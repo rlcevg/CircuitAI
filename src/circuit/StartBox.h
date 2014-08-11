@@ -8,6 +8,7 @@
 #ifndef STARTBOX_H_
 #define STARTBOX_H_
 
+#include <sys/types.h>
 #include <map>
 
 namespace circuit {
@@ -20,8 +21,10 @@ public:
 	virtual ~CStartBox();
 
 	static void CreateInstance(const char* setupScript, int width, int height);
-	static CStartBox& GetInstance() { return *singleton; }
+	static CStartBox& GetInstance();
 	static void DestroyInstance();
+
+	bool IsEmpty();
 
 	const float* operator[](int idx) const;
 
@@ -32,7 +35,7 @@ private:
 	std::map<int, float*> boxes;
 };
 
-#define startBox CStartBox::GetInstance()
+#define startBoxes CStartBox::GetInstance()
 
 } // namespace circuit
 

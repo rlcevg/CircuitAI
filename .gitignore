@@ -19,3 +19,7 @@
 *.exe
 *.out
 *.app
+
+CMakeFiles/
+Makefile
+cmake_install.cmake

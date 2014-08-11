@@ -12,7 +12,7 @@
 
 namespace circuit {
 
-CStartBox* CStartBox::singleton = NULL;
+CStartBox* CStartBox::singleton = nullptr;
 uint CStartBox::counter = 0;
 
 CStartBox::CStartBox(const char* setupScript, int width, int height)
@@ -55,7 +55,7 @@ CStartBox::CStartBox(const char* setupScript, int width, int height)
 
 CStartBox::~CStartBox()
 {
-//	for (std::pair<const int, float*>& x: startBoxes) {
+//	for (std::pair<const int, float*>& x: boxes) {
 	for (auto& box: boxes) {
 		delete [] box.second;
 	}
@@ -64,25 +64,35 @@ CStartBox::~CStartBox()
 
 void CStartBox::CreateInstance(const char* setupScript, int width, int height)
 {
-	if (singleton == NULL) {
+	if (singleton == nullptr) {
 		singleton = new CStartBox(setupScript, width, height);
 	}
 	counter++;
 }
 
+CStartBox& CStartBox::GetInstance()
+{
+	return *singleton;
+}
+
 void CStartBox::DestroyInstance()
 {
 	if (counter <= 1) {
-		if (singleton != NULL) {
+		if (singleton != nullptr) {
 			// SafeDelete
 			CStartBox* tmp = singleton;
-			singleton = NULL;
+			singleton = nullptr;
 			delete tmp;
 		}
 		counter = 0;
 	} else {
 		counter--;
 	}
+}
+
+bool CStartBox::IsEmpty()
+{
+	return boxes.empty();
 }
 
 const float* CStartBox::operator[](int idx) const
