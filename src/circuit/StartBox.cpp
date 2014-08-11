@@ -17,7 +17,6 @@ uint CStartBox::counter = 0;
 
 CStartBox::CStartBox(const char* setupScript, int width, int height)
 {
-	// TODO: replace map with array?
 	std::regex patternAlly("\\[allyteam(\\d)\\]\\s*\\{([^\\}]*)\\}");
 	std::regex patternRect("startrect\\w+=(\\d+(\\.\\d+)?);");
 

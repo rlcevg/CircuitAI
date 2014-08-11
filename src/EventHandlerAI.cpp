@@ -61,7 +61,7 @@ int CEventHandlerAI::HandleEvent(int topic, const void* data)
 			// TODO: wrapp events and commands too
 
 			const std::vector<springai::Unit*> friendlyUnits = callback->GetFriendlyUnits();
-			std::string msgText = std::string("Hello Engine (from LocalTestAI), my units num is ") + utils::int_to_string(friendlyUnits.size());
+			std::string msgText = std::string("Hello Engine (from CircuitAI), my units num is ") + utils::int_to_string(friendlyUnits.size());
 			if (!friendlyUnits.empty()) {
 				springai::Unit* unit = friendlyUnits[0];
 				springai::UnitDef* unitDef = unit->GetDef();
@@ -79,7 +79,7 @@ int CEventHandlerAI::HandleEvent(int topic, const void* data)
 			break;
 		}
 		default: {
-			std::string msgText = std::string("<LoaclTestAI> warning topic: ") + utils::int_to_string(topic);
+			std::string msgText = std::string("<CircuitAI> warning topic: ") + utils::int_to_string(topic);
 			callback->GetLog()->DoLog(msgText.c_str());
 			ret = 0;
 			break;
