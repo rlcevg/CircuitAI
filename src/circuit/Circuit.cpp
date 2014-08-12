@@ -49,7 +49,7 @@ int CCircuit::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback
 		return ERROR_INIT;
 	}
 
-	const float* box = startBoxes[game->GetMyAllyTeam()];
+	const Box& box = startBoxes[game->GetMyAllyTeam()];
 	float x = (box[static_cast<int>(BoxEdges::LEFT)] + box[static_cast<int>(BoxEdges::RIGHT)] ) / 2.0;
 	float z = (box[static_cast<int>(BoxEdges::BOTTOM)] + box[static_cast<int>(BoxEdges::TOP)] ) / 2.0;
 
@@ -90,8 +90,9 @@ int CCircuit::Update(int frame)
 						LOG("found friendly comm");
 						friendCommander = unit;
 						break;
+					} else {
+						LOG("found mah comm again");
 					}
-					LOG("found some comm");
 				}
 			}
 

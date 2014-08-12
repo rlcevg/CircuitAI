@@ -9,11 +9,16 @@
 #define STARTBOX_H_
 
 #include <sys/types.h>
-#include <map>
+#include <memory>
+#include <array>
+#include <vector>
 
 namespace circuit {
 
 enum class BoxEdges: int {BOTTOM = 0, LEFT = 1, RIGHT = 2, TOP = 3};
+
+typedef std::array<float, 4> Box;
+//using Box = std::array<float, 4>;
 
 class CStartBox {
 public:
@@ -26,13 +31,13 @@ public:
 
 	bool IsEmpty();
 
-	const float* operator[](int idx) const;
+	const std::array<float, 4>& operator[](int idx) const;
 
 private:
-	static CStartBox* singleton;
+	static std::unique_ptr<CStartBox> singleton;
 	static uint counter;
 
-	std::map<int, float*> boxes;
+	std::vector<Box> boxes;
 };
 
 #define startBoxes CStartBox::GetInstance()

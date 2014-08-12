@@ -8,19 +8,21 @@
 #include "StartBox.h"
 #include "utils.h"
 
+#include <map>
 #include <regex>
 
 namespace circuit {
 
-CStartBox* CStartBox::singleton = nullptr;
+std::unique_ptr<CStartBox> CStartBox::singleton(nullptr);
 uint CStartBox::counter = 0;
 
 CStartBox::CStartBox(const char* setupScript, int width, int height)
 {
+	std::map<int, Box> boxesMap;
 	std::regex patternAlly("\\[allyteam(\\d)\\]\\s*\\{([^\\}]*)\\}");
 	std::regex patternRect("startrect\\w+=(\\d+(\\.\\d+)?);");
-
 	std::string script(setupScript);
+
 	std::smatch allyteam;
 	std::string::const_iterator start = script.begin();
 	std::string::const_iterator end = script.end();
@@ -30,13 +32,13 @@ CStartBox::CStartBox(const char* setupScript, int width, int height)
 		std::string teamDefBody = allyteam[2];
 		std::sregex_token_iterator iter(teamDefBody.begin(), teamDefBody.end(), patternRect, 1);
 		std::sregex_token_iterator end;
-		float* startbox = new float[4];
+		Box startbox;
 		int i = 0;
 		// 0 -> bottom
 		// 1 -> left
 		// 2 -> right
 		// 3 -> top
-		for(; iter != end && i < 4; ++iter, i++ ) {
+		for (; iter != end && i < 4; ++iter, i++) {
 			startbox[i] = utils::string_to_float(*iter);
 		}
 
@@ -46,25 +48,28 @@ CStartBox::CStartBox(const char* setupScript, int width, int height)
 		startbox[static_cast<int>(BoxEdges::LEFT)  ] *= mapWidth;
 		startbox[static_cast<int>(BoxEdges::RIGHT) ] *= mapWidth;
 		startbox[static_cast<int>(BoxEdges::TOP)   ] *= mapHeight;
-		boxes[allyTeamId] = startbox;
+		boxesMap[allyTeamId] = startbox;
 
 		start = allyteam[0].second;
+	}
+
+	// Remap start boxes
+//	for (std::map<int, std::array<float, 4>>::value_type& kv : boxesMap) {
+//	for (std::pair<const int, std::array<float, 4>>& kv : boxesMap) {
+	for (auto& kv : boxesMap) {
+		boxes.push_back(kv.second);
 	}
 }
 
 CStartBox::~CStartBox()
 {
-//	for (std::pair<const int, float*>& x: boxes) {
-	for (auto& box: boxes) {
-		delete [] box.second;
-	}
-	boxes.clear();
+//	dprintf(1, "CStartBox Destructor\n");
 }
 
 void CStartBox::CreateInstance(const char* setupScript, int width, int height)
 {
 	if (singleton == nullptr) {
-		singleton = new CStartBox(setupScript, width, height);
+		singleton = std::unique_ptr<CStartBox>(new CStartBox(setupScript, width, height));
 	}
 	counter++;
 }
@@ -78,10 +83,7 @@ void CStartBox::DestroyInstance()
 {
 	if (counter <= 1) {
 		if (singleton != nullptr) {
-			// SafeDelete
-			CStartBox* tmp = singleton;
 			singleton = nullptr;
-			delete tmp;
 		}
 		counter = 0;
 	} else {
@@ -94,10 +96,9 @@ bool CStartBox::IsEmpty()
 	return boxes.empty();
 }
 
-const float* CStartBox::operator[](int idx) const
+const std::array<float, 4>& CStartBox::operator[](int idx) const
 {
-//	return boxes[idx];
-	return boxes.find(idx)->second;
+	return boxes[idx];
 }
 
 } // namespace circuit
