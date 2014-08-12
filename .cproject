@@ -25,6 +25,7 @@
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../../rts&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../Wrappers/Cpp/src-generated&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../Wrappers/Cpp/src&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/lib&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.600958395" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>

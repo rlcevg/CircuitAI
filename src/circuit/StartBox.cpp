@@ -13,9 +13,6 @@
 
 namespace circuit {
 
-std::unique_ptr<CStartBox> CStartBox::singleton(nullptr);
-uint CStartBox::counter = 0;
-
 CStartBox::CStartBox(const char* setupScript, int width, int height)
 {
 	std::map<int, Box> boxesMap;
@@ -54,41 +51,16 @@ CStartBox::CStartBox(const char* setupScript, int width, int height)
 	}
 
 	// Remap start boxes
-//	for (std::map<int, std::array<float, 4>>::value_type& kv : boxesMap) {
-//	for (std::pair<const int, std::array<float, 4>>& kv : boxesMap) {
-	for (auto& kv : boxesMap) {
+	// @see rts/Game/GameSetup.cpp CGameSetup::Init
+//	for (const std::map<int, Box>::value_type& kv : boxesMap) {
+//	for (const std::pair<const int, std::array<float, 4>>& kv : boxesMap) {
+	for (const auto& kv : boxesMap) {
 		boxes.push_back(kv.second);
 	}
 }
 
 CStartBox::~CStartBox()
 {
-//	dprintf(1, "CStartBox Destructor\n");
-}
-
-void CStartBox::CreateInstance(const char* setupScript, int width, int height)
-{
-	if (singleton == nullptr) {
-		singleton = std::unique_ptr<CStartBox>(new CStartBox(setupScript, width, height));
-	}
-	counter++;
-}
-
-CStartBox& CStartBox::GetInstance()
-{
-	return *singleton;
-}
-
-void CStartBox::DestroyInstance()
-{
-	if (counter <= 1) {
-		if (singleton != nullptr) {
-			singleton = nullptr;
-		}
-		counter = 0;
-	} else {
-		counter--;
-	}
 }
 
 bool CStartBox::IsEmpty()
@@ -96,7 +68,7 @@ bool CStartBox::IsEmpty()
 	return boxes.empty();
 }
 
-const std::array<float, 4>& CStartBox::operator[](int idx) const
+const Box& CStartBox::operator[](int idx) const
 {
 	return boxes[idx];
 }

@@ -6,47 +6,32 @@
  */
 
 #include "MetalSpot.h"
+#include "json/json.h"
 
 namespace circuit {
 
-CMetalSpot* CMetalSpot::singleton = nullptr;
-uint CMetalSpot::counter = 0;
+using namespace springai;
 
 CMetalSpot::CMetalSpot(const char* setupMetal)
 {
+	Json::Value root;
+	Json::Reader json;
+
+	if (!json.parse(setupMetal, root, false)) {
+		return;
+	}
+
+	for (const Json::Value& object : root) {
+		Metal spot;
+		spot.income = object["metal"].asFloat();
+		spot.position = AIFloat3(object["x"].asFloat(),
+								 object["y"].asFloat(),
+								 object["z"].asFloat());
+	}
 }
 
 CMetalSpot::~CMetalSpot()
 {
-	// TODO Auto-generated destructor stub
-}
-
-void CMetalSpot::CreateInstance(const char* setupMetal)
-{
-	if (singleton == nullptr) {
-		singleton = new CMetalSpot(setupMetal);
-	}
-	counter++;
-}
-
-CMetalSpot& CMetalSpot::GetInstance()
-{
-	return *singleton;
-}
-
-void CMetalSpot::DestroyInstance()
-{
-	if (counter <= 1) {
-		if (singleton != nullptr) {
-			// SafeDelete
-			CMetalSpot* tmp = singleton;
-			singleton = nullptr;
-			delete tmp;
-		}
-		counter = 0;
-	} else {
-		counter--;
-	}
 }
 
 } // namespace circuit

@@ -8,25 +8,25 @@
 #ifndef METALSPOT_H_
 #define METALSPOT_H_
 
-#include <sys/types.h>
+#include "AIFloat3.h"
+
+#include <vector>
 
 namespace circuit {
+
+using Metal = struct Metal {
+	float income;
+	springai::AIFloat3 position;
+};
 
 class CMetalSpot {
 public:
 	CMetalSpot(const char* setupMetal);
 	virtual ~CMetalSpot();
 
-	static void CreateInstance(const char* setupMetal);
-	static CMetalSpot& GetInstance();
-	static void DestroyInstance();
-
 private:
-	static CMetalSpot* singleton;
-	static uint counter;
+	std::vector<Metal> spots;
 };
-
-#define metalSpots CMetalSpot::GetInstance()
 
 } // namespace circuit
 

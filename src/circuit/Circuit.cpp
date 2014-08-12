@@ -6,8 +6,7 @@
  */
 
 #include "Circuit.h"
-#include "StartBox.h"
-#include "MetalSpot.h"
+#include "GameAttribute.h"
 #include "utils.h"
 
 #include "Game.h"
@@ -37,15 +36,19 @@ CCircuit::CCircuit(springai::OOAICallback* callback) :
 
 CCircuit::~CCircuit()
 {
-	Release(0);
+	if (initialized) {
+		Release(0);
+	}
 }
 
 int CCircuit::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback)
 {
-	CStartBox::CreateInstance(game->GetSetupScript(), map->GetWidth(), map->GetHeight());
+	CGameAttribute::CreateInstance();
 
+	gameAttribute.parseSetupScript(game->GetSetupScript(), map->GetWidth(), map->GetHeight());
+	CStartBox& startBoxes = gameAttribute.GetStartBoxes();
 	if (startBoxes.IsEmpty()) {
-		CStartBox::DestroyInstance();
+		CGameAttribute::DestroyInstance();
 		return ERROR_INIT;
 	}
 
@@ -62,11 +65,7 @@ int CCircuit::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback
 
 int CCircuit::Release(int reason)
 {
-	CStartBox::DestroyInstance();
-
-	if (!initialized) {
-		return ERROR_RELEASE;
-	}
+	CGameAttribute::DestroyInstance();
 
 	initialized = false;
 	// signal: everything went OK
@@ -110,37 +109,9 @@ int CCircuit::Update(int frame)
 
 int CCircuit::LuaMessage(const char* inData)
 {
-	LOG(inData);
 	if (strncmp(inData, "METAL_SPOTS:", 12) == 0) {
-		LOG("YES");
+		gameAttribute.parseMetalSpots(inData + 12);
 	}
-//		String json = inData.substring(12);
-//	JsonParserFactory factory=JsonParserFactory.getInstance();
-//	JSONParser parser=factory.newJsonParser();
-//	ArrayList<HashMap> jsonData=(ArrayList)parser.parseJson(json).values().toArray()[0];
-//	initializeGraph(jsonData);
-//	parent.debug("Parsed JSON metalmap with "+metalSpots.size()+" spots and "+links.size()+" links");
-//	Set<Integer> enemies = parent.getEnemyAllyTeamIDs();
-//	for(int enemy:enemies){
-//	float[] box = parent.getEnemyBox(enemy);
-//	if(box!=null){
-//	// 0 -> bottom
-//	// 1 -> left
-//	// 2 -> right
-//	// 3 -> top
-//	for (MetalSpot ms:metalSpots){
-//	AIFloat3 pos = ms.position;
-//	if(pos.z > box[3] && pos.z < box[0] && pos.x>box[1] && pos.x<box[2]){
-//	ms.hostile = true;
-//	ms.setShadowCaptured(true);
-//	for(Link l:ms.links){
-//	l.contested = true;
-//	}
-//	}
-//	}
-//	}
-//	}
-//	}
 	return 0; //signaling: OK
 }
 
