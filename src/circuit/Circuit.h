@@ -9,6 +9,7 @@
 #define CIRCUIT_H_
 
 #include "StartBox.h"
+#include "MetalSpot.h"
 
 #include "ExternalAI/Interface/AISEvents.h"
 #include "ExternalAI/Interface/AISCommands.h"
@@ -43,6 +44,10 @@ private:
 	springai::Map* map;
 
 	void CalcStartPos(const Box& box);
+	void Clusterize(const std::vector<Metal>& spots);
+	void ClearMetalClusters(std::vector<std::vector<Metal>>& metalCluster);
+	void DrawConvexHulls(const int nclusters, const int nrows, const int* clusterid, const std::vector<Metal>& spots,
+				std::vector<std::vector<Metal>>& metalCluster);
 };
 
 } // namespace circuit

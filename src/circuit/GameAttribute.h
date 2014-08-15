@@ -27,7 +27,7 @@ public:
 
 	void parseSetupScript(const char* setupScript, int width, int height);
 	void parseMetalSpots(const char* setupMetal);
-
+	bool IsMetalSpotsInitialized();
 	CStartBox& GetStartBoxes();
 	CMetalSpot& GetMetalSpots();
 

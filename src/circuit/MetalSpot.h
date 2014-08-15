@@ -24,8 +24,10 @@ public:
 	CMetalSpot(const char* setupMetal);
 	virtual ~CMetalSpot();
 
-private:
+public:
 	std::vector<Metal> spots;
+	std::vector<std::vector<Metal>> clusters;
+	int mexPerClusterAvg;
 };
 
 } // namespace circuit

@@ -12,7 +12,8 @@ namespace circuit {
 
 using namespace springai;
 
-CMetalSpot::CMetalSpot(const char* setupMetal)
+CMetalSpot::CMetalSpot(const char* setupMetal) :
+		mexPerClusterAvg(4)
 {
 	Json::Value root;
 	Json::Reader json;

@@ -62,6 +62,11 @@ void CGameAttribute::parseMetalSpots(const char* setupMetal)
 	}
 }
 
+bool CGameAttribute::IsMetalSpotsInitialized()
+{
+	return metalSpots != nullptr;
+}
+
 CStartBox& CGameAttribute::GetStartBoxes()
 {
 	return *startBoxes;
