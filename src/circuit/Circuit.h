@@ -45,9 +45,11 @@ private:
 
 	void CalcStartPos(const Box& box);
 	void Clusterize(const std::vector<Metal>& spots);
-	void ClearMetalClusters(std::vector<std::vector<Metal>>& metalCluster);
+	void ClearMetalClusters(std::vector<std::vector<Metal>>& metalCluster, std::vector<springai::AIFloat3>& centroids);
 	void DrawConvexHulls(const int nclusters, const int nrows, const int* clusterid, const std::vector<Metal>& spots,
-				std::vector<std::vector<Metal>>& metalCluster);
+			std::vector<std::vector<Metal>>& metalCluster);
+	void DrawCentroids(const int ncluster, const double** cdata, const std::vector<std::vector<Metal>>& metalCluster,
+			std::vector<springai::AIFloat3>& centroids);
 };
 
 } // namespace circuit

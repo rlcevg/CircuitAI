@@ -27,6 +27,7 @@ public:
 public:
 	std::vector<Metal> spots;
 	std::vector<std::vector<Metal>> clusters;
+	std::vector<springai::AIFloat3> centroids;
 	int mexPerClusterAvg;
 };
 

@@ -150,7 +150,7 @@ int CCircuit::Message(int playerId, const char* message)
 
 		if (msgLength == strlen("~кластер") && strcmp(message, "~кластер") == 0) {
 			if (gameAttribute.IsMetalSpotsInitialized()) {
-				ClearMetalClusters(gameAttribute.GetMetalSpots().clusters);
+				ClearMetalClusters(gameAttribute.GetMetalSpots().clusters, gameAttribute.GetMetalSpots().centroids);
 				Clusterize(gameAttribute.GetMetalSpots().spots);
 			}
 		} else if (msgLength == strlen("~делитель++") && strncmp(message, "~делитель", strlen("~делитель")) == 0) {	// Non ASCII comparison
@@ -251,11 +251,27 @@ void CCircuit::Clusterize(const std::vector<Metal>& spots)
 
 	// clusterize
 	kcluster(nclusters, nrows, ncols, data, mask, weight, transpose, npass, method, dist, clusterid, &error, &ifound);
+	// get centroids
+	double** cdata = (double**)malloc(nclusters * sizeof(double*));
+	int** cmask = (int**)malloc(nclusters * sizeof(int*));
+	for (int i = 0; i < nclusters; i++)	{
+		cdata[i] = (double*)malloc(ncols * sizeof(double));
+		cmask[i] = (int*)malloc(ncols * sizeof(int));
+	}
+	getclustercentroids(nclusters, nrows, ncols, data, mask, clusterid, cdata, cmask, 0, 'a');
 
 	// draw results
 	DrawConvexHulls(nclusters, nrows, clusterid, spots, gameAttribute.GetMetalSpots().clusters);
+	DrawCentroids(nclusters, (const double**)cdata, gameAttribute.GetMetalSpots().clusters, gameAttribute.GetMetalSpots().centroids);
 
 	// clean up
+	for (int i = 0; i < nclusters; i++) {
+		free(cmask[i]);
+		free(cdata[i]);
+	}
+	free(cmask);
+	free(cdata);
+
 	free(weight);
 	for (int i = 0; i < nrows; i++) {
 		free(data[i]);
@@ -278,10 +294,10 @@ void CCircuit::DrawConvexHulls(const int nclusters, const int nrows, const int* 
 		if (vec.empty()) {
 			continue;
 		} else if (vec.size() == 1) {
-			map->GetDrawer()->AddPoint(vec[0].position, "Cluster 1");
+//			map->GetDrawer()->AddPoint(vec[0].position, "Cluster 1");
 		} else if (vec.size() == 2) {
-			map->GetDrawer()->AddPoint(vec[0].position, "Cluster 2");
-			map->GetDrawer()->AddPoint(vec[1].position, "Cluster 2");
+//			map->GetDrawer()->AddPoint(vec[0].position, "Cluster 2");
+//			map->GetDrawer()->AddPoint(vec[1].position, "Cluster 2");
 			map->GetDrawer()->AddLine(vec[0].position, vec[1].position);
 		} else {
 			// !!! Graham scan !!!
@@ -373,7 +389,17 @@ void CCircuit::DrawConvexHulls(const int nclusters, const int nrows, const int* 
 	}
 }
 
-void CCircuit::ClearMetalClusters(std::vector<std::vector<Metal>>& metalCluster)
+void CCircuit::DrawCentroids(const int ncluster, const double** cdata, const std::vector<std::vector<Metal>>& metalCluster,
+		std::vector<springai::AIFloat3>& centroids)
+{
+	for (int i = 0; i < ncluster; i++) {
+		centroids.push_back(AIFloat3(cdata[i][0], metalCluster[i].size(), cdata[i][1]));
+		std::string msgText = utils::string_format("%i mexes cluster", metalCluster[i].size());
+		map->GetDrawer()->AddPoint(centroids[i], msgText.c_str());
+	}
+}
+
+void CCircuit::ClearMetalClusters(std::vector<std::vector<Metal>>& metalCluster, std::vector<springai::AIFloat3>& centroids)
 {
 	for (auto& cluster : metalCluster) {
 		for (auto& spot : cluster) {
@@ -381,6 +407,11 @@ void CCircuit::ClearMetalClusters(std::vector<std::vector<Metal>>& metalCluster)
 		}
 	}
 	metalCluster.clear();
+
+	for (auto& centroid : centroids) {
+		map->GetDrawer()->DeletePointsAndLines(centroid);
+	}
+	centroids.clear();
 }
 
 } // namespace circuit
