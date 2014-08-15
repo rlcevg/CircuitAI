@@ -8,6 +8,8 @@
 #ifndef CIRCUIT_H_
 #define CIRCUIT_H_
 
+#include "StartBox.h"
+
 #include "ExternalAI/Interface/AISEvents.h"
 #include "ExternalAI/Interface/AISCommands.h"
 
@@ -31,6 +33,7 @@ public:
 	int Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback);
 	int Release(int reason);
 	int Update(int frame);
+	int Message(int playerId, const char* message);
 	int LuaMessage(const char* inData);
 
 private:
@@ -38,6 +41,8 @@ private:
 	springai::Log* log;
 	springai::Game* game;
 	springai::Map* map;
+
+	void CalcStartPos(const Box& box);
 };
 
 } // namespace circuit

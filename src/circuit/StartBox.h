@@ -8,6 +8,8 @@
 #ifndef STARTBOX_H_
 #define STARTBOX_H_
 
+#include "Game/GameSetup.h"
+
 #include <array>
 #include <vector>
 
@@ -20,6 +22,8 @@ using Box = std::array<float, 4>;
 
 class CStartBox {
 public:
+	CGameSetup::StartPosType startPosType;
+
 	CStartBox(const char* setupScript, int width, int height);
 	virtual ~CStartBox();
 

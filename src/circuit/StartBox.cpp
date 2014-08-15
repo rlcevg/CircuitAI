@@ -7,16 +7,20 @@
 
 #include "StartBox.h"
 #include "utils.h"
+#include "Game/GameSetup.h"
 
 #include <map>
 #include <regex>
 
 namespace circuit {
 
-CStartBox::CStartBox(const char* setupScript, int width, int height)
+CStartBox::CStartBox(const char* setupScript, int width, int height) :
+		startPosType(CGameSetup::StartPosType::StartPos_ChooseInGame)
 {
+	srand(time(nullptr));
+
 	std::map<int, Box> boxesMap;
-	std::regex patternAlly("\\[allyteam(\\d)\\]\\s*\\{([^\\}]*)\\}");
+	std::regex patternAlly("\\[allyteam(\\d+)\\]\\s*\\{([^\\}]*)\\}");
 	std::regex patternRect("startrect\\w+=(\\d+(\\.\\d+)?);");
 	std::string script(setupScript);
 
@@ -48,6 +52,12 @@ CStartBox::CStartBox(const char* setupScript, int width, int height)
 		boxesMap[allyTeamId] = startbox;
 
 		start = allyteam[0].second;
+	}
+
+	std::cmatch matchPosType;
+	std::regex patternPosType("startpostype=(\\d+)");
+	if (std::regex_search(setupScript, matchPosType, patternPosType)) {
+		startPosType = static_cast<CGameSetup::StartPosType>(std::atoi(matchPosType[1].first));
 	}
 
 	// Remap start boxes

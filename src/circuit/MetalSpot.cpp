@@ -27,6 +27,7 @@ CMetalSpot::CMetalSpot(const char* setupMetal)
 		spot.position = AIFloat3(object["x"].asFloat(),
 								 object["y"].asFloat(),
 								 object["z"].asFloat());
+		spots.push_back(spot);
 	}
 }
 

@@ -51,7 +51,7 @@ int CEventHandlerAI::HandleEvent(int topic, const void* data)
 			struct SMessageEvent* evt = (struct SMessageEvent*)data;
 			std::string msgText = std::string(evt->message) + std::string(", player: ") + utils::int_to_string(evt->player);
 			callback->GetLog()->DoLog(msgText.c_str());
-			ret = 0;
+			ret = circuit->Message(evt->player, evt->message);;
 			break;
 		}
 		case EVENT_UNIT_CREATED: {
