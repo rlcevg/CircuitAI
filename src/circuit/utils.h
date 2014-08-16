@@ -88,7 +88,7 @@ static float string_to_float(const std::string &str)
 
 static inline void sleep(int64_t seconds)
 {
-	std::this_thread::sleep_for(std::chrono::milliseconds(seconds * 1000));
+	std::this_thread::sleep_for(std::chrono::seconds(seconds));
 }
 
 } // namespace utils

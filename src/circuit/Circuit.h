@@ -17,6 +17,10 @@
 #include "OOAICallback.h"
 #include "SSkirmishAICallback.h"
 
+#include <mutex>
+#include <atomic>
+#include <thread>
+
 namespace circuit {
 
 #define ERROR_UNKNOWN		200
@@ -43,13 +47,16 @@ private:
 	springai::Game* game;
 	springai::Map* map;
 
+	std::mutex clusterMutex;
+	bool isClusterInvoked;
+	std::atomic<bool> isClusterDone;
+	std::thread clusterThread;
+
 	void CalcStartPos(const Box& box);
 	void Clusterize(const std::vector<Metal>& spots);
 	void ClearMetalClusters(std::vector<std::vector<Metal>>& metalCluster, std::vector<springai::AIFloat3>& centroids);
-	void DrawConvexHulls(const int nclusters, const int nrows, const int* clusterid, const std::vector<Metal>& spots,
-			std::vector<std::vector<Metal>>& metalCluster);
-	void DrawCentroids(const int ncluster, const double** cdata, const std::vector<std::vector<Metal>>& metalCluster,
-			std::vector<springai::AIFloat3>& centroids);
+	void DrawConvexHulls(const std::vector<std::vector<Metal>>& metalCluster);
+	void DrawCentroids(const std::vector<std::vector<Metal>>& metalCluster, const std::vector<springai::AIFloat3>& centroids);
 };
 
 } // namespace circuit

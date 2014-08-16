@@ -51,6 +51,8 @@ CCircuit::CCircuit(springai::OOAICallback* callback) :
 		game(callback->GetGame()),
 		map(callback->GetMap())
 {
+	isClusterInvoked = false;
+	isClusterDone = false;
 }
 
 CCircuit::~CCircuit()
@@ -92,6 +94,9 @@ int CCircuit::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback
 int CCircuit::Release(int reason)
 {
 	CGameAttribute::DestroyInstance();
+	if (clusterThread.joinable()) {
+		clusterThread.join();
+	}
 
 	initialized = false;
 	// signal: everything went OK
@@ -134,6 +139,17 @@ int CCircuit::Update(int frame)
 		}
 	}
 
+	if (frame % 30 == 0) {
+		// TODO: Make it event based, e.g. when clusterization done it inserts onSuccess handler into queue.
+		//       At this point queue checked and executed if required.
+		//       It will require lock on queue.
+		if (this->isClusterInvoked && this->isClusterDone.load()) {
+			DrawConvexHulls(gameAttribute.GetMetalSpots().clusters);
+			DrawCentroids(gameAttribute.GetMetalSpots().clusters, gameAttribute.GetMetalSpots().centroids);
+			isClusterInvoked = false;
+		}
+	}
+
 	// signal: everything went OK
 	return 0;
 }
@@ -149,9 +165,15 @@ int CCircuit::Message(int playerId, const char* message)
 	else if (callback->GetSkirmishAIId() == 0) {
 
 		if (msgLength == strlen("~кластер") && strcmp(message, "~кластер") == 0) {
-			if (gameAttribute.IsMetalSpotsInitialized()) {
+			if (gameAttribute.IsMetalSpotsInitialized() && !isClusterInvoked) {
+				isClusterInvoked = true;
+				isClusterDone = false;
 				ClearMetalClusters(gameAttribute.GetMetalSpots().clusters, gameAttribute.GetMetalSpots().centroids);
-				Clusterize(gameAttribute.GetMetalSpots().spots);
+				// TODO: Implement worker thread pool.
+				//       Read about std::async, std::bind, std::future.
+				clusterThread.join();
+				clusterThread = std::thread(&CCircuit::Clusterize, this, std::ref(gameAttribute.GetMetalSpots().spots));
+//				clusterThread.detach();
 			}
 		} else if (msgLength == strlen("~делитель++") && strncmp(message, "~делитель", strlen("~делитель")) == 0) {	// Non ASCII comparison
 			if (gameAttribute.IsMetalSpotsInitialized()) {
@@ -168,6 +190,8 @@ int CCircuit::Message(int playerId, const char* message)
 				std::string msgText = utils::string_format("/Say Allies: <CircuitAI> Cluster divider = %i (avarage mexes per cluster)", divider);
 				game->SendTextMessage(msgText.c_str(), 0);
 			}
+//		} else if (strncmp(message, "~selfd", 6) == 0) {
+//			callback->GetTeamUnits()[0]->SelfDestruct();
 		}
 	}
 
@@ -191,8 +215,10 @@ int CCircuit::LuaMessage(const char* inData)
 			LOG("x:%f, z:%f, income:%f", spot.x, spot.z, spot.y);
 		}
 		LOG("size2: %i", spots.size());
-		if (callback->GetSkirmishAIId() == 0) {
-			Clusterize(gameAttribute.GetMetalSpots().spots);
+		if (callback->GetSkirmishAIId() == 0 && !isClusterInvoked) {
+			isClusterInvoked = true;
+			isClusterDone = false;
+			clusterThread = std::thread(&CCircuit::Clusterize, this, std::ref(gameAttribute.GetMetalSpots().spots));
 		}
 	}
 	return 0; //signaling: OK
@@ -212,11 +238,12 @@ void CCircuit::CalcStartPos(const Box& box)
 	output = min + (rand() % (int)(max - min + 1));
 	float z = output;
 
-	game->SendStartPosition(false, AIFloat3(x, 0.0, z));
+	game->SendStartPosition(false, AIFloat3(x, map->GetElevationAt(x, z), z));
 }
 
 void CCircuit::Clusterize(const std::vector<Metal>& spots)
 {
+//	utils::sleep(5);	// for testing purposes
 	// init params
 	const int nclusters = spots.size() / gameAttribute.GetMetalSpots().mexPerClusterAvg;
 	int nrows = spots.size();
@@ -260,9 +287,24 @@ void CCircuit::Clusterize(const std::vector<Metal>& spots)
 	}
 	getclustercentroids(nclusters, nrows, ncols, data, mask, clusterid, cdata, cmask, 0, 'a');
 
-	// draw results
-	DrawConvexHulls(nclusters, nrows, clusterid, spots, gameAttribute.GetMetalSpots().clusters);
-	DrawCentroids(nclusters, (const double**)cdata, gameAttribute.GetMetalSpots().clusters, gameAttribute.GetMetalSpots().centroids);
+	// save results
+	{
+		std::lock_guard<std::mutex> guard(clusterMutex);
+
+		std::vector<std::vector<Metal>>& metalCluster = gameAttribute.GetMetalSpots().clusters;
+		metalCluster.resize(nclusters);
+		for (int i = 0; i < nrows; i++) {
+			metalCluster[clusterid[i]].push_back(spots[i]);
+		}
+		std::vector<springai::AIFloat3>& centroids = gameAttribute.GetMetalSpots().centroids;
+		for (int i = 0; i < nclusters; i++) {
+			centroids.push_back(AIFloat3(cdata[i][0], metalCluster[i].size(), cdata[i][1]));
+		}
+	}
+	isClusterDone = true;
+
+//	DrawConvexHulls(gameAttribute.GetMetalSpots().clusters);
+//	DrawCentroids(gameAttribute.GetMetalSpots().clusters, gameAttribute.GetMetalSpots().centroids);
 
 	// clean up
 	for (int i = 0; i < nclusters; i++) {
@@ -282,14 +324,8 @@ void CCircuit::Clusterize(const std::vector<Metal>& spots)
 	free(clusterid);
 }
 
-void CCircuit::DrawConvexHulls(const int nclusters, const int nrows, const int* clusterid, const std::vector<Metal>& spots,
-			std::vector<std::vector<Metal>>& metalCluster)
+void CCircuit::DrawConvexHulls(const std::vector<std::vector<Metal>>& metalCluster)
 {
-	metalCluster.resize(nclusters);
-	for (int i = 0; i < nrows; i++) {
-		metalCluster[clusterid[i]].push_back(spots[i]);
-	}
-
 	for (const std::vector<Metal>& vec : metalCluster) {
 		if (vec.empty()) {
 			continue;
@@ -322,9 +358,8 @@ void CCircuit::DrawConvexHulls(const int nclusters, const int nrows, const int* 
 			// the array of points
 			std::vector<AIFloat3> points(N + 1);
 			// Find the bottom-most point
-			int min = 1;
+			int min = 1, i = 1;
 			float zmin = vec[0].position.z;
-			int i = 1;
 			for (const Metal& spot : vec) {
 				points[i] = spot.position;
 				float z = spot.position.z;
@@ -376,8 +411,7 @@ void CCircuit::DrawConvexHulls(const int nclusters, const int nrows, const int* 
 			}
 
 			// draw convex hull
-			AIFloat3 start = points[0];
-			AIFloat3 end;
+			AIFloat3 start = points[0], end;
 			for (int i = 1; i < M; i++) {
 				end = points[i];
 				map->GetDrawer()->AddLine(start, end);
@@ -389,11 +423,9 @@ void CCircuit::DrawConvexHulls(const int nclusters, const int nrows, const int* 
 	}
 }
 
-void CCircuit::DrawCentroids(const int ncluster, const double** cdata, const std::vector<std::vector<Metal>>& metalCluster,
-		std::vector<springai::AIFloat3>& centroids)
+void CCircuit::DrawCentroids(const std::vector<std::vector<Metal>>& metalCluster, const std::vector<springai::AIFloat3>& centroids)
 {
-	for (int i = 0; i < ncluster; i++) {
-		centroids.push_back(AIFloat3(cdata[i][0], metalCluster[i].size(), cdata[i][1]));
+	for (int i = 0; i < metalCluster.size(); i++) {
 		std::string msgText = utils::string_format("%i mexes cluster", metalCluster[i].size());
 		map->GetDrawer()->AddPoint(centroids[i], msgText.c_str());
 	}
