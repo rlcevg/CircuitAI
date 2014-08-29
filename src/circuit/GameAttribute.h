@@ -5,13 +5,14 @@
  *      Author: rlcevg
  */
 
-#ifndef GAMESETUP_H_
-#define GAMESETUP_H_
+#ifndef GAMEATTRIBUTE_H_
+#define GAMEATTRIBUTE_H_
 
-#include "StartBox.h"
-#include "MetalSpot.h"
+#include "StartBoxManager.h"
+#include "MetalSpotManager.h"
 
-#include <sys/types.h>
+#include "GameRulesParam.h"
+
 #include <memory>
 
 namespace circuit {
@@ -21,26 +22,19 @@ public:
 	CGameAttribute();
 	virtual ~CGameAttribute();
 
-	static void CreateInstance();
-	static CGameAttribute& GetInstance();
-	static void DestroyInstance();
-
-	void parseSetupScript(const char* setupScript, int width, int height);
-	void parseMetalSpots(const char* setupMetal);
-	bool IsMetalSpotsInitialized();
-	CStartBox& GetStartBoxes();
-	CMetalSpot& GetMetalSpots();
+	void ParseSetupScript(const char* setupScript, int width, int height);
+	void ParseMetalSpots(const char* metalJson);
+	void ParseMetalSpots(std::vector<springai::GameRulesParam*>& metalParams);
+	bool HasStartBoxes(bool checkEmpty = true);
+	bool HasMetalSpots(bool checkEmpty = true);
+	CStartBoxManager& GetStartBoxManager();
+	CMetalSpotManager& GetMetalSpotManager();
 
 private:
-	static std::unique_ptr<CGameAttribute> singleton;
-	static uint counter;
-
-	std::shared_ptr<CStartBox> startBoxes;
-	std::shared_ptr<CMetalSpot> metalSpots;
+	std::shared_ptr<CStartBoxManager> startBoxManager;
+	std::shared_ptr<CMetalSpotManager> metalSpotManager;
 };
-
-#define gameAttribute CGameAttribute::GetInstance()
 
 } // namespace circuit
 
-#endif // GAMESETUP_H_
+#endif // GAMEATTRIBUTE_H_

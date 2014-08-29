@@ -16,8 +16,7 @@ using namespace circuit;
 
 CEventHandlerAI::CEventHandlerAI(springai::OOAICallback* callback) :
 		callback(callback),
-		skirmishAIId(callback != NULL ? callback->GetSkirmishAIId() : -1),
-		circuit(NULL)
+		skirmishAIId(callback != NULL ? callback->GetSkirmishAIId() : -1)
 {
 	circuit = new CCircuit(callback);
 }

@@ -1,12 +1,12 @@
 /*
- * MetalSpot.h
+ * MetalSpotManager.h
  *
  *  Created on: Aug 11, 2014
  *      Author: rlcevg
  */
 
-#ifndef METALSPOT_H_
-#define METALSPOT_H_
+#ifndef METALSPOTMANAGER_H_
+#define METALSPOTMANAGER_H_
 
 #include "AIFloat3.h"
 
@@ -14,17 +14,24 @@
 
 namespace circuit {
 
+#define DEFAULT_MEXPERCLUSTER	3
+
 using Metal = struct Metal {
 	float income;
 	springai::AIFloat3 position;
 };
 
-class CMetalSpot {
+class CMetalSpotManager {
 public:
-	CMetalSpot(const char* setupMetal);
-	virtual ~CMetalSpot();
+	CMetalSpotManager(std::vector<Metal>& spots);
+	virtual ~CMetalSpotManager();
 
-public:
+	bool IsEmpty();
+	std::vector<Metal>& GetSpots();
+
+private:
+	void SortSpotsRadial();
+
 	std::vector<Metal> spots;
 	std::vector<std::vector<Metal>> clusters;
 	std::vector<springai::AIFloat3> centroids;
@@ -33,4 +40,4 @@ public:
 
 } // namespace circuit
 
-#endif // METALSPOT_H_
+#endif // METALSPOTMANAGER_H_
