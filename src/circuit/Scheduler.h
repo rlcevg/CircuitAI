@@ -23,8 +23,12 @@ public:
 	CScheduler();
 	virtual ~CScheduler();
 
+	void Init(const std::shared_ptr<CScheduler>& this_ptr);
+
+private:
 	void Release();
 
+public:
 	/*
 	 * Add task at specified frame, or execute immediately at next frame
 	 */
@@ -50,7 +54,9 @@ public:
 	 */
 	void RemoveTask(std::shared_ptr<CTask> task);
 
-public:
+private:
+	std::weak_ptr<CScheduler> self;
+
 	struct BaseContainer {
 		BaseContainer(std::shared_ptr<CTask> task) :
 			task(task) {}
@@ -66,19 +72,19 @@ public:
 	};
 	std::list<OnceTask> onceTasks;
 
-	struct IntervalTask : public BaseContainer {
-		IntervalTask(std::shared_ptr<CTask> task, int frameInterval, int lastFrame) :
+	struct RepeatTask : public BaseContainer {
+		RepeatTask(std::shared_ptr<CTask> task, int frameInterval, int lastFrame) :
 			BaseContainer(task), frameInterval(frameInterval), lastFrame(lastFrame) {}
 		int frameInterval;
 		int lastFrame;
 	};
-	std::list<IntervalTask> intervalTasks;
+	std::list<RepeatTask> repeatTasks;
 
 	struct WorkTask : public BaseContainer {
-		WorkTask(CScheduler* scheduler, std::shared_ptr<CTask> task, std::shared_ptr<CTask> onSuccess) :
-			BaseContainer(task), onSuccess(onSuccess), scheduler(scheduler) {}
-		std::shared_ptr<CTask> onSuccess;
-		CScheduler* scheduler;
+		WorkTask(std::weak_ptr<CScheduler> scheduler, std::shared_ptr<CTask> task, std::shared_ptr<CTask> onComplete) :
+			BaseContainer(task), onComplete(onComplete), scheduler(scheduler) {}
+		std::shared_ptr<CTask> onComplete;
+		std::weak_ptr<CScheduler> scheduler;
 	};
 	static CQueue<WorkTask> workTasks;
 
@@ -86,12 +92,13 @@ public:
 		FinishTask(std::shared_ptr<CTask> task) :
 			BaseContainer(task) {}
 		FinishTask(const WorkTask& workTask) :
-			BaseContainer(workTask.onSuccess) {}
+			BaseContainer(workTask.onComplete) {}
 	};
 	CQueue<FinishTask> finishTasks;
 
 	static std::thread workerThread;
 	static std::atomic<bool> workerRunning;
+	static unsigned int counterInstance;
 
 	static void WorkerThread();
 };

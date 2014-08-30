@@ -12,22 +12,38 @@ namespace circuit {
 CQueue<CScheduler::WorkTask> CScheduler::workTasks;
 std::thread CScheduler::workerThread;
 std::atomic<bool> CScheduler::workerRunning(false);
+unsigned int CScheduler::counterInstance = 0;
 
 CScheduler::CScheduler()
 {
+	printf("<DEBUG> Entering:  %s\n", __PRETTY_FUNCTION__);
+	counterInstance++;
 }
 
 CScheduler::~CScheduler()
 {
-	printf("<DEBUG> Entering: %s\n", __PRETTY_FUNCTION__);
+	printf("<DEBUG> Entering:  %s\n", __PRETTY_FUNCTION__);
+	counterInstance--;
 	Release();
+}
+
+void CScheduler::Init(const std::shared_ptr<CScheduler>& this_ptr)
+{
+	self = this_ptr;
 }
 
 void CScheduler::Release()
 {
-	if (workerRunning.load()) {
+	std::weak_ptr<CScheduler>& scheduler = self;
+	CQueue<WorkTask>::ConditionFunction condition = [&scheduler](WorkTask& item) -> bool {
+		return !scheduler.owner_before(item.scheduler) && !item.scheduler.owner_before(scheduler);
+	};
+	workTasks.RemoveAllIf(condition);
+
+	if (counterInstance == 0 && workerRunning.load()) {
 		workerRunning = false;
-		workTasks.Push({0, nullptr, nullptr});
+		// At this point workTasks is empty. Push empty task in case worker stuck at Pop().
+		workTasks.Push({self, nullptr, nullptr});
 		if (workerThread.joinable()) {
 			workerThread.join();
 		}
@@ -41,7 +57,7 @@ void CScheduler::RunTaskAt(std::shared_ptr<CTask> task, int frame)
 
 void CScheduler::RunTaskEvery(std::shared_ptr<CTask> task, int frameInterval)
 {
-	intervalTasks.push_back({task, frameInterval, -frameInterval});
+	repeatTasks.push_back({task, frameInterval, -frameInterval});
 }
 
 void CScheduler::ProcessTasks(int frame)
@@ -56,7 +72,7 @@ void CScheduler::ProcessTasks(int frame)
 		}
 	}
 
-	for (auto& container : intervalTasks) {
+	for (auto& container : repeatTasks) {
 		if (frame - container.lastFrame >= container.frameInterval) {
 			container.task->Run();
 			container.lastFrame = frame;
@@ -69,19 +85,19 @@ void CScheduler::ProcessTasks(int frame)
 	finishTasks.PopAndProcess(process);
 }
 
-void CScheduler::RunParallelTask(std::shared_ptr<CTask> task, std::shared_ptr<CTask> onSuccess)
+void CScheduler::RunParallelTask(std::shared_ptr<CTask> task, std::shared_ptr<CTask> onComplete)
 {
 	if (!workerRunning.load()) {
 		workerRunning = true;
 		workerThread = std::thread(&CScheduler::WorkerThread);
 	}
-	workTasks.Push({this, task, onSuccess});
+	workTasks.Push({self, task, onComplete});
 }
 
 void CScheduler::RemoveTask(std::shared_ptr<CTask> task)
 {
 	onceTasks.remove({task, 0});
-	intervalTasks.remove({task, 0, 0});
+	repeatTasks.remove({task, 0, 0});
 }
 
 void CScheduler::WorkerThread()
@@ -89,8 +105,11 @@ void CScheduler::WorkerThread()
 	WorkTask container = workTasks.Pop();
 	while (workerRunning.load()) {
 		container.task->Run();
-		if (container.onSuccess != nullptr) {
-			container.scheduler->finishTasks.Push(container);
+		if (container.onComplete != nullptr) {
+			std::shared_ptr<CScheduler> scheduler = container.scheduler.lock();
+			if (scheduler) {
+				scheduler->finishTasks.Push(container);
+			}
 		}
 		container = workTasks.Pop();
 	}

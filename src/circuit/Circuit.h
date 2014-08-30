@@ -14,7 +14,6 @@
 #include "OOAICallback.h"			// C++ wrapper
 #include "SSkirmishAICallback.h"	// "direct" C API
 
-#include <sys/types.h>
 #include <memory>
 
 namespace circuit {
@@ -49,15 +48,15 @@ private:
 	springai::Map* map;
 
 	static std::unique_ptr<CGameAttribute> gameAttribute;
-	static uint counterGA;
+	static unsigned int gaCounter;
 
 	static void CreateGameAttribute();
 	static void DestroyGameAttribute();
 
-	std::unique_ptr<CScheduler> scheduler;
+	std::shared_ptr<CScheduler> scheduler;
 
 	void PickStartPos(const Box& box);
-	void ParseEngineMetalSpots(int i);
+	void ParseEngineMetalSpots();
 //	void Clusterize(const std::vector<Metal>& spots);
 //	void ClearMetalClusters(std::vector<std::vector<Metal>>& metalCluster, std::vector<springai::AIFloat3>& centroids);
 //	void DrawConvexHulls(const std::vector<std::vector<Metal>>& metalCluster);

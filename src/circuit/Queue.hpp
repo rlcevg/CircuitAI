@@ -21,8 +21,9 @@ T CQueue<T>::Pop()
 	while (_queue.empty()) {
 		_cond.wait(mlock);
 	}
+
 	auto val = _queue.front();
-	_queue.pop();
+	_queue.pop_front();
 	return val;
 }
 
@@ -34,14 +35,14 @@ void CQueue<T>::Pop(T& item)
 	_cond.wait(mlock, [this]() { return !_queue.empty(); });
 
 	item = _queue.front();
-	_queue.pop();
+	_queue.pop_front();
 }
 
 template <typename T>
 void CQueue<T>::Push(const T& item)
 {
 	std::unique_lock<std::mutex> mlock(_mutex);
-	_queue.push(item);
+	_queue.push_back(item);
 	mlock.unlock();
 	_cond.notify_one();
 }
@@ -61,9 +62,23 @@ void CQueue<T>::PopAndProcess(ProcessFunction process)
 	std::unique_lock<std::mutex> mlock(_mutex);
 	if (!_queue.empty()) {
 		auto item = _queue.front();
-		_queue.pop();
+		_queue.pop_front();
 		mlock.unlock();
 		process(item);
+	}
+}
+
+template <typename T>
+void CQueue<T>::RemoveAllIf(ConditionFunction condition)
+{
+	std::unique_lock<std::mutex> mlock(_mutex);
+	typename std::list<T>::iterator iter = _queue.begin();
+	while (iter != _queue.end()) {
+		if (condition(*iter)) {
+			iter = _queue.erase(iter);
+		} else {
+			++iter;
+		}
 	}
 }
 
@@ -71,8 +86,7 @@ template <typename T>
 void CQueue<T>::Clear()
 {
 	std::unique_lock<std::mutex> mlock(_mutex);
-	std::queue<T> empty;
-	std::swap(_queue, empty);
+	_queue.clear();
 }
 
 } // namespace circuit

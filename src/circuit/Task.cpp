@@ -13,7 +13,7 @@ namespace circuit {
 
 CTask::~CTask()
 {
-	printf("<DEBUG> Entering %s\n", __PRETTY_FUNCTION__);
+	printf("<DEBUG> Entering:  %s\n", __PRETTY_FUNCTION__);
 }
 
 void CTask::Run()

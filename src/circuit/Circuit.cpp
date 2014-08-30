@@ -31,7 +31,7 @@ using namespace springai;
 #define LOG(fmt, ...)	log->DoLog(utils::string_format(std::string(fmt), ##__VA_ARGS__).c_str())
 
 std::unique_ptr<CGameAttribute> CCircuit::gameAttribute(nullptr);
-uint CCircuit::counterGA = 0;
+unsigned int CCircuit::gaCounter = 0;
 
 CCircuit::CCircuit(springai::OOAICallback* callback) :
 		initialized(false),
@@ -45,7 +45,7 @@ CCircuit::CCircuit(springai::OOAICallback* callback) :
 
 CCircuit::~CCircuit()
 {
-	printf("<DEBUG> Entering: %s,\t skirmishId: %i\n", __PRETTY_FUNCTION__, skirmishAIId);
+	printf("<DEBUG> Entering:  %s,\t skirmishId: %i\n", __PRETTY_FUNCTION__, skirmishAIId);
 	if (initialized) {
 		Release(0);
 	}
@@ -55,7 +55,8 @@ int CCircuit::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback
 {
 	this->skirmishAIId = skirmishAIId;
 	CreateGameAttribute();
-	scheduler = std::unique_ptr<CScheduler>(new CScheduler());
+	scheduler = std::make_shared<CScheduler>();
+	scheduler->Init(scheduler);
 
 	if (!gameAttribute->HasStartBoxes(false)) {
 		gameAttribute->ParseSetupScript(game->GetSetupScript(), map->GetWidth(), map->GetHeight());
@@ -66,12 +67,15 @@ int CCircuit::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback
 		std::vector<springai::GameRulesParam*> gameRulesParams = game->GetGameRulesParams();
 		gameAttribute->ParseMetalSpots(gameRulesParams);
 
-		// level 1: Schedule check of Map::GetResourceMapSpotsPositions
-		if (!gameAttribute->HasMetalSpots(false)) {
-			scheduler->RunTaskAt(std::make_shared<CTask>(&CCircuit::ParseEngineMetalSpots, this, 330), 300);
-		}
+//		// level 1: Schedule check of Map::GetResourceMapSpotsPositions
+//		if (!gameAttribute->HasMetalSpots(false)) {
+//			scheduler->RunTaskAt(std::make_shared<CTask>(&CCircuit::ParseEngineMetalSpots, this), 300);
+//		}
 	}
-	scheduler->RunTaskAt(std::make_shared<CTask>(&CCircuit::ParseEngineMetalSpots, this, 330), 300);
+
+	scheduler->RunParallelTask(std::make_shared<CTask>(&CCircuit::ParseEngineMetalSpots, this));
+	scheduler->RunParallelTask(std::make_shared<CTask>(&CCircuit::ParseEngineMetalSpots, this));
+	scheduler->RunParallelTask(std::make_shared<CTask>(&CCircuit::ParseEngineMetalSpots, this));
 
 	if (gameAttribute->HasStartBoxes()) {
 		CStartBoxManager& startBoxes = gameAttribute->GetStartBoxManager();
@@ -93,7 +97,7 @@ int CCircuit::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback
 
 int CCircuit::Release(int reason)
 {
-	printf("<DEBUG> Entering: %s,\t skirmishId: %i\n", __PRETTY_FUNCTION__, callback->GetSkirmishAIId());
+	printf("<DEBUG> Entering:  %s,\t skirmishId: %i\n", __PRETTY_FUNCTION__, callback->GetSkirmishAIId());
 	DestroyGameAttribute();
 	scheduler = nullptr;
 
@@ -214,19 +218,19 @@ void CCircuit::CreateGameAttribute()
 	if (gameAttribute == nullptr) {
 		gameAttribute = std::unique_ptr<CGameAttribute>(new CGameAttribute());
 	}
-	counterGA++;
+	gaCounter++;
 }
 
 void CCircuit::DestroyGameAttribute()
 {
-	if (counterGA <= 1) {
+	if (gaCounter <= 1) {
 		if (gameAttribute != nullptr) {
 			gameAttribute = nullptr;
 			// deletes singleton here;
 		}
-		counterGA = 0;
+		gaCounter = 0;
 	} else {
-		counterGA--;
+		gaCounter--;
 	}
 }
 
@@ -243,9 +247,10 @@ void CCircuit::PickStartPos(const Box& box)
 	game->SendStartPosition(false, AIFloat3(x, map->GetElevationAt(x, z), z));
 }
 
-void CCircuit::ParseEngineMetalSpots(int i)
+void CCircuit::ParseEngineMetalSpots()
 {
-	LOG("Yo-Yo, Hi schedulllller!, %i", i);
+	printf("<DEBUG> %s\n", __PRETTY_FUNCTION__);
+	utils::sleep(10);
 }
 //
 //void CCircuit::Clusterize(const std::vector<Metal>& spots)

@@ -25,7 +25,7 @@ CGameAttribute::CGameAttribute() :
 
 CGameAttribute::~CGameAttribute()
 {
-	printf("<DEBUG> Entering %s\n", __PRETTY_FUNCTION__);
+	printf("<DEBUG> Entering: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CGameAttribute::ParseSetupScript(const char* setupScript, int width, int height)
