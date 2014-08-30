@@ -8,6 +8,10 @@
 #ifndef CIRCUIT_H_
 #define CIRCUIT_H_
 
+//--- Delete
+#include "MetalManager.h"
+#include <vector>
+
 #include "ExternalAI/Interface/AISEvents.h"
 #include "ExternalAI/Interface/AISCommands.h"
 
@@ -46,6 +50,7 @@ private:
 	springai::Log* log;
 	springai::Game* game;
 	springai::Map* map;
+	springai::Pathing* pathing;
 
 	static std::unique_ptr<CGameAttribute> gameAttribute;
 	static unsigned int gaCounter;
@@ -57,10 +62,11 @@ private:
 
 	void PickStartPos(const Box& box);
 	void ParseEngineMetalSpots();
-//	void Clusterize(const std::vector<Metal>& spots);
-//	void ClearMetalClusters(std::vector<std::vector<Metal>>& metalCluster, std::vector<springai::AIFloat3>& centroids);
-//	void DrawConvexHulls(const std::vector<std::vector<Metal>>& metalCluster);
-//	void DrawCentroids(const std::vector<std::vector<Metal>>& metalCluster, const std::vector<springai::AIFloat3>& centroids);
+	void Clusterize(const std::vector<Metal>& spots);
+	void ClearMetalClusters(std::vector<std::vector<Metal>>& metalCluster, std::vector<springai::AIFloat3>& centroids);
+	void DrawConvexHulls(const std::vector<std::vector<Metal>>& metalCluster);
+	void DrawCentroids(const std::vector<std::vector<Metal>>& metalCluster, const std::vector<springai::AIFloat3>& centroids);
+	void DrawClusters();
 };
 
 } // namespace circuit

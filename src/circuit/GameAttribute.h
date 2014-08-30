@@ -8,8 +8,8 @@
 #ifndef GAMEATTRIBUTE_H_
 #define GAMEATTRIBUTE_H_
 
-#include "StartBoxManager.h"
-#include "MetalSpotManager.h"
+#include "SetupManager.h"
+#include "MetalManager.h"
 
 #include "GameRulesParam.h"
 
@@ -27,12 +27,12 @@ public:
 	void ParseMetalSpots(std::vector<springai::GameRulesParam*>& metalParams);
 	bool HasStartBoxes(bool checkEmpty = true);
 	bool HasMetalSpots(bool checkEmpty = true);
-	CStartBoxManager& GetStartBoxManager();
-	CMetalSpotManager& GetMetalSpotManager();
+	CSetupManager& GetSetupManager();
+	CMetalManager& GetMetalManager();
 
 private:
-	std::shared_ptr<CStartBoxManager> startBoxManager;
-	std::shared_ptr<CMetalSpotManager> metalSpotManager;
+	std::shared_ptr<CSetupManager> setupManager;
+	std::shared_ptr<CMetalManager> metalManager;
 };
 
 } // namespace circuit

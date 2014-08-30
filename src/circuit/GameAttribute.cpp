@@ -17,8 +17,8 @@ namespace circuit {
 using namespace springai;
 
 CGameAttribute::CGameAttribute() :
-		startBoxManager(nullptr),
-		metalSpotManager(nullptr)
+		setupManager(nullptr),
+		metalManager(nullptr)
 {
 	srand(time(nullptr));
 }
@@ -78,7 +78,7 @@ void CGameAttribute::ParseSetupScript(const char* setupScript, int width, int he
 		startBoxes.push_back(kv.second);
 	}
 
-	startBoxManager = std::make_shared<CStartBoxManager>(startBoxes, startPosType);
+	setupManager = std::make_shared<CSetupManager>(startBoxes, startPosType);
 }
 
 void CGameAttribute::ParseMetalSpots(const char* metalJson)
@@ -100,7 +100,7 @@ void CGameAttribute::ParseMetalSpots(const char* metalJson)
 		spots.push_back(spot);
 	}
 
-	metalSpotManager = std::make_shared<CMetalSpotManager>(spots);
+	metalManager = std::make_shared<CMetalManager>(spots);
 }
 
 void CGameAttribute::ParseMetalSpots(std::vector<springai::GameRulesParam*>& gameParams)
@@ -146,33 +146,33 @@ void CGameAttribute::ParseMetalSpots(std::vector<springai::GameRulesParam*>& gam
 		}
 	}
 
-	metalSpotManager = std::make_shared<CMetalSpotManager>(spots);
+	metalManager = std::make_shared<CMetalManager>(spots);
 }
 
 bool CGameAttribute::HasStartBoxes(bool checkEmpty)
 {
 	if (checkEmpty) {
-		return (startBoxManager != nullptr && !startBoxManager->IsEmpty());
+		return (setupManager != nullptr && !setupManager->IsEmpty());
 	}
-	return startBoxManager != nullptr;
+	return setupManager != nullptr;
 }
 
 bool CGameAttribute::HasMetalSpots(bool checkEmpty)
 {
 	if (checkEmpty) {
-		return (metalSpotManager != nullptr && metalSpotManager->IsEmpty());
+		return (metalManager != nullptr && !metalManager->IsEmpty());
 	}
-	return metalSpotManager != nullptr;
+	return metalManager != nullptr;
 }
 
-CStartBoxManager& CGameAttribute::GetStartBoxManager()
+CSetupManager& CGameAttribute::GetSetupManager()
 {
-	return *startBoxManager;
+	return *setupManager;
 }
 
-CMetalSpotManager& CGameAttribute::GetMetalSpotManager()
+CMetalManager& CGameAttribute::GetMetalManager()
 {
-	return *metalSpotManager;
+	return *metalManager;
 }
 
 } // namespace circuit

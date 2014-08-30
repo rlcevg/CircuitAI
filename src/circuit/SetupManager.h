@@ -1,12 +1,12 @@
 /*
- * StartBoxManager.h
+ * SetupManager.h
  *
  *  Created on: Aug 10, 2014
  *      Author: rlcevg
  */
 
-#ifndef STARTBOXMANAGER_H_
-#define STARTBOXMANAGER_H_
+#ifndef SETUPMANAGER_H_
+#define SETUPMANAGER_H_
 
 #include "Game/GameSetup.h"
 
@@ -24,11 +24,11 @@ enum class BoxEdges: int {BOTTOM = 0, LEFT = 1, RIGHT = 2, TOP = 3};
 // 3 -> top
 using Box = std::array<float, 4>;
 
-class CStartBoxManager {
+class CSetupManager {
 public:
-	CStartBoxManager(std::vector<Box>& startBoxes,
-					 CGameSetup::StartPosType startPosType = CGameSetup::StartPosType::StartPos_ChooseInGame);
-	virtual ~CStartBoxManager();
+	CSetupManager(std::vector<Box>& startBoxes,
+				  CGameSetup::StartPosType startPosType = CGameSetup::StartPosType::StartPos_ChooseInGame);
+	virtual ~CSetupManager();
 
 	bool IsEmpty();
 	CGameSetup::StartPosType GetStartPosType();
@@ -42,4 +42,4 @@ private:
 
 } // namespace circuit
 
-#endif // STARTBOXMANAGER_H_
+#endif // SETUPMANAGER_H_

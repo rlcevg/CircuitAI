@@ -89,6 +89,7 @@ void CScheduler::RunParallelTask(std::shared_ptr<CTask> task, std::shared_ptr<CT
 {
 	if (!workerRunning.load()) {
 		workerRunning = true;
+		// TODO: Find out more about std::async, std::bind, std::future.
 		workerThread = std::thread(&CScheduler::WorkerThread);
 	}
 	workTasks.Push({self, task, onComplete});
@@ -105,11 +106,13 @@ void CScheduler::WorkerThread()
 	WorkTask container = workTasks.Pop();
 	while (workerRunning.load()) {
 		container.task->Run();
+		container.task = nullptr;
 		if (container.onComplete != nullptr) {
 			std::shared_ptr<CScheduler> scheduler = container.scheduler.lock();
 			if (scheduler) {
 				scheduler->finishTasks.Push(container);
 			}
+			container.onComplete = nullptr;
 		}
 		container = workTasks.Pop();
 	}
