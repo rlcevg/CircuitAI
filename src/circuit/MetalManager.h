@@ -30,8 +30,6 @@ public:
 	std::vector<Metal>& GetSpots();
 
 public:
-//	void SortSpotsRadial();
-
 	std::vector<Metal> spots;
 	std::vector<std::vector<Metal>> clusters;
 	std::vector<springai::AIFloat3> centroids;

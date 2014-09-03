@@ -17,6 +17,7 @@
 #include "Log.h"
 #include "Pathing.h"
 #include "Drawer.h"
+#include "MoveData.h"
 
 // ------------ delete begin
 #include <functional>
@@ -71,12 +72,6 @@ int CCircuit::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback
 		// TODO: Add metal zone maps support
 		std::vector<springai::GameRulesParam*> gameRulesParams = game->GetGameRulesParams();
 		gameAttribute->ParseMetalSpots(gameRulesParams);
-		printf("<DEBUG> ParseMetalSpots: %i\n", gameAttribute->GetMetalManager().GetSpots().size());
-
-//		// level 1: Schedule check of Map::GetResourceMapSpotsPositions
-//		if (!gameAttribute->HasMetalSpots(false)) {
-//			scheduler->RunTaskAt(std::make_shared<CTask>(&CCircuit::ParseEngineMetalSpots, this), 300);
-//		}
 	}
 
 	if (gameAttribute->HasStartBoxes()) {
@@ -148,13 +143,17 @@ int CCircuit::Message(int playerId, const char* message)
 		PickStartPos(gameAttribute->GetSetupManager()[game->GetMyAllyTeam()]);
 	}
 
+	else if (strncmp(message, "~selfd", 6) == 0) {
+		callback->GetTeamUnits()[0]->SelfDestruct();
+	}
+
 	else if (callback->GetSkirmishAIId() == 0) {
 
 		if (msgLength == strlen("~кластер") && strcmp(message, "~кластер") == 0) {
 			if (gameAttribute->HasMetalSpots()) {
 				ClearMetalClusters(gameAttribute->GetMetalManager().clusters, gameAttribute->GetMetalManager().centroids);
-				scheduler->RunParallelTask(std::make_shared<CTask>(&CCircuit::Clusterize, this, gameAttribute->GetMetalManager().GetSpots()),
-										   std::make_shared<CTask>(&CCircuit::DrawClusters, this));
+				scheduler->RunParallelTask(std::make_shared<CGameTask>(&CCircuit::Clusterize, this, gameAttribute->GetMetalManager().GetSpots()),
+										   std::make_shared<CGameTask>(&CCircuit::DrawClusters, this));
 			}
 		} else if (msgLength == strlen("~делитель++") && strncmp(message, "~делитель", strlen("~делитель")) == 0) {	// Non ASCII comparison
 			if (gameAttribute->HasMetalSpots()) {
@@ -171,8 +170,6 @@ int CCircuit::Message(int playerId, const char* message)
 				std::string msgText = utils::string_format("/Say Allies: <CircuitAI> Cluster divider = %i (avarage mexes per cluster)", divider);
 				game->SendTextMessage(msgText.c_str(), 0);
 			}
-//		} else if (strncmp(message, "~selfd", 6) == 0) {
-//			callback->GetTeamUnits()[0]->SelfDestruct();
 		}
 	}
 
@@ -229,20 +226,9 @@ void CCircuit::PickStartPos(const Box& box)
 	game->SendStartPosition(false, AIFloat3(x, map->GetElevationAt(x, z), z));
 }
 
-void CCircuit::ParseEngineMetalSpots()
-{
-	printf("<DEBUG> %s\n", __PRETTY_FUNCTION__);
-
-//	std::vector<springai::AIFloat3> spots = map->GetResourceMapSpotsPositions(callback->GetResourceByName("Metal"));
-//	for (auto& spot : spots) {
-//		LOG("x:%f, z:%f, income:%f", spot.x, spot.z, spot.y);
-//	}
-}
-
 void CCircuit::Clusterize(const std::vector<Metal>& spots)
 {
 	// TODO: Move clusterization to MetalManager
-//	pathing->GetApproximateLength();
 	printf("<DEBUG> Entering: %s, spotsSize: %i\n", __PRETTY_FUNCTION__, spots.size());
 
 	// init params
@@ -269,16 +255,31 @@ void CCircuit::Clusterize(const std::vector<Metal>& spots)
 		}
 	}
 
-	double* weight = (double*)malloc(ncols * sizeof(double));
-	for (int i = 0; i < ncols; i++) {
+	double* weight = (double*)malloc(nrows * sizeof(double));
+	for (int i = 0; i < nrows; i++) {
 		weight[i] = 1.0;
 	}
 
 	int ifound = 0;
 	double error;
 
+	// Calculate distance matrix
+	int pathType = callback->GetTeamUnits().front()->GetDef()->GetMoveData()->GetPathType();
+	double** distmatrix = (double**)malloc(nrows * sizeof(double*));
+	distmatrix[0] = NULL;
+	int k = 0;
+	for (int i = 1; i < nrows; i++) {
+		distmatrix[i] = (double*)malloc(i * sizeof(double));
+		for (int j = 0; j < i; j++) {
+			float lenStartEnd = pathing->GetApproximateLength(spots[i].position, spots[j].position, pathType, 0.0f);
+			float lenEndStart = pathing->GetApproximateLength(spots[j].position, spots[i].position, pathType, 0.0f);
+			distmatrix[i][j] = (lenStartEnd + lenEndStart) / 2.0f;
+		}
+	}
+
 	// clusterize 's', 'm', 'a'
-	Node* tree = treecluster(nrows, ncols, data, mask, weight, transpose, 'e', 's', 0);
+//	Node* tree = treecluster(nrows, ncols, data, mask, weight, transpose, 'e', 'a', 0);
+	Node* tree = treecluster(nrows, ncols, 0, 0, 0, transpose, 'e', 'm', distmatrix);
 	cuttree(nrows, tree, nclusters, clusterid);
 //	kcluster(nclusters, nrows, ncols, data, mask, weight, transpose, npass, method, dist, clusterid, &error, &ifound);
 	// get centroids
@@ -325,7 +326,13 @@ void CCircuit::Clusterize(const std::vector<Metal>& spots)
 	}
 	free(data);
 	free(mask);
+	for (int i = 1; i < nrows; i++) {
+		free(distmatrix[i]);
+	}
+	free(distmatrix);
+
 	free(clusterid);
+	free(tree);
 
 	printf("<DEBUG> Exiting: %s\n", __PRETTY_FUNCTION__);
 }
@@ -413,7 +420,7 @@ void CCircuit::DrawConvexHulls(const std::vector<std::vector<Metal>>& metalClust
 //				swap(points[++M], points[i]);
 //			}
 
-			// FIXME: Remove DEBUG
+			// FIXME: Remove next DEBUG line
 			int M = N;
 			// draw convex hull
 			AIFloat3 start = points[0], end;

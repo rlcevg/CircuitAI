@@ -1,24 +1,24 @@
 /*
- * Task.h
+ * GameTask.h
  *
  *  Created on: Aug 28, 2014
  *      Author: rlcevg
  */
 
-#ifndef TASK_H_
-#define TASK_H_
+#ifndef GAMETASK_H_
+#define GAMETASK_H_
 
 #include <memory>
 
 namespace circuit {
 
-class CTask {
+class CGameTask {
 public:
 	template<typename _Callable, typename... _Args>
-		explicit CTask(_Callable&& __f, _Args&&... __args) {
+		explicit CGameTask(_Callable&& __f, _Args&&... __args) {
 			__b = _M_make_routine(std::__bind_simple(std::forward<_Callable>(__f), std::forward<_Args>(__args)...));
 		}
-	virtual ~CTask();
+	virtual ~CGameTask();
 
 	void Run();
 
@@ -44,8 +44,8 @@ private:
 	__shared_base_type __b;
 };
 
-inline CTask::_Impl_base::~_Impl_base() = default;
+inline CGameTask::_Impl_base::~_Impl_base() = default;
 
 } // namespace circuit
 
-#endif // TASK_H_
+#endif // GAMETASK_H_

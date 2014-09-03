@@ -61,7 +61,7 @@ private:
 	std::shared_ptr<CScheduler> scheduler;
 
 	void PickStartPos(const Box& box);
-	void ParseEngineMetalSpots();
+
 	void Clusterize(const std::vector<Metal>& spots);
 	void ClearMetalClusters(std::vector<std::vector<Metal>>& metalCluster, std::vector<springai::AIFloat3>& centroids);
 	void DrawConvexHulls(const std::vector<std::vector<Metal>>& metalCluster);

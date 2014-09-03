@@ -9,7 +9,7 @@
 
 namespace circuit {
 
-CQueue<CScheduler::WorkTask> CScheduler::workTasks;
+CMultiQueue<CScheduler::WorkTask> CScheduler::workTasks;
 std::thread CScheduler::workerThread;
 std::atomic<bool> CScheduler::workerRunning(false);
 unsigned int CScheduler::counterInstance = 0;
@@ -35,7 +35,7 @@ void CScheduler::Init(const std::shared_ptr<CScheduler>& this_ptr)
 void CScheduler::Release()
 {
 	std::weak_ptr<CScheduler>& scheduler = self;
-	CQueue<WorkTask>::ConditionFunction condition = [&scheduler](WorkTask& item) -> bool {
+	CMultiQueue<WorkTask>::ConditionFunction condition = [&scheduler](WorkTask& item) -> bool {
 		return !scheduler.owner_before(item.scheduler) && !item.scheduler.owner_before(scheduler);
 	};
 	workTasks.RemoveAllIf(condition);
@@ -50,12 +50,12 @@ void CScheduler::Release()
 	}
 }
 
-void CScheduler::RunTaskAt(std::shared_ptr<CTask> task, int frame)
+void CScheduler::RunTaskAt(std::shared_ptr<CGameTask> task, int frame)
 {
 	onceTasks.push_back({task, frame});
 }
 
-void CScheduler::RunTaskEvery(std::shared_ptr<CTask> task, int frameInterval)
+void CScheduler::RunTaskEvery(std::shared_ptr<CGameTask> task, int frameInterval)
 {
 	repeatTasks.push_back({task, frameInterval, -frameInterval});
 }
@@ -79,13 +79,13 @@ void CScheduler::ProcessTasks(int frame)
 		}
 	}
 
-	CQueue<FinishTask>::ProcessFunction process = [](FinishTask& item) {
+	CMultiQueue<FinishTask>::ProcessFunction process = [](FinishTask& item) {
 		item.task->Run();
 	};
 	finishTasks.PopAndProcess(process);
 }
 
-void CScheduler::RunParallelTask(std::shared_ptr<CTask> task, std::shared_ptr<CTask> onComplete)
+void CScheduler::RunParallelTask(std::shared_ptr<CGameTask> task, std::shared_ptr<CGameTask> onComplete)
 {
 	if (!workerRunning.load()) {
 		workerRunning = true;
@@ -95,7 +95,7 @@ void CScheduler::RunParallelTask(std::shared_ptr<CTask> task, std::shared_ptr<CT
 	workTasks.Push({self, task, onComplete});
 }
 
-void CScheduler::RemoveTask(std::shared_ptr<CTask> task)
+void CScheduler::RemoveTask(std::shared_ptr<CGameTask> task)
 {
 	onceTasks.remove({task, 0});
 	repeatTasks.remove({task, 0, 0});

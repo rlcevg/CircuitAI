@@ -1,21 +1,21 @@
 /*
- * Queue.hpp
+ * MultiQueue.hpp
  *
  *  Created on: Aug 28, 2014
  *      Author: rlcevg
  *      Origin: Juan Palacios (https://github.com/juanchopanza/cppblog/blob/master/Concurrency/Queue/Queue.h)
  */
 
-#ifndef QUEUE_H_
+#ifndef MULTIQUEUE_H_
 #	error "Don't include this file directly, include Queue.h instead"
 #endif
 
-#include "Queue.h"
+#include "MultiQueue.h"
 
 namespace circuit {
 
 template <typename T>
-T CQueue<T>::Pop()
+T CMultiQueue<T>::Pop()
 {
 	std::unique_lock<std::mutex> mlock(_mutex);
 	while (_queue.empty()) {
@@ -28,7 +28,7 @@ T CQueue<T>::Pop()
 }
 
 template <typename T>
-void CQueue<T>::Pop(T& item)
+void CMultiQueue<T>::Pop(T& item)
 {
 	std::unique_lock<std::mutex> mlock(_mutex);
 
@@ -39,7 +39,7 @@ void CQueue<T>::Pop(T& item)
 }
 
 template <typename T>
-void CQueue<T>::Push(const T& item)
+void CMultiQueue<T>::Push(const T& item)
 {
 	std::unique_lock<std::mutex> mlock(_mutex);
 	_queue.push_back(item);
@@ -48,7 +48,7 @@ void CQueue<T>::Push(const T& item)
 }
 
 template <typename T>
-bool CQueue<T>::IsEmpty()
+bool CMultiQueue<T>::IsEmpty()
 {
 	std::unique_lock<std::mutex> mlock(_mutex);
 	bool isEmpty = _queue.empty();
@@ -57,7 +57,7 @@ bool CQueue<T>::IsEmpty()
 }
 
 template <typename T>
-void CQueue<T>::PopAndProcess(ProcessFunction process)
+void CMultiQueue<T>::PopAndProcess(ProcessFunction process)
 {
 	std::unique_lock<std::mutex> mlock(_mutex);
 	if (!_queue.empty()) {
@@ -69,7 +69,7 @@ void CQueue<T>::PopAndProcess(ProcessFunction process)
 }
 
 template <typename T>
-void CQueue<T>::RemoveAllIf(ConditionFunction condition)
+void CMultiQueue<T>::RemoveAllIf(ConditionFunction condition)
 {
 	std::unique_lock<std::mutex> mlock(_mutex);
 	typename std::list<T>::iterator iter = _queue.begin();
@@ -83,7 +83,7 @@ void CQueue<T>::RemoveAllIf(ConditionFunction condition)
 }
 
 template <typename T>
-void CQueue<T>::Clear()
+void CMultiQueue<T>::Clear()
 {
 	std::unique_lock<std::mutex> mlock(_mutex);
 	_queue.clear();

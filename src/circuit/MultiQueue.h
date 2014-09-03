@@ -1,12 +1,12 @@
 /*
- * Queue.h
+ * MultiQueue.h
  *
  *  Created on: Aug 28, 2014
  *      Author: rlcevg
  */
 
-#ifndef QUEUE_H_
-#define QUEUE_H_
+#ifndef MULTIQUEUE_H_
+#define MULTIQUEUE_H_
 
 #include <list>
 #include <mutex>
@@ -16,13 +16,13 @@
 namespace circuit {
 
 template <typename T>
-class CQueue {
+class CMultiQueue {
 public:
 	typedef std::function<void (T& item)> ProcessFunction;
 	typedef std::function<bool (T& item)> ConditionFunction;
 
-	CQueue() = default;
-	CQueue(const CQueue&) = delete; // disable copying
+	CMultiQueue() = default;
+	CMultiQueue(const CMultiQueue&) = delete; // disable copying
 
 	/*
 	 * Pop object from queue if any exists and return it, otherwise wait for object to appear in queue
@@ -44,7 +44,7 @@ public:
 	void RemoveAllIf(ConditionFunction condition);
 	void Clear();
 
-	CQueue& operator=(const CQueue&) = delete; // disable assignment
+	CMultiQueue& operator=(const CMultiQueue&) = delete; // disable assignment
 
 private:
 	std::list<T> _queue;
@@ -54,6 +54,6 @@ private:
 
 } // namespace circuit
 
-#include "Queue.hpp"
+#include "MultiQueue.hpp"
 
-#endif // QUEUE_H_
+#endif // MULTIQUEUE_H_
