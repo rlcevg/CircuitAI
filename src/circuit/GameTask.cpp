@@ -7,8 +7,6 @@
 
 #include "GameTask.h"
 
-#include <functional>
-
 namespace circuit {
 
 CGameTask::~CGameTask()

@@ -10,19 +10,24 @@
 
 #include "Game/GameSetup.h"
 
-#include <array>
 #include <vector>
+
+namespace springai {
+	class Game;
+	class Map;
+}
 
 namespace circuit {
 
-enum class BoxEdges: int {BOTTOM = 0, LEFT = 1, RIGHT = 2, TOP = 3};
-
-//typedef std::array<float, 4> Box;
-// 0 -> bottom
-// 1 -> left
-// 2 -> right
-// 3 -> top
-using Box = std::array<float, 4>;
+union Box {
+	struct {
+		float bottom;
+		float left;
+		float right;
+		float top;
+	};
+	float edge[4];
+};
 
 class CSetupManager {
 public:
@@ -31,7 +36,8 @@ public:
 	virtual ~CSetupManager();
 
 	bool IsEmpty();
-	CGameSetup::StartPosType GetStartPosType();
+	bool CanChoosePos();
+	void PickStartPos(springai::Game* game, springai::Map* map);
 
 	const Box& operator[](int idx) const;
 

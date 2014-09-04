@@ -6,8 +6,12 @@
  */
 
 #include "GameAttribute.h"
+#include "SetupManager.h"
+#include "MetalManager.h"
 #include "utils.h"
 #include "json/json.h"
+
+#include "GameRulesParam.h"
 
 #include <map>
 #include <regex>
@@ -46,15 +50,15 @@ void CGameAttribute::ParseSetupScript(const char* setupScript, int width, int he
 		std::sregex_token_iterator end;
 		Box startbox;
 		for (int i = 0; iter != end && i < 4; ++iter, i++) {
-			startbox[i] = utils::string_to_float(*iter);
+			startbox.edge[i] = utils::string_to_float(*iter);
 		}
 
 		float mapWidth = SQUARE_SIZE * width;
 		float mapHeight = SQUARE_SIZE * height;
-		startbox[static_cast<int>(BoxEdges::BOTTOM)] *= mapHeight;
-		startbox[static_cast<int>(BoxEdges::LEFT)  ] *= mapWidth;
-		startbox[static_cast<int>(BoxEdges::RIGHT) ] *= mapWidth;
-		startbox[static_cast<int>(BoxEdges::TOP)   ] *= mapHeight;
+		startbox.bottom *= mapHeight;
+		startbox.left   *= mapWidth;
+		startbox.right  *= mapWidth;
+		startbox.top    *= mapHeight;
 		boxesMap[allyTeamId] = startbox;
 
 		start = allyteam[0].second;
@@ -103,7 +107,7 @@ void CGameAttribute::ParseMetalSpots(const char* metalJson)
 	metalManager = std::make_shared<CMetalManager>(spots);
 }
 
-void CGameAttribute::ParseMetalSpots(std::vector<springai::GameRulesParam*>& gameParams)
+void CGameAttribute::ParseMetalSpots(const std::vector<springai::GameRulesParam*>& gameParams)
 {
 	int mexCount = 0;
 	for (auto& param : gameParams) {

@@ -6,6 +6,7 @@
  */
 
 #include "UnitDetail.h"
+#include "UnitTask.h"
 #include "Unit.h"
 
 namespace circuit {

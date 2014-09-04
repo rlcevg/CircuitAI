@@ -8,14 +8,17 @@
 #ifndef GAMEATTRIBUTE_H_
 #define GAMEATTRIBUTE_H_
 
-#include "SetupManager.h"
-#include "MetalManager.h"
-
-#include "GameRulesParam.h"
-
 #include <memory>
+#include <vector>
+
+namespace springai {
+	class GameRulesParam;
+}
 
 namespace circuit {
+
+class CSetupManager;
+class CMetalManager;
 
 class CGameAttribute {
 public:
@@ -24,7 +27,7 @@ public:
 
 	void ParseSetupScript(const char* setupScript, int width, int height);
 	void ParseMetalSpots(const char* metalJson);
-	void ParseMetalSpots(std::vector<springai::GameRulesParam*>& metalParams);
+	void ParseMetalSpots(const std::vector<springai::GameRulesParam*>& metalParams);
 	bool HasStartBoxes(bool checkEmpty = true);
 	bool HasMetalSpots(bool checkEmpty = true);
 	CSetupManager& GetSetupManager();

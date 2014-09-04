@@ -8,7 +8,6 @@
 #ifndef SCHEDULER_H_
 #define SCHEDULER_H_
 
-#include "GameTask.h"
 #include "MultiQueue.h"
 
 #include <list>
@@ -17,6 +16,8 @@
 #include <atomic>
 
 namespace circuit {
+
+class CGameTask;
 
 class CScheduler {
 public:

@@ -19,7 +19,7 @@ template <typename T>
 class CMultiQueue {
 public:
 	typedef std::function<void (T& item)> ProcessFunction;
-	typedef std::function<bool (T& item)> ConditionFunction;
+	using ConditionFunction = std::function<bool (T& item)>;
 
 	CMultiQueue() = default;
 	CMultiQueue(const CMultiQueue&) = delete; // disable copying

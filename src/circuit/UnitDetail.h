@@ -13,6 +13,7 @@
 namespace circuit {
 
 class Unit;
+class CUnitTask;
 
 class CUnitDetail {
 public:

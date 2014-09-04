@@ -8,10 +8,6 @@
 #ifndef CIRCUIT_H_
 #define CIRCUIT_H_
 
-//--- Delete
-#include "MetalManager.h"
-#include <vector>
-
 #include "ExternalAI/Interface/AISEvents.h"
 #include "ExternalAI/Interface/AISCommands.h"
 
@@ -19,6 +15,7 @@
 #include "SSkirmishAICallback.h"	// "direct" C API
 
 #include <memory>
+#include <vector>
 
 namespace circuit {
 
@@ -26,10 +23,11 @@ namespace circuit {
 #define ERROR_INIT			(ERROR_UNKNOWN + EVENT_INIT)
 #define ERROR_RELEASE		(ERROR_UNKNOWN + EVENT_RELEASE)
 #define ERROR_UPDATE		(ERROR_UNKNOWN + EVENT_UPDATE)
+#define LOG(fmt, ...)	GetLog()->DoLog(utils::string_format(std::string(fmt), ##__VA_ARGS__).c_str())
 
-using Box = std::array<float, 4>;
 class CGameAttribute;
 class CScheduler;
+struct Metal;
 
 class CCircuit {
 public:
@@ -43,6 +41,13 @@ public:
 	int Update(int frame);
 	int Message(int playerId, const char* message);
 	int LuaMessage(const char* inData);
+
+	int GetSkirmishAIId();
+	springai::OOAICallback* GetCallback();
+	springai::Log*          GetLog();
+	springai::Game*         GetGame();
+	springai::Map*          GetMap();
+	springai::Pathing*      GetPathing();
 
 private:
 	int skirmishAIId;
@@ -60,12 +65,7 @@ private:
 
 	std::shared_ptr<CScheduler> scheduler;
 
-	void PickStartPos(const Box& box);
-
-	void Clusterize(const std::vector<Metal>& spots);
-	void ClearMetalClusters(std::vector<std::vector<Metal>>& metalCluster, std::vector<springai::AIFloat3>& centroids);
-	void DrawConvexHulls(const std::vector<std::vector<Metal>>& metalCluster);
-	void DrawCentroids(const std::vector<std::vector<Metal>>& metalCluster, const std::vector<springai::AIFloat3>& centroids);
+	void ClusterizeMetal();
 	void DrawClusters();
 };
 

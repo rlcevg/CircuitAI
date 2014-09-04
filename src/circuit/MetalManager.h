@@ -12,9 +12,12 @@
 
 #include <vector>
 
-namespace circuit {
+namespace springai {
+	class Pathing;
+	class Map;
+}
 
-#define DEFAULT_MEXPERCLUSTER	3
+namespace circuit {
 
 using Metal = struct Metal {
 	float income;
@@ -29,11 +32,18 @@ public:
 	bool IsEmpty();
 	std::vector<Metal>& GetSpots();
 
-public:
+	/*
+	 * Hierarchical clusterization without saving tree.
+	 */
+	void Clusterize(float maxDistance, int pathType, springai::Pathing* pathing);
+	void DrawConvexHulls(springai::Map* map);
+//	void DrawCentroids(springai::Map* map);
+	void ClearMetalClusters(springai::Map* map);
+
+private:
 	std::vector<Metal> spots;
 	std::vector<std::vector<Metal>> clusters;
-	std::vector<springai::AIFloat3> centroids;
-	int mexPerClusterAvg;
+//	std::vector<springai::AIFloat3> centroids;
 };
 
 } // namespace circuit

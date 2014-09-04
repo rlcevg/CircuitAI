@@ -8,11 +8,11 @@
 #ifndef UNITTASK_H_
 #define UNITTASK_H_
 
-#include "UnitDetail.h"
-
 #include <memory>
 
 namespace circuit {
+
+class CUnitDetail;
 
 class CUnitTask {
 public:
