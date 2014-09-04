@@ -14,7 +14,7 @@
 
 namespace springai {
 	class Pathing;
-	class Map;
+	class Drawer;
 }
 
 namespace circuit {
@@ -33,12 +33,12 @@ public:
 	std::vector<Metal>& GetSpots();
 
 	/*
-	 * Hierarchical clusterization without saving tree.
+	 * Hierarchical clusterization. Not reusable. Metric: complete link
 	 */
 	void Clusterize(float maxDistance, int pathType, springai::Pathing* pathing);
-	void DrawConvexHulls(springai::Map* map);
-//	void DrawCentroids(springai::Map* map);
-	void ClearMetalClusters(springai::Map* map);
+	void DrawConvexHulls(springai::Drawer* drawer);
+//	void DrawCentroids(springai::Drawer* drawer);
+	void ClearMetalClusters(springai::Drawer* drawer);
 
 private:
 	std::vector<Metal> spots;

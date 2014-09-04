@@ -11,7 +11,6 @@ namespace circuit {
 
 CGameTask::~CGameTask()
 {
-	printf("<DEBUG> Entering:  %s\n", __PRETTY_FUNCTION__);
 }
 
 void CGameTask::Run()

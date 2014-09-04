@@ -19,6 +19,14 @@ namespace utils {
 
 #define SQUARE_SIZE		8
 
+template <class C> void FreeClear(C& cntr)
+{
+	for (typename C::iterator it = cntr.begin(); it != cntr.end(); ++it) {
+		delete *it;
+	}
+//	cntr.clear();
+}
+
 static std::string string_format(const std::string fmt_str, ...)
 {
     int final_n, n = ((int)fmt_str.size()) * 2; /* reserve 2 times as much as the length of the fmt_str */

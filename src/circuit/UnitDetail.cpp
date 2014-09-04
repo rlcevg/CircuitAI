@@ -11,7 +11,8 @@
 
 namespace circuit {
 
-CUnitDetail::CUnitDetail()
+CUnitDetail::CUnitDetail() :
+		unit(nullptr)
 {
 	// TODO Auto-generated constructor stub
 

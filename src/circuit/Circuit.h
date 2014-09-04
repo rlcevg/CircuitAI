@@ -40,14 +40,17 @@ public:
 	int Release(int reason);
 	int Update(int frame);
 	int Message(int playerId, const char* message);
+	int UnitCreated(springai::Unit* unit, springai::Unit* builder);
+	int UnitFinished(int unitId);
 	int LuaMessage(const char* inData);
 
 	int GetSkirmishAIId();
-	springai::OOAICallback* GetCallback();
+//	springai::OOAICallback* GetCallback();
 	springai::Log*          GetLog();
 	springai::Game*         GetGame();
 	springai::Map*          GetMap();
 	springai::Pathing*      GetPathing();
+	springai::Drawer*       GetDrawer();
 
 private:
 	int skirmishAIId;
@@ -56,6 +59,7 @@ private:
 	springai::Game* game;
 	springai::Map* map;
 	springai::Pathing* pathing;
+	springai::Drawer* drawer;
 
 	static std::unique_ptr<CGameAttribute> gameAttribute;
 	static unsigned int gaCounter;
@@ -65,6 +69,7 @@ private:
 
 	std::shared_ptr<CScheduler> scheduler;
 
+	void RegisterUnit(springai::Unit* unit);
 	void ClusterizeMetal();
 	void DrawClusters();
 };

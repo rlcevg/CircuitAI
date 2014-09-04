@@ -29,7 +29,6 @@ CGameAttribute::CGameAttribute() :
 
 CGameAttribute::~CGameAttribute()
 {
-	printf("<DEBUG> Entering: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CGameAttribute::ParseSetupScript(const char* setupScript, int width, int height)
@@ -107,10 +106,10 @@ void CGameAttribute::ParseMetalSpots(const char* metalJson)
 	metalManager = std::make_shared<CMetalManager>(spots);
 }
 
-void CGameAttribute::ParseMetalSpots(const std::vector<springai::GameRulesParam*>& gameParams)
+void CGameAttribute::ParseMetalSpots(const std::vector<GameRulesParam*>& gameParams)
 {
 	int mexCount = 0;
-	for (auto& param : gameParams) {
+	for (auto param : gameParams) {
 		if (strcmp(param->GetName(), "mex_count") == 0) {
 			mexCount = param->GetValueFloat();
 			break;
@@ -123,7 +122,7 @@ void CGameAttribute::ParseMetalSpots(const std::vector<springai::GameRulesParam*
 
 	std::vector<Metal> spots(mexCount);
 	int i = 0;
-	for (auto& param : gameParams) {
+	for (auto param : gameParams) {
 		const char* name = param->GetName();
 		if (strncmp(name, "mex_", 4) == 0) {
 			if (strncmp(name + 4, "x", 1) == 0) {

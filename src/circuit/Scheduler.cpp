@@ -17,13 +17,11 @@ unsigned int CScheduler::counterInstance = 0;
 
 CScheduler::CScheduler()
 {
-	printf("<DEBUG> Entering:  %s\n", __PRETTY_FUNCTION__);
 	counterInstance++;
 }
 
 CScheduler::~CScheduler()
 {
-	printf("<DEBUG> Entering:  %s\n", __PRETTY_FUNCTION__);
 	counterInstance--;
 	Release();
 }

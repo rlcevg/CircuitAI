@@ -8,7 +8,6 @@
 #include "MetalManager.h"
 
 #include "Pathing.h"
-#include "Map.h"
 #include "Drawer.h"
 
 #include <functional>
@@ -37,14 +36,13 @@ std::vector<Metal>& CMetalManager::GetSpots()
 	return spots;
 }
 
-void CMetalManager::Clusterize(float maxDistance, int pathType, springai::Pathing* pathing)
+void CMetalManager::Clusterize(float maxDistance, int pathType, Pathing* pathing)
 {
 	int nrows = spots.size();
 
 	// Create distance matrix
 	float** distmatrix = new float* [nrows];
 	distmatrix[0] = nullptr;
-	int k = 0;
 	for (int i = 1; i < nrows; i++) {
 		distmatrix[i] = new float [i];
 		for (int j = 0; j < i; j++) {
@@ -85,41 +83,38 @@ void CMetalManager::Clusterize(float maxDistance, int pathType, springai::Pathin
 		// Find pair
 		int is = 1;
 		int js = 0;
-		float distance = find_closest_pair(n, distmatrix, &is, &js);
-		if (distance > maxDistance) {
+		if (find_closest_pair(n, distmatrix, &is, &js) > maxDistance) {
 			break;
 		}
 
 		// Fix the distances
 		for (int j = 0; j < js; j++) {
-			distmatrix[js][j] = std::max(distmatrix[is][j],distmatrix[js][j]);
+			distmatrix[js][j] = std::max(distmatrix[is][j], distmatrix[js][j]);
 		}
 		for (int j = js + 1; j < is; j++) {
-			distmatrix[j][js] = std::max(distmatrix[is][j],distmatrix[j][js]);
+			distmatrix[j][js] = std::max(distmatrix[is][j], distmatrix[j][js]);
 		}
 		for (int j = is + 1; j < n; j++) {
-			distmatrix[j][js] = std::max(distmatrix[j][is],distmatrix[j][js]);
+			distmatrix[j][js] = std::max(distmatrix[j][is], distmatrix[j][js]);
 		}
 
 		for (int j = 0; j < is; j++) {
-			distmatrix[is][j] = distmatrix[n-1][j];
+			distmatrix[is][j] = distmatrix[n - 1][j];
 		}
-		for (int j = is + 1; j < n-1; j++) {
-			distmatrix[j][is] = distmatrix[n-1][j];
+		for (int j = is + 1; j < n - 1; j++) {
+			distmatrix[j][is] = distmatrix[n - 1][j];
 		}
 
 		// Merge clusters
-		Cluster cluster;
-		cluster.reserve(clusters[is].size() + clusters[js].size()); // preallocate memory
+		Cluster& cluster = clusters[js];
+		cluster.reserve(cluster.size() + clusters[is].size()); // preallocate memory
 		cluster.insert(cluster.end(), clusters[is].begin(), clusters[is].end());
-		cluster.insert(cluster.end(), clusters[js].begin(), clusters[js].end());
-		clusters[js] = cluster;
 		clusters[is] = clusters[n-1];
 		clusters.pop_back();
 	}
 	int nclusters = clusters.size();
 	this->clusters.resize(nclusters);
-	for (int i = 0; i < clusters.size(); i++) {
+	for (int i = 0; i < nclusters; i++) {
 		for (int j = 0; j < clusters[i].size(); j++) {
 			this->clusters[i].push_back(spots[clusters[i][j]]);
 		}
@@ -131,15 +126,15 @@ void CMetalManager::Clusterize(float maxDistance, int pathType, springai::Pathin
 	delete[] distmatrix;
 }
 
-void CMetalManager::DrawConvexHulls(Map* map)
+void CMetalManager::DrawConvexHulls(Drawer* drawer)
 {
 	for (const std::vector<Metal>& vec : clusters) {
 		if (vec.empty()) {
 			continue;
 		} else if (vec.size() == 1) {
-//			map->GetDrawer()->AddPoint(vec[0].position, "Cluster 1");
+			drawer->AddPoint(vec[0].position, "Cluster 1");
 		} else if (vec.size() == 2) {
-			map->GetDrawer()->AddLine(vec[0].position, vec[1].position);
+			drawer->AddLine(vec[0].position, vec[1].position);
 		} else {
 			// !!! Graham scan !!!
 			// Coord system:  *-----x
@@ -219,34 +214,34 @@ void CMetalManager::DrawConvexHulls(Map* map)
 			AIFloat3 start = points[0], end;
 			for (int i = 1; i < M; i++) {
 				end = points[i];
-				map->GetDrawer()->AddLine(start, end);
+				drawer->AddLine(start, end);
 				start = end;
 			}
 			end = points[0];
-			map->GetDrawer()->AddLine(start, end);
+			drawer->AddLine(start, end);
 		}
 	}
 }
 
-//void CMetalManager::DrawCentroids(Map* map)
+//void CMetalManager::DrawCentroids(Drawer* drawer)
 //{
 //	for (int i = 0; i < metalCluster.size(); i++) {
 //		std::string msgText = utils::string_format("%i mexes cluster", metalCluster[i].size());
-//		map->GetDrawer()->AddPoint(centroids[i], msgText.c_str());
+//		drawer->AddPoint(centroids[i], msgText.c_str());
 //	}
 //}
 
-void CMetalManager::ClearMetalClusters(Map* map)
+void CMetalManager::ClearMetalClusters(Drawer* drawer)
 {
 	for (auto& cluster : clusters) {
 		for (auto& spot : cluster) {
-			map->GetDrawer()->DeletePointsAndLines(spot.position);
+			drawer->DeletePointsAndLines(spot.position);
 		}
 	}
 	clusters.clear();
 
 //	for (auto& centroid : centroids) {
-//		map->GetDrawer()->DeletePointsAndLines(centroid);
+//		drawer->DeletePointsAndLines(centroid);
 //	}
 //	centroids.clear();
 }
