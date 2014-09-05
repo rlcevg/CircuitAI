@@ -11,6 +11,9 @@
 #include "MetalManager.h"
 #include "Scheduler.h"
 #include "GameTask.h"
+#include "EconomyManager.h"
+#include "MilitaryManager.h"
+#include "CircuitUnit.h"
 #include "utils.h"
 
 #include "AIFloat3.h"
@@ -23,6 +26,8 @@
 #include "MoveData.h"
 #include "Drawer.h"
 #include "GameRulesParam.h"
+#include "SkirmishAI.h"
+#include "WrappUnit.h"
 
 namespace circuit {
 
@@ -33,14 +38,18 @@ unsigned int CCircuit::gaCounter = 0;
 
 CCircuit::CCircuit(OOAICallback* callback) :
 		initialized(false),
+		lastFrame(0),
 		callback(callback),
-		log(callback->GetLog()),
-		game(callback->GetGame()),
-		map(callback->GetMap()),
-		pathing(callback->GetPathing()),
+		log(std::unique_ptr<Log>(callback->GetLog())),
+		game(std::unique_ptr<Game>(callback->GetGame())),
+		map(std::unique_ptr<Map>(callback->GetMap())),
+		pathing(std::unique_ptr<Pathing>(callback->GetPathing())),
+		drawer(std::unique_ptr<Drawer>(map->GetDrawer())),
+		skirmishAI(std::unique_ptr<SkirmishAI>(callback->GetSkirmishAI())),
 		skirmishAIId(-1)
 {
-	drawer = map->GetDrawer();
+	teamId = skirmishAI->GetTeamId();
+	allyTeamId = game->GetMyAllyTeam();
 }
 
 CCircuit::~CCircuit()
@@ -48,12 +57,6 @@ CCircuit::~CCircuit()
 	if (initialized) {
 		Release(0);
 	}
-
-	delete drawer;
-	delete pathing;
-	delete log;
-	delete map;
-	delete game;
 }
 
 int CCircuit::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback)
@@ -66,7 +69,7 @@ int CCircuit::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback
 	if (!gameAttribute->HasStartBoxes(false)) {
 		gameAttribute->ParseSetupScript(game->GetSetupScript(), map->GetWidth(), map->GetHeight());
 	}
-	// level 0: Check if GameRulesParams have metal spots
+
 	if (!gameAttribute->HasMetalSpots(false)) {
 		// TODO: Add metal zone maps support
 		std::vector<GameRulesParam*> gameRulesParams = game->GetGameRulesParams();
@@ -76,65 +79,35 @@ int CCircuit::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback
 
 	if (gameAttribute->HasStartBoxes()) {
 		CSetupManager& setup = gameAttribute->GetSetupManager();
-
 		if (setup.CanChoosePos()) {
-			setup.PickStartPos(game, map);
+			setup.PickStartPos(GetGame(), GetMap());
 		}
 	}
 
+	modules.push_back(std::unique_ptr<CEconomyManager>(new CEconomyManager(this)));
+	modules.push_back(std::unique_ptr<CMilitaryManager>(new CMilitaryManager(this)));
+
 	initialized = true;
-	// signal: everything went OK
-	return 0;
+
+	return 0;  // signaling: OK
 }
 
 int CCircuit::Release(int reason)
 {
 	DestroyGameAttribute();
 	scheduler = nullptr;
-
+	modules.clear();
 	initialized = false;
-	// signal: everything went OK
-	return 0;
+
+	return 0;  // signaling: OK
 }
 
 int CCircuit::Update(int frame)
 {
-	if (frame == 120) {
-//		LOG("HIT 300 frame");
-		std::vector<Unit*> units = callback->GetTeamUnits();
-		if (units.size() > 0) {
-//			LOG("found mah comm");
-			Unit* commander = units.front();
-			Unit* friendCommander = NULL;;
-			std::vector<Unit*> friendlies = callback->GetFriendlyUnits();
-			for (Unit* unit : friendlies) {
-				UnitDef* unitDef = unit->GetDef();
-				if (strcmp(unitDef->GetName(), "armcom1") == 0) {
-					if (commander->GetUnitId() != unit->GetUnitId()) {
-//						LOG("found friendly comm");
-						friendCommander = unit;
-						break;
-					} else {
-//						LOG("found mah comm again");
-					}
-				}
-				delete unitDef;
-			}
-
-			if (friendCommander) {
-				LOG("giving guard order");
-				commander->Guard(friendCommander);
-//				commander->Build(callback->GetUnitDefByName("armsolar"), commander->GetPos(), UNIT_COMMAND_BUILD_NO_FACING);
-			}
-			utils::FreeClear(friendlies);
-		}
-		utils::FreeClear(units);
-	}
-
+	lastFrame = frame;
 	scheduler->ProcessTasks(frame);
 
-	// signal: everything went OK
-	return 0;
+	return 0;  // signaling: OK
 }
 
 int CCircuit::Message(int playerId, const char* message)
@@ -143,7 +116,7 @@ int CCircuit::Message(int playerId, const char* message)
 
 	if (msgLength == strlen("~стройсь") && strcmp(message, "~стройсь") == 0) {
 		CSetupManager& setup = gameAttribute->GetSetupManager();
-		setup.PickStartPos(game, map);
+		setup.PickStartPos(GetGame(), GetMap());
 	}
 
 	else if (strncmp(message, "~selfd", 6) == 0) {
@@ -156,7 +129,7 @@ int CCircuit::Message(int playerId, const char* message)
 
 		if (msgLength == strlen("~кластер") && strcmp(message, "~кластер") == 0) {
 			if (gameAttribute->HasMetalSpots()) {
-				gameAttribute->GetMetalManager().ClearMetalClusters(drawer);
+				gameAttribute->GetMetalManager().ClearMetalClusters(GetDrawer());
 				scheduler->RunParallelTask(std::make_shared<CGameTask>(&CCircuit::ClusterizeMetal, this),
 										   std::make_shared<CGameTask>(&CCircuit::DrawClusters, this));
 			}
@@ -178,41 +151,46 @@ int CCircuit::Message(int playerId, const char* message)
 		}
 	}
 
-	return 0; //signaling: OK
+	return 0;  // signaling: OK
 }
 
-int CCircuit::UnitCreated(Unit* unit, Unit* builder)
+int CCircuit::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 {
-	RegisterUnit(unit);
-
-//	if (builderId != nullptr) {
-//		if (unit.IsBeingBuilt()) {
-//			for (WorkerTask wt:workerTasks) {
+//	if (builder != nullptr) {
+//		if (unit->GetUnit()->IsBeingBuilt()) {
+//			for (WorkerTask wt : workerTasks) {
 //				if(wt instanceof ProductionTask) {
 //					ProductionTask ct = (ProductionTask)wt;
-//					if (ct.getWorker().getUnit().getUnitId() == builder.getUnitId()){
+//					if (ct.getWorker().getUnit().getUnitId() == builder.getUnitId()) {
 //						ct.setBuilding(unit);
 //					}
 //				}
 //			}
-//		}else{
-//			for (WorkerTask wt:workerTasks){
-//				if(wt instanceof ProductionTask){
+//		} else {
+//			for (WorkerTask wt : workerTasks){
+//				if (wt instanceof ProductionTask) {
 //					ProductionTask ct = (ProductionTask)wt;
-//					if (ct.getWorker().getUnit().getUnitId() == builder.getUnitId()){
+//					if (ct.getWorker().getUnit().getUnitId() == builder.getUnitId()) {
 //						ct.setCompleted();
 //					}
 //				}
 //			}
 //		}
 //	}
+	for (auto& module : modules) {
+		module->UnitCreated(unit, builder);
+	}
 
-	return 0; //signaling: OK
+	return 0;  // signaling: OK
 }
 
-int CCircuit::UnitFinished(int unitId)
+int CCircuit::UnitFinished(CCircuitUnit* unit)
 {
-	return 0; //signaling: OK
+	for (auto& module : modules) {
+		module->UnitFinished(unit);
+	}
+
+	return 0;  // signaling: OK
 }
 
 int CCircuit::LuaMessage(const char* inData)
@@ -220,7 +198,55 @@ int CCircuit::LuaMessage(const char* inData)
 //	if (strncmp(inData, "METAL_SPOTS:", 12) == 0) {
 //		gameAttribute->ParseMetalSpots(inData + 12);
 //	}
-	return 0; //signaling: OK
+	return 0;  // signaling: OK
+}
+
+CCircuitUnit* CCircuit::RegisterUnit(int unitId)
+{
+	CCircuitUnit* u = GetUnitById(unitId);
+	if (u != nullptr) {
+		return u;
+	}
+
+	springai::Unit* unit = springai::WrappUnit::GetInstance(skirmishAIId, unitId);
+	u = new CCircuitUnit(unit);
+	aliveUnits[unitId] = u;
+
+	if (unit->GetTeam() == GetTeamId()) {
+		teamUnits.push_back(u);
+		friendlyUnits.push_back(u);
+	} else if (unit->GetAllyTeam() == allyTeamId) {
+		friendlyUnits.push_back(u);
+	} else {
+		enemyUnits.push_back(u);
+	}
+
+	return u;
+}
+
+CCircuitUnit* CCircuit::GetUnitById(int unitId)
+{
+	std::map<int, CCircuitUnit*>::iterator i = aliveUnits.find(unitId);
+	if (i != aliveUnits.end()) {
+		return i->second;
+	}
+
+	return nullptr;
+}
+
+CGameAttribute* CCircuit::GetGameAttribute()
+{
+	return gameAttribute.get();
+}
+
+CScheduler* CCircuit::GetScheduler()
+{
+	return scheduler.get();
+}
+
+int CCircuit::GetLastFrame()
+{
+	return lastFrame;
 }
 
 int CCircuit::GetSkirmishAIId()
@@ -228,34 +254,49 @@ int CCircuit::GetSkirmishAIId()
 	return skirmishAIId;
 }
 
-//OOAICallback* CCircuit::GetCallback()
-//{
-//	return callback;
-//}
+int CCircuit::GetTeamId()
+{
+	return teamId;
+}
+
+int CCircuit::GetAllyTeamId()
+{
+	return allyTeamId;
+}
+
+OOAICallback* CCircuit::GetCallback()
+{
+	return callback;
+}
 
 Log* CCircuit::GetLog()
 {
-	return log;
+	return log.get();
 }
 
 Game* CCircuit::GetGame()
 {
-	return game;
+	return game.get();
 }
 
 Map* CCircuit::GetMap()
 {
-	return map;
+	return map.get();
 }
 
 Pathing* CCircuit::GetPathing()
 {
-	return pathing;
+	return pathing.get();
 }
 
 Drawer* CCircuit::GetDrawer()
 {
-	return drawer;
+	return drawer.get();
+}
+
+SkirmishAI* CCircuit::GetSkirmishAI()
+{
+	return skirmishAI.get();
 }
 
 void CCircuit::CreateGameAttribute()
@@ -279,11 +320,6 @@ void CCircuit::DestroyGameAttribute()
 	}
 }
 
-void CCircuit::RegisterUnit(Unit* unit)
-{
-
-}
-
 void CCircuit::ClusterizeMetal()
 {
 	UnitDef* unitDef = callback->GetUnitDefByName("armcom1");
@@ -293,13 +329,13 @@ void CCircuit::ClusterizeMetal()
 	unitDef = callback->GetUnitDefByName("corrl");
 	float distance = unitDef->GetMaxWeaponRange();
 	delete unitDef;
-	gameAttribute->GetMetalManager().Clusterize(distance * 2, pathType, pathing);
+	gameAttribute->GetMetalManager().Clusterize(distance * 2, pathType, GetPathing());
 }
 
 void CCircuit::DrawClusters()
 {
-	gameAttribute->GetMetalManager().DrawConvexHulls(drawer);
-//	gameAttribute->GetMetalManager().DrawCentroids(map);
+	gameAttribute->GetMetalManager().DrawConvexHulls(GetDrawer());
+//	gameAttribute->GetMetalManager().DrawCentroids(GetDrawer());
 }
 
 } // namespace circuit

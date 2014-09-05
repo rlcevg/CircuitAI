@@ -15,6 +15,7 @@
 #include "SSkirmishAICallback.h"	// "direct" C API
 
 #include <memory>
+#include <map>
 #include <vector>
 
 namespace circuit {
@@ -27,12 +28,12 @@ namespace circuit {
 
 class CGameAttribute;
 class CScheduler;
+class CCircuitUnit;
+class IModule;
 struct Metal;
 
 class CCircuit {
 public:
-	bool initialized;
-
 	CCircuit(springai::OOAICallback* callback);
 	virtual ~CCircuit();
 
@@ -40,26 +41,41 @@ public:
 	int Release(int reason);
 	int Update(int frame);
 	int Message(int playerId, const char* message);
-	int UnitCreated(springai::Unit* unit, springai::Unit* builder);
-	int UnitFinished(int unitId);
+	int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
+	int UnitFinished(CCircuitUnit* unit);
 	int LuaMessage(const char* inData);
 
+	CCircuitUnit* RegisterUnit(int unitId);
+	CCircuitUnit* GetUnitById(int unitId);
+
+	CGameAttribute* GetGameAttribute();
+	CScheduler* GetScheduler();
+	int GetLastFrame();
 	int GetSkirmishAIId();
-//	springai::OOAICallback* GetCallback();
+	int GetTeamId();
+	int GetAllyTeamId();
+	springai::OOAICallback* GetCallback();
 	springai::Log*          GetLog();
 	springai::Game*         GetGame();
 	springai::Map*          GetMap();
 	springai::Pathing*      GetPathing();
 	springai::Drawer*       GetDrawer();
+	springai::SkirmishAI*   GetSkirmishAI();
 
 private:
+	bool initialized;
+	int lastFrame;
 	int skirmishAIId;
-	springai::OOAICallback* callback;
-	springai::Log* log;
-	springai::Game* game;
-	springai::Map* map;
-	springai::Pathing* pathing;
-	springai::Drawer* drawer;
+	int teamId;
+	int allyTeamId;
+	// TODO: move these into gameAttribute?
+	springai::OOAICallback*               callback;
+	std::unique_ptr<springai::Log>        log;
+	std::unique_ptr<springai::Game>       game;
+	std::unique_ptr<springai::Map>        map;
+	std::unique_ptr<springai::Pathing>    pathing;
+	std::unique_ptr<springai::Drawer>     drawer;
+	std::unique_ptr<springai::SkirmishAI> skirmishAI;
 
 	static std::unique_ptr<CGameAttribute> gameAttribute;
 	static unsigned int gaCounter;
@@ -68,8 +84,13 @@ private:
 	static void DestroyGameAttribute();
 
 	std::shared_ptr<CScheduler> scheduler;
+	std::vector<std::unique_ptr<IModule>> modules;
 
-	void RegisterUnit(springai::Unit* unit);
+	std::map<int, CCircuitUnit*> aliveUnits;
+	std::vector<CCircuitUnit*>   teamUnits;
+	std::vector<CCircuitUnit*>   friendlyUnits;
+	std::vector<CCircuitUnit*>   enemyUnits;
+
 	void ClusterizeMetal();
 	void DrawClusters();
 };

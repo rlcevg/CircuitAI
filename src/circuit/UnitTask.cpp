@@ -6,19 +6,17 @@
  */
 
 #include "UnitTask.h"
-#include "UnitDetail.h"
+#include "CircuitUnit.h"
 
 namespace circuit {
 
-CUnitTask::CUnitTask()
+CUnitTask::CUnitTask() :
+		unit(nullptr)
 {
-	// TODO Auto-generated constructor stub
-
 }
 
 CUnitTask::~CUnitTask()
 {
-	// TODO Auto-generated destructor stub
 }
 
 } // namespace circuit
