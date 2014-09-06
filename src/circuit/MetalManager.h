@@ -11,9 +11,10 @@
 #include "AIFloat3.h"
 
 #include <vector>
+#include <atomic>
+#include <mutex>
 
 namespace springai {
-	class Pathing;
 	class Drawer;
 }
 
@@ -23,6 +24,7 @@ using Metal = struct Metal {
 	float income;
 	springai::AIFloat3 position;
 };
+using Metals = std::vector<Metal>;
 
 class CMetalManager {
 public:
@@ -30,20 +32,28 @@ public:
 	virtual ~CMetalManager();
 
 	bool IsEmpty();
+	bool IsClusterizing();
+	void SetClusterizing(bool value);
 	std::vector<Metal>& GetSpots();
+	std::vector<Metals>& GetClusters();
 
 	/*
 	 * Hierarchical clusterization. Not reusable. Metric: complete link
 	 */
-	void Clusterize(float maxDistance, int pathType, springai::Pathing* pathing);
+	void Clusterize(float maxDistance, float** distmatrix);
 	void DrawConvexHulls(springai::Drawer* drawer);
 //	void DrawCentroids(springai::Drawer* drawer);
 	void ClearMetalClusters(springai::Drawer* drawer);
 
 private:
 	std::vector<Metal> spots;
-	std::vector<std::vector<Metal>> clusters;
+	// Double buffer clusters as i don't want to copy vectors every time for safe use
+	std::vector<Metals> clusters0;
+	std::vector<Metals> clusters1;
+	std::vector<Metals>* pclusters;
 //	std::vector<springai::AIFloat3> centroids;
+	std::atomic<bool> isClusterizing;
+	std::mutex clusterMutex;
 };
 
 } // namespace circuit

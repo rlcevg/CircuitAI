@@ -6,14 +6,18 @@
  */
 
 #include "SetupManager.h"
-#include "Circuit.h"
 
-#include "Game.h"
-#include "Map.h"
+#include "AIFloat3.h"
 
 namespace circuit {
 
 using namespace springai;
+
+bool Box::ContainsPoint(springai::AIFloat3& point) const
+{
+	return (point.x >= left) && (point.x <= right) &&
+		   (point.z >= top) && (point.z <= bottom);
+}
 
 CSetupManager::CSetupManager(std::vector<Box>& startBoxes, CGameSetup::StartPosType startPosType) :
 		startBoxes(startBoxes),
@@ -30,23 +34,9 @@ bool CSetupManager::IsEmpty()
 	return startBoxes.empty();
 }
 
-bool CSetupManager::CanChoosePos()
+bool CSetupManager::CanChooseStartPos()
 {
 	return startPosType == CGameSetup::StartPos_ChooseInGame;
-}
-
-void CSetupManager::PickStartPos(Game* game, Map* map)
-{
-	Box& box = startBoxes[game->GetMyAllyTeam()];
-	int min, max;
-	min = box.left;
-	max = box.right;
-	float x = min + (rand() % (int)(max - min + 1));
-	min = box.top;
-	max = box.bottom;
-	float z = min + (rand() % (int)(max - min + 1));
-
-	game->SendStartPosition(false, AIFloat3(x, map->GetElevationAt(x, z), z));
 }
 
 const Box& CSetupManager::operator[](int idx) const

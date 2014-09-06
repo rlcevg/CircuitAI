@@ -8,10 +8,15 @@
 #include "GameAttribute.h"
 #include "SetupManager.h"
 #include "MetalManager.h"
+#include "Scheduler.h"
 #include "utils.h"
 #include "json/json.h"
 
 #include "GameRulesParam.h"
+#include "Game.h"
+#include "Map.h"
+#include "UnitDef.h"
+#include "Pathing.h"
 
 #include <map>
 #include <regex>
@@ -29,6 +34,9 @@ CGameAttribute::CGameAttribute() :
 
 CGameAttribute::~CGameAttribute()
 {
+	for (auto& kv : definitions) {
+		delete kv.second;
+	}
 }
 
 void CGameAttribute::ParseSetupScript(const char* setupScript, int width, int height)
@@ -82,6 +90,77 @@ void CGameAttribute::ParseSetupScript(const char* setupScript, int width, int he
 	}
 
 	setupManager = std::make_shared<CSetupManager>(startBoxes, startPosType);
+}
+
+bool CGameAttribute::HasStartBoxes(bool checkEmpty)
+{
+	if (checkEmpty) {
+		return (setupManager != nullptr && !setupManager->IsEmpty());
+	}
+	return setupManager != nullptr;
+}
+
+bool CGameAttribute::CanChooseStartPos()
+{
+	return setupManager->CanChooseStartPos();
+}
+
+void CGameAttribute::PickStartPos(Game* game, Map* map, StartPosType type)
+{
+	float x, z;
+	const Box& box = GetSetupManager()[game->GetMyAllyTeam()];
+
+	auto random = [](const Box& box, float& x, float& z) {
+		int min, max;
+		min = box.left;
+		max = box.right;
+		x = min + (rand() % (int)(max - min + 1));
+		min = box.top;
+		max = box.bottom;
+		z = min + (rand() % (int)(max - min + 1));
+	};
+
+	switch (type) {
+		case StartPosType::METAL_SPOT: {
+			// TODO: Optimize (with kd-tree?, convex hull?)
+			std::vector<Metals>& clusters = metalManager->GetClusters();
+			std::vector<Metals> inBoxClusters;
+			for (auto& cluster : clusters) {
+				for (auto& metal : cluster) {
+					if (box.ContainsPoint(metal.position)) {
+						inBoxClusters.push_back(cluster);
+						break;
+					}
+				}
+			}
+			if (!inBoxClusters.empty()) {
+				Metals& spots = inBoxClusters[rand() % inBoxClusters.size()];
+				AIFloat3& pos = spots[rand() % spots.size()].position;
+				x = pos.x;
+				z = pos.z;
+			} else {
+				random(box, x, z);
+			}
+			break;
+		}
+		case StartPosType::MIDDLE: {
+			x = (box.left + box.right) / 2;
+			z = (box.top + box.bottom) / 2;
+			break;
+		}
+		case StartPosType::RANDOM:
+		default: {
+			random(box, x, z);
+			break;
+		}
+	}
+
+	game->SendStartPosition(false, AIFloat3(x, map->GetElevationAt(x, z), z));
+}
+
+CSetupManager& CGameAttribute::GetSetupManager()
+{
+	return *setupManager;
 }
 
 void CGameAttribute::ParseMetalSpots(const char* metalJson)
@@ -152,14 +231,6 @@ void CGameAttribute::ParseMetalSpots(const std::vector<GameRulesParam*>& gamePar
 	metalManager = std::make_shared<CMetalManager>(spots);
 }
 
-bool CGameAttribute::HasStartBoxes(bool checkEmpty)
-{
-	if (checkEmpty) {
-		return (setupManager != nullptr && !setupManager->IsEmpty());
-	}
-	return setupManager != nullptr;
-}
-
 bool CGameAttribute::HasMetalSpots(bool checkEmpty)
 {
 	if (checkEmpty) {
@@ -168,14 +239,66 @@ bool CGameAttribute::HasMetalSpots(bool checkEmpty)
 	return metalManager != nullptr;
 }
 
-CSetupManager& CGameAttribute::GetSetupManager()
+bool CGameAttribute::HasMetalClusters()
 {
-	return *setupManager;
+	return metalManager->IsClusterizing() || !metalManager->GetClusters().empty();
+}
+
+void CGameAttribute::ClusterizeMetal(std::shared_ptr<CScheduler> scheduler, float maxDistance, int pathType, Pathing* pathing)
+{
+	metalManager->SetClusterizing(true);
+
+	Metals& spots = metalManager->GetSpots();
+	int nrows = spots.size();
+
+	// TODO: 1) Save distmatrix, could be useful
+	//       2) Break initialization into several index steps
+	// Create distance matrix
+	float** distmatrix = new float* [nrows];  // CMetalManager::Clusterize will delete distmatrix
+	distmatrix[0] = nullptr;
+	for (int i = 1; i < nrows; i++) {
+		distmatrix[i] = new float [i];
+		for (int j = 0; j < i; j++) {
+			float lenStartEnd = pathing->GetApproximateLength(spots[i].position, spots[j].position, pathType, 0.0f);
+			float lenEndStart = pathing->GetApproximateLength(spots[j].position, spots[i].position, pathType, 0.0f);
+			distmatrix[i][j] = (lenStartEnd + lenEndStart) / 2.0f;
+		}
+	}
+
+	scheduler->RunParallelTask(std::make_shared<CGameTask>(&CMetalManager::Clusterize, metalManager, maxDistance, distmatrix));
 }
 
 CMetalManager& CGameAttribute::GetMetalManager()
 {
 	return *metalManager;
+}
+
+void CGameAttribute::InitUnitDefs(std::vector<UnitDef*>& unitDefs)
+{
+	if (!definitions.empty()) {
+		for (auto& kv : definitions) {
+			delete kv.second;
+		}
+		definitions.clear();
+	}
+	for (auto def : unitDefs) {
+		definitions[def->GetName()] = def;
+	}
+}
+
+bool CGameAttribute::HasUnitDefs()
+{
+	return !definitions.empty();
+}
+
+UnitDef* CGameAttribute::GetUnitDefByName(const char* name)
+{
+	decltype(definitions)::iterator i = definitions.find(name);
+	if (i != definitions.end()) {
+		return i->second;
+	}
+
+	return nullptr;
 }
 
 } // namespace circuit

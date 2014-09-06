@@ -92,6 +92,7 @@ private:
 	std::vector<CCircuitUnit*>   enemyUnits;
 
 	void ClusterizeMetal();
+	// debug
 	void DrawClusters();
 };
 

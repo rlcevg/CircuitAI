@@ -6,7 +6,6 @@
  */
 
 #include "Scheduler.h"
-#include "GameTask.h"
 
 namespace circuit {
 

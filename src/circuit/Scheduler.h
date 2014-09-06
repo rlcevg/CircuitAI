@@ -9,6 +9,7 @@
 #define SCHEDULER_H_
 
 #include "MultiQueue.h"
+#include "GameTask.h"
 
 #include <list>
 #include <memory>
@@ -16,8 +17,6 @@
 #include <atomic>
 
 namespace circuit {
-
-class CGameTask;
 
 class CScheduler {
 public:
@@ -62,7 +61,7 @@ private:
 		BaseContainer(std::shared_ptr<CGameTask> task) :
 			task(task) {}
 		std::shared_ptr<CGameTask> task;
-		bool operator==(const BaseContainer& other) const  {
+		bool operator==(const BaseContainer& other) const {
 			return task == other.task;
 		}
 	};

@@ -8,7 +8,6 @@
 #include "MilitaryManager.h"
 #include "Circuit.h"
 #include "Scheduler.h"
-#include "GameTask.h"
 
 #include "utils.h"
 #include "Log.h"

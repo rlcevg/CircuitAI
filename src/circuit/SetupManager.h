@@ -13,11 +13,12 @@
 #include <vector>
 
 namespace springai {
-	class Game;
-	class Map;
+	class AIFloat3;
 }
 
 namespace circuit {
+
+enum class StartPosType: char {METAL_SPOT = 0, MIDDLE = 1, RANDOM = 2};
 
 union Box {
 	struct {
@@ -27,6 +28,8 @@ union Box {
 		float top;
 	};
 	float edge[4];
+
+	bool ContainsPoint(springai::AIFloat3& point) const;
 };
 
 class CSetupManager {
@@ -36,8 +39,7 @@ public:
 	virtual ~CSetupManager();
 
 	bool IsEmpty();
-	bool CanChoosePos();
-	void PickStartPos(springai::Game* game, springai::Map* map);
+	bool CanChooseStartPos();
 
 	const Box& operator[](int idx) const;
 

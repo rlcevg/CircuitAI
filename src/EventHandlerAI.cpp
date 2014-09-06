@@ -68,8 +68,10 @@ int CEventHandlerAI::HandleEvent(int topic, const void* data)
 			break;
 		}
 		default: {
-			std::string msgText = std::string("<CircuitAI> warning topic: ") + utils::int_to_string(topic);
-			callback->GetLog()->DoLog(msgText.c_str());
+			std::string msgText = std::string("<CircuitAI> warning topic: ") + utils::int_to_string(topic) + "  " + utils::int_to_string(callback->GetSkirmishAIId());
+			springai::Log* log = callback->GetLog();
+			log->DoLog(msgText.c_str());
+			delete log;
 			ret = 0;
 			break;
 		}

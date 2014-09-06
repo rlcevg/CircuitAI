@@ -7,7 +7,6 @@
 
 #include "MetalManager.h"
 
-#include "Pathing.h"
 #include "Drawer.h"
 
 #include <functional>
@@ -18,7 +17,9 @@ namespace circuit {
 using namespace springai;
 
 CMetalManager::CMetalManager(std::vector<Metal>& spots) :
-		spots(spots)
+		spots(spots),
+		pclusters(&clusters0),
+		isClusterizing(false)
 {
 }
 
@@ -31,34 +32,42 @@ bool CMetalManager::IsEmpty()
 	return spots.empty();
 }
 
+bool CMetalManager::IsClusterizing()
+{
+	return isClusterizing.load();
+}
+
+void CMetalManager::SetClusterizing(bool value)
+{
+	isClusterizing = value;
+}
+
 std::vector<Metal>& CMetalManager::GetSpots()
 {
 	return spots;
 }
 
-void CMetalManager::Clusterize(float maxDistance, int pathType, Pathing* pathing)
+std::vector<Metals>& CMetalManager::GetClusters()
 {
-	int nrows = spots.size();
+	clusterMutex.lock();
+	std::vector<Metals>& rclusters = *pclusters;
+	clusterMutex.unlock();
+	return rclusters;
+}
 
-	// Create distance matrix
-	float** distmatrix = new float* [nrows];
-	distmatrix[0] = nullptr;
-	for (int i = 1; i < nrows; i++) {
-		distmatrix[i] = new float [i];
-		for (int j = 0; j < i; j++) {
-			float lenStartEnd = pathing->GetApproximateLength(spots[i].position, spots[j].position, pathType, 0.0f);
-			float lenEndStart = pathing->GetApproximateLength(spots[j].position, spots[i].position, pathType, 0.0f);
-			distmatrix[i][j] = (lenStartEnd + lenEndStart) / 2.0f;
-		}
-	}
+void CMetalManager::Clusterize(float maxDistance, float** distmatrix)
+{
+	printf("<DEBUG> Clusterizing!!!\n");
+	std::vector<Metals>& clusters = (pclusters == &clusters0) ? clusters1 : clusters0;
+	int nrows = spots.size();
 
 	// Initialize cluster-element list
 	using Cluster = std::vector<int>;
-	std::vector<Cluster> clusters(nrows);
+	std::vector<Cluster> iclusters(nrows);
 	for (int i = 0; i < nrows; i++) {
 		Cluster cluster;
 		cluster.push_back(i);
-		clusters[i] = cluster;
+		iclusters[i] = cluster;
 	}
 
 	auto find_closest_pair = [](int n, float** distmatrix, int* ip, int* jp) -> float {
@@ -106,29 +115,39 @@ void CMetalManager::Clusterize(float maxDistance, int pathType, Pathing* pathing
 		}
 
 		// Merge clusters
-		Cluster& cluster = clusters[js];
-		cluster.reserve(cluster.size() + clusters[is].size()); // preallocate memory
-		cluster.insert(cluster.end(), clusters[is].begin(), clusters[is].end());
-		clusters[is] = clusters[n-1];
-		clusters.pop_back();
+		Cluster& cluster = iclusters[js];
+		cluster.reserve(cluster.size() + iclusters[is].size()); // preallocate memory
+		cluster.insert(cluster.end(), iclusters[is].begin(), iclusters[is].end());
+		iclusters[is] = iclusters[n-1];
+		iclusters.pop_back();
 	}
-	int nclusters = clusters.size();
-	this->clusters.resize(nclusters);
+
+	int nclusters = iclusters.size();
+	clusters.resize(nclusters);
 	for (int i = 0; i < nclusters; i++) {
-		for (int j = 0; j < clusters[i].size(); j++) {
-			this->clusters[i].push_back(spots[clusters[i][j]]);
+		clusters[i].clear();
+		for (int j = 0; j < iclusters[i].size(); j++) {
+			clusters[i].push_back(spots[iclusters[i][j]]);
 		}
+	}
+	{
+//		std::lock_guard<std::mutex> guard(clusterMutex);
+		clusterMutex.lock();
+		pclusters = &clusters;
+		clusterMutex.unlock();
 	}
 
 	for (int i = 1; i < nrows; i++) {
 		delete[] distmatrix[i];
 	}
 	delete[] distmatrix;
+
+	isClusterizing = false;
 }
 
 void CMetalManager::DrawConvexHulls(Drawer* drawer)
 {
-	for (const std::vector<Metal>& vec : clusters) {
+	for (const std::vector<Metal>& vec : GetClusters()) {
 		if (vec.empty()) {
 			continue;
 		} else if (vec.size() == 1) {
@@ -233,13 +252,13 @@ void CMetalManager::DrawConvexHulls(Drawer* drawer)
 
 void CMetalManager::ClearMetalClusters(Drawer* drawer)
 {
-	for (auto& cluster : clusters) {
+	for (auto& cluster : GetClusters()) {
 		for (auto& spot : cluster) {
 			drawer->DeletePointsAndLines(spot.position);
 		}
 	}
-	clusters.clear();
-
+//	clusters.clear();
+//
 //	for (auto& centroid : centroids) {
 //		drawer->DeletePointsAndLines(centroid);
 //	}

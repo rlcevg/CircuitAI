@@ -10,7 +10,6 @@
 #include "SetupManager.h"
 #include "MetalManager.h"
 #include "Scheduler.h"
-#include "GameTask.h"
 #include "EconomyManager.h"
 #include "MilitaryManager.h"
 #include "CircuitUnit.h"
@@ -28,6 +27,7 @@
 #include "GameRulesParam.h"
 #include "SkirmishAI.h"
 #include "WrappUnit.h"
+//#include "Cheats.h"
 
 namespace circuit {
 
@@ -69,23 +69,40 @@ int CCircuit::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback
 	if (!gameAttribute->HasStartBoxes(false)) {
 		gameAttribute->ParseSetupScript(game->GetSetupScript(), map->GetWidth(), map->GetHeight());
 	}
-
 	if (!gameAttribute->HasMetalSpots(false)) {
 		// TODO: Add metal zone maps support
 		std::vector<GameRulesParam*> gameRulesParams = game->GetGameRulesParams();
 		gameAttribute->ParseMetalSpots(gameRulesParams);
 		utils::FreeClear(gameRulesParams);
 	}
+	if (!gameAttribute->HasUnitDefs()) {
+		std::vector<UnitDef*> unitDefs = callback->GetUnitDefs();
+		gameAttribute->InitUnitDefs(unitDefs);
+	}
 
-	if (gameAttribute->HasStartBoxes()) {
-		CSetupManager& setup = gameAttribute->GetSetupManager();
-		if (setup.CanChoosePos()) {
-			setup.PickStartPos(GetGame(), GetMap());
+	bool canChooseStartPos = gameAttribute->HasStartBoxes() && gameAttribute->CanChooseStartPos();
+	if (gameAttribute->HasMetalSpots()) {
+		if (!gameAttribute->HasMetalClusters()) {
+			ClusterizeMetal();
+			scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CCircuit::ClusterizeMetal, this), 180);
 		}
+		if (canChooseStartPos) {
+			// Parallel task is only to ensure its execution after CMetalManager::Clusterize
+			scheduler->RunParallelTask(std::make_shared<CGameTask>([this]() {
+				gameAttribute->PickStartPos(GetGame(), GetMap(), StartPosType::METAL_SPOT);
+			}));
+		}
+	} else if (canChooseStartPos) {
+		gameAttribute->PickStartPos(GetGame(), GetMap(), StartPosType::MIDDLE);
 	}
 
 	modules.push_back(std::unique_ptr<CEconomyManager>(new CEconomyManager(this)));
 	modules.push_back(std::unique_ptr<CMilitaryManager>(new CMilitaryManager(this)));
+
+//	Cheats* cheats = callback->GetCheats();
+//	cheats->SetEnabled(true);
+//	cheats->SetEventsEnabled(true);
+//	delete cheats;
 
 	initialized = true;
 
@@ -97,6 +114,10 @@ int CCircuit::Release(int reason)
 	DestroyGameAttribute();
 	scheduler = nullptr;
 	modules.clear();
+	for (auto& kv : aliveUnits) {
+		delete kv.second;
+	}
+
 	initialized = false;
 
 	return 0;  // signaling: OK
@@ -115,40 +136,13 @@ int CCircuit::Message(int playerId, const char* message)
 	size_t msgLength = strlen(message);
 
 	if (msgLength == strlen("~стройсь") && strcmp(message, "~стройсь") == 0) {
-		CSetupManager& setup = gameAttribute->GetSetupManager();
-		setup.PickStartPos(GetGame(), GetMap());
+		gameAttribute->PickStartPos(GetGame(), GetMap(), StartPosType::RANDOM);
 	}
 
 	else if (strncmp(message, "~selfd", 6) == 0) {
 		std::vector<Unit*> units = callback->GetTeamUnits();
 		units[0]->SelfDestruct();
 		utils::FreeClear(units);
-	}
-
-	else if (callback->GetSkirmishAIId() == 0) {
-
-		if (msgLength == strlen("~кластер") && strcmp(message, "~кластер") == 0) {
-			if (gameAttribute->HasMetalSpots()) {
-				gameAttribute->GetMetalManager().ClearMetalClusters(GetDrawer());
-				scheduler->RunParallelTask(std::make_shared<CGameTask>(&CCircuit::ClusterizeMetal, this),
-										   std::make_shared<CGameTask>(&CCircuit::DrawClusters, this));
-			}
-//		} else if (msgLength == strlen("~делитель++") && strncmp(message, "~делитель", strlen("~делитель")) == 0) {	// Non ASCII comparison
-//			if (gameAttribute->HasMetalSpots()) {
-//				int& divider = gameAttribute->GetMetalManager().mexPerClusterAvg;
-//				if (strcmp(message + msgLength - 2, "++") == 0) {	// ASCII comparison
-//					if (divider < gameAttribute->GetMetalManager().spots.size()) {
-//						gameAttribute->GetMetalManager().mexPerClusterAvg++;
-//					}
-//				} else if (strcmp(message + msgLength - 2, "--") == 0) {
-//					if (divider > 1) {
-//						divider--;
-//					}
-//				}
-//				std::string msgText = utils::string_format("/Say Allies: <CircuitAI> Cluster divider = %i (avarage mexes per cluster)", divider);
-//				game->SendTextMessage(msgText.c_str(), 0);
-//			}
-		}
 	}
 
 	return 0;  // signaling: OK
@@ -322,16 +316,18 @@ void CCircuit::DestroyGameAttribute()
 
 void CCircuit::ClusterizeMetal()
 {
-	UnitDef* unitDef = callback->GetUnitDefByName("armcom1");
-	MoveData* moveData = unitDef->GetMoveData();
+	if (gameAttribute->GetMetalManager().IsClusterizing()) {
+		return;
+	}
+
+	MoveData* moveData = gameAttribute->GetUnitDefByName("armcom1")->GetMoveData();
 	int pathType = moveData->GetPathType();
-	delete moveData, unitDef;
-	unitDef = callback->GetUnitDefByName("corrl");
-	float distance = unitDef->GetMaxWeaponRange();
-	delete unitDef;
-	gameAttribute->GetMetalManager().Clusterize(distance * 2, pathType, GetPathing());
+	delete moveData;
+	float distance = gameAttribute->GetUnitDefByName("corrl")->GetMaxWeaponRange();
+	gameAttribute->ClusterizeMetal(scheduler, distance * 2, pathType, GetPathing());
 }
 
+// debug
 void CCircuit::DrawClusters()
 {
 	gameAttribute->GetMetalManager().DrawConvexHulls(GetDrawer());
