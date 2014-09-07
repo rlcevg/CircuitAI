@@ -10,6 +10,14 @@
 
 namespace circuit {
 
+/*
+ *    a b c d e
+ *  a -
+ *  b 1 -
+ *  c 1 1 -
+ *  d 1 1 1 -
+ *  e 1 1 1 1 -
+ */
 class CRagMatrix {
 public:
 	CRagMatrix(int nrows);

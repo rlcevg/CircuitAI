@@ -35,6 +35,11 @@ public:
 	void RunTaskAt(std::shared_ptr<CGameTask> task, int frame = 0);
 
 	/*
+	 * Add task at frame relative to current frame
+	 */
+	void RunTaskAfter(std::shared_ptr<CGameTask> task, int frame = 0);
+
+	/*
 	 * Add task at specified interval
 	 */
 	void RunTaskEvery(std::shared_ptr<CGameTask> task, int frameInterval = 30);
@@ -56,6 +61,7 @@ public:
 
 private:
 	std::weak_ptr<CScheduler> self;
+	int lastFrame;
 
 	struct BaseContainer {
 		BaseContainer(std::shared_ptr<CGameTask> task) :

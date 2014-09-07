@@ -14,7 +14,8 @@ std::thread CScheduler::workerThread;
 std::atomic<bool> CScheduler::workerRunning(false);
 unsigned int CScheduler::counterInstance = 0;
 
-CScheduler::CScheduler()
+CScheduler::CScheduler() :
+		lastFrame(0)
 {
 	counterInstance++;
 }
@@ -53,13 +54,20 @@ void CScheduler::RunTaskAt(std::shared_ptr<CGameTask> task, int frame)
 	onceTasks.push_back({task, frame});
 }
 
+void CScheduler::RunTaskAfter(std::shared_ptr<CGameTask> task, int frame)
+{
+	onceTasks.push_back({task, lastFrame + frame});
+}
+
 void CScheduler::RunTaskEvery(std::shared_ptr<CGameTask> task, int frameInterval)
 {
-	repeatTasks.push_back({task, frameInterval, -frameInterval});
+	repeatTasks.push_back({task, frameInterval, lastFrame});
 }
 
 void CScheduler::ProcessTasks(int frame)
 {
+	lastFrame = frame;
+
 	std::list<OnceTask>::iterator ionce = onceTasks.begin();
 	while (ionce != onceTasks.end()) {
 		if (ionce->frame <= frame) {

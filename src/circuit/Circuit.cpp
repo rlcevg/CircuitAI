@@ -83,7 +83,6 @@ int CCircuit::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback
 	bool canChooseStartPos = gameAttribute->HasStartBoxes() && gameAttribute->CanChooseStartPos();
 	if (gameAttribute->HasMetalSpots()) {
 		if (!gameAttribute->HasMetalClusters() && !gameAttribute->GetMetalManager().IsClusterizing()) {
-//			ClusterizeMetal();
 			MoveData* moveData = gameAttribute->GetUnitDefByName("armcom1")->GetMoveData();
 			int pathType = moveData->GetPathType();
 			delete moveData;
@@ -132,6 +131,7 @@ int CCircuit::Release(int reason)
 int CCircuit::Update(int frame)
 {
 	lastFrame = frame;
+
 	scheduler->ProcessTasks(frame);
 
 	return 0;  // signaling: OK
