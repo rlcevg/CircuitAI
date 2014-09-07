@@ -6,6 +6,7 @@
  */
 
 #include "MetalManager.h"
+#include "RagMatrix.h"
 
 #include "Drawer.h"
 
@@ -19,6 +20,7 @@ using namespace springai;
 CMetalManager::CMetalManager(std::vector<Metal>& spots) :
 		spots(spots),
 		pclusters(&clusters0),
+		distMatrix(nullptr),
 		isClusterizing(false)
 {
 }
@@ -55,11 +57,16 @@ std::vector<Metals>& CMetalManager::GetClusters()
 	return rclusters;
 }
 
-void CMetalManager::Clusterize(float maxDistance, float** distmatrix)
+void CMetalManager::SetDistMatrix(CRagMatrix& distmatrix)
 {
-	printf("<DEBUG> Clusterizing!!!\n");
+	distMatrix = std::make_shared<CRagMatrix>(distmatrix);
+}
+
+void CMetalManager::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distMatrix)
+{
 	std::vector<Metals>& clusters = (pclusters == &clusters0) ? clusters1 : clusters0;
-	int nrows = spots.size();
+	CRagMatrix& distmatrix = *distMatrix;
+	int nrows = distmatrix.GetNrows();
 
 	// Initialize cluster-element list
 	using Cluster = std::vector<int>;
@@ -70,55 +77,37 @@ void CMetalManager::Clusterize(float maxDistance, float** distmatrix)
 		iclusters[i] = cluster;
 	}
 
-	auto find_closest_pair = [](int n, float** distmatrix, int* ip, int* jp) -> float {
-		float temp;
-		float distance = distmatrix[1][0];
-		*ip = 1;
-		*jp = 0;
-		for (int i = 1; i < n; i++) {
-			for (int j = 0; j < i; j++) {
-				temp = distmatrix[i][j];
-				if (temp < distance) {
-					distance = temp;
-					*ip = i;
-					*jp = j;
-				}
-			}
-		}
-		return distance;
-	};
-
 	for (int n = nrows; n > 1; n--) {
 		// Find pair
 		int is = 1;
 		int js = 0;
-		if (find_closest_pair(n, distmatrix, &is, &js) > maxDistance) {
+		if (distmatrix.FindClosestPair(n, is, js) > maxDistance) {
 			break;
 		}
 
 		// Fix the distances
 		for (int j = 0; j < js; j++) {
-			distmatrix[js][j] = std::max(distmatrix[is][j], distmatrix[js][j]);
+			distmatrix(js, j) = std::max(distmatrix(is, j), distmatrix(js, j));
 		}
 		for (int j = js + 1; j < is; j++) {
-			distmatrix[j][js] = std::max(distmatrix[is][j], distmatrix[j][js]);
+			distmatrix(j, js) = std::max(distmatrix(is, j), distmatrix(j, js));
 		}
 		for (int j = is + 1; j < n; j++) {
-			distmatrix[j][js] = std::max(distmatrix[j][is], distmatrix[j][js]);
+			distmatrix(j, js) = std::max(distmatrix(j, is), distmatrix(j, js));
 		}
 
 		for (int j = 0; j < is; j++) {
-			distmatrix[is][j] = distmatrix[n - 1][j];
+			distmatrix(is, j) = distmatrix(n - 1, j);
 		}
 		for (int j = is + 1; j < n - 1; j++) {
-			distmatrix[j][is] = distmatrix[n - 1][j];
+			distmatrix(j, is) = distmatrix(n - 1, j);
 		}
 
 		// Merge clusters
 		Cluster& cluster = iclusters[js];
 		cluster.reserve(cluster.size() + iclusters[is].size()); // preallocate memory
 		cluster.insert(cluster.end(), iclusters[is].begin(), iclusters[is].end());
-		iclusters[is] = iclusters[n-1];
+		iclusters[is] = iclusters[n - 1];
 		iclusters.pop_back();
 	}
 
@@ -136,11 +125,6 @@ void CMetalManager::Clusterize(float maxDistance, float** distmatrix)
 		pclusters = &clusters;
 		clusterMutex.unlock();
 	}
-
-	for (int i = 1; i < nrows; i++) {
-		delete[] distmatrix[i];
-	}
-	delete[] distmatrix;
 
 	isClusterizing = false;
 }

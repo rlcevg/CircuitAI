@@ -43,10 +43,12 @@ public:
 	int Message(int playerId, const char* message);
 	int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
 	int UnitFinished(CCircuitUnit* unit);
+	int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 	int LuaMessage(const char* inData);
 
 	CCircuitUnit* RegisterUnit(int unitId);
 	CCircuitUnit* GetUnitById(int unitId);
+	void UnregisterUnit(int unitId);
 
 	CGameAttribute* GetGameAttribute();
 	CScheduler* GetScheduler();
@@ -87,9 +89,9 @@ private:
 	std::vector<std::unique_ptr<IModule>> modules;
 
 	std::map<int, CCircuitUnit*> aliveUnits;
-	std::vector<CCircuitUnit*>   teamUnits;
-	std::vector<CCircuitUnit*>   friendlyUnits;
-	std::vector<CCircuitUnit*>   enemyUnits;
+	std::map<int, CCircuitUnit*> teamUnits;
+	std::map<int, CCircuitUnit*> friendlyUnits;
+	std::map<int, CCircuitUnit*> enemyUnits;
 
 	void ClusterizeMetal();
 	// debug

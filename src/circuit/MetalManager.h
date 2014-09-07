@@ -13,12 +13,15 @@
 #include <vector>
 #include <atomic>
 #include <mutex>
+#include <memory>
 
 namespace springai {
 	class Drawer;
 }
 
 namespace circuit {
+
+class CRagMatrix;
 
 using Metal = struct Metal {
 	float income;
@@ -37,10 +40,11 @@ public:
 	std::vector<Metal>& GetSpots();
 	std::vector<Metals>& GetClusters();
 
+	void SetDistMatrix(CRagMatrix& distmatrix);
 	/*
 	 * Hierarchical clusterization. Not reusable. Metric: complete link
 	 */
-	void Clusterize(float maxDistance, float** distmatrix);
+	void Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distmatrix);
 	void DrawConvexHulls(springai::Drawer* drawer);
 //	void DrawCentroids(springai::Drawer* drawer);
 	void ClearMetalClusters(springai::Drawer* drawer);
@@ -54,6 +58,7 @@ private:
 //	std::vector<springai::AIFloat3> centroids;
 	std::atomic<bool> isClusterizing;
 	std::mutex clusterMutex;
+	std::shared_ptr<CRagMatrix> distMatrix;
 };
 
 } // namespace circuit

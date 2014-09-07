@@ -25,6 +25,8 @@ namespace circuit {
 
 using namespace springai;
 
+#define CLUSTER_MS	10
+
 CGameAttribute::CGameAttribute() :
 		setupManager(nullptr),
 		metalManager(nullptr)
@@ -241,31 +243,42 @@ bool CGameAttribute::HasMetalSpots(bool checkEmpty)
 
 bool CGameAttribute::HasMetalClusters()
 {
-	return metalManager->IsClusterizing() || !metalManager->GetClusters().empty();
+	return !metalManager->GetClusters().empty();
+}
+
+void CGameAttribute::ClusterizeMetalFirst(std::shared_ptr<CScheduler> scheduler, float maxDistance, int pathType, Pathing* pathing)
+{
+	metalManager->SetClusterizing(true);
+	Metals& spots = metalManager->GetSpots();
+	int nrows = spots.size();
+
+	std::shared_ptr<CRagMatrix> pdistmatrix = std::make_shared<CRagMatrix>(nrows);
+	CRagMatrix& distmatrix = *pdistmatrix;
+	for (int i = 1; i < nrows; i++) {
+		for (int j = 0; j < i; j++) {
+			float lenStartEnd = pathing->GetApproximateLength(spots[i].position, spots[j].position, pathType, 0.0f);
+			float lenEndStart = pathing->GetApproximateLength(spots[j].position, spots[i].position, pathType, 0.0f);
+			distmatrix(i, j) = (lenStartEnd + lenEndStart) / 2.0f;
+		}
+	}
+
+	scheduler->RunParallelTask(std::make_shared<CGameTask>(&CMetalManager::Clusterize, metalManager, maxDistance, pdistmatrix));
 }
 
 void CGameAttribute::ClusterizeMetal(std::shared_ptr<CScheduler> scheduler, float maxDistance, int pathType, Pathing* pathing)
 {
 	metalManager->SetClusterizing(true);
-
 	Metals& spots = metalManager->GetSpots();
-	int nrows = spots.size();
 
-	// TODO: 1) Save distmatrix, could be useful
-	//       2) Break initialization into several index steps
-	// Create distance matrix
-	float** distmatrix = new float* [nrows];  // CMetalManager::Clusterize will delete distmatrix
-	distmatrix[0] = nullptr;
-	for (int i = 1; i < nrows; i++) {
-		distmatrix[i] = new float [i];
-		for (int j = 0; j < i; j++) {
-			float lenStartEnd = pathing->GetApproximateLength(spots[i].position, spots[j].position, pathType, 0.0f);
-			float lenEndStart = pathing->GetApproximateLength(spots[j].position, spots[i].position, pathType, 0.0f);
-			distmatrix[i][j] = (lenStartEnd + lenEndStart) / 2.0f;
-		}
-	}
+	tmpDistStruct.i = 1;
+	tmpDistStruct.matrix = std::make_shared<CRagMatrix>(spots.size());
+	tmpDistStruct.maxDistance = maxDistance;
+	tmpDistStruct.pathType = pathType;
+	tmpDistStruct.pathing = pathing;
+	tmpDistStruct.schedWeak = scheduler;
+	tmpDistStruct.task = std::make_shared<CGameTask>(&CGameAttribute::FillDistMatrix, this);
 
-	scheduler->RunParallelTask(std::make_shared<CGameTask>(&CMetalManager::Clusterize, metalManager, maxDistance, distmatrix));
+	scheduler->RunTaskEvery(tmpDistStruct.task, 1);
 }
 
 CMetalManager& CGameAttribute::GetMetalManager()
@@ -299,6 +312,42 @@ UnitDef* CGameAttribute::GetUnitDefByName(const char* name)
 	}
 
 	return nullptr;
+}
+
+void CGameAttribute::FillDistMatrix()
+{
+	Metals& spots = metalManager->GetSpots();
+	CRagMatrix& distmatrix = *tmpDistStruct.matrix;
+	Pathing* pathing = tmpDistStruct.pathing;
+	int pathType = tmpDistStruct.pathType;
+	int nrows = distmatrix.GetNrows();
+
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::milliseconds;
+	clock::time_point t0 = clock::now();
+
+	for (int i = tmpDistStruct.i; i < nrows; i++) {
+		for (int j = 0; j < i; j++) {
+			float lenStartEnd = pathing->GetApproximateLength(spots[i].position, spots[j].position, pathType, 0.0f);
+			float lenEndStart = pathing->GetApproximateLength(spots[j].position, spots[i].position, pathType, 0.0f);
+			distmatrix(i, j) = (lenStartEnd + lenEndStart) / 2.0f;
+		}
+
+		clock::time_point t1 = clock::now();
+		if (std::chrono::duration_cast<milliseconds>(t1 - t0) > milliseconds(CLUSTER_MS)) {
+			tmpDistStruct.i = i + 1;
+			return;
+		}
+	}
+
+	metalManager->SetDistMatrix(distmatrix);
+	std::shared_ptr<CScheduler> scheduler = tmpDistStruct.schedWeak.lock();
+	if (scheduler != nullptr) {
+		scheduler->RunParallelTask(std::make_shared<CGameTask>(&CMetalManager::Clusterize, metalManager, tmpDistStruct.maxDistance, tmpDistStruct.matrix));
+		tmpDistStruct.task->SetTerminate(true);
+	}
+//	tmpDistStruct.schedWeak = nullptr;
+	tmpDistStruct.task = nullptr;
 }
 
 } // namespace circuit

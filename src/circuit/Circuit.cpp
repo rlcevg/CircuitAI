@@ -82,9 +82,15 @@ int CCircuit::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback
 
 	bool canChooseStartPos = gameAttribute->HasStartBoxes() && gameAttribute->CanChooseStartPos();
 	if (gameAttribute->HasMetalSpots()) {
-		if (!gameAttribute->HasMetalClusters()) {
-			ClusterizeMetal();
-			scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CCircuit::ClusterizeMetal, this), 180);
+		if (!gameAttribute->HasMetalClusters() && !gameAttribute->GetMetalManager().IsClusterizing()) {
+//			ClusterizeMetal();
+			MoveData* moveData = gameAttribute->GetUnitDefByName("armcom1")->GetMoveData();
+			int pathType = moveData->GetPathType();
+			delete moveData;
+			float distance = gameAttribute->GetUnitDefByName("corrl")->GetMaxWeaponRange();
+			gameAttribute->ClusterizeMetalFirst(scheduler, distance * 2, pathType, GetPathing());
+
+			scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CCircuit::ClusterizeMetal, this), 1800);
 		}
 		if (canChooseStartPos) {
 			// Parallel task is only to ensure its execution after CMetalManager::Clusterize
@@ -187,6 +193,15 @@ int CCircuit::UnitFinished(CCircuitUnit* unit)
 	return 0;  // signaling: OK
 }
 
+int CCircuit::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+{
+	for (auto& module : modules) {
+		module->UnitDestroyed(unit, attacker);
+	}
+
+	return 0;  // signaling: OK
+}
+
 int CCircuit::LuaMessage(const char* inData)
 {
 //	if (strncmp(inData, "METAL_SPOTS:", 12) == 0) {
@@ -207,12 +222,12 @@ CCircuitUnit* CCircuit::RegisterUnit(int unitId)
 	aliveUnits[unitId] = u;
 
 	if (unit->GetTeam() == GetTeamId()) {
-		teamUnits.push_back(u);
-		friendlyUnits.push_back(u);
+		teamUnits[unitId] = u;
+		friendlyUnits[unitId] = u;
 	} else if (unit->GetAllyTeam() == allyTeamId) {
-		friendlyUnits.push_back(u);
+		friendlyUnits[unitId] = u;
 	} else {
-		enemyUnits.push_back(u);
+		enemyUnits[unitId] = u;
 	}
 
 	return u;
@@ -226,6 +241,27 @@ CCircuitUnit* CCircuit::GetUnitById(int unitId)
 	}
 
 	return nullptr;
+}
+
+void CCircuit::UnregisterUnit(int unitId)
+{
+	CCircuitUnit* u = GetUnitById(unitId);
+	if (u == nullptr) {
+		return;
+	}
+
+	aliveUnits.erase(unitId);
+
+	if (u->GetUnit()->GetTeam() == GetTeamId()) {
+		teamUnits.erase(unitId);
+		friendlyUnits.erase(unitId);
+	} else if (u->GetUnit()->GetAllyTeam() == allyTeamId) {
+		friendlyUnits.erase(unitId);
+	} else {
+		enemyUnits.erase(unitId);
+	}
+
+	delete u;
 }
 
 CGameAttribute* CCircuit::GetGameAttribute()

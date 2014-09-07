@@ -15,12 +15,14 @@ namespace circuit {
 class CGameTask {
 public:
 	template<typename _Callable, typename... _Args>
-		explicit CGameTask(_Callable&& __f, _Args&&... __args) {
+		explicit CGameTask(_Callable&& __f, _Args&&... __args) : terminate(false) {
 			__b = _M_make_routine(std::__bind_simple(std::forward<_Callable>(__f), std::forward<_Args>(__args)...));
 		}
 	virtual ~CGameTask();
 
 	void Run();
+	void SetTerminate(bool value);
+	bool GetTerminate();
 
 private:
     struct _Impl_base;
@@ -42,6 +44,8 @@ private:
 	}
 
 	__shared_base_type __b;
+
+	bool terminate;
 };
 
 inline CGameTask::_Impl_base::~_Impl_base() = default;

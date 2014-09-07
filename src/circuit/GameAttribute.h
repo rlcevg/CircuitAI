@@ -8,6 +8,8 @@
 #ifndef GAMEATTRIBUTE_H_
 #define GAMEATTRIBUTE_H_
 
+#include "RagMatrix.h"
+
 #include <memory>
 #include <vector>
 #include <map>
@@ -26,6 +28,7 @@ namespace circuit {
 class CSetupManager;
 class CMetalManager;
 class CScheduler;
+class CGameTask;
 enum class StartPosType: char;
 
 class CGameAttribute {
@@ -43,6 +46,7 @@ public:
 	void ParseMetalSpots(const std::vector<springai::GameRulesParam*>& metalParams);
 	bool HasMetalSpots(bool checkEmpty = true);
 	bool HasMetalClusters();
+	void ClusterizeMetalFirst(std::shared_ptr<CScheduler> scheduler, float maxDistance, int pathType, springai::Pathing* pathing);
 	void ClusterizeMetal(std::shared_ptr<CScheduler> scheduler, float maxDistance, int pathType, springai::Pathing* pathing);
 	CMetalManager& GetMetalManager();
 
@@ -60,6 +64,17 @@ private:
 	   }
 	};
 	std::map<const char*, springai::UnitDef*, cmp_str> definitions;
+
+	struct {
+		int i;
+		std::shared_ptr<CRagMatrix> matrix;
+		springai::Pathing* pathing;
+		int pathType;
+		std::weak_ptr<CScheduler> schedWeak;
+		float maxDistance;
+		std::shared_ptr<CGameTask> task;
+	} tmpDistStruct;
+	void FillDistMatrix();
 };
 
 } // namespace circuit

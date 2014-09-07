@@ -62,6 +62,14 @@ int CEventHandlerAI::HandleEvent(int topic, const void* data)
 			ret = circuit->UnitFinished(unit);
 			break;
 		}
+		case EVENT_UNIT_DESTROYED: {
+			struct SUnitDestroyedEvent* evt = (struct SUnitDestroyedEvent*)data;
+			CCircuitUnit* attacker = circuit->GetUnitById(evt->attacker);
+			CCircuitUnit* unit = circuit->GetUnitById(evt->unit);
+			ret = circuit->UnitDestroyed(unit, attacker);
+			circuit->UnregisterUnit(evt->unit);
+			break;
+		}
 		case EVENT_LUA_MESSAGE: {
 			struct SLuaMessageEvent* evt = (struct SLuaMessageEvent*)data;
 			ret = circuit->LuaMessage(evt->inData);

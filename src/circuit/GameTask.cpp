@@ -22,4 +22,14 @@ void CGameTask::Run()
 	__t->_M_run();
 }
 
+void CGameTask::SetTerminate(bool value)
+{
+	terminate = value;
+}
+
+bool CGameTask::GetTerminate()
+{
+	return terminate;
+}
+
 } // namespace circuit

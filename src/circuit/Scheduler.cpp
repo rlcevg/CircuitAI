@@ -60,20 +60,27 @@ void CScheduler::RunTaskEvery(std::shared_ptr<CGameTask> task, int frameInterval
 
 void CScheduler::ProcessTasks(int frame)
 {
-	std::list<OnceTask>::iterator iter = onceTasks.begin();
-	while (iter != onceTasks.end()) {
-		if (iter->frame <= frame) {
-			iter->task->Run();
-			iter = onceTasks.erase(iter);  // alternatively, onceTasks.erase(iter++);
+	std::list<OnceTask>::iterator ionce = onceTasks.begin();
+	while (ionce != onceTasks.end()) {
+		if (ionce->frame <= frame) {
+			ionce->task->Run();
+			ionce = onceTasks.erase(ionce);  // alternatively, onceTasks.erase(iter++);
 		} else {
-			++iter;
+			++ionce;
 		}
 	}
 
-	for (auto& container : repeatTasks) {
-		if (frame - container.lastFrame >= container.frameInterval) {
-			container.task->Run();
-			container.lastFrame = frame;
+	std::list<RepeatTask>::iterator irepeat = repeatTasks.begin();
+	while (irepeat != repeatTasks.end()) {
+		if (frame - irepeat->lastFrame >= irepeat->frameInterval) {
+			if (irepeat->task->GetTerminate()) {
+				irepeat = repeatTasks.erase(irepeat);
+			} else {
+				irepeat->task->Run();
+				irepeat->lastFrame = frame;
+			}
+		} else {
+			++irepeat;
 		}
 	}
 
@@ -95,6 +102,7 @@ void CScheduler::RunParallelTask(std::shared_ptr<CGameTask> task, std::shared_pt
 
 void CScheduler::RemoveTask(std::shared_ptr<CGameTask> task)
 {
+	// Task must not remove any task during execution, use task->SetTerminate(true);
 	onceTasks.remove({task, 0});
 	repeatTasks.remove({task, 0, 0});
 }

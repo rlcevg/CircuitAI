@@ -21,6 +21,7 @@ CCircuitUnit::CCircuitUnit(Unit* unit) :
 
 CCircuitUnit::~CCircuitUnit()
 {
+	delete unit;
 }
 
 Unit* CCircuitUnit::GetUnit()
