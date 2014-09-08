@@ -7,6 +7,7 @@
 
 #include "MetalManager.h"
 #include "RagMatrix.h"
+#include "utils.h"
 
 #include "Drawer.h"
 
@@ -27,6 +28,7 @@ CMetalManager::CMetalManager(std::vector<Metal>& spots) :
 
 CMetalManager::~CMetalManager()
 {
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool CMetalManager::IsEmpty()
@@ -64,6 +66,7 @@ void CMetalManager::SetDistMatrix(CRagMatrix& distmatrix)
 
 void CMetalManager::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distMatrix)
 {
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	std::vector<Metals>& clusters = (pclusters == &clusters0) ? clusters1 : clusters0;
 	CRagMatrix& distmatrix = *distMatrix;
 	int nrows = distmatrix.GetNrows();

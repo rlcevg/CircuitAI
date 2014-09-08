@@ -23,7 +23,7 @@ public:
 	CScheduler();
 	virtual ~CScheduler();
 
-	void Init(const std::shared_ptr<CScheduler>& this_ptr);
+	void Init(const std::shared_ptr<CScheduler>& thisPtr);
 
 private:
 	void Release();
@@ -57,11 +57,12 @@ public:
 	/*
 	 * Remove scheduled task from queue
 	 */
-	void RemoveTask(std::shared_ptr<CGameTask> task);
+	void RemoveTask(std::shared_ptr<CGameTask>& task);
 
 private:
 	std::weak_ptr<CScheduler> self;
 	int lastFrame;
+	bool isProcessing;
 
 	struct BaseContainer {
 		BaseContainer(std::shared_ptr<CGameTask> task) :
@@ -85,6 +86,8 @@ private:
 		int lastFrame;
 	};
 	std::list<RepeatTask> repeatTasks;
+
+	std::list<std::shared_ptr<CGameTask>> removeTasks;
 
 	struct WorkTask : public BaseContainer {
 		WorkTask(std::weak_ptr<CScheduler> scheduler, std::shared_ptr<CGameTask> task, std::shared_ptr<CGameTask> onComplete) :

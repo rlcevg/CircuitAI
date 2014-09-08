@@ -7,6 +7,8 @@
 
 #include "CircuitUnit.h"
 #include "UnitTask.h"
+#include "utils.h"
+
 #include "Unit.h"
 
 namespace circuit {
@@ -21,6 +23,7 @@ CCircuitUnit::CCircuitUnit(Unit* unit) :
 
 CCircuitUnit::~CCircuitUnit()
 {
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete unit;
 }
 

@@ -36,6 +36,7 @@ CGameAttribute::CGameAttribute() :
 
 CGameAttribute::~CGameAttribute()
 {
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	for (auto& kv : definitions) {
 		delete kv.second;
 	}
@@ -248,6 +249,7 @@ bool CGameAttribute::HasMetalClusters()
 
 void CGameAttribute::ClusterizeMetalFirst(std::shared_ptr<CScheduler> scheduler, float maxDistance, int pathType, Pathing* pathing)
 {
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	metalManager->SetClusterizing(true);
 	Metals& spots = metalManager->GetSpots();
 	int nrows = spots.size();
@@ -267,6 +269,7 @@ void CGameAttribute::ClusterizeMetalFirst(std::shared_ptr<CScheduler> scheduler,
 
 void CGameAttribute::ClusterizeMetal(std::shared_ptr<CScheduler> scheduler, float maxDistance, int pathType, Pathing* pathing)
 {
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	metalManager->SetClusterizing(true);
 	Metals& spots = metalManager->GetSpots();
 
@@ -316,6 +319,7 @@ UnitDef* CGameAttribute::GetUnitDefByName(const char* name)
 
 void CGameAttribute::FillDistMatrix()
 {
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	Metals& spots = metalManager->GetSpots();
 	CRagMatrix& distmatrix = *tmpDistStruct.matrix;
 	Pathing* pathing = tmpDistStruct.pathing;
@@ -344,7 +348,7 @@ void CGameAttribute::FillDistMatrix()
 	std::shared_ptr<CScheduler> scheduler = tmpDistStruct.schedWeak.lock();
 	if (scheduler != nullptr) {
 		scheduler->RunParallelTask(std::make_shared<CGameTask>(&CMetalManager::Clusterize, metalManager, tmpDistStruct.maxDistance, tmpDistStruct.matrix));
-		tmpDistStruct.task->SetTerminate(true);
+		scheduler->RemoveTask(tmpDistStruct.task);
 	}
 //	tmpDistStruct.schedWeak = nullptr;
 	tmpDistStruct.task = nullptr;

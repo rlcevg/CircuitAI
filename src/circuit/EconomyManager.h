@@ -19,6 +19,7 @@ public:
 
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
 	virtual int UnitFinished(CCircuitUnit* unit);
+	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 };
 
 } // namespace circuit

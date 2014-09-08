@@ -6,11 +6,13 @@
  */
 
 #include "GameTask.h"
+#include "utils.h"
 
 namespace circuit {
 
 CGameTask::~CGameTask()
 {
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CGameTask::Run()
@@ -20,16 +22,6 @@ void CGameTask::Run()
 	__local.swap(__t->_M_this_ptr);
 
 	__t->_M_run();
-}
-
-void CGameTask::SetTerminate(bool value)
-{
-	terminate = value;
-}
-
-bool CGameTask::GetTerminate()
-{
-	return terminate;
 }
 
 } // namespace circuit

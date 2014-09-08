@@ -7,6 +7,7 @@
 
 #include "UnitTask.h"
 #include "CircuitUnit.h"
+#include "utils.h"
 
 namespace circuit {
 
@@ -17,6 +18,7 @@ CUnitTask::CUnitTask() :
 
 CUnitTask::~CUnitTask()
 {
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 } // namespace circuit

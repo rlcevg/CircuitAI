@@ -6,6 +6,7 @@
  */
 
 #include "SetupManager.h"
+#include "utils.h"
 
 #include "AIFloat3.h"
 
@@ -27,6 +28,7 @@ CSetupManager::CSetupManager(std::vector<Box>& startBoxes, CGameSetup::StartPosT
 
 CSetupManager::~CSetupManager()
 {
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool CSetupManager::IsEmpty()

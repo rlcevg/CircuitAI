@@ -17,6 +17,12 @@
 
 namespace utils {
 
+#ifdef DEBUG
+	#define PRINT_DEBUG(fmt, ...)	printf((std::string("<CircuitAI DEBUG> ") + utils::string_format(std::string(fmt), ##__VA_ARGS__)).c_str())
+#else
+	#define PRINT_DEBUG(fmt, ...)
+#endif
+
 #define SQUARE_SIZE		8
 
 template <class C> void FreeClear(C& cntr)

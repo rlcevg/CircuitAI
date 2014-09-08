@@ -6,6 +6,7 @@
  */
 
 #include "Scheduler.h"
+#include "utils.h"
 
 namespace circuit {
 
@@ -15,20 +16,22 @@ std::atomic<bool> CScheduler::workerRunning(false);
 unsigned int CScheduler::counterInstance = 0;
 
 CScheduler::CScheduler() :
-		lastFrame(0)
+		lastFrame(0),
+		isProcessing(false)
 {
 	counterInstance++;
 }
 
 CScheduler::~CScheduler()
 {
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	counterInstance--;
 	Release();
 }
 
-void CScheduler::Init(const std::shared_ptr<CScheduler>& this_ptr)
+void CScheduler::Init(const std::shared_ptr<CScheduler>& thisPtr)
 {
-	self = this_ptr;
+	self = thisPtr;
 }
 
 void CScheduler::Release()
@@ -66,8 +69,10 @@ void CScheduler::RunTaskEvery(std::shared_ptr<CGameTask> task, int frameInterval
 
 void CScheduler::ProcessTasks(int frame)
 {
+	isProcessing = true;
 	lastFrame = frame;
 
+	// Process once tasks
 	std::list<OnceTask>::iterator ionce = onceTasks.begin();
 	while (ionce != onceTasks.end()) {
 		if (ionce->frame <= frame) {
@@ -78,24 +83,30 @@ void CScheduler::ProcessTasks(int frame)
 		}
 	}
 
-	std::list<RepeatTask>::iterator irepeat = repeatTasks.begin();
-	while (irepeat != repeatTasks.end()) {
-		if (frame - irepeat->lastFrame >= irepeat->frameInterval) {
-			if (irepeat->task->GetTerminate()) {
-				irepeat = repeatTasks.erase(irepeat);
-			} else {
-				irepeat->task->Run();
-				irepeat->lastFrame = frame;
-			}
-		} else {
-			++irepeat;
+	// Process repeat tasks
+	for (auto& container : repeatTasks) {
+		if (frame - container.lastFrame >= container.frameInterval) {
+			container.task->Run();
+			container.lastFrame = frame;
 		}
 	}
 
+	// Process onComplete from parallel tasks
 	CMultiQueue<FinishTask>::ProcessFunction process = [](FinishTask& item) {
 		item.task->Run();
 	};
 	finishTasks.PopAndProcess(process);
+
+	// Update task queues
+	if (!removeTasks.empty()) {
+		for (auto& task : removeTasks) {
+			onceTasks.remove({task, 0});
+			repeatTasks.remove({task, 0, 0});
+		}
+		removeTasks.clear();
+	}
+
+	isProcessing = false;
 }
 
 void CScheduler::RunParallelTask(std::shared_ptr<CGameTask> task, std::shared_ptr<CGameTask> onComplete)
@@ -108,11 +119,14 @@ void CScheduler::RunParallelTask(std::shared_ptr<CGameTask> task, std::shared_pt
 	workTasks.Push({self, task, onComplete});
 }
 
-void CScheduler::RemoveTask(std::shared_ptr<CGameTask> task)
+void CScheduler::RemoveTask(std::shared_ptr<CGameTask>& task)
 {
-	// Task must not remove any task during execution, use task->SetTerminate(true);
-	onceTasks.remove({task, 0});
-	repeatTasks.remove({task, 0, 0});
+	if (isProcessing) {
+		removeTasks.push_back(task);
+	} else {
+		onceTasks.remove({task, 0});
+		repeatTasks.remove({task, 0, 0});
+	}
 }
 
 void CScheduler::WorkerThread()

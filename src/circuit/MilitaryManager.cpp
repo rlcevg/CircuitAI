@@ -8,11 +8,13 @@
 #include "MilitaryManager.h"
 #include "Circuit.h"
 #include "Scheduler.h"
+#include "utils.h"
 
 #include "utils.h"
 #include "Log.h"
 #include "Unit.h"
 #include "UnitDef.h"
+
 #include <vector>
 
 namespace circuit {
@@ -27,6 +29,7 @@ CMilitaryManager::CMilitaryManager(CCircuit* circuit) :
 
 CMilitaryManager::~CMilitaryManager()
 {
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 int CMilitaryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)

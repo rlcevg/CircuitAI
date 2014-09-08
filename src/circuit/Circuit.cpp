@@ -27,7 +27,7 @@
 #include "GameRulesParam.h"
 #include "SkirmishAI.h"
 #include "WrappUnit.h"
-//#include "Cheats.h"
+#include "Cheats.h"
 
 namespace circuit {
 
@@ -54,6 +54,7 @@ CCircuit::CCircuit(OOAICallback* callback) :
 
 CCircuit::~CCircuit()
 {
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	if (initialized) {
 		Release(0);
 	}
@@ -104,10 +105,10 @@ int CCircuit::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback
 	modules.push_back(std::unique_ptr<CEconomyManager>(new CEconomyManager(this)));
 	modules.push_back(std::unique_ptr<CMilitaryManager>(new CMilitaryManager(this)));
 
-//	Cheats* cheats = callback->GetCheats();
-//	cheats->SetEnabled(true);
-//	cheats->SetEventsEnabled(true);
-//	delete cheats;
+	Cheats* cheats = callback->GetCheats();
+	cheats->SetEnabled(true);
+	cheats->SetEventsEnabled(true);
+	delete cheats;
 
 	initialized = true;
 
@@ -116,6 +117,7 @@ int CCircuit::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback
 
 int CCircuit::Release(int reason)
 {
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	DestroyGameAttribute();
 	scheduler = nullptr;
 	modules.clear();
