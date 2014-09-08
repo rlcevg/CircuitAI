@@ -8,15 +8,20 @@
 #ifndef CIRCUIT_H_
 #define CIRCUIT_H_
 
-#include "ExternalAI/Interface/AISEvents.h"
-#include "ExternalAI/Interface/AISCommands.h"
-
-#include "OOAICallback.h"			// C++ wrapper
-#include "SSkirmishAICallback.h"	// "direct" C API
-
 #include <memory>
 #include <map>
-#include <vector>
+#include <list>
+
+namespace springai {
+	class OOAICallback;
+	class Log;
+	class Game;
+	class Map;
+	class Pathing;
+	class Drawer;
+	class SkirmishAI;
+}
+struct SSkirmishAICallback;
 
 namespace circuit {
 
@@ -32,10 +37,12 @@ class CCircuitUnit;
 class IModule;
 struct Metal;
 
-class CCircuit {
+class CCircuitAI {
 public:
-	CCircuit(springai::OOAICallback* callback);
-	virtual ~CCircuit();
+	CCircuitAI(springai::OOAICallback* callback);
+	virtual ~CCircuitAI();
+
+	int HandleEvent(int topic, const void* data);
 
 	int Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback);
 	int Release(int reason);
@@ -43,11 +50,14 @@ public:
 	int Message(int playerId, const char* message);
 	int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
 	int UnitFinished(CCircuitUnit* unit);
+	int UnitIdle(CCircuitUnit* unit);
 	int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
+	int UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId);  // TODO: Use Team class?
+	int UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId);  // TODO: Use Team class?
 	int LuaMessage(const char* inData);
 
-	CCircuitUnit* RegisterUnit(int unitId);
 	CCircuitUnit* GetUnitById(int unitId);
+	CCircuitUnit* RegisterUnit(int unitId);
 	void UnregisterUnit(int unitId);
 
 	CGameAttribute* GetGameAttribute();
@@ -86,7 +96,7 @@ private:
 	static void DestroyGameAttribute();
 
 	std::shared_ptr<CScheduler> scheduler;
-	std::vector<std::unique_ptr<IModule>> modules;
+	std::list<std::unique_ptr<IModule>> modules;
 
 	std::map<int, CCircuitUnit*> aliveUnits;
 	std::map<int, CCircuitUnit*> teamUnits;

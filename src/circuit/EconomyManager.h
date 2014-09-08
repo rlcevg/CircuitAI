@@ -10,16 +10,27 @@
 
 #include "Module.h"
 
+#include <map>
+#include <unordered_set>
+#include <functional>
+
 namespace circuit {
 
 class CEconomyManager: public virtual IModule {
 public:
-	CEconomyManager(CCircuit* circuit);
+	CEconomyManager(CCircuitAI* circuit);
 	virtual ~CEconomyManager();
 
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
 	virtual int UnitFinished(CCircuitUnit* unit);
 	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
+	virtual int UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId);
+	virtual int UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId);
+
+private:
+	std::map<int, std::function<void (CCircuitUnit* unit)>> finishedHandler;
+	std::unordered_set<CCircuitUnit*> workers;  // Consider O(n) complexity of insertion in case table rebuilding. reserve/rehash?
+	float totalBuildpower;
 };
 
 } // namespace circuit

@@ -7,12 +7,12 @@
 #include "OOAICallback.h"
 #include "WrappOOAICallback.h"
 
-#include "EventHandlerAI.h"
+#include "circuit/CircuitAI.h"
 
 #include <stdexcept>
 #include <map>
 
-static std::map<int, eventhandlerai::CEventHandlerAI*> myAIs;
+static std::map<int, circuit::CCircuitAI*> myAIs;
 static std::map<int, springai::OOAICallback*>  myAICallbacks;
 
 const static int ERROR_SHIFT = 100;
@@ -36,7 +36,7 @@ EXPORT(int) init(int skirmishAIId, const struct SSkirmishAICallback* innerCallba
 
 	try {
 		springai::OOAICallback* clb = springai::WrappOOAICallback::GetInstance(innerCallback, skirmishAIId);
-		eventhandlerai::CEventHandlerAI* ai = new eventhandlerai::CEventHandlerAI(clb);
+		circuit::CCircuitAI* ai = new circuit::CCircuitAI(clb);
 
 		myAIs[skirmishAIId] = ai;
 		myAICallbacks[skirmishAIId] = clb;
@@ -55,7 +55,7 @@ EXPORT(int) release(int skirmishAIId) {
 		springai::OOAICallback* clb = myAICallbacks[skirmishAIId];
 		myAICallbacks.erase(skirmishAIId);
 
-		eventhandlerai::CEventHandlerAI* ai = myAIs[skirmishAIId];
+		circuit::CCircuitAI* ai = myAIs[skirmishAIId];
 		myAIs.erase(skirmishAIId);
 
 		delete ai;

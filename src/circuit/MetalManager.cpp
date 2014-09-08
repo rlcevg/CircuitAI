@@ -114,6 +114,7 @@ void CMetalManager::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> di
 		iclusters.pop_back();
 	}
 
+	// TODO: Find more about std::vector::emplace
 	int nclusters = iclusters.size();
 	clusters.resize(nclusters);
 	for (int i = 0; i < nclusters; i++) {

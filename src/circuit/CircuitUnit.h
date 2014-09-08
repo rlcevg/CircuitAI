@@ -10,6 +10,7 @@
 
 namespace springai {
 	class Unit;
+	class UnitDef;
 }
 
 namespace circuit {
@@ -18,13 +19,15 @@ class CUnitTask;
 
 class CCircuitUnit {
 public:
-	CCircuitUnit(springai::Unit* unit);
+	CCircuitUnit(springai::Unit* unit, springai::UnitDef* def);
 	virtual ~CCircuitUnit();
 
 	springai::Unit* GetUnit();
+	springai::UnitDef* GetDef();
 
 private:
 	springai::Unit* unit;
+	springai::UnitDef* def;
 	CUnitTask* task;
 };
 

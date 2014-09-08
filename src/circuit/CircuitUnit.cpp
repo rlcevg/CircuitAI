@@ -10,13 +10,15 @@
 #include "utils.h"
 
 #include "Unit.h"
+#include "UnitDef.h"
 
 namespace circuit {
 
 using namespace springai;
 
-CCircuitUnit::CCircuitUnit(Unit* unit) :
+CCircuitUnit::CCircuitUnit(Unit* unit, UnitDef* def) :
 		unit(unit),
+		def(def),
 		task(nullptr)
 {
 }
@@ -30,6 +32,11 @@ CCircuitUnit::~CCircuitUnit()
 Unit* CCircuitUnit::GetUnit()
 {
 	return unit;
+}
+
+UnitDef* CCircuitUnit::GetDef()
+{
+	return def;
 }
 
 } // namespace circuit
