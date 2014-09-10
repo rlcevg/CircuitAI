@@ -33,6 +33,8 @@
 #include "WrappUnit.h"
 //#include "Cheats.h"
 
+#include <algorithm>
+
 namespace circuit {
 
 using namespace springai;
@@ -40,12 +42,7 @@ using namespace springai;
 //#define DEBUG
 //#if 1
 #ifdef DEBUG
-	#define PRINT_TOPIC(txt, topic)	\
-		LOG("<CircuitAI> %s topic: %i, SkirmishAIId: %i", txt, topic, skirmishAIId)
-//		std::string msgText = std::string("<CircuitAI> ") + txt + " topic: " + utils::int_to_string(topic) + ", SkirmishAIId: " + utils::int_to_string(callback->GetSkirmishAIId());	\
-//		springai::Log* log = callback->GetLog();	\
-//		log->DoLog(msgText.c_str());	\
-//		delete log
+	#define PRINT_TOPIC(txt, topic)	LOG("<CircuitAI> %s topic: %i, SkirmishAIId: %i", txt, topic, skirmishAIId)
 #else
 	#define PRINT_TOPIC(txt, topic)
 #endif
@@ -110,7 +107,7 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 		case EVENT_UNIT_CREATED: {
 			PRINT_TOPIC("EVENT_UNIT_CREATED", topic);
 			struct SUnitCreatedEvent* evt = (struct SUnitCreatedEvent*)data;
-			CCircuitUnit* builder = (evt->builder < 0) ? nullptr : GetUnitById(evt->builder);
+			CCircuitUnit* builder = GetUnitById(evt->builder);
 			CCircuitUnit* unit = RegisterUnit(evt->unit);
 			ret = this->UnitCreated(unit, builder);
 			break;
@@ -163,6 +160,7 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 			struct SUnitCapturedEvent* evt = (struct SUnitCapturedEvent*)data;
 			CCircuitUnit* unit = GetUnitById(evt->unitId);
 			ret = this->UnitCaptured(unit, evt->oldTeamId, evt->newTeamId);
+			// TODO: Don't delete unit but place into "captured" container?
 			UnregisterUnit(evt->unitId);
 			break;
 		}
@@ -266,14 +264,14 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 		gameAttribute->ParseSetupScript(game->GetSetupScript(), map->GetWidth(), map->GetHeight());
 	}
 	if (!gameAttribute->HasMetalSpots(false)) {
-		// TODO: Add metal zone maps support
+		// TODO: Add metal zone and no-metal-spots maps support
 		std::vector<GameRulesParam*> gameRulesParams = game->GetGameRulesParams();
 		gameAttribute->ParseMetalSpots(gameRulesParams);
 		utils::FreeClear(gameRulesParams);
 	}
 	if (!gameAttribute->HasUnitDefs()) {
-		std::vector<UnitDef*> unitDefs = callback->GetUnitDefs();
-		gameAttribute->InitUnitDefs(unitDefs);
+		// TODO: Find out more about rvalue variables
+		gameAttribute->InitUnitDefs(callback->GetUnitDefs());
 	}
 
 	bool canChooseStartPos = gameAttribute->HasStartBoxes() && gameAttribute->CanChooseStartPos();
@@ -290,11 +288,11 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 		if (canChooseStartPos) {
 			// Parallel task is only to ensure its execution after CMetalManager::Clusterize
 			scheduler->RunParallelTask(std::make_shared<CGameTask>([this]() {
-				gameAttribute->PickStartPos(GetGame(), GetMap(), StartPosType::METAL_SPOT);
+				gameAttribute->PickStartPos(GetGame(), GetMap(), CGameAttribute::StartPosType::METAL_SPOT);
 			}));
 		}
 	} else if (canChooseStartPos) {
-		gameAttribute->PickStartPos(GetGame(), GetMap(), StartPosType::MIDDLE);
+		gameAttribute->PickStartPos(GetGame(), GetMap(), CGameAttribute::StartPosType::MIDDLE);
 	}
 
 	modules.push_back(std::unique_ptr<CEconomyManager>(new CEconomyManager(this)));
@@ -339,7 +337,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 	size_t msgLength = strlen(message);
 
 	if (msgLength == strlen("~стройсь") && strcmp(message, "~стройсь") == 0) {
-		gameAttribute->PickStartPos(GetGame(), GetMap(), StartPosType::RANDOM);
+		gameAttribute->PickStartPos(GetGame(), GetMap(), CGameAttribute::StartPosType::RANDOM);
 	}
 
 	else if (strncmp(message, "~selfd", 6) == 0) {
@@ -558,6 +556,196 @@ Drawer* CCircuitAI::GetDrawer()
 SkirmishAI* CCircuitAI::GetSkirmishAI()
 {
 	return skirmishAI.get();
+}
+
+/*
+ * FindBuildSiteMindMex
+ * @see rts/Game/GameHelper.cpp CGameHelper::ClosestBuildSite
+ */
+struct SearchOffset {
+	int dx,dy;
+	int qdist; // dx*dx+dy*dy
+};
+static bool SearchOffsetComparator (const SearchOffset& a, const SearchOffset& b)
+{
+	return a.qdist < b.qdist;
+}
+static const std::vector<SearchOffset>& GetSearchOffsetTable (int radius)
+{
+	static std::vector <SearchOffset> searchOffsets;
+	unsigned int size = radius*radius*4;
+	if (size > searchOffsets.size()) {
+		searchOffsets.resize (size);
+
+		for (int y = 0; y < radius*2; y++)
+			for (int x = 0; x < radius*2; x++)
+			{
+				SearchOffset& i = searchOffsets[y*radius*2 + x];
+
+				i.dx = x - radius;
+				i.dy = y - radius;
+				i.qdist = i.dx*i.dx + i.dy*i.dy;
+			}
+
+		std::sort(searchOffsets.begin(), searchOffsets.end(), SearchOffsetComparator);
+	}
+
+	return searchOffsets;
+}
+/*
+ * const minDist = 4, using hax
+ */
+AIFloat3 CCircuitAI::FindBuildSiteMindMex(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)
+{
+	int xsize, zsize;
+	switch (facing) {
+		case 1:
+		case 3: {
+			xsize = unitDef->GetZSize() * SQUARE_SIZE;
+			zsize = unitDef->GetXSize() * SQUARE_SIZE;
+			break;
+		}
+		case 0:
+		case 2:
+		default: {
+			xsize = unitDef->GetXSize() * SQUARE_SIZE;
+			zsize = unitDef->GetZSize() * SQUARE_SIZE;
+			break;
+		}
+	}
+	// HAX:  Use building as spacer because we don't have access to groundBlockingObjectMap.
+	// TODO: Or maybe we can create own BlockingObjectMap as there is access to friendly units, features, map slopes.
+//	UnitDef* spacer4 = gameAttribute->GetUnitDefByName("striderhub");  // striderhub's size = 8 but can't recognize smooth hills
+	UnitDef* spacer4 = gameAttribute->GetUnitDefByName("armmstor");  // armmstor size = 6, thus we add diff (2) to pos when testing
+	// spacer4->GetXSize() and spacer4->GetZSize() should be equal 6
+	int size4 = spacer4->GetXSize();
+//	assert(spacer4->GetXSize() == spacer4->GetZSize() && size4 == 6);
+	int diff = (8 - size4) * SQUARE_SIZE;
+	size4 *= SQUARE_SIZE;
+	int xnum = xsize / size4 + 2;
+	if (xnum % size4 == 0) {
+		xnum--;  // check last cell manually for alignment purpose
+	}
+	int znum = zsize / size4 + 2;
+	if (znum % size4 == 0) {
+		znum--;  // check last cell manually for alignment purpose
+	}
+	UnitDef* mex = gameAttribute->GetUnitDefByName("cormex");
+	int xmsize = mex->GetXSize() * SQUARE_SIZE;
+	int zmsize = mex->GetZSize() * SQUARE_SIZE;
+	AIFloat3 spacerPos1(0, 0, 0), spacerPos2(0, 0, 0), probePos(0, 0, 0);
+
+	const int endr = (int)(searchRadius / (SQUARE_SIZE * 2));
+	const std::vector<SearchOffset>& ofs = GetSearchOffsetTable(endr);
+	Map* map = GetMap();
+	const float noffx = (xsize + size4) / 2;  // normal offset x
+	const float noffz = (zsize + size4) / 2;  // normal offset z
+	const float hoffx = noffx + diff;  // horizontal offset x
+	const float voffz = noffz + diff;  // vertical offset z
+	const float fsize4 = size4;
+	CMetalManager& metalManager = gameAttribute->GetMetalManager();
+	for (int so = 0; so < endr * endr * 4; so++) {
+		const float x = pos.x + ofs[so].dx * SQUARE_SIZE * 2;
+		const float z = pos.z + ofs[so].dy * SQUARE_SIZE * 2;
+		probePos.x = x;
+		probePos.z = z;
+
+		spacerPos1.x = probePos.x - (xsize / 2 + size4 + diff + xmsize / 2);
+		spacerPos1.z = probePos.z - (zsize / 2 + size4 + diff + zmsize / 2);
+		spacerPos2.x = probePos.x + (xsize / 2 + size4 + diff + xmsize / 2);
+		spacerPos2.z = probePos.z + (zsize / 2 + size4 + diff + zmsize / 2);
+		CMetalManager::Metals spots = metalManager.FindWithinRangeSpots(spacerPos1, spacerPos2);
+		if (!spots.empty()) {
+			for (auto& spot : spots) {
+//				GetDrawer()->DeletePointsAndLines(spot.position);
+				GetDrawer()->AddPoint(spot.position, "Mexa");
+
+				spacerPos1.x = probePos.x - (xsize / 2 + size4 + diff + xmsize / 2);
+				spacerPos1.z = probePos.z - (zsize / 2 + size4 + diff + zmsize / 2);
+				spacerPos2.x = probePos.x + (xsize / 2 + size4 + diff + xmsize / 2);
+				spacerPos2.z = probePos.z + (zsize / 2 + size4 + diff + zmsize / 2);
+				spacerPos1.y = map->GetElevationAt(spacerPos1.x, spacerPos1.z);
+				spacerPos2.y = map->GetElevationAt(spacerPos2.x, spacerPos2.z);
+				AIFloat3 p1(spacerPos2.x, spacerPos2.y, spacerPos1.z);
+				AIFloat3 p2(spacerPos1.x, spacerPos1.y, spacerPos2.z);
+				GetDrawer()->AddLine(spacerPos1, p1);
+				GetDrawer()->AddLine(spacerPos1, p2);
+				GetDrawer()->AddLine(spacerPos2, p2);
+				GetDrawer()->AddLine(spacerPos2, p1);
+			}
+			continue;
+		}
+
+		if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
+			bool good = true;
+			// horizontal spacing
+			spacerPos1.x = probePos.x - noffx;
+			spacerPos1.z = probePos.z - voffz;
+			spacerPos2.x = spacerPos1.x;
+			spacerPos2.z = probePos.z + voffz;
+			for (int ix = 0; ix < xnum; ix++) {
+				if (!map->IsPossibleToBuildAt(spacer4, spacerPos1, 0) || !map->IsPossibleToBuildAt(spacer4, spacerPos2, 0)) {
+					good = false;
+					break;
+				}
+				spacerPos1.x += fsize4;
+				spacerPos2.x = spacerPos1.x;
+			}
+			if (!good) {
+				continue;
+			}
+			spacerPos1.x = probePos.x + noffx;
+			spacerPos2.x = spacerPos1.x;
+			if (!map->IsPossibleToBuildAt(spacer4, spacerPos1, 0) || !map->IsPossibleToBuildAt(spacer4, spacerPos2, 0)) {
+				continue;
+			}
+			// vertical spacing
+			spacerPos1.x = probePos.x - hoffx;
+			spacerPos1.z = probePos.z - noffz;
+			spacerPos2.x = probePos.x + hoffx;
+			spacerPos2.z = spacerPos1.z;
+			for (int iz = 0; iz < znum; iz++) {
+				if (!map->IsPossibleToBuildAt(spacer4, spacerPos1, 0) || !map->IsPossibleToBuildAt(spacer4, spacerPos2, 0)) {
+					good = false;
+					break;
+				}
+				spacerPos1.z += fsize4;
+				spacerPos2.z = spacerPos1.z;
+			}
+			if (!good) {
+				continue;
+			}
+			spacerPos1.z = probePos.z + noffz;
+			spacerPos2.z = spacerPos1.z;
+			if (!map->IsPossibleToBuildAt(spacer4, spacerPos1, 0) || !map->IsPossibleToBuildAt(spacer4, spacerPos2, 0)) {
+				continue;
+			}
+			if (good) {
+				probePos.y = map->GetElevationAt(x, z);
+
+				spacerPos1.x = probePos.x - (xsize / 2 + size4 + diff + xmsize / 2);
+				spacerPos1.z = probePos.z - (zsize / 2 + size4 + diff + zmsize / 2);
+				spacerPos2.x = probePos.x + (xsize / 2 + size4 + diff + xmsize / 2);
+				spacerPos2.z = probePos.z + (zsize / 2 + size4 + diff + zmsize / 2);
+				spacerPos1.y = map->GetElevationAt(spacerPos1.x, spacerPos1.z);
+				spacerPos2.y = map->GetElevationAt(spacerPos2.x, spacerPos2.z);
+				AIFloat3 p1(spacerPos2.x, spacerPos2.y, spacerPos1.z);
+				AIFloat3 p2(spacerPos1.x, spacerPos1.y, spacerPos2.z);
+				GetDrawer()->DeletePointsAndLines(spacerPos1);
+				GetDrawer()->DeletePointsAndLines(spacerPos2);
+				GetDrawer()->DeletePointsAndLines(p1);
+				GetDrawer()->DeletePointsAndLines(p2);
+				GetDrawer()->AddLine(spacerPos1, p1);
+				GetDrawer()->AddLine(spacerPos1, p2);
+				GetDrawer()->AddLine(spacerPos2, p2);
+				GetDrawer()->AddLine(spacerPos2, p1);
+
+				return probePos;
+			}
+		}
+	}
+
+	return -RgtVector;
 }
 
 void CCircuitAI::CreateGameAttribute()

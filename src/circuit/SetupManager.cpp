@@ -14,7 +14,7 @@ namespace circuit {
 
 using namespace springai;
 
-bool Box::ContainsPoint(springai::AIFloat3& point) const
+bool CSetupManager::Box::ContainsPoint(const springai::AIFloat3& point) const
 {
 	return (point.x >= left) && (point.x <= right) &&
 		   (point.z >= top) && (point.z <= bottom);
@@ -41,7 +41,7 @@ bool CSetupManager::CanChooseStartPos()
 	return startPosType == CGameSetup::StartPos_ChooseInGame;
 }
 
-const Box& CSetupManager::operator[](int idx) const
+const CSetupManager::Box& CSetupManager::operator[](int idx) const
 {
 	return startBoxes[idx];
 }

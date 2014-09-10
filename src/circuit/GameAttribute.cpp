@@ -44,7 +44,7 @@ CGameAttribute::~CGameAttribute()
 
 void CGameAttribute::ParseSetupScript(const char* setupScript, int width, int height)
 {
-	std::map<int, Box> boxesMap;
+	std::map<int, CSetupManager::Box> boxesMap;
 	std::regex patternAlly("\\[allyteam(\\d+)\\]\\s*\\{([^\\}]*)\\}");
 	std::regex patternRect("startrect\\w+=(\\d+(\\.\\d+)?);");
 	std::string script(setupScript);
@@ -58,7 +58,7 @@ void CGameAttribute::ParseSetupScript(const char* setupScript, int width, int he
 		std::string teamDefBody = allyteam[2];
 		std::sregex_token_iterator iter(teamDefBody.begin(), teamDefBody.end(), patternRect, 1);
 		std::sregex_token_iterator end;
-		Box startbox;
+		CSetupManager::Box startbox;
 		for (int i = 0; iter != end && i < 4; ++iter, i++) {
 			startbox.edge[i] = utils::string_to_float(*iter);
 		}
@@ -83,7 +83,7 @@ void CGameAttribute::ParseSetupScript(const char* setupScript, int width, int he
 		startPosType = CGameSetup::StartPosType::StartPos_ChooseInGame;
 	}
 
-	std::vector<Box> startBoxes;
+	std::vector<CSetupManager::Box> startBoxes;
 	// Remap start boxes
 	// @see rts/Game/GameSetup.cpp CGameSetup::Init
 //	for (const std::map<int, Box>::value_type& kv : boxesMap) {
@@ -111,9 +111,9 @@ bool CGameAttribute::CanChooseStartPos()
 void CGameAttribute::PickStartPos(Game* game, Map* map, StartPosType type)
 {
 	float x, z;
-	const Box& box = GetSetupManager()[game->GetMyAllyTeam()];
+	const CSetupManager::Box& box = GetSetupManager()[game->GetMyAllyTeam()];
 
-	auto random = [](const Box& box, float& x, float& z) {
+	auto random = [](const CSetupManager::Box& box, float& x, float& z) {
 		int min, max;
 		min = box.left;
 		max = box.right;
@@ -125,20 +125,11 @@ void CGameAttribute::PickStartPos(Game* game, Map* map, StartPosType type)
 
 	switch (type) {
 		case StartPosType::METAL_SPOT: {
-			// TODO: Optimize (with kd-tree?, convex hull?)
-			std::vector<Metals>& clusters = metalManager->GetClusters();
-			std::vector<Metals> inBoxClusters;
-			for (auto& cluster : clusters) {
-				for (auto& metal : cluster) {
-					if (box.ContainsPoint(metal.position)) {
-						inBoxClusters.push_back(cluster);
-						break;
-					}
-				}
-			}
-			if (!inBoxClusters.empty()) {
-				Metals& spots = inBoxClusters[rand() % inBoxClusters.size()];
-				AIFloat3& pos = spots[rand() % spots.size()].position;
+			AIFloat3 posFrom(box.left, 0, box.top);
+			AIFloat3 posTo(box.right, 0, box.bottom);
+			CMetalManager::Metals inBoxSpots = metalManager->FindWithinRangeSpots(posFrom, posTo);
+			if (!inBoxSpots.empty()) {
+				AIFloat3& pos = inBoxSpots[rand() % inBoxSpots.size()].position;
 				x = pos.x;
 				z = pos.z;
 			} else {
@@ -175,9 +166,9 @@ void CGameAttribute::ParseMetalSpots(const char* metalJson)
 		return;
 	}
 
-	std::vector<Metal> spots;
+	std::vector<CMetalManager::Metal> spots;
 	for (const Json::Value& object : root) {
-		Metal spot;
+		CMetalManager::Metal spot;
 		spot.income = object["metal"].asFloat();
 		spot.position = AIFloat3(object["x"].asFloat(),
 								 object["y"].asFloat(),
@@ -202,7 +193,7 @@ void CGameAttribute::ParseMetalSpots(const std::vector<GameRulesParam*>& gamePar
 		return;
 	}
 
-	std::vector<Metal> spots(mexCount);
+	std::vector<CMetalManager::Metal> spots(mexCount);
 	int i = 0;
 	for (auto param : gameParams) {
 		const char* name = param->GetName();
@@ -251,7 +242,7 @@ void CGameAttribute::ClusterizeMetalFirst(std::shared_ptr<CScheduler> scheduler,
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	metalManager->SetClusterizing(true);
-	Metals& spots = metalManager->GetSpots();
+	const CMetalManager::Metals& spots = metalManager->GetSpots();
 	int nrows = spots.size();
 
 	std::shared_ptr<CRagMatrix> pdistmatrix = std::make_shared<CRagMatrix>(nrows);
@@ -271,7 +262,7 @@ void CGameAttribute::ClusterizeMetal(std::shared_ptr<CScheduler> scheduler, floa
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	metalManager->SetClusterizing(true);
-	Metals& spots = metalManager->GetSpots();
+	const CMetalManager::Metals& spots = metalManager->GetSpots();
 
 	tmpDistStruct.i = 1;
 	tmpDistStruct.matrix = std::make_shared<CRagMatrix>(spots.size());
@@ -289,7 +280,7 @@ CMetalManager& CGameAttribute::GetMetalManager()
 	return *metalManager;
 }
 
-void CGameAttribute::InitUnitDefs(std::vector<UnitDef*>& unitDefs)
+void CGameAttribute::InitUnitDefs(std::vector<UnitDef*>&& unitDefs)
 {
 	if (!definitions.empty()) {
 		for (auto& kv : definitions) {
@@ -317,10 +308,15 @@ UnitDef* CGameAttribute::GetUnitDefByName(const char* name)
 	return nullptr;
 }
 
+CGameAttribute::UnitDefs& CGameAttribute::GetUnitDefs()
+{
+	return definitions;
+}
+
 void CGameAttribute::FillDistMatrix()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	Metals& spots = metalManager->GetSpots();
+	const CMetalManager::Metals& spots = metalManager->GetSpots();
 	CRagMatrix& distmatrix = *tmpDistStruct.matrix;
 	Pathing* pathing = tmpDistStruct.pathing;
 	int pathType = tmpDistStruct.pathType;

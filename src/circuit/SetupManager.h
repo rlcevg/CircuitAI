@@ -18,21 +18,20 @@ namespace springai {
 
 namespace circuit {
 
-enum class StartPosType: char {METAL_SPOT = 0, MIDDLE = 1, RANDOM = 2};
-
-union Box {
-	struct {
-		float bottom;
-		float left;
-		float right;
-		float top;
-	};
-	float edge[4];
-
-	bool ContainsPoint(springai::AIFloat3& point) const;
-};
-
 class CSetupManager {
+public:
+	union Box {
+		struct {
+			float bottom;
+			float left;
+			float right;
+			float top;
+		};
+		float edge[4];
+
+		bool ContainsPoint(const springai::AIFloat3& point) const;
+	};
+
 public:
 	CSetupManager(std::vector<Box>& startBoxes,
 				  CGameSetup::StartPosType startPosType = CGameSetup::StartPosType::StartPos_ChooseInGame);

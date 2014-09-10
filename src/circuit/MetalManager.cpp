@@ -24,6 +24,11 @@ CMetalManager::CMetalManager(std::vector<Metal>& spots) :
 		distMatrix(nullptr),
 		isClusterizing(false)
 {
+	unsigned i = 0;
+    for (auto& spot : spots) {
+    	point p(spot.position.x, spot.position.z);
+        metalTree.insert(std::make_pair(p, i++));
+    }
 }
 
 CMetalManager::~CMetalManager()
@@ -46,12 +51,58 @@ void CMetalManager::SetClusterizing(bool value)
 	isClusterizing = value;
 }
 
-std::vector<Metal>& CMetalManager::GetSpots()
+const CMetalManager::Metal CMetalManager::FindNearestSpot(AIFloat3& pos) const
+{
+	Metal spot;
+
+    std::vector<MetalNode> result_n;
+    metalTree.query(bgi::nearest(point(pos.x, pos.z), 1), std::back_inserter(result_n));
+
+    if (!result_n.empty()) {
+    	return spots[result_n.front().second];
+    }
+	spot.position = -RgtVector;
+	return spot;
+}
+
+const CMetalManager::Metals CMetalManager::FindWithinDistanceSpots(AIFloat3& pos, float maxDistance) const
+{
+	Metals result;
+
+	std::vector<MetalNode> returned_values;
+	point sought = point(pos.x, pos.z);
+	box enc_box(point(pos.x - maxDistance, pos.z - maxDistance), point(pos.x + maxDistance, pos.z + maxDistance));
+	auto predicate = [&maxDistance, &sought](MetalNode const& v) {
+		return bg::distance(v.first, sought) < maxDistance;
+	};
+	metalTree.query(bgi::within(enc_box) && bgi::satisfies(predicate), std::back_inserter(returned_values));
+
+	for (auto& node : returned_values) {
+		result.push_back(spots[node.second]);
+	}
+	return result;
+}
+
+const CMetalManager::Metals CMetalManager::FindWithinRangeSpots(AIFloat3& posFrom, AIFloat3& posTo) const
+{
+	Metals result;
+
+	box query_box(point(posFrom.x, posFrom.z), point(posTo.x, posTo.z));
+	std::vector<MetalNode> result_s;
+	metalTree.query(bgi::within(query_box), std::back_inserter(result_s));
+
+	for (auto& node : result_s) {
+		result.push_back(spots[node.second]);
+	}
+	return result;
+}
+
+const CMetalManager::Metals& CMetalManager::GetSpots() const
 {
 	return spots;
 }
 
-std::vector<Metals>& CMetalManager::GetClusters()
+const std::vector<CMetalManager::Metals>& CMetalManager::GetClusters()
 {
 	clusterMutex.lock();
 	std::vector<Metals>& rclusters = *pclusters;
@@ -154,7 +205,7 @@ void CMetalManager::DrawConvexHulls(Drawer* drawer)
 				// orientation = 0 : collinear
 				return (p2.x - p1.x) * (p3.z - p1.z) - (p2.z - p1.z) * (p3.x - p1.x);
 			};
-			std::function<float(const AIFloat3&, const AIFloat3&)> dist = [](const AIFloat3& p1, const AIFloat3& p2) -> float {
+			std::function<float(const AIFloat3&, const AIFloat3&)> qdist = [](const AIFloat3& p1, const AIFloat3& p2) -> float {
 				float x = p1.x - p2.x;
 				float z = p1.z - p2.z;
 				return x * x + z * z;
@@ -185,11 +236,11 @@ void CMetalManager::DrawConvexHulls(Drawer* drawer)
 			// A function used to sort an array of
 			// points with respect to the first point
 			AIFloat3& p0 = points[1];
-			auto compare = [&p0, orientation, dist](const AIFloat3& p1, const AIFloat3& p2) {
+			auto compare = [&p0, orientation, qdist](const AIFloat3& p1, const AIFloat3& p2) {
 				// Find orientation
 				int o = orientation(p0, p1, p2);
 				if (o == 0) {
-					return dist(p0, p1) < dist(p0, p2);
+					return qdist(p0, p1) < qdist(p0, p2);
 				}
 				return o > 0;
 			};

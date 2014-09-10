@@ -13,6 +13,7 @@
 #include <list>
 
 namespace springai {
+	class AIFloat3;
 	class OOAICallback;
 	class Log;
 	class Game;
@@ -20,6 +21,7 @@ namespace springai {
 	class Pathing;
 	class Drawer;
 	class SkirmishAI;
+	class UnitDef;
 }
 struct SSkirmishAICallback;
 
@@ -73,6 +75,8 @@ public:
 	springai::Pathing*      GetPathing();
 	springai::Drawer*       GetDrawer();
 	springai::SkirmishAI*   GetSkirmishAI();
+
+	springai::AIFloat3 FindBuildSiteMindMex(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
 
 private:
 	bool initialized;

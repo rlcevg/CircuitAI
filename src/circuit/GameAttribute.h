@@ -29,9 +29,19 @@ class CSetupManager;
 class CMetalManager;
 class CScheduler;
 class CGameTask;
-enum class StartPosType: char;
 
 class CGameAttribute {
+private:
+	struct cmp_str {
+	   bool operator()(char const *a, char const *b) {
+	      return strcmp(a, b) < 0;
+	   }
+	};
+
+public:
+	enum class StartPosType: char {METAL_SPOT = 0, MIDDLE = 1, RANDOM = 2};
+	using UnitDefs = std::map<const char*, springai::UnitDef*, cmp_str>;
+
 public:
 	CGameAttribute();
 	virtual ~CGameAttribute();
@@ -50,20 +60,16 @@ public:
 	void ClusterizeMetal(std::shared_ptr<CScheduler> scheduler, float maxDistance, int pathType, springai::Pathing* pathing);
 	CMetalManager& GetMetalManager();
 
-	void InitUnitDefs(std::vector<springai::UnitDef*>& unitDefs);
+	void InitUnitDefs(std::vector<springai::UnitDef*>&& unitDefs);
 	bool HasUnitDefs();
 	springai::UnitDef* GetUnitDefByName(const char* name);
+	UnitDefs& GetUnitDefs();
 
 private:
 	std::shared_ptr<CSetupManager> setupManager;
 	std::shared_ptr<CMetalManager> metalManager;
 
-	struct cmp_str {
-	   bool operator()(char const *a, char const *b) {
-	      return strcmp(a, b) < 0;
-	   }
-	};
-	std::map<const char*, springai::UnitDef*, cmp_str> definitions;
+	UnitDefs definitions;
 
 	struct {
 		int i;

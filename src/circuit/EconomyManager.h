@@ -28,7 +28,10 @@ public:
 	virtual int UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId);
 
 private:
-	std::map<int, std::function<void (CCircuitUnit* unit)>> finishedHandler;
+	using Handlers = std::map<int, std::function<void (CCircuitUnit* unit)>>;
+	Handlers createdHandler;
+	Handlers finishedHandler;
+	Handlers destroyedHandler;
 	std::unordered_set<CCircuitUnit*> workers;  // Consider O(n) complexity of insertion in case table rebuilding. reserve/rehash?
 	float totalBuildpower;
 };

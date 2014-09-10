@@ -31,22 +31,33 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	CGameAttribute* attrib = circuit->GetGameAttribute();
 	int unitDefId;
 
-	unitDefId = attrib->GetUnitDefByName("armpw")->GetUnitDefId();
-	finishedHandler[unitDefId] = [circuit](CCircuitUnit* unit) {
+	auto atackerFinishedHandler = [circuit](CCircuitUnit* unit) {
 		Unit* u = unit->GetUnit();
-		int width = circuit->GetMap()->GetWidth() * SQUARE_SIZE;
-		int height = circuit->GetMap()->GetHeight() * SQUARE_SIZE;
-		AIFloat3 fromPos(0 + (rand() % (int)(width - 0 + 1)), 0, 0 + (rand() % (int)(height - 0 + 1)));
+		Map* map = circuit->GetMap();
+		int terWidth = map->GetWidth() * SQUARE_SIZE;
+		int terHeight = map->GetHeight() * SQUARE_SIZE;
+		float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
+		float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
+		AIFloat3 fromPos(x, map->GetElevationAt(x, z), z);
 		u->Fight(fromPos, 0);
 	};
-
-	idleHandler[unitDefId] = [circuit](CCircuitUnit* unit) {
+	auto atackerIdleHandler = [circuit](CCircuitUnit* unit) {
 		Unit* u = unit->GetUnit();
-		int width = circuit->GetMap()->GetWidth() * SQUARE_SIZE;
-		int height = circuit->GetMap()->GetHeight() * SQUARE_SIZE;
-		AIFloat3 toPos(0 + (rand() % (int)(width - 0 + 1)), 0, 0 + (rand() % (int)(height - 0 + 1)));
+		Map* map = circuit->GetMap();
+		int terWidth = map->GetWidth() * SQUARE_SIZE;
+		int terHeight = map->GetHeight() * SQUARE_SIZE;
+		float x = rand() % (int)(terWidth + 1);
+		float z = rand() % (int)(terHeight + 1);
+		AIFloat3 toPos(x, map->GetElevationAt(x, z), z);
 		u->PatrolTo(toPos, 0);
 	};
+
+	unitDefId = attrib->GetUnitDefByName("armpw")->GetUnitDefId();
+	finishedHandler[unitDefId] = atackerFinishedHandler;
+	idleHandler[unitDefId] = atackerIdleHandler;
+	unitDefId = attrib->GetUnitDefByName("armrock")->GetUnitDefId();
+	finishedHandler[unitDefId] = atackerFinishedHandler;
+	idleHandler[unitDefId] = atackerIdleHandler;
 }
 
 CMilitaryManager::~CMilitaryManager()
@@ -61,8 +72,7 @@ int CMilitaryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 
 int CMilitaryManager::UnitFinished(CCircuitUnit* unit)
 {
-	UnitDef* def = unit->GetDef();
-	auto search = finishedHandler.find(def->GetUnitDefId());
+	auto search = finishedHandler.find(unit->GetDef()->GetUnitDefId());
 	if (search != finishedHandler.end()) {
 		search->second(unit);
 	}
@@ -72,8 +82,7 @@ int CMilitaryManager::UnitFinished(CCircuitUnit* unit)
 
 int CMilitaryManager::UnitIdle(CCircuitUnit* unit)
 {
-	UnitDef* def = unit->GetDef();
-	auto search = idleHandler.find(def->GetUnitDefId());
+	auto search = idleHandler.find(unit->GetDef()->GetUnitDefId());
 	if (search != idleHandler.end()) {
 		search->second(unit);
 	}
