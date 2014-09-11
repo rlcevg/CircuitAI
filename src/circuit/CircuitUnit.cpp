@@ -6,7 +6,7 @@
  */
 
 #include "CircuitUnit.h"
-#include "UnitTask.h"
+#include "ModuleTask.h"
 #include "utils.h"
 
 #include "Unit.h"
@@ -37,6 +37,16 @@ Unit* CCircuitUnit::GetUnit()
 UnitDef* CCircuitUnit::GetDef()
 {
 	return def;
+}
+
+void CCircuitUnit::SetTask(IModuleTask* task)
+{
+	this->task = task;
+}
+
+IModuleTask* CCircuitUnit::GetTask()
+{
+	return task;
 }
 
 } // namespace circuit

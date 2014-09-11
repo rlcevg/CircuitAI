@@ -144,8 +144,12 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 			struct SUnitDestroyedEvent* evt = (struct SUnitDestroyedEvent*)data;
 			CCircuitUnit* attacker = GetUnitById(evt->attacker);
 			CCircuitUnit* unit = GetUnitById(evt->unit);
-			ret = this->UnitDestroyed(unit, attacker);
-			UnregisterUnit(evt->unit);
+			if (unit) {
+				ret = this->UnitDestroyed(unit, attacker);
+				UnregisterUnit(evt->unit);
+			} else {
+				ret = ERROR_UNIT_DESTROYED;
+			}
 			break;
 		}
 		case EVENT_UNIT_GIVEN: {
@@ -160,7 +164,6 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 			struct SUnitCapturedEvent* evt = (struct SUnitCapturedEvent*)data;
 			CCircuitUnit* unit = GetUnitById(evt->unitId);
 			ret = this->UnitCaptured(unit, evt->oldTeamId, evt->newTeamId);
-			// TODO: Don't delete unit but place into "captured" container?
 			UnregisterUnit(evt->unitId);
 			break;
 		}
@@ -408,7 +411,6 @@ int CCircuitAI::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 
 int CCircuitAI::UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 {
-	printf("unit: %i, oldTeamId: %i, newTeamId: %i, myTeamId: %i\n", unit->GetUnit()->GetUnitId(), oldTeamId, newTeamId, teamId);
 	// it might not have been given to us! Could have been given to another team
 	if (teamId == newTeamId) {
 		for (auto& module : modules) {
@@ -421,9 +423,11 @@ int CCircuitAI::UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 
 int CCircuitAI::UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 {
-	printf("unit: %i, oldTeamId: %i, newTeamId: %i, myTeamId: %i\n", unit->GetUnit()->GetUnitId(), oldTeamId, newTeamId, teamId);
-	for (auto& module : modules) {
-		module->UnitCaptured(unit, oldTeamId, newTeamId);
+	// it might not have been captured from us! Could have been captured from another team
+	if (teamId == oldTeamId) {
+		for (auto& module : modules) {
+			module->UnitCaptured(unit, oldTeamId, newTeamId);
+		}
 	}
 
 	return 0;  // signaling: OK
@@ -599,14 +603,14 @@ AIFloat3 CCircuitAI::FindBuildSiteMindMex(UnitDef* unitDef, const AIFloat3& pos,
 {
 	int xsize, zsize;
 	switch (facing) {
-		case 1:
-		case 3: {
+		case UNIT_FACING_EAST:
+		case UNIT_FACING_WEST: {
 			xsize = unitDef->GetZSize() * SQUARE_SIZE;
 			zsize = unitDef->GetXSize() * SQUARE_SIZE;
 			break;
 		}
-		case 0:
-		case 2:
+		case UNIT_FACING_SOUTH:
+		case UNIT_FACING_NORTH:
 		default: {
 			xsize = unitDef->GetXSize() * SQUARE_SIZE;
 			zsize = unitDef->GetZSize() * SQUARE_SIZE;
@@ -643,6 +647,8 @@ AIFloat3 CCircuitAI::FindBuildSiteMindMex(UnitDef* unitDef, const AIFloat3& pos,
 	const float hoffx = noffx + diff;  // horizontal offset x
 	const float voffz = noffz + diff;  // vertical offset z
 	const float fsize4 = size4;
+	const float moffx = (xsize + xmsize) / 2 + size4 + diff;  // mex offset x
+	const float moffz = (zsize + xmsize) / 2 + size4 + diff;  // mex offset z
 	CMetalManager& metalManager = gameAttribute->GetMetalManager();
 	for (int so = 0; so < endr * endr * 4; so++) {
 		const float x = pos.x + ofs[so].dx * SQUARE_SIZE * 2;
@@ -650,29 +656,11 @@ AIFloat3 CCircuitAI::FindBuildSiteMindMex(UnitDef* unitDef, const AIFloat3& pos,
 		probePos.x = x;
 		probePos.z = z;
 
-		spacerPos1.x = probePos.x - (xsize / 2 + size4 + diff + xmsize / 2);
-		spacerPos1.z = probePos.z - (zsize / 2 + size4 + diff + zmsize / 2);
-		spacerPos2.x = probePos.x + (xsize / 2 + size4 + diff + xmsize / 2);
-		spacerPos2.z = probePos.z + (zsize / 2 + size4 + diff + zmsize / 2);
-		CMetalManager::Metals spots = metalManager.FindWithinRangeSpots(spacerPos1, spacerPos2);
-		if (!spots.empty()) {
-			for (auto& spot : spots) {
-//				GetDrawer()->DeletePointsAndLines(spot.position);
-				GetDrawer()->AddPoint(spot.position, "Mexa");
-
-				spacerPos1.x = probePos.x - (xsize / 2 + size4 + diff + xmsize / 2);
-				spacerPos1.z = probePos.z - (zsize / 2 + size4 + diff + zmsize / 2);
-				spacerPos2.x = probePos.x + (xsize / 2 + size4 + diff + xmsize / 2);
-				spacerPos2.z = probePos.z + (zsize / 2 + size4 + diff + zmsize / 2);
-				spacerPos1.y = map->GetElevationAt(spacerPos1.x, spacerPos1.z);
-				spacerPos2.y = map->GetElevationAt(spacerPos2.x, spacerPos2.z);
-				AIFloat3 p1(spacerPos2.x, spacerPos2.y, spacerPos1.z);
-				AIFloat3 p2(spacerPos1.x, spacerPos1.y, spacerPos2.z);
-				GetDrawer()->AddLine(spacerPos1, p1);
-				GetDrawer()->AddLine(spacerPos1, p2);
-				GetDrawer()->AddLine(spacerPos2, p2);
-				GetDrawer()->AddLine(spacerPos2, p1);
-			}
+		spacerPos1.x = probePos.x - moffx;
+		spacerPos1.z = probePos.z - moffz;
+		spacerPos2.x = probePos.x + moffx;
+		spacerPos2.z = probePos.z + moffz;
+		if (!metalManager.FindWithinRangeSpots(spacerPos1, spacerPos2).empty()) {
 			continue;
 		}
 
@@ -722,24 +710,6 @@ AIFloat3 CCircuitAI::FindBuildSiteMindMex(UnitDef* unitDef, const AIFloat3& pos,
 			}
 			if (good) {
 				probePos.y = map->GetElevationAt(x, z);
-
-				spacerPos1.x = probePos.x - (xsize / 2 + size4 + diff + xmsize / 2);
-				spacerPos1.z = probePos.z - (zsize / 2 + size4 + diff + zmsize / 2);
-				spacerPos2.x = probePos.x + (xsize / 2 + size4 + diff + xmsize / 2);
-				spacerPos2.z = probePos.z + (zsize / 2 + size4 + diff + zmsize / 2);
-				spacerPos1.y = map->GetElevationAt(spacerPos1.x, spacerPos1.z);
-				spacerPos2.y = map->GetElevationAt(spacerPos2.x, spacerPos2.z);
-				AIFloat3 p1(spacerPos2.x, spacerPos2.y, spacerPos1.z);
-				AIFloat3 p2(spacerPos1.x, spacerPos1.y, spacerPos2.z);
-				GetDrawer()->DeletePointsAndLines(spacerPos1);
-				GetDrawer()->DeletePointsAndLines(spacerPos2);
-				GetDrawer()->DeletePointsAndLines(p1);
-				GetDrawer()->DeletePointsAndLines(p2);
-				GetDrawer()->AddLine(spacerPos1, p1);
-				GetDrawer()->AddLine(spacerPos1, p2);
-				GetDrawer()->AddLine(spacerPos2, p2);
-				GetDrawer()->AddLine(spacerPos2, p1);
-
 				return probePos;
 			}
 		}

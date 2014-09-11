@@ -24,6 +24,14 @@ namespace utils {
 #endif
 
 #define SQUARE_SIZE		8
+// z++
+#define UNIT_FACING_SOUTH	0
+// x++
+#define UNIT_FACING_EAST	1
+// z--
+#define UNIT_FACING_NORTH	2
+// x--
+#define UNIT_FACING_WEST	3
 
 template <class C> void FreeClear(C& cntr)
 {

@@ -42,7 +42,7 @@ public:
 	/*
 	 * Add task at specified interval
 	 */
-	void RunTaskEvery(std::shared_ptr<CGameTask> task, int frameInterval = 30);
+	void RunTaskEvery(std::shared_ptr<CGameTask> task, int frameInterval = 30, int frameOffset = 0);
 
 	/*
 	 * Process queued tasks at specified frame

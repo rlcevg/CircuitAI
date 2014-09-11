@@ -27,10 +27,11 @@ struct SSkirmishAICallback;
 
 namespace circuit {
 
-#define ERROR_UNKNOWN		200
-#define ERROR_INIT			(ERROR_UNKNOWN + EVENT_INIT)
-#define ERROR_RELEASE		(ERROR_UNKNOWN + EVENT_RELEASE)
-#define ERROR_UPDATE		(ERROR_UNKNOWN + EVENT_UPDATE)
+#define ERROR_UNKNOWN			200
+#define ERROR_INIT				(ERROR_UNKNOWN + EVENT_INIT)
+#define ERROR_RELEASE			(ERROR_UNKNOWN + EVENT_RELEASE)
+#define ERROR_UPDATE			(ERROR_UNKNOWN + EVENT_UPDATE)
+#define ERROR_UNIT_DESTROYED	(ERROR_UNKNOWN + EVENT_UNIT_DESTROYED)
 #define LOG(fmt, ...)	GetLog()->DoLog(utils::string_format(std::string(fmt), ##__VA_ARGS__).c_str())
 
 class CGameAttribute;
@@ -102,10 +103,10 @@ private:
 	std::shared_ptr<CScheduler> scheduler;
 	std::list<std::unique_ptr<IModule>> modules;
 
-	std::map<int, CCircuitUnit*> aliveUnits;
-	std::map<int, CCircuitUnit*> teamUnits;
-	std::map<int, CCircuitUnit*> friendlyUnits;
-	std::map<int, CCircuitUnit*> enemyUnits;
+	std::map<int, CCircuitUnit*> aliveUnits;  // owner
+	std::map<int, CCircuitUnit*> teamUnits;  // owner
+	std::map<int, CCircuitUnit*> friendlyUnits;  // owner
+	std::map<int, CCircuitUnit*> enemyUnits;  // owner
 
 	void ClusterizeMetal();
 	// debug

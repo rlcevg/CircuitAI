@@ -12,11 +12,12 @@
 #include "CircuitUnit.h"
 #include "utils.h"
 
-#include "utils.h"
 #include "Log.h"
 #include "Unit.h"
 #include "UnitDef.h"
 #include "Map.h"
+
+#include "AISCommands.h"
 
 #include <vector>
 
@@ -39,7 +40,12 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 		float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
 		float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
 		AIFloat3 fromPos(x, map->GetElevationAt(x, z), z);
-		u->Fight(fromPos, 0);
+		u->Fight(fromPos, UNIT_COMMAND_OPTION_SHIFT_KEY);
+
+		x = rand() % (int)(terWidth + 1);
+		z = rand() % (int)(terHeight + 1);
+		AIFloat3 toPos(x, map->GetElevationAt(x, z), z);
+		u->PatrolTo(toPos, UNIT_COMMAND_OPTION_SHIFT_KEY);
 	};
 	auto atackerIdleHandler = [circuit](CCircuitUnit* unit) {
 		Unit* u = unit->GetUnit();

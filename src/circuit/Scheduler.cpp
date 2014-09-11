@@ -64,9 +64,15 @@ void CScheduler::RunTaskAfter(std::shared_ptr<CGameTask> task, int frame)
 	onceTasks.push_back({task, lastFrame + frame});
 }
 
-void CScheduler::RunTaskEvery(std::shared_ptr<CGameTask> task, int frameInterval)
+void CScheduler::RunTaskEvery(std::shared_ptr<CGameTask> task, int frameInterval, int frameOffset)
 {
-	repeatTasks.push_back({task, frameInterval, lastFrame});
+	if (frameOffset > 0) {
+		RunTaskAfter(std::make_shared<CGameTask>([this, task, frameInterval]() {
+			repeatTasks.push_back({task, frameInterval, lastFrame});
+		}), frameOffset);
+	} else {
+		repeatTasks.push_back({task, frameInterval, lastFrame});
+	}
 }
 
 void CScheduler::ProcessTasks(int frame)

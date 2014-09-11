@@ -6,15 +6,22 @@
  */
 
 #include "EconomyManager.h"
+#include "EconomyTask.h"
 #include "CircuitAI.h"
 #include "GameAttribute.h"
+#include "Scheduler.h"
 #include "MetalManager.h"
 #include "CircuitUnit.h"
 #include "utils.h"
 
+#include "OOAICallback.h"
 #include "Unit.h"
 #include "UnitDef.h"
 #include "Map.h"
+#include "SkirmishAIs.h"
+
+//#include "Command.h"
+#include "AISCommands.h"
 
 namespace circuit {
 
@@ -24,8 +31,15 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		IModule(circuit),
 		totalBuildpower(.0f)
 {
+	// TODO: Use A* ai planning... or sth... STRIPS https://ru.wikipedia.org/wiki/STRIPS
+	//       https://ru.wikipedia.org/wiki/Марковский_процесс_принятия_решений
 	CGameAttribute* attrib = circuit->GetGameAttribute();
 	int unitDefId;
+
+	SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();
+	int aisCount = ais->GetSize();
+	delete ais;
+	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::Update, this), aisCount, circuit->GetSkirmishAIId());
 
 	// TODO: Group handlers
 	//       Raider:       Glaive, Bandit, Scorcher, Pyro, Panther, Scrubber, Duck
@@ -45,20 +59,55 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	 */
 	unitDefId = attrib->GetUnitDefByName("factorycloak")->GetUnitDefId();
 	createdHandler[unitDefId] = [this](CCircuitUnit* unit) {
-		this->totalBuildpower += unit->GetDef()->GetBuildSpeed();
 	};
 	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
-		CCircuitAI* circuit = this->circuit;
-		Unit* u = unit->GetUnit();
-		CGameAttribute* gameAttribute = circuit->GetGameAttribute();
-		UnitDef* def1 = gameAttribute->GetUnitDefByName("armpw");
-		UnitDef* def2 = gameAttribute->GetUnitDefByName("armrectr");
-		UnitDef* def3 = gameAttribute->GetUnitDefByName("armrock");
-		u->SetRepeat(true, 0);
-		AIFloat3 buildPos(0, 0, 0);
-		u->Build(def1, buildPos, 0, 0);
-		u->Build(def2, buildPos, 0, 0);
-		u->Build(def3, buildPos, 0, 0);
+//		CCircuitAI* circuit = this->circuit;
+//		Unit* u = unit->GetUnit();
+//		CGameAttribute* gameAttribute = circuit->GetGameAttribute();
+//		UnitDef* def1 = gameAttribute->GetUnitDefByName("armpw");
+//		UnitDef* def2 = gameAttribute->GetUnitDefByName("armrectr");
+//		UnitDef* def3 = gameAttribute->GetUnitDefByName("armrock");
+//		u->SetRepeat(true, 0);
+//		AIFloat3 buildPos(0, 0, 0);
+//		u->Build(def1, buildPos, -1, 0);
+//		u->Build(def2, buildPos, -1, 0);
+//		u->Build(def3, buildPos, -1, UNIT_COMMAND_OPTION_ALT_KEY);
+//		u->Build(def3, buildPos, -1, 0);
+//
+//		AIFloat3 pos = u->GetPos();
+//		switch (u->GetBuildingFacing()) {
+//			case UNIT_FACING_SOUTH:
+//			default:
+//				pos.z += unit->GetDef()->GetZSize() * SQUARE_SIZE;
+//				break;
+//			case UNIT_FACING_EAST:
+//				pos.x += unit->GetDef()->GetXSize() * SQUARE_SIZE;
+//				break;
+//			case UNIT_FACING_NORTH:
+//				pos.z -= unit->GetDef()->GetZSize() * SQUARE_SIZE;
+//				break;
+//			case UNIT_FACING_WEST:
+//				pos.x -= unit->GetDef()->GetXSize() * SQUARE_SIZE;
+//				break;
+//		}
+//
+//		u->MoveTo(pos, 0);
+
+		bool assigned = false;
+		for (auto& task : this->tasks) {
+			assigned = task->Execute(unit);
+			if (assigned) {
+				break;
+			}
+		}
+
+		if (!assigned) {
+//			CEconomyTask* task = new CEconomyTask(CEconomyTask::TaskType::DEFAULT);
+//			tasks.push_back(task);
+//			lazyUnits.push_back(unit);
+		}
+
+		this->totalBuildpower += unit->GetDef()->GetBuildSpeed();
 	};
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		this->totalBuildpower -= unit->GetDef()->GetBuildSpeed();
@@ -68,7 +117,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	 * comm handlers
 	 */
 	auto commCreatedHandler = [this](CCircuitUnit* unit) {
-		this->totalBuildpower += unit->GetDef()->GetBuildSpeed();
 	};
 	auto commFinishedHandler = [this](CCircuitUnit* unit) {
 		CCircuitAI* circuit = this->circuit;
@@ -83,40 +131,22 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		float terHeight = map->GetHeight() * SQUARE_SIZE;
 		if (math::fabs(terWidth - 2 * position.x) > math::fabs(terHeight - 2 * position.z)) {
 			if (2 * position.x > terWidth) {
-				facing = 3;  // facing="west"
+				facing = UNIT_FACING_WEST;
 			} else {
-				facing = 1;  // facing="east"
+				facing = UNIT_FACING_EAST;
 			}
 		} else {
 			if (2 * position.z > terHeight) {
-				facing = 2;  // facing="north"
+				facing = UNIT_FACING_NORTH;
 			} else {
-				facing = 0;  // facing="south"
+				facing = UNIT_FACING_SOUTH;
 			}
 		}
 
-//		AIFloat3 buildPos(position);
-//		float xsize = facDef->GetXSize() * SQUARE_SIZE;
-//		float zsize = facDef->GetZSize() * SQUARE_SIZE;
-//		float xsize2 = mexDef->GetXSize() * SQUARE_SIZE / 2;
-//		float zsize2 = mexDef->GetZSize() * SQUARE_SIZE / 2;
-//		float searchDiameter = std::min(xsize, zsize);
-//		printf("Xsize: %f, Zsize: %f\n", xsize, zsize);
-//		AIFloat3 offset(xsize + xsize2, 0, zsize + zsize2);
-//		std::array<AIFloat3, 4> offsets = {AIFloat3(offset.x, 0, offset.z), AIFloat3(-offset.x, 0, offset.z), AIFloat3(-offset.x, 0, -offset.z), AIFloat3(offset.x, 0, -offset.z)};
-//		for (auto& offset : offsets) {
-//			AIFloat3 probe = position + offset;
-//			AIFloat3 res = map->FindClosestBuildSite(facDef, probe, searchDiameter / 2, 4, facing);
-//			if (res != AIFloat3(-1, 0, 0)) {
-//				// if () {} Check box mex overlap
-//				buildPos = res;
-//				break;
-//			}
-//		}
-//		// if buildPos == position then terraform
-
 		AIFloat3 buildPos = this->circuit->FindBuildSiteMindMex(facDef, position, 1000.0f, facing);
 		u->Build(facDef, buildPos, facing, 0);
+
+		this->totalBuildpower += unit->GetDef()->GetBuildSpeed();
 	};
 	auto commDestroyedHandler = [this](CCircuitUnit* unit) {
 		this->totalBuildpower -= unit->GetDef()->GetBuildSpeed();
@@ -124,7 +154,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 
 	unitDefId = attrib->GetUnitDefByName("armcom1")->GetUnitDefId();
 	createdHandler[unitDefId] = commCreatedHandler;
-	finishedHandler[unitDefId] = commFinishedHandler;
+//	finishedHandler[unitDefId] = commFinishedHandler;
 	destroyedHandler[unitDefId] = commDestroyedHandler;
 	unitDefId = attrib->GetUnitDefByName("comm_trainer_support_0")->GetUnitDefId();
 	createdHandler[unitDefId] = commCreatedHandler;
@@ -156,7 +186,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	 */
 	unitDefId = attrib->GetUnitDefByName("armnanotc")->GetUnitDefId();
 	createdHandler[unitDefId] = [this](CCircuitUnit* unit) {
-		this->totalBuildpower += unit->GetDef()->GetBuildSpeed();
 	};
 	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		CCircuitAI* circuit = this->circuit;
@@ -169,6 +198,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		u->SetRepeat(true, 0);  // not necessary, maybe for later use
 		// Use u->Fight(toPos, 0) when AI is in same team as human or disable "Auto Patrol Nanos" widget
 		u->PatrolTo(toPos, 0);
+
+		this->totalBuildpower += unit->GetDef()->GetBuildSpeed();
 	};
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		this->totalBuildpower -= unit->GetDef()->GetBuildSpeed();
@@ -179,7 +210,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	 */
 	unitDefId = attrib->GetUnitDefByName("armrectr")->GetUnitDefId();
 	createdHandler[unitDefId] = [this](CCircuitUnit* unit) {
-		this->totalBuildpower += unit->GetDef()->GetBuildSpeed();
 	};
 	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		CCircuitAI* circuit = this->circuit;
@@ -187,10 +217,17 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		const CMetalManager::Metals& spots = mm.GetSpots();
 		const CMetalManager::Metal& spot = spots[rand() % spots.size()];
 		Unit* u = unit->GetUnit();
+
+		std::vector<float> params;
+		params.push_back(0.0f);
+		u->ExecuteCustomCommand(CMD_PRIORITY, params, 0, 100);
+
 		UnitDef* facDef = circuit->GetGameAttribute()->GetUnitDefByName("factorycloak");
 		AIFloat3 buildPos = circuit->FindBuildSiteMindMex(facDef, spot.position, 1000.0, -1);
-		u->Build(facDef, buildPos, -1, 0);
+		u->Build(facDef, buildPos, -1, UNIT_COMMAND_OPTION_SHIFT_KEY);
 		this->workers.insert(unit);
+
+		this->totalBuildpower += unit->GetDef()->GetBuildSpeed();
 	};
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		this->totalBuildpower -= unit->GetDef()->GetBuildSpeed();
@@ -213,6 +250,9 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 CEconomyManager::~CEconomyManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	for (auto task : tasks) {
+		delete task;
+	}
 }
 
 int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -291,6 +331,11 @@ int CEconomyManager::UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeam
 {
 	UnitDestroyed(unit, nullptr);
 	return 0; //signaling: OK
+}
+
+void CEconomyManager::Update()
+{
+
 }
 
 } // namespace circuit

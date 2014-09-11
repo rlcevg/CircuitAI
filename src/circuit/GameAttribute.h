@@ -69,7 +69,7 @@ private:
 	std::shared_ptr<CSetupManager> setupManager;
 	std::shared_ptr<CMetalManager> metalManager;
 
-	UnitDefs definitions;
+	UnitDefs definitions;  // owner
 
 	struct {
 		int i;

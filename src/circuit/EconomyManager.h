@@ -11,10 +11,13 @@
 #include "Module.h"
 
 #include <map>
+#include <list>
 #include <unordered_set>
 #include <functional>
 
 namespace circuit {
+
+class CEconomyTask;
 
 class CEconomyManager: public virtual IModule {
 public:
@@ -34,6 +37,10 @@ private:
 	Handlers destroyedHandler;
 	std::unordered_set<CCircuitUnit*> workers;  // Consider O(n) complexity of insertion in case table rebuilding. reserve/rehash?
 	float totalBuildpower;
+
+	std::list<CEconomyTask*> tasks;  // owner
+
+	void Update();
 };
 
 } // namespace circuit
