@@ -6,7 +6,7 @@
  */
 
 #include "CircuitUnit.h"
-#include "ModuleTask.h"
+#include "UnitTask.h"
 #include "utils.h"
 
 #include "Unit.h"
@@ -39,14 +39,21 @@ UnitDef* CCircuitUnit::GetDef()
 	return def;
 }
 
-void CCircuitUnit::SetTask(IModuleTask* task)
+void CCircuitUnit::SetTask(IUnitTask* task)
 {
 	this->task = task;
 }
 
-IModuleTask* CCircuitUnit::GetTask()
+IUnitTask* CCircuitUnit::GetTask()
 {
 	return task;
+}
+
+void CCircuitUnit::RemoveTask()
+{
+	if (task != nullptr) {
+		task->RemoveAssignee(this);
+	}
 }
 
 } // namespace circuit

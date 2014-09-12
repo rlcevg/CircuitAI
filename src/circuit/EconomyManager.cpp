@@ -6,22 +6,22 @@
  */
 
 #include "EconomyManager.h"
-#include "EconomyTask.h"
 #include "CircuitAI.h"
 #include "GameAttribute.h"
 #include "Scheduler.h"
 #include "MetalManager.h"
 #include "CircuitUnit.h"
+#include "BuilderTask.h"
+#include "FactoryTask.h"
 #include "utils.h"
 
+#include "AISCommands.h"
 #include "OOAICallback.h"
 #include "Unit.h"
 #include "UnitDef.h"
 #include "Map.h"
 #include "SkirmishAIs.h"
-
-//#include "Command.h"
-#include "AISCommands.h"
+#include "Resource.h"
 
 namespace circuit {
 
@@ -58,7 +58,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	 * factorycloak handlers
 	 */
 	unitDefId = attrib->GetUnitDefByName("factorycloak")->GetUnitDefId();
-	createdHandler[unitDefId] = [this](CCircuitUnit* unit) {
+	createdHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 	};
 	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 //		CCircuitAI* circuit = this->circuit;
@@ -74,49 +74,51 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 //		u->Build(def3, buildPos, -1, UNIT_COMMAND_OPTION_ALT_KEY);
 //		u->Build(def3, buildPos, -1, 0);
 //
-//		AIFloat3 pos = u->GetPos();
-//		switch (u->GetBuildingFacing()) {
-//			case UNIT_FACING_SOUTH:
-//			default:
-//				pos.z += unit->GetDef()->GetZSize() * SQUARE_SIZE;
-//				break;
-//			case UNIT_FACING_EAST:
-//				pos.x += unit->GetDef()->GetXSize() * SQUARE_SIZE;
-//				break;
-//			case UNIT_FACING_NORTH:
-//				pos.z -= unit->GetDef()->GetZSize() * SQUARE_SIZE;
-//				break;
-//			case UNIT_FACING_WEST:
-//				pos.x -= unit->GetDef()->GetXSize() * SQUARE_SIZE;
-//				break;
-//		}
-//
-//		u->MoveTo(pos, 0);
+		Unit* u = unit->GetUnit();
+		UnitDef* def = u->GetDef();
+		totalBuildpower += def->GetBuildSpeed();
 
-		bool assigned = false;
-		for (auto& task : this->tasks) {
-			assigned = task->Execute(unit);
-			if (assigned) {
+		AIFloat3 pos = u->GetPos();
+		switch (u->GetBuildingFacing()) {
+			case UNIT_FACING_SOUTH:
+			default:
+				pos.z += def->GetZSize() * SQUARE_SIZE;
 				break;
-			}
+			case UNIT_FACING_EAST:
+				pos.x += def->GetXSize() * SQUARE_SIZE;
+				break;
+			case UNIT_FACING_NORTH:
+				pos.z -= def->GetZSize() * SQUARE_SIZE;
+				break;
+			case UNIT_FACING_WEST:
+				pos.x -= def->GetXSize() * SQUARE_SIZE;
+				break;
 		}
+		u->MoveTo(pos, 0);
 
-		if (!assigned) {
-//			CEconomyTask* task = new CEconomyTask(CEconomyTask::TaskType::DEFAULT);
-//			tasks.push_back(task);
-//			lazyUnits.push_back(unit);
+		PrepareFactory(unit);
+		ExecuteFactory(unit);
+	};
+	idleHandler[unitDefId] = [this](CCircuitUnit* unit) {
+		if (unit->GetTask() == nullptr) {
+			PrepareFactory(unit);
 		}
-
-		this->totalBuildpower += unit->GetDef()->GetBuildSpeed();
+		ExecuteFactory(unit);
 	};
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		this->totalBuildpower -= unit->GetDef()->GetBuildSpeed();
+		unit->RemoveTask();
 	};
+//	commandHandler[unitDefId] = [this](CCircuitUnit* unit) {
+//		printf("commandHandler, BEGIN ProgressFactory\n");
+//		ExecuteFactory(unit);
+//		printf("commandHandler, END ProgressFactory\n");
+//	};
 
 	/*
 	 * comm handlers
 	 */
-	auto commCreatedHandler = [this](CCircuitUnit* unit) {
+	auto commCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 	};
 	auto commFinishedHandler = [this](CCircuitUnit* unit) {
 		CCircuitAI* circuit = this->circuit;
@@ -185,7 +187,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	 * armnanotc handlers
 	 */
 	unitDefId = attrib->GetUnitDefByName("armnanotc")->GetUnitDefId();
-	createdHandler[unitDefId] = [this](CCircuitUnit* unit) {
+	createdHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 	};
 	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		CCircuitAI* circuit = this->circuit;
@@ -209,9 +211,27 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	 * armrectr handlers
 	 */
 	unitDefId = attrib->GetUnitDefByName("armrectr")->GetUnitDefId();
-	createdHandler[unitDefId] = [this](CCircuitUnit* unit) {
+	createdHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
+		InformUnfinished(unit, builder);
+//		if (builder != nullptr) {
+//			CFactoryTask* task = static_cast<CFactoryTask*>(builder->GetTask());
+//			if (task != nullptr) {
+//				UnitDef* def = unit->GetDef();
+//				Resource* res = this->circuit->GetCallback()->GetResourceByName("Metal");
+//				float m = def->GetCost(res);
+//				printf("Progress Step, %f\n", task->GetMetalToSpend());
+//				if (task->ProgressStep(m)) {
+//					factoryTasks.remove(task);
+//					delete task;
+//					printf("Removed Task! Size: %i\n", factoryTasks.size());
+//				}
+//				delete res;
+//			}
+//		}
 	};
 	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
+		InformFinished(unit);
+
 		CCircuitAI* circuit = this->circuit;
 		CMetalManager& mm = circuit->GetGameAttribute()->GetMetalManager();
 		const CMetalManager::Metals& spots = mm.GetSpots();
@@ -223,13 +243,15 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		u->ExecuteCustomCommand(CMD_PRIORITY, params, 0, 100);
 
 		UnitDef* facDef = circuit->GetGameAttribute()->GetUnitDefByName("factorycloak");
-		AIFloat3 buildPos = circuit->FindBuildSiteMindMex(facDef, spot.position, 1000.0, -1);
-		u->Build(facDef, buildPos, -1, UNIT_COMMAND_OPTION_SHIFT_KEY);
+		AIFloat3 buildPos = circuit->FindBuildSiteMindMex(facDef, spot.position, 1000.0f, UNIT_COMMAND_BUILD_NO_FACING);
+		u->Build(facDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
 		this->workers.insert(unit);
 
 		this->totalBuildpower += unit->GetDef()->GetBuildSpeed();
 	};
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit) {
+		InformDestroyed(unit);
+
 		this->totalBuildpower -= unit->GetDef()->GetBuildSpeed();
 		workers.erase(unit);
 	};
@@ -250,7 +272,10 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 CEconomyManager::~CEconomyManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	for (auto task : tasks) {
+	for (auto task : factoryTasks) {
+		delete task;
+	}
+	for (auto task : builderTasks) {
 		delete task;
 	}
 }
@@ -264,7 +289,7 @@ int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 
 	auto search = createdHandler.find(unit->GetDef()->GetUnitDefId());
 	if (search != createdHandler.end()) {
-		search->second(unit);
+		search->second(unit, builder);
 	}
 
 	// check for assisters
@@ -301,6 +326,17 @@ int CEconomyManager::UnitFinished(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
+int CEconomyManager::UnitIdle(CCircuitUnit* unit)
+{
+	UnitDef* def = unit->GetDef();
+	auto search = idleHandler.find(def->GetUnitDefId());
+	if (search != idleHandler.end()) {
+		search->second(unit);
+	}
+
+	return 0; //signaling: OK
+}
+
 int CEconomyManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
 	UnitDef* def = unit->GetDef();
@@ -333,9 +369,112 @@ int CEconomyManager::UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeam
 	return 0; //signaling: OK
 }
 
+int CEconomyManager::CommandFinished(CCircuitUnit* unit, int commandTopicId)
+{
+	UnitDef* def = unit->GetDef();
+	auto search = commandHandler.find(def->GetUnitDefId());
+	if (search != commandHandler.end()) {
+		search->second(unit);
+	}
+
+	return 0; //signaling: OK
+}
+
+void CEconomyManager::InformUnfinished(CCircuitUnit* unit, CCircuitUnit* builder)
+{
+	if (unit->GetUnit()->IsBeingBuilt() && builder != nullptr) {
+		IConstructTask* task = static_cast<IConstructTask*>(builder->GetTask());
+		if (task != nullptr) {
+			unfinished[unit] = task;
+		}
+	}
+}
+
+void CEconomyManager::InformFinished(CCircuitUnit* unit)
+{
+	auto search = unfinished.find(unit);
+	if (search == unfinished.end()) {
+		return;
+	}
+
+	UnitDef* def = unit->GetDef();
+	Resource* res = this->circuit->GetCallback()->GetResourceByName("Metal");
+	float m = def->GetCost(res);
+	IConstructTask* task = search->second;
+	if (task->CompleteProgress(m)) {
+		delete task;
+		printf("Removed Task! Size: %i\n", factoryTasks.size());
+	}
+	delete res;
+
+	unfinished.erase(search);
+}
+
+void CEconomyManager::InformDestroyed(CCircuitUnit* unit)
+{
+	if (unit->GetUnit()->IsBeingBuilt()) {
+		unfinished.erase(unit);
+	}
+}
+
 void CEconomyManager::Update()
 {
 
+}
+
+void CEconomyManager::PrepareFactory(CCircuitUnit* unit)
+{
+	Unit* u = unit->GetUnit();
+	UnitDef* def = unit->GetDef();
+
+	CFactoryTask* task = nullptr;
+	decltype(factoryTasks)::iterator iter = factoryTasks.begin();
+	for (; iter != factoryTasks.end(); ++iter) {
+		if ((*iter)->CanAssignTo(unit)) {
+			task = static_cast<CFactoryTask*>(*iter);
+			printf("Found ready to go Task!! \n");
+			break;
+		}
+	}
+
+	if (task == nullptr) {
+		AIFloat3 buildPos = u->GetPos();
+//			float radius = u->GetMaxSpeed() * FRAMES_PER_SEC * 10;
+		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
+		task = new CFactoryTask(CFactoryTask::Priority::LOW, 1, buildPos, radius, 1.0f, CFactoryTask::TaskType::DEFAULT, &factoryTasks);
+		factoryTasks.push_back(task);
+		printf("Created new Task!! \n");
+	}
+
+	task->AssignTo(unit);
+	if (task->IsFull()) {
+		factoryTasks.splice(factoryTasks.end(), factoryTasks, iter);  // move task to back
+	}
+}
+
+void CEconomyManager::ExecuteFactory(CCircuitUnit* unit)
+{
+	CFactoryTask* task = static_cast<CFactoryTask*>(unit->GetTask());
+	if (task == nullptr) {
+		return;
+	}
+
+	Unit* u = unit->GetUnit();
+	AIFloat3 buildPos = u->GetPos();
+
+	printf("Progressing through Task 2!\n");
+	switch (task->GetType()) {
+		default:
+		case CFactoryTask::TaskType::BUILDPOWER: {
+			UnitDef* buildDef = this->circuit->GetGameAttribute()->GetUnitDefByName("armrectr");
+			u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING);
+			break;
+		}
+		case CFactoryTask::TaskType::FIREPOWER: {
+
+			break;
+		}
+	}
 }
 
 } // namespace circuit

@@ -57,6 +57,7 @@ public:
 	int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 	int UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId);  // TODO: Use Team class?
 	int UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId);  // TODO: Use Team class?
+	int CommandFinished(CCircuitUnit* unit, int commandTopicId);
 	int LuaMessage(const char* inData);
 
 	CCircuitUnit* GetUnitById(int unitId);

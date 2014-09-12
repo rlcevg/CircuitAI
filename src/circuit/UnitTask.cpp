@@ -7,18 +7,44 @@
 
 #include "UnitTask.h"
 #include "CircuitUnit.h"
-#include "utils.h"
 
 namespace circuit {
 
-CUnitTask::CUnitTask() :
-		unit(nullptr)
+IUnitTask::IUnitTask(Priority priority, int difficulty) :
+		priority(priority),
+		difficulty(difficulty)
 {
 }
 
-CUnitTask::~CUnitTask()
+IUnitTask::~IUnitTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+}
+
+void IUnitTask::AssignTo(CCircuitUnit* unit)
+{
+	difficulty--;
+	unit->SetTask(this);
+	units.insert(unit);
+}
+
+void IUnitTask::RemoveAssignee(CCircuitUnit* unit)
+{
+	units.erase(unit);
+	unit->SetTask(nullptr);
+	difficulty++;
+}
+
+void IUnitTask::MarkCompleted()
+{
+	for (auto& unit : units) {
+		unit->SetTask(nullptr);
+	}
+	units.clear();
+}
+
+bool IUnitTask::IsFull()
+{
+	return difficulty <= 0;
 }
 
 } // namespace circuit

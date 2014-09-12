@@ -10,30 +10,30 @@
 
 #include "AIFloat3.h"
 
+#include <unordered_set>
+
 namespace circuit {
 
 class CCircuitUnit;
 
-class CUnitTask {
+class IUnitTask {
 public:
-	enum class TaskType: char {BUILD = 0, DEFEND, ATTACK, TERRAFORM};
+	enum class Priority: char {LOW = 0, NORMAL, HIGH};
 
 public:
-	CUnitTask();
-	virtual ~CUnitTask();
+	IUnitTask(Priority priority, int difficulty);
+	virtual ~IUnitTask();
 
-private:
-	CCircuitUnit* unit;
+	virtual bool CanAssignTo(CCircuitUnit* unit) = 0;
+	void AssignTo(CCircuitUnit* unit);
+	void RemoveAssignee(CCircuitUnit* unit);
+	void MarkCompleted();
+	bool IsFull();
 
-	/*
-	 * task attributes
-	 */
-	TaskType type;
-	springai::AIFloat3 posFrom;
-	springai::AIFloat3 posTo;
-	float radius;
-	int duration;  // in frames
-	CCircuitUnit* enemy;
+protected:
+	std::unordered_set<CCircuitUnit*> units;
+	Priority priority;
+	int difficulty;  // Number of units to accomplish task
 };
 
 } // namespace circuit

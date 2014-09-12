@@ -23,7 +23,8 @@ namespace utils {
 	#define PRINT_DEBUG(fmt, ...)
 #endif
 
-#define SQUARE_SIZE		8
+#define SQUARE_SIZE			8
+#define FRAMES_PER_SEC		30
 // z++
 #define UNIT_FACING_SOUTH	0
 // x++

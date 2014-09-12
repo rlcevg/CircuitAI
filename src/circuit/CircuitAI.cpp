@@ -31,6 +31,8 @@
 #include "GameRulesParam.h"
 #include "SkirmishAI.h"
 #include "WrappUnit.h"
+//#include "Command.h"
+//#include "WrappCurrentCommand.h"
 //#include "Cheats.h"
 
 #include <algorithm>
@@ -215,6 +217,12 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 		case EVENT_COMMAND_FINISHED: {
 			PRINT_TOPIC("EVENT_COMMAND_FINISHED", topic);
 			struct SCommandFinishedEvent* evt = (struct SCommandFinishedEvent*)data;
+			printf("commandId: %i, commandTopicId: %i, unitId: %i\n", evt->commandId, evt->commandTopicId, evt->unitId);
+			CCircuitUnit* unit = GetUnitById(evt->unitId);
+			this->CommandFinished(unit, evt->commandTopicId);
+//			springai::Command* command = WrappCurrentCommand::GetInstance(skirmishAIId, evt->unitId, evt->commandId);
+//			this->CommandFinished(evt->commandId, evt->commandTopicId, unit);
+//			delete command;
 			ret = 0;
 			break;
 		}
@@ -433,6 +441,15 @@ int CCircuitAI::UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 	return 0;  // signaling: OK
 }
 
+int CCircuitAI::CommandFinished(CCircuitUnit* unit, int commandTopicId)
+{
+	for (auto& module : modules) {
+		module->CommandFinished(unit, commandTopicId);
+	}
+
+	return 0;  // signaling: OK
+}
+
 int CCircuitAI::LuaMessage(const char* inData)
 {
 //	if (strncmp(inData, "METAL_SPOTS:", 12) == 0) {
@@ -458,7 +475,7 @@ CCircuitUnit* CCircuitAI::RegisterUnit(int unitId)
 		return u;
 	}
 
-	springai::Unit* unit = springai::WrappUnit::GetInstance(skirmishAIId, unitId);
+	springai::Unit* unit = WrappUnit::GetInstance(skirmishAIId, unitId);
 	UnitDef* unitDef = unit->GetDef();
 	u = new CCircuitUnit(unit, gameAttribute->GetUnitDefByName(unitDef->GetName()));
 	delete unitDef;
@@ -619,6 +636,7 @@ AIFloat3 CCircuitAI::FindBuildSiteMindMex(UnitDef* unitDef, const AIFloat3& pos,
 	}
 	// HAX:  Use building as spacer because we don't have access to groundBlockingObjectMap.
 	// TODO: Or maybe we can create own BlockingObjectMap as there is access to friendly units, features, map slopes.
+	// TODO: Mind the queued buildings
 //	UnitDef* spacer4 = gameAttribute->GetUnitDefByName("striderhub");  // striderhub's size = 8 but can't recognize smooth hills
 	UnitDef* spacer4 = gameAttribute->GetUnitDefByName("armmstor");  // armmstor size = 6, thus we add diff (2) to pos when testing
 	// spacer4->GetXSize() and spacer4->GetZSize() should be equal 6

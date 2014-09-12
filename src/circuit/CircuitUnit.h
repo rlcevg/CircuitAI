@@ -17,7 +17,7 @@ namespace circuit {
 
 #define CMD_PRIORITY	34220
 
-class IModuleTask;
+class IUnitTask;
 
 class CCircuitUnit {
 public:
@@ -26,13 +26,14 @@ public:
 
 	springai::Unit* GetUnit();
 	springai::UnitDef* GetDef();
-	void SetTask(IModuleTask* task);
-	IModuleTask* GetTask();
+	void SetTask(IUnitTask* task);
+	IUnitTask* GetTask();
+	void RemoveTask();
 
 private:
 	springai::Unit* unit;  // owner
 	springai::UnitDef* def;
-	IModuleTask* task;
+	IUnitTask* task;
 };
 
 } // namespace circuit
