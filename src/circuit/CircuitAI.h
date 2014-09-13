@@ -64,6 +64,8 @@ public:
 	CCircuitUnit* GetUnitById(int unitId);
 	CCircuitUnit* RegisterUnit(int unitId);
 	void UnregisterUnit(int unitId);
+	CCircuitUnit* GetCommander();
+	springai::AIFloat3 FindBuildSiteMindMex(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
 
 	CGameAttribute* GetGameAttribute();
 	CScheduler* GetScheduler();
@@ -79,9 +81,12 @@ public:
 	springai::Drawer*       GetDrawer();
 	springai::SkirmishAI*   GetSkirmishAI();
 
-	springai::AIFloat3 FindBuildSiteMindMex(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
-
 private:
+	void ClusterizeMetal();
+	// debug
+	void DrawClusters();
+	void FindCommander();
+
 	bool initialized;
 	int lastFrame;
 	int skirmishAIId;
@@ -98,21 +103,20 @@ private:
 
 	static std::unique_ptr<CGameAttribute> gameAttribute;
 	static unsigned int gaCounter;
-
 	static void CreateGameAttribute();
 	static void DestroyGameAttribute();
-
 	std::shared_ptr<CScheduler> scheduler;
 	std::list<std::unique_ptr<IModule>> modules;
 
 	std::map<int, CCircuitUnit*> aliveUnits;  // owner
 	std::map<int, CCircuitUnit*> teamUnits;  // owner
+
+	// TODO: Use or delete
 	std::map<int, CCircuitUnit*> friendlyUnits;  // owner
+	// TODO: Use or delete
 	std::map<int, CCircuitUnit*> enemyUnits;  // owner
 
-	void ClusterizeMetal();
-	// debug
-	void DrawClusters();
+	int commanderId;
 };
 
 } // namespace circuit

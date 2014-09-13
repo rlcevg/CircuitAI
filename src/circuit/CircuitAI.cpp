@@ -48,7 +48,6 @@ using namespace springai;
 #else
 	#define PRINT_TOPIC(txt, topic)
 #endif
-#define DURATION_1_MIN	(30 * 60)
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;
@@ -67,6 +66,8 @@ CCircuitAI::CCircuitAI(OOAICallback* callback) :
 {
 	teamId = skirmishAI->GetTeamId();
 	allyTeamId = game->GetMyAllyTeam();
+
+	commanderId = -1;
 }
 
 CCircuitAI::~CCircuitAI()
@@ -300,7 +301,7 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 			float distance = gameAttribute->GetUnitDefByName("corrl")->GetMaxWeaponRange();
 			gameAttribute->ClusterizeMetalFirst(scheduler, distance * 2, pathType, GetPathing());
 
-			scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CCircuitAI::ClusterizeMetal, this), DURATION_1_MIN);
+			scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CCircuitAI::ClusterizeMetal, this), FRAMES_PER_SEC * 60);
 		}
 		if (canChooseStartPos) {
 			// Parallel task is only to ensure its execution after CMetalManager::Clusterize
@@ -314,6 +315,8 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 
 	modules.push_back(std::unique_ptr<CEconomyManager>(new CEconomyManager(this)));
 	modules.push_back(std::unique_ptr<CMilitaryManager>(new CMilitaryManager(this)));
+
+	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CCircuitAI::FindCommander, this), 0);
 
 //	Cheats* cheats = callback->GetCheats();
 //	cheats->SetEnabled(true);
@@ -483,6 +486,7 @@ CCircuitUnit* CCircuitAI::RegisterUnit(int unitId)
 
 	springai::Unit* unit = WrappUnit::GetInstance(skirmishAIId, unitId);
 	UnitDef* unitDef = unit->GetDef();
+	// TODO: Use GetUnitDefById ?
 	u = new CCircuitUnit(unit, gameAttribute->GetUnitDefByName(unitDef->GetName()));
 	delete unitDef;
 	aliveUnits[unitId] = u;
@@ -520,69 +524,9 @@ void CCircuitAI::UnregisterUnit(int unitId)
 	delete u;
 }
 
-CGameAttribute* CCircuitAI::GetGameAttribute()
+CCircuitUnit* CCircuitAI::GetCommander()
 {
-	return gameAttribute.get();
-}
-
-CScheduler* CCircuitAI::GetScheduler()
-{
-	return scheduler.get();
-}
-
-int CCircuitAI::GetLastFrame()
-{
-	return lastFrame;
-}
-
-int CCircuitAI::GetSkirmishAIId()
-{
-	return skirmishAIId;
-}
-
-int CCircuitAI::GetTeamId()
-{
-	return teamId;
-}
-
-int CCircuitAI::GetAllyTeamId()
-{
-	return allyTeamId;
-}
-
-OOAICallback* CCircuitAI::GetCallback()
-{
-	return callback;
-}
-
-Log* CCircuitAI::GetLog()
-{
-	return log.get();
-}
-
-Game* CCircuitAI::GetGame()
-{
-	return game.get();
-}
-
-Map* CCircuitAI::GetMap()
-{
-	return map.get();
-}
-
-Pathing* CCircuitAI::GetPathing()
-{
-	return pathing.get();
-}
-
-Drawer* CCircuitAI::GetDrawer()
-{
-	return drawer.get();
-}
-
-SkirmishAI* CCircuitAI::GetSkirmishAI()
-{
-	return skirmishAI.get();
+	return GetUnitById(commanderId);
 }
 
 /*
@@ -742,25 +686,69 @@ AIFloat3 CCircuitAI::FindBuildSiteMindMex(UnitDef* unitDef, const AIFloat3& pos,
 	return -RgtVector;
 }
 
-void CCircuitAI::CreateGameAttribute()
+CGameAttribute* CCircuitAI::GetGameAttribute()
 {
-	if (gameAttribute == nullptr) {
-		gameAttribute = std::unique_ptr<CGameAttribute>(new CGameAttribute());
-	}
-	gaCounter++;
+	return gameAttribute.get();
 }
 
-void CCircuitAI::DestroyGameAttribute()
+CScheduler* CCircuitAI::GetScheduler()
 {
-	if (gaCounter <= 1) {
-		if (gameAttribute != nullptr) {
-			gameAttribute = nullptr;
-			// deletes singleton here;
-		}
-		gaCounter = 0;
-	} else {
-		gaCounter--;
-	}
+	return scheduler.get();
+}
+
+int CCircuitAI::GetLastFrame()
+{
+	return lastFrame;
+}
+
+int CCircuitAI::GetSkirmishAIId()
+{
+	return skirmishAIId;
+}
+
+int CCircuitAI::GetTeamId()
+{
+	return teamId;
+}
+
+int CCircuitAI::GetAllyTeamId()
+{
+	return allyTeamId;
+}
+
+OOAICallback* CCircuitAI::GetCallback()
+{
+	return callback;
+}
+
+Log* CCircuitAI::GetLog()
+{
+	return log.get();
+}
+
+Game* CCircuitAI::GetGame()
+{
+	return game.get();
+}
+
+Map* CCircuitAI::GetMap()
+{
+	return map.get();
+}
+
+Pathing* CCircuitAI::GetPathing()
+{
+	return pathing.get();
+}
+
+Drawer* CCircuitAI::GetDrawer()
+{
+	return drawer.get();
+}
+
+SkirmishAI* CCircuitAI::GetSkirmishAI()
+{
+	return skirmishAI.get();
 }
 
 void CCircuitAI::ClusterizeMetal()
@@ -781,6 +769,42 @@ void CCircuitAI::DrawClusters()
 {
 	gameAttribute->GetMetalManager().DrawConvexHulls(GetDrawer());
 //	gameAttribute->GetMetalManager().DrawCentroids(GetDrawer());
+}
+
+void CCircuitAI::FindCommander()
+{
+	std::vector<Unit*> units = callback->GetTeamUnits();
+	for (auto unit : units) {
+		UnitDef* def = unit->GetDef();
+		const char* name = def->GetName();
+		delete def;
+		if (std::string("armcom1") == name || std::string("comm_trainer_support_0") == name) {
+			commanderId = unit->GetUnitId();
+			break;
+		}
+	}
+	utils::FreeClear(units);
+}
+
+void CCircuitAI::CreateGameAttribute()
+{
+	if (gameAttribute == nullptr) {
+		gameAttribute = std::unique_ptr<CGameAttribute>(new CGameAttribute());
+	}
+	gaCounter++;
+}
+
+void CCircuitAI::DestroyGameAttribute()
+{
+	if (gaCounter <= 1) {
+		if (gameAttribute != nullptr) {
+			gameAttribute = nullptr;
+			// deletes singleton here;
+		}
+		gaCounter = 0;
+	} else {
+		gaCounter--;
+	}
 }
 
 } // namespace circuit

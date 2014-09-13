@@ -16,16 +16,20 @@ namespace circuit {
 
 class IConstructTask: public IUnitTask {
 public:
-	IConstructTask(Priority priority, int quantity, springai::AIFloat3& position, std::list<IConstructTask*>& owner);
-	virtual ~IConstructTask();
-
-	void Progress();
-	void Regress();
-	bool IsDone();
-	void MarkCompleted();
+	enum class ConstructType: char {BUILDER = 0, FACTORY};
 
 public:
-	int quantity;
+	IConstructTask(Priority priority,
+			springai::AIFloat3& position, std::list<IConstructTask*>& owner, ConstructType conType);
+	virtual ~IConstructTask();
+
+	void MarkCompleted();
+
+	ConstructType GetConstructType();
+	springai::AIFloat3& GetPos();
+
+protected:
+	ConstructType conType;
 	springai::AIFloat3 position;
 	std::list<IConstructTask*>* owner;
 };

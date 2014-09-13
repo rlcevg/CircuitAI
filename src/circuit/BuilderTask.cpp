@@ -15,10 +15,15 @@ namespace circuit {
 
 using namespace springai;
 
-CBuilderTask::CBuilderTask(Priority priority, int quantity, springai::AIFloat3& position, std::list<IConstructTask*>& owner, TaskType type, float time) :
-		IConstructTask(priority, quantity, position, owner),
-		type(type),
-		time(time)
+CBuilderTask::CBuilderTask(Priority priority,
+		AIFloat3& position, std::list<IConstructTask*>& owner,
+		TaskType type, int duration) :
+				IConstructTask(priority, position, owner, ConstructType::BUILDER),
+				type(type),
+				duration(duration),
+				quantity(1),
+				target(nullptr),
+				buildPos(-RgtVector)
 {
 }
 
@@ -29,10 +34,19 @@ CBuilderTask::~CBuilderTask()
 
 bool CBuilderTask::CanAssignTo(CCircuitUnit* unit)
 {
-	Unit* u = unit->GetUnit();
-	AIFloat3 pos = u->GetPos();
-	float speed = u->GetMaxSpeed();
-	return IsDistanceOk(pos, speed);
+	return true;
+}
+
+void CBuilderTask::AssignTo(CCircuitUnit* unit)
+{
+	IUnitTask::AssignTo(unit);
+	quantity++;
+}
+
+void CBuilderTask::RemoveAssignee(CCircuitUnit* unit)
+{
+	IUnitTask::RemoveAssignee(unit);
+	quantity--;
 }
 
 CBuilderTask::TaskType CBuilderTask::GetType()
@@ -40,12 +54,34 @@ CBuilderTask::TaskType CBuilderTask::GetType()
 	return type;
 }
 
-bool CBuilderTask::IsDistanceOk(AIFloat3& pos, float speed)
+int CBuilderTask::GetQuantity()
 {
-	float dx = pos.x - position.x;
-	float dz = pos.z - position.z;
-	float distance = math::sqrt(dx * dx + dz * dz);
-	return distance / (speed * FRAMES_PER_SEC) <= time;
+	return quantity;
+}
+
+int CBuilderTask::GetDuration()
+{
+	return duration;
+}
+
+void CBuilderTask::SetBuildPos(AIFloat3& pos)
+{
+	buildPos = pos;
+}
+
+AIFloat3& CBuilderTask::GetBuildPos()
+{
+	return buildPos;
+}
+
+void CBuilderTask::SetTarget(CCircuitUnit* unit)
+{
+	target = unit;
+}
+
+CCircuitUnit* CBuilderTask::GetTarget()
+{
+	return target;
 }
 
 } // namespace circuit

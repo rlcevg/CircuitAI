@@ -10,8 +10,10 @@
 
 #include "Module.h"
 
+#include "AIFloat3.h"
 #include <map>
 #include <list>
+#include <vector>
 #include <unordered_set>
 #include <functional>
 
@@ -37,6 +39,7 @@ public:
 
 private:
 	void Update();
+	void WorkerWatchdog();
 	CCircuitUnit* FindUnitToAssist(CCircuitUnit* unit);
 	void PrepareFactory(CCircuitUnit* unit);
 	void ExecuteFactory(CCircuitUnit* unit);
@@ -55,8 +58,21 @@ private:
 	std::list<IConstructTask*> builderTasks;  // owner
 	std::list<IConstructTask*> factoryTasks;  // owner
 
-	// TODO: Use or delete
-	std::unordered_set<CCircuitUnit*> workers;  // Consider O(n) complexity of insertion in case table rebuilding. reserve/rehash?
+	struct WorkerInfo {
+		CCircuitUnit* unit;
+		springai::AIFloat3 pos;
+		float qspeed;
+	};
+	std::unordered_set<CCircuitUnit*> workers;
+	int cachedFrame;
+	using WorkerTaskRelation = std::vector<std::vector<WorkerInfo*>>;
+	WorkerTaskRelation wtRelation;
+	WorkerTaskRelation& GetWorkerTaskRelations(CCircuitUnit* unit, WorkerInfo*& retInfo);
+
+	struct BuilderInfo {
+		int startFrame;
+	};
+	std::map<CCircuitUnit*, BuilderInfo> builderInfo;
 };
 
 } // namespace circuit

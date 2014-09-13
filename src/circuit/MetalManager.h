@@ -67,7 +67,7 @@ private:
 	// Because map coordinates are big enough we can use only integer part.
 	// @see https://github.com/Warzone2100/warzone2100/blob/master/src/pointtree.cpp
 	using point = bg::model::point<float, 2, bg::cs::cartesian>;
-	using box = bg::model::box<CMetalManager::point>;
+	using box = bg::model::box<point>;
 	using MetalNode = std::pair<point, unsigned>;  // spots indexer
 	// TODO: Find out more about bgi::rtree, bgi::linear, bgi::quadratic, bgi::rstar, packing algorithm?
 	using MetalTree = bgi::rtree<MetalNode, bgi::rstar<16, 4>>;

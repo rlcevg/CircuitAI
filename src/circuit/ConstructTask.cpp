@@ -12,11 +12,12 @@ namespace circuit {
 
 using namespace springai;
 
-IConstructTask::IConstructTask(Priority priority, int quantity, AIFloat3& position, std::list<IConstructTask*>& owner) :
-		IUnitTask(priority),
-		quantity(quantity),
-		position(position),
-		owner(&owner)
+IConstructTask::IConstructTask(Priority priority,
+		AIFloat3& position, std::list<IConstructTask*>& owner, ConstructType conType) :
+				IUnitTask(priority),
+				position(position),
+				owner(&owner),
+				conType(conType)
 {
 	owner.push_front(this);
 }
@@ -25,25 +26,20 @@ IConstructTask::~IConstructTask()
 {
 }
 
-void IConstructTask::Progress()
-{
-	quantity--;
-}
-
-void IConstructTask::Regress()
-{
-	quantity++;
-}
-
-bool IConstructTask::IsDone()
-{
-	return quantity <= 0;
-}
-
 void IConstructTask::MarkCompleted()
 {
 	IUnitTask::MarkCompleted();
 	owner->remove(this);
+}
+
+IConstructTask::ConstructType IConstructTask::GetConstructType()
+{
+	return conType;
+}
+
+AIFloat3& IConstructTask::GetPos()
+{
+	return position;
 }
 
 } // namespace circuit
