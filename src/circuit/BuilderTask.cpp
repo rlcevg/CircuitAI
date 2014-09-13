@@ -15,11 +15,10 @@ namespace circuit {
 
 using namespace springai;
 
-CBuilderTask::CBuilderTask(Priority priority, int difficulty, TaskType type, springai::AIFloat3& position, float radius) :
-		IUnitTask(priority, difficulty),
+CBuilderTask::CBuilderTask(Priority priority, int quantity, springai::AIFloat3& position, std::list<IConstructTask*>& owner, TaskType type, float time) :
+		IConstructTask(priority, quantity, position, owner),
 		type(type),
-		position(position),
-		sqradius(radius * radius)
+		time(time)
 {
 }
 
@@ -28,27 +27,12 @@ CBuilderTask::~CBuilderTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-bool CBuilderTask::AssignTo(CCircuitUnit* unit)
+bool CBuilderTask::CanAssignTo(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();
 	AIFloat3 pos = u->GetPos();
-	if (!IsDistanceOk(pos)) {
-		return false;
-	}
-
-	difficulty--;
-	unit->SetTask(this);
-	units.insert(unit);
-
-	return true;
-}
-
-void CBuilderTask::MarkCompleted()
-{
-	for (auto& unit : units) {
-		unit->SetTask(nullptr);
-	}
-	units.clear();
+	float speed = u->GetMaxSpeed();
+	return IsDistanceOk(pos, speed);
 }
 
 CBuilderTask::TaskType CBuilderTask::GetType()
@@ -56,12 +40,12 @@ CBuilderTask::TaskType CBuilderTask::GetType()
 	return type;
 }
 
-bool CBuilderTask::IsDistanceOk(AIFloat3& pos)
+bool CBuilderTask::IsDistanceOk(AIFloat3& pos, float speed)
 {
 	float dx = pos.x - position.x;
 	float dz = pos.z - position.z;
-	float sqdistance = dx * dx + dz * dz;
-	return sqdistance <= sqradius;
+	float distance = math::sqrt(dx * dx + dz * dz);
+	return distance / (speed * FRAMES_PER_SEC) <= time;
 }
 
 } // namespace circuit

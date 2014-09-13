@@ -6,56 +6,44 @@
  */
 
 #include "ConstructTask.h"
-#include "CircuitUnit.h"
-
-#include "Unit.h"
+#include "utils.h"
 
 namespace circuit {
 
 using namespace springai;
 
-IConstructTask::IConstructTask(Priority priority, int difficulty, AIFloat3& position, float radius, float metal, std::list<IConstructTask*>* owner) :
-		IUnitTask(priority, difficulty),
+IConstructTask::IConstructTask(Priority priority, int quantity, AIFloat3& position, std::list<IConstructTask*>& owner) :
+		IUnitTask(priority),
+		quantity(quantity),
 		position(position),
-		sqradius(radius * radius),
-		metalToSpend(metal),
-		owner(owner)
+		owner(&owner)
 {
+	owner.push_front(this);
 }
 
 IConstructTask::~IConstructTask()
 {
 }
 
-bool IConstructTask::CanAssignTo(CCircuitUnit* unit)
+void IConstructTask::Progress()
 {
-	Unit* u = unit->GetUnit();
-	AIFloat3 pos = u->GetPos();
-	return IsDistanceOk(pos);
+	quantity--;
 }
 
-bool IConstructTask::CompleteProgress(float metalStep)
+void IConstructTask::Regress()
 {
-	metalToSpend -= metalStep;
-	if (metalToSpend <= 0.0f) {
-		MarkCompleted();
-		owner->remove(this);
-		return true;
-	}
-	return false;
+	quantity++;
 }
 
-float IConstructTask::GetMetalToSpend()
+bool IConstructTask::IsDone()
 {
-	return metalToSpend;
+	return quantity <= 0;
 }
 
-bool IConstructTask::IsDistanceOk(AIFloat3& pos)
+void IConstructTask::MarkCompleted()
 {
-	float dx = pos.x - position.x;
-	float dz = pos.z - position.z;
-	float sqdistance = dx * dx + dz * dz;
-	return sqdistance <= sqradius;
+	IUnitTask::MarkCompleted();
+	owner->remove(this);
 }
 
 } // namespace circuit

@@ -32,12 +32,8 @@ class CRagMatrix;
 class CMetalManager {
 public:
 	using Metal = struct Metal {
-		using value_type = float;
 		float income;
 		springai::AIFloat3 position;
-		inline value_type operator[](int const N) const {
-			return (N == 0) ? position.x : position.z;
-		}
 	};
 	using Metals = std::vector<Metal>;
 
@@ -49,6 +45,7 @@ public:
 	bool IsClusterizing();
 	void SetClusterizing(bool value);
 	const Metal FindNearestSpot(springai::AIFloat3& pos) const;
+	const Metals FindNearestSpots(springai::AIFloat3& pos, int num) const;
 	const Metals FindWithinDistanceSpots(springai::AIFloat3& pos, float maxDistance) const;
 	const Metals FindWithinRangeSpots(springai::AIFloat3& posFrom, springai::AIFloat3& posTo) const;
 	const Metals& GetSpots() const;
@@ -72,8 +69,8 @@ private:
 	using point = bg::model::point<float, 2, bg::cs::cartesian>;
 	using box = bg::model::box<CMetalManager::point>;
 	using MetalNode = std::pair<point, unsigned>;  // spots indexer
-	// TODO: Find out more about bgi::rtree, bgi::linear, bgi::quadratic, bgi::rstar
-	using MetalTree = bgi::rtree<MetalNode, bgi::quadratic<16>>;
+	// TODO: Find out more about bgi::rtree, bgi::linear, bgi::quadratic, bgi::rstar, packing algorithm?
+	using MetalTree = bgi::rtree<MetalNode, bgi::rstar<16, 4>>;
 	MetalTree metalTree;
 	Metals spots;
 

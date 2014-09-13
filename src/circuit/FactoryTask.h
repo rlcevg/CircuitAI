@@ -17,13 +17,17 @@ public:
 	enum class TaskType: char {BUILDPOWER = 0, FIREPOWER, AA, CLOAK, DEFAULT = BUILDPOWER};
 
 public:
-	CFactoryTask(Priority priority, int difficulty, springai::AIFloat3& position, float radius, float metal, TaskType type, std::list<IConstructTask*>* owner);
+	CFactoryTask(Priority priority, int quantity, springai::AIFloat3& position, std::list<IConstructTask*>& owner, TaskType type, float radius);
 	virtual ~CFactoryTask();
 
+	virtual bool CanAssignTo(CCircuitUnit* unit);
 	TaskType GetType();
 
 private:
+	bool IsDistanceOk(springai::AIFloat3& pos);
+
 	TaskType type;
+	float sqradius;
 };
 
 } // namespace circuit

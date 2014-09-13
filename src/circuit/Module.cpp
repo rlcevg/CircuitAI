@@ -48,9 +48,4 @@ int IModule::UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 	return 0; //signaling: OK
 }
 
-int IModule::CommandFinished(CCircuitUnit* unit, int commandTopicId)
-{
-	return 0; //signaling: OK
-}
-
 } // namespace circuit

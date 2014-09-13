@@ -125,14 +125,18 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 			break;
 		}
 		case EVENT_UNIT_IDLE: {
-			PRINT_TOPIC("EVENT_UNIT_IDLE", topic);
+//			PRINT_TOPIC("EVENT_UNIT_IDLE", topic);
 			struct SUnitIdleEvent* evt = (struct SUnitIdleEvent*)data;
 			CCircuitUnit* unit = GetUnitById(evt->unit);
-			ret = this->UnitIdle(unit);
+			if (unit != nullptr) {
+				ret = this->UnitIdle(unit);
+			} else {
+				ret = ERROR_UNIT_IDLE;
+			}
 			break;
 		}
 		case EVENT_UNIT_MOVE_FAILED: {
-			PRINT_TOPIC("EVENT_UNIT_MOVE_FAILED", topic);
+//			PRINT_TOPIC("EVENT_UNIT_MOVE_FAILED", topic);
 			ret = 0;
 			break;
 		}
@@ -146,7 +150,7 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 			struct SUnitDestroyedEvent* evt = (struct SUnitDestroyedEvent*)data;
 			CCircuitUnit* attacker = GetUnitById(evt->attacker);
 			CCircuitUnit* unit = GetUnitById(evt->unit);
-			if (unit) {
+			if (unit != nullptr) {
 				ret = this->UnitDestroyed(unit, attacker);
 				UnregisterUnit(evt->unit);
 			} else {
@@ -215,11 +219,13 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 			break;
 		}
 		case EVENT_COMMAND_FINISHED: {
-			PRINT_TOPIC("EVENT_COMMAND_FINISHED", topic);
-			struct SCommandFinishedEvent* evt = (struct SCommandFinishedEvent*)data;
-			printf("commandId: %i, commandTopicId: %i, unitId: %i\n", evt->commandId, evt->commandTopicId, evt->unitId);
-			CCircuitUnit* unit = GetUnitById(evt->unitId);
-			this->CommandFinished(unit, evt->commandTopicId);
+//			PRINT_TOPIC("EVENT_COMMAND_FINISHED", topic);
+//			struct SCommandFinishedEvent* evt = (struct SCommandFinishedEvent*)data;
+//			printf("commandId: %i, commandTopicId: %i, unitId: %i\n", evt->commandId, evt->commandTopicId, evt->unitId);
+//			CCircuitUnit* unit = GetUnitById(evt->unitId);
+//			this->CommandFinished(unit, evt->commandTopicId);
+
+			// FIXME: commandId always == -1
 //			springai::Command* command = WrappCurrentCommand::GetInstance(skirmishAIId, evt->unitId, evt->commandId);
 //			this->CommandFinished(evt->commandId, evt->commandTopicId, unit);
 //			delete command;
@@ -441,14 +447,14 @@ int CCircuitAI::UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::CommandFinished(CCircuitUnit* unit, int commandTopicId)
-{
-	for (auto& module : modules) {
-		module->CommandFinished(unit, commandTopicId);
-	}
-
-	return 0;  // signaling: OK
-}
+//int CCircuitAI::CommandFinished(CCircuitUnit* unit, int commandTopicId)
+//{
+//	for (auto& module : modules) {
+//		module->CommandFinished(unit, commandTopicId);
+//	}
+//
+//	return 0;  // signaling: OK
+//}
 
 int CCircuitAI::LuaMessage(const char* inData)
 {

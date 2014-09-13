@@ -15,6 +15,10 @@
 #include <unordered_set>
 #include <functional>
 
+namespace springai {
+	class Resource;
+}
+
 namespace circuit {
 
 class IConstructTask;
@@ -30,30 +34,29 @@ public:
 	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual int UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId);
 	virtual int UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId);
-	virtual int CommandFinished(CCircuitUnit* unit, int commandTopicId);
-
-	void InformUnfinished(CCircuitUnit* unit, CCircuitUnit* builder);  // Candidate for NotificationCenter message
-	void InformFinished(CCircuitUnit* unit);  // Candidate for NotificationCenter message
-	void InformDestroyed(CCircuitUnit* unit);  // Candidate for NotificationCenter message
 
 private:
 	void Update();
+	CCircuitUnit* FindUnitToAssist(CCircuitUnit* unit);
 	void PrepareFactory(CCircuitUnit* unit);
 	void ExecuteFactory(CCircuitUnit* unit);
+	void PrepareBuilder(CCircuitUnit* unit);
+	void ExecuteBuilder(CCircuitUnit* unit);
 
-	using Handlers2 = std::map<int, std::function<void (CCircuitUnit* unit, CCircuitUnit* builder)>>;
-	using Handlers1 = std::map<int, std::function<void (CCircuitUnit* unit)>>;
-	Handlers2 createdHandler;
-	Handlers1 finishedHandler;
-	Handlers1 idleHandler;
-	Handlers1 destroyedHandler;
-	Handlers1 commandHandler;
-	std::unordered_set<CCircuitUnit*> workers;  // Consider O(n) complexity of insertion in case table rebuilding. reserve/rehash?
-	std::map<CCircuitUnit*, IConstructTask*> unfinished;
+	using Handlers = std::map<int, std::function<void (CCircuitUnit* unit)>>;
+	Handlers finishedHandler;
+	Handlers idleHandler;
+	Handlers destroyedHandler;
+	std::map<CCircuitUnit*, IConstructTask*> unfinishedUnits;
+	std::map<IConstructTask*, std::list<CCircuitUnit*>> unfinishedTasks;
 	float totalBuildpower;
-
+	springai::Resource* metalRes;
+	springai::Resource* energyRes;
 	std::list<IConstructTask*> builderTasks;  // owner
 	std::list<IConstructTask*> factoryTasks;  // owner
+
+	// TODO: Use or delete
+	std::unordered_set<CCircuitUnit*> workers;  // Consider O(n) complexity of insertion in case table rebuilding. reserve/rehash?
 };
 
 } // namespace circuit

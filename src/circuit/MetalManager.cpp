@@ -65,6 +65,19 @@ const CMetalManager::Metal CMetalManager::FindNearestSpot(AIFloat3& pos) const
 	return spot;
 }
 
+const CMetalManager::Metals CMetalManager::FindNearestSpots(AIFloat3& pos, int num) const
+{
+	Metals result;
+
+    std::vector<MetalNode> result_n;
+    metalTree.query(bgi::nearest(point(pos.x, pos.z), num), std::back_inserter(result_n));
+
+    for (auto& node : result_n) {
+		result.push_back(spots[node.second]);
+	}
+	return result;
+}
+
 const CMetalManager::Metals CMetalManager::FindWithinDistanceSpots(AIFloat3& pos, float maxDistance) const
 {
 	Metals result;

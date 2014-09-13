@@ -10,9 +10,8 @@
 
 namespace circuit {
 
-IUnitTask::IUnitTask(Priority priority, int difficulty) :
-		priority(priority),
-		difficulty(difficulty)
+IUnitTask::IUnitTask(Priority priority) :
+		priority(priority)
 {
 }
 
@@ -22,7 +21,6 @@ IUnitTask::~IUnitTask()
 
 void IUnitTask::AssignTo(CCircuitUnit* unit)
 {
-	difficulty--;
 	unit->SetTask(this);
 	units.insert(unit);
 }
@@ -31,7 +29,6 @@ void IUnitTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	units.erase(unit);
 	unit->SetTask(nullptr);
-	difficulty++;
 }
 
 void IUnitTask::MarkCompleted()
@@ -40,11 +37,6 @@ void IUnitTask::MarkCompleted()
 		unit->SetTask(nullptr);
 	}
 	units.clear();
-}
-
-bool IUnitTask::IsFull()
-{
-	return difficulty <= 0;
 }
 
 } // namespace circuit

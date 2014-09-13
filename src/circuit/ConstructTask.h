@@ -16,19 +16,17 @@ namespace circuit {
 
 class IConstructTask: public IUnitTask {
 public:
-	IConstructTask(Priority priority, int difficulty, springai::AIFloat3& position, float radius, float metal, std::list<IConstructTask*>* owner);
+	IConstructTask(Priority priority, int quantity, springai::AIFloat3& position, std::list<IConstructTask*>& owner);
 	virtual ~IConstructTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit);
-	bool CompleteProgress(float metalStep);
-	float GetMetalToSpend();
+	void Progress();
+	void Regress();
+	bool IsDone();
+	void MarkCompleted();
 
-private:
-	bool IsDistanceOk(springai::AIFloat3& pos);
-
+public:
+	int quantity;
 	springai::AIFloat3 position;
-	float sqradius;
-	float metalToSpend;
 	std::list<IConstructTask*>* owner;
 };
 

@@ -21,19 +21,17 @@ public:
 	enum class Priority: char {LOW = 0, NORMAL, HIGH};
 
 public:
-	IUnitTask(Priority priority, int difficulty);
+	IUnitTask(Priority priority);
 	virtual ~IUnitTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) = 0;
 	void AssignTo(CCircuitUnit* unit);
 	void RemoveAssignee(CCircuitUnit* unit);
 	void MarkCompleted();
-	bool IsFull();
 
 protected:
 	std::unordered_set<CCircuitUnit*> units;
 	Priority priority;
-	int difficulty;  // Number of units to accomplish task
 };
 
 } // namespace circuit
