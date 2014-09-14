@@ -39,6 +39,7 @@ public:
 
 	bool IsEmpty();
 	bool CanChooseStartPos();
+	int GetNumAllyTeams();
 
 	const Box& operator[](int idx) const;
 

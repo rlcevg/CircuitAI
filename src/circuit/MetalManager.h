@@ -34,6 +34,7 @@ public:
 	using Metal = struct Metal {
 		float income;
 		springai::AIFloat3 position;
+		std::vector<bool> isOpen;
 	};
 	using Metals = std::vector<Metal>;
 
@@ -45,6 +46,7 @@ public:
 	bool IsClusterizing();
 	void SetClusterizing(bool value);
 	const Metal FindNearestSpot(springai::AIFloat3& pos) const;
+	const int FindNearestOpenSpotIndex(springai::AIFloat3& pos, int allyTeamId) const;
 	const Metals FindNearestSpots(springai::AIFloat3& pos, int num) const;
 	const Metals FindWithinDistanceSpots(springai::AIFloat3& pos, float maxDistance) const;
 	const Metals FindWithinRangeSpots(springai::AIFloat3& posFrom, springai::AIFloat3& posTo) const;
@@ -61,6 +63,8 @@ public:
 //	void DrawCentroids(springai::Drawer* drawer);
 	// debug
 	void ClearMetalClusters(springai::Drawer* drawer);
+
+	const Metal& operator[](int idx) const;
 
 private:
 	// Note: Pointtree is also a very pretty candidate for range searches.

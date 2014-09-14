@@ -166,6 +166,7 @@ void CGameAttribute::ParseMetalSpots(const char* metalJson)
 		return;
 	}
 
+	int numAllyTeams = setupManager->GetNumAllyTeams();
 	std::vector<CMetalManager::Metal> spots;
 	for (const Json::Value& object : root) {
 		CMetalManager::Metal spot;
@@ -173,6 +174,9 @@ void CGameAttribute::ParseMetalSpots(const char* metalJson)
 		spot.position = AIFloat3(object["x"].asFloat(),
 								 object["y"].asFloat(),
 								 object["z"].asFloat());
+		for (int i = 0; i < numAllyTeams; i++) {
+			spot.isOpen.push_back(true);
+		}
 		spots.push_back(spot);
 	}
 
@@ -219,6 +223,13 @@ void CGameAttribute::ParseMetalSpots(const std::vector<GameRulesParam*>& gamePar
 			if (i >= mexCount * 4) {
 				break;
 			}
+		}
+	}
+
+	int numAllyTeams = setupManager->GetNumAllyTeams();
+	for (int i = 0; i < mexCount; i++) {
+		for (int j = 0; j < numAllyTeams; j++) {
+			spots[i].isOpen.push_back(true);
 		}
 	}
 

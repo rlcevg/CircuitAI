@@ -41,6 +41,11 @@ bool CSetupManager::CanChooseStartPos()
 	return startPosType == CGameSetup::StartPos_ChooseInGame;
 }
 
+int CSetupManager::GetNumAllyTeams()
+{
+	return startBoxes.size();
+}
+
 const CSetupManager::Box& CSetupManager::operator[](int idx) const
 {
 	return startBoxes[idx];

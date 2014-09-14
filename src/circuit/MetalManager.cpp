@@ -53,26 +53,39 @@ void CMetalManager::SetClusterizing(bool value)
 
 const CMetalManager::Metal CMetalManager::FindNearestSpot(AIFloat3& pos) const
 {
+	std::vector<MetalNode> result_n;
+	metalTree.query(bgi::nearest(point(pos.x, pos.z), 1), std::back_inserter(result_n));
+
+	if (!result_n.empty()) {
+		return spots[result_n.front().second];
+	}
 	Metal spot;
-
-    std::vector<MetalNode> result_n;
-    metalTree.query(bgi::nearest(point(pos.x, pos.z), 1), std::back_inserter(result_n));
-
-    if (!result_n.empty()) {
-    	return spots[result_n.front().second];
-    }
 	spot.position = -RgtVector;
 	return spot;
+}
+
+const int CMetalManager::FindNearestOpenSpotIndex(AIFloat3& pos, int allyTeamId) const
+{
+	std::vector<MetalNode> result_n;
+	auto predicate = [this, allyTeamId](MetalNode const& v) {
+		return spots[v.second].isOpen[allyTeamId];
+	};
+	metalTree.query(bgi::nearest(point(pos.x, pos.z), 1) && bgi::satisfies(predicate), std::back_inserter(result_n));
+
+	if (!result_n.empty()) {
+		return result_n.front().second;
+	}
+	return -1;
 }
 
 const CMetalManager::Metals CMetalManager::FindNearestSpots(AIFloat3& pos, int num) const
 {
 	Metals result;
 
-    std::vector<MetalNode> result_n;
-    metalTree.query(bgi::nearest(point(pos.x, pos.z), num), std::back_inserter(result_n));
+	std::vector<MetalNode> result_n;
+	metalTree.query(bgi::nearest(point(pos.x, pos.z), num), std::back_inserter(result_n));
 
-    for (auto& node : result_n) {
+	for (auto& node : result_n) {
 		result.push_back(spots[node.second]);
 	}
 	return result;
@@ -315,6 +328,11 @@ void CMetalManager::ClearMetalClusters(Drawer* drawer)
 //		drawer->DeletePointsAndLines(centroid);
 //	}
 //	centroids.clear();
+}
+
+const CMetalManager::Metal& CMetalManager::operator[](int idx) const
+{
+	return spots[idx];
 }
 
 } // namespace circuit
