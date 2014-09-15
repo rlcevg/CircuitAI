@@ -65,9 +65,12 @@ private:
 	};
 	std::unordered_set<CCircuitUnit*> workers;
 	int cachedFrame;
+	bool isCachedChanged;
 	using WorkerTaskRelation = std::vector<std::vector<WorkerInfo*>>;
 	WorkerTaskRelation wtRelation;
 	WorkerTaskRelation& GetWorkerTaskRelations(CCircuitUnit* unit, WorkerInfo*& retInfo);
+
+	std::map<CCircuitUnit*, std::list<CCircuitUnit*>> factories;
 
 	struct BuilderInfo {
 		int startFrame;

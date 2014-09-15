@@ -30,13 +30,21 @@ namespace bgi = boost::geometry::index;
 class CRagMatrix;
 
 class CMetalManager {
+private:
+	// Note: Pointtree is also a very pretty candidate for range searches.
+	// Because map coordinates are big enough we can use only integer part.
+	// @see https://github.com/Warzone2100/warzone2100/blob/master/src/pointtree.cpp
+	using point = bg::model::point<float, 2, bg::cs::cartesian>;
+	using box = bg::model::box<point>;
+
 public:
 	using Metal = struct Metal {
 		float income;
 		springai::AIFloat3 position;
-		std::vector<bool> isOpen;
 	};
 	using Metals = std::vector<Metal>;
+	using MetalNode = std::pair<point, unsigned>;  // spots indexer
+	using MetalPredicate = std::function<bool (MetalNode const& v)>;
 
 public:
 	CMetalManager(std::vector<Metal>& spots);
@@ -46,7 +54,7 @@ public:
 	bool IsClusterizing();
 	void SetClusterizing(bool value);
 	const Metal FindNearestSpot(springai::AIFloat3& pos) const;
-	const int FindNearestOpenSpotIndex(springai::AIFloat3& pos, int allyTeamId) const;
+	const Metal FindNearestSpot(springai::AIFloat3& pos, MetalPredicate& predicate) const;
 	const Metals FindNearestSpots(springai::AIFloat3& pos, int num) const;
 	const Metals FindWithinDistanceSpots(springai::AIFloat3& pos, float maxDistance) const;
 	const Metals FindWithinRangeSpots(springai::AIFloat3& posFrom, springai::AIFloat3& posTo) const;
@@ -67,12 +75,6 @@ public:
 	const Metal& operator[](int idx) const;
 
 private:
-	// Note: Pointtree is also a very pretty candidate for range searches.
-	// Because map coordinates are big enough we can use only integer part.
-	// @see https://github.com/Warzone2100/warzone2100/blob/master/src/pointtree.cpp
-	using point = bg::model::point<float, 2, bg::cs::cartesian>;
-	using box = bg::model::box<point>;
-	using MetalNode = std::pair<point, unsigned>;  // spots indexer
 	// TODO: Find out more about bgi::rtree, bgi::linear, bgi::quadratic, bgi::rstar, packing algorithm?
 	using MetalTree = bgi::rtree<MetalNode, bgi::rstar<16, 4>>;
 	MetalTree metalTree;

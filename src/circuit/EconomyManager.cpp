@@ -22,6 +22,12 @@
 #include "Map.h"
 #include "SkirmishAIs.h"
 #include "Resource.h"
+#include "Economy.h"
+
+// debug
+#include "WrappTeam.h"
+#include "TeamRulesParam.h"
+#include "Drawer.h"
 
 namespace circuit {
 
@@ -30,7 +36,8 @@ using namespace springai;
 CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		IModule(circuit),
 		totalBuildpower(.0f),
-		cachedFrame(-1)
+		cachedFrame(-1),
+		isCachedChanged(true)
 {
 	metalRes = circuit->GetCallback()->GetResourceByName("Metal");
 	energyRes = circuit->GetCallback()->GetResourceByName("Energy");
@@ -70,20 +77,36 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		UnitDef* def = u->GetDef();
 		this->totalBuildpower += def->GetBuildSpeed();
 
+		std::list<CCircuitUnit*> nanos;
+		UnitDef* nanoDef = this->circuit->GetGameAttribute()->GetUnitDefByName("armnanotc");
+		float radius = nanoDef->GetBuildDistance();
+		std::vector<Unit*> units = this->circuit->GetCallback()->GetFriendlyUnitsIn(u->GetPos(), radius);
+		int nanoId = nanoDef->GetUnitDefId();
+		int teamId = this->circuit->GetTeamId();
+		for (auto nano : units) {
+			UnitDef* ndef = nano->GetDef();
+			if (ndef->GetUnitDefId() == nanoId && nano->GetTeam() == teamId) {
+				nanos.push_back(this->circuit->GetUnitById(nano->GetUnitId()));
+			}
+			delete ndef;
+		}
+		utils::FreeClear(units);
+		factories[unit] = nanos;
+
 		AIFloat3 pos = u->GetPos();
 		switch (u->GetBuildingFacing()) {
 			case UNIT_FACING_SOUTH:
 			default:
-				pos.z += def->GetZSize() * SQUARE_SIZE;
+				pos.z += def->GetZSize() * 0.75 * SQUARE_SIZE;
 				break;
 			case UNIT_FACING_EAST:
-				pos.x += def->GetXSize() * SQUARE_SIZE;
+				pos.x += def->GetXSize() * 0.75 * SQUARE_SIZE;
 				break;
 			case UNIT_FACING_NORTH:
-				pos.z -= def->GetZSize() * SQUARE_SIZE;
+				pos.z -= def->GetZSize() * 0.75 * SQUARE_SIZE;
 				break;
 			case UNIT_FACING_WEST:
-				pos.x -= def->GetXSize() * SQUARE_SIZE;
+				pos.x -= def->GetXSize() * 0.75 * SQUARE_SIZE;
 				break;
 		}
 		u->MoveTo(pos, 0);
@@ -99,6 +122,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	};
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		this->totalBuildpower -= unit->GetDef()->GetBuildSpeed();
+		factories.erase(unit);
 		unit->RemoveTask();
 	};
 
@@ -167,9 +191,10 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	unitDefId = attrib->GetUnitDefByName("armnanotc")->GetUnitDefId();
 	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		CCircuitAI* circuit = this->circuit;
-		Unit* u =unit->GetUnit();
+		Unit* u = unit->GetUnit();
 		UnitDef* def = unit->GetDef();
-		AIFloat3 toPos = u->GetPos();
+		AIFloat3 fromPos = u->GetPos();
+		AIFloat3 toPos = fromPos;
 		float size = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE;
 		toPos.x += (toPos.x > circuit->GetMap()->GetWidth() * SQUARE_SIZE / 2) ? -size : size;
 		toPos.z += (toPos.z > circuit->GetMap()->GetHeight() * SQUARE_SIZE / 2) ? -size : size;
@@ -178,9 +203,25 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		u->PatrolTo(toPos, 0);
 
 		this->totalBuildpower += unit->GetDef()->GetBuildSpeed();
+		float radius = def->GetBuildDistance();
+		float qradius = radius * radius;
+		auto qdist = [](AIFloat3& pos1, AIFloat3& pos2) {
+			float dx = pos1.x - pos2.x;
+			float dz = pos1.z - pos2.z;
+			return dx * dx + dz * dz;
+		};
+		for (auto& fac : factories) {
+			AIFloat3 facPos = fac.first->GetUnit()->GetPos();
+			if (qdist(facPos, fromPos) < qradius) {
+				fac.second.push_back(unit);
+			}
+		}
 	};
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		this->totalBuildpower -= unit->GetDef()->GetBuildSpeed();
+		for (auto& fac : factories) {
+			fac.second.remove(unit);
+		}
 	};
 
 	/*
@@ -203,6 +244,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 //		u->Build(facDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
 		this->totalBuildpower += unit->GetDef()->GetBuildSpeed();
 		this->workers.insert(unit);
+		isCachedChanged = true;
 
 //		PrepareBuilder(unit);
 //		ExecuteBuilder(unit);
@@ -215,6 +257,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		this->totalBuildpower -= unit->GetDef()->GetBuildSpeed();
 		this->workers.erase(unit);
+		isCachedChanged = true;
 		this->builderInfo.erase(unit);
 		unit->RemoveTask();
 	};
@@ -238,6 +281,7 @@ CEconomyManager::~CEconomyManager()
 	utils::FreeClear(factoryTasks);
 	utils::FreeClear(builderTasks);
 	utils::FreeClear(wtRelation.front());
+	delete metalRes, energyRes;
 }
 
 int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -369,31 +413,90 @@ int CEconomyManager::UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeam
 
 void CEconomyManager::Update()
 {
+	if (circuit->GetTeamId() != 1) {
+		return;
+	}
 //	CBuilderTask* task = nullptr;
 	int i = 0;
+//	for (auto t : builderTasks) {
+//		CBuilderTask* task = static_cast<CBuilderTask*>(t);
+//		if (task->GetType() == CBuilderTask::TaskType::ENERGIZE) {
+////			task = static_cast<CBuilderTask*>(t);
+////			break;
+//			i++;
+//		}
+//	}
+//	if (i < 10) {
+//		Map* map = circuit->GetMap();
+//		int terWidth = map->GetWidth() * SQUARE_SIZE;
+//		int terHeight = map->GetHeight() * SQUARE_SIZE;
+//		float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
+//		float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
+//		AIFloat3 buildPos(x, map->GetElevationAt(x, z), z);
+//		new CBuilderTask(CBuilderTask::Priority::LOW, buildPos, builderTasks, CBuilderTask::TaskType::ENERGIZE, 1);
+//		new CBuilderTask(CBuilderTask::Priority::LOW, buildPos, builderTasks, CBuilderTask::TaskType::EXPAND, 1);
+////		CCircuitUnit* commander = circuit->GetCommander();
+////		if (commander) {
+////			AIFloat3 buildPos = commander->GetUnit()->GetPos();
+////			task = new CBuilderTask(CBuilderTask::Priority::LOW, 3, buildPos, builderTasks, CBuilderTask::TaskType::ENERGIZE);
+////		}
+//	}
+
+	i = 0;
 	for (auto t : builderTasks) {
 		CBuilderTask* task = static_cast<CBuilderTask*>(t);
-		if (task->GetType() == CBuilderTask::TaskType::ENERGIZE) {
-//			task = static_cast<CBuilderTask*>(t);
-//			break;
+		if (task->GetType() == CBuilderTask::TaskType::FACTORY || task->GetType() == CBuilderTask::TaskType::NANO) {
 			i++;
+			break;
+		}
+	}
+	static int a = 0;
+//	if (i == 0 && totalBuildpower < metalIncome * 2) {
+	if ((a++ % 30 == 0) && (builderTasks.size() < 10)) {
+		CCircuitUnit* factory = nullptr;
+		for (auto& fac : factories) {
+			if (fac.second.size() < 3) {
+				factory = fac.first;
+				break;
+			}
+		}
+		if (factory != nullptr) {
+			AIFloat3 buildPos = factory->GetUnit()->GetPos();
+			new CBuilderTask(CBuilderTask::Priority::LOW, buildPos, builderTasks, CBuilderTask::TaskType::NANO, 1);
+			isCachedChanged = true;
+		} else {
+			Map* map = circuit->GetMap();
+			int terWidth = map->GetWidth() * SQUARE_SIZE;
+			int terHeight = map->GetHeight() * SQUARE_SIZE;
+			float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
+			float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
+			AIFloat3 buildPos(x, map->GetElevationAt(x, z), z);
+			new CBuilderTask(CBuilderTask::Priority::LOW, buildPos, builderTasks, CBuilderTask::TaskType::FACTORY, 1);
+			isCachedChanged = true;
 		}
 	}
 
-	if (i < 10) {
-		Map* map = circuit->GetMap();
-		int terWidth = map->GetWidth() * SQUARE_SIZE;
-		int terHeight = map->GetHeight() * SQUARE_SIZE;
-		float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
-		float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
-		AIFloat3 buildPos(x, map->GetElevationAt(x, z), z);
-		new CBuilderTask(CBuilderTask::Priority::LOW, buildPos, builderTasks, CBuilderTask::TaskType::ENERGIZE, 1);
-		new CBuilderTask(CBuilderTask::Priority::LOW, buildPos, builderTasks, CBuilderTask::TaskType::EXPAND, 1);
-//		CCircuitUnit* commander = circuit->GetCommander();
-//		if (commander) {
-//			AIFloat3 buildPos = commander->GetUnit()->GetPos();
-//			task = new CBuilderTask(CBuilderTask::Priority::LOW, 3, buildPos, builderTasks, CBuilderTask::TaskType::ENERGIZE);
-//		}
+	if (a % 150 == 0) {
+		Economy* eco = circuit->GetCallback()->GetEconomy();
+		float metalIncome = eco->GetIncome(metalRes);
+		delete eco;
+		printf("metalIncome: %f\n", metalIncome);
+		Team* team = WrappTeam::GetInstance(circuit->GetSkirmishAIId(), circuit->GetTeamId());
+		std::vector<TeamRulesParam*> params = team->GetTeamRulesParams();
+		for (auto param : params) {
+			printf("Param: %s, value: %f\n", param->GetName(), param->GetValueFloat());
+		}
+		delete team;
+		utils::FreeClear(params);
+
+		for (auto t : builderTasks) {
+			AIFloat3 pos = t->GetPos();
+			circuit->GetDrawer()->DeletePointsAndLines(pos);
+		}
+		for (auto t : builderTasks) {
+			AIFloat3 pos = t->GetPos();
+			circuit->GetDrawer()->AddPoint(pos, "");
+		}
 	}
 }
 
@@ -431,6 +534,7 @@ CCircuitUnit* CEconomyManager::FindUnitToAssist(CCircuitUnit* unit)
 			return circuit->GetUnitById(u->GetUnitId());
 		}
 	}
+	utils::FreeClear(units);
 	return unit;
 }
 
@@ -491,11 +595,11 @@ void CEconomyManager::PrepareBuilder(CCircuitUnit* unit)
 
 	std::vector<CBuilderTask*> candidates;
 	WorkerInfo* unitInfo;
-	// TODO: Refactor task picker? Maybe task with min(dist*quantity) is enough
+	// TODO: Refactor task picker. Task with min(dist*quantity) should be enough
 	WorkerTaskRelation& wtRelation = GetWorkerTaskRelations(unit, unitInfo);
 	int idx = wtRelation.front().size();
 	int i = 0;
-	for (auto task : builderTasks) {
+	for (auto& task : builderTasks) {
 		if (task->CanAssignTo(unit)) {
 			CBuilderTask* candidate = static_cast<CBuilderTask*>(task);
 			auto iter = std::find(wtRelation[i].begin(), wtRelation[i].end(), unitInfo);
@@ -532,6 +636,7 @@ void CEconomyManager::PrepareBuilder(CCircuitUnit* unit)
 		AIFloat3 pos = unit->GetUnit()->GetPos();
 //		task = new CBuilderTask(CBuilderTask::Priority::LOW, 3, pos, builderTasks, CBuilderTask::TaskType::ASSIST, 60, FRAMES_PER_SEC * 60);
 		task = new CBuilderTask(CBuilderTask::Priority::LOW, pos, builderTasks, CBuilderTask::TaskType::ENERGIZE, 1);
+		isCachedChanged = true;
 	}
 
 	task->AssignTo(unit);
@@ -569,7 +674,78 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 	};
 
 	switch (task->GetType()) {
-		case CBuilderTask::TaskType::BUILD: {
+		case CBuilderTask::TaskType::FACTORY: {
+			std::vector<float> params;
+			params.push_back(2.0f);
+			u->ExecuteCustomCommand(CMD_PRIORITY, params);
+
+			if (task->GetTarget() != nullptr) {
+				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY);
+				break;
+			}
+			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("factorycloak");
+			AIFloat3 buildPos = task->GetBuildPos();
+			if (buildPos != -RgtVector) {
+				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
+				break;
+			}
+			AIFloat3 position = task->GetPos();
+			buildPos = findBuildSite(buildDef, position);
+			if (buildPos == -RgtVector) {
+				// TODO: Replace FindNearestSpots with FindNearestClusters
+				CMetalManager::Metals spots = circuit->GetGameAttribute()->GetMetalManager().FindNearestSpots(position, 3);
+				for (auto& spot : spots) {
+					buildPos = findBuildSite(buildDef, spot.position);
+					if (buildPos != -RgtVector) {
+						break;
+					}
+				}
+			}
+			if (buildPos != -RgtVector) {
+				task->SetBuildPos(buildPos);
+				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
+			} else {
+				task->MarkCompleted();
+				// Fallback to Guard/Assist
+				assist(unit);
+			}
+			break;
+		}
+		case CBuilderTask::TaskType::NANO: {
+			std::vector<float> params;
+			params.push_back(0.0f);
+			u->ExecuteCustomCommand(CMD_PRIORITY, params);
+
+			if (task->GetTarget() != nullptr) {
+				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY);
+				break;
+			}
+			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("armnanotc");
+			AIFloat3 buildPos = task->GetBuildPos();
+			if (buildPos != -RgtVector) {
+				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
+				break;
+			}
+			AIFloat3 position = task->GetPos();
+			buildPos = findBuildSite(buildDef, position);
+			if (buildPos == -RgtVector) {
+				// TODO: Replace FindNearestSpots with FindNearestClusters
+				CMetalManager::Metals spots = circuit->GetGameAttribute()->GetMetalManager().FindNearestSpots(position, 3);
+				for (auto& spot : spots) {
+					buildPos = findBuildSite(buildDef, spot.position);
+					if (buildPos != -RgtVector) {
+						break;
+					}
+				}
+			}
+			if (buildPos != -RgtVector) {
+				task->SetBuildPos(buildPos);
+				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
+			} else {
+				task->MarkCompleted();
+				// Fallback to Guard/Assist
+				assist(unit);
+			}
 			break;
 		}
 		case CBuilderTask::TaskType::EXPAND: {
@@ -588,10 +764,14 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				break;
 			}
 			AIFloat3 position = u->GetPos();
-			int idx = circuit->GetGameAttribute()->GetMetalManager().FindNearestOpenSpotIndex(position, circuit->GetAllyTeamId());
-			if (idx >= 0) {
-				const CMetalManager::Metal& spot = circuit->GetGameAttribute()->GetMetalManager()[idx];
-				buildPos = spot.position;
+			const CMetalManager::Metals& spots = circuit->GetGameAttribute()->GetMetalManager().GetSpots();
+			Map* map = circuit->GetMap();
+			CMetalManager::MetalPredicate predicate = [&spots, map, buildDef](CMetalManager::MetalNode const& v) {
+				return map->IsPossibleToBuildAt(buildDef, spots[v.second].position, UNIT_COMMAND_BUILD_NO_FACING);
+			};
+			CMetalManager::Metal spot = circuit->GetGameAttribute()->GetMetalManager().FindNearestSpot(position, predicate);
+			buildPos = spot.position;
+			if (buildPos != -RgtVector) {
 				task->SetBuildPos(buildPos);
 				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
 			} else {
@@ -648,7 +828,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 
 CEconomyManager::WorkerTaskRelation& CEconomyManager::GetWorkerTaskRelations(CCircuitUnit* unit, WorkerInfo*& retInfo)
 {
-	if (cachedFrame == circuit->GetLastFrame()) {
+	if (circuit->GetLastFrame() - cachedFrame < FRAMES_PER_SEC && !isCachedChanged) {
 		for (auto info : wtRelation.front()) {
 			if (info->unit == unit) {
 				retInfo = info;
@@ -671,6 +851,10 @@ CEconomyManager::WorkerTaskRelation& CEconomyManager::GetWorkerTaskRelations(CCi
 		info->qspeed = speed * speed;
 		// TODO: include buildtime
 		workerInfos.push_back(info);
+
+		if (worker == unit) {
+			retInfo = info;
+		}
 	}
 	auto qdist = [](const AIFloat3& p1, const AIFloat3& p2) {
 		float x = p1.x - p2.x;
@@ -690,12 +874,7 @@ CEconomyManager::WorkerTaskRelation& CEconomyManager::GetWorkerTaskRelations(CCi
 	}
 
 	cachedFrame = circuit->GetLastFrame();
-	for (auto info : wtRelation.front()) {
-		if (info->unit == unit) {
-			retInfo = info;
-			break;
-		}
-	}
+	isCachedChanged = false;
 	return wtRelation;
 }
 

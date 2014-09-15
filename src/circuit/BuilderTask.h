@@ -14,7 +14,7 @@ namespace circuit {
 
 class CBuilderTask: public IConstructTask {
 public:
-	enum class TaskType: char {BUILD = 0, EXPAND, ENERGIZE, OVERDRIVE, DEFEND, ATTACK, ASSIST, TERRAFORM, DEFAULT = ASSIST};
+	enum class TaskType: char {FACTORY = 0, NANO, EXPAND, ENERGIZE, OVERDRIVE, DEFEND, ATTACK, ASSIST, TERRAFORM, DEFAULT = ENERGIZE};
 
 public:
 	CBuilderTask(Priority priority,

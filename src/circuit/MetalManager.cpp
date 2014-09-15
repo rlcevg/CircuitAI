@@ -9,6 +9,7 @@
 #include "RagMatrix.h"
 #include "utils.h"
 
+#include "Map.h"
 #include "Drawer.h"
 
 #include <functional>
@@ -64,18 +65,17 @@ const CMetalManager::Metal CMetalManager::FindNearestSpot(AIFloat3& pos) const
 	return spot;
 }
 
-const int CMetalManager::FindNearestOpenSpotIndex(AIFloat3& pos, int allyTeamId) const
+const CMetalManager::Metal CMetalManager::FindNearestSpot(AIFloat3& pos, MetalPredicate& predicate) const
 {
 	std::vector<MetalNode> result_n;
-	auto predicate = [this, allyTeamId](MetalNode const& v) {
-		return spots[v.second].isOpen[allyTeamId];
-	};
 	metalTree.query(bgi::nearest(point(pos.x, pos.z), 1) && bgi::satisfies(predicate), std::back_inserter(result_n));
 
 	if (!result_n.empty()) {
-		return result_n.front().second;
+		return spots[result_n.front().second];
 	}
-	return -1;
+	Metal spot;
+	spot.position = -RgtVector;
+	return spot;
 }
 
 const CMetalManager::Metals CMetalManager::FindNearestSpots(AIFloat3& pos, int num) const
