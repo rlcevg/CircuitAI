@@ -17,14 +17,13 @@
 
 namespace springai {
 	class GameRulesParam;
-	class Game;
-	class Map;
 	class UnitDef;
 	class Pathing;
 }
 
 namespace circuit {
 
+class CCircuitAI;
 class CSetupManager;
 class CMetalManager;
 class CScheduler;
@@ -49,7 +48,7 @@ public:
 	void ParseSetupScript(const char* setupScript, int width, int height);
 	bool HasStartBoxes(bool checkEmpty = true);
 	bool CanChooseStartPos();
-	void PickStartPos(springai::Game* game, springai::Map* map, StartPosType type);
+	void PickStartPos(CCircuitAI* circuit, StartPosType type);
 	CSetupManager& GetSetupManager();
 
 	void ParseMetalSpots(const char* metalJson);

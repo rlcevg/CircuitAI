@@ -16,9 +16,9 @@ namespace circuit {
 using namespace springai;
 
 CFactoryTask::CFactoryTask(Priority priority,
-		AIFloat3& position, std::list<IConstructTask*>& owner,
+		AIFloat3& position,
 		TaskType type, int quantity, float radius) :
-				IConstructTask(priority, position, owner, ConstructType::FACTORY),
+				IConstructTask(priority, position, ConstructType::FACTORY),
 				type(type),
 				quantity(quantity),
 				sqradius(radius * radius)

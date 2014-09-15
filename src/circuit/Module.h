@@ -8,6 +8,8 @@
 #ifndef MODULE_H_
 #define MODULE_H_
 
+#include <vector>
+
 namespace circuit {
 
 class CCircuitAI;

@@ -22,10 +22,11 @@ using namespace springai;
 CMetalManager::CMetalManager(std::vector<Metal>& spots) :
 		spots(spots),
 		pclusters(&clusters0),
+		pcentroids(&centroids0),
 		distMatrix(nullptr),
 		isClusterizing(false)
 {
-	unsigned i = 0;
+	int i = 0;
     for (auto& spot : spots) {
     	point p(spot.position.x, spot.position.z);
         metalTree.insert(std::make_pair(p, i++));
@@ -52,49 +53,47 @@ void CMetalManager::SetClusterizing(bool value)
 	isClusterizing = value;
 }
 
-const CMetalManager::Metal CMetalManager::FindNearestSpot(AIFloat3& pos) const
+const CMetalManager::Metals& CMetalManager::GetSpots() const
+{
+	return spots;
+}
+
+const int CMetalManager::FindNearestSpot(AIFloat3& pos) const
 {
 	std::vector<MetalNode> result_n;
 	metalTree.query(bgi::nearest(point(pos.x, pos.z), 1), std::back_inserter(result_n));
 
 	if (!result_n.empty()) {
-		return spots[result_n.front().second];
+		return result_n.front().second;
 	}
-	Metal spot;
-	spot.position = -RgtVector;
-	return spot;
+	return -1;
 }
 
-const CMetalManager::Metal CMetalManager::FindNearestSpot(AIFloat3& pos, MetalPredicate& predicate) const
+const int CMetalManager::FindNearestSpot(AIFloat3& pos, MetalPredicate& predicate) const
 {
 	std::vector<MetalNode> result_n;
 	metalTree.query(bgi::nearest(point(pos.x, pos.z), 1) && bgi::satisfies(predicate), std::back_inserter(result_n));
 
 	if (!result_n.empty()) {
-		return spots[result_n.front().second];
+		return result_n.front().second;
 	}
-	Metal spot;
-	spot.position = -RgtVector;
-	return spot;
+	return -1;
 }
 
-const CMetalManager::Metals CMetalManager::FindNearestSpots(AIFloat3& pos, int num) const
+const CMetalManager::MetalIndices CMetalManager::FindNearestSpots(AIFloat3& pos, int num) const
 {
-	Metals result;
-
 	std::vector<MetalNode> result_n;
 	metalTree.query(bgi::nearest(point(pos.x, pos.z), num), std::back_inserter(result_n));
 
+	MetalIndices result;
 	for (auto& node : result_n) {
-		result.push_back(spots[node.second]);
+		result.push_back(node.second);
 	}
 	return result;
 }
 
-const CMetalManager::Metals CMetalManager::FindWithinDistanceSpots(AIFloat3& pos, float maxDistance) const
+const CMetalManager::MetalIndices CMetalManager::FindWithinDistanceSpots(AIFloat3& pos, float maxDistance) const
 {
-	Metals result;
-
 	std::vector<MetalNode> returned_values;
 	point sought = point(pos.x, pos.z);
 	box enc_box(point(pos.x - maxDistance, pos.z - maxDistance), point(pos.x + maxDistance, pos.z + maxDistance));
@@ -103,37 +102,62 @@ const CMetalManager::Metals CMetalManager::FindWithinDistanceSpots(AIFloat3& pos
 	};
 	metalTree.query(bgi::within(enc_box) && bgi::satisfies(predicate), std::back_inserter(returned_values));
 
+	MetalIndices result;
 	for (auto& node : returned_values) {
-		result.push_back(spots[node.second]);
+		result.push_back(node.second);
 	}
 	return result;
 }
 
-const CMetalManager::Metals CMetalManager::FindWithinRangeSpots(AIFloat3& posFrom, AIFloat3& posTo) const
+const CMetalManager::MetalIndices CMetalManager::FindWithinRangeSpots(AIFloat3& posFrom, AIFloat3& posTo) const
 {
-	Metals result;
-
 	box query_box(point(posFrom.x, posFrom.z), point(posTo.x, posTo.z));
 	std::vector<MetalNode> result_s;
 	metalTree.query(bgi::within(query_box), std::back_inserter(result_s));
 
+	MetalIndices result;
 	for (auto& node : result_s) {
-		result.push_back(spots[node.second]);
+		result.push_back(node.second);
 	}
 	return result;
 }
 
-const CMetalManager::Metals& CMetalManager::GetSpots() const
-{
-	return spots;
-}
-
-const std::vector<CMetalManager::Metals>& CMetalManager::GetClusters()
+const std::vector<CMetalManager::MetalIndices>& CMetalManager::GetClusters()
 {
 	clusterMutex.lock();
-	std::vector<Metals>& rclusters = *pclusters;
+	std::vector<MetalIndices>& rclusters = *pclusters;
 	clusterMutex.unlock();
 	return rclusters;
+}
+
+const std::vector<AIFloat3>& CMetalManager::GetCentroids()
+{
+	clusterMutex.lock();
+	std::vector<AIFloat3>& rcentroids = *pcentroids;
+	clusterMutex.unlock();
+	return rcentroids;
+}
+
+const int CMetalManager::FindNearestCluster(springai::AIFloat3& pos)
+{
+	std::vector<MetalNode> result_n;
+	pclusterTree.load()->query(bgi::nearest(point(pos.x, pos.z), 1), std::back_inserter(result_n));
+
+	if (!result_n.empty()) {
+		return result_n.front().second;
+	}
+	return -1;
+}
+
+const int CMetalManager::FindNearestCluster(springai::AIFloat3& pos, MetalPredicate& predicate)
+{
+	std::vector<MetalNode> result_n;
+	pclusterTree.load()->query(bgi::nearest(point(pos.x, pos.z), 1) && bgi::satisfies(predicate), std::back_inserter(result_n));
+
+	if (!result_n.empty()) {
+		return result_n.front().second;
+	}
+	return -1;
 }
 
 void CMetalManager::SetDistMatrix(CRagMatrix& distmatrix)
@@ -144,15 +168,13 @@ void CMetalManager::SetDistMatrix(CRagMatrix& distmatrix)
 void CMetalManager::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distMatrix)
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	std::vector<Metals>& clusters = (pclusters == &clusters0) ? clusters1 : clusters0;
 	CRagMatrix& distmatrix = *distMatrix;
 	int nrows = distmatrix.GetNrows();
 
 	// Initialize cluster-element list
-	using Cluster = std::vector<int>;
-	std::vector<Cluster> iclusters(nrows);
+	std::vector<MetalIndices> iclusters(nrows);
 	for (int i = 0; i < nrows; i++) {
-		Cluster cluster;
+		MetalIndices cluster;
 		cluster.push_back(i);
 		iclusters[i] = cluster;
 	}
@@ -184,7 +206,7 @@ void CMetalManager::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> di
 		}
 
 		// Merge clusters
-		Cluster& cluster = iclusters[js];
+		MetalIndices& cluster = iclusters[js];
 		cluster.reserve(cluster.size() + iclusters[is].size()); // preallocate memory
 		cluster.insert(cluster.end(), iclusters[is].begin(), iclusters[is].end());
 		iclusters[is] = iclusters[n - 1];
@@ -192,18 +214,31 @@ void CMetalManager::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> di
 	}
 
 	// TODO: Find more about std::vector::emplace
+	std::vector<MetalIndices>& clusters = (pclusters == &clusters0) ? clusters1 : clusters0;
+	std::vector<AIFloat3>& centroids = (pcentroids == &centroids0) ? centroids1 : centroids0;
+	ClusterTree& clusterTree = (pclusterTree.load() == &clusterTree0) ? clusterTree1 : clusterTree0;
 	int nclusters = iclusters.size();
 	clusters.resize(nclusters);
+	centroids.resize(nclusters);
+	clusterTree.clear();
 	for (int i = 0; i < nclusters; i++) {
 		clusters[i].clear();
+		AIFloat3 centr = ZeroVector;
 		for (int j = 0; j < iclusters[i].size(); j++) {
-			clusters[i].push_back(spots[iclusters[i][j]]);
+			clusters[i].push_back(iclusters[i][j]);
+			centr += spots[iclusters[i][j]].position;
 		}
+		centr /= iclusters[i].size();
+		centroids[i] = centr;
+        clusterTree.insert(std::make_pair(point(centr.x, centr.z), i));
 	}
+
 	{
 //		std::lock_guard<std::mutex> guard(clusterMutex);
 		clusterMutex.lock();
 		pclusters = &clusters;
+		pcentroids = &centroids;
+		pclusterTree = &clusterTree;
 		clusterMutex.unlock();
 	}
 
@@ -212,13 +247,13 @@ void CMetalManager::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> di
 
 void CMetalManager::DrawConvexHulls(Drawer* drawer)
 {
-	for (const std::vector<Metal>& vec : GetClusters()) {
-		if (vec.empty()) {
+	for (const MetalIndices& indices : GetClusters()) {
+		if (indices.empty()) {
 			continue;
-		} else if (vec.size() == 1) {
-			drawer->AddPoint(vec[0].position, "Cluster 1");
-		} else if (vec.size() == 2) {
-			drawer->AddLine(vec[0].position, vec[1].position);
+		} else if (indices.size() == 1) {
+			drawer->AddPoint(spots[indices[0]].position, "Cluster 1");
+		} else if (indices.size() == 2) {
+			drawer->AddLine(spots[indices[0]].position, spots[indices[1]].position);
 		} else {
 			// !!! Graham scan !!!
 			// Coord system:  *-----x
@@ -237,15 +272,15 @@ void CMetalManager::DrawConvexHulls(Drawer* drawer)
 				return x * x + z * z;
 			};
 			// number of points
-			int N = vec.size();
+			int N = indices.size();
 			// the array of points
 			std::vector<AIFloat3> points(N + 1);
 			// Find the bottom-most point
 			int min = 1, i = 1;
-			float zmin = vec[0].position.z;
-			for (const Metal& spot : vec) {
-				points[i] = spot.position;
-				float z = spot.position.z;
+			float zmin = spots[indices[0]].position.z;
+			for (const int idx : indices) {
+				points[i] = spots[idx].position;
+				float z = spots[idx].position.z;
 				// Pick the bottom-most or chose the left most point in case of tie
 				if ((z < zmin) || (zmin == z && points[i].x < points[min].x)) {
 					zmin = z, min = i;
@@ -318,8 +353,8 @@ void CMetalManager::DrawConvexHulls(Drawer* drawer)
 void CMetalManager::ClearMetalClusters(Drawer* drawer)
 {
 	for (auto& cluster : GetClusters()) {
-		for (auto& spot : cluster) {
-			drawer->DeletePointsAndLines(spot.position);
+		for (auto& idx : cluster) {
+			drawer->DeletePointsAndLines(spots[idx].position);
 		}
 	}
 //	clusters.clear();

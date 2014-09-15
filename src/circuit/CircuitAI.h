@@ -8,9 +8,12 @@
 #ifndef CIRCUIT_H_
 #define CIRCUIT_H_
 
+#include "AIFloat3.h"
+
 #include <memory>
 #include <map>
 #include <list>
+#include <vector>
 
 namespace springai {
 	class AIFloat3;
@@ -58,6 +61,7 @@ public:
 	int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 	int UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId);  // TODO: Use Team class?
 	int UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId);  // TODO: Use Team class?
+	int PlayerCommand(std::vector<CCircuitUnit*>& units);
 //	int CommandFinished(CCircuitUnit* unit, int commandTopicId);
 	int LuaMessage(const char* inData);
 
@@ -65,6 +69,8 @@ public:
 	CCircuitUnit* RegisterUnit(int unitId);
 	void UnregisterUnit(int unitId);
 	CCircuitUnit* GetCommander();
+	void SetStartPos(springai::AIFloat3& pos);
+	springai::AIFloat3& GetStartPos();
 	springai::AIFloat3 FindBuildSiteMindMex(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
 
 	CGameAttribute* GetGameAttribute();
@@ -117,6 +123,7 @@ private:
 	std::map<int, CCircuitUnit*> enemyUnits;  // owner
 
 	int commanderId;
+	springai::AIFloat3 startPos;
 };
 
 } // namespace circuit

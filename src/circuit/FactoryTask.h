@@ -14,11 +14,11 @@ namespace circuit {
 
 class CFactoryTask: public IConstructTask {
 public:
-	enum class TaskType: char {BUILDPOWER = 0, FIREPOWER, AA, CLOAK, DEFAULT = BUILDPOWER};
+	enum class TaskType: char {BUILDPOWER = 0, FIREPOWER, AA, CLOAK, DEFAULT = FIREPOWER};
 
 public:
 	CFactoryTask(Priority priority,
-			springai::AIFloat3& position, std::list<IConstructTask*>& owner,
+			springai::AIFloat3& position,
 			TaskType type, int quantity, float radius);
 	virtual ~CFactoryTask();
 

@@ -20,18 +20,15 @@ public:
 
 public:
 	IConstructTask(Priority priority,
-			springai::AIFloat3& position, std::list<IConstructTask*>& owner, ConstructType conType);
+			springai::AIFloat3& position, ConstructType conType);
 	virtual ~IConstructTask();
 
-	void MarkCompleted();
-
 	ConstructType GetConstructType();
-	springai::AIFloat3& GetPos();
+	const springai::AIFloat3& GetPos() const;
 
 protected:
 	ConstructType conType;
 	springai::AIFloat3 position;
-	std::list<IConstructTask*>* owner;
 };
 
 } // namespace circuit

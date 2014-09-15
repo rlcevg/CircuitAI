@@ -5,6 +5,7 @@
  *      Author: rlcevg
  */
 
+#include "CircuitAI.h"
 #include "GameAttribute.h"
 #include "SetupManager.h"
 #include "MetalManager.h"
@@ -108,10 +109,10 @@ bool CGameAttribute::CanChooseStartPos()
 	return setupManager->CanChooseStartPos();
 }
 
-void CGameAttribute::PickStartPos(Game* game, Map* map, StartPosType type)
+void CGameAttribute::PickStartPos(CCircuitAI* circuit, StartPosType type)
 {
 	float x, z;
-	const CSetupManager::Box& box = GetSetupManager()[game->GetMyAllyTeam()];
+	const CSetupManager::Box& box = GetSetupManager()[circuit->GetAllyTeamId()];
 
 	auto random = [](const CSetupManager::Box& box, float& x, float& z) {
 		int min, max;
@@ -127,9 +128,10 @@ void CGameAttribute::PickStartPos(Game* game, Map* map, StartPosType type)
 		case StartPosType::METAL_SPOT: {
 			AIFloat3 posFrom(box.left, 0, box.top);
 			AIFloat3 posTo(box.right, 0, box.bottom);
-			CMetalManager::Metals inBoxSpots = metalManager->FindWithinRangeSpots(posFrom, posTo);
-			if (!inBoxSpots.empty()) {
-				AIFloat3& pos = inBoxSpots[rand() % inBoxSpots.size()].position;
+			CMetalManager::MetalIndices inBoxIndices = metalManager->FindWithinRangeSpots(posFrom, posTo);
+			if (!inBoxIndices.empty()) {
+				const CMetalManager::Metals& spots = metalManager->GetSpots();
+				const AIFloat3& pos = spots[inBoxIndices[rand() % inBoxIndices.size()]].position;
 				x = pos.x;
 				z = pos.z;
 			} else {
@@ -149,7 +151,9 @@ void CGameAttribute::PickStartPos(Game* game, Map* map, StartPosType type)
 		}
 	}
 
-	game->SendStartPosition(false, AIFloat3(x, map->GetElevationAt(x, z), z));
+	AIFloat3 pos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
+	circuit->SetStartPos(pos);
+	circuit->GetGame()->SendStartPosition(false, pos);
 }
 
 CSetupManager& CGameAttribute::GetSetupManager()

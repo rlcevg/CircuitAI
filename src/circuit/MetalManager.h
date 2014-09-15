@@ -43,8 +43,9 @@ public:
 		springai::AIFloat3 position;
 	};
 	using Metals = std::vector<Metal>;
-	using MetalNode = std::pair<point, unsigned>;  // spots indexer
+	using MetalNode = std::pair<point, int>;  // spots indexer
 	using MetalPredicate = std::function<bool (MetalNode const& v)>;
+	using MetalIndices = std::vector<int>;
 
 public:
 	CMetalManager(std::vector<Metal>& spots);
@@ -53,13 +54,16 @@ public:
 	bool IsEmpty();
 	bool IsClusterizing();
 	void SetClusterizing(bool value);
-	const Metal FindNearestSpot(springai::AIFloat3& pos) const;
-	const Metal FindNearestSpot(springai::AIFloat3& pos, MetalPredicate& predicate) const;
-	const Metals FindNearestSpots(springai::AIFloat3& pos, int num) const;
-	const Metals FindWithinDistanceSpots(springai::AIFloat3& pos, float maxDistance) const;
-	const Metals FindWithinRangeSpots(springai::AIFloat3& posFrom, springai::AIFloat3& posTo) const;
 	const Metals& GetSpots() const;
-	const std::vector<Metals>& GetClusters();
+	const int FindNearestSpot(springai::AIFloat3& pos) const;
+	const int FindNearestSpot(springai::AIFloat3& pos, MetalPredicate& predicate) const;
+	const MetalIndices FindNearestSpots(springai::AIFloat3& pos, int num) const;
+	const MetalIndices FindWithinDistanceSpots(springai::AIFloat3& pos, float maxDistance) const;
+	const MetalIndices FindWithinRangeSpots(springai::AIFloat3& posFrom, springai::AIFloat3& posTo) const;
+	const std::vector<MetalIndices>& GetClusters();
+	const std::vector<springai::AIFloat3>& GetCentroids();
+	const int FindNearestCluster(springai::AIFloat3& pos);
+	const int FindNearestCluster(springai::AIFloat3& pos, MetalPredicate& predicate);
 
 	void SetDistMatrix(CRagMatrix& distmatrix);
 	/*
@@ -75,17 +79,24 @@ public:
 	const Metal& operator[](int idx) const;
 
 private:
+	Metals spots;
 	// TODO: Find out more about bgi::rtree, bgi::linear, bgi::quadratic, bgi::rstar, packing algorithm?
 	using MetalTree = bgi::rtree<MetalNode, bgi::rstar<16, 4>>;
 	MetalTree metalTree;
-	Metals spots;
 
-	// TODO: Use KDTree for clusters/centroids also
+	// FIXME: Remove mutexes, clusterize only once. Or add ClusterLock()/ClusterUnlock() to interface.
+	//        As for now search indices could belong to wrong clusters
 	// Double buffer clusters as i don't want to copy vectors every time for safe use
-	std::vector<Metals> clusters0;
-	std::vector<Metals> clusters1;
-	std::vector<Metals>* pclusters;
-//	std::vector<springai::AIFloat3> centroids;
+	std::vector<MetalIndices> clusters0;
+	std::vector<MetalIndices> clusters1;
+	std::vector<MetalIndices>* pclusters;
+	std::vector<springai::AIFloat3> centroids0;
+	std::vector<springai::AIFloat3> centroids1;
+	std::vector<springai::AIFloat3>* pcentroids;
+	using ClusterTree = bgi::rtree<MetalNode, bgi::quadratic<16>>;
+	ClusterTree clusterTree0;
+	ClusterTree clusterTree1;
+	std::atomic<ClusterTree*> pclusterTree;
 
 	std::atomic<bool> isClusterizing;
 	std::mutex clusterMutex;

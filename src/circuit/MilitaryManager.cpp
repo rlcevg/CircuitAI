@@ -124,9 +124,9 @@ void CMilitaryManager::TestOrder()
 //			commander->Guard(friendCommander);
 ////			commander->Build(callback->GetUnitDefByName("armsolar"), commander->GetPos(), UNIT_COMMAND_BUILD_NO_FACING);
 //		}
-//		utils::FreeClear(friendlies);
+//		utils::free_clear(friendlies);
 //	}
-//	utils::FreeClear(units);
+//	utils::free_clear(units);
 }
 
 } // namespace circuit

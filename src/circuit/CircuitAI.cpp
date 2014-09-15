@@ -19,7 +19,6 @@
 #include "ExternalAI/Interface/AISCommands.h"
 #include "OOAICallback.h"			// C++ wrapper
 #include "SSkirmishAICallback.h"	// "direct" C API
-#include "AIFloat3.h"
 #include "Game.h"
 #include "Map.h"
 #include "Unit.h"
@@ -211,7 +210,12 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 		}
 		case EVENT_PLAYER_COMMAND: {
 			PRINT_TOPIC("EVENT_PLAYER_COMMAND", topic);
-			ret = 0;
+			struct SPlayerCommandEvent* evt = (struct SPlayerCommandEvent*)data;
+			std::vector<CCircuitUnit*> units(evt->unitIds_size);
+			for (int i = 0; i < evt->unitIds_size; i++) {
+				units[i] = GetUnitById(evt->unitIds[i]);
+			}
+			ret = this->PlayerCommand(units);
 			break;
 		}
 		case EVENT_SEISMIC_PING: {
@@ -285,7 +289,7 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 		// TODO: Add metal zone and no-metal-spots maps support
 		std::vector<GameRulesParam*> gameRulesParams = game->GetGameRulesParams();
 		gameAttribute->ParseMetalSpots(gameRulesParams);
-		utils::FreeClear(gameRulesParams);
+		utils::free_clear(gameRulesParams);
 	}
 	if (!gameAttribute->HasUnitDefs()) {
 		// TODO: Find out more about rvalue variables
@@ -301,16 +305,16 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 			float distance = gameAttribute->GetUnitDefByName("corrl")->GetMaxWeaponRange();
 			gameAttribute->ClusterizeMetalFirst(scheduler, distance * 2, pathType, GetPathing());
 
-			scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CCircuitAI::ClusterizeMetal, this), FRAMES_PER_SEC * 60);
+//			scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CCircuitAI::ClusterizeMetal, this), FRAMES_PER_SEC * 60);
 		}
 		if (canChooseStartPos) {
 			// Parallel task is only to ensure its execution after CMetalManager::Clusterize
 			scheduler->RunParallelTask(std::make_shared<CGameTask>([this]() {
-				gameAttribute->PickStartPos(GetGame(), GetMap(), CGameAttribute::StartPosType::METAL_SPOT);
+				gameAttribute->PickStartPos(this, CGameAttribute::StartPosType::METAL_SPOT);
 			}));
 		}
 	} else if (canChooseStartPos) {
-		gameAttribute->PickStartPos(GetGame(), GetMap(), CGameAttribute::StartPosType::MIDDLE);
+		gameAttribute->PickStartPos(this, CGameAttribute::StartPosType::MIDDLE);
 	}
 
 	modules.push_back(std::unique_ptr<CEconomyManager>(new CEconomyManager(this)));
@@ -357,13 +361,13 @@ int CCircuitAI::Message(int playerId, const char* message)
 	size_t msgLength = strlen(message);
 
 	if (msgLength == strlen("~стройсь") && strcmp(message, "~стройсь") == 0) {
-		gameAttribute->PickStartPos(GetGame(), GetMap(), CGameAttribute::StartPosType::RANDOM);
+		gameAttribute->PickStartPos(this, CGameAttribute::StartPosType::RANDOM);
 	}
 
 	else if (strncmp(message, "~selfd", 6) == 0) {
 		std::vector<Unit*> units = callback->GetTeamUnits();
 		units[0]->SelfDestruct();
-		utils::FreeClear(units);
+		utils::free_clear(units);
 	}
 
 	return 0;  // signaling: OK
@@ -450,6 +454,15 @@ int CCircuitAI::UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 	return 0;  // signaling: OK
 }
 
+int CCircuitAI::PlayerCommand(std::vector<CCircuitUnit*>& units)
+{
+	for (auto unit : units) {
+		unit->RemoveTask();
+	}
+
+	return 0;  // signaling: OK
+}
+
 //int CCircuitAI::CommandFinished(CCircuitUnit* unit, int commandTopicId)
 //{
 //	for (auto& module : modules) {
@@ -527,6 +540,16 @@ void CCircuitAI::UnregisterUnit(int unitId)
 CCircuitUnit* CCircuitAI::GetCommander()
 {
 	return GetUnitById(commanderId);
+}
+
+void CCircuitAI::SetStartPos(AIFloat3& pos)
+{
+	startPos = pos;
+}
+
+AIFloat3& CCircuitAI::GetStartPos()
+{
+	return startPos;
 }
 
 /*
@@ -783,7 +806,7 @@ void CCircuitAI::FindCommander()
 			break;
 		}
 	}
-	utils::FreeClear(units);
+	utils::free_clear(units);
 }
 
 void CCircuitAI::CreateGameAttribute()

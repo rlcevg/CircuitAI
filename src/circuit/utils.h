@@ -14,6 +14,8 @@
 #include <string.h>
 #include <stdarg.h>  // for va_start, etc
 #include <memory>    // for std::unique_ptr
+//#include <random>
+//#include <iterator>
 
 namespace utils {
 
@@ -34,7 +36,22 @@ namespace utils {
 // x--
 #define UNIT_FACING_WEST	3
 
-template <class C> void FreeClear(C& cntr)
+//template<typename Iter, typename RandomGenerator>
+//Iter select_randomly(Iter start, Iter end, RandomGenerator& g) {
+//	std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
+//	std::advance(start, dis(g));
+//	return start;
+//}
+//
+//template<typename Iter>
+//Iter select_randomly(Iter start, Iter end) {
+//	static std::random_device rd;
+////	static std::mt19937 gen(rd());
+//	static std::default_random_engine gen(rd());
+//	return select_randomly(start, end, gen);
+//}
+
+template <class C> void free_clear(C& cntr)
 {
 	for (typename C::iterator it = cntr.begin(); it != cntr.end(); ++it) {
 		delete *it;

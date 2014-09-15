@@ -18,7 +18,7 @@ public:
 
 public:
 	CBuilderTask(Priority priority,
-			springai::AIFloat3& position, std::list<IConstructTask*>& owner,
+			springai::AIFloat3& position,
 			TaskType type, int duration = 0);
 	virtual ~CBuilderTask();
 

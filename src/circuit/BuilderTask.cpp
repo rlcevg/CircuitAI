@@ -16,9 +16,9 @@ namespace circuit {
 using namespace springai;
 
 CBuilderTask::CBuilderTask(Priority priority,
-		AIFloat3& position, std::list<IConstructTask*>& owner,
+		AIFloat3& position,
 		TaskType type, int duration) :
-				IConstructTask(priority, position, owner, ConstructType::BUILDER),
+				IConstructTask(priority, position, ConstructType::BUILDER),
 				type(type),
 				duration(duration),
 				quantity(1),
