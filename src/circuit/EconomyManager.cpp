@@ -323,6 +323,7 @@ int CEconomyManager::UnitFinished(CCircuitUnit* unit)
 					std::list<CCircuitUnit*>& units = unfinishedTasks[task];
 					if (taskF->IsDone()) {
 						taskF->MarkCompleted();  // task will remove itself from owner on MarkCompleted
+						isCachedChanged = true;
 						for (auto u : units) {
 							unfinishedUnits[u] = nullptr;
 						}
@@ -336,6 +337,7 @@ int CEconomyManager::UnitFinished(CCircuitUnit* unit)
 				case IConstructTask::ConstructType::BUILDER: {
 					CBuilderTask* taskB = static_cast<CBuilderTask*>(task);
 					taskB->MarkCompleted();  // task will remove itself from owner on MarkCompleted
+					isCachedChanged = true;
 					delete task;
 					break;
 				}
@@ -631,6 +633,11 @@ void CEconomyManager::PrepareBuilder(CCircuitUnit* unit)
 			}
 		}
 	}
+//	printf("workers size: %i\n", workers.size());
+//	CBuilderTask* task = nullptr;
+//	if (!builderTasks.empty()) {
+//		task = static_cast<CBuilderTask*>(builderTasks.front());
+//	}
 
 	if (task == nullptr) {
 		AIFloat3 pos = unit->GetUnit()->GetPos();
@@ -640,6 +647,16 @@ void CEconomyManager::PrepareBuilder(CCircuitUnit* unit)
 	}
 
 	task->AssignTo(unit);
+//	builderTasks.pop_front();
+//	builderTasks.push_back(task);
+//
+//	AIFloat3 pos1 = task->GetBuildPos();
+//	AIFloat3 pos2 = task->GetPos();
+//	printf("task: %i, %i | pos1: %.2f, %.2f | pos2: %.2f, %.2f\n", task->GetType(), task->GetTarget(), pos1.x, pos1.z, pos2.x, pos2.z);
+//	circuit->GetDrawer()->DeletePointsAndLines(pos1);
+//	circuit->GetDrawer()->DeletePointsAndLines(pos2);
+//	circuit->GetDrawer()->AddPoint(pos1, "buildPos");
+//	circuit->GetDrawer()->AddPoint(pos2, "position");
 }
 
 void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
@@ -685,7 +702,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("factorycloak");
 			AIFloat3 buildPos = task->GetBuildPos();
-			if (buildPos != -RgtVector) {
+			if (buildPos != -RgtVector && circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
 				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
 				break;
 			}
@@ -706,6 +723,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
 			} else {
 				task->MarkCompleted();
+				isCachedChanged = true;
 				// Fallback to Guard/Assist
 				assist(unit);
 			}
@@ -722,7 +740,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("armnanotc");
 			AIFloat3 buildPos = task->GetBuildPos();
-			if (buildPos != -RgtVector) {
+			if (buildPos != -RgtVector && circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
 				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
 				break;
 			}
@@ -743,6 +761,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
 			} else {
 				task->MarkCompleted();
+				isCachedChanged = true;
 				// Fallback to Guard/Assist
 				assist(unit);
 			}
@@ -759,7 +778,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("cormex");
 			AIFloat3 buildPos = task->GetBuildPos();
-			if (buildPos != -RgtVector) {
+			if (buildPos != -RgtVector && circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
 				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
 				break;
 			}
@@ -776,6 +795,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
 			} else {
 				task->MarkCompleted();
+				isCachedChanged = true;
 				// Fallback to Guard/Assist
 				assist(unit);
 			}
@@ -792,7 +812,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("armsolar");
 			AIFloat3 buildPos = task->GetBuildPos();
-			if (buildPos != -RgtVector) {
+			if (buildPos != -RgtVector && circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
 				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
 				break;
 			}
@@ -813,6 +833,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
 			} else {
 				task->MarkCompleted();
+				isCachedChanged = true;
 				// Fallback to Guard/Assist
 				assist(unit);
 			}
