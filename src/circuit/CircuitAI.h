@@ -34,8 +34,15 @@ namespace circuit {
 #define ERROR_INIT				(ERROR_UNKNOWN + EVENT_INIT)
 #define ERROR_RELEASE			(ERROR_UNKNOWN + EVENT_RELEASE)
 #define ERROR_UPDATE			(ERROR_UNKNOWN + EVENT_UPDATE)
+#define ERROR_UNIT_CREATED		(ERROR_UNKNOWN + EVENT_UNIT_CREATED)
+#define ERROR_UNIT_FINISHED		(ERROR_UNKNOWN + EVENT_UNIT_FINISHED)
 #define ERROR_UNIT_IDLE			(ERROR_UNKNOWN + EVENT_UNIT_IDLE)
+#define ERROR_UNIT_MOVE_FAILED	(ERROR_UNKNOWN + EVENT_UNIT_MOVE_FAILED)
+#define ERROR_UNIT_DAMAGED		(ERROR_UNKNOWN + EVENT_UNIT_DAMAGED)
 #define ERROR_UNIT_DESTROYED	(ERROR_UNKNOWN + EVENT_UNIT_DESTROYED)
+#define ERROR_UNIT_GIVEN		(ERROR_UNKNOWN + EVENT_UNIT_GIVEN)
+#define ERROR_UNIT_CAPTURED		(ERROR_UNKNOWN + EVENT_UNIT_CAPTURED)
+#define ERROR_ENEMY_DESTROYED	(ERROR_UNKNOWN + EVENT_ENEMY_DESTROYED)
 #define LOG(fmt, ...)	GetLog()->DoLog(utils::string_format(std::string(fmt), ##__VA_ARGS__).c_str())
 
 class CGameAttribute;
@@ -58,6 +65,8 @@ public:
 	int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
 	int UnitFinished(CCircuitUnit* unit);
 	int UnitIdle(CCircuitUnit* unit);
+	int UnitMoveFailed(CCircuitUnit* unit);
+	int UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 	int UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId);  // TODO: Use Team class?
 	int UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId);  // TODO: Use Team class?
@@ -67,7 +76,7 @@ public:
 
 	CCircuitUnit* GetUnitById(int unitId);
 	CCircuitUnit* RegisterUnit(int unitId);
-	void UnregisterUnit(int unitId);
+	void UnregisterUnit(CCircuitUnit* unit);
 	CCircuitUnit* GetCommander();
 	void SetStartPos(springai::AIFloat3& pos);
 	springai::AIFloat3& GetStartPos();

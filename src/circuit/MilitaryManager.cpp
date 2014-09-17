@@ -40,12 +40,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 		float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
 		float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
 		AIFloat3 fromPos(x, map->GetElevationAt(x, z), z);
-		u->Fight(fromPos, UNIT_COMMAND_OPTION_SHIFT_KEY);
-
-		x = rand() % (int)(terWidth + 1);
-		z = rand() % (int)(terHeight + 1);
-		AIFloat3 toPos(x, map->GetElevationAt(x, z), z);
-		u->PatrolTo(toPos, UNIT_COMMAND_OPTION_SHIFT_KEY);
+		u->Fight(fromPos, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
 	};
 	auto atackerIdleHandler = [circuit](CCircuitUnit* unit) {
 		Unit* u = unit->GetUnit();
@@ -55,7 +50,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 		float x = rand() % (int)(terWidth + 1);
 		float z = rand() % (int)(terHeight + 1);
 		AIFloat3 toPos(x, map->GetElevationAt(x, z), z);
-		u->PatrolTo(toPos, 0);
+//		u->PatrolTo(toPos);
+		u->Fight(toPos);
 	};
 
 	unitDefId = attrib->GetUnitDefByName("armpw")->GetUnitDefId();
@@ -64,6 +60,47 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	unitDefId = attrib->GetUnitDefByName("armrock")->GetUnitDefId();
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
+	unitDefId = attrib->GetUnitDefByName("armwar")->GetUnitDefId();
+	finishedHandler[unitDefId] = atackerFinishedHandler;
+	idleHandler[unitDefId] = atackerIdleHandler;
+
+//	/*
+//	 * armrectr handlers
+//	 */
+//	unitDefId = attrib->GetUnitDefByName("armrectr")->GetUnitDefId();
+//	idleHandler[unitDefId] = [this](CCircuitUnit* unit) {
+//		fighterInfo.erase(unit);
+//	};
+//	damagedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+//		if (attacker != nullptr) {
+//			auto search = fighterInfo.find(unit);
+//			if (search == fighterInfo.end()) {
+//				Unit* u = unit->GetUnit();
+//				std::vector<float> params;
+//				params.push_back(2.0f);
+//				u->ExecuteCustomCommand(CMD_PRIORITY, params);
+//
+//				const AIFloat3& pos = attacker->GetUnit()->GetPos();
+//				params.clear();
+//				params.push_back(1.0f);  // 1: terraform_type, 1 == level
+//				params.push_back(this->circuit->GetTeamId());  // 2: teamId
+//				params.push_back(0.0f);  // 3: terraform type - 0 == Wall, else == Area
+//				params.push_back(pos.y - 42.0f);  // 4: terraformHeight
+//				params.push_back(1.0f);  // 5: number of control points
+//				params.push_back(1.0f);  // 6: units count?
+//				params.push_back(0.0f);  // 7: volumeSelection?
+//				params.push_back(pos.x);  //  8: i + 0 control point x
+//				params.push_back(pos.z);  //  9: i + 1 control point z
+//				params.push_back(u->GetUnitId());  // 10: i + 2 unitId
+//				u->ExecuteCustomCommand(CMD_TERRAFORM_INTERNAL, params);
+//
+//				fighterInfo[unit].isTerraforming = true;
+//			}
+//		}
+//	};
+//	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+//		fighterInfo.erase(unit);
+//	};
 }
 
 CMilitaryManager::~CMilitaryManager()
@@ -96,9 +133,29 @@ int CMilitaryManager::UnitIdle(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
+//int CMilitaryManager::UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+//{
+//	auto search = damagedHandler.find(unit->GetDef()->GetUnitDefId());
+//	if (search != damagedHandler.end()) {
+//		search->second(unit, attacker);
+//	}
+//
+//	return 0; //signaling: OK
+//}
+//
+//int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+//{
+//	auto search = destroyedHandler.find(unit->GetDef()->GetUnitDefId());
+//	if (search != destroyedHandler.end()) {
+//		search->second(unit, attacker);
+//	}
+//
+//	return 0; //signaling: OK
+//}
+
 void CMilitaryManager::TestOrder()
 {
-	circuit->LOG("HIT 120 frame");
+	circuit->LOG("Hit 120th frame");
 //	std::vector<Unit*> units = circuit->GetCallback()->GetTeamUnits();
 //	if (!units.empty()) {
 //		circuit->LOG("found mah comm");

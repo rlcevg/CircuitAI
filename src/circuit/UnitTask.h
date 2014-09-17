@@ -18,7 +18,7 @@ class CCircuitUnit;
 
 class IUnitTask {
 public:
-	enum class Priority: char {LOW = 0, NORMAL, HIGH};
+	enum class Priority: char {LOW = 0, /*NORMAL,*/ HIGH};
 
 public:
 	IUnitTask(Priority priority);

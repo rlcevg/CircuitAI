@@ -20,7 +20,7 @@ public:
 
 public:
 	IConstructTask(Priority priority,
-			springai::AIFloat3& position, ConstructType conType);
+			const springai::AIFloat3& position, ConstructType conType);
 	virtual ~IConstructTask();
 
 	ConstructType GetConstructType();

@@ -18,7 +18,7 @@ public:
 
 public:
 	CFactoryTask(Priority priority,
-			springai::AIFloat3& position,
+			const springai::AIFloat3& position,
 			TaskType type, int quantity, float radius);
 	virtual ~CFactoryTask();
 
@@ -31,7 +31,7 @@ public:
 	bool IsDone();
 
 private:
-	bool IsDistanceOk(springai::AIFloat3& pos);
+	bool IsDistanceOk(const springai::AIFloat3& pos);
 
 	TaskType type;
 	int quantity;

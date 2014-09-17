@@ -41,8 +41,10 @@ public:
 
 private:
 	void Init();
-	void UpdateFactoryPower();
-	void UpdateBuilderPower();
+	void UpdateExpandTasks();
+	void UpdateEnergyTasks();
+	void UpdateBuilderTasks();
+	void UpdateFactoryTasks();
 	void WorkerWatchdog();
 	CCircuitUnit* FindUnitToAssist(CCircuitUnit* unit);
 	void PrepareFactory(CCircuitUnit* unit);
@@ -50,10 +52,12 @@ private:
 	void PrepareBuilder(CCircuitUnit* unit);
 	void ExecuteBuilder(CCircuitUnit* unit);
 
-	using Handlers = std::map<int, std::function<void (CCircuitUnit* unit)>>;
-	Handlers finishedHandler;
-	Handlers idleHandler;
-	Handlers destroyedHandler;
+	using Handlers1 = std::map<int, std::function<void (CCircuitUnit* unit)>>;
+	using Handlers2 = std::map<int, std::function<void (CCircuitUnit* unit, CCircuitUnit* builder)>>;
+	Handlers2 createdHandler;
+	Handlers1 finishedHandler;
+	Handlers1 idleHandler;
+	Handlers2 destroyedHandler;
 	std::map<CCircuitUnit*, IConstructTask*> unfinishedUnits;
 	std::map<IConstructTask*, std::list<CCircuitUnit*>> unfinishedTasks;
 	springai::Resource* metalRes;
@@ -62,7 +66,7 @@ private:
 	float totalBuildpower;
 	std::map<CBuilderTask::TaskType, std::list<IConstructTask*>> builderTasks;  // owner
 	float builderPower;
-	int builderTasksSize;
+	int builderTasksCount;
 	std::list<IConstructTask*> factoryTasks;  // owner
 	float factoryPower;
 
@@ -80,6 +84,7 @@ private:
 
 	std::map<CCircuitUnit*, std::list<CCircuitUnit*>> factories;
 
+	// TODO: Move into CBuilderTask ?
 	struct BuilderInfo {
 		int startFrame;
 	};
@@ -87,8 +92,17 @@ private:
 
 	struct ClusterInfo {
 		CCircuitUnit* factory;
+		CCircuitUnit* pylon;
 	};
 	std::vector<ClusterInfo> clusterInfo;
+	int solarCount;
+	int fusionCount;
+	float pylonRange;
+//	float singuRange;
+
+#ifdef DEBUG
+	std::vector<springai::AIFloat3> panicList;
+#endif
 };
 
 } // namespace circuit

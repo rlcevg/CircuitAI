@@ -16,7 +16,7 @@ namespace circuit {
 using namespace springai;
 
 CFactoryTask::CFactoryTask(Priority priority,
-		AIFloat3& position,
+		const AIFloat3& position,
 		TaskType type, int quantity, float radius) :
 				IConstructTask(priority, position, ConstructType::FACTORY),
 				type(type),
@@ -33,7 +33,7 @@ CFactoryTask::~CFactoryTask()
 bool CFactoryTask::CanAssignTo(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();
-	AIFloat3 pos = u->GetPos();
+	const AIFloat3& pos = u->GetPos();
 	return IsDistanceOk(pos);
 }
 
@@ -57,7 +57,7 @@ bool CFactoryTask::IsDone()
 	return quantity <= 0;
 }
 
-bool CFactoryTask::IsDistanceOk(AIFloat3& pos)
+bool CFactoryTask::IsDistanceOk(const AIFloat3& pos)
 {
 	float dx = pos.x - position.x;
 	float dz = pos.z - position.z;

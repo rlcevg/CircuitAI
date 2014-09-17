@@ -33,6 +33,11 @@ int IModule::UnitIdle(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
+int IModule::UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+{
+	return 0; //signaling: OK
+}
+
 int IModule::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
 	return 0; //signaling: OK

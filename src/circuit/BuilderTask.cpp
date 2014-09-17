@@ -16,11 +16,11 @@ namespace circuit {
 using namespace springai;
 
 CBuilderTask::CBuilderTask(Priority priority,
-		AIFloat3& position,
-		TaskType type, int duration) :
+		const AIFloat3& position,
+		TaskType type, int timeout) :
 				IConstructTask(priority, position, ConstructType::BUILDER),
 				type(type),
-				duration(duration),
+				timeout(timeout),
 				quantity(1),
 				target(nullptr),
 				buildPos(-RgtVector)
@@ -59,12 +59,12 @@ int CBuilderTask::GetQuantity()
 	return quantity;
 }
 
-int CBuilderTask::GetDuration()
+int CBuilderTask::GetTimeout()
 {
-	return duration;
+	return timeout;
 }
 
-void CBuilderTask::SetBuildPos(AIFloat3& pos)
+void CBuilderTask::SetBuildPos(const AIFloat3& pos)
 {
 	buildPos = pos;
 }

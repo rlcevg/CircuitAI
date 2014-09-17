@@ -58,7 +58,7 @@ const CMetalManager::Metals& CMetalManager::GetSpots() const
 	return spots;
 }
 
-const int CMetalManager::FindNearestSpot(AIFloat3& pos) const
+const int CMetalManager::FindNearestSpot(const AIFloat3& pos) const
 {
 	std::vector<MetalNode> result_n;
 	metalTree.query(bgi::nearest(point(pos.x, pos.z), 1), std::back_inserter(result_n));
@@ -69,7 +69,7 @@ const int CMetalManager::FindNearestSpot(AIFloat3& pos) const
 	return -1;
 }
 
-const int CMetalManager::FindNearestSpot(AIFloat3& pos, MetalPredicate& predicate) const
+const int CMetalManager::FindNearestSpot(const AIFloat3& pos, MetalPredicate& predicate) const
 {
 	std::vector<MetalNode> result_n;
 	metalTree.query(bgi::nearest(point(pos.x, pos.z), 1) && bgi::satisfies(predicate), std::back_inserter(result_n));
@@ -80,7 +80,7 @@ const int CMetalManager::FindNearestSpot(AIFloat3& pos, MetalPredicate& predicat
 	return -1;
 }
 
-const CMetalManager::MetalIndices CMetalManager::FindNearestSpots(AIFloat3& pos, int num) const
+const CMetalManager::MetalIndices CMetalManager::FindNearestSpots(const AIFloat3& pos, int num) const
 {
 	std::vector<MetalNode> result_n;
 	metalTree.query(bgi::nearest(point(pos.x, pos.z), num), std::back_inserter(result_n));
@@ -92,7 +92,19 @@ const CMetalManager::MetalIndices CMetalManager::FindNearestSpots(AIFloat3& pos,
 	return result;
 }
 
-const CMetalManager::MetalIndices CMetalManager::FindWithinDistanceSpots(AIFloat3& pos, float maxDistance) const
+const CMetalManager::MetalIndices CMetalManager::FindNearestSpots(const AIFloat3& pos, int num, MetalPredicate& predicate) const
+{
+	std::vector<MetalNode> result_n;
+	metalTree.query(bgi::nearest(point(pos.x, pos.z), num) && bgi::satisfies(predicate), std::back_inserter(result_n));
+
+	MetalIndices result;
+	for (auto& node : result_n) {
+		result.push_back(node.second);
+	}
+	return result;
+}
+
+const CMetalManager::MetalIndices CMetalManager::FindWithinDistanceSpots(const AIFloat3& pos, float maxDistance) const
 {
 	std::vector<MetalNode> returned_values;
 	point sought = point(pos.x, pos.z);
@@ -109,7 +121,7 @@ const CMetalManager::MetalIndices CMetalManager::FindWithinDistanceSpots(AIFloat
 	return result;
 }
 
-const CMetalManager::MetalIndices CMetalManager::FindWithinRangeSpots(AIFloat3& posFrom, AIFloat3& posTo) const
+const CMetalManager::MetalIndices CMetalManager::FindWithinRangeSpots(const AIFloat3& posFrom, const AIFloat3& posTo) const
 {
 	box query_box(point(posFrom.x, posFrom.z), point(posTo.x, posTo.z));
 	std::vector<MetalNode> result_s;
@@ -138,7 +150,7 @@ const std::vector<AIFloat3>& CMetalManager::GetCentroids()
 	return rcentroids;
 }
 
-const int CMetalManager::FindNearestCluster(springai::AIFloat3& pos)
+const int CMetalManager::FindNearestCluster(const AIFloat3& pos)
 {
 	std::vector<MetalNode> result_n;
 	pclusterTree.load()->query(bgi::nearest(point(pos.x, pos.z), 1), std::back_inserter(result_n));
@@ -149,7 +161,7 @@ const int CMetalManager::FindNearestCluster(springai::AIFloat3& pos)
 	return -1;
 }
 
-const int CMetalManager::FindNearestCluster(springai::AIFloat3& pos, MetalPredicate& predicate)
+const int CMetalManager::FindNearestCluster(const AIFloat3& pos, MetalPredicate& predicate)
 {
 	std::vector<MetalNode> result_n;
 	pclusterTree.load()->query(bgi::nearest(point(pos.x, pos.z), 1) && bgi::satisfies(predicate), std::back_inserter(result_n));
@@ -159,6 +171,19 @@ const int CMetalManager::FindNearestCluster(springai::AIFloat3& pos, MetalPredic
 	}
 	return -1;
 }
+
+const CMetalManager::MetalIndices CMetalManager::FindNearestClusters(const AIFloat3& pos, int num, MetalPredicate& predicate)
+{
+	std::vector<MetalNode> result_n;
+	pclusterTree.load()->query(bgi::nearest(point(pos.x, pos.z), num) && bgi::satisfies(predicate), std::back_inserter(result_n));
+
+	MetalIndices result;
+	for (auto& node : result_n) {
+		result.push_back(node.second);
+	}
+	return result;
+}
+
 
 void CMetalManager::SetDistMatrix(CRagMatrix& distmatrix)
 {

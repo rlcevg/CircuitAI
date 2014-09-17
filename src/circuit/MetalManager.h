@@ -55,15 +55,17 @@ public:
 	bool IsClusterizing();
 	void SetClusterizing(bool value);
 	const Metals& GetSpots() const;
-	const int FindNearestSpot(springai::AIFloat3& pos) const;
-	const int FindNearestSpot(springai::AIFloat3& pos, MetalPredicate& predicate) const;
-	const MetalIndices FindNearestSpots(springai::AIFloat3& pos, int num) const;
-	const MetalIndices FindWithinDistanceSpots(springai::AIFloat3& pos, float maxDistance) const;
-	const MetalIndices FindWithinRangeSpots(springai::AIFloat3& posFrom, springai::AIFloat3& posTo) const;
+	const int FindNearestSpot(const springai::AIFloat3& pos) const;
+	const int FindNearestSpot(const springai::AIFloat3& pos, MetalPredicate& predicate) const;
+	const MetalIndices FindNearestSpots(const springai::AIFloat3& pos, int num) const;
+	const MetalIndices FindNearestSpots(const springai::AIFloat3& pos, int num, MetalPredicate& predicate) const;
+	const MetalIndices FindWithinDistanceSpots(const springai::AIFloat3& pos, float maxDistance) const;
+	const MetalIndices FindWithinRangeSpots(const springai::AIFloat3& posFrom, const springai::AIFloat3& posTo) const;
 	const std::vector<MetalIndices>& GetClusters();
 	const std::vector<springai::AIFloat3>& GetCentroids();
-	const int FindNearestCluster(springai::AIFloat3& pos);
-	const int FindNearestCluster(springai::AIFloat3& pos, MetalPredicate& predicate);
+	const int FindNearestCluster(const springai::AIFloat3& pos);
+	const int FindNearestCluster(const springai::AIFloat3& pos, MetalPredicate& predicate);
+	const MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num, MetalPredicate& predicate);
 
 	void SetDistMatrix(CRagMatrix& distmatrix);
 	/*

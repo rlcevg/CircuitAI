@@ -109,9 +109,13 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 		case EVENT_UNIT_CREATED: {
 			PRINT_TOPIC("EVENT_UNIT_CREATED", topic);
 			struct SUnitCreatedEvent* evt = (struct SUnitCreatedEvent*)data;
-			CCircuitUnit* builder = GetUnitById(evt->builder);
-			CCircuitUnit* unit = RegisterUnit(evt->unit);
-			ret = this->UnitCreated(unit, builder);
+			if (evt->unit >= 0) {
+				CCircuitUnit* builder = GetUnitById(evt->builder);
+				CCircuitUnit* unit = RegisterUnit(evt->unit);
+				ret = (unit != nullptr) ? this->UnitCreated(unit, builder) : ERROR_UNIT_CREATED;
+			} else {
+				ret = ERROR_UNIT_CREATED;
+			}
 			break;
 		}
 		case EVENT_UNIT_FINISHED: {
@@ -121,28 +125,29 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 			// and trigger UnitFinished before eoh->UnitCreated(*this, builder);
 			// @see rts/Sim/Units/Unit.cpp CUnit::PostInit
 			CCircuitUnit* unit = RegisterUnit(evt->unit);
-			ret = this->UnitFinished(unit);
+			ret = (unit != nullptr) ? this->UnitFinished(unit) : ERROR_UNIT_FINISHED;
 			break;
 		}
 		case EVENT_UNIT_IDLE: {
-//			PRINT_TOPIC("EVENT_UNIT_IDLE", topic);
+			PRINT_TOPIC("EVENT_UNIT_IDLE", topic);
 			struct SUnitIdleEvent* evt = (struct SUnitIdleEvent*)data;
 			CCircuitUnit* unit = GetUnitById(evt->unit);
-			if (unit != nullptr) {
-				ret = this->UnitIdle(unit);
-			} else {
-				ret = ERROR_UNIT_IDLE;
-			}
+			ret = (unit != nullptr) ? this->UnitIdle(unit) : ERROR_UNIT_IDLE;
 			break;
 		}
 		case EVENT_UNIT_MOVE_FAILED: {
-//			PRINT_TOPIC("EVENT_UNIT_MOVE_FAILED", topic);
-			ret = 0;
+			PRINT_TOPIC("EVENT_UNIT_MOVE_FAILED", topic);
+			struct SUnitMoveFailedEvent* evt = (struct SUnitMoveFailedEvent*)data;
+			CCircuitUnit* unit = GetUnitById(evt->unit);
+			ret = (unit != nullptr) ? this->UnitMoveFailed(unit) : ERROR_UNIT_MOVE_FAILED;
 			break;
 		}
 		case EVENT_UNIT_DAMAGED: {
 			PRINT_TOPIC("EVENT_UNIT_DAMAGED", topic);
-			ret = 0;
+			struct SUnitDamagedEvent* evt = (struct SUnitDamagedEvent*)data;
+			CCircuitUnit* attacker = GetUnitById(evt->attacker);
+			CCircuitUnit* unit = GetUnitById(evt->unit);
+			ret = (unit != nullptr) ? this->UnitDamaged(unit, attacker) : ERROR_UNIT_DAMAGED;
 			break;
 		}
 		case EVENT_UNIT_DESTROYED: {
@@ -152,7 +157,7 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 			CCircuitUnit* unit = GetUnitById(evt->unit);
 			if (unit != nullptr) {
 				ret = this->UnitDestroyed(unit, attacker);
-				UnregisterUnit(evt->unit);
+				UnregisterUnit(unit);
 			} else {
 				ret = ERROR_UNIT_DESTROYED;
 			}
@@ -162,19 +167,25 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_UNIT_GIVEN", topic);
 			struct SUnitGivenEvent* evt = (struct SUnitGivenEvent*)data;
 			CCircuitUnit* unit = RegisterUnit(evt->unitId);
-			ret = this->UnitGiven(unit, evt->oldTeamId, evt->newTeamId);
+			ret = (unit != nullptr) ? this->UnitGiven(unit, evt->oldTeamId, evt->newTeamId) : ERROR_UNIT_GIVEN;
 			break;
 		}
 		case EVENT_UNIT_CAPTURED: {
 			PRINT_TOPIC("EVENT_UNIT_CAPTURED", topic);
 			struct SUnitCapturedEvent* evt = (struct SUnitCapturedEvent*)data;
 			CCircuitUnit* unit = GetUnitById(evt->unitId);
-			ret = this->UnitCaptured(unit, evt->oldTeamId, evt->newTeamId);
-			UnregisterUnit(evt->unitId);
+			if (unit != nullptr) {
+				ret = this->UnitCaptured(unit, evt->oldTeamId, evt->newTeamId);
+				UnregisterUnit(unit);
+			} else {
+				ret = ERROR_UNIT_CAPTURED;
+			}
 			break;
 		}
 		case EVENT_ENEMY_ENTER_LOS: {
 			PRINT_TOPIC("EVENT_ENEMY_ENTER_LOS", topic);
+			struct SEnemyEnterLOSEvent* evt = (struct SEnemyEnterLOSEvent*)data;
+			CCircuitUnit* enemy = RegisterUnit(evt->enemy);
 			ret = 0;
 			break;
 		}
@@ -200,7 +211,14 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 		}
 		case EVENT_ENEMY_DESTROYED: {
 			PRINT_TOPIC("EVENT_ENEMY_DESTROYED", topic);
-			ret = 0;
+			struct SEnemyDestroyedEvent* evt = (struct SEnemyDestroyedEvent*)data;
+			CCircuitUnit* enemy = GetUnitById(evt->enemy);
+			if (enemy != nullptr) {
+				UnregisterUnit(enemy);
+				ret = 0;
+			} else {
+				ret = ERROR_ENEMY_DESTROYED;
+			}
 			break;
 		}
 		case EVENT_WEAPON_FIRED: {
@@ -335,12 +353,12 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 int CCircuitAI::Release(int reason)
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	DestroyGameAttribute();
-	scheduler = nullptr;
 	modules.clear();
+	scheduler = nullptr;
 	for (auto& kv : aliveUnits) {
 		delete kv.second;
 	}
+	DestroyGameAttribute();
 
 	initialized = false;
 
@@ -375,27 +393,6 @@ int CCircuitAI::Message(int playerId, const char* message)
 
 int CCircuitAI::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 {
-//	if (builder != nullptr) {
-//		if (unit->GetUnit()->IsBeingBuilt()) {
-//			for (WorkerTask wt : workerTasks) {
-//				if(wt instanceof ProductionTask) {
-//					ProductionTask ct = (ProductionTask)wt;
-//					if (ct.getWorker().getUnit().getUnitId() == builder.getUnitId()) {
-//						ct.setBuilding(unit);
-//					}
-//				}
-//			}
-//		} else {
-//			for (WorkerTask wt : workerTasks){
-//				if (wt instanceof ProductionTask) {
-//					ProductionTask ct = (ProductionTask)wt;
-//					if (ct.getWorker().getUnit().getUnitId() == builder.getUnitId()) {
-//						ct.setCompleted();
-//					}
-//				}
-//			}
-//		}
-//	}
 	for (auto& module : modules) {
 		module->UnitCreated(unit, builder);
 	}
@@ -416,6 +413,28 @@ int CCircuitAI::UnitIdle(CCircuitUnit* unit)
 {
 	for (auto& module : modules) {
 		module->UnitIdle(unit);
+	}
+
+	return 0;  // signaling: OK
+}
+
+int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
+{
+	Unit* u = unit->GetUnit();
+	AIFloat3 pos = u->GetPos();
+	float dx = (float)rand() / RAND_MAX - 0.5f;
+	float dz = (float)rand() / RAND_MAX - 0.5f;
+	pos.x += dx * SQUARE_SIZE * 10;
+	pos.z += dz * SQUARE_SIZE * 10;
+	u->MoveTo(pos, 0, FRAMES_PER_SEC);
+
+	return 0;  // signaling: OK
+}
+
+int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+{
+	for (auto& module : modules) {
+		module->UnitDamaged(unit, attacker);
 	}
 
 	return 0;  // signaling: OK
@@ -492,49 +511,46 @@ CCircuitUnit* CCircuitAI::GetUnitById(int unitId)
 
 CCircuitUnit* CCircuitAI::RegisterUnit(int unitId)
 {
-	CCircuitUnit* u = GetUnitById(unitId);
-	if (u != nullptr) {
-		return u;
+	CCircuitUnit* unit = GetUnitById(unitId);
+	if (unit != nullptr) {
+		return unit;
 	}
 
-	springai::Unit* unit = WrappUnit::GetInstance(skirmishAIId, unitId);
-	UnitDef* unitDef = unit->GetDef();
+	springai::Unit* u = WrappUnit::GetInstance(skirmishAIId, unitId);
+	UnitDef* unitDef = u->GetDef();
 	// TODO: Use GetUnitDefById ?
-	u = new CCircuitUnit(unit, gameAttribute->GetUnitDefByName(unitDef->GetName()));
+	unit = new CCircuitUnit(u, gameAttribute->GetUnitDefByName(unitDef->GetName()));
 	delete unitDef;
-	aliveUnits[unitId] = u;
+	aliveUnits[unitId] = unit;
 
-	if (unit->GetTeam() == GetTeamId()) {
-		teamUnits[unitId] = u;
-		friendlyUnits[unitId] = u;
-	} else if (unit->GetAllyTeam() == allyTeamId) {
-		friendlyUnits[unitId] = u;
+	if (u->GetTeam() == GetTeamId()) {
+		teamUnits[unitId] = unit;
+		friendlyUnits[unitId] = unit;
+	} else if (u->GetAllyTeam() == allyTeamId) {
+		friendlyUnits[unitId] = unit;
 	} else {
-		enemyUnits[unitId] = u;
+		enemyUnits[unitId] = unit;
 	}
 
-	return u;
+	return unit;
 }
 
-void CCircuitAI::UnregisterUnit(int unitId)
+void CCircuitAI::UnregisterUnit(CCircuitUnit* unit)
 {
-	CCircuitUnit* u = GetUnitById(unitId);
-	if (u == nullptr) {
-		return;
-	}
-
+	Unit* u = unit->GetUnit();
+	int unitId = u->GetUnitId();
 	aliveUnits.erase(unitId);
 
-	if (u->GetUnit()->GetTeam() == GetTeamId()) {
+	if (u->GetTeam() == GetTeamId()) {
 		teamUnits.erase(unitId);
 		friendlyUnits.erase(unitId);
-	} else if (u->GetUnit()->GetAllyTeam() == allyTeamId) {
+	} else if (u->GetAllyTeam() == allyTeamId) {
 		friendlyUnits.erase(unitId);
 	} else {
 		enemyUnits.erase(unitId);
 	}
 
-	delete u;
+	delete unit;
 }
 
 CCircuitUnit* CCircuitAI::GetCommander()

@@ -14,12 +14,18 @@ namespace circuit {
 
 class CBuilderTask: public IConstructTask {
 public:
-	enum class TaskType: char {FACTORY = 0, NANO, EXPAND, ENERGIZE, OVERDRIVE, DEFEND, ATTACK, ASSIST, TERRAFORM, DEFAULT = ENERGIZE};
+	enum class TaskType: char {
+		FACTORY = 0, NANO,
+		EXPAND,
+		SOLAR, FUSION, SINGU, PYLON,
+		DEFENDER, LOTUS, DDM, ANNI,
+		RADAR, TERRAFORM, ASSIST, DEFAULT = DEFENDER
+	};
 
 public:
 	CBuilderTask(Priority priority,
-			springai::AIFloat3& position,
-			TaskType type, int duration = 0);
+			const springai::AIFloat3& position,
+			TaskType type, int timeout = 0);
 	virtual ~CBuilderTask();
 
 	void AssignTo(CCircuitUnit* unit);
@@ -28,9 +34,9 @@ public:
 
 	TaskType GetType();
 	int GetQuantity();
-	int GetDuration();
+	int GetTimeout();
 
-	void SetBuildPos(springai::AIFloat3& pos);
+	void SetBuildPos(const springai::AIFloat3& pos);
 	springai::AIFloat3& GetBuildPos();
 	void SetTarget(CCircuitUnit* unit);
 	CCircuitUnit* GetTarget();
@@ -38,7 +44,7 @@ public:
 private:
 	TaskType type;
 	int quantity;
-	int duration;
+	int timeout;
 	CCircuitUnit* target;
 	springai::AIFloat3 buildPos;
 };

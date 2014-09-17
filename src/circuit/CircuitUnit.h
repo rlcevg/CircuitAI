@@ -15,7 +15,8 @@ namespace springai {
 
 namespace circuit {
 
-#define CMD_PRIORITY	34220
+#define CMD_PRIORITY			34220
+#define CMD_TERRAFORM_INTERNAL	39801
 
 class IUnitTask;
 
