@@ -4,6 +4,7 @@
 set(mySourceDirRel         "src/") # Common values are "" or "src"
 set(additionalSources      ${CUtils_SRC})
 set(additionalCompileFlags "-Isrc/lib/ -DDEBUG")
+#set(additionalCompileFlags "-Isrc/lib/")
 set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET})
 
 

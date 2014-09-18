@@ -67,6 +67,7 @@ CCircuitAI::CCircuitAI(OOAICallback* callback) :
 	allyTeamId = game->GetMyAllyTeam();
 
 	commanderId = -1;
+	startPos = -RgtVector;
 }
 
 CCircuitAI::~CCircuitAI()
@@ -109,13 +110,9 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 		case EVENT_UNIT_CREATED: {
 			PRINT_TOPIC("EVENT_UNIT_CREATED", topic);
 			struct SUnitCreatedEvent* evt = (struct SUnitCreatedEvent*)data;
-			if (evt->unit >= 0) {
-				CCircuitUnit* builder = GetUnitById(evt->builder);
-				CCircuitUnit* unit = RegisterUnit(evt->unit);
-				ret = (unit != nullptr) ? this->UnitCreated(unit, builder) : ERROR_UNIT_CREATED;
-			} else {
-				ret = ERROR_UNIT_CREATED;
-			}
+			CCircuitUnit* builder = GetUnitById(evt->builder);
+			CCircuitUnit* unit = RegisterUnit(evt->unit);
+			ret = (unit != nullptr) ? this->UnitCreated(unit, builder) : ERROR_UNIT_CREATED;
 			break;
 		}
 		case EVENT_UNIT_FINISHED: {
@@ -214,8 +211,8 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 			struct SEnemyDestroyedEvent* evt = (struct SEnemyDestroyedEvent*)data;
 			CCircuitUnit* enemy = GetUnitById(evt->enemy);
 			if (enemy != nullptr) {
-				UnregisterUnit(enemy);
 				ret = 0;
+				UnregisterUnit(enemy);
 			} else {
 				ret = ERROR_ENEMY_DESTROYED;
 			}
@@ -517,9 +514,11 @@ CCircuitUnit* CCircuitAI::RegisterUnit(int unitId)
 	}
 
 	springai::Unit* u = WrappUnit::GetInstance(skirmishAIId, unitId);
+	if (u == nullptr) {
+		return nullptr;
+	}
 	UnitDef* unitDef = u->GetDef();
-	// TODO: Use GetUnitDefById ?
-	unit = new CCircuitUnit(u, gameAttribute->GetUnitDefByName(unitDef->GetName()));
+	unit = new CCircuitUnit(u, gameAttribute->GetUnitDefById(unitDef->GetUnitDefId()));
 	delete unitDef;
 	aliveUnits[unitId] = unit;
 
@@ -799,8 +798,10 @@ void CCircuitAI::ClusterizeMetal()
 	MoveData* moveData = gameAttribute->GetUnitDefByName("armcom1")->GetMoveData();
 	int pathType = moveData->GetPathType();
 	delete moveData;
-	float distance = gameAttribute->GetUnitDefByName("corrl")->GetMaxWeaponRange();
-	gameAttribute->ClusterizeMetal(scheduler, distance * 2, pathType, GetPathing());
+	UnitDef* def = gameAttribute->GetUnitDefByName("armestor");
+	std::map<std::string, std::string> customParams = def->GetCustomParams();
+	float radius = utils::string_to_float(customParams["pylonrange"]);
+	gameAttribute->ClusterizeMetal(scheduler, radius * 2, pathType, GetPathing());
 }
 
 // debug
@@ -819,6 +820,9 @@ void CCircuitAI::FindCommander()
 		delete def;
 		if (std::string("armcom1") == name || std::string("comm_trainer_support_0") == name) {
 			commanderId = unit->GetUnitId();
+			if (startPos == -RgtVector) {
+				startPos = unit->GetPos();
+			}
 			break;
 		}
 	}

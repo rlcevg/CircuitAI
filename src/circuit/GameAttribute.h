@@ -62,13 +62,15 @@ public:
 	void InitUnitDefs(std::vector<springai::UnitDef*>&& unitDefs);
 	bool HasUnitDefs();
 	springai::UnitDef* GetUnitDefByName(const char* name);
+	springai::UnitDef* GetUnitDefById(int unitDefId);
 	UnitDefs& GetUnitDefs();
 
 private:
 	std::shared_ptr<CSetupManager> setupManager;
 	std::shared_ptr<CMetalManager> metalManager;
 
-	UnitDefs definitions;  // owner
+	UnitDefs defsByName;  // owner
+	std::map<int, springai::UnitDef*> defsById;
 
 	struct {
 		int i;

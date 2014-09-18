@@ -51,7 +51,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 		float z = rand() % (int)(terHeight + 1);
 		AIFloat3 toPos(x, map->GetElevationAt(x, z), z);
 //		u->PatrolTo(toPos);
-		u->Fight(toPos);
+		u->Fight(toPos, 0, FRAMES_PER_SEC * 60 * 5);
 	};
 
 	unitDefId = attrib->GetUnitDefByName("armpw")->GetUnitDefId();

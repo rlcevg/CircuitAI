@@ -38,7 +38,7 @@ CGameAttribute::CGameAttribute() :
 CGameAttribute::~CGameAttribute()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	for (auto& kv : definitions) {
+	for (auto& kv : defsByName) {
 		delete kv.second;
 	}
 }
@@ -286,26 +286,38 @@ CMetalManager& CGameAttribute::GetMetalManager()
 
 void CGameAttribute::InitUnitDefs(std::vector<UnitDef*>&& unitDefs)
 {
-	if (!definitions.empty()) {
-		for (auto& kv : definitions) {
+	if (!defsByName.empty()) {
+		for (auto& kv : defsByName) {
 			delete kv.second;
 		}
-		definitions.clear();
+		defsByName.clear();
+		defsById.clear();
 	}
 	for (auto def : unitDefs) {
-		definitions[def->GetName()] = def;
+		defsByName[def->GetName()] = def;
+		defsById[def->GetUnitDefId()] = def;
 	}
 }
 
 bool CGameAttribute::HasUnitDefs()
 {
-	return !definitions.empty();
+	return !defsByName.empty();
 }
 
 UnitDef* CGameAttribute::GetUnitDefByName(const char* name)
 {
-	decltype(definitions)::iterator i = definitions.find(name);
-	if (i != definitions.end()) {
+	decltype(defsByName)::iterator i = defsByName.find(name);
+	if (i != defsByName.end()) {
+		return i->second;
+	}
+
+	return nullptr;
+}
+
+UnitDef* CGameAttribute::GetUnitDefById(int unitDefId)
+{
+	decltype(defsById)::iterator i = defsById.find(unitDefId);
+	if (i != defsById.end()) {
 		return i->second;
 	}
 
@@ -314,7 +326,7 @@ UnitDef* CGameAttribute::GetUnitDefByName(const char* name)
 
 CGameAttribute::UnitDefs& CGameAttribute::GetUnitDefs()
 {
-	return definitions;
+	return defsByName;
 }
 
 void CGameAttribute::FillDistMatrix()

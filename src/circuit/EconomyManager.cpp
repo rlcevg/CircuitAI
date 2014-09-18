@@ -23,11 +23,11 @@
 #include "SkirmishAIs.h"
 #include "Resource.h"
 #include "Economy.h"
+//#include "WeaponDef.h"
 
 #ifdef DEBUG
 	#include "Drawer.h"
 #endif
-//#include "WeaponDef.h"
 
 namespace circuit {
 
@@ -72,7 +72,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateEnergyTasks, this), aisCount * numUpdates, circuit->GetSkirmishAIId() + 1);
 	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateBuilderTasks, this), aisCount * numUpdates, circuit->GetSkirmishAIId() + 2);
 	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateFactoryTasks, this), aisCount * numUpdates, circuit->GetSkirmishAIId() + 3);
-	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::WorkerWatchdog, this), FRAMES_PER_SEC * 8, circuit->GetSkirmishAIId());
+	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::WorkerWatchdog, this), FRAMES_PER_SEC * 60, circuit->GetSkirmishAIId());
 
 	// TODO: Group handlers
 	//       Raider:       Glaive, Bandit, Scorcher, Pyro, Panther, Scrubber, Duck
@@ -317,7 +317,15 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		this->workers.erase(unit);
 		isCachedChanged = true;
 		this->builderInfo.erase(unit);
-		unit->RemoveTask();
+		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
+		if (task != nullptr) {
+			unfinishedUnits.erase(task->GetTarget());
+			task->MarkCompleted();
+			builderTasks[task->GetType()].remove(task);
+			delete task;
+			builderTasksCount--;
+		}
+//		unit->RemoveTask();
 	};
 
 	/*
@@ -359,9 +367,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		builderTasks[CBuilderTask::TaskType::DDM].push_front(
 				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::DDM)
 		);
-		builderTasks[CBuilderTask::TaskType::DDM].push_front(
-				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::DDM)
-		);
 		builderTasks[CBuilderTask::TaskType::ANNI].push_front(
 				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::ANNI)
 		);
@@ -371,13 +376,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		builderTasks[CBuilderTask::TaskType::NANO].push_front(
 				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::NANO)
 		);
-		builderTasks[CBuilderTask::TaskType::NANO].push_front(
-				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::NANO)
-		);
-		builderTasks[CBuilderTask::TaskType::NANO].push_front(
-				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::NANO)
-		);
-		builderTasksCount += 8;
+		builderTasksCount += 4;
 		isCachedChanged = true;
 	};
 
@@ -483,9 +482,9 @@ int CEconomyManager::UnitFinished(CCircuitUnit* unit)
 					CBuilderTask* taskB = static_cast<CBuilderTask*>(task);
 					taskB->MarkCompleted();
 					builderTasks[taskB->GetType()].remove(taskB);
-					isCachedChanged = true;
 					delete taskB;
 					builderTasksCount--;
+					isCachedChanged = true;
 					break;
 				}
 			}
@@ -529,8 +528,14 @@ int CEconomyManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 						break;
 					}
 					case IConstructTask::ConstructType::BUILDER: {
-						unfinishedTasks.erase(task);
-						static_cast<CBuilderTask*>(task)->SetTarget(nullptr);
+						CBuilderTask* taskB = static_cast<CBuilderTask*>(task);
+						unfinishedTasks.erase(taskB);
+						task->MarkCompleted();
+						builderTasks[taskB->GetType()].remove(taskB);
+						delete taskB;
+						builderTasksCount--;
+						isCachedChanged = true;
+//						static_cast<CBuilderTask*>(task)->SetTarget(nullptr);
 						break;
 					}
 				}
@@ -820,22 +825,32 @@ void CEconomyManager::WorkerWatchdog()
 		}
 		++iter;
 	}
+
+	// somehow workers get stuck if they are trying to build already built building
+	for (auto worker : workers) {
+		Unit* u = worker->GetUnit();
+		if ((u->GetVel() == ZeroVector) && (u->GetResourceUse(metalRes) == 0.0f)) {
+			u->Stop();
+		}
+	}
 }
 
 CCircuitUnit* CEconomyManager::FindUnitToAssist(CCircuitUnit* unit)
 {
-	Unit* cu = unit->GetUnit();
-	const AIFloat3& pos = cu->GetPos();
-	float maxSpeed = cu->GetMaxSpeed();
+	CCircuitUnit* target = unit;
+	Unit* su = unit->GetUnit();
+	const AIFloat3& pos = su->GetPos();
+	float maxSpeed = su->GetMaxSpeed();
 	float radius = unit->GetDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 5;
 	std::vector<Unit*> units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
 	for (auto u : units) {
 		if (u->GetHealth() < u->GetMaxHealth() && u->GetSpeed() <= maxSpeed * 2) {
-			return circuit->GetUnitById(u->GetUnitId());
+			target = circuit->GetUnitById(u->GetUnitId());
+			break;
 		}
 	}
 	utils::free_clear(units);
-	return unit;
+	return target;
 }
 
 void CEconomyManager::PrepareFactory(CCircuitUnit* unit)
@@ -975,11 +990,12 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 	};
 
 	auto assistFallback = [this, task, u](CCircuitUnit* unit) {
+		unfinishedUnits.erase(task->GetTarget());
 		task->MarkCompleted();
 		builderTasks[task->GetType()].remove(task);
-		isCachedChanged = true;
 		delete task;
 		builderTasksCount--;
+		isCachedChanged = true;
 
 		std::vector<float> params;
 		params.push_back(0.0f);
