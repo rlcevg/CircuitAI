@@ -32,9 +32,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	CGameAttribute* attrib = circuit->GetGameAttribute();
 	int unitDefId;
 
-	auto atackerFinishedHandler = [circuit](CCircuitUnit* unit) {
+	auto atackerFinishedHandler = [this](CCircuitUnit* unit) {
 		Unit* u = unit->GetUnit();
-		Map* map = circuit->GetMap();
+		Map* map = this->circuit->GetMap();
 		int terWidth = map->GetWidth() * SQUARE_SIZE;
 		int terHeight = map->GetHeight() * SQUARE_SIZE;
 		float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
@@ -42,9 +42,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 		AIFloat3 fromPos(x, map->GetElevationAt(x, z), z);
 		u->Fight(fromPos, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
 	};
-	auto atackerIdleHandler = [circuit](CCircuitUnit* unit) {
+	auto atackerIdleHandler = [this](CCircuitUnit* unit) {
 		Unit* u = unit->GetUnit();
-		Map* map = circuit->GetMap();
+		Map* map = this->circuit->GetMap();
 		int terWidth = map->GetWidth() * SQUARE_SIZE;
 		int terHeight = map->GetHeight() * SQUARE_SIZE;
 		float x = rand() % (int)(terWidth + 1);

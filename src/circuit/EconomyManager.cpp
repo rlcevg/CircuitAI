@@ -555,7 +555,9 @@ int CEconomyManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 int CEconomyManager::UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 {
 	UnitCreated(unit, nullptr);
-	UnitFinished(unit);
+	if (!unit->GetUnit()->IsBeingBuilt()) {
+		UnitFinished(unit);
+	}
 	return 0; //signaling: OK
 }
 
@@ -830,7 +832,12 @@ void CEconomyManager::WorkerWatchdog()
 	for (auto worker : workers) {
 		Unit* u = worker->GetUnit();
 		if ((u->GetVel() == ZeroVector) && (u->GetResourceUse(metalRes) == 0.0f)) {
-			u->Stop();
+			AIFloat3 toPos = u->GetPos();
+			const float size = 50.0f;
+			toPos.x += (toPos.x > circuit->GetMap()->GetWidth() * SQUARE_SIZE / 2) ? -size : size;
+			toPos.z += (toPos.z > circuit->GetMap()->GetHeight() * SQUARE_SIZE / 2) ? -size : size;
+			u->MoveTo(toPos);
+//			u->Stop();
 		}
 	}
 }

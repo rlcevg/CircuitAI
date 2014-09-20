@@ -16,6 +16,7 @@
 #include <list>
 #include <vector>
 #include <unordered_set>
+#include <unordered_map>
 #include <functional>
 
 namespace springai {
@@ -52,8 +53,8 @@ private:
 	void PrepareBuilder(CCircuitUnit* unit);
 	void ExecuteBuilder(CCircuitUnit* unit);
 
-	using Handlers1 = std::map<int, std::function<void (CCircuitUnit* unit)>>;
-	using Handlers2 = std::map<int, std::function<void (CCircuitUnit* unit, CCircuitUnit* builder)>>;
+	using Handlers1 = std::unordered_map<int, std::function<void (CCircuitUnit* unit)>>;
+	using Handlers2 = std::unordered_map<int, std::function<void (CCircuitUnit* unit, CCircuitUnit* builder)>>;
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
