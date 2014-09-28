@@ -71,17 +71,7 @@ private:
 	std::list<IConstructTask*> factoryTasks;  // owner
 	float factoryPower;
 
-	struct WorkerInfo {
-		CCircuitUnit* unit;
-		springai::AIFloat3 pos;
-		float qspeed;
-	};
-	using WorkerTaskRelation = std::vector<std::vector<WorkerInfo*>>;
 	std::unordered_set<CCircuitUnit*> workers;
-	int cachedFrame;
-	bool isCachedChanged;
-	WorkerTaskRelation wtRelation;
-	WorkerTaskRelation& GetWorkerTaskRelations(CCircuitUnit* unit, WorkerInfo*& retInfo);
 
 	std::map<CCircuitUnit*, std::list<CCircuitUnit*>> factories;
 

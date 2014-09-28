@@ -37,7 +37,7 @@ public:
 	int GetTimeout();
 
 	void SetBuildPos(const springai::AIFloat3& pos);
-	springai::AIFloat3& GetBuildPos();
+	const springai::AIFloat3& GetBuildPos() const;
 	void SetTarget(CCircuitUnit* unit);
 	CCircuitUnit* GetTarget();
 

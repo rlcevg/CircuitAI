@@ -69,7 +69,7 @@ void CBuilderTask::SetBuildPos(const AIFloat3& pos)
 	buildPos = pos;
 }
 
-AIFloat3& CBuilderTask::GetBuildPos()
+const AIFloat3& CBuilderTask::GetBuildPos() const
 {
 	return buildPos;
 }

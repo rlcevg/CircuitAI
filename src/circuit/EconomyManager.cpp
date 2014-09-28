@@ -24,10 +24,13 @@
 #include "Resource.h"
 #include "Economy.h"
 //#include "WeaponDef.h"
+#include "Pathing.h"
+#include "MoveData.h"
 
 #ifdef DEBUG
 	#include "Drawer.h"
 #endif
+	#include "Drawer.h"
 
 namespace circuit {
 
@@ -40,15 +43,11 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		factoryPower(.0f),
 		builderTasksCount(0),
 		solarCount(0),
-		fusionCount(0),
-		cachedFrame(-1),
-		isCachedChanged(true)
+		fusionCount(0)
 {
 	metalRes = circuit->GetCallback()->GetResourceByName("Metal");
 	energyRes = circuit->GetCallback()->GetResourceByName("Energy");
 	eco = circuit->GetCallback()->GetEconomy();
-	std::vector<WorkerInfo*> wi;
-	wtRelation.push_back(wi);
 
 	CGameAttribute* attrib = circuit->GetGameAttribute();
 	UnitDef* def = attrib->GetUnitDefByName("armestor");
@@ -295,7 +294,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		this->totalBuildpower += buildSpeed;
 		this->builderPower += buildSpeed;
 		this->workers.insert(unit);
-		isCachedChanged = true;
 	};
 	idleHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
@@ -315,7 +313,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		this->totalBuildpower -= buildSpeed;
 		this->builderPower -= buildSpeed;
 		this->workers.erase(unit);
-		isCachedChanged = true;
 		this->builderInfo.erase(unit);
 		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
 		if (task != nullptr) {
@@ -352,7 +349,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::DDM)
 		);
 		builderTasksCount++;
-		isCachedChanged = true;
 	};
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 		this->fusionCount--;
@@ -377,7 +373,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::NANO)
 		);
 		builderTasksCount += 4;
-		isCachedChanged = true;
 	};
 
 	/*
@@ -419,7 +414,6 @@ CEconomyManager::~CEconomyManager()
 	for (auto& tasks : builderTasks) {
 		utils::free_clear(tasks.second);
 	}
-	utils::free_clear(wtRelation.front());
 	delete metalRes, energyRes, eco;
 }
 
@@ -433,6 +427,7 @@ int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 			switch (task->GetConstructType()) {
 				case IConstructTask::ConstructType::FACTORY: {
 //					static_cast<CFactoryTask*>(task)->Progress();
+					unfinishedTasks[task].push_back(unit);
 					break;
 				}
 				case IConstructTask::ConstructType::BUILDER: {
@@ -441,7 +436,6 @@ int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 				}
 			}
 			unfinishedUnits[unit] = task;
-			unfinishedTasks[task].push_back(unit);
 		}
 	}
 
@@ -467,7 +461,6 @@ int CEconomyManager::UnitFinished(CCircuitUnit* unit)
 					if (taskF->IsDone()) {
 						taskF->MarkCompleted();
 						factoryTasks.remove(taskF);
-						isCachedChanged = true;
 						for (auto u : units) {
 							unfinishedUnits[u] = nullptr;
 						}
@@ -484,7 +477,6 @@ int CEconomyManager::UnitFinished(CCircuitUnit* unit)
 					builderTasks[taskB->GetType()].remove(taskB);
 					delete taskB;
 					builderTasksCount--;
-					isCachedChanged = true;
 					break;
 				}
 			}
@@ -529,12 +521,10 @@ int CEconomyManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 					}
 					case IConstructTask::ConstructType::BUILDER: {
 						CBuilderTask* taskB = static_cast<CBuilderTask*>(task);
-						unfinishedTasks.erase(taskB);
 						task->MarkCompleted();
 						builderTasks[taskB->GetType()].remove(taskB);
 						delete taskB;
 						builderTasksCount--;
-						isCachedChanged = true;
 //						static_cast<CBuilderTask*>(task)->SetTarget(nullptr);
 						break;
 					}
@@ -598,7 +588,6 @@ void CEconomyManager::UpdateExpandTasks()
 			builderTasks[CBuilderTask::TaskType::EXPAND].push_front(task);
 		}
 		builderTasksCount += indices.size();
-		isCachedChanged = true;
 	}
 }
 
@@ -635,7 +624,6 @@ void CEconomyManager::UpdateEnergyTasks()
 			}
 			builderTasksCount += numSolars;
 		}
-		isCachedChanged = true;
 	}
 	else if ((metalIncome > energyIncome * 0.2) && (solarCount >= 16) && (fusionCount < 5) && builderTasks[CBuilderTask::TaskType::FUSION].empty()) {
 		const AIFloat3& startPos = circuit->GetStartPos();
@@ -656,7 +644,6 @@ void CEconomyManager::UpdateEnergyTasks()
 			builderTasks[CBuilderTask::TaskType::FUSION].push_front(task);
 			builderTasksCount++;
 		}
-		isCachedChanged = true;
 		CMetalManager::MetalPredicate predicate = [this](const CMetalManager::MetalNode& v) {
 			return clusterInfo[v.second].pylon == nullptr;
 		};
@@ -688,7 +675,6 @@ void CEconomyManager::UpdateEnergyTasks()
 			builderTasks[CBuilderTask::TaskType::FUSION].push_front(task);
 			builderTasksCount++;
 		}
-		isCachedChanged = true;
 		CMetalManager::MetalPredicate predicate = [this](const CMetalManager::MetalNode& v) {
 			return clusterInfo[v.second].pylon == nullptr;
 		};
@@ -740,7 +726,6 @@ void CEconomyManager::UpdateBuilderTasks()
 			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, buildPos, CBuilderTask::TaskType::NANO);
 			builderTasks[CBuilderTask::TaskType::NANO].push_front(task);
 			builderTasksCount++;
-			isCachedChanged = true;
 		} else {
 			const AIFloat3& startPos = circuit->GetStartPos();
 			CMetalManager::MetalPredicate predicate = [this](const CMetalManager::MetalNode& v) {
@@ -762,7 +747,6 @@ void CEconomyManager::UpdateBuilderTasks()
 			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, buildPos, CBuilderTask::TaskType::FACTORY);
 			builderTasks[CBuilderTask::TaskType::FACTORY].push_front(task);
 			builderTasksCount++;
-			isCachedChanged = true;
 		}
 	}
 }
@@ -912,49 +896,23 @@ void CEconomyManager::ExecuteFactory(CCircuitUnit* unit)
 
 void CEconomyManager::PrepareBuilder(CCircuitUnit* unit)
 {
-	auto qdist = [](const AIFloat3& p1, const AIFloat3& p2) {
-		float x = p1.x - p2.x;
-		float z = p1.z - p2.z;
-		return x * x + z * z;
-	};
-
-	std::vector<const CBuilderTask*> candidates;
-	WorkerInfo* unitInfo;
-	// TODO: Refactor task picker. Task with min(dist*quantity) should be enough
-	WorkerTaskRelation& wtRelation = GetWorkerTaskRelations(unit, unitInfo);
-	int idx = wtRelation.front().size();
-	int i = 0;
-	for (auto& tasks : builderTasks) {
-		for (auto& task : tasks.second) {
-			if (task->CanAssignTo(unit)) {
-				const CBuilderTask* candidate = static_cast<CBuilderTask*>(task);
-				auto iter = std::find(wtRelation[i].begin(), wtRelation[i].end(), unitInfo);
-				int icand = std::distance(wtRelation[i].begin(), iter);
-				if (icand < idx) {
-					idx = icand;
-					candidates.clear();
-					candidates.push_back(candidate);
-				} else if (icand == idx) {
-					candidates.push_back(candidate);
-				}
-			}
-			i++;
-		}
-	}
-
 	CBuilderTask* task = nullptr;
-	if (!candidates.empty()) {
-		task = (CBuilderTask*)candidates.front();
-		float dist = qdist(task->GetPos(), unitInfo->pos);
-		int quantity = task->GetQuantity();
-		for (auto t : candidates) {
-			float d = qdist(t->GetPos(), unitInfo->pos);
-			int q = ((CBuilderTask*)t)->GetQuantity();
-			if ((q < quantity) || (q == quantity && d < dist)) {
-//			if ((q < quantity) || (q * d < quantity * dist)) {
-				quantity = q;
-				dist = d;
-				task = (CBuilderTask*)t;
+	const AIFloat3& pos = unit->GetUnit()->GetPos();
+	MoveData* moveData = unit->GetDef()->GetMoveData();
+	int pathType = moveData->GetPathType();
+	delete moveData;
+	float buildDistance = unit->GetDef()->GetBuildDistance();
+	float metric = std::numeric_limits<float>::max();
+	for (auto& tasks : builderTasks) {
+		for (auto& t : tasks.second) {
+			if (t->CanAssignTo(unit)) {
+				CBuilderTask* candidate = static_cast<CBuilderTask*>(t);
+				float d = circuit->GetPathing()->GetApproximateLength(candidate->GetPos(), pos, pathType, buildDistance);
+				float qd = candidate->GetQuantity() * d;
+				if (qd < metric) {
+					task = candidate;
+					metric = qd;
+				}
 			}
 		}
 	}
@@ -964,7 +922,6 @@ void CEconomyManager::PrepareBuilder(CCircuitUnit* unit)
 		task = new CBuilderTask(CBuilderTask::Priority::LOW, pos, CBuilderTask::TaskType::DEFAULT);
 		builderTasks[CBuilderTask::TaskType::DEFAULT].push_front(task);
 		builderTasksCount++;
-		isCachedChanged = true;
 	}
 
 	task->AssignTo(unit);
@@ -981,17 +938,9 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 		float terWidth = map->GetWidth() * SQUARE_SIZE;
 		float terHeight = map->GetHeight() * SQUARE_SIZE;
 		if (math::fabs(terWidth - 2 * position.x) > math::fabs(terHeight - 2 * position.z)) {
-			if (2 * position.x > terWidth) {
-				facing = UNIT_FACING_WEST;
-			} else {
-				facing = UNIT_FACING_EAST;
-			}
+			facing = (2 * position.x > terWidth) ? UNIT_FACING_WEST : UNIT_FACING_EAST;
 		} else {
-			if (2 * position.z > terHeight) {
-				facing = UNIT_FACING_NORTH;
-			} else {
-				facing = UNIT_FACING_SOUTH;
-			}
+			facing = (2 * position.z > terHeight) ? UNIT_FACING_NORTH : UNIT_FACING_SOUTH;
 		}
 		return facing;
 	};
@@ -1002,7 +951,6 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 		builderTasks[task->GetType()].remove(task);
 		delete task;
 		builderTasksCount--;
-		isCachedChanged = true;
 
 		std::vector<float> params;
 		params.push_back(0.0f);
@@ -1450,60 +1398,6 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			break;
 		}
 	}
-}
-
-CEconomyManager::WorkerTaskRelation& CEconomyManager::GetWorkerTaskRelations(CCircuitUnit* unit, WorkerInfo*& retInfo)
-{
-	if (circuit->GetLastFrame() - cachedFrame < FRAMES_PER_SEC && !isCachedChanged) {
-		for (auto info : wtRelation.front()) {
-			if (info->unit == unit) {
-				retInfo = info;
-				break;
-			}
-		}
-		return wtRelation;
-	}
-
-	utils::free_clear(wtRelation.front());
-	wtRelation.clear();
-
-	WorkerInfo* unitInfo;
-	std::vector<WorkerInfo*> workerInfos;
-	for (auto worker : workers) {
-		WorkerInfo* info = new WorkerInfo;
-		info->unit = worker;
-		info->pos = worker->GetUnit()->GetPos();
-		float speed = worker->GetUnit()->GetMaxSpeed();
-		info->qspeed = speed * speed;
-		// TODO: include buildtime
-		workerInfos.push_back(info);
-
-		if (worker == unit) {
-			retInfo = info;
-		}
-	}
-	auto qdist = [](const AIFloat3& p1, const AIFloat3& p2) {
-		float x = p1.x - p2.x;
-		float z = p1.z - p2.z;
-		return x * x + z * z;
-	};
-
-	for (auto& tasks : builderTasks) {
-		for (auto& task : tasks.second) {
-			const AIFloat3& p0 = static_cast<CBuilderTask*>(task)->GetPos();
-			auto compare = [&p0, qdist](const WorkerInfo* p1, const WorkerInfo* p2) {
-				float t1 = qdist(p0, p1->pos) / p1->qspeed;
-				float t2 = qdist(p0, p2->pos) / p2->qspeed;
-				return t1 < t2;
-			};
-			std::sort(workerInfos.begin(), workerInfos.end(), compare);
-			wtRelation.push_back(workerInfos);
-		}
-	}
-
-	cachedFrame = circuit->GetLastFrame();
-	isCachedChanged = false;
-	return wtRelation;
 }
 
 } // namespace circuit
