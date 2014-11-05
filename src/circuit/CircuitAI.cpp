@@ -53,7 +53,7 @@ unsigned int CCircuitAI::gaCounter = 0;
 
 CCircuitAI::CCircuitAI(OOAICallback* callback) :
 		initialized(false),
-		eventHandler(&CCircuitAI::HandleEvent),
+		eventHandler(&CCircuitAI::HandleGameEvent),
 		lastFrame(0),
 		callback(callback),
 		log(std::unique_ptr<Log>(callback->GetLog())),
@@ -69,10 +69,6 @@ CCircuitAI::CCircuitAI(OOAICallback* callback) :
 
 	commanderId = -1;
 	startPos = -RgtVector;
-
-//	eventHandler = [this](int topic, const void* data) {
-//		HandleEvent(topic, data);
-//	};
 }
 
 CCircuitAI::~CCircuitAI()
@@ -85,15 +81,16 @@ CCircuitAI::~CCircuitAI()
 
 int CCircuitAI::HandleEvent(int topic, const void* data)
 {
-	if (gameAttribute->IsGameEnd()) {
-		if (topic == EVENT_RELEASE) {
-			PRINT_TOPIC("EVENT_RELEASE End", topic);
-			struct SReleaseEvent* evt = (struct SReleaseEvent*)data;
-			return this->Release(evt->reason);
-		}
-		return 0;
-	}
+	return (this->*eventHandler)(topic, data);
+}
 
+void CCircuitAI::NotifyGameEnd()
+{
+	eventHandler = &CCircuitAI::HandleEndEvent;
+}
+
+int CCircuitAI::HandleGameEvent(int topic, const void* data)
+{
 	int ret = ERROR_UNKNOWN;
 
 	switch (topic) {
@@ -302,6 +299,16 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 	}
 
 	return ret;
+}
+
+int CCircuitAI::HandleEndEvent(int topic, const void* data)
+{
+	if (topic == EVENT_RELEASE) {
+		PRINT_TOPIC("EVENT_RELEASE::END", topic);
+		struct SReleaseEvent* evt = (struct SReleaseEvent*)data;
+		return this->Release(evt->reason);
+	}
+	return 0;
 }
 
 int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback)
@@ -859,10 +866,12 @@ void CCircuitAI::CreateGameAttribute()
 		gameAttribute = std::unique_ptr<CGameAttribute>(new CGameAttribute());
 	}
 	gaCounter++;
+	gameAttribute->RegisterAI(this);
 }
 
 void CCircuitAI::DestroyGameAttribute()
 {
+	gameAttribute->UnregisterAI(this);
 	if (gaCounter <= 1) {
 		if (gameAttribute != nullptr) {
 			gameAttribute = nullptr;

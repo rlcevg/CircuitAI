@@ -72,7 +72,7 @@ EXPORT(int) handleEvent(int skirmishAIId, int topic, const void* data) {
 	int ret = ERROR_SHIFT + 1;
 
 	try {
-		ret = (myAIs[skirmishAIId]->*circuit::CCircuitAI::eventHandler)(topic, data);
+		ret = myAIs[skirmishAIId]->HandleEvent(topic, data);
 	} CATCH_CPP_AI_EXCEPTION(ret);
 
 	return ret; // (ret != 0) => error

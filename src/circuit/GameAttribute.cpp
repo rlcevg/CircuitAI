@@ -46,12 +46,29 @@ CGameAttribute::~CGameAttribute()
 
 void CGameAttribute::SetGameEnd(bool value)
 {
-	gameEnd = value;
+	if (gameEnd != value) {
+		if (value) {
+			for (auto circuit : circuits) {
+				circuit->NotifyGameEnd();
+			}
+		}
+		gameEnd = value;
+	}
 }
 
 bool CGameAttribute::IsGameEnd()
 {
 	return gameEnd;
+}
+
+void CGameAttribute::RegisterAI(CCircuitAI* circuit)
+{
+	circuits.insert(circuit);
+}
+
+void CGameAttribute::UnregisterAI(CCircuitAI* circuit)
+{
+	circuits.erase(circuit);
 }
 
 void CGameAttribute::ParseSetupScript(const char* setupScript, int width, int height)

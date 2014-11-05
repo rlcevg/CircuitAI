@@ -14,7 +14,6 @@
 #include <map>
 #include <list>
 #include <vector>
-#include <functional>
 
 namespace springai {
 	class AIFloat3;
@@ -58,12 +57,15 @@ public:
 	CCircuitAI(springai::OOAICallback* callback);
 	virtual ~CCircuitAI();
 
+	int HandleEvent(int topic, const void* data);
+	void NotifyGameEnd();
+private:
 	typedef int (CCircuitAI::*EventHandlerPtr)(int topic, const void* data);
+	int HandleGameEvent(int topic, const void* data);
+	int HandleEndEvent(int topic, const void* data);
 	EventHandlerPtr eventHandler;
-//	std::function<int (int, const void*)> eventHandler;
-	inline int HandleEvent(int topic, const void* data);
-	inline int HandleEventEnd(int topic, const void* data);
 
+public:
 	int Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback);
 	int Release(int reason);
 	int Update(int frame);
@@ -125,8 +127,8 @@ private:
 
 	static std::unique_ptr<CGameAttribute> gameAttribute;
 	static unsigned int gaCounter;
-	static void CreateGameAttribute();
-	static void DestroyGameAttribute();
+	void CreateGameAttribute();
+	void DestroyGameAttribute();
 	std::shared_ptr<CScheduler> scheduler;
 	std::list<std::unique_ptr<IModule>> modules;
 

@@ -14,6 +14,7 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include <string.h>
 
 namespace springai {
@@ -48,6 +49,8 @@ public:
 
 	void SetGameEnd(bool value);
 	bool IsGameEnd();
+	void RegisterAI(CCircuitAI* circuit);
+	void UnregisterAI(CCircuitAI* circuit);
 
 	void ParseSetupScript(const char* setupScript, int width, int height);
 	bool HasStartBoxes(bool checkEmpty = true);
@@ -71,6 +74,7 @@ public:
 
 private:
 	bool gameEnd;
+	std::unordered_set<CCircuitAI*> circuits;
 	std::shared_ptr<CSetupManager> setupManager;
 	std::shared_ptr<CMetalManager> metalManager;
 
