@@ -14,6 +14,7 @@
 #include <map>
 #include <list>
 #include <vector>
+#include <functional>
 
 namespace springai {
 	class AIFloat3;
@@ -57,7 +58,11 @@ public:
 	CCircuitAI(springai::OOAICallback* callback);
 	virtual ~CCircuitAI();
 
-	int HandleEvent(int topic, const void* data);
+	typedef int (CCircuitAI::*EventHandlerPtr)(int topic, const void* data);
+	EventHandlerPtr eventHandler;
+//	std::function<int (int, const void*)> eventHandler;
+	inline int HandleEvent(int topic, const void* data);
+	inline int HandleEventEnd(int topic, const void* data);
 
 	int Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback);
 	int Release(int reason);

@@ -53,6 +53,7 @@ unsigned int CCircuitAI::gaCounter = 0;
 
 CCircuitAI::CCircuitAI(OOAICallback* callback) :
 		initialized(false),
+		eventHandler(&CCircuitAI::HandleEvent),
 		lastFrame(0),
 		callback(callback),
 		log(std::unique_ptr<Log>(callback->GetLog())),
@@ -68,6 +69,10 @@ CCircuitAI::CCircuitAI(OOAICallback* callback) :
 
 	commanderId = -1;
 	startPos = -RgtVector;
+
+//	eventHandler = [this](int topic, const void* data) {
+//		HandleEvent(topic, data);
+//	};
 }
 
 CCircuitAI::~CCircuitAI()
