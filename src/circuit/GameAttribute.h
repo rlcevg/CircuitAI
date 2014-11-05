@@ -13,6 +13,7 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <string.h>
 
 namespace springai {
@@ -45,6 +46,9 @@ public:
 	CGameAttribute();
 	virtual ~CGameAttribute();
 
+	void SetGameEnd(bool value);
+	bool IsGameEnd();
+
 	void ParseSetupScript(const char* setupScript, int width, int height);
 	bool HasStartBoxes(bool checkEmpty = true);
 	bool CanChooseStartPos();
@@ -66,11 +70,12 @@ public:
 	UnitDefs& GetUnitDefs();
 
 private:
+	bool gameEnd;
 	std::shared_ptr<CSetupManager> setupManager;
 	std::shared_ptr<CMetalManager> metalManager;
 
 	UnitDefs defsByName;  // owner
-	std::map<int, springai::UnitDef*> defsById;
+	std::unordered_map<int, springai::UnitDef*> defsById;
 
 	struct {
 		int i;

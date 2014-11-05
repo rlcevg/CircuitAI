@@ -29,6 +29,7 @@ using namespace springai;
 #define CLUSTER_MS	10
 
 CGameAttribute::CGameAttribute() :
+		gameEnd(false),
 		setupManager(nullptr),
 		metalManager(nullptr)
 {
@@ -41,6 +42,16 @@ CGameAttribute::~CGameAttribute()
 	for (auto& kv : defsByName) {
 		delete kv.second;
 	}
+}
+
+void CGameAttribute::SetGameEnd(bool value)
+{
+	gameEnd = value;
+}
+
+bool CGameAttribute::IsGameEnd()
+{
+	return gameEnd;
 }
 
 void CGameAttribute::ParseSetupScript(const char* setupScript, int width, int height)

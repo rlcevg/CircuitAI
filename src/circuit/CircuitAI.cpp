@@ -80,6 +80,15 @@ CCircuitAI::~CCircuitAI()
 
 int CCircuitAI::HandleEvent(int topic, const void* data)
 {
+	if (gameAttribute->IsGameEnd()) {
+		if (topic == EVENT_RELEASE) {
+			PRINT_TOPIC("EVENT_RELEASE End", topic);
+			struct SReleaseEvent* evt = (struct SReleaseEvent*)data;
+			return this->Release(evt->reason);
+		}
+		return 0;
+	}
+
 	int ret = ERROR_UNKNOWN;
 
 	switch (topic) {
@@ -182,8 +191,8 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 		case EVENT_ENEMY_ENTER_LOS: {
 			PRINT_TOPIC("EVENT_ENEMY_ENTER_LOS", topic);
 			struct SEnemyEnterLOSEvent* evt = (struct SEnemyEnterLOSEvent*)data;
-			CCircuitUnit* enemy = RegisterUnit(evt->enemy);
-			ret = 0;
+			CCircuitUnit* unit = RegisterUnit(evt->enemy);
+			ret = (unit != nullptr) ? this->EnemyEnterLOS(unit) : ERROR_ENEMY_ENTER_LOS;
 			break;
 		}
 		case EVENT_ENEMY_LEAVE_LOS: {
@@ -350,6 +359,7 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 int CCircuitAI::Release(int reason)
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	gameAttribute->SetGameEnd(true);
 	modules.clear();
 	scheduler = nullptr;
 	for (auto& kv : aliveUnits) {
@@ -465,6 +475,15 @@ int CCircuitAI::UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 		for (auto& module : modules) {
 			module->UnitCaptured(unit, oldTeamId, newTeamId);
 		}
+	}
+
+	return 0;  // signaling: OK
+}
+
+int CCircuitAI::EnemyEnterLOS(CCircuitUnit* unit)
+{
+	for (auto& module : modules) {
+		module->EnemyEnterLOS(unit);
 	}
 
 	return 0;  // signaling: OK

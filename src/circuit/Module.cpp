@@ -53,4 +53,9 @@ int IModule::UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 	return 0; //signaling: OK
 }
 
+int IModule::EnemyEnterLOS(CCircuitUnit* unit)
+{
+	return 0; //signaling: OK
+}
+
 } // namespace circuit

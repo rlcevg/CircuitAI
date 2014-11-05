@@ -25,6 +25,7 @@ public:
 	virtual int UnitIdle(CCircuitUnit* unit);
 //	virtual int UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 //	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
+	virtual int EnemyEnterLOS(CCircuitUnit* unit);
 
 private:
 	void TestOrder();

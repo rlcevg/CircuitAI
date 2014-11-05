@@ -405,6 +405,202 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 //			}
 //		}
 //	}
+
+	// debug
+	if (circuit->GetSkirmishAIId() != 1) {
+		return;
+	}
+	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>([circuit]() {
+		// step 1: Create waypoints
+		Pathing* pathing = circuit->GetPathing();
+		Map* map = circuit->GetMap();
+		const CMetalManager::Metals& spots = circuit->GetGameAttribute()->GetMetalManager().GetSpots();
+		std::vector<AIFloat3> points;
+		for (auto& spot : spots) {
+			AIFloat3 start = spot.position;
+			for (auto& s : spots) {
+				if (spot.position == s.position) {
+					continue;
+				}
+				AIFloat3 end = s.position;
+				int pathId = pathing->InitPath(start, end, 4, .0f);
+				AIFloat3 lastPoint, point(start);
+//				Drawer* drawer = map->GetDrawer();
+				int j = 0;
+				do {
+					lastPoint = point;
+					point = pathing->GetNextWaypoint(pathId);
+					if (point.x <= 0 || point.z <= 0) {
+						break;
+					}
+//					drawer->AddLine(lastPoint, point);
+					if (j++ % 100 == 0) {
+						points.push_back(point);
+					}
+				} while ((lastPoint != point) && (point.x > 0 && point.z > 0));
+//				delete drawer;
+				pathing->FreePath(pathId);
+			}
+		}
+
+		// step 2: Create path traversability map
+		// @see path traversability map rts/
+		int widthX = circuit->GetMap()->GetWidth();
+		int heightZ = circuit->GetMap()->GetHeight();
+		MoveData* moveDef = circuit->GetGameAttribute()->GetUnitDefByName("armcom1")->GetMoveData();
+		float maxSlope = moveDef->GetMaxSlope();
+		float depth = moveDef->GetDepth();
+		float slopeMod = moveDef->GetSlopeMod();
+		std::vector<float> heightMap = circuit->GetMap()->GetHeightMap();
+		std::vector<float> slopeMap = circuit->GetMap()->GetSlopeMap();
+		printf("<debug> heightMap size: %i\n", heightMap.size());
+		printf("<debug> slopeMap size: %i\n", slopeMap.size());
+		printf("<debug> width: %i\n", circuit->GetMap()->GetWidth());
+		printf("<debug> height: %i\n", circuit->GetMap()->GetHeight());
+
+		for (int hz = 0; hz < heightZ; ++hz) {
+			for (int hx = 0; hx < widthX; ++hx) {
+				const int sx = (hx >> 1);
+				const int sz = (hz >> 1);
+//				const bool losSqr = losHandler->InLos(sqx, sqy, gu->myAllyTeam);
+
+				float scale = 1.0f;
+
+				// TODO: First implement blocking map
+//				if (los || losSqr) {
+//					if (CMoveMath::IsBlocked(*md, sqx,     sqy    , NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
+//					if (CMoveMath::IsBlocked(*md, sqx + 1, sqy    , NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
+//					if (CMoveMath::IsBlocked(*md, sqx,     sqy + 1, NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
+//					if (CMoveMath::IsBlocked(*md, sqx + 1, sqy + 1, NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
+//				}
+
+				auto posSpeedMod = [](float maxSlope, float depth, float slopeMod, float depthMod, float height, float slope) {
+					float speedMod = 0.0f;
+
+					// slope too steep or square too deep?
+					if (slope > maxSlope)
+						return speedMod;
+					if (-height > depth)
+						return speedMod;
+
+					// slope-mod
+					speedMod = 1.0f / (1.0f + slope * slopeMod);
+					// FIXME: Read waterDamageCost from mapInfo
+//					speedMod *= ((height < 0.0f)? waterDamageCost: 1.0f);
+					// FIXME: MoveData::GetDepthMod(float height) not implemented
+					speedMod *= depthMod;
+
+					return speedMod;
+				};
+				float height = heightMap[hz * widthX + hx];
+//				float slope = circuit->GetMap()->GetSlopeMap();
+				float depthMod = moveDef->GetDepthMod(height);
+				printf("%.1f,", depthMod);
+//				const float sm = posSpeedMod(maxSlope, depth, slopeMod, depthMod, height, slope);
+//				const SColor& smc = GetSpeedModColor(sm * scale);
+//
+//				texMem[texIdx + CBaseGroundDrawer::COLOR_R] = smc.r;
+//				texMem[texIdx + CBaseGroundDrawer::COLOR_G] = smc.g;
+//				texMem[texIdx + CBaseGroundDrawer::COLOR_B] = smc.b;
+//				texMem[texIdx + CBaseGroundDrawer::COLOR_A] = smc.a;
+			}
+		}
+		delete moveDef;
+		printf("\n");
+
+		// step 3: Filter key waypoints
+
+		printf("points size: %i\n", points.size());
+		float maxDistance = circuit->GetGameAttribute()->GetUnitDefByName("corrl")->GetMaxWeaponRange() * 2;
+		maxDistance *= maxDistance;
+		circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>([circuit, points, maxDistance]() {
+			int nrows = points.size();
+			CRagMatrix distmatrix(nrows);
+			for (int i = 1; i < nrows; i++) {
+				for (int j = 0; j < i; j++) {
+					float dx = points[i].x - points[j].x;
+					float dz = points[i].z - points[j].z;
+					distmatrix(i, j) = dx * dx + dz * dz;
+				}
+			}
+
+			// Initialize cluster-element list
+			std::vector<std::vector<int>> iclusters(nrows);
+			for (int i = 0; i < nrows; i++) {
+				std::vector<int> cluster;
+				cluster.push_back(i);
+				iclusters[i] = cluster;
+			}
+
+			for (int n = nrows; n > 1; n--) {
+				// Find pair
+				int is = 1;
+				int js = 0;
+				if (distmatrix.FindClosestPair(n, is, js) > maxDistance) {
+					break;
+				}
+
+				// Fix the distances
+				for (int j = 0; j < js; j++) {
+					distmatrix(js, j) = std::max(distmatrix(is, j), distmatrix(js, j));
+				}
+				for (int j = js + 1; j < is; j++) {
+					distmatrix(j, js) = std::max(distmatrix(is, j), distmatrix(j, js));
+				}
+				for (int j = is + 1; j < n; j++) {
+					distmatrix(j, js) = std::max(distmatrix(j, is), distmatrix(j, js));
+				}
+
+				for (int j = 0; j < is; j++) {
+					distmatrix(is, j) = distmatrix(n - 1, j);
+				}
+				for (int j = is + 1; j < n - 1; j++) {
+					distmatrix(j, is) = distmatrix(n - 1, j);
+				}
+
+				// Merge clusters
+				std::vector<int>& cluster = iclusters[js];
+				cluster.reserve(cluster.size() + iclusters[is].size()); // preallocate memory
+				cluster.insert(cluster.end(), iclusters[is].begin(), iclusters[is].end());
+				iclusters[is] = iclusters[n - 1];
+				iclusters.pop_back();
+			}
+
+			std::vector<std::vector<int>> clusters;
+			std::vector<AIFloat3> centroids;
+			int nclusters = iclusters.size();
+			clusters.resize(nclusters);
+			centroids.resize(nclusters);
+			for (int i = 0; i < nclusters; i++) {
+				clusters[i].clear();
+				AIFloat3 centr = ZeroVector;
+				for (int j = 0; j < iclusters[i].size(); j++) {
+					clusters[i].push_back(iclusters[i][j]);
+					centr += points[iclusters[i][j]];
+				}
+				centr /= iclusters[i].size();
+				centroids[i] = centr;
+			}
+
+			printf("nclusters: %i\n", nclusters);
+			for (int i = 0; i < clusters.size(); i++) {
+				printf("%i | ", clusters[i].size());
+			}
+			std::sort(clusters.begin(), clusters.end(), [](const std::vector<int>& a, const std::vector<int>& b){ return a.size() > b.size(); });
+//			int num = std::min(10, (int)centroids.size());
+			int num = centroids.size();
+			Drawer* drawer = circuit->GetMap()->GetDrawer();
+			for (int i = 0; i < num; i++) {
+				AIFloat3 centr = ZeroVector;
+				for (int j = 0; j < clusters[i].size(); j++) {
+					centr += points[clusters[i][j]];
+				}
+				centr /= clusters[i].size();
+				drawer->AddPoint(centr, utils::string_format("%i", i).c_str());
+			}
+			delete drawer;
+		}));
+	}), FRAMES_PER_SEC);
 }
 
 CEconomyManager::~CEconomyManager()
@@ -886,7 +1082,18 @@ void CEconomyManager::ExecuteFactory(CCircuitUnit* unit)
 		}
 		default:
 		case CFactoryTask::TaskType::FIREPOWER: {
-			const char* names[] = {"armpw", "armrock", "armpw", "armwar", "armpw", "armrock"};
+			const char* names3[] = {"armrock", "armpw", "armwar", "armsnipe", "armjeth", "armzeus"};
+			const char* names2[] = {"armpw", "armrock", "armpw", "armwar", "armsnipe", "armzeus"};
+			const char* names1[] = {"armpw", "armrock", "armpw", "armwar", "armpw", "armrock"};
+			char** names;
+			float metalIncome = eco->GetIncome(metalRes);
+			if (metalIncome > 30) {
+				names = (char**)names3;
+			} else if (metalIncome > 20) {
+				names = (char**)names2;
+			} else {
+				names = (char**)names1;
+			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName(names[rand() % 6]);
 			u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING);
 			break;

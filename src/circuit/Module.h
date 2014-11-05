@@ -26,6 +26,7 @@ public:
 	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual int UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId);
 	virtual int UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId);
+	virtual int EnemyEnterLOS(CCircuitUnit* unit);
 
 protected:
 	IModule(CCircuitAI* circuit);

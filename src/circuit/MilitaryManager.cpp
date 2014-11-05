@@ -16,6 +16,11 @@
 #include "Unit.h"
 #include "UnitDef.h"
 #include "Map.h"
+// debug
+#include "Pathing.h"
+#include "Drawer.h"
+#include "MetalManager.h"
+#include "Game.h"
 
 #include "AISCommands.h"
 
@@ -61,6 +66,15 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
 	unitDefId = attrib->GetUnitDefByName("armwar")->GetUnitDefId();
+	finishedHandler[unitDefId] = atackerFinishedHandler;
+	idleHandler[unitDefId] = atackerIdleHandler;
+	unitDefId = attrib->GetUnitDefByName("armzeus")->GetUnitDefId();
+	finishedHandler[unitDefId] = atackerFinishedHandler;
+	idleHandler[unitDefId] = atackerIdleHandler;
+	unitDefId = attrib->GetUnitDefByName("armjeth")->GetUnitDefId();
+	finishedHandler[unitDefId] = atackerFinishedHandler;
+	idleHandler[unitDefId] = atackerIdleHandler;
+	unitDefId = attrib->GetUnitDefByName("armsnipe")->GetUnitDefId();
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
 
@@ -152,6 +166,36 @@ int CMilitaryManager::UnitIdle(CCircuitUnit* unit)
 //
 //	return 0; //signaling: OK
 //}
+
+int CMilitaryManager::EnemyEnterLOS(CCircuitUnit* unit)
+{
+	// debug
+//	if (strcmp(unit->GetDef()->GetName(), "factorycloak") == 0) {
+//		circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>([this](CCircuitUnit* unit) {
+//			Unit* u = unit->GetUnit();
+//			Pathing* pathing = circuit->GetPathing();
+//			Map* map = circuit->GetMap();
+//			const CMetalManager::Metals& spots = circuit->GetGameAttribute()->GetMetalManager().GetSpots();
+//			const AIFloat3& start = u->GetPos();
+//			for (auto& s : spots) {
+//				AIFloat3 end = s.position;
+//				int pathId = pathing->InitPath(start, end, 4, .0f);
+//				AIFloat3 lastPoint, point(start);
+//				Drawer* drawer = map->GetDrawer();
+//				do {
+//					lastPoint = point;
+//					point = pathing->GetNextWaypoint(pathId);
+//					drawer->AddLine(lastPoint, point);
+//				} while (lastPoint != point);
+//				delete drawer;
+//				pathing->FreePath(pathId);
+//			}
+////			circuit->GetGame()->SetPause(true, "Nub");
+//		}, unit), FRAMES_PER_SEC);
+//	}
+
+	return 0; //signaling: OK
+}
 
 void CMilitaryManager::TestOrder()
 {
