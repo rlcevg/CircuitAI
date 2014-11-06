@@ -670,12 +670,7 @@ int CEconomyManager::UnitFinished(CCircuitUnit* unit)
 				}
 				case IConstructTask::ConstructType::BUILDER: {
 					CBuilderTask* taskB = static_cast<CBuilderTask*>(task);
-					if (taskB != nullptr) {
-						// FIXME: Why it crashes??
-						taskB->MarkCompleted();
-					} else {
-						circuit->LOG("taskB == nullptr");
-					}
+					taskB->MarkCompleted();
 					builderTasks[taskB->GetType()].remove(taskB);
 					delete taskB;
 					builderTasksCount--;
