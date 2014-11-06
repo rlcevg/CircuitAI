@@ -132,7 +132,9 @@ private:
 	std::shared_ptr<CScheduler> scheduler;
 	std::list<std::unique_ptr<IModule>> modules;
 
+	// TODO: Make global storage?
 	std::map<int, CCircuitUnit*> aliveUnits;  // owner
+	// TODO: Use or delete
 	std::map<int, CCircuitUnit*> teamUnits;  // owner
 
 	// TODO: Use or delete

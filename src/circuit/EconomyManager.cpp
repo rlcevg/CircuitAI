@@ -31,6 +31,7 @@
 	#include "Drawer.h"
 #endif
 	#include "Drawer.h"
+	#include "Log.h"
 
 namespace circuit {
 
@@ -669,7 +670,12 @@ int CEconomyManager::UnitFinished(CCircuitUnit* unit)
 				}
 				case IConstructTask::ConstructType::BUILDER: {
 					CBuilderTask* taskB = static_cast<CBuilderTask*>(task);
-					taskB->MarkCompleted();
+					if (taskB != nullptr) {
+						// FIXME: Why it crashes??
+						taskB->MarkCompleted();
+					} else {
+						circuit->LOG("taskB == nullptr");
+					}
 					builderTasks[taskB->GetType()].remove(taskB);
 					delete taskB;
 					builderTasksCount--;
@@ -1024,7 +1030,7 @@ void CEconomyManager::WorkerWatchdog()
 
 CCircuitUnit* CEconomyManager::FindUnitToAssist(CCircuitUnit* unit)
 {
-	CCircuitUnit* target = unit;
+	CCircuitUnit* target = nullptr;
 	Unit* su = unit->GetUnit();
 	const AIFloat3& pos = su->GetPos();
 	float maxSpeed = su->GetMaxSpeed();
@@ -1033,7 +1039,9 @@ CCircuitUnit* CEconomyManager::FindUnitToAssist(CCircuitUnit* unit)
 	for (auto u : units) {
 		if (u->GetHealth() < u->GetMaxHealth() && u->GetSpeed() <= maxSpeed * 2) {
 			target = circuit->GetUnitById(u->GetUnitId());
-			break;
+			if (target != nullptr) {
+				break;
+			}
 		}
 	}
 	utils::free_clear(units);
@@ -1596,6 +1604,10 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			CCircuitUnit* target = task->GetTarget();
 			if (target == nullptr) {
 				target = FindUnitToAssist(unit);
+				if (target == nullptr) {
+					assistFallback(unit);
+					break;
+				}
 			}
 			unit->GetUnit()->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY);
 			auto search = builderInfo.find(unit);

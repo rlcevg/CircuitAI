@@ -445,7 +445,7 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 	float dz = (float)rand() / RAND_MAX - 0.5f;
 	pos.x += dx * SQUARE_SIZE * 10;
 	pos.z += dz * SQUARE_SIZE * 10;
-	u->MoveTo(pos, 0, FRAMES_PER_SEC);
+	u->MoveTo(pos, 0, FRAMES_PER_SEC * 5);
 
 	return 0;  // signaling: OK
 }
