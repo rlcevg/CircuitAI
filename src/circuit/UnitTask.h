@@ -11,6 +11,10 @@
 #include "AIFloat3.h"
 
 #include <unordered_set>
+#include "utils.h"
+#include "CircuitAI.h"
+#include "Log.h"
+#include "Unit.h"
 
 namespace circuit {
 
@@ -25,9 +29,11 @@ public:
 	virtual ~IUnitTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) = 0;
-	void AssignTo(CCircuitUnit* unit);
-	void RemoveAssignee(CCircuitUnit* unit);
-	void MarkCompleted();
+	virtual void AssignTo(CCircuitUnit* unit, CCircuitAI* circuit);
+	virtual void RemoveAssignee(CCircuitUnit* unit);
+	void MarkCompleted(CCircuitAI* circuit=nullptr);
+
+	std::unordered_set<CCircuitUnit*>& GetAssignees();
 
 protected:
 	std::unordered_set<CCircuitUnit*> units;

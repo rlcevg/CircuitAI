@@ -156,6 +156,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			CCircuitUnit* attacker = GetUnitById(evt->attacker);
 			CCircuitUnit* unit = GetUnitById(evt->unit);
 			ret = (unit != nullptr) ? this->UnitDamaged(unit, attacker) : ERROR_UNIT_DAMAGED;
+			LOG("unit: %i, attacker: %i", evt->unit, evt->attacker);
 			break;
 		}
 		case EVENT_UNIT_DESTROYED: {
@@ -169,6 +170,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			} else {
 				ret = ERROR_UNIT_DESTROYED;
 			}
+			LOG("unit: %i, attacker: %i", evt->unit, evt->attacker);
 			break;
 		}
 		case EVENT_UNIT_GIVEN: {
@@ -446,6 +448,7 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 	pos.x += dx * SQUARE_SIZE * 10;
 	pos.z += dz * SQUARE_SIZE * 10;
 	u->MoveTo(pos, 0, FRAMES_PER_SEC * 5);
+	LOG("MoveFailed: %i", u->GetUnitId());
 
 	return 0;  // signaling: OK
 }

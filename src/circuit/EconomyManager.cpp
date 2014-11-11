@@ -32,6 +32,7 @@
 #endif
 	#include "Drawer.h"
 	#include "Log.h"
+	#include "Command.h"
 
 namespace circuit {
 
@@ -303,6 +304,11 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		} else {
 			unit->RemoveTask();
 			PrepareBuilder(unit);
+			std::vector<springai::Command*> cmds = unit->GetUnit()->GetCurrentCommands();
+			if (cmds.size() > 0) {
+				this->circuit->LOG("commands > 0 | unit: %i", unit->GetUnit()->GetUnitId());
+			}
+			utils::free_clear(cmds);
 		}
 		ExecuteBuilder(unit);
 	};
@@ -435,7 +441,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 						break;
 					}
 //					drawer->AddLine(lastPoint, point);
-					if (j++ % 100 == 0) {
+					if (j++ % 25 == 0) {
 						points.push_back(point);
 					}
 				} while ((lastPoint != point) && (point.x > 0 && point.z > 0));
@@ -448,21 +454,38 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		// @see path traversability map rts/
 		int widthX = circuit->GetMap()->GetWidth();
 		int heightZ = circuit->GetMap()->GetHeight();
+		int widthSX = widthX / 2;
 		MoveData* moveDef = circuit->GetGameAttribute()->GetUnitDefByName("armcom1")->GetMoveData();
 		float maxSlope = moveDef->GetMaxSlope();
 		float depth = moveDef->GetDepth();
 		float slopeMod = moveDef->GetSlopeMod();
 		std::vector<float> heightMap = circuit->GetMap()->GetHeightMap();
 		std::vector<float> slopeMap = circuit->GetMap()->GetSlopeMap();
-		printf("<debug> heightMap size: %i\n", heightMap.size());
-		printf("<debug> slopeMap size: %i\n", slopeMap.size());
-		printf("<debug> width: %i\n", circuit->GetMap()->GetWidth());
-		printf("<debug> height: %i\n", circuit->GetMap()->GetHeight());
+
+		std::vector<float> traversMap(widthX * heightZ);
+
+		auto posSpeedMod = [](float maxSlope, float depth, float slopeMod, float depthMod, float height, float slope) {
+			float speedMod = 0.0f;
+
+			// slope too steep or square too deep?
+			if (slope > maxSlope)
+				return speedMod;
+			if (-height > depth)
+				return speedMod;
+
+			// slope-mod
+			speedMod = 1.0f / (1.0f + slope * slopeMod);
+			// FIXME: Read waterDamageCost from mapInfo
+//			speedMod *= (height < 0.0f) ? waterDamageCost : 1.0f;
+			speedMod *= depthMod;
+
+			return speedMod;
+		};
 
 		for (int hz = 0; hz < heightZ; ++hz) {
 			for (int hx = 0; hx < widthX; ++hx) {
-				const int sx = (hx >> 1);
-				const int sz = (hz >> 1);
+				const int sx = hx / 2;  // hx >> 1;
+				const int sz = hz / 2;  // hz >> 1;
 //				const bool losSqr = losHandler->InLos(sqx, sqy, gu->myAllyTeam);
 
 				float scale = 1.0f;
@@ -475,43 +498,53 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 //					if (CMoveMath::IsBlocked(*md, sqx + 1, sqy + 1, NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
 //				}
 
-				auto posSpeedMod = [](float maxSlope, float depth, float slopeMod, float depthMod, float height, float slope) {
-					float speedMod = 0.0f;
-
-					// slope too steep or square too deep?
-					if (slope > maxSlope)
-						return speedMod;
-					if (-height > depth)
-						return speedMod;
-
-					// slope-mod
-					speedMod = 1.0f / (1.0f + slope * slopeMod);
-					// FIXME: Read waterDamageCost from mapInfo
-//					speedMod *= ((height < 0.0f)? waterDamageCost: 1.0f);
-					// FIXME: MoveData::GetDepthMod(float height) not implemented
-					speedMod *= depthMod;
-
-					return speedMod;
-				};
-				float height = heightMap[hz * widthX + hx];
-//				float slope = circuit->GetMap()->GetSlopeMap();
+				int idx = hz * widthX + hx;
+				float height = heightMap[idx];
+				float slope = slopeMap[sz * widthSX + sx];
 				float depthMod = moveDef->GetDepthMod(height);
-				printf("%.1f,", depthMod);
-//				const float sm = posSpeedMod(maxSlope, depth, slopeMod, depthMod, height, slope);
+				traversMap[idx] = posSpeedMod(maxSlope, depth, slopeMod, depthMod, height, slope);
+				// FIXME: blocking map first
 //				const SColor& smc = GetSpeedModColor(sm * scale);
-//
-//				texMem[texIdx + CBaseGroundDrawer::COLOR_R] = smc.r;
-//				texMem[texIdx + CBaseGroundDrawer::COLOR_G] = smc.g;
-//				texMem[texIdx + CBaseGroundDrawer::COLOR_B] = smc.b;
-//				texMem[texIdx + CBaseGroundDrawer::COLOR_A] = smc.a;
 			}
 		}
 		delete moveDef;
-		printf("\n");
 
 		// step 3: Filter key waypoints
-
 		printf("points size: %i\n", points.size());
+		auto iter = points.begin();
+		while (iter != points.end()) {
+			bool isKey = false;
+			if ((iter->z / SQUARE_SIZE - 10 >= 0 && iter->z / SQUARE_SIZE + 10 < heightZ) && (iter->x / SQUARE_SIZE - 10 >= 0 && iter->x / SQUARE_SIZE + 10 < widthX)) {
+				int idx = (int)(iter->z / SQUARE_SIZE) * widthX + (int)(iter->x / SQUARE_SIZE);
+				if (traversMap[idx] > 0.8) {
+					for (int hz = -10; hz <= 10; ++hz) {
+						for (int hx = -10; hx <= 10; ++hx) {
+							idx = (int)(iter->z / SQUARE_SIZE - hz) * widthX + iter->x / SQUARE_SIZE;
+							if (traversMap[idx] < 0.8) {
+								isKey = true;
+								break;
+							}
+						}
+						if (isKey) {
+							break;
+						}
+					}
+				}
+			}
+			if (!isKey) {
+				iter = points.erase(iter);
+			} else {
+				++iter;
+			}
+		}
+
+//		Drawer* drawer = circuit->GetMap()->GetDrawer();
+//		for (int i = 0; i < points.size(); i++) {
+//			drawer->AddPoint(points[i], "");
+//		}
+//		delete drawer;
+
+		// step 4: Clusterize key waypoints
 		float maxDistance = circuit->GetGameAttribute()->GetUnitDefByName("corrl")->GetMaxWeaponRange() * 2;
 		maxDistance *= maxDistance;
 		circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>([circuit, points, maxDistance]() {
@@ -616,7 +649,8 @@ CEconomyManager::~CEconomyManager()
 
 int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 {
-	printf("%s | %s | %s\n", unit->GetDef()->GetHumanName(), unit->GetDef()->GetName(), unit->GetDef()->GetWreckName());
+	circuit->LOG("%s | %s | %s | %i", unit->GetDef()->GetHumanName(), unit->GetDef()->GetName(), unit->GetDef()->GetWreckName(), unit->GetUnit()->GetUnitId());
+	circuit->LOG("x(%.2f) z(%.2f)", unit->GetUnit()->GetPos().x, unit->GetUnit()->GetPos().z);
 
 	if (unit->GetUnit()->IsBeingBuilt() && builder != nullptr) {
 		IConstructTask* task = static_cast<IConstructTask*>(builder->GetTask());
@@ -633,6 +667,10 @@ int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 				}
 			}
 			unfinishedUnits[unit] = task;
+			circuit->LOG("task: %lu | builder: %i", task, builder->GetUnit()->GetUnitId());
+			for (auto& unit : task->GetAssignees()) {
+				circuit->LOG("assignee: %i", unit->GetUnit()->GetUnitId());
+			}
 		}
 	}
 
@@ -646,6 +684,9 @@ int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 
 int CEconomyManager::UnitFinished(CCircuitUnit* unit)
 {
+	circuit->LOG("%s | %s | %s | %i", unit->GetDef()->GetHumanName(), unit->GetDef()->GetName(), unit->GetDef()->GetWreckName(), unit->GetUnit()->GetUnitId());
+	circuit->LOG("x(%.2f) z(%.2f)", unit->GetUnit()->GetPos().x, unit->GetUnit()->GetPos().z);
+
 	auto iter = unfinishedUnits.find(unit);
 	if (iter != unfinishedUnits.end()) {
 		IConstructTask* task = iter->second;
@@ -670,7 +711,7 @@ int CEconomyManager::UnitFinished(CCircuitUnit* unit)
 				}
 				case IConstructTask::ConstructType::BUILDER: {
 					CBuilderTask* taskB = static_cast<CBuilderTask*>(task);
-					taskB->MarkCompleted();
+					taskB->MarkCompleted(circuit);
 					builderTasks[taskB->GetType()].remove(taskB);
 					delete taskB;
 					builderTasksCount--;
@@ -718,7 +759,7 @@ int CEconomyManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 					}
 					case IConstructTask::ConstructType::BUILDER: {
 						CBuilderTask* taskB = static_cast<CBuilderTask*>(task);
-						task->MarkCompleted();
+						taskB->MarkCompleted();
 						builderTasks[taskB->GetType()].remove(taskB);
 						delete taskB;
 						builderTasksCount--;
@@ -1009,7 +1050,7 @@ void CEconomyManager::WorkerWatchdog()
 		++iter;
 	}
 
-	// somehow workers get stuck if they are trying to build already built building
+	// somehow workers get stuck
 	for (auto worker : workers) {
 		Unit* u = worker->GetUnit();
 		if ((u->GetVel() == ZeroVector) && (u->GetResourceUse(metalRes) == 0.0f)) {
@@ -1019,6 +1060,12 @@ void CEconomyManager::WorkerWatchdog()
 			toPos.z += (toPos.z > circuit->GetMap()->GetHeight() * SQUARE_SIZE / 2) ? -size : size;
 			u->MoveTo(toPos);
 //			u->Stop();
+			circuit->LOG("WatchDog: %i", u->GetUnitId());
+			if (worker->GetTask()) {
+				for (auto unit : worker->GetTask()->GetAssignees()) {
+					circuit->LOG("assignee: %i", unit->GetUnit()->GetUnitId());
+				}
+			}
 		}
 	}
 }
@@ -1065,7 +1112,7 @@ void CEconomyManager::PrepareFactory(CCircuitUnit* unit)
 		iter = factoryTasks.begin();
 	}
 
-	task->AssignTo(unit);
+	task->AssignTo(unit, circuit);
 //	if (task->IsFull()) {
 		factoryTasks.splice(factoryTasks.end(), factoryTasks, iter);  // move task to back
 //	}
@@ -1134,7 +1181,7 @@ void CEconomyManager::PrepareBuilder(CCircuitUnit* unit)
 		builderTasksCount++;
 	}
 
-	task->AssignTo(unit);
+	task->AssignTo(unit, circuit);
 }
 
 void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
@@ -1168,7 +1215,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 
 		AIFloat3 pos = u->GetPos();
 		CBuilderTask* taskNew = new CBuilderTask(CBuilderTask::Priority::LOW, pos, CBuilderTask::TaskType::ASSIST, FRAMES_PER_SEC * 20);
-		taskNew->AssignTo(unit);
+		taskNew->AssignTo(unit, circuit);
 
 		const float size = SQUARE_SIZE * 10;
 		pos.x += (pos.x > circuit->GetMap()->GetWidth() * SQUARE_SIZE / 2) ? -size : size;
@@ -1204,6 +1251,14 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
 					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
 					break;
+				} else {
+					// Here goes Mess-up. If we are going to choose another position we need to stop
+					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+					for (auto ass : task->GetAssignees()) {
+						if (ass != unit) {
+							ass->GetUnit()->Stop();
+						}
+					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1246,6 +1301,14 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
 					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
 					break;
+				} else {
+					// Here goes Mess-up. If we are going to choose another position we need to stop
+					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+					for (auto ass : task->GetAssignees()) {
+						if (ass != unit) {
+							ass->GetUnit()->Stop();
+						}
+					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1285,9 +1348,19 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("cormex");
 			AIFloat3 buildPos = task->GetBuildPos();
-			if (buildPos != -RgtVector && circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
-				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
-				break;
+			if (buildPos != -RgtVector) {
+				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
+					u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+					break;
+				} else {
+					// Here goes Mess-up. If we are going to choose another position we need to stop
+					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+					for (auto ass : task->GetAssignees()) {
+						if (ass != unit) {
+							ass->GetUnit()->Stop();
+						}
+					}
+				}
 			}
 			const AIFloat3& position = u->GetPos();
 			const CMetalManager::Metals& spots = circuit->GetGameAttribute()->GetMetalManager().GetSpots();
@@ -1318,9 +1391,19 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("armsolar");
 			AIFloat3 buildPos = task->GetBuildPos();
-			if (buildPos != -RgtVector && circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
-				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
-				break;
+			if (buildPos != -RgtVector) {
+				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
+					u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+					break;
+				} else {
+					// Here goes Mess-up. If we are going to choose another position we need to stop
+					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+					for (auto ass : task->GetAssignees()) {
+						if (ass != unit) {
+							ass->GetUnit()->Stop();
+						}
+					}
+				}
 			}
 			const AIFloat3& position = task->GetPos();
 			buildPos = circuit->FindBuildSiteMindMex(buildDef, position, 800.0f, UNIT_COMMAND_BUILD_NO_FACING);
@@ -1360,6 +1443,14 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
 					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
 					break;
+				} else {
+					// Here goes Mess-up. If we are going to choose another position we need to stop
+					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+					for (auto ass : task->GetAssignees()) {
+						if (ass != unit) {
+							ass->GetUnit()->Stop();
+						}
+					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1397,9 +1488,19 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("cafus");
 			AIFloat3 buildPos = task->GetBuildPos();
-			if (buildPos != -RgtVector && circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
-				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
-				break;
+			if (buildPos != -RgtVector) {
+				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
+					u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+					break;
+				} else {
+					// Here goes Mess-up. If we are going to choose another position we need to stop
+					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+					for (auto ass : task->GetAssignees()) {
+						if (ass != unit) {
+							ass->GetUnit()->Stop();
+						}
+					}
+				}
 			}
 			const AIFloat3& position = task->GetPos();
 			buildPos = circuit->FindBuildSiteMindMex(buildDef, position, 800.0f, UNIT_COMMAND_BUILD_NO_FACING);
@@ -1434,9 +1535,19 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("armestor");
 			AIFloat3 buildPos = task->GetBuildPos();
-			if (buildPos != -RgtVector && circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
-				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
-				break;
+			if (buildPos != -RgtVector) {
+				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
+					u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+					break;
+				} else {
+					// Here goes Mess-up. If we are going to choose another position we need to stop
+					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+					for (auto ass : task->GetAssignees()) {
+						if (ass != unit) {
+							ass->GetUnit()->Stop();
+						}
+					}
+				}
 			}
 			const AIFloat3& position = task->GetPos();
 			Map* map = circuit->GetMap();
@@ -1479,6 +1590,14 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
 					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
 					break;
+				} else {
+					// Here goes Mess-up. If we are going to choose another position we need to stop
+					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+					for (auto ass : task->GetAssignees()) {
+						if (ass != unit) {
+							ass->GetUnit()->Stop();
+						}
+					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1521,6 +1640,14 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
 					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
 					break;
+				} else {
+					// Here goes Mess-up. If we are going to choose another position we need to stop
+					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+					for (auto ass : task->GetAssignees()) {
+						if (ass != unit) {
+							ass->GetUnit()->Stop();
+						}
+					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1563,6 +1690,14 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
 					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
 					break;
+				} else {
+					// Here goes Mess-up. If we are going to choose another position we need to stop
+					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+					for (auto ass : task->GetAssignees()) {
+						if (ass != unit) {
+							ass->GetUnit()->Stop();
+						}
+					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();

@@ -19,7 +19,7 @@ IUnitTask::~IUnitTask()
 {
 }
 
-void IUnitTask::AssignTo(CCircuitUnit* unit)
+void IUnitTask::AssignTo(CCircuitUnit* unit, CCircuitAI* circuit)
 {
 	unit->SetTask(this);
 	units.insert(unit);
@@ -31,12 +31,26 @@ void IUnitTask::RemoveAssignee(CCircuitUnit* unit)
 	unit->SetTask(nullptr);
 }
 
-void IUnitTask::MarkCompleted()
+void IUnitTask::MarkCompleted(CCircuitAI* circuit)
 {
+	if (circuit) {
+		circuit->LOG("IUnitTask: %lu", this);
+		circuit->LOG("units: %i", units.size());
+	}
+	int idx = 0;
 	for (auto& unit : units) {
+		if (circuit) {
+			circuit->LOG("idx: %i | unit: %i", idx, unit->GetUnit()->GetUnitId());
+			idx++;
+		}
 		unit->SetTask(nullptr);
 	}
 	units.clear();
+}
+
+std::unordered_set<CCircuitUnit*>& IUnitTask::GetAssignees()
+{
+	return units;
 }
 
 } // namespace circuit
