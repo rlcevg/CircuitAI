@@ -30,9 +30,6 @@
 #ifdef DEBUG
 	#include "Drawer.h"
 #endif
-	#include "Drawer.h"
-	#include "Log.h"
-	#include "Command.h"
 
 namespace circuit {
 
@@ -304,11 +301,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		} else {
 			unit->RemoveTask();
 			PrepareBuilder(unit);
-			std::vector<springai::Command*> cmds = unit->GetUnit()->GetCurrentCommands();
-			if (cmds.size() > 0) {
-				this->circuit->LOG("commands > 0 | unit: %i", unit->GetUnit()->GetUnitId());
-			}
-			utils::free_clear(cmds);
 		}
 		ExecuteBuilder(unit);
 	};
@@ -413,228 +405,228 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 //		}
 //	}
 
-	// debug
-	if (circuit->GetSkirmishAIId() != 1) {
-		return;
-	}
-	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>([circuit]() {
-		// step 1: Create waypoints
-		Pathing* pathing = circuit->GetPathing();
-		Map* map = circuit->GetMap();
-		const CMetalManager::Metals& spots = circuit->GetGameAttribute()->GetMetalManager().GetSpots();
-		std::vector<AIFloat3> points;
-		for (auto& spot : spots) {
-			AIFloat3 start = spot.position;
-			for (auto& s : spots) {
-				if (spot.position == s.position) {
-					continue;
-				}
-				AIFloat3 end = s.position;
-				int pathId = pathing->InitPath(start, end, 4, .0f);
-				AIFloat3 lastPoint, point(start);
-//				Drawer* drawer = map->GetDrawer();
-				int j = 0;
-				do {
-					lastPoint = point;
-					point = pathing->GetNextWaypoint(pathId);
-					if (point.x <= 0 || point.z <= 0) {
-						break;
-					}
-//					drawer->AddLine(lastPoint, point);
-					if (j++ % 25 == 0) {
-						points.push_back(point);
-					}
-				} while ((lastPoint != point) && (point.x > 0 && point.z > 0));
-//				delete drawer;
-				pathing->FreePath(pathId);
-			}
-		}
-
-		// step 2: Create path traversability map
-		// @see path traversability map rts/
-		int widthX = circuit->GetMap()->GetWidth();
-		int heightZ = circuit->GetMap()->GetHeight();
-		int widthSX = widthX / 2;
-		MoveData* moveDef = circuit->GetGameAttribute()->GetUnitDefByName("armcom1")->GetMoveData();
-		float maxSlope = moveDef->GetMaxSlope();
-		float depth = moveDef->GetDepth();
-		float slopeMod = moveDef->GetSlopeMod();
-		std::vector<float> heightMap = circuit->GetMap()->GetHeightMap();
-		std::vector<float> slopeMap = circuit->GetMap()->GetSlopeMap();
-
-		std::vector<float> traversMap(widthX * heightZ);
-
-		auto posSpeedMod = [](float maxSlope, float depth, float slopeMod, float depthMod, float height, float slope) {
-			float speedMod = 0.0f;
-
-			// slope too steep or square too deep?
-			if (slope > maxSlope)
-				return speedMod;
-			if (-height > depth)
-				return speedMod;
-
-			// slope-mod
-			speedMod = 1.0f / (1.0f + slope * slopeMod);
-			// FIXME: Read waterDamageCost from mapInfo
-//			speedMod *= (height < 0.0f) ? waterDamageCost : 1.0f;
-			speedMod *= depthMod;
-
-			return speedMod;
-		};
-
-		for (int hz = 0; hz < heightZ; ++hz) {
-			for (int hx = 0; hx < widthX; ++hx) {
-				const int sx = hx / 2;  // hx >> 1;
-				const int sz = hz / 2;  // hz >> 1;
-//				const bool losSqr = losHandler->InLos(sqx, sqy, gu->myAllyTeam);
-
-				float scale = 1.0f;
-
-				// TODO: First implement blocking map
-//				if (los || losSqr) {
-//					if (CMoveMath::IsBlocked(*md, sqx,     sqy    , NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
-//					if (CMoveMath::IsBlocked(*md, sqx + 1, sqy    , NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
-//					if (CMoveMath::IsBlocked(*md, sqx,     sqy + 1, NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
-//					if (CMoveMath::IsBlocked(*md, sqx + 1, sqy + 1, NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
+//	// debug
+//	if (circuit->GetSkirmishAIId() != 1) {
+//		return;
+//	}
+//	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>([circuit]() {
+//		// step 1: Create waypoints
+//		Pathing* pathing = circuit->GetPathing();
+//		Map* map = circuit->GetMap();
+//		const CMetalManager::Metals& spots = circuit->GetGameAttribute()->GetMetalManager().GetSpots();
+//		std::vector<AIFloat3> points;
+//		for (auto& spot : spots) {
+//			AIFloat3 start = spot.position;
+//			for (auto& s : spots) {
+//				if (spot.position == s.position) {
+//					continue;
 //				}
-
-				int idx = hz * widthX + hx;
-				float height = heightMap[idx];
-				float slope = slopeMap[sz * widthSX + sx];
-				float depthMod = moveDef->GetDepthMod(height);
-				traversMap[idx] = posSpeedMod(maxSlope, depth, slopeMod, depthMod, height, slope);
-				// FIXME: blocking map first
-//				const SColor& smc = GetSpeedModColor(sm * scale);
-			}
-		}
-		delete moveDef;
-
-		// step 3: Filter key waypoints
-		printf("points size: %i\n", points.size());
-		auto iter = points.begin();
-		while (iter != points.end()) {
-			bool isKey = false;
-			if ((iter->z / SQUARE_SIZE - 10 >= 0 && iter->z / SQUARE_SIZE + 10 < heightZ) && (iter->x / SQUARE_SIZE - 10 >= 0 && iter->x / SQUARE_SIZE + 10 < widthX)) {
-				int idx = (int)(iter->z / SQUARE_SIZE) * widthX + (int)(iter->x / SQUARE_SIZE);
-				if (traversMap[idx] > 0.8) {
-					for (int hz = -10; hz <= 10; ++hz) {
-						for (int hx = -10; hx <= 10; ++hx) {
-							idx = (int)(iter->z / SQUARE_SIZE - hz) * widthX + iter->x / SQUARE_SIZE;
-							if (traversMap[idx] < 0.8) {
-								isKey = true;
-								break;
-							}
-						}
-						if (isKey) {
-							break;
-						}
-					}
-				}
-			}
-			if (!isKey) {
-				iter = points.erase(iter);
-			} else {
-				++iter;
-			}
-		}
-
-//		Drawer* drawer = circuit->GetMap()->GetDrawer();
-//		for (int i = 0; i < points.size(); i++) {
-//			drawer->AddPoint(points[i], "");
+//				AIFloat3 end = s.position;
+//				int pathId = pathing->InitPath(start, end, 4, .0f);
+//				AIFloat3 lastPoint, point(start);
+////				Drawer* drawer = map->GetDrawer();
+//				int j = 0;
+//				do {
+//					lastPoint = point;
+//					point = pathing->GetNextWaypoint(pathId);
+//					if (point.x <= 0 || point.z <= 0) {
+//						break;
+//					}
+////					drawer->AddLine(lastPoint, point);
+//					if (j++ % 25 == 0) {
+//						points.push_back(point);
+//					}
+//				} while ((lastPoint != point) && (point.x > 0 && point.z > 0));
+////				delete drawer;
+//				pathing->FreePath(pathId);
+//			}
 //		}
-//		delete drawer;
-
-		// step 4: Clusterize key waypoints
-		float maxDistance = circuit->GetGameAttribute()->GetUnitDefByName("corrl")->GetMaxWeaponRange() * 2;
-		maxDistance *= maxDistance;
-		circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>([circuit, points, maxDistance]() {
-			int nrows = points.size();
-			CRagMatrix distmatrix(nrows);
-			for (int i = 1; i < nrows; i++) {
-				for (int j = 0; j < i; j++) {
-					float dx = points[i].x - points[j].x;
-					float dz = points[i].z - points[j].z;
-					distmatrix(i, j) = dx * dx + dz * dz;
-				}
-			}
-
-			// Initialize cluster-element list
-			std::vector<std::vector<int>> iclusters(nrows);
-			for (int i = 0; i < nrows; i++) {
-				std::vector<int> cluster;
-				cluster.push_back(i);
-				iclusters[i] = cluster;
-			}
-
-			for (int n = nrows; n > 1; n--) {
-				// Find pair
-				int is = 1;
-				int js = 0;
-				if (distmatrix.FindClosestPair(n, is, js) > maxDistance) {
-					break;
-				}
-
-				// Fix the distances
-				for (int j = 0; j < js; j++) {
-					distmatrix(js, j) = std::max(distmatrix(is, j), distmatrix(js, j));
-				}
-				for (int j = js + 1; j < is; j++) {
-					distmatrix(j, js) = std::max(distmatrix(is, j), distmatrix(j, js));
-				}
-				for (int j = is + 1; j < n; j++) {
-					distmatrix(j, js) = std::max(distmatrix(j, is), distmatrix(j, js));
-				}
-
-				for (int j = 0; j < is; j++) {
-					distmatrix(is, j) = distmatrix(n - 1, j);
-				}
-				for (int j = is + 1; j < n - 1; j++) {
-					distmatrix(j, is) = distmatrix(n - 1, j);
-				}
-
-				// Merge clusters
-				std::vector<int>& cluster = iclusters[js];
-				cluster.reserve(cluster.size() + iclusters[is].size()); // preallocate memory
-				cluster.insert(cluster.end(), iclusters[is].begin(), iclusters[is].end());
-				iclusters[is] = iclusters[n - 1];
-				iclusters.pop_back();
-			}
-
-			std::vector<std::vector<int>> clusters;
-			std::vector<AIFloat3> centroids;
-			int nclusters = iclusters.size();
-			clusters.resize(nclusters);
-			centroids.resize(nclusters);
-			for (int i = 0; i < nclusters; i++) {
-				clusters[i].clear();
-				AIFloat3 centr = ZeroVector;
-				for (int j = 0; j < iclusters[i].size(); j++) {
-					clusters[i].push_back(iclusters[i][j]);
-					centr += points[iclusters[i][j]];
-				}
-				centr /= iclusters[i].size();
-				centroids[i] = centr;
-			}
-
-			printf("nclusters: %i\n", nclusters);
-			for (int i = 0; i < clusters.size(); i++) {
-				printf("%i | ", clusters[i].size());
-			}
-			std::sort(clusters.begin(), clusters.end(), [](const std::vector<int>& a, const std::vector<int>& b){ return a.size() > b.size(); });
-//			int num = std::min(10, (int)centroids.size());
-			int num = centroids.size();
-			Drawer* drawer = circuit->GetMap()->GetDrawer();
-			for (int i = 0; i < num; i++) {
-				AIFloat3 centr = ZeroVector;
-				for (int j = 0; j < clusters[i].size(); j++) {
-					centr += points[clusters[i][j]];
-				}
-				centr /= clusters[i].size();
-				drawer->AddPoint(centr, utils::string_format("%i", i).c_str());
-			}
-			delete drawer;
-		}));
-	}), FRAMES_PER_SEC);
+//
+//		// step 2: Create path traversability map
+//		// @see path traversability map rts/
+//		int widthX = circuit->GetMap()->GetWidth();
+//		int heightZ = circuit->GetMap()->GetHeight();
+//		int widthSX = widthX / 2;
+//		MoveData* moveDef = circuit->GetGameAttribute()->GetUnitDefByName("armcom1")->GetMoveData();
+//		float maxSlope = moveDef->GetMaxSlope();
+//		float depth = moveDef->GetDepth();
+//		float slopeMod = moveDef->GetSlopeMod();
+//		std::vector<float> heightMap = circuit->GetMap()->GetHeightMap();
+//		std::vector<float> slopeMap = circuit->GetMap()->GetSlopeMap();
+//
+//		std::vector<float> traversMap(widthX * heightZ);
+//
+//		auto posSpeedMod = [](float maxSlope, float depth, float slopeMod, float depthMod, float height, float slope) {
+//			float speedMod = 0.0f;
+//
+//			// slope too steep or square too deep?
+//			if (slope > maxSlope)
+//				return speedMod;
+//			if (-height > depth)
+//				return speedMod;
+//
+//			// slope-mod
+//			speedMod = 1.0f / (1.0f + slope * slopeMod);
+//			// FIXME: Read waterDamageCost from mapInfo
+////			speedMod *= (height < 0.0f) ? waterDamageCost : 1.0f;
+//			speedMod *= depthMod;
+//
+//			return speedMod;
+//		};
+//
+//		for (int hz = 0; hz < heightZ; ++hz) {
+//			for (int hx = 0; hx < widthX; ++hx) {
+//				const int sx = hx / 2;  // hx >> 1;
+//				const int sz = hz / 2;  // hz >> 1;
+////				const bool losSqr = losHandler->InLos(sqx, sqy, gu->myAllyTeam);
+//
+//				float scale = 1.0f;
+//
+//				// TODO: First implement blocking map
+////				if (los || losSqr) {
+////					if (CMoveMath::IsBlocked(*md, sqx,     sqy    , NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
+////					if (CMoveMath::IsBlocked(*md, sqx + 1, sqy    , NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
+////					if (CMoveMath::IsBlocked(*md, sqx,     sqy + 1, NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
+////					if (CMoveMath::IsBlocked(*md, sqx + 1, sqy + 1, NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
+////				}
+//
+//				int idx = hz * widthX + hx;
+//				float height = heightMap[idx];
+//				float slope = slopeMap[sz * widthSX + sx];
+//				float depthMod = moveDef->GetDepthMod(height);
+//				traversMap[idx] = posSpeedMod(maxSlope, depth, slopeMod, depthMod, height, slope);
+//				// FIXME: blocking map first
+////				const SColor& smc = GetSpeedModColor(sm * scale);
+//			}
+//		}
+//		delete moveDef;
+//
+//		// step 3: Filter key waypoints
+//		printf("points size: %i\n", points.size());
+//		auto iter = points.begin();
+//		while (iter != points.end()) {
+//			bool isKey = false;
+//			if ((iter->z / SQUARE_SIZE - 10 >= 0 && iter->z / SQUARE_SIZE + 10 < heightZ) && (iter->x / SQUARE_SIZE - 10 >= 0 && iter->x / SQUARE_SIZE + 10 < widthX)) {
+//				int idx = (int)(iter->z / SQUARE_SIZE) * widthX + (int)(iter->x / SQUARE_SIZE);
+//				if (traversMap[idx] > 0.8) {
+//					for (int hz = -10; hz <= 10; ++hz) {
+//						for (int hx = -10; hx <= 10; ++hx) {
+//							idx = (int)(iter->z / SQUARE_SIZE - hz) * widthX + iter->x / SQUARE_SIZE;
+//							if (traversMap[idx] < 0.8) {
+//								isKey = true;
+//								break;
+//							}
+//						}
+//						if (isKey) {
+//							break;
+//						}
+//					}
+//				}
+//			}
+//			if (!isKey) {
+//				iter = points.erase(iter);
+//			} else {
+//				++iter;
+//			}
+//		}
+//
+////		Drawer* drawer = circuit->GetMap()->GetDrawer();
+////		for (int i = 0; i < points.size(); i++) {
+////			drawer->AddPoint(points[i], "");
+////		}
+////		delete drawer;
+//
+//		// step 4: Clusterize key waypoints
+//		float maxDistance = circuit->GetGameAttribute()->GetUnitDefByName("corrl")->GetMaxWeaponRange() * 2;
+//		maxDistance *= maxDistance;
+//		circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>([circuit, points, maxDistance]() {
+//			int nrows = points.size();
+//			CRagMatrix distmatrix(nrows);
+//			for (int i = 1; i < nrows; i++) {
+//				for (int j = 0; j < i; j++) {
+//					float dx = points[i].x - points[j].x;
+//					float dz = points[i].z - points[j].z;
+//					distmatrix(i, j) = dx * dx + dz * dz;
+//				}
+//			}
+//
+//			// Initialize cluster-element list
+//			std::vector<std::vector<int>> iclusters(nrows);
+//			for (int i = 0; i < nrows; i++) {
+//				std::vector<int> cluster;
+//				cluster.push_back(i);
+//				iclusters[i] = cluster;
+//			}
+//
+//			for (int n = nrows; n > 1; n--) {
+//				// Find pair
+//				int is = 1;
+//				int js = 0;
+//				if (distmatrix.FindClosestPair(n, is, js) > maxDistance) {
+//					break;
+//				}
+//
+//				// Fix the distances
+//				for (int j = 0; j < js; j++) {
+//					distmatrix(js, j) = std::max(distmatrix(is, j), distmatrix(js, j));
+//				}
+//				for (int j = js + 1; j < is; j++) {
+//					distmatrix(j, js) = std::max(distmatrix(is, j), distmatrix(j, js));
+//				}
+//				for (int j = is + 1; j < n; j++) {
+//					distmatrix(j, js) = std::max(distmatrix(j, is), distmatrix(j, js));
+//				}
+//
+//				for (int j = 0; j < is; j++) {
+//					distmatrix(is, j) = distmatrix(n - 1, j);
+//				}
+//				for (int j = is + 1; j < n - 1; j++) {
+//					distmatrix(j, is) = distmatrix(n - 1, j);
+//				}
+//
+//				// Merge clusters
+//				std::vector<int>& cluster = iclusters[js];
+//				cluster.reserve(cluster.size() + iclusters[is].size()); // preallocate memory
+//				cluster.insert(cluster.end(), iclusters[is].begin(), iclusters[is].end());
+//				iclusters[is] = iclusters[n - 1];
+//				iclusters.pop_back();
+//			}
+//
+//			std::vector<std::vector<int>> clusters;
+//			std::vector<AIFloat3> centroids;
+//			int nclusters = iclusters.size();
+//			clusters.resize(nclusters);
+//			centroids.resize(nclusters);
+//			for (int i = 0; i < nclusters; i++) {
+//				clusters[i].clear();
+//				AIFloat3 centr = ZeroVector;
+//				for (int j = 0; j < iclusters[i].size(); j++) {
+//					clusters[i].push_back(iclusters[i][j]);
+//					centr += points[iclusters[i][j]];
+//				}
+//				centr /= iclusters[i].size();
+//				centroids[i] = centr;
+//			}
+//
+//			printf("nclusters: %i\n", nclusters);
+//			for (int i = 0; i < clusters.size(); i++) {
+//				printf("%i | ", clusters[i].size());
+//			}
+//			std::sort(clusters.begin(), clusters.end(), [](const std::vector<int>& a, const std::vector<int>& b){ return a.size() > b.size(); });
+////			int num = std::min(10, (int)centroids.size());
+//			int num = centroids.size();
+//			Drawer* drawer = circuit->GetMap()->GetDrawer();
+//			for (int i = 0; i < num; i++) {
+//				AIFloat3 centr = ZeroVector;
+//				for (int j = 0; j < clusters[i].size(); j++) {
+//					centr += points[clusters[i][j]];
+//				}
+//				centr /= clusters[i].size();
+//				drawer->AddPoint(centr, utils::string_format("%i", i).c_str());
+//			}
+//			delete drawer;
+//		}));
+//	}), FRAMES_PER_SEC);
 }
 
 CEconomyManager::~CEconomyManager()
@@ -649,9 +641,6 @@ CEconomyManager::~CEconomyManager()
 
 int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 {
-	circuit->LOG("%s | %s | %s | %i", unit->GetDef()->GetHumanName(), unit->GetDef()->GetName(), unit->GetDef()->GetWreckName(), unit->GetUnit()->GetUnitId());
-	circuit->LOG("x(%.2f) z(%.2f)", unit->GetUnit()->GetPos().x, unit->GetUnit()->GetPos().z);
-
 	if (unit->GetUnit()->IsBeingBuilt() && builder != nullptr) {
 		IConstructTask* task = static_cast<IConstructTask*>(builder->GetTask());
 		if (task != nullptr) {
@@ -675,10 +664,6 @@ int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 					break;
 				}
 			}
-			circuit->LOG("task: %lu | builder: %i", task, builder->GetUnit()->GetUnitId());
-			for (auto& unit : task->GetAssignees()) {
-				circuit->LOG("assignee: %i", unit->GetUnit()->GetUnitId());
-			}
 		}
 	}
 
@@ -692,9 +677,6 @@ int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 
 int CEconomyManager::UnitFinished(CCircuitUnit* unit)
 {
-	circuit->LOG("%s | %s | %s | %i", unit->GetDef()->GetHumanName(), unit->GetDef()->GetName(), unit->GetDef()->GetWreckName(), unit->GetUnit()->GetUnitId());
-	circuit->LOG("x(%.2f) z(%.2f)", unit->GetUnit()->GetPos().x, unit->GetUnit()->GetPos().z);
-
 	auto iter = unfinishedUnits.find(unit);
 	if (iter != unfinishedUnits.end()) {
 		IConstructTask* task = iter->second;
@@ -719,7 +701,7 @@ int CEconomyManager::UnitFinished(CCircuitUnit* unit)
 				}
 				case IConstructTask::ConstructType::BUILDER: {
 					CBuilderTask* taskB = static_cast<CBuilderTask*>(task);
-					taskB->MarkCompleted(circuit);
+					taskB->MarkCompleted();
 					builderTasks[taskB->GetType()].remove(taskB);
 					delete taskB;
 					builderTasksCount--;
@@ -1068,12 +1050,6 @@ void CEconomyManager::WorkerWatchdog()
 			toPos.z += (toPos.z > circuit->GetMap()->GetHeight() * SQUARE_SIZE / 2) ? -size : size;
 			u->MoveTo(toPos);
 //			u->Stop();
-			circuit->LOG("WatchDog: %i", u->GetUnitId());
-			if (worker->GetTask()) {
-				for (auto unit : worker->GetTask()->GetAssignees()) {
-					circuit->LOG("assignee: %i", unit->GetUnit()->GetUnitId());
-				}
-			}
 		}
 	}
 }
@@ -1120,7 +1096,7 @@ void CEconomyManager::PrepareFactory(CCircuitUnit* unit)
 		iter = factoryTasks.begin();
 	}
 
-	task->AssignTo(unit, circuit);
+	task->AssignTo(unit);
 //	if (task->IsFull()) {
 		factoryTasks.splice(factoryTasks.end(), factoryTasks, iter);  // move task to back
 //	}
@@ -1189,7 +1165,7 @@ void CEconomyManager::PrepareBuilder(CCircuitUnit* unit)
 		builderTasksCount++;
 	}
 
-	task->AssignTo(unit, circuit);
+	task->AssignTo(unit);
 }
 
 void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
@@ -1223,7 +1199,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 
 		AIFloat3 pos = u->GetPos();
 		CBuilderTask* taskNew = new CBuilderTask(CBuilderTask::Priority::LOW, pos, CBuilderTask::TaskType::ASSIST, FRAMES_PER_SEC * 20);
-		taskNew->AssignTo(unit, circuit);
+		taskNew->AssignTo(unit);
 
 		const float size = SQUARE_SIZE * 10;
 		pos.x += (pos.x > circuit->GetMap()->GetWidth() * SQUARE_SIZE / 2) ? -size : size;
@@ -1259,14 +1235,6 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
 					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
-				} else {
-//					// Here goes Mess-up. If we are going to choose another position we need to stop
-//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-//					for (auto ass : task->GetAssignees()) {
-//						if (ass != unit) {
-//							ass->GetUnit()->Stop();
-//						}
-//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1309,14 +1277,6 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
 					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
-				} else {
-//					// Here goes Mess-up. If we are going to choose another position we need to stop
-//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-//					for (auto ass : task->GetAssignees()) {
-//						if (ass != unit) {
-//							ass->GetUnit()->Stop();
-//						}
-//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1360,14 +1320,6 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
 					u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
-				} else {
-//					// Here goes Mess-up. If we are going to choose another position we need to stop
-//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-//					for (auto ass : task->GetAssignees()) {
-//						if (ass != unit) {
-//							ass->GetUnit()->Stop();
-//						}
-//					}
 				}
 			}
 			const AIFloat3& position = u->GetPos();
@@ -1403,14 +1355,6 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
 					u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
-				} else {
-//					// Here goes Mess-up. If we are going to choose another position we need to stop
-//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-//					for (auto ass : task->GetAssignees()) {
-//						if (ass != unit) {
-//							ass->GetUnit()->Stop();
-//						}
-//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1451,14 +1395,6 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
 					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
-				} else {
-//					// Here goes Mess-up. If we are going to choose another position we need to stop
-//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-//					for (auto ass : task->GetAssignees()) {
-//						if (ass != unit) {
-//							ass->GetUnit()->Stop();
-//						}
-//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1500,14 +1436,6 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
 					u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
-				} else {
-//					// Here goes Mess-up. If we are going to choose another position we need to stop
-//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-//					for (auto ass : task->GetAssignees()) {
-//						if (ass != unit) {
-//							ass->GetUnit()->Stop();
-//						}
-//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1547,14 +1475,6 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
 					u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
-				} else {
-//					// Here goes Mess-up. If we are going to choose another position we need to stop
-//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-//					for (auto ass : task->GetAssignees()) {
-//						if (ass != unit) {
-//							ass->GetUnit()->Stop();
-//						}
-//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1598,14 +1518,6 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
 					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
-				} else {
-//					// Here goes Mess-up. If we are going to choose another position we need to stop
-//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-//					for (auto ass : task->GetAssignees()) {
-//						if (ass != unit) {
-//							ass->GetUnit()->Stop();
-//						}
-//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1648,14 +1560,6 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
 					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
-				} else {
-//					// Here goes Mess-up. If we are going to choose another position we need to stop
-//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-//					for (auto ass : task->GetAssignees()) {
-//						if (ass != unit) {
-//							ass->GetUnit()->Stop();
-//						}
-//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1698,14 +1602,6 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
 					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
-				} else {
-//					// Here goes Mess-up. If we are going to choose another position we need to stop
-//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-//					for (auto ass : task->GetAssignees()) {
-//						if (ass != unit) {
-//							ass->GetUnit()->Stop();
-//						}
-//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();

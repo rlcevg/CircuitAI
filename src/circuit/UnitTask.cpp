@@ -19,7 +19,7 @@ IUnitTask::~IUnitTask()
 {
 }
 
-void IUnitTask::AssignTo(CCircuitUnit* unit, CCircuitAI* circuit)
+void IUnitTask::AssignTo(CCircuitUnit* unit)
 {
 	unit->SetTask(this);
 	units.insert(unit);
@@ -31,18 +31,9 @@ void IUnitTask::RemoveAssignee(CCircuitUnit* unit)
 	unit->SetTask(nullptr);
 }
 
-void IUnitTask::MarkCompleted(CCircuitAI* circuit)
+void IUnitTask::MarkCompleted()
 {
-	if (circuit) {
-		circuit->LOG("IUnitTask: %lu", this);
-		circuit->LOG("units: %i", units.size());
-	}
-	int idx = 0;
 	for (auto& unit : units) {
-		if (circuit) {
-			circuit->LOG("idx: %i | unit: %i", idx, unit->GetUnit()->GetUnitId());
-			idx++;
-		}
 		unit->SetTask(nullptr);
 	}
 	units.clear();

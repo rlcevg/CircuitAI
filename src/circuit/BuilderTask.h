@@ -10,8 +10,6 @@
 
 #include "ConstructTask.h"
 
-class CCircuitAI;
-
 namespace circuit {
 
 class CBuilderTask: public IConstructTask {
@@ -30,7 +28,7 @@ public:
 			TaskType type, int timeout = 0);
 	virtual ~CBuilderTask();
 
-	virtual void AssignTo(CCircuitUnit* unit, CCircuitAI* circuit);
+	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 	virtual bool CanAssignTo(CCircuitUnit* unit);
 

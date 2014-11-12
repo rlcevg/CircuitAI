@@ -37,14 +37,10 @@ bool CBuilderTask::CanAssignTo(CCircuitUnit* unit)
 	return true;
 }
 
-void CBuilderTask::AssignTo(CCircuitUnit* unit, CCircuitAI* circuit)
+void CBuilderTask::AssignTo(CCircuitUnit* unit)
 {
-	IUnitTask::AssignTo(unit, circuit);
+	IUnitTask::AssignTo(unit);
 	quantity++;
-	circuit->LOG("Assign: %lu %i | Pos: x(%.2f) z(%.2f) | BuildPos: x(%.2f) z(%.2f) | To:", this, type, position.x, position.z, buildPos.x, buildPos.z);
-	for (auto unit : units) {
-		circuit->LOG("assignee: %i", unit->GetUnit()->GetUnitId());
-	}
 }
 
 void CBuilderTask::RemoveAssignee(CCircuitUnit* unit)
