@@ -659,14 +659,22 @@ int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 				case IConstructTask::ConstructType::FACTORY: {
 //					static_cast<CFactoryTask*>(task)->Progress();
 					unfinishedTasks[task].push_back(unit);
+					unfinishedUnits[unit] = task;
 					break;
 				}
 				case IConstructTask::ConstructType::BUILDER: {
-					static_cast<CBuilderTask*>(task)->SetTarget(unit);
+					CBuilderTask* taskB = static_cast<CBuilderTask*>(task);
+					// Try to cope with strange event order, when different created units has same task
+					if (taskB->GetTarget() == nullptr) {
+						taskB->SetTarget(unit);
+						unfinishedUnits[unit] = task;
+					}
+					for (auto ass : task->GetAssignees()) {
+						ass->GetUnit()->Repair(unit->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+					}
 					break;
 				}
 			}
-			unfinishedUnits[unit] = task;
 			circuit->LOG("task: %lu | builder: %i", task, builder->GetUnit()->GetUnitId());
 			for (auto& unit : task->GetAssignees()) {
 				circuit->LOG("assignee: %i", unit->GetUnit()->GetUnitId());
@@ -1241,7 +1249,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 			if (task->GetTarget() != nullptr) {
-				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY);
+				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("factorycloak");
@@ -1249,16 +1257,16 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			if (buildPos != -RgtVector) {
 				int facing = findFacing(buildDef, buildPos);
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
-					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
 				} else {
-					// Here goes Mess-up. If we are going to choose another position we need to stop
-					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-					for (auto ass : task->GetAssignees()) {
-						if (ass != unit) {
-							ass->GetUnit()->Stop();
-						}
-					}
+//					// Here goes Mess-up. If we are going to choose another position we need to stop
+//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+//					for (auto ass : task->GetAssignees()) {
+//						if (ass != unit) {
+//							ass->GetUnit()->Stop();
+//						}
+//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1278,7 +1286,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			if (buildPos != -RgtVector) {
 				task->SetBuildPos(buildPos);
-				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			} else {
 				// Fallback to Guard/Assist/Patrol
 				assistFallback(unit);
@@ -1291,7 +1299,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 			if (task->GetTarget() != nullptr) {
-				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY);
+				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("armnanotc");
@@ -1299,16 +1307,16 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			if (buildPos != -RgtVector) {
 				int facing = findFacing(buildDef, buildPos);
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
-					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
 				} else {
-					// Here goes Mess-up. If we are going to choose another position we need to stop
-					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-					for (auto ass : task->GetAssignees()) {
-						if (ass != unit) {
-							ass->GetUnit()->Stop();
-						}
-					}
+//					// Here goes Mess-up. If we are going to choose another position we need to stop
+//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+//					for (auto ass : task->GetAssignees()) {
+//						if (ass != unit) {
+//							ass->GetUnit()->Stop();
+//						}
+//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1330,7 +1338,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			if (buildPos != -RgtVector) {
 				task->SetBuildPos(buildPos);
-				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			} else {
 				// Fallback to Guard/Assist/Patrol
 				assistFallback(unit);
@@ -1343,23 +1351,23 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 			if (task->GetTarget() != nullptr) {
-				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY);
+				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("cormex");
 			AIFloat3 buildPos = task->GetBuildPos();
 			if (buildPos != -RgtVector) {
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
-					u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+					u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
 				} else {
-					// Here goes Mess-up. If we are going to choose another position we need to stop
-					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-					for (auto ass : task->GetAssignees()) {
-						if (ass != unit) {
-							ass->GetUnit()->Stop();
-						}
-					}
+//					// Here goes Mess-up. If we are going to choose another position we need to stop
+//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+//					for (auto ass : task->GetAssignees()) {
+//						if (ass != unit) {
+//							ass->GetUnit()->Stop();
+//						}
+//					}
 				}
 			}
 			const AIFloat3& position = u->GetPos();
@@ -1373,7 +1381,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				const CMetalManager::Metals& spots =  circuit->GetGameAttribute()->GetMetalManager().GetSpots();
 				buildPos = spots[index].position;
 				task->SetBuildPos(buildPos);
-				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			} else {
 				// Fallback to Guard/Assist/Patrol
 				assistFallback(unit);
@@ -1386,23 +1394,23 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 			if (task->GetTarget() != nullptr) {
-				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY);
+				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("armsolar");
 			AIFloat3 buildPos = task->GetBuildPos();
 			if (buildPos != -RgtVector) {
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
-					u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+					u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
 				} else {
-					// Here goes Mess-up. If we are going to choose another position we need to stop
-					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-					for (auto ass : task->GetAssignees()) {
-						if (ass != unit) {
-							ass->GetUnit()->Stop();
-						}
-					}
+//					// Here goes Mess-up. If we are going to choose another position we need to stop
+//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+//					for (auto ass : task->GetAssignees()) {
+//						if (ass != unit) {
+//							ass->GetUnit()->Stop();
+//						}
+//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1420,7 +1428,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			if (buildPos != -RgtVector) {
 				task->SetBuildPos(buildPos);
-				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			} else {
 				// Fallback to Guard/Assist/Patrol
 				assistFallback(unit);
@@ -1433,7 +1441,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 			if (task->GetTarget() != nullptr) {
-				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY);
+				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("armfus");
@@ -1441,16 +1449,16 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			if (buildPos != -RgtVector) {
 				int facing = findFacing(buildDef, buildPos);
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
-					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
 				} else {
-					// Here goes Mess-up. If we are going to choose another position we need to stop
-					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-					for (auto ass : task->GetAssignees()) {
-						if (ass != unit) {
-							ass->GetUnit()->Stop();
-						}
-					}
+//					// Here goes Mess-up. If we are going to choose another position we need to stop
+//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+//					for (auto ass : task->GetAssignees()) {
+//						if (ass != unit) {
+//							ass->GetUnit()->Stop();
+//						}
+//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1470,7 +1478,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			if (buildPos != -RgtVector) {
 				task->SetBuildPos(buildPos);
-				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			} else {
 				// Fallback to Guard/Assist/Patrol
 				assistFallback(unit);
@@ -1483,23 +1491,23 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 			if (task->GetTarget() != nullptr) {
-				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY);
+				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("cafus");
 			AIFloat3 buildPos = task->GetBuildPos();
 			if (buildPos != -RgtVector) {
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
-					u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+					u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
 				} else {
-					// Here goes Mess-up. If we are going to choose another position we need to stop
-					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-					for (auto ass : task->GetAssignees()) {
-						if (ass != unit) {
-							ass->GetUnit()->Stop();
-						}
-					}
+//					// Here goes Mess-up. If we are going to choose another position we need to stop
+//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+//					for (auto ass : task->GetAssignees()) {
+//						if (ass != unit) {
+//							ass->GetUnit()->Stop();
+//						}
+//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1517,7 +1525,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			if (buildPos != -RgtVector) {
 				task->SetBuildPos(buildPos);
-				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			} else {
 				// Fallback to Guard/Assist/Patrol
 				assistFallback(unit);
@@ -1530,23 +1538,23 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 			if (task->GetTarget() != nullptr) {
-				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY);
+				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("armestor");
 			AIFloat3 buildPos = task->GetBuildPos();
 			if (buildPos != -RgtVector) {
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
-					u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+					u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
 				} else {
-					// Here goes Mess-up. If we are going to choose another position we need to stop
-					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-					for (auto ass : task->GetAssignees()) {
-						if (ass != unit) {
-							ass->GetUnit()->Stop();
-						}
-					}
+//					// Here goes Mess-up. If we are going to choose another position we need to stop
+//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+//					for (auto ass : task->GetAssignees()) {
+//						if (ass != unit) {
+//							ass->GetUnit()->Stop();
+//						}
+//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1567,7 +1575,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			if (buildPos != -RgtVector) {
 				task->SetBuildPos(buildPos);
-				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+				u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			} else {
 				// Fallback to Guard/Assist/Patrol
 				assistFallback(unit);
@@ -1580,7 +1588,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 			if (task->GetTarget() != nullptr) {
-				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY);
+				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("corrl");
@@ -1588,16 +1596,16 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			if (buildPos != -RgtVector) {
 				int facing = findFacing(buildDef, buildPos);
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
-					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
 				} else {
-					// Here goes Mess-up. If we are going to choose another position we need to stop
-					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-					for (auto ass : task->GetAssignees()) {
-						if (ass != unit) {
-							ass->GetUnit()->Stop();
-						}
-					}
+//					// Here goes Mess-up. If we are going to choose another position we need to stop
+//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+//					for (auto ass : task->GetAssignees()) {
+//						if (ass != unit) {
+//							ass->GetUnit()->Stop();
+//						}
+//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1617,7 +1625,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			if (buildPos != -RgtVector) {
 				task->SetBuildPos(buildPos);
-				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			} else {
 				// Fallback to Guard/Assist/Patrol
 				assistFallback(unit);
@@ -1630,7 +1638,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 			if (task->GetTarget() != nullptr) {
-				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY);
+				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("cordoom");
@@ -1638,16 +1646,16 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			if (buildPos != -RgtVector) {
 				int facing = findFacing(buildDef, buildPos);
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
-					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
 				} else {
-					// Here goes Mess-up. If we are going to choose another position we need to stop
-					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-					for (auto ass : task->GetAssignees()) {
-						if (ass != unit) {
-							ass->GetUnit()->Stop();
-						}
-					}
+//					// Here goes Mess-up. If we are going to choose another position we need to stop
+//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+//					for (auto ass : task->GetAssignees()) {
+//						if (ass != unit) {
+//							ass->GetUnit()->Stop();
+//						}
+//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1667,7 +1675,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			if (buildPos != -RgtVector) {
 				task->SetBuildPos(buildPos);
-				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			} else {
 				// Fallback to Guard/Assist/Patrol
 				assistFallback(unit);
@@ -1680,7 +1688,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 			if (task->GetTarget() != nullptr) {
-				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY);
+				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
 			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("armanni");
@@ -1688,16 +1696,16 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			if (buildPos != -RgtVector) {
 				int facing = findFacing(buildDef, buildPos);
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
-					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
 				} else {
-					// Here goes Mess-up. If we are going to choose another position we need to stop
-					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
-					for (auto ass : task->GetAssignees()) {
-						if (ass != unit) {
-							ass->GetUnit()->Stop();
-						}
-					}
+//					// Here goes Mess-up. If we are going to choose another position we need to stop
+//					// all previous builders before they setup target (i hope unfinishedUnits doesn't have this task yet)
+//					for (auto ass : task->GetAssignees()) {
+//						if (ass != unit) {
+//							ass->GetUnit()->Stop();
+//						}
+//					}
 				}
 			}
 			const AIFloat3& position = task->GetPos();
@@ -1717,7 +1725,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 			}
 			if (buildPos != -RgtVector) {
 				task->SetBuildPos(buildPos);
-				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			} else {
 				// Fallback to Guard/Assist/Patrol
 				assistFallback(unit);
@@ -1739,7 +1747,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 					break;
 				}
 			}
-			unit->GetUnit()->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY);
+			unit->GetUnit()->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
 			auto search = builderInfo.find(unit);
 			if (search == builderInfo.end()) {
 				builderInfo[unit].startFrame = circuit->GetLastFrame();

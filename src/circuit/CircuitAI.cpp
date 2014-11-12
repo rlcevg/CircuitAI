@@ -443,10 +443,9 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();
 	AIFloat3 pos = u->GetPos();
-	float dx = (float)rand() / RAND_MAX - 0.5f;
-	float dz = (float)rand() / RAND_MAX - 0.5f;
-	pos.x += dx * SQUARE_SIZE * 10;
-	pos.z += dz * SQUARE_SIZE * 10;
+	AIFloat3 d((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
+	d.Normalize();
+	pos += d * SQUARE_SIZE * 10;
 	u->MoveTo(pos, 0, FRAMES_PER_SEC * 5);
 	LOG("MoveFailed: %i", u->GetUnitId());
 

@@ -59,6 +59,8 @@ private:
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
 	Handlers2 destroyedHandler;
+	// FIXME: Sometimes order of events is messed up. Ends in wrong unit (from previous task) for specific task.
+	//        Therefore for different units there are same task that is deleted first time and then accessed again.
 	std::map<CCircuitUnit*, IConstructTask*> unfinishedUnits;
 	std::map<IConstructTask*, std::list<CCircuitUnit*>> unfinishedTasks;
 	springai::Resource* metalRes;
