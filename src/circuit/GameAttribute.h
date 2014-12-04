@@ -12,14 +12,10 @@
 
 #include <memory>
 #include <vector>
-#include <map>
-#include <unordered_map>
 #include <unordered_set>
-#include <string.h>
 
 namespace springai {
 	class GameRulesParam;
-	class UnitDef;
 	class Pathing;
 }
 
@@ -32,18 +28,9 @@ class CScheduler;
 class CGameTask;
 
 class CGameAttribute {
-private:
-	struct cmp_str {
-	   bool operator()(char const *a, char const *b) {
-	      return strcmp(a, b) < 0;
-	   }
-	};
-
 public:
 	enum class StartPosType: char {METAL_SPOT = 0, MIDDLE = 1, RANDOM = 2};
-	using UnitDefs = std::map<const char*, springai::UnitDef*, cmp_str>;
 
-public:
 	CGameAttribute();
 	virtual ~CGameAttribute();
 
@@ -66,20 +53,11 @@ public:
 	void ClusterizeMetal(std::shared_ptr<CScheduler> scheduler, float maxDistance, int pathType, springai::Pathing* pathing);
 	CMetalManager& GetMetalManager();
 
-	void InitUnitDefs(std::vector<springai::UnitDef*>&& unitDefs);
-	bool HasUnitDefs();
-	springai::UnitDef* GetUnitDefByName(const char* name);
-	springai::UnitDef* GetUnitDefById(int unitDefId);
-	UnitDefs& GetUnitDefs();
-
 private:
 	bool gameEnd;
 	std::unordered_set<CCircuitAI*> circuits;
 	std::shared_ptr<CSetupManager> setupManager;
 	std::shared_ptr<CMetalManager> metalManager;
-
-	UnitDefs defsByName;  // owner
-	std::unordered_map<int, springai::UnitDef*> defsById;
 
 	struct {
 		int i;

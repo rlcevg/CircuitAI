@@ -10,6 +10,8 @@
 
 #include "ConstructTask.h"
 
+#define MIN_BUILD_TIME	8
+
 namespace circuit {
 
 class CBuilderTask: public IConstructTask {
@@ -25,7 +27,7 @@ public:
 public:
 	CBuilderTask(Priority priority,
 			const springai::AIFloat3& position,
-			TaskType type, int timeout = 0);
+			TaskType type, float cost, int timeout = 0);
 	virtual ~CBuilderTask();
 
 	virtual void AssignTo(CCircuitUnit* unit);
@@ -33,7 +35,8 @@ public:
 	virtual bool CanAssignTo(CCircuitUnit* unit);
 
 	TaskType GetType();
-	int GetQuantity();
+	float GetBuildPower();
+	float GetCost();
 	int GetTimeout();
 
 	void SetBuildPos(const springai::AIFloat3& pos);
@@ -43,7 +46,8 @@ public:
 
 private:
 	TaskType type;
-	int quantity;
+	float buildPower;
+	float cost;
 	int timeout;
 	CCircuitUnit* target;
 	springai::AIFloat3 buildPos;

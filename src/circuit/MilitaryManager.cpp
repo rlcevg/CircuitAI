@@ -7,7 +7,6 @@
 
 #include "MilitaryManager.h"
 #include "CircuitAI.h"
-#include "GameAttribute.h"
 #include "Scheduler.h"
 #include "CircuitUnit.h"
 #include "utils.h"
@@ -34,7 +33,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 		IModule(circuit)
 {
 	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>(&CMilitaryManager::TestOrder, this), 120);
-	CGameAttribute* attrib = circuit->GetGameAttribute();
 	int unitDefId;
 
 	auto atackerFinishedHandler = [this](CCircuitUnit* unit) {
@@ -59,22 +57,22 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 		u->Fight(toPos, 0, FRAMES_PER_SEC * 60 * 5);
 	};
 
-	unitDefId = attrib->GetUnitDefByName("armpw")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("armpw")->GetUnitDefId();
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
-	unitDefId = attrib->GetUnitDefByName("armrock")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("armrock")->GetUnitDefId();
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
-	unitDefId = attrib->GetUnitDefByName("armwar")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("armwar")->GetUnitDefId();
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
-	unitDefId = attrib->GetUnitDefByName("armzeus")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("armzeus")->GetUnitDefId();
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
-	unitDefId = attrib->GetUnitDefByName("armjeth")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("armjeth")->GetUnitDefId();
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
-	unitDefId = attrib->GetUnitDefByName("armsnipe")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("armsnipe")->GetUnitDefId();
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
 

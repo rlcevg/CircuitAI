@@ -20,8 +20,9 @@ class IUnitTask {
 public:
 	enum class Priority: char {LOW = 0, /*NORMAL,*/ HIGH};
 
-public:
+protected:
 	IUnitTask(Priority priority);
+public:
 	virtual ~IUnitTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) = 0;

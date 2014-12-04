@@ -48,8 +48,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	energyRes = circuit->GetCallback()->GetResourceByName("Energy");
 	eco = circuit->GetCallback()->GetEconomy();
 
-	CGameAttribute* attrib = circuit->GetGameAttribute();
-	UnitDef* def = attrib->GetUnitDefByName("armestor");
+	UnitDef* def = circuit->GetUnitDefByName("armestor");
 	std::map<std::string, std::string> customParams = def->GetCustomParams();
 	pylonRange = utils::string_to_float(customParams["pylonrange"]);
 
@@ -73,6 +72,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::WorkerWatchdog, this), FRAMES_PER_SEC * 60, circuit->GetSkirmishAIId());
 
 	// TODO: Group handlers
+	//       Scout:
 	//       Raider:       Glaive, Bandit, Scorcher, Pyro, Panther, Scrubber, Duck
 	//       Assault:      Zeus, Thug, Ravager, Hermit, Reaper
 	//       Skirmisher:   Rocko, Rogue, Recluse, Scalpel, Buoy
@@ -90,7 +90,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	/*
 	 * factorycloak handlers
 	 */
-	unitDefId = attrib->GetUnitDefByName("factorycloak")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("factorycloak")->GetUnitDefId();
 	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		Unit* u = unit->GetUnit();
 		UnitDef* def = u->GetDef();
@@ -101,7 +101,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 
 		// check nanos around
 		std::list<CCircuitUnit*> nanos;
-		UnitDef* nanoDef = this->circuit->GetGameAttribute()->GetUnitDefByName("armnanotc");
+		UnitDef* nanoDef = this->circuit->GetUnitDefByName("armnanotc");
 		float radius = nanoDef->GetBuildDistance();
 		std::vector<Unit*> units = this->circuit->GetCallback()->GetFriendlyUnitsIn(u->GetPos(), radius);
 		int nanoId = nanoDef->GetUnitDefId();
@@ -157,7 +157,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	 * comm handlers
 	 */
 	auto commFinishedHandler = [this](CCircuitUnit* unit) {
-		CCircuitAI* circuit = this->circuit;
+		CCircuitAI*& circuit = this->circuit;
 		Unit* u = unit->GetUnit();
 		Map* map = circuit->GetMap();
 		const AIFloat3& position = u->GetPos();
@@ -179,27 +179,27 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 			}
 		}
 
-		UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("factorycloak");
-		AIFloat3 buildPos = this->circuit->FindBuildSiteMindMex(buildDef, position, 1000.0f, facing);
+		UnitDef* buildDef = circuit->GetUnitDefByName("factorycloak");
+		AIFloat3 buildPos = circuit->FindBuildSiteMindMex(buildDef, position, 1000.0f, facing);
 		u->Build(buildDef, buildPos, facing);
 
-		buildDef = circuit->GetGameAttribute()->GetUnitDefByName("cormex");
-		u->Build(buildDef, this->circuit->GetStartPos(), UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
+		buildDef = circuit->GetUnitDefByName("cormex");
+		u->Build(buildDef, circuit->GetStartPos(), UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY);
 
 		std::vector<float> params;
 		params.push_back(0.0f);
 		u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
-		buildDef = circuit->GetGameAttribute()->GetUnitDefByName("corrl");
+		buildDef = circuit->GetUnitDefByName("corrl");
 		buildPos = position;
 		buildPos.z += 40.0f;
-		buildPos = this->circuit->GetMap()->FindClosestBuildSite(buildDef, buildPos, 1000.0f, 0, facing);
+		buildPos = circuit->GetMap()->FindClosestBuildSite(buildDef, buildPos, 1000.0f, 0, facing);
 		u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
 
-		buildDef = circuit->GetGameAttribute()->GetUnitDefByName("corllt");
+		buildDef = circuit->GetUnitDefByName("corllt");
 		buildPos = position;
 		buildPos.z -= 40.0f;
-		buildPos = this->circuit->GetMap()->FindClosestBuildSite(buildDef, buildPos, 1000.0f, 0, facing);
+		buildPos = circuit->GetMap()->FindClosestBuildSite(buildDef, buildPos, 1000.0f, 0, facing);
 		u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
 
 		this->totalBuildpower += unit->GetDef()->GetBuildSpeed();
@@ -211,32 +211,32 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		this->totalBuildpower -= unit->GetDef()->GetBuildSpeed();
 	};
 
-	unitDefId = attrib->GetUnitDefByName("armcom1")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("armcom1")->GetUnitDefId();
 	finishedHandler[unitDefId] = commFinishedHandler;
 	destroyedHandler[unitDefId] = commDestroyedHandler;
-	unitDefId = attrib->GetUnitDefByName("comm_trainer_support_0")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("comm_trainer_support_0")->GetUnitDefId();
 	finishedHandler[unitDefId] = commFinishedHandler;
 	destroyedHandler[unitDefId] = commDestroyedHandler;
-	unitDefId = attrib->GetUnitDefByName("comm_trainer_support_1")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("comm_trainer_support_1")->GetUnitDefId();
 	finishedHandler[unitDefId] = commFinishedHandler;
 	destroyedHandler[unitDefId] = commDestroyedHandler;
-	unitDefId = attrib->GetUnitDefByName("comm_trainer_support_2")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("comm_trainer_support_2")->GetUnitDefId();
 	finishedHandler[unitDefId] = commFinishedHandler;
 	destroyedHandler[unitDefId] = commDestroyedHandler;
-	unitDefId = attrib->GetUnitDefByName("comm_trainer_support_3")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("comm_trainer_support_3")->GetUnitDefId();
 	finishedHandler[unitDefId] = commFinishedHandler;
 	destroyedHandler[unitDefId] = commDestroyedHandler;
-	unitDefId = attrib->GetUnitDefByName("comm_trainer_support_4")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("comm_trainer_support_4")->GetUnitDefId();
 	finishedHandler[unitDefId] = commFinishedHandler;
 	destroyedHandler[unitDefId] = commDestroyedHandler;
-	unitDefId = attrib->GetUnitDefByName("comm_trainer_support_5")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("comm_trainer_support_5")->GetUnitDefId();
 	finishedHandler[unitDefId] = commFinishedHandler;
 	destroyedHandler[unitDefId] = commDestroyedHandler;
 
 	/*
 	 * armnanotc handlers
 	 */
-	unitDefId = attrib->GetUnitDefByName("armnanotc")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("armnanotc")->GetUnitDefId();
 	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		CCircuitAI* circuit = this->circuit;
 		Unit* u = unit->GetUnit();
@@ -287,7 +287,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	/*
 	 * armrectr handlers
 	 */
-	unitDefId = attrib->GetUnitDefByName("armrectr")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("armrectr")->GetUnitDefId();
 	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		float buildSpeed = unit->GetDef()->GetBuildSpeed();
 		this->totalBuildpower += buildSpeed;
@@ -327,7 +327,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	/*
 	 * armsolar handlers
 	 */
-	unitDefId = attrib->GetUnitDefByName("armsolar")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("armsolar")->GetUnitDefId();
 	createdHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 		this->solarCount++;
 	};
@@ -338,14 +338,15 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	/*
 	 * armfus handlers
 	 */
-	unitDefId = attrib->GetUnitDefByName("armfus")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("armfus")->GetUnitDefId();
 	createdHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 		this->fusionCount++;
 	};
 	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		const AIFloat3& buildPos = unit->GetUnit()->GetPos();
+		float cost = this->circuit->GetUnitDefByName("cordoom")->GetCost(metalRes);
 		builderTasks[CBuilderTask::TaskType::DDM].push_front(
-				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::DDM)
+				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::DDM, cost)
 		);
 		builderTasksCount++;
 	};
@@ -356,20 +357,23 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	/*
 	 * cafus handlers
 	 */
-	unitDefId = attrib->GetUnitDefByName("cafus")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("cafus")->GetUnitDefId();
 	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		const AIFloat3& buildPos = unit->GetUnit()->GetPos();
+		float cost = this->circuit->GetUnitDefByName("cordoom")->GetCost(metalRes);
 		builderTasks[CBuilderTask::TaskType::DDM].push_front(
-				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::DDM)
+				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::DDM, cost)
 		);
+		cost = this->circuit->GetUnitDefByName("armanni")->GetCost(metalRes);
 		builderTasks[CBuilderTask::TaskType::ANNI].push_front(
-				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::ANNI)
+				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::ANNI, cost)
+		);
+		cost = this->circuit->GetUnitDefByName("armnanotc")->GetCost(metalRes);
+		builderTasks[CBuilderTask::TaskType::NANO].push_front(
+				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::NANO, cost)
 		);
 		builderTasks[CBuilderTask::TaskType::NANO].push_front(
-				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::NANO)
-		);
-		builderTasks[CBuilderTask::TaskType::NANO].push_front(
-				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::NANO)
+				new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::NANO, cost)
 		);
 		builderTasksCount += 4;
 	};
@@ -377,7 +381,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	/*
 	 * armestor handlers
 	 */
-	unitDefId = attrib->GetUnitDefByName("armestor")->GetUnitDefId();
+	unitDefId = circuit->GetUnitDefByName("armestor")->GetUnitDefId();
 	createdHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 		// check factory's cluster
 		int index = this->circuit->GetGameAttribute()->GetMetalManager().FindNearestCluster(unit->GetUnit()->GetPos());
@@ -805,13 +809,14 @@ void CEconomyManager::UpdateExpandTasks()
 		const AIFloat3& startPos = circuit->GetStartPos();
 		const CMetalManager::Metals& spots = circuit->GetGameAttribute()->GetMetalManager().GetSpots();
 		Map* map = circuit->GetMap();
-		UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("cormex");
+		UnitDef* buildDef = circuit->GetUnitDefByName("cormex");
 		CMetalManager::MetalPredicate predicate = [&spots, map, buildDef](CMetalManager::MetalNode const& v) {
 			return map->IsPossibleToBuildAt(buildDef, spots[v.second].position, UNIT_COMMAND_BUILD_NO_FACING);
 		};
 		CMetalManager::MetalIndices indices = circuit->GetGameAttribute()->GetMetalManager().FindNearestSpots(startPos, workers.size() / 4 + 1, predicate);
 		for (auto idx : indices) {
-			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, spots[idx].position, CBuilderTask::TaskType::EXPAND);
+			float cost = buildDef->GetCost(metalRes);
+			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, spots[idx].position, CBuilderTask::TaskType::EXPAND, cost);
 			task->SetBuildPos(spots[idx].position);
 			builderTasks[CBuilderTask::TaskType::EXPAND].push_front(task);
 		}
@@ -826,15 +831,16 @@ void CEconomyManager::UpdateEnergyTasks()
 	}
 
 	// check energy / metal ratio
-	float metalIncome = eco->GetIncome(metalRes);
 	float energyIncome = eco->GetIncome(energyRes);
-	if ((metalIncome > energyIncome * 0.8) && (solarCount < 16) && builderTasks[CBuilderTask::TaskType::SOLAR].empty()) {
+	float energyUsage = eco->GetUsage(energyRes);
+	if ((energyUsage > energyIncome * 1.1) && (solarCount < 16) && builderTasks[CBuilderTask::TaskType::SOLAR].empty()) {
 		const AIFloat3& startPos = circuit->GetStartPos();
 		CMetalManager::MetalIndices indices = circuit->GetGameAttribute()->GetMetalManager().FindNearestSpots(startPos, workers.size() / 4 + 2);
 		if (!indices.empty()) {
 			const CMetalManager::Metals& spots = circuit->GetGameAttribute()->GetMetalManager().GetSpots();
 			for (auto idx : indices) {
-				CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::HIGH, spots[idx].position, CBuilderTask::TaskType::SOLAR);
+				float cost = circuit->GetUnitDefByName("armsolar")->GetCost(metalRes);
+				CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::HIGH, spots[idx].position, CBuilderTask::TaskType::SOLAR, cost);
 				builderTasks[CBuilderTask::TaskType::SOLAR].push_front(task);
 			}
 			builderTasksCount += indices.size();
@@ -847,18 +853,20 @@ void CEconomyManager::UpdateEnergyTasks()
 				float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
 				float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
 				AIFloat3 buildPos = AIFloat3(x, map->GetElevationAt(x, z), z);
-				CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::SOLAR);
+				float cost = circuit->GetUnitDefByName("armsolar")->GetCost(metalRes);
+				CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::HIGH, buildPos, CBuilderTask::TaskType::SOLAR, cost);
 				builderTasks[CBuilderTask::TaskType::SOLAR].push_front(task);
 			}
 			builderTasksCount += numSolars;
 		}
 	}
-	else if ((metalIncome > energyIncome * 0.2) && (solarCount >= 16) && (fusionCount < 5) && builderTasks[CBuilderTask::TaskType::FUSION].empty()) {
+	else if ((energyUsage > energyIncome * 1.1) && (solarCount >= 16) && (fusionCount < 5) && builderTasks[CBuilderTask::TaskType::FUSION].empty()) {
 		const AIFloat3& startPos = circuit->GetStartPos();
 		int index = circuit->GetGameAttribute()->GetMetalManager().FindNearestSpot(startPos);
 		if (index >= 0) {
 			const CMetalManager::Metals& spots = circuit->GetGameAttribute()->GetMetalManager().GetSpots();
-			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, spots[index].position, CBuilderTask::TaskType::FUSION);
+			float cost = circuit->GetUnitDefByName("armfus")->GetCost(metalRes);
+			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, spots[index].position, CBuilderTask::TaskType::FUSION, cost);
 			builderTasks[CBuilderTask::TaskType::FUSION].push_front(task);
 			builderTasksCount++;
 		} else {
@@ -868,7 +876,8 @@ void CEconomyManager::UpdateEnergyTasks()
 			float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
 			float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
 			AIFloat3 buildPos = AIFloat3(x, map->GetElevationAt(x, z), z);
-			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, buildPos, CBuilderTask::TaskType::FUSION);
+			float cost = circuit->GetUnitDefByName("armfus")->GetCost(metalRes);
+			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, buildPos, CBuilderTask::TaskType::FUSION, cost);
 			builderTasks[CBuilderTask::TaskType::FUSION].push_front(task);
 			builderTasksCount++;
 		}
@@ -878,7 +887,8 @@ void CEconomyManager::UpdateEnergyTasks()
 		index = circuit->GetGameAttribute()->GetMetalManager().FindNearestCluster(startPos, predicate);
 		if (index >= 0) {
 			const std::vector<AIFloat3>& centroids = circuit->GetGameAttribute()->GetMetalManager().GetCentroids();
-			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, centroids[index], CBuilderTask::TaskType::PYLON);
+			float cost = circuit->GetUnitDefByName("armestor")->GetCost(metalRes);
+			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, centroids[index], CBuilderTask::TaskType::PYLON, cost);
 			builderTasks[CBuilderTask::TaskType::PYLON].push_front(task);
 			builderTasksCount++;
 		}
@@ -889,7 +899,8 @@ void CEconomyManager::UpdateEnergyTasks()
 		if (!indices.empty()) {
 			const CMetalManager::Metals& spots = circuit->GetGameAttribute()->GetMetalManager().GetSpots();
 			int index = indices[rand() % indices.size()];
-			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, spots[index].position, CBuilderTask::TaskType::SINGU);
+			float cost = circuit->GetUnitDefByName("cafus")->GetCost(metalRes);
+			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, spots[index].position, CBuilderTask::TaskType::SINGU, cost);
 			builderTasks[CBuilderTask::TaskType::SINGU].push_front(task);
 			builderTasksCount++;
 		} else {
@@ -899,8 +910,9 @@ void CEconomyManager::UpdateEnergyTasks()
 			float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
 			float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
 			AIFloat3 buildPos = AIFloat3(x, map->GetElevationAt(x, z), z);
-			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, buildPos, CBuilderTask::TaskType::FUSION);
-			builderTasks[CBuilderTask::TaskType::FUSION].push_front(task);
+			float cost = circuit->GetUnitDefByName("cafus")->GetCost(metalRes);
+			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, buildPos, CBuilderTask::TaskType::SINGU, cost);
+			builderTasks[CBuilderTask::TaskType::SINGU].push_front(task);
 			builderTasksCount++;
 		}
 		CMetalManager::MetalPredicate predicate = [this](const CMetalManager::MetalNode& v) {
@@ -909,7 +921,8 @@ void CEconomyManager::UpdateEnergyTasks()
 		int index = circuit->GetGameAttribute()->GetMetalManager().FindNearestCluster(startPos, predicate);
 		if (index >= 0) {
 			const std::vector<AIFloat3>& centroids = circuit->GetGameAttribute()->GetMetalManager().GetCentroids();
-			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, centroids[index], CBuilderTask::TaskType::PYLON);
+			float cost = circuit->GetUnitDefByName("armestor")->GetCost(metalRes);
+			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, centroids[index], CBuilderTask::TaskType::PYLON, cost);
 			builderTasks[CBuilderTask::TaskType::PYLON].push_front(task);
 			builderTasksCount++;
 		}
@@ -951,7 +964,8 @@ void CEconomyManager::UpdateBuilderTasks()
 					buildPos.x += def->GetXSize() * 0.55 * SQUARE_SIZE;
 					break;
 			}
-			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, buildPos, CBuilderTask::TaskType::NANO);
+			float cost = circuit->GetUnitDefByName("armnanotc")->GetCost(metalRes);
+			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, buildPos, CBuilderTask::TaskType::NANO, cost);
 			builderTasks[CBuilderTask::TaskType::NANO].push_front(task);
 			builderTasksCount++;
 		} else {
@@ -972,7 +986,8 @@ void CEconomyManager::UpdateBuilderTasks()
 				float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
 				buildPos = AIFloat3(x, map->GetElevationAt(x, z), z);
 			}
-			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, buildPos, CBuilderTask::TaskType::FACTORY);
+			float cost = circuit->GetUnitDefByName("factorycloak")->GetCost(metalRes);
+			CBuilderTask* task = new CBuilderTask(CBuilderTask::Priority::LOW, buildPos, CBuilderTask::TaskType::FACTORY, cost);
 			builderTasks[CBuilderTask::TaskType::FACTORY].push_front(task);
 			builderTasksCount++;
 		}
@@ -1110,7 +1125,7 @@ void CEconomyManager::ExecuteFactory(CCircuitUnit* unit)
 
 	switch (task->GetType()) {
 		case CFactoryTask::TaskType::BUILDPOWER: {
-			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("armrectr");
+			UnitDef* buildDef = circuit->GetUnitDefByName("armrectr");
 			u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING);
 			break;
 		}
@@ -1128,7 +1143,7 @@ void CEconomyManager::ExecuteFactory(CCircuitUnit* unit)
 			} else {
 				names = (char**)names1;
 			}
-			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName(names[rand() % 6]);
+			UnitDef* buildDef = circuit->GetUnitDefByName(names[rand() % 6]);
 			u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING);
 			break;
 		}
@@ -1138,7 +1153,9 @@ void CEconomyManager::ExecuteFactory(CCircuitUnit* unit)
 void CEconomyManager::PrepareBuilder(CCircuitUnit* unit)
 {
 	CBuilderTask* task = nullptr;
-	const AIFloat3& pos = unit->GetUnit()->GetPos();
+	Unit* u = unit->GetUnit();
+	const AIFloat3& pos = u->GetPos();
+	float maxSpeed = u->GetMaxSpeed();
 	MoveData* moveData = unit->GetDef()->GetMoveData();
 	int pathType = moveData->GetPathType();
 	delete moveData;
@@ -1148,11 +1165,23 @@ void CEconomyManager::PrepareBuilder(CCircuitUnit* unit)
 		for (auto& t : tasks.second) {
 			if (t->CanAssignTo(unit)) {
 				CBuilderTask* candidate = static_cast<CBuilderTask*>(t);
-				float d = circuit->GetPathing()->GetApproximateLength(candidate->GetPos(), pos, pathType, buildDistance);
-				float qd = candidate->GetQuantity() * d;
-				if (qd < metric) {
+				float dist;
+				bool valid;
+				CCircuitUnit* target = candidate->GetTarget();
+				if (target) {
+					Unit* tu = target->GetUnit();
+					dist = circuit->GetPathing()->GetApproximateLength(candidate->GetPos(), pos, pathType, buildDistance);
+					float maxHealth = tu->GetMaxHealth();
+					float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
+					valid = ((maxHealth - tu->GetHealth()) > healthSpeed * (dist / (maxSpeed * FRAMES_PER_SEC)));
+				} else {
+					const AIFloat3& bp = candidate->GetBuildPos();
+					dist = circuit->GetPathing()->GetApproximateLength((bp != -RgtVector) ? bp : candidate->GetPos(), pos, pathType, buildDistance);
+					valid = true;
+				}
+				if (valid && dist < metric) {
 					task = candidate;
-					metric = qd;
+					metric = dist;
 				}
 			}
 		}
@@ -1160,7 +1189,8 @@ void CEconomyManager::PrepareBuilder(CCircuitUnit* unit)
 
 	if (task == nullptr) {
 		const AIFloat3& pos = unit->GetUnit()->GetPos();
-		task = new CBuilderTask(CBuilderTask::Priority::LOW, pos, CBuilderTask::TaskType::DEFAULT);
+		float cost = circuit->GetUnitDefByName("corrl")->GetCost(metalRes);
+		task = new CBuilderTask(CBuilderTask::Priority::LOW, pos, CBuilderTask::TaskType::DEFAULT, cost);
 		builderTasks[CBuilderTask::TaskType::DEFAULT].push_front(task);
 		builderTasksCount++;
 	}
@@ -1198,7 +1228,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 		u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 		AIFloat3 pos = u->GetPos();
-		CBuilderTask* taskNew = new CBuilderTask(CBuilderTask::Priority::LOW, pos, CBuilderTask::TaskType::ASSIST, FRAMES_PER_SEC * 20);
+		CBuilderTask* taskNew = new CBuilderTask(CBuilderTask::Priority::LOW, pos, CBuilderTask::TaskType::ASSIST, 1000, FRAMES_PER_SEC * 20);
 		taskNew->AssignTo(unit);
 
 		const float size = SQUARE_SIZE * 10;
@@ -1228,7 +1258,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
-			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("factorycloak");
+			UnitDef* buildDef = circuit->GetUnitDefByName("factorycloak");
 			AIFloat3 buildPos = task->GetBuildPos();
 			if (buildPos != -RgtVector) {
 				int facing = findFacing(buildDef, buildPos);
@@ -1270,7 +1300,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
-			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("armnanotc");
+			UnitDef* buildDef = circuit->GetUnitDefByName("armnanotc");
 			AIFloat3 buildPos = task->GetBuildPos();
 			if (buildPos != -RgtVector) {
 				int facing = findFacing(buildDef, buildPos);
@@ -1314,7 +1344,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
-			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("cormex");
+			UnitDef* buildDef = circuit->GetUnitDefByName("cormex");
 			AIFloat3 buildPos = task->GetBuildPos();
 			if (buildPos != -RgtVector) {
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
@@ -1349,7 +1379,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
-			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("armsolar");
+			UnitDef* buildDef = circuit->GetUnitDefByName("armsolar");
 			AIFloat3 buildPos = task->GetBuildPos();
 			if (buildPos != -RgtVector) {
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
@@ -1388,7 +1418,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
-			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("armfus");
+			UnitDef* buildDef = circuit->GetUnitDefByName("armfus");
 			AIFloat3 buildPos = task->GetBuildPos();
 			if (buildPos != -RgtVector) {
 				int facing = findFacing(buildDef, buildPos);
@@ -1430,7 +1460,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
-			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("cafus");
+			UnitDef* buildDef = circuit->GetUnitDefByName("cafus");
 			AIFloat3 buildPos = task->GetBuildPos();
 			if (buildPos != -RgtVector) {
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
@@ -1469,7 +1499,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
-			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("armestor");
+			UnitDef* buildDef = circuit->GetUnitDefByName("armestor");
 			AIFloat3 buildPos = task->GetBuildPos();
 			if (buildPos != -RgtVector) {
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING)) {
@@ -1511,7 +1541,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
-			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("corrl");
+			UnitDef* buildDef = circuit->GetUnitDefByName("corrl");
 			AIFloat3 buildPos = task->GetBuildPos();
 			if (buildPos != -RgtVector) {
 				int facing = findFacing(buildDef, buildPos);
@@ -1553,7 +1583,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
-			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("cordoom");
+			UnitDef* buildDef = circuit->GetUnitDefByName("cordoom");
 			AIFloat3 buildPos = task->GetBuildPos();
 			if (buildPos != -RgtVector) {
 				int facing = findFacing(buildDef, buildPos);
@@ -1595,7 +1625,7 @@ void CEconomyManager::ExecuteBuilder(CCircuitUnit* unit)
 				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
-			UnitDef* buildDef = circuit->GetGameAttribute()->GetUnitDefByName("armanni");
+			UnitDef* buildDef = circuit->GetUnitDefByName("armanni");
 			AIFloat3 buildPos = task->GetBuildPos();
 			if (buildPos != -RgtVector) {
 				int facing = findFacing(buildDef, buildPos);

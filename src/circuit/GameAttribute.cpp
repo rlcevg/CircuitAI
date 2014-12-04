@@ -26,7 +26,7 @@ namespace circuit {
 
 using namespace springai;
 
-#define CLUSTER_MS	10
+#define CLUSTER_MS	8
 
 CGameAttribute::CGameAttribute() :
 		gameEnd(false),
@@ -39,9 +39,6 @@ CGameAttribute::CGameAttribute() :
 CGameAttribute::~CGameAttribute()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	for (auto& kv : defsByName) {
-		delete kv.second;
-	}
 }
 
 void CGameAttribute::SetGameEnd(bool value)
@@ -310,51 +307,6 @@ void CGameAttribute::ClusterizeMetal(std::shared_ptr<CScheduler> scheduler, floa
 CMetalManager& CGameAttribute::GetMetalManager()
 {
 	return *metalManager;
-}
-
-void CGameAttribute::InitUnitDefs(std::vector<UnitDef*>&& unitDefs)
-{
-	if (!defsByName.empty()) {
-		for (auto& kv : defsByName) {
-			delete kv.second;
-		}
-		defsByName.clear();
-		defsById.clear();
-	}
-	for (auto def : unitDefs) {
-		defsByName[def->GetName()] = def;
-		defsById[def->GetUnitDefId()] = def;
-	}
-}
-
-bool CGameAttribute::HasUnitDefs()
-{
-	return !defsByName.empty();
-}
-
-UnitDef* CGameAttribute::GetUnitDefByName(const char* name)
-{
-	decltype(defsByName)::iterator i = defsByName.find(name);
-	if (i != defsByName.end()) {
-		return i->second;
-	}
-
-	return nullptr;
-}
-
-UnitDef* CGameAttribute::GetUnitDefById(int unitDefId)
-{
-	decltype(defsById)::iterator i = defsById.find(unitDefId);
-	if (i != defsById.end()) {
-		return i->second;
-	}
-
-	return nullptr;
-}
-
-CGameAttribute::UnitDefs& CGameAttribute::GetUnitDefs()
-{
-	return defsByName;
 }
 
 void CGameAttribute::FillDistMatrix()

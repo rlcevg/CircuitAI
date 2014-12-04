@@ -14,6 +14,8 @@
 #include <map>
 #include <list>
 #include <vector>
+#include <unordered_map>
+#include <string.h>
 
 namespace springai {
 	class AIFloat3;
@@ -57,6 +59,8 @@ public:
 	CCircuitAI(springai::OOAICallback* callback);
 	virtual ~CCircuitAI();
 
+// ---- AI Event handler ---- BEGIN
+public:
 	int HandleEvent(int topic, const void* data);
 	void NotifyGameEnd();
 private:
@@ -64,6 +68,7 @@ private:
 	int HandleGameEvent(int topic, const void* data);
 	int HandleEndEvent(int topic, const void* data);
 	EventHandlerPtr eventHandler;
+// ---- AI Event handler ---- END
 
 public:
 	int Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback);
@@ -91,6 +96,26 @@ public:
 	springai::AIFloat3& GetStartPos();
 	springai::AIFloat3 FindBuildSiteMindMex(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
 
+// ---- UnitDefs ---- BEGIN
+private:
+	struct cmp_str {
+	   bool operator()(char const *a, char const *b) {
+	      return strcmp(a, b) < 0;
+	   }
+	};
+public:
+	using UnitDefs = std::map<const char*, springai::UnitDef*, cmp_str>;
+
+	void InitUnitDefs(std::vector<springai::UnitDef*>&& unitDefs);
+	springai::UnitDef* GetUnitDefByName(const char* name);
+	springai::UnitDef* GetUnitDefById(int unitDefId);
+	UnitDefs& GetUnitDefs();
+private:
+	UnitDefs defsByName;  // owner
+	std::unordered_map<int, springai::UnitDef*> defsById;
+// ---- UnitDefs ---- END
+
+public:
 	CGameAttribute* GetGameAttribute();
 	CScheduler* GetScheduler();
 	int GetLastFrame();

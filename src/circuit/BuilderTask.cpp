@@ -9,7 +9,7 @@
 #include "CircuitUnit.h"
 #include "utils.h"
 
-#include "Unit.h"
+#include "UnitDef.h"
 
 namespace circuit {
 
@@ -17,14 +17,16 @@ using namespace springai;
 
 CBuilderTask::CBuilderTask(Priority priority,
 		const AIFloat3& position,
-		TaskType type, int timeout) :
+		TaskType type, float cost, int timeout) :
 				IConstructTask(priority, position, ConstructType::BUILDER),
 				type(type),
+				cost(cost),
 				timeout(timeout),
-				quantity(1),
 				target(nullptr),
-				buildPos(-RgtVector)
+				buildPos(-RgtVector),
+				buildPower(.0f)
 {
+
 }
 
 CBuilderTask::~CBuilderTask()
@@ -34,19 +36,19 @@ CBuilderTask::~CBuilderTask()
 
 bool CBuilderTask::CanAssignTo(CCircuitUnit* unit)
 {
-	return true;
+	return (cost > buildPower * MIN_BUILD_TIME);
 }
 
 void CBuilderTask::AssignTo(CCircuitUnit* unit)
 {
 	IUnitTask::AssignTo(unit);
-	quantity++;
+	buildPower += unit->GetDef()->GetBuildSpeed();
 }
 
 void CBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IUnitTask::RemoveAssignee(unit);
-	quantity--;
+	buildPower -= unit->GetDef()->GetBuildSpeed();
 }
 
 CBuilderTask::TaskType CBuilderTask::GetType()
@@ -54,9 +56,14 @@ CBuilderTask::TaskType CBuilderTask::GetType()
 	return type;
 }
 
-int CBuilderTask::GetQuantity()
+float CBuilderTask::GetBuildPower()
 {
-	return quantity;
+	return buildPower;
+}
+
+float CBuilderTask::GetCost()
+{
+	return cost;
 }
 
 int CBuilderTask::GetTimeout()

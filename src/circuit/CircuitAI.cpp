@@ -327,18 +327,15 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 		gameAttribute->ParseMetalSpots(gameRulesParams);
 		utils::free_clear(gameRulesParams);
 	}
-	if (!gameAttribute->HasUnitDefs()) {
-		// TODO: Find out more about rvalue variables
-		gameAttribute->InitUnitDefs(callback->GetUnitDefs());
-	}
+	InitUnitDefs(callback->GetUnitDefs());
 
 	bool canChooseStartPos = gameAttribute->HasStartBoxes() && gameAttribute->CanChooseStartPos();
 	if (gameAttribute->HasMetalSpots()) {
 		if (!gameAttribute->HasMetalClusters() && !gameAttribute->GetMetalManager().IsClusterizing()) {
-			MoveData* moveData = gameAttribute->GetUnitDefByName("armcom1")->GetMoveData();
+			MoveData* moveData = GetUnitDefByName("armcom1")->GetMoveData();
 			int pathType = moveData->GetPathType();
 			delete moveData;
-			float distance = gameAttribute->GetUnitDefByName("corrl")->GetMaxWeaponRange();
+			float distance = GetUnitDefByName("corrl")->GetMaxWeaponRange();
 			gameAttribute->ClusterizeMetalFirst(scheduler, distance * 2, pathType, GetPathing());
 
 //			scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CCircuitAI::ClusterizeMetal, this), FRAMES_PER_SEC * 60);
@@ -371,10 +368,14 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 int CCircuitAI::Release(int reason)
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	gameAttribute->SetGameEnd(true);
+//	gameAttribute->SetGameEnd(true);
+
 	modules.clear();
 	scheduler = nullptr;
 	for (auto& kv : aliveUnits) {
+		delete kv.second;
+	}
+	for (auto& kv : defsByName) {
 		delete kv.second;
 	}
 	DestroyGameAttribute();
@@ -548,7 +549,7 @@ CCircuitUnit* CCircuitAI::RegisterUnit(int unitId)
 		return nullptr;
 	}
 	UnitDef* unitDef = u->GetDef();
-	unit = new CCircuitUnit(u, gameAttribute->GetUnitDefById(unitDef->GetUnitDefId()));
+	unit = new CCircuitUnit(u, GetUnitDefById(unitDef->GetUnitDefId()));
 	delete unitDef;
 	aliveUnits[unitId] = unit;
 
@@ -656,7 +657,7 @@ AIFloat3 CCircuitAI::FindBuildSiteMindMex(UnitDef* unitDef, const AIFloat3& pos,
 	// TODO: Or maybe we can create own BlockingObjectMap as there is access to friendly units, features, map slopes.
 	// TODO: Mind the queued buildings
 //	UnitDef* spacer4 = gameAttribute->GetUnitDefByName("striderhub");  // striderhub's size = 8 but can't recognize smooth hills
-	UnitDef* spacer4 = gameAttribute->GetUnitDefByName("armmstor");  // armmstor size = 6, thus we add diff (2) to pos when testing
+	UnitDef* spacer4 = GetUnitDefByName("armmstor");  // armmstor size = 6, thus we add diff (2) to pos when testing
 	// spacer4->GetXSize() and spacer4->GetZSize() should be equal 6
 	int size4 = spacer4->GetXSize();
 //	assert(spacer4->GetXSize() == spacer4->GetZSize() && size4 == 6);
@@ -670,7 +671,7 @@ AIFloat3 CCircuitAI::FindBuildSiteMindMex(UnitDef* unitDef, const AIFloat3& pos,
 	if (znum % size4 == 0) {
 		znum--;  // check last cell manually for alignment purpose
 	}
-	UnitDef* mex = gameAttribute->GetUnitDefByName("cormex");
+	UnitDef* mex = GetUnitDefByName("cormex");
 	int xmsize = mex->GetXSize() * SQUARE_SIZE;
 	int zmsize = mex->GetZSize() * SQUARE_SIZE;
 	AIFloat3 spacerPos1(0, 0, 0), spacerPos2(0, 0, 0), probePos(0, 0, 0);
@@ -754,6 +755,46 @@ AIFloat3 CCircuitAI::FindBuildSiteMindMex(UnitDef* unitDef, const AIFloat3& pos,
 	return -RgtVector;
 }
 
+void CCircuitAI::InitUnitDefs(std::vector<UnitDef*>&& unitDefs)
+{
+	if (!defsByName.empty()) {
+		for (auto& kv : defsByName) {
+			delete kv.second;
+		}
+		defsByName.clear();
+		defsById.clear();
+	}
+	for (auto def : unitDefs) {
+		defsByName[def->GetName()] = def;
+		defsById[def->GetUnitDefId()] = def;
+	}
+}
+
+UnitDef* CCircuitAI::GetUnitDefByName(const char* name)
+{
+	decltype(defsByName)::iterator i = defsByName.find(name);
+	if (i != defsByName.end()) {
+		return i->second;
+	}
+
+	return nullptr;
+}
+
+UnitDef* CCircuitAI::GetUnitDefById(int unitDefId)
+{
+	decltype(defsById)::iterator i = defsById.find(unitDefId);
+	if (i != defsById.end()) {
+		return i->second;
+	}
+
+	return nullptr;
+}
+
+CCircuitAI::UnitDefs& CCircuitAI::GetUnitDefs()
+{
+	return defsByName;
+}
+
 CGameAttribute* CCircuitAI::GetGameAttribute()
 {
 	return gameAttribute.get();
@@ -825,10 +866,10 @@ void CCircuitAI::ClusterizeMetal()
 		return;
 	}
 
-	MoveData* moveData = gameAttribute->GetUnitDefByName("armcom1")->GetMoveData();
+	MoveData* moveData = GetUnitDefByName("armcom1")->GetMoveData();
 	int pathType = moveData->GetPathType();
 	delete moveData;
-	UnitDef* def = gameAttribute->GetUnitDefByName("armestor");
+	UnitDef* def = GetUnitDefByName("armestor");
 	std::map<std::string, std::string> customParams = def->GetCustomParams();
 	float radius = utils::string_to_float(customParams["pylonrange"]);
 	gameAttribute->ClusterizeMetal(scheduler, radius * 2, pathType, GetPathing());
