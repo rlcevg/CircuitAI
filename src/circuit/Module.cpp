@@ -6,6 +6,9 @@
  */
 
 #include "Module.h"
+#include "CircuitUnit.h"
+
+#include "Unit.h"
 
 namespace circuit {
 
@@ -45,11 +48,17 @@ int IModule::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 
 int IModule::UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 {
+	UnitCreated(unit, nullptr);
+	if (!unit->GetUnit()->IsBeingBuilt()) {
+		UnitFinished(unit);
+//		UnitIdle(unit);
+	}
 	return 0; //signaling: OK
 }
 
 int IModule::UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 {
+	UnitDestroyed(unit, nullptr);
 	return 0; //signaling: OK
 }
 

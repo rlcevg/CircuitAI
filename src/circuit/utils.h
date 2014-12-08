@@ -27,6 +27,7 @@ namespace utils {
 
 #define SQUARE_SIZE			8
 #define FRAMES_PER_SEC		30
+#define WATCHDOG_COUNT		2
 // z++
 #define UNIT_FACING_SOUTH	0
 // x++

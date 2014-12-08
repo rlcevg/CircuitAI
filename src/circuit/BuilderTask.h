@@ -21,18 +21,18 @@ public:
 		EXPAND,
 		SOLAR, FUSION, SINGU, PYLON,
 		DEFENDER, LOTUS, DDM, ANNI,
-		RADAR, TERRAFORM, ASSIST, DEFAULT = DEFENDER
+		RADAR, TERRAFORM, ASSIST, RECLAIM, DEFAULT = DEFENDER
 	};
 
 public:
 	CBuilderTask(Priority priority,
-			const springai::AIFloat3& position,
+			springai::UnitDef* buildDef, const springai::AIFloat3& position,
 			TaskType type, float cost, int timeout = 0);
 	virtual ~CBuilderTask();
 
+	virtual bool CanAssignTo(CCircuitUnit* unit);
 	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
-	virtual bool CanAssignTo(CCircuitUnit* unit);
 
 	TaskType GetType();
 	float GetBuildPower();

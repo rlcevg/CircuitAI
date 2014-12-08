@@ -44,4 +44,9 @@ std::unordered_set<CCircuitUnit*>& IUnitTask::GetAssignees()
 	return units;
 }
 
+IUnitTask::Priority IUnitTask::GetPriority()
+{
+	return priority;
+}
+
 } // namespace circuit

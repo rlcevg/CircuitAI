@@ -94,7 +94,8 @@ public:
 	CCircuitUnit* GetCommander();
 	void SetStartPos(springai::AIFloat3& pos);
 	springai::AIFloat3& GetStartPos();
-	springai::AIFloat3 FindBuildSiteMindMex(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
+	springai::AIFloat3 FindBuildSiteSpace(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
+	springai::AIFloat3 FindBuildSite(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
 
 // ---- UnitDefs ---- BEGIN
 private:
@@ -129,6 +130,8 @@ public:
 	springai::Pathing*      GetPathing();
 	springai::Drawer*       GetDrawer();
 	springai::SkirmishAI*   GetSkirmishAI();
+	float GetTerrainWidth();
+	float GetTerrainHeight();
 
 private:
 	void ClusterizeMetal();
@@ -149,13 +152,15 @@ private:
 	std::unique_ptr<springai::Pathing>    pathing;
 	std::unique_ptr<springai::Drawer>     drawer;
 	std::unique_ptr<springai::SkirmishAI> skirmishAI;
+	int terrainWidth;
+	int terrainHeight;
 
 	static std::unique_ptr<CGameAttribute> gameAttribute;
 	static unsigned int gaCounter;
 	void CreateGameAttribute();
 	void DestroyGameAttribute();
 	std::shared_ptr<CScheduler> scheduler;
-	std::list<std::unique_ptr<IModule>> modules;
+	std::list<IModule*> modules;
 
 	// TODO: Make global storage?
 	std::map<int, CCircuitUnit*> aliveUnits;  // owner

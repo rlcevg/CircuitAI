@@ -67,6 +67,9 @@ CCircuitAI::CCircuitAI(OOAICallback* callback) :
 	teamId = skirmishAI->GetTeamId();
 	allyTeamId = game->GetMyAllyTeam();
 
+	terrainWidth = map->GetWidth() * SQUARE_SIZE;
+	terrainHeight = map->GetHeight() * SQUARE_SIZE;
+
 	commanderId = -1;
 	startPos = -RgtVector;
 }
@@ -350,10 +353,14 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 		gameAttribute->PickStartPos(this, CGameAttribute::StartPosType::MIDDLE);
 	}
 
-	modules.push_back(std::unique_ptr<CEconomyManager>(new CEconomyManager(this)));
-	modules.push_back(std::unique_ptr<CMilitaryManager>(new CMilitaryManager(this)));
+	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CCircuitAI::FindCommander, this));
 
-	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CCircuitAI::FindCommander, this), 0);
+	CBuilderManager* buildMgr = new CBuilderManager(this);
+	CFactoryManager* facMgr = new CFactoryManager(this);
+	modules.push_back(new CEconomyManager(this, buildMgr, facMgr));
+	modules.push_back(new CMilitaryManager(this));
+	modules.push_back(buildMgr);
+	modules.push_back(facMgr);
 
 //	Cheats* cheats = callback->GetCheats();
 //	cheats->SetEnabled(true);
@@ -370,7 +377,7 @@ int CCircuitAI::Release(int reason)
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 //	gameAttribute->SetGameEnd(true);
 
-	modules.clear();
+	utils::free_clear(modules);
 	scheduler = nullptr;
 	for (auto& kv : aliveUnits) {
 		delete kv.second;
@@ -635,7 +642,7 @@ static const std::vector<SearchOffset>& GetSearchOffsetTable (int radius)
 /*
  * const minDist = 4, using hax
  */
-AIFloat3 CCircuitAI::FindBuildSiteMindMex(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)
+AIFloat3 CCircuitAI::FindBuildSiteSpace(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)
 {
 	int xsize, zsize;
 	switch (facing) {
@@ -655,7 +662,7 @@ AIFloat3 CCircuitAI::FindBuildSiteMindMex(UnitDef* unitDef, const AIFloat3& pos,
 	}
 	// HAX:  Use building as spacer because we don't have access to groundBlockingObjectMap.
 	// TODO: Or maybe we can create own BlockingObjectMap as there is access to friendly units, features, map slopes.
-	// TODO: Mind the queued buildings
+	// TODO: Consider queued buildings
 //	UnitDef* spacer4 = gameAttribute->GetUnitDefByName("striderhub");  // striderhub's size = 8 but can't recognize smooth hills
 	UnitDef* spacer4 = GetUnitDefByName("armmstor");  // armmstor size = 6, thus we add diff (2) to pos when testing
 	// spacer4->GetXSize() and spacer4->GetZSize() should be equal 6
@@ -749,6 +756,58 @@ AIFloat3 CCircuitAI::FindBuildSiteMindMex(UnitDef* unitDef, const AIFloat3& pos,
 				probePos.y = map->GetElevationAt(x, z);
 				return probePos;
 			}
+		}
+	}
+
+	return -RgtVector;
+}
+
+AIFloat3 CCircuitAI::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)
+{
+	int xsize, zsize;
+	switch (facing) {
+		case UNIT_FACING_EAST:
+		case UNIT_FACING_WEST: {
+			xsize = unitDef->GetZSize() * SQUARE_SIZE;
+			zsize = unitDef->GetXSize() * SQUARE_SIZE;
+			break;
+		}
+		case UNIT_FACING_SOUTH:
+		case UNIT_FACING_NORTH:
+		default: {
+			xsize = unitDef->GetXSize() * SQUARE_SIZE;
+			zsize = unitDef->GetZSize() * SQUARE_SIZE;
+			break;
+		}
+	}
+	UnitDef* mex = GetUnitDefByName("cormex");
+	int xmsize = mex->GetXSize() * SQUARE_SIZE;
+	int zmsize = mex->GetZSize() * SQUARE_SIZE;
+	AIFloat3 spacerPos1(0, 0, 0), spacerPos2(0, 0, 0), probePos(0, 0, 0);
+
+	const int endr = (int)(searchRadius / (SQUARE_SIZE * 2));
+	const std::vector<SearchOffset>& ofs = GetSearchOffsetTable(endr);
+	Map* map = GetMap();
+	const float moffx = (xsize + xmsize) / 2 ;  // mex offset x
+	const float moffz = (zsize + xmsize) / 2 ;  // mex offset z
+	CMetalManager& metalManager = gameAttribute->GetMetalManager();
+	for (int so = 0; so < endr * endr * 4; so++) {
+		const float x = pos.x + ofs[so].dx * SQUARE_SIZE * 2;
+		const float z = pos.z + ofs[so].dy * SQUARE_SIZE * 2;
+		probePos.x = x;
+		probePos.z = z;
+
+		spacerPos1.x = probePos.x - moffx;
+		spacerPos1.z = probePos.z - moffz;
+		spacerPos2.x = probePos.x + moffx;
+		spacerPos2.z = probePos.z + moffz;
+		if (!metalManager.FindWithinRangeSpots(spacerPos1, spacerPos2).empty()) {
+			continue;
+		}
+
+		if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
+			probePos.y = map->GetElevationAt(x, z);
+			return probePos;
 		}
 	}
 
@@ -860,6 +919,16 @@ SkirmishAI* CCircuitAI::GetSkirmishAI()
 	return skirmishAI.get();
 }
 
+float CCircuitAI::GetTerrainWidth()
+{
+	return terrainWidth;
+}
+
+float CCircuitAI::GetTerrainHeight()
+{
+	return terrainHeight;
+}
+
 void CCircuitAI::ClusterizeMetal()
 {
 	if (gameAttribute->GetMetalManager().IsClusterizing()) {
@@ -887,9 +956,9 @@ void CCircuitAI::FindCommander()
 	std::vector<Unit*> units = callback->GetTeamUnits();
 	for (auto unit : units) {
 		UnitDef* def = unit->GetDef();
-		const char* name = def->GetName();
+		bool valid = def->IsBuilder();
 		delete def;
-		if (std::string("armcom1") == name || std::string("comm_trainer_support_0") == name) {
+		if (valid) {
 			commanderId = unit->GetUnitId();
 			if (startPos == -RgtVector) {
 				startPos = unit->GetPos();

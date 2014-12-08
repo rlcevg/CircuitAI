@@ -10,7 +10,9 @@
 
 #include "UnitTask.h"
 
-#include <list>
+namespace springai {
+	class UnitDef;
+}
 
 namespace circuit {
 
@@ -20,15 +22,17 @@ public:
 
 public:
 	IConstructTask(Priority priority,
-			const springai::AIFloat3& position, ConstructType conType);
+			springai::UnitDef* buildDef, const springai::AIFloat3& position, ConstructType conType);
 	virtual ~IConstructTask();
 
 	ConstructType GetConstructType();
 	const springai::AIFloat3& GetPos() const;
+	springai::UnitDef* GetBuildDef();
 
 protected:
 	ConstructType conType;
 	springai::AIFloat3 position;
+	springai::UnitDef* buildDef;
 };
 
 } // namespace circuit

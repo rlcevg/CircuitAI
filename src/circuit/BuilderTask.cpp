@@ -1,5 +1,5 @@
 /*
- * BuilderyTask.cpp
+ * BuilderTask.cpp
  *
  *  Created on: Sep 11, 2014
  *      Author: rlcevg
@@ -11,14 +11,16 @@
 
 #include "UnitDef.h"
 
+#include <algorithm>
+
 namespace circuit {
 
 using namespace springai;
 
 CBuilderTask::CBuilderTask(Priority priority,
-		const AIFloat3& position,
+		UnitDef* buildDef, const AIFloat3& position,
 		TaskType type, float cost, int timeout) :
-				IConstructTask(priority, position, ConstructType::BUILDER),
+				IConstructTask(priority, buildDef, position, ConstructType::BUILDER),
 				type(type),
 				cost(cost),
 				timeout(timeout),
@@ -36,7 +38,17 @@ CBuilderTask::~CBuilderTask()
 
 bool CBuilderTask::CanAssignTo(CCircuitUnit* unit)
 {
-	return (cost > buildPower * MIN_BUILD_TIME);
+	std::vector<UnitDef*> opts = unit->GetDef()->GetBuildOptions();
+//	bool valid = (std::find(opts.begin(), opts.end(), buildDef) != opts.end()) && (cost > buildPower * MIN_BUILD_TIME);
+	bool valid = false;
+	for (auto opt : opts) {
+		if (opt->GetUnitDefId() == buildDef->GetUnitDefId()) {
+			valid = true;
+			break;
+		}
+	}
+	utils::free_clear(opts);
+	return valid && (cost > buildPower * MIN_BUILD_TIME);
 }
 
 void CBuilderTask::AssignTo(CCircuitUnit* unit)

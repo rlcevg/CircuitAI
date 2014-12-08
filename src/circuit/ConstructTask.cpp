@@ -13,8 +13,9 @@ namespace circuit {
 using namespace springai;
 
 IConstructTask::IConstructTask(Priority priority,
-		const AIFloat3& position, ConstructType conType) :
+		UnitDef* buildDef, const AIFloat3& position, ConstructType conType) :
 				IUnitTask(priority),
+				buildDef(buildDef),
 				position(position),
 				conType(conType)
 {
@@ -32,6 +33,11 @@ IConstructTask::ConstructType IConstructTask::GetConstructType()
 const AIFloat3& IConstructTask::GetPos() const
 {
 	return position;
+}
+
+UnitDef* IConstructTask::GetBuildDef()
+{
+	return buildDef;
 }
 
 } // namespace circuit

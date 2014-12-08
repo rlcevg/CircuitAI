@@ -37,22 +37,20 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 
 	auto atackerFinishedHandler = [this](CCircuitUnit* unit) {
 		Unit* u = unit->GetUnit();
-		Map* map = this->circuit->GetMap();
-		int terWidth = map->GetWidth() * SQUARE_SIZE;
-		int terHeight = map->GetHeight() * SQUARE_SIZE;
+		int terWidth = this->circuit->GetTerrainWidth();
+		int terHeight = this->circuit->GetTerrainHeight();
 		float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
 		float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
-		AIFloat3 fromPos(x, map->GetElevationAt(x, z), z);
+		AIFloat3 fromPos(x, this->circuit->GetMap()->GetElevationAt(x, z), z);
 		u->Fight(fromPos, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
 	};
 	auto atackerIdleHandler = [this](CCircuitUnit* unit) {
 		Unit* u = unit->GetUnit();
-		Map* map = this->circuit->GetMap();
-		int terWidth = map->GetWidth() * SQUARE_SIZE;
-		int terHeight = map->GetHeight() * SQUARE_SIZE;
+		int terWidth = this->circuit->GetTerrainWidth();
+		int terHeight = this->circuit->GetTerrainHeight();
 		float x = rand() % (int)(terWidth + 1);
 		float z = rand() % (int)(terHeight + 1);
-		AIFloat3 toPos(x, map->GetElevationAt(x, z), z);
+		AIFloat3 toPos(x, this->circuit->GetMap()->GetElevationAt(x, z), z);
 //		u->PatrolTo(toPos);
 		u->Fight(toPos, 0, FRAMES_PER_SEC * 60 * 5);
 	};

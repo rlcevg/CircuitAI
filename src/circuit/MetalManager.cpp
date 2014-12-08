@@ -291,11 +291,6 @@ void CMetalManager::DrawConvexHulls(Drawer* drawer)
 				// orientation = 0 : collinear
 				return (p2.x - p1.x) * (p3.z - p1.z) - (p2.z - p1.z) * (p3.x - p1.x);
 			};
-			std::function<float(const AIFloat3&, const AIFloat3&)> qdist = [](const AIFloat3& p1, const AIFloat3& p2) -> float {
-				float x = p1.x - p2.x;
-				float z = p1.z - p2.z;
-				return x * x + z * z;
-			};
 			// number of points
 			int N = indices.size();
 			// the array of points
@@ -322,11 +317,11 @@ void CMetalManager::DrawConvexHulls(Drawer* drawer)
 			// A function used to sort an array of
 			// points with respect to the first point
 			AIFloat3& p0 = points[1];
-			auto compare = [&p0, orientation, qdist](const AIFloat3& p1, const AIFloat3& p2) {
+			auto compare = [&p0, orientation](const AIFloat3& p1, const AIFloat3& p2) {
 				// Find orientation
 				int o = orientation(p0, p1, p2);
 				if (o == 0) {
-					return qdist(p0, p1) < qdist(p0, p2);
+					return p0.SqDistance2D(p1) < p0.SqDistance2D(p2);
 				}
 				return o > 0;
 			};

@@ -16,9 +16,9 @@ namespace circuit {
 using namespace springai;
 
 CFactoryTask::CFactoryTask(Priority priority,
-		const AIFloat3& position,
+		UnitDef* buildDef, const AIFloat3& position,
 		TaskType type, int quantity, float radius) :
-				IConstructTask(priority, position, ConstructType::FACTORY),
+				IConstructTask(priority, buildDef, position, ConstructType::FACTORY),
 				type(type),
 				quantity(quantity),
 				sqradius(radius * radius)
@@ -34,7 +34,7 @@ bool CFactoryTask::CanAssignTo(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();
 	const AIFloat3& pos = u->GetPos();
-	return IsDistanceOk(pos);
+	return position.SqDistance2D(pos) <= sqradius;
 }
 
 CFactoryTask::TaskType CFactoryTask::GetType()
@@ -55,14 +55,6 @@ void CFactoryTask::Regress()
 bool CFactoryTask::IsDone()
 {
 	return quantity <= 0;
-}
-
-bool CFactoryTask::IsDistanceOk(const AIFloat3& pos)
-{
-	float dx = pos.x - position.x;
-	float dz = pos.z - position.z;
-	float sqdistance = dx * dx + dz * dz;
-	return sqdistance <= sqradius;
 }
 
 } // namespace circuit

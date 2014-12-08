@@ -18,7 +18,7 @@ class CCircuitUnit;
 
 class IUnitTask {
 public:
-	enum class Priority: char {LOW = 0, /*NORMAL,*/ HIGH};
+	enum class Priority: char {LOW=0, NORMAL=1, HIGH=2};
 
 protected:
 	IUnitTask(Priority priority);
@@ -31,6 +31,7 @@ public:
 	void MarkCompleted();
 
 	std::unordered_set<CCircuitUnit*>& GetAssignees();
+	Priority GetPriority();
 
 protected:
 	std::unordered_set<CCircuitUnit*> units;
