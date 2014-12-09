@@ -128,8 +128,8 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 	};
 
 	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
-	for (auto& pair : defs) {
-		UnitDef* def = pair.second;
+	for (auto& kv : defs) {
+		UnitDef* def = kv.second;
 		if (def->IsBuilder() && (def->GetSpeed() == 0)) {
 			int unitDefId = def->GetUnitDefId();
 			if  (!def->GetBuildOptions().empty()) {

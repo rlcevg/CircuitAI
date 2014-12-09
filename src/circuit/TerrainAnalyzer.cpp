@@ -172,11 +172,12 @@ CTerrainAnalyzer::CTerrainAnalyzer(CCircuitAI* circuit) :
 //			}
 //
 //			// Initialize cluster-element list
-//			std::vector<std::vector<int>> iclusters(nrows);
+//			std::vector<std::vector<int>> iclusters;
+//			iclusters.reserve(nrows);
 //			for (int i = 0; i < nrows; i++) {
 //				std::vector<int> cluster;
 //				cluster.push_back(i);
-//				iclusters[i] = cluster;
+//				iclusters.push_back(cluster);
 //			}
 //
 //			for (int n = nrows; n > 1; n--) {

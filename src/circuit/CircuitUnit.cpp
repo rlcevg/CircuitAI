@@ -16,9 +16,10 @@ namespace circuit {
 
 using namespace springai;
 
-CCircuitUnit::CCircuitUnit(Unit* unit, UnitDef* def) :
+CCircuitUnit::CCircuitUnit(Unit* unit, UnitDef* def, CCircuitDef* circuitDef) :
 		unit(unit),
 		def(def),
+		circuitDef(circuitDef),
 		task(nullptr)
 {
 }
@@ -37,6 +38,11 @@ Unit* CCircuitUnit::GetUnit()
 UnitDef* CCircuitUnit::GetDef()
 {
 	return def;
+}
+
+CCircuitDef* CCircuitUnit::GetCircuitDef()
+{
+	return circuitDef;
 }
 
 void CCircuitUnit::SetTask(IUnitTask* task)

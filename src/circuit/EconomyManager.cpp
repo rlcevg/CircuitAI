@@ -400,11 +400,14 @@ CBuilderTask* CEconomyManager::UpdateEnergyTasks()
 			CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
 				return clusterInfo[v.second].pylon == nullptr;
 			};
-			index = circuit->GetMetalManager()->FindNearestCluster(startPos, predicate);
+			CMetalManager* metalManager = circuit->GetMetalManager();
+			metalManager->ClusterLock();
+			index = metalManager->FindNearestCluster(startPos, predicate);
 			if (index >= 0) {
-				const std::vector<AIFloat3>& centroids = circuit->GetMetalManager()->GetCentroids();
+				const std::vector<AIFloat3>& centroids = metalManager->GetCentroids();
 				builderManager->EnqueueTask(CBuilderTask::Priority::LOW, pylonDef, centroids[index], CBuilderTask::TaskType::PYLON);
 			}
+			metalManager->ClusterUnlock();
 		}
 	}
 	else if ((fusionCount >= 5) && builderManager->GetTasks(CBuilderTask::TaskType::SINGU).empty() && circuit->IsAvailable(singuDef)) {
@@ -427,11 +430,14 @@ CBuilderTask* CEconomyManager::UpdateEnergyTasks()
 			CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
 				return clusterInfo[v.second].pylon == nullptr;
 			};
-			int index = circuit->GetMetalManager()->FindNearestCluster(startPos, predicate);
+			CMetalManager* metalManager = circuit->GetMetalManager();
+			metalManager->ClusterLock();
+			int index = metalManager->FindNearestCluster(startPos, predicate);
 			if (index >= 0) {
-				const std::vector<AIFloat3>& centroids = circuit->GetMetalManager()->GetCentroids();
+				const std::vector<AIFloat3>& centroids = metalManager->GetCentroids();
 				builderManager->EnqueueTask(CBuilderTask::Priority::LOW, pylonDef, centroids[index], CBuilderTask::TaskType::PYLON);
 			}
+			metalManager->ClusterUnlock();
 		}
 	}
 
@@ -460,16 +466,16 @@ CBuilderTask* CEconomyManager::UpdateBuilderTasks()
 			switch (u->GetBuildingFacing()) {
 				default:
 				case UNIT_FACING_SOUTH:
-					buildPos.z -= def->GetZSize() * 0.55 * SQUARE_SIZE;
+					buildPos.z -= def->GetZSize() * SQUARE_SIZE;
 					break;
 				case UNIT_FACING_EAST:
-					buildPos.x -= def->GetXSize() * 0.55 * SQUARE_SIZE;
+					buildPos.x -= def->GetXSize() * SQUARE_SIZE;
 					break;
 				case UNIT_FACING_NORTH:
-					buildPos.z += def->GetZSize() * 0.55 * SQUARE_SIZE;
+					buildPos.z += def->GetZSize() * SQUARE_SIZE;
 					break;
 				case UNIT_FACING_WEST:
-					buildPos.x += def->GetXSize() * 0.55 * SQUARE_SIZE;
+					buildPos.x += def->GetXSize() * SQUARE_SIZE;
 					break;
 			}
 			task = builderManager->EnqueueTask(CBuilderTask::Priority::LOW, assistDef, buildPos, CBuilderTask::TaskType::NANO);
@@ -478,10 +484,12 @@ CBuilderTask* CEconomyManager::UpdateBuilderTasks()
 			CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
 				return clusterInfo[v.second].factory == nullptr;
 			};
-			int index = circuit->GetMetalManager()->FindNearestCluster(startPos, predicate);
+			CMetalManager* metalManager = circuit->GetMetalManager();
+			metalManager->ClusterLock();
+			int index = metalManager->FindNearestCluster(startPos, predicate);
 			AIFloat3 buildPos;
 			if (index >= 0) {
-				const std::vector<AIFloat3>& centroids = circuit->GetMetalManager()->GetCentroids();
+				const std::vector<AIFloat3>& centroids = metalManager->GetCentroids();
 				buildPos = centroids[index];
 			} else {
 				CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
@@ -491,6 +499,7 @@ CBuilderTask* CEconomyManager::UpdateBuilderTasks()
 				float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
 				buildPos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 			}
+			metalManager->ClusterUnlock();
 			task = builderManager->EnqueueTask(CBuilderTask::Priority::LOW, facDef, buildPos, CBuilderTask::TaskType::FACTORY);
 		}
 	}

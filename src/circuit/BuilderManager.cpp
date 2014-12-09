@@ -75,8 +75,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	};
 
 	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
-	for (auto& pair : defs) {
-		UnitDef* def = pair.second;
+	for (auto& kv : defs) {
+		UnitDef* def = kv.second;
 		if (def->IsBuilder() && !def->GetBuildOptions().empty() && (def->GetSpeed() > 0)) {
 			int unitDefId = def->GetUnitDefId();
 			finishedHandler[unitDefId] = workerFinishedHandler;

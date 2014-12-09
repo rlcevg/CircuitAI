@@ -51,6 +51,7 @@ void CMetalManager::ParseMetalSpots(const char* metalJson)
 	}
 
 	std::vector<CMetalData::Metal> spots;
+	spots.reserve(root.size());
 	for (const Json::Value& object : root) {
 		CMetalData::Metal spot;
 		spot.income = object["metal"].asFloat();

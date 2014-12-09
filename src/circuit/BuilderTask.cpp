@@ -7,11 +7,10 @@
 
 #include "BuilderTask.h"
 #include "CircuitUnit.h"
+#include "CircuitDef.h"
 #include "utils.h"
 
 #include "UnitDef.h"
-
-#include <algorithm>
 
 namespace circuit {
 
@@ -38,17 +37,7 @@ CBuilderTask::~CBuilderTask()
 
 bool CBuilderTask::CanAssignTo(CCircuitUnit* unit)
 {
-	std::vector<UnitDef*> opts = unit->GetDef()->GetBuildOptions();
-//	bool valid = (std::find(opts.begin(), opts.end(), buildDef) != opts.end()) && (cost > buildPower * MIN_BUILD_TIME);
-	bool valid = false;
-	for (auto opt : opts) {
-		if (opt->GetUnitDefId() == buildDef->GetUnitDefId()) {
-			valid = true;
-			break;
-		}
-	}
-	utils::free_clear(opts);
-	return valid && (cost > buildPower * MIN_BUILD_SEC);
+	return (unit->GetCircuitDef()->CanBuild(buildDef) && (cost > buildPower * MIN_BUILD_SEC));
 }
 
 void CBuilderTask::AssignTo(CCircuitUnit* unit)

@@ -217,11 +217,12 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 	int nrows = distmatrix.GetNrows();
 
 	// Initialize cluster-element list
-	std::vector<MetalIndices> iclusters(nrows);
+	std::vector<MetalIndices> iclusters;
+	iclusters.reserve(nrows);
 	for (int i = 0; i < nrows; i++) {
 		MetalIndices cluster;
 		cluster.push_back(i);
-		iclusters[i] = cluster;
+		iclusters.push_back(cluster);
 	}
 
 	for (int n = nrows; n > 1; n--) {

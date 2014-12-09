@@ -51,6 +51,7 @@ class CMetalManager;
 class CTerrainAnalyzer;
 class CScheduler;
 class CCircuitUnit;
+class CCircuitDef;
 class IModule;
 struct Metal;
 
@@ -106,12 +107,13 @@ public:
 	springai::UnitDef* GetUnitDefByName(const char* name);
 	springai::UnitDef* GetUnitDefById(int unitDefId);
 	UnitDefs& GetUnitDefs();
+	CCircuitDef* GetCircuitDef(springai::UnitDef* unitDef);
 	int GetUnitCount(springai::UnitDef* unitDef);
 	bool IsAvailable(springai::UnitDef* unitDef);
 private:
 	UnitDefs defsByName;  // owner
 	std::unordered_map<int, springai::UnitDef*> defsById;
-	std::unordered_map<springai::UnitDef*, int> unitCounts;
+	std::unordered_map<springai::UnitDef*, CCircuitDef*> circuitDefs;  // owner
 // ---- UnitDefs ---- END
 
 public:

@@ -18,15 +18,17 @@ namespace circuit {
 #define CMD_PRIORITY			34220
 #define CMD_TERRAFORM_INTERNAL	39801
 
+class CCircuitDef;
 class IUnitTask;
 
 class CCircuitUnit {
 public:
-	CCircuitUnit(springai::Unit* unit, springai::UnitDef* def);
+	CCircuitUnit(springai::Unit* unit, springai::UnitDef* def, CCircuitDef* circuitDef);
 	virtual ~CCircuitUnit();
 
 	springai::Unit* GetUnit();
 	springai::UnitDef* GetDef();
+	CCircuitDef* GetCircuitDef();
 	void SetTask(IUnitTask* task);
 	IUnitTask* GetTask();
 	void RemoveTask();
@@ -34,6 +36,7 @@ public:
 private:
 	springai::Unit* unit;  // owner
 	springai::UnitDef* def;
+	CCircuitDef* circuitDef;
 	IUnitTask* task;
 };
 

@@ -84,6 +84,7 @@ void CSetupManager::ParseSetupScript(const char* setupScript, float width, float
 	}
 
 	std::vector<CSetupData::Box> startBoxes;
+	startBoxes.reserve(boxesMap.size());
 	// Remap start boxes
 	// @see rts/Game/GameSetup.cpp CGameSetup::Init
 //	for (const std::map<int, Box>::value_type& kv : boxesMap) {

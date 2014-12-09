@@ -14,6 +14,7 @@
 #include "EconomyManager.h"
 #include "MilitaryManager.h"
 #include "CircuitUnit.h"
+#include "CircuitDef.h"
 #include "utils.h"
 
 #include "ExternalAI/Interface/AISEvents.h"
@@ -232,9 +233,10 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		case EVENT_PLAYER_COMMAND: {
 			PRINT_TOPIC("EVENT_PLAYER_COMMAND", topic);
 			struct SPlayerCommandEvent* evt = (struct SPlayerCommandEvent*)data;
-			std::vector<CCircuitUnit*> units(evt->unitIds_size);
+			std::vector<CCircuitUnit*> units;
+			units.reserve(evt->unitIds_size);
 			for (int i = 0; i < evt->unitIds_size; i++) {
-				units[i] = GetUnitById(evt->unitIds[i]);
+				units.push_back(GetUnitById(evt->unitIds[i]));
 			}
 			ret = this->PlayerCommand(units);
 			break;
@@ -323,7 +325,9 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 	if (metalManager->HasMetalSpots()) {
 		if (!metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
 			metalManager->ClusterizeMetalFirst();
-//			scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMetalManager::ClusterizeMetal, metalManager, scheduler), FRAMES_PER_SEC * 60);
+//			scheduler->RunTaskEvery(std::make_shared<CGameTask>([this]() {
+//				metalManager->ClusterizeMetal(scheduler);
+//			}), FRAMES_PER_SEC * 60);
 		}
 		if (canChooseStartPos) {
 			// Parallel task is only to ensure its execution after CMetalManager::Clusterize
@@ -362,6 +366,9 @@ int CCircuitAI::Release(int reason)
 	setupManager = nullptr;
 	scheduler = nullptr;
 	for (auto& kv : aliveUnits) {
+		delete kv.second;
+	}
+	for (auto& kv : circuitDefs) {
 		delete kv.second;
 	}
 	for (auto& kv : defsByName) {
@@ -538,14 +545,15 @@ CCircuitUnit* CCircuitAI::RegisterUnit(int unitId)
 		return nullptr;
 	}
 	UnitDef* unitDef = u->GetDef();
-	unit = new CCircuitUnit(u, GetUnitDefById(unitDef->GetUnitDefId()));
+	UnitDef* def = GetUnitDefById(unitDef->GetUnitDefId());
+	unit = new CCircuitUnit(u, def, GetCircuitDef(def));
 	delete unitDef;
 	aliveUnits[unitId] = unit;
 
 	if (u->GetTeam() == GetTeamId()) {
 		teamUnits[unitId] = unit;
 		friendlyUnits[unitId] = unit;
-		unitCounts[unit->GetDef()]++;
+		circuitDefs[unit->GetDef()]->Inc();
 	} else if (u->GetAllyTeam() == allyTeamId) {
 		friendlyUnits[unitId] = unit;
 	} else {
@@ -564,7 +572,7 @@ void CCircuitAI::UnregisterUnit(CCircuitUnit* unit)
 	if (u->GetTeam() == GetTeamId()) {
 		teamUnits.erase(unitId);
 		friendlyUnits.erase(unitId);
-		unitCounts[unit->GetDef()]--;
+		circuitDefs[unit->GetDef()]->Dec();
 	} else if (u->GetAllyTeam() == allyTeamId) {
 		friendlyUnits.erase(unitId);
 	} else {
@@ -582,12 +590,25 @@ void CCircuitAI::InitUnitDefs(std::vector<UnitDef*>&& unitDefs)
 		}
 		defsByName.clear();
 		defsById.clear();
-		unitCounts.clear();
+		for (auto& kv : circuitDefs) {
+			delete kv.second;
+		}
 	}
+
 	for (auto def : unitDefs) {
 		defsByName[def->GetName()] = def;
 		defsById[def->GetUnitDefId()] = def;
-		unitCounts[def] = 0;
+	}
+
+	for (auto& kv : defsById) {
+		std::vector<UnitDef*> options = kv.second->GetBuildOptions();
+		std::unordered_set<UnitDef*> opts;
+		for (auto buildDef : options) {
+			// if it breaks with defsById[] then something really wrong is going on
+			opts.insert(defsById[buildDef->GetUnitDefId()]);
+		}
+		circuitDefs[kv.second] = new CCircuitDef(opts);
+		utils::free_clear(options);
 	}
 }
 
@@ -616,9 +637,24 @@ CCircuitAI::UnitDefs& CCircuitAI::GetUnitDefs()
 	return defsByName;
 }
 
+CCircuitDef* CCircuitAI::GetCircuitDef(springai::UnitDef* unitDef)
+{
+	decltype(circuitDefs)::iterator i = circuitDefs.find(unitDef);
+	if (i != circuitDefs.end()) {
+		return i->second;
+	}
+
+	return nullptr;
+}
+
 int CCircuitAI::GetUnitCount(UnitDef* unitDef)
 {
-	return unitCounts[unitDef];
+	decltype(circuitDefs)::iterator i = circuitDefs.find(unitDef);
+	if (i != circuitDefs.end()) {
+		return i->second->GetCount();
+	}
+
+	return -1;
 }
 
 bool CCircuitAI::IsAvailable(UnitDef* unitDef)
