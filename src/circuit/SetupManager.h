@@ -1,53 +1,47 @@
 /*
  * SetupManager.h
  *
- *  Created on: Aug 10, 2014
+ *  Created on: Dec 9, 2014
  *      Author: rlcevg
  */
 
-#ifndef SETUPMANAGER_H_
-#define SETUPMANAGER_H_
+#ifndef SRC_CIRCUIT_SETUPMANAGER_H_
+#define SRC_CIRCUIT_SETUPMANAGER_H_
 
-#include "Game/GameSetup.h"
-
-#include <vector>
-
-namespace springai {
-	class AIFloat3;
-}
+#include "AIFloat3.h"
 
 namespace circuit {
 
+class CCircuitAI;
+class CSetupData;
+class CCircuitUnit;
+
 class CSetupManager {
 public:
-	union Box {
-		struct {
-			float bottom;
-			float left;
-			float right;
-			float top;
-		};
-		float edge[4];
+	enum class StartPosType: char {METAL_SPOT = 0, MIDDLE = 1, RANDOM = 2};
 
-		bool ContainsPoint(const springai::AIFloat3& point) const;
-	};
-
-public:
-	CSetupManager(std::vector<Box>& startBoxes,
-				  CGameSetup::StartPosType startPosType = CGameSetup::StartPosType::StartPos_ChooseInGame);
+	CSetupManager(CCircuitAI* circuit, CSetupData* setupData);
 	virtual ~CSetupManager();
+	void ParseSetupScript(const char* setupScript, float width, float height);
 
-	bool IsEmpty();
+	bool HasStartBoxes();
 	bool CanChooseStartPos();
-	int GetNumAllyTeams();
 
-	const Box& operator[](int idx) const;
+	void PickStartPos(CCircuitAI* circuit, StartPosType type);
+	CCircuitUnit* GetCommander();
+	void SetStartPos(const springai::AIFloat3& pos);
+	const springai::AIFloat3& GetStartPos();
 
 private:
-	std::vector<Box> startBoxes;
-	CGameSetup::StartPosType startPosType;
+	void FindCommander();
+
+	CCircuitAI* circuit;
+	CSetupData* setupData;
+
+	int commanderId;
+	springai::AIFloat3 startPos;
 };
 
 } // namespace circuit
 
-#endif // SETUPMANAGER_H_
+#endif // SRC_CIRCUIT_SETUPMANAGER_H_

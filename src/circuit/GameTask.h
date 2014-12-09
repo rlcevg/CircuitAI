@@ -42,6 +42,9 @@ private:
 	}
 
 	__shared_base_type __b;
+
+public:
+	static std::shared_ptr<CGameTask> EmptyTask;
 };
 
 inline CGameTask::_Impl_base::~_Impl_base() = default;

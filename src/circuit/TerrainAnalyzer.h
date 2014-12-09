@@ -8,14 +8,30 @@
 #ifndef SRC_CIRCUIT_TERRAINANALYZER_H_
 #define SRC_CIRCUIT_TERRAINANALYZER_H_
 
-namespace circuit
-{
+#include "AIFloat3.h"
 
-class TerrainAnalyzer
-{
+namespace springai {
+	class UnitDef;
+}
+
+namespace circuit {
+
+class CCircuitAI;
+
+class CTerrainAnalyzer {
 public:
-	TerrainAnalyzer();
-	virtual ~TerrainAnalyzer();
+	CTerrainAnalyzer(CCircuitAI* circuit);
+	virtual ~CTerrainAnalyzer();
+
+	int GetTerrainWidth();
+	int GetTerrainHeight();
+	springai::AIFloat3 FindBuildSiteSpace(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
+	springai::AIFloat3 FindBuildSite(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
+
+private:
+	CCircuitAI* circuit;
+	int terrainWidth;
+	int terrainHeight;
 };
 
 } // namespace circuit

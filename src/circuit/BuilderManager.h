@@ -16,6 +16,7 @@
 #include <list>
 #include <map>
 #include <set>
+#include <vector>
 #include <unordered_map>
 #include <functional>
 
@@ -69,7 +70,7 @@ private:
 	Handlers2 destroyedHandler;
 
 	std::map<CCircuitUnit*, CBuilderTask*> unfinishedUnits;
-	std::map<CBuilderTask::TaskType, std::list<CBuilderTask*>> builderTasks;  // owner
+	std::vector<std::list<CBuilderTask*>> builderTasks;  // owner
 	int builderTasksCount;
 	float builderPower;
 

@@ -8,8 +8,6 @@
 #ifndef CIRCUIT_H_
 #define CIRCUIT_H_
 
-#include "AIFloat3.h"
-
 #include <memory>
 #include <map>
 #include <list>
@@ -18,7 +16,6 @@
 #include <string.h>
 
 namespace springai {
-	class AIFloat3;
 	class OOAICallback;
 	class Log;
 	class Game;
@@ -49,6 +46,9 @@ namespace circuit {
 #define LOG(fmt, ...)	GetLog()->DoLog(utils::string_format(std::string(fmt), ##__VA_ARGS__).c_str())
 
 class CGameAttribute;
+class CSetupManager;
+class CMetalManager;
+class CTerrainAnalyzer;
 class CScheduler;
 class CCircuitUnit;
 class IModule;
@@ -91,11 +91,6 @@ public:
 	CCircuitUnit* GetUnitById(int unitId);
 	CCircuitUnit* RegisterUnit(int unitId);
 	void UnregisterUnit(CCircuitUnit* unit);
-	CCircuitUnit* GetCommander();
-	void SetStartPos(springai::AIFloat3& pos);
-	springai::AIFloat3& GetStartPos();
-	springai::AIFloat3 FindBuildSiteSpace(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
-	springai::AIFloat3 FindBuildSite(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
 
 // ---- UnitDefs ---- BEGIN
 private:
@@ -111,13 +106,15 @@ public:
 	springai::UnitDef* GetUnitDefByName(const char* name);
 	springai::UnitDef* GetUnitDefById(int unitDefId);
 	UnitDefs& GetUnitDefs();
+	int GetUnitCount(springai::UnitDef* unitDef);
+	bool IsAvailable(springai::UnitDef* unitDef);
 private:
 	UnitDefs defsByName;  // owner
 	std::unordered_map<int, springai::UnitDef*> defsById;
+	std::unordered_map<springai::UnitDef*, int> unitCounts;
 // ---- UnitDefs ---- END
 
 public:
-	CGameAttribute* GetGameAttribute();
 	CScheduler* GetScheduler();
 	int GetLastFrame();
 	int GetSkirmishAIId();
@@ -130,21 +127,19 @@ public:
 	springai::Pathing*      GetPathing();
 	springai::Drawer*       GetDrawer();
 	springai::SkirmishAI*   GetSkirmishAI();
-	float GetTerrainWidth();
-	float GetTerrainHeight();
+	CSetupManager* GetSetupManager();
+	CMetalManager* GetMetalManager();
+	CTerrainAnalyzer* GetTerrainAnalyzer();
 
 private:
-	void ClusterizeMetal();
 	// debug
-	void DrawClusters();
-	void FindCommander();
+//	void DrawClusters();
 
 	bool initialized;
 	int lastFrame;
 	int skirmishAIId;
 	int teamId;
 	int allyTeamId;
-	// TODO: move these into gameAttribute?
 	springai::OOAICallback*               callback;
 	std::unique_ptr<springai::Log>        log;
 	std::unique_ptr<springai::Game>       game;
@@ -152,14 +147,15 @@ private:
 	std::unique_ptr<springai::Pathing>    pathing;
 	std::unique_ptr<springai::Drawer>     drawer;
 	std::unique_ptr<springai::SkirmishAI> skirmishAI;
-	int terrainWidth;
-	int terrainHeight;
 
 	static std::unique_ptr<CGameAttribute> gameAttribute;
 	static unsigned int gaCounter;
 	void CreateGameAttribute();
 	void DestroyGameAttribute();
 	std::shared_ptr<CScheduler> scheduler;
+	std::unique_ptr<CSetupManager> setupManager;
+	std::unique_ptr<CMetalManager> metalManager;
+	std::unique_ptr<CTerrainAnalyzer> terrainAnalyzer;
 	std::list<IModule*> modules;
 
 	// TODO: Make global storage?
@@ -171,9 +167,6 @@ private:
 	std::map<int, CCircuitUnit*> friendlyUnits;  // owner
 	// TODO: Use or delete
 	std::map<int, CCircuitUnit*> enemyUnits;  // owner
-
-	int commanderId;
-	springai::AIFloat3 startPos;
 };
 
 } // namespace circuit

@@ -11,6 +11,7 @@
 #include "Module.h"
 #include "BuilderManager.h"
 #include "FactoryManager.h"
+#include "TerrainAnalyzer.h"
 
 #include "AIFloat3.h"
 
@@ -45,7 +46,7 @@ public:
 
 private:
 	void Init();
-	CBuilderTask* UpdateExpandTasks();
+	CBuilderTask* UpdateMetalTasks();
 	CBuilderTask* UpdateEnergyTasks();
 	CBuilderTask* UpdateBuilderTasks();
 	CFactoryTask* UpdateFactoryTasks();

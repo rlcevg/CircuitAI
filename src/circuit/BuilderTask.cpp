@@ -48,7 +48,7 @@ bool CBuilderTask::CanAssignTo(CCircuitUnit* unit)
 		}
 	}
 	utils::free_clear(opts);
-	return valid && (cost > buildPower * MIN_BUILD_TIME);
+	return valid && (cost > buildPower * MIN_BUILD_SEC);
 }
 
 void CBuilderTask::AssignTo(CCircuitUnit* unit)

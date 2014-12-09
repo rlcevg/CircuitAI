@@ -1,110 +1,80 @@
 /*
  * MetalManager.h
  *
- *  Created on: Aug 11, 2014
+ *  Created on: Dec 9, 2014
  *      Author: rlcevg
  */
 
-#ifndef METALMANAGER_H_
-#define METALMANAGER_H_
+#ifndef SRC_CIRCUIT_METALMANAGER_H_
+#define SRC_CIRCUIT_METALMANAGER_H_
 
-#include "AIFloat3.h"
+#include "MetalData.h"
 
-#include <boost/geometry/geometries/box.hpp>
-#include <boost/geometry/geometries/point.hpp>
-#include <boost/geometry/index/rtree.hpp>
-#include <vector>
-#include <atomic>
-#include <mutex>
 #include <memory>
+#include <vector>
 
 namespace springai {
-	class Drawer;
+	class GameRulesParam;
+	class Pathing;
 }
 
 namespace circuit {
 
-namespace bg = boost::geometry;
-namespace bgi = boost::geometry::index;
-
+class CCircuitAI;
+class CMetalData;
+class CScheduler;
+class CGameTask;
 class CRagMatrix;
 
 class CMetalManager {
-private:
-	// Note: Pointtree is also a very pretty candidate for range searches.
-	// Because map coordinates are big enough we can use only integer part.
-	// @see https://github.com/Warzone2100/warzone2100/blob/master/src/pointtree.cpp
-	using point = bg::model::point<float, 2, bg::cs::cartesian>;
-	using box = bg::model::box<point>;
-
 public:
-	using Metal = struct Metal {
-		float income;
-		springai::AIFloat3 position;
-	};
-	using Metals = std::vector<Metal>;
-	using MetalNode = std::pair<point, int>;  // spots indexer
-	using MetalPredicate = std::function<bool (MetalNode const& v)>;
-	using MetalIndices = std::vector<int>;
-
-public:
-	CMetalManager(std::vector<Metal>& spots);
+	CMetalManager(CCircuitAI* circuit, CMetalData* metalData);
 	virtual ~CMetalManager();
+	void ParseMetalSpots(const char* metalJson);
+	void ParseMetalSpots(const std::vector<springai::GameRulesParam*>& metalParams);
 
-	bool IsEmpty();
+	bool HasMetalSpots();
+	bool HasMetalClusters();
 	bool IsClusterizing();
-	void SetClusterizing(bool value);
-	const Metals& GetSpots() const;
+
+	void ClusterizeMetalFirst();
+	void ClusterizeMetal(std::shared_ptr<CScheduler> scheduler);
+private:
+	struct {
+		int i;
+		std::shared_ptr<CRagMatrix> matrix;
+		springai::Pathing* pathing;
+		int pathType;
+		std::weak_ptr<CScheduler> schedWeak;
+		float maxDistance;
+		std::shared_ptr<CGameTask> task;
+	} tmpDistStruct;
+	void FillDistMatrix();
+
+public:
+	const CMetalData::Metals& GetSpots() const;
 	const int FindNearestSpot(const springai::AIFloat3& pos) const;
-	const int FindNearestSpot(const springai::AIFloat3& pos, MetalPredicate& predicate) const;
-	const MetalIndices FindNearestSpots(const springai::AIFloat3& pos, int num) const;
-	const MetalIndices FindNearestSpots(const springai::AIFloat3& pos, int num, MetalPredicate& predicate) const;
-	const MetalIndices FindWithinDistanceSpots(const springai::AIFloat3& pos, float maxDistance) const;
-	const MetalIndices FindWithinRangeSpots(const springai::AIFloat3& posFrom, const springai::AIFloat3& posTo) const;
-	const std::vector<MetalIndices>& GetClusters();
-	const std::vector<springai::AIFloat3>& GetCentroids();
-	const int FindNearestCluster(const springai::AIFloat3& pos);
-	const int FindNearestCluster(const springai::AIFloat3& pos, MetalPredicate& predicate);
-	const MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num, MetalPredicate& predicate);
+	const int FindNearestSpot(const springai::AIFloat3& pos, CMetalData::MetalPredicate& predicate) const;
+	const CMetalData::MetalIndices FindNearestSpots(const springai::AIFloat3& pos, int num) const;
+	const CMetalData::MetalIndices FindNearestSpots(const springai::AIFloat3& pos, int num, CMetalData::MetalPredicate& predicate) const;
+	const CMetalData::MetalIndices FindWithinDistanceSpots(const springai::AIFloat3& pos, float maxDistance) const;
+	const CMetalData::MetalIndices FindWithinRangeSpots(const springai::AIFloat3& posFrom, const springai::AIFloat3& posTo) const;
 
-	void SetDistMatrix(CRagMatrix& distmatrix);
-	/*
-	 * Hierarchical clusterization. Not reusable. Metric: complete link
-	 */
-	void Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distmatrix);
-	// debug, could be used for defence perimeter calculation
-	void DrawConvexHulls(springai::Drawer* drawer);
-//	void DrawCentroids(springai::Drawer* drawer);
-	// debug
-	void ClearMetalClusters(springai::Drawer* drawer);
+	const int FindNearestCluster(const springai::AIFloat3& pos) const;
+	const int FindNearestCluster(const springai::AIFloat3& pos, CMetalData::MetalPredicate& predicate) const;
+	const CMetalData::MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num, CMetalData::MetalPredicate& predicate) const;
 
-	const Metal& operator[](int idx) const;
+	void ClusterLock();
+	void ClusterUnlock();
+	const std::vector<CMetalData::MetalIndices>& GetClusters() const;
+	const std::vector<springai::AIFloat3>& GetCentroids() const;
+	const std::vector<springai::AIFloat3>& GetCostCentroids() const;
 
 private:
-	Metals spots;
-	// TODO: Find out more about bgi::rtree, bgi::linear, bgi::quadratic, bgi::rstar, packing algorithm?
-	using MetalTree = bgi::rtree<MetalNode, bgi::rstar<16, 4>>;
-	MetalTree metalTree;
-
-	// FIXME: Remove mutexes, clusterize only once. Or add ClusterLock()/ClusterUnlock() to interface.
-	//        As for now search indices could belong to wrong clusters
-	// Double buffer clusters as i don't want to copy vectors every time for safe use
-	std::vector<MetalIndices> clusters0;
-	std::vector<MetalIndices> clusters1;
-	std::vector<MetalIndices>* pclusters;
-	std::vector<springai::AIFloat3> centroids0;
-	std::vector<springai::AIFloat3> centroids1;
-	std::vector<springai::AIFloat3>* pcentroids;
-	using ClusterTree = bgi::rtree<MetalNode, bgi::quadratic<16>>;
-	ClusterTree clusterTree0;
-	ClusterTree clusterTree1;
-	std::atomic<ClusterTree*> pclusterTree;
-
-	std::atomic<bool> isClusterizing;
-	std::mutex clusterMutex;
-	std::shared_ptr<CRagMatrix> distMatrix;
+	CCircuitAI* circuit;
+	CMetalData* metalData;
 };
 
 } // namespace circuit
 
-#endif // METALMANAGER_H_
+#endif // SRC_CIRCUIT_METALMANAGER_H_

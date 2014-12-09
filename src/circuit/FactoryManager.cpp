@@ -65,8 +65,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 
 		// try to avoid factory stuck
 		float size = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 0.75;
-		pos.x += (pos.x > this->circuit->GetTerrainWidth() / 2) ? -size : size;
-		pos.z += (pos.z > this->circuit->GetTerrainHeight() / 2) ? -size : size;
+		CTerrainAnalyzer* terrain = this->circuit->GetTerrainAnalyzer();
+		pos.x += (pos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
+		pos.z += (pos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
 		u->MoveTo(pos);
 
 		AssignTask(unit);
@@ -97,8 +98,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		const AIFloat3& fromPos = u->GetPos();
 		AIFloat3 toPos = fromPos;
 		float size = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE;
-		toPos.x += (toPos.x > this->circuit->GetTerrainWidth() / 2) ? -size : size;
-		toPos.z += (toPos.z > this->circuit->GetTerrainHeight() / 2) ? -size : size;
+		CTerrainAnalyzer* terrain = this->circuit->GetTerrainAnalyzer();
+		toPos.x += (toPos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
+		toPos.z += (toPos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
 		u->PatrolTo(toPos);
 
 		std::vector<float> params;

@@ -8,10 +8,11 @@
 #include "BuilderManager.h"
 #include "CircuitAI.h"
 #include "Scheduler.h"
-#include "GameAttribute.h"
+#include "SetupManager.h"
 #include "MetalManager.h"
 #include "CircuitUnit.h"
 #include "EconomyManager.h"
+#include "TerrainAnalyzer.h"
 #include "utils.h"
 
 #include "AISCommands.h"
@@ -22,6 +23,8 @@
 #include "Pathing.h"
 #include "MoveData.h"
 #include "UnitRulesParam.h"
+#include "Command.h"
+
 //#include "Drawer.h"
 
 namespace circuit {
@@ -38,7 +41,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 										  FRAMES_PER_SEC * 60,
 										  circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 0);
 	// Init after parallel clusterization
-	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>([](){return;}),
+	circuit->GetScheduler()->RunParallelTask(CGameTask::EmptyTask,
 											 std::make_shared<CGameTask>(&CBuilderManager::Init, this));
 
 	/*
@@ -81,13 +84,15 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 			destroyedHandler[unitDefId] = workerDestroyedHandler;
 		}
 	}
+
+	builderTasks.resize(static_cast<int>(CBuilderTask::TaskType::TASKS_COUNT));
 }
 
 CBuilderManager::~CBuilderManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	for (auto& tasks : builderTasks) {
-		utils::free_clear(tasks.second);
+		utils::free_clear(tasks);
 	}
 }
 
@@ -120,13 +125,7 @@ int CBuilderManager::UnitFinished(CCircuitUnit* unit)
 {
 	auto iter = unfinishedUnits.find(unit);
 	if (iter != unfinishedUnits.end()) {
-		CBuilderTask* task = iter->second;
-		// FIXME: Is this check necessary?
-		if (task != nullptr) {
-			DequeueTask(task);
-		} else {
-			unfinishedUnits.erase(iter);
-		}
+		DequeueTask(iter->second);
 	}
 
 	auto search = finishedHandler.find(unit->GetDef()->GetUnitDefId());
@@ -152,13 +151,7 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 	if (unit->GetUnit()->IsBeingBuilt()) {
 		auto iter = unfinishedUnits.find(unit);
 		if (iter != unfinishedUnits.end()) {
-			CBuilderTask* task = iter->second;
-			// FIXME: Is this check necessary?
-			if (task != nullptr) {
-				DequeueTask(task);
-			} else {
-				unfinishedUnits.erase(iter);
-			}
+			DequeueTask(iter->second);
 		}
 	}
 
@@ -178,7 +171,7 @@ CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
 										   int timeout)
 {
 	CBuilderTask* task = new CBuilderTask(priority, buildDef, position, type, cost, timeout);
-	builderTasks[type].push_front(task);
+	builderTasks[static_cast<int>(type)].push_front(task);
 	builderTasksCount++;
 	return task;
 }
@@ -191,7 +184,7 @@ CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
 {
 	float cost = buildDef->GetCost(economyManager->GetMetalRes());
 	CBuilderTask* task = new CBuilderTask(priority, buildDef, position, type, cost, timeout);
-	builderTasks[type].push_front(task);
+	builderTasks[static_cast<int>(type)].push_front(task);
 	builderTasksCount++;
 	return task;
 }
@@ -202,7 +195,7 @@ CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
 										   int timeout)
 {
 	CBuilderTask* task = new CBuilderTask(priority, nullptr, position, type, 1000.0f, timeout);
-	builderTasks[type].push_front(task);
+	builderTasks[static_cast<int>(type)].push_front(task);
 	builderTasksCount++;
 	return task;
 }
@@ -211,7 +204,7 @@ void CBuilderManager::DequeueTask(CBuilderTask* task)
 {
 	unfinishedUnits.erase(task->GetTarget());
 	task->MarkCompleted();
-	builderTasks[task->GetType()].remove(task);
+	builderTasks[static_cast<int>(task->GetType())].remove(task);
 	delete task;
 	builderTasksCount--;
 }
@@ -229,14 +222,14 @@ bool CBuilderManager::CanEnqueueTask()
 const std::list<CBuilderTask*>& CBuilderManager::GetTasks(CBuilderTask::TaskType type)
 {
 	// Auto-creates empty list
-	return builderTasks[type];
+	return builderTasks[static_cast<int>(type)];
 }
 
 void CBuilderManager::Init()
 {
 	// TODO: Improve init
 	for (auto worker : workers) {
-		if (circuit->GetCommander() != worker) {
+		if (circuit->GetSetupManager()->GetCommander() != worker) {
 			UnitIdle(worker);
 		} else {
 			Unit* u = worker->GetUnit();
@@ -245,23 +238,16 @@ void CBuilderManager::Init()
 				if (param->GetValueFloat() == 1) {
 					const AIFloat3& position = u->GetPos();
 					int facing = UNIT_COMMAND_BUILD_NO_FACING;
-					float terWidth = circuit->GetTerrainWidth();
-					float terHeight = circuit->GetTerrainHeight();
+					CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+					float terWidth = terrain->GetTerrainWidth();
+					float terHeight = terrain->GetTerrainHeight();
 					if (math::fabs(terWidth - 2 * position.x) > math::fabs(terHeight - 2 * position.z)) {
-						if (2 * position.x > terWidth) {
-							facing = UNIT_FACING_WEST;
-						} else {
-							facing = UNIT_FACING_EAST;
-						}
+						facing = (2 * position.x > terWidth) ? UNIT_FACING_WEST : UNIT_FACING_EAST;
 					} else {
-						if (2 * position.z > terHeight) {
-							facing = UNIT_FACING_NORTH;
-						} else {
-							facing = UNIT_FACING_SOUTH;
-						}
+						facing = (2 * position.z > terHeight) ? UNIT_FACING_NORTH : UNIT_FACING_SOUTH;
 					}
 					UnitDef* buildDef = circuit->GetUnitDefByName("factorycloak");
-					AIFloat3 buildPos = circuit->FindBuildSiteSpace(buildDef, position, 1000.0f, facing);
+					AIFloat3 buildPos = terrain->FindBuildSiteSpace(buildDef, position, 1000.0f, facing);
 					u->Build(buildDef, buildPos, facing);
 				}
 				delete param;
@@ -276,23 +262,18 @@ void CBuilderManager::Watchdog()
 	decltype(builderInfo)::iterator iter = builderInfo.begin();
 	while (iter != builderInfo.end()) {
 		CBuilderTask* task = static_cast<CBuilderTask*>(iter->first->GetTask());
-		if (task != nullptr) {
-			int timeout = task->GetTimeout();
-			if ((timeout > 0) && (circuit->GetLastFrame() - iter->second.startFrame > timeout)) {
-				switch (task->GetType()) {
-					case CBuilderTask::TaskType::ASSIST: {
-						CCircuitUnit* unit = iter->first;
-						task->MarkCompleted();
-						auto search = builderTasks.find(CBuilderTask::TaskType::ASSIST);
-						if (search != builderTasks.end()) {
-							search->second.remove(task);
-						}
-						delete task;
-						unit->GetUnit()->Stop();
-						iter = builderInfo.erase(iter);
-						continue;
-						break;
-					}
+		int timeout = task->GetTimeout();
+		if ((timeout > 0) && (circuit->GetLastFrame() - iter->second.startFrame > timeout)) {
+			switch (task->GetType()) {
+				case CBuilderTask::TaskType::ASSIST: {
+					CCircuitUnit* unit = iter->first;
+					task->MarkCompleted();
+					builderTasks[static_cast<int>(CBuilderTask::TaskType::ASSIST)].remove(task);
+					delete task;
+					unit->GetUnit()->Stop();
+					iter = builderInfo.erase(iter);
+					continue;
+					break;
 				}
 			}
 		}
@@ -302,14 +283,16 @@ void CBuilderManager::Watchdog()
 	// somehow workers get stuck
 	for (auto worker : workers) {
 		Unit* u = worker->GetUnit();
-		Resource* metalRes = economyManager->GetMetalRes();
-		if ((u->GetVel() == ZeroVector) && (u->GetResourceUse(metalRes) == 0)) {
+		std::vector<springai::Command*> commands = u->GetCurrentCommands();
+		if (commands.empty()) {
 			AIFloat3 toPos = u->GetPos();
 			const float size = 50.0f;
-			toPos.x += (toPos.x > circuit->GetTerrainWidth() / 2) ? -size : size;
-			toPos.z += (toPos.z > circuit->GetTerrainHeight() / 2) ? -size : size;
+			CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+			toPos.x += (toPos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
+			toPos.z += (toPos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
 			u->MoveTo(toPos);
 		}
+		utils::free_clear(commands);
 	}
 }
 
@@ -325,7 +308,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	float buildDistance = unit->GetDef()->GetBuildDistance();
 	float metric = std::numeric_limits<float>::max();
 	for (auto& tasks : builderTasks) {
-		for (auto& t : tasks.second) {
+		for (auto& t : tasks) {
 			if (!t->CanAssignTo(unit)) {
 				continue;
 			}
@@ -346,7 +329,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 			} else {
 				const AIFloat3& bp = candidate->GetBuildPos();
 				dist = circuit->GetPathing()->GetApproximateLength((bp != -RgtVector) ? bp : candidate->GetPos(), pos, pathType, buildDistance);
-				valid = dist < metric;
+				valid = ((dist < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));
 			}
 
 			if (valid) {
@@ -370,8 +353,9 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 
 	auto findFacing = [this](UnitDef* buildDef, const AIFloat3& position) {
 		int facing = UNIT_COMMAND_BUILD_NO_FACING;
-		float terWidth = circuit->GetTerrainWidth();
-		float terHeight = circuit->GetTerrainHeight();
+		CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+		float terWidth = terrain->GetTerrainWidth();
+		float terHeight = terrain->GetTerrainHeight();
 		if (math::fabs(terWidth - 2 * position.x) > math::fabs(terHeight - 2 * position.z)) {
 			facing = (2 * position.x > terWidth) ? UNIT_FACING_WEST : UNIT_FACING_EAST;
 		} else {
@@ -392,8 +376,9 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 		taskNew->AssignTo(unit);
 
 		const float size = SQUARE_SIZE * 10;
-		pos.x += (pos.x > circuit->GetTerrainWidth() / 2) ? -size : size;
-		pos.z += (pos.z > circuit->GetTerrainHeight() / 2) ? -size : size;
+		CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+		pos.x += (pos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
+		pos.z += (pos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
 		u->PatrolTo(pos);
 
 		builderInfo[unit].startFrame = circuit->GetLastFrame();
@@ -443,14 +428,15 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 					const AIFloat3& position = task->GetPos();
 					float searchRadius = buildDef->GetBuildDistance();
 					facing = findFacing(buildDef, position);
-					buildPos = circuit->FindBuildSite(buildDef, position, searchRadius, facing);
+					CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+					buildPos = terrain->FindBuildSite(buildDef, position, searchRadius, facing);
 					if (buildPos == -RgtVector) {
 						// TODO: Replace FindNearestSpots with FindNearestClusters
-						const CMetalManager::Metals& spots =  circuit->GetGameAttribute()->GetMetalManager().GetSpots();
-						CMetalManager::MetalIndices indices = circuit->GetGameAttribute()->GetMetalManager().FindNearestSpots(position, 3);
+						const CMetalData::Metals& spots =  circuit->GetMetalManager()->GetSpots();
+						CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestSpots(position, 3);
 						for (const int idx : indices) {
 							facing = findFacing(buildDef, spots[idx].position);
-							buildPos = circuit->FindBuildSite(buildDef, spots[idx].position, searchRadius, facing);
+							buildPos = terrain->FindBuildSite(buildDef, spots[idx].position, searchRadius, facing);
 							if (buildPos != -RgtVector) {
 								break;
 							}
@@ -463,14 +449,15 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 					const AIFloat3& position = task->GetPos();
 					float searchRadius = 100.0f * SQUARE_SIZE;
 					facing = findFacing(buildDef, position);
-					buildPos = circuit->FindBuildSiteSpace(buildDef, position, searchRadius, facing);
+					CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+					buildPos = terrain->FindBuildSiteSpace(buildDef, position, searchRadius, facing);
 					if (buildPos == -RgtVector) {
 						// TODO: Replace FindNearestSpots with FindNearestClusters
-						const CMetalManager::Metals& spots =  circuit->GetGameAttribute()->GetMetalManager().GetSpots();
-						CMetalManager::MetalIndices indices = circuit->GetGameAttribute()->GetMetalManager().FindNearestSpots(position, 3);
+						const CMetalData::Metals& spots =  circuit->GetMetalManager()->GetSpots();
+						CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestSpots(position, 3);
 						for (const int idx : indices) {
 							facing = findFacing(buildDef, spots[idx].position);
-							buildPos = circuit->FindBuildSiteSpace(buildDef, spots[idx].position, searchRadius, facing);
+							buildPos = terrain->FindBuildSiteSpace(buildDef, spots[idx].position, searchRadius, facing);
 							if (buildPos != -RgtVector) {
 								break;
 							}

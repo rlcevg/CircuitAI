@@ -1,36 +1,39 @@
 /*
  * MetalManager.cpp
  *
- *  Created on: Aug 11, 2014
+ *  Created on: Dec 9, 2014
  *      Author: rlcevg
  */
 
 #include "MetalManager.h"
 #include "RagMatrix.h"
+#include "CircuitAI.h"
+#include "Scheduler.h"
 #include "utils.h"
+#include "json/json.h"
 
-#include "Map.h"
-#include "Drawer.h"
-
-#include <functional>
-#include <algorithm>
+#include "Game.h"
+#include "GameRulesParam.h"
+#include "Pathing.h"
+#include "UnitDef.h"
+#include "MoveData.h"
 
 namespace circuit {
 
 using namespace springai;
 
-CMetalManager::CMetalManager(std::vector<Metal>& spots) :
-		spots(spots),
-		pclusters(&clusters0),
-		pcentroids(&centroids0),
-		distMatrix(nullptr),
-		isClusterizing(false)
+#define CLUSTER_MS	8
+
+CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData) :
+		circuit(circuit),
+		metalData(metalData)
 {
-	int i = 0;
-    for (auto& spot : spots) {
-    	point p(spot.position.x, spot.position.z);
-        metalTree.insert(std::make_pair(p, i++));
-    }
+	if (!metalData->IsInitialized()) {
+		// TODO: Add metal zone and no-metal-spots maps support
+		std::vector<GameRulesParam*> gameRulesParams = circuit->GetGame()->GetGameRulesParams();
+		ParseMetalSpots(gameRulesParams);
+		utils::free_clear(gameRulesParams);
+	}
 }
 
 CMetalManager::~CMetalManager()
@@ -38,356 +41,258 @@ CMetalManager::~CMetalManager()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-bool CMetalManager::IsEmpty()
+void CMetalManager::ParseMetalSpots(const char* metalJson)
 {
-	return spots.empty();
+	Json::Value root;
+	Json::Reader json;
+
+	if (!json.parse(metalJson, root, false)) {
+		return;
+	}
+
+	std::vector<CMetalData::Metal> spots;
+	for (const Json::Value& object : root) {
+		CMetalData::Metal spot;
+		spot.income = object["metal"].asFloat();
+		spot.position = AIFloat3(object["x"].asFloat(),
+								 object["y"].asFloat(),
+								 object["z"].asFloat());
+		spots.push_back(spot);
+	}
+
+	metalData->Init(spots);
+}
+
+void CMetalManager::ParseMetalSpots(const std::vector<GameRulesParam*>& gameParams)
+{
+	int mexCount = 0;
+	for (auto param : gameParams) {
+		if (strcmp(param->GetName(), "mex_count") == 0) {
+			mexCount = param->GetValueFloat();
+			break;
+		}
+	}
+
+	if (mexCount <= 0) {
+		return;
+	}
+
+	std::vector<CMetalData::Metal> spots(mexCount);
+	int i = 0;
+	for (auto param : gameParams) {
+		const char* name = param->GetName();
+		if (strncmp(name, "mex_", 4) == 0) {
+			if (strncmp(name + 4, "x", 1) == 0) {
+				int idx = std::atoi(name + 5);
+				spots[idx - 1].position.x = param->GetValueFloat();
+				i++;
+			} else if (strncmp(name + 4, "y", 1) == 0) {
+				int idx = std::atoi(name + 5);
+				spots[idx - 1].position.y = param->GetValueFloat();
+				i++;
+			} else if (strncmp(name + 4, "z", 1) == 0) {
+				int idx = std::atoi(name + 5);
+				spots[idx - 1].position.z = param->GetValueFloat();
+				i++;
+			} else if (strncmp(name + 4, "metal", 5) == 0) {
+				int idx = std::atoi(name + 9);
+				spots[idx - 1].income = param->GetValueFloat();
+				i++;
+			}
+
+			if (i >= mexCount * 4) {
+				break;
+			}
+		}
+	}
+
+	metalData->Init(spots);
+}
+
+bool CMetalManager::HasMetalSpots()
+{
+	return (metalData->IsInitialized() && !metalData->IsEmpty());
+}
+
+bool CMetalManager::HasMetalClusters()
+{
+	return !metalData->GetClusters().empty();
 }
 
 bool CMetalManager::IsClusterizing()
 {
-	return isClusterizing.load();
+	return metalData->IsClusterizing();
 }
 
-void CMetalManager::SetClusterizing(bool value)
-{
-	isClusterizing = value;
-}
-
-const CMetalManager::Metals& CMetalManager::GetSpots() const
-{
-	return spots;
-}
-
-const int CMetalManager::FindNearestSpot(const AIFloat3& pos) const
-{
-	std::vector<MetalNode> result_n;
-	metalTree.query(bgi::nearest(point(pos.x, pos.z), 1), std::back_inserter(result_n));
-
-	if (!result_n.empty()) {
-		return result_n.front().second;
-	}
-	return -1;
-}
-
-const int CMetalManager::FindNearestSpot(const AIFloat3& pos, MetalPredicate& predicate) const
-{
-	std::vector<MetalNode> result_n;
-	metalTree.query(bgi::nearest(point(pos.x, pos.z), 1) && bgi::satisfies(predicate), std::back_inserter(result_n));
-
-	if (!result_n.empty()) {
-		return result_n.front().second;
-	}
-	return -1;
-}
-
-const CMetalManager::MetalIndices CMetalManager::FindNearestSpots(const AIFloat3& pos, int num) const
-{
-	std::vector<MetalNode> result_n;
-	metalTree.query(bgi::nearest(point(pos.x, pos.z), num), std::back_inserter(result_n));
-
-	MetalIndices result;
-	for (auto& node : result_n) {
-		result.push_back(node.second);
-	}
-	return result;
-}
-
-const CMetalManager::MetalIndices CMetalManager::FindNearestSpots(const AIFloat3& pos, int num, MetalPredicate& predicate) const
-{
-	std::vector<MetalNode> result_n;
-	metalTree.query(bgi::nearest(point(pos.x, pos.z), num) && bgi::satisfies(predicate), std::back_inserter(result_n));
-
-	MetalIndices result;
-	for (auto& node : result_n) {
-		result.push_back(node.second);
-	}
-	return result;
-}
-
-const CMetalManager::MetalIndices CMetalManager::FindWithinDistanceSpots(const AIFloat3& pos, float maxDistance) const
-{
-	std::vector<MetalNode> returned_values;
-	point sought = point(pos.x, pos.z);
-	box enc_box(point(pos.x - maxDistance, pos.z - maxDistance), point(pos.x + maxDistance, pos.z + maxDistance));
-	auto predicate = [&maxDistance, &sought](MetalNode const& v) {
-		return bg::distance(v.first, sought) < maxDistance;
-	};
-	metalTree.query(bgi::within(enc_box) && bgi::satisfies(predicate), std::back_inserter(returned_values));
-
-	MetalIndices result;
-	for (auto& node : returned_values) {
-		result.push_back(node.second);
-	}
-	return result;
-}
-
-const CMetalManager::MetalIndices CMetalManager::FindWithinRangeSpots(const AIFloat3& posFrom, const AIFloat3& posTo) const
-{
-	box query_box(point(posFrom.x, posFrom.z), point(posTo.x, posTo.z));
-	std::vector<MetalNode> result_s;
-	metalTree.query(bgi::within(query_box), std::back_inserter(result_s));
-
-	MetalIndices result;
-	for (auto& node : result_s) {
-		result.push_back(node.second);
-	}
-	return result;
-}
-
-const std::vector<CMetalManager::MetalIndices>& CMetalManager::GetClusters()
-{
-	clusterMutex.lock();
-	std::vector<MetalIndices>& rclusters = *pclusters;
-	clusterMutex.unlock();
-	return rclusters;
-}
-
-const std::vector<AIFloat3>& CMetalManager::GetCentroids()
-{
-	clusterMutex.lock();
-	std::vector<AIFloat3>& rcentroids = *pcentroids;
-	clusterMutex.unlock();
-	return rcentroids;
-}
-
-const int CMetalManager::FindNearestCluster(const AIFloat3& pos)
-{
-	std::vector<MetalNode> result_n;
-	pclusterTree.load()->query(bgi::nearest(point(pos.x, pos.z), 1), std::back_inserter(result_n));
-
-	if (!result_n.empty()) {
-		return result_n.front().second;
-	}
-	return -1;
-}
-
-const int CMetalManager::FindNearestCluster(const AIFloat3& pos, MetalPredicate& predicate)
-{
-	std::vector<MetalNode> result_n;
-	pclusterTree.load()->query(bgi::nearest(point(pos.x, pos.z), 1) && bgi::satisfies(predicate), std::back_inserter(result_n));
-
-	if (!result_n.empty()) {
-		return result_n.front().second;
-	}
-	return -1;
-}
-
-const CMetalManager::MetalIndices CMetalManager::FindNearestClusters(const AIFloat3& pos, int num, MetalPredicate& predicate)
-{
-	std::vector<MetalNode> result_n;
-	pclusterTree.load()->query(bgi::nearest(point(pos.x, pos.z), num) && bgi::satisfies(predicate), std::back_inserter(result_n));
-
-	MetalIndices result;
-	for (auto& node : result_n) {
-		result.push_back(node.second);
-	}
-	return result;
-}
-
-
-void CMetalManager::SetDistMatrix(CRagMatrix& distmatrix)
-{
-	distMatrix = std::make_shared<CRagMatrix>(distmatrix);
-}
-
-void CMetalManager::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distMatrix)
+void CMetalManager::ClusterizeMetalFirst()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	CRagMatrix& distmatrix = *distMatrix;
+	metalData->SetClusterizing(true);
+
+	// prepare parameters
+	MoveData* moveData = circuit->GetUnitDefByName("armcom1")->GetMoveData();
+	int pathType = moveData->GetPathType();
+	delete moveData;
+	UnitDef* def = circuit->GetUnitDefByName("armestor");
+	std::map<std::string, std::string> customParams = def->GetCustomParams();
+	float radius = utils::string_to_float(customParams["pylonrange"]);
+	float maxDistance = radius * 2;
+	Pathing* pathing = circuit->GetPathing();
+
+	const CMetalData::Metals& spots = metalData->GetSpots();
+	int nrows = spots.size();
+
+	std::shared_ptr<CRagMatrix> pdistmatrix = std::make_shared<CRagMatrix>(nrows);
+	CRagMatrix& distmatrix = *pdistmatrix;
+	for (int i = 1; i < nrows; i++) {
+		for (int j = 0; j < i; j++) {
+			float lenStartEnd = pathing->GetApproximateLength(spots[i].position, spots[j].position, pathType, 0.0f);
+			float lenEndStart = pathing->GetApproximateLength(spots[j].position, spots[i].position, pathType, 0.0f);
+			distmatrix(i, j) = (lenStartEnd + lenEndStart) / 2.0f;
+		}
+	}
+
+	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CMetalData::Clusterize, metalData, maxDistance, pdistmatrix));
+}
+
+void CMetalManager::ClusterizeMetal(std::shared_ptr<CScheduler> scheduler)
+{
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	metalData->SetClusterizing(true);
+
+	// prepare parameters
+	MoveData* moveData = circuit->GetUnitDefByName("armcom1")->GetMoveData();
+	int pathType = moveData->GetPathType();
+	delete moveData;
+	UnitDef* def = circuit->GetUnitDefByName("armestor");
+	std::map<std::string, std::string> customParams = def->GetCustomParams();
+	float radius = utils::string_to_float(customParams["pylonrange"]);
+	float maxDistance = radius * 2;
+	Pathing* pathing = circuit->GetPathing();
+
+	const CMetalData::Metals& spots = metalData->GetSpots();
+
+	tmpDistStruct.i = 1;
+	tmpDistStruct.matrix = std::make_shared<CRagMatrix>(spots.size());
+	tmpDistStruct.maxDistance = maxDistance;
+	tmpDistStruct.pathType = pathType;
+	tmpDistStruct.pathing = pathing;
+	tmpDistStruct.schedWeak = scheduler;
+	tmpDistStruct.task = std::make_shared<CGameTask>(&CMetalManager::FillDistMatrix, this);
+
+	scheduler->RunTaskEvery(tmpDistStruct.task, 1);
+}
+
+void CMetalManager::FillDistMatrix()
+{
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	const CMetalData::Metals& spots = metalData->GetSpots();
+	CRagMatrix& distmatrix = *tmpDistStruct.matrix;
+	Pathing* pathing = tmpDistStruct.pathing;
+	int pathType = tmpDistStruct.pathType;
 	int nrows = distmatrix.GetNrows();
 
-	// Initialize cluster-element list
-	std::vector<MetalIndices> iclusters(nrows);
-	for (int i = 0; i < nrows; i++) {
-		MetalIndices cluster;
-		cluster.push_back(i);
-		iclusters[i] = cluster;
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::milliseconds;
+	clock::time_point t0 = clock::now();
+
+	for (int i = tmpDistStruct.i; i < nrows; i++) {
+		for (int j = 0; j < i; j++) {
+			float lenStartEnd = pathing->GetApproximateLength(spots[i].position, spots[j].position, pathType, 0.0f);
+			float lenEndStart = pathing->GetApproximateLength(spots[j].position, spots[i].position, pathType, 0.0f);
+			distmatrix(i, j) = (lenStartEnd + lenEndStart) / 2.0f;
+		}
+
+		clock::time_point t1 = clock::now();
+		if (std::chrono::duration_cast<milliseconds>(t1 - t0) > milliseconds(CLUSTER_MS)) {
+			tmpDistStruct.i = i + 1;
+			return;
+		}
 	}
 
-	for (int n = nrows; n > 1; n--) {
-		// Find pair
-		int is = 1;
-		int js = 0;
-		if (distmatrix.FindClosestPair(n, is, js) > maxDistance) {
-			break;
-		}
-
-		// Fix the distances
-		for (int j = 0; j < js; j++) {
-			distmatrix(js, j) = std::max(distmatrix(is, j), distmatrix(js, j));
-		}
-		for (int j = js + 1; j < is; j++) {
-			distmatrix(j, js) = std::max(distmatrix(is, j), distmatrix(j, js));
-		}
-		for (int j = is + 1; j < n; j++) {
-			distmatrix(j, js) = std::max(distmatrix(j, is), distmatrix(j, js));
-		}
-
-		for (int j = 0; j < is; j++) {
-			distmatrix(is, j) = distmatrix(n - 1, j);
-		}
-		for (int j = is + 1; j < n - 1; j++) {
-			distmatrix(j, is) = distmatrix(n - 1, j);
-		}
-
-		// Merge clusters
-		MetalIndices& cluster = iclusters[js];
-		cluster.reserve(cluster.size() + iclusters[is].size()); // preallocate memory
-		cluster.insert(cluster.end(), iclusters[is].begin(), iclusters[is].end());
-		iclusters[is] = iclusters[n - 1];
-		iclusters.pop_back();
+	metalData->SetDistMatrix(distmatrix);
+	std::shared_ptr<CScheduler> scheduler = tmpDistStruct.schedWeak.lock();
+	if (scheduler != nullptr) {
+		scheduler->RunParallelTask(std::make_shared<CGameTask>(&CMetalData::Clusterize, metalData, tmpDistStruct.maxDistance, tmpDistStruct.matrix));
+		scheduler->RemoveTask(tmpDistStruct.task);
 	}
-
-	// TODO: Find more about std::vector::emplace
-	std::vector<MetalIndices>& clusters = (pclusters == &clusters0) ? clusters1 : clusters0;
-	std::vector<AIFloat3>& centroids = (pcentroids == &centroids0) ? centroids1 : centroids0;
-	ClusterTree& clusterTree = (pclusterTree.load() == &clusterTree0) ? clusterTree1 : clusterTree0;
-	int nclusters = iclusters.size();
-	clusters.resize(nclusters);
-	centroids.resize(nclusters);
-	clusterTree.clear();
-	for (int i = 0; i < nclusters; i++) {
-		clusters[i].clear();
-		AIFloat3 centr = ZeroVector;
-		for (int j = 0; j < iclusters[i].size(); j++) {
-			clusters[i].push_back(iclusters[i][j]);
-			centr += spots[iclusters[i][j]].position;
-		}
-		centr /= iclusters[i].size();
-		centroids[i] = centr;
-        clusterTree.insert(std::make_pair(point(centr.x, centr.z), i));
-	}
-
-	{
-//		std::lock_guard<std::mutex> guard(clusterMutex);
-		clusterMutex.lock();
-		pclusters = &clusters;
-		pcentroids = &centroids;
-		pclusterTree = &clusterTree;
-		clusterMutex.unlock();
-	}
-
-	isClusterizing = false;
+//	tmpDistStruct.schedWeak = nullptr;
+	tmpDistStruct.task = nullptr;
 }
 
-void CMetalManager::DrawConvexHulls(Drawer* drawer)
+const CMetalData::Metals& CMetalManager::GetSpots() const
 {
-	for (const MetalIndices& indices : GetClusters()) {
-		if (indices.empty()) {
-			continue;
-		} else if (indices.size() == 1) {
-			drawer->AddPoint(spots[indices[0]].position, "Cluster 1");
-		} else if (indices.size() == 2) {
-			drawer->AddLine(spots[indices[0]].position, spots[indices[1]].position);
-		} else {
-			// !!! Graham scan !!!
-			// Coord system:  *-----x
-			//                |
-			//                |
-			//                z
-			auto orientation = [](const AIFloat3& p1, const AIFloat3& p2, const AIFloat3& p3) {
-				// orientation > 0 : counter-clockwise turn,
-				// orientation < 0 : clockwise,
-				// orientation = 0 : collinear
-				return (p2.x - p1.x) * (p3.z - p1.z) - (p2.z - p1.z) * (p3.x - p1.x);
-			};
-			// number of points
-			int N = indices.size();
-			// the array of points
-			std::vector<AIFloat3> points(N + 1);
-			// Find the bottom-most point
-			int min = 1, i = 1;
-			float zmin = spots[indices[0]].position.z;
-			for (const int idx : indices) {
-				points[i] = spots[idx].position;
-				float z = spots[idx].position.z;
-				// Pick the bottom-most or chose the left most point in case of tie
-				if ((z < zmin) || (zmin == z && points[i].x < points[min].x)) {
-					zmin = z, min = i;
-				}
-				i++;
-			}
-			auto swap = [](AIFloat3& p1, AIFloat3& p2) {
-				AIFloat3 tmp = p1;
-				p1 = p2;
-				p2 = tmp;
-			};
-			swap(points[1], points[min]);
-
-			// A function used to sort an array of
-			// points with respect to the first point
-			AIFloat3& p0 = points[1];
-			auto compare = [&p0, orientation](const AIFloat3& p1, const AIFloat3& p2) {
-				// Find orientation
-				int o = orientation(p0, p1, p2);
-				if (o == 0) {
-					return p0.SqDistance2D(p1) < p0.SqDistance2D(p2);
-				}
-				return o > 0;
-			};
-			// Sort n-1 points with respect to the first point. A point p1 comes
-			// before p2 in sorted output if p2 has larger polar angle (in
-			// counterclockwise direction) than p1
-			std::sort(points.begin() + 2, points.end(), compare);
-
-			// let points[0] be a sentinel point that will stop the loop
-			points[0] = points[N];
-
-//			int M = 1; // Number of points on the convex hull.
-//			for (int i(2); i <= N; ++i) {
-//				while (orientation(points[M - 1], points[M], points[i]) <= 0) {
-//					if (M > 1) {
-//						M--;
-//					} else if (i == N) {
-//						break;
-//					} else {
-//						i++;
-//					}
-//				}
-//				swap(points[++M], points[i]);
-//			}
-
-			// FIXME: Remove next DEBUG line
-			int M = N;
-			// draw convex hull
-			AIFloat3 start = points[0], end;
-			for (int i = 1; i < M; i++) {
-				end = points[i];
-				drawer->AddLine(start, end);
-				start = end;
-			}
-			end = points[0];
-			drawer->AddLine(start, end);
-		}
-	}
+	return metalData->GetSpots();
 }
 
-//void CMetalManager::DrawCentroids(Drawer* drawer)
-//{
-//	for (int i = 0; i < metalCluster.size(); i++) {
-//		std::string msgText = utils::string_format("%i mexes cluster", metalCluster[i].size());
-//		drawer->AddPoint(centroids[i], msgText.c_str());
-//	}
-//}
-
-void CMetalManager::ClearMetalClusters(Drawer* drawer)
+const int CMetalManager::FindNearestSpot(const springai::AIFloat3& pos) const
 {
-	for (auto& cluster : GetClusters()) {
-		for (auto& idx : cluster) {
-			drawer->DeletePointsAndLines(spots[idx].position);
-		}
-	}
-//	clusters.clear();
-//
-//	for (auto& centroid : centroids) {
-//		drawer->DeletePointsAndLines(centroid);
-//	}
-//	centroids.clear();
+	return metalData->FindNearestSpot(pos);
 }
 
-const CMetalManager::Metal& CMetalManager::operator[](int idx) const
+const int CMetalManager::FindNearestSpot(const springai::AIFloat3& pos, CMetalData::MetalPredicate& predicate) const
 {
-	return spots[idx];
+	return metalData->FindNearestSpot(pos, predicate);
+}
+
+const CMetalData::MetalIndices CMetalManager::FindNearestSpots(const springai::AIFloat3& pos, int num) const
+{
+	return metalData->FindNearestSpots(pos, num);
+}
+
+const CMetalData::MetalIndices CMetalManager::FindNearestSpots(const springai::AIFloat3& pos, int num, CMetalData::MetalPredicate& predicate) const
+{
+	return metalData->FindNearestSpots(pos, num, predicate);
+}
+
+const CMetalData::MetalIndices CMetalManager::FindWithinDistanceSpots(const springai::AIFloat3& pos, float maxDistance) const
+{
+	return metalData->FindWithinDistanceSpots(pos, maxDistance);
+}
+
+const CMetalData::MetalIndices CMetalManager::FindWithinRangeSpots(const springai::AIFloat3& posFrom, const springai::AIFloat3& posTo) const
+{
+	return metalData->FindWithinRangeSpots(posFrom, posTo);
+}
+
+const int CMetalManager::FindNearestCluster(const springai::AIFloat3& pos) const
+{
+	return metalData->FindNearestCluster(pos);
+}
+
+const int CMetalManager::FindNearestCluster(const springai::AIFloat3& pos, CMetalData::MetalPredicate& predicate) const
+{
+	return metalData->FindNearestCluster(pos, predicate);
+}
+
+const CMetalData::MetalIndices CMetalManager::FindNearestClusters(const springai::AIFloat3& pos, int num, CMetalData::MetalPredicate& predicate) const
+{
+	return metalData->FindNearestClusters(pos, num, predicate);
+}
+
+void CMetalManager::ClusterLock()
+{
+	metalData->ClusterLock();
+}
+
+void CMetalManager::ClusterUnlock()
+{
+	metalData->ClusterUnlock();
+}
+
+const std::vector<CMetalData::MetalIndices>& CMetalManager::GetClusters() const
+{
+	return metalData->GetClusters();
+}
+
+const std::vector<springai::AIFloat3>& CMetalManager::GetCentroids() const
+{
+	return metalData->GetCentroids();
+}
+
+const std::vector<springai::AIFloat3>& CMetalManager::GetCostCentroids() const
+{
+	return metalData->GetCostCentroids();
 }
 
 } // namespace circuit

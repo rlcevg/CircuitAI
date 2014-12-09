@@ -10,18 +10,19 @@
 
 #include "ConstructTask.h"
 
-#define MIN_BUILD_TIME	8
+#define MIN_BUILD_SEC	8
+#define MAX_TRAVEL_SEC	60
 
 namespace circuit {
 
 class CBuilderTask: public IConstructTask {
 public:
-	enum class TaskType: char {
+	enum class TaskType: int {
 		FACTORY = 0, NANO,
-		EXPAND,
+		EXPAND, STORE,
 		SOLAR, FUSION, SINGU, PYLON,
 		DEFENDER, LOTUS, DDM, ANNI,
-		RADAR, TERRAFORM, ASSIST, RECLAIM, DEFAULT = DEFENDER
+		RADAR, TERRAFORM, ASSIST, RECLAIM, TASKS_COUNT, DEFAULT = DEFENDER
 	};
 
 public:

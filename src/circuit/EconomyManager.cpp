@@ -7,8 +7,8 @@
 
 #include "EconomyManager.h"
 #include "CircuitAI.h"
-#include "GameAttribute.h"
 #include "Scheduler.h"
+#include "SetupManager.h"
 #include "MetalManager.h"
 #include "CircuitUnit.h"
 #include "BuilderManager.h"
@@ -55,16 +55,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit, CBuilderManager* builderMa
 	// TODO: Use A* ai planning... or sth... STRIPS https://ru.wikipedia.org/wiki/STRIPS
 	//       https://ru.wikipedia.org/wiki/Марковский_процесс_принятия_решений
 
-	SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();
-	int aisCount = ais->GetSize();
-	delete ais;
 	// FIXME: Remove parallel clusterization (and Init). Task is fast enough for main process and too much issues with parallelism.
-	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>(&CEconomyManager::Init, this));
-	const int interval = aisCount * 4;
-	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateExpandTasks, this), interval, circuit->GetSkirmishAIId() + 0);
-	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateEnergyTasks, this), interval, circuit->GetSkirmishAIId() + 1);
-	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateBuilderTasks, this), interval, circuit->GetSkirmishAIId() + 2 + 100 * interval);
-	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateFactoryTasks, this), interval, circuit->GetSkirmishAIId() + 3);
+	circuit->GetScheduler()->RunParallelTask(CGameTask::EmptyTask, std::make_shared<CGameTask>(&CEconomyManager::Init, this));
 
 	// TODO: Group handlers
 	//       Scout:
@@ -88,7 +80,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit, CBuilderManager* builderMa
 	unitDefId = circuit->GetUnitDefByName("factorycloak")->GetUnitDefId();
 	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		// check factory's cluster
-		int index = this->circuit->GetGameAttribute()->GetMetalManager().FindNearestCluster(unit->GetUnit()->GetPos());
+		int index = this->circuit->GetMetalManager()->FindNearestCluster(unit->GetUnit()->GetPos());
 		if (index >= 0) {
 			clusterInfo[index].factory = unit;
 		}
@@ -132,7 +124,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit, CBuilderManager* builderMa
 	unitDefId = circuit->GetUnitDefByName("armestor")->GetUnitDefId();
 	createdHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 		// check pylon's cluster
-		int index = this->circuit->GetGameAttribute()->GetMetalManager().FindNearestCluster(unit->GetUnit()->GetPos());
+		int index = this->circuit->GetMetalManager()->FindNearestCluster(unit->GetUnit()->GetPos());
 		if (index >= 0) {
 			clusterInfo[index].pylon = unit;
 		}
@@ -189,7 +181,7 @@ CBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 {
 	// TODO: Add general logic here
 	CBuilderTask* task;
-	task = UpdateExpandTasks();
+	task = UpdateMetalTasks();
 	if (task != nullptr) {
 		return task;
 	}
@@ -251,14 +243,14 @@ AIFloat3 CEconomyManager::FindBuildPos(CCircuitUnit* unit)
 	switch (task->GetType()) {
 		case CBuilderTask::TaskType::EXPAND: {
 			const AIFloat3& position = u->GetPos();
-			const CMetalManager::Metals& spots = circuit->GetGameAttribute()->GetMetalManager().GetSpots();
+			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
 			Map* map = circuit->GetMap();
-			CMetalManager::MetalPredicate predicate = [&spots, map, buildDef](CMetalManager::MetalNode const& v) {
+			CMetalData::MetalPredicate predicate = [&spots, map, buildDef](CMetalData::MetalNode const& v) {
 				return map->IsPossibleToBuildAt(buildDef, spots[v.second].position, UNIT_COMMAND_BUILD_NO_FACING);
 			};
-			int index = circuit->GetGameAttribute()->GetMetalManager().FindNearestSpot(position, predicate);
+			int index = circuit->GetMetalManager()->FindNearestSpot(position, predicate);
 			if (index >= 0) {
-				const CMetalManager::Metals& spots =  circuit->GetGameAttribute()->GetMetalManager().GetSpots();
+				const CMetalData::Metals& spots =  circuit->GetMetalManager()->GetSpots();
 				buildPos = spots[index].position;
 			}
 			break;
@@ -266,15 +258,16 @@ AIFloat3 CEconomyManager::FindBuildPos(CCircuitUnit* unit)
 		case CBuilderTask::TaskType::PYLON: {
 			const AIFloat3& position = task->GetPos();
 //			buildPos = circuit->GetMap()->FindClosestBuildSite(buildDef, position, pylonRange, 0, UNIT_COMMAND_BUILD_NO_FACING);
-			buildPos = circuit->FindBuildSite(buildDef, position, pylonRange, UNIT_COMMAND_BUILD_NO_FACING);
+			CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+			buildPos = terrain->FindBuildSite(buildDef, position, pylonRange, UNIT_COMMAND_BUILD_NO_FACING);
 			if (buildPos == -RgtVector) {
-				const CMetalManager::Metals& spots =  circuit->GetGameAttribute()->GetMetalManager().GetSpots();
-				CMetalManager::MetalPredicate predicate = [this](const CMetalManager::MetalNode& v) {
+				const CMetalData::Metals& spots =  circuit->GetMetalManager()->GetSpots();
+				CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
 					return clusterInfo[v.second].pylon == nullptr;
 				};
-				CMetalManager::MetalIndices indices = circuit->GetGameAttribute()->GetMetalManager().FindNearestClusters(position, 3, predicate);
+				CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestClusters(position, 3, predicate);
 				for (const int idx : indices) {
-					buildPos = circuit->FindBuildSite(buildDef, spots[idx].position, pylonRange, UNIT_COMMAND_BUILD_NO_FACING);
+					buildPos = terrain->FindBuildSite(buildDef, spots[idx].position, pylonRange, UNIT_COMMAND_BUILD_NO_FACING);
 					if (buildPos != -RgtVector) {
 						break;
 					}
@@ -288,36 +281,65 @@ AIFloat3 CEconomyManager::FindBuildPos(CCircuitUnit* unit)
 
 void CEconomyManager::Init()
 {
-	const std::vector<CMetalManager::MetalIndices>& clusters = circuit->GetGameAttribute()->GetMetalManager().GetClusters();
+	const std::vector<CMetalData::MetalIndices>& clusters = circuit->GetMetalManager()->GetClusters();
 	clusterInfo.resize(clusters.size());
 	for (int i = 0; i < clusters.size(); i++) {
 		clusterInfo[i] = {nullptr};
 	}
+
+	SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();
+	const int interval = ais->GetSize() * 4;
+	delete ais;
+	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateMetalTasks, this), interval, circuit->GetSkirmishAIId() + 0);
+	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateEnergyTasks, this), interval, circuit->GetSkirmishAIId() + 1);
+	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateBuilderTasks, this), interval, circuit->GetSkirmishAIId() + 2 + 100 * interval);
+	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateFactoryTasks, this), interval, circuit->GetSkirmishAIId() + 3);
 }
 
-CBuilderTask* CEconomyManager::UpdateExpandTasks()
+CBuilderTask* CEconomyManager::UpdateMetalTasks()
 {
 	CBuilderTask* task = nullptr;
 	if (!builderManager->CanEnqueueTask()) {
 		return task;
 	}
 
-	UnitDef* buildDef = circuit->GetUnitDefByName("cormex");
+	UnitDef* metalDef = circuit->GetUnitDefByName("cormex");
+	UnitDef* storeDef = circuit->GetUnitDefByName("armmstor");
 
 	// check uncolonized mexes
-	if (builderManager->GetTasks(CBuilderTask::TaskType::EXPAND).empty() && (buildDef->GetMaxThisUnit() > 0)) {
-		const AIFloat3& startPos = circuit->GetStartPos();
-		const CMetalManager::Metals& spots = circuit->GetGameAttribute()->GetMetalManager().GetSpots();
+	if (builderManager->GetTasks(CBuilderTask::TaskType::EXPAND).empty() && circuit->IsAvailable(metalDef)) {
+		const AIFloat3& startPos = circuit->GetSetupManager()->GetStartPos();
+		const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
 		Map* map = circuit->GetMap();
-		CMetalManager::MetalPredicate predicate = [&spots, map, buildDef](CMetalManager::MetalNode const& v) {
-			return map->IsPossibleToBuildAt(buildDef, spots[v.second].position, UNIT_COMMAND_BUILD_NO_FACING);
+		CMetalData::MetalPredicate predicate = [&spots, map, metalDef](CMetalData::MetalNode const& v) {
+			return map->IsPossibleToBuildAt(metalDef, spots[v.second].position, UNIT_COMMAND_BUILD_NO_FACING);
 		};
-		float cost = buildDef->GetCost(metalRes);
+		float cost = metalDef->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 4 + 1;
-		CMetalManager::MetalIndices indices = circuit->GetGameAttribute()->GetMetalManager().FindNearestSpots(startPos, count, predicate);
+		CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestSpots(startPos, count, predicate);
 		for (auto idx : indices) {
-			CBuilderTask* task = builderManager->EnqueueTask(CBuilderTask::Priority::LOW, buildDef, spots[idx].position, CBuilderTask::TaskType::EXPAND, cost);
+			CBuilderTask* task = builderManager->EnqueueTask(CBuilderTask::Priority::HIGH, metalDef, spots[idx].position, CBuilderTask::TaskType::EXPAND, cost);
 			task->SetBuildPos(spots[idx].position);
+		}
+		return task;
+	}
+
+	float income = eco->GetIncome(metalRes);
+	float storage = eco->GetStorage(metalRes);
+	if (builderManager->GetTasks(CBuilderTask::TaskType::STORE).empty() && (storage / income < 25) && circuit->IsAvailable(storeDef)) {
+		const AIFloat3& startPos = circuit->GetSetupManager()->GetStartPos();
+		int idx = circuit->GetMetalManager()->FindNearestSpot(startPos);
+		if (idx != -1) {
+			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
+			task = builderManager->EnqueueTask(CBuilderTask::Priority::HIGH, storeDef, spots[idx].position, CBuilderTask::TaskType::STORE);
+		} else {
+			CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+			int terWidth = terrain->GetTerrainWidth();
+			int terHeight = terrain->GetTerrainHeight();
+			float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
+			float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
+			AIFloat3 buildPos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
+			task = builderManager->EnqueueTask(CBuilderTask::Priority::HIGH, storeDef, buildPos, CBuilderTask::TaskType::STORE);
 		}
 	}
 
@@ -339,76 +361,75 @@ CBuilderTask* CEconomyManager::UpdateEnergyTasks()
 	// check energy / metal ratio
 	float energyIncome = eco->GetIncome(energyRes);
 	float energyUsage = eco->GetUsage(energyRes);
-	if ((energyUsage > energyIncome * 1.1) && (solarCount < 16) && builderManager->GetTasks(CBuilderTask::TaskType::SOLAR).empty() && (solarDef->GetMaxThisUnit() > 0)) {
-		const AIFloat3& startPos = circuit->GetStartPos();
+	if ((energyUsage > energyIncome * 1.1) && (solarCount < 16) && builderManager->GetTasks(CBuilderTask::TaskType::SOLAR).empty() && circuit->IsAvailable(solarDef)) {
+		const AIFloat3& startPos = circuit->GetSetupManager()->GetStartPos();
 		float cost = solarDef->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 4 + 2;
-		CMetalManager::MetalIndices indices = circuit->GetGameAttribute()->GetMetalManager().FindNearestSpots(startPos, count);
+		CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestSpots(startPos, count);
 		if (!indices.empty()) {
-			const CMetalManager::Metals& spots = circuit->GetGameAttribute()->GetMetalManager().GetSpots();
+			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
 			for (auto idx : indices) {
 				task = builderManager->EnqueueTask(CBuilderTask::Priority::HIGH, solarDef, spots[idx].position, CBuilderTask::TaskType::SOLAR, cost);
 			}
 		} else {
-			Map* map = circuit->GetMap();
-			int terWidth = circuit->GetTerrainWidth();
-			int terHeight = circuit->GetTerrainHeight();
-			const int numSolars = 2;
-			for (int i = 0; i < numSolars; i++) {
-				float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
-				float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
-				AIFloat3 buildPos = AIFloat3(x, map->GetElevationAt(x, z), z);
-				task = builderManager->EnqueueTask(CBuilderTask::Priority::HIGH, solarDef, buildPos, CBuilderTask::TaskType::SOLAR, cost);
-			}
+			CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+			int terWidth = terrain->GetTerrainWidth();
+			int terHeight = terrain->GetTerrainHeight();
+			float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
+			float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
+			AIFloat3 buildPos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
+			task = builderManager->EnqueueTask(CBuilderTask::Priority::HIGH, solarDef, buildPos, CBuilderTask::TaskType::SOLAR, cost);
 		}
 	}
-	else if ((energyUsage > energyIncome * 1.1) && (solarCount >= 16) && (fusionCount < 5) && builderManager->GetTasks(CBuilderTask::TaskType::FUSION).empty() && (fusDef->GetMaxThisUnit() > 0)) {
-		const AIFloat3& startPos = circuit->GetStartPos();
-		int index = circuit->GetGameAttribute()->GetMetalManager().FindNearestSpot(startPos);
+	else if ((energyUsage > energyIncome * 1.1) && (solarCount >= 16) && (fusionCount < 5) && builderManager->GetTasks(CBuilderTask::TaskType::FUSION).empty() && circuit->IsAvailable(fusDef)) {
+		const AIFloat3& startPos = circuit->GetSetupManager()->GetStartPos();
+		int index = circuit->GetMetalManager()->FindNearestSpot(startPos);
 		if (index >= 0) {
-			const CMetalManager::Metals& spots = circuit->GetGameAttribute()->GetMetalManager().GetSpots();
+			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
 			task = builderManager->EnqueueTask(CBuilderTask::Priority::LOW, fusDef, spots[index].position, CBuilderTask::TaskType::FUSION);
 		} else {
-			int terWidth = circuit->GetTerrainWidth();
-			int terHeight = circuit->GetTerrainHeight();
+			CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+			int terWidth = terrain->GetTerrainWidth();
+			int terHeight = terrain->GetTerrainHeight();
 			float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
 			float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
 			AIFloat3 buildPos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 			task = builderManager->EnqueueTask(CBuilderTask::Priority::LOW, fusDef, buildPos, CBuilderTask::TaskType::FUSION);
 		}
-		if (pylonDef->GetMaxThisUnit() > 0) {
-			CMetalManager::MetalPredicate predicate = [this](const CMetalManager::MetalNode& v) {
+		if (circuit->IsAvailable(pylonDef)) {
+			CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
 				return clusterInfo[v.second].pylon == nullptr;
 			};
-			index = circuit->GetGameAttribute()->GetMetalManager().FindNearestCluster(startPos, predicate);
+			index = circuit->GetMetalManager()->FindNearestCluster(startPos, predicate);
 			if (index >= 0) {
-				const std::vector<AIFloat3>& centroids = circuit->GetGameAttribute()->GetMetalManager().GetCentroids();
+				const std::vector<AIFloat3>& centroids = circuit->GetMetalManager()->GetCentroids();
 				builderManager->EnqueueTask(CBuilderTask::Priority::LOW, pylonDef, centroids[index], CBuilderTask::TaskType::PYLON);
 			}
 		}
 	}
-	else if ((fusionCount >= 5) && builderManager->GetTasks(CBuilderTask::TaskType::SINGU).empty() && (singuDef->GetMaxThisUnit() > 0)) {
-		const AIFloat3& startPos = circuit->GetStartPos();
-		CMetalManager::MetalIndices indices = circuit->GetGameAttribute()->GetMetalManager().FindNearestSpots(startPos, 3);
+	else if ((fusionCount >= 5) && builderManager->GetTasks(CBuilderTask::TaskType::SINGU).empty() && circuit->IsAvailable(singuDef)) {
+		const AIFloat3& startPos = circuit->GetSetupManager()->GetStartPos();
+		CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestSpots(startPos, 3);
 		if (!indices.empty()) {
-			const CMetalManager::Metals& spots = circuit->GetGameAttribute()->GetMetalManager().GetSpots();
+			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
 			int index = indices[rand() % indices.size()];
 			task = builderManager->EnqueueTask(CBuilderTask::Priority::LOW, singuDef, spots[index].position, CBuilderTask::TaskType::SINGU);
 		} else {
-			int terWidth = circuit->GetTerrainWidth();
-			int terHeight = circuit->GetTerrainHeight();
+			CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+			int terWidth = terrain->GetTerrainWidth();
+			int terHeight = terrain->GetTerrainHeight();
 			float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
 			float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
 			AIFloat3 buildPos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 			task = builderManager->EnqueueTask(CBuilderTask::Priority::LOW, singuDef, buildPos, CBuilderTask::TaskType::SINGU);
 		}
-		if (pylonDef->GetMaxThisUnit() > 0) {
-			CMetalManager::MetalPredicate predicate = [this](const CMetalManager::MetalNode& v) {
+		if (circuit->IsAvailable(pylonDef)) {
+			CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
 				return clusterInfo[v.second].pylon == nullptr;
 			};
-			int index = circuit->GetGameAttribute()->GetMetalManager().FindNearestCluster(startPos, predicate);
+			int index = circuit->GetMetalManager()->FindNearestCluster(startPos, predicate);
 			if (index >= 0) {
-				const std::vector<AIFloat3>& centroids = circuit->GetGameAttribute()->GetMetalManager().GetCentroids();
+				const std::vector<AIFloat3>& centroids = circuit->GetMetalManager()->GetCentroids();
 				builderManager->EnqueueTask(CBuilderTask::Priority::LOW, pylonDef, centroids[index], CBuilderTask::TaskType::PYLON);
 			}
 		}
@@ -432,7 +453,7 @@ CBuilderTask* CEconomyManager::UpdateBuilderTasks()
 	if ((factoryManager->GetFactoryPower() < metalIncome) &&
 			builderManager->GetTasks(CBuilderTask::TaskType::FACTORY).empty() && builderManager->GetTasks(CBuilderTask::TaskType::NANO).empty()) {
 		CCircuitUnit* factory = factoryManager->NeedUpgrade();
-		if ((factory != nullptr) && (assistDef->GetMaxThisUnit() > 0)) {
+		if ((factory != nullptr) && circuit->IsAvailable(assistDef)) {
 			Unit* u = factory->GetUnit();
 			UnitDef* def = factory->GetDef();
 			AIFloat3 buildPos = u->GetPos();
@@ -452,19 +473,20 @@ CBuilderTask* CEconomyManager::UpdateBuilderTasks()
 					break;
 			}
 			task = builderManager->EnqueueTask(CBuilderTask::Priority::LOW, assistDef, buildPos, CBuilderTask::TaskType::NANO);
-		} else if (facDef->GetMaxThisUnit() > 0) {
-			const AIFloat3& startPos = circuit->GetStartPos();
-			CMetalManager::MetalPredicate predicate = [this](const CMetalManager::MetalNode& v) {
+		} else if (circuit->IsAvailable(facDef)) {
+			const AIFloat3& startPos = circuit->GetSetupManager()->GetStartPos();
+			CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
 				return clusterInfo[v.second].factory == nullptr;
 			};
-			int index = circuit->GetGameAttribute()->GetMetalManager().FindNearestCluster(startPos, predicate);
+			int index = circuit->GetMetalManager()->FindNearestCluster(startPos, predicate);
 			AIFloat3 buildPos;
 			if (index >= 0) {
-				const std::vector<AIFloat3>& centroids = circuit->GetGameAttribute()->GetMetalManager().GetCentroids();
+				const std::vector<AIFloat3>& centroids = circuit->GetMetalManager()->GetCentroids();
 				buildPos = centroids[index];
 			} else {
-				int terWidth = circuit->GetTerrainWidth();
-				int terHeight = circuit->GetTerrainHeight();
+				CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+				int terWidth = terrain->GetTerrainWidth();
+				int terHeight = terrain->GetTerrainHeight();
 				float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
 				float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
 				buildPos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
@@ -487,7 +509,7 @@ CFactoryTask* CEconomyManager::UpdateFactoryTasks()
 
 	float metalIncome = eco->GetIncome(metalRes);
 //	printf("metalIncome: %.2f, totalBuildpower: %.2f, factoryPower: %.2f\n", metalIncome, totalBuildpower, factoryPower);
-	if ((builderManager->GetBuilderPower() < metalIncome * 1.5) && (buildDef->GetMaxThisUnit() > 0)) {
+	if ((builderManager->GetBuilderPower() < metalIncome * 1.5) && circuit->IsAvailable(buildDef)) {
 		for (auto t : factoryManager->GetTasks()) {
 			if (t->GetType() == CFactoryTask::TaskType::BUILDPOWER) {
 				return task;
@@ -495,7 +517,8 @@ CFactoryTask* CEconomyManager::UpdateFactoryTasks()
 		}
 		CCircuitUnit* factory = factoryManager->GetRandomFactory();
 		const AIFloat3& buildPos = factory->GetUnit()->GetPos();
-		float radius = std::max(circuit->GetTerrainWidth(), circuit->GetTerrainHeight()) / 4;
+		CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+		float radius = std::max(terrain->GetTerrainWidth(), terrain->GetTerrainHeight()) / 4;
 		task = factoryManager->EnqueueTask(CFactoryTask::Priority::NORMAL, buildDef, buildPos, CFactoryTask::TaskType::BUILDPOWER, 2, radius);
 	}
 

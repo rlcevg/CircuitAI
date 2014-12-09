@@ -9,6 +9,8 @@
 #include "CircuitAI.h"
 #include "Scheduler.h"
 #include "CircuitUnit.h"
+#include "MetalManager.h"
+#include "TerrainAnalyzer.h"
 #include "utils.h"
 
 #include "Log.h"
@@ -18,7 +20,6 @@
 // debug
 #include "Pathing.h"
 #include "Drawer.h"
-#include "MetalManager.h"
 #include "Game.h"
 
 #include "AISCommands.h"
@@ -37,8 +38,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 
 	auto atackerFinishedHandler = [this](CCircuitUnit* unit) {
 		Unit* u = unit->GetUnit();
-		int terWidth = this->circuit->GetTerrainWidth();
-		int terHeight = this->circuit->GetTerrainHeight();
+		CTerrainAnalyzer* terrain = this->circuit->GetTerrainAnalyzer();
+		int terWidth = terrain->GetTerrainWidth();
+		int terHeight = terrain->GetTerrainHeight();
 		float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
 		float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
 		AIFloat3 fromPos(x, this->circuit->GetMap()->GetElevationAt(x, z), z);
@@ -46,8 +48,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	};
 	auto atackerIdleHandler = [this](CCircuitUnit* unit) {
 		Unit* u = unit->GetUnit();
-		int terWidth = this->circuit->GetTerrainWidth();
-		int terHeight = this->circuit->GetTerrainHeight();
+		CTerrainAnalyzer* terrain = this->circuit->GetTerrainAnalyzer();
+		int terWidth = terrain->GetTerrainWidth();
+		int terHeight = terrain->GetTerrainHeight();
 		float x = rand() % (int)(terWidth + 1);
 		float z = rand() % (int)(terHeight + 1);
 		AIFloat3 toPos(x, this->circuit->GetMap()->GetElevationAt(x, z), z);
@@ -171,7 +174,7 @@ int CMilitaryManager::EnemyEnterLOS(CCircuitUnit* unit)
 //			Unit* u = unit->GetUnit();
 //			Pathing* pathing = circuit->GetPathing();
 //			Map* map = circuit->GetMap();
-//			const CMetalManager::Metals& spots = circuit->GetGameAttribute()->GetMetalManager().GetSpots();
+//			const CMetalManager::Metals& spots = circuit->GetMetalManager().GetSpots();
 //			const AIFloat3& start = u->GetPos();
 //			for (auto& s : spots) {
 //				AIFloat3 end = s.position;
