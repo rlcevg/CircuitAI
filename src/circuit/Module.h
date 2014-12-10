@@ -8,6 +8,9 @@
 #ifndef MODULE_H_
 #define MODULE_H_
 
+#include <unordered_map>
+#include <functional>
+
 namespace circuit {
 
 class CCircuitAI;
@@ -28,6 +31,9 @@ public:
 
 protected:
 	IModule(CCircuitAI* circuit);
+
+	using Handlers1 = std::unordered_map<int, std::function<void (CCircuitUnit* unit)>>;
+	using Handlers2 = std::unordered_map<int, std::function<void (CCircuitUnit* unit, CCircuitUnit* other)>>;
 
 	CCircuitAI* circuit;
 };

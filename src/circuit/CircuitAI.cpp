@@ -9,12 +9,14 @@
 #include "GameAttribute.h"
 #include "SetupManager.h"
 #include "MetalManager.h"
-#include "TerrainAnalyzer.h"
 #include "Scheduler.h"
+#include "BuilderManager.h"
+#include "FactoryManager.h"
 #include "EconomyManager.h"
 #include "MilitaryManager.h"
 #include "CircuitUnit.h"
 #include "CircuitDef.h"
+#include "TerrainManager.h"
 #include "utils.h"
 
 #include "ExternalAI/Interface/AISEvents.h"
@@ -317,9 +319,9 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 
 	InitUnitDefs(callback->GetUnitDefs());
 
-	terrainAnalyzer = std::unique_ptr<CTerrainAnalyzer>(new CTerrainAnalyzer(this));
-	setupManager = std::unique_ptr<CSetupManager>(new CSetupManager(this, &gameAttribute->GetSetupData()));
-	metalManager = std::unique_ptr<CMetalManager>(new CMetalManager(this, &gameAttribute->GetMetalData()));
+	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
+	metalManager = std::make_shared<CMetalManager>(this, &gameAttribute->GetMetalData());
+	terrainManager = std::make_shared<CTerrainManager>(this);
 
 	bool canChooseStartPos = (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos());
 	if (metalManager->HasMetalSpots()) {
@@ -339,12 +341,16 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 		setupManager->PickStartPos(this, CSetupManager::StartPosType::MIDDLE);
 	}
 
-	CBuilderManager* buildMgr = new CBuilderManager(this);
-	CFactoryManager* facMgr = new CFactoryManager(this);
-	modules.push_back(new CEconomyManager(this, buildMgr, facMgr));
-	modules.push_back(new CMilitaryManager(this));
-	modules.push_back(buildMgr);
-	modules.push_back(facMgr);
+	builderManager = std::make_shared<CBuilderManager>(this);
+	factoryManager = std::make_shared<CFactoryManager>(this);
+	economyManager = std::make_shared<CEconomyManager>(this);
+	militaryManager = std::make_shared<CMilitaryManager>(this);
+
+	modules.push_back(terrainManager);
+	modules.push_back(economyManager);
+	modules.push_back(militaryManager);
+	modules.push_back(builderManager);
+	modules.push_back(factoryManager);
 
 //	Cheats* cheats = callback->GetCheats();
 //	cheats->SetEnabled(true);
@@ -361,8 +367,13 @@ int CCircuitAI::Release(int reason)
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 //	gameAttribute->SetGameEnd(true);
 
-	utils::free_clear(modules);
-	terrainAnalyzer = nullptr;
+	modules.clear();
+	militaryManager = nullptr;
+	economyManager = nullptr;
+	factoryManager = nullptr;
+	builderManager = nullptr;
+	terrainManager = nullptr;
+	metalManager = nullptr;
 	setupManager = nullptr;
 	scheduler = nullptr;
 	for (auto& kv : aliveUnits) {
@@ -732,9 +743,29 @@ CMetalManager* CCircuitAI::GetMetalManager()
 	return metalManager.get();
 }
 
-CTerrainAnalyzer* CCircuitAI::GetTerrainAnalyzer()
+CTerrainManager* CCircuitAI::GetTerrainManager()
 {
-	return terrainAnalyzer.get();
+	return terrainManager.get();
+}
+
+CBuilderManager* CCircuitAI::GetBuilderManager()
+{
+	return builderManager.get();
+}
+
+CFactoryManager* CCircuitAI::GetFactoryManager()
+{
+	return factoryManager.get();
+}
+
+CEconomyManager* CCircuitAI::GetEconomyManager()
+{
+	return economyManager.get();
+}
+
+CMilitaryManager* CCircuitAI::GetMilitaryManager()
+{
+	return militaryManager.get();
 }
 
 //// debug

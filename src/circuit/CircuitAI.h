@@ -48,7 +48,11 @@ namespace circuit {
 class CGameAttribute;
 class CSetupManager;
 class CMetalManager;
-class CTerrainAnalyzer;
+class CTerrainManager;
+class CBuilderManager;
+class CFactoryManager;
+class CEconomyManager;
+class CMilitaryManager;
 class CScheduler;
 class CCircuitUnit;
 class CCircuitDef;
@@ -131,7 +135,11 @@ public:
 	springai::SkirmishAI*   GetSkirmishAI();
 	CSetupManager* GetSetupManager();
 	CMetalManager* GetMetalManager();
-	CTerrainAnalyzer* GetTerrainAnalyzer();
+	CTerrainManager* GetTerrainManager();
+	CBuilderManager* GetBuilderManager();
+	CFactoryManager* GetFactoryManager();
+	CEconomyManager* GetEconomyManager();
+	CMilitaryManager* GetMilitaryManager();
 
 private:
 	// debug
@@ -155,10 +163,14 @@ private:
 	void CreateGameAttribute();
 	void DestroyGameAttribute();
 	std::shared_ptr<CScheduler> scheduler;
-	std::unique_ptr<CSetupManager> setupManager;
-	std::unique_ptr<CMetalManager> metalManager;
-	std::unique_ptr<CTerrainAnalyzer> terrainAnalyzer;
-	std::list<IModule*> modules;
+	std::shared_ptr<CSetupManager> setupManager;
+	std::shared_ptr<CMetalManager> metalManager;
+	std::shared_ptr<CTerrainManager> terrainManager;
+	std::shared_ptr<CBuilderManager> builderManager;
+	std::shared_ptr<CFactoryManager> factoryManager;
+	std::shared_ptr<CEconomyManager> economyManager;
+	std::shared_ptr<CMilitaryManager> militaryManager;
+	std::list<std::shared_ptr<IModule>> modules;
 
 	// TODO: Make global storage?
 	std::map<int, CCircuitUnit*> aliveUnits;  // owner

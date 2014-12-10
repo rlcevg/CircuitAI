@@ -11,6 +11,7 @@
 #include "CircuitUnit.h"
 #include "FactoryTask.h"
 #include "EconomyManager.h"
+#include "TerrainManager.h"
 #include "utils.h"
 
 #include "AIFloat3.h"
@@ -29,8 +30,7 @@ using namespace springai;
 CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		IModule(circuit),
 		factoryPower(.0f),
-		assistDef(nullptr),
-		economyManager(nullptr)
+		assistDef(nullptr)
 {
 	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::Watchdog, this),
 										  FRAMES_PER_SEC * 60,
@@ -65,7 +65,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 
 		// try to avoid factory stuck
 		float size = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 0.75;
-		CTerrainAnalyzer* terrain = this->circuit->GetTerrainAnalyzer();
+		CTerrainManager* terrain = this->circuit->GetTerrainManager();
 		pos.x += (pos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
 		pos.z += (pos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
 		u->MoveTo(pos);
@@ -98,7 +98,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		const AIFloat3& fromPos = u->GetPos();
 		AIFloat3 toPos = fromPos;
 		float size = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE;
-		CTerrainAnalyzer* terrain = this->circuit->GetTerrainAnalyzer();
+		CTerrainManager* terrain = this->circuit->GetTerrainManager();
 		toPos.x += (toPos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
 		toPos.z += (toPos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
 		u->PatrolTo(toPos);
@@ -149,11 +149,6 @@ CFactoryManager::~CFactoryManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	utils::free_clear(factoryTasks);
-}
-
-void CFactoryManager::SetEconomyManager(CEconomyManager* ecoMgr)
-{
-	economyManager = ecoMgr;
 }
 
 int CFactoryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -325,7 +320,7 @@ void CFactoryManager::AssignTask(CCircuitUnit* unit)
 	}
 
 	if (task == nullptr) {
-		task = economyManager->CreateFactoryTask(unit);
+		task = circuit->GetEconomyManager()->CreateFactoryTask(unit);
 
 //		iter = factoryTasks.begin();
 	}

@@ -9,7 +9,6 @@
 #include "CircuitAI.h"
 #include "Scheduler.h"
 #include "SetupData.h"
-#include "TerrainAnalyzer.h"
 #include "MetalManager.h"
 #include "utils.h"
 
@@ -33,8 +32,10 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData) :
 		startPos(-RgtVector)
 {
 	if (!setupData->IsInitialized()) {
-		CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
-		ParseSetupScript(circuit->GetGame()->GetSetupScript(), terrain->GetTerrainWidth(), terrain->GetTerrainHeight());
+		Map* map = circuit->GetMap();
+		int terrainWidth = map->GetWidth() * SQUARE_SIZE;
+		int terrainHeight = map->GetHeight() * SQUARE_SIZE;
+		ParseSetupScript(circuit->GetGame()->GetSetupScript(), terrainWidth, terrainHeight);
 	}
 	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>(&CSetupManager::FindCommander, this));
 }

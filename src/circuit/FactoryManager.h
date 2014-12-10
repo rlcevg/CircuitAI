@@ -13,8 +13,6 @@
 
 #include <map>
 #include <list>
-#include <unordered_map>
-#include <functional>
 
 namespace springai {
 	class UnitDef;
@@ -22,13 +20,10 @@ namespace springai {
 
 namespace circuit {
 
-class CEconomyManager;
-
 class CFactoryManager: public virtual IModule {
 public:
 	CFactoryManager(CCircuitAI* circuit);
 	virtual ~CFactoryManager();
-	void SetEconomyManager(CEconomyManager* ecoMgr);
 
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
 	virtual int UnitFinished(CCircuitUnit* unit);
@@ -53,8 +48,6 @@ private:
 	void AssignTask(CCircuitUnit* unit);
 	void ExecuteTask(CCircuitUnit* unit);
 
-	using Handlers1 = std::unordered_map<int, std::function<void (CCircuitUnit* unit)>>;
-	using Handlers2 = std::unordered_map<int, std::function<void (CCircuitUnit* unit, CCircuitUnit* other)>>;
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
 	Handlers2 destroyedHandler;
@@ -66,8 +59,6 @@ private:
 
 	std::map<CCircuitUnit*, std::list<CCircuitUnit*>> factories;
 	springai::UnitDef* assistDef;
-
-	CEconomyManager* economyManager;
 };
 
 } // namespace circuit

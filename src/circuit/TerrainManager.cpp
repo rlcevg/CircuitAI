@@ -1,30 +1,96 @@
 /*
- * TerrainAnalyzer.cpp
+ * TerrainManager.cpp
  *
  *  Created on: Dec 6, 2014
  *      Author: rlcevg
  */
 
-#include "TerrainAnalyzer.h"
 #include "CircuitAI.h"
+#include "CircuitUnit.h"
 #include "MetalManager.h"
+#include "TerrainManager.h"
 #include "utils.h"
 
 #include "Map.h"
+#include "Unit.h"
 #include "UnitDef.h"
 
 #include <algorithm>
+
+#include "Drawer.h"
 
 namespace circuit {
 
 using namespace springai;
 
-CTerrainAnalyzer::CTerrainAnalyzer(CCircuitAI* circuit) :
-		circuit(circuit)
+#define MAX_BLOCK_VAL	32000
+
+CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
+		IModule(circuit)
 {
 	Map* map = circuit->GetMap();
-	terrainWidth = map->GetWidth() * SQUARE_SIZE;
-	terrainHeight = map->GetHeight() * SQUARE_SIZE;
+	int mapWidth = map->GetWidth();
+	int mapHeight = map->GetHeight();
+	terrainWidth = mapWidth * SQUARE_SIZE;
+	terrainHeight = mapHeight * SQUARE_SIZE;
+
+	cellRows = mapWidth / 2;  // build-step = 2 little green squares
+	int cellsCount = cellRows * (mapHeight / 2);
+	blockingMap.resize(cellsCount, 0);
+
+	const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
+	UnitDef* def = circuit->GetUnitDefByName("cormex");
+	int size = std::max(def->GetXSize(), def->GetZSize());
+	int& xsize = size, &zsize = size;
+	for (auto& spot : spots) {
+		AIFloat3 pos = Pos2BuildPos(xsize, zsize, spot.position);
+		const int x1 = int(pos.x / (SQUARE_SIZE << 1)) - (xsize >> 2), x2 = x1 + (xsize >> 1);
+		const int z1 = int(pos.z / (SQUARE_SIZE << 1)) - (zsize >> 2), z2 = z1 + (zsize >> 1);
+		for (int z = z1; z < z2; z++) {
+			for (int x = x1; x < x2; x++) {
+				blockingMap[z * cellRows + x] = MAX_BLOCK_VAL;
+			}
+		}
+	}
+
+	/*
+	 * building handlers
+	 */
+	auto buildingCreatedHandler = [this](CCircuitUnit* unit) {
+		AddBlocker(unit);
+	};
+	auto buildingDestroyedHandler = [this](CCircuitUnit* unit) {
+		RemoveBlocker(unit);
+	};
+
+	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
+	for (auto& kv : defs) {
+		UnitDef* def = kv.second;
+		int unitDefId = def->GetUnitDefId();
+		createdHandler[unitDefId] = buildingCreatedHandler;
+		destroyedHandler[unitDefId] = buildingDestroyedHandler;
+		if (def->GetSpeed() > 0) {
+			finishedHandler[unitDefId] = buildingDestroyedHandler;
+		}
+	}
+
+	def = circuit->GetUnitDefByName("armsolar");
+	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+	auto search = customParams.find("pylonrange");
+	if (search != customParams.end()) {
+		float radius = utils::string_to_float(search->second);
+		BlockInfo info;
+		info.xsize = def->GetXSize();
+		info.zsize = def->GetZSize();
+		info.offset = ZeroVector;
+		blockInfo[def] = info;
+	}
+	def = circuit->GetUnitDefByName("factorycloak");
+	BlockInfo info;
+	info.xsize = def->GetXSize() + 12;
+	info.zsize = def->GetZSize() + 5;
+	info.offset = AIFloat3(0, 0, SQUARE_SIZE * 2 * 4);
+	blockInfo[def] = info;
 
 //	// debug
 //	if (circuit->GetSkirmishAIId() != 1) {
@@ -72,8 +138,8 @@ CTerrainAnalyzer::CTerrainAnalyzer(CCircuitAI* circuit) :
 //		float maxSlope = moveDef->GetMaxSlope();
 //		float depth = moveDef->GetDepth();
 //		float slopeMod = moveDef->GetSlopeMod();
-//		std::vector<float> heightMap = circuit->GetMap()->GetHeightMap();
-//		std::vector<float> slopeMap = circuit->GetMap()->GetSlopeMap();
+//		const std::vector<float>& heightMap = circuit->GetMap()->GetHeightMap();
+//		const std::vector<float>& slopeMap = circuit->GetMap()->GetSlopeMap();
 //
 //		std::vector<float> traversMap(widthX * heightZ);
 //
@@ -251,34 +317,74 @@ CTerrainAnalyzer::CTerrainAnalyzer(CCircuitAI* circuit) :
 //	}), FRAMES_PER_SEC);
 }
 
-CTerrainAnalyzer::~CTerrainAnalyzer()
+CTerrainManager::~CTerrainManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-int CTerrainAnalyzer::GetTerrainWidth()
+int CTerrainManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
+{
+	auto search = createdHandler.find(unit->GetDef()->GetUnitDefId());
+	if (search != createdHandler.end()) {
+		search->second(unit);
+	}
+
+	return 0; //signaling: OK
+}
+
+int CTerrainManager::UnitFinished(CCircuitUnit* unit)
+{
+	auto search = finishedHandler.find(unit->GetDef()->GetUnitDefId());
+	if (search != finishedHandler.end()) {
+		search->second(unit);
+	}
+
+	return 0; //signaling: OK
+}
+
+int CTerrainManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+{
+	auto search = destroyedHandler.find(unit->GetDef()->GetUnitDefId());
+	if (search != destroyedHandler.end()) {
+		search->second(unit);
+	}
+
+	return 0; //signaling: OK
+}
+
+int CTerrainManager::GetTerrainWidth()
 {
 	return terrainWidth;
 }
 
-int CTerrainAnalyzer::GetTerrainHeight()
+int CTerrainManager::GetTerrainHeight()
 {
 	return terrainHeight;
 }
 
-/*
- * FindBuildSiteSpace
- * @see rts/Game/GameHelper.cpp CGameHelper::ClosestBuildSite
- */
-struct SearchOffset {
-	int dx,dy;
-	int qdist; // dx*dx+dy*dy
-};
-static bool SearchOffsetComparator (const SearchOffset& a, const SearchOffset& b)
+AIFloat3 CTerrainManager::Pos2BuildPos(int xsize, int zsize, const AIFloat3& pos)
 {
-	return a.qdist < b.qdist;
+	AIFloat3 buildPos;
+
+	static const int HALFMAP_SQ = SQUARE_SIZE * 2;
+
+	if (xsize & 2) {  // swaped Xsize, Zsize according to facing
+		buildPos.x = floor((pos.x              ) / (HALFMAP_SQ)) * HALFMAP_SQ + SQUARE_SIZE;
+	} else {
+		buildPos.x = floor((pos.x + SQUARE_SIZE) / (HALFMAP_SQ)) * HALFMAP_SQ;
+	}
+
+	if (zsize & 2) {  // swaped Xsize, Zsize according to facing
+		buildPos.z = floor((pos.z              ) / (HALFMAP_SQ)) * HALFMAP_SQ + SQUARE_SIZE;
+	} else {
+		buildPos.z = floor((pos.z + SQUARE_SIZE) / (HALFMAP_SQ)) * HALFMAP_SQ;
+	}
+
+//	pos.y = circuit->GetMap()->GetElevationAt(pos.x, pos.z);
+	return pos;
 }
-static const std::vector<SearchOffset>& GetSearchOffsetTable (int radius)
+
+const std::vector<CTerrainManager::SearchOffset>& CTerrainManager::GetSearchOffsetTable(int radius)
 {
 	static std::vector <SearchOffset> searchOffsets;
 	unsigned int size = radius*radius*4;
@@ -295,184 +401,155 @@ static const std::vector<SearchOffset>& GetSearchOffsetTable (int radius)
 				i.qdist = i.dx*i.dx + i.dy*i.dy;
 			}
 
-		std::sort(searchOffsets.begin(), searchOffsets.end(), SearchOffsetComparator);
+		auto searchOffsetComparator = [](const SearchOffset& a, const SearchOffset& b) {
+			return a.qdist < b.qdist;
+		};
+		std::sort(searchOffsets.begin(), searchOffsets.end(), searchOffsetComparator);
 	}
 
 	return searchOffsets;
 }
-/*
- * const minDist = 4, using hax
- */
-AIFloat3 CTerrainAnalyzer::FindBuildSiteSpace(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)
+
+AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)
 {
 	int xsize, zsize;
-	switch (facing) {
-		case UNIT_FACING_EAST:
-		case UNIT_FACING_WEST: {
-			xsize = unitDef->GetZSize() * SQUARE_SIZE;
-			zsize = unitDef->GetXSize() * SQUARE_SIZE;
-			break;
+	AIFloat3 offset(ZeroVector);
+	auto search = blockInfo.find(unitDef);
+	if (search != blockInfo.end()) {
+		BlockInfo& info = search->second;
+		switch (facing) {
+			default:
+			case UNIT_FACING_SOUTH:
+				xsize = info.xsize;
+				zsize = info.zsize;
+				offset.x = info.offset.x;
+				offset.z = info.offset.z;
+				break;
+			case UNIT_FACING_EAST:
+				xsize = info.zsize;
+				zsize = info.xsize;
+				offset.x = info.offset.z;
+				offset.z = info.offset.x;
+				break;
+			case UNIT_FACING_NORTH:
+				xsize = info.xsize;
+				zsize = info.zsize;
+				offset.x = info.offset.x;
+				offset.z = -info.offset.z;
+				break;
+			case UNIT_FACING_WEST:
+				xsize = info.zsize;
+				zsize = info.xsize;
+				offset.x = -info.offset.z;
+				offset.z = info.offset.x;
+				break;
 		}
-		case UNIT_FACING_SOUTH:
-		case UNIT_FACING_NORTH:
-		default: {
-			xsize = unitDef->GetXSize() * SQUARE_SIZE;
-			zsize = unitDef->GetZSize() * SQUARE_SIZE;
-			break;
+	} else {
+		xsize = ((facing & 1) == UNIT_FACING_SOUTH) ? unitDef->GetXSize() : unitDef->GetZSize();
+		zsize = ((facing & 1) == UNIT_FACING_EAST) ? unitDef->GetXSize() : unitDef->GetZSize();
+	}
+
+	auto isOpenSite = [this](int x1, int x2, int z1, int z2) {
+		for (int z = z1; z < z2; z++) {
+			for (int x = x1; x < x2; x++) {
+				if (blockingMap[z * cellRows + x] > 0) {
+					return false;
+				}
+			}
 		}
-	}
-	// HAX:  Use building as spacer because we don't have access to groundBlockingObjectMap.
-	// TODO: Or maybe we can create own BlockingObjectMap as there is access to friendly units, features, map slopes.
-	// TODO: Consider queued buildings
-//	UnitDef* spacer4 = gameAttribute->GetUnitDefByName("striderhub");  // striderhub's size = 8 but can't recognize smooth hills
-	UnitDef* spacer4 = circuit->GetUnitDefByName("armmstor");  // armmstor size = 6, thus we add diff (2) to pos when testing
-	// spacer4->GetXSize() and spacer4->GetZSize() should be equal 6
-	int size4 = spacer4->GetXSize();
-//	assert(spacer4->GetXSize() == spacer4->GetZSize() && size4 == 6);
-	int diff = (8 - size4) * SQUARE_SIZE;
-	size4 *= SQUARE_SIZE;
-	int xnum = xsize / size4 + 2;
-	if (xnum % size4 == 0) {
-		xnum--;  // check last cell manually for alignment purpose
-	}
-	int znum = zsize / size4 + 2;
-	if (znum % size4 == 0) {
-		znum--;  // check last cell manually for alignment purpose
-	}
-	UnitDef* mex = circuit->GetUnitDefByName("cormex");
-	int xmsize = mex->GetXSize() * SQUARE_SIZE;
-	int zmsize = mex->GetZSize() * SQUARE_SIZE;
-	AIFloat3 spacerPos1(0, 0, 0), spacerPos2(0, 0, 0), probePos(0, 0, 0);
+		return true;
+	};
 
 	const int endr = (int)(searchRadius / (SQUARE_SIZE * 2));
 	const std::vector<SearchOffset>& ofs = GetSearchOffsetTable(endr);
 	Map* map = circuit->GetMap();
-	const float noffx = (xsize + size4) / 2;  // normal offset x
-	const float noffz = (zsize + size4) / 2;  // normal offset z
-	const float hoffx = noffx + diff;  // horizontal offset x
-	const float voffz = noffz + diff;  // vertical offset z
-	const float fsize4 = size4;
-	const float moffx = (xsize + xmsize) / 2 + size4 + diff;  // mex offset x
-	const float moffz = (zsize + xmsize) / 2 + size4 + diff;  // mex offset z
-	CMetalManager* metalManager = circuit->GetMetalManager();
+	AIFloat3 buildPos = Pos2BuildPos(xsize, zsize, pos);
+	AIFloat3 probePos(ZeroVector);
 	for (int so = 0; so < endr * endr * 4; so++) {
-		const float x = pos.x + ofs[so].dx * SQUARE_SIZE * 2;
-		const float z = pos.z + ofs[so].dy * SQUARE_SIZE * 2;
-		probePos.x = x;
-		probePos.z = z;
+		probePos.x = buildPos.x + ofs[so].dx * SQUARE_SIZE * 2;
+		probePos.z = buildPos.z + ofs[so].dy * SQUARE_SIZE * 2;
 
-		spacerPos1.x = probePos.x - moffx;
-		spacerPos1.z = probePos.z - moffz;
-		spacerPos2.x = probePos.x + moffx;
-		spacerPos2.z = probePos.z + moffz;
-		if (!metalManager->FindWithinRangeSpots(spacerPos1, spacerPos2).empty()) {
+		AIFloat3 blockPos = probePos + offset;
+		const int x1 = int(blockPos.x / (SQUARE_SIZE * 2)) - (xsize / 4), x2 = x1 + (xsize / 2);
+		const int z1 = int(blockPos.z / (SQUARE_SIZE * 2)) - (zsize / 4), z2 = z1 + (zsize / 2);
+		if (!isOpenSite(x1, x2, z1, z2)) {
 			continue;
 		}
 
 		if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
-			bool good = true;
-			// horizontal spacing
-			spacerPos1.x = probePos.x - noffx;
-			spacerPos1.z = probePos.z - voffz;
-			spacerPos2.x = spacerPos1.x;
-			spacerPos2.z = probePos.z + voffz;
-			for (int ix = 0; ix < xnum; ix++) {
-				if (!map->IsPossibleToBuildAt(spacer4, spacerPos1, 0) || !map->IsPossibleToBuildAt(spacer4, spacerPos2, 0)) {
-					good = false;
-					break;
-				}
-				spacerPos1.x += fsize4;
-				spacerPos2.x = spacerPos1.x;
-			}
-			if (!good) {
-				continue;
-			}
-			spacerPos1.x = probePos.x + noffx;
-			spacerPos2.x = spacerPos1.x;
-			if (!map->IsPossibleToBuildAt(spacer4, spacerPos1, 0) || !map->IsPossibleToBuildAt(spacer4, spacerPos2, 0)) {
-				continue;
-			}
-			// vertical spacing
-			spacerPos1.x = probePos.x - hoffx;
-			spacerPos1.z = probePos.z - noffz;
-			spacerPos2.x = probePos.x + hoffx;
-			spacerPos2.z = spacerPos1.z;
-			for (int iz = 0; iz < znum; iz++) {
-				if (!map->IsPossibleToBuildAt(spacer4, spacerPos1, 0) || !map->IsPossibleToBuildAt(spacer4, spacerPos2, 0)) {
-					good = false;
-					break;
-				}
-				spacerPos1.z += fsize4;
-				spacerPos2.z = spacerPos1.z;
-			}
-			if (!good) {
-				continue;
-			}
-			spacerPos1.z = probePos.z + noffz;
-			spacerPos2.z = spacerPos1.z;
-			if (!map->IsPossibleToBuildAt(spacer4, spacerPos1, 0) || !map->IsPossibleToBuildAt(spacer4, spacerPos2, 0)) {
-				continue;
-			}
-			if (good) {
-				probePos.y = map->GetElevationAt(x, z);
-				return probePos;
-			}
-		}
-	}
-
-	return -RgtVector;
-}
-
-AIFloat3 CTerrainAnalyzer::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)
-{
-	int xsize, zsize;
-	switch (facing) {
-		case UNIT_FACING_EAST:
-		case UNIT_FACING_WEST: {
-			xsize = unitDef->GetZSize() * SQUARE_SIZE;
-			zsize = unitDef->GetXSize() * SQUARE_SIZE;
-			break;
-		}
-		case UNIT_FACING_SOUTH:
-		case UNIT_FACING_NORTH:
-		default: {
-			xsize = unitDef->GetXSize() * SQUARE_SIZE;
-			zsize = unitDef->GetZSize() * SQUARE_SIZE;
-			break;
-		}
-	}
-	UnitDef* mex = circuit->GetUnitDefByName("cormex");
-	int xmsize = mex->GetXSize() * SQUARE_SIZE;
-	int zmsize = mex->GetZSize() * SQUARE_SIZE;
-	AIFloat3 spacerPos1(0, 0, 0), spacerPos2(0, 0, 0), probePos(0, 0, 0);
-
-	const int endr = (int)(searchRadius / (SQUARE_SIZE * 2));
-	const std::vector<SearchOffset>& ofs = GetSearchOffsetTable(endr);
-	Map* map = circuit->GetMap();
-	const float moffx = (xsize + xmsize) / 2 ;  // mex offset x
-	const float moffz = (zsize + xmsize) / 2 ;  // mex offset z
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	for (int so = 0; so < endr * endr * 4; so++) {
-		const float x = pos.x + ofs[so].dx * SQUARE_SIZE * 2;
-		const float z = pos.z + ofs[so].dy * SQUARE_SIZE * 2;
-		probePos.x = x;
-		probePos.z = z;
-
-		spacerPos1.x = probePos.x - moffx;
-		spacerPos1.z = probePos.z - moffz;
-		spacerPos2.x = probePos.x + moffx;
-		spacerPos2.z = probePos.z + moffz;
-		if (!metalManager->FindWithinRangeSpots(spacerPos1, spacerPos2).empty()) {
-			continue;
-		}
-
-		if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
-			probePos.y = map->GetElevationAt(x, z);
+			probePos.y = map->GetElevationAt(probePos.x, probePos.z);
 			return probePos;
 		}
 	}
 
 	return -RgtVector;
+}
+
+void CTerrainManager::AddBlocker(CCircuitUnit* unit)
+{
+	if (blockers.find(unit) == blockers.end()) {
+		MarkBlocker(unit, 1);
+	}
+}
+
+void CTerrainManager::RemoveBlocker(CCircuitUnit* unit)
+{
+	if (blockers.find(unit) != blockers.end()) {
+		MarkBlocker(unit, -1);
+	}
+}
+
+void CTerrainManager::MarkBlocker(CCircuitUnit* unit, int count)
+{
+	auto search = blockInfo.find(unit->GetDef());
+	if (search == blockInfo.end()) {
+		return;
+	}
+	BlockInfo& info = search->second;
+
+	Unit* u = unit->GetUnit();
+	int facing = u->GetBuildingFacing();
+	int xsize = ((facing & 1) == 0) ? info.xsize : info.zsize;
+	int zsize = ((facing & 1) == 1) ? info.xsize : info.zsize;
+	AIFloat3 offset;
+	switch (facing) {
+		default:
+		case UNIT_FACING_SOUTH:
+			offset.x = info.offset.x;
+			offset.z = info.offset.z;
+			break;
+		case UNIT_FACING_EAST:
+			offset.x = info.offset.z;
+			offset.z = info.offset.x;
+			break;
+		case UNIT_FACING_NORTH:
+			offset.x = info.offset.x;
+			offset.z = -info.offset.z;
+			break;
+		case UNIT_FACING_WEST:
+			offset.x = -info.offset.z;
+			offset.z = info.offset.x;
+			break;
+	}
+	offset.y = 0;
+
+	AIFloat3 pos = Pos2BuildPos(xsize, zsize, u->GetPos()) + offset;
+	const int x1 = int(pos.x / (SQUARE_SIZE * 2)) - (xsize / 4), x2 = x1 + (xsize / 2);
+	const int z1 = int(pos.z / (SQUARE_SIZE * 2)) - (zsize / 4), z2 = z1 + (zsize / 2);
+	Drawer* drawer = circuit->GetMap()->GetDrawer();
+	for (int z = z1; z < z2; z++) {
+		for (int x = x1; x < x2; x++) {
+			blockingMap[z * cellRows + x] += count;
+			if (count > 0) {
+				AIFloat3 pos(x * SQUARE_SIZE * 2 + SQUARE_SIZE, 0, z * SQUARE_SIZE * 2 + SQUARE_SIZE);
+				drawer->AddPoint(pos, "");
+			} if (count < 0) {
+				AIFloat3 pos(x * SQUARE_SIZE * 2 + SQUARE_SIZE, 0, z * SQUARE_SIZE * 2 + SQUARE_SIZE);
+				drawer->DeletePointsAndLines(pos);
+			}
+		}
+	}
+	delete drawer;
 }
 
 } // namespace circuit

@@ -12,7 +12,7 @@
 #include "MetalManager.h"
 #include "CircuitUnit.h"
 #include "EconomyManager.h"
-#include "TerrainAnalyzer.h"
+#include "TerrainManager.h"
 #include "utils.h"
 
 #include "AISCommands.h"
@@ -25,8 +25,6 @@
 #include "UnitRulesParam.h"
 #include "Command.h"
 
-//#include "Drawer.h"
-
 namespace circuit {
 
 using namespace springai;
@@ -34,8 +32,7 @@ using namespace springai;
 CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		IModule(circuit),
 		builderTasksCount(0),
-		builderPower(.0f),
-		economyManager(nullptr)
+		builderPower(.0f)
 {
 	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Watchdog, this),
 										  FRAMES_PER_SEC * 60,
@@ -94,11 +91,6 @@ CBuilderManager::~CBuilderManager()
 	for (auto& tasks : builderTasks) {
 		utils::free_clear(tasks);
 	}
-}
-
-void CBuilderManager::SetEconomyManager(CEconomyManager* ecoMgr)
-{
-	economyManager = ecoMgr;
 }
 
 int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -182,7 +174,7 @@ CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
 										   CBuilderTask::TaskType type,
 										   int timeout)
 {
-	float cost = buildDef->GetCost(economyManager->GetMetalRes());
+	float cost = buildDef->GetCost(circuit->GetEconomyManager()->GetMetalRes());
 	CBuilderTask* task = new CBuilderTask(priority, buildDef, position, type, cost, timeout);
 	builderTasks[static_cast<int>(type)].push_front(task);
 	builderTasksCount++;
@@ -238,7 +230,7 @@ void CBuilderManager::Init()
 				if (param->GetValueFloat() == 1) {
 					const AIFloat3& position = u->GetPos();
 					int facing = UNIT_COMMAND_BUILD_NO_FACING;
-					CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+					CTerrainManager* terrain = circuit->GetTerrainManager();
 					float terWidth = terrain->GetTerrainWidth();
 					float terHeight = terrain->GetTerrainHeight();
 					if (math::fabs(terWidth - 2 * position.x) > math::fabs(terHeight - 2 * position.z)) {
@@ -247,7 +239,7 @@ void CBuilderManager::Init()
 						facing = (2 * position.z > terHeight) ? UNIT_FACING_NORTH : UNIT_FACING_SOUTH;
 					}
 					UnitDef* buildDef = circuit->GetUnitDefByName("factorycloak");
-					AIFloat3 buildPos = terrain->FindBuildSiteSpace(buildDef, position, 1000.0f, facing);
+					AIFloat3 buildPos = terrain->FindBuildSite(buildDef, position, 1000.0f, facing);
 					u->Build(buildDef, buildPos, facing);
 				}
 				delete param;
@@ -287,7 +279,7 @@ void CBuilderManager::Watchdog()
 		if (commands.empty()) {
 			AIFloat3 toPos = u->GetPos();
 			const float size = 50.0f;
-			CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+			CTerrainManager* terrain = circuit->GetTerrainManager();
 			toPos.x += (toPos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
 			toPos.z += (toPos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
 			u->MoveTo(toPos);
@@ -340,7 +332,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	}
 
 	if (task == nullptr) {
-		task = economyManager->CreateBuilderTask(unit);
+		task = circuit->GetEconomyManager()->CreateBuilderTask(unit);
 	}
 
 	task->AssignTo(unit);
@@ -353,7 +345,7 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 
 	auto findFacing = [this](UnitDef* buildDef, const AIFloat3& position) {
 		int facing = UNIT_COMMAND_BUILD_NO_FACING;
-		CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+		CTerrainManager* terrain = circuit->GetTerrainManager();
 		float terWidth = terrain->GetTerrainWidth();
 		float terHeight = terrain->GetTerrainHeight();
 		if (math::fabs(terWidth - 2 * position.x) > math::fabs(terHeight - 2 * position.z)) {
@@ -376,7 +368,7 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 		taskNew->AssignTo(unit);
 
 		const float size = SQUARE_SIZE * 10;
-		CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+		CTerrainManager* terrain = circuit->GetTerrainManager();
 		pos.x += (pos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
 		pos.z += (pos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
 		u->PatrolTo(pos);
@@ -420,7 +412,7 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 			switch (type) {
 				case CBuilderTask::TaskType::EXPAND:
 				case CBuilderTask::TaskType::PYLON: {
-					buildPos = economyManager->FindBuildPos(unit);
+					buildPos = circuit->GetEconomyManager()->FindBuildPos(unit);
 					valid = (buildPos != -RgtVector);
 					break;
 				}
@@ -428,7 +420,7 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 					const AIFloat3& position = task->GetPos();
 					float searchRadius = buildDef->GetBuildDistance();
 					facing = findFacing(buildDef, position);
-					CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+					CTerrainManager* terrain = circuit->GetTerrainManager();
 					buildPos = terrain->FindBuildSite(buildDef, position, searchRadius, facing);
 					if (buildPos == -RgtVector) {
 						// TODO: Replace FindNearestSpots with FindNearestClusters
@@ -449,15 +441,15 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 					const AIFloat3& position = task->GetPos();
 					float searchRadius = 100.0f * SQUARE_SIZE;
 					facing = findFacing(buildDef, position);
-					CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
-					buildPos = terrain->FindBuildSiteSpace(buildDef, position, searchRadius, facing);
+					CTerrainManager* terrain = circuit->GetTerrainManager();
+					buildPos = terrain->FindBuildSite(buildDef, position, searchRadius, facing);
 					if (buildPos == -RgtVector) {
 						// TODO: Replace FindNearestSpots with FindNearestClusters
 						const CMetalData::Metals& spots =  circuit->GetMetalManager()->GetSpots();
 						CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestSpots(position, 3);
 						for (const int idx : indices) {
 							facing = findFacing(buildDef, spots[idx].position);
-							buildPos = terrain->FindBuildSiteSpace(buildDef, spots[idx].position, searchRadius, facing);
+							buildPos = terrain->FindBuildSite(buildDef, spots[idx].position, searchRadius, facing);
 							if (buildPos != -RgtVector) {
 								break;
 							}

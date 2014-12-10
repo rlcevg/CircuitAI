@@ -9,15 +9,10 @@
 #define ECONOMYMANAGER_H_
 
 #include "Module.h"
-#include "BuilderManager.h"
-#include "FactoryManager.h"
-#include "TerrainAnalyzer.h"
 
 #include "AIFloat3.h"
 
 #include <vector>
-#include <unordered_map>
-#include <functional>
 
 namespace springai {
 	class Resource;
@@ -31,7 +26,7 @@ class CFactoryTask;
 
 class CEconomyManager: public virtual IModule {
 public:
-	CEconomyManager(CCircuitAI* circuit, CBuilderManager* builderManager, CFactoryManager* factoryManager);
+	CEconomyManager(CCircuitAI* circuit);
 	virtual ~CEconomyManager();
 
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
@@ -51,18 +46,13 @@ private:
 	CBuilderTask* UpdateBuilderTasks();
 	CFactoryTask* UpdateFactoryTasks();
 
-	using Handlers1 = std::unordered_map<int, std::function<void (CCircuitUnit* unit)>>;
-	using Handlers2 = std::unordered_map<int, std::function<void (CCircuitUnit* unit, CCircuitUnit* other)>>;
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
-	Handlers1 idleHandler;
 	Handlers2 destroyedHandler;
 
 	springai::Resource* metalRes;
 	springai::Resource* energyRes;
 	springai::Economy* eco;
-	CBuilderManager* builderManager;
-	CFactoryManager* factoryManager;
 
 	struct ClusterInfo {
 		CCircuitUnit* factory;

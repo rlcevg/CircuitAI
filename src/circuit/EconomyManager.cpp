@@ -13,6 +13,7 @@
 #include "CircuitUnit.h"
 #include "BuilderManager.h"
 #include "FactoryManager.h"
+#include "TerrainManager.h"
 #include "utils.h"
 
 #include "AISCommands.h"
@@ -27,16 +28,12 @@
 #include "Pathing.h"
 #include "MoveData.h"
 
-//#include "Drawer.h"
-
 namespace circuit {
 
 using namespace springai;
 
-CEconomyManager::CEconomyManager(CCircuitAI* circuit, CBuilderManager* builderManager, CFactoryManager* factoryManager) :
+CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		IModule(circuit),
-		builderManager(builderManager),
-		factoryManager(factoryManager),
 		solarCount(0),
 		fusionCount(0)
 {
@@ -55,7 +52,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit, CBuilderManager* builderMa
 	// TODO: Use A* ai planning... or sth... STRIPS https://ru.wikipedia.org/wiki/STRIPS
 	//       https://ru.wikipedia.org/wiki/Марковский_процесс_принятия_решений
 
-	// FIXME: Remove parallel clusterization (and Init). Task is fast enough for main process and too much issues with parallelism.
 	circuit->GetScheduler()->RunParallelTask(CGameTask::EmptyTask, std::make_shared<CGameTask>(&CEconomyManager::Init, this));
 
 	// TODO: Group handlers
@@ -136,9 +132,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit, CBuilderManager* builderMa
 			}
 		}
 	};
-
-	builderManager->SetEconomyManager(this);
-	factoryManager->SetEconomyManager(this);
 }
 
 CEconomyManager::~CEconomyManager()
@@ -195,7 +188,7 @@ CBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 	}
 	const AIFloat3& pos = unit->GetUnit()->GetPos();
 	UnitDef* buildDef = circuit->GetUnitDefByName("corrl");
-	task = builderManager->EnqueueTask(CBuilderTask::Priority::LOW, buildDef, pos, CBuilderTask::TaskType::DEFAULT);
+	task = circuit->GetBuilderManager()->EnqueueTask(CBuilderTask::Priority::LOW, buildDef, pos, CBuilderTask::TaskType::DEFAULT);
 	return task;
 }
 
@@ -220,7 +213,7 @@ CFactoryTask* CEconomyManager::CreateFactoryTask(CCircuitUnit* unit)
 	UnitDef* buildDef = circuit->GetUnitDefByName(names[rand() % 6]);
 	const AIFloat3& buildPos = u->GetPos();
 	float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
-	CFactoryTask* task = factoryManager->EnqueueTask(CFactoryTask::Priority::LOW, buildDef, buildPos, CFactoryTask::TaskType::DEFAULT, 2, radius);
+	CFactoryTask* task = circuit->GetFactoryManager()->EnqueueTask(CFactoryTask::Priority::LOW, buildDef, buildPos, CFactoryTask::TaskType::DEFAULT, 2, radius);
 	return task;
 }
 
@@ -257,8 +250,7 @@ AIFloat3 CEconomyManager::FindBuildPos(CCircuitUnit* unit)
 		}
 		case CBuilderTask::TaskType::PYLON: {
 			const AIFloat3& position = task->GetPos();
-//			buildPos = circuit->GetMap()->FindClosestBuildSite(buildDef, position, pylonRange, 0, UNIT_COMMAND_BUILD_NO_FACING);
-			CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+			CTerrainManager* terrain = circuit->GetTerrainManager();
 			buildPos = terrain->FindBuildSite(buildDef, position, pylonRange, UNIT_COMMAND_BUILD_NO_FACING);
 			if (buildPos == -RgtVector) {
 				const CMetalData::Metals& spots =  circuit->GetMetalManager()->GetSpots();
@@ -298,6 +290,7 @@ void CEconomyManager::Init()
 
 CBuilderTask* CEconomyManager::UpdateMetalTasks()
 {
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	CBuilderTask* task = nullptr;
 	if (!builderManager->CanEnqueueTask()) {
 		return task;
@@ -333,7 +326,7 @@ CBuilderTask* CEconomyManager::UpdateMetalTasks()
 			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
 			task = builderManager->EnqueueTask(CBuilderTask::Priority::HIGH, storeDef, spots[idx].position, CBuilderTask::TaskType::STORE);
 		} else {
-			CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+			CTerrainManager* terrain = circuit->GetTerrainManager();
 			int terWidth = terrain->GetTerrainWidth();
 			int terHeight = terrain->GetTerrainHeight();
 			float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
@@ -348,6 +341,7 @@ CBuilderTask* CEconomyManager::UpdateMetalTasks()
 
 CBuilderTask* CEconomyManager::UpdateEnergyTasks()
 {
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	CBuilderTask* task = nullptr;
 	if (!builderManager->CanEnqueueTask()) {
 		return task;
@@ -372,7 +366,7 @@ CBuilderTask* CEconomyManager::UpdateEnergyTasks()
 				task = builderManager->EnqueueTask(CBuilderTask::Priority::HIGH, solarDef, spots[idx].position, CBuilderTask::TaskType::SOLAR, cost);
 			}
 		} else {
-			CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+			CTerrainManager* terrain = circuit->GetTerrainManager();
 			int terWidth = terrain->GetTerrainWidth();
 			int terHeight = terrain->GetTerrainHeight();
 			float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
@@ -388,7 +382,7 @@ CBuilderTask* CEconomyManager::UpdateEnergyTasks()
 			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
 			task = builderManager->EnqueueTask(CBuilderTask::Priority::LOW, fusDef, spots[index].position, CBuilderTask::TaskType::FUSION);
 		} else {
-			CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+			CTerrainManager* terrain = circuit->GetTerrainManager();
 			int terWidth = terrain->GetTerrainWidth();
 			int terHeight = terrain->GetTerrainHeight();
 			float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
@@ -418,7 +412,7 @@ CBuilderTask* CEconomyManager::UpdateEnergyTasks()
 			int index = indices[rand() % indices.size()];
 			task = builderManager->EnqueueTask(CBuilderTask::Priority::LOW, singuDef, spots[index].position, CBuilderTask::TaskType::SINGU);
 		} else {
-			CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+			CTerrainManager* terrain = circuit->GetTerrainManager();
 			int terWidth = terrain->GetTerrainWidth();
 			int terHeight = terrain->GetTerrainHeight();
 			float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
@@ -446,6 +440,7 @@ CBuilderTask* CEconomyManager::UpdateEnergyTasks()
 
 CBuilderTask* CEconomyManager::UpdateBuilderTasks()
 {
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	CBuilderTask* task = nullptr;
 	if (!builderManager->CanEnqueueTask()) {
 		return task;
@@ -456,6 +451,7 @@ CBuilderTask* CEconomyManager::UpdateBuilderTasks()
 
 	// check buildpower
 	float metalIncome = eco->GetIncome(metalRes);
+	CFactoryManager* factoryManager = circuit->GetFactoryManager();
 	if ((factoryManager->GetFactoryPower() < metalIncome) &&
 			builderManager->GetTasks(CBuilderTask::TaskType::FACTORY).empty() && builderManager->GetTasks(CBuilderTask::TaskType::NANO).empty()) {
 		CCircuitUnit* factory = factoryManager->NeedUpgrade();
@@ -492,7 +488,7 @@ CBuilderTask* CEconomyManager::UpdateBuilderTasks()
 				const std::vector<AIFloat3>& centroids = metalManager->GetCentroids();
 				buildPos = centroids[index];
 			} else {
-				CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+				CTerrainManager* terrain = circuit->GetTerrainManager();
 				int terWidth = terrain->GetTerrainWidth();
 				int terHeight = terrain->GetTerrainHeight();
 				float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
@@ -509,6 +505,7 @@ CBuilderTask* CEconomyManager::UpdateBuilderTasks()
 
 CFactoryTask* CEconomyManager::UpdateFactoryTasks()
 {
+	CFactoryManager* factoryManager = circuit->GetFactoryManager();
 	CFactoryTask* task = nullptr;
 	if (!factoryManager->CanEnqueueTask()) {
 		return task;
@@ -517,7 +514,7 @@ CFactoryTask* CEconomyManager::UpdateFactoryTasks()
 	UnitDef* buildDef = circuit->GetUnitDefByName("armrectr");
 
 	float metalIncome = eco->GetIncome(metalRes);
-//	printf("metalIncome: %.2f, totalBuildpower: %.2f, factoryPower: %.2f\n", metalIncome, totalBuildpower, factoryPower);
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	if ((builderManager->GetBuilderPower() < metalIncome * 1.5) && circuit->IsAvailable(buildDef)) {
 		for (auto t : factoryManager->GetTasks()) {
 			if (t->GetType() == CFactoryTask::TaskType::BUILDPOWER) {
@@ -526,7 +523,7 @@ CFactoryTask* CEconomyManager::UpdateFactoryTasks()
 		}
 		CCircuitUnit* factory = factoryManager->GetRandomFactory();
 		const AIFloat3& buildPos = factory->GetUnit()->GetPos();
-		CTerrainAnalyzer* terrain = circuit->GetTerrainAnalyzer();
+		CTerrainManager* terrain = circuit->GetTerrainManager();
 		float radius = std::max(terrain->GetTerrainWidth(), terrain->GetTerrainHeight()) / 4;
 		task = factoryManager->EnqueueTask(CFactoryTask::Priority::NORMAL, buildDef, buildPos, CFactoryTask::TaskType::BUILDPOWER, 2, radius);
 	}

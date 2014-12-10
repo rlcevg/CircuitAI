@@ -10,9 +10,6 @@
 
 #include "Module.h"
 
-#include <unordered_map>
-#include <functional>
-
 namespace circuit {
 
 class CMilitaryManager: public virtual IModule {
@@ -30,8 +27,6 @@ public:
 private:
 	void TestOrder();
 
-	using Handlers1 = std::unordered_map<int, std::function<void (CCircuitUnit* unit)>>;
-	using Handlers2 = std::unordered_map<int, std::function<void (CCircuitUnit* unit, CCircuitUnit* attacker)>>;
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
 //	Handlers2 damagedHandler;

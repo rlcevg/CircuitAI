@@ -17,18 +17,13 @@
 #include <map>
 #include <set>
 #include <vector>
-#include <unordered_map>
-#include <functional>
 
 namespace circuit {
-
-class CEconomyManager;
 
 class CBuilderManager: public virtual IModule {
 public:
 	CBuilderManager(CCircuitAI* circuit);
 	virtual ~CBuilderManager();
-	void SetEconomyManager(CEconomyManager* ecoMgr);
 
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
 	virtual int UnitFinished(CCircuitUnit* unit);
@@ -63,8 +58,6 @@ private:
 	void ExecuteTask(CCircuitUnit* unit);
 	CCircuitUnit* FindUnitToAssist(CCircuitUnit* unit);
 
-	using Handlers1 = std::unordered_map<int, std::function<void (CCircuitUnit* unit)>>;
-	using Handlers2 = std::unordered_map<int, std::function<void (CCircuitUnit* unit, CCircuitUnit* other)>>;
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
 	Handlers2 destroyedHandler;
@@ -81,8 +74,6 @@ private:
 		int startFrame;
 	};
 	std::map<CCircuitUnit*, BuilderInfo> builderInfo;  // Assistant's info
-
-	CEconomyManager* economyManager;
 };
 
 } // namespace circuit

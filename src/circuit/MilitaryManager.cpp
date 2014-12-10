@@ -10,7 +10,7 @@
 #include "Scheduler.h"
 #include "CircuitUnit.h"
 #include "MetalManager.h"
-#include "TerrainAnalyzer.h"
+#include "TerrainManager.h"
 #include "utils.h"
 
 #include "Log.h"
@@ -38,7 +38,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 
 	auto atackerFinishedHandler = [this](CCircuitUnit* unit) {
 		Unit* u = unit->GetUnit();
-		CTerrainAnalyzer* terrain = this->circuit->GetTerrainAnalyzer();
+		CTerrainManager* terrain = this->circuit->GetTerrainManager();
 		int terWidth = terrain->GetTerrainWidth();
 		int terHeight = terrain->GetTerrainHeight();
 		float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
@@ -48,7 +48,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	};
 	auto atackerIdleHandler = [this](CCircuitUnit* unit) {
 		Unit* u = unit->GetUnit();
-		CTerrainAnalyzer* terrain = this->circuit->GetTerrainAnalyzer();
+		CTerrainManager* terrain = this->circuit->GetTerrainManager();
 		int terWidth = terrain->GetTerrainWidth();
 		int terHeight = terrain->GetTerrainHeight();
 		float x = rand() % (int)(terWidth + 1);
