@@ -14,15 +14,11 @@
 
 #include "Game.h"
 #include "GameRulesParam.h"
-#include "Pathing.h"
 #include "UnitDef.h"
-#include "MoveData.h"
 
 namespace circuit {
 
 using namespace springai;
-
-#define CLUSTER_MS	8
 
 CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData) :
 		circuit(circuit),
@@ -125,20 +121,17 @@ bool CMetalManager::IsClusterizing()
 	return metalData->IsClusterizing();
 }
 
-void CMetalManager::ClusterizeMetalFirst()
+void CMetalManager::ClusterizeMetal()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	metalData->SetClusterizing(true);
 
 	// prepare parameters
-	MoveData* moveData = circuit->GetUnitDefByName("armcom1")->GetMoveData();
-	int pathType = moveData->GetPathType();
-	delete moveData;
 	UnitDef* def = circuit->GetUnitDefByName("armestor");
-	std::map<std::string, std::string> customParams = def->GetCustomParams();
-	float radius = utils::string_to_float(customParams["pylonrange"]);
+	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+	auto search = customParams.find("pylonrange");
+	float radius = (search != customParams.end()) ? utils::string_to_float(search->second) : 500;
 	float maxDistance = radius * 2;
-	Pathing* pathing = circuit->GetPathing();
 
 	const CMetalData::Metals& spots = metalData->GetSpots();
 	int nrows = spots.size();
@@ -147,78 +140,11 @@ void CMetalManager::ClusterizeMetalFirst()
 	CRagMatrix& distmatrix = *pdistmatrix;
 	for (int i = 1; i < nrows; i++) {
 		for (int j = 0; j < i; j++) {
-			float lenStartEnd = pathing->GetApproximateLength(spots[i].position, spots[j].position, pathType, 0.0f);
-			float lenEndStart = pathing->GetApproximateLength(spots[j].position, spots[i].position, pathType, 0.0f);
-			distmatrix(i, j) = (lenStartEnd + lenEndStart) / 2.0f;
+			distmatrix(i, j) = spots[i].position.distance2D(spots[j].position);
 		}
 	}
 
 	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CMetalData::Clusterize, metalData, maxDistance, pdistmatrix));
-}
-
-void CMetalManager::ClusterizeMetal(std::shared_ptr<CScheduler> scheduler)
-{
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	metalData->SetClusterizing(true);
-
-	// prepare parameters
-	MoveData* moveData = circuit->GetUnitDefByName("armcom1")->GetMoveData();
-	int pathType = moveData->GetPathType();
-	delete moveData;
-	UnitDef* def = circuit->GetUnitDefByName("armestor");
-	std::map<std::string, std::string> customParams = def->GetCustomParams();
-	float radius = utils::string_to_float(customParams["pylonrange"]);
-	float maxDistance = radius * 2;
-	Pathing* pathing = circuit->GetPathing();
-
-	const CMetalData::Metals& spots = metalData->GetSpots();
-
-	tmpDistStruct.i = 1;
-	tmpDistStruct.matrix = std::make_shared<CRagMatrix>(spots.size());
-	tmpDistStruct.maxDistance = maxDistance;
-	tmpDistStruct.pathType = pathType;
-	tmpDistStruct.pathing = pathing;
-	tmpDistStruct.schedWeak = scheduler;
-	tmpDistStruct.task = std::make_shared<CGameTask>(&CMetalManager::FillDistMatrix, this);
-
-	scheduler->RunTaskEvery(tmpDistStruct.task, 1);
-}
-
-void CMetalManager::FillDistMatrix()
-{
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	const CMetalData::Metals& spots = metalData->GetSpots();
-	CRagMatrix& distmatrix = *tmpDistStruct.matrix;
-	Pathing* pathing = tmpDistStruct.pathing;
-	int pathType = tmpDistStruct.pathType;
-	int nrows = distmatrix.GetNrows();
-
-	using clock = std::chrono::high_resolution_clock;
-	using std::chrono::milliseconds;
-	clock::time_point t0 = clock::now();
-
-	for (int i = tmpDistStruct.i; i < nrows; i++) {
-		for (int j = 0; j < i; j++) {
-			float lenStartEnd = pathing->GetApproximateLength(spots[i].position, spots[j].position, pathType, 0.0f);
-			float lenEndStart = pathing->GetApproximateLength(spots[j].position, spots[i].position, pathType, 0.0f);
-			distmatrix(i, j) = (lenStartEnd + lenEndStart) / 2.0f;
-		}
-
-		clock::time_point t1 = clock::now();
-		if (std::chrono::duration_cast<milliseconds>(t1 - t0) > milliseconds(CLUSTER_MS)) {
-			tmpDistStruct.i = i + 1;
-			return;
-		}
-	}
-
-	metalData->SetDistMatrix(distmatrix);
-	std::shared_ptr<CScheduler> scheduler = tmpDistStruct.schedWeak.lock();
-	if (scheduler != nullptr) {
-		scheduler->RunParallelTask(std::make_shared<CGameTask>(&CMetalData::Clusterize, metalData, tmpDistStruct.maxDistance, tmpDistStruct.matrix));
-		scheduler->RemoveTask(tmpDistStruct.task);
-	}
-//	tmpDistStruct.schedWeak = nullptr;
-	tmpDistStruct.task = nullptr;
 }
 
 const CMetalData::Metals& CMetalManager::GetSpots() const

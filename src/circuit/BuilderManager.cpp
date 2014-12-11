@@ -25,6 +25,10 @@
 #include "UnitRulesParam.h"
 #include "Command.h"
 
+// debug
+#include "Game.h"
+#include "Drawer.h"
+
 namespace circuit {
 
 using namespace springai;
@@ -312,7 +316,16 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 			CCircuitUnit* target = candidate->GetTarget();
 			if (target != nullptr) {
 				Unit* tu = target->GetUnit();
-				dist = circuit->GetPathing()->GetApproximateLength(candidate->GetBuildPos(), pos, pathType, buildDistance);
+
+				// FIXME: GetApproximateLength to position taken by building or feature will return 0
+				UnitDef* buildDef = target->GetDef();
+				int facing = tu->GetBuildingFacing();
+				int xsize = ((facing & 1) == 0) ? buildDef->GetXSize() : buildDef->GetZSize();
+				int zsize = ((facing & 1) == 1) ? buildDef->GetXSize() : buildDef->GetZSize();
+				AIFloat3 offset = (pos - candidate->GetBuildPos()).Normalize2D() * (sqrtf(xsize * xsize + zsize * zsize) * (SQUARE_SIZE / 2) + buildDistance);
+				AIFloat3 buildPos = candidate->GetBuildPos() + offset;
+
+				dist = circuit->GetPathing()->GetApproximateLength(buildPos, pos, pathType, buildDistance);
 				if (dist < metric) {
 					float maxHealth = tu->GetMaxHealth();
 					float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
@@ -323,6 +336,28 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 				dist = circuit->GetPathing()->GetApproximateLength((bp != -RgtVector) ? bp : candidate->GetPos(), pos, pathType, buildDistance);
 				valid = ((dist < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));
 			}
+
+			// debug
+			Drawer* drawer = circuit->GetMap()->GetDrawer();
+			if (dist <= 0) {
+				drawer->AddPoint(pos, "");
+				if (target != nullptr) {
+					Unit* tu = target->GetUnit();
+					UnitDef* buildDef = target->GetDef();
+					int facing = tu->GetBuildingFacing();
+					int xsize = ((facing & 1) == 0) ? buildDef->GetXSize() : buildDef->GetZSize();
+					int zsize = ((facing & 1) == 1) ? buildDef->GetXSize() : buildDef->GetZSize();
+					AIFloat3 offset = (pos - candidate->GetBuildPos()).Normalize2D() * (sqrtf(xsize * xsize + zsize * zsize) * (SQUARE_SIZE / 2) + buildDistance);
+					AIFloat3 buildPos = candidate->GetBuildPos() + offset;
+					drawer->AddLine(pos, buildPos);
+				} else {
+					const AIFloat3& bp = candidate->GetBuildPos();
+					drawer->AddLine(pos, (bp != -RgtVector) ? bp : candidate->GetPos());
+				}
+				circuit->GetGame()->SetPause(true, "dist <= 0");
+				printf("%f\n", dist);
+			}
+			delete drawer;
 
 			if (valid) {
 				task = candidate;

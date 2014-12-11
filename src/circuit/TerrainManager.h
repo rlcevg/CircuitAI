@@ -12,7 +12,7 @@
 
 #include "AIFloat3.h"
 
-#include <set>
+//#include <set>
 #include <vector>
 #include <unordered_map>
 
@@ -65,7 +65,7 @@ private:
 		springai::AIFloat3 offset;
 	};
 	std::unordered_map<springai::UnitDef*, BlockInfo> blockInfo;
-	std::set<CCircuitUnit*> blockers;
+//	std::set<CCircuitUnit*> blockers;
 	void AddBlocker(CCircuitUnit* unit);
 	void RemoveBlocker(CCircuitUnit* unit);
 	void MarkBlocker(CCircuitUnit* unit, int count);

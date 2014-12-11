@@ -37,19 +37,7 @@ public:
 	bool HasMetalClusters();
 	bool IsClusterizing();
 
-	void ClusterizeMetalFirst();
-	void ClusterizeMetal(std::shared_ptr<CScheduler> scheduler);
-private:
-	struct {
-		int i;
-		std::shared_ptr<CRagMatrix> matrix;
-		springai::Pathing* pathing;
-		int pathType;
-		std::weak_ptr<CScheduler> schedWeak;
-		float maxDistance;
-		std::shared_ptr<CGameTask> task;
-	} tmpDistStruct;
-	void FillDistMatrix();
+	void ClusterizeMetal();
 
 public:
 	const CMetalData::Metals& GetSpots() const;

@@ -326,10 +326,7 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 	bool canChooseStartPos = (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos());
 	if (metalManager->HasMetalSpots()) {
 		if (!metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
-			metalManager->ClusterizeMetalFirst();
-//			scheduler->RunTaskEvery(std::make_shared<CGameTask>([this]() {
-//				metalManager->ClusterizeMetal(scheduler);
-//			}), FRAMES_PER_SEC * 60);
+			metalManager->ClusterizeMetal();
 		}
 		if (canChooseStartPos) {
 			// Parallel task is only to ensure its execution after CMetalManager::Clusterize
