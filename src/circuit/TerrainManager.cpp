@@ -14,6 +14,8 @@
 #include "Map.h"
 #include "Unit.h"
 #include "UnitDef.h"
+#include "OOAICallback.h"
+#include "WeaponDef.h"
 
 #include <algorithm>
 
@@ -22,6 +24,8 @@ namespace circuit {
 using namespace springai;
 
 #define MAX_BLOCK_VAL	0xFF
+#define STRUCT			0x8000
+#define GetBlock(x, z)	blockingMap[z * cellRows + x]
 
 CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 		IModule(circuit)
@@ -72,6 +76,9 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 		}
 	}
 
+	/*
+	 * building masks
+	 */
 	def = circuit->GetUnitDefByName("armsolar");
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto search = customParams.find("pylonrange");
@@ -83,11 +90,29 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 		info.offset = ZeroVector;
 		blockInfo[def] = info;
 	}
+
 	def = circuit->GetUnitDefByName("factorycloak");
 	BlockInfo info;
 	info.xsize = def->GetXSize() / 2 + 6;
 	info.zsize = def->GetZSize() / 2 + 3;
 	info.offset = AIFloat3(0, 0, (SQUARE_SIZE * 2) * 4);
+	blockInfo[def] = info;
+
+	def = circuit->GetUnitDefByName("armfus");
+	WeaponDef* wpDef;
+	wpDef = circuit->GetCallback()->GetWeaponDefByName("atomic_blast");
+	info.xsize = (sqrtf(2) * wpDef->GetAreaOfEffect()) / (SQUARE_SIZE * 2);
+	delete wpDef;
+	info.zsize = info.xsize;
+	info.offset = ZeroVector;
+	blockInfo[def] = info;
+
+	def = circuit->GetUnitDefByName("cafus");
+	wpDef = circuit->GetCallback()->GetWeaponDefByName("nuclear_missile");
+	info.xsize = (sqrtf(2) * wpDef->GetAreaOfEffect()) / (SQUARE_SIZE * 2);
+	delete wpDef;
+	info.zsize = info.xsize;
+	info.offset = ZeroVector;
 	blockInfo[def] = info;
 
 //	// debug
@@ -410,7 +435,9 @@ const std::vector<CTerrainManager::SearchOffset>& CTerrainManager::GetSearchOffs
 
 AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)
 {
-	int xsize, zsize;
+	int xbsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
+	int zbsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
+	int xmsize, zmsize;
 	AIFloat3 offset(ZeroVector);
 	auto search = blockInfo.find(unitDef);
 	if (search != blockInfo.end()) {
@@ -418,39 +445,62 @@ AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, f
 		switch (facing) {
 			default:
 			case UNIT_FACING_SOUTH:
-				xsize = info.xsize;
-				zsize = info.zsize;
+				xmsize = info.xsize;
+				zmsize = info.zsize;
 				offset.x = info.offset.x;
 				offset.z = info.offset.z;
 				break;
 			case UNIT_FACING_EAST:
-				xsize = info.zsize;
-				zsize = info.xsize;
+				xmsize = info.zsize;
+				zmsize = info.xsize;
 				offset.x = info.offset.z;
 				offset.z = info.offset.x;
 				break;
 			case UNIT_FACING_NORTH:
-				xsize = info.xsize;
-				zsize = info.zsize;
+				xmsize = info.xsize;
+				zmsize = info.zsize;
 				offset.x = info.offset.x;
 				offset.z = -info.offset.z;
 				break;
 			case UNIT_FACING_WEST:
-				xsize = info.zsize;
-				zsize = info.xsize;
+				xmsize = info.zsize;
+				zmsize = info.xsize;
 				offset.x = -info.offset.z;
 				offset.z = info.offset.x;
 				break;
 		}
 	} else {
-		xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
-		zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
+		xmsize = xbsize;
+		zmsize = zbsize;
 	}
 
-	auto isOpenSite = [this](int x1, int x2, int z1, int z2) {
-		for (int z = z1; z < z2; z++) {
-			for (int x = x1; x < x2; x++) {
-				if (blockingMap[z * cellRows + x] > 0) {
+	// m - spacer mask; b - building
+	auto isOpenSite = [this](int xm1, int xm2, int zm1, int zm2, int xb1, int xb2, int zb1, int zb2) {
+		for (int x = xm1; x < xm2; x++) {
+			for (int z = zm1; z < zb1; z++) {
+				if (GetBlock(x, z) & STRUCT) {
+					return false;
+				}
+			}
+			for (int z = zb2; z < zm2; z++) {
+				if (GetBlock(x, z) & STRUCT) {
+					return false;
+				}
+			}
+		}
+		for (int z = zb1; z < zb2; z++) {
+			for (int x = xm1; x < xb1; x++) {
+				if (GetBlock(x, z) & STRUCT) {
+					return false;
+				}
+			}
+			for (int x = xb2; x < xm2; x++) {
+				if (GetBlock(x, z) & STRUCT) {
+					return false;
+				}
+			}
+			for (int x = xb1; x < xb2; x++) {
+				if (GetBlock(x, z) > 0) {
 					return false;
 				}
 			}
@@ -461,21 +511,24 @@ AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, f
 	const int endr = (int)(searchRadius / (SQUARE_SIZE * 2));
 	const std::vector<SearchOffset>& ofs = GetSearchOffsetTable(endr);
 	Map* map = circuit->GetMap();
-	AIFloat3 buildPos = Pos2BuildPos(xsize, zsize, pos);
-	AIFloat3 probePos(ZeroVector);
-
+	AIFloat3 buildPos = Pos2BuildPos(xmsize, zmsize, pos);
+	const int cornerX1 = int(buildPos.x / (SQUARE_SIZE * 2)) - (xbsize / 2);
+	const int cornerZ1 = int(buildPos.z / (SQUARE_SIZE * 2)) - (zbsize / 2);
 	AIFloat3 blockPos = buildPos + offset;
-	const int cornerX1 = int(blockPos.x / (SQUARE_SIZE * 2)) - (xsize / 2);
-	const int cornerZ1 = int(blockPos.z / (SQUARE_SIZE * 2)) - (zsize / 2);
+	const int maskCornerX1 = int(blockPos.x / (SQUARE_SIZE * 2)) - (xmsize / 2);
+	const int maskCornerZ1 = int(blockPos.z / (SQUARE_SIZE * 2)) - (zmsize / 2);
+	AIFloat3 probePos(ZeroVector);
 	for (int so = 0; so < endr * endr * 4; so++) {
-		int x1 = cornerX1 + ofs[so].dx, x2 = x1 + xsize;
-		int z1 = cornerZ1 + ofs[so].dy, z2 = z1 + zsize;
-		if (!isOpenSite(x1, x2, z1, z2)) {
+		int xm1 = maskCornerX1 + ofs[so].dx, xm2 = xm1 + xmsize;
+		int zm1 = maskCornerZ1 + ofs[so].dy, zm2 = zm1 + zmsize;
+		int xb1 = cornerX1 + ofs[so].dx, xb2 = xb1 + xbsize;
+		int zb1 = cornerZ1 + ofs[so].dy, zb2 = zb1 + zbsize;
+		if (!isOpenSite(xm1, xm2, zm1, zm2, xb1, xb2, zb1, zb2)) {
 			continue;
 		}
 
-		probePos.x = (x1 + x2) * SQUARE_SIZE;
-		probePos.z = (z1 + z2) * SQUARE_SIZE;
+		probePos.x = (xb1 + xb2) * SQUARE_SIZE;
+		probePos.z = (zb1 + zb2) * SQUARE_SIZE;
 		if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
 			probePos.y = map->GetElevationAt(probePos.x, probePos.z);
 			return probePos;
@@ -507,7 +560,9 @@ void CTerrainManager::MarkBlocker(CCircuitUnit* unit, int count)
 	UnitDef* unitDef = unit->GetDef();
 	int facing = u->GetBuildingFacing();
 
-	int xsize, zsize;
+	int xbsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
+	int zbsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
+	int xmsize, zmsize;
 	AIFloat3 offset(ZeroVector);
 	auto search = blockInfo.find(unitDef);
 	if (search != blockInfo.end()) {
@@ -515,41 +570,58 @@ void CTerrainManager::MarkBlocker(CCircuitUnit* unit, int count)
 		switch (facing) {
 			default:
 			case UNIT_FACING_SOUTH:
-				xsize = info.xsize;
-				zsize = info.zsize;
+				xmsize = info.xsize;
+				zmsize = info.zsize;
 				offset.x = info.offset.x;
 				offset.z = info.offset.z;
 				break;
 			case UNIT_FACING_EAST:
-				xsize = info.zsize;
-				zsize = info.xsize;
+				xmsize = info.zsize;
+				zmsize = info.xsize;
 				offset.x = info.offset.z;
 				offset.z = info.offset.x;
 				break;
 			case UNIT_FACING_NORTH:
-				xsize = info.xsize;
-				zsize = info.zsize;
+				xmsize = info.xsize;
+				zmsize = info.zsize;
 				offset.x = info.offset.x;
 				offset.z = -info.offset.z;
 				break;
 			case UNIT_FACING_WEST:
-				xsize = info.zsize;
-				zsize = info.xsize;
+				xmsize = info.zsize;
+				zmsize = info.xsize;
 				offset.x = -info.offset.z;
 				offset.z = info.offset.x;
 				break;
 		}
 	} else {
-		xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
-		zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
+		xmsize = xbsize;
+		zmsize = zbsize;
 	}
 
-	AIFloat3 pos = Pos2BuildPos(xsize, zsize, u->GetPos()) + offset;
-	const int x1 = int(pos.x / (SQUARE_SIZE * 2)) - (xsize / 2), x2 = x1 + xsize;
-	const int z1 = int(pos.z / (SQUARE_SIZE * 2)) - (zsize / 2), z2 = z1 + zsize;
-	for (int z = z1; z < z2; z++) {
-		for (int x = x1; x < x2; x++) {
-			blockingMap[z * cellRows + x] += count;
+	AIFloat3 buildPos = Pos2BuildPos(xmsize, zmsize, u->GetPos());
+	const int xb1 = int(buildPos.x / (SQUARE_SIZE * 2)) - (xbsize / 2), xb2 = xb1 + xbsize;
+	const int zb1 = int(buildPos.z / (SQUARE_SIZE * 2)) - (zbsize / 2), zb2 = zb1 + zbsize;
+	AIFloat3 blockPos = buildPos + offset;
+	const int xm1 = int(blockPos.x / (SQUARE_SIZE * 2)) - (xmsize / 2), xm2 = xm1 + xmsize;
+	const int zm1 = int(blockPos.z / (SQUARE_SIZE * 2)) - (zmsize / 2), zm2 = zm1 + zmsize;
+	for (int x = xm1; x < xm2; x++) {
+		for (int z = zm1; z < zb1; z++) {
+			GetBlock(x, z) += count;
+		}
+		for (int z = zb2; z < zm2; z++) {
+			GetBlock(x, z) += count;
+		}
+	}
+	for (int z = zb1; z < zb2; z++) {
+		for (int x = xm1; x < xb1; x++) {
+			GetBlock(x, z) += count;
+		}
+		for (int x = xb2; x < xm2; x++) {
+			GetBlock(x, z) += count;
+		}
+		for (int x = xb1; x < xb2; x++) {
+			GetBlock(x, z) |= STRUCT;
 		}
 	}
 }
