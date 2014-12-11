@@ -12,7 +12,6 @@
 
 #include "AIFloat3.h"
 
-//#include <set>
 #include <vector>
 #include <unordered_map>
 
@@ -32,7 +31,6 @@ public:
 	void Init();
 
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
-	virtual int UnitFinished(CCircuitUnit* unit);
 	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
 	int GetTerrainWidth();
@@ -50,7 +48,6 @@ public:
 
 private:
 	Handlers1 createdHandler;
-	Handlers1 finishedHandler;
 	Handlers1 destroyedHandler;
 
 	int terrainWidth;
@@ -65,7 +62,6 @@ private:
 		springai::AIFloat3 offset;
 	};
 	std::unordered_map<springai::UnitDef*, BlockInfo> blockInfo;
-//	std::set<CCircuitUnit*> blockers;
 	void AddBlocker(CCircuitUnit* unit);
 	void RemoveBlocker(CCircuitUnit* unit);
 	void MarkBlocker(CCircuitUnit* unit, int count);

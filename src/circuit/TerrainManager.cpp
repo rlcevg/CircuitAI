@@ -69,27 +69,26 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	for (auto& kv : defs) {
 		UnitDef* def = kv.second;
 		int unitDefId = def->GetUnitDefId();
-		createdHandler[unitDefId] = buildingCreatedHandler;
-		destroyedHandler[unitDefId] = buildingDestroyedHandler;
-		if (def->GetSpeed() > 0) {
-			finishedHandler[unitDefId] = buildingDestroyedHandler;
+		if (def->GetSpeed() == 0) {
+			createdHandler[unitDefId] = buildingCreatedHandler;
+			destroyedHandler[unitDefId] = buildingDestroyedHandler;
 		}
 	}
 
 	/*
 	 * building masks
 	 */
-	def = circuit->GetUnitDefByName("armsolar");
-	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
-	auto search = customParams.find("pylonrange");
-	if (search != customParams.end()) {
-		float radius = utils::string_to_float(search->second);
-		BlockInfo info;
-		info.xsize = def->GetXSize() / 2;
-		info.zsize = def->GetZSize() / 2;
-		info.offset = ZeroVector;
-		blockInfo[def] = info;
-	}
+//	def = circuit->GetUnitDefByName("armsolar");
+//	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+//	auto search = customParams.find("pylonrange");
+//	if (search != customParams.end()) {
+//		float radius = utils::string_to_float(search->second);
+//		BlockInfo info;
+//		info.xsize = def->GetXSize() / 2;
+//		info.zsize = def->GetZSize() / 2;
+//		info.offset = ZeroVector;
+//		blockInfo[def] = info;
+//	}
 
 	def = circuit->GetUnitDefByName("factorycloak");
 	BlockInfo info;
@@ -101,7 +100,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	def = circuit->GetUnitDefByName("armfus");
 	WeaponDef* wpDef;
 	wpDef = circuit->GetCallback()->GetWeaponDefByName("atomic_blast");
-	info.xsize = (sqrtf(2) * wpDef->GetAreaOfEffect()) / (SQUARE_SIZE * 2);
+	info.xsize = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
 	delete wpDef;
 	info.zsize = info.xsize;
 	info.offset = ZeroVector;
@@ -109,7 +108,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 
 	def = circuit->GetUnitDefByName("cafus");
 	wpDef = circuit->GetCallback()->GetWeaponDefByName("nuclear_missile");
-	info.xsize = (sqrtf(2) * wpDef->GetAreaOfEffect()) / (SQUARE_SIZE * 2);
+	info.xsize = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
 	delete wpDef;
 	info.zsize = info.xsize;
 	info.offset = ZeroVector;
@@ -355,16 +354,6 @@ int CTerrainManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 	return 0; //signaling: OK
 }
 
-int CTerrainManager::UnitFinished(CCircuitUnit* unit)
-{
-	auto search = finishedHandler.find(unit->GetDef()->GetUnitDefId());
-	if (search != finishedHandler.end()) {
-		search->second(unit);
-	}
-
-	return 0; //signaling: OK
-}
-
 int CTerrainManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
 	auto search = destroyedHandler.find(unit->GetDef()->GetUnitDefId());
@@ -540,18 +529,12 @@ AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, f
 
 void CTerrainManager::AddBlocker(CCircuitUnit* unit)
 {
-//	if (blockers.find(unit) == blockers.end()) {
-//		blockers.insert(unit);
-		MarkBlocker(unit, 1);
-//	}
+	MarkBlocker(unit, 1);
 }
 
 void CTerrainManager::RemoveBlocker(CCircuitUnit* unit)
 {
-//	if (blockers.find(unit) != blockers.end()) {
-		MarkBlocker(unit, -1);
-//		blockers.erase(unit);
-//	}
+	MarkBlocker(unit, -1);
 }
 
 void CTerrainManager::MarkBlocker(CCircuitUnit* unit, int count)
@@ -599,6 +582,19 @@ void CTerrainManager::MarkBlocker(CCircuitUnit* unit, int count)
 		zmsize = zbsize;
 	}
 
+	/*
+	 * xm1     xb1   xb2     xm2
+	 * |       |     |       |
+	 * mmmmmmmmmmmmmmmmmmmmmm - zm1
+	 * mmmmmmmmmmmmmmmmmmmmmm
+	 * mmmmmmmmbbbbbbmmmmmmmm - zb1
+	 * mmmmmmmmbbbbbbmmmmmmmm
+	 * mmmmmmmmbbbbbbmmmmmmmm
+	 * mmmmmmmmmmmmmmmmmmmmmm - zb2
+	 * mmmmmmmmmmmmmmmmmmmmmm
+	 *                        - zm2
+	 */
+
 	AIFloat3 buildPos = Pos2BuildPos(xmsize, zmsize, u->GetPos());
 	const int xb1 = int(buildPos.x / (SQUARE_SIZE * 2)) - (xbsize / 2), xb2 = xb1 + xbsize;
 	const int zb1 = int(buildPos.z / (SQUARE_SIZE * 2)) - (zbsize / 2), zb2 = zb1 + zbsize;
@@ -620,8 +616,16 @@ void CTerrainManager::MarkBlocker(CCircuitUnit* unit, int count)
 		for (int x = xb2; x < xm2; x++) {
 			GetBlock(x, z) += count;
 		}
-		for (int x = xb1; x < xb2; x++) {
-			GetBlock(x, z) |= STRUCT;
+		if (count > 0) {
+			for (int x = xb1; x < xb2; x++) {
+				GetBlock(x, z) |= STRUCT;
+			}
+		} else {
+			// NOTE: This can be wrong if unit was built inside factory :/
+			// FIX: Do not mark movable units
+			for (int x = xb1; x < xb2; x++) {
+				GetBlock(x, z) &= ~STRUCT;
+			}
 		}
 	}
 }
