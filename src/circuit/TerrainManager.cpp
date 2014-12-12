@@ -22,9 +22,42 @@
 // debug
 #include "Drawer.h"
 
+#define MAX_BLOCK_VAL	0xFF
+#define STRUCTURE		0x8000
+
 namespace circuit {
 
 using namespace springai;
+
+inline bool CTerrainManager::BlockingMap::IsStruct(int x, int z)
+{
+	return (grid[z * cellRows + x] & STRUCTURE);
+}
+
+inline bool CTerrainManager::BlockingMap::IsBlocked(int x, int z)
+{
+	return (grid[z * cellRows + x] > 0);
+}
+
+inline void CTerrainManager::BlockingMap::MarkBlocker(int x, int z)
+{
+	grid[z * cellRows + x] = MAX_BLOCK_VAL;
+}
+
+inline void CTerrainManager::BlockingMap::AddBlocker(int x, int z, int count)
+{
+	grid[z * cellRows + x] += count;
+}
+
+inline void CTerrainManager::BlockingMap::AddStruct(int x, int z)
+{
+	grid[z * cellRows + x] |= STRUCTURE;
+}
+
+inline void CTerrainManager::BlockingMap::RemoveStruct(int x, int z)
+{
+	grid[z * cellRows + x] &= ~STRUCTURE;
+}
 
 CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 		IModule(circuit)
@@ -54,17 +87,17 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 		}
 	}
 
-	// debug
-	Drawer* drawer = circuit->GetMap()->GetDrawer();
-	for (int z = 0; z < cellRows; z++) {
-		for (int x = 0; x < mapHeight / 2; x++) {
-			if (blockingMap.IsBlocked(x, z)) {
-				AIFloat3 pos = AIFloat3(x * SQUARE_SIZE * 2 + SQUARE_SIZE, 0, z * SQUARE_SIZE * 2 + SQUARE_SIZE);
-				drawer->AddPoint(pos, "");
-			}
-		}
-	}
-	delete drawer;
+//	// debug
+//	Drawer* drawer = circuit->GetMap()->GetDrawer();
+//	for (int z = 0; z < cellRows; z++) {
+//		for (int x = 0; x < mapHeight / 2; x++) {
+//			if (blockingMap.IsBlocked(x, z)) {
+//				AIFloat3 pos = AIFloat3(x * SQUARE_SIZE * 2 + SQUARE_SIZE, 0, z * SQUARE_SIZE * 2 + SQUARE_SIZE);
+//				drawer->AddPoint(pos, "");
+//			}
+//		}
+//	}
+//	delete drawer;
 
 	/*
 	 * building handlers
@@ -102,27 +135,32 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 //	}
 
 	WeaponDef* wpDef;
-	AIFloat3 offset;
+	int2 offset;
+	int2 bsize;
+	int2 ssize;
 	int radius;
 	def = circuit->GetUnitDefByName("factorycloak");
-	xsize = def->GetXSize() / 2 + 6;
-	zsize = def->GetZSize() / 2 + 4;
-	offset = AIFloat3(0, 0, (SQUARE_SIZE * 2) * 4);
-	blockInfos[def] = new CBlockRectangle(offset, xsize, zsize);
+	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+	bsize = int2(ssize.x + 6, ssize.y + 4);
+	// offset in South facing
+	offset = int2(1, 4);
+	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize);
 
 	def = circuit->GetUnitDefByName("armfus");
 	wpDef = circuit->GetCallback()->GetWeaponDefByName("atomic_blast");
 	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
 	delete wpDef;
-	offset = ZeroVector;
-	blockInfos[def] = new CBlockCircle(offset, radius);
+	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+	offset = int2(0, 0);
+	blockInfos[def] = new CBlockCircle(offset, radius, ssize);
 
 	def = circuit->GetUnitDefByName("cafus");
 	wpDef = circuit->GetCallback()->GetWeaponDefByName("nuclear_missile");
 	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
 	delete wpDef;
-	offset = ZeroVector;
-	blockInfos[def] = new CBlockCircle(offset, radius);
+	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+	offset = int2(0, 0);
+	blockInfos[def] = new CBlockCircle(offset, radius, ssize);
 
 //	// debug
 //	if (circuit->GetSkirmishAIId() != 1) {
@@ -387,11 +425,159 @@ int CTerrainManager::GetTerrainHeight()
 	return terrainHeight;
 }
 
+//AIFloat3 CTerrainManager::Pos2BuildPos(int xsize, int zsize, const AIFloat3& pos)
+//{
+//	AIFloat3 buildPos;
+//
+//	static const int HALFMAP_SQ = SQUARE_SIZE * 2;
+//
+//	if (xsize & 1) {  // swaped Xsize, Zsize according to facing
+//		buildPos.x = floor((pos.x              ) / (HALFMAP_SQ)) * HALFMAP_SQ + SQUARE_SIZE;
+//	} else {
+//		buildPos.x = floor((pos.x + SQUARE_SIZE) / (HALFMAP_SQ)) * HALFMAP_SQ;
+//	}
+//
+//	if (zsize & 1) {  // swaped Xsize, Zsize according to facing
+//		buildPos.z = floor((pos.z              ) / (HALFMAP_SQ)) * HALFMAP_SQ + SQUARE_SIZE;
+//	} else {
+//		buildPos.z = floor((pos.z + SQUARE_SIZE) / (HALFMAP_SQ)) * HALFMAP_SQ;
+//	}
+//
+////	buildPos.y = circuit->GetMap()->GetElevationAt(buildPos.x, buildPos.z);
+//	buildPos.y = pos.y;
+//	return buildPos;
+//}
+
+const std::vector<CTerrainManager::SearchOffset>& CTerrainManager::GetSearchOffsetTable(int radius)
+{
+	static std::vector <SearchOffset> searchOffsets;
+	unsigned int size = radius*radius*4;
+	if (size > searchOffsets.size()) {
+		searchOffsets.resize (size);
+
+		for (int y = 0; y < radius*2; y++)
+			for (int x = 0; x < radius*2; x++)
+			{
+				SearchOffset& i = searchOffsets[y*radius*2 + x];
+
+				i.dx = x - radius;
+				i.dy = y - radius;
+				i.qdist = i.dx*i.dx + i.dy*i.dy;
+			}
+
+		auto searchOffsetComparator = [](const SearchOffset& a, const SearchOffset& b) {
+			return a.qdist < b.qdist;
+		};
+		std::sort(searchOffsets.begin(), searchOffsets.end(), searchOffsetComparator);
+	}
+
+	return searchOffsets;
+}
+
+AIFloat3 CTerrainManager::FindBuildSiteByMask(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask)
+{
+	int xmsize, zmsize, xssize, zssize;
+	switch (facing) {
+		default:
+		case UNIT_FACING_SOUTH:
+		case UNIT_FACING_NORTH: {
+			xmsize = mask->GetXSize();
+			zmsize = mask->GetZSize();
+			xssize = unitDef->GetXSize() / 2;
+			zssize = unitDef->GetZSize() / 2;
+			break;
+		}
+		case UNIT_FACING_EAST:
+		case UNIT_FACING_WEST: {
+			xmsize = mask->GetZSize();
+			zmsize = mask->GetXSize();
+			xssize = unitDef->GetZSize() / 2;
+			zssize = unitDef->GetXSize() / 2;
+			break;
+		}
+	}
+
+#define DECLARE_TEST(testName, facingType)								\
+	auto testName = [this, mask](const int2& m1, const int2& m2) {		\
+		for (int x = m1.x, xm = 0; x < m2.x; x++, xm++) {				\
+			for (int z = m1.y, zm = 0; z < m2.y; z++, zm++) {			\
+				switch (mask->facingType(xm, zm)) {						\
+					case IBlockMask::BlockType::BLOCKED: {				\
+						if (blockingMap.IsStruct(x, z)) {				\
+							return false;								\
+						}												\
+						break;											\
+					}													\
+					case IBlockMask::BlockType::STRUCT: {				\
+						if (blockingMap.IsBlocked(x, z)) {				\
+							return false;								\
+						}												\
+						break;											\
+					}													\
+				}														\
+			}															\
+		}																\
+		return true;													\
+	};
+
+	const int endr = (int)(searchRadius / (SQUARE_SIZE * 2));
+	const std::vector<SearchOffset>& ofs = GetSearchOffsetTable(endr);
+	int2 corner;
+	corner.x = int(pos.x / (SQUARE_SIZE * 2)) - (xssize / 2);
+	corner.y = int(pos.z / (SQUARE_SIZE * 2)) - (zssize / 2);
+	int2 maskCorner = corner - mask->GetStructOffset(facing);
+	AIFloat3 probePos(ZeroVector);
+	Map* map = circuit->GetMap();
+
+#define DO_TEST(testName)												\
+	for (int so = 0; so < endr * endr * 4; so++) {						\
+		int2 m1(maskCorner.x + ofs[so].dx, maskCorner.y + ofs[so].dy);	\
+		int2 m2(        m1.x + xmsize,             m1.y + zmsize);		\
+		if (!testName(m1, m2)) {										\
+			continue;													\
+		}																\
+																		\
+		int2 b1(    corner.x + ofs[so].dx,     corner.y + ofs[so].dy);	\
+		int2 b2(        b1.x + xssize,             b1.y + zssize);		\
+		probePos.x = (b1.x + b2.x) * SQUARE_SIZE;						\
+		probePos.z = (b1.y + b2.y) * SQUARE_SIZE;						\
+		if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {		\
+			probePos.y = map->GetElevationAt(probePos.x, probePos.z);	\
+			return probePos;											\
+		}																\
+	}
+
+	switch (facing) {
+		case UNIT_FACING_SOUTH: {
+			DECLARE_TEST(isOpenSouth, GetTypeSouth);
+			DO_TEST(isOpenSouth);
+			break;
+		}
+		case UNIT_FACING_EAST: {
+			DECLARE_TEST(isOpenEast, GetTypeEast);
+			DO_TEST(isOpenEast);
+			break;
+		}
+		case UNIT_FACING_NORTH: {
+			DECLARE_TEST(isOpenNorth, GetTypeNorth);
+			DO_TEST(isOpenNorth);
+			break;
+		}
+		case UNIT_FACING_WEST: {
+			DECLARE_TEST(isOpenWest, GetTypeWest);
+			DO_TEST(isOpenWest);
+			break;
+		}
+	}
+
+	return -RgtVector;
+}
+
 AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)
 {
 	auto search = blockInfos.find(unitDef);
 	if (search != blockInfos.end()) {
-		return search->second->FindBuildSite(blockingMap, unitDef, facing, pos, searchRadius, circuit->GetMap());
+		return FindBuildSiteByMask(unitDef, pos, searchRadius, facing, search->second);
 	}
 
 	/*
@@ -400,7 +586,6 @@ AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, f
 	int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
-	// m - spacer mask; b - building
 	auto isOpenSite = [this](int x1, int x2, int z1, int z2) {
 		for (int x = x1; x < x2; x++) {
 			for (int z = z1; z < z2; z++) {
@@ -413,7 +598,7 @@ AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, f
 	};
 
 	const int endr = (int)(searchRadius / (SQUARE_SIZE * 2));
-	const std::vector<IBlockInfo::SearchOffset>& ofs = IBlockInfo::GetSearchOffsetTable(endr);
+	const std::vector<SearchOffset>& ofs = GetSearchOffsetTable(endr);
 	Map* map = circuit->GetMap();
 	const int cornerX1 = int(pos.x / (SQUARE_SIZE * 2)) - (xsize / 2);
 	const int cornerZ1 = int(pos.z / (SQUARE_SIZE * 2)) - (zsize / 2);
@@ -446,20 +631,108 @@ void CTerrainManager::RemoveBlocker(CCircuitUnit* unit)
 	MarkBlocker(unit, -1);
 }
 
-void CTerrainManager::MarkBlocker(CCircuitUnit* unit, int count)
+void CTerrainManager::MarkBlockerByMask(CCircuitUnit* unit, int count, IBlockMask* mask)
 {
 	Unit* u = unit->GetUnit();
 	UnitDef* unitDef = unit->GetDef();
 	int facing = u->GetBuildingFacing();
 	const AIFloat3& pos = u->GetPos();
 
-	int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
-	int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
+	int xmsize, zmsize, xssize, zssize;
+	switch (facing) {
+		default:
+		case UNIT_FACING_SOUTH:
+		case UNIT_FACING_NORTH: {
+			xmsize = mask->GetXSize();
+			zmsize = mask->GetZSize();
+			xssize = unitDef->GetXSize() / 2;
+			zssize = unitDef->GetZSize() / 2;
+			break;
+		}
+		case UNIT_FACING_EAST:
+		case UNIT_FACING_WEST: {
+			xmsize = mask->GetZSize();
+			zmsize = mask->GetXSize();
+			xssize = unitDef->GetZSize() / 2;
+			zssize = unitDef->GetXSize() / 2;
+			break;
+		}
+	}
+
+#define DECLARE_MARKER(typeName, structOperation)			\
+	Drawer* drawer = circuit->GetMap()->GetDrawer();	\
+	for (int x = m1.x, xm = 0; x < m2.x; x++, xm++) {		\
+		for (int z = m1.y, zm = 0; z < m2.y; z++, zm++) {	\
+			switch (mask->typeName(xm, zm)) {				\
+				case IBlockMask::BlockType::BLOCKED: {		\
+					blockingMap.AddBlocker(x, z, count);	\
+					AIFloat3 ppp(x * SQUARE_SIZE * 2 + SQUARE_SIZE, 0, z * SQUARE_SIZE * 2 + SQUARE_SIZE);	\
+					drawer->AddPoint(ppp, "");	\
+					break;									\
+				}											\
+				case IBlockMask::BlockType::STRUCT: {		\
+					blockingMap.structOperation(x, z);		\
+					AIFloat3 ppp(x * SQUARE_SIZE * 2 + SQUARE_SIZE, 0, z * SQUARE_SIZE * 2 + SQUARE_SIZE);	\
+					drawer->AddPoint(ppp, "");	\
+					break;									\
+				}											\
+			}												\
+		}													\
+	}	\
+	delete drawer;
+
+	int2 corner;
+	corner.x = int(pos.x / (SQUARE_SIZE * 2)) - (xssize / 2);
+	corner.y = int(pos.z / (SQUARE_SIZE * 2)) - (zssize / 2);
+	int2 m1 = corner - mask->GetStructOffset(facing);
+	int2 m2(m1.x + xmsize, m1.y + zmsize);
+	Map* map = circuit->GetMap();
+
+#define DO_MARK(facingType)							\
+	if (count > 0) {								\
+		DECLARE_MARKER(facingType, AddStruct);		\
+	} else {										\
+		DECLARE_MARKER(facingType, RemoveStruct);	\
+	}
+
+	switch (facing) {
+		case UNIT_FACING_SOUTH: {
+			DO_MARK(GetTypeSouth);
+			break;
+		}
+		case UNIT_FACING_EAST: {
+			DO_MARK(GetTypeEast);
+			break;
+		}
+		case UNIT_FACING_NORTH: {
+			DO_MARK(GetTypeNorth);
+			break;
+		}
+		case UNIT_FACING_WEST: {
+			DO_MARK(GetTypeWest);
+			break;
+		}
+	}
+}
+
+void CTerrainManager::MarkBlocker(CCircuitUnit* unit, int count)
+{
+	UnitDef* unitDef = unit->GetDef();
 	auto search = blockInfos.find(unitDef);
 	if (search != blockInfos.end()) {
-		search->second->MarkBlocker(blockingMap, facing, xsize, zsize, pos, count);
+		MarkBlockerByMask(unit, count, search->second);
 		return;
 	}
+
+	/*
+	 * Default marker
+	 */
+	Unit* u = unit->GetUnit();
+	int facing = u->GetBuildingFacing();
+	const AIFloat3& pos = u->GetPos();
+
+	int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
+	int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
 	const int x1 = int(pos.x / (SQUARE_SIZE * 2)) - (xsize / 2), x2 = x1 + xsize;
 	const int z1 = int(pos.z / (SQUARE_SIZE * 2)) - (zsize / 2), z2 = z1 + zsize;
@@ -470,7 +743,7 @@ void CTerrainManager::MarkBlocker(CCircuitUnit* unit, int count)
 			}
 		}
 	} else {
-		// NOTE: This can be wrong if unit was built inside factory :/
+		// NOTE: This can mess up things if unit is inside factory :/
 		// SOLUTION: Do not mark movable units
 		for (int z = z1; z < z2; z++) {
 			for (int x = x1; x < x2; x++) {

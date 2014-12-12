@@ -25,10 +25,6 @@
 #include "UnitRulesParam.h"
 #include "Command.h"
 
-// debug
-#include "Game.h"
-#include "Drawer.h"
-
 namespace circuit {
 
 using namespace springai;
@@ -104,12 +100,18 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		if ((task != nullptr) && (task->GetConstructType() == IConstructTask::ConstructType::BUILDER)) {
 			CBuilderTask* taskB = static_cast<CBuilderTask*>(task);
 			// NOTE: Try to cope with strange event order, when different units created within same task
+			// FIXME: Create additional task to catch lost unit
 			if (taskB->GetTarget() == nullptr) {
 				taskB->SetTarget(unit);
 				unfinishedUnits[unit] = taskB;
-			}
-			for (auto ass : taskB->GetAssignees()) {
-				ass->GetUnit()->Repair(unit->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+
+				UnitDef* buildDef = unit->GetDef();
+				Unit* u = unit->GetUnit();
+				int facing = u->GetBuildingFacing();
+				const AIFloat3& pos = u->GetPos();
+				for (auto ass : taskB->GetAssignees()) {
+					ass->GetUnit()->Build(buildDef, pos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+				}
 			}
 		}
 	}
@@ -250,14 +252,6 @@ void CBuilderManager::Init()
 			}
 		}
 	}
-
-//	UnitDef* pylonDef = circuit->GetUnitDefByName("armestor");
-//	for (int i = 0; i < 20; i++) {
-//		int index = circuit->GetMetalManager()->FindNearestSpot(circuit->GetSetupManager()->GetStartPos());
-//		if (index >= 0) {
-//			EnqueueTask(CBuilderTask::Priority::LOW, pylonDef, circuit->GetMetalManager()->GetSpots()[index].position, CBuilderTask::TaskType::PYLON);
-//		}
-//	}
 }
 
 void CBuilderManager::Watchdog()
@@ -351,28 +345,6 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 				valid = ((dist < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));
 			}
 
-			// debug
-//			Drawer* drawer = circuit->GetMap()->GetDrawer();
-//			if (dist <= 0) {
-//				drawer->AddPoint(pos, "");
-//				if (target != nullptr) {
-//					Unit* tu = target->GetUnit();
-//					UnitDef* buildDef = target->GetDef();
-//					int facing = tu->GetBuildingFacing();
-//					int xsize = ((facing & 1) == 0) ? buildDef->GetXSize() : buildDef->GetZSize();
-//					int zsize = ((facing & 1) == 1) ? buildDef->GetXSize() : buildDef->GetZSize();
-//					AIFloat3 offset = (pos - bp).Normalize2D() * (sqrtf(xsize * xsize + zsize * zsize) * (SQUARE_SIZE / 2) + buildDistance);
-//					AIFloat3 buildPos = candidate->GetBuildPos() + offset;
-//					drawer->AddLine(pos, buildPos);
-//				} else {
-//					const AIFloat3& bp = candidate->GetBuildPos();
-//					drawer->AddLine(pos, (bp != -RgtVector) ? bp : candidate->GetPos());
-//				}
-//				circuit->GetGame()->SetPause(true, "dist <= 0");
-//				printf("%f\n", dist);
-//			}
-//			delete drawer;
-
 			if (valid) {
 				task = candidate;
 				metric = dist;
@@ -442,8 +414,10 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 			params.push_back(static_cast<float>(task->GetPriority()));
 			u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
-			if (task->GetTarget() != nullptr) {
-				u->Repair(task->GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+			CCircuitUnit* target = task->GetTarget();
+			if (target != nullptr) {
+				Unit* tu = target->GetUnit();
+				u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
 			UnitDef* buildDef = task->GetBuildDef();
