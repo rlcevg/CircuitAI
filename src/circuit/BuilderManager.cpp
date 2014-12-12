@@ -250,6 +250,14 @@ void CBuilderManager::Init()
 			}
 		}
 	}
+
+//	UnitDef* pylonDef = circuit->GetUnitDefByName("armestor");
+//	for (int i = 0; i < 20; i++) {
+//		int index = circuit->GetMetalManager()->FindNearestSpot(circuit->GetSetupManager()->GetStartPos());
+//		if (index >= 0) {
+//			EnqueueTask(CBuilderTask::Priority::LOW, pylonDef, circuit->GetMetalManager()->GetSpots()[index].position, CBuilderTask::TaskType::PYLON);
+//		}
+//	}
 }
 
 void CBuilderManager::Watchdog()
@@ -314,6 +322,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 			float dist;
 			bool valid;
 			CCircuitUnit* target = candidate->GetTarget();
+			const AIFloat3& bp = candidate->GetBuildPos();
 			if (target != nullptr) {
 				Unit* tu = target->GetUnit();
 
@@ -322,42 +331,47 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 				int facing = tu->GetBuildingFacing();
 				int xsize = ((facing & 1) == 0) ? buildDef->GetXSize() : buildDef->GetZSize();
 				int zsize = ((facing & 1) == 1) ? buildDef->GetXSize() : buildDef->GetZSize();
-				AIFloat3 offset = (pos - candidate->GetBuildPos()).Normalize2D() * (sqrtf(xsize * xsize + zsize * zsize) * (SQUARE_SIZE / 2) + buildDistance);
+				AIFloat3 offset = (pos - bp).Normalize2D() * (sqrtf(xsize * xsize + zsize * zsize) * (SQUARE_SIZE / 2) + buildDistance);
 				AIFloat3 buildPos = candidate->GetBuildPos() + offset;
 
 				dist = circuit->GetPathing()->GetApproximateLength(buildPos, pos, pathType, buildDistance);
+				if (dist <= 0) {
+					dist = bp.distance(pos) * 1.5;
+				}
 				if (dist < metric) {
 					float maxHealth = tu->GetMaxHealth();
 					float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
 					valid = (((maxHealth - tu->GetHealth()) * 0.8) > healthSpeed * (dist / (maxSpeed * FRAMES_PER_SEC)));
 				}
 			} else {
-				const AIFloat3& bp = candidate->GetBuildPos();
 				dist = circuit->GetPathing()->GetApproximateLength((bp != -RgtVector) ? bp : candidate->GetPos(), pos, pathType, buildDistance);
+				if (dist <= 0) {
+					dist = bp.distance(pos) * 1.5;
+				}
 				valid = ((dist < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));
 			}
 
 			// debug
-			Drawer* drawer = circuit->GetMap()->GetDrawer();
-			if (dist <= 0) {
-				drawer->AddPoint(pos, "");
-				if (target != nullptr) {
-					Unit* tu = target->GetUnit();
-					UnitDef* buildDef = target->GetDef();
-					int facing = tu->GetBuildingFacing();
-					int xsize = ((facing & 1) == 0) ? buildDef->GetXSize() : buildDef->GetZSize();
-					int zsize = ((facing & 1) == 1) ? buildDef->GetXSize() : buildDef->GetZSize();
-					AIFloat3 offset = (pos - candidate->GetBuildPos()).Normalize2D() * (sqrtf(xsize * xsize + zsize * zsize) * (SQUARE_SIZE / 2) + buildDistance);
-					AIFloat3 buildPos = candidate->GetBuildPos() + offset;
-					drawer->AddLine(pos, buildPos);
-				} else {
-					const AIFloat3& bp = candidate->GetBuildPos();
-					drawer->AddLine(pos, (bp != -RgtVector) ? bp : candidate->GetPos());
-				}
-				circuit->GetGame()->SetPause(true, "dist <= 0");
-				printf("%f\n", dist);
-			}
-			delete drawer;
+//			Drawer* drawer = circuit->GetMap()->GetDrawer();
+//			if (dist <= 0) {
+//				drawer->AddPoint(pos, "");
+//				if (target != nullptr) {
+//					Unit* tu = target->GetUnit();
+//					UnitDef* buildDef = target->GetDef();
+//					int facing = tu->GetBuildingFacing();
+//					int xsize = ((facing & 1) == 0) ? buildDef->GetXSize() : buildDef->GetZSize();
+//					int zsize = ((facing & 1) == 1) ? buildDef->GetXSize() : buildDef->GetZSize();
+//					AIFloat3 offset = (pos - bp).Normalize2D() * (sqrtf(xsize * xsize + zsize * zsize) * (SQUARE_SIZE / 2) + buildDistance);
+//					AIFloat3 buildPos = candidate->GetBuildPos() + offset;
+//					drawer->AddLine(pos, buildPos);
+//				} else {
+//					const AIFloat3& bp = candidate->GetBuildPos();
+//					drawer->AddLine(pos, (bp != -RgtVector) ? bp : candidate->GetPos());
+//				}
+//				circuit->GetGame()->SetPause(true, "dist <= 0");
+//				printf("%f\n", dist);
+//			}
+//			delete drawer;
 
 			if (valid) {
 				task = candidate;
