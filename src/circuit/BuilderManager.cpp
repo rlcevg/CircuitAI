@@ -320,7 +320,8 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 			if (target != nullptr) {
 				Unit* tu = target->GetUnit();
 
-				// FIXME: GetApproximateLength to position taken by building or feature will return 0
+				// FIXME: GetApproximateLength to position occupied by building or feature will return 0
+				//        Also seems GetApproximateLength is the cause of lags
 				UnitDef* buildDef = target->GetDef();
 				int facing = tu->GetBuildingFacing();
 				int xsize = ((facing & 1) == 0) ? buildDef->GetXSize() : buildDef->GetZSize();

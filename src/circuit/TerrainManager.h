@@ -10,6 +10,7 @@
 
 #include "Module.h"
 
+#include "System/type2.h"
 #include "AIFloat3.h"
 
 #include <unordered_map>
@@ -67,8 +68,10 @@ private:
 	struct BlockingMap {
 		std::vector<int> grid;     // granularity Map::GetWidth / 2,  Map::GetHeight / 2
 		int columns;
+		int rows;
 		std::vector<int> gridLow;  // granularity Map::GetWidth / 16, Map::GetHeight / 16
 		int columnsLow;
+		int rowsLow;
 		inline bool IsStruct(int x, int z);
 		inline bool IsBlocked(int x, int z);
 		inline bool IsBlockedLow(int x, int z);
@@ -77,6 +80,10 @@ private:
 		inline void RemoveBlocker(int x, int z);
 		inline void AddStruct(int x, int z);
 		inline void RemoveStruct(int x, int z);
+
+		inline bool IsInBounds(const int2& r1, const int2& r2);
+		inline bool IsInBoundsLow(int x, int z);
+		inline void Bound(int2& r1, int2& r2);
 	} blockingMap;
 	std::unordered_map<springai::UnitDef*, IBlockMask*> blockInfos;  // owner
 	void AddBlocker(CCircuitUnit* unit);

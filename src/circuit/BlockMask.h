@@ -32,8 +32,8 @@ public:
 protected:
 	IBlockMask();
 	struct BlockRects {
-		int2 b1, b2;
-		int2 s1, s2;
+		int2 b1, b2;  // b - blocker rect
+		int2 s1, s2;  // s - structure rect
 	};
 	BlockRects Init(const int2& offset, const int2& bsize, const int2& ssize);
 
