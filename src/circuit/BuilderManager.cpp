@@ -331,6 +331,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 
 				dist = circuit->GetPathing()->GetApproximateLength(buildPos, pos, pathType, buildDistance);
 				if (dist <= 0) {
+//					continue;
 					dist = bp.distance(pos) * 1.5;
 				}
 				if (dist < metric) {
@@ -341,6 +342,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 			} else {
 				dist = circuit->GetPathing()->GetApproximateLength((bp != -RgtVector) ? bp : candidate->GetPos(), pos, pathType, buildDistance);
 				if (dist <= 0) {
+//					continue;
 					dist = bp.distance(pos) * 1.5;
 				}
 				valid = ((dist < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));

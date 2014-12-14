@@ -42,8 +42,9 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	eco = circuit->GetCallback()->GetEconomy();
 
 	UnitDef* def = circuit->GetUnitDefByName("armestor");
-	std::map<std::string, std::string> customParams = def->GetCustomParams();
-	pylonRange = utils::string_to_float(customParams["pylonrange"]);
+	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+	auto search = customParams.find("pylonrange");
+	pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : 500;
 
 //	WeaponDef* wpDef = circuit->GetCallback()->GetWeaponDefByName("nuclear_missile");
 //	singuRange = wpDef->GetAreaOfEffect();

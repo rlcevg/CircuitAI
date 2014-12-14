@@ -24,7 +24,7 @@ struct SBlockingMap {
 
 	inline bool IsStruct(int x, int z, StructMask structMask);
 	inline bool IsBlocked(int x, int z, int notIgnoreMask);
-	inline bool IsBlockedLow(int x, int z, int ignoreMask);
+	inline bool IsBlockedLow(int xLow, int zLow, int notIgnoreMask);
 	inline void MarkBlocker(int x, int z, StructType structType);
 	inline void AddBlocker(int x, int z, StructType structType);
 	inline void RemoveBlocker(int x, int z, StructType structType);
@@ -38,16 +38,20 @@ struct SBlockingMap {
 	static inline StructMask GetStructMask(StructType structType);
 
 	struct BlockCell {
-//		unsigned int totalCount;
 		int blockerMask;
 		int notIgnoreMask;  // = ~ignoreMask
 		StructMask structMask;
 		unsigned int blockerCounts[static_cast<int>(StructType::TOTAL_COUNT)];
 	};
-	std::vector<BlockCell> grid;     // granularity Map::GetWidth / 2,  Map::GetHeight / 2
+	std::vector<BlockCell> grid;  // granularity Map::GetWidth / 2,  Map::GetHeight / 2
 	int columns;
 	int rows;
-	std::vector<int> gridLow;  // granularity Map::GetWidth / 16, Map::GetHeight / 16
+
+	struct BlockCellLow {
+		int blockerMask;
+		unsigned int blockerCounts[static_cast<int>(StructType::TOTAL_COUNT)];
+	};
+	std::vector<BlockCellLow> gridLow;  // granularity Map::GetWidth / 16, Map::GetHeight / 16
 	int columnsLow;
 	int rowsLow;
 };

@@ -38,10 +38,9 @@ inline bool SBlockingMap::IsBlocked(int x, int z, int notIgnoreMask)
 	return (cell.blockerMask & notIgnoreMask) || static_cast<int>(cell.structMask);
 }
 
-inline bool SBlockingMap::IsBlockedLow(int x, int z, int ignoreMask)
+inline bool SBlockingMap::IsBlockedLow(int xLow, int zLow, int notIgnoreMask)
 {
-	return false;
-//	return (gridLow[z * columnsLow + x] >= (GRID_RATIO_LOW - 1) * (GRID_RATIO_LOW - 1));
+	return (gridLow[zLow * columns + xLow].blockerMask & notIgnoreMask);
 }
 
 inline void SBlockingMap::MarkBlocker(int x, int z, StructType structType)
@@ -49,16 +48,26 @@ inline void SBlockingMap::MarkBlocker(int x, int z, StructType structType)
 	BlockCell& cell = grid[z * columns + x];
 	cell.blockerCounts[static_cast<int>(structType)] = MAX_BLOCK_VAL;
 	cell.structMask = GetStructMask(structType);
-	cell.blockerMask |= static_cast<int>(cell.structMask);
-//	gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW]++;
+	const int structMask = static_cast<int>(cell.structMask);
+	cell.blockerMask |= structMask;
+
+	BlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
+	if (cellLow.blockerCounts[static_cast<int>(structType)]++ == (GRID_RATIO_LOW - 1) * (GRID_RATIO_LOW - 1)) {
+		cellLow.blockerMask |= structMask;
+	}
 }
 
 inline void SBlockingMap::AddBlocker(int x, int z, StructType structType)
 {
 	BlockCell& cell = grid[z * columns + x];
 	if (cell.blockerCounts[static_cast<int>(structType)]++ == 0) {
-		cell.blockerMask |= static_cast<int>(GetStructMask(structType));
-//		gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW]++;
+		const int structMask = static_cast<int>(GetStructMask(structType));
+		cell.blockerMask |= structMask;
+
+		BlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
+		if (++cellLow.blockerCounts[static_cast<int>(structType)] == (GRID_RATIO_LOW - 1) * (GRID_RATIO_LOW - 1)) {
+			cellLow.blockerMask |= structMask;
+		}
 	}
 }
 
@@ -66,8 +75,13 @@ inline void SBlockingMap::RemoveBlocker(int x, int z, StructType structType)
 {
 	BlockCell& cell = grid[z * columns + x];
 	if (--cell.blockerCounts[static_cast<int>(structType)] == 0) {
-		cell.blockerMask &= ~static_cast<int>(GetStructMask(structType));
-//		gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW]--;
+		const int notStructMask = ~static_cast<int>(GetStructMask(structType));
+		cell.blockerMask &= notStructMask;
+
+		BlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
+		if (cellLow.blockerCounts[static_cast<int>(structType)]-- == (GRID_RATIO_LOW - 1) * (GRID_RATIO_LOW - 1)) {
+			cellLow.blockerMask &= notStructMask;
+		}
 	}
 }
 
@@ -75,10 +89,13 @@ inline void SBlockingMap::AddStruct(int x, int z, StructType structType, int not
 {
 	BlockCell& cell = grid[z * columns + x];
 	if (cell.blockerCounts[static_cast<int>(structType)] == 0) {
-//		gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW]++;
+		BlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
+		if (++cellLow.blockerCounts[static_cast<int>(structType)] == (GRID_RATIO_LOW - 1) * (GRID_RATIO_LOW - 1)) {
+			cellLow.blockerMask |= static_cast<int>(GetStructMask(structType));
+		}
 	}
 	cell.notIgnoreMask = notIgnoreMask;
-	cell.structMask = static_cast<StructMask>(GetStructMask(structType));
+	cell.structMask = GetStructMask(structType);
 }
 
 inline void SBlockingMap::RemoveStruct(int x, int z, StructType structType, int notIgnoreMask)
@@ -87,7 +104,10 @@ inline void SBlockingMap::RemoveStruct(int x, int z, StructType structType, int 
 	cell.notIgnoreMask = 0;
 	cell.structMask = StructMask::NONE;
 	if (cell.blockerCounts[static_cast<int>(structType)] == 0) {
-//		gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW]--;
+		BlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
+		if (cellLow.blockerCounts[static_cast<int>(structType)]-- == (GRID_RATIO_LOW - 1) * (GRID_RATIO_LOW - 1)) {
+			cellLow.blockerMask &= ~static_cast<int>(GetStructMask(structType));
+		}
 	}
 }
 
