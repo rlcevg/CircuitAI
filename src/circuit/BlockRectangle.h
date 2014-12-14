@@ -15,7 +15,8 @@ namespace circuit {
 class CBlockRectangle: public virtual IBlockMask {
 public:
 	// bsize - block size, ssize - struct size
-	CBlockRectangle(const int2& offset, const int2& bsize, const int2& ssize);
+	CBlockRectangle(const int2& offset, const int2& bsize, const int2& ssize,
+					SBlockingMap::StructType structType = SBlockingMap::StructType::UNKNOWN, int ignoreMask = 0);
 	virtual ~CBlockRectangle();
 };
 

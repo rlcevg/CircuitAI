@@ -15,7 +15,8 @@ namespace circuit {
 class CBlockCircle: public virtual IBlockMask {
 public:
 	// ssize - struct size
-	CBlockCircle(const int2& offset, int radius, const int2& ssize);
+	CBlockCircle(const int2& offset, int radius, const int2& ssize,
+				 SBlockingMap::StructType structType = SBlockingMap::StructType::UNKNOWN, int ignoreMask = 0);
 	virtual ~CBlockCircle();
 };
 

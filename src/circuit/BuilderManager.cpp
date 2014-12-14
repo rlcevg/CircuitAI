@@ -320,8 +320,8 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 			if (target != nullptr) {
 				Unit* tu = target->GetUnit();
 
-				// FIXME: GetApproximateLength to position occupied by building or feature will return 0
-				//        Also seems GetApproximateLength is the cause of lags
+				// FIXME: GetApproximateLength to position occupied by building or feature will return 0.
+				//        Also GetApproximateLength could be the cause of lags in late game when simultaneously 30 units become idle
 				UnitDef* buildDef = target->GetDef();
 				int facing = tu->GetBuildingFacing();
 				int xsize = ((facing & 1) == 0) ? buildDef->GetXSize() : buildDef->GetZSize();

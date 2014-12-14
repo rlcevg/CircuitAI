@@ -10,7 +10,8 @@
 
 namespace circuit {
 
-CBlockCircle::CBlockCircle(const int2& offset, int radius, const int2& ssize)
+CBlockCircle::CBlockCircle(const int2& offset, int radius, const int2& ssize, SBlockingMap::StructType structType, int ignoreMask) :
+		IBlockMask(structType, ignoreMask)
 {
 	int2 bsize(radius * 2, radius * 2);
 	BlockRects rects = Init(offset, bsize, ssize);

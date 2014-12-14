@@ -12,13 +12,15 @@
 
 namespace circuit {
 
-IBlockMask::IBlockMask() :
+IBlockMask::IBlockMask(SBlockingMap::StructType structType, int ignoreMask) :
 		xsize(0),
 		zsize(0),
 		offsetSouth(0, 0),
 		offsetEast(0, 0),
 		offsetNorth(0, 0),
-		offsetWest(0, 0)
+		offsetWest(0, 0),
+		structType(structType),
+		ignoreMask(ignoreMask)
 {
 }
 
