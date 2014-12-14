@@ -19,6 +19,9 @@
 #include "OOAICallback.h"
 #include "WeaponDef.h"
 
+// debug
+#include "Log.h"
+
 namespace circuit {
 
 using namespace springai;
@@ -413,6 +416,10 @@ AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, f
 		return FindBuildSiteLow(unitDef, pos, searchRadius, facing);
 	}
 
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+
 	/*
 	 * Default FindBuildSite
 	 */
@@ -451,9 +458,14 @@ AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, f
 		probePos.z = (s1.y + s2.y) * SQUARE_SIZE;
 		if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
 			probePos.y = map->GetElevationAt(probePos.x, probePos.z);
+			clock::time_point t1 = clock::now();
+			circuit->LOG("id: %i | FindBuildSite  %i micros | struct: %s | SUCCESS", circuit->GetSkirmishAIId(), std::chrono::duration_cast<microseconds>(t1 - t0).count(), unitDef->GetName());
 			return probePos;
 		}
 	}
+
+	clock::time_point t1 = clock::now();
+	circuit->LOG("id: %i | FindBuildSite  %i micros | struct: %s | FAIL", circuit->GetSkirmishAIId(), std::chrono::duration_cast<microseconds>(t1 - t0).count(), unitDef->GetName());
 
 	return -RgtVector;
 }
@@ -559,6 +571,10 @@ const CTerrainManager::SearchOffsetsLow& CTerrainManager::GetSearchOffsetTableLo
 
 AIFloat3 CTerrainManager::FindBuildSiteLow(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)
 {
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+
 	const int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
@@ -608,10 +624,15 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(UnitDef* unitDef, const AIFloat3& pos
 			probePos.z = (s1.y + s2.y) * SQUARE_SIZE;
 			if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
 				probePos.y = map->GetElevationAt(probePos.x, probePos.z);
+				clock::time_point t1 = clock::now();
+				circuit->LOG("id: %i | FindBuildSiteLow  %i micros | struct: %s | SUCCESS", circuit->GetSkirmishAIId(), std::chrono::duration_cast<microseconds>(t1 - t0).count(), unitDef->GetName());
 				return probePos;
 			}
 		}
 	}
+
+	clock::time_point t1 = clock::now();
+	circuit->LOG("id: %i | FindBuildSiteLow  %i micros | struct: %s | FAIL", circuit->GetSkirmishAIId(), std::chrono::duration_cast<microseconds>(t1 - t0).count(), unitDef->GetName());
 
 	return -RgtVector;
 }
@@ -623,6 +644,10 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(UnitDef* unitDef, const AIFloat3& 
 	if ((searchRadius > GRID_RATIO_LOW * 2 * 100) || (xmsize * zmsize > GRID_RATIO_LOW * GRID_RATIO_LOW * 9)) {
 		return FindBuildSiteByMaskLow(unitDef, pos, searchRadius, facing, mask);
 	}
+
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
 
 	int xssize, zssize;
 	switch (facing) {
@@ -701,6 +726,8 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(UnitDef* unitDef, const AIFloat3& 
 		probePos.z = (s1.y + s2.y) * SQUARE_SIZE;											\
 		if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {							\
 			probePos.y = map->GetElevationAt(probePos.x, probePos.z);						\
+			clock::time_point t1 = clock::now();	\
+			circuit->LOG("id: %i | FindBuildSiteByMask  %i micros | struct: %s | SUCCESS", circuit->GetSkirmishAIId(), std::chrono::duration_cast<microseconds>(t1 - t0).count(), unitDef->GetName());	\
 			return probePos;																\
 		}																					\
 	}
@@ -729,11 +756,18 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(UnitDef* unitDef, const AIFloat3& 
 		}
 	}
 
+	clock::time_point t1 = clock::now();
+	circuit->LOG("id: %i | FindBuildSiteByMask  %i micros | struct: %s | FAIL", circuit->GetSkirmishAIId(), std::chrono::duration_cast<microseconds>(t1 - t0).count(), unitDef->GetName());
+
 	return -RgtVector;
 }
 
 AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask)
 {
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+
 	int xmsize, zmsize, xssize, zssize;
 	switch (facing) {
 		default:
@@ -825,6 +859,8 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(UnitDef* unitDef, const AIFloat
 			probePos.z = (s1.y + s2.y) * SQUARE_SIZE;															\
 			if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {											\
 				probePos.y = map->GetElevationAt(probePos.x, probePos.z);										\
+				clock::time_point t1 = clock::now();	\
+				circuit->LOG("id: %i | FindBuildSiteByMaskLow  %i micros | struct: %s | SUCCESS", circuit->GetSkirmishAIId(), std::chrono::duration_cast<microseconds>(t1 - t0).count(), unitDef->GetName());	\
 				return probePos;																				\
 			}																									\
 		}																										\
@@ -853,6 +889,9 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(UnitDef* unitDef, const AIFloat
 			break;
 		}
 	}
+
+	clock::time_point t1 = clock::now();
+	circuit->LOG("id: %i | FindBuildSiteByMaskLow  %i micros | struct: %s | FAIL", circuit->GetSkirmishAIId(), std::chrono::duration_cast<microseconds>(t1 - t0).count(), unitDef->GetName());
 
 	return -RgtVector;
 }
