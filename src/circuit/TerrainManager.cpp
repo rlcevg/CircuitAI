@@ -77,6 +77,10 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 			destroyedHandler[unitDefId] = buildingDestroyedHandler;
 		}
 	}
+	// Forbid from removing mex blocker
+	int unitDefId = def->GetUnitDefId();
+	createdHandler.erase(unitDefId);
+	destroyedHandler.erase(unitDefId);
 
 	/*
 	 * building masks
@@ -412,9 +416,10 @@ AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, f
 		return FindBuildSiteByMask(unitDef, pos, searchRadius, facing, search->second);
 	}
 
-	if (searchRadius > SQUARE_SIZE * 2 * 100) {
-		return FindBuildSiteLow(unitDef, pos, searchRadius, facing);
-	}
+	FindBuildSiteLow(unitDef, pos, searchRadius, facing);
+//	if (searchRadius > SQUARE_SIZE * 2 * 100) {
+//		return FindBuildSiteLow(unitDef, pos, searchRadius, facing);
+//	}
 
 	using clock = std::chrono::high_resolution_clock;
 	using std::chrono::microseconds;
@@ -639,11 +644,12 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(UnitDef* unitDef, const AIFloat3& pos
 
 AIFloat3 CTerrainManager::FindBuildSiteByMask(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask)
 {
+	FindBuildSiteByMaskLow(unitDef, pos, searchRadius, facing, mask);
 	int xmsize = mask->GetXSize();
 	int zmsize = mask->GetZSize();
-	if ((searchRadius > GRID_RATIO_LOW * 2 * 100) || (xmsize * zmsize > GRID_RATIO_LOW * GRID_RATIO_LOW * 9)) {
-		return FindBuildSiteByMaskLow(unitDef, pos, searchRadius, facing, mask);
-	}
+//	if ((searchRadius > GRID_RATIO_LOW * 2 * 100) || (xmsize * zmsize > GRID_RATIO_LOW * GRID_RATIO_LOW * 9)) {
+//		return FindBuildSiteByMaskLow(unitDef, pos, searchRadius, facing, mask);
+//	}
 
 	using clock = std::chrono::high_resolution_clock;
 	using std::chrono::microseconds;
