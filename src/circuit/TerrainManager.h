@@ -10,6 +10,7 @@
 
 #include "Module.h"
 #include "BlockingMap.h"
+#include "TerrainData.h"
 
 #include "AIFloat3.h"
 
@@ -29,18 +30,39 @@ class CTerrainManager: public virtual IModule {
 public:
 	CTerrainManager(CCircuitAI* circuit);
 	virtual ~CTerrainManager();
-	void Init();
-
-	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
-	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
-
-	int GetTerrainWidth();
-	int GetTerrainHeight();
 
 public:
+	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
+	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
+private:
+	Handlers1 createdHandler;
+	Handlers1 destroyedHandler;
+
+public:
+	int GetTerrainWidth();
+	int GetTerrainHeight();
+private:
+	int terrainWidth;
+	int terrainHeight;
+
+public:
+	// TODO: Use IsInBounds test and Bound operation only if mask or search offsets (endr) are out of bounds
 	springai::AIFloat3 FindBuildSite(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
 private:
-//	static springai::AIFloat3 Pos2BuildPos(int xsize, int zsize, const springai::AIFloat3& pos);
+	int cacheBuildFrame;
+	struct AllyBuilding {
+		int unitId;
+		springai::UnitDef* def;
+		springai::AIFloat3 pos;
+	};
+	struct cmp_building {
+	   bool operator()(const AllyBuilding& lhs, const AllyBuilding& rhs) {
+	      return lhs.unitId < rhs.unitId;
+	   }
+	};
+	std::map<int, AllyBuilding> markedUnits;
+	void MarkAllyBuildings();
+
 	struct SearchOffset {
 		int dx, dy;
 		int qdist;  // dx*dx + dy*dy
@@ -56,14 +78,8 @@ private:
 	static const SearchOffsetsLow& GetSearchOffsetTableLow(int radius);
 	springai::AIFloat3 FindBuildSiteLow(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
 	springai::AIFloat3 FindBuildSiteByMask(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask);
+	// NOTE: Functions using low-resolution grid are ~20% faster on fail. But ~5% slower on success.
 	springai::AIFloat3 FindBuildSiteByMaskLow(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask);
-
-private:
-	Handlers1 createdHandler;
-	Handlers1 destroyedHandler;
-
-	int terrainWidth;
-	int terrainHeight;
 
 	SBlockingMap blockingMap;
 	std::unordered_map<springai::UnitDef*, IBlockMask*> blockInfos;  // owner
@@ -71,6 +87,13 @@ private:
 	void RemoveBlocker(CCircuitUnit* unit);
 	void MarkBlockerByMask(CCircuitUnit* unit, bool block, IBlockMask* mask);
 	void MarkBlocker(CCircuitUnit* unit, bool block);
+
+public:
+	void ClusterizeTerrain();
+	const std::vector<springai::AIFloat3>& GetDefencePoints() const;
+	const std::vector<springai::AIFloat3>& GetDefencePerimeter() const;
+private:
+	CTerrainData terrainData;
 };
 
 } // namespace circuit

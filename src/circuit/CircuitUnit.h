@@ -17,6 +17,9 @@ namespace circuit {
 
 #define CMD_PRIORITY			34220
 #define CMD_TERRAFORM_INTERNAL	39801
+//#define CMD_RETREAT_ZONE		10001
+//#define CMD_SETHAVEN			CMD_RETREAT_ZONE
+#define CMD_RETREAT				34223
 
 class CCircuitDef;
 class IUnitTask;

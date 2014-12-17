@@ -24,6 +24,7 @@ static SBlockingMap::StructMask structTypes[] = {
 	SBlockingMap::StructMask::DEF_MID,
 	SBlockingMap::StructMask::DEF_HIGH,
 	SBlockingMap::StructMask::SPECIAL,
+	SBlockingMap::StructMask::NANO,
 	SBlockingMap::StructMask::UNKNOWN
 };
 

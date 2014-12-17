@@ -24,9 +24,6 @@
 #include "SkirmishAIs.h"
 #include "Resource.h"
 #include "Economy.h"
-//#include "WeaponDef.h"
-#include "Pathing.h"
-#include "MoveData.h"
 
 namespace circuit {
 
@@ -45,10 +42,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto search = customParams.find("pylonrange");
 	pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : 500;
-
-//	WeaponDef* wpDef = circuit->GetCallback()->GetWeaponDefByName("nuclear_missile");
-//	singuRange = wpDef->GetAreaOfEffect();
-//	delete wpDef;
 
 	// TODO: Use A* ai planning... or sth... STRIPS https://ru.wikipedia.org/wiki/STRIPS
 	//       https://ru.wikipedia.org/wiki/Марковский_процесс_принятия_решений

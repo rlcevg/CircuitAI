@@ -20,7 +20,6 @@ CMetalData::CMetalData() :
 		initialized(false),
 		pclusters(&clusters0),
 		pcentroids(&centroids0),
-		distMatrix(nullptr),
 		isClusterizing(false)
 {
 }
@@ -30,7 +29,7 @@ CMetalData::~CMetalData()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CMetalData::Init(std::vector<Metal>& spots)
+void CMetalData::Init(const Metals& spots)
 {
 	if (initialized) {
 		metalTree.clear();
@@ -203,11 +202,6 @@ const std::vector<AIFloat3>& CMetalData::GetCentroids() const
 const std::vector<AIFloat3>& CMetalData::GetCostCentroids() const
 {
 	return *pcostCentroids.load();
-}
-
-void CMetalData::SetDistMatrix(CRagMatrix& distmatrix)
-{
-	distMatrix = std::make_shared<CRagMatrix>(distmatrix);
 }
 
 void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distMatrix)

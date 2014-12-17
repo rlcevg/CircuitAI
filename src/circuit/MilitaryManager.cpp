@@ -21,6 +21,8 @@
 #include "Pathing.h"
 #include "Drawer.h"
 #include "Game.h"
+#include "OOAICallback.h"
+#include "Lua.h"
 
 #include "AISCommands.h"
 
@@ -45,6 +47,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 		float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
 		AIFloat3 fromPos(x, this->circuit->GetMap()->GetElevationAt(x, z), z);
 		u->Fight(fromPos, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+
+		std::vector<float> params;
+		params.push_back(3);
+		u->ExecuteCustomCommand(CMD_RETREAT, params);
 	};
 	auto atackerIdleHandler = [this](CCircuitUnit* unit) {
 		Unit* u = unit->GetUnit();
@@ -76,6 +82,28 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	unitDefId = circuit->GetUnitDefByName("armsnipe")->GetUnitDefId();
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
+
+	unitDefId = circuit->GetUnitDefByName("armnanotc")->GetUnitDefId();
+	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
+		Unit* u = unit->GetUnit();
+		const AIFloat3& pos = u->GetPos();
+		// TODO: Do not toggle havens
+		Lua* lua = this->circuit->GetCallback()->GetLua();
+		char buf[64];
+		snprintf(buf, sizeof(buf), "sethaven|%.0f|%.0f|%.0f", pos.x, pos.y, pos.z);
+		lua->CallRules(buf, -1);
+		delete lua;
+	};
+	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+		Unit* u = unit->GetUnit();
+		const AIFloat3& pos = u->GetPos();
+		// TODO: Do not toggle havens
+		Lua* lua = this->circuit->GetCallback()->GetLua();
+		char buf[64];
+		snprintf(buf, sizeof(buf), "sethaven|%.0f|%.0f|%.0f", pos.x, pos.y, pos.z);
+		lua->CallRules(buf, -1);
+		delete lua;
+	};
 
 //	/*
 //	 * armrectr handlers
@@ -155,16 +183,16 @@ int CMilitaryManager::UnitIdle(CCircuitUnit* unit)
 //
 //	return 0; //signaling: OK
 //}
-//
-//int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
-//{
-//	auto search = destroyedHandler.find(unit->GetDef()->GetUnitDefId());
-//	if (search != destroyedHandler.end()) {
-//		search->second(unit, attacker);
-//	}
-//
-//	return 0; //signaling: OK
-//}
+
+int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+{
+	auto search = destroyedHandler.find(unit->GetDef()->GetUnitDefId());
+	if (search != destroyedHandler.end()) {
+		search->second(unit, attacker);
+	}
+
+	return 0; //signaling: OK
+}
 
 int CMilitaryManager::EnemyEnterLOS(CCircuitUnit* unit)
 {

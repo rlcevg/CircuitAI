@@ -356,6 +356,13 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 
 	initialized = true;
 
+	// debug
+	if (skirmishAIId == 1) {
+		scheduler->RunTaskAt(std::make_shared<CGameTask>([this]() {
+			terrainManager->ClusterizeTerrain();
+		}));
+	}
+
 	return 0;  // signaling: OK
 }
 

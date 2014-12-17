@@ -46,7 +46,7 @@ public:
 public:
 	CMetalData();
 	virtual ~CMetalData();
-	void Init(std::vector<Metal>& spots);
+	void Init(const Metals& spots);
 
 	bool IsInitialized();
 	bool IsEmpty();
@@ -72,7 +72,6 @@ public:
 	const std::vector<springai::AIFloat3>& GetCentroids() const;
 	const std::vector<springai::AIFloat3>& GetCostCentroids() const;
 
-	void SetDistMatrix(CRagMatrix& distmatrix);
 	/*
 	 * Hierarchical clusterization. Not reusable. Metric: complete link
 	 */
@@ -109,7 +108,6 @@ private:
 
 	std::atomic<bool> isClusterizing;
 	std::mutex clusterMutex;
-	std::shared_ptr<CRagMatrix> distMatrix;
 };
 
 } // namespace circuit

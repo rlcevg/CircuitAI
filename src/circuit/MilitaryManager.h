@@ -21,7 +21,7 @@ public:
 	virtual int UnitFinished(CCircuitUnit* unit);
 	virtual int UnitIdle(CCircuitUnit* unit);
 //	virtual int UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
-//	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
+	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual int EnemyEnterLOS(CCircuitUnit* unit);
 
 private:
@@ -30,7 +30,7 @@ private:
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
 //	Handlers2 damagedHandler;
-//	Handlers2 destroyedHandler;
+	Handlers2 destroyedHandler;
 
 //	struct FighterInfo {
 //		bool isTerraforming;
