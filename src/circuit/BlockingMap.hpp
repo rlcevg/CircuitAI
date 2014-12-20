@@ -11,7 +11,8 @@
 
 #include "BlockingMap.h"
 
-#define MAX_BLOCK_VAL	32000
+#define MAX_BLOCK_VAL		32000
+#define BLOCK_THRESHOLD		(GRID_RATIO_LOW * GRID_RATIO_LOW * 2 / 3)
 
 namespace circuit {
 
@@ -53,7 +54,7 @@ inline void SBlockingMap::MarkBlocker(int x, int z, StructType structType)
 	cell.blockerMask |= structMask;
 
 	BlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
-	if (cellLow.blockerCounts[static_cast<int>(structType)]++ == (GRID_RATIO_LOW - 1) * (GRID_RATIO_LOW - 1)) {
+	if (cellLow.blockerCounts[static_cast<int>(structType)]++ == BLOCK_THRESHOLD) {
 		cellLow.blockerMask |= structMask;
 	}
 }
@@ -66,7 +67,7 @@ inline void SBlockingMap::AddBlocker(int x, int z, StructType structType)
 		cell.blockerMask |= structMask;
 
 		BlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
-		if (++cellLow.blockerCounts[static_cast<int>(structType)] == (GRID_RATIO_LOW - 1) * (GRID_RATIO_LOW - 1)) {
+		if (++cellLow.blockerCounts[static_cast<int>(structType)] == BLOCK_THRESHOLD) {
 			cellLow.blockerMask |= structMask;
 		}
 	}
@@ -80,7 +81,7 @@ inline void SBlockingMap::RemoveBlocker(int x, int z, StructType structType)
 		cell.blockerMask &= notStructMask;
 
 		BlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
-		if (cellLow.blockerCounts[static_cast<int>(structType)]-- == (GRID_RATIO_LOW - 1) * (GRID_RATIO_LOW - 1)) {
+		if (cellLow.blockerCounts[static_cast<int>(structType)]-- == BLOCK_THRESHOLD) {
 			cellLow.blockerMask &= notStructMask;
 		}
 	}
@@ -91,7 +92,7 @@ inline void SBlockingMap::AddStruct(int x, int z, StructType structType, int not
 	BlockCell& cell = grid[z * columns + x];
 	if (cell.blockerCounts[static_cast<int>(structType)] == 0) {
 		BlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
-		if (++cellLow.blockerCounts[static_cast<int>(structType)] == (GRID_RATIO_LOW - 1) * (GRID_RATIO_LOW - 1)) {
+		if (++cellLow.blockerCounts[static_cast<int>(structType)] == BLOCK_THRESHOLD) {
 			cellLow.blockerMask |= static_cast<int>(GetStructMask(structType));
 		}
 	}
@@ -106,7 +107,7 @@ inline void SBlockingMap::RemoveStruct(int x, int z, StructType structType, int 
 	cell.structMask = StructMask::NONE;
 	if (cell.blockerCounts[static_cast<int>(structType)] == 0) {
 		BlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
-		if (cellLow.blockerCounts[static_cast<int>(structType)]-- == (GRID_RATIO_LOW - 1) * (GRID_RATIO_LOW - 1)) {
+		if (cellLow.blockerCounts[static_cast<int>(structType)]-- == BLOCK_THRESHOLD) {
 			cellLow.blockerMask &= ~static_cast<int>(GetStructMask(structType));
 		}
 	}

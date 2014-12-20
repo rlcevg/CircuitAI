@@ -47,6 +47,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	auto workerFinishedHandler = [this](CCircuitUnit* unit) {
 		builderPower += unit->GetDef()->GetBuildSpeed();
 		workers.insert(unit);
+
+		std::vector<float> params;
+		params.push_back(3);
+		unit->GetUnit()->ExecuteCustomCommand(CMD_RETREAT, params);
 	};
 	auto workerIdleHandler = [this](CCircuitUnit* unit) {
 		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
@@ -260,6 +264,9 @@ void CBuilderManager::Watchdog()
 	decltype(builderInfo)::iterator iter = builderInfo.begin();
 	while (iter != builderInfo.end()) {
 		CBuilderTask* task = static_cast<CBuilderTask*>(iter->first->GetTask());
+		if (task == nullptr) {
+			continue;
+		}
 		int timeout = task->GetTimeout();
 		if ((timeout > 0) && (circuit->GetLastFrame() - iter->second.startFrame > timeout)) {
 			switch (task->GetType()) {
@@ -525,10 +532,11 @@ CCircuitUnit* CBuilderManager::FindUnitToAssist(CCircuitUnit* unit)
 	const AIFloat3& pos = su->GetPos();
 	float maxSpeed = su->GetMaxSpeed();
 	float radius = unit->GetDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 5;
+	circuit->UpdateAllyUnits();
 	std::vector<Unit*> units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
 	for (auto u : units) {
 		if (u->GetHealth() < u->GetMaxHealth() && u->GetSpeed() <= maxSpeed * 2) {
-			target = circuit->GetUnitById(u->GetUnitId());
+			target = circuit->GetFriendlyUnit(u);
 			if (target != nullptr) {
 				break;
 			}

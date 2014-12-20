@@ -49,7 +49,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 		u->Fight(fromPos, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
 
 		std::vector<float> params;
-		params.push_back(3);
+		params.push_back(2);
 		u->ExecuteCustomCommand(CMD_RETREAT, params);
 	};
 	auto atackerIdleHandler = [this](CCircuitUnit* unit) {

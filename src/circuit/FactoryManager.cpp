@@ -55,7 +55,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			for (auto nano : units) {
 				UnitDef* ndef = nano->GetDef();
 				if (ndef->GetUnitDefId() == nanoId && nano->GetTeam() == teamId) {
-					nanos.push_back(this->circuit->GetUnitById(nano->GetUnitId()));
+					nanos.push_back(this->circuit->GetTeamUnitById(nano->GetUnitId()));
 				}
 				delete ndef;
 			}
@@ -276,7 +276,7 @@ CCircuitUnit* CFactoryManager::NeedUpgrade()
 	// TODO: Wrap into predicate
 	if (assistDef != nullptr) {
 		for (auto& fac : factories) {
-			if (fac.second.size() < 4) {
+			if (fac.second.size() < 5) {
 				return fac.first;
 			}
 		}

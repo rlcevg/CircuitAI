@@ -157,7 +157,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 
 CCircuitUnit* CSetupManager::GetCommander()
 {
-	return circuit->GetUnitById(commanderId);
+	return circuit->GetTeamUnitById(commanderId);
 }
 
 void CSetupManager::SetStartPos(const AIFloat3& pos)

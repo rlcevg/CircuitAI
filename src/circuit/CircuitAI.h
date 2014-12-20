@@ -24,6 +24,7 @@ namespace springai {
 	class Drawer;
 	class SkirmishAI;
 	class UnitDef;
+	class Unit;
 }
 struct SSkirmishAICallback;
 
@@ -93,9 +94,17 @@ public:
 //	int CommandFinished(CCircuitUnit* unit, int commandTopicId);
 	int LuaMessage(const char* inData);
 
-	CCircuitUnit* GetUnitById(int unitId);
-	CCircuitUnit* RegisterUnit(int unitId);
-	void UnregisterUnit(CCircuitUnit* unit);
+	CCircuitUnit* RegisterTeamUnit(int unitId);
+	void UnregisterTeamUnit(CCircuitUnit* unit);
+	CCircuitUnit* GetTeamUnitById(int unitId);
+	void UpdateAllyUnits();
+	CCircuitUnit* GetFriendlyUnit(springai::Unit* u);
+	CCircuitUnit* GetAllyUnitById(int unitId);
+	const std::map<int, CCircuitUnit*>& GetAllyUnits() const;
+	CCircuitUnit* RegisterEnemyUnit(int unitId);
+	void UnregisterEnemyUnit(CCircuitUnit* unit);
+	CCircuitUnit* GetEnemyUnitById(int unitId);
+	const std::map<int, CCircuitUnit*>& GetEnemyUnits() const;
 
 // ---- UnitDefs ---- BEGIN
 private:
@@ -172,14 +181,9 @@ private:
 	std::shared_ptr<CMilitaryManager> militaryManager;
 	std::list<std::shared_ptr<IModule>> modules;
 
-	// TODO: Make global storage?
-	std::map<int, CCircuitUnit*> aliveUnits;  // owner
-	// TODO: Use or delete
+	int lastAllyUpdate;
 	std::map<int, CCircuitUnit*> teamUnits;  // owner
-
-	// TODO: Use or delete
-	std::map<int, CCircuitUnit*> friendlyUnits;  // owner
-	// TODO: Use or delete
+	std::map<int, CCircuitUnit*> allyUnits;  // owner
 	std::map<int, CCircuitUnit*> enemyUnits;  // owner
 };
 

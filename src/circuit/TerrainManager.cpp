@@ -194,12 +194,7 @@ int CTerrainManager::GetTerrainHeight()
 
 AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)
 {
-	// Mark ally buildings
-	int lastFrame = circuit->GetLastFrame();
-	if (cacheBuildFrame + FRAMES_PER_SEC < lastFrame) {
-		MarkAllyBuildings();
-		cacheBuildFrame = lastFrame;
-	}
+	MarkAllyBuildings();
 
 	auto search = blockInfos.find(unitDef);
 	if (search != blockInfos.end()) {
@@ -257,23 +252,44 @@ AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, f
 
 void CTerrainManager::MarkAllyBuildings()
 {
-//	const std::vector<CCircuitUnit*>& allies = circuit->GetAllyUnits();
-//
-//	std::vector<Unit*> units = circuit->GetCallback()->GetFriendlyUnits();
-//	std::set<AllyBuilding, cmp_building> newUnits;
-//	for (auto u : units) {
-//		if (u->GetMaxSpeed() <= 0) {
-//			int unitId = u->GetUnitId();
-//			if (markedUnits.find(unitId) == markedUnits.end()) {
-//				UnitDef* def = u->GetDef();
-//				AllyBuilding building = {unitId, circuit->GetUnitDefById(def->GetUnitDefId()), u->GetPos()};
-//				delete def;
-//				newUnits.insert(building);
-//				MarkBlocker(, true);
-//			}
-//		}
-//	}
-//	utils::free_clear(units);
+	int lastFrame = circuit->GetLastFrame();
+	if (cacheBuildFrame + FRAMES_PER_SEC >= lastFrame) {
+		return;
+	}
+	cacheBuildFrame = lastFrame;
+
+	circuit->UpdateAllyUnits();
+	const std::map<int, CCircuitUnit*>& allies = circuit->GetAllyUnits();
+
+	std::set<Structure, cmp> newUnits, oldUnits;
+	for (auto& kv : allies) {
+		CCircuitUnit* unit = kv.second;
+		Unit* u = unit->GetUnit();
+		if (u->GetMaxSpeed() <= 0) {
+			int unitId = kv.first;
+			Structure building;
+			building.unitId = unitId;
+			decltype(markedAllies)::iterator search = markedAllies.find(building);
+			if (search == markedAllies.end()) {
+				UnitDef* def = u->GetDef();
+				building.def = circuit->GetUnitDefById(def->GetUnitDefId());
+				building.pos = u->GetPos();
+				building.facing = u->GetBuildingFacing();
+				delete def;
+				newUnits.insert(building);
+				MarkBlocker(building, true);
+			} else {
+				oldUnits.insert(*search);
+			}
+		}
+	}
+	std::set<Structure, cmp> deadUnits;
+	std::set_difference(markedAllies.begin(), markedAllies.end(), oldUnits.begin(), oldUnits.end(), std::inserter(deadUnits, deadUnits.begin()), cmp());
+	for (auto& building : deadUnits) {
+		MarkBlocker(building, false);
+	}
+	markedAllies.clear();
+	std::set_union(oldUnits.begin(), oldUnits.end(), newUnits.begin(), newUnits.end(), std::inserter(markedAllies, markedAllies.begin()), cmp());
 }
 
 const CTerrainManager::SearchOffsets& CTerrainManager::GetSearchOffsetTable(int radius)
@@ -654,20 +670,23 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(UnitDef* unitDef, const AIFloat
 
 void CTerrainManager::AddBlocker(CCircuitUnit* unit)
 {
-	MarkBlocker(unit, true);
+	Unit* u = unit->GetUnit();
+	Structure building = {u->GetUnitId(), unit->GetDef(), u->GetPos(), u->GetBuildingFacing()};
+	MarkBlocker(building, true);
 }
 
 void CTerrainManager::RemoveBlocker(CCircuitUnit* unit)
 {
-	MarkBlocker(unit, false);
+	Unit* u = unit->GetUnit();
+	Structure building = {u->GetUnitId(), unit->GetDef(), u->GetPos(), u->GetBuildingFacing()};
+	MarkBlocker(building, false);
 }
 
-void CTerrainManager::MarkBlockerByMask(CCircuitUnit* unit, bool block, IBlockMask* mask)
+void CTerrainManager::MarkBlockerByMask(const Structure& building, bool block, IBlockMask* mask)
 {
-	Unit* u = unit->GetUnit();
-	UnitDef* unitDef = unit->GetDef();
-	int facing = u->GetBuildingFacing();
-	const AIFloat3& pos = u->GetPos();
+	UnitDef* unitDef = building.def;
+	int facing = building.facing;
+	const AIFloat3& pos = building.pos;
 
 	int xmsize, zmsize, xssize, zssize;
 	switch (facing) {
@@ -747,21 +766,20 @@ void CTerrainManager::MarkBlockerByMask(CCircuitUnit* unit, bool block, IBlockMa
 	}
 }
 
-void CTerrainManager::MarkBlocker(CCircuitUnit* unit, bool block)
+void CTerrainManager::MarkBlocker(const Structure& building, bool block)
 {
-	UnitDef* unitDef = unit->GetDef();
+	UnitDef* unitDef = building.def;
 	auto search = blockInfos.find(unitDef);
 	if (search != blockInfos.end()) {
-		MarkBlockerByMask(unit, block, search->second);
+		MarkBlockerByMask(building, block, search->second);
 		return;
 	}
 
 	/*
 	 * Default marker
 	 */
-	Unit* u = unit->GetUnit();
-	int facing = u->GetBuildingFacing();
-	const AIFloat3& pos = u->GetPos();
+	int facing = building.facing;
+	const AIFloat3& pos = building.pos;
 
 	const int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;

@@ -15,6 +15,7 @@
 #include "AIFloat3.h"
 
 #include <unordered_map>
+#include <set>
 
 namespace springai {
 	class UnitDef;
@@ -50,17 +51,18 @@ public:
 	springai::AIFloat3 FindBuildSite(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
 private:
 	int cacheBuildFrame;
-	struct AllyBuilding {
+	struct Structure {
 		int unitId;
 		springai::UnitDef* def;
 		springai::AIFloat3 pos;
+		int facing;
 	};
-	struct cmp_building {
-	   bool operator()(const AllyBuilding& lhs, const AllyBuilding& rhs) {
+	struct cmp {
+	   bool operator()(const Structure& lhs, const Structure& rhs) {
 	      return lhs.unitId < rhs.unitId;
 	   }
 	};
-	std::map<int, AllyBuilding> markedUnits;
+	std::set<Structure, cmp> markedAllies;
 	void MarkAllyBuildings();
 
 	struct SearchOffset {
@@ -85,8 +87,8 @@ private:
 	std::unordered_map<springai::UnitDef*, IBlockMask*> blockInfos;  // owner
 	void AddBlocker(CCircuitUnit* unit);
 	void RemoveBlocker(CCircuitUnit* unit);
-	void MarkBlockerByMask(CCircuitUnit* unit, bool block, IBlockMask* mask);
-	void MarkBlocker(CCircuitUnit* unit, bool block);
+	void MarkBlockerByMask(const Structure& building, bool block, IBlockMask* mask);
+	void MarkBlocker(const Structure& building, bool block);
 
 public:
 	void ClusterizeTerrain();
