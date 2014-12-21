@@ -17,6 +17,7 @@
 namespace springai {
 	class Resource;
 	class Economy;
+	class AIFloat3;
 }
 
 namespace circuit {
@@ -41,9 +42,9 @@ public:
 
 private:
 	void Init();
-	CBuilderTask* UpdateMetalTasks();
-	CBuilderTask* UpdateEnergyTasks();
-	CBuilderTask* UpdateBuilderTasks();
+	CBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position);
+	CBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position);
+	CBuilderTask* UpdateBuilderTasks(const springai::AIFloat3& position);
 	CFactoryTask* UpdateFactoryTasks();
 
 	Handlers2 createdHandler;

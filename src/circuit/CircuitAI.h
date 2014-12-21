@@ -97,6 +97,7 @@ public:
 	CCircuitUnit* RegisterTeamUnit(int unitId);
 	void UnregisterTeamUnit(CCircuitUnit* unit);
 	CCircuitUnit* GetTeamUnitById(int unitId);
+	const std::map<int, CCircuitUnit*>& GetTeamUnits() const;
 	void UpdateAllyUnits();
 	CCircuitUnit* GetFriendlyUnit(springai::Unit* u);
 	CCircuitUnit* GetAllyUnitById(int unitId);

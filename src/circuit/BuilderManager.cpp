@@ -55,12 +55,28 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	auto workerIdleHandler = [this](CCircuitUnit* unit) {
 		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
 		if ((task != nullptr) && (task->GetType() == CBuilderTask::TaskType::ASSIST)) {
-			task->SetTarget(nullptr);
+			DequeueTask(task);
 		} else {
 			unit->RemoveTask();
-			AssignTask(unit);
 		}
+		AssignTask(unit);
 		ExecuteTask(unit);
+	};
+	auto workerDamagedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+		if (unit->GetUnit()->IsBeingBuilt()) {
+			return;
+		}
+		builderInfo.erase(unit);
+		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
+		if (task != nullptr) {
+			for (auto ass : task->GetAssignees()) {
+				if (ass != unit) {
+					ass->GetUnit()->Stop();
+				}
+			}
+			unit->GetUnit()->MoveTo(this->circuit->GetSetupManager()->GetStartPos(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 10);
+			DequeueTask(task);
+		}
 	};
 	auto workerDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 		if (unit->GetUnit()->IsBeingBuilt()) {
@@ -82,6 +98,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 			int unitDefId = def->GetUnitDefId();
 			finishedHandler[unitDefId] = workerFinishedHandler;
 			idleHandler[unitDefId] = workerIdleHandler;
+			damagedHandler[unitDefId] = workerDamagedHandler;
 			destroyedHandler[unitDefId] = workerDestroyedHandler;
 		}
 	}
@@ -148,6 +165,16 @@ int CBuilderManager::UnitIdle(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
+int CBuilderManager::UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+{
+	auto search = damagedHandler.find(unit->GetDef()->GetUnitDefId());
+	if (search != damagedHandler.end()) {
+		search->second(unit, attacker);
+	}
+
+	return 0; //signaling: OK
+}
+
 int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
 	if (unit->GetUnit()->IsBeingBuilt()) {
@@ -191,16 +218,16 @@ CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
 	return task;
 }
 
-CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
-										   const AIFloat3& position,
-										   CBuilderTask::TaskType type,
-										   int timeout)
-{
-	CBuilderTask* task = new CBuilderTask(priority, nullptr, position, type, 1000.0f, timeout);
-	builderTasks[static_cast<int>(type)].push_front(task);
-	builderTasksCount++;
-	return task;
-}
+//CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
+//										   const AIFloat3& position,
+//										   CBuilderTask::TaskType type,
+//										   int timeout)
+//{
+//	CBuilderTask* task = new CBuilderTask(priority, nullptr, position, type, 1000.0f, timeout);
+//	builderTasks[static_cast<int>(type)].push_front(task);
+//	builderTasksCount++;
+//	return task;
+//}
 
 void CBuilderManager::DequeueTask(CBuilderTask* task)
 {
@@ -265,15 +292,16 @@ void CBuilderManager::Watchdog()
 	while (iter != builderInfo.end()) {
 		CBuilderTask* task = static_cast<CBuilderTask*>(iter->first->GetTask());
 		if (task == nullptr) {
+			iter->first->GetUnit()->Stop();
+			iter = builderInfo.erase(iter);
 			continue;
 		}
 		int timeout = task->GetTimeout();
 		if ((timeout > 0) && (circuit->GetLastFrame() - iter->second.startFrame > timeout)) {
 			switch (task->GetType()) {
-				case CBuilderTask::TaskType::ASSIST: {
+				case CBuilderTask::TaskType::PATROL: {
 					CCircuitUnit* unit = iter->first;
 					task->MarkCompleted();
-					builderTasks[static_cast<int>(CBuilderTask::TaskType::ASSIST)].remove(task);
 					delete task;
 					unit->GetUnit()->Stop();
 					iter = builderInfo.erase(iter);
@@ -295,9 +323,23 @@ void CBuilderManager::Watchdog()
 			CTerrainManager* terrain = circuit->GetTerrainManager();
 			toPos.x += (toPos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
 			toPos.z += (toPos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
-			u->MoveTo(toPos);
+			u->MoveTo(toPos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 10);
 		}
 		utils::free_clear(commands);
+	}
+
+	// find unfinished abandoned buildings
+	// TODO: Include special units
+	for (auto& kv : circuit->GetTeamUnits()) {
+		CCircuitUnit* unit = kv.second;
+		Unit* u = unit->GetUnit();
+		if (u->IsBeingBuilt() && (u->GetMaxSpeed() <= 0) && (unfinishedUnits.find(unit) == unfinishedUnits.end())) {
+			const AIFloat3& pos = u->GetPos();
+			CBuilderTask* task = EnqueueTask(CBuilderTask::Priority::NORMAL, unit->GetDef(), pos, CBuilderTask::TaskType::ASSIST);
+			task->SetBuildPos(pos);
+			task->SetTarget(unit);
+			unfinishedUnits[unit] = task;
+		}
 	}
 }
 
@@ -320,6 +362,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 			CBuilderTask* candidate = static_cast<CBuilderTask*>(t);
 
 			// Check time-distance to target
+			float weight = 1.0f / (static_cast<float>(candidate->GetPriority()) + 1.0f);
 			float dist;
 			bool valid;
 			CCircuitUnit* target = candidate->GetTarget();
@@ -333,7 +376,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 				int facing = tu->GetBuildingFacing();
 				int xsize = ((facing & 1) == 0) ? buildDef->GetXSize() : buildDef->GetZSize();
 				int zsize = ((facing & 1) == 1) ? buildDef->GetXSize() : buildDef->GetZSize();
-				AIFloat3 offset = (pos - bp).Normalize2D() * (sqrtf(xsize * xsize + zsize * zsize) * (SQUARE_SIZE / 2) + buildDistance);
+				AIFloat3 offset = (pos - bp).Normalize2D() * (sqrtf(xsize * xsize + zsize * zsize) * SQUARE_SIZE + buildDistance);
 				AIFloat3 buildPos = candidate->GetBuildPos() + offset;
 
 				dist = circuit->GetPathing()->GetApproximateLength(buildPos, pos, pathType, buildDistance);
@@ -341,7 +384,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 //					continue;
 					dist = bp.distance(pos) * 1.5;
 				}
-				if (dist < metric) {
+				if (dist * weight < metric) {
 					float maxHealth = tu->GetMaxHealth();
 					float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
 					valid = (((maxHealth - tu->GetHealth()) * 0.8) > healthSpeed * (dist / (maxSpeed * FRAMES_PER_SEC)));
@@ -352,12 +395,13 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 //					continue;
 					dist = bp.distance(pos) * 1.5;
 				}
-				valid = ((dist < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));
+//				valid = ((dist < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));
+				valid = (dist * weight < metric);
 			}
 
 			if (valid) {
 				task = candidate;
-				metric = dist;
+				metric = dist * weight;
 			}
 		}
 	}
@@ -395,7 +439,7 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 		u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 		AIFloat3 pos = u->GetPos();
-		CBuilderTask* taskNew = new CBuilderTask(CBuilderTask::Priority::LOW, nullptr, pos, CBuilderTask::TaskType::ASSIST, 1000, FRAMES_PER_SEC * 20);
+		CBuilderTask* taskNew = new CBuilderTask(CBuilderTask::Priority::LOW, nullptr, pos, CBuilderTask::TaskType::PATROL, 1000.0f, FRAMES_PER_SEC * 20);
 		taskNew->AssignTo(unit);
 
 		const float size = SQUARE_SIZE * 10;
@@ -406,6 +450,10 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 
 		builderInfo[unit].startFrame = circuit->GetLastFrame();
 	};
+
+	std::vector<float> params;
+	params.push_back(static_cast<float>(task->GetPriority()));
+	u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 	CBuilderTask::TaskType type = task->GetType();
 	switch (type) {
@@ -420,10 +468,6 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 //		case CBuilderTask::TaskType::DDM:
 //		case CBuilderTask::TaskType::ANNI:
 		default: {
-			std::vector<float> params;
-			params.push_back(static_cast<float>(task->GetPriority()));
-			u->ExecuteCustomCommand(CMD_PRIORITY, params);
-
 			CCircuitUnit* target = task->GetTarget();
 			if (target != nullptr) {
 				Unit* tu = target->GetUnit();
@@ -503,10 +547,6 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 			break;
 		}
 		case CBuilderTask::TaskType::ASSIST: {
-			std::vector<float> params;
-			params.push_back(2.0f);
-			u->ExecuteCustomCommand(CMD_PRIORITY, params);
-
 			CCircuitUnit* target = task->GetTarget();
 			if (target == nullptr) {
 				target = FindUnitToAssist(unit);
@@ -531,7 +571,7 @@ CCircuitUnit* CBuilderManager::FindUnitToAssist(CCircuitUnit* unit)
 	Unit* su = unit->GetUnit();
 	const AIFloat3& pos = su->GetPos();
 	float maxSpeed = su->GetMaxSpeed();
-	float radius = unit->GetDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 5;
+	float radius = unit->GetDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 10;
 	circuit->UpdateAllyUnits();
 	std::vector<Unit*> units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
 	for (auto u : units) {

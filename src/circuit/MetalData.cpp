@@ -167,6 +167,18 @@ const int CMetalData::FindNearestCluster(const AIFloat3& pos, MetalPredicate& pr
 	return -1;
 }
 
+const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& pos, int num) const
+{
+	std::vector<MetalNode> result_n;
+	pclusterTree.load()->query(bgi::nearest(point(pos.x, pos.z), num), std::back_inserter(result_n));
+
+	MetalIndices result;
+	for (auto& node : result_n) {
+		result.push_back(node.second);
+	}
+	return result;
+}
+
 const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& pos, int num, MetalPredicate& predicate) const
 {
 	std::vector<MetalNode> result_n;

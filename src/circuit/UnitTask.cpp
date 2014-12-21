@@ -39,7 +39,7 @@ void IUnitTask::MarkCompleted()
 	units.clear();
 }
 
-std::unordered_set<CCircuitUnit*>& IUnitTask::GetAssignees()
+std::set<CCircuitUnit*>& IUnitTask::GetAssignees()
 {
 	return units;
 }

@@ -17,6 +17,10 @@
 //#include <random>
 //#include <iterator>
 
+// debug
+#include "Drawer.h"
+#include "Log.h"
+
 namespace utils {
 
 #ifdef DEBUG

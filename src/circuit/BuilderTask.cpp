@@ -37,7 +37,7 @@ CBuilderTask::~CBuilderTask()
 
 bool CBuilderTask::CanAssignTo(CCircuitUnit* unit)
 {
-	return (unit->GetCircuitDef()->CanBuild(buildDef) && (cost > buildPower * MIN_BUILD_SEC));
+	return ((unit->GetCircuitDef()->CanBuild(buildDef) && (cost > buildPower * MIN_BUILD_SEC)) || (target != nullptr));
 }
 
 void CBuilderTask::AssignTo(CCircuitUnit* unit)

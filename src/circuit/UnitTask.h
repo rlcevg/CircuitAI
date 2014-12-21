@@ -10,7 +10,7 @@
 
 #include "AIFloat3.h"
 
-#include <unordered_set>
+#include <set>
 
 namespace circuit {
 
@@ -30,11 +30,11 @@ public:
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 	void MarkCompleted();
 
-	std::unordered_set<CCircuitUnit*>& GetAssignees();
+	std::set<CCircuitUnit*>& GetAssignees();
 	Priority GetPriority();
 
 protected:
-	std::unordered_set<CCircuitUnit*> units;
+	std::set<CCircuitUnit*> units;
 	Priority priority;
 };
 

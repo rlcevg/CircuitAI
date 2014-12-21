@@ -79,7 +79,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 			destroyedHandler[unitDefId] = buildingDestroyedHandler;
 		}
 	}
-	// Forbid from removing mex blocker
+	// Forbid from removing cormex blocker
 	int unitDefId = def->GetUnitDefId();
 	createdHandler.erase(unitDefId);
 	destroyedHandler.erase(unitDefId);
@@ -136,7 +136,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
-	ignoreMask = static_cast<int>(SBlockingMap::StructMask::ALL);
+	ignoreMask = static_cast<int>(SBlockingMap::StructMask::ALL) & ~static_cast<int>(SBlockingMap::StructMask::FACTORY);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::MEX, ignoreMask);
 
 	def = circuit->GetUnitDefByName("corrl");

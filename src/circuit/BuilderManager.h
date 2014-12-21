@@ -28,6 +28,7 @@ public:
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
 	virtual int UnitFinished(CCircuitUnit* unit);
 	virtual int UnitIdle(CCircuitUnit* unit);
+	virtual int UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
 	CBuilderTask* EnqueueTask(CBuilderTask::Priority priority,
@@ -41,10 +42,10 @@ public:
 							  const springai::AIFloat3& position,
 							  CBuilderTask::TaskType type,
 							  int timeout = 0);
-	CBuilderTask* EnqueueTask(CBuilderTask::Priority priority,
-							  const springai::AIFloat3& position,
-							  CBuilderTask::TaskType type,
-							  int timeout = 0);
+//	CBuilderTask* EnqueueTask(CBuilderTask::Priority priority,
+//							  const springai::AIFloat3& position,
+//							  CBuilderTask::TaskType type,
+//							  int timeout = 0);
 	void DequeueTask(CBuilderTask* task);
 	float GetBuilderPower();
 	bool CanEnqueueTask();
@@ -60,6 +61,7 @@ private:
 
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
+	Handlers2 damagedHandler;
 	Handlers2 destroyedHandler;
 
 	std::map<CCircuitUnit*, CBuilderTask*> unfinishedUnits;

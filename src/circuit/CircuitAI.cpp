@@ -358,11 +358,11 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 	initialized = true;
 
 	// debug
-	if (skirmishAIId == 1) {
-		scheduler->RunTaskAt(std::make_shared<CGameTask>([this]() {
-			terrainManager->ClusterizeTerrain();
-		}));
-	}
+//	if (skirmishAIId == 1) {
+//		scheduler->RunTaskAt(std::make_shared<CGameTask>([this]() {
+//			terrainManager->ClusterizeTerrain();
+//		}));
+//	}
 
 	return 0;  // signaling: OK
 }
@@ -384,18 +384,24 @@ int CCircuitAI::Release(int reason)
 	for (auto& kv : teamUnits) {
 		delete kv.second;
 	}
+	teamUnits.clear();
 	for (auto& kv : allyUnits) {
 		delete kv.second;
 	}
+	allyUnits.clear();
 	for (auto& kv : enemyUnits) {
 		delete kv.second;
 	}
+	enemyUnits.clear();
 	for (auto& kv : circuitDefs) {
 		delete kv.second;
 	}
+	circuitDefs.clear();
 	for (auto& kv : defsByName) {
 		delete kv.second;
 	}
+	defsByName.clear();
+	defsById.clear();
 	DestroyGameAttribute();
 
 	initialized = false;
@@ -414,13 +420,16 @@ int CCircuitAI::Update(int frame)
 
 int CCircuitAI::Message(int playerId, const char* message)
 {
+	const char cmdPos[] = "~стройсь\0";
+	const char cmdSelfD[] = "~Згинь, нечистая сила!\0";
+
 	size_t msgLength = strlen(message);
 
-	if (msgLength == strlen("~стройсь") && strcmp(message, "~стройсь") == 0) {
+	if ((msgLength == strlen(cmdPos)) && (strcmp(message, cmdPos) == 0)) {
 		setupManager->PickStartPos(this, CSetupManager::StartPosType::RANDOM);
 	}
 
-	else if (strncmp(message, "~selfd", 6) == 0) {
+	else if ((msgLength == strlen(cmdSelfD)) && (strcmp(message, cmdSelfD) == 0)) {
 		std::vector<Unit*> units = callback->GetTeamUnits();
 		for (auto u : units) {
 			u->SelfDestruct();
@@ -465,7 +474,7 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 	AIFloat3 d((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
 	d.Normalize();
 	pos += d * SQUARE_SIZE * 10;
-	u->MoveTo(pos, 0, FRAMES_PER_SEC * 5);
+	u->MoveTo(pos, 0, FRAMES_PER_SEC * 10);
 
 	return 0;  // signaling: OK
 }
@@ -589,6 +598,11 @@ CCircuitUnit* CCircuitAI::GetTeamUnitById(int unitId)
 	}
 
 	return nullptr;
+}
+
+const std::map<int, CCircuitUnit*>& CCircuitAI::GetTeamUnits() const
+{
+	return teamUnits;
 }
 
 void CCircuitAI::UpdateAllyUnits()

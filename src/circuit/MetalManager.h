@@ -50,6 +50,7 @@ public:
 
 	const int FindNearestCluster(const springai::AIFloat3& pos) const;
 	const int FindNearestCluster(const springai::AIFloat3& pos, CMetalData::MetalPredicate& predicate) const;
+	const CMetalData::MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num) const;
 	const CMetalData::MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num, CMetalData::MetalPredicate& predicate) const;
 
 	void ClusterLock();
