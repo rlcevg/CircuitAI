@@ -31,8 +31,7 @@ using namespace springai;
 CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		IModule(circuit),
 		factoryPower(.0f),
-		assistDef(nullptr),
-		havensCount(0)
+		assistDef(nullptr)
 {
 	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::Watchdog, this),
 										  FRAMES_PER_SEC * 60,
@@ -125,7 +124,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		snprintf(buf, sizeof(buf), "sethaven|%.0f|%.0f|%.0f", fromPos.x, fromPos.y, fromPos.z);
 		lua->CallRules(buf, -1);
 		delete lua;
-		havensCount++;
+		havens.insert(unit);
 	};
 	auto assistDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 		if (unit->GetUnit()->IsBeingBuilt()) {
@@ -143,7 +142,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		snprintf(buf, sizeof(buf), "sethaven|%.0f|%.0f|%.0f", pos.x, pos.y, pos.z);
 		lua->CallRules(buf, -1);
 		delete lua;
-		havensCount--;
+		havens.erase(unit);
 	};
 
 	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
@@ -282,7 +281,7 @@ float CFactoryManager::GetFactoryPower()
 
 bool CFactoryManager::CanEnqueueTask()
 {
-	return (factoryTasks.size() < factories.size() * 2);
+	return (factoryTasks.size() < factories.size() * 4);
 }
 
 const std::list<CFactoryTask*>& CFactoryManager::GetTasks() const
@@ -310,9 +309,23 @@ CCircuitUnit* CFactoryManager::GetRandomFactory()
 	return iter->first;
 }
 
-int CFactoryManager::GetHavensCount()
+CCircuitUnit* CFactoryManager::GetClosestHaven(CCircuitUnit* unit) const
 {
-	return havensCount;
+	if (havens.empty()) {
+		return nullptr;
+	}
+	CCircuitUnit* haven;
+	float metric = std::numeric_limits<float>::max();
+	const AIFloat3& position = unit->GetUnit()->GetPos();
+	for (auto hav : havens) {
+		const AIFloat3& pos = hav->GetUnit()->GetPos();
+		float qdist = pos.SqDistance2D(position);
+		if (qdist < metric) {
+			haven = hav;
+			metric = qdist;
+		}
+	}
+	return haven;
 }
 
 void CFactoryManager::Watchdog()

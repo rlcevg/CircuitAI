@@ -70,11 +70,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		builderInfos.erase(unit);
 		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
 		if (task != nullptr) {
-			if (this->circuit->GetFactoryManager()->GetHavensCount() == 0) {
-				unit->GetUnit()->MoveTo(this->circuit->GetSetupManager()->GetStartPos(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 0);
-			} else {
-				unit->GetUnit()->Stop();
-			}
+			CCircuitUnit* haven = this->circuit->GetFactoryManager()->GetClosestHaven(unit);
+			const AIFloat3& pos = (haven != nullptr) ? haven->GetUnit()->GetPos() : this->circuit->GetSetupManager()->GetStartPos();
+			unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 0);
 			if (task->GetTarget() == nullptr) {
 				for (auto ass : task->GetAssignees()) {
 					if (ass != unit) {
@@ -85,7 +83,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 					CMetalManager* metalManager = this->circuit->GetMetalManager();
 					int index = metalManager->FindNearestSpot(task->GetBuildPos());
 					if (index != -1) {
-						metalManager->SetOpenSpot(index, false);
+						metalManager->SetOpenSpot(index, true);
 					}
 				}
 				DequeueTask(task);
@@ -107,7 +105,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 				CMetalManager* metalManager = this->circuit->GetMetalManager();
 				int index = metalManager->FindNearestSpot(task->GetBuildPos());
 				if (index != -1) {
-					metalManager->SetOpenSpot(index, false);
+					metalManager->SetOpenSpot(index, true);
 				}
 			}
 			DequeueTask(task);
@@ -246,7 +244,7 @@ CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
 										   CBuilderTask::TaskType type,
 										   int timeout)
 {
-	CBuilderTask* task = new CBuilderTask(priority, nullptr, position, type, 1000.0f, timeout);
+	CBuilderTask* task = new CBuilderTask(priority, nullptr, position, type, .0f, timeout);
 	builderTasks[static_cast<int>(type)].push_front(task);
 	builderTasksCount++;
 	return task;
@@ -268,7 +266,7 @@ float CBuilderManager::GetBuilderPower()
 
 bool CBuilderManager::CanEnqueueTask()
 {
-	return (builderTasksCount < workers.size() * 2);
+	return (builderTasksCount < workers.size() * 4);
 }
 
 const std::list<CBuilderTask*>& CBuilderManager::GetTasks(CBuilderTask::TaskType type)
@@ -300,7 +298,8 @@ void CBuilderManager::Init()
 					}
 					UnitDef* buildDef = circuit->GetUnitDefByName("factorycloak");
 					AIFloat3 buildPos = terrain->FindBuildSite(buildDef, position, 1000.0f, facing);
-					u->Build(buildDef, buildPos, facing);
+					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+					u->Build(circuit->GetMexDef(), position, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
 				}
 				delete param;
 			}
@@ -410,7 +409,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 				if (dist * weight < metric) {
 					float maxHealth = tu->GetMaxHealth();
 					float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
-					valid = (((maxHealth - tu->GetHealth()) * 0.8) > healthSpeed * (dist / (maxSpeed * FRAMES_PER_SEC)));
+					valid = (((maxHealth - tu->GetHealth()) * 0.6) > healthSpeed * (dist / (maxSpeed * FRAMES_PER_SEC)));
 				}
 			} else {
 				dist = circuit->GetPathing()->GetApproximateLength((bp != -RgtVector) ? bp : candidate->GetPos(), pos, pathType, buildDistance);

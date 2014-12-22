@@ -26,7 +26,7 @@ struct SBlockingMap {
 	inline bool IsStruct(int x, int z, StructMask structMask);
 	inline bool IsBlocked(int x, int z, int notIgnoreMask);
 	inline bool IsBlockedLow(int xLow, int zLow, int notIgnoreMask);
-	inline void MarkBlocker(int x, int z, StructType structType);
+	inline void MarkBlocker(int x, int z, StructType structType, int notIgnoreMask);
 	inline void AddBlocker(int x, int z, StructType structType);
 	inline void RemoveBlocker(int x, int z, StructType structType);
 	inline void AddStruct(int x, int z, StructType structType, int notIgnoreMask);

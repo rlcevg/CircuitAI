@@ -43,7 +43,7 @@ public:
 	CCircuitUnit* NeedUpgrade();
 	CCircuitUnit* GetRandomFactory();
 
-	int GetHavensCount();
+	CCircuitUnit* GetClosestHaven(CCircuitUnit* unit) const;
 
 private:
 	void Watchdog();
@@ -62,7 +62,7 @@ private:
 	std::map<CCircuitUnit*, std::list<CCircuitUnit*>> factories;
 	springai::UnitDef* assistDef;
 
-	int havensCount;
+	std::set<CCircuitUnit*> havens;
 };
 
 } // namespace circuit

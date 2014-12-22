@@ -47,10 +47,11 @@ inline bool SBlockingMap::IsBlockedLow(int xLow, int zLow, int notIgnoreMask)
 	return (gridLow[zLow * columnsLow + xLow].blockerMask & notIgnoreMask);
 }
 
-inline void SBlockingMap::MarkBlocker(int x, int z, StructType structType)
+inline void SBlockingMap::MarkBlocker(int x, int z, StructType structType, int notIgnoreMask)
 {
 	BlockCell& cell = grid[z * columns + x];
 	cell.blockerCounts[static_cast<int>(structType)] = MAX_BLOCK_VAL;
+	cell.notIgnoreMask = notIgnoreMask;
 	cell.structMask = GetStructMask(structType);
 	const int structMask = static_cast<int>(cell.structMask);
 	cell.blockerMask |= structMask;

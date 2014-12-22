@@ -37,62 +37,10 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	terrainWidth = mapWidth * SQUARE_SIZE;
 	terrainHeight = mapHeight * SQUARE_SIZE;
 
-	blockingMap.columns = mapWidth / 2;  // build-step = 2 little green squares
-	blockingMap.rows = mapHeight / 2;
-	SBlockingMap::BlockCell cell = {0};
-	blockingMap.grid.resize(blockingMap.columns * blockingMap.rows, cell);
-	blockingMap.columnsLow = mapWidth / (GRID_RATIO_LOW * 2);
-	blockingMap.rowsLow = mapHeight / (GRID_RATIO_LOW * 2);
-	SBlockingMap::BlockCellLow cellLow = {0};
-	blockingMap.gridLow.resize(blockingMap.columnsLow * blockingMap.rowsLow, cellLow);
-
-	const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
-	UnitDef* def = circuit->GetMexDef();
-	int size = std::max(def->GetXSize(), def->GetZSize()) / 2;
-	int& xsize = size, &zsize = size;
-	for (auto& spot : spots) {
-		const int x1 = int(spot.position.x / (SQUARE_SIZE << 1)) - (xsize >> 1), x2 = x1 + xsize;
-		const int z1 = int(spot.position.z / (SQUARE_SIZE << 1)) - (zsize >> 1), z2 = z1 + zsize;
-		for (int z = z1; z < z2; z++) {
-			for (int x = x1; x < x2; x++) {
-				blockingMap.MarkBlocker(x, z, SBlockingMap::StructType::MEX);
-			}
-		}
-	}
-
-	/*
-	 * building handlers
-	 */
-	auto buildingCreatedHandler = [this](CCircuitUnit* unit) {
-		AddBlocker(unit);
-	};
-	auto buildingDestroyedHandler = [this](CCircuitUnit* unit) {
-		RemoveBlocker(unit);
-	};
-
-	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
-	for (auto& kv : defs) {
-		UnitDef* def = kv.second;
-		int unitDefId = def->GetUnitDefId();
-		if (def->GetSpeed() == 0) {
-			createdHandler[unitDefId] = buildingCreatedHandler;
-			destroyedHandler[unitDefId] = buildingDestroyedHandler;
-		}
-	}
-	// Forbid from removing cormex blocker
-	int unitDefId = circuit->GetMexDef()->GetUnitDefId();
-	createdHandler.erase(unitDefId);
-	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit) {
-		CMetalManager* metalManager = this->circuit->GetMetalManager();
-		int index = metalManager->FindNearestSpot(unit->GetUnit()->GetPos());
-		if (index != -1) {
-			metalManager->SetOpenSpot(index, false);
-		}
-	};
-
 	/*
 	 * building masks
 	 */
+	UnitDef* def;
 	WeaponDef* wpDef;
 	int2 offset;
 	int2 bsize;
@@ -136,7 +84,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto search = customParams.find("pylonrange");
 	float pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : 500;
-	radius = pylonRange / (SQUARE_SIZE * 1.2);
+	radius = pylonRange / (SQUARE_SIZE * 1.3);
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
 	ignoreMask = static_cast<int>(SBlockingMap::StructMask::ALL) & ~static_cast<int>(SBlockingMap::StructMask::PYLON);
@@ -169,6 +117,66 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	offset = int2(0, 0);
 	ignoreMask = static_cast<int>(SBlockingMap::StructMask::MEX) | static_cast<int>(SBlockingMap::StructMask::DEF_LOW) | static_cast<int>(SBlockingMap::StructMask::ENGY_HIGH) | static_cast<int>(SBlockingMap::StructMask::PYLON);
 	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::NANO, ignoreMask);
+
+	blockingMap.columns = mapWidth / 2;  // build-step = 2 little green squares
+	blockingMap.rows = mapHeight / 2;
+	SBlockingMap::BlockCell cell = {0};
+	blockingMap.grid.resize(blockingMap.columns * blockingMap.rows, cell);
+	blockingMap.columnsLow = mapWidth / (GRID_RATIO_LOW * 2);
+	blockingMap.rowsLow = mapHeight / (GRID_RATIO_LOW * 2);
+	SBlockingMap::BlockCellLow cellLow = {0};
+	blockingMap.gridLow.resize(blockingMap.columnsLow * blockingMap.rowsLow, cellLow);
+
+	const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
+	def = circuit->GetMexDef();
+	int size = std::max(def->GetXSize(), def->GetZSize()) / 2;
+	int& xsize = size, &zsize = size;
+	int notIgnoreMask = ~(static_cast<int>(SBlockingMap::StructMask::ALL) & ~static_cast<int>(SBlockingMap::StructMask::FACTORY));
+	for (auto& spot : spots) {
+		const int x1 = int(spot.position.x / (SQUARE_SIZE << 1)) - (xsize >> 1), x2 = x1 + xsize;
+		const int z1 = int(spot.position.z / (SQUARE_SIZE << 1)) - (zsize >> 1), z2 = z1 + zsize;
+		for (int z = z1; z < z2; z++) {
+			for (int x = x1; x < x2; x++) {
+				blockingMap.MarkBlocker(x, z, SBlockingMap::StructType::MEX, notIgnoreMask);
+			}
+		}
+	}
+
+	/*
+	 * building handlers
+	 */
+	auto buildingCreatedHandler = [this](CCircuitUnit* unit) {
+		AddBlocker(unit);
+	};
+	auto buildingDestroyedHandler = [this](CCircuitUnit* unit) {
+		RemoveBlocker(unit);
+	};
+
+	ignoreMask = static_cast<int>(SBlockingMap::StructMask::PYLON);
+	offset = int2(0, 0);
+	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
+	for (auto& kv : defs) {
+		UnitDef* def = kv.second;
+		int unitDefId = def->GetUnitDefId();
+		if (def->GetSpeed() == 0) {
+			createdHandler[unitDefId] = buildingCreatedHandler;
+			destroyedHandler[unitDefId] = buildingDestroyedHandler;
+			if (blockInfos.find(def) == blockInfos.end()) {
+				ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+				blockInfos[def] = new CBlockRectangle(offset, ssize, ssize, SBlockingMap::StructType::UNKNOWN, ignoreMask);
+			}
+		}
+	}
+	// Forbid from removing cormex blocker
+	int unitDefId = circuit->GetMexDef()->GetUnitDefId();
+	createdHandler.erase(unitDefId);
+	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit) {
+		CMetalManager* metalManager = this->circuit->GetMetalManager();
+		int index = metalManager->FindNearestSpot(unit->GetUnit()->GetPos());
+		if (index != -1) {
+			metalManager->SetOpenSpot(index, true);
+		}
+	};
 }
 
 CTerrainManager::~CTerrainManager()
@@ -463,7 +471,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(UnitDef* unitDef, const AIFloat3& 
 {
 	int xmsize = mask->GetXSize();
 	int zmsize = mask->GetZSize();
-	if ((searchRadius > GRID_RATIO_LOW * 2 * 100) || (xmsize * zmsize > GRID_RATIO_LOW * GRID_RATIO_LOW * 9)) {
+	if ((searchRadius > SQUARE_SIZE * 2 * 100) || (xmsize * zmsize > GRID_RATIO_LOW * GRID_RATIO_LOW * 9)) {
 		return FindBuildSiteByMaskLow(unitDef, pos, searchRadius, facing, mask);
 	}
 
