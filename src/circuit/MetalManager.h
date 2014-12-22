@@ -10,7 +10,6 @@
 
 #include "MetalData.h"
 
-#include <memory>
 #include <vector>
 
 namespace springai {
@@ -30,6 +29,7 @@ class CMetalManager {
 public:
 	CMetalManager(CCircuitAI* circuit, CMetalData* metalData);
 	virtual ~CMetalManager();
+
 	void ParseMetalSpots(const char* metalJson);
 	void ParseMetalSpots(const std::vector<springai::GameRulesParam*>& metalParams);
 
@@ -62,6 +62,15 @@ public:
 private:
 	CCircuitAI* circuit;
 	CMetalData* metalData;
+
+public:
+	struct MetalInfo {
+		bool open;
+	};
+	void SetOpenSpot(int index, bool value);
+	const std::vector<MetalInfo>& GetMetalInfos() const;
+private:
+	std::vector<MetalInfo> metalInfos;
 };
 
 } // namespace circuit

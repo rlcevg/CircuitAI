@@ -47,7 +47,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	blockingMap.gridLow.resize(blockingMap.columnsLow * blockingMap.rowsLow, cellLow);
 
 	const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
-	UnitDef* def = circuit->GetUnitDefByName("cormex");
+	UnitDef* def = circuit->GetMexDef();
 	int size = std::max(def->GetXSize(), def->GetZSize()) / 2;
 	int& xsize = size, &zsize = size;
 	for (auto& spot : spots) {
@@ -80,9 +80,15 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 		}
 	}
 	// Forbid from removing cormex blocker
-	int unitDefId = def->GetUnitDefId();
+	int unitDefId = circuit->GetMexDef()->GetUnitDefId();
 	createdHandler.erase(unitDefId);
-	destroyedHandler.erase(unitDefId);
+	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit) {
+		CMetalManager* metalManager = this->circuit->GetMetalManager();
+		int index = metalManager->FindNearestSpot(unit->GetUnit()->GetPos());
+		if (index != -1) {
+			metalManager->SetOpenSpot(index, false);
+		}
+	};
 
 	/*
 	 * building masks
@@ -143,7 +149,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	ignoreMask = static_cast<int>(SBlockingMap::StructMask::ALL) & ~static_cast<int>(SBlockingMap::StructMask::FACTORY);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::MEX, ignoreMask);
 
-	def = circuit->GetUnitDefByName("cormex");
+	def = circuit->GetMexDef();  // cormex
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
@@ -271,6 +277,7 @@ void CTerrainManager::MarkAllyBuildings()
 
 	circuit->UpdateAllyUnits();
 	const std::map<int, CCircuitUnit*>& allies = circuit->GetAllyUnits();
+	UnitDef* mexDef = circuit->GetMexDef();
 
 	std::set<Structure, cmp> newUnits, oldUnits;
 	for (auto& kv : allies) {
@@ -289,6 +296,13 @@ void CTerrainManager::MarkAllyBuildings()
 				delete def;
 				newUnits.insert(building);
 				MarkBlocker(building, true);
+				if (building.def == mexDef) {  // update metalInfo's open state
+					CMetalManager* metalManager = circuit->GetMetalManager();
+					int index = metalManager->FindNearestSpot(building.pos);
+					if (index != -1) {
+						metalManager->SetOpenSpot(index, false);
+					}
+				}
 			} else {
 				oldUnits.insert(*search);
 			}
@@ -298,6 +312,13 @@ void CTerrainManager::MarkAllyBuildings()
 	std::set_difference(markedAllies.begin(), markedAllies.end(), oldUnits.begin(), oldUnits.end(), std::inserter(deadUnits, deadUnits.begin()), cmp());
 	for (auto& building : deadUnits) {
 		MarkBlocker(building, false);
+		if (building.def == mexDef) {  // update metalInfo's open state
+			CMetalManager* metalManager = circuit->GetMetalManager();
+			int index = metalManager->FindNearestSpot(building.pos);
+			if (index != -1) {
+				metalManager->SetOpenSpot(index, true);
+			}
+		}
 	}
 	markedAllies.clear();
 	std::set_union(oldUnits.begin(), oldUnits.end(), newUnits.begin(), newUnits.end(), std::inserter(markedAllies, markedAllies.begin()), cmp());

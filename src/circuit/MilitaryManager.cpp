@@ -22,7 +22,6 @@
 #include "Drawer.h"
 #include "Game.h"
 #include "OOAICallback.h"
-#include "Lua.h"
 
 #include "AISCommands.h"
 
@@ -83,39 +82,17 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
 
-	unitDefId = circuit->GetUnitDefByName("armnanotc")->GetUnitDefId();
-	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
-		Unit* u = unit->GetUnit();
-		const AIFloat3& pos = u->GetPos();
-		// TODO: Do not toggle havens
-		Lua* lua = this->circuit->GetCallback()->GetLua();
-		char buf[64];
-		snprintf(buf, sizeof(buf), "sethaven|%.0f|%.0f|%.0f", pos.x, pos.y, pos.z);
-		lua->CallRules(buf, -1);
-		delete lua;
-	};
-	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
-		Unit* u = unit->GetUnit();
-		const AIFloat3& pos = u->GetPos();
-		// TODO: Do not toggle havens
-		Lua* lua = this->circuit->GetCallback()->GetLua();
-		char buf[64];
-		snprintf(buf, sizeof(buf), "sethaven|%.0f|%.0f|%.0f", pos.x, pos.y, pos.z);
-		lua->CallRules(buf, -1);
-		delete lua;
-	};
-
 //	/*
 //	 * armrectr handlers
 //	 */
 //	unitDefId = attrib->GetUnitDefByName("armrectr")->GetUnitDefId();
 //	idleHandler[unitDefId] = [this](CCircuitUnit* unit) {
-//		fighterInfo.erase(unit);
+//		fighterInfos.erase(unit);
 //	};
 //	damagedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 //		if (attacker != nullptr) {
-//			auto search = fighterInfo.find(unit);
-//			if (search == fighterInfo.end()) {
+//			auto search = fighterInfos.find(unit);
+//			if (search == fighterInfos.end()) {
 //				Unit* u = unit->GetUnit();
 //				std::vector<float> params;
 //				params.push_back(2.0f);
@@ -135,12 +112,12 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 //				params.push_back(u->GetUnitId());  // 10: i + 2 unitId
 //				u->ExecuteCustomCommand(CMD_TERRAFORM_INTERNAL, params);
 //
-//				fighterInfo[unit].isTerraforming = true;
+//				fighterInfos[unit].isTerraforming = true;
 //			}
 //		}
 //	};
 //	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
-//		fighterInfo.erase(unit);
+//		fighterInfos.erase(unit);
 //	};
 }
 
@@ -183,16 +160,16 @@ int CMilitaryManager::UnitIdle(CCircuitUnit* unit)
 //
 //	return 0; //signaling: OK
 //}
-
-int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
-{
-	auto search = destroyedHandler.find(unit->GetDef()->GetUnitDefId());
-	if (search != destroyedHandler.end()) {
-		search->second(unit, attacker);
-	}
-
-	return 0; //signaling: OK
-}
+//
+//int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+//{
+//	auto search = destroyedHandler.find(unit->GetDef()->GetUnitDefId());
+//	if (search != destroyedHandler.end()) {
+//		search->second(unit, attacker);
+//	}
+//
+//	return 0; //signaling: OK
+//}
 
 int CMilitaryManager::EnemyEnterLOS(CCircuitUnit* unit)
 {

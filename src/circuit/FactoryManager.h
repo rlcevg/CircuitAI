@@ -43,6 +43,8 @@ public:
 	CCircuitUnit* NeedUpgrade();
 	CCircuitUnit* GetRandomFactory();
 
+	int GetHavensCount();
+
 private:
 	void Watchdog();
 	void AssignTask(CCircuitUnit* unit);
@@ -59,6 +61,8 @@ private:
 
 	std::map<CCircuitUnit*, std::list<CCircuitUnit*>> factories;
 	springai::UnitDef* assistDef;
+
+	int havensCount;
 };
 
 } // namespace circuit

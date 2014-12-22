@@ -734,6 +734,8 @@ void CCircuitAI::InitUnitDefs(std::vector<UnitDef*>&& unitDefs)
 		circuitDefs[kv.second] = new CCircuitDef(opts);
 		utils::free_clear(options);
 	}
+
+	mexDef = GetUnitDefByName("cormex");
 }
 
 UnitDef* CCircuitAI::GetUnitDefByName(const char* name)
@@ -784,6 +786,11 @@ int CCircuitAI::GetUnitCount(UnitDef* unitDef)
 bool CCircuitAI::IsAvailable(UnitDef* unitDef)
 {
 	return (unitDef->GetMaxThisUnit() > GetUnitCount(unitDef));
+}
+
+UnitDef* CCircuitAI::GetMexDef() const
+{
+	return mexDef;
 }
 
 CScheduler* CCircuitAI::GetScheduler()

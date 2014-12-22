@@ -20,6 +20,7 @@
 #include "Unit.h"
 #include "UnitDef.h"
 #include "Command.h"
+#include "Lua.h"
 
 #include <vector>
 
@@ -30,7 +31,8 @@ using namespace springai;
 CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		IModule(circuit),
 		factoryPower(.0f),
-		assistDef(nullptr)
+		assistDef(nullptr),
+		havensCount(0)
 {
 	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::Watchdog, this),
 										  FRAMES_PER_SEC * 60,
@@ -116,6 +118,14 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 				fac.second.push_back(unit);
 			}
 		}
+
+		// TODO: Do not toggle havens
+		Lua* lua = this->circuit->GetCallback()->GetLua();
+		char buf[64];
+		snprintf(buf, sizeof(buf), "sethaven|%.0f|%.0f|%.0f", fromPos.x, fromPos.y, fromPos.z);
+		lua->CallRules(buf, -1);
+		delete lua;
+		havensCount++;
 	};
 	auto assistDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 		if (unit->GetUnit()->IsBeingBuilt()) {
@@ -125,6 +135,15 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		for (auto& fac : factories) {
 			fac.second.remove(unit);
 		}
+
+		const AIFloat3& pos = unit->GetUnit()->GetPos();
+		// TODO: Do not toggle havens
+		Lua* lua = this->circuit->GetCallback()->GetLua();
+		char buf[64];
+		snprintf(buf, sizeof(buf), "sethaven|%.0f|%.0f|%.0f", pos.x, pos.y, pos.z);
+		lua->CallRules(buf, -1);
+		delete lua;
+		havensCount--;
 	};
 
 	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
@@ -289,6 +308,11 @@ CCircuitUnit* CFactoryManager::GetRandomFactory()
 	auto iter = factories.begin();
 	std::advance(iter, rand() % factories.size());
 	return iter->first;
+}
+
+int CFactoryManager::GetHavensCount()
+{
+	return havensCount;
 }
 
 void CFactoryManager::Watchdog()

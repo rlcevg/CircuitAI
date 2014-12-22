@@ -124,10 +124,12 @@ public:
 	CCircuitDef* GetCircuitDef(springai::UnitDef* unitDef);
 	int GetUnitCount(springai::UnitDef* unitDef);
 	bool IsAvailable(springai::UnitDef* unitDef);
+	springai::UnitDef* GetMexDef() const;
 private:
 	UnitDefs defsByName;  // owner
 	std::unordered_map<int, springai::UnitDef*> defsById;
 	std::unordered_map<springai::UnitDef*, CCircuitDef*> circuitDefs;  // owner
+	springai::UnitDef* mexDef;
 // ---- UnitDefs ---- END
 
 public:

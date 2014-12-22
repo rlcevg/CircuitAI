@@ -42,6 +42,10 @@ public:
 							  const springai::AIFloat3& position,
 							  CBuilderTask::TaskType type,
 							  int timeout = 0);
+	CBuilderTask* EnqueueTask(CBuilderTask::Priority priority,
+							  const springai::AIFloat3& position,
+							  CBuilderTask::TaskType type,
+							  int timeout = 0);
 	void DequeueTask(CBuilderTask* task);
 	float GetBuilderPower();
 	bool CanEnqueueTask();
@@ -71,7 +75,7 @@ private:
 	struct BuilderInfo {
 		int startFrame;
 	};
-	std::map<CCircuitUnit*, BuilderInfo> builderInfo;  // Assistant's info
+	std::map<CCircuitUnit*, BuilderInfo> builderInfos;  // Assistant's info
 };
 
 } // namespace circuit

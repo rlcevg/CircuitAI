@@ -60,7 +60,7 @@ private:
 		CCircuitUnit* factory;
 		CCircuitUnit* pylon;
 	};
-	std::vector<ClusterInfo> clusterInfo;
+	std::vector<ClusterInfo> clusterInfos;
 	int solarCount;
 	int fusionCount;
 	float pylonRange;

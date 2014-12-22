@@ -13,6 +13,7 @@
 #include "CircuitUnit.h"
 #include "EconomyManager.h"
 #include "TerrainManager.h"
+#include "FactoryManager.h"
 #include "utils.h"
 
 #include "AISCommands.h"
@@ -66,14 +67,25 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		if (unit->GetUnit()->IsBeingBuilt()) {
 			return;
 		}
-		builderInfo.erase(unit);
+		builderInfos.erase(unit);
 		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
 		if (task != nullptr) {
-			unit->GetUnit()->MoveTo(this->circuit->GetSetupManager()->GetStartPos(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 10);
+			if (this->circuit->GetFactoryManager()->GetHavensCount() == 0) {
+				unit->GetUnit()->MoveTo(this->circuit->GetSetupManager()->GetStartPos(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 0);
+			} else {
+				unit->GetUnit()->Stop();
+			}
 			if (task->GetTarget() == nullptr) {
 				for (auto ass : task->GetAssignees()) {
 					if (ass != unit) {
 						ass->GetUnit()->Stop();
+					}
+				}
+				if (task->GetType() == CBuilderTask::TaskType::EXPAND) {  // update metalInfo's open state
+					CMetalManager* metalManager = this->circuit->GetMetalManager();
+					int index = metalManager->FindNearestSpot(task->GetBuildPos());
+					if (index != -1) {
+						metalManager->SetOpenSpot(index, false);
 					}
 				}
 				DequeueTask(task);
@@ -88,9 +100,16 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		}
 		builderPower -= unit->GetDef()->GetBuildSpeed();
 		workers.erase(unit);
-		builderInfo.erase(unit);
+		builderInfos.erase(unit);
 		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
 		if (task != nullptr) {
+			if (task->GetType() == CBuilderTask::TaskType::EXPAND) {  // update metalInfo's open state
+				CMetalManager* metalManager = this->circuit->GetMetalManager();
+				int index = metalManager->FindNearestSpot(task->GetBuildPos());
+				if (index != -1) {
+					metalManager->SetOpenSpot(index, false);
+				}
+			}
 			DequeueTask(task);
 		}
 	};
@@ -222,6 +241,17 @@ CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
 	return task;
 }
 
+CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
+										   const AIFloat3& position,
+										   CBuilderTask::TaskType type,
+										   int timeout)
+{
+	CBuilderTask* task = new CBuilderTask(priority, nullptr, position, type, 1000.0f, timeout);
+	builderTasks[static_cast<int>(type)].push_front(task);
+	builderTasksCount++;
+	return task;
+}
+
 void CBuilderManager::DequeueTask(CBuilderTask* task)
 {
 	unfinishedUnits.erase(task->GetTarget());
@@ -281,23 +311,23 @@ void CBuilderManager::Init()
 void CBuilderManager::Watchdog()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	decltype(builderInfo)::iterator iter = builderInfo.begin();
-	while (iter != builderInfo.end()) {
+	decltype(builderInfos)::iterator iter = builderInfos.begin();
+	while (iter != builderInfos.end()) {
 		CBuilderTask* task = static_cast<CBuilderTask*>(iter->first->GetTask());
 		if (task == nullptr) {
 			iter->first->GetUnit()->Stop();
-			iter = builderInfo.erase(iter);
+			iter = builderInfos.erase(iter);
 			continue;
 		}
 		int timeout = task->GetTimeout();
 		if ((timeout > 0) && (circuit->GetLastFrame() - iter->second.startFrame > timeout)) {
 			switch (task->GetType()) {
-				case CBuilderTask::TaskType::PATROL: {
+				case CBuilderTask::TaskType::PATROL:
+				case CBuilderTask::TaskType::RECLAIM: {
 					CCircuitUnit* unit = iter->first;
-					task->MarkCompleted();
-					delete task;
+					DequeueTask(task);
 					unit->GetUnit()->Stop();
-					iter = builderInfo.erase(iter);
+					iter = builderInfos.erase(iter);
 					continue;
 					break;
 				}
@@ -388,8 +418,8 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 //					continue;
 					dist = bp.distance(pos) * 1.5;
 				}
-//				valid = ((dist * weight < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));
-				valid = (dist * weight < metric);
+				valid = ((dist * weight < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));
+//				valid = (dist * weight < metric);
 			}
 
 			if (valid) {
@@ -432,7 +462,7 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 		u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 		AIFloat3 pos = u->GetPos();
-		CBuilderTask* taskNew = new CBuilderTask(CBuilderTask::Priority::LOW, nullptr, pos, CBuilderTask::TaskType::PATROL, 1000.0f, FRAMES_PER_SEC * 20);
+		CBuilderTask* taskNew = EnqueueTask(CBuilderTask::Priority::LOW, pos, CBuilderTask::TaskType::PATROL, FRAMES_PER_SEC * 20);
 		taskNew->AssignTo(unit);
 
 		const float size = SQUARE_SIZE * 10;
@@ -441,7 +471,7 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 		pos.z += (pos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
 		u->PatrolTo(pos);
 
-		builderInfo[unit].startFrame = circuit->GetLastFrame();
+		builderInfos[unit].startFrame = circuit->GetLastFrame();
 	};
 
 	std::vector<float> params;
@@ -549,9 +579,22 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 				}
 			}
 			unit->GetUnit()->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
-			auto search = builderInfo.find(unit);
-			if (search == builderInfo.end()) {
-				builderInfo[unit].startFrame = circuit->GetLastFrame();
+			auto search = builderInfos.find(unit);
+			if (search == builderInfos.end()) {
+				builderInfos[unit].startFrame = circuit->GetLastFrame();
+			}
+			break;
+		}
+		case CBuilderTask::TaskType::RECLAIM: {
+			CTerrainManager* terrain = circuit->GetTerrainManager();
+			float width = terrain->GetTerrainWidth() / 2;
+			float height = terrain->GetTerrainHeight() / 2;
+			AIFloat3 pos(width, 0, height);
+			float radius = sqrtf(width * width + height * height);
+			unit->GetUnit()->ReclaimInArea(pos, radius, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+			auto search = builderInfos.find(unit);
+			if (search == builderInfos.end()) {
+				builderInfos[unit].startFrame = circuit->GetLastFrame();
 			}
 			break;
 		}

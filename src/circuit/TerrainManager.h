@@ -80,7 +80,7 @@ private:
 	static const SearchOffsetsLow& GetSearchOffsetTableLow(int radius);
 	springai::AIFloat3 FindBuildSiteLow(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
 	springai::AIFloat3 FindBuildSiteByMask(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask);
-	// NOTE: Functions using low-resolution grid are ~20% faster on fail. But ~5% slower on success.
+	// NOTE: Low-resolution build site is 40-80% faster on fail and 20-50% faster on success (with large objects). But has lower precision.
 	springai::AIFloat3 FindBuildSiteByMaskLow(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask);
 
 	SBlockingMap blockingMap;

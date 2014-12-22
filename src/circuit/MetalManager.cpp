@@ -30,6 +30,8 @@ CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData) :
 		ParseMetalSpots(gameRulesParams);
 		utils::free_clear(gameRulesParams);
 	}
+	MetalInfo mi = {true};
+	metalInfos.resize(metalData->GetSpots().size(), mi);
 }
 
 CMetalManager::~CMetalManager()
@@ -225,6 +227,16 @@ const std::vector<AIFloat3>& CMetalManager::GetCentroids() const
 const std::vector<AIFloat3>& CMetalManager::GetCostCentroids() const
 {
 	return metalData->GetCostCentroids();
+}
+
+void CMetalManager::SetOpenSpot(int index, bool value)
+{
+	metalInfos[index].open = value;
+}
+
+const std::vector<CMetalManager::MetalInfo>& CMetalManager::GetMetalInfos() const
+{
+	return metalInfos;
 }
 
 } // namespace circuit
