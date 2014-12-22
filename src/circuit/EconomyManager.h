@@ -46,6 +46,7 @@ private:
 	CBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position);
 	CBuilderTask* UpdateBuilderTasks(const springai::AIFloat3& position);
 	CFactoryTask* UpdateFactoryTasks();
+	CBuilderTask* UpdateStorageTasks();
 
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;

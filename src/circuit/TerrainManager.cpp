@@ -98,14 +98,15 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	bsize = ssize + int2(6, 4);
 	// offset in South facing
 	offset = int2(0, 4);
-	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::FACTORY);
+	ignoreMask = static_cast<int>(SBlockingMap::StructMask::PYLON);
+	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::FACTORY, ignoreMask);
 
 	def = circuit->GetUnitDefByName("armsolar");
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
 	ignoreMask = static_cast<int>(SBlockingMap::StructMask::MEX) | static_cast<int>(SBlockingMap::StructMask::DEF_LOW) | static_cast<int>(SBlockingMap::StructMask::PYLON) | static_cast<int>(SBlockingMap::StructMask::NANO);
-	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::ENERGY, ignoreMask);
+	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::ENGY_LOW, ignoreMask);
 
 	def = circuit->GetUnitDefByName("armfus");
 	wpDef = def->GetDeathExplosion();
@@ -113,8 +114,8 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
-	ignoreMask = static_cast<int>(SBlockingMap::StructMask::MEX) | static_cast<int>(SBlockingMap::StructMask::DEF_LOW) | static_cast<int>(SBlockingMap::StructMask::PYLON) | static_cast<int>(SBlockingMap::StructMask::NANO);
-	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENERGY, ignoreMask);
+	ignoreMask = static_cast<int>(SBlockingMap::StructMask::MEX) | static_cast<int>(SBlockingMap::StructMask::DEF_LOW) | static_cast<int>(SBlockingMap::StructMask::PYLON);
+	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_MID, ignoreMask);
 
 	def = circuit->GetUnitDefByName("cafus");
 	wpDef = def->GetDeathExplosion();
@@ -123,14 +124,24 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
 	ignoreMask = static_cast<int>(SBlockingMap::StructMask::MEX) | static_cast<int>(SBlockingMap::StructMask::DEF_LOW) | static_cast<int>(SBlockingMap::StructMask::PYLON) | static_cast<int>(SBlockingMap::StructMask::NANO);
-	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENERGY, ignoreMask);
+	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_HIGH, ignoreMask);
 
 	def = circuit->GetUnitDefByName("armestor");
+	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+	auto search = customParams.find("pylonrange");
+	float pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : 500;
+	radius = pylonRange / (SQUARE_SIZE * 1.2);
+	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+	offset = int2(0, 0);
+	ignoreMask = static_cast<int>(SBlockingMap::StructMask::ALL) & ~static_cast<int>(SBlockingMap::StructMask::PYLON);
+	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::PYLON, ignoreMask);
+
+	def = circuit->GetUnitDefByName("armmstor");
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
-	ignoreMask = static_cast<int>(SBlockingMap::StructMask::ENERGY) | static_cast<int>(SBlockingMap::StructMask::NANO);
-	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::PYLON, ignoreMask);
+	ignoreMask = static_cast<int>(SBlockingMap::StructMask::ALL) & ~static_cast<int>(SBlockingMap::StructMask::FACTORY);
+	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::MEX, ignoreMask);
 
 	def = circuit->GetUnitDefByName("cormex");
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
@@ -143,14 +154,14 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
-	ignoreMask = static_cast<int>(SBlockingMap::StructMask::ENERGY) | static_cast<int>(SBlockingMap::StructMask::NANO);
+	ignoreMask = static_cast<int>(SBlockingMap::StructMask::ENGY_LOW) | static_cast<int>(SBlockingMap::StructMask::ENGY_MID) | static_cast<int>(SBlockingMap::StructMask::ENGY_HIGH) | static_cast<int>(SBlockingMap::StructMask::PYLON) | static_cast<int>(SBlockingMap::StructMask::NANO);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::DEF_LOW, ignoreMask);
 
 	def = circuit->GetUnitDefByName("armnanotc");
 	radius = 160 / (SQUARE_SIZE * 2);  // 160 - Zero-K const
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
-	ignoreMask = static_cast<int>(SBlockingMap::StructMask::MEX) | static_cast<int>(SBlockingMap::StructMask::DEF_LOW) | static_cast<int>(SBlockingMap::StructMask::ENERGY) | static_cast<int>(SBlockingMap::StructMask::PYLON);
+	ignoreMask = static_cast<int>(SBlockingMap::StructMask::MEX) | static_cast<int>(SBlockingMap::StructMask::DEF_LOW) | static_cast<int>(SBlockingMap::StructMask::ENGY_HIGH) | static_cast<int>(SBlockingMap::StructMask::PYLON);
 	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::NANO, ignoreMask);
 }
 
@@ -602,7 +613,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(UnitDef* unitDef, const AIFloat
 
 	int2 structCenter;
 	structCenter.x = int(pos.x / (SQUARE_SIZE * 2 * GRID_RATIO_LOW));
-	structCenter.y = int(pos.x / (SQUARE_SIZE * 2 * GRID_RATIO_LOW));
+	structCenter.y = int(pos.z / (SQUARE_SIZE * 2 * GRID_RATIO_LOW));
 
 	const int notIgnore = ~mask->GetIgnoreMask();
 	SBlockingMap::StructMask structMask = SBlockingMap::GetStructMask(mask->GetStructType());

@@ -19,7 +19,9 @@ namespace circuit {
 static SBlockingMap::StructMask structTypes[] = {
 	SBlockingMap::StructMask::FACTORY,
 	SBlockingMap::StructMask::MEX,
-	SBlockingMap::StructMask::ENERGY,
+	SBlockingMap::StructMask::ENGY_LOW,
+	SBlockingMap::StructMask::ENGY_MID,
+	SBlockingMap::StructMask::ENGY_HIGH,
 	SBlockingMap::StructMask::PYLON,
 	SBlockingMap::StructMask::DEF_LOW,
 	SBlockingMap::StructMask::DEF_MID,
@@ -42,7 +44,7 @@ inline bool SBlockingMap::IsBlocked(int x, int z, int notIgnoreMask)
 
 inline bool SBlockingMap::IsBlockedLow(int xLow, int zLow, int notIgnoreMask)
 {
-	return (gridLow[zLow * columns + xLow].blockerMask & notIgnoreMask);
+	return (gridLow[zLow * columnsLow + xLow].blockerMask & notIgnoreMask);
 }
 
 inline void SBlockingMap::MarkBlocker(int x, int z, StructType structType)

@@ -69,13 +69,17 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		builderInfo.erase(unit);
 		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
 		if (task != nullptr) {
-			for (auto ass : task->GetAssignees()) {
-				if (ass != unit) {
-					ass->GetUnit()->Stop();
-				}
-			}
 			unit->GetUnit()->MoveTo(this->circuit->GetSetupManager()->GetStartPos(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 10);
-			DequeueTask(task);
+			if (task->GetTarget() == nullptr) {
+				for (auto ass : task->GetAssignees()) {
+					if (ass != unit) {
+						ass->GetUnit()->Stop();
+					}
+				}
+				DequeueTask(task);
+			} else {
+				unit->RemoveTask();
+			}
 		}
 	};
 	auto workerDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
@@ -217,17 +221,6 @@ CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
 	builderTasksCount++;
 	return task;
 }
-
-//CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
-//										   const AIFloat3& position,
-//										   CBuilderTask::TaskType type,
-//										   int timeout)
-//{
-//	CBuilderTask* task = new CBuilderTask(priority, nullptr, position, type, 1000.0f, timeout);
-//	builderTasks[static_cast<int>(type)].push_front(task);
-//	builderTasksCount++;
-//	return task;
-//}
 
 void CBuilderManager::DequeueTask(CBuilderTask* task)
 {
@@ -395,7 +388,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 //					continue;
 					dist = bp.distance(pos) * 1.5;
 				}
-//				valid = ((dist < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));
+//				valid = ((dist * weight < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));
 				valid = (dist * weight < metric);
 			}
 

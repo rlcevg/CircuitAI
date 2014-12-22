@@ -42,10 +42,6 @@ public:
 							  const springai::AIFloat3& position,
 							  CBuilderTask::TaskType type,
 							  int timeout = 0);
-//	CBuilderTask* EnqueueTask(CBuilderTask::Priority priority,
-//							  const springai::AIFloat3& position,
-//							  CBuilderTask::TaskType type,
-//							  int timeout = 0);
 	void DequeueTask(CBuilderTask* task);
 	float GetBuilderPower();
 	bool CanEnqueueTask();
