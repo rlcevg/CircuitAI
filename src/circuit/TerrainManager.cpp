@@ -23,6 +23,8 @@
 #include "Pathing.h"
 #include "MoveData.h"
 
+#define STRUCTURE_MASK_BIT(bits)	static_cast<int>(SBlockingMap::StructMask::bits)
+
 namespace circuit {
 
 using namespace springai;
@@ -52,14 +54,17 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	bsize = ssize + int2(6, 4);
 	// offset in South facing
 	offset = int2(0, 4);
-	ignoreMask = static_cast<int>(SBlockingMap::StructMask::PYLON);
+	ignoreMask = STRUCTURE_MASK_BIT(PYLON);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::FACTORY, ignoreMask);
 
 	def = circuit->GetUnitDefByName("armsolar");
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
-	ignoreMask = static_cast<int>(SBlockingMap::StructMask::MEX) | static_cast<int>(SBlockingMap::StructMask::DEF_LOW) | static_cast<int>(SBlockingMap::StructMask::PYLON) | static_cast<int>(SBlockingMap::StructMask::NANO);
+	ignoreMask = STRUCTURE_MASK_BIT(MEX) |
+				 STRUCTURE_MASK_BIT(DEF_LOW) |
+				 STRUCTURE_MASK_BIT(PYLON) |
+				 STRUCTURE_MASK_BIT(NANO);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::ENGY_LOW, ignoreMask);
 
 	def = circuit->GetUnitDefByName("armfus");
@@ -68,7 +73,9 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
-	ignoreMask = static_cast<int>(SBlockingMap::StructMask::MEX) | static_cast<int>(SBlockingMap::StructMask::DEF_LOW) | static_cast<int>(SBlockingMap::StructMask::PYLON);
+	ignoreMask = STRUCTURE_MASK_BIT(MEX) |
+				 STRUCTURE_MASK_BIT(DEF_LOW) |
+				 STRUCTURE_MASK_BIT(PYLON);
 	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_MID, ignoreMask);
 
 	def = circuit->GetUnitDefByName("cafus");
@@ -77,45 +84,55 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
-	ignoreMask = static_cast<int>(SBlockingMap::StructMask::MEX) | static_cast<int>(SBlockingMap::StructMask::DEF_LOW) | static_cast<int>(SBlockingMap::StructMask::PYLON) | static_cast<int>(SBlockingMap::StructMask::NANO);
+	ignoreMask = STRUCTURE_MASK_BIT(MEX) |
+				 STRUCTURE_MASK_BIT(DEF_LOW) |
+				 STRUCTURE_MASK_BIT(PYLON) |
+				 STRUCTURE_MASK_BIT(NANO);
 	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_HIGH, ignoreMask);
 
 	def = circuit->GetUnitDefByName("armestor");
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto search = customParams.find("pylonrange");
 	float pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : 500;
-	radius = pylonRange / (SQUARE_SIZE * 1.3);
+	radius = pylonRange / (SQUARE_SIZE * 1.2);
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
-	ignoreMask = static_cast<int>(SBlockingMap::StructMask::ALL) & ~static_cast<int>(SBlockingMap::StructMask::PYLON);
+	ignoreMask = STRUCTURE_MASK_BIT(ALL) & ~STRUCTURE_MASK_BIT(PYLON);
 	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::PYLON, ignoreMask);
 
 	def = circuit->GetUnitDefByName("armmstor");
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
-	ignoreMask = static_cast<int>(SBlockingMap::StructMask::ALL) & ~static_cast<int>(SBlockingMap::StructMask::FACTORY);
+	ignoreMask = STRUCTURE_MASK_BIT(ALL) & ~STRUCTURE_MASK_BIT(FACTORY);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::MEX, ignoreMask);
 
 	def = circuit->GetMexDef();  // cormex
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
-	ignoreMask = static_cast<int>(SBlockingMap::StructMask::ALL) & ~static_cast<int>(SBlockingMap::StructMask::FACTORY);
+	ignoreMask = STRUCTURE_MASK_BIT(ALL) & ~STRUCTURE_MASK_BIT(FACTORY);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::MEX, ignoreMask);
 
 	def = circuit->GetUnitDefByName("corrl");
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
-	ignoreMask = static_cast<int>(SBlockingMap::StructMask::ENGY_LOW) | static_cast<int>(SBlockingMap::StructMask::ENGY_MID) | static_cast<int>(SBlockingMap::StructMask::ENGY_HIGH) | static_cast<int>(SBlockingMap::StructMask::PYLON) | static_cast<int>(SBlockingMap::StructMask::NANO);
+	ignoreMask = STRUCTURE_MASK_BIT(ENGY_LOW) |
+				 STRUCTURE_MASK_BIT(ENGY_MID) |
+				 STRUCTURE_MASK_BIT(ENGY_HIGH) |
+				 STRUCTURE_MASK_BIT(PYLON) |
+				 STRUCTURE_MASK_BIT(NANO);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::DEF_LOW, ignoreMask);
 
 	def = circuit->GetUnitDefByName("armnanotc");
 	radius = 160 / (SQUARE_SIZE * 2);  // 160 - Zero-K const
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
-	ignoreMask = static_cast<int>(SBlockingMap::StructMask::MEX) | static_cast<int>(SBlockingMap::StructMask::DEF_LOW) | static_cast<int>(SBlockingMap::StructMask::ENGY_HIGH) | static_cast<int>(SBlockingMap::StructMask::PYLON);
+	ignoreMask = STRUCTURE_MASK_BIT(MEX) |
+				 STRUCTURE_MASK_BIT(DEF_LOW) |
+				 STRUCTURE_MASK_BIT(ENGY_HIGH) |
+				 STRUCTURE_MASK_BIT(PYLON);
 	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::NANO, ignoreMask);
 
 	blockingMap.columns = mapWidth / 2;  // build-step = 2 little green squares
@@ -131,7 +148,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	def = circuit->GetMexDef();
 	int size = std::max(def->GetXSize(), def->GetZSize()) / 2;
 	int& xsize = size, &zsize = size;
-	int notIgnoreMask = ~(static_cast<int>(SBlockingMap::StructMask::ALL) & ~static_cast<int>(SBlockingMap::StructMask::FACTORY));
+	int notIgnoreMask = STRUCTURE_MASK_BIT(FACTORY);
 	for (auto& spot : spots) {
 		const int x1 = int(spot.position.x / (SQUARE_SIZE << 1)) - (xsize >> 1), x2 = x1 + xsize;
 		const int z1 = int(spot.position.z / (SQUARE_SIZE << 1)) - (zsize >> 1), z2 = z1 + zsize;
@@ -145,21 +162,26 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	/*
 	 * building handlers
 	 */
-	auto buildingCreatedHandler = [this](CCircuitUnit* unit) {
-		AddBlocker(unit);
-	};
+//	auto buildingCreatedHandler = [this](CCircuitUnit* unit) {
+//		// TODO: Remove? Already done at CBuilderManager::ExecuteTask
+//		Unit* u = unit->GetUnit();
+//		Structure building = {u->GetUnitId(), unit->GetDef(), u->GetPos(), u->GetBuildingFacing()};
+//		MarkBlocker(building, true);
+//	};
 	auto buildingDestroyedHandler = [this](CCircuitUnit* unit) {
-		RemoveBlocker(unit);
+		Unit* u = unit->GetUnit();
+		Structure building = {u->GetUnitId(), unit->GetDef(), u->GetPos(), u->GetBuildingFacing()};
+		MarkBlocker(building, false);
 	};
 
-	ignoreMask = static_cast<int>(SBlockingMap::StructMask::PYLON);
+	ignoreMask = STRUCTURE_MASK_BIT(PYLON);
 	offset = int2(0, 0);
 	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
 	for (auto& kv : defs) {
 		UnitDef* def = kv.second;
 		int unitDefId = def->GetUnitDefId();
 		if (def->GetSpeed() == 0) {
-			createdHandler[unitDefId] = buildingCreatedHandler;
+//			createdHandler[unitDefId] = buildingCreatedHandler;
 			destroyedHandler[unitDefId] = buildingDestroyedHandler;
 			if (blockInfos.find(def) == blockInfos.end()) {
 				ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
@@ -169,13 +191,9 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	}
 	// Forbid from removing cormex blocker
 	int unitDefId = circuit->GetMexDef()->GetUnitDefId();
-	createdHandler.erase(unitDefId);
+//	createdHandler.erase(unitDefId);
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit) {
-		CMetalManager* metalManager = this->circuit->GetMetalManager();
-		int index = metalManager->FindNearestSpot(unit->GetUnit()->GetPos());
-		if (index != -1) {
-			metalManager->SetOpenSpot(index, true);
-		}
+		this->circuit->GetMetalManager()->SetOpenSpot(unit->GetUnit()->GetPos(), true);
 	};
 }
 
@@ -187,15 +205,15 @@ CTerrainManager::~CTerrainManager()
 	}
 }
 
-int CTerrainManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
-{
-	auto search = createdHandler.find(unit->GetDef()->GetUnitDefId());
-	if (search != createdHandler.end()) {
-		search->second(unit);
-	}
-
-	return 0; //signaling: OK
-}
+//int CTerrainManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
+//{
+//	auto search = createdHandler.find(unit->GetDef()->GetUnitDefId());
+//	if (search != createdHandler.end()) {
+//		search->second(unit);
+//	}
+//
+//	return 0; //signaling: OK
+//}
 
 int CTerrainManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
@@ -215,6 +233,18 @@ int CTerrainManager::GetTerrainWidth()
 int CTerrainManager::GetTerrainHeight()
 {
 	return terrainHeight;
+}
+
+void CTerrainManager::AddBlocker(UnitDef* unitDef, const AIFloat3& pos, int facing)
+{
+	Structure building = {-1, unitDef, pos, facing};
+	MarkBlocker(building, true);
+}
+
+void CTerrainManager::RemoveBlocker(UnitDef* unitDef, const AIFloat3& pos, int facing)
+{
+	Structure building = {-1, unitDef, pos, facing};
+	MarkBlocker(building, false);
 }
 
 AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)
@@ -285,7 +315,7 @@ void CTerrainManager::MarkAllyBuildings()
 
 	circuit->UpdateAllyUnits();
 	const std::map<int, CCircuitUnit*>& allies = circuit->GetAllyUnits();
-	UnitDef* mexDef = circuit->GetMexDef();
+//	UnitDef* mexDef = circuit->GetMexDef();
 
 	std::set<Structure, cmp> newUnits, oldUnits;
 	for (auto& kv : allies) {
@@ -304,13 +334,10 @@ void CTerrainManager::MarkAllyBuildings()
 				delete def;
 				newUnits.insert(building);
 				MarkBlocker(building, true);
-				if (building.def == mexDef) {  // update metalInfo's open state
-					CMetalManager* metalManager = circuit->GetMetalManager();
-					int index = metalManager->FindNearestSpot(building.pos);
-					if (index != -1) {
-						metalManager->SetOpenSpot(index, false);
-					}
-				}
+				// TODO: Remove? Because map->IsPossibleToBuildAt will take care of mexes
+//				if (building.def == mexDef) {  // update metalInfo's open state
+//					circuit->GetMetalManager()->SetOpenSpot(building.pos, false);
+//				}
 			} else {
 				oldUnits.insert(*search);
 			}
@@ -320,13 +347,10 @@ void CTerrainManager::MarkAllyBuildings()
 	std::set_difference(markedAllies.begin(), markedAllies.end(), oldUnits.begin(), oldUnits.end(), std::inserter(deadUnits, deadUnits.begin()), cmp());
 	for (auto& building : deadUnits) {
 		MarkBlocker(building, false);
-		if (building.def == mexDef) {  // update metalInfo's open state
-			CMetalManager* metalManager = circuit->GetMetalManager();
-			int index = metalManager->FindNearestSpot(building.pos);
-			if (index != -1) {
-				metalManager->SetOpenSpot(index, true);
-			}
-		}
+		// TODO: Remove? Because map->IsPossibleToBuildAt will take care of mexes
+//		if (building.def == mexDef) {  // update metalInfo's open state
+//			circuit->GetMetalManager()->SetOpenSpot(building.pos, true);
+//		}
 	}
 	markedAllies.clear();
 	std::set_union(oldUnits.begin(), oldUnits.end(), newUnits.begin(), newUnits.end(), std::inserter(markedAllies, markedAllies.begin()), cmp());
@@ -706,20 +730,6 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(UnitDef* unitDef, const AIFloat
 	}
 
 	return -RgtVector;
-}
-
-void CTerrainManager::AddBlocker(CCircuitUnit* unit)
-{
-	Unit* u = unit->GetUnit();
-	Structure building = {u->GetUnitId(), unit->GetDef(), u->GetPos(), u->GetBuildingFacing()};
-	MarkBlocker(building, true);
-}
-
-void CTerrainManager::RemoveBlocker(CCircuitUnit* unit)
-{
-	Unit* u = unit->GetUnit();
-	Structure building = {u->GetUnitId(), unit->GetDef(), u->GetPos(), u->GetBuildingFacing()};
-	MarkBlocker(building, false);
 }
 
 void CTerrainManager::MarkBlockerByMask(const Structure& building, bool block, IBlockMask* mask)

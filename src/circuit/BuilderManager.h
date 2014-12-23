@@ -31,6 +31,9 @@ public:
 	virtual int UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
+	float GetBuilderPower();
+	bool CanEnqueueTask();
+	const std::list<CBuilderTask*>& GetTasks(CBuilderTask::TaskType type);
 	CBuilderTask* EnqueueTask(CBuilderTask::Priority priority,
 							  springai::UnitDef* buildDef,
 							  const springai::AIFloat3& position,
@@ -47,9 +50,8 @@ public:
 							  CBuilderTask::TaskType type,
 							  int timeout = 0);
 	void DequeueTask(CBuilderTask* task);
-	float GetBuilderPower();
-	bool CanEnqueueTask();
-	const std::list<CBuilderTask*>& GetTasks(CBuilderTask::TaskType type);
+private:
+	void AbandonTask(CBuilderTask* task);
 
 private:
 	void Init();

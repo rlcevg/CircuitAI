@@ -19,10 +19,11 @@ class CBuilderTask: public IConstructTask {
 public:
 	enum class TaskType: int {
 		FACTORY = 0, NANO,
-		EXPAND, STORE,
-		SOLAR, FUSION, SINGU, PYLON,
-		DEFENDER, LOTUS, DDM, ANNI,
-		RADAR, TERRAFORM, ASSIST, RECLAIM, PATROL, TASKS_COUNT, DEFAULT = DEFENDER
+		STORE, PYLON,
+		SOLAR, FUSION, SINGU,
+		DEFENDER, LOTUS, DDM, ANNI, RAVE,
+		RADAR, EXPAND,
+		TERRAFORM, ASSIST, RECLAIM, PATROL, TASKS_COUNT, DEFAULT = DEFENDER
 	};
 
 public:
@@ -45,6 +46,10 @@ public:
 	void SetTarget(CCircuitUnit* unit);
 	CCircuitUnit* GetTarget();
 
+	bool IsStructure();
+	void SetFacing(int value);
+	int GetFacing();
+
 private:
 	TaskType type;
 	float buildPower;
@@ -52,6 +57,7 @@ private:
 	int timeout;
 	CCircuitUnit* target;
 	springai::AIFloat3 buildPos;
+	int facing;
 };
 
 } // namespace circuit

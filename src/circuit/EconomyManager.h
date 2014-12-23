@@ -64,6 +64,7 @@ private:
 	int solarCount;
 	int fusionCount;
 	float pylonRange;
+	int pylonCount, pylonMaxCount;
 };
 
 } // namespace circuit

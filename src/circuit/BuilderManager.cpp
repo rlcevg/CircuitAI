@@ -70,26 +70,14 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		builderInfos.erase(unit);
 		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
 		if (task != nullptr) {
-			CCircuitUnit* haven = this->circuit->GetFactoryManager()->GetClosestHaven(unit);
-			const AIFloat3& pos = (haven != nullptr) ? haven->GetUnit()->GetPos() : this->circuit->GetSetupManager()->GetStartPos();
-			unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 0);
 			if (task->GetTarget() == nullptr) {
-				for (auto ass : task->GetAssignees()) {
-					if (ass != unit) {
-						ass->GetUnit()->Stop();
-					}
-				}
-				if (task->GetType() == CBuilderTask::TaskType::EXPAND) {  // update metalInfo's open state
-					CMetalManager* metalManager = this->circuit->GetMetalManager();
-					int index = metalManager->FindNearestSpot(task->GetBuildPos());
-					if (index != -1) {
-						metalManager->SetOpenSpot(index, true);
-					}
-				}
-				DequeueTask(task);
+				AbandonTask(task);
 			} else {
 				unit->RemoveTask();
 			}
+			CCircuitUnit* haven = this->circuit->GetFactoryManager()->GetClosestHaven(unit);
+			const AIFloat3& pos = (haven != nullptr) ? haven->GetUnit()->GetPos() : this->circuit->GetSetupManager()->GetStartPos();
+			unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 0);
 		}
 	};
 	auto workerDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
@@ -101,14 +89,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		builderInfos.erase(unit);
 		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
 		if (task != nullptr) {
-			if (task->GetType() == CBuilderTask::TaskType::EXPAND) {  // update metalInfo's open state
-				CMetalManager* metalManager = this->circuit->GetMetalManager();
-				int index = metalManager->FindNearestSpot(task->GetBuildPos());
-				if (index != -1) {
-					metalManager->SetOpenSpot(index, true);
-				}
-			}
-			DequeueTask(task);
+			AbandonTask(task);
 		}
 	};
 
@@ -137,25 +118,33 @@ CBuilderManager::~CBuilderManager()
 
 int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 {
-	if ((builder != nullptr) && unit->GetUnit()->IsBeingBuilt()) {
-		IConstructTask* task = static_cast<IConstructTask*>(builder->GetTask());
-		if ((task != nullptr) && (task->GetConstructType() == IConstructTask::ConstructType::BUILDER)) {
-			CBuilderTask* taskB = static_cast<CBuilderTask*>(task);
-			// NOTE: Try to cope with strange event order, when different units created within same task
-			// FIXME: Create additional task to catch lost unit
-			if (taskB->GetTarget() == nullptr) {
-				taskB->SetTarget(unit);
-				unfinishedUnits[unit] = taskB;
+	if (builder == nullptr) {
+		return 0; //signaling: OK
+	}
 
-				UnitDef* buildDef = unit->GetDef();
-				Unit* u = unit->GetUnit();
-				int facing = u->GetBuildingFacing();
-				const AIFloat3& pos = u->GetPos();
-				for (auto ass : taskB->GetAssignees()) {
-					ass->GetUnit()->Build(buildDef, pos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
-				}
+	IConstructTask* task = static_cast<IConstructTask*>(builder->GetTask());
+	if ((task == nullptr) || (task->GetConstructType() != IConstructTask::ConstructType::BUILDER)) {
+		return 0; //signaling: OK
+	}
+
+	CBuilderTask* taskB = static_cast<CBuilderTask*>(task);
+	if (unit->GetUnit()->IsBeingBuilt()) {
+		// NOTE: Try to cope with strange event order, when different units created within same task
+		// FIXME: Create additional task to catch lost unit
+		if (taskB->GetTarget() == nullptr) {
+			taskB->SetTarget(unit);  // taskB->SetBuildPos(u->GetPos());
+			unfinishedUnits[unit] = taskB;
+
+			UnitDef* buildDef = unit->GetDef();
+			Unit* u = unit->GetUnit();
+			int facing = u->GetBuildingFacing();
+			const AIFloat3& pos = u->GetPos();
+			for (auto ass : taskB->GetAssignees()) {
+				ass->GetUnit()->Build(buildDef, pos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			}
 		}
+	} else {
+		DequeueTask(taskB);
 	}
 
 	return 0; //signaling: OK
@@ -201,7 +190,7 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 	if (unit->GetUnit()->IsBeingBuilt()) {
 		auto iter = unfinishedUnits.find(unit);
 		if (iter != unfinishedUnits.end()) {
-			DequeueTask(iter->second);
+			AbandonTask(iter->second);
 		}
 	}
 
@@ -211,6 +200,22 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 	}
 
 	return 0; //signaling: OK
+}
+
+float CBuilderManager::GetBuilderPower()
+{
+	return builderPower;
+}
+
+bool CBuilderManager::CanEnqueueTask()
+{
+	return (builderTasksCount < workers.size() * 4);
+}
+
+const std::list<CBuilderTask*>& CBuilderManager::GetTasks(CBuilderTask::TaskType type)
+{
+	// Auto-creates empty list
+	return builderTasks[static_cast<int>(type)];
 }
 
 CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
@@ -259,51 +264,47 @@ void CBuilderManager::DequeueTask(CBuilderTask* task)
 	builderTasksCount--;
 }
 
-float CBuilderManager::GetBuilderPower()
+void CBuilderManager::AbandonTask(CBuilderTask* task)
 {
-	return builderPower;
-}
-
-bool CBuilderManager::CanEnqueueTask()
-{
-	return (builderTasksCount < workers.size() * 4);
-}
-
-const std::list<CBuilderTask*>& CBuilderManager::GetTasks(CBuilderTask::TaskType type)
-{
-	// Auto-creates empty list
-	return builderTasks[static_cast<int>(type)];
+	for (auto ass : task->GetAssignees()) {
+		ass->GetUnit()->Stop();
+	}
+	if (task->GetTarget() == nullptr) {
+		if (task->IsStructure()) {
+			circuit->GetTerrainManager()->RemoveBlocker(task->GetBuildDef(), task->GetBuildPos(), task->GetFacing());
+		} else if (task->GetType() == CBuilderTask::TaskType::EXPAND) {  // update metalInfo's open state
+			circuit->GetMetalManager()->SetOpenSpot(task->GetBuildPos(), true);
+		}
+	}
+	DequeueTask(task);
 }
 
 void CBuilderManager::Init()
 {
-	// TODO: Improve init
-	for (auto worker : workers) {
-		if (circuit->GetSetupManager()->GetCommander() != worker) {
-			UnitIdle(worker);
-		} else {
-			Unit* u = worker->GetUnit();
-			UnitRulesParam* param = worker->GetUnit()->GetUnitRulesParamByName("facplop");
-			if (param != nullptr) {
-				if (param->GetValueFloat() == 1) {
-					const AIFloat3& position = u->GetPos();
-					int facing = UNIT_COMMAND_BUILD_NO_FACING;
-					CTerrainManager* terrain = circuit->GetTerrainManager();
-					float terWidth = terrain->GetTerrainWidth();
-					float terHeight = terrain->GetTerrainHeight();
-					if (math::fabs(terWidth - 2 * position.x) > math::fabs(terHeight - 2 * position.z)) {
-						facing = (2 * position.x > terWidth) ? UNIT_FACING_WEST : UNIT_FACING_EAST;
-					} else {
-						facing = (2 * position.z > terHeight) ? UNIT_FACING_NORTH : UNIT_FACING_SOUTH;
-					}
-					UnitDef* buildDef = circuit->GetUnitDefByName("factorycloak");
-					AIFloat3 buildPos = terrain->FindBuildSite(buildDef, position, 1000.0f, facing);
-					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
-					u->Build(circuit->GetMexDef(), position, UNIT_COMMAND_BUILD_NO_FACING, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+	CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+	if (commander != nullptr) {
+		Unit* u = commander->GetUnit();
+		UnitRulesParam* param = commander->GetUnit()->GetUnitRulesParamByName("facplop");
+		if (param != nullptr) {
+			if (param->GetValueFloat() == 1) {
+				const AIFloat3& pos = u->GetPos();
+				EnqueueTask(IUnitTask::Priority::HIGH, circuit->GetUnitDefByName("factorycloak"), pos, CBuilderTask::TaskType::FACTORY);
+				CMetalManager* metalManager = this->circuit->GetMetalManager();
+				int index = metalManager->FindNearestSpot(pos);
+				if (index != -1) {
+					const CMetalData::Metals& spots = metalManager->GetSpots();
+					metalManager->SetOpenSpot(index, false);
+					const AIFloat3& buildPos = spots[index].position;
+					EnqueueTask(IUnitTask::Priority::HIGH, circuit->GetMexDef(), buildPos, CBuilderTask::TaskType::EXPAND)->SetBuildPos(buildPos);
 				}
-				delete param;
+				EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetUnitDefByName("armsolar"), pos, CBuilderTask::TaskType::SOLAR);
+				EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetUnitDefByName("corrl"), pos, CBuilderTask::TaskType::DEFENDER);
 			}
+			delete param;
 		}
+	}
+	for (auto worker : workers) {
+		UnitIdle(worker);
 	}
 }
 
@@ -481,7 +482,6 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 	switch (type) {
 //		case CBuilderTask::TaskType::FACTORY:
 //		case CBuilderTask::TaskType::NANO:
-//		case CBuilderTask::TaskType::EXPAND:
 //		case CBuilderTask::TaskType::SOLAR:
 //		case CBuilderTask::TaskType::FUSION:
 //		case CBuilderTask::TaskType::SINGU:
@@ -489,6 +489,7 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 //		case CBuilderTask::TaskType::DEFENDER:
 //		case CBuilderTask::TaskType::DDM:
 //		case CBuilderTask::TaskType::ANNI:
+//		case CBuilderTask::TaskType::RAVE:
 		default: {
 			CCircuitUnit* target = task->GetTarget();
 			if (target != nullptr) {
@@ -496,20 +497,21 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 				u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 				break;
 			}
+			int facing = UNIT_COMMAND_BUILD_NO_FACING;
 			UnitDef* buildDef = task->GetBuildDef();
 			AIFloat3 buildPos = task->GetBuildPos();
-			int facing = UNIT_COMMAND_BUILD_NO_FACING;
 			if (buildPos != -RgtVector) {
 				facing = findFacing(buildDef, buildPos);
 				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
 					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					break;
+				} else {
+					circuit->GetTerrainManager()->RemoveBlocker(buildDef, buildPos, facing);
 				}
 			}
 
 			bool valid = false;
 			switch (type) {
-				case CBuilderTask::TaskType::EXPAND:
 				case CBuilderTask::TaskType::PYLON: {
 					buildPos = circuit->GetEconomyManager()->FindBuildPos(unit);
 					valid = (buildPos != -RgtVector);
@@ -561,6 +563,38 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 
 			if (valid) {
 				task->SetBuildPos(buildPos);
+				task->SetFacing(facing);
+				circuit->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);
+				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+			} else {
+				// Fallback to Guard/Assist/Patrol
+				assistFallback(unit);
+			}
+			break;
+		}
+		case CBuilderTask::TaskType::EXPAND: {
+			CCircuitUnit* target = task->GetTarget();
+			if (target != nullptr) {
+				Unit* tu = target->GetUnit();
+				u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+				break;
+			}
+			int facing = UNIT_COMMAND_BUILD_NO_FACING;
+			UnitDef* buildDef = task->GetBuildDef();
+			AIFloat3 buildPos = task->GetBuildPos();
+			if (buildPos != -RgtVector) {
+				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
+					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+					break;
+				} else {
+					circuit->GetMetalManager()->SetOpenSpot(buildPos, true);
+				}
+			}
+
+			buildPos = circuit->GetEconomyManager()->FindBuildPos(unit);
+			if (buildPos != -RgtVector) {
+				task->SetBuildPos(buildPos);
+				circuit->GetMetalManager()->SetOpenSpot(buildPos, false);
 				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			} else {
 				// Fallback to Guard/Assist/Patrol

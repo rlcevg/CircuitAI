@@ -82,6 +82,13 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
 
+	/*
+	 * raveparty handlers
+	 */
+	finishedHandler[circuit->GetUnitDefByName("raveparty")->GetUnitDefId()] = [this](CCircuitUnit* unit) {
+		unit->GetUnit()->SetTrajectory(1);
+	};
+
 //	/*
 //	 * armrectr handlers
 //	 */

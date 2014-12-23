@@ -10,6 +10,7 @@
 #include "CircuitDef.h"
 #include "utils.h"
 
+#include "AISCommands.h"
 #include "UnitDef.h"
 
 namespace circuit {
@@ -25,7 +26,8 @@ CBuilderTask::CBuilderTask(Priority priority,
 				timeout(timeout),
 				target(nullptr),
 				buildPos(-RgtVector),
-				buildPower(.0f)
+				buildPower(.0f),
+				facing(UNIT_COMMAND_BUILD_NO_FACING)
 {
 
 }
@@ -90,6 +92,21 @@ void CBuilderTask::SetTarget(CCircuitUnit* unit)
 CCircuitUnit* CBuilderTask::GetTarget()
 {
 	return target;
+}
+
+bool CBuilderTask::IsStructure()
+{
+	return (type < CBuilderTask::TaskType::EXPAND);
+}
+
+void CBuilderTask::SetFacing(int value)
+{
+	facing = value;
+}
+
+int CBuilderTask::GetFacing()
+{
+	return facing;
 }
 
 } // namespace circuit

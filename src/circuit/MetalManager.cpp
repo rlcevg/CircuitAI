@@ -234,6 +234,14 @@ void CMetalManager::SetOpenSpot(int index, bool value)
 	metalInfos[index].open = value;
 }
 
+void CMetalManager::SetOpenSpot(const springai::AIFloat3& pos, bool value)
+{
+	int index = FindNearestSpot(pos);
+	if (index != -1) {
+		SetOpenSpot(index, true);
+	}
+}
+
 const std::vector<CMetalManager::MetalInfo>& CMetalManager::GetMetalInfos() const
 {
 	return metalInfos;

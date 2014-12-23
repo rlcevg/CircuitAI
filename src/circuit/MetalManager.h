@@ -68,6 +68,7 @@ public:
 		bool open;
 	};
 	void SetOpenSpot(int index, bool value);
+	void SetOpenSpot(const springai::AIFloat3& pos, bool value);
 	const std::vector<MetalInfo>& GetMetalInfos() const;
 private:
 	std::vector<MetalInfo> metalInfos;

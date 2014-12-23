@@ -33,10 +33,10 @@ public:
 	virtual ~CTerrainManager();
 
 public:
-	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
+//	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
 	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 private:
-	Handlers1 createdHandler;
+//	Handlers1 createdHandler;
 	Handlers1 destroyedHandler;
 
 public:
@@ -47,6 +47,8 @@ private:
 	int terrainHeight;
 
 public:
+	void AddBlocker(springai::UnitDef* unitDef, const springai::AIFloat3& pos, int facing);
+	void RemoveBlocker(springai::UnitDef* unitDef, const springai::AIFloat3& pos, int facing);
 	// TODO: Use IsInBounds test and Bound operation only if mask or search offsets (endr) are out of bounds
 	springai::AIFloat3 FindBuildSite(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
 private:
@@ -85,8 +87,6 @@ private:
 
 	SBlockingMap blockingMap;
 	std::unordered_map<springai::UnitDef*, IBlockMask*> blockInfos;  // owner
-	void AddBlocker(CCircuitUnit* unit);
-	void RemoveBlocker(CCircuitUnit* unit);
 	void MarkBlockerByMask(const Structure& building, bool block, IBlockMask* mask);
 	void MarkBlocker(const Structure& building, bool block);
 
