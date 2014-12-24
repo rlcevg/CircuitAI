@@ -51,7 +51,7 @@ public:
 							  int timeout = 0);
 	void DequeueTask(CBuilderTask* task);
 private:
-	void AbandonTask(CBuilderTask* task);
+	void AbandonTask(CBuilderTask* task, CCircuitUnit* unit = nullptr);
 
 private:
 	void Init();

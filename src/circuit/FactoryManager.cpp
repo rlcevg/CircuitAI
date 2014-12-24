@@ -20,7 +20,7 @@
 #include "Unit.h"
 #include "UnitDef.h"
 #include "Command.h"
-#include "Lua.h"
+//#include "Lua.h"
 
 #include <vector>
 
@@ -119,11 +119,12 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		}
 
 		// TODO: Do not toggle havens
-		Lua* lua = this->circuit->GetCallback()->GetLua();
-		char buf[64];
-		snprintf(buf, sizeof(buf), "sethaven|%.0f|%.0f|%.0f", fromPos.x, fromPos.y, fromPos.z);
-		lua->CallRules(buf, -1);
-		delete lua;
+		// FIXME: Desyncs
+//		Lua* lua = this->circuit->GetCallback()->GetLua();
+//		char buf[64];
+//		snprintf(buf, sizeof(buf), "sethaven|%.0f|%.0f|%.0f", fromPos.x, fromPos.y, fromPos.z);
+//		lua->CallRules(buf, -1);
+//		delete lua;
 		havens.insert(unit);
 	};
 	auto assistDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
@@ -137,11 +138,12 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 
 		const AIFloat3& pos = unit->GetUnit()->GetPos();
 		// TODO: Do not toggle havens
-		Lua* lua = this->circuit->GetCallback()->GetLua();
-		char buf[64];
-		snprintf(buf, sizeof(buf), "sethaven|%.0f|%.0f|%.0f", pos.x, pos.y, pos.z);
-		lua->CallRules(buf, -1);
-		delete lua;
+		// FIXME: Desyncs
+//		Lua* lua = this->circuit->GetCallback()->GetLua();
+//		char buf[64];
+//		snprintf(buf, sizeof(buf), "sethaven|%.0f|%.0f|%.0f", pos.x, pos.y, pos.z);
+//		lua->CallRules(buf, -1);
+//		delete lua;
 		havens.erase(unit);
 	};
 

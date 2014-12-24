@@ -94,7 +94,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto search = customParams.find("pylonrange");
 	float pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : 500;
-	radius = pylonRange / (SQUARE_SIZE * 1.2);
+	radius = pylonRange / (SQUARE_SIZE * 1.3);
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
 	ignoreMask = STRUCTURE_MASK_BIT(ALL) & ~STRUCTURE_MASK_BIT(PYLON);
@@ -195,6 +195,30 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		this->circuit->GetMetalManager()->SetOpenSpot(unit->GetUnit()->GetPos(), true);
 	};
+
+
+//	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>([this]() {
+//		Drawer* drawer = this->circuit->GetMap()->GetDrawer();
+//		for (int z = 0; z < this->circuit->GetMap()->GetHeight() / 16; z++) {
+//			for (int x = 0; x < blockingMap.columnsLow; x++) {
+//				AIFloat3 ppp(x * GRID_RATIO_LOW * SQUARE_SIZE * 2 + GRID_RATIO_LOW * SQUARE_SIZE, 0 , z * GRID_RATIO_LOW * SQUARE_SIZE * 2 + GRID_RATIO_LOW * SQUARE_SIZE);
+//				drawer->DeletePointsAndLines(ppp);
+//			}
+//		}
+//		delete drawer;
+//	}), FRAMES_PER_SEC * 60);
+//	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>([this]() {
+//		Drawer* drawer = this->circuit->GetMap()->GetDrawer();
+//		for (int z = 0; z < this->circuit->GetMap()->GetHeight() / 16; z++) {
+//			for (int x = 0; x < blockingMap.columnsLow; x++) {
+//				if (blockingMap.IsBlockedLow(x, z, 0xFFFFFFFF)) {
+//					AIFloat3 ppp(x * GRID_RATIO_LOW * SQUARE_SIZE * 2 + GRID_RATIO_LOW * SQUARE_SIZE, 0 , z * GRID_RATIO_LOW * SQUARE_SIZE * 2 + GRID_RATIO_LOW * SQUARE_SIZE);
+//					drawer->AddPoint(ppp, "");
+//				}
+//			}
+//		}
+//		delete drawer;
+//	}), FRAMES_PER_SEC * 60, FRAMES_PER_SEC * 5);
 }
 
 CTerrainManager::~CTerrainManager()
@@ -315,7 +339,7 @@ void CTerrainManager::MarkAllyBuildings()
 
 	circuit->UpdateAllyUnits();
 	const std::map<int, CCircuitUnit*>& allies = circuit->GetAllyUnits();
-//	UnitDef* mexDef = circuit->GetMexDef();
+	UnitDef* mexDef = circuit->GetMexDef();
 
 	std::set<Structure, cmp> newUnits, oldUnits;
 	for (auto& kv : allies) {
@@ -333,11 +357,11 @@ void CTerrainManager::MarkAllyBuildings()
 				building.facing = u->GetBuildingFacing();
 				delete def;
 				newUnits.insert(building);
-				MarkBlocker(building, true);
-				// TODO: Remove? Because map->IsPossibleToBuildAt will take care of mexes
-//				if (building.def == mexDef) {  // update metalInfo's open state
-//					circuit->GetMetalManager()->SetOpenSpot(building.pos, false);
-//				}
+				if (building.def == mexDef) {  // update metalInfo's open state
+					circuit->GetMetalManager()->SetOpenSpot(building.pos, false);
+				} else {
+					MarkBlocker(building, true);
+				}
 			} else {
 				oldUnits.insert(*search);
 			}
@@ -346,11 +370,11 @@ void CTerrainManager::MarkAllyBuildings()
 	std::set<Structure, cmp> deadUnits;
 	std::set_difference(markedAllies.begin(), markedAllies.end(), oldUnits.begin(), oldUnits.end(), std::inserter(deadUnits, deadUnits.begin()), cmp());
 	for (auto& building : deadUnits) {
-		MarkBlocker(building, false);
-		// TODO: Remove? Because map->IsPossibleToBuildAt will take care of mexes
-//		if (building.def == mexDef) {  // update metalInfo's open state
-//			circuit->GetMetalManager()->SetOpenSpot(building.pos, true);
-//		}
+		if (building.def == mexDef) {  // update metalInfo's open state
+			circuit->GetMetalManager()->SetOpenSpot(building.pos, true);
+		} else {
+			MarkBlocker(building, false);
+		}
 	}
 	markedAllies.clear();
 	std::set_union(oldUnits.begin(), oldUnits.end(), newUnits.begin(), newUnits.end(), std::inserter(markedAllies, markedAllies.begin()), cmp());
@@ -960,7 +984,7 @@ void CTerrainManager::ClusterizeTerrain()
 			if (traversMap[idx] > 0.8) {
 				for (int hz = -10; hz <= 10; ++hz) {
 					for (int hx = -10; hx <= 10; ++hx) {
-						idx = (int)(iter->z / SQUARE_SIZE - hz) * widthX + iter->x / SQUARE_SIZE;
+						idx = (int)(iter->z / SQUARE_SIZE + hz) * widthX + iter->x / SQUARE_SIZE + hx;
 						if (traversMap[idx] < 0.8) {
 							isKey = true;
 							break;

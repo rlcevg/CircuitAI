@@ -71,13 +71,13 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
 		if (task != nullptr) {
 			if (task->GetTarget() == nullptr) {
-				AbandonTask(task);
+				AbandonTask(task, unit);
 			} else {
 				unit->RemoveTask();
 			}
 			CCircuitUnit* haven = this->circuit->GetFactoryManager()->GetClosestHaven(unit);
 			const AIFloat3& pos = (haven != nullptr) ? haven->GetUnit()->GetPos() : this->circuit->GetSetupManager()->GetStartPos();
-			unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 0);
+			unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 1);
 		}
 	};
 	auto workerDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
@@ -89,7 +89,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		builderInfos.erase(unit);
 		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
 		if (task != nullptr) {
-			AbandonTask(task);
+			AbandonTask(task, unit);
 		}
 	};
 
@@ -264,10 +264,12 @@ void CBuilderManager::DequeueTask(CBuilderTask* task)
 	builderTasksCount--;
 }
 
-void CBuilderManager::AbandonTask(CBuilderTask* task)
+void CBuilderManager::AbandonTask(CBuilderTask* task, CCircuitUnit* unit)
 {
 	for (auto ass : task->GetAssignees()) {
-		ass->GetUnit()->Stop();
+		if (ass != unit) {
+			ass->GetUnit()->Stop();
+		}
 	}
 	if (task->GetTarget() == nullptr) {
 		if (task->IsStructure()) {
@@ -295,7 +297,7 @@ void CBuilderManager::Init()
 					const CMetalData::Metals& spots = metalManager->GetSpots();
 					metalManager->SetOpenSpot(index, false);
 					const AIFloat3& buildPos = spots[index].position;
-					EnqueueTask(IUnitTask::Priority::HIGH, circuit->GetMexDef(), buildPos, CBuilderTask::TaskType::EXPAND)->SetBuildPos(buildPos);
+					EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetMexDef(), buildPos, CBuilderTask::TaskType::EXPAND)->SetBuildPos(buildPos);
 				}
 				EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetUnitDefByName("armsolar"), pos, CBuilderTask::TaskType::SOLAR);
 				EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetUnitDefByName("corrl"), pos, CBuilderTask::TaskType::DEFENDER);
