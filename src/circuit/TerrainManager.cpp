@@ -195,30 +195,6 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		this->circuit->GetMetalManager()->SetOpenSpot(unit->GetUnit()->GetPos(), true);
 	};
-
-
-//	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>([this]() {
-//		Drawer* drawer = this->circuit->GetMap()->GetDrawer();
-//		for (int z = 0; z < this->circuit->GetMap()->GetHeight() / 16; z++) {
-//			for (int x = 0; x < blockingMap.columnsLow; x++) {
-//				AIFloat3 ppp(x * GRID_RATIO_LOW * SQUARE_SIZE * 2 + GRID_RATIO_LOW * SQUARE_SIZE, 0 , z * GRID_RATIO_LOW * SQUARE_SIZE * 2 + GRID_RATIO_LOW * SQUARE_SIZE);
-//				drawer->DeletePointsAndLines(ppp);
-//			}
-//		}
-//		delete drawer;
-//	}), FRAMES_PER_SEC * 60);
-//	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>([this]() {
-//		Drawer* drawer = this->circuit->GetMap()->GetDrawer();
-//		for (int z = 0; z < this->circuit->GetMap()->GetHeight() / 16; z++) {
-//			for (int x = 0; x < blockingMap.columnsLow; x++) {
-//				if (blockingMap.IsBlockedLow(x, z, 0xFFFFFFFF)) {
-//					AIFloat3 ppp(x * GRID_RATIO_LOW * SQUARE_SIZE * 2 + GRID_RATIO_LOW * SQUARE_SIZE, 0 , z * GRID_RATIO_LOW * SQUARE_SIZE * 2 + GRID_RATIO_LOW * SQUARE_SIZE);
-//					drawer->AddPoint(ppp, "");
-//				}
-//			}
-//		}
-//		delete drawer;
-//	}), FRAMES_PER_SEC * 60, FRAMES_PER_SEC * 5);
 }
 
 CTerrainManager::~CTerrainManager()
@@ -331,6 +307,9 @@ AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, f
 
 void CTerrainManager::MarkAllyBuildings()
 {
+	if (!circuit->IsAllyAware()) {
+		return;
+	}
 	int lastFrame = circuit->GetLastFrame();
 	if (cacheBuildFrame + FRAMES_PER_SEC >= lastFrame) {
 		return;

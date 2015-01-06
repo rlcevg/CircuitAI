@@ -62,6 +62,9 @@ struct Metal;
 
 class CCircuitAI {
 public:
+	enum class Difficulty: char {EASY, NORMAL, HARD};
+
+public:
 	CCircuitAI(springai::OOAICallback* callback);
 	virtual ~CCircuitAI();
 
@@ -106,6 +109,10 @@ public:
 	void UnregisterEnemyUnit(CCircuitUnit* unit);
 	CCircuitUnit* GetEnemyUnitById(int unitId);
 	const std::map<int, CCircuitUnit*>& GetEnemyUnits() const;
+
+	void InitOptions();
+	Difficulty GetDifficulty();
+	bool IsAllyAware();
 
 // ---- UnitDefs ---- BEGIN
 private:
@@ -188,6 +195,10 @@ private:
 	std::map<int, CCircuitUnit*> teamUnits;  // owner
 	std::map<int, CCircuitUnit*> allyUnits;  // owner
 	std::map<int, CCircuitUnit*> enemyUnits;  // owner
+
+	// AIOptions.lua
+	Difficulty difficulty;
+	bool allyAware;
 };
 
 } // namespace circuit

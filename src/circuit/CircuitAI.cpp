@@ -34,6 +34,7 @@
 #include "GameRulesParam.h"
 #include "SkirmishAI.h"
 #include "WrappUnit.h"
+#include "OptionValues.h"
 
 //#include "Command.h"
 //#include "WrappCurrentCommand.h"
@@ -64,7 +65,10 @@ CCircuitAI::CCircuitAI(OOAICallback* callback) :
 		pathing(std::unique_ptr<Pathing>(callback->GetPathing())),
 		drawer(std::unique_ptr<Drawer>(map->GetDrawer())),
 		skirmishAI(std::unique_ptr<SkirmishAI>(callback->GetSkirmishAI())),
-		skirmishAIId(callback != NULL ? callback->GetSkirmishAIId() : -1)
+		skirmishAIId(callback != NULL ? callback->GetSkirmishAIId() : -1),
+		mexDef(nullptr),
+		difficulty(Difficulty::NORMAL),
+		allyAware(true)
 {
 	teamId = skirmishAI->GetTeamId();
 	allyTeamId = game->GetMyAllyTeam();
@@ -318,6 +322,7 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 	scheduler = std::make_shared<CScheduler>();
 	scheduler->Init(scheduler);
 
+	InitOptions();
 	InitUnitDefs(callback->GetUnitDefs());
 
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
@@ -704,6 +709,44 @@ CCircuitUnit* CCircuitAI::GetEnemyUnitById(int unitId)
 const std::map<int, CCircuitUnit*>& CCircuitAI::GetEnemyUnits() const
 {
 	return enemyUnits;
+}
+
+void CCircuitAI::InitOptions()
+{
+	OptionValues* options = skirmishAI->GetOptionValues();
+	const char* value;
+	const char easy[] = "easy";
+	const char normal[] = "normal";
+	const char hard[] = "hard";
+	const char trueVal[] = "true";
+
+	value = options->GetValueByKey("difficulty");
+	if (value != nullptr) {
+		if (strncmp(value, easy, sizeof(easy)) == 0) {
+			difficulty = Difficulty::EASY;
+		} else if (strncmp(value, normal, sizeof(normal)) == 0) {
+			difficulty = Difficulty::NORMAL;
+		} else if (strncmp(value, hard, sizeof(hard)) == 0) {
+			difficulty = Difficulty::HARD;
+		}
+	}
+
+	value = options->GetValueByKey("ally_aware");
+	if (value != nullptr) {
+		allyAware = (strncmp(value, trueVal, sizeof(trueVal)) == 0);
+	}
+
+	delete options;
+}
+
+CCircuitAI::Difficulty CCircuitAI::GetDifficulty()
+{
+	return difficulty;
+}
+
+bool CCircuitAI::IsAllyAware()
+{
+	return allyAware;
 }
 
 void CCircuitAI::InitUnitDefs(std::vector<UnitDef*>&& unitDefs)
