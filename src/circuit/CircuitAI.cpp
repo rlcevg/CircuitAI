@@ -6,23 +6,23 @@
  */
 
 #include "CircuitAI.h"
-#include "GameAttribute.h"
-#include "SetupManager.h"
-#include "MetalManager.h"
-#include "Scheduler.h"
-#include "BuilderManager.h"
-#include "FactoryManager.h"
-#include "EconomyManager.h"
-#include "MilitaryManager.h"
-#include "CircuitUnit.h"
-#include "CircuitDef.h"
-#include "TerrainManager.h"
-#include "utils.h"
+#include "static/GameAttribute.h"
+#include "static/SetupManager.h"
+#include "static/MetalManager.h"
+#include "module/BuilderManager.h"
+#include "module/FactoryManager.h"
+#include "module/EconomyManager.h"
+#include "module/MilitaryManager.h"
+#include "unit/CircuitUnit.h"
+#include "unit/CircuitDef.h"
+#include "terrain/TerrainManager.h"
+#include "util/Scheduler.h"
+#include "util/utils.h"
 
-#include "ExternalAI/Interface/AISEvents.h"
-#include "ExternalAI/Interface/AISCommands.h"
-#include "OOAICallback.h"			// C++ wrapper
+#include "AISEvents.h"
+#include "AISCommands.h"
 #include "SSkirmishAICallback.h"	// "direct" C API
+#include "OOAICallback.h"			// C++ wrapper
 #include "Game.h"
 #include "Map.h"
 #include "Unit.h"
@@ -349,7 +349,6 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 	economyManager = std::make_shared<CEconomyManager>(this);
 	militaryManager = std::make_shared<CMilitaryManager>(this);
 
-	modules.push_back(terrainManager);
 	modules.push_back(economyManager);
 	modules.push_back(militaryManager);
 	modules.push_back(builderManager);
