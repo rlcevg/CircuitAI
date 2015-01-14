@@ -6,41 +6,102 @@
  *      Origin: Randy Gaul (http://gamedevelopment.tutsplus.com/tutorials/the-action-list-data-structure-good-for-ui-ai-animations-and-more--gamedev-9264)
  */
 
-#include "ActionList.h"
-#include "Action.h"
+#include "util/ActionList.h"
+#include "util/Action.h"
+#include "util/utils.h"
+
+#include <algorithm>
 
 namespace circuit {
 
-CActionList::CActionList()
+CActionList::CActionList() :
+		startFrame(-1),
+		duration(-1)
 {
-	// TODO Auto-generated constructor stub
-
 }
 
 CActionList::~CActionList()
 {
-	// TODO Auto-generated destructor stub
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	utils::free_clear(actions);
 }
 
-void CActionList::Update(float dt)
+void CActionList::Update(CCircuitAI* circuit)
 {
-	unsigned int lanes = 0;
-	for (auto action : actions) {
-		if(lanes & action->lanes) {
-			continue;
-		}
-
-	    action->Update(dt);
+	itAction = actions.begin();
+	while (itAction != actions.end()) {
+		IAction* action = *itAction;
+	    action->Update(circuit);
 		if (action->isBlocking) {
-			lanes |= action->lanes;
-//			break;
+			break;
 		}
 
 		if (action->isFinished) {
 			action->OnEnd();
-			action = this->Remove(action);
+			itAction = this->Remove(itAction);
+		} else {
+			++itAction;
 		}
 	}
+}
+
+void CActionList::PushFront(IAction* action)
+{
+	actions.push_front(action);
+}
+
+void CActionList::PushBack(IAction* action)
+{
+	actions.push_back(action);
+}
+
+void CActionList::InsertBefore(IAction* action)
+{
+	auto it = std::find(actions.begin(), actions.end(), action);
+	actions.insert(it, action);
+}
+
+void CActionList::InsertBefore(decltype(actions)::iterator it, IAction* action)
+{
+	actions.insert(it, action);
+}
+
+void CActionList::InsertAfter(IAction* action)
+{
+	auto it = std::find(actions.begin(), actions.end(), action);
+	actions.insert(++it, action);
+}
+
+void CActionList::InsertAfter(decltype(actions)::iterator it, IAction* action)
+{
+	auto itIns = it;
+	actions.insert(++itIns, action);
+}
+
+IAction* CActionList::Remove(IAction* action)
+{
+	auto it = std::find(actions.begin(), actions.end(), action);
+	return *Remove(it);
+}
+
+decltype(CActionList::actions)::iterator CActionList::Remove(decltype(actions)::iterator it)
+{
+	return actions.erase(it);
+}
+
+IAction* CActionList::Begin(void)
+{
+	return actions.front();
+}
+
+IAction* CActionList::End(void)
+{
+	return actions.back();
+}
+
+bool CActionList::IsEmpty(void) const
+{
+	return actions.empty();
 }
 
 } // namespace circuit

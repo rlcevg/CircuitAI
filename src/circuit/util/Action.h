@@ -12,21 +12,21 @@
 namespace circuit {
 
 class CActionList;
+class CCircuitAI;
 
 class IAction {
 protected:
-	IAction();
+	IAction(CActionList* owner);
 public:
 	virtual ~IAction();
 
-	virtual void Update(float dt) = 0;
-	virtual void OnStart(void) = 0;
-	virtual void OnEnd(void) = 0;
+	virtual void Update(CCircuitAI* circuit) = 0;
+	virtual void OnStart(void);
+	virtual void OnEnd(void);
 	bool isFinished;
 	bool isBlocking;
-	unsigned lanes;
-	float elapsed;
-	float duration;
+	int startFrame;
+	int duration;
 
 private:
 	CActionList* ownerList;

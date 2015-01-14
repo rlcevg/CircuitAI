@@ -9,9 +9,6 @@
 #include "task/UnitTask.h"
 #include "util/utils.h"
 
-#include "Unit.h"
-#include "UnitDef.h"
-
 namespace circuit {
 
 using namespace springai;

@@ -6,19 +6,29 @@
  *      Origin: Randy Gaul (http://gamedevelopment.tutsplus.com/tutorials/the-action-list-data-structure-good-for-ui-ai-animations-and-more--gamedev-9264)
  */
 
-#include "Action.h"
+#include "util/Action.h"
 
 namespace circuit {
 
-IAction::IAction()
+IAction::IAction(CActionList* owner) :
+		ownerList(owner),
+		isFinished(false),
+		isBlocking(true),
+		startFrame(-1),
+		duration(-1)
 {
-	// TODO Auto-generated constructor stub
-
 }
 
 IAction::~IAction()
 {
-	// TODO Auto-generated destructor stub
+}
+
+void IAction::OnStart(void)
+{
+}
+
+void IAction::OnEnd(void)
+{
 }
 
 } // namespace circuit

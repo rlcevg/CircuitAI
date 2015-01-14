@@ -8,6 +8,8 @@
 #ifndef UNITTASK_H_
 #define UNITTASK_H_
 
+//#include "util/ActionList.h"
+
 #include "AIFloat3.h"
 
 #include <set>
@@ -16,7 +18,7 @@ namespace circuit {
 
 class CCircuitUnit;
 
-class IUnitTask {
+class IUnitTask {  // CSquad
 public:
 	enum class Priority: char {LOW = 0, NORMAL = 1, HIGH = 2};
 
@@ -30,12 +32,15 @@ public:
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 	void MarkCompleted();
 
+//	void Update(CCircuitAI* circuit);
+
 	std::set<CCircuitUnit*>& GetAssignees();
 	Priority GetPriority();
 
 protected:
 	std::set<CCircuitUnit*> units;
 	Priority priority;
+//	CActionList actionList;
 };
 
 } // namespace circuit

@@ -18,7 +18,7 @@ namespace circuit {
 
 class IConstructTask: public IUnitTask {
 public:
-	enum class ConstructType: char {BUILDER = 0, FACTORY};
+	enum class ConstructType: char {BUILDER, FACTORY};
 
 public:
 	IConstructTask(Priority priority,

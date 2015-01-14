@@ -14,35 +14,35 @@
 namespace circuit {
 
 class IAction;
+class CCircuitAI;
 
 class CActionList {
 public:
 	CActionList();
 	virtual ~CActionList();
 
-	void Update(float dt);
+	void Update(CCircuitAI* circuit);
 
 	void PushFront(IAction* action);
 	void PushBack(IAction* action);
 	void InsertBefore(IAction* action);
+	void InsertBefore(std::list<IAction*>::iterator it, IAction* action);
 	void InsertAfter(IAction* action);
+	void InsertAfter(std::list<IAction*>::iterator it, IAction* action);
 	IAction* Remove(IAction* action);
+	std::list<IAction*>::iterator Remove(std::list<IAction*>::iterator it);
 
 	IAction* Begin(void);
 	IAction* End(void);
 
 	bool IsEmpty(void) const;
-	float TimeLeft(void) const;
-	bool IsBlocking(void) const;
 
-private:
-	float duration;
-	float timeElapsed;
-	float percentDone;
-	bool blocking;
-	unsigned lanes;
-	// FIXME: owner?
-	std::list<IAction*> actions; // can be a vector or linked list
+	std::list<IAction*>::iterator itAction;
+
+protected:
+	int startFrame;
+	int duration;
+	std::list<IAction*> actions;  // owner
 };
 
 } // namespace circuit

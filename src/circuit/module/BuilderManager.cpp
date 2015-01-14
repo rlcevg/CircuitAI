@@ -71,7 +71,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
 		if (task != nullptr) {
 			if (task->GetTarget() == nullptr) {
-				AbandonTask(task, unit);
+				AbortTask(task, unit);
 			} else {
 				unit->RemoveTask();
 			}
@@ -89,7 +89,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		builderInfos.erase(unit);
 		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
 		if (task != nullptr) {
-			AbandonTask(task, unit);
+			AbortTask(task, unit);
 		}
 	};
 
@@ -207,7 +207,7 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 	if (unit->GetUnit()->IsBeingBuilt()) {
 		auto iter = unfinishedUnits.find(unit);
 		if (iter != unfinishedUnits.end()) {
-			AbandonTask(iter->second);
+			AbortTask(iter->second);
 		}
 	}
 
@@ -243,8 +243,7 @@ CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
 										   int timeout)
 {
 	CBuilderTask* task = new CBuilderTask(priority, buildDef, position, type, cost, timeout);
-	builderTasks[static_cast<int>(type)].push_front(task);
-	builderTasksCount++;
+	AddTask(task, type);
 	return task;
 }
 
@@ -256,8 +255,7 @@ CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
 {
 	float cost = buildDef->GetCost(circuit->GetEconomyManager()->GetMetalRes());
 	CBuilderTask* task = new CBuilderTask(priority, buildDef, position, type, cost, timeout);
-	builderTasks[static_cast<int>(type)].push_front(task);
-	builderTasksCount++;
+	AddTask(task, type);
 	return task;
 }
 
@@ -267,8 +265,7 @@ CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
 										   int timeout)
 {
 	CBuilderTask* task = new CBuilderTask(priority, nullptr, position, type, .0f, timeout);
-	builderTasks[static_cast<int>(type)].push_front(task);
-	builderTasksCount++;
+	AddTask(task, type);
 	return task;
 }
 
@@ -281,7 +278,14 @@ void CBuilderManager::DequeueTask(CBuilderTask* task)
 	builderTasksCount--;
 }
 
-void CBuilderManager::AbandonTask(CBuilderTask* task, CCircuitUnit* unit)
+inline void CBuilderManager::AddTask(CBuilderTask* task, CBuilderTask::TaskType type)
+{
+	builderTasks[static_cast<int>(type)].push_front(task);
+	builderTasksCount++;
+	// TODO: Send NewTask message
+}
+
+void CBuilderManager::AbortTask(CBuilderTask* task, CCircuitUnit* unit)
 {
 	for (auto ass : task->GetAssignees()) {
 		if (ass != unit) {
@@ -415,9 +419,8 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 				// FIXME: GetApproximateLength to position occupied by building or feature will return 0.
 				//        Also GetApproximateLength could be the cause of lags in late game when simultaneously 30 units become idle
 				UnitDef* buildDef = target->GetDef();
-				int facing = tu->GetBuildingFacing();
-				int xsize = ((facing & 1) == 0) ? buildDef->GetXSize() : buildDef->GetZSize();
-				int zsize = ((facing & 1) == 1) ? buildDef->GetXSize() : buildDef->GetZSize();
+				int xsize = buildDef->GetXSize();
+				int zsize = buildDef->GetZSize();
 				AIFloat3 offset = (pos - bp).Normalize2D() * (sqrtf(xsize * xsize + zsize * zsize) * SQUARE_SIZE + buildDistance);
 				AIFloat3 buildPos = candidate->GetBuildPos() + offset;
 

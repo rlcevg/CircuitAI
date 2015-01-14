@@ -39,6 +39,11 @@ void IUnitTask::MarkCompleted()
 	units.clear();
 }
 
+//void IUnitTask::Update(CCircuitAI* circuit)
+//{
+//	actionList.Update(circuit);
+//}
+
 std::set<CCircuitUnit*>& IUnitTask::GetAssignees()
 {
 	return units;

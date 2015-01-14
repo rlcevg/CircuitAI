@@ -8,6 +8,8 @@
 #ifndef CIRCUITUNIT_H_
 #define CIRCUITUNIT_H_
 
+#include "util/ActionList.h"
+
 namespace springai {
 	class Unit;
 	class UnitDef;
@@ -24,7 +26,7 @@ namespace circuit {
 class CCircuitDef;
 class IUnitTask;
 
-class CCircuitUnit {
+class CCircuitUnit: public CActionList {
 public:
 	CCircuitUnit(springai::Unit* unit, springai::UnitDef* def, CCircuitDef* circuitDef);
 	virtual ~CCircuitUnit();
@@ -32,6 +34,7 @@ public:
 	springai::Unit* GetUnit();
 	springai::UnitDef* GetDef();
 	CCircuitDef* GetCircuitDef();
+
 	void SetTask(IUnitTask* task);
 	IUnitTask* GetTask();
 	void RemoveTask();

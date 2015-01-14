@@ -29,7 +29,6 @@ CBuilderTask::CBuilderTask(Priority priority,
 				buildPower(.0f),
 				facing(UNIT_COMMAND_BUILD_NO_FACING)
 {
-
 }
 
 CBuilderTask::~CBuilderTask()
@@ -39,7 +38,7 @@ CBuilderTask::~CBuilderTask()
 
 bool CBuilderTask::CanAssignTo(CCircuitUnit* unit)
 {
-	return ((unit->GetCircuitDef()->CanBuild(buildDef) && (cost > buildPower * MIN_BUILD_SEC)) || (target != nullptr));
+	return ((unit->GetCircuitDef()->CanBuild(buildDef) || (target != nullptr)) && (cost > buildPower * MIN_BUILD_SEC));
 }
 
 void CBuilderTask::AssignTo(CCircuitUnit* unit)
