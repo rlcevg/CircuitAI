@@ -23,6 +23,14 @@ public:
 	virtual ~CFactoryTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit);
+	// TODO: Remove!
+	virtual void RemoveAssignee(CCircuitUnit* unit);
+	// TODO: Remove!
+	virtual void MarkCompleted();
+
+	virtual void OnUnitIdle(CCircuitUnit* unit);
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
+	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
 	TaskType GetType();
 

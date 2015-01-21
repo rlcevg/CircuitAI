@@ -1,24 +1,21 @@
 /*
- * IdleTask.h
+ * RetreatTask.h
  *
- *  Created on: Jan 13, 2015
+ *  Created on: Jan 18, 2015
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_TASK_IDLETASK_H_
-#define SRC_CIRCUIT_TASK_IDLETASK_H_
+#ifndef SRC_CIRCUIT_TASK_RETREATTASK_H_
+#define SRC_CIRCUIT_TASK_RETREATTASK_H_
 
 #include "task/UnitTask.h"
 
 namespace circuit {
 
-class CIdleTask: public IUnitTask {
+class CRetreatTask: public IUnitTask {
 public:
-	CIdleTask();
-	virtual ~CIdleTask();
-
-	virtual void RemoveAssignee(CCircuitUnit* unit);
-	virtual void MarkCompleted();
+	CRetreatTask();
+	virtual ~CRetreatTask();
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
@@ -27,4 +24,4 @@ public:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_TASK_IDLETASK_H_
+#endif // SRC_CIRCUIT_TASK_RETREATTASK_H_

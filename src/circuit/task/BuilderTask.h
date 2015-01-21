@@ -17,7 +17,7 @@ namespace circuit {
 
 class CBuilderTask: public IConstructTask {
 public:
-	enum class TaskType: int {
+	enum class BuildType: int {
 		FACTORY = 0, NANO,
 		STORE, PYLON,
 		SOLAR, FUSION, SINGU,
@@ -29,14 +29,18 @@ public:
 public:
 	CBuilderTask(Priority priority,
 			springai::UnitDef* buildDef, const springai::AIFloat3& position,
-			TaskType type, float cost, int timeout = 0);
+			BuildType type, float cost, int timeout = 0);
 	virtual ~CBuilderTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit);
 	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 
-	TaskType GetType();
+	virtual void OnUnitIdle(CCircuitUnit* unit);
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
+	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
+
+	BuildType GetBuildType();
 	float GetBuildPower();
 	float GetCost();
 	int GetTimeout();
@@ -51,10 +55,10 @@ public:
 	int GetFacing();
 
 private:
-	TaskType type;
+	BuildType buildType;
 	float buildPower;
 	float cost;
-	int timeout;
+	int timeout;  // TODO: re-evaluate need of this
 	CCircuitUnit* target;
 	springai::AIFloat3 buildPos;
 	int facing;

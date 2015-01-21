@@ -32,7 +32,7 @@ namespace circuit {
 using namespace springai;
 
 CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
-		IModule(circuit)
+		IUnitModule(circuit)
 {
 	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>(&CMilitaryManager::TestOrder, this), 120);
 	int unitDefId;
@@ -206,6 +206,26 @@ int CMilitaryManager::EnemyEnterLOS(CCircuitUnit* unit)
 //	}
 
 	return 0; //signaling: OK
+}
+
+void CMilitaryManager::AssignTask(CCircuitUnit* unit)
+{
+
+}
+
+void CMilitaryManager::ExecuteTask(CCircuitUnit* unit)
+{
+
+}
+
+void CMilitaryManager::AbortTask(IUnitTask* task, CCircuitUnit* unit)
+{
+
+}
+
+void CMilitaryManager::OnUnitDamaged(CCircuitUnit* unit)
+{
+
 }
 
 void CMilitaryManager::TestOrder()

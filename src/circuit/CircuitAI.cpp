@@ -415,9 +415,16 @@ int CCircuitAI::Release(int reason)
 
 int CCircuitAI::Update(int frame)
 {
+//	using clock = std::chrono::high_resolution_clock;
+//	using std::chrono::microseconds;
+//	clock::time_point t0 = clock::now();
+
 	lastFrame = frame;
 
 	scheduler->ProcessTasks(frame);
+
+//	clock::time_point t1 = clock::now();
+//	std::chrono::duration_cast<microseconds>(t1 - t0).count();
 
 	return 0;  // signaling: OK
 }
@@ -537,7 +544,8 @@ int CCircuitAI::EnemyEnterLOS(CCircuitUnit* unit)
 int CCircuitAI::PlayerCommand(std::vector<CCircuitUnit*>& units)
 {
 	for (auto unit : units) {
-		unit->RemoveTask();
+		// TODO: Replace IdleTask with PlayerTask (commands from player)
+		unit->GetTask()->RemoveAssignee(unit);
 	}
 
 	return 0;  // signaling: OK

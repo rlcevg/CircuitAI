@@ -6,10 +6,11 @@
  */
 
 #include "unit/action/UnitAction.h"
+#include "unit/CircuitUnit.h"
 
 namespace circuit {
 
-IUnitAction::IUnitAction(CActionList* owner, Type type) :
+IUnitAction::IUnitAction(CCircuitUnit* owner, Type type) :
 		IAction(owner),
 		type(type)
 {
@@ -17,6 +18,11 @@ IUnitAction::IUnitAction(CActionList* owner, Type type) :
 
 IUnitAction::~IUnitAction()
 {
+}
+
+IUnitAction::Type IUnitAction::GetType()
+{
+	return type;
 }
 
 } // namespace circuit

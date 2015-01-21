@@ -10,6 +10,7 @@
 
 #include "util/MultiQueue.h"
 #include "util/GameTask.h"
+#include "util/utils.h"
 
 #include <list>
 #include <memory>
@@ -42,7 +43,7 @@ public:
 	/*
 	 * Add task at specified interval
 	 */
-	void RunTaskEvery(std::shared_ptr<CGameTask> task, int frameInterval = 30, int frameOffset = 0);
+	void RunTaskEvery(std::shared_ptr<CGameTask> task, int frameInterval = FRAMES_PER_SEC, int frameOffset = 0);
 
 	/*
 	 * Process queued tasks at specified frame

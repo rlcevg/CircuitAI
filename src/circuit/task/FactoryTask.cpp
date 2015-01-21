@@ -37,6 +37,35 @@ bool CFactoryTask::CanAssignTo(CCircuitUnit* unit)
 	return position.SqDistance2D(pos) <= sqradius;
 }
 
+void CFactoryTask::RemoveAssignee(CCircuitUnit* unit)
+{
+	units.erase(unit);
+	unit->SetTask(nullptr);
+}
+
+void CFactoryTask::MarkCompleted()
+{
+	for (auto unit : units) {
+		unit->SetTask(nullptr);
+	}
+	units.clear();
+}
+
+void CFactoryTask::OnUnitIdle(CCircuitUnit* unit)
+{
+	// TODO: Remove? Can factory fail to build?
+}
+
+void CFactoryTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+{
+	// TODO: React: analyze, abort, create appropriate task
+}
+
+void CFactoryTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+{
+	// TODO: React: analyze, abort, create appropriate task
+}
+
 CFactoryTask::TaskType CFactoryTask::GetType()
 {
 	return type;

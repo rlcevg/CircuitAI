@@ -14,12 +14,12 @@ namespace circuit {
 
 class CMoveAction: public IUnitAction {
 public:
-	CMoveAction(CActionList* owner);
+	CMoveAction(CCircuitUnit* owner);
 	virtual ~CMoveAction();
 
-	virtual void Update(CCircuitAI* circuit);
-	virtual void OnStart(void);
-	virtual void OnEnd(void);
+	virtual void Update();
+	virtual void OnStart();
+	virtual void OnEnd();
 };
 
 } // namespace circuit

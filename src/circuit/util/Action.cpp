@@ -13,7 +13,7 @@ namespace circuit {
 IAction::IAction(CActionList* owner) :
 		ownerList(owner),
 		isFinished(false),
-		isBlocking(true),
+		isBlocking(false),
 		startFrame(-1),
 		duration(-1)
 {
@@ -23,11 +23,11 @@ IAction::~IAction()
 {
 }
 
-void IAction::OnStart(void)
+void IAction::OnStart()
 {
 }
 
-void IAction::OnEnd(void)
+void IAction::OnEnd()
 {
 }
 

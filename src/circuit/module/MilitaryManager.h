@@ -8,11 +8,11 @@
 #ifndef MILITARYMANAGER_H_
 #define MILITARYMANAGER_H_
 
-#include "module/Module.h"
+#include "module/UnitModule.h"
 
 namespace circuit {
 
-class CMilitaryManager: public virtual IModule {
+class CMilitaryManager: public IUnitModule {
 public:
 	CMilitaryManager(CCircuitAI* circuit);
 	virtual ~CMilitaryManager();
@@ -23,6 +23,11 @@ public:
 //	virtual int UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 //	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual int EnemyEnterLOS(CCircuitUnit* unit);
+
+	virtual void AssignTask(CCircuitUnit* unit);
+	virtual void ExecuteTask(CCircuitUnit* unit);
+	virtual void AbortTask(IUnitTask* task, CCircuitUnit* unit = nullptr);
+	virtual void OnUnitDamaged(CCircuitUnit* unit);
 
 private:
 	void TestOrder();

@@ -26,12 +26,13 @@ CActionList::~CActionList()
 	utils::free_clear(actions);
 }
 
-void CActionList::Update(CCircuitAI* circuit)
+void CActionList::Update()
 {
 	itAction = actions.begin();
 	while (itAction != actions.end()) {
 		IAction* action = *itAction;
-	    action->Update(circuit);
+	    action->Update();
+
 		if (action->isBlocking) {
 			break;
 		}
@@ -89,17 +90,17 @@ decltype(CActionList::actions)::iterator CActionList::Remove(decltype(actions)::
 	return actions.erase(it);
 }
 
-IAction* CActionList::Begin(void)
+IAction* CActionList::Begin()
 {
 	return actions.front();
 }
 
-IAction* CActionList::End(void)
+IAction* CActionList::End()
 {
 	return actions.back();
 }
 
-bool CActionList::IsEmpty(void) const
+bool CActionList::IsEmpty() const
 {
 	return actions.empty();
 }

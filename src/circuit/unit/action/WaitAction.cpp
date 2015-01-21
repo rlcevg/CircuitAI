@@ -6,12 +6,11 @@
  */
 
 #include "unit/action/WaitAction.h"
-#include "CircuitAI.h"
 #include "util/utils.h"
 
 namespace circuit {
 
-CWaitAction::CWaitAction(CActionList* owner) :
+CWaitAction::CWaitAction(CCircuitUnit* owner) :
 		IUnitAction(owner, Type::WAIT)
 {
 }
@@ -21,17 +20,17 @@ CWaitAction::~CWaitAction()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CWaitAction::Update(CCircuitAI* circuit)
+void CWaitAction::Update()
 {
 
 }
 
-void CWaitAction::OnStart(void)
+void CWaitAction::OnStart()
 {
 
 }
 
-void CWaitAction::OnEnd(void)
+void CWaitAction::OnEnd()
 {
 
 }

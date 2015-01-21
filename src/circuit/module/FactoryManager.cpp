@@ -8,9 +8,9 @@
 #include "module/FactoryManager.h"
 #include "CircuitAI.h"
 #include "unit/CircuitUnit.h"
-#include "task/FactoryTask.h"
 #include "module/EconomyManager.h"
 #include "terrain/TerrainManager.h"
+#include "task/IdleTask.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
@@ -29,7 +29,7 @@ namespace circuit {
 using namespace springai;
 
 CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
-		IModule(circuit),
+		IUnitModule(circuit),
 		factoryPower(.0f),
 		assistDef(nullptr)
 {
@@ -41,6 +41,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 	 * factory handlers
 	 */
 	auto factoryFinishedHandler = [this](CCircuitUnit* unit) {
+//		unit->SetManager(this);
+//		idleTask->AssignTo(unit);
+
 		Unit* u = unit->GetUnit();
 		UnitDef* def = unit->GetDef();
 		AIFloat3 pos = u->GetPos();
@@ -86,7 +89,10 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		}
 		factoryPower -= unit->GetDef()->GetBuildSpeed();
 		factories.erase(unit);
-		unit->RemoveTask();
+		IUnitTask* task = unit->GetTask();
+		if (task != nullptr) {
+			task->RemoveAssignee(unit);
+		}
 	};
 
 	/*
@@ -192,17 +198,10 @@ int CFactoryManager::UnitFinished(CCircuitUnit* unit)
 		CFactoryTask* task = iter->second;
 		if (task != nullptr) {
 			task->Progress();
-			std::list<CCircuitUnit*>& units = unfinishedTasks[task];
 			if (task->IsDone()) {
-				task->MarkCompleted();
-				factoryTasks.remove(task);
-				for (auto u : units) {
-					unfinishedUnits[u] = nullptr;
-				}
-				unfinishedTasks.erase(task);
-				delete task;
+				DequeueTask(task);
 			} else {
-				units.remove(unit);
+				unfinishedTasks[task].remove(unit);
 			}
 		}
 		unfinishedUnits.erase(iter);
@@ -276,6 +275,52 @@ void CFactoryManager::DequeueTask(CFactoryTask* task)
 	delete task;
 }
 
+void CFactoryManager::AssignTask(CCircuitUnit* unit)
+{
+	Unit* u = unit->GetUnit();
+	UnitDef* def = unit->GetDef();
+
+	CFactoryTask* task = nullptr;
+	decltype(factoryTasks)::iterator iter = factoryTasks.begin();
+	for (; iter != factoryTasks.end(); ++iter) {
+		if ((*iter)->CanAssignTo(unit)) {
+			task = static_cast<CFactoryTask*>(*iter);
+			break;
+		}
+	}
+
+	if (task == nullptr) {
+		task = circuit->GetEconomyManager()->CreateFactoryTask(unit);
+
+//		iter = factoryTasks.begin();
+	}
+
+	task->AssignTo(unit);
+//	if (task->IsFull()) {
+//		factoryTasks.splice(factoryTasks.end(), factoryTasks, iter);  // move task to back
+//	}
+}
+
+void CFactoryManager::ExecuteTask(CCircuitUnit* unit)
+{
+	CFactoryTask* task = static_cast<CFactoryTask*>(unit->GetTask());
+	Unit* u = unit->GetUnit();
+	const AIFloat3& buildPos = u->GetPos();
+
+	UnitDef* buildDef = task->GetBuildDef();
+	u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING);
+}
+
+void CFactoryManager::AbortTask(IUnitTask* task, CCircuitUnit* unit)
+{
+
+}
+
+void CFactoryManager::OnUnitDamaged(CCircuitUnit* unit)
+{
+
+}
+
 float CFactoryManager::GetFactoryPower()
 {
 	return factoryPower;
@@ -342,42 +387,6 @@ void CFactoryManager::Watchdog()
 		}
 		utils::free_clear(commands);
 	}
-}
-
-void CFactoryManager::AssignTask(CCircuitUnit* unit)
-{
-	Unit* u = unit->GetUnit();
-	UnitDef* def = unit->GetDef();
-
-	CFactoryTask* task = nullptr;
-	decltype(factoryTasks)::iterator iter = factoryTasks.begin();
-	for (; iter != factoryTasks.end(); ++iter) {
-		if ((*iter)->CanAssignTo(unit)) {
-			task = static_cast<CFactoryTask*>(*iter);
-			break;
-		}
-	}
-
-	if (task == nullptr) {
-		task = circuit->GetEconomyManager()->CreateFactoryTask(unit);
-
-//		iter = factoryTasks.begin();
-	}
-
-	task->AssignTo(unit);
-//	if (task->IsFull()) {
-//		factoryTasks.splice(factoryTasks.end(), factoryTasks, iter);  // move task to back
-//	}
-}
-
-void CFactoryManager::ExecuteTask(CCircuitUnit* unit)
-{
-	CFactoryTask* task = static_cast<CFactoryTask*>(unit->GetTask());
-	Unit* u = unit->GetUnit();
-	const AIFloat3& buildPos = u->GetPos();
-
-	UnitDef* buildDef = task->GetBuildDef();
-	u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING);
 }
 
 } // namespace circuit

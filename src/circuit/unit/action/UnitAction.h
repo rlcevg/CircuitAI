@@ -12,14 +12,18 @@
 
 namespace circuit {
 
+class CCircuitUnit;
+
 class IUnitAction: public IAction {
 public:
-	enum class Type: char {MOVE, BUILD, ATTACK, FIGHT, PATROL, RECLAIM, TERRAFORM, WAIT};
+	enum class Type: char {MOVE, BUILD, ATTACK, FIGHT, PATROL, RECLAIM, TERRAFORM, WAIT, IDLE};
 
 protected:
-	IUnitAction(CActionList* owner, Type type);
+	IUnitAction(CCircuitUnit* owner, Type type);
 public:
 	virtual ~IUnitAction();
+
+	Type GetType();
 
 protected:
 	Type type;

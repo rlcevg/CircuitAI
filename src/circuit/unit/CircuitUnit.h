@@ -25,6 +25,7 @@ namespace circuit {
 
 class CCircuitDef;
 class IUnitTask;
+class IUnitManager;
 
 class CCircuitUnit: public CActionList {
 public:
@@ -37,13 +38,16 @@ public:
 
 	void SetTask(IUnitTask* task);
 	IUnitTask* GetTask();
-	void RemoveTask();
+
+	void SetManager(IUnitManager* mgr);
+	IUnitManager* GetManager();
 
 private:
 	springai::Unit* unit;  // owner
 	springai::UnitDef* def;
 	CCircuitDef* circuitDef;
 	IUnitTask* task;
+	IUnitManager* manager;
 };
 
 } // namespace circuit

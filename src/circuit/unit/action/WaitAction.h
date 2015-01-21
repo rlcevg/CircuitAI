@@ -14,15 +14,12 @@ namespace circuit {
 
 class CWaitAction: public IUnitAction {
 public:
-	CWaitAction(CActionList* owner);
+	CWaitAction(CCircuitUnit* owner);
 	virtual ~CWaitAction();
 
-	virtual void Update(CCircuitAI* circuit);
-	virtual void OnStart(void);
-	virtual void OnEnd(void);
-
-private:
-
+	virtual void Update();
+	virtual void OnStart();
+	virtual void OnEnd();
 };
 
 } // namespace circuit

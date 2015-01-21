@@ -17,6 +17,8 @@ class CCircuitAI;
 class CCircuitUnit;
 
 class IModule {
+protected:
+	IModule(CCircuitAI* circuit);
 public:
 	virtual ~IModule();
 
@@ -30,8 +32,6 @@ public:
 	virtual int EnemyEnterLOS(CCircuitUnit* unit);
 
 protected:
-	IModule(CCircuitAI* circuit);
-
 	using Handlers1 = std::unordered_map<int, std::function<void (CCircuitUnit* unit)>>;
 	using Handlers2 = std::unordered_map<int, std::function<void (CCircuitUnit* unit, CCircuitUnit* other)>>;
 

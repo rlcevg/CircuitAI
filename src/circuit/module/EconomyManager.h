@@ -25,7 +25,7 @@ namespace circuit {
 class CBuilderTask;
 class CFactoryTask;
 
-class CEconomyManager: public virtual IModule {
+class CEconomyManager: public IModule {
 public:
 	CEconomyManager(CCircuitAI* circuit);
 	virtual ~CEconomyManager();

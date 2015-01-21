@@ -10,7 +10,7 @@
 
 namespace circuit {
 
-std::shared_ptr<CGameTask> CGameTask::EmptyTask = std::make_shared<CGameTask>([](){return;});
+std::shared_ptr<CGameTask> CGameTask::emptyTask = std::make_shared<CGameTask>([](){return;});
 
 CGameTask::~CGameTask()
 {

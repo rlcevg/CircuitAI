@@ -20,9 +20,10 @@ class IConstructTask: public IUnitTask {
 public:
 	enum class ConstructType: char {BUILDER, FACTORY};
 
-public:
+protected:
 	IConstructTask(Priority priority,
 			springai::UnitDef* buildDef, const springai::AIFloat3& position, ConstructType conType);
+public:
 	virtual ~IConstructTask();
 
 	ConstructType GetConstructType();

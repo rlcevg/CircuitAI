@@ -12,7 +12,6 @@
 namespace circuit {
 
 class CActionList;
-class CCircuitAI;
 
 class IAction {
 protected:
@@ -20,15 +19,15 @@ protected:
 public:
 	virtual ~IAction();
 
-	virtual void Update(CCircuitAI* circuit) = 0;
-	virtual void OnStart(void);
-	virtual void OnEnd(void);
+	virtual void Update() = 0;
+	virtual void OnStart();
+	virtual void OnEnd();
 	bool isFinished;
 	bool isBlocking;
 	int startFrame;
 	int duration;
 
-private:
+protected:
 	CActionList* ownerList;
 };
 

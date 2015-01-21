@@ -14,14 +14,13 @@
 namespace circuit {
 
 class IAction;
-class CCircuitAI;
 
 class CActionList {
 public:
 	CActionList();
 	virtual ~CActionList();
 
-	void Update(CCircuitAI* circuit);
+	void Update();
 
 	void PushFront(IAction* action);
 	void PushBack(IAction* action);
@@ -32,10 +31,10 @@ public:
 	IAction* Remove(IAction* action);
 	std::list<IAction*>::iterator Remove(std::list<IAction*>::iterator it);
 
-	IAction* Begin(void);
-	IAction* End(void);
+	IAction* Begin();
+	IAction* End();
 
-	bool IsEmpty(void) const;
+	bool IsEmpty() const;
 
 	std::list<IAction*>::iterator itAction;
 

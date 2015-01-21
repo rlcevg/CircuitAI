@@ -6,8 +6,9 @@
  */
 
 #include "unit/CircuitUnit.h"
-#include "task/UnitTask.h"
 #include "util/utils.h"
+
+#include "Unit.h"
 
 namespace circuit {
 
@@ -17,7 +18,8 @@ CCircuitUnit::CCircuitUnit(Unit* unit, UnitDef* def, CCircuitDef* circuitDef) :
 		unit(unit),
 		def(def),
 		circuitDef(circuitDef),
-		task(nullptr)
+		task(nullptr),
+		manager(nullptr)
 {
 }
 
@@ -52,11 +54,14 @@ IUnitTask* CCircuitUnit::GetTask()
 	return task;
 }
 
-void CCircuitUnit::RemoveTask()
+void CCircuitUnit::SetManager(IUnitManager* mgr)
 {
-	if (task != nullptr) {
-		task->RemoveAssignee(this);
-	}
+	manager = mgr;
+}
+
+IUnitManager* CCircuitUnit::GetManager()
+{
+	return manager;
 }
 
 } // namespace circuit

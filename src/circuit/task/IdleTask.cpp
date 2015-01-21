@@ -6,17 +6,15 @@
  */
 
 #include "task/IdleTask.h"
-#include "unit/action/UnitAction.h"
+#include "task/action/AssignAction.h"
 #include "util/utils.h"
 
 namespace circuit {
 
-CIdleTask* CIdleTask::IdleTask = new CIdleTask;
-
 CIdleTask::CIdleTask() :
 		IUnitTask(Priority::NORMAL)
 {
-//	actionList.PushBack(new CWaitAction(&actionList));
+	PushBack(new CAssignAction(this));
 }
 
 CIdleTask::~CIdleTask()
@@ -24,9 +22,29 @@ CIdleTask::~CIdleTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-bool CIdleTask::CanAssignTo(CCircuitUnit* unit)
+void CIdleTask::RemoveAssignee(CCircuitUnit* unit)
 {
-	return true;
+	units.erase(unit);
+}
+
+void CIdleTask::MarkCompleted()
+{
+	units.clear();
+}
+
+void CIdleTask::OnUnitIdle(CCircuitUnit* unit)
+{
+	// Do nothing. Unit is already idling.
+}
+
+void CIdleTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+{
+	// TODO: React while idling: analyze situation and create appropriate task/action
+}
+
+void CIdleTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+{
+
 }
 
 } // namespace circuit

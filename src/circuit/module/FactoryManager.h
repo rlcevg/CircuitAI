@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_FACTORYMANAGER_H_
 #define SRC_CIRCUIT_FACTORYMANAGER_H_
 
-#include "module/Module.h"
+#include "module/UnitModule.h"
 #include "task/FactoryTask.h"
 
 #include <map>
@@ -20,7 +20,7 @@ namespace springai {
 
 namespace circuit {
 
-class CFactoryManager: public virtual IModule {
+class CFactoryManager: public IUnitModule {
 public:
 	CFactoryManager(CCircuitAI* circuit);
 	virtual ~CFactoryManager();
@@ -37,6 +37,11 @@ public:
 							  int quantity,
 							  float radius);
 	void DequeueTask(CFactoryTask* task);
+	virtual void AssignTask(CCircuitUnit* unit);
+	virtual void ExecuteTask(CCircuitUnit* unit);
+	virtual void AbortTask(IUnitTask* task, CCircuitUnit* unit = nullptr);
+	virtual void OnUnitDamaged(CCircuitUnit* unit);
+
 	float GetFactoryPower();
 	bool CanEnqueueTask();
 	const std::list<CFactoryTask*>& GetTasks() const;
@@ -47,8 +52,6 @@ public:
 
 private:
 	void Watchdog();
-	void AssignTask(CCircuitUnit* unit);
-	void ExecuteTask(CCircuitUnit* unit);
 
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;

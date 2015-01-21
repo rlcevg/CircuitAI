@@ -7,6 +7,8 @@
 
 #include "task/UnitTask.h"
 #include "unit/CircuitUnit.h"
+#include "unit/UnitManager.h"
+#include "task/IdleTask.h"
 
 namespace circuit {
 
@@ -19,6 +21,11 @@ IUnitTask::~IUnitTask()
 {
 }
 
+bool IUnitTask::CanAssignTo(CCircuitUnit* unit)
+{
+	return true;
+}
+
 void IUnitTask::AssignTo(CCircuitUnit* unit)
 {
 	unit->SetTask(this);
@@ -28,21 +35,16 @@ void IUnitTask::AssignTo(CCircuitUnit* unit)
 void IUnitTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	units.erase(unit);
-	unit->SetTask(nullptr);
+	unit->GetManager()->GetIdleTask()->AssignTo(unit);
 }
 
 void IUnitTask::MarkCompleted()
 {
-	for (auto& unit : units) {
-		unit->SetTask(nullptr);
+	for (auto unit : units) {
+		unit->GetManager()->GetIdleTask()->AssignTo(unit);
 	}
 	units.clear();
 }
-
-//void IUnitTask::Update(CCircuitAI* circuit)
-//{
-//	actionList.Update(circuit);
-//}
 
 std::set<CCircuitUnit*>& IUnitTask::GetAssignees()
 {
