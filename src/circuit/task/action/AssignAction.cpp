@@ -26,6 +26,7 @@ CAssignAction::~CAssignAction()
 
 void CAssignAction::Update(CCircuitAI* circuit)
 {
+	isBlocking = false;
 	IUnitTask* task = static_cast<IUnitTask*>(ownerList);
 	auto assignees = task->GetAssignees();  // copy assignees
 	for (auto ass : assignees) {
@@ -34,6 +35,7 @@ void CAssignAction::Update(CCircuitAI* circuit)
 		manager->AssignTask(ass);
 		manager->ExecuteTask(ass);
 		if (!circuit->IsUpdateTimeValid()) {
+			isBlocking = true;
 			break;
 		}
 	}

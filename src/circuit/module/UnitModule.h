@@ -13,7 +13,7 @@
 
 namespace circuit {
 
-class IUnitModule: public IModule, public IUnitManager {
+class IUnitModule: public IModule, public IUnitManager {  // CActionList
 protected:
 	IUnitModule(CCircuitAI* circuit);
 public:

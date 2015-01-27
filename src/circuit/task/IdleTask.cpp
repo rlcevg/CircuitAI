@@ -7,6 +7,7 @@
 
 #include "task/IdleTask.h"
 #include "task/action/AssignAction.h"
+#include "unit/CircuitUnit.h"
 #include "util/utils.h"
 
 namespace circuit {
@@ -20,6 +21,12 @@ CIdleTask::CIdleTask() :
 CIdleTask::~CIdleTask()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+}
+
+void CIdleTask::AssignTo(CCircuitUnit* unit)
+{
+	unit->SetTask(this);
+	units.insert(unit);
 }
 
 void CIdleTask::RemoveAssignee(CCircuitUnit* unit)
@@ -44,7 +51,6 @@ void CIdleTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 
 void CIdleTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
-
 }
 
 } // namespace circuit

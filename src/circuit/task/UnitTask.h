@@ -8,8 +8,6 @@
 #ifndef UNITTASK_H_
 #define UNITTASK_H_
 
-#include "util/ActionList.h"
-
 #include "AIFloat3.h"
 
 #include <set>
@@ -17,8 +15,9 @@
 namespace circuit {
 
 class CCircuitUnit;
+class CCircuitAI;
 
-class IUnitTask: public CActionList {  // CSquad, IAction
+class IUnitTask {  // CSquad, IAction
 public:
 	enum class Priority: char {LOW = 0, NORMAL = 1, HIGH = 2};
 
@@ -31,8 +30,8 @@ public:
 	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 	virtual void MarkCompleted();
+	virtual void Update(CCircuitAI* circuit) = 0;
 
-	// TODO: Remove pure virtual?
 	virtual void OnUnitIdle(CCircuitUnit* unit) = 0;
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker) = 0;
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker) = 0;

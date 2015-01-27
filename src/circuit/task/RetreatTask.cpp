@@ -6,6 +6,7 @@
  */
 
 #include "task/RetreatTask.h"
+#include "task/action/RetreatAction.h"
 #include "util/utils.h"
 
 namespace circuit {
@@ -13,6 +14,7 @@ namespace circuit {
 CRetreatTask::CRetreatTask() :
 		IUnitTask(Priority::NORMAL)
 {
+	PushBack(new CRetreatAction(this));
 }
 
 CRetreatTask::~CRetreatTask()
@@ -23,6 +25,8 @@ CRetreatTask::~CRetreatTask()
 void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	// TODO: Do nothing? Check health on update.
+	// 1) Check distance to heaven
+	// 2) Push
 }
 
 void CRetreatTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)

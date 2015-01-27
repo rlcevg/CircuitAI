@@ -6,12 +6,11 @@
  */
 
 #include "task/BuilderTask.h"
+#include "task/RetreatTask.h"
 #include "CircuitAI.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
 #include "unit/UnitManager.h"
-#include "module/FactoryManager.h"
-#include "static/SetupManager.h"
 #include "util/utils.h"
 
 #include "AISCommands.h"
@@ -73,11 +72,7 @@ void CBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 		RemoveAssignee(unit);
 	}
 
-	// TODO: Convert into RetreatTask
-	CCircuitAI* circuit = manager->GetCircuit();
-	CCircuitUnit* haven = circuit->GetFactoryManager()->GetClosestHaven(unit);
-	const AIFloat3& pos = (haven != nullptr) ? haven->GetUnit()->GetPos() : circuit->GetSetupManager()->GetStartPos();
-	unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 1);
+	unit->GetManager()->GetRetreatTask()->AssignTo(unit);
 }
 
 void CBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)

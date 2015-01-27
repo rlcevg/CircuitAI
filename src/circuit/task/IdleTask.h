@@ -17,6 +17,7 @@ public:
 	CIdleTask();
 	virtual ~CIdleTask();
 
+	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 	virtual void MarkCompleted();
 

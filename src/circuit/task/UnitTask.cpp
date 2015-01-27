@@ -28,6 +28,7 @@ bool IUnitTask::CanAssignTo(CCircuitUnit* unit)
 
 void IUnitTask::AssignTo(CCircuitUnit* unit)
 {
+	unit->GetManager()->GetIdleTask()->RemoveAssignee(unit);
 	unit->SetTask(this);
 	units.insert(unit);
 }

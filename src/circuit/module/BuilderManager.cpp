@@ -14,6 +14,7 @@
 #include "module/FactoryManager.h"
 #include "terrain/TerrainManager.h"
 #include "task/IdleTask.h"
+#include "task/RetreatTask.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
@@ -76,7 +77,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		builderInfos.erase(unit);
 		IUnitTask* task = unit->GetTask();
 		task->OnUnitDestroyed(unit, attacker);
-		task->RemoveAssignee(unit);
+		task->RemoveAssignee(unit);  // Remove from IdleTask
 	};
 
 	/*
@@ -630,6 +631,7 @@ void CBuilderManager::Watchdog()
 	for (auto worker : workers) {
 		Unit* u = worker->GetUnit();
 		std::vector<springai::Command*> commands = u->GetCurrentCommands();
+		// TODO: Ignore workers with idle and wait task! (.. && worker->GetTask()->IsBusy())
 		if (commands.empty()) {
 			AIFloat3 toPos = u->GetPos();
 			const float size = 50.0f;
@@ -659,6 +661,20 @@ void CBuilderManager::Watchdog()
 void CBuilderManager::Update()
 {
 	idleTask->Update(circuit);
+	retreatTask->Update(circuit);
+	auto it = updateTasks.begin();
+	while ((it != updateTasks.end()) && circuit->IsUpdateTimeValid()) {
+		(*it)->Update(circuit);
+		it = updateTasks.erase(it);
+	}
+
+	if (updateTasks.empty()) {
+		for (auto& tasks : builderTasks) {
+			for (auto t : tasks) {
+				updateTasks.push_back(t);
+			}
+		}
+	}
 }
 
 CCircuitUnit* CBuilderManager::FindUnitToAssist(CCircuitUnit* unit)
