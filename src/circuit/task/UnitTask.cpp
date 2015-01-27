@@ -46,7 +46,7 @@ void IUnitTask::MarkCompleted()
 	units.clear();
 }
 
-std::set<CCircuitUnit*>& IUnitTask::GetAssignees()
+const std::set<CCircuitUnit*>& IUnitTask::GetAssignees() const
 {
 	return units;
 }

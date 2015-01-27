@@ -7,6 +7,7 @@
 
 #include "task/action/AssignAction.h"
 #include "task/UnitTask.h"
+#include "CircuitAI.h"
 #include "unit/CircuitUnit.h"
 #include "unit/UnitManager.h"
 #include "util/utils.h"
@@ -23,17 +24,19 @@ CAssignAction::~CAssignAction()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CAssignAction::Update()
+void CAssignAction::Update(CCircuitAI* circuit)
 {
 	IUnitTask* task = static_cast<IUnitTask*>(ownerList);
-	for (auto ass : task->GetAssignees()) {
+	auto assignees = task->GetAssignees();  // copy assignees
+	for (auto ass : assignees) {
+		task->RemoveAssignee(ass);
 		IUnitManager* manager = ass->GetManager();
 		manager->AssignTask(ass);
 		manager->ExecuteTask(ass);
+		if (!circuit->IsUpdateTimeValid()) {
+			break;
+		}
 	}
-	task->MarkCompleted();
-
-//	isFinished = true;
 }
 
 } // namespace circuit

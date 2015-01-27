@@ -16,7 +16,7 @@ class CCircuitUnit;
 
 class IUnitAction: public IAction {
 public:
-	enum class Type: char {MOVE, BUILD, ATTACK, FIGHT, PATROL, RECLAIM, TERRAFORM, WAIT, IDLE};
+	enum class Type: char {MOVE, BUILD, ATTACK, FIGHT, PATROL, RECLAIM, TERRAFORM, WAIT};
 
 protected:
 	IUnitAction(CCircuitUnit* owner, Type type);

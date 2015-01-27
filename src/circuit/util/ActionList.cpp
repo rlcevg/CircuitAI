@@ -26,12 +26,12 @@ CActionList::~CActionList()
 	utils::free_clear(actions);
 }
 
-void CActionList::Update()
+void CActionList::Update(CCircuitAI* circuit)
 {
 	itAction = actions.begin();
 	while (itAction != actions.end()) {
 		IAction* action = *itAction;
-	    action->Update();
+	    action->Update(circuit);
 
 		if (action->isBlocking) {
 			break;

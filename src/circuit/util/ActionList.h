@@ -14,13 +14,14 @@
 namespace circuit {
 
 class IAction;
+class CCircuitAI;
 
 class CActionList {
 public:
 	CActionList();
 	virtual ~CActionList();
 
-	void Update();
+	void Update(CCircuitAI* circuit);
 
 	void PushFront(IAction* action);
 	void PushBack(IAction* action);

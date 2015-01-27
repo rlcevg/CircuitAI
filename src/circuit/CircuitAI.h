@@ -14,6 +14,7 @@
 #include <vector>
 #include <unordered_map>
 #include <string.h>
+#include <chrono>
 
 namespace springai {
 	class OOAICallback;
@@ -29,6 +30,9 @@ namespace springai {
 struct SSkirmishAICallback;
 
 namespace circuit {
+
+using clock = std::chrono::high_resolution_clock;
+using std::chrono::milliseconds;
 
 #define ERROR_UNKNOWN			200
 #define ERROR_INIT				(ERROR_UNKNOWN + EVENT_INIT)
@@ -109,6 +113,8 @@ public:
 	void UnregisterEnemyUnit(CCircuitUnit* unit);
 	CCircuitUnit* GetEnemyUnitById(int unitId);
 	const std::map<int, CCircuitUnit*>& GetEnemyUnits() const;
+
+	bool IsUpdateTimeValid();
 
 	void InitOptions();
 	Difficulty GetDifficulty();
@@ -195,6 +201,8 @@ private:
 	std::map<int, CCircuitUnit*> teamUnits;  // owner
 	std::map<int, CCircuitUnit*> allyUnits;  // owner
 	std::map<int, CCircuitUnit*> enemyUnits;  // owner
+
+	clock::time_point startUpdate;
 
 	// AIOptions.lua
 	Difficulty difficulty;

@@ -37,7 +37,7 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker) = 0;
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker) = 0;
 
-	std::set<CCircuitUnit*>& GetAssignees();
+	const std::set<CCircuitUnit*>& GetAssignees() const;
 	Priority GetPriority();
 
 protected:

@@ -595,7 +595,7 @@ void CBuilderManager::Init()
 		UnitIdle(worker);
 	}
 
-	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Update, this), FRAMES_PER_SEC / 2);
+	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Update, this), FRAMES_PER_SEC / 10);
 }
 
 void CBuilderManager::Watchdog()
@@ -658,7 +658,7 @@ void CBuilderManager::Watchdog()
 
 void CBuilderManager::Update()
 {
-	idleTask->Update();
+	idleTask->Update(circuit);
 }
 
 CCircuitUnit* CBuilderManager::FindUnitToAssist(CCircuitUnit* unit)

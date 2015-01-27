@@ -17,7 +17,7 @@ public:
 	CAssignAction(IUnitTask* owner);
 	virtual ~CAssignAction();
 
-	virtual void Update();
+	virtual void Update(CCircuitAI* circuit);
 };
 
 } // namespace circuit

@@ -13,9 +13,7 @@ namespace circuit {
 IAction::IAction(CActionList* owner) :
 		ownerList(owner),
 		isFinished(false),
-		isBlocking(false),
-		startFrame(-1),
-		duration(-1)
+		isBlocking(false)
 {
 }
 
