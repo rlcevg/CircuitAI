@@ -21,6 +21,8 @@ public:
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 	virtual void MarkCompleted();
 
+	virtual void Update(CCircuitAI* circuit);
+
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);

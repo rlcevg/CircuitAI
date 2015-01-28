@@ -24,9 +24,13 @@ public:
 
 	virtual bool CanAssignTo(CCircuitUnit* unit);
 	// TODO: Remove!
+	virtual void AssignTo(CCircuitUnit* unit);
+	// TODO: Remove!
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 	// TODO: Remove!
 	virtual void MarkCompleted();
+
+	virtual void Update(CCircuitAI* circuit);
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);

@@ -17,6 +17,10 @@ public:
 	CRetreatTask();
 	virtual ~CRetreatTask();
 
+	virtual void AssignTo(CCircuitUnit* unit);
+
+	virtual void Update(CCircuitAI* circuit);
+
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);

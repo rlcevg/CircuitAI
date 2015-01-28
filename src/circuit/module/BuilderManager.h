@@ -72,7 +72,6 @@ private:
 	std::vector<std::set<CBuilderTask*>> builderTasks;  // owner
 	int builderTasksCount;
 	float builderPower;
-	std::list<CBuilderTask*> updateTasks;  // tmp list of tasks to update
 
 	std::set<CCircuitUnit*> workers;
 

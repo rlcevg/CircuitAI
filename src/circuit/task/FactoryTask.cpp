@@ -37,6 +37,12 @@ bool CFactoryTask::CanAssignTo(CCircuitUnit* unit)
 	return position.SqDistance2D(pos) <= sqradius;
 }
 
+void CFactoryTask::AssignTo(CCircuitUnit* unit)
+{
+	unit->SetTask(this);
+	units.insert(unit);
+}
+
 void CFactoryTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	units.erase(unit);
@@ -49,6 +55,11 @@ void CFactoryTask::MarkCompleted()
 		unit->SetTask(nullptr);
 	}
 	units.clear();
+}
+
+void CFactoryTask::Update(CCircuitAI* circuit)
+{
+
 }
 
 void CFactoryTask::OnUnitIdle(CCircuitUnit* unit)

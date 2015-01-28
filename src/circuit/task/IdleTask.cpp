@@ -6,8 +6,9 @@
  */
 
 #include "task/IdleTask.h"
-#include "task/action/AssignAction.h"
+#include "CircuitAI.h"
 #include "unit/CircuitUnit.h"
+#include "unit/UnitManager.h"
 #include "util/utils.h"
 
 namespace circuit {
@@ -15,7 +16,6 @@ namespace circuit {
 CIdleTask::CIdleTask() :
 		IUnitTask(Priority::NORMAL)
 {
-	PushBack(new CAssignAction(this));
 }
 
 CIdleTask::~CIdleTask()
@@ -37,6 +37,19 @@ void CIdleTask::RemoveAssignee(CCircuitUnit* unit)
 void CIdleTask::MarkCompleted()
 {
 	units.clear();
+}
+
+void CIdleTask::Update(CCircuitAI* circuit)
+{
+	auto assignees = units;  // copy assignees
+	for (auto ass : assignees) {
+		IUnitManager* manager = ass->GetManager();
+		manager->AssignTask(ass);  // should RemoveAssignee() on AssignTo()
+		manager->ExecuteTask(ass);
+		if (!circuit->IsUpdateTimeValid()) {
+			break;
+		}
+	}
 }
 
 void CIdleTask::OnUnitIdle(CCircuitUnit* unit)

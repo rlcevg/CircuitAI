@@ -151,6 +151,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 //		lua->CallRules(buf, -1);
 //		delete lua;
 		havens.erase(unit);
+		// TODO: Send HavenDestroyed message
 	};
 
 	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();

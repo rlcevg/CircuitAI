@@ -48,13 +48,20 @@ bool CBuilderTask::CanAssignTo(CCircuitUnit* unit)
 void CBuilderTask::AssignTo(CCircuitUnit* unit)
 {
 	IUnitTask::AssignTo(unit);
+
 	buildPower += unit->GetDef()->GetBuildSpeed();
 }
 
 void CBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IUnitTask::RemoveAssignee(unit);
+
 	buildPower -= unit->GetDef()->GetBuildSpeed();
+}
+
+void CBuilderTask::Update(CCircuitAI* circuit)
+{
+
 }
 
 void CBuilderTask::OnUnitIdle(CCircuitUnit* unit)
@@ -64,6 +71,11 @@ void CBuilderTask::OnUnitIdle(CCircuitUnit* unit)
 
 void CBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
+	Unit* u = unit->GetUnit();
+	if (u->GetHealth() > u->GetMaxHealth() * 0.6) {
+		return;
+	}
+
 	IUnitManager* manager = unit->GetManager();
 	manager->OnUnitDamaged(unit);
 	if (target == nullptr) {

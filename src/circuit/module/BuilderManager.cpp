@@ -77,7 +77,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		builderInfos.erase(unit);
 		IUnitTask* task = unit->GetTask();
 		task->OnUnitDestroyed(unit, attacker);
-		task->RemoveAssignee(unit);  // Remove from IdleTask
+		unit->GetTask()->RemoveAssignee(unit);  // Remove from IdleTask
 	};
 
 	/*
@@ -662,17 +662,17 @@ void CBuilderManager::Update()
 {
 	idleTask->Update(circuit);
 	retreatTask->Update(circuit);
-	auto it = updateTasks.begin();
-	while ((it != updateTasks.end()) && circuit->IsUpdateTimeValid()) {
-		(*it)->Update(circuit);
-		it = updateTasks.erase(it);
-	}
-
-	if (updateTasks.empty()) {
-		for (auto& tasks : builderTasks) {
-			for (auto t : tasks) {
-				updateTasks.push_back(t);
+	bool exit = false;
+	for (auto& tasks : builderTasks) {
+		for (auto t : tasks) {
+			t->Update(circuit);
+			if (!circuit->IsUpdateTimeValid()) {
+				exit = true;
+				break;
 			}
+		}
+		if (exit) {
+			break;
 		}
 	}
 }

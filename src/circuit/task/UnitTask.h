@@ -30,6 +30,7 @@ public:
 	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 	virtual void MarkCompleted();
+
 	virtual void Update(CCircuitAI* circuit) = 0;
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) = 0;
