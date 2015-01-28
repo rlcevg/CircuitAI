@@ -204,7 +204,8 @@ CBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 
 	const std::set<CBuilderTask*>& tasks = builderManager->GetTasks(CBuilderTask::BuildType::RAVE);
 	if (tasks.empty()) {
-		task = builderManager->EnqueueTask(CBuilderTask::Priority::LOW, circuit->GetUnitDefByName("raveparty"), circuit->GetSetupManager()->GetStartPos(), CBuilderTask::BuildType::RAVE);
+		task = builderManager->EnqueueTask(CBuilderTask::Priority::HIGH, circuit->GetUnitDefByName("raveparty"),
+										   circuit->GetSetupManager()->GetStartPos(), CBuilderTask::BuildType::RAVE);
 	} else {
 		task = *tasks.begin();
 	}
@@ -236,7 +237,7 @@ CFactoryTask* CEconomyManager::CreateFactoryTask(CCircuitUnit* unit)
 	UnitDef* buildDef = circuit->GetUnitDefByName(names[rand() % 6]);
 	const AIFloat3& buildPos = u->GetPos();
 	float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
-	task = circuit->GetFactoryManager()->EnqueueTask(CFactoryTask::Priority::LOW, buildDef, buildPos, CFactoryTask::TaskType::DEFAULT, 1, radius);
+	task = circuit->GetFactoryManager()->EnqueueTask(CFactoryTask::Priority::LOW, buildDef, buildPos, CFactoryTask::FacType::DEFAULT, 1, radius);
 	return task;
 }
 
@@ -308,8 +309,9 @@ void CEconomyManager::Init()
 	const int interval = ais->GetSize() * 2;
 	delete ais;
 	const AIFloat3& pos = circuit->GetSetupManager()->GetStartPos();
-	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateBuilderTasks, this, pos), interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
-	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this), interval, circuit->GetSkirmishAIId() + 1);
+	CScheduler* scheduler = circuit->GetScheduler();
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateBuilderTasks, this, pos), interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this), interval, circuit->GetSkirmishAIId() + 1);
 }
 
 CBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position)
@@ -530,7 +532,7 @@ CFactoryTask* CEconomyManager::UpdateFactoryTasks()
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	if ((builderManager->GetBuilderPower() < metalIncome * 1.8) && circuit->IsAvailable(buildDef)) {
 		for (auto t : factoryManager->GetTasks()) {
-			if (t->GetType() == CFactoryTask::TaskType::BUILDPOWER) {
+			if (t->GetFacType() == CFactoryTask::FacType::BUILDPOWER) {
 				return task;
 			}
 		}
@@ -538,7 +540,7 @@ CFactoryTask* CEconomyManager::UpdateFactoryTasks()
 		const AIFloat3& buildPos = factory->GetUnit()->GetPos();
 		CTerrainManager* terrain = circuit->GetTerrainManager();
 		float radius = std::max(terrain->GetTerrainWidth(), terrain->GetTerrainHeight()) / 4;
-		task = factoryManager->EnqueueTask(CFactoryTask::Priority::NORMAL, buildDef, buildPos, CFactoryTask::TaskType::BUILDPOWER, 1, radius);
+		task = factoryManager->EnqueueTask(CFactoryTask::Priority::NORMAL, buildDef, buildPos, CFactoryTask::FacType::BUILDPOWER, 1, radius);
 	}
 
 	return task;

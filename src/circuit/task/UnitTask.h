@@ -20,9 +20,10 @@ class CCircuitAI;
 class IUnitTask {  // CSquad, IAction
 public:
 	enum class Priority: char {LOW = 0, NORMAL = 1, HIGH = 2};
+	enum class Type: char {IDLE, RETREAT, BUILDER, FACTORY, ATTACK, SCOUT};
 
 protected:
-	IUnitTask(Priority priority);
+	IUnitTask(Priority priority, Type type);
 public:
 	virtual ~IUnitTask();
 
@@ -39,10 +40,12 @@ public:
 
 	const std::set<CCircuitUnit*>& GetAssignees() const;
 	Priority GetPriority();
+	Type GetType();
 
 protected:
 	std::set<CCircuitUnit*> units;
 	Priority priority;
+	Type type;
 };
 
 } // namespace circuit

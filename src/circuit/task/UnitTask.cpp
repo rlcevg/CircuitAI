@@ -12,8 +12,9 @@
 
 namespace circuit {
 
-IUnitTask::IUnitTask(Priority priority) :
-		priority(priority)
+IUnitTask::IUnitTask(Priority priority, Type type) :
+		priority(priority),
+		type(type)
 {
 }
 
@@ -55,6 +56,11 @@ const std::set<CCircuitUnit*>& IUnitTask::GetAssignees() const
 IUnitTask::Priority IUnitTask::GetPriority()
 {
 	return priority;
+}
+
+IUnitTask::Type IUnitTask::GetType()
+{
+	return type;
 }
 
 } // namespace circuit

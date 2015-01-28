@@ -14,7 +14,7 @@
 namespace circuit {
 
 CIdleTask::CIdleTask() :
-		IUnitTask(Priority::NORMAL)
+		IUnitTask(Priority::NORMAL, Type::IDLE)
 {
 }
 

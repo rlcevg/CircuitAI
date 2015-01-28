@@ -24,7 +24,7 @@ using namespace springai;
 CBuilderTask::CBuilderTask(Priority priority,
 		UnitDef* buildDef, const AIFloat3& position,
 		BuildType type, float cost, int timeout) :
-				IConstructTask(priority, buildDef, position, ConstructType::BUILDER),
+				IConstructTask(priority, Type::BUILDER, buildDef, position),
 				buildType(type),
 				cost(cost),
 				timeout(timeout),
@@ -61,7 +61,7 @@ void CBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CBuilderTask::Update(CCircuitAI* circuit)
 {
-
+	// tODO: Analyze nearby situation, maybe cancel this task
 }
 
 void CBuilderTask::OnUnitIdle(CCircuitUnit* unit)
@@ -77,19 +77,19 @@ void CBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 	}
 
 	IUnitManager* manager = unit->GetManager();
-	manager->OnUnitDamaged(unit);
+	manager->SpecialCleanUp(unit);
 	if (target == nullptr) {
-		manager->AbortTask(this, unit);
+		manager->AbortTask(this);
 	} else {
 		RemoveAssignee(unit);
 	}
 
-	unit->GetManager()->GetRetreatTask()->AssignTo(unit);
+	manager->GetRetreatTask()->AssignTo(unit);
 }
 
 void CBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
-	unit->GetManager()->AbortTask(this, unit);
+	unit->GetManager()->AbortTask(this);
 }
 
 CBuilderTask::BuildType CBuilderTask::GetBuildType()

@@ -218,12 +218,12 @@ void CMilitaryManager::ExecuteTask(CCircuitUnit* unit)
 
 }
 
-void CMilitaryManager::AbortTask(IUnitTask* task, CCircuitUnit* unit)
+void CMilitaryManager::AbortTask(IUnitTask* task)
 {
 
 }
 
-void CMilitaryManager::OnUnitDamaged(CCircuitUnit* unit)
+void CMilitaryManager::SpecialCleanUp(CCircuitUnit* unit)
 {
 
 }

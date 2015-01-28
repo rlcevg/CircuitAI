@@ -7,6 +7,7 @@
 
 #include "task/FactoryTask.h"
 #include "unit/CircuitUnit.h"
+#include "unit/UnitManager.h"
 #include "util/utils.h"
 
 #include "Unit.h"
@@ -17,9 +18,9 @@ using namespace springai;
 
 CFactoryTask::CFactoryTask(Priority priority,
 		UnitDef* buildDef, const AIFloat3& position,
-		TaskType type, int quantity, float radius) :
-				IConstructTask(priority, buildDef, position, ConstructType::FACTORY),
-				type(type),
+		FacType type, int quantity, float radius) :
+				IConstructTask(priority, Type::FACTORY, buildDef, position),
+				facType(type),
 				quantity(quantity),
 				sqradius(radius * radius)
 {
@@ -37,34 +38,14 @@ bool CFactoryTask::CanAssignTo(CCircuitUnit* unit)
 	return position.SqDistance2D(pos) <= sqradius;
 }
 
-void CFactoryTask::AssignTo(CCircuitUnit* unit)
-{
-	unit->SetTask(this);
-	units.insert(unit);
-}
-
-void CFactoryTask::RemoveAssignee(CCircuitUnit* unit)
-{
-	units.erase(unit);
-	unit->SetTask(nullptr);
-}
-
-void CFactoryTask::MarkCompleted()
-{
-	for (auto unit : units) {
-		unit->SetTask(nullptr);
-	}
-	units.clear();
-}
-
 void CFactoryTask::Update(CCircuitAI* circuit)
 {
-
+	// TODO: Analyze nearby situation, enemies
 }
 
 void CFactoryTask::OnUnitIdle(CCircuitUnit* unit)
 {
-	// TODO: Remove? Can factory fail to build?
+	unit->GetManager()->ExecuteTask(unit);
 }
 
 void CFactoryTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
@@ -74,12 +55,12 @@ void CFactoryTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 
 void CFactoryTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
-	// TODO: React: analyze, abort, create appropriate task
+	RemoveAssignee(unit);
 }
 
-CFactoryTask::TaskType CFactoryTask::GetType()
+CFactoryTask::FacType CFactoryTask::GetFacType()
 {
-	return type;
+	return facType;
 }
 
 void CFactoryTask::Progress()

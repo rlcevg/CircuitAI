@@ -54,13 +54,15 @@ public:
 	void DequeueTask(CBuilderTask* task);
 	virtual void AssignTask(CCircuitUnit* unit);
 	virtual void ExecuteTask(CCircuitUnit* unit);
-	virtual void AbortTask(IUnitTask* task, CCircuitUnit* unit = nullptr);
-	virtual void OnUnitDamaged(CCircuitUnit* unit);
+	virtual void AbortTask(IUnitTask* task);
+	virtual void SpecialCleanUp(CCircuitUnit* unit);
 
 private:
 	void Init();
 	void Watchdog();
-	void Update();
+	void UpdateIdle();
+	void UpdateRetreat();
+	void UpdateBuild();
 	CCircuitUnit* FindUnitToAssist(CCircuitUnit* unit);
 
 	Handlers1 finishedHandler;
@@ -72,6 +74,7 @@ private:
 	std::vector<std::set<CBuilderTask*>> builderTasks;  // owner
 	int builderTasksCount;
 	float builderPower;
+	std::set<CBuilderTask*> updateTasks;  // temporary tasks holder to keep updating every task
 
 	std::set<CCircuitUnit*> workers;
 

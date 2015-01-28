@@ -17,21 +17,16 @@ namespace springai {
 namespace circuit {
 
 class IConstructTask: public IUnitTask {
-public:
-	enum class ConstructType: char {BUILDER, FACTORY};
-
 protected:
-	IConstructTask(Priority priority,
-			springai::UnitDef* buildDef, const springai::AIFloat3& position, ConstructType conType);
+	IConstructTask(Priority priority, Type type,
+			springai::UnitDef* buildDef, const springai::AIFloat3& position);
 public:
 	virtual ~IConstructTask();
 
-	ConstructType GetConstructType();
 	const springai::AIFloat3& GetPos() const;
 	springai::UnitDef* GetBuildDef();
 
 protected:
-	ConstructType conType;
 	springai::AIFloat3 position;
 	springai::UnitDef* buildDef;
 };

@@ -24,7 +24,7 @@ namespace circuit {
 using namespace springai;
 
 CRetreatTask::CRetreatTask() :
-		IUnitTask(Priority::NORMAL)
+		IUnitTask(Priority::NORMAL, Type::RETREAT)
 {
 }
 
@@ -40,7 +40,7 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	CCircuitAI* circuit = unit->GetManager()->GetCircuit();
 	CCircuitUnit* haven = circuit->GetFactoryManager()->GetClosestHaven(unit);
 	const AIFloat3& pos = (haven != nullptr) ? haven->GetUnit()->GetPos() : circuit->GetSetupManager()->GetStartPos();
-	// TODO: push MoveAction into unit?
+	// TODO: push MoveAction into unit? to avoid enemy fire
 	unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 1);
 }
 
@@ -70,13 +70,14 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 	Unit* u = unit->GetUnit();
 	if (u->GetPos().SqDistance2D(pos) > maxDist * maxDist) {
-		// TODO: push MoveAction into unit?
+		// TODO: push MoveAction into unit? to avoid enemy fire
 		u->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 1);
 		// TODO: Add fail counter?
 	} else {
 		std::vector<float> params;
 		params.push_back(0.0f);
 		u->ExecuteCustomCommand(CMD_PRIORITY, params);
+
 		AIFloat3 pos = u->GetPos();
 		const float size = SQUARE_SIZE * 10;
 		CTerrainManager* terrain = circuit->GetTerrainManager();
@@ -88,6 +89,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 
 void CRetreatTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
+	//TODO: Rebuild retreat path?
 }
 
 void CRetreatTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)

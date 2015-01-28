@@ -26,8 +26,8 @@ public:
 
 	virtual void AssignTask(CCircuitUnit* unit);
 	virtual void ExecuteTask(CCircuitUnit* unit);
-	virtual void AbortTask(IUnitTask* task, CCircuitUnit* unit = nullptr);
-	virtual void OnUnitDamaged(CCircuitUnit* unit);
+	virtual void AbortTask(IUnitTask* task);
+	virtual void SpecialCleanUp(CCircuitUnit* unit);
 
 private:
 	void TestOrder();

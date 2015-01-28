@@ -25,9 +25,8 @@ public:
 	virtual CCircuitAI* GetCircuit() = 0;
 	virtual void AssignTask(CCircuitUnit* unit) = 0;
 	virtual void ExecuteTask(CCircuitUnit* unit) = 0;
-	// TODO: Remove CCircuitUnit* unit = nullptr?
-	virtual void AbortTask(IUnitTask* task, CCircuitUnit* unit = nullptr) = 0;
-	virtual void OnUnitDamaged(CCircuitUnit* unit) = 0;
+	virtual void AbortTask(IUnitTask* task) = 0;
+	virtual void SpecialCleanUp(CCircuitUnit* unit) = 0;
 
 	CIdleTask* GetIdleTask();
 	CRetreatTask* GetRetreatTask();

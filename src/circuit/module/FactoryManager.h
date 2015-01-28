@@ -33,14 +33,14 @@ public:
 	CFactoryTask* EnqueueTask(CFactoryTask::Priority priority,
 							  springai::UnitDef* buildDef,
 							  const springai::AIFloat3& position,
-							  CFactoryTask::TaskType type,
+							  CFactoryTask::FacType type,
 							  int quantity,
 							  float radius);
 	void DequeueTask(CFactoryTask* task);
 	virtual void AssignTask(CCircuitUnit* unit);
 	virtual void ExecuteTask(CCircuitUnit* unit);
-	virtual void AbortTask(IUnitTask* task, CCircuitUnit* unit = nullptr);
-	virtual void OnUnitDamaged(CCircuitUnit* unit);
+	virtual void AbortTask(IUnitTask* task);
+	virtual void SpecialCleanUp(CCircuitUnit* unit);
 
 	float GetFactoryPower();
 	bool CanEnqueueTask();
@@ -52,6 +52,7 @@ public:
 
 private:
 	void Watchdog();
+	void UpdateIdle();
 
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;

@@ -14,21 +14,15 @@ namespace circuit {
 
 class CFactoryTask: public IConstructTask {
 public:
-	enum class TaskType: char {BUILDPOWER = 0, FIREPOWER, AA, CLOAK, DEFAULT = FIREPOWER};
+	enum class FacType: char {BUILDPOWER = 0, FIREPOWER, AA, CLOAK, DEFAULT = FIREPOWER};
 
 public:
 	CFactoryTask(Priority priority,
 			springai::UnitDef* buildDef, const springai::AIFloat3& position,
-			TaskType type, int quantity, float radius);
+			FacType type, int quantity, float radius);
 	virtual ~CFactoryTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit);
-	// TODO: Remove!
-	virtual void AssignTo(CCircuitUnit* unit);
-	// TODO: Remove!
-	virtual void RemoveAssignee(CCircuitUnit* unit);
-	// TODO: Remove!
-	virtual void MarkCompleted();
 
 	virtual void Update(CCircuitAI* circuit);
 
@@ -36,14 +30,14 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
-	TaskType GetType();
+	FacType GetFacType();
 
 	void Progress();
 	void Regress();
 	bool IsDone();
 
 private:
-	TaskType type;
+	FacType facType;
 	int quantity;
 	float sqradius;
 };

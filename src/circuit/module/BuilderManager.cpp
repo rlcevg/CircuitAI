@@ -37,12 +37,13 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		builderTasksCount(0),
 		builderPower(.0f)
 {
-	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Watchdog, this),
-										  FRAMES_PER_SEC * 60,
-										  circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 0);
+	CScheduler* scheduler = circuit->GetScheduler();
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Watchdog, this),
+							FRAMES_PER_SEC * 60,
+							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 0);
 	// Init after parallel clusterization
-	circuit->GetScheduler()->RunParallelTask(CGameTask::emptyTask,
-											 std::make_shared<CGameTask>(&CBuilderManager::Init, this));
+	scheduler->RunParallelTask(CGameTask::emptyTask,
+							   std::make_shared<CGameTask>(&CBuilderManager::Init, this));
 
 	/*
 	 * worker handlers
@@ -75,6 +76,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		builderPower -= unit->GetDef()->GetBuildSpeed();
 		workers.erase(unit);
 		builderInfos.erase(unit);
+
 		IUnitTask* task = unit->GetTask();
 		task->OnUnitDestroyed(unit, attacker);
 		unit->GetTask()->RemoveAssignee(unit);  // Remove from IdleTask
@@ -126,8 +128,9 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		return 0; //signaling: OK
 	}
 
+	// FIXME: Can IdleTask get here?
 	IConstructTask* task = static_cast<IConstructTask*>(builder->GetTask());
-	if ((task == nullptr) || (task->GetConstructType() != IConstructTask::ConstructType::BUILDER)) {
+	if (task->GetType() != IUnitTask::Type::BUILDER) {
 		return 0; //signaling: OK
 	}
 
@@ -271,6 +274,7 @@ void CBuilderManager::DequeueTask(CBuilderTask* task)
 		unfinishedUnits.erase(task->GetTarget());
 		task->MarkCompleted();
 		tasks.erase(it);
+		updateTasks.erase(task);
 		delete task;
 		builderTasksCount--;
 	}
@@ -389,16 +393,6 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 
 	CBuilderTask::BuildType type = task->GetBuildType();
 	switch (type) {
-//		case CBuilderTask::TaskType::FACTORY:
-//		case CBuilderTask::TaskType::NANO:
-//		case CBuilderTask::TaskType::SOLAR:
-//		case CBuilderTask::TaskType::FUSION:
-//		case CBuilderTask::TaskType::SINGU:
-//		case CBuilderTask::TaskType::PYLON:
-//		case CBuilderTask::TaskType::DEFENDER:
-//		case CBuilderTask::TaskType::DDM:
-//		case CBuilderTask::TaskType::ANNI:
-//		case CBuilderTask::TaskType::RAVE:
 		default: {
 			CCircuitUnit* target = task->GetTarget();
 			if (target != nullptr) {
@@ -543,14 +537,10 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 	}
 }
 
-void CBuilderManager::AbortTask(IUnitTask* task, CCircuitUnit* unit)
+void CBuilderManager::AbortTask(IUnitTask* task)
 {
-	// TODO: Remove? All assignees will get IdleTask on DequeueTask.
-//	for (auto ass : task->GetAssignees()) {
-//		if (ass != unit) {
-//			ass->GetUnit()->Stop();
-//		}
-//	}
+	// NOTE: Don't send Stop command, save some traffic.
+
 	CBuilderTask* taskB = static_cast<CBuilderTask*>(task);
 	if (taskB->GetTarget() == nullptr) {
 		if (taskB->IsStructure()) {
@@ -562,7 +552,7 @@ void CBuilderManager::AbortTask(IUnitTask* task, CCircuitUnit* unit)
 	DequeueTask(taskB);
 }
 
-void CBuilderManager::OnUnitDamaged(CCircuitUnit* unit)
+void CBuilderManager::SpecialCleanUp(CCircuitUnit* unit)
 {
 	builderInfos.erase(unit);
 }
@@ -596,7 +586,10 @@ void CBuilderManager::Init()
 		UnitIdle(worker);
 	}
 
-	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Update, this), FRAMES_PER_SEC / 10);
+	CScheduler* scheduler = circuit->GetScheduler();
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), 2, 0);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateRetreat, this), FRAMES_PER_SEC / 2);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), 2, 1);
 }
 
 void CBuilderManager::Watchdog()
@@ -605,11 +598,6 @@ void CBuilderManager::Watchdog()
 	decltype(builderInfos)::iterator iter = builderInfos.begin();
 	while (iter != builderInfos.end()) {
 		CBuilderTask* task = static_cast<CBuilderTask*>(iter->first->GetTask());
-//		if (task == nullptr) {
-//			iter->first->GetUnit()->Stop();
-//			iter = builderInfos.erase(iter);
-//			continue;
-//		}
 		int timeout = task->GetTimeout();
 		if ((timeout > 0) && (circuit->GetLastFrame() - iter->second.startFrame > timeout)) {
 			switch (task->GetBuildType()) {
@@ -617,7 +605,6 @@ void CBuilderManager::Watchdog()
 				case CBuilderTask::BuildType::RECLAIM: {
 					CCircuitUnit* unit = iter->first;
 					DequeueTask(task);
-//					unit->GetUnit()->Stop();
 					iter = builderInfos.erase(iter);
 					continue;
 					break;
@@ -631,7 +618,7 @@ void CBuilderManager::Watchdog()
 	for (auto worker : workers) {
 		Unit* u = worker->GetUnit();
 		std::vector<springai::Command*> commands = u->GetCurrentCommands();
-		// TODO: Ignore workers with idle and wait task! (.. && worker->GetTask()->IsBusy())
+		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())
 		if (commands.empty()) {
 			AIFloat3 toPos = u->GetPos();
 			const float size = 50.0f;
@@ -658,21 +645,29 @@ void CBuilderManager::Watchdog()
 	}
 }
 
-void CBuilderManager::Update()
+void CBuilderManager::UpdateIdle()
 {
 	idleTask->Update(circuit);
+}
+
+void CBuilderManager::UpdateRetreat()
+{
 	retreatTask->Update(circuit);
-	bool exit = false;
-	for (auto& tasks : builderTasks) {
-		for (auto t : tasks) {
-			t->Update(circuit);
-			if (!circuit->IsUpdateTimeValid()) {
-				exit = true;
-				break;
+}
+
+void CBuilderManager::UpdateBuild()
+{
+	auto it = updateTasks.begin();
+	while ((it != updateTasks.end()) && circuit->IsUpdateTimeValid()) {
+		(*it)->Update(circuit);
+		it = updateTasks.erase(it);
+	}
+
+	if (updateTasks.empty()) {
+		for (auto& tasks : builderTasks) {
+			for (auto t : tasks) {
+				updateTasks.insert(t);
 			}
-		}
-		if (exit) {
-			break;
 		}
 	}
 }
