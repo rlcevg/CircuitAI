@@ -66,7 +66,10 @@ void CBuilderTask::Update(CCircuitAI* circuit)
 
 void CBuilderTask::OnUnitIdle(CCircuitUnit* unit)
 {
-	RemoveAssignee(unit);
+	// Try to avoid instant task reassignment
+	if (unit->GetManager()->GetCircuit()->GetLastFrame() - unit->GetTaskFrame() > FRAMES_PER_SEC) {
+		RemoveAssignee(unit);
+	}
 }
 
 void CBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)

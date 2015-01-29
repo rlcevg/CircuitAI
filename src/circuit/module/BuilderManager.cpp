@@ -37,9 +37,7 @@ using namespace springai;
 CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		IUnitModule(circuit),
 		builderTasksCount(0),
-		builderPower(.0f),
-		wtCachedFrame(-1),
-		isWTChanged(true)
+		builderPower(.0f)
 {
 	CScheduler* scheduler = circuit->GetScheduler();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Watchdog, this),
@@ -48,9 +46,6 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	// Init after parallel clusterization
 	scheduler->RunParallelTask(CGameTask::emptyTask,
 							   std::make_shared<CGameTask>(&CBuilderManager::Init, this));
-
-	std::vector<WorkerInfo*> wi;
-	wtRelation.push_back(wi);
 
 	/*
 	 * worker handlers
@@ -62,13 +57,13 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 
 		builderPower += unit->GetDef()->GetBuildSpeed();
 		workers.insert(unit);
-		isWTChanged = true;
 
 		std::vector<float> params;
 		params.push_back(3);
 		unit->GetUnit()->ExecuteCustomCommand(CMD_RETREAT, params);
 	};
 	auto workerIdleHandler = [this](CCircuitUnit* unit) {
+		// FIXME: Can trigger task reassignment, its only valid on build order fail.
 		unit->GetTask()->OnUnitIdle(unit);
 	};
 	auto workerDamagedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
@@ -83,12 +78,11 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		}
 		builderPower -= unit->GetDef()->GetBuildSpeed();
 		workers.erase(unit);
-		builderInfos.erase(unit);
-		isWTChanged = true;
+		SpecialCleanUp(unit);
 
 		IUnitTask* task = unit->GetTask();
 		task->OnUnitDestroyed(unit, attacker);
-		unit->GetTask()->RemoveAssignee(unit);  // Remove from IdleTask
+		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 	};
 
 	/*
@@ -129,7 +123,6 @@ CBuilderManager::~CBuilderManager()
 	for (auto& tasks : builderTasks) {
 		utils::free_clear(tasks);
 	}
-	utils::free_clear(wtRelation.front());
 }
 
 int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -139,7 +132,7 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 	}
 
 	// FIXME: Can IdleTask get here?
-	IConstructTask* task = static_cast<IConstructTask*>(builder->GetTask());
+	IUnitTask* task = builder->GetTask();
 	if (task->GetType() != IUnitTask::Type::BUILDER) {
 		return 0; //signaling: OK
 	}
@@ -273,7 +266,6 @@ inline void CBuilderManager::AddTask(CBuilderTask* task, CBuilderTask::BuildType
 {
 	builderTasks[static_cast<int>(type)].insert(task);
 	builderTasksCount++;
-	isWTChanged = true;
 	// TODO: Send NewTask message
 }
 
@@ -288,72 +280,11 @@ void CBuilderManager::DequeueTask(CBuilderTask* task)
 		updateTasks.erase(task);
 		delete task;
 		builderTasksCount--;
-		isWTChanged = true;
 	}
 }
 
 void CBuilderManager::AssignTask(CCircuitUnit* unit)
 {
-	if (workers.size() > 1) {
-	std::vector<std::pair<CBuilderTask*, int>> candidates;
-	WorkerInfo* unitInfo = GetWorkerInfo(unit);
-	int idx = wtRelation.front().size();
-	int i = 0;
-	for (auto& tasks : builderTasks) {
-		for (auto t : tasks) {
-			if (t->CanAssignTo(unit)) {
-				auto iter = std::find(wtRelation[i].begin(), wtRelation[i].end(), unitInfo);
-				int icand = std::distance(wtRelation[i].begin(), iter);
-				if (icand < idx) {
-					idx = icand;
-					candidates.clear();
-					candidates.push_back(std::make_pair(t, i));
-				} else if (icand == idx) {
-					candidates.push_back(std::make_pair(t, i));
-				}
-			}
-			i++;
-		}
-	}
-
-	CBuilderTask* task = nullptr;
-	if (!candidates.empty()) {
-		std::pair<CBuilderTask*, int>& front = candidates.front();
-		float metric = std::numeric_limits<float>::max();
-		float maxSpeed = unitInfo->maxSpeed;
-		for (auto& candi : candidates) {
-			CBuilderTask* candidate = candi.first;
-			// Check if candidate valid
-			float candiMetric = unitInfo->metrics[candi.second];
-			float dist = candiMetric * maxSpeed * (static_cast<float>(candidate->GetPriority()) + 1.0f);
-			bool valid;
-			CCircuitUnit* target = candidate->GetTarget();
-			const AIFloat3& bp = candidate->GetBuildPos();
-			if (target != nullptr) {
-				Unit* tu = target->GetUnit();
-				float maxHealth = tu->GetMaxHealth();
-				float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
-				valid = (((maxHealth - tu->GetHealth()) * 0.6) > healthSpeed * (dist / (maxSpeed * FRAMES_PER_SEC)));
-			} else {
-				valid = ((dist / (maxSpeed * FRAMES_PER_SEC)) < MAX_TRAVEL_SEC);
-//				valid = true;
-			}
-
-			if (valid) {
-				task = candidate;
-				metric = candiMetric;
-			}
-		}
-	}
-
-	if (task == nullptr) {
-		task = circuit->GetEconomyManager()->CreateBuilderTask(unit);
-	}
-
-	task->AssignTo(unit);
-
-	} else {
-
 	CBuilderTask* task = nullptr;
 	Unit* u = unit->GetUnit();
 	const AIFloat3& pos = u->GetPos();
@@ -365,11 +296,10 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	float buildDistance = unitDef->GetBuildDistance();
 	float metric = std::numeric_limits<float>::max();
 	for (auto& tasks : builderTasks) {
-		for (auto& t : tasks) {
-			if (!t->CanAssignTo(unit)) {
+		for (auto candidate : tasks) {
+			if (!candidate->CanAssignTo(unit)) {
 				continue;
 			}
-			CBuilderTask* candidate = static_cast<CBuilderTask*>(t);
 
 			// Check time-distance to target
 			float weight = 1.0f / (static_cast<float>(candidate->GetPriority()) + 1.0f);
@@ -420,7 +350,6 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	}
 
 	task->AssignTo(unit);
-	}
 }
 
 void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
@@ -458,7 +387,7 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 		pos.z += (pos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
 		u->PatrolTo(pos);
 
-		builderInfos[unit].startFrame = circuit->GetLastFrame();
+		assistants.insert(unit);
 	};
 
 	std::vector<float> params;
@@ -589,10 +518,6 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 				}
 			}
 			unit->GetUnit()->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
-			auto search = builderInfos.find(unit);
-			if (search == builderInfos.end()) {
-				builderInfos[unit].startFrame = circuit->GetLastFrame();
-			}
 			break;
 		}
 		case CBuilderTask::BuildType::RECLAIM: {
@@ -602,9 +527,9 @@ void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
 			AIFloat3 pos(width, 0, height);
 			float radius = sqrtf(width * width + height * height);
 			unit->GetUnit()->ReclaimInArea(pos, radius, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
-			auto search = builderInfos.find(unit);
-			if (search == builderInfos.end()) {
-				builderInfos[unit].startFrame = circuit->GetLastFrame();
+			auto search = assistants.find(unit);
+			if (search == assistants.end()) {
+				assistants.insert(unit);
 			}
 			break;
 		}
@@ -628,7 +553,7 @@ void CBuilderManager::AbortTask(IUnitTask* task)
 
 void CBuilderManager::SpecialCleanUp(CCircuitUnit* unit)
 {
-	builderInfos.erase(unit);
+	assistants.erase(unit);
 }
 
 void CBuilderManager::Init()
@@ -669,17 +594,17 @@ void CBuilderManager::Init()
 void CBuilderManager::Watchdog()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	decltype(builderInfos)::iterator iter = builderInfos.begin();
-	while (iter != builderInfos.end()) {
-		CBuilderTask* task = static_cast<CBuilderTask*>(iter->first->GetTask());
+	decltype(assistants)::iterator iter = assistants.begin();
+	while (iter != assistants.end()) {
+		CCircuitUnit* unit = *iter;
+		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
 		int timeout = task->GetTimeout();
-		if ((timeout > 0) && (circuit->GetLastFrame() - iter->second.startFrame > timeout)) {
+		if ((timeout > 0) && (circuit->GetLastFrame() - unit->GetTaskFrame() > timeout)) {
 			switch (task->GetBuildType()) {
 				case CBuilderTask::BuildType::PATROL:
 				case CBuilderTask::BuildType::RECLAIM: {
-					CCircuitUnit* unit = iter->first;
 					DequeueTask(task);
-					iter = builderInfos.erase(iter);
+					iter = assistants.erase(iter);
 					continue;
 					break;
 				}
@@ -765,88 +690,6 @@ CCircuitUnit* CBuilderManager::FindUnitToAssist(CCircuitUnit* unit)
 	}
 	utils::free_clear(units);
 	return target;
-}
-
-CBuilderManager::WorkerInfo* CBuilderManager::GetWorkerInfo(CCircuitUnit* unit)
-{
-	if ((circuit->GetLastFrame() - wtCachedFrame < FRAMES_PER_SEC * 5) && !isWTChanged) {
-		for (auto info : wtRelation.front()) {
-			if (info->unit == unit) {
-				return info;
-			}
-		}
-	}
-
-	utils::free_clear(wtRelation.front());
-	wtRelation.clear();
-
-	WorkerInfo* workerInfo;
-	std::vector<WorkerInfo*> workerInfos;
-	for (auto worker : workers) {
-		WorkerInfo* info = new WorkerInfo;
-
-		Unit* u = worker->GetUnit();
-		float maxSpeed = u->GetMaxSpeed();
-		const AIFloat3& pos = u->GetPos();
-		UnitDef* unitDef = unit->GetDef();
-		MoveData* moveData = unitDef->GetMoveData();
-		int pathType = moveData->GetPathType();
-		delete moveData;
-		float buildDistance = unitDef->GetBuildDistance();
-		std::vector<float>& metrics = info->metrics;
-		metrics.reserve(builderTasksCount);
-		for (auto& tasks : builderTasks) {
-			for (auto task : tasks) {
-				float weight = 1.0f / (static_cast<float>(task->GetPriority()) + 1.0f);
-				float dist;
-				CCircuitUnit* target = task->GetTarget();
-				const AIFloat3& bp = task->GetBuildPos();
-				if (target != nullptr) {
-					Unit* tu = target->GetUnit();
-
-					// FIXME: GetApproximateLength to position occupied by building or feature will return 0.
-					UnitDef* buildDef = target->GetDef();
-					int xsize = buildDef->GetXSize();
-					int zsize = buildDef->GetZSize();
-					AIFloat3 offset = (pos - bp).Normalize2D() * (sqrtf(xsize * xsize + zsize * zsize) * SQUARE_SIZE + buildDistance);
-					AIFloat3 buildPos = task->GetBuildPos() + offset;
-
-					dist = circuit->GetPathing()->GetApproximateLength(buildPos, pos, pathType, buildDistance);
-					if (dist <= 0) {
-						dist = bp.distance(pos) * 1.5;
-					}
-				} else {
-					dist = circuit->GetPathing()->GetApproximateLength((bp != -RgtVector) ? bp : task->GetPos(), pos, pathType, buildDistance);
-					if (dist <= 0) {
-						dist = bp.distance(pos) * 1.5;
-					}
-				}
-//				float dist = pos.distance2D(task->GetPos());
-				metrics.push_back(dist * weight / maxSpeed);
-			}
-		}
-
-		info->unit = worker;
-		info->pos = pos;
-		info->maxSpeed = maxSpeed;
-		workerInfos.push_back(info);
-
-		if (worker == unit) {
-			workerInfo = info;
-		}
-	}
-
-	for (int i = 0; i < builderTasksCount; i++) {
-		auto compare = [i](const WorkerInfo* p1, const WorkerInfo* p2) {
-			return p1->metrics[i] < p2->metrics[i];
-		};
-		std::sort(workerInfos.begin(), workerInfos.end(), compare);
-		wtRelation.push_back(workerInfos);
-	}
-
-	wtCachedFrame = circuit->GetLastFrame();
-	isWTChanged = false;
-	return workerInfo;
 }
 
 } // namespace circuit

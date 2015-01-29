@@ -87,7 +87,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 
 		IUnitTask* task = unit->GetTask();
 		task->OnUnitDestroyed(unit, attacker);
-		unit->GetTask()->RemoveAssignee(unit);  // Remove from IdleTask
+		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 	};
 
 	/*
@@ -162,7 +162,7 @@ CFactoryManager::~CFactoryManager()
 int CFactoryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 {
 	if ((builder != nullptr) && unit->GetUnit()->IsBeingBuilt()) {
-		IConstructTask* task = static_cast<IConstructTask*>(builder->GetTask());
+		IUnitTask* task = builder->GetTask();
 		if (task->GetType() == IUnitTask::Type::FACTORY) {
 			CFactoryTask* taskF = static_cast<CFactoryTask*>(task);
 			unfinishedTasks[taskF].push_back(unit);

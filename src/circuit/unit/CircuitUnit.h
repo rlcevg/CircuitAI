@@ -38,6 +38,7 @@ public:
 
 	void SetTask(IUnitTask* task);
 	IUnitTask* GetTask();
+	int GetTaskFrame();
 
 	void SetManager(IUnitManager* mgr);
 	IUnitManager* GetManager();
@@ -47,6 +48,7 @@ private:
 	springai::UnitDef* def;
 	CCircuitDef* circuitDef;
 	IUnitTask* task;
+	int taskFrame;
 	IUnitManager* manager;
 };
 

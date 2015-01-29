@@ -6,6 +6,8 @@
  */
 
 #include "unit/CircuitUnit.h"
+#include "unit/UnitManager.h"
+#include "CircuitAI.h"
 #include "util/utils.h"
 
 #include "Unit.h"
@@ -19,7 +21,8 @@ CCircuitUnit::CCircuitUnit(Unit* unit, UnitDef* def, CCircuitDef* circuitDef) :
 		def(def),
 		circuitDef(circuitDef),
 		task(nullptr),
-		manager(nullptr)
+		manager(nullptr),
+		taskFrame(-1)
 {
 }
 
@@ -47,11 +50,17 @@ CCircuitDef* CCircuitUnit::GetCircuitDef()
 void CCircuitUnit::SetTask(IUnitTask* task)
 {
 	this->task = task;
+	taskFrame = manager->GetCircuit()->GetLastFrame();
 }
 
 IUnitTask* CCircuitUnit::GetTask()
 {
 	return task;
+}
+
+int CCircuitUnit::GetTaskFrame()
+{
+	return taskFrame;
 }
 
 void CCircuitUnit::SetManager(IUnitManager* mgr)

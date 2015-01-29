@@ -78,24 +78,7 @@ private:
 
 	std::set<CCircuitUnit*> workers;
 
-	// Task assignment helpers, reloaded.
-	struct WorkerInfo {
-		CCircuitUnit* unit;
-		springai::AIFloat3 pos;
-		float maxSpeed;
-		std::vector<float> metrics;  // (dist * weight) per task
-	};
-	using WorkerTaskRelation = std::vector<std::vector<WorkerInfo*>>;
-	int wtCachedFrame;
-	bool isWTChanged;
-	WorkerTaskRelation wtRelation;
-	WorkerInfo* GetWorkerInfo(CCircuitUnit* unit);
-
-	// TODO: Move into CBuilderTask ?
-	struct BuilderInfo {
-		int startFrame;
-	};
-	std::map<CCircuitUnit*, BuilderInfo> builderInfos;  // Assistant's info
+	std::set<CCircuitUnit*> assistants;
 };
 
 } // namespace circuit

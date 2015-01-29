@@ -16,6 +16,7 @@ namespace springai {
 
 namespace circuit {
 
+// TODO: Remove? It only used as common pos and buildDef container.
 class IConstructTask: public IUnitTask {
 protected:
 	IConstructTask(Priority priority, Type type,
