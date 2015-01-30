@@ -19,7 +19,9 @@ using namespace springai;
 CFactoryTask::CFactoryTask(Priority priority,
 		UnitDef* buildDef, const AIFloat3& position,
 		FacType type, int quantity, float radius) :
-				IConstructTask(priority, Type::FACTORY, buildDef, position),
+				IUnitTask(priority, Type::FACTORY),
+				buildDef(buildDef),
+				position(position),
 				facType(type),
 				quantity(quantity),
 				sqradius(radius * radius)
@@ -56,6 +58,16 @@ void CFactoryTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 void CFactoryTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
 	RemoveAssignee(unit);
+}
+
+const AIFloat3& CFactoryTask::GetPos() const
+{
+	return position;
+}
+
+UnitDef* CFactoryTask::GetBuildDef()
+{
+	return buildDef;
 }
 
 CFactoryTask::FacType CFactoryTask::GetFacType()

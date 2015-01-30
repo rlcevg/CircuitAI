@@ -63,8 +63,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		unit->GetUnit()->ExecuteCustomCommand(CMD_RETREAT, params);
 	};
 	auto workerIdleHandler = [this](CCircuitUnit* unit) {
-		// FIXME: Can trigger task reassignment, its only valid on build order fail.
-		unit->GetTask()->OnUnitIdle(unit);
+		// Avoid instant task reassignment, its only valid on build order fail.
+		if (this->circuit->GetLastFrame() - unit->GetTaskFrame() > FRAMES_PER_SEC) {
+			unit->GetTask()->OnUnitIdle(unit);
+		}
 	};
 	auto workerDamagedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 		if (unit->GetUnit()->IsBeingBuilt()) {
@@ -677,11 +679,11 @@ CCircuitUnit* CBuilderManager::FindUnitToAssist(CCircuitUnit* unit)
 	Unit* su = unit->GetUnit();
 	const AIFloat3& pos = su->GetPos();
 	float maxSpeed = su->GetMaxSpeed();
-	float radius = unit->GetDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 10;
+	float radius = unit->GetDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 30;
 	circuit->UpdateAllyUnits();
 	std::vector<Unit*> units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
 	for (auto u : units) {
-		if (u->GetHealth() < u->GetMaxHealth() && u->GetSpeed() <= maxSpeed * 2) {
+		if (u->GetHealth() < u->GetMaxHealth() && u->GetVel().Length() <= maxSpeed * 1.5) {
 			target = circuit->GetFriendlyUnit(u);
 			if (target != nullptr) {
 				break;

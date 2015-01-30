@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_TASK_DEFENDTASK_H_
 #define SRC_CIRCUIT_TASK_DEFENDTASK_H_
 
-#include <task/UnitTask.h>
+#include "task/UnitTask.h"
 
 namespace circuit
 {

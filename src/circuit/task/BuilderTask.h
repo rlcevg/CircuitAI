@@ -8,14 +8,18 @@
 #ifndef BUILDERTASK_H_
 #define BUILDERTASK_H_
 
-#include "task/ConstructTask.h"
+#include "task/UnitTask.h"
 
 #define MIN_BUILD_SEC	10
 #define MAX_TRAVEL_SEC	60
 
+namespace springai {
+	class UnitDef;
+}
+
 namespace circuit {
 
-class CBuilderTask: public IConstructTask {
+class CBuilderTask: public IUnitTask {
 public:
 	enum class BuildType: int {
 		FACTORY = 0, NANO,
@@ -28,8 +32,8 @@ public:
 
 public:
 	CBuilderTask(Priority priority,
-			springai::UnitDef* buildDef, const springai::AIFloat3& position,
-			BuildType type, float cost, int timeout = 0);
+				 springai::UnitDef* buildDef, const springai::AIFloat3& position,
+				 BuildType type, float cost, int timeout = 0);
 	virtual ~CBuilderTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit);
@@ -41,6 +45,9 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
+
+	const springai::AIFloat3& GetPos() const;
+	springai::UnitDef* GetBuildDef();
 
 	BuildType GetBuildType();
 	float GetBuildPower();
@@ -57,6 +64,9 @@ public:
 	int GetFacing();
 
 private:
+	springai::AIFloat3 position;
+	springai::UnitDef* buildDef;
+
 	BuildType buildType;
 	float buildPower;
 	float cost;

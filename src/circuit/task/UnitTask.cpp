@@ -6,9 +6,9 @@
  */
 
 #include "task/UnitTask.h"
+#include "task/IdleTask.h"
 #include "unit/CircuitUnit.h"
 #include "unit/UnitManager.h"
-#include "task/IdleTask.h"
 
 namespace circuit {
 

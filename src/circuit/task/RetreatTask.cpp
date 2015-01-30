@@ -6,12 +6,12 @@
  */
 
 #include "task/RetreatTask.h"
-#include "CircuitAI.h"
 #include "unit/CircuitUnit.h"
 #include "unit/UnitManager.h"
 #include "module/FactoryManager.h"
 #include "static/SetupManager.h"
 #include "terrain/TerrainManager.h"
+#include "CircuitAI.h"
 #include "util/utils.h"
 
 #include "AISCommands.h"

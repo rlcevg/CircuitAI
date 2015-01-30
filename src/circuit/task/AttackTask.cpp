@@ -40,6 +40,7 @@ void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
 void CAttackTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
 	Unit* u = unit->GetUnit();
+	// TODO: floating retreat coefficient
 	if (u->GetHealth() > u->GetMaxHealth() * 0.6) {
 		return;
 	}

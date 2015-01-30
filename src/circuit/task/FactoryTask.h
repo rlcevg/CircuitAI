@@ -8,18 +8,22 @@
 #ifndef FACTORYTASK_H_
 #define FACTORYTASK_H_
 
-#include "task/ConstructTask.h"
+#include "task/UnitTask.h"
+
+namespace springai {
+	class UnitDef;
+}
 
 namespace circuit {
 
-class CFactoryTask: public IConstructTask {
+class CFactoryTask: public IUnitTask {
 public:
 	enum class FacType: char {BUILDPOWER = 0, FIREPOWER, AA, CLOAK, DEFAULT = FIREPOWER};
 
 public:
 	CFactoryTask(Priority priority,
-			springai::UnitDef* buildDef, const springai::AIFloat3& position,
-			FacType type, int quantity, float radius);
+				 springai::UnitDef* buildDef, const springai::AIFloat3& position,
+				 FacType type, int quantity, float radius);
 	virtual ~CFactoryTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit);
@@ -30,6 +34,9 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
+	const springai::AIFloat3& GetPos() const;
+	springai::UnitDef* GetBuildDef();
+
 	FacType GetFacType();
 
 	void Progress();
@@ -37,6 +44,9 @@ public:
 	bool IsDone();
 
 private:
+	springai::AIFloat3 position;
+	springai::UnitDef* buildDef;
+
 	FacType facType;
 	int quantity;
 	float sqradius;

@@ -20,7 +20,7 @@ class CCircuitAI;
 class IUnitTask {  // CSquad, IAction
 public:
 	enum class Priority: char {LOW = 0, NORMAL = 1, HIGH = 2};
-	enum class Type: char {IDLE, RETREAT, BUILDER, FACTORY, ATTACK, SCOUT};
+	enum class Type: char {IDLE, RETREAT, BUILDER, FACTORY, ATTACK, SCOUT, REPAIR};
 
 protected:
 	IUnitTask(Priority priority, Type type);

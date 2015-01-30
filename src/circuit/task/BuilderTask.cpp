@@ -7,10 +7,12 @@
 
 #include "task/BuilderTask.h"
 #include "task/RetreatTask.h"
-#include "CircuitAI.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
 #include "unit/UnitManager.h"
+#include "unit/action/UnitAction.h"
+#include "module/EconomyManager.h"
+#include "CircuitAI.h"
 #include "util/utils.h"
 
 #include "AISCommands.h"
@@ -24,7 +26,9 @@ using namespace springai;
 CBuilderTask::CBuilderTask(Priority priority,
 		UnitDef* buildDef, const AIFloat3& position,
 		BuildType type, float cost, int timeout) :
-				IConstructTask(priority, Type::BUILDER, buildDef, position),
+				IUnitTask(priority, Type::BUILDER),
+				buildDef(buildDef),
+				position(position),
 				buildType(type),
 				cost(cost),
 				timeout(timeout),
@@ -62,19 +66,28 @@ void CBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 void CBuilderTask::Update(CCircuitAI* circuit)
 {
 	// tODO: Analyze nearby situation, maybe cancel this task
+	for (auto unit : units) {
+		IUnitAction* action = static_cast<IUnitAction*>(unit->Begin());
+		if (action->GetType() == IUnitAction::Type::PRE_BUILD) {
+			Unit* u = unit->GetUnit();
+			const AIFloat3& vel = u->GetVel();
+			Resource* metal = circuit->GetEconomyManager()->GetMetalRes();
+			if ((vel == ZeroVector) && (u->GetResourceUse(metal) <= 0)) {
+				// TODO: Something is on build site, get standing units in radius and push them.
+			}
+		}
+	}
 }
 
 void CBuilderTask::OnUnitIdle(CCircuitUnit* unit)
 {
-	// Try to avoid instant task reassignment
-	if (unit->GetManager()->GetCircuit()->GetLastFrame() - unit->GetTaskFrame() > FRAMES_PER_SEC) {
-		RemoveAssignee(unit);
-	}
+	RemoveAssignee(unit);
 }
 
 void CBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
 	Unit* u = unit->GetUnit();
+	// TODO: floating retreat coefficient
 	if (u->GetHealth() > u->GetMaxHealth() * 0.6) {
 		return;
 	}
@@ -93,6 +106,16 @@ void CBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 void CBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
 	unit->GetManager()->AbortTask(this);
+}
+
+const AIFloat3& CBuilderTask::GetPos() const
+{
+	return position;
+}
+
+UnitDef* CBuilderTask::GetBuildDef()
+{
+	return buildDef;
 }
 
 CBuilderTask::BuildType CBuilderTask::GetBuildType()
