@@ -12,7 +12,8 @@
 
 namespace circuit {
 
-IUnitTask::IUnitTask(Priority priority, Type type) :
+IUnitTask::IUnitTask(CCircuitAI* circuit, Priority priority, Type type) :
+		circuit(circuit),
 		priority(priority),
 		type(type)
 {

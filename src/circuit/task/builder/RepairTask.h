@@ -8,26 +8,27 @@
 #ifndef SRC_CIRCUIT_TASK_REPAIRTASK_H_
 #define SRC_CIRCUIT_TASK_REPAIRTASK_H_
 
-#include "task/UnitTask.h"
+#include "task/builder/BuilderTask.h"
 
 namespace circuit {
 
-class CRepairTask: public IUnitTask {
-public:
-	CRepairTask(Priority priority, float cost, CCircuitUnit* target);
-	virtual ~CRepairTask();
+class CEconomyManager;
 
-	virtual void Update(CCircuitAI* circuit);
+class CBRepairTask: public IBuilderTask {
+public:
+	CBRepairTask(CCircuitAI* circuit, Priority priority, int timeout = 0);
+	virtual ~CBRepairTask();
+
+	virtual void Execute(CCircuitUnit* unit);
+	virtual void Update();
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
-	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
+
+	virtual void SetTarget(CCircuitUnit* unit);
 
 private:
-	float buildPower;
-	float cost;
-	springai::AIFloat3 position;
-	CCircuitUnit* target;
+	CCircuitUnit* FindUnitToAssist(CCircuitUnit* unit);
 };
 
 } // namespace circuit

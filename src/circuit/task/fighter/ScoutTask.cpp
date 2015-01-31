@@ -5,13 +5,13 @@
  *      Author: rlcevg
  */
 
-#include "task/ScoutTask.h"
+#include "task/fighter/ScoutTask.h"
 #include "util/utils.h"
 
 namespace circuit {
 
-CScoutTask::CScoutTask() :
-		IUnitTask(Priority::NORMAL, Type::SCOUT)
+CScoutTask::CScoutTask(CCircuitAI* circuit) :
+		IUnitTask(circuit, Priority::NORMAL, Type::SCOUT)
 {
 }
 
@@ -20,7 +20,12 @@ CScoutTask::~CScoutTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CScoutTask::Update(CCircuitAI* circuit)
+void CScoutTask::Execute(CCircuitUnit* unit)
+{
+
+}
+
+void CScoutTask::Update()
 {
 	// TODO: Monitor threat? Or do it on EnemySeen/EnemyDestroyed?
 }

@@ -1,12 +1,12 @@
 /*
- * FactoryTask.h
+ * RecruitTask.h
  *
  *  Created on: Sep 11, 2014
  *      Author: rlcevg
  */
 
-#ifndef FACTORYTASK_H_
-#define FACTORYTASK_H_
+#ifndef SRC_CIRCUIT_TASK_RECRUITTASK_H_
+#define SRC_CIRCUIT_TASK_RECRUITTASK_H_
 
 #include "task/UnitTask.h"
 
@@ -16,19 +16,20 @@ namespace springai {
 
 namespace circuit {
 
-class CFactoryTask: public IUnitTask {
+class CRecruitTask: public IUnitTask {
 public:
 	enum class FacType: char {BUILDPOWER = 0, FIREPOWER, AA, CLOAK, DEFAULT = FIREPOWER};
 
 public:
-	CFactoryTask(Priority priority,
-				 springai::UnitDef* buildDef, const springai::AIFloat3& position,
-				 FacType type, int quantity, float radius);
-	virtual ~CFactoryTask();
+	CRecruitTask(CCircuitAI* circuit, Priority priority,
+			  springai::UnitDef* buildDef, const springai::AIFloat3& position,
+			  FacType type, int quantity, float radius);
+	virtual ~CRecruitTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit);
 
-	virtual void Update(CCircuitAI* circuit);
+	virtual void Execute(CCircuitUnit* unit);
+	virtual void Update();
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
@@ -54,4 +55,4 @@ private:
 
 } // namespace circuit
 
-#endif // FACTORYTASK_H_
+#endif // SRC_CIRCUIT_TASK_RECRUITTASK_H_

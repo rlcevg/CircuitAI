@@ -14,14 +14,15 @@ namespace circuit {
 
 class CIdleTask: public IUnitTask {
 public:
-	CIdleTask();
+	CIdleTask(CCircuitAI* circuit);
 	virtual ~CIdleTask();
 
 	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 	virtual void MarkCompleted();
 
-	virtual void Update(CCircuitAI* circuit);
+	virtual void Execute(CCircuitUnit* unit);
+	virtual void Update();
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);

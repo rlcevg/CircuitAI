@@ -9,7 +9,7 @@
 #define SRC_CIRCUIT_BUILDERMANAGER_H_
 
 #include "module/UnitModule.h"
-#include "task/BuilderTask.h"
+#include "task/builder/BuilderTask.h"
 
 #include "AIFloat3.h"
 
@@ -32,30 +32,37 @@ public:
 
 	float GetBuilderPower();
 	bool CanEnqueueTask();
-	const std::set<CBuilderTask*>& GetTasks(CBuilderTask::BuildType type);
-	CBuilderTask* EnqueueTask(CBuilderTask::Priority priority,
+	const std::set<IBuilderTask*>& GetTasks(IBuilderTask::BuildType type);
+	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,
 							  springai::UnitDef* buildDef,
 							  const springai::AIFloat3& position,
-							  CBuilderTask::BuildType type,
+							  IBuilderTask::BuildType type,
 							  float cost,
 							  int timeout = 0);
-	CBuilderTask* EnqueueTask(CBuilderTask::Priority priority,
+	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,
 							  springai::UnitDef* buildDef,
 							  const springai::AIFloat3& position,
-							  CBuilderTask::BuildType type,
+							  IBuilderTask::BuildType type,
 							  int timeout = 0);
-	CBuilderTask* EnqueueTask(CBuilderTask::Priority priority,
+	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,
 							  const springai::AIFloat3& position,
-							  CBuilderTask::BuildType type,
+							  IBuilderTask::BuildType type,
 							  int timeout = 0);
 private:
-	inline void AddTask(CBuilderTask* task, CBuilderTask::BuildType type);
+	IBuilderTask* AddTask(IBuilderTask::Priority priority,
+						  springai::UnitDef* buildDef,
+						  const springai::AIFloat3& position,
+						  IBuilderTask::BuildType type,
+						  float cost,
+						  int timeout);
 public:
-	void DequeueTask(CBuilderTask* task);
+	void DequeueTask(IBuilderTask* task);
 	virtual void AssignTask(CCircuitUnit* unit);
-	virtual void ExecuteTask(CCircuitUnit* unit);
+//	virtual void ExecuteTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
 	virtual void SpecialCleanUp(CCircuitUnit* unit);
+	virtual void SpecialProcess(CCircuitUnit* unit);
+	virtual void FallbackTask(CCircuitUnit* unit);
 
 private:
 	void Init();
@@ -63,18 +70,17 @@ private:
 	void UpdateIdle();
 	void UpdateRetreat();
 	void UpdateBuild();
-	CCircuitUnit* FindUnitToAssist(CCircuitUnit* unit);
 
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
 	Handlers2 damagedHandler;
 	Handlers2 destroyedHandler;
 
-	std::map<CCircuitUnit*, CBuilderTask*> unfinishedUnits;
-	std::vector<std::set<CBuilderTask*>> builderTasks;  // owner
+	std::map<CCircuitUnit*, IBuilderTask*> unfinishedUnits;
+	std::vector<std::set<IBuilderTask*>> builderTasks;  // owner
 	int builderTasksCount;
 	float builderPower;
-	std::set<CBuilderTask*> updateTasks;  // temporary tasks holder to keep updating every task
+	std::set<IBuilderTask*> updateTasks;  // temporary tasks holder to keep updating every task
 
 	std::set<CCircuitUnit*> workers;
 

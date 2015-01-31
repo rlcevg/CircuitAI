@@ -14,12 +14,13 @@ namespace circuit {
 
 class CRetreatTask: public IUnitTask {
 public:
-	CRetreatTask();
+	CRetreatTask(CCircuitAI* circuit);
 	virtual ~CRetreatTask();
 
 	virtual void AssignTo(CCircuitUnit* unit);
 
-	virtual void Update(CCircuitAI* circuit);
+	virtual void Execute(CCircuitUnit* unit);
+	virtual void Update();
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);

@@ -20,10 +20,10 @@ class CCircuitAI;
 class IUnitTask {  // CSquad, IAction
 public:
 	enum class Priority: char {LOW = 0, NORMAL = 1, HIGH = 2};
-	enum class Type: char {IDLE, RETREAT, BUILDER, FACTORY, ATTACK, SCOUT, REPAIR};
+	enum class Type: char {IDLE, RETREAT, BUILDER, FACTORY, ATTACK, SCOUT};
 
 protected:
-	IUnitTask(Priority priority, Type type);
+	IUnitTask(CCircuitAI* circuit, Priority priority, Type type);
 public:
 	virtual ~IUnitTask();
 
@@ -32,7 +32,8 @@ public:
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 	virtual void MarkCompleted();
 
-	virtual void Update(CCircuitAI* circuit) = 0;
+	virtual void Execute(CCircuitUnit* unit) = 0;  // <=> IAction::OnStart()
+	virtual void Update() = 0;
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) = 0;
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker) = 0;
@@ -43,6 +44,7 @@ public:
 	Type GetType();
 
 protected:
+	CCircuitAI* circuit;
 	std::set<CCircuitUnit*> units;
 	Priority priority;
 	Type type;

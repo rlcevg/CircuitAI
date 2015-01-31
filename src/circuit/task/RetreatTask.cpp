@@ -23,8 +23,8 @@ namespace circuit {
 
 using namespace springai;
 
-CRetreatTask::CRetreatTask() :
-		IUnitTask(Priority::NORMAL, Type::RETREAT)
+CRetreatTask::CRetreatTask(CCircuitAI* circuit) :
+		IUnitTask(circuit, Priority::NORMAL, Type::RETREAT)
 {
 }
 
@@ -37,14 +37,18 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 {
 	IUnitTask::AssignTo(unit);
 
-	CCircuitAI* circuit = unit->GetManager()->GetCircuit();
+	Execute(unit);
+}
+
+void CRetreatTask::Execute(CCircuitUnit* unit)
+{
 	CCircuitUnit* haven = circuit->GetFactoryManager()->GetClosestHaven(unit);
 	const AIFloat3& pos = (haven != nullptr) ? haven->GetUnit()->GetPos() : circuit->GetSetupManager()->GetStartPos();
 	// TODO: push MoveAction into unit? to avoid enemy fire
 	unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 1);
 }
 
-void CRetreatTask::Update(CCircuitAI* circuit)
+void CRetreatTask::Update()
 {
 	auto assignees = units;
 	for (auto ass : assignees) {
@@ -57,7 +61,6 @@ void CRetreatTask::Update(CCircuitAI* circuit)
 
 void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 {
-	CCircuitAI* circuit = unit->GetManager()->GetCircuit();
 	CCircuitUnit* haven = circuit->GetFactoryManager()->GetClosestHaven(unit);
 	AIFloat3 pos;
 	float maxDist;

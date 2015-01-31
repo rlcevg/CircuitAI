@@ -8,8 +8,8 @@
 #ifndef SRC_CIRCUIT_FACTORYMANAGER_H_
 #define SRC_CIRCUIT_FACTORYMANAGER_H_
 
+#include "task/RecruitTask.h"
 #include "module/UnitModule.h"
-#include "task/FactoryTask.h"
 
 #include <map>
 #include <list>
@@ -30,21 +30,23 @@ public:
 	virtual int UnitIdle(CCircuitUnit* unit);
 	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
-	CFactoryTask* EnqueueTask(CFactoryTask::Priority priority,
+	CRecruitTask* EnqueueTask(CRecruitTask::Priority priority,
 							  springai::UnitDef* buildDef,
 							  const springai::AIFloat3& position,
-							  CFactoryTask::FacType type,
+							  CRecruitTask::FacType type,
 							  int quantity,
 							  float radius);
-	void DequeueTask(CFactoryTask* task);
+	void DequeueTask(CRecruitTask* task);
 	virtual void AssignTask(CCircuitUnit* unit);
-	virtual void ExecuteTask(CCircuitUnit* unit);
+//	virtual void ExecuteTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
 	virtual void SpecialCleanUp(CCircuitUnit* unit);
+	virtual void SpecialProcess(CCircuitUnit* unit);
+	virtual void FallbackTask(CCircuitUnit* unit);
 
 	float GetFactoryPower();
 	bool CanEnqueueTask();
-	const std::list<CFactoryTask*>& GetTasks() const;
+	const std::list<CRecruitTask*>& GetTasks() const;
 	CCircuitUnit* NeedUpgrade();
 	CCircuitUnit* GetRandomFactory();
 
@@ -58,9 +60,9 @@ private:
 	Handlers1 idleHandler;
 	Handlers2 destroyedHandler;
 
-	std::map<CCircuitUnit*, CFactoryTask*> unfinishedUnits;
-	std::map<CFactoryTask*, std::list<CCircuitUnit*>> unfinishedTasks;
-	std::list<CFactoryTask*> factoryTasks;  // owner
+	std::map<CCircuitUnit*, CRecruitTask*> unfinishedUnits;
+	std::map<CRecruitTask*, std::list<CCircuitUnit*>> unfinishedTasks;
+	std::list<CRecruitTask*> factoryTasks;  // owner
 	float factoryPower;
 
 	std::map<CCircuitUnit*, std::list<CCircuitUnit*>> factories;

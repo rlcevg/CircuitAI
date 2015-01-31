@@ -15,7 +15,6 @@
 #include "util/utils.h"
 
 #include "AIFloat3.h"
-#include "AISCommands.h"
 #include "OOAICallback.h"
 #include "Unit.h"
 #include "UnitDef.h"
@@ -164,7 +163,7 @@ int CFactoryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 	if ((builder != nullptr) && unit->GetUnit()->IsBeingBuilt()) {
 		IUnitTask* task = builder->GetTask();
 		if (task->GetType() == IUnitTask::Type::FACTORY) {
-			CFactoryTask* taskF = static_cast<CFactoryTask*>(task);
+			CRecruitTask* taskF = static_cast<CRecruitTask*>(task);
 			unfinishedTasks[taskF].push_back(unit);
 			unfinishedUnits[unit] = taskF;
 		}
@@ -177,7 +176,7 @@ int CFactoryManager::UnitFinished(CCircuitUnit* unit)
 {
 	auto iter = unfinishedUnits.find(unit);
 	if (iter != unfinishedUnits.end()) {
-		CFactoryTask* task = iter->second;
+		CRecruitTask* task = iter->second;
 		if (task != nullptr) {
 			task->Progress();
 			if (task->IsDone()) {
@@ -212,7 +211,7 @@ int CFactoryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 	if (unit->GetUnit()->IsBeingBuilt()) {
 		auto iter = unfinishedUnits.find(unit);
 		if (iter != unfinishedUnits.end()) {
-			CFactoryTask* task = iter->second;
+			CRecruitTask* task = iter->second;
 			if (task != nullptr) {
 				std::list<CCircuitUnit*>& units = unfinishedTasks[task];
 				units.remove(iter->first);
@@ -233,19 +232,19 @@ int CFactoryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 	return 0; //signaling: OK
 }
 
-CFactoryTask* CFactoryManager::EnqueueTask(CFactoryTask::Priority priority,
+CRecruitTask* CFactoryManager::EnqueueTask(CRecruitTask::Priority priority,
 										   UnitDef* buildDef,
 										   const AIFloat3& position,
-										   CFactoryTask::FacType type,
+										   CRecruitTask::FacType type,
 										   int quantity,
 										   float radius)
 {
-	CFactoryTask* task = new CFactoryTask(priority, buildDef, position, type, quantity, radius);
+	CRecruitTask* task = new CRecruitTask(circuit, priority, buildDef, position, type, quantity, radius);
 	factoryTasks.push_front(task);
 	return task;
 }
 
-void CFactoryManager::DequeueTask(CFactoryTask* task)
+void CFactoryManager::DequeueTask(CRecruitTask* task)
 {
 	std::list<CCircuitUnit*>& units = unfinishedTasks[task];
 	task->MarkCompleted();
@@ -262,11 +261,11 @@ void CFactoryManager::AssignTask(CCircuitUnit* unit)
 	Unit* u = unit->GetUnit();
 	UnitDef* def = unit->GetDef();
 
-	CFactoryTask* task = nullptr;
+	CRecruitTask* task = nullptr;
 	decltype(factoryTasks)::iterator iter = factoryTasks.begin();
 	for (; iter != factoryTasks.end(); ++iter) {
 		if ((*iter)->CanAssignTo(unit)) {
-			task = static_cast<CFactoryTask*>(*iter);
+			task = static_cast<CRecruitTask*>(*iter);
 			break;
 		}
 	}
@@ -283,15 +282,15 @@ void CFactoryManager::AssignTask(CCircuitUnit* unit)
 //	}
 }
 
-void CFactoryManager::ExecuteTask(CCircuitUnit* unit)
-{
-	CFactoryTask* task = static_cast<CFactoryTask*>(unit->GetTask());
-	Unit* u = unit->GetUnit();
-	const AIFloat3& buildPos = u->GetPos();
-
-	UnitDef* buildDef = task->GetBuildDef();
-	u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING);
-}
+//void CFactoryManager::ExecuteTask(CCircuitUnit* unit)
+//{
+//	CArmyTask* task = static_cast<CArmyTask*>(unit->GetTask());
+//	Unit* u = unit->GetUnit();
+//	const AIFloat3& buildPos = u->GetPos();
+//
+//	UnitDef* buildDef = task->GetBuildDef();
+//	u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING);
+//}
 
 void CFactoryManager::AbortTask(IUnitTask* task)
 {
@@ -299,6 +298,16 @@ void CFactoryManager::AbortTask(IUnitTask* task)
 }
 
 void CFactoryManager::SpecialCleanUp(CCircuitUnit* unit)
+{
+
+}
+
+void CFactoryManager::SpecialProcess(CCircuitUnit* unit)
+{
+
+}
+
+void CFactoryManager::FallbackTask(CCircuitUnit* unit)
 {
 
 }
@@ -313,7 +322,7 @@ bool CFactoryManager::CanEnqueueTask()
 	return (factoryTasks.size() < factories.size() * 4);
 }
 
-const std::list<CFactoryTask*>& CFactoryManager::GetTasks() const
+const std::list<CRecruitTask*>& CFactoryManager::GetTasks() const
 {
 	return factoryTasks;
 }
@@ -373,7 +382,7 @@ void CFactoryManager::Watchdog()
 
 void CFactoryManager::UpdateIdle()
 {
-	idleTask->Update(circuit);
+	idleTask->Update();
 }
 
 } // namespace circuit

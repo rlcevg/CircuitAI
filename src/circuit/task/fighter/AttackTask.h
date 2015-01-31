@@ -14,10 +14,11 @@ namespace circuit {
 
 class CAttackTask: public IUnitTask {
 public:
-	CAttackTask();
+	CAttackTask(CCircuitAI* circuit);
 	virtual ~CAttackTask();
 
-	virtual void Update(CCircuitAI* circuit);
+	virtual void Execute(CCircuitUnit* unit);
+	virtual void Update();
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);

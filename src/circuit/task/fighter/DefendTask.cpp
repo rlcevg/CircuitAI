@@ -1,11 +1,11 @@
 /*
- * AttackTask.cpp
+ * DefendTask.cpp
  *
  *  Created on: Jan 28, 2015
  *      Author: rlcevg
  */
 
-#include "task/AttackTask.h"
+#include "task/fighter/DefendTask.h"
 #include "task/RetreatTask.h"
 #include "unit/CircuitUnit.h"
 #include "unit/UnitManager.h"
@@ -17,30 +17,34 @@ namespace circuit {
 
 using namespace springai;
 
-CAttackTask::CAttackTask() :
-		IUnitTask(Priority::NORMAL, Type::ATTACK)
+CDefendTask::CDefendTask(CCircuitAI* circuit) :
+		IUnitTask(circuit, Priority::NORMAL, Type::ATTACK)
 {
 }
 
-CAttackTask::~CAttackTask()
+CDefendTask::~CDefendTask()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CAttackTask::Update(CCircuitAI* circuit)
+void CDefendTask::Execute(CCircuitUnit* unit)
+{
+
+}
+
+void CDefendTask::Update()
 {
 	// TODO: Monitor threat? Or do it on EnemySeen/EnemyDestroyed?
 }
 
-void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
+void CDefendTask::OnUnitIdle(CCircuitUnit* unit)
 {
-	// TODO: Wait for others if goal reached? Or we stuck far away?
+	// TODO: Should be on patrol. Stuck?
 }
 
-void CAttackTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CDefendTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
 	Unit* u = unit->GetUnit();
-	// TODO: floating retreat coefficient
 	if (u->GetHealth() > u->GetMaxHealth() * 0.6) {
 		return;
 	}
@@ -49,7 +53,7 @@ void CAttackTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 	unit->GetManager()->GetRetreatTask()->AssignTo(unit);
 }
 
-void CAttackTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CDefendTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
 	RemoveAssignee(unit);
 }

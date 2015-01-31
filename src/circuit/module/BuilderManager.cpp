@@ -6,23 +6,34 @@
  */
 
 #include "module/BuilderManager.h"
-#include "CircuitAI.h"
+#include "module/EconomyManager.h"
 #include "static/SetupManager.h"
 #include "static/MetalManager.h"
 #include "unit/CircuitUnit.h"
-#include "module/EconomyManager.h"
-#include "module/FactoryManager.h"
 #include "terrain/TerrainManager.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
+#include "task/builder/FactoryTask.h"
+#include "task/builder/NanoTask.h"
+#include "task/builder/StoreTask.h"
+#include "task/builder/PylonTask.h"
+#include "task/builder/EnergyTask.h"
+#include "task/builder/DefenceTask.h"
+#include "task/builder/BunkerTask.h"
+#include "task/builder/BigGunTask.h"
+#include "task/builder/RadarTask.h"
+#include "task/builder/MexTask.h"
+#include "task/builder/TerraformTask.h"
+#include "task/builder/RepairTask.h"
+#include "task/builder/ReclaimTask.h"
+#include "task/builder/PatrolTask.h"
+#include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
 #include "AISCommands.h"
-#include "OOAICallback.h"
-#include "Unit.h"
 #include "UnitDef.h"
-#include "Map.h"
+#include "Unit.h"
 #include "Pathing.h"
 #include "MoveData.h"
 #include "UnitRulesParam.h"
@@ -80,7 +91,6 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		}
 		builderPower -= unit->GetDef()->GetBuildSpeed();
 		workers.erase(unit);
-		SpecialCleanUp(unit);
 
 		IUnitTask* task = unit->GetTask();
 		task->OnUnitDestroyed(unit, attacker);
@@ -116,7 +126,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		this->circuit->GetMetalManager()->SetOpenSpot(unit->GetUnit()->GetPos(), true);
 	};
 
-	builderTasks.resize(static_cast<int>(CBuilderTask::BuildType::TASKS_COUNT));
+	builderTasks.resize(static_cast<int>(IBuilderTask::BuildType::TASKS_COUNT));
 }
 
 CBuilderManager::~CBuilderManager()
@@ -139,7 +149,7 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		return 0; //signaling: OK
 	}
 
-	CBuilderTask* taskB = static_cast<CBuilderTask*>(task);
+	IBuilderTask* taskB = static_cast<IBuilderTask*>(task);
 	if (unit->GetUnit()->IsBeingBuilt()) {
 		// NOTE: Try to cope with strange event order, when different units created within same task
 		// FIXME: Create additional task to catch lost unit
@@ -224,56 +234,120 @@ bool CBuilderManager::CanEnqueueTask()
 	return (builderTasksCount < workers.size() * 4);
 }
 
-const std::set<CBuilderTask*>& CBuilderManager::GetTasks(CBuilderTask::BuildType type)
+const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType type)
 {
 	// Auto-creates empty list
 	return builderTasks[static_cast<int>(type)];
 }
 
-CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
+IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 										   UnitDef* buildDef,
 										   const AIFloat3& position,
-										   CBuilderTask::BuildType type,
+										   IBuilderTask::BuildType type,
 										   float cost,
 										   int timeout)
 {
-	CBuilderTask* task = new CBuilderTask(priority, buildDef, position, type, cost, timeout);
-	AddTask(task, type);
-	return task;
+	return AddTask(priority, buildDef, position, type, cost, timeout);
 }
 
-CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
+IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 										   UnitDef* buildDef,
 										   const AIFloat3& position,
-										   CBuilderTask::BuildType type,
+										   IBuilderTask::BuildType type,
 										   int timeout)
 {
 	float cost = buildDef->GetCost(circuit->GetEconomyManager()->GetMetalRes());
-	CBuilderTask* task = new CBuilderTask(priority, buildDef, position, type, cost, timeout);
-	AddTask(task, type);
-	return task;
+	return AddTask(priority, buildDef, position, type, cost, timeout);
 }
 
-CBuilderTask* CBuilderManager::EnqueueTask(CBuilderTask::Priority priority,
+IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 										   const AIFloat3& position,
-										   CBuilderTask::BuildType type,
+										   IBuilderTask::BuildType type,
 										   int timeout)
 {
-	CBuilderTask* task = new CBuilderTask(priority, nullptr, position, type, .0f, timeout);
-	AddTask(task, type);
-	return task;
+	return AddTask(priority, nullptr, position, type, .0f, timeout);
 }
 
-inline void CBuilderManager::AddTask(CBuilderTask* task, CBuilderTask::BuildType type)
+IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
+									   springai::UnitDef* buildDef,
+									   const springai::AIFloat3& position,
+									   IBuilderTask::BuildType type,
+									   float cost,
+									   int timeout)
 {
+	IBuilderTask* task;
+	switch (type) {
+		case IBuilderTask::BuildType::FACTORY: {
+			task = new CBFactoryTask(circuit, priority, buildDef, position, type, cost, timeout);
+			break;
+		}
+		case IBuilderTask::BuildType::NANO: {
+			task = new CBNanoTask(circuit, priority, buildDef, position, type, cost, timeout);
+			break;
+		}
+		case IBuilderTask::BuildType::STORE: {
+			task = new CBStoreTask(circuit, priority, buildDef, position, type, cost, timeout);
+			break;
+		}
+		case IBuilderTask::BuildType::PYLON: {
+			task = new CBPylonTask(circuit, priority, buildDef, position, type, cost, timeout);
+			break;
+		}
+		case IBuilderTask::BuildType::ENERGY: {
+			task = new CBEnergyTask(circuit, priority, buildDef, position, type, cost, timeout);
+			break;
+		}
+		case IBuilderTask::BuildType::DEFENCE: {
+			task = new CBDefenceTask(circuit, priority, buildDef, position, type, cost, timeout);
+			break;
+		}
+		case IBuilderTask::BuildType::BUNKER: {
+			task = new CBBunkerTask(circuit, priority, buildDef, position, type, cost, timeout);
+			break;
+		}
+		default:
+		case IBuilderTask::BuildType::BIG_GUN: {
+			task = new CBBigGunTask(circuit, priority, buildDef, position, type, cost, timeout);
+			break;
+		}
+		case IBuilderTask::BuildType::RADAR: {
+			task = new CBRadarTask(circuit, priority, buildDef, position, type, cost, timeout);
+			break;
+		}
+		case IBuilderTask::BuildType::MEX: {
+			task = new CBMexTask(circuit, priority, buildDef, position, type, cost, timeout);
+			break;
+		}
+		case IBuilderTask::BuildType::TERRAFORM: {
+			// TODO: Re-evalute params
+			task = new CBTerraformTask(circuit, priority, buildDef, position, type, cost, timeout);
+			break;
+		}
+		case IBuilderTask::BuildType::REPAIR: {
+			task = new CBRepairTask(circuit, priority, timeout);
+			break;
+		}
+		case IBuilderTask::BuildType::RECLAIM: {
+			// TODO: Re-evalute params
+			task = new CBReclaimTask(circuit, priority, buildDef, position, type, cost, timeout);
+			break;
+		}
+		case IBuilderTask::BuildType::PATROL: {
+			// TODO: Re-evalute params
+			task = new CBPatrolTask(circuit, priority, buildDef, position, type, cost, timeout);
+			break;
+		}
+	}
+
 	builderTasks[static_cast<int>(type)].insert(task);
 	builderTasksCount++;
 	// TODO: Send NewTask message
+	return task;
 }
 
-void CBuilderManager::DequeueTask(CBuilderTask* task)
+void CBuilderManager::DequeueTask(IBuilderTask* task)
 {
-	std::set<CBuilderTask*>& tasks = builderTasks[static_cast<int>(task->GetBuildType())];
+	std::set<IBuilderTask*>& tasks = builderTasks[static_cast<int>(task->GetBuildType())];
 	auto it = tasks.find(task);
 	if (it != tasks.end()) {
 		unfinishedUnits.erase(task->GetTarget());
@@ -287,7 +361,7 @@ void CBuilderManager::DequeueTask(CBuilderTask* task)
 
 void CBuilderManager::AssignTask(CCircuitUnit* unit)
 {
-	CBuilderTask* task = nullptr;
+	IBuilderTask* task = nullptr;
 	Unit* u = unit->GetUnit();
 	const AIFloat3& pos = u->GetPos();
 	float maxSpeed = u->GetMaxSpeed();
@@ -354,199 +428,199 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	task->AssignTo(unit);
 }
 
-void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
-{
-	CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
-	Unit* u = unit->GetUnit();
-
-	auto findFacing = [this](UnitDef* buildDef, const AIFloat3& position) {
-		int facing = UNIT_COMMAND_BUILD_NO_FACING;
-		CTerrainManager* terrain = circuit->GetTerrainManager();
-		float terWidth = terrain->GetTerrainWidth();
-		float terHeight = terrain->GetTerrainHeight();
-		if (math::fabs(terWidth - 2 * position.x) > math::fabs(terHeight - 2 * position.z)) {
-			facing = (2 * position.x > terWidth) ? UNIT_FACING_WEST : UNIT_FACING_EAST;
-		} else {
-			facing = (2 * position.z > terHeight) ? UNIT_FACING_NORTH : UNIT_FACING_SOUTH;
-		}
-		return facing;
-	};
-
-	auto patrolFallback = [this, task, u](CCircuitUnit* unit) {
-		DequeueTask(task);
-
-		std::vector<float> params;
-		params.push_back(0.0f);
-		u->ExecuteCustomCommand(CMD_PRIORITY, params);
-
-		AIFloat3 pos = u->GetPos();
-		CBuilderTask* taskNew = EnqueueTask(CBuilderTask::Priority::LOW, pos, CBuilderTask::BuildType::PATROL, FRAMES_PER_SEC * 20);
-		taskNew->AssignTo(unit);
-
-		const float size = SQUARE_SIZE * 10;
-		CTerrainManager* terrain = circuit->GetTerrainManager();
-		pos.x += (pos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
-		pos.z += (pos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
-		u->PatrolTo(pos);
-
-		assistants.insert(unit);
-	};
-
-	std::vector<float> params;
-	params.push_back(static_cast<float>(task->GetPriority()));
-	u->ExecuteCustomCommand(CMD_PRIORITY, params);
-
-	CBuilderTask::BuildType type = task->GetBuildType();
-	switch (type) {
-		default: {
-			CCircuitUnit* target = task->GetTarget();
-			if (target != nullptr) {
-				Unit* tu = target->GetUnit();
-				u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
-				break;
-			}
-			int facing = UNIT_COMMAND_BUILD_NO_FACING;
-			UnitDef* buildDef = task->GetBuildDef();
-			AIFloat3 buildPos = task->GetBuildPos();
-			if (buildPos != -RgtVector) {
-				facing = findFacing(buildDef, buildPos);
-				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
-					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
-					break;
-				} else {
-					circuit->GetTerrainManager()->RemoveBlocker(buildDef, buildPos, facing);
-				}
-			}
-
-			bool valid = false;
-			switch (type) {
-				case CBuilderTask::BuildType::PYLON: {
-					buildPos = circuit->GetEconomyManager()->FindBuildPos(unit);
-					valid = (buildPos != -RgtVector);
-					break;
-				}
-				case CBuilderTask::BuildType::NANO: {
-					const AIFloat3& position = task->GetPos();
-					float searchRadius = buildDef->GetBuildDistance();
-					facing = findFacing(buildDef, position);
-					CTerrainManager* terrain = circuit->GetTerrainManager();
-					buildPos = terrain->FindBuildSite(buildDef, position, searchRadius, facing);
-					if (buildPos == -RgtVector) {
-						// TODO: Replace FindNearestSpots with FindNearestClusters
-						const CMetalData::Metals& spots =  circuit->GetMetalManager()->GetSpots();
-						CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestSpots(position, 3);
-						for (const int idx : indices) {
-							facing = findFacing(buildDef, spots[idx].position);
-							buildPos = terrain->FindBuildSite(buildDef, spots[idx].position, searchRadius, facing);
-							if (buildPos != -RgtVector) {
-								break;
-							}
-						}
-					}
-					valid = (buildPos != -RgtVector);
-					break;
-				}
-				default: {
-					const AIFloat3& position = task->GetPos();
-					float searchRadius = 100.0f * SQUARE_SIZE;
-					facing = findFacing(buildDef, position);
-					CTerrainManager* terrain = circuit->GetTerrainManager();
-					buildPos = terrain->FindBuildSite(buildDef, position, searchRadius, facing);
-					if (buildPos == -RgtVector) {
-						// TODO: Replace FindNearestSpots with FindNearestClusters
-						const CMetalData::Metals& spots =  circuit->GetMetalManager()->GetSpots();
-						CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestSpots(position, 3);
-						for (const int idx : indices) {
-							facing = findFacing(buildDef, spots[idx].position);
-							buildPos = terrain->FindBuildSite(buildDef, spots[idx].position, searchRadius, facing);
-							if (buildPos != -RgtVector) {
-								break;
-							}
-						}
-					}
-					valid = (buildPos != -RgtVector);
-					break;
-				}
-			}
-
-			if (valid) {
-				task->SetBuildPos(buildPos);
-				task->SetFacing(facing);
-				circuit->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);
-				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
-			} else {
-				// Fallback to Guard/Assist/Patrol
-				patrolFallback(unit);
-			}
-			break;
-		}
-		case CBuilderTask::BuildType::EXPAND: {
-			CCircuitUnit* target = task->GetTarget();
-			if (target != nullptr) {
-				Unit* tu = target->GetUnit();
-				u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
-				break;
-			}
-			int facing = UNIT_COMMAND_BUILD_NO_FACING;
-			UnitDef* buildDef = task->GetBuildDef();
-			AIFloat3 buildPos = task->GetBuildPos();
-			if (buildPos != -RgtVector) {
-				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
-					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
-					break;
-				} else {
-					circuit->GetMetalManager()->SetOpenSpot(buildPos, true);
-				}
-			}
-
-			buildPos = circuit->GetEconomyManager()->FindBuildPos(unit);
-			if (buildPos != -RgtVector) {
-				task->SetBuildPos(buildPos);
-				circuit->GetMetalManager()->SetOpenSpot(buildPos, false);
-				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
-			} else {
-				// Fallback to Guard/Assist/Patrol
-				patrolFallback(unit);
-			}
-			break;
-		}
-		case CBuilderTask::BuildType::ASSIST: {
-			CCircuitUnit* target = task->GetTarget();
-			if (target == nullptr) {
-				target = FindUnitToAssist(unit);
-				if (target == nullptr) {
-					patrolFallback(unit);
-					break;
-				}
-			}
-			unit->GetUnit()->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
-			break;
-		}
-		case CBuilderTask::BuildType::RECLAIM: {
-			CTerrainManager* terrain = circuit->GetTerrainManager();
-			float width = terrain->GetTerrainWidth() / 2;
-			float height = terrain->GetTerrainHeight() / 2;
-			AIFloat3 pos(width, 0, height);
-			float radius = sqrtf(width * width + height * height);
-			unit->GetUnit()->ReclaimInArea(pos, radius, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
-			auto search = assistants.find(unit);
-			if (search == assistants.end()) {
-				assistants.insert(unit);
-			}
-			break;
-		}
-	}
-}
+//void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
+//{
+//	IBuilderTask* task = static_cast<IBuilderTask*>(unit->GetTask());
+//	Unit* u = unit->GetUnit();
+//
+//	auto findFacing = [this](UnitDef* buildDef, const AIFloat3& position) {
+//		int facing = UNIT_COMMAND_BUILD_NO_FACING;
+//		CTerrainManager* terrain = circuit->GetTerrainManager();
+//		float terWidth = terrain->GetTerrainWidth();
+//		float terHeight = terrain->GetTerrainHeight();
+//		if (math::fabs(terWidth - 2 * position.x) > math::fabs(terHeight - 2 * position.z)) {
+//			facing = (2 * position.x > terWidth) ? UNIT_FACING_WEST : UNIT_FACING_EAST;
+//		} else {
+//			facing = (2 * position.z > terHeight) ? UNIT_FACING_NORTH : UNIT_FACING_SOUTH;
+//		}
+//		return facing;
+//	};
+//
+//	auto patrolFallback = [this, task, u](CCircuitUnit* unit) {
+//		DequeueTask(task);
+//
+//		std::vector<float> params;
+//		params.push_back(0.0f);
+//		u->ExecuteCustomCommand(CMD_PRIORITY, params);
+//
+//		AIFloat3 pos = u->GetPos();
+//		IBuilderTask* taskNew = EnqueueTask(IBuilderTask::Priority::LOW, pos, IBuilderTask::BuildType::PATROL, FRAMES_PER_SEC * 20);
+//		taskNew->AssignTo(unit);
+//
+//		const float size = SQUARE_SIZE * 10;
+//		CTerrainManager* terrain = circuit->GetTerrainManager();
+//		pos.x += (pos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
+//		pos.z += (pos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
+//		u->PatrolTo(pos);
+//
+//		assistants.insert(unit);
+//	};
+//
+//	std::vector<float> params;
+//	params.push_back(static_cast<float>(task->GetPriority()));
+//	u->ExecuteCustomCommand(CMD_PRIORITY, params);
+//
+//	IBuilderTask::BuildType type = task->GetBuildType();
+//	switch (type) {
+//		default: {
+//			CCircuitUnit* target = task->GetTarget();
+//			if (target != nullptr) {
+//				Unit* tu = target->GetUnit();
+//				u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+//				break;
+//			}
+//			int facing = UNIT_COMMAND_BUILD_NO_FACING;
+//			UnitDef* buildDef = task->GetBuildDef();
+//			AIFloat3 buildPos = task->GetBuildPos();
+//			if (buildPos != -RgtVector) {
+//				facing = findFacing(buildDef, buildPos);
+//				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
+//					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+//					break;
+//				} else {
+//					circuit->GetTerrainManager()->RemoveBlocker(buildDef, buildPos, facing);
+//				}
+//			}
+//
+//			bool valid = false;
+//			switch (type) {
+//				case IBuilderTask::BuildType::PYLON: {
+//					buildPos = circuit->GetEconomyManager()->FindBuildPos(unit);
+//					valid = (buildPos != -RgtVector);
+//					break;
+//				}
+//				case IBuilderTask::BuildType::NANO: {
+//					const AIFloat3& position = task->GetPos();
+//					float searchRadius = buildDef->GetBuildDistance();
+//					facing = findFacing(buildDef, position);
+//					CTerrainManager* terrain = circuit->GetTerrainManager();
+//					buildPos = terrain->FindBuildSite(buildDef, position, searchRadius, facing);
+//					if (buildPos == -RgtVector) {
+//						// TODO: Replace FindNearestSpots with FindNearestClusters
+//						const CMetalData::Metals& spots =  circuit->GetMetalManager()->GetSpots();
+//						CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestSpots(position, 3);
+//						for (const int idx : indices) {
+//							facing = findFacing(buildDef, spots[idx].position);
+//							buildPos = terrain->FindBuildSite(buildDef, spots[idx].position, searchRadius, facing);
+//							if (buildPos != -RgtVector) {
+//								break;
+//							}
+//						}
+//					}
+//					valid = (buildPos != -RgtVector);
+//					break;
+//				}
+//				default: {
+//					const AIFloat3& position = task->GetPos();
+//					float searchRadius = 100.0f * SQUARE_SIZE;
+//					facing = findFacing(buildDef, position);
+//					CTerrainManager* terrain = circuit->GetTerrainManager();
+//					buildPos = terrain->FindBuildSite(buildDef, position, searchRadius, facing);
+//					if (buildPos == -RgtVector) {
+//						// TODO: Replace FindNearestSpots with FindNearestClusters
+//						const CMetalData::Metals& spots =  circuit->GetMetalManager()->GetSpots();
+//						CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestSpots(position, 3);
+//						for (const int idx : indices) {
+//							facing = findFacing(buildDef, spots[idx].position);
+//							buildPos = terrain->FindBuildSite(buildDef, spots[idx].position, searchRadius, facing);
+//							if (buildPos != -RgtVector) {
+//								break;
+//							}
+//						}
+//					}
+//					valid = (buildPos != -RgtVector);
+//					break;
+//				}
+//			}
+//
+//			if (valid) {
+//				task->SetBuildPos(buildPos);
+//				task->SetFacing(facing);
+//				circuit->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);
+//				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+//			} else {
+//				// Fallback to Guard/Assist/Patrol
+//				patrolFallback(unit);
+//			}
+//			break;
+//		}
+//		case IBuilderTask::BuildType::MEX: {
+//			CCircuitUnit* target = task->GetTarget();
+//			if (target != nullptr) {
+//				Unit* tu = target->GetUnit();
+//				u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+//				break;
+//			}
+//			int facing = UNIT_COMMAND_BUILD_NO_FACING;
+//			UnitDef* buildDef = task->GetBuildDef();
+//			AIFloat3 buildPos = task->GetBuildPos();
+//			if (buildPos != -RgtVector) {
+//				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
+//					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+//					break;
+//				} else {
+//					circuit->GetMetalManager()->SetOpenSpot(buildPos, true);
+//				}
+//			}
+//
+//			buildPos = circuit->GetEconomyManager()->FindBuildPos(unit);
+//			if (buildPos != -RgtVector) {
+//				task->SetBuildPos(buildPos);
+//				circuit->GetMetalManager()->SetOpenSpot(buildPos, false);
+//				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+//			} else {
+//				// Fallback to Guard/Assist/Patrol
+//				patrolFallback(unit);
+//			}
+//			break;
+//		}
+//		case IBuilderTask::BuildType::REPAIR: {
+//			CCircuitUnit* target = task->GetTarget();
+//			if (target == nullptr) {
+//				target = FindUnitToAssist(unit);
+//				if (target == nullptr) {
+//					patrolFallback(unit);
+//					break;
+//				}
+//			}
+//			unit->GetUnit()->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+//			break;
+//		}
+//		case IBuilderTask::BuildType::RECLAIM: {
+//			CTerrainManager* terrain = circuit->GetTerrainManager();
+//			float width = terrain->GetTerrainWidth() / 2;
+//			float height = terrain->GetTerrainHeight() / 2;
+//			AIFloat3 pos(width, 0, height);
+//			float radius = sqrtf(width * width + height * height);
+//			unit->GetUnit()->ReclaimInArea(pos, radius, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+//			auto search = assistants.find(unit);
+//			if (search == assistants.end()) {
+//				assistants.insert(unit);
+//			}
+//			break;
+//		}
+//	}
+//}
 
 void CBuilderManager::AbortTask(IUnitTask* task)
 {
 	// NOTE: Don't send Stop command, save some traffic.
 
-	CBuilderTask* taskB = static_cast<CBuilderTask*>(task);
+	IBuilderTask* taskB = static_cast<IBuilderTask*>(task);
 	if (taskB->GetTarget() == nullptr) {
 		if (taskB->IsStructure()) {
 			circuit->GetTerrainManager()->RemoveBlocker(taskB->GetBuildDef(), taskB->GetBuildPos(), taskB->GetFacing());
-		} else if (taskB->GetBuildType() == CBuilderTask::BuildType::EXPAND) {  // update metalInfo's open state
+		} else if (taskB->GetBuildType() == IBuilderTask::BuildType::MEX) {  // update metalInfo's open state
 			circuit->GetMetalManager()->SetOpenSpot(taskB->GetBuildPos(), true);
 		}
 	}
@@ -558,6 +632,20 @@ void CBuilderManager::SpecialCleanUp(CCircuitUnit* unit)
 	assistants.erase(unit);
 }
 
+void CBuilderManager::SpecialProcess(CCircuitUnit* unit)
+{
+	assistants.insert(unit);
+}
+
+void CBuilderManager::FallbackTask(CCircuitUnit* unit)
+{
+	DequeueTask(static_cast<IBuilderTask*>(unit->GetTask()));
+
+	IBuilderTask* task = EnqueueTask(IBuilderTask::Priority::LOW, unit->GetUnit()->GetPos(), IBuilderTask::BuildType::PATROL, FRAMES_PER_SEC * 20);
+	task->AssignTo(unit);
+	task->Execute(unit);
+}
+
 void CBuilderManager::Init()
 {
 	CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
@@ -567,7 +655,7 @@ void CBuilderManager::Init()
 		UnitRulesParam* param = commander->GetUnit()->GetUnitRulesParamByName("facplop");
 		if (param != nullptr) {
 			if (param->GetValueFloat() == 1) {
-				EnqueueTask(IUnitTask::Priority::HIGH, circuit->GetUnitDefByName("factorycloak"), pos, CBuilderTask::BuildType::FACTORY);
+				EnqueueTask(IUnitTask::Priority::HIGH, circuit->GetUnitDefByName("factorycloak"), pos, IBuilderTask::BuildType::FACTORY);
 			}
 			delete param;
 		}
@@ -578,10 +666,10 @@ void CBuilderManager::Init()
 			const CMetalData::Metals& spots = metalManager->GetSpots();
 			metalManager->SetOpenSpot(index, false);
 			const AIFloat3& buildPos = spots[index].position;
-			EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetMexDef(), buildPos, CBuilderTask::BuildType::EXPAND)->SetBuildPos(buildPos);
+			EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetMexDef(), buildPos, IBuilderTask::BuildType::MEX)->SetBuildPos(buildPos);
 		}
-		EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetUnitDefByName("armsolar"), pos, CBuilderTask::BuildType::SOLAR);
-		EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetUnitDefByName("corrl"), pos, CBuilderTask::BuildType::DEFENDER);
+		EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetUnitDefByName("armsolar"), pos, IBuilderTask::BuildType::ENERGY);
+		EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetUnitDefByName("corrl"), pos, IBuilderTask::BuildType::DEFENCE);
 	}
 	for (auto worker : workers) {
 		UnitIdle(worker);
@@ -599,20 +687,22 @@ void CBuilderManager::Watchdog()
 	decltype(assistants)::iterator iter = assistants.begin();
 	while (iter != assistants.end()) {
 		CCircuitUnit* unit = *iter;
-		CBuilderTask* task = static_cast<CBuilderTask*>(unit->GetTask());
+		++iter;
+		IBuilderTask* task = static_cast<IBuilderTask*>(unit->GetTask());
+		printf("%i\n", task->GetBuildType());
 		int timeout = task->GetTimeout();
 		if ((timeout > 0) && (circuit->GetLastFrame() - unit->GetTaskFrame() > timeout)) {
 			switch (task->GetBuildType()) {
-				case CBuilderTask::BuildType::PATROL:
-				case CBuilderTask::BuildType::RECLAIM: {
+				case IBuilderTask::BuildType::PATROL:
+				case IBuilderTask::BuildType::RECLAIM: {
 					DequeueTask(task);
-					iter = assistants.erase(iter);
-					continue;
+//					iter = assistants.erase(iter);
+//					continue;
 					break;
 				}
 			}
 		}
-		++iter;
+//		++iter;
 	}
 
 	// somehow workers get stuck
@@ -638,8 +728,8 @@ void CBuilderManager::Watchdog()
 		Unit* u = unit->GetUnit();
 		if (u->IsBeingBuilt() && (u->GetMaxSpeed() <= 0) && (unfinishedUnits.find(unit) == unfinishedUnits.end())) {
 			const AIFloat3& pos = u->GetPos();
-			CBuilderTask* task = EnqueueTask(CBuilderTask::Priority::NORMAL, unit->GetDef(), pos, CBuilderTask::BuildType::ASSIST);
-			task->SetBuildPos(pos);
+			IBuilderTask* task = EnqueueTask(IBuilderTask::Priority::NORMAL, unit->GetDef(), pos, IBuilderTask::BuildType::REPAIR);
+//			task->SetBuildPos(pos);
 			task->SetTarget(unit);
 			unfinishedUnits[unit] = task;
 		}
@@ -648,19 +738,19 @@ void CBuilderManager::Watchdog()
 
 void CBuilderManager::UpdateIdle()
 {
-	idleTask->Update(circuit);
+	idleTask->Update();
 }
 
 void CBuilderManager::UpdateRetreat()
 {
-	retreatTask->Update(circuit);
+	retreatTask->Update();
 }
 
 void CBuilderManager::UpdateBuild()
 {
 	auto it = updateTasks.begin();
 	while ((it != updateTasks.end()) && circuit->IsUpdateTimeValid()) {
-		(*it)->Update(circuit);
+		(*it)->Update();
 		it = updateTasks.erase(it);
 	}
 
@@ -671,27 +761,6 @@ void CBuilderManager::UpdateBuild()
 			}
 		}
 	}
-}
-
-CCircuitUnit* CBuilderManager::FindUnitToAssist(CCircuitUnit* unit)
-{
-	CCircuitUnit* target = nullptr;
-	Unit* su = unit->GetUnit();
-	const AIFloat3& pos = su->GetPos();
-	float maxSpeed = su->GetMaxSpeed();
-	float radius = unit->GetDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 30;
-	circuit->UpdateAllyUnits();
-	std::vector<Unit*> units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
-	for (auto u : units) {
-		if (u->GetHealth() < u->GetMaxHealth() && u->GetVel().Length() <= maxSpeed * 1.5) {
-			target = circuit->GetFriendlyUnit(u);
-			if (target != nullptr) {
-				break;
-			}
-		}
-	}
-	utils::free_clear(units);
-	return target;
 }
 
 } // namespace circuit

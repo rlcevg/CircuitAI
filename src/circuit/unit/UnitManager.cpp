@@ -12,15 +12,19 @@
 
 namespace circuit {
 
-IUnitManager::IUnitManager() :
-		idleTask(new CIdleTask),
-		retreatTask(new CRetreatTask)
+IUnitManager::IUnitManager(CCircuitAI* circuit)
 {
+	idleTask = new CIdleTask(circuit);
+	retreatTask = new CRetreatTask(circuit);
 }
 
 IUnitManager::~IUnitManager()
 {
 	delete idleTask, retreatTask;
+}
+
+void IUnitManager::FallbackTask(CCircuitUnit* unit)
+{
 }
 
 CIdleTask* IUnitManager::GetIdleTask()

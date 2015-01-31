@@ -16,10 +16,11 @@ namespace circuit
 class CDefendTask: public IUnitTask
 {
 public:
-	CDefendTask();
+	CDefendTask(CCircuitAI* circuit);
 	virtual ~CDefendTask();
 
-	virtual void Update(CCircuitAI* circuit);
+	virtual void Execute(CCircuitUnit* unit);
+	virtual void Update();
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);

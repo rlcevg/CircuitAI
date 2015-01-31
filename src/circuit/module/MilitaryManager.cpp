@@ -213,10 +213,10 @@ void CMilitaryManager::AssignTask(CCircuitUnit* unit)
 
 }
 
-void CMilitaryManager::ExecuteTask(CCircuitUnit* unit)
-{
-
-}
+//void CMilitaryManager::ExecuteTask(CCircuitUnit* unit)
+//{
+//
+//}
 
 void CMilitaryManager::AbortTask(IUnitTask* task)
 {
@@ -224,6 +224,16 @@ void CMilitaryManager::AbortTask(IUnitTask* task)
 }
 
 void CMilitaryManager::SpecialCleanUp(CCircuitUnit* unit)
+{
+
+}
+
+void CMilitaryManager::SpecialProcess(CCircuitUnit* unit)
+{
+
+}
+
+void CMilitaryManager::FallbackTask(CCircuitUnit* unit)
 {
 
 }

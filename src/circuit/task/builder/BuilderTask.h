@@ -19,28 +19,48 @@ namespace springai {
 
 namespace circuit {
 
-class CBuilderTask: public IUnitTask {
+class IBuilderTask: public IUnitTask {
 public:
+//	enum class BuildType: int {
+//		FACTORY = 0, NANO,  // Production group
+//		STORE,
+//		PYLON,
+//		SOLAR, FUSION, SINGU, GEO,  // Energy group
+//		DEFENDER, LOTUS, RAVE,  // Requires no energy
+//		DDM, ANNI,  // Requires energy
+//		RADAR,
+//		MEX,
+//		TERRAFORM, REPAIR, RECLAIM, PATROL,  // Other builder actions
+//		TASKS_COUNT, DEFAULT = DEFENDER
+//	};
 	enum class BuildType: int {
-		FACTORY = 0, NANO,
-		STORE, PYLON,
-		SOLAR, FUSION, SINGU,
-		DEFENDER, LOTUS, DDM, ANNI, RAVE,
-		RADAR, EXPAND,
-		TERRAFORM, ASSIST, RECLAIM, PATROL, TASKS_COUNT, DEFAULT = DEFENDER
+		FACTORY = 0,
+		NANO,
+		STORE,
+		PYLON,
+		ENERGY,
+		DEFENCE,  // lotus, defender
+		BUNKER,  // stardust, stinger, ddm, anni
+		BIG_GUN,  // super weapons
+		RADAR,
+		MEX,
+		TERRAFORM, REPAIR, RECLAIM, PATROL,  // Other builder actions
+		TASKS_COUNT, DEFAULT = BIG_GUN
 	};
 
-public:
-	CBuilderTask(Priority priority,
+protected:
+	IBuilderTask(CCircuitAI* circuit, Priority priority,
 				 springai::UnitDef* buildDef, const springai::AIFloat3& position,
 				 BuildType type, float cost, int timeout = 0);
-	virtual ~CBuilderTask();
+public:
+	virtual ~IBuilderTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit);
 	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 
-	virtual void Update(CCircuitAI* circuit);
+	virtual void Execute(CCircuitUnit* unit);
+	virtual void Update();
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
@@ -56,14 +76,16 @@ public:
 
 	void SetBuildPos(const springai::AIFloat3& pos);
 	const springai::AIFloat3& GetBuildPos() const;
-	void SetTarget(CCircuitUnit* unit);
+	virtual void SetTarget(CCircuitUnit* unit);
 	CCircuitUnit* GetTarget();
 
 	bool IsStructure();
 	void SetFacing(int value);
 	int GetFacing();
 
-private:
+protected:
+	int FindFacing(springai::UnitDef* buildDef, const springai::AIFloat3& position);
+
 	springai::AIFloat3 position;
 	springai::UnitDef* buildDef;
 

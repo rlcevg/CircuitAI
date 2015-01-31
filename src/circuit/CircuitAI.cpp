@@ -715,7 +715,7 @@ const std::map<int, CCircuitUnit*>& CCircuitAI::GetEnemyUnits() const
 bool CCircuitAI::IsUpdateTimeValid()
 {
 	clock::time_point t = clock::now();
-	return std::chrono::duration_cast<milliseconds>(t - startUpdate).count() < 5;  // or (1000 / FRAMES_PER_SEC)
+	return std::chrono::duration_cast<milliseconds>(t - startUpdate).count() < 1;  // or (1000 / FRAMES_PER_SEC)
 }
 
 void CCircuitAI::InitOptions()

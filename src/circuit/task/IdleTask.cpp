@@ -13,8 +13,8 @@
 
 namespace circuit {
 
-CIdleTask::CIdleTask() :
-		IUnitTask(Priority::NORMAL, Type::IDLE)
+CIdleTask::CIdleTask(CCircuitAI* circuit) :
+		IUnitTask(circuit, Priority::NORMAL, Type::IDLE)
 {
 }
 
@@ -39,13 +39,16 @@ void CIdleTask::MarkCompleted()
 	units.clear();
 }
 
-void CIdleTask::Update(CCircuitAI* circuit)
+void CIdleTask::Execute(CCircuitUnit* unit)
+{
+}
+
+void CIdleTask::Update()
 {
 	auto assignees = units;  // copy assignees
 	for (auto ass : assignees) {
-		IUnitManager* manager = ass->GetManager();
-		manager->AssignTask(ass);  // should RemoveAssignee() on AssignTo()
-		manager->ExecuteTask(ass);
+		ass->GetManager()->AssignTask(ass);  // should RemoveAssignee() on AssignTo()
+		ass->GetTask()->Execute(ass);
 		if (!circuit->IsUpdateTimeValid()) {
 			break;
 		}
