@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef CIRCUIT_H_
-#define CIRCUIT_H_
+#ifndef SRC_CIRCUIT_CIRCUIT_H_
+#define SRC_CIRCUIT_CIRCUIT_H_
 
 #include <memory>
 #include <map>
@@ -211,4 +211,4 @@ private:
 
 } // namespace circuit
 
-#endif // CIRCUIT_H_
+#endif // SRC_CIRCUIT_CIRCUIT_H_

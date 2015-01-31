@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_FACTORYMANAGER_H_
-#define SRC_CIRCUIT_FACTORYMANAGER_H_
+#ifndef SRC_CIRCUIT_MODULE_FACTORYMANAGER_H_
+#define SRC_CIRCUIT_MODULE_FACTORYMANAGER_H_
 
 #include "task/RecruitTask.h"
 #include "module/UnitModule.h"
@@ -72,4 +72,4 @@ private:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_FACTORYMANAGER_H_
+#endif // SRC_CIRCUIT_MODULE_FACTORYMANAGER_H_

@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef GAMEATTRIBUTE_H_
-#define GAMEATTRIBUTE_H_
+#ifndef SRC_CIRCUIT_STATIC_GAMEATTRIBUTE_H_
+#define SRC_CIRCUIT_STATIC_GAMEATTRIBUTE_H_
 
 #include "static/SetupData.h"
 #include "static/MetalData.h"
@@ -43,4 +43,4 @@ private:
 
 } // namespace circuit
 
-#endif // GAMEATTRIBUTE_H_
+#endif // SRC_CIRCUIT_STATIC_GAMEATTRIBUTE_H_

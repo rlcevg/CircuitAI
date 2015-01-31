@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef MULTIQUEUE_H_
-#define MULTIQUEUE_H_
+#ifndef SRC_CIRCUIT_UTIL_MULTIQUEUE_H_
+#define SRC_CIRCUIT_UTIL_MULTIQUEUE_H_
 
 #include <list>
 #include <mutex>
@@ -56,4 +56,4 @@ private:
 
 #include "util/MultiQueue.hpp"
 
-#endif // MULTIQUEUE_H_
+#endif // SRC_CIRCUIT_UTIL_MULTIQUEUE_H_

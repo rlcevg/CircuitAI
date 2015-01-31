@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_TASK_MOVEACTION_H_
-#define SRC_CIRCUIT_TASK_MOVEACTION_H_
+#ifndef SRC_CIRCUIT_UNIT_ACTION_MOVEACTION_H_
+#define SRC_CIRCUIT_UNIT_ACTION_MOVEACTION_H_
 
 #include "unit/action/UnitAction.h"
 
@@ -24,4 +24,4 @@ public:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_TASK_MOVEACTION_H_
+#endif // SRC_CIRCUIT_UNIT_ACTION_MOVEACTION_H_

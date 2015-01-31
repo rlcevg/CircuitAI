@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef MILITARYMANAGER_H_
-#define MILITARYMANAGER_H_
+#ifndef SRC_CIRCUIT_MODULE_MILITARYMANAGER_H_
+#define SRC_CIRCUIT_MODULE_MILITARYMANAGER_H_
 
 #include "module/UnitModule.h"
 
@@ -46,4 +46,4 @@ private:
 
 } // namespace circuit
 
-#endif // MILITARYMANAGER_H_
+#endif // SRC_CIRCUIT_MODULE_MILITARYMANAGER_H_

@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_TASK_SCOUTTASK_H_
-#define SRC_CIRCUIT_TASK_SCOUTTASK_H_
+#ifndef SRC_CIRCUIT_TASK_FIGHTER_SCOUTTASK_H_
+#define SRC_CIRCUIT_TASK_FIGHTER_SCOUTTASK_H_
 
 #include "task/UnitTask.h"
 
@@ -27,4 +27,4 @@ public:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_TASK_SCOUTTASK_H_
+#endif // SRC_CIRCUIT_TASK_FIGHTER_SCOUTTASK_H_

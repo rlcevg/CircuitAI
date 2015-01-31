@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef MODULE_H_
-#define MODULE_H_
+#ifndef SRC_CIRCUIT_MODULE_MODULE_H_
+#define SRC_CIRCUIT_MODULE_MODULE_H_
 
 #include <unordered_map>
 #include <functional>
@@ -40,4 +40,4 @@ protected:
 
 } // namespace circuit
 
-#endif // MODULE_H_
+#endif // SRC_CIRCUIT_MODULE_MODULE_H_

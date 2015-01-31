@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef CIRCUITUNIT_H_
-#define CIRCUITUNIT_H_
+#ifndef SRC_CIRCUIT_UNIT_CIRCUITUNIT_H_
+#define SRC_CIRCUIT_UNIT_CIRCUITUNIT_H_
 
 #include "util/ActionList.h"
 
@@ -54,4 +54,4 @@ private:
 
 } // namespace circuit
 
-#endif // CIRCUITUNIT_H_
+#endif // SRC_CIRCUIT_UNIT_CIRCUITUNIT_H_

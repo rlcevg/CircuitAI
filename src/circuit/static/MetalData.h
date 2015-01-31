@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef METALDATA_H_
-#define METALDATA_H_
+#ifndef SRC_CIRCUIT_STATIC_METALDATA_H_
+#define SRC_CIRCUIT_STATIC_METALDATA_H_
 
 #include "AIFloat3.h"
 
@@ -41,6 +41,12 @@ public:
 	using MetalNode = std::pair<point, int>;  // spots indexer
 	using MetalPredicate = std::function<bool (MetalNode const& v)>;
 	using MetalIndices = std::vector<int>;
+	using Cluster = struct Cluster {
+		MetalIndices idxSpots;
+		springai::AIFloat3 geoCentr;
+		springai::AIFloat3 weightCentr;
+	};
+	using Clusters = std::vector<Cluster>;
 
 public:
 	CMetalData();
@@ -66,9 +72,7 @@ public:
 	const MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num) const;
 	const MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num, MetalPredicate& predicate) const;
 
-	const std::vector<MetalIndices>& GetClusters() const;
-	const std::vector<springai::AIFloat3>& GetGeoCentroids() const;
-	const std::vector<springai::AIFloat3>& GetWeightCentroids() const;
+	const std::vector<Cluster>& GetClusters() const;
 
 	/*
 	 * Hierarchical clusterization. Not reusable. Metric: complete link. Thread-unsafe
@@ -89,9 +93,7 @@ private:
 	using MetalTree = bgi::rtree<MetalNode, bgi::rstar<16, 4>>;
 	MetalTree metalTree;
 
-	std::vector<MetalIndices> clusters;
-	std::vector<springai::AIFloat3> geoCentroids;
-	std::vector<springai::AIFloat3> weightCentroids;
+	Clusters clusters;
 	using ClusterTree = bgi::rtree<MetalNode, bgi::quadratic<16>>;
 	ClusterTree clusterTree;
 
@@ -100,4 +102,4 @@ private:
 
 } // namespace circuit
 
-#endif // METALDATA_H_
+#endif // SRC_CIRCUIT_STATIC_METALDATA_H_

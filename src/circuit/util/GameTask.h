@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef GAMETASK_H_
-#define GAMETASK_H_
+#ifndef SRC_CIRCUIT_UTIL_GAMETASK_H_
+#define SRC_CIRCUIT_UTIL_GAMETASK_H_
 
 #include <memory>
 
@@ -51,4 +51,4 @@ inline CGameTask::_Impl_base::~_Impl_base() = default;
 
 } // namespace circuit
 
-#endif // GAMETASK_H_
+#endif // SRC_CIRCUIT_UTIL_GAMETASK_H_

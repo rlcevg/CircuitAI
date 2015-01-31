@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_BLOCKMASK_H_
-#define SRC_CIRCUIT_BLOCKMASK_H_
+#ifndef SRC_CIRCUIT_TERRAIN_BLOCKMASK_H_
+#define SRC_CIRCUIT_TERRAIN_BLOCKMASK_H_
 
 #include "terrain/BlockingMap.h"
 
@@ -86,4 +86,4 @@ inline SBlockingMap::StructType IBlockMask::GetStructType()
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_BLOCKMASK_H_
+#endif // SRC_CIRCUIT_TERRAIN_BLOCKMASK_H_

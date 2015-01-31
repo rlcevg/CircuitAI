@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef SCHEDULER_H_
-#define SCHEDULER_H_
+#ifndef SRC_CIRCUIT_UTIL_SCHEDULER_H_
+#define SRC_CIRCUIT_UTIL_SCHEDULER_H_
 
 #include "util/MultiQueue.h"
 #include "util/GameTask.h"
@@ -115,4 +115,4 @@ private:
 
 } // namespace circuit
 
-#endif // SCHEDULER_H_
+#endif // SRC_CIRCUIT_UTIL_SCHEDULER_H_

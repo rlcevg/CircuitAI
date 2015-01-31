@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_TERRAINMANAGER_H_
-#define SRC_CIRCUIT_TERRAINMANAGER_H_
+#ifndef SRC_CIRCUIT_TERRAIN_TERRAINMANAGER_H_
+#define SRC_CIRCUIT_TERRAIN_TERRAINMANAGER_H_
 
 #include "terrain/BlockingMap.h"
 #include "terrain/TerrainData.h"
@@ -94,4 +94,4 @@ private:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_TERRAINMANAGER_H_
+#endif // SRC_CIRCUIT_TERRAIN_TERRAINMANAGER_H_

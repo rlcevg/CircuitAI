@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_BLOCKINGMAP_H_
-#define SRC_CIRCUIT_BLOCKINGMAP_H_
+#ifndef SRC_CIRCUIT_TERRAIN_BLOCKINGMAP_H_
+#define SRC_CIRCUIT_TERRAIN_BLOCKINGMAP_H_
 
 #include "System/type2.h"
 
@@ -61,4 +61,4 @@ struct SBlockingMap {
 
 #include "terrain/BlockingMap.hpp"
 
-#endif // SRC_CIRCUIT_BLOCKINGMAP_H_
+#endif // SRC_CIRCUIT_TERRAIN_BLOCKINGMAP_H_

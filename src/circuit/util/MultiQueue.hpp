@@ -6,7 +6,7 @@
  *      Origin: Juan Palacios (https://github.com/juanchopanza/cppblog/blob/master/Concurrency/Queue/Queue.h)
  */
 
-#ifndef MULTIQUEUE_H_
+#ifndef SRC_CIRCUIT_UTIL_MULTIQUEUE_H_
 #	error "Don't include this file directly, include Queue.h instead"
 #endif
 

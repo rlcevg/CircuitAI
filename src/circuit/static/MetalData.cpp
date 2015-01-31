@@ -189,19 +189,9 @@ const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& p
 	return result;
 }
 
-const std::vector<CMetalData::MetalIndices>& CMetalData::GetClusters() const
+const CMetalData::Clusters& CMetalData::GetClusters() const
 {
 	return clusters;
-}
-
-const std::vector<AIFloat3>& CMetalData::GetGeoCentroids() const
-{
-	return geoCentroids;
-}
-
-const std::vector<AIFloat3>& CMetalData::GetWeightCentroids() const
-{
-	return weightCentroids;
 }
 
 void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distMatrix)
@@ -275,20 +265,19 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 
 	int nclusters = iclusters.size();
 	clusters.resize(nclusters);
-	geoCentroids.resize(nclusters);
-	weightCentroids.resize(nclusters);
 	clusterTree.clear();
 	for (int i = 0; i < nclusters; i++) {
-		clusters[i].clear();
+		Cluster& c = clusters[i];
+		c.idxSpots.clear();
 		AIFloat3 centr = ZeroVector;
 		for (int j = 0; j < iclusters[i].size(); j++) {
-			clusters[i].push_back(iclusters[i][j]);
+			c.idxSpots.push_back(iclusters[i][j]);
 			centr += spots[iclusters[i][j]].position;
 		}
 		centr /= iclusters[i].size();
-		weightCentroids[i] = centr;
+		c.weightCentr = centr;
 		clusterTree.insert(std::make_pair(point(centr.x, centr.z), i));
-		geoCentroids[i] = findCentroid(clusters[i]);
+		c.geoCentr = findCentroid(c.idxSpots);
 	}
 
 	isClusterizing = false;

@@ -53,9 +53,7 @@ public:
 	const CMetalData::MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num) const;
 	const CMetalData::MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num, CMetalData::MetalPredicate& predicate) const;
 
-	const std::vector<CMetalData::MetalIndices>& GetClusters() const;
-	const std::vector<springai::AIFloat3>& GetGeoCentroids() const;
-	const std::vector<springai::AIFloat3>& GetWeightCentroids() const;
+	const CMetalData::Clusters& GetClusters() const;
 
 private:
 	CCircuitAI* circuit;

@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef ECONOMYMANAGER_H_
-#define ECONOMYMANAGER_H_
+#ifndef SRC_CIRCUIT_MODULE_ECONOMYMANAGER_H_
+#define SRC_CIRCUIT_MODULE_ECONOMYMANAGER_H_
 
 #include "module/Module.h"
 
@@ -44,8 +44,8 @@ private:
 	void Init();
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position);
 	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position);
-	IBuilderTask* UpdateBuilderTasks(const springai::AIFloat3& position);
-	CRecruitTask* UpdateFactoryTasks();
+	IBuilderTask* UpdateFactoryTasks(const springai::AIFloat3& position);
+	CRecruitTask* UpdateRecruitTasks();
 	IBuilderTask* UpdateStorageTasks();
 
 	Handlers2 createdHandler;
@@ -69,4 +69,4 @@ private:
 
 } // namespace circuit
 
-#endif // ECONOMYMANAGER_H_
+#endif // SRC_CIRCUIT_MODULE_ECONOMYMANAGER_H_

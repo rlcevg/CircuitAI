@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_BUILDERMANAGER_H_
-#define SRC_CIRCUIT_BUILDERMANAGER_H_
+#ifndef SRC_CIRCUIT_MODULE_BUILDERMANAGER_H_
+#define SRC_CIRCUIT_MODULE_BUILDERMANAGER_H_
 
 #include "module/UnitModule.h"
 #include "task/builder/BuilderTask.h"
@@ -88,4 +88,4 @@ private:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_BUILDERMANAGER_H_
+#endif // SRC_CIRCUIT_MODULE_BUILDERMANAGER_H_

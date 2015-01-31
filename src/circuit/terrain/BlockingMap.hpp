@@ -5,7 +5,7 @@
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_BLOCKINGMAP_H_
+#ifndef SRC_CIRCUIT_TERRAIN_BLOCKINGMAP_H_
 #	error "Don't include this file directly, include BlockingMap.h instead"
 #endif
 

@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef UNITTASK_H_
-#define UNITTASK_H_
+#ifndef SRC_CIRCUIT_TASK_UNITTASK_H_
+#define SRC_CIRCUIT_TASK_UNITTASK_H_
 
 #include "AIFloat3.h"
 
@@ -52,4 +52,4 @@ protected:
 
 } // namespace circuit
 
-#endif // UNITTASK_H_
+#endif // SRC_CIRCUIT_TASK_UNITTASK_H_

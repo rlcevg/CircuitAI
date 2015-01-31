@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef RAGMATRIX_H_
-#define RAGMATRIX_H_
+#ifndef SRC_CIRCUIT_UTIL_RAGMATRIX_H_
+#define SRC_CIRCUIT_UTIL_RAGMATRIX_H_
 
 namespace circuit {
 
@@ -35,4 +35,4 @@ private:
 
 } // namespace circuit
 
-#endif // RAGMATRIX_H_
+#endif // SRC_CIRCUIT_UTIL_RAGMATRIX_H_

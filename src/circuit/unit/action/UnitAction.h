@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_TASK_UNITACTION_H_
-#define SRC_CIRCUIT_TASK_UNITACTION_H_
+#ifndef SRC_CIRCUIT_UNIT_ACTION_UNITACTION_H_
+#define SRC_CIRCUIT_UNIT_ACTION_UNITACTION_H_
 
 #include "util/Action.h"
 
@@ -31,4 +31,4 @@ protected:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_TASK_UNITACTION_H_
+#endif // SRC_CIRCUIT_UNIT_ACTION_UNITACTION_H_

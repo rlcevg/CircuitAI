@@ -187,7 +187,7 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 	if (task != nullptr) {
 		return task;
 	}
-	task = UpdateBuilderTasks(pos);
+	task = UpdateFactoryTasks(pos);
 	if (task != nullptr) {
 		return task;
 	}
@@ -215,7 +215,7 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 CRecruitTask* CEconomyManager::CreateFactoryTask(CCircuitUnit* unit)
 {
 	// TODO: Add general logic here
-	CRecruitTask* task = UpdateFactoryTasks();
+	CRecruitTask* task = UpdateRecruitTasks();
 	if (task != nullptr) {
 		return task;
 	}
@@ -310,7 +310,7 @@ void CEconomyManager::Init()
 	delete ais;
 	const AIFloat3& pos = circuit->GetSetupManager()->GetStartPos();
 	CScheduler* scheduler = circuit->GetScheduler();
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateBuilderTasks, this, pos), interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateFactoryTasks, this, pos), interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this), interval, circuit->GetSkirmishAIId() + 1);
 }
 
@@ -373,7 +373,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position)
 	float metalIncome = eco->GetIncome(metalRes);
 	float energyUsage = eco->GetUsage(energyRes);
 
-	// Solar task
+	// Solar
 	if (((metalIncome > energyIncome * 0.5) || (energyUsage > energyIncome * 0.5)) && (solarCount < 10) && circuit->IsAvailable(solarDef)) {
 		float cost = solarDef->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 4 + 2;
@@ -397,7 +397,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position)
 		return task;
 	}
 
-	// Fusion task
+	// Fusion
 	if ((energyUsage > energyIncome * 0.6) && (solarCount >= 10) && (fusionCount < 3) && circuit->IsAvailable(fusDef)) {
 		float cost = fusDef->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 4 + 1;
@@ -422,7 +422,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position)
 		return task;
 	}
 
-	// Singularity task
+	// Singularity
 	if ((energyUsage > energyIncome * 0.7) && (fusionCount >= 3) && circuit->IsAvailable(singuDef)) {
 		float cost = singuDef->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 4 + 1;
@@ -451,7 +451,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position)
 	return task;
 }
 
-IBuilderTask* CEconomyManager::UpdateBuilderTasks(const AIFloat3& position)
+IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position)
 {
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	IBuilderTask* task = nullptr;
@@ -516,7 +516,7 @@ IBuilderTask* CEconomyManager::UpdateBuilderTasks(const AIFloat3& position)
 	return task;
 }
 
-CRecruitTask* CEconomyManager::UpdateFactoryTasks()
+CRecruitTask* CEconomyManager::UpdateRecruitTasks()
 {
 	CFactoryManager* factoryManager = circuit->GetFactoryManager();
 	CRecruitTask* task = nullptr;

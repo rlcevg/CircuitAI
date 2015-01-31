@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_BLOCKCIRCLE_H_
-#define SRC_CIRCUIT_BLOCKCIRCLE_H_
+#ifndef SRC_CIRCUIT_TERRAIN_BLOCKCIRCLE_H_
+#define SRC_CIRCUIT_TERRAIN_BLOCKCIRCLE_H_
 
 #include "terrain/BlockMask.h"
 
@@ -22,4 +22,4 @@ public:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_BLOCKCIRCLE_H_
+#endif // SRC_CIRCUIT_TERRAIN_BLOCKCIRCLE_H_

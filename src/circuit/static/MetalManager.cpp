@@ -204,19 +204,9 @@ const CMetalData::MetalIndices CMetalManager::FindNearestClusters(const AIFloat3
 	return metalData->FindNearestClusters(pos, num, predicate);
 }
 
-const std::vector<CMetalData::MetalIndices>& CMetalManager::GetClusters() const
+const CMetalData::Clusters& CMetalManager::GetClusters() const
 {
 	return metalData->GetClusters();
-}
-
-const std::vector<AIFloat3>& CMetalManager::GetGeoCentroids() const
-{
-	return metalData->GetGeoCentroids();
-}
-
-const std::vector<AIFloat3>& CMetalManager::GetWeightCentroids() const
-{
-	return metalData->GetWeightCentroids();
 }
 
 void CMetalManager::SetOpenSpot(int index, bool value)

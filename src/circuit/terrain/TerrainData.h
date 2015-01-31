@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_TERRAINDATA_H_
-#define SRC_CIRCUIT_TERRAINDATA_H_
+#ifndef SRC_CIRCUIT_TERRAIN_TERRAINDATA_H_
+#define SRC_CIRCUIT_TERRAIN_TERRAINDATA_H_
 
 #include "AIFloat3.h"
 
@@ -50,4 +50,4 @@ private:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_TERRAINDATA_H_
+#endif // SRC_CIRCUIT_TERRAIN_TERRAINDATA_H_

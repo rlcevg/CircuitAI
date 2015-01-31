@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef UTILS_H_
-#define UTILS_H_
+#ifndef SRC_CIRCUIT_UTIL_UTILS_H_
+#define SRC_CIRCUIT_UTIL_UTILS_H_
 
 #include <chrono>
 #include <thread>
@@ -138,4 +138,4 @@ static inline void sleep(int64_t seconds)
 
 } // namespace utils
 
-#endif // UTILS_H_
+#endif // SRC_CIRCUIT_UTIL_UTILS_H_

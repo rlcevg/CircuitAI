@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef SETUPDATA_H_
-#define SETUPDATA_H_
+#ifndef SRC_CIRCUIT_STATIC_SETUPDATA_H_
+#define SRC_CIRCUIT_STATIC_SETUPDATA_H_
 
 #include "Game/GameSetup.h"
 
@@ -52,4 +52,4 @@ private:
 
 } // namespace circuit
 
-#endif // SETUPDATA_H_
+#endif // SRC_CIRCUIT_STATIC_SETUPDATA_H_

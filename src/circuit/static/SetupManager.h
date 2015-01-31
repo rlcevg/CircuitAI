@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_SETUPMANAGER_H_
-#define SRC_CIRCUIT_SETUPMANAGER_H_
+#ifndef SRC_CIRCUIT_STATIC_SETUPMANAGER_H_
+#define SRC_CIRCUIT_STATIC_SETUPMANAGER_H_
 
 #include "AIFloat3.h"
 
@@ -44,4 +44,4 @@ private:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_SETUPMANAGER_H_
+#endif // SRC_CIRCUIT_STATIC_SETUPMANAGER_H_

@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_CIRCUITDEF_H_
-#define SRC_CIRCUIT_CIRCUITDEF_H_
+#ifndef SRC_CIRCUIT_UNIT_CIRCUITDEF_H_
+#define SRC_CIRCUIT_UNIT_CIRCUITDEF_H_
 
 #include <unordered_set>
 
@@ -40,4 +40,4 @@ private:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_CIRCUITDEF_H_
+#endif // SRC_CIRCUIT_UNIT_CIRCUITDEF_H_
