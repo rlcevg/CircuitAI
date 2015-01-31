@@ -278,63 +278,64 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 	IBuilderTask* task;
 	switch (type) {
 		case IBuilderTask::BuildType::FACTORY: {
-			task = new CBFactoryTask(circuit, priority, buildDef, position, type, cost, timeout);
+			task = new CBFactoryTask(circuit, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::NANO: {
-			task = new CBNanoTask(circuit, priority, buildDef, position, type, cost, timeout);
+			task = new CBNanoTask(circuit, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::STORE: {
-			task = new CBStoreTask(circuit, priority, buildDef, position, type, cost, timeout);
+			task = new CBStoreTask(circuit, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::PYLON: {
-			task = new CBPylonTask(circuit, priority, buildDef, position, type, cost, timeout);
+			task = new CBPylonTask(circuit, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::ENERGY: {
-			task = new CBEnergyTask(circuit, priority, buildDef, position, type, cost, timeout);
+			task = new CBEnergyTask(circuit, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::DEFENCE: {
-			task = new CBDefenceTask(circuit, priority, buildDef, position, type, cost, timeout);
+			task = new CBDefenceTask(circuit, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::BUNKER: {
-			task = new CBBunkerTask(circuit, priority, buildDef, position, type, cost, timeout);
+			task = new CBBunkerTask(circuit, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		default:
 		case IBuilderTask::BuildType::BIG_GUN: {
-			task = new CBBigGunTask(circuit, priority, buildDef, position, type, cost, timeout);
+			task = new CBBigGunTask(circuit, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::RADAR: {
-			task = new CBRadarTask(circuit, priority, buildDef, position, type, cost, timeout);
+			task = new CBRadarTask(circuit, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::MEX: {
-			task = new CBMexTask(circuit, priority, buildDef, position, type, cost, timeout);
+			task = new CBMexTask(circuit, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::TERRAFORM: {
 			// TODO: Re-evalute params
-			task = new CBTerraformTask(circuit, priority, buildDef, position, type, cost, timeout);
+			task = new CBTerraformTask(circuit, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::REPAIR: {
+			// TODO: Consider adding target param instead of using CBRepairTask::SetTarget
 			task = new CBRepairTask(circuit, priority, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::RECLAIM: {
 			// TODO: Re-evalute params
-			task = new CBReclaimTask(circuit, priority, buildDef, position, type, cost, timeout);
+			task = new CBReclaimTask(circuit, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::PATROL: {
 			// TODO: Re-evalute params
-			task = new CBPatrolTask(circuit, priority, buildDef, position, type, cost, timeout);
+			task = new CBPatrolTask(circuit, priority, buildDef, position, cost, timeout);
 			break;
 		}
 	}
@@ -427,190 +428,6 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 
 	task->AssignTo(unit);
 }
-
-//void CBuilderManager::ExecuteTask(CCircuitUnit* unit)
-//{
-//	IBuilderTask* task = static_cast<IBuilderTask*>(unit->GetTask());
-//	Unit* u = unit->GetUnit();
-//
-//	auto findFacing = [this](UnitDef* buildDef, const AIFloat3& position) {
-//		int facing = UNIT_COMMAND_BUILD_NO_FACING;
-//		CTerrainManager* terrain = circuit->GetTerrainManager();
-//		float terWidth = terrain->GetTerrainWidth();
-//		float terHeight = terrain->GetTerrainHeight();
-//		if (math::fabs(terWidth - 2 * position.x) > math::fabs(terHeight - 2 * position.z)) {
-//			facing = (2 * position.x > terWidth) ? UNIT_FACING_WEST : UNIT_FACING_EAST;
-//		} else {
-//			facing = (2 * position.z > terHeight) ? UNIT_FACING_NORTH : UNIT_FACING_SOUTH;
-//		}
-//		return facing;
-//	};
-//
-//	auto patrolFallback = [this, task, u](CCircuitUnit* unit) {
-//		DequeueTask(task);
-//
-//		std::vector<float> params;
-//		params.push_back(0.0f);
-//		u->ExecuteCustomCommand(CMD_PRIORITY, params);
-//
-//		AIFloat3 pos = u->GetPos();
-//		IBuilderTask* taskNew = EnqueueTask(IBuilderTask::Priority::LOW, pos, IBuilderTask::BuildType::PATROL, FRAMES_PER_SEC * 20);
-//		taskNew->AssignTo(unit);
-//
-//		const float size = SQUARE_SIZE * 10;
-//		CTerrainManager* terrain = circuit->GetTerrainManager();
-//		pos.x += (pos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
-//		pos.z += (pos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
-//		u->PatrolTo(pos);
-//
-//		assistants.insert(unit);
-//	};
-//
-//	std::vector<float> params;
-//	params.push_back(static_cast<float>(task->GetPriority()));
-//	u->ExecuteCustomCommand(CMD_PRIORITY, params);
-//
-//	IBuilderTask::BuildType type = task->GetBuildType();
-//	switch (type) {
-//		default: {
-//			CCircuitUnit* target = task->GetTarget();
-//			if (target != nullptr) {
-//				Unit* tu = target->GetUnit();
-//				u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
-//				break;
-//			}
-//			int facing = UNIT_COMMAND_BUILD_NO_FACING;
-//			UnitDef* buildDef = task->GetBuildDef();
-//			AIFloat3 buildPos = task->GetBuildPos();
-//			if (buildPos != -RgtVector) {
-//				facing = findFacing(buildDef, buildPos);
-//				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
-//					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
-//					break;
-//				} else {
-//					circuit->GetTerrainManager()->RemoveBlocker(buildDef, buildPos, facing);
-//				}
-//			}
-//
-//			bool valid = false;
-//			switch (type) {
-//				case IBuilderTask::BuildType::PYLON: {
-//					buildPos = circuit->GetEconomyManager()->FindBuildPos(unit);
-//					valid = (buildPos != -RgtVector);
-//					break;
-//				}
-//				case IBuilderTask::BuildType::NANO: {
-//					const AIFloat3& position = task->GetPos();
-//					float searchRadius = buildDef->GetBuildDistance();
-//					facing = findFacing(buildDef, position);
-//					CTerrainManager* terrain = circuit->GetTerrainManager();
-//					buildPos = terrain->FindBuildSite(buildDef, position, searchRadius, facing);
-//					if (buildPos == -RgtVector) {
-//						// TODO: Replace FindNearestSpots with FindNearestClusters
-//						const CMetalData::Metals& spots =  circuit->GetMetalManager()->GetSpots();
-//						CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestSpots(position, 3);
-//						for (const int idx : indices) {
-//							facing = findFacing(buildDef, spots[idx].position);
-//							buildPos = terrain->FindBuildSite(buildDef, spots[idx].position, searchRadius, facing);
-//							if (buildPos != -RgtVector) {
-//								break;
-//							}
-//						}
-//					}
-//					valid = (buildPos != -RgtVector);
-//					break;
-//				}
-//				default: {
-//					const AIFloat3& position = task->GetPos();
-//					float searchRadius = 100.0f * SQUARE_SIZE;
-//					facing = findFacing(buildDef, position);
-//					CTerrainManager* terrain = circuit->GetTerrainManager();
-//					buildPos = terrain->FindBuildSite(buildDef, position, searchRadius, facing);
-//					if (buildPos == -RgtVector) {
-//						// TODO: Replace FindNearestSpots with FindNearestClusters
-//						const CMetalData::Metals& spots =  circuit->GetMetalManager()->GetSpots();
-//						CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestSpots(position, 3);
-//						for (const int idx : indices) {
-//							facing = findFacing(buildDef, spots[idx].position);
-//							buildPos = terrain->FindBuildSite(buildDef, spots[idx].position, searchRadius, facing);
-//							if (buildPos != -RgtVector) {
-//								break;
-//							}
-//						}
-//					}
-//					valid = (buildPos != -RgtVector);
-//					break;
-//				}
-//			}
-//
-//			if (valid) {
-//				task->SetBuildPos(buildPos);
-//				task->SetFacing(facing);
-//				circuit->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);
-//				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
-//			} else {
-//				// Fallback to Guard/Assist/Patrol
-//				patrolFallback(unit);
-//			}
-//			break;
-//		}
-//		case IBuilderTask::BuildType::MEX: {
-//			CCircuitUnit* target = task->GetTarget();
-//			if (target != nullptr) {
-//				Unit* tu = target->GetUnit();
-//				u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
-//				break;
-//			}
-//			int facing = UNIT_COMMAND_BUILD_NO_FACING;
-//			UnitDef* buildDef = task->GetBuildDef();
-//			AIFloat3 buildPos = task->GetBuildPos();
-//			if (buildPos != -RgtVector) {
-//				if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
-//					u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
-//					break;
-//				} else {
-//					circuit->GetMetalManager()->SetOpenSpot(buildPos, true);
-//				}
-//			}
-//
-//			buildPos = circuit->GetEconomyManager()->FindBuildPos(unit);
-//			if (buildPos != -RgtVector) {
-//				task->SetBuildPos(buildPos);
-//				circuit->GetMetalManager()->SetOpenSpot(buildPos, false);
-//				u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
-//			} else {
-//				// Fallback to Guard/Assist/Patrol
-//				patrolFallback(unit);
-//			}
-//			break;
-//		}
-//		case IBuilderTask::BuildType::REPAIR: {
-//			CCircuitUnit* target = task->GetTarget();
-//			if (target == nullptr) {
-//				target = FindUnitToAssist(unit);
-//				if (target == nullptr) {
-//					patrolFallback(unit);
-//					break;
-//				}
-//			}
-//			unit->GetUnit()->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
-//			break;
-//		}
-//		case IBuilderTask::BuildType::RECLAIM: {
-//			CTerrainManager* terrain = circuit->GetTerrainManager();
-//			float width = terrain->GetTerrainWidth() / 2;
-//			float height = terrain->GetTerrainHeight() / 2;
-//			AIFloat3 pos(width, 0, height);
-//			float radius = sqrtf(width * width + height * height);
-//			unit->GetUnit()->ReclaimInArea(pos, radius, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
-//			auto search = assistants.find(unit);
-//			if (search == assistants.end()) {
-//				assistants.insert(unit);
-//			}
-//			break;
-//		}
-//	}
-//}
 
 void CBuilderManager::AbortTask(IUnitTask* task)
 {

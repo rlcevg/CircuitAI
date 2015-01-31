@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef BUILDERTASK_H_
-#define BUILDERTASK_H_
+#ifndef SRC_CIRCUIT_TASK_BUILDER_BUILDERTASK_H_
+#define SRC_CIRCUIT_TASK_BUILDER_BUILDERTASK_H_
 
 #include "task/UnitTask.h"
 
@@ -21,18 +21,6 @@ namespace circuit {
 
 class IBuilderTask: public IUnitTask {
 public:
-//	enum class BuildType: int {
-//		FACTORY = 0, NANO,  // Production group
-//		STORE,
-//		PYLON,
-//		SOLAR, FUSION, SINGU, GEO,  // Energy group
-//		DEFENDER, LOTUS, RAVE,  // Requires no energy
-//		DDM, ANNI,  // Requires energy
-//		RADAR,
-//		MEX,
-//		TERRAFORM, REPAIR, RECLAIM, PATROL,  // Other builder actions
-//		TASKS_COUNT, DEFAULT = DEFENDER
-//	};
 	enum class BuildType: int {
 		FACTORY = 0,
 		NANO,
@@ -100,4 +88,4 @@ protected:
 
 } // namespace circuit
 
-#endif // BUILDERTASK_H_
+#endif // SRC_CIRCUIT_TASK_BUILDER_BUILDERTASK_H_

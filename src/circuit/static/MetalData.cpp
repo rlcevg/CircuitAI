@@ -18,8 +18,6 @@ using namespace springai;
 
 CMetalData::CMetalData() :
 		initialized(false),
-		pclusters(&clusters0),
-		pcentroids(&centroids0),
 		isClusterizing(false)
 {
 }
@@ -148,7 +146,7 @@ const CMetalData::MetalIndices CMetalData::FindWithinRangeSpots(const AIFloat3& 
 const int CMetalData::FindNearestCluster(const AIFloat3& pos) const
 {
 	std::vector<MetalNode> result_n;
-	pclusterTree.load()->query(bgi::nearest(point(pos.x, pos.z), 1), std::back_inserter(result_n));
+	clusterTree.query(bgi::nearest(point(pos.x, pos.z), 1), std::back_inserter(result_n));
 
 	if (!result_n.empty()) {
 		return result_n.front().second;
@@ -159,7 +157,7 @@ const int CMetalData::FindNearestCluster(const AIFloat3& pos) const
 const int CMetalData::FindNearestCluster(const AIFloat3& pos, MetalPredicate& predicate) const
 {
 	std::vector<MetalNode> result_n;
-	pclusterTree.load()->query(bgi::nearest(point(pos.x, pos.z), 1) && bgi::satisfies(predicate), std::back_inserter(result_n));
+	clusterTree.query(bgi::nearest(point(pos.x, pos.z), 1) && bgi::satisfies(predicate), std::back_inserter(result_n));
 
 	if (!result_n.empty()) {
 		return result_n.front().second;
@@ -170,7 +168,7 @@ const int CMetalData::FindNearestCluster(const AIFloat3& pos, MetalPredicate& pr
 const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& pos, int num) const
 {
 	std::vector<MetalNode> result_n;
-	pclusterTree.load()->query(bgi::nearest(point(pos.x, pos.z), num), std::back_inserter(result_n));
+	clusterTree.query(bgi::nearest(point(pos.x, pos.z), num), std::back_inserter(result_n));
 
 	MetalIndices result;
 	for (auto& node : result_n) {
@@ -182,7 +180,7 @@ const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& p
 const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& pos, int num, MetalPredicate& predicate) const
 {
 	std::vector<MetalNode> result_n;
-	pclusterTree.load()->query(bgi::nearest(point(pos.x, pos.z), num) && bgi::satisfies(predicate), std::back_inserter(result_n));
+	clusterTree.query(bgi::nearest(point(pos.x, pos.z), num) && bgi::satisfies(predicate), std::back_inserter(result_n));
 
 	MetalIndices result;
 	for (auto& node : result_n) {
@@ -191,29 +189,19 @@ const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& p
 	return result;
 }
 
-void CMetalData::ClusterLock()
-{
-	clusterMutex.lock();
-}
-
-void CMetalData::ClusterUnlock()
-{
-	clusterMutex.unlock();
-}
-
 const std::vector<CMetalData::MetalIndices>& CMetalData::GetClusters() const
 {
-	return *pclusters.load();
+	return clusters;
 }
 
-const std::vector<AIFloat3>& CMetalData::GetCentroids() const
+const std::vector<AIFloat3>& CMetalData::GetGeoCentroids() const
 {
-	return *pcentroids.load();
+	return geoCentroids;
 }
 
-const std::vector<AIFloat3>& CMetalData::GetCostCentroids() const
+const std::vector<AIFloat3>& CMetalData::GetWeightCentroids() const
 {
-	return *pcostCentroids.load();
+	return weightCentroids;
 }
 
 void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distMatrix)
@@ -285,14 +273,10 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 		return pos;
 	};
 
-	std::vector<MetalIndices>& clusters = (pclusters == &clusters0) ? clusters1 : clusters0;
-	std::vector<AIFloat3>& centroids = (pcentroids == &centroids0) ? centroids1 : centroids0;
-	std::vector<AIFloat3>& costCentroids = (pcostCentroids == &costCentroids0) ? costCentroids1 : costCentroids0;
-	ClusterTree& clusterTree = (pclusterTree.load() == &clusterTree0) ? clusterTree1 : clusterTree0;
 	int nclusters = iclusters.size();
 	clusters.resize(nclusters);
-	centroids.resize(nclusters);
-	costCentroids.resize(nclusters);
+	geoCentroids.resize(nclusters);
+	weightCentroids.resize(nclusters);
 	clusterTree.clear();
 	for (int i = 0; i < nclusters; i++) {
 		clusters[i].clear();
@@ -302,19 +286,9 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 			centr += spots[iclusters[i][j]].position;
 		}
 		centr /= iclusters[i].size();
-		costCentroids[i] = centr;
-        clusterTree.insert(std::make_pair(point(centr.x, centr.z), i));
-        centroids[i] = findCentroid(clusters[i]);
-	}
-
-	{
-//		std::lock_guard<std::mutex> guard(clusterMutex);
-		clusterMutex.lock();
-		pclusters = &clusters;
-		pcentroids = &centroids;
-		pcostCentroids = &costCentroids;
-		pclusterTree = &clusterTree;
-		clusterMutex.unlock();
+		weightCentroids[i] = centr;
+		clusterTree.insert(std::make_pair(point(centr.x, centr.z), i));
+		geoCentroids[i] = findCentroid(clusters[i]);
 	}
 
 	isClusterizing = false;

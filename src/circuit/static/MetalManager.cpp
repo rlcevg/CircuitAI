@@ -204,34 +204,24 @@ const CMetalData::MetalIndices CMetalManager::FindNearestClusters(const AIFloat3
 	return metalData->FindNearestClusters(pos, num, predicate);
 }
 
-void CMetalManager::ClusterLock()
-{
-	metalData->ClusterLock();
-}
-
-void CMetalManager::ClusterUnlock()
-{
-	metalData->ClusterUnlock();
-}
-
 const std::vector<CMetalData::MetalIndices>& CMetalManager::GetClusters() const
 {
 	return metalData->GetClusters();
 }
 
-const std::vector<AIFloat3>& CMetalManager::GetCentroids() const
+const std::vector<AIFloat3>& CMetalManager::GetGeoCentroids() const
 {
-	return metalData->GetCentroids();
+	return metalData->GetGeoCentroids();
 }
 
-const std::vector<AIFloat3>& CMetalManager::GetCostCentroids() const
+const std::vector<AIFloat3>& CMetalManager::GetWeightCentroids() const
 {
-	return metalData->GetCostCentroids();
+	return metalData->GetWeightCentroids();
 }
 
 void CMetalManager::SetOpenSpot(int index, bool value)
 {
-	metalInfos[index].open = value;
+	metalInfos[index].isOpen = value;
 }
 
 void CMetalManager::SetOpenSpot(const springai::AIFloat3& pos, bool value)

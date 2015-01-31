@@ -213,11 +213,6 @@ void CMilitaryManager::AssignTask(CCircuitUnit* unit)
 
 }
 
-//void CMilitaryManager::ExecuteTask(CCircuitUnit* unit)
-//{
-//
-//}
-
 void CMilitaryManager::AbortTask(IUnitTask* task)
 {
 

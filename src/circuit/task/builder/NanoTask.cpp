@@ -24,7 +24,7 @@ using namespace springai;
 
 CBNanoTask::CBNanoTask(CCircuitAI* circuit, Priority priority,
 					   UnitDef* buildDef, const AIFloat3& position,
-					   BuildType type, float cost, int timeout) :
+					   float cost, int timeout) :
 		IBuilderTask(circuit, priority, buildDef, position, BuildType::NANO, cost, timeout)
 {
 }

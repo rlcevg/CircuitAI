@@ -282,16 +282,6 @@ void CFactoryManager::AssignTask(CCircuitUnit* unit)
 //	}
 }
 
-//void CFactoryManager::ExecuteTask(CCircuitUnit* unit)
-//{
-//	CArmyTask* task = static_cast<CArmyTask*>(unit->GetTask());
-//	Unit* u = unit->GetUnit();
-//	const AIFloat3& buildPos = u->GetPos();
-//
-//	UnitDef* buildDef = task->GetBuildDef();
-//	u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING);
-//}
-
 void CFactoryManager::AbortTask(IUnitTask* task)
 {
 

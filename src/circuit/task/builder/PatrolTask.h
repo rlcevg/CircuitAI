@@ -17,7 +17,7 @@ public:
 	// TODO: Re-evalute params
 	CBPatrolTask(CCircuitAI* circuit, Priority priority,
 				 springai::UnitDef* buildDef, const springai::AIFloat3& position,
-				 BuildType type, float cost, int timeout);
+				 float cost, int timeout);
 	virtual ~CBPatrolTask();
 
 	virtual void RemoveAssignee(CCircuitUnit* unit);

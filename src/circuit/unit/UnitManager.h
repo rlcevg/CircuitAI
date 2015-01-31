@@ -24,8 +24,6 @@ public:
 
 	virtual CCircuitAI* GetCircuit() = 0;
 	virtual void AssignTask(CCircuitUnit* unit) = 0;
-	// TODO: Remove
-//	virtual void ExecuteTask(CCircuitUnit* unit) = 0;
 	virtual void AbortTask(IUnitTask* task) = 0;
 	virtual void SpecialCleanUp(CCircuitUnit* unit) = 0;
 	virtual void SpecialProcess(CCircuitUnit* unit) = 0;

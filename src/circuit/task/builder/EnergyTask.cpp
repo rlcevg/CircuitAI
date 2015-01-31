@@ -14,7 +14,7 @@ using namespace springai;
 
 CBEnergyTask::CBEnergyTask(CCircuitAI* circuit, Priority priority,
 						   UnitDef* buildDef, const AIFloat3& position,
-						   BuildType type, float cost, int timeout) :
+						   float cost, int timeout) :
 		IBuilderTask(circuit, priority, buildDef, position, BuildType::ENERGY, cost, timeout)
 {
 }

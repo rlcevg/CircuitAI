@@ -16,7 +16,7 @@ class CBPylonTask: public IBuilderTask {
 public:
 	CBPylonTask(CCircuitAI* circuit, Priority priority,
 				springai::UnitDef* buildDef, const springai::AIFloat3& position,
-				BuildType type, float cost, int timeout);
+				float cost, int timeout);
 	virtual ~CBPylonTask();
 
 	virtual void Execute(CCircuitUnit* unit);

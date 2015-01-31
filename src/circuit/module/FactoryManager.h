@@ -38,7 +38,6 @@ public:
 							  float radius);
 	void DequeueTask(CRecruitTask* task);
 	virtual void AssignTask(CCircuitUnit* unit);
-//	virtual void ExecuteTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
 	virtual void SpecialCleanUp(CCircuitUnit* unit);
 	virtual void SpecialProcess(CCircuitUnit* unit);

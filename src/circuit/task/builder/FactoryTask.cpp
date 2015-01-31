@@ -13,8 +13,8 @@ namespace circuit {
 using namespace springai;
 
 CBFactoryTask::CBFactoryTask(CCircuitAI* circuit, Priority priority,
-						   UnitDef* buildDef, const AIFloat3& position,
-						   BuildType type, float cost, int timeout) :
+							 UnitDef* buildDef, const AIFloat3& position,
+							 float cost, int timeout) :
 		IBuilderTask(circuit, priority, buildDef, position, BuildType::FACTORY, cost, timeout)
 {
 }

@@ -53,11 +53,9 @@ public:
 	const CMetalData::MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num) const;
 	const CMetalData::MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num, CMetalData::MetalPredicate& predicate) const;
 
-	void ClusterLock();
-	void ClusterUnlock();
 	const std::vector<CMetalData::MetalIndices>& GetClusters() const;
-	const std::vector<springai::AIFloat3>& GetCentroids() const;
-	const std::vector<springai::AIFloat3>& GetCostCentroids() const;
+	const std::vector<springai::AIFloat3>& GetGeoCentroids() const;
+	const std::vector<springai::AIFloat3>& GetWeightCentroids() const;
 
 private:
 	CCircuitAI* circuit;
@@ -65,7 +63,7 @@ private:
 
 public:
 	struct MetalInfo {
-		bool open;
+		bool isOpen;
 	};
 	void SetOpenSpot(int index, bool value);
 	void SetOpenSpot(const springai::AIFloat3& pos, bool value);

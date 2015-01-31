@@ -15,7 +15,6 @@
 #include <boost/geometry/index/rtree.hpp>
 #include <vector>
 #include <atomic>
-#include <mutex>
 #include <memory>
 
 namespace circuit {
@@ -67,14 +66,12 @@ public:
 	const MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num) const;
 	const MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num, MetalPredicate& predicate) const;
 
-	void ClusterLock();
-	void ClusterUnlock();
 	const std::vector<MetalIndices>& GetClusters() const;
-	const std::vector<springai::AIFloat3>& GetCentroids() const;
-	const std::vector<springai::AIFloat3>& GetCostCentroids() const;
+	const std::vector<springai::AIFloat3>& GetGeoCentroids() const;
+	const std::vector<springai::AIFloat3>& GetWeightCentroids() const;
 
 	/*
-	 * Hierarchical clusterization. Not reusable. Metric: complete link
+	 * Hierarchical clusterization. Not reusable. Metric: complete link. Thread-unsafe
 	 */
 	void Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distmatrix);
 
@@ -92,23 +89,13 @@ private:
 	using MetalTree = bgi::rtree<MetalNode, bgi::rstar<16, 4>>;
 	MetalTree metalTree;
 
-	// Double buffer clusters as i don't want to copy vectors every time for safe use
-	std::vector<MetalIndices> clusters0;
-	std::vector<MetalIndices> clusters1;
-	std::atomic<std::vector<MetalIndices>*> pclusters;
-	std::vector<springai::AIFloat3> centroids0;
-	std::vector<springai::AIFloat3> centroids1;
-	std::atomic<std::vector<springai::AIFloat3>*> pcentroids;
-	std::vector<springai::AIFloat3> costCentroids0;
-	std::vector<springai::AIFloat3> costCentroids1;
-	std::atomic<std::vector<springai::AIFloat3>*> pcostCentroids;
+	std::vector<MetalIndices> clusters;
+	std::vector<springai::AIFloat3> geoCentroids;
+	std::vector<springai::AIFloat3> weightCentroids;
 	using ClusterTree = bgi::rtree<MetalNode, bgi::quadratic<16>>;
-	ClusterTree clusterTree0;
-	ClusterTree clusterTree1;
-	std::atomic<ClusterTree*> pclusterTree;
+	ClusterTree clusterTree;
 
 	std::atomic<bool> isClusterizing;
-	std::mutex clusterMutex;
 };
 
 } // namespace circuit

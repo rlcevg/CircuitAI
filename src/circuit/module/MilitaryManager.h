@@ -25,7 +25,6 @@ public:
 	virtual int EnemyEnterLOS(CCircuitUnit* unit);
 
 	virtual void AssignTask(CCircuitUnit* unit);
-//	virtual void ExecuteTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
 	virtual void SpecialCleanUp(CCircuitUnit* unit);
 	virtual void SpecialProcess(CCircuitUnit* unit);
