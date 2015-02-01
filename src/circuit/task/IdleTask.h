@@ -14,12 +14,12 @@ namespace circuit {
 
 class CIdleTask: public IUnitTask {
 public:
-	CIdleTask(CCircuitAI* circuit);
+	CIdleTask(ITaskManager* mgr);
 	virtual ~CIdleTask();
 
 	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
-	virtual void MarkCompleted();
+	virtual void Close(bool done);
 
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();

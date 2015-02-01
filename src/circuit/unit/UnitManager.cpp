@@ -6,35 +6,15 @@
  */
 
 #include "unit/UnitManager.h"
-#include "CircuitAI.h"
-#include "task/IdleTask.h"
-#include "task/RetreatTask.h"
 
 namespace circuit {
 
-IUnitManager::IUnitManager(CCircuitAI* circuit)
+IUnitManager::IUnitManager()
 {
-	idleTask = new CIdleTask(circuit);
-	retreatTask = new CRetreatTask(circuit);
 }
 
 IUnitManager::~IUnitManager()
 {
-	delete idleTask, retreatTask;
-}
-
-void IUnitManager::FallbackTask(CCircuitUnit* unit)
-{
-}
-
-CIdleTask* IUnitManager::GetIdleTask()
-{
-	return idleTask;
-}
-
-CRetreatTask* IUnitManager::GetRetreatTask()
-{
-	return retreatTask;
 }
 
 } // namespace circuit

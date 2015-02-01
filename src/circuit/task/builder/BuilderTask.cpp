@@ -7,9 +7,9 @@
 
 #include "task/builder/BuilderTask.h"
 #include "task/RetreatTask.h"
+#include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
-#include "unit/UnitManager.h"
 #include "unit/action/UnitAction.h"
 #include "static/MetalManager.h"
 #include "module/EconomyManager.h"
@@ -26,10 +26,10 @@ namespace circuit {
 
 using namespace springai;
 
-IBuilderTask::IBuilderTask(CCircuitAI* circuit, Priority priority,
+IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 		UnitDef* buildDef, const AIFloat3& position,
 		BuildType type, float cost, int timeout) :
-				IUnitTask(circuit, priority, Type::BUILDER),
+				IUnitTask(mgr, priority, Type::BUILDER),
 				buildDef(buildDef),
 				position(position),
 				buildType(type),
@@ -79,6 +79,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 		return;
 	}
+	CCircuitAI* circuit = manager->GetCircuit();
 	if (buildPos != -RgtVector) {
 		facing = FindFacing(buildDef, buildPos);
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
@@ -110,13 +111,14 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	} else {
 		// Fallback to Guard/Assist/Patrol
-		unit->GetManager()->FallbackTask(unit);
+		manager->FallbackTask(unit);
 	}
 }
 
 void IBuilderTask::Update()
 {
 	// tODO: Analyze nearby situation, maybe cancel this task
+	CCircuitAI* circuit = manager->GetCircuit();
 	for (auto unit : units) {
 		IUnitAction* action = static_cast<IUnitAction*>(unit->Begin());
 		if (action->GetType() == IUnitAction::Type::PRE_BUILD) {
@@ -143,7 +145,6 @@ void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 		return;
 	}
 
-	IUnitManager* manager = unit->GetManager();
 	if (target == nullptr) {
 		manager->AbortTask(this);
 	} else {
@@ -155,7 +156,7 @@ void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 
 void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
-	unit->GetManager()->AbortTask(this);
+	manager->AbortTask(this);
 }
 
 const AIFloat3& IBuilderTask::GetPos() const
@@ -227,7 +228,7 @@ int IBuilderTask::GetFacing()
 int IBuilderTask::FindFacing(springai::UnitDef* buildDef, const springai::AIFloat3& position)
 {
 	int facing = UNIT_COMMAND_BUILD_NO_FACING;
-	CTerrainManager* terrain = circuit->GetTerrainManager();
+	CTerrainManager* terrain = manager->GetCircuit()->GetTerrainManager();
 	float terWidth = terrain->GetTerrainWidth();
 	float terHeight = terrain->GetTerrainHeight();
 	if (math::fabs(terWidth - 2 * position.x) > math::fabs(terHeight - 2 * position.z)) {

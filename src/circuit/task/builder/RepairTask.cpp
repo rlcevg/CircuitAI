@@ -7,8 +7,8 @@
 
 #include "task/builder/RepairTask.h"
 #include "task/RetreatTask.h"
+#include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
-#include "unit/UnitManager.h"
 #include "module/EconomyManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -22,8 +22,8 @@ namespace circuit {
 
 using namespace springai;
 
-CBRepairTask::CBRepairTask(CCircuitAI* circuit, Priority priority, int timeout) :
-		IBuilderTask(circuit, priority, nullptr, -RgtVector, BuildType::REPAIR, 1000, timeout)
+CBRepairTask::CBRepairTask(ITaskManager* mgr, Priority priority, int timeout) :
+		IBuilderTask(mgr, priority, nullptr, -RgtVector, BuildType::REPAIR, 1000, timeout)
 {
 }
 
@@ -37,10 +37,10 @@ void CBRepairTask::Execute(CCircuitUnit* unit)
 	if (target == nullptr) {
 		target = FindUnitToAssist(unit);
 		if (target == nullptr) {
-			unit->GetManager()->FallbackTask(unit);
+			manager->FallbackTask(unit);
 			return;
 		}
-		cost = target->GetDef()->GetCost(circuit->GetEconomyManager()->GetMetalRes());
+		cost = target->GetDef()->GetCost(manager->GetCircuit()->GetEconomyManager()->GetMetalRes());
 	}
 
 	Unit* u = unit->GetUnit();
@@ -64,7 +64,7 @@ void CBRepairTask::OnUnitIdle(CCircuitUnit* unit)
 		RemoveAssignee(unit);
 	} else {
 		// task finished
-		unit->GetManager()->AbortTask(this);
+		manager->DoneTask(this);
 	}
 }
 
@@ -78,14 +78,14 @@ void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 
 	RemoveAssignee(unit);
 
-	unit->GetManager()->GetRetreatTask()->AssignTo(unit);
+	manager->GetRetreatTask()->AssignTo(unit);
 }
 
 void CBRepairTask::SetTarget(CCircuitUnit* unit)
 {
 	target = unit;
 	if (unit != nullptr) {
-		cost = unit->GetDef()->GetCost(circuit->GetEconomyManager()->GetMetalRes());
+		cost = unit->GetDef()->GetCost(manager->GetCircuit()->GetEconomyManager()->GetMetalRes());
 		position = buildPos = unit->GetUnit()->GetPos();
 	} else {
 		cost = 1000;
@@ -100,6 +100,7 @@ CCircuitUnit* CBRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 	const AIFloat3& pos = su->GetPos();
 	float maxSpeed = su->GetMaxSpeed();
 	float radius = unit->GetDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 30;
+	CCircuitAI* circuit = manager->GetCircuit();
 	circuit->UpdateAllyUnits();
 	std::vector<Unit*> units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
 	for (auto u : units) {

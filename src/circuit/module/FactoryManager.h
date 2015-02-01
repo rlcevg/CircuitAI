@@ -36,9 +36,13 @@ public:
 							  CRecruitTask::FacType type,
 							  int quantity,
 							  float radius);
-	void DequeueTask(CRecruitTask* task);
+private:
+	void DequeueTask(CRecruitTask* task, bool done = false);
+
+public:
 	virtual void AssignTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
+	virtual void DoneTask(IUnitTask* task);
 	virtual void SpecialCleanUp(CCircuitUnit* unit);
 	virtual void SpecialProcess(CCircuitUnit* unit);
 	virtual void FallbackTask(CCircuitUnit* unit);
@@ -63,6 +67,7 @@ private:
 	std::map<CRecruitTask*, std::list<CCircuitUnit*>> unfinishedTasks;
 	std::list<CRecruitTask*> factoryTasks;  // owner
 	float factoryPower;
+	std::set<CRecruitTask*> deleteTasks;
 
 	std::map<CCircuitUnit*, std::list<CCircuitUnit*>> factories;
 	springai::UnitDef* assistDef;

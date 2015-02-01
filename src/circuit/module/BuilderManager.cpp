@@ -166,7 +166,7 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 			}
 		}
 	} else {
-		DequeueTask(taskB);
+		DoneTask(taskB);
 	}
 
 	return 0; //signaling: OK
@@ -176,7 +176,7 @@ int CBuilderManager::UnitFinished(CCircuitUnit* unit)
 {
 	auto iter = unfinishedUnits.find(unit);
 	if (iter != unfinishedUnits.end()) {
-		DequeueTask(iter->second);
+		DoneTask(iter->second);
 	}
 
 	auto search = finishedHandler.find(unit->GetDef()->GetUnitDefId());
@@ -278,64 +278,64 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 	IBuilderTask* task;
 	switch (type) {
 		case IBuilderTask::BuildType::FACTORY: {
-			task = new CBFactoryTask(circuit, priority, buildDef, position, cost, timeout);
+			task = new CBFactoryTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::NANO: {
-			task = new CBNanoTask(circuit, priority, buildDef, position, cost, timeout);
+			task = new CBNanoTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::STORE: {
-			task = new CBStoreTask(circuit, priority, buildDef, position, cost, timeout);
+			task = new CBStoreTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::PYLON: {
-			task = new CBPylonTask(circuit, priority, buildDef, position, cost, timeout);
+			task = new CBPylonTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::ENERGY: {
-			task = new CBEnergyTask(circuit, priority, buildDef, position, cost, timeout);
+			task = new CBEnergyTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::DEFENCE: {
-			task = new CBDefenceTask(circuit, priority, buildDef, position, cost, timeout);
+			task = new CBDefenceTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::BUNKER: {
-			task = new CBBunkerTask(circuit, priority, buildDef, position, cost, timeout);
+			task = new CBBunkerTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		default:
 		case IBuilderTask::BuildType::BIG_GUN: {
-			task = new CBBigGunTask(circuit, priority, buildDef, position, cost, timeout);
+			task = new CBBigGunTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::RADAR: {
-			task = new CBRadarTask(circuit, priority, buildDef, position, cost, timeout);
+			task = new CBRadarTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::MEX: {
-			task = new CBMexTask(circuit, priority, buildDef, position, cost, timeout);
+			task = new CBMexTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::TERRAFORM: {
 			// TODO: Re-evalute params
-			task = new CBTerraformTask(circuit, priority, buildDef, position, cost, timeout);
+			task = new CBTerraformTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::REPAIR: {
 			// TODO: Consider adding target param instead of using CBRepairTask::SetTarget
-			task = new CBRepairTask(circuit, priority, timeout);
+			task = new CBRepairTask(this, priority, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::RECLAIM: {
 			// TODO: Re-evalute params
-			task = new CBReclaimTask(circuit, priority, buildDef, position, cost, timeout);
+			task = new CBReclaimTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::PATROL: {
 			// TODO: Re-evalute params
-			task = new CBPatrolTask(circuit, priority, buildDef, position, cost, timeout);
+			task = new CBPatrolTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 	}
@@ -346,16 +346,16 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 	return task;
 }
 
-void CBuilderManager::DequeueTask(IBuilderTask* task)
+void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
 {
 	std::set<IBuilderTask*>& tasks = builderTasks[static_cast<int>(task->GetBuildType())];
 	auto it = tasks.find(task);
 	if (it != tasks.end()) {
 		unfinishedUnits.erase(task->GetTarget());
-		task->MarkCompleted();
+		task->Close(done);
 		tasks.erase(it);
 		updateTasks.erase(task);
-		delete task;
+		deleteTasks.insert(task);
 		builderTasksCount--;
 	}
 }
@@ -444,6 +444,11 @@ void CBuilderManager::AbortTask(IUnitTask* task)
 	DequeueTask(taskB);
 }
 
+void CBuilderManager::DoneTask(IUnitTask* task)
+{
+	DequeueTask(static_cast<IBuilderTask*>(task), true);
+}
+
 void CBuilderManager::SpecialCleanUp(CCircuitUnit* unit)
 {
 	assistants.erase(unit);
@@ -511,7 +516,7 @@ void CBuilderManager::Watchdog()
 			switch (task->GetBuildType()) {
 				case IBuilderTask::BuildType::PATROL:
 				case IBuilderTask::BuildType::RECLAIM: {
-					DequeueTask(task);
+					DoneTask(task);
 					break;
 				}
 			}
@@ -546,6 +551,12 @@ void CBuilderManager::Watchdog()
 			unfinishedUnits[unit] = task;
 		}
 	}
+
+	// scheduled task deletion
+	for (auto task : deleteTasks) {
+		delete task;
+	}
+	deleteTasks.clear();
 }
 
 void CBuilderManager::UpdateIdle()

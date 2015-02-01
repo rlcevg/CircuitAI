@@ -115,15 +115,23 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	 */
 	// ZK doesn't use unitDef's extractsMetal/metalMake, but has customParams::ismex = 1. Anyway there is only 1 mex type.
 	mexDef = circuit->GetUnitDefByName("cormex");
-	// Also there is no reliable way to identify ZK energy makers.
+
 //	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
 //	for (auto& kv : defs) {
 //		UnitDef* def = kv.second;
-//		if (def->GetResourceMake(energyRes) > 0) {
-//			energyDefs.push_back(def);
+//		if (def->GetSpeed() <= 0) {
+//			float make = def->GetResourceMake(energyRes);
+//			float use = def->GetUpkeep(energyRes);
+//			if ((make > 0) || (use < 0)) {
+//				Energy engy;
+//				engy.def = def;
+//				engy.make = (make > 0) ? make : -use;
+//				engy.cost = def->GetCost(metalRes);
+//				energyDefs.push_back(engy);
+//			}
 //		}
 //	}
-	float energyMake;
+
 	Energy engy;
 
 	engy.def = circuit->GetUnitDefByName("armsolar");
@@ -371,8 +379,6 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position)
 				const AIFloat3& pos = spots[index].position;
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost);
 				task->SetBuildPos(pos);
-				// TODO: Make separate defence task updater?
-				builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, circuit->GetUnitDefByName("corrl"), pos, IBuilderTask::BuildType::DEFENCE);
 				return task;
 			}
 		}
@@ -400,7 +406,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position)
 		float cost;
 		float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome * 0.5);
 		const std::set<IBuilderTask*>& tasks = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY);
-		for (auto& engy : energyDefs) {
+		for (auto& engy : energyDefs) {  // sorted by high-tech first
 			if (!circuit->IsAvailable(engy.def)) {
 				continue;
 			}
@@ -444,7 +450,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position)
 				buildPos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 			}
 
-			task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, cost);
+			task = builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, cost);
 			return task;
 		}
 	}

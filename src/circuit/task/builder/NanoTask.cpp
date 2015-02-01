@@ -6,8 +6,8 @@
  */
 
 #include "task/builder/NanoTask.h"
+#include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
-#include "unit/UnitManager.h"
 #include "static/MetalManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
@@ -22,10 +22,10 @@ namespace circuit {
 
 using namespace springai;
 
-CBNanoTask::CBNanoTask(CCircuitAI* circuit, Priority priority,
+CBNanoTask::CBNanoTask(ITaskManager* mgr, Priority priority,
 					   UnitDef* buildDef, const AIFloat3& position,
 					   float cost, int timeout) :
-		IBuilderTask(circuit, priority, buildDef, position, BuildType::NANO, cost, timeout)
+		IBuilderTask(mgr, priority, buildDef, position, BuildType::NANO, cost, timeout)
 {
 }
 
@@ -47,6 +47,7 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 		u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 		return;
 	}
+	CCircuitAI* circuit = manager->GetCircuit();
 	if (buildPos != -RgtVector) {
 		facing = FindFacing(buildDef, buildPos);
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
@@ -78,7 +79,7 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 		u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	} else {
 		// Fallback to Guard/Assist/Patrol
-		unit->GetManager()->FallbackTask(unit);
+		manager->FallbackTask(unit);
 	}
 }
 

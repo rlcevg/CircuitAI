@@ -11,7 +11,8 @@ namespace circuit {
 
 IUnitModule::IUnitModule(CCircuitAI* circuit) :
 		IModule(circuit),
-		IUnitManager(circuit)
+		IUnitManager(),
+		ITaskManager()
 {
 }
 

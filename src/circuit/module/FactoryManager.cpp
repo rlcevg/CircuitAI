@@ -180,7 +180,7 @@ int CFactoryManager::UnitFinished(CCircuitUnit* unit)
 		if (task != nullptr) {
 			task->Progress();
 			if (task->IsDone()) {
-				DequeueTask(task);
+				DoneTask(task);
 			} else {
 				unfinishedTasks[task].remove(unit);
 			}
@@ -239,21 +239,21 @@ CRecruitTask* CFactoryManager::EnqueueTask(CRecruitTask::Priority priority,
 										   int quantity,
 										   float radius)
 {
-	CRecruitTask* task = new CRecruitTask(circuit, priority, buildDef, position, type, quantity, radius);
+	CRecruitTask* task = new CRecruitTask(this, priority, buildDef, position, type, quantity, radius);
 	factoryTasks.push_front(task);
 	return task;
 }
 
-void CFactoryManager::DequeueTask(CRecruitTask* task)
+void CFactoryManager::DequeueTask(CRecruitTask* task, bool done)
 {
 	std::list<CCircuitUnit*>& units = unfinishedTasks[task];
-	task->MarkCompleted();
+	task->Close(done);
 	factoryTasks.remove(task);
 	for (auto u : units) {
 		unfinishedUnits[u] = nullptr;
 	}
 	unfinishedTasks.erase(task);
-	delete task;
+	deleteTasks.insert(task);
 }
 
 void CFactoryManager::AssignTask(CCircuitUnit* unit)
@@ -284,22 +284,24 @@ void CFactoryManager::AssignTask(CCircuitUnit* unit)
 
 void CFactoryManager::AbortTask(IUnitTask* task)
 {
+	DequeueTask(static_cast<CRecruitTask*>(task));
+}
 
+void CFactoryManager::DoneTask(IUnitTask* task)
+{
+	DequeueTask(static_cast<CRecruitTask*>(task), true);
 }
 
 void CFactoryManager::SpecialCleanUp(CCircuitUnit* unit)
 {
-
 }
 
 void CFactoryManager::SpecialProcess(CCircuitUnit* unit)
 {
-
 }
 
 void CFactoryManager::FallbackTask(CCircuitUnit* unit)
 {
-
 }
 
 float CFactoryManager::GetFactoryPower()
@@ -368,6 +370,12 @@ void CFactoryManager::Watchdog()
 		}
 		utils::free_clear(commands);
 	}
+
+	// scheduled task deletion
+	for (auto task : deleteTasks) {
+		delete task;
+	}
+	deleteTasks.clear();
 }
 
 void CFactoryManager::UpdateIdle()

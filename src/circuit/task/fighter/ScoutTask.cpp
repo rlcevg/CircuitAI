@@ -10,8 +10,8 @@
 
 namespace circuit {
 
-CScoutTask::CScoutTask(CCircuitAI* circuit) :
-		IUnitTask(circuit, Priority::NORMAL, Type::SCOUT)
+CScoutTask::CScoutTask(ITaskManager* mgr) :
+		IUnitTask(mgr, Priority::NORMAL, Type::SCOUT)
 {
 }
 

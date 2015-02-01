@@ -14,7 +14,7 @@ namespace circuit {
 
 class CBStoreTask: public IBuilderTask {
 public:
-	CBStoreTask(CCircuitAI* circuit, Priority priority,
+	CBStoreTask(ITaskManager* mgr, Priority priority,
 				springai::UnitDef* buildDef, const springai::AIFloat3& position,
 				float cost, int timeout);
 	virtual ~CBStoreTask();

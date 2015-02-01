@@ -14,7 +14,7 @@ namespace circuit {
 
 class CBBigGunTask: public IBuilderTask {
 public:
-	CBBigGunTask(CCircuitAI* circuit, Priority priority,
+	CBBigGunTask(ITaskManager* mgr, Priority priority,
 				 springai::UnitDef* buildDef, const springai::AIFloat3& position,
 				 float cost, int timeout);
 	virtual ~CBBigGunTask();

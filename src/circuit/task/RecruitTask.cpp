@@ -7,7 +7,6 @@
 
 #include "task/RecruitTask.h"
 #include "unit/CircuitUnit.h"
-#include "unit/UnitManager.h"
 #include "util/utils.h"
 
 #include "AISCommands.h"
@@ -17,10 +16,10 @@ namespace circuit {
 
 using namespace springai;
 
-CRecruitTask::CRecruitTask(CCircuitAI* circuit, Priority priority,
+CRecruitTask::CRecruitTask(ITaskManager* mgr, Priority priority,
 		UnitDef* buildDef, const AIFloat3& position,
 		FacType type, int quantity, float radius) :
-				IUnitTask(circuit, priority, Type::FACTORY),
+				IUnitTask(mgr, priority, Type::FACTORY),
 				buildDef(buildDef),
 				position(position),
 				facType(type),

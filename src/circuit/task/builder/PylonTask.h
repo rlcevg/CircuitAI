@@ -14,7 +14,7 @@ namespace circuit {
 
 class CBPylonTask: public IBuilderTask {
 public:
-	CBPylonTask(CCircuitAI* circuit, Priority priority,
+	CBPylonTask(ITaskManager* mgr, Priority priority,
 				springai::UnitDef* buildDef, const springai::AIFloat3& position,
 				float cost, int timeout);
 	virtual ~CBPylonTask();

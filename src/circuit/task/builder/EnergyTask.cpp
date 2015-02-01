@@ -12,10 +12,10 @@ namespace circuit {
 
 using namespace springai;
 
-CBEnergyTask::CBEnergyTask(CCircuitAI* circuit, Priority priority,
+CBEnergyTask::CBEnergyTask(ITaskManager* mgr, Priority priority,
 						   UnitDef* buildDef, const AIFloat3& position,
 						   float cost, int timeout) :
-		IBuilderTask(circuit, priority, buildDef, position, BuildType::ENERGY, cost, timeout)
+		IBuilderTask(mgr, priority, buildDef, position, BuildType::ENERGY, cost, timeout)
 {
 }
 

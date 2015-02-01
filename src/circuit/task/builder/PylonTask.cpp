@@ -6,8 +6,8 @@
  */
 
 #include "task/builder/PylonTask.h"
+#include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
-#include "unit/UnitManager.h"
 #include "module/EconomyManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
@@ -21,10 +21,10 @@ namespace circuit {
 
 using namespace springai;
 
-CBPylonTask::CBPylonTask(CCircuitAI* circuit, Priority priority,
+CBPylonTask::CBPylonTask(ITaskManager* mgr, Priority priority,
 						 UnitDef* buildDef, const AIFloat3& position,
 						 float cost, int timeout) :
-		IBuilderTask(circuit, priority, buildDef, position, BuildType::PYLON, cost, timeout)
+		IBuilderTask(mgr, priority, buildDef, position, BuildType::PYLON, cost, timeout)
 {
 }
 
@@ -46,6 +46,7 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 		u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 		return;
 	}
+	CCircuitAI* circuit = manager->GetCircuit();
 	if (buildPos != -RgtVector) {
 		facing = FindFacing(buildDef, buildPos);
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
@@ -63,7 +64,7 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 		u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	} else {
 		// Fallback to Guard/Assist/Patrol
-		unit->GetManager()->FallbackTask(unit);
+		manager->FallbackTask(unit);
 	}
 }
 

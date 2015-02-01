@@ -15,7 +15,7 @@
 namespace circuit {
 
 class CCircuitUnit;
-class CCircuitAI;
+class ITaskManager;
 
 class IUnitTask {  // CSquad, IAction
 public:
@@ -23,17 +23,18 @@ public:
 	enum class Type: char {IDLE, RETREAT, BUILDER, FACTORY, ATTACK, SCOUT};
 
 protected:
-	IUnitTask(CCircuitAI* circuit, Priority priority, Type type);
+	IUnitTask(ITaskManager* mgr, Priority priority, Type type);
 public:
 	virtual ~IUnitTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit);
 	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
-	virtual void MarkCompleted();
+	virtual void Close(bool done);
 
 	virtual void Execute(CCircuitUnit* unit) = 0;  // <=> IAction::OnStart()
 	virtual void Update() = 0;
+	virtual void Finish();  // <=> IAction::OnEnd()
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) = 0;
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker) = 0;
@@ -44,7 +45,7 @@ public:
 	Type GetType();
 
 protected:
-	CCircuitAI* circuit;
+	ITaskManager* manager;
 	std::set<CCircuitUnit*> units;
 	Priority priority;
 	Type type;

@@ -38,7 +38,7 @@ public:
 	};
 
 protected:
-	IBuilderTask(CCircuitAI* circuit, Priority priority,
+	IBuilderTask(ITaskManager* mgr, Priority priority,
 				 springai::UnitDef* buildDef, const springai::AIFloat3& position,
 				 BuildType type, float cost, int timeout = 0);
 public:

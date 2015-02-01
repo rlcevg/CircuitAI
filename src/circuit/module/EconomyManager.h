@@ -42,7 +42,6 @@ public:
 	springai::UnitDef* GetMexDef() const;
 	springai::AIFloat3 FindBuildPos(CCircuitUnit* unit);
 
-
 private:
 	void Init();
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position);

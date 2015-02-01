@@ -10,31 +10,15 @@
 
 namespace circuit {
 
-class CCircuitUnit;
 class CCircuitAI;
-class IUnitTask;
-class CIdleTask;
-class CRetreatTask;
 
 class IUnitManager {
 protected:
-	IUnitManager(CCircuitAI* circuit);
+	IUnitManager();
 public:
 	virtual ~IUnitManager();
 
 	virtual CCircuitAI* GetCircuit() = 0;
-	virtual void AssignTask(CCircuitUnit* unit) = 0;
-	virtual void AbortTask(IUnitTask* task) = 0;
-	virtual void SpecialCleanUp(CCircuitUnit* unit) = 0;
-	virtual void SpecialProcess(CCircuitUnit* unit) = 0;
-	virtual void FallbackTask(CCircuitUnit* unit) = 0;
-
-	CIdleTask* GetIdleTask();
-	CRetreatTask* GetRetreatTask();
-
-protected:
-	CIdleTask* idleTask;
-	CRetreatTask* retreatTask;
 };
 
 } // namespace circuit

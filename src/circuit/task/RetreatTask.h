@@ -14,7 +14,7 @@ namespace circuit {
 
 class CRetreatTask: public IUnitTask {
 public:
-	CRetreatTask(CCircuitAI* circuit);
+	CRetreatTask(ITaskManager* mgr);
 	virtual ~CRetreatTask();
 
 	virtual void AssignTo(CCircuitUnit* unit);

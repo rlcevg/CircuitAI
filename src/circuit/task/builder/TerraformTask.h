@@ -15,7 +15,7 @@ namespace circuit {
 class CBTerraformTask: public IBuilderTask {
 public:
 	// TODO: Re-evalute params
-	CBTerraformTask(CCircuitAI* circuit, Priority priority,
+	CBTerraformTask(ITaskManager* mgr, Priority priority,
 					springai::UnitDef* buildDef, const springai::AIFloat3& position,
 					float cost, int timeout);
 	virtual ~CBTerraformTask();

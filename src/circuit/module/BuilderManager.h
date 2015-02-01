@@ -55,10 +55,12 @@ private:
 						  IBuilderTask::BuildType type,
 						  float cost,
 						  int timeout);
+	void DequeueTask(IBuilderTask* task, bool done = false);
+
 public:
-	void DequeueTask(IBuilderTask* task);
 	virtual void AssignTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
+	virtual void DoneTask(IUnitTask* task);
 	virtual void SpecialCleanUp(CCircuitUnit* unit);
 	virtual void SpecialProcess(CCircuitUnit* unit);
 	virtual void FallbackTask(CCircuitUnit* unit);
@@ -80,6 +82,7 @@ private:
 	int builderTasksCount;
 	float builderPower;
 	std::set<IBuilderTask*> updateTasks;  // temporary tasks holder to keep updating every task
+	std::set<IBuilderTask*> deleteTasks;
 
 	std::set<CCircuitUnit*> workers;
 

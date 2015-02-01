@@ -6,8 +6,8 @@
  */
 
 #include "task/RetreatTask.h"
+#include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
-#include "unit/UnitManager.h"
 #include "module/FactoryManager.h"
 #include "static/SetupManager.h"
 #include "terrain/TerrainManager.h"
@@ -23,8 +23,8 @@ namespace circuit {
 
 using namespace springai;
 
-CRetreatTask::CRetreatTask(CCircuitAI* circuit) :
-		IUnitTask(circuit, Priority::NORMAL, Type::RETREAT)
+CRetreatTask::CRetreatTask(ITaskManager* mgr) :
+		IUnitTask(mgr, Priority::NORMAL, Type::RETREAT)
 {
 }
 
@@ -42,6 +42,7 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 
 void CRetreatTask::Execute(CCircuitUnit* unit)
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitUnit* haven = circuit->GetFactoryManager()->GetClosestHaven(unit);
 	const AIFloat3& pos = (haven != nullptr) ? haven->GetUnit()->GetPos() : circuit->GetSetupManager()->GetStartPos();
 	// TODO: push MoveAction into unit? to avoid enemy fire
@@ -61,6 +62,7 @@ void CRetreatTask::Update()
 
 void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitUnit* haven = circuit->GetFactoryManager()->GetClosestHaven(unit);
 	AIFloat3 pos;
 	float maxDist;

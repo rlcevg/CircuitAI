@@ -14,7 +14,7 @@ namespace circuit {
 
 class CBRadarTask: public IBuilderTask {
 public:
-	CBRadarTask(CCircuitAI* circuit, Priority priority,
+	CBRadarTask(ITaskManager* mgr, Priority priority,
 				springai::UnitDef* buildDef, const springai::AIFloat3& position,
 				float cost, int timeout);
 	virtual ~CBRadarTask();

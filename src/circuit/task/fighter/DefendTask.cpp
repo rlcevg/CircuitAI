@@ -7,8 +7,8 @@
 
 #include "task/fighter/DefendTask.h"
 #include "task/RetreatTask.h"
+#include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
-#include "unit/UnitManager.h"
 #include "util/utils.h"
 
 #include "Unit.h"
@@ -17,8 +17,8 @@ namespace circuit {
 
 using namespace springai;
 
-CDefendTask::CDefendTask(CCircuitAI* circuit) :
-		IUnitTask(circuit, Priority::NORMAL, Type::ATTACK)
+CDefendTask::CDefendTask(ITaskManager* mgr) :
+		IUnitTask(mgr, Priority::NORMAL, Type::ATTACK)
 {
 }
 
@@ -50,7 +50,7 @@ void CDefendTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 	}
 
 	RemoveAssignee(unit);
-	unit->GetManager()->GetRetreatTask()->AssignTo(unit);
+	manager->GetRetreatTask()->AssignTo(unit);
 }
 
 void CDefendTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)

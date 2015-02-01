@@ -12,10 +12,10 @@ namespace circuit {
 
 using namespace springai;
 
-CBRadarTask::CBRadarTask(CCircuitAI* circuit, Priority priority,
+CBRadarTask::CBRadarTask(ITaskManager* mgr, Priority priority,
 						 UnitDef* buildDef, const AIFloat3& position,
 						 float cost, int timeout) :
-		IBuilderTask(circuit, priority, buildDef, position, BuildType::RADAR, cost, timeout)
+		IBuilderTask(mgr, priority, buildDef, position, BuildType::RADAR, cost, timeout)
 {
 }
 

@@ -7,13 +7,13 @@
 
 #include "task/UnitTask.h"
 #include "task/IdleTask.h"
+#include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
-#include "unit/UnitManager.h"
 
 namespace circuit {
 
-IUnitTask::IUnitTask(CCircuitAI* circuit, Priority priority, Type type) :
-		circuit(circuit),
+IUnitTask::IUnitTask(ITaskManager* mgr, Priority priority, Type type) :
+		manager(mgr),
 		priority(priority),
 		type(type)
 {
@@ -30,7 +30,7 @@ bool IUnitTask::CanAssignTo(CCircuitUnit* unit)
 
 void IUnitTask::AssignTo(CCircuitUnit* unit)
 {
-	unit->GetManager()->GetIdleTask()->RemoveAssignee(unit);
+	manager->GetIdleTask()->RemoveAssignee(unit);
 	unit->SetTask(this);
 	units.insert(unit);
 }
@@ -38,15 +38,24 @@ void IUnitTask::AssignTo(CCircuitUnit* unit)
 void IUnitTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	units.erase(unit);
-	unit->GetManager()->GetIdleTask()->AssignTo(unit);
+	manager->GetIdleTask()->AssignTo(unit);
 }
 
-void IUnitTask::MarkCompleted()
+void IUnitTask::Close(bool done)
 {
+	CIdleTask* idleTask = manager->GetIdleTask();
 	for (auto unit : units) {
-		unit->GetManager()->GetIdleTask()->AssignTo(unit);
+		idleTask->AssignTo(unit);
 	}
 	units.clear();
+
+	if (done) {
+		Finish();
+	}
+}
+
+void IUnitTask::Finish()
+{
 }
 
 const std::set<CCircuitUnit*>& IUnitTask::GetAssignees() const

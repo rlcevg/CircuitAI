@@ -6,8 +6,8 @@
  */
 
 #include "task/builder/PatrolTask.h"
+#include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
-#include "unit/UnitManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -19,10 +19,10 @@ namespace circuit {
 
 using namespace springai;
 
-CBPatrolTask::CBPatrolTask(CCircuitAI* circuit, Priority priority,
+CBPatrolTask::CBPatrolTask(ITaskManager* mgr, Priority priority,
 						   UnitDef* buildDef, const AIFloat3& position,
 						   float cost, int timeout) :
-		IBuilderTask(circuit, priority, buildDef, position, BuildType::PATROL, cost, timeout)
+		IBuilderTask(mgr, priority, buildDef, position, BuildType::PATROL, cost, timeout)
 {
 }
 
@@ -33,18 +33,18 @@ CBPatrolTask::~CBPatrolTask()
 
 void CBPatrolTask::RemoveAssignee(CCircuitUnit* unit)
 {
-	unit->GetManager()->SpecialCleanUp(unit);
+	manager->SpecialCleanUp(unit);
 
 	IBuilderTask::RemoveAssignee(unit);
 }
 
-void CBPatrolTask::MarkCompleted()
+void CBPatrolTask::Close(bool done)
 {
 	for (auto unit : units) {
-		unit->GetManager()->SpecialCleanUp(unit);
+		manager->SpecialCleanUp(unit);
 	}
 
-	IBuilderTask::MarkCompleted();
+	IBuilderTask::Close(done);
 }
 
 void CBPatrolTask::Execute(CCircuitUnit* unit)
@@ -56,13 +56,13 @@ void CBPatrolTask::Execute(CCircuitUnit* unit)
 	u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 	const float size = SQUARE_SIZE * 10;
-	CTerrainManager* terrain = circuit->GetTerrainManager();
+	CTerrainManager* terrain = manager->GetCircuit()->GetTerrainManager();
 	AIFloat3 pos = position;
 	pos.x += (pos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
 	pos.z += (pos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
 	u->PatrolTo(pos);
 
-	unit->GetManager()->SpecialProcess(unit);
+	manager->SpecialProcess(unit);
 }
 
 } // namespace circuit

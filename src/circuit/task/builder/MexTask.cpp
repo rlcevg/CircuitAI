@@ -6,14 +6,17 @@
  */
 
 #include "task/builder/MexTask.h"
+#include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
-#include "unit/UnitManager.h"
 #include "static/MetalManager.h"
 #include "module/EconomyManager.h"
+#include "module/BuilderManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
 #include "AISCommands.h"
+#include "OOAICallback.h"
+#include "UnitDef.h"
 #include "Unit.h"
 #include "Map.h"
 
@@ -21,10 +24,10 @@ namespace circuit {
 
 using namespace springai;
 
-CBMexTask::CBMexTask(CCircuitAI* circuit, Priority priority,
+CBMexTask::CBMexTask(ITaskManager* mgr, Priority priority,
 					 UnitDef* buildDef, const AIFloat3& position,
 					 float cost, int timeout) :
-		IBuilderTask(circuit, priority, buildDef, position, BuildType::MEX, cost, timeout)
+		IBuilderTask(mgr, priority, buildDef, position, BuildType::MEX, cost, timeout)
 {
 }
 
@@ -46,6 +49,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 		u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 		return;
 	}
+	CCircuitAI* circuit = manager->GetCircuit();
 	if (buildPos != -RgtVector) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
 			u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
@@ -61,8 +65,55 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 		u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	} else {
 		// Fallback to Guard/Assist/Patrol
-		unit->GetManager()->FallbackTask(unit);
+		manager->FallbackTask(unit);
 	}
+}
+
+void CBMexTask::Update()
+{
+	// TODO: Prevent from building enemy's mex
+
+	IBuilderTask::Update();
+}
+
+void CBMexTask::Finish()
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, circuit->GetUnitDefByName("corrl"), buildPos, IBuilderTask::BuildType::DEFENCE);
+}
+
+void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
+{
+	/*
+	 * Check if unit is idle because of enemy mex ahead and build turret if so.
+	 */
+	CCircuitAI* circuit = manager->GetCircuit();
+	int mexDefId = circuit->GetEconomyManager()->GetMexDef()->GetUnitDefId();
+	// TODO: Use internal CCircuitAI::GetEnemyUnits
+	std::vector<Unit*> enemies = circuit->GetCallback()->GetEnemyUnitsIn(buildPos, 1);
+	bool blocked = false;
+	for (auto enemy : enemies) {
+		UnitDef* def = enemy->GetDef();
+		int enemyDefId = def->GetUnitDefId();
+		delete def;
+		if (enemyDefId == mexDefId) {
+			blocked = true;
+			break;
+		}
+	}
+	utils::free_clear(enemies);
+	if (blocked) {
+		UnitDef* def = circuit->GetUnitDefByName("corllt");
+		float range = def->GetMaxWeaponRange();
+		const AIFloat3& pos = unit->GetUnit()->GetPos();
+		if (buildPos.SqDistance2D(pos) < range * range) {
+			CBuilderManager* builderManager = circuit->GetBuilderManager();
+			builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, def, pos, IBuilderTask::BuildType::DEFENCE);
+		}
+	}
+
+	IBuilderTask::OnUnitIdle(unit);
 }
 
 } // namespace circuit

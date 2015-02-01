@@ -10,10 +10,11 @@
 
 #include "module/Module.h"
 #include "unit/UnitManager.h"
+#include "task/TaskManager.h"
 
 namespace circuit {
 
-class IUnitModule: public IModule, public IUnitManager {  // CActionList
+class IUnitModule: public IModule, public IUnitManager, public ITaskManager {  // CActionList
 protected:
 	IUnitModule(CCircuitAI* circuit);
 public:

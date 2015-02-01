@@ -14,7 +14,7 @@ namespace circuit {
 
 class CAttackTask: public IUnitTask {
 public:
-	CAttackTask(CCircuitAI* circuit);
+	CAttackTask(ITaskManager* mgr);
 	virtual ~CAttackTask();
 
 	virtual void Execute(CCircuitUnit* unit);

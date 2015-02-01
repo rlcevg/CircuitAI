@@ -14,7 +14,7 @@ namespace circuit {
 
 class CScoutTask: public IUnitTask {
 public:
-	CScoutTask(CCircuitAI* circuit);
+	CScoutTask(ITaskManager* mgr);
 	virtual ~CScoutTask();
 
 	virtual void Execute(CCircuitUnit* unit);

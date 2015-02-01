@@ -16,7 +16,7 @@ namespace circuit
 class CDefendTask: public IUnitTask
 {
 public:
-	CDefendTask(CCircuitAI* circuit);
+	CDefendTask(ITaskManager* mgr);
 	virtual ~CDefendTask();
 
 	virtual void Execute(CCircuitUnit* unit);

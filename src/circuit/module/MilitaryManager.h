@@ -26,6 +26,7 @@ public:
 
 	virtual void AssignTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
+	virtual void DoneTask(IUnitTask* task);
 	virtual void SpecialCleanUp(CCircuitUnit* unit);
 	virtual void SpecialProcess(CCircuitUnit* unit);
 	virtual void FallbackTask(CCircuitUnit* unit);

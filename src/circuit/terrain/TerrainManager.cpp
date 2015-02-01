@@ -64,6 +64,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	bsize = ssize;
 	offset = int2(0, 0);
 	ignoreMask = STRUCTURE_MASK_BIT(MEX) |
+				 STRUCTURE_MASK_BIT(ENGY_HIGH) |
 				 STRUCTURE_MASK_BIT(DEF_LOW) |
 				 STRUCTURE_MASK_BIT(PYLON) |
 				 STRUCTURE_MASK_BIT(NANO);
@@ -71,7 +72,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 
 	def = circuit->GetUnitDefByName("armfus");
 	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
+	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) * 0.9;
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
@@ -82,11 +83,12 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 
 	def = circuit->GetUnitDefByName("cafus");
 	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
+	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) * 0.9;
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
 	ignoreMask = STRUCTURE_MASK_BIT(MEX) |
+				 STRUCTURE_MASK_BIT(ENGY_LOW) |
 				 STRUCTURE_MASK_BIT(DEF_LOW) |
 				 STRUCTURE_MASK_BIT(PYLON) |
 				 STRUCTURE_MASK_BIT(NANO);
@@ -129,7 +131,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 
 	def = circuit->GetUnitDefByName("armnanotc");
 	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
+	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) * 0.9;
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);

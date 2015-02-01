@@ -14,12 +14,16 @@ namespace circuit {
 
 class CBMexTask: public IBuilderTask {
 public:
-	CBMexTask(CCircuitAI* circuit, Priority priority,
+	CBMexTask(ITaskManager* mgr, Priority priority,
 			  springai::UnitDef* buildDef, const springai::AIFloat3& position,
 			  float cost, int timeout);
 	virtual ~CBMexTask();
 
 	virtual void Execute(CCircuitUnit* unit);
+	virtual void Update();
+	virtual void Finish();
+
+	virtual void OnUnitIdle(CCircuitUnit* unit);
 };
 
 } // namespace circuit

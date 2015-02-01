@@ -21,9 +21,9 @@ public:
 	enum class FacType: char {BUILDPOWER = 0, FIREPOWER, AA, CLOAK, DEFAULT = FIREPOWER};
 
 public:
-	CRecruitTask(CCircuitAI* circuit, Priority priority,
-			  springai::UnitDef* buildDef, const springai::AIFloat3& position,
-			  FacType type, int quantity, float radius);
+	CRecruitTask(ITaskManager* mgr, Priority priority,
+				 springai::UnitDef* buildDef, const springai::AIFloat3& position,
+				 FacType type, int quantity, float radius);
 	virtual ~CRecruitTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit);

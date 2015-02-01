@@ -14,7 +14,7 @@ namespace circuit {
 
 class CBEnergyTask: public IBuilderTask {
 public:
-	CBEnergyTask(CCircuitAI* circuit, Priority priority,
+	CBEnergyTask(ITaskManager* mgr, Priority priority,
 				 springai::UnitDef* buildDef, const springai::AIFloat3& position,
 				 float cost, int timeout);
 	virtual ~CBEnergyTask();
