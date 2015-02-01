@@ -94,12 +94,11 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	CTerrainManager* terrain = circuit->GetTerrainManager();
 	buildPos = terrain->FindBuildSite(buildDef, position, searchRadius, facing);
 	if (buildPos == -RgtVector) {
-		// TODO: Replace FindNearestSpots with FindNearestClusters
-		const CMetalData::Metals& spots =  circuit->GetMetalManager()->GetSpots();
-		CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestSpots(position, 3);
+		const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
+		const CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestClusters(position, 3);
 		for (const int idx : indices) {
-			facing = FindFacing(buildDef, spots[idx].position);
-			buildPos = terrain->FindBuildSite(buildDef, spots[idx].position, searchRadius, facing);
+			facing = FindFacing(buildDef, clusters[idx].geoCentr);
+			buildPos = terrain->FindBuildSite(buildDef, clusters[idx].geoCentr, searchRadius, facing);
 			if (buildPos != -RgtVector) {
 				break;
 			}
@@ -202,6 +201,7 @@ const AIFloat3& IBuilderTask::GetBuildPos() const
 void IBuilderTask::SetTarget(CCircuitUnit* unit)
 {
 	target = unit;
+	SetBuildPos((unit != nullptr) ? unit->GetUnit()->GetPos() : -RgtVector);
 }
 
 CCircuitUnit* IBuilderTask::GetTarget()

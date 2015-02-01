@@ -85,8 +85,8 @@ void CBRepairTask::SetTarget(CCircuitUnit* unit)
 {
 	target = unit;
 	if (unit != nullptr) {
-		cost = target->GetDef()->GetCost(circuit->GetEconomyManager()->GetMetalRes());
-		position = buildPos = target->GetUnit()->GetPos();
+		cost = unit->GetDef()->GetCost(circuit->GetEconomyManager()->GetMetalRes());
+		position = buildPos = unit->GetUnit()->GetPos();
 	} else {
 		cost = 1000;
 		position = buildPos = -RgtVector;

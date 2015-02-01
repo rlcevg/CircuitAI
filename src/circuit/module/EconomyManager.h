@@ -18,6 +18,7 @@ namespace springai {
 	class Resource;
 	class Economy;
 	class AIFloat3;
+	class UnitDef;
 }
 
 namespace circuit {
@@ -36,9 +37,11 @@ public:
 
 	IBuilderTask* CreateBuilderTask(CCircuitUnit* unit);
 	CRecruitTask* CreateFactoryTask(CCircuitUnit* unit);
-	springai::Resource* GetMetalRes();
-	springai::Resource* GetEnergyRes();
+	springai::Resource* GetMetalRes() const;
+	springai::Resource* GetEnergyRes() const;
+	springai::UnitDef* GetMexDef() const;
 	springai::AIFloat3 FindBuildPos(CCircuitUnit* unit);
+
 
 private:
 	void Init();
@@ -61,10 +64,16 @@ private:
 		CCircuitUnit* pylon;
 	};
 	std::vector<ClusterInfo> clusterInfos;
-	int solarCount;
-	int fusionCount;
 	float pylonRange;
 	int pylonCount, pylonMaxCount;
+
+	springai::UnitDef* mexDef;
+	using Energy = struct Energy {
+		springai::UnitDef* def;
+		float make;
+		float cost;
+	};
+	std::vector<Energy> energyDefs;
 };
 
 } // namespace circuit

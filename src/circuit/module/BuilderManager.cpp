@@ -121,7 +121,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		}
 	}
 	// Forbid from removing cormex blocker
-	int unitDefId = circuit->GetMexDef()->GetUnitDefId();
+	int unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetUnitDefId();
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 		this->circuit->GetMetalManager()->SetOpenSpot(unit->GetUnit()->GetPos(), true);
 	};
@@ -154,7 +154,7 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		// NOTE: Try to cope with strange event order, when different units created within same task
 		// FIXME: Create additional task to catch lost unit
 		if (taskB->GetTarget() == nullptr) {
-			taskB->SetTarget(unit);  // taskB->SetBuildPos(u->GetPos());
+			taskB->SetTarget(unit);
 			unfinishedUnits[unit] = taskB;
 
 			UnitDef* buildDef = unit->GetDef();
@@ -483,7 +483,7 @@ void CBuilderManager::Init()
 			const CMetalData::Metals& spots = metalManager->GetSpots();
 			metalManager->SetOpenSpot(index, false);
 			const AIFloat3& buildPos = spots[index].position;
-			EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetMexDef(), buildPos, IBuilderTask::BuildType::MEX)->SetBuildPos(buildPos);
+			EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetEconomyManager()->GetMexDef(), buildPos, IBuilderTask::BuildType::MEX)->SetBuildPos(buildPos);
 		}
 		EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetUnitDefByName("armsolar"), pos, IBuilderTask::BuildType::ENERGY);
 		EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetUnitDefByName("corrl"), pos, IBuilderTask::BuildType::DEFENCE);
@@ -506,20 +506,16 @@ void CBuilderManager::Watchdog()
 		CCircuitUnit* unit = *iter;
 		++iter;
 		IBuilderTask* task = static_cast<IBuilderTask*>(unit->GetTask());
-		printf("%i\n", task->GetBuildType());
 		int timeout = task->GetTimeout();
 		if ((timeout > 0) && (circuit->GetLastFrame() - unit->GetTaskFrame() > timeout)) {
 			switch (task->GetBuildType()) {
 				case IBuilderTask::BuildType::PATROL:
 				case IBuilderTask::BuildType::RECLAIM: {
 					DequeueTask(task);
-//					iter = assistants.erase(iter);
-//					continue;
 					break;
 				}
 			}
 		}
-//		++iter;
 	}
 
 	// somehow workers get stuck
@@ -546,7 +542,6 @@ void CBuilderManager::Watchdog()
 		if (u->IsBeingBuilt() && (u->GetMaxSpeed() <= 0) && (unfinishedUnits.find(unit) == unfinishedUnits.end())) {
 			const AIFloat3& pos = u->GetPos();
 			IBuilderTask* task = EnqueueTask(IBuilderTask::Priority::NORMAL, unit->GetDef(), pos, IBuilderTask::BuildType::REPAIR);
-//			task->SetBuildPos(pos);
 			task->SetTarget(unit);
 			unfinishedUnits[unit] = task;
 		}

@@ -6,11 +6,12 @@
  */
 
 #include "terrain/TerrainManager.h"
-#include "CircuitAI.h"
-#include "unit/CircuitUnit.h"
-#include "static/MetalManager.h"
 #include "terrain/BlockRectangle.h"
 #include "terrain/BlockCircle.h"
+#include "unit/CircuitUnit.h"
+#include "static/MetalManager.h"
+#include "module/EconomyManager.h"
+#include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
@@ -37,6 +38,8 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	int mapHeight = map->GetHeight();
 	terrainWidth = mapWidth * SQUARE_SIZE;
 	terrainHeight = mapHeight * SQUARE_SIZE;
+
+	UnitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 
 	/*
 	 * building masks
@@ -106,7 +109,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	ignoreMask = STRUCTURE_MASK_BIT(ALL) & ~STRUCTURE_MASK_BIT(FACTORY);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::MEX, ignoreMask);
 
-	def = circuit->GetMexDef();  // cormex
+	def = mexDef;  // cormex
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
@@ -146,7 +149,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	blockingMap.gridLow.resize(blockingMap.columnsLow * blockingMap.rowsLow, cellLow);
 
 	const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
-	def = circuit->GetMexDef();
+	def = mexDef;
 	int size = std::max(def->GetXSize(), def->GetZSize()) / 2;
 	int& xsize = size, &zsize = size;
 	int notIgnoreMask = STRUCTURE_MASK_BIT(FACTORY);
@@ -274,7 +277,7 @@ void CTerrainManager::MarkAllyBuildings()
 
 	circuit->UpdateAllyUnits();
 	const std::map<int, CCircuitUnit*>& allies = circuit->GetAllyUnits();
-	UnitDef* mexDef = circuit->GetMexDef();
+	UnitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 
 	std::set<Structure, cmp> newUnits, oldUnits;
 	for (auto& kv : allies) {

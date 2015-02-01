@@ -66,7 +66,6 @@ CCircuitAI::CCircuitAI(OOAICallback* callback) :
 		drawer(std::unique_ptr<Drawer>(map->GetDrawer())),
 		skirmishAI(std::unique_ptr<SkirmishAI>(callback->GetSkirmishAI())),
 		skirmishAIId(callback != NULL ? callback->GetSkirmishAIId() : -1),
-		mexDef(nullptr),
 		difficulty(Difficulty::NORMAL),
 		allyAware(true)
 {
@@ -327,7 +326,6 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
 	metalManager = std::make_shared<CMetalManager>(this, &gameAttribute->GetMetalData());
-	terrainManager = std::make_shared<CTerrainManager>(this);
 
 	bool canChooseStartPos = (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos());
 	if (metalManager->HasMetalSpots()) {
@@ -344,11 +342,17 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 		setupManager->PickStartPos(this, CSetupManager::StartPosType::MIDDLE);
 	}
 
+	// EconomyManager uses metal clusters and must be initialized after MetalManager::ClusterizeMetal
+	economyManager = std::make_shared<CEconomyManager>(this);
+
+	// TerrainManager uses EconomyManager::GetMexDef and must be initialized after EconomyManager
+	terrainManager = std::make_shared<CTerrainManager>(this);
+
 	builderManager = std::make_shared<CBuilderManager>(this);
 	factoryManager = std::make_shared<CFactoryManager>(this);
-	economyManager = std::make_shared<CEconomyManager>(this);
 	militaryManager = std::make_shared<CMilitaryManager>(this);
 
+	// TODO: Remove EconomyManager from module (move abilities to BuilderManager).
 	modules.push_back(economyManager);
 	modules.push_back(militaryManager);
 	modules.push_back(builderManager);
@@ -784,8 +788,6 @@ void CCircuitAI::InitUnitDefs(std::vector<UnitDef*>&& unitDefs)
 		circuitDefs[kv.second] = new CCircuitDef(opts);
 		utils::free_clear(options);
 	}
-
-	mexDef = GetUnitDefByName("cormex");
 }
 
 UnitDef* CCircuitAI::GetUnitDefByName(const char* name)
@@ -836,11 +838,6 @@ int CCircuitAI::GetUnitCount(UnitDef* unitDef)
 bool CCircuitAI::IsAvailable(UnitDef* unitDef)
 {
 	return (unitDef->GetMaxThisUnit() > GetUnitCount(unitDef));
-}
-
-UnitDef* CCircuitAI::GetMexDef() const
-{
-	return mexDef;
 }
 
 CScheduler* CCircuitAI::GetScheduler()
