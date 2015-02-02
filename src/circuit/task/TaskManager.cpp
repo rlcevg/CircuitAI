@@ -8,6 +8,7 @@
 #include "task/TaskManager.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
+#include "unit/CircuitUnit.h"
 
 namespace circuit {
 
@@ -20,6 +21,13 @@ ITaskManager::ITaskManager()
 ITaskManager::~ITaskManager()
 {
 	delete idleTask, retreatTask;
+}
+
+void ITaskManager::AssignTask(CCircuitUnit* unit, IUnitTask* task)
+{
+	unit->GetTask()->RemoveAssignee(unit);
+	task->AssignTo(unit);
+	task->Execute(unit);
 }
 
 CIdleTask* ITaskManager::GetIdleTask()

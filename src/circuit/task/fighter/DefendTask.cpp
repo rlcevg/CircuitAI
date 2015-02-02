@@ -45,12 +45,12 @@ void CDefendTask::OnUnitIdle(CCircuitUnit* unit)
 void CDefendTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
 	Unit* u = unit->GetUnit();
+	// TODO: floating retreat coefficient
 	if (u->GetHealth() > u->GetMaxHealth() * 0.6) {
 		return;
 	}
 
-	RemoveAssignee(unit);
-	manager->GetRetreatTask()->AssignTo(unit);
+	manager->AssignTask(unit, manager->GetRetreatTask());
 }
 
 void CDefendTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)

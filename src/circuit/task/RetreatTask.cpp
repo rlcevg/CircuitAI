@@ -33,13 +33,6 @@ CRetreatTask::~CRetreatTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CRetreatTask::AssignTo(CCircuitUnit* unit)
-{
-	IUnitTask::AssignTo(unit);
-
-	Execute(unit);
-}
-
 void CRetreatTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();

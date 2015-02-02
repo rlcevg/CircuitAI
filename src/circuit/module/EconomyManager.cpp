@@ -113,9 +113,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	/*
 	 * Identify resource buildings
 	 */
-	// ZK doesn't use unitDef's extractsMetal/metalMake, but has customParams::ismex = 1. Anyway there is only 1 mex type.
-	mexDef = circuit->GetUnitDefByName("cormex");
-
 //	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
 //	for (auto& kv : defs) {
 //		UnitDef* def = kv.second;
@@ -129,9 +126,16 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 //				engy.cost = def->GetCost(metalRes);
 //				energyDefs.push_back(engy);
 //			}
+//
+//			const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+//			auto search = customParams.find("ismex");
+//			if ((search != customParams.end()) && (utils::string_to_int(search->second) == 1)) {
+//				mexDef = def;  // cormex
+//			}
 //		}
 //	}
 
+	mexDef = circuit->GetUnitDefByName("cormex");
 	Energy engy;
 
 	engy.def = circuit->GetUnitDefByName("armsolar");
@@ -314,13 +318,13 @@ AIFloat3 CEconomyManager::FindBuildPos(CCircuitUnit* unit)
 			CTerrainManager* terrain = circuit->GetTerrainManager();
 			buildPos = terrain->FindBuildSite(buildDef, position, pylonRange * 16, UNIT_COMMAND_BUILD_NO_FACING);
 			if (buildPos == -RgtVector) {
-				const CMetalData::Metals& spots = metalManager->GetSpots();
-				CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
-					return clusterInfos[v.second].pylon == nullptr;
-				};
-				CMetalData::MetalIndices indices = metalManager->FindNearestClusters(position, 3, predicate);
+//				CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
+//					return clusterInfos[v.second].pylon == nullptr;
+//				};
+				CMetalData::MetalIndices indices = metalManager->FindNearestClusters(position, 3/*, predicate*/);
+				const CMetalData::Clusters& clusters = metalManager->GetClusters();
 				for (const int idx : indices) {
-					buildPos = terrain->FindBuildSite(buildDef, spots[idx].position, pylonRange * 16, UNIT_COMMAND_BUILD_NO_FACING);
+					buildPos = terrain->FindBuildSite(buildDef, clusters[idx].geoCentr, pylonRange * 16, UNIT_COMMAND_BUILD_NO_FACING);
 					if (buildPos != -RgtVector) {
 						break;
 					}
@@ -330,23 +334,6 @@ AIFloat3 CEconomyManager::FindBuildPos(CCircuitUnit* unit)
 		}
 	}
 	return buildPos;
-}
-
-void CEconomyManager::Init()
-{
-	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
-	clusterInfos.resize(clusters.size());
-	for (int i = 0; i < clusters.size(); i++) {
-		clusterInfos[i] = {nullptr};
-	}
-
-	SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();
-	const int interval = ais->GetSize() * 2;
-	delete ais;
-	const AIFloat3& pos = circuit->GetSetupManager()->GetStartPos();
-	CScheduler* scheduler = circuit->GetScheduler();
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateFactoryTasks, this, pos), interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this), interval, circuit->GetSkirmishAIId() + 1);
 }
 
 IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position)
@@ -604,6 +591,23 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 	}
 
 	return task;
+}
+
+void CEconomyManager::Init()
+{
+	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
+	clusterInfos.resize(clusters.size());
+	for (int i = 0; i < clusters.size(); i++) {
+		clusterInfos[i] = {nullptr};
+	}
+
+	SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();
+	const int interval = ais->GetSize() * 2;
+	delete ais;
+	const AIFloat3& pos = circuit->GetSetupManager()->GetStartPos();
+	CScheduler* scheduler = circuit->GetScheduler();
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateFactoryTasks, this, pos), interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this), interval, circuit->GetSkirmishAIId() + 1);
 }
 
 } // namespace circuit

@@ -39,6 +39,7 @@ protected:
 		int2 b1, b2;  // b - blocker rect
 		int2 s1, s2;  // s - structure rect
 	};
+	// @param offset to South facing
 	BlockRects Init(const int2& offset, const int2& bsize, const int2& ssize);
 
 	// TODO: South, East, North, West masks for performance?

@@ -141,17 +141,15 @@ void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
 	Unit* u = unit->GetUnit();
 	// TODO: floating retreat coefficient
-	if (u->GetHealth() > u->GetMaxHealth() * 0.6) {
+	if (u->GetHealth() >= u->GetMaxHealth() * 0.9) {
 		return;
 	}
 
 	if (target == nullptr) {
 		manager->AbortTask(this);
-	} else {
-		RemoveAssignee(unit);
 	}
 
-	manager->GetRetreatTask()->AssignTo(unit);
+	manager->AssignTask(unit, manager->GetRetreatTask());
 }
 
 void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)

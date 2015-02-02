@@ -84,8 +84,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		factoryPower -= unit->GetDef()->GetBuildSpeed();
 		factories.erase(unit);
 
-		IUnitTask* task = unit->GetTask();
-		task->OnUnitDestroyed(unit, attacker);
+		unit->GetTask()->OnUnitDestroyed(unit, attacker);
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 	};
 
@@ -247,8 +246,8 @@ CRecruitTask* CFactoryManager::EnqueueTask(CRecruitTask::Priority priority,
 void CFactoryManager::DequeueTask(CRecruitTask* task, bool done)
 {
 	std::list<CCircuitUnit*>& units = unfinishedTasks[task];
-	task->Close(done);
 	factoryTasks.remove(task);
+	task->Close(done);
 	for (auto u : units) {
 		unfinishedUnits[u] = nullptr;
 	}
@@ -372,10 +371,7 @@ void CFactoryManager::Watchdog()
 	}
 
 	// scheduled task deletion
-	for (auto task : deleteTasks) {
-		delete task;
-	}
-	deleteTasks.clear();
+	utils::free_clear(deleteTasks);
 }
 
 void CFactoryManager::UpdateIdle()

@@ -43,15 +43,15 @@ void IUnitTask::RemoveAssignee(CCircuitUnit* unit)
 
 void IUnitTask::Close(bool done)
 {
+	if (done) {
+		Finish();
+	}
+
 	CIdleTask* idleTask = manager->GetIdleTask();
 	for (auto unit : units) {
 		idleTask->AssignTo(unit);
 	}
 	units.clear();
-
-	if (done) {
-		Finish();
-	}
 }
 
 void IUnitTask::Finish()
@@ -71,6 +71,11 @@ IUnitTask::Priority IUnitTask::GetPriority()
 IUnitTask::Type IUnitTask::GetType()
 {
 	return type;
+}
+
+ITaskManager* IUnitTask::GetManager()
+{
+	return manager;
 }
 
 } // namespace circuit

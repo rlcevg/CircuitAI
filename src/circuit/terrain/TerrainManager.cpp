@@ -175,6 +175,32 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 			blockInfos[def] = new CBlockRectangle(offset, ssize, ssize, SBlockingMap::StructType::UNKNOWN, ignoreMask);
 		}
 	}
+
+	// debug
+	if (circuit->GetSkirmishAIId() == 3) {
+		circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>([this]() {
+			Drawer* drawer = this->circuit->GetMap()->GetDrawer();
+			for (int z = 0; z < this->circuit->GetMap()->GetHeight() / (GRID_RATIO_LOW * 2); z++) {
+				for (int x = 0; x < blockingMap.columnsLow; x++) {
+					AIFloat3 ppp(x * GRID_RATIO_LOW * SQUARE_SIZE * 2 + GRID_RATIO_LOW * SQUARE_SIZE, 0 , z * GRID_RATIO_LOW * SQUARE_SIZE * 2 + GRID_RATIO_LOW * SQUARE_SIZE);
+					drawer->DeletePointsAndLines(ppp);
+				}
+			}
+			delete drawer;
+		}), FRAMES_PER_SEC * 60);
+		circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>([this]() {
+			Drawer* drawer = this->circuit->GetMap()->GetDrawer();
+			for (int z = 0; z < this->circuit->GetMap()->GetHeight() / (GRID_RATIO_LOW * 2); z++) {
+				for (int x = 0; x < blockingMap.columnsLow; x++) {
+					if (blockingMap.IsBlockedLow(x, z, 0xFFFFFFFF)) {
+						AIFloat3 ppp(x * GRID_RATIO_LOW * SQUARE_SIZE * 2 + GRID_RATIO_LOW * SQUARE_SIZE, 0 , z * GRID_RATIO_LOW * SQUARE_SIZE * 2 + GRID_RATIO_LOW * SQUARE_SIZE);
+						drawer->AddPoint(ppp, "");
+					}
+				}
+			}
+			delete drawer;
+		}), FRAMES_PER_SEC * 60, FRAMES_PER_SEC * 10);
+	}
 }
 
 CTerrainManager::~CTerrainManager()
@@ -482,27 +508,27 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(UnitDef* unitDef, const AIFloat3& 
 		}
 	}
 
-#define DECLARE_TEST(testName, facingType)													\
-	auto testName = [this, mask, notIgnore, structMask](const int2& m1, const int2& m2) {	\
-		for (int x = m1.x, xm = 0; x < m2.x; x++, xm++) {									\
-			for (int z = m1.y, zm = 0; z < m2.y; z++, zm++) {								\
-				switch (mask->facingType(xm, zm)) {											\
-					case IBlockMask::BlockType::BLOCKED: {									\
-						if (blockingMap.IsStruct(x, z, structMask)) {						\
-							return false;													\
-						}																	\
-						break;																\
-					}																		\
-					case IBlockMask::BlockType::STRUCT: {									\
-						if (blockingMap.IsBlocked(x, z, notIgnore)) {						\
-							return false;													\
-						}																	\
-						break;																\
-					}																		\
-				}																			\
-			}																				\
-		}																					\
-		return true;																		\
+#define DECLARE_TEST(testName, facingType)																	\
+	auto testName = [this, mask, notIgnore, structMask](const int2& m1, const int2& m2, const int2& om) {	\
+		for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {												\
+			for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {											\
+				switch (mask->facingType(xm, zm)) {															\
+					case IBlockMask::BlockType::BLOCKED: {													\
+						if (blockingMap.IsStruct(x, z, structMask)) {										\
+							return false;																	\
+						}																					\
+						break;																				\
+					}																						\
+					case IBlockMask::BlockType::STRUCT: {													\
+						if (blockingMap.IsBlocked(x, z, notIgnore)) {										\
+							return false;																	\
+						}																					\
+						break;																				\
+					}																						\
+				}																							\
+			}																								\
+		}																									\
+		return true;																						\
 	};
 
 	const int endr = (int)(searchRadius / (SQUARE_SIZE * 2));
@@ -521,27 +547,29 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(UnitDef* unitDef, const AIFloat3& 
 	AIFloat3 probePos(ZeroVector);
 	Map* map = circuit->GetMap();
 
-#define DO_TEST(testName)																	\
-	for (int so = 0; so < endr * endr * 4; so++) {											\
-		int2 s1(structCorner.x + ofs[so].dx, structCorner.y + ofs[so].dy);					\
-		int2 s2(          s1.x + xssize,               s1.y + zssize);						\
-		if (!blockingMap.IsInBounds(s1, s2)) {												\
-			continue;																		\
-		}																					\
-																							\
-		int2 m1(maskCorner.x + ofs[so].dx, maskCorner.y + ofs[so].dy);						\
-		int2 m2(        m1.x + xmsize,             m1.y + zmsize);							\
-		blockingMap.Bound(m1, m2);															\
-		if (!testName(m1, m2)) {															\
-			continue;																		\
-		}																					\
-																							\
-		probePos.x = (s1.x + s2.x) * SQUARE_SIZE;											\
-		probePos.z = (s1.y + s2.y) * SQUARE_SIZE;											\
-		if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {							\
-			probePos.y = map->GetElevationAt(probePos.x, probePos.z);						\
-			return probePos;																\
-		}																					\
+#define DO_TEST(testName)																					\
+	for (int so = 0; so < endr * endr * 4; so++) {															\
+		int2 s1(structCorner.x + ofs[so].dx, structCorner.y + ofs[so].dy);									\
+		int2 s2(          s1.x + xssize,               s1.y + zssize);										\
+		if (!blockingMap.IsInBounds(s1, s2)) {																\
+			continue;																						\
+		}																									\
+																											\
+		int2 m1(maskCorner.x + ofs[so].dx, maskCorner.y + ofs[so].dy);										\
+		int2 m2(        m1.x + xmsize,             m1.y + zmsize);											\
+		int2 om = m1;																						\
+		blockingMap.Bound(m1, m2);																			\
+		om = m1 - om;																						\
+		if (!testName(m1, m2, om)) {																		\
+			continue;																						\
+		}																									\
+																											\
+		probePos.x = (s1.x + s2.x) * SQUARE_SIZE;															\
+		probePos.z = (s1.y + s2.y) * SQUARE_SIZE;															\
+		if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {											\
+			probePos.y = map->GetElevationAt(probePos.x, probePos.z);										\
+			return probePos;																				\
+		}																									\
 	}
 
 	switch (facing) {
@@ -595,9 +623,9 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(UnitDef* unitDef, const AIFloat
 	}
 
 #define DECLARE_TEST_LOW(testName, facingType)																	\
-	auto testName = [this, mask, notIgnore, structMask](const int2& m1, const int2& m2) {						\
-		for (int x = m1.x, xm = 0; x < m2.x; x++, xm++) {														\
-			for (int z = m1.y, zm = 0; z < m2.y; z++, zm++) {													\
+	auto testName = [this, mask, notIgnore, structMask](const int2& m1, const int2& m2, const int2& om) {		\
+		for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {													\
+			for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {												\
 				switch (mask->facingType(xm, zm)) {																\
 					case IBlockMask::BlockType::BLOCKED: {														\
 						if (blockingMap.IsStruct(x, z, structMask)) {											\
@@ -655,8 +683,10 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(UnitDef* unitDef, const AIFloat
 																												\
 			int2 m1(maskCorner.x + ofs[so].dx, maskCorner.y + ofs[so].dy);										\
 			int2 m2(        m1.x + xmsize,             m1.y + zmsize);											\
+			int2 om = m1;																						\
 			blockingMap.Bound(m1, m2);																			\
-			if (!testName(m1, m2)) {																			\
+			om = m1 - om;																						\
+			if (!testName(m1, m2, om)) {																		\
 				continue;																						\
 			}																									\
 																												\
@@ -724,8 +754,8 @@ void CTerrainManager::MarkBlockerByMask(const Structure& building, bool block, I
 	}
 
 #define DECLARE_MARKER(typeName, blockerOp, structOp)					\
-	for (int x = m1.x, xm = 0; x < m2.x; x++, xm++) {					\
-		for (int z = m1.y, zm = 0; z < m2.y; z++, zm++) {				\
+	for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {				\
+		for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {			\
 			switch (mask->typeName(xm, zm)) {							\
 				case IBlockMask::BlockType::BLOCKED: {					\
 					blockingMap.blockerOp(x, z, structType);			\
@@ -743,9 +773,11 @@ void CTerrainManager::MarkBlockerByMask(const Structure& building, bool block, I
 	corner.x = int(pos.x / (SQUARE_SIZE * 2)) - (xssize / 2);
 	corner.y = int(pos.z / (SQUARE_SIZE * 2)) - (zssize / 2);
 
-	int2 m1 = corner - mask->GetStructOffset(facing);
-	int2 m2(m1.x + xmsize, m1.y + zmsize);
-	blockingMap.Bound(m1, m2);
+	int2 m1 = corner - mask->GetStructOffset(facing);	// top-left mask corner
+	int2 m2(m1.x + xmsize, m1.y + zmsize);				// bottom-right mask corner
+	int2 om = m1;										// remember original mask corner
+	blockingMap.Bound(m1, m2);							// corners bounded by map
+	om = m1 - om;										// shift original mask corner
 
 	const int notIgnore = ~mask->GetIgnoreMask();
 	SBlockingMap::StructType structType = mask->GetStructType();

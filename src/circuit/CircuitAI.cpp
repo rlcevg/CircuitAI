@@ -15,6 +15,7 @@
 #include "module/MilitaryManager.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
+#include "task/PlayerTask.h"
 #include "terrain/TerrainManager.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -542,8 +543,8 @@ int CCircuitAI::EnemyEnterLOS(CCircuitUnit* unit)
 int CCircuitAI::PlayerCommand(std::vector<CCircuitUnit*>& units)
 {
 	for (auto unit : units) {
-		// TODO: Replace IdleTask with PlayerTask (commands from player)
-		unit->GetTask()->RemoveAssignee(unit);
+		ITaskManager* mgr = unit->GetTask()->GetManager();
+		mgr->AssignTask(unit, new CPlayerTask(mgr));
 	}
 
 	return 0;  // signaling: OK

@@ -81,6 +81,8 @@ void CBMexTask::Finish()
 	CCircuitAI* circuit = manager->GetCircuit();
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, circuit->GetUnitDefByName("corrl"), buildPos, IBuilderTask::BuildType::DEFENCE);
+
+	circuit->GetEconomyManager()->UpdateMetalTasks(buildPos);
 }
 
 void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
@@ -109,7 +111,20 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 		const AIFloat3& pos = unit->GetUnit()->GetPos();
 		if (buildPos.SqDistance2D(pos) < range * range) {
 			CBuilderManager* builderManager = circuit->GetBuilderManager();
-			builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, def, pos, IBuilderTask::BuildType::DEFENCE);
+			IBuilderTask* task = nullptr;
+			float qdist = 200 * 200;
+			// TODO: Push tasks into bgi::rtree
+			for (auto t : builderManager->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
+				if (pos.SqDistance2D(t->GetPos()) < qdist) {
+					task = t;
+					break;
+				}
+			}
+			if (task == nullptr) {
+				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, def, pos, IBuilderTask::BuildType::DEFENCE);
+			}
+			manager->AssignTask(unit, task);
+			return;
 		}
 	}
 

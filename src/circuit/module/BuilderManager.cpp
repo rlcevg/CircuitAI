@@ -92,8 +92,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		builderPower -= unit->GetDef()->GetBuildSpeed();
 		workers.erase(unit);
 
-		IUnitTask* task = unit->GetTask();
-		task->OnUnitDestroyed(unit, attacker);
+		unit->GetTask()->OnUnitDestroyed(unit, attacker);
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 	};
 
@@ -352,8 +351,8 @@ void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
 	auto it = tasks.find(task);
 	if (it != tasks.end()) {
 		unfinishedUnits.erase(task->GetTarget());
-		task->Close(done);
 		tasks.erase(it);
+		task->Close(done);
 		updateTasks.erase(task);
 		deleteTasks.insert(task);
 		builderTasksCount--;
@@ -379,7 +378,8 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 			}
 
 			// Check time-distance to target
-			float weight = 1.0f / (static_cast<float>(candidate->GetPriority()) + 1.0f);
+			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
+			weight = 1.0f / (weight * weight);
 			float dist;
 			bool valid;
 			CCircuitUnit* target = candidate->GetTarget();
@@ -482,6 +482,7 @@ void CBuilderManager::Init()
 			delete param;
 		}
 
+		// FIXME: Remove, make proper eco rules!
 		CMetalManager* metalManager = this->circuit->GetMetalManager();
 		int index = metalManager->FindNearestSpot(pos);
 		if (index != -1) {
@@ -490,8 +491,6 @@ void CBuilderManager::Init()
 			const AIFloat3& buildPos = spots[index].position;
 			EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetEconomyManager()->GetMexDef(), buildPos, IBuilderTask::BuildType::MEX)->SetBuildPos(buildPos);
 		}
-		EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetUnitDefByName("armsolar"), pos, IBuilderTask::BuildType::ENERGY);
-		EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetUnitDefByName("corrl"), pos, IBuilderTask::BuildType::DEFENCE);
 	}
 	for (auto worker : workers) {
 		UnitIdle(worker);
@@ -553,10 +552,7 @@ void CBuilderManager::Watchdog()
 	}
 
 	// scheduled task deletion
-	for (auto task : deleteTasks) {
-		delete task;
-	}
-	deleteTasks.clear();
+	utils::free_clear(deleteTasks);
 }
 
 void CBuilderManager::UpdateIdle()

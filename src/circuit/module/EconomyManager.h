@@ -42,13 +42,14 @@ public:
 	springai::UnitDef* GetMexDef() const;
 	springai::AIFloat3 FindBuildPos(CCircuitUnit* unit);
 
-private:
-	void Init();
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position);
 	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position);
 	IBuilderTask* UpdateFactoryTasks(const springai::AIFloat3& position);
 	CRecruitTask* UpdateRecruitTasks();
 	IBuilderTask* UpdateStorageTasks();
+
+private:
+	void Init();
 
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;

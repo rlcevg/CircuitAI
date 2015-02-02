@@ -50,8 +50,7 @@ void CAttackTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 		return;
 	}
 
-	RemoveAssignee(unit);
-	manager->GetRetreatTask()->AssignTo(unit);
+	manager->AssignTask(unit, manager->GetRetreatTask());
 }
 
 void CAttackTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)

@@ -1,21 +1,21 @@
 /*
- * RetreatTask.h
+ * PlayerTask.h
  *
- *  Created on: Jan 18, 2015
+ *  Created on: Feb 3, 2015
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_TASK_RETREATTASK_H_
-#define SRC_CIRCUIT_TASK_RETREATTASK_H_
+#ifndef SRC_CIRCUIT_TASK_PLAYERTASK_H_
+#define SRC_CIRCUIT_TASK_PLAYERTASK_H_
 
 #include "task/UnitTask.h"
 
 namespace circuit {
 
-class CRetreatTask: public IUnitTask {
+class CPlayerTask: public IUnitTask {
 public:
-	CRetreatTask(ITaskManager* mgr);
-	virtual ~CRetreatTask();
+	CPlayerTask(ITaskManager* mgr);
+	virtual ~CPlayerTask();
 
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
@@ -27,4 +27,4 @@ public:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_TASK_RETREATTASK_H_
+#endif // SRC_CIRCUIT_TASK_PLAYERTASK_H_

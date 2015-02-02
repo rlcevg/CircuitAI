@@ -20,7 +20,7 @@ class ITaskManager;
 class IUnitTask {  // CSquad, IAction
 public:
 	enum class Priority: char {LOW = 0, NORMAL = 1, HIGH = 2};
-	enum class Type: char {IDLE, RETREAT, BUILDER, FACTORY, ATTACK, SCOUT};
+	enum class Type: char {PLAYER, IDLE, RETREAT, BUILDER, FACTORY, ATTACK, SCOUT};
 
 protected:
 	IUnitTask(ITaskManager* mgr, Priority priority, Type type);
@@ -34,6 +34,7 @@ public:
 
 	virtual void Execute(CCircuitUnit* unit) = 0;  // <=> IAction::OnStart()
 	virtual void Update() = 0;
+	// TODO: Run Finish on update event?
 	virtual void Finish();  // <=> IAction::OnEnd()
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) = 0;
@@ -43,6 +44,7 @@ public:
 	const std::set<CCircuitUnit*>& GetAssignees() const;
 	Priority GetPriority();
 	Type GetType();
+	ITaskManager* GetManager();
 
 protected:
 	ITaskManager* manager;
