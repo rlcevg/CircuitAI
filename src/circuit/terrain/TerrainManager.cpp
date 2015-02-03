@@ -175,32 +175,6 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 			blockInfos[def] = new CBlockRectangle(offset, ssize, ssize, SBlockingMap::StructType::UNKNOWN, ignoreMask);
 		}
 	}
-
-	// debug
-	if (circuit->GetSkirmishAIId() == 3) {
-		circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>([this]() {
-			Drawer* drawer = this->circuit->GetMap()->GetDrawer();
-			for (int z = 0; z < this->circuit->GetMap()->GetHeight() / (GRID_RATIO_LOW * 2); z++) {
-				for (int x = 0; x < blockingMap.columnsLow; x++) {
-					AIFloat3 ppp(x * GRID_RATIO_LOW * SQUARE_SIZE * 2 + GRID_RATIO_LOW * SQUARE_SIZE, 0 , z * GRID_RATIO_LOW * SQUARE_SIZE * 2 + GRID_RATIO_LOW * SQUARE_SIZE);
-					drawer->DeletePointsAndLines(ppp);
-				}
-			}
-			delete drawer;
-		}), FRAMES_PER_SEC * 60);
-		circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>([this]() {
-			Drawer* drawer = this->circuit->GetMap()->GetDrawer();
-			for (int z = 0; z < this->circuit->GetMap()->GetHeight() / (GRID_RATIO_LOW * 2); z++) {
-				for (int x = 0; x < blockingMap.columnsLow; x++) {
-					if (blockingMap.IsBlockedLow(x, z, 0xFFFFFFFF)) {
-						AIFloat3 ppp(x * GRID_RATIO_LOW * SQUARE_SIZE * 2 + GRID_RATIO_LOW * SQUARE_SIZE, 0 , z * GRID_RATIO_LOW * SQUARE_SIZE * 2 + GRID_RATIO_LOW * SQUARE_SIZE);
-						drawer->AddPoint(ppp, "");
-					}
-				}
-			}
-			delete drawer;
-		}), FRAMES_PER_SEC * 60, FRAMES_PER_SEC * 10);
-	}
 }
 
 CTerrainManager::~CTerrainManager()

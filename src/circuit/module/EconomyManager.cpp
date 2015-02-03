@@ -397,7 +397,10 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position)
 			if (!circuit->IsAvailable(engy.def)) {
 				continue;
 			}
-			// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8)
+			// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
+			//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
+			//       solar       geothermal    fusion         singu           ...
+			//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
 			float metric = engy.cost / (buildPower * buildPower / 8);
 			if (metric < MAX_BUILD_SEC) {
 				int count = buildPower / engy.cost * 4 + 1;

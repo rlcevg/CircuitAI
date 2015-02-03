@@ -19,8 +19,8 @@ public:
 			  float cost, int timeout);
 	virtual ~CBMexTask();
 
+	// TODO: Prevent from building enemy's mex
 	virtual void Execute(CCircuitUnit* unit);
-	virtual void Update();
 	virtual void Finish();
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);

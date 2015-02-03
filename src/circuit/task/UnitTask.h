@@ -34,7 +34,7 @@ public:
 
 	virtual void Execute(CCircuitUnit* unit) = 0;  // <=> IAction::OnStart()
 	virtual void Update() = 0;
-	// TODO: Run Finish on update event?
+	// NOTE: Do not run time consuming code here. Instead create separate task.
 	virtual void Finish();  // <=> IAction::OnEnd()
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) = 0;

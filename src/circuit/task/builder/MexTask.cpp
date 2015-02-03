@@ -69,13 +69,6 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	}
 }
 
-void CBMexTask::Update()
-{
-	// TODO: Prevent from building enemy's mex
-
-	IBuilderTask::Update();
-}
-
 void CBMexTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -91,25 +84,26 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 	 * Check if unit is idle because of enemy mex ahead and build turret if so.
 	 */
 	CCircuitAI* circuit = manager->GetCircuit();
-	int mexDefId = circuit->GetEconomyManager()->GetMexDef()->GetUnitDefId();
-	// TODO: Use internal CCircuitAI::GetEnemyUnits
-	std::vector<Unit*> enemies = circuit->GetCallback()->GetEnemyUnitsIn(buildPos, 1);
-	bool blocked = false;
-	for (auto enemy : enemies) {
-		UnitDef* def = enemy->GetDef();
-		int enemyDefId = def->GetUnitDefId();
-		delete def;
-		if (enemyDefId == mexDefId) {
-			blocked = true;
-			break;
+	UnitDef* def = circuit->GetUnitDefByName("corllt");
+	float range = def->GetMaxWeaponRange();
+	float testRange = range + 200;
+	const AIFloat3& pos = unit->GetUnit()->GetPos();
+	if (buildPos.SqDistance2D(pos) < testRange * testRange) {
+		int mexDefId = circuit->GetEconomyManager()->GetMexDef()->GetUnitDefId();
+		// TODO: Use internal CCircuitAI::GetEnemyUnits?
+		std::vector<Unit*> enemies = circuit->GetCallback()->GetEnemyUnitsIn(buildPos, 1);
+		bool blocked = false;
+		for (auto enemy : enemies) {
+			UnitDef* def = enemy->GetDef();
+			int enemyDefId = def->GetUnitDefId();
+			delete def;
+			if (enemyDefId == mexDefId) {
+				blocked = true;
+				break;
+			}
 		}
-	}
-	utils::free_clear(enemies);
-	if (blocked) {
-		UnitDef* def = circuit->GetUnitDefByName("corllt");
-		float range = def->GetMaxWeaponRange();
-		const AIFloat3& pos = unit->GetUnit()->GetPos();
-		if (buildPos.SqDistance2D(pos) < range * range) {
+		utils::free_clear(enemies);
+		if (blocked) {
 			CBuilderManager* builderManager = circuit->GetBuilderManager();
 			IBuilderTask* task = nullptr;
 			float qdist = 200 * 200;
@@ -121,7 +115,8 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 				}
 			}
 			if (task == nullptr) {
-				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, def, pos, IBuilderTask::BuildType::DEFENCE);
+				AIFloat3 newPos = buildPos - (buildPos - pos).Normalize2D() * range * 0.8;
+				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, def, newPos, IBuilderTask::BuildType::DEFENCE);
 			}
 			manager->AssignTask(unit, task);
 			return;
