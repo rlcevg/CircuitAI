@@ -109,65 +109,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	float pylonSquare = pylonRange * 2 / SQUARE_SIZE;
 	pylonSquare *= pylonSquare;
 	pylonMaxCount = ((map->GetWidth() * map->GetHeight()) / pylonSquare) / 2;
-
-	/*
-	 * Identify resource buildings
-	 */
-//	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
-//	for (auto& kv : defs) {
-//		UnitDef* def = kv.second;
-//		if (def->GetSpeed() <= 0) {
-//			float make = def->GetResourceMake(energyRes);
-//			float use = def->GetUpkeep(energyRes);
-//			if ((make > 0) || (use < 0)) {
-//				Energy engy;
-//				engy.def = def;
-//				engy.make = (make > 0) ? make : -use;
-//				engy.cost = def->GetCost(metalRes);
-//				energyDefs.push_back(engy);
-//			}
-//
-//			const std::map<std::string, std::string>& customParams = def->GetCustomParams();
-//			auto search = customParams.find("ismex");
-//			if ((search != customParams.end()) && (utils::string_to_int(search->second) == 1)) {
-//				mexDef = def;  // cormex
-//			}
-//		}
-//	}
-
-	mexDef = circuit->GetUnitDefByName("cormex");
-	Energy engy;
-
-	engy.def = circuit->GetUnitDefByName("armsolar");
-	engy.make = 2;
-	engy.cost = engy.def->GetCost(metalRes);
-	energyDefs.push_back(engy);
-
-//	engy.def = circuit->GetUnitDefByName("armwin");  // Tidal
-//	engy.make = engy.def->GetTidalResourceGenerator(energyRes) * circuit->GetMap()->GetTidalStrength();
-//	engy.cost = engy.def->GetCost(metalRes);
-//	energyDefs.push_back(engy);
-
-//	engy.def = circuit->GetUnitDefByName("armwin");  // Wind
-//	engy.make = engy.def->GetWindResourceGenerator(energyRes) * circuit->GetMap()->GetMinWind();
-//	engy.cost = engy.def->GetCost(metalRes);
-//	energyDefs.push_back(engy);
-
-	engy.def = circuit->GetUnitDefByName("armfus");
-	engy.make = engy.def->GetResourceMake(energyRes);
-	engy.cost = engy.def->GetCost(metalRes);
-	energyDefs.push_back(engy);
-
-	engy.def = circuit->GetUnitDefByName("cafus");
-	engy.make = engy.def->GetResourceMake(energyRes);
-	engy.cost = engy.def->GetCost(metalRes);
-	energyDefs.push_back(engy);
-
-	// High-tech energy first
-	auto compare = [](const Energy& e1, const Energy& e2) {
-		return (e1.make / e1.cost) > (e2.make / e2.cost);
-	};
-	std::sort(energyDefs.begin(), energyDefs.end(), compare);
 }
 
 CEconomyManager::~CEconomyManager()
@@ -285,11 +226,6 @@ Resource* CEconomyManager::GetEnergyRes() const
 	return energyRes;
 }
 
-UnitDef* CEconomyManager::GetMexDef() const
-{
-	return mexDef;
-}
-
 AIFloat3 CEconomyManager::FindBuildPos(CCircuitUnit* unit)
 {
 	IBuilderTask* task = static_cast<IBuilderTask*>(unit->GetTask());
@@ -336,6 +272,39 @@ AIFloat3 CEconomyManager::FindBuildPos(CCircuitUnit* unit)
 	return buildPos;
 }
 
+void CEconomyManager::AddAvailEnergy(const std::set<UnitDef*>& addonDefs)
+{
+	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
+//	energyInfos.reserve(energyInfos.size() + addonDefs.size());
+	for (auto def : addonDefs) {
+		float make = def->GetResourceMake(energyRes);
+		EnergyInfo engy;
+		engy.def = def;
+		engy.make = (make > 0) ? make : -def->GetUpkeep(energyRes);
+		engy.cost = def->GetCost(metalRes);
+		energyInfos.push_back(engy);
+	}
+
+	// High-tech energy first
+	auto compare = [](const EnergyInfo& e1, const EnergyInfo& e2) {
+		return (e1.make / e1.cost) > (e2.make / e2.cost);
+	};
+//	std::sort(energyInfos.begin(), energyInfos.end(), compare);
+	energyInfos.sort(compare);
+}
+
+void CEconomyManager::RemoveAvailEnergy(const std::set<UnitDef*>& deleteDefs)
+{
+	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
+	auto it = energyInfos.begin();
+	while (it != energyInfos.end()) {
+		auto search = deleteDefs.find(it->def);
+		if (search != deleteDefs.end()) {
+			it = energyInfos.erase(it);
+		}
+	}
+}
+
 IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position)
 {
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
@@ -347,6 +316,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position)
 	// check uncolonized mexes
 	float energyIncome = eco->GetIncome(energyRes);
 	float metalIncome = eco->GetIncome(metalRes);
+	UnitDef* mexDef = builderManager->GetMexDef();
 	if ((energyIncome * 0.8 > metalIncome) && circuit->IsAvailable(mexDef)) {
 		float cost = mexDef->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 3 + 1;
@@ -355,10 +325,9 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position)
 			const CMetalData::Metals& spots = metalManager->GetSpots();
 			const std::vector<CMetalManager::MetalInfo>& metalInfos = metalManager->GetMetalInfos();
 			Map* map = circuit->GetMap();
-			UnitDef* metalDef = mexDef;
-			CMetalData::MetalPredicate predicate = [&spots, &metalInfos, map, metalDef](CMetalData::MetalNode const& v) {
+			CMetalData::MetalPredicate predicate = [&spots, &metalInfos, map, mexDef](CMetalData::MetalNode const& v) {
 				int index = v.second;
-				return (metalInfos[index].isOpen && map->IsPossibleToBuildAt(metalDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
+				return (metalInfos[index].isOpen && map->IsPossibleToBuildAt(mexDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 			};
 			int index = metalManager->FindNearestSpot(position, predicate);
 			if (index != -1) {
@@ -393,8 +362,9 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position)
 		float cost;
 		float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome * 0.5);
 		const std::set<IBuilderTask*>& tasks = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY);
-		for (auto& engy : energyDefs) {  // sorted by high-tech first
-			if (!circuit->IsAvailable(engy.def)) {
+		for (auto& engy : energyInfos) {  // sorted by high-tech first
+			// TODO: Add geothermal powerplant support
+			if (!circuit->IsAvailable(engy.def) || engy.def->IsNeedGeo()) {
 				continue;
 			}
 			// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).

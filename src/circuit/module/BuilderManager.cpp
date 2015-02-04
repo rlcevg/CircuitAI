@@ -10,6 +10,7 @@
 #include "static/SetupManager.h"
 #include "static/MetalManager.h"
 #include "unit/CircuitUnit.h"
+#include "unit/CircuitDef.h"
 #include "terrain/TerrainManager.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
@@ -72,6 +73,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		std::vector<float> params;
 		params.push_back(3);
 		unit->GetUnit()->ExecuteCustomCommand(CMD_RETREAT, params);
+
+		AddBuildList(unit);
 	};
 	auto workerIdleHandler = [this](CCircuitUnit* unit) {
 		// Avoid instant task reassignment, its only valid on build order fail.
@@ -94,6 +97,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 
 		unit->GetTask()->OnUnitDestroyed(unit, attacker);
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
+
+		RemoveBuildList(unit);
 	};
 
 	/*
@@ -104,8 +109,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		this->circuit->GetTerrainManager()->RemoveBlocker(unit->GetDef(), u->GetPos(), u->GetBuildingFacing());
 	};
 
-	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
-	for (auto& kv : defs) {
+	CCircuitAI::UnitDefs& allDefs = circuit->GetUnitDefs();
+	Resource* energyRes = circuit->GetEconomyManager()->GetEnergyRes();
+	for (auto& kv : allDefs) {
 		UnitDef* def = kv.second;
 		if (def->GetSpeed() > 0) {
 			if (def->IsBuilder() && !def->GetBuildOptions().empty()) {
@@ -117,10 +123,28 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 			}
 		} else {
 			destroyedHandler[def->GetUnitDefId()] = buildingDestroyedHandler;
+
+			// identify resource buildings
+			float make = def->GetResourceMake(energyRes);
+			float use = def->GetUpkeep(energyRes);
+			if ((make > 0) || (use < 0)) {
+				// TODO: Filter only defs that we able to build
+				allEnergyDefs.insert(def);
+
+				// TODO: Make available not only for energy
+				buildCounts[def] = 0;
+			}
+
+			const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+			auto search = customParams.find("ismex");
+			if ((search != customParams.end()) && (utils::string_to_int(search->second) == 1)) {
+				mexDef = def;  // cormex
+			}
 		}
 	}
+
 	// Forbid from removing cormex blocker
-	int unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetUnitDefId();
+	int unitDefId = mexDef->GetUnitDefId();
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 		this->circuit->GetMetalManager()->SetOpenSpot(unit->GetUnit()->GetPos(), true);
 	};
@@ -221,6 +245,79 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 	}
 
 	return 0; //signaling: OK
+}
+
+void CBuilderManager::AddBuildList(CCircuitUnit* unit)
+{
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	if (cdef->GetCount() > 1) {
+		return;
+	}
+
+	// TODO: Cache intersection inside CCircuitDef?
+	const std::unordered_set<UnitDef*>& buildOptions = cdef->GetBuildOptions();
+	std::set<UnitDef*> builds;
+	for (auto build : buildOptions) {
+		builds.insert(build);
+	}
+	std::set<UnitDef*> diffDefs;
+	std::set_intersection(allEnergyDefs.begin(), allEnergyDefs.end(),
+						  builds.begin(), builds.end(),
+						  std::inserter(diffDefs, diffDefs.begin()));
+	for (auto def : diffDefs) {
+		++buildCounts[def];
+	}
+
+	int size = availEnergyDefs.size();
+	availEnergyDefs.insert(diffDefs.begin(), diffDefs.end());
+	if (size != availEnergyDefs.size()) {
+		circuit->GetEconomyManager()->AddAvailEnergy(diffDefs);
+	}
+
+	// TODO: Same thing with factory, etc.
+}
+
+void CBuilderManager::RemoveBuildList(CCircuitUnit* unit)
+{
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	if (cdef->GetCount() > 1) {
+		return;
+	}
+
+	// TODO: Cache intersection inside CCircuitDef?
+	const std::unordered_set<UnitDef*>& buildOptions = cdef->GetBuildOptions();
+	std::set<UnitDef*> builds;
+	for (auto build : buildOptions) {
+		builds.insert(build);
+	}
+	std::set<UnitDef*> diffDefs;
+	std::set_intersection(allEnergyDefs.begin(), allEnergyDefs.end(),
+						  buildOptions.begin(), buildOptions.end(),
+						  std::inserter(diffDefs, diffDefs.begin()));
+	std::set<UnitDef*> deleteDefs;
+	for (auto def : diffDefs) {
+		int& count = buildCounts[def];
+		if (--count == 0) {
+			deleteDefs.insert(def);
+		}
+	}
+
+	if (!deleteDefs.empty()) {
+		availEnergyDefs.erase(deleteDefs.begin(), deleteDefs.end());
+		circuit->GetEconomyManager()->RemoveAvailEnergy(deleteDefs);
+	}
+
+	// TODO: Same thing with factory, etc.
+}
+
+UnitDef* CBuilderManager::GetMexDef() const
+{
+	return mexDef;
+}
+
+const std::set<UnitDef*>& CBuilderManager::GetEnergyDefs() const
+{
+	return availEnergyDefs;
 }
 
 float CBuilderManager::GetBuilderPower()
@@ -489,7 +586,7 @@ void CBuilderManager::Init()
 			const CMetalData::Metals& spots = metalManager->GetSpots();
 			metalManager->SetOpenSpot(index, false);
 			const AIFloat3& buildPos = spots[index].position;
-			EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetEconomyManager()->GetMexDef(), buildPos, IBuilderTask::BuildType::MEX)->SetBuildPos(buildPos);
+			EnqueueTask(IUnitTask::Priority::NORMAL, mexDef, buildPos, IBuilderTask::BuildType::MEX)->SetBuildPos(buildPos);
 		}
 	}
 	for (auto worker : workers) {

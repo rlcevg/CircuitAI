@@ -10,7 +10,7 @@
 #include "terrain/BlockCircle.h"
 #include "unit/CircuitUnit.h"
 #include "static/MetalManager.h"
-#include "module/EconomyManager.h"
+#include "module/BuilderManager.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -39,7 +39,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	terrainWidth = mapWidth * SQUARE_SIZE;
 	terrainHeight = mapHeight * SQUARE_SIZE;
 
-	UnitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
+	UnitDef* mexDef = circuit->GetBuilderManager()->GetMexDef();
 
 	/*
 	 * building masks
@@ -279,7 +279,7 @@ void CTerrainManager::MarkAllyBuildings()
 
 	circuit->UpdateAllyUnits();
 	const std::map<int, CCircuitUnit*>& allies = circuit->GetAllyUnits();
-	UnitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
+	UnitDef* mexDef = circuit->GetBuilderManager()->GetMexDef();
 
 	std::set<Structure, cmp> newUnits, oldUnits;
 	for (auto& kv : allies) {
@@ -308,7 +308,9 @@ void CTerrainManager::MarkAllyBuildings()
 		}
 	}
 	std::set<Structure, cmp> deadUnits;
-	std::set_difference(markedAllies.begin(), markedAllies.end(), oldUnits.begin(), oldUnits.end(), std::inserter(deadUnits, deadUnits.begin()), cmp());
+	std::set_difference(markedAllies.begin(), markedAllies.end(),
+						oldUnits.begin(), oldUnits.end(),
+						std::inserter(deadUnits, deadUnits.begin()), cmp());
 	for (auto& building : deadUnits) {
 		if (building.def == mexDef) {  // update metalInfo's open state
 			circuit->GetMetalManager()->SetOpenSpot(building.pos, true);
@@ -317,7 +319,9 @@ void CTerrainManager::MarkAllyBuildings()
 		}
 	}
 	markedAllies.clear();
-	std::set_union(oldUnits.begin(), oldUnits.end(), newUnits.begin(), newUnits.end(), std::inserter(markedAllies, markedAllies.begin()), cmp());
+	std::set_union(oldUnits.begin(), oldUnits.end(),
+				   newUnits.begin(), newUnits.end(),
+				   std::inserter(markedAllies, markedAllies.begin()), cmp());
 }
 
 const CTerrainManager::SearchOffsets& CTerrainManager::GetSearchOffsetTable(int radius)

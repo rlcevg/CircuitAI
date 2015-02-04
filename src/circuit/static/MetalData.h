@@ -33,7 +33,7 @@ private:
 	using box = bg::model::box<point>;
 
 public:
-	using Metal = struct Metal {
+	using Metal = struct {
 		float income;
 		springai::AIFloat3 position;
 	};
@@ -41,7 +41,7 @@ public:
 	using MetalNode = std::pair<point, int>;  // spots indexer
 	using MetalPredicate = std::function<bool (MetalNode const& v)>;
 	using MetalIndices = std::vector<int>;
-	using Cluster = struct Cluster {
+	using Cluster = struct {
 		MetalIndices idxSpots;
 		springai::AIFloat3 geoCentr;
 		springai::AIFloat3 weightCentr;

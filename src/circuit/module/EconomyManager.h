@@ -13,6 +13,8 @@
 #include "AIFloat3.h"
 
 #include <vector>
+#include <list>
+#include <set>
 
 namespace springai {
 	class Resource;
@@ -39,8 +41,9 @@ public:
 	CRecruitTask* CreateFactoryTask(CCircuitUnit* unit);
 	springai::Resource* GetMetalRes() const;
 	springai::Resource* GetEnergyRes() const;
-	springai::UnitDef* GetMexDef() const;
 	springai::AIFloat3 FindBuildPos(CCircuitUnit* unit);
+	void AddAvailEnergy(const std::set<springai::UnitDef*>& addonDefs);
+	void RemoveAvailEnergy(const std::set<springai::UnitDef*>& deleteDefs);
 
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position);
 	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position);
@@ -67,13 +70,12 @@ private:
 	float pylonRange;
 	int pylonCount, pylonMaxCount;
 
-	springai::UnitDef* mexDef;
-	using Energy = struct Energy {
+	using EnergyInfo = struct {
 		springai::UnitDef* def;
 		float make;
 		float cost;
 	};
-	std::vector<Energy> energyDefs;
+	std::list<EnergyInfo> energyInfos;
 };
 
 } // namespace circuit

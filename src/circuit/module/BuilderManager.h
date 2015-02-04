@@ -30,6 +30,11 @@ public:
 	virtual int UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
+	void AddBuildList(CCircuitUnit* unit);
+	void RemoveBuildList(CCircuitUnit* unit);
+	springai::UnitDef* GetMexDef() const;
+	const std::set<springai::UnitDef*>& GetEnergyDefs() const;
+
 	float GetBuilderPower();
 	bool CanEnqueueTask();
 	const std::set<IBuilderTask*>& GetTasks(IBuilderTask::BuildType type);
@@ -76,6 +81,12 @@ private:
 	Handlers1 idleHandler;
 	Handlers2 damagedHandler;
 	Handlers2 destroyedHandler;
+
+	std::set<springai::UnitDef*> allEnergyDefs;
+	std::set<springai::UnitDef*> availEnergyDefs;
+	springai::UnitDef* mexDef;
+	// TODO: Consider moving into CCircuitDef?
+	std::unordered_map<springai::UnitDef*, int> buildCounts;
 
 	std::map<CCircuitUnit*, IBuilderTask*> unfinishedUnits;
 	std::vector<std::set<IBuilderTask*>> builderTasks;  // owner

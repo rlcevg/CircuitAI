@@ -29,9 +29,9 @@ public:
 	void Dec();
 
 	CCircuitDef& operator++ ();     // prefix  (++C): no parameter, returns a reference
-    CCircuitDef  operator++ (int);  // postfix (C++): dummy parameter, returns a value
+	CCircuitDef  operator++ (int);  // postfix (C++): dummy parameter, returns a value
 	CCircuitDef& operator-- ();     // prefix  (++C): no parameter, returns a reference
-    CCircuitDef  operator-- (int);  // postfix (C++): dummy parameter, returns a value
+	CCircuitDef  operator-- (int);  // postfix (C++): dummy parameter, returns a value
 
 private:
 	std::unordered_set<springai::UnitDef*> buildOptions;
