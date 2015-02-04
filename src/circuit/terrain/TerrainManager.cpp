@@ -72,7 +72,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 
 	def = circuit->GetUnitDefByName("armfus");
 	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) * 0.9;
+	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) * 0.95;
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
@@ -83,7 +83,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 
 	def = circuit->GetUnitDefByName("cafus");
 	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) * 0.9;
+	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) * 0.95;
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
@@ -131,7 +131,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 
 	def = circuit->GetUnitDefByName("armnanotc");
 	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) * 0.9;
+	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) * 0.95;
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);

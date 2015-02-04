@@ -310,7 +310,7 @@ float CFactoryManager::GetFactoryPower()
 
 bool CFactoryManager::CanEnqueueTask()
 {
-	return (factoryTasks.size() < factories.size() * 4);
+	return (factoryTasks.size() < factories.size() * 2);
 }
 
 const std::list<CRecruitTask*>& CFactoryManager::GetTasks() const

@@ -44,6 +44,7 @@ public:
 	void AddBlocker(springai::UnitDef* unitDef, const springai::AIFloat3& pos, int facing);
 	void RemoveBlocker(springai::UnitDef* unitDef, const springai::AIFloat3& pos, int facing);
 	// TODO: Use IsInBounds test and Bound operation only if mask or search offsets (endr) are out of bounds
+	// TODO: Use A* to calculate build offset
 	springai::AIFloat3 FindBuildSite(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int facing);
 private:
 	int cacheBuildFrame;

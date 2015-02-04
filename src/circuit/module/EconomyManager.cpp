@@ -30,13 +30,19 @@ namespace circuit {
 
 using namespace springai;
 
+#define INCOME_SAMPLES	5
+
 CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		IModule(circuit),
-		pylonCount(0)
+		pylonCount(0),
+		indexRes(0)
 {
 	metalRes = circuit->GetCallback()->GetResourceByName("Metal");
 	energyRes = circuit->GetCallback()->GetResourceByName("Energy");
 	eco = circuit->GetCallback()->GetEconomy();
+
+	metalIncomes.resize(INCOME_SAMPLES, .0f);
+	energyIncomes.resize(INCOME_SAMPLES, .0f);
 
 	UnitDef* def = circuit->GetUnitDefByName("armestor");
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
@@ -46,7 +52,9 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	// TODO: Use A* ai planning... or sth... STRIPS https://ru.wikipedia.org/wiki/STRIPS
 	//       https://ru.wikipedia.org/wiki/Марковский_процесс_принятия_решений
 
-	circuit->GetScheduler()->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CEconomyManager::Init, this));
+	CScheduler* scheduler = circuit->GetScheduler();
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateResourceIncome, this), FRAMES_PER_SEC);
+	scheduler->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CEconomyManager::Init, this));
 
 	// TODO: Group handlers
 	//       Raider:       Glaive, Bandit, Scorcher, Pyro, Panther, Scrubber, Duck
@@ -223,7 +231,7 @@ CRecruitTask* CEconomyManager::CreateFactoryTask(CCircuitUnit* unit)
 	const char* names2[] = {"armpw", "armrock", "armpw", "armwar", "armsnipe", "armzeus"};
 	const char* names1[] = {"armpw", "armrock", "armpw", "armwar", "armpw", "armrock"};
 	char** names;
-	float metalIncome = eco->GetIncome(metalRes);
+	float metalIncome = GetAvgMetalIncome();
 	if (metalIncome > 30) {
 		names = (char**)names3;
 	} else if (metalIncome > 20) {
@@ -358,6 +366,36 @@ void CEconomyManager::RemoveAvailEnergy(const std::set<UnitDef*>& buildDefs)
 	}
 }
 
+void CEconomyManager::UpdateResourceIncome()
+{
+	energyIncomes[indexRes] = eco->GetIncome(energyRes);
+	metalIncomes[indexRes] = eco->GetIncome(metalRes);
+	indexRes++;
+	indexRes %= INCOME_SAMPLES;
+
+	metalIncome = .0f;
+	for (int i = 0; i < INCOME_SAMPLES; i++) {
+		metalIncome += metalIncomes[i];
+	}
+	metalIncome /= INCOME_SAMPLES;
+
+	energyIncome = .0f;
+	for (int i = 0; i < INCOME_SAMPLES; i++) {
+		energyIncome += energyIncomes[i];
+	}
+	energyIncome /= INCOME_SAMPLES;
+}
+
+float CEconomyManager::GetAvgMetalIncome()
+{
+	return metalIncome;
+}
+
+float CEconomyManager::GetAvgEnergyIncome()
+{
+	return energyIncome;
+}
+
 IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position)
 {
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
@@ -367,9 +405,9 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position)
 	}
 
 	// check uncolonized mexes
-	float energyIncome = eco->GetIncome(energyRes);
-	float metalIncome = eco->GetIncome(metalRes);
-	if ((energyIncome * 0.8 > metalIncome) && circuit->IsAvailable(mexDef)) {
+	float energyIncome = GetAvgEnergyIncome();
+	float metalIncome = GetAvgMetalIncome();
+	if ((energyIncome > metalIncome) && circuit->IsAvailable(mexDef)) {
 		float cost = mexDef->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 3 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < count) {
@@ -404,10 +442,9 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position)
 		return task;
 	}
 
-	// TODO: Average income
 	// check energy / metal ratio
-	float energyIncome = eco->GetIncome(energyRes);
-	float metalIncome = eco->GetIncome(metalRes);
+	float energyIncome = GetAvgEnergyIncome();
+	float metalIncome = GetAvgMetalIncome();
 	float energyUsage = eco->GetUsage(energyRes);
 
 	if ((metalIncome > energyIncome * 0.8) || (energyUsage > energyIncome * 0.8)) {
@@ -483,7 +520,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position)
 	UnitDef* facDef = circuit->GetUnitDefByName("factorycloak");
 
 	// check buildpower
-	float metalIncome = eco->GetIncome(metalRes);
+	float metalIncome = GetAvgMetalIncome();
 	CFactoryManager* factoryManager = circuit->GetFactoryManager();
 	if ((factoryManager->GetFactoryPower() < metalIncome) &&
 			builderManager->GetTasks(IBuilderTask::BuildType::FACTORY).empty() && builderManager->GetTasks(IBuilderTask::BuildType::NANO).empty()) {
@@ -546,7 +583,7 @@ CRecruitTask* CEconomyManager::UpdateRecruitTasks()
 
 	UnitDef* buildDef = circuit->GetUnitDefByName("armrectr");
 
-	float metalIncome = eco->GetIncome(metalRes);
+	float metalIncome = GetAvgMetalIncome();
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	// TODO: Create ReclaimTask for 20% of workers, and 20% RepairTask.
 	if ((builderManager->GetBuilderPower() < metalIncome * 1.2) && circuit->IsAvailable(buildDef)) {
@@ -576,7 +613,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 	UnitDef* storeDef = circuit->GetUnitDefByName("armmstor");
 	UnitDef* pylonDef = circuit->GetUnitDefByName("armestor");
 
-	float income = eco->GetIncome(metalRes);
+	float income = GetAvgMetalIncome();
 	float storage = eco->GetStorage(metalRes);
 	if (builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() && (storage / income < 25) && circuit->IsAvailable(storeDef)) {
 		const AIFloat3& startPos = circuit->GetSetupManager()->GetStartPos();

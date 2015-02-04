@@ -278,7 +278,7 @@ float CBuilderManager::GetBuilderPower()
 
 bool CBuilderManager::CanEnqueueTask()
 {
-	return (builderTasksCount < workers.size() * 4);
+	return (builderTasksCount < workers.size() * 2);
 }
 
 const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType type)

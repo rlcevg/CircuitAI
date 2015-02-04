@@ -46,6 +46,10 @@ public:
 	void AddAvailEnergy(const std::set<springai::UnitDef*>& buildDefs);
 	void RemoveAvailEnergy(const std::set<springai::UnitDef*>& buildDefs);
 
+	void UpdateResourceIncome();
+	float GetAvgMetalIncome();
+	float GetAvgEnergyIncome();
+
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position);
 	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position);
 	IBuilderTask* UpdateFactoryTasks(const springai::AIFloat3& position);
@@ -80,6 +84,13 @@ private:
 		float cost;
 	};
 	std::list<EnergyInfo> energyInfos;
+
+	// TODO: Didn't see any improvements. Remove avg?
+	std::vector<float> metalIncomes;
+	std::vector<float> energyIncomes;
+	int indexRes;
+	float metalIncome;
+	float energyIncome;
 };
 
 } // namespace circuit
