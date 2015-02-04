@@ -41,9 +41,10 @@ public:
 	CRecruitTask* CreateFactoryTask(CCircuitUnit* unit);
 	springai::Resource* GetMetalRes() const;
 	springai::Resource* GetEnergyRes() const;
+	springai::UnitDef* GetMexDef() const;
 	springai::AIFloat3 FindBuildPos(CCircuitUnit* unit);
-	void AddAvailEnergy(const std::set<springai::UnitDef*>& addonDefs);
-	void RemoveAvailEnergy(const std::set<springai::UnitDef*>& deleteDefs);
+	void AddAvailEnergy(const std::set<springai::UnitDef*>& buildDefs);
+	void RemoveAvailEnergy(const std::set<springai::UnitDef*>& buildDefs);
 
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position);
 	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position);
@@ -70,6 +71,9 @@ private:
 	float pylonRange;
 	int pylonCount, pylonMaxCount;
 
+	springai::UnitDef* mexDef;
+	std::set<springai::UnitDef*> allEnergyDefs;
+	std::set<springai::UnitDef*> availEnergyDefs;
 	using EnergyInfo = struct {
 		springai::UnitDef* def;
 		float make;

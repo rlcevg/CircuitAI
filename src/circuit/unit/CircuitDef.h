@@ -33,9 +33,14 @@ public:
 	CCircuitDef& operator-- ();     // prefix  (++C): no parameter, returns a reference
 	CCircuitDef  operator-- (int);  // postfix (C++): dummy parameter, returns a value
 
+	void IncBuild();
+	void DecBuild();
+	int GetBuildCount();
+
 private:
 	std::unordered_set<springai::UnitDef*> buildOptions;
 	int count;
+	int buildCounts;  // number of builder defs able to build this def;
 };
 
 } // namespace circuit

@@ -109,6 +109,28 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	float pylonSquare = pylonRange * 2 / SQUARE_SIZE;
 	pylonSquare *= pylonSquare;
 	pylonMaxCount = ((map->GetWidth() * map->GetHeight()) / pylonSquare) / 2;
+
+	/*
+	 *  Identify resource buildings
+	 */
+	CCircuitAI::UnitDefs& allDefs = circuit->GetUnitDefs();
+	for (auto& kv : allDefs) {
+		UnitDef* def = kv.second;
+		if (def->GetSpeed() <= 0) {
+			float make = def->GetResourceMake(energyRes);
+			float use = def->GetUpkeep(energyRes);
+			if ((make > 0) || (use < 0)) {
+				// TODO: Filter only defs that we are able to build
+				allEnergyDefs.insert(def);
+			}
+
+			const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+			auto search = customParams.find("ismex");
+			if ((search != customParams.end()) && (utils::string_to_int(search->second) == 1)) {
+				mexDef = def;  // cormex
+			}
+		}
+	}
 }
 
 CEconomyManager::~CEconomyManager()
@@ -226,6 +248,11 @@ Resource* CEconomyManager::GetEnergyRes() const
 	return energyRes;
 }
 
+UnitDef* CEconomyManager::GetMexDef() const
+{
+	return mexDef;
+}
+
 AIFloat3 CEconomyManager::FindBuildPos(CCircuitUnit* unit)
 {
 	IBuilderTask* task = static_cast<IBuilderTask*>(unit->GetTask());
@@ -272,11 +299,24 @@ AIFloat3 CEconomyManager::FindBuildPos(CCircuitUnit* unit)
 	return buildPos;
 }
 
-void CEconomyManager::AddAvailEnergy(const std::set<UnitDef*>& addonDefs)
+void CEconomyManager::AddAvailEnergy(const std::set<UnitDef*>& buildDefs)
 {
+	// TODO: Cache engyDefs in CCircuitDef?
+	std::set<UnitDef*> engyDefs;
+	std::set_intersection(allEnergyDefs.begin(), allEnergyDefs.end(),
+						  buildDefs.begin(), buildDefs.end(),
+						  std::inserter(engyDefs, engyDefs.begin()));
+	std::set<UnitDef*> diffDefs;
+	std::set_difference(engyDefs.begin(), engyDefs.end(),
+						availEnergyDefs.begin(), availEnergyDefs.end(),
+						std::inserter(diffDefs, diffDefs.begin()));
+	if (diffDefs.empty()) {
+		return;
+	}
+	availEnergyDefs.insert(diffDefs.begin(), diffDefs.end());
+
 	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
-//	energyInfos.reserve(energyInfos.size() + addonDefs.size());
-	for (auto def : addonDefs) {
+	for (auto def : diffDefs) {
 		float make = def->GetResourceMake(energyRes);
 		EnergyInfo engy;
 		engy.def = def;
@@ -289,17 +329,30 @@ void CEconomyManager::AddAvailEnergy(const std::set<UnitDef*>& addonDefs)
 	auto compare = [](const EnergyInfo& e1, const EnergyInfo& e2) {
 		return (e1.make / e1.cost) > (e2.make / e2.cost);
 	};
-//	std::sort(energyInfos.begin(), energyInfos.end(), compare);
 	energyInfos.sort(compare);
 }
 
-void CEconomyManager::RemoveAvailEnergy(const std::set<UnitDef*>& deleteDefs)
+void CEconomyManager::RemoveAvailEnergy(const std::set<UnitDef*>& buildDefs)
 {
+	// TODO: Cache engyDefs in CCircuitDef?
+	std::set<UnitDef*> engyDefs;
+	std::set_intersection(allEnergyDefs.begin(), allEnergyDefs.end(),
+						  buildDefs.begin(), buildDefs.end(),
+						  std::inserter(engyDefs, engyDefs.begin()));
+	std::set<UnitDef*> diffDefs;
+	std::set_difference(availEnergyDefs.begin(), availEnergyDefs.end(),
+						engyDefs.begin(), engyDefs.end(),
+						std::inserter(diffDefs, diffDefs.begin()));
+	if (diffDefs.empty()) {
+		return;
+	}
+	availEnergyDefs.erase(diffDefs.begin(), diffDefs.end());
+
 	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
 	auto it = energyInfos.begin();
 	while (it != energyInfos.end()) {
-		auto search = deleteDefs.find(it->def);
-		if (search != deleteDefs.end()) {
+		auto search = diffDefs.find(it->def);
+		if (search != diffDefs.end()) {
 			it = energyInfos.erase(it);
 		}
 	}
@@ -316,7 +369,6 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position)
 	// check uncolonized mexes
 	float energyIncome = eco->GetIncome(energyRes);
 	float metalIncome = eco->GetIncome(metalRes);
-	UnitDef* mexDef = builderManager->GetMexDef();
 	if ((energyIncome * 0.8 > metalIncome) && circuit->IsAvailable(mexDef)) {
 		float cost = mexDef->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 3 + 1;
@@ -325,9 +377,10 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position)
 			const CMetalData::Metals& spots = metalManager->GetSpots();
 			const std::vector<CMetalManager::MetalInfo>& metalInfos = metalManager->GetMetalInfos();
 			Map* map = circuit->GetMap();
-			CMetalData::MetalPredicate predicate = [&spots, &metalInfos, map, mexDef](CMetalData::MetalNode const& v) {
+			UnitDef* metalDef = mexDef;
+			CMetalData::MetalPredicate predicate = [&spots, &metalInfos, map, metalDef](CMetalData::MetalNode const& v) {
 				int index = v.second;
-				return (metalInfos[index].isOpen && map->IsPossibleToBuildAt(mexDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
+				return (metalInfos[index].isOpen && map->IsPossibleToBuildAt(metalDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 			};
 			int index = metalManager->FindNearestSpot(position, predicate);
 			if (index != -1) {

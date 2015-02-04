@@ -345,11 +345,11 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 
 	// EconomyManager uses metal clusters and must be initialized after MetalManager::ClusterizeMetal
 	economyManager = std::make_shared<CEconomyManager>(this);
-	builderManager = std::make_shared<CBuilderManager>(this);
 
 	// TerrainManager uses BuilderManager::GetMexDef and must be initialized after EconomyManager
 	terrainManager = std::make_shared<CTerrainManager>(this);
 
+	builderManager = std::make_shared<CBuilderManager>(this);
 	factoryManager = std::make_shared<CFactoryManager>(this);
 	militaryManager = std::make_shared<CMilitaryManager>(this);
 

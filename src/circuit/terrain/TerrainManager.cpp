@@ -10,7 +10,7 @@
 #include "terrain/BlockCircle.h"
 #include "unit/CircuitUnit.h"
 #include "static/MetalManager.h"
-#include "module/BuilderManager.h"
+#include "module/EconomyManager.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -39,7 +39,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 	terrainWidth = mapWidth * SQUARE_SIZE;
 	terrainHeight = mapHeight * SQUARE_SIZE;
 
-	UnitDef* mexDef = circuit->GetBuilderManager()->GetMexDef();
+	UnitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 
 	/*
 	 * building masks
@@ -279,7 +279,7 @@ void CTerrainManager::MarkAllyBuildings()
 
 	circuit->UpdateAllyUnits();
 	const std::map<int, CCircuitUnit*>& allies = circuit->GetAllyUnits();
-	UnitDef* mexDef = circuit->GetBuilderManager()->GetMexDef();
+	UnitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 
 	std::set<Structure, cmp> newUnits, oldUnits;
 	for (auto& kv : allies) {

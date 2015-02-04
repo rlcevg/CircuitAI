@@ -89,8 +89,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 	float testRange = range + 200;
 	const AIFloat3& pos = unit->GetUnit()->GetPos();
 	if (buildPos.SqDistance2D(pos) < testRange * testRange) {
-		CBuilderManager* builderManager = circuit->GetBuilderManager();
-		int mexDefId = builderManager->GetMexDef()->GetUnitDefId();
+		int mexDefId = circuit->GetEconomyManager()->GetMexDef()->GetUnitDefId();
 		// TODO: Use internal CCircuitAI::GetEnemyUnits?
 		std::vector<Unit*> enemies = circuit->GetCallback()->GetEnemyUnitsIn(buildPos, 1);
 		bool blocked = false;
@@ -105,6 +104,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 		}
 		utils::free_clear(enemies);
 		if (blocked) {
+			CBuilderManager* builderManager = circuit->GetBuilderManager();
 			IBuilderTask* task = nullptr;
 			float qdist = 200 * 200;
 			// TODO: Push tasks into bgi::rtree

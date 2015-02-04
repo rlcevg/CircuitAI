@@ -14,7 +14,8 @@ using namespace springai;
 
 CCircuitDef::CCircuitDef(std::unordered_set<springai::UnitDef*>& opts) :
 		count(0),
-		buildOptions(opts)
+		buildOptions(opts),
+		buildCounts(0)
 {
 }
 
@@ -72,6 +73,21 @@ CCircuitDef  CCircuitDef::operator-- (int)
 	CCircuitDef temp = *this;
 	count--;
 	return temp;
+}
+
+void CCircuitDef::IncBuild()
+{
+	buildCounts++;
+}
+
+void CCircuitDef::DecBuild()
+{
+	buildCounts--;
+}
+
+int CCircuitDef::GetBuildCount()
+{
+	return buildCounts;
 }
 
 } // namespace circuit
