@@ -10,7 +10,7 @@
 
 #include "task/UnitTask.h"
 
-#define MIN_BUILD_SEC	10
+#define MIN_BUILD_SEC	30
 #define MAX_BUILD_SEC	120
 #define MAX_TRAVEL_SEC	60
 

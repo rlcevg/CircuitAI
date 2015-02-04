@@ -207,13 +207,16 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 		return task;
 	}
 
-	const std::set<IBuilderTask*>& tasks = builderManager->GetTasks(IBuilderTask::BuildType::BIG_GUN);
-	if (tasks.empty()) {
-		task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, circuit->GetUnitDefByName("raveparty"),
-										   circuit->GetSetupManager()->GetStartPos(), IBuilderTask::BuildType::BIG_GUN);
-	} else {
-		task = *tasks.begin();
-	}
+	// TODO: Fix eco rules. It should never get here
+//	const std::set<IBuilderTask*>& tasks = builderManager->GetTasks(IBuilderTask::BuildType::BIG_GUN);
+//	if (tasks.empty()) {
+//		task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, circuit->GetUnitDefByName("raveparty"),
+//										   circuit->GetSetupManager()->GetStartPos(), IBuilderTask::BuildType::BIG_GUN);
+//	} else {
+//		task = *tasks.begin();
+//	}
+	task = builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, circuit->GetUnitDefByName("armwin"),
+									   pos, IBuilderTask::BuildType::ENERGY);
 	return task;
 }
 
@@ -409,7 +412,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position)
 	float metalIncome = GetAvgMetalIncome();
 	if ((energyIncome > metalIncome) && circuit->IsAvailable(mexDef)) {
 		float cost = mexDef->GetCost(metalRes);
-		int count = builderManager->GetBuilderPower() / cost * 3 + 1;
+		int count = builderManager->GetBuilderPower() / cost * 4 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < count) {
 			CMetalManager* metalManager = circuit->GetMetalManager();
 			const CMetalData::Metals& spots = metalManager->GetSpots();
@@ -463,7 +466,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position)
 			//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
 			float metric = engy.cost / (buildPower * buildPower / 8);
 			if (metric < MAX_BUILD_SEC) {
-				int count = buildPower / engy.cost * 4 + 1;
+				int count = buildPower / engy.cost * 4 + 2;
 				if (tasks.size() < count) {
 					cost = engy.cost;
 					bestDef = engy.def;
