@@ -410,7 +410,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position)
 	// check uncolonized mexes
 	float energyIncome = GetAvgEnergyIncome();
 	float metalIncome = GetAvgMetalIncome();
-	if ((energyIncome > metalIncome) && circuit->IsAvailable(mexDef)) {
+	if ((energyIncome * 0.95 > metalIncome) && circuit->IsAvailable(mexDef)) {
 		float cost = mexDef->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 4 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < count) {
@@ -466,7 +466,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position)
 			//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
 			float metric = engy.cost / (buildPower * buildPower / 8);
 			if (metric < MAX_BUILD_SEC) {
-				int count = buildPower / engy.cost * 4 + 2;
+				int count = buildPower / engy.cost * 4 + 1;
 				if (tasks.size() < count) {
 					cost = engy.cost;
 					bestDef = engy.def;

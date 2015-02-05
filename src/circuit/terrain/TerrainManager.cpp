@@ -70,6 +70,19 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 				 STRUCTURE_MASK_BIT(NANO);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::ENGY_LOW, ignoreMask);
 
+	def = circuit->GetUnitDefByName("armwin");
+	wpDef = def->GetDeathExplosion();
+	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) * 0.95;
+	delete wpDef;
+	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+	offset = int2(0, 0);
+	ignoreMask = STRUCTURE_MASK_BIT(MEX) |
+				 STRUCTURE_MASK_BIT(ENGY_HIGH) |
+				 STRUCTURE_MASK_BIT(DEF_LOW) |
+				 STRUCTURE_MASK_BIT(PYLON) |
+				 STRUCTURE_MASK_BIT(NANO);
+	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_LOW, ignoreMask);
+
 	def = circuit->GetUnitDefByName("armfus");
 	wpDef = def->GetDeathExplosion();
 	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) * 0.95;
