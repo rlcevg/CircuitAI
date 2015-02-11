@@ -1,11 +1,11 @@
 /*
- * MetalManager.cpp
+ * ResourceManager.cpp
  *
  *  Created on: Dec 9, 2014
  *      Author: rlcevg
  */
 
-#include "static/MetalManager.h"
+#include "resource/ResourceManager.h"
 #include "CircuitAI.h"
 #include "util/RagMatrix.h"
 #include "util/Scheduler.h"

@@ -8,6 +8,8 @@
 #ifndef SRC_CIRCUIT_UTIL_UTILS_H_
 #define SRC_CIRCUIT_UTIL_UTILS_H_
 
+#include "Sim/Misc/GlobalConstants.h"
+
 #include <chrono>
 #include <thread>
 
@@ -29,8 +31,7 @@ namespace utils {
 	#define PRINT_DEBUG(fmt, ...)
 #endif
 
-#define SQUARE_SIZE			8
-#define FRAMES_PER_SEC		30
+#define FRAMES_PER_SEC		GAME_SPEED
 #define WATCHDOG_COUNT		2
 // z++
 #define UNIT_FACING_SOUTH	0

@@ -6,9 +6,9 @@
  */
 
 #include "static/SetupManager.h"
-#include "CircuitAI.h"
 #include "static/SetupData.h"
-#include "static/MetalManager.h"
+#include "resource/ResourceManager.h"
+#include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 

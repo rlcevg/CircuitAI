@@ -6,10 +6,10 @@
  */
 
 #include "module/MilitaryManager.h"
-#include "CircuitAI.h"
+#include "resource/ResourceManager.h"
 #include "unit/CircuitUnit.h"
-#include "static/MetalManager.h"
 #include "terrain/TerrainManager.h"
+#include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 

@@ -9,7 +9,7 @@
 #define SRC_CIRCUIT_STATIC_GAMEATTRIBUTE_H_
 
 #include "static/SetupData.h"
-#include "static/MetalData.h"
+#include "resource/MetalData.h"
 
 #include <unordered_set>
 

@@ -8,7 +8,7 @@
 #include "module/EconomyManager.h"
 #include "CircuitAI.h"
 #include "static/SetupManager.h"
-#include "static/MetalManager.h"
+#include "resource/ResourceManager.h"
 #include "unit/CircuitUnit.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"

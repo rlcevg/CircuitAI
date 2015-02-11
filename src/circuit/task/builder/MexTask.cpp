@@ -8,9 +8,9 @@
 #include "task/builder/MexTask.h"
 #include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
-#include "static/MetalManager.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"
+#include "resource/ResourceManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 

@@ -8,7 +8,7 @@
 #include "CircuitAI.h"
 #include "static/GameAttribute.h"
 #include "static/SetupManager.h"
-#include "static/MetalManager.h"
+#include "resource/ResourceManager.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
 #include "module/EconomyManager.h"

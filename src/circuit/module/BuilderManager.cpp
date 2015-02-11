@@ -8,7 +8,7 @@
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
 #include "static/SetupManager.h"
-#include "static/MetalManager.h"
+#include "resource/ResourceManager.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
 #include "terrain/TerrainManager.h"

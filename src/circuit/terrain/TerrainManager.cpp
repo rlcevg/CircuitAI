@@ -9,8 +9,8 @@
 #include "terrain/BlockRectangle.h"
 #include "terrain/BlockCircle.h"
 #include "unit/CircuitUnit.h"
-#include "static/MetalManager.h"
 #include "module/EconomyManager.h"
+#include "resource/ResourceManager.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -72,7 +72,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 
 	def = circuit->GetUnitDefByName("armwin");
 	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) * 0.95;
+	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
@@ -85,7 +85,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 
 	def = circuit->GetUnitDefByName("armfus");
 	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) * 0.95;
+	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
@@ -96,7 +96,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 
 	def = circuit->GetUnitDefByName("cafus");
 	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) * 0.95;
+	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
@@ -144,7 +144,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 
 	def = circuit->GetUnitDefByName("armnanotc");
 	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) * 0.95;
+	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);

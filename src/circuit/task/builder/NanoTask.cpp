@@ -8,7 +8,7 @@
 #include "task/builder/NanoTask.h"
 #include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
-#include "static/MetalManager.h"
+#include "resource/ResourceManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"

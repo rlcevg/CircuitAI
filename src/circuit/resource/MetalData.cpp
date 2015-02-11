@@ -5,7 +5,7 @@
  *      Author: rlcevg
  */
 
-#include "static/MetalData.h"
+#include "resource/MetalData.h"
 #include "util/RagMatrix.h"
 #include "util/utils.h"
 
@@ -92,6 +92,7 @@ const int CMetalData::FindNearestSpot(const AIFloat3& pos, MetalPredicate& predi
 const CMetalData::MetalIndices CMetalData::FindNearestSpots(const AIFloat3& pos, int num) const
 {
 	std::vector<MetalNode> result_n;
+	result_n.reserve(num);
 	metalTree.query(bgi::nearest(point(pos.x, pos.z), num), std::back_inserter(result_n));
 
 	MetalIndices result;
@@ -104,6 +105,7 @@ const CMetalData::MetalIndices CMetalData::FindNearestSpots(const AIFloat3& pos,
 const CMetalData::MetalIndices CMetalData::FindNearestSpots(const AIFloat3& pos, int num, MetalPredicate& predicate) const
 {
 	std::vector<MetalNode> result_n;
+	result_n.reserve(num);
 	metalTree.query(bgi::nearest(point(pos.x, pos.z), num) && bgi::satisfies(predicate), std::back_inserter(result_n));
 
 	MetalIndices result;
@@ -168,6 +170,7 @@ const int CMetalData::FindNearestCluster(const AIFloat3& pos, MetalPredicate& pr
 const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& pos, int num) const
 {
 	std::vector<MetalNode> result_n;
+	result_n.reserve(num);
 	clusterTree.query(bgi::nearest(point(pos.x, pos.z), num), std::back_inserter(result_n));
 
 	MetalIndices result;
@@ -180,6 +183,7 @@ const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& p
 const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& pos, int num, MetalPredicate& predicate) const
 {
 	std::vector<MetalNode> result_n;
+	result_n.reserve(num);
 	clusterTree.query(bgi::nearest(point(pos.x, pos.z), num) && bgi::satisfies(predicate), std::back_inserter(result_n));
 
 	MetalIndices result;
