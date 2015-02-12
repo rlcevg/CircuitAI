@@ -6,9 +6,9 @@
  */
 
 #include "module/MilitaryManager.h"
-#include "resource/ResourceManager.h"
-#include "unit/CircuitUnit.h"
+#include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
+#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"

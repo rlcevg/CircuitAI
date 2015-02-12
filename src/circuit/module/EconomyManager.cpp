@@ -6,13 +6,13 @@
  */
 
 #include "module/EconomyManager.h"
-#include "CircuitAI.h"
-#include "static/SetupManager.h"
-#include "resource/ResourceManager.h"
-#include "unit/CircuitUnit.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
+#include "static/SetupManager.h"
+#include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
+#include "unit/CircuitUnit.h"
+#include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 

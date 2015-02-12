@@ -25,12 +25,12 @@ local infos = {
 	},
 	{
 		key    = 'name',
-		value  = 'Test AI using the new C++ wrapper',
+		value  = 'Circuit',
 		desc   = 'human readable name.',
 	},
 	{
 		key    = 'description',
-		value  = 'This AI is for testing the C++ wrapper only.',
+		value  = 'This AI is using the new C++ wrapper.',
 		desc   = 'tooltip.',
 	},
 	{

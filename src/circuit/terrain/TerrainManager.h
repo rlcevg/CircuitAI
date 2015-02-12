@@ -9,7 +9,6 @@
 #define SRC_CIRCUIT_TERRAIN_TERRAINMANAGER_H_
 
 #include "terrain/BlockingMap.h"
-#include "terrain/TerrainData.h"
 
 #include "AIFloat3.h"
 
@@ -25,10 +24,11 @@ namespace circuit {
 class CCircuitAI;
 class CCircuitUnit;
 class IBlockMask;
+class CTerrainData;
 
 class CTerrainManager {
 public:
-	CTerrainManager(CCircuitAI* circuit);
+	CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData);
 	virtual ~CTerrainManager();
 private:
 	CCircuitAI* circuit;
@@ -90,7 +90,7 @@ public:
 	const std::vector<springai::AIFloat3>& GetDefencePoints() const;
 	const std::vector<springai::AIFloat3>& GetDefencePerimeter() const;
 private:
-	CTerrainData terrainData;
+	CTerrainData* terrainData;
 };
 
 } // namespace circuit

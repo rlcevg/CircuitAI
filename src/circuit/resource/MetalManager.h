@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_RESOURCEMANAGER_H_
 #define SRC_CIRCUIT_RESOURCEMANAGER_H_
 
-#include "resource/MetalData.h"
+#include "static/MetalData.h"
 
 #include <vector>
 

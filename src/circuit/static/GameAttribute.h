@@ -9,7 +9,8 @@
 #define SRC_CIRCUIT_STATIC_GAMEATTRIBUTE_H_
 
 #include "static/SetupData.h"
-#include "resource/MetalData.h"
+#include "static/MetalData.h"
+#include "static/TerrainData.h"
 
 #include <unordered_set>
 
@@ -33,12 +34,14 @@ public:
 
 	CSetupData& GetSetupData();
 	CMetalData& GetMetalData();
+	CTerrainData& GetTerrainData();
 
 private:
 	bool gameEnd;
 	std::unordered_set<CCircuitAI*> circuits;
 	CSetupData setupData;
 	CMetalData metalData;
+	CTerrainData terrainData;
 };
 
 } // namespace circuit

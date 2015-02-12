@@ -8,9 +8,10 @@
 #include "terrain/TerrainManager.h"
 #include "terrain/BlockRectangle.h"
 #include "terrain/BlockCircle.h"
-#include "unit/CircuitUnit.h"
+#include "static/TerrainData.h"
 #include "module/EconomyManager.h"
-#include "resource/ResourceManager.h"
+#include "resource/MetalManager.h"
+#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -29,8 +30,9 @@ namespace circuit {
 
 using namespace springai;
 
-CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
+CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData) :
 		circuit(circuit),
+		terrainData(terrainData),
 		cacheBuildFrame(0)
 {
 	Map* map = circuit->GetMap();
@@ -142,6 +144,17 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 				 STRUCTURE_MASK_BIT(NANO);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::DEF_LOW, ignoreMask);
 
+	def = circuit->GetUnitDefByName("corllt");
+	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+	bsize = ssize;
+	offset = int2(0, 0);
+	ignoreMask = STRUCTURE_MASK_BIT(ENGY_LOW) |
+				 STRUCTURE_MASK_BIT(ENGY_MID) |
+				 STRUCTURE_MASK_BIT(ENGY_HIGH) |
+				 STRUCTURE_MASK_BIT(PYLON) |
+				 STRUCTURE_MASK_BIT(NANO);
+	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::DEF_LOW, ignoreMask);
+
 	def = circuit->GetUnitDefByName("armnanotc");
 	wpDef = def->GetDeathExplosion();
 	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
@@ -187,6 +200,10 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit) :
 			ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 			blockInfos[def] = new CBlockRectangle(offset, ssize, ssize, SBlockingMap::StructType::UNKNOWN, ignoreMask);
 		}
+	}
+
+	if (!terrainData->IsInitialized()) {
+		terrainData->Init(circuit);
 	}
 }
 
@@ -847,7 +864,7 @@ void CTerrainManager::MarkBlocker(const Structure& building, bool block)
 void CTerrainManager::ClusterizeTerrain()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	terrainData.SetClusterizing(true);
+	terrainData->SetClusterizing(true);
 
 	// step 1: Create waypoints
 	Pathing* pathing = circuit->GetPathing();
@@ -969,17 +986,17 @@ void CTerrainManager::ClusterizeTerrain()
 	// step 4: Clusterize key waypoints
 	float maxDistance = circuit->GetUnitDefByName("cordoom")->GetMaxWeaponRange() * 2;
 	maxDistance *= maxDistance;
-	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CTerrainData::Clusterize, &terrainData, wayPoints, maxDistance, circuit));
+	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CTerrainData::Clusterize, terrainData, wayPoints, maxDistance, circuit));
 }
 
 const std::vector<springai::AIFloat3>& CTerrainManager::GetDefencePoints() const
 {
-	return terrainData.GetDefencePoints();
+	return terrainData->GetDefencePoints();
 }
 
 const std::vector<springai::AIFloat3>& CTerrainManager::GetDefencePerimeter() const
 {
-	return terrainData.GetDefencePerimeter();
+	return terrainData->GetDefencePerimeter();
 }
 
 } // namespace circuit

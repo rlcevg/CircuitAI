@@ -10,7 +10,7 @@
 #include "unit/CircuitUnit.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"
-#include "resource/ResourceManager.h"
+#include "resource/MetalManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -73,7 +73,7 @@ void CBMexTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, circuit->GetUnitDefByName("corrl"), buildPos, IBuilderTask::BuildType::DEFENCE);
+	builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, circuit->GetUnitDefByName("corllt"), buildPos, IBuilderTask::BuildType::DEFENCE);
 
 	circuit->GetEconomyManager()->UpdateMetalTasks(buildPos);
 }
@@ -84,7 +84,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 	 * Check if unit is idle because of enemy mex ahead and build turret if so.
 	 */
 	CCircuitAI* circuit = manager->GetCircuit();
-	UnitDef* def = circuit->GetUnitDefByName("corllt");
+	UnitDef* def = circuit->GetUnitDefByName("corrl");
 	float range = def->GetMaxWeaponRange();
 	float testRange = range + 200;
 	const AIFloat3& pos = unit->GetUnit()->GetPos();
@@ -115,7 +115,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 				}
 			}
 			if (task == nullptr) {
-				AIFloat3 newPos = buildPos - (buildPos - pos).Normalize2D() * range * 0.8;
+				AIFloat3 newPos = buildPos - (buildPos - pos).Normalize2D() * range * 0.9;
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, def, newPos, IBuilderTask::BuildType::DEFENCE);
 			}
 			manager->AssignTask(unit, task);

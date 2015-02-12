@@ -12,7 +12,7 @@
 #include "unit/CircuitDef.h"
 #include "unit/action/UnitAction.h"
 #include "module/EconomyManager.h"
-#include "resource/ResourceManager.h"
+#include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"

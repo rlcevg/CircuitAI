@@ -8,15 +8,15 @@
 #include "CircuitAI.h"
 #include "static/GameAttribute.h"
 #include "static/SetupManager.h"
-#include "resource/ResourceManager.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
 #include "module/EconomyManager.h"
 #include "module/MilitaryManager.h"
+#include "resource/MetalManager.h"
+#include "terrain/TerrainManager.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
 #include "task/PlayerTask.h"
-#include "terrain/TerrainManager.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
@@ -347,7 +347,7 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 	economyManager = std::make_shared<CEconomyManager>(this);
 
 	// TerrainManager uses BuilderManager::GetMexDef and must be initialized after EconomyManager
-	terrainManager = std::make_shared<CTerrainManager>(this);
+	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
 
 	builderManager = std::make_shared<CBuilderManager>(this);
 	factoryManager = std::make_shared<CFactoryManager>(this);

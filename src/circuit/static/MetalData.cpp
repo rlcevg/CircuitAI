@@ -5,7 +5,7 @@
  *      Author: rlcevg
  */
 
-#include "resource/MetalData.h"
+#include "static/MetalData.h"
 #include "util/RagMatrix.h"
 #include "util/utils.h"
 

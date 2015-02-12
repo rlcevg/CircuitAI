@@ -5,7 +5,7 @@
  *      Author: rlcevg
  */
 
-#include "resource/ResourceManager.h"
+#include "resource/MetalManager.h"
 #include "CircuitAI.h"
 #include "util/RagMatrix.h"
 #include "util/Scheduler.h"

@@ -61,4 +61,9 @@ CMetalData& CGameAttribute::GetMetalData()
 	return metalData;
 }
 
+CTerrainData& CGameAttribute::GetTerrainData()
+{
+	return terrainData;
+}
+
 } // namespace circuit
