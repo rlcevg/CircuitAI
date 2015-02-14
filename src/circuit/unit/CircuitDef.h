@@ -16,6 +16,9 @@ namespace springai {
 
 namespace circuit {
 
+struct STerrainMapMobileType;
+struct STerrainMapImmobileType;
+
 class CCircuitDef {
 public:
 	CCircuitDef(std::unordered_set<springai::UnitDef*>& opts);
@@ -37,10 +40,18 @@ public:
 	void DecBuild();
 	int GetBuildCount();
 
+	void SetImmobileType(STerrainMapImmobileType* immobile);
+	STerrainMapImmobileType* GetImmobileType();
+	void SetMobileType(STerrainMapMobileType* mobile);
+	STerrainMapMobileType* GetMobileType();
+
 private:
 	std::unordered_set<springai::UnitDef*> buildOptions;
 	int count;
 	int buildCounts;  // number of builder defs able to build this def;
+
+	STerrainMapMobileType* mobileType;
+	STerrainMapImmobileType* immobileType;
 };
 
 } // namespace circuit

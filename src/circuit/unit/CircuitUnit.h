@@ -26,6 +26,7 @@ namespace circuit {
 class CCircuitDef;
 class IUnitTask;
 class IUnitManager;
+struct STerrainMapArea;
 
 class CCircuitUnit: public CActionList {
 public:
@@ -43,6 +44,9 @@ public:
 	void SetManager(IUnitManager* mgr);
 	IUnitManager* GetManager();
 
+	void SetArea(STerrainMapArea* area);
+	STerrainMapArea* GetArea();
+
 private:
 	springai::Unit* unit;  // owner
 	springai::UnitDef* def;
@@ -50,6 +54,7 @@ private:
 	IUnitTask* task;
 	int taskFrame;
 	IUnitManager* manager;
+	STerrainMapArea* area;  // = nullptr if a unit flies
 };
 
 } // namespace circuit

@@ -62,7 +62,6 @@ class CScheduler;
 class CCircuitUnit;
 class CCircuitDef;
 class IModule;
-struct Metal;
 
 class CCircuitAI {
 public:

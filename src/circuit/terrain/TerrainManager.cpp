@@ -12,6 +12,7 @@
 #include "module/EconomyManager.h"
 #include "resource/MetalManager.h"
 #include "unit/CircuitUnit.h"
+#include "unit/CircuitDef.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -859,6 +860,77 @@ void CTerrainManager::MarkBlocker(const Structure& building, bool block)
 			}
 		}
 	}
+}
+
+//void CTerrainManager::CorrectPosition(AIFloat3& position)
+//{
+//	if (position.x < 1) {
+//		position.x = 1;
+//	} else if (position.x > terrainWidth - 2) {
+//		position.x = terrainWidth - 2;
+//	}
+//	if (position.z < 1) {
+//		position.z = 1;
+//	} else if (position.z > terrainHeight - 2) {
+//		position.z = terrainHeight - 2;
+//	}
+//	position.y = circuit->GetMap()->GetElevationAt(position.x, position.z);
+//}
+
+STerrainMapArea* CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIFloat3& position)
+{
+	STerrainMapMobileType* mobileType = cdef->GetMobileType();
+	if (mobileType == nullptr) {  // flying units & buildings
+		return nullptr;
+	}
+
+	// other mobile units & their factories
+	int iS = GetSectorIndex(position);
+//	if (!terrainManager->IsSectorValid(iS)) {
+//		CorrectPosition(pos);
+//		iS = terrainManager->GetSectorIndex(pos);
+//	}
+	return mobileType->sector[iS].area;
+}
+
+int CTerrainManager::GetSectorIndex(const AIFloat3& position)
+{
+	return terrainData->GetSectorIndex(position);
+}
+
+bool CTerrainManager::CanMoveToPos(STerrainMapArea* area, const AIFloat3& destination)
+{
+	return terrainData->CanMoveToPos(area, destination);
+}
+
+STerrainMapAreaSector* CTerrainManager::GetClosestSector(STerrainMapArea* sourceArea, const int& destinationSIndex)
+{
+	return terrainData->GetClosestSector(sourceArea, destinationSIndex);
+}
+
+STerrainMapSector* CTerrainManager::GetClosestSector(STerrainMapImmobileType* sourceIT, const int& destinationSIndex)
+{
+	return terrainData->GetClosestSector(sourceIT, destinationSIndex);
+}
+
+STerrainMapAreaSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* sourceArea, const int& sourceSIndex, STerrainMapMobileType* destinationMT)
+{
+	return terrainData->GetAlternativeSector(sourceArea, sourceSIndex, destinationMT);
+}
+
+STerrainMapSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* destinationArea, const int& sourceSIndex, STerrainMapImmobileType* destinationIT)
+{
+	return terrainData->GetAlternativeSector(destinationArea, sourceSIndex, destinationIT);
+}
+
+const STerrainMapSector& CTerrainManager::GetSector(int sIndex) const
+{
+	return terrainData->sector[sIndex];
+}
+
+int CTerrainManager::GetConvertStoP() const
+{
+	return terrainData->convertStoP;
 }
 
 void CTerrainManager::ClusterizeTerrain()

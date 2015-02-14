@@ -23,8 +23,14 @@ namespace circuit {
 
 class CCircuitAI;
 class CCircuitUnit;
+class CCircuitDef;
 class IBlockMask;
 class CTerrainData;
+struct STerrainMapArea;
+struct STerrainMapMobileType;
+struct STerrainMapImmobileType;
+struct STerrainMapAreaSector;
+struct STerrainMapSector;
 
 class CTerrainManager {
 public:
@@ -86,6 +92,17 @@ private:
 	void MarkBlocker(const Structure& building, bool block);
 
 public:
+//	void CorrectPosition(springai::AIFloat3& position);
+	STerrainMapArea* GetCurrentMapArea(CCircuitDef* cdef, const springai::AIFloat3& position);
+	int GetSectorIndex(const springai::AIFloat3& position);
+	bool CanMoveToPos(STerrainMapArea* area, const springai::AIFloat3& destination);
+	STerrainMapAreaSector* GetClosestSector(STerrainMapArea* sourceArea, const int& destinationSIndex);
+	STerrainMapSector* GetClosestSector(STerrainMapImmobileType* sourceIT, const int& destinationSIndex);
+	STerrainMapAreaSector* GetAlternativeSector(STerrainMapArea* sourceArea, const int& sourceSIndex, STerrainMapMobileType* destinationMT);
+	STerrainMapSector* GetAlternativeSector(STerrainMapArea* destinationArea, const int& sourceSIndex, STerrainMapImmobileType* destinationIT); // can return 0
+	const STerrainMapSector& GetSector(int sIndex) const;
+	int GetConvertStoP() const;
+
 	void ClusterizeTerrain();
 	const std::vector<springai::AIFloat3>& GetDefencePoints() const;
 	const std::vector<springai::AIFloat3>& GetDefencePerimeter() const;

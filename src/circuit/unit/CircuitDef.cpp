@@ -15,7 +15,9 @@ using namespace springai;
 CCircuitDef::CCircuitDef(std::unordered_set<springai::UnitDef*>& opts) :
 		count(0),
 		buildOptions(opts),
-		buildCounts(0)
+		buildCounts(0),
+		mobileType(nullptr),
+		immobileType(nullptr)
 {
 }
 
@@ -88,6 +90,26 @@ void CCircuitDef::DecBuild()
 int CCircuitDef::GetBuildCount()
 {
 	return buildCounts;
+}
+
+void CCircuitDef::SetImmobileType(STerrainMapImmobileType* immobile)
+{
+	immobileType = immobile;
+}
+
+STerrainMapImmobileType* CCircuitDef::GetImmobileType()
+{
+	return immobileType;
+}
+
+void CCircuitDef::SetMobileType(STerrainMapMobileType* mobile)
+{
+	mobileType = mobile;
+}
+
+STerrainMapMobileType* CCircuitDef::GetMobileType()
+{
+	return mobileType;
 }
 
 } // namespace circuit

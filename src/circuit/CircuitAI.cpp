@@ -346,7 +346,7 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 	// EconomyManager uses metal clusters and must be initialized after MetalManager::ClusterizeMetal
 	economyManager = std::make_shared<CEconomyManager>(this);
 
-	// TerrainManager uses BuilderManager::GetMexDef and must be initialized after EconomyManager
+	// TerrainManager uses EconomyManager::GetMexDef and must be initialized after EconomyManager
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
 
 	builderManager = std::make_shared<CBuilderManager>(this);
@@ -574,7 +574,7 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(int unitId)
 		return unit;
 	}
 
-	springai::Unit* u = WrappUnit::GetInstance(skirmishAIId, unitId);
+	Unit* u = WrappUnit::GetInstance(skirmishAIId, unitId);
 	if (u == nullptr) {
 		return nullptr;
 	}
@@ -583,6 +583,8 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(int unitId)
 	CCircuitDef* cdef = GetCircuitDef(def);
 	unit = new CCircuitUnit(u, def, cdef);
 	delete unitDef;
+
+	unit->SetArea(terrainManager->GetCurrentMapArea(cdef, u->GetPos()));
 
 	teamUnits[unitId] = unit;
 	cdef->Inc();
@@ -779,6 +781,8 @@ void CCircuitAI::InitUnitDefs(std::vector<UnitDef*>&& unitDefs)
 		defsById[def->GetUnitDefId()] = def;
 	}
 
+	// NOTE: terrainManager is not initialized yet, use CTerrainData directly
+	CTerrainData& terrainData = gameAttribute->GetTerrainData();
 	for (auto& kv : defsById) {
 		std::vector<UnitDef*> options = kv.second->GetBuildOptions();
 		std::unordered_set<UnitDef*> opts;
@@ -786,8 +790,17 @@ void CCircuitAI::InitUnitDefs(std::vector<UnitDef*>&& unitDefs)
 			// if it breaks with defsById[] then something really wrong is going on
 			opts.insert(defsById[buildDef->GetUnitDefId()]);
 		}
-		circuitDefs[kv.second] = new CCircuitDef(opts);
+		UnitDef* ud = kv.second;
+		CCircuitDef* cdef = new CCircuitDef(opts);
+		circuitDefs[ud] = cdef;
 		utils::free_clear(options);
+
+		if (ud->IsAbleToFly()) {
+		} else if (ud->GetSpeed() == 0 ) {  // for immobile units
+			cdef->SetImmobileType(terrainData.udImmobileType[ud->GetUnitDefId()]);
+		} else {  // for mobile units
+			cdef->SetMobileType(terrainData.udMobileType[ud->GetUnitDefId()]);
+		}
 	}
 }
 

@@ -34,30 +34,30 @@ namespace circuit {
 
 class CCircuitAI;
 
-struct TerrainMapArea;
-struct TerrainMapAreaSector;
-struct TerrainMapMobileType;
-struct TerrainMapImmobileType;
-struct TerrainMapSector;
+struct STerrainMapArea;
+struct STerrainMapAreaSector;
+struct STerrainMapMobileType;
+struct STerrainMapImmobileType;
+struct STerrainMapSector;
 
-struct TerrainMapAreaSector {
-	TerrainMapAreaSector() :
+struct STerrainMapAreaSector {
+	STerrainMapAreaSector() :
 		S(nullptr),
 		area(nullptr),
 		areaClosest(nullptr)
 	{};
 
 	// NOTE: some of these values are loaded as they become needed, use GlobalTerrainMap functions
-	TerrainMapSector* S;  // always valid
-	TerrainMapArea* area;  // The TerrainMapArea this sector belongs to, otherwise = 0 until
-	TerrainMapArea* areaClosest;  // uninitialized, = the TerrainMapArea closest to this sector
+	STerrainMapSector* S;  // always valid
+	STerrainMapArea* area;  // The TerrainMapArea this sector belongs to, otherwise = 0 until
+	STerrainMapArea* areaClosest;  // uninitialized, = the TerrainMapArea closest to this sector
 	// Use this to find the closest sector useable by a unit with a different MoveType, the 0 pointer may be valid as a key index
-	std::map<TerrainMapMobileType*, TerrainMapAreaSector*> sectorAlternativeM;  // uninitialized
-	std::map<TerrainMapImmobileType*, TerrainMapSector*> sectorAlternativeI;  // uninitialized
+	std::map<STerrainMapMobileType*, STerrainMapAreaSector*> sectorAlternativeM;  // uninitialized
+	std::map<STerrainMapImmobileType*, STerrainMapSector*> sectorAlternativeI;  // uninitialized
 };
 
-struct TerrainMapArea {
-	TerrainMapArea(int areaIUSize, TerrainMapMobileType* TMMobileType) :
+struct STerrainMapArea {
+	STerrainMapArea(int areaIUSize, STerrainMapMobileType* TMMobileType) :
 		index(areaIUSize),
 		mobileType(TMMobileType),
 		percentOfMap(.0f),
@@ -66,17 +66,17 @@ struct TerrainMapArea {
 
 	bool areaUsable;  // Should units of this type be used in this area
 	int index;
-	TerrainMapMobileType* mobileType;
-	std::map<int, TerrainMapAreaSector*> sector;         // key = sector index, a list of all sectors belonging to it
-	std::map<int, TerrainMapAreaSector*> sectorClosest;  // key = sector indexes not in "sector", indicates the sector belonging to this map-area with the closest distance
+	STerrainMapMobileType* mobileType;
+	std::map<int, STerrainMapAreaSector*> sector;         // key = sector index, a list of all sectors belonging to it
+	std::map<int, STerrainMapAreaSector*> sectorClosest;  // key = sector indexes not in "sector", indicates the sector belonging to this map-area with the closest distance
 	// NOTE: use TerrainData::GetClosestSector: these values are not initialized but are instead loaded as they become needed
 	float percentOfMap;  // 0-100
 };
 
 #define MAP_AREA_LIST_SIZE 50
 
-struct TerrainMapMobileType {
-	TerrainMapMobileType() :
+struct STerrainMapMobileType {
+	STerrainMapMobileType() :
 		typeUsable(false),
 		areaLargest(nullptr),
 		udCount(0),
@@ -88,14 +88,14 @@ struct TerrainMapMobileType {
 		moveData(nullptr)
 	{};
 
-	~TerrainMapMobileType();
+	~STerrainMapMobileType();
 
 	bool typeUsable;  // Should units of this type be used on this map
-	std::vector<TerrainMapAreaSector> sector;  // Each MoveType has it's own sector list, GlobalTerrainMap->GetSectorIndex() gives an index
-	std::vector<TerrainMapArea*> area;  // Each MoveType has it's own MapArea list
-	TerrainMapArea* areaLargest;  // Largest area usable by this type, otherwise = 0
+	std::vector<STerrainMapAreaSector> sector;  // Each MoveType has it's own sector list, GlobalTerrainMap->GetSectorIndex() gives an index
+	std::vector<STerrainMapArea*> area;  // Each MoveType has it's own MapArea list
+	STerrainMapArea* areaLargest;  // Largest area usable by this type, otherwise = 0
 
-	float maxSlope;		 // = MoveData*->maxSlope
+	float maxSlope;      // = MoveData*->maxSlope
 	float maxElevation;  // = -ud->minWaterDepth
 	float minElevation;  // = -MoveData*->depth
 	bool canHover;
@@ -104,9 +104,9 @@ struct TerrainMapMobileType {
 	int udCount;
 };
 
-struct TerrainMapSector
+struct STerrainMapSector
 {
-	TerrainMapSector() :
+	STerrainMapSector() :
 		percentLand(.0f),
 		maxSlope(.0f),
 		maxElevation(.0f),
@@ -114,8 +114,8 @@ struct TerrainMapSector
 		isWater(false)
 	{};
 
-	bool isWater;		// (Water = true) (Land = false)
-	float3 position;	// center of the sector, same as unit positions
+	bool isWater;  // (Water = true) (Land = false)
+	springai::AIFloat3 position;  // center of the sector, same as unit positions
 
 	// only used during initialization
 	float percentLand;   // 0-100
@@ -124,8 +124,8 @@ struct TerrainMapSector
 	float maxSlope;      // 0 or higher
 };
 
-struct TerrainMapImmobileType {
-	TerrainMapImmobileType() :
+struct STerrainMapImmobileType {
+	STerrainMapImmobileType() :
 		udCount(0),
 		canFloat(false),
 		canHover(false),
@@ -135,8 +135,8 @@ struct TerrainMapImmobileType {
 	{};
 
 	bool typeUsable;  // Should units of this type be used on this map
-	std::map<int, TerrainMapSector*> sector;         // a list of sectors useable by these units
-	std::map<int, TerrainMapSector*> sectorClosest;  // key = sector indexes not in "sector", indicates the closest sector in "sector"
+	std::map<int, STerrainMapSector*> sector;         // a list of sectors useable by these units
+	std::map<int, STerrainMapSector*> sectorClosest;  // key = sector indexes not in "sector", indicates the closest sector in "sector"
 	float minElevation;
 	float maxElevation;
 	bool canHover;
@@ -151,23 +151,23 @@ public:
 	void Init(CCircuitAI* circuit);
 
 // ---- RAI's GlobalTerrainMap ---- BEGIN
-	bool CanMoveToPos(TerrainMapArea* area, const float3& destination);
-	std::vector<TerrainMapAreaSector>& GetSectorList(TerrainMapArea* sourceArea = nullptr);
-	TerrainMapAreaSector* GetClosestSector(TerrainMapArea* sourceArea, const int& destinationSIndex);
-	TerrainMapSector* GetClosestSector(TerrainMapImmobileType* sourceIT, const int& destinationSIndex);
-	TerrainMapAreaSector* GetAlternativeSector(TerrainMapArea* sourceArea, const int& sourceSIndex, TerrainMapMobileType* destinationMT);
-	TerrainMapSector* GetAlternativeSector(TerrainMapArea* destinationArea, const int& sourceSIndex, TerrainMapImmobileType* destinationIT); // can return 0
-	int GetSectorIndex(const float3& position); // use IsSectorValid() to insure the index is valid
+	bool CanMoveToPos(STerrainMapArea* area, const springai::AIFloat3& destination);
+	std::vector<STerrainMapAreaSector>& GetSectorList(STerrainMapArea* sourceArea = nullptr);
+	STerrainMapAreaSector* GetClosestSector(STerrainMapArea* sourceArea, const int& destinationSIndex);
+	STerrainMapSector* GetClosestSector(STerrainMapImmobileType* sourceIT, const int& destinationSIndex);
+	STerrainMapAreaSector* GetAlternativeSector(STerrainMapArea* sourceArea, const int& sourceSIndex, STerrainMapMobileType* destinationMT);
+	STerrainMapSector* GetAlternativeSector(STerrainMapArea* destinationArea, const int& sourceSIndex, STerrainMapImmobileType* destinationIT); // can return 0
+	int GetSectorIndex(const springai::AIFloat3& position); // use IsSectorValid() to insure the index is valid
 	bool IsSectorValid(const int& sIndex);
 
-	std::list<TerrainMapMobileType> mobileType;             // Used for mobile units, not all movedatas are used
-	std::map<int, TerrainMapMobileType*> udMobileType;      // key = ud->id, Used to find a TerrainMapMobileType for a unit
-	std::list<TerrainMapImmobileType> immobileType;         // Used for immobile units
-	std::map<int, TerrainMapImmobileType*> udImmobileType;  // key = ud->id, Used to find a TerrainMapImmobileType for a unit
-	std::vector<TerrainMapAreaSector> sectorAirType;        // used for flying units, GetSectorIndex gives an index
-	std::vector<TerrainMapSector> sector;  // global sector data, GetSectorIndex gives an index
-	TerrainMapImmobileType* landSectorType;   // 0 to the sky
-	TerrainMapImmobileType* waterSectorType;  // minElevation to 0
+	std::list<STerrainMapMobileType> mobileType;             // Used for mobile units, not all movedatas are used
+	std::map<int, STerrainMapMobileType*> udMobileType;      // key = ud->id, Used to find a TerrainMapMobileType for a unit
+	std::list<STerrainMapImmobileType> immobileType;         // Used for immobile units
+	std::map<int, STerrainMapImmobileType*> udImmobileType;  // key = ud->id, Used to find a TerrainMapImmobileType for a unit
+	std::vector<STerrainMapAreaSector> sectorAirType;        // used for flying units, GetSectorIndex gives an index
+	std::vector<STerrainMapSector> sector;  // global sector data, GetSectorIndex gives an index
+	STerrainMapImmobileType* landSectorType;   // 0 to the sky
+	STerrainMapImmobileType* waterSectorType;  // minElevation to 0
 
 	bool waterIsHarmful;  // Units are damaged by it (Lava/Acid map)
 	bool waterIsAVoid;    // (Space map)

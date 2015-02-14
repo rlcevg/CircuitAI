@@ -26,7 +26,11 @@ namespace circuit {
 
 using namespace springai;
 
-TerrainMapMobileType::~TerrainMapMobileType()
+// FIXME: Make Engine consts available to AI. @see rts/Sim/MoveTypes/MoveDefHandler.cpp
+#define MAX_ALLOWED_WATER_DAMAGE_GMM	1e3f
+#define MAX_ALLOWED_WATER_DAMAGE_HMM	1e4f
+
+STerrainMapMobileType::~STerrainMapMobileType()
 {
 	utils::free_clear(area);
 	delete moveData;
@@ -55,11 +59,28 @@ CTerrainData::~CTerrainData()
 void CTerrainData::Init(CCircuitAI* circuit)
 {
 	circuit->LOG("Loading the Terrain-Map ...");
+
 	/*
-	 *  Reading the WaterDamage entry from the map file
+	 *  Reading the WaterDamage and establishing sector size
 	 */
 	waterIsHarmful = false;
 	waterIsAVoid = false;
+
+//	Map* map = circuit->GetMap();
+//	float waterDamage = map->GetWaterDamage();
+//	printf("%f\n", waterDamage);
+//	std::string waterText = "  Water Damage: " + utils::float_to_string(waterDamage, "%-.*G");
+//	// @see rts/Sim/MoveTypes/MoveDefHandler.cpp
+//	if (waterDamage > 0) {  // >= MAX_ALLOWED_WATER_DAMAGE_GMM
+//		waterIsHarmful = true;
+//		waterText += " (This map's water is harmful to land units";
+//		if (waterDamage >= MAX_ALLOWED_WATER_DAMAGE_HMM) {
+//			waterIsAVoid = true;
+//			waterText += " as well as hovercraft";
+//		}
+//		waterText += ")";
+//	}
+//	circuit->LOG(waterText.c_str());
 
 	Map* map = circuit->GetMap();
 	std::string mapArchiveFileName = "maps/";
@@ -104,7 +125,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	sectorXSize = (SQUARE_SIZE * mapWidth) / convertStoP;
 	sectorZSize = (SQUARE_SIZE * mapHeight) / convertStoP;
 
-	sectorAirType.resize(sectorXSize * sectorZSize, TerrainMapAreaSector());
+	sectorAirType.resize(sectorXSize * sectorZSize, STerrainMapAreaSector());
 
 	circuit->LOG("  Sector-Map Block Size: %i", convertStoP);
 	circuit->LOG("  Sector-Map Size: %li (x%i, z%i)", sectorXSize * sectorZSize, sectorXSize, sectorZSize);
@@ -126,7 +147,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 			float maxWaterDepth = def->GetMaxWaterDepth();
 			bool canHover = def->IsAbleToHover();
 			bool canFloat = def->IsFloater();
-			TerrainMapImmobileType* IT = nullptr;
+			STerrainMapImmobileType* IT = nullptr;
 			for (auto& it : immobileType) {
 				if (((it.maxElevation == -minWaterDepth) && (it.canHover == canHover) && (it.canFloat == canFloat)) &&
 					((it.minElevation == -maxWaterDepth) || ((it.canHover || it.canFloat) && (it.minElevation <= 0) && (-maxWaterDepth <= 0))))
@@ -136,7 +157,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 				}
 			}
 			if (IT == nullptr) {
-				TerrainMapImmobileType IT2;
+				STerrainMapImmobileType IT2;
 				immobileType.push_back(IT2);
 				IT = &immobileType.back();
 				IT->maxElevation = -minWaterDepth;
@@ -156,7 +177,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 			MoveData* moveData = def->GetMoveData();
 			float maxSlope = moveData->GetMaxSlope();
 			float depth = moveData->GetDepth();
-			TerrainMapMobileType* MT = nullptr;
+			STerrainMapMobileType* MT = nullptr;
 			for (auto& mt : mobileType) {
 				if (((mt.maxElevation == -minWaterDepth) && (mt.maxSlope == maxSlope) && (mt.canHover == canHover) && (mt.canFloat == canFloat)) &&
 					((mt.minElevation == -depth) || ((mt.canHover || mt.canFloat) && (mt.minElevation <= 0) && (-maxWaterDepth <= 0))))
@@ -166,7 +187,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 				}
 			}
 			if (MT == nullptr) {
-				TerrainMapMobileType MT2;
+				STerrainMapMobileType MT2;
 				mobileType.push_back(MT2);
 				MT = &mobileType.back();
 				MT->maxSlope = maxSlope;
@@ -187,15 +208,6 @@ void CTerrainData::Init(CCircuitAI* circuit)
 		}
 	}
 
-	// FIXME: Zero-K must have?
-	if (waterIsAVoid) {
-		if (mobileType.empty()) {  // Work-Around(Mod FF): buildings use canFloat instead of canFly to represent their ability to fly in space
-			waterIsAVoid = false;
-		} else {
-			waterIsHarmful = true; // If there is no water then this will prevent water units from being used
-		}
-	}
-
 	/*
 	 *  Special types
 	 */
@@ -212,7 +224,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 		}
 	}
 	if (landSectorType == nullptr) {
-		immobileType.push_back(TerrainMapImmobileType());
+		immobileType.push_back(STerrainMapImmobileType());
 		landSectorType = &immobileType.back();
 		immobileType.back().maxElevation = 1e7;
 		immobileType.back().minElevation = 0;
@@ -220,7 +232,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 		immobileType.back().canHover = false;
 	}
 	if (waterSectorType == nullptr) {
-		immobileType.push_back(TerrainMapImmobileType());
+		immobileType.push_back(STerrainMapImmobileType());
 		waterSectorType = &immobileType.back();
 		immobileType.back().maxElevation = 0;
 		immobileType.back().minElevation = -1e7;
@@ -426,7 +438,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 				i = *sectorsRemaining.begin();
 				sectorSearch.push_back(i);
 				sectorsRemaining.erase(i);
-				mt.area[aIndex] = new TerrainMapArea(aIndex, &mt);
+				mt.area[aIndex] = new STerrainMapArea(aIndex, &mt);
 				areaSize++;
 			}
 		}
@@ -488,40 +500,44 @@ void CTerrainData::Init(CCircuitAI* circuit)
 //	circuit->LOG(deb.str().c_str());
 }
 
-bool CTerrainData::CanMoveToPos(TerrainMapArea* area, const float3& destination)
+bool CTerrainData::CanMoveToPos(STerrainMapArea* area, const AIFloat3& destination)
 {
 	int iS = GetSectorIndex(destination);
-	if (!IsSectorValid(iS))
+	if (!IsSectorValid(iS)) {
 		return false;
-	if (area == nullptr) // either a flying unit or a unit was somehow created at an impossible position
+	}
+	if (area == nullptr) {  // either a flying unit or a unit was somehow created at an impossible position
 		return true;
-	if (area == GetSectorList(area)[iS].area)
+	}
+	if (area == GetSectorList(area)[iS].area) {
 		return true;
+	}
 	return false;
 }
 
-std::vector<TerrainMapAreaSector>& CTerrainData::GetSectorList(TerrainMapArea* sourceArea)
+std::vector<STerrainMapAreaSector>& CTerrainData::GetSectorList(STerrainMapArea* sourceArea)
 {
 	if (sourceArea == nullptr || sourceArea->mobileType == nullptr) // It flies or it's immobile
 		return sectorAirType;
 	return sourceArea->mobileType->sector;
 }
 
-TerrainMapAreaSector* CTerrainData::GetClosestSector(TerrainMapArea* sourceArea, const int& destinationSIndex)
+STerrainMapAreaSector* CTerrainData::GetClosestSector(STerrainMapArea* sourceArea, const int& destinationSIndex)
 {
 	auto iAS = sourceArea->sectorClosest.find(destinationSIndex);
-	if (iAS != sourceArea->sectorClosest.end())  // It's already been determined
+	if (iAS != sourceArea->sectorClosest.end()) {  // It's already been determined
 		return iAS->second;
+	}
 //*l<<"\n GCAS";
-	std::vector<TerrainMapAreaSector>& TMSectors = GetSectorList(sourceArea);
+	std::vector<STerrainMapAreaSector>& TMSectors = GetSectorList(sourceArea);
 	if (sourceArea == TMSectors[destinationSIndex].area) {
 		sourceArea->sectorClosest[destinationSIndex] = &TMSectors[destinationSIndex];
 //*l<<"1(#)";
 		return &TMSectors[destinationSIndex];
 	}
 
-	float3* destination = &TMSectors[destinationSIndex].S->position;
-	TerrainMapAreaSector* SClosest = nullptr;
+	AIFloat3* destination = &TMSectors[destinationSIndex].S->position;
+	STerrainMapAreaSector* SClosest = nullptr;
 	float DisClosest = 0.0f;
 	for (auto& iS : sourceArea->sector) {
 		if (SClosest == nullptr || iS.second->S->position.distance(*destination) < DisClosest) {
@@ -534,11 +550,12 @@ TerrainMapAreaSector* CTerrainData::GetClosestSector(TerrainMapArea* sourceArea,
 	return SClosest;
 }
 
-TerrainMapSector* CTerrainData::GetClosestSector(TerrainMapImmobileType* sourceIT, const int& destinationSIndex)
+STerrainMapSector* CTerrainData::GetClosestSector(STerrainMapImmobileType* sourceIT, const int& destinationSIndex)
 {
 	auto iS = sourceIT->sectorClosest.find(destinationSIndex);
-	if (iS != sourceIT->sectorClosest.end())  // It's already been determined
+	if (iS != sourceIT->sectorClosest.end()) {  // It's already been determined
 		return iS->second;
+	}
 //*l<<"\n GCS";
 	if (sourceIT->sector.find(destinationSIndex) != sourceIT->sector.end()) {
 		sourceIT->sectorClosest[destinationSIndex] = &sector[destinationSIndex];
@@ -546,8 +563,8 @@ TerrainMapSector* CTerrainData::GetClosestSector(TerrainMapImmobileType* sourceI
 		return &sector[destinationSIndex];
 	}
 
-	const float3* destination = &sector[destinationSIndex].position;
-	TerrainMapSector* SClosest = nullptr;
+	const AIFloat3* destination = &sector[destinationSIndex].position;
+	STerrainMapSector* SClosest = nullptr;
 	float DisClosest = 0.0f;
 	for (auto& iS : sourceIT->sector) {
 		if (SClosest == nullptr || iS.second->position.distance(*destination) < DisClosest) {
@@ -560,12 +577,13 @@ TerrainMapSector* CTerrainData::GetClosestSector(TerrainMapImmobileType* sourceI
 	return SClosest;
 }
 
-TerrainMapAreaSector* CTerrainData::GetAlternativeSector(TerrainMapArea* sourceArea, const int& sourceSIndex, TerrainMapMobileType* destinationMT)
+STerrainMapAreaSector* CTerrainData::GetAlternativeSector(STerrainMapArea* sourceArea, const int& sourceSIndex, STerrainMapMobileType* destinationMT)
 {
-	std::vector<TerrainMapAreaSector>& TMSectors = GetSectorList(sourceArea);
+	std::vector<STerrainMapAreaSector>& TMSectors = GetSectorList(sourceArea);
 	auto iMS = TMSectors[sourceSIndex].sectorAlternativeM.find(destinationMT);
-	if (iMS != TMSectors[sourceSIndex].sectorAlternativeM.end())  // It's already been determined
+	if (iMS != TMSectors[sourceSIndex].sectorAlternativeM.end()) {  // It's already been determined
 		return iMS->second;
+	}
 //*l<<"\nGSAM";
 	if (destinationMT == nullptr) {  // flying unit movetype
 //		*l<<"(2#)";
@@ -577,12 +595,12 @@ TerrainMapAreaSector* CTerrainData::GetAlternativeSector(TerrainMapArea* sourceA
 		return GetAlternativeSector(sourceArea, GetSectorIndex(GetClosestSector(sourceArea, sourceSIndex)->S->position), destinationMT);
 	}
 
-	const float3* position = &TMSectors[sourceSIndex].S->position;
-	TerrainMapAreaSector* bestAS = nullptr;
-	TerrainMapArea* largestArea = nullptr;
+	const AIFloat3* position = &TMSectors[sourceSIndex].S->position;
+	STerrainMapAreaSector* bestAS = nullptr;
+	STerrainMapArea* largestArea = nullptr;
 	float bestDistance = -1.0;
 	float bestMidDistance = -1.0;
-	const std::vector<TerrainMapArea*>& TMAreas = destinationMT->area;
+	const std::vector<STerrainMapArea*>& TMAreas = destinationMT->area;
 	const int areaSize = destinationMT->area.size();
 	for (int iA = 0; iA < areaSize; iA++) {
 		if (largestArea == nullptr || largestArea->percentOfMap < TMAreas[iA]->percentOfMap) {
@@ -591,7 +609,7 @@ TerrainMapAreaSector* CTerrainData::GetAlternativeSector(TerrainMapArea* sourceA
 	}
 	for (int iA = 0; iA < areaSize; iA++) {
 		if (TMAreas[iA]->areaUsable || !largestArea->areaUsable) {
-			TerrainMapAreaSector* CAS = GetClosestSector(TMAreas[iA], sourceSIndex);
+			STerrainMapAreaSector* CAS = GetClosestSector(TMAreas[iA], sourceSIndex);
 			float midDistance; // how much of a gap exists between the two areas (source & destination)
 			if (sourceArea == nullptr || sourceArea == TMSectors[GetSectorIndex(CAS->S->position)].area) {
 				midDistance = 0.0;
@@ -618,15 +636,16 @@ TerrainMapAreaSector* CTerrainData::GetAlternativeSector(TerrainMapArea* sourceA
 	return bestAS;
 }
 
-TerrainMapSector* CTerrainData::GetAlternativeSector(TerrainMapArea* destinationArea, const int& sourceSIndex, TerrainMapImmobileType* destinationIT)
+STerrainMapSector* CTerrainData::GetAlternativeSector(STerrainMapArea* destinationArea, const int& sourceSIndex, STerrainMapImmobileType* destinationIT)
 {
-	std::vector<TerrainMapAreaSector>& TMSectors = GetSectorList(destinationArea);
+	std::vector<STerrainMapAreaSector>& TMSectors = GetSectorList(destinationArea);
 	auto iMS = TMSectors[sourceSIndex].sectorAlternativeI.find(destinationIT);
-	if (iMS != TMSectors[sourceSIndex].sectorAlternativeI.end())  // It's already been determined
+	if (iMS != TMSectors[sourceSIndex].sectorAlternativeI.end()) {  // It's already been determined
 		return iMS->second;
+	}
 
 //*l<<"\nGSAI";
-	TerrainMapSector* closestS = nullptr;
+	STerrainMapSector* closestS = nullptr;
 	if (destinationArea != nullptr && destinationArea != TMSectors[sourceSIndex].area) {
 //		*l<<"(3#)";
 		closestS = GetAlternativeSector(destinationArea, GetSectorIndex(GetClosestSector(destinationArea, sourceSIndex)->S->position), destinationIT);
@@ -634,7 +653,7 @@ TerrainMapSector* CTerrainData::GetAlternativeSector(TerrainMapArea* destination
 		return closestS;
 	}
 
-	const float3* position = &sector[sourceSIndex].position;
+	const AIFloat3* position = &sector[sourceSIndex].position;
 	float closestDistance = -1.0;
 	for (auto& iS : destinationArea->sector) {
 		if (closestS == nullptr || iS.second->S->position.distance(*position) < closestDistance) {
@@ -648,15 +667,16 @@ TerrainMapSector* CTerrainData::GetAlternativeSector(TerrainMapArea* destination
 	return closestS;
 }
 
-int CTerrainData::GetSectorIndex(const float3& position)
+int CTerrainData::GetSectorIndex(const AIFloat3& position)
 {
-	return sectorXSize*(int(position.z)/convertStoP) + int(position.x)/convertStoP;
+	return sectorXSize * int(position.z) / convertStoP + int(position.x) / convertStoP;
 }
 
 bool CTerrainData::IsSectorValid(const int& sIndex)
 {
-	if( sIndex < 0 || sIndex >= sectorXSize*sectorZSize )
+	if ((sIndex < 0) || (sIndex >= sectorXSize * sectorZSize)) {
 		return false;
+	}
 	return true;
 }
 
@@ -711,7 +731,7 @@ const std::vector<springai::AIFloat3>& CTerrainData::GetDefencePerimeter() const
 	return points;
 }
 
-void CTerrainData::Clusterize(const std::vector<springai::AIFloat3>& wayPoints, float maxDistance, CCircuitAI* circuit)
+void CTerrainData::Clusterize(const std::vector<AIFloat3>& wayPoints, float maxDistance, CCircuitAI* circuit)
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	int nrows = wayPoints.size();

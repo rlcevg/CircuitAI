@@ -21,8 +21,9 @@ CCircuitUnit::CCircuitUnit(Unit* unit, UnitDef* def, CCircuitDef* circuitDef) :
 		def(def),
 		circuitDef(circuitDef),
 		task(nullptr),
+		taskFrame(-1),
 		manager(nullptr),
-		taskFrame(-1)
+		area(nullptr)
 {
 }
 
@@ -71,6 +72,16 @@ void CCircuitUnit::SetManager(IUnitManager* mgr)
 IUnitManager* CCircuitUnit::GetManager()
 {
 	return manager;
+}
+
+void CCircuitUnit::SetArea(STerrainMapArea* area)
+{
+	this->area = area;
+}
+
+STerrainMapArea* CCircuitUnit::GetArea()
+{
+	return area;
 }
 
 } // namespace circuit

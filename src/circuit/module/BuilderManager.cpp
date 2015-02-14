@@ -9,8 +9,7 @@
 #include "module/EconomyManager.h"
 #include "resource/MetalManager.h"
 #include "static/SetupManager.h"
-#include "unit/CircuitUnit.h"
-#include "unit/CircuitDef.h"
+#include "static/TerrainData.h"
 #include "terrain/TerrainManager.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
@@ -28,6 +27,8 @@
 #include "task/builder/RepairTask.h"
 #include "task/builder/ReclaimTask.h"
 #include "task/builder/PatrolTask.h"
+#include "unit/CircuitUnit.h"
+#include "unit/CircuitDef.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -407,6 +408,56 @@ void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
 	}
 }
 
+bool CBuilderManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, const float& range)
+{
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	int iS = terrainManager->GetSectorIndex(position);
+	STerrainMapSector* sector;
+	STerrainMapMobileType* mobileType = cdef->GetMobileType();
+	STerrainMapImmobileType* immobileType = cdef->GetImmobileType();
+	if (mobileType != nullptr) {  // a factory or mobile unit
+		STerrainMapAreaSector* AS = terrainManager->GetAlternativeSector(nullptr, iS, mobileType);
+		if (immobileType != nullptr) {  // a factory
+			sector = terrainManager->GetAlternativeSector(AS->area, iS, immobileType);
+			if (sector == 0) {
+				return false;
+			}
+		} else {
+			sector = AS->S;
+		}
+	} else if (immobileType != nullptr) {  // buildings
+		sector = terrainManager->GetClosestSector(immobileType, iS);
+	} else {
+		return true; // flying units
+	}
+
+	if (sector == &terrainManager->GetSector(iS)) {  // the current sector is the best sector
+		return true;
+	}
+	return sector->position.distance2D(terrainManager->GetSector(iS).position) < range;
+}
+
+bool CBuilderManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& position, const AIFloat3& destination)
+{
+	// FIXME: so far we know only mobile builders
+//	if (unit->GetCircuitDef()->GetImmobileType() != nullptr) {  // A hub or factory
+//		return position.distance2D(destination) < unit->GetDef()->GetBuildDistance();
+//	}
+	STerrainMapArea* area = unit->GetArea();
+	if (area == nullptr) {  // A flying unit
+		return true;
+	}
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	int iS = terrainManager->GetSectorIndex(destination);
+	if (area->sector.find(iS) != area->sector.end()) {
+		return true;
+	}
+	if (terrainManager->GetClosestSector(area, iS)->S->position.distance2D(destination) < unit->GetDef()->GetBuildDistance() - terrainManager->GetConvertStoP()) {
+		return true;
+	}
+	return false;
+}
+
 void CBuilderManager::AssignTask(CCircuitUnit* unit)
 {
 	IBuilderTask* task = nullptr;
@@ -414,10 +465,10 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	const AIFloat3& pos = u->GetPos();
 	float maxSpeed = u->GetMaxSpeed();
 	UnitDef* unitDef = unit->GetDef();
+	float buildDistance = unitDef->GetBuildDistance();
 	MoveData* moveData = unitDef->GetMoveData();
 	int pathType = moveData->GetPathType();
 	delete moveData;
-	float buildDistance = unitDef->GetBuildDistance();
 	float metric = std::numeric_limits<float>::max();
 	for (auto& tasks : builderTasks) {
 		for (auto candidate : tasks) {
@@ -425,24 +476,29 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 				continue;
 			}
 
+			AIFloat3 buildPos;
+			const AIFloat3& bp = candidate->GetBuildPos();
+			CCircuitUnit* target = candidate->GetTarget();
+
 			// Check time-distance to target
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
 			weight = 1.0f / (weight * weight);
 			float dist;
 			bool valid;
-			CCircuitUnit* target = candidate->GetTarget();
-			const AIFloat3& bp = candidate->GetBuildPos();
-			if (target != nullptr) {
-				Unit* tu = target->GetUnit();
 
+			if (target != nullptr) {
 				// FIXME: GetApproximateLength to position occupied by building or feature will return 0.
-				//        Also GetApproximateLength could be the cause of lags in late game when simultaneously 30 units become idle
 				UnitDef* buildDef = target->GetDef();
 				int xsize = buildDef->GetXSize();
 				int zsize = buildDef->GetZSize();
 				AIFloat3 offset = (pos - bp).Normalize2D() * (sqrtf(xsize * xsize + zsize * zsize) * SQUARE_SIZE + buildDistance);
-				AIFloat3 buildPos = candidate->GetBuildPos() + offset;
+				buildPos = bp + offset;
 
+				if (!CanBuildAt(unit, pos, buildPos)) {
+					continue;
+				}
+
+				Unit* tu = target->GetUnit();
 				dist = circuit->GetPathing()->GetApproximateLength(buildPos, pos, pathType, buildDistance);
 				if (dist <= 0) {
 //					continue;
@@ -453,8 +509,18 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 					float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
 					valid = (((maxHealth - tu->GetHealth()) * 0.6) > healthSpeed * (dist / (maxSpeed * FRAMES_PER_SEC)));
 				}
+
 			} else {
-				dist = circuit->GetPathing()->GetApproximateLength((bp != -RgtVector) ? bp : candidate->GetPos(), pos, pathType, buildDistance);
+
+				buildPos = (bp != -RgtVector) ? bp : buildPos = candidate->GetPos();
+
+				// TODO: Move CanBeBuiltAt into task creation stage?
+				CCircuitDef* toBuild = circuit->GetCircuitDef(candidate->GetBuildDef());
+				if (!CanBuildAt(unit, pos, buildPos) || !CanBeBuiltAt(toBuild, buildPos)) {
+					continue;
+				}
+
+				dist = circuit->GetPathing()->GetApproximateLength(buildPos, pos, pathType, buildDistance);
 				if (dist <= 0) {
 //					continue;
 					dist = bp.distance(pos) * 1.5;
