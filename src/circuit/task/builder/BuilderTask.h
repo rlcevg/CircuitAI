@@ -12,7 +12,7 @@
 
 #define MIN_BUILD_SEC	20
 #define MAX_BUILD_SEC	120
-#define MAX_TRAVEL_SEC	60
+#define MAX_TRAVEL_SEC	180
 
 namespace springai {
 	class UnitDef;
@@ -55,7 +55,7 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
-	const springai::AIFloat3& GetPos() const;
+	const springai::AIFloat3& GetTaskPos() const;
 	springai::UnitDef* GetBuildDef();
 
 	BuildType GetBuildType();
@@ -65,6 +65,7 @@ public:
 
 	void SetBuildPos(const springai::AIFloat3& pos);
 	const springai::AIFloat3& GetBuildPos() const;
+	const springai::AIFloat3& GetPosition() const;  // buildPos if set, pos otherwise
 	virtual void SetTarget(CCircuitUnit* unit);
 	CCircuitUnit* GetTarget();
 

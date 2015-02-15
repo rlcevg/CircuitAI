@@ -157,7 +157,7 @@ void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 	manager->AbortTask(this);
 }
 
-const AIFloat3& IBuilderTask::GetPos() const
+const AIFloat3& IBuilderTask::GetTaskPos() const
 {
 	return position;
 }
@@ -195,6 +195,11 @@ void IBuilderTask::SetBuildPos(const AIFloat3& pos)
 const AIFloat3& IBuilderTask::GetBuildPos() const
 {
 	return buildPos;
+}
+
+const AIFloat3& IBuilderTask::GetPosition() const
+{
+	return (buildPos != -RgtVector) ? buildPos : position;
 }
 
 void IBuilderTask::SetTarget(CCircuitUnit* unit)

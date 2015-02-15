@@ -338,6 +338,11 @@ CCircuitUnit* CFactoryManager::GetRandomFactory()
 	return iter->first;
 }
 
+UnitDef* CFactoryManager::GetAssistDef() const
+{
+	return assistDef;
+}
+
 CCircuitUnit* CFactoryManager::GetClosestHaven(CCircuitUnit* unit) const
 {
 	if (havens.empty()) {

@@ -43,16 +43,16 @@ public:
 	springai::Resource* GetEnergyRes() const;
 	springai::UnitDef* GetMexDef() const;
 	springai::AIFloat3 FindBuildPos(CCircuitUnit* unit);
-	void AddAvailEnergy(const std::set<springai::UnitDef*>& buildDefs);
+	void AddAvailEnergy(const std::set<springai::UnitDef*>& buildDefs);  // add available energy defs
 	void RemoveAvailEnergy(const std::set<springai::UnitDef*>& buildDefs);
 
 	void UpdateResourceIncome();
 	float GetAvgMetalIncome();
 	float GetAvgEnergyIncome();
 
-	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position);
-	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position);
-	IBuilderTask* UpdateFactoryTasks(const springai::AIFloat3& position);
+	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
+	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
+	IBuilderTask* UpdateFactoryTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	CRecruitTask* UpdateRecruitTasks();
 	IBuilderTask* UpdateStorageTasks();
 

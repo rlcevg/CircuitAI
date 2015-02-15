@@ -437,11 +437,11 @@ bool CBuilderManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 	return sector->position.distance2D(terrainManager->GetSector(iS).position) < range;
 }
 
-bool CBuilderManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& position, const AIFloat3& destination)
+bool CBuilderManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination)
 {
 	// FIXME: so far we know only mobile builders
 //	if (unit->GetCircuitDef()->GetImmobileType() != nullptr) {  // A hub or factory
-//		return position.distance2D(destination) < unit->GetDef()->GetBuildDistance();
+//		return unit->GetUnit()->GetPos().distance2D(destination) < unit->GetDef()->GetBuildDistance();
 //	}
 	STerrainMapArea* area = unit->GetArea();
 	if (area == nullptr) {  // A flying unit
@@ -452,6 +452,7 @@ bool CBuilderManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& position, c
 	if (area->sector.find(iS) != area->sector.end()) {
 		return true;
 	}
+	// FIXME: Recheck this condition, strange and rarely met
 	if (terrainManager->GetClosestSector(area, iS)->S->position.distance2D(destination) < unit->GetDef()->GetBuildDistance() - terrainManager->GetConvertStoP()) {
 		return true;
 	}
@@ -476,27 +477,26 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 				continue;
 			}
 
-			AIFloat3 buildPos;
-			const AIFloat3& bp = candidate->GetBuildPos();
-			CCircuitUnit* target = candidate->GetTarget();
-
 			// Check time-distance to target
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
 			weight = 1.0f / (weight * weight);
 			float dist;
 			bool valid;
 
+			CCircuitUnit* target = candidate->GetTarget();
 			if (target != nullptr) {
+				const AIFloat3& bp = candidate->GetBuildPos();
+
+				if (!CanBuildAt(unit, bp)) {
+					continue;
+				}
+
 				// FIXME: GetApproximateLength to position occupied by building or feature will return 0.
 				UnitDef* buildDef = target->GetDef();
 				int xsize = buildDef->GetXSize();
 				int zsize = buildDef->GetZSize();
 				AIFloat3 offset = (pos - bp).Normalize2D() * (sqrtf(xsize * xsize + zsize * zsize) * SQUARE_SIZE + buildDistance);
-				buildPos = bp + offset;
-
-				if (!CanBuildAt(unit, pos, buildPos)) {
-					continue;
-				}
+				const AIFloat3& buildPos = bp + offset;
 
 				Unit* tu = target->GetUnit();
 				dist = circuit->GetPathing()->GetApproximateLength(buildPos, pos, pathType, buildDistance);
@@ -512,18 +512,16 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 
 			} else {
 
-				buildPos = (bp != -RgtVector) ? bp : buildPos = candidate->GetPos();
+				const AIFloat3& buildPos = candidate->GetPosition();
 
-				// TODO: Move CanBeBuiltAt into task creation stage?
-				CCircuitDef* toBuild = circuit->GetCircuitDef(candidate->GetBuildDef());
-				if (!CanBuildAt(unit, pos, buildPos) || !CanBeBuiltAt(toBuild, buildPos)) {
+				if (!CanBuildAt(unit, buildPos)) {
 					continue;
 				}
 
 				dist = circuit->GetPathing()->GetApproximateLength(buildPos, pos, pathType, buildDistance);
 				if (dist <= 0) {
 //					continue;
-					dist = bp.distance(pos) * 1.5;
+					dist = buildPos.distance(pos) * 1.5;
 				}
 				valid = ((dist * weight < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));
 //				valid = (dist * weight < metric);

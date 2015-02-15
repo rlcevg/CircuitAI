@@ -27,8 +27,8 @@ namespace circuit {
 using namespace springai;
 
 // FIXME: Make Engine consts available to AI. @see rts/Sim/MoveTypes/MoveDefHandler.cpp
-#define MAX_ALLOWED_WATER_DAMAGE_GMM	1e3f
-#define MAX_ALLOWED_WATER_DAMAGE_HMM	1e4f
+//#define MAX_ALLOWED_WATER_DAMAGE_GMM	1e3f
+//#define MAX_ALLOWED_WATER_DAMAGE_HMM	1e4f
 
 STerrainMapMobileType::~STerrainMapMobileType()
 {
@@ -125,7 +125,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	sectorXSize = (SQUARE_SIZE * mapWidth) / convertStoP;
 	sectorZSize = (SQUARE_SIZE * mapHeight) / convertStoP;
 
-	sectorAirType.resize(sectorXSize * sectorZSize, STerrainMapAreaSector());
+	sectorAirType.resize(sectorXSize * sectorZSize);
 
 	circuit->LOG("  Sector-Map Block Size: %i", convertStoP);
 	circuit->LOG("  Sector-Map Size: %li (x%i, z%i)", sectorXSize * sectorZSize, sectorXSize, sectorZSize);
@@ -257,7 +257,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 
 	for (int z = 0; z < sectorZSize; z++) {
 		for (int x = 0; x < sectorXSize; x++) {
-			int i = z * sectorXSize + x;
+			int i = (z * sectorXSize) + x;
 
 			sector[i].position.x = x * convertStoP + convertStoP / 2;  // Center position of the Block
 			sector[i].position.z = z * convertStoP + convertStoP / 2;  //
@@ -318,7 +318,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	percentLand *= 100.0 / (sectorXSize * convertStoHM * sectorZSize * convertStoHM);
 
 	for (auto& it : immobileType) {
-		it.typeUsable = ((100.0 * it.sector.size() / float(sectorXSize * sectorZSize) >= 20.0) || ((double)convertStoP * convertStoP * it.sector.size() >= 1.8e7));
+		it.typeUsable = (((100.0 * it.sector.size()) / float(sectorXSize * sectorZSize) >= 20.0) || ((double)convertStoP * convertStoP * it.sector.size() >= 1.8e7));
 	}
 
 	circuit->LOG("  Map Land Percent: %.2f%%", percentLand);
@@ -343,7 +343,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 		} else {
 			itText += "any";
 		}
-		float percentMap = 100.0 * it.sector.size() / (sectorXSize * sectorZSize);
+		float percentMap = (100.0 * it.sector.size()) / (sectorXSize * sectorZSize);
 		itText += ")  \tIs buildable across " + utils::float_to_string(percentMap, "%-.4G") + "%% of the map. (used by %d unit-defs)";
 		circuit->LOG(itText.c_str(), it.udCount);
 	}
@@ -456,7 +456,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 			for (auto& iS : mt.area[iA]->sector) {
 				iS.second->area = mt.area[iA];
 			}
-			mt.area[iA]->percentOfMap = 100.0 * mt.area[iA]->sector.size() / (sectorXSize * sectorZSize);
+			mt.area[iA]->percentOfMap = (100.0 * mt.area[iA]->sector.size()) / (sectorXSize * sectorZSize);
 			if (mt.area[iA]->percentOfMap >= 20.0 ) {  // A map area occupying 20% of the map
 				mt.area[iA]->areaUsable = true;
 				mt.typeUsable = true;
@@ -490,7 +490,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 //		deb << "\n\n " << mt.moveData->GetName() << " h=" << mt.canHover << " f=" << mt.canFloat << " mb=" << mt.area.size();
 //		for (int iS = 0; iS < sectorXSize * sectorZSize; iS++) {
 //			if (iS % sectorXSize == 0) deb << "\n";
-//			if (mt.sector[iS].area != 0) deb << "*";
+//			if (mt.sector[iS].area != nullptr) deb << "*";
 //			else if (sector[iS].maxElevation < 0.0) deb << "~";
 //			else if (sector[iS].maxSlope > 0.5) deb << "^";
 //			else deb << "x";
@@ -517,8 +517,9 @@ bool CTerrainData::CanMoveToPos(STerrainMapArea* area, const AIFloat3& destinati
 
 std::vector<STerrainMapAreaSector>& CTerrainData::GetSectorList(STerrainMapArea* sourceArea)
 {
-	if (sourceArea == nullptr || sourceArea->mobileType == nullptr) // It flies or it's immobile
+	if ((sourceArea == nullptr) ||( sourceArea->mobileType == nullptr)) {  // It flies or it's immobile
 		return sectorAirType;
+	}
 	return sourceArea->mobileType->sector;
 }
 
@@ -540,7 +541,7 @@ STerrainMapAreaSector* CTerrainData::GetClosestSector(STerrainMapArea* sourceAre
 	STerrainMapAreaSector* SClosest = nullptr;
 	float DisClosest = 0.0f;
 	for (auto& iS : sourceArea->sector) {
-		if (SClosest == nullptr || iS.second->S->position.distance(*destination) < DisClosest) {
+		if ((SClosest == nullptr) || (iS.second->S->position.distance(*destination) < DisClosest)) {
 			SClosest = iS.second;
 			DisClosest = iS.second->S->position.distance(*destination);
 		}
@@ -567,7 +568,7 @@ STerrainMapSector* CTerrainData::GetClosestSector(STerrainMapImmobileType* sourc
 	STerrainMapSector* SClosest = nullptr;
 	float DisClosest = 0.0f;
 	for (auto& iS : sourceIT->sector) {
-		if (SClosest == nullptr || iS.second->position.distance(*destination) < DisClosest) {
+		if ((SClosest == nullptr) || (iS.second->position.distance(*destination) < DisClosest)) {
 			SClosest = iS.second;
 			DisClosest = iS.second->position.distance(*destination);
 		}
@@ -590,7 +591,7 @@ STerrainMapAreaSector* CTerrainData::GetAlternativeSector(STerrainMapArea* sourc
 		return &TMSectors[sourceSIndex];
 	}
 
-	if (sourceArea != nullptr && sourceArea != TMSectors[sourceSIndex].area) {
+	if ((sourceArea != nullptr) && (sourceArea != TMSectors[sourceSIndex].area)) {
 //		*l<<"(3#)";
 		return GetAlternativeSector(sourceArea, GetSectorIndex(GetClosestSector(sourceArea, sourceSIndex)->S->position), destinationMT);
 	}
@@ -603,7 +604,7 @@ STerrainMapAreaSector* CTerrainData::GetAlternativeSector(STerrainMapArea* sourc
 	const std::vector<STerrainMapArea*>& TMAreas = destinationMT->area;
 	const int areaSize = destinationMT->area.size();
 	for (int iA = 0; iA < areaSize; iA++) {
-		if (largestArea == nullptr || largestArea->percentOfMap < TMAreas[iA]->percentOfMap) {
+		if ((largestArea == nullptr) || (largestArea->percentOfMap < TMAreas[iA]->percentOfMap)) {
 			largestArea = TMAreas[iA];
 		}
 	}
@@ -611,19 +612,19 @@ STerrainMapAreaSector* CTerrainData::GetAlternativeSector(STerrainMapArea* sourc
 		if (TMAreas[iA]->areaUsable || !largestArea->areaUsable) {
 			STerrainMapAreaSector* CAS = GetClosestSector(TMAreas[iA], sourceSIndex);
 			float midDistance; // how much of a gap exists between the two areas (source & destination)
-			if (sourceArea == nullptr || sourceArea == TMSectors[GetSectorIndex(CAS->S->position)].area) {
+			if ((sourceArea == nullptr) || (sourceArea == TMSectors[GetSectorIndex(CAS->S->position)].area)) {
 				midDistance = 0.0;
 			} else {
 				midDistance = CAS->S->position.distance2D(GetClosestSector(sourceArea, GetSectorIndex(CAS->S->position))->S->position);
 			}
-			if (bestMidDistance < 0 || midDistance < bestMidDistance) {
+			if ((bestMidDistance < 0) || (midDistance < bestMidDistance)) {
 				bestMidDistance = midDistance;
 				bestAS = nullptr;
 				bestDistance = -1.0;
 			}
 			if (midDistance == bestMidDistance) {
 				float distance = position->distance2D(CAS->S->position);
-				if (bestAS == nullptr || distance * TMAreas[iA]->percentOfMap < bestDistance*bestAS->area->percentOfMap) {
+				if ((bestAS == nullptr) || (distance * TMAreas[iA]->percentOfMap < bestDistance*bestAS->area->percentOfMap)) {
 					bestAS = CAS;
 					bestDistance = distance;
 				}
@@ -646,7 +647,7 @@ STerrainMapSector* CTerrainData::GetAlternativeSector(STerrainMapArea* destinati
 
 //*l<<"\nGSAI";
 	STerrainMapSector* closestS = nullptr;
-	if (destinationArea != nullptr && destinationArea != TMSectors[sourceSIndex].area) {
+	if ((destinationArea != nullptr) && (destinationArea != TMSectors[sourceSIndex].area)) {
 //		*l<<"(3#)";
 		closestS = GetAlternativeSector(destinationArea, GetSectorIndex(GetClosestSector(destinationArea, sourceSIndex)->S->position), destinationIT);
 		TMSectors[sourceSIndex].sectorAlternativeI[destinationIT] = closestS;
@@ -656,7 +657,7 @@ STerrainMapSector* CTerrainData::GetAlternativeSector(STerrainMapArea* destinati
 	const AIFloat3* position = &sector[sourceSIndex].position;
 	float closestDistance = -1.0;
 	for (auto& iS : destinationArea->sector) {
-		if (closestS == nullptr || iS.second->S->position.distance(*position) < closestDistance) {
+		if ((closestS == nullptr) || (iS.second->S->position.distance(*position) < closestDistance)) {
 			closestS = iS.second->S;
 			closestDistance = iS.second->S->position.distance(*position);
 		}
@@ -669,7 +670,7 @@ STerrainMapSector* CTerrainData::GetAlternativeSector(STerrainMapArea* destinati
 
 int CTerrainData::GetSectorIndex(const AIFloat3& position)
 {
-	return sectorXSize * int(position.z) / convertStoP + int(position.x) / convertStoP;
+	return sectorXSize * (int(position.z) / convertStoP) + int(position.x) / convertStoP;
 }
 
 bool CTerrainData::IsSectorValid(const int& sIndex)
@@ -697,7 +698,7 @@ int CTerrainData::GetFileValue(int& fileSize, char*& file, std::string entry)
 			} else if (file[i] == ';') {
 				return atoi(entryValue.c_str());
 			}
-		} else if (entry[entryIndex] == file[i] || (!islower(file[i]) && entry[entryIndex] == tolower(file[i]))) {  // the current letter matches
+		} else if ((entry[entryIndex] == file[i]) || (!islower(file[i]) && (entry[entryIndex] == tolower(file[i])))) {  // the current letter matches
 			entryIndex++;
 		} else {
 			entryIndex = 0;

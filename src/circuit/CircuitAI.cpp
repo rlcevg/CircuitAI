@@ -323,7 +323,7 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 	scheduler->Init(scheduler);
 
 	InitOptions();
-	InitUnitDefs(callback->GetUnitDefs());
+	InitUnitDefs(callback->GetUnitDefs());  // Inits CTerrainData
 
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
 	metalManager = std::make_shared<CMetalManager>(this, &gameAttribute->GetMetalData());
@@ -781,8 +781,11 @@ void CCircuitAI::InitUnitDefs(std::vector<UnitDef*>&& unitDefs)
 		defsById[def->GetUnitDefId()] = def;
 	}
 
-	// NOTE: terrainManager is not initialized yet, use CTerrainData directly
+	// FIXME: terrainManager is not initialized yet, use CTerrainData directly
 	CTerrainData& terrainData = gameAttribute->GetTerrainData();
+	if (!terrainData.IsInitialized()) {
+		terrainData.Init(this);
+	}
 	for (auto& kv : defsById) {
 		std::vector<UnitDef*> options = kv.second->GetBuildOptions();
 		std::unordered_set<UnitDef*> opts;

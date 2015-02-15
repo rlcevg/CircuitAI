@@ -886,9 +886,9 @@ STerrainMapArea* CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIF
 
 	// other mobile units & their factories
 	int iS = GetSectorIndex(position);
-//	if (!terrainManager->IsSectorValid(iS)) {
-//		CorrectPosition(pos);
-//		iS = terrainManager->GetSectorIndex(pos);
+//	if (!terrainData->IsSectorValid(iS)) {
+//		CorrectPosition(position);
+//		iS = terrainData->GetSectorIndex(position);
 //	}
 	return mobileType->sector[iS].area;
 }

@@ -109,7 +109,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 			float qdist = 200 * 200;
 			// TODO: Push tasks into bgi::rtree
 			for (auto t : builderManager->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
-				if (pos.SqDistance2D(t->GetPos()) < qdist) {
+				if (pos.SqDistance2D(t->GetTaskPos()) < qdist) {
 					task = t;
 					break;
 				}

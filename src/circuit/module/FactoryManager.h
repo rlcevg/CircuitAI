@@ -53,6 +53,7 @@ public:
 	CCircuitUnit* NeedUpgrade();
 	CCircuitUnit* GetRandomFactory();
 
+	springai::UnitDef* GetAssistDef() const;
 	CCircuitUnit* GetClosestHaven(CCircuitUnit* unit) const;
 
 private:

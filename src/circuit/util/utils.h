@@ -20,8 +20,10 @@
 //#include <iterator>
 
 // debug
+#include "Map.h"  // to get Drawer
 #include "Drawer.h"
 #include "Log.h"
+#include "Game.h"  // to pause
 
 namespace utils {
 
