@@ -16,10 +16,13 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <unordered_set>
 
 namespace circuit {
 
 class CCircuitDef;
+struct STerrainMapMobileType;
+struct STerrainMapArea;
 
 class CBuilderManager: public IUnitModule {
 public:
@@ -66,6 +69,7 @@ public:
 	// position must be valid
 	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position, const float& range = .0);  // NOTE: returns false if the area was too small to be recorded
 	bool CanBuildAt(CCircuitUnit* unit, const springai::AIFloat3& destination);
+	bool IsBuilderInArea(springai::UnitDef* buildDef, const springai::AIFloat3& position);  // Check if build-area has proper builder
 
 	virtual void AssignTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
@@ -94,8 +98,10 @@ private:
 	std::set<IBuilderTask*> deleteTasks;
 
 	std::set<CCircuitUnit*> workers;
+	std::set<CCircuitUnit*> assistants;  // workers with temporary task
 
-	std::set<CCircuitUnit*> assistants;
+	std::unordered_set<const STerrainMapMobileType*> workerMobileTypes;
+	std::map<const STerrainMapArea*, std::map<CCircuitDef*, int>> buildAreas;  // area <=> worker types
 };
 
 } // namespace circuit

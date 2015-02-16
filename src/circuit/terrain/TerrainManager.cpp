@@ -25,7 +25,7 @@
 #include "Pathing.h"
 #include "MoveData.h"
 
-#define STRUCTURE_MASK_BIT(bits)	static_cast<int>(SBlockingMap::StructMask::bits)
+#define STRUCT_BIT(bits)	static_cast<int>(SBlockingMap::StructMask::bits)
 
 namespace circuit {
 
@@ -59,18 +59,18 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	bsize = ssize + int2(6, 4);
 	// offset in South facing
 	offset = int2(0, 4);
-	ignoreMask = STRUCTURE_MASK_BIT(PYLON);
+	ignoreMask = STRUCT_BIT(PYLON);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::FACTORY, ignoreMask);
 
 	def = circuit->GetUnitDefByName("armsolar");
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
-	ignoreMask = STRUCTURE_MASK_BIT(MEX) |
-				 STRUCTURE_MASK_BIT(ENGY_HIGH) |
-				 STRUCTURE_MASK_BIT(DEF_LOW) |
-				 STRUCTURE_MASK_BIT(PYLON) |
-				 STRUCTURE_MASK_BIT(NANO);
+	ignoreMask = STRUCT_BIT(MEX) |
+				 STRUCT_BIT(ENGY_HIGH) |
+				 STRUCT_BIT(DEF_LOW) |
+				 STRUCT_BIT(PYLON) |
+				 STRUCT_BIT(NANO);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::ENGY_LOW, ignoreMask);
 
 	def = circuit->GetUnitDefByName("armwin");
@@ -79,11 +79,11 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
-	ignoreMask = STRUCTURE_MASK_BIT(MEX) |
-				 STRUCTURE_MASK_BIT(ENGY_HIGH) |
-				 STRUCTURE_MASK_BIT(DEF_LOW) |
-				 STRUCTURE_MASK_BIT(PYLON) |
-				 STRUCTURE_MASK_BIT(NANO);
+	ignoreMask = STRUCT_BIT(MEX) |
+				 STRUCT_BIT(ENGY_HIGH) |
+				 STRUCT_BIT(DEF_LOW) |
+				 STRUCT_BIT(PYLON) |
+				 STRUCT_BIT(NANO);
 	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_LOW, ignoreMask);
 
 	def = circuit->GetUnitDefByName("armfus");
@@ -92,9 +92,9 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
-	ignoreMask = STRUCTURE_MASK_BIT(MEX) |
-				 STRUCTURE_MASK_BIT(DEF_LOW) |
-				 STRUCTURE_MASK_BIT(PYLON);
+	ignoreMask = STRUCT_BIT(MEX) |
+				 STRUCT_BIT(DEF_LOW) |
+				 STRUCT_BIT(PYLON);
 	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_MID, ignoreMask);
 
 	def = circuit->GetUnitDefByName("cafus");
@@ -103,11 +103,11 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
-	ignoreMask = STRUCTURE_MASK_BIT(MEX) |
-				 STRUCTURE_MASK_BIT(ENGY_LOW) |
-				 STRUCTURE_MASK_BIT(DEF_LOW) |
-				 STRUCTURE_MASK_BIT(PYLON) |
-				 STRUCTURE_MASK_BIT(NANO);
+	ignoreMask = STRUCT_BIT(MEX) |
+				 STRUCT_BIT(ENGY_LOW) |
+				 STRUCT_BIT(DEF_LOW) |
+				 STRUCT_BIT(PYLON) |
+				 STRUCT_BIT(NANO);
 	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_HIGH, ignoreMask);
 
 	def = circuit->GetUnitDefByName("armestor");
@@ -117,43 +117,43 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	radius = pylonRange / (SQUARE_SIZE * 1.3);
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
-	ignoreMask = STRUCTURE_MASK_BIT(ALL) & ~STRUCTURE_MASK_BIT(PYLON);
+	ignoreMask = STRUCT_BIT(ALL) & ~STRUCT_BIT(PYLON);
 	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::PYLON, ignoreMask);
 
 	def = circuit->GetUnitDefByName("armmstor");
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
-	ignoreMask = STRUCTURE_MASK_BIT(ALL) & ~STRUCTURE_MASK_BIT(FACTORY);
+	ignoreMask = STRUCT_BIT(ALL) & ~STRUCT_BIT(FACTORY);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::MEX, ignoreMask);
 
 	def = mexDef;  // cormex
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
-	ignoreMask = STRUCTURE_MASK_BIT(ALL) & ~STRUCTURE_MASK_BIT(FACTORY);
+	ignoreMask = STRUCT_BIT(ALL) & ~STRUCT_BIT(FACTORY);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::MEX, ignoreMask);
 
 	def = circuit->GetUnitDefByName("corrl");
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
-	ignoreMask = STRUCTURE_MASK_BIT(ENGY_LOW) |
-				 STRUCTURE_MASK_BIT(ENGY_MID) |
-				 STRUCTURE_MASK_BIT(ENGY_HIGH) |
-				 STRUCTURE_MASK_BIT(PYLON) |
-				 STRUCTURE_MASK_BIT(NANO);
+	ignoreMask = STRUCT_BIT(ENGY_LOW) |
+				 STRUCT_BIT(ENGY_MID) |
+				 STRUCT_BIT(ENGY_HIGH) |
+				 STRUCT_BIT(PYLON) |
+				 STRUCT_BIT(NANO);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::DEF_LOW, ignoreMask);
 
 	def = circuit->GetUnitDefByName("corllt");
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
-	ignoreMask = STRUCTURE_MASK_BIT(ENGY_LOW) |
-				 STRUCTURE_MASK_BIT(ENGY_MID) |
-				 STRUCTURE_MASK_BIT(ENGY_HIGH) |
-				 STRUCTURE_MASK_BIT(PYLON) |
-				 STRUCTURE_MASK_BIT(NANO);
+	ignoreMask = STRUCT_BIT(ENGY_LOW) |
+				 STRUCT_BIT(ENGY_MID) |
+				 STRUCT_BIT(ENGY_HIGH) |
+				 STRUCT_BIT(PYLON) |
+				 STRUCT_BIT(NANO);
 	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::DEF_LOW, ignoreMask);
 
 	def = circuit->GetUnitDefByName("armnanotc");
@@ -162,10 +162,10 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
-	ignoreMask = STRUCTURE_MASK_BIT(MEX) |
-				 STRUCTURE_MASK_BIT(DEF_LOW) |
-				 STRUCTURE_MASK_BIT(ENGY_HIGH) |
-				 STRUCTURE_MASK_BIT(PYLON);
+	ignoreMask = STRUCT_BIT(MEX) |
+				 STRUCT_BIT(DEF_LOW) |
+				 STRUCT_BIT(ENGY_HIGH) |
+				 STRUCT_BIT(PYLON);
 	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::NANO, ignoreMask);
 
 	blockingMap.columns = mapWidth / 2;  // build-step = 2 little green squares
@@ -181,7 +181,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	def = mexDef;
 	int size = std::max(def->GetXSize(), def->GetZSize()) / 2;
 	int& xsize = size, &zsize = size;
-	int notIgnoreMask = STRUCTURE_MASK_BIT(FACTORY);
+	int notIgnoreMask = STRUCT_BIT(FACTORY);
 	for (auto& spot : spots) {
 		const int x1 = int(spot.position.x / (SQUARE_SIZE << 1)) - (xsize >> 1), x2 = x1 + xsize;
 		const int z1 = int(spot.position.z / (SQUARE_SIZE << 1)) - (zsize >> 1), z2 = z1 + zsize;
@@ -192,7 +192,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 		}
 	}
 
-	ignoreMask = STRUCTURE_MASK_BIT(PYLON);
+	ignoreMask = STRUCT_BIT(PYLON);
 	offset = int2(0, 0);
 	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
 	for (auto& kv : defs) {
@@ -931,6 +931,11 @@ const STerrainMapSector& CTerrainManager::GetSector(int sIndex) const
 int CTerrainManager::GetConvertStoP() const
 {
 	return terrainData->convertStoP;
+}
+
+const STerrainMapMobileType* CTerrainManager::GetMobileType(int unitDefId) const
+{
+	return terrainData->udMobileType[unitDefId];
 }
 
 void CTerrainManager::ClusterizeTerrain()

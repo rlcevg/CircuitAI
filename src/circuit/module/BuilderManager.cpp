@@ -67,6 +67,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		// TODO: Consider moving initilizer into UnitCreated handler
 		unit->SetManager(this);
 		idleTask->AssignTo(unit);
+		++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 
 		builderPower += unit->GetDef()->GetBuildSpeed();
 		workers.insert(unit);
@@ -93,6 +94,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		if (unit->GetUnit()->IsBeingBuilt()) {
 			return;
 		}
+		--buildAreas[unit->GetArea()][unit->GetCircuitDef()];
+
 		builderPower -= unit->GetDef()->GetBuildSpeed();
 		workers.erase(unit);
 
@@ -110,16 +113,22 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		this->circuit->GetTerrainManager()->RemoveBlocker(unit->GetDef(), u->GetPos(), u->GetBuildingFacing());
 	};
 
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
 	for (auto& kv : defs) {
 		UnitDef* def = kv.second;
 		if (def->GetSpeed() > 0) {
-			if (def->IsBuilder() && !def->GetBuildOptions().empty()) {
+			if (def->IsBuilder() && !circuit->GetCircuitDef(def)->GetBuildOptions().empty()) {
 				int unitDefId = def->GetUnitDefId();
 				finishedHandler[unitDefId] = workerFinishedHandler;
 				idleHandler[unitDefId] = workerIdleHandler;
 				damagedHandler[unitDefId] = workerDamagedHandler;
 				destroyedHandler[unitDefId] = workerDestroyedHandler;
+
+				const STerrainMapMobileType* mt = terrainManager->GetMobileType(unitDefId);
+				if (mt != nullptr) {  // not air
+					workerMobileTypes.insert(mt);
+				}
 			}
 		} else {
 			destroyedHandler[def->GetUnitDefId()] = buildingDestroyedHandler;
@@ -133,6 +142,13 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	};
 
 	builderTasks.resize(static_cast<int>(IBuilderTask::BuildType::TASKS_COUNT));
+
+	for (auto mt : workerMobileTypes) {
+		for (auto area : mt->area) {
+			buildAreas[area] = std::map<CCircuitDef*, int>();
+		}
+	}
+	buildAreas[nullptr] = std::map<CCircuitDef*, int>();  // air
 }
 
 CBuilderManager::~CBuilderManager()
@@ -452,9 +468,32 @@ bool CBuilderManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination
 	if (area->sector.find(iS) != area->sector.end()) {
 		return true;
 	}
-	// FIXME: Recheck this condition, strange and rarely met
 	if (terrainManager->GetClosestSector(area, iS)->S->position.distance2D(destination) < unit->GetDef()->GetBuildDistance() - terrainManager->GetConvertStoP()) {
 		return true;
+	}
+	return false;
+}
+
+bool CBuilderManager::IsBuilderInArea(UnitDef* buildDef, const AIFloat3& position)
+{
+	// check air first
+	for (auto& kv : buildAreas[nullptr]) {
+		if ((kv.second > 0) && kv.first->CanBuild(buildDef)) {
+			return true;
+		}
+	}
+
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	int iS = terrainManager->GetSectorIndex(position);
+	for (auto mt : workerMobileTypes) {
+		STerrainMapArea* area = mt->sector[iS].area;
+		if (area != nullptr) {
+			for (auto& kv : buildAreas[area]) {
+				if ((kv.second > 0) && kv.first->CanBuild(buildDef)) {
+					return true;
+				}
+			}
+		}
 	}
 	return false;
 }

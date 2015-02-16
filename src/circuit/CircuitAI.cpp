@@ -343,10 +343,11 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 		setupManager->PickStartPos(this, CSetupManager::StartPosType::MIDDLE);
 	}
 
-	// EconomyManager uses metal clusters and must be initialized after MetalManager::ClusterizeMetal
+	// NOTE: EconomyManager uses metal clusters and must be initialized after MetalManager::ClusterizeMetal
 	economyManager = std::make_shared<CEconomyManager>(this);
 
-	// TerrainManager uses EconomyManager::GetMexDef and must be initialized after EconomyManager
+	// FIXME: TerrainManager uses EconomyManager::GetMexDef and must be initialized after EconomyManager
+	//        TerrainManager also could use FactoryManager::GetAssistDef instead of hardcoded armnanotc
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
 
 	builderManager = std::make_shared<CBuilderManager>(this);

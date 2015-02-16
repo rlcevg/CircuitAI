@@ -6,11 +6,12 @@
  */
 
 #include "module/FactoryManager.h"
-#include "CircuitAI.h"
-#include "unit/CircuitUnit.h"
 #include "module/EconomyManager.h"
 #include "terrain/TerrainManager.h"
 #include "task/IdleTask.h"
+#include "unit/CircuitUnit.h"
+#include "unit/CircuitDef.h"
+#include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
@@ -138,7 +139,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		UnitDef* def = kv.second;
 		if (def->IsBuilder() && (def->GetSpeed() == 0)) {
 			int unitDefId = def->GetUnitDefId();
-			if  (!def->GetBuildOptions().empty()) {
+			if  (!circuit->GetCircuitDef(def)->GetBuildOptions().empty()) {
 				finishedHandler[unitDefId] = factoryFinishedHandler;
 				idleHandler[unitDefId] = factoryIdleHandler;
 				destroyedHandler[unitDefId] = factoryDestroyedHandler;

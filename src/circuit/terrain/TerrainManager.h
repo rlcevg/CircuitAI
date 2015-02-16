@@ -102,6 +102,7 @@ public:
 	STerrainMapSector* GetAlternativeSector(STerrainMapArea* destinationArea, const int& sourceSIndex, STerrainMapImmobileType* destinationIT); // can return 0
 	const STerrainMapSector& GetSector(int sIndex) const;
 	int GetConvertStoP() const;
+	const STerrainMapMobileType* GetMobileType(int unitDefId) const;
 
 	void ClusterizeTerrain();
 	const std::vector<springai::AIFloat3>& GetDefencePoints() const;

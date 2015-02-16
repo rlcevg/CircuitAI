@@ -429,9 +429,11 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				};
 			} else {
 				// FIXME: Must check if there are any units able to build in that area
-				predicate = [&spots, &metalInfos, map, metalDef](CMetalData::MetalNode const& v) {
+				predicate = [&spots, &metalInfos, map, metalDef, builderManager](CMetalData::MetalNode const& v) {
 					int index = v.second;
-					return (metalInfos[index].isOpen && map->IsPossibleToBuildAt(metalDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
+					return (metalInfos[index].isOpen &&
+							builderManager->IsBuilderInArea(metalDef, spots[index].position) &&
+							map->IsPossibleToBuildAt(metalDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};
 			}
 			int index = metalManager->FindNearestSpot(position, predicate);
