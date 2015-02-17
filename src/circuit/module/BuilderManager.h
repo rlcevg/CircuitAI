@@ -66,6 +66,7 @@ private:
 	void DequeueTask(IBuilderTask* task, bool done = false);
 
 public:
+	// TODO: Move into CTerrainManager??
 	// position must be valid
 	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position, const float& range = .0);  // NOTE: returns false if the area was too small to be recorded
 	bool CanBuildAt(CCircuitUnit* unit, const springai::AIFloat3& destination);

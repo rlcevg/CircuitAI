@@ -179,7 +179,7 @@ public:
 	int convertStoP;  // Sector to Position: times this value for convertion, divide for the reverse
 
 private:
-	int GetFileValue(int& fileSize, char*& file, std::string entry);
+//	int GetFileValue(int& fileSize, char*& file, std::string entry);
 // ---- RAI's GlobalTerrainMap ---- END
 
 // ---- UNUSED so far ---- BEGIN

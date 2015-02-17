@@ -10,6 +10,7 @@
 #include "terrain/BlockCircle.h"
 #include "static/TerrainData.h"
 #include "module/EconomyManager.h"
+#include "module/BuilderManager.h"
 #include "resource/MetalManager.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
@@ -238,17 +239,17 @@ void CTerrainManager::RemoveBlocker(UnitDef* unitDef, const AIFloat3& pos, int f
 	MarkBlocker(building, false);
 }
 
-AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)
+AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing, TerrainPredicate predicate)
 {
 	MarkAllyBuildings();
 
 	auto search = blockInfos.find(unitDef);
 	if (search != blockInfos.end()) {
-		return FindBuildSiteByMask(unitDef, pos, searchRadius, facing, search->second);
+		return FindBuildSiteByMask(unitDef, pos, searchRadius, facing, search->second, predicate);
 	}
 
 	if (searchRadius > SQUARE_SIZE * 2 * 100) {
-		return FindBuildSiteLow(unitDef, pos, searchRadius, facing);
+		return FindBuildSiteLow(unitDef, pos, searchRadius, facing, predicate);
 	}
 
 	/*
@@ -277,6 +278,8 @@ AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, f
 
 	AIFloat3 probePos(ZeroVector);
 	Map* map = circuit->GetMap();
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	CCircuitDef* cdef = circuit->GetCircuitDef(unitDef);
 
 	for (int so = 0; so < endr * endr * 4; so++) {
 		int2 s1(cornerX1 + ofs[so].dx, cornerZ1 + ofs[so].dy);
@@ -287,9 +290,11 @@ AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, f
 
 		probePos.x = (s1.x + s2.x) * SQUARE_SIZE;
 		probePos.z = (s1.y + s2.y) * SQUARE_SIZE;
-		if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
+		if (builderManager->CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
 			probePos.y = map->GetElevationAt(probePos.x, probePos.z);
-			return probePos;
+			if (predicate(probePos)) {
+				return probePos;
+			}
 		}
 	}
 
@@ -431,7 +436,7 @@ const CTerrainManager::SearchOffsetsLow& CTerrainManager::GetSearchOffsetTableLo
 	return searchOffsetsLow;
 }
 
-AIFloat3 CTerrainManager::FindBuildSiteLow(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)
+AIFloat3 CTerrainManager::FindBuildSiteLow(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing, TerrainPredicate& predicate)
 {
 	const int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
@@ -462,6 +467,8 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(UnitDef* unitDef, const AIFloat3& pos
 
 	AIFloat3 probePos(ZeroVector);
 	Map* map = circuit->GetMap();
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	CCircuitDef* cdef = circuit->GetCircuitDef(unitDef);
 
 	for (int soLow = 0; soLow < endrLow * endrLow * 4; soLow++) {
 		int xlow = centerX + ofsLow[soLow].dx;
@@ -480,9 +487,11 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(UnitDef* unitDef, const AIFloat3& pos
 
 			probePos.x = (s1.x + s2.x) * SQUARE_SIZE;
 			probePos.z = (s1.y + s2.y) * SQUARE_SIZE;
-			if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
+			if (builderManager->CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
 				probePos.y = map->GetElevationAt(probePos.x, probePos.z);
-				return probePos;
+				if (predicate(probePos)) {
+					return probePos;
+				}
 			}
 		}
 	}
@@ -490,12 +499,12 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(UnitDef* unitDef, const AIFloat3& pos
 	return -RgtVector;
 }
 
-AIFloat3 CTerrainManager::FindBuildSiteByMask(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask)
+AIFloat3 CTerrainManager::FindBuildSiteByMask(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask, TerrainPredicate& predicate)
 {
 	int xmsize = mask->GetXSize();
 	int zmsize = mask->GetZSize();
 	if ((searchRadius > SQUARE_SIZE * 2 * 100) || (xmsize * zmsize > GRID_RATIO_LOW * GRID_RATIO_LOW * 9)) {
-		return FindBuildSiteByMaskLow(unitDef, pos, searchRadius, facing, mask);
+		return FindBuildSiteByMaskLow(unitDef, pos, searchRadius, facing, mask, predicate);
 	}
 
 	int xssize, zssize;
@@ -555,30 +564,34 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(UnitDef* unitDef, const AIFloat3& 
 
 	AIFloat3 probePos(ZeroVector);
 	Map* map = circuit->GetMap();
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	CCircuitDef* cdef = circuit->GetCircuitDef(unitDef);
 
-#define DO_TEST(testName)																					\
-	for (int so = 0; so < endr * endr * 4; so++) {															\
-		int2 s1(structCorner.x + ofs[so].dx, structCorner.y + ofs[so].dy);									\
-		int2 s2(          s1.x + xssize,               s1.y + zssize);										\
-		if (!blockingMap.IsInBounds(s1, s2)) {																\
-			continue;																						\
-		}																									\
-																											\
-		int2 m1(maskCorner.x + ofs[so].dx, maskCorner.y + ofs[so].dy);										\
-		int2 m2(        m1.x + xmsize,             m1.y + zmsize);											\
-		int2 om = m1;																						\
-		blockingMap.Bound(m1, m2);																			\
-		om = m1 - om;																						\
-		if (!testName(m1, m2, om)) {																		\
-			continue;																						\
-		}																									\
-																											\
-		probePos.x = (s1.x + s2.x) * SQUARE_SIZE;															\
-		probePos.z = (s1.y + s2.y) * SQUARE_SIZE;															\
-		if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {											\
-			probePos.y = map->GetElevationAt(probePos.x, probePos.z);										\
-			return probePos;																				\
-		}																									\
+#define DO_TEST(testName)																							\
+	for (int so = 0; so < endr * endr * 4; so++) {																	\
+		int2 s1(structCorner.x + ofs[so].dx, structCorner.y + ofs[so].dy);											\
+		int2 s2(          s1.x + xssize,               s1.y + zssize);												\
+		if (!blockingMap.IsInBounds(s1, s2)) {																		\
+			continue;																								\
+		}																											\
+																													\
+		int2 m1(maskCorner.x + ofs[so].dx, maskCorner.y + ofs[so].dy);												\
+		int2 m2(        m1.x + xmsize,             m1.y + zmsize);													\
+		int2 om = m1;																								\
+		blockingMap.Bound(m1, m2);																					\
+		om = m1 - om;																								\
+		if (!testName(m1, m2, om)) {																				\
+			continue;																								\
+		}																											\
+																													\
+		probePos.x = (s1.x + s2.x) * SQUARE_SIZE;																	\
+		probePos.z = (s1.y + s2.y) * SQUARE_SIZE;																	\
+		if (builderManager->CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {	\
+			probePos.y = map->GetElevationAt(probePos.x, probePos.z);												\
+			if (predicate(probePos)) {																				\
+				return probePos;																					\
+			}																										\
+		}																											\
 	}
 
 	switch (facing) {
@@ -608,7 +621,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(UnitDef* unitDef, const AIFloat3& 
 	return -RgtVector;
 }
 
-AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask)
+AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask, TerrainPredicate& predicate)
 {
 	int xmsize, zmsize, xssize, zssize;
 	switch (facing) {
@@ -631,27 +644,27 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(UnitDef* unitDef, const AIFloat
 		}
 	}
 
-#define DECLARE_TEST_LOW(testName, facingType)																	\
-	auto testName = [this, mask, notIgnore, structMask](const int2& m1, const int2& m2, const int2& om) {		\
-		for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {													\
-			for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {												\
-				switch (mask->facingType(xm, zm)) {																\
-					case IBlockMask::BlockType::BLOCKED: {														\
-						if (blockingMap.IsStruct(x, z, structMask)) {											\
-							return false;																		\
-						}																						\
-						break;																					\
-					}																							\
-					case IBlockMask::BlockType::STRUCT: {														\
-						if (blockingMap.IsBlocked(x, z, notIgnore)) {											\
-							return false;																		\
-						}																						\
-						break;																					\
-					}																							\
-				}																								\
-			}																									\
-		}																										\
-		return true;																							\
+#define DECLARE_TEST_LOW(testName, facingType)																\
+	auto testName = [this, mask, notIgnore, structMask](const int2& m1, const int2& m2, const int2& om) {	\
+		for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {												\
+			for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {											\
+				switch (mask->facingType(xm, zm)) {															\
+					case IBlockMask::BlockType::BLOCKED: {													\
+						if (blockingMap.IsStruct(x, z, structMask)) {										\
+							return false;																	\
+						}																					\
+						break;																				\
+					}																						\
+					case IBlockMask::BlockType::STRUCT: {													\
+						if (blockingMap.IsBlocked(x, z, notIgnore)) {										\
+							return false;																	\
+						}																					\
+						break;																				\
+					}																						\
+				}																							\
+			}																								\
+		}																									\
+		return true;																						\
 	};
 
 	const int endr = (int)(searchRadius / (SQUARE_SIZE * 2));
@@ -674,38 +687,42 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(UnitDef* unitDef, const AIFloat
 
 	AIFloat3 probePos(ZeroVector);
 	Map* map = circuit->GetMap();
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	CCircuitDef* cdef = circuit->GetCircuitDef(unitDef);
 
-#define DO_TEST_LOW(testName)																					\
-	for (int soLow = 0; soLow < endrLow * endrLow * 4; soLow++) {												\
-		int2 low(structCenter.x + ofsLow[soLow].dx, structCenter.y + ofsLow[soLow].dy);							\
-		if (!blockingMap.IsInBoundsLow(low.x, low.y) || blockingMap.IsBlockedLow(low.x, low.y, notIgnore)) {	\
-			continue;																							\
-		}																										\
-																												\
-		const SearchOffsets& ofs = ofsLow[soLow].ofs;															\
-		for (int so = 0; so < GRID_RATIO_LOW * GRID_RATIO_LOW; so++) {											\
-			int2 s1(structCorner.x + ofs[so].dx, structCorner.y + ofs[so].dy);									\
-			int2 s2(          s1.x + xssize,               s1.y + zssize);										\
-			if (!blockingMap.IsInBounds(s1, s2)) {																\
-				continue;																						\
-			}																									\
-																												\
-			int2 m1(maskCorner.x + ofs[so].dx, maskCorner.y + ofs[so].dy);										\
-			int2 m2(        m1.x + xmsize,             m1.y + zmsize);											\
-			int2 om = m1;																						\
-			blockingMap.Bound(m1, m2);																			\
-			om = m1 - om;																						\
-			if (!testName(m1, m2, om)) {																		\
-				continue;																						\
-			}																									\
-																												\
-			probePos.x = (s1.x + s2.x) * SQUARE_SIZE;															\
-			probePos.z = (s1.y + s2.y) * SQUARE_SIZE;															\
-			if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {											\
-				probePos.y = map->GetElevationAt(probePos.x, probePos.z);										\
-				return probePos;																				\
-			}																									\
-		}																										\
+#define DO_TEST_LOW(testName)																							\
+	for (int soLow = 0; soLow < endrLow * endrLow * 4; soLow++) {														\
+		int2 low(structCenter.x + ofsLow[soLow].dx, structCenter.y + ofsLow[soLow].dy);									\
+		if (!blockingMap.IsInBoundsLow(low.x, low.y) || blockingMap.IsBlockedLow(low.x, low.y, notIgnore)) {			\
+			continue;																									\
+		}																												\
+																														\
+		const SearchOffsets& ofs = ofsLow[soLow].ofs;																	\
+		for (int so = 0; so < GRID_RATIO_LOW * GRID_RATIO_LOW; so++) {													\
+			int2 s1(structCorner.x + ofs[so].dx, structCorner.y + ofs[so].dy);											\
+			int2 s2(          s1.x + xssize,               s1.y + zssize);												\
+			if (!blockingMap.IsInBounds(s1, s2)) {																		\
+				continue;																								\
+			}																											\
+																														\
+			int2 m1(maskCorner.x + ofs[so].dx, maskCorner.y + ofs[so].dy);												\
+			int2 m2(        m1.x + xmsize,             m1.y + zmsize);													\
+			int2 om = m1;																								\
+			blockingMap.Bound(m1, m2);																					\
+			om = m1 - om;																								\
+			if (!testName(m1, m2, om)) {																				\
+				continue;																								\
+			}																											\
+																														\
+			probePos.x = (s1.x + s2.x) * SQUARE_SIZE;																	\
+			probePos.z = (s1.y + s2.y) * SQUARE_SIZE;																	\
+			if (builderManager->CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {	\
+				probePos.y = map->GetElevationAt(probePos.x, probePos.z);												\
+				if (predicate(probePos)) {																				\
+					return probePos;																					\
+				}																										\
+			}																											\
+		}																												\
 	}
 
 	switch (facing) {

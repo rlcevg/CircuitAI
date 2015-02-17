@@ -12,7 +12,7 @@
 
 #include "OOAICallback.h"
 #include "Map.h"
-#include "File.h"
+//#include "File.h"
 #include "UnitDef.h"
 #include "MoveData.h"
 
@@ -27,8 +27,8 @@ namespace circuit {
 using namespace springai;
 
 // FIXME: Make Engine consts available to AI. @see rts/Sim/MoveTypes/MoveDefHandler.cpp
-//#define MAX_ALLOWED_WATER_DAMAGE_GMM	1e3f
-//#define MAX_ALLOWED_WATER_DAMAGE_HMM	1e4f
+#define MAX_ALLOWED_WATER_DAMAGE_GMM	1e3f
+#define MAX_ALLOWED_WATER_DAMAGE_HMM	1e4f
 
 STerrainMapMobileType::~STerrainMapMobileType()
 {
@@ -66,53 +66,52 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	waterIsHarmful = false;
 	waterIsAVoid = false;
 
-//	Map* map = circuit->GetMap();
-//	float waterDamage = map->GetWaterDamage();
-//	printf("%f\n", waterDamage);
-//	std::string waterText = "  Water Damage: " + utils::float_to_string(waterDamage, "%-.*G");
-//	// @see rts/Sim/MoveTypes/MoveDefHandler.cpp
-//	if (waterDamage > 0) {  // >= MAX_ALLOWED_WATER_DAMAGE_GMM
-//		waterIsHarmful = true;
-//		waterText += " (This map's water is harmful to land units";
-//		if (waterDamage >= MAX_ALLOWED_WATER_DAMAGE_HMM) {
-//			waterIsAVoid = true;
-//			waterText += " as well as hovercraft";
-//		}
-//		waterText += ")";
-//	}
-//	circuit->LOG(waterText.c_str());
-
 	Map* map = circuit->GetMap();
-	std::string mapArchiveFileName = "maps/";
-	mapArchiveFileName += utils::MakeFileSystemCompatible(map->GetName());
-	mapArchiveFileName += ".smd";
-
-	File* file = circuit->GetCallback()->GetFile();
-	int mapArchiveFileSize = file->GetSize(mapArchiveFileName.c_str());
-	if (mapArchiveFileSize > 0) {
-		circuit->LOG("Searching the Map-Archive File: '%s'  File Size: %i", mapArchiveFileName.c_str(), mapArchiveFileSize);
-		char* archiveFile = new char[mapArchiveFileSize];
-		file->GetContent(mapArchiveFileName.c_str(), archiveFile, mapArchiveFileSize);
-		int waterDamage = GetFileValue(mapArchiveFileSize, archiveFile, "WaterDamage");
-		waterIsAVoid = GetFileValue(mapArchiveFileSize, archiveFile, "VoidWater") > 0;
-		circuit->LOG("  Void Water: %s", waterIsAVoid ? "true  (This map has no water)" : "false");
-
-		std::string waterText = "  Water Damage: " + utils::int_to_string(waterDamage);
-		if (waterDamage > 0) {
-			waterIsHarmful = true;
-			waterText += " (This map's water is harmful to land units";
-			if (waterDamage > 10000) {
-				waterIsAVoid = true; // UNTESTED
-				waterText += " as well as hovercraft";
-			}
-			waterText += ")";
+	float waterDamage = map->GetWaterDamage();  // scaled by (UNIT_SLOWUPDATE_RATE / GAME_SPEED)
+	std::string waterText = "  Water Damage: " + utils::float_to_string(waterDamage, "%-.*G");
+	// @see rts/Sim/MoveTypes/MoveDefHandler.cpp
+	if (waterDamage > 0) {  // >= MAX_ALLOWED_WATER_DAMAGE_GMM
+		waterIsHarmful = true;
+		waterText += " (This map's water is harmful to land units";
+		if (waterDamage >= MAX_ALLOWED_WATER_DAMAGE_HMM) {
+			waterIsAVoid = true;
+			waterText += " as well as hovercraft";
 		}
-		circuit->LOG(waterText.c_str());
-		delete [] archiveFile;
-	} else {
-		circuit->LOG("Could not find Map-Archive file for reading additional map info: %s", mapArchiveFileName.c_str());
+		waterText += ")";
 	}
-	delete file;
+	circuit->LOG(waterText.c_str());
+
+//	Map* map = circuit->GetMap();
+//	std::string mapArchiveFileName = "maps/";
+//	mapArchiveFileName += utils::MakeFileSystemCompatible(map->GetName());
+//	mapArchiveFileName += ".smd";
+//
+//	File* file = circuit->GetCallback()->GetFile();
+//	int mapArchiveFileSize = file->GetSize(mapArchiveFileName.c_str());
+//	if (mapArchiveFileSize > 0) {
+//		circuit->LOG("Searching the Map-Archive File: '%s'  File Size: %i", mapArchiveFileName.c_str(), mapArchiveFileSize);
+//		char* archiveFile = new char[mapArchiveFileSize];
+//		file->GetContent(mapArchiveFileName.c_str(), archiveFile, mapArchiveFileSize);
+//		int waterDamage = GetFileValue(mapArchiveFileSize, archiveFile, "WaterDamage");
+//		waterIsAVoid = GetFileValue(mapArchiveFileSize, archiveFile, "VoidWater") > 0;
+//		circuit->LOG("  Void Water: %s", waterIsAVoid ? "true  (This map has no water)" : "false");
+//
+//		std::string waterText = "  Water Damage: " + utils::int_to_string(waterDamage);
+//		if (waterDamage > 0) {
+//			waterIsHarmful = true;
+//			waterText += " (This map's water is harmful to land units";
+//			if (waterDamage > 10000) {
+//				waterIsAVoid = true; // UNTESTED
+//				waterText += " as well as hovercraft";
+//			}
+//			waterText += ")";
+//		}
+//		circuit->LOG(waterText.c_str());
+//		delete [] archiveFile;
+//	} else {
+//		circuit->LOG("Could not find Map-Archive file for reading additional map info: %s", mapArchiveFileName.c_str());
+//	}
+//	delete file;
 
 	int mapWidth = map->GetWidth();
 	int mapHeight = map->GetHeight();
@@ -681,31 +680,31 @@ bool CTerrainData::IsSectorValid(const int& sIndex)
 	return true;
 }
 
-int CTerrainData::GetFileValue(int& fileSize, char*& file, std::string entry)
-{
-	for(size_t i = 0; i < entry.size(); i++) {
-		if (!islower(entry[i])) {
-			entry[i] = tolower(entry[i]);
-		}
-	}
-	size_t entryIndex = 0;
-	std::string entryValue = "";
-	for (int i = 0; i < fileSize; i++) {
-		if (entryIndex >= entry.size()) {
-			// Entry Found: Reading the value
-			if (file[i] >= '0' && file[i] <= '9') {
-				entryValue += file[i];
-			} else if (file[i] == ';') {
-				return atoi(entryValue.c_str());
-			}
-		} else if ((entry[entryIndex] == file[i]) || (!islower(file[i]) && (entry[entryIndex] == tolower(file[i])))) {  // the current letter matches
-			entryIndex++;
-		} else {
-			entryIndex = 0;
-		}
-	}
-	return 0;
-}
+//int CTerrainData::GetFileValue(int& fileSize, char*& file, std::string entry)
+//{
+//	for(size_t i = 0; i < entry.size(); i++) {
+//		if (!islower(entry[i])) {
+//			entry[i] = tolower(entry[i]);
+//		}
+//	}
+//	size_t entryIndex = 0;
+//	std::string entryValue = "";
+//	for (int i = 0; i < fileSize; i++) {
+//		if (entryIndex >= entry.size()) {
+//			// Entry Found: Reading the value
+//			if (file[i] >= '0' && file[i] <= '9') {
+//				entryValue += file[i];
+//			} else if (file[i] == ';') {
+//				return atoi(entryValue.c_str());
+//			}
+//		} else if ((entry[entryIndex] == file[i]) || (!islower(file[i]) && (entry[entryIndex] == tolower(file[i])))) {  // the current letter matches
+//			entryIndex++;
+//		} else {
+//			entryIndex = 0;
+//		}
+//	}
+//	return 0;
+//}
 
 bool CTerrainData::IsInitialized()
 {

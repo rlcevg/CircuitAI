@@ -72,9 +72,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		builderPower += unit->GetDef()->GetBuildSpeed();
 		workers.insert(unit);
 
-		std::vector<float> params;
-		params.push_back(3);
-		unit->GetUnit()->ExecuteCustomCommand(CMD_RETREAT, params);
+//		std::vector<float> params;
+//		params.push_back(3);
+//		unit->GetUnit()->ExecuteCustomCommand(CMD_RETREAT, params);
 
 		AddBuildList(unit);
 	};
@@ -726,9 +726,7 @@ void CBuilderManager::UpdateBuild()
 
 	if (updateTasks.empty()) {
 		for (auto& tasks : builderTasks) {
-			for (auto t : tasks) {
-				updateTasks.insert(t);
-			}
+			updateTasks.insert(tasks.begin(), tasks.end());
 		}
 	}
 }

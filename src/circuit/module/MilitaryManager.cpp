@@ -13,17 +13,12 @@
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
-#include "Log.h"
 #include "Unit.h"
 #include "UnitDef.h"
-#include "Map.h"
+#include "AISCommands.h"
 // debug
 #include "Pathing.h"
-#include "Drawer.h"
-#include "Game.h"
 #include "OOAICallback.h"
-
-#include "AISCommands.h"
 
 #include <vector>
 
@@ -47,9 +42,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 		AIFloat3 fromPos(x, this->circuit->GetMap()->GetElevationAt(x, z), z);
 		u->Fight(fromPos, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
 
-		std::vector<float> params;
-		params.push_back(2);
-		u->ExecuteCustomCommand(CMD_RETREAT, params);
+//		std::vector<float> params;
+//		params.push_back(2);
+//		u->ExecuteCustomCommand(CMD_RETREAT, params);
 	};
 	auto atackerIdleHandler = [this](CCircuitUnit* unit) {
 		Unit* u = unit->GetUnit();

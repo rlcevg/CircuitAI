@@ -139,51 +139,51 @@ static inline void sleep(int64_t seconds)
 	std::this_thread::sleep_for(std::chrono::seconds(seconds));
 }
 
-template<typename T>
-static inline void file_read(T* value, FILE* file)
-{
-	const size_t readCount = fread(value, sizeof(T), 1, file);
-	if (readCount != 1) {
-		throw std::runtime_error("failed reading from file");
-	}
-}
-
-template<typename T>
-static inline void file_write(const T* value, FILE* file)
-{
-	const size_t writeCount = fwrite(value, sizeof(T), 1, file);
-	if (writeCount != 1) {
-		throw std::runtime_error("failed writing to file");
-	}
-}
-
-static bool IsFSGoodChar(const char c)
-{
-	if ((c >= '0') && (c <= '9')) {
-		return true;
-	} else if ((c >= 'a') && (c <= 'z')) {
-		return true;
-	} else if ((c >= 'A') && (c <= 'Z')) {
-		return true;
-	} else if ((c == '.') || (c == '_') || (c == '-')) {
-		return true;
-	}
-
-	return false;
-}
-
-static std::string MakeFileSystemCompatible(const std::string& str)
-{
-	std::string cleaned = str;
-
-	for (std::string::size_type i=0; i < cleaned.size(); i++) {
-		if (!IsFSGoodChar(cleaned[i])) {
-			cleaned[i] = '_';
-		}
-	}
-
-	return cleaned;
-}
+//template<typename T>
+//static inline void file_read(T* value, FILE* file)
+//{
+//	const size_t readCount = fread(value, sizeof(T), 1, file);
+//	if (readCount != 1) {
+//		throw std::runtime_error("failed reading from file");
+//	}
+//}
+//
+//template<typename T>
+//static inline void file_write(const T* value, FILE* file)
+//{
+//	const size_t writeCount = fwrite(value, sizeof(T), 1, file);
+//	if (writeCount != 1) {
+//		throw std::runtime_error("failed writing to file");
+//	}
+//}
+//
+//static bool IsFSGoodChar(const char c)
+//{
+//	if ((c >= '0') && (c <= '9')) {
+//		return true;
+//	} else if ((c >= 'a') && (c <= 'z')) {
+//		return true;
+//	} else if ((c >= 'A') && (c <= 'Z')) {
+//		return true;
+//	} else if ((c == '.') || (c == '_') || (c == '-')) {
+//		return true;
+//	}
+//
+//	return false;
+//}
+//
+//static std::string MakeFileSystemCompatible(const std::string& str)
+//{
+//	std::string cleaned = str;
+//
+//	for (std::string::size_type i=0; i < cleaned.size(); i++) {
+//		if (!IsFSGoodChar(cleaned[i])) {
+//			cleaned[i] = '_';
+//		}
+//	}
+//
+//	return cleaned;
+//}
 
 } // namespace utils
 
