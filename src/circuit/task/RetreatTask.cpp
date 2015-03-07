@@ -9,7 +9,7 @@
 #include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
 #include "module/FactoryManager.h"
-#include "static/SetupManager.h"
+#include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"

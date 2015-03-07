@@ -32,7 +32,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		factoryPower(.0f),
 		assistDef(nullptr)
 {
-	CScheduler* scheduler = circuit->GetScheduler();
+	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::Watchdog, this),
 							FRAMES_PER_SEC * 60,
 							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 1);

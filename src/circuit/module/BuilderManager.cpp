@@ -8,7 +8,7 @@
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
 #include "resource/MetalManager.h"
-#include "static/SetupManager.h"
+#include "setup/SetupManager.h"
 #include "static/TerrainData.h"
 #include "terrain/TerrainManager.h"
 #include "task/IdleTask.h"
@@ -52,7 +52,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		builderTasksCount(0),
 		builderPower(.0f)
 {
-	CScheduler* scheduler = circuit->GetScheduler();
+	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Watchdog, this),
 							FRAMES_PER_SEC * 60,
 							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 0);
@@ -125,9 +125,11 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 				damagedHandler[unitDefId] = workerDamagedHandler;
 				destroyedHandler[unitDefId] = workerDestroyedHandler;
 
-				const STerrainMapMobileType* mt = terrainManager->GetMobileType(unitDefId);
-				if (mt != nullptr) {  // not air
-					workerMobileTypes.insert(mt);
+				int mtId = terrainManager->GetMobileTypeId(unitDefId);
+				if (mtId >= 0) {  // not air
+					workerMobileTypes.insert(mtId);
+				} else {
+					workerAirDefs.insert(def);
 				}
 			}
 		} else {
@@ -143,9 +145,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 
 	builderTasks.resize(static_cast<int>(IBuilderTask::BuildType::TASKS_COUNT));
 
-	for (auto mt : workerMobileTypes) {
-		for (auto area : mt->area) {
-			buildAreas[area] = std::map<CCircuitDef*, int>();
+	for (auto mtId : workerMobileTypes) {
+		for (auto& area : terrainManager->GetMobileTypeById(mtId)->area) {
+			buildAreas[area.get()] = std::map<CCircuitDef*, int>();
 		}
 	}
 	buildAreas[nullptr] = std::map<CCircuitDef*, int>();  // air
@@ -424,56 +426,6 @@ void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
 	}
 }
 
-bool CBuilderManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, const float& range)
-{
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	int iS = terrainManager->GetSectorIndex(position);
-	STerrainMapSector* sector;
-	STerrainMapMobileType* mobileType = cdef->GetMobileType();
-	STerrainMapImmobileType* immobileType = cdef->GetImmobileType();
-	if (mobileType != nullptr) {  // a factory or mobile unit
-		STerrainMapAreaSector* AS = terrainManager->GetAlternativeSector(nullptr, iS, mobileType);
-		if (immobileType != nullptr) {  // a factory
-			sector = terrainManager->GetAlternativeSector(AS->area, iS, immobileType);
-			if (sector == 0) {
-				return false;
-			}
-		} else {
-			sector = AS->S;
-		}
-	} else if (immobileType != nullptr) {  // buildings
-		sector = terrainManager->GetClosestSector(immobileType, iS);
-	} else {
-		return true; // flying units
-	}
-
-	if (sector == &terrainManager->GetSector(iS)) {  // the current sector is the best sector
-		return true;
-	}
-	return sector->position.distance2D(terrainManager->GetSector(iS).position) < range;
-}
-
-bool CBuilderManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination)
-{
-	// FIXME: so far we know only mobile builders
-//	if (unit->GetCircuitDef()->GetImmobileType() != nullptr) {  // A hub or factory
-//		return unit->GetUnit()->GetPos().distance2D(destination) < unit->GetDef()->GetBuildDistance();
-//	}
-	STerrainMapArea* area = unit->GetArea();
-	if (area == nullptr) {  // A flying unit
-		return true;
-	}
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	int iS = terrainManager->GetSectorIndex(destination);
-	if (area->sector.find(iS) != area->sector.end()) {
-		return true;
-	}
-	if (terrainManager->GetClosestSector(area, iS)->S->position.distance2D(destination) < unit->GetDef()->GetBuildDistance() - terrainManager->GetConvertStoP()) {
-		return true;
-	}
-	return false;
-}
-
 bool CBuilderManager::IsBuilderInArea(UnitDef* buildDef, const AIFloat3& position)
 {
 	// check air first
@@ -485,8 +437,8 @@ bool CBuilderManager::IsBuilderInArea(UnitDef* buildDef, const AIFloat3& positio
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	int iS = terrainManager->GetSectorIndex(position);
-	for (auto mt : workerMobileTypes) {
-		STerrainMapArea* area = mt->sector[iS].area;
+	for (auto mtId : workerMobileTypes) {
+		STerrainMapArea* area = terrainManager->GetMobileTypeById(mtId)->sector[iS].area;
 		if (area != nullptr) {
 			for (auto& kv : buildAreas[area]) {
 				if ((kv.second > 0) && kv.first->CanBuild(buildDef)) {
@@ -509,6 +461,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	MoveData* moveData = unitDef->GetMoveData();
 	int pathType = moveData->GetPathType();
 	delete moveData;
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	float metric = std::numeric_limits<float>::max();
 	for (auto& tasks : builderTasks) {
 		for (auto candidate : tasks) {
@@ -526,7 +479,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 			if (target != nullptr) {
 				const AIFloat3& bp = candidate->GetBuildPos();
 
-				if (!CanBuildAt(unit, bp)) {
+				if (!terrainManager->CanBuildAt(unit, bp)) {
 					continue;
 				}
 
@@ -553,7 +506,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 
 				const AIFloat3& buildPos = candidate->GetPosition();
 
-				if (!CanBuildAt(unit, buildPos)) {
+				if (!terrainManager->CanBuildAt(unit, buildPos)) {
 					continue;
 				}
 
@@ -647,7 +600,7 @@ void CBuilderManager::Init()
 		UnitIdle(worker);
 	}
 
-	CScheduler* scheduler = circuit->GetScheduler();
+	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), 2, 0);
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateRetreat, this), FRAMES_PER_SEC / 2);
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), 2, 1);
@@ -728,6 +681,30 @@ void CBuilderManager::UpdateBuild()
 		for (auto& tasks : builderTasks) {
 			updateTasks.insert(tasks.begin(), tasks.end());
 		}
+	}
+}
+
+void CBuilderManager::UpdateAreaUsers()
+{
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	buildAreas.clear();
+	for (auto mtId : workerMobileTypes) {
+		for (auto& area : terrainManager->GetMobileTypeById(mtId)->area) {
+			buildAreas[area.get()] = std::map<CCircuitDef*, int>();
+		}
+	}
+	buildAreas[nullptr] = std::map<CCircuitDef*, int>();  // air
+
+	for (auto& kv : circuit->GetTeamUnits()) {
+		CCircuitUnit* unit = kv.second;
+		CCircuitDef* cdef = unit->GetCircuitDef();
+		if (cdef->GetImmobileTypeId() >= 0) {
+			continue;
+		}
+		if ((workerMobileTypes.find(cdef->GetMobileTypeId()) == workerMobileTypes.end()) && (workerAirDefs.find(unit->GetDef()) == workerAirDefs.end())) {
+			continue;
+		}
+		++buildAreas[unit->GetArea()][cdef];
 	}
 }
 

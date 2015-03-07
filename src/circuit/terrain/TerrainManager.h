@@ -32,8 +32,9 @@ struct STerrainMapMobileType;
 struct STerrainMapImmobileType;
 struct STerrainMapAreaSector;
 struct STerrainMapSector;
+struct SAreaData;
 
-class CTerrainManager {
+class CTerrainManager {  // <=> RAI's cBuilderPlacement
 public:
 	using TerrainPredicate = std::function<bool (const springai::AIFloat3& p)>;
 
@@ -54,11 +55,16 @@ public:
 	void RemoveBlocker(springai::UnitDef* unitDef, const springai::AIFloat3& pos, int facing);
 	// TODO: Use IsInBounds test and Bound operation only if mask or search offsets (endr) are out of bounds
 	// TODO: Based on map complexity use A* or circle to calculate build offset
+	// TODO: Consider abstract task position (any area with builder) and task for certain unit-pos-area
+	springai::AIFloat3 FindBuildSite(springai::UnitDef* unitDef,
+									 const springai::AIFloat3& pos,
+									 float searchRadius,
+									 int facing);
 	springai::AIFloat3 FindBuildSite(springai::UnitDef* unitDef,
 									 const springai::AIFloat3& pos,
 									 float searchRadius,
 									 int facing,
-									 TerrainPredicate predicate = [](const springai::AIFloat3& p){ return true; });
+									 TerrainPredicate& predicate);
 private:
 	int cacheBuildFrame;
 	struct Structure {
@@ -123,8 +129,23 @@ public:
 	STerrainMapSector* GetAlternativeSector(STerrainMapArea* destinationArea, const int& sourceSIndex, STerrainMapImmobileType* destinationIT); // can return 0
 	const STerrainMapSector& GetSector(int sIndex) const;
 	int GetConvertStoP() const;
-	const STerrainMapMobileType* GetMobileType(int unitDefId) const;
 
+	STerrainMapMobileType* GetMobileType(int unitDefId) const;
+	int GetMobileTypeId(int unitDefId) const;
+	STerrainMapMobileType* GetMobileTypeById(int id) const;
+	STerrainMapImmobileType* GetImmobileType(int unitDefId) const;
+	int GetImmobileTypeId(int unitDefId) const;
+	STerrainMapImmobileType* GetImmobileTypeById(int id) const;
+
+	// position must be valid
+	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position, const float& range = .0);  // NOTE: returns false if the area was too small to be recorded
+	bool CanBuildAt(CCircuitUnit* unit, const springai::AIFloat3& destination);
+
+	void UpdateAreaUsers();
+private:
+	SAreaData* areaData;
+
+public:
 	void ClusterizeTerrain();
 	const std::vector<springai::AIFloat3>& GetDefencePoints() const;
 	const std::vector<springai::AIFloat3>& GetDefencePerimeter() const;

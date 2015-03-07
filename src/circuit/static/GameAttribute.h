@@ -32,6 +32,7 @@ public:
 	void RegisterAI(CCircuitAI* circuit);
 	void UnregisterAI(CCircuitAI* circuit);
 
+	const std::unordered_set<CCircuitAI*>& GetCircuits() const;
 	CSetupData& GetSetupData();
 	CMetalData& GetMetalData();
 	CTerrainData& GetTerrainData();

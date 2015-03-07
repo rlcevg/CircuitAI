@@ -10,7 +10,7 @@
 #include "terrain/BlockCircle.h"
 #include "static/TerrainData.h"
 #include "module/EconomyManager.h"
-#include "module/BuilderManager.h"
+#include "module/BuilderManager.h"  // Only for UpdateAreaUsers
 #include "resource/MetalManager.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
@@ -207,6 +207,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	if (!terrainData->IsInitialized()) {
 		terrainData->Init(circuit);
 	}
+	areaData = terrainData->pAreaData.load();
 }
 
 CTerrainManager::~CTerrainManager()
@@ -239,7 +240,15 @@ void CTerrainManager::RemoveBlocker(UnitDef* unitDef, const AIFloat3& pos, int f
 	MarkBlocker(building, false);
 }
 
-AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing, TerrainPredicate predicate)
+AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)
+{
+	TerrainPredicate predicate = [](const AIFloat3& p) {
+		return true;
+	};
+	return FindBuildSite(unitDef, pos, searchRadius, facing, predicate);
+}
+
+AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing, TerrainPredicate& predicate)
 {
 	MarkAllyBuildings();
 
@@ -278,7 +287,6 @@ AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, f
 
 	AIFloat3 probePos(ZeroVector);
 	Map* map = circuit->GetMap();
-	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	CCircuitDef* cdef = circuit->GetCircuitDef(unitDef);
 
 	for (int so = 0; so < endr * endr * 4; so++) {
@@ -290,7 +298,7 @@ AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, f
 
 		probePos.x = (s1.x + s2.x) * SQUARE_SIZE;
 		probePos.z = (s1.y + s2.y) * SQUARE_SIZE;
-		if (builderManager->CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
+		if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
 			probePos.y = map->GetElevationAt(probePos.x, probePos.z);
 			if (predicate(probePos)) {
 				return probePos;
@@ -467,7 +475,6 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(UnitDef* unitDef, const AIFloat3& pos
 
 	AIFloat3 probePos(ZeroVector);
 	Map* map = circuit->GetMap();
-	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	CCircuitDef* cdef = circuit->GetCircuitDef(unitDef);
 
 	for (int soLow = 0; soLow < endrLow * endrLow * 4; soLow++) {
@@ -487,7 +494,7 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(UnitDef* unitDef, const AIFloat3& pos
 
 			probePos.x = (s1.x + s2.x) * SQUARE_SIZE;
 			probePos.z = (s1.y + s2.y) * SQUARE_SIZE;
-			if (builderManager->CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
+			if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
 				probePos.y = map->GetElevationAt(probePos.x, probePos.z);
 				if (predicate(probePos)) {
 					return probePos;
@@ -564,34 +571,33 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(UnitDef* unitDef, const AIFloat3& 
 
 	AIFloat3 probePos(ZeroVector);
 	Map* map = circuit->GetMap();
-	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	CCircuitDef* cdef = circuit->GetCircuitDef(unitDef);
 
-#define DO_TEST(testName)																							\
-	for (int so = 0; so < endr * endr * 4; so++) {																	\
-		int2 s1(structCorner.x + ofs[so].dx, structCorner.y + ofs[so].dy);											\
-		int2 s2(          s1.x + xssize,               s1.y + zssize);												\
-		if (!blockingMap.IsInBounds(s1, s2)) {																		\
-			continue;																								\
-		}																											\
-																													\
-		int2 m1(maskCorner.x + ofs[so].dx, maskCorner.y + ofs[so].dy);												\
-		int2 m2(        m1.x + xmsize,             m1.y + zmsize);													\
-		int2 om = m1;																								\
-		blockingMap.Bound(m1, m2);																					\
-		om = m1 - om;																								\
-		if (!testName(m1, m2, om)) {																				\
-			continue;																								\
-		}																											\
-																													\
-		probePos.x = (s1.x + s2.x) * SQUARE_SIZE;																	\
-		probePos.z = (s1.y + s2.y) * SQUARE_SIZE;																	\
-		if (builderManager->CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {	\
-			probePos.y = map->GetElevationAt(probePos.x, probePos.z);												\
-			if (predicate(probePos)) {																				\
-				return probePos;																					\
-			}																										\
-		}																											\
+#define DO_TEST(testName)																			\
+	for (int so = 0; so < endr * endr * 4; so++) {													\
+		int2 s1(structCorner.x + ofs[so].dx, structCorner.y + ofs[so].dy);							\
+		int2 s2(          s1.x + xssize,               s1.y + zssize);								\
+		if (!blockingMap.IsInBounds(s1, s2)) {														\
+			continue;																				\
+		}																							\
+																									\
+		int2 m1(maskCorner.x + ofs[so].dx, maskCorner.y + ofs[so].dy);								\
+		int2 m2(        m1.x + xmsize,             m1.y + zmsize);									\
+		int2 om = m1;																				\
+		blockingMap.Bound(m1, m2);																	\
+		om = m1 - om;																				\
+		if (!testName(m1, m2, om)) {																\
+			continue;																				\
+		}																							\
+																									\
+		probePos.x = (s1.x + s2.x) * SQUARE_SIZE;													\
+		probePos.z = (s1.y + s2.y) * SQUARE_SIZE;													\
+		if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {	\
+			probePos.y = map->GetElevationAt(probePos.x, probePos.z);								\
+			if (predicate(probePos)) {																\
+				return probePos;																	\
+			}																						\
+		}																							\
 	}
 
 	switch (facing) {
@@ -687,42 +693,41 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(UnitDef* unitDef, const AIFloat
 
 	AIFloat3 probePos(ZeroVector);
 	Map* map = circuit->GetMap();
-	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	CCircuitDef* cdef = circuit->GetCircuitDef(unitDef);
 
-#define DO_TEST_LOW(testName)																							\
-	for (int soLow = 0; soLow < endrLow * endrLow * 4; soLow++) {														\
-		int2 low(structCenter.x + ofsLow[soLow].dx, structCenter.y + ofsLow[soLow].dy);									\
-		if (!blockingMap.IsInBoundsLow(low.x, low.y) || blockingMap.IsBlockedLow(low.x, low.y, notIgnore)) {			\
-			continue;																									\
-		}																												\
-																														\
-		const SearchOffsets& ofs = ofsLow[soLow].ofs;																	\
-		for (int so = 0; so < GRID_RATIO_LOW * GRID_RATIO_LOW; so++) {													\
-			int2 s1(structCorner.x + ofs[so].dx, structCorner.y + ofs[so].dy);											\
-			int2 s2(          s1.x + xssize,               s1.y + zssize);												\
-			if (!blockingMap.IsInBounds(s1, s2)) {																		\
-				continue;																								\
-			}																											\
-																														\
-			int2 m1(maskCorner.x + ofs[so].dx, maskCorner.y + ofs[so].dy);												\
-			int2 m2(        m1.x + xmsize,             m1.y + zmsize);													\
-			int2 om = m1;																								\
-			blockingMap.Bound(m1, m2);																					\
-			om = m1 - om;																								\
-			if (!testName(m1, m2, om)) {																				\
-				continue;																								\
-			}																											\
-																														\
-			probePos.x = (s1.x + s2.x) * SQUARE_SIZE;																	\
-			probePos.z = (s1.y + s2.y) * SQUARE_SIZE;																	\
-			if (builderManager->CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {	\
-				probePos.y = map->GetElevationAt(probePos.x, probePos.z);												\
-				if (predicate(probePos)) {																				\
-					return probePos;																					\
-				}																										\
-			}																											\
-		}																												\
+#define DO_TEST_LOW(testName)																					\
+	for (int soLow = 0; soLow < endrLow * endrLow * 4; soLow++) {												\
+		int2 low(structCenter.x + ofsLow[soLow].dx, structCenter.y + ofsLow[soLow].dy);							\
+		if (!blockingMap.IsInBoundsLow(low.x, low.y) || blockingMap.IsBlockedLow(low.x, low.y, notIgnore)) {	\
+			continue;																							\
+		}																										\
+																												\
+		const SearchOffsets& ofs = ofsLow[soLow].ofs;															\
+		for (int so = 0; so < GRID_RATIO_LOW * GRID_RATIO_LOW; so++) {											\
+			int2 s1(structCorner.x + ofs[so].dx, structCorner.y + ofs[so].dy);									\
+			int2 s2(          s1.x + xssize,               s1.y + zssize);										\
+			if (!blockingMap.IsInBounds(s1, s2)) {																\
+				continue;																						\
+			}																									\
+																												\
+			int2 m1(maskCorner.x + ofs[so].dx, maskCorner.y + ofs[so].dy);										\
+			int2 m2(        m1.x + xmsize,             m1.y + zmsize);											\
+			int2 om = m1;																						\
+			blockingMap.Bound(m1, m2);																			\
+			om = m1 - om;																						\
+			if (!testName(m1, m2, om)) {																		\
+				continue;																						\
+			}																									\
+																												\
+			probePos.x = (s1.x + s2.x) * SQUARE_SIZE;															\
+			probePos.z = (s1.y + s2.y) * SQUARE_SIZE;															\
+			if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {			\
+				probePos.y = map->GetElevationAt(probePos.x, probePos.z);										\
+				if (predicate(probePos)) {																		\
+					return probePos;																			\
+				}																								\
+			}																									\
+		}																										\
 	}
 
 	switch (facing) {
@@ -896,7 +901,7 @@ void CTerrainManager::MarkBlocker(const Structure& building, bool block)
 
 STerrainMapArea* CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIFloat3& position)
 {
-	STerrainMapMobileType* mobileType = cdef->GetMobileType();
+	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileTypeId());
 	if (mobileType == nullptr) {  // flying units & buildings
 		return nullptr;
 	}
@@ -942,7 +947,7 @@ STerrainMapSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* destin
 
 const STerrainMapSector& CTerrainManager::GetSector(int sIndex) const
 {
-	return terrainData->sector[sIndex];
+	return areaData->sector[sIndex];
 }
 
 int CTerrainManager::GetConvertStoP() const
@@ -950,9 +955,95 @@ int CTerrainManager::GetConvertStoP() const
 	return terrainData->convertStoP;
 }
 
-const STerrainMapMobileType* CTerrainManager::GetMobileType(int unitDefId) const
+STerrainMapMobileType* CTerrainManager::GetMobileType(int unitDefId) const
+{
+	return GetMobileTypeById(terrainData->udMobileType[unitDefId]);
+}
+
+int CTerrainManager::GetMobileTypeId(int unitDefId) const
 {
 	return terrainData->udMobileType[unitDefId];
+}
+
+STerrainMapMobileType* CTerrainManager::GetMobileTypeById(int id) const
+{
+	return (id < 0) ? nullptr : &areaData->mobileType[id];
+}
+
+STerrainMapImmobileType* CTerrainManager::GetImmobileType(int unitDefId) const
+{
+	return GetImmobileTypeById(terrainData->udImmobileType[unitDefId]);
+}
+
+int CTerrainManager::GetImmobileTypeId(int unitDefId) const
+{
+	return terrainData->udMobileType[unitDefId];
+}
+
+STerrainMapImmobileType* CTerrainManager::GetImmobileTypeById(int id) const
+{
+	return &areaData->immobileType[id];
+}
+
+bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, const float& range)
+{
+	int iS = GetSectorIndex(position);
+	STerrainMapSector* sector;
+	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileTypeId());
+	STerrainMapImmobileType* immobileType = GetImmobileTypeById(cdef->GetImmobileTypeId());
+	if (mobileType != nullptr) {  // a factory or mobile unit
+		STerrainMapAreaSector* AS = GetAlternativeSector(nullptr, iS, mobileType);
+		if (immobileType != nullptr) {  // a factory
+			sector = GetAlternativeSector(AS->area, iS, immobileType);
+			if (sector == 0) {
+				return false;
+			}
+		} else {
+			sector = AS->S;
+		}
+	} else if (immobileType != nullptr) {  // buildings
+		sector = GetClosestSector(immobileType, iS);
+	} else {
+		return true; // flying units
+	}
+
+	if (sector == &GetSector(iS)) {  // the current sector is the best sector
+		return true;
+	}
+	return sector->position.distance2D(GetSector(iS).position) < range;
+}
+
+bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination)
+{
+	// FIXME: so far we know only mobile builders
+//	if (unit->GetCircuitDef()->GetImmobileType() != nullptr) {  // A hub or factory
+//		return unit->GetUnit()->GetPos().distance2D(destination) < unit->GetDef()->GetBuildDistance();
+//	}
+	STerrainMapArea* area = unit->GetArea();
+	if (area == nullptr) {  // A flying unit
+		return true;
+	}
+	int iS = GetSectorIndex(destination);
+	if (area->sector.find(iS) != area->sector.end()) {
+		return true;
+	}
+	if (GetClosestSector(area, iS)->S->position.distance2D(destination) < unit->GetDef()->GetBuildDistance() - GetConvertStoP()) {
+		return true;
+	}
+	return false;
+}
+
+void CTerrainManager::UpdateAreaUsers()
+{
+	areaData = terrainData->GetNextAreaData();
+	for (auto& kv : circuit->GetTeamUnits()) {
+		CCircuitUnit* unit = kv.second;
+		unit->SetArea(GetCurrentMapArea(unit->GetCircuitDef(), unit->GetUnit()->GetPos()));
+	}
+	// TODO: Use boost signals to invoke UpdateAreaUsers event?
+	circuit->GetBuilderManager()->UpdateAreaUsers();
+
+	terrainData->DidUpdateAreaUsers();
 }
 
 void CTerrainManager::ClusterizeTerrain()

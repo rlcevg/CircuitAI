@@ -66,10 +66,6 @@ private:
 	void DequeueTask(IBuilderTask* task, bool done = false);
 
 public:
-	// TODO: Move into CTerrainManager??
-	// position must be valid
-	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position, const float& range = .0);  // NOTE: returns false if the area was too small to be recorded
-	bool CanBuildAt(CCircuitUnit* unit, const springai::AIFloat3& destination);
 	bool IsBuilderInArea(springai::UnitDef* buildDef, const springai::AIFloat3& position);  // Check if build-area has proper builder
 
 	virtual void AssignTask(CCircuitUnit* unit);
@@ -101,7 +97,11 @@ private:
 	std::set<CCircuitUnit*> workers;
 	std::set<CCircuitUnit*> assistants;  // workers with temporary task
 
-	std::unordered_set<const STerrainMapMobileType*> workerMobileTypes;
+public:
+	void UpdateAreaUsers();
+private:
+	std::unordered_set<int> workerMobileTypes;
+	std::unordered_set<springai::UnitDef*> workerAirDefs;
 	std::map<const STerrainMapArea*, std::map<CCircuitDef*, int>> buildAreas;  // area <=> worker types
 };
 

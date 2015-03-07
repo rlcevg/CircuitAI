@@ -7,7 +7,7 @@
 
 #include "CircuitAI.h"
 #include "static/GameAttribute.h"
-#include "static/SetupManager.h"
+#include "setup/SetupManager.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
 #include "module/EconomyManager.h"
@@ -801,9 +801,9 @@ void CCircuitAI::InitUnitDefs(std::vector<UnitDef*>&& unitDefs)
 
 		if (ud->IsAbleToFly()) {
 		} else if (ud->GetSpeed() == 0 ) {  // for immobile units
-			cdef->SetImmobileType(terrainData.udImmobileType[ud->GetUnitDefId()]);
+			cdef->SetImmobileTypeId(terrainData.udImmobileType[ud->GetUnitDefId()]);
 		} else {  // for mobile units
-			cdef->SetMobileType(terrainData.udMobileType[ud->GetUnitDefId()]);
+			cdef->SetMobileTypeId(terrainData.udMobileType[ud->GetUnitDefId()]);
 		}
 	}
 }
@@ -858,9 +858,19 @@ bool CCircuitAI::IsAvailable(UnitDef* unitDef)
 	return (unitDef->GetMaxThisUnit() > GetUnitCount(unitDef));
 }
 
-CScheduler* CCircuitAI::GetScheduler()
+bool CCircuitAI::IsInitialized()
 {
-	return scheduler.get();
+	return initialized;
+}
+
+CGameAttribute* CCircuitAI::GetGameAttribute()
+{
+	return gameAttribute.get();
+}
+
+std::shared_ptr<CScheduler>& CCircuitAI::GetScheduler()
+{
+	return scheduler;
 }
 
 int CCircuitAI::GetLastFrame()
@@ -974,8 +984,7 @@ void CCircuitAI::DestroyGameAttribute()
 	gameAttribute->UnregisterAI(this);
 	if (gaCounter <= 1) {
 		if (gameAttribute != nullptr) {
-			gameAttribute = nullptr;
-			// deletes singleton here;
+			gameAttribute = nullptr;  // deletes singleton here;
 		}
 		gaCounter = 0;
 	} else {

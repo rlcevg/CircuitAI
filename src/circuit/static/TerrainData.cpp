@@ -6,7 +6,10 @@
  */
 
 #include "static/TerrainData.h"
+#include "static/GameAttribute.h"
+#include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
+#include "util/Scheduler.h"
 #include "util/RagMatrix.h"
 #include "util/utils.h"
 
@@ -30,22 +33,20 @@ using namespace springai;
 #define MAX_ALLOWED_WATER_DAMAGE_GMM	1e3f
 #define MAX_ALLOWED_WATER_DAMAGE_HMM	1e4f
 
-STerrainMapMobileType::~STerrainMapMobileType()
-{
-	utils::free_clear(area);
-	delete moveData;
-}
-
 CTerrainData::CTerrainData() :
 		landSectorType(nullptr),
 		waterSectorType(nullptr),
 		waterIsHarmful(false),
 		waterIsAVoid(false),
-		minElevation(.0),
-		percentLand(.0),
 		sectorXSize(0),
 		sectorZSize(0),
-		convertStoP(0),  // 1
+		convertStoP(1),
+		map(nullptr),
+		gameAttribute(nullptr),
+		pAreaData(&areaData0),
+		pHeightMap(&heightMap0),
+		updatingAreas(false),
+		aiToUpdate(0),
 		isClusterizing(false),
 		initialized(false)
 {
@@ -54,11 +55,26 @@ CTerrainData::CTerrainData() :
 CTerrainData::~CTerrainData()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	delete map;
 }
 
 void CTerrainData::Init(CCircuitAI* circuit)
 {
+	map = circuit->GetCallback()->GetMap();  // Must be ai-independent
+	scheduler = circuit->GetScheduler();
+	gameAttribute = circuit->GetGameAttribute();
 	circuit->LOG("Loading the Terrain-Map ...");
+
+	/*
+	 *  Assign areaData references
+	 */
+	SAreaData& areaData = *pAreaData.load();
+	std::vector<STerrainMapMobileType>& mobileType = areaData.mobileType;
+	std::vector<STerrainMapImmobileType>& immobileType = areaData.immobileType;
+	std::vector<STerrainMapAreaSector>& sectorAirType = areaData.sectorAirType;
+	std::vector<STerrainMapSector>& sector = areaData.sector;
+	float& minElevation = areaData.minElevation;
+	float& percentLand = areaData.percentLand;
 
 	/*
 	 *  Reading the WaterDamage and establishing sector size
@@ -66,7 +82,6 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	waterIsHarmful = false;
 	waterIsAVoid = false;
 
-	Map* map = circuit->GetMap();
 	float waterDamage = map->GetWaterDamage();  // scaled by (UNIT_SLOWUPDATE_RATE / GAME_SPEED)
 	std::string waterText = "  Water Damage: " + utils::float_to_string(waterDamage, "%-.*G");
 	// @see rts/Sim/MoveTypes/MoveDefHandler.cpp
@@ -138,7 +153,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 
 		if (def->IsAbleToFly()) {
 
-			udMobileType[def->GetUnitDefId()] = nullptr;
+			udMobileType[def->GetUnitDefId()] = -1;
 
 		} else if (def->GetSpeed() <= 0) {
 
@@ -147,6 +162,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 			bool canHover = def->IsAbleToHover();
 			bool canFloat = def->IsFloater();
 			STerrainMapImmobileType* IT = nullptr;
+			int itIdx = 0;
 			for (auto& it : immobileType) {
 				if (((it.maxElevation == -minWaterDepth) && (it.canHover == canHover) && (it.canFloat == canFloat)) &&
 					((it.minElevation == -maxWaterDepth) || ((it.canHover || it.canFloat) && (it.minElevation <= 0) && (-maxWaterDepth <= 0))))
@@ -154,18 +170,20 @@ void CTerrainData::Init(CCircuitAI* circuit)
 					IT = &it;
 					break;
 				}
+				++itIdx;
 			}
 			if (IT == nullptr) {
 				STerrainMapImmobileType IT2;
 				immobileType.push_back(IT2);
 				IT = &immobileType.back();
+				itIdx = immobileType.size() - 1;
 				IT->maxElevation = -minWaterDepth;
 				IT->minElevation = -maxWaterDepth;
 				IT->canHover = canHover;
 				IT->canFloat = canFloat;
 			}
 			IT->udCount++;
-			udImmobileType[def->GetUnitDefId()] = IT;
+			udImmobileType[def->GetUnitDefId()] = itIdx;
 
 		} else {
 
@@ -173,10 +191,11 @@ void CTerrainData::Init(CCircuitAI* circuit)
 			float maxWaterDepth = def->GetMaxWaterDepth();
 			bool canHover = def->IsAbleToHover();
 			bool canFloat = def->IsFloater();
-			MoveData* moveData = def->GetMoveData();
+			std::shared_ptr<MoveData> moveData(def->GetMoveData());
 			float maxSlope = moveData->GetMaxSlope();
 			float depth = moveData->GetDepth();
 			STerrainMapMobileType* MT = nullptr;
+			int mtIdx = 0;
 			for (auto& mt : mobileType) {
 				if (((mt.maxElevation == -minWaterDepth) && (mt.maxSlope == maxSlope) && (mt.canHover == canHover) && (mt.canFloat == canFloat)) &&
 					((mt.minElevation == -depth) || ((mt.canHover || mt.canFloat) && (mt.minElevation <= 0) && (-maxWaterDepth <= 0))))
@@ -184,11 +203,13 @@ void CTerrainData::Init(CCircuitAI* circuit)
 					MT = &mt;
 					break;
 				}
+				++mtIdx;
 			}
 			if (MT == nullptr) {
 				STerrainMapMobileType MT2;
 				mobileType.push_back(MT2);
 				MT = &mobileType.back();
+				mtIdx = mobileType.size() - 1;
 				MT->maxSlope = maxSlope;
 				MT->maxElevation = -minWaterDepth;
 				MT->minElevation = -depth;
@@ -200,10 +221,10 @@ void CTerrainData::Init(CCircuitAI* circuit)
 				if (MT->moveData->GetCrushStrength() < moveData->GetCrushStrength()) {
 					std::swap(MT->moveData, moveData);  // figured it would be easier on the pathfinder
 				}
-				delete moveData;
+				moveData = nullptr;  // delete moveData;
 			}
 			MT->udCount++;
-			udMobileType[def->GetUnitDefId()] = MT;
+			udMobileType[def->GetUnitDefId()] = mtIdx;
 		}
 	}
 
@@ -214,10 +235,10 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	waterSectorType = nullptr;
 	for (auto& it : immobileType) {
 		if (!it.canFloat && !it.canHover) {
-			if ((it.minElevation == 0) && ((landSectorType == 0) || (it.maxElevation > landSectorType->maxElevation))) {
+			if ((it.minElevation == 0) && ((landSectorType == nullptr) || (it.maxElevation > landSectorType->maxElevation))) {
 				landSectorType = &it;
 			}
-			if ((it.maxElevation == 0) && ((waterSectorType == 0) || (it.minElevation < waterSectorType->minElevation))) {
+			if ((it.maxElevation == 0) && ((waterSectorType == nullptr) || (it.minElevation < waterSectorType->minElevation))) {
 				waterSectorType = &it;
 			}
 		}
@@ -245,7 +266,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	 */
 	sector.resize(sectorXSize * sectorZSize);
 	const std::vector<float>& standardSlopeMap = circuit->GetMap()->GetSlopeMap();
-	const std::vector<float>& standardHeightMap = circuit->GetMap()->GetHeightMap();
+	const std::vector<float>& standardHeightMap = *pHeightMap.load() = circuit->GetMap()->GetHeightMap();
 	const int convertStoSM = convertStoP / 16;  // * for conversion, / for reverse conversion
 	const int convertStoHM = convertStoP / 8;  // * for conversion, / for reverse conversion
 	const int slopeMapXSize = sectorXSize * convertStoSM;
@@ -428,8 +449,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 							aIndex = iA;
 						}
 					}
-					delete mt.area[aIndex];
-					areaSize--;
+					areaSize--;  // delete mt.area[aIndex];
 				} else {
 					aIndex = areaSize;
 				}
@@ -437,15 +457,14 @@ void CTerrainData::Init(CCircuitAI* circuit)
 				i = *sectorsRemaining.begin();
 				sectorSearch.push_back(i);
 				sectorsRemaining.erase(i);
-				mt.area[aIndex] = new STerrainMapArea(aIndex, &mt);
+				mt.area[aIndex] = std::make_shared<STerrainMapArea>(aIndex, &mt);
 				areaSize++;
 			}
 		}
 		if ((areaSize > 0) && ((mt.area[areaSize - 1]->sector.size() <= MAMinimalSectors) ||
 			(100.0 * float(mt.area[areaSize - 1]->sector.size()) / float(sectorXSize * sectorZSize) <= MAMinimalSectorPercent)))
 		{
-			areaSize--;
-			delete mt.area[areaSize];
+			areaSize--;  // delete mt.area[areaSize];
 		}
 		mt.area.resize(areaSize);
 
@@ -453,7 +472,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 		float percentOfMap = 0.0;
 		for (int iA = 0; iA < areaSize; iA++) {
 			for (auto& iS : mt.area[iA]->sector) {
-				iS.second->area = mt.area[iA];
+				iS.second->area = mt.area[iA].get();  // any profit from weak_ptr here?
 			}
 			mt.area[iA]->percentOfMap = (100.0 * mt.area[iA]->sector.size()) / (sectorXSize * sectorZSize);
 			if (mt.area[iA]->percentOfMap >= 20.0 ) {  // A map area occupying 20% of the map
@@ -463,7 +482,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 				mt.area[iA]->areaUsable = false;
 			}
 			if ((mt.areaLargest == nullptr) || (mt.areaLargest->percentOfMap < mt.area[iA]->percentOfMap)) {
-				mt.areaLargest = mt.area[iA];
+				mt.areaLargest = mt.area[iA].get();
 			}
 
 			percentOfMap += mt.area[iA]->percentOfMap;
@@ -471,6 +490,46 @@ void CTerrainData::Init(CCircuitAI* circuit)
 		mtText << "  \tHas " << areaSize << " Map-Area(s) occupying " << percentOfMap << "%% of the map. (used by " << mt.udCount << " unit-defs)";
 		circuit->LOG(mtText.str().c_str());
 	}
+
+	/*
+	 *  Duplicate areaData
+	 */
+	SAreaData& nextAreaData = (pAreaData.load() == &areaData0) ? areaData1 : areaData0;
+	nextAreaData.mobileType = mobileType;
+	for (auto& mt : nextAreaData.mobileType) {
+		std::vector<std::shared_ptr<STerrainMapArea>> cpAreas;
+		cpAreas.reserve(mt.area.size());
+		for (auto area : mt.area) {
+			std::shared_ptr<STerrainMapArea> cpArea = std::make_shared<STerrainMapArea>(area->index, &mt);
+			for (auto& kv : area->sector) {
+				cpArea->sector[kv.first] = &mt.sector[kv.first];
+			}
+			cpAreas.push_back(cpArea);
+		}
+		mt.area = cpAreas;
+	}
+	nextAreaData.immobileType = immobileType;
+	nextAreaData.sector = sector;
+	nextAreaData.sectorAirType = sectorAirType;
+	for (int z = 0; z < sectorZSize; z++) {
+		for (int x = 0; x < sectorXSize; x++) {
+			int i = (z * sectorXSize) + x;
+			nextAreaData.sectorAirType[i].S = &nextAreaData.sector[i];
+			for (auto& mt : nextAreaData.mobileType) {
+				mt.sector[i].S = &nextAreaData.sector[i];
+			}
+			for (auto& it : nextAreaData.immobileType) {
+				if ((it.canHover && (it.maxElevation >= nextAreaData.sector[i].maxElevation) && !waterIsAVoid) ||
+					(it.canFloat && (it.maxElevation >= nextAreaData.sector[i].maxElevation) && !waterIsHarmful) ||
+					((it.minElevation <= nextAreaData.sector[i].minElevation) && (it.maxElevation >= nextAreaData.sector[i].maxElevation) && (!waterIsHarmful || (nextAreaData.sector[i].minElevation >=0))))
+				{
+					it.sector[i] = &nextAreaData.sector[i];
+				}
+			}
+		}
+	}
+
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::CheckHeightMap, this), FRAMES_PER_SEC * 60);
 
 	initialized = true;
 
@@ -517,7 +576,7 @@ bool CTerrainData::CanMoveToPos(STerrainMapArea* area, const AIFloat3& destinati
 std::vector<STerrainMapAreaSector>& CTerrainData::GetSectorList(STerrainMapArea* sourceArea)
 {
 	if ((sourceArea == nullptr) ||( sourceArea->mobileType == nullptr)) {  // It flies or it's immobile
-		return sectorAirType;
+		return pAreaData.load()->sectorAirType;
 	}
 	return sourceArea->mobileType->sector;
 }
@@ -558,12 +617,13 @@ STerrainMapSector* CTerrainData::GetClosestSector(STerrainMapImmobileType* sourc
 	}
 //*l<<"\n GCS";
 	if (sourceIT->sector.find(destinationSIndex) != sourceIT->sector.end()) {
+		std::vector<STerrainMapSector>& sector = pAreaData.load()->sector;
 		sourceIT->sectorClosest[destinationSIndex] = &sector[destinationSIndex];
 //*l<<"1(#)";
 		return &sector[destinationSIndex];
 	}
 
-	const AIFloat3* destination = &sector[destinationSIndex].position;
+	const AIFloat3* destination = &pAreaData.load()->sector[destinationSIndex].position;
 	STerrainMapSector* SClosest = nullptr;
 	float DisClosest = 0.0f;
 	for (auto& iS : sourceIT->sector) {
@@ -600,16 +660,16 @@ STerrainMapAreaSector* CTerrainData::GetAlternativeSector(STerrainMapArea* sourc
 	STerrainMapArea* largestArea = nullptr;
 	float bestDistance = -1.0;
 	float bestMidDistance = -1.0;
-	const std::vector<STerrainMapArea*>& TMAreas = destinationMT->area;
+	const std::vector<std::shared_ptr<STerrainMapArea>>& TMAreas = destinationMT->area;
 	const int areaSize = destinationMT->area.size();
 	for (int iA = 0; iA < areaSize; iA++) {
 		if ((largestArea == nullptr) || (largestArea->percentOfMap < TMAreas[iA]->percentOfMap)) {
-			largestArea = TMAreas[iA];
+			largestArea = TMAreas[iA].get();
 		}
 	}
 	for (int iA = 0; iA < areaSize; iA++) {
 		if (TMAreas[iA]->areaUsable || !largestArea->areaUsable) {
-			STerrainMapAreaSector* CAS = GetClosestSector(TMAreas[iA], sourceSIndex);
+			STerrainMapAreaSector* CAS = GetClosestSector(TMAreas[iA].get(), sourceSIndex);
 			float midDistance; // how much of a gap exists between the two areas (source & destination)
 			if ((sourceArea == nullptr) || (sourceArea == TMSectors[GetSectorIndex(CAS->S->position)].area)) {
 				midDistance = 0.0;
@@ -653,7 +713,7 @@ STerrainMapSector* CTerrainData::GetAlternativeSector(STerrainMapArea* destinati
 		return closestS;
 	}
 
-	const AIFloat3* position = &sector[sourceSIndex].position;
+	const AIFloat3* position = &pAreaData.load()->sector[sourceSIndex].position;
 	float closestDistance = -1.0;
 	for (auto& iS : destinationArea->sector) {
 		if ((closestS == nullptr) || (iS.second->S->position.distance(*position) < closestDistance)) {
@@ -705,6 +765,310 @@ bool CTerrainData::IsSectorValid(const int& sIndex)
 //	}
 //	return 0;
 //}
+
+void CTerrainData::CheckHeightMap()
+{
+	if (updatingAreas) {
+		return;
+	}
+	updatingAreas = true;
+	std::vector<float>& heightMap = (pHeightMap.load() == &heightMap0) ? heightMap1 : heightMap0;
+	heightMap = map->GetHeightMap();
+	slopeMap = map->GetSlopeMap();
+	scheduler->RunParallelTask(std::make_shared<CGameTask>(&CTerrainData::UpdateAreas, this),
+							   std::make_shared<CGameTask>(&CTerrainData::ScheduleUsersUpdate, this));
+}
+
+void CTerrainData::UpdateAreas()
+{
+	/*
+	 *  Assign areaData references
+	 */
+	SAreaData& areaData = (pAreaData.load() == &areaData0) ? areaData1 : areaData0;
+	std::vector<STerrainMapMobileType>& mobileType = areaData.mobileType;
+	std::vector<STerrainMapImmobileType>& immobileType = areaData.immobileType;
+	std::vector<STerrainMapSector>& sector = areaData.sector;
+	float& minElevation = areaData.minElevation;
+	float& percentLand = areaData.percentLand;
+
+	/*
+	 *  Copy previous areaData
+	 */
+	SAreaData& prevAreaData = *pAreaData.load();
+	decltype(areaData.mobileType)::iterator itmt = mobileType.begin();
+	for (auto& mt : prevAreaData.mobileType) {
+		itmt->area = mt.area;
+		itmt->areaLargest = nullptr;
+		for (auto& as : itmt->sector) {
+			as.areaClosest = nullptr;
+		}
+		++itmt;
+	}
+	decltype(areaData.immobileType)::iterator itit = immobileType.begin();
+	for (auto& it : prevAreaData.immobileType) {
+		itit->sector = it.sector;
+		for (auto& kv : it.sector) {
+			itit->sector[kv.first] = &sector[kv.first];
+		}
+		itit->sectorClosest.clear();
+		++itit;
+	}
+	decltype(areaData.sector)::iterator its = sector.begin();
+	for (auto& s : prevAreaData.sector) {
+		*its++ = s;
+	}
+	minElevation = prevAreaData.minElevation;
+	percentLand = prevAreaData.percentLand;
+
+	/*
+	 *  Updating sector & determining sectors for immobileType
+	 */
+	const std::vector<float>& standardSlopeMap = slopeMap;
+	const std::vector<float>& standardHeightMap = (pHeightMap.load() == &heightMap0) ? heightMap1 : heightMap0;
+	const std::vector<float>& prevHeightMap = *pHeightMap.load();
+	const int convertStoSM = convertStoP / 16;  // * for conversion, / for reverse conversion
+	const int convertStoHM = convertStoP / 8;  // * for conversion, / for reverse conversion
+	const int slopeMapXSize = sectorXSize * convertStoSM;
+	const int heightMapXSize = sectorXSize * convertStoHM;
+
+	float tmpPercentLand = std::round(percentLand * (sectorXSize * convertStoHM * sectorZSize * convertStoHM) / 100.0);
+
+	auto isSectorHeightChanged = [&standardHeightMap, &prevHeightMap, convertStoHM, heightMapXSize](int iMap) {
+		for (int zH = 0; zH < convertStoHM; zH++) {
+			for (int xH = 0, iH = iMap + zH * heightMapXSize + xH; xH < convertStoHM; xH++, iH = iMap + zH * heightMapXSize + xH) {
+				if (standardHeightMap[iH] != prevHeightMap[iH]) {
+					return true;
+				}
+			}
+		}
+		return false;
+	};
+	std::set<int> changedSectors;
+
+	for (int z = 0; z < sectorZSize; z++) {
+		for (int x = 0; x < sectorXSize; x++) {
+			int iMap = ((z * convertStoHM) * heightMapXSize) + x * convertStoHM;
+			if (!isSectorHeightChanged(iMap)) {
+				continue;
+			}
+
+			int i = (z * sectorXSize) + x;
+			changedSectors.insert(i);
+
+			sector[i].position.y = map->GetElevationAt(sector[i].position.x, sector[i].position.z);
+
+			iMap = ((z * convertStoSM) * slopeMapXSize) + x * convertStoSM;
+			for (int zS = 0; zS < convertStoSM; zS++) {
+				for (int xS = 0, iS = iMap + zS * slopeMapXSize + xS; xS < convertStoSM; xS++, iS = iMap + zS * slopeMapXSize + xS) {
+					if (sector[i].maxSlope < standardSlopeMap[iS]) {
+						sector[i].maxSlope = standardSlopeMap[iS];
+					}
+				}
+			}
+
+			float prevPercentLand = std::round(sector[i].percentLand * (convertStoHM * convertStoHM) / 100.0);
+			sector[i].percentLand = .0;
+			for (int zH = 0; zH < convertStoHM; zH++) {
+				for (int xH = 0, iH = iMap + zH * heightMapXSize + xH; xH < convertStoHM; xH++, iH = iMap + zH * heightMapXSize + xH) {
+					if (standardHeightMap[iH] >= 0) {
+						sector[i].percentLand++;
+					}
+
+					if (sector[i].minElevation > standardHeightMap[iH]) {
+						sector[i].minElevation = standardHeightMap[iH];
+						if (minElevation > standardHeightMap[i]) {
+							minElevation = standardHeightMap[i];
+						}
+					} else if (sector[i].maxElevation < standardHeightMap[iH]) {
+						sector[i].maxElevation = standardHeightMap[iH];
+					}
+				}
+			}
+
+			if (sector[i].percentLand != prevPercentLand) {
+				tmpPercentLand += sector[i].percentLand - prevPercentLand;
+			}
+			sector[i].percentLand *= 100.0 / (convertStoHM * convertStoHM);
+
+			sector[i].isWater = (sector[i].percentLand <= 50.0);
+
+			for (auto& it : immobileType) {
+				if ((it.canHover && (it.maxElevation >= sector[i].maxElevation) && !waterIsAVoid) ||
+					(it.canFloat && (it.maxElevation >= sector[i].maxElevation) && !waterIsHarmful) ||
+					((it.minElevation <= sector[i].minElevation) && (it.maxElevation >= sector[i].maxElevation) && (!waterIsHarmful || (sector[i].minElevation >= 0))))
+				{
+					it.sector[i] = &sector[i];
+				} else {
+					it.sector.erase(i);
+				}
+			}
+		}
+	}
+
+	percentLand = tmpPercentLand * 100.0 / (sectorXSize * convertStoHM * sectorZSize * convertStoHM);
+
+	for (auto& it : immobileType) {
+		it.typeUsable = (((100.0 * it.sector.size()) / float(sectorXSize * sectorZSize) >= 20.0) || ((double)convertStoP * convertStoP * it.sector.size() >= 1.8e7));
+	}
+
+	/*
+	 *  Determine areas per mobileType
+	 */
+	auto shouldRebuild = [this, &changedSectors, &sector](STerrainMapMobileType& mt) {
+		for (auto iS : changedSectors) {
+			if ((mt.canHover && (mt.maxElevation >= sector[iS].maxElevation) && !waterIsAVoid && ((sector[iS].maxElevation <= 0) || (mt.maxSlope >= sector[iS].maxSlope))) ||
+				(mt.canFloat && (mt.maxElevation >= sector[iS].maxElevation) && !waterIsHarmful && ((sector[iS].maxElevation <= 0) || (mt.maxSlope >= sector[iS].maxSlope))) ||
+				((mt.maxSlope >= sector[iS].maxSlope) && (mt.minElevation <= sector[iS].minElevation) && (mt.maxElevation >= sector[iS].maxElevation) && (!waterIsHarmful || (sector[iS].minElevation >= 0))))
+			{
+				if (mt.sector[iS].area == nullptr) {
+					return true;
+				}
+			} else {
+				if (mt.sector[iS].area != nullptr) {
+					return true;
+				}
+			}
+		}
+		return false;
+	};
+	const size_t MAMinimalSectors = 8;         // Minimal # of sector for a valid MapArea
+	const float MAMinimalSectorPercent = 0.5;  // Minimal % of map for a valid MapArea
+	itmt = prevAreaData.mobileType.begin();
+	for (auto& mt : mobileType) {
+		if (shouldRebuild(*itmt++)) {
+
+			for (auto& as : mt.sector) {
+				as.area = nullptr;
+			}
+
+			std::deque<int> sectorSearch;
+			std::set<int> sectorsRemaining;
+			for (int iS = 0; iS < sectorZSize * sectorXSize; iS++) {
+				if ((mt.canHover && (mt.maxElevation >= sector[iS].maxElevation) && !waterIsAVoid && ((sector[iS].maxElevation <= 0) || (mt.maxSlope >= sector[iS].maxSlope))) ||
+						(mt.canFloat && (mt.maxElevation >= sector[iS].maxElevation) && !waterIsHarmful && ((sector[iS].maxElevation <= 0) || (mt.maxSlope >= sector[iS].maxSlope))) ||
+						((mt.maxSlope >= sector[iS].maxSlope) && (mt.minElevation <= sector[iS].minElevation) && (mt.maxElevation >= sector[iS].maxElevation) && (!waterIsHarmful || (sector[iS].minElevation >= 0))))
+				{
+					sectorsRemaining.insert(iS);
+				}
+			}
+
+			// Group sectors into areas
+			int i, iX, iZ, aIndex = 0, areaSize = 0;  // Temp Var.
+			mt.area.resize(MAP_AREA_LIST_SIZE);
+			while (!sectorsRemaining.empty() || !sectorSearch.empty()) {
+
+				if (!sectorSearch.empty()) {
+					i = sectorSearch.front();
+					mt.area[aIndex]->sector[i] = &mt.sector[i];
+					iX = i % sectorXSize;
+					iZ = i / sectorXSize;
+					if ((sectorsRemaining.find(i - 1) != sectorsRemaining.end()) && (iX > 0)) {  // Search left
+						sectorSearch.push_back(i - 1);
+						sectorsRemaining.erase(i - 1);
+					}
+					if ((sectorsRemaining.find(i + 1) != sectorsRemaining.end()) && (iX < sectorXSize - 1)) {  // Search right
+						sectorSearch.push_back(i + 1);
+						sectorsRemaining.erase(i + 1);
+					}
+					if ((sectorsRemaining.find(i - sectorXSize) != sectorsRemaining.end()) && (iZ > 0)) {  // Search up
+						sectorSearch.push_back(i - sectorXSize);
+						sectorsRemaining.erase(i - sectorXSize);
+					}
+					if ((sectorsRemaining.find(i + sectorXSize) != sectorsRemaining.end()) && (iZ < sectorZSize - 1)) {  // Search down
+						sectorSearch.push_back(i + sectorXSize);
+						sectorsRemaining.erase(i + sectorXSize);
+					}
+					sectorSearch.pop_front();
+
+				} else {
+
+					if ((areaSize > 0) && ((areaSize == MAP_AREA_LIST_SIZE) || (mt.area[areaSize - 1]->sector.size() <= MAMinimalSectors) ||
+							(100. * float(mt.area[areaSize - 1]->sector.size()) / float(sectorXSize * sectorZSize) <= MAMinimalSectorPercent)))
+					{
+						aIndex = 0;
+						for (int iA = 1; iA < areaSize; iA++) {
+							if (mt.area[iA]->sector.size() < mt.area[aIndex]->sector.size()) {
+								aIndex = iA;
+							}
+						}
+						areaSize--;  // delete mt.area[aIndex];
+					} else {
+						aIndex = areaSize;
+					}
+
+					i = *sectorsRemaining.begin();
+					sectorSearch.push_back(i);
+					sectorsRemaining.erase(i);
+					mt.area[aIndex] = std::make_shared<STerrainMapArea>(aIndex, &mt);
+					areaSize++;
+				}
+			}
+			if ((areaSize > 0) && ((mt.area[areaSize - 1]->sector.size() <= MAMinimalSectors) ||
+					(100.0 * float(mt.area[areaSize - 1]->sector.size()) / float(sectorXSize * sectorZSize) <= MAMinimalSectorPercent)))
+			{
+				areaSize--;  // delete mt.area[areaSize];
+			}
+			mt.area.resize(areaSize);
+
+		} else {  // should not rebuild
+
+			// Copy mt.area from previous areaData
+			std::vector<std::shared_ptr<STerrainMapArea>> cpAreas;
+			cpAreas.reserve(mt.area.size());
+			for (auto area : mt.area) {
+				std::shared_ptr<STerrainMapArea> cpArea = std::make_shared<STerrainMapArea>(area->index, &mt);
+				for (auto& kv : area->sector) {
+					cpArea->sector[kv.first] = &mt.sector[kv.first];
+				}
+				cpAreas.push_back(cpArea);
+			}
+			mt.area = cpAreas;
+		}
+
+		// Calculations
+		for (int iA = 0; iA < mt.area.size(); iA++) {
+			for (auto& iS : mt.area[iA]->sector) {
+				iS.second->area = mt.area[iA].get();
+			}
+			mt.area[iA]->percentOfMap = (100.0 * mt.area[iA]->sector.size()) / (sectorXSize * sectorZSize);
+			if (mt.area[iA]->percentOfMap >= 20.0 ) {  // A map area occupying 20% of the map
+				mt.area[iA]->areaUsable = true;
+				mt.typeUsable = true;
+			} else {
+				mt.area[iA]->areaUsable = false;
+			}
+			if ((mt.areaLargest == nullptr) || (mt.areaLargest->percentOfMap < mt.area[iA]->percentOfMap)) {
+				mt.areaLargest = mt.area[iA].get();
+			}
+		}
+	}
+}
+
+void CTerrainData::ScheduleUsersUpdate()
+{
+	for (auto circuit : gameAttribute->GetCircuits()) {
+		if (circuit->IsInitialized()) {
+			circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(&CTerrainManager::UpdateAreaUsers, circuit->GetTerrainManager()), ++aiToUpdate);
+		}
+	}
+	// Check if there are any ai to update
+	++aiToUpdate;
+	DidUpdateAreaUsers();
+}
+
+void CTerrainData::DidUpdateAreaUsers()
+{
+	if (--aiToUpdate == 0) {
+		pAreaData = GetNextAreaData();
+		pHeightMap = (pHeightMap.load() == &heightMap0) ? &heightMap1 : &heightMap0;
+		updatingAreas = false;
+	}
+}
+
+SAreaData* CTerrainData::GetNextAreaData()
+{
+	return (pAreaData.load() == &areaData0) ? &areaData1 : &areaData0;
+}
 
 bool CTerrainData::IsInitialized()
 {

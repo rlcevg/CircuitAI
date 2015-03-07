@@ -51,6 +51,11 @@ void CGameAttribute::UnregisterAI(CCircuitAI* circuit)
 	circuits.erase(circuit);
 }
 
+const std::unordered_set<CCircuitAI*>& CGameAttribute::GetCircuits() const
+{
+	return circuits;
+}
+
 CSetupData& CGameAttribute::GetSetupData()
 {
 	return setupData;

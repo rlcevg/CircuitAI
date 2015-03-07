@@ -143,7 +143,9 @@ private:
 // ---- UnitDefs ---- END
 
 public:
-	CScheduler* GetScheduler();
+	bool IsInitialized();
+	CGameAttribute* GetGameAttribute();
+	std::shared_ptr<CScheduler>& GetScheduler();
 	int GetLastFrame();
 	int GetSkirmishAIId();
 	int GetTeamId();

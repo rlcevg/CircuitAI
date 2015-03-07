@@ -5,7 +5,7 @@
  *      Author: rlcevg
  */
 
-#include "static/SetupManager.h"
+#include "setup/SetupManager.h"
 #include "static/SetupData.h"
 #include "resource/MetalManager.h"
 #include "CircuitAI.h"
