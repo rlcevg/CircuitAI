@@ -22,6 +22,7 @@
 #include "AIFloat3.h"
 
 #include <map>
+#include <list>
 #include <vector>
 #include <atomic>
 #include <memory>
@@ -46,29 +47,25 @@ struct STerrainMapSector;
 struct STerrainMapAreaSector {
 	STerrainMapAreaSector() :
 		S(nullptr),
-		area(nullptr),
-		areaClosest(nullptr)
+		area(nullptr)
 	{};
 
 	// NOTE: some of these values are loaded as they become needed, use GlobalTerrainMap functions
 	STerrainMapSector* S;  // always valid
 	STerrainMapArea* area;  // The TerrainMapArea this sector belongs to, otherwise = 0 until
-	STerrainMapArea* areaClosest;  // uninitialized, = the TerrainMapArea closest to this sector
 	// Use this to find the closest sector useable by a unit with a different MoveType, the 0 pointer may be valid as a key index
 	std::map<STerrainMapMobileType*, STerrainMapAreaSector*> sectorAlternativeM;  // uninitialized
 	std::map<STerrainMapImmobileType*, STerrainMapSector*> sectorAlternativeI;  // uninitialized
 };
 
 struct STerrainMapArea {
-	STerrainMapArea(int areaIUSize, STerrainMapMobileType* TMMobileType) :
-		index(areaIUSize),
+	STerrainMapArea(STerrainMapMobileType* TMMobileType) :
 		mobileType(TMMobileType),
 		percentOfMap(.0f),
 		areaUsable(false)
 	{};
 
 	bool areaUsable;  // Should units of this type be used in this area
-	int index;
 	STerrainMapMobileType* mobileType;
 	std::map<int, STerrainMapAreaSector*> sector;         // key = sector index, a list of all sectors belonging to it
 	std::map<int, STerrainMapAreaSector*> sectorClosest;  // key = sector indexes not in "sector", indicates the sector belonging to this map-area with the closest distance
@@ -90,10 +87,11 @@ struct STerrainMapMobileType {
 		maxSlope(.0f),
 		moveData(nullptr)
 	{};
+	~STerrainMapMobileType();
 
 	bool typeUsable;  // Should units of this type be used on this map
 	std::vector<STerrainMapAreaSector> sector;  // Each MoveType has it's own sector list, GlobalTerrainMap->GetSectorIndex() gives an index
-	std::vector<std::shared_ptr<STerrainMapArea>> area;  // Each MoveType has it's own MapArea list
+	std::list<STerrainMapArea*> area;  // Each MoveType has it's own MapArea list
 	STerrainMapArea* areaLargest;  // Largest area usable by this type, otherwise = 0
 
 	float maxSlope;      // = MoveData*->maxSlope

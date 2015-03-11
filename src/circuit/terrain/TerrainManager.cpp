@@ -910,9 +910,13 @@ STerrainMapArea* CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIF
 	int iS = GetSectorIndex(position);
 //	if (!terrainData->IsSectorValid(iS)) {
 //		CorrectPosition(position);
-//		iS = terrainData->GetSectorIndex(position);
+//		iS = GetSectorIndex(position);
 //	}
-	return mobileType->sector[iS].area;
+	STerrainMapArea* area = mobileType->sector[iS].area;
+	if (area == nullptr) {  // unit outside of valid area
+		area = GetAlternativeSector(area, iS, mobileType)->area;
+	}
+	return area;
 }
 
 int CTerrainManager::GetSectorIndex(const AIFloat3& position)
@@ -1004,7 +1008,7 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 	} else if (immobileType != nullptr) {  // buildings
 		sector = GetClosestSector(immobileType, iS);
 	} else {
-		return true; // flying units
+		return true;  // flying units
 	}
 
 	if (sector == &GetSector(iS)) {  // the current sector is the best sector
