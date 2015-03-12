@@ -710,6 +710,7 @@ void CBuilderManager::UpdateAreaUsers()
 	std::set<IBuilderTask*> removeTasks;
 	for (auto& tasks : builderTasks) {
 		for (auto task : tasks) {
+			// FIXME: Do not remove tasks if there is builder around it (even in another area)
 			if (!IsBuilderInArea(task->GetBuildDef(), task->GetPosition())) {
 				removeTasks.insert(task);
 			}

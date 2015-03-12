@@ -125,16 +125,12 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	for (auto& kv : allDefs) {
 		UnitDef* def = kv.second;
 		if (def->GetSpeed() <= 0) {
-			float make = def->GetResourceMake(energyRes);
-			float use = def->GetUpkeep(energyRes);
-			if ((make > 0) || (use < 0)) {
+			const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+			auto it = customParams.find("income_energy");
+			if ((it != customParams.end()) && (utils::string_to_float(it->second) > 0)) {
 				// TODO: Filter only defs that we are able to build
 				allEnergyDefs.insert(def);
-			}
-
-			const std::map<std::string, std::string>& customParams = def->GetCustomParams();
-			auto search = customParams.find("ismex");
-			if ((search != customParams.end()) && (utils::string_to_int(search->second) == 1)) {
+			} else if (((it = customParams.find("ismex")) != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 				mexDef = def;  // cormex
 			}
 		}
@@ -341,10 +337,9 @@ void CEconomyManager::AddAvailEnergy(const std::set<UnitDef*>& buildDefs)
 
 	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
 	for (auto def : diffDefs) {
-		float make = def->GetResourceMake(energyRes);
 		EnergyInfo engy;
 		engy.def = def;
-		engy.make = (make > 0) ? make : -def->GetUpkeep(energyRes);
+		engy.make = utils::string_to_float(def->GetCustomParams().find("income_energy")->second);
 		engy.cost = def->GetCost(metalRes);
 		energyInfos.push_back(engy);
 	}

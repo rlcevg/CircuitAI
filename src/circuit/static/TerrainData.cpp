@@ -640,6 +640,7 @@ void CTerrainData::UpdateAreas()
 		itmt->areaLargest = nullptr;
 		for (auto& as : itmt->sector) {
 			as.area = nullptr;
+			// TODO: Use previous sectorAlternativeM/I and update it?
 			as.sectorAlternativeM.clear();
 			as.sectorAlternativeI.clear();
 		}
@@ -652,6 +653,7 @@ void CTerrainData::UpdateAreas()
 		for (auto& kv : it.sector) {
 			itit->sector[kv.first] = &sector[kv.first];
 		}
+		// TODO: Use previous sectorClosest and update it (replace STerrainMapSector* by index)?
 		itit->sectorClosest.clear();
 		++itit;
 	}
