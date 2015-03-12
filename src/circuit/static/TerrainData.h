@@ -165,12 +165,6 @@ public:
 	void Init(CCircuitAI* circuit);
 
 // ---- RAI's GlobalTerrainMap ---- BEGIN
-	bool CanMoveToPos(STerrainMapArea* area, const springai::AIFloat3& destination);
-	std::vector<STerrainMapAreaSector>& GetSectorList(STerrainMapArea* sourceArea = nullptr);
-	STerrainMapAreaSector* GetClosestSector(STerrainMapArea* sourceArea, const int& destinationSIndex);
-	STerrainMapSector* GetClosestSector(STerrainMapImmobileType* sourceIT, const int& destinationSIndex);
-	STerrainMapAreaSector* GetAlternativeSector(STerrainMapArea* sourceArea, const int& sourceSIndex, STerrainMapMobileType* destinationMT);
-	STerrainMapSector* GetAlternativeSector(STerrainMapArea* destinationArea, const int& sourceSIndex, STerrainMapImmobileType* destinationIT); // can return 0
 	int GetSectorIndex(const springai::AIFloat3& position); // use IsSectorValid() to insure the index is valid
 	bool IsSectorValid(const int& sIndex);
 

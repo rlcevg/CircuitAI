@@ -123,13 +123,15 @@ public:
 	STerrainMapArea* GetCurrentMapArea(CCircuitDef* cdef, const springai::AIFloat3& position);
 	int GetSectorIndex(const springai::AIFloat3& position);
 	bool CanMoveToPos(STerrainMapArea* area, const springai::AIFloat3& destination);
+private:
+	std::vector<STerrainMapAreaSector>& GetSectorList(STerrainMapArea* sourceArea = nullptr);
 	STerrainMapAreaSector* GetClosestSector(STerrainMapArea* sourceArea, const int& destinationSIndex);
 	STerrainMapSector* GetClosestSector(STerrainMapImmobileType* sourceIT, const int& destinationSIndex);
 	STerrainMapAreaSector* GetAlternativeSector(STerrainMapArea* sourceArea, const int& sourceSIndex, STerrainMapMobileType* destinationMT);
 	STerrainMapSector* GetAlternativeSector(STerrainMapArea* destinationArea, const int& sourceSIndex, STerrainMapImmobileType* destinationIT); // can return 0
 	const STerrainMapSector& GetSector(int sIndex) const;
 	int GetConvertStoP() const;
-
+public:
 	STerrainMapMobileType* GetMobileType(int unitDefId) const;
 	int GetMobileTypeId(int unitDefId) const;
 	STerrainMapMobileType* GetMobileTypeById(int id) const;
@@ -142,6 +144,7 @@ public:
 	bool CanBuildAt(CCircuitUnit* unit, const springai::AIFloat3& destination);
 
 	void UpdateAreaUsers();
+	void DidUpdateAreaUsers();
 private:
 	SAreaData* areaData;
 

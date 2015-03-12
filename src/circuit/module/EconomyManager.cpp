@@ -303,15 +303,15 @@ AIFloat3 CEconomyManager::FindBuildPos(CCircuitUnit* unit)
 			};
 			const AIFloat3& position = task->GetTaskPos();
 			CTerrainManager* terrain = circuit->GetTerrainManager();
-			buildPos = terrain->FindBuildSite(buildDef, position, pylonRange * 16, UNIT_COMMAND_BUILD_NO_FACING, predicate);
+			buildPos = terrain->FindBuildSite(buildDef, position, pylonRange * 8, UNIT_COMMAND_BUILD_NO_FACING, predicate);
 			if (buildPos == -RgtVector) {
-//				CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
+//				CMetalData::MetalPredicate predCl = [this](const CMetalData::MetalNode& v) {
 //					return clusterInfos[v.second].pylon == nullptr;
 //				};
-				CMetalData::MetalIndices indices = metalManager->FindNearestClusters(position, 3/*, predicate*/);
+				CMetalData::MetalIndices indices = metalManager->FindNearestClusters(position, 3/*, predCl*/);
 				const CMetalData::Clusters& clusters = metalManager->GetClusters();
 				for (const int idx : indices) {
-					buildPos = terrain->FindBuildSite(buildDef, clusters[idx].geoCentr, pylonRange * 16, UNIT_COMMAND_BUILD_NO_FACING, predicate);
+					buildPos = terrain->FindBuildSite(buildDef, clusters[idx].geoCentr, pylonRange * 8, UNIT_COMMAND_BUILD_NO_FACING, predicate);
 					if (buildPos != -RgtVector) {
 						break;
 					}

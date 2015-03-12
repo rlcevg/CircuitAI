@@ -706,6 +706,18 @@ void CBuilderManager::UpdateAreaUsers()
 		}
 		++buildAreas[unit->GetArea()][cdef];
 	}
+
+	std::set<IBuilderTask*> removeTasks;
+	for (auto& tasks : builderTasks) {
+		for (auto task : tasks) {
+			if (!IsBuilderInArea(task->GetBuildDef(), task->GetPosition())) {
+				removeTasks.insert(task);
+			}
+		}
+	}
+	for (auto task : removeTasks) {
+		AbortTask(task);
+	}
 }
 
 } // namespace circuit

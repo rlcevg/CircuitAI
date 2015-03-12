@@ -913,8 +913,10 @@ STerrainMapArea* CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIF
 //		iS = GetSectorIndex(position);
 //	}
 	STerrainMapArea* area = mobileType->sector[iS].area;
-	if (area == nullptr) {  // unit outside of valid area
-		area = GetAlternativeSector(area, iS, mobileType)->area;
+	if (area == nullptr) {
+		// Case: 1) unit spawned/pushed/transported outside of valid area
+		//       2) factory terraformed height around and became non-valid area
+		area = GetAlternativeSector(nullptr, iS, mobileType)->area;
 	}
 	return area;
 }
@@ -926,27 +928,155 @@ int CTerrainManager::GetSectorIndex(const AIFloat3& position)
 
 bool CTerrainManager::CanMoveToPos(STerrainMapArea* area, const AIFloat3& destination)
 {
-	return terrainData->CanMoveToPos(area, destination);
+	int iS = GetSectorIndex(destination);
+	if (!terrainData->IsSectorValid(iS)) {
+		return false;
+	}
+	if (area == nullptr) {  // either a flying unit or a unit was somehow created at an impossible position
+		return true;
+	}
+	if (area == GetSectorList(area)[iS].area) {
+		return true;
+	}
+	return false;
+}
+
+std::vector<STerrainMapAreaSector>& CTerrainManager::GetSectorList(STerrainMapArea* sourceArea)
+{
+	if ((sourceArea == nullptr) ||( sourceArea->mobileType == nullptr)) {  // It flies or it's immobile
+		return areaData->sectorAirType;
+	}
+	return sourceArea->mobileType->sector;
 }
 
 STerrainMapAreaSector* CTerrainManager::GetClosestSector(STerrainMapArea* sourceArea, const int& destinationSIndex)
 {
-	return terrainData->GetClosestSector(sourceArea, destinationSIndex);
+	auto iAS = sourceArea->sectorClosest.find(destinationSIndex);
+	if (iAS != sourceArea->sectorClosest.end()) {  // It's already been determined
+		return iAS->second;
+	}
+
+	std::vector<STerrainMapAreaSector>& TMSectors = GetSectorList(sourceArea);
+	if (sourceArea == TMSectors[destinationSIndex].area) {
+		sourceArea->sectorClosest[destinationSIndex] = &TMSectors[destinationSIndex];
+		return &TMSectors[destinationSIndex];
+	}
+
+	AIFloat3* destination = &TMSectors[destinationSIndex].S->position;
+	STerrainMapAreaSector* SClosest = nullptr;
+	float DisClosest = 0.0f;
+	for (auto& iS : sourceArea->sector) {
+		if ((SClosest == nullptr) || (iS.second->S->position.distance(*destination) < DisClosest)) {
+			SClosest = iS.second;
+			DisClosest = iS.second->S->position.distance(*destination);
+		}
+	}
+	sourceArea->sectorClosest[destinationSIndex] = SClosest;
+	return SClosest;
 }
 
 STerrainMapSector* CTerrainManager::GetClosestSector(STerrainMapImmobileType* sourceIT, const int& destinationSIndex)
 {
-	return terrainData->GetClosestSector(sourceIT, destinationSIndex);
+	auto iS = sourceIT->sectorClosest.find(destinationSIndex);
+	if (iS != sourceIT->sectorClosest.end()) {  // It's already been determined
+		return iS->second;
+	}
+
+	if (sourceIT->sector.find(destinationSIndex) != sourceIT->sector.end()) {
+		STerrainMapSector* SClosest = &areaData->sector[destinationSIndex];
+		sourceIT->sectorClosest[destinationSIndex] = SClosest;
+		return SClosest;
+	}
+
+	const AIFloat3* destination = &areaData->sector[destinationSIndex].position;
+	STerrainMapSector* SClosest = nullptr;
+	float DisClosest = 0.0f;
+	for (auto& iS : sourceIT->sector) {
+		if ((SClosest == nullptr) || (iS.second->position.distance(*destination) < DisClosest)) {
+			SClosest = iS.second;
+			DisClosest = iS.second->position.distance(*destination);
+		}
+	}
+	sourceIT->sectorClosest[destinationSIndex] = SClosest;
+	return SClosest;
 }
 
 STerrainMapAreaSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* sourceArea, const int& sourceSIndex, STerrainMapMobileType* destinationMT)
 {
-	return terrainData->GetAlternativeSector(sourceArea, sourceSIndex, destinationMT);
+	std::vector<STerrainMapAreaSector>& TMSectors = GetSectorList(sourceArea);
+	auto iMS = TMSectors[sourceSIndex].sectorAlternativeM.find(destinationMT);
+	if (iMS != TMSectors[sourceSIndex].sectorAlternativeM.end()) {  // It's already been determined
+		return iMS->second;
+	}
+
+	if (destinationMT == nullptr) {  // flying unit movetype
+		return &TMSectors[sourceSIndex];
+	}
+
+	if ((sourceArea != nullptr) && (sourceArea != TMSectors[sourceSIndex].area)) {
+		return GetAlternativeSector(sourceArea, GetSectorIndex(GetClosestSector(sourceArea, sourceSIndex)->S->position), destinationMT);
+	}
+
+	const AIFloat3* position = &TMSectors[sourceSIndex].S->position;
+	STerrainMapAreaSector* bestAS = nullptr;
+	STerrainMapArea* largestArea = destinationMT->areaLargest;
+	float bestDistance = -1.0;
+	float bestMidDistance = -1.0;
+	const std::list<STerrainMapArea*>& TMAreas = destinationMT->area;
+	for (auto area : TMAreas) {
+		if (area->areaUsable || !largestArea->areaUsable) {
+			STerrainMapAreaSector* CAS = GetClosestSector(area, sourceSIndex);
+			float midDistance; // how much of a gap exists between the two areas (source & destination)
+			if ((sourceArea == nullptr) || (sourceArea == TMSectors[GetSectorIndex(CAS->S->position)].area)) {
+				midDistance = 0.0;
+			} else {
+				midDistance = CAS->S->position.distance2D(GetClosestSector(sourceArea, GetSectorIndex(CAS->S->position))->S->position);
+			}
+			if ((bestMidDistance < 0) || (midDistance < bestMidDistance)) {
+				bestMidDistance = midDistance;
+				bestAS = nullptr;
+				bestDistance = -1.0;
+			}
+			if (midDistance == bestMidDistance) {
+				float distance = position->distance2D(CAS->S->position);
+				if ((bestAS == nullptr) || (distance * area->percentOfMap < bestDistance * bestAS->area->percentOfMap)) {
+					bestAS = CAS;
+					bestDistance = distance;
+				}
+			}
+		}
+	}
+
+	TMSectors[sourceSIndex].sectorAlternativeM[destinationMT] = bestAS;
+	return bestAS;
 }
 
 STerrainMapSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* destinationArea, const int& sourceSIndex, STerrainMapImmobileType* destinationIT)
 {
-	return terrainData->GetAlternativeSector(destinationArea, sourceSIndex, destinationIT);
+	std::vector<STerrainMapAreaSector>& TMSectors = GetSectorList(destinationArea);
+	auto iMS = TMSectors[sourceSIndex].sectorAlternativeI.find(destinationIT);
+	if (iMS != TMSectors[sourceSIndex].sectorAlternativeI.end()) {  // It's already been determined
+		return iMS->second;
+	}
+
+	STerrainMapSector* closestS = nullptr;
+	if ((destinationArea != nullptr) && (destinationArea != TMSectors[sourceSIndex].area)) {
+		closestS = GetAlternativeSector(destinationArea, GetSectorIndex(GetClosestSector(destinationArea, sourceSIndex)->S->position), destinationIT);
+		TMSectors[sourceSIndex].sectorAlternativeI[destinationIT] = closestS;
+		return closestS;
+	}
+
+	const AIFloat3* position = &areaData->sector[sourceSIndex].position;
+	float closestDistance = -1.0;
+	for (auto& iS : destinationArea->sector) {
+		if ((closestS == nullptr) || (iS.second->S->position.distance(*position) < closestDistance)) {
+			closestS = iS.second->S;
+			closestDistance = iS.second->S->position.distance(*position);
+		}
+	}
+
+	TMSectors[sourceSIndex].sectorAlternativeI[destinationIT] = closestS;
+	return closestS;
 }
 
 const STerrainMapSector& CTerrainManager::GetSector(int sIndex) const
@@ -999,7 +1129,7 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 		STerrainMapAreaSector* AS = GetAlternativeSector(nullptr, iS, mobileType);
 		if (immobileType != nullptr) {  // a factory
 			sector = GetAlternativeSector(AS->area, iS, immobileType);
-			if (sector == 0) {
+			if (sector == nullptr) {
 				return false;
 			}
 		} else {
@@ -1042,11 +1172,28 @@ void CTerrainManager::UpdateAreaUsers()
 	areaData = terrainData->GetNextAreaData();
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
-		unit->SetArea(GetCurrentMapArea(unit->GetCircuitDef(), unit->GetUnit()->GetPos()));
+
+		STerrainMapArea* area = nullptr;  // flying units & buildings
+		STerrainMapMobileType* mobileType = GetMobileTypeById(unit->GetCircuitDef()->GetMobileTypeId());
+		if (mobileType != nullptr) {
+			// other mobile units & their factories
+			int iS = GetSectorIndex(unit->GetUnit()->GetPos());
+			area = mobileType->sector[iS].area;
+			if (area == nullptr) {  // unit outside of valid area
+				// TODO: Rescue operation
+				area = GetAlternativeSector(nullptr, iS, mobileType)->area;
+			}
+		}
+		unit->SetArea(area);
 	}
 	// TODO: Use boost signals to invoke UpdateAreaUsers event?
 	circuit->GetBuilderManager()->UpdateAreaUsers();
 
+	DidUpdateAreaUsers();
+}
+
+void CTerrainManager::DidUpdateAreaUsers()
+{
 	terrainData->DidUpdateAreaUsers();
 }
 

@@ -381,6 +381,7 @@ int CCircuitAI::Release(int reason)
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 //	gameAttribute->SetGameEnd(true);
+	terrainManager->DidUpdateAreaUsers();
 
 	modules.clear();
 	militaryManager = nullptr;
