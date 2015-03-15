@@ -128,9 +128,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 				int mtId = terrainManager->GetMobileTypeId(unitDefId);
 				if (mtId >= 0) {  // not air
 					workerMobileTypes.insert(mtId);
-				} else {
-					workerAirDefs.insert(def);
 				}
+				workerDefs.insert(def);
 			}
 		} else {
 			destroyedHandler[def->GetUnitDefId()] = buildingDestroyedHandler;
@@ -697,21 +696,17 @@ void CBuilderManager::UpdateAreaUsers()
 
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
-		CCircuitDef* cdef = unit->GetCircuitDef();
-		if (cdef->GetImmobileTypeId() >= 0) {
-			continue;
+		if (workerDefs.find(unit->GetDef()) != workerDefs.end()) {
+			++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 		}
-		if ((workerMobileTypes.find(cdef->GetMobileTypeId()) == workerMobileTypes.end()) && (workerAirDefs.find(unit->GetDef()) == workerAirDefs.end())) {
-			continue;
-		}
-		++buildAreas[unit->GetArea()][cdef];
 	}
 
 	std::set<IBuilderTask*> removeTasks;
 	for (auto& tasks : builderTasks) {
 		for (auto task : tasks) {
-			// FIXME: Do not remove tasks if there is builder around it (even in another area)
-			if (!IsBuilderInArea(task->GetBuildDef(), task->GetPosition())) {
+			// FIXME: Do not remove tasks if there is builder around, able to build it (even in another area)
+			UnitDef* def = task->GetBuildDef();
+			if ((def != nullptr) && !IsBuilderInArea(def, task->GetPosition())) {
 				removeTasks.insert(task);
 			}
 		}

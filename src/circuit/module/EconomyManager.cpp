@@ -12,6 +12,7 @@
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
 #include "unit/CircuitUnit.h"
+#include "unit/CircuitDef.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -103,7 +104,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		if (index >= 0) {
 			clusterInfos[index].pylon = unit;
 		}
-		pylonCount++;
+		++pylonCount;
 	};
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 		for (auto& info : clusterInfos) {
@@ -111,7 +112,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 				info.pylon = nullptr;
 			}
 		}
-		pylonCount--;
+		--pylonCount;
 	};
 	Map* map = circuit->GetMap();
 	float pylonSquare = pylonRange * 2 / SQUARE_SIZE;
@@ -127,7 +128,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		if (def->GetSpeed() <= 0) {
 			const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 			auto it = customParams.find("income_energy");
-			if ((it != customParams.end()) && (utils::string_to_float(it->second) > 0)) {
+			if ((it != customParams.end()) && (utils::string_to_float(it->second) > 1)) {
 				// TODO: Filter only defs that we are able to build
 				allEnergyDefs.insert(def);
 			} else if (((it = customParams.find("ismex")) != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
@@ -337,7 +338,7 @@ void CEconomyManager::AddAvailEnergy(const std::set<UnitDef*>& buildDefs)
 
 	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
 	for (auto def : diffDefs) {
-		EnergyInfo engy;
+		SEnergyInfo engy;
 		engy.def = def;
 		engy.make = utils::string_to_float(def->GetCustomParams().find("income_energy")->second);
 		engy.cost = def->GetCost(metalRes);
@@ -345,7 +346,7 @@ void CEconomyManager::AddAvailEnergy(const std::set<UnitDef*>& buildDefs)
 	}
 
 	// High-tech energy first
-	auto compare = [](const EnergyInfo& e1, const EnergyInfo& e2) {
+	auto compare = [](const SEnergyInfo& e1, const SEnergyInfo& e2) {
 		return (e1.make / e1.cost) > (e2.make / e2.cost);
 	};
 	energyInfos.sort(compare);
@@ -418,7 +419,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	// check uncolonized mexes
 	float energyIncome = GetAvgEnergyIncome();
 	float metalIncome = GetAvgMetalIncome();
-	if ((energyIncome * 0.95 > metalIncome) && circuit->IsAvailable(mexDef)) {
+	if ((energyIncome * 0.9 > metalIncome) && circuit->IsAvailable(mexDef)) {
 		float cost = mexDef->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 4 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < count) {
@@ -482,7 +483,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			}
 
 			int count = buildPower / engy.cost * 4 + 1;
-			if (tasks.size() < count) {
+			if ((tasks.size() < count) && (circuit->GetCircuitDef(engy.def)->GetCount() < int(0.173 * engy.cost / engy.make))) {
 				cost = engy.cost;
 				bestDef = engy.def;
 				// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).

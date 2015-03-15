@@ -67,23 +67,23 @@ private:
 	springai::Resource* energyRes;
 	springai::Economy* eco;
 
-	struct ClusterInfo {
+	struct SClusterInfo {
 		CCircuitUnit* factory;
 		CCircuitUnit* pylon;
 	};
-	std::vector<ClusterInfo> clusterInfos;
+	std::vector<SClusterInfo> clusterInfos;
 	float pylonRange;
 	int pylonCount, pylonMaxCount;
 
 	springai::UnitDef* mexDef;
 	std::set<springai::UnitDef*> allEnergyDefs;
 	std::set<springai::UnitDef*> availEnergyDefs;
-	using EnergyInfo = struct {
+	using SEnergyInfo = struct {
 		springai::UnitDef* def;
 		float make;
 		float cost;
 	};
-	std::list<EnergyInfo> energyInfos;
+	std::list<SEnergyInfo> energyInfos;
 
 	// TODO: Didn't see any improvements. Remove avg?
 	std::vector<float> metalIncomes;

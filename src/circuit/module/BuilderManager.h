@@ -101,7 +101,7 @@ public:
 	void UpdateAreaUsers();
 private:
 	std::unordered_set<int> workerMobileTypes;
-	std::unordered_set<springai::UnitDef*> workerAirDefs;
+	std::unordered_set<springai::UnitDef*> workerDefs;
 	std::map<const STerrainMapArea*, std::map<CCircuitDef*, int>> buildAreas;  // area <=> worker types
 };
 

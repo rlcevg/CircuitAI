@@ -328,19 +328,8 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
 	metalManager = std::make_shared<CMetalManager>(this, &gameAttribute->GetMetalData());
 
-	bool canChooseStartPos = (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos());
-	if (metalManager->HasMetalSpots()) {
-		if (!metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
-			metalManager->ClusterizeMetal();
-		}
-		if (canChooseStartPos) {
-			// Parallel task is only to ensure its execution after CMetalManager::Clusterize
-			scheduler->RunParallelTask(std::make_shared<CGameTask>([this]() {
-				setupManager->PickStartPos(this, CSetupManager::StartPosType::METAL_SPOT);
-			}));
-		}
-	} else if (canChooseStartPos) {
-		setupManager->PickStartPos(this, CSetupManager::StartPosType::MIDDLE);
+	if (metalManager->HasMetalSpots() && !metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
+		metalManager->ClusterizeMetal();
 	}
 
 	// NOTE: EconomyManager uses metal clusters and must be initialized after MetalManager::ClusterizeMetal
@@ -349,6 +338,17 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 	// FIXME: TerrainManager uses EconomyManager::GetMexDef and must be initialized after EconomyManager
 	//        TerrainManager also could use FactoryManager::GetAssistDef instead of hardcoded armnanotc
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
+
+	if (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos()) {
+		if (metalManager->HasMetalSpots()) {
+			// Parallel task is only to ensure its execution after CMetalManager::Clusterize
+			scheduler->RunParallelTask(std::make_shared<CGameTask>([this]() {
+				setupManager->PickStartPos(this, CSetupManager::StartPosType::METAL_SPOT);
+			}));
+		} else {
+			setupManager->PickStartPos(this, CSetupManager::StartPosType::MIDDLE);
+		}
+	}
 
 	builderManager = std::make_shared<CBuilderManager>(this);
 	factoryManager = std::make_shared<CFactoryManager>(this);

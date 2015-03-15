@@ -7,7 +7,10 @@
 
 #include "setup/SetupManager.h"
 #include "static/SetupData.h"
+#include "static/TerrainData.h"
 #include "resource/MetalManager.h"
+#include "terrain/TerrainManager.h"
+#include "unit/CircuitDef.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -130,12 +133,24 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 			CMetalData::MetalIndices inBoxIndices = metalManager->FindWithinRangeSpots(posFrom, posTo);
 			if (!inBoxIndices.empty()) {
 				const CMetalData::Metals& spots = metalManager->GetSpots();
-				const AIFloat3& pos = spots[inBoxIndices[rand() % inBoxIndices.size()]].position;
-				x = pos.x;
-				z = pos.z;
-			} else {
-				random(box, x, z);
+				CTerrainManager* terrain = circuit->GetTerrainManager();
+				STerrainMapMobileType* mobileType = terrain->GetMobileTypeById(circuit->GetCircuitDef(circuit->GetUnitDefByName("armcom1"))->GetMobileTypeId());
+				std::vector<int> filteredIndices;
+				for (auto idx : inBoxIndices) {
+					int iS = terrain->GetSectorIndex(spots[idx].position);
+					STerrainMapArea* area = mobileType->sector[iS].area;
+					if ((area != nullptr) && area->percentOfMap >= 0.1) {
+						filteredIndices.push_back(idx);
+					}
+				}
+				if (!filteredIndices.empty()) {
+					const AIFloat3& pos = spots[filteredIndices[rand() % filteredIndices.size()]].position;
+					x = pos.x;
+					z = pos.z;
+					break;
+				}
 			}
+			random(box, x, z);
 			break;
 		}
 		case StartPosType::MIDDLE: {

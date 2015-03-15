@@ -8,12 +8,12 @@
 #include "task/builder/BuilderTask.h"
 #include "task/RetreatTask.h"
 #include "task/TaskManager.h"
-#include "unit/CircuitUnit.h"
-#include "unit/CircuitDef.h"
-#include "unit/action/UnitAction.h"
 #include "module/EconomyManager.h"
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
+#include "unit/CircuitUnit.h"
+#include "unit/CircuitDef.h"
+#include "unit/action/UnitAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -90,16 +90,19 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		}
 	}
 
+	CTerrainManager* terrain = circuit->GetTerrainManager();
+	CTerrainManager::TerrainPredicate predicate = [terrain, unit](const AIFloat3& p) {
+		return terrain->CanBuildAt(unit, p);
+	};
 	float searchRadius = 100.0f * SQUARE_SIZE;
 	facing = FindFacing(buildDef, position);
-	CTerrainManager* terrain = circuit->GetTerrainManager();
-	buildPos = terrain->FindBuildSite(buildDef, position, searchRadius, facing);
+	buildPos = terrain->FindBuildSite(buildDef, position, searchRadius, facing, predicate);
 	if (buildPos == -RgtVector) {
 		const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
 		const CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestClusters(position, 3);
 		for (const int idx : indices) {
 			facing = FindFacing(buildDef, clusters[idx].geoCentr);
-			buildPos = terrain->FindBuildSite(buildDef, clusters[idx].geoCentr, searchRadius, facing);
+			buildPos = terrain->FindBuildSite(buildDef, clusters[idx].geoCentr, searchRadius, facing, predicate);
 			if (buildPos != -RgtVector) {
 				break;
 			}
