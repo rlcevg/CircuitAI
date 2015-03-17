@@ -118,7 +118,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	radius = pylonRange / (SQUARE_SIZE * 1.3);
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(ALL) & ~STRUCT_BIT(PYLON);
+	ignoreMask = STRUCT_BIT(ALL) & ~(STRUCT_BIT(FACTORY) | STRUCT_BIT(PYLON));
 	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::PYLON, ignoreMask);
 
 	def = circuit->GetUnitDefByName("armmstor");
@@ -165,9 +165,22 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(MEX) |
 				 STRUCT_BIT(DEF_LOW) |
+				 STRUCT_BIT(ENGY_MID) |
 				 STRUCT_BIT(ENGY_HIGH) |
 				 STRUCT_BIT(PYLON);
 	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::NANO, ignoreMask);
+
+	def = circuit->GetUnitDefByName("raveparty");
+	wpDef = def->GetDeathExplosion();
+	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
+	delete wpDef;
+	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+	offset = int2(0, 0);
+	ignoreMask = STRUCT_BIT(MEX) |
+				 STRUCT_BIT(DEF_LOW) |
+				 STRUCT_BIT(ENGY_HIGH) |
+				 STRUCT_BIT(PYLON);
+	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
 
 	blockingMap.columns = mapWidth / 2;  // build-step = 2 little green squares
 	blockingMap.rows = mapHeight / 2;

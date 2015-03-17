@@ -94,7 +94,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	CTerrainManager::TerrainPredicate predicate = [terrain, unit](const AIFloat3& p) {
 		return terrain->CanBuildAt(unit, p);
 	};
-	float searchRadius = 100.0f * SQUARE_SIZE;
+	float searchRadius = 200.0f * SQUARE_SIZE;
 	facing = FindFacing(buildDef, position);
 	buildPos = terrain->FindBuildSite(buildDef, position, searchRadius, facing, predicate);
 	if (buildPos == -RgtVector) {
