@@ -26,6 +26,7 @@
 #include "Resource.h"
 #include "Economy.h"
 #include "Feature.h"
+#include "Team.h"  // Only for GetAllyTeams().size()
 
 namespace circuit {
 
@@ -136,6 +137,12 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 			}
 		}
 	}
+
+	// FIXME: Cost thresholds should rely on alive allies
+	std::vector<Team*> allyTeams = circuit->GetCallback()->GetAllyTeams();
+	float allyTeamCount = allyTeams.size();
+	ecoFactor = 1.0f / (allyTeamCount * 0.25f + 0.75f);
+	utils::free_clear(allyTeams);
 }
 
 CEconomyManager::~CEconomyManager()
@@ -206,12 +213,13 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 
 	// FIXME: Eco rules. It should never get here
 	float metalIncome = GetAvgMetalIncome();
-	if (metalIncome < 20) {
-		task = builderManager->EnqueueTask(IBuilderTask::Priority::LOW, circuit->GetUnitDefByName("armwin"),
-										   pos, IBuilderTask::BuildType::ENERGY);
-	} else if (metalIncome < 50) {
-		task = builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, circuit->GetUnitDefByName("armfus"),
-										   pos, IBuilderTask::BuildType::ENERGY);
+	UnitDef* buildDef = circuit->GetUnitDefByName("armwin");
+	if ((metalIncome < 20 * ecoFactor) && (circuit->GetCircuitDef(buildDef)->GetCount() < 50)) {
+		task = builderManager->EnqueueTask(IBuilderTask::Priority::LOW, buildDef, pos,
+										   IBuilderTask::BuildType::ENERGY);
+	} else if (metalIncome < 40 * ecoFactor) {
+		task = builderManager->EnqueueTask(IBuilderTask::Priority::LOW, unit->GetUnit()->GetPos(),
+										   IBuilderTask::BuildType::PATROL, FRAMES_PER_SEC * 20);
 	} else {
 		const std::set<IBuilderTask*>& tasks = builderManager->GetTasks(IBuilderTask::BuildType::BIG_GUN);
 		if (tasks.empty()) {
@@ -239,9 +247,9 @@ CRecruitTask* CEconomyManager::CreateFactoryTask(CCircuitUnit* unit)
 	const char* names1[] = {"armpw", "armrock", "armpw", "armwar", "armpw", "armrock"};
 	char** names;
 	float metalIncome = GetAvgMetalIncome();
-	if (metalIncome > 30) {
+	if (metalIncome > 30 * ecoFactor) {
 		names = (char**)names3;
-	} else if (metalIncome > 20) {
+	} else if (metalIncome > 20 * ecoFactor) {
 		names = (char**)names2;
 	} else {
 		names = (char**)names1;
@@ -482,17 +490,22 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 				continue;
 			}
 
-			int count = buildPower / engy.cost * 4 + 1;
-			if ((tasks.size() < count) && (circuit->GetCircuitDef(engy.def)->GetCount() < int(0.173 * engy.cost / engy.make))) {
-				cost = engy.cost;
-				bestDef = engy.def;
-				// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
-				//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
-				//       solar       geothermal    fusion         singu           ...
-				//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
-				if (cost / (buildPower * buildPower / 8) < MAX_BUILD_SEC) {
-					break;
+			if (circuit->GetCircuitDef(engy.def)->GetCount() < int(0.173 * engy.cost / engy.make)) {
+				int count = buildPower / engy.cost * 4 + 1;
+				if (tasks.size() < count) {
+					cost = engy.cost;
+					bestDef = engy.def;
+					// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
+					//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
+					//       solar       geothermal    fusion         singu           ...
+					//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
+					if (cost / (buildPower * buildPower / 8) < MAX_BUILD_SEC / ecoFactor) {
+						break;
+					}
 				}
+			} else {
+				bestDef = nullptr;
+				break;
 			}
 		}
 
@@ -664,7 +677,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 	}
 
 	float energyIncome = GetAvgEnergyIncome();
-	if ((metalIncome > 10) && (energyIncome > 100) && (pylonCount < pylonMaxCount) && circuit->IsAvailable(pylonDef)) {
+	if ((metalIncome > 10 * ecoFactor) && (energyIncome > 100) && (pylonCount < pylonMaxCount) && circuit->IsAvailable(pylonDef)) {
 		float cost = pylonDef->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 2 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::PYLON).size() < count) {

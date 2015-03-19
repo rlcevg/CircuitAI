@@ -91,6 +91,25 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	}
 
 	CTerrainManager* terrain = circuit->GetTerrainManager();
+
+	// FIXME: Replace const 999.0f with build time?
+	if (circuit->IsAllyAware() && (cost > 999.0f)) {
+		circuit->UpdateAllyUnits();
+		const std::map<int, CCircuitUnit*>& allies = circuit->GetAllyUnits();
+		float sqDist = cost * cost;
+		for (auto& kv : allies) {
+			CCircuitUnit* alu = kv.second;
+			Unit* au = alu->GetUnit();
+			if ((alu->GetDef() == buildDef) && au->IsBeingBuilt()) {
+				const AIFloat3& pos = au->GetPos();
+				if ((position.SqDistance2D(pos) < sqDist) && terrain->CanBuildAt(unit, pos)) {
+					u->Build(buildDef, pos, au->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+					return;
+				}
+			}
+		}
+	}
+
 	CTerrainManager::TerrainPredicate predicate = [terrain, unit](const AIFloat3& p) {
 		return terrain->CanBuildAt(unit, p);
 	};

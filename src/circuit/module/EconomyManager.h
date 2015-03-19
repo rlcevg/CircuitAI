@@ -85,6 +85,8 @@ private:
 	};
 	std::list<SEnergyInfo> energyInfos;
 
+	float ecoFactor;
+
 	// TODO: Didn't see any improvements. Remove avg?
 	std::vector<float> metalIncomes;
 	std::vector<float> energyIncomes;

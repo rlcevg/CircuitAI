@@ -139,7 +139,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 				for (auto idx : inBoxIndices) {
 					int iS = terrain->GetSectorIndex(spots[idx].position);
 					STerrainMapArea* area = mobileType->sector[iS].area;
-					if ((area != nullptr) && area->percentOfMap >= 0.1) {
+					if ((area != nullptr) && area->areaUsable) {
 						filteredIndices.push_back(idx);
 					}
 				}

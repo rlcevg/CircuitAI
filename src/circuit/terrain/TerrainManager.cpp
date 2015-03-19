@@ -55,13 +55,17 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	int2 ssize;
 	int radius;
 	int ignoreMask;
-	def = circuit->GetUnitDefByName("factorycloak");
-	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	bsize = ssize + int2(6, 4);
+
 	// offset in South facing
 	offset = int2(0, 4);
 	ignoreMask = STRUCT_BIT(PYLON);
-	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::FACTORY, ignoreMask);
+	const char* factories[] = {"factorycloak", "factoryamph", "factoryhover", "factoryjump", "factoryshield", "factoryspider", "factorytank", "factoryveh"};
+	for (auto fac : factories) {
+		def = circuit->GetUnitDefByName(fac);
+		ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+		bsize = ssize + int2(6, 4);
+		blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::FACTORY, ignoreMask);
+	}
 
 	def = circuit->GetUnitDefByName("armsolar");
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
