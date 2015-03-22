@@ -6,7 +6,7 @@
  */
 
 #include "static/MetalData.h"
-#include "util/RagMatrix.h"
+#include "util/math/HierarchCluster.h"
 #include "util/utils.h"
 
 #include <functional>
@@ -201,51 +201,9 @@ const CMetalData::Clusters& CMetalData::GetClusters() const
 void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distMatrix)
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	CRagMatrix& distmatrix = *distMatrix;
-	int nrows = distmatrix.GetNrows();
 
-	// Initialize cluster-element list
-	std::vector<MetalIndices> iclusters;
-	iclusters.reserve(nrows);
-	for (int i = 0; i < nrows; i++) {
-		MetalIndices cluster;
-		cluster.push_back(i);
-		iclusters.push_back(cluster);
-	}
-
-	for (int n = nrows; n > 1; n--) {
-		// Find pair
-		int is = 1;
-		int js = 0;
-		if (distmatrix.FindClosestPair(n, is, js) > maxDistance) {
-			break;
-		}
-
-		// Fix the distances
-		for (int j = 0; j < js; j++) {
-			distmatrix(js, j) = std::max(distmatrix(is, j), distmatrix(js, j));
-		}
-		for (int j = js + 1; j < is; j++) {
-			distmatrix(j, js) = std::max(distmatrix(is, j), distmatrix(j, js));
-		}
-		for (int j = is + 1; j < n; j++) {
-			distmatrix(j, js) = std::max(distmatrix(j, is), distmatrix(j, js));
-		}
-
-		for (int j = 0; j < is; j++) {
-			distmatrix(is, j) = distmatrix(n - 1, j);
-		}
-		for (int j = is + 1; j < n - 1; j++) {
-			distmatrix(j, is) = distmatrix(n - 1, j);
-		}
-
-		// Merge clusters
-		MetalIndices& cluster = iclusters[js];
-		cluster.reserve(cluster.size() + iclusters[is].size()); // preallocate memory
-		cluster.insert(cluster.end(), iclusters[is].begin(), iclusters[is].end());
-		iclusters[is] = iclusters[n - 1];
-		iclusters.pop_back();
-	}
+	CHierarchCluster clust;
+	const CHierarchCluster::Clusters& iclusters = clust.Clusterize(*distMatrix, maxDistance);
 
 	auto findCentroid = [this](MetalIndices& cluster) {
 		if (cluster.size() == 1) {

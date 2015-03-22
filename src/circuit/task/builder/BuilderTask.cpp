@@ -81,7 +81,6 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
 	if (buildPos != -RgtVector) {
-		facing = FindFacing(buildDef, buildPos);
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
 			u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			return;
@@ -95,6 +94,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	// FIXME: Replace const 999.0f with build time?
 	if (circuit->IsAllyAware() && (cost > 999.0f)) {
 		circuit->UpdateAllyUnits();
+		// TODO: Use OOAICallback::GetFriendlyUnitsIn()?
 		const std::map<int, CCircuitUnit*>& allies = circuit->GetAllyUnits();
 		float sqDist = cost * cost;
 		for (auto& kv : allies) {

@@ -27,6 +27,7 @@ namespace circuit {
 
 class IBuilderTask;
 class CRecruitTask;
+class CLagrangeInterPol;
 
 class CEconomyManager: public IModule {
 public:
@@ -80,10 +81,12 @@ private:
 	std::set<springai::UnitDef*> availEnergyDefs;
 	using SEnergyInfo = struct {
 		springai::UnitDef* def;
-		float make;
 		float cost;
+		float costDivMake;
+		int limit;
 	};
 	std::list<SEnergyInfo> energyInfos;
+	CLagrangeInterPol* engyPol;
 
 	float ecoFactor;
 

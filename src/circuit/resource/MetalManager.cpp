@@ -7,7 +7,7 @@
 
 #include "resource/MetalManager.h"
 #include "CircuitAI.h"
-#include "util/RagMatrix.h"
+#include "util/math/RagMatrix.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 #include "json/json.h"

@@ -5,7 +5,7 @@
  *      Author: rlcevg
  */
 
-#include "util/RagMatrix.h"
+#include "util/math/RagMatrix.h"
 #include "util/utils.h"
 
 #include <cstring>  // std::memcpy

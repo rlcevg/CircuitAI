@@ -14,6 +14,7 @@
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
 #include "CircuitAI.h"
+#include "util/math/LagrangeInterPol.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
@@ -143,12 +144,27 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	float allyTeamCount = allyTeams.size();
 	ecoFactor = 1.0f / (allyTeamCount * 0.25f + 0.75f);
 	utils::free_clear(allyTeams);
+
+	// TODO: Make configurable
+	// Using cafus, armfus, armsolar as control points
+	const char* engies[] = {"cafus", "armfus", "armsolar"};
+	const int limits[] = {2, 3, 6};  // TODO: range randomize
+	const int size = sizeof(engies) / sizeof(engies[0]);
+	CLagrangeInterPol::Vector x(size), y(size);
+	for (int i = 0; i < size; ++i) {
+		UnitDef* def = circuit->GetUnitDefByName(engies[i]);
+		float make = utils::string_to_float(def->GetCustomParams().find("income_energy")->second);
+		x[i] = def->GetCost(metalRes) / make;
+		y[i] = limits[i] + 0.5;  // +0.5 to be sure precision errors will not decrease integer part
+	}
+	engyPol = new CLagrangeInterPol(x, y);  // Alternatively use CGaussSolver to compute polynomial - faster on reuse
 }
 
 CEconomyManager::~CEconomyManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete metalRes, energyRes, eco;
+	delete engyPol;
 }
 
 int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -204,7 +220,8 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	std::vector<Feature*> features = circuit->GetCallback()->GetFeaturesIn(pos, u->GetMaxSpeed() * FRAMES_PER_SEC * 60);
 	if (!features.empty() && (builderManager->GetTasks(IBuilderTask::BuildType::RECLAIM).size() < 20)) {
-		task = builderManager->EnqueueTask(IBuilderTask::Priority::LOW, pos, IBuilderTask::BuildType::RECLAIM, FRAMES_PER_SEC * 60);
+		task = builderManager->EnqueueTask(IBuilderTask::Priority::LOW, pos,
+										   IBuilderTask::BuildType::RECLAIM, FRAMES_PER_SEC * 60);
 	}
 	utils::free_clear(features);
 	if (task != nullptr) {
@@ -223,8 +240,14 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 	} else {
 		const std::set<IBuilderTask*>& tasks = builderManager->GetTasks(IBuilderTask::BuildType::BIG_GUN);
 		if (tasks.empty()) {
-			task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, circuit->GetUnitDefByName("raveparty"),
-										   	   circuit->GetSetupManager()->GetStartPos(), IBuilderTask::BuildType::BIG_GUN);
+			buildDef = circuit->GetUnitDefByName("raveparty");
+			if (circuit->GetCircuitDef(buildDef)->GetCount() < 2) {
+				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, circuit->GetSetupManager()->GetStartPos(),
+												   IBuilderTask::BuildType::BIG_GUN);
+			} else {
+				task = builderManager->EnqueueTask(IBuilderTask::Priority::LOW, unit->GetUnit()->GetPos(),
+												   IBuilderTask::BuildType::PATROL, FRAMES_PER_SEC * 20);
+			}
 		} else {
 			task = *tasks.begin();
 		}
@@ -348,14 +371,15 @@ void CEconomyManager::AddAvailEnergy(const std::set<UnitDef*>& buildDefs)
 	for (auto def : diffDefs) {
 		SEnergyInfo engy;
 		engy.def = def;
-		engy.make = utils::string_to_float(def->GetCustomParams().find("income_energy")->second);
 		engy.cost = def->GetCost(metalRes);
+		engy.costDivMake = engy.cost / utils::string_to_float(def->GetCustomParams().find("income_energy")->second);
+		engy.limit = engyPol->GetValueAt(engy.costDivMake);
 		energyInfos.push_back(engy);
 	}
 
 	// High-tech energy first
 	auto compare = [](const SEnergyInfo& e1, const SEnergyInfo& e2) {
-		return (e1.make / e1.cost) > (e2.make / e2.cost);
+		return e1.costDivMake < e2.costDivMake;
 	};
 	energyInfos.sort(compare);
 }
@@ -490,7 +514,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 				continue;
 			}
 
-			if (circuit->GetCircuitDef(engy.def)->GetCount() < int(0.173 * engy.cost / engy.make)) {
+			if (circuit->GetCircuitDef(engy.def)->GetCount() < engy.limit) {
 				int count = buildPower / engy.cost * 4 + 1;
 				if (tasks.size() < count) {
 					cost = engy.cost;
