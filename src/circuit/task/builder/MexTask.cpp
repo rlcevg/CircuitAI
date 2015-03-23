@@ -73,23 +73,47 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 void CBMexTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	UnitDef* defDef = circuit->GetUnitDefByName("corllt");
-	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	if (defDef->GetCost(economyManager->GetMetalRes()) / economyManager->GetAvgMetalIncome() < MIN_BUILD_SEC / 2) {
-		int index = circuit->GetMetalManager()->FindNearestCluster(buildPos);
-		if (index >= 0) {
+	CMetalManager* metalManager = circuit->GetMetalManager();
+	IBuilderTask* task = nullptr;
+
+	int index = metalManager->FindNearestCluster(buildPos);
+	if (index >= 0) {
+		CBuilderManager* builderManager = circuit->GetBuilderManager();
+
+		// Colonize next spot in cluster
+		Map* map = circuit->GetMap();
+		const CMetalData::Metals& spots = metalManager->GetSpots();
+		for (auto idx : metalManager->GetClusters()[index].idxSpots) {
+			const AIFloat3& pos = spots[idx].position;
+			if (metalManager->IsOpenSpot(idx) &&
+				builderManager->IsBuilderInArea(buildDef, pos) &&
+				map->IsPossibleToBuildAt(buildDef, pos, UNIT_COMMAND_BUILD_NO_FACING))
+			{
+				metalManager->SetOpenSpot(idx, false);
+				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, pos, IBuilderTask::BuildType::MEX, cost);
+				task->SetBuildPos(pos);
+				break;
+			}
+		}
+
+		// Add defence
+		UnitDef* defDef = circuit->GetUnitDefByName("corllt");
+		CEconomyManager* economyManager = circuit->GetEconomyManager();
+		if (defDef->GetCost(economyManager->GetMetalRes()) / economyManager->GetAvgMetalIncome() < MIN_BUILD_SEC / 2) {
 			for (auto& defPoint : circuit->GetMilitaryManager()->GetDefPoints(index)) {
 				if (defPoint.isOpen) {
 					defPoint.isOpen = false;
-					circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, defPoint.position,
-															  IBuilderTask::BuildType::DEFENCE);
+					builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, defPoint.position,
+												IBuilderTask::BuildType::DEFENCE);
 					break;
 				}
 			}
 		}
 	}
 
-	circuit->GetEconomyManager()->UpdateMetalTasks(buildPos);
+	if (task == nullptr) {
+		circuit->GetEconomyManager()->UpdateMetalTasks(buildPos);
+	}
 }
 
 void CBMexTask::Cancel()

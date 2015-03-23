@@ -7,10 +7,8 @@
 
 #include "static/MetalData.h"
 #include "util/math/HierarchCluster.h"
+#include "util/math/EncloseCircle.h"
 #include "util/utils.h"
-
-#include <functional>
-#include <algorithm>
 
 namespace circuit {
 
@@ -205,41 +203,26 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 	CHierarchCluster clust;
 	const CHierarchCluster::Clusters& iclusters = clust.Clusterize(*distMatrix, maxDistance);
 
-	auto findCentroid = [this](MetalIndices& cluster) {
-		if (cluster.size() == 1) {
-			return spots[cluster[0]].position;
-		}
-		float distSq = spots[cluster[1]].position.SqDistance2D(spots[cluster[0]].position);
-		int ir = 1, jr = 0;
-		for (int i = 0; i < cluster.size(); i++) {
-			for (int j = 0; j < cluster.size(); j++) {
-				float temp = spots[cluster[i]].position.SqDistance2D(spots[cluster[j]].position);
-				if (temp > distSq) {
-					distSq = temp;
-					ir = i;
-					jr = j;
-				}
-			}
-		}
-		AIFloat3 pos = (spots[cluster[ir]].position + spots[cluster[jr]].position) / 2;
-		return pos;
-	};
-
 	int nclusters = iclusters.size();
 	clusters.resize(nclusters);
 	clusterTree.clear();
+	CEncloseCircle enclose;
 	for (int i = 0; i < nclusters; i++) {
 		Cluster& c = clusters[i];
 		c.idxSpots.clear();
 		AIFloat3 centr = ZeroVector;
+		std::vector<AIFloat3> points;
+		points.reserve(iclusters[i].size());
 		for (int j = 0; j < iclusters[i].size(); j++) {
 			c.idxSpots.push_back(iclusters[i][j]);
-			centr += spots[iclusters[i][j]].position;
+			points.push_back(spots[iclusters[i][j]].position);
+			centr += points[j];
 		}
 		centr /= iclusters[i].size();
 		c.weightCentr = centr;
 		clusterTree.insert(std::make_pair(point(centr.x, centr.z), i));
-		c.geoCentr = findCentroid(c.idxSpots);
+		const CEncloseCircle::SCircle& circle = enclose.MakeCircle(points);
+		c.geoCentr = AIFloat3(circle.c.x, centr.y, circle.c.y);
 	}
 
 	isClusterizing = false;

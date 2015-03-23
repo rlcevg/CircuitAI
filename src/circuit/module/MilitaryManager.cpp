@@ -12,6 +12,7 @@
 #include "CircuitAI.h"
 #include "util/math/HierarchCluster.h"
 #include "util/math/RagMatrix.h"
+#include "util/math/EncloseCircle.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
@@ -278,9 +279,11 @@ void CMilitaryManager::Init()
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	clusterInfos.resize(clusters.size());
 
+	Map* map = circuit->GetMap();
 	float maxDistance = circuit->GetUnitDefByName("corllt")->GetMaxWeaponRange() * 3 / 4 * 2;
-
 	CHierarchCluster clust;
+	CEncloseCircle enclose;
+
 	for (int k = 0; k < clusters.size(); ++k) {
 		const CMetalData::MetalIndices& idxSpots = clusters[k].idxSpots;
 		int nrows = idxSpots.size();
@@ -297,13 +300,14 @@ void CMilitaryManager::Init()
 		int nclusters = iclusters.size();
 		defPoints.reserve(nclusters);
 		for (int i = 0; i < nclusters; ++i) {
-			CMetalData::MetalIndices indices;
-			AIFloat3 centr = ZeroVector;
+			std::vector<AIFloat3> points;
+			points.reserve(iclusters[i].size());
 			for (int j = 0; j < iclusters[i].size(); ++j) {
-				centr += spots[idxSpots[iclusters[i][j]]].position;
+				points.push_back(spots[idxSpots[iclusters[i][j]]].position);
 			}
-			centr /= iclusters[i].size();
-			defPoints.push_back({centr, true});
+			const CEncloseCircle::SCircle& circle = enclose.MakeCircle(points);
+			AIFloat3 pos = AIFloat3(circle.c.x, map->GetElevationAt(circle.c.x, circle.c.y), circle.c.y);
+			defPoints.push_back({pos, true});
 		}
 	}
 }

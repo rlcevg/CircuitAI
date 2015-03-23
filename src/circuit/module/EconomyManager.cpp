@@ -33,7 +33,7 @@ namespace circuit {
 
 using namespace springai;
 
-#define INCOME_SAMPLES	5
+#define INCOME_SAMPLES	10
 
 CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		IModule(circuit),
@@ -56,7 +56,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	//       https://ru.wikipedia.org/wiki/Марковский_процесс_принятия_решений
 
 	CScheduler* scheduler = circuit->GetScheduler().get();
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateResourceIncome, this), FRAMES_PER_SEC);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateResourceIncome, this), FRAMES_PER_SEC / 2);
 	scheduler->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CEconomyManager::Init, this));
 
 	// TODO: Group handlers
@@ -450,7 +450,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	// check uncolonized mexes
 	float energyIncome = GetAvgEnergyIncome();
 	float metalIncome = GetAvgMetalIncome();
-	if ((energyIncome * 0.9 > metalIncome) && circuit->IsAvailable(mexDef)) {
+	if ((energyIncome * 0.8 > metalIncome) && circuit->IsAvailable(mexDef)) {
 		float cost = mexDef->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 4 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < count) {
@@ -649,7 +649,7 @@ CRecruitTask* CEconomyManager::UpdateRecruitTasks()
 	float metalIncome = GetAvgMetalIncome();
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	// TODO: Create ReclaimTask for 20% of workers, and 20% RepairTask.
-	if ((builderManager->GetBuilderPower() < metalIncome * 1.2) && circuit->IsAvailable(buildDef)) {
+	if ((builderManager->GetBuilderPower() < metalIncome * 1.5) && circuit->IsAvailable(buildDef)) {
 		for (auto t : factoryManager->GetTasks()) {
 			if (t->GetFacType() == CRecruitTask::FacType::BUILDPOWER) {
 				return task;
