@@ -45,6 +45,8 @@ void IUnitTask::Close(bool done)
 {
 	if (done) {
 		Finish();
+	} else {
+		Cancel();
 	}
 
 	CIdleTask* idleTask = manager->GetIdleTask();
@@ -55,6 +57,10 @@ void IUnitTask::Close(bool done)
 }
 
 void IUnitTask::Finish()
+{
+}
+
+void IUnitTask::Cancel()
 {
 }
 

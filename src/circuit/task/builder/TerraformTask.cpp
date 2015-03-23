@@ -29,4 +29,8 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 	// TODO: Terraform
 }
 
+void CBTerraformTask::Cancel()
+{
+}
+
 } // namespace circuit

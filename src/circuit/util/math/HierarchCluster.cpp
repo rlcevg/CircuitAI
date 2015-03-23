@@ -11,6 +11,8 @@
 
 namespace circuit {
 
+using namespace springai;
+
 CHierarchCluster::CHierarchCluster()
 {
 }

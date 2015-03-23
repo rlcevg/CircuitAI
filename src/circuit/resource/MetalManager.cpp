@@ -218,13 +218,18 @@ void CMetalManager::SetOpenSpot(const springai::AIFloat3& pos, bool value)
 {
 	int index = FindNearestSpot(pos);
 	if (index != -1) {
-		SetOpenSpot(index, true);
+		SetOpenSpot(index, value);
 	}
 }
 
-const std::vector<CMetalManager::MetalInfo>& CMetalManager::GetMetalInfos() const
+bool CMetalManager::IsOpenSpot(int index)
 {
-	return metalInfos;
+	return metalInfos[index].isOpen;
 }
+
+//const std::vector<CMetalManager::MetalInfo>& CMetalManager::GetMetalInfos() const
+//{
+//	return metalInfos;
+//}
 
 } // namespace circuit

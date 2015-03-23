@@ -10,6 +10,7 @@
 #include "unit/CircuitUnit.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"
+#include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -72,10 +73,30 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 void CBMexTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, circuit->GetUnitDefByName("corllt"), buildPos, IBuilderTask::BuildType::DEFENCE);
+	UnitDef* defDef = circuit->GetUnitDefByName("corllt");
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	if (defDef->GetCost(economyManager->GetMetalRes()) / economyManager->GetAvgMetalIncome() < MIN_BUILD_SEC / 2) {
+		int index = circuit->GetMetalManager()->FindNearestCluster(buildPos);
+		if (index >= 0) {
+			for (auto& defPoint : circuit->GetMilitaryManager()->GetDefPoints(index)) {
+				if (defPoint.isOpen) {
+					defPoint.isOpen = false;
+					circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, defPoint.position,
+															  IBuilderTask::BuildType::DEFENCE);
+					break;
+				}
+			}
+		}
+	}
 
 	circuit->GetEconomyManager()->UpdateMetalTasks(buildPos);
+}
+
+void CBMexTask::Cancel()
+{
+	if (target == nullptr) {
+		manager->GetCircuit()->GetMetalManager()->SetOpenSpot(buildPos, true);
+	}
 }
 
 void CBMexTask::OnUnitIdle(CCircuitUnit* unit)

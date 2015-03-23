@@ -10,6 +10,8 @@
 #include "terrain/TerrainManager.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
+#include "util/math/HierarchCluster.h"
+#include "util/math/RagMatrix.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
@@ -20,8 +22,6 @@
 #include "Pathing.h"
 #include "OOAICallback.h"
 
-#include <vector>
-
 namespace circuit {
 
 using namespace springai;
@@ -29,7 +29,9 @@ using namespace springai;
 CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 		IUnitModule(circuit)
 {
-	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>(&CMilitaryManager::TestOrder, this), 120);
+	CScheduler* scheduler = circuit->GetScheduler().get();
+	scheduler->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CMilitaryManager::Init, this));
+
 	int unitDefId;
 
 	auto atackerFinishedHandler = [this](CCircuitUnit* unit) {
@@ -41,10 +43,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 		float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
 		AIFloat3 fromPos(x, this->circuit->GetMap()->GetElevationAt(x, z), z);
 		u->Fight(fromPos, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
-
-//		std::vector<float> params;
-//		params.push_back(2);
-//		u->ExecuteCustomCommand(CMD_RETREAT, params);
 	};
 	auto atackerIdleHandler = [this](CCircuitUnit* unit) {
 		Unit* u = unit->GetUnit();
@@ -54,7 +52,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 		float x = rand() % (int)(terWidth + 1);
 		float z = rand() % (int)(terHeight + 1);
 		AIFloat3 toPos(x, this->circuit->GetMap()->GetElevationAt(x, z), z);
-//		u->PatrolTo(toPos);
 		u->Fight(toPos, 0, FRAMES_PER_SEC * 60 * 5);
 	};
 
@@ -78,9 +75,18 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	idleHandler[unitDefId] = atackerIdleHandler;
 
 	/*
+	 * Defence handlers
+	 */
+	unitDefId = circuit->GetUnitDefByName("corllt")->GetUnitDefId();
+	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+		OpenDefPoint(unit->GetUnit()->GetPos());
+	};
+
+	/*
 	 * raveparty handlers
 	 */
-	finishedHandler[circuit->GetUnitDefByName("raveparty")->GetUnitDefId()] = [this](CCircuitUnit* unit) {
+	unitDefId = circuit->GetUnitDefByName("raveparty")->GetUnitDefId();
+	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		unit->GetUnit()->SetTrajectory(1);
 	};
 
@@ -162,16 +168,16 @@ int CMilitaryManager::UnitIdle(CCircuitUnit* unit)
 //
 //	return 0; //signaling: OK
 //}
-//
-//int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
-//{
-//	auto search = destroyedHandler.find(unit->GetDef()->GetUnitDefId());
-//	if (search != destroyedHandler.end()) {
-//		search->second(unit, attacker);
-//	}
-//
-//	return 0; //signaling: OK
-//}
+
+int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+{
+	auto search = destroyedHandler.find(unit->GetDef()->GetUnitDefId());
+	if (search != destroyedHandler.end()) {
+		search->second(unit, attacker);
+	}
+
+	return 0; //signaling: OK
+}
 
 int CMilitaryManager::EnemyEnterLOS(CCircuitUnit* unit)
 {
@@ -233,37 +239,73 @@ void CMilitaryManager::FallbackTask(CCircuitUnit* unit)
 
 }
 
-void CMilitaryManager::TestOrder()
+std::vector<CMilitaryManager::SDefPoint>& CMilitaryManager::GetDefPoints(int index)
 {
-	circuit->LOG("Hit 120th frame");
-//	std::vector<Unit*> units = circuit->GetCallback()->GetTeamUnits();
-//	if (!units.empty()) {
-//		circuit->LOG("found mah comm");
-//		Unit* commander = units.front();
-//		Unit* friendCommander = NULL;;
-//		std::vector<Unit*> friendlies = circuit->GetCallback()->GetFriendlyUnits();
-//		for (Unit* unit : friendlies) {
-//			UnitDef* unitDef = unit->GetDef();
-//			if (strcmp(unitDef->GetName(), "armcom1") == 0) {
-//				if (commander->GetUnitId() != unit->GetUnitId()) {
-//					circuit->LOG("found friendly comm");
-//					friendCommander = unit;
-//					break;
-//				} else {
-//					circuit->LOG("found mah comm again");
-//				}
-//			}
-//			delete unitDef;
-//		}
-//
-//		if (friendCommander) {
-//			circuit->LOG("giving guard order");
-//			commander->Guard(friendCommander);
-////			commander->Build(callback->GetUnitDefByName("armsolar"), commander->GetPos(), UNIT_COMMAND_BUILD_NO_FACING);
-//		}
-//		utils::free_clear(friendlies);
-//	}
-//	utils::free_clear(units);
+	return clusterInfos[index].defPoints;
+}
+
+void CMilitaryManager::OpenDefPoint(const AIFloat3& pos)
+{
+	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
+	if (index < 0) {
+		return;
+	}
+
+	std::vector<CMilitaryManager::SDefPoint>& defPoints = clusterInfos[index].defPoints;
+	int idx = 0;
+	float dist = pos.distance2D(defPoints[idx].position);
+	for (int i = 1; i < defPoints.size(); ++i) {
+		if (!defPoints[i].isOpen) {
+			float tmp = pos.distance2D(defPoints[i].position);
+			if (tmp < dist) {
+				tmp = dist;
+				idx = i;
+			}
+		}
+	}
+	defPoints[idx].isOpen = true;
+}
+
+//const std::vector<CMilitaryManager::SClusterInfo>& CMilitaryManager::GetClusterInfos() const
+//{
+//	return clusterInfos;
+//}
+
+void CMilitaryManager::Init()
+{
+	CMetalManager* metalManager = circuit->GetMetalManager();
+	const CMetalData::Metals& spots = metalManager->GetSpots();
+	const CMetalData::Clusters& clusters = metalManager->GetClusters();
+	clusterInfos.resize(clusters.size());
+
+	float maxDistance = circuit->GetUnitDefByName("corllt")->GetMaxWeaponRange() * 3 / 4 * 2;
+
+	CHierarchCluster clust;
+	for (int k = 0; k < clusters.size(); ++k) {
+		const CMetalData::MetalIndices& idxSpots = clusters[k].idxSpots;
+		int nrows = idxSpots.size();
+		CRagMatrix distmatrix(nrows);
+		for (int i = 1; i < nrows; ++i) {
+			for (int j = 0; j < i; ++j) {
+				distmatrix(i, j) = spots[idxSpots[i]].position.distance2D(spots[idxSpots[j]].position);
+			}
+		}
+
+		const CHierarchCluster::Clusters& iclusters = clust.Clusterize(distmatrix, maxDistance);
+
+		std::vector<SDefPoint>& defPoints = clusterInfos[k].defPoints;
+		int nclusters = iclusters.size();
+		defPoints.reserve(nclusters);
+		for (int i = 0; i < nclusters; ++i) {
+			CMetalData::MetalIndices indices;
+			AIFloat3 centr = ZeroVector;
+			for (int j = 0; j < iclusters[i].size(); ++j) {
+				centr += spots[idxSpots[iclusters[i][j]]].position;
+			}
+			centr /= iclusters[i].size();
+			defPoints.push_back({centr, true});
+		}
+	}
 }
 
 } // namespace circuit

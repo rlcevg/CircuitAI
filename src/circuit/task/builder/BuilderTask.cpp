@@ -154,6 +154,13 @@ void IBuilderTask::Update()
 	}
 }
 
+void IBuilderTask::Cancel()
+{
+	if (target == nullptr) {
+		manager->GetCircuit()->GetTerrainManager()->RemoveBlocker(buildDef, buildPos, facing);
+	}
+}
+
 void IBuilderTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	RemoveAssignee(unit);

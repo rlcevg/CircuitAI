@@ -14,7 +14,6 @@
 
 namespace springai {
 	class GameRulesParam;
-	class Pathing;
 }
 
 namespace circuit {
@@ -65,7 +64,8 @@ public:
 	};
 	void SetOpenSpot(int index, bool value);
 	void SetOpenSpot(const springai::AIFloat3& pos, bool value);
-	const std::vector<MetalInfo>& GetMetalInfos() const;
+	bool IsOpenSpot(int index);
+//	const std::vector<MetalInfo>& GetMetalInfos() const;
 private:
 	std::vector<MetalInfo> metalInfos;
 };

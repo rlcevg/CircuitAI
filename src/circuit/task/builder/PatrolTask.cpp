@@ -65,4 +65,8 @@ void CBPatrolTask::Execute(CCircuitUnit* unit)
 	manager->SpecialProcess(unit);
 }
 
+void CBPatrolTask::Cancel()
+{
+}
+
 } // namespace circuit

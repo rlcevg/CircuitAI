@@ -21,6 +21,7 @@ public:
 	virtual ~CBTerraformTask();
 
 	virtual void Execute(CCircuitUnit* unit);
+	virtual void Cancel();
 };
 
 } // namespace circuit

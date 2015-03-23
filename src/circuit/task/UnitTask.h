@@ -36,6 +36,7 @@ public:
 	virtual void Update() = 0;
 	// NOTE: Do not run time consuming code here. Instead create separate task.
 	virtual void Finish();  // <=> IAction::OnEnd()
+	virtual void Cancel();  // TODO: Make pure virtual?
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) = 0;
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker) = 0;

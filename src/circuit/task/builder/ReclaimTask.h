@@ -24,6 +24,7 @@ public:
 	virtual void Close(bool done);
 
 	virtual void Execute(CCircuitUnit* unit);
+	virtual void Cancel();
 };
 
 } // namespace circuit

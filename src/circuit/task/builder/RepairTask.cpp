@@ -56,6 +56,10 @@ void CBRepairTask::Update()
 	// TODO: Analyze nearby threats? Or threats should update some central system and send messages to all involved?
 }
 
+void CBRepairTask::Cancel()
+{
+}
+
 void CBRepairTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	Unit* u = target->GetUnit();

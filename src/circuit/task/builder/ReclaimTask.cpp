@@ -65,4 +65,8 @@ void CBReclaimTask::Execute(CCircuitUnit* unit)
 	manager->SpecialProcess(unit);
 }
 
+void CBReclaimTask::Cancel()
+{
+}
+
 } // namespace circuit

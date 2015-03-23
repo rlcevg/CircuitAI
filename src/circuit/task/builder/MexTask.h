@@ -22,6 +22,7 @@ public:
 	// TODO: Prevent from building enemy's mex
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Finish();
+	virtual void Cancel();
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 };

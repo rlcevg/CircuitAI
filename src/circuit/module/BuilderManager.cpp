@@ -535,16 +535,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 void CBuilderManager::AbortTask(IUnitTask* task)
 {
 	// NOTE: Don't send Stop command, save some traffic.
-
-	IBuilderTask* taskB = static_cast<IBuilderTask*>(task);
-	if (taskB->GetTarget() == nullptr) {
-		if (taskB->IsStructure()) {
-			circuit->GetTerrainManager()->RemoveBlocker(taskB->GetBuildDef(), taskB->GetBuildPos(), taskB->GetFacing());
-		} else if (taskB->GetBuildType() == IBuilderTask::BuildType::MEX) {  // update metalInfo's open state
-			circuit->GetMetalManager()->SetOpenSpot(taskB->GetBuildPos(), true);
-		}
-	}
-	DequeueTask(taskB);
+	DequeueTask(static_cast<IBuilderTask*>(task), false);
 }
 
 void CBuilderManager::DoneTask(IUnitTask* task)

@@ -18,6 +18,8 @@ public:
 				  springai::UnitDef* buildDef, const springai::AIFloat3& position,
 				  float cost, int timeout);
 	virtual ~CBDefenceTask();
+
+	virtual void Cancel();
 };
 
 } // namespace circuit

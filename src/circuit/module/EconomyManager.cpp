@@ -311,11 +311,10 @@ AIFloat3 CEconomyManager::FindBuildPos(CCircuitUnit* unit)
 		case IBuilderTask::BuildType::MEX: {
 			const AIFloat3& position = u->GetPos();
 			const CMetalData::Metals& spots = metalManager->GetSpots();
-			const std::vector<CMetalManager::MetalInfo>& metalInfos = metalManager->GetMetalInfos();
 			Map* map = circuit->GetMap();
-			CMetalData::MetalPredicate predicate = [&spots, &metalInfos, map, buildDef, terrainManager, unit](CMetalData::MetalNode const& v) {
+			CMetalData::MetalPredicate predicate = [&spots, metalManager, map, buildDef, terrainManager, unit](CMetalData::MetalNode const& v) {
 				int index = v.second;
-				return (metalInfos[index].isOpen &&
+				return (metalManager->IsOpenSpot(index) &&
 						terrainManager->CanBuildAt(unit, spots[index].position) &&
 						map->IsPossibleToBuildAt(buildDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 			};
@@ -457,22 +456,21 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 		if (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < count) {
 			CMetalManager* metalManager = circuit->GetMetalManager();
 			const CMetalData::Metals& spots = metalManager->GetSpots();
-			const std::vector<CMetalManager::MetalInfo>& metalInfos = metalManager->GetMetalInfos();
 			Map* map = circuit->GetMap();
 			UnitDef* metalDef = mexDef;
 			CMetalData::MetalPredicate predicate;
 			if (unit != nullptr) {
 				CTerrainManager* terrainManager = circuit->GetTerrainManager();
-				predicate = [&spots, &metalInfos, map, metalDef, terrainManager, unit](CMetalData::MetalNode const& v) {
+				predicate = [&spots, metalManager, map, metalDef, terrainManager, unit](CMetalData::MetalNode const& v) {
 					int index = v.second;
-					return (metalInfos[index].isOpen &&
+					return (metalManager->IsOpenSpot(index) &&
 							terrainManager->CanBuildAt(unit, spots[index].position) &&
 							map->IsPossibleToBuildAt(metalDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};
 			} else {
-				predicate = [&spots, &metalInfos, map, metalDef, builderManager](CMetalData::MetalNode const& v) {
+				predicate = [&spots, metalManager, map, metalDef, builderManager](CMetalData::MetalNode const& v) {
 					int index = v.second;
-					return (metalInfos[index].isOpen &&
+					return (metalManager->IsOpenSpot(index) &&
 							builderManager->IsBuilderInArea(metalDef, spots[index].position) &&
 							map->IsPossibleToBuildAt(metalDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};
@@ -726,8 +724,9 @@ void CEconomyManager::Init()
 {
 	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
 	clusterInfos.resize(clusters.size());
-	for (int i = 0; i < clusters.size(); i++) {
-		clusterInfos[i] = {nullptr};
+
+	for (int k = 0; k < clusters.size(); ++k) {
+		clusterInfos[k] = {nullptr};
 	}
 
 	SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();

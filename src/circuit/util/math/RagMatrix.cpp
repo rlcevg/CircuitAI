@@ -9,13 +9,14 @@
 #include "util/utils.h"
 
 #include <cstring>  // std::memcpy
+//#include <assert.h>
 
 namespace circuit {
 
 CRagMatrix::CRagMatrix(int nrows) :
 		nrows(nrows)
 {
-//	assert(nrows > 1);
+//	assert(nrows > 1);  // ??
 	int size = nrows * (nrows - 1) / 2;
 	data = new float [size];
 }
