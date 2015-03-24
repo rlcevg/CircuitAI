@@ -163,6 +163,7 @@ CBuilderManager::~CBuilderManager()
 	for (auto& tasks : builderTasks) {
 		utils::free_clear(tasks);
 	}
+	utils::free_clear(deleteTasks);
 }
 
 int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)

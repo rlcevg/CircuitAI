@@ -30,14 +30,16 @@ public:
 	virtual bool CanAssignTo(CCircuitUnit* unit);
 	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
-	virtual void Close(bool done);
 
 	virtual void Execute(CCircuitUnit* unit) = 0;  // <=> IAction::OnStart()
 	virtual void Update() = 0;
+	virtual void Close(bool done);
+protected:
 	// NOTE: Do not run time consuming code here. Instead create separate task.
 	virtual void Finish();  // <=> IAction::OnEnd()
 	virtual void Cancel();  // TODO: Make pure virtual?
 
+public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) = 0;
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker) = 0;
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker) = 0;

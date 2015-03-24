@@ -50,8 +50,10 @@ public:
 
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
+protected:
 	virtual void Cancel();
 
+public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);

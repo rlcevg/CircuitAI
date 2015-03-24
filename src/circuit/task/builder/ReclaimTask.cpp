@@ -38,15 +38,6 @@ void CBReclaimTask::RemoveAssignee(CCircuitUnit* unit)
 	IBuilderTask::RemoveAssignee(unit);
 }
 
-void CBReclaimTask::Close(bool done)
-{
-	for (auto unit : units) {
-		manager->SpecialCleanUp(unit);
-	}
-
-	IBuilderTask::Close(done);
-}
-
 void CBReclaimTask::Execute(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();
@@ -67,6 +58,15 @@ void CBReclaimTask::Execute(CCircuitUnit* unit)
 	}
 
 	manager->SpecialProcess(unit);
+}
+
+void CBReclaimTask::Close(bool done)
+{
+	for (auto unit : units) {
+		manager->SpecialCleanUp(unit);
+	}
+
+	IBuilderTask::Close(done);
 }
 
 void CBReclaimTask::Cancel()

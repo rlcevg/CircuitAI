@@ -109,6 +109,21 @@ void CBMexTask::Finish()
 				}
 			}
 		}
+
+//		if (task == nullptr) {
+//			const AIFloat3 pos = metalManager->GetClusters()[index].geoCentr;
+//			std::vector<Feature*> features = circuit->GetCallback()->GetFeaturesIn(pos, 500);
+//			if (!features.empty()) {
+//				// FIXME: 1) Add reclaim in radius.
+//				//        2) Add other options than stop reclaim on timeout
+//				IBuilderTask* recl = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, pos,
+//																 IBuilderTask::BuildType::RECLAIM, FRAMES_PER_SEC * 30);
+//				if (!units.empty()) {
+//					manager->AssignTask(*units.begin(), recl);
+//				}
+//			}
+//			utils::free_clear(features);
+//		}
 	}
 
 	if (task == nullptr) {

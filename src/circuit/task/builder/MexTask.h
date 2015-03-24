@@ -19,11 +19,13 @@ public:
 			  float cost, int timeout);
 	virtual ~CBMexTask();
 
-	// TODO: Prevent from building enemy's mex
+	// TODO: Prevent from building enemy's mex, reclaim it
 	virtual void Execute(CCircuitUnit* unit);
+protected:
 	virtual void Finish();
 	virtual void Cancel();
 
+public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 };
 

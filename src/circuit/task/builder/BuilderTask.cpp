@@ -172,6 +172,7 @@ void IBuilderTask::Update()
 				 * FIXME: The logic is broken here. It creates Reclaim task, but its based on timeout
 				 * otherwise it won't be removed from task queue. And nearby patrollers or ally units
 				 * can still build the target.
+				 * Maybe just AbortTask and on RepairTask check same conditions.
 				 */
 				CBuilderManager* builderManager = circuit->GetBuilderManager();
 				IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildPos,

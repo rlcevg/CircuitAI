@@ -21,9 +21,10 @@ public:
 	virtual ~CBPatrolTask();
 
 	virtual void RemoveAssignee(CCircuitUnit* unit);
-	virtual void Close(bool done);
 
 	virtual void Execute(CCircuitUnit* unit);
+	virtual void Close(bool done);
+protected:
 	virtual void Cancel();
 };
 

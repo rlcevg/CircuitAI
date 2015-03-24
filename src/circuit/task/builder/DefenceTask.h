@@ -19,6 +19,7 @@ public:
 				  float cost, int timeout);
 	virtual ~CBDefenceTask();
 
+protected:
 	virtual void Cancel();
 };
 

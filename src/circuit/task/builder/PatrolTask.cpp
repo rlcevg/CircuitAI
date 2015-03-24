@@ -38,15 +38,6 @@ void CBPatrolTask::RemoveAssignee(CCircuitUnit* unit)
 	IBuilderTask::RemoveAssignee(unit);
 }
 
-void CBPatrolTask::Close(bool done)
-{
-	for (auto unit : units) {
-		manager->SpecialCleanUp(unit);
-	}
-
-	IBuilderTask::Close(done);
-}
-
 void CBPatrolTask::Execute(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();
@@ -63,6 +54,15 @@ void CBPatrolTask::Execute(CCircuitUnit* unit)
 	u->PatrolTo(pos);
 
 	manager->SpecialProcess(unit);
+}
+
+void CBPatrolTask::Close(bool done)
+{
+	for (auto unit : units) {
+		manager->SpecialCleanUp(unit);
+	}
+
+	IBuilderTask::Close(done);
 }
 
 void CBPatrolTask::Cancel()
