@@ -9,6 +9,8 @@
 #include "task/RetreatTask.h"
 #include "task/TaskManager.h"
 #include "module/EconomyManager.h"
+#include "module/BuilderManager.h"
+#include "module/FactoryManager.h"
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
 #include "unit/CircuitUnit.h"
@@ -38,8 +40,15 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 				target(nullptr),
 				buildPos(-RgtVector),
 				buildPower(.0f),
-				facing(UNIT_COMMAND_BUILD_NO_FACING)
+				facing(UNIT_COMMAND_BUILD_NO_FACING),
+				savedIncome(.0f)
 {
+	// TODO: Move into IBuilderTask::Execute?
+	if (IsStructure()) {
+		// Alter/randomize position
+		AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
+		this->position += offset * SQUARE_SIZE * 16;
+	}
 }
 
 IBuilderTask::~IBuilderTask()
@@ -152,6 +161,49 @@ void IBuilderTask::Update()
 			}
 		}
 	}
+
+	// FIXME: Replace const 999.0f with build time?
+	if ((cost > 999.0f) && (savedIncome > .0f)) {
+		CCircuitAI* circuit = manager->GetCircuit();
+		float currentIncome = circuit->GetEconomyManager()->GetAvgMetalIncome();
+		if (currentIncome < savedIncome * 0.6) {
+			if ((target != nullptr) && (target->GetUnit()->GetHealth() < target->GetUnit()->GetMaxHealth() * 0.2)) {
+				/*
+				 * FIXME: The logic is broken here. It creates Reclaim task, but its based on timeout
+				 * otherwise it won't be removed from task queue. And nearby patrollers or ally units
+				 * can still build the target.
+				 */
+				CBuilderManager* builderManager = circuit->GetBuilderManager();
+				IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildPos,
+																 IBuilderTask::BuildType::RECLAIM, FRAMES_PER_SEC * MAX_BUILD_SEC);
+				task->SetTarget(target);
+				std::set<CCircuitUnit*> us = units;
+				for (auto unit : us) {
+					manager->AssignTask(unit, task);
+				}
+
+				CTerrainManager* terrain = circuit->GetTerrainManager();
+				auto reclaim = [this, terrain](Unit* u) {
+					u->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+					AIFloat3 toPos = u->GetPos();
+					toPos.x += (toPos.x > terrain->GetTerrainWidth() / 2) ? -SQUARE_SIZE : SQUARE_SIZE;
+					toPos.z += (toPos.z > terrain->GetTerrainHeight() / 2) ? -SQUARE_SIZE : SQUARE_SIZE;
+					u->PatrolTo(toPos, UNIT_COMMAND_OPTION_SHIFT_KEY);
+				};
+
+				std::vector<CCircuitUnit*> havens = circuit->GetFactoryManager()->GetHavensAt(buildPos);
+				for (auto haven : havens) {
+					reclaim(haven->GetUnit());
+				}
+
+//				std::vector<CCircuitUnit*> patrollers = builderManager->GetPatrollersAt(buildPos);
+//				for (auto patrol : patrollers) {
+//					reclaim(patrol->GetUnit());
+//				}
+			}
+			manager->AbortTask(this);
+		}
+	}
 }
 
 void IBuilderTask::Cancel()
@@ -234,7 +286,13 @@ const AIFloat3& IBuilderTask::GetPosition() const
 void IBuilderTask::SetTarget(CCircuitUnit* unit)
 {
 	target = unit;
-	SetBuildPos((unit != nullptr) ? unit->GetUnit()->GetPos() : -RgtVector);
+	if (unit != nullptr) {
+		SetBuildPos(unit->GetUnit()->GetPos());
+		savedIncome = manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome();
+	} else {
+		SetBuildPos(-RgtVector);
+		savedIncome = .0f;
+	}
 }
 
 CCircuitUnit* IBuilderTask::GetTarget()

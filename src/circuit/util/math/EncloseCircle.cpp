@@ -29,10 +29,11 @@ CEncloseCircle::~CEncloseCircle()
  * Note: If 0 points are given, null is returned. If 1 point is given, a circle of radius 0 is returned.
  */
 // Initially: No boundary points known
-const CEncloseCircle::SCircle& CEncloseCircle::MakeCircle(const std::vector<AIFloat3>& points)
+void CEncloseCircle::MakeCircle(const std::vector<AIFloat3>& points)
 {
 	assert(!points.empty());
 
+	SCircle circle;
 	if (points.size() < 2) {
 		circle = SCircle(SPoint(points[0].x, points[0].z), 0);
 	} else if (points.size() < 3) {
@@ -50,21 +51,27 @@ const CEncloseCircle::SCircle& CEncloseCircle::MakeCircle(const std::vector<AIFl
 
 		// Progressively add points to circle or recompute circle
 		decltype(shuffled)::iterator it = shuffled.begin();
-		SCircle c = MakeCircleOnePoint(shuffled.begin(), ++it, shuffled[0]);
+		circle = MakeCircleOnePoint(shuffled.begin(), ++it, shuffled[0]);
 		while (it != shuffled.end()) {
 			const SPoint& p = *it++;
-			if (!c.contains(p)) {
-				c = MakeCircleOnePoint(shuffled.begin(), it, p);
+			if (!circle.contains(p)) {
+				circle = MakeCircleOnePoint(shuffled.begin(), it, p);
 			}
 		}
-		circle = c;
 	}
-	return circle;
+
+	center = AIFloat3(circle.c.x, 0, circle.c.y);
+	radius = circle.r;
 }
 
-const CEncloseCircle::SCircle& CEncloseCircle::GetCircle()
+const AIFloat3& CEncloseCircle::GetCenter() const
 {
-	return circle;
+	return center;
+}
+
+float CEncloseCircle::GetRadius() const
+{
+	return radius;
 }
 
 // One boundary point known

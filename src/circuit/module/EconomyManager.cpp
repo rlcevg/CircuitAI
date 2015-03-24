@@ -452,7 +452,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	float metalIncome = GetAvgMetalIncome();
 	if ((energyIncome * 0.8 > metalIncome) && circuit->IsAvailable(mexDef)) {
 		float cost = mexDef->GetCost(metalRes);
-		int count = builderManager->GetBuilderPower() / cost * 4 + 1;
+		int count = builderManager->GetBuilderPower() / cost * 4 + 2;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < count) {
 			CMetalManager* metalManager = circuit->GetMetalManager();
 			const CMetalData::Metals& spots = metalManager->GetSpots();

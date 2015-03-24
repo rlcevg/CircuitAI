@@ -221,8 +221,10 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 		centr /= iclusters[i].size();
 		c.weightCentr = centr;
 		clusterTree.insert(std::make_pair(point(centr.x, centr.z), i));
-		const CEncloseCircle::SCircle& circle = enclose.MakeCircle(points);
-		c.geoCentr = AIFloat3(circle.c.x, centr.y, circle.c.y);
+
+		enclose.MakeCircle(points);
+		c.geoCentr = enclose.GetCenter();
+		c.geoCentr.y = centr.y;
 	}
 
 	isClusterizing = false;

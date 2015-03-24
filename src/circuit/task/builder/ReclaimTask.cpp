@@ -55,12 +55,16 @@ void CBReclaimTask::Execute(CCircuitUnit* unit)
 	params.push_back(static_cast<float>(priority));
 	u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
-	CTerrainManager* terrain = manager->GetCircuit()->GetTerrainManager();
-	float width = terrain->GetTerrainWidth() / 2;
-	float height = terrain->GetTerrainHeight() / 2;
-	AIFloat3 pos(width, 0, height);
-	float radius = sqrtf(width * width + height * height);
-	unit->GetUnit()->ReclaimInArea(pos, radius, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+	if (target == nullptr) {
+		CTerrainManager* terrain = manager->GetCircuit()->GetTerrainManager();
+		float width = terrain->GetTerrainWidth() / 2;
+		float height = terrain->GetTerrainHeight() / 2;
+		AIFloat3 pos(width, 0, height);
+		float radius = sqrtf(width * width + height * height);
+		unit->GetUnit()->ReclaimInArea(pos, radius, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+	} else {
+		unit->GetUnit()->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+	}
 
 	manager->SpecialProcess(unit);
 }

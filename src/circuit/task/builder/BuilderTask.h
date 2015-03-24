@@ -87,6 +87,8 @@ protected:
 	CCircuitUnit* target;
 	springai::AIFloat3 buildPos;
 	int facing;
+
+	float savedIncome;
 };
 
 } // namespace circuit

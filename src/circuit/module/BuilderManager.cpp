@@ -424,7 +424,6 @@ void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
 		unfinishedUnits.erase(task->GetTarget());
 		tasks.erase(it);
 		task->Close(done);
-		updateTasks.erase(task);
 		deleteTasks.insert(task);
 		builderTasksCount--;
 	}
@@ -649,9 +648,6 @@ void CBuilderManager::Watchdog()
 			unfinishedUnits[unit] = task;
 		}
 	}
-
-	// scheduled task deletion
-	utils::free_clear(deleteTasks);
 }
 
 void CBuilderManager::UpdateIdle()
@@ -666,6 +662,14 @@ void CBuilderManager::UpdateRetreat()
 
 void CBuilderManager::UpdateBuild()
 {
+	if (!deleteTasks.empty()) {
+		for (auto task : deleteTasks) {
+			updateTasks.erase(task);
+			delete task;
+		}
+		deleteTasks.clear();
+	}
+
 	auto it = updateTasks.begin();
 	while ((it != updateTasks.end()) && circuit->IsUpdateTimeValid()) {
 		(*it)->Update();

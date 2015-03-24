@@ -13,6 +13,7 @@
 
 #include <map>
 #include <list>
+#include <vector>
 
 namespace springai {
 	class UnitDef;
@@ -55,6 +56,7 @@ public:
 
 	springai::UnitDef* GetAssistDef() const;
 	CCircuitUnit* GetClosestHaven(CCircuitUnit* unit) const;
+	std::vector<CCircuitUnit*> GetHavensAt(const springai::AIFloat3& pos) const;
 
 private:
 	void Watchdog();

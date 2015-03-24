@@ -305,8 +305,9 @@ void CMilitaryManager::Init()
 			for (int j = 0; j < iclusters[i].size(); ++j) {
 				points.push_back(spots[idxSpots[iclusters[i][j]]].position);
 			}
-			const CEncloseCircle::SCircle& circle = enclose.MakeCircle(points);
-			AIFloat3 pos = AIFloat3(circle.c.x, map->GetElevationAt(circle.c.x, circle.c.y), circle.c.y);
+			enclose.MakeCircle(points);
+			AIFloat3 pos = enclose.GetCenter();
+			pos.y = map->GetElevationAt(pos.x, pos.z);
 			defPoints.push_back({pos, true});
 		}
 	}

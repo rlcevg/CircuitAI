@@ -17,7 +17,7 @@
 namespace circuit {
 
 class CEncloseCircle {
-public:
+private:
 	struct SPoint {
 		float x, y;
 
@@ -76,8 +76,9 @@ public:
 	CEncloseCircle();
 	virtual ~CEncloseCircle();
 
-	const SCircle& MakeCircle(const std::vector<springai::AIFloat3>& points);
-	const SCircle& GetCircle();
+	void MakeCircle(const std::vector<springai::AIFloat3>& points);
+	const springai::AIFloat3& GetCenter() const;
+	float GetRadius() const;
 
 private:
 	SCircle MakeCircleOnePoint(const std::vector<SPoint>::iterator& ptsBegin,
@@ -87,7 +88,8 @@ private:
 	SCircle MakeDiameter(const SPoint& a, const SPoint& b);
 	bool MakeCircumcircle(const SPoint& a, const SPoint& b, const SPoint& c, SCircle& circle);
 
-	SCircle circle;
+	springai::AIFloat3 center;
+	float radius;
 };
 
 } // namespace circuit

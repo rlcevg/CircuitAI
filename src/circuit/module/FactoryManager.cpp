@@ -363,6 +363,20 @@ CCircuitUnit* CFactoryManager::GetClosestHaven(CCircuitUnit* unit) const
 	return haven;
 }
 
+std::vector<CCircuitUnit*> CFactoryManager::GetHavensAt(const AIFloat3& pos) const
+{
+	std::vector<CCircuitUnit*> result;
+	result.reserve(havens.size());  // size overkill
+	float sqBuildDist = assistDef->GetBuildDistance();
+	sqBuildDist *= sqBuildDist;
+	for (auto haven : havens) {
+		if (haven->GetUnit()->GetPos().SqDistance2D(pos) <= sqBuildDist) {
+			result.push_back(haven);
+		}
+	}
+	return result;
+}
+
 void CFactoryManager::Watchdog()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
