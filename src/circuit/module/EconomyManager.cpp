@@ -139,7 +139,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		}
 	}
 
-	// FIXME: Cost thresholds should rely on alive allies
+	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
 	std::vector<Team*> allyTeams = circuit->GetCallback()->GetAllyTeams();
 	float allyTeamCount = allyTeams.size();
 	ecoFactor = 1.0f / (allyTeamCount * 0.25f + 0.75f);
@@ -148,7 +148,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	// TODO: Make configurable
 	// Using cafus, armfus, armsolar as control points
 	const char* engies[] = {"cafus", "armfus", "armsolar"};
-	const int limits[] = {2, 3, 6};  // TODO: range randomize
+	const int limits[] = {2, 3, 8};  // TODO: range randomize
 	const int size = sizeof(engies) / sizeof(engies[0]);
 	CLagrangeInterPol::Vector x(size), y(size);
 	for (int i = 0; i < size; ++i) {

@@ -13,14 +13,18 @@
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/index/rtree.hpp>
+#include <boost/polygon/voronoi.hpp>
+#include <boost/graph/adjacency_list.hpp>
 #include <vector>
 #include <atomic>
 #include <memory>
 
-namespace circuit {
+#include "Drawer.h"
 
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
+
+namespace circuit {
 
 class CRagMatrix;
 
@@ -31,6 +35,10 @@ private:
 	// @see https://github.com/Warzone2100/warzone2100/blob/master/src/pointtree.cpp
 	using point = bg::model::point<float, 2, bg::cs::cartesian>;
 	using box = bg::model::box<point>;
+	using vor_point = boost::polygon::point_data<int>;
+	using vor_diagram = boost::polygon::voronoi_diagram<double>;
+	using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, boost::property<boost::edge_weight_t, float>>;
+	using Edge = boost::graph_traits<Graph>::edge_descriptor;
 
 public:
 	using Metal = struct {
@@ -83,6 +91,7 @@ public:
 //	void DrawConvexHulls(springai::Drawer* drawer);
 //	void DrawCentroids(springai::Drawer* drawer);
 //	void ClearMetalClusters(springai::Drawer* drawer);
+	void DrawKruskal(springai::Drawer* drawer);
 
 	const Metal& operator[](int idx) const;
 
@@ -96,6 +105,10 @@ private:
 	Clusters clusters;
 	using ClusterTree = bgi::rtree<MetalNode, bgi::quadratic<16>>;
 	ClusterTree clusterTree;
+
+	vor_diagram clustVoronoi;  // TODO: Do not save?
+	Graph graph;
+	std::vector<Edge> spanning_tree;
 
 	std::atomic<bool> isClusterizing;
 };

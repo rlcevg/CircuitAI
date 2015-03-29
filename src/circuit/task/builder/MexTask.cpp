@@ -110,6 +110,7 @@ void CBMexTask::Finish()
 			}
 		}
 
+		// TODO: Move into DefenceTask as next code is about turret's line of sight
 //		if (task == nullptr) {
 //			const AIFloat3 pos = metalManager->GetClusters()[index].geoCentr;
 //			std::vector<Feature*> features = circuit->GetCallback()->GetFeaturesIn(pos, 500);

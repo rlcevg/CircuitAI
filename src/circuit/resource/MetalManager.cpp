@@ -146,7 +146,8 @@ void CMetalManager::ClusterizeMetal()
 		}
 	}
 
-	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CMetalData::Clusterize, metalData, maxDistance, pdistmatrix));
+	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CMetalData::Clusterize, metalData, maxDistance, pdistmatrix),
+			std::make_shared<CGameTask>(&CMetalData::DrawKruskal, metalData, circuit->GetDrawer()));
 }
 
 const CMetalData::Metals& CMetalManager::GetSpots() const

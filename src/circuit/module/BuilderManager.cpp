@@ -139,7 +139,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	// Forbid from removing cormex blocker
 	int unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetUnitDefId();
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
-//		this->circuit->GetMetalManager()->SetOpenSpot(unit->GetUnit()->GetPos(), true);
+		this->circuit->GetMetalManager()->SetOpenSpot(unit->GetUnit()->GetPos(), true);
 //		this->circuit->GetEconomyManager()->UpdateMetalTasks(this->circuit->GetSetupManager()->GetStartPos());
 		const AIFloat3& pos = unit->GetUnit()->GetPos();
 		if (IsBuilderInArea(unit->GetDef(), pos)) {

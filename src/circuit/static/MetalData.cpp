@@ -10,6 +10,8 @@
 #include "util/math/EncloseCircle.h"
 #include "util/utils.h"
 
+#include <boost/graph/kruskal_min_spanning_tree.hpp>
+
 namespace circuit {
 
 using namespace springai;
@@ -200,9 +202,11 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 
+	// Clusterize metal spots by distance to each other
 	CHierarchCluster clust;
 	const CHierarchCluster::Clusters& iclusters = clust.Clusterize(*distMatrix, maxDistance);
 
+	// Fill cluster structures, calculate centers
 	int nclusters = iclusters.size();
 	clusters.resize(nclusters);
 	clusterTree.clear();
@@ -215,17 +219,47 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 		points.reserve(iclusters[i].size());
 		for (int j = 0; j < iclusters[i].size(); j++) {
 			c.idxSpots.push_back(iclusters[i][j]);
-			points.push_back(spots[iclusters[i][j]].position);
-			centr += points[j];
+			const AIFloat3& pos = spots[iclusters[i][j]].position;
+			points.push_back(pos);
+			centr += pos;
 		}
 		centr /= iclusters[i].size();
 		c.weightCentr = centr;
-		clusterTree.insert(std::make_pair(point(centr.x, centr.z), i));
 
 		enclose.MakeCircle(points);
 		c.geoCentr = enclose.GetCenter();
 		c.geoCentr.y = centr.y;
+		clusterTree.insert(std::make_pair(point(c.geoCentr.x, c.geoCentr.z), i));
 	}
+
+	// NOTE: C++ poly2tri (https://code.google.com/p/poly2tri/) is a nice candidate for triangulation,
+	//       but boost has voronoi_diagram. Also for boost "The library allows users to implement their own
+	//       Voronoi diagram / Delaunay triangulation construction routines based on the Voronoi builder API".
+	// Build Voronoi diagram out of clusters
+	std::vector<vor_point> vorPoints;
+	vorPoints.reserve(nclusters);
+	for (auto c : clusters) {
+		vorPoints.push_back(vor_point(c.geoCentr.x, c.geoCentr.z));
+	}
+	clustVoronoi.clear();
+	construct_voronoi(vorPoints.begin(), vorPoints.end(), &clustVoronoi);
+
+	// Convert voronoi_diagram to "Delaunay" in BGL (Boost Graph Library)
+	Graph g(nclusters);
+	int edgeCount = 0;  // counts each edge twice
+	for (auto& edge : clustVoronoi.edges()) {
+		if (edgeCount++ % 2 == 0) {  // FIXME: No docs says that odd edge is a twin of even
+			std::size_t idx0 = edge.cell()->source_index();
+			std::size_t idx1 = edge.twin()->cell()->source_index();
+			float weight = clusters[idx0].geoCentr.distance(clusters[idx1].geoCentr);
+			add_edge(idx0, idx1, weight, g);
+		}
+	}
+
+	// Build Kruskal's minimum spanning tree
+	spanning_tree.clear();
+	boost::kruskal_minimum_spanning_tree(g, std::back_inserter(spanning_tree));
+	graph = g;
 
 	isClusterizing = false;
 }
@@ -344,6 +378,15 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 ////	}
 ////	centroids.clear();
 //}
+
+void CMetalData::DrawKruskal(Drawer* drawer)
+{
+	for (auto& ei : spanning_tree) {
+		const AIFloat3& posFrom = clusters[boost::source(ei, graph)].geoCentr;
+		const AIFloat3& posTo = clusters[boost::target(ei, graph)].geoCentr;
+		drawer->AddLine(posFrom, posTo);
+	}
+}
 
 const CMetalData::Metal& CMetalData::operator[](int idx) const
 {

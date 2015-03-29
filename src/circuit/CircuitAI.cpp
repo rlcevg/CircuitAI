@@ -803,6 +803,7 @@ void CCircuitAI::InitUnitDefs(std::vector<UnitDef*>&& unitDefs)
 		if (ud->IsAbleToFly()) {
 		} else if (ud->GetSpeed() == 0 ) {  // for immobile units
 			cdef->SetImmobileTypeId(terrainData.udImmobileType[ud->GetUnitDefId()]);
+			// TODO: SetMobileType for factories (like RAI does)
 		} else {  // for mobile units
 			cdef->SetMobileTypeId(terrainData.udMobileType[ud->GetUnitDefId()]);
 		}

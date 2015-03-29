@@ -3,6 +3,7 @@
  *
  *  Created on: Aug 28, 2014
  *      Author: rlcevg
+ *      Origin: gcc's libstc++. Don't know proper link http://ftp.availo.se/pub/NetBSD/NetBSD-current/src/external/gpl3/gcc/dist/libstdc++-v3/src/c++11/thread.cc
  */
 
 #ifndef SRC_CIRCUIT_UTIL_GAMETASK_H_
