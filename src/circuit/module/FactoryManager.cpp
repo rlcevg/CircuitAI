@@ -9,6 +9,8 @@
 #include "module/EconomyManager.h"
 #include "terrain/TerrainManager.h"
 #include "task/IdleTask.h"
+#include "task/builder/StaticRepair.h"
+#include "task/builder/StaticReclaim.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
 #include "CircuitAI.h"
@@ -52,7 +54,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 
 		// check nanos around
 		if (assistDef != nullptr) {
-			std::list<CCircuitUnit*> nanos;
+			std::set<CCircuitUnit*> nanos;
 			float radius = assistDef->GetBuildDistance();
 			std::vector<Unit*> units = this->circuit->GetCallback()->GetFriendlyUnitsIn(u->GetPos(), radius);
 			int nanoId = assistDef->GetUnitDefId();
@@ -60,20 +62,13 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			for (auto nano : units) {
 				UnitDef* ndef = nano->GetDef();
 				if (ndef->GetUnitDefId() == nanoId && nano->GetTeam() == teamId) {
-					nanos.push_back(this->circuit->GetTeamUnitById(nano->GetUnitId()));
+					nanos.insert(this->circuit->GetTeamUnitById(nano->GetUnitId()));
 				}
 				delete ndef;
 			}
 			utils::free_clear(units);
 			factories[unit] = nanos;
 		}
-
-		// try to avoid factory stuck
-//		float size = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 0.75;
-//		CTerrainManager* terrain = this->circuit->GetTerrainManager();
-//		pos.x += (pos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
-//		pos.z += (pos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
-//		u->MoveTo(pos);
 	};
 	auto factoryIdleHandler = [this](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
@@ -85,7 +80,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		factoryPower -= unit->GetDef()->GetBuildSpeed();
 		factories.erase(unit);
 
-		unit->GetTask()->OnUnitDestroyed(unit, attacker);
+		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 	};
 
@@ -93,33 +88,33 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 	 * armnanotc handlers
 	 */
 	auto assistFinishedHandler = [this](CCircuitUnit* unit) {
+		unit->SetManager(this);
+		idleTask->AssignTo(unit);
+
 		Unit* u = unit->GetUnit();
 		UnitDef* def = unit->GetDef();
 		factoryPower += def->GetBuildSpeed();
-		const AIFloat3& fromPos = u->GetPos();
-		AIFloat3 toPos = fromPos;
-		float size = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE;
-		CTerrainManager* terrain = this->circuit->GetTerrainManager();
-		toPos.x += (toPos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
-		toPos.z += (toPos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
-		u->PatrolTo(toPos);
+		const AIFloat3& pos = u->GetPos();
 
 		std::vector<float> params;
 		params.push_back(0.0f);
 		u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
-		// check to which factory nano belongs to
+		// check factory nano belongs to
 		float radius = def->GetBuildDistance();
 		float qradius = radius * radius;
 		for (auto& fac : factories) {
 			const AIFloat3& facPos = fac.first->GetUnit()->GetPos();
-			if (facPos.SqDistance2D(fromPos) < qradius) {
-				fac.second.push_back(unit);
+			if (facPos.SqDistance2D(pos) < qradius) {
+				fac.second.insert(unit);
 			}
 		}
 
 		havens.insert(unit);
 		// TODO: Send HavenFinished message
+	};
+	auto assistIdleHandler = [this](CCircuitUnit* unit) {
+		unit->GetTask()->OnUnitIdle(unit);
 	};
 	auto assistDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 		if (unit->GetUnit()->IsBeingBuilt()) {
@@ -127,11 +122,14 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		}
 		factoryPower -= unit->GetDef()->GetBuildSpeed();
 		for (auto& fac : factories) {
-			fac.second.remove(unit);
+			fac.second.erase(unit);
 		}
 
 		havens.erase(unit);
 		// TODO: Send HavenDestroyed message
+
+		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
+		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 	};
 
 	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
@@ -145,6 +143,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 				destroyedHandler[unitDefId] = factoryDestroyedHandler;
 			} else {
 				finishedHandler[unitDefId] = assistFinishedHandler;
+				idleHandler[unitDefId] = assistIdleHandler;
 				destroyedHandler[unitDefId] = assistDestroyedHandler;
 				assistDef = def;
 			}
@@ -160,12 +159,20 @@ CFactoryManager::~CFactoryManager()
 
 int CFactoryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 {
-	if ((builder != nullptr) && unit->GetUnit()->IsBeingBuilt()) {
-		IUnitTask* task = builder->GetTask();
-		if (task->GetType() == IUnitTask::Type::FACTORY) {
-			CRecruitTask* taskF = static_cast<CRecruitTask*>(task);
-			unfinishedTasks[taskF].push_back(unit);
-			unfinishedUnits[unit] = taskF;
+	if (builder == nullptr) {
+		return 0; //signaling: OK
+	}
+
+	IUnitTask* task = builder->GetTask();
+	if (task->GetType() != IUnitTask::Type::FACTORY) {
+		return 0; //signaling: OK
+	}
+
+	if (unit->GetUnit()->IsBeingBuilt()) {
+		CRecruitTask* taskR = static_cast<CRecruitTask*>(task);
+		if (taskR->GetTarget() == nullptr) {
+			taskR->SetTarget(unit);
+			unfinishedUnits[unit] = taskR;
 		}
 	}
 
@@ -176,16 +183,7 @@ int CFactoryManager::UnitFinished(CCircuitUnit* unit)
 {
 	auto iter = unfinishedUnits.find(unit);
 	if (iter != unfinishedUnits.end()) {
-		CRecruitTask* task = iter->second;
-		if (task != nullptr) {
-			task->Progress();
-			if (task->IsDone()) {
-				DoneTask(task);
-			} else {
-				unfinishedTasks[task].remove(unit);
-			}
-		}
-		unfinishedUnits.erase(iter);
+		DoneTask(iter->second);
 	}
 
 	auto search = finishedHandler.find(unit->GetDef()->GetUnitDefId());
@@ -211,16 +209,7 @@ int CFactoryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 	if (unit->GetUnit()->IsBeingBuilt()) {
 		auto iter = unfinishedUnits.find(unit);
 		if (iter != unfinishedUnits.end()) {
-			CRecruitTask* task = iter->second;
-			if (task != nullptr) {
-				std::list<CCircuitUnit*>& units = unfinishedTasks[task];
-				units.remove(iter->first);
-				if (units.empty()) {
-					unfinishedTasks.erase(task);
-				}
-				task->Regress();
-			}
-			unfinishedUnits.erase(iter);
+			AbortTask(iter->second);
 		}
 	}
 
@@ -235,25 +224,53 @@ int CFactoryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 CRecruitTask* CFactoryManager::EnqueueTask(CRecruitTask::Priority priority,
 										   UnitDef* buildDef,
 										   const AIFloat3& position,
-										   CRecruitTask::FacType type,
-										   int quantity,
+										   CRecruitTask::BuildType type,
 										   float radius)
 {
-	CRecruitTask* task = new CRecruitTask(this, priority, buildDef, position, type, quantity, radius);
-	factoryTasks.push_front(task);
+	CRecruitTask* task = new CRecruitTask(this, priority, buildDef, position, type, radius);
+	factoryTasks.insert(task);
 	return task;
 }
 
-void CFactoryManager::DequeueTask(CRecruitTask* task, bool done)
+IBuilderTask* CFactoryManager::EnqueueAssist(IBuilderTask::Priority priority,
+											 const AIFloat3& position,
+											 IBuilderTask::BuildType type,
+											 float radius)
 {
-	std::list<CCircuitUnit*>& units = unfinishedTasks[task];
-	factoryTasks.remove(task);
-	task->Close(done);
-	for (auto u : units) {
-		unfinishedUnits[u] = nullptr;
+	IBuilderTask* task;
+	switch (type) {
+		default:
+		case IBuilderTask::BuildType::REPAIR: {
+			// TODO: Consider adding target param instead of using CBRepairTask::SetTarget
+			task = new CStaticRepair(this, priority);
+			break;
+		}
+		case IBuilderTask::BuildType::RECLAIM: {
+			// TODO: Re-evalute params
+			task = new CStaticReclaim(this, priority, nullptr, position, .0f, 0, radius);
+			break;
+		}
 	}
-	unfinishedTasks.erase(task);
-	deleteTasks.insert(task);
+	assistTasks.insert(task);
+	return task;
+}
+
+void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
+{
+	auto it = factoryTasks.find(static_cast<CRecruitTask*>(task));
+	if (it != factoryTasks.end()) {
+		unfinishedUnits.erase(static_cast<CRecruitTask*>(task)->GetTarget());
+		factoryTasks.erase(it);
+		task->Close(done);
+		deleteTasks.insert(task);
+	} else {
+		auto it2 = assistTasks.find(static_cast<IBuilderTask*>(task));
+		if (it2 != assistTasks.end()) {
+			assistTasks.erase(static_cast<IBuilderTask*>(task));
+			task->Close(done);
+			deleteTasks.insert(task);
+		}
+	}
 }
 
 void CFactoryManager::AssignTask(CCircuitUnit* unit)
@@ -261,35 +278,44 @@ void CFactoryManager::AssignTask(CCircuitUnit* unit)
 	Unit* u = unit->GetUnit();
 	UnitDef* def = unit->GetDef();
 
-	CRecruitTask* task = nullptr;
-	decltype(factoryTasks)::iterator iter = factoryTasks.begin();
-	for (; iter != factoryTasks.end(); ++iter) {
-		if ((*iter)->CanAssignTo(unit)) {
-			task = static_cast<CRecruitTask*>(*iter);
-			break;
+	if (def == assistDef) {
+		IBuilderTask* task = circuit->GetEconomyManager()->CreateAssistTask(unit);
+		if (task != nullptr) {  // if nullptr then continue to Wait (or Idle)
+			task->AssignTo(unit);
 		}
+
+	} else {
+
+		CRecruitTask* task = nullptr;
+		decltype(factoryTasks)::iterator iter = factoryTasks.begin();
+		for (; iter != factoryTasks.end(); ++iter) {
+			if ((*iter)->CanAssignTo(unit)) {
+				task = static_cast<CRecruitTask*>(*iter);
+				break;
+			}
+		}
+
+		if (task == nullptr) {
+			task = circuit->GetEconomyManager()->CreateFactoryTask(unit);
+
+//			iter = factoryTasks.begin();
+		}
+
+		task->AssignTo(unit);
+//		if (task->IsFull()) {
+//			factoryTasks.splice(factoryTasks.end(), factoryTasks, iter);  // move task to back
+//		}
 	}
-
-	if (task == nullptr) {
-		task = circuit->GetEconomyManager()->CreateFactoryTask(unit);
-
-//		iter = factoryTasks.begin();
-	}
-
-	task->AssignTo(unit);
-//	if (task->IsFull()) {
-//		factoryTasks.splice(factoryTasks.end(), factoryTasks, iter);  // move task to back
-//	}
 }
 
 void CFactoryManager::AbortTask(IUnitTask* task)
 {
-	DequeueTask(static_cast<CRecruitTask*>(task));
+	DequeueTask(task, false);
 }
 
 void CFactoryManager::DoneTask(IUnitTask* task)
 {
-	DequeueTask(static_cast<CRecruitTask*>(task), true);
+	DequeueTask(task, true);
 }
 
 void CFactoryManager::SpecialCleanUp(CCircuitUnit* unit)
@@ -314,7 +340,7 @@ bool CFactoryManager::CanEnqueueTask()
 	return (factoryTasks.size() < factories.size() * 2);
 }
 
-const std::list<CRecruitTask*>& CFactoryManager::GetTasks() const
+const std::set<CRecruitTask*>& CFactoryManager::GetTasks() const
 {
 	return factoryTasks;
 }

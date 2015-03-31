@@ -18,12 +18,12 @@ namespace circuit {
 
 class CRecruitTask: public IUnitTask {
 public:
-	enum class FacType: char {BUILDPOWER = 0, FIREPOWER, AA, CLOAK, DEFAULT = FIREPOWER};
+	enum class BuildType: char {BUILDPOWER = 0, FIREPOWER, AA, CLOAK, DEFAULT = FIREPOWER};
 
 public:
 	CRecruitTask(ITaskManager* mgr, Priority priority,
 				 springai::UnitDef* buildDef, const springai::AIFloat3& position,
-				 FacType type, int quantity, float radius);
+				 BuildType type, float radius);
 	virtual ~CRecruitTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit);
@@ -35,22 +35,21 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
-	const springai::AIFloat3& GetPos() const;
-	springai::UnitDef* GetBuildDef();
+	const springai::AIFloat3& GetTaskPos() const;
+	springai::UnitDef* GetBuildDef() const;
 
-	FacType GetFacType();
+	BuildType GetBuildType() const;
 
-	void Progress();
-	void Regress();
-	bool IsDone();
+	void SetTarget(CCircuitUnit* unit);
+	CCircuitUnit* GetTarget() const;
 
 private:
 	springai::AIFloat3 position;
 	springai::UnitDef* buildDef;
 
-	FacType facType;
-	int quantity;
+	BuildType buildType;
 	float sqradius;
+	CCircuitUnit* target;
 };
 
 } // namespace circuit

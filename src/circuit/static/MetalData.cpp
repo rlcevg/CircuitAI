@@ -10,8 +10,6 @@
 #include "util/math/EncloseCircle.h"
 #include "util/utils.h"
 
-#include <boost/graph/kruskal_min_spanning_tree.hpp>
-
 namespace circuit {
 
 using namespace springai;
@@ -198,6 +196,11 @@ const CMetalData::Clusters& CMetalData::GetClusters() const
 	return clusters;
 }
 
+const CMetalData::Graph& CMetalData::GetGraph() const
+{
+	return clusterGraph;
+}
+
 void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distMatrix)
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
@@ -242,7 +245,7 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 		vorPoints.push_back(vor_point(c.geoCentr.x, c.geoCentr.z));
 	}
 	clustVoronoi.clear();
-	construct_voronoi(vorPoints.begin(), vorPoints.end(), &clustVoronoi);
+	boost::polygon::construct_voronoi(vorPoints.begin(), vorPoints.end(), &clustVoronoi);
 
 	// Convert voronoi_diagram to "Delaunay" in BGL (Boost Graph Library)
 	Graph g(nclusters);
@@ -252,14 +255,10 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 			std::size_t idx0 = edge.cell()->source_index();
 			std::size_t idx1 = edge.twin()->cell()->source_index();
 			float weight = clusters[idx0].geoCentr.distance(clusters[idx1].geoCentr);
-			add_edge(idx0, idx1, weight, g);
+			boost::add_edge(idx0, idx1, weight, g);
 		}
 	}
-
-	// Build Kruskal's minimum spanning tree
-	spanning_tree.clear();
-	boost::kruskal_minimum_spanning_tree(g, std::back_inserter(spanning_tree));
-	graph = g;
+	clusterGraph = g;
 
 	isClusterizing = false;
 }
@@ -378,15 +377,6 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 ////	}
 ////	centroids.clear();
 //}
-
-void CMetalData::DrawKruskal(Drawer* drawer)
-{
-	for (auto& ei : spanning_tree) {
-		const AIFloat3& posFrom = clusters[boost::source(ei, graph)].geoCentr;
-		const AIFloat3& posTo = clusters[boost::target(ei, graph)].geoCentr;
-		drawer->AddLine(posFrom, posTo);
-	}
-}
 
 const CMetalData::Metal& CMetalData::operator[](int idx) const
 {

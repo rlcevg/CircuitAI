@@ -59,22 +59,22 @@ public:
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
 	const springai::AIFloat3& GetTaskPos() const;
-	springai::UnitDef* GetBuildDef();
+	springai::UnitDef* GetBuildDef() const;
 
-	BuildType GetBuildType();
-	float GetBuildPower();
-	float GetCost();
-	int GetTimeout();
+	BuildType GetBuildType() const;
+	float GetBuildPower() const;
+	float GetCost() const;
+	int GetTimeout() const;
 
 	void SetBuildPos(const springai::AIFloat3& pos);
 	const springai::AIFloat3& GetBuildPos() const;
-	const springai::AIFloat3& GetPosition() const;  // buildPos if set, pos otherwise
+	const springai::AIFloat3& GetPosition() const;  // return buildPos if set, position otherwise
 	virtual void SetTarget(CCircuitUnit* unit);
-	CCircuitUnit* GetTarget();
+	CCircuitUnit* GetTarget() const;
 
-	bool IsStructure();
+	bool IsStructure() const;
 	void SetFacing(int value);
-	int GetFacing();
+	int GetFacing() const;
 
 protected:
 	int FindFacing(springai::UnitDef* buildDef, const springai::AIFloat3& position);

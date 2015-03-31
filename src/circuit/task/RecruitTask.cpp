@@ -18,13 +18,13 @@ using namespace springai;
 
 CRecruitTask::CRecruitTask(ITaskManager* mgr, Priority priority,
 		UnitDef* buildDef, const AIFloat3& position,
-		FacType type, int quantity, float radius) :
+		BuildType type, float radius) :
 				IUnitTask(mgr, priority, Type::FACTORY),
 				buildDef(buildDef),
 				position(position),
-				facType(type),
-				quantity(quantity),
-				sqradius(radius * radius)
+				buildType(type),
+				sqradius(radius * radius),
+				target(nullptr)
 {
 }
 
@@ -70,34 +70,29 @@ void CRecruitTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 	RemoveAssignee(unit);
 }
 
-const AIFloat3& CRecruitTask::GetPos() const
+const AIFloat3& CRecruitTask::GetTaskPos() const
 {
 	return position;
 }
 
-UnitDef* CRecruitTask::GetBuildDef()
+UnitDef* CRecruitTask::GetBuildDef() const
 {
 	return buildDef;
 }
 
-CRecruitTask::FacType CRecruitTask::GetFacType()
+CRecruitTask::BuildType CRecruitTask::GetBuildType() const
 {
-	return facType;
+	return buildType;
 }
 
-void CRecruitTask::Progress()
+void CRecruitTask::SetTarget(CCircuitUnit* unit)
 {
-	quantity--;
+	target = unit;
 }
 
-void CRecruitTask::Regress()
+CCircuitUnit* CRecruitTask::GetTarget() const
 {
-	quantity++;
-}
-
-bool CRecruitTask::IsDone()
-{
-	return quantity <= 0;
+	return target;
 }
 
 } // namespace circuit

@@ -58,24 +58,17 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 		}
 	}
 
+	// Alter/randomize position
+	AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
+	AIFloat3 pos = position + offset * SQUARE_SIZE * 16;
+
 	CTerrainManager* terrain = circuit->GetTerrainManager();
 	CTerrainManager::TerrainPredicate predicate = [terrain, unit](const AIFloat3& p) {
 		return terrain->CanBuildAt(unit, p);
 	};
 	float searchRadius = buildDef->GetBuildDistance();
-	facing = FindFacing(buildDef, position);
-	buildPos = terrain->FindBuildSite(buildDef, position, searchRadius, facing, predicate);
-	if (buildPos == -RgtVector) {
-		const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
-		const CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestClusters(position, 3);
-		for (const int idx : indices) {
-			facing = FindFacing(buildDef, clusters[idx].geoCentr);
-			buildPos = terrain->FindBuildSite(buildDef, clusters[idx].geoCentr, searchRadius, facing, predicate);
-			if (buildPos != -RgtVector) {
-				break;
-			}
-		}
-	}
+	facing = FindFacing(buildDef, pos);
+	buildPos = terrain->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
 
 	if (buildPos != -RgtVector) {
 		circuit->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);

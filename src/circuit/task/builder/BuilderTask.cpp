@@ -41,14 +41,8 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 				buildPos(-RgtVector),
 				buildPower(.0f),
 				facing(UNIT_COMMAND_BUILD_NO_FACING),
-				savedIncome(.0f)
+				savedIncome(manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome())
 {
-	// TODO: Move into IBuilderTask::Execute?
-	if (IsStructure()) {
-		// Alter/randomize position
-		AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
-		this->position += offset * SQUARE_SIZE * 16;
-	}
 }
 
 IBuilderTask::~IBuilderTask()
@@ -119,23 +113,17 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		}
 	}
 
+	// Alter/randomize position
+	AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
+	AIFloat3 pos = position + offset * SQUARE_SIZE * 16;
+
 	CTerrainManager::TerrainPredicate predicate = [terrain, unit](const AIFloat3& p) {
 		return terrain->CanBuildAt(unit, p);
 	};
 	float searchRadius = 200.0f * SQUARE_SIZE;
-	facing = FindFacing(buildDef, position);
-	buildPos = terrain->FindBuildSite(buildDef, position, searchRadius, facing, predicate);
-	if (buildPos == -RgtVector) {
-		const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
-		const CMetalData::MetalIndices indices = circuit->GetMetalManager()->FindNearestClusters(position, 3);
-		for (const int idx : indices) {
-			facing = FindFacing(buildDef, clusters[idx].geoCentr);
-			buildPos = terrain->FindBuildSite(buildDef, clusters[idx].geoCentr, searchRadius, facing, predicate);
-			if (buildPos != -RgtVector) {
-				break;
-			}
-		}
-	}
+	facing = FindFacing(buildDef, pos);
+	buildPos = terrain->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
+	// TODO: if (buildPos == -RgtVector) then assign/select other StartPos?
 
 	if (buildPos != -RgtVector) {
 		circuit->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);
@@ -148,7 +136,6 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 
 void IBuilderTask::Update()
 {
-	// tODO: Analyze nearby situation, maybe cancel this task
 	CCircuitAI* circuit = manager->GetCircuit();
 	for (auto unit : units) {
 		IUnitAction* action = static_cast<IUnitAction*>(unit->Begin());
@@ -162,47 +149,21 @@ void IBuilderTask::Update()
 		}
 	}
 
-	// FIXME: Replace const 999.0f with build time?
-	if ((cost > 999.0f) && (savedIncome > .0f)) {
-		CCircuitAI* circuit = manager->GetCircuit();
-		float currentIncome = circuit->GetEconomyManager()->GetAvgMetalIncome();
-		if (currentIncome < savedIncome * 0.6) {
-			if ((target != nullptr) && (target->GetUnit()->GetHealth() < target->GetUnit()->GetMaxHealth() * 0.2)) {
-				/*
-				 * FIXME: The logic is broken here. It creates Reclaim task, but its based on timeout
-				 * otherwise it won't be removed from task queue. And nearby patrollers or ally units
-				 * can still build the target.
-				 * Maybe just AbortTask and on RepairTask check same conditions.
-				 */
-				CBuilderManager* builderManager = circuit->GetBuilderManager();
-				IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildPos,
-																 IBuilderTask::BuildType::RECLAIM, FRAMES_PER_SEC * MAX_BUILD_SEC);
-				task->SetTarget(target);
-				std::set<CCircuitUnit*> us = units;
-				for (auto unit : us) {
-					manager->AssignTask(unit, task);
+	// FIXME: Replace const 1000.0f with build time?
+	if (cost < 1000.0f) {
+		return;
+	}
+	float currentIncome = circuit->GetEconomyManager()->GetAvgMetalIncome();
+	if (currentIncome < savedIncome * 0.6) {
+		manager->AbortTask(this);
+		if (target != nullptr) {
+			for (auto haven : circuit->GetFactoryManager()->GetHavensAt(buildPos)) {
+				IBuilderTask* task = static_cast<IBuilderTask*>(haven->GetTask());
+				if (task->GetTarget() == target) {
+					CFactoryManager* factoryManager = static_cast<CFactoryManager*>(haven->GetManager());
+					factoryManager->AbortTask(task);
 				}
-
-				CTerrainManager* terrain = circuit->GetTerrainManager();
-				auto reclaim = [this, terrain](Unit* u) {
-					u->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
-					AIFloat3 toPos = u->GetPos();
-					toPos.x += (toPos.x > terrain->GetTerrainWidth() / 2) ? -SQUARE_SIZE : SQUARE_SIZE;
-					toPos.z += (toPos.z > terrain->GetTerrainHeight() / 2) ? -SQUARE_SIZE : SQUARE_SIZE;
-					u->PatrolTo(toPos, UNIT_COMMAND_OPTION_SHIFT_KEY);
-				};
-
-				std::vector<CCircuitUnit*> havens = circuit->GetFactoryManager()->GetHavensAt(buildPos);
-				for (auto haven : havens) {
-					reclaim(haven->GetUnit());
-				}
-
-//				std::vector<CCircuitUnit*> patrollers = builderManager->GetPatrollersAt(buildPos);
-//				for (auto patrol : patrollers) {
-//					reclaim(patrol->GetUnit());
-//				}
 			}
-			manager->AbortTask(this);
 		}
 	}
 }
@@ -223,7 +184,7 @@ void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
 	Unit* u = unit->GetUnit();
 	// TODO: floating retreat coefficient
-	if (u->GetHealth() >= u->GetMaxHealth() * 0.9) {
+	if (u->GetHealth() >= u->GetMaxHealth() * 0.8) {
 		return;
 	}
 
@@ -244,27 +205,27 @@ const AIFloat3& IBuilderTask::GetTaskPos() const
 	return position;
 }
 
-UnitDef* IBuilderTask::GetBuildDef()
+UnitDef* IBuilderTask::GetBuildDef() const
 {
 	return buildDef;
 }
 
-IBuilderTask::BuildType IBuilderTask::GetBuildType()
+IBuilderTask::BuildType IBuilderTask::GetBuildType() const
 {
 	return buildType;
 }
 
-float IBuilderTask::GetBuildPower()
+float IBuilderTask::GetBuildPower() const
 {
 	return buildPower;
 }
 
-float IBuilderTask::GetCost()
+float IBuilderTask::GetCost() const
 {
 	return cost;
 }
 
-int IBuilderTask::GetTimeout()
+int IBuilderTask::GetTimeout() const
 {
 	return timeout;
 }
@@ -287,21 +248,15 @@ const AIFloat3& IBuilderTask::GetPosition() const
 void IBuilderTask::SetTarget(CCircuitUnit* unit)
 {
 	target = unit;
-	if (unit != nullptr) {
-		SetBuildPos(unit->GetUnit()->GetPos());
-		savedIncome = manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome();
-	} else {
-		SetBuildPos(-RgtVector);
-		savedIncome = .0f;
-	}
+	SetBuildPos((unit != nullptr) ? unit->GetUnit()->GetPos() : -RgtVector);
 }
 
-CCircuitUnit* IBuilderTask::GetTarget()
+CCircuitUnit* IBuilderTask::GetTarget() const
 {
 	return target;
 }
 
-bool IBuilderTask::IsStructure()
+bool IBuilderTask::IsStructure() const
 {
 	return (buildType < IBuilderTask::BuildType::MEX);
 }
@@ -311,7 +266,7 @@ void IBuilderTask::SetFacing(int value)
 	facing = value;
 }
 
-int IBuilderTask::GetFacing()
+int IBuilderTask::GetFacing() const
 {
 	return facing;
 }

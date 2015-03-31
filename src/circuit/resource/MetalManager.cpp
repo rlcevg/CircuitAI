@@ -146,8 +146,7 @@ void CMetalManager::ClusterizeMetal()
 		}
 	}
 
-	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CMetalData::Clusterize, metalData, maxDistance, pdistmatrix),
-			std::make_shared<CGameTask>(&CMetalData::DrawKruskal, metalData, circuit->GetDrawer()));
+	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CMetalData::Clusterize, metalData, maxDistance, pdistmatrix));
 }
 
 const CMetalData::Metals& CMetalManager::GetSpots() const
@@ -208,6 +207,11 @@ const CMetalData::MetalIndices CMetalManager::FindNearestClusters(const AIFloat3
 const CMetalData::Clusters& CMetalManager::GetClusters() const
 {
 	return metalData->GetClusters();
+}
+
+const CMetalData::Graph& CMetalManager::GetGraph() const
+{
+	return metalData->GetGraph();
 }
 
 void CMetalManager::SetOpenSpot(int index, bool value)

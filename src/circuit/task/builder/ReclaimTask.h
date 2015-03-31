@@ -17,7 +17,7 @@ public:
 	// TODO: Re-evalute params
 	CBReclaimTask(ITaskManager* mgr, Priority priority,
 				  springai::UnitDef* buildDef, const springai::AIFloat3& position,
-				  float cost, int timeout);
+				  float cost, int timeout, float radius = .0f);
 	virtual ~CBReclaimTask();
 
 	virtual void RemoveAssignee(CCircuitUnit* unit);
@@ -26,6 +26,9 @@ public:
 	virtual void Close(bool done);
 protected:
 	virtual void Cancel();
+
+private:
+	float radius;
 };
 
 } // namespace circuit

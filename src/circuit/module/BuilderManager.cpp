@@ -72,10 +72,6 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		builderPower += unit->GetDef()->GetBuildSpeed();
 		workers.insert(unit);
 
-//		std::vector<float> params;
-//		params.push_back(3);
-//		unit->GetUnit()->ExecuteCustomCommand(CMD_RETREAT, params);
-
 		AddBuildList(unit);
 	};
 	auto workerIdleHandler = [this](CCircuitUnit* unit) {
@@ -99,7 +95,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		builderPower -= unit->GetDef()->GetBuildSpeed();
 		workers.erase(unit);
 
-		unit->GetTask()->OnUnitDestroyed(unit, attacker);
+		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
 		RemoveBuildList(unit);
@@ -172,7 +168,6 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		return 0; //signaling: OK
 	}
 
-	// FIXME: Can IdleTask get here?
 	IUnitTask* task = builder->GetTask();
 	if (task->GetType() != IUnitTask::Type::BUILDER) {
 		return 0; //signaling: OK
@@ -181,15 +176,14 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 	IBuilderTask* taskB = static_cast<IBuilderTask*>(task);
 	if (unit->GetUnit()->IsBeingBuilt()) {
 		// NOTE: Try to cope with strange event order, when different units created within same task
-		// FIXME: Create additional task to catch lost unit
+		// TODO: Create additional task to build/reclaim lost unit
 		if (taskB->GetTarget() == nullptr) {
 			taskB->SetTarget(unit);
 			unfinishedUnits[unit] = taskB;
 
 			UnitDef* buildDef = unit->GetDef();
-			Unit* u = unit->GetUnit();
-			int facing = u->GetBuildingFacing();
-			const AIFloat3& pos = u->GetPos();
+			int facing = taskB->GetFacing();  // or use unit->GetUnit()->GetBuildingFacing() ?
+			const AIFloat3& pos = taskB->GetBuildPos();
 			for (auto ass : taskB->GetAssignees()) {
 				ass->GetUnit()->Build(buildDef, pos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			}
@@ -639,10 +633,16 @@ void CBuilderManager::Watchdog()
 
 	// find unfinished abandoned buildings
 	// TODO: Include special units
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	float realBP = std::min(economyManager->GetAvgMetalIncome(), builderPower);
+	Resource* metalRes = economyManager->GetMetalRes();
+	float maxBuildTime = MAX_BUILD_SEC * economyManager->GetEcoFactor();
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
 		Unit* u = unit->GetUnit();
-		if (u->IsBeingBuilt() && (u->GetMaxSpeed() <= 0) && (unfinishedUnits.find(unit) == unfinishedUnits.end())) {
+		if (u->IsBeingBuilt() && (u->GetMaxSpeed() <= 0) && (unfinishedUnits.find(unit) == unfinishedUnits.end()) &&
+			(unit->GetDef()->GetCost(metalRes) / realBP < maxBuildTime))
+		{
 			const AIFloat3& pos = u->GetPos();
 			IBuilderTask* task = EnqueueTask(IBuilderTask::Priority::NORMAL, unit->GetDef(), pos, IBuilderTask::BuildType::REPAIR);
 			task->SetTarget(unit);

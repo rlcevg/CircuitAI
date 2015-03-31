@@ -9,10 +9,10 @@
 #define SRC_CIRCUIT_MODULE_FACTORYMANAGER_H_
 
 #include "task/RecruitTask.h"
+#include "task/builder/BuilderTask.h"
 #include "module/UnitModule.h"
 
 #include <map>
-#include <list>
 #include <vector>
 
 namespace springai {
@@ -34,11 +34,14 @@ public:
 	CRecruitTask* EnqueueTask(CRecruitTask::Priority priority,
 							  springai::UnitDef* buildDef,
 							  const springai::AIFloat3& position,
-							  CRecruitTask::FacType type,
-							  int quantity,
+							  CRecruitTask::BuildType type,
 							  float radius);
+	IBuilderTask* EnqueueAssist(IBuilderTask::Priority priority,
+								const springai::AIFloat3& position,
+								IBuilderTask::BuildType type,
+								float radius);
 private:
-	void DequeueTask(CRecruitTask* task, bool done = false);
+	void DequeueTask(IUnitTask* task, bool done = false);
 
 public:
 	virtual void AssignTask(CCircuitUnit* unit);
@@ -50,7 +53,7 @@ public:
 
 	float GetFactoryPower();
 	bool CanEnqueueTask();
-	const std::list<CRecruitTask*>& GetTasks() const;
+	const std::set<CRecruitTask*>& GetTasks() const;
 	CCircuitUnit* NeedUpgrade();
 	CCircuitUnit* GetRandomFactory();
 
@@ -67,15 +70,15 @@ private:
 	Handlers2 destroyedHandler;
 
 	std::map<CCircuitUnit*, CRecruitTask*> unfinishedUnits;
-	std::map<CRecruitTask*, std::list<CCircuitUnit*>> unfinishedTasks;
-	std::list<CRecruitTask*> factoryTasks;  // owner
+	std::set<CRecruitTask*> factoryTasks;  // owner
 	float factoryPower;
-	std::set<CRecruitTask*> deleteTasks;
+	std::set<IUnitTask*> deleteTasks;
 
-	std::map<CCircuitUnit*, std::list<CCircuitUnit*>> factories;
+	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> factories;  // factory 1:n nanos
 	springai::UnitDef* assistDef;
 
 	std::set<CCircuitUnit*> havens;
+	std::set<IBuilderTask*> assistTasks;
 };
 
 } // namespace circuit

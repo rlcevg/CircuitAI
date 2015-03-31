@@ -10,6 +10,7 @@
 #include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
 #include "module/EconomyManager.h"
+#include "module/FactoryManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -48,12 +49,27 @@ void CBRepairTask::Execute(CCircuitUnit* unit)
 	params.push_back(static_cast<float>(priority));
 	u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
-	unit->GetUnit()->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+	unit->GetUnit()->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 }
 
 void CBRepairTask::Update()
 {
-	// TODO: Analyze nearby threats? Or threats should update some central system and send messages to all involved?
+	// FIXME: Replace const 1000.0f with build time?
+	if (cost < 1000.0f) {
+		return;
+	}
+	CCircuitAI* circuit = manager->GetCircuit();
+	float currentIncome = circuit->GetEconomyManager()->GetAvgMetalIncome();
+	if (currentIncome < savedIncome * 0.6) {
+		manager->AbortTask(this);
+		for (auto haven : circuit->GetFactoryManager()->GetHavensAt(buildPos)) {
+			IBuilderTask* task = static_cast<IBuilderTask*>(haven->GetTask());
+			if (task->GetTarget() == target) {
+				CFactoryManager* factoryManager = static_cast<CFactoryManager*>(haven->GetManager());
+				factoryManager->AbortTask(task);
+			}
+		}
+	}
 }
 
 void CBRepairTask::Cancel()
@@ -76,7 +92,7 @@ void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
 	Unit* u = unit->GetUnit();
 	// TODO: floating retreat coefficient
-	if (u->GetHealth() > u->GetMaxHealth() * 0.6) {
+	if (u->GetHealth() >= u->GetMaxHealth() * 0.8) {
 		return;
 	}
 
@@ -103,6 +119,7 @@ CCircuitUnit* CBRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 	float maxSpeed = su->GetMaxSpeed();
 	float radius = unit->GetDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 30;
 	CCircuitAI* circuit = manager->GetCircuit();
+
 	circuit->UpdateAllyUnits();
 	std::vector<Unit*> units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
 	for (auto u : units) {

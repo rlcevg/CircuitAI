@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_MODULE_ECONOMYMANAGER_H_
 
 #include "module/Module.h"
+#include "static/MetalData.h"
 
 #include "AIFloat3.h"
 
@@ -40,6 +41,7 @@ public:
 
 	IBuilderTask* CreateBuilderTask(CCircuitUnit* unit);
 	CRecruitTask* CreateFactoryTask(CCircuitUnit* unit);
+	IBuilderTask* CreateAssistTask(CCircuitUnit* unit);
 	springai::Resource* GetMetalRes() const;
 	springai::Resource* GetEnergyRes() const;
 	springai::UnitDef* GetMexDef() const;
@@ -48,8 +50,9 @@ public:
 	void RemoveAvailEnergy(const std::set<springai::UnitDef*>& buildDefs);
 
 	void UpdateResourceIncome();
-	float GetAvgMetalIncome();
-	float GetAvgEnergyIncome();
+	float GetAvgMetalIncome() const;
+	float GetAvgEnergyIncome() const;
+	float GetEcoFactor() const;
 
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
@@ -59,6 +62,7 @@ public:
 
 private:
 	void Init();
+	void LinkCluster(int index);
 
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
@@ -96,6 +100,9 @@ private:
 	int indexRes;
 	float metalIncome;
 	float energyIncome;
+
+	std::vector<CMetalData::Edge> spanningTree;
+	CMetalData::Graph spanningGraph;
 };
 
 } // namespace circuit

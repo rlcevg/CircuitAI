@@ -21,8 +21,9 @@ using namespace springai;
 
 CBReclaimTask::CBReclaimTask(ITaskManager* mgr, Priority priority,
 							 UnitDef* buildDef, const AIFloat3& position,
-							 float cost, int timeout) :
-		IBuilderTask(mgr, priority, buildDef, position, BuildType::RECLAIM, cost, timeout)
+							 float cost, int timeout, float radius) :
+		IBuilderTask(mgr, priority, buildDef, position, BuildType::RECLAIM, cost, timeout),
+		radius(radius)
 {
 }
 
@@ -47,12 +48,19 @@ void CBReclaimTask::Execute(CCircuitUnit* unit)
 	u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 	if (target == nullptr) {
-		CTerrainManager* terrain = manager->GetCircuit()->GetTerrainManager();
-		float width = terrain->GetTerrainWidth() / 2;
-		float height = terrain->GetTerrainHeight() / 2;
-		AIFloat3 pos(width, 0, height);
-		float radius = sqrtf(width * width + height * height);
-		unit->GetUnit()->ReclaimInArea(pos, radius, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+		AIFloat3 pos;
+		float radius;
+		if ((position == -RgtVector) || (radius == .0f)) {
+			CTerrainManager* terrain = manager->GetCircuit()->GetTerrainManager();
+			float width = terrain->GetTerrainWidth() / 2;
+			float height = terrain->GetTerrainHeight() / 2;
+			pos = AIFloat3(width, 0, height);
+			radius = sqrtf(width * width + height * height);
+		} else {
+			pos = position;
+			radius = this->radius;
+		}
+		unit->GetUnit()->ReclaimInArea(pos, radius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	} else {
 		unit->GetUnit()->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	}

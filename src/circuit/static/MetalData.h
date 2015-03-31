@@ -19,8 +19,6 @@
 #include <atomic>
 #include <memory>
 
-#include "Drawer.h"
-
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 
@@ -37,10 +35,12 @@ private:
 	using box = bg::model::box<point>;
 	using vor_point = boost::polygon::point_data<int>;
 	using vor_diagram = boost::polygon::voronoi_diagram<double>;
-	using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, boost::property<boost::edge_weight_t, float>>;
-	using Edge = boost::graph_traits<Graph>::edge_descriptor;
 
 public:
+	using Graph = boost::adjacency_list<boost::hash_setS, boost::vecS, boost::undirectedS, boost::no_property, boost::property<boost::edge_weight_t, float>>;
+	using Vertex = boost::graph_traits<CMetalData::Graph>::vertex_descriptor;
+	using Edge = boost::graph_traits<CMetalData::Graph>::edge_descriptor;
+
 	using Metal = struct {
 		float income;
 		springai::AIFloat3 position;
@@ -80,7 +80,8 @@ public:
 	const MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num) const;
 	const MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num, MetalPredicate& predicate) const;
 
-	const std::vector<Cluster>& GetClusters() const;
+	const CMetalData::Clusters& GetClusters() const;
+	const CMetalData::Graph& GetGraph() const;
 
 	/*
 	 * Hierarchical clusterization. Not reusable. Metric: complete link. Thread-unsafe
@@ -91,7 +92,6 @@ public:
 //	void DrawConvexHulls(springai::Drawer* drawer);
 //	void DrawCentroids(springai::Drawer* drawer);
 //	void ClearMetalClusters(springai::Drawer* drawer);
-	void DrawKruskal(springai::Drawer* drawer);
 
 	const Metal& operator[](int idx) const;
 
@@ -107,8 +107,7 @@ private:
 	ClusterTree clusterTree;
 
 	vor_diagram clustVoronoi;  // TODO: Do not save?
-	Graph graph;
-	std::vector<Edge> spanning_tree;
+	Graph clusterGraph;
 
 	std::atomic<bool> isClusterizing;
 };
