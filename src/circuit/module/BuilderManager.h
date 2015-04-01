@@ -52,10 +52,18 @@ public:
 							  const springai::AIFloat3& position,
 							  IBuilderTask::BuildType type,
 							  int timeout = 0);
-	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,
-							  const springai::AIFloat3& position,
-							  IBuilderTask::BuildType type,
-							  int timeout = 0);
+	IBuilderTask* EnqueuePatrol(IBuilderTask::Priority priority,
+								const springai::AIFloat3& position,
+								float cost,
+								int timeout);
+	IBuilderTask* EnqueueReclaim(IBuilderTask::Priority priority,
+								 const springai::AIFloat3& position,
+								 float cost,
+								 int timeout,
+								 float radius = .0f);
+	IBuilderTask* EnqueueRepair(IBuilderTask::Priority priority,
+								CCircuitUnit* target,
+								int timeout = 0);
 private:
 	IBuilderTask* AddTask(IBuilderTask::Priority priority,
 						  springai::UnitDef* buildDef,

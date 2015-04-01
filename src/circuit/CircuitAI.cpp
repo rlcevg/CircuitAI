@@ -651,6 +651,10 @@ void CCircuitAI::UpdateAllyUnits()
 
 CCircuitUnit* CCircuitAI::GetFriendlyUnit(Unit* u)
 {
+	if (u == nullptr) {
+		return nullptr;
+	}
+
 	if (u->GetTeam() == teamId) {
 		return GetTeamUnitById(u->GetUnitId());
 	} else if (u->GetAllyTeam() == allyTeamId) {

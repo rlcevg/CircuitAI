@@ -8,9 +8,8 @@
 #include "task/builder/RepairTask.h"
 #include "task/RetreatTask.h"
 #include "task/TaskManager.h"
-#include "unit/CircuitUnit.h"
 #include "module/EconomyManager.h"
-#include "module/FactoryManager.h"
+#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -23,9 +22,10 @@ namespace circuit {
 
 using namespace springai;
 
-CBRepairTask::CBRepairTask(ITaskManager* mgr, Priority priority, int timeout) :
-		IBuilderTask(mgr, priority, nullptr, -RgtVector, BuildType::REPAIR, 1000, timeout)
+CBRepairTask::CBRepairTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, int timeout) :
+		IBuilderTask(mgr, priority, nullptr, -RgtVector, BuildType::REPAIR, 1000.0f, timeout)
 {
+	SetTarget(target);
 }
 
 CBRepairTask::~CBRepairTask()
@@ -49,7 +49,7 @@ void CBRepairTask::Execute(CCircuitUnit* unit)
 	params.push_back(static_cast<float>(priority));
 	u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
-	unit->GetUnit()->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+	u->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 }
 
 void CBRepairTask::Update()
@@ -58,17 +58,9 @@ void CBRepairTask::Update()
 	if (cost < 1000.0f) {
 		return;
 	}
-	CCircuitAI* circuit = manager->GetCircuit();
-	float currentIncome = circuit->GetEconomyManager()->GetAvgMetalIncome();
+	float currentIncome = manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome();
 	if (currentIncome < savedIncome * 0.6) {
 		manager->AbortTask(this);
-		for (auto haven : circuit->GetFactoryManager()->GetHavensAt(buildPos)) {
-			IBuilderTask* task = static_cast<IBuilderTask*>(haven->GetTask());
-			if (task->GetTarget() == target) {
-				CFactoryManager* factoryManager = static_cast<CFactoryManager*>(haven->GetManager());
-				factoryManager->AbortTask(task);
-			}
-		}
 	}
 }
 
@@ -106,7 +98,7 @@ void CBRepairTask::SetTarget(CCircuitUnit* unit)
 		cost = unit->GetDef()->GetCost(manager->GetCircuit()->GetEconomyManager()->GetMetalRes());
 		position = buildPos = unit->GetUnit()->GetPos();
 	} else {
-		cost = 1000;
+		cost = 1000.0f;
 		position = buildPos = -RgtVector;
 	}
 }

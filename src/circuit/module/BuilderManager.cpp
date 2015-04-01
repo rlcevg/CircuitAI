@@ -42,6 +42,7 @@
 #include "Command.h"
 
 #include <utility>
+#include <assert.h>
 
 namespace circuit {
 
@@ -136,7 +137,6 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	int unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetUnitDefId();
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 		this->circuit->GetMetalManager()->SetOpenSpot(unit->GetUnit()->GetPos(), true);
-//		this->circuit->GetEconomyManager()->UpdateMetalTasks(this->circuit->GetSetupManager()->GetStartPos());
 		const AIFloat3& pos = unit->GetUnit()->GetPos();
 		if (IsBuilderInArea(unit->GetDef(), pos)) {
 			EnqueueTask(IBuilderTask::Priority::HIGH, unit->GetDef(), pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
@@ -325,12 +325,37 @@ IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 	return AddTask(priority, buildDef, position, type, cost, timeout);
 }
 
-IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
-										   const AIFloat3& position,
-										   IBuilderTask::BuildType type,
-										   int timeout)
+IBuilderTask* CBuilderManager::EnqueuePatrol(IBuilderTask::Priority priority,
+											 const springai::AIFloat3& position,
+											 float cost,
+											 int timeout)
 {
-	return AddTask(priority, nullptr, position, type, .0f, timeout);
+	IBuilderTask* task = new CBPatrolTask(this, priority, position, cost, timeout);
+	builderTasks[static_cast<int>(IBuilderTask::BuildType::PATROL)].insert(task);
+	builderTasksCount++;
+	return task;
+}
+
+IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
+											  const springai::AIFloat3& position,
+											  float cost,
+											  int timeout,
+											  float radius)
+{
+	IBuilderTask* task = new CBReclaimTask(this, priority, position, cost, timeout, radius);
+	builderTasks[static_cast<int>(IBuilderTask::BuildType::RECLAIM)].insert(task);
+	builderTasksCount++;
+	return task;
+}
+
+IBuilderTask* CBuilderManager::EnqueueRepair(IBuilderTask::Priority priority,
+											 CCircuitUnit* target,
+											 int timeout)
+{
+	IBuilderTask* task = new CBRepairTask(this, priority, target, timeout);
+	builderTasks[static_cast<int>(IBuilderTask::BuildType::REPAIR)].insert(task);
+	builderTasksCount++;
+	return task;
 }
 
 IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
@@ -340,6 +365,7 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 									   float cost,
 									   int timeout)
 {
+	assert(type <= IBuilderTask::BuildType::MEX);
 	IBuilderTask* task;
 	switch (type) {
 		case IBuilderTask::BuildType::FACTORY: {
@@ -386,21 +412,6 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 		case IBuilderTask::BuildType::TERRAFORM: {
 			// TODO: Re-evalute params
 			task = new CBTerraformTask(this, priority, buildDef, position, cost, timeout);
-			break;
-		}
-		case IBuilderTask::BuildType::REPAIR: {
-			// TODO: Consider adding target param instead of using CBRepairTask::SetTarget
-			task = new CBRepairTask(this, priority, timeout);
-			break;
-		}
-		case IBuilderTask::BuildType::RECLAIM: {
-			// TODO: Re-evalute params
-			task = new CBReclaimTask(this, priority, buildDef, position, cost, timeout);
-			break;
-		}
-		case IBuilderTask::BuildType::PATROL: {
-			// TODO: Re-evalute params
-			task = new CBPatrolTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 	}
@@ -556,7 +567,7 @@ void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 {
 	DequeueTask(static_cast<IBuilderTask*>(unit->GetTask()));
 
-	IBuilderTask* task = EnqueueTask(IBuilderTask::Priority::LOW, unit->GetUnit()->GetPos(), IBuilderTask::BuildType::PATROL, FRAMES_PER_SEC * 20);
+	IBuilderTask* task = EnqueuePatrol(IBuilderTask::Priority::LOW, unit->GetUnit()->GetPos(), .0f, FRAMES_PER_SEC * 20);
 	task->AssignTo(unit);
 	task->Execute(unit);
 }
@@ -590,9 +601,11 @@ void CBuilderManager::Init()
 	}
 
 	CScheduler* scheduler = circuit->GetScheduler().get();
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), 2, 0);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateRetreat, this), FRAMES_PER_SEC / 2);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), 2, 1);
+	const int interval = FRAMES_PER_SEC / 2;
+	const int offset = circuit->GetSkirmishAIId() % interval;
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateRetreat, this), interval, offset + 1);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 2);
 }
 
 void CBuilderManager::Watchdog()
@@ -634,19 +647,15 @@ void CBuilderManager::Watchdog()
 	// find unfinished abandoned buildings
 	// TODO: Include special units
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	float realBP = std::min(economyManager->GetAvgMetalIncome(), builderPower);
 	Resource* metalRes = economyManager->GetMetalRes();
-	float maxBuildTime = MAX_BUILD_SEC * economyManager->GetEcoFactor();
+	float maxCost = MAX_BUILD_SEC * economyManager->GetEcoFactor() * std::min(economyManager->GetAvgMetalIncome(), builderPower);
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
 		Unit* u = unit->GetUnit();
 		if (u->IsBeingBuilt() && (u->GetMaxSpeed() <= 0) && (unfinishedUnits.find(unit) == unfinishedUnits.end()) &&
-			(unit->GetDef()->GetCost(metalRes) / realBP < maxBuildTime))
+			(unit->GetDef()->GetCost(metalRes) < maxCost))
 		{
-			const AIFloat3& pos = u->GetPos();
-			IBuilderTask* task = EnqueueTask(IBuilderTask::Priority::NORMAL, unit->GetDef(), pos, IBuilderTask::BuildType::REPAIR);
-			task->SetTarget(unit);
-			unfinishedUnits[unit] = task;
+			unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
 		}
 	}
 }

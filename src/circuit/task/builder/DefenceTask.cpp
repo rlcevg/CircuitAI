@@ -7,9 +7,14 @@
 
 #include "task/builder/DefenceTask.h"
 #include "task/TaskManager.h"
+#include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
+
+#include "OOAICallback.h"
+#include "UnitDef.h"
+#include "Feature.h"
 
 namespace circuit {
 
@@ -25,6 +30,20 @@ CBDefenceTask::CBDefenceTask(ITaskManager* mgr, Priority priority,
 CBDefenceTask::~CBDefenceTask()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+}
+
+void CBDefenceTask::Finish()
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	float radius = buildDef->GetMaxWeaponRange();
+	std::vector<Feature*> features = circuit->GetCallback()->GetFeaturesIn(buildPos, radius);
+	if (!features.empty()) {
+		IBuilderTask* recl = circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, buildPos, .0f, FRAMES_PER_SEC * MAX_BUILD_SEC, radius);
+		if (!units.empty()) {
+			manager->AssignTask(*units.begin(), recl);
+		}
+	}
+	utils::free_clear(features);
 }
 
 void CBDefenceTask::Cancel()

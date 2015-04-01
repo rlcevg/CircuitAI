@@ -99,32 +99,15 @@ void CBMexTask::Finish()
 		// Add defence
 		UnitDef* defDef = circuit->GetUnitDefByName("corllt");
 		CEconomyManager* economyManager = circuit->GetEconomyManager();
-		if (defDef->GetCost(economyManager->GetMetalRes()) / economyManager->GetAvgMetalIncome() < MIN_BUILD_SEC / 2) {
+		if (defDef->GetCost(economyManager->GetMetalRes()) * economyManager->GetEcoFactor() < MIN_BUILD_SEC / 2 * economyManager->GetAvgMetalIncome()) {
 			for (auto& defPoint : circuit->GetMilitaryManager()->GetDefPoints(index)) {
 				if (defPoint.isOpen) {
 					defPoint.isOpen = false;
-					builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, defPoint.position,
-												IBuilderTask::BuildType::DEFENCE);
+					builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, defPoint.position, IBuilderTask::BuildType::DEFENCE);
 					break;
 				}
 			}
 		}
-
-		// TODO: Move into DefenceTask as next code is about turret's line of sight
-//		if (task == nullptr) {
-//			const AIFloat3 pos = metalManager->GetClusters()[index].geoCentr;
-//			std::vector<Feature*> features = circuit->GetCallback()->GetFeaturesIn(pos, 500);
-//			if (!features.empty()) {
-//				// FIXME: 1) Add reclaim in radius.
-//				//        2) Add other options than stop reclaim on timeout
-//				IBuilderTask* recl = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, pos,
-//																 IBuilderTask::BuildType::RECLAIM, FRAMES_PER_SEC * 30);
-//				if (!units.empty()) {
-//					manager->AssignTask(*units.begin(), recl);
-//				}
-//			}
-//			utils::free_clear(features);
-//		}
 	}
 
 	if (task == nullptr) {

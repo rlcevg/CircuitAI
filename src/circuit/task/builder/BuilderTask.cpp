@@ -10,7 +10,6 @@
 #include "task/TaskManager.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"
-#include "module/FactoryManager.h"
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
 #include "unit/CircuitUnit.h"
@@ -156,15 +155,6 @@ void IBuilderTask::Update()
 	float currentIncome = circuit->GetEconomyManager()->GetAvgMetalIncome();
 	if (currentIncome < savedIncome * 0.6) {
 		manager->AbortTask(this);
-		if (target != nullptr) {
-			for (auto haven : circuit->GetFactoryManager()->GetHavensAt(buildPos)) {
-				IBuilderTask* task = static_cast<IBuilderTask*>(haven->GetTask());
-				if (task->GetTarget() == target) {
-					CFactoryManager* factoryManager = static_cast<CFactoryManager*>(haven->GetManager());
-					factoryManager->AbortTask(task);
-				}
-			}
-		}
 	}
 }
 

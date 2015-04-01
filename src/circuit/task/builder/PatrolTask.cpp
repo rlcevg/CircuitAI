@@ -20,9 +20,9 @@ namespace circuit {
 using namespace springai;
 
 CBPatrolTask::CBPatrolTask(ITaskManager* mgr, Priority priority,
-						   UnitDef* buildDef, const AIFloat3& position,
+						   const AIFloat3& position,
 						   float cost, int timeout) :
-		IBuilderTask(mgr, priority, buildDef, position, BuildType::PATROL, cost, timeout)
+		IBuilderTask(mgr, priority, nullptr, position, BuildType::PATROL, cost, timeout)
 {
 }
 
@@ -33,6 +33,7 @@ CBPatrolTask::~CBPatrolTask()
 
 void CBPatrolTask::RemoveAssignee(CCircuitUnit* unit)
 {
+	// Unregister from timeout processor
 	manager->SpecialCleanUp(unit);
 
 	IBuilderTask::RemoveAssignee(unit);
@@ -53,12 +54,18 @@ void CBPatrolTask::Execute(CCircuitUnit* unit)
 	pos.z += (pos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
 	u->PatrolTo(pos);
 
+	// Register unit to process timeout if set
 	manager->SpecialProcess(unit);
+}
+
+void CBPatrolTask::Update()
+{
 }
 
 void CBPatrolTask::Close(bool done)
 {
 	for (auto unit : units) {
+		// Unregister from timeout processor
 		manager->SpecialCleanUp(unit);
 	}
 

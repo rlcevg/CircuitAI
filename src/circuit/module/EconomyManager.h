@@ -53,6 +53,8 @@ public:
 	float GetAvgMetalIncome() const;
 	float GetAvgEnergyIncome() const;
 	float GetEcoFactor() const;
+	bool IsMetalFull() const;
+	bool IsMetalEmpty() const;
 
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);

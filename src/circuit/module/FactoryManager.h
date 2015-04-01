@@ -36,10 +36,12 @@ public:
 							  const springai::AIFloat3& position,
 							  CRecruitTask::BuildType type,
 							  float radius);
-	IBuilderTask* EnqueueAssist(IBuilderTask::Priority priority,
-								const springai::AIFloat3& position,
-								IBuilderTask::BuildType type,
-								float radius);
+	IBuilderTask* EnqueueReclaim(IBuilderTask::Priority priority,
+								 const springai::AIFloat3& position,
+								 float radius,
+								 int timeout = 0);
+	IBuilderTask* EnqueueRepair(IBuilderTask::Priority priority,
+								CCircuitUnit* target);
 private:
 	void DequeueTask(IUnitTask* task, bool done = false);
 
@@ -64,6 +66,7 @@ public:
 private:
 	void Watchdog();
 	void UpdateIdle();
+	void UpdateAssist();
 
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
@@ -72,13 +75,15 @@ private:
 	std::map<CCircuitUnit*, CRecruitTask*> unfinishedUnits;
 	std::set<CRecruitTask*> factoryTasks;  // owner
 	float factoryPower;
-	std::set<IUnitTask*> deleteTasks;
+	std::set<CRecruitTask*> deleteTasks;
 
 	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> factories;  // factory 1:n nanos
 	springai::UnitDef* assistDef;
 
 	std::set<CCircuitUnit*> havens;
-	std::set<IBuilderTask*> assistTasks;
+	std::set<IBuilderTask*> assistTasks;  // owner
+	std::set<IBuilderTask*> updateAssists;
+	std::set<IBuilderTask*> deleteAssists;
 };
 
 } // namespace circuit

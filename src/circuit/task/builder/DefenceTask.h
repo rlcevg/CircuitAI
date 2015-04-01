@@ -20,6 +20,7 @@ public:
 	virtual ~CBDefenceTask();
 
 protected:
+	virtual void Finish();
 	virtual void Cancel();
 };
 

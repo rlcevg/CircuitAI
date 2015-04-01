@@ -9,8 +9,8 @@
 #include "module/EconomyManager.h"
 #include "terrain/TerrainManager.h"
 #include "task/IdleTask.h"
-#include "task/builder/StaticRepair.h"
-#include "task/builder/StaticReclaim.h"
+#include "task/static/RepairTask.h"
+#include "task/static/ReclaimTask.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
 #include "CircuitAI.h"
@@ -38,7 +38,10 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::Watchdog, this),
 							FRAMES_PER_SEC * 60,
 							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 1);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateIdle, this), FRAMES_PER_SEC);
+	const int interval = FRAMES_PER_SEC;
+	const int offset = circuit->GetSkirmishAIId() % interval;
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateIdle, this), interval, offset + 10);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateAssist, this), interval, offset + 11);
 
 	/*
 	 * factory handlers
@@ -155,6 +158,9 @@ CFactoryManager::~CFactoryManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	utils::free_clear(factoryTasks);
+	utils::free_clear(deleteTasks);
+	utils::free_clear(assistTasks);
+	utils::free_clear(deleteAssists);
 }
 
 int CFactoryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -232,25 +238,20 @@ CRecruitTask* CFactoryManager::EnqueueTask(CRecruitTask::Priority priority,
 	return task;
 }
 
-IBuilderTask* CFactoryManager::EnqueueAssist(IBuilderTask::Priority priority,
-											 const AIFloat3& position,
-											 IBuilderTask::BuildType type,
-											 float radius)
+IBuilderTask* CFactoryManager::EnqueueReclaim(IBuilderTask::Priority priority,
+											  const springai::AIFloat3& position,
+											  float radius,
+											  int timeout)
 {
-	IBuilderTask* task;
-	switch (type) {
-		default:
-		case IBuilderTask::BuildType::REPAIR: {
-			// TODO: Consider adding target param instead of using CBRepairTask::SetTarget
-			task = new CStaticRepair(this, priority);
-			break;
-		}
-		case IBuilderTask::BuildType::RECLAIM: {
-			// TODO: Re-evalute params
-			task = new CStaticReclaim(this, priority, nullptr, position, .0f, 0, radius);
-			break;
-		}
-	}
+	IBuilderTask* task = new CSReclaimTask(this, priority, position, .0f, timeout, radius);
+	assistTasks.insert(task);
+	return task;
+}
+
+IBuilderTask* CFactoryManager::EnqueueRepair(IBuilderTask::Priority priority,
+											 CCircuitUnit* target)
+{
+	IBuilderTask* task = new CSRepairTask(this, priority, target);
 	assistTasks.insert(task);
 	return task;
 }
@@ -262,13 +263,13 @@ void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 		unfinishedUnits.erase(static_cast<CRecruitTask*>(task)->GetTarget());
 		factoryTasks.erase(it);
 		task->Close(done);
-		deleteTasks.insert(task);
+		deleteTasks.insert(static_cast<CRecruitTask*>(task));
 	} else {
 		auto it2 = assistTasks.find(static_cast<IBuilderTask*>(task));
 		if (it2 != assistTasks.end()) {
-			assistTasks.erase(static_cast<IBuilderTask*>(task));
+			assistTasks.erase(it2);
 			task->Close(done);
-			deleteTasks.insert(task);
+			deleteAssists.insert(static_cast<IBuilderTask*>(task));
 		}
 	}
 }
@@ -415,14 +416,33 @@ void CFactoryManager::Watchdog()
 		}
 		utils::free_clear(commands);
 	}
-
-	// scheduled task deletion
-	utils::free_clear(deleteTasks);
 }
 
 void CFactoryManager::UpdateIdle()
 {
 	idleTask->Update();
+}
+
+void CFactoryManager::UpdateAssist()
+{
+	utils::free_clear(deleteTasks);
+	if (!deleteAssists.empty()) {
+		for (auto task : deleteAssists) {
+			updateAssists.erase(task);
+			delete task;
+		}
+		deleteAssists.clear();
+	}
+
+	auto it = updateAssists.begin();
+	while ((it != updateAssists.end()) && circuit->IsUpdateTimeValid()) {
+		(*it)->Update();
+		it = updateAssists.erase(it);
+	}
+
+	if (updateAssists.empty()) {
+		updateAssists.insert(assistTasks.begin(), assistTasks.end());
+	}
 }
 
 } // namespace circuit

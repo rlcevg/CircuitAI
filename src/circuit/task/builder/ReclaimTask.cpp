@@ -7,8 +7,9 @@
 
 #include "task/builder/ReclaimTask.h"
 #include "task/TaskManager.h"
-#include "unit/CircuitUnit.h"
+#include "module/EconomyManager.h"
 #include "terrain/TerrainManager.h"
+#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -20,9 +21,9 @@ namespace circuit {
 using namespace springai;
 
 CBReclaimTask::CBReclaimTask(ITaskManager* mgr, Priority priority,
-							 UnitDef* buildDef, const AIFloat3& position,
+							 const AIFloat3& position,
 							 float cost, int timeout, float radius) :
-		IBuilderTask(mgr, priority, buildDef, position, BuildType::RECLAIM, cost, timeout),
+		IBuilderTask(mgr, priority, nullptr, position, BuildType::RECLAIM, cost, timeout),
 		radius(radius)
 {
 }
@@ -34,6 +35,7 @@ CBReclaimTask::~CBReclaimTask()
 
 void CBReclaimTask::RemoveAssignee(CCircuitUnit* unit)
 {
+	// Unregister from timeout processor
 	manager->SpecialCleanUp(unit);
 
 	IBuilderTask::RemoveAssignee(unit);
@@ -49,28 +51,37 @@ void CBReclaimTask::Execute(CCircuitUnit* unit)
 
 	if (target == nullptr) {
 		AIFloat3 pos;
-		float radius;
+		float reclRadius;
 		if ((position == -RgtVector) || (radius == .0f)) {
 			CTerrainManager* terrain = manager->GetCircuit()->GetTerrainManager();
 			float width = terrain->GetTerrainWidth() / 2;
 			float height = terrain->GetTerrainHeight() / 2;
 			pos = AIFloat3(width, 0, height);
-			radius = sqrtf(width * width + height * height);
+			reclRadius = sqrtf(width * width + height * height);
 		} else {
 			pos = position;
-			radius = this->radius;
+			reclRadius = radius;
 		}
-		unit->GetUnit()->ReclaimInArea(pos, radius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->ReclaimInArea(pos, reclRadius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	} else {
-		unit->GetUnit()->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	}
 
+	// Register unit to process timeout if set
 	manager->SpecialProcess(unit);
+}
+
+void CBReclaimTask::Update()
+{
+	if (manager->GetCircuit()->GetEconomyManager()->IsMetalFull()) {
+		manager->AbortTask(this);
+	}
 }
 
 void CBReclaimTask::Close(bool done)
 {
 	for (auto unit : units) {
+		// Unregister from timeout processor
 		manager->SpecialCleanUp(unit);
 	}
 

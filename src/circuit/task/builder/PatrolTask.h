@@ -14,15 +14,15 @@ namespace circuit {
 
 class CBPatrolTask: public IBuilderTask {
 public:
-	// TODO: Re-evalute params
 	CBPatrolTask(ITaskManager* mgr, Priority priority,
-				 springai::UnitDef* buildDef, const springai::AIFloat3& position,
+				 const springai::AIFloat3& position,
 				 float cost, int timeout);
 	virtual ~CBPatrolTask();
 
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 
 	virtual void Execute(CCircuitUnit* unit);
+	virtual void Update();
 	virtual void Close(bool done);
 protected:
 	virtual void Cancel();
