@@ -177,12 +177,22 @@ CCircuitUnit* CSetupManager::GetCommander()
 
 void CSetupManager::SetStartPos(const AIFloat3& pos)
 {
-	startPos = pos;
+	startPos = basePos = pos;
 }
 
 const AIFloat3& CSetupManager::GetStartPos()
 {
 	return startPos;
+}
+
+void CSetupManager::SetBasePos(const springai::AIFloat3& pos)
+{
+	basePos = pos;
+}
+
+const springai::AIFloat3& CSetupManager::GetBasePos()
+{
+	return basePos;
 }
 
 void CSetupManager::FindCommander()

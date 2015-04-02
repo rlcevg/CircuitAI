@@ -11,6 +11,7 @@
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"
 #include "resource/MetalManager.h"
+#include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
@@ -122,12 +123,19 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	float searchRadius = 200.0f * SQUARE_SIZE;
 	facing = FindFacing(buildDef, pos);
 	buildPos = terrain->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
-	// TODO: if (buildPos == -RgtVector) then assign/select other StartPos?
 
 	if (buildPos != -RgtVector) {
 		circuit->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);
 		u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	} else {
+		// TODO: Select new proper BasePos, like near metal cluster.
+		int terWidth = terrain->GetTerrainWidth();
+		int terHeight = terrain->GetTerrainHeight();
+		float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
+		float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
+		AIFloat3 pos(x, circuit->GetMap()->GetElevationAt(x, z), z);
+		circuit->GetSetupManager()->SetBasePos(pos);
+
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);
 	}

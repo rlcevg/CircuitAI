@@ -52,7 +52,7 @@ void CBReclaimTask::Execute(CCircuitUnit* unit)
 	if (target == nullptr) {
 		AIFloat3 pos;
 		float reclRadius;
-		if ((position == -RgtVector) || (radius == .0f)) {
+		if ((radius == .0f) || (position == -RgtVector)) {
 			CTerrainManager* terrain = manager->GetCircuit()->GetTerrainManager();
 			float width = terrain->GetTerrainWidth() / 2;
 			float height = terrain->GetTerrainHeight() / 2;

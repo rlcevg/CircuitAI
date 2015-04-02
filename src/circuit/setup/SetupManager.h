@@ -31,6 +31,8 @@ public:
 	CCircuitUnit* GetCommander();
 	void SetStartPos(const springai::AIFloat3& pos);
 	const springai::AIFloat3& GetStartPos();
+	void SetBasePos(const springai::AIFloat3& pos);
+	const springai::AIFloat3& GetBasePos();
 
 private:
 	void FindCommander();
@@ -40,6 +42,7 @@ private:
 
 	int commanderId;
 	springai::AIFloat3 startPos;
+	springai::AIFloat3 basePos;
 };
 
 } // namespace circuit

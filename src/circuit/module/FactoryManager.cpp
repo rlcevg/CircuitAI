@@ -258,19 +258,20 @@ IBuilderTask* CFactoryManager::EnqueueRepair(IBuilderTask::Priority priority,
 
 void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 {
-	auto it = factoryTasks.find(static_cast<CRecruitTask*>(task));
-	if (it != factoryTasks.end()) {
+	// TODO: Convert CRecruitTask into IBuilderTask
+	auto itf = factoryTasks.find(static_cast<CRecruitTask*>(task));
+	if (itf != factoryTasks.end()) {
 		unfinishedUnits.erase(static_cast<CRecruitTask*>(task)->GetTarget());
-		factoryTasks.erase(it);
+		factoryTasks.erase(itf);
 		task->Close(done);
 		deleteTasks.insert(static_cast<CRecruitTask*>(task));
-	} else {
-		auto it2 = assistTasks.find(static_cast<IBuilderTask*>(task));
-		if (it2 != assistTasks.end()) {
-			assistTasks.erase(it2);
-			task->Close(done);
-			deleteAssists.insert(static_cast<IBuilderTask*>(task));
-		}
+		return;
+	}
+	auto ita = assistTasks.find(static_cast<IBuilderTask*>(task));
+	if (ita != assistTasks.end()) {
+		assistTasks.erase(ita);
+		task->Close(done);
+		deleteAssists.insert(static_cast<IBuilderTask*>(task));
 	}
 }
 

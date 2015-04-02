@@ -99,7 +99,7 @@ void CBMexTask::Finish()
 		// Add defence
 		UnitDef* defDef = circuit->GetUnitDefByName("corllt");
 		CEconomyManager* economyManager = circuit->GetEconomyManager();
-		if (defDef->GetCost(economyManager->GetMetalRes()) * economyManager->GetEcoFactor() < MIN_BUILD_SEC / 2 * economyManager->GetAvgMetalIncome()) {
+		if (defDef->GetCost(economyManager->GetMetalRes()) < (MIN_BUILD_SEC / 2) * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor()) {
 			for (auto& defPoint : circuit->GetMilitaryManager()->GetDefPoints(index)) {
 				if (defPoint.isOpen) {
 					defPoint.isOpen = false;

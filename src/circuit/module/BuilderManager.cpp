@@ -648,7 +648,7 @@ void CBuilderManager::Watchdog()
 	// TODO: Include special units
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	Resource* metalRes = economyManager->GetMetalRes();
-	float maxCost = MAX_BUILD_SEC * economyManager->GetEcoFactor() * std::min(economyManager->GetAvgMetalIncome(), builderPower);
+	float maxCost = MAX_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), builderPower) * economyManager->GetEcoFactor();
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
 		Unit* u = unit->GetUnit();

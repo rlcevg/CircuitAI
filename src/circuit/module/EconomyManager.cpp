@@ -144,7 +144,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
 	std::vector<Team*> allyTeams = circuit->GetCallback()->GetAllyTeams();
 	float allyTeamCount = allyTeams.size();
-	ecoFactor = 1.0f / (allyTeamCount * 0.25f + 0.75f);
+	ecoFactor = allyTeamCount * 0.25f + 0.75f;
 	utils::free_clear(allyTeams);
 
 	// TODO: Make configurable
@@ -246,18 +246,18 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 	}
 
 	// FIXME: Eco rules. It should never get here
-	float metalIncome = GetAvgMetalIncome();
+	float metalIncome = GetAvgMetalIncome() * ecoFactor;
 	UnitDef* buildDef = circuit->GetUnitDefByName("armwin");
-	if ((metalIncome < 20 * ecoFactor) && (circuit->GetCircuitDef(buildDef)->GetCount() < 50)) {
+	if ((metalIncome < 20) && (circuit->GetCircuitDef(buildDef)->GetCount() < 50)) {
 		task = builderManager->EnqueueTask(IBuilderTask::Priority::LOW, buildDef, pos, IBuilderTask::BuildType::ENERGY);
-	} else if (metalIncome < 40 * ecoFactor) {
+	} else if (metalIncome < 40) {
 		task = builderManager->EnqueuePatrol(IBuilderTask::Priority::LOW, unit->GetUnit()->GetPos(), .0f, FRAMES_PER_SEC * 20);
 	} else {
 		const std::set<IBuilderTask*>& tasks = builderManager->GetTasks(IBuilderTask::BuildType::BIG_GUN);
 		if (tasks.empty()) {
 			buildDef = circuit->GetUnitDefByName("raveparty");
 			if (circuit->GetCircuitDef(buildDef)->GetCount() < 2) {
-				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, circuit->GetSetupManager()->GetStartPos(), IBuilderTask::BuildType::BIG_GUN);
+				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, circuit->GetSetupManager()->GetBasePos(), IBuilderTask::BuildType::BIG_GUN);
 			} else {
 				task = builderManager->EnqueuePatrol(IBuilderTask::Priority::LOW, unit->GetUnit()->GetPos(), .0f, FRAMES_PER_SEC * 20);
 			}
@@ -282,10 +282,10 @@ CRecruitTask* CEconomyManager::CreateFactoryTask(CCircuitUnit* unit)
 	const char* names2[] = {"armpw", "armrock", "armpw", "armwar", "armsnipe", "armzeus"};
 	const char* names1[] = {"armpw", "armrock", "armpw", "armwar", "armpw", "armrock"};
 	char** names;
-	float metalIncome = GetAvgMetalIncome();
-	if (metalIncome > 30 * ecoFactor) {
+	float metalIncome = GetAvgMetalIncome() * ecoFactor;
+	if (metalIncome > 30) {
 		names = (char**)names3;
-	} else if (metalIncome > 20 * ecoFactor) {
+	} else if (metalIncome > 20) {
 		names = (char**)names2;
 	} else {
 		names = (char**)names1;
@@ -308,7 +308,7 @@ IBuilderTask* CEconomyManager::CreateAssistTask(CCircuitUnit* unit)
 	/*
 	 * Check for damaged units
 	 */
-	float maxCost = MAX_BUILD_SEC * ecoFactor * GetAvgMetalIncome();
+	float maxCost = MAX_BUILD_SEC * GetAvgMetalIncome() * ecoFactor;
 	circuit->UpdateAllyUnits();
 	std::vector<Unit*> units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
 	for (auto u : units) {
@@ -589,7 +589,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		float cost;
 		float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome * 0.5f);
 		const std::set<IBuilderTask*>& tasks = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY);
-		float maxBuildTime = MAX_BUILD_SEC / ecoFactor;
+		float maxBuildTime = MAX_BUILD_SEC * ecoFactor;
 		for (auto& engy : energyInfos) {  // sorted by high-tech first
 			// TODO: Add geothermal powerplant support
 			if (!circuit->IsAvailable(engy.def) || engy.def->IsNeedGeo()) {
@@ -626,7 +626,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 					buildPos = spots[index].position;
 				}
 			} else {
-				const AIFloat3& startPos = circuit->GetSetupManager()->GetStartPos();
+				const AIFloat3& startPos = circuit->GetSetupManager()->GetBasePos();
 				int index = metalManager->FindNearestCluster(startPos);
 				if (index >= 0) {
 					const CMetalData::Clusters& clusters = metalManager->GetClusters();
@@ -763,7 +763,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 	float metalIncome = GetAvgMetalIncome();
 	float storage = eco->GetStorage(metalRes);
 	if (builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() && (storage / metalIncome < 25) && circuit->IsAvailable(storeDef)) {
-		const AIFloat3& startPos = circuit->GetSetupManager()->GetStartPos();
+		const AIFloat3& startPos = circuit->GetSetupManager()->GetBasePos();
 		CMetalManager* metalManager = circuit->GetMetalManager();
 		int index = metalManager->FindNearestSpot(startPos);
 		AIFloat3 buildPos;
@@ -783,7 +783,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 	}
 
 	float energyIncome = GetAvgEnergyIncome();
-	if ((metalIncome > 10 * ecoFactor) && (energyIncome > 100) && (pylonCount < pylonMaxCount) && circuit->IsAvailable(pylonDef)) {
+	if ((metalIncome * ecoFactor > 10) && (energyIncome > 100) && (pylonCount < pylonMaxCount) && circuit->IsAvailable(pylonDef)) {
 		float cost = pylonDef->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 2 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::PYLON).size() < count) {
@@ -791,7 +791,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 //				return clusterInfos[v.second].pylon == nullptr;
 //			};
 			CMetalManager* metalManager = circuit->GetMetalManager();
-			const AIFloat3& startPos = circuit->GetSetupManager()->GetStartPos();
+			const AIFloat3& startPos = circuit->GetSetupManager()->GetBasePos();
 			int index = metalManager->FindNearestCluster(startPos/*, predicate*/);
 			if (index >= 0) {
 				const CMetalData::Clusters& clusters = metalManager->GetClusters();
@@ -816,7 +816,7 @@ void CEconomyManager::Init()
 	SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();
 	const int interval = ais->GetSize() * 2;
 	delete ais;
-	const AIFloat3& pos = circuit->GetSetupManager()->GetStartPos();
+	const AIFloat3& pos = circuit->GetSetupManager()->GetBasePos();
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateFactoryTasks, this, pos, nullptr), interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this), interval, circuit->GetSkirmishAIId() + 1);
