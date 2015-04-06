@@ -59,7 +59,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		if (assistDef != nullptr) {
 			std::set<CCircuitUnit*> nanos;
 			float radius = assistDef->GetBuildDistance();
-			std::vector<Unit*> units = this->circuit->GetCallback()->GetFriendlyUnitsIn(u->GetPos(), radius);
+			auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(u->GetPos(), radius));
 			int nanoId = assistDef->GetUnitDefId();
 			int teamId = this->circuit->GetTeamId();
 			for (auto nano : units) {
@@ -408,14 +408,20 @@ std::vector<CCircuitUnit*> CFactoryManager::GetHavensAt(const AIFloat3& pos) con
 void CFactoryManager::Watchdog()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	for (auto& fac : factories) {
-		CCircuitUnit* unit = fac.first;
-		Unit* u = unit->GetUnit();
-		std::vector<springai::Command*> commands = u->GetCurrentCommands();
+	auto checkIdler = [this](CCircuitUnit* unit) {
+		auto commands = std::move(unit->GetUnit()->GetCurrentCommands());
 		if (commands.empty()) {
 			UnitIdle(unit);
 		}
 		utils::free_clear(commands);
+	};
+
+	for (auto& fac : factories) {
+		checkIdler(fac.first);
+	}
+
+	for (auto haven : havens) {
+		checkIdler(haven);
 	}
 }
 

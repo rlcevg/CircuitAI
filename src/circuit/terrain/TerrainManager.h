@@ -53,6 +53,7 @@ private:
 public:
 	void AddBlocker(springai::UnitDef* unitDef, const springai::AIFloat3& pos, int facing);
 	void RemoveBlocker(springai::UnitDef* unitDef, const springai::AIFloat3& pos, int facing);
+	void ResetBuildFrame();
 	// TODO: Use IsInBounds test and Bound operation only if mask or search offsets (endr) are out of bounds
 	// TODO: Based on map complexity use A* or circle to calculate build offset
 	// TODO: Consider abstract task position (any area with builder) and task for certain unit-pos-area
@@ -113,6 +114,7 @@ private:
 											  IBlockMask* mask,
 											  TerrainPredicate& predicate);
 
+	// TODO: Move into CAllyTeam: saves memory, better cooperation (within 1 host). But what if allies doesn't share los or anything?
 	SBlockingMap blockingMap;
 	std::unordered_map<springai::UnitDef*, IBlockMask*> blockInfos;  // owner
 	void MarkBlockerByMask(const Structure& building, bool block, IBlockMask* mask);

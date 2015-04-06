@@ -35,12 +35,14 @@ namespace circuit {
 
 using namespace springai;
 
-#define INCOME_SAMPLES	10
+#define INCOME_SAMPLES	5
 
 CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		IModule(circuit),
 		pylonCount(0),
-		indexRes(0)
+		indexRes(0),
+		metalIncome(.0f),
+		energyIncome(.0f)
 {
 	metalRes = circuit->GetCallback()->GetResourceByName("Metal");
 	energyRes = circuit->GetCallback()->GetResourceByName("Energy");
@@ -58,7 +60,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	//       https://ru.wikipedia.org/wiki/Марковский_процесс_принятия_решений
 
 	CScheduler* scheduler = circuit->GetScheduler().get();
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateResourceIncome, this), FRAMES_PER_SEC / 2);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateResourceIncome, this), TEAM_SLOWUPDATE_RATE);
 	scheduler->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CEconomyManager::Init, this));
 
 	// TODO: Group handlers
@@ -118,10 +120,11 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		}
 		--pylonCount;
 	};
-	Map* map = circuit->GetMap();
-	float pylonSquare = pylonRange * 2 / SQUARE_SIZE;
-	pylonSquare *= pylonSquare;
-	pylonMaxCount = ((map->GetWidth() * map->GetHeight()) / pylonSquare) / 2;
+//	Map* map = circuit->GetMap();
+//	float pylonSquare = pylonRange * 2 / SQUARE_SIZE;
+//	pylonSquare *= pylonSquare;
+//	pylonMaxCount = ((map->GetWidth() * map->GetHeight()) / pylonSquare) / 2;
+	pylonMaxCount = 10;
 
 	/*
 	 *  Identify resource buildings
@@ -236,7 +239,7 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 	}
 
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	std::vector<Feature*> features = circuit->GetCallback()->GetFeaturesIn(pos, u->GetMaxSpeed() * FRAMES_PER_SEC * 60);
+	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(pos, u->GetMaxSpeed() * FRAMES_PER_SEC * 60));
 	if (!features.empty() && (builderManager->GetTasks(IBuilderTask::BuildType::RECLAIM).size() < 20)) {
 		task = builderManager->EnqueueReclaim(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 60);
 	}
@@ -310,7 +313,7 @@ IBuilderTask* CEconomyManager::CreateAssistTask(CCircuitUnit* unit)
 	 */
 	float maxCost = MAX_BUILD_SEC * GetAvgMetalIncome() * ecoFactor;
 	circuit->UpdateAllyUnits();
-	std::vector<Unit*> units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
+	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
 	for (auto u : units) {
 		CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
 		if (candUnit == nullptr) {
@@ -337,7 +340,7 @@ IBuilderTask* CEconomyManager::CreateAssistTask(CCircuitUnit* unit)
 	 */
 	if (IsMetalEmpty()) {
 		// Reclaim task
-		std::vector<Feature*> features = circuit->GetCallback()->GetFeaturesIn(pos, radius);
+		auto features = std::move(circuit->GetCallback()->GetFeaturesIn(pos, radius));
 		bool valid = !features.empty();
 		utils::free_clear(features);
 		if (valid) {
@@ -480,7 +483,7 @@ void CEconomyManager::RemoveAvailEnergy(const std::set<UnitDef*>& buildDefs)
 void CEconomyManager::UpdateResourceIncome()
 {
 	energyIncomes[indexRes] = eco->GetIncome(energyRes);
-	metalIncomes[indexRes] = eco->GetIncome(metalRes);
+	metalIncomes[indexRes] = eco->GetIncome(metalRes);/* + eco->GetReceived(metalRes);*/
 	indexRes++;
 	indexRes %= INCOME_SAMPLES;
 
@@ -584,10 +587,12 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	float metalIncome = GetAvgMetalIncome();
 	float energyUsage = eco->GetUsage(energyRes);
 
-	if ((metalIncome > energyIncome * 0.8) || (energyUsage > energyIncome * 0.8)) {
+	bool energyStalling = (metalIncome > energyIncome * 0.8);
+	if (energyStalling || (energyUsage > energyIncome * 0.8)) {
 		UnitDef* bestDef = nullptr;
 		float cost;
 		float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome * 0.5f);
+		buildPower = std::min(buildPower, energyIncome);
 		const std::set<IBuilderTask*>& tasks = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY);
 		float maxBuildTime = MAX_BUILD_SEC * ecoFactor;
 		for (auto& engy : energyInfos) {  // sorted by high-tech first
@@ -638,7 +643,8 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			if ((buildPos != -RgtVector) && terrainManager->CanBeBuiltAt(circuit->GetCircuitDef(bestDef), buildPos) &&
 					((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 			{
-				task = builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, cost);
+				IBuilderTask::Priority priority = energyStalling ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
+				task = builderManager->EnqueueTask(priority, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, cost);
 			}
 		}
 	}
@@ -783,7 +789,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 	}
 
 	float energyIncome = GetAvgEnergyIncome();
-	if ((metalIncome * ecoFactor > 10) && (energyIncome > 100) && (pylonCount < pylonMaxCount) && circuit->IsAvailable(pylonDef)) {
+	if ((metalIncome * ecoFactor > 10) && (energyIncome > 50) && (pylonCount < pylonMaxCount) && circuit->IsAvailable(pylonDef)) {
 		float cost = pylonDef->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 2 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::PYLON).size() < count) {

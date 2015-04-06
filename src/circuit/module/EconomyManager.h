@@ -102,6 +102,7 @@ private:
 	int indexRes;
 	float metalIncome;
 	float energyIncome;
+	float metalPrevious;
 
 	std::vector<CMetalData::Edge> spanningTree;
 	CMetalData::Graph spanningGraph;

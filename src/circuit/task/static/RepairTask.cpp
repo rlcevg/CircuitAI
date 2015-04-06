@@ -45,7 +45,7 @@ void CSRepairTask::Update()
 		 */
 		CCircuitUnit* repairTarget = nullptr;
 		circuit->UpdateAllyUnits();
-		std::vector<Unit*> us = circuit->GetCallback()->GetFriendlyUnitsIn(position, (*units.begin())->GetDef()->GetBuildDistance());
+		auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, (*units.begin())->GetDef()->GetBuildDistance()));
 		for (auto u : us) {
 			CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
 			if (candUnit == nullptr) {

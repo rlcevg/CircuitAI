@@ -52,6 +52,7 @@ struct SBlockingMap {
 		int blockerMask;
 		unsigned int blockerCounts[static_cast<int>(StructType::TOTAL_COUNT)];
 	};
+	// TODO: Replace with QuadTree
 	std::vector<BlockCellLow> gridLow;  // granularity Map::GetWidth / 16, Map::GetHeight / 16
 	int columnsLow;
 	int rowsLow;

@@ -36,7 +36,7 @@ void CBDefenceTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	float radius = buildDef->GetMaxWeaponRange() * 0.8;
-	std::vector<Feature*> features = circuit->GetCallback()->GetFeaturesIn(buildPos, radius);
+	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(buildPos, radius));
 	if (!features.empty()) {
 		IBuilderTask* recl = circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, buildPos, .0f, FRAMES_PER_SEC * MAX_BUILD_SEC, radius);
 		if (!units.empty()) {

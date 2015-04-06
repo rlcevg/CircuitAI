@@ -34,9 +34,10 @@ using namespace springai;
 
 CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData) :
 		circuit(circuit),
-		terrainData(terrainData),
-		cacheBuildFrame(0)
+		terrainData(terrainData)
 {
+	ResetBuildFrame();
+
 	Map* map = circuit->GetMap();
 	int mapWidth = map->GetWidth();
 	int mapHeight = map->GetHeight();
@@ -255,6 +256,11 @@ void CTerrainManager::RemoveBlocker(UnitDef* unitDef, const AIFloat3& pos, int f
 {
 	Structure building = {-1, unitDef, pos, facing};
 	MarkBlocker(building, false);
+}
+
+void CTerrainManager::ResetBuildFrame()
+{
+	cacheBuildFrame = -FRAMES_PER_SEC;
 }
 
 AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)

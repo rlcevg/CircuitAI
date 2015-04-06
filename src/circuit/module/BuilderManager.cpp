@@ -77,6 +77,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	};
 	auto workerIdleHandler = [this](CCircuitUnit* unit) {
 		// Avoid instant task reassignment, its only valid on build order fail.
+		// FIXME: Unfortunatly can't use EVENT_COMMAND_FINISHED because there is no unique commandId like unitId
 		if (this->circuit->GetLastFrame() - unit->GetTaskFrame() > FRAMES_PER_SEC) {
 			unit->GetTask()->OnUnitIdle(unit);
 		}
@@ -574,38 +575,43 @@ void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 
 void CBuilderManager::Init()
 {
-	CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-	if (commander != nullptr) {
-		Unit* u = commander->GetUnit();
-		const AIFloat3& pos = u->GetPos();
-		UnitRulesParam* param = commander->GetUnit()->GetUnitRulesParamByName("facplop");
-		if (param != nullptr) {
-			if (param->GetValueFloat() == 1) {
-				EnqueueTask(IUnitTask::Priority::HIGH, circuit->GetUnitDefByName("factorycloak"), pos, IBuilderTask::BuildType::FACTORY);
+	auto subinit = [this]() {
+		CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+		if (commander != nullptr) {
+			Unit* u = commander->GetUnit();
+			const AIFloat3& pos = u->GetPos();
+			UnitRulesParam* param = u->GetUnitRulesParamByName("facplop");
+			if (param != nullptr) {
+				if (param->GetValueFloat() == 1) {
+					EnqueueTask(IUnitTask::Priority::HIGH, circuit->GetUnitDefByName("factorycloak"), pos, IBuilderTask::BuildType::FACTORY);
+				}
+				delete param;
 			}
-			delete param;
+
+			// FIXME: Remove, make proper eco rules!
+			CMetalManager* metalManager = this->circuit->GetMetalManager();
+			int index = metalManager->FindNearestSpot(pos);
+			if (index != -1) {
+				const CMetalData::Metals& spots = metalManager->GetSpots();
+				metalManager->SetOpenSpot(index, false);
+				const AIFloat3& buildPos = spots[index].position;
+				EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetEconomyManager()->GetMexDef(), buildPos, IBuilderTask::BuildType::MEX)->SetBuildPos(buildPos);
+			}
+		}
+		for (auto worker : workers) {
+			UnitIdle(worker);
 		}
 
-		// FIXME: Remove, make proper eco rules!
-		CMetalManager* metalManager = this->circuit->GetMetalManager();
-		int index = metalManager->FindNearestSpot(pos);
-		if (index != -1) {
-			const CMetalData::Metals& spots = metalManager->GetSpots();
-			metalManager->SetOpenSpot(index, false);
-			const AIFloat3& buildPos = spots[index].position;
-			EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetEconomyManager()->GetMexDef(), buildPos, IBuilderTask::BuildType::MEX)->SetBuildPos(buildPos);
-		}
-	}
-	for (auto worker : workers) {
-		UnitIdle(worker);
-	}
+		CScheduler* scheduler = circuit->GetScheduler().get();
+		const int interval = FRAMES_PER_SEC / 2;
+		const int offset = circuit->GetSkirmishAIId() % interval;
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateRetreat, this), interval, offset + 1);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 2);
+	};
 
-	CScheduler* scheduler = circuit->GetScheduler().get();
-	const int interval = FRAMES_PER_SEC / 2;
-	const int offset = circuit->GetSkirmishAIId() % interval;
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateRetreat, this), interval, offset + 1);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 2);
+	// Try to avoid blocked factories on plop
+	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(subinit), circuit->GetSkirmishAIId() * 2);
 }
 
 void CBuilderManager::Watchdog()
@@ -631,7 +637,7 @@ void CBuilderManager::Watchdog()
 	// somehow workers get stuck
 	for (auto worker : workers) {
 		Unit* u = worker->GetUnit();
-		std::vector<springai::Command*> commands = u->GetCurrentCommands();
+		auto commands = std::move(u->GetCurrentCommands());
 		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())
 		if (commands.empty()) {
 			AIFloat3 toPos = u->GetPos();

@@ -644,6 +644,8 @@ void CCircuitAI::UpdateAllyUnits()
 			CCircuitUnit* unit = new CCircuitUnit(u, def, GetCircuitDef(def));
 			delete unitDef;
 			allyUnits[unitId] = unit;
+		} else {
+			delete u;
 		}
 	}
 	lastAllyUpdate = lastFrame;

@@ -113,7 +113,7 @@ CCircuitUnit* CBRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 
 	circuit->UpdateAllyUnits();
-	std::vector<Unit*> units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
+	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
 	for (auto u : units) {
 		if (u->GetHealth() < u->GetMaxHealth() && u->GetVel().Length() <= maxSpeed * 1.5) {
 			target = circuit->GetFriendlyUnit(u);

@@ -42,7 +42,7 @@ void CSReclaimTask::Update()
 		 */
 		CCircuitUnit* repairTarget = nullptr;
 		circuit->UpdateAllyUnits();
-		std::vector<Unit*> us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius);
+		auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, radius));
 		for (auto u : us) {
 			CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
 			if (candUnit == nullptr) {

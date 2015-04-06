@@ -88,7 +88,10 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 			u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			return;
 		} else {
-			circuit->GetTerrainManager()->RemoveBlocker(buildDef, buildPos, facing);
+			CTerrainManager* terrain = circuit->GetTerrainManager();
+			terrain->RemoveBlocker(buildDef, buildPos, facing);
+			// FIXME: If enemy blocked position then no need for reset
+			terrain->ResetBuildFrame();
 		}
 	}
 
