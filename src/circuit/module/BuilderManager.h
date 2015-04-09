@@ -10,19 +10,20 @@
 
 #include "module/UnitModule.h"
 #include "task/builder/BuilderTask.h"
-
-#include "AIFloat3.h"
+#include "static/TerrainData.h"
 
 #include <map>
 #include <set>
 #include <vector>
 #include <unordered_set>
 
+namespace springai {
+	class AIFloat3;
+}
+
 namespace circuit {
 
 class CCircuitDef;
-struct STerrainMapMobileType;
-struct STerrainMapArea;
 
 class CBuilderManager: public IUnitModule {
 public:
@@ -42,13 +43,13 @@ public:
 	bool CanEnqueueTask();
 	const std::set<IBuilderTask*>& GetTasks(IBuilderTask::BuildType type);
 	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,
-							  springai::UnitDef* buildDef,
+							  CCircuitDef* buildDef,
 							  const springai::AIFloat3& position,
 							  IBuilderTask::BuildType type,
 							  float cost,
 							  int timeout = 0);
 	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,
-							  springai::UnitDef* buildDef,
+							  CCircuitDef* buildDef,
 							  const springai::AIFloat3& position,
 							  IBuilderTask::BuildType type,
 							  int timeout = 0);
@@ -66,7 +67,7 @@ public:
 								int timeout = 0);
 private:
 	IBuilderTask* AddTask(IBuilderTask::Priority priority,
-						  springai::UnitDef* buildDef,
+						  CCircuitDef* buildDef,
 						  const springai::AIFloat3& position,
 						  IBuilderTask::BuildType type,
 						  float cost,
@@ -74,7 +75,7 @@ private:
 	void DequeueTask(IBuilderTask* task, bool done = false);
 
 public:
-	bool IsBuilderInArea(springai::UnitDef* buildDef, const springai::AIFloat3& position);  // Check if build-area has proper builder
+	bool IsBuilderInArea(CCircuitDef* buildDef, const springai::AIFloat3& position);  // Check if build-area has proper builder
 
 	virtual void AssignTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
@@ -108,8 +109,8 @@ private:
 public:
 	void UpdateAreaUsers();
 private:
-	std::unordered_set<int> workerMobileTypes;
-	std::unordered_set<springai::UnitDef*> workerDefs;
+	std::unordered_set<STerrainMapMobileType::Id> workerMobileTypes;
+	std::unordered_set<CCircuitDef*> workerDefs;
 	std::map<const STerrainMapArea*, std::map<CCircuitDef*, int>> buildAreas;  // area <=> worker types
 };
 

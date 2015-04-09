@@ -12,7 +12,9 @@ namespace circuit {
 
 using namespace springai;
 
-CCircuitDef::CCircuitDef(std::unordered_set<springai::UnitDef*>& buildOpts) :
+CCircuitDef::CCircuitDef(springai::UnitDef* def, std::unordered_set<Id>& buildOpts) :
+		id(def->GetUnitDefId()),
+		def(def),
 		count(0),
 		buildOptions(buildOpts),
 		buildCounts(0),
@@ -24,19 +26,30 @@ CCircuitDef::CCircuitDef(std::unordered_set<springai::UnitDef*>& buildOpts) :
 CCircuitDef::~CCircuitDef()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	delete def;
 }
 
-const std::unordered_set<UnitDef*>& CCircuitDef::GetBuildOptions() const
+UnitDef* CCircuitDef::GetUnitDef() const
+{
+	return def;
+}
+
+const std::unordered_set<CCircuitDef::Id>& CCircuitDef::GetBuildOptions() const
 {
 	return buildOptions;
 }
 
-bool CCircuitDef::CanBuild(UnitDef* buildDef)
+bool CCircuitDef::CanBuild(Id buildDefId) const
 {
-	return (buildOptions.find(buildDef) != buildOptions.end());
+	return (buildOptions.find(buildDefId) != buildOptions.end());
 }
 
-int CCircuitDef::GetCount()
+bool CCircuitDef::CanBuild(CCircuitDef* buildDef) const
+{
+	return CanBuild(buildDef->GetId());
+}
+
+int CCircuitDef::GetCount() const
 {
 	return count;
 }
@@ -51,30 +64,35 @@ void CCircuitDef::Dec()
 	count--;
 }
 
-CCircuitDef& CCircuitDef::operator++ ()
+CCircuitDef& CCircuitDef::operator++()
 {
 	++count;
 	return *this;
 }
 
-CCircuitDef  CCircuitDef::operator++ (int)
+CCircuitDef CCircuitDef::operator++(int)
 {
 	CCircuitDef temp = *this;
 	count++;
 	return temp;
 }
 
-CCircuitDef& CCircuitDef::operator-- ()
+CCircuitDef& CCircuitDef::operator--()
 {
 	--count;
 	return *this;
 }
 
-CCircuitDef  CCircuitDef::operator-- (int)
+CCircuitDef CCircuitDef::operator--(int)
 {
 	CCircuitDef temp = *this;
 	count--;
 	return temp;
+}
+
+bool CCircuitDef::IsAvailable()
+{
+	return (def->GetMaxThisUnit() > count);
 }
 
 void CCircuitDef::IncBuild()
@@ -87,27 +105,27 @@ void CCircuitDef::DecBuild()
 	buildCounts--;
 }
 
-int CCircuitDef::GetBuildCount()
+int CCircuitDef::GetBuildCount() const
 {
 	return buildCounts;
 }
 
-void CCircuitDef::SetImmobileTypeId(int immobileId)
+void CCircuitDef::SetImmobileId(STerrainMapImmobileType::Id immobileId)
 {
 	immobileTypeId = immobileId;
 }
 
-int CCircuitDef::GetImmobileTypeId()
+STerrainMapImmobileType::Id CCircuitDef::GetImmobileId() const
 {
 	return immobileTypeId;
 }
 
-void CCircuitDef::SetMobileTypeId(int mobileId)
+void CCircuitDef::SetMobileId(STerrainMapMobileType::Id mobileId)
 {
 	mobileTypeId = mobileId;
 }
 
-int CCircuitDef::GetMobileTypeId()
+STerrainMapMobileType::Id CCircuitDef::GetMobileId() const
 {
 	return mobileTypeId;
 }

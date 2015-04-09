@@ -7,7 +7,6 @@
 
 #include "task/builder/PatrolTask.h"
 #include "task/TaskManager.h"
-#include "unit/CircuitUnit.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"

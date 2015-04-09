@@ -6,16 +6,12 @@
  */
 
 #include "unit/AllyTeam.h"
-#include "unit/CircuitUnit.h"
-#include "unit/CircuitDef.h"
 #include "static/GameAttribute.h"
-#include "static/TerrainData.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
 #include "AIFloat3.h"
 #include "OOAICallback.h"
-#include "UnitDef.h"
 
 namespace circuit {
 
@@ -27,7 +23,7 @@ bool CAllyTeam::SBox::ContainsPoint(const AIFloat3& point) const
 		   (point.z >= top) && (point.z <= bottom);
 }
 
-CAllyTeam::CAllyTeam(const std::vector<int>& tids, const SBox& sb) :
+CAllyTeam::CAllyTeam(const std::vector<Id>& tids, const SBox& sb) :
 		teamIds(tids),
 		startBox(sb),
 		lastUpdate(-1),
@@ -73,27 +69,21 @@ void CAllyTeam::UpdateUnits(int frame, springai::OOAICallback* callback)
 		}
 		int unitId = u->GetUnitId();
 		UnitDef* unitDef = u->GetDef();
-		UnitDef* def = defsById[unitDef->GetUnitDefId()];
-		CCircuitUnit* unit = new CCircuitUnit(u, def, circuitDefs[def]);
+		CCircuitUnit* unit = new CCircuitUnit(u, defsById[unitDef->GetUnitDefId()]);
 		delete unitDef;
 		friendlyUnits[unitId] = unit;
 	}
 	lastUpdate = frame;
 }
 
-CAllyTeam::UnitDefs* CAllyTeam::GetDefsByName()
+CAllyTeam::NCircuitDefs* CAllyTeam::GetDefsByName()
 {
 	return &defsByName;
 }
 
-CAllyTeam::IdUnitDefs* CAllyTeam::GetDefsById()
+CAllyTeam::CircuitDefs* CAllyTeam::GetDefsById()
 {
 	return &defsById;
-}
-
-CAllyTeam::CircuitDefs* CAllyTeam::GetCircuitDefs()
-{
-	return &circuitDefs;
 }
 
 void CAllyTeam::Init(CCircuitAI* circuit)
@@ -102,35 +92,27 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 		return;
 	}
 
-	const std::vector<UnitDef*>& unitDefs = circuit->GetCallback()->GetUnitDefs();
-	for (auto def : unitDefs) {
-		defsByName[def->GetName()] = def;
-		defsById[def->GetUnitDefId()] = def;
-	}
-
 	CTerrainData& terrainData = circuit->GetGameAttribute()->GetTerrainData();
-	if (!terrainData.IsInitialized()) {
-		terrainData.Init(circuit);
-	}
-	for (auto& kv : defsById) {
-		std::vector<UnitDef*> options = kv.second->GetBuildOptions();
-		std::unordered_set<UnitDef*> opts;
+	const std::vector<UnitDef*>& unitDefs = circuit->GetCallback()->GetUnitDefs();
+	for (auto ud : unitDefs) {
+		auto options = std::move(ud->GetBuildOptions());
+		std::unordered_set<CCircuitDef::Id> opts;
 		for (auto buildDef : options) {
-			// if it breaks with defsById[] then something really wrong is going on
-			opts.insert(defsById[buildDef->GetUnitDefId()]);
+			opts.insert(buildDef->GetUnitDefId());
+			delete buildDef;
 		}
-		UnitDef* ud = kv.second;
-		CCircuitDef* cdef = new CCircuitDef(opts);
-		circuitDefs[ud] = cdef;
-		utils::free_clear(options);
+		CCircuitDef* cdef = new CCircuitDef(ud, opts);
 
 		if (ud->IsAbleToFly()) {
 		} else if (ud->GetSpeed() == 0 ) {  // for immobile units
-			cdef->SetImmobileTypeId(terrainData.udImmobileType[ud->GetUnitDefId()]);
+			cdef->SetImmobileId(terrainData.udImmobileType[cdef->GetId()]);
 			// TODO: SetMobileType for factories (like RAI does)
 		} else {  // for mobile units
-			cdef->SetMobileTypeId(terrainData.udMobileType[ud->GetUnitDefId()]);
+			cdef->SetMobileId(terrainData.udMobileType[cdef->GetId()]);
 		}
+
+		defsByName[ud->GetName()] = cdef;
+		defsById[cdef->GetId()] = cdef;
 	}
 }
 
@@ -150,16 +132,11 @@ void CAllyTeam::Release()
 	}
 	enemyUnits.clear();
 
-	for (auto& kv : circuitDefs) {
+	for (auto& kv : defsById) {
 		delete kv.second;
 	}
-	circuitDefs.clear();
-
-	for (auto& kv : defsByName) {
-		delete kv.second;
-	}
-	defsByName.clear();
 	defsById.clear();
+	defsByName.clear();
 }
 
 } // namespace circuit

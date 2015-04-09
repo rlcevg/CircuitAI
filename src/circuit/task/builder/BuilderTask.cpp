@@ -13,14 +13,11 @@
 #include "resource/MetalManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
-#include "unit/CircuitUnit.h"
-#include "unit/CircuitDef.h"
 #include "unit/action/UnitAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
 #include "AISCommands.h"
-#include "UnitDef.h"
 #include "Map.h"
 
 namespace circuit {
@@ -28,7 +25,7 @@ namespace circuit {
 using namespace springai;
 
 IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
-		UnitDef* buildDef, const AIFloat3& position,
+		CCircuitDef* buildDef, const AIFloat3& position,
 		BuildType type, float cost, int timeout) :
 				IUnitTask(mgr, priority, Type::BUILDER),
 				buildDef(buildDef),
@@ -58,14 +55,14 @@ void IBuilderTask::AssignTo(CCircuitUnit* unit)
 {
 	IUnitTask::AssignTo(unit);
 
-	buildPower += unit->GetDef()->GetBuildSpeed();
+	buildPower += unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
 }
 
 void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IUnitTask::RemoveAssignee(unit);
 
-	buildPower -= unit->GetDef()->GetBuildSpeed();
+	buildPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
 }
 
 void IBuilderTask::Execute(CCircuitUnit* unit)
@@ -78,19 +75,20 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 
 	if (target != nullptr) {
 		Unit* tu = target->GetUnit();
-		u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->Build(target->GetCircuitDef()->GetUnitDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 		return;
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
+	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (buildPos != -RgtVector) {
-		if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
-			u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
+			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			return;
 		} else {
 			CTerrainManager* terrain = circuit->GetTerrainManager();
 			terrain->RemoveBlocker(buildDef, buildPos, facing);
 			// FIXME: If enemy blocked position then no need for reset
-			terrain->ResetBuildFrame();
+//			terrain->ResetBuildFrame();
 		}
 	}
 
@@ -105,10 +103,11 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		for (auto& kv : allies) {
 			CCircuitUnit* alu = kv.second;
 			Unit* au = alu->GetUnit();
-			if ((alu->GetDef() == buildDef) && au->IsBeingBuilt()) {
+			// NOTE: Comparing pointers instead of instances as CircuitDef is from same allyTeam
+			if ((alu->GetCircuitDef() == buildDef) && au->IsBeingBuilt()) {
 				const AIFloat3& pos = au->GetPos();
 				if ((position.SqDistance2D(pos) < sqDist) && terrain->CanBuildAt(unit, pos)) {
-					u->Build(buildDef, pos, au->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+					u->Build(buildUDef, pos, au->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					return;
 				}
 			}
@@ -128,7 +127,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 
 	if (buildPos != -RgtVector) {
 		circuit->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);
-		u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	} else {
 		// TODO: Select new proper BasePos, like near metal cluster.
 		int terWidth = terrain->GetTerrainWidth();
@@ -205,7 +204,7 @@ const AIFloat3& IBuilderTask::GetTaskPos() const
 	return position;
 }
 
-UnitDef* IBuilderTask::GetBuildDef() const
+CCircuitDef* IBuilderTask::GetBuildDef() const
 {
 	return buildDef;
 }
@@ -271,7 +270,7 @@ int IBuilderTask::GetFacing() const
 	return facing;
 }
 
-int IBuilderTask::FindFacing(springai::UnitDef* buildDef, const springai::AIFloat3& position)
+int IBuilderTask::FindFacing(CCircuitDef* buildDef, const springai::AIFloat3& position)
 {
 	int facing = UNIT_COMMAND_BUILD_NO_FACING;
 	CTerrainManager* terrain = manager->GetCircuit()->GetTerrainManager();

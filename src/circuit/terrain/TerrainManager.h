@@ -9,16 +9,13 @@
 #define SRC_CIRCUIT_TERRAIN_TERRAINMANAGER_H_
 
 #include "terrain/BlockingMap.h"
+#include "unit/CircuitDef.h"
 
 #include "AIFloat3.h"
 
 #include <unordered_map>
 #include <set>
 #include <functional>
-
-namespace springai {
-	class UnitDef;
-}
 
 namespace circuit {
 
@@ -51,17 +48,17 @@ private:
 	int terrainHeight;
 
 public:
-	void AddBlocker(springai::UnitDef* unitDef, const springai::AIFloat3& pos, int facing);
-	void RemoveBlocker(springai::UnitDef* unitDef, const springai::AIFloat3& pos, int facing);
+	void AddBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing);
+	void RemoveBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing);
 	void ResetBuildFrame();
 	// TODO: Use IsInBounds test and Bound operation only if mask or search offsets (endr) are out of bounds
 	// TODO: Based on map complexity use A* or circle to calculate build offset
 	// TODO: Consider abstract task position (any area with builder) and task for certain unit-pos-area
-	springai::AIFloat3 FindBuildSite(springai::UnitDef* unitDef,
+	springai::AIFloat3 FindBuildSite(CCircuitDef* cdef,
 									 const springai::AIFloat3& pos,
 									 float searchRadius,
 									 int facing);
-	springai::AIFloat3 FindBuildSite(springai::UnitDef* unitDef,
+	springai::AIFloat3 FindBuildSite(CCircuitDef* cdef,
 									 const springai::AIFloat3& pos,
 									 float searchRadius,
 									 int facing,
@@ -70,7 +67,7 @@ private:
 	int cacheBuildFrame;
 	struct Structure {
 		int unitId;
-		springai::UnitDef* def;
+		CCircuitDef* cdef;
 		springai::AIFloat3 pos;
 		int facing;
 	};
@@ -95,19 +92,19 @@ private:
 	using SearchOffsetsLow = std::vector<SearchOffsetLow>;
 	static const SearchOffsets& GetSearchOffsetTable(int radius);
 	static const SearchOffsetsLow& GetSearchOffsetTableLow(int radius);
-	springai::AIFloat3 FindBuildSiteLow(springai::UnitDef* unitDef,
+	springai::AIFloat3 FindBuildSiteLow(CCircuitDef* cdef,
 										const springai::AIFloat3& pos,
 										float searchRadius,
 										int facing,
 										TerrainPredicate& predicate);
-	springai::AIFloat3 FindBuildSiteByMask(springai::UnitDef* unitDef,
+	springai::AIFloat3 FindBuildSiteByMask(CCircuitDef* cdef,
 										   const springai::AIFloat3& pos,
 										   float searchRadius,
 										   int facing,
 										   IBlockMask* mask,
 										   TerrainPredicate& predicate);
 	// NOTE: Low-resolution build site is 40-80% faster on fail and 20-50% faster on success (with large objects). But has lower precision.
-	springai::AIFloat3 FindBuildSiteByMaskLow(springai::UnitDef* unitDef,
+	springai::AIFloat3 FindBuildSiteByMaskLow(CCircuitDef* cdef,
 											  const springai::AIFloat3& pos,
 											  float searchRadius,
 											  int facing,
@@ -116,7 +113,7 @@ private:
 
 	// TODO: Move into CAllyTeam: saves memory, better cooperation (within 1 host). But what if allies doesn't share los or anything?
 	SBlockingMap blockingMap;
-	std::unordered_map<springai::UnitDef*, IBlockMask*> blockInfos;  // owner
+	std::unordered_map<CCircuitDef::Id, IBlockMask*> blockInfos;  // owner
 	void MarkBlockerByMask(const Structure& building, bool block, IBlockMask* mask);
 	void MarkBlocker(const Structure& building, bool block);
 
@@ -134,12 +131,12 @@ private:
 	const STerrainMapSector& GetSector(int sIndex) const;
 	int GetConvertStoP() const;
 public:
-	STerrainMapMobileType* GetMobileType(int unitDefId) const;
-	int GetMobileTypeId(int unitDefId) const;
-	STerrainMapMobileType* GetMobileTypeById(int id) const;
-	STerrainMapImmobileType* GetImmobileType(int unitDefId) const;
-	int GetImmobileTypeId(int unitDefId) const;
-	STerrainMapImmobileType* GetImmobileTypeById(int id) const;
+	STerrainMapMobileType* GetMobileType(CCircuitDef::Id unitDefId) const;
+	STerrainMapMobileType::Id GetMobileTypeId(CCircuitDef::Id unitDefId) const;
+	STerrainMapMobileType* GetMobileTypeById(STerrainMapMobileType::Id id) const;
+	STerrainMapImmobileType* GetImmobileType(CCircuitDef::Id unitDefId) const;
+	STerrainMapImmobileType::Id GetImmobileTypeId(CCircuitDef::Id unitDefId) const;
+	STerrainMapImmobileType* GetImmobileTypeById(STerrainMapImmobileType::Id id) const;
 
 	// position must be valid
 	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position, const float& range = .0);  // NOTE: returns false if the area was too small to be recorded

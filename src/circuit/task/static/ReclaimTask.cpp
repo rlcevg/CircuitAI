@@ -13,7 +13,6 @@
 #include "util/utils.h"
 
 #include "OOAICallback.h"
-#include "Unit.h"
 
 namespace circuit {
 

@@ -9,7 +9,6 @@
 #include "module/EconomyManager.h"
 #include "resource/MetalManager.h"
 #include "setup/SetupManager.h"
-#include "static/TerrainData.h"
 #include "terrain/TerrainManager.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
@@ -27,14 +26,12 @@
 #include "task/builder/RepairTask.h"
 #include "task/builder/ReclaimTask.h"
 #include "task/builder/PatrolTask.h"
-#include "unit/CircuitUnit.h"
-#include "unit/CircuitDef.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
+#include "AIFloat3.h"
 #include "AISCommands.h"
-#include "UnitDef.h"
 #include "Pathing.h"
 #include "MoveData.h"
 #include "UnitRulesParam.h"
@@ -69,7 +66,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		idleTask->AssignTo(unit);
 		++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 
-		builderPower += unit->GetDef()->GetBuildSpeed();
+		builderPower += unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
 		workers.insert(unit);
 
 		AddBuildList(unit);
@@ -93,7 +90,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		}
 		--buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 
-		builderPower -= unit->GetDef()->GetBuildSpeed();
+		builderPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
 		workers.erase(unit);
 
 		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
@@ -107,16 +104,17 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	 */
 	auto buildingDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 		Unit* u = unit->GetUnit();
-		this->circuit->GetTerrainManager()->RemoveBlocker(unit->GetDef(), u->GetPos(), u->GetBuildingFacing());
+		this->circuit->GetTerrainManager()->RemoveBlocker(unit->GetCircuitDef(), u->GetPos(), u->GetBuildingFacing());
 	};
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CAllyTeam::UnitDefs& defs = circuit->GetUnitDefs();
+	CAllyTeam::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
-		UnitDef* def = kv.second;
+		CCircuitDef* cdef = kv.second;
+		UnitDef* def = cdef->GetUnitDef();
 		if (def->GetSpeed() > 0) {
-			if (def->IsBuilder() && !circuit->GetCircuitDef(def)->GetBuildOptions().empty()) {
-				int unitDefId = def->GetUnitDefId();
+			if (def->IsBuilder() && !cdef->GetBuildOptions().empty()) {
+				int unitDefId = kv.first;
 				finishedHandler[unitDefId] = workerFinishedHandler;
 				idleHandler[unitDefId] = workerIdleHandler;
 				damagedHandler[unitDefId] = workerDamagedHandler;
@@ -126,20 +124,20 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 				if (mtId >= 0) {  // not air
 					workerMobileTypes.insert(mtId);
 				}
-				workerDefs.insert(def);
+				workerDefs.insert(cdef);
 			}
 		} else {
-			destroyedHandler[def->GetUnitDefId()] = buildingDestroyedHandler;
+			destroyedHandler[kv.first] = buildingDestroyedHandler;
 		}
 	}
 
 	// Forbid from removing cormex blocker
-	int unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetUnitDefId();
+	int unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 		this->circuit->GetMetalManager()->SetOpenSpot(unit->GetUnit()->GetPos(), true);
 		const AIFloat3& pos = unit->GetUnit()->GetPos();
-		if (IsBuilderInArea(unit->GetDef(), pos)) {
-			EnqueueTask(IBuilderTask::Priority::HIGH, unit->GetDef(), pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
+		if (IsBuilderInArea(unit->GetCircuitDef(), pos)) {
+			EnqueueTask(IBuilderTask::Priority::HIGH, unit->GetCircuitDef(), pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
 		}
 	};
 
@@ -181,7 +179,7 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 			taskB->SetTarget(unit);
 			unfinishedUnits[unit] = taskB;
 
-			UnitDef* buildDef = unit->GetDef();
+			UnitDef* buildDef = unit->GetCircuitDef()->GetUnitDef();
 			int facing = taskB->GetFacing();  // or use unit->GetUnit()->GetBuildingFacing() ?
 			const AIFloat3& pos = taskB->GetBuildPos();
 			for (auto ass : taskB->GetAssignees()) {
@@ -202,7 +200,7 @@ int CBuilderManager::UnitFinished(CCircuitUnit* unit)
 		DoneTask(iter->second);
 	}
 
-	auto search = finishedHandler.find(unit->GetDef()->GetUnitDefId());
+	auto search = finishedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != finishedHandler.end()) {
 		search->second(unit);
 	}
@@ -212,7 +210,7 @@ int CBuilderManager::UnitFinished(CCircuitUnit* unit)
 
 int CBuilderManager::UnitIdle(CCircuitUnit* unit)
 {
-	auto search = idleHandler.find(unit->GetDef()->GetUnitDefId());
+	auto search = idleHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != idleHandler.end()) {
 		search->second(unit);
 	}
@@ -222,7 +220,7 @@ int CBuilderManager::UnitIdle(CCircuitUnit* unit)
 
 int CBuilderManager::UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
-	auto search = damagedHandler.find(unit->GetDef()->GetUnitDefId());
+	auto search = damagedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != damagedHandler.end()) {
 		search->second(unit, attacker);
 	}
@@ -239,7 +237,7 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 		}
 	}
 
-	auto search = destroyedHandler.find(unit->GetDef()->GetUnitDefId());
+	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != destroyedHandler.end()) {
 		search->second(unit, attacker);
 	}
@@ -249,16 +247,17 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 
 void CBuilderManager::AddBuildList(CCircuitUnit* unit)
 {
-	CCircuitDef* cdef = unit->GetCircuitDef();
-	if (cdef->GetCount() > 1) {
+	CCircuitDef* cDef = unit->GetCircuitDef();
+	if (cDef->GetCount() > 1) {
 		return;
 	}
 
-	const std::unordered_set<UnitDef*>& buildOptions = cdef->GetBuildOptions();
-	std::set<UnitDef*> buildDefs;
+	const std::unordered_set<CCircuitDef::Id>& buildOptions = cDef->GetBuildOptions();
+	std::set<CCircuitDef*> buildDefs;
 	for (auto build : buildOptions) {
-		buildDefs.insert(build);
-		circuit->GetCircuitDef(build)->IncBuild();
+		CCircuitDef* cdef = circuit->GetCircuitDef(build);
+		buildDefs.insert(cdef);
+		cdef->IncBuild();
 	}
 
 	circuit->GetEconomyManager()->AddAvailEnergy(buildDefs);
@@ -268,19 +267,18 @@ void CBuilderManager::AddBuildList(CCircuitUnit* unit)
 
 void CBuilderManager::RemoveBuildList(CCircuitUnit* unit)
 {
-	CCircuitDef* cdef = unit->GetCircuitDef();
-	if (cdef->GetCount() > 1) {
+	CCircuitDef* cDef = unit->GetCircuitDef();
+	if (cDef->GetCount() > 1) {
 		return;
 	}
 
-	const std::unordered_set<UnitDef*>& buildOptions = cdef->GetBuildOptions();
-	std::set<UnitDef*> buildDefs;
+	const std::unordered_set<CCircuitDef::Id>& buildOptions = cDef->GetBuildOptions();
+	std::set<CCircuitDef*> buildDefs;
 	for (auto build : buildOptions) {
-		buildDefs.insert(build);
 		CCircuitDef* cdef = circuit->GetCircuitDef(build);
 		cdef->DecBuild();
-		if (cdef->GetCount() == 0) {
-			buildDefs.insert(build);
+		if (cdef->GetBuildCount() == 0) {
+			buildDefs.insert(cdef);
 		}
 	}
 
@@ -306,7 +304,7 @@ const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType
 }
 
 IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
-										   UnitDef* buildDef,
+										   CCircuitDef* buildDef,
 										   const AIFloat3& position,
 										   IBuilderTask::BuildType type,
 										   float cost,
@@ -316,12 +314,12 @@ IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 }
 
 IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
-										   UnitDef* buildDef,
+										   CCircuitDef* buildDef,
 										   const AIFloat3& position,
 										   IBuilderTask::BuildType type,
 										   int timeout)
 {
-	float cost = buildDef->GetCost(circuit->GetEconomyManager()->GetMetalRes());
+	float cost = buildDef->GetUnitDef()->GetCost(circuit->GetEconomyManager()->GetMetalRes());
 	return AddTask(priority, buildDef, position, type, cost, timeout);
 }
 
@@ -359,7 +357,7 @@ IBuilderTask* CBuilderManager::EnqueueRepair(IBuilderTask::Priority priority,
 }
 
 IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
-									   springai::UnitDef* buildDef,
+									   CCircuitDef* buildDef,
 									   const springai::AIFloat3& position,
 									   IBuilderTask::BuildType type,
 									   float cost,
@@ -411,7 +409,7 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 		}
 		case IBuilderTask::BuildType::TERRAFORM: {
 			// TODO: Re-evalute params
-			task = new CBTerraformTask(this, priority, buildDef, position, cost, timeout);
+			task = new CBTerraformTask(this, priority, position, cost, timeout);
 			break;
 		}
 	}
@@ -435,11 +433,12 @@ void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
 	}
 }
 
-bool CBuilderManager::IsBuilderInArea(UnitDef* buildDef, const AIFloat3& position)
+bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& position)
 {
+	CCircuitDef::Id buildDefId = buildDef->GetId();
 	// check air first
 	for (auto& kv : buildAreas[nullptr]) {
-		if ((kv.second > 0) && kv.first->CanBuild(buildDef)) {
+		if ((kv.second > 0) && kv.first->CanBuild(buildDefId)) {
 			return true;
 		}
 	}
@@ -450,7 +449,7 @@ bool CBuilderManager::IsBuilderInArea(UnitDef* buildDef, const AIFloat3& positio
 		STerrainMapArea* area = terrainManager->GetMobileTypeById(mtId)->sector[iS].area;
 		if (area != nullptr) {
 			for (auto& kv : buildAreas[area]) {
-				if ((kv.second > 0) && kv.first->CanBuild(buildDef)) {
+				if ((kv.second > 0) && kv.first->CanBuild(buildDefId)) {
 					return true;
 				}
 			}
@@ -465,7 +464,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	Unit* u = unit->GetUnit();
 	const AIFloat3& pos = u->GetPos();
 	float maxSpeed = u->GetMaxSpeed();
-	UnitDef* unitDef = unit->GetDef();
+	UnitDef* unitDef = unit->GetCircuitDef()->GetUnitDef();
 	float buildDistance = unitDef->GetBuildDistance();
 	MoveData* moveData = unitDef->GetMoveData();
 	int pathType = moveData->GetPathType();
@@ -493,7 +492,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 				}
 
 				// FIXME: GetApproximateLength to position occupied by building or feature will return 0.
-				UnitDef* buildDef = target->GetDef();
+				UnitDef* buildDef = target->GetCircuitDef()->GetUnitDef();
 				int xsize = buildDef->GetXSize();
 				int zsize = buildDef->GetZSize();
 				AIFloat3 offset = (pos - bp).Normalize2D() * (sqrtf(xsize * xsize + zsize * zsize) * SQUARE_SIZE + buildDistance);
@@ -582,7 +581,7 @@ void CBuilderManager::Init()
 			UnitRulesParam* param = u->GetUnitRulesParamByName("facplop");
 			if (param != nullptr) {
 				if (param->GetValueFloat() == 1) {
-					EnqueueTask(IUnitTask::Priority::HIGH, circuit->GetUnitDefByName("factorycloak"), pos, IBuilderTask::BuildType::FACTORY);
+					EnqueueTask(IUnitTask::Priority::HIGH, circuit->GetCircuitDef("factorycloak"), pos, IBuilderTask::BuildType::FACTORY);
 				}
 				delete param;
 			}
@@ -658,7 +657,7 @@ void CBuilderManager::Watchdog()
 		CCircuitUnit* unit = kv.second;
 		Unit* u = unit->GetUnit();
 		if (u->IsBeingBuilt() && (u->GetMaxSpeed() <= 0) && (unfinishedUnits.find(unit) == unfinishedUnits.end()) &&
-			(unit->GetDef()->GetCost(metalRes) < maxCost))
+			(unit->GetCircuitDef()->GetUnitDef()->GetCost(metalRes) < maxCost))
 		{
 			unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
 		}
@@ -711,7 +710,7 @@ void CBuilderManager::UpdateAreaUsers()
 
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
-		if (workerDefs.find(unit->GetDef()) != workerDefs.end()) {
+		if (workerDefs.find(unit->GetCircuitDef()) != workerDefs.end()) {
 			++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 		}
 	}
@@ -720,8 +719,8 @@ void CBuilderManager::UpdateAreaUsers()
 	for (auto& tasks : builderTasks) {
 		for (auto task : tasks) {
 			// FIXME: Do not remove tasks if there is builder around, able to build it (even in another area)
-			UnitDef* def = task->GetBuildDef();
-			if ((def != nullptr) && !IsBuilderInArea(def, task->GetPosition())) {
+			CCircuitDef* cdef = task->GetBuildDef();
+			if ((cdef != nullptr) && !IsBuilderInArea(cdef, task->GetPosition())) {
 				removeTasks.insert(task);
 			}
 		}

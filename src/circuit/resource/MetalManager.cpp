@@ -14,7 +14,6 @@
 
 #include "Game.h"
 #include "GameRulesParam.h"
-#include "UnitDef.h"
 
 namespace circuit {
 
@@ -129,7 +128,7 @@ void CMetalManager::ClusterizeMetal()
 	metalData->SetClusterizing(true);
 
 	// prepare parameters
-	UnitDef* def = circuit->GetUnitDefByName("armestor");
+	UnitDef* def = circuit->GetCircuitDef("armestor")->GetUnitDef();
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto search = customParams.find("pylonrange");
 	float radius = (search != customParams.end()) ? utils::string_to_float(search->second) : 500;

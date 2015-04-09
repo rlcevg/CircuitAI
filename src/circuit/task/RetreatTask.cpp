@@ -7,7 +7,6 @@
 
 #include "task/RetreatTask.h"
 #include "task/TaskManager.h"
-#include "unit/CircuitUnit.h"
 #include "module/FactoryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
@@ -16,7 +15,6 @@
 
 #include "AISCommands.h"
 #include "AIFloat3.h"
-#include "UnitDef.h"
 
 namespace circuit {
 
@@ -60,7 +58,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 	float maxDist;
 	if (haven != nullptr) {
 		pos = haven->GetUnit()->GetPos();
-		maxDist = haven->GetDef()->GetBuildDistance() * 0.5;
+		maxDist = haven->GetCircuitDef()->GetUnitDef()->GetBuildDistance() * 0.5;
 	} else {
 		pos = circuit->GetSetupManager()->GetStartPos();
 		maxDist = 200;

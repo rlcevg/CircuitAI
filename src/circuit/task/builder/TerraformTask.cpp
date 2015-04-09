@@ -13,9 +13,9 @@ namespace circuit {
 using namespace springai;
 
 CBTerraformTask::CBTerraformTask(ITaskManager* mgr, Priority priority,
-								 UnitDef* buildDef, const AIFloat3& position,
+								 const AIFloat3& position,
 								 float cost, int timeout) :
-		IBuilderTask(mgr, priority, buildDef, position, BuildType::TERRAFORM, cost, timeout)
+		IBuilderTask(mgr, priority, nullptr, position, BuildType::TERRAFORM, cost, timeout)
 {
 }
 

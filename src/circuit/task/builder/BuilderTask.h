@@ -14,11 +14,9 @@
 #define MAX_BUILD_SEC	120
 #define MAX_TRAVEL_SEC	180
 
-namespace springai {
-	class UnitDef;
-}
-
 namespace circuit {
+
+class CCircuitDef;
 
 class IBuilderTask: public IUnitTask {
 public:
@@ -39,7 +37,7 @@ public:
 
 protected:
 	IBuilderTask(ITaskManager* mgr, Priority priority,
-				 springai::UnitDef* buildDef, const springai::AIFloat3& position,
+				 CCircuitDef* buildDef, const springai::AIFloat3& position,
 				 BuildType type, float cost, int timeout = 0);
 public:
 	virtual ~IBuilderTask();
@@ -59,7 +57,7 @@ public:
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
 	const springai::AIFloat3& GetTaskPos() const;
-	springai::UnitDef* GetBuildDef() const;
+	CCircuitDef* GetBuildDef() const;
 
 	BuildType GetBuildType() const;
 	float GetBuildPower() const;
@@ -77,16 +75,16 @@ public:
 	int GetFacing() const;
 
 protected:
-	int FindFacing(springai::UnitDef* buildDef, const springai::AIFloat3& position);
+	int FindFacing(CCircuitDef* buildDef, const springai::AIFloat3& position);
 
 	springai::AIFloat3 position;
-	springai::UnitDef* buildDef;
+	CCircuitDef* buildDef;
 
 	BuildType buildType;
 	float buildPower;
 	float cost;
 	int timeout;  // TODO: re-evaluate need of this
-	CCircuitUnit* target;
+	CCircuitUnit* target;  // FIXME: Replace target with unitId
 	springai::AIFloat3 buildPos;
 	int facing;
 

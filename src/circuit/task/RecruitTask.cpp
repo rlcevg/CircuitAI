@@ -7,6 +7,7 @@
 
 #include "task/RecruitTask.h"
 #include "unit/CircuitUnit.h"
+#include "unit/CircuitDef.h"
 #include "util/utils.h"
 
 #include "AISCommands.h"
@@ -16,7 +17,7 @@ namespace circuit {
 using namespace springai;
 
 CRecruitTask::CRecruitTask(ITaskManager* mgr, Priority priority,
-		UnitDef* buildDef, const AIFloat3& position,
+		CCircuitDef* buildDef, const AIFloat3& position,
 		BuildType type, float radius) :
 				IUnitTask(mgr, priority, Type::FACTORY),
 				buildDef(buildDef),
@@ -41,12 +42,9 @@ bool CRecruitTask::CanAssignTo(CCircuitUnit* unit)
 
 void CRecruitTask::Execute(CCircuitUnit* unit)
 {
-	CRecruitTask* task = static_cast<CRecruitTask*>(unit->GetTask());
 	Unit* u = unit->GetUnit();
 	const AIFloat3& buildPos = u->GetPos();
-
-	UnitDef* buildDef = task->GetBuildDef();
-	u->Build(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING);
+	u->Build(buildDef->GetUnitDef(), buildPos, UNIT_COMMAND_BUILD_NO_FACING);
 }
 
 void CRecruitTask::Update()
@@ -74,7 +72,7 @@ const AIFloat3& CRecruitTask::GetTaskPos() const
 	return position;
 }
 
-UnitDef* CRecruitTask::GetBuildDef() const
+CCircuitDef* CRecruitTask::GetBuildDef() const
 {
 	return buildDef;
 }

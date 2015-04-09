@@ -20,8 +20,6 @@
 namespace springai {
 	class Resource;
 	class Economy;
-	class AIFloat3;
-	class UnitDef;
 }
 
 namespace circuit {
@@ -29,6 +27,7 @@ namespace circuit {
 class IBuilderTask;
 class CRecruitTask;
 class CLagrangeInterPol;
+class CCircuitDef;
 
 class CEconomyManager: public IModule {
 public:
@@ -44,10 +43,10 @@ public:
 	IBuilderTask* CreateAssistTask(CCircuitUnit* unit);
 	springai::Resource* GetMetalRes() const;
 	springai::Resource* GetEnergyRes() const;
-	springai::UnitDef* GetMexDef() const;
+	CCircuitDef* GetMexDef() const;
 	springai::AIFloat3 FindBuildPos(CCircuitUnit* unit);
-	void AddAvailEnergy(const std::set<springai::UnitDef*>& buildDefs);  // add available energy defs
-	void RemoveAvailEnergy(const std::set<springai::UnitDef*>& buildDefs);
+	void AddAvailEnergy(const std::set<CCircuitDef*>& buildDefs);  // add available energy defs
+	void RemoveAvailEnergy(const std::set<CCircuitDef*>& buildDefs);
 
 	void UpdateResourceIncome();
 	float GetAvgMetalIncome() const;
@@ -82,11 +81,11 @@ private:
 	float pylonRange;
 	int pylonCount, pylonMaxCount;
 
-	springai::UnitDef* mexDef;
-	std::set<springai::UnitDef*> allEnergyDefs;
-	std::set<springai::UnitDef*> availEnergyDefs;
+	CCircuitDef* mexDef;
+	std::set<CCircuitDef*> allEnergyDefs;
+	std::set<CCircuitDef*> availEnergyDefs;
 	using SEnergyInfo = struct {
-		springai::UnitDef* def;
+		CCircuitDef* cdef;
 		float cost;
 		float costDivMake;
 		int limit;

@@ -9,12 +9,10 @@
 #include "task/TaskManager.h"
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
-#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
 #include "AISCommands.h"
-#include "UnitDef.h"
 #include "Map.h"
 
 namespace circuit {
@@ -22,7 +20,7 @@ namespace circuit {
 using namespace springai;
 
 CBNanoTask::CBNanoTask(ITaskManager* mgr, Priority priority,
-					   UnitDef* buildDef, const AIFloat3& position,
+					   CCircuitDef* buildDef, const AIFloat3& position,
 					   float cost, int timeout) :
 		IBuilderTask(mgr, priority, buildDef, position, BuildType::NANO, cost, timeout)
 {
@@ -43,14 +41,15 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 
 	if (target != nullptr) {
 		Unit* tu = target->GetUnit();
-		u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->Build(target->GetCircuitDef()->GetUnitDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 		return;
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
+	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (buildPos != -RgtVector) {
 		facing = FindFacing(buildDef, buildPos);
-		if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
-			u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
+			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			return;
 		} else {
 			circuit->GetTerrainManager()->RemoveBlocker(buildDef, buildPos, facing);
@@ -65,13 +64,13 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 	CTerrainManager::TerrainPredicate predicate = [terrain, unit](const AIFloat3& p) {
 		return terrain->CanBuildAt(unit, p);
 	};
-	float searchRadius = buildDef->GetBuildDistance();
+	float searchRadius = buildUDef->GetBuildDistance();
 	facing = FindFacing(buildDef, pos);
 	buildPos = terrain->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
 
 	if (buildPos != -RgtVector) {
 		circuit->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);
-		u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	} else {
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);

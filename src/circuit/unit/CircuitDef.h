@@ -8,49 +8,68 @@
 #ifndef SRC_CIRCUIT_UNIT_CIRCUITDEF_H_
 #define SRC_CIRCUIT_UNIT_CIRCUITDEF_H_
 
-#include <unordered_set>
+#include "static/TerrainData.h"
 
-namespace springai {
-	class UnitDef;
-}
+#include "UnitDef.h"
+
+#include <unordered_set>
 
 namespace circuit {
 
 class CCircuitDef {
 public:
-	CCircuitDef(std::unordered_set<springai::UnitDef*>& buildOpts);
+	using Id = int;
+
+	CCircuitDef(springai::UnitDef* def, std::unordered_set<Id>& buildOpts);
 	virtual ~CCircuitDef();
 
-	const std::unordered_set<springai::UnitDef*>& GetBuildOptions() const;
-	bool CanBuild(springai::UnitDef* buildDef);
-	int GetCount();
+	Id GetId() const;
+	springai::UnitDef* GetUnitDef() const;
+	const std::unordered_set<Id>& GetBuildOptions() const;
+	bool CanBuild(Id buildDefId) const;
+	bool CanBuild(CCircuitDef* buildDef) const;
+	int GetCount() const;
 
 	void Inc();
 	void Dec();
 
-	CCircuitDef& operator++ ();     // prefix  (++C): no parameter, returns a reference
-	CCircuitDef  operator++ (int);  // postfix (C++): dummy parameter, returns a value
-	CCircuitDef& operator-- ();     // prefix  (++C): no parameter, returns a reference
-	CCircuitDef  operator-- (int);  // postfix (C++): dummy parameter, returns a value
+	CCircuitDef& operator++();     // prefix  (++C): no parameter, returns a reference
+	CCircuitDef  operator++(int);  // postfix (C++): dummy parameter, returns a value
+	CCircuitDef& operator--();     // prefix  (++C): no parameter, returns a reference
+	CCircuitDef  operator--(int);  // postfix (C++): dummy parameter, returns a value
+	inline bool operator==(const CCircuitDef& rhs);
+	inline bool operator!=(const CCircuitDef& rhs);
 
+	bool IsAvailable();
 	void IncBuild();
 	void DecBuild();
-	int GetBuildCount();
+	int GetBuildCount() const;
 
-	void SetImmobileTypeId(int immobileId);
-	int GetImmobileTypeId();
-	void SetMobileTypeId(int mobileId);
-	int GetMobileTypeId();
+	void SetImmobileId(STerrainMapImmobileType::Id immobileId);
+	STerrainMapImmobileType::Id GetImmobileId() const;
+	void SetMobileId(STerrainMapMobileType::Id mobileId);
+	STerrainMapMobileType::Id GetMobileId() const;
 
 private:
-	springai::UnitDef* def;
-	std::unordered_set<springai::UnitDef*> buildOptions;
+	Id id;
+	springai::UnitDef* def;  // owner
+	std::unordered_set<Id> buildOptions;
 	int count;
 	int buildCounts;  // number of builder defs able to build this def;
 
-	int mobileTypeId;
-	int immobileTypeId;
+	STerrainMapImmobileType::Id immobileTypeId;
+	STerrainMapMobileType::Id   mobileTypeId;
 };
+
+inline bool CCircuitDef::operator==(const CCircuitDef& rhs)
+{
+	return (id == rhs.id);
+}
+
+inline bool CCircuitDef::operator!=(const CCircuitDef& rhs)
+{
+	return (id != rhs.id);
+}
 
 } // namespace circuit
 

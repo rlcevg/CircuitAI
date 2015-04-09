@@ -8,6 +8,9 @@
 #ifndef SRC_CIRCUIT_SETUP_ALLYTEAM_H_
 #define SRC_CIRCUIT_SETUP_ALLYTEAM_H_
 
+#include "unit/CircuitUnit.h"
+#include "unit/CircuitDef.h"
+
 #include <vector>
 #include <map>
 #include <unordered_map>
@@ -16,18 +19,15 @@
 namespace springai {
 	class AIFloat3;
 	class OOAICallback;
-	class UnitDef;
-	class Unit;
 }
 
 namespace circuit {
 
 class CCircuitAI;
-class CCircuitUnit;
-class CCircuitDef;
 
 class CAllyTeam {
 public:
+	using Id = int;
 	union SBox {
 		struct {
 			float bottom;
@@ -41,7 +41,7 @@ public:
 	};
 
 public:
-	CAllyTeam(const std::vector<int>& tids, const SBox& sb);
+	CAllyTeam(const std::vector<Id>& tids, const SBox& sb);
 	virtual ~CAllyTeam();
 
 	int GetSize() const;
@@ -50,12 +50,12 @@ public:
 	void UpdateUnits(int frame, springai::OOAICallback* callback);
 
 private:
-	std::vector<int> teamIds;
+	std::vector<Id> teamIds;
 	SBox startBox;
 
 	int lastUpdate;
-	std::map<int, CCircuitUnit*> friendlyUnits;  // owner
-	std::map<int, CCircuitUnit*> enemyUnits;  // owner
+	std::map<CCircuitUnit::Id, CCircuitUnit*> friendlyUnits;  // owner
+	std::map<CCircuitUnit::Id, CCircuitUnit*> enemyUnits;  // owner
 
 // ---- UnitDefs ---- BEGIN
 private:
@@ -65,19 +65,16 @@ private:
 		}
 	};
 public:
-	using UnitDefs = std::map<const char*, springai::UnitDef*, cmp_str>;
-	using IdUnitDefs = std::unordered_map<int, springai::UnitDef*>;
-	using CircuitDefs = std::unordered_map<springai::UnitDef*, CCircuitDef*>;
+	using CircuitDefs = std::unordered_map<CCircuitDef::Id, CCircuitDef*>;
+	using NCircuitDefs = std::map<const char*, CCircuitDef*, cmp_str>;
 
-	UnitDefs* GetDefsByName();
-	IdUnitDefs* GetDefsById();
-	CircuitDefs* GetCircuitDefs();
+	NCircuitDefs* GetDefsByName();
+	CircuitDefs* GetDefsById();
 	void Init(CCircuitAI* circuit);
 	void Release();
 private:
-	UnitDefs defsByName;  // owner
-	IdUnitDefs defsById;
-	std::unordered_map<springai::UnitDef*, CCircuitDef*> circuitDefs;  // owner
+	NCircuitDefs defsByName;
+	CircuitDefs defsById;  // owner
 
 	int initCount;
 // ---- UnitDefs ---- END

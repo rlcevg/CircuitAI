@@ -101,15 +101,15 @@ public:
 	CCircuitUnit* RegisterTeamUnit(int unitId);
 	void UnregisterTeamUnit(CCircuitUnit* unit);
 	CCircuitUnit* GetTeamUnitById(int unitId);
-	const std::map<int, CCircuitUnit*>& GetTeamUnits() const;
+	const std::map<CCircuitUnit::Id, CCircuitUnit*>& GetTeamUnits() const;
 	void UpdateAllyUnits();
 	CCircuitUnit* GetFriendlyUnit(springai::Unit* u);
 	CCircuitUnit* GetAllyUnitById(int unitId);
-	const std::map<int, CCircuitUnit*>& GetAllyUnits() const;
+	const std::map<CCircuitUnit::Id, CCircuitUnit*>& GetAllyUnits() const;
 	CCircuitUnit* RegisterEnemyUnit(int unitId);
 	void UnregisterEnemyUnit(CCircuitUnit* unit);
 	CCircuitUnit* GetEnemyUnitById(int unitId);
-	const std::map<int, CCircuitUnit*>& GetEnemyUnits() const;
+	const std::map<CCircuitUnit::Id, CCircuitUnit*>& GetEnemyUnits() const;
 
 	bool IsUpdateTimeValid();
 
@@ -117,18 +117,15 @@ public:
 	Difficulty GetDifficulty();
 	bool IsAllyAware();
 
-// ---- UnitDefs ---- BEGIN
-	springai::UnitDef* GetUnitDefByName(const char* name);
-	springai::UnitDef* GetUnitDefById(int unitDefId);
-	CAllyTeam::UnitDefs& GetUnitDefs();
-	CCircuitDef* GetCircuitDef(springai::UnitDef* unitDef);
-	int GetUnitCount(springai::UnitDef* unitDef);
-	bool IsAvailable(springai::UnitDef* unitDef);
+// ---- UnitDefs PROXY ---- BEGIN
+public:
+	CAllyTeam::CircuitDefs& GetCircuitDefs();
+	CCircuitDef* GetCircuitDef(const char* name);
+	CCircuitDef* GetCircuitDef(CCircuitDef::Id unitDefId);
 private:
-	CAllyTeam::UnitDefs* defsByName;
-	std::unordered_map<int, springai::UnitDef*>* defsById;
-	std::unordered_map<springai::UnitDef*, CCircuitDef*>* circuitDefs;
-// ---- UnitDefs ---- END
+	CAllyTeam::CircuitDefs*  defsById;
+	CAllyTeam::NCircuitDefs* defsByName;
+// ---- UnitDefs PROXY ---- END
 
 public:
 	bool IsInitialized();

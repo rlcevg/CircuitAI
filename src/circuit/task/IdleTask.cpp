@@ -7,7 +7,6 @@
 
 #include "task/IdleTask.h"
 #include "task/TaskManager.h"
-#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 

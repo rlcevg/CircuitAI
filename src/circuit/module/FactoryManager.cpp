@@ -11,15 +11,12 @@
 #include "task/IdleTask.h"
 #include "task/static/RepairTask.h"
 #include "task/static/ReclaimTask.h"
-#include "unit/CircuitUnit.h"
-#include "unit/CircuitDef.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
 #include "AIFloat3.h"
 #include "OOAICallback.h"
-#include "UnitDef.h"
 #include "Command.h"
 
 #include <vector>
@@ -50,16 +47,16 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		idleTask->AssignTo(unit);
 
 		Unit* u = unit->GetUnit();
-		UnitDef* def = unit->GetDef();
+		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
 		AIFloat3 pos = u->GetPos();
 		factoryPower += def->GetBuildSpeed();
 
 		// check nanos around
 		if (assistDef != nullptr) {
 			std::set<CCircuitUnit*> nanos;
-			float radius = assistDef->GetBuildDistance();
+			float radius = assistDef->GetUnitDef()->GetBuildDistance();
 			auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(u->GetPos(), radius));
-			int nanoId = assistDef->GetUnitDefId();
+			int nanoId = assistDef->GetId();
 			int teamId = this->circuit->GetTeamId();
 			for (auto nano : units) {
 				UnitDef* ndef = nano->GetDef();
@@ -79,7 +76,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		if (unit->GetUnit()->IsBeingBuilt()) {
 			return;
 		}
-		factoryPower -= unit->GetDef()->GetBuildSpeed();
+		factoryPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
 		factories.erase(unit);
 
 		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
@@ -94,7 +91,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		idleTask->AssignTo(unit);
 
 		Unit* u = unit->GetUnit();
-		UnitDef* def = unit->GetDef();
+		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
 		factoryPower += def->GetBuildSpeed();
 		const AIFloat3& pos = u->GetPos();
 
@@ -122,7 +119,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		if (unit->GetUnit()->IsBeingBuilt()) {
 			return;
 		}
-		factoryPower -= unit->GetDef()->GetBuildSpeed();
+		factoryPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
 		for (auto& fac : factories) {
 			fac.second.erase(unit);
 		}
@@ -134,12 +131,13 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 	};
 
-	CAllyTeam::UnitDefs& defs = circuit->GetUnitDefs();
+	CAllyTeam::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
-		UnitDef* def = kv.second;
+		CCircuitDef* cdef = kv.second;
+		UnitDef* def = cdef->GetUnitDef();
 		if (def->IsBuilder() && (def->GetSpeed() == 0)) {
-			int unitDefId = def->GetUnitDefId();
-			if  (!circuit->GetCircuitDef(def)->GetBuildOptions().empty()) {
+			int unitDefId = kv.first;
+			if  (!kv.second->GetBuildOptions().empty()) {
 				finishedHandler[unitDefId] = factoryFinishedHandler;
 				idleHandler[unitDefId] = factoryIdleHandler;
 				destroyedHandler[unitDefId] = factoryDestroyedHandler;
@@ -147,7 +145,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 				finishedHandler[unitDefId] = assistFinishedHandler;
 				idleHandler[unitDefId] = assistIdleHandler;
 				destroyedHandler[unitDefId] = assistDestroyedHandler;
-				assistDef = def;
+				assistDef = cdef;
 			}
 		}
 	}
@@ -191,7 +189,7 @@ int CFactoryManager::UnitFinished(CCircuitUnit* unit)
 		DoneTask(iter->second);
 	}
 
-	auto search = finishedHandler.find(unit->GetDef()->GetUnitDefId());
+	auto search = finishedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != finishedHandler.end()) {
 		search->second(unit);
 	}
@@ -201,7 +199,7 @@ int CFactoryManager::UnitFinished(CCircuitUnit* unit)
 
 int CFactoryManager::UnitIdle(CCircuitUnit* unit)
 {
-	auto search = idleHandler.find(unit->GetDef()->GetUnitDefId());
+	auto search = idleHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != idleHandler.end()) {
 		search->second(unit);
 	}
@@ -218,7 +216,7 @@ int CFactoryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 		}
 	}
 
-	auto search = destroyedHandler.find(unit->GetDef()->GetUnitDefId());
+	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != destroyedHandler.end()) {
 		search->second(unit, attacker);
 	}
@@ -227,7 +225,7 @@ int CFactoryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 }
 
 CRecruitTask* CFactoryManager::EnqueueTask(CRecruitTask::Priority priority,
-										   UnitDef* buildDef,
+										   CCircuitDef* buildDef,
 										   const AIFloat3& position,
 										   CRecruitTask::BuildType type,
 										   float radius)
@@ -276,10 +274,7 @@ void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 
 void CFactoryManager::AssignTask(CCircuitUnit* unit)
 {
-	Unit* u = unit->GetUnit();
-	UnitDef* def = unit->GetDef();
-
-	if (def == assistDef) {
+	if (unit->GetCircuitDef() == assistDef) {  // FIXME: Check Id instead pointers?
 		IBuilderTask* task = circuit->GetEconomyManager()->CreateAssistTask(unit);
 		if (task != nullptr) {  // if nullptr then continue to Wait (or Idle)
 			task->AssignTo(unit);
@@ -366,7 +361,7 @@ CCircuitUnit* CFactoryManager::GetRandomFactory()
 	return iter->first;
 }
 
-UnitDef* CFactoryManager::GetAssistDef() const
+CCircuitDef* CFactoryManager::GetAssistDef() const
 {
 	return assistDef;
 }
@@ -394,7 +389,7 @@ std::vector<CCircuitUnit*> CFactoryManager::GetHavensAt(const AIFloat3& pos) con
 {
 	std::vector<CCircuitUnit*> result;
 	result.reserve(havens.size());  // size overkill
-	float sqBuildDist = assistDef->GetBuildDistance();
+	float sqBuildDist = assistDef->GetUnitDef()->GetBuildDistance();
 	sqBuildDist *= sqBuildDist;
 	for (auto haven : havens) {
 		if (haven->GetUnit()->GetPos().SqDistance2D(pos) <= sqBuildDist) {

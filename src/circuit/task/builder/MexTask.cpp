@@ -7,7 +7,6 @@
 
 #include "task/builder/MexTask.h"
 #include "task/TaskManager.h"
-#include "unit/CircuitUnit.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
@@ -17,7 +16,6 @@
 
 #include "AISCommands.h"
 #include "OOAICallback.h"
-#include "UnitDef.h"
 #include "Map.h"
 
 namespace circuit {
@@ -25,7 +23,7 @@ namespace circuit {
 using namespace springai;
 
 CBMexTask::CBMexTask(ITaskManager* mgr, Priority priority,
-					 UnitDef* buildDef, const AIFloat3& position,
+					 CCircuitDef* buildDef, const AIFloat3& position,
 					 float cost, int timeout) :
 		IBuilderTask(mgr, priority, buildDef, position, BuildType::MEX, cost, timeout)
 {
@@ -46,13 +44,14 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 
 	if (target != nullptr) {
 		Unit* tu = target->GetUnit();
-		u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->Build(target->GetCircuitDef()->GetUnitDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 		return;
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
+	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (buildPos != -RgtVector) {
-		if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
-			u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
+			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			return;
 		} else {
 			circuit->GetMetalManager()->SetOpenSpot(buildPos, true);
@@ -62,7 +61,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	buildPos = circuit->GetEconomyManager()->FindBuildPos(unit);
 	if (buildPos != -RgtVector) {
 		circuit->GetMetalManager()->SetOpenSpot(buildPos, false);
-		u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	} else {
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);
@@ -86,7 +85,7 @@ void CBMexTask::Finish()
 			const AIFloat3& pos = spots[idx].position;
 			if (metalManager->IsOpenSpot(idx) &&
 				builderManager->IsBuilderInArea(buildDef, pos) &&
-				map->IsPossibleToBuildAt(buildDef, pos, UNIT_COMMAND_BUILD_NO_FACING))
+				map->IsPossibleToBuildAt(buildDef->GetUnitDef(), pos, UNIT_COMMAND_BUILD_NO_FACING))
 			{
 				metalManager->SetOpenSpot(idx, false);
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, pos, IBuilderTask::BuildType::MEX, cost);
@@ -96,9 +95,9 @@ void CBMexTask::Finish()
 		}
 
 		// Add defence
-		UnitDef* defDef = circuit->GetUnitDefByName("corllt");
+		CCircuitDef* defDef = circuit->GetCircuitDef("corllt");
 		CEconomyManager* economyManager = circuit->GetEconomyManager();
-		if (defDef->GetCost(economyManager->GetMetalRes()) < (MIN_BUILD_SEC / 2) * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor()) {
+		if (defDef->GetUnitDef()->GetCost(economyManager->GetMetalRes()) < (MIN_BUILD_SEC / 2) * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor()) {
 			for (auto& defPoint : circuit->GetMilitaryManager()->GetDefPoints(index)) {
 				if (defPoint.isOpen) {
 					defPoint.isOpen = false;
@@ -127,12 +126,12 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 	 * Check if unit is idle because of enemy mex ahead and build turret if so.
 	 */
 	CCircuitAI* circuit = manager->GetCircuit();
-	UnitDef* def = circuit->GetUnitDefByName("corrl");
-	float range = def->GetMaxWeaponRange();
+	CCircuitDef* def = circuit->GetCircuitDef("corrl");
+	float range = def->GetUnitDef()->GetMaxWeaponRange();
 	float testRange = range + 200;
 	const AIFloat3& pos = unit->GetUnit()->GetPos();
 	if (buildPos.SqDistance2D(pos) < testRange * testRange) {
-		int mexDefId = circuit->GetEconomyManager()->GetMexDef()->GetUnitDefId();
+		int mexDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
 		// TODO: Use internal CCircuitAI::GetEnemyUnits?
 		std::vector<Unit*> enemies = circuit->GetCallback()->GetEnemyUnitsIn(buildPos, 1);
 		bool blocked = false;

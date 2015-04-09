@@ -7,17 +7,13 @@
 
 #include "setup/SetupManager.h"
 #include "static/SetupData.h"
-#include "static/TerrainData.h"
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
-#include "unit/CircuitDef.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
 #include "OOAICallback.h"
-#include "Unit.h"
-#include "UnitDef.h"
 #include "Game.h"
 #include "Map.h"
 
@@ -169,7 +165,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 			if (!inBoxIndices.empty()) {
 				const CMetalData::Metals& spots = metalManager->GetSpots();
 				CTerrainManager* terrain = circuit->GetTerrainManager();
-				STerrainMapMobileType* mobileType = terrain->GetMobileTypeById(circuit->GetCircuitDef(circuit->GetUnitDefByName("armcom1"))->GetMobileTypeId());
+				STerrainMapMobileType* mobileType = terrain->GetMobileTypeById(circuit->GetCircuitDef("armcom1")->GetMobileId());
 				std::vector<int> filteredIndices;
 				for (auto idx : inBoxIndices) {
 					int iS = terrain->GetSectorIndex(spots[idx].position);

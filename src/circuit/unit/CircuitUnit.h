@@ -12,10 +12,6 @@
 
 #include "Unit.h"
 
-namespace springai {
-	class UnitDef;
-}
-
 namespace circuit {
 
 #define CMD_PRIORITY			34220
@@ -31,32 +27,47 @@ struct STerrainMapArea;
 
 class CCircuitUnit: public CActionList {
 public:
-	CCircuitUnit(springai::Unit* unit, springai::UnitDef* def, CCircuitDef* circuitDef);
+	using Id = int;
+
+	CCircuitUnit(springai::Unit* unit, CCircuitDef* circuitDef);
 	virtual ~CCircuitUnit();
 
-	springai::Unit* GetUnit();
-	springai::UnitDef* GetDef();
-	CCircuitDef* GetCircuitDef();
+	Id GetId() const;
+	springai::Unit* GetUnit() const;
+	CCircuitDef* GetCircuitDef() const;
 
 	void SetTask(IUnitTask* task);
-	IUnitTask* GetTask();
-	int GetTaskFrame();
+	IUnitTask* GetTask() const;
+	int GetTaskFrame() const;
 
 	void SetManager(IUnitManager* mgr);
-	IUnitManager* GetManager();
+	IUnitManager* GetManager() const;
 
 	void SetArea(STerrainMapArea* area);
-	STerrainMapArea* GetArea();
+	STerrainMapArea* GetArea() const;
+
+	inline bool operator==(const CCircuitUnit& rhs);
+	inline bool operator!=(const CCircuitUnit& rhs);
 
 private:
+	Id id;
 	springai::Unit* unit;  // owner
-	springai::UnitDef* def;
 	CCircuitDef* circuitDef;
 	IUnitTask* task;
 	int taskFrame;
 	IUnitManager* manager;
 	STerrainMapArea* area;  // = nullptr if a unit flies
 };
+
+inline bool CCircuitUnit::operator==(const CCircuitUnit& rhs)
+{
+	return (id == rhs.id);
+}
+
+inline bool CCircuitUnit::operator!=(const CCircuitUnit& rhs)
+{
+	return (id != rhs.id);
+}
 
 } // namespace circuit
 

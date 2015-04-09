@@ -15,11 +15,9 @@
 #include <map>
 #include <vector>
 
-namespace springai {
-	class UnitDef;
-}
-
 namespace circuit {
+
+class CCircuitDef;
 
 class CFactoryManager: public IUnitModule {
 public:
@@ -32,7 +30,7 @@ public:
 	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
 	CRecruitTask* EnqueueTask(CRecruitTask::Priority priority,
-							  springai::UnitDef* buildDef,
+							  CCircuitDef* buildDef,
 							  const springai::AIFloat3& position,
 							  CRecruitTask::BuildType type,
 							  float radius);
@@ -59,7 +57,7 @@ public:
 	CCircuitUnit* NeedUpgrade();
 	CCircuitUnit* GetRandomFactory();
 
-	springai::UnitDef* GetAssistDef() const;
+	CCircuitDef* GetAssistDef() const;
 	CCircuitUnit* GetClosestHaven(CCircuitUnit* unit) const;
 	std::vector<CCircuitUnit*> GetHavensAt(const springai::AIFloat3& pos) const;
 
@@ -78,7 +76,7 @@ private:
 	std::set<CRecruitTask*> deleteTasks;
 
 	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> factories;  // factory 1:n nanos
-	springai::UnitDef* assistDef;
+	CCircuitDef* assistDef;
 
 	std::set<CCircuitUnit*> havens;
 	std::set<IBuilderTask*> assistTasks;  // owner

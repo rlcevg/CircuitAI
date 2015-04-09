@@ -14,9 +14,9 @@ namespace circuit {
 
 using namespace springai;
 
-CCircuitUnit::CCircuitUnit(Unit* unit, UnitDef* def, CCircuitDef* circuitDef) :
+CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* circuitDef) :
+		id(unit->GetUnitId()),
 		unit(unit),
-		def(def),
 		circuitDef(circuitDef),
 		task(nullptr),
 		taskFrame(-1),
@@ -31,17 +31,17 @@ CCircuitUnit::~CCircuitUnit()
 	delete unit;
 }
 
-Unit* CCircuitUnit::GetUnit()
+CCircuitUnit::Id CCircuitUnit::GetId() const
+{
+	return id;
+}
+
+Unit* CCircuitUnit::GetUnit() const
 {
 	return unit;
 }
 
-UnitDef* CCircuitUnit::GetDef()
-{
-	return def;
-}
-
-CCircuitDef* CCircuitUnit::GetCircuitDef()
+CCircuitDef* CCircuitUnit::GetCircuitDef() const
 {
 	return circuitDef;
 }
@@ -52,12 +52,12 @@ void CCircuitUnit::SetTask(IUnitTask* task)
 	taskFrame = manager->GetCircuit()->GetLastFrame();
 }
 
-IUnitTask* CCircuitUnit::GetTask()
+IUnitTask* CCircuitUnit::GetTask() const
 {
 	return task;
 }
 
-int CCircuitUnit::GetTaskFrame()
+int CCircuitUnit::GetTaskFrame() const
 {
 	return taskFrame;
 }
@@ -67,7 +67,7 @@ void CCircuitUnit::SetManager(IUnitManager* mgr)
 	manager = mgr;
 }
 
-IUnitManager* CCircuitUnit::GetManager()
+IUnitManager* CCircuitUnit::GetManager() const
 {
 	return manager;
 }
@@ -77,7 +77,7 @@ void CCircuitUnit::SetArea(STerrainMapArea* area)
 	this->area = area;
 }
 
-STerrainMapArea* CCircuitUnit::GetArea()
+STerrainMapArea* CCircuitUnit::GetArea() const
 {
 	return area;
 }

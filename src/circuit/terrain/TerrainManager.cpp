@@ -8,18 +8,14 @@
 #include "terrain/TerrainManager.h"
 #include "terrain/BlockRectangle.h"
 #include "terrain/BlockCircle.h"
-#include "static/TerrainData.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"  // Only for UpdateAreaUsers
 #include "resource/MetalManager.h"
-#include "unit/CircuitUnit.h"
-#include "unit/CircuitDef.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
 #include "Map.h"
-#include "UnitDef.h"
 #include "OOAICallback.h"
 #include "WeaponDef.h"
 #include "Pathing.h"
@@ -43,11 +39,12 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	terrainWidth = mapWidth * SQUARE_SIZE;
 	terrainHeight = mapHeight * SQUARE_SIZE;
 
-	UnitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
+	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 
 	/*
 	 * building masks
 	 */
+	CCircuitDef* cdef;
 	UnitDef* def;
 	WeaponDef* wpDef;
 	int2 offset;
@@ -61,13 +58,15 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	ignoreMask = STRUCT_BIT(PYLON);
 	const char* factories[] = {"factorycloak", "factoryamph", "factoryhover", "factoryjump", "factoryshield", "factoryspider", "factorytank", "factoryveh"};
 	for (auto fac : factories) {
-		def = circuit->GetUnitDefByName(fac);
+		cdef = circuit->GetCircuitDef(fac);
+		def = cdef->GetUnitDef();
 		ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 		bsize = ssize + int2(6, 4);
-		blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::FACTORY, ignoreMask);
+		blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::FACTORY, ignoreMask);
 	}
 
-	def = circuit->GetUnitDefByName("armsolar");
+	cdef = circuit->GetCircuitDef("armsolar");
+	def = cdef->GetUnitDef();
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
@@ -76,9 +75,10 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 				 STRUCT_BIT(DEF_LOW) |
 				 STRUCT_BIT(PYLON) |
 				 STRUCT_BIT(NANO);
-	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::ENGY_LOW, ignoreMask);
+	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::ENGY_LOW, ignoreMask);
 
-	def = circuit->GetUnitDefByName("armwin");
+	cdef = circuit->GetCircuitDef("armwin");
+	def = cdef->GetUnitDef();
 	wpDef = def->GetDeathExplosion();
 	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
 	delete wpDef;
@@ -89,9 +89,10 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 				 STRUCT_BIT(DEF_LOW) |
 				 STRUCT_BIT(PYLON) |
 				 STRUCT_BIT(NANO);
-	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_LOW, ignoreMask);
+	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_LOW, ignoreMask);
 
-	def = circuit->GetUnitDefByName("armfus");
+	cdef = circuit->GetCircuitDef("armfus");
+	def = cdef->GetUnitDef();
 	wpDef = def->GetDeathExplosion();
 	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
 	delete wpDef;
@@ -100,9 +101,10 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	ignoreMask = STRUCT_BIT(MEX) |
 				 STRUCT_BIT(DEF_LOW) |
 				 STRUCT_BIT(PYLON);
-	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_MID, ignoreMask);
+	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_MID, ignoreMask);
 
-	def = circuit->GetUnitDefByName("cafus");
+	cdef = circuit->GetCircuitDef("cafus");
+	def = cdef->GetUnitDef();
 	wpDef = def->GetDeathExplosion();
 	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
 	delete wpDef;
@@ -113,9 +115,10 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 				 STRUCT_BIT(DEF_LOW) |
 				 STRUCT_BIT(PYLON) |
 				 STRUCT_BIT(NANO);
-	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_HIGH, ignoreMask);
+	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_HIGH, ignoreMask);
 
-	def = circuit->GetUnitDefByName("armestor");
+	cdef = circuit->GetCircuitDef("armestor");
+	def = cdef->GetUnitDef();
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto search = customParams.find("pylonrange");
 	float pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : 500;
@@ -123,23 +126,26 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(ALL) & ~(STRUCT_BIT(FACTORY) | STRUCT_BIT(PYLON));
-	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::PYLON, ignoreMask);
+	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::PYLON, ignoreMask);
 
-	def = circuit->GetUnitDefByName("armmstor");
+	cdef = circuit->GetCircuitDef("armmstor");
+	def = cdef->GetUnitDef();
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(ALL) & ~STRUCT_BIT(FACTORY);
-	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::MEX, ignoreMask);
+	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::MEX, ignoreMask);
 
-	def = mexDef;  // cormex
+	cdef = mexDef;
+	def = cdef->GetUnitDef();  // cormex
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(ALL) & ~STRUCT_BIT(FACTORY);
-	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::MEX, ignoreMask);
+	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::MEX, ignoreMask);
 
-	def = circuit->GetUnitDefByName("corrl");
+	cdef = circuit->GetCircuitDef("corrl");
+	def = cdef->GetUnitDef();
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
@@ -148,9 +154,10 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 				 STRUCT_BIT(ENGY_HIGH) |
 				 STRUCT_BIT(PYLON) |
 				 STRUCT_BIT(NANO);
-	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::DEF_LOW, ignoreMask);
+	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::DEF_LOW, ignoreMask);
 
-	def = circuit->GetUnitDefByName("corllt");
+	cdef = circuit->GetCircuitDef("corllt");
+	def = cdef->GetUnitDef();
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
@@ -159,9 +166,10 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 				 STRUCT_BIT(ENGY_HIGH) |
 				 STRUCT_BIT(PYLON) |
 				 STRUCT_BIT(NANO);
-	blockInfos[def] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::DEF_LOW, ignoreMask);
+	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::DEF_LOW, ignoreMask);
 
-	def = circuit->GetUnitDefByName("armnanotc");
+	cdef = circuit->GetCircuitDef("armnanotc");
+	def = cdef->GetUnitDef();
 	wpDef = def->GetDeathExplosion();
 	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
 	delete wpDef;
@@ -172,9 +180,10 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 				 STRUCT_BIT(ENGY_MID) |
 				 STRUCT_BIT(ENGY_HIGH) |
 				 STRUCT_BIT(PYLON);
-	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::NANO, ignoreMask);
+	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::NANO, ignoreMask);
 
-	def = circuit->GetUnitDefByName("raveparty");
+	cdef = circuit->GetCircuitDef("raveparty");
+	def = cdef->GetUnitDef();
 	wpDef = def->GetDeathExplosion();
 	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
 	delete wpDef;
@@ -184,7 +193,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 				 STRUCT_BIT(DEF_LOW) |
 				 STRUCT_BIT(ENGY_HIGH) |
 				 STRUCT_BIT(PYLON);
-	blockInfos[def] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
+	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
 
 	blockingMap.columns = mapWidth / 2;  // build-step = 2 little green squares
 	blockingMap.rows = mapHeight / 2;
@@ -196,7 +205,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	blockingMap.gridLow.resize(blockingMap.columnsLow * blockingMap.rowsLow, cellLow);
 
 	const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
-	def = mexDef;
+	def = mexDef->GetUnitDef();
 	int size = std::max(def->GetXSize(), def->GetZSize()) / 2;
 	int& xsize = size, &zsize = size;
 	int notIgnoreMask = STRUCT_BIT(FACTORY);
@@ -212,12 +221,13 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 
 	ignoreMask = STRUCT_BIT(PYLON);
 	offset = int2(0, 0);
-	CAllyTeam::UnitDefs& defs = circuit->GetUnitDefs();
+	CAllyTeam::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
-		UnitDef* def = kv.second;
-		if ((def->GetSpeed() == 0) && (blockInfos.find(def) == blockInfos.end())) {
+		CCircuitDef* cdef = kv.second;
+		UnitDef* def = cdef->GetUnitDef();
+		if ((def->GetSpeed() == 0) && (blockInfos.find(kv.first) == blockInfos.end())) {
 			ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-			blockInfos[def] = new CBlockRectangle(offset, ssize, ssize, SBlockingMap::StructType::UNKNOWN, ignoreMask);
+			blockInfos[cdef->GetId()] = new CBlockRectangle(offset, ssize, ssize, SBlockingMap::StructType::UNKNOWN, ignoreMask);
 		}
 	}
 
@@ -245,15 +255,15 @@ int CTerrainManager::GetTerrainHeight()
 	return terrainHeight;
 }
 
-void CTerrainManager::AddBlocker(UnitDef* unitDef, const AIFloat3& pos, int facing)
+void CTerrainManager::AddBlocker(CCircuitDef* cdef, const AIFloat3& pos, int facing)
 {
-	Structure building = {-1, unitDef, pos, facing};
+	Structure building = {-1, cdef, pos, facing};
 	MarkBlocker(building, true);
 }
 
-void CTerrainManager::RemoveBlocker(UnitDef* unitDef, const AIFloat3& pos, int facing)
+void CTerrainManager::RemoveBlocker(CCircuitDef* cdef, const AIFloat3& pos, int facing)
 {
-	Structure building = {-1, unitDef, pos, facing};
+	Structure building = {-1, cdef, pos, facing};
 	MarkBlocker(building, false);
 }
 
@@ -262,30 +272,31 @@ void CTerrainManager::ResetBuildFrame()
 	cacheBuildFrame = -FRAMES_PER_SEC;
 }
 
-AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing)
+AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing)
 {
 	TerrainPredicate predicate = [](const AIFloat3& p) {
 		return true;
 	};
-	return FindBuildSite(unitDef, pos, searchRadius, facing, predicate);
+	return FindBuildSite(cdef, pos, searchRadius, facing, predicate);
 }
 
-AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing, TerrainPredicate& predicate)
+AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing, TerrainPredicate& predicate)
 {
 	MarkAllyBuildings();
 
-	auto search = blockInfos.find(unitDef);
+	auto search = blockInfos.find(cdef->GetId());
 	if (search != blockInfos.end()) {
-		return FindBuildSiteByMask(unitDef, pos, searchRadius, facing, search->second, predicate);
+		return FindBuildSiteByMask(cdef, pos, searchRadius, facing, search->second, predicate);
 	}
 
 	if (searchRadius > SQUARE_SIZE * 2 * 100) {
-		return FindBuildSiteLow(unitDef, pos, searchRadius, facing, predicate);
+		return FindBuildSiteLow(cdef, pos, searchRadius, facing, predicate);
 	}
 
 	/*
 	 * Default FindBuildSite
 	 */
+	UnitDef* unitDef = cdef->GetUnitDef();
 	const int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
@@ -309,7 +320,6 @@ AIFloat3 CTerrainManager::FindBuildSite(UnitDef* unitDef, const AIFloat3& pos, f
 
 	AIFloat3 probePos(ZeroVector);
 	Map* map = circuit->GetMap();
-	CCircuitDef* cdef = circuit->GetCircuitDef(unitDef);
 
 	for (int so = 0; so < endr * endr * 4; so++) {
 		int2 s1(cornerX1 + ofs[so].dx, cornerZ1 + ofs[so].dy);
@@ -344,26 +354,26 @@ void CTerrainManager::MarkAllyBuildings()
 	cacheBuildFrame = lastFrame;
 
 	circuit->UpdateAllyUnits();
-	const std::map<int, CCircuitUnit*>& allies = circuit->GetAllyUnits();
-	UnitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
+	const std::map<CCircuitUnit::Id, CCircuitUnit*>& allies = circuit->GetAllyUnits();
+	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 
 	std::set<Structure, cmp> newUnits, oldUnits;
 	for (auto& kv : allies) {
 		CCircuitUnit* unit = kv.second;
 		Unit* u = unit->GetUnit();
 		if (u->GetMaxSpeed() <= 0) {
-			int unitId = kv.first;
 			Structure building;
-			building.unitId = unitId;
+			building.unitId = kv.first;
 			decltype(markedAllies)::iterator search = markedAllies.find(building);
 			if (search == markedAllies.end()) {
 				UnitDef* def = u->GetDef();
-				building.def = circuit->GetUnitDefById(def->GetUnitDefId());
+				building.cdef = unit->GetCircuitDef();
 				building.pos = u->GetPos();
 				building.facing = u->GetBuildingFacing();
 				delete def;
 				newUnits.insert(building);
-				if (building.def == mexDef) {  // update metalInfo's open state
+				// NOTE: Comparing pointers instead of instances as CircuitDef is from same allyTeam
+				if (building.cdef == mexDef) {  // update metalInfo's open state
 					circuit->GetMetalManager()->SetOpenSpot(building.pos, false);
 				} else {
 					MarkBlocker(building, true);
@@ -378,7 +388,8 @@ void CTerrainManager::MarkAllyBuildings()
 						oldUnits.begin(), oldUnits.end(),
 						std::inserter(deadUnits, deadUnits.begin()), cmp());
 	for (auto& building : deadUnits) {
-		if (building.def == mexDef) {  // update metalInfo's open state
+		// NOTE: Comparing pointers instead of instances as CircuitDef is from same allyTeam
+		if (building.cdef == mexDef) {  // update metalInfo's open state
 			circuit->GetMetalManager()->SetOpenSpot(building.pos, true);
 		} else {
 			MarkBlocker(building, false);
@@ -466,8 +477,9 @@ const CTerrainManager::SearchOffsetsLow& CTerrainManager::GetSearchOffsetTableLo
 	return searchOffsetsLow;
 }
 
-AIFloat3 CTerrainManager::FindBuildSiteLow(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing, TerrainPredicate& predicate)
+AIFloat3 CTerrainManager::FindBuildSiteLow(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing, TerrainPredicate& predicate)
 {
+	UnitDef* unitDef = cdef->GetUnitDef();
 	const int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
@@ -497,7 +509,6 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(UnitDef* unitDef, const AIFloat3& pos
 
 	AIFloat3 probePos(ZeroVector);
 	Map* map = circuit->GetMap();
-	CCircuitDef* cdef = circuit->GetCircuitDef(unitDef);
 
 	for (int soLow = 0; soLow < endrLow * endrLow * 4; soLow++) {
 		int xlow = centerX + ofsLow[soLow].dx;
@@ -528,14 +539,15 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(UnitDef* unitDef, const AIFloat3& pos
 	return -RgtVector;
 }
 
-AIFloat3 CTerrainManager::FindBuildSiteByMask(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask, TerrainPredicate& predicate)
+AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask, TerrainPredicate& predicate)
 {
 	int xmsize = mask->GetXSize();
 	int zmsize = mask->GetZSize();
 	if ((searchRadius > SQUARE_SIZE * 2 * 100) || (xmsize * zmsize > GRID_RATIO_LOW * GRID_RATIO_LOW * 9)) {
-		return FindBuildSiteByMaskLow(unitDef, pos, searchRadius, facing, mask, predicate);
+		return FindBuildSiteByMaskLow(cdef, pos, searchRadius, facing, mask, predicate);
 	}
 
+	UnitDef* unitDef = cdef->GetUnitDef();
 	int xssize, zssize;
 	switch (facing) {
 		default:
@@ -593,7 +605,6 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(UnitDef* unitDef, const AIFloat3& 
 
 	AIFloat3 probePos(ZeroVector);
 	Map* map = circuit->GetMap();
-	CCircuitDef* cdef = circuit->GetCircuitDef(unitDef);
 
 #define DO_TEST(testName)																			\
 	for (int so = 0; so < endr * endr * 4; so++) {													\
@@ -649,8 +660,9 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(UnitDef* unitDef, const AIFloat3& 
 	return -RgtVector;
 }
 
-AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(UnitDef* unitDef, const AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask, TerrainPredicate& predicate)
+AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask, TerrainPredicate& predicate)
 {
+	UnitDef* unitDef = cdef->GetUnitDef();
 	int xmsize, zmsize, xssize, zssize;
 	switch (facing) {
 		default:
@@ -715,7 +727,6 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(UnitDef* unitDef, const AIFloat
 
 	AIFloat3 probePos(ZeroVector);
 	Map* map = circuit->GetMap();
-	CCircuitDef* cdef = circuit->GetCircuitDef(unitDef);
 
 #define DO_TEST_LOW(testName)																					\
 	for (int soLow = 0; soLow < endrLow * endrLow * 4; soLow++) {												\
@@ -781,7 +792,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(UnitDef* unitDef, const AIFloat
 
 void CTerrainManager::MarkBlockerByMask(const Structure& building, bool block, IBlockMask* mask)
 {
-	UnitDef* unitDef = building.def;
+	UnitDef* unitDef = building.cdef->GetUnitDef();
 	int facing = building.facing;
 	const AIFloat3& pos = building.pos;
 
@@ -867,8 +878,8 @@ void CTerrainManager::MarkBlockerByMask(const Structure& building, bool block, I
 
 void CTerrainManager::MarkBlocker(const Structure& building, bool block)
 {
-	UnitDef* unitDef = building.def;
-	auto search = blockInfos.find(unitDef);
+	CCircuitDef* cdef = building.cdef;
+	auto search = blockInfos.find(cdef->GetId());
 	if (search != blockInfos.end()) {
 		MarkBlockerByMask(building, block, search->second);
 		return;
@@ -880,6 +891,7 @@ void CTerrainManager::MarkBlocker(const Structure& building, bool block)
 	int facing = building.facing;
 	const AIFloat3& pos = building.pos;
 
+	UnitDef* unitDef = cdef->GetUnitDef();
 	const int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
@@ -923,7 +935,7 @@ void CTerrainManager::MarkBlocker(const Structure& building, bool block)
 
 STerrainMapArea* CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIFloat3& position)
 {
-	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileTypeId());
+	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
 	if (mobileType == nullptr) {  // flying units & buildings
 		return nullptr;
 	}
@@ -1111,32 +1123,32 @@ int CTerrainManager::GetConvertStoP() const
 	return terrainData->convertStoP;
 }
 
-STerrainMapMobileType* CTerrainManager::GetMobileType(int unitDefId) const
+STerrainMapMobileType* CTerrainManager::GetMobileType(CCircuitDef::Id unitDefId) const
 {
 	return GetMobileTypeById(terrainData->udMobileType[unitDefId]);
 }
 
-int CTerrainManager::GetMobileTypeId(int unitDefId) const
+STerrainMapMobileType::Id CTerrainManager::GetMobileTypeId(CCircuitDef::Id unitDefId) const
 {
 	return terrainData->udMobileType[unitDefId];
 }
 
-STerrainMapMobileType* CTerrainManager::GetMobileTypeById(int id) const
+STerrainMapMobileType* CTerrainManager::GetMobileTypeById(STerrainMapMobileType::Id id) const
 {
 	return (id < 0) ? nullptr : &areaData->mobileType[id];
 }
 
-STerrainMapImmobileType* CTerrainManager::GetImmobileType(int unitDefId) const
+STerrainMapImmobileType* CTerrainManager::GetImmobileType(CCircuitDef::Id unitDefId) const
 {
 	return GetImmobileTypeById(terrainData->udImmobileType[unitDefId]);
 }
 
-int CTerrainManager::GetImmobileTypeId(int unitDefId) const
+STerrainMapImmobileType::Id CTerrainManager::GetImmobileTypeId(CCircuitDef::Id unitDefId) const
 {
 	return terrainData->udMobileType[unitDefId];
 }
 
-STerrainMapImmobileType* CTerrainManager::GetImmobileTypeById(int id) const
+STerrainMapImmobileType* CTerrainManager::GetImmobileTypeById(STerrainMapImmobileType::Id id) const
 {
 	return &areaData->immobileType[id];
 }
@@ -1145,8 +1157,8 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 {
 	int iS = GetSectorIndex(position);
 	STerrainMapSector* sector;
-	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileTypeId());
-	STerrainMapImmobileType* immobileType = GetImmobileTypeById(cdef->GetImmobileTypeId());
+	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
+	STerrainMapImmobileType* immobileType = GetImmobileTypeById(cdef->GetImmobileId());
 	if (mobileType != nullptr) {  // a factory or mobile unit
 		STerrainMapAreaSector* AS = GetAlternativeSector(nullptr, iS, mobileType);
 		if (immobileType != nullptr) {  // a factory
@@ -1171,7 +1183,7 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 
 bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination)
 {
-	// FIXME: so far we know only mobile builders
+	// NOTE: So far we know only mobile builders
 //	if (unit->GetCircuitDef()->GetImmobileType() != nullptr) {  // A hub or factory
 //		return unit->GetUnit()->GetPos().distance2D(destination) < unit->GetDef()->GetBuildDistance();
 //	}
@@ -1183,7 +1195,7 @@ bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination
 	if (area->sector.find(iS) != area->sector.end()) {
 		return true;
 	}
-	if (GetClosestSector(area, iS)->S->position.distance2D(destination) < unit->GetDef()->GetBuildDistance() - GetConvertStoP()) {
+	if (GetClosestSector(area, iS)->S->position.distance2D(destination) < unit->GetCircuitDef()->GetUnitDef()->GetBuildDistance() - GetConvertStoP()) {
 		return true;
 	}
 	return false;
@@ -1196,7 +1208,7 @@ void CTerrainManager::UpdateAreaUsers()
 		CCircuitUnit* unit = kv.second;
 
 		STerrainMapArea* area = nullptr;  // flying units & buildings
-		STerrainMapMobileType* mobileType = GetMobileTypeById(unit->GetCircuitDef()->GetMobileTypeId());
+		STerrainMapMobileType* mobileType = GetMobileTypeById(unit->GetCircuitDef()->GetMobileId());
 		if (mobileType != nullptr) {
 			// other mobile units & their factories
 			int iS = GetSectorIndex(unit->GetUnit()->GetPos());
@@ -1258,7 +1270,7 @@ void CTerrainManager::ClusterizeTerrain()
 	int widthX = circuit->GetMap()->GetWidth();
 	int heightZ = circuit->GetMap()->GetHeight();
 	int widthSX = widthX / 2;
-	MoveData* moveDef = circuit->GetUnitDefByName("armcom1")->GetMoveData();
+	MoveData* moveDef = circuit->GetCircuitDef("armcom1")->GetUnitDef()->GetMoveData();
 	float maxSlope = moveDef->GetMaxSlope();
 	float depth = moveDef->GetDepth();
 	float slopeMod = moveDef->GetSlopeMod();
@@ -1342,7 +1354,7 @@ void CTerrainManager::ClusterizeTerrain()
 	}
 
 	// step 4: Clusterize key waypoints
-	float maxDistance = circuit->GetUnitDefByName("cordoom")->GetMaxWeaponRange() * 2;
+	float maxDistance = circuit->GetCircuitDef("cordoom")->GetUnitDef()->GetMaxWeaponRange() * 2;
 	maxDistance *= maxDistance;
 	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CTerrainData::Clusterize, terrainData, wayPoints, maxDistance, circuit));
 }

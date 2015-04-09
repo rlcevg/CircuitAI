@@ -14,8 +14,6 @@
 #include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
-#include "unit/CircuitUnit.h"
-#include "unit/CircuitDef.h"
 #include "task/PlayerTask.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -26,7 +24,6 @@
 #include "OOAICallback.h"			// C++ wrapper
 #include "Game.h"
 #include "Map.h"
-#include "UnitDef.h"
 #include "Log.h"
 #include "Pathing.h"
 #include "MoveData.h"
@@ -69,7 +66,6 @@ CCircuitAI::CCircuitAI(OOAICallback* callback) :
 		difficulty(Difficulty::NORMAL),
 		allyAware(true),
 		allyTeam(nullptr),
-		circuitDefs(nullptr),
 		defsByName(nullptr),
 		defsById(nullptr)
 {
@@ -326,14 +322,16 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 	scheduler->Init(scheduler);
 
 	InitOptions();
+	if (!gameAttribute->GetTerrainData().IsInitialized()) {
+		gameAttribute->GetTerrainData().Init(this);
+	}
 
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
 	allyTeam = setupManager->GetAllyTeam();
+	allyTeam->Init(this);
 	allyAware &= allyTeam->GetSize() > 1;
-	defsByName = allyTeam->GetDefsByName();
 	defsById = allyTeam->GetDefsById();
-	circuitDefs = allyTeam->GetCircuitDefs();
-	allyTeam->Init(this);  // Inits CTerrainData
+	defsByName = allyTeam->GetDefsByName();
 
 	metalManager = std::make_shared<CMetalManager>(this, &gameAttribute->GetMetalData());
 	if (metalManager->HasMetalSpots() && !metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
@@ -573,9 +571,8 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(int unitId)
 		return nullptr;
 	}
 	UnitDef* unitDef = u->GetDef();
-	UnitDef* def = GetUnitDefById(unitDef->GetUnitDefId());
-	CCircuitDef* cdef = GetCircuitDef(def);
-	unit = new CCircuitUnit(u, def, cdef);
+	CCircuitDef* cdef = GetCircuitDef(unitDef->GetUnitDefId());
+	unit = new CCircuitUnit(u, cdef);
 	delete unitDef;
 
 	unit->SetArea(terrainManager->GetCurrentMapArea(cdef, u->GetPos()));
@@ -592,7 +589,7 @@ void CCircuitAI::UnregisterTeamUnit(CCircuitUnit* unit)
 	int unitId = u->GetUnitId();
 
 	teamUnits.erase(unitId);
-	(*circuitDefs)[unit->GetDef()]->Dec();
+	(*defsById)[unit->GetCircuitDef()->GetId()]->Dec();
 
 	delete unit;
 }
@@ -607,7 +604,7 @@ CCircuitUnit* CCircuitAI::GetTeamUnitById(int unitId)
 	return nullptr;
 }
 
-const std::map<int, CCircuitUnit*>& CCircuitAI::GetTeamUnits() const
+const std::map<CCircuitUnit::Id, CCircuitUnit*>& CCircuitAI::GetTeamUnits() const
 {
 	return teamUnits;
 }
@@ -632,8 +629,7 @@ void CCircuitAI::UpdateAllyUnits()
 		if (u->GetTeam() != teamId) {
 			int unitId = u->GetUnitId();
 			UnitDef* unitDef = u->GetDef();
-			UnitDef* def = GetUnitDefById(unitDef->GetUnitDefId());
-			CCircuitUnit* unit = new CCircuitUnit(u, def, GetCircuitDef(def));
+			CCircuitUnit* unit = new CCircuitUnit(u, GetCircuitDef(unitDef->GetUnitDefId()));
 			delete unitDef;
 			allyUnits[unitId] = unit;
 		} else {
@@ -668,7 +664,7 @@ CCircuitUnit* CCircuitAI::GetAllyUnitById(int unitId)
 	return nullptr;
 }
 
-const std::map<int, CCircuitUnit*>& CCircuitAI::GetAllyUnits() const
+const std::map<CCircuitUnit::Id, CCircuitUnit*>& CCircuitAI::GetAllyUnits() const
 {
 	return allyUnits;
 }
@@ -685,8 +681,7 @@ CCircuitUnit* CCircuitAI::RegisterEnemyUnit(int unitId)
 		return nullptr;
 	}
 	UnitDef* unitDef = u->GetDef();
-	UnitDef* def = GetUnitDefById(unitDef->GetUnitDefId());
-	unit = new CCircuitUnit(u, def, GetCircuitDef(def));
+	unit = new CCircuitUnit(u, GetCircuitDef(unitDef->GetUnitDefId()));
 	delete unitDef;
 
 	enemyUnits[unitId] = unit;
@@ -714,7 +709,7 @@ CCircuitUnit* CCircuitAI::GetEnemyUnitById(int unitId)
 	return nullptr;
 }
 
-const std::map<int, CCircuitUnit*>& CCircuitAI::GetEnemyUnits() const
+const std::map<CCircuitUnit::Id, CCircuitUnit*>& CCircuitAI::GetEnemyUnits() const
 {
 	return enemyUnits;
 }
@@ -763,7 +758,7 @@ bool CCircuitAI::IsAllyAware()
 	return allyAware;
 }
 
-UnitDef* CCircuitAI::GetUnitDefByName(const char* name)
+CCircuitDef* CCircuitAI::GetCircuitDef(const char* name)
 {
 	auto it = defsByName->find(name);
 	if (it != defsByName->end()) {
@@ -773,7 +768,7 @@ UnitDef* CCircuitAI::GetUnitDefByName(const char* name)
 	return nullptr;
 }
 
-UnitDef* CCircuitAI::GetUnitDefById(int unitDefId)
+CCircuitDef* CCircuitAI::GetCircuitDef(CCircuitDef::Id unitDefId)
 {
 	auto it = defsById->find(unitDefId);
 	if (it != defsById->end()) {
@@ -783,34 +778,9 @@ UnitDef* CCircuitAI::GetUnitDefById(int unitDefId)
 	return nullptr;
 }
 
-CAllyTeam::UnitDefs& CCircuitAI::GetUnitDefs()
+CAllyTeam::CircuitDefs& CCircuitAI::GetCircuitDefs()
 {
-	return *defsByName;
-}
-
-CCircuitDef* CCircuitAI::GetCircuitDef(springai::UnitDef* unitDef)
-{
-	auto it = circuitDefs->find(unitDef);
-	if (it != circuitDefs->end()) {
-		return it->second;
-	}
-
-	return nullptr;
-}
-
-int CCircuitAI::GetUnitCount(UnitDef* unitDef)
-{
-	auto it = circuitDefs->find(unitDef);
-	if (it != circuitDefs->end()) {
-		return it->second->GetCount();
-	}
-
-	return -1;
-}
-
-bool CCircuitAI::IsAvailable(UnitDef* unitDef)
-{
-	return (unitDef->GetMaxThisUnit() > GetUnitCount(unitDef));
+	return *defsById;
 }
 
 bool CCircuitAI::IsInitialized()

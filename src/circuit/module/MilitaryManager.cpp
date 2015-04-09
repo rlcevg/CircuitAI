@@ -8,7 +8,6 @@
 #include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
-#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/math/HierarchCluster.h"
 #include "util/math/RagMatrix.h"
@@ -16,7 +15,6 @@
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
-#include "UnitDef.h"
 #include "AISCommands.h"
 // debug
 #include "Pathing.h"
@@ -55,29 +53,29 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 		u->Fight(toPos, 0, FRAMES_PER_SEC * 60 * 5);
 	};
 
-	unitDefId = circuit->GetUnitDefByName("armpw")->GetUnitDefId();
+	unitDefId = circuit->GetCircuitDef("armpw")->GetId();
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
-	unitDefId = circuit->GetUnitDefByName("armrock")->GetUnitDefId();
+	unitDefId = circuit->GetCircuitDef("armrock")->GetId();
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
-	unitDefId = circuit->GetUnitDefByName("armwar")->GetUnitDefId();
+	unitDefId = circuit->GetCircuitDef("armwar")->GetId();
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
-	unitDefId = circuit->GetUnitDefByName("armzeus")->GetUnitDefId();
+	unitDefId = circuit->GetCircuitDef("armzeus")->GetId();
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
-	unitDefId = circuit->GetUnitDefByName("armjeth")->GetUnitDefId();
+	unitDefId = circuit->GetCircuitDef("armjeth")->GetId();
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
-	unitDefId = circuit->GetUnitDefByName("armsnipe")->GetUnitDefId();
+	unitDefId = circuit->GetCircuitDef("armsnipe")->GetId();
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
 
 	/*
 	 * Defence handlers
 	 */
-	unitDefId = circuit->GetUnitDefByName("corllt")->GetUnitDefId();
+	unitDefId = circuit->GetCircuitDef("corllt")->GetId();
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 		OpenDefPoint(unit->GetUnit()->GetPos());
 	};
@@ -85,7 +83,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	/*
 	 * raveparty handlers
 	 */
-	unitDefId = circuit->GetUnitDefByName("raveparty")->GetUnitDefId();
+	unitDefId = circuit->GetCircuitDef("raveparty")->GetId();
 	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 		unit->GetUnit()->SetTrajectory(1);
 	};
@@ -141,7 +139,7 @@ int CMilitaryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 
 int CMilitaryManager::UnitFinished(CCircuitUnit* unit)
 {
-	auto search = finishedHandler.find(unit->GetDef()->GetUnitDefId());
+	auto search = finishedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != finishedHandler.end()) {
 		search->second(unit);
 	}
@@ -151,7 +149,7 @@ int CMilitaryManager::UnitFinished(CCircuitUnit* unit)
 
 int CMilitaryManager::UnitIdle(CCircuitUnit* unit)
 {
-	auto search = idleHandler.find(unit->GetDef()->GetUnitDefId());
+	auto search = idleHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != idleHandler.end()) {
 		search->second(unit);
 	}
@@ -171,7 +169,7 @@ int CMilitaryManager::UnitIdle(CCircuitUnit* unit)
 
 int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
-	auto search = destroyedHandler.find(unit->GetDef()->GetUnitDefId());
+	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != destroyedHandler.end()) {
 		search->second(unit, attacker);
 	}
@@ -279,7 +277,7 @@ void CMilitaryManager::Init()
 	clusterInfos.resize(clusters.size());
 
 	Map* map = circuit->GetMap();
-	float maxDistance = circuit->GetUnitDefByName("corllt")->GetMaxWeaponRange() * 3 / 4 * 2;
+	float maxDistance = circuit->GetCircuitDef("corllt")->GetUnitDef()->GetMaxWeaponRange() * 3 / 4 * 2;
 	CHierarchCluster clust;
 	CEncloseCircle enclose;
 

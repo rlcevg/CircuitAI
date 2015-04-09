@@ -9,12 +9,10 @@
 #include "task/TaskManager.h"
 #include "module/EconomyManager.h"
 #include "module/FactoryManager.h"
-#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
 #include "OOAICallback.h"
-#include "UnitDef.h"  // Only for temporary radius
 
 namespace circuit {
 
@@ -45,7 +43,7 @@ void CSRepairTask::Update()
 		 */
 		CCircuitUnit* repairTarget = nullptr;
 		circuit->UpdateAllyUnits();
-		auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, (*units.begin())->GetDef()->GetBuildDistance()));
+		auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, (*units.begin())->GetCircuitDef()->GetUnitDef()->GetBuildDistance()));
 		for (auto u : us) {
 			CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
 			if (candUnit == nullptr) {

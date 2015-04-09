@@ -16,7 +16,7 @@ class CBNanoTask: public IBuilderTask
 {
 public:
 	CBNanoTask(ITaskManager* mgr, Priority priority,
-			   springai::UnitDef* buildDef, const springai::AIFloat3& position,
+			   CCircuitDef* buildDef, const springai::AIFloat3& position,
 			   float cost, int timeout);
 	virtual ~CBNanoTask();
 

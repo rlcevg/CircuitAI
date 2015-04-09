@@ -76,6 +76,8 @@ struct STerrainMapArea {
 #define MAP_AREA_LIST_SIZE 50
 
 struct STerrainMapMobileType {
+	using Id = int;
+
 	STerrainMapMobileType() :
 		typeUsable(false),
 		areaLargest(nullptr),
@@ -104,8 +106,7 @@ struct STerrainMapMobileType {
 	int udCount;
 };
 
-struct STerrainMapSector
-{
+struct STerrainMapSector {
 	STerrainMapSector() :
 		percentLand(.0f),
 		maxSlope(.0f),
@@ -125,6 +126,8 @@ struct STerrainMapSector
 };
 
 struct STerrainMapImmobileType {
+	using Id = int;
+
 	STerrainMapImmobileType() :
 		udCount(0),
 		canFloat(false),
@@ -171,8 +174,8 @@ public:
 
 	SAreaData areaData0, areaData1;  // Double-buffer
 	std::atomic<SAreaData*> pAreaData;
-	std::map<int, int> udMobileType;    // key = ud->id, Used to find a TerrainMapMobileType for a unit
-	std::map<int, int> udImmobileType;  // key = ud->id, Used to find a TerrainMapImmobileType for a unit
+	std::map<int, STerrainMapMobileType::Id> udMobileType;    // key = ud->id, Used to find a TerrainMapMobileType for a unit
+	std::map<int, STerrainMapImmobileType::Id> udImmobileType;  // key = ud->id, Used to find a TerrainMapImmobileType for a unit
 	STerrainMapImmobileType* landSectorType;   // 0 to the sky
 	STerrainMapImmobileType* waterSectorType;  // minElevation to 0
 

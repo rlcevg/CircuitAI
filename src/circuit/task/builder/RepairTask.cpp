@@ -9,13 +9,11 @@
 #include "task/RetreatTask.h"
 #include "task/TaskManager.h"
 #include "module/EconomyManager.h"
-#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
 #include "AISCommands.h"
 #include "OOAICallback.h"
-#include "UnitDef.h"
 
 namespace circuit {
 
@@ -40,7 +38,7 @@ void CBRepairTask::Execute(CCircuitUnit* unit)
 			manager->FallbackTask(unit);
 			return;
 		}
-		cost = target->GetDef()->GetCost(manager->GetCircuit()->GetEconomyManager()->GetMetalRes());
+		cost = target->GetCircuitDef()->GetUnitDef()->GetCost(manager->GetCircuit()->GetEconomyManager()->GetMetalRes());
 	}
 
 	Unit* u = unit->GetUnit();
@@ -94,7 +92,7 @@ void CBRepairTask::SetTarget(CCircuitUnit* unit)
 {
 	target = unit;
 	if (unit != nullptr) {
-		cost = unit->GetDef()->GetCost(manager->GetCircuit()->GetEconomyManager()->GetMetalRes());
+		cost = unit->GetCircuitDef()->GetUnitDef()->GetCost(manager->GetCircuit()->GetEconomyManager()->GetMetalRes());
 		position = buildPos = unit->GetUnit()->GetPos();
 	} else {
 		cost = 1000.0f;
@@ -108,7 +106,7 @@ CCircuitUnit* CBRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 	Unit* su = unit->GetUnit();
 	const AIFloat3& pos = su->GetPos();
 	float maxSpeed = su->GetMaxSpeed();
-	float radius = unit->GetDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 30;
+	float radius = unit->GetCircuitDef()->GetUnitDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 30;
 	CCircuitAI* circuit = manager->GetCircuit();
 
 	circuit->UpdateAllyUnits();

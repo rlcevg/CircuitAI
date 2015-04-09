@@ -17,7 +17,6 @@
 #include "OOAICallback.h"
 #include "Map.h"
 //#include "File.h"
-#include "UnitDef.h"
 #include "MoveData.h"
 
 #include <functional>
@@ -153,10 +152,8 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	/*
 	 *  MoveType Detection and TerrainMapMobileType Initialization
 	 */
-	CAllyTeam::UnitDefs& defs = circuit->GetUnitDefs();
-	for (auto& kv : defs) {
-		UnitDef* def = kv.second;
-
+	auto defs = std::move(circuit->GetCallback()->GetUnitDefs());
+	for (auto def : defs) {
 		if (def->IsAbleToFly()) {
 
 			udMobileType[def->GetUnitDefId()] = -1;
@@ -233,6 +230,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 			udMobileType[def->GetUnitDefId()] = mtIdx;
 		}
 	}
+	utils::free_clear(defs);
 
 	/*
 	 *  Special types

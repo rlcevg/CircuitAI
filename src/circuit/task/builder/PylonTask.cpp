@@ -7,7 +7,6 @@
 
 #include "task/builder/PylonTask.h"
 #include "task/TaskManager.h"
-#include "unit/CircuitUnit.h"
 #include "module/EconomyManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
@@ -21,7 +20,7 @@ namespace circuit {
 using namespace springai;
 
 CBPylonTask::CBPylonTask(ITaskManager* mgr, Priority priority,
-						 UnitDef* buildDef, const AIFloat3& position,
+						 CCircuitDef* buildDef, const AIFloat3& position,
 						 float cost, int timeout) :
 		IBuilderTask(mgr, priority, buildDef, position, BuildType::PYLON, cost, timeout)
 {
@@ -42,14 +41,15 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 
 	if (target != nullptr) {
 		Unit* tu = target->GetUnit();
-		u->Build(target->GetDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->Build(target->GetCircuitDef()->GetUnitDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 		return;
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
+	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (buildPos != -RgtVector) {
 		facing = FindFacing(buildDef, buildPos);
-		if (circuit->GetMap()->IsPossibleToBuildAt(buildDef, buildPos, facing)) {
-			u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
+			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			return;
 		} else {
 			circuit->GetTerrainManager()->RemoveBlocker(buildDef, buildPos, facing);
@@ -60,7 +60,7 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 
 	if (buildPos != -RgtVector) {
 		circuit->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);
-		u->Build(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	} else {
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);

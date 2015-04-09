@@ -13,7 +13,6 @@
 #include "util/utils.h"
 
 #include "OOAICallback.h"
-#include "UnitDef.h"
 #include "Feature.h"
 
 namespace circuit {
@@ -21,7 +20,7 @@ namespace circuit {
 using namespace springai;
 
 CBDefenceTask::CBDefenceTask(ITaskManager* mgr, Priority priority,
-							 UnitDef* buildDef, const AIFloat3& position,
+							 CCircuitDef* buildDef, const AIFloat3& position,
 							 float cost, int timeout) :
 		IBuilderTask(mgr, priority, buildDef, position, BuildType::DEFENCE, cost, timeout)
 {
@@ -35,7 +34,7 @@ CBDefenceTask::~CBDefenceTask()
 void CBDefenceTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	float radius = buildDef->GetMaxWeaponRange() * 0.8;
+	float radius = buildDef->GetUnitDef()->GetMaxWeaponRange() * 0.8;
 	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(buildPos, radius));
 	if (!features.empty()) {
 		IBuilderTask* recl = circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, buildPos, .0f, FRAMES_PER_SEC * MAX_BUILD_SEC, radius);

@@ -10,11 +10,9 @@
 
 #include "task/UnitTask.h"
 
-namespace springai {
-	class UnitDef;
-}
-
 namespace circuit {
+
+class CCircuitDef;
 
 class CRecruitTask: public IUnitTask {
 public:
@@ -22,7 +20,7 @@ public:
 
 public:
 	CRecruitTask(ITaskManager* mgr, Priority priority,
-				 springai::UnitDef* buildDef, const springai::AIFloat3& position,
+				 CCircuitDef* buildDef, const springai::AIFloat3& position,
 				 BuildType type, float radius);
 	virtual ~CRecruitTask();
 
@@ -36,7 +34,7 @@ public:
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
 	const springai::AIFloat3& GetTaskPos() const;
-	springai::UnitDef* GetBuildDef() const;
+	CCircuitDef* GetBuildDef() const;
 
 	BuildType GetBuildType() const;
 
@@ -45,7 +43,7 @@ public:
 
 private:
 	springai::AIFloat3 position;
-	springai::UnitDef* buildDef;
+	CCircuitDef* buildDef;
 
 	BuildType buildType;
 	float sqradius;

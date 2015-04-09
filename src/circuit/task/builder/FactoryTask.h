@@ -15,7 +15,7 @@ namespace circuit {
 class CBFactoryTask: public IBuilderTask {
 public:
 	CBFactoryTask(ITaskManager* mgr, Priority priority,
-				  springai::UnitDef* buildDef, const springai::AIFloat3& position,
+				  CCircuitDef* buildDef, const springai::AIFloat3& position,
 				  float cost, int timeout);
 	virtual ~CBFactoryTask();
 };
