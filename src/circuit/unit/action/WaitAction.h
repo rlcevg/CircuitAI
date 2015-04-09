@@ -17,7 +17,7 @@ public:
 	CWaitAction(CCircuitUnit* owner);
 	virtual ~CWaitAction();
 
-	virtual void Update();
+	virtual void Update(CCircuitAI* circuit);
 	virtual void OnStart();
 	virtual void OnEnd();
 };

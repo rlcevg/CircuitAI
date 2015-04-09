@@ -40,7 +40,7 @@ public:
 	inline bool operator==(const CCircuitDef& rhs);
 	inline bool operator!=(const CCircuitDef& rhs);
 
-	bool IsAvailable();
+	bool IsAvailable() const;
 	void IncBuild();
 	void DecBuild();
 	int GetBuildCount() const;

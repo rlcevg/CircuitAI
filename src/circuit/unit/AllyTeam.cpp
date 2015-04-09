@@ -76,14 +76,14 @@ void CAllyTeam::UpdateUnits(int frame, springai::OOAICallback* callback)
 	lastUpdate = frame;
 }
 
-CAllyTeam::NCircuitDefs* CAllyTeam::GetDefsByName()
-{
-	return &defsByName;
-}
-
 CAllyTeam::CircuitDefs* CAllyTeam::GetDefsById()
 {
 	return &defsById;
+}
+
+CAllyTeam::NCircuitDefs* CAllyTeam::GetDefsByName()
+{
+	return &defsByName;
 }
 
 void CAllyTeam::Init(CCircuitAI* circuit)

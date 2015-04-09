@@ -7,6 +7,7 @@
 
 #include "unit/CircuitUnit.h"
 #include "unit/UnitManager.h"
+#include "unit/action/WaitAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -23,6 +24,7 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* circuitDef) :
 		manager(nullptr),
 		area(nullptr)
 {
+	PushBack(new CWaitAction(this));
 }
 
 CCircuitUnit::~CCircuitUnit()

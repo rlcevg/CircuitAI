@@ -17,7 +17,7 @@ public:
 	CMoveAction(CCircuitUnit* owner);
 	virtual ~CMoveAction();
 
-	virtual void Update();
+	virtual void Update(CCircuitAI* circuit);
 	virtual void OnStart();
 	virtual void OnEnd();
 };

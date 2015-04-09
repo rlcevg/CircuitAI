@@ -61,7 +61,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			for (auto nano : units) {
 				UnitDef* ndef = nano->GetDef();
 				if (ndef->GetUnitDefId() == nanoId && nano->GetTeam() == teamId) {
-					nanos.insert(this->circuit->GetTeamUnitById(nano->GetUnitId()));
+					nanos.insert(this->circuit->GetTeamUnit(nano->GetUnitId()));
 				}
 				delete ndef;
 			}

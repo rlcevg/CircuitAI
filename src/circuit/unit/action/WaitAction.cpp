@@ -20,7 +20,7 @@ CWaitAction::~CWaitAction()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CWaitAction::Update()
+void CWaitAction::Update(CCircuitAI* circuit)
 {
 
 }

@@ -68,13 +68,13 @@ public:
 	using CircuitDefs = std::unordered_map<CCircuitDef::Id, CCircuitDef*>;
 	using NCircuitDefs = std::map<const char*, CCircuitDef*, cmp_str>;
 
-	NCircuitDefs* GetDefsByName();
 	CircuitDefs* GetDefsById();
+	NCircuitDefs* GetDefsByName();
 	void Init(CCircuitAI* circuit);
 	void Release();
 private:
-	NCircuitDefs defsByName;
 	CircuitDefs defsById;  // owner
+	NCircuitDefs defsByName;
 
 	int initCount;
 // ---- UnitDefs ---- END

@@ -3,7 +3,7 @@
 
 set(mySourceDirRel         "src/") # Common values are "" or "src"
 set(additionalSources      ${CUtils_SRC})
-#set(additionalCompileFlags "-Isrc/lib/ -Isrc/circuit/ -O0 -DDEBUG")
+#set(additionalCompileFlags "-Isrc/lib/ -Isrc/circuit/ -O1 -DDEBUG")
 set(additionalCompileFlags "-Isrc/lib/ -Isrc/circuit/")
 set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET})
 

@@ -98,17 +98,18 @@ public:
 //	int CommandFinished(CCircuitUnit* unit, int commandTopicId);
 	int LuaMessage(const char* inData);
 
-	CCircuitUnit* RegisterTeamUnit(int unitId);
+	CCircuitUnit* RegisterTeamUnit(CCircuitUnit::Id unitId);
 	void UnregisterTeamUnit(CCircuitUnit* unit);
-	CCircuitUnit* GetTeamUnitById(int unitId);
+	CCircuitUnit* GetTeamUnit(CCircuitUnit::Id unitId);
 	const std::map<CCircuitUnit::Id, CCircuitUnit*>& GetTeamUnits() const;
 	void UpdateAllyUnits();
 	CCircuitUnit* GetFriendlyUnit(springai::Unit* u);
-	CCircuitUnit* GetAllyUnitById(int unitId);
+	CCircuitUnit* GetFriendlyUnit(CCircuitUnit::Id unitId);
+	CCircuitUnit* GetAllyUnit(CCircuitUnit::Id unitId);
 	const std::map<CCircuitUnit::Id, CCircuitUnit*>& GetAllyUnits() const;
-	CCircuitUnit* RegisterEnemyUnit(int unitId);
+	CCircuitUnit* RegisterEnemyUnit(CCircuitUnit::Id unitId);
 	void UnregisterEnemyUnit(CCircuitUnit* unit);
-	CCircuitUnit* GetEnemyUnitById(int unitId);
+	CCircuitUnit* GetEnemyUnit(CCircuitUnit::Id unitId);
 	const std::map<CCircuitUnit::Id, CCircuitUnit*>& GetEnemyUnits() const;
 
 	bool IsUpdateTimeValid();

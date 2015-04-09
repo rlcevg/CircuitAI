@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_TASK_REPAIRTASK_H_
 
 #include "task/builder/BuilderTask.h"
+#include "unit/CircuitUnit.h"
 
 namespace circuit {
 
@@ -30,8 +31,9 @@ public:
 
 	virtual void SetTarget(CCircuitUnit* unit);
 
-private:
+protected:
 	CCircuitUnit* FindUnitToAssist(CCircuitUnit* unit);
+	CCircuitUnit::Id targetId;  // Ignore "target" variable because ally units are vivid
 };
 
 } // namespace circuit

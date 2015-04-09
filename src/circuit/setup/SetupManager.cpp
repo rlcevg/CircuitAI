@@ -223,7 +223,7 @@ const springai::AIFloat3& CSetupManager::GetBasePos()
 
 CCircuitUnit* CSetupManager::GetCommander()
 {
-	return circuit->GetTeamUnitById(commanderId);
+	return circuit->GetTeamUnit(commanderId);
 }
 
 CAllyTeam* CSetupManager::GetAllyTeam()

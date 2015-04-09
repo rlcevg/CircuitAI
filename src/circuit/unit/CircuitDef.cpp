@@ -29,6 +29,11 @@ CCircuitDef::~CCircuitDef()
 	delete def;
 }
 
+CCircuitDef::Id CCircuitDef::GetId() const
+{
+	return id;
+}
+
 UnitDef* CCircuitDef::GetUnitDef() const
 {
 	return def;
@@ -46,7 +51,8 @@ bool CCircuitDef::CanBuild(Id buildDefId) const
 
 bool CCircuitDef::CanBuild(CCircuitDef* buildDef) const
 {
-	return CanBuild(buildDef->GetId());
+	// FIXME: Remove Patrol/Reclaim/Terra tasks from CBuildManager::builderTasks
+	return (buildDef != nullptr) ? CanBuild(buildDef->GetId()) : false;
 }
 
 int CCircuitDef::GetCount() const
@@ -90,7 +96,7 @@ CCircuitDef CCircuitDef::operator--(int)
 	return temp;
 }
 
-bool CCircuitDef::IsAvailable()
+bool CCircuitDef::IsAvailable() const
 {
 	return (def->GetMaxThisUnit() > count);
 }

@@ -256,11 +256,16 @@ void CBuilderManager::AddBuildList(CCircuitUnit* unit)
 	std::set<CCircuitDef*> buildDefs;
 	for (auto build : buildOptions) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(build);
-		buildDefs.insert(cdef);
+		// FIXME: Don't move CCircuitDef into AllyTeam
+		if (cdef->GetBuildCount() == 0) {
+			buildDefs.insert(cdef);
+		}
 		cdef->IncBuild();
 	}
 
-	circuit->GetEconomyManager()->AddAvailEnergy(buildDefs);
+	if (!buildDefs.empty()) {
+		circuit->GetEconomyManager()->AddAvailEnergy(buildDefs);
+	}
 
 	// TODO: Same thing with factory, etc.
 }
@@ -277,12 +282,15 @@ void CBuilderManager::RemoveBuildList(CCircuitUnit* unit)
 	for (auto build : buildOptions) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(build);
 		cdef->DecBuild();
+		// FIXME: Don't move CCircuitDef into AllyTeam
 		if (cdef->GetBuildCount() == 0) {
 			buildDefs.insert(cdef);
 		}
 	}
 
-	circuit->GetEconomyManager()->RemoveAvailEnergy(buildDefs);
+	if (!buildDefs.empty()) {  // throws exception on set::erase otherwise
+		circuit->GetEconomyManager()->RemoveAvailEnergy(buildDefs);
+	}
 
 	// TODO: Same thing with factory, etc.
 }

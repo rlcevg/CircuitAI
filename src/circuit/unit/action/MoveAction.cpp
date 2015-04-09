@@ -20,7 +20,7 @@ CMoveAction::~CMoveAction()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CMoveAction::Update()
+void CMoveAction::Update(CCircuitAI* circuit)
 {
 
 }

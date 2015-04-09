@@ -32,13 +32,14 @@ CBRepairTask::~CBRepairTask()
 
 void CBRepairTask::Execute(CCircuitUnit* unit)
 {
-	if (target == nullptr) {
-		target = FindUnitToAssist(unit);
+	if (targetId == -1) {
+		CCircuitUnit* target = FindUnitToAssist(unit);
 		if (target == nullptr) {
 			manager->FallbackTask(unit);
 			return;
 		}
 		cost = target->GetCircuitDef()->GetUnitDef()->GetCost(manager->GetCircuit()->GetEconomyManager()->GetMetalRes());
+		targetId = target->GetId();
 	}
 
 	Unit* u = unit->GetUnit();
@@ -46,7 +47,7 @@ void CBRepairTask::Execute(CCircuitUnit* unit)
 	params.push_back(static_cast<float>(priority));
 	u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
-	u->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+	u->Repair(manager->GetCircuit()->GetFriendlyUnit(targetId)->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 }
 
 void CBRepairTask::Update()
@@ -90,13 +91,14 @@ void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 
 void CBRepairTask::SetTarget(CCircuitUnit* unit)
 {
-	target = unit;
 	if (unit != nullptr) {
 		cost = unit->GetCircuitDef()->GetUnitDef()->GetCost(manager->GetCircuit()->GetEconomyManager()->GetMetalRes());
 		position = buildPos = unit->GetUnit()->GetPos();
+		targetId = unit->GetId();
 	} else {
 		cost = 1000.0f;
 		position = buildPos = -RgtVector;
+		targetId = -1;
 	}
 }
 

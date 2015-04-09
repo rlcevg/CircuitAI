@@ -37,33 +37,33 @@ void CSRepairTask::Update()
 		manager->AbortTask(this);
 	} else if (++repUpdCount >= 5) {
 		repUpdCount = 0;
-		// TODO: Check if the current target is being built or repaired
-		/*
-		 * Check for damaged units
-		 */
-		CCircuitUnit* repairTarget = nullptr;
-		circuit->UpdateAllyUnits();
-		auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, (*units.begin())->GetCircuitDef()->GetUnitDef()->GetBuildDistance()));
-		for (auto u : us) {
-			CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
-			if (candUnit == nullptr) {
-				continue;
+		if ((targetId != -1) && circuit->GetFriendlyUnit(targetId)->GetUnit()->IsBeingBuilt()) {
+			/*
+			 * Check for damaged units
+			 */
+			CCircuitUnit* repairTarget = nullptr;
+			circuit->UpdateAllyUnits();
+			auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, (*units.begin())->GetCircuitDef()->GetUnitDef()->GetBuildDistance()));
+			for (auto u : us) {
+				CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
+				if (candUnit == nullptr) {
+					continue;
+				}
+				if (!u->IsBeingBuilt() && u->GetHealth() < u->GetMaxHealth()) {
+					repairTarget = candUnit;
+					break;
+				}
 			}
-			if (!u->IsBeingBuilt() && u->GetHealth() < u->GetMaxHealth()) {
-				repairTarget = candUnit;
-				break;
+			utils::free_clear(us);
+			if ((repairTarget != nullptr) && (targetId != repairTarget->GetId())) {
+				// Repair task
+				IBuilderTask* task = circuit->GetFactoryManager()->EnqueueRepair(IBuilderTask::Priority::LOW, repairTarget);
+				decltype(units) tmpUnits = units;
+				for (auto unit : tmpUnits) {
+					manager->AssignTask(unit, task);
+				}
+				manager->AbortTask(this);
 			}
-		}
-		utils::free_clear(us);
-		// FIXME: (target != repairTarget) always works because UpdateAllyUnits deletes previous units and allocates new
-		if ((repairTarget != nullptr) && (target != repairTarget)) {
-			// Repair task
-			IBuilderTask* task = circuit->GetFactoryManager()->EnqueueRepair(IBuilderTask::Priority::LOW, repairTarget);
-			decltype(units) tmpUnits = units;
-			for (auto unit : tmpUnits) {
-				manager->AssignTask(unit, task);
-			}
-			manager->AbortTask(this);
 		}
 	}
 }

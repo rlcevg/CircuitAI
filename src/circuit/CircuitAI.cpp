@@ -123,7 +123,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		case EVENT_UNIT_CREATED: {
 			PRINT_TOPIC("EVENT_UNIT_CREATED", topic);
 			struct SUnitCreatedEvent* evt = (struct SUnitCreatedEvent*)data;
-			CCircuitUnit* builder = GetTeamUnitById(evt->builder);
+			CCircuitUnit* builder = GetTeamUnit(evt->builder);
 			CCircuitUnit* unit = RegisterTeamUnit(evt->unit);
 			ret = (unit != nullptr) ? this->UnitCreated(unit, builder) : ERROR_UNIT_CREATED;
 			break;
@@ -141,30 +141,30 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		case EVENT_UNIT_IDLE: {
 			PRINT_TOPIC("EVENT_UNIT_IDLE", topic);
 			struct SUnitIdleEvent* evt = (struct SUnitIdleEvent*)data;
-			CCircuitUnit* unit = GetTeamUnitById(evt->unit);
+			CCircuitUnit* unit = GetTeamUnit(evt->unit);
 			ret = (unit != nullptr) ? this->UnitIdle(unit) : ERROR_UNIT_IDLE;
 			break;
 		}
 		case EVENT_UNIT_MOVE_FAILED: {
 			PRINT_TOPIC("EVENT_UNIT_MOVE_FAILED", topic);
 			struct SUnitMoveFailedEvent* evt = (struct SUnitMoveFailedEvent*)data;
-			CCircuitUnit* unit = GetTeamUnitById(evt->unit);
+			CCircuitUnit* unit = GetTeamUnit(evt->unit);
 			ret = (unit != nullptr) ? this->UnitMoveFailed(unit) : ERROR_UNIT_MOVE_FAILED;
 			break;
 		}
 		case EVENT_UNIT_DAMAGED: {
 			PRINT_TOPIC("EVENT_UNIT_DAMAGED", topic);
 			struct SUnitDamagedEvent* evt = (struct SUnitDamagedEvent*)data;
-			CCircuitUnit* attacker = GetEnemyUnitById(evt->attacker);
-			CCircuitUnit* unit = GetTeamUnitById(evt->unit);
+			CCircuitUnit* attacker = GetEnemyUnit(evt->attacker);
+			CCircuitUnit* unit = GetTeamUnit(evt->unit);
 			ret = (unit != nullptr) ? this->UnitDamaged(unit, attacker) : ERROR_UNIT_DAMAGED;
 			break;
 		}
 		case EVENT_UNIT_DESTROYED: {
 			PRINT_TOPIC("EVENT_UNIT_DESTROYED", topic);
 			struct SUnitDestroyedEvent* evt = (struct SUnitDestroyedEvent*)data;
-			CCircuitUnit* attacker = GetEnemyUnitById(evt->attacker);
-			CCircuitUnit* unit = GetTeamUnitById(evt->unit);
+			CCircuitUnit* attacker = GetEnemyUnit(evt->attacker);
+			CCircuitUnit* unit = GetTeamUnit(evt->unit);
 			if (unit != nullptr) {
 				ret = this->UnitDestroyed(unit, attacker);
 				UnregisterTeamUnit(unit);
@@ -183,7 +183,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		case EVENT_UNIT_CAPTURED: {
 			PRINT_TOPIC("EVENT_UNIT_CAPTURED", topic);
 			struct SUnitCapturedEvent* evt = (struct SUnitCapturedEvent*)data;
-			CCircuitUnit* unit = GetTeamUnitById(evt->unitId);
+			CCircuitUnit* unit = GetTeamUnit(evt->unitId);
 			if (unit != nullptr) {
 				ret = this->UnitCaptured(unit, evt->oldTeamId, evt->newTeamId);
 				UnregisterTeamUnit(unit);
@@ -222,7 +222,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		case EVENT_ENEMY_DESTROYED: {
 			PRINT_TOPIC("EVENT_ENEMY_DESTROYED", topic);
 			struct SEnemyDestroyedEvent* evt = (struct SEnemyDestroyedEvent*)data;
-			CCircuitUnit* enemy = GetEnemyUnitById(evt->enemy);
+			CCircuitUnit* enemy = GetEnemyUnit(evt->enemy);
 			if (enemy != nullptr) {
 				ret = 0;
 				UnregisterEnemyUnit(enemy);
@@ -242,7 +242,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			std::vector<CCircuitUnit*> units;
 			units.reserve(evt->unitIds_size);
 			for (int i = 0; i < evt->unitIds_size; i++) {
-				units.push_back(GetTeamUnitById(evt->unitIds[i]));
+				units.push_back(GetTeamUnit(evt->unitIds[i]));
 			}
 			ret = this->PlayerCommand(units);
 			break;
@@ -559,9 +559,9 @@ int CCircuitAI::LuaMessage(const char* inData)
 	return 0;  // signaling: OK
 }
 
-CCircuitUnit* CCircuitAI::RegisterTeamUnit(int unitId)
+CCircuitUnit* CCircuitAI::RegisterTeamUnit(CCircuitUnit::Id unitId)
 {
-	CCircuitUnit* unit = GetTeamUnitById(unitId);
+	CCircuitUnit* unit = GetTeamUnit(unitId);
 	if (unit != nullptr) {
 		return unit;
 	}
@@ -594,7 +594,7 @@ void CCircuitAI::UnregisterTeamUnit(CCircuitUnit* unit)
 	delete unit;
 }
 
-CCircuitUnit* CCircuitAI::GetTeamUnitById(int unitId)
+CCircuitUnit* CCircuitAI::GetTeamUnit(CCircuitUnit::Id unitId)
 {
 	std::map<int, CCircuitUnit*>::iterator i = teamUnits.find(unitId);
 	if (i != teamUnits.end()) {
@@ -646,15 +646,24 @@ CCircuitUnit* CCircuitAI::GetFriendlyUnit(Unit* u)
 	}
 
 	if (u->GetTeam() == teamId) {
-		return GetTeamUnitById(u->GetUnitId());
+		return GetTeamUnit(u->GetUnitId());
 	} else if (u->GetAllyTeam() == allyTeamId) {
-		return GetAllyUnitById(u->GetUnitId());
+		return GetAllyUnit(u->GetUnitId());
 	}
 
 	return nullptr;
 }
 
-CCircuitUnit* CCircuitAI::GetAllyUnitById(int unitId)
+CCircuitUnit* CCircuitAI::GetFriendlyUnit(CCircuitUnit::Id unitId)
+{
+	CCircuitUnit* result = GetTeamUnit(unitId);
+	if (result == nullptr) {
+		result = GetAllyUnit(unitId);
+	}
+	return result;
+}
+
+CCircuitUnit* CCircuitAI::GetAllyUnit(CCircuitUnit::Id unitId)
 {
 	std::map<int, CCircuitUnit*>::iterator i = allyUnits.find(unitId);
 	if (i != allyUnits.end()) {
@@ -669,9 +678,9 @@ const std::map<CCircuitUnit::Id, CCircuitUnit*>& CCircuitAI::GetAllyUnits() cons
 	return allyUnits;
 }
 
-CCircuitUnit* CCircuitAI::RegisterEnemyUnit(int unitId)
+CCircuitUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId)
 {
-	CCircuitUnit* unit = GetEnemyUnitById(unitId);
+	CCircuitUnit* unit = GetEnemyUnit(unitId);
 	if (unit != nullptr) {
 		return unit;
 	}
@@ -699,7 +708,7 @@ void CCircuitAI::UnregisterEnemyUnit(CCircuitUnit* unit)
 	delete unit;
 }
 
-CCircuitUnit* CCircuitAI::GetEnemyUnitById(int unitId)
+CCircuitUnit* CCircuitAI::GetEnemyUnit(CCircuitUnit::Id unitId)
 {
 	std::map<int, CCircuitUnit*>::iterator i = enemyUnits.find(unitId);
 	if (i != enemyUnits.end()) {
