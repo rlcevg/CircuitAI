@@ -12,7 +12,6 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
-#include "Unit.h"
 #include "Map.h"
 
 namespace circuit {

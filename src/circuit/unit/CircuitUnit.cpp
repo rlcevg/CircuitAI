@@ -10,8 +10,6 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
-#include "Unit.h"
-
 namespace circuit {
 
 using namespace springai;

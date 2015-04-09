@@ -18,7 +18,7 @@ namespace circuit {
 
 class CCircuitDef {
 public:
-	CCircuitDef(std::unordered_set<springai::UnitDef*>& opts);
+	CCircuitDef(std::unordered_set<springai::UnitDef*>& buildOpts);
 	virtual ~CCircuitDef();
 
 	const std::unordered_set<springai::UnitDef*>& GetBuildOptions() const;
@@ -43,6 +43,7 @@ public:
 	int GetMobileTypeId();
 
 private:
+	springai::UnitDef* def;
 	std::unordered_set<springai::UnitDef*> buildOptions;
 	int count;
 	int buildCounts;  // number of builder defs able to build this def;

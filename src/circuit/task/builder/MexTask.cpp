@@ -18,7 +18,6 @@
 #include "AISCommands.h"
 #include "OOAICallback.h"
 #include "UnitDef.h"
-#include "Unit.h"
 #include "Map.h"
 
 namespace circuit {

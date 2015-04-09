@@ -10,8 +10,9 @@
 
 #include "util/ActionList.h"
 
+#include "Unit.h"
+
 namespace springai {
-	class Unit;
 	class UnitDef;
 }
 

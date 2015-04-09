@@ -12,9 +12,9 @@ namespace circuit {
 
 using namespace springai;
 
-CCircuitDef::CCircuitDef(std::unordered_set<springai::UnitDef*>& opts) :
+CCircuitDef::CCircuitDef(std::unordered_set<springai::UnitDef*>& buildOpts) :
 		count(0),
-		buildOptions(opts),
+		buildOptions(buildOpts),
 		buildCounts(0),
 		mobileTypeId(-1),
 		immobileTypeId(-1)

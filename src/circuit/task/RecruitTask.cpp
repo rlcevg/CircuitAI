@@ -10,7 +10,6 @@
 #include "util/utils.h"
 
 #include "AISCommands.h"
-#include "Unit.h"
 
 namespace circuit {
 

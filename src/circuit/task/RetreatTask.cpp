@@ -17,7 +17,6 @@
 #include "AISCommands.h"
 #include "AIFloat3.h"
 #include "UnitDef.h"
-#include "Unit.h"
 
 namespace circuit {
 

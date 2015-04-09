@@ -35,10 +35,7 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData) :
 		startPos(-RgtVector)
 {
 	if (!setupData->IsInitialized()) {
-		Map* map = circuit->GetMap();
-		int terrainWidth = map->GetWidth() * SQUARE_SIZE;
-		int terrainHeight = map->GetHeight() * SQUARE_SIZE;
-		ParseSetupScript(circuit->GetGame()->GetSetupScript(), terrainWidth, terrainHeight);
+		ParseSetupScript(circuit->GetGame()->GetSetupScript());
 	}
 	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>(&CSetupManager::FindCommander, this));
 }
@@ -48,23 +45,32 @@ CSetupManager::~CSetupManager()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CSetupManager::ParseSetupScript(const char* setupScript, float width, float height)
+void CSetupManager::ParseSetupScript(const char* setupScript)
 {
-	std::map<int, CSetupData::Box> boxesMap;
+	std::string script(setupScript);
+	std::map<int, int> teamIdsRemap;
+	struct SAllyData {
+		CAllyTeam::SBox startBox;
+		std::set<int> origTeamIds;
+	};
+	std::map<int, SAllyData> alliesMap;
+
+	// Detect start boxes
+	Map* map = circuit->GetMap();
+	float width = map->GetWidth() * SQUARE_SIZE;
+	float height = map->GetHeight() * SQUARE_SIZE;
 	std::regex patternAlly("\\[allyteam(\\d+)\\]\\s*\\{([^\\}]*)\\}");
 	std::regex patternRect("startrect\\w+=(\\d+(\\.\\d+)?);");
-	std::string script(setupScript);
-
-	std::smatch allyteam;
+	std::smatch section;
 	std::string::const_iterator start = script.begin();
 	std::string::const_iterator end = script.end();
-	while (std::regex_search(start, end, allyteam, patternAlly)) {
-		int allyTeamId = utils::string_to_int(allyteam[1]);
+	while (std::regex_search(start, end, section, patternAlly)) {
+		int allyTeamId = utils::string_to_int(section[1]);
 
-		std::string teamDefBody = allyteam[2];
-		std::sregex_token_iterator iter(teamDefBody.begin(), teamDefBody.end(), patternRect, 1);
+		std::string allyBody = section[2];
+		std::sregex_token_iterator iter(allyBody.begin(), allyBody.end(), patternRect, 1);
 		std::sregex_token_iterator end;
-		CSetupData::Box startbox;
+		CAllyTeam::SBox startbox;
 		for (int i = 0; iter != end && i < 4; ++iter, i++) {
 			startbox.edge[i] = utils::string_to_float(*iter);
 		}
@@ -73,11 +79,12 @@ void CSetupManager::ParseSetupScript(const char* setupScript, float width, float
 		startbox.left   *= width;
 		startbox.right  *= width;
 		startbox.top    *= height;
-		boxesMap[allyTeamId] = startbox;
+		alliesMap[allyTeamId].startBox = startbox;
 
-		start = allyteam[0].second;
+		start = section[0].second;
 	}
 
+	// Detect start position type
 	CGameSetup::StartPosType startPosType;
 	std::cmatch matchPosType;
 	std::regex patternPosType("startpostype=(\\d+)");
@@ -87,22 +94,50 @@ void CSetupManager::ParseSetupScript(const char* setupScript, float width, float
 		startPosType = CGameSetup::StartPosType::StartPos_ChooseInGame;
 	}
 
-	std::vector<CSetupData::Box> startBoxes;
-	startBoxes.reserve(boxesMap.size());
-	// Remap start boxes
-	// @see rts/Game/GameSetup.cpp CGameSetup::Init
-//	for (const std::map<int, Box>::value_type& kv : boxesMap) {
-//	for (const std::pair<const int, std::array<float, 4>>& kv : boxesMap) {
-	for (const auto& kv : boxesMap) {
-		startBoxes.push_back(kv.second);
+	// Detect team alliances
+	std::regex patternTeam("\\[team(\\d+)\\]\\s*\\{([^\\}]*)\\}");
+	std::regex patternAllyId("allyteam=(\\d+);");
+	start = script.begin();
+	end = script.end();
+	while (std::regex_search(start, end, section, patternTeam)) {
+		int teamId = utils::string_to_int(section[1]);
+		teamIdsRemap[teamId] = teamId;
+
+		std::string teamBody = section[2];
+		std::smatch matchAllyId;
+		if (std::regex_search(teamBody, matchAllyId, patternAllyId)) {
+			int allyTeamId = utils::string_to_int(matchAllyId[1]);
+			alliesMap[allyTeamId].origTeamIds.insert(teamId);
+		}
+
+		start = section[0].second;
+	}
+	// Make team remapper
+	int i = 0;
+	for (auto& kv : teamIdsRemap) {
+		kv.second = i++;
 	}
 
-	setupData->Init(startBoxes, startPosType);
+	// Remap teams, create ally-teams
+	// @see rts/Game/GameSetup.cpp CGameSetup::Init
+	std::vector<CAllyTeam*> allyTeams;
+	allyTeams.reserve(alliesMap.size());
+	for (const auto& kv : alliesMap) {
+		const SAllyData& data = kv.second;
+		std::vector<int> teamIds;
+		teamIds.reserve(data.origTeamIds.size());
+		for (auto id : data.origTeamIds) {
+			teamIds.push_back(teamIdsRemap[id]);
+		}
+		allyTeams.push_back(new CAllyTeam(teamIds, data.startBox));
+	}
+
+	setupData->Init(allyTeams, startPosType);
 }
 
 bool CSetupManager::HasStartBoxes()
 {
-	return (setupData->IsInitialized() && !setupData->IsEmpty());
+	return setupData->IsInitialized();
 }
 
 bool CSetupManager::CanChooseStartPos()
@@ -113,9 +148,9 @@ bool CSetupManager::CanChooseStartPos()
 void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 {
 	float x, z;
-	const CSetupData::Box& box = (*setupData)[circuit->GetAllyTeamId()];
+	const CAllyTeam::SBox& box = (*setupData)[circuit->GetAllyTeamId()];
 
-	auto random = [](const CSetupData::Box& box, float& x, float& z) {
+	auto random = [](const CAllyTeam::SBox& box, float& x, float& z) {
 		int min, max;
 		min = box.left;
 		max = box.right;
@@ -170,11 +205,6 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 	circuit->GetGame()->SendStartPosition(false, pos);
 }
 
-CCircuitUnit* CSetupManager::GetCommander()
-{
-	return circuit->GetTeamUnitById(commanderId);
-}
-
 void CSetupManager::SetStartPos(const AIFloat3& pos)
 {
 	startPos = basePos = pos;
@@ -193,6 +223,16 @@ void CSetupManager::SetBasePos(const springai::AIFloat3& pos)
 const springai::AIFloat3& CSetupManager::GetBasePos()
 {
 	return basePos;
+}
+
+CCircuitUnit* CSetupManager::GetCommander()
+{
+	return circuit->GetTeamUnitById(commanderId);
+}
+
+CAllyTeam* CSetupManager::GetAllyTeam()
+{
+	return setupData->GetAllyTeam(circuit->GetAllyTeamId());
 }
 
 void CSetupManager::FindCommander()

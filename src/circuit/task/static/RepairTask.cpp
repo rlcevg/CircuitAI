@@ -14,7 +14,6 @@
 #include "util/utils.h"
 
 #include "OOAICallback.h"
-#include "Unit.h"
 #include "UnitDef.h"  // Only for temporary radius
 
 namespace circuit {
@@ -40,6 +39,7 @@ void CSRepairTask::Update()
 		manager->AbortTask(this);
 	} else if (++repUpdCount >= 5) {
 		repUpdCount = 0;
+		// TODO: Check if the current target is being built or repaired
 		/*
 		 * Check for damaged units
 		 */
@@ -57,6 +57,7 @@ void CSRepairTask::Update()
 			}
 		}
 		utils::free_clear(us);
+		// FIXME: (target != repairTarget) always works because UpdateAllyUnits deletes previous units and allocates new
 		if ((repairTarget != nullptr) && (target != repairTarget)) {
 			// Repair task
 			IBuilderTask* task = circuit->GetFactoryManager()->EnqueueRepair(IBuilderTask::Priority::LOW, repairTarget);

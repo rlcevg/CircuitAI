@@ -153,7 +153,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	/*
 	 *  MoveType Detection and TerrainMapMobileType Initialization
 	 */
-	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
+	CAllyTeam::UnitDefs& defs = circuit->GetUnitDefs();
 	for (auto& kv : defs) {
 		UnitDef* def = kv.second;
 

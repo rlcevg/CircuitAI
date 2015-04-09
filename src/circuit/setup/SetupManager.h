@@ -15,6 +15,7 @@ namespace circuit {
 class CCircuitAI;
 class CSetupData;
 class CCircuitUnit;
+class CAllyTeam;
 
 class CSetupManager {
 public:
@@ -22,17 +23,19 @@ public:
 
 	CSetupManager(CCircuitAI* circuit, CSetupData* setupData);
 	virtual ~CSetupManager();
-	void ParseSetupScript(const char* setupScript, float width, float height);
+	void ParseSetupScript(const char* setupScript);
 
 	bool HasStartBoxes();
 	bool CanChooseStartPos();
 
 	void PickStartPos(CCircuitAI* circuit, StartPosType type);
-	CCircuitUnit* GetCommander();
 	void SetStartPos(const springai::AIFloat3& pos);
 	const springai::AIFloat3& GetStartPos();
 	void SetBasePos(const springai::AIFloat3& pos);
 	const springai::AIFloat3& GetBasePos();
+
+	CCircuitUnit* GetCommander();
+	CAllyTeam* GetAllyTeam();
 
 private:
 	void FindCommander();

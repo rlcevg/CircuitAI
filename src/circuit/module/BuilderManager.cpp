@@ -35,7 +35,6 @@
 
 #include "AISCommands.h"
 #include "UnitDef.h"
-#include "Unit.h"
 #include "Pathing.h"
 #include "MoveData.h"
 #include "UnitRulesParam.h"
@@ -112,7 +111,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	};
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
+	CAllyTeam::UnitDefs& defs = circuit->GetUnitDefs();
 	for (auto& kv : defs) {
 		UnitDef* def = kv.second;
 		if (def->GetSpeed() > 0) {

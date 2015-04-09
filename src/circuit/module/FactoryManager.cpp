@@ -19,7 +19,6 @@
 
 #include "AIFloat3.h"
 #include "OOAICallback.h"
-#include "Unit.h"
 #include "UnitDef.h"
 #include "Command.h"
 
@@ -135,7 +134,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 	};
 
-	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
+	CAllyTeam::UnitDefs& defs = circuit->GetUnitDefs();
 	for (auto& kv : defs) {
 		UnitDef* def = kv.second;
 		if (def->IsBuilder() && (def->GetSpeed() == 0)) {

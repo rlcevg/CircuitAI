@@ -20,7 +20,6 @@
 
 #include "AISCommands.h"
 #include "OOAICallback.h"
-#include "Unit.h"
 #include "UnitDef.h"
 #include "Map.h"
 #include "SkirmishAIs.h"
@@ -120,16 +119,22 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		}
 		--pylonCount;
 	};
-//	Map* map = circuit->GetMap();
-//	float pylonSquare = pylonRange * 2 / SQUARE_SIZE;
-//	pylonSquare *= pylonSquare;
-//	pylonMaxCount = ((map->GetWidth() * map->GetHeight()) / pylonSquare) / 2;
-	pylonMaxCount = 10;
+
+	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
+	std::vector<Team*> allyTeams = circuit->GetCallback()->GetAllyTeams();
+	float allyTeamCount = allyTeams.size();
+	ecoFactor = allyTeamCount * 0.25f + 0.75f;
+	utils::free_clear(allyTeams);
+
+	Map* map = circuit->GetMap();
+	float pylonSquare = pylonRange * 2 / SQUARE_SIZE;
+	pylonSquare *= pylonSquare;
+	pylonMaxCount = ((map->GetWidth() * map->GetHeight()) / pylonSquare) / allyTeamCount / 2;
 
 	/*
 	 *  Identify resource buildings
 	 */
-	CCircuitAI::UnitDefs& allDefs = circuit->GetUnitDefs();
+	CAllyTeam::UnitDefs& allDefs = circuit->GetUnitDefs();
 	for (auto& kv : allDefs) {
 		UnitDef* def = kv.second;
 		if (def->GetSpeed() <= 0) {
@@ -143,12 +148,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 			}
 		}
 	}
-
-	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
-	std::vector<Team*> allyTeams = circuit->GetCallback()->GetAllyTeams();
-	float allyTeamCount = allyTeams.size();
-	ecoFactor = allyTeamCount * 0.25f + 0.75f;
-	utils::free_clear(allyTeams);
 
 	// TODO: Make configurable
 	// Using cafus, armfus, armsolar as control points
@@ -437,7 +436,7 @@ void CEconomyManager::AddAvailEnergy(const std::set<UnitDef*>& buildDefs)
 	}
 	availEnergyDefs.insert(diffDefs.begin(), diffDefs.end());
 
-	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
+	CAllyTeam::UnitDefs& defs = circuit->GetUnitDefs();
 	for (auto def : diffDefs) {
 		SEnergyInfo engy;
 		engy.def = def;
@@ -470,7 +469,7 @@ void CEconomyManager::RemoveAvailEnergy(const std::set<UnitDef*>& buildDefs)
 	}
 	availEnergyDefs.erase(diffDefs.begin(), diffDefs.end());
 
-	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
+	CAllyTeam::UnitDefs& defs = circuit->GetUnitDefs();
 	auto it = energyInfos.begin();
 	while (it != energyInfos.end()) {
 		auto search = diffDefs.find(it->def);
@@ -483,7 +482,7 @@ void CEconomyManager::RemoveAvailEnergy(const std::set<UnitDef*>& buildDefs)
 void CEconomyManager::UpdateResourceIncome()
 {
 	energyIncomes[indexRes] = eco->GetIncome(energyRes);
-	metalIncomes[indexRes] = eco->GetIncome(metalRes);/* + eco->GetReceived(metalRes);*/
+	metalIncomes[indexRes] = eco->GetIncome(metalRes) + eco->GetReceived(metalRes);
 	indexRes++;
 	indexRes %= INCOME_SAMPLES;
 

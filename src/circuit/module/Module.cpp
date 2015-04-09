@@ -8,8 +8,6 @@
 #include "module/Module.h"
 #include "unit/CircuitUnit.h"
 
-#include "Unit.h"
-
 namespace circuit {
 
 IModule::IModule(CCircuitAI* circuit) :

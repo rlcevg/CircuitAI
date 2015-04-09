@@ -16,7 +16,6 @@
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
-#include "Unit.h"
 #include "UnitDef.h"
 #include "AISCommands.h"
 // debug

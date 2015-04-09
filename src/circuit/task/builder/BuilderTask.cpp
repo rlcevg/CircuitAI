@@ -21,7 +21,6 @@
 
 #include "AISCommands.h"
 #include "UnitDef.h"
-#include "Unit.h"
 #include "Map.h"
 
 namespace circuit {

@@ -8,12 +8,12 @@
 #ifndef SRC_CIRCUIT_CIRCUIT_H_
 #define SRC_CIRCUIT_CIRCUIT_H_
 
+#include "unit/AllyTeam.h"
+
 #include <memory>
 #include <map>
 #include <list>
 #include <vector>
-#include <unordered_map>
-#include <string.h>
 #include <chrono>
 
 namespace springai {
@@ -24,8 +24,6 @@ namespace springai {
 	class Pathing;
 	class Drawer;
 	class SkirmishAI;
-	class UnitDef;
-	class Unit;
 }
 struct SSkirmishAICallback;
 
@@ -59,8 +57,8 @@ class CFactoryManager;
 class CEconomyManager;
 class CMilitaryManager;
 class CScheduler;
+class CAllyTeam;
 class CCircuitUnit;
-class CCircuitDef;
 class IModule;
 
 class CCircuitAI {
@@ -120,26 +118,16 @@ public:
 	bool IsAllyAware();
 
 // ---- UnitDefs ---- BEGIN
-private:
-	struct cmp_str {
-	   bool operator()(char const *a, char const *b) {
-	      return strcmp(a, b) < 0;
-	   }
-	};
-public:
-	using UnitDefs = std::map<const char*, springai::UnitDef*, cmp_str>;
-
-	void InitUnitDefs(std::vector<springai::UnitDef*>&& unitDefs);
 	springai::UnitDef* GetUnitDefByName(const char* name);
 	springai::UnitDef* GetUnitDefById(int unitDefId);
-	UnitDefs& GetUnitDefs();
+	CAllyTeam::UnitDefs& GetUnitDefs();
 	CCircuitDef* GetCircuitDef(springai::UnitDef* unitDef);
 	int GetUnitCount(springai::UnitDef* unitDef);
 	bool IsAvailable(springai::UnitDef* unitDef);
 private:
-	UnitDefs defsByName;  // owner
-	std::unordered_map<int, springai::UnitDef*> defsById;
-	std::unordered_map<springai::UnitDef*, CCircuitDef*> circuitDefs;  // owner
+	CAllyTeam::UnitDefs* defsByName;
+	std::unordered_map<int, springai::UnitDef*>* defsById;
+	std::unordered_map<springai::UnitDef*, CCircuitDef*>* circuitDefs;
 // ---- UnitDefs ---- END
 
 public:
@@ -196,8 +184,9 @@ private:
 	std::shared_ptr<CMilitaryManager> militaryManager;
 	std::list<std::shared_ptr<IModule>> modules;
 
-	int lastAllyUpdate;
+	int lastAllyUpdate;  // frame
 	std::map<int, CCircuitUnit*> teamUnits;  // owner
+	CAllyTeam* allyTeam;
 	std::map<int, CCircuitUnit*> allyUnits;  // owner
 	std::map<int, CCircuitUnit*> enemyUnits;  // owner
 

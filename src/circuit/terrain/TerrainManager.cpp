@@ -19,7 +19,6 @@
 #include "util/utils.h"
 
 #include "Map.h"
-#include "Unit.h"
 #include "UnitDef.h"
 #include "OOAICallback.h"
 #include "WeaponDef.h"
@@ -213,7 +212,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 
 	ignoreMask = STRUCT_BIT(PYLON);
 	offset = int2(0, 0);
-	CCircuitAI::UnitDefs& defs = circuit->GetUnitDefs();
+	CAllyTeam::UnitDefs& defs = circuit->GetUnitDefs();
 	for (auto& kv : defs) {
 		UnitDef* def = kv.second;
 		if ((def->GetSpeed() == 0) && (blockInfos.find(def) == blockInfos.end())) {
