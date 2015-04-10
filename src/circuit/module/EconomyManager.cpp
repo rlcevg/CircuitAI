@@ -131,7 +131,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	/*
 	 *  Identify resource buildings
 	 */
-	CAllyTeam::CircuitDefs& allDefs = circuit->GetCircuitDefs();
+	CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
 		CCircuitDef* cdef = kv.second;
 		UnitDef* def = cdef->GetUnitDef();

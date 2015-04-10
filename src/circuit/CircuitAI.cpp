@@ -15,6 +15,7 @@
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
 #include "task/PlayerTask.h"
+#include "unit/AllyTeam.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
@@ -65,9 +66,7 @@ CCircuitAI::CCircuitAI(OOAICallback* callback) :
 		skirmishAIId(callback != NULL ? callback->GetSkirmishAIId() : -1),
 		difficulty(Difficulty::NORMAL),
 		allyAware(true),
-		allyTeam(nullptr),
-		defsByName(nullptr),
-		defsById(nullptr)
+		allyTeam(nullptr)
 {
 	teamId = skirmishAI->GetTeamId();
 	allyTeamId = game->GetMyAllyTeam();
@@ -322,16 +321,12 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 	scheduler->Init(scheduler);
 
 	InitOptions();
-	if (!gameAttribute->GetTerrainData().IsInitialized()) {
-		gameAttribute->GetTerrainData().Init(this);
-	}
+	InitUnitDefs();  // Inits TerrainData
 
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
 	allyTeam = setupManager->GetAllyTeam();
-	allyTeam->Init(this);
+	allyTeam->Init();
 	allyAware &= allyTeam->GetSize() > 1;
-	defsById = allyTeam->GetDefsById();
-	defsByName = allyTeam->GetDefsByName();
 
 	metalManager = std::make_shared<CMetalManager>(this, &gameAttribute->GetMetalData());
 	if (metalManager->HasMetalSpots() && !metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
@@ -403,6 +398,11 @@ int CCircuitAI::Release(int reason)
 	}
 	teamUnits.clear();
 	allyTeam->Release();
+	for (auto& kv : defsById) {
+		delete kv.second;
+	}
+	defsById.clear();
+	defsByName.clear();
 	DestroyGameAttribute();
 
 	initialized = false;
@@ -589,7 +589,7 @@ void CCircuitAI::UnregisterTeamUnit(CCircuitUnit* unit)
 	int unitId = u->GetUnitId();
 
 	teamUnits.erase(unitId);
-	(*defsById)[unit->GetCircuitDef()->GetId()]->Dec();
+	defsById[unit->GetCircuitDef()->GetId()]->Dec();
 
 	delete unit;
 }
@@ -767,10 +767,39 @@ bool CCircuitAI::IsAllyAware()
 	return allyAware;
 }
 
+void CCircuitAI::InitUnitDefs()
+{
+	CTerrainData& terrainData = gameAttribute->GetTerrainData();
+	if (!gameAttribute->GetTerrainData().IsInitialized()) {
+		gameAttribute->GetTerrainData().Init(this);
+	}
+	const std::vector<UnitDef*>& unitDefs = callback->GetUnitDefs();
+	for (auto ud : unitDefs) {
+		auto options = std::move(ud->GetBuildOptions());
+		std::unordered_set<CCircuitDef::Id> opts;
+		for (auto buildDef : options) {
+			opts.insert(buildDef->GetUnitDefId());
+			delete buildDef;
+		}
+		CCircuitDef* cdef = new CCircuitDef(ud, opts);
+
+		if (ud->IsAbleToFly()) {
+		} else if (ud->GetSpeed() == 0 ) {  // for immobile units
+			cdef->SetImmobileId(terrainData.udImmobileType[cdef->GetId()]);
+			// TODO: SetMobileType for factories (like RAI does)
+		} else {  // for mobile units
+			cdef->SetMobileId(terrainData.udMobileType[cdef->GetId()]);
+		}
+
+		defsByName[ud->GetName()] = cdef;
+		defsById[cdef->GetId()] = cdef;
+	}
+}
+
 CCircuitDef* CCircuitAI::GetCircuitDef(const char* name)
 {
-	auto it = defsByName->find(name);
-	if (it != defsByName->end()) {
+	auto it = defsByName.find(name);
+	if (it != defsByName.end()) {
 		return it->second;
 	}
 
@@ -779,17 +808,17 @@ CCircuitDef* CCircuitAI::GetCircuitDef(const char* name)
 
 CCircuitDef* CCircuitAI::GetCircuitDef(CCircuitDef::Id unitDefId)
 {
-	auto it = defsById->find(unitDefId);
-	if (it != defsById->end()) {
+	auto it = defsById.find(unitDefId);
+	if (it != defsById.end()) {
 		return it->second;
 	}
 
 	return nullptr;
 }
 
-CAllyTeam::CircuitDefs& CCircuitAI::GetCircuitDefs()
+CCircuitAI::CircuitDefs& CCircuitAI::GetCircuitDefs()
 {
-	return *defsById;
+	return defsById;
 }
 
 bool CCircuitAI::IsInitialized()

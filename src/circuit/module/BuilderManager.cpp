@@ -108,7 +108,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	};
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CAllyTeam::CircuitDefs& defs = circuit->GetCircuitDefs();
+	CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
 		UnitDef* def = cdef->GetUnitDef();
@@ -256,7 +256,6 @@ void CBuilderManager::AddBuildList(CCircuitUnit* unit)
 	std::set<CCircuitDef*> buildDefs;
 	for (auto build : buildOptions) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(build);
-		// FIXME: Don't move CCircuitDef into AllyTeam
 		if (cdef->GetBuildCount() == 0) {
 			buildDefs.insert(cdef);
 		}
@@ -282,7 +281,6 @@ void CBuilderManager::RemoveBuildList(CCircuitUnit* unit)
 	for (auto build : buildOptions) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(build);
 		cdef->DecBuild();
-		// FIXME: Don't move CCircuitDef into AllyTeam
 		if (cdef->GetBuildCount() == 0) {
 			buildDefs.insert(cdef);
 		}

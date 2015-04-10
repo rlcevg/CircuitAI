@@ -8,13 +8,16 @@
 #ifndef SRC_CIRCUIT_CIRCUIT_H_
 #define SRC_CIRCUIT_CIRCUIT_H_
 
-#include "unit/AllyTeam.h"
+#include "unit/CircuitUnit.h"
+#include "unit/CircuitDef.h"
 
 #include <memory>
+#include <unordered_map>
 #include <map>
 #include <list>
 #include <vector>
 #include <chrono>
+#include <string.h>
 
 namespace springai {
 	class OOAICallback;
@@ -58,7 +61,6 @@ class CEconomyManager;
 class CMilitaryManager;
 class CScheduler;
 class CAllyTeam;
-class CCircuitUnit;
 class IModule;
 
 class CCircuitAI {
@@ -118,15 +120,25 @@ public:
 	Difficulty GetDifficulty();
 	bool IsAllyAware();
 
-// ---- UnitDefs PROXY ---- BEGIN
+// ---- UnitDefs ---- BEGIN
+private:
+	struct cmp_str {
+		bool operator()(char const* a, char const* b) {
+			return strcmp(a, b) < 0;
+		}
+	};
 public:
-	CAllyTeam::CircuitDefs& GetCircuitDefs();
+	using CircuitDefs = std::unordered_map<CCircuitDef::Id, CCircuitDef*>;
+	using NamedDefs = std::map<const char*, CCircuitDef*, cmp_str>;
+
+	void InitUnitDefs();
+	CircuitDefs& GetCircuitDefs();
 	CCircuitDef* GetCircuitDef(const char* name);
 	CCircuitDef* GetCircuitDef(CCircuitDef::Id unitDefId);
 private:
-	CAllyTeam::CircuitDefs*  defsById;
-	CAllyTeam::NCircuitDefs* defsByName;
-// ---- UnitDefs PROXY ---- END
+	CircuitDefs  defsById;  // owner
+	NamedDefs defsByName;
+// ---- UnitDefs ---- END
 
 public:
 	bool IsInitialized();

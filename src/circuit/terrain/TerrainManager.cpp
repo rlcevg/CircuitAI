@@ -221,7 +221,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 
 	ignoreMask = STRUCT_BIT(PYLON);
 	offset = int2(0, 0);
-	CAllyTeam::CircuitDefs& defs = circuit->GetCircuitDefs();
+	CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
 		UnitDef* def = cdef->GetUnitDef();
@@ -372,8 +372,7 @@ void CTerrainManager::MarkAllyBuildings()
 				building.facing = u->GetBuildingFacing();
 				delete def;
 				newUnits.insert(building);
-				// NOTE: Comparing pointers instead of instances as CircuitDef is from same allyTeam
-				if (building.cdef == mexDef) {  // update metalInfo's open state
+				if (*building.cdef == *mexDef) {  // update metalInfo's open state
 					circuit->GetMetalManager()->SetOpenSpot(building.pos, false);
 				} else {
 					MarkBlocker(building, true);
@@ -388,8 +387,7 @@ void CTerrainManager::MarkAllyBuildings()
 						oldUnits.begin(), oldUnits.end(),
 						std::inserter(deadUnits, deadUnits.begin()), cmp());
 	for (auto& building : deadUnits) {
-		// NOTE: Comparing pointers instead of instances as CircuitDef is from same allyTeam
-		if (building.cdef == mexDef) {  // update metalInfo's open state
+		if (*building.cdef == *mexDef) {  // update metalInfo's open state
 			circuit->GetMetalManager()->SetOpenSpot(building.pos, true);
 		} else {
 			MarkBlocker(building, false);

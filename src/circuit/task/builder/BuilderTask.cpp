@@ -103,8 +103,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		for (auto& kv : allies) {
 			CCircuitUnit* alu = kv.second;
 			Unit* au = alu->GetUnit();
-			// NOTE: Comparing pointers instead of instances as CircuitDef is from same allyTeam
-			if ((alu->GetCircuitDef() == buildDef) && au->IsBeingBuilt()) {
+			if ((*alu->GetCircuitDef() == *buildDef) && au->IsBeingBuilt()) {
 				const AIFloat3& pos = au->GetPos();
 				if ((position.SqDistance2D(pos) < sqDist) && terrain->CanBuildAt(unit, pos)) {
 					u->Build(buildUDef, pos, au->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);

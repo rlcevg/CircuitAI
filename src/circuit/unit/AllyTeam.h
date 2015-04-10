@@ -9,12 +9,9 @@
 #define SRC_CIRCUIT_SETUP_ALLYTEAM_H_
 
 #include "unit/CircuitUnit.h"
-#include "unit/CircuitDef.h"
 
 #include <vector>
 #include <map>
-#include <unordered_map>
-#include <string.h>
 
 namespace springai {
 	class AIFloat3;
@@ -47,37 +44,18 @@ public:
 	int GetSize() const;
 	const SBox& GetStartBox() const;
 
-	void UpdateUnits(int frame, springai::OOAICallback* callback);
+	void Init();
+	void Release();
+	void UpdateUnits(CCircuitAI* circuit);
 
 private:
 	std::vector<Id> teamIds;
 	SBox startBox;
 
+	int initCount;
 	int lastUpdate;
 	std::map<CCircuitUnit::Id, CCircuitUnit*> friendlyUnits;  // owner
 	std::map<CCircuitUnit::Id, CCircuitUnit*> enemyUnits;  // owner
-
-// ---- UnitDefs ---- BEGIN
-private:
-	struct cmp_str {
-		bool operator()(char const* a, char const* b) {
-			return strcmp(a, b) < 0;
-		}
-	};
-public:
-	using CircuitDefs = std::unordered_map<CCircuitDef::Id, CCircuitDef*>;
-	using NCircuitDefs = std::map<const char*, CCircuitDef*, cmp_str>;
-
-	CircuitDefs* GetDefsById();
-	NCircuitDefs* GetDefsByName();
-	void Init(CCircuitAI* circuit);
-	void Release();
-private:
-	CircuitDefs defsById;  // owner
-	NCircuitDefs defsByName;
-
-	int initCount;
-// ---- UnitDefs ---- END
 };
 
 } // namespace circuit

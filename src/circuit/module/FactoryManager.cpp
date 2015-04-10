@@ -131,7 +131,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 	};
 
-	CAllyTeam::CircuitDefs& defs = circuit->GetCircuitDefs();
+	CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
 		UnitDef* def = cdef->GetUnitDef();

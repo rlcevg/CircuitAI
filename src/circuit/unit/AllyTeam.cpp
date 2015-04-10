@@ -50,69 +50,10 @@ const CAllyTeam::SBox& CAllyTeam::GetStartBox() const
 	return startBox;
 }
 
-void CAllyTeam::UpdateUnits(int frame, springai::OOAICallback* callback)
-{
-	if (lastUpdate >= frame) {
-		return;
-	}
-
-	for (auto& kv : friendlyUnits) {
-		delete kv.second;
-	}
-	friendlyUnits.clear();
-	const std::vector<Unit*>& units = callback->GetFriendlyUnits();
-	for (auto u : units) {
-		// FIXME: Why engine returns vector with some nullptrs?
-		// TODO: Check every GetEnemy/FriendlyUnits for nullptr
-		if (u == nullptr) {
-			continue;
-		}
-		int unitId = u->GetUnitId();
-		UnitDef* unitDef = u->GetDef();
-		CCircuitUnit* unit = new CCircuitUnit(u, defsById[unitDef->GetUnitDefId()]);
-		delete unitDef;
-		friendlyUnits[unitId] = unit;
-	}
-	lastUpdate = frame;
-}
-
-CAllyTeam::CircuitDefs* CAllyTeam::GetDefsById()
-{
-	return &defsById;
-}
-
-CAllyTeam::NCircuitDefs* CAllyTeam::GetDefsByName()
-{
-	return &defsByName;
-}
-
-void CAllyTeam::Init(CCircuitAI* circuit)
+void CAllyTeam::Init()
 {
 	if (initCount++ > 0) {
 		return;
-	}
-
-	CTerrainData& terrainData = circuit->GetGameAttribute()->GetTerrainData();
-	const std::vector<UnitDef*>& unitDefs = circuit->GetCallback()->GetUnitDefs();
-	for (auto ud : unitDefs) {
-		auto options = std::move(ud->GetBuildOptions());
-		std::unordered_set<CCircuitDef::Id> opts;
-		for (auto buildDef : options) {
-			opts.insert(buildDef->GetUnitDefId());
-			delete buildDef;
-		}
-		CCircuitDef* cdef = new CCircuitDef(ud, opts);
-
-		if (ud->IsAbleToFly()) {
-		} else if (ud->GetSpeed() == 0 ) {  // for immobile units
-			cdef->SetImmobileId(terrainData.udImmobileType[cdef->GetId()]);
-			// TODO: SetMobileType for factories (like RAI does)
-		} else {  // for mobile units
-			cdef->SetMobileId(terrainData.udMobileType[cdef->GetId()]);
-		}
-
-		defsByName[ud->GetName()] = cdef;
-		defsById[cdef->GetId()] = cdef;
 	}
 }
 
@@ -126,17 +67,36 @@ void CAllyTeam::Release()
 		delete kv.second;
 	}
 	friendlyUnits.clear();
-
 	for (auto& kv : enemyUnits) {
 		delete kv.second;
 	}
 	enemyUnits.clear();
+}
 
-	for (auto& kv : defsById) {
+void CAllyTeam::UpdateUnits(CCircuitAI* circuit)
+{
+	if (lastUpdate >= circuit->GetLastFrame()) {
+		return;
+	}
+
+	for (auto& kv : friendlyUnits) {
 		delete kv.second;
 	}
-	defsById.clear();
-	defsByName.clear();
+	friendlyUnits.clear();
+	const std::vector<Unit*>& units = circuit->GetCallback()->GetFriendlyUnits();
+	for (auto u : units) {
+		// FIXME: Why engine returns vector with some nullptrs?
+		// TODO: Check every GetEnemy/FriendlyUnits for nullptr
+		if (u == nullptr) {
+			continue;
+		}
+		int unitId = u->GetUnitId();
+		UnitDef* unitDef = u->GetDef();
+		CCircuitUnit* unit = new CCircuitUnit(u, circuit->GetCircuitDef(unitDef->GetUnitDefId()));
+		delete unitDef;
+		friendlyUnits[unitId] = unit;
+	}
+	lastUpdate = circuit->GetLastFrame();
 }
 
 } // namespace circuit
