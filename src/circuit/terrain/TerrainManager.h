@@ -64,7 +64,7 @@ public:
 									 int facing,
 									 TerrainPredicate& predicate);
 private:
-	int cacheBuildFrame;
+	int markFrame;
 	struct Structure {
 		int unitId;
 		CCircuitDef* cdef;
@@ -111,7 +111,6 @@ private:
 											  IBlockMask* mask,
 											  TerrainPredicate& predicate);
 
-	// TODO: Move into CAllyTeam: saves memory, better cooperation (within 1 host). But what if allies doesn't share los or anything?
 	SBlockingMap blockingMap;
 	std::unordered_map<CCircuitDef::Id, IBlockMask*> blockInfos;  // owner
 	void MarkBlockerByMask(const Structure& building, bool block, IBlockMask* mask);
@@ -142,7 +141,7 @@ public:
 	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position, const float& range = .0);  // NOTE: returns false if the area was too small to be recorded
 	bool CanBuildAt(CCircuitUnit* unit, const springai::AIFloat3& destination);
 
-	void UpdateAreaUsers();
+	void UpdateAreaUsers(CCircuitAI* circuit);
 	void DidUpdateAreaUsers();
 private:
 	SAreaData* areaData;

@@ -23,7 +23,6 @@
 #include "Resource.h"
 #include "Economy.h"
 #include "Feature.h"
-#include "Team.h"  // Only for GetAllyTeams().size()
 
 #include <boost/graph/kruskal_min_spanning_tree.hpp>
 
@@ -118,15 +117,13 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	};
 
 	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
-	std::vector<Team*> allyTeams = circuit->GetCallback()->GetAllyTeams();
-	float allyTeamCount = allyTeams.size();
-	ecoFactor = allyTeamCount * 0.25f + 0.75f;
-	utils::free_clear(allyTeams);
+	int allyTeamSize = circuit->GetAllyTeam()->GetSize();
+	ecoFactor = allyTeamSize * 0.25f + 0.75f;
 
 	Map* map = circuit->GetMap();
 	float pylonSquare = pylonRange * 2 / SQUARE_SIZE;
 	pylonSquare *= pylonSquare;
-	pylonMaxCount = ((map->GetWidth() * map->GetHeight()) / pylonSquare) / allyTeamCount / 2;
+	pylonMaxCount = ((map->GetWidth() * map->GetHeight()) / pylonSquare) / allyTeamSize / 2;
 
 	/*
 	 *  Identify resource buildings

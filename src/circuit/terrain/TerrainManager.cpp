@@ -21,8 +21,6 @@
 #include "Pathing.h"
 #include "MoveData.h"
 
-#define STRUCT_BIT(bits)	static_cast<int>(SBlockingMap::StructMask::bits)
-
 namespace circuit {
 
 using namespace springai;
@@ -269,7 +267,7 @@ void CTerrainManager::RemoveBlocker(CCircuitDef* cdef, const AIFloat3& pos, int 
 
 void CTerrainManager::ResetBuildFrame()
 {
-	cacheBuildFrame = -FRAMES_PER_SEC;
+	markFrame = -FRAMES_PER_SEC;
 }
 
 AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing)
@@ -282,7 +280,9 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 
 AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing, TerrainPredicate& predicate)
 {
-	MarkAllyBuildings();
+	if (circuit->IsAllyAware()) {
+		MarkAllyBuildings();
+	}
 
 	auto search = blockInfos.find(cdef->GetId());
 	if (search != blockInfos.end()) {
@@ -343,26 +343,22 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 
 void CTerrainManager::MarkAllyBuildings()
 {
-	if (!circuit->IsAllyAware()) {
-		return;
-	}
-
 	int lastFrame = circuit->GetLastFrame();
-	if (cacheBuildFrame + FRAMES_PER_SEC >= lastFrame) {
+	if (markFrame + FRAMES_PER_SEC >= lastFrame) {
 		return;
 	}
-	cacheBuildFrame = lastFrame;
+	markFrame = lastFrame;
 
 	circuit->UpdateFriendlyUnits();
 	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
-	CAllyTeam::Id teamId = circuit->GetAllyTeamId();
+	const CAllyTeam::TeamIds& teamIds = circuit->GetAllyTeam()->GetTeamIds();
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 
 	std::set<Structure, cmp> newUnits, oldUnits;
 	for (auto& kv : friendlies) {
 		CCircuitUnit* unit = kv.second;
 		Unit* u = unit->GetUnit();
-		if ((u->GetTeam() != teamId) && (u->GetMaxSpeed() <= 0)) {
+		if ((teamIds.find(u->GetTeam()) == teamIds.end()) && (u->GetMaxSpeed() <= 0)) {
 			Structure building;
 			building.unitId = kv.first;
 			decltype(markedAllies)::iterator search = markedAllies.find(building);
@@ -1200,7 +1196,7 @@ bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination
 	return false;
 }
 
-void CTerrainManager::UpdateAreaUsers()
+void CTerrainManager::UpdateAreaUsers(CCircuitAI* circuit)
 {
 	areaData = terrainData->GetNextAreaData();
 	for (auto& kv : circuit->GetTeamUnits()) {

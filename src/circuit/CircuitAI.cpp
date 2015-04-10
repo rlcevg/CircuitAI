@@ -220,12 +220,10 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_ENEMY_DESTROYED", topic);
 			struct SEnemyDestroyedEvent* evt = (struct SEnemyDestroyedEvent*)data;
 			CCircuitUnit* enemy = GetEnemyUnit(evt->enemy);
-			if (enemy != nullptr) {
-				ret = 0;
+			if (enemy != nullptr) {  // Removed from AllyTeam once, but each AI gets this event
 				UnregisterEnemyUnit(enemy);
-			} else {
-				ret = ERROR_ENEMY_DESTROYED;
 			}
+			ret = 0;
 			break;
 		}
 		case EVENT_WEAPON_FIRED: {
@@ -323,8 +321,6 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
 	allyTeam = setupManager->GetAllyTeam();
-	allyTeam->Init();
-	allyAware &= allyTeam->GetSize() > 1;
 
 	metalManager = std::make_shared<CMetalManager>(this, &gameAttribute->GetMetalData());
 	if (metalManager->HasMetalSpots() && !metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
@@ -336,7 +332,9 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 
 	// FIXME: TerrainManager uses EconomyManager::GetMexDef and must be initialized after EconomyManager
 	//        TerrainManager also could use FactoryManager::GetAssistDef instead of hardcoded armnanotc
-	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
+	allyTeam->Init(this);
+	terrainManager = allyTeam->GetTerrainManager();
+	allyAware &= allyTeam->GetSize() > 1;
 
 	if (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos()) {
 		if (metalManager->HasMetalSpots()) {
@@ -677,6 +675,11 @@ CCircuitUnit* CCircuitAI::GetEnemyUnit(CCircuitUnit::Id unitId)
 const CAllyTeam::Units& CCircuitAI::GetEnemyUnits() const
 {
 	return allyTeam->GetEnemyUnits();
+}
+
+CAllyTeam* CCircuitAI::GetAllyTeam() const
+{
+	return allyTeam;
 }
 
 bool CCircuitAI::IsUpdateTimeValid()

@@ -10,8 +10,9 @@
 
 #include "unit/CircuitUnit.h"
 
-#include <vector>
+#include <memory>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace springai {
 	class AIFloat3;
@@ -20,11 +21,13 @@ namespace springai {
 namespace circuit {
 
 class CCircuitAI;
+class CTerrainManager;
 
 class CAllyTeam {
 public:
 	using Id = int;
 	using Units = std::unordered_map<CCircuitUnit::Id, CCircuitUnit*>;
+	using TeamIds = std::unordered_set<Id>;
 	union SBox {
 		struct {
 			float bottom;
@@ -38,13 +41,14 @@ public:
 	};
 
 public:
-	CAllyTeam(const std::vector<Id>& tids, const SBox& sb);
+	CAllyTeam(const TeamIds& tids, const SBox& sb);
 	virtual ~CAllyTeam();
 
 	int GetSize() const;
+	const TeamIds& GetTeamIds() const;
 	const SBox& GetStartBox() const;
 
-	void Init();
+	void Init(CCircuitAI* circuit);
 	void Release();
 
 	void UpdateFriendlyUnits(CCircuitAI* circuit);
@@ -56,14 +60,18 @@ public:
 	CCircuitUnit* GetEnemyUnit(CCircuitUnit::Id unitId);
 	const Units& GetEnemyUnits() const;
 
+	std::shared_ptr<CTerrainManager>& GetTerrainManager();
+
 private:
-	std::vector<Id> teamIds;
+	TeamIds teamIds;
 	SBox startBox;
 
 	int initCount;
 	int lastUpdate;
 	Units friendlyUnits;  // owner
 	Units enemyUnits;  // owner
+
+	std::shared_ptr<CTerrainManager> terrainManager;
 };
 
 } // namespace circuit

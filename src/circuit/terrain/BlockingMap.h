@@ -12,7 +12,8 @@
 
 #include <vector>
 
-#define GRID_RATIO_LOW	8
+#define GRID_RATIO_LOW		8
+#define STRUCT_BIT(bits)	static_cast<int>(SBlockingMap::StructMask::bits)
 
 namespace circuit {
 

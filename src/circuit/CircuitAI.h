@@ -116,6 +116,9 @@ public:
 	CCircuitUnit* GetEnemyUnit(springai::Unit* u);
 	CCircuitUnit* GetEnemyUnit(CCircuitUnit::Id unitId);
 	const CAllyTeam::Units& GetEnemyUnits() const;
+
+	CAllyTeam* GetAllyTeam() const;
+
 private:
 	CAllyTeam::Units teamUnits;  // owner
 	CAllyTeam* allyTeam;

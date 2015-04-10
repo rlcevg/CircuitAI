@@ -52,7 +52,7 @@ public:
 private:
 	Id id;
 	springai::Unit* unit;  // owner
-	CCircuitDef* circuitDef;
+	CCircuitDef* circuitDef;  // TODO: Replace with CCircuitDef::Id?
 	IUnitTask* task;
 	int taskFrame;
 	IUnitManager* manager;

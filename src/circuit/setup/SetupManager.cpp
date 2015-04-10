@@ -120,10 +120,10 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 	allyTeams.reserve(alliesMap.size());
 	for (const auto& kv : alliesMap) {
 		const SAllyData& data = kv.second;
-		std::vector<int> teamIds;
+		CAllyTeam::TeamIds teamIds;
 		teamIds.reserve(data.origTeamIds.size());
 		for (auto id : data.origTeamIds) {
-			teamIds.push_back(teamIdsRemap[id]);
+			teamIds.insert(teamIdsRemap[id]);
 		}
 		allyTeams.push_back(new CAllyTeam(teamIds, data.startBox));
 	}

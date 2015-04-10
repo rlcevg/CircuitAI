@@ -7,6 +7,7 @@
 
 #include "unit/AllyTeam.h"
 #include "static/GameAttribute.h"
+#include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -23,7 +24,7 @@ bool CAllyTeam::SBox::ContainsPoint(const AIFloat3& point) const
 		   (point.z >= top) && (point.z <= bottom);
 }
 
-CAllyTeam::CAllyTeam(const std::vector<Id>& tids, const SBox& sb) :
+CAllyTeam::CAllyTeam(const TeamIds& tids, const SBox& sb) :
 		teamIds(tids),
 		startBox(sb),
 		lastUpdate(-1),
@@ -45,16 +46,23 @@ int CAllyTeam::GetSize() const
 	return teamIds.size();
 }
 
+const CAllyTeam::TeamIds& CAllyTeam::GetTeamIds() const
+{
+	return teamIds;
+}
+
 const CAllyTeam::SBox& CAllyTeam::GetStartBox() const
 {
 	return startBox;
 }
 
-void CAllyTeam::Init()
+void CAllyTeam::Init(CCircuitAI* circuit)
 {
 	if (initCount++ > 0) {
 		return;
 	}
+
+	terrainManager = std::make_shared<CTerrainManager>(circuit, &circuit->GetGameAttribute()->GetTerrainData());
 }
 
 void CAllyTeam::Release()
@@ -71,6 +79,8 @@ void CAllyTeam::Release()
 		delete kv.second;
 	}
 	enemyUnits.clear();
+
+	terrainManager = nullptr;
 }
 
 void CAllyTeam::UpdateFriendlyUnits(CCircuitAI* circuit)
@@ -138,6 +148,11 @@ CCircuitUnit* CAllyTeam::GetEnemyUnit(CCircuitUnit::Id unitId)
 const CAllyTeam::Units& CAllyTeam::GetEnemyUnits() const
 {
 	return enemyUnits;
+}
+
+std::shared_ptr<CTerrainManager>& CAllyTeam::GetTerrainManager()
+{
+	return terrainManager;
 }
 
 } // namespace circuit
