@@ -15,7 +15,6 @@
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
 #include "task/PlayerTask.h"
-#include "unit/AllyTeam.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
@@ -55,7 +54,6 @@ CCircuitAI::CCircuitAI(OOAICallback* callback) :
 		initialized(false),
 		eventHandler(&CCircuitAI::HandleGameEvent),
 		lastFrame(-1),
-		lastAllyUpdate(-1),
 		callback(callback),
 		log(std::unique_ptr<Log>(callback->GetLog())),
 		game(std::unique_ptr<Game>(callback->GetGame())),
@@ -596,7 +594,7 @@ void CCircuitAI::UnregisterTeamUnit(CCircuitUnit* unit)
 
 CCircuitUnit* CCircuitAI::GetTeamUnit(CCircuitUnit::Id unitId)
 {
-	std::map<int, CCircuitUnit*>::iterator i = teamUnits.find(unitId);
+	decltype(teamUnits)::iterator i = teamUnits.find(unitId);
 	if (i != teamUnits.end()) {
 		return i->second;
 	}
@@ -604,39 +602,14 @@ CCircuitUnit* CCircuitAI::GetTeamUnit(CCircuitUnit::Id unitId)
 	return nullptr;
 }
 
-const std::map<CCircuitUnit::Id, CCircuitUnit*>& CCircuitAI::GetTeamUnits() const
+const CAllyTeam::Units& CCircuitAI::GetTeamUnits() const
 {
 	return teamUnits;
 }
 
-void CCircuitAI::UpdateAllyUnits()
+void CCircuitAI::UpdateFriendlyUnits()
 {
-	if (lastAllyUpdate >= lastFrame) {
-		return;
-	}
-
-	for (auto& kv : allyUnits) {
-		delete kv.second;
-	}
-	allyUnits.clear();
-	const std::vector<Unit*>& units = callback->GetFriendlyUnits();
-	for (auto u : units) {
-		// FIXME: Why engine returns vector with some nullptrs?
-		// TODO: Check every GetEnemy/FriendlyUnits for nullptr
-		if (u == nullptr) {
-			continue;
-		}
-		if (u->GetTeam() != teamId) {
-			int unitId = u->GetUnitId();
-			UnitDef* unitDef = u->GetDef();
-			CCircuitUnit* unit = new CCircuitUnit(u, GetCircuitDef(unitDef->GetUnitDefId()));
-			delete unitDef;
-			allyUnits[unitId] = unit;
-		} else {
-			delete u;
-		}
-	}
-	lastAllyUpdate = lastFrame;
+	allyTeam->UpdateFriendlyUnits(this);
 }
 
 CCircuitUnit* CCircuitAI::GetFriendlyUnit(Unit* u)
@@ -648,7 +621,7 @@ CCircuitUnit* CCircuitAI::GetFriendlyUnit(Unit* u)
 	if (u->GetTeam() == teamId) {
 		return GetTeamUnit(u->GetUnitId());
 	} else if (u->GetAllyTeam() == allyTeamId) {
-		return GetAllyUnit(u->GetUnitId());
+		return allyTeam->GetFriendlyUnit(u->GetUnitId());
 	}
 
 	return nullptr;
@@ -656,26 +629,12 @@ CCircuitUnit* CCircuitAI::GetFriendlyUnit(Unit* u)
 
 CCircuitUnit* CCircuitAI::GetFriendlyUnit(CCircuitUnit::Id unitId)
 {
-	CCircuitUnit* result = GetTeamUnit(unitId);
-	if (result == nullptr) {
-		result = GetAllyUnit(unitId);
-	}
-	return result;
+	return allyTeam->GetFriendlyUnit(unitId);
 }
 
-CCircuitUnit* CCircuitAI::GetAllyUnit(CCircuitUnit::Id unitId)
+const CAllyTeam::Units& CCircuitAI::GetFriendlyUnits() const
 {
-	std::map<int, CCircuitUnit*>::iterator i = allyUnits.find(unitId);
-	if (i != allyUnits.end()) {
-		return i->second;
-	}
-
-	return nullptr;
-}
-
-const std::map<CCircuitUnit::Id, CCircuitUnit*>& CCircuitAI::GetAllyUnits() const
-{
-	return allyUnits;
+	return allyTeam->GetFriendlyUnits();
 }
 
 CCircuitUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId)
@@ -690,37 +649,34 @@ CCircuitUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId)
 		return nullptr;
 	}
 	UnitDef* unitDef = u->GetDef();
-	unit = new CCircuitUnit(u, GetCircuitDef(unitDef->GetUnitDefId()));
+	unit = new CCircuitUnit(u, defsById[unitDef->GetUnitDefId()]);
 	delete unitDef;
 
-	enemyUnits[unitId] = unit;
+	allyTeam->AddEnemyUnit(unit);
 
 	return unit;
 }
 
 void CCircuitAI::UnregisterEnemyUnit(CCircuitUnit* unit)
 {
-	Unit* u = unit->GetUnit();
-	int unitId = u->GetUnitId();
-
-	enemyUnits.erase(unitId);
+	allyTeam->RemoveEnemyUnit(unit);
 
 	delete unit;
 }
 
-CCircuitUnit* CCircuitAI::GetEnemyUnit(CCircuitUnit::Id unitId)
+CCircuitUnit* CCircuitAI::GetEnemyUnit(Unit* u)
 {
-	std::map<int, CCircuitUnit*>::iterator i = enemyUnits.find(unitId);
-	if (i != enemyUnits.end()) {
-		return i->second;
-	}
-
-	return nullptr;
+	return GetEnemyUnit(u->GetUnitId());
 }
 
-const std::map<CCircuitUnit::Id, CCircuitUnit*>& CCircuitAI::GetEnemyUnits() const
+CCircuitUnit* CCircuitAI::GetEnemyUnit(CCircuitUnit::Id unitId)
 {
-	return enemyUnits;
+	return allyTeam->GetEnemyUnit(unitId);
+}
+
+const CAllyTeam::Units& CCircuitAI::GetEnemyUnits() const
+{
+	return allyTeam->GetEnemyUnits();
 }
 
 bool CCircuitAI::IsUpdateTimeValid()

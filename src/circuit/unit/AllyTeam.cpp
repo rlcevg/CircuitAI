@@ -73,9 +73,10 @@ void CAllyTeam::Release()
 	enemyUnits.clear();
 }
 
-void CAllyTeam::UpdateUnits(CCircuitAI* circuit)
+void CAllyTeam::UpdateFriendlyUnits(CCircuitAI* circuit)
 {
-	if (lastUpdate >= circuit->GetLastFrame()) {
+	int frame = circuit->GetLastFrame();
+	if (lastUpdate >= frame) {
 		return;
 	}
 
@@ -96,7 +97,47 @@ void CAllyTeam::UpdateUnits(CCircuitAI* circuit)
 		delete unitDef;
 		friendlyUnits[unitId] = unit;
 	}
-	lastUpdate = circuit->GetLastFrame();
+	lastUpdate = frame;
+}
+
+CCircuitUnit* CAllyTeam::GetFriendlyUnit(CCircuitUnit::Id unitId)
+{
+	decltype(friendlyUnits)::iterator i = friendlyUnits.find(unitId);
+	if (i != friendlyUnits.end()) {
+		return i->second;
+	}
+
+	return nullptr;
+}
+
+const CAllyTeam::Units& CAllyTeam::GetFriendlyUnits() const
+{
+	return friendlyUnits;
+}
+
+void CAllyTeam::AddEnemyUnit(CCircuitUnit* unit)
+{
+	enemyUnits[unit->GetId()] = unit;
+}
+
+void CAllyTeam::RemoveEnemyUnit(CCircuitUnit* unit)
+{
+	enemyUnits.erase(unit->GetId());
+}
+
+CCircuitUnit* CAllyTeam::GetEnemyUnit(CCircuitUnit::Id unitId)
+{
+	decltype(enemyUnits)::iterator i = enemyUnits.find(unitId);
+	if (i != enemyUnits.end()) {
+		return i->second;
+	}
+
+	return nullptr;
+}
+
+const CAllyTeam::Units& CAllyTeam::GetEnemyUnits() const
+{
+	return enemyUnits;
 }
 
 } // namespace circuit

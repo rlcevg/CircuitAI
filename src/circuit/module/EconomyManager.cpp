@@ -308,7 +308,7 @@ IBuilderTask* CEconomyManager::CreateAssistTask(CCircuitUnit* unit)
 	 * Check for damaged units
 	 */
 	float maxCost = MAX_BUILD_SEC * GetAvgMetalIncome() * ecoFactor;
-	circuit->UpdateAllyUnits();
+	circuit->UpdateFriendlyUnits();
 	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
 	for (auto u : units) {
 		CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);

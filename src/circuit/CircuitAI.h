@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_CIRCUIT_H_
 #define SRC_CIRCUIT_CIRCUIT_H_
 
-#include "unit/CircuitUnit.h"
+#include "unit/AllyTeam.h"
 #include "unit/CircuitDef.h"
 
 #include <memory>
@@ -60,7 +60,6 @@ class CFactoryManager;
 class CEconomyManager;
 class CMilitaryManager;
 class CScheduler;
-class CAllyTeam;
 class IModule;
 
 class CCircuitAI {
@@ -100,25 +99,44 @@ public:
 //	int CommandFinished(CCircuitUnit* unit, int commandTopicId);
 	int LuaMessage(const char* inData);
 
+// ---- Units ---- BEGIN
+public:
 	CCircuitUnit* RegisterTeamUnit(CCircuitUnit::Id unitId);
 	void UnregisterTeamUnit(CCircuitUnit* unit);
-	CCircuitUnit* GetTeamUnit(CCircuitUnit::Id unitId);
-	const std::map<CCircuitUnit::Id, CCircuitUnit*>& GetTeamUnits() const;
-	void UpdateAllyUnits();
+	CCircuitUnit* GetTeamUnit(CCircuitUnit::Id unitId) /*const*/;
+	const CAllyTeam::Units& GetTeamUnits() const;
+
+	void UpdateFriendlyUnits();
 	CCircuitUnit* GetFriendlyUnit(springai::Unit* u);
 	CCircuitUnit* GetFriendlyUnit(CCircuitUnit::Id unitId);
-	CCircuitUnit* GetAllyUnit(CCircuitUnit::Id unitId);
-	const std::map<CCircuitUnit::Id, CCircuitUnit*>& GetAllyUnits() const;
+	const CAllyTeam::Units& GetFriendlyUnits() const;
+
 	CCircuitUnit* RegisterEnemyUnit(CCircuitUnit::Id unitId);
 	void UnregisterEnemyUnit(CCircuitUnit* unit);
+	CCircuitUnit* GetEnemyUnit(springai::Unit* u);
 	CCircuitUnit* GetEnemyUnit(CCircuitUnit::Id unitId);
-	const std::map<CCircuitUnit::Id, CCircuitUnit*>& GetEnemyUnits() const;
+	const CAllyTeam::Units& GetEnemyUnits() const;
+private:
+	CAllyTeam::Units teamUnits;  // owner
+	CAllyTeam* allyTeam;
+// ---- Units ---- END
 
+// ---- UpdateTime ---- BEGIN
+public:
 	bool IsUpdateTimeValid();
+private:
+	clock::time_point startUpdate;
+// ---- UpdateTime ---- END
 
+// ---- AIOptions.lua ---- BEGIN
+public:
 	void InitOptions();
 	Difficulty GetDifficulty();
 	bool IsAllyAware();
+private:
+	Difficulty difficulty;
+	bool allyAware;
+// ---- AIOptions.lua ---- END
 
 // ---- UnitDefs ---- BEGIN
 private:
@@ -193,18 +211,6 @@ private:
 	std::shared_ptr<CEconomyManager> economyManager;
 	std::shared_ptr<CMilitaryManager> militaryManager;
 	std::list<std::shared_ptr<IModule>> modules;
-
-	int lastAllyUpdate;  // frame
-	std::map<int, CCircuitUnit*> teamUnits;  // owner
-	CAllyTeam* allyTeam;
-	std::map<int, CCircuitUnit*> allyUnits;  // owner
-	std::map<int, CCircuitUnit*> enemyUnits;  // owner
-
-	clock::time_point startUpdate;
-
-	// AIOptions.lua
-	Difficulty difficulty;
-	bool allyAware;
 };
 
 } // namespace circuit

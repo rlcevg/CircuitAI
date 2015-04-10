@@ -353,15 +353,16 @@ void CTerrainManager::MarkAllyBuildings()
 	}
 	cacheBuildFrame = lastFrame;
 
-	circuit->UpdateAllyUnits();
-	const std::map<CCircuitUnit::Id, CCircuitUnit*>& allies = circuit->GetAllyUnits();
+	circuit->UpdateFriendlyUnits();
+	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
+	CAllyTeam::Id teamId = circuit->GetAllyTeamId();
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 
 	std::set<Structure, cmp> newUnits, oldUnits;
-	for (auto& kv : allies) {
+	for (auto& kv : friendlies) {
 		CCircuitUnit* unit = kv.second;
 		Unit* u = unit->GetUnit();
-		if (u->GetMaxSpeed() <= 0) {
+		if ((u->GetTeam() != teamId) && (u->GetMaxSpeed() <= 0)) {
 			Structure building;
 			building.unitId = kv.first;
 			decltype(markedAllies)::iterator search = markedAllies.find(building);

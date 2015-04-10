@@ -91,6 +91,7 @@ void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 
 void CBRepairTask::SetTarget(CCircuitUnit* unit)
 {
+	target = unit;
 	if (unit != nullptr) {
 		cost = unit->GetCircuitDef()->GetUnitDef()->GetCost(manager->GetCircuit()->GetEconomyManager()->GetMetalRes());
 		position = buildPos = unit->GetUnit()->GetPos();
@@ -111,7 +112,7 @@ CCircuitUnit* CBRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 	float radius = unit->GetCircuitDef()->GetUnitDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 30;
 	CCircuitAI* circuit = manager->GetCircuit();
 
-	circuit->UpdateAllyUnits();
+	circuit->UpdateFriendlyUnits();
 	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
 	for (auto u : units) {
 		if (u->GetHealth() < u->GetMaxHealth() && u->GetVel().Length() <= maxSpeed * 1.5) {

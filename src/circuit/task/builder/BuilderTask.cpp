@@ -96,11 +96,11 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 
 	// FIXME: Replace const 999.0f with build time?
 	if (circuit->IsAllyAware() && (cost > 999.0f)) {
-		circuit->UpdateAllyUnits();
+		circuit->UpdateFriendlyUnits();
 		// TODO: Use OOAICallback::GetFriendlyUnitsIn()?
-		const std::map<int, CCircuitUnit*>& allies = circuit->GetAllyUnits();
+		const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
 		float sqDist = cost * cost;
-		for (auto& kv : allies) {
+		for (auto& kv : friendlies) {
 			CCircuitUnit* alu = kv.second;
 			Unit* au = alu->GetUnit();
 			if ((*alu->GetCircuitDef() == *buildDef) && au->IsBeingBuilt()) {

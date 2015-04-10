@@ -11,11 +11,10 @@
 #include "unit/CircuitUnit.h"
 
 #include <vector>
-#include <map>
+#include <unordered_map>
 
 namespace springai {
 	class AIFloat3;
-	class OOAICallback;
 }
 
 namespace circuit {
@@ -25,6 +24,7 @@ class CCircuitAI;
 class CAllyTeam {
 public:
 	using Id = int;
+	using Units = std::unordered_map<CCircuitUnit::Id, CCircuitUnit*>;
 	union SBox {
 		struct {
 			float bottom;
@@ -46,7 +46,15 @@ public:
 
 	void Init();
 	void Release();
-	void UpdateUnits(CCircuitAI* circuit);
+
+	void UpdateFriendlyUnits(CCircuitAI* circuit);
+	CCircuitUnit* GetFriendlyUnit(CCircuitUnit::Id unitId);
+	const Units& GetFriendlyUnits() const;
+
+	void AddEnemyUnit(CCircuitUnit* unit);
+	void RemoveEnemyUnit(CCircuitUnit* unit);
+	CCircuitUnit* GetEnemyUnit(CCircuitUnit::Id unitId);
+	const Units& GetEnemyUnits() const;
 
 private:
 	std::vector<Id> teamIds;
@@ -54,8 +62,8 @@ private:
 
 	int initCount;
 	int lastUpdate;
-	std::map<CCircuitUnit::Id, CCircuitUnit*> friendlyUnits;  // owner
-	std::map<CCircuitUnit::Id, CCircuitUnit*> enemyUnits;  // owner
+	Units friendlyUnits;  // owner
+	Units enemyUnits;  // owner
 };
 
 } // namespace circuit
