@@ -157,12 +157,16 @@ void IBuilderTask::Update()
 	}
 
 	// FIXME: Replace const 1000.0f with build time?
-	if (cost < 1000.0f) {
-		return;
-	}
-	float currentIncome = circuit->GetEconomyManager()->GetAvgMetalIncome();
-	if (currentIncome < savedIncome * 0.6) {
+	if ((cost > 1000.0f) && (circuit->GetEconomyManager()->GetAvgMetalIncome() < savedIncome * 0.6)) {
 		manager->AbortTask(this);
+	}
+}
+
+void IBuilderTask::Finish()
+{
+	// FIXME: Replace const 1000.0f with build time?
+	if ((cost > 1000.0f) && (buildDef != nullptr) && (buildDef->GetUnitDef()->GetMaxWeaponRange() <= .0f)) {
+		manager->GetCircuit()->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
 	}
 }
 

@@ -37,7 +37,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	terrainWidth = mapWidth * SQUARE_SIZE;
 	terrainHeight = mapHeight * SQUARE_SIZE;
 
-	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
+	CCircuitDef* mexDef = circuit->GetCircuitDef("cormex");
 
 	/*
 	 * building masks
@@ -202,7 +202,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	SBlockingMap::BlockCellLow cellLow = {0};
 	blockingMap.gridLow.resize(blockingMap.columnsLow * blockingMap.rowsLow, cellLow);
 
-	const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
+	const CMetalData::Metals& spots = circuit->GetAllyTeam()->GetMetalManager()->GetSpots();
 	def = mexDef->GetUnitDef();
 	int size = std::max(def->GetXSize(), def->GetZSize()) / 2;
 	int& xsize = size, &zsize = size;

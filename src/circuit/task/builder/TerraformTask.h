@@ -9,20 +9,25 @@
 #define SRC_CIRCUIT_TASK_BUILDER_TERRAFORMTASK_H_
 
 #include "task/builder/BuilderTask.h"
+#include "unit/CircuitUnit.h"
 
 namespace circuit {
 
 class CBTerraformTask: public IBuilderTask {
 public:
-	// TODO: Re-evalute params
-	CBTerraformTask(ITaskManager* mgr, Priority priority,
-					const springai::AIFloat3& position,
-					float cost, int timeout);
+	CBTerraformTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, float cost = 1.0f, int timeout = 0);
 	virtual ~CBTerraformTask();
 
 	virtual void Execute(CCircuitUnit* unit);
 protected:
+	virtual void Finish();
 	virtual void Cancel();
+
+public:
+	virtual void OnUnitIdle(CCircuitUnit* unit);
+
+protected:
+	CCircuitUnit::Id targetId;  // Ignore "target" as it could be destroyed
 };
 
 } // namespace circuit

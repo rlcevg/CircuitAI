@@ -237,7 +237,7 @@ void CMilitaryManager::FallbackTask(CCircuitUnit* unit)
 
 }
 
-std::vector<CMilitaryManager::SDefPoint>& CMilitaryManager::GetDefPoints(int index)
+CMilitaryManager::DefPoints& CMilitaryManager::GetDefPoints(int index)
 {
 	return clusterInfos[index].defPoints;
 }
@@ -249,7 +249,7 @@ void CMilitaryManager::OpenDefPoint(const AIFloat3& pos)
 		return;
 	}
 
-	std::vector<CMilitaryManager::SDefPoint>& defPoints = clusterInfos[index].defPoints;
+	DefPoints& defPoints = clusterInfos[index].defPoints;
 	int idx = 0;
 	float dist = pos.distance2D(defPoints[idx].position);
 	for (int i = 1; i < defPoints.size(); ++i) {
@@ -293,7 +293,7 @@ void CMilitaryManager::Init()
 
 		const CHierarchCluster::Clusters& iclusters = clust.Clusterize(distmatrix, maxDistance);
 
-		std::vector<SDefPoint>& defPoints = clusterInfos[k].defPoints;
+		DefPoints& defPoints = clusterInfos[k].defPoints;
 		int nclusters = iclusters.size();
 		defPoints.reserve(nclusters);
 		for (int i = 0; i < nclusters; ++i) {

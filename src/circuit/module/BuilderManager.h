@@ -65,6 +65,10 @@ public:
 	IBuilderTask* EnqueueRepair(IBuilderTask::Priority priority,
 								CCircuitUnit* target,
 								int timeout = 0);
+	IBuilderTask* EnqueueTerraform(IBuilderTask::Priority priority,
+								   CCircuitUnit* target,
+								   float cost = 1.0f,
+								   int timeout = 0);
 private:
 	IBuilderTask* AddTask(IBuilderTask::Priority priority,
 						  CCircuitDef* buildDef,

@@ -70,6 +70,10 @@ void CBPatrolTask::Close(bool done)
 	IBuilderTask::Close(done);
 }
 
+void CBPatrolTask::Finish()
+{
+}
+
 void CBPatrolTask::Cancel()
 {
 }

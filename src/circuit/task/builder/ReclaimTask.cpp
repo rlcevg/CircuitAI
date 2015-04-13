@@ -86,6 +86,10 @@ void CBReclaimTask::Close(bool done)
 	IBuilderTask::Close(done);
 }
 
+void CBReclaimTask::Finish()
+{
+}
+
 void CBReclaimTask::Cancel()
 {
 }

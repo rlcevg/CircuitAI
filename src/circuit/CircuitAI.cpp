@@ -321,20 +321,14 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
 	allyTeam = setupManager->GetAllyTeam();
+	allyAware &= allyTeam->GetSize() > 1;
 
-	metalManager = std::make_shared<CMetalManager>(this, &gameAttribute->GetMetalData());
-	if (metalManager->HasMetalSpots() && !metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
-		metalManager->ClusterizeMetal();
-	}
+	allyTeam->Init(this);
+	metalManager = allyTeam->GetMetalManager();
+	terrainManager = allyTeam->GetTerrainManager();
 
 	// NOTE: EconomyManager uses metal clusters and must be initialized after MetalManager::ClusterizeMetal
 	economyManager = std::make_shared<CEconomyManager>(this);
-
-	// FIXME: TerrainManager uses EconomyManager::GetMexDef and must be initialized after EconomyManager
-	//        TerrainManager also could use FactoryManager::GetAssistDef instead of hardcoded armnanotc
-	allyTeam->Init(this);
-	terrainManager = allyTeam->GetTerrainManager();
-	allyAware &= allyTeam->GetSize() > 1;
 
 	if (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos()) {
 		if (metalManager->HasMetalSpots()) {

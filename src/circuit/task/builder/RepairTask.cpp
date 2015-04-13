@@ -8,6 +8,7 @@
 #include "task/builder/RepairTask.h"
 #include "task/RetreatTask.h"
 #include "task/TaskManager.h"
+#include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -47,18 +48,30 @@ void CBRepairTask::Execute(CCircuitUnit* unit)
 	params.push_back(static_cast<float>(priority));
 	u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
-	u->Repair(manager->GetCircuit()->GetFriendlyUnit(targetId)->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+	CCircuitUnit* target = manager->GetCircuit()->GetFriendlyUnit(targetId);
+	if (target != nullptr) {
+		u->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+	}
 }
 
 void CBRepairTask::Update()
 {
 	// FIXME: Replace const 1000.0f with build time?
-	if (cost < 1000.0f) {
-		return;
-	}
-	float currentIncome = manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome();
-	if (currentIncome < savedIncome * 0.6) {
+	if ((cost > 1000.0f) && (manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome() < savedIncome * 0.6)) {
 		manager->AbortTask(this);
+	}
+}
+
+void CBRepairTask::Finish()
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	CCircuitUnit* target = circuit->GetFriendlyUnit(targetId);
+	// FIXME: Replace const 1000.0f with build time?
+	if ((target != nullptr) && (target->GetUnit()->GetMaxSpeed() <= 0)) {
+		UnitDef* def = target->GetCircuitDef()->GetUnitDef();
+		if ((def->GetMaxWeaponRange() <= .0f) && (def->GetCost(circuit->GetEconomyManager()->GetMetalRes()) > 1000.0f)) {
+			circuit->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
+		}
 	}
 }
 
@@ -96,10 +109,12 @@ void CBRepairTask::SetTarget(CCircuitUnit* unit)
 		cost = unit->GetCircuitDef()->GetUnitDef()->GetCost(manager->GetCircuit()->GetEconomyManager()->GetMetalRes());
 		position = buildPos = unit->GetUnit()->GetPos();
 		targetId = unit->GetId();
+//		buildDef = unit->GetCircuitDef();
 	} else {
 		cost = 1000.0f;
 		position = buildPos = -RgtVector;
 		targetId = -1;
+//		buildDef = nullptr;
 	}
 }
 

@@ -22,8 +22,9 @@ public:
 		springai::AIFloat3 position;
 		bool isOpen;
 	};
+	using DefPoints = std::vector<SDefPoint>;
 	struct SClusterInfo {
-		std::vector<SDefPoint> defPoints;
+		DefPoints defPoints;
 	};
 
 public:

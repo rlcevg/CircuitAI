@@ -6,6 +6,7 @@
  */
 
 #include "unit/AllyTeam.h"
+#include "resource/MetalManager.h"
 #include "static/GameAttribute.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
@@ -62,6 +63,10 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 		return;
 	}
 
+	metalManager = std::make_shared<CMetalManager>(circuit, &circuit->GetGameAttribute()->GetMetalData());
+	if (metalManager->HasMetalSpots() && !metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
+		metalManager->ClusterizeMetal();
+	}
 	terrainManager = std::make_shared<CTerrainManager>(circuit, &circuit->GetGameAttribute()->GetTerrainData());
 }
 
@@ -80,6 +85,7 @@ void CAllyTeam::Release()
 	}
 	enemyUnits.clear();
 
+	metalManager = nullptr;
 	terrainManager = nullptr;
 }
 
@@ -148,6 +154,11 @@ CCircuitUnit* CAllyTeam::GetEnemyUnit(CCircuitUnit::Id unitId)
 const CAllyTeam::Units& CAllyTeam::GetEnemyUnits() const
 {
 	return enemyUnits;
+}
+
+std::shared_ptr<CMetalManager>& CAllyTeam::GetMetalManager()
+{
+	return metalManager;
 }
 
 std::shared_ptr<CTerrainManager>& CAllyTeam::GetTerrainManager()

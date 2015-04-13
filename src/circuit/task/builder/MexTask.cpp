@@ -95,15 +95,34 @@ void CBMexTask::Finish()
 		}
 
 		// Add defence
-		CCircuitDef* defDef = circuit->GetCircuitDef("corllt");
+		// TODO: Move into MilitaryManager
+		CCircuitDef* defDef;
+		bool valid = false;
 		CEconomyManager* economyManager = circuit->GetEconomyManager();
-		if (defDef->GetUnitDef()->GetCost(economyManager->GetMetalRes()) < (MIN_BUILD_SEC / 2) * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor()) {
+		float maxCost = MIN_BUILD_SEC * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor();
+		const char* defenders[] = {"corhlt", "corllt"};
+		for (auto name : defenders) {
+			defDef = circuit->GetCircuitDef(name);
+			if (defDef->GetUnitDef()->GetCost(economyManager->GetMetalRes()) < maxCost) {
+				valid = true;
+				break;
+			}
+		}
+		if (valid) {
+			CMilitaryManager::SDefPoint* closestPoint = nullptr;
+			float minDist = std::numeric_limits<float>::max();
 			for (auto& defPoint : circuit->GetMilitaryManager()->GetDefPoints(index)) {
 				if (defPoint.isOpen) {
-					defPoint.isOpen = false;
-					builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, defPoint.position, IBuilderTask::BuildType::DEFENCE);
-					break;
+					float dist = defPoint.position.SqDistance2D(buildPos);
+					if ((closestPoint == nullptr) || (dist < minDist)) {
+						closestPoint = &defPoint;
+						minDist = dist;
+					}
 				}
+			}
+			if (closestPoint != nullptr) {
+				closestPoint->isOpen = false;
+				builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, closestPoint->position, IBuilderTask::BuildType::DEFENCE);
 			}
 		}
 	}
@@ -133,7 +152,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 	if (buildPos.SqDistance2D(pos) < testRange * testRange) {
 		int mexDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
 		// TODO: Use internal CCircuitAI::GetEnemyUnits?
-		std::vector<Unit*> enemies = circuit->GetCallback()->GetEnemyUnitsIn(buildPos, 1);
+		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(buildPos, 1));
 		bool blocked = false;
 		for (auto enemy : enemies) {
 			UnitDef* def = enemy->GetDef();

@@ -21,6 +21,7 @@ namespace springai {
 namespace circuit {
 
 class CCircuitAI;
+class CMetalManager;
 class CTerrainManager;
 
 class CAllyTeam {
@@ -60,6 +61,7 @@ public:
 	CCircuitUnit* GetEnemyUnit(CCircuitUnit::Id unitId);
 	const Units& GetEnemyUnits() const;
 
+	std::shared_ptr<CMetalManager>& GetMetalManager();
 	std::shared_ptr<CTerrainManager>& GetTerrainManager();
 
 private:
@@ -71,6 +73,7 @@ private:
 	Units friendlyUnits;  // owner
 	Units enemyUnits;  // owner
 
+	std::shared_ptr<CMetalManager> metalManager;
 	std::shared_ptr<CTerrainManager> terrainManager;
 };
 

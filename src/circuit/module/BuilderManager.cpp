@@ -362,6 +362,17 @@ IBuilderTask* CBuilderManager::EnqueueRepair(IBuilderTask::Priority priority,
 	return task;
 }
 
+IBuilderTask* CBuilderManager::EnqueueTerraform(IBuilderTask::Priority priority,
+												CCircuitUnit* target,
+												float cost,
+												int timeout)
+{
+	IBuilderTask* task = new CBTerraformTask(this, priority, target, cost, timeout);
+	builderTasks[static_cast<int>(IBuilderTask::BuildType::TERRAFORM)].insert(task);
+	builderTasksCount++;
+	return task;
+}
+
 IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 									   CCircuitDef* buildDef,
 									   const springai::AIFloat3& position,
@@ -411,11 +422,6 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 		}
 		case IBuilderTask::BuildType::MEX: {
 			task = new CBMexTask(this, priority, buildDef, position, cost, timeout);
-			break;
-		}
-		case IBuilderTask::BuildType::TERRAFORM: {
-			// TODO: Re-evalute params
-			task = new CBTerraformTask(this, priority, position, cost, timeout);
 			break;
 		}
 	}
@@ -655,17 +661,19 @@ void CBuilderManager::Watchdog()
 	}
 
 	// find unfinished abandoned buildings
-	// TODO: Include special units
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	Resource* metalRes = economyManager->GetMetalRes();
 	float maxCost = MAX_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), builderPower) * economyManager->GetEcoFactor();
+	// TODO: Include special units
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
 		Unit* u = unit->GetUnit();
-		if (u->IsBeingBuilt() && (u->GetMaxSpeed() <= 0) && (unfinishedUnits.find(unit) == unfinishedUnits.end()) &&
-			(unit->GetCircuitDef()->GetUnitDef()->GetCost(metalRes) < maxCost))
-		{
-			unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+		if (u->IsBeingBuilt() && (u->GetMaxSpeed() <= 0) && (unfinishedUnits.find(unit) == unfinishedUnits.end())) {
+			float maxHealth = u->GetMaxHealth();
+			float buildPercent = (maxHealth - u->GetHealth()) / maxHealth;
+			if (unit->GetCircuitDef()->GetUnitDef()->GetCost(metalRes) * buildPercent < maxCost) {
+				unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+			}
 		}
 	}
 }

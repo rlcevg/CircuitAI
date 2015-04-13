@@ -25,6 +25,7 @@ public:
 	virtual void Update();
 	virtual void Close(bool done);
 protected:
+	virtual void Finish();
 	virtual void Cancel();
 };
 
