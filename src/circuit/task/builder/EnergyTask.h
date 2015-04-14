@@ -18,6 +18,9 @@ public:
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
 				 float cost, int timeout);
 	virtual ~CBEnergyTask();
+
+protected:
+	virtual void Finish();
 };
 
 } // namespace circuit

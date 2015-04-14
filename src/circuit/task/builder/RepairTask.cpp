@@ -51,6 +51,8 @@ void CBRepairTask::Execute(CCircuitUnit* unit)
 	CCircuitUnit* target = manager->GetCircuit()->GetFriendlyUnit(targetId);
 	if (target != nullptr) {
 		u->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+	} else {
+		manager->AbortTask(this);
 	}
 }
 

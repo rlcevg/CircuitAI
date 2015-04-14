@@ -644,12 +644,14 @@ void CBuilderManager::Watchdog()
 		}
 	}
 
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	Resource* metalRes = economyManager->GetMetalRes();
 	// somehow workers get stuck
 	for (auto worker : workers) {
 		Unit* u = worker->GetUnit();
 		auto commands = std::move(u->GetCurrentCommands());
 		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())
-		if (commands.empty()) {
+		if (commands.empty() && (u->GetResourceUse(metalRes) == .0f) && (u->GetVel() == ZeroVector)) {
 			AIFloat3 toPos = u->GetPos();
 			const float size = 50.0f;
 			CTerrainManager* terrain = circuit->GetTerrainManager();
@@ -661,8 +663,6 @@ void CBuilderManager::Watchdog()
 	}
 
 	// find unfinished abandoned buildings
-	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	Resource* metalRes = economyManager->GetMetalRes();
 	float maxCost = MAX_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), builderPower) * economyManager->GetEcoFactor();
 	// TODO: Include special units
 	for (auto& kv : circuit->GetTeamUnits()) {

@@ -65,6 +65,8 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 	params.push_back(position.z - offsetZ);  //  9: i + 9 control point z
 	params.push_back(unit->GetId());  // 10: i + 10 unitId
 	u->ExecuteCustomCommand(CMD_TERRAFORM_INTERNAL, params);
+
+	// TODO: Enqueue "move out" action for nearby units
 }
 
 void CBTerraformTask::Finish()

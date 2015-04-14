@@ -217,8 +217,9 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 		}
 	}
 
-	ignoreMask = STRUCT_BIT(PYLON);
 	offset = int2(0, 0);
+	ignoreMask = STRUCT_BIT(PYLON) |
+				 STRUCT_BIT(ENGY_HIGH);
 	CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;

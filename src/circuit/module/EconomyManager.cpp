@@ -146,6 +146,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 
 	// TODO: Make configurable
 	// Using cafus, armfus, armsolar as control points
+	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
 	const char* engies[] = {"cafus", "armfus", "armsolar"};
 	const int limits[] = {2, 3, 8};  // TODO: range randomize
 	const int size = sizeof(engies) / sizeof(engies[0]);
@@ -661,7 +662,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	// check buildpower
 	float metalIncome = GetAvgMetalIncome();
 	if ((factoryManager->GetFactoryPower() < metalIncome) &&
-			builderManager->GetTasks(IBuilderTask::BuildType::FACTORY).empty() && builderManager->GetTasks(IBuilderTask::BuildType::NANO).empty())
+		builderManager->GetTasks(IBuilderTask::BuildType::FACTORY).empty() && builderManager->GetTasks(IBuilderTask::BuildType::NANO).empty())
 	{
 		CCircuitUnit* factory = factoryManager->NeedUpgrade();
 		if ((factory != nullptr) && assistDef->IsAvailable()) {
