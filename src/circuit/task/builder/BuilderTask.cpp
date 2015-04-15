@@ -165,9 +165,9 @@ void IBuilderTask::Update()
 void IBuilderTask::Finish()
 {
 	// FIXME: Replace const 1000.0f with build time?
-	if ((cost > 1000.0f) && (buildDef != nullptr) && (buildDef->GetUnitDef()->GetMaxWeaponRange() <= .0f)) {
-		manager->GetCircuit()->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
-	}
+//	if ((cost > 1000.0f) && (buildDef != nullptr) && (buildDef->GetUnitDef()->GetMaxWeaponRange() <= .0f)) {
+//		manager->GetCircuit()->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
+//	}
 }
 
 void IBuilderTask::Cancel()

@@ -664,6 +664,7 @@ void CBuilderManager::Watchdog()
 
 	// find unfinished abandoned buildings
 	float maxCost = MAX_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), builderPower) * economyManager->GetEcoFactor();
+	CCircuitDef* terraDef = circuit->GetCircuitDef("terraunit");
 	// TODO: Include special units
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
@@ -671,7 +672,8 @@ void CBuilderManager::Watchdog()
 		if (u->IsBeingBuilt() && (u->GetMaxSpeed() <= 0) && (unfinishedUnits.find(unit) == unfinishedUnits.end())) {
 			float maxHealth = u->GetMaxHealth();
 			float buildPercent = (maxHealth - u->GetHealth()) / maxHealth;
-			if (unit->GetCircuitDef()->GetUnitDef()->GetCost(metalRes) * buildPercent < maxCost) {
+			CCircuitDef* cdef = unit->GetCircuitDef();
+			if ((cdef->GetUnitDef()->GetCost(metalRes) * buildPercent < maxCost) || (*cdef == *terraDef)) {
 				unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
 			}
 		}

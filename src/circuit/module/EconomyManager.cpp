@@ -306,6 +306,7 @@ IBuilderTask* CEconomyManager::CreateAssistTask(CCircuitUnit* unit)
 	 * Check for damaged units
 	 */
 	float maxCost = MAX_BUILD_SEC * GetAvgMetalIncome() * ecoFactor;
+	CCircuitDef* terraDef = circuit->GetCircuitDef("terraunit");
 	circuit->UpdateFriendlyUnits();
 	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
 	for (auto u : units) {
@@ -314,7 +315,8 @@ IBuilderTask* CEconomyManager::CreateAssistTask(CCircuitUnit* unit)
 			continue;
 		}
 		if (u->IsBeingBuilt()) {
-			if (isBuildMobile && (candUnit->GetCircuitDef()->GetUnitDef()->GetCost(metalRes) < maxCost)) {
+			CCircuitDef* cdef = candUnit->GetCircuitDef();
+			if (isBuildMobile && ((cdef->GetUnitDef()->GetCost(metalRes) < maxCost) || (*cdef == *terraDef))) {
 				isBuildMobile = candUnit->GetUnit()->GetMaxSpeed() > 0;
 				buildTarget = candUnit;
 			}

@@ -9,6 +9,7 @@
 #include "task/TaskManager.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
+#include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -43,46 +44,64 @@ void CBEnergyTask::Finish()
 	float offsetX = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) * SQUARE_SIZE + 10 * SQUARE_SIZE;
 	float offsetZ = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) * SQUARE_SIZE + 10 * SQUARE_SIZE;
 	int facing = this->facing;
-	auto defenceGroup = [circuit, buildPos, offsetX, offsetZ, facing]() {
+	int targetId = target->GetId();
+	// FIXME: Using builder's def because MaxSlope is not provided by engine's interface for buildings!
+	//        and CTerrainManager::CanBuildAt returns false in many cases
+	CCircuitDef* bdef = (*units.begin())->GetCircuitDef();
+	auto defenceGroup = [circuit, buildPos, offsetX, offsetZ, facing, targetId, bdef]() {
+		if (circuit->GetTeamUnit(targetId) == nullptr) {
+			return;
+		}
 		CBuilderManager* builderManager = circuit->GetBuilderManager();
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		CCircuitDef* cdef;
 		AIFloat3 pos;
 
 		cdef = circuit->GetCircuitDef("corllt");
 		pos = buildPos + AIFloat3(-offsetX, 0, -offsetZ);
+		pos = terrainManager->GetBuildPosition(bdef, pos);
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE);
 		pos = buildPos + AIFloat3(+offsetX, 0, +offsetZ);
+		pos = terrainManager->GetBuildPosition(bdef, pos);
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE);
 
 		cdef = circuit->GetCircuitDef("corgrav");
-		pos = buildPos + AIFloat3(-offsetX * 0.8, 0, +offsetZ * 0.8);
+		pos = buildPos + AIFloat3(-offsetX * 0.7, 0, +offsetZ * 0.7);
+		pos = terrainManager->GetBuildPosition(bdef, pos);
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE);
-		pos = buildPos + AIFloat3(+offsetX * 0.8, 0, -offsetZ * 0.8);
+		pos = buildPos + AIFloat3(+offsetX * 0.7, 0, -offsetZ * 0.7);
+		pos = terrainManager->GetBuildPosition(bdef, pos);
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE);
 
 		cdef = circuit->GetCircuitDef("missiletower");
 		pos = buildPos + AIFloat3(-offsetX, 0, 0);
+		pos = terrainManager->GetBuildPosition(bdef, pos);
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE);
 		pos = buildPos + AIFloat3(+offsetX, 0, 0);
+		pos = terrainManager->GetBuildPosition(bdef, pos);
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE);
 		pos = buildPos + AIFloat3(0, 0, -offsetZ);
+		pos = terrainManager->GetBuildPosition(bdef, pos);
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE);
 		pos = buildPos + AIFloat3(0, 0, +offsetZ);
+		pos = terrainManager->GetBuildPosition(bdef, pos);
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE);
 
 		cdef = circuit->GetCircuitDef("corjamt");
 		pos = buildPos + AIFloat3(-offsetX, 0, 0);
+		pos = terrainManager->GetBuildPosition(bdef, pos);
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE);
 		pos = buildPos + AIFloat3(+offsetX, 0, 0);
+		pos = terrainManager->GetBuildPosition(bdef, pos);
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE);
 		pos = buildPos + AIFloat3(0, 0, -offsetZ);
+		pos = terrainManager->GetBuildPosition(bdef, pos);
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE);
 		pos = buildPos + AIFloat3(0, 0, +offsetZ);
+		pos = terrainManager->GetBuildPosition(bdef, pos);
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE);
 
-		// FIXME: Some tasks enqueued in no-area or areas with no builder
-		// HINT: CTerrainManager::GetClosestSector / CTerrainManager::GetAlternativeSector
-
+		cdef = circuit->GetFactoryManager()->GetAssistDef();
 		pos = buildPos;
 		switch (facing) {
 			default:
@@ -90,16 +109,16 @@ void CBEnergyTask::Finish()
 				pos.z -= offsetZ;
 				break;
 			case UNIT_FACING_EAST:
-				pos.x -= offsetZ;
+				pos.x -= offsetX;
 				break;
 			case UNIT_FACING_NORTH:
 				pos.z += offsetZ;
 				break;
 			case UNIT_FACING_WEST:
-				pos.x += offsetZ;
+				pos.x += offsetX;
 				break;
 		}
-		cdef = circuit->GetFactoryManager()->GetAssistDef();
+		pos = terrainManager->GetBuildPosition(bdef, pos);
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::NANO);
 	};
 	manager->GetCircuit()->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(defenceGroup), FRAMES_PER_SEC * 60);

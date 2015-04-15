@@ -164,6 +164,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 			float maxWaterDepth = def->GetMaxWaterDepth();
 			bool canHover = def->IsAbleToHover();
 			bool canFloat = def->IsFloater();
+			// FIXME: MaxSlope is not provided by engine's interface for buildings!
 			STerrainMapImmobileType* IT = nullptr;
 			int itIdx = 0;
 			for (auto& it : immobileType) {
@@ -537,9 +538,9 @@ void CTerrainData::Init(CCircuitAI* circuit)
 
 	initialized = true;
 
-//	/*
-//	 *  Debugging
-//	 */
+	/*
+	 *  Debugging
+	 */
 //	std::ostringstream deb;
 //	for (int iS = 0; iS < sectorXSize * sectorZSize; iS++) {
 //		if (iS % sectorXSize == 0) deb << "\n";
@@ -553,6 +554,17 @@ void CTerrainData::Init(CCircuitAI* circuit)
 //		for (int iS = 0; iS < sectorXSize * sectorZSize; iS++) {
 //			if (iS % sectorXSize == 0) deb << "\n";
 //			if (mt.sector[iS].area != nullptr) deb << "*";
+//			else if (sector[iS].maxElevation < 0.0) deb << "~";
+//			else if (sector[iS].maxSlope > 0.5) deb << "^";
+//			else deb << "x";
+//		}
+//	}
+//	int itId = 0;
+//	for (auto& mt : immobileType) {
+//		deb << "\n\n " << itId++ << " h=" << mt.canHover << " f=" << mt.canFloat << " mb=" << mt.sector.size();
+//		for (int iS = 0; iS < sectorXSize * sectorZSize; iS++) {
+//			if (iS % sectorXSize == 0) deb << "\n";
+//			if (mt.sector.find(iS) != mt.sector.end()) deb << "*";
 //			else if (sector[iS].maxElevation < 0.0) deb << "~";
 //			else if (sector[iS].maxSlope > 0.5) deb << "^";
 //			else deb << "x";
@@ -783,8 +795,8 @@ void CTerrainData::UpdateAreas()
 			std::set<int> sectorsRemaining;
 			for (int iS = 0; iS < sectorZSize * sectorXSize; iS++) {
 				if ((mt.canHover && (mt.maxElevation >= sector[iS].maxElevation) && !waterIsAVoid && ((sector[iS].maxElevation <= 0) || (mt.maxSlope >= sector[iS].maxSlope))) ||
-						(mt.canFloat && (mt.maxElevation >= sector[iS].maxElevation) && !waterIsHarmful && ((sector[iS].maxElevation <= 0) || (mt.maxSlope >= sector[iS].maxSlope))) ||
-						((mt.maxSlope >= sector[iS].maxSlope) && (mt.minElevation <= sector[iS].minElevation) && (mt.maxElevation >= sector[iS].maxElevation) && (!waterIsHarmful || (sector[iS].minElevation >= 0))))
+					(mt.canFloat && (mt.maxElevation >= sector[iS].maxElevation) && !waterIsHarmful && ((sector[iS].maxElevation <= 0) || (mt.maxSlope >= sector[iS].maxSlope))) ||
+					((mt.maxSlope >= sector[iS].maxSlope) && (mt.minElevation <= sector[iS].minElevation) && (mt.maxElevation >= sector[iS].maxElevation) && (!waterIsHarmful || (sector[iS].minElevation >= 0))))
 				{
 					sectorsRemaining.insert(iS);
 				}
