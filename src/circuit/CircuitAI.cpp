@@ -756,6 +756,7 @@ CCircuitDef* CCircuitAI::GetCircuitDef(const char* name)
 		return it->second;
 	}
 
+	// FIXME: Return some manually created object with MAX_INT id? As there is no nullptr checks along the code
 	return nullptr;
 }
 

@@ -1016,7 +1016,7 @@ STerrainMapAreaSector* CTerrainManager::GetClosestSector(STerrainMapArea* source
 	STerrainMapAreaSector* SClosest = nullptr;
 	float sqDisClosest = std::numeric_limits<float>::max();
 	for (auto& iS : sourceArea->sector) {
-		float sqDist = iS.second->S->position.SqDistance2D(*destination);
+		float sqDist = iS.second->S->position.SqDistance2D(*destination);  // TODO: Consider SqDistance() instead of 2D
 		if (sqDist < sqDisClosest) {
 			SClosest = iS.second;
 			sqDisClosest = sqDist;
@@ -1043,7 +1043,7 @@ STerrainMapSector* CTerrainManager::GetClosestSector(STerrainMapImmobileType* so
 	STerrainMapSector* SClosest = nullptr;
 	float sqDisClosest = std::numeric_limits<float>::max();
 	for (auto& iS : sourceIT->sector) {
-		float sqDist = iS.second->position.SqDistance2D(*destination);
+		float sqDist = iS.second->position.SqDistance2D(*destination);  // TODO: Consider SqDistance() instead of 2D
 		if (sqDist < sqDisClosest) {
 			SClosest = iS.second;
 			sqDisClosest = sqDist;
@@ -1121,7 +1121,7 @@ STerrainMapSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* destin
 	const AIFloat3* position = &areaData->sector[sourceSIndex].position;
 	float closestDistance = std::numeric_limits<float>::max();
 	for (auto& iS : destinationArea->sector) {
-		float sqDist = iS.second->S->position.SqDistance2D(*position);
+		float sqDist = iS.second->S->position.SqDistance2D(*position);  // TODO: Consider SqDistance() instead of 2D
 		if (sqDist < closestDistance) {
 			closestS = iS.second->S;
 			closestDistance = sqDist;

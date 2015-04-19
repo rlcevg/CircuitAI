@@ -36,8 +36,7 @@ public:
 	virtual int UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
-	void AddBuildList(CCircuitUnit* unit);
-	void RemoveBuildList(CCircuitUnit* unit);
+	CCircuitDef* GetTerraDef();
 
 	float GetBuilderPower();
 	bool CanEnqueueTask();
@@ -91,6 +90,10 @@ public:
 private:
 	void Init();
 	void Watchdog();
+
+	void AddBuildList(CCircuitUnit* unit);
+	void RemoveBuildList(CCircuitUnit* unit);
+
 	void UpdateIdle();
 	void UpdateRetreat();
 	void UpdateBuild();
@@ -109,6 +112,8 @@ private:
 
 	std::set<CCircuitUnit*> workers;
 	std::set<CCircuitUnit*> assistants;  // workers with temporary task
+
+	CCircuitDef* terraDef;
 
 public:
 	void UpdateAreaUsers();

@@ -149,6 +149,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		}
 	}
 	buildAreas[nullptr] = std::map<CCircuitDef*, int>();  // air
+
+	terraDef = circuit->GetCircuitDef("terraunit");
 }
 
 CBuilderManager::~CBuilderManager()
@@ -245,52 +247,9 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 	return 0; //signaling: OK
 }
 
-void CBuilderManager::AddBuildList(CCircuitUnit* unit)
+CCircuitDef* CBuilderManager::GetTerraDef()
 {
-	CCircuitDef* cDef = unit->GetCircuitDef();
-	if (cDef->GetCount() > 1) {
-		return;
-	}
-
-	const std::unordered_set<CCircuitDef::Id>& buildOptions = cDef->GetBuildOptions();
-	std::set<CCircuitDef*> buildDefs;
-	for (auto build : buildOptions) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(build);
-		if (cdef->GetBuildCount() == 0) {
-			buildDefs.insert(cdef);
-		}
-		cdef->IncBuild();
-	}
-
-	if (!buildDefs.empty()) {
-		circuit->GetEconomyManager()->AddAvailEnergy(buildDefs);
-	}
-
-	// TODO: Same thing with factory, etc.
-}
-
-void CBuilderManager::RemoveBuildList(CCircuitUnit* unit)
-{
-	CCircuitDef* cDef = unit->GetCircuitDef();
-	if (cDef->GetCount() > 1) {
-		return;
-	}
-
-	const std::unordered_set<CCircuitDef::Id>& buildOptions = cDef->GetBuildOptions();
-	std::set<CCircuitDef*> buildDefs;
-	for (auto build : buildOptions) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(build);
-		cdef->DecBuild();
-		if (cdef->GetBuildCount() == 0) {
-			buildDefs.insert(cdef);
-		}
-	}
-
-	if (!buildDefs.empty()) {  // throws exception on set::erase otherwise
-		circuit->GetEconomyManager()->RemoveAvailEnergy(buildDefs);
-	}
-
-	// TODO: Same thing with factory, etc.
+	return terraDef;
 }
 
 float CBuilderManager::GetBuilderPower()
@@ -664,7 +623,6 @@ void CBuilderManager::Watchdog()
 
 	// find unfinished abandoned buildings
 	float maxCost = MAX_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), builderPower) * economyManager->GetEcoFactor();
-	CCircuitDef* terraDef = circuit->GetCircuitDef("terraunit");
 	// TODO: Include special units
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
@@ -678,6 +636,54 @@ void CBuilderManager::Watchdog()
 			}
 		}
 	}
+}
+
+void CBuilderManager::AddBuildList(CCircuitUnit* unit)
+{
+	CCircuitDef* cDef = unit->GetCircuitDef();
+	if (cDef->GetCount() > 1) {
+		return;
+	}
+
+	const std::unordered_set<CCircuitDef::Id>& buildOptions = cDef->GetBuildOptions();
+	std::set<CCircuitDef*> buildDefs;
+	for (auto build : buildOptions) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(build);
+		if (cdef->GetBuildCount() == 0) {
+			buildDefs.insert(cdef);
+		}
+		cdef->IncBuild();
+	}
+
+	if (!buildDefs.empty()) {
+		circuit->GetEconomyManager()->AddAvailEnergy(buildDefs);
+	}
+
+	// TODO: Same thing with factory, etc.
+}
+
+void CBuilderManager::RemoveBuildList(CCircuitUnit* unit)
+{
+	CCircuitDef* cDef = unit->GetCircuitDef();
+	if (cDef->GetCount() > 1) {
+		return;
+	}
+
+	const std::unordered_set<CCircuitDef::Id>& buildOptions = cDef->GetBuildOptions();
+	std::set<CCircuitDef*> buildDefs;
+	for (auto build : buildOptions) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(build);
+		cdef->DecBuild();
+		if (cdef->GetBuildCount() == 0) {
+			buildDefs.insert(cdef);
+		}
+	}
+
+	if (!buildDefs.empty()) {  // throws exception on set::erase otherwise
+		circuit->GetEconomyManager()->RemoveAvailEnergy(buildDefs);
+	}
+
+	// TODO: Same thing with factory, etc.
 }
 
 void CBuilderManager::UpdateIdle()
