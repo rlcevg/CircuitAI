@@ -66,15 +66,15 @@ void CBRepairTask::Update()
 
 void CBRepairTask::Finish()
 {
-	CCircuitAI* circuit = manager->GetCircuit();
-	CCircuitUnit* target = circuit->GetFriendlyUnit(targetId);
-	// FIXME: Replace const 1000.0f with build time?
-	if ((target != nullptr) && (target->GetUnit()->GetMaxSpeed() <= 0)) {
-		UnitDef* def = target->GetCircuitDef()->GetUnitDef();
-		if ((def->GetMaxWeaponRange() <= .0f) && (def->GetCost(circuit->GetEconomyManager()->GetMetalRes()) > 1000.0f)) {
-			circuit->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
-		}
-	}
+//	CCircuitAI* circuit = manager->GetCircuit();
+//	CCircuitUnit* target = circuit->GetFriendlyUnit(targetId);
+//	// FIXME: Replace const 1000.0f with build time?
+//	if ((target != nullptr) && (target->GetUnit()->GetMaxSpeed() <= 0)) {
+//		UnitDef* def = target->GetCircuitDef()->GetUnitDef();
+//		if ((def->GetMaxWeaponRange() <= .0f) && (def->GetCost(circuit->GetEconomyManager()->GetMetalRes()) > 1000.0f)) {
+//			circuit->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
+//		}
+//	}
 }
 
 void CBRepairTask::Cancel()

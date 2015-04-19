@@ -898,10 +898,7 @@ void CTerrainData::ScheduleUsersUpdate()
 	aiToUpdate = 0;
 	for (auto circuit : gameAttribute->GetCircuits()) {
 		if (circuit->IsInitialized()) {
-			circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(&CTerrainManager::UpdateAreaUsers,
-																			  circuit->GetTerrainManager(),
-																			  circuit),
-												  ++aiToUpdate);
+			circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(&CTerrainManager::UpdateAreaUsers, circuit->GetTerrainManager()), ++aiToUpdate);
 		}
 	}
 	// Check if there are any ai to update

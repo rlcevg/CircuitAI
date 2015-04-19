@@ -141,7 +141,7 @@ public:
 	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position, const float& range = .0);  // NOTE: returns false if the area was too small to be recorded
 	bool CanBuildAt(CCircuitUnit* unit, const springai::AIFloat3& destination);
 
-	void UpdateAreaUsers(CCircuitAI* circuit);
+	void UpdateAreaUsers();
 	void DidUpdateAreaUsers();
 private:
 	SAreaData* areaData;

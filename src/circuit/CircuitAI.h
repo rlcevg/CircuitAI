@@ -81,7 +81,7 @@ private:
 	EventHandlerPtr eventHandler;
 // ---- AI Event handler ---- END
 
-public:
+private:
 	int Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback);
 	int Release(int reason);
 	int Update(int frame);
@@ -100,9 +100,10 @@ public:
 	int LuaMessage(const char* inData);
 
 // ---- Units ---- BEGIN
-public:
+private:
 	CCircuitUnit* RegisterTeamUnit(CCircuitUnit::Id unitId);
 	void UnregisterTeamUnit(CCircuitUnit* unit);
+public:
 	CCircuitUnit* GetTeamUnit(CCircuitUnit::Id unitId) /*const*/;
 	const CAllyTeam::Units& GetTeamUnits() const;
 
@@ -111,8 +112,10 @@ public:
 	CCircuitUnit* GetFriendlyUnit(CCircuitUnit::Id unitId);
 	const CAllyTeam::Units& GetFriendlyUnits() const;
 
+private:
 	CCircuitUnit* RegisterEnemyUnit(CCircuitUnit::Id unitId);
 	void UnregisterEnemyUnit(CCircuitUnit* unit);
+public:
 	CCircuitUnit* GetEnemyUnit(springai::Unit* u);
 	CCircuitUnit* GetEnemyUnit(CCircuitUnit::Id unitId);
 	const CAllyTeam::Units& GetEnemyUnits() const;
@@ -133,10 +136,10 @@ private:
 
 // ---- AIOptions.lua ---- BEGIN
 public:
-	void InitOptions();
 	Difficulty GetDifficulty();
 	bool IsAllyAware();
 private:
+	void InitOptions();
 	Difficulty difficulty;
 	bool allyAware;
 // ---- AIOptions.lua ---- END
@@ -152,11 +155,11 @@ public:
 	using CircuitDefs = std::unordered_map<CCircuitDef::Id, CCircuitDef*>;
 	using NamedDefs = std::map<const char*, CCircuitDef*, cmp_str>;
 
-	void InitUnitDefs();
 	CircuitDefs& GetCircuitDefs();
 	CCircuitDef* GetCircuitDef(const char* name);
 	CCircuitDef* GetCircuitDef(CCircuitDef::Id unitDefId);
 private:
+	void InitUnitDefs();
 	CircuitDefs  defsById;  // owner
 	NamedDefs defsByName;
 // ---- UnitDefs ---- END

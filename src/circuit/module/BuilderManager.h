@@ -36,7 +36,7 @@ public:
 	virtual int UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
-	CCircuitDef* GetTerraDef();
+	CCircuitDef* GetTerraDef() const;
 
 	float GetBuilderPower();
 	bool CanEnqueueTask();

@@ -247,7 +247,7 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 	return 0; //signaling: OK
 }
 
-CCircuitDef* CBuilderManager::GetTerraDef()
+CCircuitDef* CBuilderManager::GetTerraDef() const
 {
 	return terraDef;
 }

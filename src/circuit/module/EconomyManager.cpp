@@ -818,7 +818,7 @@ void CEconomyManager::Init()
 	}
 
 	SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();
-	const int interval = ais->GetSize() * 2;
+	const int interval = ais->GetSize() * FRAMES_PER_SEC;
 	delete ais;
 	const AIFloat3& pos = circuit->GetSetupManager()->GetBasePos();
 	CScheduler* scheduler = circuit->GetScheduler().get();

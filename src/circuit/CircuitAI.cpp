@@ -325,7 +325,7 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 
 	allyTeam->Init(this);
 	metalManager = allyTeam->GetMetalManager();
-	terrainManager = allyTeam->GetTerrainManager();
+	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
 
 	// NOTE: EconomyManager uses metal clusters and must be initialized after MetalManager::ClusterizeMetal
 	economyManager = std::make_shared<CEconomyManager>(this);
@@ -682,6 +682,16 @@ bool CCircuitAI::IsUpdateTimeValid()
 	return std::chrono::duration_cast<milliseconds>(t - startUpdate).count() < 1;  // or (1000 / FRAMES_PER_SEC)
 }
 
+CCircuitAI::Difficulty CCircuitAI::GetDifficulty()
+{
+	return difficulty;
+}
+
+bool CCircuitAI::IsAllyAware()
+{
+	return allyAware;
+}
+
 void CCircuitAI::InitOptions()
 {
 	OptionValues* options = skirmishAI->GetOptionValues();
@@ -710,14 +720,30 @@ void CCircuitAI::InitOptions()
 	delete options;
 }
 
-CCircuitAI::Difficulty CCircuitAI::GetDifficulty()
+CCircuitDef* CCircuitAI::GetCircuitDef(const char* name)
 {
-	return difficulty;
+	auto it = defsByName.find(name);
+	if (it != defsByName.end()) {
+		return it->second;
+	}
+
+	// FIXME: Return manually created object with MAX_INT id? As there is no nullptr checks along the code
+	return nullptr;
 }
 
-bool CCircuitAI::IsAllyAware()
+CCircuitDef* CCircuitAI::GetCircuitDef(CCircuitDef::Id unitDefId)
 {
-	return allyAware;
+	auto it = defsById.find(unitDefId);
+	if (it != defsById.end()) {
+		return it->second;
+	}
+
+	return nullptr;
+}
+
+CCircuitAI::CircuitDefs& CCircuitAI::GetCircuitDefs()
+{
+	return defsById;
 }
 
 void CCircuitAI::InitUnitDefs()
@@ -747,32 +773,6 @@ void CCircuitAI::InitUnitDefs()
 		defsByName[ud->GetName()] = cdef;
 		defsById[cdef->GetId()] = cdef;
 	}
-}
-
-CCircuitDef* CCircuitAI::GetCircuitDef(const char* name)
-{
-	auto it = defsByName.find(name);
-	if (it != defsByName.end()) {
-		return it->second;
-	}
-
-	// FIXME: Return some manually created object with MAX_INT id? As there is no nullptr checks along the code
-	return nullptr;
-}
-
-CCircuitDef* CCircuitAI::GetCircuitDef(CCircuitDef::Id unitDefId)
-{
-	auto it = defsById.find(unitDefId);
-	if (it != defsById.end()) {
-		return it->second;
-	}
-
-	return nullptr;
-}
-
-CCircuitAI::CircuitDefs& CCircuitAI::GetCircuitDefs()
-{
-	return defsById;
 }
 
 bool CCircuitAI::IsInitialized()

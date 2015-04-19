@@ -24,6 +24,8 @@ class CCircuitAI;
 
 class CGameAttribute {
 public:
+	using Circuits = std::unordered_set<CCircuitAI*>;
+
 	CGameAttribute();
 	virtual ~CGameAttribute();
 
@@ -32,14 +34,14 @@ public:
 	void RegisterAI(CCircuitAI* circuit);
 	void UnregisterAI(CCircuitAI* circuit);
 
-	const std::unordered_set<CCircuitAI*>& GetCircuits() const;
+	const Circuits& GetCircuits() const;
 	CSetupData& GetSetupData();
 	CMetalData& GetMetalData();
 	CTerrainData& GetTerrainData();
 
 private:
 	bool gameEnd;
-	std::unordered_set<CCircuitAI*> circuits;
+	Circuits circuits;
 	CSetupData setupData;
 	CMetalData metalData;
 	CTerrainData terrainData;

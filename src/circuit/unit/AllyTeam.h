@@ -22,7 +22,6 @@ namespace circuit {
 
 class CCircuitAI;
 class CMetalManager;
-class CTerrainManager;
 
 class CAllyTeam {
 public:
@@ -62,7 +61,6 @@ public:
 	const Units& GetEnemyUnits() const;
 
 	std::shared_ptr<CMetalManager>& GetMetalManager();
-	std::shared_ptr<CTerrainManager>& GetTerrainManager();
 
 private:
 	TeamIds teamIds;
@@ -74,7 +72,6 @@ private:
 	Units enemyUnits;  // owner
 
 	std::shared_ptr<CMetalManager> metalManager;
-	std::shared_ptr<CTerrainManager> terrainManager;
 };
 
 } // namespace circuit

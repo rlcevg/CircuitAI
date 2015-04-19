@@ -202,7 +202,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	SBlockingMap::BlockCellLow cellLow = {0};
 	blockingMap.gridLow.resize(blockingMap.columnsLow * blockingMap.rowsLow, cellLow);
 
-	const CMetalData::Metals& spots = circuit->GetAllyTeam()->GetMetalManager()->GetSpots();
+	const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
 	def = mexDef->GetUnitDef();
 	int size = std::max(def->GetXSize(), def->GetZSize()) / 2;
 	int& xsize = size, &zsize = size;
@@ -352,14 +352,14 @@ void CTerrainManager::MarkAllyBuildings()
 
 	circuit->UpdateFriendlyUnits();
 	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
-	const CAllyTeam::TeamIds& teamIds = circuit->GetAllyTeam()->GetTeamIds();
+	int teamId = circuit->GetTeamId();
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 
 	std::set<Structure, cmp> newUnits, oldUnits;
 	for (auto& kv : friendlies) {
 		CCircuitUnit* unit = kv.second;
 		Unit* u = unit->GetUnit();
-		if ((teamIds.find(u->GetTeam()) == teamIds.end()) && (u->GetMaxSpeed() <= 0)) {
+		if ((u->GetTeam() != teamId) && (u->GetMaxSpeed() <= 0)) {
 			Structure building;
 			building.unitId = kv.first;
 			decltype(markedAllies)::iterator search = markedAllies.find(building);
@@ -1220,7 +1220,7 @@ bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination
 	return false;
 }
 
-void CTerrainManager::UpdateAreaUsers(CCircuitAI* circuit)
+void CTerrainManager::UpdateAreaUsers()
 {
 	areaData = terrainData->GetNextAreaData();
 	for (auto& kv : circuit->GetTeamUnits()) {

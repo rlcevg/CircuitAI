@@ -99,7 +99,7 @@ void CBMexTask::Finish()
 		CCircuitDef* defDef;
 		bool valid = false;
 		CEconomyManager* economyManager = circuit->GetEconomyManager();
-		float maxCost = MIN_BUILD_SEC * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor();
+		float maxCost = MIN_BUILD_SEC * economyManager->GetAvgMetalIncome();/* * economyManager->GetEcoFactor();*/
 		const char* defenders[] = {"corhlt", "corllt"};
 		for (auto name : defenders) {
 			defDef = circuit->GetCircuitDef(name);
