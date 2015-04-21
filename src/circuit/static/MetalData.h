@@ -8,6 +8,8 @@
 #ifndef SRC_CIRCUIT_STATIC_METALDATA_H_
 #define SRC_CIRCUIT_STATIC_METALDATA_H_
 
+#include "resource/EnergyLink.h"
+
 #include "AIFloat3.h"
 
 #include <boost/geometry/geometries/box.hpp>
@@ -18,6 +20,7 @@
 #include <vector>
 #include <atomic>
 #include <memory>
+#include <set>
 
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
@@ -37,9 +40,13 @@ private:
 	using vor_diagram = boost::polygon::voronoi_diagram<double>;
 
 public:
-	using Graph = boost::adjacency_list<boost::hash_setS, boost::vecS, boost::undirectedS, boost::no_property, boost::property<boost::edge_weight_t, float>>;
-	using Vertex = boost::graph_traits<CMetalData::Graph>::vertex_descriptor;
-	using Edge = boost::graph_traits<CMetalData::Graph>::edge_descriptor;
+	using Edge = struct {
+		float weight;
+		std::set<CEnergyLink::Structure*, CEnergyLink::cmp> buildings;
+	};
+	using Graph = boost::adjacency_list<boost::hash_setS, boost::vecS, boost::undirectedS, boost::no_property, Edge>;
+	using VertexDesc = boost::graph_traits<CMetalData::Graph>::vertex_descriptor;
+	using EdgeDesc = boost::graph_traits<CMetalData::Graph>::edge_descriptor;
 
 	using Metal = struct {
 		float income;

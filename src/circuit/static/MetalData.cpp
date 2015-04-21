@@ -254,8 +254,13 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 		if (edgeCount++ % 2 == 0) {  // FIXME: No docs says that odd edge is a twin of even
 			std::size_t idx0 = edge.cell()->source_index();
 			std::size_t idx1 = edge.twin()->cell()->source_index();
-			float weight = clusters[idx0].geoCentr.distance(clusters[idx1].geoCentr);
-			boost::add_edge(idx0, idx1, weight, g);
+
+			EdgeDesc edgeId;
+			bool ok;
+			std::tie(edgeId, ok) = boost::add_edge(idx0, idx1, g);
+			if (ok) {
+				g[edgeId].weight = clusters[idx0].geoCentr.distance(clusters[idx1].geoCentr);
+			}
 		}
 	}
 	clusterGraph = g;

@@ -364,11 +364,9 @@ void CTerrainManager::MarkAllyBuildings()
 			building.unitId = kv.first;
 			decltype(markedAllies)::iterator search = markedAllies.find(building);
 			if (search == markedAllies.end()) {
-				UnitDef* def = u->GetDef();
 				building.cdef = unit->GetCircuitDef();
 				building.pos = u->GetPos();
 				building.facing = u->GetBuildingFacing();
-				delete def;
 				newUnits.insert(building);
 				if (*building.cdef == *mexDef) {  // update metalInfo's open state
 					circuit->GetMetalManager()->SetOpenSpot(building.pos, false);

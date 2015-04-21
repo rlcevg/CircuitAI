@@ -162,7 +162,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	/*
 	 * Energy link
 	 */
-//	unitDefId = mexDef->GetUnitDefId();
+//	unitDefId = mexDef->GetId();
 //	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
 //		int index = this->circuit->GetMetalManager()->FindNearestCluster(unit->GetUnit()->GetPos());
 //		if (index >= 0) {
@@ -835,15 +835,21 @@ void CEconomyManager::LinkCluster(int index)
 	// Add new edges to Kruskal graph
 	CMetalData::Graph::out_edge_iterator edgeIt, edgeEnd;
 	std::tie(edgeIt, edgeEnd) = boost::out_edges(index, clusterGraph);  // or boost::tie
-	std::list<CMetalData::Edge> edgeAddon;
+	std::list<CMetalData::EdgeDesc> edgeAddon;
 	for (; edgeIt != edgeEnd; ++edgeIt) {
 		CMetalData::Graph::out_edge_iterator edIt, edEnd;
 		std::tie(edIt, edEnd) = boost::out_edges(boost::target(*edgeIt, clusterGraph), spanningGraph);
 		if (edIt != edEnd) {
 			int idx0 = boost::source(*edgeIt, clusterGraph);
 			int idx1 = boost::target(*edgeIt, clusterGraph);
-			float weight = clusters[idx0].geoCentr.distance(clusters[idx1].geoCentr);
-			edgeAddon.push_back(boost::add_edge(idx0, idx1, weight, spanningGraph).first);
+
+			CMetalData::EdgeDesc edgeId;
+			bool ok;
+			std::tie(edgeId, ok) = boost::add_edge(idx0, idx1, spanningGraph);
+			if (ok) {
+				spanningGraph[edgeId].weight = clusters[idx0].geoCentr.distance(clusters[idx1].geoCentr);
+				edgeAddon.push_back(edgeId);
+			}
 		}
 	}
 	if (spanningTree.empty()) {
@@ -857,7 +863,8 @@ void CEconomyManager::LinkCluster(int index)
 
 	// Build Kruskal's minimum spanning tree
 	spanningTree.clear();
-	boost::kruskal_minimum_spanning_tree(spanningGraph, std::back_inserter(spanningTree));
+	boost::property_map<CMetalData::Graph, float CMetalData::Edge::*>::const_type w_map = boost::get(&CMetalData::Edge::weight, clusterGraph);
+	boost::kruskal_minimum_spanning_tree(spanningGraph, std::back_inserter(spanningTree), boost::weight_map(w_map));
 
 	// Remove unused edges
 	for (auto& edge : edgeAddon) {

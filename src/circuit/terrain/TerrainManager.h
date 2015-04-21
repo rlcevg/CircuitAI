@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_TERRAIN_TERRAINMANAGER_H_
 
 #include "terrain/BlockingMap.h"
+#include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
 
 #include "AIFloat3.h"
@@ -65,7 +66,7 @@ public:
 private:
 	int markFrame;
 	struct Structure {
-		int unitId;
+		CCircuitUnit::Id unitId;
 		CCircuitDef* cdef;
 		springai::AIFloat3 pos;
 		int facing;
