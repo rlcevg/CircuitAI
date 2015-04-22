@@ -9,7 +9,6 @@
 #define SRC_CIRCUIT_MODULE_ECONOMYMANAGER_H_
 
 #include "module/Module.h"
-#include "static/MetalData.h"
 
 #include "AIFloat3.h"
 
@@ -28,10 +27,11 @@ class IBuilderTask;
 class CRecruitTask;
 class CLagrangeInterPol;
 class CCircuitDef;
+class CEnergyLink;
 
 class CEconomyManager: public IModule {
 public:
-	CEconomyManager(CCircuitAI* circuit);
+	CEconomyManager(CCircuitAI* circuit, CEnergyLink* energyLink);
 	virtual ~CEconomyManager();
 
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
@@ -63,7 +63,6 @@ public:
 
 private:
 	void Init();
-	void LinkCluster(int index);
 
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
@@ -84,7 +83,7 @@ private:
 	CCircuitDef* mexDef;
 	std::set<CCircuitDef*> allEnergyDefs;
 	std::set<CCircuitDef*> availEnergyDefs;
-	using SEnergyInfo = struct {
+	struct SEnergyInfo {
 		CCircuitDef* cdef;
 		float cost;
 		float costDivMake;
@@ -101,10 +100,8 @@ private:
 	int indexRes;
 	float metalIncome;
 	float energyIncome;
-	float metalPrevious;
 
-	std::vector<CMetalData::EdgeDesc> spanningTree;
-	CMetalData::Graph spanningGraph;
+	CEnergyLink* energyLink;
 };
 
 } // namespace circuit

@@ -7,6 +7,7 @@
 
 #include "unit/AllyTeam.h"
 #include "resource/MetalManager.h"
+#include "resource/EnergyLink.h"
 #include "static/GameAttribute.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -28,7 +29,8 @@ CAllyTeam::CAllyTeam(const TeamIds& tids, const SBox& sb) :
 		teamIds(tids),
 		startBox(sb),
 		lastUpdate(-1),
-		initCount(0)
+		initCount(0),
+		energyLink(nullptr)
 {
 }
 
@@ -66,6 +68,8 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 	if (metalManager->HasMetalSpots() && !metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
 		metalManager->ClusterizeMetal();
 	}
+
+	energyLink = new CEnergyLink(circuit);
 }
 
 void CAllyTeam::Release()
@@ -84,6 +88,8 @@ void CAllyTeam::Release()
 	enemyUnits.clear();
 
 	metalManager = nullptr;
+
+	delete energyLink;
 }
 
 void CAllyTeam::UpdateFriendlyUnits(CCircuitAI* circuit)
@@ -156,6 +162,11 @@ const CAllyTeam::Units& CAllyTeam::GetEnemyUnits() const
 std::shared_ptr<CMetalManager>& CAllyTeam::GetMetalManager()
 {
 	return metalManager;
+}
+
+CEnergyLink* CAllyTeam::GetEnergyLink() const
+{
+	return energyLink;
 }
 
 } // namespace circuit

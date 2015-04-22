@@ -8,8 +8,6 @@
 #ifndef SRC_CIRCUIT_STATIC_METALDATA_H_
 #define SRC_CIRCUIT_STATIC_METALDATA_H_
 
-#include "resource/EnergyLink.h"
-
 #include "AIFloat3.h"
 
 #include <boost/geometry/geometries/box.hpp>
@@ -40,15 +38,15 @@ private:
 	using vor_diagram = boost::polygon::voronoi_diagram<double>;
 
 public:
-	using Edge = struct {
+	struct Edge {
+		int index;
 		float weight;
-		std::set<CEnergyLink::Structure*, CEnergyLink::cmp> buildings;
 	};
 	using Graph = boost::adjacency_list<boost::hash_setS, boost::vecS, boost::undirectedS, boost::no_property, Edge>;
 	using VertexDesc = boost::graph_traits<CMetalData::Graph>::vertex_descriptor;
 	using EdgeDesc = boost::graph_traits<CMetalData::Graph>::edge_descriptor;
 
-	using Metal = struct {
+	struct Metal {
 		float income;
 		springai::AIFloat3 position;
 	};
@@ -56,7 +54,7 @@ public:
 	using MetalNode = std::pair<point, int>;  // spots indexer
 	using MetalPredicate = std::function<bool (MetalNode const& v)>;
 	using MetalIndices = std::vector<int>;
-	using Cluster = struct {
+	struct Cluster {
 		MetalIndices idxSpots;
 		springai::AIFloat3 geoCentr;
 		springai::AIFloat3 weightCentr;

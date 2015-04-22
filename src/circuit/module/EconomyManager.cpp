@@ -10,6 +10,7 @@
 #include "module/FactoryManager.h"
 #include "setup/SetupManager.h"
 #include "resource/MetalManager.h"
+#include "resource/EnergyLink.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/math/LagrangeInterPol.h"
@@ -24,20 +25,19 @@
 #include "Economy.h"
 #include "Feature.h"
 
-#include <boost/graph/kruskal_min_spanning_tree.hpp>
-
 namespace circuit {
 
 using namespace springai;
 
 #define INCOME_SAMPLES	5
 
-CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
+CEconomyManager::CEconomyManager(CCircuitAI* circuit, CEnergyLink* energyLink) :
 		IModule(circuit),
 		pylonCount(0),
 		indexRes(0),
 		metalIncome(.0f),
-		energyIncome(.0f)
+		energyIncome(.0f),
+		energyLink(energyLink)
 {
 	metalRes = circuit->GetCallback()->GetResourceByName("Metal");
 	energyRes = circuit->GetCallback()->GetResourceByName("Energy");
@@ -162,18 +162,17 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	/*
 	 * Energy link
 	 */
-//	unitDefId = mexDef->GetId();
-//	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
-//		int index = this->circuit->GetMetalManager()->FindNearestCluster(unit->GetUnit()->GetPos());
-//		if (index >= 0) {
-//			LinkCluster(index);
-//		}
-//	};
+	unitDefId = mexDef->GetId();
+	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
+		int index = this->circuit->GetMetalManager()->FindNearestCluster(unit->GetUnit()->GetPos());
+		if (index >= 0) {
+			this->energyLink->LinkCluster(index);
+		}
+	};
 //	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 //		// TODO: Destroy link;
 ////		UnlinkCluster();
 //	};
-//	spanningGraph = CMetalData::Graph(boost::num_vertices(circuit->GetMetalManager()->GetGraph()));
 }
 
 CEconomyManager::~CEconomyManager()
@@ -824,61 +823,6 @@ void CEconomyManager::Init()
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateFactoryTasks, this, pos, nullptr), interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this), interval, circuit->GetSkirmishAIId() + 1);
-}
-
-void CEconomyManager::LinkCluster(int index)
-{
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
-	const CMetalData::Clusters& clusters = metalManager->GetClusters();
-
-	// Add new edges to Kruskal graph
-	CMetalData::Graph::out_edge_iterator edgeIt, edgeEnd;
-	std::tie(edgeIt, edgeEnd) = boost::out_edges(index, clusterGraph);  // or boost::tie
-	std::list<CMetalData::EdgeDesc> edgeAddon;
-	for (; edgeIt != edgeEnd; ++edgeIt) {
-		CMetalData::Graph::out_edge_iterator edIt, edEnd;
-		std::tie(edIt, edEnd) = boost::out_edges(boost::target(*edgeIt, clusterGraph), spanningGraph);
-		if (edIt != edEnd) {
-			int idx0 = boost::source(*edgeIt, clusterGraph);
-			int idx1 = boost::target(*edgeIt, clusterGraph);
-
-			CMetalData::EdgeDesc edgeId;
-			bool ok;
-			std::tie(edgeId, ok) = boost::add_edge(idx0, idx1, spanningGraph);
-			if (ok) {
-				spanningGraph[edgeId].weight = clusters[idx0].geoCentr.distance(clusters[idx1].geoCentr);
-				edgeAddon.push_back(edgeId);
-			}
-		}
-	}
-	if (spanningTree.empty()) {
-		boost::add_edge(index, index, spanningGraph);
-	}
-
-	// Clear Kruskal drawing
-	for (auto& edge : spanningTree) {
-		circuit->GetDrawer()->DeletePointsAndLines(clusters[(std::size_t)boost::source(edge, clusterGraph)].geoCentr);
-	}
-
-	// Build Kruskal's minimum spanning tree
-	spanningTree.clear();
-	boost::property_map<CMetalData::Graph, float CMetalData::Edge::*>::const_type w_map = boost::get(&CMetalData::Edge::weight, clusterGraph);
-	boost::kruskal_minimum_spanning_tree(spanningGraph, std::back_inserter(spanningTree), boost::weight_map(w_map));
-
-	// Remove unused edges
-	for (auto& edge : edgeAddon) {
-		if (std::find(spanningTree.begin(), spanningTree.end(), edge) == spanningTree.end()) {
-			boost::remove_edge(edge, spanningGraph);
-		}
-	}
-
-	// Draw Kruskal
-	for (auto& edge : spanningTree) {
-		const AIFloat3& posFrom = clusters[boost::source(edge, clusterGraph)].geoCentr;
-		const AIFloat3& posTo = clusters[boost::target(edge, clusterGraph)].geoCentr;
-		circuit->GetDrawer()->AddLine(posFrom, posTo);
-	}
 }
 
 } // namespace circuit

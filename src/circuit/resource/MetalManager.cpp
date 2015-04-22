@@ -145,6 +145,7 @@ void CMetalManager::ClusterizeMetal()
 		}
 	}
 
+	// TODO: Remove parallelism (and fix Init everywhere)
 	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CMetalData::Clusterize, metalData, maxDistance, pdistmatrix));
 }
 

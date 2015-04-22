@@ -328,7 +328,7 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
 
 	// NOTE: EconomyManager uses metal clusters and must be initialized after MetalManager::ClusterizeMetal
-	economyManager = std::make_shared<CEconomyManager>(this);
+	economyManager = std::make_shared<CEconomyManager>(this, allyTeam->GetEnergyLink());
 
 	if (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos()) {
 		if (metalManager->HasMetalSpots()) {

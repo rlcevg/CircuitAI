@@ -370,6 +370,7 @@ void CTerrainManager::MarkAllyBuildings()
 				newUnits.insert(building);
 				if (*building.cdef == *mexDef) {  // update metalInfo's open state
 					circuit->GetMetalManager()->SetOpenSpot(building.pos, false);
+					// TODO: Update EnergyLink
 				} else {
 					MarkBlocker(building, true);
 				}
@@ -385,6 +386,7 @@ void CTerrainManager::MarkAllyBuildings()
 	for (auto& building : deadUnits) {
 		if (*building.cdef == *mexDef) {  // update metalInfo's open state
 			circuit->GetMetalManager()->SetOpenSpot(building.pos, true);
+			// TODO: Update EnergyLink
 		} else {
 			MarkBlocker(building, false);
 		}
