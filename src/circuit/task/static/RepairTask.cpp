@@ -37,7 +37,8 @@ void CSRepairTask::Update()
 		manager->AbortTask(this);
 	} else if (++repUpdCount >= 5) {
 		repUpdCount = 0;
-		if ((targetId != -1) && circuit->GetFriendlyUnit(targetId)->GetUnit()->IsBeingBuilt()) {
+		CCircuitUnit* target = circuit->GetFriendlyUnit(targetId);
+		if ((target != nullptr) && target->GetUnit()->IsBeingBuilt()) {
 			/*
 			 * Check for damaged units
 			 */

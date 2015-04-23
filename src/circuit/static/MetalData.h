@@ -39,6 +39,8 @@ private:
 
 public:
 	struct Edge {
+		Edge() : index(-1), weight(.0f) {}
+		Edge(int i, float w) : index(i), weight(w) {}
 		int index;
 		float weight;
 	};

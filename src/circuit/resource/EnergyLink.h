@@ -48,7 +48,11 @@ private:
 	std::unordered_map<CCircuitDef::Id, float> pylonRanges;
 
 	std::unordered_set<int> linkedMexes;
-	std::unordered_map<int, int> linkedClusters;
+	struct LinkVertex {
+		int mexCount;
+		bool isConnected;
+	};
+	std::unordered_map<int, LinkVertex> linkedClusters;
 	struct Link {
 		Link() : isBeingBuilt(false) {}
 		std::set<CCircuitUnit::Id> pylons;
