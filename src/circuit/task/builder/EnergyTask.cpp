@@ -48,7 +48,7 @@ void CBEnergyTask::Finish()
 	// FIXME: Using builder's def because MaxSlope is not provided by engine's interface for buildings!
 	//        and CTerrainManager::CanBuildAt returns false in many cases
 	CCircuitDef* bdef = (*units.begin())->GetCircuitDef();
-	auto defenceGroup = [circuit, buildPos, offsetX, offsetZ, facing, targetId, bdef]() {
+//	auto defenceGroup = [circuit, buildPos, offsetX, offsetZ, facing, targetId, bdef]() {
 		if (circuit->GetTeamUnit(targetId) == nullptr) {
 			return;
 		}
@@ -120,8 +120,8 @@ void CBEnergyTask::Finish()
 		}
 		pos = terrainManager->GetBuildPosition(bdef, pos);
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::NANO);
-	};
-	manager->GetCircuit()->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(defenceGroup), FRAMES_PER_SEC * 60);
+//	};
+//	manager->GetCircuit()->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(defenceGroup), FRAMES_PER_SEC * 60);
 
 	IBuilderTask::Finish();
 }

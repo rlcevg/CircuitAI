@@ -27,11 +27,10 @@ class IBuilderTask;
 class CRecruitTask;
 class CLagrangeInterPol;
 class CCircuitDef;
-class CEnergyLink;
 
 class CEconomyManager: public IModule {
 public:
-	CEconomyManager(CCircuitAI* circuit, CEnergyLink* energyLink);
+	CEconomyManager(CCircuitAI* circuit);
 	virtual ~CEconomyManager();
 
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
@@ -100,8 +99,6 @@ private:
 	int indexRes;
 	float metalIncome;
 	float energyIncome;
-
-	CEnergyLink* energyLink;
 };
 
 } // namespace circuit

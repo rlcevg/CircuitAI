@@ -325,10 +325,11 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 
 	allyTeam->Init(this);
 	metalManager = allyTeam->GetMetalManager();
+	energyLink = allyTeam->GetEnergyLink();
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
 
 	// NOTE: EconomyManager uses metal clusters and must be initialized after MetalManager::ClusterizeMetal
-	economyManager = std::make_shared<CEconomyManager>(this, allyTeam->GetEnergyLink());
+	economyManager = std::make_shared<CEconomyManager>(this);
 
 	if (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos()) {
 		if (metalManager->HasMetalSpots()) {
@@ -381,6 +382,7 @@ int CCircuitAI::Release(int reason)
 	builderManager = nullptr;
 	terrainManager = nullptr;
 	metalManager = nullptr;
+	energyLink = nullptr;
 	setupManager = nullptr;
 	scheduler = nullptr;
 	for (auto& kv : teamUnits) {
@@ -853,6 +855,11 @@ CSetupManager* CCircuitAI::GetSetupManager()
 CMetalManager* CCircuitAI::GetMetalManager()
 {
 	return metalManager.get();
+}
+
+CEnergyLink* CCircuitAI::GetEnergyLink()
+{
+	return energyLink.get();
 }
 
 CTerrainManager* CCircuitAI::GetTerrainManager()

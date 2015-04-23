@@ -62,7 +62,7 @@ public:
 	const Units& GetEnemyUnits() const;
 
 	std::shared_ptr<CMetalManager>& GetMetalManager();
-	CEnergyLink* GetEnergyLink() const;
+	std::shared_ptr<CEnergyLink>& GetEnergyLink();
 
 private:
 	TeamIds teamIds;
@@ -74,8 +74,7 @@ private:
 	Units enemyUnits;  // owner
 
 	std::shared_ptr<CMetalManager> metalManager;
-
-	CEnergyLink* energyLink;
+	std::shared_ptr<CEnergyLink> energyLink;
 };
 
 } // namespace circuit

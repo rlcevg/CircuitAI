@@ -31,13 +31,12 @@ using namespace springai;
 
 #define INCOME_SAMPLES	5
 
-CEconomyManager::CEconomyManager(CCircuitAI* circuit, CEnergyLink* energyLink) :
+CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		IModule(circuit),
 		pylonCount(0),
 		indexRes(0),
 		metalIncome(.0f),
-		energyIncome(.0f),
-		energyLink(energyLink)
+		energyIncome(.0f)
 {
 	metalRes = circuit->GetCallback()->GetResourceByName("Metal");
 	energyRes = circuit->GetCallback()->GetResourceByName("Energy");
@@ -164,15 +163,15 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit, CEnergyLink* energyLink) :
 	 */
 	unitDefId = mexDef->GetId();
 	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
-		int index = this->circuit->GetMetalManager()->FindNearestCluster(unit->GetUnit()->GetPos());
-		if (index >= 0) {
-			this->energyLink->LinkCluster(index);
-		}
+		CEnergyLink* energyLink = this->circuit->GetEnergyLink();
+		energyLink->AddMex(unit->GetUnit()->GetPos());
+		energyLink->RebuildTree();
 	};
-//	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
-//		// TODO: Destroy link;
-////		UnlinkCluster();
-//	};
+	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+		CEnergyLink* energyLink = this->circuit->GetEnergyLink();
+		energyLink->RemoveMex(unit->GetUnit()->GetPos());
+		energyLink->RebuildTree();
+	};
 }
 
 CEconomyManager::~CEconomyManager()

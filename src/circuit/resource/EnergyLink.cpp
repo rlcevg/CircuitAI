@@ -32,51 +32,111 @@ CEnergyLink::~CEnergyLink()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CEnergyLink::LinkCluster(int index)
+void CEnergyLink::AddMex(const AIFloat3& pos)
 {
+	AddMex(pos, circuit->GetMetalManager()->FindNearestSpot(pos));
+}
+
+void CEnergyLink::AddMex(const AIFloat3& pos, int index)
+{
+	if ((index < 0) || (linkedMexes.find(index) != linkedMexes.end())) {
+		return;
+	}
+	linkedMexes.insert(index);
+
+	CMetalManager* metalManager = circuit->GetMetalManager();
+	int clIdx = metalManager->FindNearestCluster(pos);
+	if ((clIdx < 0) || (++linkedClusters[clIdx] < metalManager->GetClusters()[clIdx].idxSpots.size())) {
+		return;
+	}
+
+	printf("Add: %i, %i, %i\n", linkedClusters[clIdx], metalManager->GetClusters()[clIdx].idxSpots.size(), clIdx);
+	linkClusters.push_back(clIdx);
+}
+
+void CEnergyLink::RemoveMex(const AIFloat3& pos)
+{
+	RemoveMex(pos, circuit->GetMetalManager()->FindNearestSpot(pos));
+}
+
+void CEnergyLink::RemoveMex(const AIFloat3& pos, int index)
+{
+	if ((index < 0) || (linkedMexes.find(index) == linkedMexes.end())) {
+		return;
+	}
+	linkedMexes.erase(index);
+
+	CMetalManager* metalManager = circuit->GetMetalManager();
+	int clIdx = metalManager->FindNearestCluster(pos);
+	if ((clIdx < 0) || (linkedClusters[clIdx]-- < metalManager->GetClusters()[clIdx].idxSpots.size())) {
+		return;
+	}
+
+	printf("Remove: %i, %i, %i\n", linkedClusters[clIdx], metalManager->GetClusters()[clIdx].idxSpots.size(), clIdx);
+	unlinkClusters.push_back(clIdx);
+}
+
+void CEnergyLink::RebuildTree()
+{
+	if (linkClusters.empty() && unlinkClusters.empty()) {
+		return;
+	}
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 
 	// Mark previous edges as const
-	CMetalData::Graph::edge_iterator edgeIt, edgeEnd;
-	std::tie(edgeIt, edgeEnd) = boost::edges(spanningGraph);
-	for (; edgeIt != edgeEnd; ++edgeIt) {
-		spanningGraph[*edgeIt].weight = EPSILON;
-	}
+//	CMetalData::Graph::edge_iterator edgeIt, edgeEnd;
+//	std::tie(edgeIt, edgeEnd) = boost::edges(spanningGraph);
+//	for (; edgeIt != edgeEnd; ++edgeIt) {
+//		// TODO: Only for built or beingbuilt edges
+//		spanningGraph[*edgeIt].weight = EPSILON;
+//	}
 
 	// Add new edges to Kruskal graph
-	CMetalData::Graph::out_edge_iterator outEdgeIt, outEdgeEnd;
-	std::tie(outEdgeIt, outEdgeEnd) = boost::out_edges(index, clusterGraph);  // or boost::tie
 	std::list<CMetalData::EdgeDesc> edgeAddon;
-	for (; outEdgeIt != outEdgeEnd; ++outEdgeIt) {
-		CMetalData::Graph::out_edge_iterator edIt, edEnd;
-		std::tie(edIt, edEnd) = boost::out_edges(boost::target(*outEdgeIt, clusterGraph), spanningGraph);
-		if (edIt != edEnd) {
-			int idx0 = boost::source(*outEdgeIt, clusterGraph);
-			int idx1 = boost::target(*outEdgeIt, clusterGraph);
+	for (auto index : linkClusters) {
+		CMetalData::Graph::out_edge_iterator outEdgeIt, outEdgeEnd;
+		std::tie(outEdgeIt, outEdgeEnd) = boost::out_edges(index, clusterGraph);  // or boost::tie
+		for (; outEdgeIt != outEdgeEnd; ++outEdgeIt) {
+			CMetalData::Graph::out_edge_iterator edIt, edEnd;
+			std::tie(edIt, edEnd) = boost::out_edges(boost::target(*outEdgeIt, clusterGraph), spanningGraph);
+			if (edIt != edEnd) {
+				const int& idx0 = index;
+//				int idx0 = boost::source(*outEdgeIt, clusterGraph);
+				int idx1 = boost::target(*outEdgeIt, clusterGraph);
 
-			CMetalData::EdgeDesc edgeId;
-			bool ok;
-			std::tie(edgeId, ok) = boost::add_edge(idx0, idx1, spanningGraph);
-			if (ok) {
-				CMetalData::Edge& edge = spanningGraph[edgeId];
-				edge.index = clusterGraph[*outEdgeIt].index;
-				edge.weight = clusters[idx0].geoCentr.distance(clusters[idx1].geoCentr);
-				edgeAddon.push_back(edgeId);
+				CMetalData::EdgeDesc edgeId;
+				bool ok;
+				std::tie(edgeId, ok) = boost::add_edge(idx0, idx1, spanningGraph);
+				if (ok) {
+					CMetalData::Edge& edge = spanningGraph[edgeId];
+					edge.index = clusterGraph[*outEdgeIt].index;
+					edge.weight = clusters[idx0].geoCentr.distance(clusters[idx1].geoCentr);
+					edgeAddon.push_back(edgeId);
+				}
 			}
 		}
 	}
-	if (spanningTree.empty()) {
+	if (spanningTree.empty() && !linkClusters.empty()) {
+		int index = linkClusters.front();
 		boost::add_edge(index, index, spanningGraph);
 	}
+	linkClusters.clear();
 
-	if (circuit->GetAllyTeamId() == 0) {  // DEBUG
-		// Clear Kruskal drawing
-		for (auto& edge : spanningTree) {
-			circuit->GetDrawer()->DeletePointsAndLines(clusters[(std::size_t)boost::source(edge, clusterGraph)].geoCentr);
-		}
+	// Clear Kruskal drawing
+	for (auto& edge : spanningTree) {
+		circuit->GetDrawer()->DeletePointsAndLines(clusters[(std::size_t)boost::source(edge, clusterGraph)].geoCentr);
 	}
+
+	// Remove destroyed edges
+	auto pred = [](const CMetalData::EdgeDesc& desc) {
+		return true;
+	};
+	for (auto index : unlinkClusters) {
+		boost::remove_out_edge_if(index, pred, spanningGraph);
+	}
+	unlinkClusters.clear();
 
 	// Build Kruskal's minimum spanning tree
 	spanningTree.clear();
@@ -84,27 +144,20 @@ void CEnergyLink::LinkCluster(int index)
 	boost::kruskal_minimum_spanning_tree(spanningGraph, std::back_inserter(spanningTree), boost::weight_map(w_map));
 
 	// Remove unused edges
-	for (auto& edge : edgeAddon) {
-		if (std::find(spanningTree.begin(), spanningTree.end(), edge) == spanningTree.end()) {
-			boost::remove_edge(edge, spanningGraph);
-		}
+//	for (auto& edge : edgeAddon) {
+//		if (std::find(spanningTree.begin(), spanningTree.end(), edge) == spanningTree.end()) {
+//			CMetalData::VertexDesc u = boost::source(edge, spanningGraph);
+//			CMetalData::VertexDesc v = boost::target(edge, spanningGraph);
+//			boost::remove_edge(u, v, spanningGraph);  // boost::remove_edge(edge, spanningGraph) - crashes
+//		}
+//	}
+
+	// Draw Kruskal
+	for (auto& edge : spanningTree) {
+		const AIFloat3& posFrom = clusters[boost::source(edge, clusterGraph)].geoCentr;
+		const AIFloat3& posTo = clusters[boost::target(edge, clusterGraph)].geoCentr;
+		circuit->GetDrawer()->AddLine(posFrom, posTo);
 	}
-
-	if (circuit->GetAllyTeamId() == 0) {  // DEBUG
-		// Draw Kruskal
-		for (auto& edge : spanningTree) {
-			const AIFloat3& posFrom = clusters[boost::source(edge, clusterGraph)].geoCentr;
-			const AIFloat3& posTo = clusters[boost::target(edge, clusterGraph)].geoCentr;
-			circuit->GetDrawer()->AddLine(posFrom, posTo);
-		}
-	}
-}
-
-void CEnergyLink::Update()
-{
-	circuit->UpdateFriendlyUnits();
-
-	MarkAllyPylons();
 }
 
 void CEnergyLink::Init()
@@ -117,12 +170,17 @@ void CEnergyLink::Init()
 		}
 	}
 
-	const CMetalData::Graph& clusterGraph = circuit->GetMetalManager()->GetGraph();
+	CMetalManager* metalManager = circuit->GetMetalManager();
+	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
 	// FIXME: No-metal-spots maps can crash: check !links.empty()
 	links.resize(boost::num_edges(clusterGraph));
 	linkIt = boost::make_iterator_property_map(&links[0], boost::get(&CMetalData::Edge::index, clusterGraph));
 
 	spanningGraph = CMetalData::Graph(boost::num_vertices(clusterGraph));
+
+	for (int i = 0; i < metalManager->GetClusters().size(); ++i) {
+		linkedClusters[i] = 0;
+	}
 }
 
 void CEnergyLink::MarkAllyPylons()

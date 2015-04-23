@@ -11,6 +11,7 @@
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"  // Only for UpdateAreaUsers
 #include "resource/MetalManager.h"
+#include "resource/EnergyLink.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -356,6 +357,7 @@ void CTerrainManager::MarkAllyBuildings()
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 
 	std::set<Structure, cmp> newUnits, oldUnits;
+	bool updateLink = false;
 	for (auto& kv : friendlies) {
 		CCircuitUnit* unit = kv.second;
 		Unit* u = unit->GetUnit();
@@ -369,8 +371,11 @@ void CTerrainManager::MarkAllyBuildings()
 				building.facing = u->GetBuildingFacing();
 				newUnits.insert(building);
 				if (*building.cdef == *mexDef) {  // update metalInfo's open state
-					circuit->GetMetalManager()->SetOpenSpot(building.pos, false);
-					// TODO: Update EnergyLink
+					CMetalManager* metalManager = circuit->GetMetalManager();
+					int index = metalManager->FindNearestSpot(building.pos);
+					metalManager->SetOpenSpot(index, false);
+					circuit->GetEnergyLink()->AddMex(building.pos, index);
+					updateLink = true;
 				} else {
 					MarkBlocker(building, true);
 				}
@@ -385,11 +390,17 @@ void CTerrainManager::MarkAllyBuildings()
 						std::inserter(deadUnits, deadUnits.begin()), cmp());
 	for (auto& building : deadUnits) {
 		if (*building.cdef == *mexDef) {  // update metalInfo's open state
-			circuit->GetMetalManager()->SetOpenSpot(building.pos, true);
-			// TODO: Update EnergyLink
+			CMetalManager* metalManager = circuit->GetMetalManager();
+			int index = metalManager->FindNearestSpot(building.pos);
+			metalManager->SetOpenSpot(index, true);
+			circuit->GetEnergyLink()->RemoveMex(building.pos, index);
+			updateLink = true;
 		} else {
 			MarkBlocker(building, false);
 		}
+	}
+	if (updateLink) {
+		circuit->GetEnergyLink()->RebuildTree();
 	}
 	markedAllies.clear();
 	std::set_union(oldUnits.begin(), oldUnits.end(),

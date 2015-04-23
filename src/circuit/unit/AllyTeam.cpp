@@ -69,7 +69,7 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 		metalManager->ClusterizeMetal();
 	}
 
-	energyLink = new CEnergyLink(circuit);
+	energyLink = std::make_shared<CEnergyLink>(circuit);
 }
 
 void CAllyTeam::Release()
@@ -88,8 +88,7 @@ void CAllyTeam::Release()
 	enemyUnits.clear();
 
 	metalManager = nullptr;
-
-	delete energyLink;
+	energyLink = nullptr;
 }
 
 void CAllyTeam::UpdateFriendlyUnits(CCircuitAI* circuit)
@@ -164,7 +163,7 @@ std::shared_ptr<CMetalManager>& CAllyTeam::GetMetalManager()
 	return metalManager;
 }
 
-CEnergyLink* CAllyTeam::GetEnergyLink() const
+std::shared_ptr<CEnergyLink>& CAllyTeam::GetEnergyLink()
 {
 	return energyLink;
 }
