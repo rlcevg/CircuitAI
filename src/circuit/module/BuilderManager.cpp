@@ -406,23 +406,11 @@ void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
 
 bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& position)
 {
-	CCircuitDef::Id buildDefId = buildDef->GetId();
-	// check air first
-	for (auto& kv : buildAreas[nullptr]) {
-		if ((kv.second > 0) && kv.first->CanBuild(buildDefId)) {
-			return true;
-		}
-	}
-
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	int iS = terrainManager->GetSectorIndex(position);
-	for (auto mtId : workerMobileTypes) {
-		STerrainMapArea* area = terrainManager->GetMobileTypeById(mtId)->sector[iS].area;
-		if (area != nullptr) {
-			for (auto& kv : buildAreas[area]) {
-				if ((kv.second > 0) && kv.first->CanBuild(buildDefId)) {
-					return true;
-				}
+	for (auto& kv : buildAreas) {
+		for (auto& kvw : kv.second) {
+			if ((kvw.second > 0) && terrainManager->CanMobileBuildAt(kv.first, kvw.first, position)) {
+				return true;
 			}
 		}
 	}
@@ -437,9 +425,22 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	float maxSpeed = u->GetMaxSpeed();
 	UnitDef* unitDef = unit->GetCircuitDef()->GetUnitDef();
 	float buildDistance = unitDef->GetBuildDistance();
-	MoveData* moveData = unitDef->GetMoveData();
-	int pathType = moveData->GetPathType();
-	delete moveData;
+
+	std::function<float (const AIFloat3& buildPos)> pathLength;
+	if (unitDef->IsAbleToFly()) {
+		pathLength = [&pos](const AIFloat3& buildPos) {
+			return buildPos.distance2D(pos);
+		};
+	} else {
+		MoveData* moveData = unitDef->GetMoveData();
+		int pathType = moveData->GetPathType();
+		delete moveData;
+		Pathing* pathing = circuit->GetPathing();
+		pathLength = [pathing, &pos, pathType, buildDistance](const AIFloat3& buildPos) {
+			return pathing->GetApproximateLength(buildPos, pos, pathType, buildDistance);
+		};
+	}
+
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	float metric = std::numeric_limits<float>::max();
 	for (auto& tasks : builderTasks) {
@@ -470,7 +471,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 				const AIFloat3& buildPos = bp + offset;
 
 				Unit* tu = target->GetUnit();
-				dist = circuit->GetPathing()->GetApproximateLength(buildPos, pos, pathType, buildDistance);
+				dist = pathLength(buildPos);
 				if (dist <= 0) {
 //					continue;
 					dist = bp.distance(pos) * 1.5;
@@ -489,7 +490,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 					continue;
 				}
 
-				dist = circuit->GetPathing()->GetApproximateLength(buildPos, pos, pathType, buildDistance);
+				dist = pathLength(buildPos);
 				if (dist <= 0) {
 //					continue;
 					dist = buildPos.distance(pos) * 1.5;
@@ -509,6 +510,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 		task = circuit->GetEconomyManager()->CreateBuilderTask(unit);
 	}
 
+	// TODO: Move fully assigned tasks (max builders) out of builderTasks into separate list?+-
 	task->AssignTo(unit);
 }
 
@@ -740,7 +742,6 @@ void CBuilderManager::UpdateAreaUsers()
 	std::set<IBuilderTask*> removeTasks;
 	for (auto& tasks : builderTasks) {
 		for (auto task : tasks) {
-			// FIXME: Do not remove tasks if there is builder around, able to build it (even in another area)
 			CCircuitDef* cdef = task->GetBuildDef();
 			if ((cdef != nullptr) && !IsBuilderInArea(cdef, task->GetPosition())) {
 				removeTasks.insert(task);

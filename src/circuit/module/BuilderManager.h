@@ -120,7 +120,7 @@ public:
 private:
 	std::unordered_set<STerrainMapMobileType::Id> workerMobileTypes;
 	std::unordered_set<CCircuitDef*> workerDefs;
-	std::map<const STerrainMapArea*, std::map<CCircuitDef*, int>> buildAreas;  // area <=> worker types
+	std::map<STerrainMapArea*, std::map<CCircuitDef*, int>> buildAreas;  // area <=> worker types
 };
 
 } // namespace circuit

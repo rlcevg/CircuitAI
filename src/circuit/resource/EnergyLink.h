@@ -14,7 +14,6 @@
 
 #include <set>
 #include <map>
-#include <unordered_set>
 #include <unordered_map>
 #include <list>
 
@@ -27,12 +26,7 @@ public:
 	CEnergyLink(CCircuitAI* circuit);
 	virtual ~CEnergyLink();
 
-	void AddMex(const springai::AIFloat3& pos);
-	void AddMex(const springai::AIFloat3& pos, int index);
-	void RemoveMex(const springai::AIFloat3& pos);
-	void RemoveMex(const springai::AIFloat3& pos, int index);
-	void RebuildTree();
-	void MarkAllyPylons();
+	void Update();
 
 private:
 	void Init();
@@ -44,29 +38,40 @@ private:
 		springai::AIFloat3 pos;
 	};
 	using Structures = std::map<CCircuitUnit::Id, Structure>;
-	Structures markedAllies;
+	Structures markedPylons;
 	std::unordered_map<CCircuitDef::Id, float> pylonRanges;
 
-	std::unordered_set<int> linkedMexes;
+	Structures markedMexes;
 	struct LinkVertex {
 		int mexCount;
 		bool isConnected;
 	};
 	std::unordered_map<int, LinkVertex> linkedClusters;
 	struct Link {
-		Link() : isBeingBuilt(false) {}
-		std::set<CCircuitUnit::Id> pylons;
+		Link() : isBeingBuilt(false), isFinished(false), isValid(true) {}
+		std::map<CCircuitUnit::Id, float> pylons;
 		bool isBeingBuilt;
+		bool isFinished;
+		bool isValid;
 	};
+	std::set<CMetalData::EdgeDesc> linkPylons, unlinkPylons;
 	std::vector<Link> links;  // Graph's exterior property
 	typedef boost::property_map<CMetalData::Graph, int CMetalData::Edge::*>::const_type EdgeIndexMap;
 	boost::iterator_property_map<Link*, EdgeIndexMap, Link, Link&> linkIt;  // Alternative: links[clusterGraph[*linkEdgeIt].index]
 
-	void MarkPylon(CCircuitUnit::Id unitId, const Structure& building, bool alive);
+	void MarkAllyPylons(const std::list<CCircuitUnit*>& pylons);
+	void AddPylon(CCircuitUnit::Id unitId, const Structure& building);
+	void RemovePylon(CCircuitUnit::Id unitId, const Structure& building);
+	void CheckLink();
 
 	std::list<int> linkClusters, unlinkClusters;  // - must not contain same clusters
 	std::vector<CMetalData::EdgeDesc> spanningTree;
 	CMetalData::Graph spanningGraph;
+
+	void MarkAllyMexes(const std::list<CCircuitUnit*>& mexes);
+	void AddMex(const springai::AIFloat3& pos);
+	void RemoveMex(const springai::AIFloat3& pos);
+	void RebuildTree();
 };
 
 } // namespace circuit

@@ -157,21 +157,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		y[i] = limits[i] + 0.5;  // +0.5 to be sure precision errors will not decrease integer part
 	}
 	engyPol = new CLagrangeInterPol(x, y);  // Alternatively use CGaussSolver to compute polynomial - faster on reuse
-
-	/*
-	 * Energy link
-	 */
-	unitDefId = mexDef->GetId();
-	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
-		CEnergyLink* energyLink = this->circuit->GetEnergyLink();
-		energyLink->AddMex(unit->GetUnit()->GetPos());
-		energyLink->RebuildTree();
-	};
-	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
-		CEnergyLink* energyLink = this->circuit->GetEnergyLink();
-		energyLink->RemoveMex(unit->GetUnit()->GetPos());
-		energyLink->RebuildTree();
-	};
 }
 
 CEconomyManager::~CEconomyManager()
@@ -233,7 +218,7 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(pos, u->GetMaxSpeed() * FRAMES_PER_SEC * 60));
-	if (!features.empty() && (builderManager->GetTasks(IBuilderTask::BuildType::RECLAIM).size() < 20)) {
+	if (!features.empty() && (builderManager->GetTasks(IBuilderTask::BuildType::RECLAIM).size() < 2)) {
 		task = builderManager->EnqueueReclaim(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 60);
 	}
 	utils::free_clear(features);
@@ -786,6 +771,8 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 
 	float energyIncome = GetAvgEnergyIncome();
 	if ((metalIncome * ecoFactor > 10) && (energyIncome > 50) && (pylonCount < pylonMaxCount) && pylonDef->IsAvailable()) {
+		circuit->GetEnergyLink()->Update();
+
 		float cost = pylonDef->GetUnitDef()->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 2 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::PYLON).size() < count) {

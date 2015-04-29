@@ -11,7 +11,6 @@
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"  // Only for UpdateAreaUsers
 #include "resource/MetalManager.h"
-#include "resource/EnergyLink.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -357,7 +356,6 @@ void CTerrainManager::MarkAllyBuildings()
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 
 	std::set<Structure, cmp> newUnits, oldUnits;
-	bool updateLink = false;
 	for (auto& kv : friendlies) {
 		CCircuitUnit* unit = kv.second;
 		Unit* u = unit->GetUnit();
@@ -371,11 +369,7 @@ void CTerrainManager::MarkAllyBuildings()
 				building.facing = u->GetBuildingFacing();
 				newUnits.insert(building);
 				if (*building.cdef == *mexDef) {  // update metalInfo's open state
-					CMetalManager* metalManager = circuit->GetMetalManager();
-					int index = metalManager->FindNearestSpot(building.pos);
-					metalManager->SetOpenSpot(index, false);
-					circuit->GetEnergyLink()->AddMex(building.pos, index);
-					updateLink = true;
+					circuit->GetMetalManager()->SetOpenSpot(building.pos, false);
 				} else {
 					MarkBlocker(building, true);
 				}
@@ -390,17 +384,10 @@ void CTerrainManager::MarkAllyBuildings()
 						std::inserter(deadUnits, deadUnits.begin()), cmp());
 	for (auto& building : deadUnits) {
 		if (*building.cdef == *mexDef) {  // update metalInfo's open state
-			CMetalManager* metalManager = circuit->GetMetalManager();
-			int index = metalManager->FindNearestSpot(building.pos);
-			metalManager->SetOpenSpot(index, true);
-			circuit->GetEnergyLink()->RemoveMex(building.pos, index);
-			updateLink = true;
+			circuit->GetMetalManager()->SetOpenSpot(building.pos, true);
 		} else {
 			MarkBlocker(building, false);
 		}
-	}
-	if (updateLink) {
-		circuit->GetEnergyLink()->RebuildTree();
 	}
 	markedAllies.clear();
 	std::set_union(oldUnits.begin(), oldUnits.end(),
@@ -925,20 +912,20 @@ void CTerrainManager::MarkBlocker(const Structure& building, bool block)
 	}
 }
 
-//void CTerrainManager::CorrectPosition(AIFloat3& position)
-//{
-//	if (position.x < 1) {
-//		position.x = 1;
-//	} else if (position.x > terrainWidth - 2) {
-//		position.x = terrainWidth - 2;
-//	}
-//	if (position.z < 1) {
-//		position.z = 1;
-//	} else if (position.z > terrainHeight - 2) {
-//		position.z = terrainHeight - 2;
-//	}
-//	position.y = circuit->GetMap()->GetElevationAt(position.x, position.z);
-//}
+void CTerrainManager::CorrectPosition(AIFloat3& position)
+{
+	if (position.x < 1) {
+		position.x = 1;
+	} else if (position.x > terrainWidth - 2) {
+		position.x = terrainWidth - 2;
+	}
+	if (position.z < 1) {
+		position.z = 1;
+	} else if (position.z > terrainHeight - 2) {
+		position.z = terrainHeight - 2;
+	}
+	position.y = circuit->GetMap()->GetElevationAt(position.x, position.z);
+}
 
 STerrainMapArea* CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIFloat3& position)
 {
@@ -984,7 +971,9 @@ bool CTerrainManager::CanMoveToPos(STerrainMapArea* area, const AIFloat3& destin
 
 AIFloat3 CTerrainManager::GetBuildPosition(CCircuitDef* cdef, const AIFloat3& position)
 {
-	int iS = GetSectorIndex(position);
+	AIFloat3 pos = position;
+	CorrectPosition(pos);
+	int iS = GetSectorIndex(pos);
 	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
 	STerrainMapImmobileType* immobileType = GetImmobileTypeById(cdef->GetImmobileId());
 	if (mobileType != nullptr) {  // a factory or mobile unit
@@ -998,7 +987,7 @@ AIFloat3 CTerrainManager::GetBuildPosition(CCircuitDef* cdef, const AIFloat3& po
 	} else if (immobileType != nullptr) {  // buildings
 		return GetClosestSector(immobileType, iS)->position;
 	} else {
-		return position;  // flying units
+		return pos;  // flying units
 	}
 }
 
@@ -1180,7 +1169,7 @@ STerrainMapImmobileType::Id CTerrainManager::GetImmobileTypeId(CCircuitDef::Id u
 
 STerrainMapImmobileType* CTerrainManager::GetImmobileTypeById(STerrainMapImmobileType::Id id) const
 {
-	return &areaData->immobileType[id];
+	return (id < 0) ? nullptr : &areaData->immobileType[id];
 }
 
 bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, const float& range)
@@ -1226,6 +1215,21 @@ bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination
 		return true;
 	}
 	if (GetClosestSector(area, iS)->S->position.distance2D(destination) < unit->GetCircuitDef()->GetUnitDef()->GetBuildDistance() - GetConvertStoP()) {
+		return true;
+	}
+	return false;
+}
+
+bool CTerrainManager::CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const AIFloat3& destination)
+{
+	if (area == nullptr) {  // A flying unit
+		return true;
+	}
+	int iS = GetSectorIndex(destination);
+	if (area->sector.find(iS) != area->sector.end()) {
+		return true;
+	}
+	if (GetClosestSector(area, iS)->S->position.distance2D(destination) < builderDef->GetUnitDef()->GetBuildDistance() - GetConvertStoP()) {
 		return true;
 	}
 	return false;

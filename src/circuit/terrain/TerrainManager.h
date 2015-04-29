@@ -117,7 +117,7 @@ private:
 	void MarkBlocker(const Structure& building, bool block);
 
 public:
-//	void CorrectPosition(springai::AIFloat3& position);
+	void CorrectPosition(springai::AIFloat3& position);
 	STerrainMapArea* GetCurrentMapArea(CCircuitDef* cdef, const springai::AIFloat3& position);
 	int GetSectorIndex(const springai::AIFloat3& position);
 	bool CanMoveToPos(STerrainMapArea* area, const springai::AIFloat3& destination);
@@ -141,6 +141,7 @@ public:
 	// position must be valid
 	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position, const float& range = .0);  // NOTE: returns false if the area was too small to be recorded
 	bool CanBuildAt(CCircuitUnit* unit, const springai::AIFloat3& destination);
+	bool CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const springai::AIFloat3& destination);
 
 	void UpdateAreaUsers();
 	void DidUpdateAreaUsers();

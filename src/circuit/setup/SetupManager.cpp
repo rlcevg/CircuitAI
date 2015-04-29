@@ -28,7 +28,8 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData) :
 		circuit(circuit),
 		setupData(setupData),
 		commanderId(-1),
-		startPos(-RgtVector)
+		startPos(-RgtVector),
+		basePos(-RgtVector)
 {
 	if (!setupData->IsInitialized()) {
 		ParseSetupScript(circuit->GetGame()->GetSetupScript());
@@ -241,7 +242,7 @@ void CSetupManager::FindCommander()
 		if (valid) {
 			commanderId = unit->GetUnitId();
 			if (startPos == -RgtVector) {
-				startPos = unit->GetPos();
+				SetStartPos(unit->GetPos());
 			}
 			break;
 		}
