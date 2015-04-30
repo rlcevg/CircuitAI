@@ -857,7 +857,7 @@ CMetalManager* CCircuitAI::GetMetalManager()
 	return metalManager.get();
 }
 
-CEnergyLink* CCircuitAI::GetEnergyLink()
+CEnergyGrid* CCircuitAI::GetEnergyLink()
 {
 	return energyLink.get();
 }

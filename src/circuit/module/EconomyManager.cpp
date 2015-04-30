@@ -10,7 +10,7 @@
 #include "module/FactoryManager.h"
 #include "setup/SetupManager.h"
 #include "resource/MetalManager.h"
-#include "resource/EnergyLink.h"
+#include "resource/EnergyGrid.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/math/LagrangeInterPol.h"

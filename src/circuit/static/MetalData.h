@@ -45,8 +45,8 @@ public:
 		float weight;
 	};
 	using Graph = boost::adjacency_list<boost::hash_setS, boost::vecS, boost::undirectedS, boost::no_property, Edge>;
-	using VertexDesc = boost::graph_traits<CMetalData::Graph>::vertex_descriptor;
-	using EdgeDesc = boost::graph_traits<CMetalData::Graph>::edge_descriptor;
+	using VertexDesc = boost::graph_traits<Graph>::vertex_descriptor;
+	using EdgeDesc = boost::graph_traits<Graph>::edge_descriptor;
 
 	struct Metal {
 		float income;

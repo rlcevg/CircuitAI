@@ -1,77 +1,54 @@
 /*
  * EnergyLink.h
  *
- *  Created on: Apr 19, 2015
+ *  Created on: Apr 29, 2015
  *      Author: rlcevg
  */
 
 #ifndef SRC_CIRCUIT_RESOURCE_ENERGYLINK_H_
 #define SRC_CIRCUIT_RESOURCE_ENERGYLINK_H_
 
-#include "static/MetalData.h"
 #include "unit/CircuitUnit.h"
-#include "unit/CircuitDef.h"
 
-#include <set>
+#include <boost/graph/adjacency_list.hpp>
 #include <map>
-#include <unordered_map>
-#include <list>
+#include <set>
 
 namespace circuit {
 
-class CCircuitAI;
-
 class CEnergyLink {
 public:
-	CEnergyLink(CCircuitAI* circuit);
+	CEnergyLink(const springai::AIFloat3& startPos, const springai::AIFloat3& endPos);
 	virtual ~CEnergyLink();
 
-	void Update();
+	void AddPylon(CCircuitUnit::Id unitId, const springai::AIFloat3& pos, float range);
+	int RemovePylon(CCircuitUnit::Id unitId);
+	void CheckConnection();
 
-private:
-	void Init();
-	CCircuitAI* circuit;
+	inline bool IsBeingBuilt() { return isBeingBuilt; };
+	inline bool IsFinished() { return isFinished; };
+	inline bool IsValid() { return isValid; };
 
-	int markFrame;
-	struct Structure {
-		CCircuitDef::Id cdefId;
+public:
+	struct Pylon {  // Vertex
+		Pylon() : pos(-RgtVector), range(.0f) {}
+		Pylon(const springai::AIFloat3& p, float r) : pos(p), range(r) {}
 		springai::AIFloat3 pos;
+		float range;
 	};
-	using Structures = std::map<CCircuitUnit::Id, Structure>;
-	Structures markedPylons;
-	std::unordered_map<CCircuitDef::Id, float> pylonRanges;
+	using Graph = boost::adjacency_list<boost::listS, boost::listS, boost::undirectedS, Pylon, boost::property<boost::edge_color_t, boost::default_color_type>>;
+	using VertexDesc = boost::graph_traits<Graph>::vertex_descriptor;
+	using EdgeDesc = boost::graph_traits<Graph>::edge_descriptor;
 
-	Structures markedMexes;
-	struct LinkVertex {
-		int mexCount;
-		bool isConnected;
-	};
-	std::unordered_map<int, LinkVertex> linkedClusters;
-	struct Link {
-		Link() : isBeingBuilt(false), isFinished(false), isValid(true) {}
-		std::map<CCircuitUnit::Id, float> pylons;
-		bool isBeingBuilt;
-		bool isFinished;
-		bool isValid;
-	};
-	std::set<CMetalData::EdgeDesc> linkPylons, unlinkPylons;
-	std::vector<Link> links;  // Graph's exterior property
-	typedef boost::property_map<CMetalData::Graph, int CMetalData::Edge::*>::const_type EdgeIndexMap;
-	boost::iterator_property_map<Link*, EdgeIndexMap, Link, Link&> linkIt;  // Alternative: links[clusterGraph[*linkEdgeIt].index]
+//private:
+	Graph graph;
+	std::map<CCircuitUnit::Id, VertexDesc> pylons;
+	bool isBeingBuilt;
+	bool isFinished;
+	bool isValid;
 
-	void MarkAllyPylons(const std::list<CCircuitUnit*>& pylons);
-	void AddPylon(CCircuitUnit::Id unitId, const Structure& building);
-	void RemovePylon(CCircuitUnit::Id unitId, const Structure& building);
-	void CheckLink();
-
-	std::list<int> linkClusters, unlinkClusters;  // - must not contain same clusters
-	std::vector<CMetalData::EdgeDesc> spanningTree;
-	CMetalData::Graph spanningGraph;
-
-	void MarkAllyMexes(const std::list<CCircuitUnit*>& mexes);
-	void AddMex(const springai::AIFloat3& pos);
-	void RemoveMex(const springai::AIFloat3& pos);
-	void RebuildTree();
+	springai::AIFloat3 startPos, endPos;
+	std::set<VertexDesc> startPylons;
 };
 
 } // namespace circuit

@@ -7,7 +7,7 @@
 
 #include "unit/AllyTeam.h"
 #include "resource/MetalManager.h"
-#include "resource/EnergyLink.h"
+#include "resource/EnergyGrid.h"
 #include "static/GameAttribute.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -69,7 +69,7 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 		metalManager->ClusterizeMetal();
 	}
 
-	energyLink = std::make_shared<CEnergyLink>(circuit);
+	energyLink = std::make_shared<CEnergyGrid>(circuit);
 }
 
 void CAllyTeam::Release()
@@ -163,7 +163,7 @@ std::shared_ptr<CMetalManager>& CAllyTeam::GetMetalManager()
 	return metalManager;
 }
 
-std::shared_ptr<CEnergyLink>& CAllyTeam::GetEnergyLink()
+std::shared_ptr<CEnergyGrid>& CAllyTeam::GetEnergyLink()
 {
 	return energyLink;
 }

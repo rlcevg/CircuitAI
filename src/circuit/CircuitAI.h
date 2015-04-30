@@ -180,7 +180,7 @@ public:
 	springai::SkirmishAI*   GetSkirmishAI();
 	CSetupManager* GetSetupManager();
 	CMetalManager* GetMetalManager();
-	CEnergyLink* GetEnergyLink();
+	CEnergyGrid* GetEnergyLink();
 	CTerrainManager* GetTerrainManager();
 	CBuilderManager* GetBuilderManager();
 	CFactoryManager* GetFactoryManager();
@@ -211,7 +211,7 @@ private:
 	std::shared_ptr<CScheduler> scheduler;
 	std::shared_ptr<CSetupManager> setupManager;
 	std::shared_ptr<CMetalManager> metalManager;
-	std::shared_ptr<CEnergyLink> energyLink;
+	std::shared_ptr<CEnergyGrid> energyLink;
 	std::shared_ptr<CTerrainManager> terrainManager;
 	std::shared_ptr<CBuilderManager> builderManager;
 	std::shared_ptr<CFactoryManager> factoryManager;
