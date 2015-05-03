@@ -24,6 +24,7 @@ namespace springai {
 namespace circuit {
 
 class CCircuitDef;
+class CEnergyLink;
 
 class CBuilderManager: public IUnitModule {
 public:
@@ -52,6 +53,12 @@ public:
 							  const springai::AIFloat3& position,
 							  IBuilderTask::BuildType type,
 							  int timeout = 0);
+	IBuilderTask* EnqueuePylon(IBuilderTask::Priority priority,
+							   CCircuitDef* buildDef,
+							   const springai::AIFloat3& position,
+							   CEnergyLink* link,
+							   float cost,
+							   int timeout = 0);
 	IBuilderTask* EnqueuePatrol(IBuilderTask::Priority priority,
 								const springai::AIFloat3& position,
 								float cost,

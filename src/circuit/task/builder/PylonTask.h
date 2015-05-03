@@ -12,14 +12,22 @@
 
 namespace circuit {
 
+class CEnergyLink;
+
 class CBPylonTask: public IBuilderTask {
 public:
 	CBPylonTask(ITaskManager* mgr, Priority priority,
 				CCircuitDef* buildDef, const springai::AIFloat3& position,
-				float cost, int timeout);
+				CEnergyLink* link, float cost, int timeout);
 	virtual ~CBPylonTask();
 
 	virtual void Execute(CCircuitUnit* unit);
+protected:
+	virtual void Finish();
+	virtual void Cancel();
+
+private:
+	CEnergyLink* link;
 };
 
 } // namespace circuit

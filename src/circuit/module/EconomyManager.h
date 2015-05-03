@@ -73,7 +73,7 @@ private:
 
 	struct SClusterInfo {
 		CCircuitUnit* factory;
-		CCircuitUnit* pylon;
+		CCircuitUnit* pylon;  // TODO: Remove?
 	};
 	std::vector<SClusterInfo> clusterInfos;
 	float pylonRange;

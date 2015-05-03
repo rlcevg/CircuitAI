@@ -8,6 +8,7 @@
 #include "task/builder/PylonTask.h"
 #include "task/TaskManager.h"
 #include "module/EconomyManager.h"
+#include "resource/EnergyLink.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -21,8 +22,9 @@ using namespace springai;
 
 CBPylonTask::CBPylonTask(ITaskManager* mgr, Priority priority,
 						 CCircuitDef* buildDef, const AIFloat3& position,
-						 float cost, int timeout) :
-		IBuilderTask(mgr, priority, buildDef, position, BuildType::PYLON, cost, timeout)
+						 CEnergyLink* link, float cost, int timeout) :
+		IBuilderTask(mgr, priority, buildDef, position, BuildType::PYLON, cost, timeout),
+		link(link)
 {
 }
 
@@ -65,6 +67,22 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);
 	}
+}
+
+void CBPylonTask::Finish()
+{
+	if (link != nullptr) {
+		link->SetBeingBuilt(false);
+	}
+	manager->GetCircuit()->GetEconomyManager()->UpdateStorageTasks();
+}
+
+void CBPylonTask::Cancel()
+{
+	if (link != nullptr) {
+		link->SetBeingBuilt(false);
+	}
+	IBuilderTask::Cancel();
 }
 
 } // namespace circuit

@@ -180,7 +180,7 @@ public:
 	springai::SkirmishAI*   GetSkirmishAI();
 	CSetupManager* GetSetupManager();
 	CMetalManager* GetMetalManager();
-	CEnergyGrid* GetEnergyLink();
+	CEnergyGrid* GetEnergyGrid();
 	CTerrainManager* GetTerrainManager();
 	CBuilderManager* GetBuilderManager();
 	CFactoryManager* GetFactoryManager();

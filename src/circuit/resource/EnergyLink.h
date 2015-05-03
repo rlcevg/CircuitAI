@@ -10,7 +10,6 @@
 
 #include "unit/CircuitUnit.h"
 
-#include <boost/graph/adjacency_list.hpp>
 #include <map>
 #include <set>
 
@@ -18,37 +17,37 @@ namespace circuit {
 
 class CEnergyLink {
 public:
+	struct SPylon {
+		SPylon() : pos(-RgtVector), range(.0f) {}
+		SPylon(const springai::AIFloat3& p, float r) : pos(p), range(r) {}
+		springai::AIFloat3 pos;
+		float range;
+		std::set<SPylon*> neighbors;
+	};
+
 	CEnergyLink(const springai::AIFloat3& startPos, const springai::AIFloat3& endPos);
 	virtual ~CEnergyLink();
 
 	void AddPylon(CCircuitUnit::Id unitId, const springai::AIFloat3& pos, float range);
 	int RemovePylon(CCircuitUnit::Id unitId);
 	void CheckConnection();
+	SPylon* GetConnectionHead();
 
-	inline bool IsBeingBuilt() { return isBeingBuilt; };
-	inline bool IsFinished() { return isFinished; };
-	inline bool IsValid() { return isValid; };
+	inline void SetBeingBuilt(bool value) { isBeingBuilt = value; }
+	inline bool IsBeingBuilt() { return isBeingBuilt; }
+	inline bool IsFinished() { return isFinished; }
+	inline bool IsValid() { return isValid; }
+	inline const springai::AIFloat3& GetStartPos() { return startPos; }
+	inline const springai::AIFloat3& GetEndPos() { return endPos; }
 
-public:
-	struct Pylon {  // Vertex
-		Pylon() : pos(-RgtVector), range(.0f) {}
-		Pylon(const springai::AIFloat3& p, float r) : pos(p), range(r) {}
-		springai::AIFloat3 pos;
-		float range;
-	};
-	using Graph = boost::adjacency_list<boost::listS, boost::listS, boost::undirectedS, Pylon, boost::property<boost::edge_color_t, boost::default_color_type>>;
-	using VertexDesc = boost::graph_traits<Graph>::vertex_descriptor;
-	using EdgeDesc = boost::graph_traits<Graph>::edge_descriptor;
-
-//private:
-	Graph graph;
-	std::map<CCircuitUnit::Id, VertexDesc> pylons;
+private:
+	std::map<CCircuitUnit::Id, SPylon*> pylons;  // owner
 	bool isBeingBuilt;
 	bool isFinished;
 	bool isValid;
 
 	springai::AIFloat3 startPos, endPos;
-	std::set<VertexDesc> startPylons;
+	std::set<SPylon*> startPylons;
 };
 
 } // namespace circuit

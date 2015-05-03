@@ -24,10 +24,14 @@ class CCircuitAI;
 
 class CEnergyGrid {
 public:
+	typedef boost::property_map<CMetalData::Graph, int CMetalData::Edge::*>::const_type EdgeIndexMap;
+	using link_iterator_t = boost::iterator_property_map<CEnergyLink*, EdgeIndexMap, CEnergyLink, CEnergyLink&>;
+
 	CEnergyGrid(CCircuitAI* circuit);
 	virtual ~CEnergyGrid();
 
 	void Update();
+	CEnergyLink* GetLinkToBuild();
 
 private:
 	void Init();
@@ -39,15 +43,14 @@ private:
 	std::unordered_map<CCircuitDef::Id, float> pylonRanges;
 
 	Structures markedMexes;
-	struct LinkVertex {
+	struct SLinkVertex {
 		int mexCount;
 		bool isConnected;
 	};
-	std::unordered_map<int, LinkVertex> linkedClusters;
+	std::vector<SLinkVertex> linkedClusters;
 	std::set<CMetalData::EdgeDesc> linkPylons, unlinkPylons;
 	std::vector<CEnergyLink> links;  // Graph's exterior property
-	typedef boost::property_map<CMetalData::Graph, int CMetalData::Edge::*>::const_type EdgeIndexMap;
-	boost::iterator_property_map<CEnergyLink*, EdgeIndexMap, CEnergyLink, CEnergyLink&> linkIt;  // Alternative: links[clusterGraph[*linkEdgeIt].index]
+	link_iterator_t linkIt;  // Alternative: links[clusterGraph[*linkEdgeIt].index]
 
 	void MarkAllyPylons(const std::list<CCircuitUnit*>& pylons);
 	void AddPylon(CCircuitUnit* unit, const springai::AIFloat3& pos);
@@ -55,8 +58,8 @@ private:
 	void CheckGrid();
 
 	std::list<int> linkClusters, unlinkClusters;  // - must not contain same clusters
-	std::vector<CMetalData::EdgeDesc> spanningTree;
-	CMetalData::Graph spanningGraph;
+	std::set<CMetalData::EdgeDesc> spanningTree;
+	CMetalData::Graph ownedClusters;
 
 	void MarkAllyMexes(const std::list<CCircuitUnit*>& mexes);
 	void AddMex(const springai::AIFloat3& pos);

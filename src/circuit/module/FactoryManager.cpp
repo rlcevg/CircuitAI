@@ -59,6 +59,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			int nanoId = assistDef->GetId();
 			int teamId = this->circuit->GetTeamId();
 			for (auto nano : units) {
+				if (nano == nullptr) {
+					continue;
+				}
 				UnitDef* ndef = nano->GetDef();
 				if (ndef->GetUnitDefId() == nanoId && nano->GetTeam() == teamId) {
 					nanos.insert(this->circuit->GetTeamUnit(nano->GetUnitId()));

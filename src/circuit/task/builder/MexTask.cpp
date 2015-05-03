@@ -155,6 +155,9 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(buildPos, 1));
 		bool blocked = false;
 		for (auto enemy : enemies) {
+			if (enemy == nullptr) {
+				continue;
+			}
 			UnitDef* def = enemy->GetDef();
 			int enemyDefId = def->GetUnitDefId();
 			delete def;

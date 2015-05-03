@@ -48,7 +48,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	UnitDef* def = circuit->GetCircuitDef("armestor")->GetUnitDef();
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto search = customParams.find("pylonrange");
-	pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : 500;
+	pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : PYLON_RANGE;
 
 	// TODO: Use A* ai planning... or sth... STRIPS https://ru.wikipedia.org/wiki/STRIPS
 	//       https://ru.wikipedia.org/wiki/Марковский_процесс_принятия_решений
@@ -147,7 +147,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	// Using cafus, armfus, armsolar as control points
 	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
 	const char* engies[] = {"cafus", "armfus", "armsolar"};
-	const int limits[] = {2, 3, 8};  // TODO: range randomize
+	const int limits[] = {4, 3, 8};  // TODO: range randomize
 	const int size = sizeof(engies) / sizeof(engies[0]);
 	CLagrangeInterPol::Vector x(size), y(size);
 	for (int i = 0; i < size; ++i) {
@@ -234,17 +234,17 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 	} else if (metalIncome < 40) {
 		task = builderManager->EnqueuePatrol(IBuilderTask::Priority::LOW, unit->GetUnit()->GetPos(), .0f, FRAMES_PER_SEC * 20);
 	} else {
-		const std::set<IBuilderTask*>& tasks = builderManager->GetTasks(IBuilderTask::BuildType::BIG_GUN);
-		if (tasks.empty()) {
-			buildDef = circuit->GetCircuitDef("raveparty");
-			if (buildDef->GetCount() < 2) {
-				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, circuit->GetSetupManager()->GetBasePos(), IBuilderTask::BuildType::BIG_GUN);
-			} else {
+//		const std::set<IBuilderTask*>& tasks = builderManager->GetTasks(IBuilderTask::BuildType::BIG_GUN);
+//		if (tasks.empty()) {
+//			buildDef = circuit->GetCircuitDef("raveparty");
+//			if (buildDef->GetCount() < 1) {
+//				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, circuit->GetSetupManager()->GetBasePos(), IBuilderTask::BuildType::BIG_GUN);
+//			} else {
 				task = builderManager->EnqueuePatrol(IBuilderTask::Priority::LOW, unit->GetUnit()->GetPos(), .0f, FRAMES_PER_SEC * 20);
-			}
-		} else {
-			task = *tasks.begin();
-		}
+//			}
+//		} else {
+//			task = *tasks.begin();
+//		}
 	}
 	return task;
 }
@@ -256,6 +256,7 @@ CRecruitTask* CEconomyManager::CreateFactoryTask(CCircuitUnit* unit)
 	if (task != nullptr) {
 		return task;
 	}
+//	return (CRecruitTask*)circuit->GetFactoryManager()->GetIdleTask();
 
 	const char* names3[] = {"armrock", "armpw", "armwar", "armsnipe", "armjeth", "armzeus"};
 	const char* names2[] = {"armpw", "armrock", "armpw", "armwar", "armsnipe", "armzeus"};
@@ -770,21 +771,32 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 	}
 
 	float energyIncome = GetAvgEnergyIncome();
-	if ((metalIncome * ecoFactor > 10) && (energyIncome > 50) && (pylonCount < pylonMaxCount) && pylonDef->IsAvailable()) {
-		circuit->GetEnergyLink()->Update();
-
+	if ((metalIncome * ecoFactor > 10) && (energyIncome > 50) /*&& (pylonCount < pylonMaxCount)*/ && pylonDef->IsAvailable()) {
 		float cost = pylonDef->GetUnitDef()->GetCost(metalRes);
-		int count = builderManager->GetBuilderPower() / cost * 2 + 1;
+		int count = builderManager->GetBuilderPower() / cost * 20 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::PYLON).size() < count) {
-//			CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
-//				return clusterInfos[v.second].pylon == nullptr;
-//			};
-			CMetalManager* metalManager = circuit->GetMetalManager();
-			const AIFloat3& startPos = circuit->GetSetupManager()->GetBasePos();
-			int index = metalManager->FindNearestCluster(startPos/*, predicate*/);
-			if (index >= 0) {
-				const CMetalData::Clusters& clusters = metalManager->GetClusters();
-				task = builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, pylonDef, clusters[index].geoCentr, IBuilderTask::BuildType::PYLON);
+			CEnergyGrid* grid = circuit->GetEnergyGrid();
+			grid->Update();
+
+			CEnergyLink* link = grid->GetLinkToBuild();
+			if (link != nullptr) {
+				AIFloat3 buildPos;
+				CEnergyLink::SPylon* pylon = link->GetConnectionHead();
+				if (pylon != nullptr) {
+					const AIFloat3& endPos = link->GetEndPos();
+					float dist = pylon->range + pylonRange;
+					if (endPos.SqDistance2D(pylon->pos) > dist * dist) {
+						AIFloat3 dir = endPos - pylon->pos;
+						buildPos = pylon->pos + dir.Normalize2D() * (pylon->range + pylonRange) * 0.95;
+					} else {
+						buildPos = endPos;
+					}
+				} else {
+					buildPos = link->GetStartPos();
+				}
+
+				link->SetBeingBuilt(true);
+				task = builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, pylonDef, buildPos, link, cost);
 				return task;
 			}
 		}

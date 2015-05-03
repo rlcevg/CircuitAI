@@ -117,10 +117,13 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 
 	cdef = circuit->GetCircuitDef("armestor");
 	def = cdef->GetUnitDef();
-	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
-	auto search = customParams.find("pylonrange");
-	float pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : 500;
-	radius = pylonRange / (SQUARE_SIZE * 1.3);
+//	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+//	auto search = customParams.find("pylonrange");
+//	float pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : PYLON_RANGE;
+//	radius = pylonRange / (SQUARE_SIZE * 1.3);
+	wpDef = def->GetDeathExplosion();
+	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
+	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(ALL) & ~(STRUCT_BIT(FACTORY) | STRUCT_BIT(PYLON));

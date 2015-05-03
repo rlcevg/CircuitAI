@@ -132,7 +132,7 @@ CCircuitUnit* CBRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 	circuit->UpdateFriendlyUnits();
 	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
 	for (auto u : units) {
-		if (u->GetHealth() < u->GetMaxHealth() && u->GetVel().Length() <= maxSpeed * 1.5) {
+		if ((u != nullptr) && u->GetHealth() < u->GetMaxHealth() && u->GetVel().Length() <= maxSpeed * 1.5) {
 			target = circuit->GetFriendlyUnit(u);
 			if (target != nullptr) {
 				break;

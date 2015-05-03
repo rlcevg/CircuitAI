@@ -38,7 +38,6 @@
 #include "Command.h"
 
 #include <utility>
-#include <assert.h>
 
 namespace circuit {
 
@@ -288,8 +287,21 @@ IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 	return AddTask(priority, buildDef, position, type, cost, timeout);
 }
 
+IBuilderTask* CBuilderManager::EnqueuePylon(IBuilderTask::Priority priority,
+											CCircuitDef* buildDef,
+											const AIFloat3& position,
+											CEnergyLink* link,
+											float cost,
+											int timeout)
+{
+	IBuilderTask* task = new CBPylonTask(this, priority, buildDef, position, link, cost, timeout);
+	builderTasks[static_cast<int>(IBuilderTask::BuildType::PYLON)].insert(task);
+	builderTasksCount++;
+	return task;
+}
+
 IBuilderTask* CBuilderManager::EnqueuePatrol(IBuilderTask::Priority priority,
-											 const springai::AIFloat3& position,
+											 const AIFloat3& position,
 											 float cost,
 											 int timeout)
 {
@@ -300,7 +312,7 @@ IBuilderTask* CBuilderManager::EnqueuePatrol(IBuilderTask::Priority priority,
 }
 
 IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
-											  const springai::AIFloat3& position,
+											  const AIFloat3& position,
 											  float cost,
 											  int timeout,
 											  float radius)
@@ -334,12 +346,11 @@ IBuilderTask* CBuilderManager::EnqueueTerraform(IBuilderTask::Priority priority,
 
 IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 									   CCircuitDef* buildDef,
-									   const springai::AIFloat3& position,
+									   const AIFloat3& position,
 									   IBuilderTask::BuildType type,
 									   float cost,
 									   int timeout)
 {
-	assert(type <= IBuilderTask::BuildType::MEX);
 	IBuilderTask* task;
 	switch (type) {
 		case IBuilderTask::BuildType::FACTORY: {
@@ -352,10 +363,6 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 		}
 		case IBuilderTask::BuildType::STORE: {
 			task = new CBStoreTask(this, priority, buildDef, position, cost, timeout);
-			break;
-		}
-		case IBuilderTask::BuildType::PYLON: {
-			task = new CBPylonTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::ENERGY: {
