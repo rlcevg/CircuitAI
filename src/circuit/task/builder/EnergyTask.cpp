@@ -54,7 +54,7 @@ void CBEnergyTask::Finish()
 		}
 		CBuilderManager* builderManager = circuit->GetBuilderManager();
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		CCircuitDef* cdef;
+		CCircuitDef* cdef, *fdef;
 		AIFloat3 pos;
 
 		cdef = circuit->GetCircuitDef("corllt");
@@ -66,12 +66,15 @@ void CBEnergyTask::Finish()
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE);
 
 		cdef = circuit->GetCircuitDef("corgrav");
+		fdef = circuit->GetCircuitDef("armartic");
 		pos = buildPos + AIFloat3(-offsetX * 0.7, 0, +offsetZ * 0.7);
 		pos = terrainManager->GetBuildPosition(bdef, pos);
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE);
+		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, fdef, pos, IBuilderTask::BuildType::DEFENCE);
 		pos = buildPos + AIFloat3(+offsetX * 0.7, 0, -offsetZ * 0.7);
 		pos = terrainManager->GetBuildPosition(bdef, pos);
 		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE);
+		builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, fdef, pos, IBuilderTask::BuildType::DEFENCE);
 
 		cdef = circuit->GetCircuitDef("missiletower");
 		pos = buildPos + AIFloat3(-offsetX, 0, 0);

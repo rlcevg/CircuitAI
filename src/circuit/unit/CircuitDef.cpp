@@ -17,6 +17,7 @@ CCircuitDef::CCircuitDef(springai::UnitDef* def, std::unordered_set<Id>& buildOp
 		def(def),
 		count(0),
 		buildOptions(buildOpts),
+		buildDistance(def->GetBuildDistance()),
 		buildCounts(0),
 		mobileTypeId(-1),
 		immobileTypeId(-1)
@@ -27,47 +28,6 @@ CCircuitDef::~CCircuitDef()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete def;
-}
-
-CCircuitDef::Id CCircuitDef::GetId() const
-{
-	return id;
-}
-
-UnitDef* CCircuitDef::GetUnitDef() const
-{
-	return def;
-}
-
-const std::unordered_set<CCircuitDef::Id>& CCircuitDef::GetBuildOptions() const
-{
-	return buildOptions;
-}
-
-bool CCircuitDef::CanBuild(Id buildDefId) const
-{
-	return (buildOptions.find(buildDefId) != buildOptions.end());
-}
-
-bool CCircuitDef::CanBuild(CCircuitDef* buildDef) const
-{
-	// FIXME: Remove Patrol/Reclaim/Terra tasks from CBuildManager::builderTasks
-	return (buildDef != nullptr) ? CanBuild(buildDef->GetId()) : false;
-}
-
-int CCircuitDef::GetCount() const
-{
-	return count;
-}
-
-void CCircuitDef::Inc()
-{
-	count++;
-}
-
-void CCircuitDef::Dec()
-{
-	count--;
 }
 
 CCircuitDef& CCircuitDef::operator++()
@@ -94,46 +54,6 @@ CCircuitDef CCircuitDef::operator--(int)
 	CCircuitDef temp = *this;
 	count--;
 	return temp;
-}
-
-bool CCircuitDef::IsAvailable() const
-{
-	return (def->GetMaxThisUnit() > count);
-}
-
-void CCircuitDef::IncBuild()
-{
-	buildCounts++;
-}
-
-void CCircuitDef::DecBuild()
-{
-	buildCounts--;
-}
-
-int CCircuitDef::GetBuildCount() const
-{
-	return buildCounts;
-}
-
-void CCircuitDef::SetImmobileId(STerrainMapImmobileType::Id immobileId)
-{
-	immobileTypeId = immobileId;
-}
-
-STerrainMapImmobileType::Id CCircuitDef::GetImmobileId() const
-{
-	return immobileTypeId;
-}
-
-void CCircuitDef::SetMobileId(STerrainMapMobileType::Id mobileId)
-{
-	mobileTypeId = mobileId;
-}
-
-STerrainMapMobileType::Id CCircuitDef::GetMobileId() const
-{
-	return mobileTypeId;
 }
 
 } // namespace circuit

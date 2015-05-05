@@ -23,15 +23,16 @@ public:
 	CCircuitDef(springai::UnitDef* def, std::unordered_set<Id>& buildOpts);
 	virtual ~CCircuitDef();
 
-	Id GetId() const;
-	springai::UnitDef* GetUnitDef() const;
-	const std::unordered_set<Id>& GetBuildOptions() const;
-	bool CanBuild(Id buildDefId) const;
-	bool CanBuild(CCircuitDef* buildDef) const;
-	int GetCount() const;
+	inline Id GetId() const { return id; }
+	inline springai::UnitDef* GetUnitDef() const { return def; }
+	inline const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
+	inline float GetBuildDistance() const { return buildDistance; }
+	inline bool CanBuild(Id buildDefId) const;
+	inline bool CanBuild(CCircuitDef* buildDef) const;
+	inline int GetCount() const { return count; }
 
-	void Inc();
-	void Dec();
+	inline void Inc() { ++count; }
+	inline void Dec() { --count; }
 
 	CCircuitDef& operator++();     // prefix  (++C): no parameter, returns a reference
 	CCircuitDef  operator++(int);  // postfix (C++): dummy parameter, returns a value
@@ -40,26 +41,38 @@ public:
 	inline bool operator==(const CCircuitDef& rhs);
 	inline bool operator!=(const CCircuitDef& rhs);
 
-	bool IsAvailable() const;
-	void IncBuild();
-	void DecBuild();
-	int GetBuildCount() const;
+	inline bool IsAvailable() const;
+	inline void IncBuild() { ++buildCounts; }
+	inline void DecBuild() { --buildCounts; }
+	inline int GetBuildCount() const { return buildCounts; }
 
-	void SetImmobileId(STerrainMapImmobileType::Id immobileId);
-	STerrainMapImmobileType::Id GetImmobileId() const;
-	void SetMobileId(STerrainMapMobileType::Id mobileId);
-	STerrainMapMobileType::Id GetMobileId() const;
+	inline void SetImmobileId(STerrainMapImmobileType::Id immobileId) { immobileTypeId = immobileId; }
+	inline STerrainMapImmobileType::Id GetImmobileId() const { return immobileTypeId; }
+	inline void SetMobileId(STerrainMapMobileType::Id mobileId) { mobileTypeId = mobileId; }
+	inline STerrainMapMobileType::Id GetMobileId() const { return mobileTypeId; }
 
 private:
 	Id id;
 	springai::UnitDef* def;  // owner
 	std::unordered_set<Id> buildOptions;
+	float buildDistance;
 	int count;
 	int buildCounts;  // number of builder defs able to build this def;
 
 	STerrainMapImmobileType::Id immobileTypeId;
 	STerrainMapMobileType::Id   mobileTypeId;
 };
+
+inline bool CCircuitDef::CanBuild(Id buildDefId) const
+{
+	return (buildOptions.find(buildDefId) != buildOptions.end());
+}
+
+inline bool CCircuitDef::CanBuild(CCircuitDef* buildDef) const
+{
+	// FIXME: Remove Patrol/Reclaim/Terra tasks from CBuildManager::builderTasks
+	return (buildDef != nullptr) ? CanBuild(buildDef->GetId()) : false;
+}
 
 inline bool CCircuitDef::operator==(const CCircuitDef& rhs)
 {
@@ -69,6 +82,11 @@ inline bool CCircuitDef::operator==(const CCircuitDef& rhs)
 inline bool CCircuitDef::operator!=(const CCircuitDef& rhs)
 {
 	return (id != rhs.id);
+}
+
+inline bool CCircuitDef::IsAvailable() const
+{
+	return (def->GetMaxThisUnit() > count);
 }
 
 } // namespace circuit

@@ -54,7 +54,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		// check nanos around
 		if (assistDef != nullptr) {
 			std::set<CCircuitUnit*> nanos;
-			float radius = assistDef->GetUnitDef()->GetBuildDistance();
+			float radius = assistDef->GetBuildDistance();
 			auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(u->GetPos(), radius));
 			int nanoId = assistDef->GetId();
 			int teamId = this->circuit->GetTeamId();
@@ -94,8 +94,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		idleTask->AssignTo(unit);
 
 		Unit* u = unit->GetUnit();
-		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
-		factoryPower += def->GetBuildSpeed();
+		factoryPower += unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
 		const AIFloat3& pos = u->GetPos();
 
 		std::vector<float> params;
@@ -103,7 +102,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 		// check factory nano belongs to
-		float radius = def->GetBuildDistance();
+		float radius = unit->GetCircuitDef()->GetBuildDistance();
 		float qradius = radius * radius;
 		for (auto& fac : factories) {
 			const AIFloat3& facPos = fac.first->GetUnit()->GetPos();
@@ -392,7 +391,7 @@ std::vector<CCircuitUnit*> CFactoryManager::GetHavensAt(const AIFloat3& pos) con
 {
 	std::vector<CCircuitUnit*> result;
 	result.reserve(havens.size());  // size overkill
-	float sqBuildDist = assistDef->GetUnitDef()->GetBuildDistance();
+	float sqBuildDist = assistDef->GetBuildDistance();
 	sqBuildDist *= sqBuildDist;
 	for (auto haven : havens) {
 		if (haven->GetUnit()->GetPos().SqDistance2D(pos) <= sqBuildDist) {

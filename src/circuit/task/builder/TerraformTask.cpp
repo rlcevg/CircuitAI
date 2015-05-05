@@ -79,7 +79,7 @@ void CBTerraformTask::Cancel()
 
 void CBTerraformTask::OnUnitIdle(CCircuitUnit* unit)
 {
-	float range = unit->GetCircuitDef()->GetUnitDef()->GetBuildDistance() * 2;
+	float range = unit->GetCircuitDef()->GetBuildDistance() * 2;
 	const AIFloat3& pos = unit->GetUnit()->GetPos();
 	if (position.SqDistance2D(pos) < range * range) {
 		manager->DoneTask(this);

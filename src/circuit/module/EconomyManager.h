@@ -44,8 +44,8 @@ public:
 	springai::Resource* GetEnergyRes() const;
 	CCircuitDef* GetMexDef() const;
 	springai::AIFloat3 FindBuildPos(CCircuitUnit* unit);
-	void AddAvailEnergy(const std::set<CCircuitDef*>& buildDefs);  // add available energy defs
-	void RemoveAvailEnergy(const std::set<CCircuitDef*>& buildDefs);
+	void AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs);  // add available energy defs
+	void RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs);
 
 	void UpdateResourceIncome();
 	float GetAvgMetalIncome() const;
@@ -92,6 +92,7 @@ private:
 	CLagrangeInterPol* engyPol;
 
 	float ecoFactor;
+	int maxReclaimers;
 
 	// TODO: Didn't see any improvements. Remove avg?
 	std::vector<float> metalIncomes;

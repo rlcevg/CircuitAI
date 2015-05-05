@@ -58,7 +58,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 	float maxDist;
 	if (haven != nullptr) {
 		pos = haven->GetUnit()->GetPos();
-		maxDist = haven->GetCircuitDef()->GetUnitDef()->GetBuildDistance() * 0.5;
+		maxDist = haven->GetCircuitDef()->GetBuildDistance() * 0.5;
 	} else {
 		pos = circuit->GetSetupManager()->GetStartPos();
 		maxDist = 200;

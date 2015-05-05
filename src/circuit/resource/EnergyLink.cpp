@@ -138,4 +138,10 @@ CEnergyLink::SPylon* CEnergyLink::GetConnectionHead()
 	return winner;
 }
 
+void CEnergyLink::SetVertices(const AIFloat3& startPos, const AIFloat3& endPos)
+{
+	this->startPos = startPos;
+	this->endPos = endPos;
+}
+
 } // namespace circuit

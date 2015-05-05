@@ -23,8 +23,6 @@ namespace circuit {
 
 using namespace springai;
 
-#define EPSILON 1.0f
-
 class CExitBFS: public std::exception {
 public:
 	CExitBFS(CEnergyLink* link) : std::exception(), link(link) {}
@@ -59,7 +57,8 @@ struct spanning_tree {
 
 CEnergyGrid::CEnergyGrid(CCircuitAI* circuit) :
 		circuit(circuit),
-		markFrame(-1)
+		markFrame(-1),
+		isForceRebuild(false)
 {
 	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CEnergyGrid::Init, this));
 }
@@ -244,64 +243,26 @@ void CEnergyGrid::AddPylon(CCircuitUnit* unit, const AIFloat3& P)
 	}
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
-
 	const AIFloat3& P0 = clusters[index].geoCentr;
-	auto isBoundsValid = [&P0, &P](const AIFloat3& P1) {
-		float dx = P1.x - P0.x;
-		float dz = P1.z - P0.z;
-		float mult = ((P.x - P0.x) * dx + (P.z - P0.z) * dz) / (dx * dx + dz * dz);
-
-		float projX = P0.x + dx * mult;
-		float projZ = P0.z + dz * mult;
-		return ((std::min(P0.x, P1.x) <= projX) && (projX <= std::max(P0.x, P1.x)) &&
-				(std::min(P0.z, P1.z) <= projZ) && (projZ <= std::max(P0.z, P1.z)));
-	};
-	auto sqDistPointToLine = [&P0, &P](const AIFloat3& P1) {
-		float A = P0.z - P1.z;
-		float B = P1.x - P0.x;
-		float C = P0.x * P1.z - P1.x * P0.z;
-		float denominator = A * P.x + B * P.z + C;
-		float numerator = A * A + B * B;
-		return denominator * denominator / numerator;
-	};
 
 	// Find edges to which building belongs to: linkEdgeIts
 	CMetalData::Graph::out_edge_iterator edgeIt, edgeEnd;
-	std::list<CMetalData::Graph::out_edge_iterator> linkEdgeIts;
-	std::list<CMetalData::Graph::out_edge_iterator> linkEdgeItsVR;  // Edges which vertex is in pylon-range
 	std::tie(edgeIt, edgeEnd) = boost::out_edges(index, clusterGraph);  // or boost::tie
 	float sqMinDist = std::numeric_limits<float>::max();
 	float range = pylonRanges[unit->GetCircuitDef()->GetId()];
 	float sqRange = range * range;
 	for (; edgeIt != edgeEnd; ++edgeIt) {
-		int idxTarget = boost::target(*edgeIt, clusterGraph);
+		const CMetalData::EdgeDesc& edgeId = *edgeIt;
+		int idxTarget = boost::target(edgeId, clusterGraph);
 		const AIFloat3& P1 = clusters[idxTarget].geoCentr;
 
-		if ((P0.SqDistance2D(P) < sqRange) || (P1.SqDistance2D(P) < sqRange)) {
-			linkEdgeItsVR.push_back(edgeIt);
-			continue;
+		if ((P0.SqDistance2D(P) < sqRange) || (P1.SqDistance2D(P) < sqRange) ||
+			(((P0 + P1) * 0.5f).SqDistance2D(P) < P0.SqDistance2D(P1) * 0.25f))
+		{
+			CEnergyLink& link = boost::get(linkIt, edgeId);
+			link.AddPylon(unit->GetId(), P, range);
+			linkPylons.insert(edgeId);
 		}
-
-		if (!isBoundsValid(P1)) {
-			continue;
-		}
-
-		float sqDist = sqDistPointToLine(P1);
-		if (std::fabs(sqDist - sqMinDist) < EPSILON) {
-			linkEdgeIts.push_back(edgeIt);
-		} else if (sqDist < sqMinDist) {
-			linkEdgeIts.clear();
-			linkEdgeIts.push_back(edgeIt);
-			sqMinDist = sqDist;
-		}
-	}
-	linkEdgeIts.splice(linkEdgeIts.end(), linkEdgeItsVR);
-
-	for (auto& edgeIt : linkEdgeIts) {
-		const CMetalData::EdgeDesc& edgeId = *edgeIt;
-		CEnergyLink& link = boost::get(linkIt, edgeId);
-		link.AddPylon(unit->GetId(), P, range);
-		linkPylons.insert(edgeId);
 	}
 }
 
@@ -398,6 +359,15 @@ void CEnergyGrid::AddMex(const AIFloat3& pos)
 		return;
 	}
 
+	// FIXME: DEBUG
+//	circuit->GetDrawer()->DeletePointsAndLines(pos);
+//	circuit->GetDrawer()->AddPoint(pos, utils::int_to_string(temp++).c_str());
+//	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this, pos, index]() {
+//		circuit->GetDrawer()->DeletePointsAndLines(metalManager->GetClusters()[index].geoCentr);
+//		circuit->GetDrawer()->AddPoint(metalManager->GetClusters()[index].geoCentr, "Full");
+//	}), FRAMES_PER_SEC * 5);
+	// FIXME: DEBUG
+
 	linkClusters.push_back(index);
 	lv.isConnected = true;
 }
@@ -414,15 +384,25 @@ void CEnergyGrid::RemoveMex(const AIFloat3& pos)
 		return;
 	}
 
+	// FIXME: DEBUG
+//	circuit->GetDrawer()->DeletePointsAndLines(pos);
+//	circuit->GetDrawer()->DeletePointsAndLines(circuit->GetMetalManager()->GetClusters()[index].geoCentr);
+//	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this, pos, index]() {
+//		circuit->GetDrawer()->AddPoint(pos, utils::int_to_string(temp++).c_str());
+//		circuit->GetDrawer()->AddPoint(circuit->GetMetalManager()->GetClusters()[index].geoCentr, "Empty");
+//	}), FRAMES_PER_SEC * 5);
+	// FIXME: DEBUG
+
 	unlinkClusters.push_back(index);
 	lv.isConnected = false;
 }
 
 void CEnergyGrid::RebuildTree()
 {
-	if (linkClusters.empty() && unlinkClusters.empty()) {
+	if (linkClusters.empty() && unlinkClusters.empty() && !isForceRebuild) {
 		return;
 	}
+	isForceRebuild = false;
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
@@ -433,9 +413,12 @@ void CEnergyGrid::RebuildTree()
 		std::tie(outEdgeIt, outEdgeEnd) = boost::out_edges(index, clusterGraph);  // or boost::tie
 		for (; outEdgeIt != outEdgeEnd; ++outEdgeIt) {
 			const CMetalData::EdgeDesc& edgeId = *outEdgeIt;
-			int idx1 = boost::target(edgeId, clusterGraph);
-			if (linkedClusters[idx1].isConnected) {
-				boost::add_edge(index, idx1, clusterGraph[edgeId], ownedClusters);
+			int idx0 = boost::target(edgeId, clusterGraph);
+			if (linkedClusters[idx0].isConnected) {
+				boost::add_edge(idx0, index, clusterGraph[edgeId], ownedClusters);
+
+				CEnergyLink& link = boost::get(linkIt, edgeId);
+				link.SetVertices(clusters[idx0].geoCentr, clusters[index].geoCentr);  // Set edge direction
 			}
 		}
 	}
@@ -455,6 +438,8 @@ void CEnergyGrid::RebuildTree()
 		CEnergyLink& link = boost::get(linkIt, edgeId);
 		if (link.IsFinished() || link.IsBeingBuilt()) {
 			ownedClusters[edgeId].weight = clusterGraph[edgeId].weight * 0.01f;
+		} else if (!link.IsValid()) {
+			ownedClusters[edgeId].weight = clusterGraph[edgeId].weight * 100.0f;
 		}
 	}
 

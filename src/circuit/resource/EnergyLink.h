@@ -34,11 +34,13 @@ public:
 	SPylon* GetConnectionHead();
 
 	inline void SetBeingBuilt(bool value) { isBeingBuilt = value; }
-	inline bool IsBeingBuilt() { return isBeingBuilt; }
-	inline bool IsFinished() { return isFinished; }
-	inline bool IsValid() { return isValid; }
-	inline const springai::AIFloat3& GetStartPos() { return startPos; }
-	inline const springai::AIFloat3& GetEndPos() { return endPos; }
+	inline bool IsBeingBuilt() const { return isBeingBuilt; }
+	inline bool IsFinished() const { return isFinished; }
+	inline void SetValid(bool value) { isValid = value; }
+	inline bool IsValid() const { return isValid; }
+	void SetVertices(const springai::AIFloat3& startPos, const springai::AIFloat3& endPos);
+	inline const springai::AIFloat3& GetStartPos() const { return startPos; }
+	inline const springai::AIFloat3& GetEndPos() const { return endPos; }
 
 private:
 	std::map<CCircuitUnit::Id, SPylon*> pylons;  // owner

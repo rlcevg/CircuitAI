@@ -126,7 +126,7 @@ CCircuitUnit* CBRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 	Unit* su = unit->GetUnit();
 	const AIFloat3& pos = su->GetPos();
 	float maxSpeed = su->GetMaxSpeed();
-	float radius = unit->GetCircuitDef()->GetUnitDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 30;
+	float radius = unit->GetCircuitDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 30;
 	CCircuitAI* circuit = manager->GetCircuit();
 
 	circuit->UpdateFriendlyUnits();

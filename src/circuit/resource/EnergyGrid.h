@@ -31,6 +31,7 @@ public:
 	virtual ~CEnergyGrid();
 
 	void Update();
+	inline void SetForceRebuild(bool value) { isForceRebuild = value; }
 	CEnergyLink* GetLinkToBuild();
 
 private:
@@ -60,6 +61,7 @@ private:
 	std::list<int> linkClusters, unlinkClusters;  // - must not contain same clusters
 	std::set<CMetalData::EdgeDesc> spanningTree;
 	CMetalData::Graph ownedClusters;
+	bool isForceRebuild;
 
 	void MarkAllyMexes(const std::list<CCircuitUnit*>& mexes);
 	void AddMex(const springai::AIFloat3& pos);

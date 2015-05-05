@@ -32,19 +32,19 @@ public:
 	CCircuitUnit(springai::Unit* unit, CCircuitDef* circuitDef);
 	virtual ~CCircuitUnit();
 
-	Id GetId() const;
-	springai::Unit* GetUnit() const;
-	CCircuitDef* GetCircuitDef() const;
+	inline Id GetId() const { return id; }
+	inline springai::Unit* GetUnit() const { return unit; }
+	inline CCircuitDef* GetCircuitDef() const { return circuitDef; }
 
 	void SetTask(IUnitTask* task);
-	IUnitTask* GetTask() const;
-	int GetTaskFrame() const;
+	inline IUnitTask* GetTask() const { return task; }
+	inline int GetTaskFrame() const { return taskFrame; }
 
-	void SetManager(IUnitManager* mgr);
-	IUnitManager* GetManager() const;
+	inline void SetManager(IUnitManager* mgr) { manager = mgr; }
+	inline IUnitManager* GetManager() const { return manager; }
 
-	void SetArea(STerrainMapArea* area);
-	STerrainMapArea* GetArea() const;
+	inline void SetArea(STerrainMapArea* area) { this->area = area; }
+	inline STerrainMapArea* GetArea() const { return area; }
 
 	inline bool operator==(const CCircuitUnit& rhs);
 	inline bool operator!=(const CCircuitUnit& rhs);

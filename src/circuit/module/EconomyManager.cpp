@@ -116,13 +116,16 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	};
 
 	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
-	int allyTeamSize = circuit->GetAllyTeam()->GetSize();
-	ecoFactor = allyTeamSize * 0.25f + 0.75f;
+	ecoFactor = circuit->GetAllyTeam()->GetSize() * 0.25f + 0.75f;
 
 	Map* map = circuit->GetMap();
 	float pylonSquare = pylonRange * 2 / SQUARE_SIZE;
 	pylonSquare *= pylonSquare;
-	pylonMaxCount = ((map->GetWidth() * map->GetHeight()) / pylonSquare) / allyTeamSize / 2;
+	pylonMaxCount = (map->GetWidth() * map->GetHeight()) / pylonSquare;
+
+	// FIXME: Replace area reclaim with own implementation, remove maxReclaimers
+	int areaSize = circuit->GetTerrainManager()->GetMobileType(circuit->GetCircuitDef("armrectr")->GetMobileId())->area.size();  // FIXME: area.size() - list, uses std::advance()
+	maxReclaimers = (areaSize == 1) ? 20 : 2;
 
 	/*
 	 *  Identify resource buildings
@@ -147,7 +150,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	// Using cafus, armfus, armsolar as control points
 	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
 	const char* engies[] = {"cafus", "armfus", "armsolar"};
-	const int limits[] = {4, 3, 8};  // TODO: range randomize
+	const int limits[] = {5, 3, 8};  // TODO: range randomize
 	const int size = sizeof(engies) / sizeof(engies[0]);
 	CLagrangeInterPol::Vector x(size), y(size);
 	for (int i = 0; i < size; ++i) {
@@ -218,7 +221,7 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(pos, u->GetMaxSpeed() * FRAMES_PER_SEC * 60));
-	if (!features.empty() && (builderManager->GetTasks(IBuilderTask::BuildType::RECLAIM).size() < 2)) {
+	if (!features.empty() && (builderManager->GetTasks(IBuilderTask::BuildType::RECLAIM).size() < maxReclaimers)) {
 		task = builderManager->EnqueueReclaim(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 60);
 	}
 	utils::free_clear(features);
@@ -229,18 +232,18 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 	// FIXME: Eco rules. It should never get here
 	float metalIncome = GetAvgMetalIncome() * ecoFactor;
 	CCircuitDef* buildDef = circuit->GetCircuitDef("armwin");
-	if ((metalIncome < 20) && (buildDef->GetCount() < 50)) {
+	if (/*(metalIncome < 20) &&*/ (buildDef->GetCount() < 50)) {
 		task = builderManager->EnqueueTask(IBuilderTask::Priority::LOW, buildDef, pos, IBuilderTask::BuildType::ENERGY);
-	} else if (metalIncome < 40) {
+	} else /*if (metalIncome < 40)*/ {
 		task = builderManager->EnqueuePatrol(IBuilderTask::Priority::LOW, unit->GetUnit()->GetPos(), .0f, FRAMES_PER_SEC * 20);
-	} else {
+//	} else {
 //		const std::set<IBuilderTask*>& tasks = builderManager->GetTasks(IBuilderTask::BuildType::BIG_GUN);
 //		if (tasks.empty()) {
 //			buildDef = circuit->GetCircuitDef("raveparty");
 //			if (buildDef->GetCount() < 1) {
 //				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, circuit->GetSetupManager()->GetBasePos(), IBuilderTask::BuildType::BIG_GUN);
 //			} else {
-				task = builderManager->EnqueuePatrol(IBuilderTask::Priority::LOW, unit->GetUnit()->GetPos(), .0f, FRAMES_PER_SEC * 20);
+//				task = builderManager->EnqueuePatrol(IBuilderTask::Priority::LOW, unit->GetUnit()->GetPos(), .0f, FRAMES_PER_SEC * 20);
 //			}
 //		} else {
 //			task = *tasks.begin();
@@ -284,7 +287,7 @@ IBuilderTask* CEconomyManager::CreateAssistTask(CCircuitUnit* unit)
 	CCircuitUnit* buildTarget = nullptr;
 	bool isBuildMobile = true;
 	const AIFloat3& pos = unit->GetUnit()->GetPos();
-	float radius = unit->GetCircuitDef()->GetUnitDef()->GetBuildDistance();
+	float radius = unit->GetCircuitDef()->GetBuildDistance();
 
 	/*
 	 * Check for damaged units
@@ -402,7 +405,7 @@ AIFloat3 CEconomyManager::FindBuildPos(CCircuitUnit* unit)
 	return buildPos;
 }
 
-void CEconomyManager::AddAvailEnergy(const std::set<CCircuitDef*>& buildDefs)
+void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 {
 	// TODO: Cache engyDefs in CCircuitDef?
 	std::set<CCircuitDef*> engyDefs;
@@ -435,7 +438,7 @@ void CEconomyManager::AddAvailEnergy(const std::set<CCircuitDef*>& buildDefs)
 	energyInfos.sort(compare);
 }
 
-void CEconomyManager::RemoveAvailEnergy(const std::set<CCircuitDef*>& buildDefs)
+void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 {
 	// TODO: Cache engyDefs in CCircuitDef?
 	std::set<CCircuitDef*> engyDefs;
@@ -771,9 +774,9 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 	}
 
 	float energyIncome = GetAvgEnergyIncome();
-	if ((metalIncome * ecoFactor > 10) && (energyIncome > 50) /*&& (pylonCount < pylonMaxCount)*/ && pylonDef->IsAvailable()) {
+	if ((metalIncome * ecoFactor > 10) && (energyIncome > 50) && (pylonCount < pylonMaxCount) && pylonDef->IsAvailable()) {
 		float cost = pylonDef->GetUnitDef()->GetCost(metalRes);
-		int count = builderManager->GetBuilderPower() / cost * 20 + 1;
+		int count = builderManager->GetBuilderPower() / cost * 2 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::PYLON).size() < count) {
 			CEnergyGrid* grid = circuit->GetEnergyGrid();
 			grid->Update();
@@ -795,9 +798,13 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 					buildPos = link->GetStartPos();
 				}
 
-				link->SetBeingBuilt(true);
-				task = builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, pylonDef, buildPos, link, cost);
-				return task;
+				if (builderManager->IsBuilderInArea(pylonDef, buildPos)) {
+					task = builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, pylonDef, buildPos, link, cost);
+					return task;
+				} else {
+					link->SetValid(false);  // FIXME: Reset valid on timer?
+					grid->SetForceRebuild(true);
+				}
 			}
 		}
 	}

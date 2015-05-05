@@ -1140,11 +1140,6 @@ const STerrainMapSector& CTerrainManager::GetSector(int sIndex) const
 	return areaData->sector[sIndex];
 }
 
-int CTerrainManager::GetConvertStoP() const
-{
-	return terrainData->convertStoP;
-}
-
 STerrainMapMobileType* CTerrainManager::GetMobileType(CCircuitDef::Id unitDefId) const
 {
 	return GetMobileTypeById(terrainData->udMobileType[unitDefId]);
@@ -1206,8 +1201,8 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination)
 {
 	// NOTE: So far we know only mobile builders
-//	if (unit->GetCircuitDef()->GetImmobileType() != nullptr) {  // A hub or factory
-//		return unit->GetUnit()->GetPos().distance2D(destination) < unit->GetDef()->GetBuildDistance();
+//	if (unit->GetCircuitDef()->GetImmobileId() != -1) {  // A hub or factory
+//		return unit->GetUnit()->GetPos().distance2D(destination) < unit->GetCircuitDef()->GetBuildDistance();
 //	}
 	STerrainMapArea* area = unit->GetArea();
 	if (area == nullptr) {  // A flying unit
@@ -1217,10 +1212,7 @@ bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination
 	if (area->sector.find(iS) != area->sector.end()) {
 		return true;
 	}
-	if (GetClosestSector(area, iS)->S->position.distance2D(destination) < unit->GetCircuitDef()->GetUnitDef()->GetBuildDistance() - GetConvertStoP()) {
-		return true;
-	}
-	return false;
+	return GetClosestSector(area, iS)->S->position.distance2D(destination) < unit->GetCircuitDef()->GetBuildDistance();
 }
 
 bool CTerrainManager::CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const AIFloat3& destination)
@@ -1232,10 +1224,7 @@ bool CTerrainManager::CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* build
 	if (area->sector.find(iS) != area->sector.end()) {
 		return true;
 	}
-	if (GetClosestSector(area, iS)->S->position.distance2D(destination) < builderDef->GetUnitDef()->GetBuildDistance() - GetConvertStoP()) {
-		return true;
-	}
-	return false;
+	return GetClosestSector(area, iS)->S->position.distance2D(destination) < builderDef->GetBuildDistance();
 }
 
 void CTerrainManager::UpdateAreaUsers()
@@ -1307,7 +1296,7 @@ void CTerrainManager::ClusterizeTerrain()
 	int widthX = circuit->GetMap()->GetWidth();
 	int heightZ = circuit->GetMap()->GetHeight();
 	int widthSX = widthX / 2;
-	MoveData* moveDef = circuit->GetCircuitDef("armcom1")->GetUnitDef()->GetMoveData();
+	MoveData* moveDef = circuit->GetCircuitDef("armrectr")->GetUnitDef()->GetMoveData();
 	float maxSlope = moveDef->GetMaxSlope();
 	float depth = moveDef->GetDepth();
 	float slopeMod = moveDef->GetSlopeMod();

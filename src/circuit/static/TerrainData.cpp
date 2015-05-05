@@ -698,8 +698,8 @@ void CTerrainData::UpdateAreas()
 
 	for (int z = 0; z < sectorZSize; z++) {
 		for (int x = 0; x < sectorXSize; x++) {
-			int iMap = ((z * convertStoHM) * heightMapXSize) + x * convertStoHM;
-			if (!isSectorHeightChanged(iMap)) {
+			int iMapH = ((z * convertStoHM) * heightMapXSize) + x * convertStoHM;
+			if (!isSectorHeightChanged(iMapH)) {
 				continue;
 			}
 
@@ -709,9 +709,9 @@ void CTerrainData::UpdateAreas()
 			sector[i].position.y = map->GetElevationAt(sector[i].position.x, sector[i].position.z);
 
 			sector[i].maxSlope = .0f;
-			iMap = ((z * convertStoSM) * slopeMapXSize) + x * convertStoSM;
+			int iMapS = ((z * convertStoSM) * slopeMapXSize) + x * convertStoSM;
 			for (int zS = 0; zS < convertStoSM; zS++) {
-				for (int xS = 0, iS = iMap + zS * slopeMapXSize + xS; xS < convertStoSM; xS++, iS = iMap + zS * slopeMapXSize + xS) {
+				for (int xS = 0, iS = iMapS + zS * slopeMapXSize + xS; xS < convertStoSM; xS++, iS = iMapS + zS * slopeMapXSize + xS) {
 					if (sector[i].maxSlope < standardSlopeMap[iS]) {
 						sector[i].maxSlope = standardSlopeMap[iS];
 					}
@@ -720,10 +720,10 @@ void CTerrainData::UpdateAreas()
 
 			float prevPercentLand = std::round(sector[i].percentLand * (convertStoHM * convertStoHM) / 100.0);
 			sector[i].percentLand = .0f;
-			sector[i].minElevation = .0f;
-			sector[i].maxElevation = .0f;
+			sector[i].minElevation = standardHeightMap[iMapH];
+			sector[i].maxElevation = standardHeightMap[iMapH];
 			for (int zH = 0; zH < convertStoHM; zH++) {
-				for (int xH = 0, iH = iMap + zH * heightMapXSize + xH; xH < convertStoHM; xH++, iH = iMap + zH * heightMapXSize + xH) {
+				for (int xH = 0, iH = iMapH + zH * heightMapXSize + xH; xH < convertStoHM; xH++, iH = iMapH + zH * heightMapXSize + xH) {
 					if (standardHeightMap[iH] >= 0) {
 						sector[i].percentLand++;
 					}

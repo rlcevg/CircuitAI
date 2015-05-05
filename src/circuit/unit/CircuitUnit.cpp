@@ -33,55 +33,10 @@ CCircuitUnit::~CCircuitUnit()
 	delete unit;
 }
 
-CCircuitUnit::Id CCircuitUnit::GetId() const
-{
-	return id;
-}
-
-Unit* CCircuitUnit::GetUnit() const
-{
-	return unit;
-}
-
-CCircuitDef* CCircuitUnit::GetCircuitDef() const
-{
-	return circuitDef;
-}
-
 void CCircuitUnit::SetTask(IUnitTask* task)
 {
 	this->task = task;
 	taskFrame = manager->GetCircuit()->GetLastFrame();
-}
-
-IUnitTask* CCircuitUnit::GetTask() const
-{
-	return task;
-}
-
-int CCircuitUnit::GetTaskFrame() const
-{
-	return taskFrame;
-}
-
-void CCircuitUnit::SetManager(IUnitManager* mgr)
-{
-	manager = mgr;
-}
-
-IUnitManager* CCircuitUnit::GetManager() const
-{
-	return manager;
-}
-
-void CCircuitUnit::SetArea(STerrainMapArea* area)
-{
-	this->area = area;
-}
-
-STerrainMapArea* CCircuitUnit::GetArea() const
-{
-	return area;
 }
 
 } // namespace circuit

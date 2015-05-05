@@ -64,7 +64,7 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 	CTerrainManager::TerrainPredicate predicate = [terrain, unit](const AIFloat3& p) {
 		return terrain->CanBuildAt(unit, p);
 	};
-	float searchRadius = buildUDef->GetBuildDistance();
+	float searchRadius = buildDef->GetBuildDistance();
 	facing = FindFacing(buildDef, pos);
 	buildPos = terrain->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
 

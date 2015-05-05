@@ -26,6 +26,7 @@ CBPylonTask::CBPylonTask(ITaskManager* mgr, Priority priority,
 		IBuilderTask(mgr, priority, buildDef, position, BuildType::PYLON, cost, timeout),
 		link(link)
 {
+	link->SetBeingBuilt(true);
 }
 
 CBPylonTask::~CBPylonTask()

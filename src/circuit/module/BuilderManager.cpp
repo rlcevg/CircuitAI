@@ -416,7 +416,9 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	for (auto& kv : buildAreas) {
 		for (auto& kvw : kv.second) {
-			if ((kvw.second > 0) && terrainManager->CanMobileBuildAt(kv.first, kvw.first, position)) {
+			if ((kvw.second > 0) && kvw.first->CanBuild(buildDef) &&
+				terrainManager->CanMobileBuildAt(kv.first, kvw.first, position))
+			{
 				return true;
 			}
 		}
@@ -431,7 +433,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	const AIFloat3& pos = u->GetPos();
 	float maxSpeed = u->GetMaxSpeed();
 	UnitDef* unitDef = unit->GetCircuitDef()->GetUnitDef();
-	float buildDistance = unitDef->GetBuildDistance();
+	float buildDistance = unit->GetCircuitDef()->GetBuildDistance();
 
 	std::function<float (const AIFloat3& buildPos)> pathLength;
 	if (unitDef->IsAbleToFly()) {
@@ -665,7 +667,7 @@ void CBuilderManager::AddBuildList(CCircuitUnit* unit)
 	}
 
 	if (!buildDefs.empty()) {
-		circuit->GetEconomyManager()->AddAvailEnergy(buildDefs);
+		circuit->GetEconomyManager()->AddEnergyDefs(buildDefs);
 	}
 
 	// TODO: Same thing with factory, etc.
@@ -689,7 +691,7 @@ void CBuilderManager::RemoveBuildList(CCircuitUnit* unit)
 	}
 
 	if (!buildDefs.empty()) {  // throws exception on set::erase otherwise
-		circuit->GetEconomyManager()->RemoveAvailEnergy(buildDefs);
+		circuit->GetEconomyManager()->RemoveEnergyDefs(buildDefs);
 	}
 
 	// TODO: Same thing with factory, etc.
