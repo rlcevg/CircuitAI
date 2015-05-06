@@ -15,12 +15,12 @@ namespace circuit {
 
 using namespace springai;
 
-CEnergyLink::CEnergyLink(const AIFloat3& startPos, const AIFloat3& endPos) :
+CEnergyLink::CEnergyLink(int idx0, const AIFloat3& P0, int idx1, const AIFloat3& P1) :
 		isBeingBuilt(false),
 		isFinished(false),
 		isValid(true),
-		startPos(startPos),
-		endPos(endPos)
+		v0(new SVertex(idx0, P0)),
+		v1(new SVertex(idx1, P1))
 {
 }
 
@@ -30,6 +30,7 @@ CEnergyLink::~CEnergyLink()
 	for (auto& kv : pylons) {
 		delete kv.second;
 	}
+	delete v0, v1;
 }
 
 void CEnergyLink::AddPylon(CCircuitUnit::Id unitId, const AIFloat3& pos, float range)
@@ -47,9 +48,12 @@ void CEnergyLink::AddPylon(CCircuitUnit::Id unitId, const AIFloat3& pos, float r
 
 	pylons[unitId] = pylon0;
 
-	float exRange = range;/* + PYLON_RANGE;*/
-	if (startPos.SqDistance2D(pos) < exRange * exRange) {
-		startPylons.insert(pylon0);
+	float sqRange = range * range;
+	if (v0->pos.SqDistance2D(pos) < sqRange) {
+		v0->pylons.insert(pylon0);
+	}
+	if (v1->pos.SqDistance2D(pos) < sqRange) {
+		v1->pylons.insert(pylon0);
 	}
 }
 
@@ -64,7 +68,8 @@ int CEnergyLink::RemovePylon(CCircuitUnit::Id unitId)
 	for (SPylon* pylon1 : pylon0->neighbors) {
 		pylon1->neighbors.erase(pylon0);
 	}
-	startPylons.erase(pylon0);
+	v0->pylons.erase(pylon0);
+	v1->pylons.erase(pylon0);
 	delete pylon0;
 
 	return pylons.erase(unitId);
@@ -76,17 +81,16 @@ void CEnergyLink::CheckConnection()
 	std::set<SPylon*> visited;
 	std::queue<SPylon*> queue;
 
-	for (SPylon* p : startPylons) {
+	for (SPylon* p : v0->pylons) {
 		queue.push(p);
 	}
 
 	while (!queue.empty()) {
 		SPylon* q = queue.front();
 		queue.pop();
-		float dist = q->range;/* + PYLON_RANGE;  // FIXME: Remove const*/
-		if (endPos.SqDistance2D(q->pos) < dist * dist) {
+		float dist = q->range;
+		if (v1->pos.SqDistance2D(q->pos) < dist * dist) {
 			isFinished = true;
-			// TODO: Check if there are end-pylons that contains all spots in cluster
 			return;
 		}
 
@@ -103,7 +107,24 @@ void CEnergyLink::CheckConnection()
 	isFinished = false;
 }
 
-CEnergyLink::SPylon* CEnergyLink::GetConnectionHead()
+void CEnergyLink::CalcHeadInfos(SBuildInfo& outInfo0, SBuildInfo& outInfo1)
+{
+	SPylon* pylon0 = GetConnectionHead(v0, v1);
+	SPylon* pylon1 = GetConnectionHead(v1, v0);
+	outInfo0.pos   = (pylon0 != nullptr) ? pylon0->pos   : v0->pos;
+	outInfo0.range = (pylon0 != nullptr) ? pylon0->range : .0f;
+	outInfo1.pos   = (pylon1 != nullptr) ? pylon1->pos   : v1->pos;
+	outInfo1.range = (pylon1 != nullptr) ? pylon1->range : .0f;
+}
+
+void CEnergyLink::SetStartVertex(int index)
+{
+	if (index != v0->index) {
+		std::swap(v0, v1);
+	}
+}
+
+CEnergyLink::SPylon* CEnergyLink::GetConnectionHead(SVertex* v0, SVertex* v1)
 {
 	SPylon* winner = nullptr;
 	float sqMinDist = std::numeric_limits<float>::max();
@@ -112,14 +133,14 @@ CEnergyLink::SPylon* CEnergyLink::GetConnectionHead()
 	std::set<SPylon*> visited;
 	std::queue<SPylon*> queue;
 
-	for (SPylon* p : startPylons) {
+	for (SPylon* p : v0->pylons) {
 		queue.push(p);
 	}
 
 	while (!queue.empty()) {
 		SPylon* q = queue.front();
 		queue.pop();
-		float sqDist = endPos.SqDistance2D(q->pos);
+		float sqDist = v1->pos.SqDistance2D(q->pos);
 		if (sqDist < sqMinDist) {
 			sqMinDist = sqDist;
 			winner = q;
@@ -136,12 +157,6 @@ CEnergyLink::SPylon* CEnergyLink::GetConnectionHead()
 	}
 
 	return winner;
-}
-
-void CEnergyLink::SetVertices(const AIFloat3& startPos, const AIFloat3& endPos)
-{
-	this->startPos = startPos;
-	this->endPos = endPos;
 }
 
 } // namespace circuit

@@ -125,7 +125,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 
 	// FIXME: Replace area reclaim with own implementation, remove maxReclaimers
 	int areaSize = circuit->GetTerrainManager()->GetMobileType(circuit->GetCircuitDef("armrectr")->GetMobileId())->area.size();  // FIXME: area.size() - list, uses std::advance()
-	maxReclaimers = (areaSize == 1) ? 20 : 2;
+	maxReclaimers = (areaSize == 1) ? 5 : 2;
 
 	/*
 	 *  Identify resource buildings
@@ -781,25 +781,12 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 			CEnergyGrid* grid = circuit->GetEnergyGrid();
 			grid->Update();
 
-			CEnergyLink* link = grid->GetLinkToBuild();
+			AIFloat3 buildPos;
+			CCircuitDef* buildDef;
+			CEnergyLink* link = grid->GetLinkToBuild(buildDef, buildPos);
 			if (link != nullptr) {
-				AIFloat3 buildPos;
-				CEnergyLink::SPylon* pylon = link->GetConnectionHead();
-				if (pylon != nullptr) {
-					const AIFloat3& endPos = link->GetEndPos();
-					float dist = pylon->range + pylonRange;
-					if (endPos.SqDistance2D(pylon->pos) > dist * dist) {
-						AIFloat3 dir = endPos - pylon->pos;
-						buildPos = pylon->pos + dir.Normalize2D() * (pylon->range + pylonRange) * 0.95;
-					} else {
-						buildPos = endPos;
-					}
-				} else {
-					buildPos = link->GetStartPos();
-				}
-
-				if (builderManager->IsBuilderInArea(pylonDef, buildPos)) {
-					task = builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, pylonDef, buildPos, link, cost);
+				if (builderManager->IsBuilderInArea(buildDef, buildPos)) {
+					task = builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, buildDef, buildPos, link, cost);
 					return task;
 				} else {
 					link->SetValid(false);  // FIXME: Reset valid on timer?

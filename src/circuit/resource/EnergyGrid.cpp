@@ -96,8 +96,11 @@ void CEnergyGrid::Update()
 	CheckGrid();
 }
 
-CEnergyLink* CEnergyGrid::GetLinkToBuild()
+CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, springai::AIFloat3& outPos)
 {
+	/*
+	 * Detect link to build
+	 */
 	spanning_tree filter(spanningTree);
 	boost::filtered_graph<CMetalData::Graph, spanning_tree> fg(ownedClusters, filter);
 	detect_link vis(linkIt);
@@ -113,6 +116,25 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild()
 	} catch (const CExitBFS& e) {
 		link = e.link;
 	}
+	if (link == nullptr) {
+		return nullptr;
+	}
+
+	/*
+	 * Find best build def and position
+	 */
+	CEnergyLink::SBuildInfo info0, info1;
+	link->CalcHeadInfos(info0, info1);
+
+	outDef = circuit->GetCircuitDef("armestor");
+	float dist = info0.range + PYLON_RANGE;
+//	if (endPos.SqDistance2D(pylon->pos) > dist * dist) {
+		AIFloat3 dir = info1.pos - info0.pos;
+		outPos = info0.pos + dir.Normalize2D() * (info0.range + PYLON_RANGE) * 0.95;
+//	} else {
+//		outPos = endPos;
+//	}
+
 	return link;
 }
 
@@ -129,21 +151,22 @@ void CEnergyGrid::Init()
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
+
+	linkedClusters.resize(clusters.size(), {0, false, false});
+
 	// FIXME: No-metal-spots maps can crash: check !links.empty()
 	links.reserve(boost::num_edges(clusterGraph));
 	CMetalData::Graph::edge_iterator edgeIt, edgeEnd;
 	std::tie(edgeIt, edgeEnd) = boost::edges(clusterGraph);
 	for (; edgeIt != edgeEnd; ++edgeIt) {
 		const CMetalData::EdgeDesc& edgeId = *edgeIt;
-		const AIFloat3& startPos = clusters[boost::source(edgeId, clusterGraph)].geoCentr;
-		const AIFloat3& endPos = clusters[boost::target(edgeId, clusterGraph)].geoCentr;
-		links.push_back(CEnergyLink(startPos, endPos));
+		int idx0 = boost::source(edgeId, clusterGraph);
+		int idx1 = boost::target(edgeId, clusterGraph);
+		links.emplace_back(idx0, clusters[idx0].geoCentr, idx1, clusters[idx1].geoCentr);
 	}
 	linkIt = boost::make_iterator_property_map(&links[0], boost::get(&CMetalData::Edge::index, clusterGraph));
 
 	ownedClusters = CMetalData::Graph(boost::num_vertices(clusterGraph));
-
-	linkedClusters.resize(metalManager->GetClusters().size(), {0, false});
 
 	// FIXME: DEBUG
 	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>([this]() {
@@ -152,15 +175,6 @@ void CEnergyGrid::Init()
 		for (int i = 0; i < clusters.size(); ++i) {
 			circuit->GetDrawer()->DeletePointsAndLines(clusters[i].geoCentr);
 		}
-//		const CMetalData::Graph& clusterGraph = circuit->GetMetalManager()->GetGraph();
-//		CMetalData::Graph::edge_iterator edgeIt, edgeEnd;
-//		std::tie(edgeIt, edgeEnd) = boost::edges(clusterGraph);
-//		for (; edgeIt != edgeEnd; ++edgeIt) {
-//			CEnergyLink &link = boost::get(linkIt, *edgeIt);
-//			for (auto& kv: link.pylons) {
-//				circuit->GetDrawer()->DeletePointsAndLines(markedPylons[kv.first]);
-//			}
-//		}
 		Update();
 	}), FRAMES_PER_SEC * 30);
 	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>([this]() {
@@ -172,32 +186,6 @@ void CEnergyGrid::Init()
 			const AIFloat3& posTo = clusters[boost::target(edge, clusterGraph)].geoCentr;
 			circuit->GetDrawer()->AddLine(posFrom, posTo);
 		}
-
-//		CMetalData::Graph::edge_iterator edgeIt, edgeEnd;
-//		std::tie(edgeIt, edgeEnd) = boost::edges(clusterGraph);
-//		for (; edgeIt != edgeEnd; ++edgeIt) {
-//			Link &link = boost::get(linkIt, *edgeIt);
-//			if (link.pylons.empty()) {
-//				continue;
-//			}
-//
-//			std::vector<std::pair<Structure*, float>> buildings;
-//			buildings.reserve(link.pylons.size());
-//			for (auto& kv: link.pylons) {
-//				buildings.push_back(std::make_pair(&markedPylons[kv.first], kv.second));
-//			}
-//			// Sorted by distance from graph vertex to unit
-//			auto compare = [](const std::pair<Structure*, float>& lhs, const std::pair<Structure*, float>& rhs) {
-//				return lhs.second < rhs.second;
-//			};
-//			std::sort(buildings.begin(), buildings.end(), compare);
-//
-//			AIFloat3 start = buildings.front().first->pos;
-//			for (auto& kv : buildings) {
-//				circuit->GetDrawer()->AddLine(start, kv.first->pos);
-//				start = kv.first->pos;
-//			}
-//		}
 	}), FRAMES_PER_SEC * 30, FRAMES_PER_SEC * 3);
 	// FIXME: DEBUG
 }
@@ -273,7 +261,6 @@ void CEnergyGrid::RemovePylon(CCircuitUnit::Id unitId, const AIFloat3& pos)
 	if (index < 0) {
 		return;
 	}
-	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
 
 	// Find edges to which building belongs to: linkEdgeIts
@@ -359,17 +346,8 @@ void CEnergyGrid::AddMex(const AIFloat3& pos)
 		return;
 	}
 
-	// FIXME: DEBUG
-//	circuit->GetDrawer()->DeletePointsAndLines(pos);
-//	circuit->GetDrawer()->AddPoint(pos, utils::int_to_string(temp++).c_str());
-//	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this, pos, index]() {
-//		circuit->GetDrawer()->DeletePointsAndLines(metalManager->GetClusters()[index].geoCentr);
-//		circuit->GetDrawer()->AddPoint(metalManager->GetClusters()[index].geoCentr, "Full");
-//	}), FRAMES_PER_SEC * 5);
-	// FIXME: DEBUG
-
-	linkClusters.push_back(index);
-	lv.isConnected = true;
+	linkClusters.insert(index);
+	lv.SetConnected(true);
 }
 
 void CEnergyGrid::RemoveMex(const AIFloat3& pos)
@@ -384,17 +362,15 @@ void CEnergyGrid::RemoveMex(const AIFloat3& pos)
 		return;
 	}
 
-	// FIXME: DEBUG
-//	circuit->GetDrawer()->DeletePointsAndLines(pos);
-//	circuit->GetDrawer()->DeletePointsAndLines(circuit->GetMetalManager()->GetClusters()[index].geoCentr);
-//	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this, pos, index]() {
-//		circuit->GetDrawer()->AddPoint(pos, utils::int_to_string(temp++).c_str());
-//		circuit->GetDrawer()->AddPoint(circuit->GetMetalManager()->GetClusters()[index].geoCentr, "Empty");
-//	}), FRAMES_PER_SEC * 5);
-	// FIXME: DEBUG
-
-	unlinkClusters.push_back(index);
-	lv.isConnected = false;
+	// Because RemoveMex executes after AddMex collisions could be handled here
+	auto it = linkClusters.find(index);
+	if (it == linkClusters.end()) {
+		unlinkClusters.push_back(index);
+		lv.SetConnected(false);
+	} else {
+		linkClusters.erase(it);
+		lv.RevertConnected();
+	}
 }
 
 void CEnergyGrid::RebuildTree()
@@ -405,7 +381,15 @@ void CEnergyGrid::RebuildTree()
 	isForceRebuild = false;
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
-	const CMetalData::Clusters& clusters = metalManager->GetClusters();
+
+	// Remove destroyed edges
+	auto pred = [](const CMetalData::EdgeDesc& desc) {
+		return true;
+	};
+	for (int index : unlinkClusters) {
+		boost::remove_out_edge_if(index, pred, ownedClusters);
+	}
+	unlinkClusters.clear();
 
 	// Add new edges to Kruskal graph
 	for (int index : linkClusters) {
@@ -418,20 +402,11 @@ void CEnergyGrid::RebuildTree()
 				boost::add_edge(idx0, index, clusterGraph[edgeId], ownedClusters);
 
 				CEnergyLink& link = boost::get(linkIt, edgeId);
-				link.SetVertices(clusters[idx0].geoCentr, clusters[index].geoCentr);  // Set edge direction
+				link.SetStartVertex(idx0);
 			}
 		}
 	}
 	linkClusters.clear();
-
-	// Remove destroyed edges
-	auto pred = [](const CMetalData::EdgeDesc& desc) {
-		return true;
-	};
-	for (int index : unlinkClusters) {
-		boost::remove_out_edge_if(index, pred, ownedClusters);
-	}
-	unlinkClusters.clear();
 
 	// Mark used edges as const
 	for (const CMetalData::EdgeDesc& edgeId : spanningTree) {

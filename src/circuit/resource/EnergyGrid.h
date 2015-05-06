@@ -32,7 +32,7 @@ public:
 
 	void Update();
 	inline void SetForceRebuild(bool value) { isForceRebuild = value; }
-	CEnergyLink* GetLinkToBuild();
+	CEnergyLink* GetLinkToBuild(CCircuitDef*& outDef, springai::AIFloat3& outPos);
 
 private:
 	void Init();
@@ -45,8 +45,10 @@ private:
 
 	Structures markedMexes;
 	struct SLinkVertex {
+		void SetConnected(bool value) { oldConnected = isConnected; isConnected = value; }
+		void RevertConnected() { isConnected = oldConnected; }
 		int mexCount;
-		bool isConnected;
+		bool isConnected, oldConnected;
 	};
 	std::vector<SLinkVertex> linkedClusters;
 	std::set<CMetalData::EdgeDesc> linkPylons, unlinkPylons;
@@ -58,7 +60,8 @@ private:
 	void RemovePylon(CCircuitUnit::Id unitId, const springai::AIFloat3& pos);
 	void CheckGrid();
 
-	std::list<int> linkClusters, unlinkClusters;  // - must not contain same clusters
+	std::set<int> linkClusters;
+	std::list<int> unlinkClusters;
 	std::set<CMetalData::EdgeDesc> spanningTree;
 	CMetalData::Graph ownedClusters;
 	bool isForceRebuild;
