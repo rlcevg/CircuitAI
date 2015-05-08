@@ -34,6 +34,8 @@ public:
 	inline void SetForceRebuild(bool value) { isForceRebuild = value; }
 	CEnergyLink* GetLinkToBuild(CCircuitDef*& outDef, springai::AIFloat3& outPos);
 
+	float GetPylonRange(CCircuitDef::Id defId);
+
 private:
 	void Init();
 	CCircuitAI* circuit;
@@ -42,6 +44,7 @@ private:
 	using Structures = std::map<CCircuitUnit::Id, springai::AIFloat3>;
 	Structures markedPylons;
 	std::unordered_map<CCircuitDef::Id, float> pylonRanges;
+	std::map<float, CCircuitDef::Id> rangePylons;
 
 	Structures markedMexes;
 	struct SLinkVertex {

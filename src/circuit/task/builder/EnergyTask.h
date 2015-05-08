@@ -16,7 +16,7 @@ class CBEnergyTask: public IBuilderTask {
 public:
 	CBEnergyTask(ITaskManager* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
-				 float cost, int timeout);
+				 float cost, bool isShake, int timeout);
 	virtual ~CBEnergyTask();
 
 protected:

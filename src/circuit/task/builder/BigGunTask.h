@@ -16,7 +16,7 @@ class CBBigGunTask: public IBuilderTask {
 public:
 	CBBigGunTask(ITaskManager* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
-				 float cost, int timeout);
+				 float cost, bool isShake, int timeout);
 	virtual ~CBBigGunTask();
 };
 

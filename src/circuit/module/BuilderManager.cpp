@@ -251,12 +251,17 @@ CCircuitDef* CBuilderManager::GetTerraDef() const
 	return terraDef;
 }
 
-float CBuilderManager::GetBuilderPower()
+int CBuilderManager::GetWorkerCount() const
+{
+	return workers.size();
+}
+
+float CBuilderManager::GetBuilderPower() const
 {
 	return builderPower;
 }
 
-bool CBuilderManager::CanEnqueueTask()
+bool CBuilderManager::CanEnqueueTask() const
 {
 	return (builderTasksCount < workers.size() * 2);
 }
@@ -272,19 +277,21 @@ IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 										   const AIFloat3& position,
 										   IBuilderTask::BuildType type,
 										   float cost,
+										   bool isShake,
 										   int timeout)
 {
-	return AddTask(priority, buildDef, position, type, cost, timeout);
+	return AddTask(priority, buildDef, position, type, cost, isShake, timeout);
 }
 
 IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 										   CCircuitDef* buildDef,
 										   const AIFloat3& position,
 										   IBuilderTask::BuildType type,
+										   bool isShake,
 										   int timeout)
 {
 	float cost = buildDef->GetUnitDef()->GetCost(circuit->GetEconomyManager()->GetMetalRes());
-	return AddTask(priority, buildDef, position, type, cost, timeout);
+	return AddTask(priority, buildDef, position, type, cost, isShake, timeout);
 }
 
 IBuilderTask* CBuilderManager::EnqueuePylon(IBuilderTask::Priority priority,
@@ -349,41 +356,42 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 									   const AIFloat3& position,
 									   IBuilderTask::BuildType type,
 									   float cost,
+									   bool isShake,
 									   int timeout)
 {
 	IBuilderTask* task;
 	switch (type) {
 		case IBuilderTask::BuildType::FACTORY: {
-			task = new CBFactoryTask(this, priority, buildDef, position, cost, timeout);
+			task = new CBFactoryTask(this, priority, buildDef, position, cost, isShake, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::NANO: {
-			task = new CBNanoTask(this, priority, buildDef, position, cost, timeout);
+			task = new CBNanoTask(this, priority, buildDef, position, cost, isShake, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::STORE: {
-			task = new CBStoreTask(this, priority, buildDef, position, cost, timeout);
+			task = new CBStoreTask(this, priority, buildDef, position, cost, isShake, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::ENERGY: {
-			task = new CBEnergyTask(this, priority, buildDef, position, cost, timeout);
+			task = new CBEnergyTask(this, priority, buildDef, position, cost, isShake, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::DEFENCE: {
-			task = new CBDefenceTask(this, priority, buildDef, position, cost, timeout);
+			task = new CBDefenceTask(this, priority, buildDef, position, cost, isShake, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::BUNKER: {
-			task = new CBBunkerTask(this, priority, buildDef, position, cost, timeout);
+			task = new CBBunkerTask(this, priority, buildDef, position, cost, isShake, timeout);
 			break;
 		}
 		default:
 		case IBuilderTask::BuildType::BIG_GUN: {
-			task = new CBBigGunTask(this, priority, buildDef, position, cost, timeout);
+			task = new CBBigGunTask(this, priority, buildDef, position, cost, isShake, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::RADAR: {
-			task = new CBRadarTask(this, priority, buildDef, position, cost, timeout);
+			task = new CBRadarTask(this, priority, buildDef, position, cost, isShake, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::MEX: {
@@ -718,9 +726,12 @@ void CBuilderManager::UpdateBuild()
 	}
 
 	auto it = updateTasks.begin();
-	while ((it != updateTasks.end()) && circuit->IsUpdateTimeValid()) {
+	while (it != updateTasks.end()) {
 		(*it)->Update();
 		it = updateTasks.erase(it);
+		if (circuit->IsUpdateTimeValid()) {
+			break;
+		}
 	}
 
 	if (updateTasks.empty()) {

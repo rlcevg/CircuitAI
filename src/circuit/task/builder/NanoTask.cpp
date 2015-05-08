@@ -21,8 +21,8 @@ using namespace springai;
 
 CBNanoTask::CBNanoTask(ITaskManager* mgr, Priority priority,
 					   CCircuitDef* buildDef, const AIFloat3& position,
-					   float cost, int timeout) :
-		IBuilderTask(mgr, priority, buildDef, position, BuildType::NANO, cost, timeout)
+					   float cost, bool isShake, int timeout) :
+		IBuilderTask(mgr, priority, buildDef, position, BuildType::NANO, cost, isShake, timeout)
 {
 }
 
@@ -57,8 +57,13 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 	}
 
 	// Alter/randomize position
-	AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
-	AIFloat3 pos = position + offset * SQUARE_SIZE * 16;
+	AIFloat3 pos;
+	if (isShake) {
+		AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
+		pos = position + offset * SQUARE_SIZE * 16;
+	} else {
+		pos = position;
+	}
 
 	CTerrainManager* terrain = circuit->GetTerrainManager();
 	CTerrainManager::TerrainPredicate predicate = [terrain, unit](const AIFloat3& p) {

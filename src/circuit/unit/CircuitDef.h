@@ -65,7 +65,7 @@ private:
 
 inline bool CCircuitDef::CanBuild(Id buildDefId) const
 {
-	return (buildOptions.find(buildDefId) != buildOptions.end());
+	return buildOptions.find(buildDefId) != buildOptions.end();
 }
 
 inline bool CCircuitDef::CanBuild(CCircuitDef* buildDef) const
@@ -76,17 +76,17 @@ inline bool CCircuitDef::CanBuild(CCircuitDef* buildDef) const
 
 inline bool CCircuitDef::operator==(const CCircuitDef& rhs)
 {
-	return (id == rhs.id);
+	return id == rhs.id;
 }
 
 inline bool CCircuitDef::operator!=(const CCircuitDef& rhs)
 {
-	return (id != rhs.id);
+	return id != rhs.id;
 }
 
 inline bool CCircuitDef::IsAvailable() const
 {
-	return (def->GetMaxThisUnit() > count);
+	return def->GetMaxThisUnit() > count;
 }
 
 } // namespace circuit

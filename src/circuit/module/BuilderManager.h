@@ -39,19 +39,22 @@ public:
 
 	CCircuitDef* GetTerraDef() const;
 
-	float GetBuilderPower();
-	bool CanEnqueueTask();
+	int GetWorkerCount() const;
+	float GetBuilderPower() const;
+	bool CanEnqueueTask() const;
 	const std::set<IBuilderTask*>& GetTasks(IBuilderTask::BuildType type);
 	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,
 							  CCircuitDef* buildDef,
 							  const springai::AIFloat3& position,
 							  IBuilderTask::BuildType type,
 							  float cost,
+							  bool isShake = true,
 							  int timeout = 0);
 	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,
 							  CCircuitDef* buildDef,
 							  const springai::AIFloat3& position,
 							  IBuilderTask::BuildType type,
+							  bool isShake = true,
 							  int timeout = 0);
 	IBuilderTask* EnqueuePylon(IBuilderTask::Priority priority,
 							   CCircuitDef* buildDef,
@@ -81,6 +84,7 @@ private:
 						  const springai::AIFloat3& position,
 						  IBuilderTask::BuildType type,
 						  float cost,
+						  bool isShake,
 						  int timeout);
 	void DequeueTask(IBuilderTask* task, bool done = false);
 

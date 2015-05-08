@@ -26,10 +26,11 @@ using namespace springai;
 
 IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 		CCircuitDef* buildDef, const AIFloat3& position,
-		BuildType type, float cost, int timeout) :
+		BuildType type, float cost, bool isShake, int timeout) :
 				IUnitTask(mgr, priority, Type::BUILDER),
 				buildDef(buildDef),
 				position(position),
+				isShake(isShake),
 				buildType(type),
 				cost(cost),
 				timeout(timeout),
@@ -87,7 +88,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		} else {
 			CTerrainManager* terrain = circuit->GetTerrainManager();
 			terrain->RemoveBlocker(buildDef, buildPos, facing);
-			// FIXME: If enemy blocked position then no need for reset
+			// FIXME: If enemy blocked position then reset will have no effect
 //			terrain->ResetBuildFrame();
 		}
 	}
@@ -114,8 +115,13 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	}
 
 	// Alter/randomize position
-	AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
-	AIFloat3 pos = position + offset * SQUARE_SIZE * 16;
+	AIFloat3 pos;
+	if (isShake) {
+		AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
+		pos = position + offset * SQUARE_SIZE * 16;
+	} else {
+		pos = position;
+	}
 
 	CTerrainManager::TerrainPredicate predicate = [terrain, unit](const AIFloat3& p) {
 		return terrain->CanBuildAt(unit, p);

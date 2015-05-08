@@ -61,12 +61,12 @@ private:
 
 inline bool CCircuitUnit::operator==(const CCircuitUnit& rhs)
 {
-	return (id == rhs.id);
+	return id == rhs.id;
 }
 
 inline bool CCircuitUnit::operator!=(const CCircuitUnit& rhs)
 {
-	return (id != rhs.id);
+	return id != rhs.id;
 }
 
 } // namespace circuit

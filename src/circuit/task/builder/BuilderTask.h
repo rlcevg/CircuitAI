@@ -38,7 +38,7 @@ public:
 protected:
 	IBuilderTask(ITaskManager* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
-				 BuildType type, float cost, int timeout = 0);
+				 BuildType type, float cost, bool isShake = true, int timeout = 0);
 public:
 	virtual ~IBuilderTask();
 
@@ -79,6 +79,7 @@ protected:
 	int FindFacing(CCircuitDef* buildDef, const springai::AIFloat3& position);
 
 	springai::AIFloat3 position;
+	bool isShake;  // Alter/randomize position
 	CCircuitDef* buildDef;
 
 	BuildType buildType;

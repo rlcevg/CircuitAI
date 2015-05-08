@@ -21,8 +21,8 @@ using namespace springai;
 
 CBDefenceTask::CBDefenceTask(ITaskManager* mgr, Priority priority,
 							 CCircuitDef* buildDef, const AIFloat3& position,
-							 float cost, int timeout) :
-		IBuilderTask(mgr, priority, buildDef, position, BuildType::DEFENCE, cost, timeout)
+							 float cost, bool isShake, int timeout) :
+		IBuilderTask(mgr, priority, buildDef, position, BuildType::DEFENCE, cost, isShake, timeout)
 {
 }
 
@@ -43,6 +43,8 @@ void CBDefenceTask::Finish()
 		}
 	}
 	utils::free_clear(features);
+
+	IBuilderTask::Finish();
 }
 
 void CBDefenceTask::Cancel()
@@ -50,6 +52,8 @@ void CBDefenceTask::Cancel()
 	if (target == nullptr) {
 		manager->GetCircuit()->GetMilitaryManager()->OpenDefPoint(GetPosition());
 	}
+
+	IBuilderTask::Cancel();
 }
 
 } // namespace circuit

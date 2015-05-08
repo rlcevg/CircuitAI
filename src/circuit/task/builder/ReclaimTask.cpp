@@ -21,7 +21,7 @@ using namespace springai;
 CBReclaimTask::CBReclaimTask(ITaskManager* mgr, Priority priority,
 							 const AIFloat3& position,
 							 float cost, int timeout, float radius) :
-		IBuilderTask(mgr, priority, nullptr, position, BuildType::RECLAIM, cost, timeout),
+		IBuilderTask(mgr, priority, nullptr, position, BuildType::RECLAIM, cost, false, timeout),
 		radius(radius)
 {
 }

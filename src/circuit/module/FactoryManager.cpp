@@ -438,9 +438,12 @@ void CFactoryManager::UpdateAssist()
 	}
 
 	auto it = updateAssists.begin();
-	while ((it != updateAssists.end()) && circuit->IsUpdateTimeValid()) {
+	while (it != updateAssists.end()) {
 		(*it)->Update();
 		it = updateAssists.erase(it);
+		if (circuit->IsUpdateTimeValid()) {
+			break;
+		}
 	}
 
 	if (updateAssists.empty()) {

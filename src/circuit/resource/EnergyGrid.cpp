@@ -38,7 +38,7 @@ public:
     template <class Edge, class Graph>
 	void tree_edge(Edge e, const Graph& g) {
 		CEnergyLink& link = boost::get(linkIt, e);
-		if (!link.IsFinished() && !link.IsBeingBuilt() && link.IsValid()) {
+		if (!link.IsFinished() && link.IsValid()) {
 			throw CExitBFS(&link);
 		}
 	}
@@ -47,12 +47,17 @@ public:
 
 struct spanning_tree {
 	spanning_tree() {}
-	spanning_tree(const std::set<CMetalData::EdgeDesc>& edges) : spanningTree(edges) {}
+	spanning_tree(const std::set<CMetalData::EdgeDesc>& edges, const CEnergyGrid::link_iterator_t& it) :
+		spanningTree(edges),
+		linkIt(it)
+	{}
 	template <typename Edge>
 	bool operator()(const Edge& e) const {
-		return (spanningTree.find(e) != spanningTree.end());
+		// NOTE: check for link.IsBeingBuilt solves vertex's pylon duplicates, but slows down grid construction
+		return (spanningTree.find(e) != spanningTree.end()) && !boost::get(linkIt, e).IsBeingBuilt();
 	}
 	std::set<CMetalData::EdgeDesc> spanningTree;
+    CEnergyGrid::link_iterator_t linkIt;
 };
 
 CEnergyGrid::CEnergyGrid(CCircuitAI* circuit) :
@@ -101,7 +106,7 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, springai::AIFloat
 	/*
 	 * Detect link to build
 	 */
-	spanning_tree filter(spanningTree);
+	spanning_tree filter(spanningTree, linkIt);
 	boost::filtered_graph<CMetalData::Graph, spanning_tree> fg(ownedClusters, filter);
 	detect_link vis(linkIt);
 	const AIFloat3& pos = circuit->GetSetupManager()->GetStartPos();
@@ -123,19 +128,43 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, springai::AIFloat
 	/*
 	 * Find best build def and position
 	 */
-	CEnergyLink::SBuildInfo info0, info1;
-	link->CalcHeadInfos(info0, info1);
+	CEnergyLink::SVertex* v0 = link->GetV0();
+	CEnergyLink::SVertex* v1 = link->GetV1();
+	CEnergyLink::SPylon* pylon0 = link->GetConnectionHead(v0, v1->pos);
+	if (pylon0 == nullptr) {
+		outDef = circuit->GetEconomyManager()->GetPylonDef();
+		outPos = v0->pos;
+		return link;
+	}
+	CEnergyLink::SPylon* pylon1 = link->GetConnectionHead(v1, pylon0->pos);
+	if (pylon1 == nullptr) {
+		outDef = circuit->GetEconomyManager()->GetPylonDef();
+		outPos = v1->pos;
+		return link;
+	}
 
-	outDef = circuit->GetCircuitDef("armestor");
-	float dist = info0.range + PYLON_RANGE;
-//	if (endPos.SqDistance2D(pylon->pos) > dist * dist) {
-		AIFloat3 dir = info1.pos - info0.pos;
-		outPos = info0.pos + dir.Normalize2D() * (info0.range + PYLON_RANGE) * 0.95;
-//	} else {
-//		outPos = endPos;
-//	}
+	CCircuitDef::Id defId;
+	float range;
+//	for (auto& kv : boost::adaptors::reverse(rangePylons)) ...  #include <boost/range/adaptor/reversed.hpp>
+	for (auto it = rangePylons.rbegin(); it != rangePylons.rend(); ++it) {
+		defId = it->second;
+		range = it->first;
+		float dist = pylon0->range + pylon1->range + it->first;
+		if (pylon0->pos.SqDistance2D(pylon1->pos) > dist * dist) {
+			break;
+		}
+	}
+	outDef = circuit->GetCircuitDef(defId);
+	AIFloat3 dir = pylon1->pos - pylon0->pos;
+	outPos = pylon0->pos + dir.Normalize2D() * (pylon0->range + range) * 0.95;
 
 	return link;
+}
+
+float CEnergyGrid::GetPylonRange(CCircuitDef::Id defId)
+{
+	auto it = pylonRanges.find(defId);
+	return (it != pylonRanges.end()) ? it->second : .0f;
 }
 
 void CEnergyGrid::Init()
@@ -146,6 +175,12 @@ void CEnergyGrid::Init()
 		if (it != customParams.end()) {
 			pylonRanges[kv.first] = utils::string_to_float(it->second);
 		}
+	}
+	// FIXME: const names
+	const char* names[] = {"armestor", "armsolar", "armwin"};
+	for (const char* name : names) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(name);
+		rangePylons[pylonRanges[cdef->GetId()]] = cdef->GetId();
 	}
 
 	CMetalManager* metalManager = circuit->GetMetalManager();
@@ -225,31 +260,33 @@ void CEnergyGrid::MarkAllyPylons(const std::list<CCircuitUnit*>& pylons)
 void CEnergyGrid::AddPylon(CCircuitUnit* unit, const AIFloat3& P)
 {
 	CMetalManager* metalManager = circuit->GetMetalManager();
-	int index = metalManager->FindNearestCluster(P);
-	if (index < 0) {
+	CMetalData::MetalIndices indices = metalManager->FindNearestClusters(P, 3);  // Triangle
+	if (indices.empty()) {
 		return;
 	}
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
-	const AIFloat3& P0 = clusters[index].geoCentr;
 
 	// Find edges to which building belongs to: linkEdgeIts
-	CMetalData::Graph::out_edge_iterator edgeIt, edgeEnd;
-	std::tie(edgeIt, edgeEnd) = boost::out_edges(index, clusterGraph);  // or boost::tie
-	float sqMinDist = std::numeric_limits<float>::max();
-	float range = pylonRanges[unit->GetCircuitDef()->GetId()];
-	float sqRange = range * range;
-	for (; edgeIt != edgeEnd; ++edgeIt) {
-		const CMetalData::EdgeDesc& edgeId = *edgeIt;
-		int idxTarget = boost::target(edgeId, clusterGraph);
-		const AIFloat3& P1 = clusters[idxTarget].geoCentr;
+	for (int index : indices) {
+		const AIFloat3& P0 = clusters[index].geoCentr;
+		CMetalData::Graph::out_edge_iterator edgeIt, edgeEnd;
+		std::tie(edgeIt, edgeEnd) = boost::out_edges(index, clusterGraph);  // or boost::tie
+		float sqMinDist = std::numeric_limits<float>::max();
+		float range = pylonRanges[unit->GetCircuitDef()->GetId()];
+		float sqRange = range * range;
+		for (; edgeIt != edgeEnd; ++edgeIt) {
+			const CMetalData::EdgeDesc& edgeId = *edgeIt;
+			int idxTarget = boost::target(edgeId, clusterGraph);
+			const AIFloat3& P1 = clusters[idxTarget].geoCentr;
 
-		if ((P0.SqDistance2D(P) < sqRange) || (P1.SqDistance2D(P) < sqRange) ||
-			(((P0 + P1) * 0.5f).SqDistance2D(P) < P0.SqDistance2D(P1) * 0.25f))
-		{
-			CEnergyLink& link = boost::get(linkIt, edgeId);
-			link.AddPylon(unit->GetId(), P, range);
-			linkPylons.insert(edgeId);
+			if ((P0.SqDistance2D(P) < sqRange) || (P1.SqDistance2D(P) < sqRange) ||
+				(((P0 + P1) * 0.5f).SqDistance2D(P) < P0.SqDistance2D(P1) * 0.25f))
+			{
+				CEnergyLink& link = boost::get(linkIt, edgeId);
+				link.AddPylon(unit->GetId(), P, range);
+				linkPylons.insert(edgeId);
+			}
 		}
 	}
 }
@@ -257,22 +294,23 @@ void CEnergyGrid::AddPylon(CCircuitUnit* unit, const AIFloat3& P)
 void CEnergyGrid::RemovePylon(CCircuitUnit::Id unitId, const AIFloat3& pos)
 {
 	CMetalManager* metalManager = circuit->GetMetalManager();
-	int index = metalManager->FindNearestCluster(pos);
-	if (index < 0) {
+	CMetalData::MetalIndices indices = metalManager->FindNearestClusters(pos, 3);  // Triangle
+	if (indices.empty()) {
 		return;
 	}
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
 
 	// Find edges to which building belongs to: linkEdgeIts
-	CMetalData::Graph::out_edge_iterator edgeIt, edgeEnd;
-	std::list<CMetalData::Graph::out_edge_iterator> linkEdgeIts;
-	std::tie(edgeIt, edgeEnd) = boost::out_edges(index, clusterGraph);  // or boost::tie
-	float sqMinDist = std::numeric_limits<float>::max();
-	for (; edgeIt != edgeEnd; ++edgeIt) {
-		const CMetalData::EdgeDesc& edgeId = *edgeIt;
-		CEnergyLink& link = boost::get(linkIt, edgeId);
-		if ((link.RemovePylon(unitId) > 0)) {
-			unlinkPylons.insert(edgeId);
+	for (int index : indices) {
+		CMetalData::Graph::out_edge_iterator edgeIt, edgeEnd;
+		std::list<CMetalData::Graph::out_edge_iterator> linkEdgeIts;
+		std::tie(edgeIt, edgeEnd) = boost::out_edges(index, clusterGraph);  // or boost::tie
+		for (; edgeIt != edgeEnd; ++edgeIt) {
+			const CMetalData::EdgeDesc& edgeId = *edgeIt;
+			CEnergyLink& link = boost::get(linkIt, edgeId);
+			if ((link.RemovePylon(unitId) > 0)) {
+				unlinkPylons.insert(edgeId);
+			}
 		}
 	}
 }
@@ -411,7 +449,7 @@ void CEnergyGrid::RebuildTree()
 	// Mark used edges as const
 	for (const CMetalData::EdgeDesc& edgeId : spanningTree) {
 		CEnergyLink& link = boost::get(linkIt, edgeId);
-		if (link.IsFinished() || link.IsBeingBuilt()) {
+		if (link.IsFinished()) {
 			ownedClusters[edgeId].weight = clusterGraph[edgeId].weight * 0.01f;
 		} else if (!link.IsValid()) {
 			ownedClusters[edgeId].weight = clusterGraph[edgeId].weight * 100.0f;

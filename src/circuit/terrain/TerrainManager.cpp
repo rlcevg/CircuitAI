@@ -69,6 +69,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	bsize = ssize;
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(MEX) |
+				 STRUCT_BIT(ENGY_MID) |
 				 STRUCT_BIT(ENGY_HIGH) |
 				 STRUCT_BIT(DEF_LOW) |
 				 STRUCT_BIT(PYLON) |
@@ -83,6 +84,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(MEX) |
+				 STRUCT_BIT(ENGY_MID) |
 				 STRUCT_BIT(ENGY_HIGH) |
 				 STRUCT_BIT(DEF_LOW) |
 				 STRUCT_BIT(PYLON) |

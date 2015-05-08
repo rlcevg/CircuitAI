@@ -588,12 +588,8 @@ void CCircuitAI::UnregisterTeamUnit(CCircuitUnit* unit)
 
 CCircuitUnit* CCircuitAI::GetTeamUnit(CCircuitUnit::Id unitId)
 {
-	decltype(teamUnits)::iterator i = teamUnits.find(unitId);
-	if (i != teamUnits.end()) {
-		return i->second;
-	}
-
-	return nullptr;
+	auto it = teamUnits.find(unitId);
+	return (it != teamUnits.end()) ? it->second : nullptr;
 }
 
 const CAllyTeam::Units& CCircuitAI::GetTeamUnits() const
@@ -725,22 +721,14 @@ void CCircuitAI::InitOptions()
 CCircuitDef* CCircuitAI::GetCircuitDef(const char* name)
 {
 	auto it = defsByName.find(name);
-	if (it != defsByName.end()) {
-		return it->second;
-	}
-
 	// FIXME: Return manually created object with MAX_INT id? As there is no nullptr checks along the code
-	return nullptr;
+	return (it != defsByName.end()) ? it->second : nullptr;
 }
 
 CCircuitDef* CCircuitAI::GetCircuitDef(CCircuitDef::Id unitDefId)
 {
 	auto it = defsById.find(unitDefId);
-	if (it != defsById.end()) {
-		return it->second;
-	}
-
-	return nullptr;
+	return (it != defsById.end()) ? it->second : nullptr;
 }
 
 CCircuitAI::CircuitDefs& CCircuitAI::GetCircuitDefs()

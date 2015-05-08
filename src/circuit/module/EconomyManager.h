@@ -43,6 +43,8 @@ public:
 	springai::Resource* GetMetalRes() const;
 	springai::Resource* GetEnergyRes() const;
 	CCircuitDef* GetMexDef() const;
+	CCircuitDef* GetPylonDef() const;
+	float GetPylonRange() const;
 	springai::AIFloat3 FindBuildPos(CCircuitUnit* unit);
 	void AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs);  // add available energy defs
 	void RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs);
@@ -53,6 +55,7 @@ public:
 	float GetEcoFactor() const;
 	bool IsMetalFull() const;
 	bool IsMetalEmpty() const;
+	bool IsEnergyStalling() const;
 
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
@@ -77,7 +80,7 @@ private:
 	};
 	std::vector<SClusterInfo> clusterInfos;
 	float pylonRange;
-	int pylonCount, pylonMaxCount;
+	CCircuitDef* pylonDef;  // TODO: Move into CEnergyGrid?
 
 	CCircuitDef* mexDef;
 	std::set<CCircuitDef*> allEnergyDefs;

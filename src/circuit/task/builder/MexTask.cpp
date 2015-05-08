@@ -25,7 +25,7 @@ using namespace springai;
 CBMexTask::CBMexTask(ITaskManager* mgr, Priority priority,
 					 CCircuitDef* buildDef, const AIFloat3& position,
 					 float cost, int timeout) :
-		IBuilderTask(mgr, priority, buildDef, position, BuildType::MEX, cost, timeout)
+		IBuilderTask(mgr, priority, buildDef, position, BuildType::MEX, cost, false, timeout)
 {
 }
 
@@ -72,63 +72,76 @@ void CBMexTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CMetalManager* metalManager = circuit->GetMetalManager();
-	IBuilderTask* task = nullptr;
 
 	int index = metalManager->FindNearestCluster(buildPos);
-	if (index >= 0) {
-		CBuilderManager* builderManager = circuit->GetBuilderManager();
+	if (index < 0) {
+		circuit->GetEconomyManager()->UpdateMetalTasks(buildPos);
+		return;
+	}
 
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
+
+	bool mustHave = !economyManager->IsEnergyStalling() && (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < 1) && (builderManager->GetWorkerCount() > 1);
+	if (mustHave && buildDef->IsAvailable()) {
 		// Colonize next spot in cluster
+		int bestIdx = -1;
 		Map* map = circuit->GetMap();
 		const CMetalData::Metals& spots = metalManager->GetSpots();
+		float sqMinDist = std::numeric_limits<float>::max();
 		for (auto idx : metalManager->GetClusters()[index].idxSpots) {
 			const AIFloat3& pos = spots[idx].position;
 			if (metalManager->IsOpenSpot(idx) &&
 				builderManager->IsBuilderInArea(buildDef, pos) &&
 				map->IsPossibleToBuildAt(buildDef->GetUnitDef(), pos, UNIT_COMMAND_BUILD_NO_FACING))
 			{
-				metalManager->SetOpenSpot(idx, false);
-				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, pos, IBuilderTask::BuildType::MEX, cost);
-				task->SetBuildPos(pos);
-				break;
-			}
-		}
-
-		// Add defence
-		// TODO: Move into MilitaryManager
-		CCircuitDef* defDef;
-		bool valid = false;
-		CEconomyManager* economyManager = circuit->GetEconomyManager();
-		float maxCost = MIN_BUILD_SEC * economyManager->GetAvgMetalIncome();/* * economyManager->GetEcoFactor();*/
-		const char* defenders[] = {"corhlt", "corllt"};
-		for (auto name : defenders) {
-			defDef = circuit->GetCircuitDef(name);
-			if (defDef->GetUnitDef()->GetCost(economyManager->GetMetalRes()) < maxCost) {
-				valid = true;
-				break;
-			}
-		}
-		if (valid) {
-			CMilitaryManager::SDefPoint* closestPoint = nullptr;
-			float minDist = std::numeric_limits<float>::max();
-			for (auto& defPoint : circuit->GetMilitaryManager()->GetDefPoints(index)) {
-				if (defPoint.isOpen) {
-					float dist = defPoint.position.SqDistance2D(buildPos);
-					if ((closestPoint == nullptr) || (dist < minDist)) {
-						closestPoint = &defPoint;
-						minDist = dist;
-					}
+				float sqDist = buildPos.SqDistance2D(pos);
+				if (sqDist < sqMinDist) {
+					sqMinDist = sqDist;
+					bestIdx = idx;
 				}
 			}
-			if (closestPoint != nullptr) {
-				closestPoint->isOpen = false;
-				builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, closestPoint->position, IBuilderTask::BuildType::DEFENCE);
-			}
 		}
+		if (bestIdx != -1) {
+			const AIFloat3& pos = spots[bestIdx].position;
+			metalManager->SetOpenSpot(bestIdx, false);
+			builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, pos, IBuilderTask::BuildType::MEX, cost)->SetBuildPos(pos);
+		} else {
+			circuit->GetEconomyManager()->UpdateMetalTasks(buildPos);
+		}
+	} else {
+		economyManager->UpdateEnergyTasks(buildPos);
 	}
 
-	if (task == nullptr) {
-		circuit->GetEconomyManager()->UpdateMetalTasks(buildPos);
+	// Add defence
+	// TODO: Move into MilitaryManager
+	CCircuitDef* defDef;
+	bool valid = false;
+	float maxCost = MIN_BUILD_SEC * economyManager->GetAvgMetalIncome();/* * economyManager->GetEcoFactor();*/
+	const char* defenders[] = {"corhlt", "corllt"};
+	for (auto name : defenders) {
+		defDef = circuit->GetCircuitDef(name);
+		if (defDef->GetUnitDef()->GetCost(economyManager->GetMetalRes()) < maxCost) {
+			valid = true;
+			break;
+		}
+	}
+	if (valid) {
+		CMilitaryManager::SDefPoint* closestPoint = nullptr;
+		float minDist = std::numeric_limits<float>::max();
+		for (auto& defPoint : circuit->GetMilitaryManager()->GetDefPoints(index)) {
+			if (defPoint.isOpen) {
+				float dist = defPoint.position.SqDistance2D(buildPos);
+				if ((closestPoint == nullptr) || (dist < minDist)) {
+					closestPoint = &defPoint;
+					minDist = dist;
+				}
+			}
+		}
+		if (closestPoint != nullptr) {
+			closestPoint->isOpen = false;
+			builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, closestPoint->position, IBuilderTask::BuildType::DEFENCE);
+		}
 	}
 }
 

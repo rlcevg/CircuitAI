@@ -14,8 +14,8 @@ using namespace springai;
 
 CBFactoryTask::CBFactoryTask(ITaskManager* mgr, Priority priority,
 							 CCircuitDef* buildDef, const AIFloat3& position,
-							 float cost, int timeout) :
-		IBuilderTask(mgr, priority, buildDef, position, BuildType::FACTORY, cost, timeout)
+							 float cost, bool isShake, int timeout) :
+		IBuilderTask(mgr, priority, buildDef, position, BuildType::FACTORY, cost, isShake, timeout)
 {
 }
 

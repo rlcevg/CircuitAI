@@ -77,7 +77,7 @@ int CEnergyLink::RemovePylon(CCircuitUnit::Id unitId)
 
 void CEnergyLink::CheckConnection()
 {
-//	int i = 0;
+	int i = 0;
 	std::set<SPylon*> visited;
 	std::queue<SPylon*> queue;
 
@@ -94,7 +94,10 @@ void CEnergyLink::CheckConnection()
 			return;
 		}
 
-//		if (i++ > 1000) break;
+		if (i++ > 1000) {
+			isValid = false;
+			break;
+		}
 
 		visited.insert(q);
 		for (SPylon* child : q->neighbors) {
@@ -107,16 +110,6 @@ void CEnergyLink::CheckConnection()
 	isFinished = false;
 }
 
-void CEnergyLink::CalcHeadInfos(SBuildInfo& outInfo0, SBuildInfo& outInfo1)
-{
-	SPylon* pylon0 = GetConnectionHead(v0, v1);
-	SPylon* pylon1 = GetConnectionHead(v1, v0);
-	outInfo0.pos   = (pylon0 != nullptr) ? pylon0->pos   : v0->pos;
-	outInfo0.range = (pylon0 != nullptr) ? pylon0->range : .0f;
-	outInfo1.pos   = (pylon1 != nullptr) ? pylon1->pos   : v1->pos;
-	outInfo1.range = (pylon1 != nullptr) ? pylon1->range : .0f;
-}
-
 void CEnergyLink::SetStartVertex(int index)
 {
 	if (index != v0->index) {
@@ -124,12 +117,12 @@ void CEnergyLink::SetStartVertex(int index)
 	}
 }
 
-CEnergyLink::SPylon* CEnergyLink::GetConnectionHead(SVertex* v0, SVertex* v1)
+CEnergyLink::SPylon* CEnergyLink::GetConnectionHead(SVertex* v0, const AIFloat3& P1)
 {
 	SPylon* winner = nullptr;
-	float sqMinDist = std::numeric_limits<float>::max();
+	float minDist = std::numeric_limits<float>::max();
 
-//	int i = 0;
+	int i = 0;
 	std::set<SPylon*> visited;
 	std::queue<SPylon*> queue;
 
@@ -140,13 +133,16 @@ CEnergyLink::SPylon* CEnergyLink::GetConnectionHead(SVertex* v0, SVertex* v1)
 	while (!queue.empty()) {
 		SPylon* q = queue.front();
 		queue.pop();
-		float sqDist = v1->pos.SqDistance2D(q->pos);
-		if (sqDist < sqMinDist) {
-			sqMinDist = sqDist;
+		float dist = P1.distance2D(q->pos) - q->range;
+		if (dist < minDist) {
+			minDist = dist;
 			winner = q;
 		}
 
-//		if (i++ > 1000) return winner;
+		if (i++ > 1000) {
+			isValid = false;
+			return winner;
+		}
 
 		visited.insert(q);
 		for (SPylon* child : q->neighbors) {

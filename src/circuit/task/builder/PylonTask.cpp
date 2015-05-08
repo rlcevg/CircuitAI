@@ -23,10 +23,12 @@ using namespace springai;
 CBPylonTask::CBPylonTask(ITaskManager* mgr, Priority priority,
 						 CCircuitDef* buildDef, const AIFloat3& position,
 						 CEnergyLink* link, float cost, int timeout) :
-		IBuilderTask(mgr, priority, buildDef, position, BuildType::PYLON, cost, timeout),
+		IBuilderTask(mgr, priority, buildDef, position, BuildType::PYLON, cost, false, timeout),
 		link(link)
 {
-	link->SetBeingBuilt(true);
+	if (link != nullptr) {
+		link->SetBeingBuilt(true);
+	}
 }
 
 CBPylonTask::~CBPylonTask()
@@ -76,6 +78,8 @@ void CBPylonTask::Finish()
 		link->SetBeingBuilt(false);
 	}
 	manager->GetCircuit()->GetEconomyManager()->UpdateStorageTasks();
+
+	IBuilderTask::Finish();
 }
 
 void CBPylonTask::Cancel()
@@ -83,6 +87,7 @@ void CBPylonTask::Cancel()
 	if (link != nullptr) {
 		link->SetBeingBuilt(false);
 	}
+
 	IBuilderTask::Cancel();
 }
 
