@@ -784,7 +784,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 	float energyIncome = GetAvgEnergyIncome();
 	if ((metalIncome * ecoFactor > 10) && (energyIncome > 100) && pylonDef->IsAvailable()) {
 		float cost = pylonDef->GetUnitDef()->GetCost(metalRes);
-		int count = builderManager->GetBuilderPower() / cost * 4 + 1;
+		int count = builderManager->GetBuilderPower() / cost * 8 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::PYLON).size() < count) {
 			CEnergyGrid* grid = circuit->GetEnergyGrid();
 			grid->Update();

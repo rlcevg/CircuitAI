@@ -35,7 +35,7 @@ public:
 	virtual ~CEnergyLink();
 
 	void AddPylon(CCircuitUnit::Id unitId, const springai::AIFloat3& pos, float range);
-	int RemovePylon(CCircuitUnit::Id unitId);
+	bool RemovePylon(CCircuitUnit::Id unitId);
 	void CheckConnection();
 	SPylon* GetConnectionHead(SVertex* v0, const springai::AIFloat3& P1);
 

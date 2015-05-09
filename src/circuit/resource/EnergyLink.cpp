@@ -35,6 +35,10 @@ CEnergyLink::~CEnergyLink()
 
 void CEnergyLink::AddPylon(CCircuitUnit::Id unitId, const AIFloat3& pos, float range)
 {
+	if (pylons.find(unitId) != pylons.end()) {
+		return;
+	}
+
 	SPylon* pylon0 = new SPylon(pos, range);
 
 	for (auto& kv : pylons) {
@@ -57,11 +61,11 @@ void CEnergyLink::AddPylon(CCircuitUnit::Id unitId, const AIFloat3& pos, float r
 	}
 }
 
-int CEnergyLink::RemovePylon(CCircuitUnit::Id unitId)
+bool CEnergyLink::RemovePylon(CCircuitUnit::Id unitId)
 {
 	auto it = pylons.find(unitId);
 	if (it == pylons.end()) {
-		return 0;
+		return false;
 	}
 	SPylon* pylon0 = it->second;
 
@@ -72,7 +76,7 @@ int CEnergyLink::RemovePylon(CCircuitUnit::Id unitId)
 	v1->pylons.erase(pylon0);
 	delete pylon0;
 
-	return pylons.erase(unitId);
+	return it != pylons.erase(it);
 }
 
 void CEnergyLink::CheckConnection()

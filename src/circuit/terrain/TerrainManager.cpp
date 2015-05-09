@@ -350,7 +350,7 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 void CTerrainManager::MarkAllyBuildings()
 {
 	int lastFrame = circuit->GetLastFrame();
-	if (markFrame + FRAMES_PER_SEC >= lastFrame) {
+	if (markFrame /*+ FRAMES_PER_SEC*/ >= lastFrame) {
 		return;
 	}
 	markFrame = lastFrame;

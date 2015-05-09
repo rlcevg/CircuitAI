@@ -73,7 +73,7 @@ void CBEnergyTask::Finish()
 			AIFloat3 dir = metalManager->GetClusters()[index].geoCentr - pos;
 			pos += dir.Normalize2D() * pylonRange;
 		}
-		builderManager->EnqueuePylon(IBuilderTask::Priority::NORMAL, pylonDef, pos, nullptr, 1.0f);
+		builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, pylonDef, pos, nullptr, 1.0f);
 	}
 
 	if (cost < 1001.0f) {

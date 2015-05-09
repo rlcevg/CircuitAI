@@ -76,7 +76,7 @@ CEnergyGrid::~CEnergyGrid()
 void CEnergyGrid::Update()
 {
 	int lastFrame = circuit->GetLastFrame();
-	if (markFrame + FRAMES_PER_SEC >= lastFrame) {
+	if (markFrame /*+ FRAMES_PER_SEC*/ >= lastFrame) {
 		return;
 	}
 	markFrame = lastFrame;
@@ -203,26 +203,27 @@ void CEnergyGrid::Init()
 
 	ownedClusters = CMetalData::Graph(boost::num_vertices(clusterGraph));
 
-	// FIXME: DEBUG
-	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>([this]() {
-		// Clear Kruskal drawing
-		const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
-		for (int i = 0; i < clusters.size(); ++i) {
-			circuit->GetDrawer()->DeletePointsAndLines(clusters[i].geoCentr);
-		}
-		Update();
-	}), FRAMES_PER_SEC * 30);
-	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>([this]() {
-		// Draw Kruskal
-		const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
-		const CMetalData::Graph& clusterGraph = circuit->GetMetalManager()->GetGraph();
-		for (const CMetalData::EdgeDesc& edge : spanningTree) {
-			const AIFloat3& posFrom = clusters[boost::source(edge, clusterGraph)].geoCentr;
-			const AIFloat3& posTo = clusters[boost::target(edge, clusterGraph)].geoCentr;
-			circuit->GetDrawer()->AddLine(posFrom, posTo);
-		}
-	}), FRAMES_PER_SEC * 30, FRAMES_PER_SEC * 3);
-	// FIXME: DEBUG
+	/*
+	 *  Debugging
+	 */
+//	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>([this]() {
+//		// Clear previous Kruskal drawing
+//		const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
+//		for (int i = 0; i < clusters.size(); ++i) {
+//			circuit->GetDrawer()->DeletePointsAndLines(clusters[i].geoCentr);
+//		}
+//		Update();
+//	}), FRAMES_PER_SEC * 30);
+//	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>([this]() {
+//		// Draw planned Kruskal
+//		const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
+//		const CMetalData::Graph& clusterGraph = circuit->GetMetalManager()->GetGraph();
+//		for (const CMetalData::EdgeDesc& edge : spanningTree) {
+//			const AIFloat3& posFrom = clusters[boost::source(edge, clusterGraph)].geoCentr;
+//			const AIFloat3& posTo = clusters[boost::target(edge, clusterGraph)].geoCentr;
+//			circuit->GetDrawer()->AddLine(posFrom, posTo);
+//		}
+//	}), FRAMES_PER_SEC * 30, FRAMES_PER_SEC * 3);
 }
 
 void CEnergyGrid::MarkAllyPylons(const std::list<CCircuitUnit*>& pylons)
@@ -308,7 +309,7 @@ void CEnergyGrid::RemovePylon(CCircuitUnit::Id unitId, const AIFloat3& pos)
 		for (; edgeIt != edgeEnd; ++edgeIt) {
 			const CMetalData::EdgeDesc& edgeId = *edgeIt;
 			CEnergyLink& link = boost::get(linkIt, edgeId);
-			if ((link.RemovePylon(unitId) > 0)) {
+			if (link.RemovePylon(unitId)) {
 				unlinkPylons.insert(edgeId);
 			}
 		}
@@ -449,7 +450,7 @@ void CEnergyGrid::RebuildTree()
 	// Mark used edges as const
 	for (const CMetalData::EdgeDesc& edgeId : spanningTree) {
 		CEnergyLink& link = boost::get(linkIt, edgeId);
-		if (link.IsFinished()) {
+		if (link.IsFinished() || link.IsBeingBuilt()) {
 			ownedClusters[edgeId].weight = clusterGraph[edgeId].weight * 0.01f;
 		} else if (!link.IsValid()) {
 			ownedClusters[edgeId].weight = clusterGraph[edgeId].weight * 100.0f;
