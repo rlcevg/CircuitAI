@@ -214,16 +214,30 @@ const CMetalData::Graph& CMetalManager::GetGraph() const
 	return metalData->GetGraph();
 }
 
-void CMetalManager::SetOpenSpot(int index, bool value)
+void CMetalManager::SetOpenSpot(int index, bool value, size_t dbg)
 {
 	metalInfos[index].isOpen = value;
+
+	// FIXME: DEBUG
+	circuit->GetDrawer()->DeletePointsAndLines(metalData->GetSpots()[index].position);
+	const AIFloat3& pos = metalData->GetSpots()[index].position;
+	if (value) {
+		std::string str = utils::int_to_string(circuit->GetSkirmishAIId()) + "opn " + utils::int_to_string(dbg);
+		circuit->LOG("task opn: %i, %f, %f, %f", dbg, pos.x, pos.y, pos.z);
+		circuit->GetDrawer()->AddPoint(pos, str.c_str());
+	} else {
+		std::string str = utils::int_to_string(circuit->GetSkirmishAIId()) + "cls " + utils::int_to_string(dbg);
+		circuit->LOG("task cls: %i, %f, %f, %f", dbg, pos.x, pos.y, pos.z);
+		circuit->GetDrawer()->AddPoint(pos, str.c_str());
+	}
+	// FIXME: DEBUG
 }
 
-void CMetalManager::SetOpenSpot(const springai::AIFloat3& pos, bool value)
+void CMetalManager::SetOpenSpot(const springai::AIFloat3& pos, bool value, size_t dbg)
 {
 	int index = FindNearestSpot(pos);
 	if (index != -1) {
-		SetOpenSpot(index, value);
+		SetOpenSpot(index, value, dbg);
 	}
 }
 

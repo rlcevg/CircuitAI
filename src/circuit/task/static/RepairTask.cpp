@@ -35,7 +35,7 @@ void CSRepairTask::Update()
 	float currentIncome = circuit->GetEconomyManager()->GetAvgMetalIncome();
 	if (currentIncome < savedIncome * 0.6) {
 		manager->AbortTask(this);
-	} else if (++repUpdCount >= 5) {
+	} else if ((++repUpdCount >= 5) && !units.empty()) {
 		repUpdCount = 0;
 		CCircuitUnit* target = circuit->GetFriendlyUnit(targetId);
 		if ((target != nullptr) && target->GetUnit()->IsBeingBuilt()) {

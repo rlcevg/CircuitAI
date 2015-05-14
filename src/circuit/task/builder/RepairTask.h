@@ -23,8 +23,8 @@ public:
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
 protected:
-	virtual void Finish();
-	virtual void Cancel();
+	virtual void Finish() override final;
+	virtual void Cancel() override final;
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);

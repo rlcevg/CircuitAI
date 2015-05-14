@@ -17,12 +17,12 @@ public:
 	CPlayerTask(ITaskManager* mgr);
 	virtual ~CPlayerTask();
 
-	virtual void Execute(CCircuitUnit* unit);
-	virtual void Update();
+	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Update() override;
 
-	virtual void OnUnitIdle(CCircuitUnit* unit);
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
-	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
+	virtual void OnUnitIdle(CCircuitUnit* unit) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker) override;
+	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker) override;
 };
 
 } // namespace circuit

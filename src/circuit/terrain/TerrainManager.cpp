@@ -198,6 +198,20 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 				 STRUCT_BIT(PYLON);
 	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
 
+	cdef = circuit->GetCircuitDef("armamd");
+	def = cdef->GetUnitDef();
+	wpDef = def->GetDeathExplosion();
+	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
+	delete wpDef;
+	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+	offset = int2(0, 0);
+	ignoreMask = STRUCT_BIT(MEX) |
+				 STRUCT_BIT(DEF_LOW) |
+				 STRUCT_BIT(ENGY_MID) |
+				 STRUCT_BIT(ENGY_HIGH) |
+				 STRUCT_BIT(PYLON);
+	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
+
 	blockingMap.columns = mapWidth / 2;  // build-step = 2 little green squares
 	blockingMap.rows = mapHeight / 2;
 	SBlockingMap::BlockCell cell = {0};
@@ -940,11 +954,10 @@ STerrainMapArea* CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIF
 	}
 
 	// other mobile units & their factories
-	int iS = GetSectorIndex(position);
-//	if (!terrainData->IsSectorValid(iS)) {
-//		CorrectPosition(position);
-//		iS = GetSectorIndex(position);
-//	}
+	AIFloat3 pos = position;
+	CorrectPosition(pos);
+	int iS = GetSectorIndex(pos);
+
 	STerrainMapArea* area = mobileType->sector[iS].area;
 	if (area == nullptr) {
 		// Case: 1) unit spawned/pushed/transported outside of valid area
@@ -979,6 +992,7 @@ AIFloat3 CTerrainManager::GetBuildPosition(CCircuitDef* cdef, const AIFloat3& po
 	AIFloat3 pos = position;
 	CorrectPosition(pos);
 	int iS = GetSectorIndex(pos);
+
 	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
 	STerrainMapImmobileType* immobileType = GetImmobileTypeById(cdef->GetImmobileId());
 	if (mobileType != nullptr) {  // a factory or mobile unit
@@ -1239,7 +1253,10 @@ void CTerrainManager::UpdateAreaUsers()
 		STerrainMapMobileType* mobileType = GetMobileTypeById(unit->GetCircuitDef()->GetMobileId());
 		if (mobileType != nullptr) {
 			// other mobile units & their factories
-			int iS = GetSectorIndex(unit->GetUnit()->GetPos());
+			AIFloat3 pos = unit->GetUnit()->GetPos();
+			CorrectPosition(pos);
+			int iS = GetSectorIndex(pos);
+
 			area = mobileType->sector[iS].area;
 			if (area == nullptr) {  // unit outside of valid area
 				// TODO: Rescue operation

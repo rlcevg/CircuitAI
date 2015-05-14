@@ -86,7 +86,7 @@ void CBEnergyTask::Finish()
 	float offsetZ = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) * SQUARE_SIZE + 10 * SQUARE_SIZE;
 	// FIXME: Using builder's def because MaxSlope is not provided by engine's interface for buildings!
 	//        and CTerrainManager::CanBuildAt returns false in many cases
-	CCircuitDef* bdef = (*this->units.begin())->GetCircuitDef();
+	CCircuitDef* bdef = units.empty() ? circuit->GetCircuitDef("armrectr") : (*this->units.begin())->GetCircuitDef();
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CCircuitDef* cdef, *fdef;

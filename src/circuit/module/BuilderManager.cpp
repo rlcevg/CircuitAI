@@ -71,8 +71,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		AddBuildList(unit);
 	};
 	auto workerIdleHandler = [this](CCircuitUnit* unit) {
-		// Avoid instant task reassignment, its only valid on build order fail.
-		// FIXME: Unfortunatly can't use EVENT_COMMAND_FINISHED because there is no unique commandId like unitId
+		this->circuit->LOG("idle: %i, task: %i", unit, unit->GetTask());
+		// FIXME: Avoid instant task reassignment, its only valid on build order fail.
+		//        Can cause idle builder, but Watchdog should catch it eventually.
+		//        Unfortunatly can't use EVENT_COMMAND_FINISHED because there is no unique commandId like unitId
 		if (this->circuit->GetLastFrame() - unit->GetTaskFrame() > FRAMES_PER_SEC) {
 			unit->GetTask()->OnUnitIdle(unit);
 		}
@@ -133,9 +135,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	// Forbid from removing cormex blocker
 	int unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
-		this->circuit->GetMetalManager()->SetOpenSpot(unit->GetUnit()->GetPos(), true);
 		const AIFloat3& pos = unit->GetUnit()->GetPos();
-		if (IsBuilderInArea(unit->GetCircuitDef(), pos)) {
+		if (unit->GetUnit()->IsBeingBuilt() || !IsBuilderInArea(unit->GetCircuitDef(), pos)) {
+			this->circuit->GetMetalManager()->SetOpenSpot(pos, true, -1);
+		} else {
 			EnqueueTask(IBuilderTask::Priority::HIGH, unit->GetCircuitDef(), pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
 		}
 	};
@@ -177,6 +180,7 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		// NOTE: Try to cope with strange event order, when different units created within same task
 		// TODO: Create additional task to build/reclaim lost unit
 		if (taskB->GetTarget() == nullptr) {
+			circuit->LOG("SetTarget: %i, %s", unit, unit->GetCircuitDef()->GetUnitDef()->GetName());
 			taskB->SetTarget(unit);
 			unfinishedUnits[unit] = taskB;
 
@@ -581,9 +585,10 @@ void CBuilderManager::Init()
 			int index = metalManager->FindNearestSpot(pos);
 			if (index != -1) {
 				const CMetalData::Metals& spots = metalManager->GetSpots();
-				metalManager->SetOpenSpot(index, false);
 				const AIFloat3& buildPos = spots[index].position;
-				EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetEconomyManager()->GetMexDef(), buildPos, IBuilderTask::BuildType::MEX)->SetBuildPos(buildPos);
+				IBuilderTask* task = EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetEconomyManager()->GetMexDef(), buildPos, IBuilderTask::BuildType::MEX);
+				task->SetBuildPos(buildPos);
+				metalManager->SetOpenSpot(index, false, size_t(task));
 			}
 		}
 		for (auto worker : workers) {

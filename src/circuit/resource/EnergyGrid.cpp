@@ -235,7 +235,7 @@ void CEnergyGrid::MarkAllyPylons(const std::list<CCircuitUnit*>& pylons)
 		if (it == markedPylons.end()) {
 			const AIFloat3& pos = unit->GetUnit()->GetPos();
 			newUnits[unitId] = pos;
-			AddPylon(unit, pos);
+			AddPylon(unitId, unit->GetCircuitDef()->GetId(), pos);
 		} else {
 			oldUnits.insert(*it);
 		}
@@ -250,7 +250,7 @@ void CEnergyGrid::MarkAllyPylons(const std::list<CCircuitUnit*>& pylons)
 						oldUnits.begin(), oldUnits.end(),
 						std::inserter(deadUnits, deadUnits.end()), cmp);
 	for (auto& kv : deadUnits) {
-		RemovePylon(kv.first, kv.second);
+		RemovePylon(kv.first);
 	}
 	markedPylons.clear();
 	std::set_union(oldUnits.begin(), oldUnits.end(),
@@ -258,60 +258,47 @@ void CEnergyGrid::MarkAllyPylons(const std::list<CCircuitUnit*>& pylons)
 				   std::inserter(markedPylons, markedPylons.end()), cmp);
 }
 
-void CEnergyGrid::AddPylon(CCircuitUnit* unit, const AIFloat3& P)
+void CEnergyGrid::AddPylon(CCircuitUnit::Id unitId, CCircuitDef::Id defId, const AIFloat3& pos)
 {
 	CMetalManager* metalManager = circuit->GetMetalManager();
-	CMetalData::MetalIndices indices = metalManager->FindNearestClusters(P, 3);  // Triangle
-	if (indices.empty()) {
-		return;
-	}
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
 
-	// Find edges to which building belongs to: linkEdgeIts
-	for (int index : indices) {
-		const AIFloat3& P0 = clusters[index].geoCentr;
-		CMetalData::Graph::out_edge_iterator edgeIt, edgeEnd;
-		std::tie(edgeIt, edgeEnd) = boost::out_edges(index, clusterGraph);  // or boost::tie
-		float sqMinDist = std::numeric_limits<float>::max();
-		float range = pylonRanges[unit->GetCircuitDef()->GetId()];
-		float sqRange = range * range;
-		for (; edgeIt != edgeEnd; ++edgeIt) {
-			const CMetalData::EdgeDesc& edgeId = *edgeIt;
-			int idxTarget = boost::target(edgeId, clusterGraph);
-			const AIFloat3& P1 = clusters[idxTarget].geoCentr;
+	// Find edges to which building belongs to
+	float range = pylonRanges[defId];
+	float sqRange = range * range;
+	CMetalData::Graph::edge_iterator edgeIt, edgeEnd;
+	std::tie(edgeIt, edgeEnd) = boost::edges(clusterGraph);  // or boost::tie
+	for (; edgeIt != edgeEnd; ++edgeIt) {
+		const CMetalData::EdgeDesc& edgeId = *edgeIt;
+		int idxSource = boost::source(edgeId, clusterGraph);
+		const AIFloat3& P0 = clusters[idxSource].geoCentr;
+		int idxTarget = boost::target(edgeId, clusterGraph);
+		const AIFloat3& P1 = clusters[idxTarget].geoCentr;
 
-			if ((P0.SqDistance2D(P) < sqRange) || (P1.SqDistance2D(P) < sqRange) ||
-				(((P0 + P1) * 0.5f).SqDistance2D(P) < P0.SqDistance2D(P1) * 0.25f))
-			{
-				CEnergyLink& link = boost::get(linkIt, edgeId);
-				link.AddPylon(unit->GetId(), P, range);
-				linkPylons.insert(edgeId);
-			}
+		if ((P0.SqDistance2D(pos) < sqRange) || (P1.SqDistance2D(pos) < sqRange) ||
+			(((P0 + P1) * 0.5f).SqDistance2D(pos) < P0.SqDistance2D(P1) * 0.25f))
+		{
+			CEnergyLink& link = boost::get(linkIt, edgeId);
+			link.AddPylon(unitId, pos, range);
+			linkPylons.insert(edgeId);
 		}
 	}
 }
 
-void CEnergyGrid::RemovePylon(CCircuitUnit::Id unitId, const AIFloat3& pos)
+void CEnergyGrid::RemovePylon(CCircuitUnit::Id unitId)
 {
 	CMetalManager* metalManager = circuit->GetMetalManager();
-	CMetalData::MetalIndices indices = metalManager->FindNearestClusters(pos, 3);  // Triangle
-	if (indices.empty()) {
-		return;
-	}
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
 
-	// Find edges to which building belongs to: linkEdgeIts
-	for (int index : indices) {
-		CMetalData::Graph::out_edge_iterator edgeIt, edgeEnd;
-		std::list<CMetalData::Graph::out_edge_iterator> linkEdgeIts;
-		std::tie(edgeIt, edgeEnd) = boost::out_edges(index, clusterGraph);  // or boost::tie
-		for (; edgeIt != edgeEnd; ++edgeIt) {
-			const CMetalData::EdgeDesc& edgeId = *edgeIt;
-			CEnergyLink& link = boost::get(linkIt, edgeId);
-			if (link.RemovePylon(unitId)) {
-				unlinkPylons.insert(edgeId);
-			}
+	// Find edges to which building belongs to
+	CMetalData::Graph::edge_iterator edgeIt, edgeEnd;
+	std::tie(edgeIt, edgeEnd) = boost::edges(clusterGraph);  // or boost::tie
+	for (; edgeIt != edgeEnd; ++edgeIt) {
+		const CMetalData::EdgeDesc& edgeId = *edgeIt;
+		CEnergyLink& link = boost::get(linkIt, edgeId);
+		if (link.RemovePylon(unitId)) {
+			unlinkPylons.insert(edgeId);
 		}
 	}
 }

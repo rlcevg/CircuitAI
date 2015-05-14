@@ -178,7 +178,7 @@ void IBuilderTask::Finish()
 
 void IBuilderTask::Cancel()
 {
-	if (target == nullptr) {
+	if ((target == nullptr) && (buildPos != -RgtVector)) {
 		manager->GetCircuit()->GetTerrainManager()->RemoveBlocker(buildDef, buildPos, facing);
 	}
 }

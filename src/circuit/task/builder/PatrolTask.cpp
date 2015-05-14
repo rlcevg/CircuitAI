@@ -45,7 +45,7 @@ void CBPatrolTask::Execute(CCircuitUnit* unit)
 	params.push_back(0.0f);
 	u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
-	const float size = SQUARE_SIZE * 10;
+	const float size = SQUARE_SIZE * 100;
 	CTerrainManager* terrain = manager->GetCircuit()->GetTerrainManager();
 	AIFloat3 pos = position;
 	pos.x += (pos.x > terrain->GetTerrainWidth() / 2) ? -size : size;

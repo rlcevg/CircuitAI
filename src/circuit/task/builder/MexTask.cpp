@@ -27,11 +27,13 @@ CBMexTask::CBMexTask(ITaskManager* mgr, Priority priority,
 					 float cost, int timeout) :
 		IBuilderTask(mgr, priority, buildDef, position, BuildType::MEX, cost, false, timeout)
 {
+	manager->GetCircuit()->LOG("CBMexTask::CBMexTask %i", this);
 }
 
 CBMexTask::~CBMexTask()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	manager->GetCircuit()->LOG("CBMexTask::~CBMexTask %i", this);
 }
 
 void CBMexTask::Execute(CCircuitUnit* unit)
@@ -45,6 +47,11 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	if (target != nullptr) {
 		Unit* tu = target->GetUnit();
 		u->Build(target->GetCircuitDef()->GetUnitDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		const AIFloat3& ppp = tu->GetPos();
+		manager->GetCircuit()->LOG("CBMexTask::Execute target %i", this);
+		if (ppp != buildPos) {
+			manager->GetCircuit()->LOG("CBMexTask::target pos WTF %f, %f, %f | bp: %f, %f, %f", ppp.x, ppp.y, ppp.z, buildPos.x, buildPos.y, buildPos.z);
+		}
 		return;
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -52,37 +59,43 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	if (buildPos != -RgtVector) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
 			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+			manager->GetCircuit()->LOG("CBMexTask::Execute old bp %i", this);
 			return;
 		} else {
-			circuit->GetMetalManager()->SetOpenSpot(buildPos, true);
+			circuit->GetMetalManager()->SetOpenSpot(buildPos, true, size_t(this));
+			manager->GetCircuit()->LOG("CBMexTask::Execute wrong bp %i", this);
 		}
 	}
 
 	buildPos = circuit->GetEconomyManager()->FindBuildPos(unit);
 	if (buildPos != -RgtVector) {
-		circuit->GetMetalManager()->SetOpenSpot(buildPos, false);
+		circuit->GetMetalManager()->SetOpenSpot(buildPos, false, size_t(this));
 		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		manager->GetCircuit()->LOG("CBMexTask::Execute new bp %i", this);
 	} else {
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);
+		manager->GetCircuit()->LOG("CBMexTask::Execute fallback %i", this);
 	}
 }
 
 void CBMexTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->LOG("CBMexTask::Finish %i", this);
 	CMetalManager* metalManager = circuit->GetMetalManager();
 
 	int index = metalManager->FindNearestCluster(buildPos);
 	if (index < 0) {
-		circuit->GetEconomyManager()->UpdateMetalTasks(buildPos);
+		circuit->GetEconomyManager()->UpdateMetalTasks(buildPos, units.empty() ? nullptr : *units.begin());
 		return;
 	}
 
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 
-	bool mustHave = !economyManager->IsEnergyStalling() && (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < 1) && (builderManager->GetWorkerCount() > 1);
+	int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::MEX).size();
+	bool mustHave = !economyManager->IsEnergyStalling() || ((taskSize < 1) && (builderManager->GetWorkerCount() > 2));
 	if (mustHave && buildDef->IsAvailable()) {
 		// Colonize next spot in cluster
 		int bestIdx = -1;
@@ -104,20 +117,21 @@ void CBMexTask::Finish()
 		}
 		if (bestIdx != -1) {
 			const AIFloat3& pos = spots[bestIdx].position;
-			metalManager->SetOpenSpot(bestIdx, false);
-			builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, pos, IBuilderTask::BuildType::MEX, cost)->SetBuildPos(pos);
+			IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, pos, IBuilderTask::BuildType::MEX, cost);
+			task->SetBuildPos(pos);
+			metalManager->SetOpenSpot(bestIdx, false, size_t(task));
 		} else {
-			circuit->GetEconomyManager()->UpdateMetalTasks(buildPos);
+			circuit->GetEconomyManager()->UpdateMetalTasks(buildPos, units.empty() ? nullptr : *units.begin());
 		}
 	} else {
-		economyManager->UpdateEnergyTasks(buildPos);
+		economyManager->UpdateEnergyTasks(buildPos, units.empty() ? nullptr : *units.begin());
 	}
 
 	// Add defence
 	// TODO: Move into MilitaryManager
 	CCircuitDef* defDef;
 	bool valid = false;
-	float maxCost = MIN_BUILD_SEC * economyManager->GetAvgMetalIncome();/* * economyManager->GetEcoFactor();*/
+	float maxCost = MIN_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
 	const char* defenders[] = {"corhlt", "corllt"};
 	for (auto name : defenders) {
 		defDef = circuit->GetCircuitDef(name);
@@ -147,8 +161,13 @@ void CBMexTask::Finish()
 
 void CBMexTask::Cancel()
 {
-	if (target == nullptr) {
-		manager->GetCircuit()->GetMetalManager()->SetOpenSpot(buildPos, true);
+	manager->GetCircuit()->LOG("CBMexTask::Cancel %i, target: %i", this, target);
+	if (target != nullptr) {
+		manager->GetCircuit()->LOG("CBMexTask::Cancel target: %i, %s", target, target->GetCircuitDef()->GetUnitDef()->GetName());
+	}
+	if ((target == nullptr) && (buildPos != -RgtVector)) {
+		manager->GetCircuit()->LOG("CBMexTask::Cancel 2 %i", this);
+		manager->GetCircuit()->GetMetalManager()->SetOpenSpot(buildPos, true, size_t(this));
 	}
 }
 
@@ -158,14 +177,15 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 	 * Check if unit is idle because of enemy mex ahead and build turret if so.
 	 */
 	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->LOG("CBMexTask::OnUnitIdle %i", this);
 	CCircuitDef* def = circuit->GetCircuitDef("corrl");
 	float range = def->GetUnitDef()->GetMaxWeaponRange();
-	float testRange = range + 200;
+	float testRange = range + 200;  // 200 elmos
 	const AIFloat3& pos = unit->GetUnit()->GetPos();
 	if (buildPos.SqDistance2D(pos) < testRange * testRange) {
 		int mexDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
 		// TODO: Use internal CCircuitAI::GetEnemyUnits?
-		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(buildPos, 1));
+		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(buildPos, SQUARE_SIZE));
 		bool blocked = false;
 		for (auto enemy : enemies) {
 			if (enemy == nullptr) {
@@ -183,7 +203,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 		if (blocked) {
 			CBuilderManager* builderManager = circuit->GetBuilderManager();
 			IBuilderTask* task = nullptr;
-			float qdist = 200 * 200;
+			float qdist = 200 * 200;  // 200 elmos
 			// TODO: Push tasks into bgi::rtree
 			for (auto t : builderManager->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
 				if (pos.SqDistance2D(t->GetTaskPos()) < qdist) {
@@ -197,11 +217,13 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 			}
 			// TODO: Before BuildTask assign MoveTask(task->GetTaskPos())
 			manager->AssignTask(unit, task);
+			circuit->LOG("Assigned defender %i", this);
 			return;
 		}
 	}
 
 	IBuilderTask::OnUnitIdle(unit);
+	circuit->LOG("IBuilderTask::OnUnitIdle %i", this);
 }
 
 } // namespace circuit

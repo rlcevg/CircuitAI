@@ -11,7 +11,7 @@
 #include "task/UnitTask.h"
 
 #define MIN_BUILD_SEC	20
-#define MAX_BUILD_SEC	120
+#define MAX_BUILD_SEC	60
 #define MAX_TRAVEL_SEC	180
 
 namespace circuit {
@@ -26,8 +26,8 @@ public:
 		STORE,
 		PYLON,
 		ENERGY,
-		DEFENCE,  // lotus, defender
-		BUNKER,  // stardust, stinger, ddm, anni
+		DEFENCE,  // lotus, defender, stardust, stinger
+		BUNKER,  // ddm, anni
 		BIG_GUN,  // super weapons
 		RADAR,
 		MEX,

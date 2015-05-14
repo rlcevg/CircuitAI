@@ -59,8 +59,8 @@ private:
 	link_iterator_t linkIt;  // Alternative: links[clusterGraph[*linkEdgeIt].index]
 
 	void MarkAllyPylons(const std::list<CCircuitUnit*>& pylons);
-	void AddPylon(CCircuitUnit* unit, const springai::AIFloat3& pos);
-	void RemovePylon(CCircuitUnit::Id unitId, const springai::AIFloat3& pos);
+	void AddPylon(CCircuitUnit::Id unitId, CCircuitDef::Id defId, const springai::AIFloat3& pos);
+	void RemovePylon(CCircuitUnit::Id unitId);
 	void CheckGrid();
 
 	std::set<int> linkClusters;

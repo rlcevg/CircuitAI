@@ -469,7 +469,7 @@ void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 void CEconomyManager::UpdateResourceIncome()
 {
 	energyIncomes[indexRes] = eco->GetIncome(energyRes);
-	metalIncomes[indexRes] = eco->GetIncome(metalRes) + eco->GetReceived(metalRes);
+	metalIncomes[indexRes] = eco->GetIncome(metalRes)/* + eco->GetReceived(metalRes)*/;
 	indexRes++;
 	indexRes %= INCOME_SAMPLES;
 
@@ -525,14 +525,13 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	}
 
 	// check uncolonized mexes
-	float energyIncome = GetAvgEnergyIncome();
-	float metalIncome = GetAvgMetalIncome();
-	bool mustHave = (energyIncome * 0.8 > metalIncome) || ((builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < 1) && (builderManager->GetWorkerCount() > 1));
+	int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::MEX).size();
+	bool mustHave = !IsEnergyStalling() || ((taskSize < 1) && (builderManager->GetWorkerCount() > 2));
 	if (mustHave && mexDef->IsAvailable()) {
 		UnitDef* metalDef =  mexDef->GetUnitDef();
 		float cost = metalDef->GetCost(metalRes);
-		int count = builderManager->GetBuilderPower() / cost * 4 + 2;
-		if (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < count) {
+		int maxCount = builderManager->GetBuilderPower() / cost * 4 + 2;
+		if (taskSize < maxCount) {
 			CMetalManager* metalManager = circuit->GetMetalManager();
 			const CMetalData::Metals& spots = metalManager->GetSpots();
 			Map* map = circuit->GetMap();
@@ -556,10 +555,10 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			}
 			int index = metalManager->FindNearestSpot(position, predicate);
 			if (index != -1) {
-				metalManager->SetOpenSpot(index, false);
 				const AIFloat3& pos = spots[index].position;
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost);
 				task->SetBuildPos(pos);
+				metalManager->SetOpenSpot(index, false, size_t(task));
 			}
 		}
 	}
@@ -577,16 +576,14 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 
 	// check energy / metal ratio
 	float energyIncome = GetAvgEnergyIncome();
-	float metalIncome = GetAvgMetalIncome();
 	float energyUsage = eco->GetUsage(energyRes);
-
 	bool isEnergyStalling = IsEnergyStalling();
 	if (isEnergyStalling || (energyUsage > energyIncome * 0.8)) {
-		metalIncome = std::min(metalIncome, energyIncome);
 		CCircuitDef* bestDef = nullptr;
 		float cost;
+		float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
 		float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome * 0.5f);
-		const std::set<IBuilderTask*>& tasks = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY);
+		int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
 		float maxBuildTime = MAX_BUILD_SEC * ecoFactor;
 		for (auto& engy : energyInfos) {  // sorted by high-tech first
 			// TODO: Add geothermal powerplant support
@@ -595,8 +592,8 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			}
 
 			if (engy.cdef->GetCount() < engy.limit) {
-				int count = buildPower / engy.cost * 4 + 1;
-				if (tasks.size() < count) {
+				int maxCount = buildPower / engy.cost * 4 + 1;
+				if (taskSize < maxCount) {
 					cost = engy.cost;
 					bestDef = engy.cdef;
 					// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
@@ -761,7 +758,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 
 	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
 	float storage = eco->GetStorage(metalRes);
-	if (builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() && (storage / metalIncome < 25) && storeDef->IsAvailable()) {
+	if (builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() && (storage / metalIncome < 10) && storeDef->IsAvailable()) {
 		const AIFloat3& startPos = circuit->GetSetupManager()->GetBasePos();
 		CMetalManager* metalManager = circuit->GetMetalManager();
 		int index = metalManager->FindNearestSpot(startPos);

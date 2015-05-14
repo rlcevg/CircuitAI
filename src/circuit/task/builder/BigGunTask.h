@@ -18,6 +18,9 @@ public:
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
 				 float cost, bool isShake, int timeout);
 	virtual ~CBBigGunTask();
+
+protected:
+	virtual void Finish();
 };
 
 } // namespace circuit

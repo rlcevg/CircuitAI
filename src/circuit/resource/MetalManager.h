@@ -63,8 +63,8 @@ public:
 	struct MetalInfo {
 		bool isOpen;
 	};
-	void SetOpenSpot(int index, bool value);
-	void SetOpenSpot(const springai::AIFloat3& pos, bool value);
+	void SetOpenSpot(int index, bool value, size_t dbg);
+	void SetOpenSpot(const springai::AIFloat3& pos, bool value, size_t dbg);
 	bool IsOpenSpot(int index);
 //	const std::vector<MetalInfo>& GetMetalInfos() const;
 private:
