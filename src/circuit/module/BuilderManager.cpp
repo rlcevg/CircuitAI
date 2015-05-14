@@ -71,10 +71,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		AddBuildList(unit);
 	};
 	auto workerIdleHandler = [this](CCircuitUnit* unit) {
-		this->circuit->LOG("idle: %i, task: %i", unit, unit->GetTask());
 		// FIXME: Avoid instant task reassignment, its only valid on build order fail.
 		//        Can cause idle builder, but Watchdog should catch it eventually.
-		//        Unfortunatly can't use EVENT_COMMAND_FINISHED because there is no unique commandId like unitId
+		//        Unfortunately can't use EVENT_COMMAND_FINISHED because there is no unique commandId like unitId
 		if (this->circuit->GetLastFrame() - unit->GetTaskFrame() > FRAMES_PER_SEC) {
 			unit->GetTask()->OnUnitIdle(unit);
 		}
@@ -137,7 +136,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 		const AIFloat3& pos = unit->GetUnit()->GetPos();
 		if (unit->GetUnit()->IsBeingBuilt() || !IsBuilderInArea(unit->GetCircuitDef(), pos)) {
-			this->circuit->GetMetalManager()->SetOpenSpot(pos, true, -1);
+			this->circuit->GetMetalManager()->SetOpenSpot(pos, true);
 		} else {
 			EnqueueTask(IBuilderTask::Priority::HIGH, unit->GetCircuitDef(), pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
 		}
@@ -175,12 +174,15 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		return 0; //signaling: OK
 	}
 
+	Unit* u = unit->GetUnit();
 	IBuilderTask* taskB = static_cast<IBuilderTask*>(task);
-	if (unit->GetUnit()->IsBeingBuilt()) {
-		// NOTE: Try to cope with strange event order, when different units created within same task
+	if (u->IsBeingBuilt()) {
+		// FIXME: Try to cope with strange event order, when different units created within same task.
+		//        Real example: unit starts building, but hlt kills structure right away. UnitDestroyed invoked and new task assigned to unit.
+		//        But for some engine-bugged reason unit is not idle and retries same building. UnitCreated invoked for new task with wrong target.
+		//        Next workaround unfortunately doesn't mark bugged building on blocking map.
 		// TODO: Create additional task to build/reclaim lost unit
-		if (taskB->GetTarget() == nullptr) {
-			circuit->LOG("SetTarget: %i, %s", unit, unit->GetCircuitDef()->GetUnitDef()->GetName());
+		if ((taskB->GetTarget() == nullptr) && (*taskB->GetBuildDef() == *unit->GetCircuitDef()) && taskB->IsEqualBuildPos(u->GetPos())) {
 			taskB->SetTarget(unit);
 			unfinishedUnits[unit] = taskB;
 
@@ -588,7 +590,7 @@ void CBuilderManager::Init()
 				const AIFloat3& buildPos = spots[index].position;
 				IBuilderTask* task = EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetEconomyManager()->GetMexDef(), buildPos, IBuilderTask::BuildType::MEX);
 				task->SetBuildPos(buildPos);
-				metalManager->SetOpenSpot(index, false, size_t(task));
+				metalManager->SetOpenSpot(index, false);
 			}
 		}
 		for (auto worker : workers) {

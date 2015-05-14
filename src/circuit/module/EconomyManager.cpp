@@ -469,7 +469,7 @@ void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 void CEconomyManager::UpdateResourceIncome()
 {
 	energyIncomes[indexRes] = eco->GetIncome(energyRes);
-	metalIncomes[indexRes] = eco->GetIncome(metalRes)/* + eco->GetReceived(metalRes)*/;
+	metalIncomes[indexRes] = eco->GetIncome(metalRes) + eco->GetReceived(metalRes);
 	indexRes++;
 	indexRes %= INCOME_SAMPLES;
 
@@ -558,7 +558,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				const AIFloat3& pos = spots[index].position;
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost);
 				task->SetBuildPos(pos);
-				metalManager->SetOpenSpot(index, false, size_t(task));
+				metalManager->SetOpenSpot(index, false);
 			}
 		}
 	}
@@ -584,7 +584,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
 		float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome * 0.5f);
 		int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
-		float maxBuildTime = MAX_BUILD_SEC * ecoFactor;
+		float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.1f : ecoFactor);
 		for (auto& engy : energyInfos) {  // sorted by high-tech first
 			// TODO: Add geothermal powerplant support
 			if (!engy.cdef->IsAvailable() || engy.cdef->GetUnitDef()->IsNeedGeo()) {
@@ -605,7 +605,6 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 					}
 				}
 			} else {
-				bestDef = nullptr;
 				break;
 			}
 		}

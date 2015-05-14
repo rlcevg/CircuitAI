@@ -264,9 +264,14 @@ CCircuitUnit* IBuilderTask::GetTarget() const
 	return target;
 }
 
+bool IBuilderTask::IsEqualBuildPos(const AIFloat3& pos) const
+{
+	return (math::fabs(pos.x - buildPos.x) <= SQUARE_SIZE) && (math::fabs(pos.z - buildPos.z) <= SQUARE_SIZE);
+}
+
 bool IBuilderTask::IsStructure() const
 {
-	return (buildType < IBuilderTask::BuildType::MEX);
+	return buildType < IBuilderTask::BuildType::MEX;
 }
 
 void IBuilderTask::SetFacing(int value)

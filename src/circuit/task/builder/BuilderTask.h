@@ -71,6 +71,7 @@ public:
 	virtual void SetTarget(CCircuitUnit* unit);
 	CCircuitUnit* GetTarget() const;
 
+	bool IsEqualBuildPos(const springai::AIFloat3& pos) const;
 	bool IsStructure() const;
 	void SetFacing(int value);
 	int GetFacing() const;
