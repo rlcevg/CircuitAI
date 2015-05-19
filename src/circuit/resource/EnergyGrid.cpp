@@ -7,11 +7,15 @@
 
 #include "resource/EnergyGrid.h"
 #include "resource/MetalManager.h"
-#include "module/EconomyManager.h"  // Only for MexDef
+#include "module/BuilderManager.h"
+#include "module/EconomyManager.h"
 #include "setup/SetupManager.h"
+#include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
+
+#include "AISCommands.h"
 
 #include <boost/graph/kruskal_min_spanning_tree.hpp>
 #include <boost/graph/breadth_first_search.hpp>
@@ -101,7 +105,7 @@ void CEnergyGrid::Update()
 	CheckGrid();
 }
 
-CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, springai::AIFloat3& outPos)
+CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 {
 	/*
 	 * Detect link to build
@@ -128,35 +132,54 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, springai::AIFloat
 	/*
 	 * Find best build def and position
 	 */
+	float searchRadius = circuit->GetEconomyManager()->GetPylonRange() * 0.5f;
+
 	CEnergyLink::SVertex* v0 = link->GetV0();
 	CEnergyLink::SVertex* v1 = link->GetV1();
 	CEnergyLink::SPylon* pylon0 = link->GetConnectionHead(v0, v1->pos);
 	if (pylon0 == nullptr) {
 		outDef = circuit->GetEconomyManager()->GetPylonDef();
-		outPos = v0->pos;
+		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, v0->pos, searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
 		return link;
 	}
 	CEnergyLink::SPylon* pylon1 = link->GetConnectionHead(v1, pylon0->pos);
 	if (pylon1 == nullptr) {
 		outDef = circuit->GetEconomyManager()->GetPylonDef();
-		outPos = v1->pos;
+		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, v1->pos, searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
 		return link;
 	}
 
-	CCircuitDef::Id defId;
-	float range;
-//	for (auto& kv : boost::adaptors::reverse(rangePylons)) ...  #include <boost/range/adaptor/reversed.hpp>
-	for (auto it = rangePylons.rbegin(); it != rangePylons.rend(); ++it) {
-		defId = it->second;
-		range = it->first;
-		float dist = pylon0->range + pylon1->range + it->first;
-		if (pylon0->pos.SqDistance2D(pylon1->pos) > dist * dist) {
+	decltype(rangePylons) candDefs = rangePylons;
+	while (!candDefs.empty()) {
+		CCircuitDef::Id defId;
+		float range;
+		auto it = candDefs.rbegin();
+		for (; it != candDefs.rend(); ++it) {
+			defId = it->second;
+			range = it->first;
+			float dist = pylon0->range + pylon1->range + range;
+			if (pylon0->pos.SqDistance2D(pylon1->pos) > dist * dist) {
+				break;
+			}
+		}
+		outDef = circuit->GetCircuitDef(defId);
+		AIFloat3 dir = pylon1->pos - pylon0->pos;
+		AIFloat3 sweetPos;
+		float dist = pylon0->range + pylon1->range + range * 2.0f;
+		if (dir.SqLength2D() < dist * dist) {
+			sweetPos = (pylon0->pos + dir.Normalize2D() * (pylon0->range - pylon1->range) + pylon1->pos) * 0.5f;
+		} else {
+			sweetPos = pylon0->pos + dir.Normalize2D() * (pylon0->range + range) * 0.95f;
+		}
+
+		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, sweetPos, searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
+		if (outPos == -RgtVector) {
+//			candDefs.erase(std::next(it).base());  // http://stackoverflow.com/questions/1830158/how-to-call-erase-with-a-reverse-iterator
+			candDefs.erase(range);
+		} else {
 			break;
 		}
 	}
-	outDef = circuit->GetCircuitDef(defId);
-	AIFloat3 dir = pylon1->pos - pylon0->pos;
-	outPos = pylon0->pos + dir.Normalize2D() * (pylon0->range + range) * 0.95;
 
 	return link;
 }

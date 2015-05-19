@@ -80,20 +80,18 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		return;
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
+	CTerrainManager* terrain = circuit->GetTerrainManager();
 	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (buildPos != -RgtVector) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
 			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			return;
 		} else {
-			CTerrainManager* terrain = circuit->GetTerrainManager();
 			terrain->RemoveBlocker(buildDef, buildPos, facing);
 			// FIXME: If enemy blocked position then reset will have no effect
 //			terrain->ResetBuildFrame();
 		}
 	}
-
-	CTerrainManager* terrain = circuit->GetTerrainManager();
 
 	// FIXME: Replace const 999.0f with build time?
 	if (circuit->IsAllyAware() && (cost > 999.0f)) {

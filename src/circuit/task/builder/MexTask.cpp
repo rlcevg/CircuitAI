@@ -11,6 +11,7 @@
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
+#include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -48,19 +49,31 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 		return;
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
+	CMetalManager* metalManager = circuit->GetMetalManager();
 	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (buildPos != -RgtVector) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
 			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			return;
 		} else {
-			circuit->GetMetalManager()->SetOpenSpot(buildPos, true);
+			metalManager->SetOpenSpot(buildPos, true);
 		}
 	}
 
-	buildPos = circuit->GetEconomyManager()->FindBuildPos(unit);
+	const CMetalData::Metals& spots = metalManager->GetSpots();
+	Map* map = circuit->GetMap();
+	CTerrainManager* terrain = circuit->GetTerrainManager();
+	CMetalData::MetalPredicate predicate = [&spots, metalManager, map, buildUDef, terrain, unit](CMetalData::MetalNode const& v) {
+		int index = v.second;
+		return (metalManager->IsOpenSpot(index) &&
+				terrain->CanBuildAt(unit, spots[index].position) &&
+				map->IsPossibleToBuildAt(buildUDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
+	};
+	int index = metalManager->FindNearestSpot(position, predicate);
+	buildPos = (index >= 0) ? spots[index].position : AIFloat3(-RgtVector);
+
 	if (buildPos != -RgtVector) {
-		circuit->GetMetalManager()->SetOpenSpot(buildPos, false);
+		metalManager->SetOpenSpot(buildPos, false);
 		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	} else {
 		// Fallback to Guard/Assist/Patrol

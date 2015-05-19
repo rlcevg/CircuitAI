@@ -14,6 +14,8 @@
 
 #include "Game.h"
 #include "GameRulesParam.h"
+#include "MoveData.h"
+#include "Pathing.h"
 
 namespace circuit {
 
@@ -128,11 +130,15 @@ void CMetalManager::ClusterizeMetal()
 	metalData->SetClusterizing(true);
 
 	// prepare parameters
+	MoveData* moveData = circuit->GetCircuitDef("armrectr")->GetUnitDef()->GetMoveData();
+	int pathType = moveData->GetPathType();
+	delete moveData;
 	UnitDef* def = circuit->GetCircuitDef("armestor")->GetUnitDef();
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto search = customParams.find("pylonrange");
 	float radius = (search != customParams.end()) ? utils::string_to_float(search->second) : PYLON_RANGE;
 	float maxDistance = radius * 2;
+	Pathing* pathing = circuit->GetPathing();
 
 	const CMetalData::Metals& spots = metalData->GetSpots();
 	int nrows = spots.size();
@@ -141,7 +147,9 @@ void CMetalManager::ClusterizeMetal()
 	CRagMatrix& distmatrix = *pdistmatrix;
 	for (int i = 1; i < nrows; i++) {
 		for (int j = 0; j < i; j++) {
-			distmatrix(i, j) = spots[i].position.distance2D(spots[j].position);
+			float pathLength = pathing->GetApproximateLength(spots[i].position, spots[j].position, pathType, 0.0f);
+			float geomLength = spots[i].position.distance2D(spots[j].position);
+			distmatrix(i, j) = (geomLength * 1.4f < pathLength) ? pathLength : geomLength;
 		}
 	}
 

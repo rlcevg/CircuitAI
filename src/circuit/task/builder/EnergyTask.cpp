@@ -59,6 +59,10 @@ void CBEnergyTask::Finish()
 		if (p == nullptr) {
 			continue;
 		}
+		// FIXME: Is SqDistance2D necessary?
+		//        @see rts/Sim/Misc/QaudField.cpp
+		//        ...CQuadField::GetUnitsExact(const float3& pos, float radius, bool spherical)
+		//        const float totRad = radius + u->radius; -- suspicious
 		if ((*p->GetCircuitDef() == *pylonDef) && (buildPos.SqDistance2D(u->GetPos()) < radius * radius)) {
 			foundPylon = true;
 			break;

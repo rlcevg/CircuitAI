@@ -94,25 +94,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		}
 	};
 
-	/*
-	 * armestor handlers
-	 */
-	unitDefId = pylonDef->GetId();
-	createdHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
-		// check pylon's cluster
-		int index = this->circuit->GetMetalManager()->FindNearestCluster(unit->GetUnit()->GetPos());
-		if (index >= 0) {
-			clusterInfos[index].pylon = unit;
-		}
-	};
-	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
-		for (auto& info : clusterInfos) {
-			if (info.pylon == unit) {
-				info.pylon = nullptr;
-			}
-		}
-	};
-
 	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
 	ecoFactor = circuit->GetAllyTeam()->GetSize() * 0.25f + 0.75f;
 
@@ -281,6 +262,7 @@ IBuilderTask* CEconomyManager::CreateAssistTask(CCircuitUnit* unit)
 	bool isBuildMobile = true;
 	const AIFloat3& pos = unit->GetUnit()->GetPos();
 	float radius = unit->GetCircuitDef()->GetBuildDistance();
+	float sqRadius = radius * radius;
 
 	/*
 	 * Check for damaged units
@@ -295,12 +277,14 @@ IBuilderTask* CEconomyManager::CreateAssistTask(CCircuitUnit* unit)
 			continue;
 		}
 		if (u->IsBeingBuilt()) {
-			CCircuitDef* cdef = candUnit->GetCircuitDef();
-			if (isBuildMobile && ((cdef->GetUnitDef()->GetCost(metalRes) < maxCost) || (*cdef == *terraDef))) {
-				isBuildMobile = candUnit->GetUnit()->GetMaxSpeed() > 0;
-				buildTarget = candUnit;
+			if ((pos.SqDistance2D(u->GetPos()) < sqRadius)) {
+				CCircuitDef* cdef = candUnit->GetCircuitDef();
+				if (isBuildMobile && ((cdef->GetUnitDef()->GetCost(metalRes) < maxCost) || (*cdef == *terraDef))) {
+					isBuildMobile = candUnit->GetUnit()->GetMaxSpeed() > 0;
+					buildTarget = candUnit;
+				}
 			}
-		} else if (u->GetHealth() < u->GetMaxHealth()) {
+		} else if (u->GetHealth() < u->GetMaxHealth() && (pos.SqDistance2D(u->GetPos()) < sqRadius)) {
 			repairTarget = candUnit;
 			break;
 		}
@@ -354,58 +338,6 @@ CCircuitDef* CEconomyManager::GetPylonDef() const
 float CEconomyManager::GetPylonRange() const
 {
 	return pylonRange;
-}
-
-AIFloat3 CEconomyManager::FindBuildPos(CCircuitUnit* unit)
-{
-	IBuilderTask* task = static_cast<IBuilderTask*>(unit->GetTask());
-	Unit* u = unit->GetUnit();
-	AIFloat3 buildPos = -RgtVector;
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	switch (task->GetBuildType()) {
-		case IBuilderTask::BuildType::MEX: {
-			const AIFloat3& position = u->GetPos();
-			const CMetalData::Metals& spots = metalManager->GetSpots();
-			Map* map = circuit->GetMap();
-			UnitDef* buildDef = task->GetBuildDef()->GetUnitDef();
-			CMetalData::MetalPredicate predicate = [&spots, metalManager, map, buildDef, terrainManager, unit](CMetalData::MetalNode const& v) {
-				int index = v.second;
-				return (metalManager->IsOpenSpot(index) &&
-						terrainManager->CanBuildAt(unit, spots[index].position) &&
-						map->IsPossibleToBuildAt(buildDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
-			};
-			int index = metalManager->FindNearestSpot(position, predicate);
-			if (index >= 0) {
-				buildPos = spots[index].position;
-			}
-			break;
-		}
-		case IBuilderTask::BuildType::PYLON: {
-			CTerrainManager::TerrainPredicate predicate = [terrainManager, unit](const AIFloat3& p) {
-				return terrainManager->CanBuildAt(unit, p);
-			};
-			const AIFloat3& position = task->GetTaskPos();
-			CTerrainManager* terrain = circuit->GetTerrainManager();
-			CCircuitDef* buildDef = task->GetBuildDef();
-			buildPos = terrain->FindBuildSite(buildDef, position, pylonRange * 8, UNIT_COMMAND_BUILD_NO_FACING, predicate);
-			if (buildPos == -RgtVector) {
-//				CMetalData::MetalPredicate predCl = [this](const CMetalData::MetalNode& v) {
-//					return clusterInfos[v.second].pylon == nullptr;
-//				};
-				CMetalData::MetalIndices indices = metalManager->FindNearestClusters(position, 3/*, predCl*/);
-				const CMetalData::Clusters& clusters = metalManager->GetClusters();
-				for (const int idx : indices) {
-					buildPos = terrain->FindBuildSite(buildDef, clusters[idx].geoCentr, pylonRange * 8, UNIT_COMMAND_BUILD_NO_FACING, predicate);
-					if (buildPos != -RgtVector) {
-						break;
-					}
-				}
-			}
-			break;
-		}
-	}
-	return buildPos;
 }
 
 void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
@@ -579,6 +511,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	float energyUsage = eco->GetUsage(energyRes);
 	bool isEnergyStalling = IsEnergyStalling();
 	if (isEnergyStalling || (energyUsage > energyIncome * 0.8)) {
+		// Select proper energy UnitDef to build
 		CCircuitDef* bestDef = nullptr;
 		float cost;
 		float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
@@ -610,6 +543,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		}
 
 		if (bestDef != nullptr) {
+			// Find place to build
 			AIFloat3 buildPos = -RgtVector;
 
 			CMetalManager* metalManager = circuit->GetMetalManager();
@@ -785,15 +719,15 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 			CEnergyGrid* grid = circuit->GetEnergyGrid();
 			grid->Update();
 
-			AIFloat3 buildPos;
 			CCircuitDef* buildDef;
+			AIFloat3 buildPos;
 			CEnergyLink* link = grid->GetLinkToBuild(buildDef, buildPos);
 			if (link != nullptr) {
-				if (builderManager->IsBuilderInArea(buildDef, buildPos)) {
+				if ((buildPos != -RgtVector) && builderManager->IsBuilderInArea(buildDef, buildPos)) {
 					task = builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, buildDef, buildPos, link, cost);
 					return task;
 				} else {
-					link->SetValid(false);  // FIXME: Reset valid on timer?
+					link->SetValid(false);  // FIXME: Reset valid on timer? Or when air con appears
 					grid->SetForceRebuild(true);
 				}
 			}

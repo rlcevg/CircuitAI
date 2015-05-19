@@ -45,7 +45,6 @@ public:
 	CCircuitDef* GetMexDef() const;
 	CCircuitDef* GetPylonDef() const;
 	float GetPylonRange() const;
-	springai::AIFloat3 FindBuildPos(CCircuitUnit* unit);
 	void AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs);  // add available energy defs
 	void RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs);
 
@@ -76,7 +75,6 @@ private:
 
 	struct SClusterInfo {
 		CCircuitUnit* factory;
-		CCircuitUnit* pylon;  // TODO: Remove?
 	};
 	std::vector<SClusterInfo> clusterInfos;
 	float pylonRange;
