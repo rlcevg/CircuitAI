@@ -691,7 +691,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 
 	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
 	float storage = eco->GetStorage(metalRes);
-	if (builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() && (storage / metalIncome < 10) && storeDef->IsAvailable()) {
+	if (builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() && (storage < 10 * metalIncome) && storeDef->IsAvailable()) {
 		const AIFloat3& startPos = circuit->GetSetupManager()->GetBasePos();
 		CMetalManager* metalManager = circuit->GetMetalManager();
 		int index = metalManager->FindNearestSpot(startPos);
@@ -711,7 +711,21 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 		return task;
 	}
 
+	task = UpdatePylonTasks();
+
+	return task;
+}
+
+IBuilderTask* CEconomyManager::UpdatePylonTasks()
+{
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	IBuilderTask* task = nullptr;
+	if (!builderManager->CanEnqueueTask()) {
+		return task;
+	}
+
 	float energyIncome = GetAvgEnergyIncome();
+	float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
 	if ((metalIncome * ecoFactor > 10) && (energyIncome > 100) && pylonDef->IsAvailable()) {
 		float cost = pylonDef->GetUnitDef()->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 8 + 1;
@@ -725,7 +739,6 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 			if (link != nullptr) {
 				if ((buildPos != -RgtVector) && builderManager->IsBuilderInArea(buildDef, buildPos)) {
 					task = builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, buildDef, buildPos, link, cost);
-					return task;
 				} else {
 					link->SetValid(false);  // FIXME: Reset valid on timer? Or when air con appears
 					grid->SetForceRebuild(true);

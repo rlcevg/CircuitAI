@@ -61,6 +61,7 @@ public:
 	IBuilderTask* UpdateFactoryTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	CRecruitTask* UpdateRecruitTasks();
 	IBuilderTask* UpdateStorageTasks();
+	IBuilderTask* UpdatePylonTasks();
 
 private:
 	void Init();

@@ -138,13 +138,13 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 	CEnergyLink::SVertex* v1 = link->GetV1();
 	CEnergyLink::SPylon* pylon0 = link->GetConnectionHead(v0, v1->pos);
 	if (pylon0 == nullptr) {
-		outDef = circuit->GetEconomyManager()->GetPylonDef();
+		outDef = circuit->GetEconomyManager()->GetPylonDef();  // IsAvailable check should be done before entering GetLinkToBuild
 		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, v0->pos, searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
 		return link;
 	}
 	CEnergyLink::SPylon* pylon1 = link->GetConnectionHead(v1, pylon0->pos);
 	if (pylon1 == nullptr) {
-		outDef = circuit->GetEconomyManager()->GetPylonDef();
+		outDef = circuit->GetEconomyManager()->GetPylonDef();  // IsAvailable check should be done before entering GetLinkToBuild
 		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, v1->pos, searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
 		return link;
 	}
@@ -162,7 +162,14 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 				break;
 			}
 		}
+
 		outDef = circuit->GetCircuitDef(defId);
+		if (!outDef->IsAvailable()) {
+			outPos = -RgtVector;
+			candDefs.erase(range);
+			continue;
+		}
+
 		AIFloat3 dir = pylon1->pos - pylon0->pos;
 		AIFloat3 sweetPos;
 		float dist = pylon0->range + pylon1->range + range * 2.0f;

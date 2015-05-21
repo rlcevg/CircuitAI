@@ -82,7 +82,7 @@ void CBPylonTask::Finish()
 	if (link != nullptr) {
 		link->SetBeingBuilt(false);
 	}
-	manager->GetCircuit()->GetEconomyManager()->UpdateStorageTasks();
+	manager->GetCircuit()->GetEconomyManager()->UpdatePylonTasks();
 
 	IBuilderTask::Finish();
 }

@@ -150,7 +150,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	cdef = circuit->GetCircuitDef("corrl");
 	def = cdef->GetUnitDef();
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	bsize = ssize;
+	bsize = ssize + int2(4, 4);
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(ENGY_LOW) |
 				 STRUCT_BIT(ENGY_MID) |
@@ -162,7 +162,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	cdef = circuit->GetCircuitDef("corllt");
 	def = cdef->GetUnitDef();
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	bsize = ssize;
+	bsize = ssize + int2(4, 4);
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(ENGY_LOW) |
 				 STRUCT_BIT(ENGY_MID) |
@@ -245,7 +245,8 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 		UnitDef* def = cdef->GetUnitDef();
 		if ((def->GetSpeed() == 0) && (blockInfos.find(kv.first) == blockInfos.end())) {
 			ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-			blockInfos[cdef->GetId()] = new CBlockRectangle(offset, ssize, ssize, SBlockingMap::StructType::UNKNOWN, ignoreMask);
+			bsize = ssize + int2(4, 4);
+			blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::UNKNOWN, ignoreMask);
 		}
 	}
 

@@ -86,7 +86,7 @@ protected:
 	BuildType buildType;
 	float buildPower;
 	float cost;
-	int timeout;  // TODO: re-evaluate need of this
+	int timeout;  // TODO: Use Default = MAX_TRAVEL_SEC. Start checks (on Update?) after first assignment. Stop checks on target != nullptr?
 	CCircuitUnit* target;  // FIXME: Replace target with unitId
 	springai::AIFloat3 buildPos;
 	int facing;
