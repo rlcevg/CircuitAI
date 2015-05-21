@@ -726,7 +726,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 
 	float energyIncome = GetAvgEnergyIncome();
 	float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
-	if ((metalIncome * ecoFactor > 10) && (energyIncome > 100) && pylonDef->IsAvailable()) {
+	if ((metalIncome * ecoFactor > 10) && (energyIncome > 80) && pylonDef->IsAvailable()) {
 		float cost = pylonDef->GetUnitDef()->GetCost(metalRes);
 		int count = builderManager->GetBuilderPower() / cost * 8 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::PYLON).size() < count) {

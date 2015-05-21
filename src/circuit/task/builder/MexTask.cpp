@@ -84,52 +84,19 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 void CBMexTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CMetalManager* metalManager = circuit->GetMetalManager();
-
-	int index = metalManager->FindNearestCluster(buildPos);
-	if (index < 0) {
-		circuit->GetEconomyManager()->UpdateMetalTasks(buildPos, units.empty() ? nullptr : *units.begin());
-		return;
-	}
-
-	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 
-	int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::MEX).size();
-	bool mustHave = !economyManager->IsEnergyStalling() || ((taskSize < 1) && (builderManager->GetWorkerCount() > 2));
-	if (mustHave && buildDef->IsAvailable()) {
-		// Colonize next spot in cluster
-		int bestIdx = -1;
-		Map* map = circuit->GetMap();
-		const CMetalData::Metals& spots = metalManager->GetSpots();
-		float sqMinDist = std::numeric_limits<float>::max();
-		for (auto idx : metalManager->GetClusters()[index].idxSpots) {
-			const AIFloat3& pos = spots[idx].position;
-			if (metalManager->IsOpenSpot(idx) &&
-				builderManager->IsBuilderInArea(buildDef, pos) &&
-				map->IsPossibleToBuildAt(buildDef->GetUnitDef(), pos, UNIT_COMMAND_BUILD_NO_FACING))
-			{
-				float sqDist = buildPos.SqDistance2D(pos);
-				if (sqDist < sqMinDist) {
-					sqMinDist = sqDist;
-					bestIdx = idx;
-				}
-			}
-		}
-		if (bestIdx != -1) {
-			const AIFloat3& pos = spots[bestIdx].position;
-			IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, pos, IBuilderTask::BuildType::MEX, cost);
-			task->SetBuildPos(pos);
-			metalManager->SetOpenSpot(bestIdx, false);
-		} else {
-			circuit->GetEconomyManager()->UpdateMetalTasks(buildPos, units.empty() ? nullptr : *units.begin());
-		}
-	} else {
-		economyManager->UpdateEnergyTasks(buildPos, units.empty() ? nullptr : *units.begin());
+	CCircuitUnit* unit = units.empty() ? nullptr : *units.begin();
+	if (economyManager->UpdateMetalTasks(buildPos, unit) == nullptr) {
+		economyManager->UpdateEnergyTasks(buildPos, unit);
 	}
 
 	// Add defence
 	// TODO: Move into MilitaryManager
+	int index = circuit->GetMetalManager()->FindNearestCluster(buildPos);
+	if (index < 0) {
+		return;
+	}
 	CCircuitDef* defDef;
 	bool valid = false;
 	float maxCost = MIN_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
@@ -155,7 +122,7 @@ void CBMexTask::Finish()
 		}
 		if (closestPoint != nullptr) {
 			closestPoint->isOpen = false;
-			builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, closestPoint->position, IBuilderTask::BuildType::DEFENCE);
+			circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, closestPoint->position, IBuilderTask::BuildType::DEFENCE);
 		}
 	}
 }

@@ -465,6 +465,7 @@ void CEnergyGrid::RebuildTree()
 	linkClusters.clear();
 
 	// Mark used edges as const
+	// TODO: Modify weight according to distance to own base?
 	for (const CMetalData::EdgeDesc& edgeId : spanningTree) {
 		CEnergyLink& link = boost::get(linkIt, edgeId);
 		if (link.IsFinished() || link.IsBeingBuilt()) {

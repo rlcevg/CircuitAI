@@ -177,13 +177,14 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+	bsize = int2(radius * 2, radius * 2);
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(MEX) |
 				 STRUCT_BIT(DEF_LOW) |
 				 STRUCT_BIT(ENGY_MID) |
 				 STRUCT_BIT(ENGY_HIGH) |
 				 STRUCT_BIT(PYLON);
-	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::NANO, ignoreMask);
+	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::NANO, ignoreMask);
 
 	cdef = circuit->GetCircuitDef("raveparty");
 	def = cdef->GetUnitDef();

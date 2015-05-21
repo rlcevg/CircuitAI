@@ -476,7 +476,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
 			weight = 1.0f / (weight * weight);
 			float dist;
-			bool valid;
+			bool valid = false;
 
 			CCircuitUnit* target = candidate->GetTarget();
 			if (target != nullptr) {
@@ -495,7 +495,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 
 				Unit* tu = target->GetUnit();
 				dist = pathLength(buildPos);
-				if (dist <= 0) {
+				if (dist < SQUARE_SIZE) {
 //					continue;
 					dist = bp.distance(pos) * 1.5;
 				}
@@ -514,7 +514,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 				}
 
 				dist = pathLength(buildPos);
-				if (dist <= 0) {
+				if (dist < SQUARE_SIZE) {
 //					continue;
 					dist = buildPos.distance(pos) * 1.5;
 				}
