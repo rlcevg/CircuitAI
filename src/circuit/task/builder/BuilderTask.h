@@ -57,24 +57,24 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
-	const springai::AIFloat3& GetTaskPos() const;
-	CCircuitDef* GetBuildDef() const;
+	inline const springai::AIFloat3& GetTaskPos() const { return position; }
+	inline CCircuitDef* GetBuildDef() const { return buildDef; }
 
-	BuildType GetBuildType() const;
-	float GetBuildPower() const;
-	float GetCost() const;
-	int GetTimeout() const;
+	inline BuildType GetBuildType() const { return buildType; }
+	inline float GetBuildPower() const { return buildPower; }
+	inline float GetCost() const { return cost; }
+	inline int GetTimeout() const { return timeout; }
 
-	void SetBuildPos(const springai::AIFloat3& pos);
-	const springai::AIFloat3& GetBuildPos() const;
+	inline void SetBuildPos(const springai::AIFloat3& pos) { buildPos = pos; }
+	inline const springai::AIFloat3& GetBuildPos() const { return buildPos; }
 	const springai::AIFloat3& GetPosition() const;  // return buildPos if set, position otherwise
 	virtual void SetTarget(CCircuitUnit* unit);
-	CCircuitUnit* GetTarget() const;
+	inline CCircuitUnit* GetTarget() const { return target; }
 
 	bool IsEqualBuildPos(const springai::AIFloat3& pos) const;
-	bool IsStructure() const;
-	void SetFacing(int value);
-	int GetFacing() const;
+	inline bool IsStructure() const { return buildType <= BuildType::MEX; }
+	inline void SetFacing(int value) { facing = value; }
+	inline int GetFacing() const { return facing; }
 
 protected:
 	int FindFacing(CCircuitDef* buildDef, const springai::AIFloat3& position);

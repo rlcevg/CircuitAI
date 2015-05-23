@@ -182,7 +182,9 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		//        But for some engine-bugged reason unit is not idle and retries same building. UnitCreated invoked for new task with wrong target.
 		//        Next workaround unfortunately doesn't mark bugged building on blocking map.
 		// TODO: Create additional task to build/reclaim lost unit
-		if ((taskB->GetTarget() == nullptr) && (*taskB->GetBuildDef() == *unit->GetCircuitDef()) && taskB->IsEqualBuildPos(u->GetPos())) {
+		if ((taskB->GetTarget() == nullptr) && (taskB->GetBuildDef() != nullptr) &&
+			(*taskB->GetBuildDef() == *unit->GetCircuitDef()) && taskB->IsEqualBuildPos(u->GetPos()))
+		{
 			taskB->SetTarget(unit);
 			unfinishedUnits[unit] = taskB;
 

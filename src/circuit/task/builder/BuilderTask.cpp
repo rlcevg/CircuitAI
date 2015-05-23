@@ -206,46 +206,6 @@ void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 	manager->AbortTask(this);
 }
 
-const AIFloat3& IBuilderTask::GetTaskPos() const
-{
-	return position;
-}
-
-CCircuitDef* IBuilderTask::GetBuildDef() const
-{
-	return buildDef;
-}
-
-IBuilderTask::BuildType IBuilderTask::GetBuildType() const
-{
-	return buildType;
-}
-
-float IBuilderTask::GetBuildPower() const
-{
-	return buildPower;
-}
-
-float IBuilderTask::GetCost() const
-{
-	return cost;
-}
-
-int IBuilderTask::GetTimeout() const
-{
-	return timeout;
-}
-
-void IBuilderTask::SetBuildPos(const AIFloat3& pos)
-{
-	buildPos = pos;
-}
-
-const AIFloat3& IBuilderTask::GetBuildPos() const
-{
-	return buildPos;
-}
-
 const AIFloat3& IBuilderTask::GetPosition() const
 {
 	return (buildPos != -RgtVector) ? buildPos : position;
@@ -257,29 +217,9 @@ void IBuilderTask::SetTarget(CCircuitUnit* unit)
 	SetBuildPos((unit != nullptr) ? unit->GetUnit()->GetPos() : -RgtVector);
 }
 
-CCircuitUnit* IBuilderTask::GetTarget() const
-{
-	return target;
-}
-
 bool IBuilderTask::IsEqualBuildPos(const AIFloat3& pos) const
 {
 	return (math::fabs(pos.x - buildPos.x) <= SQUARE_SIZE) && (math::fabs(pos.z - buildPos.z) <= SQUARE_SIZE);
-}
-
-bool IBuilderTask::IsStructure() const
-{
-	return buildType < IBuilderTask::BuildType::MEX;
-}
-
-void IBuilderTask::SetFacing(int value)
-{
-	facing = value;
-}
-
-int IBuilderTask::GetFacing() const
-{
-	return facing;
 }
 
 int IBuilderTask::FindFacing(CCircuitDef* buildDef, const springai::AIFloat3& position)
