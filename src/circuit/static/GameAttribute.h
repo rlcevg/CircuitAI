@@ -14,10 +14,6 @@
 
 #include <unordered_set>
 
-namespace springai {
-	class Pathing;
-}
-
 namespace circuit {
 
 class CCircuitAI;
@@ -30,14 +26,14 @@ public:
 	virtual ~CGameAttribute();
 
 	void SetGameEnd(bool value);
-	bool IsGameEnd();
-	void RegisterAI(CCircuitAI* circuit);
-	void UnregisterAI(CCircuitAI* circuit);
+	inline bool IsGameEnd() const { return gameEnd; }
+	inline void RegisterAI(CCircuitAI* circuit) { circuits.insert(circuit); }
+	inline void UnregisterAI(CCircuitAI* circuit) { circuits.erase(circuit); }
 
-	const Circuits& GetCircuits() const;
-	CSetupData& GetSetupData();
-	CMetalData& GetMetalData();
-	CTerrainData& GetTerrainData();
+	inline const Circuits& GetCircuits() const { return circuits; }
+	inline CSetupData& GetSetupData() { return setupData; }
+	inline CMetalData& GetMetalData() { return metalData; }
+	inline CTerrainData& GetTerrainData() { return terrainData; }
 
 private:
 	bool gameEnd;

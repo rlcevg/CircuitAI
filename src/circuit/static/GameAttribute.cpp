@@ -36,39 +36,4 @@ void CGameAttribute::SetGameEnd(bool value)
 	}
 }
 
-bool CGameAttribute::IsGameEnd()
-{
-	return gameEnd;
-}
-
-void CGameAttribute::RegisterAI(CCircuitAI* circuit)
-{
-	circuits.insert(circuit);
-}
-
-void CGameAttribute::UnregisterAI(CCircuitAI* circuit)
-{
-	circuits.erase(circuit);
-}
-
-const std::unordered_set<CCircuitAI*>& CGameAttribute::GetCircuits() const
-{
-	return circuits;
-}
-
-CSetupData& CGameAttribute::GetSetupData()
-{
-	return setupData;
-}
-
-CMetalData& CGameAttribute::GetMetalData()
-{
-	return metalData;
-}
-
-CTerrainData& CGameAttribute::GetTerrainData()
-{
-	return terrainData;
-}
-
 } // namespace circuit

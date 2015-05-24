@@ -50,9 +50,10 @@ void CBEnergyTask::Finish()
 	bool foundPylon = false;
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	CCircuitDef* pylonDef = economyManager->GetPylonDef();
-	float pylonRange = circuit->GetEnergyGrid()->GetPylonRange(buildDef->GetId());
+	float ourRange = circuit->GetEnergyGrid()->GetPylonRange(buildDef->GetId());
+	float pylonRange = economyManager->GetPylonRange();
 	circuit->UpdateFriendlyUnits();
-	float radius = economyManager->GetPylonRange() + pylonRange;
+	float radius = pylonRange + ourRange;
 	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(buildPos, radius));
 	for (auto u : units) {
 		CCircuitUnit* p = circuit->GetFriendlyUnit(u);
@@ -74,8 +75,14 @@ void CBEnergyTask::Finish()
 		CMetalManager* metalManager = circuit->GetMetalManager();
 		int index = metalManager->FindNearestCluster(pos);
 		if (index >= 0) {
-			AIFloat3 dir = metalManager->GetClusters()[index].geoCentr - pos;
-			pos += dir.Normalize2D() * pylonRange;
+			const AIFloat3& clPos = metalManager->GetClusters()[index].geoCentr;
+			AIFloat3 dir = clPos - pos;
+			float dist = ourRange + pylonRange + pylonRange * 2.0f;
+			if (dir.SqLength2D() < dist * dist) {
+				pos = (pos + dir.Normalize2D() * (ourRange - pylonRange) + clPos) * 0.5f;
+			} else {
+				pos += dir.Normalize2D() * (ourRange + pylonRange) * 0.95f;
+			}
 		}
 		builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, pylonDef, pos, nullptr, 1.0f);
 	}
