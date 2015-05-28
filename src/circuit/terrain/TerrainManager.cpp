@@ -213,6 +213,14 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 				 STRUCT_BIT(PYLON);
 	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
 
+	cdef = circuit->GetCircuitDef("armorco");
+	def = cdef->GetUnitDef();
+	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+	bsize = ssize + int2(4, 4);
+	offset = int2(0, 0);
+	ignoreMask = STRUCT_BIT(ALL);
+	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
+
 	blockingMap.columns = mapWidth / 2;  // build-step = 2 little green squares
 	blockingMap.rows = mapHeight / 2;
 	SBlockingMap::BlockCell cell = {0};

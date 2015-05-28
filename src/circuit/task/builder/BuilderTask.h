@@ -11,7 +11,7 @@
 #include "task/UnitTask.h"
 
 #define MIN_BUILD_SEC	20
-#define MAX_BUILD_SEC	60
+#define MAX_BUILD_SEC	120
 #define MAX_TRAVEL_SEC	180
 
 namespace circuit {

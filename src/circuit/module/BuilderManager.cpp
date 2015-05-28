@@ -152,6 +152,15 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	buildAreas[nullptr] = std::map<CCircuitDef*, int>();  // air
 
 	terraDef = circuit->GetCircuitDef("terraunit");
+
+	// FIXME: EXPERIMENTAL
+	/*
+	 * armorco handlers
+	 */
+	createdHandlers[circuit->GetCircuitDef("armorco")->GetId()] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
+		unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::LOW, unit);
+	};
+	// FIXME: EXPERIMENTAL
 }
 
 CBuilderManager::~CBuilderManager()
@@ -165,6 +174,11 @@ CBuilderManager::~CBuilderManager()
 
 int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 {
+	auto search = createdHandlers.find(unit->GetCircuitDef()->GetId());
+	if (search != createdHandlers.end()) {
+		search->second(unit, builder);
+	}
+
 	if (builder == nullptr) {
 		return 0; //signaling: OK
 	}
@@ -330,9 +344,10 @@ IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
 											  const AIFloat3& position,
 											  float cost,
 											  int timeout,
-											  float radius)
+											  float radius,
+											  bool isMetal)
 {
-	IBuilderTask* task = new CBReclaimTask(this, priority, position, cost, timeout, radius);
+	IBuilderTask* task = new CBReclaimTask(this, priority, position, cost, timeout, radius, isMetal);
 	builderTasks[static_cast<int>(IBuilderTask::BuildType::RECLAIM)].insert(task);
 	builderTasksCount++;
 	return task;
@@ -447,6 +462,13 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	IBuilderTask* task = nullptr;
 	Unit* u = unit->GetUnit();
 	const AIFloat3& pos = u->GetPos();
+
+	task = circuit->GetEconomyManager()->UpdateReclaimTasks(pos, unit);
+	if (task != nullptr) {
+		task->AssignTo(unit);
+		return;
+	}
+
 	float maxSpeed = u->GetMaxSpeed();
 	UnitDef* unitDef = unit->GetCircuitDef()->GetUnitDef();
 	float buildDistance = unit->GetCircuitDef()->GetBuildDistance();
@@ -655,7 +677,7 @@ void CBuilderManager::Watchdog()
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
 		Unit* u = unit->GetUnit();
-		if (u->IsBeingBuilt() && (u->GetMaxSpeed() <= 0) && (unfinishedUnits.find(unit) == unfinishedUnits.end())) {
+		if ((unfinishedUnits.find(unit) == unfinishedUnits.end()) && u->IsBeingBuilt() && (u->GetMaxSpeed() <= 0)) {
 			float maxHealth = u->GetMaxHealth();
 			float buildPercent = (maxHealth - u->GetHealth()) / maxHealth;
 			CCircuitDef* cdef = unit->GetCircuitDef();

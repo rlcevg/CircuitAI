@@ -71,6 +71,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	unitDefId = circuit->GetCircuitDef("armsnipe")->GetId();
 	finishedHandler[unitDefId] = atackerFinishedHandler;
 	idleHandler[unitDefId] = atackerIdleHandler;
+	unitDefId = circuit->GetCircuitDef("armorco")->GetId();
+	finishedHandler[unitDefId] = atackerFinishedHandler;
+	idleHandler[unitDefId] = atackerIdleHandler;
 
 	/*
 	 * Defence handlers

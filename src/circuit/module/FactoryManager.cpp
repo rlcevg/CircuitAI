@@ -52,25 +52,23 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		factoryPower += def->GetBuildSpeed();
 
 		// check nanos around
-		if (assistDef != nullptr) {
-			std::set<CCircuitUnit*> nanos;
-			float radius = assistDef->GetBuildDistance();
-			auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(u->GetPos(), radius));
-			int nanoId = assistDef->GetId();
-			int teamId = this->circuit->GetTeamId();
-			for (auto nano : units) {
-				if (nano == nullptr) {
-					continue;
-				}
-				UnitDef* ndef = nano->GetDef();
-				if (ndef->GetUnitDefId() == nanoId && nano->GetTeam() == teamId) {
-					nanos.insert(this->circuit->GetTeamUnit(nano->GetUnitId()));
-				}
-				delete ndef;
+		std::set<CCircuitUnit*> nanos;
+		float radius = assistDef->GetBuildDistance();
+		auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(u->GetPos(), radius));
+		int nanoId = assistDef->GetId();
+		int teamId = this->circuit->GetTeamId();
+		for (auto nano : units) {
+			if (nano == nullptr) {
+				continue;
 			}
-			utils::free_clear(units);
-			factories[unit] = nanos;
+			UnitDef* ndef = nano->GetDef();
+			if (ndef->GetUnitDefId() == nanoId && nano->GetTeam() == teamId) {
+				nanos.insert(this->circuit->GetTeamUnit(nano->GetUnitId()));
+			}
+			delete ndef;
 		}
+		utils::free_clear(units);
+		factories[unit] = nanos;
 	};
 	auto factoryIdleHandler = [this](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
@@ -151,6 +149,66 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			}
 		}
 	}
+
+	// FIXME: EXPERIMENTAL
+	/*
+	 * striderhub handlers
+	 */
+	CCircuitDef::Id defId = circuit->GetCircuitDef("striderhub")->GetId();
+	finishedHandler[defId] = [this, defId](CCircuitUnit* unit) {
+		unit->SetManager(this);
+
+		Unit* u = unit->GetUnit();
+		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
+		AIFloat3 pos = u->GetPos();
+		factoryPower += def->GetBuildSpeed();
+		CRecruitTask* task = new CRecruitTask(this, IUnitTask::Priority::HIGH, nullptr, ZeroVector, CRecruitTask::BuildType::FIREPOWER, unit->GetCircuitDef()->GetBuildDistance());
+		unit->SetTask(task);
+
+		// check nanos around
+		std::set<CCircuitUnit*> nanos;
+		float radius = assistDef->GetBuildDistance();
+		auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(u->GetPos(), radius));
+		int nanoId = assistDef->GetId();
+		int teamId = this->circuit->GetTeamId();
+		for (auto nano : units) {
+			if (nano == nullptr) {
+				continue;
+			}
+			UnitDef* ndef = nano->GetDef();
+			if (ndef->GetUnitDefId() == nanoId && nano->GetTeam() == teamId) {
+				nanos.insert(this->circuit->GetTeamUnit(nano->GetUnitId()));
+			}
+			delete ndef;
+		}
+		utils::free_clear(units);
+		factories[unit] = nanos;
+
+		std::vector<float> params;
+		params.push_back(2.0f);
+		u->ExecuteCustomCommand(CMD_PRIORITY, params);
+
+//		u->SetRepeat(true);
+		idleHandler[defId](unit);
+	};
+	idleHandler[defId] = [this](CCircuitUnit* unit) {
+		AIFloat3 pos = unit->GetUnit()->GetPos();
+		CTerrainManager* terrain = this->circuit->GetTerrainManager();
+		CCircuitDef* detriDef = this->circuit->GetCircuitDef("armorco");
+		pos = terrain->FindBuildSite(detriDef, pos, this->circuit->GetCircuitDef("striderhub")->GetBuildDistance(), -1);
+		if (pos != -RgtVector) {
+			unit->GetUnit()->Build(detriDef->GetUnitDef(), pos, -1, 0, FRAMES_PER_SEC * 10);
+		}
+	};
+	destroyedHandler[defId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+		if (unit->GetUnit()->IsBeingBuilt()) {
+			return;
+		}
+		factoryPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+		factories.erase(unit);
+		delete unit->GetTask();
+	};
+	// FIXME: EXPERIMENTAL
 }
 
 CFactoryManager::~CFactoryManager()

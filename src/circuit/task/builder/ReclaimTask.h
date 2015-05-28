@@ -16,7 +16,7 @@ class CBReclaimTask: public IBuilderTask {
 public:
 	CBReclaimTask(ITaskManager* mgr, Priority priority,
 				  const springai::AIFloat3& position,
-				  float cost, int timeout, float radius = .0f);
+				  float cost, int timeout, float radius = .0f, bool isMetal = true);
 	virtual ~CBReclaimTask();
 
 	virtual void RemoveAssignee(CCircuitUnit* unit);
@@ -28,8 +28,12 @@ protected:
 	virtual void Finish();
 	virtual void Cancel();
 
+public:
+	virtual void OnUnitIdle(CCircuitUnit* unit);
+
 protected:
 	float radius;
+	bool isMetal;
 };
 
 } // namespace circuit

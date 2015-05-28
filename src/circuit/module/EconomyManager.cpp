@@ -24,6 +24,7 @@
 #include "Resource.h"
 #include "Economy.h"
 #include "Feature.h"
+#include "FeatureDef.h"
 
 namespace circuit {
 
@@ -96,10 +97,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 
 	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
 	ecoFactor = circuit->GetAllyTeam()->GetSize() * 0.25f + 0.75f;
-
-	// FIXME: Replace area reclaim with own implementation, remove maxReclaimers
-	int areaSize = circuit->GetTerrainManager()->GetMobileType(circuit->GetCircuitDef("armrectr")->GetMobileId())->area.size();  // FIXME: area.size() - list, uses std::advance()
-	maxReclaimers = (areaSize == 1) ? 4 : 2;
 
 	/*
 	 *  Identify resource buildings
@@ -176,8 +173,7 @@ int CEconomyManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 IBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 {
 	// TODO: Add general logic here
-	Unit* u = unit->GetUnit();
-	const AIFloat3& pos = u->GetPos();
+	const AIFloat3& pos = unit->GetUnit()->GetPos();
 
 	IBuilderTask* task;
 	task = UpdateMetalTasks(pos, unit);
@@ -193,37 +189,52 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(CCircuitUnit* unit)
 		return task;
 	}
 
-	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(pos, u->GetMaxSpeed() * FRAMES_PER_SEC * 60));
-	if (!features.empty() && (builderManager->GetTasks(IBuilderTask::BuildType::RECLAIM).size() < maxReclaimers)) {
-		task = builderManager->EnqueueReclaim(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 60);
-	}
-	utils::free_clear(features);
-	if (task != nullptr) {
-		return task;
-	}
-
 	// FIXME: Eco rules. It should never get here
-	float metalIncome = GetAvgMetalIncome() * ecoFactor;
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome()) * ecoFactor;
 	CCircuitDef* buildDef = circuit->GetCircuitDef("armwin");
 	if ((metalIncome < 50) && (buildDef->GetCount() < 10)) {
 		task = builderManager->EnqueueTask(IBuilderTask::Priority::LOW, buildDef, pos, IBuilderTask::BuildType::ENERGY);
 	} else if (metalIncome < 100) {
-		task = builderManager->EnqueuePatrol(IBuilderTask::Priority::LOW, unit->GetUnit()->GetPos(), .0f, FRAMES_PER_SEC * 20);
+		task = builderManager->EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 20);
 	} else {
 		const std::set<IBuilderTask*>& tasks = builderManager->GetTasks(IBuilderTask::BuildType::BIG_GUN);
 		if (tasks.empty()) {
-			buildDef = circuit->GetCircuitDef("raveparty");
+			buildDef = circuit->GetCircuitDef("striderhub");
 			if (buildDef->GetCount() < 1) {
-				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, circuit->GetSetupManager()->GetBasePos(), IBuilderTask::BuildType::BIG_GUN);
+				CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
+					return clusterInfos[v.second].factory == nullptr;
+				};
+				CMetalManager* metalManager = circuit->GetMetalManager();
+				int index = metalManager->FindNearestCluster(circuit->GetSetupManager()->GetBasePos(), predicate);
+				CTerrainManager* terrain = circuit->GetTerrainManager();
+				AIFloat3 buildPos;
+				if (index >= 0) {
+					buildPos = metalManager->GetClusters()[index].geoCentr;
+					float size = 10 * SQUARE_SIZE;
+					buildPos.x += (buildPos.x > terrain->GetTerrainWidth() / 2) ? size : -size;
+					buildPos.z += (buildPos.z > terrain->GetTerrainHeight() / 2) ? size : -size;
+					if (terrain->CanBeBuiltAt(buildDef, buildPos) && terrain->CanBuildAt(unit, buildPos)) {
+						task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, buildPos, IBuilderTask::BuildType::BIG_GUN);
+					} else {
+						task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, circuit->GetSetupManager()->GetBasePos(), IBuilderTask::BuildType::BIG_GUN);
+					}
+				} else {
+					task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, circuit->GetSetupManager()->GetBasePos(), IBuilderTask::BuildType::BIG_GUN);
+				}
 			} else {
-				task = builderManager->EnqueuePatrol(IBuilderTask::Priority::LOW, unit->GetUnit()->GetPos(), .0f, FRAMES_PER_SEC * 20);
+				buildDef = circuit->GetCircuitDef("raveparty");
+				if (buildDef->GetCount() < 1) {
+					task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, circuit->GetSetupManager()->GetBasePos(), IBuilderTask::BuildType::BIG_GUN);
+				} else {
+					task = builderManager->EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 20);
+				}
 			}
 		} else {
 			task = *tasks.begin();
 		}
 	}
-	return task;
+	return task;  // Must not return nullptr
 }
 
 CRecruitTask* CEconomyManager::CreateFactoryTask(CCircuitUnit* unit)
@@ -451,14 +462,15 @@ bool CEconomyManager::IsEnergyStalling() const
 IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	IBuilderTask* task = nullptr;
 	if (!builderManager->CanEnqueueTask()) {
-		return task;
+		return nullptr;
 	}
+	IBuilderTask* task = nullptr;
 
 	// check uncolonized mexes
 	int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::MEX).size();
-	bool mustHave = !IsEnergyStalling() || ((taskSize < 1) && (builderManager->GetWorkerCount() > 2));
+	bool isEnergyStalling = IsEnergyStalling();
+	bool mustHave = !isEnergyStalling || ((taskSize < 1) && (builderManager->GetWorkerCount() > 2));
 	if (mustHave && mexDef->IsAvailable()) {
 		UnitDef* metalDef =  mexDef->GetUnitDef();
 		float cost = metalDef->GetCost(metalRes);
@@ -491,9 +503,57 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost);
 				task->SetBuildPos(pos);
 				metalManager->SetOpenSpot(index, false);
+				return task;
 			}
 		}
 	}
+
+	if (!isEnergyStalling) {
+		task = UpdateReclaimTasks(position, unit);
+	}
+
+	return task;
+}
+
+IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCircuitUnit* unit)
+{
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	if (!builderManager->CanEnqueueTask() || (unit == nullptr)) {
+		return nullptr;
+	}
+	IBuilderTask* task = nullptr;
+
+	if (IsMetalFull() || builderManager->GetTasks(IBuilderTask::BuildType::RECLAIM).size() >= builderManager->GetWorkerCount() / 2) {
+		return nullptr;
+	}
+	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(position, unit->GetUnit()->GetMaxSpeed() * FRAMES_PER_SEC * 60));
+	if (!features.empty()) {
+		CTerrainManager* terrain = circuit->GetTerrainManager();
+		AIFloat3 reclPos;
+		float minSqDist = std::numeric_limits<float>::max();
+		for (Feature* feature : features) {
+			AIFloat3 featPos = feature->GetPosition();
+			terrain->CorrectPosition(featPos);  // Impulsed flying feature
+			if (!terrain->CanBuildAt(unit, featPos)) {
+				continue;
+			}
+			FeatureDef* featDef = feature->GetDef();
+			float reclaimValue = featDef->GetContainedResource(metalRes)/* * feature->GetReclaimLeft()*/;
+			delete featDef;
+			if (reclaimValue < 1.0f) {
+				continue;
+			}
+			float sqDist = position.SqDistance2D(featPos);
+			if (sqDist < minSqDist) {
+				reclPos = featPos;
+				minSqDist = sqDist;
+			}
+		}
+		if (minSqDist < std::numeric_limits<float>::max()) {
+			task = builderManager->EnqueueReclaim(IBuilderTask::Priority::LOW, reclPos, 1.0f, FRAMES_PER_SEC * 300, unit->GetCircuitDef()->GetBuildDistance());
+		}
+	}
+	utils::free_clear(features);
 
 	return task;
 }
@@ -501,161 +561,160 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	IBuilderTask* task = nullptr;
 	if (!builderManager->CanEnqueueTask()) {
-		return task;
+		return nullptr;
 	}
 
 	// check energy / metal ratio
 	float energyIncome = GetAvgEnergyIncome();
-	float energyUsage = eco->GetUsage(energyRes);
 	bool isEnergyStalling = IsEnergyStalling();
-	if (isEnergyStalling || (energyUsage > energyIncome * 0.8)) {
-		// Select proper energy UnitDef to build
-		CCircuitDef* bestDef = nullptr;
-		float cost;
-		float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
-		float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome * 0.5f);
-		int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
-		float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.1f : ecoFactor);
-		for (auto& engy : energyInfos) {  // sorted by high-tech first
-			// TODO: Add geothermal powerplant support
-			if (!engy.cdef->IsAvailable() || engy.cdef->GetUnitDef()->IsNeedGeo()) {
-				continue;
-			}
+	if (!isEnergyStalling && (eco->GetUsage(energyRes) <= energyIncome * 0.8)) {
+		return nullptr;
+	}
 
-			if (engy.cdef->GetCount() < engy.limit) {
-				int maxCount = buildPower / engy.cost * 4 + 1;
-				if (taskSize < maxCount) {
-					cost = engy.cost;
-					bestDef = engy.cdef;
-					// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
-					//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
-					//       solar       geothermal    fusion         singu           ...
-					//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
-					if (cost / (buildPower * buildPower / 8) < maxBuildTime) {
-						break;
-					}
-				}
-			} else {
-				break;
-			}
+	// Select proper energy UnitDef to build
+	CCircuitDef* bestDef = nullptr;
+	float cost;
+	float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
+	float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome * 0.5f);
+	int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
+	float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.1f : ecoFactor);
+	for (auto& engy : energyInfos) {  // sorted by high-tech first
+		// TODO: Add geothermal powerplant support
+		if (!engy.cdef->IsAvailable() || engy.cdef->GetUnitDef()->IsNeedGeo()) {
+			continue;
 		}
 
-		if (bestDef != nullptr) {
-			// Find place to build
-			AIFloat3 buildPos = -RgtVector;
-
-			CMetalManager* metalManager = circuit->GetMetalManager();
-			if (cost / std::min(builderManager->GetBuilderPower(), metalIncome) < MIN_BUILD_SEC) {
-				int index = metalManager->FindNearestSpot(position);
-				if (index != -1) {
-					const CMetalData::Metals& spots = metalManager->GetSpots();
-					buildPos = spots[index].position;
-				}
-			} else {
-				const AIFloat3& startPos = circuit->GetSetupManager()->GetBasePos();
-				int index = metalManager->FindNearestCluster(startPos);
-				if (index >= 0) {
-					const CMetalData::Clusters& clusters = metalManager->GetClusters();
-					buildPos = clusters[index].geoCentr;
+		if (engy.cdef->GetCount() < engy.limit) {
+			int maxCount = buildPower / engy.cost * 4 + 1;
+			if (taskSize < maxCount) {
+				cost = engy.cost;
+				bestDef = engy.cdef;
+				// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
+				//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
+				//       solar       geothermal    fusion         singu           ...
+				//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
+				if (cost / (buildPower * buildPower / 8) < maxBuildTime) {
+					break;
 				}
 			}
-
-			CTerrainManager* terrainManager = circuit->GetTerrainManager();
-			if ((buildPos != -RgtVector) && terrainManager->CanBeBuiltAt(bestDef, buildPos) &&
-				((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
-			{
-				IBuilderTask::Priority priority = isEnergyStalling ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
-				task = builderManager->EnqueueTask(priority, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, cost);
-			}
+		} else {
+			break;
 		}
 	}
 
-	return task;
+	if (bestDef != nullptr) {
+		// Find place to build
+		AIFloat3 buildPos = -RgtVector;
+
+		CMetalManager* metalManager = circuit->GetMetalManager();
+		if (cost / std::min(builderManager->GetBuilderPower(), metalIncome) < MIN_BUILD_SEC) {
+			int index = metalManager->FindNearestSpot(position);
+			if (index != -1) {
+				const CMetalData::Metals& spots = metalManager->GetSpots();
+				buildPos = spots[index].position;
+			}
+		} else {
+			const AIFloat3& startPos = circuit->GetSetupManager()->GetBasePos();
+			int index = metalManager->FindNearestCluster(startPos);
+			if (index >= 0) {
+				const CMetalData::Clusters& clusters = metalManager->GetClusters();
+				buildPos = clusters[index].geoCentr;
+			}
+		}
+
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		if ((buildPos != -RgtVector) && terrainManager->CanBeBuiltAt(bestDef, buildPos) &&
+			((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
+		{
+			IBuilderTask::Priority priority = isEnergyStalling ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
+			return builderManager->EnqueueTask(priority, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, cost);
+		}
+	}
+
+	return nullptr;
 }
 
 IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	IBuilderTask* task = nullptr;
 	if (!builderManager->CanEnqueueTask()) {
-		return task;
+		return nullptr;
 	}
 
 	CFactoryManager* factoryManager = circuit->GetFactoryManager();
-	CCircuitDef* assistDef = factoryManager->GetAssistDef();
-	CCircuitDef* facDef = circuit->GetCircuitDef("factorycloak");
 
 	// check buildpower
 	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
-	if ((factoryManager->GetFactoryPower() < metalIncome) &&
-		builderManager->GetTasks(IBuilderTask::BuildType::FACTORY).empty() && builderManager->GetTasks(IBuilderTask::BuildType::NANO).empty())
+	if ((factoryManager->GetFactoryPower() >= metalIncome) ||
+		!builderManager->GetTasks(IBuilderTask::BuildType::FACTORY).empty() ||
+		!builderManager->GetTasks(IBuilderTask::BuildType::NANO).empty())
 	{
-		CCircuitUnit* factory = factoryManager->NeedUpgrade();
-		if ((factory != nullptr) && assistDef->IsAvailable()) {
-			Unit* u = factory->GetUnit();
-			UnitDef* def = factory->GetCircuitDef()->GetUnitDef();
-			AIFloat3 buildPos = u->GetPos();
-			switch (u->GetBuildingFacing()) {
-				default:
-				case UNIT_FACING_SOUTH:
-					buildPos.z -= def->GetZSize() * SQUARE_SIZE;
-					break;
-				case UNIT_FACING_EAST:
-					buildPos.x -= def->GetXSize() * SQUARE_SIZE;
-					break;
-				case UNIT_FACING_NORTH:
-					buildPos.z += def->GetZSize() * SQUARE_SIZE;
-					break;
-				case UNIT_FACING_WEST:
-					buildPos.x += def->GetXSize() * SQUARE_SIZE;
-					break;
-			}
+		return nullptr;
+	}
 
-			CTerrainManager* terrainManager = circuit->GetTerrainManager();
-			if (terrainManager->CanBeBuiltAt(assistDef, buildPos) &&
-					((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
+	CCircuitDef* assistDef = factoryManager->GetAssistDef();
+	CCircuitUnit* factory = factoryManager->NeedUpgrade();
+	if ((factory != nullptr) && assistDef->IsAvailable()) {
+		Unit* u = factory->GetUnit();
+		UnitDef* def = factory->GetCircuitDef()->GetUnitDef();
+		AIFloat3 buildPos = u->GetPos();
+		switch (u->GetBuildingFacing()) {
+			default:
+			case UNIT_FACING_SOUTH:
+				buildPos.z -= def->GetZSize() * SQUARE_SIZE;
+				break;
+			case UNIT_FACING_EAST:
+				buildPos.x -= def->GetXSize() * SQUARE_SIZE;
+				break;
+			case UNIT_FACING_NORTH:
+				buildPos.z += def->GetZSize() * SQUARE_SIZE;
+				break;
+			case UNIT_FACING_WEST:
+				buildPos.x += def->GetXSize() * SQUARE_SIZE;
+				break;
+		}
+
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		if (terrainManager->CanBeBuiltAt(assistDef, buildPos) &&
+			((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
+		{
+			return builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, assistDef, buildPos, IBuilderTask::BuildType::NANO);
+		}
+	}
+
+	CCircuitDef* facDef = circuit->GetCircuitDef("factorycloak");
+	if (facDef->IsAvailable()) {
+		CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
+			return clusterInfos[v.second].factory == nullptr;
+		};
+		CMetalManager* metalManager = circuit->GetMetalManager();
+		int index = metalManager->FindNearestCluster(position, predicate);
+		CTerrainManager* terrain = circuit->GetTerrainManager();
+		AIFloat3 buildPos;
+		if (index >= 0) {
+			const CMetalData::Clusters& clusters = metalManager->GetClusters();
+			buildPos = clusters[index].geoCentr;
+			UnitDef* facUDef = facDef->GetUnitDef();
+			float size = std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
+			buildPos.x += (buildPos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
+			buildPos.z += (buildPos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
+
+			if (terrain->CanBeBuiltAt(facDef, buildPos) && ((unit == nullptr) || terrain->CanBuildAt(unit, buildPos)))
 			{
-				task = builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, assistDef, buildPos, IBuilderTask::BuildType::NANO);
-			}
-
-		} else if (facDef->IsAvailable()) {
-
-			CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
-				return clusterInfos[v.second].factory == nullptr;
-			};
-			CMetalManager* metalManager = circuit->GetMetalManager();
-			int index = metalManager->FindNearestCluster(position, predicate);
-			CTerrainManager* terrain = circuit->GetTerrainManager();
-			AIFloat3 buildPos;
-			if (index >= 0) {
-				const CMetalData::Clusters& clusters = metalManager->GetClusters();
-				buildPos = clusters[index].geoCentr;
-				UnitDef* facUDef = facDef->GetUnitDef();
-				float size = std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
-				buildPos.x += (buildPos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
-				buildPos.z += (buildPos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
-
-				CTerrainManager* terrainManager = circuit->GetTerrainManager();
-				if (terrainManager->CanBeBuiltAt(facDef, buildPos) &&
-					((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
-				{
-					task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos, IBuilderTask::BuildType::FACTORY);
-				}
+				return builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos, IBuilderTask::BuildType::FACTORY);
 			}
 		}
 	}
 
-	return task;
+	return nullptr;
 }
 
 CRecruitTask* CEconomyManager::UpdateRecruitTasks()
 {
 	CFactoryManager* factoryManager = circuit->GetFactoryManager();
-	CRecruitTask* task = nullptr;
 	if (!factoryManager->CanEnqueueTask()) {
-		return task;
+		return nullptr;
 	}
 
 	CCircuitDef* buildDef = circuit->GetCircuitDef("armrectr");
@@ -663,91 +722,82 @@ CRecruitTask* CEconomyManager::UpdateRecruitTasks()
 	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	// TODO: Create ReclaimTask for 20% of workers, and 20% RepairTask.
-	if ((builderManager->GetBuilderPower() < metalIncome * 1.5) && buildDef->IsAvailable()) {
-		for (auto t : factoryManager->GetTasks()) {
-			if (t->GetBuildType() == CRecruitTask::BuildType::BUILDPOWER) {
-				return task;
-			}
-		}
+	if ((builderManager->GetBuilderPower() < metalIncome * 2.0f) && (rand() % 2 == 0) && buildDef->IsAvailable()) {
 		CCircuitUnit* factory = factoryManager->GetRandomFactory();
 		const AIFloat3& buildPos = factory->GetUnit()->GetPos();
 		CTerrainManager* terrain = circuit->GetTerrainManager();
 		float radius = std::max(terrain->GetTerrainWidth(), terrain->GetTerrainHeight()) / 4;
-		task = factoryManager->EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::BuildType::BUILDPOWER, radius);
+		return factoryManager->EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::BuildType::BUILDPOWER, radius);
 	}
 
-	return task;
+	return nullptr;
 }
 
 IBuilderTask* CEconomyManager::UpdateStorageTasks()
 {
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	IBuilderTask* task = nullptr;
 	if (!builderManager->CanEnqueueTask()) {
-		return task;
+		return nullptr;
 	}
 
 	CCircuitDef* storeDef = circuit->GetCircuitDef("armmstor");
 
 	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
-	float storage = eco->GetStorage(metalRes);
-	if (builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() && (storage < 10 * metalIncome) && storeDef->IsAvailable()) {
-		const AIFloat3& startPos = circuit->GetSetupManager()->GetBasePos();
-		CMetalManager* metalManager = circuit->GetMetalManager();
-		int index = metalManager->FindNearestSpot(startPos);
-		AIFloat3 buildPos;
-		if (index != -1) {
-			const CMetalData::Metals& spots = metalManager->GetSpots();
-			buildPos = spots[index].position;
-		} else {
-			CTerrainManager* terrain = circuit->GetTerrainManager();
-			int terWidth = terrain->GetTerrainWidth();
-			int terHeight = terrain->GetTerrainHeight();
-			float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
-			float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
-			buildPos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
-		}
-		task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, storeDef, buildPos, IBuilderTask::BuildType::STORE);
-		return task;
+	if (!builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() || (eco->GetStorage(metalRes) > 10 * metalIncome) || !storeDef->IsAvailable()) {
+		return UpdatePylonTasks();
 	}
 
-	task = UpdatePylonTasks();
-
-	return task;
+	const AIFloat3& startPos = circuit->GetSetupManager()->GetBasePos();
+	CMetalManager* metalManager = circuit->GetMetalManager();
+	int index = metalManager->FindNearestSpot(startPos);
+	AIFloat3 buildPos;
+	if (index != -1) {
+		const CMetalData::Metals& spots = metalManager->GetSpots();
+		buildPos = spots[index].position;
+	} else {
+		CTerrainManager* terrain = circuit->GetTerrainManager();
+		int terWidth = terrain->GetTerrainWidth();
+		int terHeight = terrain->GetTerrainHeight();
+		float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
+		float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
+		buildPos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
+	}
+	return builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, storeDef, buildPos, IBuilderTask::BuildType::STORE);
 }
 
 IBuilderTask* CEconomyManager::UpdatePylonTasks()
 {
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	IBuilderTask* task = nullptr;
 	if (!builderManager->CanEnqueueTask()) {
-		return task;
+		return nullptr;
 	}
 
 	float energyIncome = GetAvgEnergyIncome();
 	float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
-	if ((metalIncome * ecoFactor > 10) && (energyIncome > 80) && pylonDef->IsAvailable()) {
-		float cost = pylonDef->GetUnitDef()->GetCost(metalRes);
-		int count = builderManager->GetBuilderPower() / cost * 8 + 1;
-		if (builderManager->GetTasks(IBuilderTask::BuildType::PYLON).size() < count) {
-			CEnergyGrid* grid = circuit->GetEnergyGrid();
-			grid->Update();
+	if ((metalIncome * ecoFactor < 10) || (energyIncome < 80) || !pylonDef->IsAvailable()) {
+		return nullptr;
+	}
 
-			CCircuitDef* buildDef;
-			AIFloat3 buildPos;
-			CEnergyLink* link = grid->GetLinkToBuild(buildDef, buildPos);
-			if (link != nullptr) {
-				if ((buildPos != -RgtVector) && builderManager->IsBuilderInArea(buildDef, buildPos)) {
-					task = builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, buildDef, buildPos, link, cost);
-				} else {
-					link->SetValid(false);  // FIXME: Reset valid on timer? Or when air con appears
-					grid->SetForceRebuild(true);
-				}
+	float cost = pylonDef->GetUnitDef()->GetCost(metalRes);
+	int count = builderManager->GetBuilderPower() / cost * 8 + 1;
+	if (builderManager->GetTasks(IBuilderTask::BuildType::PYLON).size() < count) {
+		CEnergyGrid* grid = circuit->GetEnergyGrid();
+		grid->Update();
+
+		CCircuitDef* buildDef;
+		AIFloat3 buildPos;
+		CEnergyLink* link = grid->GetLinkToBuild(buildDef, buildPos);
+		if (link != nullptr) {
+			if ((buildPos != -RgtVector) && builderManager->IsBuilderInArea(buildDef, buildPos)) {
+				return builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, buildDef, buildPos, link, cost);
+			} else {
+				link->SetValid(false);  // FIXME: Reset valid on timer? Or when air con appears
+				grid->SetForceRebuild(true);
 			}
 		}
 	}
 
-	return task;
+	return nullptr;
 }
 
 void CEconomyManager::Init()

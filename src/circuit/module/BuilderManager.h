@@ -70,7 +70,8 @@ public:
 								 const springai::AIFloat3& position,
 								 float cost,
 								 int timeout,
-								 float radius = .0f);
+								 float radius = .0f,
+								 bool isMetal = true);
 	IBuilderTask* EnqueueRepair(IBuilderTask::Priority priority,
 								CCircuitUnit* target,
 								int timeout = 0);
@@ -109,6 +110,7 @@ private:
 	void UpdateRetreat();
 	void UpdateBuild();
 
+	Handlers2 createdHandlers;  // FIXME: EXPERIMENTAL
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
 	Handlers2 damagedHandler;

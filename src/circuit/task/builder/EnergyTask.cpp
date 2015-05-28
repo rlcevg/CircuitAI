@@ -77,9 +77,9 @@ void CBEnergyTask::Finish()
 		if (index >= 0) {
 			const AIFloat3& clPos = metalManager->GetClusters()[index].geoCentr;
 			AIFloat3 dir = clPos - pos;
-			float dist = ourRange + pylonRange + pylonRange * 2.0f;
+			float dist = ourRange /*+ pylonRange*/ + pylonRange * 2.0f;
 			if (dir.SqLength2D() < dist * dist) {
-				pos = (pos + dir.Normalize2D() * (ourRange - pylonRange) + clPos) * 0.5f;
+				pos = (pos + dir.Normalize2D() * (ourRange /*- pylonRange*/) + clPos) * 0.5f;
 			} else {
 				pos += dir.Normalize2D() * (ourRange + pylonRange) * 0.95f;
 			}

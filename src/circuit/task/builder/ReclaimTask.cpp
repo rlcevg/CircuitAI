@@ -20,9 +20,10 @@ using namespace springai;
 
 CBReclaimTask::CBReclaimTask(ITaskManager* mgr, Priority priority,
 							 const AIFloat3& position,
-							 float cost, int timeout, float radius) :
+							 float cost, int timeout, float radius, bool isMetal) :
 		IBuilderTask(mgr, priority, nullptr, position, BuildType::RECLAIM, cost, false, timeout),
-		radius(radius)
+		radius(radius),
+		isMetal(isMetal)
 {
 }
 
@@ -71,7 +72,7 @@ void CBReclaimTask::Execute(CCircuitUnit* unit)
 
 void CBReclaimTask::Update()
 {
-	if (manager->GetCircuit()->GetEconomyManager()->IsMetalFull()) {
+	if (isMetal && manager->GetCircuit()->GetEconomyManager()->IsMetalFull()) {
 		manager->AbortTask(this);
 	}
 }
@@ -92,6 +93,11 @@ void CBReclaimTask::Finish()
 
 void CBReclaimTask::Cancel()
 {
+}
+
+void CBReclaimTask::OnUnitIdle(CCircuitUnit* unit)
+{
+	manager->AbortTask(this);
 }
 
 } // namespace circuit

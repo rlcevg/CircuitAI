@@ -57,6 +57,7 @@ public:
 	bool IsEnergyStalling() const;
 
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
+	IBuilderTask* UpdateReclaimTasks(const springai::AIFloat3& position, CCircuitUnit* unit);
 	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	IBuilderTask* UpdateFactoryTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	CRecruitTask* UpdateRecruitTasks();
@@ -94,7 +95,6 @@ private:
 	CLagrangeInterPol* engyPol;
 
 	float ecoFactor;
-	int maxReclaimers;
 
 	// TODO: Didn't see any improvements. Remove avg?
 	std::vector<float> metalIncomes;
