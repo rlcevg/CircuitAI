@@ -17,6 +17,7 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+#include "OOAICallback.h"
 #include "AISCommands.h"
 #include "Map.h"
 
@@ -95,21 +96,23 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 
 	// FIXME: Replace const 999.0f with build time?
 	if (circuit->IsAllyAware() && (cost > 999.0f)) {
-		circuit->UpdateFriendlyUnits();
-		// TODO: Use OOAICallback::GetFriendlyUnitsIn()?
-		const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
-		float sqDist = cost * cost;
-		for (auto& kv : friendlies) {
-			CCircuitUnit* alu = kv.second;
-			Unit* au = alu->GetUnit();
+//		circuit->UpdateFriendlyUnits();
+		auto friendlies = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, cost));
+		for (Unit* au : friendlies) {
+			CCircuitUnit* alu = circuit->GetFriendlyUnit(au);
+			if (alu == nullptr) {
+				continue;
+			}
 			if ((*alu->GetCircuitDef() == *buildDef) && au->IsBeingBuilt()) {
 				const AIFloat3& pos = au->GetPos();
-				if ((position.SqDistance2D(pos) < sqDist) && terrain->CanBuildAt(unit, pos)) {
+				if (terrain->CanBuildAt(unit, pos)) {
 					u->Build(buildUDef, pos, au->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+					utils::free_clear(friendlies);
 					return;
 				}
 			}
 		}
+		utils::free_clear(friendlies);
 	}
 
 	// Alter/randomize position

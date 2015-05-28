@@ -13,6 +13,7 @@
 #include "AIFloat3.h"
 
 #include <vector>
+#include <set>
 
 namespace circuit {
 
@@ -34,10 +35,15 @@ public:
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
 	virtual int UnitFinished(CCircuitUnit* unit);
 	virtual int UnitIdle(CCircuitUnit* unit);
-//	virtual int UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
+	virtual int UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual int EnemyEnterLOS(CCircuitUnit* unit);
 
+	IUnitTask* EnqueueTask();
+private:
+	void DequeueTask(IUnitTask* task, bool done = false);
+
+public:
 	virtual void AssignTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
 	virtual void DoneTask(IUnitTask* task);
@@ -52,10 +58,18 @@ public:
 private:
 	void Init();
 
+	void UpdateIdle();
+	void UpdateRetreat();
+	void UpdateFight();
+
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
-//	Handlers2 damagedHandler;
+	Handlers2 damagedHandler;
 	Handlers2 destroyedHandler;
+
+	std::set<IUnitTask*> fighterTasks;  // owner
+	std::set<IUnitTask*> updateTasks;
+	std::set<IUnitTask*> deleteTasks;
 
 //	struct FighterInfo {
 //		bool isTerraforming;

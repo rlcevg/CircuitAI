@@ -41,14 +41,13 @@ void CSReclaimTask::Update()
 		 */
 		CCircuitUnit* repairTarget = nullptr;
 		circuit->UpdateFriendlyUnits();
-		float sqRadius = radius * radius;
 		auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, radius));
 		for (auto u : us) {
 			CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
 			if (candUnit == nullptr) {
 				continue;
 			}
-			if (!u->IsBeingBuilt() && (u->GetHealth() < u->GetMaxHealth()) && (position.SqDistance2D(u->GetPos()) < sqRadius)) {
+			if (!u->IsBeingBuilt() && (u->GetHealth() < u->GetMaxHealth())) {
 				repairTarget = candUnit;
 				break;
 			}

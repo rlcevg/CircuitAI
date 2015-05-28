@@ -60,7 +60,7 @@ void CBEnergyTask::Finish()
 		if (p == nullptr) {
 			continue;
 		}
-		// FIXME: Is SqDistance2D necessary?
+		// FIXME: Is SqDistance2D necessary? Or must subtract model radius of pylon from "radius" variable
 		//        @see rts/Sim/Misc/QaudField.cpp
 		//        ...CQuadField::GetUnitsExact(const float3& pos, float radius, bool spherical)
 		//        const float totRad = radius + u->radius; -- suspicious
@@ -77,11 +77,11 @@ void CBEnergyTask::Finish()
 		if (index >= 0) {
 			const AIFloat3& clPos = metalManager->GetClusters()[index].geoCentr;
 			AIFloat3 dir = clPos - pos;
-			float dist = ourRange /*+ pylonRange*/ + pylonRange * 2.0f;
+			float dist = ourRange /*+ pylonRange*/ + pylonRange * 1.8f;
 			if (dir.SqLength2D() < dist * dist) {
-				pos = (pos + dir.Normalize2D() * (ourRange /*- pylonRange*/) + clPos) * 0.5f;
+				pos = (pos /*+ dir.Normalize2D() * (ourRange - pylonRange)*/ + clPos) * 0.5f;
 			} else {
-				pos += dir.Normalize2D() * (ourRange + pylonRange) * 0.95f;
+				pos += dir.Normalize2D() * (ourRange + pylonRange) * 0.9f;
 			}
 		}
 		builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, pylonDef, pos, nullptr, 1.0f);

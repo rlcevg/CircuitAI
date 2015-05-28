@@ -157,7 +157,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	/*
 	 * armorco handlers
 	 */
-	createdHandlers[circuit->GetCircuitDef("armorco")->GetId()] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
+	createdHandler[circuit->GetCircuitDef("armorco")->GetId()] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 		unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::LOW, unit);
 	};
 	// FIXME: EXPERIMENTAL
@@ -174,8 +174,8 @@ CBuilderManager::~CBuilderManager()
 
 int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 {
-	auto search = createdHandlers.find(unit->GetCircuitDef()->GetId());
-	if (search != createdHandlers.end()) {
+	auto search = createdHandler.find(unit->GetCircuitDef()->GetId());
+	if (search != createdHandler.end()) {
 		search->second(unit, builder);
 	}
 
@@ -629,7 +629,7 @@ void CBuilderManager::Init()
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 2);
 	};
 
-	// Try to avoid blocked factories on plop
+	// Try to avoid blocked factories on start
 	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(subinit), circuit->GetSkirmishAIId() * 2);
 }
 

@@ -7,18 +7,15 @@
 
 #include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
-#include "terrain/TerrainManager.h"
+#include "task/IdleTask.h"
+#include "task/RetreatTask.h"
+#include "task/fighter/AttackTask.h"
 #include "CircuitAI.h"
 #include "util/math/HierarchCluster.h"
 #include "util/math/RagMatrix.h"
 #include "util/math/EncloseCircle.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
-
-#include "AISCommands.h"
-// debug
-#include "Pathing.h"
-#include "OOAICallback.h"
 
 namespace circuit {
 
@@ -33,55 +30,49 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	int unitDefId;
 
 	auto atackerFinishedHandler = [this](CCircuitUnit* unit) {
-		Unit* u = unit->GetUnit();
-		CTerrainManager* terrain = this->circuit->GetTerrainManager();
-		int terWidth = terrain->GetTerrainWidth();
-		int terHeight = terrain->GetTerrainHeight();
-		float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
-		float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
-		AIFloat3 fromPos(x, this->circuit->GetMap()->GetElevationAt(x, z), z);
-		u->Fight(fromPos, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 60);
+		unit->SetManager(this);
+		idleTask->AssignTo(unit);
 	};
 	auto atackerIdleHandler = [this](CCircuitUnit* unit) {
-		Unit* u = unit->GetUnit();
-		CTerrainManager* terrain = this->circuit->GetTerrainManager();
-		int terWidth = terrain->GetTerrainWidth();
-		int terHeight = terrain->GetTerrainHeight();
-		float x = rand() % (int)(terWidth + 1);
-		float z = rand() % (int)(terHeight + 1);
-		AIFloat3 toPos(x, this->circuit->GetMap()->GetElevationAt(x, z), z);
-		u->Fight(toPos, 0, FRAMES_PER_SEC * 60 * 5);
+		unit->GetTask()->OnUnitIdle(unit);
+	};
+	auto atackerDamagedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+		if (unit->GetUnit()->IsBeingBuilt()) {
+			return;
+		}
+		unit->GetTask()->OnUnitDamaged(unit, attacker);
+	};
+	auto atackerDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+		if (unit->GetUnit()->IsBeingBuilt()) {
+			return;
+		}
+		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
+		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 	};
 
-	unitDefId = circuit->GetCircuitDef("armpw")->GetId();
-	finishedHandler[unitDefId] = atackerFinishedHandler;
-	idleHandler[unitDefId] = atackerIdleHandler;
-	unitDefId = circuit->GetCircuitDef("armrock")->GetId();
-	finishedHandler[unitDefId] = atackerFinishedHandler;
-	idleHandler[unitDefId] = atackerIdleHandler;
-	unitDefId = circuit->GetCircuitDef("armwar")->GetId();
-	finishedHandler[unitDefId] = atackerFinishedHandler;
-	idleHandler[unitDefId] = atackerIdleHandler;
-	unitDefId = circuit->GetCircuitDef("armzeus")->GetId();
-	finishedHandler[unitDefId] = atackerFinishedHandler;
-	idleHandler[unitDefId] = atackerIdleHandler;
-	unitDefId = circuit->GetCircuitDef("armjeth")->GetId();
-	finishedHandler[unitDefId] = atackerFinishedHandler;
-	idleHandler[unitDefId] = atackerIdleHandler;
-	unitDefId = circuit->GetCircuitDef("armsnipe")->GetId();
-	finishedHandler[unitDefId] = atackerFinishedHandler;
-	idleHandler[unitDefId] = atackerIdleHandler;
-	unitDefId = circuit->GetCircuitDef("armorco")->GetId();
-	finishedHandler[unitDefId] = atackerFinishedHandler;
-	idleHandler[unitDefId] = atackerIdleHandler;
+	CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
+	for (auto& kv : defs) {
+		CCircuitDef* cdef = kv.second;
+		UnitDef* def = cdef->GetUnitDef();
+		if ((def->GetSpeed() > 0) && !def->IsBuilder() && (def->GetPower() > .0f)) {
+			int unitDefId = kv.first;
+			finishedHandler[unitDefId] = atackerFinishedHandler;
+			idleHandler[unitDefId] = atackerIdleHandler;
+			damagedHandler[unitDefId] = atackerDamagedHandler;
+			destroyedHandler[unitDefId] = atackerDestroyedHandler;
+		}
+	}
 
 	/*
 	 * Defence handlers
 	 */
-	unitDefId = circuit->GetCircuitDef("corllt")->GetId();
-	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 		OpenDefPoint(unit->GetUnit()->GetPos());
 	};
+	unitDefId = circuit->GetCircuitDef("corllt")->GetId();
+	destroyedHandler[unitDefId] = defenceDestroyedHandler;
+	unitDefId = circuit->GetCircuitDef("corhlt")->GetId();
+	destroyedHandler[unitDefId] = defenceDestroyedHandler;
 
 	/*
 	 * raveparty handlers
@@ -133,6 +124,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 CMilitaryManager::~CMilitaryManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	utils::free_clear(fighterTasks);
+	utils::free_clear(deleteTasks);
 }
 
 int CMilitaryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -160,15 +153,15 @@ int CMilitaryManager::UnitIdle(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
-//int CMilitaryManager::UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
-//{
-//	auto search = damagedHandler.find(unit->GetDef()->GetUnitDefId());
-//	if (search != damagedHandler.end()) {
-//		search->second(unit, attacker);
-//	}
-//
-//	return 0; //signaling: OK
-//}
+int CMilitaryManager::UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+{
+	auto search = damagedHandler.find(unit->GetCircuitDef()->GetId());
+	if (search != damagedHandler.end()) {
+		search->second(unit, attacker);
+	}
+
+	return 0; //signaling: OK
+}
 
 int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
@@ -210,19 +203,36 @@ int CMilitaryManager::EnemyEnterLOS(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
+IUnitTask* CMilitaryManager::EnqueueTask()
+{
+	CAttackTask* task = new CAttackTask(this);
+	fighterTasks.insert(task);
+	return task;
+}
+
+void CMilitaryManager::DequeueTask(IUnitTask* task, bool done)
+{
+	auto it = fighterTasks.find(task);
+	if (it != fighterTasks.end()) {
+		fighterTasks.erase(it);
+		task->Close(done);
+		deleteTasks.insert(task);
+	}
+}
+
 void CMilitaryManager::AssignTask(CCircuitUnit* unit)
 {
-
+	EnqueueTask()->AssignTo(unit);
 }
 
 void CMilitaryManager::AbortTask(IUnitTask* task)
 {
-
+	DequeueTask(task, false);
 }
 
 void CMilitaryManager::DoneTask(IUnitTask* task)
 {
-
+	DequeueTask(task, false);
 }
 
 void CMilitaryManager::SpecialCleanUp(CCircuitUnit* unit)
@@ -310,6 +320,49 @@ void CMilitaryManager::Init()
 			pos.y = map->GetElevationAt(pos.x, pos.z);
 			defPoints.push_back({pos, true});
 		}
+	}
+
+	CScheduler* scheduler = circuit->GetScheduler().get();
+	const int interval = FRAMES_PER_SEC / 2;
+	const int offset = circuit->GetSkirmishAIId() % interval;
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateIdle, this), interval, offset + 5);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateRetreat, this), interval, offset + 6);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateFight, this), interval, offset + 7);
+}
+
+void CMilitaryManager::UpdateIdle()
+{
+	idleTask->Update();
+}
+
+void CMilitaryManager::UpdateRetreat()
+{
+	retreatTask->Update();
+}
+
+void CMilitaryManager::UpdateFight()
+{
+	if (!deleteTasks.empty()) {
+		for (auto task : deleteTasks) {
+			updateTasks.erase(task);
+			delete task;
+		}
+		deleteTasks.clear();
+	}
+
+	auto it = updateTasks.begin();
+	while (it != updateTasks.end()) {
+		(*it)->Update();
+		it = updateTasks.erase(it);
+		if (circuit->IsUpdateTimeValid()) {
+			break;
+		}
+	}
+
+	if (updateTasks.empty()) {
+//		for (auto& tasks : fighterTasks) {
+			updateTasks.insert(fighterTasks.begin(), fighterTasks.end());
+//		}
 	}
 }
 

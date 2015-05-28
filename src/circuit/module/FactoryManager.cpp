@@ -406,7 +406,7 @@ CCircuitUnit* CFactoryManager::NeedUpgrade()
 	// TODO: Wrap into predicate
 	if (assistDef != nullptr) {
 		for (auto& fac : factories) {
-			if (fac.second.size() < 5) {
+			if (fac.second.size() < 9) {
 				return fac.first;
 			}
 		}
@@ -431,11 +431,15 @@ CCircuitUnit* CFactoryManager::GetClosestHaven(CCircuitUnit* unit) const
 	if (havens.empty()) {
 		return nullptr;
 	}
-	CCircuitUnit* haven;
+	CCircuitUnit* haven = nullptr;
 	float metric = std::numeric_limits<float>::max();
 	const AIFloat3& position = unit->GetUnit()->GetPos();
+	CTerrainManager* terrain = circuit->GetTerrainManager();
 	for (auto hav : havens) {
 		const AIFloat3& pos = hav->GetUnit()->GetPos();
+		if (!terrain->CanMoveToPos(unit->GetArea(), pos)) {
+			continue;
+		}
 		float qdist = pos.SqDistance2D(position);
 		if (qdist < metric) {
 			haven = hav;

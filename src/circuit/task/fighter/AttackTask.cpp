@@ -8,8 +8,11 @@
 #include "task/fighter/AttackTask.h"
 #include "task/RetreatTask.h"
 #include "task/TaskManager.h"
-#include "unit/CircuitUnit.h"
+#include "terrain/TerrainManager.h"
+#include "CircuitAI.h"
 #include "util/utils.h"
+
+#include "AISCommands.h"
 
 namespace circuit {
 
@@ -27,7 +30,15 @@ CAttackTask::~CAttackTask()
 
 void CAttackTask::Execute(CCircuitUnit* unit)
 {
-
+	CCircuitAI* circuit = manager->GetCircuit();
+	Unit* u = unit->GetUnit();
+	CTerrainManager* terrain = circuit->GetTerrainManager();
+	int terWidth = terrain->GetTerrainWidth();
+	int terHeight = terrain->GetTerrainHeight();
+	float x = rand() % (int)(terWidth + 1);
+	float z = rand() % (int)(terHeight + 1);
+	AIFloat3 toPos(x, circuit->GetMap()->GetElevationAt(x, z), z);
+	u->Fight(toPos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60 * 5);
 }
 
 void CAttackTask::Update()
@@ -38,6 +49,7 @@ void CAttackTask::Update()
 void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	// TODO: Wait for others if goal reached? Or we stuck far away?
+	manager->AbortTask(this);
 }
 
 void CAttackTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
@@ -49,11 +61,13 @@ void CAttackTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 	}
 
 	manager->AssignTask(unit, manager->GetRetreatTask());
+	manager->AbortTask(this);
 }
 
 void CAttackTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
-	RemoveAssignee(unit);
+//	RemoveAssignee(unit);
+	manager->AbortTask(this);
 }
 
 } // namespace circuit

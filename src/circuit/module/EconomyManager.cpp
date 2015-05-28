@@ -273,7 +273,6 @@ IBuilderTask* CEconomyManager::CreateAssistTask(CCircuitUnit* unit)
 	bool isBuildMobile = true;
 	const AIFloat3& pos = unit->GetUnit()->GetPos();
 	float radius = unit->GetCircuitDef()->GetBuildDistance();
-	float sqRadius = radius * radius;
 
 	/*
 	 * Check for damaged units
@@ -288,14 +287,12 @@ IBuilderTask* CEconomyManager::CreateAssistTask(CCircuitUnit* unit)
 			continue;
 		}
 		if (u->IsBeingBuilt()) {
-			if ((pos.SqDistance2D(u->GetPos()) < sqRadius)) {
-				CCircuitDef* cdef = candUnit->GetCircuitDef();
-				if (isBuildMobile && ((cdef->GetUnitDef()->GetCost(metalRes) < maxCost) || (*cdef == *terraDef))) {
-					isBuildMobile = candUnit->GetUnit()->GetMaxSpeed() > 0;
-					buildTarget = candUnit;
-				}
+			CCircuitDef* cdef = candUnit->GetCircuitDef();
+			if (isBuildMobile && ((cdef->GetUnitDef()->GetCost(metalRes) < maxCost) || (*cdef == *terraDef))) {
+				isBuildMobile = candUnit->GetUnit()->GetMaxSpeed() > 0;
+				buildTarget = candUnit;
 			}
-		} else if (u->GetHealth() < u->GetMaxHealth() && (pos.SqDistance2D(u->GetPos()) < sqRadius)) {
+		} else if (u->GetHealth() < u->GetMaxHealth()) {
 			repairTarget = candUnit;
 			break;
 		}
@@ -526,7 +523,8 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 	if (IsMetalFull() || builderManager->GetTasks(IBuilderTask::BuildType::RECLAIM).size() >= builderManager->GetWorkerCount() / 2) {
 		return nullptr;
 	}
-	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(position, unit->GetUnit()->GetMaxSpeed() * FRAMES_PER_SEC * 60));
+	float travelDistance = unit->GetUnit()->GetMaxSpeed() * FRAMES_PER_SEC * MAX_TRAVEL_SEC;
+	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(position, travelDistance));
 	if (!features.empty()) {
 		CTerrainManager* terrain = circuit->GetTerrainManager();
 		AIFloat3 reclPos;
@@ -646,7 +644,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 
 	// check buildpower
 	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
-	if ((factoryManager->GetFactoryPower() >= metalIncome) ||
+	if ((factoryManager->GetFactoryPower() * 0.8f >= metalIncome) ||
 		!builderManager->GetTasks(IBuilderTask::BuildType::FACTORY).empty() ||
 		!builderManager->GetTasks(IBuilderTask::BuildType::NANO).empty())
 	{
@@ -722,7 +720,7 @@ CRecruitTask* CEconomyManager::UpdateRecruitTasks()
 	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	// TODO: Create ReclaimTask for 20% of workers, and 20% RepairTask.
-	if ((builderManager->GetBuilderPower() < metalIncome * 2.0f) && (rand() % 2 == 0) && buildDef->IsAvailable()) {
+	if ((builderManager->GetBuilderPower() < metalIncome * 2.0f) && (rand() < RAND_MAX / 3) && buildDef->IsAvailable()) {
 		CCircuitUnit* factory = factoryManager->GetRandomFactory();
 		const AIFloat3& buildPos = factory->GetUnit()->GetPos();
 		CTerrainManager* terrain = circuit->GetTerrainManager();

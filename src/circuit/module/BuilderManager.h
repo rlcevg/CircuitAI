@@ -110,7 +110,7 @@ private:
 	void UpdateRetreat();
 	void UpdateBuild();
 
-	Handlers2 createdHandlers;  // FIXME: EXPERIMENTAL
+	Handlers2 createdHandler;  // FIXME: EXPERIMENTAL
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
 	Handlers2 damagedHandler;
