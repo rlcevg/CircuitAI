@@ -45,7 +45,6 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 
 IBuilderTask::~IBuilderTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool IBuilderTask::CanAssignTo(CCircuitUnit* unit)

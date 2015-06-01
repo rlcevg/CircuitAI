@@ -51,7 +51,7 @@ public:
 	virtual void SpecialProcess(CCircuitUnit* unit);
 	virtual void FallbackTask(CCircuitUnit* unit);
 
-	std::vector<SDefPoint>& GetDefPoints(int index);
+	std::vector<SDefPoint>& GetDefPoints(int index) { return clusterInfos[index].defPoints; }
 	void OpenDefPoint(const springai::AIFloat3& pos);
 //	const std::vector<SClusterInfo>& GetClusterInfos() const;
 
@@ -62,6 +62,7 @@ private:
 	void UpdateRetreat();
 	void UpdateFight();
 
+	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
 	Handlers2 damagedHandler;
@@ -70,6 +71,7 @@ private:
 	std::set<IUnitTask*> fighterTasks;  // owner
 	std::set<IUnitTask*> updateTasks;
 	std::set<IUnitTask*> deleteTasks;
+	unsigned int updateSlice;
 
 //	struct FighterInfo {
 //		bool isTerraforming;

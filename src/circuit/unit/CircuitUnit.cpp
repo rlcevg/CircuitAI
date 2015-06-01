@@ -11,6 +11,8 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+#include "AISCommands.h"
+
 namespace circuit {
 
 using namespace springai;
@@ -22,7 +24,8 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* circuitDef) :
 		task(nullptr),
 		taskFrame(-1),
 		manager(nullptr),
-		area(nullptr)
+		area(nullptr),
+		dgunFrame(-1)
 {
 	PushBack(new CWaitAction(this));
 }
@@ -37,6 +40,18 @@ void CCircuitUnit::SetTask(IUnitTask* task)
 {
 	this->task = task;
 	taskFrame = manager->GetCircuit()->GetLastFrame();
+}
+
+void CCircuitUnit::ManualFire(const AIFloat3& pos, int frame)
+{
+	dgunFrame = frame;
+	unit->DGunPosition(pos, UNIT_COMMAND_OPTION_ALT_KEY, FRAMES_PER_SEC * 5);
+}
+
+void CCircuitUnit::ManualFire(Unit* enemy, int frame)
+{
+	dgunFrame = frame;
+	unit->DGun(enemy, UNIT_COMMAND_OPTION_ALT_KEY, FRAMES_PER_SEC * 5);
 }
 
 } // namespace circuit

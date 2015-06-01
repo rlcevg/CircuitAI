@@ -43,6 +43,7 @@ public:
 		Edge(int i, float w) : index(i), weight(w) {}
 		int index;
 		float weight;
+		springai::AIFloat3 center;
 	};
 	using Graph = boost::adjacency_list<boost::hash_setS, boost::vecS, boost::undirectedS, boost::no_property, Edge>;
 	using VertexDesc = boost::graph_traits<Graph>::vertex_descriptor;

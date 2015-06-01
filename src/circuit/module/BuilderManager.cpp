@@ -10,6 +10,7 @@
 #include "resource/MetalManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
+#include "task/NullTask.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
 #include "task/builder/FactoryTask.h"
@@ -59,10 +60,20 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	/*
 	 * worker handlers
 	 */
+	auto workerCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
+		if (unit->GetTask() == nullptr) {
+			unit->SetManager(this);
+			nullTask->AssignTo(unit);
+		}
+	};
 	auto workerFinishedHandler = [this](CCircuitUnit* unit) {
-		// TODO: Consider moving initilizer into UnitCreated handler
-		unit->SetManager(this);
-		idleTask->AssignTo(unit);
+		if (unit->GetTask() == nullptr) {
+			unit->SetManager(this);
+			idleTask->AssignTo(unit);
+		} else {
+			nullTask->RemoveAssignee(unit);
+		}
+
 		++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 
 		builderPower += unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
@@ -79,22 +90,19 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		}
 	};
 	auto workerDamagedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
-		if (unit->GetUnit()->IsBeingBuilt()) {
-			return;
-		}
 		unit->GetTask()->OnUnitDamaged(unit, attacker);
 	};
 	auto workerDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
-		if (unit->GetUnit()->IsBeingBuilt()) {
+		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
+		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
+
+		if (unit->GetTask() == nullTask) {  // alternative: unit->GetUnit()->IsBeingBuilt()
 			return;
 		}
 		--buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 
 		builderPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
 		workers.erase(unit);
-
-		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
-		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
 		RemoveBuildList(unit);
 	};
@@ -114,7 +122,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		UnitDef* def = cdef->GetUnitDef();
 		if (def->GetSpeed() > 0) {
 			if (def->IsBuilder() && !cdef->GetBuildOptions().empty()) {
-				int unitDefId = kv.first;
+				CCircuitDef::Id unitDefId = kv.first;
+				createdHandler[unitDefId] = workerCreatedHandler;
 				finishedHandler[unitDefId] = workerFinishedHandler;
 				idleHandler[unitDefId] = workerIdleHandler;
 				damagedHandler[unitDefId] = workerDamagedHandler;
@@ -132,7 +141,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	}
 
 	// Forbid from removing cormex blocker
-	int unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
+	CCircuitDef::Id unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
 		const AIFloat3& pos = unit->GetUnit()->GetPos();
 		if (unit->GetUnit()->IsBeingBuilt() || !IsBuilderInArea(unit->GetCircuitDef(), pos)) {
@@ -157,9 +166,12 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	/*
 	 * armorco handlers
 	 */
-	createdHandler[circuit->GetCircuitDef("armorco")->GetId()] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
-		unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::LOW, unit);
-	};
+	const char* striders[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco"};
+	for (auto strider : striders) {
+		createdHandler[circuit->GetCircuitDef(strider)->GetId()] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
+			unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::LOW, unit);
+		};
+	}
 	// FIXME: EXPERIMENTAL
 }
 
@@ -191,7 +203,7 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 	Unit* u = unit->GetUnit();
 	IBuilderTask* taskB = static_cast<IBuilderTask*>(task);
 	if (u->IsBeingBuilt()) {
-		// FIXME: Try to cope with strange event order, when different units created within same task.
+		// FIXME: Try to cope with wrong event order, when different units created within same task.
 		//        Real example: unit starts building, but hlt kills structure right away. UnitDestroyed invoked and new task assigned to unit.
 		//        But for some engine-bugged reason unit is not idle and retries same building. UnitCreated invoked for new task with wrong target.
 		//        Next workaround unfortunately doesn't mark bugged building on blocking map.
@@ -253,11 +265,9 @@ int CBuilderManager::UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 
 int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
-	if (unit->GetUnit()->IsBeingBuilt()) {
-		auto iter = unfinishedUnits.find(unit);
-		if (iter != unfinishedUnits.end()) {
-			AbortTask(iter->second);
-		}
+	auto iter = unfinishedUnits.find(unit);
+	if (iter != unfinishedUnits.end()) {
+		AbortTask(iter->second);
 	}
 
 	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
@@ -266,26 +276,6 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 	}
 
 	return 0; //signaling: OK
-}
-
-CCircuitDef* CBuilderManager::GetTerraDef() const
-{
-	return terraDef;
-}
-
-int CBuilderManager::GetWorkerCount() const
-{
-	return workers.size();
-}
-
-float CBuilderManager::GetBuilderPower() const
-{
-	return builderPower;
-}
-
-bool CBuilderManager::CanEnqueueTask() const
-{
-	return (builderTasksCount < workers.size() * 2);
 }
 
 const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType type)
@@ -554,7 +544,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	}
 
 	if (task == nullptr) {
-		task = circuit->GetEconomyManager()->CreateBuilderTask(unit);
+		task = circuit->GetEconomyManager()->CreateBuilderTask(pos, unit);
 	}
 
 	// TODO: Move fully assigned tasks (max builders) out of builderTasks into separate list?+-
@@ -595,40 +585,32 @@ void CBuilderManager::Init()
 {
 	auto subinit = [this]() {
 		CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+		IBuilderTask* task = nullptr;
 		if (commander != nullptr) {
 			Unit* u = commander->GetUnit();
 			const AIFloat3& pos = u->GetPos();
 			UnitRulesParam* param = u->GetUnitRulesParamByName("facplop");
 			if (param != nullptr) {
 				if (param->GetValueFloat() == 1) {
-					EnqueueTask(IUnitTask::Priority::HIGH, circuit->GetCircuitDef("factorycloak"), pos, IBuilderTask::BuildType::FACTORY);
+					task = EnqueueTask(IUnitTask::Priority::HIGH, circuit->GetCircuitDef("factorycloak"), pos, IBuilderTask::BuildType::FACTORY);
+					static_cast<ITaskManager*>(this)->AssignTask(commander, task);
 				}
 				delete param;
 			}
-
-			// FIXME: Remove, make proper eco rules!
-			CMetalManager* metalManager = this->circuit->GetMetalManager();
-			int index = metalManager->FindNearestSpot(pos);
-			if (index != -1) {
-				const CMetalData::Metals& spots = metalManager->GetSpots();
-				const AIFloat3& buildPos = spots[index].position;
-				IBuilderTask* task = EnqueueTask(IUnitTask::Priority::NORMAL, circuit->GetEconomyManager()->GetMexDef(), buildPos, IBuilderTask::BuildType::MEX);
-				task->SetBuildPos(buildPos);
-				metalManager->SetOpenSpot(index, false);
-			}
 		}
 		for (auto worker : workers) {
-			UnitIdle(worker);
+			if ((worker != commander) || (task == nullptr)) {
+				UnitIdle(worker);
+			}
 		}
 
 		CScheduler* scheduler = circuit->GetScheduler().get();
-		const int interval = FRAMES_PER_SEC / 2;
+		const int interval = 8;
 		const int offset = circuit->GetSkirmishAIId() % interval;
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateRetreat, this), interval, offset + 1);
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 2);
 	};
-
 	// Try to avoid blocked factories on start
 	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(subinit), circuit->GetSkirmishAIId() * 2);
 }
@@ -677,15 +659,21 @@ void CBuilderManager::Watchdog()
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
 		Unit* u = unit->GetUnit();
-		if ((unfinishedUnits.find(unit) == unfinishedUnits.end()) && u->IsBeingBuilt() && (u->GetMaxSpeed() <= 0)) {
-			float maxHealth = u->GetMaxHealth();
-			float buildPercent = (maxHealth - u->GetHealth()) / maxHealth;
-			CCircuitDef* cdef = unit->GetCircuitDef();
-			if ((cdef->GetUnitDef()->GetCost(metalRes) * buildPercent < maxCost) || (*cdef == *terraDef)) {
+		if ((unfinishedUnits.find(unit) == unfinishedUnits.end()) && (u->GetMaxSpeed() <= 0)) {
+			if (u->IsBeingBuilt()) {
+				float maxHealth = u->GetMaxHealth();
+				float buildPercent = (maxHealth - u->GetHealth()) / maxHealth;
+				CCircuitDef* cdef = unit->GetCircuitDef();
+				if ((cdef->GetUnitDef()->GetCost(metalRes) * buildPercent < maxCost) || (*cdef == *terraDef)) {
+					unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+				}
+			} else if (u->GetHealth() < u->GetMaxHealth()) {
 				unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
 			}
 		}
 	}
+
+	// TODO: Open/close metal spots with map->IsPossibleToBuild()
 }
 
 void CBuilderManager::AddBuildList(CCircuitUnit* unit)
@@ -757,10 +745,12 @@ void CBuilderManager::UpdateBuild()
 	}
 
 	auto it = updateTasks.begin();
+	unsigned int i = 0;
 	while (it != updateTasks.end()) {
 		(*it)->Update();
+
 		it = updateTasks.erase(it);
-		if (circuit->IsUpdateTimeValid()) {
+		if (++i >= updateSlice) {
 			break;
 		}
 	}
@@ -769,6 +759,7 @@ void CBuilderManager::UpdateBuild()
 		for (auto& tasks : builderTasks) {
 			updateTasks.insert(tasks.begin(), tasks.end());
 		}
+		updateSlice = updateTasks.size() / TEAM_SLOWUPDATE_RATE;
 	}
 }
 

@@ -43,13 +43,13 @@ void CBRepairTask::Execute(CCircuitUnit* unit)
 		targetId = target->GetId();
 	}
 
-	Unit* u = unit->GetUnit();
-	std::vector<float> params;
-	params.push_back(static_cast<float>(priority));
-	u->ExecuteCustomCommand(CMD_PRIORITY, params);
-
 	CCircuitUnit* target = manager->GetCircuit()->GetFriendlyUnit(targetId);
 	if (target != nullptr) {
+		Unit* u = unit->GetUnit();
+		std::vector<float> params;
+		params.push_back(static_cast<float>(priority));
+		u->ExecuteCustomCommand(CMD_PRIORITY, params);
+
 		u->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	} else {
 		manager->AbortTask(this);
@@ -59,7 +59,7 @@ void CBRepairTask::Execute(CCircuitUnit* unit)
 void CBRepairTask::Update()
 {
 	// FIXME: Replace const 1000.0f with build time?
-	if ((cost > 1000.0f) && (manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome() < savedIncome * 0.6)) {
+	if ((cost > 1000.0f) && (manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome() < savedIncome * 0.6f)) {
 		manager->AbortTask(this);
 	}
 }
@@ -97,7 +97,7 @@ void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 {
 	Unit* u = unit->GetUnit();
 	// TODO: floating retreat coefficient
-	if (u->GetHealth() >= u->GetMaxHealth() * 0.8) {
+	if (u->GetHealth() >= u->GetMaxHealth() * 0.8f) {
 		return;
 	}
 
@@ -132,7 +132,7 @@ CCircuitUnit* CBRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 	circuit->UpdateFriendlyUnits();
 	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
 	for (auto u : units) {
-		if ((u != nullptr) && u->GetHealth() < u->GetMaxHealth() && u->GetVel().Length() <= maxSpeed * 1.5) {
+		if ((u != nullptr) && u->GetHealth() < u->GetMaxHealth() && u->GetVel().Length() <= maxSpeed * 1.5f) {
 			target = circuit->GetFriendlyUnit(u);
 			if (target != nullptr) {
 				break;

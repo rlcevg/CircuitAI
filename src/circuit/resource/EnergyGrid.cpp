@@ -79,11 +79,10 @@ CEnergyGrid::~CEnergyGrid()
 
 void CEnergyGrid::Update()
 {
-	int lastFrame = circuit->GetLastFrame();
-	if (markFrame /*+ FRAMES_PER_SEC*/ >= lastFrame) {
+	if (markFrame /*+ FRAMES_PER_SEC*/ >= circuit->GetLastFrame()) {
 		return;
 	}
-	markFrame = lastFrame;
+	markFrame = circuit->GetLastFrame();
 
 	circuit->UpdateFriendlyUnits();
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
@@ -464,14 +463,22 @@ void CEnergyGrid::RebuildTree()
 	}
 	linkClusters.clear();
 
-	// Mark used edges as const
-	// TODO: Modify weight according to distance to own base?
+	float width = circuit->GetTerrainManager()->GetTerrainWidth();
+	float height = circuit->GetTerrainManager()->GetTerrainHeight();
+	float baseWeight = width * width + height * height;
+	float invBaseWeight = 1.0f / baseWeight;  // FIXME: only valid for 1 of the ally team
+	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	for (const CMetalData::EdgeDesc& edgeId : spanningTree) {
 		CEnergyLink& link = boost::get(linkIt, edgeId);
 		if (link.IsFinished() || link.IsBeingBuilt()) {
-			ownedClusters[edgeId].weight = clusterGraph[edgeId].weight * 0.01f;
+			// Mark used edges as const
+			ownedClusters[edgeId].weight = clusterGraph[edgeId].weight * invBaseWeight;
 		} else if (!link.IsValid()) {
-			ownedClusters[edgeId].weight = clusterGraph[edgeId].weight * 100.0f;
+			ownedClusters[edgeId].weight = clusterGraph[edgeId].weight * baseWeight;
+		} else {
+			// Adjust weight by distance to base
+			const CMetalData::Edge& edge = clusterGraph[edgeId];
+			ownedClusters[edgeId].weight = edge.weight * basePos.SqDistance2D(edge.center) * invBaseWeight;
 		}
 	}
 

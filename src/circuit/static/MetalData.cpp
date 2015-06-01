@@ -262,6 +262,7 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 				Edge& edge = g[edgeId];
 				edge.index = edgeCount / 2;
 				edge.weight = clusters[idx0].geoCentr.distance(clusters[idx1].geoCentr);
+				edge.center = (clusters[idx0].geoCentr + clusters[idx1].geoCentr) * 0.5f;
 			}
 		}
 	}

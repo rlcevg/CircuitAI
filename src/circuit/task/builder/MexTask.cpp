@@ -142,7 +142,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitDef* def = circuit->GetCircuitDef("corrl");
 	float range = def->GetUnitDef()->GetMaxWeaponRange();
-	float testRange = range + 200;  // 200 elmos
+	float testRange = range + 200.0f;  // 200 elmos
 	const AIFloat3& pos = unit->GetUnit()->GetPos();
 	if (buildPos.SqDistance2D(pos) < testRange * testRange) {
 		int mexDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
@@ -165,7 +165,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 		if (blocked) {
 			CBuilderManager* builderManager = circuit->GetBuilderManager();
 			IBuilderTask* task = nullptr;
-			float qdist = 200 * 200;  // 200 elmos
+			float qdist = 200.0f * 200.0f;  // 200 elmos
 			// TODO: Push tasks into bgi::rtree
 			for (auto t : builderManager->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
 				if (pos.SqDistance2D(t->GetTaskPos()) < qdist) {
@@ -174,7 +174,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 				}
 			}
 			if (task == nullptr) {
-				AIFloat3 newPos = buildPos - (buildPos - pos).Normalize2D() * range * 0.9;
+				AIFloat3 newPos = buildPos - (buildPos - pos).Normalize2D() * range * 0.9f;
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, def, newPos, IBuilderTask::BuildType::DEFENCE);
 			}
 			// TODO: Before BuildTask assign MoveTask(task->GetTaskPos())

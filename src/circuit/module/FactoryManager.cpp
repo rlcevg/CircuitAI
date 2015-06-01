@@ -8,6 +8,7 @@
 #include "module/FactoryManager.h"
 #include "module/EconomyManager.h"
 #include "terrain/TerrainManager.h"
+#include "task/NullTask.h"
 #include "task/IdleTask.h"
 #include "task/static/RepairTask.h"
 #include "task/static/ReclaimTask.h"
@@ -18,8 +19,6 @@
 #include "AIFloat3.h"
 #include "OOAICallback.h"
 #include "Command.h"
-
-#include <vector>
 
 namespace circuit {
 
@@ -34,17 +33,27 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::Watchdog, this),
 							FRAMES_PER_SEC * 60,
 							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 1);
-	const int interval = FRAMES_PER_SEC;
-	const int offset = circuit->GetSkirmishAIId() % interval;
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateIdle, this), interval, offset + 10);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateAssist, this), interval, offset + 11);
+	const int interval = 4;
+	const int offset = circuit->GetSkirmishAIId() % interval + circuit->GetSkirmishAIId() * 2;
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateIdle, this), interval, offset + 1);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateAssist, this), interval, offset + 4);
 
 	/*
 	 * factory handlers
 	 */
+	auto factoryCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
+		if (unit->GetTask() == nullptr) {
+			unit->SetManager(this);
+			nullTask->AssignTo(unit);
+		}
+	};
 	auto factoryFinishedHandler = [this](CCircuitUnit* unit) {
-		unit->SetManager(this);
-		idleTask->AssignTo(unit);
+		if (unit->GetTask() == nullptr) {
+			unit->SetManager(this);
+			idleTask->AssignTo(unit);
+		} else {
+			nullTask->RemoveAssignee(unit);
+		}
 
 		Unit* u = unit->GetUnit();
 		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
@@ -74,22 +83,32 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		unit->GetTask()->OnUnitIdle(unit);
 	};
 	auto factoryDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
-		if (unit->GetUnit()->IsBeingBuilt()) {
+		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
+		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
+
+		if (unit->GetTask() == nullTask) {  // alternative: unit->GetUnit()->IsBeingBuilt()
 			return;
 		}
 		factoryPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
 		factories.erase(unit);
-
-		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
-		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 	};
 
 	/*
 	 * armnanotc handlers
 	 */
+	auto assistCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
+		if (unit->GetTask() == nullptr) {
+			unit->SetManager(this);
+			nullTask->AssignTo(unit);
+		}
+	};
 	auto assistFinishedHandler = [this](CCircuitUnit* unit) {
-		unit->SetManager(this);
-		idleTask->AssignTo(unit);
+		if (unit->GetTask() == nullptr) {
+			unit->SetManager(this);
+			idleTask->AssignTo(unit);
+		} else {
+			nullTask->RemoveAssignee(unit);
+		}
 
 		Unit* u = unit->GetUnit();
 		factoryPower += unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
@@ -116,7 +135,10 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		unit->GetTask()->OnUnitIdle(unit);
 	};
 	auto assistDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
-		if (unit->GetUnit()->IsBeingBuilt()) {
+		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
+		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
+
+		if (unit->GetTask() == nullTask) {  // alternative: unit->GetUnit()->IsBeingBuilt()
 			return;
 		}
 		factoryPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
@@ -126,9 +148,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 
 		havens.erase(unit);
 		// TODO: Send HavenDestroyed message
-
-		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
-		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 	};
 
 	CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
@@ -136,12 +155,14 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		CCircuitDef* cdef = kv.second;
 		UnitDef* def = cdef->GetUnitDef();
 		if (def->IsBuilder() && (def->GetSpeed() == 0)) {
-			int unitDefId = kv.first;
+			CCircuitDef::Id unitDefId = kv.first;
 			if  (!kv.second->GetBuildOptions().empty()) {
+				createdHandler[unitDefId] = factoryCreatedHandler;
 				finishedHandler[unitDefId] = factoryFinishedHandler;
 				idleHandler[unitDefId] = factoryIdleHandler;
 				destroyedHandler[unitDefId] = factoryDestroyedHandler;
 			} else {
+				createdHandler[unitDefId] = assistCreatedHandler;
 				finishedHandler[unitDefId] = assistFinishedHandler;
 				idleHandler[unitDefId] = assistIdleHandler;
 				destroyedHandler[unitDefId] = assistDestroyedHandler;
@@ -192,12 +213,23 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		idleHandler[defId](unit);
 	};
 	idleHandler[defId] = [this](CCircuitUnit* unit) {
+		const char* names[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco"};
+		const std::array<float, 7> prob = {.1, .3, .25, .07, .1, .15, .03};
+		int choice = 0;
+		float dice = rand() / (float)RAND_MAX;
+		float total;
+		for (int i = 0; i < prob.size(); ++i) {
+			total += prob[i];
+			if (dice < total) {
+				choice = i;
+				break;
+			}
+		}
+		CCircuitDef* striderDef = this->circuit->GetCircuitDef(names[choice]);
 		AIFloat3 pos = unit->GetUnit()->GetPos();
-		CTerrainManager* terrain = this->circuit->GetTerrainManager();
-		CCircuitDef* detriDef = this->circuit->GetCircuitDef("armorco");
-		pos = terrain->FindBuildSite(detriDef, pos, this->circuit->GetCircuitDef("striderhub")->GetBuildDistance(), -1);
+		pos = this->circuit->GetTerrainManager()->FindBuildSite(striderDef, pos, this->circuit->GetCircuitDef("striderhub")->GetBuildDistance(), -1);
 		if (pos != -RgtVector) {
-			unit->GetUnit()->Build(detriDef->GetUnitDef(), pos, -1, 0, FRAMES_PER_SEC * 10);
+			unit->GetUnit()->Build(striderDef->GetUnitDef(), pos, -1, 0, FRAMES_PER_SEC * 10);
 		}
 	};
 	destroyedHandler[defId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
@@ -222,6 +254,11 @@ CFactoryManager::~CFactoryManager()
 
 int CFactoryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 {
+	auto search = createdHandler.find(unit->GetCircuitDef()->GetId());
+	if (search != createdHandler.end()) {
+		search->second(unit, builder);
+	}
+
 	if (builder == nullptr) {
 		return 0; //signaling: OK
 	}
@@ -386,21 +423,6 @@ void CFactoryManager::FallbackTask(CCircuitUnit* unit)
 {
 }
 
-float CFactoryManager::GetFactoryPower()
-{
-	return factoryPower;
-}
-
-bool CFactoryManager::CanEnqueueTask()
-{
-	return (factoryTasks.size() < factories.size() * 2);
-}
-
-const std::set<CRecruitTask*>& CFactoryManager::GetTasks() const
-{
-	return factoryTasks;
-}
-
 CCircuitUnit* CFactoryManager::NeedUpgrade()
 {
 	// TODO: Wrap into predicate
@@ -419,11 +441,6 @@ CCircuitUnit* CFactoryManager::GetRandomFactory()
 	auto iter = factories.begin();
 	std::advance(iter, rand() % factories.size());
 	return iter->first;
-}
-
-CCircuitDef* CFactoryManager::GetAssistDef() const
-{
-	return assistDef;
 }
 
 CCircuitUnit* CFactoryManager::GetClosestHaven(CCircuitUnit* unit) const
@@ -500,16 +517,19 @@ void CFactoryManager::UpdateAssist()
 	}
 
 	auto it = updateAssists.begin();
+	unsigned int i = 0;
 	while (it != updateAssists.end()) {
 		(*it)->Update();
+
 		it = updateAssists.erase(it);
-		if (circuit->IsUpdateTimeValid()) {
+		if (++i >= updateSlice) {
 			break;
 		}
 	}
 
 	if (updateAssists.empty()) {
-		updateAssists.insert(assistTasks.begin(), assistTasks.end());
+		updateAssists = assistTasks;
+		updateSlice = updateAssists.size() / TEAM_SLOWUPDATE_RATE;
 	}
 }
 

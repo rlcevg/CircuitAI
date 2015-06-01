@@ -64,24 +64,4 @@ void IUnitTask::Cancel()
 {
 }
 
-const std::set<CCircuitUnit*>& IUnitTask::GetAssignees() const
-{
-	return units;
-}
-
-IUnitTask::Priority IUnitTask::GetPriority()
-{
-	return priority;
-}
-
-IUnitTask::Type IUnitTask::GetType()
-{
-	return type;
-}
-
-ITaskManager* IUnitTask::GetManager()
-{
-	return manager;
-}
-
 } // namespace circuit

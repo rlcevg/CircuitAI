@@ -13,7 +13,8 @@
 namespace circuit {
 
 CIdleTask::CIdleTask(ITaskManager* mgr) :
-		IUnitTask(mgr, Priority::NORMAL, Type::IDLE)
+		IUnitTask(mgr, Priority::NORMAL, Type::IDLE),
+		updateSlice(0)
 {
 }
 
@@ -30,12 +31,15 @@ void CIdleTask::AssignTo(CCircuitUnit* unit)
 
 void CIdleTask::RemoveAssignee(CCircuitUnit* unit)
 {
-	units.erase(unit);
+	if (units.erase(unit) > 0) {
+		updateUnits.erase(unit);
+	}
 }
 
 void CIdleTask::Close(bool done)
 {
 	units.clear();
+	updateUnits.clear();
 }
 
 void CIdleTask::Execute(CCircuitUnit* unit)
@@ -44,12 +48,21 @@ void CIdleTask::Execute(CCircuitUnit* unit)
 
 void CIdleTask::Update()
 {
-	CCircuitAI* circuit = manager->GetCircuit();
-	auto assignees = units;  // copy assignees
-	for (auto ass : assignees) {
+	if (updateUnits.empty()) {
+		updateUnits = units;  // copy units
+		updateSlice = updateUnits.size() / TEAM_SLOWUPDATE_RATE;
+	}
+
+	auto it = updateUnits.begin();
+	unsigned int i = 0;
+	while (it != updateUnits.end()) {
+		CCircuitUnit* ass = *it;
+		it = updateUnits.erase(it);
+
 		manager->AssignTask(ass);  // should RemoveAssignee() on AssignTo()
 		ass->GetTask()->Execute(ass);
-		if (!circuit->IsUpdateTimeValid()) {
+
+		if (++i >= updateSlice) {
 			break;
 		}
 	}

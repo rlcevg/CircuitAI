@@ -39,14 +39,14 @@ public:
 	void CheckConnection();
 	SPylon* GetConnectionHead(SVertex* v0, const springai::AIFloat3& P1);
 
-	inline void SetBeingBuilt(bool value) { isBeingBuilt = value; }
-	inline bool IsBeingBuilt() const { return isBeingBuilt; }
-	inline bool IsFinished() const { return isFinished; }
-	inline void SetValid(bool value) { isValid = value; }
-	inline bool IsValid() const { return isValid; }
+	void SetBeingBuilt(bool value) { isBeingBuilt = value; }
+	bool IsBeingBuilt() const { return isBeingBuilt; }
+	bool IsFinished() const { return isFinished; }
+	void SetValid(bool value) { isValid = value; }
+	bool IsValid() const { return isValid; }
 	void SetStartVertex(int index);
-	inline SVertex* GetV0() { return v0; }
-	inline SVertex* GetV1() { return v1; }
+	SVertex* GetV0() { return v0; }
+	SVertex* GetV1() { return v1; }
 
 private:
 	SVertex *v0, *v1;

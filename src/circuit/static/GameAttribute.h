@@ -26,14 +26,14 @@ public:
 	virtual ~CGameAttribute();
 
 	void SetGameEnd(bool value);
-	inline bool IsGameEnd() const { return gameEnd; }
-	inline void RegisterAI(CCircuitAI* circuit) { circuits.insert(circuit); }
-	inline void UnregisterAI(CCircuitAI* circuit) { circuits.erase(circuit); }
+	bool IsGameEnd() const { return gameEnd; }
+	void RegisterAI(CCircuitAI* circuit) { circuits.insert(circuit); }
+	void UnregisterAI(CCircuitAI* circuit) { circuits.erase(circuit); }
 
-	inline const Circuits& GetCircuits() const { return circuits; }
-	inline CSetupData& GetSetupData() { return setupData; }
-	inline CMetalData& GetMetalData() { return metalData; }
-	inline CTerrainData& GetTerrainData() { return terrainData; }
+	const Circuits& GetCircuits() const { return circuits; }
+	CSetupData& GetSetupData() { return setupData; }
+	CMetalData& GetMetalData() { return metalData; }
+	CTerrainData& GetTerrainData() { return terrainData; }
 
 private:
 	bool gameEnd;

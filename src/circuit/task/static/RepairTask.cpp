@@ -45,13 +45,14 @@ void CSRepairTask::Update()
 			CCircuitUnit* repairTarget = nullptr;
 			circuit->UpdateFriendlyUnits();
 			float buildDist = (*units.begin())->GetCircuitDef()->GetBuildDistance();
+			float sqBuildDist = buildDist * buildDist;
 			auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, buildDist));
 			for (auto u : us) {
 				CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
 				if (candUnit == nullptr) {
 					continue;
 				}
-				if (!u->IsBeingBuilt() && (u->GetHealth() < u->GetMaxHealth())) {
+				if (!u->IsBeingBuilt() && (u->GetHealth() < u->GetMaxHealth()) && (position.SqDistance2D(u->GetPos()) < sqBuildDist)) {
 					repairTarget = candUnit;
 					break;
 				}

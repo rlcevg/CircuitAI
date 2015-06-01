@@ -12,6 +12,7 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+#include "OOAICallback.h"
 #include "AISCommands.h"
 
 namespace circuit {
@@ -44,6 +45,20 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 void CAttackTask::Update()
 {
 	// TODO: Monitor threat? Or do it on EnemySeen/EnemyDestroyed?
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	for (CCircuitUnit* unit : units) {
+		CCircuitDef* cdef = unit->GetCircuitDef();
+		int reloadFrames = cdef->GetReloadFrames();
+		if ((reloadFrames < 0) || (unit->GetDGunFrame() + reloadFrames >= circuit->GetLastFrame())) {
+			continue;
+		}
+		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(unit->GetUnit()->GetPos(), cdef->GetDGunRange() * 0.9f));
+		if (!enemies.empty()) {
+			unit->ManualFire(enemies.front(), circuit->GetLastFrame());
+			utils::free_clear(enemies);
+		}
+	}
 }
 
 void CAttackTask::OnUnitIdle(CCircuitUnit* unit)

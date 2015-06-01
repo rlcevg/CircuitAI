@@ -11,8 +11,8 @@
 #include "task/UnitTask.h"
 
 #define MIN_BUILD_SEC	20
-#define MAX_BUILD_SEC	60
-#define MAX_TRAVEL_SEC	90
+#define MAX_BUILD_SEC	40
+#define MAX_TRAVEL_SEC	60
 
 namespace circuit {
 
@@ -57,24 +57,24 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
-	inline const springai::AIFloat3& GetTaskPos() const { return position; }
-	inline CCircuitDef* GetBuildDef() const { return buildDef; }
+	const springai::AIFloat3& GetTaskPos() const { return position; }
+	CCircuitDef* GetBuildDef() const { return buildDef; }
 
-	inline BuildType GetBuildType() const { return buildType; }
-	inline float GetBuildPower() const { return buildPower; }
-	inline float GetCost() const { return cost; }
-	inline int GetTimeout() const { return timeout; }
+	BuildType GetBuildType() const { return buildType; }
+	float GetBuildPower() const { return buildPower; }
+	float GetCost() const { return cost; }
+	int GetTimeout() const { return timeout; }
 
-	inline void SetBuildPos(const springai::AIFloat3& pos) { buildPos = pos; }
-	inline const springai::AIFloat3& GetBuildPos() const { return buildPos; }
+	void SetBuildPos(const springai::AIFloat3& pos) { buildPos = pos; }
+	const springai::AIFloat3& GetBuildPos() const { return buildPos; }
 	const springai::AIFloat3& GetPosition() const;  // return buildPos if set, position otherwise
 	virtual void SetTarget(CCircuitUnit* unit);
-	inline CCircuitUnit* GetTarget() const { return target; }
+	CCircuitUnit* GetTarget() const { return target; }
 
 	bool IsEqualBuildPos(const springai::AIFloat3& pos) const;
-	inline bool IsStructure() const { return buildType <= BuildType::MEX; }
-	inline void SetFacing(int value) { facing = value; }
-	inline int GetFacing() const { return facing; }
+	bool IsStructure() const { return buildType <= BuildType::MEX; }
+	void SetFacing(int value) { facing = value; }
+	int GetFacing() const { return facing; }
 
 protected:
 	int FindFacing(CCircuitDef* buildDef, const springai::AIFloat3& position);

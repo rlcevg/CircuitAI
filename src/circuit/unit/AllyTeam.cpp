@@ -43,21 +43,6 @@ CAllyTeam::~CAllyTeam()
 	}
 }
 
-int CAllyTeam::GetSize() const
-{
-	return teamIds.size();
-}
-
-const CAllyTeam::TeamIds& CAllyTeam::GetTeamIds() const
-{
-	return teamIds;
-}
-
-const CAllyTeam::SBox& CAllyTeam::GetStartBox() const
-{
-	return startBox;
-}
-
 void CAllyTeam::Init(CCircuitAI* circuit)
 {
 	if (initCount++ > 0) {
@@ -93,8 +78,7 @@ void CAllyTeam::Release()
 
 void CAllyTeam::UpdateFriendlyUnits(CCircuitAI* circuit)
 {
-	int frame = circuit->GetLastFrame();
-	if (lastUpdate >= frame) {
+	if (lastUpdate >= circuit->GetLastFrame()) {
 		return;
 	}
 
@@ -115,57 +99,19 @@ void CAllyTeam::UpdateFriendlyUnits(CCircuitAI* circuit)
 		delete unitDef;
 		friendlyUnits[unitId] = unit;
 	}
-	lastUpdate = frame;
+	lastUpdate = circuit->GetLastFrame();
 }
 
 CCircuitUnit* CAllyTeam::GetFriendlyUnit(CCircuitUnit::Id unitId)
 {
-	decltype(friendlyUnits)::iterator i = friendlyUnits.find(unitId);
-	if (i != friendlyUnits.end()) {
-		return i->second;
-	}
-
-	return nullptr;
-}
-
-const CAllyTeam::Units& CAllyTeam::GetFriendlyUnits() const
-{
-	return friendlyUnits;
-}
-
-void CAllyTeam::AddEnemyUnit(CCircuitUnit* unit)
-{
-	enemyUnits[unit->GetId()] = unit;
-}
-
-void CAllyTeam::RemoveEnemyUnit(CCircuitUnit* unit)
-{
-	enemyUnits.erase(unit->GetId());
+	decltype(friendlyUnits)::iterator it = friendlyUnits.find(unitId);
+	return (it != friendlyUnits.end()) ? it->second : nullptr;
 }
 
 CCircuitUnit* CAllyTeam::GetEnemyUnit(CCircuitUnit::Id unitId)
 {
-	decltype(enemyUnits)::iterator i = enemyUnits.find(unitId);
-	if (i != enemyUnits.end()) {
-		return i->second;
-	}
-
-	return nullptr;
-}
-
-const CAllyTeam::Units& CAllyTeam::GetEnemyUnits() const
-{
-	return enemyUnits;
-}
-
-std::shared_ptr<CMetalManager>& CAllyTeam::GetMetalManager()
-{
-	return metalManager;
-}
-
-std::shared_ptr<CEnergyGrid>& CAllyTeam::GetEnergyLink()
-{
-	return energyLink;
+	decltype(enemyUnits)::iterator it = enemyUnits.find(unitId);
+	return (it != enemyUnits.end()) ? it->second : nullptr;
 }
 
 } // namespace circuit

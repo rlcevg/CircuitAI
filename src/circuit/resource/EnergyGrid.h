@@ -31,7 +31,7 @@ public:
 	virtual ~CEnergyGrid();
 
 	void Update();
-	inline void SetForceRebuild(bool value) { isForceRebuild = value; }
+	void SetForceRebuild(bool value) { isForceRebuild = value; }
 	CEnergyLink* GetLinkToBuild(CCircuitDef*& outDef, springai::AIFloat3& outPos);
 
 	float GetPylonRange(CCircuitDef::Id defId);

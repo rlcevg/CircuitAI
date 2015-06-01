@@ -21,7 +21,7 @@ public:
 				CEnergyLink* link, float cost, int timeout);
 	virtual ~CBPylonTask();
 
-	inline CEnergyLink* GetLink() { return link; }
+	CEnergyLink* GetLink() { return link; }
 
 	virtual void Execute(CCircuitUnit* unit);
 protected:

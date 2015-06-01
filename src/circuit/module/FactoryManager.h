@@ -51,13 +51,14 @@ public:
 	virtual void SpecialProcess(CCircuitUnit* unit);
 	virtual void FallbackTask(CCircuitUnit* unit);
 
-	float GetFactoryPower();
-	bool CanEnqueueTask();
-	const std::set<CRecruitTask*>& GetTasks() const;
+	int GetFactoryCount() const { return factories.size(); }
+	float GetFactoryPower() const { return factoryPower; }
+	bool CanEnqueueTask() const { return factoryTasks.size() < factories.size() * 2; }
+	const std::set<CRecruitTask*>& GetTasks() const { return factoryTasks; }
 	CCircuitUnit* NeedUpgrade();
 	CCircuitUnit* GetRandomFactory();
 
-	CCircuitDef* GetAssistDef() const;
+	CCircuitDef* GetAssistDef() const { return assistDef; }
 	CCircuitUnit* GetClosestHaven(CCircuitUnit* unit) const;
 	std::vector<CCircuitUnit*> GetHavensAt(const springai::AIFloat3& pos) const;
 
@@ -66,6 +67,7 @@ private:
 	void UpdateIdle();
 	void UpdateAssist();
 
+	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
 	Handlers2 destroyedHandler;
@@ -74,6 +76,7 @@ private:
 	std::set<CRecruitTask*> factoryTasks;  // owner
 	float factoryPower;
 	std::set<CRecruitTask*> deleteTasks;
+	unsigned int updateSlice;
 
 	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> factories;  // factory 1:n nanos
 	CCircuitDef* assistDef;

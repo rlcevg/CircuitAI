@@ -13,6 +13,7 @@ namespace circuit {
 class IUnitTask;
 class CCircuitAI;
 class CCircuitUnit;
+class CNullTask;
 class CIdleTask;
 class CRetreatTask;
 
@@ -32,10 +33,11 @@ public:
 	virtual void SpecialProcess(CCircuitUnit* unit) = 0;
 	virtual void FallbackTask(CCircuitUnit* unit) = 0;
 
-	CIdleTask* GetIdleTask();
-	CRetreatTask* GetRetreatTask();
+	CIdleTask* GetIdleTask() const { return idleTask; }
+	CRetreatTask* GetRetreatTask() const { return retreatTask; }
 
 protected:
+	CNullTask* nullTask;
 	CIdleTask* idleTask;
 	CRetreatTask* retreatTask;
 };

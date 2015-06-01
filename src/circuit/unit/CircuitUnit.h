@@ -32,22 +32,26 @@ public:
 	CCircuitUnit(springai::Unit* unit, CCircuitDef* circuitDef);
 	virtual ~CCircuitUnit();
 
-	inline Id GetId() const { return id; }
-	inline springai::Unit* GetUnit() const { return unit; }
-	inline CCircuitDef* GetCircuitDef() const { return circuitDef; }
+	Id GetId() const { return id; }
+	springai::Unit* GetUnit() const { return unit; }
+	CCircuitDef* GetCircuitDef() const { return circuitDef; }
 
 	void SetTask(IUnitTask* task);
-	inline IUnitTask* GetTask() const { return task; }
-	inline int GetTaskFrame() const { return taskFrame; }
+	IUnitTask* GetTask() const { return task; }
+	int GetTaskFrame() const { return taskFrame; }
 
-	inline void SetManager(IUnitManager* mgr) { manager = mgr; }
-	inline IUnitManager* GetManager() const { return manager; }
+	void SetManager(IUnitManager* mgr) { manager = mgr; }
+	IUnitManager* GetManager() const { return manager; }
 
-	inline void SetArea(STerrainMapArea* area) { this->area = area; }
-	inline STerrainMapArea* GetArea() const { return area; }
+	void SetArea(STerrainMapArea* area) { this->area = area; }
+	STerrainMapArea* GetArea() const { return area; }
 
-	inline bool operator==(const CCircuitUnit& rhs);
-	inline bool operator!=(const CCircuitUnit& rhs);
+	void ManualFire(const springai::AIFloat3& pos, int frame);
+	void ManualFire(springai::Unit* enemy, int frame);
+	int GetDGunFrame() const { return dgunFrame; }
+
+	bool operator==(const CCircuitUnit& rhs) { return id == rhs.id; }
+	bool operator!=(const CCircuitUnit& rhs) { return id != rhs.id; }
 
 private:
 	Id id;
@@ -57,17 +61,9 @@ private:
 	int taskFrame;
 	IUnitManager* manager;
 	STerrainMapArea* area;  // = nullptr if a unit flies
+
+	int dgunFrame;
 };
-
-inline bool CCircuitUnit::operator==(const CCircuitUnit& rhs)
-{
-	return id == rhs.id;
-}
-
-inline bool CCircuitUnit::operator!=(const CCircuitUnit& rhs)
-{
-	return id != rhs.id;
-}
 
 } // namespace circuit
 

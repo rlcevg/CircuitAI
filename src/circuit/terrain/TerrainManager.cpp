@@ -59,9 +59,17 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 		cdef = circuit->GetCircuitDef(fac);
 		def = cdef->GetUnitDef();
 		ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-		bsize = ssize + int2(6, 4);
+		bsize = ssize + int2(8, 6);
 		blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::FACTORY, ignoreMask);
 	}
+
+	cdef = circuit->GetCircuitDef("striderhub");
+	def = cdef->GetUnitDef();
+	radius = cdef->GetBuildDistance() / (SQUARE_SIZE * 2);
+	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+	offset = int2(0, 0);
+	ignoreMask = STRUCT_BIT(NONE);
+	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
 
 	cdef = circuit->GetCircuitDef("armsolar");
 	def = cdef->GetUnitDef();
@@ -119,10 +127,6 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 
 	cdef = circuit->GetCircuitDef("armestor");
 	def = cdef->GetUnitDef();
-//	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
-//	auto search = customParams.find("pylonrange");
-//	float pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : PYLON_RANGE;
-//	radius = pylonRange / (SQUARE_SIZE * 1.3);
 	wpDef = def->GetDeathExplosion();
 	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
 	delete wpDef;
@@ -213,13 +217,16 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 				 STRUCT_BIT(PYLON);
 	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
 
-	cdef = circuit->GetCircuitDef("armorco");
-	def = cdef->GetUnitDef();
-	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	bsize = ssize + int2(4, 4);
-	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(ALL);
-	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
+	const char* striders[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco"};
+	for (auto strider : striders) {
+		cdef = circuit->GetCircuitDef(strider);
+		def = cdef->GetUnitDef();
+		ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+		bsize = ssize + int2(4, 4);
+		offset = int2(0, 0);
+		ignoreMask = STRUCT_BIT(ALL);
+		blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
+	}
 
 	blockingMap.columns = mapWidth / 2;  // build-step = 2 little green squares
 	blockingMap.rows = mapHeight / 2;
@@ -363,7 +370,7 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 		if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
 			probePos.y = map->GetElevationAt(probePos.x, probePos.z);
 			if (predicate(probePos)) {
-				return probePos;
+				return probePos - AIFloat3(.1f, .0f, .1f);;
 			}
 		}
 	}
@@ -373,11 +380,10 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 
 void CTerrainManager::MarkAllyBuildings()
 {
-	int lastFrame = circuit->GetLastFrame();
-	if (markFrame /*+ FRAMES_PER_SEC*/ >= lastFrame) {
+	if (markFrame /*+ FRAMES_PER_SEC*/ >= circuit->GetLastFrame()) {
 		return;
 	}
-	markFrame = lastFrame;
+	markFrame = circuit->GetLastFrame();
 
 	circuit->UpdateFriendlyUnits();
 	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
@@ -553,7 +559,7 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(CCircuitDef* cdef, const AIFloat3& po
 			if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
 				probePos.y = map->GetElevationAt(probePos.x, probePos.z);
 				if (predicate(probePos)) {
-					return probePos;
+					return probePos - AIFloat3(.1f, .0f, .1f);
 				}
 			}
 		}
@@ -651,7 +657,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 		if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {	\
 			probePos.y = map->GetElevationAt(probePos.x, probePos.z);								\
 			if (predicate(probePos)) {																\
-				return probePos;																	\
+				return probePos - AIFloat3(.1f, .0f, .1f);											\
 			}																						\
 		}																							\
 	}
@@ -780,7 +786,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 			if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {			\
 				probePos.y = map->GetElevationAt(probePos.x, probePos.z);										\
 				if (predicate(probePos)) {																		\
-					return probePos;																			\
+					return probePos - AIFloat3(.1f, .0f, .1f);													\
 				}																								\
 			}																									\
 		}																										\

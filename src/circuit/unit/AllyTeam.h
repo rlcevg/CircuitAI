@@ -45,24 +45,24 @@ public:
 	CAllyTeam(const TeamIds& tids, const SBox& sb);
 	virtual ~CAllyTeam();
 
-	int GetSize() const;
-	const TeamIds& GetTeamIds() const;
-	const SBox& GetStartBox() const;
+	int GetSize() const { return teamIds.size(); }
+	const TeamIds& GetTeamIds() const { return teamIds; }
+	const SBox& GetStartBox() const { return startBox; }
 
 	void Init(CCircuitAI* circuit);
 	void Release();
 
 	void UpdateFriendlyUnits(CCircuitAI* circuit);
 	CCircuitUnit* GetFriendlyUnit(CCircuitUnit::Id unitId);
-	const Units& GetFriendlyUnits() const;
+	const Units& GetFriendlyUnits() const { return friendlyUnits; }
 
-	void AddEnemyUnit(CCircuitUnit* unit);
-	void RemoveEnemyUnit(CCircuitUnit* unit);
+	void AddEnemyUnit(CCircuitUnit* unit) { enemyUnits[unit->GetId()] = unit; }
+	void RemoveEnemyUnit(CCircuitUnit* unit) { enemyUnits.erase(unit->GetId()); }
 	CCircuitUnit* GetEnemyUnit(CCircuitUnit::Id unitId);
-	const Units& GetEnemyUnits() const;
+	const Units& GetEnemyUnits() const { return enemyUnits; }
 
-	std::shared_ptr<CMetalManager>& GetMetalManager();
-	std::shared_ptr<CEnergyGrid>& GetEnergyLink();
+	std::shared_ptr<CMetalManager>& GetMetalManager() { return metalManager; }
+	std::shared_ptr<CEnergyGrid>& GetEnergyLink() { return energyLink; }
 
 private:
 	TeamIds teamIds;

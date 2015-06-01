@@ -41,8 +41,8 @@ void CBDefenceTask::Finish()
 		if (!units.empty()) {
 			manager->AssignTask(*units.begin(), recl);
 		}
+		utils::free_clear(features);
 	}
-	utils::free_clear(features);
 
 	IBuilderTask::Finish();
 }

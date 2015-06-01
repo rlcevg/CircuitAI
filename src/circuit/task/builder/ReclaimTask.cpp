@@ -12,7 +12,10 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+#include "OOAICallback.h"
 #include "AISCommands.h"
+#include "Feature.h"
+#include "FeatureDef.h"
 
 namespace circuit {
 
@@ -44,9 +47,9 @@ void CBReclaimTask::Execute(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();
 
-	std::vector<float> params;
-	params.push_back(static_cast<float>(priority));
-	u->ExecuteCustomCommand(CMD_PRIORITY, params);
+//	std::vector<float> params;
+//	params.push_back(static_cast<float>(priority));
+//	u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 	if (target == nullptr) {
 		AIFloat3 pos;
@@ -72,8 +75,62 @@ void CBReclaimTask::Execute(CCircuitUnit* unit)
 
 void CBReclaimTask::Update()
 {
-	if (isMetal && manager->GetCircuit()->GetEconomyManager()->IsMetalFull()) {
+	if (!isMetal) {
+		return;
+	}
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	if (circuit->GetEconomyManager()->IsMetalFull()) {
 		manager->AbortTask(this);
+	} else if (!units.empty()) {
+		/*
+		 * Update reclaim position
+		 */
+		// FIXME: Works only with 1 task per worker
+		CCircuitUnit* unit = *units.begin();
+		Unit* u = unit->GetUnit();
+		const AIFloat3& pos = u->GetPos();
+		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(pos, 300.0f));
+		if (!enemies.empty()) {
+			for (Unit* enemy : enemies) {
+				if (enemy->IsBeingBuilt()) {
+					u->ReclaimUnit(enemy, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+					utils::free_clear(enemies);
+					return;
+				}
+			}
+			utils::free_clear(enemies);
+		}
+
+		auto features = std::move(circuit->GetCallback()->GetFeaturesIn(pos, 500.0f));
+		if (!features.empty()) {
+			CTerrainManager* terrain = circuit->GetTerrainManager();
+			AIFloat3 reclPos;
+			float minSqDist = std::numeric_limits<float>::max();
+			Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
+			for (Feature* feature : features) {
+				AIFloat3 featPos = feature->GetPosition();
+				terrain->CorrectPosition(featPos);  // Impulsed flying feature
+				if (!terrain->CanBuildAt(unit, featPos)) {
+					continue;
+				}
+				FeatureDef* featDef = feature->GetDef();
+				float reclaimValue = featDef->GetContainedResource(metalRes)/* * feature->GetReclaimLeft()*/;
+				delete featDef;
+				if (reclaimValue < 1.0f) {
+					continue;
+				}
+				float sqDist = pos.SqDistance2D(featPos);
+				if (sqDist < minSqDist) {
+					reclPos = featPos;
+					minSqDist = sqDist;
+				}
+			}
+			if (minSqDist < std::numeric_limits<float>::max()) {
+				u->ReclaimInArea(reclPos, unit->GetCircuitDef()->GetBuildDistance(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+			}
+			utils::free_clear(features);
+		}
 	}
 }
 

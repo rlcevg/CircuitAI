@@ -1,25 +1,23 @@
 /*
- * IdleTask.h
+ * NullTask.h
  *
- *  Created on: Jan 13, 2015
+ *  Created on: May 29, 2015
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_TASK_IDLETASK_H_
-#define SRC_CIRCUIT_TASK_IDLETASK_H_
+#ifndef SRC_CIRCUIT_TASK_NULLTASK_H_
+#define SRC_CIRCUIT_TASK_NULLTASK_H_
 
 #include "task/UnitTask.h"
 
 namespace circuit {
 
-class CIdleTask: public IUnitTask {
+class CNullTask: public IUnitTask {
 public:
-	CIdleTask(ITaskManager* mgr);
-	virtual ~CIdleTask();
+	CNullTask(ITaskManager* mgr);
+	virtual ~CNullTask();
 
 	virtual void AssignTo(CCircuitUnit* unit);
-	virtual void RemoveAssignee(CCircuitUnit* unit);
-	virtual void Close(bool done);
 
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
@@ -27,12 +25,8 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
-
-private:
-	std::set<CCircuitUnit*> updateUnits;
-	unsigned int updateSlice;
 };
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_TASK_IDLETASK_H_
+#endif // SRC_CIRCUIT_TASK_NULLTASK_H_

@@ -16,7 +16,6 @@
 #include <map>
 #include <list>
 #include <vector>
-#include <chrono>
 #include <string.h>
 
 namespace springai {
@@ -31,9 +30,6 @@ namespace springai {
 struct SSkirmishAICallback;
 
 namespace circuit {
-
-using clock = std::chrono::high_resolution_clock;
-using std::chrono::milliseconds;
 
 #define ERROR_UNKNOWN			200
 #define ERROR_INIT				(ERROR_UNKNOWN + EVENT_INIT)
@@ -103,40 +99,33 @@ private:
 	CCircuitUnit* RegisterTeamUnit(CCircuitUnit::Id unitId);
 	void UnregisterTeamUnit(CCircuitUnit* unit);
 public:
-	CCircuitUnit* GetTeamUnit(CCircuitUnit::Id unitId) /*const*/;
-	const CAllyTeam::Units& GetTeamUnits() const;
+	CCircuitUnit* GetTeamUnit(CCircuitUnit::Id unitId);
+	const CAllyTeam::Units& GetTeamUnits() const { return teamUnits; }
 
-	void UpdateFriendlyUnits();
+	void UpdateFriendlyUnits() { allyTeam->UpdateFriendlyUnits(this); }
 	CCircuitUnit* GetFriendlyUnit(springai::Unit* u);
-	CCircuitUnit* GetFriendlyUnit(CCircuitUnit::Id unitId);
-	const CAllyTeam::Units& GetFriendlyUnits() const;
+	CCircuitUnit* GetFriendlyUnit(CCircuitUnit::Id unitId) { return allyTeam->GetFriendlyUnit(unitId); }
+	const CAllyTeam::Units& GetFriendlyUnits() const { return allyTeam->GetFriendlyUnits(); }
 
 private:
 	CCircuitUnit* RegisterEnemyUnit(CCircuitUnit::Id unitId);
 	void UnregisterEnemyUnit(CCircuitUnit* unit);
 public:
-	CCircuitUnit* GetEnemyUnit(springai::Unit* u);
-	CCircuitUnit* GetEnemyUnit(CCircuitUnit::Id unitId);
-	const CAllyTeam::Units& GetEnemyUnits() const;
+	CCircuitUnit* GetEnemyUnit(springai::Unit* u) { return GetEnemyUnit(u->GetUnitId()); }
+	CCircuitUnit* GetEnemyUnit(CCircuitUnit::Id unitId) { return allyTeam->GetEnemyUnit(unitId); }
+	const CAllyTeam::Units& GetEnemyUnits() const { return allyTeam->GetEnemyUnits(); }
 
-	CAllyTeam* GetAllyTeam() const;
+	CAllyTeam* GetAllyTeam() const { return allyTeam; }
 
 private:
 	CAllyTeam::Units teamUnits;  // owner
 	CAllyTeam* allyTeam;
 // ---- Units ---- END
 
-// ---- UpdateTime ---- BEGIN
-public:
-	bool IsUpdateTimeValid();
-private:
-	clock::time_point startUpdate;
-// ---- UpdateTime ---- END
-
 // ---- AIOptions.lua ---- BEGIN
 public:
-	Difficulty GetDifficulty();
-	bool IsAllyAware();
+	Difficulty GetDifficulty() const { return difficulty; }
+	bool IsAllyAware() const { return allyAware; }
 private:
 	void InitOptions();
 	Difficulty difficulty;
@@ -154,7 +143,7 @@ public:
 	using CircuitDefs = std::unordered_map<CCircuitDef::Id, CCircuitDef*>;
 	using NamedDefs = std::map<const char*, CCircuitDef*, cmp_str>;
 
-	CircuitDefs& GetCircuitDefs();
+	CircuitDefs& GetCircuitDefs() { return defsById; }
 	CCircuitDef* GetCircuitDef(const char* name);
 	CCircuitDef* GetCircuitDef(CCircuitDef::Id unitDefId);
 private:
@@ -164,28 +153,28 @@ private:
 // ---- UnitDefs ---- END
 
 public:
-	bool IsInitialized();
-	CGameAttribute* GetGameAttribute();
-	std::shared_ptr<CScheduler>& GetScheduler();
-	int GetLastFrame();
-	int GetSkirmishAIId();
-	int GetTeamId();
-	int GetAllyTeamId();
-	springai::OOAICallback* GetCallback();
-	springai::Log*          GetLog();
-	springai::Game*         GetGame();
-	springai::Map*          GetMap();
-	springai::Pathing*      GetPathing();
-	springai::Drawer*       GetDrawer();
-	springai::SkirmishAI*   GetSkirmishAI();
-	CSetupManager* GetSetupManager();
-	CMetalManager* GetMetalManager();
-	CEnergyGrid* GetEnergyGrid();
-	CTerrainManager* GetTerrainManager();
-	CBuilderManager* GetBuilderManager();
-	CFactoryManager* GetFactoryManager();
-	CEconomyManager* GetEconomyManager();
-	CMilitaryManager* GetMilitaryManager();
+	bool IsInitialized() const { return initialized; }
+	CGameAttribute* GetGameAttribute() const { return gameAttribute.get(); }
+	std::shared_ptr<CScheduler>& GetScheduler() { return scheduler; }
+	int GetLastFrame() const    { return lastFrame; }
+	int GetSkirmishAIId() const { return skirmishAIId; }
+	int GetTeamId() const       { return teamId; }
+	int GetAllyTeamId() const   { return allyTeamId; }
+	springai::OOAICallback* GetCallback() const   { return callback; }
+	springai::Log*          GetLog() const        { return log.get(); }
+	springai::Game*         GetGame() const       { return game.get(); }
+	springai::Map*          GetMap() const        { return map.get(); }
+	springai::Pathing*      GetPathing() const    { return pathing.get(); }
+	springai::Drawer*       GetDrawer() const     { return drawer.get(); }
+	springai::SkirmishAI*   GetSkirmishAI() const { return skirmishAI.get(); }
+	CSetupManager*    GetSetupManager() const    { return setupManager.get(); }
+	CMetalManager*    GetMetalManager() const    { return metalManager.get(); }
+	CEnergyGrid*      GetEnergyGrid() const      { return energyLink.get(); }
+	CTerrainManager*  GetTerrainManager() const  { return terrainManager.get(); }
+	CBuilderManager*  GetBuilderManager() const  { return builderManager.get(); }
+	CFactoryManager*  GetFactoryManager() const  { return factoryManager.get(); }
+	CEconomyManager*  GetEconomyManager() const  { return economyManager.get(); }
+	CMilitaryManager* GetMilitaryManager() const { return militaryManager.get(); }
 
 private:
 	// debug

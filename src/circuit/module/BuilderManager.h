@@ -37,11 +37,11 @@ public:
 	virtual int UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
-	CCircuitDef* GetTerraDef() const;
+	CCircuitDef* GetTerraDef() const { return terraDef; }
 
-	int GetWorkerCount() const;
-	float GetBuilderPower() const;
-	bool CanEnqueueTask() const;
+	int GetWorkerCount() const { return workers.size(); }
+	float GetBuilderPower() const { return builderPower; }
+	bool CanEnqueueTask() const { return builderTasksCount < workers.size() * 2; }
 	const std::set<IBuilderTask*>& GetTasks(IBuilderTask::BuildType type);
 	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,
 							  CCircuitDef* buildDef,
@@ -110,7 +110,7 @@ private:
 	void UpdateRetreat();
 	void UpdateBuild();
 
-	Handlers2 createdHandler;  // FIXME: EXPERIMENTAL
+	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
 	Handlers2 damagedHandler;
@@ -122,6 +122,7 @@ private:
 	float builderPower;
 	std::set<IBuilderTask*> updateTasks;  // temporary tasks holder to keep updating every task
 	std::set<IBuilderTask*> deleteTasks;
+	unsigned int updateSlice;
 
 	std::set<CCircuitUnit*> workers;
 	std::set<CCircuitUnit*> assistants;  // workers with temporary task

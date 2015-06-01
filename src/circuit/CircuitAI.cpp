@@ -404,7 +404,6 @@ int CCircuitAI::Release(int reason)
 
 int CCircuitAI::Update(int frame)
 {
-	startUpdate = clock::now();
 	lastFrame = frame;
 
 	scheduler->ProcessTasks(frame);
@@ -592,16 +591,6 @@ CCircuitUnit* CCircuitAI::GetTeamUnit(CCircuitUnit::Id unitId)
 	return (it != teamUnits.end()) ? it->second : nullptr;
 }
 
-const CAllyTeam::Units& CCircuitAI::GetTeamUnits() const
-{
-	return teamUnits;
-}
-
-void CCircuitAI::UpdateFriendlyUnits()
-{
-	allyTeam->UpdateFriendlyUnits(this);
-}
-
 CCircuitUnit* CCircuitAI::GetFriendlyUnit(Unit* u)
 {
 	if (u == nullptr) {
@@ -615,16 +604,6 @@ CCircuitUnit* CCircuitAI::GetFriendlyUnit(Unit* u)
 	}
 
 	return nullptr;
-}
-
-CCircuitUnit* CCircuitAI::GetFriendlyUnit(CCircuitUnit::Id unitId)
-{
-	return allyTeam->GetFriendlyUnit(unitId);
-}
-
-const CAllyTeam::Units& CCircuitAI::GetFriendlyUnits() const
-{
-	return allyTeam->GetFriendlyUnits();
 }
 
 CCircuitUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId)
@@ -652,42 +631,6 @@ void CCircuitAI::UnregisterEnemyUnit(CCircuitUnit* unit)
 	allyTeam->RemoveEnemyUnit(unit);
 
 	delete unit;
-}
-
-CCircuitUnit* CCircuitAI::GetEnemyUnit(Unit* u)
-{
-	return GetEnemyUnit(u->GetUnitId());
-}
-
-CCircuitUnit* CCircuitAI::GetEnemyUnit(CCircuitUnit::Id unitId)
-{
-	return allyTeam->GetEnemyUnit(unitId);
-}
-
-const CAllyTeam::Units& CCircuitAI::GetEnemyUnits() const
-{
-	return allyTeam->GetEnemyUnits();
-}
-
-CAllyTeam* CCircuitAI::GetAllyTeam() const
-{
-	return allyTeam;
-}
-
-bool CCircuitAI::IsUpdateTimeValid()
-{
-	clock::time_point t = clock::now();
-	return std::chrono::duration_cast<milliseconds>(t - startUpdate).count() < 5;  // or (1000 / FRAMES_PER_SEC)
-}
-
-CCircuitAI::Difficulty CCircuitAI::GetDifficulty()
-{
-	return difficulty;
-}
-
-bool CCircuitAI::IsAllyAware()
-{
-	return allyAware;
 }
 
 void CCircuitAI::InitOptions()
@@ -731,11 +674,6 @@ CCircuitDef* CCircuitAI::GetCircuitDef(CCircuitDef::Id unitDefId)
 	return (it != defsById.end()) ? it->second : nullptr;
 }
 
-CCircuitAI::CircuitDefs& CCircuitAI::GetCircuitDefs()
-{
-	return defsById;
-}
-
 void CCircuitAI::InitUnitDefs()
 {
 	CTerrainData& terrainData = gameAttribute->GetTerrainData();
@@ -763,116 +701,6 @@ void CCircuitAI::InitUnitDefs()
 		defsByName[ud->GetName()] = cdef;
 		defsById[cdef->GetId()] = cdef;
 	}
-}
-
-bool CCircuitAI::IsInitialized()
-{
-	return initialized;
-}
-
-CGameAttribute* CCircuitAI::GetGameAttribute()
-{
-	return gameAttribute.get();
-}
-
-std::shared_ptr<CScheduler>& CCircuitAI::GetScheduler()
-{
-	return scheduler;
-}
-
-int CCircuitAI::GetLastFrame()
-{
-	return lastFrame;
-}
-
-int CCircuitAI::GetSkirmishAIId()
-{
-	return skirmishAIId;
-}
-
-int CCircuitAI::GetTeamId()
-{
-	return teamId;
-}
-
-int CCircuitAI::GetAllyTeamId()
-{
-	return allyTeamId;
-}
-
-OOAICallback* CCircuitAI::GetCallback()
-{
-	return callback;
-}
-
-Log* CCircuitAI::GetLog()
-{
-	return log.get();
-}
-
-Game* CCircuitAI::GetGame()
-{
-	return game.get();
-}
-
-Map* CCircuitAI::GetMap()
-{
-	return map.get();
-}
-
-Pathing* CCircuitAI::GetPathing()
-{
-	return pathing.get();
-}
-
-Drawer* CCircuitAI::GetDrawer()
-{
-	return drawer.get();
-}
-
-SkirmishAI* CCircuitAI::GetSkirmishAI()
-{
-	return skirmishAI.get();
-}
-
-CSetupManager* CCircuitAI::GetSetupManager()
-{
-	return setupManager.get();
-}
-
-CMetalManager* CCircuitAI::GetMetalManager()
-{
-	return metalManager.get();
-}
-
-CEnergyGrid* CCircuitAI::GetEnergyGrid()
-{
-	return energyLink.get();
-}
-
-CTerrainManager* CCircuitAI::GetTerrainManager()
-{
-	return terrainManager.get();
-}
-
-CBuilderManager* CCircuitAI::GetBuilderManager()
-{
-	return builderManager.get();
-}
-
-CFactoryManager* CCircuitAI::GetFactoryManager()
-{
-	return factoryManager.get();
-}
-
-CEconomyManager* CCircuitAI::GetEconomyManager()
-{
-	return economyManager.get();
-}
-
-CMilitaryManager* CCircuitAI::GetMilitaryManager()
-{
-	return militaryManager.get();
 }
 
 //// debug

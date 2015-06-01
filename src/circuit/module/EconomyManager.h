@@ -37,24 +37,24 @@ public:
 	virtual int UnitFinished(CCircuitUnit* unit);
 	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 
-	IBuilderTask* CreateBuilderTask(CCircuitUnit* unit);
+	IBuilderTask* CreateBuilderTask(const springai::AIFloat3& position, CCircuitUnit* unit);
 	CRecruitTask* CreateFactoryTask(CCircuitUnit* unit);
 	IBuilderTask* CreateAssistTask(CCircuitUnit* unit);
-	springai::Resource* GetMetalRes() const;
-	springai::Resource* GetEnergyRes() const;
-	CCircuitDef* GetMexDef() const;
-	CCircuitDef* GetPylonDef() const;
-	float GetPylonRange() const;
+	springai::Resource* GetMetalRes() const { return metalRes; }
+	springai::Resource* GetEnergyRes() const { return energyRes; }
+	CCircuitDef* GetMexDef() const { return mexDef; }
+	CCircuitDef* GetPylonDef() const { return pylonDef; }
+	float GetPylonRange() const { return pylonRange; }
 	void AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs);  // add available energy defs
 	void RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs);
 
 	void UpdateResourceIncome();
-	float GetAvgMetalIncome() const;
-	float GetAvgEnergyIncome() const;
-	float GetEcoFactor() const;
-	bool IsMetalFull() const;
-	bool IsMetalEmpty() const;
-	bool IsEnergyStalling() const;
+	float GetAvgMetalIncome() const { return metalIncome; }
+	float GetAvgEnergyIncome() const { return energyIncome; }
+	float GetEcoFactor() const { return ecoFactor; }
+	bool IsMetalEmpty();
+	bool IsMetalFull();
+	bool IsEnergyStalling();
 
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	IBuilderTask* UpdateReclaimTasks(const springai::AIFloat3& position, CCircuitUnit* unit);
@@ -102,6 +102,13 @@ private:
 	int indexRes;
 	float metalIncome;
 	float energyIncome;
+
+	int emptyFrame;
+	int fullFrame;
+	int stallingFrame;
+	bool isMetalEmpty;
+	bool isMetalFull;
+	bool isEnergyStalling;
 };
 
 } // namespace circuit
