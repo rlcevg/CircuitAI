@@ -42,7 +42,7 @@ CCircuitDef::CCircuitDef(springai::UnitDef* def, std::unordered_set<Id>& buildOp
 		}
 		utils::free_clear(mounts);
 		if (bestReload < std::numeric_limits<float>::max()) {
-			reloadFrames = math::ceil(bestReload * FRAMES_PER_SEC) + FRAMES_PER_SEC;
+			reloadFrames = math::ceil(bestReload * FRAMES_PER_SEC)/* + FRAMES_PER_SEC*/;
 			dgunRange = bestRange;
 		}
 	}

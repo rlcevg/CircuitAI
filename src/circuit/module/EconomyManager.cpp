@@ -627,16 +627,16 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		switch (u->GetBuildingFacing()) {
 			default:
 			case UNIT_FACING_SOUTH:
-				buildPos.z -= def->GetZSize() * SQUARE_SIZE;
+				buildPos.z -= 200.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
 				break;
 			case UNIT_FACING_EAST:
-				buildPos.x -= def->GetXSize() * SQUARE_SIZE;
+				buildPos.x -= 200.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
 				break;
 			case UNIT_FACING_NORTH:
-				buildPos.z += def->GetZSize() * SQUARE_SIZE;
+				buildPos.z += 200.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
 				break;
 			case UNIT_FACING_WEST:
-				buildPos.x += def->GetXSize() * SQUARE_SIZE;
+				buildPos.x += 200.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
 				break;
 		}
 
@@ -663,7 +663,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			const CMetalData::Clusters& clusters = metalManager->GetClusters();
 			buildPos = clusters[index].geoCentr;
 			UnitDef* facUDef = facDef->GetUnitDef();
-			float size = std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
+			float size = 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
 			buildPos.x += (buildPos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
 			buildPos.z += (buildPos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
 
@@ -688,13 +688,14 @@ CRecruitTask* CEconomyManager::UpdateRecruitTasks()
 
 	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	// TODO: Create ReclaimTask for 20% of workers, and 20% RepairTask.
 	if ((builderManager->GetBuilderPower() < metalIncome * 2.0f) && (rand() < RAND_MAX / 3) && buildDef->IsAvailable()) {
-		CCircuitUnit* factory = factoryManager->GetRandomFactory();
-		const AIFloat3& buildPos = factory->GetUnit()->GetPos();
-		CTerrainManager* terrain = circuit->GetTerrainManager();
-		float radius = std::max(terrain->GetTerrainWidth(), terrain->GetTerrainHeight()) / 4;
-		return factoryManager->EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::BuildType::BUILDPOWER, radius);
+		CCircuitUnit* factory = factoryManager->GetRandomFactory(buildDef);
+		if (factory != nullptr) {
+			const AIFloat3& buildPos = factory->GetUnit()->GetPos();
+			CTerrainManager* terrain = circuit->GetTerrainManager();
+			float radius = std::max(terrain->GetTerrainWidth(), terrain->GetTerrainHeight()) / 4;
+			return factoryManager->EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::BuildType::BUILDPOWER, radius);
+		}
 	}
 
 	return nullptr;

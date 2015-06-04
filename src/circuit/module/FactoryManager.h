@@ -14,6 +14,7 @@
 
 #include <map>
 #include <vector>
+#include <list>
 
 namespace circuit {
 
@@ -56,11 +57,10 @@ public:
 	bool CanEnqueueTask() const { return factoryTasks.size() < factories.size() * 2; }
 	const std::set<CRecruitTask*>& GetTasks() const { return factoryTasks; }
 	CCircuitUnit* NeedUpgrade();
-	CCircuitUnit* GetRandomFactory();
+	CCircuitUnit* GetRandomFactory(CCircuitDef* buildDef);
 
 	CCircuitDef* GetAssistDef() const { return assistDef; }
-	CCircuitUnit* GetClosestHaven(CCircuitUnit* unit) const;
-	std::vector<CCircuitUnit*> GetHavensAt(const springai::AIFloat3& pos) const;
+	springai::AIFloat3 GetClosestHaven(CCircuitUnit* unit) const;
 
 private:
 	void Watchdog();
@@ -78,10 +78,21 @@ private:
 	std::set<CRecruitTask*> deleteTasks;
 	unsigned int updateSlice;
 
-	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> factories;  // factory 1:n nanos
-	CCircuitDef* assistDef;
+	struct SFactory {
+		SFactory(CCircuitUnit* u, const std::set<CCircuitUnit*>& n, int w) :
+			unit(u),
+			nanos(n),
+			weight(w)
+		{}
+		CCircuitUnit* unit;
+		std::set<CCircuitUnit*> nanos;
+		int weight;
+	};
+	std::list<SFactory> factories;  // facory 1:n nano
 
-	std::set<CCircuitUnit*> havens;
+	CCircuitDef* assistDef;
+	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> assists;  // nano 1:n factory
+	std::list<springai::AIFloat3> havens;  // position behind factory
 	std::set<IBuilderTask*> assistTasks;  // owner
 	std::set<IBuilderTask*> updateAssists;
 	std::set<IBuilderTask*> deleteAssists;

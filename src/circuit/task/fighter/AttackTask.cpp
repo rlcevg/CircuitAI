@@ -49,13 +49,20 @@ void CAttackTask::Update()
 	CCircuitAI* circuit = manager->GetCircuit();
 	for (CCircuitUnit* unit : units) {
 		CCircuitDef* cdef = unit->GetCircuitDef();
-		int reloadFrames = cdef->GetReloadFrames();
-		if ((reloadFrames < 0) || (unit->GetDGunFrame() + reloadFrames >= circuit->GetLastFrame())) {
+		if ((cdef->GetReloadFrames() < 0) ||
+			(unit->GetDGunFrame() + cdef->GetReloadFrames() >= circuit->GetLastFrame()) ||
+			unit->GetUnit()->IsParalyzed())
+		{
 			continue;
 		}
 		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(unit->GetUnit()->GetPos(), cdef->GetDGunRange() * 0.9f));
 		if (!enemies.empty()) {
-			unit->ManualFire(enemies.front(), circuit->GetLastFrame());
+			for (Unit* enemy : enemies) {
+				if (enemy != nullptr) {
+					unit->ManualFire(enemy, circuit->GetLastFrame());
+					break;
+				}
+			}
 			utils::free_clear(enemies);
 		}
 	}

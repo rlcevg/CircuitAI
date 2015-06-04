@@ -170,8 +170,8 @@ void CBEnergyTask::Finish()
 			pos.x += offsetX / 2;
 			break;
 	}
-	pos = terrainManager->GetBuildPosition(bdef, pos);
-	builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, cdef, pos, IBuilderTask::BuildType::NANO, false);
+//	pos = terrainManager->GetBuildPosition(bdef, pos);
+//	builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, cdef, pos, IBuilderTask::BuildType::NANO, false);
 
 	if (rand() < RAND_MAX / 2) {
 		cdef = circuit->GetCircuitDef("armamd");

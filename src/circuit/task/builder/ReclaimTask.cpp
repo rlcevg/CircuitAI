@@ -93,7 +93,7 @@ void CBReclaimTask::Update()
 		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(pos, 300.0f));
 		if (!enemies.empty()) {
 			for (Unit* enemy : enemies) {
-				if (enemy->IsBeingBuilt()) {
+				if ((enemy != nullptr) && enemy->IsBeingBuilt()) {
 					u->ReclaimUnit(enemy, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					utils::free_clear(enemies);
 					return;

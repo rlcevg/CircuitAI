@@ -65,7 +65,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 
 	cdef = circuit->GetCircuitDef("striderhub");
 	def = cdef->GetUnitDef();
-	radius = cdef->GetBuildDistance() / (SQUARE_SIZE * 2);
+	radius = 200.0f /*cdef->GetBuildDistance()*/ / (SQUARE_SIZE * 2);
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(NONE);
@@ -114,7 +114,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	cdef = circuit->GetCircuitDef("cafus");
 	def = cdef->GetUnitDef();
 	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
+	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) / circuit->GetAllyTeam()->GetSize();
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
@@ -177,11 +177,12 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 
 	cdef = circuit->GetCircuitDef("armnanotc");
 	def = cdef->GetUnitDef();
-	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
-	delete wpDef;
+//	wpDef = def->GetDeathExplosion();
+//	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
+//	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	bsize = int2(radius * 2, radius * 2);
+//	bsize = int2(radius * 2 - (ssize.x % 2), radius * 2 - (ssize.y % 2));
+	bsize = ssize;
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(MEX) |
 				 STRUCT_BIT(DEF_LOW) |

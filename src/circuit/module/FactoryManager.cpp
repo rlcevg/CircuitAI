@@ -55,15 +55,12 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			nullTask->RemoveAssignee(unit);
 		}
 
-		Unit* u = unit->GetUnit();
-		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
-		AIFloat3 pos = u->GetPos();
-		factoryPower += def->GetBuildSpeed();
+		factoryPower += unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
 
 		// check nanos around
 		std::set<CCircuitUnit*> nanos;
 		float radius = assistDef->GetBuildDistance();
-		auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(u->GetPos(), radius));
+		auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(unit->GetUnit()->GetPos(), radius));
 		int nanoId = assistDef->GetId();
 		int teamId = this->circuit->GetTeamId();
 		for (auto nano : units) {
@@ -72,12 +69,19 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			}
 			UnitDef* ndef = nano->GetDef();
 			if (ndef->GetUnitDefId() == nanoId && nano->GetTeam() == teamId) {
-				nanos.insert(this->circuit->GetTeamUnit(nano->GetUnitId()));
+				CCircuitUnit* ass = this->circuit->GetTeamUnit(nano->GetUnitId());
+				nanos.insert(ass);
+
+				std::set<CCircuitUnit*>& facs = assists[ass];
+				if (facs.empty()) {
+					factoryPower += ass->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+				}
+				facs.insert(unit);
 			}
 			delete ndef;
 		}
 		utils::free_clear(units);
-		factories[unit] = nanos;
+		factories.emplace_back(unit, nanos, 3);
 	};
 	auto factoryIdleHandler = [this](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
@@ -90,7 +94,20 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			return;
 		}
 		factoryPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
-		factories.erase(unit);
+		for (auto it = factories.begin(); it != factories.end(); ++it) {
+			if (it->unit != unit) {
+				continue;
+			}
+			for (CCircuitUnit* ass : it->nanos) {
+				std::set<CCircuitUnit*>& facs = assists[ass];
+				facs.erase(unit);
+				if (facs.empty()) {
+					factoryPower -= ass->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+				}
+			}
+			factories.erase(it);
+			break;
+		}
 	};
 
 	/*
@@ -111,8 +128,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		}
 
 		Unit* u = unit->GetUnit();
-		factoryPower += unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
-		const AIFloat3& pos = u->GetPos();
+		const AIFloat3& assPos = u->GetPos();
 
 		std::vector<float> params;
 		params.push_back(0.0f);
@@ -121,15 +137,29 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		// check factory nano belongs to
 		float radius = unit->GetCircuitDef()->GetBuildDistance();
 		float qradius = radius * radius;
-		for (auto& fac : factories) {
-			const AIFloat3& facPos = fac.first->GetUnit()->GetPos();
-			if (facPos.SqDistance2D(pos) < qradius) {
-				fac.second.insert(unit);
+		std::set<CCircuitUnit*>& facs = assists[unit];
+		for (SFactory& fac : factories) {
+			if (assPos.SqDistance2D(fac.unit->GetUnit()->GetPos()) >= qradius) {
+				continue;
 			}
+			fac.nanos.insert(unit);
+			facs.insert(fac.unit);
+		}
+		if (!facs.empty()) {
+			factoryPower += unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
 		}
 
-		havens.insert(unit);
-		// TODO: Send HavenFinished message
+		bool isInHaven = false;
+		for (const AIFloat3& hav : havens) {
+			if (assPos.SqDistance2D(hav) < qradius) {
+				isInHaven = true;
+				break;
+			}
+		}
+		if (!isInHaven) {
+			havens.push_back(assPos);
+			// TODO: Send HavenFinished message?
+		}
 	};
 	auto assistIdleHandler = [this](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
@@ -141,13 +171,16 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		if (unit->GetTask() == nullTask) {  // alternative: unit->GetUnit()->IsBeingBuilt()
 			return;
 		}
-		factoryPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
-		for (auto& fac : factories) {
-			fac.second.erase(unit);
+		for (SFactory& fac : factories) {
+			fac.nanos.erase(unit);
 		}
+		if (!assists[unit].empty()) {
+			factoryPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+		}
+		assists.erase(unit);
 
-		havens.erase(unit);
-		// TODO: Send HavenDestroyed message
+		havens.remove(unit->GetUnit()->GetPos());
+		// TODO: Send HavenDestroyed message?
 	};
 
 	CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
@@ -179,10 +212,8 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 	finishedHandler[defId] = [this, defId](CCircuitUnit* unit) {
 		unit->SetManager(this);
 
+		factoryPower += unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
 		Unit* u = unit->GetUnit();
-		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
-		AIFloat3 pos = u->GetPos();
-		factoryPower += def->GetBuildSpeed();
 		CRecruitTask* task = new CRecruitTask(this, IUnitTask::Priority::HIGH, nullptr, ZeroVector, CRecruitTask::BuildType::FIREPOWER, unit->GetCircuitDef()->GetBuildDistance());
 		unit->SetTask(task);
 
@@ -198,12 +229,19 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			}
 			UnitDef* ndef = nano->GetDef();
 			if (ndef->GetUnitDefId() == nanoId && nano->GetTeam() == teamId) {
-				nanos.insert(this->circuit->GetTeamUnit(nano->GetUnitId()));
+				CCircuitUnit* ass = this->circuit->GetTeamUnit(nano->GetUnitId());
+				nanos.insert(ass);
+
+				std::set<CCircuitUnit*>& facs = assists[ass];
+				if (facs.empty()) {
+					factoryPower += ass->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+				}
+				facs.insert(unit);
 			}
 			delete ndef;
 		}
 		utils::free_clear(units);
-		factories[unit] = nanos;
+		factories.emplace_back(unit, nanos, 9);
 
 		std::vector<float> params;
 		params.push_back(2.0f);
@@ -237,7 +275,20 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			return;
 		}
 		factoryPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
-		factories.erase(unit);
+		for (auto it = factories.begin(); it != factories.end(); ++it) {
+			if (it->unit != unit) {
+				continue;
+			}
+			for (CCircuitUnit* ass : it->nanos) {
+				std::set<CCircuitUnit*>& facs = assists[ass];
+				facs.erase(unit);
+				if (facs.empty()) {
+					factoryPower -= ass->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+				}
+			}
+			factories.erase(it);
+			break;
+		}
 		delete unit->GetTask();
 	};
 	// FIXME: EXPERIMENTAL
@@ -426,58 +477,55 @@ void CFactoryManager::FallbackTask(CCircuitUnit* unit)
 CCircuitUnit* CFactoryManager::NeedUpgrade()
 {
 	// TODO: Wrap into predicate
-	if (assistDef != nullptr) {
-		for (auto& fac : factories) {
-			if (fac.second.size() < 9) {
-				return fac.first;
-			}
+	if (factories.empty()) {
+		return nullptr;
+	}
+	int facSize = factories.size();
+	for (auto it = factories.rbegin(); it != factories.rend(); ++it) {
+		SFactory& fac = *it;
+		if (fac.nanos.size() < facSize * fac.weight) {
+			return fac.unit;
 		}
 	}
 	return nullptr;
 }
 
-CCircuitUnit* CFactoryManager::GetRandomFactory()
+CCircuitUnit* CFactoryManager::GetRandomFactory(CCircuitDef* buildDef)
 {
-	auto iter = factories.begin();
-	std::advance(iter, rand() % factories.size());
-	return iter->first;
-}
-
-CCircuitUnit* CFactoryManager::GetClosestHaven(CCircuitUnit* unit) const
-{
-	if (havens.empty()) {
+	std::list<CCircuitUnit*> facs;
+	for (SFactory& fac : factories) {
+		if (fac.unit->GetCircuitDef()->CanBuild(buildDef)) {
+			facs.push_back(fac.unit);
+		}
+	}
+	if (facs.empty()) {
 		return nullptr;
 	}
-	CCircuitUnit* haven = nullptr;
+	auto it = facs.begin();
+	std::advance(it, rand() % facs.size());
+	return *it;
+}
+
+AIFloat3 CFactoryManager::GetClosestHaven(CCircuitUnit* unit) const
+{
+	if (havens.empty()) {
+		return -RgtVector;
+	}
 	float metric = std::numeric_limits<float>::max();
 	const AIFloat3& position = unit->GetUnit()->GetPos();
 	CTerrainManager* terrain = circuit->GetTerrainManager();
-	for (auto hav : havens) {
-		const AIFloat3& pos = hav->GetUnit()->GetPos();
-		if (!terrain->CanMoveToPos(unit->GetArea(), pos)) {
+	auto it = havens.begin(), havIt = havens.end();
+	for (; it != havens.end(); ++it) {
+		if (!terrain->CanMoveToPos(unit->GetArea(), *it)) {
 			continue;
 		}
-		float qdist = pos.SqDistance2D(position);
+		float qdist = it->SqDistance2D(position);
 		if (qdist < metric) {
-			haven = hav;
+			havIt = it;
 			metric = qdist;
 		}
 	}
-	return haven;
-}
-
-std::vector<CCircuitUnit*> CFactoryManager::GetHavensAt(const AIFloat3& pos) const
-{
-	std::vector<CCircuitUnit*> result;
-	result.reserve(havens.size());  // size overkill
-	float sqBuildDist = assistDef->GetBuildDistance();
-	sqBuildDist *= sqBuildDist;
-	for (auto haven : havens) {
-		if (haven->GetUnit()->GetPos().SqDistance2D(pos) <= sqBuildDist) {
-			result.push_back(haven);
-		}
-	}
-	return result;
+	return (havIt != havens.end()) ? *havIt : AIFloat3(-RgtVector);
 }
 
 void CFactoryManager::Watchdog()
@@ -492,11 +540,11 @@ void CFactoryManager::Watchdog()
 	};
 
 	for (auto& fac : factories) {
-		checkIdler(fac.first);
+		checkIdler(fac.unit);
 	}
 
-	for (auto haven : havens) {
-		checkIdler(haven);
+	for (auto& kv : assists) {
+		checkIdler(kv.first);
 	}
 }
 

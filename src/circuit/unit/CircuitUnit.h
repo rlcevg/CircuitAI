@@ -46,6 +46,9 @@ public:
 	void SetArea(STerrainMapArea* area) { this->area = area; }
 	STerrainMapArea* GetArea() const { return area; }
 
+	void MoveFailed() { ++moveFails; }
+	bool IsMoveFailed() const { return moveFails > 100; }
+
 	void ManualFire(const springai::AIFloat3& pos, int frame);
 	void ManualFire(springai::Unit* enemy, int frame);
 	int GetDGunFrame() const { return dgunFrame; }
@@ -61,6 +64,8 @@ private:
 	int taskFrame;
 	IUnitManager* manager;
 	STerrainMapArea* area;  // = nullptr if a unit flies
+
+	int moveFails;
 
 	int dgunFrame;
 };

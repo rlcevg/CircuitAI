@@ -462,12 +462,18 @@ int CCircuitAI::UnitIdle(CCircuitUnit* unit)
 
 int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 {
-	Unit* u = unit->GetUnit();
-	AIFloat3 pos = u->GetPos();
-	AIFloat3 d((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
-	d.Normalize();
-	pos += d * SQUARE_SIZE * 10;
-	u->MoveTo(pos, 0, FRAMES_PER_SEC * 10);
+	unit->MoveFailed();
+	if (unit->IsMoveFailed()) {
+		UnitDestroyed(unit, nullptr);
+		UnregisterTeamUnit(unit);
+	} else {
+		Unit* u = unit->GetUnit();
+		AIFloat3 pos = u->GetPos();
+		AIFloat3 d((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
+		d.Normalize();
+		pos += d * SQUARE_SIZE * 10;
+		u->MoveTo(pos, 0, FRAMES_PER_SEC * 10);
+	}
 
 	return 0;  // signaling: OK
 }
@@ -525,9 +531,11 @@ int CCircuitAI::EnemyEnterLOS(CCircuitUnit* unit)
 
 int CCircuitAI::PlayerCommand(std::vector<CCircuitUnit*>& units)
 {
-	for (auto unit : units) {
-		ITaskManager* mgr = unit->GetTask()->GetManager();
-		mgr->AssignTask(unit, new CPlayerTask(mgr));
+	for (CCircuitUnit* unit : units) {
+		if (unit != nullptr) {
+			ITaskManager* mgr = unit->GetTask()->GetManager();
+			mgr->AssignTask(unit, new CPlayerTask(mgr));
+		}
 	}
 
 	return 0;  // signaling: OK

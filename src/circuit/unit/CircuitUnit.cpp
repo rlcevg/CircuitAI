@@ -25,6 +25,7 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* circuitDef) :
 		taskFrame(-1),
 		manager(nullptr),
 		area(nullptr),
+		moveFails(0),
 		dgunFrame(-1)
 {
 	PushBack(new CWaitAction(this));

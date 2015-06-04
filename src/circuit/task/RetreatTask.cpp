@@ -48,8 +48,8 @@ void CRetreatTask::Close(bool done)
 void CRetreatTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CCircuitUnit* haven = circuit->GetFactoryManager()->GetClosestHaven(unit);
-	const AIFloat3& pos = (haven != nullptr) ? haven->GetUnit()->GetPos() : circuit->GetSetupManager()->GetStartPos();
+	AIFloat3 haven = circuit->GetFactoryManager()->GetClosestHaven(unit);
+	const AIFloat3& pos = (haven != -RgtVector) ? haven : circuit->GetSetupManager()->GetStartPos();
 	// TODO: push MoveAction into unit? to avoid enemy fire
 	unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 1);
 }
@@ -92,16 +92,11 @@ void CRetreatTask::Update()
 void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CCircuitUnit* haven = circuit->GetFactoryManager()->GetClosestHaven(unit);
-	AIFloat3 pos;
-	float maxDist;
-	if (haven != nullptr) {
-		pos = haven->GetUnit()->GetPos();
-		maxDist = haven->GetCircuitDef()->GetBuildDistance() * 0.5f;
-	} else {
+	AIFloat3 pos = circuit->GetFactoryManager()->GetClosestHaven(unit);
+	if (pos == -RgtVector) {
 		pos = circuit->GetSetupManager()->GetStartPos();
-		maxDist = 200.0f;
 	}
+	float maxDist = 200.0f;
 	Unit* u = unit->GetUnit();
 	if (u->GetPos().SqDistance2D(pos) > maxDist * maxDist) {
 		// TODO: push MoveAction into unit? to avoid enemy fire

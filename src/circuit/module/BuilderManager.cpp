@@ -164,7 +164,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 
 	// FIXME: EXPERIMENTAL
 	/*
-	 * armorco handlers
+	 * strider handlers
 	 */
 	const char* striders[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco"};
 	for (auto strider : striders) {
