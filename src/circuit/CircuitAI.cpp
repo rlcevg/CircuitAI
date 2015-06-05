@@ -689,25 +689,57 @@ void CCircuitAI::InitUnitDefs()
 		gameAttribute->GetTerrainData().Init(this);
 	}
 	const std::vector<UnitDef*>& unitDefs = callback->GetUnitDefs();
-	for (auto ud : unitDefs) {
+	for (UnitDef* ud : unitDefs) {
 		auto options = std::move(ud->GetBuildOptions());
 		std::unordered_set<CCircuitDef::Id> opts;
-		for (auto buildDef : options) {
+		for (UnitDef* buildDef : options) {
 			opts.insert(buildDef->GetUnitDefId());
 			delete buildDef;
 		}
 		CCircuitDef* cdef = new CCircuitDef(ud, opts);
 
+		defsByName[ud->GetName()] = cdef;
+		defsById[cdef->GetId()] = cdef;
+	}
+
+	for (auto& kv : GetCircuitDefs()) {
+		CCircuitDef* cdef = kv.second;
+		UnitDef* ud = cdef->GetUnitDef();
 		if (ud->IsAbleToFly()) {
 		} else if (ud->GetSpeed() == 0 ) {  // for immobile units
 			cdef->SetImmobileId(terrainData.udImmobileType[cdef->GetId()]);
-			// TODO: SetMobileType for factories (like RAI does)
+			// If a unit can build mobile units then it will inherit mobileType from it's options
+			std::map<STerrainMapMobileType::Id, int> mtCount;
+			cdef->GetBuildOptions();
+			for (CCircuitDef::Id buildId : cdef->GetBuildOptions()) {
+				CCircuitDef* bdef = GetCircuitDef(buildId);
+				if ((bdef == nullptr) || (bdef->GetUnitDef()->GetSpeed() <= 0)) {
+					continue;
+				}
+				STerrainMapMobileType::Id mtId = terrainData.udMobileType[bdef->GetId()];
+				STerrainMapMobileType& mt = terrainData.areaData0.mobileType[mtId];
+				if (mt.area.empty()) {
+					continue;
+				}
+				auto it = mtCount.find(mtId);
+				if (it != mtCount.end()) {
+					it->second++;
+				} else {
+					mtCount[mtId] = 1;
+				}
+			}
+			int iMost = 0;
+			STerrainMapMobileType::Id mtId = cdef->GetMobileId();
+			for (auto& mtkv : mtCount) {
+				if (mtkv.second > iMost) {
+					mtId = mtkv.first;
+					iMost = mtkv.second;
+				}
+			}
+			cdef->SetMobileId(mtId);
 		} else {  // for mobile units
 			cdef->SetMobileId(terrainData.udMobileType[cdef->GetId()]);
 		}
-
-		defsByName[ud->GetName()] = cdef;
-		defsById[cdef->GetId()] = cdef;
 	}
 }
 

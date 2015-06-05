@@ -1233,10 +1233,9 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 
 bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination)
 {
-	// NOTE: So far we know only mobile builders
-//	if (unit->GetCircuitDef()->GetImmobileId() != -1) {  // A hub or factory
-//		return unit->GetUnit()->GetPos().distance2D(destination) < unit->GetCircuitDef()->GetBuildDistance();
-//	}
+	if (unit->GetCircuitDef()->GetImmobileId() != -1) {  // A hub or factory
+		return unit->GetUnit()->GetPos().distance2D(destination) < unit->GetCircuitDef()->GetBuildDistance();
+	}
 	STerrainMapArea* area = unit->GetArea();
 	if (area == nullptr) {  // A flying unit
 		return true;
