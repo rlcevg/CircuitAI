@@ -12,6 +12,11 @@
 
 #include "Unit.h"
 
+namespace springai {
+	class Weapon;
+//	class UnitRulesParam;
+}
+
 namespace circuit {
 
 #define CMD_PRIORITY			34220
@@ -47,11 +52,10 @@ public:
 	STerrainMapArea* GetArea() const { return area; }
 
 	void MoveFailed() { ++moveFails; }
-	bool IsMoveFailed() const { return moveFails > 100; }
+	bool IsMoveFailed() const { return moveFails > 30; }
 
-	void ManualFire(const springai::AIFloat3& pos, int frame);
-	void ManualFire(springai::Unit* enemy, int frame);
-	int GetDGunFrame() const { return dgunFrame; }
+	springai::Weapon* GetDGun() const { return dgun; }
+//	bool IsDisarmed();
 
 	bool operator==(const CCircuitUnit& rhs) { return id == rhs.id; }
 	bool operator!=(const CCircuitUnit& rhs) { return id != rhs.id; }
@@ -67,7 +71,8 @@ private:
 
 	int moveFails;
 
-	int dgunFrame;
+	springai::Weapon* dgun;
+//	springai::UnitRulesParam* disarmParam;
 };
 
 } // namespace circuit

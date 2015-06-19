@@ -39,7 +39,8 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 				buildPos(-RgtVector),
 				buildPower(.0f),
 				facing(UNIT_COMMAND_BUILD_NO_FACING),
-				savedIncome(manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome())
+				savedIncome(manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome()),
+				buildFails(0)
 {
 }
 
@@ -185,7 +186,14 @@ void IBuilderTask::Cancel()
 
 void IBuilderTask::OnUnitIdle(CCircuitUnit* unit)
 {
-	RemoveAssignee(unit);
+	if (++buildFails <= 3) {
+		Execute(unit);
+	} else if (buildFails <= 30) {
+		RemoveAssignee(unit);
+	} else {
+		manager->AbortTask(this);
+		manager->GetCircuit()->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);  // FIXME: Remove blocker on timer? Or when air con appears
+	}
 }
 
 void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)

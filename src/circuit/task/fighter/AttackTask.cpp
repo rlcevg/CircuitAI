@@ -14,6 +14,7 @@
 
 #include "OOAICallback.h"
 #include "AISCommands.h"
+#include "Weapon.h"
 
 namespace circuit {
 
@@ -49,17 +50,20 @@ void CAttackTask::Update()
 	CCircuitAI* circuit = manager->GetCircuit();
 	for (CCircuitUnit* unit : units) {
 		CCircuitDef* cdef = unit->GetCircuitDef();
-		if ((cdef->GetReloadFrames() < 0) ||
-			(unit->GetDGunFrame() + cdef->GetReloadFrames() >= circuit->GetLastFrame()) ||
-			unit->GetUnit()->IsParalyzed())
-		{
+		if (cdef->GetDGunMount() == nullptr) {
 			continue;
 		}
-		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(unit->GetUnit()->GetPos(), cdef->GetDGunRange() * 0.9f));
+		Unit* u = unit->GetUnit();
+		// NOTE: Paralyzer doesn't increase ReloadFrame beyond currentFrame, but disarmer does.
+		//       Also checking disarm is more expensive (because of UnitRulesParam).
+		if ((unit->GetDGun()->GetReloadFrame() > circuit->GetLastFrame()) || u->IsParalyzed() /*|| unit->IsDisarmed()*/) {
+			continue;
+		}
+		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(u->GetPos(), cdef->GetDGunRange() * 0.9f));
 		if (!enemies.empty()) {
 			for (Unit* enemy : enemies) {
 				if (enemy != nullptr) {
-					unit->ManualFire(enemy, circuit->GetLastFrame());
+					u->DGun(enemy, UNIT_COMMAND_OPTION_ALT_KEY, FRAMES_PER_SEC * 5);
 					break;
 				}
 			}

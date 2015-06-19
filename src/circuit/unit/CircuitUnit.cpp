@@ -11,7 +11,7 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
-#include "AISCommands.h"
+//#include "UnitRulesParam.h"
 
 namespace circuit {
 
@@ -25,16 +25,19 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* circuitDef) :
 		taskFrame(-1),
 		manager(nullptr),
 		area(nullptr),
-		moveFails(0),
-		dgunFrame(-1)
+//		disarmParam(nullptr),
+		moveFails(0)
 {
 	PushBack(new CWaitAction(this));
+
+	WeaponMount* wpMnt = circuitDef->GetDGunMount();
+	dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
 }
 
 CCircuitUnit::~CCircuitUnit()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	delete unit;
+	delete unit/*, disarmParam*/;
 }
 
 void CCircuitUnit::SetTask(IUnitTask* task)
@@ -43,16 +46,15 @@ void CCircuitUnit::SetTask(IUnitTask* task)
 	taskFrame = manager->GetCircuit()->GetLastFrame();
 }
 
-void CCircuitUnit::ManualFire(const AIFloat3& pos, int frame)
-{
-	dgunFrame = frame;
-	unit->DGunPosition(pos, UNIT_COMMAND_OPTION_ALT_KEY, FRAMES_PER_SEC * 5);
-}
-
-void CCircuitUnit::ManualFire(Unit* enemy, int frame)
-{
-	dgunFrame = frame;
-	unit->DGun(enemy, UNIT_COMMAND_OPTION_ALT_KEY, FRAMES_PER_SEC * 5);
-}
+//bool CCircuitUnit::IsDisarmed()
+//{
+//	if (disarmParam == nullptr) {
+//		disarmParam = unit->GetUnitRulesParamByName("disarmed");
+//		if (disarmParam == nullptr) {
+//			return false;
+//		}
+//	}
+//	return disarmParam->GetValueFloat() > .0f;
+//}
 
 } // namespace circuit

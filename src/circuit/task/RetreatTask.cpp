@@ -15,6 +15,7 @@
 
 #include "OOAICallback.h"
 #include "AISCommands.h"
+#include "Weapon.h"
 
 namespace circuit {
 
@@ -73,11 +74,15 @@ void CRetreatTask::Update()
 			RemoveAssignee(ass);
 		} else {
 			CCircuitDef* cdef = ass->GetCircuitDef();
-			int reloadFrames = cdef->GetReloadFrames();
-			if ((reloadFrames >= 0) && (ass->GetDGunFrame() + reloadFrames < circuit->GetLastFrame())) {
-				auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(ass->GetUnit()->GetPos(), cdef->GetDGunRange() * 0.8f));
+			if ((cdef->GetDGunMount() != nullptr) && (ass->GetDGun()->GetReloadFrame() <= circuit->GetLastFrame()) && !u->IsParalyzed() /*&& !ass->IsDisarmed()*/) {
+				auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(u->GetPos(), cdef->GetDGunRange() * 0.8f));
 				if (!enemies.empty()) {
-					ass->ManualFire(enemies.front(), circuit->GetLastFrame());
+					for (Unit* enemy : enemies) {
+						if (enemy != nullptr) {
+							u->DGun(enemy, UNIT_COMMAND_OPTION_ALT_KEY, FRAMES_PER_SEC * 5);
+							break;
+						}
+					}
 					utils::free_clear(enemies);
 				}
 			}

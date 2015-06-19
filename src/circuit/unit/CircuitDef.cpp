@@ -22,14 +22,16 @@ CCircuitDef::CCircuitDef(springai::UnitDef* def, std::unordered_set<Id>& buildOp
 		buildOptions(buildOpts),
 		buildDistance(def->GetBuildDistance()),
 		buildCounts(0),
-		reloadFrames(-1),
+//		dgunReload(-1),
 		dgunRange(.0f),
+		dgunMount(nullptr),
 		mobileTypeId(-1),
 		immobileTypeId(-1)
 {
 	if (def->CanManualFire()) {
 		float bestReload = std::numeric_limits<float>::max();
 		float bestRange;
+		WeaponMount* bestMount = nullptr;
 		auto mounts = std::move(def->GetWeaponMounts());
 		for (WeaponMount* mount : mounts) {
 			WeaponDef* wd = mount->GetWeaponDef();
@@ -37,13 +39,17 @@ CCircuitDef::CCircuitDef(springai::UnitDef* def, std::unordered_set<Id>& buildOp
 			if (wd->IsManualFire() && ((reload = wd->GetReload()) < bestReload)) {
 				bestReload = reload;
 				bestRange = wd->GetRange();
+				delete bestMount;
+				bestMount = mount;
+			} else {
+				delete mount;
 			}
 			delete wd;
 		}
-		utils::free_clear(mounts);
 		if (bestReload < std::numeric_limits<float>::max()) {
-			reloadFrames = math::ceil(bestReload * FRAMES_PER_SEC)/* + FRAMES_PER_SEC*/;
+//			dgunReload = math::ceil(bestReload * FRAMES_PER_SEC)/* + FRAMES_PER_SEC*/;
 			dgunRange = bestRange;
+			dgunMount = bestMount;
 		}
 	}
 }
@@ -51,7 +57,7 @@ CCircuitDef::CCircuitDef(springai::UnitDef* def, std::unordered_set<Id>& buildOp
 CCircuitDef::~CCircuitDef()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	delete def;
+	delete def, dgunMount;
 }
 
 CCircuitDef& CCircuitDef::operator++()

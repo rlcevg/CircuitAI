@@ -14,6 +14,10 @@
 
 #include <unordered_set>
 
+namespace springai {
+	class WeaponMount;
+}
+
 namespace circuit {
 
 class CCircuitDef {
@@ -46,8 +50,9 @@ public:
 	void DecBuild() { --buildCounts; }
 	int GetBuildCount() const { return buildCounts; }
 
-	int GetReloadFrames() const { return reloadFrames; }
+//	int GetDGunReload() const { return dgunReload; }
 	float GetDGunRange() const { return dgunRange; }
+	springai::WeaponMount* GetDGunMount() const { return dgunMount; }
 
 	void SetImmobileId(STerrainMapImmobileType::Id immobileId) { immobileTypeId = immobileId; }
 	STerrainMapImmobileType::Id GetImmobileId() const { return immobileTypeId; }
@@ -62,8 +67,9 @@ private:
 	int count;
 	int buildCounts;  // number of builder defs able to build this def;
 
-	int reloadFrames;
+//	int dgunReload;  // frames in ticks
 	float dgunRange;
+	springai::WeaponMount* dgunMount;
 
 	STerrainMapImmobileType::Id immobileTypeId;
 	STerrainMapMobileType::Id   mobileTypeId;

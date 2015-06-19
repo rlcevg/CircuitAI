@@ -25,6 +25,8 @@
 #include "Economy.h"
 #include "Feature.h"
 #include "FeatureDef.h"
+#include "Team.h"
+#include "TeamRulesParam.h"
 
 namespace circuit {
 
@@ -186,10 +188,10 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(const AIFloat3& position, CCirc
 {
 	// TODO: Add general logic here
 	IBuilderTask* task;
-	task = UpdateMetalTasks(position, unit);
-	if (task != nullptr) {
-		return task;
-	}
+//	task = UpdateMetalTasks(position, unit);
+//	if (task != nullptr) {
+//		return task;
+//	}
 	task = UpdateEnergyTasks(position, unit);
 	if (task != nullptr) {
 		return task;
@@ -372,9 +374,12 @@ void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 void CEconomyManager::UpdateResourceIncome()
 {
 	energyIncomes[indexRes] = eco->GetIncome(energyRes);
+#ifdef E451
+	metalIncomes[indexRes] = eco->GetIncome(metalRes);
+#else
 	metalIncomes[indexRes] = eco->GetIncome(metalRes) + eco->GetReceived(metalRes);
-	indexRes++;
-	indexRes %= INCOME_SAMPLES;
+#endif
+	++indexRes %= INCOME_SAMPLES;
 
 	metalIncome = .0f;
 	for (int i = 0; i < INCOME_SAMPLES; i++) {
@@ -413,7 +418,15 @@ bool CEconomyManager::IsEnergyStalling()
 		stallingFrame = circuit->GetLastFrame();
 		// FIXME: Check decay (eco->GetUsage(energyRes) - energyIncome > (eco->GetUsage(metalRes) - metalIncome) * 0.9f)
 		//        Proper GetUsage with GetPull requires latest engine
+#ifdef E451
 		isEnergyStalling = GetAvgMetalIncome() > GetAvgEnergyIncome() * 0.8f;
+#else
+		TeamRulesParam* mParam = circuit->GetTeam()->GetTeamRulesParamByName("extraMetalPull");
+		float mPull = eco->GetPull(metalRes) + (mParam != nullptr ? mParam->GetValueFloat() : .0f);
+		TeamRulesParam* eParam = circuit->GetTeam()->GetTeamRulesParamByName("extraEnergyPull");
+		float ePull = eco->GetPull(energyRes) + (eParam != nullptr ? eParam->GetValueFloat() : .0f);
+		isEnergyStalling = (GetAvgMetalIncome() - mPull) * 0.9f > GetAvgEnergyIncome() - ePull;
+#endif
 	}
 	return isEnergyStalling;
 }

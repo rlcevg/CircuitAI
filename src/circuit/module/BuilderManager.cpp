@@ -453,7 +453,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	Unit* u = unit->GetUnit();
 	const AIFloat3& pos = u->GetPos();
 
-	task = circuit->GetEconomyManager()->UpdateReclaimTasks(pos, unit);
+	task = circuit->GetEconomyManager()->UpdateMetalTasks(pos, unit);
 	if (task != nullptr) {
 		task->AssignTo(unit);
 		return;
@@ -598,11 +598,11 @@ void CBuilderManager::Init()
 				delete param;
 			}
 		}
-		for (auto worker : workers) {
-			if ((worker != commander) || (task == nullptr)) {
-				UnitIdle(worker);
-			}
-		}
+//		for (auto worker : workers) {
+//			if ((worker != commander) || (task == nullptr)) {
+//				UnitIdle(worker);
+//			}
+//		}
 
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		const int interval = 8;

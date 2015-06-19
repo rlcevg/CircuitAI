@@ -32,6 +32,7 @@
 #include "SkirmishAI.h"
 #include "WrappUnit.h"
 #include "OptionValues.h"
+#include "WrappTeam.h"
 
 //#include "Command.h"
 //#include "WrappCurrentCommand.h"
@@ -67,6 +68,7 @@ CCircuitAI::CCircuitAI(OOAICallback* callback) :
 		allyTeam(nullptr)
 {
 	teamId = skirmishAI->GetTeamId();
+	team = std::unique_ptr<Team>(WrappTeam::GetInstance(skirmishAIId, teamId));
 	allyTeamId = game->GetMyAllyTeam();
 }
 

@@ -167,6 +167,7 @@ public:
 	springai::Pathing*      GetPathing() const    { return pathing.get(); }
 	springai::Drawer*       GetDrawer() const     { return drawer.get(); }
 	springai::SkirmishAI*   GetSkirmishAI() const { return skirmishAI.get(); }
+	springai::Team*         GetTeam() const       { return team.get(); }
 	CSetupManager*    GetSetupManager() const    { return setupManager.get(); }
 	CMetalManager*    GetMetalManager() const    { return metalManager.get(); }
 	CEnergyGrid*      GetEnergyGrid() const      { return energyLink.get(); }
@@ -192,6 +193,7 @@ private:
 	std::unique_ptr<springai::Pathing>    pathing;
 	std::unique_ptr<springai::Drawer>     drawer;
 	std::unique_ptr<springai::SkirmishAI> skirmishAI;
+	std::unique_ptr<springai::Team>       team;
 
 	static std::unique_ptr<CGameAttribute> gameAttribute;
 	static unsigned int gaCounter;

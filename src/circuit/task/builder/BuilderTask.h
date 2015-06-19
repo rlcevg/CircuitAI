@@ -92,6 +92,8 @@ protected:
 	int facing;
 
 	float savedIncome;
+
+	int buildFails;
 };
 
 } // namespace circuit
