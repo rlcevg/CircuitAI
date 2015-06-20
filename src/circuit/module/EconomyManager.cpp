@@ -40,6 +40,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 		indexRes(0),
 		metalIncome(.0f),
 		energyIncome(.0f),
+		metalParam(nullptr),
+		energyParam(nullptr),
 		emptyFrame(-1),
 		fullFrame(-1),
 		stallingFrame(-1),
@@ -150,7 +152,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 CEconomyManager::~CEconomyManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	delete metalRes, energyRes, eco;
+	delete metalRes, energyRes, eco, metalParam, energyParam;
 	delete engyPol;
 }
 
@@ -188,10 +190,6 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(const AIFloat3& position, CCirc
 {
 	// TODO: Add general logic here
 	IBuilderTask* task;
-//	task = UpdateMetalTasks(position, unit);
-//	if (task != nullptr) {
-//		return task;
-//	}
 	task = UpdateEnergyTasks(position, unit);
 	if (task != nullptr) {
 		return task;
@@ -374,11 +372,7 @@ void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 void CEconomyManager::UpdateResourceIncome()
 {
 	energyIncomes[indexRes] = eco->GetIncome(energyRes);
-#ifdef E451
-	metalIncomes[indexRes] = eco->GetIncome(metalRes);
-#else
 	metalIncomes[indexRes] = eco->GetIncome(metalRes) + eco->GetReceived(metalRes);
-#endif
 	++indexRes %= INCOME_SAMPLES;
 
 	metalIncome = .0f;
@@ -414,19 +408,20 @@ bool CEconomyManager::IsMetalFull()
 
 bool CEconomyManager::IsEnergyStalling()
 {
-	if (stallingFrame /*+ TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
+	if (stallingFrame + TEAM_SLOWUPDATE_RATE < circuit->GetLastFrame()) {
 		stallingFrame = circuit->GetLastFrame();
-		// FIXME: Check decay (eco->GetUsage(energyRes) - energyIncome > (eco->GetUsage(metalRes) - metalIncome) * 0.9f)
-		//        Proper GetUsage with GetPull requires latest engine
-#ifdef E451
-		isEnergyStalling = GetAvgMetalIncome() > GetAvgEnergyIncome() * 0.8f;
-#else
-		TeamRulesParam* mParam = circuit->GetTeam()->GetTeamRulesParamByName("extraMetalPull");
-		float mPull = eco->GetPull(metalRes) + (mParam != nullptr ? mParam->GetValueFloat() : .0f);
-		TeamRulesParam* eParam = circuit->GetTeam()->GetTeamRulesParamByName("extraEnergyPull");
-		float ePull = eco->GetPull(energyRes) + (eParam != nullptr ? eParam->GetValueFloat() : .0f);
-		isEnergyStalling = (GetAvgMetalIncome() - mPull) * 0.9f > GetAvgEnergyIncome() - ePull;
-#endif
+
+		if (metalParam == nullptr) {
+			metalParam = circuit->GetTeam()->GetTeamRulesParamByName("extraMetalPull");
+		}
+		float metalPull = eco->GetPull(metalRes) + (metalParam != nullptr ? metalParam->GetValueFloat() : .0f);
+
+		if (energyParam == nullptr) {
+			energyParam = circuit->GetTeam()->GetTeamRulesParamByName("extraEnergyPull");
+		}
+		float energyPull = eco->GetPull(energyRes) + (energyParam != nullptr ? energyParam->GetValueFloat() : .0f);
+
+		isEnergyStalling = (GetAvgMetalIncome() - metalPull) * 0.9f > GetAvgEnergyIncome() - energyPull;
 	}
 	return isEnergyStalling;
 }

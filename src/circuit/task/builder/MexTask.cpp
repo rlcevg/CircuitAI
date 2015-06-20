@@ -86,10 +86,7 @@ void CBMexTask::Finish()
 	CCircuitAI* circuit = manager->GetCircuit();
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 
-	CCircuitUnit* unit = units.empty() ? nullptr : *units.begin();
-//	if (economyManager->UpdateMetalTasks(buildPos, unit) == nullptr) {
-		economyManager->UpdateEnergyTasks(buildPos, unit);
-//	}
+	economyManager->UpdateEnergyTasks(buildPos, units.empty() ? nullptr : *units.begin());
 
 	// Add defence
 	// TODO: Move into MilitaryManager

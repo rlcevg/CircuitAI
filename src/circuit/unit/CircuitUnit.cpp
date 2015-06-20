@@ -37,7 +37,7 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* circuitDef) :
 CCircuitUnit::~CCircuitUnit()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	delete unit/*, disarmParam*/;
+	delete unit, dgun/*, disarmParam*/;
 }
 
 void CCircuitUnit::SetTask(IUnitTask* task)

@@ -598,11 +598,6 @@ void CBuilderManager::Init()
 				delete param;
 			}
 		}
-//		for (auto worker : workers) {
-//			if ((worker != commander) || (task == nullptr)) {
-//				UnitIdle(worker);
-//			}
-//		}
 
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		const int interval = 8;

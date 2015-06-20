@@ -19,6 +19,7 @@
 namespace springai {
 	class Resource;
 	class Economy;
+	class TeamRulesParam;
 }
 
 namespace circuit {
@@ -102,6 +103,9 @@ private:
 	int indexRes;
 	float metalIncome;
 	float energyIncome;
+
+	springai::TeamRulesParam* metalParam;
+	springai::TeamRulesParam* energyParam;
 
 	int emptyFrame;
 	int fullFrame;
