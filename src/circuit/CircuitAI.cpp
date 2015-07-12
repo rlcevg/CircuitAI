@@ -374,7 +374,9 @@ int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallba
 int CCircuitAI::Release(int reason)
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-//	gameAttribute->SetGameEnd(true);
+	if (reason == 1) {
+		gameAttribute->SetGameEnd(true);
+	}
 	terrainManager->DidUpdateAreaUsers();
 
 	modules.clear();

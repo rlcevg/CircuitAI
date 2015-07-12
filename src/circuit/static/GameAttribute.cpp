@@ -26,14 +26,16 @@ CGameAttribute::~CGameAttribute()
 
 void CGameAttribute::SetGameEnd(bool value)
 {
-	if (gameEnd != value) {
-		if (value) {
-			for (auto circuit : circuits) {
-				circuit->NotifyGameEnd();
-			}
-		}
-		gameEnd = value;
+	if (gameEnd == value) {
+		return;
 	}
+
+	if (value) {
+		for (CCircuitAI* circuit : circuits) {
+			circuit->NotifyGameEnd();
+		}
+	}
+	gameEnd = value;
 }
 
 } // namespace circuit

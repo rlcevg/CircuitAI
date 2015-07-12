@@ -56,29 +56,54 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 	Map* map = circuit->GetMap();
 	float width = map->GetWidth() * SQUARE_SIZE;
 	float height = map->GetHeight() * SQUARE_SIZE;
-	std::regex patternAlly("\\[allyteam(\\d+)\\]\\s*\\{([^\\}]*)\\}");
-	std::regex patternRect("startrect\\w+=(\\d+(\\.\\d+)?);");
-	std::smatch section;
+
 	std::string::const_iterator start = script.begin();
 	std::string::const_iterator end = script.end();
-	while (std::regex_search(start, end, section, patternAlly)) {
-		int allyTeamId = utils::string_to_int(section[1]);
+	std::regex patternBox("startboxes=(.*);");
+	std::smatch section;
+	if (std::regex_search(start, end, section, patternBox)) {
+		// zk way
+		// startboxes=return { [0] = { 0, 0, 0.25, 1 }, [1] = { 0.75, 0, 1, 1 }, };
+		// @see Zero-K.sdd/LuaRules/Gadgets/start_boxes.lua
+		std::string lua_str = section[1];
+		start = lua_str.begin();
+		end = lua_str.end();
+		std::regex patternAlly("\\[(\\d+)\\][^\\{]*\\{[ ,]*(\\d+\\.?\\d*)[ ,]*(\\d+\\.?\\d*)[ ,]*(\\d+\\.?\\d*)[ ,]*(\\d+\\.?\\d*)[^\\}]\\}");
+		while (std::regex_search(start, end, section, patternAlly)) {
+			int allyTeamId = utils::string_to_int(section[1]);
 
-		std::string allyBody = section[2];
-		std::sregex_token_iterator iter(allyBody.begin(), allyBody.end(), patternRect, 1);
-		std::sregex_token_iterator end;
-		CAllyTeam::SBox startbox;
-		for (int i = 0; iter != end && i < 4; ++iter, i++) {
-			startbox.edge[i] = utils::string_to_float(*iter);
+			CAllyTeam::SBox startbox;
+			startbox.left   = utils::string_to_float(section[2]) * width;
+			startbox.top    = utils::string_to_float(section[3]) * height;
+			startbox.right  = utils::string_to_float(section[4]) * width;
+			startbox.bottom = utils::string_to_float(section[5]) * height;
+			alliesMap[allyTeamId].startBox = startbox;
+
+			start = section[0].second;
 		}
+	} else {
+		// DEPRECATED: engine way
+		std::regex patternAlly("\\[allyteam(\\d+)\\]\\s*\\{([^\\}]*)\\}");
+		std::regex patternRect("startrect\\w+=(\\d+(\\.\\d+)?);");
+		while (std::regex_search(start, end, section, patternAlly)) {
+			int allyTeamId = utils::string_to_int(section[1]);
 
-		startbox.bottom *= height;
-		startbox.left   *= width;
-		startbox.right  *= width;
-		startbox.top    *= height;
-		alliesMap[allyTeamId].startBox = startbox;
+			std::string allyBody = section[2];
+			std::sregex_token_iterator iter(allyBody.begin(), allyBody.end(), patternRect, 1);
+			std::sregex_token_iterator end;
+			CAllyTeam::SBox startbox;
+			for (int i = 0; iter != end && i < 4; ++iter, i++) {
+				startbox.edge[i] = utils::string_to_float(*iter);
+			}
 
-		start = section[0].second;
+			startbox.bottom *= height;
+			startbox.left   *= width;
+			startbox.right  *= width;
+			startbox.top    *= height;
+			alliesMap[allyTeamId].startBox = startbox;
+
+			start = section[0].second;
+		}
 	}
 
 	// Detect start position type
