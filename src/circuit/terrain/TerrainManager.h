@@ -52,7 +52,7 @@ public:
 	void RemoveBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing);
 	void ResetBuildFrame();
 	// TODO: Use IsInBounds test and Bound operation only if mask or search offsets (endr) are out of bounds
-	// TODO: Based on map complexity use A* or circle to calculate build offset
+	// TODO: Based on map complexity use BFS or circle to calculate build offset
 	// TODO: Consider abstract task position (any area with builder) and task for certain unit-pos-area
 	springai::AIFloat3 FindBuildSite(CCircuitDef* cdef,
 									 const springai::AIFloat3& pos,

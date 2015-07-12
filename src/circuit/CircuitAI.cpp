@@ -466,12 +466,13 @@ int CCircuitAI::UnitIdle(CCircuitUnit* unit)
 
 int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 {
+	Unit* u = unit->GetUnit();
 	unit->MoveFailed();
 	if (unit->IsMoveFailed()) {
+		u->Stop();
 		UnitDestroyed(unit, nullptr);
 		UnregisterTeamUnit(unit);
 	} else {
-		Unit* u = unit->GetUnit();
 		AIFloat3 pos = u->GetPos();
 		AIFloat3 d((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
 		d.Normalize();
