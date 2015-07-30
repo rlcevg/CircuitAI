@@ -17,6 +17,8 @@ public:
 	CAttackTask(ITaskManager* mgr);
 	virtual ~CAttackTask();
 
+	virtual void AssignTo(CCircuitUnit* unit);
+
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
 

@@ -24,6 +24,8 @@ class CCircuitDef {
 public:
 	using Id = int;
 
+	CCircuitDef(const CCircuitDef& that) = delete;
+	CCircuitDef& operator=(const CCircuitDef&) = delete;
 	CCircuitDef(springai::UnitDef* def, std::unordered_set<Id>& buildOpts);
 	virtual ~CCircuitDef();
 
@@ -39,9 +41,9 @@ public:
 	void Dec() { --count; }
 
 	CCircuitDef& operator++();     // prefix  (++C): no parameter, returns a reference
-	CCircuitDef  operator++(int);  // postfix (C++): dummy parameter, returns a value
+//	CCircuitDef  operator++(int);  // postfix (C++): dummy parameter, returns a value
 	CCircuitDef& operator--();     // prefix  (++C): no parameter, returns a reference
-	CCircuitDef  operator--(int);  // postfix (C++): dummy parameter, returns a value
+//	CCircuitDef  operator--(int);  // postfix (C++): dummy parameter, returns a value
 	bool operator==(const CCircuitDef& rhs) { return id == rhs.id; }
 	bool operator!=(const CCircuitDef& rhs) { return id != rhs.id; }
 

@@ -147,18 +147,18 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		}
 		if (!facs.empty()) {
 			factoryPower += unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
-		}
 
-		bool isInHaven = false;
-		for (const AIFloat3& hav : havens) {
-			if (assPos.SqDistance2D(hav) < qradius) {
-				isInHaven = true;
-				break;
+			bool isInHaven = false;
+			for (const AIFloat3& hav : havens) {
+				if (assPos.SqDistance2D(hav) < qradius) {
+					isInHaven = true;
+					break;
+				}
 			}
-		}
-		if (!isInHaven) {
-			havens.push_back(assPos);
-			// TODO: Send HavenFinished message?
+			if (!isInHaven) {
+				havens.push_back(assPos);
+				// TODO: Send HavenFinished message?
+			}
 		}
 	};
 	auto assistIdleHandler = [this](CCircuitUnit* unit) {
@@ -171,16 +171,27 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		if (unit->GetTask() == nullTask) {  // alternative: unit->GetUnit()->IsBeingBuilt()
 			return;
 		}
+		const AIFloat3& assPos = unit->GetUnit()->GetPos();
+		float radius = unit->GetCircuitDef()->GetBuildDistance();
+		float qradius = radius * radius;
 		for (SFactory& fac : factories) {
-			fac.nanos.erase(unit);
+			if ((fac.nanos.erase(unit) == 0) || !fac.nanos.empty()) {
+				continue;
+			}
+			auto it = havens.begin();
+			while (it != havens.end()) {
+				if (it->SqDistance2D(assPos) < qradius) {
+					it = havens.erase(it);
+					// TODO: Send HavenDestroyed message?
+				} else {
+					++it;
+				}
+			}
 		}
 		if (!assists[unit].empty()) {
 			factoryPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
 		}
 		assists.erase(unit);
-
-		havens.remove(unit->GetUnit()->GetPos());
-		// TODO: Send HavenDestroyed message?
 	};
 
 	CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();

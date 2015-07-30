@@ -9,6 +9,7 @@
 #include "task/IdleTask.h"
 #include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
+#include "unit/action/IdleAction.h"
 
 namespace circuit {
 
@@ -33,11 +34,15 @@ void IUnitTask::AssignTo(CCircuitUnit* unit)
 	manager->GetIdleTask()->RemoveAssignee(unit);
 	unit->SetTask(this);
 	units.insert(unit);
+
+	unit->PushBack(new CIdleAction(unit));
 }
 
 void IUnitTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	units.erase(unit);
+	unit->Clear();
+
 	manager->GetIdleTask()->AssignTo(unit);
 }
 

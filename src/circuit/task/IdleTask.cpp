@@ -7,6 +7,7 @@
 
 #include "task/IdleTask.h"
 #include "task/TaskManager.h"
+#include "unit/action/IdleAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -27,6 +28,8 @@ void CIdleTask::AssignTo(CCircuitUnit* unit)
 {
 	unit->SetTask(this);
 	units.insert(unit);
+
+	unit->PushBack(new CIdleAction(unit));
 }
 
 void CIdleTask::RemoveAssignee(CCircuitUnit* unit)
@@ -34,6 +37,8 @@ void CIdleTask::RemoveAssignee(CCircuitUnit* unit)
 	if (units.erase(unit) > 0) {
 		updateUnits.erase(unit);
 	}
+
+	unit->Clear();
 }
 
 void CIdleTask::Close(bool done)

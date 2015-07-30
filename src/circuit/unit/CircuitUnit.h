@@ -34,6 +34,8 @@ class CCircuitUnit: public CActionList {
 public:
 	using Id = int;
 
+	CCircuitUnit(const CCircuitUnit& that) = delete;
+	CCircuitUnit& operator=(const CCircuitUnit&) = delete;
 	CCircuitUnit(springai::Unit* unit, CCircuitDef* circuitDef);
 	virtual ~CCircuitUnit();
 
@@ -51,8 +53,7 @@ public:
 	void SetArea(STerrainMapArea* area) { this->area = area; }
 	STerrainMapArea* GetArea() const { return area; }
 
-	void MoveFailed() { ++moveFails; }
-	bool IsMoveFailed() const { return moveFails > 30; }
+	bool IsMoveFailed() { return ++moveFails > 30; }
 
 	springai::Weapon* GetDGun() const { return dgun; }
 //	bool IsDisarmed();

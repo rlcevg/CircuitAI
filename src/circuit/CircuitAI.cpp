@@ -467,7 +467,6 @@ int CCircuitAI::UnitIdle(CCircuitUnit* unit)
 int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();
-	unit->MoveFailed();
 	if (unit->IsMoveFailed()) {
 		u->Stop();
 		UnitDestroyed(unit, nullptr);

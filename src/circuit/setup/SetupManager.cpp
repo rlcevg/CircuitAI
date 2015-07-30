@@ -113,7 +113,7 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 	if (std::regex_search(setupScript, matchPosType, patternPosType)) {
 		startPosType = static_cast<CGameSetup::StartPosType>(std::atoi(matchPosType[1].first));
 	} else {
-		startPosType = CGameSetup::StartPosType::StartPos_ChooseInGame;
+		startPosType = CGameSetup::StartPosType::StartPos_Fixed;
 	}
 
 	// Detect team alliances
@@ -157,12 +157,12 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 	setupData->Init(allyTeams, startPosType);
 }
 
-bool CSetupManager::HasStartBoxes()
+bool CSetupManager::HasStartBoxes() const
 {
 	return setupData->IsInitialized();
 }
 
-bool CSetupManager::CanChooseStartPos()
+bool CSetupManager::CanChooseStartPos() const
 {
 	return setupData->CanChooseStartPos();
 }
@@ -227,32 +227,12 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 	circuit->GetGame()->SendStartPosition(false, pos);
 }
 
-void CSetupManager::SetStartPos(const AIFloat3& pos)
-{
-	startPos = basePos = pos;
-}
-
-const AIFloat3& CSetupManager::GetStartPos()
-{
-	return startPos;
-}
-
-void CSetupManager::SetBasePos(const springai::AIFloat3& pos)
-{
-	basePos = pos;
-}
-
-const springai::AIFloat3& CSetupManager::GetBasePos()
-{
-	return basePos;
-}
-
-CCircuitUnit* CSetupManager::GetCommander()
+CCircuitUnit* CSetupManager::GetCommander() const
 {
 	return circuit->GetTeamUnit(commanderId);
 }
 
-CAllyTeam* CSetupManager::GetAllyTeam()
+CAllyTeam* CSetupManager::GetAllyTeam() const
 {
 	return setupData->GetAllyTeam(circuit->GetAllyTeamId());
 }

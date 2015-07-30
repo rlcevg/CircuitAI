@@ -23,12 +23,12 @@ CActionList::CActionList() :
 CActionList::~CActionList()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	utils::free_clear(actions);
+	Clear();
 }
 
 void CActionList::Update(CCircuitAI* circuit)
 {
-	itAction = actions.begin();
+	std::list<IAction*>::iterator itAction = actions.begin();
 	while (itAction != actions.end()) {
 		IAction* action = *itAction;
 	    action->Update(circuit);
@@ -49,34 +49,38 @@ void CActionList::Update(CCircuitAI* circuit)
 void CActionList::PushFront(IAction* action)
 {
 	actions.push_front(action);
+	action->OnStart();
 }
-
 void CActionList::PushBack(IAction* action)
 {
 	actions.push_back(action);
+	action->OnStart();
 }
 
 void CActionList::InsertBefore(IAction* action)
 {
 	auto it = std::find(actions.begin(), actions.end(), action);
-	actions.insert(it, action);
+	InsertBefore(it, action);
 }
 
-void CActionList::InsertBefore(decltype(actions)::iterator it, IAction* action)
+void CActionList::InsertBefore(std::list<IAction*>::iterator it, IAction* action)
 {
 	actions.insert(it, action);
+	action->OnStart();
 }
 
 void CActionList::InsertAfter(IAction* action)
 {
 	auto it = std::find(actions.begin(), actions.end(), action);
 	actions.insert(++it, action);
+	action->OnStart();
 }
 
 void CActionList::InsertAfter(decltype(actions)::iterator it, IAction* action)
 {
 	auto itIns = it;
 	actions.insert(++itIns, action);
+	action->OnStart();
 }
 
 IAction* CActionList::Remove(IAction* action)
@@ -85,24 +89,9 @@ IAction* CActionList::Remove(IAction* action)
 	return *Remove(it);
 }
 
-decltype(CActionList::actions)::iterator CActionList::Remove(decltype(actions)::iterator it)
+void CActionList::Clear()
 {
-	return actions.erase(it);
-}
-
-IAction* CActionList::Begin()
-{
-	return actions.front();
-}
-
-IAction* CActionList::End()
-{
-	return actions.back();
-}
-
-bool CActionList::IsEmpty() const
-{
-	return actions.empty();
+	utils::free_clear(actions);
 }
 
 } // namespace circuit

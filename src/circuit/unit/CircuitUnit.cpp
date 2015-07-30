@@ -7,7 +7,6 @@
 
 #include "unit/CircuitUnit.h"
 #include "unit/UnitManager.h"
-#include "unit/action/WaitAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -28,8 +27,6 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* circuitDef) :
 //		disarmParam(nullptr),
 		moveFails(0)
 {
-	PushBack(new CWaitAction(this));
-
 	WeaponMount* wpMnt = circuitDef->GetDGunMount();
 	dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
 }

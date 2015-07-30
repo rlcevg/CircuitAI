@@ -15,7 +15,7 @@ namespace circuit {
 
 using namespace springai;
 
-CCircuitDef::CCircuitDef(springai::UnitDef* def, std::unordered_set<Id>& buildOpts) :
+CCircuitDef::CCircuitDef(UnitDef* def, std::unordered_set<Id>& buildOpts) :
 		id(def->GetUnitDefId()),
 		def(def),
 		count(0),
@@ -66,12 +66,13 @@ CCircuitDef& CCircuitDef::operator++()
 	return *this;
 }
 
-CCircuitDef CCircuitDef::operator++(int)
-{
-	CCircuitDef temp = *this;
-	count++;
-	return temp;
-}
+// FIXME: ~CCircuitDef should fail with delete
+//CCircuitDef CCircuitDef::operator++(int)
+//{
+//	CCircuitDef temp = *this;
+//	count++;
+//	return temp;
+//}
 
 CCircuitDef& CCircuitDef::operator--()
 {
@@ -79,11 +80,11 @@ CCircuitDef& CCircuitDef::operator--()
 	return *this;
 }
 
-CCircuitDef CCircuitDef::operator--(int)
-{
-	CCircuitDef temp = *this;
-	count--;
-	return temp;
-}
+//CCircuitDef CCircuitDef::operator--(int)
+//{
+//	CCircuitDef temp = *this;
+//	count--;
+//	return temp;
+//}
 
 } // namespace circuit

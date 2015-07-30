@@ -30,14 +30,13 @@ public:
 	void InsertAfter(IAction* action);
 	void InsertAfter(std::list<IAction*>::iterator it, IAction* action);
 	IAction* Remove(IAction* action);
-	std::list<IAction*>::iterator Remove(std::list<IAction*>::iterator it);
+	std::list<IAction*>::iterator Remove(std::list<IAction*>::iterator it) { return actions.erase(it); }
 
-	IAction* Begin();
-	IAction* End();
+	IAction* Begin() const { return actions.front(); }
+	IAction* End() const { return actions.back(); }
 
-	bool IsEmpty() const;
-
-	std::list<IAction*>::iterator itAction;
+	bool IsEmpty() const { return actions.empty(); }
+	void Clear();
 
 protected:
 	int startFrame;

@@ -22,11 +22,11 @@ public:
 	virtual ~CSetupData();
 	void Init(const std::vector<CAllyTeam*>& ats, CGameSetup::StartPosType spt = CGameSetup::StartPosType::StartPos_ChooseInGame);
 
-	bool IsInitialized();
-	bool CanChooseStartPos();
+	bool IsInitialized() const { return initialized; }
+	bool CanChooseStartPos() const { return startPosType == CGameSetup::StartPos_ChooseInGame; }
 
-	CAllyTeam* GetAllyTeam(int allyTeamId);
-	const CAllyTeam::SBox& operator[](int idx) const;
+	CAllyTeam* GetAllyTeam(int allyTeamId) const { return allyTeams[allyTeamId]; }
+	const CAllyTeam::SBox& operator[](int idx) const { return allyTeams[idx]->GetStartBox(); }
 
 private:
 	bool initialized;

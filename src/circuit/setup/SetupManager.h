@@ -25,17 +25,17 @@ public:
 	virtual ~CSetupManager();
 	void ParseSetupScript(const char* setupScript);
 
-	bool HasStartBoxes();
-	bool CanChooseStartPos();
+	bool HasStartBoxes() const;
+	bool CanChooseStartPos() const;
 
 	void PickStartPos(CCircuitAI* circuit, StartPosType type);
-	void SetStartPos(const springai::AIFloat3& pos);
-	const springai::AIFloat3& GetStartPos();
-	void SetBasePos(const springai::AIFloat3& pos);
-	const springai::AIFloat3& GetBasePos();
+	void SetStartPos(const springai::AIFloat3& pos) { startPos = basePos = pos; }
+	const springai::AIFloat3& GetStartPos() const { return startPos; }
+	void SetBasePos(const springai::AIFloat3& pos) { basePos = pos; }
+	const springai::AIFloat3& GetBasePos() const { return basePos; }
 
-	CCircuitUnit* GetCommander();
-	CAllyTeam* GetAllyTeam();
+	CCircuitUnit* GetCommander() const;
+	CAllyTeam* GetAllyTeam() const;
 
 private:
 	void FindCommander();

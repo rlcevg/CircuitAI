@@ -10,12 +10,11 @@
 #include "module/FactoryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
+#include "unit/action/DGunAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
-#include "OOAICallback.h"
 #include "AISCommands.h"
-#include "Weapon.h"
 
 namespace circuit {
 
@@ -32,18 +31,22 @@ CRetreatTask::~CRetreatTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
+void CRetreatTask::AssignTo(CCircuitUnit* unit)
 {
-	updateUnits.erase(unit);
+	IUnitTask::AssignTo(unit);
 
-	IUnitTask::RemoveAssignee(unit);
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	if (cdef->GetDGunMount() != nullptr) {
+		CDGunAction* act = new CDGunAction(unit, cdef->GetDGunRange() * 0.8f);
+		unit->PushBack(act);
+	}
 }
 
-void CRetreatTask::Close(bool done)
+void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
 {
-	updateUnits.clear();
+	IUnitTask::RemoveAssignee(unit);
 
-	IUnitTask::Close(done);
+	updateUnits.erase(unit);
 }
 
 void CRetreatTask::Execute(CCircuitUnit* unit)
@@ -73,25 +76,20 @@ void CRetreatTask::Update()
 		if (u->GetHealth() >= u->GetMaxHealth() * 0.8f) {
 			RemoveAssignee(ass);
 		} else {
-			CCircuitDef* cdef = ass->GetCircuitDef();
-			if ((cdef->GetDGunMount() != nullptr) && (ass->GetDGun()->GetReloadFrame() <= circuit->GetLastFrame()) && !u->IsParalyzed() /*&& !ass->IsDisarmed()*/) {
-				auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(u->GetPos(), cdef->GetDGunRange() * 0.8f));
-				if (!enemies.empty()) {
-					for (Unit* enemy : enemies) {
-						if (enemy != nullptr) {
-							u->DGun(enemy, UNIT_COMMAND_OPTION_ALT_KEY, FRAMES_PER_SEC * 5);
-							break;
-						}
-					}
-					utils::free_clear(enemies);
-				}
-			}
+			ass->Update(circuit);
 		}
 
 		if (++i >= updateSlice) {
 			break;
 		}
 	}
+}
+
+void CRetreatTask::Close(bool done)
+{
+	updateUnits.clear();
+
+	IUnitTask::Close(done);
 }
 
 void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)

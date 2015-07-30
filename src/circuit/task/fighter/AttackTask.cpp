@@ -9,12 +9,11 @@
 #include "task/RetreatTask.h"
 #include "task/TaskManager.h"
 #include "terrain/TerrainManager.h"
+#include "unit/action/DGunAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
-#include "OOAICallback.h"
 #include "AISCommands.h"
-#include "Weapon.h"
 
 namespace circuit {
 
@@ -28,6 +27,17 @@ CAttackTask::CAttackTask(ITaskManager* mgr) :
 CAttackTask::~CAttackTask()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+}
+
+void CAttackTask::AssignTo(CCircuitUnit* unit)
+{
+	IUnitTask::AssignTo(unit);
+
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	if (cdef->GetDGunMount() != nullptr) {
+		CDGunAction* act = new CDGunAction(unit, cdef->GetDGunRange() * 0.9f);
+		unit->PushBack(act);
+	}
 }
 
 void CAttackTask::Execute(CCircuitUnit* unit)
@@ -49,26 +59,7 @@ void CAttackTask::Update()
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	for (CCircuitUnit* unit : units) {
-		CCircuitDef* cdef = unit->GetCircuitDef();
-		if (cdef->GetDGunMount() == nullptr) {
-			continue;
-		}
-		Unit* u = unit->GetUnit();
-		// NOTE: Paralyzer doesn't increase ReloadFrame beyond currentFrame, but disarmer does.
-		//       Also checking disarm is more expensive (because of UnitRulesParam).
-		if ((unit->GetDGun()->GetReloadFrame() > circuit->GetLastFrame()) || u->IsParalyzed() /*|| unit->IsDisarmed()*/) {
-			continue;
-		}
-		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(u->GetPos(), cdef->GetDGunRange() * 0.9f));
-		if (!enemies.empty()) {
-			for (Unit* enemy : enemies) {
-				if (enemy != nullptr) {
-					u->DGun(enemy, UNIT_COMMAND_OPTION_ALT_KEY, FRAMES_PER_SEC * 5);
-					break;
-				}
-			}
-			utils::free_clear(enemies);
-		}
+		unit->Update(circuit);
 	}
 }
 
