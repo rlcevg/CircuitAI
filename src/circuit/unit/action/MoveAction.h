@@ -10,16 +10,24 @@
 
 #include "unit/action/UnitAction.h"
 
+#include "AIFloat3.h"
+
 namespace circuit {
 
 class CMoveAction: public IUnitAction {
 public:
-	CMoveAction(CCircuitUnit* owner);
+	enum class MoveType: char {RAW, SAFE};
+
+	CMoveAction(CCircuitUnit* owner, const springai::AIFloat3& pos, MoveType mt = MoveType::SAFE);
 	virtual ~CMoveAction();
 
 	virtual void Update(CCircuitAI* circuit);
 	virtual void OnStart();
 	virtual void OnEnd();
+
+private:
+	springai::AIFloat3 position;
+	MoveType moveType;
 };
 
 } // namespace circuit

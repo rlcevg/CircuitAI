@@ -6,12 +6,19 @@
  */
 
 #include "unit/action/MoveAction.h"
+#include "CircuitAI.h"
 #include "util/utils.h"
+
+#include "AISCommands.h"
 
 namespace circuit {
 
-CMoveAction::CMoveAction(CCircuitUnit* owner) :
-		IUnitAction(owner, Type::MOVE)
+using namespace springai;
+
+CMoveAction::CMoveAction(CCircuitUnit* owner, const AIFloat3& pos, MoveType mt) :
+		IUnitAction(owner, Type::MOVE),
+		position(pos),
+		moveType(mt)
 {
 }
 
@@ -27,12 +34,12 @@ void CMoveAction::Update(CCircuitAI* circuit)
 
 void CMoveAction::OnStart()
 {
-
+	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
+	unit->GetUnit()->MoveTo(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 1);
 }
 
 void CMoveAction::OnEnd()
 {
-
 }
 
 } // namespace circuit

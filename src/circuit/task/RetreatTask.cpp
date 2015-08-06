@@ -11,9 +11,11 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "unit/action/DGunAction.h"
+#include "unit/action/MoveAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+// FIXME: Remove
 #include "AISCommands.h"
 
 namespace circuit {
@@ -54,8 +56,7 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 	AIFloat3 haven = circuit->GetFactoryManager()->GetClosestHaven(unit);
 	const AIFloat3& pos = (haven != -RgtVector) ? haven : circuit->GetSetupManager()->GetStartPos();
-	// TODO: push MoveAction into unit? to avoid enemy fire
-	unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 1);
+	unit->PushBack(new CMoveAction(unit, pos));
 }
 
 void CRetreatTask::Update()
@@ -99,13 +100,14 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 	if (pos == -RgtVector) {
 		pos = circuit->GetSetupManager()->GetStartPos();
 	}
-	float maxDist = 200.0f;
+	const float maxDist = 200.0f;  // TODO: Get havens buildDistance from factoryManager
 	Unit* u = unit->GetUnit();
 	if (u->GetPos().SqDistance2D(pos) > maxDist * maxDist) {
 		// TODO: push MoveAction into unit? to avoid enemy fire
 		u->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 1);
 		// TODO: Add fail counter?
 	} else {
+		// TODO: push WaitAction into unit
 		std::vector<float> params;
 		params.push_back(0.0f);
 		u->ExecuteCustomCommand(CMD_PRIORITY, params);

@@ -16,6 +16,9 @@
 #include "OOAICallback.h"
 #include "Game.h"
 #include "Map.h"
+#include "WrappTeam.h"
+#include "Team.h"
+#include "TeamRulesParam.h"
 
 #include <map>
 #include <regex>
@@ -61,7 +64,8 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 	std::string::const_iterator end = script.end();
 	std::regex patternBox("startboxes=(.*);");
 	std::smatch section;
-	if (std::regex_search(start, end, section, patternBox)) {
+	bool isZkBox = std::regex_search(start, end, section, patternBox);
+	if (isZkBox) {
 		// zk way
 		// startboxes=return { [0] = { 0, 0, 0.25, 1 }, [1] = { 0.75, 0, 1, 1 }, };
 		// @see Zero-K.sdd/LuaRules/Gadgets/start_boxes.lua
@@ -82,7 +86,7 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 			start = section[0].second;
 		}
 	} else {
-		// DEPRECATED: engine way
+		// engine way
 		std::regex patternAlly("\\[allyteam(\\d+)\\]\\s*\\{([^\\}]*)\\}");
 		std::regex patternRect("startrect\\w+=(\\d+(\\.\\d+)?);");
 		while (std::regex_search(start, end, section, patternAlly)) {
@@ -146,12 +150,22 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 	allyTeams.reserve(alliesMap.size());
 	for (const auto& kv : alliesMap) {
 		const SAllyData& data = kv.second;
+		int boxId;  // TODO: Support box per team instead of allyTeam
+		if (isZkBox) {
+			int teamId = teamIdsRemap[*data.origTeamIds.begin()];
+			Team* team = WrappTeam::GetInstance(circuit->GetSkirmishAIId(), teamId);
+			TeamRulesParam* trp = team->GetTeamRulesParamByName("start_box_id");
+			if (trp != nullptr) {
+				boxId = trp->GetValueFloat();
+				delete trp;
+			}
+		}
 		CAllyTeam::TeamIds teamIds;
 		teamIds.reserve(data.origTeamIds.size());
 		for (auto id : data.origTeamIds) {
 			teamIds.insert(teamIdsRemap[id]);
 		}
-		allyTeams.push_back(new CAllyTeam(teamIds, data.startBox));
+		allyTeams.push_back(new CAllyTeam(teamIds, (isZkBox) ? alliesMap[boxId].startBox : data.startBox));
 	}
 
 	setupData->Init(allyTeams, startPosType);
@@ -246,9 +260,9 @@ void CSetupManager::FindCommander()
 		delete def;
 		if (valid) {
 			commanderId = unit->GetUnitId();
-			if (startPos == -RgtVector) {
+//			if (startPos == -RgtVector) {
 				SetStartPos(unit->GetPos());
-			}
+//			}
 			break;
 		}
 	}
