@@ -186,9 +186,9 @@ void IBuilderTask::Cancel()
 
 void IBuilderTask::OnUnitIdle(CCircuitUnit* unit)
 {
-	if (++buildFails <= 3) {
+	if (++buildFails <= 2) {
 		Execute(unit);
-	} else if (buildFails <= 30) {
+	} else if (buildFails <= 10) {
 		RemoveAssignee(unit);
 	} else {
 		manager->AbortTask(this);

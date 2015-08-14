@@ -150,7 +150,9 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 	allyTeams.reserve(alliesMap.size());
 	for (const auto& kv : alliesMap) {
 		const SAllyData& data = kv.second;
-		int boxId;  // TODO: Support box per team instead of allyTeam
+
+		// TODO: Support box per team instead of allyTeam
+		int boxId;
 		if (isZkBox) {
 			int teamId = teamIdsRemap[*data.origTeamIds.begin()];
 			Team* team = WrappTeam::GetInstance(circuit->GetSkirmishAIId(), teamId);
@@ -160,6 +162,7 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 				delete trp;
 			}
 		}
+
 		CAllyTeam::TeamIds teamIds;
 		teamIds.reserve(data.origTeamIds.size());
 		for (auto id : data.origTeamIds) {

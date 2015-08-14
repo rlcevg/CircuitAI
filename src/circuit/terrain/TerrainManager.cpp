@@ -53,7 +53,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 
 	// offset in South facing
 	offset = int2(0, 4);
-	ignoreMask = STRUCT_BIT(PYLON);
+	ignoreMask = STRUCT_BIT(NONE);
 	const char* factories[] = {"factorycloak", "factoryamph", "factoryhover", "factoryjump", "factoryshield", "factoryspider", "factorytank", "factoryveh"};
 	for (auto fac : factories) {
 		cdef = circuit->GetCircuitDef(fac);
@@ -107,14 +107,15 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(MEX) |
-				 STRUCT_BIT(DEF_LOW) |
-				 STRUCT_BIT(PYLON);
+				 STRUCT_BIT(PYLON) |
+				 STRUCT_BIT(DEF_LOW);
 	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_MID, ignoreMask);
 
 	cdef = circuit->GetCircuitDef("cafus");
 	def = cdef->GetUnitDef();
 	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2) / circuit->GetAllyTeam()->GetSize();
+	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
+	radius -= radius / 6 * (std::min(circuit->GetAllyTeam()->GetSize(), 4) - 1);  // [radius ~ 1 player ; radius/2 ~ 4+ players]
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
@@ -148,7 +149,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	bsize = ssize;
 	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(ALL) & ~STRUCT_BIT(FACTORY);
+	ignoreMask = STRUCT_BIT(ALL) & ~(STRUCT_BIT(FACTORY) | STRUCT_BIT(PYLON));
 	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::MEX, ignoreMask);
 
 	cdef = circuit->GetCircuitDef("corrl");
@@ -187,8 +188,8 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	ignoreMask = STRUCT_BIT(MEX) |
 				 STRUCT_BIT(DEF_LOW) |
 				 STRUCT_BIT(ENGY_MID) |
-				 STRUCT_BIT(ENGY_HIGH) |
-				 STRUCT_BIT(PYLON);
+				 STRUCT_BIT(PYLON) |
+				 STRUCT_BIT(ENGY_HIGH);
 	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::NANO, ignoreMask);
 
 	cdef = circuit->GetCircuitDef("raveparty");
@@ -200,8 +201,8 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(MEX) |
 				 STRUCT_BIT(DEF_LOW) |
-				 STRUCT_BIT(ENGY_HIGH) |
-				 STRUCT_BIT(PYLON);
+				 STRUCT_BIT(PYLON) |
+				 STRUCT_BIT(ENGY_HIGH);
 	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
 
 	cdef = circuit->GetCircuitDef("armamd");
@@ -214,8 +215,8 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	ignoreMask = STRUCT_BIT(MEX) |
 				 STRUCT_BIT(DEF_LOW) |
 				 STRUCT_BIT(ENGY_MID) |
-				 STRUCT_BIT(ENGY_HIGH) |
-				 STRUCT_BIT(PYLON);
+				 STRUCT_BIT(PYLON) |
+				 STRUCT_BIT(ENGY_HIGH);
 	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
 
 	const char* striders[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco"};
@@ -371,7 +372,7 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 		if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
 			probePos.y = map->GetElevationAt(probePos.x, probePos.z);
 			if (predicate(probePos)) {
-				return probePos - AIFloat3(.1f, .0f, .1f);;
+				return probePos + AIFloat3(.1f, .0f, -.1f);;
 			}
 		}
 	}
@@ -560,7 +561,7 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(CCircuitDef* cdef, const AIFloat3& po
 			if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
 				probePos.y = map->GetElevationAt(probePos.x, probePos.z);
 				if (predicate(probePos)) {
-					return probePos - AIFloat3(.1f, .0f, .1f);
+					return probePos + AIFloat3(.1f, .0f, -.1f);
 				}
 			}
 		}
@@ -658,7 +659,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 		if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {	\
 			probePos.y = map->GetElevationAt(probePos.x, probePos.z);								\
 			if (predicate(probePos)) {																\
-				return probePos - AIFloat3(.1f, .0f, .1f);											\
+				return probePos + AIFloat3(.1f, .0f, -.1f);											\
 			}																						\
 		}																							\
 	}
@@ -787,7 +788,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 			if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {			\
 				probePos.y = map->GetElevationAt(probePos.x, probePos.z);										\
 				if (predicate(probePos)) {																		\
-					return probePos - AIFloat3(.1f, .0f, .1f);													\
+					return probePos + AIFloat3(.1f, .0f, -.1f);													\
 				}																								\
 			}																									\
 		}																										\
@@ -1105,7 +1106,7 @@ STerrainMapAreaSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* so
 		return GetAlternativeSector(sourceArea, GetSectorIndex(GetClosestSector(sourceArea, sourceSIndex)->S->position), destinationMT);
 	}
 
-	const AIFloat3* position = &TMSectors[sourceSIndex].S->position;
+	const AIFloat3& position = TMSectors[sourceSIndex].S->position;
 	STerrainMapAreaSector* bestAS = nullptr;
 	STerrainMapArea* largestArea = destinationMT->areaLargest;
 	float bestDistance = -1.0;
@@ -1126,7 +1127,7 @@ STerrainMapAreaSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* so
 				bestDistance = -1.0;
 			}
 			if (midDistance == bestMidDistance) {
-				float distance = position->distance2D(CAS->S->position);
+				float distance = position.distance2D(CAS->S->position);
 				if ((bestAS == nullptr) || (distance * area->percentOfMap < bestDistance * bestAS->area->percentOfMap)) {
 					bestAS = CAS;
 					bestDistance = distance;
@@ -1148,19 +1149,19 @@ STerrainMapSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* destin
 	}
 
 	STerrainMapSector* closestS = nullptr;
-	if ((destinationArea != nullptr) && (destinationArea != TMSectors[sourceSIndex].area)) {
-		closestS = GetAlternativeSector(destinationArea, GetSectorIndex(GetClosestSector(destinationArea, sourceSIndex)->S->position), destinationIT);
-		TMSectors[sourceSIndex].sectorAlternativeI[destinationIT] = closestS;
-		return closestS;
-	}
-
-	const AIFloat3* position = &areaData->sector[sourceSIndex].position;
-	float closestDistance = std::numeric_limits<float>::max();
-	for (auto& iS : destinationArea->sector) {
-		float sqDist = iS.second->S->position.SqDistance2D(*position);  // TODO: Consider SqDistance() instead of 2D
-		if (sqDist < closestDistance) {
-			closestS = iS.second->S;
-			closestDistance = sqDist;
+	if (destinationArea != nullptr) {
+		if (destinationArea != TMSectors[sourceSIndex].area) {
+			closestS = GetAlternativeSector(destinationArea, GetSectorIndex(GetClosestSector(destinationArea, sourceSIndex)->S->position), destinationIT);
+		} else {
+			const AIFloat3& position = areaData->sector[sourceSIndex].position;
+			float closestDistance = std::numeric_limits<float>::max();
+			for (auto& iS : destinationArea->sector) {
+				float sqDist = iS.second->S->position.SqDistance2D(position);  // TODO: Consider SqDistance() instead of 2D
+				if (sqDist < closestDistance) {
+					closestS = iS.second->S;
+					closestDistance = sqDist;
+				}
+			}
 		}
 	}
 

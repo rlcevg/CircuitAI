@@ -137,7 +137,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 	// Using cafus, armfus, armsolar as control points
 	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
 	const char* engies[] = {"cafus", "armfus", "armsolar"};
-	const int limits[] = {5, 3, 10};  // TODO: range randomize
+	const int limits[] = {3, 2, 10};  // TODO: range randomize
 	const int size = sizeof(engies) / sizeof(engies[0]);
 	CLagrangeInterPol::Vector x(size), y(size);
 	for (int i = 0; i < size; ++i) {
@@ -199,7 +199,7 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(const AIFloat3& position, CCirc
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome()) * ecoFactor;
 	CCircuitDef* buildDef = circuit->GetCircuitDef("armwin");
-	if ((metalIncome < 50) && (buildDef->GetCount() < 10)) {
+	if ((metalIncome < 50) && (buildDef->GetCount() < 10) && buildDef->IsAvailable()) {
 		task = builderManager->EnqueueTask(IBuilderTask::Priority::LOW, buildDef, position, IBuilderTask::BuildType::ENERGY);
 	} else if (metalIncome < 200) {
 		task = builderManager->EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
@@ -207,7 +207,7 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(const AIFloat3& position, CCirc
 		const std::set<IBuilderTask*>& tasks = builderManager->GetTasks(IBuilderTask::BuildType::BIG_GUN);
 		if (tasks.empty()) {
 			buildDef = circuit->GetCircuitDef("raveparty");
-			if (buildDef->GetCount() < 1) {
+			if ((buildDef->GetCount() < 1) && buildDef->IsAvailable()) {
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, circuit->GetSetupManager()->GetBasePos(), IBuilderTask::BuildType::BIG_GUN);
 			} else {
 				task = builderManager->EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
@@ -216,7 +216,9 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(const AIFloat3& position, CCirc
 			task = *tasks.begin();
 		}
 	}
-	return task;  // Must not return nullptr
+
+	assert(task != nullptr);
+	return task;
 }
 
 CRecruitTask* CEconomyManager::CreateFactoryTask(CCircuitUnit* unit)
@@ -664,12 +666,11 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			return clusterInfos[v.second].factory == nullptr;
 		};
 		CMetalManager* metalManager = circuit->GetMetalManager();
-		int index = metalManager->FindNearestCluster(position, predicate);
+		int index = metalManager->FindNearestCluster(isStriderValid ? circuit->GetSetupManager()->GetBasePos() : position, predicate);
 		CTerrainManager* terrain = circuit->GetTerrainManager();
-		AIFloat3 buildPos;
 		if (index >= 0) {
 			const CMetalData::Clusters& clusters = metalManager->GetClusters();
-			buildPos = clusters[index].geoCentr;
+			AIFloat3 buildPos = clusters[index].geoCentr;
 			UnitDef* facUDef = facDef->GetUnitDef();
 			float size = 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
 			buildPos.x += (buildPos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
@@ -685,6 +686,11 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	return nullptr;
 }
 
+IBuilderTask* CEconomyManager::UpdateFactoryTasks()
+{
+	return UpdateFactoryTasks(circuit->GetSetupManager()->GetBasePos());
+}
+
 CRecruitTask* CEconomyManager::UpdateRecruitTasks()
 {
 	CFactoryManager* factoryManager = circuit->GetFactoryManager();
@@ -696,7 +702,7 @@ CRecruitTask* CEconomyManager::UpdateRecruitTasks()
 
 	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	if ((builderManager->GetBuilderPower() < metalIncome * 2.0f) && (rand() < RAND_MAX / 3) && buildDef->IsAvailable()) {
+	if ((builderManager->GetBuilderPower() < metalIncome * 2.0f) && (rand() < RAND_MAX / 2) && buildDef->IsAvailable()) {
 		CCircuitUnit* factory = factoryManager->GetRandomFactory(buildDef);
 		if (factory != nullptr) {
 			const AIFloat3& buildPos = factory->GetUnit()->GetPos();
@@ -788,9 +794,9 @@ void CEconomyManager::Init()
 	SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();
 	const int interval = ais->GetSize() * FRAMES_PER_SEC;
 	delete ais;
-	const AIFloat3& pos = circuit->GetSetupManager()->GetBasePos();
 	CScheduler* scheduler = circuit->GetScheduler().get();
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateFactoryTasks, this, pos, nullptr), interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks), this),
+							interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this), interval, circuit->GetSkirmishAIId() + 1);
 }
 

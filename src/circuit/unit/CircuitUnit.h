@@ -53,7 +53,7 @@ public:
 	void SetArea(STerrainMapArea* area) { this->area = area; }
 	STerrainMapArea* GetArea() const { return area; }
 
-	bool IsMoveFailed() { return ++moveFails > 30; }
+	bool IsMoveFailed() { return ++moveFails > 10; }
 
 	springai::Weapon* GetDGun() const { return dgun; }
 //	bool IsDisarmed();

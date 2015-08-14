@@ -61,6 +61,7 @@ public:
 	IBuilderTask* UpdateReclaimTasks(const springai::AIFloat3& position, CCircuitUnit* unit);
 	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	IBuilderTask* UpdateFactoryTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
+	IBuilderTask* UpdateFactoryTasks();
 	CRecruitTask* UpdateRecruitTasks();
 	IBuilderTask* UpdateStorageTasks();
 	IBuilderTask* UpdatePylonTasks();
