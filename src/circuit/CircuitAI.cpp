@@ -33,6 +33,7 @@
 #include "WrappUnit.h"
 #include "OptionValues.h"
 #include "WrappTeam.h"
+#include "Mod.h"
 
 //#include "Command.h"
 //#include "WrappCurrentCommand.h"
@@ -311,9 +312,58 @@ int CCircuitAI::HandleEndEvent(int topic, const void* data)
 	return 0;
 }
 
+bool CCircuitAI::IsModValid()
+{
+	Mod* mod = callback->GetMod();
+	const char* name = mod->GetHumanName();
+	const char* version = mod->GetVersion();
+	delete mod;
+
+	if (strstr(name, "Zero-K") == nullptr) {
+		LOG("Only Zero-K mod is supported!");
+		return false;
+	}
+
+	char* tmp = new char [strlen(version) + 1];
+	strcpy(tmp, version);
+
+	const int minModVer[] = {1, 3, 8, 10};
+	int i = 0;
+	const char* tok = strtok(tmp, "v.");
+	while (tok != nullptr) {
+		int ver = atoi(tok);
+		if (ver < minModVer[i]) {
+			delete tmp;
+			LOG("Zero-K must be 1.3.8.10 or higher!");
+			return false;
+		}
+		if (ver > minModVer[i]) {
+			break;
+		}
+		++i;
+		tok = strtok(nullptr, ".");
+	}
+	delete tmp;
+
+	const int minEngineVer = 100;
+	int ver = atoi(skirmishCallback->Engine_Version_getMajor(skirmishAIId));
+	if (ver < minEngineVer) {
+		LOG("Engine must be 100.0 or higher!");
+		return false;
+	}
+
+	return true;
+}
+
 int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback)
 {
 	this->skirmishAIId = skirmishAIId;
+	// FIXME: Due to chewed API only skirmishCallback have access to Engine
+	this->skirmishCallback = const_cast<SSkirmishAICallback*>(skirmishCallback);
+	if (!IsModValid()) {
+		return ERROR_INIT;
+	}
+
 	CreateGameAttribute();
 	scheduler = std::make_shared<CScheduler>();
 	scheduler->Init(scheduler);

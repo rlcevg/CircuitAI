@@ -49,10 +49,10 @@ void CMetalManager::ParseMetalSpots(const char* metalJson)
 		return;
 	}
 
-	std::vector<CMetalData::Metal> spots;
+	std::vector<CMetalData::SMetal> spots;
 	spots.reserve(root.size());
 	for (const Json::Value& object : root) {
-		CMetalData::Metal spot;
+		CMetalData::SMetal spot;
 		spot.income = object["metal"].asFloat();
 		spot.position = AIFloat3(object["x"].asFloat(),
 								 object["y"].asFloat(),
@@ -77,7 +77,7 @@ void CMetalManager::ParseMetalSpots(const std::vector<GameRulesParam*>& gamePara
 		return;
 	}
 
-	std::vector<CMetalData::Metal> spots(mexCount);
+	std::vector<CMetalData::SMetal> spots(mexCount);
 	int i = 0;
 	for (auto param : gameParams) {
 		const char* name = param->GetName();

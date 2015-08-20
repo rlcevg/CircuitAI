@@ -228,7 +228,7 @@ void CEnergyGrid::Init()
 		int idx1 = boost::target(edgeId, clusterGraph);
 		links.emplace_back(idx0, clusters[idx0].geoCentr, idx1, clusters[idx1].geoCentr);
 	}
-	linkIt = boost::make_iterator_property_map(&links[0], boost::get(&CMetalData::Edge::index, clusterGraph));
+	linkIt = boost::make_iterator_property_map(&links[0], boost::get(&CMetalData::SEdge::index, clusterGraph));
 
 	ownedClusters = CMetalData::Graph(boost::num_vertices(clusterGraph));
 
@@ -477,14 +477,14 @@ void CEnergyGrid::RebuildTree()
 			ownedClusters[edgeId].weight = clusterGraph[edgeId].weight * baseWeight;
 		} else {
 			// Adjust weight by distance to base
-			const CMetalData::Edge& edge = clusterGraph[edgeId];
+			const CMetalData::SEdge& edge = clusterGraph[edgeId];
 			ownedClusters[edgeId].weight = edge.weight * basePos.SqDistance2D(edge.center) * invBaseWeight;
 		}
 	}
 
 	// Build Kruskal's minimum spanning tree
 	spanningTree.clear();
-	boost::property_map<CMetalData::Graph, float CMetalData::Edge::*>::type w_map = boost::get(&CMetalData::Edge::weight, ownedClusters);
+	boost::property_map<CMetalData::Graph, float CMetalData::SEdge::*>::type w_map = boost::get(&CMetalData::SEdge::weight, ownedClusters);
 	boost::kruskal_minimum_spanning_tree(ownedClusters, std::inserter(spanningTree, spanningTree.end()), boost::weight_map(w_map));
 }
 

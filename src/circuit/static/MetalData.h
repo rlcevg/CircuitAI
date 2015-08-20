@@ -38,31 +38,31 @@ private:
 	using vor_diagram = boost::polygon::voronoi_diagram<double>;
 
 public:
-	struct Edge {
-		Edge() : index(-1), weight(.0f) {}
-		Edge(int i, float w) : index(i), weight(w) {}
+	struct SEdge {
+		SEdge() : index(-1), weight(.0f) {}
+		SEdge(int i, float w) : index(i), weight(w) {}
 		int index;
 		float weight;
 		springai::AIFloat3 center;
 	};
-	using Graph = boost::adjacency_list<boost::hash_setS, boost::vecS, boost::undirectedS, boost::no_property, Edge>;
+	using Graph = boost::adjacency_list<boost::hash_setS, boost::vecS, boost::undirectedS, boost::no_property, SEdge>;
 	using VertexDesc = boost::graph_traits<Graph>::vertex_descriptor;
 	using EdgeDesc = boost::graph_traits<Graph>::edge_descriptor;
 
-	struct Metal {
+	struct SMetal {
 		float income;
 		springai::AIFloat3 position;
 	};
-	using Metals = std::vector<Metal>;
+	using Metals = std::vector<SMetal>;
 	using MetalNode = std::pair<point, int>;  // spots indexer
 	using MetalPredicate = std::function<bool (MetalNode const& v)>;
 	using MetalIndices = std::vector<int>;
-	struct Cluster {
+	struct SCluster {
 		MetalIndices idxSpots;
 		springai::AIFloat3 geoCentr;
 		springai::AIFloat3 weightCentr;
 	};
-	using Clusters = std::vector<Cluster>;
+	using Clusters = std::vector<SCluster>;
 
 public:
 	CMetalData();
@@ -101,7 +101,7 @@ public:
 //	void DrawCentroids(springai::Drawer* drawer);
 //	void ClearMetalClusters(springai::Drawer* drawer);
 
-	const Metal& operator[](int idx) const;
+	const SMetal& operator[](int idx) const;
 
 private:
 	bool initialized;

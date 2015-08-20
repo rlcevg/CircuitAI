@@ -77,6 +77,7 @@ private:
 // ---- AI Event handler ---- END
 
 private:
+	bool IsModValid();
 	int Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback);
 	int Release(int reason);
 	int Update(int frame);
@@ -186,6 +187,7 @@ private:
 	int skirmishAIId;
 	int teamId;
 	int allyTeamId;
+	SSkirmishAICallback* skirmishCallback;
 	springai::OOAICallback*               callback;
 	std::unique_ptr<springai::Log>        log;
 	std::unique_ptr<springai::Game>       game;

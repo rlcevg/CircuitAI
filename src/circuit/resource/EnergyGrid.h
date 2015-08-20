@@ -24,7 +24,7 @@ class CCircuitAI;
 
 class CEnergyGrid {
 public:
-	typedef boost::property_map<CMetalData::Graph, int CMetalData::Edge::*>::const_type EdgeIndexMap;
+	typedef boost::property_map<CMetalData::Graph, int CMetalData::SEdge::*>::const_type EdgeIndexMap;
 	using link_iterator_t = boost::iterator_property_map<CEnergyLink*, EdgeIndexMap, CEnergyLink, CEnergyLink&>;
 
 	CEnergyGrid(CCircuitAI* circuit);

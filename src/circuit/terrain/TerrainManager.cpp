@@ -55,7 +55,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	offset = int2(0, 4);
 	ignoreMask = STRUCT_BIT(NONE);
 	const char* factories[] = {"factorycloak", "factoryamph", "factoryhover", "factoryjump", "factoryshield", "factoryspider", "factorytank", "factoryveh"};
-	for (auto fac : factories) {
+	for (const char* fac : factories) {
 		cdef = circuit->GetCircuitDef(fac);
 		def = cdef->GetUnitDef();
 		ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
@@ -220,7 +220,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
 
 	const char* striders[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco"};
-	for (auto strider : striders) {
+	for (const char* strider : striders) {
 		cdef = circuit->GetCircuitDef(strider);
 		def = cdef->GetUnitDef();
 		ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);

@@ -215,7 +215,7 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 	clusterTree.clear();
 	CEncloseCircle enclose;
 	for (int i = 0; i < nclusters; i++) {
-		Cluster& c = clusters[i];
+		SCluster& c = clusters[i];
 		c.idxSpots.clear();
 		AIFloat3 centr = ZeroVector;
 		std::vector<AIFloat3> points;
@@ -259,7 +259,7 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 			bool ok;
 			std::tie(edgeId, ok) = boost::add_edge(idx0, idx1, g);
 			if (ok) {
-				Edge& edge = g[edgeId];
+				SEdge& edge = g[edgeId];
 				edge.index = edgeCount / 2;
 				edge.weight = clusters[idx0].geoCentr.distance(clusters[idx1].geoCentr);
 				edge.center = (clusters[idx0].geoCentr + clusters[idx1].geoCentr) * 0.5f;
@@ -386,7 +386,7 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 ////	centroids.clear();
 //}
 
-const CMetalData::Metal& CMetalData::operator[](int idx) const
+const CMetalData::SMetal& CMetalData::operator[](int idx) const
 {
 	return spots[idx];
 }
