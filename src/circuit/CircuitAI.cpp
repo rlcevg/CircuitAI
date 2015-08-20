@@ -56,6 +56,7 @@ CCircuitAI::CCircuitAI(OOAICallback* callback) :
 		initialized(false),
 		eventHandler(&CCircuitAI::HandleGameEvent),
 		lastFrame(-1),
+		skirmishCallback(nullptr),
 		callback(callback),
 		log(std::unique_ptr<Log>(callback->GetLog())),
 		game(std::unique_ptr<Game>(callback->GetGame())),
@@ -324,11 +325,10 @@ bool CCircuitAI::IsModValid()
 		return false;
 	}
 
-	char* tmp = new char [strlen(version) + 1];
-	strcpy(tmp, version);
-
 	const int minModVer[] = {1, 3, 8, 10};
 	int i = 0;
+	char* tmp = new char [strlen(version) + 1];
+	strcpy(tmp, version);
 	const char* tok = strtok(tmp, "v.");
 	while (tok != nullptr) {
 		int ver = atoi(tok);
@@ -337,10 +337,9 @@ bool CCircuitAI::IsModValid()
 			LOG("Zero-K must be 1.3.8.10 or higher!");
 			return false;
 		}
-		if (ver > minModVer[i]) {
+		if ((ver > minModVer[i]) || (++i >= sizeof(minModVer) / sizeof(minModVer[0]))) {
 			break;
 		}
-		++i;
 		tok = strtok(nullptr, ".");
 	}
 	delete tmp;
@@ -469,6 +468,9 @@ int CCircuitAI::Message(int playerId, const char* message)
 {
 	const char cmdPos[] = "~стройсь\0";
 	const char cmdSelfD[] = "~Згинь, нечистая сила!\0";
+#ifdef DEBUG
+	const char cmdBlock[] = "~block\0";
+#endif
 
 	size_t msgLength = strlen(message);
 
@@ -483,6 +485,12 @@ int CCircuitAI::Message(int playerId, const char* message)
 		}
 		utils::free_clear(units);
 	}
+
+#ifdef DEBUG
+	else if ((msgLength == strlen(cmdBlock)) && (strcmp(message, cmdBlock) == 0)) {
+		terrainManager->ToggleVisOverlay();
+	}
+#endif
 
 	return 0;  // signaling: OK
 }
@@ -825,5 +833,39 @@ void CCircuitAI::DestroyGameAttribute()
 		gaCounter--;
 	}
 }
+
+#ifdef DEBUG
+// ---- Missing springai::Debug functions ---- BEGIN
+void CCircuitAI::DebugDrawerUpdateOverlayTexture(int overlayTextureId, const float* texData, int x, int y, int w, int h)
+{
+	SUpdateOverlayTextureDrawerDebugCommand cmd = {overlayTextureId, texData, x, y, w, h};
+	skirmishCallback->Engine_handleCommand(skirmishAIId, COMMAND_TO_ID_ENGINE, -1, COMMAND_DEBUG_DRAWER_OVERLAYTEXTURE_UPDATE, &cmd);
+}
+
+void CCircuitAI::DebugDrawerDelOverlayTexture(int overlayTextureId)
+{
+	SDeleteOverlayTextureDrawerDebugCommand cmd = {overlayTextureId};
+	skirmishCallback->Engine_handleCommand(skirmishAIId, COMMAND_TO_ID_ENGINE, -1, COMMAND_DEBUG_DRAWER_OVERLAYTEXTURE_DELETE, &cmd);
+}
+
+void CCircuitAI::DebugDrawerSetOverlayTexturePos(int overlayTextureId, float x, float y)
+{
+	SSetPositionOverlayTextureDrawerDebugCommand cmd = {overlayTextureId, x, y};
+	skirmishCallback->Engine_handleCommand(skirmishAIId, COMMAND_TO_ID_ENGINE, -1, COMMAND_DEBUG_DRAWER_OVERLAYTEXTURE_SET_POS, &cmd);
+}
+
+void CCircuitAI::DebugDrawerSetOverlayTextureSize(int overlayTextureId, float w, float h)
+{
+	SSetSizeOverlayTextureDrawerDebugCommand cmd = {overlayTextureId, w, h};
+	skirmishCallback->Engine_handleCommand(skirmishAIId, COMMAND_TO_ID_ENGINE, -1, COMMAND_DEBUG_DRAWER_OVERLAYTEXTURE_SET_SIZE, &cmd);
+}
+
+void CCircuitAI::DebugDrawerSetOverlayTextureLabel(int overlayTextureId, const char* texLabel)
+{
+	SSetLabelOverlayTextureDrawerDebugCommand cmd = {overlayTextureId, texLabel};
+	skirmishCallback->Engine_handleCommand(skirmishAIId, COMMAND_TO_ID_ENGINE, -1, COMMAND_DEBUG_DRAWER_OVERLAYTEXTURE_SET_LABEL, &cmd);
+}
+// ---- Missing springai::Debug functions ---- END
+#endif
 
 } // namespace circuit

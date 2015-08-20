@@ -153,6 +153,13 @@ public:
 	const std::vector<springai::AIFloat3>& GetDefencePerimeter() const;
 private:
 	CTerrainData* terrainData;
+
+#ifdef DEBUG
+	int dbgTextureId;
+	float* dbgMap;
+public:
+	void ToggleVisOverlay();
+#endif
 };
 
 } // namespace circuit

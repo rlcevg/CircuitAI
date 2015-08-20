@@ -38,7 +38,7 @@ inline bool SBlockingMap::IsStruct(int x, int z, StructMask structMask)
 
 inline bool SBlockingMap::IsBlocked(int x, int z, int notIgnoreMask)
 {
-	BlockCell& cell = grid[z * columns + x];
+	SBlockCell& cell = grid[z * columns + x];
 	return (cell.blockerMask & notIgnoreMask) || static_cast<int>(cell.structMask);
 }
 
@@ -49,14 +49,14 @@ inline bool SBlockingMap::IsBlockedLow(int xLow, int zLow, int notIgnoreMask)
 
 inline void SBlockingMap::MarkBlocker(int x, int z, StructType structType, int notIgnoreMask)
 {
-	BlockCell& cell = grid[z * columns + x];
+	SBlockCell& cell = grid[z * columns + x];
 	cell.blockerCounts[static_cast<int>(structType)] = MAX_BLOCK_VAL;
 	cell.notIgnoreMask = notIgnoreMask;
 	cell.structMask = GetStructMask(structType);
 	const int structMask = static_cast<int>(cell.structMask);
 	cell.blockerMask |= structMask;
 
-	BlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
+	SBlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
 	if (cellLow.blockerCounts[static_cast<int>(structType)]++ == BLOCK_THRESHOLD) {
 		cellLow.blockerMask |= structMask;
 	}
@@ -64,12 +64,12 @@ inline void SBlockingMap::MarkBlocker(int x, int z, StructType structType, int n
 
 inline void SBlockingMap::AddBlocker(int x, int z, StructType structType)
 {
-	BlockCell& cell = grid[z * columns + x];
+	SBlockCell& cell = grid[z * columns + x];
 	if (cell.blockerCounts[static_cast<int>(structType)]++ == 0) {
 		const int structMask = static_cast<int>(GetStructMask(structType));
 		cell.blockerMask |= structMask;
 
-		BlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
+		SBlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
 		if (++cellLow.blockerCounts[static_cast<int>(structType)] == BLOCK_THRESHOLD) {
 			cellLow.blockerMask |= structMask;
 		}
@@ -78,12 +78,12 @@ inline void SBlockingMap::AddBlocker(int x, int z, StructType structType)
 
 inline void SBlockingMap::RemoveBlocker(int x, int z, StructType structType)
 {
-	BlockCell& cell = grid[z * columns + x];
+	SBlockCell& cell = grid[z * columns + x];
 	if (--cell.blockerCounts[static_cast<int>(structType)] == 0) {
 		const int notStructMask = ~static_cast<int>(GetStructMask(structType));
 		cell.blockerMask &= notStructMask;
 
-		BlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
+		SBlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
 		if (cellLow.blockerCounts[static_cast<int>(structType)]-- == BLOCK_THRESHOLD) {
 			cellLow.blockerMask &= notStructMask;
 		}
@@ -92,9 +92,9 @@ inline void SBlockingMap::RemoveBlocker(int x, int z, StructType structType)
 
 inline void SBlockingMap::AddStruct(int x, int z, StructType structType, int notIgnoreMask)
 {
-	BlockCell& cell = grid[z * columns + x];
+	SBlockCell& cell = grid[z * columns + x];
 	if (cell.blockerCounts[static_cast<int>(structType)] == 0) {
-		BlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
+		SBlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
 		if (++cellLow.blockerCounts[static_cast<int>(structType)] == BLOCK_THRESHOLD) {
 			cellLow.blockerMask |= static_cast<int>(GetStructMask(structType));
 		}
@@ -105,11 +105,11 @@ inline void SBlockingMap::AddStruct(int x, int z, StructType structType, int not
 
 inline void SBlockingMap::RemoveStruct(int x, int z, StructType structType, int notIgnoreMask)
 {
-	BlockCell& cell = grid[z * columns + x];
+	SBlockCell& cell = grid[z * columns + x];
 	cell.notIgnoreMask = 0;
 	cell.structMask = StructMask::NONE;
 	if (cell.blockerCounts[static_cast<int>(structType)] == 0) {
-		BlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
+		SBlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
 		if (cellLow.blockerCounts[static_cast<int>(structType)]-- == BLOCK_THRESHOLD) {
 			cellLow.blockerMask &= ~static_cast<int>(GetStructMask(structType));
 		}

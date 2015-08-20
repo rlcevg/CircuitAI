@@ -211,6 +211,17 @@ private:
 	std::shared_ptr<CEconomyManager> economyManager;
 	std::shared_ptr<CMilitaryManager> militaryManager;
 	std::list<std::shared_ptr<IModule>> modules;
+
+#ifdef DEBUG
+// ---- Missing springai::Debug functions ---- BEGIN
+public:
+	void DebugDrawerUpdateOverlayTexture(int overlayTextureId, const float* texData, int x, int y, int w, int h);
+	void DebugDrawerDelOverlayTexture(int overlayTextureId);
+	void DebugDrawerSetOverlayTexturePos(int overlayTextureId, float x, float y);
+	void DebugDrawerSetOverlayTextureSize(int overlayTextureId, float w, float h);
+	void DebugDrawerSetOverlayTextureLabel(int overlayTextureId, const char* texLabel);
+// ---- Missing springai::Debug functions ---- BEGIN
+#endif
 };
 
 } // namespace circuit

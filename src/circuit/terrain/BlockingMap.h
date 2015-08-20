@@ -39,22 +39,22 @@ struct SBlockingMap {
 
 	static inline StructMask GetStructMask(StructType structType);
 
-	struct BlockCell {
+	struct SBlockCell {
 		int blockerMask;
 		int notIgnoreMask;  // = ~ignoreMask
 		StructMask structMask;
 		unsigned int blockerCounts[static_cast<int>(StructType::TOTAL_COUNT)];
 	};
-	std::vector<BlockCell> grid;  // granularity Map::GetWidth / 2,  Map::GetHeight / 2
+	std::vector<SBlockCell> grid;  // granularity Map::GetWidth / 2,  Map::GetHeight / 2
 	int columns;
 	int rows;
 
-	struct BlockCellLow {
+	struct SBlockCellLow {
 		int blockerMask;
 		unsigned int blockerCounts[static_cast<int>(StructType::TOTAL_COUNT)];
 	};
 	// TODO: Replace with QuadTree
-	std::vector<BlockCellLow> gridLow;  // granularity Map::GetWidth / 16, Map::GetHeight / 16
+	std::vector<SBlockCellLow> gridLow;  // granularity Map::GetWidth / 16, Map::GetHeight / 16
 	int columnsLow;
 	int rowsLow;
 };

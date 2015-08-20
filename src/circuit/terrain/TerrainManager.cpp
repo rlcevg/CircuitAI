@@ -20,14 +20,18 @@
 #include "WeaponDef.h"
 #include "Pathing.h"
 #include "MoveData.h"
+#include "Debug.h"
 
 namespace circuit {
 
 using namespace springai;
 
-CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData) :
-		circuit(circuit),
-		terrainData(terrainData)
+CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
+		: circuit(circuit)
+		, terrainData(terrainData)
+#ifdef DEBUG
+		, dbgTextureId(-1)
+#endif
 {
 	ResetBuildFrame();
 
@@ -232,11 +236,11 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 
 	blockingMap.columns = mapWidth / 2;  // build-step = 2 little green squares
 	blockingMap.rows = mapHeight / 2;
-	SBlockingMap::BlockCell cell = {0};
+	SBlockingMap::SBlockCell cell = {0};
 	blockingMap.grid.resize(blockingMap.columns * blockingMap.rows, cell);
 	blockingMap.columnsLow = mapWidth / (GRID_RATIO_LOW * 2);
 	blockingMap.rowsLow = mapHeight / (GRID_RATIO_LOW * 2);
-	SBlockingMap::BlockCellLow cellLow = {0};
+	SBlockingMap::SBlockCellLow cellLow = {0};
 	blockingMap.gridLow.resize(blockingMap.columnsLow * blockingMap.rowsLow, cellLow);
 
 	const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
@@ -280,6 +284,13 @@ CTerrainManager::~CTerrainManager()
 	for (auto& kv : blockInfos) {
 		delete kv.second;
 	}
+
+#ifdef DEBUG
+	if (dbgTextureId >= 0) {
+		circuit->DebugDrawerDelOverlayTexture(dbgTextureId);
+		delete[] dbgMap;
+	}
+#endif
 }
 
 int CTerrainManager::GetTerrainWidth()
@@ -296,12 +307,30 @@ void CTerrainManager::AddBlocker(CCircuitDef* cdef, const AIFloat3& pos, int fac
 {
 	Structure building = {-1, cdef, pos, facing};
 	MarkBlocker(building, true);
+
+#ifdef DEBUG
+	if (dbgTextureId >= 0) {
+		for (int i = 0; i < blockingMap.gridLow.size(); ++i) {
+			dbgMap[i] = (blockingMap.gridLow[i].blockerMask > 0) ? 1.0f : 0.0f;
+		}
+		circuit->DebugDrawerUpdateOverlayTexture(dbgTextureId, dbgMap, 0, 0, blockingMap.columnsLow, blockingMap.rowsLow);
+	}
+#endif
 }
 
 void CTerrainManager::RemoveBlocker(CCircuitDef* cdef, const AIFloat3& pos, int facing)
 {
 	Structure building = {-1, cdef, pos, facing};
 	MarkBlocker(building, false);
+
+#ifdef DEBUG
+	if (dbgTextureId >= 0) {
+		for (int i = 0; i < blockingMap.gridLow.size(); ++i) {
+			dbgMap[i] = (blockingMap.gridLow[i].blockerMask > 0) ? 1.0f : 0.0f;
+		}
+		circuit->DebugDrawerUpdateOverlayTexture(dbgTextureId, dbgMap, 0, 0, blockingMap.columnsLow, blockingMap.rowsLow);
+	}
+#endif
 }
 
 void CTerrainManager::ResetBuildFrame()
@@ -1430,5 +1459,32 @@ const std::vector<springai::AIFloat3>& CTerrainManager::GetDefencePerimeter() co
 {
 	return terrainData->GetDefencePerimeter();
 }
+
+#ifdef DEBUG
+void CTerrainManager::ToggleVisOverlay()
+{
+	if (dbgTextureId < 0) {
+		// /cheat
+		// /debugdrawai
+		// /team N
+		// /spectator
+		// "~block"
+		dbgMap = new float [blockingMap.gridLow.size()];
+		for (int i = 0; i < blockingMap.gridLow.size(); ++i) {
+			dbgMap[i] = (blockingMap.gridLow[i].blockerMask > 0) ? 1.0f : 0.0f;
+		}
+		Debug* dbg = circuit->GetCallback()->GetDebug();
+		dbgTextureId = dbg->AddOverlayTexture(dbgMap, blockingMap.columnsLow, blockingMap.rowsLow);
+		circuit->DebugDrawerSetOverlayTexturePos(dbgTextureId, 0.50f, 0.25f);
+		circuit->DebugDrawerSetOverlayTextureSize(dbgTextureId, 0.40f, 0.40f);
+		circuit->DebugDrawerSetOverlayTextureLabel(dbgTextureId, "Blocking Map");
+		delete dbg;
+	} else {
+		circuit->DebugDrawerDelOverlayTexture(dbgTextureId);
+		dbgTextureId = -1;
+		delete[] dbgMap;
+	}
+}
+#endif
 
 } // namespace circuit
