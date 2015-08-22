@@ -52,22 +52,25 @@ using namespace springai;
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;
 
-CCircuitAI::CCircuitAI(OOAICallback* callback) :
-		initialized(false),
-		eventHandler(&CCircuitAI::HandleGameEvent),
-		lastFrame(-1),
-		skirmishCallback(nullptr),
-		callback(callback),
-		log(std::unique_ptr<Log>(callback->GetLog())),
-		game(std::unique_ptr<Game>(callback->GetGame())),
-		map(std::unique_ptr<Map>(callback->GetMap())),
-		pathing(std::unique_ptr<Pathing>(callback->GetPathing())),
-		drawer(std::unique_ptr<Drawer>(map->GetDrawer())),
-		skirmishAI(std::unique_ptr<SkirmishAI>(callback->GetSkirmishAI())),
-		skirmishAIId(callback != NULL ? callback->GetSkirmishAIId() : -1),
-		difficulty(Difficulty::NORMAL),
-		allyAware(true),
-		allyTeam(nullptr)
+CCircuitAI::CCircuitAI(OOAICallback* callback)
+		: initialized(false)
+		, eventHandler(&CCircuitAI::HandleGameEvent)
+		, lastFrame(-1)
+		, sAICallback(nullptr)
+		, callback(callback)
+		, log(std::unique_ptr<Log>(callback->GetLog()))
+		, game(std::unique_ptr<Game>(callback->GetGame()))
+		, map(std::unique_ptr<Map>(callback->GetMap()))
+		, pathing(std::unique_ptr<Pathing>(callback->GetPathing()))
+		, drawer(std::unique_ptr<Drawer>(map->GetDrawer()))
+		, skirmishAI(std::unique_ptr<SkirmishAI>(callback->GetSkirmishAI()))
+		, skirmishAIId(callback != NULL ? callback->GetSkirmishAIId() : -1)
+		, difficulty(Difficulty::NORMAL)
+		, allyAware(true)
+		, allyTeam(nullptr)
+#ifdef DEBUG_VIS
+		, debugDrawer(nullptr)
+#endif
 {
 	teamId = skirmishAI->GetTeamId();
 	team = std::unique_ptr<Team>(WrappTeam::GetInstance(skirmishAIId, teamId));
@@ -345,7 +348,7 @@ bool CCircuitAI::IsModValid()
 	delete tmp;
 
 	const int minEngineVer = 100;
-	int ver = atoi(skirmishCallback->Engine_Version_getMajor(skirmishAIId));
+	int ver = atoi(sAICallback->Engine_Version_getMajor(skirmishAIId));
 	if (ver < minEngineVer) {
 		LOG("Engine must be 100.0 or higher!");
 		return false;
@@ -354,14 +357,21 @@ bool CCircuitAI::IsModValid()
 	return true;
 }
 
-int CCircuitAI::Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback)
+int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICallback)
 {
 	this->skirmishAIId = skirmishAIId;
-	// FIXME: Due to chewed API only skirmishCallback have access to Engine
-	this->skirmishCallback = const_cast<SSkirmishAICallback*>(skirmishCallback);
+	// FIXME: Due to chewed API only SSkirmishAICallback have access to Engine
+	this->sAICallback = sAICallback;
 	if (!IsModValid()) {
 		return ERROR_INIT;
 	}
+
+#ifdef DEBUG_VIS
+	debugDrawer = std::unique_ptr<CDebugDrawer>(new CDebugDrawer(this, sAICallback));
+	if (debugDrawer->Init() != 0) {
+		return ERROR_INIT;
+	}
+#endif
 
 	CreateGameAttribute();
 	scheduler = std::make_shared<CScheduler>();
@@ -450,6 +460,10 @@ int CCircuitAI::Release(int reason)
 	defsByName.clear();
 	DestroyGameAttribute();
 
+#ifdef DEBUG_VIS
+	debugDrawer = nullptr;
+#endif
+
 	initialized = false;
 
 	return 0;  // signaling: OK
@@ -461,6 +475,12 @@ int CCircuitAI::Update(int frame)
 
 	scheduler->ProcessTasks(frame);
 
+#ifdef DEBUG_VIS
+	if (frame % FRAMES_PER_SEC == 0) {
+		debugDrawer->Refresh();
+	}
+#endif
+
 	return 0;  // signaling: OK
 }
 
@@ -468,7 +488,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 {
 	const char cmdPos[] = "~стройсь\0";
 	const char cmdSelfD[] = "~Згинь, нечистая сила!\0";
-#ifdef DEBUG
+#ifdef DEBUG_VIS
 	const char cmdBlock[] = "~block\0";
 #endif
 
@@ -486,7 +506,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 		utils::free_clear(units);
 	}
 
-#ifdef DEBUG
+#ifdef DEBUG_VIS
 	else if ((msgLength == strlen(cmdBlock)) && (strcmp(message, cmdBlock) == 0)) {
 		terrainManager->ToggleVisOverlay();
 	}
@@ -833,39 +853,5 @@ void CCircuitAI::DestroyGameAttribute()
 		gaCounter--;
 	}
 }
-
-#ifdef DEBUG
-// ---- Missing springai::Debug functions ---- BEGIN
-void CCircuitAI::DebugDrawerUpdateOverlayTexture(int overlayTextureId, const float* texData, int x, int y, int w, int h)
-{
-	SUpdateOverlayTextureDrawerDebugCommand cmd = {overlayTextureId, texData, x, y, w, h};
-	skirmishCallback->Engine_handleCommand(skirmishAIId, COMMAND_TO_ID_ENGINE, -1, COMMAND_DEBUG_DRAWER_OVERLAYTEXTURE_UPDATE, &cmd);
-}
-
-void CCircuitAI::DebugDrawerDelOverlayTexture(int overlayTextureId)
-{
-	SDeleteOverlayTextureDrawerDebugCommand cmd = {overlayTextureId};
-	skirmishCallback->Engine_handleCommand(skirmishAIId, COMMAND_TO_ID_ENGINE, -1, COMMAND_DEBUG_DRAWER_OVERLAYTEXTURE_DELETE, &cmd);
-}
-
-void CCircuitAI::DebugDrawerSetOverlayTexturePos(int overlayTextureId, float x, float y)
-{
-	SSetPositionOverlayTextureDrawerDebugCommand cmd = {overlayTextureId, x, y};
-	skirmishCallback->Engine_handleCommand(skirmishAIId, COMMAND_TO_ID_ENGINE, -1, COMMAND_DEBUG_DRAWER_OVERLAYTEXTURE_SET_POS, &cmd);
-}
-
-void CCircuitAI::DebugDrawerSetOverlayTextureSize(int overlayTextureId, float w, float h)
-{
-	SSetSizeOverlayTextureDrawerDebugCommand cmd = {overlayTextureId, w, h};
-	skirmishCallback->Engine_handleCommand(skirmishAIId, COMMAND_TO_ID_ENGINE, -1, COMMAND_DEBUG_DRAWER_OVERLAYTEXTURE_SET_SIZE, &cmd);
-}
-
-void CCircuitAI::DebugDrawerSetOverlayTextureLabel(int overlayTextureId, const char* texLabel)
-{
-	SSetLabelOverlayTextureDrawerDebugCommand cmd = {overlayTextureId, texLabel};
-	skirmishCallback->Engine_handleCommand(skirmishAIId, COMMAND_TO_ID_ENGINE, -1, COMMAND_DEBUG_DRAWER_OVERLAYTEXTURE_SET_LABEL, &cmd);
-}
-// ---- Missing springai::Debug functions ---- END
-#endif
 
 } // namespace circuit

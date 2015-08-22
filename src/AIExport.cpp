@@ -13,7 +13,7 @@
 #include <map>
 
 static std::map<int, circuit::CCircuitAI*> myAIs;
-static std::map<int, springai::OOAICallback*>  myAICallbacks;
+static std::map<int, springai::OOAICallback*> myAICallbacks;
 
 const static int ERROR_SHIFT = 100;
 

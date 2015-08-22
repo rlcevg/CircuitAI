@@ -154,8 +154,9 @@ public:
 private:
 	CTerrainData* terrainData;
 
-#ifdef DEBUG
+#ifdef DEBUG_VIS
 	int dbgTextureId;
+	uint32_t sdlWindowId;
 	float* dbgMap;
 public:
 	void ToggleVisOverlay();

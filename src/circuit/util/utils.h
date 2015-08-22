@@ -20,6 +20,9 @@
 //#include <iterator>
 
 // debug
+#ifdef DEBUG_VIS
+	#include "DebugDrawer.h"
+#endif
 #include "Map.h"  // to get Drawer
 #include "Drawer.h"
 #include "Log.h"

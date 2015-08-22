@@ -56,6 +56,7 @@ class CEconomyManager;
 class CMilitaryManager;
 class CScheduler;
 class IModule;
+class CDebugDrawer;
 
 class CCircuitAI {
 public:
@@ -78,7 +79,7 @@ private:
 
 private:
 	bool IsModValid();
-	int Init(int skirmishAIId, const SSkirmishAICallback* skirmishCallback);
+	int Init(int skirmishAIId, const struct SSkirmishAICallback* sAICallback);
 	int Release(int reason);
 	int Update(int frame);
 	int Message(int playerId, const char* message);
@@ -187,7 +188,7 @@ private:
 	int skirmishAIId;
 	int teamId;
 	int allyTeamId;
-	SSkirmishAICallback* skirmishCallback;
+	const struct SSkirmishAICallback* sAICallback;
 	springai::OOAICallback*               callback;
 	std::unique_ptr<springai::Log>        log;
 	std::unique_ptr<springai::Game>       game;
@@ -212,15 +213,11 @@ private:
 	std::shared_ptr<CMilitaryManager> militaryManager;
 	std::list<std::shared_ptr<IModule>> modules;
 
-#ifdef DEBUG
-// ---- Missing springai::Debug functions ---- BEGIN
+#ifdef DEBUG_VIS
+private:
+	std::unique_ptr<CDebugDrawer> debugDrawer;
 public:
-	void DebugDrawerUpdateOverlayTexture(int overlayTextureId, const float* texData, int x, int y, int w, int h);
-	void DebugDrawerDelOverlayTexture(int overlayTextureId);
-	void DebugDrawerSetOverlayTexturePos(int overlayTextureId, float x, float y);
-	void DebugDrawerSetOverlayTextureSize(int overlayTextureId, float w, float h);
-	void DebugDrawerSetOverlayTextureLabel(int overlayTextureId, const char* texLabel);
-// ---- Missing springai::Debug functions ---- BEGIN
+	CDebugDrawer* GetDebugDrawer() const { return debugDrawer.get(); }
 #endif
 };
 

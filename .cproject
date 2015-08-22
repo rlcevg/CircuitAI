@@ -28,6 +28,7 @@
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../Wrappers/Cpp/src&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/circuit&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/lib&quot;"/>
+									<listOptionValue builtIn="false" value="/usr/include/SDL2"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.600958395" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
