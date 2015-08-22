@@ -492,6 +492,10 @@ int CCircuitAI::Message(int playerId, const char* message)
 	const char cmdBlock[] = "~block\0";
 #endif
 
+	if (message[0] != '~') {
+		return 0;
+	}
+
 	size_t msgLength = strlen(message);
 
 	if ((msgLength == strlen(cmdPos)) && (strcmp(message, cmdPos) == 0)) {

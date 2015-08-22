@@ -14,18 +14,20 @@
 #include "OOAICallback.h"
 #include "Debug.h"
 
-#include <SDL_opengl.h>
-
 namespace circuit {
 
 using namespace springai;
+
+std::map<Uint32, CDebugDrawer::SWindow> CDebugDrawer::allWindows;
+std::mutex CDebugDrawer::wndMutex;
+unsigned int CDebugDrawer::ddCounter = 0;
+std::set<Uint32> CDebugDrawer::needRefresh;
 
 CDebugDrawer::CDebugDrawer(CCircuitAI* circuit, const struct SSkirmishAICallback* sAICallback)
 		: circuit(circuit)
 		, sAICallback(sAICallback)
 		, debug(circuit->GetCallback()->GetDebug())
 		, initialized(false)
-		, needRefresh(false)
 {
 }
 
@@ -77,14 +79,16 @@ void CDebugDrawer::SetOverlayTextureLabel(int overlayTextureId, const char* texL
 
 int CDebugDrawer::Init()
 {
-	if (SDL_WasInit(SDL_INIT_VIDEO) == 0) {
-//		if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-			circuit->LOG("SDL_Init Error: %s", SDL_GetError());
-			return 1;
-//		}
+	if (ddCounter++ == 0) {
+		if (SDL_WasInit(SDL_INIT_VIDEO) == 0) {
+//			if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+				circuit->LOG("SDL_Init Error: %s", SDL_GetError());
+				return 1;
+//			}
+		}
+		// NOTE: Spring doesn't handle multiple windows
+		SDL_SetEventFilter(CDebugDrawer::WindowEventFilter, this);
 	}
-	// NOTE: Spring doesn't handle multiple windows
-	SDL_SetEventFilter(CDebugDrawer::WindowEventFilter, this);
 
 	initialized = true;
 	return 0;
@@ -92,19 +96,23 @@ int CDebugDrawer::Init()
 
 void CDebugDrawer::Release()
 {
-	SDL_SetEventFilter(nullptr, nullptr);
+	if (--ddCounter == 0) {
+		SDL_SetEventFilter(nullptr, nullptr);
+	}
 	SDL_Window* prevWin = SDL_GL_GetCurrentWindow();
 	SDL_GLContext prevContext = SDL_GL_GetCurrentContext();
 
+	wndMutex.lock();
 	for (auto& kv : windows) {
-		SWindow& wnd = kv.second;
+		SWindow& wnd = *kv.second;
 		SDL_GL_MakeCurrent(wnd.window, wnd.glcontext);
 
 		SDL_DestroyTexture(wnd.texture);
 		SDL_DestroyRenderer(wnd.renderer);
 		SDL_DestroyWindow(wnd.window);
+
+		allWindows.erase(kv.first);
 	}
-	wndMutex.lock();
 	windows.clear();
 	wndMutex.unlock();
 
@@ -119,7 +127,7 @@ Uint32 CDebugDrawer::AddSDLWindow(int width, int height, const char* label)
 	SDL_GLContext prevContext = SDL_GL_GetCurrentContext();
 
 	SWindow wnd;
-	wnd.window = SDL_CreateWindow(label, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+	wnd.window = SDL_CreateWindow(label, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 320, 300, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 	if (wnd.window == nullptr) {
 		circuit->LOG("SDL_CreateWindow Error: %s", SDL_GetError());
 		SDL_GL_MakeCurrent(prevWin, prevContext);
@@ -142,7 +150,9 @@ Uint32 CDebugDrawer::AddSDLWindow(int width, int height, const char* label)
 		return -1;
 	}
 	Uint32 windowId = SDL_GetWindowID(wnd.window);
-	windows[windowId] = wnd;
+	wndMutex.lock();
+	windows[windowId] = &allWindows.emplace(windowId, wnd).first->second;
+	wndMutex.unlock();
 
 	SDL_GL_MakeCurrent(prevWin, prevContext);
 	return windowId;
@@ -155,7 +165,7 @@ void CDebugDrawer::DelSDLWindow(Uint32 windowId)
 		return;
 	}
 
-	SWindow& wnd = it->second;
+	SWindow& wnd = *it->second;
 	SDL_Window* prevWin = SDL_GL_GetCurrentWindow();
 	SDL_GLContext prevContext = SDL_GL_GetCurrentContext();
 	SDL_GL_MakeCurrent(wnd.window, wnd.glcontext);
@@ -165,6 +175,7 @@ void CDebugDrawer::DelSDLWindow(Uint32 windowId)
 	SDL_DestroyWindow(wnd.window);
 	wndMutex.lock();
 	windows.erase(it);
+	allWindows.erase(windowId);
 	wndMutex.unlock();
 
 	SDL_GL_MakeCurrent(prevWin, prevContext);
@@ -177,7 +188,7 @@ void CDebugDrawer::DrawMap(Uint32 windowId, const float* texData, SDL_Color colo
 		return;
 	}
 
-	SWindow& wnd = it->second;
+	SWindow& wnd = *it->second;
 	SDL_Window* prevWin = SDL_GL_GetCurrentWindow();
 	SDL_GLContext prevContext = SDL_GL_GetCurrentContext();
 	SDL_GL_MakeCurrent(wnd.window, wnd.glcontext);
@@ -202,33 +213,42 @@ void CDebugDrawer::DrawMap(Uint32 windowId, const float* texData, SDL_Color colo
 bool CDebugDrawer::HasWindow(Uint32 windowId)
 {
 	std::lock_guard<std::mutex> guard(wndMutex);
-	return windows.find(windowId) != windows.end();
+	return allWindows.find(windowId) != allWindows.end();
+}
+
+void CDebugDrawer::NeedRefresh(Uint32 windowId)
+{
+	std::lock_guard<std::mutex> guard(wndMutex);
+	needRefresh.insert(windowId);
 }
 
 void CDebugDrawer::Refresh()
 {
-	if (!needRefresh) {
+	if (needRefresh.empty()) {
 		return;
 	}
 	SDL_Window* prevWin = SDL_GL_GetCurrentWindow();
 	SDL_GLContext prevContext = SDL_GL_GetCurrentContext();
-	for (auto& kv : windows) {
-		SWindow& wnd = kv.second;
+	wndMutex.lock();
+	for (Uint32 windowId : needRefresh) {
+		auto it = allWindows.find(windowId);
+		if (it == allWindows.end()) {
+			continue;
+		}
+		SWindow& wnd = it->second;
 		SDL_GL_MakeCurrent(wnd.window, wnd.glcontext);
 
-		int ww, wh;
-		SDL_GetWindowSize(wnd.window, &ww, &wh);
-		glViewport(0, 0, ww, wh);
-//		glMatrixMode(GL_PROJECTION | GL_MODELVIEW);
-//		glLoadIdentity();
-//		glOrtho(0, ww, wh, 0, 1, -1);
+		SDL_Rect rect = {0};
+		SDL_GetWindowSize(wnd.window, &rect.w, &rect.h);
+		SDL_RenderSetViewport(wnd.renderer, &rect);
 
 		SDL_RenderClear(wnd.renderer);
 		SDL_RenderCopy(wnd.renderer, wnd.texture, nullptr, nullptr);
 		SDL_RenderPresent(wnd.renderer);
 	}
 	SDL_GL_MakeCurrent(prevWin, prevContext);
-	needRefresh = false;
+	needRefresh.clear();
+	wndMutex.unlock();
 }
 
 int CDebugDrawer::WindowEventFilter(void* userdata, SDL_Event* event)
@@ -240,7 +260,7 @@ int CDebugDrawer::WindowEventFilter(void* userdata, SDL_Event* event)
 			if (self->HasWindow(event->window.windowID)) {
 				// case SDL_WINDOWEVENT_RESIZED:
 				if (event->window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-					self->NeedRefresh();
+					self->NeedRefresh(event->window.windowID);
 				}
 				return 0;
 			} else {

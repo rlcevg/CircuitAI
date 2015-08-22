@@ -11,6 +11,7 @@
 #include <SDL.h>
 #include <map>
 #include <mutex>
+#include <set>
 
 class SSkirmishAICallback;
 namespace springai {
@@ -42,7 +43,7 @@ public:
 	void DrawMap(Uint32 windowId, const float* texData, SDL_Color colorMod = {255, 0, 0, 0});
 
 	bool HasWindow(Uint32 windowId);
-	void NeedRefresh() { needRefresh = true; }
+	void NeedRefresh(Uint32 windowId);
 	void Refresh();
 	static int WindowEventFilter(void* userdata, SDL_Event* event);
 
@@ -58,9 +59,11 @@ private:
 		SDL_Renderer* renderer;
 		SDL_Texture* texture;
 	};
-	std::map<Uint32, SWindow> windows;
-	std::mutex wndMutex;
-	bool needRefresh;
+	std::map<Uint32, SWindow*> windows;
+	static std::map<Uint32, SWindow> allWindows;
+	static std::mutex wndMutex;
+	static unsigned int ddCounter;
+	static std::set<Uint32> needRefresh;
 };
 
 } // namespace circuit
