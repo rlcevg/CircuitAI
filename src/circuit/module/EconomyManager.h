@@ -105,8 +105,9 @@ private:
 	float metalIncome;
 	float energyIncome;
 
-	springai::TeamRulesParam* metalParam;
-	springai::TeamRulesParam* energyParam;
+	// Economy metal+energy params
+	springai::TeamRulesParam* empParam, *eepParam;
+	springai::TeamRulesParam* odeiParam, *odecParam/*, *odeoParam, *odteParam, *odaParam*/;
 
 	int emptyFrame;
 	int fullFrame;

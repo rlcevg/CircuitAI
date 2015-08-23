@@ -512,7 +512,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 
 #ifdef DEBUG_VIS
 	else if ((msgLength == strlen(cmdBlock)) && (strcmp(message, cmdBlock) == 0)) {
-		terrainManager->ToggleVisOverlay();
+		terrainManager->ToggleVis();
 	}
 #endif
 
@@ -549,7 +549,7 @@ int CCircuitAI::UnitIdle(CCircuitUnit* unit)
 int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();
-	if (unit->IsMoveFailed()) {
+	if (unit->IsMoveFailed(lastFrame)) {
 		u->Stop();
 		UnitDestroyed(unit, nullptr);
 		UnregisterTeamUnit(unit);

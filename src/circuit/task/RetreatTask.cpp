@@ -96,11 +96,12 @@ void CRetreatTask::Close(bool done)
 void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	AIFloat3 pos = circuit->GetFactoryManager()->GetClosestHaven(unit);
+	CFactoryManager* factoryManager = circuit->GetFactoryManager();
+	AIFloat3 pos = factoryManager->GetClosestHaven(unit);
 	if (pos == -RgtVector) {
 		pos = circuit->GetSetupManager()->GetStartPos();
 	}
-	const float maxDist = 200.0f;  // TODO: Get havens buildDistance from factoryManager
+	const float maxDist = factoryManager->GetAssistDef()->GetBuildDistance();
 	Unit* u = unit->GetUnit();
 	if (u->GetPos().SqDistance2D(pos) > maxDist * maxDist) {
 		// TODO: push MoveAction into unit? to avoid enemy fire
@@ -113,7 +114,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 		AIFloat3 pos = u->GetPos();
-		const float size = SQUARE_SIZE * 10;
+		const float size = SQUARE_SIZE * 20;
 		CTerrainManager* terrain = circuit->GetTerrainManager();
 		pos.x += (pos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
 		pos.z += (pos.z > terrain->GetTerrainHeight() / 2) ? -size : size;

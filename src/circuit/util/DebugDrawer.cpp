@@ -5,9 +5,9 @@
  *	  Author: rlcevg
  */
 
-#include "DebugDrawer.h"
+#include "util/DebugDrawer.h"
+#include "util/utils.h"
 #include "CircuitAI.h"
-#include "utils.h"
 
 #include "SSkirmishAICallback.h"
 #include "AISCommands.h"

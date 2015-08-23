@@ -35,19 +35,24 @@ using namespace springai;
 #define INCOME_SAMPLES	5
 #define HIDDEN_ENERGY	10000.0f
 
-CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
-		IModule(circuit),
-		indexRes(0),
-		metalIncome(.0f),
-		energyIncome(.0f),
-		metalParam(nullptr),
-		energyParam(nullptr),
-		emptyFrame(-1),
-		fullFrame(-1),
-		stallingFrame(-1),
-		isMetalEmpty(false),
-		isMetalFull(false),
-		isEnergyStalling(false)
+CEconomyManager::CEconomyManager(CCircuitAI* circuit)
+		: IModule(circuit)
+		, indexRes(0)
+		, metalIncome(.0f)
+		, energyIncome(.0f)
+		, empParam(nullptr)
+		, eepParam(nullptr)
+		, odeiParam(nullptr)
+		, odecParam(nullptr)
+//		, odeoParam(nullptr)
+//		, odteParam(nullptr)
+//		, odaParam(nullptr)
+		, emptyFrame(-1)
+		, fullFrame(-1)
+		, stallingFrame(-1)
+		, isMetalEmpty(false)
+		, isMetalFull(false)
+		, isEnergyStalling(false)
 {
 	metalRes = circuit->GetCallback()->GetResourceByName("Metal");
 	energyRes = circuit->GetCallback()->GetResourceByName("Energy");
@@ -152,7 +157,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit) :
 CEconomyManager::~CEconomyManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	delete metalRes, energyRes, eco, metalParam, energyParam;
+	delete metalRes, energyRes, eco, empParam, eepParam;
+	delete odeiParam, odecParam/*, odeoParam, odteParam, odaParam*/;
 	delete engyPol;
 }
 
@@ -373,7 +379,16 @@ void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 
 void CEconomyManager::UpdateResourceIncome()
 {
-	energyIncomes[indexRes] = eco->GetIncome(energyRes);
+	if (odeiParam == nullptr) {
+		odeiParam = circuit->GetTeam()->GetTeamRulesParamByName("OD_energyIncome");
+	}
+	float oddEnergyIncome = (odeiParam != nullptr) ? odeiParam->GetValueFloat() : .0f;
+	if (odecParam == nullptr) {
+		odecParam = circuit->GetTeam()->GetTeamRulesParamByName("OD_energyChange");
+	}
+	float oddEnergyChange = (odecParam != nullptr) ? odecParam->GetValueFloat() : .0f;
+
+	energyIncomes[indexRes] = eco->GetIncome(energyRes) + oddEnergyIncome - std::max(.0f, oddEnergyChange);
 	metalIncomes[indexRes] = eco->GetIncome(metalRes) + eco->GetReceived(metalRes);
 	++indexRes %= INCOME_SAMPLES;
 
@@ -413,17 +428,35 @@ bool CEconomyManager::IsEnergyStalling()
 	if (stallingFrame + TEAM_SLOWUPDATE_RATE < circuit->GetLastFrame()) {
 		stallingFrame = circuit->GetLastFrame();
 
-		if (metalParam == nullptr) {
-			metalParam = circuit->GetTeam()->GetTeamRulesParamByName("extraMetalPull");
+		if (empParam == nullptr) {
+			empParam = circuit->GetTeam()->GetTeamRulesParamByName("extraMetalPull");
 		}
-		float metalPull = eco->GetPull(metalRes) + (metalParam != nullptr ? metalParam->GetValueFloat() : .0f);
+		float metalPull = eco->GetPull(metalRes) + (empParam != nullptr ? empParam->GetValueFloat() : .0f);
 
-		if (energyParam == nullptr) {
-			energyParam = circuit->GetTeam()->GetTeamRulesParamByName("extraEnergyPull");
+		if (eepParam == nullptr) {
+			eepParam = circuit->GetTeam()->GetTeamRulesParamByName("extraEnergyPull");
 		}
-		float energyPull = eco->GetPull(energyRes) + (energyParam != nullptr ? energyParam->GetValueFloat() : .0f);
+		float extraEnergyPull = (eepParam != nullptr) ? eepParam->GetValueFloat() : .0f;
+//		if (odeoParam == nullptr) {
+//			odeoParam = circuit->GetTeam()->GetTeamRulesParamByName("OD_energyOverdrive");
+//		}
+//		float oddEnergyOverdrive = (odeoParam != nullptr) ? odeoParam->GetValueFloat() : .0f;
+//		if (odecParam == nullptr) {
+//			odecParam = circuit->GetTeam()->GetTeamRulesParamByName("OD_energyChange");
+//		}
+//		float oddEnergyChange = (odecParam != nullptr) ? odecParam->GetValueFloat() : .0f;
+//		float extraChange = std::min(.0f, oddEnergyChange) - std::min(.0f, oddEnergyOverdrive);
+//		if (odteParam == nullptr) {
+//			odteParam = circuit->GetTeam()->GetTeamRulesParamByName("OD_team_energyWaste");
+//		}
+//		float teamEnergyWaste = (odteParam != nullptr) ? odteParam->GetValueFloat() : .0f;
+//		if (odaParam == nullptr) {
+//			odaParam = circuit->GetTeam()->GetTeamRulesParamByName("OD_allies");
+//		}
+//		float numAllies = (odaParam != nullptr) ? odaParam->GetValueFloat() : 1.0f;
+		float energyPull = eco->GetPull(energyRes) + extraEnergyPull/* + extraChange - teamEnergyWaste / numAllies*/;
 
-		isEnergyStalling = (GetAvgMetalIncome() - metalPull) * 0.9f > GetAvgEnergyIncome() - energyPull;
+		isEnergyStalling = std::min(GetAvgMetalIncome() - metalPull, .0f) * 0.9f > std::min(GetAvgEnergyIncome() - energyPull, .0f);
 	}
 	return isEnergyStalling;
 }
@@ -539,9 +572,6 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	float metalIncome = GetAvgMetalIncome();
 	float energyIncome = GetAvgEnergyIncome();
 	bool isEnergyStalling = IsEnergyStalling();
-	if (!(isEnergyStalling || (eco->GetUsage(energyRes) > energyIncome * 0.9f))) {
-		return nullptr;
-	}
 
 	// Select proper energy UnitDef to build
 	CCircuitDef* bestDef = nullptr;
@@ -557,7 +587,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		}
 
 		if (engy.cdef->GetCount() < engy.limit) {
-			int maxCount = buildPower / engy.cost * 32 + 1;
+			int maxCount = buildPower / engy.cost * 16 + 1;
 			if (taskSize < maxCount) {
 				cost = engy.cost;
 				bestDef = engy.cdef;
@@ -569,10 +599,8 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 					break;
 				}
 			}
-		} else {
-			if (!isEnergyStalling) {
-				bestDef = nullptr;
-			}
+		} else if (!isEnergyStalling) {
+			bestDef = nullptr;
 			break;
 		}
 	}

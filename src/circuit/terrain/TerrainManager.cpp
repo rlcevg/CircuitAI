@@ -310,13 +310,7 @@ void CTerrainManager::AddBlocker(CCircuitDef* cdef, const AIFloat3& pos, int fac
 	MarkBlocker(building, true);
 
 #ifdef DEBUG_VIS
-	if (dbgTextureId >= 0) {
-		for (int i = 0; i < blockingMap.gridLow.size(); ++i) {
-			dbgMap[i] = (blockingMap.gridLow[i].blockerMask > 0) ? 1.0f : 0.0f;
-		}
-		circuit->GetDebugDrawer()->UpdateOverlayTexture(dbgTextureId, dbgMap, 0, 0, blockingMap.columnsLow, blockingMap.rowsLow);
-		circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {220, 220, 0, 0});
-	}
+	UpdateVis();
 #endif
 }
 
@@ -326,13 +320,7 @@ void CTerrainManager::RemoveBlocker(CCircuitDef* cdef, const AIFloat3& pos, int 
 	MarkBlocker(building, false);
 
 #ifdef DEBUG_VIS
-	if (dbgTextureId >= 0) {
-		for (int i = 0; i < blockingMap.gridLow.size(); ++i) {
-			dbgMap[i] = (blockingMap.gridLow[i].blockerMask > 0) ? 1.0f : 0.0f;
-		}
-		circuit->GetDebugDrawer()->UpdateOverlayTexture(dbgTextureId, dbgMap, 0, 0, blockingMap.columnsLow, blockingMap.rowsLow);
-		circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {220, 220, 0, 0});
-	}
+	UpdateVis();
 #endif
 }
 
@@ -1464,7 +1452,18 @@ const std::vector<springai::AIFloat3>& CTerrainManager::GetDefencePerimeter() co
 }
 
 #ifdef DEBUG_VIS
-void CTerrainManager::ToggleVisOverlay()
+void CTerrainManager::UpdateVis()
+{
+	if (dbgTextureId >= 0) {
+		for (int i = 0; i < blockingMap.gridLow.size(); ++i) {
+			dbgMap[i] = (blockingMap.gridLow[i].blockerMask > 0) ? 1.0f : 0.0f;
+		}
+		circuit->GetDebugDrawer()->UpdateOverlayTexture(dbgTextureId, dbgMap, 0, 0, blockingMap.columnsLow, blockingMap.rowsLow);
+		circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {220, 220, 0, 0});
+	}
+}
+
+void CTerrainManager::ToggleVis()
 {
 	if (dbgTextureId < 0) {
 		// /cheat

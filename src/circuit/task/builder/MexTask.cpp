@@ -84,10 +84,6 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 void CBMexTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CEconomyManager* economyManager = circuit->GetEconomyManager();
-
-	economyManager->UpdateEnergyTasks(buildPos, units.empty() ? nullptr : *units.begin());
-
 	// Add defence
 	// TODO: Move into MilitaryManager
 	int index = circuit->GetMetalManager()->FindNearestCluster(buildPos);
@@ -96,11 +92,13 @@ void CBMexTask::Finish()
 	}
 	CCircuitDef* defDef;
 	bool valid = false;
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	Resource* metalRes = economyManager->GetMetalRes();
 	float maxCost = MIN_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
 	const char* defenders[] = {"corhlt", "corllt"};
 	for (auto name : defenders) {
 		defDef = circuit->GetCircuitDef(name);
-		if (defDef->GetUnitDef()->GetCost(economyManager->GetMetalRes()) < maxCost) {
+		if (defDef->GetUnitDef()->GetCost(metalRes) < maxCost) {
 			valid = true;
 			break;
 		}

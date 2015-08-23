@@ -53,7 +53,7 @@ public:
 	void SetArea(STerrainMapArea* area) { this->area = area; }
 	STerrainMapArea* GetArea() const { return area; }
 
-	bool IsMoveFailed() { return ++moveFails > 10; }
+	bool IsMoveFailed(int frame);
 
 	springai::Weapon* GetDGun() const { return dgun; }
 //	bool IsDisarmed();
@@ -71,6 +71,7 @@ private:
 	STerrainMapArea* area;  // = nullptr if a unit flies
 
 	int moveFails;
+	int failFrame;
 
 	springai::Weapon* dgun;
 //	springai::UnitRulesParam* disarmParam;

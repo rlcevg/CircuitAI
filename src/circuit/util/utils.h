@@ -39,6 +39,7 @@ namespace utils {
 #define FRAMES_PER_SEC		GAME_SPEED
 #define WATCHDOG_COUNT		2
 #define PYLON_RANGE			500.0f
+#define TASK_RETRIES		10
 
 // z++
 #define UNIT_FACING_SOUTH	0
