@@ -91,33 +91,47 @@ void CBMexTask::Finish()
 		return;
 	}
 	CCircuitDef* defDef;
-	bool valid = false;
+	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	Resource* metalRes = economyManager->GetMetalRes();
 	float maxCost = MIN_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
-	const char* defenders[] = {"corhlt", "corllt"};
-	for (auto name : defenders) {
-		defDef = circuit->GetCircuitDef(name);
-		if (defDef->GetUnitDef()->GetCost(metalRes) < maxCost) {
-			valid = true;
-			break;
-		}
-	}
-	if (valid) {
-		CMilitaryManager::SDefPoint* closestPoint = nullptr;
-		float minDist = std::numeric_limits<float>::max();
-		for (auto& defPoint : circuit->GetMilitaryManager()->GetDefPoints(index)) {
-			if (defPoint.isOpen) {
-				float dist = defPoint.position.SqDistance2D(buildPos);
-				if ((closestPoint == nullptr) || (dist < minDist)) {
-					closestPoint = &defPoint;
-					minDist = dist;
-				}
+	CMilitaryManager::SDefPoint* closestPoint = nullptr;
+	float minDist = std::numeric_limits<float>::max();
+	for (CMilitaryManager::SDefPoint& defPoint : militaryManager->GetDefPoints(index)) {
+		if (defPoint.cost < maxCost) {
+			float dist = defPoint.position.SqDistance2D(buildPos);
+			if ((closestPoint == nullptr) || (dist < minDist)) {
+				closestPoint = &defPoint;
+				minDist = dist;
 			}
 		}
-		if (closestPoint != nullptr) {
-			closestPoint->isOpen = false;
-			circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, closestPoint->position, IBuilderTask::BuildType::DEFENCE);
+	}
+	if (closestPoint == nullptr) {
+		return;
+	}
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	Resource* metalRes = economyManager->GetMetalRes();
+	float totalCost = .0f;
+	IBuilderTask* parentTask = nullptr;
+	const char* defenders[] = {"corllt", "corhlt", "corrazor", "armnanotc", "cordoom"/*, "armartic", "corjamt", "armanni", "corbhmth"*/};
+	for (const char* name : defenders) {
+		defDef = circuit->GetCircuitDef(name);
+		float defCost = defDef->GetUnitDef()->GetCost(metalRes);
+		if (totalCost < closestPoint->cost) {
+			totalCost += defCost;
+			continue;
+		}
+		totalCost += defCost;
+		if (totalCost < maxCost) {
+			closestPoint->cost += defCost;
+			IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, closestPoint->position,
+															 IBuilderTask::BuildType::DEFENCE, true, (parentTask == nullptr));
+			if (parentTask != nullptr) {
+				parentTask->SetNextTask(task);
+			}
+			parentTask = task;
+		} else {
+			// TODO: Auto-sort defenders by cost OR remove break?
+			break;
 		}
 	}
 }
@@ -144,7 +158,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 		// TODO: Use internal CCircuitAI::GetEnemyUnits?
 		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(buildPos, SQUARE_SIZE));
 		bool blocked = false;
-		for (auto enemy : enemies) {
+		for (Unit* enemy : enemies) {
 			if (enemy == nullptr) {
 				continue;
 			}
@@ -162,7 +176,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 			IBuilderTask* task = nullptr;
 			float qdist = 200.0f * 200.0f;  // 200 elmos
 			// TODO: Push tasks into bgi::rtree
-			for (auto t : builderManager->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
+			for (IBuilderTask* t : builderManager->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
 				if (pos.SqDistance2D(t->GetTaskPos()) < qdist) {
 					task = t;
 					break;

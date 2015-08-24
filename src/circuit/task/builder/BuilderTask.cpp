@@ -27,20 +27,21 @@ using namespace springai;
 
 IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 		CCircuitDef* buildDef, const AIFloat3& position,
-		BuildType type, float cost, bool isShake, int timeout) :
-				IUnitTask(mgr, priority, Type::BUILDER),
-				buildDef(buildDef),
-				position(position),
-				isShake(isShake),
-				buildType(type),
-				cost(cost),
-				timeout(timeout),
-				target(nullptr),
-				buildPos(-RgtVector),
-				buildPower(.0f),
-				facing(UNIT_COMMAND_BUILD_NO_FACING),
-				savedIncome(manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome()),
-				buildFails(0)
+		BuildType type, float cost, bool isShake, int timeout)
+				: IUnitTask(mgr, priority, Type::BUILDER)
+				, buildDef(buildDef)
+				, position(position)
+				, isShake(isShake)
+				, buildType(type)
+				, cost(cost)
+				, timeout(timeout)
+				, target(nullptr)
+				, buildPos(-RgtVector)
+				, buildPower(.0f)
+				, facing(UNIT_COMMAND_BUILD_NO_FACING)
+				, nextTask(nullptr)
+				, savedIncome(manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome())
+				, buildFails(0)
 {
 }
 
@@ -175,12 +176,26 @@ void IBuilderTask::Finish()
 //	if ((cost > 1000.0f) && (buildDef != nullptr) && (buildDef->GetUnitDef()->GetMaxWeaponRange() <= .0f)) {
 //		manager->GetCircuit()->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
 //	}
+
+	// Advance queue
+	if (nextTask != nullptr) {
+		manager->GetCircuit()->GetBuilderManager()->ActivateTask(nextTask);
+		nextTask = nullptr;
+	}
 }
 
 void IBuilderTask::Cancel()
 {
 	if ((target == nullptr) && (buildPos != -RgtVector)) {
 		manager->GetCircuit()->GetTerrainManager()->RemoveBlocker(buildDef, buildPos, facing);
+	}
+
+	// Destroy queue
+	IBuilderTask* next = nextTask;
+	while (next != nullptr) {
+		IBuilderTask* nextNext = next->nextTask;
+		delete next;
+		next = nextNext;
 	}
 }
 

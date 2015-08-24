@@ -43,24 +43,28 @@ public:
 	float GetBuilderPower() const { return builderPower; }
 	bool CanEnqueueTask() const { return builderTasksCount < workers.size() * 2; }
 	const std::set<IBuilderTask*>& GetTasks(IBuilderTask::BuildType type);
+	void ActivateTask(IBuilderTask* task);
 	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,
 							  CCircuitDef* buildDef,
 							  const springai::AIFloat3& position,
 							  IBuilderTask::BuildType type,
 							  float cost,
-							  bool isShake = true,
+							  bool isShake = true,  // Should position be randomly shifted?
+							  bool isActive = true,  // Should task go to general queue or remain detached?
 							  int timeout = 0);
 	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,
 							  CCircuitDef* buildDef,
 							  const springai::AIFloat3& position,
 							  IBuilderTask::BuildType type,
 							  bool isShake = true,
+							  bool isActive = true,
 							  int timeout = 0);
 	IBuilderTask* EnqueuePylon(IBuilderTask::Priority priority,
 							   CCircuitDef* buildDef,
 							   const springai::AIFloat3& position,
 							   CEnergyLink* link,
 							   float cost,
+							   bool isActive = true,
 							   int timeout = 0);
 	IBuilderTask* EnqueuePatrol(IBuilderTask::Priority priority,
 								const springai::AIFloat3& position,
@@ -86,6 +90,7 @@ private:
 						  IBuilderTask::BuildType type,
 						  float cost,
 						  bool isShake,
+						  bool isActive,
 						  int timeout);
 	void DequeueTask(IBuilderTask* task, bool done = false);
 

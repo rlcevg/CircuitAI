@@ -207,7 +207,7 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(const AIFloat3& position, CCirc
 	CCircuitDef* buildDef = circuit->GetCircuitDef("armwin");
 	if ((metalIncome < 50) && (buildDef->GetCount() < 10) && buildDef->IsAvailable()) {
 		task = builderManager->EnqueueTask(IBuilderTask::Priority::LOW, buildDef, position, IBuilderTask::BuildType::ENERGY);
-	} else if (metalIncome < 200) {
+	} else if (metalIncome < 100) {
 		task = builderManager->EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
 	} else {
 		const std::set<IBuilderTask*>& tasks = builderManager->GetTasks(IBuilderTask::BuildType::BIG_GUN);
@@ -283,7 +283,7 @@ IBuilderTask* CEconomyManager::CreateAssistTask(CCircuitUnit* unit)
 		if (u->IsBeingBuilt()) {
 			if ((pos.SqDistance2D(u->GetPos()) < sqRadius)) {
 				CCircuitDef* cdef = candUnit->GetCircuitDef();
-				if (isBuildMobile && ((cdef->GetUnitDef()->GetCost(metalRes) < maxCost) || IsMetalFull() || (*cdef == *terraDef))) {
+				if (isBuildMobile && ((cdef->GetUnitDef()->GetCost(metalRes) < maxCost) || !IsMetalEmpty() || (*cdef == *terraDef))) {
 					isBuildMobile = candUnit->GetUnit()->GetMaxSpeed() > 0;
 					buildTarget = candUnit;
 				}
@@ -407,7 +407,7 @@ void CEconomyManager::UpdateResourceIncome()
 
 bool CEconomyManager::IsMetalEmpty()
 {
-	if (emptyFrame /*+ TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
+	if (emptyFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
 		emptyFrame = circuit->GetLastFrame();
 		isMetalEmpty = eco->GetCurrent(metalRes) < eco->GetStorage(metalRes) * 0.2f;
 	}
@@ -416,7 +416,7 @@ bool CEconomyManager::IsMetalEmpty()
 
 bool CEconomyManager::IsMetalFull()
 {
-	if (fullFrame /*+ TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
+	if (fullFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
 		fullFrame = circuit->GetLastFrame();
 		isMetalFull = eco->GetCurrent(metalRes) > eco->GetStorage(metalRes) * 0.8f;
 	}

@@ -284,15 +284,22 @@ const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType
 	return builderTasks[static_cast<int>(type)];
 }
 
+void CBuilderManager::ActivateTask(IBuilderTask* task)
+{
+	builderTasks[static_cast<int>(task->GetBuildType())].insert(task);
+	builderTasksCount++;
+}
+
 IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 										   CCircuitDef* buildDef,
 										   const AIFloat3& position,
 										   IBuilderTask::BuildType type,
 										   float cost,
 										   bool isShake,
+										   bool isActive,
 										   int timeout)
 {
-	return AddTask(priority, buildDef, position, type, cost, isShake, timeout);
+	return AddTask(priority, buildDef, position, type, cost, isShake, isActive, timeout);
 }
 
 IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
@@ -300,10 +307,11 @@ IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 										   const AIFloat3& position,
 										   IBuilderTask::BuildType type,
 										   bool isShake,
+										   bool isActive,
 										   int timeout)
 {
 	float cost = buildDef->GetUnitDef()->GetCost(circuit->GetEconomyManager()->GetMetalRes());
-	return AddTask(priority, buildDef, position, type, cost, isShake, timeout);
+	return AddTask(priority, buildDef, position, type, cost, isShake, isActive, timeout);
 }
 
 IBuilderTask* CBuilderManager::EnqueuePylon(IBuilderTask::Priority priority,
@@ -311,11 +319,14 @@ IBuilderTask* CBuilderManager::EnqueuePylon(IBuilderTask::Priority priority,
 											const AIFloat3& position,
 											CEnergyLink* link,
 											float cost,
+											bool isActive,
 											int timeout)
 {
 	IBuilderTask* task = new CBPylonTask(this, priority, buildDef, position, link, cost, timeout);
-	builderTasks[static_cast<int>(IBuilderTask::BuildType::PYLON)].insert(task);
-	builderTasksCount++;
+	if (isActive) {
+		builderTasks[static_cast<int>(IBuilderTask::BuildType::PYLON)].insert(task);
+		builderTasksCount++;
+	}
 	return task;
 }
 
@@ -370,6 +381,7 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 									   IBuilderTask::BuildType type,
 									   float cost,
 									   bool isShake,
+									   bool isActive,
 									   int timeout)
 {
 	IBuilderTask* task;
@@ -413,8 +425,10 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 		}
 	}
 
-	builderTasks[static_cast<int>(type)].insert(task);
-	builderTasksCount++;
+	if (isActive) {
+		builderTasks[static_cast<int>(type)].insert(task);
+		builderTasksCount++;
+	}
 	// TODO: Send NewTask message
 	return task;
 }

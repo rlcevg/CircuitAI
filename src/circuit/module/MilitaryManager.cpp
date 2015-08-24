@@ -6,6 +6,7 @@
  */
 
 #include "module/MilitaryManager.h"
+#include "module/EconomyManager.h"
 #include "resource/MetalManager.h"
 #include "task/NullTask.h"
 #include "task/IdleTask.h"
@@ -76,7 +77,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	 * Defence handlers
 	 */
 	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
-		OpenDefPoint(unit->GetUnit()->GetPos());
+		DecDefPoint(unit->GetUnit()->GetPos(), unit->GetCircuitDef());
 	};
 	unitDefId = circuit->GetCircuitDef("corllt")->GetId();
 	destroyedHandler[unitDefId] = defenceDestroyedHandler;
@@ -264,18 +265,20 @@ void CMilitaryManager::FallbackTask(CCircuitUnit* unit)
 
 }
 
-void CMilitaryManager::OpenDefPoint(const AIFloat3& pos)
+void CMilitaryManager::DecDefPoint(const AIFloat3& pos, CCircuitDef* cdef)
 {
 	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
 	if (index < 0) {
 		return;
 	}
 
+	Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
+	float cost = cdef->GetUnitDef()->GetCost(metalRes);
 	DefPoints& defPoints = clusterInfos[index].defPoints;
 	int idx = 0;
 	float dist = pos.distance2D(defPoints[idx].position);
 	for (int i = 1; i < defPoints.size(); ++i) {
-		if (!defPoints[i].isOpen) {
+		if (defPoints[i].cost >= cost) {
 			float tmp = pos.distance2D(defPoints[i].position);
 			if (tmp < dist) {
 				tmp = dist;
@@ -283,7 +286,7 @@ void CMilitaryManager::OpenDefPoint(const AIFloat3& pos)
 			}
 		}
 	}
-	defPoints[idx].isOpen = true;
+	defPoints[idx].cost -= cost;
 }
 
 //const std::vector<CMilitaryManager::SClusterInfo>& CMilitaryManager::GetClusterInfos() const
@@ -327,7 +330,7 @@ void CMilitaryManager::Init()
 			enclose.MakeCircle(points);
 			AIFloat3 pos = enclose.GetCenter();
 			pos.y = map->GetElevationAt(pos.x, pos.z);
-			defPoints.push_back({pos, true});
+			defPoints.push_back({pos, .0f});
 		}
 	}
 

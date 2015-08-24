@@ -68,13 +68,18 @@ public:
 	void SetBuildPos(const springai::AIFloat3& pos) { buildPos = pos; }
 	const springai::AIFloat3& GetBuildPos() const { return buildPos; }
 	const springai::AIFloat3& GetPosition() const;  // return buildPos if set, position otherwise
+
 	virtual void SetTarget(CCircuitUnit* unit);
 	CCircuitUnit* GetTarget() const { return target; }
 
 	bool IsEqualBuildPos(const springai::AIFloat3& pos) const;
 	bool IsStructure() const { return buildType <= BuildType::MEX; }
+
 	void SetFacing(int value) { facing = value; }
 	int GetFacing() const { return facing; }
+
+	void SetNextTask(IBuilderTask* task) { nextTask = task; }
+	IBuilderTask* GetNextTask() const { return nextTask; }
 
 protected:
 	int FindFacing(CCircuitDef* buildDef, const springai::AIFloat3& position);
@@ -90,9 +95,9 @@ protected:
 	CCircuitUnit* target;  // FIXME: Replace target with unitId
 	springai::AIFloat3 buildPos;
 	int facing;
+	IBuilderTask* nextTask;
 
 	float savedIncome;
-
 	int buildFails;
 };
 

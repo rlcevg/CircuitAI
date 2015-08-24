@@ -17,11 +17,13 @@
 
 namespace circuit {
 
+class CCircuitDef;
+
 class CMilitaryManager: public IUnitModule {
 public:
 	struct SDefPoint {
 		springai::AIFloat3 position;
-		bool isOpen;
+		float cost;
 	};
 	using DefPoints = std::vector<SDefPoint>;
 	struct SClusterInfo {
@@ -52,7 +54,7 @@ public:
 	virtual void FallbackTask(CCircuitUnit* unit);
 
 	std::vector<SDefPoint>& GetDefPoints(int index) { return clusterInfos[index].defPoints; }
-	void OpenDefPoint(const springai::AIFloat3& pos);
+	void DecDefPoint(const springai::AIFloat3& pos, CCircuitDef* cdef);
 //	const std::vector<SClusterInfo>& GetClusterInfos() const;
 
 private:

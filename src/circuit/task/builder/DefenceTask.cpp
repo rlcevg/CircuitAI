@@ -50,7 +50,7 @@ void CBDefenceTask::Finish()
 void CBDefenceTask::Cancel()
 {
 	if (target == nullptr) {
-		manager->GetCircuit()->GetMilitaryManager()->OpenDefPoint(GetPosition());
+		manager->GetCircuit()->GetMilitaryManager()->DecDefPoint(GetPosition(), buildDef);
 	}
 
 	IBuilderTask::Cancel();
