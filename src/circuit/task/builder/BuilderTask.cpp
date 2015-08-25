@@ -139,8 +139,8 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		// TODO: Select new proper BasePos, like near metal cluster.
 		int terWidth = terrain->GetTerrainWidth();
 		int terHeight = terrain->GetTerrainHeight();
-		float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
-		float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
+		float x = terWidth / 4 + rand() % (int)(terWidth / 2 + 1);
+		float z = terHeight / 4 + rand() % (int)(terHeight / 2 + 1);
 		AIFloat3 pos(x, circuit->GetMap()->GetElevationAt(x, z), z);
 		circuit->GetSetupManager()->SetBasePos(pos);
 
@@ -152,20 +152,20 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 void IBuilderTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	for (auto unit : units) {
-		IUnitAction* action = static_cast<IUnitAction*>(unit->Begin());
-		if (action->GetType() == IUnitAction::Type::PRE_BUILD) {
-			Unit* u = unit->GetUnit();
-			const AIFloat3& vel = u->GetVel();
-			Resource* metal = circuit->GetEconomyManager()->GetMetalRes();
-			if ((vel == ZeroVector) && (u->GetResourceUse(metal) <= 0)) {
-				// TODO: Something is on build site, get standing units in radius and push them.
-			}
-		}
-	}
+//	for (auto unit : units) {
+//		IUnitAction* action = static_cast<IUnitAction*>(unit->Begin());
+//		if (action->GetType() == IUnitAction::Type::PRE_BUILD) {
+//			Unit* u = unit->GetUnit();
+//			const AIFloat3& vel = u->GetVel();
+//			Resource* metal = circuit->GetEconomyManager()->GetMetalRes();
+//			if ((vel == ZeroVector) && (u->GetResourceUse(metal) <= 0)) {
+//				// TODO: Something is on build site, get standing units in radius and push them.
+//			}
+//		}
+//	}
 
 	// FIXME: Replace const 1000.0f with build time?
-	if ((cost > 1000.0f) && (circuit->GetEconomyManager()->GetAvgMetalIncome() < savedIncome * 0.6)) {
+	if ((cost > 1000.0f) && (circuit->GetEconomyManager()->GetAvgMetalIncome() < savedIncome * 0.6f)) {
 		manager->AbortTask(this);
 	}
 }

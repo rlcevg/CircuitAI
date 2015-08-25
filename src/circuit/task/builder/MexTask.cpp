@@ -116,11 +116,10 @@ void CBMexTask::Finish()
 	for (const char* name : defenders) {
 		defDef = circuit->GetCircuitDef(name);
 		float defCost = defDef->GetUnitDef()->GetCost(metalRes);
-		if (totalCost < closestPoint->cost) {
-			totalCost += defCost;
+		totalCost += defCost;
+		if (totalCost <= closestPoint->cost) {
 			continue;
 		}
-		totalCost += defCost;
 		if (totalCost < maxCost) {
 			closestPoint->cost += defCost;
 			IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, closestPoint->position,

@@ -262,8 +262,11 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		idleHandler[defId](unit);
 	};
 	idleHandler[defId] = [this](CCircuitUnit* unit) {
+		float metalIncome = this->circuit->GetEconomyManager()->GetAvgMetalIncome();
 		const char* names[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco"};
-		const std::array<float, 7> prob = {.1, .3, .25, .07, .1, .15, .03};
+		const std::array<float, 7> prob0 = {.01, .30, .39, .10, .10, .10, .00};
+		const std::array<float, 7> prob1 = {.10, .30, .25, .07, .10, .15, .03};
+		const std::array<float, 7>& prob = (metalIncome < 100) ? prob0 : prob1;
 		int choice = 0;
 		float dice = rand() / (float)RAND_MAX;
 		float total;

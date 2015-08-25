@@ -53,6 +53,8 @@ public:
 	float GetAvgMetalIncome() const { return metalIncome; }
 	float GetAvgEnergyIncome() const { return energyIncome; }
 	float GetEcoFactor() const { return ecoFactor; }
+	float GetMetalPull();
+	float GetEnergyPull();
 	bool IsMetalEmpty();
 	bool IsMetalFull();
 	bool IsEnergyStalling();
@@ -115,6 +117,11 @@ private:
 	bool isMetalEmpty;
 	bool isMetalFull;
 	bool isEnergyStalling;
+
+	int metalPullFrame;
+	int energyPullFrame;
+	float metalPull;
+	float energyPull;
 };
 
 } // namespace circuit

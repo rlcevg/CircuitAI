@@ -9,6 +9,7 @@
 #include "task/TaskManager.h"
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
+#include "module/EconomyManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -34,7 +35,7 @@ CBDefenceTask::~CBDefenceTask()
 void CBDefenceTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	float radius = buildDef->GetUnitDef()->GetMaxWeaponRange() * 0.8;
+	float radius = buildDef->GetUnitDef()->GetMaxWeaponRange() * 0.5f;
 	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(buildPos, radius));
 	if (!features.empty()) {
 		IBuilderTask* recl = circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, buildPos, .0f, FRAMES_PER_SEC * 60, radius, false);
@@ -49,8 +50,22 @@ void CBDefenceTask::Finish()
 
 void CBDefenceTask::Cancel()
 {
-	if (target == nullptr) {
-		manager->GetCircuit()->GetMilitaryManager()->DecDefPoint(GetPosition(), buildDef);
+	CCircuitAI* circuit = manager->GetCircuit();
+	Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
+	float defCost = buildDef->GetUnitDef()->GetCost(metalRes);
+	CMilitaryManager::SDefPoint* point = circuit->GetMilitaryManager()->GetDefPoint(GetPosition(), defCost);
+	if (point != nullptr) {
+		if ((target == nullptr) && (point->cost >= defCost)) {
+			point->cost -= defCost;
+		}
+		IBuilderTask* next = nextTask;
+		while (next != nullptr) {
+			defCost = next->GetBuildDef()->GetUnitDef()->GetCost(metalRes);
+			if (point->cost >= defCost) {
+				point->cost -= defCost;
+			}
+			next = next->GetNextTask();
+		}
 	}
 
 	IBuilderTask::Cancel();

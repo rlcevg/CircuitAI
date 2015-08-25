@@ -53,6 +53,10 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, isMetalEmpty(false)
 		, isMetalFull(false)
 		, isEnergyStalling(false)
+		, metalPullFrame(-1)
+		, energyPullFrame(-1)
+		, metalPull(.0f)
+		, energyPull(.0f)
 {
 	metalRes = circuit->GetCallback()->GetResourceByName("Metal");
 	energyRes = circuit->GetCallback()->GetResourceByName("Energy");
@@ -238,9 +242,9 @@ CRecruitTask* CEconomyManager::CreateFactoryTask(CCircuitUnit* unit)
 
 	float metalIncome = GetAvgMetalIncome() * ecoFactor;
 	const char* names[] = {"armpw", "armrock", "armwar", "armzeus", "armsnipe", "armjeth"};
-	const std::array<float, 6> prob1 = {.35, .25, .24, .15, .01, .0};
-	const std::array<float, 6> prob2 = {.1, .1, .1, .3, .3, .1};
-	const std::array<float, 6>& prob = ((metalIncome < 20) || (eco->GetCurrent(energyRes) < (eco->GetStorage(energyRes) - HIDDEN_ENERGY) * 0.5f)) ? prob1 : prob2;
+	const std::array<float, 6> prob0 = {.35, .25, .24, .15, .01, .00};
+	const std::array<float, 6> prob1 = {.10, .10, .10, .30, .30, .10};
+	const std::array<float, 6>& prob = ((metalIncome < 20) || (eco->GetCurrent(energyRes) < (eco->GetStorage(energyRes) - HIDDEN_ENERGY) * 0.5f)) ? prob0 : prob1;
 	int choice = 0;
 	float dice = rand() / (float)RAND_MAX;
 	float total;
@@ -405,6 +409,48 @@ void CEconomyManager::UpdateResourceIncome()
 	energyIncome /= INCOME_SAMPLES;
 }
 
+float CEconomyManager::GetMetalPull()
+{
+	if (metalPullFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
+		metalPullFrame = circuit->GetLastFrame();
+		if (empParam == nullptr) {
+			empParam = circuit->GetTeam()->GetTeamRulesParamByName("extraMetalPull");
+		}
+		metalPull = eco->GetPull(metalRes) + (empParam != nullptr ? empParam->GetValueFloat() : .0f);
+	}
+	return metalPull;
+}
+
+float CEconomyManager::GetEnergyPull()
+{
+	if (energyPullFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
+		energyPullFrame = circuit->GetLastFrame();
+		if (eepParam == nullptr) {
+			eepParam = circuit->GetTeam()->GetTeamRulesParamByName("extraEnergyPull");
+		}
+		float extraEnergyPull = (eepParam != nullptr) ? eepParam->GetValueFloat() : .0f;
+//		if (odeoParam == nullptr) {
+//			odeoParam = circuit->GetTeam()->GetTeamRulesParamByName("OD_energyOverdrive");
+//		}
+//		float oddEnergyOverdrive = (odeoParam != nullptr) ? odeoParam->GetValueFloat() : .0f;
+//		if (odecParam == nullptr) {
+//			odecParam = circuit->GetTeam()->GetTeamRulesParamByName("OD_energyChange");
+//		}
+//		float oddEnergyChange = (odecParam != nullptr) ? odecParam->GetValueFloat() : .0f;
+//		float extraChange = std::min(.0f, oddEnergyChange) - std::min(.0f, oddEnergyOverdrive);
+//		if (odteParam == nullptr) {
+//			odteParam = circuit->GetTeam()->GetTeamRulesParamByName("OD_team_energyWaste");
+//		}
+//		float teamEnergyWaste = (odteParam != nullptr) ? odteParam->GetValueFloat() : .0f;
+//		if (odaParam == nullptr) {
+//			odaParam = circuit->GetTeam()->GetTeamRulesParamByName("OD_allies");
+//		}
+//		float numAllies = (odaParam != nullptr) ? odaParam->GetValueFloat() : 1.0f;
+		energyPull = eco->GetPull(energyRes) + extraEnergyPull/* + extraChange - teamEnergyWaste / numAllies*/;
+	}
+	return energyPull;
+}
+
 bool CEconomyManager::IsMetalEmpty()
 {
 	if (emptyFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
@@ -427,36 +473,7 @@ bool CEconomyManager::IsEnergyStalling()
 {
 	if (stallingFrame + TEAM_SLOWUPDATE_RATE < circuit->GetLastFrame()) {
 		stallingFrame = circuit->GetLastFrame();
-
-		if (empParam == nullptr) {
-			empParam = circuit->GetTeam()->GetTeamRulesParamByName("extraMetalPull");
-		}
-		float metalPull = eco->GetPull(metalRes) + (empParam != nullptr ? empParam->GetValueFloat() : .0f);
-
-		if (eepParam == nullptr) {
-			eepParam = circuit->GetTeam()->GetTeamRulesParamByName("extraEnergyPull");
-		}
-		float extraEnergyPull = (eepParam != nullptr) ? eepParam->GetValueFloat() : .0f;
-//		if (odeoParam == nullptr) {
-//			odeoParam = circuit->GetTeam()->GetTeamRulesParamByName("OD_energyOverdrive");
-//		}
-//		float oddEnergyOverdrive = (odeoParam != nullptr) ? odeoParam->GetValueFloat() : .0f;
-//		if (odecParam == nullptr) {
-//			odecParam = circuit->GetTeam()->GetTeamRulesParamByName("OD_energyChange");
-//		}
-//		float oddEnergyChange = (odecParam != nullptr) ? odecParam->GetValueFloat() : .0f;
-//		float extraChange = std::min(.0f, oddEnergyChange) - std::min(.0f, oddEnergyOverdrive);
-//		if (odteParam == nullptr) {
-//			odteParam = circuit->GetTeam()->GetTeamRulesParamByName("OD_team_energyWaste");
-//		}
-//		float teamEnergyWaste = (odteParam != nullptr) ? odteParam->GetValueFloat() : .0f;
-//		if (odaParam == nullptr) {
-//			odaParam = circuit->GetTeam()->GetTeamRulesParamByName("OD_allies");
-//		}
-//		float numAllies = (odaParam != nullptr) ? odaParam->GetValueFloat() : 1.0f;
-		float energyPull = eco->GetPull(energyRes) + extraEnergyPull/* + extraChange - teamEnergyWaste / numAllies*/;
-
-		isEnergyStalling = std::min(GetAvgMetalIncome() - metalPull, .0f) * 0.9f > std::min(GetAvgEnergyIncome() - energyPull, .0f);
+		isEnergyStalling = std::min(GetAvgMetalIncome() - GetMetalPull(), .0f) * 0.9f > std::min(GetAvgEnergyIncome() - GetEnergyPull(), .0f);
 	}
 	return isEnergyStalling;
 }
@@ -510,9 +527,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 		}
 	}
 
-	if (!isEnergyStalling) {
-		task = UpdateReclaimTasks(position, unit);
-	}
+	task = isEnergyStalling ? UpdateEnergyTasks(position, unit) : UpdateReclaimTasks(position, unit);
 
 	return task;
 }
@@ -528,7 +543,7 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 	if (IsMetalFull() || builderManager->GetTasks(IBuilderTask::BuildType::RECLAIM).size() >= builderManager->GetWorkerCount() / 3) {
 		return nullptr;
 	}
-	float travelDistance = unit->GetUnit()->GetMaxSpeed() * FRAMES_PER_SEC * 30;
+	float travelDistance = unit->GetUnit()->GetMaxSpeed() * FRAMES_PER_SEC * ((GetMetalPull() * 0.8f > GetAvgMetalIncome()) ? 300 : 30);
 	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(position, travelDistance));
 	if (!features.empty()) {
 		CTerrainManager* terrain = circuit->GetTerrainManager();

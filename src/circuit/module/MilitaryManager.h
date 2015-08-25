@@ -54,7 +54,7 @@ public:
 	virtual void FallbackTask(CCircuitUnit* unit);
 
 	std::vector<SDefPoint>& GetDefPoints(int index) { return clusterInfos[index].defPoints; }
-	void DecDefPoint(const springai::AIFloat3& pos, CCircuitDef* cdef);
+	SDefPoint* GetDefPoint(const springai::AIFloat3& pos, float cost);
 //	const std::vector<SClusterInfo>& GetClusterInfos() const;
 
 private:

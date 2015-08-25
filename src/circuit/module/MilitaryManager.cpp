@@ -77,7 +77,12 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	 * Defence handlers
 	 */
 	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
-		DecDefPoint(unit->GetUnit()->GetPos(), unit->GetCircuitDef());
+		Resource* metalRes = this->circuit->GetEconomyManager()->GetMetalRes();
+		float defCost = unit->GetCircuitDef()->GetUnitDef()->GetCost(metalRes);
+		SDefPoint* point = GetDefPoint(unit->GetUnit()->GetPos(), defCost);
+		if (point != nullptr) {
+			point->cost -= defCost;
+		}
 	};
 	unitDefId = circuit->GetCircuitDef("corllt")->GetId();
 	destroyedHandler[unitDefId] = defenceDestroyedHandler;
@@ -265,20 +270,18 @@ void CMilitaryManager::FallbackTask(CCircuitUnit* unit)
 
 }
 
-void CMilitaryManager::DecDefPoint(const AIFloat3& pos, CCircuitDef* cdef)
+CMilitaryManager::SDefPoint* CMilitaryManager::GetDefPoint(const AIFloat3& pos, float defCost)
 {
 	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
 	if (index < 0) {
-		return;
+		return nullptr;
 	}
 
-	Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
-	float cost = cdef->GetUnitDef()->GetCost(metalRes);
 	DefPoints& defPoints = clusterInfos[index].defPoints;
 	int idx = 0;
 	float dist = pos.distance2D(defPoints[idx].position);
 	for (int i = 1; i < defPoints.size(); ++i) {
-		if (defPoints[i].cost >= cost) {
+		if (defPoints[i].cost >= defCost) {
 			float tmp = pos.distance2D(defPoints[i].position);
 			if (tmp < dist) {
 				tmp = dist;
@@ -286,7 +289,7 @@ void CMilitaryManager::DecDefPoint(const AIFloat3& pos, CCircuitDef* cdef)
 			}
 		}
 	}
-	defPoints[idx].cost -= cost;
+	return &defPoints[idx];
 }
 
 //const std::vector<CMilitaryManager::SClusterInfo>& CMilitaryManager::GetClusterInfos() const
