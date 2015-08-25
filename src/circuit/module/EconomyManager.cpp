@@ -60,7 +60,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 {
 	metalRes = circuit->GetCallback()->GetResourceByName("Metal");
 	energyRes = circuit->GetCallback()->GetResourceByName("Energy");
-	eco = circuit->GetCallback()->GetEconomy();
+	economy = circuit->GetCallback()->GetEconomy();
 
 	metalIncomes.resize(INCOME_SAMPLES, .0f);
 	energyIncomes.resize(INCOME_SAMPLES, .0f);
@@ -161,7 +161,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 CEconomyManager::~CEconomyManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	delete metalRes, energyRes, eco, empParam, eepParam;
+	delete metalRes, energyRes, economy, empParam, eepParam;
 	delete odeiParam, odecParam/*, odeoParam, odteParam, odaParam*/;
 	delete engyPol;
 }
@@ -244,7 +244,7 @@ CRecruitTask* CEconomyManager::CreateFactoryTask(CCircuitUnit* unit)
 	const char* names[] = {"armpw", "armrock", "armwar", "armzeus", "armsnipe", "armjeth"};
 	const std::array<float, 6> prob0 = {.35, .25, .24, .15, .01, .00};
 	const std::array<float, 6> prob1 = {.10, .10, .10, .30, .30, .10};
-	const std::array<float, 6>& prob = ((metalIncome < 20) || (eco->GetCurrent(energyRes) < (eco->GetStorage(energyRes) - HIDDEN_ENERGY) * 0.5f)) ? prob0 : prob1;
+	const std::array<float, 6>& prob = ((metalIncome < 20) || (economy->GetCurrent(energyRes) < (economy->GetStorage(energyRes) - HIDDEN_ENERGY) * 0.5f)) ? prob0 : prob1;
 	int choice = 0;
 	float dice = rand() / (float)RAND_MAX;
 	float total;
@@ -392,8 +392,8 @@ void CEconomyManager::UpdateResourceIncome()
 	}
 	float oddEnergyChange = (odecParam != nullptr) ? odecParam->GetValueFloat() : .0f;
 
-	energyIncomes[indexRes] = eco->GetIncome(energyRes) + oddEnergyIncome - std::max(.0f, oddEnergyChange);
-	metalIncomes[indexRes] = eco->GetIncome(metalRes) + eco->GetReceived(metalRes);
+	energyIncomes[indexRes] = economy->GetIncome(energyRes) + oddEnergyIncome - std::max(.0f, oddEnergyChange);
+	metalIncomes[indexRes] = economy->GetIncome(metalRes) + economy->GetReceived(metalRes);
 	++indexRes %= INCOME_SAMPLES;
 
 	metalIncome = .0f;
@@ -416,7 +416,7 @@ float CEconomyManager::GetMetalPull()
 		if (empParam == nullptr) {
 			empParam = circuit->GetTeam()->GetTeamRulesParamByName("extraMetalPull");
 		}
-		metalPull = eco->GetPull(metalRes) + (empParam != nullptr ? empParam->GetValueFloat() : .0f);
+		metalPull = economy->GetPull(metalRes) + (empParam != nullptr ? empParam->GetValueFloat() : .0f);
 	}
 	return metalPull;
 }
@@ -446,7 +446,7 @@ float CEconomyManager::GetEnergyPull()
 //			odaParam = circuit->GetTeam()->GetTeamRulesParamByName("OD_allies");
 //		}
 //		float numAllies = (odaParam != nullptr) ? odaParam->GetValueFloat() : 1.0f;
-		energyPull = eco->GetPull(energyRes) + extraEnergyPull/* + extraChange - teamEnergyWaste / numAllies*/;
+		energyPull = economy->GetPull(energyRes) + extraEnergyPull/* + extraChange - teamEnergyWaste / numAllies*/;
 	}
 	return energyPull;
 }
@@ -455,7 +455,7 @@ bool CEconomyManager::IsMetalEmpty()
 {
 	if (emptyFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
 		emptyFrame = circuit->GetLastFrame();
-		isMetalEmpty = eco->GetCurrent(metalRes) < eco->GetStorage(metalRes) * 0.2f;
+		isMetalEmpty = economy->GetCurrent(metalRes) < economy->GetStorage(metalRes) * 0.2f;
 	}
 	return isMetalEmpty;
 }
@@ -464,7 +464,7 @@ bool CEconomyManager::IsMetalFull()
 {
 	if (fullFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
 		fullFrame = circuit->GetLastFrame();
-		isMetalFull = eco->GetCurrent(metalRes) > eco->GetStorage(metalRes) * 0.8f;
+		isMetalFull = economy->GetCurrent(metalRes) > economy->GetStorage(metalRes) * 0.8f;
 	}
 	return isMetalFull;
 }
@@ -487,14 +487,12 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	IBuilderTask* task = nullptr;
 
 	// check uncolonized mexes
-	int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::MEX).size();
 	bool isEnergyStalling = IsEnergyStalling();
-	bool mustHave = !isEnergyStalling || ((taskSize < 1) && (builderManager->GetWorkerCount() > 2));
-	if (mustHave && mexDef->IsAvailable()) {
+	if (!isEnergyStalling && mexDef->IsAvailable()) {
 		UnitDef* metalDef =  mexDef->GetUnitDef();
 		float cost = metalDef->GetCost(metalRes);
-		int maxCount = builderManager->GetBuilderPower() / cost * 4 + 2;
-		if (taskSize < maxCount) {
+		int maxCount = builderManager->GetBuilderPower() / cost * 4 + 1;
+		if (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < maxCount) {
 			CMetalManager* metalManager = circuit->GetMetalManager();
 			const CMetalData::Metals& spots = metalManager->GetSpots();
 			Map* map = circuit->GetMap();
@@ -546,13 +544,13 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 	float travelDistance = unit->GetUnit()->GetMaxSpeed() * FRAMES_PER_SEC * ((GetMetalPull() * 0.8f > GetAvgMetalIncome()) ? 300 : 30);
 	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(position, travelDistance));
 	if (!features.empty()) {
-		CTerrainManager* terrain = circuit->GetTerrainManager();
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		AIFloat3 reclPos;
 		float minSqDist = std::numeric_limits<float>::max();
 		for (Feature* feature : features) {
 			AIFloat3 featPos = feature->GetPosition();
-			terrain->CorrectPosition(featPos);  // Impulsed flying feature
-			if (!terrain->CanBuildAt(unit, featPos)) {
+			terrainManager->CorrectPosition(featPos);  // Impulsed flying feature
+			if (!terrainManager->CanBuildAt(unit, featPos)) {
 				continue;
 			}
 			FeatureDef* featDef = feature->GetDef();
@@ -710,16 +708,19 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		};
 		CMetalManager* metalManager = circuit->GetMetalManager();
 		int index = metalManager->FindNearestCluster(isStriderValid ? circuit->GetSetupManager()->GetBasePos() : position, predicate);
-		CTerrainManager* terrain = circuit->GetTerrainManager();
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		if (index >= 0) {
 			const CMetalData::Clusters& clusters = metalManager->GetClusters();
 			AIFloat3 buildPos = clusters[index].geoCentr;
 			UnitDef* facUDef = facDef->GetUnitDef();
 			float size = 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
-			buildPos.x += (buildPos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
-			buildPos.z += (buildPos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
+			buildPos.x += (buildPos.x > terrainManager->GetTerrainWidth() / 2) ? -size : size;
+			buildPos.z += (buildPos.z > terrainManager->GetTerrainHeight() / 2) ? -size : size;
+			CCircuitDef* bdef = (unit == nullptr) ? circuit->GetCircuitDef("armrectr") : unit->GetCircuitDef();
+			buildPos = terrainManager->GetBuildPosition(bdef, buildPos);
 
-			if (terrain->CanBeBuiltAt(facDef, buildPos) && ((unit == nullptr) || terrain->CanBuildAt(unit, buildPos)))
+			if (terrainManager->CanBeBuiltAt(facDef, buildPos) &&
+				((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 			{
 				return builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos, IBuilderTask::BuildType::FACTORY);
 			}
@@ -749,8 +750,8 @@ CRecruitTask* CEconomyManager::UpdateRecruitTasks()
 		CCircuitUnit* factory = factoryManager->GetRandomFactory(buildDef);
 		if (factory != nullptr) {
 			const AIFloat3& buildPos = factory->GetUnit()->GetPos();
-			CTerrainManager* terrain = circuit->GetTerrainManager();
-			float radius = std::max(terrain->GetTerrainWidth(), terrain->GetTerrainHeight()) / 4;
+			CTerrainManager* terrainManager = circuit->GetTerrainManager();
+			float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
 			return factoryManager->EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::BuildType::BUILDPOWER, radius);
 		}
 	}
@@ -768,7 +769,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 	CCircuitDef* storeDef = circuit->GetCircuitDef("armmstor");
 
 	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
-	if (!builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() || (eco->GetStorage(metalRes) > 10 * metalIncome) || !storeDef->IsAvailable()) {
+	if (!builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() || (economy->GetStorage(metalRes) > 10 * metalIncome) || !storeDef->IsAvailable()) {
 		return UpdatePylonTasks();
 	}
 
@@ -780,9 +781,9 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 		const CMetalData::Metals& spots = metalManager->GetSpots();
 		buildPos = spots[index].position;
 	} else {
-		CTerrainManager* terrain = circuit->GetTerrainManager();
-		int terWidth = terrain->GetTerrainWidth();
-		int terHeight = terrain->GetTerrainHeight();
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		int terWidth = terrainManager->GetTerrainWidth();
+		int terHeight = terrainManager->GetTerrainHeight();
 		float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
 		float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
 		buildPos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);

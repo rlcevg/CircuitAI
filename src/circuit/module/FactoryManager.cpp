@@ -527,10 +527,10 @@ AIFloat3 CFactoryManager::GetClosestHaven(CCircuitUnit* unit) const
 	}
 	float metric = std::numeric_limits<float>::max();
 	const AIFloat3& position = unit->GetUnit()->GetPos();
-	CTerrainManager* terrain = circuit->GetTerrainManager();
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	auto it = havens.begin(), havIt = havens.end();
 	for (; it != havens.end(); ++it) {
-		if (!terrain->CanMoveToPos(unit->GetArea(), *it)) {
+		if (!terrainManager->CanMoveToPos(unit->GetArea(), *it)) {
 			continue;
 		}
 		float qdist = it->SqDistance2D(position);

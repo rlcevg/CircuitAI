@@ -77,7 +77,7 @@ private:
 
 	springai::Resource* metalRes;
 	springai::Resource* energyRes;
-	springai::Economy* eco;
+	springai::Economy* economy;
 
 	struct SClusterInfo {
 		CCircuitUnit* factory;

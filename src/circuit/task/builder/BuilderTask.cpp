@@ -82,14 +82,14 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		return;
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
-	CTerrainManager* terrain = circuit->GetTerrainManager();
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (buildPos != -RgtVector) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
 			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			return;
 		} else {
-			terrain->RemoveBlocker(buildDef, buildPos, facing);
+			terrainManager->RemoveBlocker(buildDef, buildPos, facing);
 			// FIXME: If enemy blocked position then reset will have no effect
 //			terrain->ResetBuildFrame();
 		}
@@ -106,7 +106,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 			}
 			if ((*alu->GetCircuitDef() == *buildDef) && au->IsBeingBuilt()) {
 				const AIFloat3& pos = au->GetPos();
-				if (terrain->CanBuildAt(unit, pos)) {
+				if (terrainManager->CanBuildAt(unit, pos)) {
 					u->Build(buildUDef, pos, au->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 					utils::free_clear(friendlies);
 					return;
@@ -125,20 +125,20 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		pos = position;
 	}
 
-	CTerrainManager::TerrainPredicate predicate = [terrain, unit](const AIFloat3& p) {
-		return terrain->CanBuildAt(unit, p);
+	CTerrainManager::TerrainPredicate predicate = [terrainManager, unit](const AIFloat3& p) {
+		return terrainManager->CanBuildAt(unit, p);
 	};
 	float searchRadius = 200.0f * SQUARE_SIZE;
 	facing = FindFacing(buildDef, pos);
-	buildPos = terrain->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
+	buildPos = terrainManager->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
 
 	if (buildPos != -RgtVector) {
 		circuit->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);
 		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	} else {
 		// TODO: Select new proper BasePos, like near metal cluster.
-		int terWidth = terrain->GetTerrainWidth();
-		int terHeight = terrain->GetTerrainHeight();
+		int terWidth = terrainManager->GetTerrainWidth();
+		int terHeight = terrainManager->GetTerrainHeight();
 		float x = terWidth / 4 + rand() % (int)(terWidth / 2 + 1);
 		float z = terHeight / 4 + rand() % (int)(terHeight / 2 + 1);
 		AIFloat3 pos(x, circuit->GetMap()->GetElevationAt(x, z), z);
@@ -250,9 +250,9 @@ bool IBuilderTask::IsEqualBuildPos(const AIFloat3& pos) const
 int IBuilderTask::FindFacing(CCircuitDef* buildDef, const springai::AIFloat3& position)
 {
 	int facing = UNIT_COMMAND_BUILD_NO_FACING;
-	CTerrainManager* terrain = manager->GetCircuit()->GetTerrainManager();
-	float terWidth = terrain->GetTerrainWidth();
-	float terHeight = terrain->GetTerrainHeight();
+	CTerrainManager* terrainManager = manager->GetCircuit()->GetTerrainManager();
+	float terWidth = terrainManager->GetTerrainWidth();
+	float terHeight = terrainManager->GetTerrainHeight();
 	if (math::fabs(terWidth - 2 * position.x) > math::fabs(terHeight - 2 * position.z)) {
 		facing = (2 * position.x > terWidth) ? UNIT_FACING_WEST : UNIT_FACING_EAST;
 	} else {

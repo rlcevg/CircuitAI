@@ -654,9 +654,9 @@ void CBuilderManager::Watchdog()
 		if (commands.empty() && (u->GetResourceUse(metalRes) == .0f) && (u->GetVel() == ZeroVector)) {
 			AIFloat3 toPos = u->GetPos();
 			const float size = 50.0f;
-			CTerrainManager* terrain = circuit->GetTerrainManager();
-			toPos.x += (toPos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
-			toPos.z += (toPos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
+			CTerrainManager* terrainManager = circuit->GetTerrainManager();
+			toPos.x += (toPos.x > terrainManager->GetTerrainWidth() / 2) ? -size : size;
+			toPos.z += (toPos.z > terrainManager->GetTerrainHeight() / 2) ? -size : size;
 			u->MoveTo(toPos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 10);
 		}
 		utils::free_clear(commands);

@@ -50,23 +50,23 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 		return;
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
-	CTerrainManager* terrain = circuit->GetTerrainManager();
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (buildPos != -RgtVector) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
 			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 			return;
 		} else {
-			terrain->RemoveBlocker(buildDef, buildPos, facing);
+			terrainManager->RemoveBlocker(buildDef, buildPos, facing);
 		}
 	}
 
-	CTerrainManager::TerrainPredicate predicate = [terrain, unit](const AIFloat3& p) {
-		return terrain->CanBuildAt(unit, p);
+	CTerrainManager::TerrainPredicate predicate = [terrainManager, unit](const AIFloat3& p) {
+		return terrainManager->CanBuildAt(unit, p);
 	};
 	float searchRadius = circuit->GetEconomyManager()->GetPylonRange() * 0.5f;
 	facing = FindFacing(buildDef, position);
-	buildPos = terrain->FindBuildSite(buildDef, position, searchRadius, facing, predicate);
+	buildPos = terrainManager->FindBuildSite(buildDef, position, searchRadius, facing, predicate);
 
 	if (buildPos != -RgtVector) {
 		circuit->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);

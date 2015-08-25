@@ -55,9 +55,9 @@ void CBReclaimTask::Execute(CCircuitUnit* unit)
 		AIFloat3 pos;
 		float reclRadius;
 		if ((radius == .0f) || (position == -RgtVector)) {
-			CTerrainManager* terrain = manager->GetCircuit()->GetTerrainManager();
-			float width = terrain->GetTerrainWidth() / 2;
-			float height = terrain->GetTerrainHeight() / 2;
+			CTerrainManager* terrainManager = manager->GetCircuit()->GetTerrainManager();
+			float width = terrainManager->GetTerrainWidth() / 2;
+			float height = terrainManager->GetTerrainHeight() / 2;
 			pos = AIFloat3(width, 0, height);
 			reclRadius = sqrtf(width * width + height * height);
 		} else {
@@ -104,14 +104,14 @@ void CBReclaimTask::Update()
 
 		auto features = std::move(circuit->GetCallback()->GetFeaturesIn(pos, 500.0f));
 		if (!features.empty()) {
-			CTerrainManager* terrain = circuit->GetTerrainManager();
+			CTerrainManager* terrainManager = circuit->GetTerrainManager();
 			AIFloat3 reclPos;
 			float minSqDist = std::numeric_limits<float>::max();
 			Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
 			for (Feature* feature : features) {
 				AIFloat3 featPos = feature->GetPosition();
-				terrain->CorrectPosition(featPos);  // Impulsed flying feature
-				if (!terrain->CanBuildAt(unit, featPos)) {
+				terrainManager->CorrectPosition(featPos);  // Impulsed flying feature
+				if (!terrainManager->CanBuildAt(unit, featPos)) {
 					continue;
 				}
 				FeatureDef* featDef = feature->GetDef();

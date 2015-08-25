@@ -63,13 +63,13 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 		cdef = circuit->GetCircuitDef(fac);
 		def = cdef->GetUnitDef();
 		ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-		bsize = ssize + int2(8, 6);
+		bsize = ssize + int2(8, 8);
 		blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::FACTORY, ignoreMask);
 	}
 
 	cdef = circuit->GetCircuitDef("striderhub");
 	def = cdef->GetUnitDef();
-	radius = 200.0f /*cdef->GetBuildDistance()*/ / (SQUARE_SIZE * 2);
+	radius = 250 /*cdef->GetBuildDistance()*/ / (SQUARE_SIZE * 2);
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(NONE);
@@ -392,7 +392,7 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 		if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
 			probePos.y = map->GetElevationAt(probePos.x, probePos.z);
 			if (predicate(probePos)) {
-				return probePos + AIFloat3(.1f, .0f, -.1f);;
+				return probePos;
 			}
 		}
 	}
@@ -581,7 +581,7 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(CCircuitDef* cdef, const AIFloat3& po
 			if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
 				probePos.y = map->GetElevationAt(probePos.x, probePos.z);
 				if (predicate(probePos)) {
-					return probePos + AIFloat3(.1f, .0f, -.1f);
+					return probePos;
 				}
 			}
 		}
@@ -679,7 +679,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 		if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {	\
 			probePos.y = map->GetElevationAt(probePos.x, probePos.z);								\
 			if (predicate(probePos)) {																\
-				return probePos + AIFloat3(.1f, .0f, -.1f);											\
+				return probePos;																	\
 			}																						\
 		}																							\
 	}
@@ -808,7 +808,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 			if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {			\
 				probePos.y = map->GetElevationAt(probePos.x, probePos.z);										\
 				if (predicate(probePos)) {																		\
-					return probePos + AIFloat3(.1f, .0f, -.1f);													\
+					return probePos;																			\
 				}																								\
 			}																									\
 		}																										\

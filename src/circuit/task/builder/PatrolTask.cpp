@@ -46,10 +46,10 @@ void CBPatrolTask::Execute(CCircuitUnit* unit)
 	u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 	const float size = SQUARE_SIZE * 100;
-	CTerrainManager* terrain = manager->GetCircuit()->GetTerrainManager();
+	CTerrainManager* terrainManager = manager->GetCircuit()->GetTerrainManager();
 	AIFloat3 pos = position;
-	pos.x += (pos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
-	pos.z += (pos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
+	pos.x += (pos.x > terrainManager->GetTerrainWidth() / 2) ? -size : size;
+	pos.z += (pos.z > terrainManager->GetTerrainHeight() / 2) ? -size : size;
 	u->PatrolTo(pos);
 
 	// Register unit to process timeout if set

@@ -44,9 +44,9 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	Unit* u = unit->GetUnit();
-	CTerrainManager* terrain = circuit->GetTerrainManager();
-	int terWidth = terrain->GetTerrainWidth();
-	int terHeight = terrain->GetTerrainHeight();
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	int terWidth = terrainManager->GetTerrainWidth();
+	int terHeight = terrainManager->GetTerrainHeight();
 	float x = rand() % (int)(terWidth + 1);
 	float z = rand() % (int)(terHeight + 1);
 	AIFloat3 toPos(x, circuit->GetMap()->GetElevationAt(x, z), z);

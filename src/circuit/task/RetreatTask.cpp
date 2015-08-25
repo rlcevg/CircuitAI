@@ -115,9 +115,9 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 
 		AIFloat3 pos = u->GetPos();
 		const float size = SQUARE_SIZE * 20;
-		CTerrainManager* terrain = circuit->GetTerrainManager();
-		pos.x += (pos.x > terrain->GetTerrainWidth() / 2) ? -size : size;
-		pos.z += (pos.z > terrain->GetTerrainHeight() / 2) ? -size : size;
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		pos.x += (pos.x > terrainManager->GetTerrainWidth() / 2) ? -size : size;
+		pos.z += (pos.z > terrainManager->GetTerrainHeight() / 2) ? -size : size;
 		u->PatrolTo(pos);
 	}
 }
