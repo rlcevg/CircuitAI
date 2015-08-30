@@ -193,36 +193,6 @@ int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
 	return 0; //signaling: OK
 }
 
-int CMilitaryManager::EnemyEnterLOS(CCircuitUnit* unit)
-{
-	// debug
-//	if (strcmp(unit->GetDef()->GetName(), "factorycloak") == 0) {
-//		circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>([this](CCircuitUnit* unit) {
-//			Unit* u = unit->GetUnit();
-//			Pathing* pathing = circuit->GetPathing();
-//			Map* map = circuit->GetMap();
-//			const CMetalManager::Metals& spots = circuit->GetMetalManager().GetSpots();
-//			const AIFloat3& start = u->GetPos();
-//			for (auto& s : spots) {
-//				AIFloat3 end = s.position;
-//				int pathId = pathing->InitPath(start, end, 4, .0f);
-//				AIFloat3 lastPoint, point(start);
-//				Drawer* drawer = map->GetDrawer();
-//				do {
-//					lastPoint = point;
-//					point = pathing->GetNextWaypoint(pathId);
-//					drawer->AddLine(lastPoint, point);
-//				} while (lastPoint != point);
-//				delete drawer;
-//				pathing->FreePath(pathId);
-//			}
-////			circuit->GetGame()->SetPause(true, "Nub");
-//		}, unit), FRAMES_PER_SEC);
-//	}
-
-	return 0; //signaling: OK
-}
-
 IUnitTask* CMilitaryManager::EnqueueTask()
 {
 	CAttackTask* task = new CAttackTask(this);

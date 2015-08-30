@@ -31,6 +31,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 #ifdef DEBUG_VIS
 		, dbgTextureId(-1)
 		, sdlWindowId(-1)
+		, dbgMap(nullptr)
 #endif
 {
 	ResetBuildFrame();

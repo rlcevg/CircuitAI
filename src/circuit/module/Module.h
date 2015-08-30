@@ -29,7 +29,6 @@ public:
 	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 	virtual int UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId);
 	virtual int UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId);
-	virtual int EnemyEnterLOS(CCircuitUnit* unit);
 
 protected:
 	using Handlers1 = std::unordered_map<int, std::function<void (CCircuitUnit* unit)>>;

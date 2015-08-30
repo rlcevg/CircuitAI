@@ -14,6 +14,7 @@
 #include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
+#include "terrain/ThreatMap.h"
 #include "task/PlayerTask.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -199,38 +200,48 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		case EVENT_ENEMY_ENTER_LOS: {
 			PRINT_TOPIC("EVENT_ENEMY_ENTER_LOS", topic);
 			struct SEnemyEnterLOSEvent* evt = (struct SEnemyEnterLOSEvent*)data;
-			CCircuitUnit* unit = RegisterEnemyUnit(evt->enemy);
+			CCircuitUnit* unit = RegisterEnemyUnit(evt->enemy, true);
 			ret = (unit != nullptr) ? this->EnemyEnterLOS(unit) : ERROR_ENEMY_ENTER_LOS;
 			break;
 		}
 		case EVENT_ENEMY_LEAVE_LOS: {
 			PRINT_TOPIC("EVENT_ENEMY_LEAVE_LOS", topic);
-			ret = 0;
+			struct SEnemyLeaveLOSEvent* evt = (struct SEnemyLeaveLOSEvent*)data;
+			CCircuitUnit* enemy = GetEnemyUnit(evt->enemy);
+			ret = (enemy != nullptr) ? this->EnemyLeaveLOS(enemy) : ERROR_ENEMY_LEAVE_LOS;
 			break;
 		}
 		case EVENT_ENEMY_ENTER_RADAR: {
 			PRINT_TOPIC("EVENT_ENEMY_ENTER_RADAR", topic);
-			ret = 0;
+			struct SEnemyEnterRadarEvent* evt = (struct SEnemyEnterRadarEvent*)data;
+			CCircuitUnit* unit = RegisterEnemyUnit(evt->enemy, false);
+			ret = (unit != nullptr) ? this->EnemyEnterRadar(unit) : ERROR_ENEMY_ENTER_RADAR;
 			break;
 		}
 		case EVENT_ENEMY_LEAVE_RADAR: {
 			PRINT_TOPIC("EVENT_ENEMY_LEAVE_RADAR", topic);
-			ret = 0;
+			struct SEnemyLeaveRadarEvent* evt = (struct SEnemyLeaveRadarEvent*)data;
+			CCircuitUnit* enemy = GetEnemyUnit(evt->enemy);
+			ret = (enemy != nullptr) ? this->EnemyLeaveRadar(enemy) : ERROR_ENEMY_LEAVE_RADAR;
 			break;
 		}
 		case EVENT_ENEMY_DAMAGED: {
 			PRINT_TOPIC("EVENT_ENEMY_DAMAGED", topic);
-			ret = 0;
+			struct SEnemyDamagedEvent* evt = (struct SEnemyDamagedEvent*)data;
+			CCircuitUnit* enemy = GetEnemyUnit(evt->enemy);
+			ret = (enemy != nullptr) ? this->EnemyDamaged(enemy) : ERROR_ENEMY_DAMAGED;
 			break;
 		}
 		case EVENT_ENEMY_DESTROYED: {
 			PRINT_TOPIC("EVENT_ENEMY_DESTROYED", topic);
 			struct SEnemyDestroyedEvent* evt = (struct SEnemyDestroyedEvent*)data;
 			CCircuitUnit* enemy = GetEnemyUnit(evt->enemy);
-			if (enemy != nullptr) {  // Removed from AllyTeam once, but each AI gets this event
+			if (enemy != nullptr) {
+				ret = this->EnemyDestroyed(enemy);
 				UnregisterEnemyUnit(enemy);
+			} else {
+				ret = ERROR_ENEMY_DESTROYED;
 			}
-			ret = 0;
 			break;
 		}
 		case EVENT_WEAPON_FIRED: {
@@ -413,6 +424,10 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	modules.push_back(builderManager);
 	modules.push_back(factoryManager);
 
+	threatMap = std::make_shared<CThreatMap>(this);
+	const int offset = skirmishAIId % FRAMES_PER_SEC;
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CCircuitAI::UpdateEnemyUnits, this), FRAMES_PER_SEC, offset);
+
 //	Cheats* cheats = callback->GetCheats();
 //	cheats->SetEnabled(true);
 //	cheats->SetEventsEnabled(true);
@@ -445,6 +460,7 @@ int CCircuitAI::Release(int reason)
 	builderManager = nullptr;
 	terrainManager = nullptr;
 	metalManager = nullptr;
+	threatMap = nullptr;
 	energyLink = nullptr;
 	setupManager = nullptr;
 	scheduler = nullptr;
@@ -452,6 +468,10 @@ int CCircuitAI::Release(int reason)
 		delete kv.second;
 	}
 	teamUnits.clear();
+	for (auto& kv : enemyUnits) {
+		delete kv.second;
+	}
+	enemyUnits.clear();
 	allyTeam->Release();
 	for (auto& kv : defsById) {
 		delete kv.second;
@@ -490,6 +510,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 	const char cmdSelfD[] = "~Згинь, нечистая сила!\0";
 #ifdef DEBUG_VIS
 	const char cmdBlock[] = "~block\0";
+	const char cmdThreat[] = "~threat\0";
 #endif
 
 	if (message[0] != '~') {
@@ -513,6 +534,9 @@ int CCircuitAI::Message(int playerId, const char* message)
 #ifdef DEBUG_VIS
 	else if ((msgLength == strlen(cmdBlock)) && (strcmp(message, cmdBlock) == 0)) {
 		terrainManager->ToggleVis();
+	}
+	else if ((msgLength == strlen(cmdThreat)) && (strcmp(message, cmdThreat) == 0)) {
+		threatMap->ToggleVis();
 	}
 #endif
 
@@ -606,11 +630,46 @@ int CCircuitAI::UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::EnemyEnterLOS(CCircuitUnit* unit)
+int CCircuitAI::EnemyEnterLOS(CCircuitUnit* enemy)
 {
-	for (auto& module : modules) {
-		module->EnemyEnterLOS(unit);
-	}
+	threatMap->EnemyEnterLOS(enemy);
+
+	return 0;  // signaling: OK
+}
+
+int CCircuitAI::EnemyLeaveLOS(CCircuitUnit* enemy)
+{
+	threatMap->EnemyLeaveLOS(enemy);
+
+	return 0;  // signaling: OK
+}
+
+int CCircuitAI::EnemyEnterRadar(CCircuitUnit* enemy)
+{
+	threatMap->EnemyEnterRadar(enemy);
+	enemy->SetLastSeen(-1);
+
+	return 0;  // signaling: OK
+}
+
+int CCircuitAI::EnemyLeaveRadar(CCircuitUnit* enemy)
+{
+	threatMap->EnemyLeaveRadar(enemy);
+	enemy->SetLastSeen(lastFrame);
+
+	return 0;  // signaling: OK
+}
+
+int CCircuitAI::EnemyDamaged(CCircuitUnit* enemy)
+{
+	threatMap->EnemyDamaged(enemy);
+
+	return 0;  // signaling: OK
+}
+
+int CCircuitAI::EnemyDestroyed(CCircuitUnit* enemy)
+{
+	threatMap->EnemyDestroyed(enemy);
 
 	return 0;  // signaling: OK
 }
@@ -679,13 +738,13 @@ void CCircuitAI::UnregisterTeamUnit(CCircuitUnit* unit)
 	delete unit;
 }
 
-CCircuitUnit* CCircuitAI::GetTeamUnit(CCircuitUnit::Id unitId)
+CCircuitUnit* CCircuitAI::GetTeamUnit(CCircuitUnit::Id unitId) const
 {
 	auto it = teamUnits.find(unitId);
 	return (it != teamUnits.end()) ? it->second : nullptr;
 }
 
-CCircuitUnit* CCircuitAI::GetFriendlyUnit(Unit* u)
+CCircuitUnit* CCircuitAI::GetFriendlyUnit(Unit* u) const
 {
 	if (u == nullptr) {
 		return nullptr;
@@ -700,10 +759,15 @@ CCircuitUnit* CCircuitAI::GetFriendlyUnit(Unit* u)
 	return nullptr;
 }
 
-CCircuitUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId)
+CCircuitUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS)
 {
 	CCircuitUnit* unit = GetEnemyUnit(unitId);
 	if (unit != nullptr) {
+		if (isInLOS && (unit->GetCircuitDef() == nullptr)) {
+			UnitDef* unitDef = unit->GetUnit()->GetDef();
+			unit->SetCircuitDef(defsById[unitDef->GetUnitDefId()]);
+			delete unitDef;
+		}
 		return unit;
 	}
 
@@ -711,20 +775,49 @@ CCircuitUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId)
 	if (u == nullptr) {
 		return nullptr;
 	}
-	UnitDef* unitDef = u->GetDef();
-	unit = new CCircuitUnit(u, defsById[unitDef->GetUnitDefId()]);
-	delete unitDef;
+	CCircuitDef* cdef = nullptr;
+	if (isInLOS) {
+		UnitDef* unitDef = u->GetDef();
+		cdef = defsById[unitDef->GetUnitDefId()];
+		delete unitDef;
+	}
+	unit = new CCircuitUnit(u, cdef);
 
-	allyTeam->AddEnemyUnit(unit);
+	enemyUnits[unit->GetId()] = unit;
 
 	return unit;
 }
 
 void CCircuitAI::UnregisterEnemyUnit(CCircuitUnit* unit)
 {
-	allyTeam->RemoveEnemyUnit(unit);
+	enemyUnits.erase(unit->GetId());
 
 	delete unit;
+}
+
+void CCircuitAI::UpdateEnemyUnits()
+{
+	auto it = enemyUnits.begin();
+	while (it != enemyUnits.end()) {
+		CCircuitUnit* enemy = it->second;
+		int frame = enemy->GetLastSeen();
+		if ((frame != -1) && (lastFrame - frame >= FRAMES_PER_SEC * 300)) {
+			EnemyDestroyed(enemy);
+
+			// UnregisterEnemyUnit(enemy)
+			it = enemyUnits.erase(it);
+			delete enemy;
+		} else {
+			++it;
+		}
+	}
+	threatMap->Update();
+}
+
+CCircuitUnit* CCircuitAI::GetEnemyUnit(CCircuitUnit::Id unitId) const
+{
+	auto it = enemyUnits.find(unitId);
+	return (it != enemyUnits.end()) ? it->second : nullptr;
 }
 
 void CCircuitAI::InitOptions()

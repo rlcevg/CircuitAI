@@ -41,6 +41,8 @@ public:
 
 	Id GetId() const { return id; }
 	springai::Unit* GetUnit() const { return unit; }
+
+	void SetCircuitDef(CCircuitDef* cdef);
 	CCircuitDef* GetCircuitDef() const { return circuitDef; }
 
 	void SetTask(IUnitTask* task);
@@ -55,8 +57,13 @@ public:
 
 	bool IsMoveFailed(int frame);
 
+	// For enemy
+	void SetLastSeen(int frame) { unitFrame.lastSeen = frame; }
+	int GetLastSeen() const { return unitFrame.lastSeen; }
+
 	springai::Weapon* GetDGun() const { return dgun; }
-//	bool IsDisarmed();
+	bool IsDisarmed();
+	float GetDPS();
 
 	bool operator==(const CCircuitUnit& rhs) { return id == rhs.id; }
 	bool operator!=(const CCircuitUnit& rhs) { return id != rhs.id; }
@@ -71,10 +78,13 @@ private:
 	STerrainMapArea* area;  // = nullptr if a unit flies
 
 	int moveFails;
-	int failFrame;
+	union UnitFrame {
+		int failFrame;
+		int lastSeen;
+	} unitFrame;
 
 	springai::Weapon* dgun;
-//	springai::UnitRulesParam* disarmParam;
+	springai::UnitRulesParam* disarmParam;
 };
 
 } // namespace circuit

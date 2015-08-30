@@ -53,13 +53,8 @@ public:
 	void Release();
 
 	void UpdateFriendlyUnits(CCircuitAI* circuit);
-	CCircuitUnit* GetFriendlyUnit(CCircuitUnit::Id unitId);
+	CCircuitUnit* GetFriendlyUnit(CCircuitUnit::Id unitId) const;
 	const Units& GetFriendlyUnits() const { return friendlyUnits; }
-
-	void AddEnemyUnit(CCircuitUnit* unit) { enemyUnits[unit->GetId()] = unit; }
-	void RemoveEnemyUnit(CCircuitUnit* unit) { enemyUnits.erase(unit->GetId()); }
-	CCircuitUnit* GetEnemyUnit(CCircuitUnit::Id unitId);
-	const Units& GetEnemyUnits() const { return enemyUnits; }
 
 	std::shared_ptr<CMetalManager>& GetMetalManager() { return metalManager; }
 	std::shared_ptr<CEnergyGrid>& GetEnergyLink() { return energyLink; }
@@ -71,7 +66,6 @@ private:
 	int initCount;
 	int lastUpdate;
 	Units friendlyUnits;  // owner
-	Units enemyUnits;  // owner
 
 	std::shared_ptr<CMetalManager> metalManager;
 	std::shared_ptr<CEnergyGrid> energyLink;

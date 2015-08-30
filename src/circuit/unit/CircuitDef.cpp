@@ -10,6 +10,7 @@
 
 #include "WeaponMount.h"
 #include "WeaponDef.h"
+#include "Damage.h"
 
 namespace circuit {
 
@@ -51,6 +52,40 @@ CCircuitDef::CCircuitDef(UnitDef* def, std::unordered_set<Id>& buildOpts) :
 			dgunRange = bestRange;
 			dgunMount = bestMount;
 		}
+	}
+
+	dps = 0.0f;
+	auto mounts = std::move(def->GetWeaponMounts());
+	for (WeaponMount* mount : mounts) {
+		WeaponDef* wd = mount->GetWeaponDef();
+		const std::map<std::string, std::string>& customParams = wd->GetCustomParams();
+		bool valid = !wd->IsParalyzer();
+		auto it = customParams.find("extra_damage");
+		if (it != customParams.end()) {
+			// FIXME: arm_venom uses extra_damage to reduce HP, and damage = paralyzer
+			valid |= utils::string_to_float(it->second) > 0.0f;
+		}
+		it = customParams.find("disarmdamageonly");
+		if (it != customParams.end()) {
+			valid |= utils::string_to_int(it->second) == 0;
+		}
+		it = customParams.find("timeslow_onlyslow");
+		if (it != customParams.end()) {
+			valid |= utils::string_to_int(it->second) == 0;
+		}
+		if (valid) {
+			float ldps = 0.0f;
+			float reloadTime = wd->GetReload();
+			Damage* damage = wd->GetDamage();
+			const std::vector<float>& damages = damage->GetTypes();
+			for (float dmg : damages) {
+				ldps += dmg;
+			}
+			dps += ldps * wd->GetSalvoSize() / damages.size() / reloadTime;
+			delete damage;
+		}
+		delete wd;
+		delete mount;
 	}
 }
 

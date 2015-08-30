@@ -44,11 +44,16 @@ namespace circuit {
 #define ERROR_UNIT_GIVEN		(ERROR_UNKNOWN + EVENT_UNIT_GIVEN)
 #define ERROR_UNIT_CAPTURED		(ERROR_UNKNOWN + EVENT_UNIT_CAPTURED)
 #define ERROR_ENEMY_ENTER_LOS	(ERROR_UNKNOWN + EVENT_ENEMY_ENTER_LOS)
+#define ERROR_ENEMY_LEAVE_LOS	(ERROR_UNKNOWN + EVENT_ENEMY_LEAVE_LOS)
+#define ERROR_ENEMY_ENTER_RADAR	(ERROR_UNKNOWN + EVENT_ENEMY_ENTER_RADAR)
+#define ERROR_ENEMY_LEAVE_RADAR	(ERROR_UNKNOWN + EVENT_ENEMY_LEAVE_RADAR)
+#define ERROR_ENEMY_DAMAGED		(ERROR_UNKNOWN + EVENT_ENEMY_DAMAGED)
 #define ERROR_ENEMY_DESTROYED	(ERROR_UNKNOWN + EVENT_ENEMY_DESTROYED)
 #define LOG(fmt, ...)	GetLog()->DoLog(utils::string_format(std::string(fmt), ##__VA_ARGS__).c_str())
 
 class CGameAttribute;
 class CSetupManager;
+class CThreatMap;
 class CTerrainManager;
 class CBuilderManager;
 class CFactoryManager;
@@ -91,7 +96,12 @@ private:
 	int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
 	int UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId);  // TODO: Use Team class?
 	int UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId);  // TODO: Use Team class?
-	int EnemyEnterLOS(CCircuitUnit* unit);
+	int EnemyEnterLOS(CCircuitUnit* enemy);
+	int EnemyLeaveLOS(CCircuitUnit* enemy);
+	int EnemyEnterRadar(CCircuitUnit* enemy);
+	int EnemyLeaveRadar(CCircuitUnit* enemy);
+	int EnemyDamaged(CCircuitUnit* enemy);
+	int EnemyDestroyed(CCircuitUnit* enemy);
 	int PlayerCommand(std::vector<CCircuitUnit*>& units);
 //	int CommandFinished(CCircuitUnit* unit, int commandTopicId);
 	int LuaMessage(const char* inData);
@@ -101,26 +111,28 @@ private:
 	CCircuitUnit* RegisterTeamUnit(CCircuitUnit::Id unitId);
 	void UnregisterTeamUnit(CCircuitUnit* unit);
 public:
-	CCircuitUnit* GetTeamUnit(CCircuitUnit::Id unitId);
+	CCircuitUnit* GetTeamUnit(CCircuitUnit::Id unitId) const;
 	const CAllyTeam::Units& GetTeamUnits() const { return teamUnits; }
 
 	void UpdateFriendlyUnits() { allyTeam->UpdateFriendlyUnits(this); }
-	CCircuitUnit* GetFriendlyUnit(springai::Unit* u);
-	CCircuitUnit* GetFriendlyUnit(CCircuitUnit::Id unitId) { return allyTeam->GetFriendlyUnit(unitId); }
+	CCircuitUnit* GetFriendlyUnit(springai::Unit* u) const;
+	CCircuitUnit* GetFriendlyUnit(CCircuitUnit::Id unitId) const { return allyTeam->GetFriendlyUnit(unitId); }
 	const CAllyTeam::Units& GetFriendlyUnits() const { return allyTeam->GetFriendlyUnits(); }
 
 private:
-	CCircuitUnit* RegisterEnemyUnit(CCircuitUnit::Id unitId);
+	CCircuitUnit* RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS = false);
 	void UnregisterEnemyUnit(CCircuitUnit* unit);
+	void UpdateEnemyUnits();
 public:
-	CCircuitUnit* GetEnemyUnit(springai::Unit* u) { return GetEnemyUnit(u->GetUnitId()); }
-	CCircuitUnit* GetEnemyUnit(CCircuitUnit::Id unitId) { return allyTeam->GetEnemyUnit(unitId); }
-	const CAllyTeam::Units& GetEnemyUnits() const { return allyTeam->GetEnemyUnits(); }
+	CCircuitUnit* GetEnemyUnit(springai::Unit* u) const { return GetEnemyUnit(u->GetUnitId()); }
+	CCircuitUnit* GetEnemyUnit(CCircuitUnit::Id unitId) const;
+	const CAllyTeam::Units& GetEnemyUnits() const { return enemyUnits; }
 
 	CAllyTeam* GetAllyTeam() const { return allyTeam; }
 
 private:
 	CAllyTeam::Units teamUnits;  // owner
+	CAllyTeam::Units enemyUnits;  // owner
 	CAllyTeam* allyTeam;
 // ---- Units ---- END
 
@@ -173,6 +185,7 @@ public:
 	CSetupManager*    GetSetupManager() const    { return setupManager.get(); }
 	CMetalManager*    GetMetalManager() const    { return metalManager.get(); }
 	CEnergyGrid*      GetEnergyGrid() const      { return energyLink.get(); }
+	CThreatMap*       GetThreatMap() const       { return threatMap.get(); }
 	CTerrainManager*  GetTerrainManager() const  { return terrainManager.get(); }
 	CBuilderManager*  GetBuilderManager() const  { return builderManager.get(); }
 	CFactoryManager*  GetFactoryManager() const  { return factoryManager.get(); }
@@ -206,6 +219,7 @@ private:
 	std::shared_ptr<CSetupManager> setupManager;
 	std::shared_ptr<CMetalManager> metalManager;
 	std::shared_ptr<CEnergyGrid> energyLink;
+	std::shared_ptr<CThreatMap> threatMap;
 	std::shared_ptr<CTerrainManager> terrainManager;
 	std::shared_ptr<CBuilderManager> builderManager;
 	std::shared_ptr<CFactoryManager> factoryManager;

@@ -9,6 +9,7 @@
 #include "resource/MetalManager.h"
 #include "resource/EnergyGrid.h"
 #include "static/GameAttribute.h"
+#include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -25,12 +26,11 @@ bool CAllyTeam::SBox::ContainsPoint(const AIFloat3& point) const
 		   (point.z >= top) && (point.z <= bottom);
 }
 
-CAllyTeam::CAllyTeam(const TeamIds& tids, const SBox& sb) :
-		teamIds(tids),
-		startBox(sb),
-		lastUpdate(-1),
-		initCount(0),
-		energyLink(nullptr)
+CAllyTeam::CAllyTeam(const TeamIds& tids, const SBox& sb)
+		: teamIds(tids)
+		, startBox(sb)
+		, lastUpdate(-1)
+		, initCount(0)
 {
 }
 
@@ -53,7 +53,6 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 	if (metalManager->HasMetalSpots() && !metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
 		metalManager->ClusterizeMetal();
 	}
-
 	energyLink = std::make_shared<CEnergyGrid>(circuit);
 }
 
@@ -67,10 +66,6 @@ void CAllyTeam::Release()
 		delete kv.second;
 	}
 	friendlyUnits.clear();
-	for (auto& kv : enemyUnits) {
-		delete kv.second;
-	}
-	enemyUnits.clear();
 
 	metalManager = nullptr;
 	energyLink = nullptr;
@@ -102,16 +97,10 @@ void CAllyTeam::UpdateFriendlyUnits(CCircuitAI* circuit)
 	lastUpdate = circuit->GetLastFrame();
 }
 
-CCircuitUnit* CAllyTeam::GetFriendlyUnit(CCircuitUnit::Id unitId)
+CCircuitUnit* CAllyTeam::GetFriendlyUnit(CCircuitUnit::Id unitId) const
 {
-	decltype(friendlyUnits)::iterator it = friendlyUnits.find(unitId);
+	decltype(friendlyUnits)::const_iterator it = friendlyUnits.find(unitId);
 	return (it != friendlyUnits.end()) ? it->second : nullptr;
-}
-
-CCircuitUnit* CAllyTeam::GetEnemyUnit(CCircuitUnit::Id unitId)
-{
-	decltype(enemyUnits)::iterator it = enemyUnits.find(unitId);
-	return (it != enemyUnits.end()) ? it->second : nullptr;
 }
 
 } // namespace circuit

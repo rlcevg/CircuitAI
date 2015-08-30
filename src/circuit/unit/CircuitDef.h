@@ -55,6 +55,7 @@ public:
 //	int GetDGunReload() const { return dgunReload; }
 	float GetDGunRange() const { return dgunRange; }
 	springai::WeaponMount* GetDGunMount() const { return dgunMount; }
+	float GetDPS() const { return dps; }
 
 	void SetImmobileId(STerrainMapImmobileType::Id immobileId) { immobileTypeId = immobileId; }
 	STerrainMapImmobileType::Id GetImmobileId() const { return immobileTypeId; }
@@ -72,6 +73,7 @@ private:
 //	int dgunReload;  // frames in ticks
 	float dgunRange;
 	springai::WeaponMount* dgunMount;
+	float dps;
 
 	STerrainMapImmobileType::Id immobileTypeId;
 	STerrainMapMobileType::Id   mobileTypeId;
