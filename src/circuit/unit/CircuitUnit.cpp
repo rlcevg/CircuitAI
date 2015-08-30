@@ -78,12 +78,15 @@ bool CCircuitUnit::IsDisarmed()
 
 float CCircuitUnit::GetDPS()
 {
-	if (circuitDef == nullptr) {
+	if (circuitDef == nullptr) {  // unknown enemy
 		return 100.0f;
 	}
 	float dps = circuitDef->GetDPS();
-	if ((dps < 0.1f) || unit->IsParalyzed() || IsDisarmed()) {
-		return 0.0f;
+	if (dps < 0.1f) {
+		return .0f;
+	}
+	if (unit->IsParalyzed() || IsDisarmed()) {
+		return 1.0f;
 	}
 	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;
 	return dps;

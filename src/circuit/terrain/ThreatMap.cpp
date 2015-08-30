@@ -74,8 +74,8 @@ void CThreatMap::Update()
 		}
 
 		DelEnemyUnit(e);
-//		if (((e.losStatus & LosType::RADAR) == 0) && IsInLOS(e.pos))
-//			((e.losStatus & LosType::LOS) == 0) && IsInLOS(e.pos)) {
+//		if ((((e.losStatus & LosType::RADAR) == 0) && IsInRadar(e.pos)) ||
+//			(((e.losStatus & LosType::LOS) == 0) && IsInLOS(e.pos))) {
 		if (((e.losStatus & ((LosType::RADAR | LosType::LOS))) == 0) && IsInLOS(e.pos)) {
 			e.losStatus |= LosType::HIDDEN;
 			continue;
@@ -83,7 +83,7 @@ void CThreatMap::Update()
 		if (e.losStatus & (LosType::RADAR | LosType::LOS)) {
 			e.pos = e.unit->GetUnit()->GetPos();
 		} else {
-			e.threat *= 0.98f;  // decay 0.98^updateNum
+			e.threat *= 0.99f;  // decay 0.99^updateNum
 		}
 		if (e.losStatus & LosType::LOS) {
 			e.threat = GetEnemyUnitThreat(e.unit);
@@ -156,8 +156,7 @@ void CThreatMap::EnemyEnterRadar(CCircuitUnit* enemy)
 
 	SEnemyUnit& e = it->second;
 	e.pos = enemy->GetUnit()->GetPos();
-	if (isNew) {
-		// unknown enemy enters radar for the first time
+	if (isNew) {  // unknown enemy enters radar for the first time
 		e.threat = enemy->GetDPS();  // TODO: Randomize
 		e.range = (150.0f + 100.0f) / (SQUARE_SIZE * THREAT_RES);
 	}
@@ -223,9 +222,9 @@ void CThreatMap::AddEnemyUnit(const SEnemyUnit& e, const float scale)
 	const int rangeSq = e.range * e.range;
 
 	const int beginX = std::max(int(posx - e.range), 0);
-	const int endX = std::min(int(posx + e.range), width);
+	const int endX = std::min(int(posx + e.range + 1), width);
 	const int beginZ = std::max(int(posz - e.range), 0);
-	const int endZ = std::min(int(posz + e.range), height);
+	const int endZ = std::min(int(posz + e.range + 1), height);
 
 	for (int x = beginX; x < endX; ++x) {
 		const int dxSq = (posx - x) * (posx - x);
