@@ -40,7 +40,7 @@ void CDefendTask::OnUnitIdle(CCircuitUnit* unit)
 	// TODO: Should be on patrol. Stuck?
 }
 
-void CDefendTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CDefendTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	Unit* u = unit->GetUnit();
 	// TODO: floating retreat coefficient
@@ -51,7 +51,7 @@ void CDefendTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 	manager->AssignTask(unit, manager->GetRetreatTask());
 }
 
-void CDefendTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CDefendTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	RemoveAssignee(unit);
 }

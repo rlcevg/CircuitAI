@@ -17,37 +17,26 @@ namespace circuit {
 
 using namespace springai;
 
-CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* circuitDef)
+CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* cdef)
 		: id(unit->GetUnitId())
 		, unit(unit)
-		, dgun(nullptr)
+		, circuitDef(cdef)
 		, task(nullptr)
 		, taskFrame(-1)
 		, manager(nullptr)
 		, area(nullptr)
 		, disarmParam(nullptr)
 		, moveFails(0)
-		, unitFrame({-1})
+		, failFrame(-1)
 {
-	SetCircuitDef(circuitDef);
+	WeaponMount* wpMnt = circuitDef->GetDGunMount();
+	dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
 }
 
 CCircuitUnit::~CCircuitUnit()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete unit, dgun, disarmParam;
-}
-
-void CCircuitUnit::SetCircuitDef(CCircuitDef* cdef)
-{
-	circuitDef = cdef;
-	delete dgun;
-	if (cdef == nullptr) {
-		dgun = nullptr;
-	} else {
-		WeaponMount* wpMnt = circuitDef->GetDGunMount();
-		dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
-	}
 }
 
 void CCircuitUnit::SetTask(IUnitTask* task)
@@ -58,10 +47,10 @@ void CCircuitUnit::SetTask(IUnitTask* task)
 
 bool CCircuitUnit::IsMoveFailed(int frame)
 {
-	if (frame - unitFrame.failFrame >= FRAMES_PER_SEC * 3) {
+	if (frame - failFrame >= FRAMES_PER_SEC * 3) {
 		moveFails = 0;
 	}
-	unitFrame.failFrame = frame;
+	failFrame = frame;
 	return ++moveFails > TASK_RETRIES * 2;
 }
 
@@ -78,9 +67,6 @@ bool CCircuitUnit::IsDisarmed()
 
 float CCircuitUnit::GetDPS()
 {
-	if (circuitDef == nullptr) {  // unknown enemy
-		return 100.0f;
-	}
 	float dps = circuitDef->GetDPS();
 	if (dps < 0.1f) {
 		return .0f;

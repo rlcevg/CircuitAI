@@ -34,9 +34,9 @@ public:
 	CEconomyManager(CCircuitAI* circuit);
 	virtual ~CEconomyManager();
 
-	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
-	virtual int UnitFinished(CCircuitUnit* unit);
-	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
+	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
+	virtual int UnitFinished(CCircuitUnit* unit) override;
+	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 
 	IBuilderTask* CreateBuilderTask(const springai::AIFloat3& position, CCircuitUnit* unit);
 	CRecruitTask* CreateFactoryTask(CCircuitUnit* unit);
@@ -73,7 +73,7 @@ private:
 
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
-	Handlers2 destroyedHandler;
+	EHandlers destroyedHandler;
 
 	springai::Resource* metalRes;
 	springai::Resource* energyRes;

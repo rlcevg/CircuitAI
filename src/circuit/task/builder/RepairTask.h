@@ -28,7 +28,7 @@ protected:
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
 
 	virtual void SetTarget(CCircuitUnit* unit);
 

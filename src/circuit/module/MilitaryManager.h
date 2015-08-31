@@ -34,11 +34,11 @@ public:
 	CMilitaryManager(CCircuitAI* circuit);
 	virtual ~CMilitaryManager();
 
-	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
-	virtual int UnitFinished(CCircuitUnit* unit);
-	virtual int UnitIdle(CCircuitUnit* unit);
-	virtual int UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
-	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
+	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
+	virtual int UnitFinished(CCircuitUnit* unit) override;
+	virtual int UnitIdle(CCircuitUnit* unit) override;
+	virtual int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 
 	IUnitTask* EnqueueTask();
 private:
@@ -66,8 +66,8 @@ private:
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
-	Handlers2 damagedHandler;
-	Handlers2 destroyedHandler;
+	EHandlers damagedHandler;
+	EHandlers destroyedHandler;
 
 	std::set<IUnitTask*> fighterTasks;  // owner
 	std::set<IUnitTask*> updateTasks;

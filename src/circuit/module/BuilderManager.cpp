@@ -89,10 +89,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 			unit->GetTask()->OnUnitIdle(unit);
 		}
 	};
-	auto workerDamagedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+	auto workerDamagedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		unit->GetTask()->OnUnitDamaged(unit, attacker);
 	};
-	auto workerDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+	auto workerDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
@@ -110,7 +110,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	/*
 	 * building handlers
 	 */
-	auto buildingDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+	auto buildingDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		Unit* u = unit->GetUnit();
 		this->circuit->GetTerrainManager()->RemoveBlocker(unit->GetCircuitDef(), u->GetPos(), u->GetBuildingFacing());
 	};
@@ -142,7 +142,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 
 	// Forbid from removing cormex blocker
 	CCircuitDef::Id unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
-	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		const AIFloat3& pos = unit->GetUnit()->GetPos();
 		if (unit->GetUnit()->IsBeingBuilt() || !IsBuilderInArea(unit->GetCircuitDef(), pos)) {
 			this->circuit->GetMetalManager()->SetOpenSpot(pos, true);
@@ -166,12 +166,12 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	/*
 	 * strider handlers
 	 */
-	const char* striders[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco"};
-	for (auto strider : striders) {
-		createdHandler[circuit->GetCircuitDef(strider)->GetId()] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
-			unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::LOW, unit);
-		};
-	}
+//	const char* striders[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco"};
+//	for (auto strider : striders) {
+//		createdHandler[circuit->GetCircuitDef(strider)->GetId()] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
+//			unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::LOW, unit);
+//		};
+//	}
 	// FIXME: EXPERIMENTAL
 }
 
@@ -253,7 +253,7 @@ int CBuilderManager::UnitIdle(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
-int CBuilderManager::UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+int CBuilderManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	auto search = damagedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != damagedHandler.end()) {
@@ -263,7 +263,7 @@ int CBuilderManager::UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 	return 0; //signaling: OK
 }
 
-int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	auto iter = unfinishedUnits.find(unit);
 	if (iter != unfinishedUnits.end()) {

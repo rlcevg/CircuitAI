@@ -8,7 +8,7 @@
 
 #include "terrain/ThreatMap.h"
 #include "terrain/TerrainManager.h"
-#include "CircuitAI.h"
+#include "unit/EnemyUnit.h"
 #include "util/utils.h"
 
 #include "OOAICallback.h"
@@ -68,29 +68,47 @@ void CThreatMap::Update()
 
 	// account for moving units
 	for (auto& kv : enemyUnits) {
-		SEnemyUnit& e = kv.second;
-		if (e.losStatus & LosType::HIDDEN) {
+		CEnemyUnit* e = kv.second;
+		if (e->IsHidden()) {
 			continue;
 		}
 
 		DelEnemyUnit(e);
-//		if ((((e.losStatus & LosType::RADAR) == 0) && IsInRadar(e.pos)) ||
-//			(((e.losStatus & LosType::LOS) == 0) && IsInLOS(e.pos))) {
-		if (((e.losStatus & ((LosType::RADAR | LosType::LOS))) == 0) && IsInLOS(e.pos)) {
-			e.losStatus |= LosType::HIDDEN;
+//		if ((!e->IsInRadar() && IsInRadar(e->GetPos())) ||
+//			(!e->IsInLOS() && IsInLOS(e->GetPos()))) {
+		if (e->NotInRadarAndLOS() && IsInLOS(e->GetPos())) {
+			e->SetHidden();
 			continue;
 		}
-		if (e.losStatus & (LosType::RADAR | LosType::LOS)) {
-			e.pos = e.unit->GetUnit()->GetPos();
+		if (e->IsInRadarOrLOS()) {
+			AIFloat3 pos = e->GetUnit()->GetPos();
+			circuit->GetTerrainManager()->CorrectPosition(pos);
+			e->SetPos(pos);
 		} else {
-			e.threat *= 0.99f;  // decay 0.99^updateNum
+			e->DecayThreat(0.99f);  // decay 0.99^updateNum
 		}
-		if (e.losStatus & LosType::LOS) {
-			e.threat = GetEnemyUnitThreat(e.unit);
+		if (e->IsInLOS()) {
+			e->SetThreat(GetEnemyUnitThreat(e));
 		}
 		AddEnemyUnit(e);
 
-		currMaxThreat = std::max(currMaxThreat, e.threat);
+		currMaxThreat = std::max(currMaxThreat, e->GetThreat());
+	}
+
+	for (auto& kv : peaceUnits) {
+		CEnemyUnit* e = kv.second;
+		if (e->IsHidden()) {
+			continue;
+		}
+		if (e->NotInRadarAndLOS() && IsInLOS(e->GetPos())) {
+			e->SetHidden();
+			continue;
+		}
+		if (e->IsInRadarOrLOS()) {
+			AIFloat3 pos = e->GetUnit()->GetPos();
+			circuit->GetTerrainManager()->CorrectPosition(pos);
+			e->SetPos(pos);
+		}
 	}
 
 #ifdef DEBUG_VIS
@@ -98,110 +116,124 @@ void CThreatMap::Update()
 #endif
 }
 
-void CThreatMap::EnemyEnterLOS(CCircuitUnit* enemy)
+void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 {
+	// Possible cases:
+	// (1) Unknown enemy that has been detected for the first time
+	// (2) Unknown enemy that was only in radar enters LOS
+	// (3) Known enemy that already was in LOS enters again
+
+	enemy->SetInLOS();
+
 	if (enemy->GetDPS() < 0.1f) {
+		if (enemy->GetThreat() > .0f) {  // (2)
+			// threat prediction failed when enemy was unknown
+			if (!enemy->IsHidden()) {
+				DelEnemyUnit(enemy);
+			}
+			enemy->SetThreat(.0f);
+			enemy->SetRange(.0f);
+			enemyUnits.erase(enemy->GetId());
+		}
+		peaceUnits[enemy->GetId()] = enemy;
+		AIFloat3 pos = enemy->GetUnit()->GetPos();
+		circuit->GetTerrainManager()->CorrectPosition(pos);
+		enemy->SetPos(pos);
+		enemy->ClearHidden();
 		return;
 	}
 
 	auto it = enemyUnits.find(enemy->GetId());
 	if (it == enemyUnits.end()) {
-		bool ok;
-		std::tie(it, ok) = enemyUnits.emplace(enemy->GetId(), SEnemyUnit(enemy));
-	} else if (it->second.losStatus & LosType::HIDDEN) {
-		it->second.losStatus &= ~LosType::HIDDEN;
+		enemyUnits[enemy->GetId()] = enemy;
+	} else if (enemy->IsHidden()) {
+		enemy->ClearHidden();
 	} else {
-		DelEnemyUnit(it->second);
+		DelEnemyUnit(enemy);
 	}
 
-	SEnemyUnit& e = it->second;
-	e.pos = enemy->GetUnit()->GetPos();
-	e.threat = GetEnemyUnitThreat(enemy);
-	e.range = (enemy->GetUnit()->GetMaxRange() + 100.0f) / (SQUARE_SIZE * THREAT_RES);
-	e.losStatus |= LosType::LOS;
+	AIFloat3 pos = enemy->GetUnit()->GetPos();
+	circuit->GetTerrainManager()->CorrectPosition(pos);
+	enemy->SetPos(pos);
+	enemy->SetThreat(GetEnemyUnitThreat(enemy));
+	enemy->SetRange((enemy->GetUnit()->GetMaxRange() + 100.0f) / (SQUARE_SIZE * THREAT_RES));
 
-	circuit->GetTerrainManager()->CorrectPosition(e.pos);
-	AddEnemyUnit(e);
+	AddEnemyUnit(enemy);
 }
 
-void CThreatMap::EnemyLeaveLOS(CCircuitUnit* enemy)
+void CThreatMap::EnemyLeaveLOS(CEnemyUnit* enemy)
 {
-	auto it = enemyUnits.find(enemy->GetId());
-	if (it == enemyUnits.end()) {
-		return;
-	}
-
-	SEnemyUnit& e = it->second;
-	e.losStatus &= ~LosType::LOS;
+	enemy->ClearInLOS();
 }
 
-void CThreatMap::EnemyEnterRadar(CCircuitUnit* enemy)
+void CThreatMap::EnemyEnterRadar(CEnemyUnit* enemy)
 {
-	if (enemy->GetDPS() < 0.1f) {
+	// Possible cases:
+	// (1) Unknown enemy wanders at radars
+	// (2) Known enemy that once was in los wandering at radar
+	// (3) EnemyEnterRadar invoked right after EnemyEnterLOS in area with no radar
+
+	enemy->SetInRadar();
+
+	if (enemy->IsInLOS()) {  // (3)
 		return;
 	}
 
-	bool isNew = false;
-	auto it = enemyUnits.find(enemy->GetId());
-	if (it == enemyUnits.end()) {
-		std::tie(it, isNew) = enemyUnits.emplace(enemy->GetId(), SEnemyUnit(enemy));
-	} else if (it->second.losStatus & LosType::LOS) {
-		it->second.losStatus |= LosType::RADAR;
+	if (enemy->GetDPS() < 0.1f) {  // (2)
+		AIFloat3 pos = enemy->GetUnit()->GetPos();
+		circuit->GetTerrainManager()->CorrectPosition(pos);
+		enemy->SetPos(pos);
+		enemy->ClearHidden();
 		return;
-	} else if (it->second.losStatus & LosType::HIDDEN) {
-		it->second.losStatus &= ~LosType::HIDDEN;
+	}
+
+	auto it = enemyUnits.find(enemy->GetId());
+	if (it == enemyUnits.end()) {  // (1)
+		enemyUnits[enemy->GetId()] = enemy;
+	} else if (enemy->IsHidden()) {
+		enemy->ClearHidden();
 	} else {
-		DelEnemyUnit(it->second);
+		DelEnemyUnit(enemy);
 	}
 
-	SEnemyUnit& e = it->second;
-	e.pos = enemy->GetUnit()->GetPos();
-	if (isNew) {  // unknown enemy enters radar for the first time
-		e.threat = enemy->GetDPS();  // TODO: Randomize
-		e.range = (150.0f + 100.0f) / (SQUARE_SIZE * THREAT_RES);
+	AIFloat3 pos = enemy->GetUnit()->GetPos();
+	circuit->GetTerrainManager()->CorrectPosition(pos);
+	enemy->SetPos(pos);
+	if (enemy->IsNew()) {  // unknown enemy enters radar for the first time
+		enemy->SetThreat(enemy->GetDPS());  // TODO: Randomize
+		enemy->SetRange((150.0f + 100.0f) / (SQUARE_SIZE * THREAT_RES));
 	}
-	e.losStatus |= LosType::RADAR;
 
-	circuit->GetTerrainManager()->CorrectPosition(e.pos);
-	AddEnemyUnit(e);
+	AddEnemyUnit(enemy);
 }
 
-void CThreatMap::EnemyLeaveRadar(CCircuitUnit* enemy)
+void CThreatMap::EnemyLeaveRadar(CEnemyUnit* enemy)
+{
+	enemy->ClearInRadar();
+}
+
+void CThreatMap::EnemyDamaged(CEnemyUnit* enemy)
 {
 	auto it = enemyUnits.find(enemy->GetId());
-	if (it == enemyUnits.end()) {
+	if ((it == enemyUnits.end()) || !enemy->IsInLOS()) {
 		return;
 	}
 
-	SEnemyUnit& e = it->second;
-	e.losStatus &= ~LosType::RADAR;
+	DelEnemyUnit(enemy);
+	enemy->SetThreat(GetEnemyUnitThreat(enemy));
+	AddEnemyUnit(enemy);
 }
 
-void CThreatMap::EnemyDamaged(CCircuitUnit* enemy)
+void CThreatMap::EnemyDestroyed(CEnemyUnit* enemy)
 {
 	auto it = enemyUnits.find(enemy->GetId());
 	if (it == enemyUnits.end()) {
+		peaceUnits.erase(enemy->GetId());
 		return;
 	}
 
-	SEnemyUnit& e = it->second;
-	if (e.losStatus & LosType::LOS) {
-		DelEnemyUnit(e);
-		e.threat = GetEnemyUnitThreat(enemy);
-		AddEnemyUnit(e);
-	}
-}
-
-void CThreatMap::EnemyDestroyed(CCircuitUnit* enemy)
-{
-	auto it = enemyUnits.find(enemy->GetId());
-	if (it == enemyUnits.end()) {
-		return;
-	}
-
-	const SEnemyUnit& e = it->second;
-	if ((e.losStatus & LosType::HIDDEN) == 0) {
-		DelEnemyUnit(e);
+	if (!enemy->IsHidden()) {
+		DelEnemyUnit(enemy);
 	}
 	enemyUnits.erase(it);
 }
@@ -213,18 +245,23 @@ float CThreatMap::GetThreatAt(const AIFloat3& pos) const
 	return threatCells[z * width + x] - THREAT_VAL_BASE;
 }
 
-void CThreatMap::AddEnemyUnit(const SEnemyUnit& e, const float scale)
+float CThreatMap::GetUnitPower(CCircuitUnit* unit) const
 {
-	const int posx = e.pos.x / (SQUARE_SIZE * THREAT_RES);
-	const int posz = e.pos.z / (SQUARE_SIZE * THREAT_RES);
+	return unit->GetDPS() * unit->GetUnit()->GetHealth() / unit->GetUnit()->GetMaxHealth();
+}
 
-	const float threat = e.threat * scale;
-	const int rangeSq = e.range * e.range;
+void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, const float scale)
+{
+	const int posx = e->GetPos().x / (SQUARE_SIZE * THREAT_RES);
+	const int posz = e->GetPos().z / (SQUARE_SIZE * THREAT_RES);
 
-	const int beginX = std::max(int(posx - e.range), 0);
-	const int endX = std::min(int(posx + e.range + 1), width);
-	const int beginZ = std::max(int(posz - e.range), 0);
-	const int endZ = std::min(int(posz + e.range + 1), height);
+	const float threat = e->GetThreat() * scale;
+	const int rangeSq = e->GetRange() * e->GetRange();
+
+	const int beginX = std::max(int(posx - e->GetRange()    ),      0);
+	const int endX   = std::min(int(posx + e->GetRange() + 1),  width);
+	const int beginZ = std::max(int(posz - e->GetRange()    ),      0);
+	const int endZ   = std::min(int(posz + e->GetRange() + 1), height);
 
 	for (int x = beginX; x < endX; ++x) {
 		const int dxSq = (posx - x) * (posx - x);
@@ -246,7 +283,7 @@ void CThreatMap::AddEnemyUnit(const SEnemyUnit& e, const float scale)
 	currAvgThreat = currSumThreat / threatCells.size();
 }
 
-float CThreatMap::GetEnemyUnitThreat(CCircuitUnit* enemy) const
+float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
 {
 	Unit* u = enemy->GetUnit();
 	if (u->IsBeingBuilt()) {

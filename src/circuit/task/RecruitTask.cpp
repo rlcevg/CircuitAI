@@ -57,12 +57,12 @@ void CRecruitTask::OnUnitIdle(CCircuitUnit* unit)
 	Execute(unit);
 }
 
-void CRecruitTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CRecruitTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	// TODO: React: analyze, abort, create appropriate task
 }
 
-void CRecruitTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CRecruitTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	RemoveAssignee(unit);
 }

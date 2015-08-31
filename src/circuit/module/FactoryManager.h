@@ -25,10 +25,10 @@ public:
 	CFactoryManager(CCircuitAI* circuit);
 	virtual ~CFactoryManager();
 
-	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
-	virtual int UnitFinished(CCircuitUnit* unit);
-	virtual int UnitIdle(CCircuitUnit* unit);
-	virtual int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
+	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
+	virtual int UnitFinished(CCircuitUnit* unit) override;
+	virtual int UnitIdle(CCircuitUnit* unit) override;
+	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 
 	CRecruitTask* EnqueueTask(CRecruitTask::Priority priority,
 							  CCircuitDef* buildDef,
@@ -70,7 +70,7 @@ private:
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
 	Handlers1 idleHandler;
-	Handlers2 destroyedHandler;
+	EHandlers destroyedHandler;
 
 	std::map<CCircuitUnit*, CRecruitTask*> unfinishedUnits;
 	std::set<CRecruitTask*> factoryTasks;  // owner

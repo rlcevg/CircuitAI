@@ -11,7 +11,7 @@
 #include "unit/CircuitUnit.h"
 
 #include <memory>
-#include <unordered_map>
+#include <map>
 #include <unordered_set>
 
 namespace springai {
@@ -27,7 +27,7 @@ class CEnergyGrid;
 class CAllyTeam {
 public:
 	using Id = int;
-	using Units = std::unordered_map<CCircuitUnit::Id, CCircuitUnit*>;
+	using Units = std::map<CCircuitUnit::Id, CCircuitUnit*>;
 	using TeamIds = std::unordered_set<Id>;
 	union SBox {
 		struct {

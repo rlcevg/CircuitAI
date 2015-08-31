@@ -9,6 +9,8 @@
 #include "task/RetreatTask.h"
 #include "task/TaskManager.h"
 #include "terrain/TerrainManager.h"
+#include "terrain/ThreatMap.h"
+#include "unit/EnemyUnit.h"
 #include "unit/action/DGunAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -43,14 +45,38 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 void CAttackTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	Unit* u = unit->GetUnit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	int terWidth = terrainManager->GetTerrainWidth();
-	int terHeight = terrainManager->GetTerrainHeight();
-	float x = rand() % (int)(terWidth + 1);
-	float z = rand() % (int)(terHeight + 1);
-	AIFloat3 toPos(x, circuit->GetMap()->GetElevationAt(x, z), z);
-	u->Fight(toPos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60 * 5);
+	Unit* u = unit->GetUnit();
+
+	const AIFloat3& pos = u->GetPos();
+	STerrainMapArea* area = unit->GetArea();
+	float power = circuit->GetThreatMap()->GetUnitPower(unit);
+	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
+	CEnemyUnit* bestTarget = nullptr;
+	float minSqDist = std::numeric_limits<float>::max();
+	for (auto& kv : enemies) {
+		CEnemyUnit* enemy = kv.second;
+		if (enemy->IsHidden() || (enemy->GetThreat() >= power) ||
+			!terrainManager->CanMoveToPos(area, enemy->GetPos()))
+		{
+			continue;
+		}
+		float sqDist = pos.SqDistance2D(enemy->GetPos());
+		if (sqDist < minSqDist) {
+			bestTarget = enemy;
+			minSqDist = sqDist;
+		}
+	}
+
+	AIFloat3 toPos;
+	if (bestTarget == nullptr) {
+		float x = rand() % (terrainManager->GetTerrainWidth() + 1);
+		float z = rand() % (terrainManager->GetTerrainHeight() + 1);
+		toPos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
+	} else {
+		toPos = bestTarget->GetPos();
+	}
+	u->Fight(toPos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 300);
 }
 
 void CAttackTask::Update()
@@ -69,7 +95,7 @@ void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
 	manager->AbortTask(this);
 }
 
-void CAttackTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CAttackTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	Unit* u = unit->GetUnit();
 	// TODO: floating retreat coefficient
@@ -81,7 +107,7 @@ void CAttackTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 	manager->AbortTask(this);
 }
 
-void CAttackTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CAttackTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 //	RemoveAssignee(unit);
 	manager->AbortTask(this);

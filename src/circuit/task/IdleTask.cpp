@@ -78,12 +78,12 @@ void CIdleTask::OnUnitIdle(CCircuitUnit* unit)
 	// Do nothing. Unit is already idling.
 }
 
-void CIdleTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CIdleTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	// TODO: React while idling: analyze situation and create appropriate task/action
 }
 
-void CIdleTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CIdleTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 }
 

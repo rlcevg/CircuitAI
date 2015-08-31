@@ -39,11 +39,11 @@ void CNullTask::OnUnitIdle(CCircuitUnit* unit)
 {
 }
 
-void CNullTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CNullTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 }
 
-void CNullTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CNullTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	RemoveAssignee(unit);
 }

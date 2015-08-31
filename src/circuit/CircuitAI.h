@@ -61,6 +61,7 @@ class CEconomyManager;
 class CMilitaryManager;
 class CScheduler;
 class IModule;
+class CEnemyUnit;
 class CDebugDrawer;
 
 class CCircuitAI {
@@ -92,16 +93,16 @@ private:
 	int UnitFinished(CCircuitUnit* unit);
 	int UnitIdle(CCircuitUnit* unit);
 	int UnitMoveFailed(CCircuitUnit* unit);
-	int UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
-	int UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
+	int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
+	int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
 	int UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId);  // TODO: Use Team class?
 	int UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId);  // TODO: Use Team class?
-	int EnemyEnterLOS(CCircuitUnit* enemy);
-	int EnemyLeaveLOS(CCircuitUnit* enemy);
-	int EnemyEnterRadar(CCircuitUnit* enemy);
-	int EnemyLeaveRadar(CCircuitUnit* enemy);
-	int EnemyDamaged(CCircuitUnit* enemy);
-	int EnemyDestroyed(CCircuitUnit* enemy);
+	int EnemyEnterLOS(CEnemyUnit* enemy);
+	int EnemyLeaveLOS(CEnemyUnit* enemy);
+	int EnemyEnterRadar(CEnemyUnit* enemy);
+	int EnemyLeaveRadar(CEnemyUnit* enemy);
+	int EnemyDamaged(CEnemyUnit* enemy);
+	int EnemyDestroyed(CEnemyUnit* enemy);
 	int PlayerCommand(std::vector<CCircuitUnit*>& units);
 //	int CommandFinished(CCircuitUnit* unit, int commandTopicId);
 	int LuaMessage(const char* inData);
@@ -119,20 +120,21 @@ public:
 	CCircuitUnit* GetFriendlyUnit(CCircuitUnit::Id unitId) const { return allyTeam->GetFriendlyUnit(unitId); }
 	const CAllyTeam::Units& GetFriendlyUnits() const { return allyTeam->GetFriendlyUnits(); }
 
+	using EnemyUnits = std::map<CCircuitUnit::Id, CEnemyUnit*>;
 private:
-	CCircuitUnit* RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS = false);
-	void UnregisterEnemyUnit(CCircuitUnit* unit);
+	CEnemyUnit* RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS = false);
+	void UnregisterEnemyUnit(CEnemyUnit* unit);
 	void UpdateEnemyUnits();
 public:
-	CCircuitUnit* GetEnemyUnit(springai::Unit* u) const { return GetEnemyUnit(u->GetUnitId()); }
-	CCircuitUnit* GetEnemyUnit(CCircuitUnit::Id unitId) const;
-	const CAllyTeam::Units& GetEnemyUnits() const { return enemyUnits; }
+	CEnemyUnit* GetEnemyUnit(springai::Unit* u) const { return GetEnemyUnit(u->GetUnitId()); }
+	CEnemyUnit* GetEnemyUnit(CCircuitUnit::Id unitId) const;
+	const EnemyUnits& GetEnemyUnits() const { return enemyUnits; }
 
 	CAllyTeam* GetAllyTeam() const { return allyTeam; }
 
 private:
 	CAllyTeam::Units teamUnits;  // owner
-	CAllyTeam::Units enemyUnits;  // owner
+	EnemyUnits enemyUnits;  // owner
 	CAllyTeam* allyTeam;
 // ---- Units ---- END
 

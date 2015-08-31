@@ -35,12 +35,12 @@ void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
 	// TODO: Go scout elsewhere? Or join the force?
 }
 
-void CScoutTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CScoutTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	// TODO: Update threat and try to avoid?
 }
 
-void CScoutTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CScoutTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	RemoveAssignee(unit);
 }

@@ -50,10 +50,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	auto attackerIdleHandler = [this](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
 	};
-	auto attackerDamagedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+	auto attackerDamagedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		unit->GetTask()->OnUnitDamaged(unit, attacker);
 	};
-	auto attackerDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+	auto attackerDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 	};
@@ -76,7 +76,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	/*
 	 * Defence handlers
 	 */
-	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		Resource* metalRes = this->circuit->GetEconomyManager()->GetMetalRes();
 		float defCost = unit->GetCircuitDef()->GetUnitDef()->GetCost(metalRes);
 		SDefPoint* point = GetDefPoint(unit->GetUnit()->GetPos(), defCost);
@@ -104,7 +104,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 //	idleHandler[unitDefId] = [this](CCircuitUnit* unit) {
 //		fighterInfos.erase(unit);
 //	};
-//	damagedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+//	damagedHandler[unitDefId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 //		if (attacker != nullptr) {
 //			auto search = fighterInfos.find(unit);
 //			if (search == fighterInfos.end()) {
@@ -131,7 +131,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 //			}
 //		}
 //	};
-//	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+//	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 //		fighterInfos.erase(unit);
 //	};
 }
@@ -173,7 +173,7 @@ int CMilitaryManager::UnitIdle(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
-int CMilitaryManager::UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+int CMilitaryManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	auto search = damagedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != damagedHandler.end()) {
@@ -183,7 +183,7 @@ int CMilitaryManager::UnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 	return 0; //signaling: OK
 }
 
-int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != destroyedHandler.end()) {

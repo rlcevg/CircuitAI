@@ -101,7 +101,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			clusterInfos[index].factory = unit;
 		}
 	};
-	auto factoryDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+	auto factoryDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		if (unit->GetUnit()->IsBeingBuilt()) {
 			return;
 		}
@@ -186,7 +186,7 @@ int CEconomyManager::UnitFinished(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
-int CEconomyManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+int CEconomyManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != destroyedHandler.end()) {
@@ -769,7 +769,11 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 	CCircuitDef* storeDef = circuit->GetCircuitDef("armmstor");
 
 	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
-	if (!builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() || (economy->GetStorage(metalRes) > 10 * metalIncome) || !storeDef->IsAvailable()) {
+	if (!builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() ||
+		(economy->GetStorage(metalRes) > 10 * metalIncome) ||
+		(storeDef->GetCount() >= 5) ||
+		!storeDef->IsAvailable())
+	{
 		return UpdatePylonTasks();
 	}
 

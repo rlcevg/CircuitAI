@@ -93,7 +93,7 @@ void CBRepairTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	Unit* u = unit->GetUnit();
 	// TODO: floating retreat coefficient

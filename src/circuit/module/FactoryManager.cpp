@@ -86,7 +86,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 	auto factoryIdleHandler = [this](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
 	};
-	auto factoryDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+	auto factoryDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
@@ -164,7 +164,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 	auto assistIdleHandler = [this](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
 	};
-	auto assistDestroyedHandler = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+	auto assistDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
@@ -284,7 +284,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			unit->GetUnit()->Build(striderDef->GetUnitDef(), pos, -1, 0, FRAMES_PER_SEC * 10);
 		}
 	};
-	destroyedHandler[defId] = [this](CCircuitUnit* unit, CCircuitUnit* attacker) {
+	destroyedHandler[defId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		if (unit->GetUnit()->IsBeingBuilt()) {
 			return;
 		}
@@ -369,7 +369,7 @@ int CFactoryManager::UnitIdle(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
-int CFactoryManager::UnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+int CFactoryManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	if (unit->GetUnit()->IsBeingBuilt()) {
 		auto iter = unfinishedUnits.find(unit);

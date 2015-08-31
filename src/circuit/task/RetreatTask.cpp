@@ -122,12 +122,12 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-void CRetreatTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CRetreatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	//TODO: Rebuild retreat path?
 }
 
-void CRetreatTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+void CRetreatTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	RemoveAssignee(unit);
 }

@@ -211,7 +211,7 @@ void IBuilderTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
+void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	Unit* u = unit->GetUnit();
 	// TODO: floating retreat coefficient
@@ -226,7 +226,7 @@ void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker)
 	manager->AssignTask(unit, manager->GetRetreatTask());
 }
 
-void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker)
+void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	manager->AbortTask(this);
 }

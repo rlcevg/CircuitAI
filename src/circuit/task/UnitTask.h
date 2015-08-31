@@ -15,6 +15,7 @@
 namespace circuit {
 
 class CCircuitUnit;
+class CEnemyUnit;
 class ITaskManager;
 
 class IUnitTask {  // CSquad, IAction
@@ -41,8 +42,8 @@ protected:
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) = 0;
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker) = 0;
-	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker) = 0;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) = 0;
+	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) = 0;
 
 	const std::set<CCircuitUnit*>& GetAssignees() const { return units; }
 	Priority GetPriority() const { return priority; }

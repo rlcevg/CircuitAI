@@ -54,8 +54,8 @@ protected:
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CCircuitUnit* attacker);
-	virtual void OnUnitDestroyed(CCircuitUnit* unit, CCircuitUnit* attacker);
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
+	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
 
 	const springai::AIFloat3& GetTaskPos() const { return position; }
 	CCircuitDef* GetBuildDef() const { return buildDef; }
