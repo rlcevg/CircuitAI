@@ -801,10 +801,19 @@ void CCircuitAI::UpdateEnemyUnits()
 	auto it = enemyUnits.begin();
 	while (it != enemyUnits.end()) {
 		CEnemyUnit* enemy = it->second;
+
+		// FIXME: Unit id validation. No EnemyDestroyed sometimes apparently
+		if (enemy->IsInRadarOrLOS() && (enemy->GetUnit()->GetPos() == ZeroVector)) {
+			EnemyDestroyed(enemy);
+			// UnregisterEnemyUnit(enemy)
+			it = enemyUnits.erase(it);
+			delete enemy;
+			continue;
+		}
+
 		int frame = enemy->GetLastSeen();
 		if ((frame != -1) && (lastFrame - frame >= FRAMES_PER_SEC * 300)) {
 			EnemyDestroyed(enemy);
-
 			// UnregisterEnemyUnit(enemy)
 			it = enemyUnits.erase(it);
 			delete enemy;
@@ -812,6 +821,7 @@ void CCircuitAI::UpdateEnemyUnits()
 			++it;
 		}
 	}
+
 	threatMap->Update();
 }
 

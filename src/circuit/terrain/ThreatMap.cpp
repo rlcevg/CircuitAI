@@ -55,8 +55,8 @@ CThreatMap::~CThreatMap()
 #ifdef DEBUG_VIS
 	if (sdlWindowId != DEBUG_MARK) {
 		circuit->GetDebugDrawer()->DelSDLWindow(sdlWindowId);
+		delete[] dbgMap;
 	}
-	delete[] dbgMap;
 #endif
 }
 

@@ -14,10 +14,6 @@
 #include "util/utils.h"
 
 #include "AISCommands.h"
-// FIXME: DEBUG
-#include "OOAICallback.h"
-#include "Cheats.h"
-// FIXME: DEBUG
 
 namespace circuit {
 
@@ -65,16 +61,6 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	} else {
 		position = bestTarget->GetPos();
-		// FIXME: DEBUG
-		if (position.x == 1 && position.z == 1) {
-			Cheats* cheats = circuit->GetCallback()->GetCheats();
-			cheats->SetEnabled(true);
-			circuit->GetDrawer()->AddPoint(bestTarget->GetUnit()->GetPos(), "ZeroPos");
-			circuit->GetGame()->SetPause(true, "fail");
-			cheats->SetEnabled(false);
-			delete cheats;
-		}
-		// FIXME: DEBUG
 	}
 	u->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 300);
 }
