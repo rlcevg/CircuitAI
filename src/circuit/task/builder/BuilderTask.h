@@ -20,7 +20,7 @@ class CCircuitDef;
 
 class IBuilderTask: public IUnitTask {
 public:
-	enum class BuildType: int {
+	enum class BuildType: char {
 		FACTORY = 0,
 		NANO,
 		STORE,

@@ -67,7 +67,7 @@ void CThreatMap::Update()
 	currMaxThreat = .0f;
 
 	// account for moving units
-	for (auto& kv : enemyUnits) {
+	for (auto& kv : hostileUnits) {
 		CEnemyUnit* e = kv.second;
 		if (e->IsHidden()) {
 			continue;
@@ -133,7 +133,7 @@ void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 			}
 			enemy->SetThreat(.0f);
 			enemy->SetRange(.0f);
-			enemyUnits.erase(enemy->GetId());
+			hostileUnits.erase(enemy->GetId());
 		}
 		peaceUnits[enemy->GetId()] = enemy;
 		AIFloat3 pos = enemy->GetUnit()->GetPos();
@@ -143,9 +143,9 @@ void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 		return;
 	}
 
-	auto it = enemyUnits.find(enemy->GetId());
-	if (it == enemyUnits.end()) {
-		enemyUnits[enemy->GetId()] = enemy;
+	auto it = hostileUnits.find(enemy->GetId());
+	if (it == hostileUnits.end()) {
+		hostileUnits[enemy->GetId()] = enemy;
 	} else if (enemy->IsHidden()) {
 		enemy->ClearHidden();
 	} else {
@@ -187,9 +187,9 @@ void CThreatMap::EnemyEnterRadar(CEnemyUnit* enemy)
 		return;
 	}
 
-	auto it = enemyUnits.find(enemy->GetId());
-	if (it == enemyUnits.end()) {  // (1)
-		enemyUnits[enemy->GetId()] = enemy;
+	auto it = hostileUnits.find(enemy->GetId());
+	if (it == hostileUnits.end()) {  // (1)
+		hostileUnits[enemy->GetId()] = enemy;
 	} else if (enemy->IsHidden()) {
 		enemy->ClearHidden();
 	} else {
@@ -214,8 +214,8 @@ void CThreatMap::EnemyLeaveRadar(CEnemyUnit* enemy)
 
 void CThreatMap::EnemyDamaged(CEnemyUnit* enemy)
 {
-	auto it = enemyUnits.find(enemy->GetId());
-	if ((it == enemyUnits.end()) || !enemy->IsInLOS()) {
+	auto it = hostileUnits.find(enemy->GetId());
+	if ((it == hostileUnits.end()) || !enemy->IsInLOS()) {
 		return;
 	}
 
@@ -226,8 +226,8 @@ void CThreatMap::EnemyDamaged(CEnemyUnit* enemy)
 
 void CThreatMap::EnemyDestroyed(CEnemyUnit* enemy)
 {
-	auto it = enemyUnits.find(enemy->GetId());
-	if (it == enemyUnits.end()) {
+	auto it = hostileUnits.find(enemy->GetId());
+	if (it == hostileUnits.end()) {
 		peaceUnits.erase(enemy->GetId());
 		return;
 	}
@@ -235,7 +235,7 @@ void CThreatMap::EnemyDestroyed(CEnemyUnit* enemy)
 	if (!enemy->IsHidden()) {
 		DelEnemyUnit(enemy);
 	}
-	enemyUnits.erase(it);
+	hostileUnits.erase(it);
 }
 
 float CThreatMap::GetThreatAt(const AIFloat3& pos) const
@@ -245,7 +245,7 @@ float CThreatMap::GetThreatAt(const AIFloat3& pos) const
 	return threatCells[z * width + x] - THREAT_VAL_BASE;
 }
 
-float CThreatMap::GetUnitPower(CCircuitUnit* unit) const
+float CThreatMap::GetUnitThreat(CCircuitUnit* unit) const
 {
 	return unit->GetDPS() * unit->GetUnit()->GetHealth() / unit->GetUnit()->GetMaxHealth();
 }

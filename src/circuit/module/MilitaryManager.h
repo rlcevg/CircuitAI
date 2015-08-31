@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_MODULE_MILITARYMANAGER_H_
 
 #include "module/UnitModule.h"
+#include "task/fighter/FighterTask.h"
 
 #include "AIFloat3.h"
 
@@ -40,7 +41,7 @@ public:
 	virtual int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 
-	IUnitTask* EnqueueTask();
+	IUnitTask* EnqueueTask(IFighterTask::FightType type);
 private:
 	void DequeueTask(IUnitTask* task, bool done = false);
 
@@ -73,6 +74,8 @@ private:
 	std::set<IUnitTask*> updateTasks;
 	std::set<IUnitTask*> deleteTasks;
 	unsigned int updateSlice;
+
+	std::set<CCircuitDef*> scouts;
 
 //	struct FighterInfo {
 //		bool isTerraforming;

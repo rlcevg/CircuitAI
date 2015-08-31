@@ -243,7 +243,7 @@ CRecruitTask* CEconomyManager::CreateFactoryTask(CCircuitUnit* unit)
 	float metalIncome = GetAvgMetalIncome() * ecoFactor;
 	const char* names[] = {"armpw", "armrock", "armwar", "armzeus", "armsnipe", "armjeth"};
 	const std::array<float, 6> prob0 = {.35, .25, .24, .15, .01, .00};
-	const std::array<float, 6> prob1 = {.10, .10, .10, .30, .30, .10};
+	const std::array<float, 6> prob1 = {.20, .10, .10, .30, .20, .10};
 	const std::array<float, 6>& prob = ((metalIncome < 20) || (economy->GetCurrent(energyRes) < (economy->GetStorage(energyRes) - HIDDEN_ENERGY) * 0.5f)) ? prob0 : prob1;
 	int choice = 0;
 	float dice = rand() / (float)RAND_MAX;
@@ -788,8 +788,8 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		int terWidth = terrainManager->GetTerrainWidth();
 		int terHeight = terrainManager->GetTerrainHeight();
-		float x = terWidth/4 + rand() % (int)(terWidth/2 + 1);
-		float z = terHeight/4 + rand() % (int)(terHeight/2 + 1);
+		float x = terWidth / 4 + rand() % (int)(terWidth / 2 + 1);
+		float z = terHeight / 4 + rand() % (int)(terHeight / 2 + 1);
 		buildPos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	}
 	return builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, storeDef, buildPos, IBuilderTask::BuildType::STORE);

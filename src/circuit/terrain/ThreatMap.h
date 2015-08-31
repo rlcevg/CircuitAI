@@ -25,6 +25,9 @@ public:
 	CThreatMap(CCircuitAI* circuit);
 	virtual ~CThreatMap();
 
+	const CCircuitAI::EnemyUnits& GetHostileUnits() const { return hostileUnits; }
+	const CCircuitAI::EnemyUnits& GetPeaceUnits() const { return peaceUnits; }
+
 	void Update();
 
 	void EnemyEnterLOS(CEnemyUnit* enemy);
@@ -41,7 +44,7 @@ public:
 	int GetThreatMapWidth() const { return width; }
 	int GetThreatMapHeight() const { return height; }
 
-	float GetUnitPower(CCircuitUnit* unit) const;
+	float GetUnitThreat(CCircuitUnit* unit) const;
 
 private:
 	CCircuitAI* circuit;
@@ -59,7 +62,7 @@ private:
 	int width;
 	int height;
 
-	CCircuitAI::EnemyUnits enemyUnits;
+	CCircuitAI::EnemyUnits hostileUnits;
 	CCircuitAI::EnemyUnits peaceUnits;
 	std::vector<float> threatCells;
 

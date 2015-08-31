@@ -127,7 +127,7 @@ Uint32 CDebugDrawer::AddSDLWindow(int width, int height, const char* label)
 	SDL_GLContext prevContext = SDL_GL_GetCurrentContext();
 
 	SWindow wnd;
-	wnd.window = SDL_CreateWindow(label, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 510, 470, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+	wnd.window = SDL_CreateWindow(label, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 480, 470, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 	if (wnd.window == nullptr) {
 		circuit->LOG("SDL_CreateWindow Error: %s", SDL_GetError());
 		SDL_GL_MakeCurrent(prevWin, prevContext);

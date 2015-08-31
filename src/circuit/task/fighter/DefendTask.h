@@ -8,23 +8,16 @@
 #ifndef SRC_CIRCUIT_TASK_FIGHTER_DEFENDTASK_H_
 #define SRC_CIRCUIT_TASK_FIGHTER_DEFENDTASK_H_
 
-#include "task/UnitTask.h"
+#include "task/fighter/FighterTask.h"
 
-namespace circuit
-{
+namespace circuit {
 
-class CDefendTask: public IUnitTask
-{
+class CDefendTask: public IFighterTask {
 public:
 	CDefendTask(ITaskManager* mgr);
 	virtual ~CDefendTask();
 
 	virtual void Execute(CCircuitUnit* unit);
-	virtual void Update();
-
-	virtual void OnUnitIdle(CCircuitUnit* unit);
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
-	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
 };
 
 } // namespace circuit

@@ -11,6 +11,8 @@
 #include "task/NullTask.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
+#include "task/fighter/DefendTask.h"
+#include "task/fighter/ScoutTask.h"
 #include "task/fighter/AttackTask.h"
 #include "CircuitAI.h"
 #include "util/math/HierarchCluster.h"
@@ -134,6 +136,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 //	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 //		fighterInfos.erase(unit);
 //	};
+
+	scouts.insert(circuit->GetCircuitDef("armpw"));
 }
 
 CMilitaryManager::~CMilitaryManager()
@@ -193,9 +197,24 @@ int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 	return 0; //signaling: OK
 }
 
-IUnitTask* CMilitaryManager::EnqueueTask()
+IUnitTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 {
-	CAttackTask* task = new CAttackTask(this);
+	IFighterTask* task;
+	switch (type) {
+		case IFighterTask::FightType::DEFEND: {
+			task = new CDefendTask(this);
+			break;
+		}
+		case IFighterTask::FightType::SCOUT: {
+			task = new CScoutTask(this);
+			break;
+		}
+		case IFighterTask::FightType::ATTACK: {
+			task = new CAttackTask(this);
+			break;
+		}
+	}
+
 	fighterTasks.insert(task);
 	return task;
 }
@@ -212,7 +231,10 @@ void CMilitaryManager::DequeueTask(IUnitTask* task, bool done)
 
 void CMilitaryManager::AssignTask(CCircuitUnit* unit)
 {
-	EnqueueTask()->AssignTo(unit);
+	IFighterTask::FightType type = scouts.find(unit->GetCircuitDef()) != scouts.end() ?
+			IFighterTask::FightType::SCOUT :
+			IFighterTask::FightType::ATTACK;
+	EnqueueTask(type)->AssignTo(unit);
 }
 
 void CMilitaryManager::AbortTask(IUnitTask* task)
