@@ -187,9 +187,10 @@ void CThreatMap::EnemyEnterRadar(CEnemyUnit* enemy)
 		return;
 	}
 
+	bool isNew = false;
 	auto it = hostileUnits.find(enemy->GetId());
 	if (it == hostileUnits.end()) {  // (1)
-		hostileUnits[enemy->GetId()] = enemy;
+		std::tie(it, isNew) = hostileUnits.emplace(enemy->GetId(), enemy);
 	} else if (enemy->IsHidden()) {
 		enemy->ClearHidden();
 	} else {
@@ -199,7 +200,7 @@ void CThreatMap::EnemyEnterRadar(CEnemyUnit* enemy)
 	AIFloat3 pos = enemy->GetUnit()->GetPos();
 	circuit->GetTerrainManager()->CorrectPosition(pos);
 	enemy->SetPos(pos);
-	if (enemy->IsNew()) {  // unknown enemy enters radar for the first time
+	if (isNew) {  // unknown enemy enters radar for the first time
 		enemy->SetThreat(enemy->GetDPS());  // TODO: Randomize
 		enemy->SetRange((150.0f + 100.0f) / (SQUARE_SIZE * THREAT_RES));
 	}

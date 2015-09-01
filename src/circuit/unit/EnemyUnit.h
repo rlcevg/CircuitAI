@@ -68,7 +68,6 @@ public:
 	void ClearInLOS() { losStatus &= ~LosType::LOS; }
 	void ClearInRadar() { losStatus &= ~LosType::RADAR; }
 	void ClearHidden() { losStatus &= ~LosType::HIDDEN; }
-	bool IsNew() const { return losStatus == LosType::NONE; }
 	bool IsInLOS() const { return losStatus & LosType::LOS; }
 	bool IsInRadar() const { return losStatus & LosType::RADAR; }
 	bool IsInRadarOrLOS() const { return losStatus & (LosType::RADAR | LosType::LOS); }

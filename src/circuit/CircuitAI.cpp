@@ -838,7 +838,7 @@ void CCircuitAI::InitOptions()
 	const char easy[] = "easy";
 	const char normal[] = "normal";
 	const char hard[] = "hard";
-	const char trueVal[] = "true";
+	const char trueVal[] = "1";
 
 	value = options->GetValueByKey("difficulty");
 	if (value != nullptr) {
