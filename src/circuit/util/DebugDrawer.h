@@ -41,6 +41,7 @@ public:
 	Uint32 AddSDLWindow(int width, int height, const char* label);
 	void DelSDLWindow(Uint32 windowId);
 	void DrawMap(Uint32 windowId, const float* texData, SDL_Color colorMod = {255, 0, 0, 0});
+	void DrawTex(Uint32 windowId, const float* texData);
 
 	bool HasWindow(Uint32 windowId);
 	void NeedRefresh(Uint32 windowId);

@@ -37,6 +37,9 @@ namespace circuit {
 class CCircuitAI;
 class CScheduler;
 class CGameAttribute;
+#ifdef DEBUG_VIS
+class CDebugDrawer;
+#endif
 
 struct STerrainMapArea;
 struct STerrainMapAreaSector;
@@ -232,6 +235,15 @@ private:
 
 	std::atomic<bool> isClusterizing;
 // ---- UNUSED so far ---- END
+
+#ifdef DEBUG_VIS
+private:
+	std::shared_ptr<CDebugDrawer> debugDrawer;
+	std::vector<std::pair<uint32_t, float*>> sdlWindows;
+	void UpdateVis();
+public:
+	void ToggleVis();
+#endif
 };
 
 } // namespace circuit

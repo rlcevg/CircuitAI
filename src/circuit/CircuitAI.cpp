@@ -507,11 +507,12 @@ int CCircuitAI::Update(int frame)
 
 int CCircuitAI::Message(int playerId, const char* message)
 {
-	const char cmdPos[] = "~стройсь\0";
-	const char cmdSelfD[] = "~Згинь, нечистая сила!\0";
+	const char cmdPos[]    = "~стройсь\0";
+	const char cmdSelfD[]  = "~Згинь, нечистая сила!\0";
 #ifdef DEBUG_VIS
-	const char cmdBlock[] = "~block\0";
+	const char cmdBlock[]  = "~block\0";
 	const char cmdThreat[] = "~threat\0";
+	const char cmdArea[]   = "~area\0";
 #endif
 
 	if (message[0] != '~') {
@@ -538,6 +539,9 @@ int CCircuitAI::Message(int playerId, const char* message)
 	}
 	else if ((msgLength == strlen(cmdThreat)) && (strcmp(message, cmdThreat) == 0)) {
 		threatMap->ToggleVis();
+	}
+	else if ((msgLength == strlen(cmdArea)) && (strcmp(message, cmdArea) == 0)) {
+		gameAttribute->GetTerrainData().ToggleVis();
 	}
 #endif
 
@@ -838,7 +842,8 @@ void CCircuitAI::InitOptions()
 	const char easy[] = "easy";
 	const char normal[] = "normal";
 	const char hard[] = "hard";
-	const char trueVal[] = "1";
+	const char trueVal0[] = "true";
+	const char trueVal1[] = "1";
 
 	value = options->GetValueByKey("difficulty");
 	if (value != nullptr) {
@@ -853,7 +858,8 @@ void CCircuitAI::InitOptions()
 
 	value = options->GetValueByKey("ally_aware");
 	if (value != nullptr) {
-		allyAware = (strncmp(value, trueVal, sizeof(trueVal)) == 0);
+		allyAware = (strncmp(value, trueVal0, sizeof(trueVal0)) == 0) ||
+					(strncmp(value, trueVal1, sizeof(trueVal1)) == 0);
 	}
 
 	delete options;

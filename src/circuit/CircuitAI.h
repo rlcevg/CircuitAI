@@ -62,7 +62,9 @@ class CMilitaryManager;
 class CScheduler;
 class IModule;
 class CEnemyUnit;
+#ifdef DEBUG_VIS
 class CDebugDrawer;
+#endif
 
 class CCircuitAI {
 public:
@@ -231,9 +233,9 @@ private:
 
 #ifdef DEBUG_VIS
 private:
-	std::unique_ptr<CDebugDrawer> debugDrawer;
+	std::shared_ptr<CDebugDrawer> debugDrawer;
 public:
-	CDebugDrawer* GetDebugDrawer() const { return debugDrawer.get(); }
+	std::shared_ptr<CDebugDrawer>& GetDebugDrawer() { return debugDrawer; }
 #endif
 };
 

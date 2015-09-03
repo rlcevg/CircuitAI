@@ -38,22 +38,22 @@ STerrainMapMobileType::~STerrainMapMobileType()
 	utils::free_clear(area);
 }
 
-CTerrainData::CTerrainData() :
-		landSectorType(nullptr),
-		waterSectorType(nullptr),
-		waterIsHarmful(false),
-		waterIsAVoid(false),
-		sectorXSize(0),
-		sectorZSize(0),
-		convertStoP(1),
-		map(nullptr),
-		gameAttribute(nullptr),
-		pAreaData(&areaData0),
-		pHeightMap(&heightMap0),
-		updatingAreas(false),
-		aiToUpdate(0),
-		isClusterizing(false),
-		initialized(false)
+CTerrainData::CTerrainData()
+		: landSectorType(nullptr)
+		, waterSectorType(nullptr)
+		, waterIsHarmful(false)
+		, waterIsAVoid(false)
+		, sectorXSize(0)
+		, sectorZSize(0)
+		, convertStoP(1)
+		, map(nullptr)
+		, gameAttribute(nullptr)
+		, pAreaData(&areaData0)
+		, pHeightMap(&heightMap0)
+		, updatingAreas(false)
+		, aiToUpdate(0)
+		, isClusterizing(false)
+		, initialized(false)
 {
 }
 
@@ -61,6 +61,16 @@ CTerrainData::~CTerrainData()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete map;
+
+#ifdef DEBUG_VIS
+	if (debugDrawer != nullptr) {
+		for (const std::pair<Uint32, float*>& win : sdlWindows) {
+			debugDrawer->DelSDLWindow(win.first);
+			delete[] win.second;
+		}
+		debugDrawer = nullptr;
+	}
+#endif
 }
 
 void CTerrainData::Init(CCircuitAI* circuit)
@@ -541,13 +551,16 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	/*
 	 *  Debugging
 	 */
+#ifdef DEBUG_VIS
+	debugDrawer = circuit->GetDebugDrawer();
+#endif
 //	std::ostringstream deb;
 //	for (int iS = 0; iS < sectorXSize * sectorZSize; iS++) {
 //		if (iS % sectorXSize == 0) deb << "\n";
 //		if (sector[iS].maxElevation < 0.0) deb << "~";
 //		else if (sector[iS].maxSlope > 0.5) deb << "^";
 //		else if (sector[iS].maxSlope > 0.25) deb << "#";
-//		else deb << "x";
+//		else deb << "*";
 //	}
 //	for (auto& mt : mobileType) {
 //		deb << "\n\n " << mt.moveData->GetName() << " h=" << mt.canHover << " f=" << mt.canFloat << " mb=" << mt.area.size();
@@ -908,11 +921,17 @@ void CTerrainData::ScheduleUsersUpdate()
 
 void CTerrainData::DidUpdateAreaUsers()
 {
-	if (--aiToUpdate == 0) {
-		pAreaData = GetNextAreaData();
-		pHeightMap = (pHeightMap.load() == &heightMap0) ? &heightMap1 : &heightMap0;
-		updatingAreas = false;
+	if (--aiToUpdate > 0) {
+		return;
 	}
+
+	pAreaData = GetNextAreaData();
+	pHeightMap = (pHeightMap.load() == &heightMap0) ? &heightMap1 : &heightMap0;
+	updatingAreas = false;
+
+#ifdef DEBUG_VIS
+	UpdateVis();
+#endif
 }
 
 SAreaData* CTerrainData::GetNextAreaData()
@@ -1114,5 +1133,119 @@ void CTerrainData::Clusterize(const std::vector<AIFloat3>& wayPoints, float maxD
 ////	}
 ////	centroids.clear();
 //}
+
+#ifdef DEBUG_VIS
+#define WATER(x, i) {	\
+	x[i * 3 + 0] = .2f;  /*R*/	\
+	x[i * 3 + 1] = .2f;  /*G*/	\
+	x[i * 3 + 2] = .8f;  /*B*/	\
+}
+#define HILL(x, i) {	\
+	x[i * 3 + 0] = .65f;  /*R*/	\
+	x[i * 3 + 1] = .16f;  /*G*/	\
+	x[i * 3 + 2] = .16f;  /*B*/	\
+}
+#define LAND(x, i) {	\
+	x[i * 3 + 0] = .2f;  /*R*/	\
+	x[i * 3 + 1] = .8f;  /*G*/	\
+	x[i * 3 + 2] = .2f;  /*B*/	\
+}
+#define MOUNTAIN(x, i) {	\
+	x[i * 3 + 0] = 1.f;  /*R*/	\
+	x[i * 3 + 1] = .0f;  /*G*/	\
+	x[i * 3 + 2] = .0f;  /*B*/	\
+}
+#define BLOCK(x, i) {	\
+	x[i * 3 + 0] = .0f;  /*R*/	\
+	x[i * 3 + 1] = .0f;  /*G*/	\
+	x[i * 3 + 2] = .0f;  /*B*/	\
+}
+
+void CTerrainData::UpdateVis()
+{
+	if ((debugDrawer == nullptr) || sdlWindows.empty()) {
+		return;
+	}
+	SAreaData& areaData = *GetNextAreaData();
+	std::vector<STerrainMapSector>& sector = areaData.sector;
+	int winNum = 0;
+
+	std::pair<Uint32, float*> win = sdlWindows[winNum++];
+	for (int i = 0; i < sectorXSize * sectorZSize; ++i) {
+		if (sector[i].maxElevation < 0.0) WATER(win.second, i)
+		else if (sector[i].maxSlope > 0.5) MOUNTAIN(win.second, i)
+		else if (sector[i].maxSlope > 0.25) HILL(win.second, i)
+		else LAND(win.second, i)
+	}
+	debugDrawer->DrawTex(win.first, win.second);
+
+	for (const STerrainMapMobileType& mt : areaData.mobileType) {
+		std::pair<Uint32, float*> win = sdlWindows[winNum++];
+		for (int i = 0; i < sectorXSize * sectorZSize; ++i) {
+			if (mt.sector[i].area != nullptr) LAND(win.second, i)
+			else if (sector[i].maxElevation < 0.0) WATER(win.second, i)
+			else if (sector[i].maxSlope > 0.5) HILL(win.second, i)
+			else BLOCK(win.second, i)
+		}
+		debugDrawer->DrawTex(win.first, win.second);
+	}
+
+	int itId = 0;
+	for (const STerrainMapImmobileType& mt : areaData.immobileType) {
+		std::pair<Uint32, float*> win = sdlWindows[winNum++];
+		for (int i = 0; i < sectorXSize * sectorZSize; ++i) {
+			if (mt.sector.find(i) != mt.sector.end()) LAND(win.second, i)
+			else if (sector[i].maxElevation < 0.0) WATER(win.second, i)
+			else if (sector[i].maxSlope > 0.5) HILL(win.second, i)
+			else BLOCK(win.second, i)
+		}
+		debugDrawer->DrawTex(win.first, win.second);
+	}
+}
+
+void CTerrainData::ToggleVis()
+{
+	if (debugDrawer == nullptr) {
+		return;
+	}
+	if (sdlWindows.empty()) {
+		// ~area
+		SAreaData& areaData = *GetNextAreaData();
+		std::vector<STerrainMapSector>& sector = areaData.sector;
+
+		std::pair<Uint32, float*> win;
+		win.second = new float [sectorXSize * sectorZSize * 3];
+		win.first = debugDrawer->AddSDLWindow(sectorXSize, sectorZSize, "Circuit AI :: Terrain");
+		sdlWindows.push_back(win);
+
+		for (const STerrainMapMobileType& mt : areaData.mobileType) {
+			std::pair<Uint32, float*> win;
+			win.second = new float [sectorXSize * sectorZSize * 3];
+			std::ostringstream label;
+			label << "Circuit AI :: Terrain :: Mobile [" << mt.moveData->GetName() << "] h=" << mt.canHover << " f=" << mt.canFloat << " mb=" << mt.area.size();
+			win.first = debugDrawer->AddSDLWindow(sectorXSize, sectorZSize, label.str().c_str());
+			sdlWindows.push_back(win);
+		}
+
+		int itId = 0;
+		for (const STerrainMapImmobileType& mt : areaData.immobileType) {
+			std::pair<Uint32, float*> win;
+			win.second = new float [sectorXSize * sectorZSize * 3];
+			std::ostringstream label;
+			label << "Circuit AI :: Terrain :: Immobile [" << itId++ << "] h=" << mt.canHover << " f=" << mt.canFloat << " mb=" << mt.sector.size();
+			win.first = debugDrawer->AddSDLWindow(sectorXSize, sectorZSize, label.str().c_str());
+			sdlWindows.push_back(win);
+		}
+
+		UpdateVis();
+	} else {
+		for (const std::pair<Uint32, float*> win : sdlWindows) {
+			debugDrawer->DelSDLWindow(win.first);
+			delete[] win.second;
+		}
+		sdlWindows.clear();
+	}
+}
+#endif
 
 } // namespace circuit

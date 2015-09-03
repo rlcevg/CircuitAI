@@ -199,7 +199,42 @@ void CDebugDrawer::DrawMap(Uint32 windowId, const float* texData, SDL_Color colo
 
 	SDL_LockTexture(wnd.texture, nullptr, (void**)&pixels, &pitch);
 	for (int i = 0; i < tw * th; ++i) {
-		pixels[i] = {(Uint8)(texData[i] * colorMod.b), (Uint8)(texData[i] * colorMod.g), (Uint8)(texData[i] * colorMod.r), 0};  // Assuming 0.0f <= texData[i] <= 1.0f
+		pixels[i] = {(Uint8)(texData[i] * colorMod.b),
+					 (Uint8)(texData[i] * colorMod.g),
+					 (Uint8)(texData[i] * colorMod.r),
+					 0};  // Assuming 0.0f <= texData[i] <= 1.0f
+	}
+	SDL_UnlockTexture(wnd.texture);
+
+	SDL_RenderClear(wnd.renderer);
+	SDL_RenderCopy(wnd.renderer, wnd.texture, nullptr, nullptr);
+	SDL_RenderPresent(wnd.renderer);
+
+	SDL_GL_MakeCurrent(prevWin, prevContext);
+}
+
+void CDebugDrawer::DrawTex(Uint32 windowId, const float* texData)
+{
+	auto it = windows.find(windowId);
+	if (it == windows.end()) {
+		return;
+	}
+
+	SWindow& wnd = *it->second;
+	SDL_Window* prevWin = SDL_GL_GetCurrentWindow();
+	SDL_GLContext prevContext = SDL_GL_GetCurrentContext();
+	SDL_GL_MakeCurrent(wnd.window, wnd.glcontext);
+
+	SDL_Color* pixels;
+	int tw, th, pitch;
+	SDL_QueryTexture(wnd.texture, nullptr, nullptr, &tw, &th);
+
+	SDL_LockTexture(wnd.texture, nullptr, (void**)&pixels, &pitch);
+	for (int i = 0; i < tw * th; ++i) {
+		pixels[i] = {(Uint8)(texData[i * 3 + 2] * 255),
+					 (Uint8)(texData[i * 3 + 1] * 255),
+					 (Uint8)(texData[i * 3 + 0] * 255),
+					 0};  // Assuming 0.0f <= texData[0..3][i] <= 1.0f
 	}
 	SDL_UnlockTexture(wnd.texture);
 
