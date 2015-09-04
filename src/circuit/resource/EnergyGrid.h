@@ -73,6 +73,18 @@ private:
 	void AddMex(const springai::AIFloat3& pos);
 	void RemoveMex(const springai::AIFloat3& pos);
 	void RebuildTree();
+
+#ifdef DEBUG_VIS
+private:
+	bool drawGrid;
+	int figureGridId;
+	int figureInvalidId;
+	int figureFinishedId;
+	int figureBuildId;
+	void UpdateVis();
+public:
+	void ToggleVis();
+#endif
 };
 
 } // namespace circuit

@@ -41,6 +41,10 @@
 //#include "WrappCurrentCommand.h"
 //#include "Cheats.h"
 
+#ifdef DEBUG_VIS
+#include "resource/EnergyGrid.h"
+#endif
+
 namespace circuit {
 
 using namespace springai;
@@ -513,6 +517,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 	const char cmdBlock[]  = "~block\0";
 	const char cmdThreat[] = "~threat\0";
 	const char cmdArea[]   = "~area\0";
+	const char cmdGrid[]   = "~grid\0";
 #endif
 
 	if (message[0] != '~') {
@@ -542,6 +547,9 @@ int CCircuitAI::Message(int playerId, const char* message)
 	}
 	else if ((msgLength == strlen(cmdArea)) && (strcmp(message, cmdArea) == 0)) {
 		gameAttribute->GetTerrainData().ToggleVis();
+	}
+	else if ((msgLength == strlen(cmdGrid)) && (strcmp(message, cmdGrid) == 0)) {
+		allyTeam->GetEnergyLink()->ToggleVis();
 	}
 #endif
 

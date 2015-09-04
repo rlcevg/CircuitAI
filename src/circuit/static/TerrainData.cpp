@@ -548,12 +548,8 @@ void CTerrainData::Init(CCircuitAI* circuit)
 
 	initialized = true;
 
-	/*
-	 *  Debugging
-	 */
 #ifdef DEBUG_VIS
 	debugDrawer = circuit->GetDebugDrawer();
-#endif
 //	std::ostringstream deb;
 //	for (int iS = 0; iS < sectorXSize * sectorZSize; iS++) {
 //		if (iS % sectorXSize == 0) deb << "\n";
@@ -585,6 +581,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 //	}
 //	deb << "\n";
 //	circuit->LOG(deb.str().c_str());
+#endif
 }
 
 int CTerrainData::GetSectorIndex(const AIFloat3& position)
@@ -1166,6 +1163,7 @@ void CTerrainData::UpdateVis()
 	if ((debugDrawer == nullptr) || sdlWindows.empty()) {
 		return;
 	}
+
 	SAreaData& areaData = *GetNextAreaData();
 	std::vector<STerrainMapSector>& sector = areaData.sector;
 	int winNum = 0;

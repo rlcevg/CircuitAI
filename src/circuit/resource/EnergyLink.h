@@ -45,8 +45,8 @@ public:
 	void SetValid(bool value) { isValid = value; }
 	bool IsValid() const { return isValid; }
 	void SetStartVertex(int index);
-	SVertex* GetV0() { return v0; }
-	SVertex* GetV1() { return v1; }
+	SVertex* GetV0() const { return v0; }
+	SVertex* GetV1() const { return v1; }
 
 private:
 	SVertex *v0, *v1;

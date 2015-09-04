@@ -16,6 +16,7 @@
 #include "util/utils.h"
 
 #include "AISCommands.h"
+#include "Figure.h"
 
 #include <boost/graph/kruskal_min_spanning_tree.hpp>
 #include <boost/graph/breadth_first_search.hpp>
@@ -64,10 +65,17 @@ struct spanning_tree {
     CEnergyGrid::link_iterator_t linkIt;
 };
 
-CEnergyGrid::CEnergyGrid(CCircuitAI* circuit) :
-		circuit(circuit),
-		markFrame(-1),
-		isForceRebuild(false)
+CEnergyGrid::CEnergyGrid(CCircuitAI* circuit)
+		: circuit(circuit)
+		, markFrame(-1)
+		, isForceRebuild(false)
+#ifdef DEBUG_VIS
+		, figureFinishedId(-1)
+		, figureBuildId(-1)
+		, figureInvalidId(-1)
+		, figureGridId(-1)
+		, drawGrid(false)
+#endif
 {
 	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CEnergyGrid::Init, this));
 }
@@ -102,6 +110,10 @@ void CEnergyGrid::Update()
 
 	MarkAllyPylons(pylons);
 	CheckGrid();
+
+#ifdef DEBUG_VIS
+	UpdateVis();
+#endif
 }
 
 CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
@@ -231,28 +243,6 @@ void CEnergyGrid::Init()
 	linkIt = boost::make_iterator_property_map(&links[0], boost::get(&CMetalData::SEdge::index, clusterGraph));
 
 	ownedClusters = CMetalData::Graph(boost::num_vertices(clusterGraph));
-
-	/*
-	 *  Debugging
-	 */
-//	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>([this]() {
-//		// Clear previous Kruskal drawing
-//		const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
-//		for (int i = 0; i < clusters.size(); ++i) {
-//			circuit->GetDrawer()->DeletePointsAndLines(clusters[i].geoCentr);
-//		}
-//		Update();
-//	}), FRAMES_PER_SEC * 30);
-//	circuit->GetScheduler()->RunTaskEvery(std::make_shared<CGameTask>([this]() {
-//		// Draw planned Kruskal
-//		const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
-//		const CMetalData::Graph& clusterGraph = circuit->GetMetalManager()->GetGraph();
-//		for (const CMetalData::EdgeDesc& edge : spanningTree) {
-//			const AIFloat3& posFrom = clusters[boost::source(edge, clusterGraph)].geoCentr;
-//			const AIFloat3& posTo = clusters[boost::target(edge, clusterGraph)].geoCentr;
-//			circuit->GetDrawer()->AddLine(posFrom, posTo);
-//		}
-//	}), FRAMES_PER_SEC * 30, FRAMES_PER_SEC * 3);
 }
 
 void CEnergyGrid::MarkAllyPylons(const std::list<CCircuitUnit*>& pylons)
@@ -487,5 +477,70 @@ void CEnergyGrid::RebuildTree()
 	boost::property_map<CMetalData::Graph, float CMetalData::SEdge::*>::type w_map = boost::get(&CMetalData::SEdge::weight, ownedClusters);
 	boost::kruskal_minimum_spanning_tree(ownedClusters, std::inserter(spanningTree, spanningTree.end()), boost::weight_map(w_map));
 }
+
+
+#ifdef DEBUG_VIS
+void CEnergyGrid::UpdateVis()
+{
+	if (!drawGrid) {
+		return;
+	}
+
+	Map* map = circuit->GetMap();
+	Figure* fig = circuit->GetDrawer()->GetFigure();
+
+	fig->Remove(figureFinishedId);
+	fig->Remove(figureBuildId);
+	fig->Remove(figureInvalidId);
+	fig->Remove(figureGridId);
+	// create new figure groups
+	figureFinishedId = fig->DrawLine(ZeroVector, ZeroVector, 0.0f, false, FRAMES_PER_SEC * 300, 0);
+	figureBuildId    = fig->DrawLine(ZeroVector, ZeroVector, 0.0f, false, FRAMES_PER_SEC * 300, 0);
+	figureInvalidId  = fig->DrawLine(ZeroVector, ZeroVector, 0.0f, false, FRAMES_PER_SEC * 300, 0);
+	figureGridId     = fig->DrawLine(ZeroVector, ZeroVector, 0.0f, false, FRAMES_PER_SEC * 300, 0);
+	for (const CEnergyLink& link : links) {
+		int figureId;
+		if (link.IsFinished()) {
+			figureId = figureFinishedId;
+		} else if (link.IsBeingBuilt()) {
+			figureId = figureBuildId;
+		} else if (!link.IsValid()) {
+			figureId = figureInvalidId;
+		} else {
+			figureId = figureGridId;
+		}
+		AIFloat3 pos0 = link.GetV0()->pos;
+		const AIFloat3 dir = (link.GetV1()->pos - pos0) / 10.0f;
+		pos0.y = map->GetElevationAt(pos0.x, pos0.z) + 20.0f;
+		for (int i = 0; i < 10; ++i) {
+			AIFloat3 pos1 = pos0 + dir;
+			pos1.y = map->GetElevationAt(pos1.x, pos1.z) + 20.0f;
+			fig->DrawLine(pos0, pos1, 16.0f, false, FRAMES_PER_SEC * 300, figureId);
+			pos0 = pos1;
+		}
+	}
+	fig->SetColor(figureFinishedId, AIColor(0.1f, 0.3f, 1.0f), 255);
+	fig->SetColor(figureBuildId,    AIColor(1.0f, 1.0f, 0.0f), 255);
+	fig->SetColor(figureInvalidId,  AIColor(1.0f, 0.3f, 0.3f), 255);
+	fig->SetColor(figureGridId,     AIColor(0.7f, 0.7f, 0.7f), 255);
+
+	delete fig;
+}
+
+void CEnergyGrid::ToggleVis()
+{
+	drawGrid = !drawGrid;
+	if (drawGrid) {
+		UpdateVis();
+	} else {
+		Figure* fig = circuit->GetDrawer()->GetFigure();
+		fig->Remove(figureFinishedId);
+		fig->Remove(figureBuildId);
+		fig->Remove(figureInvalidId);
+		fig->Remove(figureGridId);
+		delete fig;
+	}
+}
+#endif
 
 } // namespace circuit
