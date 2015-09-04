@@ -75,6 +75,7 @@ CEnergyGrid::CEnergyGrid(CCircuitAI* circuit)
 		, figureInvalidId(-1)
 		, figureGridId(-1)
 		, drawGrid(false)
+		, toggleFrame(-1)
 #endif
 {
 	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CEnergyGrid::Init, this));
@@ -529,6 +530,11 @@ void CEnergyGrid::UpdateVis()
 
 void CEnergyGrid::ToggleVis()
 {
+	if (toggleFrame >= circuit->GetLastFrame()) {
+		return;
+	}
+	toggleFrame = circuit->GetLastFrame();
+
 	drawGrid = !drawGrid;
 	if (drawGrid) {
 		UpdateVis();

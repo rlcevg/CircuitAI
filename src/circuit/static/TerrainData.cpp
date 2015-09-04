@@ -546,8 +546,6 @@ void CTerrainData::Init(CCircuitAI* circuit)
 
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::CheckHeightMap, this), FRAMES_PER_SEC * 60);
 
-	initialized = true;
-
 #ifdef DEBUG_VIS
 	debugDrawer = circuit->GetDebugDrawer();
 //	std::ostringstream deb;
@@ -582,6 +580,8 @@ void CTerrainData::Init(CCircuitAI* circuit)
 //	deb << "\n";
 //	circuit->LOG(deb.str().c_str());
 #endif
+
+	initialized = true;
 }
 
 int CTerrainData::GetSectorIndex(const AIFloat3& position)

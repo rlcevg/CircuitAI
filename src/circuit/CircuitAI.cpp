@@ -75,6 +75,7 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, allyAware(true)
 		, allyTeam(nullptr)
 #ifdef DEBUG_VIS
+		, isGridVis(false)
 		, debugDrawer(nullptr)
 #endif
 {
@@ -549,7 +550,17 @@ int CCircuitAI::Message(int playerId, const char* message)
 		gameAttribute->GetTerrainData().ToggleVis();
 	}
 	else if ((msgLength == strlen(cmdGrid)) && (strcmp(message, cmdGrid) == 0)) {
-		allyTeam->GetEnergyLink()->ToggleVis();
+		auto selection = std::move(callback->GetSelectedUnits());
+		if (!selection.empty()) {
+			if (selection[0]->GetAllyTeam() == allyTeamId) {
+				allyTeam->GetEnergyLink()->ToggleVis();
+				isGridVis = !isGridVis;
+			}
+			utils::free_clear(selection);
+		} else if (isGridVis) {
+			allyTeam->GetEnergyLink()->ToggleVis();
+			isGridVis = false;
+		}
 	}
 #endif
 

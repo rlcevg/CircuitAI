@@ -233,6 +233,7 @@ private:
 
 #ifdef DEBUG_VIS
 private:
+	bool isGridVis;
 	std::shared_ptr<CDebugDrawer> debugDrawer;
 public:
 	std::shared_ptr<CDebugDrawer>& GetDebugDrawer() { return debugDrawer; }

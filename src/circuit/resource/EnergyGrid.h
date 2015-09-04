@@ -76,11 +76,12 @@ private:
 
 #ifdef DEBUG_VIS
 private:
-	bool drawGrid;
 	int figureGridId;
 	int figureInvalidId;
 	int figureFinishedId;
 	int figureBuildId;
+	bool drawGrid;
+	int toggleFrame;
 	void UpdateVis();
 public:
 	void ToggleVis();
