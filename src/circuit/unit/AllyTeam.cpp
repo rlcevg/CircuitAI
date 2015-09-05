@@ -11,6 +11,7 @@
 #include "static/GameAttribute.h"
 #include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
+#include "util/Scheduler.h"
 #include "util/utils.h"
 
 #include "AIFloat3.h"
@@ -53,6 +54,8 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 	if (metalManager->HasMetalSpots() && !metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
 		metalManager->ClusterizeMetal();
 	}
+	// Init after parallel clusterization
+	circuit->GetScheduler()->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CMetalManager::Init, metalManager));
 	energyLink = std::make_shared<CEnergyGrid>(circuit);
 }
 

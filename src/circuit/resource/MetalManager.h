@@ -37,6 +37,7 @@ public:
 	bool IsClusterizing();
 
 	void ClusterizeMetal();
+	void Init();
 
 public:
 	const CMetalData::Metals& GetSpots() const;
@@ -60,15 +61,20 @@ private:
 	CMetalData* metalData;
 
 public:
-	struct MetalInfo {
-		bool isOpen;
-	};
 	void SetOpenSpot(int index, bool value);
 	void SetOpenSpot(const springai::AIFloat3& pos, bool value);
 	bool IsOpenSpot(int index);
-//	const std::vector<MetalInfo>& GetMetalInfos() const;
+	bool IsClusterOur(int index);
 private:
-	std::vector<MetalInfo> metalInfos;
+	struct SMetalInfo {
+		bool isOpen;
+		int clusterId;
+	};
+	struct SClusterInfo {
+		int mexCount;
+	};
+	std::vector<SMetalInfo> metalInfos;
+	std::vector<SClusterInfo> clusterInfos;
 };
 
 } // namespace circuit

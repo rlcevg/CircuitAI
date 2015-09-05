@@ -307,7 +307,7 @@ int CTerrainManager::GetTerrainHeight()
 
 void CTerrainManager::AddBlocker(CCircuitDef* cdef, const AIFloat3& pos, int facing)
 {
-	Structure building = {-1, cdef, pos, facing};
+	SStructure building = {-1, cdef, pos, facing};
 	MarkBlocker(building, true);
 
 #ifdef DEBUG_VIS
@@ -317,7 +317,7 @@ void CTerrainManager::AddBlocker(CCircuitDef* cdef, const AIFloat3& pos, int fac
 
 void CTerrainManager::RemoveBlocker(CCircuitDef* cdef, const AIFloat3& pos, int facing)
 {
-	Structure building = {-1, cdef, pos, facing};
+	SStructure building = {-1, cdef, pos, facing};
 	MarkBlocker(building, false);
 
 #ifdef DEBUG_VIS
@@ -373,7 +373,7 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 	};
 
 	const int endr = (int)(searchRadius / (SQUARE_SIZE * 2));
-	const std::vector<SearchOffset>& ofs = GetSearchOffsetTable(endr);
+	const std::vector<SSearchOffset>& ofs = GetSearchOffsetTable(endr);
 
 	const int cornerX1 = int(pos.x / (SQUARE_SIZE * 2)) - (xsize / 2);
 	const int cornerZ1 = int(pos.z / (SQUARE_SIZE * 2)) - (zsize / 2);
@@ -413,56 +413,81 @@ void CTerrainManager::MarkAllyBuildings()
 	int teamId = circuit->GetTeamId();
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 
-	std::set<Structure, cmp> newUnits, oldUnits;
-	for (auto& kv : friendlies) {
-		CCircuitUnit* unit = kv.second;
-		Unit* u = unit->GetUnit();
-		if ((u->GetTeam() != teamId) && (u->GetMaxSpeed() <= 0)) {
-			Structure building;
-			building.unitId = kv.first;
-			decltype(markedAllies)::iterator search = markedAllies.find(building);
-			if (search == markedAllies.end()) {
-				building.cdef = unit->GetCircuitDef();
-				building.pos = u->GetPos();
-				building.facing = u->GetBuildingFacing();
-				newUnits.insert(building);
-				if (*building.cdef == *mexDef) {  // update metalInfo's open state
-					circuit->GetMetalManager()->SetOpenSpot(building.pos, false);
-				} else {
-					MarkBlocker(building, true);
-				}
-			} else {
-				oldUnits.insert(*search);
-			}
+	decltype(markedAllies) prevUnits = std::move(markedAllies);
+	markedAllies.clear();
+	auto first1  = friendlies.begin();
+	auto last1   = friendlies.end();
+	auto first2  = prevUnits.begin();
+	auto last2   = prevUnits.end();
+	auto d_first = std::back_inserter(markedAllies);
+	auto addStructure = [&d_first, mexDef, this](const CCircuitUnit* unit) {
+		SStructure building;
+		building.unitId = unit->GetId();
+		building.cdef = unit->GetCircuitDef();
+		building.pos = unit->GetUnit()->GetPos();
+		building.facing = unit->GetUnit()->GetBuildingFacing();
+		*d_first++ = building;
+		if (*building.cdef == *mexDef) {  // update metalInfo's open state
+			circuit->GetMetalManager()->SetOpenSpot(building.pos, false);
+		} else {
+			MarkBlocker(building, true);
 		}
-	}
-	std::set<Structure, cmp> deadUnits;
-	std::set_difference(markedAllies.begin(), markedAllies.end(),
-						oldUnits.begin(), oldUnits.end(),
-						std::inserter(deadUnits, deadUnits.begin()), cmp());
-	for (auto& building : deadUnits) {
+	};
+	auto delStructure = [mexDef, this](const SStructure& building) {
 		if (*building.cdef == *mexDef) {  // update metalInfo's open state
 			circuit->GetMetalManager()->SetOpenSpot(building.pos, true);
 		} else {
 			MarkBlocker(building, false);
 		}
+	};
+
+	// @see std::set_symmetric_difference + std::set_intersection
+	while (first1 != last1) {
+		const CCircuitUnit* unit = first1->second;
+		if ((unit->GetUnit()->GetTeam() == teamId) || (unit->GetUnit()->GetMaxSpeed() > 0)) {
+			++first1;
+			continue;
+		}
+		if (first2 == last2) {
+			addStructure(unit);  // everything else in first1..last1 is new units
+			while (++first1 != last1) {
+				const CCircuitUnit* unit = first1->second;
+				if ((unit->GetUnit()->GetTeam() == teamId) || (unit->GetUnit()->GetMaxSpeed() > 0)) {
+					continue;
+				}
+				addStructure(unit);
+			}
+			break;
+		}
+
+		if (first1->first < first2->unitId) {
+			addStructure(unit);  // new unit
+			++first1;  // advance friendlies
+		} else {
+			if (first2->unitId < first1->first) {
+				delStructure(*first2);  // dead unit
+			} else {
+				*d_first++ = *first2;  // old unit
+				++first1;  // advance friendlies
+			}
+            ++first2;  // advance prevUnits
+		}
 	}
-	markedAllies.clear();
-	std::set_union(oldUnits.begin(), oldUnits.end(),
-				   newUnits.begin(), newUnits.end(),
-				   std::inserter(markedAllies, markedAllies.begin()), cmp());
+	while (first2 != last2) {  // everything else in first2..last2 is dead units
+		delStructure(*first2++);
+	}
 }
 
 const CTerrainManager::SearchOffsets& CTerrainManager::GetSearchOffsetTable(int radius)
 {
-	static std::vector<SearchOffset> searchOffsets;
+	static std::vector<SSearchOffset> searchOffsets;
 	unsigned int size = radius * radius * 4;
 	if (size > searchOffsets.size()) {
 		searchOffsets.resize(size);
 
 		for (int y = 0; y < radius * 2; y++) {
 			for (int x = 0; x < radius * 2; x++) {
-				SearchOffset& i = searchOffsets[y * radius * 2 + x];
+				SSearchOffset& i = searchOffsets[y * radius * 2 + x];
 
 				i.dx = x - radius;
 				i.dy = y - radius;
@@ -470,7 +495,7 @@ const CTerrainManager::SearchOffsets& CTerrainManager::GetSearchOffsetTable(int 
 			}
 		}
 
-		auto searchOffsetComparator = [](const SearchOffset& a, const SearchOffset& b) {
+		auto searchOffsetComparator = [](const SSearchOffset& a, const SSearchOffset& b) {
 			return a.qdist < b.qdist;
 		};
 		std::sort(searchOffsets.begin(), searchOffsets.end(), searchOffsetComparator);
@@ -491,19 +516,19 @@ const CTerrainManager::SearchOffsetsLow& CTerrainManager::GetSearchOffsetTableLo
 		searchOffsets.resize(radius * radius * 4);
 		for (int y = 0; y < radius * 2; y++) {
 			for (int x = 0; x < radius * 2; x++) {
-				SearchOffset& i = searchOffsets[y * radius * 2 + x];
+				SSearchOffset& i = searchOffsets[y * radius * 2 + x];
 				i.dx = x - radius;
 				i.dy = y - radius;
 				i.qdist = i.dx * i.dx + i.dy * i.dy;
 			}
 		}
 
-		auto searchOffsetComparator = [](const SearchOffset& a, const SearchOffset& b) {
+		auto searchOffsetComparator = [](const SSearchOffset& a, const SSearchOffset& b) {
 			return a.qdist < b.qdist;
 		};
 		for (int yl = 0; yl < radiusLow * 2; yl++) {
 			for (int xl = 0; xl < radiusLow * 2; xl++) {
-				SearchOffsetLow& il = searchOffsetsLow[yl * radiusLow * 2 + xl];
+				SSearchOffsetLow& il = searchOffsetsLow[yl * radiusLow * 2 + xl];
 				il.dx = xl - radiusLow;
 				il.dy = yl - radiusLow;
 				il.qdist = il.dx * il.dx + il.dy * il.dy;
@@ -520,7 +545,7 @@ const CTerrainManager::SearchOffsetsLow& CTerrainManager::GetSearchOffsetTableLo
 			}
 		}
 
-		auto searchOffsetLowComparator = [](const SearchOffsetLow& a, const SearchOffsetLow& b) {
+		auto searchOffsetLowComparator = [](const SSearchOffsetLow& a, const SSearchOffsetLow& b) {
 			return a.qdist < b.qdist;
 		};
 		std::sort(searchOffsetsLow.begin(), searchOffsetsLow.end(), searchOffsetLowComparator);
@@ -842,7 +867,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 	return -RgtVector;
 }
 
-void CTerrainManager::MarkBlockerByMask(const Structure& building, bool block, IBlockMask* mask)
+void CTerrainManager::MarkBlockerByMask(const SStructure& building, bool block, IBlockMask* mask)
 {
 	UnitDef* unitDef = building.cdef->GetUnitDef();
 	int facing = building.facing;
@@ -928,7 +953,7 @@ void CTerrainManager::MarkBlockerByMask(const Structure& building, bool block, I
 	}
 }
 
-void CTerrainManager::MarkBlocker(const Structure& building, bool block)
+void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 {
 	CCircuitDef* cdef = building.cdef;
 	auto search = blockInfos.find(cdef->GetId());

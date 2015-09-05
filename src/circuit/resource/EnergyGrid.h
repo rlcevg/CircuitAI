@@ -50,7 +50,6 @@ private:
 	struct SLinkVertex {
 		void SetConnected(bool value) { oldConnected = isConnected; isConnected = value; }
 		void RevertConnected() { isConnected = oldConnected; }
-		int mexCount;
 		bool isConnected, oldConnected;
 	};
 	std::vector<SLinkVertex> linkedClusters;
@@ -80,10 +79,11 @@ private:
 	int figureInvalidId;
 	int figureFinishedId;
 	int figureBuildId;
-	bool drawGrid;
+	bool isVis;
 	int toggleFrame;
-	void UpdateVis();
 public:
+	bool IsVis() const { return isVis; }
+	void UpdateVis();
 	void ToggleVis();
 #endif
 };

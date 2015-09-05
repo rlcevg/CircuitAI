@@ -15,7 +15,7 @@
 #include "AIFloat3.h"
 
 #include <unordered_map>
-#include <set>
+#include <deque>
 #include <functional>
 
 namespace circuit {
@@ -65,31 +65,26 @@ public:
 									 TerrainPredicate& predicate);
 private:
 	int markFrame;
-	struct Structure {
+	struct SStructure {
 		CCircuitUnit::Id unitId;
 		CCircuitDef* cdef;
 		springai::AIFloat3 pos;
 		int facing;
 	};
-	struct cmp {
-	   bool operator()(const Structure& lhs, const Structure& rhs) {
-	      return lhs.unitId < rhs.unitId;
-	   }
-	};
-	std::set<Structure, cmp> markedAllies;
+	std::deque<SStructure> markedAllies;  // sorted by insertion
 	void MarkAllyBuildings();
 
-	struct SearchOffset {
+	struct SSearchOffset {
 		int dx, dy;
 		int qdist;  // dx*dx + dy*dy
 	};
-	using SearchOffsets = std::vector<SearchOffset>;
-	struct SearchOffsetLow {
+	using SearchOffsets = std::vector<SSearchOffset>;
+	struct SSearchOffsetLow {
 		SearchOffsets ofs;
 		int dx, dy;
 		int qdist;  // dx*dx + dy*dy
 	};
-	using SearchOffsetsLow = std::vector<SearchOffsetLow>;
+	using SearchOffsetsLow = std::vector<SSearchOffsetLow>;
 	static const SearchOffsets& GetSearchOffsetTable(int radius);
 	static const SearchOffsetsLow& GetSearchOffsetTableLow(int radius);
 	springai::AIFloat3 FindBuildSiteLow(CCircuitDef* cdef,
@@ -113,8 +108,8 @@ private:
 
 	SBlockingMap blockingMap;
 	std::unordered_map<CCircuitDef::Id, IBlockMask*> blockInfos;  // owner
-	void MarkBlockerByMask(const Structure& building, bool block, IBlockMask* mask);
-	void MarkBlocker(const Structure& building, bool block);
+	void MarkBlockerByMask(const SStructure& building, bool block, IBlockMask* mask);
+	void MarkBlocker(const SStructure& building, bool block);
 
 public:
 	void CorrectPosition(springai::AIFloat3& position);

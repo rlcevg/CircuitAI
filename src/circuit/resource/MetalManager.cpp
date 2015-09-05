@@ -31,8 +31,7 @@ CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData) :
 		ParseMetalSpots(gameRulesParams);
 		utils::free_clear(gameRulesParams);
 	}
-	MetalInfo mi = {true};
-	metalInfos.resize(metalData->GetSpots().size(), mi);
+	metalInfos.resize(metalData->GetSpots().size(), {true, -1});
 }
 
 CMetalManager::~CMetalManager()
@@ -157,6 +156,16 @@ void CMetalManager::ClusterizeMetal()
 	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CMetalData::Clusterize, metalData, maxDistance, pdistmatrix));
 }
 
+void CMetalManager::Init()
+{
+	clusterInfos.resize(GetClusters().size(), {0});
+	for (int i = 0; i < clusterInfos.size(); ++i) {
+		for (int idx : GetClusters()[i].idxSpots) {
+			metalInfos[idx].clusterId = i;
+		}
+	}
+}
+
 const CMetalData::Metals& CMetalManager::GetSpots() const
 {
 	return metalData->GetSpots();
@@ -224,7 +233,10 @@ const CMetalData::Graph& CMetalManager::GetGraph() const
 
 void CMetalManager::SetOpenSpot(int index, bool value)
 {
-	metalInfos[index].isOpen = value;
+	if (metalInfos[index].isOpen != value) {
+		metalInfos[index].isOpen = value;
+		clusterInfos[metalInfos[index].clusterId].mexCount += value ? -1 : 1;
+	}
 }
 
 void CMetalManager::SetOpenSpot(const springai::AIFloat3& pos, bool value)
@@ -240,9 +252,9 @@ bool CMetalManager::IsOpenSpot(int index)
 	return metalInfos[index].isOpen;
 }
 
-//const std::vector<CMetalManager::MetalInfo>& CMetalManager::GetMetalInfos() const
-//{
-//	return metalInfos;
-//}
+bool CMetalManager::IsClusterOur(int index)
+{
+	return clusterInfos[index].mexCount >= metalData->GetClusters()[index].idxSpots.size();
+}
 
 } // namespace circuit

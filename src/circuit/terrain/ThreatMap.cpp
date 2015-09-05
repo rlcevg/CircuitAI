@@ -286,12 +286,8 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, const float scale)
 
 float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
 {
-	Unit* u = enemy->GetUnit();
-	if (u->IsBeingBuilt()) {
-		return .0f;
-	}
 	const float dps = std::min(enemy->GetDPS(), 2000.0f);
-	const float dpsMod = std::max(u->GetHealth(), .0f) / u->GetMaxHealth();
+	const float dpsMod = std::max(enemy->GetUnit()->GetHealth(), .0f) / enemy->GetUnit()->GetMaxHealth();
 	return dps * dpsMod;
 }
 

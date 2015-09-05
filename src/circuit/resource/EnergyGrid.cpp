@@ -74,7 +74,7 @@ CEnergyGrid::CEnergyGrid(CCircuitAI* circuit)
 		, figureBuildId(-1)
 		, figureInvalidId(-1)
 		, figureGridId(-1)
-		, drawGrid(false)
+		, isVis(false)
 		, toggleFrame(-1)
 #endif
 {
@@ -111,10 +111,6 @@ void CEnergyGrid::Update()
 
 	MarkAllyPylons(pylons);
 	CheckGrid();
-
-#ifdef DEBUG_VIS
-	UpdateVis();
-#endif
 }
 
 CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
@@ -229,7 +225,7 @@ void CEnergyGrid::Init()
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
 
-	linkedClusters.resize(clusters.size(), {0, false, false});
+	linkedClusters.resize(clusters.size(), {false, false});
 
 	// FIXME: No-metal-spots maps can crash: check !links.empty()
 	links.reserve(boost::num_edges(clusterGraph));
@@ -388,7 +384,7 @@ void CEnergyGrid::AddMex(const AIFloat3& pos)
 		return;
 	}
 	SLinkVertex& lv = linkedClusters[index];
-	if (++lv.mexCount < metalManager->GetClusters()[index].idxSpots.size()) {
+	if (!metalManager->IsClusterOur(index)) {
 		return;
 	}
 
@@ -404,7 +400,7 @@ void CEnergyGrid::RemoveMex(const AIFloat3& pos)
 		return;
 	}
 	SLinkVertex& lv = linkedClusters[index];
-	if (lv.mexCount-- < metalManager->GetClusters()[index].idxSpots.size()) {
+	if (metalManager->IsClusterOur(index)) {
 		return;
 	}
 
@@ -483,7 +479,7 @@ void CEnergyGrid::RebuildTree()
 #ifdef DEBUG_VIS
 void CEnergyGrid::UpdateVis()
 {
-	if (!drawGrid) {
+	if (!isVis) {
 		return;
 	}
 
@@ -535,8 +531,8 @@ void CEnergyGrid::ToggleVis()
 	}
 	toggleFrame = circuit->GetLastFrame();
 
-	drawGrid = !drawGrid;
-	if (drawGrid) {
+	isVis = !isVis;
+	if (isVis) {
 		UpdateVis();
 	} else {
 		Figure* fig = circuit->GetDrawer()->GetFigure();

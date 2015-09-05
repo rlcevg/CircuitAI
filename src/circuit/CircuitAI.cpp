@@ -75,7 +75,6 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, allyAware(true)
 		, allyTeam(nullptr)
 #ifdef DEBUG_VIS
-		, isGridVis(false)
 		, debugDrawer(nullptr)
 #endif
 {
@@ -503,6 +502,7 @@ int CCircuitAI::Update(int frame)
 
 #ifdef DEBUG_VIS
 	if (frame % FRAMES_PER_SEC == 0) {
+		allyTeam->GetEnergyLink()->UpdateVis();
 		debugDrawer->Refresh();
 	}
 #endif
@@ -554,12 +554,10 @@ int CCircuitAI::Message(int playerId, const char* message)
 		if (!selection.empty()) {
 			if (selection[0]->GetAllyTeam() == allyTeamId) {
 				allyTeam->GetEnergyLink()->ToggleVis();
-				isGridVis = !isGridVis;
 			}
 			utils::free_clear(selection);
-		} else if (isGridVis) {
+		} else if (allyTeam->GetEnergyLink()->IsVis()) {
 			allyTeam->GetEnergyLink()->ToggleVis();
-			isGridVis = false;
 		}
 	}
 #endif
