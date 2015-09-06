@@ -140,7 +140,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		}
 	}
 
-	// Forbid from removing cormex blocker
+	/*
+	 * cormex handlers; forbid from removing blocker
+	 */
 	CCircuitDef::Id unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		const AIFloat3& pos = unit->GetUnit()->GetPos();

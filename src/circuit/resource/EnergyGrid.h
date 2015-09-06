@@ -46,13 +46,7 @@ private:
 	std::unordered_map<CCircuitDef::Id, float> pylonRanges;
 	std::map<float, CCircuitDef::Id> rangePylons;
 
-	Structures markedMexes;
-	struct SLinkVertex {
-		void SetConnected(bool value) { oldConnected = isConnected; isConnected = value; }
-		void RevertConnected() { isConnected = oldConnected; }
-		bool isConnected, oldConnected;
-	};
-	std::vector<SLinkVertex> linkedClusters;
+	std::vector<bool> linkedClusters;
 	std::set<CMetalData::EdgeDesc> linkPylons, unlinkPylons;
 	std::vector<CEnergyLink> links;  // Graph's exterior property
 	link_iterator_t linkIt;  // Alternative: links[clusterGraph[*linkEdgeIt].index]
@@ -62,15 +56,13 @@ private:
 	void RemovePylon(CCircuitUnit::Id unitId);
 	void CheckGrid();
 
-	std::set<int> linkClusters;
+	std::list<int> linkClusters;
 	std::list<int> unlinkClusters;
 	std::set<CMetalData::EdgeDesc> spanningTree;
 	CMetalData::Graph ownedClusters;
 	bool isForceRebuild;
 
-	void MarkAllyMexes(const std::list<CCircuitUnit*>& mexes);
-	void AddMex(const springai::AIFloat3& pos);
-	void RemoveMex(const springai::AIFloat3& pos);
+	void MarkClusters();
 	void RebuildTree();
 
 #ifdef DEBUG_VIS
@@ -79,6 +71,7 @@ private:
 	int figureInvalidId;
 	int figureFinishedId;
 	int figureBuildId;
+	int figureKruskalId;
 	bool isVis;
 	int toggleFrame;
 public:

@@ -6,6 +6,7 @@
  */
 
 #include "resource/MetalManager.h"
+#include "module/EconomyManager.h"
 #include "CircuitAI.h"
 #include "util/math/RagMatrix.h"
 #include "util/Scheduler.h"
@@ -21,9 +22,10 @@ namespace circuit {
 
 using namespace springai;
 
-CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData) :
-		circuit(circuit),
-		metalData(metalData)
+CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData)
+		: circuit(circuit)
+		, metalData(metalData)
+		, markFrame(-1)
 {
 	if (!metalData->IsInitialized()) {
 		// TODO: Add metal zone and no-metal-spots maps support
@@ -233,10 +235,7 @@ const CMetalData::Graph& CMetalManager::GetGraph() const
 
 void CMetalManager::SetOpenSpot(int index, bool value)
 {
-	if (metalInfos[index].isOpen != value) {
-		metalInfos[index].isOpen = value;
-		clusterInfos[metalInfos[index].clusterId].mexCount += value ? -1 : 1;
-	}
+	metalInfos[index].isOpen = value;
 }
 
 void CMetalManager::SetOpenSpot(const springai::AIFloat3& pos, bool value)
@@ -252,9 +251,88 @@ bool CMetalManager::IsOpenSpot(int index)
 	return metalInfos[index].isOpen;
 }
 
+void CMetalManager::MarkAllyMexes()
+{
+	if (markFrame /*+ FRAMES_PER_SEC*/ >= circuit->GetLastFrame()) {
+		return;
+	}
+
+	circuit->UpdateFriendlyUnits();
+	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
+	std::list<CCircuitUnit*> mexes, pylons;
+	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
+	for (auto& kv : friendlies) {
+		CCircuitUnit* unit = kv.second;
+		if (*unit->GetCircuitDef() == *mexDef) {
+			mexes.push_back(unit);
+		}
+	}
+
+	MarkAllyMexes(mexes);
+}
+
+void CMetalManager::MarkAllyMexes(const std::list<CCircuitUnit*>& mexes)
+{
+	if (markFrame /*+ FRAMES_PER_SEC*/ >= circuit->GetLastFrame()) {
+		return;
+	}
+	markFrame = circuit->GetLastFrame();
+
+	decltype(markedMexes) prevUnits = std::move(markedMexes);
+	markedMexes.clear();
+	auto first1  = mexes.begin();
+	auto last1   = mexes.end();
+	auto first2  = prevUnits.begin();
+	auto last2   = prevUnits.end();
+	auto d_first = std::back_inserter(markedMexes);
+	auto addMex = [&d_first, this](const CCircuitUnit* unit) {
+		SMex mex;
+		mex.unitId = unit->GetId();
+		mex.pos = unit->GetUnit()->GetPos();
+		*d_first++ = mex;
+		int index = FindNearestSpot(mex.pos);
+		if (index != -1) {
+			clusterInfos[metalInfos[index].clusterId].mexCount++;
+		}
+	};
+	auto delMex = [this](const SMex& mex) {
+		int index = FindNearestSpot(mex.pos);
+		if (index != -1) {
+			clusterInfos[metalInfos[index].clusterId].mexCount--;
+		}
+	};
+
+	// @see std::set_symmetric_difference + std::set_intersection
+	while (first1 != last1) {
+		if (first2 == last2) {
+			addMex(*first1);  // everything else in first1..last1 is new units
+			while (++first1 != last1) {
+				addMex(*first1);
+			}
+			break;
+		}
+
+		if ((*first1)->GetId() < first2->unitId) {
+			addMex(*first1);  // new unit
+			++first1;  // advance mexes
+		} else {
+			if (first2->unitId < (*first1)->GetId()) {
+				delMex(*first2);  // dead unit
+			} else {
+				*d_first++ = *first2;  // old unit
+				++first1;  // advance mexes
+			}
+            ++first2;  // advance prevUnits
+		}
+	}
+	while (first2 != last2) {  // everything else in first2..last2 is dead units
+		delMex(*first2++);
+	}
+}
+
 bool CMetalManager::IsClusterOur(int index)
 {
-	return clusterInfos[index].mexCount >= metalData->GetClusters()[index].idxSpots.size();
+	return clusterInfos[index].mexCount >= GetClusters()[index].idxSpots.size();
 }
 
 } // namespace circuit

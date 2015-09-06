@@ -427,16 +427,12 @@ void CTerrainManager::MarkAllyBuildings()
 		building.pos = unit->GetUnit()->GetPos();
 		building.facing = unit->GetUnit()->GetBuildingFacing();
 		*d_first++ = building;
-		if (*building.cdef == *mexDef) {  // update metalInfo's open state
-			circuit->GetMetalManager()->SetOpenSpot(building.pos, false);
-		} else {
+		if (*building.cdef != *mexDef) {
 			MarkBlocker(building, true);
 		}
 	};
 	auto delStructure = [mexDef, this](const SStructure& building) {
-		if (*building.cdef == *mexDef) {  // update metalInfo's open state
-			circuit->GetMetalManager()->SetOpenSpot(building.pos, true);
-		} else {
+		if (*building.cdef != *mexDef) {
 			MarkBlocker(building, false);
 		}
 	};

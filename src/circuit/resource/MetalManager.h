@@ -9,8 +9,7 @@
 #define SRC_CIRCUIT_RESOURCEMANAGER_H_
 
 #include "static/MetalData.h"
-
-#include <vector>
+#include "unit/CircuitUnit.h"
 
 namespace springai {
 	class GameRulesParam;
@@ -56,16 +55,18 @@ public:
 	const CMetalData::Clusters& GetClusters() const;
 	const CMetalData::Graph& GetGraph() const;
 
-private:
-	CCircuitAI* circuit;
-	CMetalData* metalData;
-
 public:
 	void SetOpenSpot(int index, bool value);
 	void SetOpenSpot(const springai::AIFloat3& pos, bool value);
 	bool IsOpenSpot(int index);
+	void MarkAllyMexes();
+	void MarkAllyMexes(const std::list<CCircuitUnit*>& mexes);
 	bool IsClusterOur(int index);
+
 private:
+	CCircuitAI* circuit;
+	CMetalData* metalData;
+
 	struct SMetalInfo {
 		bool isOpen;
 		int clusterId;
@@ -75,6 +76,13 @@ private:
 	};
 	std::vector<SMetalInfo> metalInfos;
 	std::vector<SClusterInfo> clusterInfos;
+
+	int markFrame;
+	struct SMex {
+		CCircuitUnit::Id unitId;
+		springai::AIFloat3 pos;
+	};
+	std::deque<SMex> markedMexes;
 };
 
 } // namespace circuit

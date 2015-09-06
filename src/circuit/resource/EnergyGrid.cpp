@@ -74,6 +74,7 @@ CEnergyGrid::CEnergyGrid(CCircuitAI* circuit)
 		, figureBuildId(-1)
 		, figureInvalidId(-1)
 		, figureGridId(-1)
+		, figureKruskalId(-1)
 		, isVis(false)
 		, toggleFrame(-1)
 #endif
@@ -106,7 +107,8 @@ void CEnergyGrid::Update()
 		}
 	}
 
-	MarkAllyMexes(mexes);
+	circuit->GetMetalManager()->MarkAllyMexes(mexes);
+	MarkClusters();
 	RebuildTree();
 
 	MarkAllyPylons(pylons);
@@ -225,7 +227,7 @@ void CEnergyGrid::Init()
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
 
-	linkedClusters.resize(clusters.size(), {false, false});
+	linkedClusters.resize(clusters.size(), false);
 
 	// FIXME: No-metal-spots maps can crash: check !links.empty()
 	links.reserve(boost::num_edges(clusterGraph));
@@ -344,74 +346,16 @@ void CEnergyGrid::CheckGrid()
 	unlinkPylons.clear();
 }
 
-void CEnergyGrid::MarkAllyMexes(const std::list<CCircuitUnit*>& mexes)
+void CEnergyGrid::MarkClusters()
 {
-	Structures newUnits, oldUnits;
-	for (CCircuitUnit* unit : mexes) {
-		CCircuitUnit::Id unitId = unit->GetId();
-		Structures::iterator it = markedMexes.find(unitId);
-		if (it == markedMexes.end()) {
-			const AIFloat3& pos = unit->GetUnit()->GetPos();
-			newUnits[unitId] = pos;
-			AddMex(pos);
-		} else {
-			oldUnits.insert(*it);
+	const int size = circuit->GetMetalManager()->GetClusters().size();
+	for (int index = 0; index < size; ++index) {
+		bool isOur = circuit->GetMetalManager()->IsClusterOur(index);
+		if (linkedClusters[index] == isOur) {
+			continue;
 		}
-	}
-
-	auto cmp = [](const Structures::value_type& lhs, const Structures::value_type& rhs) {
-		return lhs.first < rhs.first;
-	};
-
-	Structures deadUnits;
-	std::set_difference(markedMexes.begin(), markedMexes.end(),
-						oldUnits.begin(), oldUnits.end(),
-						std::inserter(deadUnits, deadUnits.end()), cmp);
-	for (auto& kv : deadUnits) {
-		RemoveMex(kv.second);
-	}
-	markedMexes.clear();
-	std::set_union(oldUnits.begin(), oldUnits.end(),
-				   newUnits.begin(), newUnits.end(),
-				   std::inserter(markedMexes, markedMexes.end()), cmp);
-}
-
-void CEnergyGrid::AddMex(const AIFloat3& pos)
-{
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	int index = metalManager->FindNearestCluster(pos);
-	if (index < 0) {
-		return;
-	}
-	SLinkVertex& lv = linkedClusters[index];
-	if (!metalManager->IsClusterOur(index)) {
-		return;
-	}
-
-	linkClusters.insert(index);
-	lv.SetConnected(true);
-}
-
-void CEnergyGrid::RemoveMex(const AIFloat3& pos)
-{
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	int index = metalManager->FindNearestCluster(pos);
-	if (index < 0) {
-		return;
-	}
-	SLinkVertex& lv = linkedClusters[index];
-	if (metalManager->IsClusterOur(index)) {
-		return;
-	}
-
-	// Because RemoveMex executes after AddMex collisions could be handled here
-	auto it = linkClusters.find(index);
-	if (it == linkClusters.end()) {
-		unlinkClusters.push_back(index);
-		lv.SetConnected(false);
-	} else {
-		linkClusters.erase(it);
-		lv.RevertConnected();
+		(isOur ? linkClusters : unlinkClusters).push_back(index);
+		linkedClusters[index] = isOur;
 	}
 }
 
@@ -440,7 +384,7 @@ void CEnergyGrid::RebuildTree()
 		for (; outEdgeIt != outEdgeEnd; ++outEdgeIt) {
 			const CMetalData::EdgeDesc& edgeId = *outEdgeIt;
 			int idx0 = boost::target(edgeId, clusterGraph);
-			if (linkedClusters[idx0].isConnected) {
+			if (linkedClusters[idx0]) {
 				boost::add_edge(idx0, index, clusterGraph[edgeId], ownedClusters);
 
 				CEnergyLink& link = boost::get(linkIt, edgeId);
@@ -497,21 +441,24 @@ void CEnergyGrid::UpdateVis()
 	figureGridId     = fig->DrawLine(ZeroVector, ZeroVector, 0.0f, false, FRAMES_PER_SEC * 300, 0);
 	for (const CEnergyLink& link : links) {
 		int figureId;
+		float height = 20.0f;
 		if (link.IsFinished()) {
 			figureId = figureFinishedId;
+			height = 18.0f;
 		} else if (link.IsBeingBuilt()) {
 			figureId = figureBuildId;
 		} else if (!link.IsValid()) {
 			figureId = figureInvalidId;
 		} else {
 			figureId = figureGridId;
+			height = 18.0f;
 		}
 		AIFloat3 pos0 = link.GetV0()->pos;
 		const AIFloat3 dir = (link.GetV1()->pos - pos0) / 10.0f;
-		pos0.y = map->GetElevationAt(pos0.x, pos0.z) + 20.0f;
+		pos0.y = map->GetElevationAt(pos0.x, pos0.z) + height;
 		for (int i = 0; i < 10; ++i) {
 			AIFloat3 pos1 = pos0 + dir;
-			pos1.y = map->GetElevationAt(pos1.x, pos1.z) + 20.0f;
+			pos1.y = map->GetElevationAt(pos1.x, pos1.z) + height;
 			fig->DrawLine(pos0, pos1, 16.0f, false, FRAMES_PER_SEC * 300, figureId);
 			pos0 = pos1;
 		}
@@ -519,7 +466,27 @@ void CEnergyGrid::UpdateVis()
 	fig->SetColor(figureFinishedId, AIColor(0.1f, 0.3f, 1.0f), 255);
 	fig->SetColor(figureBuildId,    AIColor(1.0f, 1.0f, 0.0f), 255);
 	fig->SetColor(figureInvalidId,  AIColor(1.0f, 0.3f, 0.3f), 255);
-	fig->SetColor(figureGridId,     AIColor(0.7f, 0.7f, 0.7f), 255);
+	fig->SetColor(figureGridId,     AIColor(0.5f, 0.5f, 0.5f), 255);
+
+	// Draw planned Kruskal
+	fig->Remove(figureKruskalId);
+	figureKruskalId = fig->DrawLine(ZeroVector, ZeroVector, 0.0f, false, FRAMES_PER_SEC * 300, 0);
+	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
+	const CMetalData::Graph& clusterGraph = circuit->GetMetalManager()->GetGraph();
+	for (const CMetalData::EdgeDesc& edge : spanningTree) {
+		const AIFloat3& posFrom = clusters[boost::source(edge, clusterGraph)].geoCentr;
+		const AIFloat3& posTo = clusters[boost::target(edge, clusterGraph)].geoCentr;
+		AIFloat3 pos0 = posFrom;
+		const AIFloat3 dir = (posTo - pos0) / 10.0f;
+		pos0.y = map->GetElevationAt(pos0.x, pos0.z) + 19.0f;
+		for (int i = 0; i < 10; ++i) {
+			AIFloat3 pos1 = pos0 + dir;
+			pos1.y = map->GetElevationAt(pos1.x, pos1.z) + 19.0f;
+			fig->DrawLine(pos0, pos1, 16.0f, false, FRAMES_PER_SEC * 300, figureKruskalId);
+			pos0 = pos1;
+		}
+	}
+	fig->SetColor(figureKruskalId, AIColor(0.0f, 1.0f, 1.0f), 255);
 
 	delete fig;
 }
@@ -540,6 +507,7 @@ void CEnergyGrid::ToggleVis()
 		fig->Remove(figureBuildId);
 		fig->Remove(figureInvalidId);
 		fig->Remove(figureGridId);
+		fig->Remove(figureKruskalId);
 		delete fig;
 	}
 }
