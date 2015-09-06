@@ -251,7 +251,7 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 	Graph g(nclusters);
 	int edgeCount = 0;  // counts each edge twice
 	for (auto& edge : clustVoronoi.edges()) {
-		if (edgeCount++ % 2 == 0) {  // FIXME: No docs says that odd edge is a twin of even
+		if ((edgeCount++ % 2 == 0)/* && edge.is_finite()*/) {  // FIXME: No docs says that odd edge is a twin of even
 			std::size_t idx0 = edge.cell()->source_index();
 			std::size_t idx1 = edge.twin()->cell()->source_index();
 

@@ -41,8 +41,7 @@ private:
 	CCircuitAI* circuit;
 
 	int markFrame;
-	using Structures = std::map<CCircuitUnit::Id, springai::AIFloat3>;
-	Structures markedPylons;
+	std::deque<CCircuitUnit::Id> markedPylons;  // sorted by insertion
 	std::unordered_map<CCircuitDef::Id, float> pylonRanges;
 	std::map<float, CCircuitDef::Id> rangePylons;
 

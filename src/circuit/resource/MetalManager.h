@@ -82,7 +82,7 @@ private:
 		CCircuitUnit::Id unitId;
 		springai::AIFloat3 pos;
 	};
-	std::deque<SMex> markedMexes;
+	std::deque<SMex> markedMexes;  // sorted by insertion
 };
 
 } // namespace circuit

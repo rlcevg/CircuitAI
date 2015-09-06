@@ -246,34 +246,47 @@ void CEnergyGrid::Init()
 
 void CEnergyGrid::MarkAllyPylons(const std::list<CCircuitUnit*>& pylons)
 {
-	Structures newUnits, oldUnits;
-	for (CCircuitUnit* unit : pylons) {
-		CCircuitUnit::Id unitId = unit->GetId();
-		Structures::iterator it = markedPylons.find(unitId);
-		if (it == markedPylons.end()) {
-			const AIFloat3& pos = unit->GetUnit()->GetPos();
-			newUnits[unitId] = pos;
-			AddPylon(unitId, unit->GetCircuitDef()->GetId(), pos);
-		} else {
-			oldUnits.insert(*it);
-		}
-	}
-
-	auto cmp = [](const Structures::value_type& lhs, const Structures::value_type& rhs) {
-		return lhs.first < rhs.first;
+	decltype(markedPylons) prevUnits = std::move(markedPylons);
+	markedPylons.clear();
+	auto first1  = pylons.begin();
+	auto last1   = pylons.end();
+	auto first2  = prevUnits.begin();
+	auto last2   = prevUnits.end();
+	auto d_first = std::back_inserter(markedPylons);
+	auto addPylon = [&d_first, this](const CCircuitUnit* unit) {
+		*d_first++ = unit->GetId();
+		AddPylon(unit->GetId(), unit->GetCircuitDef()->GetId(), unit->GetUnit()->GetPos());
+	};
+	auto delPylon = [this](const CCircuitUnit::Id unitId) {
+		RemovePylon(unitId);
 	};
 
-	Structures deadUnits;
-	std::set_difference(markedPylons.begin(), markedPylons.end(),
-						oldUnits.begin(), oldUnits.end(),
-						std::inserter(deadUnits, deadUnits.end()), cmp);
-	for (auto& kv : deadUnits) {
-		RemovePylon(kv.first);
+	// @see std::set_symmetric_difference + std::set_intersection
+	while (first1 != last1) {
+		if (first2 == last2) {
+			addPylon(*first1);  // everything else in first1..last1 is new units
+			while (++first1 != last1) {
+				addPylon(*first1);
+			}
+			break;
+		}
+
+		if ((*first1)->GetId() < *first2) {
+			addPylon(*first1);  // new unit
+			++first1;  // advance mexes
+		} else {
+			if (*first2 < (*first1)->GetId()) {
+				delPylon(*first2);  // dead unit
+			} else {
+				*d_first++ = *first2;  // old unit
+				++first1;  // advance mexes
+			}
+            ++first2;  // advance prevUnits
+		}
 	}
-	markedPylons.clear();
-	std::set_union(oldUnits.begin(), oldUnits.end(),
-				   newUnits.begin(), newUnits.end(),
-				   std::inserter(markedPylons, markedPylons.end()), cmp);
+	while (first2 != last2) {  // everything else in first2..last2 is dead units
+		delPylon(*first2++);
+	}
 }
 
 void CEnergyGrid::AddPylon(CCircuitUnit::Id unitId, CCircuitDef::Id defId, const AIFloat3& pos)
