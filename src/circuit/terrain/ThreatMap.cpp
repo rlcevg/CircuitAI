@@ -155,8 +155,8 @@ void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 	AIFloat3 pos = enemy->GetUnit()->GetPos();
 	circuit->GetTerrainManager()->CorrectPosition(pos);
 	enemy->SetPos(pos);
-	enemy->SetThreat(GetEnemyUnitThreat(enemy));
 	enemy->SetRange((enemy->GetUnit()->GetMaxRange() + 100.0f) / (SQUARE_SIZE * THREAT_RES));
+	enemy->SetThreat(GetEnemyUnitThreat(enemy));
 
 	AddEnemyUnit(enemy);
 }
@@ -286,6 +286,9 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, const float scale)
 
 float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
 {
+	if (enemy->GetRange() > 2000.0f / (SQUARE_SIZE * THREAT_RES)) {
+		return THREAT_VAL_BASE;  // or 0
+	}
 	const float dps = std::min(enemy->GetDPS(), 2000.0f);
 	const float dpsMod = std::max(enemy->GetUnit()->GetHealth(), .0f) / enemy->GetUnit()->GetMaxHealth();
 	return dps * dpsMod;

@@ -240,9 +240,10 @@ private:
 private:
 	std::shared_ptr<CDebugDrawer> debugDrawer;
 	std::vector<std::pair<uint32_t, float*>> sdlWindows;
+	int toggleFrame;
 	void UpdateVis();
 public:
-	void ToggleVis();
+	void ToggleVis(int frame);
 #endif
 };
 

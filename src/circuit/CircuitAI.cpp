@@ -19,6 +19,9 @@
 #include "unit/EnemyUnit.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
+#ifdef DEBUG_VIS
+#include "resource/EnergyGrid.h"
+#endif
 
 #include "AISEvents.h"
 #include "AISCommands.h"
@@ -40,10 +43,6 @@
 //#include "Command.h"
 //#include "WrappCurrentCommand.h"
 //#include "Cheats.h"
-
-#ifdef DEBUG_VIS
-#include "resource/EnergyGrid.h"
-#endif
 
 namespace circuit {
 
@@ -547,7 +546,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 		threatMap->ToggleVis();
 	}
 	else if ((msgLength == strlen(cmdArea)) && (strcmp(message, cmdArea) == 0)) {
-		gameAttribute->GetTerrainData().ToggleVis();
+		gameAttribute->GetTerrainData().ToggleVis(lastFrame);
 	}
 	else if ((msgLength == strlen(cmdGrid)) && (strcmp(message, cmdGrid) == 0)) {
 		auto selection = std::move(callback->GetSelectedUnits());

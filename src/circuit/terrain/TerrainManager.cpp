@@ -8,6 +8,7 @@
 #include "terrain/TerrainManager.h"
 #include "terrain/BlockRectangle.h"
 #include "terrain/BlockCircle.h"
+#include "terrain/ThreatMap.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"  // Only for UpdateAreaUsers
 #include "resource/MetalManager.h"
@@ -1276,6 +1277,9 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 
 bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination)
 {
+	if (circuit->GetThreatMap()->GetThreatAt(destination) > 20.0f) {
+		return false;
+	}
 	if (unit->GetCircuitDef()->GetImmobileId() != -1) {  // A hub or factory
 		return unit->GetUnit()->GetPos().distance2D(destination) < unit->GetCircuitDef()->GetBuildDistance();
 	}

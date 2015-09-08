@@ -54,6 +54,9 @@ CTerrainData::CTerrainData()
 		, aiToUpdate(0)
 		, isClusterizing(false)
 		, initialized(false)
+#ifdef DEBUG_VIS
+		, toggleFrame(-1)
+#endif
 {
 }
 
@@ -1201,11 +1204,13 @@ void CTerrainData::UpdateVis()
 	}
 }
 
-void CTerrainData::ToggleVis()
+void CTerrainData::ToggleVis(int frame)
 {
-	if (debugDrawer == nullptr) {
+	if ((debugDrawer == nullptr) || (toggleFrame >= frame)) {
 		return;
 	}
+	toggleFrame = frame;
+
 	if (sdlWindows.empty()) {
 		// ~area
 		SAreaData& areaData = *GetNextAreaData();

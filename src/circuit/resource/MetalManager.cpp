@@ -287,19 +287,15 @@ void CMetalManager::MarkAllyMexes(const std::list<CCircuitUnit*>& mexes)
 	auto d_first = std::back_inserter(markedMexes);
 	auto addMex = [&d_first, this](const CCircuitUnit* unit) {
 		SMex mex;
-		mex.unitId = unit->GetId();
-		mex.pos = unit->GetUnit()->GetPos();
-		*d_first++ = mex;
-		int index = FindNearestSpot(mex.pos);
-		if (index != -1) {
-			clusterInfos[metalInfos[index].clusterId].mexCount++;
+		mex.index = FindNearestSpot(unit->GetUnit()->GetPos());
+		if (mex.index != -1) {
+			mex.unitId = unit->GetId();
+			*d_first++ = mex;
+			clusterInfos[metalInfos[mex.index].clusterId].mexCount++;
 		}
 	};
 	auto delMex = [this](const SMex& mex) {
-		int index = FindNearestSpot(mex.pos);
-		if (index != -1) {
-			clusterInfos[metalInfos[index].clusterId].mexCount--;
-		}
+		clusterInfos[metalInfos[mex.index].clusterId].mexCount--;
 	};
 
 	// @see std::set_symmetric_difference + std::set_intersection

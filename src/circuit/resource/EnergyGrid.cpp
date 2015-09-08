@@ -16,7 +16,9 @@
 #include "util/utils.h"
 
 #include "AISCommands.h"
+#ifdef DEBUG_VIS
 #include "Figure.h"
+#endif
 
 #include <boost/graph/kruskal_min_spanning_tree.hpp>
 #include <boost/graph/breadth_first_search.hpp>
@@ -273,13 +275,13 @@ void CEnergyGrid::MarkAllyPylons(const std::list<CCircuitUnit*>& pylons)
 
 		if ((*first1)->GetId() < *first2) {
 			addPylon(*first1);  // new unit
-			++first1;  // advance mexes
+			++first1;  // advance pylons
 		} else {
 			if (*first2 < (*first1)->GetId()) {
 				delPylon(*first2);  // dead unit
 			} else {
 				*d_first++ = *first2;  // old unit
-				++first1;  // advance mexes
+				++first1;  // advance pylons
 			}
             ++first2;  // advance prevUnits
 		}

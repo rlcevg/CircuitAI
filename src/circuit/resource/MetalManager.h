@@ -80,7 +80,7 @@ private:
 	int markFrame;
 	struct SMex {
 		CCircuitUnit::Id unitId;
-		springai::AIFloat3 pos;
+		int index;
 	};
 	std::deque<SMex> markedMexes;  // sorted by insertion
 };
