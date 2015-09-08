@@ -34,15 +34,17 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 				, isShake(isShake)
 				, buildType(type)
 				, cost(cost)
-				, timeout(timeout)
 				, target(nullptr)
 				, buildPos(-RgtVector)
 				, buildPower(.0f)
 				, facing(UNIT_COMMAND_BUILD_NO_FACING)
 				, nextTask(nullptr)
-				, savedIncome(manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome())
+				, timeout(timeout)
 				, buildFails(0)
 {
+	CCircuitAI* circuit = manager->GetCircuit();
+	lastTouched = circuit->GetLastFrame();
+	savedIncome = circuit->GetEconomyManager()->GetAvgMetalIncome();
 }
 
 IBuilderTask::~IBuilderTask()
@@ -56,14 +58,23 @@ bool IBuilderTask::CanAssignTo(CCircuitUnit* unit)
 
 void IBuilderTask::AssignTo(CCircuitUnit* unit)
 {
+	lastTouched = -1;
+
 	IUnitTask::AssignTo(unit);
 
 	buildPower += unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+	if (position == -RgtVector) {
+		position = unit->GetUnit()->GetPos();
+	}
 }
 
 void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IUnitTask::RemoveAssignee(unit);
+
+	if (units.empty()) {
+		lastTouched = manager->GetCircuit()->GetLastFrame();
+	}
 
 	buildPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
 }
@@ -215,7 +226,7 @@ void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	Unit* u = unit->GetUnit();
 	// TODO: floating retreat coefficient
-	if (u->GetHealth() >= u->GetMaxHealth() * 0.8) {
+	if (u->GetHealth() >= u->GetMaxHealth() * 0.8f) {
 		return;
 	}
 

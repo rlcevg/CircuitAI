@@ -9,10 +9,12 @@
 #define SRC_CIRCUIT_TASK_BUILDER_BUILDERTASK_H_
 
 #include "task/UnitTask.h"
+#include "util/utils.h"
 
 #define MIN_BUILD_SEC	20
 #define MAX_BUILD_SEC	40
 #define MAX_TRAVEL_SEC	60
+#define ASSIGN_TIMEOUT	FRAMES_PER_SEC * 300
 
 namespace circuit {
 
@@ -38,7 +40,7 @@ public:
 protected:
 	IBuilderTask(ITaskManager* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
-				 BuildType type, float cost, bool isShake = true, int timeout = 0);
+				 BuildType type, float cost, bool isShake = true, int timeout = ASSIGN_TIMEOUT);
 public:
 	virtual ~IBuilderTask();
 
@@ -81,6 +83,8 @@ public:
 	void SetNextTask(IBuilderTask* task) { nextTask = task; }
 	IBuilderTask* GetNextTask() const { return nextTask; }
 
+	int GetLastTouched() const { return lastTouched; }
+
 protected:
 	int FindFacing(CCircuitDef* buildDef, const springai::AIFloat3& position);
 
@@ -91,11 +95,13 @@ protected:
 	BuildType buildType;
 	float buildPower;
 	float cost;
-	int timeout;  // TODO: Use Default = MAX_TRAVEL_SEC. Start checks (on Update?) after first assignment. Stop checks on target != nullptr?
 	CCircuitUnit* target;  // FIXME: Replace target with unitId
 	springai::AIFloat3 buildPos;
 	int facing;
 	IBuilderTask* nextTask;
+
+	int lastTouched;
+	int timeout;
 
 	float savedIncome;
 	int buildFails;

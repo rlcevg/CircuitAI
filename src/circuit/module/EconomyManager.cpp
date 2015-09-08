@@ -27,6 +27,7 @@
 #include "FeatureDef.h"
 #include "Team.h"
 #include "TeamRulesParam.h"
+#include "UnitRulesParam.h"
 
 namespace circuit {
 
@@ -707,7 +708,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			return clusterInfos[v.second].factory == nullptr;
 		};
 		CMetalManager* metalManager = circuit->GetMetalManager();
-		int index = metalManager->FindNearestCluster(isStriderValid ? circuit->GetSetupManager()->GetBasePos() : position, predicate);
+		int index = metalManager->FindNearestCluster(position, predicate);
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		if (index >= 0) {
 			const CMetalData::Clusters& clusters = metalManager->GetClusters();
@@ -839,13 +840,34 @@ void CEconomyManager::Init()
 		clusterInfos[k] = {nullptr};
 	}
 
-	SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();
-	const int interval = ais->GetSize() * FRAMES_PER_SEC;
-	delete ais;
-	CScheduler* scheduler = circuit->GetScheduler().get();
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks), this),
-							interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this), interval, circuit->GetSkirmishAIId() + 1);
+	auto subinit = [this]() {
+		CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+		IBuilderTask* task = nullptr;
+		if (commander != nullptr) {
+			Unit* u = commander->GetUnit();
+			const AIFloat3& pos = u->GetPos();
+			UnitRulesParam* param = u->GetUnitRulesParamByName("facplop");
+			if (param != nullptr) {
+				if (param->GetValueFloat() == 1) {
+					CBuilderManager* builderManager = circuit->GetBuilderManager();
+					task = builderManager->EnqueueTask(IUnitTask::Priority::HIGH, circuit->GetCircuitDef("factorycloak"), pos,
+													   IBuilderTask::BuildType::FACTORY);
+					static_cast<ITaskManager*>(builderManager)->AssignTask(commander, task);
+				}
+				delete param;
+			}
+		}
+
+		SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();
+		const int interval = ais->GetSize() * FRAMES_PER_SEC;
+		delete ais;
+		CScheduler* scheduler = circuit->GetScheduler().get();
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks), this),
+								interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this), interval, circuit->GetSkirmishAIId() + 1);
+	};
+	// Try to avoid blocked factories on start
+	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(subinit), circuit->GetSkirmishAIId() * 2);
 }
 
 } // namespace circuit

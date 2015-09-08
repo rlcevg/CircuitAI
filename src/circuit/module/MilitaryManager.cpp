@@ -247,19 +247,8 @@ void CMilitaryManager::DoneTask(IUnitTask* task)
 	DequeueTask(task, false);
 }
 
-void CMilitaryManager::SpecialCleanUp(CCircuitUnit* unit)
-{
-
-}
-
-void CMilitaryManager::SpecialProcess(CCircuitUnit* unit)
-{
-
-}
-
 void CMilitaryManager::FallbackTask(CCircuitUnit* unit)
 {
-
 }
 
 CMilitaryManager::SDefPoint* CMilitaryManager::GetDefPoint(const AIFloat3& pos, float defCost)

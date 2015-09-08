@@ -51,21 +51,21 @@ public:
 							  float cost,
 							  bool isShake = true,  // Should position be randomly shifted?
 							  bool isActive = true,  // Should task go to general queue or remain detached?
-							  int timeout = 0);
+							  int timeout = ASSIGN_TIMEOUT);
 	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,
 							  CCircuitDef* buildDef,
 							  const springai::AIFloat3& position,
 							  IBuilderTask::BuildType type,
 							  bool isShake = true,
 							  bool isActive = true,
-							  int timeout = 0);
+							  int timeout = ASSIGN_TIMEOUT);
 	IBuilderTask* EnqueuePylon(IBuilderTask::Priority priority,
 							   CCircuitDef* buildDef,
 							   const springai::AIFloat3& position,
 							   CEnergyLink* link,
 							   float cost,
 							   bool isActive = true,
-							   int timeout = 0);
+							   int timeout = ASSIGN_TIMEOUT);
 	IBuilderTask* EnqueuePatrol(IBuilderTask::Priority priority,
 								const springai::AIFloat3& position,
 								float cost,
@@ -78,11 +78,11 @@ public:
 								 bool isMetal = true);
 	IBuilderTask* EnqueueRepair(IBuilderTask::Priority priority,
 								CCircuitUnit* target,
-								int timeout = 0);
+								int timeout = ASSIGN_TIMEOUT);
 	IBuilderTask* EnqueueTerraform(IBuilderTask::Priority priority,
 								   CCircuitUnit* target,
 								   float cost = 1.0f,
-								   int timeout = 0);
+								   int timeout = ASSIGN_TIMEOUT);
 private:
 	IBuilderTask* AddTask(IBuilderTask::Priority priority,
 						  CCircuitDef* buildDef,
@@ -100,8 +100,6 @@ public:
 	virtual void AssignTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
 	virtual void DoneTask(IUnitTask* task);
-	virtual void SpecialCleanUp(CCircuitUnit* unit);
-	virtual void SpecialProcess(CCircuitUnit* unit);
 	virtual void FallbackTask(CCircuitUnit* unit);
 
 private:
@@ -130,7 +128,6 @@ private:
 	unsigned int updateSlice;
 
 	std::set<CCircuitUnit*> workers;
-	std::set<CCircuitUnit*> assistants;  // workers with temporary task
 
 	CCircuitDef* terraDef;
 

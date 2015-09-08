@@ -1249,6 +1249,9 @@ STerrainMapImmobileType* CTerrainManager::GetImmobileTypeById(STerrainMapImmobil
 
 bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, const float& range)
 {
+	if (circuit->GetThreatMap()->GetThreatAt(position) > 20.0f) {
+		return false;
+	}
 	int iS = GetSectorIndex(position);
 	STerrainMapSector* sector;
 	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
@@ -1296,6 +1299,9 @@ bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination
 
 bool CTerrainManager::CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const AIFloat3& destination)
 {
+	if (circuit->GetThreatMap()->GetThreatAt(destination) > 20.0f) {
+		return false;
+	}
 	if (area == nullptr) {  // A flying unit
 		return true;
 	}

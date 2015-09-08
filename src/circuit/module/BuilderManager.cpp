@@ -35,7 +35,6 @@
 #include "AISCommands.h"
 #include "Pathing.h"
 #include "MoveData.h"
-#include "UnitRulesParam.h"
 #include "Command.h"
 
 #include <utility>
@@ -537,7 +536,8 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 
 			} else {
 
-				const AIFloat3& buildPos = candidate->GetPosition();
+				const AIFloat3& bp = candidate->GetPosition();
+				const AIFloat3& buildPos = (bp != -RgtVector) ? bp : pos;
 
 				if (!terrainManager->CanBuildAt(unit, buildPos)) {
 					continue;
@@ -545,7 +545,6 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 
 				dist = pathLength(buildPos);
 				if (dist < SQUARE_SIZE) {
-//					continue;
 					dist = buildPos.distance(pos) * 1.5;
 				}
 				valid = ((dist * weight < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));
@@ -578,16 +577,6 @@ void CBuilderManager::DoneTask(IUnitTask* task)
 	DequeueTask(static_cast<IBuilderTask*>(task), true);
 }
 
-void CBuilderManager::SpecialCleanUp(CCircuitUnit* unit)
-{
-	assistants.erase(unit);
-}
-
-void CBuilderManager::SpecialProcess(CCircuitUnit* unit)
-{
-	assistants.insert(unit);
-}
-
 void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 {
 	DequeueTask(static_cast<IBuilderTask*>(unit->GetTask()));
@@ -599,57 +588,21 @@ void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 
 void CBuilderManager::Init()
 {
-	auto subinit = [this]() {
-		CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-		IBuilderTask* task = nullptr;
-		if (commander != nullptr) {
-			Unit* u = commander->GetUnit();
-			const AIFloat3& pos = u->GetPos();
-			UnitRulesParam* param = u->GetUnitRulesParamByName("facplop");
-			if (param != nullptr) {
-				if (param->GetValueFloat() == 1) {
-					task = EnqueueTask(IUnitTask::Priority::HIGH, circuit->GetCircuitDef("factorycloak"), pos, IBuilderTask::BuildType::FACTORY);
-					static_cast<ITaskManager*>(this)->AssignTask(commander, task);
-				}
-				delete param;
-			}
-		}
-
-		CScheduler* scheduler = circuit->GetScheduler().get();
-		const int interval = 8;
-		const int offset = circuit->GetSkirmishAIId() % interval;
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateRetreat, this), interval, offset + 1);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 2);
-	};
-	// Try to avoid blocked factories on start
-	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(subinit), circuit->GetSkirmishAIId() * 2);
+	CScheduler* scheduler = circuit->GetScheduler().get();
+	const int interval = 8;
+	const int offset = circuit->GetSkirmishAIId() % interval;
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateRetreat, this), interval, offset + 1);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 2);
 }
 
 void CBuilderManager::Watchdog()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	decltype(assistants)::iterator iter = assistants.begin();
-	while (iter != assistants.end()) {
-		CCircuitUnit* unit = *iter;
-		++iter;
-		IBuilderTask* task = static_cast<IBuilderTask*>(unit->GetTask());
-		int timeout = task->GetTimeout();
-		if ((timeout > 0) && (circuit->GetLastFrame() - unit->GetTaskFrame() > timeout)) {
-			switch (task->GetBuildType()) {
-				case IBuilderTask::BuildType::PATROL:
-				case IBuilderTask::BuildType::RECLAIM: {
-					DoneTask(task);
-					break;
-				}
-			}
-		}
-	}
-
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	Resource* metalRes = economyManager->GetMetalRes();
 	// somehow workers get stuck
-	for (auto worker : workers) {
+	for (CCircuitUnit* worker : workers) {
 		Unit* u = worker->GetUnit();
 		auto commands = std::move(u->GetCurrentCommands());
 		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())
@@ -683,8 +636,6 @@ void CBuilderManager::Watchdog()
 			}
 		}
 	}
-
-	// TODO: Open/close metal spots with map->IsPossibleToBuild()
 }
 
 void CBuilderManager::AddBuildList(CCircuitUnit* unit)
@@ -696,7 +647,7 @@ void CBuilderManager::AddBuildList(CCircuitUnit* unit)
 
 	const std::unordered_set<CCircuitDef::Id>& buildOptions = cDef->GetBuildOptions();
 	std::set<CCircuitDef*> buildDefs;
-	for (auto build : buildOptions) {
+	for (CCircuitDef::Id build : buildOptions) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(build);
 		if (cdef->GetBuildCount() == 0) {
 			buildDefs.insert(cdef);
@@ -720,7 +671,7 @@ void CBuilderManager::RemoveBuildList(CCircuitUnit* unit)
 
 	const std::unordered_set<CCircuitDef::Id>& buildOptions = cDef->GetBuildOptions();
 	std::set<CCircuitDef*> buildDefs;
-	for (auto build : buildOptions) {
+	for (CCircuitDef::Id build : buildOptions) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(build);
 		cdef->DecBuild();
 		if (cdef->GetBuildCount() == 0) {
@@ -748,7 +699,7 @@ void CBuilderManager::UpdateRetreat()
 void CBuilderManager::UpdateBuild()
 {
 	if (!deleteTasks.empty()) {
-		for (auto task : deleteTasks) {
+		for (IBuilderTask* task : deleteTasks) {
 			updateTasks.erase(task);
 			delete task;
 		}
@@ -757,8 +708,17 @@ void CBuilderManager::UpdateBuild()
 
 	auto it = updateTasks.begin();
 	unsigned int i = 0;
+	int lastFrame = circuit->GetLastFrame();
 	while (it != updateTasks.end()) {
-		(*it)->Update();
+		IBuilderTask* task = *it;
+
+		int frame = task->GetLastTouched();
+		int timeout = task->GetTimeout();
+		if ((frame != -1) && (timeout > 0) && (lastFrame - frame >= timeout)) {
+			AbortTask(task);
+		} else {
+			task->Update();
+		}
 
 		it = updateTasks.erase(it);
 		if (++i >= updateSlice) {

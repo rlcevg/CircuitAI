@@ -49,8 +49,6 @@ public:
 	virtual void AssignTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
 	virtual void DoneTask(IUnitTask* task);
-	virtual void SpecialCleanUp(CCircuitUnit* unit);
-	virtual void SpecialProcess(CCircuitUnit* unit);
 	virtual void FallbackTask(CCircuitUnit* unit);
 
 	std::vector<SDefPoint>& GetDefPoints(int index) { return clusterInfos[index].defPoints; }

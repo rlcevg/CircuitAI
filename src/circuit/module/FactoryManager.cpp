@@ -7,6 +7,8 @@
 
 #include "module/FactoryManager.h"
 #include "module/EconomyManager.h"
+#include "module/BuilderManager.h"
+#include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "task/NullTask.h"
 #include "task/IdleTask.h"
@@ -60,7 +62,8 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		// check nanos around
 		std::set<CCircuitUnit*> nanos;
 		float radius = assistDef->GetBuildDistance();
-		auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(unit->GetUnit()->GetPos(), radius));
+		const AIFloat3& pos = unit->GetUnit()->GetPos();
+		auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
 		int nanoId = assistDef->GetId();
 		int teamId = this->circuit->GetTeamId();
 		for (auto nano : units) {
@@ -81,7 +84,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			delete ndef;
 		}
 		utils::free_clear(units);
-		factories.emplace_back(unit, nanos, 3);
+		factories.emplace_back(unit, nanos, 3, true);
+
+		this->circuit->GetSetupManager()->SetBasePos(pos);
 	};
 	auto factoryIdleHandler = [this](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
@@ -107,6 +112,20 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			}
 			factories.erase(it);
 			break;
+		}
+
+		// check if any factory with builders left
+		bool valid = false;
+		for (SFactory& fac : factories) {
+			if (fac.hasBuilder) {
+				valid = true;
+				break;
+			}
+		}
+		if (!valid) {
+			CCircuitDef* facDef = this->circuit->GetCircuitDef("factorycloak");
+			this->circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, -RgtVector,
+															IBuilderTask::BuildType::FACTORY);
 		}
 	};
 
@@ -252,7 +271,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			delete ndef;
 		}
 		utils::free_clear(units);
-		factories.emplace_back(unit, nanos, 9);
+		factories.emplace_back(unit, nanos, 9, false);
 
 		std::vector<float> params;
 		params.push_back(2.0f);
@@ -474,14 +493,6 @@ void CFactoryManager::AbortTask(IUnitTask* task)
 void CFactoryManager::DoneTask(IUnitTask* task)
 {
 	DequeueTask(task, true);
-}
-
-void CFactoryManager::SpecialCleanUp(CCircuitUnit* unit)
-{
-}
-
-void CFactoryManager::SpecialProcess(CCircuitUnit* unit)
-{
 }
 
 void CFactoryManager::FallbackTask(CCircuitUnit* unit)

@@ -35,12 +35,11 @@ CBReclaimTask::~CBReclaimTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CBReclaimTask::RemoveAssignee(CCircuitUnit* unit)
+void CBReclaimTask::AssignTo(CCircuitUnit* unit)
 {
-	// Unregister from timeout processor
-	manager->SpecialCleanUp(unit);
+	IBuilderTask::AssignTo(unit);
 
-	IBuilderTask::RemoveAssignee(unit);
+	lastTouched = manager->GetCircuit()->GetLastFrame();
 }
 
 void CBReclaimTask::Execute(CCircuitUnit* unit)
@@ -68,9 +67,6 @@ void CBReclaimTask::Execute(CCircuitUnit* unit)
 	} else {
 		u->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	}
-
-	// Register unit to process timeout if set
-	manager->SpecialProcess(unit);
 }
 
 void CBReclaimTask::Update()
@@ -132,16 +128,6 @@ void CBReclaimTask::Update()
 			utils::free_clear(features);
 		}
 	}
-}
-
-void CBReclaimTask::Close(bool done)
-{
-	for (auto unit : units) {
-		// Unregister from timeout processor
-		manager->SpecialCleanUp(unit);
-	}
-
-	IBuilderTask::Close(done);
 }
 
 void CBReclaimTask::Finish()

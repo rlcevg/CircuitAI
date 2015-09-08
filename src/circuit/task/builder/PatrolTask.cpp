@@ -29,12 +29,11 @@ CBPatrolTask::~CBPatrolTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CBPatrolTask::RemoveAssignee(CCircuitUnit* unit)
+void CBPatrolTask::AssignTo(CCircuitUnit* unit)
 {
-	// Unregister from timeout processor
-	manager->SpecialCleanUp(unit);
+	IBuilderTask::AssignTo(unit);
 
-	IBuilderTask::RemoveAssignee(unit);
+	lastTouched = manager->GetCircuit()->GetLastFrame();
 }
 
 void CBPatrolTask::Execute(CCircuitUnit* unit)
@@ -51,23 +50,10 @@ void CBPatrolTask::Execute(CCircuitUnit* unit)
 	pos.x += (pos.x > terrainManager->GetTerrainWidth() / 2) ? -size : size;
 	pos.z += (pos.z > terrainManager->GetTerrainHeight() / 2) ? -size : size;
 	u->PatrolTo(pos);
-
-	// Register unit to process timeout if set
-	manager->SpecialProcess(unit);
 }
 
 void CBPatrolTask::Update()
 {
-}
-
-void CBPatrolTask::Close(bool done)
-{
-	for (auto unit : units) {
-		// Unregister from timeout processor
-		manager->SpecialCleanUp(unit);
-	}
-
-	IBuilderTask::Close(done);
 }
 
 void CBPatrolTask::Finish()

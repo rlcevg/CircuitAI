@@ -48,8 +48,6 @@ public:
 	virtual void AssignTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
 	virtual void DoneTask(IUnitTask* task);
-	virtual void SpecialCleanUp(CCircuitUnit* unit);
-	virtual void SpecialProcess(CCircuitUnit* unit);
 	virtual void FallbackTask(CCircuitUnit* unit);
 
 	int GetFactoryCount() const { return factories.size(); }
@@ -79,14 +77,16 @@ private:
 	unsigned int updateSlice;
 
 	struct SFactory {
-		SFactory(CCircuitUnit* u, const std::set<CCircuitUnit*>& n, int w) :
-			unit(u),
-			nanos(n),
-			weight(w)
+		SFactory(CCircuitUnit* u, const std::set<CCircuitUnit*>& n, int w, bool h)
+			: unit(u)
+			, nanos(n)
+			, weight(w)
+			, hasBuilder(h)
 		{}
 		CCircuitUnit* unit;
 		std::set<CCircuitUnit*> nanos;
 		int weight;
+		bool hasBuilder;
 	};
 	std::list<SFactory> factories;  // facory 1:n nano
 

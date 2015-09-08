@@ -29,8 +29,6 @@ public:
 	virtual void AssignTask(CCircuitUnit* unit) = 0;
 	virtual void AbortTask(IUnitTask* task) = 0;
 	virtual void DoneTask(IUnitTask* task) = 0;
-	virtual void SpecialCleanUp(CCircuitUnit* unit) = 0;
-	virtual void SpecialProcess(CCircuitUnit* unit) = 0;
 	virtual void FallbackTask(CCircuitUnit* unit) = 0;
 
 	CIdleTask* GetIdleTask() const { return idleTask; }

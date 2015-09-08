@@ -19,11 +19,10 @@ public:
 				  float cost, int timeout, float radius = .0f, bool isMetal = true);
 	virtual ~CBReclaimTask();
 
-	virtual void RemoveAssignee(CCircuitUnit* unit);
+	virtual void AssignTo(CCircuitUnit* unit);
 
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
-	virtual void Close(bool done);
 protected:
 	virtual void Finish();
 	virtual void Cancel();
