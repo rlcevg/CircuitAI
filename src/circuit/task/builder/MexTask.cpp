@@ -60,6 +60,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 		}
 	}
 
+	// FIXME: Unsafe fallback expansion (mex can be behind enemy lines)
 	const CMetalData::Metals& spots = metalManager->GetSpots();
 	Map* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();

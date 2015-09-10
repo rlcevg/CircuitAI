@@ -1249,7 +1249,7 @@ STerrainMapImmobileType* CTerrainManager::GetImmobileTypeById(STerrainMapImmobil
 
 bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, const float& range)
 {
-	if (circuit->GetThreatMap()->GetThreatAt(position) > 20.0f) {
+	if (circuit->GetThreatMap()->GetThreatAt(position) > MIN_THREAT) {
 		return false;
 	}
 	int iS = GetSectorIndex(position);
@@ -1280,7 +1280,7 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 
 bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination)
 {
-	if (circuit->GetThreatMap()->GetThreatAt(destination) > 20.0f) {
+	if (circuit->GetThreatMap()->GetThreatAt(destination) > MIN_THREAT) {
 		return false;
 	}
 	if (unit->GetCircuitDef()->GetImmobileId() != -1) {  // A hub or factory
@@ -1299,7 +1299,7 @@ bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination
 
 bool CTerrainManager::CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const AIFloat3& destination)
 {
-	if (circuit->GetThreatMap()->GetThreatAt(destination) > 20.0f) {
+	if (circuit->GetThreatMap()->GetThreatAt(destination) > MIN_THREAT) {
 		return false;
 	}
 	if (area == nullptr) {  // A flying unit

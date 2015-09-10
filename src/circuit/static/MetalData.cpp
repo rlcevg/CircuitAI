@@ -241,29 +241,63 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 	// Build Voronoi diagram out of clusters
 	std::vector<vor_point> vorPoints;
 	vorPoints.reserve(nclusters);
-	for (auto c : clusters) {
+	for (SCluster& c : clusters) {
 		vorPoints.push_back(vor_point(c.geoCentr.x, c.geoCentr.z));
 	}
 	clustVoronoi.clear();
 	boost::polygon::construct_voronoi(vorPoints.begin(), vorPoints.end(), &clustVoronoi);
 
 	// Convert voronoi_diagram to "Delaunay" in BGL (Boost Graph Library)
+	std::map<int, std::set<int>> verts;
 	Graph g(nclusters);
 	int edgeCount = 0;  // counts each edge twice
+	std::vector<std::pair<int, int>> edges;
+	edges.reserve(clustVoronoi.edges().size() / 2);
 	for (auto& edge : clustVoronoi.edges()) {
-		if ((edgeCount++ % 2 == 0)/* && edge.is_finite()*/) {  // FIXME: No docs says that odd edge is a twin of even
-			std::size_t idx0 = edge.cell()->source_index();
-			std::size_t idx1 = edge.twin()->cell()->source_index();
+		std::size_t idx0 = edge.cell()->source_index();
+		std::size_t idx1 = edge.twin()->cell()->source_index();
 
-			EdgeDesc edgeId;
-			bool ok;
-			std::tie(edgeId, ok) = boost::add_edge(idx0, idx1, g);
-			if (ok) {
-				SEdge& edge = g[edgeId];
-				edge.index = edgeCount / 2;
-				edge.weight = clusters[idx0].geoCentr.distance(clusters[idx1].geoCentr);
-				edge.center = (clusters[idx0].geoCentr + clusters[idx1].geoCentr) * 0.5f;
+		auto it = verts.find(idx0);
+		if (it != verts.end()) {
+			it->second.insert(idx1);
+		} else {
+			std::set<int> v;
+			v.insert(idx1);
+			verts[idx0] = v;
+		}
+
+		if ((edgeCount++ % 2 == 0)/* && edge.is_finite()*/) {  // FIXME: No docs says that odd edge is a twin of even
+			edges.push_back(std::make_pair(idx0, idx1));
+		}
+	}
+	auto badEdge = [&verts, this](int A, int B) {
+		for (int C : verts[A]) {
+			std::set<int>& vs = verts[C];
+			if (vs.find(B) != vs.end()) {
+				float AB = clusters[A].geoCentr.distance(clusters[B].geoCentr);
+				float BC = clusters[B].geoCentr.distance(clusters[C].geoCentr);
+				float CA = clusters[C].geoCentr.distance(clusters[A].geoCentr);
+				if (AB > (BC + CA) * 0.9f) {
+					return true;
+				}
 			}
+		}
+		return false;
+	};
+	int edgeIndex = 0;
+	for (std::pair<int, int>& e : edges) {
+		int A = e.first, B = e.second;
+		if (badEdge(A, B)) {
+			continue;
+		}
+		EdgeDesc edgeId;
+		bool ok;
+		std::tie(edgeId, ok) = boost::add_edge(A, B, g);
+		if (ok) {
+			SEdge& edge = g[edgeId];
+			edge.index = edgeIndex++;
+			edge.weight = clusters[A].geoCentr.distance(clusters[B].geoCentr);
+			edge.center = (clusters[A].geoCentr + clusters[B].geoCentr) * 0.5f;
 		}
 	}
 	clusterGraph = g;

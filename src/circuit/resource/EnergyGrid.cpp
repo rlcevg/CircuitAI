@@ -39,11 +39,11 @@ public:
 	CEnergyLink* link;
 };
 
-class detect_link : public boost::bfs_visitor<> {
+class detect_link: public boost::bfs_visitor<> {
 public:
 	detect_link(const CEnergyGrid::link_iterator_t& it) : linkIt(it) {}
     template <class Edge, class Graph>
-	void tree_edge(Edge e, const Graph& g) {
+	void tree_edge(const Edge& e, const Graph& g) {
 		CEnergyLink& link = boost::get(linkIt, e);
 		if (!link.IsFinished() && link.IsValid()) {
 			throw CExitBFS(&link);
@@ -54,9 +54,9 @@ public:
 
 struct spanning_tree {
 	spanning_tree() {}
-	spanning_tree(const std::set<CMetalData::EdgeDesc>& edges, const CEnergyGrid::link_iterator_t& it) :
-		spanningTree(edges),
-		linkIt(it)
+	spanning_tree(const std::set<CMetalData::EdgeDesc>& edges, const CEnergyGrid::link_iterator_t& it)
+		: spanningTree(edges)
+		, linkIt(it)
 	{}
 	template <typename Edge>
 	bool operator()(const Edge& e) const {
@@ -124,13 +124,13 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 	 */
 	spanning_tree filter(spanningTree, linkIt);
 	boost::filtered_graph<CMetalData::Graph, spanning_tree> fg(ownedClusters, filter);
-	detect_link vis(linkIt);
-	const AIFloat3& pos = circuit->GetSetupManager()->GetStartPos();
+	const AIFloat3& pos = circuit->GetSetupManager()->GetBasePos();
 	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
 	if (index < 0) {
 		return nullptr;
 	}
 
+	detect_link vis(linkIt);
 	CEnergyLink* link = nullptr;
 	try {
 		boost::breadth_first_search(fg, boost::vertex(index, ownedClusters), boost::visitor(vis));
@@ -365,7 +365,7 @@ void CEnergyGrid::MarkClusters()
 {
 	const int size = circuit->GetMetalManager()->GetClusters().size();
 	for (int index = 0; index < size; ++index) {
-		bool isOur = circuit->GetMetalManager()->IsClusterOur(index);
+		bool isOur = circuit->GetMetalManager()->IsClusterFinished(index);
 		if (linkedClusters[index] == isOur) {
 			continue;
 		}

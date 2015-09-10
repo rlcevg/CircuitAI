@@ -45,7 +45,8 @@ public:
 		float weight;
 		springai::AIFloat3 center;
 	};
-	using Graph = boost::adjacency_list<boost::hash_setS, boost::vecS, boost::undirectedS, boost::no_property, SEdge>;
+	using Graph = boost::adjacency_list<boost::hash_setS, boost::vecS, boost::undirectedS,
+										boost::no_property, SEdge>;
 	using VertexDesc = boost::graph_traits<Graph>::vertex_descriptor;
 	using EdgeDesc = boost::graph_traits<Graph>::edge_descriptor;
 

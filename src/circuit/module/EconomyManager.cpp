@@ -497,25 +497,23 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			CMetalManager* metalManager = circuit->GetMetalManager();
 			const CMetalData::Metals& spots = metalManager->GetSpots();
 			Map* map = circuit->GetMap();
-			CMetalData::MetalPredicate predicate;
+			CMetalManager::MexPredicate predicate;
 			if (unit != nullptr) {
 				CTerrainManager* terrainManager = circuit->GetTerrainManager();
-				predicate = [&spots, metalManager, map, metalDef, terrainManager, unit](CMetalData::MetalNode const& v) {
-					int index = v.second;
+				predicate = [&spots, metalManager, map, metalDef, terrainManager, unit](int index) {
 					return (metalManager->IsOpenSpot(index) &&
 							terrainManager->CanBuildAt(unit, spots[index].position) &&
 							map->IsPossibleToBuildAt(metalDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};
 			} else {
 				CCircuitDef* mexDef = this->mexDef;
-				predicate = [&spots, metalManager, map, mexDef, builderManager](CMetalData::MetalNode const& v) {
-					int index = v.second;
+				predicate = [&spots, metalManager, map, mexDef, builderManager](int index) {
 					return (metalManager->IsOpenSpot(index) &&
 							builderManager->IsBuilderInArea(mexDef, spots[index].position) &&
 							map->IsPossibleToBuildAt(mexDef->GetUnitDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};
 			}
-			int index = metalManager->FindNearestSpot(position, predicate);
+			int index = metalManager->GetMexToBuild(position, predicate);
 			if (index != -1) {
 				const AIFloat3& pos = spots[index].position;
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost);

@@ -61,7 +61,11 @@ public:
 	bool IsOpenSpot(int index);
 	void MarkAllyMexes();
 	void MarkAllyMexes(const std::list<CCircuitUnit*>& mexes);
-	bool IsClusterOur(int index);
+	bool IsClusterFinished(int index);
+	bool IsClusterQueued(int index);
+
+	using MexPredicate = std::function<bool (int index)>;
+	int GetMexToBuild(const springai::AIFloat3& pos, MexPredicate& predicate);
 
 private:
 	CCircuitAI* circuit;
@@ -72,7 +76,8 @@ private:
 		int clusterId;
 	};
 	struct SClusterInfo {
-		int mexCount;
+		int queuedCount;
+		int finishedCount;
 	};
 	std::vector<SMetalInfo> metalInfos;
 	std::vector<SClusterInfo> clusterInfos;

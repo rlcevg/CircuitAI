@@ -7,6 +7,7 @@
 
 #include "resource/MetalManager.h"
 #include "module/EconomyManager.h"
+#include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
 #include "util/math/RagMatrix.h"
 #include "util/Scheduler.h"
@@ -18,9 +19,59 @@
 #include "MoveData.h"
 #include "Pathing.h"
 
+#include <boost/graph/breadth_first_search.hpp>
+#include <boost/graph/filtered_graph.hpp>
+
 namespace circuit {
 
 using namespace springai;
+
+class CExitBFS: public std::exception {
+public:
+	CExitBFS() : std::exception() {}
+	virtual const char* what() const throw() {
+		return "BFS goal has been reached";
+	}
+};
+
+class detect_cluster: public boost::bfs_visitor<> {
+public:
+	detect_cluster(CMetalManager* mgr, CMetalManager::MexPredicate& pred, std::list<int>& outIdxs)
+		: manager(mgr)
+		, predicate(pred)
+		, pindices(&outIdxs)
+	{}
+    template <class Vertex, class Graph>
+	void discover_vertex(const Vertex u, const Graph& g) {
+		if (manager->IsClusterQueued(u) || manager->IsClusterFinished(u)) {
+			return;
+		}
+		for (int index : manager->GetClusters()[u].idxSpots) {
+			if (predicate(index)) {
+				pindices->push_back(index);
+			}
+		}
+		if (!pindices->empty()) {
+			throw CExitBFS();
+		}
+	}
+	CMetalManager* manager;
+	CMetalManager::MexPredicate predicate;
+	std::list<int>* pindices;
+};
+
+struct mex_tree {
+	mex_tree() : threatMap(nullptr), pclusters(nullptr) {}
+	mex_tree(CThreatMap* tm, const CMetalData::Clusters& cs)
+		: threatMap(tm)
+		, pclusters(&cs)
+	{}
+	bool operator()(const CMetalData::VertexDesc u) const {
+		return threatMap->GetThreatAt((*pclusters)[u].geoCentr) <= MIN_THREAT;
+	}
+	CThreatMap* threatMap;
+	const CMetalData::Clusters* pclusters;
+};
 
 CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData)
 		: circuit(circuit)
@@ -235,7 +286,10 @@ const CMetalData::Graph& CMetalManager::GetGraph() const
 
 void CMetalManager::SetOpenSpot(int index, bool value)
 {
-	metalInfos[index].isOpen = value;
+	if (metalInfos[index].isOpen != value) {
+		metalInfos[index].isOpen = value;
+		clusterInfos[metalInfos[index].clusterId].queuedCount += value ? -1 : 1;
+	}
 }
 
 void CMetalManager::SetOpenSpot(const springai::AIFloat3& pos, bool value)
@@ -291,11 +345,11 @@ void CMetalManager::MarkAllyMexes(const std::list<CCircuitUnit*>& mexes)
 		if (mex.index != -1) {
 			mex.unitId = unit->GetId();
 			*d_first++ = mex;
-			clusterInfos[metalInfos[mex.index].clusterId].mexCount++;
+			clusterInfos[metalInfos[mex.index].clusterId].finishedCount++;
 		}
 	};
 	auto delMex = [this](const SMex& mex) {
-		clusterInfos[metalInfos[mex.index].clusterId].mexCount--;
+		clusterInfos[metalInfos[mex.index].clusterId].finishedCount--;
 	};
 
 	// @see std::set_symmetric_difference + std::set_intersection
@@ -326,9 +380,42 @@ void CMetalManager::MarkAllyMexes(const std::list<CCircuitUnit*>& mexes)
 	}
 }
 
-bool CMetalManager::IsClusterOur(int index)
+bool CMetalManager::IsClusterFinished(int index)
 {
-	return clusterInfos[index].mexCount >= GetClusters()[index].idxSpots.size();
+	return clusterInfos[index].finishedCount >= GetClusters()[index].idxSpots.size();
+}
+
+bool CMetalManager::IsClusterQueued(int index)
+{
+	return clusterInfos[index].queuedCount >= GetClusters()[index].idxSpots.size();
+}
+
+int CMetalManager::GetMexToBuild(const AIFloat3& pos, MexPredicate& predicate)
+{
+	mex_tree filter(circuit->GetThreatMap(), GetClusters());
+	const CMetalData::Graph& graph = GetGraph();
+	boost::filtered_graph<CMetalData::Graph, boost::keep_all, mex_tree> fg(graph, boost::keep_all(), filter);
+	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
+	if (index < 0) {
+		return false;
+	}
+
+	std::list<int> indices;
+	detect_cluster vis(this, predicate, indices);
+	int result = -1;
+	try {
+		boost::breadth_first_search(fg, boost::vertex(index, graph), boost::visitor(vis));
+	} catch (const CExitBFS& e) {
+		float sqMinDist = std::numeric_limits<float>::max();
+		for (int index : indices) {
+			float sqDist = GetSpots()[index].position.SqDistance2D(pos);
+			if (sqDist < sqMinDist) {
+				sqMinDist = sqDist;
+				result = index;
+			}
+		}
+	}
+	return result;
 }
 
 } // namespace circuit

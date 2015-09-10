@@ -41,6 +41,7 @@ namespace utils {
 #define PYLON_RANGE			500.0f
 #define TASK_RETRIES		10
 #define DEBUG_MARK			0xBAD0C0DE
+#define MIN_THREAT			20.0f
 
 // z++
 #define UNIT_FACING_SOUTH	0
