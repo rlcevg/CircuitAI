@@ -602,7 +602,7 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 		AIFloat3 pos = u->GetPos();
 		AIFloat3 d((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
 		d.Normalize();
-		pos += d * SQUARE_SIZE * 10;
+		pos += d * SQUARE_SIZE * 30;
 		u->MoveTo(pos, 0, FRAMES_PER_SEC * 10);
 	}
 

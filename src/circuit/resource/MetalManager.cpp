@@ -19,22 +19,22 @@
 #include "MoveData.h"
 #include "Pathing.h"
 
-#include <boost/graph/breadth_first_search.hpp>
+#include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <boost/graph/filtered_graph.hpp>
 
 namespace circuit {
 
 using namespace springai;
 
-class CExitBFS: public std::exception {
+class CExitDSP: public std::exception {
 public:
-	CExitBFS() : std::exception() {}
+	CExitDSP() : std::exception() {}
 	virtual const char* what() const throw() {
-		return "BFS goal has been reached";
+		return "DSP goal has been reached";
 	}
 };
 
-class detect_cluster: public boost::bfs_visitor<> {
+class detect_cluster: public boost::dijkstra_visitor<> {
 public:
 	detect_cluster(CMetalManager* mgr, CMetalManager::MexPredicate& pred, std::list<int>& outIdxs)
 		: manager(mgr)
@@ -42,7 +42,7 @@ public:
 		, pindices(&outIdxs)
 	{}
     template <class Vertex, class Graph>
-	void discover_vertex(const Vertex u, const Graph& g) {
+	void examine_vertex(const Vertex u, const Graph& g) {
 		if (manager->IsClusterQueued(u) || manager->IsClusterFinished(u)) {
 			return;
 		}
@@ -52,7 +52,7 @@ public:
 			}
 		}
 		if (!pindices->empty()) {
-			throw CExitBFS();
+			throw CExitDSP();
 		}
 	}
 	CMetalManager* manager;
@@ -402,10 +402,11 @@ int CMetalManager::GetMexToBuild(const AIFloat3& pos, MexPredicate& predicate)
 
 	std::list<int> indices;
 	detect_cluster vis(this, predicate, indices);
+	auto w_map = boost::get(&CMetalData::SEdge::weight, fg);
 	int result = -1;
 	try {
-		boost::breadth_first_search(fg, boost::vertex(index, graph), boost::visitor(vis));
-	} catch (const CExitBFS& e) {
+		boost::dijkstra_shortest_paths(fg, boost::vertex(index, graph), boost::weight_map(w_map).visitor(vis));
+	} catch (const CExitDSP& e) {
 		float sqMinDist = std::numeric_limits<float>::max();
 		for (int index : indices) {
 			float sqDist = GetSpots()[index].position.SqDistance2D(pos);
