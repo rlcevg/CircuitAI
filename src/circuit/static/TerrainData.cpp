@@ -633,8 +633,8 @@ void CTerrainData::CheckHeightMap()
 	}
 	updatingAreas = true;
 	std::vector<float>& heightMap = (pHeightMap.load() == &heightMap0) ? heightMap1 : heightMap0;
-	heightMap = map->GetHeightMap();
-	slopeMap = map->GetSlopeMap();
+	heightMap = std::move(map->GetHeightMap());
+	slopeMap = std::move(map->GetSlopeMap());
 	scheduler->RunParallelTask(std::make_shared<CGameTask>(&CTerrainData::UpdateAreas, this),
 							   std::make_shared<CGameTask>(&CTerrainData::ScheduleUsersUpdate, this));
 }
@@ -921,7 +921,7 @@ void CTerrainData::ScheduleUsersUpdate()
 
 void CTerrainData::DidUpdateAreaUsers()
 {
-	if (--aiToUpdate > 0) {
+	if (--aiToUpdate != 0) {
 		return;
 	}
 

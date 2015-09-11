@@ -33,17 +33,18 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CThreatMap* threatMap = circuit->GetThreatMap();
 	Unit* u = unit->GetUnit();
 
 	const AIFloat3& pos = u->GetPos();
 	STerrainMapArea* area = unit->GetArea();
-	float power = circuit->GetThreatMap()->GetUnitThreat(unit);
+	float power = threatMap->GetUnitThreat(unit);
 	CEnemyUnit* bestTarget = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden() || (enemy->GetThreat() >= power) ||
+		if (enemy->IsHidden() || (threatMap->GetThreatAt(enemy->GetPos()) >= power) ||
 			!terrainManager->CanMoveToPos(area, enemy->GetPos()))
 		{
 			continue;

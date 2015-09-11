@@ -40,10 +40,10 @@ CThreatMap::CThreatMap(CCircuitAI* circuit)
 	int losMipLevel = mod->GetLosMipLevel();
 	delete mod;
 
-//	radarMap = map->GetRadarMap();
+//	radarMap = std::move(map->GetRadarMap());
 //	radarWidth = map->GetWidth() / 8;
 
-	losMap = map->GetLosMap();
+	losMap = std::move(map->GetLosMap());
 	losWidth = map->GetWidth() >> losMipLevel;
 	losResConv = SQUARE_SIZE << losMipLevel;
 }
@@ -62,8 +62,8 @@ CThreatMap::~CThreatMap()
 
 void CThreatMap::Update()
 {
-//	radarMap = circuit->GetMap()->GetRadarMap();
-	losMap = circuit->GetMap()->GetLosMap();
+//	radarMap = std::move(circuit->GetMap()->GetRadarMap());
+	losMap = std::move(circuit->GetMap()->GetLosMap());
 	currMaxThreat = .0f;
 
 	// account for moving units
