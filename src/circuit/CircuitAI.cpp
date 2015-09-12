@@ -16,6 +16,7 @@
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "task/PlayerTask.h"
+#include "task/StuckTask.h"
 #include "unit/EnemyUnit.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -593,17 +594,13 @@ int CCircuitAI::UnitIdle(CCircuitUnit* unit)
 
 int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 {
-	Unit* u = unit->GetUnit();
 	if (unit->IsMoveFailed(lastFrame)) {
-		u->Stop();
+		unit->GetUnit()->Stop();
 		UnitDestroyed(unit, nullptr);
 		UnregisterTeamUnit(unit);
 	} else {
-		AIFloat3 pos = u->GetPos();
-		AIFloat3 d((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
-		d.Normalize();
-		pos += d * SQUARE_SIZE * 30;
-		u->MoveTo(pos, 0, FRAMES_PER_SEC * 10);
+		ITaskManager* mgr = unit->GetTask()->GetManager();
+		mgr->AssignTask(unit, new CStuckTask(mgr));
 	}
 
 	return 0;  // signaling: OK

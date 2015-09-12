@@ -59,6 +59,15 @@ void CScoutTask::Execute(CCircuitUnit* unit)
 
 	if (bestTarget != nullptr) {
 		position = bestTarget->GetPos();
+		float range = u->GetMaxRange();
+		if ((bestTarget->GetCircuitDef() != nullptr) && (minSqDist < range * range)) {
+			int targetCat = bestTarget->GetCircuitDef()->GetUnitDef()->GetCategory();
+			int noChaseCat = unit->GetCircuitDef()->GetUnitDef()->GetNoChaseCategory();
+			if (targetCat & noChaseCat != 0) {
+				u->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 300);
+				return;
+			}
+		}
 		u->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 300);
 		return;
 	}

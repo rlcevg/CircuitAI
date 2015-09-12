@@ -57,7 +57,7 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	Unit* u = unit->GetUnit();
 	// TODO: floating retreat coefficient
-	if (u->GetHealth() > u->GetMaxHealth() * 0.6) {
+	if (u->GetHealth() > u->GetMaxHealth() * 0.6f) {
 		return;
 	}
 
