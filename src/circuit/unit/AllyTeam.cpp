@@ -16,6 +16,8 @@
 
 #include "AIFloat3.h"
 #include "OOAICallback.h"
+#include "Team.h"
+#include "TeamRulesParam.h"
 
 namespace circuit {
 
@@ -48,6 +50,13 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 {
 	if (initCount++ > 0) {
 		return;
+	}
+
+	TeamRulesParam* trp = circuit->GetTeam()->GetTeamRulesParamByName("start_box_id");
+	if (trp != nullptr) {
+		int boxId = trp->GetValueFloat();
+		startBox = circuit->GetGameAttribute()->GetSetupData().GetStartBox(boxId);
+		delete trp;
 	}
 
 	metalManager = std::make_shared<CMetalManager>(circuit, &circuit->GetGameAttribute()->GetMetalData());

@@ -16,9 +16,6 @@
 #include "OOAICallback.h"
 #include "Game.h"
 #include "Map.h"
-#include "WrappTeam.h"
-#include "Team.h"
-#include "TeamRulesParam.h"
 
 #include <map>
 #include <regex>
@@ -49,11 +46,9 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 {
 	std::string script(setupScript);
 	std::map<int, int> teamIdsRemap;
-	struct SAllyData {
-		CAllyTeam::SBox startBox;
-		std::set<int> origTeamIds;
-	};
-	std::map<int, SAllyData> alliesMap;
+	using OrigTeamIds = std::set<int>;
+	std::map<int, OrigTeamIds> allies;
+	CSetupData::BoxMap boxes;
 
 	// Detect start boxes
 	Map* map = circuit->GetMap();
@@ -81,7 +76,7 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 			startbox.top    = utils::string_to_float(section[3]) * height;
 			startbox.right  = utils::string_to_float(section[4]) * width;
 			startbox.bottom = utils::string_to_float(section[5]) * height;
-			alliesMap[allyTeamId].startBox = startbox;
+			boxes[allyTeamId] = startbox;
 
 			start = section[0].second;
 		}
@@ -104,7 +99,7 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 			startbox.left   *= width;
 			startbox.right  *= width;
 			startbox.top    *= height;
-			alliesMap[allyTeamId].startBox = startbox;
+			boxes[allyTeamId] = startbox;
 
 			start = section[0].second;
 		}
@@ -133,7 +128,7 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 		std::smatch matchAllyId;
 		if (std::regex_search(teamBody, matchAllyId, patternAllyId)) {
 			int allyTeamId = utils::string_to_int(matchAllyId[1]);
-			alliesMap[allyTeamId].origTeamIds.insert(teamId);
+			allies[allyTeamId].insert(teamId);
 		}
 
 		start = section[0].second;
@@ -147,31 +142,19 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 	// Remap teams, create ally-teams
 	// @see rts/Game/GameSetup.cpp CGameSetup::Init
 	std::vector<CAllyTeam*> allyTeams;
-	allyTeams.reserve(alliesMap.size());
-	for (const auto& kv : alliesMap) {
-		const SAllyData& data = kv.second;
-
-		// TODO: Support box per team instead of allyTeam
-		int boxId;
-		if (isZkBox) {
-			int teamId = teamIdsRemap[*data.origTeamIds.begin()];
-			Team* team = WrappTeam::GetInstance(circuit->GetSkirmishAIId(), teamId);
-			TeamRulesParam* trp = team->GetTeamRulesParamByName("start_box_id");
-			if (trp != nullptr) {
-				boxId = trp->GetValueFloat();
-				delete trp;
-			}
-		}
+	allyTeams.reserve(allies.size());
+	for (const auto& kv : allies) {
+		const OrigTeamIds& data = kv.second;
 
 		CAllyTeam::TeamIds teamIds;
-		teamIds.reserve(data.origTeamIds.size());
-		for (auto id : data.origTeamIds) {
+		teamIds.reserve(data.size());
+		for (auto id : data) {
 			teamIds.insert(teamIdsRemap[id]);
 		}
-		allyTeams.push_back(new CAllyTeam(teamIds, (isZkBox) ? alliesMap[boxId].startBox : data.startBox));
+		allyTeams.push_back(new CAllyTeam(teamIds, isZkBox ? boxes[0] : boxes[kv.first]));
 	}
 
-	setupData->Init(allyTeams, startPosType);
+	setupData->Init(allyTeams, boxes, startPosType);
 }
 
 bool CSetupManager::HasStartBoxes() const
@@ -187,7 +170,7 @@ bool CSetupManager::CanChooseStartPos() const
 void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 {
 	float x, z;
-	const CAllyTeam::SBox& box = (*setupData)[circuit->GetAllyTeamId()];
+	const CAllyTeam::SBox& box = circuit->GetAllyTeam()->GetStartBox();
 
 	auto random = [](const CAllyTeam::SBox& box, float& x, float& z) {
 		int min, max;
