@@ -39,8 +39,8 @@ public:
 	float GetThreat() const { return threat; }
 	void DecayThreat(float decay) { threat *= decay; }
 
-	void SetRange(float r) { range = r; }
-	float GetRange() const { return range; }
+	void SetRange(int r) { range = r; }
+	int GetRange() const { return range; }
 
 	bool operator==(const CCircuitUnit& rhs) { return id == rhs.GetId(); }
 	bool operator!=(const CCircuitUnit& rhs) { return id != rhs.GetId(); }
@@ -58,7 +58,7 @@ private:
 	enum LosType: char {NONE = 0x00, LOS = 0x01, RADAR = 0x02, HIDDEN = 0x04};
 	springai::AIFloat3 pos;
 	float threat;
-	float range;
+	int range;
 	std::underlying_type<LosType>::type losStatus;
 
 public:

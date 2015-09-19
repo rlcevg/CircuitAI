@@ -18,6 +18,13 @@ public:
 	virtual ~CAttackTask();
 
 	virtual void Execute(CCircuitUnit* unit);
+	virtual void Update();
+
+private:
+	bool isUpdating;
+	int updCount;
+
+	CEnemyUnit* FindBestTarget(CCircuitUnit* unit, float& minSqDist);
 };
 
 } // namespace circuit

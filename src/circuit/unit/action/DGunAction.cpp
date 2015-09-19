@@ -6,6 +6,7 @@
  */
 
 #include "unit/action/DGunAction.h"
+#include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -17,9 +18,9 @@ namespace circuit {
 
 using namespace springai;
 
-CDGunAction::CDGunAction(CCircuitUnit* owner, float range) :
-		IUnitAction(owner, Type::DGUN),
-		range(range)
+CDGunAction::CDGunAction(CCircuitUnit* owner, float range)
+		: IUnitAction(owner, Type::DGUN)
+		, range(range)
 {
 }
 
@@ -30,6 +31,7 @@ CDGunAction::~CDGunAction()
 
 void CDGunAction::Update(CCircuitAI* circuit)
 {
+	isBlocking = false;
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	// NOTE: Paralyzer doesn't increase ReloadFrame beyond currentFrame, but disarmer does.
 	//       Also checking disarm is more expensive (because of UnitRulesParam).
@@ -41,9 +43,14 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	if (enemies.empty()) {
 		return;
 	}
-	for (Unit* enemy : enemies) {
-		if (enemy != nullptr) {
-			u->DGun(enemy, UNIT_COMMAND_OPTION_ALT_KEY, FRAMES_PER_SEC * 5);
+	for (Unit* e : enemies) {
+		if (e == nullptr) {
+			continue;
+		}
+		CEnemyUnit* enemy = circuit->GetEnemyUnit(e);
+		if ((enemy != nullptr) && (enemy->GetThreat() > 0.1f)) {
+			u->DGun(e, UNIT_COMMAND_OPTION_ALT_KEY, FRAMES_PER_SEC * 5);
+			isBlocking = true;
 			break;
 		}
 	}

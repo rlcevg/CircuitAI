@@ -296,16 +296,6 @@ CTerrainManager::~CTerrainManager()
 #endif
 }
 
-int CTerrainManager::GetTerrainWidth()
-{
-	return terrainWidth;
-}
-
-int CTerrainManager::GetTerrainHeight()
-{
-	return terrainHeight;
-}
-
 void CTerrainManager::AddBlocker(CCircuitDef* cdef, const AIFloat3& pos, int facing)
 {
 	SStructure building = {-1, cdef, pos, facing};
@@ -1212,41 +1202,6 @@ STerrainMapSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* destin
 	return closestS;
 }
 
-const STerrainMapSector& CTerrainManager::GetSector(int sIndex) const
-{
-	return areaData->sector[sIndex];
-}
-
-STerrainMapMobileType* CTerrainManager::GetMobileType(CCircuitDef::Id unitDefId) const
-{
-	return GetMobileTypeById(terrainData->udMobileType[unitDefId]);
-}
-
-STerrainMapMobileType::Id CTerrainManager::GetMobileTypeId(CCircuitDef::Id unitDefId) const
-{
-	return terrainData->udMobileType[unitDefId];
-}
-
-STerrainMapMobileType* CTerrainManager::GetMobileTypeById(STerrainMapMobileType::Id id) const
-{
-	return (id < 0) ? nullptr : &areaData->mobileType[id];
-}
-
-STerrainMapImmobileType* CTerrainManager::GetImmobileType(CCircuitDef::Id unitDefId) const
-{
-	return GetImmobileTypeById(terrainData->udImmobileType[unitDefId]);
-}
-
-STerrainMapImmobileType::Id CTerrainManager::GetImmobileTypeId(CCircuitDef::Id unitDefId) const
-{
-	return terrainData->udMobileType[unitDefId];
-}
-
-STerrainMapImmobileType* CTerrainManager::GetImmobileTypeById(STerrainMapImmobileType::Id id) const
-{
-	return (id < 0) ? nullptr : &areaData->immobileType[id];
-}
-
 bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, const float& range)
 {
 	if (circuit->GetThreatMap()->GetThreatAt(position) > MIN_THREAT) {
@@ -1338,11 +1293,6 @@ void CTerrainManager::UpdateAreaUsers()
 	circuit->GetBuilderManager()->UpdateAreaUsers();
 
 	DidUpdateAreaUsers();
-}
-
-void CTerrainManager::DidUpdateAreaUsers()
-{
-	terrainData->DidUpdateAreaUsers();
 }
 
 void CTerrainManager::ClusterizeTerrain()

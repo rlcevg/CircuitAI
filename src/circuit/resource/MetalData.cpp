@@ -5,7 +5,7 @@
  *      Author: rlcevg
  */
 
-#include "static/MetalData.h"
+#include "resource/MetalData.h"
 #include "util/math/HierarchCluster.h"
 #include "util/math/EncloseCircle.h"
 #include "util/utils.h"

@@ -94,6 +94,7 @@ private:
 		float cost;
 		float costDivMake;
 		int limit;
+		bool operator==(const CCircuitDef* d) { return cdef == d; }
 	};
 	std::list<SEnergyInfo> energyInfos;
 	CLagrangeInterPol* engyPol;

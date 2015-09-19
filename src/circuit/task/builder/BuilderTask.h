@@ -9,7 +9,7 @@
 #define SRC_CIRCUIT_TASK_BUILDER_BUILDERTASK_H_
 
 #include "task/UnitTask.h"
-#include "util/utils.h"
+#include "util/Defines.h"
 
 #define MIN_BUILD_SEC	20
 #define MAX_BUILD_SEC	40

@@ -152,8 +152,8 @@ struct STerrainMapImmobileType {
 
 struct SAreaData {
 	SAreaData() :
-		minElevation(.0),
-		percentLand(.0)
+		minElevation(.0f),
+		percentLand(.0f)
 	{};
 
 	std::vector<STerrainMapMobileType> mobileType;      // Used for mobile units, not all movedatas are used
@@ -175,7 +175,7 @@ public:
 	int GetSectorIndex(const springai::AIFloat3& position); // use IsSectorValid() to insure the index is valid
 	bool IsSectorValid(const int& sIndex);
 
-	SAreaData areaData0, areaData1;  // Double-buffer
+	SAreaData areaData0, areaData1;  // Double-buffer for threading
 	std::atomic<SAreaData*> pAreaData;
 	std::map<int, STerrainMapMobileType::Id> udMobileType;    // key = ud->id, Used to find a TerrainMapMobileType for a unit
 	std::map<int, STerrainMapImmobileType::Id> udImmobileType;  // key = ud->id, Used to find a TerrainMapImmobileType for a unit

@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_UTIL_UTILS_H_
 #define SRC_CIRCUIT_UTIL_UTILS_H_
 
-#include "Sim/Misc/GlobalConstants.h"
+#include "util/Defines.h"
 
 #include <chrono>
 #include <thread>
@@ -19,14 +19,14 @@
 //#include <random>
 //#include <iterator>
 
-// debug
 #ifdef DEBUG_VIS
 #include "DebugDrawer.h"
-#endif
+
 #include "Map.h"  // to get Drawer
 #include "Drawer.h"
 #include "Log.h"
 #include "Game.h"  // to pause
+#endif
 
 namespace utils {
 
@@ -35,22 +35,6 @@ namespace utils {
 #else
 	#define PRINT_DEBUG(fmt, ...)
 #endif
-
-#define FRAMES_PER_SEC		GAME_SPEED
-#define WATCHDOG_COUNT		2
-#define PYLON_RANGE			500.0f
-#define TASK_RETRIES		10
-#define DEBUG_MARK			0xBAD0C0DE
-#define MIN_THREAT			20.0f
-
-// z++
-#define UNIT_FACING_SOUTH	0
-// x++
-#define UNIT_FACING_EAST	1
-// z--
-#define UNIT_FACING_NORTH	2
-// x--
-#define UNIT_FACING_WEST	3
 
 //template<typename Iter, typename RandomGenerator>
 //Iter select_randomly(Iter start, Iter end, RandomGenerator& g) {

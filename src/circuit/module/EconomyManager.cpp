@@ -127,6 +127,16 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	/*
 	 *  Identify resource buildings
 	 */
+	auto energyFinishedHandler = [this](CCircuitUnit* unit) {
+		auto it = std::find(energyInfos.begin(), energyInfos.end(), unit->GetCircuitDef());
+		if (it != energyInfos.end()) {
+			float income = it->cost / it->costDivMake;
+			for (int i = 0; i < INCOME_SAMPLES; i++) {
+				energyIncomes[i] += income;
+			}
+			energyIncome += income;
+		}
+	};
 	CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
 		CCircuitDef* cdef = kv.second;
@@ -137,6 +147,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			if ((it != customParams.end()) && (utils::string_to_float(it->second) > 1)) {
 				// TODO: Filter only defs that we are able to build
 				allEnergyDefs.insert(cdef);
+				finishedHandler[kv.first] = energyFinishedHandler;
 			} else if (((it = customParams.find("ismex")) != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 				mexDef = cdef;  // cormex
 			}
@@ -243,9 +254,9 @@ CRecruitTask* CEconomyManager::CreateFactoryTask(CCircuitUnit* unit)
 
 	float metalIncome = GetAvgMetalIncome() * ecoFactor;
 	const char* names[] = {"armpw", "armrock", "armwar", "armzeus", "armsnipe", "armjeth"};
-	const std::array<float, 6> prob0 = {.35, .25, .24, .15, .01, .00};
+	const std::array<float, 6> prob0 = {.70, .15, .10, .05, .00, .00};
 	const std::array<float, 6> prob1 = {.20, .10, .10, .30, .20, .10};
-	const std::array<float, 6>& prob = ((metalIncome < 20) || (economy->GetCurrent(energyRes) < (economy->GetStorage(energyRes) - HIDDEN_ENERGY) * 0.5f)) ? prob0 : prob1;
+	const std::array<float, 6>& prob = ((metalIncome < 40) || (economy->GetCurrent(energyRes) < (economy->GetStorage(energyRes) - HIDDEN_ENERGY) * 0.5f)) ? prob0 : prob1;
 	int choice = 0;
 	float dice = rand() / (float)RAND_MAX;
 	float total;
@@ -301,7 +312,7 @@ IBuilderTask* CEconomyManager::CreateAssistTask(CCircuitUnit* unit)
 	utils::free_clear(units);
 	if (repairTarget != nullptr) {
 		// Repair task
-		return circuit->GetFactoryManager()->EnqueueRepair(IBuilderTask::Priority::LOW, repairTarget);
+		return circuit->GetFactoryManager()->EnqueueRepair(IBuilderTask::Priority::NORMAL, repairTarget);
 	}
 
 	/*
@@ -313,12 +324,12 @@ IBuilderTask* CEconomyManager::CreateAssistTask(CCircuitUnit* unit)
 		bool valid = !features.empty();
 		if (valid) {
 			utils::free_clear(features);
-			return circuit->GetFactoryManager()->EnqueueReclaim(IBuilderTask::Priority::LOW, pos, radius);
+			return circuit->GetFactoryManager()->EnqueueReclaim(IBuilderTask::Priority::NORMAL, pos, radius);
 		}
 	}
 	if (buildTarget != nullptr) {
 		// Construction task
-		return circuit->GetFactoryManager()->EnqueueRepair(IBuilderTask::Priority::LOW, buildTarget);
+		return circuit->GetFactoryManager()->EnqueueRepair(IBuilderTask::Priority::NORMAL, buildTarget);
 	}
 
 	return nullptr;
@@ -565,7 +576,7 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 			}
 		}
 		if (minSqDist < std::numeric_limits<float>::max()) {
-			task = builderManager->EnqueueReclaim(IBuilderTask::Priority::LOW, reclPos, 1.0f, FRAMES_PER_SEC * 300, unit->GetCircuitDef()->GetBuildDistance());
+			task = builderManager->EnqueueReclaim(IBuilderTask::Priority::NORMAL, reclPos, 1.0f, FRAMES_PER_SEC * 300, unit->GetCircuitDef()->GetBuildDistance());
 		}
 		utils::free_clear(features);
 	}

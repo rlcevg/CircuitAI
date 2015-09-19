@@ -8,9 +8,9 @@
 #ifndef SRC_CIRCUIT_STATIC_GAMEATTRIBUTE_H_
 #define SRC_CIRCUIT_STATIC_GAMEATTRIBUTE_H_
 
-#include "static/SetupData.h"
-#include "static/MetalData.h"
-#include "static/TerrainData.h"
+#include "setup/SetupData.h"
+#include "resource/MetalData.h"
+#include "terrain/TerrainData.h"
 
 #include <unordered_set>
 

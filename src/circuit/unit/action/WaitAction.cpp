@@ -10,8 +10,8 @@
 
 namespace circuit {
 
-CWaitAction::CWaitAction(CCircuitUnit* owner) :
-		IUnitAction(owner, Type::WAIT)
+CWaitAction::CWaitAction(CCircuitUnit* owner)
+		: IUnitAction(owner, Type::WAIT)
 {
 }
 

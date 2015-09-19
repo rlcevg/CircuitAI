@@ -10,7 +10,7 @@
 
 #include "module/UnitModule.h"
 #include "task/builder/BuilderTask.h"
-#include "static/TerrainData.h"
+#include "terrain/TerrainData.h"
 
 #include <map>
 #include <set>

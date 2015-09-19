@@ -9,7 +9,7 @@
 #define SRC_CIRCUIT_RESOURCE_ENERGYGRID_H_
 
 #include "resource/EnergyLink.h"
-#include "static/MetalData.h"
+#include "resource/MetalData.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
 

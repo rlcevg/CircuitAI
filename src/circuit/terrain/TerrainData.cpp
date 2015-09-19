@@ -5,10 +5,10 @@
  *      Author: rlcevg
  */
 
-#include "static/TerrainData.h"
-#include "static/GameAttribute.h"
+#include "terrain/TerrainData.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
+#include "util/GameAttribute.h"
 #include "util/math/HierarchCluster.h"
 #include "util/math/RagMatrix.h"
 #include "util/Scheduler.h"
@@ -148,8 +148,8 @@ void CTerrainData::Init(CCircuitAI* circuit)
 
 	int mapWidth = map->GetWidth();
 	int mapHeight = map->GetHeight();
-	convertStoP = 64;  // = 2^x, should not be less than 16
-	if ((mapWidth / 64) * (mapHeight / 64) < 8 * 8) {
+	convertStoP = SQUARE_SIZE * THREAT_RES;  // = 2^x, should not be less than 16 (2*SUQARE_SIZE)
+	if ((mapWidth / convertStoP) * (mapHeight / convertStoP) < 8 * 8) {
 		convertStoP /= 2; // Smaller Sectors, more detailed analysis
 //	} else if ((mapWidth / 16) * (mapHeight / 16) > 20 * 20 ) {
 //		convertStoP *= 2; // Larger Sectors, less detailed analysis

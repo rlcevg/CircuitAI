@@ -18,7 +18,6 @@ namespace circuit {
 
 using namespace springai;
 
-#define THREAT_RES			8
 #define THREAT_VAL_BASE		1.0f
 
 CThreatMap::CThreatMap(CCircuitAI* circuit)
@@ -31,8 +30,9 @@ CThreatMap::CThreatMap(CCircuitAI* circuit)
 		, dbgMap(nullptr)
 #endif
 {
-	width = circuit->GetTerrainManager()->GetTerrainWidth() / (SQUARE_SIZE * THREAT_RES);
-	height = circuit->GetTerrainManager()->GetTerrainHeight() / (SQUARE_SIZE * THREAT_RES);
+	squareSize = circuit->GetTerrainManager()->GetConvertStoP();
+	width = circuit->GetTerrainManager()->GetTerrainWidth() / squareSize;
+	height = circuit->GetTerrainManager()->GetTerrainHeight() / squareSize;
 	threatCells.resize(width * height, THREAT_VAL_BASE);
 
 	Map* map = circuit->GetMap();
@@ -132,7 +132,7 @@ void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 				DelEnemyUnit(enemy);
 			}
 			enemy->SetThreat(.0f);
-			enemy->SetRange(.0f);
+			enemy->SetRange(0);
 			hostileUnits.erase(enemy->GetId());
 		}
 		peaceUnits[enemy->GetId()] = enemy;
@@ -155,7 +155,7 @@ void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 	AIFloat3 pos = enemy->GetUnit()->GetPos();
 	circuit->GetTerrainManager()->CorrectPosition(pos);
 	enemy->SetPos(pos);
-	enemy->SetRange((enemy->GetUnit()->GetMaxRange() + 100.0f) / (SQUARE_SIZE * THREAT_RES));
+	enemy->SetRange(((int)enemy->GetUnit()->GetMaxRange() + 100) / squareSize);
 	enemy->SetThreat(GetEnemyUnitThreat(enemy));
 
 	AddEnemyUnit(enemy);
@@ -202,7 +202,7 @@ void CThreatMap::EnemyEnterRadar(CEnemyUnit* enemy)
 	enemy->SetPos(pos);
 	if (isNew) {  // unknown enemy enters radar for the first time
 		enemy->SetThreat(enemy->GetDPS());  // TODO: Randomize
-		enemy->SetRange((150.0f + 100.0f) / (SQUARE_SIZE * THREAT_RES));
+		enemy->SetRange((150 + 100) / squareSize);
 	}
 
 	AddEnemyUnit(enemy);
@@ -241,8 +241,8 @@ void CThreatMap::EnemyDestroyed(CEnemyUnit* enemy)
 
 float CThreatMap::GetThreatAt(const AIFloat3& pos) const
 {
-	const int z = pos.z / (SQUARE_SIZE * THREAT_RES);
-	const int x = pos.x / (SQUARE_SIZE * THREAT_RES);
+	const int z = pos.z / squareSize;
+	const int x = pos.x / squareSize;
 	return threatCells[z * width + x] - THREAT_VAL_BASE;
 }
 
@@ -253,8 +253,8 @@ float CThreatMap::GetUnitThreat(CCircuitUnit* unit) const
 
 void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, const float scale)
 {
-	const int posx = e->GetPos().x / (SQUARE_SIZE * THREAT_RES);
-	const int posz = e->GetPos().z / (SQUARE_SIZE * THREAT_RES);
+	const int posx = (int)e->GetPos().x / squareSize;
+	const int posz = (int)e->GetPos().z / squareSize;
 
 	const float threat = e->GetThreat() * scale;
 	const int rangeSq = e->GetRange() * e->GetRange();
@@ -272,8 +272,8 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, const float scale)
 			if (dxSq + dzSq <= rangeSq) {
 				// MicroPather cannot deal with negative costs
 				// (which may arise due to floating-point drift)
-				// nor with zero-cost nodes
-				// (threat is not used as an additive overlay)
+				// nor with zero-cost nodes (see MP::SetMapData,
+				// threat is not used as an additive overlay)
 				threatCells[z * width + x] = std::max(threatCells[z * width + x] + threat, THREAT_VAL_BASE);
 
 				currSumThreat += threat;
@@ -286,7 +286,7 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, const float scale)
 
 float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
 {
-	if (enemy->GetRange() > 2000.0f / (SQUARE_SIZE * THREAT_RES)) {
+	if (enemy->GetRange() > 2000 / squareSize) {
 		return THREAT_VAL_BASE;  // or 0
 	}
 	const float dps = std::min(enemy->GetDPS(), 2000.0f);

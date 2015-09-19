@@ -54,6 +54,7 @@ namespace circuit {
 class CGameAttribute;
 class CSetupManager;
 class CThreatMap;
+class CPathFinder;
 class CTerrainManager;
 class CBuilderManager;
 class CFactoryManager;
@@ -190,6 +191,7 @@ public:
 	CMetalManager*    GetMetalManager() const    { return metalManager.get(); }
 	CEnergyGrid*      GetEnergyGrid() const      { return energyLink.get(); }
 	CThreatMap*       GetThreatMap() const       { return threatMap.get(); }
+	CPathFinder*      GetPathfinder() const      { return pathfinder.get(); }
 	CTerrainManager*  GetTerrainManager() const  { return terrainManager.get(); }
 	CBuilderManager*  GetBuilderManager() const  { return builderManager.get(); }
 	CFactoryManager*  GetFactoryManager() const  { return factoryManager.get(); }
@@ -224,6 +226,7 @@ private:
 	std::shared_ptr<CMetalManager> metalManager;
 	std::shared_ptr<CEnergyGrid> energyLink;
 	std::shared_ptr<CThreatMap> threatMap;
+	std::shared_ptr<CPathFinder> pathfinder;
 	std::shared_ptr<CTerrainManager> terrainManager;
 	std::shared_ptr<CBuilderManager> builderManager;
 	std::shared_ptr<CFactoryManager> factoryManager;

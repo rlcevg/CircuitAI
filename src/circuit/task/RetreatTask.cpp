@@ -9,6 +9,7 @@
 #include "task/TaskManager.h"
 #include "module/FactoryManager.h"
 #include "setup/SetupManager.h"
+#include "terrain/PathFinder.h"
 #include "terrain/TerrainManager.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/MoveAction.h"
@@ -55,8 +56,20 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	AIFloat3 haven = circuit->GetFactoryManager()->GetClosestHaven(unit);
-	const AIFloat3& pos = (haven != -RgtVector) ? haven : circuit->GetSetupManager()->GetStartPos();
-	unit->PushBack(new CMoveAction(unit, pos));
+	F3Vec path;
+
+	AIFloat3 startPos = unit->GetUnit()->GetPos();
+	AIFloat3 endPos = (haven != -RgtVector) ? haven : circuit->GetSetupManager()->GetStartPos();
+	float range = circuit->GetTerrainManager()->GetConvertStoP();
+	circuit->GetPathfinder()->SetMapData(unit->GetCircuitDef()->GetMobileId());
+	circuit->GetPathfinder()->MakePath(path, startPos, endPos, range);
+
+	if (path.empty()) {
+		path.push_back(endPos);
+	}
+	CMoveAction* act = new CMoveAction(unit, path);
+	unit->PushBack(act);
+	act->Update(circuit);
 }
 
 void CRetreatTask::Update()

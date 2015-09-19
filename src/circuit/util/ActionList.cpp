@@ -31,13 +31,15 @@ void CActionList::Update(CCircuitAI* circuit)
 	std::list<IAction*>::iterator itAction = actions.begin();
 	while (itAction != actions.end()) {
 		IAction* action = *itAction;
-	    action->Update(circuit);
+		if (action->IsActive()) {
+			action->Update(circuit);
+		}
 
-		if (action->isBlocking) {
+		if (action->IsBlocking()) {
 			break;
 		}
 
-		if (action->isFinished) {
+		if (action->IsFinished()) {
 			action->OnEnd();
 			itAction = this->Remove(itAction);
 		} else {
@@ -46,15 +48,17 @@ void CActionList::Update(CCircuitAI* circuit)
 	}
 }
 
-void CActionList::PushFront(IAction* action)
+std::list<IAction*>::iterator CActionList::PushFront(IAction* action)
 {
 	actions.push_front(action);
 	action->OnStart();
+	return actions.begin();
 }
-void CActionList::PushBack(IAction* action)
+std::list<IAction*>::iterator CActionList::PushBack(IAction* action)
 {
 	actions.push_back(action);
 	action->OnStart();
+	return --actions.end();
 }
 
 void CActionList::InsertBefore(IAction* action)

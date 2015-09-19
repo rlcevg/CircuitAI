@@ -23,7 +23,7 @@ protected:
 public:
 	virtual ~IUnitAction();
 
-	Type GetType();
+	Type GetType() const { return type; }
 
 protected:
 	Type type;

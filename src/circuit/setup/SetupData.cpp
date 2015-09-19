@@ -5,7 +5,7 @@
  *      Author: rlcevg
  */
 
-#include "static/SetupData.h"
+#include "setup/SetupData.h"
 #include "util/utils.h"
 
 namespace circuit {

@@ -23,11 +23,20 @@ public:
 	virtual void Update(CCircuitAI* circuit) = 0;
 	virtual void OnStart();
 	virtual void OnEnd();
-	bool isFinished;
-	bool isBlocking;
+
+	void SetFinished(bool val) { isFinished = val; }
+	bool IsFinished() const { return isFinished; }
+	void SetBlocking(bool val) { isBlocking = val; }
+	bool IsBlocking() const { return isBlocking; }
+	void SetActive(bool val) { isActive = val; }
+	bool IsActive() const { return isActive; }
 
 protected:
 	CActionList* ownerList;
+
+	bool isFinished;
+	bool isBlocking;
+	bool isActive;
 };
 
 } // namespace circuit

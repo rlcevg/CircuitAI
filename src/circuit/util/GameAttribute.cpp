@@ -5,9 +5,9 @@
  *      Author: rlcevg
  */
 
-#include "static/GameAttribute.h"
-#include "CircuitAI.h"
+#include "util/GameAttribute.h"
 #include "util/utils.h"
+#include "CircuitAI.h"
 
 namespace circuit {
 

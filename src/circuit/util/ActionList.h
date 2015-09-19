@@ -23,8 +23,8 @@ public:
 
 	void Update(CCircuitAI* circuit);
 
-	void PushFront(IAction* action);
-	void PushBack(IAction* action);
+	std::list<IAction*>::iterator PushFront(IAction* action);
+	std::list<IAction*>::iterator PushBack(IAction* action);
 	void InsertBefore(IAction* action);
 	void InsertBefore(std::list<IAction*>::iterator it, IAction* action);
 	void InsertAfter(IAction* action);

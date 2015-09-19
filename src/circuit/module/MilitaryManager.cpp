@@ -64,14 +64,20 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
 		UnitDef* def = cdef->GetUnitDef();
-		if ((def->GetSpeed() > 0) && !def->IsBuilder() && (def->GetPower() > .0f)) {
-			CCircuitDef::Id unitDefId = kv.first;
-			createdHandler[unitDefId] = attackerCreatedHandler;
-			finishedHandler[unitDefId] = attackerFinishedHandler;
-			idleHandler[unitDefId] = attackerIdleHandler;
-			damagedHandler[unitDefId] = attackerDamagedHandler;
-			destroyedHandler[unitDefId] = attackerDestroyedHandler;
+		if ((cdef->GetDPS() < 0.1f) || (def->GetSpeed() <= 0) || def->IsBuilder()) {
+			continue;
 		}
+		const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+		auto it = customParams.find("is_drone");
+		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
+			continue;
+		}
+		CCircuitDef::Id unitDefId = kv.first;
+		createdHandler[unitDefId] = attackerCreatedHandler;
+		finishedHandler[unitDefId] = attackerFinishedHandler;
+		idleHandler[unitDefId] = attackerIdleHandler;
+		damagedHandler[unitDefId] = attackerDamagedHandler;
+		destroyedHandler[unitDefId] = attackerDestroyedHandler;
 	}
 
 	CCircuitDef::Id unitDefId;

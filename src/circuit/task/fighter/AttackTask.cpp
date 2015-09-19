@@ -21,6 +21,8 @@ using namespace springai;
 
 CAttackTask::CAttackTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::ATTACK)
+		, isUpdating(false)
+		, updCount(0)
 {
 }
 
@@ -31,16 +33,60 @@ CAttackTask::~CAttackTask()
 
 void CAttackTask::Execute(CCircuitUnit* unit)
 {
+	Unit* u = unit->GetUnit();
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+
+	float minSqDist;
+	CEnemyUnit* bestTarget = FindBestTarget(unit, minSqDist);
+
+	if (bestTarget == nullptr) {
+		if (!isUpdating) {
+			float x = rand() % (terrainManager->GetTerrainWidth() + 1);
+			float z = rand() % (terrainManager->GetTerrainHeight() + 1);
+			position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
+		}
+	} else {
+		position = bestTarget->GetPos();
+		float range = u->GetMaxRange();
+		if ((bestTarget->GetCircuitDef() != nullptr) && (minSqDist < range * range)) {
+			int targetCat = bestTarget->GetCircuitDef()->GetUnitDef()->GetCategory();
+			int noChaseCat = unit->GetCircuitDef()->GetUnitDef()->GetNoChaseCategory();
+			if (targetCat & noChaseCat != 0) {
+				u->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 300);
+				return;
+			}
+		}
+	}
+	u->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 300);
+}
+
+void CAttackTask::Update()
+{
+	if (updCount++ % 2 == 0) {
+		IFighterTask::Update();
+	} else {
+		isUpdating = true;
+		for (CCircuitUnit* unit : units) {
+			Execute(unit);
+		}
+		isUpdating = false;
+	}
+}
+
+CEnemyUnit* CAttackTask::FindBestTarget(CCircuitUnit* unit, float& minSqDist)
+{
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	Unit* u = unit->GetUnit();
-
-	const AIFloat3& pos = u->GetPos();
+	const AIFloat3& pos = unit->GetUnit()->GetPos();
 	STerrainMapArea* area = unit->GetArea();
 	float power = threatMap->GetUnitThreat(unit);
+
 	CEnemyUnit* bestTarget = nullptr;
-	float minSqDist = std::numeric_limits<float>::max();
+	minSqDist = std::numeric_limits<float>::max();
+
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
@@ -56,23 +102,7 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 		}
 	}
 
-	if (bestTarget == nullptr) {
-		float x = rand() % (terrainManager->GetTerrainWidth() + 1);
-		float z = rand() % (terrainManager->GetTerrainHeight() + 1);
-		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
-	} else {
-		position = bestTarget->GetPos();
-		float range = u->GetMaxRange();
-		if ((bestTarget->GetCircuitDef() != nullptr) && (minSqDist < range * range)) {
-			int targetCat = bestTarget->GetCircuitDef()->GetUnitDef()->GetCategory();
-			int noChaseCat = unit->GetCircuitDef()->GetUnitDef()->GetNoChaseCategory();
-			if (targetCat & noChaseCat != 0) {
-				u->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 300);
-				return;
-			}
-		}
-	}
-	u->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 300);
+	return bestTarget;
 }
 
 } // namespace circuit

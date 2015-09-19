@@ -6,7 +6,7 @@
  */
 
 #include "setup/SetupManager.h"
-#include "static/SetupData.h"
+#include "setup/SetupData.h"
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"

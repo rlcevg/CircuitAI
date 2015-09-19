@@ -13,10 +13,10 @@
 
 namespace circuit {
 
-IUnitTask::IUnitTask(ITaskManager* mgr, Priority priority, Type type) :
-		manager(mgr),
-		priority(priority),
-		type(type)
+IUnitTask::IUnitTask(ITaskManager* mgr, Priority priority, Type type)
+		: manager(mgr)
+		, priority(priority)
+		, type(type)
 {
 }
 

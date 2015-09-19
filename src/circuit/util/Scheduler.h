@@ -10,7 +10,7 @@
 
 #include "util/MultiQueue.h"
 #include "util/GameTask.h"
-#include "util/utils.h"
+#include "util/Defines.h"
 
 #include <list>
 #include <memory>

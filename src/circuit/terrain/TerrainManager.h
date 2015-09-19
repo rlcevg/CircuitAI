@@ -41,8 +41,8 @@ private:
 	CCircuitAI* circuit;
 
 public:
-	int GetTerrainWidth();
-	int GetTerrainHeight();
+	int GetTerrainWidth() const { return terrainWidth; }
+	int GetTerrainHeight() const { return terrainHeight; }
 private:
 	int terrainWidth;
 	int terrainHeight;
@@ -112,6 +112,7 @@ private:
 	void MarkBlocker(const SStructure& building, bool block);
 
 public:
+	int GetConvertStoP() const { return terrainData->convertStoP; }
 	void CorrectPosition(springai::AIFloat3& position);
 	STerrainMapArea* GetCurrentMapArea(CCircuitDef* cdef, const springai::AIFloat3& position);
 	int GetSectorIndex(const springai::AIFloat3& position);
@@ -123,14 +124,34 @@ private:
 	STerrainMapSector* GetClosestSector(STerrainMapImmobileType* sourceIT, const int destinationSIndex);
 	STerrainMapAreaSector* GetAlternativeSector(STerrainMapArea* sourceArea, const int sourceSIndex, STerrainMapMobileType* destinationMT);
 	STerrainMapSector* GetAlternativeSector(STerrainMapArea* destinationArea, const int sourceSIndex, STerrainMapImmobileType* destinationIT); // can return 0
-	const STerrainMapSector& GetSector(int sIndex) const;
+	const STerrainMapSector& GetSector(int sIndex) const {
+		return areaData->sector[sIndex];
+	}
 public:
-	STerrainMapMobileType* GetMobileType(CCircuitDef::Id unitDefId) const;
-	STerrainMapMobileType::Id GetMobileTypeId(CCircuitDef::Id unitDefId) const;
-	STerrainMapMobileType* GetMobileTypeById(STerrainMapMobileType::Id id) const;
-	STerrainMapImmobileType* GetImmobileType(CCircuitDef::Id unitDefId) const;
-	STerrainMapImmobileType::Id GetImmobileTypeId(CCircuitDef::Id unitDefId) const;
-	STerrainMapImmobileType* GetImmobileTypeById(STerrainMapImmobileType::Id id) const;
+	const std::vector<STerrainMapMobileType>& GetMobileTypes() const {
+		return areaData->mobileType;
+	}
+	STerrainMapMobileType* GetMobileType(CCircuitDef::Id unitDefId) const {
+		return GetMobileTypeById(terrainData->udMobileType[unitDefId]);
+	}
+	STerrainMapMobileType::Id GetMobileTypeId(CCircuitDef::Id unitDefId) const {
+		return terrainData->udMobileType[unitDefId];
+	}
+	STerrainMapMobileType* GetMobileTypeById(STerrainMapMobileType::Id id) const {
+		return (id < 0) ? nullptr : &areaData->mobileType[id];
+	}
+	const std::vector<STerrainMapImmobileType>& GetImmobileTypes() const {
+		return areaData->immobileType;
+	}
+	STerrainMapImmobileType* GetImmobileType(CCircuitDef::Id unitDefId) const {
+		return GetImmobileTypeById(terrainData->udImmobileType[unitDefId]);
+	}
+	STerrainMapImmobileType::Id GetImmobileTypeId(CCircuitDef::Id unitDefId) const {
+		return terrainData->udMobileType[unitDefId];
+	}
+	STerrainMapImmobileType* GetImmobileTypeById(STerrainMapImmobileType::Id id) const {
+		return (id < 0) ? nullptr : &areaData->immobileType[id];
+	}
 
 	// position must be valid
 	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position, const float& range = .0);  // NOTE: returns false if the area was too small to be recorded
@@ -138,7 +159,7 @@ public:
 	bool CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const springai::AIFloat3& destination);
 
 	void UpdateAreaUsers();
-	void DidUpdateAreaUsers();
+	void DidUpdateAreaUsers() { terrainData->DidUpdateAreaUsers(); }
 private:
 	SAreaData* areaData;
 

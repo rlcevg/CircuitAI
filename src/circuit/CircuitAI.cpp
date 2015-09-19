@@ -6,7 +6,6 @@
  */
 
 #include "CircuitAI.h"
-#include "static/GameAttribute.h"
 #include "setup/SetupManager.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
@@ -15,9 +14,11 @@
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
+#include "terrain/PathFinder.h"
 #include "task/PlayerTask.h"
 #include "task/StuckTask.h"
 #include "unit/EnemyUnit.h"
+#include "util/GameAttribute.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 #ifdef DEBUG_VIS
@@ -405,6 +406,9 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	energyLink = allyTeam->GetEnergyLink();
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
 
+	pathfinder = std::make_shared<CPathFinder>(this);
+	pathfinder->Init();
+
 	// NOTE: EconomyManager uses metal clusters and must be initialized after MetalManager::ClusterizeMetal
 	economyManager = std::make_shared<CEconomyManager>(this);
 
@@ -599,8 +603,11 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 		UnitDestroyed(unit, nullptr);
 		UnregisterTeamUnit(unit);
 	} else {
-		ITaskManager* mgr = unit->GetTask()->GetManager();
-		mgr->AssignTask(unit, new CStuckTask(mgr));
+		IUnitTask* prevTask = unit->GetTask();
+		if (prevTask->GetType() != IUnitTask::Type::RETREAT) {
+			ITaskManager* mgr = prevTask->GetManager();
+			mgr->AssignTask(unit, new CStuckTask(mgr));
+		}
 	}
 
 	return 0;  // signaling: OK

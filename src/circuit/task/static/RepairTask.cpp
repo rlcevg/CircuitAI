@@ -18,9 +18,9 @@ namespace circuit {
 
 using namespace springai;
 
-CSRepairTask::CSRepairTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, int timeout) :
-		CBRepairTask(mgr, priority, target, timeout),
-		repUpdCount(0)
+CSRepairTask::CSRepairTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, int timeout)
+		: CBRepairTask(mgr, priority, target, timeout)
+		, updCount(0)
 {
 }
 
@@ -35,8 +35,8 @@ void CSRepairTask::Update()
 	float currentIncome = circuit->GetEconomyManager()->GetAvgMetalIncome();
 	if (currentIncome < savedIncome * 0.6) {
 		manager->AbortTask(this);
-	} else if ((++repUpdCount >= 5) && !units.empty()) {
-		repUpdCount = 0;
+	} else if ((++updCount >= 5) && !units.empty()) {
+		updCount = 0;
 		CCircuitUnit* target = circuit->GetFriendlyUnit(targetId);
 		if ((target != nullptr) && target->GetUnit()->IsBeingBuilt()) {
 			/*
@@ -60,7 +60,7 @@ void CSRepairTask::Update()
 			utils::free_clear(us);
 			if ((repairTarget != nullptr) && (targetId != repairTarget->GetId())) {
 				// Repair task
-				IBuilderTask* task = circuit->GetFactoryManager()->EnqueueRepair(IBuilderTask::Priority::LOW, repairTarget);
+				IBuilderTask* task = circuit->GetFactoryManager()->EnqueueRepair(IBuilderTask::Priority::NORMAL, repairTarget);
 				decltype(units) tmpUnits = units;
 				for (auto unit : tmpUnits) {
 					manager->AssignTask(unit, task);

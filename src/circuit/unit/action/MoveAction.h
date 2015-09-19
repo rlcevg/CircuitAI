@@ -9,25 +9,23 @@
 #define SRC_CIRCUIT_UNIT_ACTION_MOVEACTION_H_
 
 #include "unit/action/UnitAction.h"
-
-#include "AIFloat3.h"
+#include "util/Defines.h"
 
 namespace circuit {
 
 class CMoveAction: public IUnitAction {
 public:
-	enum class MoveType: char {RAW, SAFE};
-
-	CMoveAction(CCircuitUnit* owner, const springai::AIFloat3& pos, MoveType mt = MoveType::SAFE);
+	CMoveAction(CCircuitUnit* owner);
+	CMoveAction(CCircuitUnit* owner, const F3Vec& path);
 	virtual ~CMoveAction();
 
 	virtual void Update(CCircuitAI* circuit);
-	virtual void OnStart();
-	virtual void OnEnd();
+
+	void SetPath(const F3Vec& path);
 
 private:
-	springai::AIFloat3 position;
-	MoveType moveType;
+	F3Vec path;
+	int pathIterator;
 };
 
 } // namespace circuit

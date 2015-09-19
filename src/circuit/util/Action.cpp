@@ -10,10 +10,11 @@
 
 namespace circuit {
 
-IAction::IAction(CActionList* owner) :
-		ownerList(owner),
-		isFinished(false),
-		isBlocking(false)
+IAction::IAction(CActionList* owner)
+		: ownerList(owner)
+		, isFinished(false)
+		, isBlocking(false)
+		, isActive(true)
 {
 }
 

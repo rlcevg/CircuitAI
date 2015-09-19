@@ -12,6 +12,8 @@
 
 namespace circuit {
 
+class CEnemyUnit;
+
 class IFighterTask: public IUnitTask {
 public:
 	enum class FightType: char {DEFEND, SCOUT, ATTACK};

@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_UNIT_CIRCUITDEF_H_
 #define SRC_CIRCUIT_UNIT_CIRCUITDEF_H_
 
-#include "static/TerrainData.h"
+#include "terrain/TerrainData.h"
 
 #include "UnitDef.h"
 

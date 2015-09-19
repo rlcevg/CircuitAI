@@ -59,6 +59,7 @@ private:
 	float currMaxThreat;
 	float currSumThreat;
 
+	int squareSize;
 	int width;
 	int height;
 

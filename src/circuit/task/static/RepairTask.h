@@ -22,7 +22,7 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 
 private:
-	int repUpdCount;
+	int updCount;
 };
 
 } // namespace circuit

@@ -9,16 +9,28 @@
 #define SRC_CIRCUIT_TASK_FIGHTER_SCOUTTASK_H_
 
 #include "task/fighter/FighterTask.h"
+#include "util/Defines.h"
 
 namespace circuit {
+
+class CMoveAction;
 
 class CScoutTask: public IFighterTask {
 public:
 	CScoutTask(ITaskManager* mgr);
 	virtual ~CScoutTask();
 
+	virtual void AssignTo(CCircuitUnit* unit);
+
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
+
+private:
+	bool isUpdating;
+	int updCount;
+	CMoveAction* moveAction;
+
+	CEnemyUnit* FindBestTarget(CCircuitUnit* unit, F3Vec& path);
 };
 
 } // namespace circuit

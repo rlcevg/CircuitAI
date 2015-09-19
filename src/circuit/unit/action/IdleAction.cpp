@@ -10,8 +10,8 @@
 
 namespace circuit {
 
-CIdleAction::CIdleAction(CCircuitUnit* owner) :
-		IUnitAction(owner, Type::IDLE)
+CIdleAction::CIdleAction(CCircuitUnit* owner)
+		: IUnitAction(owner, Type::IDLE)
 {
 }
 
