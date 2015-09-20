@@ -219,7 +219,7 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(const AIFloat3& position, CCirc
 
 	// FIXME: Eco rules. It should never get here
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome()) * ecoFactor;
+	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome())/* * ecoFactor*/;
 	CCircuitDef* buildDef = circuit->GetCircuitDef("armwin");
 	if ((metalIncome < 50) && (buildDef->GetCount() < 10) && buildDef->IsAvailable()) {
 		task = builderManager->EnqueueTask(IBuilderTask::Priority::LOW, buildDef, position, IBuilderTask::BuildType::ENERGY);
@@ -253,10 +253,10 @@ CRecruitTask* CEconomyManager::CreateFactoryTask(CCircuitUnit* unit)
 //	return (CRecruitTask*)circuit->GetFactoryManager()->GetIdleTask();
 
 	float metalIncome = GetAvgMetalIncome() * ecoFactor;
-	const char* names[] = {"armpw", "armrock", "armwar", "armzeus", "armsnipe", "armjeth"};
-	const std::array<float, 6> prob0 = {.70, .15, .10, .05, .00, .00};
-	const std::array<float, 6> prob1 = {.20, .10, .10, .30, .20, .10};
-	const std::array<float, 6>& prob = ((metalIncome < 40) || (economy->GetCurrent(energyRes) < (economy->GetStorage(energyRes) - HIDDEN_ENERGY) * 0.5f)) ? prob0 : prob1;
+	const char* names[] = {"armpw", "armrock", "armwar", "armzeus", "armsnipe", "armjeth", "spherepole"};
+	const std::array<float, 7> prob0 = {.70, .15, .10, .05, .00, .00, .00};
+	const std::array<float, 7> prob1 = {.10, .05, .05, .20, .20, .10, .30};
+	const std::array<float, 7>& prob = ((metalIncome < 40) || (economy->GetCurrent(energyRes) < (economy->GetStorage(energyRes) - HIDDEN_ENERGY) * 0.5f)) ? prob0 : prob1;
 	int choice = 0;
 	float dice = rand() / (float)RAND_MAX;
 	float total;
@@ -683,7 +683,6 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	CCircuitUnit* factory = factoryManager->NeedUpgrade();
 	if ((factory != nullptr) && assistDef->IsAvailable()) {
 		Unit* u = factory->GetUnit();
-		UnitDef* def = factory->GetCircuitDef()->GetUnitDef();
 		AIFloat3 buildPos = u->GetPos();
 		switch (u->GetBuildingFacing()) {
 			default:
@@ -702,6 +701,9 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		}
 
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		CCircuitDef* bdef = (unit == nullptr) ? factory->GetCircuitDef() : unit->GetCircuitDef();
+		buildPos = terrainManager->GetBuildPosition(bdef, buildPos);
+
 		if (terrainManager->CanBeBuiltAt(assistDef, buildPos) &&
 			((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 		{
@@ -726,7 +728,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			float size = 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
 			buildPos.x += (buildPos.x > terrainManager->GetTerrainWidth() / 2) ? -size : size;
 			buildPos.z += (buildPos.z > terrainManager->GetTerrainHeight() / 2) ? -size : size;
-			CCircuitDef* bdef = (unit == nullptr) ? circuit->GetCircuitDef("armrectr") : unit->GetCircuitDef();
+			CCircuitDef* bdef = (unit == nullptr) ? facDef : unit->GetCircuitDef();
 			buildPos = terrainManager->GetBuildPosition(bdef, buildPos);
 
 			if (terrainManager->CanBeBuiltAt(facDef, buildPos) &&

@@ -26,6 +26,8 @@ public:
 private:
 	F3Vec path;
 	int pathIterator;
+	int increment;
+	int minSqDist;
 };
 
 } // namespace circuit

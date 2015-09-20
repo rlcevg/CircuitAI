@@ -6,18 +6,19 @@
  */
 
 #include "module/MilitaryManager.h"
+#include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
 #include "resource/MetalManager.h"
+#include "setup/SetupManager.h"
+#include "setup/DefenceMatrix.h"
 #include "task/NullTask.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
+#include "task/builder/DefenceTask.h"
 #include "task/fighter/DefendTask.h"
 #include "task/fighter/ScoutTask.h"
 #include "task/fighter/AttackTask.h"
 #include "CircuitAI.h"
-#include "util/math/HierarchCluster.h"
-#include "util/math/RagMatrix.h"
-#include "util/math/EncloseCircle.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
@@ -25,9 +26,9 @@ namespace circuit {
 
 using namespace springai;
 
-CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
-		IUnitModule(circuit),
-		updateSlice(0)
+CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
+		: IUnitModule(circuit)
+		, updateSlice(0)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CMilitaryManager::Init, this));
@@ -87,15 +88,17 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		Resource* metalRes = this->circuit->GetEconomyManager()->GetMetalRes();
 		float defCost = unit->GetCircuitDef()->GetUnitDef()->GetCost(metalRes);
-		SDefPoint* point = GetDefPoint(unit->GetUnit()->GetPos(), defCost);
+		CDefenceMatrix* defence = this->circuit->GetDefenceMatrix();
+		CDefenceMatrix::SDefPoint* point = defence->GetDefPoint(unit->GetUnit()->GetPos(), defCost);
 		if (point != nullptr) {
 			point->cost -= defCost;
 		}
 	};
-	unitDefId = circuit->GetCircuitDef("corllt")->GetId();
-	destroyedHandler[unitDefId] = defenceDestroyedHandler;
-	unitDefId = circuit->GetCircuitDef("corhlt")->GetId();
-	destroyedHandler[unitDefId] = defenceDestroyedHandler;
+	const char* defenders[] = {"corllt", "corhlt", "corrazor", "armnanotc", "cordoom"/*, "armartic", "corjamt", "armanni", "corbhmth"*/};
+	for (const char* name : defenders) {
+		unitDefId = circuit->GetCircuitDef(name)->GetId();
+		destroyedHandler[unitDefId] = defenceDestroyedHandler;
+	}
 
 	/*
 	 * raveparty handlers
@@ -143,7 +146,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit) :
 //		fighterInfos.erase(unit);
 //	};
 
-	scouts.insert(circuit->GetCircuitDef("armpw"));
+	const char* names[] = {"armpw", "spherepole"};
+	for (const char* name : names) {
+		scouts.insert(circuit->GetCircuitDef(name));
+	}
 }
 
 CMilitaryManager::~CMilitaryManager()
@@ -257,72 +263,99 @@ void CMilitaryManager::FallbackTask(CCircuitUnit* unit)
 {
 }
 
-CMilitaryManager::SDefPoint* CMilitaryManager::GetDefPoint(const AIFloat3& pos, float defCost)
+void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 {
 	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
 	if (index < 0) {
-		return nullptr;
+		return;
 	}
-
-	DefPoints& defPoints = clusterInfos[index].defPoints;
-	int idx = 0;
-	float dist = pos.distance2D(defPoints[idx].position);
-	for (int i = 1; i < defPoints.size(); ++i) {
-		if (defPoints[i].cost >= defCost) {
-			float tmp = pos.distance2D(defPoints[i].position);
-			if (tmp < dist) {
-				tmp = dist;
-				idx = i;
+	CCircuitDef* defDef;
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	float maxCost = MIN_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
+	CDefenceMatrix* defence = circuit->GetDefenceMatrix();
+	CDefenceMatrix::SDefPoint* closestPoint = nullptr;
+	float minDist = std::numeric_limits<float>::max();
+	for (CDefenceMatrix::SDefPoint& defPoint : defence->GetDefPoints(index)) {
+		if (defPoint.cost < maxCost) {
+			float dist = defPoint.position.SqDistance2D(pos);
+			if ((closestPoint == nullptr) || (dist < minDist)) {
+				closestPoint = &defPoint;
+				minDist = dist;
 			}
 		}
 	}
-	return &defPoints[idx];
+	if (closestPoint == nullptr) {
+		return;
+	}
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	Resource* metalRes = economyManager->GetMetalRes();
+	float totalCost = .0f;
+	IBuilderTask* parentTask = nullptr;
+	const char* defenders[] = {"corllt", "corhlt", "corrazor", "armnanotc", "cordoom"/*, "armartic", "corjamt", "armanni", "corbhmth"*/};
+	for (const char* name : defenders) {
+		defDef = circuit->GetCircuitDef(name);
+		float defCost = defDef->GetUnitDef()->GetCost(metalRes);
+		totalCost += defCost;
+		if (totalCost <= closestPoint->cost) {
+			continue;
+		}
+		if (totalCost < maxCost) {
+			closestPoint->cost += defCost;
+			IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, closestPoint->position,
+															 IBuilderTask::BuildType::DEFENCE, true, (parentTask == nullptr));
+			if (parentTask != nullptr) {
+				parentTask->SetNextTask(task);
+			}
+			parentTask = task;
+		} else {
+			// TODO: Auto-sort defenders by cost OR remove break?
+			break;
+		}
+	}
 }
 
-//const std::vector<CMilitaryManager::SClusterInfo>& CMilitaryManager::GetClusterInfos() const
-//{
-//	return clusterInfos;
-//}
+void CMilitaryManager::AbortDefence(CBDefenceTask* task)
+{
+	Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
+	float defCost = task->GetBuildDef()->GetUnitDef()->GetCost(metalRes);
+	CDefenceMatrix::SDefPoint* point = circuit->GetDefenceMatrix()->GetDefPoint(task->GetPosition(), defCost);
+	if (point != nullptr) {
+		if ((task->GetTarget() == nullptr) && (point->cost >= defCost)) {
+			point->cost -= defCost;
+		}
+		IBuilderTask* next = task->GetNextTask();
+		while (next != nullptr) {
+			defCost = next->GetBuildDef()->GetUnitDef()->GetCost(metalRes);
+			if (point->cost >= defCost) {
+				point->cost -= defCost;
+			}
+			next = next->GetNextTask();
+		}
+	}
+
+}
+
+int CMilitaryManager::GetScoutIndex()
+{
+	int result = scoutPath[curScoutIdx];
+	++curScoutIdx %= scoutPath.size();
+	return result;
+}
 
 void CMilitaryManager::Init()
 {
 	CMetalManager* metalManager = circuit->GetMetalManager();
-	const CMetalData::Metals& spots = metalManager->GetSpots();
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
-	clusterInfos.resize(clusters.size());
 
-	Map* map = circuit->GetMap();
-	float maxDistance = circuit->GetCircuitDef("corllt")->GetUnitDef()->GetMaxWeaponRange() * 3 / 4 * 2;
-	CHierarchCluster clust;
-	CEncloseCircle enclose;
-
-	for (int k = 0; k < clusters.size(); ++k) {
-		const CMetalData::MetalIndices& idxSpots = clusters[k].idxSpots;
-		int nrows = idxSpots.size();
-		CRagMatrix distmatrix(nrows);
-		for (int i = 1; i < nrows; ++i) {
-			for (int j = 0; j < i; ++j) {
-				distmatrix(i, j) = spots[idxSpots[i]].position.distance2D(spots[idxSpots[j]].position);
-			}
-		}
-
-		const CHierarchCluster::Clusters& iclusters = clust.Clusterize(distmatrix, maxDistance);
-
-		DefPoints& defPoints = clusterInfos[k].defPoints;
-		int nclusters = iclusters.size();
-		defPoints.reserve(nclusters);
-		for (int i = 0; i < nclusters; ++i) {
-			std::vector<AIFloat3> points;
-			points.reserve(iclusters[i].size());
-			for (int j = 0; j < iclusters[i].size(); ++j) {
-				points.push_back(spots[idxSpots[iclusters[i][j]]].position);
-			}
-			enclose.MakeCircle(points);
-			AIFloat3 pos = enclose.GetCenter();
-			pos.y = map->GetElevationAt(pos.x, pos.z);
-			defPoints.push_back({pos, .0f});
-		}
+	scoutPath.reserve(clusters.size());
+	for (int i = 0; i < clusters.size(); ++i) {
+		scoutPath.push_back(i);
 	}
+	const AIFloat3& pos = circuit->GetSetupManager()->GetStartPos();
+	auto compare = [&pos, &clusters](int a, int b) {
+		return pos.SqDistance2D(clusters[a].geoCentr) > pos.SqDistance2D(clusters[b].geoCentr);
+	};
+	std::sort(scoutPath.begin(), scoutPath.end(), compare);
 
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	const int interval = 6;

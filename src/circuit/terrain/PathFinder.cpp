@@ -13,6 +13,9 @@
 #include "util/utils.h"
 
 #include "Map.h"
+#ifdef DEBUG_VIS
+#include "Figure.h"
+#endif
 
 namespace circuit {
 
@@ -22,6 +25,10 @@ using namespace NSMicroPather;
 CPathFinder::CPathFinder(CCircuitAI* circuit)
 		: circuit(circuit)
 		, airMoveArray(nullptr)
+#ifdef DEBUG_VIS
+		, isVis(false)
+		, toggleFrame(-1)
+#endif
 {
 	squareSize     = circuit->GetTerrainManager()->GetConvertStoP();
 	pathMapXSize   = circuit->GetTerrainManager()->GetTerrainWidth() / squareSize;
@@ -74,6 +81,35 @@ void CPathFinder::Init()
 		airMoveArray[i] = true;
 	}
 	moveArrays.push_back(airMoveArray);
+}
+
+void CPathFinder::UpdateAreaUsers()
+{
+	const std::vector<STerrainMapMobileType>& moveTypes = circuit->GetTerrainManager()->GetMobileTypes();
+	int totalcells = pathMapXSize * pathMapYSize;
+	for (int j = 0; j < moveTypes.size(); ++j) {
+		const STerrainMapMobileType& mt = moveTypes[j];
+		bool* moveArray = moveArrays[j];
+
+		for (int i = 0; i < totalcells; ++i) {
+			// NOTE: Not all passable sectors have area
+			moveArray[i] = (mt.sector[i].area != nullptr);
+		}
+
+		// make sure that the edges are no-go
+		for (int i = 0; i < pathMapXSize; ++i) {
+			moveArray[i] = false;
+			int k = pathMapXSize * (pathMapYSize - 1) + i;
+			moveArray[k] = false;
+		}
+		for (int i = 0; i < pathMapYSize; ++i) {
+			int k = i * pathMapXSize;
+			moveArray[k] = false;
+			k = i * pathMapXSize + pathMapXSize - 1;
+			moveArray[k] = false;
+		}
+	}
+	micropather->Reset();
 }
 
 void CPathFinder::SetMapData(STerrainMapMobileType::Id mobileTypeId)
@@ -141,9 +177,12 @@ float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos
 		}
 	}
 
+#ifdef DEBUG_VIS
+	UpdateVis(posPath);
+#endif
+
 	return pathCost;
 }
-
 
 float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRange, F3Vec& possibleTargets)
 {
@@ -266,6 +305,10 @@ float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRan
 		}
 	}
 
+#ifdef DEBUG_VIS
+	UpdateVis(posPath);
+#endif
+
 	return pathCost;
 }
 
@@ -275,5 +318,31 @@ float CPathFinder::FindBestPathToRadius(F3Vec& posPath, AIFloat3& startPos, floa
 	posTargets.push_back(target);
 	return FindBestPath(posPath, startPos, radiusAroundTarget, posTargets);
 }
+
+#ifdef DEBUG_VIS
+void CPathFinder::UpdateVis(const F3Vec& path)
+{
+	if (!isVis) {
+		return;
+	}
+
+	Figure* fig = circuit->GetDrawer()->GetFigure();
+	int figId =	fig->DrawLine(ZeroVector, ZeroVector, 8.0f, true, FRAMES_PER_SEC * 20, 0);
+	for (int i = 1; i < path.size(); ++i) {
+		fig->DrawLine(path[i - 1], path[i], 8.0f, true, FRAMES_PER_SEC * 20, figId);
+	}
+	delete fig;
+}
+
+void CPathFinder::ToggleVis()
+{
+	if (toggleFrame >= circuit->GetLastFrame()) {
+		return;
+	}
+	toggleFrame = circuit->GetLastFrame();
+
+	isVis = !isVis;
+}
+#endif
 
 } // namespace circuit

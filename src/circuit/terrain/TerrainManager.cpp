@@ -9,6 +9,7 @@
 #include "terrain/BlockRectangle.h"
 #include "terrain/BlockCircle.h"
 #include "terrain/ThreatMap.h"
+#include "terrain/PathFinder.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"  // Only for UpdateAreaUsers
 #include "resource/MetalManager.h"
@@ -1291,6 +1292,7 @@ void CTerrainManager::UpdateAreaUsers()
 	}
 	// TODO: Use boost signals to invoke UpdateAreaUsers event?
 	circuit->GetBuilderManager()->UpdateAreaUsers();
+	circuit->GetPathfinder()->UpdateAreaUsers();
 
 	DidUpdateAreaUsers();
 }

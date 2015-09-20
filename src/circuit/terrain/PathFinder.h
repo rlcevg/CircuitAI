@@ -23,6 +23,8 @@ public:
 	virtual ~CPathFinder();
 
 	void Init();
+	void UpdateAreaUsers();
+
 	void* XY2Node(int x, int y);
 	void Node2XY(void* node, int* x, int* y);
 	springai::AIFloat3 Node2Pos(void* node);
@@ -47,6 +49,15 @@ private:
 	int pathMapYSize;
 
 	std::vector<void*> path;
+
+#ifdef DEBUG_VIS
+private:
+	bool isVis;
+	int toggleFrame;
+public:
+	void UpdateVis(const F3Vec& path);
+	void ToggleVis();
+#endif
 };
 
 } // namespace circuit

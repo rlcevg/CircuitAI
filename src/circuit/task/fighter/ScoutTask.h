@@ -13,8 +13,6 @@
 
 namespace circuit {
 
-class CMoveAction;
-
 class CScoutTask: public IFighterTask {
 public:
 	CScoutTask(ITaskManager* mgr);
@@ -27,8 +25,7 @@ public:
 
 private:
 	bool isUpdating;
-	int updCount;
-	CMoveAction* moveAction;
+	unsigned int updCount;
 
 	CEnemyUnit* FindBestTarget(CCircuitUnit* unit, F3Vec& path);
 };

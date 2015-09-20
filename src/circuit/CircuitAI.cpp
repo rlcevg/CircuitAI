@@ -404,6 +404,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	allyTeam->Init(this);
 	metalManager = allyTeam->GetMetalManager();
 	energyLink = allyTeam->GetEnergyLink();
+	defence = allyTeam->GetDefenceMatrix();
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
 
 	pathfinder = std::make_shared<CPathFinder>(this);
@@ -444,12 +445,13 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 	initialized = true;
 
-	// debug
+	// FIXME: DEBUG
 //	if (skirmishAIId == 1) {
 //		scheduler->RunTaskAt(std::make_shared<CGameTask>([this]() {
 //			terrainManager->ClusterizeTerrain();
 //		}));
 //	}
+	// FIXME: DEBUG
 
 	return 0;  // signaling: OK
 }
@@ -471,6 +473,7 @@ int CCircuitAI::Release(int reason)
 	metalManager = nullptr;
 	threatMap = nullptr;
 	energyLink = nullptr;
+	defence = nullptr;
 	setupManager = nullptr;
 	scheduler = nullptr;
 	for (auto& kv : teamUnits) {
@@ -523,6 +526,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 	const char cmdThreat[] = "~threat\0";
 	const char cmdArea[]   = "~area\0";
 	const char cmdGrid[]   = "~grid\0";
+	const char cmdPath[]   = "~path\0";
 #endif
 
 	if (message[0] != '~') {
@@ -563,6 +567,9 @@ int CCircuitAI::Message(int playerId, const char* message)
 		} else if (allyTeam->GetEnergyLink()->IsVis()) {
 			allyTeam->GetEnergyLink()->ToggleVis();
 		}
+	}
+	else if ((msgLength == strlen(cmdPath)) && (strcmp(message, cmdPath) == 0)) {
+		pathfinder->ToggleVis();
 	}
 #endif
 

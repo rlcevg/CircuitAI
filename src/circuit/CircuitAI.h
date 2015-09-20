@@ -190,6 +190,7 @@ public:
 	CSetupManager*    GetSetupManager() const    { return setupManager.get(); }
 	CMetalManager*    GetMetalManager() const    { return metalManager.get(); }
 	CEnergyGrid*      GetEnergyGrid() const      { return energyLink.get(); }
+	CDefenceMatrix*   GetDefenceMatrix() const   { return defence.get(); }
 	CThreatMap*       GetThreatMap() const       { return threatMap.get(); }
 	CPathFinder*      GetPathfinder() const      { return pathfinder.get(); }
 	CTerrainManager*  GetTerrainManager() const  { return terrainManager.get(); }
@@ -225,6 +226,7 @@ private:
 	std::shared_ptr<CSetupManager> setupManager;
 	std::shared_ptr<CMetalManager> metalManager;
 	std::shared_ptr<CEnergyGrid> energyLink;
+	std::shared_ptr<CDefenceMatrix> defence;
 	std::shared_ptr<CThreatMap> threatMap;
 	std::shared_ptr<CPathFinder> pathfinder;
 	std::shared_ptr<CTerrainManager> terrainManager;

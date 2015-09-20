@@ -23,9 +23,10 @@ namespace circuit {
 
 using namespace springai;
 
-CRetreatTask::CRetreatTask(ITaskManager* mgr) :
-		IUnitTask(mgr, Priority::NORMAL, Type::RETREAT),
-		updateSlice(0)
+CRetreatTask::CRetreatTask(ITaskManager* mgr)
+		: IUnitTask(mgr, Priority::NORMAL, Type::RETREAT)
+		, updateSlice(0)
+		, updCount(0)
 {
 }
 
@@ -43,6 +44,8 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 		CDGunAction* act = new CDGunAction(unit, cdef->GetDGunRange() * 0.8f);
 		unit->PushBack(act);
 	}
+
+	unit->PushBack(new CMoveAction(unit));
 }
 
 void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
@@ -54,6 +57,12 @@ void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CRetreatTask::Execute(CCircuitUnit* unit)
 {
+	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
+	if (act->GetType() != IUnitAction::Type::MOVE) {
+		return;
+	}
+	CMoveAction* moveAction = static_cast<CMoveAction*>(act);
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	AIFloat3 haven = circuit->GetFactoryManager()->GetClosestHaven(unit);
 	F3Vec path;
@@ -67,9 +76,8 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 	if (path.empty()) {
 		path.push_back(endPos);
 	}
-	CMoveAction* act = new CMoveAction(unit, path);
-	unit->PushBack(act);
-	act->Update(circuit);
+	moveAction->SetPath(path);
+	moveAction->Update(circuit);
 }
 
 void CRetreatTask::Update()
@@ -78,6 +86,7 @@ void CRetreatTask::Update()
 	if (updateUnits.empty()) {
 		updateUnits = units;  // copy units
 		updateSlice = updateUnits.size() / TEAM_SLOWUPDATE_RATE;
+		++updCount;
 	}
 
 	auto it = updateUnits.begin();
@@ -89,6 +98,8 @@ void CRetreatTask::Update()
 		Unit* u = ass->GetUnit();
 		if (u->GetHealth() >= u->GetMaxHealth() * 0.8f) {
 			RemoveAssignee(ass);
+		} else if (updCount % 4 == 0) {
+			Execute(ass);
 		} else {
 			ass->Update(circuit);
 		}
@@ -127,11 +138,16 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 		AIFloat3 pos = u->GetPos();
-		const float size = SQUARE_SIZE * 20;
+		const float size = SQUARE_SIZE * 30;
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		pos.x += (pos.x > terrainManager->GetTerrainWidth() / 2) ? -size : size;
 		pos.z += (pos.z > terrainManager->GetTerrainHeight() / 2) ? -size : size;
 		u->PatrolTo(pos);
+
+		IUnitAction* act = static_cast<IUnitAction*>(unit->End());
+		if (act->GetType() == IUnitAction::Type::MOVE) {
+			static_cast<CMoveAction*>(act)->SetFinished(true);
+		}
 	}
 }
 

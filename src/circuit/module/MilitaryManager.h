@@ -11,26 +11,15 @@
 #include "module/UnitModule.h"
 #include "task/fighter/FighterTask.h"
 
-#include "AIFloat3.h"
-
 #include <vector>
 #include <set>
 
 namespace circuit {
 
 class CCircuitDef;
+class CBDefenceTask;
 
 class CMilitaryManager: public IUnitModule {
-public:
-	struct SDefPoint {
-		springai::AIFloat3 position;
-		float cost;
-	};
-	using DefPoints = std::vector<SDefPoint>;
-	struct SClusterInfo {
-		DefPoints defPoints;
-	};
-
 public:
 	CMilitaryManager(CCircuitAI* circuit);
 	virtual ~CMilitaryManager();
@@ -51,9 +40,9 @@ public:
 	virtual void DoneTask(IUnitTask* task);
 	virtual void FallbackTask(CCircuitUnit* unit);
 
-	std::vector<SDefPoint>& GetDefPoints(int index) { return clusterInfos[index].defPoints; }
-	SDefPoint* GetDefPoint(const springai::AIFloat3& pos, float cost);
-//	const std::vector<SClusterInfo>& GetClusterInfos() const;
+	void MakeDefence(const springai::AIFloat3& pos);
+	void AbortDefence(CBDefenceTask* task);
+	int GetScoutIndex();
 
 private:
 	void Init();
@@ -74,13 +63,8 @@ private:
 	unsigned int updateSlice;
 
 	std::set<CCircuitDef*> scouts;
-
-//	struct FighterInfo {
-//		bool isTerraforming;
-//	};
-//	std::map<CCircuitUnit*, FighterInfo> fighterInfos;
-
-	std::vector<SClusterInfo> clusterInfos;
+	std::vector<int> scoutPath;  // list of cluster ids
+	unsigned int curScoutIdx;
 };
 
 } // namespace circuit

@@ -23,6 +23,7 @@ namespace circuit {
 class CCircuitAI;
 class CMetalManager;
 class CEnergyGrid;
+class CDefenceMatrix;
 
 class CAllyTeam {
 public:
@@ -58,6 +59,7 @@ public:
 
 	std::shared_ptr<CMetalManager>& GetMetalManager() { return metalManager; }
 	std::shared_ptr<CEnergyGrid>& GetEnergyLink() { return energyLink; }
+	std::shared_ptr<CDefenceMatrix>& GetDefenceMatrix() { return defence; }
 
 private:
 	TeamIds teamIds;
@@ -69,6 +71,7 @@ private:
 
 	std::shared_ptr<CMetalManager> metalManager;
 	std::shared_ptr<CEnergyGrid> energyLink;
+	std::shared_ptr<CDefenceMatrix> defence;
 };
 
 } // namespace circuit

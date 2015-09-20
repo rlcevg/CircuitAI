@@ -7,6 +7,7 @@
 
 #include "task/fighter/ScoutTask.h"
 #include "task/TaskManager.h"
+#include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
@@ -17,9 +18,6 @@
 #include "util/utils.h"
 
 #include "AISCommands.h"
-//FIXME: DEBUG
-#include "Figure.h"
-//FIXME: DEBUG
 
 namespace circuit {
 
@@ -29,7 +27,6 @@ CScoutTask::CScoutTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::SCOUT)
 		, isUpdating(false)
 		, updCount(0)
-		, moveAction(nullptr)
 {
 }
 
@@ -42,13 +39,19 @@ void CScoutTask::AssignTo(CCircuitUnit* unit)
 {
 	IFighterTask::AssignTo(unit);
 
-	moveAction = new CMoveAction(unit);
+	CMoveAction* moveAction = new CMoveAction(unit);
 	unit->PushBack(moveAction);
 	moveAction->SetActive(false);
 }
 
 void CScoutTask::Execute(CCircuitUnit* unit)
 {
+	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
+	if (act->GetType() != IUnitAction::Type::MOVE) {
+		return;
+	}
+	CMoveAction* moveAction = static_cast<CMoveAction*>(act);
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
@@ -77,7 +80,7 @@ void CScoutTask::Execute(CCircuitUnit* unit)
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	if (!clusters.empty()) {
-		int index = rand() % clusters.size();
+		int index = circuit->GetMilitaryManager()->GetScoutIndex();
 		position = clusters[index].geoCentr;
 		const CMetalData::Metals& spots = metalManager->GetSpots();
 		auto it = clusters[index].idxSpots.begin();
@@ -122,7 +125,7 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, F3Vec& path)
 
 	CEnemyUnit* bestTarget = nullptr;
 	F3Vec enemyPositions;
-	float range = unit->GetUnit()->GetMaxRange();
+	float range = unit->GetUnit()->GetMaxRange() + terrainManager->GetConvertStoP() * 2;
 	float minSqDist = range * range;
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
@@ -146,18 +149,8 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, F3Vec& path)
 		return bestTarget;
 	}
 
-	range = std::max<float>(range * 0.8f, circuit->GetTerrainManager()->GetConvertStoP());
 	circuit->GetPathfinder()->SetMapData(unit->GetCircuitDef()->GetMobileId());
-	circuit->GetPathfinder()->FindBestPath(path, pos, range, enemyPositions);
-
-	//FIXME: DEBUG
-	Figure* fig = circuit->GetDrawer()->GetFigure();
-	int figId =	fig->DrawLine(ZeroVector, ZeroVector, 8.0f, true, FRAMES_PER_SEC * 20, 0);
-	for (int i = 1; i < path.size(); ++i) {
-		fig->DrawLine(path[i - 1], path[i], 8.0f, true, FRAMES_PER_SEC * 20, figId);
-	}
-	delete fig;
-	//FIXME: DEBUG
+	circuit->GetPathfinder()->FindBestPath(path, pos, range * 0.5f, enemyPositions);
 
 	return nullptr;
 }

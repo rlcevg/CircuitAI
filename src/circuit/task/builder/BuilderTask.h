@@ -11,11 +11,6 @@
 #include "task/UnitTask.h"
 #include "util/Defines.h"
 
-#define MIN_BUILD_SEC	20
-#define MAX_BUILD_SEC	40
-#define MAX_TRAVEL_SEC	60
-#define ASSIGN_TIMEOUT	FRAMES_PER_SEC * 300
-
 namespace circuit {
 
 class CCircuitDef;

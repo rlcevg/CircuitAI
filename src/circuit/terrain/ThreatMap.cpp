@@ -248,7 +248,7 @@ float CThreatMap::GetThreatAt(const AIFloat3& pos) const
 
 float CThreatMap::GetUnitThreat(CCircuitUnit* unit) const
 {
-	return unit->GetDPS() * unit->GetUnit()->GetHealth() / unit->GetUnit()->GetMaxHealth();
+	return unit->GetDPS() * unit->GetUnit()->GetHealth()/* / unit->GetUnit()->GetMaxHealth()*/;
 }
 
 void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, const float scale)
@@ -290,7 +290,7 @@ float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
 		return THREAT_VAL_BASE;  // or 0
 	}
 	const float dps = std::min(enemy->GetDPS(), 2000.0f);
-	const float dpsMod = std::max(enemy->GetUnit()->GetHealth(), .0f) / enemy->GetUnit()->GetMaxHealth();
+	const float dpsMod = std::max(enemy->GetUnit()->GetHealth(), .0f)/* / enemy->GetUnit()->GetMaxHealth()*/;
 	return dps * dpsMod;
 }
 
@@ -322,7 +322,7 @@ void CThreatMap::UpdateVis()
 {
 	if ((sdlWindowId != DEBUG_MARK)/* && (currMaxThreat > .0f)*/) {
 		for (int i = 0; i < threatCells.size(); ++i) {
-			dbgMap[i] = std::min((threatCells[i] - THREAT_VAL_BASE) / 200.0f /*currMaxThreat*/, 1.0f);
+			dbgMap[i] = std::min((threatCells[i] - THREAT_VAL_BASE) / 40000.0f /*currMaxThreat*/, 1.0f);
 		}
 		circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap);
 	}

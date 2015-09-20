@@ -30,6 +30,11 @@
 // x--
 #define UNIT_FACING_WEST	3
 
+#define MIN_BUILD_SEC	20
+#define MAX_BUILD_SEC	40
+#define MAX_TRAVEL_SEC	60
+#define ASSIGN_TIMEOUT	FRAMES_PER_SEC * 300
+
 typedef std::vector<springai::AIFloat3> F3Vec;
 
 #endif // SRC_CIRCUIT_UTIL_DEFINES_H_

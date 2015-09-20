@@ -8,6 +8,7 @@
 #include "unit/AllyTeam.h"
 #include "resource/MetalManager.h"
 #include "resource/EnergyGrid.h"
+#include "setup/DefenceMatrix.h"
 #include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
@@ -65,7 +66,9 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 	}
 	// Init after parallel clusterization
 	circuit->GetScheduler()->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CMetalManager::Init, metalManager));
+
 	energyLink = std::make_shared<CEnergyGrid>(circuit);
+	defence = std::make_shared<CDefenceMatrix>(circuit);
 }
 
 void CAllyTeam::Release()
@@ -81,6 +84,7 @@ void CAllyTeam::Release()
 
 	metalManager = nullptr;
 	energyLink = nullptr;
+	defence = nullptr;
 }
 
 void CAllyTeam::UpdateFriendlyUnits(CCircuitAI* circuit)

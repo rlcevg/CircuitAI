@@ -84,56 +84,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 
 void CBMexTask::Finish()
 {
-	CCircuitAI* circuit = manager->GetCircuit();
-	// Add defence
-	// TODO: Move into MilitaryManager
-	int index = circuit->GetMetalManager()->FindNearestCluster(buildPos);
-	if (index < 0) {
-		return;
-	}
-	CCircuitDef* defDef;
-	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
-	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	float maxCost = MIN_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
-	CMilitaryManager::SDefPoint* closestPoint = nullptr;
-	float minDist = std::numeric_limits<float>::max();
-	for (CMilitaryManager::SDefPoint& defPoint : militaryManager->GetDefPoints(index)) {
-		if (defPoint.cost < maxCost) {
-			float dist = defPoint.position.SqDistance2D(buildPos);
-			if ((closestPoint == nullptr) || (dist < minDist)) {
-				closestPoint = &defPoint;
-				minDist = dist;
-			}
-		}
-	}
-	if (closestPoint == nullptr) {
-		return;
-	}
-	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	Resource* metalRes = economyManager->GetMetalRes();
-	float totalCost = .0f;
-	IBuilderTask* parentTask = nullptr;
-	const char* defenders[] = {"corllt", "corhlt", "corrazor", "armnanotc", "cordoom"/*, "armartic", "corjamt", "armanni", "corbhmth"*/};
-	for (const char* name : defenders) {
-		defDef = circuit->GetCircuitDef(name);
-		float defCost = defDef->GetUnitDef()->GetCost(metalRes);
-		totalCost += defCost;
-		if (totalCost <= closestPoint->cost) {
-			continue;
-		}
-		if (totalCost < maxCost) {
-			closestPoint->cost += defCost;
-			IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, closestPoint->position,
-															 IBuilderTask::BuildType::DEFENCE, true, (parentTask == nullptr));
-			if (parentTask != nullptr) {
-				parentTask->SetNextTask(task);
-			}
-			parentTask = task;
-		} else {
-			// TODO: Auto-sort defenders by cost OR remove break?
-			break;
-		}
-	}
+	manager->GetCircuit()->GetMilitaryManager()->MakeDefence(buildPos);
 }
 
 void CBMexTask::Cancel()

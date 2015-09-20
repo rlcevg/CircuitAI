@@ -22,7 +22,7 @@ public:
 
 private:
 	bool isUpdating;
-	int updCount;
+	unsigned int updCount;
 
 	CEnemyUnit* FindBestTarget(CCircuitUnit* unit, float& minSqDist);
 };

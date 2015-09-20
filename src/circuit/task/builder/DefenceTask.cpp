@@ -9,7 +9,6 @@
 #include "task/TaskManager.h"
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
-#include "module/EconomyManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -50,23 +49,7 @@ void CBDefenceTask::Finish()
 
 void CBDefenceTask::Cancel()
 {
-	CCircuitAI* circuit = manager->GetCircuit();
-	Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
-	float defCost = buildDef->GetUnitDef()->GetCost(metalRes);
-	CMilitaryManager::SDefPoint* point = circuit->GetMilitaryManager()->GetDefPoint(GetPosition(), defCost);
-	if (point != nullptr) {
-		if ((target == nullptr) && (point->cost >= defCost)) {
-			point->cost -= defCost;
-		}
-		IBuilderTask* next = nextTask;
-		while (next != nullptr) {
-			defCost = next->GetBuildDef()->GetUnitDef()->GetCost(metalRes);
-			if (point->cost >= defCost) {
-				point->cost -= defCost;
-			}
-			next = next->GetNextTask();
-		}
-	}
+	manager->GetCircuit()->GetMilitaryManager()->AbortDefence(this);
 
 	IBuilderTask::Cancel();
 }
