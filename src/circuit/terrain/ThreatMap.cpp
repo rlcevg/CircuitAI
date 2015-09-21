@@ -13,6 +13,7 @@
 
 #include "OOAICallback.h"
 #include "Mod.h"
+#include "Map.h"
 
 namespace circuit {
 

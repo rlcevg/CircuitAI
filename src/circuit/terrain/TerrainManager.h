@@ -163,10 +163,10 @@ public:
 private:
 	SAreaData* areaData;
 
-public:
-	void ClusterizeTerrain();
-	const std::vector<springai::AIFloat3>& GetDefencePoints() const;
-	const std::vector<springai::AIFloat3>& GetDefencePerimeter() const;
+//public:
+//	void ClusterizeTerrain();
+//	const std::vector<springai::AIFloat3>& GetDefencePoints() const;
+//	const std::vector<springai::AIFloat3>& GetDefencePerimeter() const;
 private:
 	CTerrainData* terrainData;
 

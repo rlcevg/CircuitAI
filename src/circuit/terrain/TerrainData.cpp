@@ -15,9 +15,10 @@
 #include "util/utils.h"
 
 #include "OOAICallback.h"
+#include "Log.h"
 #include "Map.h"
-//#include "File.h"
 #include "MoveData.h"
+//#include "File.h"
 
 #include <functional>
 #include <algorithm>
@@ -52,7 +53,7 @@ CTerrainData::CTerrainData()
 		, pHeightMap(&heightMap0)
 		, updatingAreas(false)
 		, aiToUpdate(0)
-		, isClusterizing(false)
+//		, isClusterizing(false)
 		, initialized(false)
 #ifdef DEBUG_VIS
 		, toggleFrame(-1)
@@ -939,86 +940,71 @@ SAreaData* CTerrainData::GetNextAreaData()
 	return (pAreaData.load() == &areaData0) ? &areaData1 : &areaData0;
 }
 
-bool CTerrainData::IsInitialized()
-{
-	return initialized;
-}
-
-bool CTerrainData::IsClusterizing()
-{
-	return isClusterizing.load();
-}
-
-void CTerrainData::SetClusterizing(bool value)
-{
-	isClusterizing = value;
-}
-
-const std::vector<springai::AIFloat3>& CTerrainData::GetDefencePoints() const
-{
-	return points;
-}
-
-const std::vector<springai::AIFloat3>& CTerrainData::GetDefencePerimeter() const
-{
-	return points;
-}
-
-void CTerrainData::Clusterize(const std::vector<AIFloat3>& wayPoints, float maxDistance, CCircuitAI* circuit)
-{
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	int nrows = wayPoints.size();
-	CRagMatrix distmatrix(nrows);
-	for (int i = 1; i < nrows; i++) {
-		for (int j = 0; j < i; j++) {
-			float dx = wayPoints[i].x - wayPoints[j].x;
-			float dz = wayPoints[i].z - wayPoints[j].z;
-			distmatrix(i, j) = dx * dx + dz * dz;
-		}
-	}
-
-	CHierarchCluster clust;
-	const CHierarchCluster::Clusters& iclusters = clust.Clusterize(distmatrix, maxDistance);
-
-	std::vector<std::vector<int>> clusters;
-	std::vector<AIFloat3> centroids;
-	int nclusters = iclusters.size();
-	clusters.resize(nclusters);
-	centroids.resize(nclusters);
-	for (int i = 0; i < nclusters; i++) {
-		clusters[i].clear();
-		AIFloat3 centr = ZeroVector;
-		for (int j = 0; j < iclusters[i].size(); j++) {
-			clusters[i].push_back(iclusters[i][j]);
-			centr += wayPoints[iclusters[i][j]];
-		}
-		centr /= iclusters[i].size();
-		centroids[i] = centr;
-	}
-
-	printf("nclusters: %i\n", nclusters);
-	for (int i = 0; i < clusters.size(); i++) {
-		printf("%i | ", clusters[i].size());
-	}
-	auto compare = [](const std::vector<int>& a, const std::vector<int>& b) {
-		return a.size() > b.size();
-	};
-	std::sort(clusters.begin(), clusters.end(), compare);
-	int num = centroids.size();
-	Drawer* drawer = circuit->GetMap()->GetDrawer();
-	for (int i = 0; i < num; i++) {
-		AIFloat3 centr = ZeroVector;
-		for (int j = 0; j < clusters[i].size(); j++) {
-			centr += wayPoints[clusters[i][j]];
-		}
-		centr /= clusters[i].size();
-		drawer->AddPoint(centr, utils::string_format("%i", i).c_str());
-	}
-	delete drawer;
-
-	isClusterizing = false;
-}
-
+//const std::vector<springai::AIFloat3>& CTerrainData::GetDefencePoints() const
+//{
+//	return points;
+//}
+//
+//const std::vector<springai::AIFloat3>& CTerrainData::GetDefencePerimeter() const
+//{
+//	return points;
+//}
+//
+//void CTerrainData::Clusterize(const std::vector<AIFloat3>& wayPoints, float maxDistance, CCircuitAI* circuit)
+//{
+//	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+//	int nrows = wayPoints.size();
+//	CRagMatrix distmatrix(nrows);
+//	for (int i = 1; i < nrows; i++) {
+//		for (int j = 0; j < i; j++) {
+//			float dx = wayPoints[i].x - wayPoints[j].x;
+//			float dz = wayPoints[i].z - wayPoints[j].z;
+//			distmatrix(i, j) = dx * dx + dz * dz;
+//		}
+//	}
+//
+//	CHierarchCluster clust;
+//	const CHierarchCluster::Clusters& iclusters = clust.Clusterize(distmatrix, maxDistance);
+//
+//	std::vector<std::vector<int>> clusters;
+//	std::vector<AIFloat3> centroids;
+//	int nclusters = iclusters.size();
+//	clusters.resize(nclusters);
+//	centroids.resize(nclusters);
+//	for (int i = 0; i < nclusters; i++) {
+//		clusters[i].clear();
+//		AIFloat3 centr = ZeroVector;
+//		for (int j = 0; j < iclusters[i].size(); j++) {
+//			clusters[i].push_back(iclusters[i][j]);
+//			centr += wayPoints[iclusters[i][j]];
+//		}
+//		centr /= iclusters[i].size();
+//		centroids[i] = centr;
+//	}
+//
+//	printf("nclusters: %i\n", nclusters);
+//	for (int i = 0; i < clusters.size(); i++) {
+//		printf("%i | ", clusters[i].size());
+//	}
+//	auto compare = [](const std::vector<int>& a, const std::vector<int>& b) {
+//		return a.size() > b.size();
+//	};
+//	std::sort(clusters.begin(), clusters.end(), compare);
+//	int num = centroids.size();
+//	Drawer* drawer = circuit->GetMap()->GetDrawer();
+//	for (int i = 0; i < num; i++) {
+//		AIFloat3 centr = ZeroVector;
+//		for (int j = 0; j < clusters[i].size(); j++) {
+//			centr += wayPoints[clusters[i][j]];
+//		}
+//		centr /= clusters[i].size();
+//		drawer->AddPoint(centr, utils::string_format("%i", i).c_str());
+//	}
+//	delete drawer;
+//
+//	isClusterizing = false;
+//}
+//
 //void CTerrainData::DrawConvexHulls(Drawer* drawer)
 //{
 //	for (const MetalIndices& indices : GetClusters()) {

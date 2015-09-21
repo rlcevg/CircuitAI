@@ -215,25 +215,25 @@ private:
 
 // ---- UNUSED so far ---- BEGIN
 public:
-	bool IsInitialized();
-	bool IsClusterizing();
-	void SetClusterizing(bool value);
-
-	const std::vector<springai::AIFloat3>& GetDefencePoints() const;
-	const std::vector<springai::AIFloat3>& GetDefencePerimeter() const;
-
-	void Clusterize(const std::vector<springai::AIFloat3>& wayPoints, float maxDistance, CCircuitAI* circuit);
-
-	// debug, could be used for defence perimeter calculation
+	bool IsInitialized() const { return initialized; }
+//	bool IsClusterizing() const { return isClusterizing.load(); }
+//	void SetClusterizing(bool value) { isClusterizing = value; }
+//
+//	const std::vector<springai::AIFloat3>& GetDefencePoints() const;
+//	const std::vector<springai::AIFloat3>& GetDefencePerimeter() const;
+//
+//	void Clusterize(const std::vector<springai::AIFloat3>& wayPoints, float maxDistance, CCircuitAI* circuit);
+//
+//	// debug, could be used for defence perimeter calculation
 //	void DrawConvexHulls(springai::Drawer* drawer);
 //	void DrawCentroids(springai::Drawer* drawer);
 //	void ClearMetalClusters(springai::Drawer* drawer);
-
+//
 private:
 	bool initialized;
-	std::vector<springai::AIFloat3> points;
-
-	std::atomic<bool> isClusterizing;
+//	std::vector<springai::AIFloat3> points;
+//
+//	std::atomic<bool> isClusterizing;
 // ---- UNUSED so far ---- END
 
 #ifdef DEBUG_VIS

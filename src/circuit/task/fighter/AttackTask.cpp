@@ -14,6 +14,7 @@
 #include "util/utils.h"
 
 #include "AISCommands.h"
+#include "Map.h"
 
 namespace circuit {
 
