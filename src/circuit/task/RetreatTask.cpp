@@ -98,7 +98,7 @@ void CRetreatTask::Update()
 		Unit* u = ass->GetUnit();
 		if (u->GetHealth() >= u->GetMaxHealth() * 0.8f) {
 			RemoveAssignee(ass);
-		} else if (updCount % 4 == 0) {
+		} else if (updCount % 8 == 0) {
 			Execute(ass);
 		} else {
 			ass->Update(circuit);
@@ -129,7 +129,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 	Unit* u = unit->GetUnit();
 	if (u->GetPos().SqDistance2D(pos) > maxDist * maxDist) {
 		// TODO: push MoveAction into unit? to avoid enemy fire
-		u->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 1);
+		u->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 1);
 		// TODO: Add fail counter?
 	} else {
 		// TODO: push WaitAction into unit

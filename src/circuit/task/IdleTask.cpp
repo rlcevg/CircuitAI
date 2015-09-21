@@ -13,9 +13,9 @@
 
 namespace circuit {
 
-CIdleTask::CIdleTask(ITaskManager* mgr) :
-		IUnitTask(mgr, Priority::NORMAL, Type::IDLE),
-		updateSlice(0)
+CIdleTask::CIdleTask(ITaskManager* mgr)
+		: IUnitTask(mgr, Priority::NORMAL, Type::IDLE)
+		, updateSlice(0)
 {
 }
 

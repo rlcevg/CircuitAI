@@ -18,13 +18,13 @@ using namespace springai;
 
 CRecruitTask::CRecruitTask(ITaskManager* mgr, Priority priority,
 		CCircuitDef* buildDef, const AIFloat3& position,
-		BuildType type, float radius) :
-				IUnitTask(mgr, priority, Type::FACTORY),
-				buildDef(buildDef),
-				position(position),
-				buildType(type),
-				sqradius(radius * radius),
-				target(nullptr)
+		BuildType type, float radius)
+				: IUnitTask(mgr, priority, Type::FACTORY)
+				, buildDef(buildDef)
+				, position(position)
+				, buildType(type)
+				, sqradius(radius * radius)
+				, target(nullptr)
 {
 }
 

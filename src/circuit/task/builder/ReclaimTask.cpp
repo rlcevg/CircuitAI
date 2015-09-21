@@ -23,10 +23,10 @@ using namespace springai;
 
 CBReclaimTask::CBReclaimTask(ITaskManager* mgr, Priority priority,
 							 const AIFloat3& position,
-							 float cost, int timeout, float radius, bool isMetal) :
-		IBuilderTask(mgr, priority, nullptr, position, BuildType::RECLAIM, cost, false, timeout),
-		radius(radius),
-		isMetal(isMetal)
+							 float cost, int timeout, float radius, bool isMetal)
+		: IBuilderTask(mgr, priority, nullptr, position, BuildType::RECLAIM, cost, false, timeout)
+		, radius(radius)
+		, isMetal(isMetal)
 {
 }
 

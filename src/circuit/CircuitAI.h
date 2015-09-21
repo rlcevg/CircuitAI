@@ -107,7 +107,7 @@ private:
 	int EnemyDamaged(CEnemyUnit* enemy);
 	int EnemyDestroyed(CEnemyUnit* enemy);
 	int PlayerCommand(std::vector<CCircuitUnit*>& units);
-//	int CommandFinished(CCircuitUnit* unit, int commandTopicId);
+//	int CommandFinished(CCircuitUnit* unit, int commandTopicId, springai::Command* cmd);
 	int LuaMessage(const char* inData);
 
 // ---- Units ---- BEGIN

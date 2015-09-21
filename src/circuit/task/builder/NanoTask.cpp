@@ -39,17 +39,17 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 	params.push_back(static_cast<float>(priority));
 	u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
+	CCircuitAI* circuit = manager->GetCircuit();
 	if (target != nullptr) {
 		Unit* tu = target->GetUnit();
-		u->Build(target->GetCircuitDef()->GetUnitDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->Build(target->GetCircuitDef()->GetUnitDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 		return;
 	}
-	CCircuitAI* circuit = manager->GetCircuit();
 	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (buildPos != -RgtVector) {
 		facing = FindFacing(buildDef, buildPos);
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
-			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 			return;
 		} else {
 			circuit->GetTerrainManager()->RemoveBlocker(buildDef, buildPos, facing);
@@ -75,7 +75,7 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 
 	if (buildPos != -RgtVector) {
 		circuit->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);
-		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 	} else {
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);

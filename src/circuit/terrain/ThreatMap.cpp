@@ -155,7 +155,7 @@ void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 	AIFloat3 pos = enemy->GetUnit()->GetPos();
 	circuit->GetTerrainManager()->CorrectPosition(pos);
 	enemy->SetPos(pos);
-	enemy->SetRange(((int)enemy->GetUnit()->GetMaxRange() + 100) / squareSize);
+	enemy->SetRange(((int)enemy->GetUnit()->GetMaxRange() + SQUARE_SIZE * THREAT_RES * 2) / squareSize);
 	enemy->SetThreat(GetEnemyUnitThreat(enemy));
 
 	AddEnemyUnit(enemy);
@@ -202,7 +202,7 @@ void CThreatMap::EnemyEnterRadar(CEnemyUnit* enemy)
 	enemy->SetPos(pos);
 	if (isNew) {  // unknown enemy enters radar for the first time
 		enemy->SetThreat(enemy->GetDPS());  // TODO: Randomize
-		enemy->SetRange((150 + 100) / squareSize);
+		enemy->SetRange((SQUARE_SIZE * THREAT_RES * 4) / squareSize);
 	}
 
 	AddEnemyUnit(enemy);

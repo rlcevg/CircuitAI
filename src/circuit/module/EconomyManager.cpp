@@ -230,7 +230,7 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(const AIFloat3& position, CCirc
 		if (tasks.empty()) {
 			buildDef = circuit->GetCircuitDef("raveparty");
 			if ((buildDef->GetCount() < 1) && buildDef->IsAvailable()) {
-				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, circuit->GetSetupManager()->GetBasePos(), IBuilderTask::BuildType::BIG_GUN);
+				task = builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, circuit->GetSetupManager()->GetBasePos(), IBuilderTask::BuildType::BIG_GUN);
 			} else {
 				task = builderManager->EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
 			}
@@ -250,13 +250,15 @@ CRecruitTask* CEconomyManager::CreateFactoryTask(CCircuitUnit* unit)
 	if (task != nullptr) {
 		return task;
 	}
+	// FIXME: DEBUG
 //	return (CRecruitTask*)circuit->GetFactoryManager()->GetIdleTask();
+	// FIXME: DEBUG
 
 	float metalIncome = GetAvgMetalIncome() * ecoFactor;
-	const char* names[] = {"armpw", "armrock", "armwar", "armzeus", "armsnipe", "armjeth", "spherepole"};
-	const std::array<float, 7> prob0 = {.70, .15, .10, .05, .00, .00, .00};
-	const std::array<float, 7> prob1 = {.10, .05, .05, .20, .20, .10, .30};
-	const std::array<float, 7>& prob = ((metalIncome < 40) || (economy->GetCurrent(energyRes) < (economy->GetStorage(energyRes) - HIDDEN_ENERGY) * 0.5f)) ? prob0 : prob1;
+	const char* names[] = {"armpw", "armrock", "armwar", "armzeus", "armsnipe", "armjeth", "spherepole", "armham"};
+	const std::array<float, 8> prob0 = {.60, .15, .10, .06, .01, .01, .02, .05};
+	const std::array<float, 8> prob1 = {.09, .05, .05, .30, .10, .10, .30, .01};
+	const std::array<float, 8>& prob = ((metalIncome < 40) || (economy->GetCurrent(energyRes) < (economy->GetStorage(energyRes) - HIDDEN_ENERGY) * 0.5f)) ? prob0 : prob1;
 	int choice = 0;
 	float dice = rand() / (float)RAND_MAX;
 	float total;
@@ -725,9 +727,12 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			const CMetalData::Clusters& clusters = metalManager->GetClusters();
 			AIFloat3 buildPos = clusters[index].geoCentr;
 			UnitDef* facUDef = facDef->GetUnitDef();
-			float size = 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
-			buildPos.x += (buildPos.x > terrainManager->GetTerrainWidth() / 2) ? -size : size;
-			buildPos.z += (buildPos.z > terrainManager->GetTerrainHeight() / 2) ? -size : size;
+
+			AIFloat3 center = AIFloat3(terrainManager->GetTerrainWidth() / 2, 0, terrainManager->GetTerrainHeight() / 2);
+			float size = (center.SqDistance2D(circuit->GetSetupManager()->GetStartPos()) > center.SqDistance2D(buildPos)) ? -200.0f : 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
+			buildPos.x += (buildPos.x > center.x) ? -size : size;
+			buildPos.z += (buildPos.z > center.z) ? -size : size;
+
 			CCircuitDef* bdef = (unit == nullptr) ? facDef : unit->GetCircuitDef();
 			buildPos = terrainManager->GetBuildPosition(bdef, buildPos);
 

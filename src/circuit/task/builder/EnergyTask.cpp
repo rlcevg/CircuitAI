@@ -25,8 +25,8 @@ using namespace springai;
 
 CBEnergyTask::CBEnergyTask(ITaskManager* mgr, Priority priority,
 						   CCircuitDef* buildDef, const AIFloat3& position,
-						   float cost, bool isShake, int timeout) :
-		IBuilderTask(mgr, priority, buildDef, position, BuildType::ENERGY, cost, isShake, timeout)
+						   float cost, bool isShake, int timeout)
+		: IBuilderTask(mgr, priority, buildDef, position, BuildType::ENERGY, cost, isShake, timeout)
 {
 }
 

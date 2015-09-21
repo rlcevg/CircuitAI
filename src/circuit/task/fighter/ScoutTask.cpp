@@ -62,7 +62,7 @@ void CScoutTask::Execute(CCircuitUnit* unit)
 
 	if (bestTarget != nullptr) {
 		position = bestTarget->GetPos();
-		u->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 300);
+		u->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
 		moveAction->SetActive(false);
 		return;
 	} else if (!path.empty()) {
@@ -84,10 +84,10 @@ void CScoutTask::Execute(CCircuitUnit* unit)
 		position = clusters[index].geoCentr;
 		const CMetalData::Metals& spots = metalManager->GetSpots();
 		auto it = clusters[index].idxSpots.begin();
-		u->Fight(spots[*it].position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 300);
+		u->Fight(spots[*it].position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
 		auto end = clusters[index].idxSpots.end();
 		while (++it != end) {
-			u->Fight(spots[*it].position, UNIT_COMMAND_OPTION_SHIFT_KEY, FRAMES_PER_SEC * 300);
+			u->Fight(spots[*it].position, UNIT_COMMAND_OPTION_SHIFT_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
 		}
 		moveAction->SetActive(false);
 		return;
@@ -96,13 +96,13 @@ void CScoutTask::Execute(CCircuitUnit* unit)
 	float x = rand() % (terrainManager->GetTerrainWidth() + 1);
 	float z = rand() % (terrainManager->GetTerrainHeight() + 1);
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
-	u->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 300);
+	u->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
 	moveAction->SetActive(false);
 }
 
 void CScoutTask::Update()
 {
-	if (updCount++ % 4 == 0) {
+	if (updCount++ % 8 == 0) {
 		// FIXME: Update group target
 		isUpdating = true;
 		for (CCircuitUnit* unit : units) {
@@ -121,12 +121,14 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, F3Vec& path)
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	AIFloat3 pos = unit->GetUnit()->GetPos();
 	STerrainMapArea* area = unit->GetArea();
-	float power = threatMap->GetUnitThreat(unit) * 0.5f;
-
-	CEnemyUnit* bestTarget = nullptr;
-	F3Vec enemyPositions;
+	float power = threatMap->GetUnitThreat(unit) * 0.8f;
+	int noChaseCat = unit->GetCircuitDef()->GetUnitDef()->GetNoChaseCategory();
 	float range = unit->GetUnit()->GetMaxRange() + terrainManager->GetConvertStoP() * 2;
 	float minSqDist = range * range;
+
+	CEnemyUnit* bestTarget = nullptr;
+	CEnemyUnit* worstTarget = nullptr;
+	F3Vec enemyPositions;
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
@@ -137,11 +139,22 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, F3Vec& path)
 		}
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
 		if (sqDist < minSqDist) {
-			bestTarget = enemy;
-			minSqDist = sqDist;
+			if (enemy->GetCircuitDef() != nullptr) {
+				int targetCat = enemy->GetCircuitDef()->GetUnitDef()->GetCategory();
+				if (targetCat & noChaseCat == 0) {
+					bestTarget = enemy;
+					minSqDist = sqDist;
+				}
+			}
+			if (bestTarget == nullptr) {
+				worstTarget = enemy;
+			}
 		} else {
 			enemyPositions.push_back(enemy->GetPos());
 		}
+	}
+	if (bestTarget == nullptr) {
+		bestTarget = worstTarget;
 	}
 
 	path.clear();

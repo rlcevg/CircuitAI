@@ -49,7 +49,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 		}
 		CEnemyUnit* enemy = circuit->GetEnemyUnit(e);
 		if ((enemy != nullptr) && (enemy->GetThreat() > 0.1f)) {
-			u->DGun(e, UNIT_COMMAND_OPTION_ALT_KEY, FRAMES_PER_SEC * 5);
+			u->DGun(e, UNIT_COMMAND_OPTION_ALT_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 5);
 			isBlocking = true;
 			break;
 		}

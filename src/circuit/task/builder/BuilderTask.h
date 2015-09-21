@@ -68,6 +68,7 @@ public:
 
 	virtual void SetTarget(CCircuitUnit* unit);
 	CCircuitUnit* GetTarget() const { return target; }
+	void UpdateTarget(CCircuitUnit* unit);
 
 	bool IsEqualBuildPos(const springai::AIFloat3& pos) const;
 	bool IsStructure() const { return buildType <= BuildType::MEX; }
@@ -81,7 +82,7 @@ public:
 	int GetLastTouched() const { return lastTouched; }
 
 protected:
-	int FindFacing(CCircuitDef* buildDef, const springai::AIFloat3& position);
+	virtual int FindFacing(CCircuitDef* buildDef, const springai::AIFloat3& position);
 
 	springai::AIFloat3 position;
 	bool isShake;  // Alter/randomize position

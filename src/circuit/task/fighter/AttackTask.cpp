@@ -54,17 +54,17 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 			int targetCat = bestTarget->GetCircuitDef()->GetUnitDef()->GetCategory();
 			int noChaseCat = unit->GetCircuitDef()->GetUnitDef()->GetNoChaseCategory();
 			if (targetCat & noChaseCat != 0) {
-				u->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 300);
+				u->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
 				return;
 			}
 		}
 	}
-	u->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 300);
+	u->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
 }
 
 void CAttackTask::Update()
 {
-	if (updCount++ % 4 == 0) {
+	if (updCount++ % 8 == 0) {
 		isUpdating = true;
 		for (CCircuitUnit* unit : units) {
 			Execute(unit);

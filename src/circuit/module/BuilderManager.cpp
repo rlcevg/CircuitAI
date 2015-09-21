@@ -10,9 +10,11 @@
 #include "resource/MetalManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
+#include "terrain/PathFinder.h"
 #include "task/NullTask.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
+#include "task/StuckTask.h"
 #include "task/builder/FactoryTask.h"
 #include "task/builder/NanoTask.h"
 #include "task/builder/StoreTask.h"
@@ -31,13 +33,7 @@
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
-#include "AIFloat3.h"
-#include "AISCommands.h"
-#include "Pathing.h"
-#include "MoveData.h"
 #include "Command.h"
-
-#include <utility>
 
 namespace circuit {
 
@@ -212,15 +208,8 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		if ((taskB->GetTarget() == nullptr) && (taskB->GetBuildDef() != nullptr) &&
 			(*taskB->GetBuildDef() == *unit->GetCircuitDef()) && taskB->IsEqualBuildPos(u->GetPos()))
 		{
-			taskB->SetTarget(unit);
+			taskB->UpdateTarget(unit);
 			unfinishedUnits[unit] = taskB;
-
-			UnitDef* buildDef = unit->GetCircuitDef()->GetUnitDef();
-			int facing = taskB->GetFacing();  // or use unit->GetUnit()->GetBuildingFacing() ?
-			const AIFloat3& pos = taskB->GetBuildPos();
-			for (auto ass : taskB->GetAssignees()) {
-				ass->GetUnit()->Build(buildDef, pos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
-			}
 		}
 	} else {
 		DoneTask(taskB);
@@ -465,8 +454,7 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 void CBuilderManager::AssignTask(CCircuitUnit* unit)
 {
 	IBuilderTask* task = nullptr;
-	Unit* u = unit->GetUnit();
-	const AIFloat3& pos = u->GetPos();
+	AIFloat3 pos = unit->GetUnit()->GetPos();
 
 	task = circuit->GetEconomyManager()->UpdateMetalTasks(pos, unit);
 	if (task != nullptr) {
@@ -474,26 +462,11 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 		return;
 	}
 
-	float maxSpeed = u->GetMaxSpeed();
-	UnitDef* unitDef = unit->GetCircuitDef()->GetUnitDef();
-	float buildDistance = unit->GetCircuitDef()->GetBuildDistance();
-
-	std::function<float (const AIFloat3& buildPos)> pathLength;
-	if (unitDef->IsAbleToFly()) {
-		pathLength = [&pos](const AIFloat3& buildPos) {
-			return buildPos.distance2D(pos);
-		};
-	} else {
-		MoveData* moveData = unitDef->GetMoveData();
-		int pathType = moveData->GetPathType();
-		delete moveData;
-		Pathing* pathing = circuit->GetPathing();
-		pathLength = [pathing, &pos, pathType, buildDistance](const AIFloat3& buildPos) {
-			return pathing->GetApproximateLength(buildPos, pos, pathType, buildDistance);
-		};
-	}
-
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	terrainManager->CorrectPosition(pos);
+	circuit->GetPathfinder()->SetMapData(unit->GetCircuitDef()->GetMobileId());
+	float maxSpeed = unit->GetUnit()->GetMaxSpeed();
+	int buildDistance = unit->GetCircuitDef()->GetBuildDistance();
 	float metric = std::numeric_limits<float>::max();
 	for (auto& tasks : builderTasks) {
 		for (auto candidate : tasks) {
@@ -509,46 +482,31 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 
 			CCircuitUnit* target = candidate->GetTarget();
 			if (target != nullptr) {
-				const AIFloat3& bp = candidate->GetBuildPos();
-
-				if (!terrainManager->CanBuildAt(unit, bp)) {
-					continue;
-				}
-
-				// FIXME: GetApproximateLength to position occupied by building or feature will return 0.
-				UnitDef* buildDef = target->GetCircuitDef()->GetUnitDef();
-				int xsize = buildDef->GetXSize();
-				int zsize = buildDef->GetZSize();
-				AIFloat3 offset = (pos - bp).Normalize2D() * (sqrtf(xsize * xsize + zsize * zsize) * SQUARE_SIZE + buildDistance);
-				const AIFloat3& buildPos = bp + offset;
-
-				Unit* tu = target->GetUnit();
-				dist = pathLength(buildPos);
-				if (dist < SQUARE_SIZE) {
-//					continue;
-					dist = bp.distance(pos) * 1.5;
-				}
-				if (dist * weight < metric) {
-					float maxHealth = tu->GetMaxHealth();
-					float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
-					valid = (((maxHealth - tu->GetHealth()) * 0.6) > healthSpeed * (dist / (maxSpeed * FRAMES_PER_SEC)));
-				}
-
-			} else {
-
-				const AIFloat3& bp = candidate->GetPosition();
-				const AIFloat3& buildPos = (bp != -RgtVector) ? bp : pos;
+				AIFloat3 buildPos = candidate->GetBuildPos();
 
 				if (!terrainManager->CanBuildAt(unit, buildPos)) {
 					continue;
 				}
 
-				dist = pathLength(buildPos);
-				if (dist < SQUARE_SIZE) {
-					dist = buildPos.distance(pos) * 1.5;
+				Unit* tu = target->GetUnit();
+				dist = circuit->GetPathfinder()->PathCost(pos, buildPos, buildDistance);
+				if (dist * weight < metric) {
+					float maxHealth = tu->GetMaxHealth();
+					float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
+					valid = (((maxHealth - tu->GetHealth()) * 0.6f) > healthSpeed * (dist / (maxSpeed * FRAMES_PER_SEC)));
 				}
+
+			} else {
+
+				const AIFloat3& bp = candidate->GetPosition();
+				AIFloat3 buildPos = (bp != -RgtVector) ? bp : pos;
+
+				if (!terrainManager->CanBuildAt(unit, buildPos)) {
+					continue;
+				}
+
+				dist = circuit->GetPathfinder()->PathCost(pos, buildPos, buildDistance);
 				valid = ((dist * weight < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));
-//				valid = (dist * weight < metric);
 			}
 
 			if (valid) {
@@ -562,7 +520,6 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 		task = circuit->GetEconomyManager()->CreateBuilderTask(pos, unit);
 	}
 
-	// TODO: Move fully assigned tasks (max builders) out of builderTasks into separate list?+-
 	task->AssignTo(unit);
 }
 
@@ -607,12 +564,7 @@ void CBuilderManager::Watchdog()
 		auto commands = std::move(u->GetCurrentCommands());
 		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())
 		if (commands.empty() && (u->GetResourceUse(metalRes) == .0f) && (u->GetVel() == ZeroVector)) {
-			AIFloat3 toPos = u->GetPos();
-			const float size = 50.0f;
-			CTerrainManager* terrainManager = circuit->GetTerrainManager();
-			toPos.x += (toPos.x > terrainManager->GetTerrainWidth() / 2) ? -size : size;
-			toPos.z += (toPos.z > terrainManager->GetTerrainHeight() / 2) ? -size : size;
-			u->MoveTo(toPos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 10);
+			static_cast<ITaskManager*>(this)->AssignTask(worker, new CStuckTask(this));
 		}
 		utils::free_clear(commands);
 	}

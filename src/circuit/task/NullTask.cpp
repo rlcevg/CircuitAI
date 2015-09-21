@@ -11,8 +11,8 @@
 
 namespace circuit {
 
-CNullTask::CNullTask(ITaskManager* mgr) :
-		IUnitTask(mgr, IUnitTask::Priority::LOW, IUnitTask::Type::IDLE)
+CNullTask::CNullTask(ITaskManager* mgr)
+		: IUnitTask(mgr, IUnitTask::Priority::LOW, IUnitTask::Type::IDLE)
 {
 }
 

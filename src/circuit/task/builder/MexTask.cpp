@@ -25,8 +25,8 @@ using namespace springai;
 
 CBMexTask::CBMexTask(ITaskManager* mgr, Priority priority,
 					 CCircuitDef* buildDef, const AIFloat3& position,
-					 float cost, int timeout) :
-		IBuilderTask(mgr, priority, buildDef, position, BuildType::MEX, cost, false, timeout)
+					 float cost, int timeout)
+		: IBuilderTask(mgr, priority, buildDef, position, BuildType::MEX, cost, false, timeout)
 {
 }
 
@@ -43,17 +43,17 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	params.push_back(static_cast<float>(priority));
 	u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
+	CCircuitAI* circuit = manager->GetCircuit();
 	if (target != nullptr) {
 		Unit* tu = target->GetUnit();
-		u->Build(target->GetCircuitDef()->GetUnitDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->Build(target->GetCircuitDef()->GetUnitDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 		return;
 	}
-	CCircuitAI* circuit = manager->GetCircuit();
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (buildPos != -RgtVector) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
-			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 			return;
 		} else {
 			metalManager->SetOpenSpot(buildPos, true);
@@ -75,7 +75,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 
 	if (buildPos != -RgtVector) {
 		metalManager->SetOpenSpot(buildPos, false);
-		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 	} else {
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);

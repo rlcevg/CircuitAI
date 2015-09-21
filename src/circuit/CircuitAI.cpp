@@ -41,10 +41,8 @@
 #include "OptionValues.h"
 #include "WrappTeam.h"
 #include "Mod.h"
-
-//#include "Command.h"
+#include "Cheats.h"
 //#include "WrappCurrentCommand.h"
-//#include "Cheats.h"
 
 namespace circuit {
 
@@ -212,9 +210,13 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		}
 		case EVENT_ENEMY_LEAVE_LOS: {
 			PRINT_TOPIC("EVENT_ENEMY_LEAVE_LOS", topic);
-			struct SEnemyLeaveLOSEvent* evt = (struct SEnemyLeaveLOSEvent*)data;
-			CEnemyUnit* enemy = GetEnemyUnit(evt->enemy);
-			ret = (enemy != nullptr) ? this->EnemyLeaveLOS(enemy) : ERROR_ENEMY_LEAVE_LOS;
+			if (difficulty == Difficulty::HARD) {
+				ret = 0;
+			} else {
+				struct SEnemyLeaveLOSEvent* evt = (struct SEnemyLeaveLOSEvent*)data;
+				CEnemyUnit* enemy = GetEnemyUnit(evt->enemy);
+				ret = (enemy != nullptr) ? this->EnemyLeaveLOS(enemy) : ERROR_ENEMY_LEAVE_LOS;
+			}
 			break;
 		}
 		case EVENT_ENEMY_ENTER_RADAR: {
@@ -226,9 +228,13 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		}
 		case EVENT_ENEMY_LEAVE_RADAR: {
 			PRINT_TOPIC("EVENT_ENEMY_LEAVE_RADAR", topic);
-			struct SEnemyLeaveRadarEvent* evt = (struct SEnemyLeaveRadarEvent*)data;
-			CEnemyUnit* enemy = GetEnemyUnit(evt->enemy);
-			ret = (enemy != nullptr) ? this->EnemyLeaveRadar(enemy) : ERROR_ENEMY_LEAVE_RADAR;
+			if (difficulty == Difficulty::HARD) {
+				ret = 0;
+			} else {
+				struct SEnemyLeaveRadarEvent* evt = (struct SEnemyLeaveRadarEvent*)data;
+				CEnemyUnit* enemy = GetEnemyUnit(evt->enemy);
+				ret = (enemy != nullptr) ? this->EnemyLeaveRadar(enemy) : ERROR_ENEMY_LEAVE_RADAR;
+			}
 			break;
 		}
 		case EVENT_ENEMY_DAMAGED: {
@@ -273,14 +279,11 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		}
 		case EVENT_COMMAND_FINISHED: {
 //			PRINT_TOPIC("EVENT_COMMAND_FINISHED", topic);
+			// FIXME: commandId always == -1, no use
 //			struct SCommandFinishedEvent* evt = (struct SCommandFinishedEvent*)data;
-//			printf("commandId: %i, commandTopicId: %i, unitId: %i\n", evt->commandId, evt->commandTopicId, evt->unitId);
-//			CCircuitUnit* unit = GetTeamUnitById(evt->unitId);
-//			this->CommandFinished(unit, evt->commandTopicId);
-
-			// FIXME: commandId always == -1
+//			CCircuitUnit* unit = GetTeamUnit(evt->unitId);
 //			springai::Command* command = WrappCurrentCommand::GetInstance(skirmishAIId, evt->unitId, evt->commandId);
-//			this->CommandFinished(evt->commandId, evt->commandTopicId, unit);
+//			this->CommandFinished(unit, evt->commandTopicId, command);
 //			delete command;
 			ret = 0;
 			break;
@@ -298,7 +301,9 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		case EVENT_ENEMY_CREATED: {
 			PRINT_TOPIC("EVENT_ENEMY_CREATED", topic);
 			// @see Cheats::SetEventsEnabled
-			ret = 0;
+			struct SEnemyCreatedEvent* evt = (struct SEnemyCreatedEvent*)data;
+			CEnemyUnit* unit = RegisterEnemyUnit(evt->enemy, true);
+			ret = (unit != nullptr) ? this->EnemyEnterLOS(unit) : ERROR_ENEMY_ENTER_LOS;
 			break;
 		}
 		case EVENT_ENEMY_FINISHED: {
@@ -438,10 +443,12 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	const int offset = skirmishAIId % FRAMES_PER_SEC;
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CCircuitAI::UpdateEnemyUnits, this), FRAMES_PER_SEC, offset);
 
-//	Cheats* cheats = callback->GetCheats();
-//	cheats->SetEnabled(true);
-//	cheats->SetEventsEnabled(true);
-//	delete cheats;
+	if (difficulty == Difficulty::HARD) {
+		Cheats* cheats = callback->GetCheats();
+		cheats->SetEnabled(true);
+		cheats->SetEventsEnabled(true);
+		delete cheats;
+	}
 
 	initialized = true;
 
@@ -718,7 +725,7 @@ int CCircuitAI::PlayerCommand(std::vector<CCircuitUnit*>& units)
 	return 0;  // signaling: OK
 }
 
-//int CCircuitAI::CommandFinished(CCircuitUnit* unit, int commandTopicId)
+//int CCircuitAI::CommandFinished(CCircuitUnit* unit, int commandTopicId, springai::Command* cmd)
 //{
 //	for (auto& module : modules) {
 //		module->CommandFinished(unit, commandTopicId);

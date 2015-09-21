@@ -23,14 +23,12 @@ public:
 
 	void Update(CCircuitAI* circuit);
 
-	std::list<IAction*>::iterator PushFront(IAction* action);
-	std::list<IAction*>::iterator PushBack(IAction* action);
+	void PushFront(IAction* action);
+	void PushBack(IAction* action);
 	void InsertBefore(IAction* action);
 	void InsertBefore(std::list<IAction*>::iterator it, IAction* action);
 	void InsertAfter(IAction* action);
 	void InsertAfter(std::list<IAction*>::iterator it, IAction* action);
-	IAction* Remove(IAction* action);
-	std::list<IAction*>::iterator Remove(std::list<IAction*>::iterator it) { return actions.erase(it); }
 
 	IAction* Begin() const { return actions.front(); }
 	IAction* End() const { return actions.back(); }
@@ -39,6 +37,8 @@ public:
 	void Clear();
 
 protected:
+	std::list<IAction*>::iterator Remove(std::list<IAction*>::iterator it);
+
 	int startFrame;
 	int duration;
 	std::list<IAction*> actions;  // owner

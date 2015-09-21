@@ -41,24 +41,23 @@ void CActionList::Update(CCircuitAI* circuit)
 
 		if (action->IsFinished()) {
 			action->OnEnd();
-			itAction = this->Remove(itAction);
+			itAction = Remove(itAction);
 		} else {
 			++itAction;
 		}
 	}
 }
 
-std::list<IAction*>::iterator CActionList::PushFront(IAction* action)
+void CActionList::PushFront(IAction* action)
 {
 	actions.push_front(action);
 	action->OnStart();
-	return actions.begin();
 }
-std::list<IAction*>::iterator CActionList::PushBack(IAction* action)
+
+void CActionList::PushBack(IAction* action)
 {
 	actions.push_back(action);
 	action->OnStart();
-	return --actions.end();
 }
 
 void CActionList::InsertBefore(IAction* action)
@@ -87,15 +86,15 @@ void CActionList::InsertAfter(decltype(actions)::iterator it, IAction* action)
 	action->OnStart();
 }
 
-IAction* CActionList::Remove(IAction* action)
-{
-	auto it = std::find(actions.begin(), actions.end(), action);
-	return *Remove(it);
-}
-
 void CActionList::Clear()
 {
 	utils::free_clear(actions);
+}
+
+std::list<IAction*>::iterator CActionList::Remove(std::list<IAction*>::iterator it)
+{
+	delete *it;
+	return actions.erase(it);
 }
 
 } // namespace circuit

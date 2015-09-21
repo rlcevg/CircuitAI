@@ -18,6 +18,9 @@ public:
 				  CCircuitDef* buildDef, const springai::AIFloat3& position,
 				  float cost, bool isShake, int timeout);
 	virtual ~CBFactoryTask();
+
+private:
+	virtual int FindFacing(CCircuitDef* buildDef, const springai::AIFloat3& position) override;
 };
 
 } // namespace circuit

@@ -29,6 +29,7 @@ using namespace springai;
 CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit)
 		, updateSlice(0)
+		, curScoutIdx(0)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CMilitaryManager::Init, this));
@@ -94,7 +95,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			point->cost -= defCost;
 		}
 	};
-	const char* defenders[] = {"corllt", "corhlt", "corrazor", "armnanotc", "cordoom"/*, "armartic", "corjamt", "armanni", "corbhmth"*/};
+	const char* defenders[] = {"corllt", "corrad", "corhlt", "corrazor", "armnanotc", "cordoom"/*, "armartic", "corjamt", "armanni", "corbhmth"*/};
 	for (const char* name : defenders) {
 		unitDefId = circuit->GetCircuitDef(name)->GetId();
 		destroyedHandler[unitDefId] = defenceDestroyedHandler;
@@ -291,7 +292,7 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	Resource* metalRes = economyManager->GetMetalRes();
 	float totalCost = .0f;
 	IBuilderTask* parentTask = nullptr;
-	const char* defenders[] = {"corllt", "corhlt", "corrazor", "armnanotc", "cordoom"/*, "armartic", "corjamt", "armanni", "corbhmth"*/};
+	const char* defenders[] = {"corllt", "corrad", "corhlt", "corrazor", "armnanotc", "cordoom"/*, "armartic", "corjamt", "armanni", "corbhmth"*/};
 	for (const char* name : defenders) {
 		defDef = circuit->GetCircuitDef(name);
 		float defCost = defDef->GetUnitDef()->GetCost(metalRes);

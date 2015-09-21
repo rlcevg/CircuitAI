@@ -300,7 +300,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		AIFloat3 pos = unit->GetUnit()->GetPos();
 		pos = this->circuit->GetTerrainManager()->FindBuildSite(striderDef, pos, this->circuit->GetCircuitDef("striderhub")->GetBuildDistance(), -1);
 		if (pos != -RgtVector) {
-			unit->GetUnit()->Build(striderDef->GetUnitDef(), pos, -1, 0, FRAMES_PER_SEC * 10);
+			unit->GetUnit()->Build(striderDef->GetUnitDef(), pos, -1, 0, this->circuit->GetLastFrame() + FRAMES_PER_SEC * 10);
 		}
 	};
 	destroyedHandler[defId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
