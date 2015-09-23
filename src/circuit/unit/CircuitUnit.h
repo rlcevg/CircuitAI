@@ -21,6 +21,7 @@ namespace circuit {
 //#define CMD_RETREAT_ZONE		10001
 //#define CMD_SETHAVEN			CMD_RETREAT_ZONE
 #define CMD_MORPH				31210
+#define CMD_MORPH_STOP			32210
 #define CMD_PRIORITY			34220
 #define CMD_MISC_PRIORITY		34221
 //#define CMD_RETREAT				34223
@@ -60,6 +61,10 @@ public:
 	bool IsDisarmed();
 	float GetDPS();
 
+	void Morph();
+	void StopMorph();
+	bool IsMorphing() const { return isMorphing; }
+
 	bool operator==(const CCircuitUnit& rhs) { return id == rhs.id; }
 	bool operator!=(const CCircuitUnit& rhs) { return id != rhs.id; }
 
@@ -77,6 +82,7 @@ private:
 
 	springai::Weapon* dgun;
 	springai::UnitRulesParam* disarmParam;
+	bool isMorphing;
 };
 
 } // namespace circuit

@@ -239,7 +239,11 @@ void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 
 void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
-	manager->AbortTask(this);
+	if (((target != nullptr) && (units.size() > 1)) || unit->IsMorphing()) {
+		RemoveAssignee(unit);
+	} else {
+		manager->AbortTask(this);
+	}
 }
 
 const AIFloat3& IBuilderTask::GetPosition() const

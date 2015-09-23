@@ -28,6 +28,7 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* cdef)
 		, disarmParam(nullptr)
 		, moveFails(0)
 		, failFrame(-1)
+		, isMorphing(false)
 {
 	WeaponMount* wpMnt = circuitDef->GetDGunMount();
 	dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
@@ -76,6 +77,24 @@ float CCircuitUnit::GetDPS()
 	}
 	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;
 	return dps;
+}
+
+void CCircuitUnit::Morph()
+{
+	isMorphing = true;
+	std::vector<float> params;
+	unit->ExecuteCustomCommand(CMD_MORPH, params);
+	params.push_back(.0f);
+	unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, params);
+}
+
+void CCircuitUnit::StopMorph()
+{
+	isMorphing = false;
+	std::vector<float> params;
+	unit->ExecuteCustomCommand(CMD_MORPH_STOP, params);
+	params.push_back(1.0f);
+	unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, params);
 }
 
 } // namespace circuit

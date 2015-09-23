@@ -173,14 +173,10 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	 * Morphing
 	 */
 	auto comFinishedHandler = [this](CCircuitUnit* unit) {
-		morphees.insert(unit);
-		if (morph == nullptr) {
-			morph = std::make_shared<CGameTask>(&CEconomyManager::UpdateMorph, this);
-			this->circuit->GetScheduler()->RunTaskEvery(morph, FRAMES_PER_SEC * 20);
-		}
+		AddMorphee(unit);
 	};
 	auto comDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
-		morphees.erase(unit);
+		RemoveMorphee(unit);
 	};
 	const char* coms[] = {"armcom0", "armcom1", "armcom2", "armcom3", "armcom4"};
 	for (const char* name : coms) {
@@ -218,6 +214,16 @@ int CEconomyManager::UnitFinished(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
+int CEconomyManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+{
+	if (unit->IsMorphing() && (unit->GetUnit()->GetHealth() < unit->GetUnit()->GetMaxHealth() * 0.5f)) {
+		unit->StopMorph();
+		AddMorphee(unit);
+	}
+
+	return 0; //signaling: OK
+}
+
 int CEconomyManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
@@ -242,7 +248,7 @@ IBuilderTask* CEconomyManager::CreateBuilderTask(const AIFloat3& position, CCirc
 	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome())/* * ecoFactor*/;
 	CCircuitDef* buildDef = circuit->GetCircuitDef("armwin");
 	if ((metalIncome < 50) && (buildDef->GetCount() < 10) && buildDef->IsAvailable()) {
-		task = builderManager->EnqueueTask(IBuilderTask::Priority::LOW, buildDef, position, IBuilderTask::BuildType::ENERGY);
+		task = builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
 	} else if (metalIncome < 100) {
 		task = builderManager->EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
 	} else {
@@ -867,6 +873,15 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 	return nullptr;
 }
 
+void CEconomyManager::AddMorphee(CCircuitUnit* unit)
+{
+	morphees.insert(unit);
+	if (morph == nullptr) {
+		morph = std::make_shared<CGameTask>(&CEconomyManager::UpdateMorph, this);
+		circuit->GetScheduler()->RunTaskEvery(morph, FRAMES_PER_SEC * 20);
+	}
+}
+
 void CEconomyManager::UpdateMorph()
 {
 	if (morphees.empty()) {
@@ -877,19 +892,20 @@ void CEconomyManager::UpdateMorph()
 
 	float energyIncome = GetAvgEnergyIncome();
 	float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
-	if (metalIncome < 10) {
+	if ((metalIncome < 10) || (GetMetalPull() > metalIncome)) {
 		return;
 	}
 
-	for (CCircuitUnit* unit : morphees) {
-		std::vector<float> params;
-		unit->GetUnit()->ExecuteCustomCommand(CMD_MORPH, params);
-		params.push_back(.0f);
-		unit->GetUnit()->ExecuteCustomCommand(CMD_MISC_PRIORITY, params);
+	auto it = morphees.begin();
+	while (it != morphees.end()) {
+		CCircuitUnit* unit = *it;
+		if (unit->GetUnit()->GetHealth() < unit->GetUnit()->GetMaxHealth() * 0.8f) {
+			++it;
+		} else {
+			unit->Morph();
+			it = morphees.erase(it);
+		}
 	}
-	morphees.clear();
-	circuit->GetScheduler()->RemoveTask(morph);
-	morph = nullptr;
 }
 
 void CEconomyManager::Init()
