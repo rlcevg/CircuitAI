@@ -62,7 +62,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 	};
 
-	CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
+	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
 		UnitDef* def = cdef->GetUnitDef();
@@ -95,7 +95,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			point->cost -= defCost;
 		}
 	};
-	const char* defenders[] = {"corllt", "corrad", "corhlt", "corrazor", "armnanotc", "cordoom"/*, "armartic", "corjamt", "armanni", "corbhmth"*/};
+	const char* defenders[] = {"corllt", "corrad", "armartic", "corhlt", "corrazor", "armnanotc", "cordoom"/*, "corjamt", "armanni", "corbhmth"*/};
 	for (const char* name : defenders) {
 		unitDefId = circuit->GetCircuitDef(name)->GetId();
 		destroyedHandler[unitDefId] = defenceDestroyedHandler;
@@ -292,7 +292,7 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	Resource* metalRes = economyManager->GetMetalRes();
 	float totalCost = .0f;
 	IBuilderTask* parentTask = nullptr;
-	const char* defenders[] = {"corllt", "corrad", "corhlt", "corrazor", "armnanotc", "cordoom"/*, "armartic", "corjamt", "armanni", "corbhmth"*/};
+	const char* defenders[] = {"corllt", "corrad", "armartic", "corhlt", "corrazor", "armnanotc", "cordoom"/*, "corjamt", "armanni", "corbhmth"*/};
 	for (const char* name : defenders) {
 		defDef = circuit->GetCircuitDef(name);
 		float defCost = defDef->GetUnitDef()->GetCost(metalRes);

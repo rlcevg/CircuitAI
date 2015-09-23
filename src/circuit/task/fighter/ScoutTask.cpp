@@ -79,11 +79,12 @@ void CScoutTask::Execute(CCircuitUnit* unit)
 	}
 
 	CMetalManager* metalManager = circuit->GetMetalManager();
-	const CMetalData::Clusters& clusters = metalManager->GetClusters();
+	CMetalData::Clusters clusters = metalManager->GetClusters();
 	if (!clusters.empty()) {
 		int index = circuit->GetMilitaryManager()->GetScoutIndex();
 		position = clusters[index].geoCentr;
 		const CMetalData::Metals& spots = metalManager->GetSpots();
+		std::random_shuffle(clusters[index].idxSpots.begin(), clusters[index].idxSpots.end());
 		auto it = clusters[index].idxSpots.begin();
 		u->Fight(spots[*it].position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
 		auto end = clusters[index].idxSpots.end();

@@ -17,7 +17,7 @@ local options = {
 	},
 	{ -- list
 		key     = 'difficulty',
-		name    = 'Level Of Difficulty',
+		name    = 'Difficulty',
 		desc    = 'How tough the AI should be.\nkey: difficulty',
 		type    = 'list',
 		section = 'performance',

@@ -358,7 +358,7 @@ bool CCircuitAI::IsModValid()
 	while (tok != nullptr) {
 		int ver = atoi(tok);
 		if (ver < minModVer[i]) {
-			delete tmp;
+			delete[] tmp;
 			LOG("Zero-K must be 1.3.8.14 or higher!");
 			return false;
 		}
@@ -367,7 +367,7 @@ bool CCircuitAI::IsModValid()
 		}
 		tok = strtok(nullptr, ".");
 	}
-	delete tmp;
+	delete[] tmp;
 
 	const int minEngineVer = 100;
 	int ver = atoi(sAICallback->Engine_Version_getMajor(skirmishAIId));

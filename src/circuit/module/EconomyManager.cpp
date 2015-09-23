@@ -125,7 +125,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	ecoFactor = circuit->GetAllyTeam()->GetSize() * 0.25f + 0.75f;
 
 	/*
-	 *  Identify resource buildings
+	 * Identify resource buildings
 	 */
 	auto energyFinishedHandler = [this](CCircuitUnit* unit) {
 		auto it = std::find(energyInfos.begin(), energyInfos.end(), unit->GetCircuitDef());
@@ -137,7 +137,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			energyIncome += income;
 		}
 	};
-	CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
+	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
 		CCircuitDef* cdef = kv.second;
 		UnitDef* def = cdef->GetUnitDef();
@@ -168,6 +168,25 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		y[i] = limits[i] + 0.5;  // +0.5 to be sure precision errors will not decrease integer part
 	}
 	engyPol = new CLagrangeInterPol(x, y);  // Alternatively use CGaussSolver to compute polynomial - faster on reuse
+
+	/*
+	 * Morphing
+	 */
+	auto comFinishedHandler = [this](CCircuitUnit* unit) {
+		morphees.insert(unit);
+		if (morph == nullptr) {
+			morph = std::make_shared<CGameTask>(&CEconomyManager::UpdateMorph, this);
+			this->circuit->GetScheduler()->RunTaskEvery(morph, FRAMES_PER_SEC * 20);
+		}
+	};
+	auto comDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+		morphees.erase(unit);
+	};
+	const char* coms[] = {"armcom0", "armcom1", "armcom2", "armcom3", "armcom4"};
+	for (const char* name : coms) {
+		finishedHandler[circuit->GetCircuitDef(name)->GetId()] = comFinishedHandler;
+		destroyedHandler[circuit->GetCircuitDef(name)->GetId()] = comDestroyedHandler;
+	}
 }
 
 CEconomyManager::~CEconomyManager()
@@ -176,6 +195,7 @@ CEconomyManager::~CEconomyManager()
 	delete metalRes, energyRes, economy, empParam, eepParam;
 	delete odeiParam, odecParam/*, odeoParam, odteParam, odaParam*/;
 	delete engyPol;
+	morph = nullptr;
 }
 
 int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -845,6 +865,31 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 	}
 
 	return nullptr;
+}
+
+void CEconomyManager::UpdateMorph()
+{
+	if (morphees.empty()) {
+		circuit->GetScheduler()->RemoveTask(morph);
+		morph = nullptr;
+		return;
+	}
+
+	float energyIncome = GetAvgEnergyIncome();
+	float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
+	if (metalIncome < 10) {
+		return;
+	}
+
+	for (CCircuitUnit* unit : morphees) {
+		std::vector<float> params;
+		unit->GetUnit()->ExecuteCustomCommand(CMD_MORPH, params);
+		params.push_back(.0f);
+		unit->GetUnit()->ExecuteCustomCommand(CMD_MISC_PRIORITY, params);
+	}
+	morphees.clear();
+	circuit->GetScheduler()->RemoveTask(morph);
+	morph = nullptr;
 }
 
 void CEconomyManager::Init()

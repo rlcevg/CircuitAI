@@ -62,8 +62,7 @@
 using namespace NSMicroPather;
 
 class OpenQueueBH {
-	public:
-
+public:
 	OpenQueueBH(PathNode** heapArray)
 		: size(0)
 		, heapArray(heapArray)
@@ -100,7 +99,6 @@ class OpenQueueBH {
 		}
 	}
 
-
 	void Update(PathNode* pNode) {
 		if (size > 1) {
 			// heapify now
@@ -118,7 +116,6 @@ class OpenQueueBH {
 			}
 		}
 	}
-
 
 	PathNode* Pop() {
 		// get the first one
@@ -177,40 +174,34 @@ class OpenQueueBH {
 		return (size == 0);
 	}
 
-	private:
-		PathNode** heapArray;
-		int size;
+private:
+	PathNode** heapArray;
+	int size;
 };
 
 
-CMicroPather::CMicroPather(Graph* _graph, unsigned allocate)
-		: ALLOCATE(allocate)
-		, BLOCKSIZE(allocate - 1)
+CMicroPather::CMicroPather(Graph* _graph, int sizeX, int sizeY)
+		: ALLOCATE(sizeX * sizeY)
+		, BLOCKSIZE(ALLOCATE - 1)
 		, graph(_graph)
 		, pathNodeMem(0)
 		, availMem(0)
 		, pathNodeCount(0)
 		, frame(0)
 		, checksum(0)
+		, mapSizeX(sizeX)
+		, mapSizeY(sizeY)
+		, isRunning(false)
 {
+//	@param allocate		The block size that the node cache is allocated from. In some
+//						cases setting this parameter will improve the perfomance of the pather.
+//						- If you have a small map, for example the size of a chessboard, set allocate
+//						 to be the number of states + 1. 65 for a chessboard. This will allow
+//						 MicroPather to used a fixed amount of memory.
+//						- If your map is large, something like 1/4 the number of possible
+//						 states is good. For example, Lilith3D normally has about 16000
+//						 states, so 'allocate' should be about 4000.
 	AllocatePathNode();
-	isRunning = false;
-}
-
-CMicroPather::~CMicroPather()
-{
-	free(pathNodeMemForFree);
-	free(heapArrayMem);
-}
-
-
-// make sure that costArray doesn't contain values below 1.0 (for speed), and below 0.0 (for eternal loop)
-void CMicroPather::SetMapData(bool* canMoveArray, float* costArray, int mapSizeX, int mapSizeY)
-{
-	this->canMoveArray = canMoveArray;
-	this->costArray = costArray;
-	this->mapSizeX = mapSizeX;
-	this->mapSizeY = mapSizeY;
 
 	assert(mapSizeX >= 0);
 	assert(mapSizeY >= 0);
@@ -235,6 +226,18 @@ void CMicroPather::SetMapData(bool* canMoveArray, float* costArray, int mapSizeX
 	offsets[7] = + mapSizeX + 1;
 }
 
+CMicroPather::~CMicroPather()
+{
+	free(pathNodeMemForFree);
+	free(heapArrayMem);
+}
+
+// make sure that costArray doesn't contain values below 1.0 (for speed), and below 0.0 (for eternal loop)
+void CMicroPather::SetMapData(bool* canMoveArray, float* costArray)
+{
+	this->canMoveArray = canMoveArray;
+	this->costArray = costArray;
+}
 
 void CMicroPather::Reset()
 {
@@ -246,7 +249,6 @@ void CMicroPather::Reset()
 
 	frame = 1;
 }
-
 
 // must only be called once...
 PathNode* CMicroPather::AllocatePathNode()
@@ -398,8 +400,6 @@ void CMicroPather::FixNode( void** Node)
 	*Node = (void*) static_cast<intptr_t>(y * mapSizeX + x);
 }
 
-
-
 int CMicroPather::Solve(void* startNode, void* endNode, std::vector<void*>* path, float* cost)
 {
 	assert(!isRunning);
@@ -527,7 +527,6 @@ int CMicroPather::Solve(void* startNode, void* endNode, std::vector<void*>* path
 	isRunning = false;
 	return NO_SOLUTION;
 }
-
 
 int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*> endNodes, std::vector<void*>* path, float* cost)
 {
@@ -683,8 +682,6 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*
 	isRunning = false;
 	return NO_SOLUTION;
 }
-
-
 
 int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode, std::vector<void*>* path, float* cost, int radius)
 {

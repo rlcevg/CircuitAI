@@ -162,7 +162,7 @@ public:
 	using CircuitDefs = std::unordered_map<CCircuitDef::Id, CCircuitDef*>;
 	using NamedDefs = std::map<const char*, CCircuitDef*, cmp_str>;
 
-	CircuitDefs& GetCircuitDefs() { return defsById; }
+	const CircuitDefs& GetCircuitDefs() const { return defsById; }
 	CCircuitDef* GetCircuitDef(const char* name);
 	CCircuitDef* GetCircuitDef(CCircuitDef::Id unitDefId);
 private:

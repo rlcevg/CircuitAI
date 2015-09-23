@@ -213,7 +213,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		assists.erase(unit);
 	};
 
-	CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
+	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
 		UnitDef* def = cdef->GetUnitDef();

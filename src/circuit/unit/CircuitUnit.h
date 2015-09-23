@@ -18,11 +18,13 @@ namespace springai {
 
 namespace circuit {
 
-#define CMD_PRIORITY			34220
-#define CMD_TERRAFORM_INTERNAL	39801
 //#define CMD_RETREAT_ZONE		10001
 //#define CMD_SETHAVEN			CMD_RETREAT_ZONE
-#define CMD_RETREAT				34223
+#define CMD_MORPH				31210
+#define CMD_PRIORITY			34220
+#define CMD_MISC_PRIORITY		34221
+//#define CMD_RETREAT				34223
+#define CMD_TERRAFORM_INTERNAL	39801
 
 class CCircuitDef;
 class IUnitTask;

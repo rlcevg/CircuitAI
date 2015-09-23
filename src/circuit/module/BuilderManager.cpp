@@ -111,7 +111,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	};
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
+	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
 		UnitDef* def = cdef->GetUnitDef();

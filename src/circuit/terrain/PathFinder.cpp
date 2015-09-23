@@ -30,11 +30,10 @@ CPathFinder::CPathFinder(CCircuitAI* circuit)
 		, toggleFrame(-1)
 #endif
 {
-	squareSize     = circuit->GetTerrainManager()->GetConvertStoP();
-	pathMapXSize   = circuit->GetTerrainManager()->GetTerrainWidth() / squareSize;
-	pathMapYSize   = circuit->GetTerrainManager()->GetTerrainHeight() / squareSize;
-	int totalcells = pathMapXSize * pathMapYSize;
-	micropather    = new CMicroPather(this, totalcells);
+	squareSize   = circuit->GetTerrainManager()->GetConvertStoP();
+	pathMapXSize = circuit->GetTerrainManager()->GetTerrainWidth() / squareSize;
+	pathMapYSize = circuit->GetTerrainManager()->GetTerrainHeight() / squareSize;
+	micropather  = new CMicroPather(this, pathMapXSize, pathMapYSize);
 }
 
 CPathFinder::~CPathFinder()
@@ -115,7 +114,7 @@ void CPathFinder::UpdateAreaUsers()
 void CPathFinder::SetMapData(STerrainMapMobileType::Id mobileTypeId)
 {
 	bool* moveArray = (mobileTypeId < 0) ? airMoveArray : moveArrays[mobileTypeId];
-	micropather->SetMapData(moveArray, circuit->GetThreatMap()->GetThreatArray(), pathMapXSize, pathMapYSize);
+	micropather->SetMapData(moveArray, circuit->GetThreatMap()->GetThreatArray());
 }
 
 void* CPathFinder::XY2Node(int x, int y)

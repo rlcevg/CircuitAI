@@ -15,6 +15,7 @@
 #include <vector>
 #include <list>
 #include <set>
+#include <memory>
 
 namespace springai {
 	class Resource;
@@ -28,6 +29,7 @@ class IBuilderTask;
 class CRecruitTask;
 class CLagrangeInterPol;
 class CCircuitDef;
+class CGameTask;
 
 class CEconomyManager: public IModule {
 public:
@@ -67,6 +69,7 @@ public:
 	CRecruitTask* UpdateRecruitTasks();
 	IBuilderTask* UpdateStorageTasks();
 	IBuilderTask* UpdatePylonTasks();
+	void UpdateMorph();
 
 private:
 	void Init();
@@ -123,6 +126,9 @@ private:
 	int energyPullFrame;
 	float metalPull;
 	float energyPull;
+
+	std::shared_ptr<CGameTask> morph;
+	std::set<CCircuitUnit*> morphees;
 };
 
 } // namespace circuit

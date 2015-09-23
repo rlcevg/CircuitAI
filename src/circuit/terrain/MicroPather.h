@@ -213,16 +213,10 @@ namespace NSMicroPather {
 			 * Construct the pather, passing a pointer to the object that implements the Graph callbacks.
 			 *
 			 * @param graph		The "map" that implements the Graph callbacks.
-			 * @param allocate		The block size that the node cache is allocated from. In some
-			 *						cases setting this parameter will improve the perfomance of the pather.
-			 *						- If you have a small map, for example the size of a chessboard, set allocate
-			 *						 to be the number of states + 1. 65 for a chessboard. This will allow
-			 *						 MicroPather to used a fixed amount of memory.
-			 *						- If your map is large, something like 1/4 the number of possible
-			 *						 states is good. For example, Lilith3D normally has about 16000
-			 *						 states, so 'allocate' should be about 4000.
+			 * @param sizeX		Width of the map.
+			 * @param sizeY		Height of the map.
 			 */
-			CMicroPather(Graph* graph, unsigned allocate);
+			CMicroPather(Graph* graph, int sizeX, int sizeY);
 			~CMicroPather();
 
 			/*
@@ -254,7 +248,7 @@ namespace NSMicroPather {
 			int offsets[8];
 			int xEndNode, yEndNode;
 			bool isRunning;
-			void SetMapData(bool* canMoveArray, float* costArray, int mapSizeX, int mapSizeY);
+			void SetMapData(bool* canMoveArray, float* costArray);
 			int FindBestPathToPointOnRadius(void* startNode, void* endNode, std::vector<void*>* path, float* cost, int radius);
 			int FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*> endNodes, std::vector<void*>* path, float* cost);
 
