@@ -517,7 +517,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	}
 
 	if (task == nullptr) {
-		task = circuit->GetEconomyManager()->CreateBuilderTask(pos, unit);
+		task = CreateBuilderTask(pos, unit);
 	}
 
 	task->AssignTo(unit);
@@ -553,41 +553,38 @@ void CBuilderManager::Init()
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 2);
 }
 
-void CBuilderManager::Watchdog()
+IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCircuitUnit* unit)
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	Resource* metalRes = economyManager->GetMetalRes();
-	// somehow workers get stuck
-	for (CCircuitUnit* worker : workers) {
-		Unit* u = worker->GetUnit();
-		auto commands = std::move(u->GetCurrentCommands());
-		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())
-		if (commands.empty() && (u->GetResourceUse(metalRes) == .0f) && (u->GetVel() == ZeroVector)) {
-			static_cast<ITaskManager*>(this)->AssignTask(worker, new CStuckTask(this));
-		}
-		utils::free_clear(commands);
+	IBuilderTask* task;
+	task = economyManager->UpdateEnergyTasks(position, unit);
+	if (task != nullptr) {
+		return task;
 	}
 
-	// find unfinished abandoned buildings
-	float maxCost = MAX_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), builderPower) * economyManager->GetEcoFactor();
-	// TODO: Include special units
-	for (auto& kv : circuit->GetTeamUnits()) {
-		CCircuitUnit* unit = kv.second;
-		Unit* u = unit->GetUnit();
-		if ((unfinishedUnits.find(unit) == unfinishedUnits.end()) && (u->GetMaxSpeed() <= 0)) {
-			if (u->IsBeingBuilt()) {
-				float maxHealth = u->GetMaxHealth();
-				float buildPercent = (maxHealth - u->GetHealth()) / maxHealth;
-				CCircuitDef* cdef = unit->GetCircuitDef();
-				if ((cdef->GetUnitDef()->GetCost(metalRes) * buildPercent < maxCost) || (*cdef == *terraDef)) {
-					unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
-				}
-			} else if (u->GetHealth() < u->GetMaxHealth()) {
-				unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+	// FIXME: Eco rules. It should never get here
+	float metalIncome = std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome())/* * economyManager->GetEcoFactor()*/;
+	CCircuitDef* buildDef = circuit->GetCircuitDef("armwin");
+	if ((metalIncome < 50) && (buildDef->GetCount() < 10) && buildDef->IsAvailable()) {
+		task = EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
+	} else if (metalIncome < 100) {
+		task = EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
+	} else {
+		const std::set<IBuilderTask*>& tasks = GetTasks(IBuilderTask::BuildType::BIG_GUN);
+		if (tasks.empty()) {
+			buildDef = circuit->GetCircuitDef("raveparty");
+			if ((buildDef->GetCount() < 1) && buildDef->IsAvailable()) {
+				task = EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, circuit->GetSetupManager()->GetBasePos(), IBuilderTask::BuildType::BIG_GUN);
+			} else {
+				task = EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
 			}
+		} else {
+			task = *tasks.begin();
 		}
 	}
+
+	assert(task != nullptr);
+	return task;
 }
 
 void CBuilderManager::AddBuildList(CCircuitUnit* unit)
@@ -636,6 +633,43 @@ void CBuilderManager::RemoveBuildList(CCircuitUnit* unit)
 	}
 
 	// TODO: Same thing with factory, etc.
+}
+
+void CBuilderManager::Watchdog()
+{
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	Resource* metalRes = economyManager->GetMetalRes();
+	// somehow workers get stuck
+	for (CCircuitUnit* worker : workers) {
+		Unit* u = worker->GetUnit();
+		auto commands = std::move(u->GetCurrentCommands());
+		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())
+		if (commands.empty() && (u->GetResourceUse(metalRes) == .0f) && (u->GetVel() == ZeroVector)) {
+			static_cast<ITaskManager*>(this)->AssignTask(worker, new CStuckTask(this));
+		}
+		utils::free_clear(commands);
+	}
+
+	// find unfinished abandoned buildings
+	float maxCost = MAX_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), builderPower) * economyManager->GetEcoFactor();
+	// TODO: Include special units
+	for (auto& kv : circuit->GetTeamUnits()) {
+		CCircuitUnit* unit = kv.second;
+		Unit* u = unit->GetUnit();
+		if ((unfinishedUnits.find(unit) == unfinishedUnits.end()) && (u->GetMaxSpeed() <= 0)) {
+			if (u->IsBeingBuilt()) {
+				float maxHealth = u->GetMaxHealth();
+				float buildPercent = (maxHealth - u->GetHealth()) / maxHealth;
+				CCircuitDef* cdef = unit->GetCircuitDef();
+				if ((cdef->GetUnitDef()->GetCost(metalRes) * buildPercent < maxCost) || (*cdef == *terraDef)) {
+					unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+				}
+			} else if (u->GetHealth() < u->GetMaxHealth()) {
+				unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+			}
+		}
+	}
 }
 
 void CBuilderManager::UpdateIdle()

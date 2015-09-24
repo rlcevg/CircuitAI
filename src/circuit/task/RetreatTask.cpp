@@ -137,11 +137,21 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		params.push_back(0.0f);
 		u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
-		AIFloat3 pos = u->GetPos();
-		const float size = SQUARE_SIZE * 30;
+		const AIFloat3& unitPos = u->GetPos();
+		AIFloat3 pos = unitPos;
+		const float size = SQUARE_SIZE * 50;
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		pos.x += (pos.x > terrainManager->GetTerrainWidth() / 2) ? -size : size;
-		pos.z += (pos.z > terrainManager->GetTerrainHeight() / 2) ? -size : size;
+		float centerX = terrainManager->GetTerrainWidth() / 2;
+		float centerZ = terrainManager->GetTerrainHeight() / 2;
+		pos.x += (pos.x > centerX) ? size : -size;
+		pos.z += (pos.z > centerZ) ? size : -size;
+		AIFloat3 oldPos = pos;
+		terrainManager->CorrectPosition(pos);
+		if (oldPos != pos) {
+			pos = unitPos;
+			pos.x += (pos.x > centerX) ? -size : size;
+			pos.z += (pos.z > centerZ) ? -size : size;
+		}
 		u->PatrolTo(pos);
 
 		IUnitAction* act = static_cast<IUnitAction*>(unit->End());

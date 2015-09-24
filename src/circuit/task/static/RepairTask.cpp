@@ -32,8 +32,9 @@ CSRepairTask::~CSRepairTask()
 void CSRepairTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	float currentIncome = circuit->GetEconomyManager()->GetAvgMetalIncome();
-	if (currentIncome < savedIncome * 0.6) {
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	float currentIncome = economyManager->GetAvgMetalIncome();
+	if ((currentIncome < savedIncome * 0.6) || economyManager->IsMetalFull()) {
 		manager->AbortTask(this);
 	} else if ((++updCount >= 5) && !units.empty()) {
 		updCount = 0;

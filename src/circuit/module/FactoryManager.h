@@ -60,7 +60,13 @@ public:
 	CCircuitDef* GetAssistDef() const { return assistDef; }
 	springai::AIFloat3 GetClosestHaven(CCircuitUnit* unit) const;
 
+	CRecruitTask* UpdateBuildPower(CCircuitUnit* unit);
+	CRecruitTask* UpdateFirePower(CCircuitUnit* unit);
+
 private:
+	CRecruitTask* CreateFactoryTask(CCircuitUnit* unit);
+	IBuilderTask* CreateAssistTask(CCircuitUnit* unit);
+
 	void Watchdog();
 	void UpdateIdle();
 	void UpdateAssist();

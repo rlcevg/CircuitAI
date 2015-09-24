@@ -26,7 +26,6 @@ namespace springai {
 namespace circuit {
 
 class IBuilderTask;
-class CRecruitTask;
 class CLagrangeInterPol;
 class CCircuitDef;
 class CGameTask;
@@ -41,9 +40,6 @@ public:
 	virtual int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 
-	IBuilderTask* CreateBuilderTask(const springai::AIFloat3& position, CCircuitUnit* unit);
-	CRecruitTask* CreateFactoryTask(CCircuitUnit* unit);
-	IBuilderTask* CreateAssistTask(CCircuitUnit* unit);
 	springai::Resource* GetMetalRes() const { return metalRes; }
 	springai::Resource* GetEnergyRes() const { return energyRes; }
 	CCircuitDef* GetMexDef() const { return mexDef; }
@@ -61,13 +57,13 @@ public:
 	bool IsMetalEmpty();
 	bool IsMetalFull();
 	bool IsEnergyStalling();
+	bool IsEnergyEmpty();
 
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	IBuilderTask* UpdateReclaimTasks(const springai::AIFloat3& position, CCircuitUnit* unit);
 	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	IBuilderTask* UpdateFactoryTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	IBuilderTask* UpdateFactoryTasks();
-	CRecruitTask* UpdateRecruitTasks();
 	IBuilderTask* UpdateStorageTasks();
 	IBuilderTask* UpdatePylonTasks();
 
@@ -119,12 +115,12 @@ private:
 	springai::TeamRulesParam* empParam, *eepParam;
 	springai::TeamRulesParam* odeiParam, *odecParam/*, *odeoParam, *odteParam, *odaParam*/;
 
-	int emptyFrame;
-	int fullFrame;
-	int stallingFrame;
+	void UpdateEconomy();
+	int ecoFrame;
 	bool isMetalEmpty;
 	bool isMetalFull;
 	bool isEnergyStalling;
+	bool isEnergyEmpty;
 
 	int metalPullFrame;
 	int energyPullFrame;

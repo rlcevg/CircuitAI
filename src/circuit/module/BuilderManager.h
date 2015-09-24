@@ -104,11 +104,12 @@ public:
 
 private:
 	void Init();
-	void Watchdog();
+	IBuilderTask* CreateBuilderTask(const springai::AIFloat3& position, CCircuitUnit* unit);
 
 	void AddBuildList(CCircuitUnit* unit);
 	void RemoveBuildList(CCircuitUnit* unit);
 
+	void Watchdog();
 	void UpdateIdle();
 	void UpdateRetreat();
 	void UpdateBuild();
