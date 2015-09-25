@@ -9,7 +9,7 @@
 #include "resource/MetalManager.h"
 #include "resource/EnergyGrid.h"
 #include "setup/DefenceMatrix.h"
-#include "terrain/ThreatMap.h"
+#include "terrain/PathFinder.h"
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
 #include "util/Scheduler.h"
@@ -69,6 +69,7 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 
 	energyLink = std::make_shared<CEnergyGrid>(circuit);
 	defence = std::make_shared<CDefenceMatrix>(circuit);
+	pathfinder = std::make_shared<CPathFinder>(&circuit->GetGameAttribute()->GetTerrainData());
 }
 
 void CAllyTeam::Release()
@@ -85,6 +86,7 @@ void CAllyTeam::Release()
 	metalManager = nullptr;
 	energyLink = nullptr;
 	defence = nullptr;
+	pathfinder = nullptr;
 }
 
 void CAllyTeam::UpdateFriendlyUnits(CCircuitAI* circuit)

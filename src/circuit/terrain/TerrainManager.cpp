@@ -37,13 +37,6 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 #endif
 {
 	ResetBuildFrame();
-
-	Map* map = circuit->GetMap();
-	int mapWidth = map->GetWidth();
-	int mapHeight = map->GetHeight();
-	terrainWidth = mapWidth * SQUARE_SIZE;
-	terrainHeight = mapHeight * SQUARE_SIZE;
-
 	CCircuitDef* mexDef = circuit->GetCircuitDef("cormex");
 
 	/*
@@ -237,6 +230,9 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 		blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
 	}
 
+	Map* map = circuit->GetMap();
+	int mapWidth = map->GetWidth();
+	int mapHeight = map->GetHeight();
 	blockingMap.columns = mapWidth / 2;  // build-step = 2 little green squares
 	blockingMap.rows = mapHeight / 2;
 	SBlockingMap::SBlockCell cell = {0};
@@ -981,21 +977,6 @@ void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 			}
 		}
 	}
-}
-
-void CTerrainManager::CorrectPosition(AIFloat3& position)
-{
-	if (position.x < 1) {
-		position.x = 1;
-	} else if (position.x > terrainWidth - 2) {
-		position.x = terrainWidth - 2;
-	}
-	if (position.z < 1) {
-		position.z = 1;
-	} else if (position.z > terrainHeight - 2) {
-		position.z = terrainHeight - 2;
-	}
-	position.y = circuit->GetMap()->GetElevationAt(position.x, position.z);
 }
 
 STerrainMapArea* CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIFloat3& position)

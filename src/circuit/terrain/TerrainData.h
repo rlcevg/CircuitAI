@@ -171,27 +171,36 @@ public:
 	virtual ~CTerrainData();
 	void Init(CCircuitAI* circuit);
 
+	static springai::Map* GetMap() { return map; }
+	static void CorrectPosition(springai::AIFloat3& position);
+	static int terrainWidth;
+	static int terrainHeight;
+
 // ---- RAI's GlobalTerrainMap ---- BEGIN
-	int GetSectorIndex(const springai::AIFloat3& position); // use IsSectorValid() to insure the index is valid
-	bool IsSectorValid(const int& sIndex);
+	int GetSectorIndex(const springai::AIFloat3& position) {  // use IsSectorValid() to insure the index is valid
+		return sectorXSize * (int(position.z) / convertStoP) + int(position.x) / convertStoP;
+	}
+	bool IsSectorValid(const int& sIndex) {
+		return (sIndex >= 0) && (sIndex < sectorXSize * sectorZSize);
+	}
 
 	SAreaData areaData0, areaData1;  // Double-buffer for threading
 	std::atomic<SAreaData*> pAreaData;
 	std::map<int, STerrainMapMobileType::Id> udMobileType;    // key = ud->id, Used to find a TerrainMapMobileType for a unit
 	std::map<int, STerrainMapImmobileType::Id> udImmobileType;  // key = ud->id, Used to find a TerrainMapImmobileType for a unit
-	STerrainMapImmobileType* landSectorType;   // 0 to the sky
-	STerrainMapImmobileType* waterSectorType;  // minElevation to 0
 
 	bool waterIsHarmful;  // Units are damaged by it (Lava/Acid map)
 	bool waterIsAVoid;    // (Space map)
 
 	int sectorXSize;
 	int sectorZSize;
-	int convertStoP;  // Sector to Position: times this value for convertion, divide for the reverse
+	static int convertStoP;  // Sector to Position: times this value for convertion, divide for the reverse
 
 private:
 //	int GetFileValue(int& fileSize, char*& file, std::string entry);
 // ---- RAI's GlobalTerrainMap ---- END
+
+	void DelegateAuthority(CCircuitAI* curOwner);
 
 // ---- Threaded areas updater ---- BEGIN
 private:
@@ -200,16 +209,19 @@ private:
 	void ScheduleUsersUpdate();
 public:
 	void DidUpdateAreaUsers();
-	SAreaData* GetNextAreaData();
+	SAreaData* GetNextAreaData() {
+		return (pAreaData.load() == &areaData0) ? &areaData1 : &areaData0;
+	}
+
 private:
-	springai::Map* map;  // owner
+	static springai::Map* map;
 	std::shared_ptr<CScheduler> scheduler;
 	CGameAttribute* gameAttribute;
 	std::vector<float> heightMap0;
 	std::vector<float> heightMap1;
 	std::atomic<std::vector<float>*> pHeightMap;
 	std::vector<float> slopeMap;
-	bool updatingAreas;
+	bool isUpdating;
 	int aiToUpdate;
 // ---- Threaded areas updater ---- END
 

@@ -29,9 +29,11 @@ CScheduler::~CScheduler()
 	Release();
 }
 
-void CScheduler::Init(const std::shared_ptr<CScheduler>& thisPtr)
+void CScheduler::ProcessRelease()
 {
-	self = thisPtr;
+	for (auto& task : releaseTasks) {
+		task->Run();
+	}
 }
 
 void CScheduler::Release()
@@ -52,16 +54,6 @@ void CScheduler::Release()
 			PRINT_DEBUG("Leaving join: %s\n", __PRETTY_FUNCTION__);
 		}
 	}
-}
-
-void CScheduler::RunTaskAt(std::shared_ptr<CGameTask> task, int frame)
-{
-	onceTasks.push_back({task, frame});
-}
-
-void CScheduler::RunTaskAfter(std::shared_ptr<CGameTask> task, int frame)
-{
-	onceTasks.push_back({task, lastFrame + frame});
 }
 
 void CScheduler::RunTaskEvery(std::shared_ptr<CGameTask> task, int frameInterval, int frameOffset)

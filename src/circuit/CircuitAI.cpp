@@ -410,10 +410,8 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	metalManager = allyTeam->GetMetalManager();
 	energyLink = allyTeam->GetEnergyLink();
 	defence = allyTeam->GetDefenceMatrix();
+	pathfinder = allyTeam->GetPathfinder();
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
-
-	pathfinder = std::make_shared<CPathFinder>(this);
-	pathfinder->Init();
 
 	// NOTE: EconomyManager uses metal clusters and must be initialized after MetalManager::ClusterizeMetal
 	economyManager = std::make_shared<CEconomyManager>(this);
@@ -471,6 +469,9 @@ int CCircuitAI::Release(int reason)
 	}
 	terrainManager->DidUpdateAreaUsers();
 
+	scheduler->ProcessRelease();
+	scheduler = nullptr;
+
 	modules.clear();
 	militaryManager = nullptr;
 	economyManager = nullptr;
@@ -481,8 +482,9 @@ int CCircuitAI::Release(int reason)
 	threatMap = nullptr;
 	energyLink = nullptr;
 	defence = nullptr;
+	pathfinder = nullptr;
 	setupManager = nullptr;
-	scheduler = nullptr;
+
 	for (auto& kv : teamUnits) {
 		delete kv.second;
 	}
@@ -497,6 +499,7 @@ int CCircuitAI::Release(int reason)
 	}
 	defsById.clear();
 	defsByName.clear();
+
 	DestroyGameAttribute();
 
 #ifdef DEBUG_VIS
@@ -576,7 +579,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 		}
 	}
 	else if ((msgLength == strlen(cmdPath)) && (strcmp(message, cmdPath) == 0)) {
-		pathfinder->ToggleVis();
+		pathfinder->ToggleVis(this);
 	}
 #endif
 

@@ -164,7 +164,7 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, F3Vec& path)
 		return bestTarget;
 	}
 
-	circuit->GetPathfinder()->SetMapData(unit->GetCircuitDef()->GetMobileId());
+	circuit->GetPathfinder()->SetMapData(unit->GetCircuitDef()->GetMobileId(), threatMap);
 	circuit->GetPathfinder()->FindBestPath(path, pos, range * 0.5f, enemyPositions);
 
 	return nullptr;

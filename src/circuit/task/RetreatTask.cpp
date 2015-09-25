@@ -70,7 +70,7 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 	AIFloat3 startPos = unit->GetUnit()->GetPos();
 	AIFloat3 endPos = (haven != -RgtVector) ? haven : circuit->GetSetupManager()->GetStartPos();
 	float range = circuit->GetTerrainManager()->GetConvertStoP();
-	circuit->GetPathfinder()->SetMapData(unit->GetCircuitDef()->GetMobileId());
+	circuit->GetPathfinder()->SetMapData(unit->GetCircuitDef()->GetMobileId(), circuit->GetThreatMap());
 	circuit->GetPathfinder()->MakePath(path, startPos, endPos, range);
 
 	if (path.empty()) {

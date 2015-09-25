@@ -7,6 +7,7 @@
 
 #include "terrain/TerrainData.h"
 #include "terrain/TerrainManager.h"
+#include "terrain/PathFinder.h"
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
 #include "util/math/HierarchCluster.h"
@@ -39,19 +40,20 @@ STerrainMapMobileType::~STerrainMapMobileType()
 	utils::free_clear(area);
 }
 
+int CTerrainData::terrainWidth(0);
+int CTerrainData::terrainHeight(0);
+int CTerrainData::convertStoP(1);
+Map* CTerrainData::map(nullptr);
+
 CTerrainData::CTerrainData()
-		: landSectorType(nullptr)
-		, waterSectorType(nullptr)
-		, waterIsHarmful(false)
+		: waterIsHarmful(false)
 		, waterIsAVoid(false)
 		, sectorXSize(0)
 		, sectorZSize(0)
-		, convertStoP(1)
-		, map(nullptr)
 		, gameAttribute(nullptr)
 		, pAreaData(&areaData0)
 		, pHeightMap(&heightMap0)
-		, updatingAreas(false)
+		, isUpdating(false)
 		, aiToUpdate(0)
 //		, isClusterizing(false)
 		, initialized(false)
@@ -64,7 +66,6 @@ CTerrainData::CTerrainData()
 CTerrainData::~CTerrainData()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	delete map;
 
 #ifdef DEBUG_VIS
 	if (debugDrawer != nullptr) {
@@ -79,7 +80,7 @@ CTerrainData::~CTerrainData()
 
 void CTerrainData::Init(CCircuitAI* circuit)
 {
-	map = circuit->GetCallback()->GetMap();  // Must be ai-independent
+	map = circuit->GetMap();
 	scheduler = circuit->GetScheduler();
 	gameAttribute = circuit->GetGameAttribute();
 	circuit->LOG("Loading the Terrain-Map ...");
@@ -149,6 +150,8 @@ void CTerrainData::Init(CCircuitAI* circuit)
 
 	int mapWidth = map->GetWidth();
 	int mapHeight = map->GetHeight();
+	terrainWidth = mapWidth * SQUARE_SIZE;
+	terrainHeight = mapHeight * SQUARE_SIZE;
 	convertStoP = SQUARE_SIZE * THREAT_RES;  // = 2^x, should not be less than 16 (2*SUQARE_SIZE)
 	if ((mapWidth / convertStoP) * (mapHeight / convertStoP) < 8 * 8) {
 		convertStoP /= 2; // Smaller Sectors, more detailed analysis
@@ -246,38 +249,6 @@ void CTerrainData::Init(CCircuitAI* circuit)
 		}
 	}
 	utils::free_clear(defs);
-
-	/*
-	 *  Special types
-	 */
-	landSectorType = nullptr;
-	waterSectorType = nullptr;
-	for (auto& it : immobileType) {
-		if (!it.canFloat && !it.canHover) {
-			if ((it.minElevation == 0) && ((landSectorType == nullptr) || (it.maxElevation > landSectorType->maxElevation))) {
-				landSectorType = &it;
-			}
-			if ((it.maxElevation == 0) && ((waterSectorType == nullptr) || (it.minElevation < waterSectorType->minElevation))) {
-				waterSectorType = &it;
-			}
-		}
-	}
-	if (landSectorType == nullptr) {
-		immobileType.push_back(STerrainMapImmobileType());
-		landSectorType = &immobileType.back();
-		immobileType.back().maxElevation = 1e7;
-		immobileType.back().minElevation = 0;
-		immobileType.back().canFloat = false;
-		immobileType.back().canHover = false;
-	}
-	if (waterSectorType == nullptr) {
-		immobileType.push_back(STerrainMapImmobileType());
-		waterSectorType = &immobileType.back();
-		immobileType.back().maxElevation = 0;
-		immobileType.back().minElevation = -1e7;
-		immobileType.back().canFloat = false;
-		immobileType.back().canHover = false;
-	}
 
 	circuit->LOG("  Determining Usable Terrain for all units ...");
 	/*
@@ -549,6 +520,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	}
 
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::CheckHeightMap, this), FRAMES_PER_SEC * 60);
+	scheduler->RunOnRelease(std::make_shared<CGameTask>(&CTerrainData::DelegateAuthority, this, circuit));
 
 #ifdef DEBUG_VIS
 	debugDrawer = circuit->GetDebugDrawer();
@@ -588,17 +560,19 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	initialized = true;
 }
 
-int CTerrainData::GetSectorIndex(const AIFloat3& position)
+void CTerrainData::CorrectPosition(AIFloat3& position)
 {
-	return sectorXSize * (int(position.z) / convertStoP) + int(position.x) / convertStoP;
-}
-
-bool CTerrainData::IsSectorValid(const int& sIndex)
-{
-	if ((sIndex < 0) || (sIndex >= sectorXSize * sectorZSize)) {
-		return false;
+	if (position.x < 1) {
+		position.x = 1;
+	} else if (position.x > terrainWidth - 2) {
+		position.x = terrainWidth - 2;
 	}
-	return true;
+	if (position.z < 1) {
+		position.z = 1;
+	} else if (position.z > terrainHeight - 2) {
+		position.z = terrainHeight - 2;
+	}
+	position.y = map->GetElevationAt(position.x, position.z);
 }
 
 //int CTerrainData::GetFileValue(int& fileSize, char*& file, std::string entry)
@@ -627,12 +601,26 @@ bool CTerrainData::IsSectorValid(const int& sIndex)
 //	return 0;
 //}
 
+void CTerrainData::DelegateAuthority(CCircuitAI* curOwner)
+{
+	for (auto circuit : gameAttribute->GetCircuits()) {
+		if (circuit->IsInitialized() && (circuit != curOwner)) {
+			map = circuit->GetMap();
+			scheduler = circuit->GetScheduler();
+			scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::CheckHeightMap, this), FRAMES_PER_SEC * 60);
+			scheduler->RunTaskAfter(std::make_shared<CGameTask>(&CTerrainData::CheckHeightMap, this), FRAMES_PER_SEC);
+			scheduler->RunOnRelease(std::make_shared<CGameTask>(&CTerrainData::DelegateAuthority, this, circuit));
+			break;
+		}
+	}
+}
+
 void CTerrainData::CheckHeightMap()
 {
-	if (updatingAreas) {
+	if (isUpdating) {
 		return;
 	}
-	updatingAreas = true;
+	isUpdating = true;
 	std::vector<float>& heightMap = (pHeightMap.load() == &heightMap0) ? heightMap1 : heightMap0;
 	heightMap = std::move(map->GetHeightMap());
 	slopeMap = std::move(map->GetSlopeMap());
@@ -913,6 +901,7 @@ void CTerrainData::ScheduleUsersUpdate()
 	for (auto circuit : gameAttribute->GetCircuits()) {
 		if (circuit->IsInitialized()) {
 			circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(&CTerrainManager::UpdateAreaUsers, circuit->GetTerrainManager()), ++aiToUpdate);
+			circuit->GetPathfinder()->SetUpdated(false);
 		}
 	}
 	// Check if there are any ai to update
@@ -928,16 +917,11 @@ void CTerrainData::DidUpdateAreaUsers()
 
 	pAreaData = GetNextAreaData();
 	pHeightMap = (pHeightMap.load() == &heightMap0) ? &heightMap1 : &heightMap0;
-	updatingAreas = false;
+	isUpdating = false;
 
 #ifdef DEBUG_VIS
 	UpdateVis();
 #endif
-}
-
-SAreaData* CTerrainData::GetNextAreaData()
-{
-	return (pAreaData.load() == &areaData0) ? &areaData1 : &areaData0;
 }
 
 //const std::vector<springai::AIFloat3>& CTerrainData::GetDefencePoints() const

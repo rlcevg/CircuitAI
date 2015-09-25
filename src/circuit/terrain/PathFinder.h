@@ -16,21 +16,22 @@
 namespace circuit {
 
 class CCircuitAI;
+class CThreatMap;
 
 class CPathFinder: public NSMicroPather::Graph {
 public:
-	CPathFinder(CCircuitAI* circuit);
+	CPathFinder(CTerrainData* terrainData);
 	virtual ~CPathFinder();
 
-	void Init();
 	void UpdateAreaUsers();
+	void SetUpdated(bool value) { isUpdated = value; }
 
 	void* XY2Node(int x, int y);
 	void Node2XY(void* node, int* x, int* y);
 	springai::AIFloat3 Node2Pos(void* node);
 	void* Pos2Node(springai::AIFloat3 pos);
 
-	void SetMapData(STerrainMapMobileType::Id mobileTypeId);
+	void SetMapData(STerrainMapMobileType::Id mobileTypeId, CThreatMap* threatMap);
 
 	unsigned Checksum() const { return micropather->Checksum(); }
 	float MakePath(F3Vec& posPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
@@ -39,11 +40,12 @@ public:
 	float FindBestPathToRadius(F3Vec& posPath, springai::AIFloat3& startPos, float radiusAroundTarget, const springai::AIFloat3& target);
 
 private:
-	CCircuitAI* circuit;
+	CTerrainData* terrainData;
 
 	NSMicroPather::CMicroPather* micropather;
 	bool* airMoveArray;
 	std::vector<bool*> moveArrays;
+	bool isUpdated;
 
 	int squareSize;
 	int pathMapXSize;
@@ -55,9 +57,10 @@ private:
 private:
 	bool isVis;
 	int toggleFrame;
+	CCircuitAI* circuit;
 public:
 	void UpdateVis(const F3Vec& path);
-	void ToggleVis();
+	void ToggleVis(CCircuitAI* circuit);
 #endif
 };
 

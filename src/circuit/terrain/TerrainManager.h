@@ -41,11 +41,8 @@ private:
 	CCircuitAI* circuit;
 
 public:
-	int GetTerrainWidth() const { return terrainWidth; }
-	int GetTerrainHeight() const { return terrainHeight; }
-private:
-	int terrainWidth;
-	int terrainHeight;
+	int GetTerrainWidth() const { return terrainData->terrainWidth; }
+	int GetTerrainHeight() const { return terrainData->terrainHeight; }
 
 public:
 	void AddBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing);
@@ -113,7 +110,7 @@ private:
 
 public:
 	int GetConvertStoP() const { return terrainData->convertStoP; }
-	void CorrectPosition(springai::AIFloat3& position);
+	void CorrectPosition(springai::AIFloat3& position) { terrainData->CorrectPosition(position); }
 	STerrainMapArea* GetCurrentMapArea(CCircuitDef* cdef, const springai::AIFloat3& position);
 	int GetSectorIndex(const springai::AIFloat3& position);
 	bool CanMoveToPos(STerrainMapArea* area, const springai::AIFloat3& destination);
@@ -124,9 +121,7 @@ private:
 	STerrainMapSector* GetClosestSector(STerrainMapImmobileType* sourceIT, const int destinationSIndex);
 	STerrainMapAreaSector* GetAlternativeSector(STerrainMapArea* sourceArea, const int sourceSIndex, STerrainMapMobileType* destinationMT);
 	STerrainMapSector* GetAlternativeSector(STerrainMapArea* destinationArea, const int sourceSIndex, STerrainMapImmobileType* destinationIT); // can return 0
-	const STerrainMapSector& GetSector(int sIndex) const {
-		return areaData->sector[sIndex];
-	}
+	const STerrainMapSector& GetSector(int sIndex) const { return areaData->sector[sIndex]; }
 public:
 	const std::vector<STerrainMapMobileType>& GetMobileTypes() const {
 		return areaData->mobileType;

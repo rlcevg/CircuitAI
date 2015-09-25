@@ -7,10 +7,11 @@
  */
 
 #include "terrain/PathFinder.h"
-#include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
-#include "CircuitAI.h"
 #include "util/utils.h"
+#ifdef DEBUG_VIS
+#include "CircuitAI.h"
+#endif
 
 #include "Map.h"
 #ifdef DEBUG_VIS
@@ -22,33 +23,22 @@ namespace circuit {
 using namespace springai;
 using namespace NSMicroPather;
 
-CPathFinder::CPathFinder(CCircuitAI* circuit)
-		: circuit(circuit)
+CPathFinder::CPathFinder(CTerrainData* terrainData)
+		: terrainData(terrainData)
 		, airMoveArray(nullptr)
+		, isUpdated(true)
 #ifdef DEBUG_VIS
 		, isVis(false)
 		, toggleFrame(-1)
+		, circuit(nullptr)
 #endif
 {
-	squareSize   = circuit->GetTerrainManager()->GetConvertStoP();
-	pathMapXSize = circuit->GetTerrainManager()->GetTerrainWidth() / squareSize;
-	pathMapYSize = circuit->GetTerrainManager()->GetTerrainHeight() / squareSize;
+	squareSize   = terrainData->convertStoP;
+	pathMapXSize = terrainData->terrainWidth / squareSize;
+	pathMapYSize = terrainData->terrainHeight / squareSize;
 	micropather  = new CMicroPather(this, pathMapXSize, pathMapYSize);
-}
 
-CPathFinder::~CPathFinder()
-{
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	// airMoveArray will be deleted inside loop
-	for (bool* ma : moveArrays) {
-		delete[] ma;
-	}
-	delete micropather;
-}
-
-void CPathFinder::Init()
-{
-	const std::vector<STerrainMapMobileType>& moveTypes = circuit->GetTerrainManager()->GetMobileTypes();
+	const std::vector<STerrainMapMobileType>& moveTypes = terrainData->pAreaData.load()->mobileType;
 	moveArrays.reserve(moveTypes.size() + 1);
 
 	int totalcells = pathMapXSize * pathMapYSize;
@@ -82,9 +72,24 @@ void CPathFinder::Init()
 	moveArrays.push_back(airMoveArray);
 }
 
+CPathFinder::~CPathFinder()
+{
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	// airMoveArray will be deleted inside loop
+	for (bool* ma : moveArrays) {
+		delete[] ma;
+	}
+	delete micropather;
+}
+
 void CPathFinder::UpdateAreaUsers()
 {
-	const std::vector<STerrainMapMobileType>& moveTypes = circuit->GetTerrainManager()->GetMobileTypes();
+	if (isUpdated) {
+		return;
+	}
+	isUpdated = true;
+
+	const std::vector<STerrainMapMobileType>& moveTypes = terrainData->GetNextAreaData()->mobileType;
 	int totalcells = pathMapXSize * pathMapYSize;
 	for (int j = 0; j < moveTypes.size(); ++j) {
 		const STerrainMapMobileType& mt = moveTypes[j];
@@ -111,10 +116,10 @@ void CPathFinder::UpdateAreaUsers()
 	micropather->Reset();
 }
 
-void CPathFinder::SetMapData(STerrainMapMobileType::Id mobileTypeId)
+void CPathFinder::SetMapData(STerrainMapMobileType::Id mobileTypeId, CThreatMap* threatMap)
 {
 	bool* moveArray = (mobileTypeId < 0) ? airMoveArray : moveArrays[mobileTypeId];
-	micropather->SetMapData(moveArray, circuit->GetThreatMap()->GetThreatArray());
+	micropather->SetMapData(moveArray, threatMap->GetThreatArray());
 }
 
 void* CPathFinder::XY2Node(int x, int y)
@@ -153,8 +158,8 @@ float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos
 {
 	path.clear();
 
-	circuit->GetTerrainManager()->CorrectPosition(startPos);
-	circuit->GetTerrainManager()->CorrectPosition(endPos);
+	terrainData->CorrectPosition(startPos);
+	terrainData->CorrectPosition(endPos);
 
 	float pathCost = 0.0f;
 
@@ -168,7 +173,7 @@ float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos
 	if (micropather->FindBestPathToPointOnRadius(XY2Node(sx, sy), XY2Node(ex, ey), &path, &pathCost, radius) == CMicroPather::SOLVED) {
 		posPath.reserve(path.size());
 
-		Map* map = circuit->GetMap();
+		Map* map = terrainData->GetMap();
 		for (void* node : path) {
 			float3 mypos = Node2Pos(node);
 			mypos.y = map->GetElevationAt(mypos.x, mypos.z);
@@ -188,7 +193,7 @@ float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloa
 	path.clear();
 
 	// startPos must be correct
-	circuit->GetTerrainManager()->CorrectPosition(endPos);
+	terrainData->CorrectPosition(endPos);
 
 	float pathCost = 0.0f;
 
@@ -290,13 +295,12 @@ float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRan
 		offsetSize = index;
 	}
 
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	for (unsigned int i = 0; i < possibleTargets.size(); i++) {
 		AIFloat3& f = possibleTargets[i];
 		int x, y;
 		// TODO: make the circle here
 
-		terrainManager->CorrectPosition(f);
+		terrainData->CorrectPosition(f);
 		Node2XY(Pos2Node(f), &x, &y);
 
 		for (unsigned int j = 0; j < offsetSize; j++) {
@@ -309,12 +313,12 @@ float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRan
 		}
 	}
 
-	terrainManager->CorrectPosition(startPos);
+	terrainData->CorrectPosition(startPos);
 
 	if (micropather->FindBestPathToAnyGivenPoint(Pos2Node(startPos), endNodes, &path, &pathCost) == CMicroPather::SOLVED) {
         posPath.reserve(path.size());
 
-		Map* map = circuit->GetMap();
+		Map* map = terrainData->GetMap();
 		for (unsigned i = 0; i < path.size(); i++) {
 			int x, y;
 
@@ -354,7 +358,7 @@ void CPathFinder::UpdateVis(const F3Vec& path)
 	delete fig;
 }
 
-void CPathFinder::ToggleVis()
+void CPathFinder::ToggleVis(CCircuitAI* circuit)
 {
 	if (toggleFrame >= circuit->GetLastFrame()) {
 		return;
@@ -362,6 +366,7 @@ void CPathFinder::ToggleVis()
 	toggleFrame = circuit->GetLastFrame();
 
 	isVis = !isVis;
+	this->circuit = circuit;
 }
 #endif
 

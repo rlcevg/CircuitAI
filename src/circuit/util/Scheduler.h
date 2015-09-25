@@ -24,7 +24,8 @@ public:
 	CScheduler();
 	virtual ~CScheduler();
 
-	void Init(const std::shared_ptr<CScheduler>& thisPtr);
+	void Init(const std::shared_ptr<CScheduler>& thisPtr) { self = thisPtr; }
+	void ProcessRelease();
 
 private:
 	void Release();
@@ -33,12 +34,16 @@ public:
 	/*
 	 * Add task at specified frame, or execute immediately at next frame
 	 */
-	void RunTaskAt(std::shared_ptr<CGameTask> task, int frame = 0);
+	void RunTaskAt(std::shared_ptr<CGameTask> task, int frame = 0) {
+		onceTasks.push_back({task, frame});
+	}
 
 	/*
 	 * Add task at frame relative to current frame
 	 */
-	void RunTaskAfter(std::shared_ptr<CGameTask> task, int frame = 0);
+	void RunTaskAfter(std::shared_ptr<CGameTask> task, int frame = 0) {
+		onceTasks.push_back({task, lastFrame + frame});
+	}
 
 	/*
 	 * Add task at specified interval
@@ -60,6 +65,13 @@ public:
 	 */
 	void RemoveTask(std::shared_ptr<CGameTask>& task);
 
+	/*
+	 * Run task on release. Not affected by RemoveTask
+	 */
+	void RunOnRelease(std::shared_ptr<CGameTask> task) {
+		releaseTasks.push_back(task);
+	}
+
 private:
 	std::weak_ptr<CScheduler> self;
 	int lastFrame;
@@ -73,14 +85,14 @@ private:
 			return task == other.task;
 		}
 	};
-	struct OnceTask : public BaseContainer {
+	struct OnceTask: public BaseContainer {
 		OnceTask(std::shared_ptr<CGameTask> task, int frame) :
 			BaseContainer(task), frame(frame) {}
 		int frame;
 	};
 	std::list<OnceTask> onceTasks;
 
-	struct RepeatTask : public BaseContainer {
+	struct RepeatTask: public BaseContainer {
 		RepeatTask(std::shared_ptr<CGameTask> task, int frameInterval, int lastFrame) :
 			BaseContainer(task), frameInterval(frameInterval), lastFrame(lastFrame) {}
 		int frameInterval;
@@ -90,7 +102,7 @@ private:
 
 	std::list<std::shared_ptr<CGameTask>> removeTasks;
 
-	struct WorkTask : public BaseContainer {
+	struct WorkTask: public BaseContainer {
 		WorkTask(std::weak_ptr<CScheduler> scheduler, std::shared_ptr<CGameTask> task, std::shared_ptr<CGameTask> onComplete) :
 			BaseContainer(task), onComplete(onComplete), scheduler(scheduler) {}
 		std::shared_ptr<CGameTask> onComplete;
@@ -98,13 +110,15 @@ private:
 	};
 	static CMultiQueue<WorkTask> workTasks;
 
-	struct FinishTask : public BaseContainer {
+	struct FinishTask: public BaseContainer {
 		FinishTask(std::shared_ptr<CGameTask> task) :
 			BaseContainer(task) {}
 		FinishTask(const WorkTask& workTask) :
 			BaseContainer(workTask.onComplete) {}
 	};
 	CMultiQueue<FinishTask> finishTasks;
+
+	std::list<std::shared_ptr<CGameTask>> releaseTasks;
 
 	static std::thread workerThread;
 	static std::atomic<bool> workerRunning;
