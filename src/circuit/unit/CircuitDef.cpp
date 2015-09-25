@@ -6,6 +6,7 @@
  */
 
 #include "unit/CircuitDef.h"
+#include "CircuitAI.h"
 #include "util/utils.h"
 
 #include "WeaponMount.h"
@@ -16,7 +17,7 @@ namespace circuit {
 
 using namespace springai;
 
-CCircuitDef::CCircuitDef(UnitDef* def, std::unordered_set<Id>& buildOpts) :
+CCircuitDef::CCircuitDef(UnitDef* def, std::unordered_set<Id>& buildOpts, CCircuitAI* circuit) :
 		id(def->GetUnitDefId()),
 		def(def),
 		count(0),
@@ -55,6 +56,7 @@ CCircuitDef::CCircuitDef(UnitDef* def, std::unordered_set<Id>& buildOpts) :
 	}
 
 	dps = 0.0f;
+	int targetCategory = 0;
 	auto mounts = std::move(def->GetWeaponMounts());
 	for (WeaponMount* mount : mounts) {
 		WeaponDef* wd = mount->GetWeaponDef();
@@ -93,10 +95,14 @@ CCircuitDef::CCircuitDef(UnitDef* def, std::unordered_set<Id>& buildOpts) :
 				}
 				dps += ldps * wd->GetSalvoSize() / damages.size() / reloadTime;
 			}
+			targetCategory |= mount->GetOnlyTargetCategory();
 		}
 		delete wd;
 		delete mount;
 	}
+	isAntiAir   = (targetCategory & circuit->GetAirCategory());
+	isAntiLand  = (targetCategory & circuit->GetLandCategory());
+	isAntiWater = (targetCategory & circuit->GetWaterCategory());
 }
 
 CCircuitDef::~CCircuitDef()

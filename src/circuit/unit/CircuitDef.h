@@ -26,7 +26,7 @@ public:
 
 	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
-	CCircuitDef(springai::UnitDef* def, std::unordered_set<Id>& buildOpts);
+	CCircuitDef(springai::UnitDef* def, std::unordered_set<Id>& buildOpts, CCircuitAI* circuit);
 	virtual ~CCircuitDef();
 
 	Id GetId() const { return id; }
@@ -42,8 +42,8 @@ public:
 
 	CCircuitDef& operator++();     // prefix  (++C): no parameter, returns a reference
 //	CCircuitDef  operator++(int);  // postfix (C++): dummy parameter, returns a value
-	CCircuitDef& operator--();     // prefix  (++C): no parameter, returns a reference
-//	CCircuitDef  operator--(int);  // postfix (C++): dummy parameter, returns a value
+	CCircuitDef& operator--();     // prefix  (--C): no parameter, returns a reference
+//	CCircuitDef  operator--(int);  // postfix (C--): dummy parameter, returns a value
 	bool operator==(const CCircuitDef& rhs) { return id == rhs.id; }
 	bool operator!=(const CCircuitDef& rhs) { return id != rhs.id; }
 
@@ -62,6 +62,10 @@ public:
 	void SetMobileId(STerrainMapMobileType::Id mobileId) { mobileTypeId = mobileId; }
 	STerrainMapMobileType::Id GetMobileId() const { return mobileTypeId; }
 
+	bool IsAntiAir()   const { return isAntiAir; }
+	bool IsAntiLand()  const { return isAntiLand; }
+	bool IsAntiWater() const { return isAntiWater; }
+
 private:
 	Id id;
 	springai::UnitDef* def;  // owner
@@ -77,6 +81,10 @@ private:
 
 	STerrainMapImmobileType::Id immobileTypeId;
 	STerrainMapMobileType::Id   mobileTypeId;
+
+	bool isAntiAir;
+	bool isAntiLand;
+	bool isAntiWater;
 };
 
 inline bool CCircuitDef::CanBuild(Id buildDefId) const

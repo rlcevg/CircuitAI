@@ -175,29 +175,33 @@ public:
 	bool IsInitialized() const { return initialized; }
 	CGameAttribute* GetGameAttribute() const { return gameAttribute.get(); }
 	std::shared_ptr<CScheduler>& GetScheduler() { return scheduler; }
-	int GetLastFrame() const    { return lastFrame; }
+	int GetLastFrame()    const { return lastFrame; }
 	int GetSkirmishAIId() const { return skirmishAIId; }
-	int GetTeamId() const       { return teamId; }
-	int GetAllyTeamId() const   { return allyTeamId; }
-	springai::OOAICallback* GetCallback() const   { return callback; }
-	springai::Log*          GetLog() const        { return log.get(); }
-	springai::Game*         GetGame() const       { return game.get(); }
-	springai::Map*          GetMap() const        { return map.get(); }
-	springai::Pathing*      GetPathing() const    { return pathing.get(); }
-	springai::Drawer*       GetDrawer() const     { return drawer.get(); }
+	int GetTeamId()       const { return teamId; }
+	int GetAllyTeamId()   const { return allyTeamId; }
+	springai::OOAICallback* GetCallback()   const { return callback; }
+	springai::Log*          GetLog()        const { return log.get(); }
+	springai::Game*         GetGame()       const { return game.get(); }
+	springai::Map*          GetMap()        const { return map.get(); }
+	springai::Pathing*      GetPathing()    const { return pathing.get(); }
+	springai::Drawer*       GetDrawer()     const { return drawer.get(); }
 	springai::SkirmishAI*   GetSkirmishAI() const { return skirmishAI.get(); }
-	springai::Team*         GetTeam() const       { return team.get(); }
-	CSetupManager*    GetSetupManager() const    { return setupManager.get(); }
-	CMetalManager*    GetMetalManager() const    { return metalManager.get(); }
-	CEnergyGrid*      GetEnergyGrid() const      { return energyLink.get(); }
-	CDefenceMatrix*   GetDefenceMatrix() const   { return defence.get(); }
-	CThreatMap*       GetThreatMap() const       { return threatMap.get(); }
-	CPathFinder*      GetPathfinder() const      { return pathfinder.get(); }
-	CTerrainManager*  GetTerrainManager() const  { return terrainManager.get(); }
-	CBuilderManager*  GetBuilderManager() const  { return builderManager.get(); }
-	CFactoryManager*  GetFactoryManager() const  { return factoryManager.get(); }
-	CEconomyManager*  GetEconomyManager() const  { return economyManager.get(); }
+	springai::Team*         GetTeam()       const { return team.get(); }
+	CSetupManager*    GetSetupManager()    const { return setupManager.get(); }
+	CMetalManager*    GetMetalManager()    const { return metalManager.get(); }
+	CEnergyGrid*      GetEnergyGrid()      const { return energyLink.get(); }
+	CDefenceMatrix*   GetDefenceMatrix()   const { return defence.get(); }
+	CThreatMap*       GetThreatMap()       const { return threatMap.get(); }
+	CPathFinder*      GetPathfinder()      const { return pathfinder.get(); }
+	CTerrainManager*  GetTerrainManager()  const { return terrainManager.get(); }
+	CBuilderManager*  GetBuilderManager()  const { return builderManager.get(); }
+	CFactoryManager*  GetFactoryManager()  const { return factoryManager.get(); }
+	CEconomyManager*  GetEconomyManager()  const { return economyManager.get(); }
 	CMilitaryManager* GetMilitaryManager() const { return militaryManager.get(); }
+
+	int GetAirCategory()   const { return airCategory; }
+	int GetLandCategory()  const { return landCategory; }
+	int GetWaterCategory() const { return waterCategory; }
 
 private:
 	// debug
@@ -235,6 +239,10 @@ private:
 	std::shared_ptr<CEconomyManager> economyManager;
 	std::shared_ptr<CMilitaryManager> militaryManager;
 	std::list<std::shared_ptr<IModule>> modules;
+
+	int airCategory;
+	int landCategory;
+	int waterCategory;
 
 #ifdef DEBUG_VIS
 private:

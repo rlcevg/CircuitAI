@@ -65,7 +65,7 @@ float CEnemyUnit::GetDPS()
 		return 10.0f;
 	}
 	float dps = circuitDef->GetDPS();
-	if (dps < 0.1f) {
+	if ((dps < 0.1f) || !circuitDef->IsAntiLand()) {  // FIXME: Move IsAntiLand check elsewhere
 		return .0f;
 	}
 	if (unit->IsParalyzed() || unit->IsBeingBuilt() || IsDisarmed()) {

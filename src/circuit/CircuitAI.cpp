@@ -73,6 +73,9 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, difficulty(Difficulty::NORMAL)
 		, allyAware(true)
 		, allyTeam(nullptr)
+		, airCategory(0)
+		, landCategory(0)
+		, waterCategory(0)
 #ifdef DEBUG_VIS
 		, debugDrawer(nullptr)
 #endif
@@ -917,6 +920,10 @@ CCircuitDef* CCircuitAI::GetCircuitDef(CCircuitDef::Id unitDefId)
 
 void CCircuitAI::InitUnitDefs()
 {
+	airCategory   = game->GetCategoriesFlag("FIXEDWING GUNSHIP");
+	landCategory  = game->GetCategoriesFlag("LAND SINK TURRET SHIP SWIM FLOAT HOVER");
+	waterCategory = game->GetCategoriesFlag("SWIM SUB SINK FLOAT SHIP");
+
 	CTerrainData& terrainData = gameAttribute->GetTerrainData();
 	if (!gameAttribute->GetTerrainData().IsInitialized()) {
 		gameAttribute->GetTerrainData().Init(this);
@@ -929,7 +936,7 @@ void CCircuitAI::InitUnitDefs()
 			opts.insert(buildDef->GetUnitDefId());
 			delete buildDef;
 		}
-		CCircuitDef* cdef = new CCircuitDef(ud, opts);
+		CCircuitDef* cdef = new CCircuitDef(ud, opts, this);
 
 		defsByName[ud->GetName()] = cdef;
 		defsById[cdef->GetId()] = cdef;
