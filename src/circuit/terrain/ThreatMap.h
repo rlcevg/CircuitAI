@@ -16,7 +16,6 @@
 
 namespace circuit {
 
-class CCircuitAI;
 class CCircuitUnit;
 class CEnemyUnit;
 
@@ -41,6 +40,7 @@ public:
 	float GetThreatAt(const springai::AIFloat3&) const;
 
 	float* GetThreatArray() { return &threatCells[0]; }
+	float* GetThreatCloakArray() { return &threatCloak[0]; }
 	int GetThreatMapWidth() const { return width; }
 	int GetThreatMapHeight() const { return height; }
 
@@ -63,9 +63,13 @@ private:
 	int width;
 	int height;
 
+	int rangeDefault;
+	int rangeCloakSq;
+
 	CCircuitAI::EnemyUnits hostileUnits;
 	CCircuitAI::EnemyUnits peaceUnits;
 	std::vector<float> threatCells;
+	std::vector<float> threatCloak;
 
 //	std::vector<int> radarMap;
 	std::vector<int> losMap;

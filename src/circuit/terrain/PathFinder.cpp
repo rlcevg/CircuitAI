@@ -7,6 +7,7 @@
  */
 
 #include "terrain/PathFinder.h"
+#include "terrain/TerrainData.h"
 #include "terrain/ThreatMap.h"
 #include "util/utils.h"
 #ifdef DEBUG_VIS
@@ -116,10 +117,12 @@ void CPathFinder::UpdateAreaUsers()
 	micropather->Reset();
 }
 
-void CPathFinder::SetMapData(STerrainMapMobileType::Id mobileTypeId, CThreatMap* threatMap)
+void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap)
 {
+	STerrainMapMobileType::Id mobileTypeId = unit->GetCircuitDef()->GetMobileId();
 	bool* moveArray = (mobileTypeId < 0) ? airMoveArray : moveArrays[mobileTypeId];
-	micropather->SetMapData(moveArray, threatMap->GetThreatArray());
+	float* costArray = unit->GetUnit()->IsCloaked() ? threatMap->GetThreatCloakArray() : threatMap->GetThreatArray();
+	micropather->SetMapData(moveArray, costArray);
 }
 
 void* CPathFinder::XY2Node(int x, int y)
@@ -351,10 +354,11 @@ void CPathFinder::UpdateVis(const F3Vec& path)
 	}
 
 	Figure* fig = circuit->GetDrawer()->GetFigure();
-	int figId =	fig->DrawLine(ZeroVector, ZeroVector, 8.0f, true, FRAMES_PER_SEC * 20, 0);
+	int figId = fig->DrawLine(ZeroVector, ZeroVector, 8.0f, true, FRAMES_PER_SEC * 5, 0);
 	for (int i = 1; i < path.size(); ++i) {
 		fig->DrawLine(path[i - 1], path[i], 8.0f, true, FRAMES_PER_SEC * 20, figId);
 	}
+	fig->SetColor(figId, AIColor(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX), 255);
 	delete fig;
 }
 

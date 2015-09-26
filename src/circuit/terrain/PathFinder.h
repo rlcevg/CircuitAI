@@ -10,13 +10,16 @@
 #define SRC_CIRCUIT_TERRAIN_PATHFINDER_H_
 
 #include "terrain/MicroPather.h"
-#include "terrain/TerrainData.h"
 #include "util/Defines.h"
 
 namespace circuit {
 
-class CCircuitAI;
+class CTerrainData;
+class CCircuitUnit;
 class CThreatMap;
+#ifdef DEBUG_VIS
+class CCircuitAI;
+#endif
 
 class CPathFinder: public NSMicroPather::Graph {
 public:
@@ -31,7 +34,7 @@ public:
 	springai::AIFloat3 Node2Pos(void* node);
 	void* Pos2Node(springai::AIFloat3 pos);
 
-	void SetMapData(STerrainMapMobileType::Id mobileTypeId, CThreatMap* threatMap);
+	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap);
 
 	unsigned Checksum() const { return micropather->Checksum(); }
 	float MakePath(F3Vec& posPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);

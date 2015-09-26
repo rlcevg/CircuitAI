@@ -34,7 +34,13 @@ CThreatMap::CThreatMap(CCircuitAI* circuit)
 	squareSize = circuit->GetTerrainManager()->GetConvertStoP();
 	width = circuit->GetTerrainManager()->GetTerrainWidth() / squareSize;
 	height = circuit->GetTerrainManager()->GetTerrainHeight() / squareSize;
+
+	rangeDefault = (SQUARE_SIZE * THREAT_RES * 4) / squareSize;
+	const int rangeCloak = (SQUARE_SIZE * THREAT_RES * 2) / squareSize;
+	rangeCloakSq = rangeCloak * rangeCloak;
+
 	threatCells.resize(width * height, THREAT_VAL_BASE);
+	threatCloak.resize(width * height, THREAT_VAL_BASE);
 
 	Map* map = circuit->GetMap();
 	Mod* mod = circuit->GetCallback()->GetMod();
@@ -203,7 +209,7 @@ void CThreatMap::EnemyEnterRadar(CEnemyUnit* enemy)
 	enemy->SetPos(pos);
 	if (isNew) {  // unknown enemy enters radar for the first time
 		enemy->SetThreat(enemy->GetDPS());  // TODO: Randomize
-		enemy->SetRange((SQUARE_SIZE * THREAT_RES * 4) / squareSize);
+		enemy->SetRange(rangeDefault);
 	}
 
 	AddEnemyUnit(enemy);
@@ -271,13 +277,18 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, const float scale)
 			const int dzSq = (posz - z) * (posz - z);
 
 			if (dxSq + dzSq <= rangeSq) {
+				const int index = z * width + x;
 				// MicroPather cannot deal with negative costs
 				// (which may arise due to floating-point drift)
 				// nor with zero-cost nodes (see MP::SetMapData,
 				// threat is not used as an additive overlay)
-				threatCells[z * width + x] = std::max(threatCells[z * width + x] + threat, THREAT_VAL_BASE);
+				threatCells[index] = std::max(threatCells[index] + threat, THREAT_VAL_BASE);
 
 				currSumThreat += threat;
+
+				if (dxSq + dzSq <= rangeCloakSq) {  // Assuming decloak range <= weapon range
+					threatCloak[index] = std::max(threatCloak[index] + threat, THREAT_VAL_BASE);
+				}
 			}
 		}
 	}

@@ -104,7 +104,7 @@ void CScoutTask::Execute(CCircuitUnit* unit)
 
 void CScoutTask::Update()
 {
-	if (updCount++ % 8 == 0) {
+	if (updCount++ % 4 == 0) {
 		// FIXME: Update group target
 		isUpdating = true;
 		for (CCircuitUnit* unit : units) {
@@ -164,7 +164,7 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, F3Vec& path)
 		return bestTarget;
 	}
 
-	circuit->GetPathfinder()->SetMapData(unit->GetCircuitDef()->GetMobileId(), threatMap);
+	circuit->GetPathfinder()->SetMapData(unit, threatMap);
 	circuit->GetPathfinder()->FindBestPath(path, pos, range * 0.5f, enemyPositions);
 
 	return nullptr;

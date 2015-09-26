@@ -65,7 +65,7 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 
 void CAttackTask::Update()
 {
-	if (updCount++ % 8 == 0) {
+	if (updCount++ % 4 == 0) {
 		isUpdating = true;
 		for (CCircuitUnit* unit : units) {
 			Execute(unit);

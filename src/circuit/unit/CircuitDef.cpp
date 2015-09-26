@@ -62,41 +62,38 @@ CCircuitDef::CCircuitDef(UnitDef* def, std::unordered_set<Id>& buildOpts, CCircu
 		WeaponDef* wd = mount->GetWeaponDef();
 		const std::map<std::string, std::string>& customParams = wd->GetCustomParams();
 
-		bool valid = !wd->IsParalyzer();
+		float scale = wd->IsParalyzer() ? 0.2f : 1.0f;
 
 		float extraDmg = .0f;
 		auto it = customParams.find("extra_damage");
 		if (it != customParams.end()) {
 			extraDmg = utils::string_to_float(it->second);
-			valid |= extraDmg > 0.1f;
 		}
 
 		it = customParams.find("disarmdamageonly");
-		if (it != customParams.end()) {
-			valid |= utils::string_to_int(it->second) == 0;
+		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
+			scale = 0.2f;
 		}
 
 		it = customParams.find("timeslow_onlyslow");
-		if (it != customParams.end()) {
-			valid |= utils::string_to_int(it->second) == 0;
+		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
+			scale = 0.2f;
 		}
 
-		if (valid) {
-			float reloadTime = wd->GetReload();
-			if (extraDmg > 0.1f) {
-				dps += extraDmg * wd->GetSalvoSize() / reloadTime;
-			} else {
-				Damage* damage = wd->GetDamage();
-				const std::vector<float>& damages = damage->GetTypes();
-				delete damage;
-				float ldps = .0f;
-				for (float dmg : damages) {
-					ldps += dmg;
-				}
-				dps += ldps * wd->GetSalvoSize() / damages.size() / reloadTime;
-			}
-			targetCategory |= mount->GetOnlyTargetCategory();
+		float reloadTime = wd->GetReload();
+		if (extraDmg > 0.1f) {
+			dps += extraDmg * wd->GetSalvoSize() / reloadTime;
 		}
+		Damage* damage = wd->GetDamage();
+		const std::vector<float>& damages = damage->GetTypes();
+		delete damage;
+		float ldps = .0f;
+		for (float dmg : damages) {
+			ldps += dmg;
+		}
+		dps += ldps * wd->GetSalvoSize() * scale / damages.size() / reloadTime;
+		targetCategory |= mount->GetOnlyTargetCategory();
+
 		delete wd;
 		delete mount;
 	}

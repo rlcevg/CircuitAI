@@ -64,13 +64,15 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 	CMoveAction* moveAction = static_cast<CMoveAction*>(act);
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	AIFloat3 haven = circuit->GetFactoryManager()->GetClosestHaven(unit);
+	AIFloat3 startPos = unit->GetUnit()->GetPos();
+	AIFloat3 endPos = circuit->GetFactoryManager()->GetClosestHaven(unit);
+	if (endPos == -RgtVector) {
+		endPos = circuit->GetSetupManager()->GetBasePos();
+	}
 	F3Vec path;
 
-	AIFloat3 startPos = unit->GetUnit()->GetPos();
-	AIFloat3 endPos = (haven != -RgtVector) ? haven : circuit->GetSetupManager()->GetStartPos();
 	float range = circuit->GetTerrainManager()->GetConvertStoP();
-	circuit->GetPathfinder()->SetMapData(unit->GetCircuitDef()->GetMobileId(), circuit->GetThreatMap());
+	circuit->GetPathfinder()->SetMapData(unit, circuit->GetThreatMap());
 	circuit->GetPathfinder()->MakePath(path, startPos, endPos, range);
 
 	if (path.empty()) {
@@ -98,7 +100,7 @@ void CRetreatTask::Update()
 		Unit* u = ass->GetUnit();
 		if (u->GetHealth() >= u->GetMaxHealth() * 0.8f) {
 			RemoveAssignee(ass);
-		} else if (updCount % 8 == 0) {
+		} else if (updCount % 4 == 0) {
 			Execute(ass);
 		} else {
 			ass->Update(circuit);
@@ -123,7 +125,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 	CFactoryManager* factoryManager = circuit->GetFactoryManager();
 	AIFloat3 pos = factoryManager->GetClosestHaven(unit);
 	if (pos == -RgtVector) {
-		pos = circuit->GetSetupManager()->GetStartPos();
+		pos = circuit->GetSetupManager()->GetBasePos();
 	}
 	const float maxDist = factoryManager->GetAssistDef()->GetBuildDistance();
 	Unit* u = unit->GetUnit();

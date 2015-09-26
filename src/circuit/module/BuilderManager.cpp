@@ -464,7 +464,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	terrainManager->CorrectPosition(pos);
-	circuit->GetPathfinder()->SetMapData(unit->GetCircuitDef()->GetMobileId(), circuit->GetThreatMap());
+	circuit->GetPathfinder()->SetMapData(unit, circuit->GetThreatMap());
 	float maxSpeed = unit->GetUnit()->GetMaxSpeed();
 	int buildDistance = unit->GetCircuitDef()->GetBuildDistance();
 	float metric = std::numeric_limits<float>::max();
