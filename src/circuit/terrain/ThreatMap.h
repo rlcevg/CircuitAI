@@ -36,40 +36,56 @@ public:
 	void EnemyDamaged(CEnemyUnit* enemy);
 	void EnemyDestroyed(CEnemyUnit* enemy);
 
-	float GetAverageThreat() const { return currAvgThreat + 1.0f; }
-	float GetThreatAt(const springai::AIFloat3&) const;
+//	float GetAverageThreat() const { return currAvgThreat + 1.0f; }
+	int GetSquareSize() const { return squareSize; }
+	float GetAllThreatAt(const springai::AIFloat3& position) const;
+	void SetThreatType(CCircuitUnit* unit);
+	float GetThreatAt(const springai::AIFloat3& position) const;
+	float GetThreatAt(CCircuitUnit* unit, const springai::AIFloat3& position) const;
 
-	float* GetThreatArray() { return &threatCells[0]; }
-	float* GetThreatCloakArray() { return &threatCloak[0]; }
+	float* GetAirThreatArray() { return &airThreat[0]; }
+	float* GetLandThreatArray() { return &landThreat[0]; }
+	float* GetWaterThreatArray() { return &waterThreat[0]; }
+	float* GetCloakThreatArray() { return &cloakThreat[0]; }
 	int GetThreatMapWidth() const { return width; }
 	int GetThreatMapHeight() const { return height; }
 
 	float GetUnitThreat(CCircuitUnit* unit) const;
 
 private:
+	using Threats = std::vector<float>;
 	CCircuitAI* circuit;
 
 	void AddEnemyUnit(const CEnemyUnit* e, const float scale = 1.0f);
 	void DelEnemyUnit(const CEnemyUnit* e) { AddEnemyUnit(e, -1.0f); };
+	void AddEnemyUnitAll(const CEnemyUnit* e, const float scale = 1.0f);
+	void DelEnemyUnitAll(const CEnemyUnit* e) { AddEnemyUnitAll(e, -1.0f); };
+	void AddEnemyUnit(const CEnemyUnit* e, Threats& threats, const float scale = 1.0f);
+	void DelEnemyUnit(const CEnemyUnit* e, Threats& threats) { AddEnemyUnit(e, threats, -1.0f); };
+	void AddDecloaker(const CEnemyUnit* e, const float scale = 1.0f);
+	void DelDecloaker(const CEnemyUnit* e) { AddDecloaker(e, -1.0f); };
+	int GetCloakRange(const CEnemyUnit* e) const;
 	float GetEnemyUnitThreat(CEnemyUnit* enemy) const;
 	bool IsInLOS(const springai::AIFloat3& pos) const;
 //	bool IsInRadar(const springai::AIFloat3& pos) const;
 
-	float currAvgThreat;
-	float currMaxThreat;
-	float currSumThreat;
+//	float currAvgThreat;
+//	float currMaxThreat;
+//	float currSumThreat;
 
 	int squareSize;
 	int width;
 	int height;
 
 	int rangeDefault;
-	int rangeCloakSq;
+	int distCloak;
 
 	CCircuitAI::EnemyUnits hostileUnits;
 	CCircuitAI::EnemyUnits peaceUnits;
-	std::vector<float> threatCells;
-	std::vector<float> threatCloak;
+	Threats airThreat;
+	Threats landThreat;  // surface
+	Threats waterThreat;  // under water
+	Threats cloakThreat;
 
 //	std::vector<int> radarMap;
 	std::vector<int> losMap;
@@ -77,10 +93,11 @@ private:
 	int losWidth;
 	int losResConv;
 
+	Threats* pthreats;
+
 #ifdef DEBUG_VIS
 private:
-	uint32_t sdlWindowId;
-	float* dbgMap;
+	std::vector<std::pair<uint32_t, float*>> sdlWindows;
 	void UpdateVis();
 public:
 	void ToggleVis();

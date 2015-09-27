@@ -19,6 +19,7 @@ class CCircuitUnit;
 class CThreatMap;
 #ifdef DEBUG_VIS
 class CCircuitAI;
+class CCircuitDef;
 #endif
 
 class CPathFinder: public NSMicroPather::Graph {
@@ -61,7 +62,17 @@ private:
 	bool isVis;
 	int toggleFrame;
 	CCircuitAI* circuit;
+	CCircuitDef* dbgDef;
+	springai::AIFloat3 dbgPos;
+	int dbgType;
 public:
+	void SetDbgDef(CCircuitDef* cdef) { dbgDef = cdef; }
+	CCircuitDef* GetDbgDef() const { return dbgDef; }
+	void SetDbgPos(const springai::AIFloat3& pos) { dbgPos = pos; }
+	const springai::AIFloat3& GetDbgPos() const { return dbgPos; }
+	void SetDbgType(int type) { dbgType = type; }
+	int GetDbgType() const { return dbgType; }
+	void SetMapData(CThreatMap* threatMap);
 	void UpdateVis(const F3Vec& path);
 	void ToggleVis(CCircuitAI* circuit);
 #endif

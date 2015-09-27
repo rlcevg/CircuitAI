@@ -25,6 +25,7 @@ CEnemyUnit::CEnemyUnit(Unit* unit, CCircuitDef* cdef)
 		, pos(ZeroVector)
 		, threat(.0f)
 		, range(0)
+		, rangeDecloak(0)
 		, losStatus(LosType::NONE)
 {
 	SetCircuitDef(cdef);
@@ -65,7 +66,7 @@ float CEnemyUnit::GetDPS()
 		return 10.0f;
 	}
 	float dps = circuitDef->GetDPS();
-	if ((dps < 0.1f) || !circuitDef->IsAntiLand()) {  // FIXME: Move IsAntiLand check elsewhere
+	if (dps < 0.1f) {
 		return .0f;
 	}
 	if (unit->IsParalyzed() || unit->IsBeingBuilt() || IsDisarmed()) {

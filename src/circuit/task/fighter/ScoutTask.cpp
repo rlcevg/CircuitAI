@@ -74,7 +74,7 @@ void CScoutTask::Execute(CCircuitUnit* unit)
 		return;
 	}
 
-	if (isUpdating && (threatMap->GetThreatAt(position) < threatMap->GetUnitThreat(unit))) {
+	if (isUpdating && (threatMap->GetThreatAt(unit, position) < threatMap->GetUnitThreat(unit))) {
 		return;
 	}
 
@@ -125,12 +125,13 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, F3Vec& path)
 	STerrainMapArea* area = unit->GetArea();
 	float power = threatMap->GetUnitThreat(unit) * 0.8f;
 	int noChaseCat = unit->GetCircuitDef()->GetUnitDef()->GetNoChaseCategory();
-	float range = unit->GetUnit()->GetMaxRange() + terrainManager->GetConvertStoP() * 2;
+	float range = unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2;
 	float minSqDist = range * range;
 
 	CEnemyUnit* bestTarget = nullptr;
 	CEnemyUnit* worstTarget = nullptr;
 	F3Vec enemyPositions;
+	threatMap->SetThreatType(unit);
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;

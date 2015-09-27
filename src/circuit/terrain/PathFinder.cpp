@@ -32,6 +32,9 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 		, isVis(false)
 		, toggleFrame(-1)
 		, circuit(nullptr)
+		, dbgDef(nullptr)
+		, dbgPos(ZeroVector)
+		, dbgType(1)
 #endif
 {
 	squareSize   = terrainData->convertStoP;
@@ -119,9 +122,19 @@ void CPathFinder::UpdateAreaUsers()
 
 void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap)
 {
-	STerrainMapMobileType::Id mobileTypeId = unit->GetCircuitDef()->GetMobileId();
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	STerrainMapMobileType::Id mobileTypeId = cdef->GetMobileId();
 	bool* moveArray = (mobileTypeId < 0) ? airMoveArray : moveArrays[mobileTypeId];
-	float* costArray = unit->GetUnit()->IsCloaked() ? threatMap->GetThreatCloakArray() : threatMap->GetThreatArray();
+	float* costArray;
+	if (unit->GetUnit()->IsCloaked()) {
+		costArray = threatMap->GetCloakThreatArray();
+	} else if (cdef->GetUnitDef()->IsAbleToFly()) {
+		costArray = threatMap->GetAirThreatArray();
+	} else if (unit->GetUnit()->GetPos().y < -10.0f) {
+		costArray = threatMap->GetWaterThreatArray();
+	} else {
+		costArray = threatMap->GetLandThreatArray();
+	}
 	micropather->SetMapData(moveArray, costArray);
 }
 
@@ -142,8 +155,8 @@ AIFloat3 CPathFinder::Node2Pos(void* node)
 	const size_t index = (size_t)node;
 
 	float3 pos;
-	pos.z = (index / pathMapXSize) * squareSize;
-	pos.x = (index - ((index / pathMapXSize) * pathMapXSize)) * squareSize;
+	pos.z = (index / pathMapXSize) * squareSize + squareSize / 2;
+	pos.x = (index - ((index / pathMapXSize) * pathMapXSize)) * squareSize + squareSize / 2;
 
 	return pos;
 }
@@ -347,6 +360,17 @@ float CPathFinder::FindBestPathToRadius(F3Vec& posPath, AIFloat3& startPos, floa
 }
 
 #ifdef DEBUG_VIS
+void CPathFinder::SetMapData(CThreatMap* threatMap)
+{
+	if ((dbgDef == nullptr) || (dbgType < 0) || (dbgType > 3)) {
+		return;
+	}
+	STerrainMapMobileType::Id mobileTypeId = dbgDef->GetMobileId();
+	bool* moveArray = (mobileTypeId < 0) ? airMoveArray : moveArrays[mobileTypeId];
+	float* costArray[] = {threatMap->GetAirThreatArray(), threatMap->GetLandThreatArray(), threatMap->GetWaterThreatArray(), threatMap->GetCloakThreatArray()};
+	micropather->SetMapData(moveArray, costArray[dbgType]);
+}
+
 void CPathFinder::UpdateVis(const F3Vec& path)
 {
 	if (!isVis) {
@@ -354,9 +378,9 @@ void CPathFinder::UpdateVis(const F3Vec& path)
 	}
 
 	Figure* fig = circuit->GetDrawer()->GetFigure();
-	int figId = fig->DrawLine(ZeroVector, ZeroVector, 8.0f, true, FRAMES_PER_SEC * 5, 0);
+	int figId = fig->DrawLine(ZeroVector, ZeroVector, 16.0f, true, FRAMES_PER_SEC * 5, 0);
 	for (int i = 1; i < path.size(); ++i) {
-		fig->DrawLine(path[i - 1], path[i], 8.0f, true, FRAMES_PER_SEC * 20, figId);
+		fig->DrawLine(path[i - 1], path[i], 16.0f, true, FRAMES_PER_SEC * 20, figId);
 	}
 	fig->SetColor(figId, AIColor(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX), 255);
 	delete fig;
@@ -371,6 +395,38 @@ void CPathFinder::ToggleVis(CCircuitAI* circuit)
 
 	isVis = !isVis;
 	this->circuit = circuit;
+
+//	auto node2pos = [this](void* node) {
+//		const size_t index = (size_t)node;
+//		float3 pos;
+//		pos.z = (index / pathMapXSize) * squareSize;
+//		pos.x = (index - ((index / pathMapXSize) * pathMapXSize)) * squareSize;
+//		return pos;
+//	};
+//	Drawer* draw = circuit->GetDrawer();
+//	if (isVis) {
+//		for (int x = 0; x < pathMapXSize; ++x) {
+//			for (int z = 1; z < pathMapYSize; ++z) {
+//				AIFloat3 p0 = node2pos(XY2Node(x, z - 1));
+//				AIFloat3 p1 = node2pos(XY2Node(x, z));
+//				draw->AddLine(p0, p1);
+//			}
+//		}
+//		for (int z = 0; z < pathMapYSize; ++z) {
+//			for (int x = 1; x < pathMapXSize; ++x) {
+//				AIFloat3 p0 = node2pos(XY2Node(x - 1, z));
+//				AIFloat3 p1 = node2pos(XY2Node(x, z));
+//				draw->AddLine(p0, p1);
+//			}
+//		}
+//	} else {
+//		for (int z = 0; z < pathMapYSize; ++z) {
+//			for (int x = 0; x < pathMapXSize; ++x) {
+//				AIFloat3 p = node2pos(XY2Node(x, z));
+//				draw->DeletePointsAndLines(p);
+//			}
+//		}
+//	}
 }
 #endif
 

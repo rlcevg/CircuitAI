@@ -540,6 +540,9 @@ int CCircuitAI::Message(int playerId, const char* message)
 	const char cmdArea[]   = "~area\0";
 	const char cmdGrid[]   = "~grid\0";
 	const char cmdPath[]   = "~path\0";
+
+	const char cmdName[]   = "~name";
+	const char cmdEnd[]    = "~end";
 #endif
 
 	if (message[0] != '~') {
@@ -583,6 +586,22 @@ int CCircuitAI::Message(int playerId, const char* message)
 	}
 	else if ((msgLength == strlen(cmdPath)) && (strcmp(message, cmdPath) == 0)) {
 		pathfinder->ToggleVis(this);
+	}
+
+	else if ((strncmp(message, cmdName, 5) == 0)) {
+		pathfinder->SetDbgDef(GetCircuitDef(message[6]));
+		pathfinder->SetDbgPos(map->GetMousePos());
+		const AIFloat3& dbgPos = pathfinder->GetDbgPos();
+		LOG("%f, %f, %f, %i", dbgPos.x, dbgPos.y, dbgPos.z, pathfinder->GetDbgDef());
+	}
+	else if ((strncmp(message, cmdEnd, 4) == 0)) {
+		F3Vec path;
+		pathfinder->SetDbgType(atoi((const char*)&message[5]));
+		AIFloat3 startPos = pathfinder->GetDbgPos();
+		AIFloat3 endPos = map->GetMousePos();
+		pathfinder->SetMapData(GetThreatMap());
+		pathfinder->MakePath(path, startPos, endPos, threatMap->GetSquareSize());
+		LOG("%f, %f, %f, %i", endPos.x, endPos.y, endPos.z, pathfinder->GetDbgType());
 	}
 #endif
 
@@ -922,7 +941,7 @@ void CCircuitAI::InitUnitDefs()
 {
 	airCategory   = game->GetCategoriesFlag("FIXEDWING GUNSHIP");
 	landCategory  = game->GetCategoriesFlag("LAND SINK TURRET SHIP SWIM FLOAT HOVER");
-	waterCategory = game->GetCategoriesFlag("SWIM SUB SINK FLOAT SHIP");
+	waterCategory = game->GetCategoriesFlag("SUB");
 
 	CTerrainData& terrainData = gameAttribute->GetTerrainData();
 	if (!gameAttribute->GetTerrainData().IsInitialized()) {

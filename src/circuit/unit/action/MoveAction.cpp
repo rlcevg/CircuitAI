@@ -63,17 +63,10 @@ void CMoveAction::Update(CCircuitAI* circuit)
 	pathIterator = step;
 	u->MoveTo(path[step], UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 
-	if (pathIterator >= pathMaxIndex) {
-		return;
+	for (int i = 0; (step < pathMaxIndex) && (i < 3); ++i) {
+		step = std::min(step + increment, pathMaxIndex);
+		u->MoveTo(path[step], UNIT_COMMAND_OPTION_SHIFT_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 	}
-	step = std::min(step + increment * 2, pathMaxIndex);
-	u->MoveTo(path[step], UNIT_COMMAND_OPTION_SHIFT_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 120);
-
-	if (step >= pathMaxIndex) {
-		return;
-	}
-	step = std::min(step + increment * 4, pathMaxIndex);
-	u->MoveTo(path[step], UNIT_COMMAND_OPTION_SHIFT_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 180);
 }
 
 void CMoveAction::SetPath(const F3Vec& path)

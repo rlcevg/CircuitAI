@@ -57,6 +57,8 @@ CCircuitDef::CCircuitDef(UnitDef* def, std::unordered_set<Id>& buildOpts, CCircu
 
 	dps = 0.0f;
 	int targetCategory = 0;
+	bool isTracks = false;
+	bool isWater = false;
 	auto mounts = std::move(def->GetWeaponMounts());
 	for (WeaponMount* mount : mounts) {
 		WeaponDef* wd = mount->GetWeaponDef();
@@ -93,13 +95,15 @@ CCircuitDef::CCircuitDef(UnitDef* def, std::unordered_set<Id>& buildOpts, CCircu
 		}
 		dps += ldps * wd->GetSalvoSize() * scale / damages.size() / reloadTime;
 		targetCategory |= mount->GetOnlyTargetCategory();
+		isTracks |= (wd->GetProjectileSpeed() * FRAMES_PER_SEC >= 500.0f) || wd->IsTracks();
+		isWater |= wd->IsWaterWeapon();
 
 		delete wd;
 		delete mount;
 	}
-	isAntiAir   = (targetCategory & circuit->GetAirCategory());
+	isAntiAir   = (targetCategory & circuit->GetAirCategory()) && isTracks;
 	isAntiLand  = (targetCategory & circuit->GetLandCategory());
-	isAntiWater = (targetCategory & circuit->GetWaterCategory());
+	isAntiWater = (targetCategory & circuit->GetWaterCategory()) || isWater;
 }
 
 CCircuitDef::~CCircuitDef()

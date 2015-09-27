@@ -145,14 +145,14 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		float centerX = terrainManager->GetTerrainWidth() / 2;
 		float centerZ = terrainManager->GetTerrainHeight() / 2;
-		pos.x += (pos.x > centerX) ? size : -size;
-		pos.z += (pos.z > centerZ) ? size : -size;
+		pos.x += (pos.x > centerX) ? -size : size;
+		pos.z += (pos.z > centerZ) ? -size : size;
 		AIFloat3 oldPos = pos;
 		terrainManager->CorrectPosition(pos);
 		if (oldPos != pos) {
 			pos = unitPos;
-			pos.x += (pos.x > centerX) ? -size : size;
-			pos.z += (pos.z > centerZ) ? -size : size;
+			pos.x += (pos.x > centerX) ? size : -size;
+			pos.z += (pos.z > centerZ) ? size : -size;
 		}
 		u->PatrolTo(pos);
 

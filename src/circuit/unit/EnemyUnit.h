@@ -42,6 +42,9 @@ public:
 	void SetRange(int r) { range = r; }
 	int GetRange() const { return range; }
 
+	void SetDecloakRange(int r) { rangeDecloak = r; }
+	int GetDecloakRange() const { return rangeDecloak; }
+
 	bool operator==(const CCircuitUnit& rhs) { return id == rhs.GetId(); }
 	bool operator!=(const CCircuitUnit& rhs) { return id != rhs.GetId(); }
 
@@ -59,6 +62,7 @@ private:
 	springai::AIFloat3 pos;
 	float threat;
 	int range;
+	int rangeDecloak;
 	std::underlying_type<LosType>::type losStatus;
 
 public:

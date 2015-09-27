@@ -88,6 +88,7 @@ CEnemyUnit* CAttackTask::FindBestTarget(CCircuitUnit* unit, float& minSqDist)
 	CEnemyUnit* bestTarget = nullptr;
 	minSqDist = std::numeric_limits<float>::max();
 
+	threatMap->SetThreatType(unit);
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
