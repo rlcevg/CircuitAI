@@ -89,8 +89,8 @@ void CThreatMap::Update()
 			AIFloat3 pos = e->GetUnit()->GetPos();
 			circuit->GetTerrainManager()->CorrectPosition(pos);
 			e->SetPos(pos);
-		} else {
-			e->DecayThreat(0.99f);  // decay 0.99^updateNum
+//		} else {
+//			e->DecayThreat(0.99f);  // decay 0.99^updateNum
 		}
 		if (e->IsInLOS()) {
 			e->SetThreat(GetEnemyUnitThreat(e));

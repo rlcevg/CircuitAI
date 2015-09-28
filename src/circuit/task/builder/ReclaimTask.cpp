@@ -42,6 +42,13 @@ void CBReclaimTask::AssignTo(CCircuitUnit* unit)
 	lastTouched = manager->GetCircuit()->GetLastFrame();
 }
 
+void CBReclaimTask::RemoveAssignee(CCircuitUnit* unit)
+{
+	IBuilderTask::RemoveAssignee(unit);
+
+	manager->AbortTask(this);
+}
+
 void CBReclaimTask::Execute(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();

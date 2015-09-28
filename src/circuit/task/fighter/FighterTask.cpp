@@ -37,6 +37,13 @@ void IFighterTask::AssignTo(CCircuitUnit* unit)
 	}
 }
 
+void IFighterTask::RemoveAssignee(CCircuitUnit* unit)
+{
+	IUnitTask::RemoveAssignee(unit);
+
+	manager->AbortTask(this);
+}
+
 void IFighterTask::Update()
 {
 	// TODO: Monitor threat? Or do it on EnemySeen/EnemyDestroyed?

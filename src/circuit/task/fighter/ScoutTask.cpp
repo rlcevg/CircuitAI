@@ -28,6 +28,7 @@ CScoutTask::CScoutTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::SCOUT)
 		, isUpdating(false)
 		, updCount(0)
+		, scoutIndex(0)
 {
 }
 
@@ -53,52 +54,55 @@ void CScoutTask::Execute(CCircuitUnit* unit)
 	}
 	CMoveAction* moveAction = static_cast<CMoveAction*>(act);
 
-	CCircuitAI* circuit = manager->GetCircuit();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CThreatMap* threatMap = circuit->GetThreatMap();
-	Unit* u = unit->GetUnit();
-
 	F3Vec path;
 	CEnemyUnit* bestTarget = FindBestTarget(unit, path);
 
+	CCircuitAI* circuit = manager->GetCircuit();
 	if (bestTarget != nullptr) {
 		position = bestTarget->GetPos();
-		u->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
+		unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
 		moveAction->SetActive(false);
 		return;
 	} else if (!path.empty()) {
 		position = path.back();
 		moveAction->SetPath(path);
-		moveAction->Update(circuit);
 		moveAction->SetActive(true);
+		unit->Update(circuit);
 		return;
 	}
 
-	if (isUpdating && (threatMap->GetThreatAt(unit, position) < threatMap->GetUnitThreat(unit))) {
-		return;
-	}
-
+	CThreatMap* threatMap = circuit->GetThreatMap();
 	CMetalManager* metalManager = circuit->GetMetalManager();
-	CMetalData::Clusters clusters = metalManager->GetClusters();
-	if (!clusters.empty()) {
-		int index = circuit->GetMilitaryManager()->GetScoutIndex();
-		position = clusters[index].geoCentr;
-		const CMetalData::Metals& spots = metalManager->GetSpots();
-		std::random_shuffle(clusters[index].idxSpots.begin(), clusters[index].idxSpots.end());
-		auto it = clusters[index].idxSpots.begin();
-		u->Fight(spots[*it].position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
-		auto end = clusters[index].idxSpots.end();
-		while (++it != end) {
-			u->Fight(spots[*it].position, UNIT_COMMAND_OPTION_SHIFT_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
+	const CMetalData::Metals& spots = metalManager->GetSpots();
+	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, position) < threatMap->GetUnitThreat(unit));
+	if (!spots.empty()) {
+		if (!proceed) {
+			scoutIndex = circuit->GetMilitaryManager()->GetScoutIndex();
 		}
-		moveAction->SetActive(false);
-		return;
+
+		AIFloat3 startPos = unit->GetUnit()->GetPos();
+		AIFloat3 endPos = spots[scoutIndex].position;
+
+		circuit->GetPathfinder()->SetMapData(unit, threatMap);
+		circuit->GetPathfinder()->MakePath(path, startPos, endPos, threatMap->GetSquareSize());
+
+		if (!path.empty()) {
+			position = path.back();
+			moveAction->SetPath(path);
+			moveAction->SetActive(true);
+			unit->Update(circuit);
+			return;
+		}
 	}
 
+	if (proceed) {
+		return;
+	}
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	float x = rand() % (terrainManager->GetTerrainWidth() + 1);
 	float z = rand() % (terrainManager->GetTerrainHeight() + 1);
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
-	u->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
+	unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
 	moveAction->SetActive(false);
 }
 
@@ -125,7 +129,7 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, F3Vec& path)
 	STerrainMapArea* area = unit->GetArea();
 	float power = threatMap->GetUnitThreat(unit) * 0.8f;
 	int noChaseCat = unit->GetCircuitDef()->GetUnitDef()->GetNoChaseCategory();
-	float range = std::max(unit->GetUnit()->GetMaxRange() + DEFAULT_SLACK * 2,
+	float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
 						   unit->GetCircuitDef()->GetUnitDef()->GetLosRadius() * threatMap->GetLosConv());
 	float minSqDist = range * range;
 

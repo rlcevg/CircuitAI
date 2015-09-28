@@ -26,6 +26,7 @@ public:
 private:
 	bool isUpdating;
 	unsigned int updCount;
+	int scoutIndex;
 
 	CEnemyUnit* FindBestTarget(CCircuitUnit* unit, F3Vec& path);
 };

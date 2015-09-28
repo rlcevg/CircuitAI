@@ -645,6 +645,7 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 		IUnitTask* prevTask = unit->GetTask();
 		if (prevTask->GetType() != IUnitTask::Type::RETREAT) {
 			ITaskManager* mgr = prevTask->GetManager();
+			// TODO: Make sure prevTask is valid and can be assigned
 			mgr->AssignTask(unit, new CStuckTask(mgr));
 		}
 	}
@@ -827,7 +828,7 @@ CEnemyUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS)
 {
 	CEnemyUnit* unit = GetEnemyUnit(unitId);
 	if (unit != nullptr) {
-		if (isInLOS && (unit->GetCircuitDef() == nullptr)) {
+		if (isInLOS/* && (unit->GetCircuitDef() == nullptr)*/) {
 			UnitDef* unitDef = unit->GetUnit()->GetDef();
 			unit->SetCircuitDef(defsById[unitDef->GetUnitDefId()]);
 			delete unitDef;
@@ -875,7 +876,7 @@ void CCircuitAI::UpdateEnemyUnits()
 		}
 
 		int frame = enemy->GetLastSeen();
-		if ((frame != -1) && (lastFrame - frame >= FRAMES_PER_SEC * 300)) {
+		if ((frame != -1) && (lastFrame - frame >= FRAMES_PER_SEC * 600)) {
 			EnemyDestroyed(enemy);
 			// UnregisterEnemyUnit(enemy)
 			it = enemyUnits.erase(it);

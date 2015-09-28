@@ -24,6 +24,7 @@ public:
 	virtual ~IFighterTask();
 
 	virtual void AssignTo(CCircuitUnit* unit);
+	virtual void RemoveAssignee(CCircuitUnit* unit);  // FIXME: Remove when proper task assignment implemented
 
 	virtual void Update();
 

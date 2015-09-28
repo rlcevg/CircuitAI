@@ -79,7 +79,7 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 		path.push_back(endPos);
 	}
 	moveAction->SetPath(path);
-	moveAction->Update(circuit);
+	unit->Update(circuit);
 }
 
 void CRetreatTask::Update()

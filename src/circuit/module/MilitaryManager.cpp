@@ -244,7 +244,7 @@ void CMilitaryManager::DequeueTask(IUnitTask* task, bool done)
 
 void CMilitaryManager::AssignTask(CCircuitUnit* unit)
 {
-	IFighterTask::FightType type = scouts.find(unit->GetCircuitDef()) != scouts.end() ?
+	IFighterTask::FightType type = (scouts.find(unit->GetCircuitDef()) != scouts.end()) ?
 			IFighterTask::FightType::SCOUT :
 			IFighterTask::FightType::ATTACK;
 	EnqueueTask(type)->AssignTo(unit);
@@ -346,15 +346,15 @@ int CMilitaryManager::GetScoutIndex()
 void CMilitaryManager::Init()
 {
 	CMetalManager* metalManager = circuit->GetMetalManager();
-	const CMetalData::Clusters& clusters = metalManager->GetClusters();
+	const CMetalData::Metals& spots = metalManager->GetSpots();
 
-	scoutPath.reserve(clusters.size());
-	for (int i = 0; i < clusters.size(); ++i) {
+	scoutPath.reserve(spots.size());
+	for (int i = 0; i < spots.size(); ++i) {
 		scoutPath.push_back(i);
 	}
 	const AIFloat3& pos = circuit->GetSetupManager()->GetStartPos();
-	auto compare = [&pos, &clusters](int a, int b) {
-		return pos.SqDistance2D(clusters[a].geoCentr) > pos.SqDistance2D(clusters[b].geoCentr);
+	auto compare = [&pos, &spots](int a, int b) {
+		return pos.SqDistance2D(spots[a].position) > pos.SqDistance2D(spots[b].position);
 	};
 	std::sort(scoutPath.begin(), scoutPath.end(), compare);
 

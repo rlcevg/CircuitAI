@@ -36,6 +36,13 @@ void CBPatrolTask::AssignTo(CCircuitUnit* unit)
 	lastTouched = manager->GetCircuit()->GetLastFrame();
 }
 
+void CBPatrolTask::RemoveAssignee(CCircuitUnit* unit)
+{
+	IBuilderTask::RemoveAssignee(unit);
+
+	manager->AbortTask(this);
+}
+
 void CBPatrolTask::Execute(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();

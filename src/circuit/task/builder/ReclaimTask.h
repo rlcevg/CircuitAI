@@ -20,6 +20,7 @@ public:
 	virtual ~CBReclaimTask();
 
 	virtual void AssignTo(CCircuitUnit* unit);
+	virtual void RemoveAssignee(CCircuitUnit* unit);  // FIXME: Remove when proper task assignment implemented
 
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
