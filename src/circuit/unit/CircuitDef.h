@@ -26,7 +26,7 @@ public:
 
 	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
-	CCircuitDef(springai::UnitDef* def, std::unordered_set<Id>& buildOpts, CCircuitAI* circuit);
+	CCircuitDef(CCircuitAI* circuit, springai::UnitDef* def, std::unordered_set<Id>& buildOpts);
 	virtual ~CCircuitDef();
 
 	Id GetId() const { return id; }

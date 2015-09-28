@@ -8,6 +8,7 @@
 
 #include "terrain/PathFinder.h"
 #include "terrain/TerrainData.h"
+#include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "util/utils.h"
 #ifdef DEBUG_VIS
@@ -74,6 +75,8 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 		airMoveArray[i] = true;
 	}
 	moveArrays.push_back(airMoveArray);
+
+	blockArray.resize(totalcells, 0);
 }
 
 CPathFinder::~CPathFinder()
@@ -86,22 +89,36 @@ CPathFinder::~CPathFinder()
 	delete micropather;
 }
 
-void CPathFinder::UpdateAreaUsers()
+void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 {
 	if (isUpdated) {
 		return;
 	}
 	isUpdated = true;
 
+	std::fill(blockArray.begin(), blockArray.end(), 0);
+	const int granularity = squareSize / (SQUARE_SIZE * 2);
+	const SBlockingMap& blockMap = terrainManager->GetBlockingMap();
+	for (int x = 0; x < blockMap.columns; ++x) {
+		for (int z = 0; z < blockMap.rows; ++z) {
+			if (blockMap.IsStruct(x, z, SBlockingMap::StructMask::ALL)) {
+				const int moveX = x / granularity;
+				const int moveY = z / granularity;
+				++blockArray[moveY * pathMapXSize + moveX];
+			}
+		}
+	}
+
 	const std::vector<STerrainMapMobileType>& moveTypes = terrainData->GetNextAreaData()->mobileType;
-	int totalcells = pathMapXSize * pathMapYSize;
+	const int totalcells = pathMapXSize * pathMapYSize;
+	const int blockThreshold = granularity * granularity / 4;
 	for (int j = 0; j < moveTypes.size(); ++j) {
 		const STerrainMapMobileType& mt = moveTypes[j];
 		bool* moveArray = moveArrays[j];
 
 		for (int i = 0; i < totalcells; ++i) {
 			// NOTE: Not all passable sectors have area
-			moveArray[i] = (mt.sector[i].area != nullptr);
+			moveArray[i] = (mt.sector[i].area != nullptr) && (blockArray[i] < blockThreshold);
 		}
 
 		// make sure that the edges are no-go

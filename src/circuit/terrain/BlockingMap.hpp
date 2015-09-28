@@ -31,18 +31,18 @@ static SBlockingMap::StructMask structTypes[] = {
 	SBlockingMap::StructMask::UNKNOWN
 };
 
-inline bool SBlockingMap::IsStruct(int x, int z, StructMask structMask)
+inline bool SBlockingMap::IsStruct(int x, int z, StructMask structMask) const
 {
 	return (grid[z * columns + x].notIgnoreMask & static_cast<int>(structMask));
 }
 
-inline bool SBlockingMap::IsBlocked(int x, int z, int notIgnoreMask)
+inline bool SBlockingMap::IsBlocked(int x, int z, int notIgnoreMask) const
 {
-	SBlockCell& cell = grid[z * columns + x];
+	const SBlockCell& cell = grid[z * columns + x];
 	return (cell.blockerMask & notIgnoreMask) || static_cast<int>(cell.structMask);
 }
 
-inline bool SBlockingMap::IsBlockedLow(int xLow, int zLow, int notIgnoreMask)
+inline bool SBlockingMap::IsBlockedLow(int xLow, int zLow, int notIgnoreMask) const
 {
 	return (gridLow[zLow * columnsLow + xLow].blockerMask & notIgnoreMask);
 }
@@ -116,12 +116,12 @@ inline void SBlockingMap::RemoveStruct(int x, int z, StructType structType, int 
 	}
 }
 
-inline bool SBlockingMap::IsInBounds(const int2& r1, const int2& r2)
+inline bool SBlockingMap::IsInBounds(const int2& r1, const int2& r2) const
 {
 	return (r1.x >= 0) && (r1.y >= 0) && (r2.x < columns) && (r2.y < rows);
 }
 
-inline bool SBlockingMap::IsInBoundsLow(int x, int z)
+inline bool SBlockingMap::IsInBoundsLow(int x, int z) const
 {
 	return (x >= 0) && (z >= 0) && (x < columnsLow) && (z < rowsLow);
 }

@@ -15,6 +15,7 @@
 namespace circuit {
 
 class CTerrainData;
+class CTerrainManager;
 class CCircuitUnit;
 class CThreatMap;
 #ifdef DEBUG_VIS
@@ -27,8 +28,9 @@ public:
 	CPathFinder(CTerrainData* terrainData);
 	virtual ~CPathFinder();
 
-	void UpdateAreaUsers();
+	void UpdateAreaUsers(CTerrainManager* terrainManager);
 	void SetUpdated(bool value) { isUpdated = value; }
+	bool IsUpdated() const { return isUpdated; }
 
 	void* XY2Node(int x, int y);
 	void Node2XY(void* node, int* x, int* y);
@@ -49,6 +51,7 @@ private:
 	NSMicroPather::CMicroPather* micropather;
 	bool* airMoveArray;
 	std::vector<bool*> moveArrays;
+	std::vector<int> blockArray;
 	bool isUpdated;
 
 	int squareSize;

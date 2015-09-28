@@ -31,8 +31,8 @@ CThreatMap::CThreatMap(CCircuitAI* circuit)
 	width = circuit->GetTerrainManager()->GetTerrainWidth() / squareSize;
 	height = circuit->GetTerrainManager()->GetTerrainHeight() / squareSize;
 
-	rangeDefault = (SQUARE_SIZE * THREAT_RES * 4) / squareSize;
-	distCloak = (SQUARE_SIZE * THREAT_RES * 3) / squareSize;
+	rangeDefault = (DEFAULT_SLACK * 4) / squareSize;
+	distCloak = (DEFAULT_SLACK * 3) / squareSize;
 
 	airThreat.resize(width * height, THREAT_VAL_BASE);
 	landThreat.resize(width * height, THREAT_VAL_BASE);
@@ -176,7 +176,7 @@ void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 	AIFloat3 pos = enemy->GetUnit()->GetPos();
 	circuit->GetTerrainManager()->CorrectPosition(pos);
 	enemy->SetPos(pos);
-	enemy->SetRange(((int)enemy->GetUnit()->GetMaxRange() + SQUARE_SIZE * THREAT_RES * 2) / squareSize);
+	enemy->SetRange(GetEnemyUnitRange(enemy));
 	enemy->SetDecloakRange(GetCloakRange(enemy));
 	enemy->SetThreat(GetEnemyUnitThreat(enemy));
 
@@ -431,6 +431,16 @@ void CThreatMap::AddDecloaker(const CEnemyUnit* e, const float scale)
 			}
 		}
 	}
+}
+
+int CThreatMap::GetEnemyUnitRange(const CEnemyUnit* e) const
+{
+	assert(e->GetCircuitDef() != nullptr);
+	int range = e->GetUnit()->GetMaxRange();
+	if (e->GetCircuitDef()->GetUnitDef()->GetSpeed() > 0) {
+		return (range + DEFAULT_SLACK * 4) / squareSize;
+	}
+	return (range + DEFAULT_SLACK * 2) / squareSize;
 }
 
 int CThreatMap::GetCloakRange(const CEnemyUnit* e) const

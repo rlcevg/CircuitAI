@@ -152,7 +152,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	int mapHeight = map->GetHeight();
 	terrainWidth = mapWidth * SQUARE_SIZE;
 	terrainHeight = mapHeight * SQUARE_SIZE;
-	convertStoP = SQUARE_SIZE * THREAT_RES;  // = 2^x, should not be less than 16 (2*SUQARE_SIZE)
+	convertStoP = DEFAULT_SLACK;  // = 2^x, should not be less than 16 (2*SUQARE_SIZE)
 	if ((mapWidth / convertStoP) * (mapHeight / convertStoP) < 8 * 8) {
 		convertStoP /= 2; // Smaller Sectors, more detailed analysis
 //	} else if ((mapWidth / 16) * (mapHeight / 16) > 20 * 20 ) {

@@ -389,6 +389,14 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 	return -RgtVector;
 }
 
+const SBlockingMap& CTerrainManager::GetBlockingMap()
+{
+	if (circuit->IsAllyAware()) {
+		MarkAllyBuildings();
+	}
+	return blockingMap;
+}
+
 void CTerrainManager::MarkAllyBuildings()
 {
 	if (markFrame /*+ FRAMES_PER_SEC*/ >= circuit->GetLastFrame()) {
@@ -1273,7 +1281,7 @@ void CTerrainManager::UpdateAreaUsers()
 	}
 	// TODO: Use boost signals to invoke UpdateAreaUsers event?
 	circuit->GetBuilderManager()->UpdateAreaUsers();
-	circuit->GetPathfinder()->UpdateAreaUsers();
+	circuit->GetPathfinder()->UpdateAreaUsers(this);
 
 	DidUpdateAreaUsers();
 }

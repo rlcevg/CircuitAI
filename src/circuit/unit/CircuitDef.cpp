@@ -17,18 +17,18 @@ namespace circuit {
 
 using namespace springai;
 
-CCircuitDef::CCircuitDef(UnitDef* def, std::unordered_set<Id>& buildOpts, CCircuitAI* circuit) :
-		id(def->GetUnitDefId()),
-		def(def),
-		count(0),
-		buildOptions(buildOpts),
-		buildDistance(def->GetBuildDistance()),
-		buildCounts(0),
-//		dgunReload(-1),
-		dgunRange(.0f),
-		dgunMount(nullptr),
-		mobileTypeId(-1),
-		immobileTypeId(-1)
+CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts)
+		: id(def->GetUnitDefId())
+		, def(def)
+		, count(0)
+		, buildOptions(buildOpts)
+		, buildDistance(def->GetBuildDistance())
+		, buildCounts(0)
+//		, dgunReload(-1)
+		, dgunRange(.0f)
+		, dgunMount(nullptr)
+		, mobileTypeId(-1)
+		, immobileTypeId(-1)
 {
 	if (def->CanManualFire()) {
 		float bestReload = std::numeric_limits<float>::max();

@@ -23,7 +23,7 @@ CMoveAction::CMoveAction(CCircuitUnit* owner)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	int squareSize = unit->GetManager()->GetCircuit()->GetTerrainManager()->GetConvertStoP();
-	increment = ((SQUARE_SIZE * THREAT_RES) / squareSize + 1);
+	increment = (DEFAULT_SLACK / squareSize + 1);
 	minSqDist = squareSize * increment;
 	minSqDist *= minSqDist;
 }
@@ -63,7 +63,7 @@ void CMoveAction::Update(CCircuitAI* circuit)
 	pathIterator = step;
 	u->MoveTo(path[step], UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 
-	for (int i = 0; (step < pathMaxIndex) && (i < 3); ++i) {
+	for (int i = 0; (step < pathMaxIndex) && (i < 2); ++i) {
 		step = std::min(step + increment, pathMaxIndex);
 		u->MoveTo(path[step], UNIT_COMMAND_OPTION_SHIFT_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 	}

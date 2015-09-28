@@ -24,17 +24,17 @@ struct SBlockingMap {
 								 DEF_HIGH = 0x0100, SPECIAL = 0x0200,     NANO = 0x0400,  UNKNOWN = 0x0800,
 									 NONE = 0x0000,     ALL = 0xFFFF};
 
-	inline bool IsStruct(int x, int z, StructMask structMask);
-	inline bool IsBlocked(int x, int z, int notIgnoreMask);
-	inline bool IsBlockedLow(int xLow, int zLow, int notIgnoreMask);
+	inline bool IsStruct(int x, int z, StructMask structMask) const;
+	inline bool IsBlocked(int x, int z, int notIgnoreMask) const;
+	inline bool IsBlockedLow(int xLow, int zLow, int notIgnoreMask) const;
 	inline void MarkBlocker(int x, int z, StructType structType, int notIgnoreMask);
 	inline void AddBlocker(int x, int z, StructType structType);
 	inline void RemoveBlocker(int x, int z, StructType structType);
 	inline void AddStruct(int x, int z, StructType structType, int notIgnoreMask);
 	inline void RemoveStruct(int x, int z, StructType structType, int notIgnoreMask);
 
-	inline bool IsInBounds(const int2& r1, const int2& r2);
-	inline bool IsInBoundsLow(int x, int z);
+	inline bool IsInBounds(const int2& r1, const int2& r2) const;
+	inline bool IsInBoundsLow(int x, int z) const;
 	inline void Bound(int2& r1, int2& r2);
 
 	static inline StructMask GetStructMask(StructType structType);

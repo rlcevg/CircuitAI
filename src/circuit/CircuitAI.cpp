@@ -955,7 +955,7 @@ void CCircuitAI::InitUnitDefs()
 			opts.insert(buildDef->GetUnitDefId());
 			delete buildDef;
 		}
-		CCircuitDef* cdef = new CCircuitDef(ud, opts, this);
+		CCircuitDef* cdef = new CCircuitDef(this, ud, opts);
 
 		defsByName[ud->GetName()] = cdef;
 		defsById[cdef->GetId()] = cdef;

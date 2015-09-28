@@ -21,7 +21,6 @@
 namespace circuit {
 
 class CCircuitAI;
-class CCircuitUnit;
 class IBlockMask;
 class CTerrainData;
 struct STerrainMapArea;
@@ -60,6 +59,9 @@ public:
 									 float searchRadius,
 									 int facing,
 									 TerrainPredicate& predicate);
+
+	const SBlockingMap& GetBlockingMap();
+
 private:
 	int markFrame;
 	struct SStructure {

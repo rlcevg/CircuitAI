@@ -20,6 +20,7 @@
 #define DEBUG_MARK			0xBAD0C0DE
 #define THREAT_RES			8
 #define MIN_THREAT			20.0f
+#define DEFAULT_SLACK		(SQUARE_SIZE * THREAT_RES)
 
 // z++
 #define UNIT_FACING_SOUTH	0

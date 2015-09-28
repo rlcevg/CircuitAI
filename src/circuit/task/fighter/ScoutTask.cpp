@@ -125,7 +125,8 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, F3Vec& path)
 	STerrainMapArea* area = unit->GetArea();
 	float power = threatMap->GetUnitThreat(unit) * 0.8f;
 	int noChaseCat = unit->GetCircuitDef()->GetUnitDef()->GetNoChaseCategory();
-	float range = unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2;
+	float range = std::max(unit->GetUnit()->GetMaxRange() + DEFAULT_SLACK * 2,
+						   unit->GetCircuitDef()->GetUnitDef()->GetLosRadius() * threatMap->GetLosConv());
 	float minSqDist = range * range;
 
 	CEnemyUnit* bestTarget = nullptr;

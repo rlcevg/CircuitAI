@@ -359,11 +359,11 @@ void CMilitaryManager::Init()
 	std::sort(scoutPath.begin(), scoutPath.end(), compare);
 
 	CScheduler* scheduler = circuit->GetScheduler().get();
-	const int interval = 6;
-	const int offset = circuit->GetSkirmishAIId() % interval + circuit->GetSkirmishAIId() * 2;
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateIdle, this), interval, offset + 3);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateRetreat, this), interval, offset + 4);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateFight, this), interval, offset + 5);
+	const int interval = 4;
+	const int offset = circuit->GetSkirmishAIId() % interval;
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateIdle, this), interval, offset + 0);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateFight, this), interval / 2, offset + 1);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateRetreat, this), interval, offset + 2);
 }
 
 void CMilitaryManager::UpdateIdle()

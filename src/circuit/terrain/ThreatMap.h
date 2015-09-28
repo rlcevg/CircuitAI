@@ -51,6 +51,7 @@ public:
 	int GetThreatMapHeight() const { return height; }
 
 	float GetUnitThreat(CCircuitUnit* unit) const;
+	int GetLosConv() const { return losResConv; }
 
 private:
 	using Threats = std::vector<float>;
@@ -64,8 +65,11 @@ private:
 	void DelEnemyUnit(const CEnemyUnit* e, Threats& threats) { AddEnemyUnit(e, threats, -1.0f); };
 	void AddDecloaker(const CEnemyUnit* e, const float scale = 1.0f);
 	void DelDecloaker(const CEnemyUnit* e) { AddDecloaker(e, -1.0f); };
+
+	int GetEnemyUnitRange(const CEnemyUnit* e) const;
 	int GetCloakRange(const CEnemyUnit* e) const;
 	float GetEnemyUnitThreat(CEnemyUnit* enemy) const;
+
 	bool IsInLOS(const springai::AIFloat3& pos) const;
 //	bool IsInRadar(const springai::AIFloat3& pos) const;
 
