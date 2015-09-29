@@ -63,6 +63,7 @@ public:
 	void MarkAllyMexes(const std::list<CCircuitUnit*>& mexes);
 	bool IsClusterFinished(int index);
 	bool IsClusterQueued(int index);
+	bool IsMexInFinished(int index);
 
 	using MexPredicate = std::function<bool (int index)>;
 	int GetMexToBuild(const springai::AIFloat3& pos, MexPredicate& predicate);

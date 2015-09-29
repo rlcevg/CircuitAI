@@ -390,6 +390,11 @@ bool CMetalManager::IsClusterQueued(int index)
 	return clusterInfos[index].queuedCount >= GetClusters()[index].idxSpots.size();
 }
 
+bool CMetalManager::IsMexInFinished(int index)
+{
+	return clusterInfos[metalInfos[index].clusterId].finishedCount >= GetClusters()[index].idxSpots.size();
+}
+
 int CMetalManager::GetMexToBuild(const AIFloat3& pos, MexPredicate& predicate)
 {
 	mex_tree filter(circuit->GetThreatMap(), GetClusters());

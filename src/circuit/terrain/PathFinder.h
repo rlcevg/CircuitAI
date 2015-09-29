@@ -45,6 +45,8 @@ public:
 	float FindBestPath(F3Vec& posPath, springai::AIFloat3& startPos, float myMaxRange, F3Vec& possibleTargets);
 	float FindBestPathToRadius(F3Vec& posPath, springai::AIFloat3& startPos, float radiusAroundTarget, const springai::AIFloat3& target);
 
+	int GetSquareSize() const { return squareSize; }
+
 private:
 	CTerrainData* terrainData;
 

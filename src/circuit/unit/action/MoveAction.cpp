@@ -7,7 +7,7 @@
 
 #include "unit/action/MoveAction.h"
 #include "unit/UnitManager.h"
-#include "terrain/TerrainManager.h"
+#include "terrain/PathFinder.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -22,7 +22,7 @@ CMoveAction::CMoveAction(CCircuitUnit* owner)
 		, pathIterator(0)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
-	int squareSize = unit->GetManager()->GetCircuit()->GetTerrainManager()->GetConvertStoP();
+	int squareSize = unit->GetManager()->GetCircuit()->GetPathfinder()->GetSquareSize();
 	increment = (DEFAULT_SLACK / squareSize + 1);
 	minSqDist = squareSize * increment;
 	minSqDist *= minSqDist;

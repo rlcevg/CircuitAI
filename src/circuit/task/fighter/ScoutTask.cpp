@@ -83,8 +83,9 @@ void CScoutTask::Execute(CCircuitUnit* unit)
 		AIFloat3 startPos = unit->GetUnit()->GetPos();
 		AIFloat3 endPos = spots[scoutIndex].position;
 
-		circuit->GetPathfinder()->SetMapData(unit, threatMap);
-		circuit->GetPathfinder()->MakePath(path, startPos, endPos, threatMap->GetSquareSize());
+		CPathFinder* pathfinder = circuit->GetPathfinder();
+		pathfinder->SetMapData(unit, threatMap);
+		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
 
 		if (!path.empty()) {
 			position = path.back();
@@ -132,8 +133,10 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, F3Vec& path)
 	float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
 						   unit->GetCircuitDef()->GetUnitDef()->GetLosRadius() * threatMap->GetLosConv());
 	float minSqDist = range * range;
+	float maxThreat = .0f;
 
 	CEnemyUnit* bestTarget = nullptr;
+	CEnemyUnit* mediumTarget = nullptr;
 	CEnemyUnit* worstTarget = nullptr;
 	F3Vec enemyPositions;
 	threatMap->SetThreatType(unit);
@@ -147,22 +150,27 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, F3Vec& path)
 		}
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
 		if (sqDist < minSqDist) {
-			if (enemy->GetCircuitDef() != nullptr) {
-				int targetCat = enemy->GetCircuitDef()->GetUnitDef()->GetCategory();
-				if (targetCat & noChaseCat == 0) {
-					bestTarget = enemy;
-					minSqDist = sqDist;
+			if (enemy->GetThreat() > maxThreat) {
+				bestTarget = enemy;
+				minSqDist = sqDist;
+				maxThreat = enemy->GetThreat();
+			} else if (bestTarget == nullptr) {
+				if (enemy->GetCircuitDef() != nullptr) {
+					int targetCat = enemy->GetCircuitDef()->GetUnitDef()->GetCategory();
+					if ((targetCat & noChaseCat) == 0) {
+						mediumTarget = enemy;
+					}
 				}
-			}
-			if (bestTarget == nullptr) {
-				worstTarget = enemy;
+				if (mediumTarget == nullptr) {
+					worstTarget = enemy;
+				}
 			}
 		} else {
 			enemyPositions.push_back(enemy->GetPos());
 		}
 	}
 	if (bestTarget == nullptr) {
-		bestTarget = worstTarget;
+		bestTarget = (mediumTarget != nullptr) ? mediumTarget : worstTarget;
 	}
 
 	path.clear();

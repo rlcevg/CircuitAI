@@ -65,6 +65,7 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, callback(callback)
 		, log(std::unique_ptr<Log>(callback->GetLog()))
 		, game(std::unique_ptr<Game>(callback->GetGame()))
+//		, cheats(std::unique_ptr<Cheats>(callback->GetCheats()))
 		, map(std::unique_ptr<Map>(callback->GetMap()))
 		, pathing(std::unique_ptr<Pathing>(callback->GetPathing()))
 		, drawer(std::unique_ptr<Drawer>(map->GetDrawer()))
@@ -168,6 +169,9 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_UNIT_DAMAGED", topic);
 			struct SUnitDamagedEvent* evt = (struct SUnitDamagedEvent*)data;
 			CEnemyUnit* attacker = GetEnemyUnit(evt->attacker);
+//			if (difficulty == Difficulty::NORMAL) {
+//				attacker = RegisterEnemyUnitCheat(attacker, evt->attacker);
+//			}
 			CCircuitUnit* unit = GetTeamUnit(evt->unit);
 			ret = (unit != nullptr) ? this->UnitDamaged(unit, attacker) : ERROR_UNIT_DAMAGED;
 			break;
@@ -600,7 +604,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 		AIFloat3 startPos = pathfinder->GetDbgPos();
 		AIFloat3 endPos = map->GetMousePos();
 		pathfinder->SetMapData(GetThreatMap());
-		pathfinder->MakePath(path, startPos, endPos, threatMap->GetSquareSize());
+		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
 		LOG("%f, %f, %f, %i", endPos.x, endPos.y, endPos.z, pathfinder->GetDbgType());
 	}
 #endif
@@ -852,6 +856,41 @@ CEnemyUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS)
 
 	return unit;
 }
+
+//// FIXME: Can't use it because unitId == -1 always
+//CEnemyUnit* CCircuitAI::RegisterEnemyUnitCheat(CEnemyUnit* enemy, CCircuitUnit::Id unitId)
+//{
+//	if (enemy != nullptr) {
+//		if (enemy->GetCircuitDef() == nullptr) {
+//			cheats->SetEnabled(true);
+//			UnitDef* unitDef = enemy->GetUnit()->GetDef();
+//			enemy->SetCircuitDef(defsById[unitDef->GetUnitDefId()]);
+//			delete unitDef;
+//			cheats->SetEnabled(false);
+//		}
+//		return enemy;
+//	}
+//
+//	cheats->SetEnabled(true);
+//	springai::Unit* u = WrappUnit::GetInstance(skirmishAIId, unitId);
+//	if ((u == nullptr) || (u->GetAllyTeam() == allyTeamId)) {
+//		cheats->SetEnabled(false);
+//		return nullptr;
+//	}
+//
+//	UnitDef* unitDef = u->GetDef();
+//	CCircuitDef* cdef = defsById[unitDef->GetUnitDefId()];
+//	delete unitDef;
+//	CEnemyUnit* unit = new CEnemyUnit(u, cdef);
+//
+//	enemyUnits[unit->GetId()] = unit;
+//
+//	EnemyEnterLOS(unit);
+//	EnemyLeaveLOS(unit);
+//
+//	cheats->SetEnabled(false);
+//	return unit;
+//}
 
 void CCircuitAI::UnregisterEnemyUnit(CEnemyUnit* unit)
 {

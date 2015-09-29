@@ -69,6 +69,7 @@ void CThreatMap::Update()
 {
 //	radarMap = std::move(circuit->GetMap()->GetRadarMap());
 	losMap = std::move(circuit->GetMap()->GetLosMap());
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 //	currMaxThreat = .0f;
 
 	// account for moving units
@@ -87,7 +88,7 @@ void CThreatMap::Update()
 		}
 		if (e->IsInRadarOrLOS()) {
 			AIFloat3 pos = e->GetUnit()->GetPos();
-			circuit->GetTerrainManager()->CorrectPosition(pos);
+			terrainManager->CorrectPosition(pos);
 			e->SetPos(pos);
 //		} else {
 //			e->DecayThreat(0.99f);  // decay 0.99^updateNum
@@ -112,7 +113,7 @@ void CThreatMap::Update()
 		}
 		if (e->IsInRadarOrLOS()) {
 			AIFloat3 pos = e->GetUnit()->GetPos();
-			circuit->GetTerrainManager()->CorrectPosition(pos);
+			terrainManager->CorrectPosition(pos);
 			if (pos != e->GetPos()) {
 				DelDecloaker(e);
 				e->SetPos(pos);

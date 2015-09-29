@@ -338,9 +338,22 @@ void CMilitaryManager::AbortDefence(CBDefenceTask* task)
 
 int CMilitaryManager::GetScoutIndex()
 {
-	int result = scoutPath[curScoutIdx];
-	++curScoutIdx %= scoutPath.size();
-	return result;
+	CMetalManager* metalManager = circuit->GetMetalManager();
+	int prevIdx = curScoutIdx;
+	while (curScoutIdx < scoutPath.size()) {
+		int result = scoutPath[curScoutIdx++];
+		if (!metalManager->IsMexInFinished(result)) {
+			return result;
+		}
+	}
+	curScoutIdx = 0;
+	while (curScoutIdx < prevIdx) {
+		int result = scoutPath[curScoutIdx++];
+		if (!metalManager->IsMexInFinished(result)) {
+			return result;
+		}
+	}
+	return scoutPath[curScoutIdx++ % scoutPath.size()];
 }
 
 void CMilitaryManager::Init()

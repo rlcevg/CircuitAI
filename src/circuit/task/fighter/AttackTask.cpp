@@ -54,7 +54,7 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 		if ((bestTarget->GetCircuitDef() != nullptr) && (minSqDist < range * range)) {
 			int targetCat = bestTarget->GetCircuitDef()->GetUnitDef()->GetCategory();
 			int noChaseCat = unit->GetCircuitDef()->GetUnitDef()->GetNoChaseCategory();
-			if (targetCat & noChaseCat != 0) {
+			if ((targetCat & noChaseCat) != 0) {
 				u->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
 				return;
 			}

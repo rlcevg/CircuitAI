@@ -37,7 +37,6 @@ public:
 	void EnemyDestroyed(CEnemyUnit* enemy);
 
 //	float GetAverageThreat() const { return currAvgThreat + 1.0f; }
-	int GetSquareSize() const { return squareSize; }
 	float GetAllThreatAt(const springai::AIFloat3& position) const;
 	void SetThreatType(CCircuitUnit* unit);
 	float GetThreatAt(const springai::AIFloat3& position) const;
@@ -51,6 +50,7 @@ public:
 	int GetThreatMapHeight() const { return height; }
 
 	float GetUnitThreat(CCircuitUnit* unit) const;
+	int GetSquareSize() const { return squareSize; }
 	int GetLosConv() const { return losResConv; }
 
 private:

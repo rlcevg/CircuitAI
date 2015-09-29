@@ -64,16 +64,18 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 	CMoveAction* moveAction = static_cast<CMoveAction*>(act);
 
 	CCircuitAI* circuit = manager->GetCircuit();
+	CFactoryManager* factoryManager = circuit->GetFactoryManager();
 	AIFloat3 startPos = unit->GetUnit()->GetPos();
-	AIFloat3 endPos = circuit->GetFactoryManager()->GetClosestHaven(unit);
+	AIFloat3 endPos = factoryManager->GetClosestHaven(unit);
 	if (endPos == -RgtVector) {
 		endPos = circuit->GetSetupManager()->GetBasePos();
 	}
 	F3Vec path;
 
-	float range = circuit->GetTerrainManager()->GetConvertStoP();
-	circuit->GetPathfinder()->SetMapData(unit, circuit->GetThreatMap());
-	circuit->GetPathfinder()->MakePath(path, startPos, endPos, range);
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	float range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
+	pathfinder->SetMapData(unit, circuit->GetThreatMap());
+	pathfinder->MakePath(path, startPos, endPos, range);
 
 	if (path.empty()) {
 		path.push_back(endPos);
