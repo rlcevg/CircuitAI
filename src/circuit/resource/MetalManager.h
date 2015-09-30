@@ -31,39 +31,63 @@ public:
 	void ParseMetalSpots(const char* metalJson);
 	void ParseMetalSpots(const std::vector<springai::GameRulesParam*>& metalParams);
 
-	bool HasMetalSpots();
-	bool HasMetalClusters();
-	bool IsClusterizing();
+	bool HasMetalSpots() const { return (metalData->IsInitialized() && !metalData->IsEmpty()); }
+	bool HasMetalClusters() const { return !metalData->GetClusters().empty(); }
+	bool IsClusterizing() const { return metalData->IsClusterizing(); }
 
 	void ClusterizeMetal();
 	void Init();
 
 public:
-	const CMetalData::Metals& GetSpots() const;
-	const int FindNearestSpot(const springai::AIFloat3& pos) const;
-	const int FindNearestSpot(const springai::AIFloat3& pos, CMetalData::MetalPredicate& predicate) const;
-	const CMetalData::MetalIndices FindNearestSpots(const springai::AIFloat3& pos, int num) const;
-	const CMetalData::MetalIndices FindNearestSpots(const springai::AIFloat3& pos, int num, CMetalData::MetalPredicate& predicate) const;
-	const CMetalData::MetalIndices FindWithinDistanceSpots(const springai::AIFloat3& pos, float maxDistance) const;
-	const CMetalData::MetalIndices FindWithinRangeSpots(const springai::AIFloat3& posFrom, const springai::AIFloat3& posTo) const;
+	const CMetalData::Metals& GetSpots() const { return metalData->GetSpots(); }
+	const int FindNearestSpot(const springai::AIFloat3& pos) const {
+		return metalData->FindNearestSpot(pos);
+	}
+	const int FindNearestSpot(const springai::AIFloat3& pos, CMetalData::MetalPredicate& predicate) const {
+		return metalData->FindNearestSpot(pos, predicate);
+	}
+	const CMetalData::MetalIndices FindNearestSpots(const springai::AIFloat3& pos, int num) const {
+		return metalData->FindNearestSpots(pos, num);
+	}
+	const CMetalData::MetalIndices FindNearestSpots(const springai::AIFloat3& pos, int num, CMetalData::MetalPredicate& predicate) const {
+		return metalData->FindNearestSpots(pos, num, predicate);
+	}
+	const CMetalData::MetalIndices FindWithinDistanceSpots(const springai::AIFloat3& pos, float maxDistance) const {
+		return metalData->FindWithinDistanceSpots(pos, maxDistance);
+	}
+	const CMetalData::MetalIndices FindWithinRangeSpots(const springai::AIFloat3& posFrom, const springai::AIFloat3& posTo) const {
+		return metalData->FindWithinRangeSpots(posFrom, posTo);
+	}
 
-	const int FindNearestCluster(const springai::AIFloat3& pos) const;
-	const int FindNearestCluster(const springai::AIFloat3& pos, CMetalData::MetalPredicate& predicate) const;
-	const CMetalData::MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num) const;
-	const CMetalData::MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num, CMetalData::MetalPredicate& predicate) const;
+	const int FindNearestCluster(const springai::AIFloat3& pos) const {
+		return metalData->FindNearestCluster(pos);
+	}
+	const int FindNearestCluster(const springai::AIFloat3& pos, CMetalData::MetalPredicate& predicate) const {
+		return metalData->FindNearestCluster(pos, predicate);
+	}
+	const CMetalData::MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num) const {
+		return metalData->FindNearestClusters(pos, num);
+	}
+	const CMetalData::MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num, CMetalData::MetalPredicate& predicate) const {
+		return metalData->FindNearestClusters(pos, num, predicate);
+	}
 
-	const CMetalData::Clusters& GetClusters() const;
-	const CMetalData::Graph& GetGraph() const;
+	const CMetalData::Clusters& GetClusters() const { return metalData->GetClusters(); }
+	const CMetalData::Graph& GetGraph() const { return metalData->GetGraph(); }
 
 public:
 	void SetOpenSpot(int index, bool value);
 	void SetOpenSpot(const springai::AIFloat3& pos, bool value);
-	bool IsOpenSpot(int index);
+	bool IsOpenSpot(int index) const { return metalInfos[index].isOpen; }
 	void MarkAllyMexes();
 	void MarkAllyMexes(const std::list<CCircuitUnit*>& mexes);
-	bool IsClusterFinished(int index);
-	bool IsClusterQueued(int index);
-	bool IsMexInFinished(int index);
+	bool IsClusterFinished(int index) const {
+		return clusterInfos[index].finishedCount >= GetClusters()[index].idxSpots.size();
+	}
+	bool IsClusterQueued(int index) const {
+		return clusterInfos[index].queuedCount >= GetClusters()[index].idxSpots.size();
+	}
+	bool IsMexInFinished(int index) const;
 
 	using MexPredicate = std::function<bool (int index)>;
 	int GetMexToBuild(const springai::AIFloat3& pos, MexPredicate& predicate);

@@ -12,6 +12,7 @@
 #include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
+#include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -64,6 +65,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	const CMetalData::Metals& spots = metalManager->GetSpots();
 	Map* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	circuit->GetThreatMap()->SetThreatType(unit);
 	CMetalData::MetalPredicate predicate = [&spots, metalManager, map, buildUDef, terrainManager, unit](CMetalData::MetalNode const& v) {
 		int index = v.second;
 		return (metalManager->IsOpenSpot(index) &&

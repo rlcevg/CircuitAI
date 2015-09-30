@@ -67,7 +67,7 @@ struct mex_tree {
 		, pclusters(&cs)
 	{}
 	bool operator()(const CMetalData::VertexDesc u) const {
-		return threatMap->GetAllThreatAt((*pclusters)[u].geoCentr) <= MIN_THREAT;
+		return threatMap->GetThreatAt((*pclusters)[u].geoCentr) <= MIN_THREAT;
 	}
 	CThreatMap* threatMap;
 	const CMetalData::Clusters* pclusters;
@@ -161,21 +161,6 @@ void CMetalManager::ParseMetalSpots(const std::vector<GameRulesParam*>& gamePara
 	metalData->Init(spots);
 }
 
-bool CMetalManager::HasMetalSpots()
-{
-	return (metalData->IsInitialized() && !metalData->IsEmpty());
-}
-
-bool CMetalManager::HasMetalClusters()
-{
-	return !metalData->GetClusters().empty();
-}
-
-bool CMetalManager::IsClusterizing()
-{
-	return metalData->IsClusterizing();
-}
-
 void CMetalManager::ClusterizeMetal()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
@@ -219,71 +204,6 @@ void CMetalManager::Init()
 	}
 }
 
-const CMetalData::Metals& CMetalManager::GetSpots() const
-{
-	return metalData->GetSpots();
-}
-
-const int CMetalManager::FindNearestSpot(const AIFloat3& pos) const
-{
-	return metalData->FindNearestSpot(pos);
-}
-
-const int CMetalManager::FindNearestSpot(const AIFloat3& pos, CMetalData::MetalPredicate& predicate) const
-{
-	return metalData->FindNearestSpot(pos, predicate);
-}
-
-const CMetalData::MetalIndices CMetalManager::FindNearestSpots(const AIFloat3& pos, int num) const
-{
-	return metalData->FindNearestSpots(pos, num);
-}
-
-const CMetalData::MetalIndices CMetalManager::FindNearestSpots(const AIFloat3& pos, int num, CMetalData::MetalPredicate& predicate) const
-{
-	return metalData->FindNearestSpots(pos, num, predicate);
-}
-
-const CMetalData::MetalIndices CMetalManager::FindWithinDistanceSpots(const AIFloat3& pos, float maxDistance) const
-{
-	return metalData->FindWithinDistanceSpots(pos, maxDistance);
-}
-
-const CMetalData::MetalIndices CMetalManager::FindWithinRangeSpots(const AIFloat3& posFrom, const AIFloat3& posTo) const
-{
-	return metalData->FindWithinRangeSpots(posFrom, posTo);
-}
-
-const int CMetalManager::FindNearestCluster(const AIFloat3& pos) const
-{
-	return metalData->FindNearestCluster(pos);
-}
-
-const int CMetalManager::FindNearestCluster(const AIFloat3& pos, CMetalData::MetalPredicate& predicate) const
-{
-	return metalData->FindNearestCluster(pos, predicate);
-}
-
-const CMetalData::MetalIndices CMetalManager::FindNearestClusters(const AIFloat3& pos, int num) const
-{
-	return metalData->FindNearestClusters(pos, num);
-}
-
-const CMetalData::MetalIndices CMetalManager::FindNearestClusters(const AIFloat3& pos, int num, CMetalData::MetalPredicate& predicate) const
-{
-	return metalData->FindNearestClusters(pos, num, predicate);
-}
-
-const CMetalData::Clusters& CMetalManager::GetClusters() const
-{
-	return metalData->GetClusters();
-}
-
-const CMetalData::Graph& CMetalManager::GetGraph() const
-{
-	return metalData->GetGraph();
-}
-
 void CMetalManager::SetOpenSpot(int index, bool value)
 {
 	if (metalInfos[index].isOpen != value) {
@@ -298,11 +218,6 @@ void CMetalManager::SetOpenSpot(const springai::AIFloat3& pos, bool value)
 	if (index != -1) {
 		SetOpenSpot(index, value);
 	}
-}
-
-bool CMetalManager::IsOpenSpot(int index)
-{
-	return metalInfos[index].isOpen;
 }
 
 void CMetalManager::MarkAllyMexes()
@@ -380,34 +295,26 @@ void CMetalManager::MarkAllyMexes(const std::list<CCircuitUnit*>& mexes)
 	}
 }
 
-bool CMetalManager::IsClusterFinished(int index)
+bool CMetalManager::IsMexInFinished(int index) const
 {
-	return clusterInfos[index].finishedCount >= GetClusters()[index].idxSpots.size();
-}
-
-bool CMetalManager::IsClusterQueued(int index)
-{
-	return clusterInfos[index].queuedCount >= GetClusters()[index].idxSpots.size();
-}
-
-bool CMetalManager::IsMexInFinished(int index)
-{
-	return clusterInfos[metalInfos[index].clusterId].finishedCount >= GetClusters()[index].idxSpots.size();
+	// NOTE: finishedCount updated on lazy MarkAllyMexes call, thus can be invalid
+	int idx = metalInfos[index].clusterId;
+	return clusterInfos[idx].finishedCount >= GetClusters()[idx].idxSpots.size();
 }
 
 int CMetalManager::GetMexToBuild(const AIFloat3& pos, MexPredicate& predicate)
 {
+	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
+	if (index < 0) {
+		return -1;
+	}
+
 	mex_tree filter(circuit->GetThreatMap(), GetClusters());
 	const CMetalData::Graph& graph = GetGraph();
 	boost::filtered_graph<CMetalData::Graph, boost::keep_all, mex_tree> fg(graph, boost::keep_all(), filter);
-	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
-	if (index < 0) {
-		return false;
-	}
-
+	auto w_map = boost::get(&CMetalData::SEdge::weight, fg);
 	std::list<int> indices;
 	detect_cluster vis(this, predicate, indices);
-	auto w_map = boost::get(&CMetalData::SEdge::weight, fg);
 	int result = -1;
 	try {
 		boost::dijkstra_shortest_paths(fg, boost::vertex(index, graph), boost::weight_map(w_map).visitor(vis));

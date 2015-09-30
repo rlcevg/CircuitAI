@@ -10,6 +10,7 @@
 #include "resource/MetalManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
+#include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
 #include "task/NullTask.h"
 #include "task/IdleTask.h"
@@ -456,6 +457,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	IBuilderTask* task = nullptr;
 	AIFloat3 pos = unit->GetUnit()->GetPos();
 
+	circuit->GetThreatMap()->SetThreatType(unit);
 	task = circuit->GetEconomyManager()->UpdateMetalTasks(pos, unit);
 	if (task != nullptr) {
 		task->AssignTo(unit);

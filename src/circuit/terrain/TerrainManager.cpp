@@ -1008,11 +1008,6 @@ STerrainMapArea* CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIF
 	return area;
 }
 
-int CTerrainManager::GetSectorIndex(const AIFloat3& position)
-{
-	return terrainData->GetSectorIndex(position);
-}
-
 bool CTerrainManager::CanMoveToPos(STerrainMapArea* area, const AIFloat3& destination)
 {
 	int iS = GetSectorIndex(destination);
@@ -1225,7 +1220,7 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 
 bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination)
 {
-	if (circuit->GetThreatMap()->GetAllThreatAt(destination) > MIN_THREAT) {
+	if (circuit->GetThreatMap()->GetThreatAt(destination) > MIN_THREAT) {
 		return false;
 	}
 	if (unit->GetCircuitDef()->GetImmobileId() != -1) {  // A hub or factory

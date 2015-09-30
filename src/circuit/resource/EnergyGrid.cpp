@@ -122,14 +122,14 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 	/*
 	 * Detect link to build
 	 */
-	spanning_tree filter(spanningTree, linkIt);
-	boost::filtered_graph<CMetalData::Graph, spanning_tree> fg(ownedClusters, filter);
 	const AIFloat3& pos = circuit->GetSetupManager()->GetBasePos();
 	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
 	if (index < 0) {
 		return nullptr;
 	}
 
+	spanning_tree filter(spanningTree, linkIt);
+	boost::filtered_graph<CMetalData::Graph, spanning_tree> fg(ownedClusters, filter);
 	detect_link vis(linkIt);
 	CEnergyLink* link = nullptr;
 	try {

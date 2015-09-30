@@ -24,7 +24,7 @@ CMoveAction::CMoveAction(CCircuitUnit* owner)
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	int squareSize = unit->GetManager()->GetCircuit()->GetPathfinder()->GetSquareSize();
 	increment = (DEFAULT_SLACK / squareSize + 1);
-	minSqDist = squareSize * increment;
+	minSqDist = squareSize * increment / 2;
 	minSqDist *= minSqDist;
 }
 

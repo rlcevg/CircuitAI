@@ -9,6 +9,7 @@
 #include "task/TaskManager.h"
 #include "module/EconomyManager.h"
 #include "terrain/TerrainManager.h"
+#include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -108,6 +109,7 @@ void CBReclaimTask::Update()
 		auto features = std::move(circuit->GetCallback()->GetFeaturesIn(pos, 500.0f));
 		if (!features.empty()) {
 			CTerrainManager* terrainManager = circuit->GetTerrainManager();
+			circuit->GetThreatMap()->SetThreatType(unit);
 			AIFloat3 reclPos;
 			float minSqDist = std::numeric_limits<float>::max();
 			Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();

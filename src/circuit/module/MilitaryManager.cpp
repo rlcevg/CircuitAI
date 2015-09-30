@@ -353,7 +353,8 @@ int CMilitaryManager::GetScoutIndex()
 			return result;
 		}
 	}
-	return scoutPath[curScoutIdx++ % scoutPath.size()];
+	++curScoutIdx %= scoutPath.size();
+	return scoutPath[curScoutIdx];
 }
 
 void CMilitaryManager::Init()

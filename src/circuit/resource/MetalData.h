@@ -70,13 +70,13 @@ public:
 	virtual ~CMetalData();
 	void Init(const Metals& spots);
 
-	bool IsInitialized();
-	bool IsEmpty();
+	bool IsInitialized() const { return initialized; }
+	bool IsEmpty() const { return spots.empty(); }
 
-	bool IsClusterizing();
-	void SetClusterizing(bool value);
+	bool IsClusterizing() const { return isClusterizing.load(); }
+	void SetClusterizing(bool value) { isClusterizing = value; }
 
-	const Metals& GetSpots() const;
+	const Metals& GetSpots() const { return spots; }
 	const int FindNearestSpot(const springai::AIFloat3& pos) const;
 	const int FindNearestSpot(const springai::AIFloat3& pos, MetalPredicate& predicate) const;
 	const MetalIndices FindNearestSpots(const springai::AIFloat3& pos, int num) const;
@@ -89,8 +89,8 @@ public:
 	const MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num) const;
 	const MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num, MetalPredicate& predicate) const;
 
-	const CMetalData::Clusters& GetClusters() const;
-	const CMetalData::Graph& GetGraph() const;
+	const CMetalData::Clusters& GetClusters() const { return clusters; }
+	const CMetalData::Graph& GetGraph() const { return clusterGraph; }
 
 	/*
 	 * Hierarchical clusterization. Not reusable. Metric: complete link. Thread-unsafe
@@ -102,7 +102,7 @@ public:
 //	void DrawCentroids(springai::Drawer* drawer);
 //	void ClearMetalClusters(springai::Drawer* drawer);
 
-	const SMetal& operator[](int idx) const;
+	const SMetal& operator[](int idx) const { return spots[idx]; }
 
 private:
 	bool initialized;

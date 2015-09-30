@@ -126,7 +126,6 @@ public:
 	using EnemyUnits = std::map<CCircuitUnit::Id, CEnemyUnit*>;
 private:
 	CEnemyUnit* RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS = false);
-//	CEnemyUnit* RegisterEnemyUnitCheat(CEnemyUnit* enemy, CCircuitUnit::Id unitId);
 	void UnregisterEnemyUnit(CEnemyUnit* unit);
 	void UpdateEnemyUnits();
 public:
@@ -217,7 +216,6 @@ private:
 	springai::OOAICallback*               callback;
 	std::unique_ptr<springai::Log>        log;
 	std::unique_ptr<springai::Game>       game;
-//	std::unique_ptr<springai::Cheats>     cheats;
 	std::unique_ptr<springai::Map>        map;
 	std::unique_ptr<springai::Pathing>    pathing;
 	std::unique_ptr<springai::Drawer>     drawer;

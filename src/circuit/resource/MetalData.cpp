@@ -40,31 +40,6 @@ void CMetalData::Init(const Metals& spots)
     initialized = true;
 }
 
-bool CMetalData::IsInitialized()
-{
-	return initialized;
-}
-
-bool CMetalData::IsEmpty()
-{
-	return spots.empty();
-}
-
-bool CMetalData::IsClusterizing()
-{
-	return isClusterizing.load();
-}
-
-void CMetalData::SetClusterizing(bool value)
-{
-	isClusterizing = value;
-}
-
-const CMetalData::Metals& CMetalData::GetSpots() const
-{
-	return spots;
-}
-
 const int CMetalData::FindNearestSpot(const AIFloat3& pos) const
 {
 	std::vector<MetalNode> result_n;
@@ -189,16 +164,6 @@ const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& p
 		result.push_back(node.second);
 	}
 	return result;
-}
-
-const CMetalData::Clusters& CMetalData::GetClusters() const
-{
-	return clusters;
-}
-
-const CMetalData::Graph& CMetalData::GetGraph() const
-{
-	return clusterGraph;
 }
 
 void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distMatrix)
@@ -419,10 +384,5 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 ////	}
 ////	centroids.clear();
 //}
-
-const CMetalData::SMetal& CMetalData::operator[](int idx) const
-{
-	return spots[idx];
-}
 
 } // namespace circuit

@@ -45,6 +45,9 @@ public:
 	void SetDecloakRange(int r) { rangeDecloak = r; }
 	int GetDecloakRange() const { return rangeDecloak; }
 
+	void SetKnown(bool value) { isKnown = value; }
+	bool IsKnown() const { return isKnown; }
+
 	bool operator==(const CCircuitUnit& rhs) { return id == rhs.GetId(); }
 	bool operator!=(const CCircuitUnit& rhs) { return id != rhs.GetId(); }
 
@@ -63,8 +66,9 @@ private:
 	float threat;
 	int range;
 	int rangeDecloak;
-	std::underlying_type<LosType>::type losStatus;
+	bool isKnown;
 
+	std::underlying_type<LosType>::type losStatus;
 public:
 	void SetInLOS() { losStatus |= LosType::LOS; }
 	void SetInRadar() { losStatus |= LosType::RADAR; }

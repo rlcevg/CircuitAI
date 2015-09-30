@@ -144,14 +144,14 @@ void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 			} else {
 				DelEnemyUnitAll(enemy);
 			}
+			hostileUnits.erase(enemy->GetId());
+			peaceUnits[enemy->GetId()] = enemy;
 			enemy->SetThreat(.0f);
 			enemy->SetRange(0);
 			enemy->SetDecloakRange(GetCloakRange(enemy));
-			hostileUnits.erase(enemy->GetId());
-			peaceUnits[enemy->GetId()] = enemy;
 		} else if (peaceUnits.find(enemy->GetId()) == peaceUnits.end()) {
-			enemy->SetDecloakRange(GetCloakRange(enemy));
 			peaceUnits[enemy->GetId()] = enemy;
+			enemy->SetDecloakRange(GetCloakRange(enemy));
 		} else if (enemy->IsHidden()) {
 			enemy->ClearHidden();
 		} else {
@@ -161,6 +161,7 @@ void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 		AIFloat3 pos = enemy->GetUnit()->GetPos();
 		circuit->GetTerrainManager()->CorrectPosition(pos);
 		enemy->SetPos(pos);
+		enemy->SetKnown(true);
 
 		AddDecloaker(enemy);
 		return;
@@ -170,8 +171,10 @@ void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 		hostileUnits[enemy->GetId()] = enemy;
 	} else if (enemy->IsHidden()) {
 		enemy->ClearHidden();
-	} else {
+	} else if (enemy->IsKnown()) {
 		DelEnemyUnit(enemy);
+	} else {
+		DelEnemyUnitAll(enemy);
 	}
 
 	AIFloat3 pos = enemy->GetUnit()->GetPos();
@@ -180,6 +183,7 @@ void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 	enemy->SetRange(GetEnemyUnitRange(enemy));
 	enemy->SetDecloakRange(GetCloakRange(enemy));
 	enemy->SetThreat(GetEnemyUnitThreat(enemy));
+	enemy->SetKnown(true);
 
 	AddEnemyUnit(enemy);
 }
@@ -280,12 +284,13 @@ float CThreatMap::GetAllThreatAt(const AIFloat3& position) const
 	const int index = z * width + x;
 //	float air = airThreat[index] - THREAT_VAL_BASE;
 	float land = landThreat[index] - THREAT_VAL_BASE;
-	float water = waterThreat[index] - THREAT_VAL_BASE;
-	return /*air + */land + water;
+//	float water = waterThreat[index] - THREAT_VAL_BASE;
+	return /*air + */land/* + water*/;
 }
 
 void CThreatMap::SetThreatType(CCircuitUnit* unit)
 {
+	assert(unit != nullptr);
 	if (unit->GetCircuitDef()->GetUnitDef()->IsAbleToFly()) {
 		pthreats = &airThreat;
 	} else if (unit->GetUnit()->GetPos().y < -10.0f) {
@@ -304,6 +309,7 @@ float CThreatMap::GetThreatAt(const AIFloat3& position) const
 
 float CThreatMap::GetThreatAt(CCircuitUnit* unit, const AIFloat3& position) const
 {
+	assert(unit != nullptr);
 	const int z = position.z / squareSize;
 	const int x = position.x / squareSize;
 	if (unit->GetCircuitDef()->GetUnitDef()->IsAbleToFly()) {
@@ -345,7 +351,7 @@ void CThreatMap::AddEnemyUnitAll(const CEnemyUnit* e, const float scale)
 	const int posx = (int)e->GetPos().x / squareSize;
 	const int posz = (int)e->GetPos().z / squareSize;
 
-	const float threat = e->GetThreat() * scale;
+	const float threat = e->GetThreat() * scale/* - 0.1f*/;
 	const float threatCloak = 10.0f * scale;
 	const int rangeSq = e->GetRange() * e->GetRange();
 	const int rangeCloakSq = e->GetDecloakRange() * e->GetDecloakRange();
@@ -379,7 +385,7 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, Threats& threats, const float
 	const int posx = (int)e->GetPos().x / squareSize;
 	const int posz = (int)e->GetPos().z / squareSize;
 
-	const float threat = e->GetThreat() * scale;
+	const float threat = e->GetThreat() * scale/* - 0.1f*/;
 	const int rangeSq = e->GetRange() * e->GetRange();
 
 	const int beginX = std::max(int(posx - e->GetRange()    ),      0);

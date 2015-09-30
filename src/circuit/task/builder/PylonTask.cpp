@@ -10,6 +10,7 @@
 #include "module/EconomyManager.h"
 #include "resource/EnergyLink.h"
 #include "terrain/TerrainManager.h"
+#include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -61,6 +62,7 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 		}
 	}
 
+	circuit->GetThreatMap()->SetThreatType(unit);
 	CTerrainManager::TerrainPredicate predicate = [terrainManager, unit](const AIFloat3& p) {
 		return terrainManager->CanBuildAt(unit, p);
 	};
@@ -69,7 +71,7 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 	buildPos = terrainManager->FindBuildSite(buildDef, position, searchRadius, facing, predicate);
 
 	if (buildPos != -RgtVector) {
-		circuit->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);
+		terrainManager->AddBlocker(buildDef, buildPos, facing);
 		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 	} else {
 		// Fallback to Guard/Assist/Patrol

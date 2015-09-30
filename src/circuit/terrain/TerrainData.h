@@ -177,7 +177,7 @@ public:
 	static int terrainHeight;
 
 // ---- RAI's GlobalTerrainMap ---- BEGIN
-	int GetSectorIndex(const springai::AIFloat3& position) {  // use IsSectorValid() to insure the index is valid
+	int GetSectorIndex(const springai::AIFloat3& position) const {  // use IsSectorValid() to insure the index is valid
 		return sectorXSize * (int(position.z) / convertStoP) + int(position.x) / convertStoP;
 	}
 	bool IsSectorValid(const int& sIndex) {

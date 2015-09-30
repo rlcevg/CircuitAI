@@ -13,6 +13,7 @@
 #include "resource/MetalManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
+#include "terrain/ThreatMap.h"
 #include "unit/action/UnitAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -106,6 +107,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		}
 	}
 
+	circuit->GetThreatMap()->SetThreatType(unit);
 	// FIXME: Replace const 999.0f with build time?
 	if (circuit->IsAllyAware() && (cost > 999.0f)) {
 //		circuit->UpdateFriendlyUnits();
@@ -144,7 +146,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	buildPos = terrainManager->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
 
 	if (buildPos != -RgtVector) {
-		circuit->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);
+		terrainManager->AddBlocker(buildDef, buildPos, facing);
 		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 	} else {
 		// TODO: Select new proper BasePos, like near metal cluster.
