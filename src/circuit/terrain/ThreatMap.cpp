@@ -161,7 +161,7 @@ void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 		AIFloat3 pos = enemy->GetUnit()->GetPos();
 		circuit->GetTerrainManager()->CorrectPosition(pos);
 		enemy->SetPos(pos);
-		enemy->SetKnown(true);
+		enemy->SetKnown();
 
 		AddDecloaker(enemy);
 		return;
@@ -183,7 +183,7 @@ void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 	enemy->SetRange(GetEnemyUnitRange(enemy));
 	enemy->SetDecloakRange(GetCloakRange(enemy));
 	enemy->SetThreat(GetEnemyUnitThreat(enemy));
-	enemy->SetKnown(true);
+	enemy->SetKnown();
 
 	AddEnemyUnit(enemy);
 }
@@ -444,7 +444,7 @@ int CThreatMap::GetEnemyUnitRange(const CEnemyUnit* e) const
 {
 	assert(e->GetCircuitDef() != nullptr);
 	int range = e->GetUnit()->GetMaxRange();
-	if (e->GetCircuitDef()->GetUnitDef()->GetSpeed() > 0) {
+	if (e->GetCircuitDef()->IsMobile()) {
 		return (range + DEFAULT_SLACK * 4) / squareSize;
 	}
 	return (range + DEFAULT_SLACK * 2) / squareSize;

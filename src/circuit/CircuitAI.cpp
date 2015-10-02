@@ -964,16 +964,15 @@ void CCircuitAI::InitUnitDefs()
 
 	for (auto& kv : GetCircuitDefs()) {
 		CCircuitDef* cdef = kv.second;
-		UnitDef* ud = cdef->GetUnitDef();
-		if (ud->IsAbleToFly()) {
-		} else if (ud->GetSpeed() == 0 ) {  // for immobile units
+		if (cdef->GetUnitDef()->IsAbleToFly()) {
+		} else if (!cdef->IsMobile()) {  // for immobile units
 			cdef->SetImmobileId(terrainData.udImmobileType[cdef->GetId()]);
 			// If a unit can build mobile units then it will inherit mobileType from it's options
 			std::map<STerrainMapMobileType::Id, int> mtCount;
 			cdef->GetBuildOptions();
 			for (CCircuitDef::Id buildId : cdef->GetBuildOptions()) {
 				CCircuitDef* bdef = GetCircuitDef(buildId);
-				if ((bdef == nullptr) || (bdef->GetUnitDef()->GetSpeed() <= 0)) {
+				if ((bdef == nullptr) || !bdef->IsMobile()) {
 					continue;
 				}
 				STerrainMapMobileType::Id mtId = terrainData.udMobileType[bdef->GetId()];

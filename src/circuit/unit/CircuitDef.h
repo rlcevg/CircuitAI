@@ -66,6 +66,8 @@ public:
 	bool IsAntiLand()  const { return isAntiLand; }
 	bool IsAntiWater() const { return isAntiWater; }
 
+	bool IsMobile() const { return isMobile; }
+
 private:
 	Id id;
 	springai::UnitDef* def;  // owner
@@ -85,6 +87,8 @@ private:
 	bool isAntiAir;
 	bool isAntiLand;
 	bool isAntiWater;
+
+	bool isMobile;
 };
 
 inline bool CCircuitDef::CanBuild(Id buildDefId) const

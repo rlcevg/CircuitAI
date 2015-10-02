@@ -65,11 +65,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
-		UnitDef* def = cdef->GetUnitDef();
-		if ((cdef->GetDPS() < 0.1f) || (def->GetSpeed() <= 0) || def->IsBuilder()) {
+		if ((cdef->GetDPS() < 0.1f) || !cdef->IsMobile() || cdef->GetUnitDef()->IsBuilder()) {
 			continue;
 		}
-		const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
 		auto it = customParams.find("is_drone");
 		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 			continue;
@@ -149,7 +148,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 	const char* names[] = {"armpw", "spherepole"};
 	for (const char* name : names) {
-		scouts.insert(circuit->GetCircuitDef(name));
+		scoutDefs.insert(circuit->GetCircuitDef(name));
 	}
 }
 
@@ -244,7 +243,7 @@ void CMilitaryManager::DequeueTask(IUnitTask* task, bool done)
 
 void CMilitaryManager::AssignTask(CCircuitUnit* unit)
 {
-	IFighterTask::FightType type = (scouts.find(unit->GetCircuitDef()) != scouts.end()) ?
+	IFighterTask::FightType type = (scoutDefs.find(unit->GetCircuitDef()) != scoutDefs.end()) ?
 			IFighterTask::FightType::SCOUT :
 			IFighterTask::FightType::ATTACK;
 	EnqueueTask(type)->AssignTo(unit);

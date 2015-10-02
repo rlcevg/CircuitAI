@@ -62,7 +62,7 @@ private:
 	std::set<IUnitTask*> deleteTasks;
 	unsigned int updateSlice;
 
-	std::set<CCircuitDef*> scouts;
+	std::set<CCircuitDef*> scoutDefs;
 	std::vector<int> scoutPath;  // list of cluster ids
 	unsigned int curScoutIdx;
 };

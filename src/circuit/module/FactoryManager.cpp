@@ -217,8 +217,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
-		UnitDef* def = cdef->GetUnitDef();
-		if (def->IsBuilder() && (def->GetSpeed() == 0)) {
+		if (!cdef->IsMobile() && cdef->GetUnitDef()->IsBuilder()) {
 			CCircuitDef::Id unitDefId = kv.first;
 			if  (!kv.second->GetBuildOptions().empty()) {
 				createdHandler[unitDefId] = factoryCreatedHandler;

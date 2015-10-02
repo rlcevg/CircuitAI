@@ -308,6 +308,7 @@ int CMetalManager::GetMexToBuild(const AIFloat3& pos, MexPredicate& predicate)
 	if (index < 0) {
 		return -1;
 	}
+	MarkAllyMexes();
 
 	mex_tree filter(circuit->GetThreatMap(), GetClusters());
 	const CMetalData::Graph& graph = GetGraph();

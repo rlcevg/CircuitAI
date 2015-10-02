@@ -104,6 +104,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	isAntiAir   = (targetCategory & circuit->GetAirCategory()) && isTracks;
 	isAntiLand  = (targetCategory & circuit->GetLandCategory());
 	isAntiWater = (targetCategory & circuit->GetWaterCategory()) || isWater;
+
+	isMobile = def->GetSpeed() > .0f;
 }
 
 CCircuitDef::~CCircuitDef()

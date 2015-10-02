@@ -115,9 +115,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
-		UnitDef* def = cdef->GetUnitDef();
-		if (def->GetSpeed() > 0) {
-			if (def->IsBuilder() && !cdef->GetBuildOptions().empty()) {
+		if (cdef->IsMobile()) {
+			if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
 				CCircuitDef::Id unitDefId = kv.first;
 				createdHandler[unitDefId] = workerCreatedHandler;
 				finishedHandler[unitDefId] = workerFinishedHandler;

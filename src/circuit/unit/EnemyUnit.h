@@ -45,9 +45,6 @@ public:
 	void SetDecloakRange(int r) { rangeDecloak = r; }
 	int GetDecloakRange() const { return rangeDecloak; }
 
-	void SetKnown(bool value) { isKnown = value; }
-	bool IsKnown() const { return isKnown; }
-
 	bool operator==(const CCircuitUnit& rhs) { return id == rhs.GetId(); }
 	bool operator!=(const CCircuitUnit& rhs) { return id != rhs.GetId(); }
 
@@ -61,12 +58,11 @@ private:
 	springai::Weapon* dgun;
 	springai::UnitRulesParam* disarmParam;
 
-	enum LosType: char {NONE = 0x00, LOS = 0x01, RADAR = 0x02, HIDDEN = 0x04};
+	enum LosType: char {NONE = 0x00, LOS = 0x01, RADAR = 0x02, HIDDEN = 0x04, KNOWN = 0x08};
 	springai::AIFloat3 pos;
 	float threat;
 	int range;
 	int rangeDecloak;
-	bool isKnown;
 
 	std::underlying_type<LosType>::type losStatus;
 public:
@@ -81,6 +77,8 @@ public:
 	bool IsInRadarOrLOS() const { return losStatus & (LosType::RADAR | LosType::LOS); }
 	bool NotInRadarAndLOS() const { return (losStatus & (LosType::RADAR | LosType::LOS)) == 0; }
 	bool IsHidden() const { return losStatus & LosType::HIDDEN; }
+	void SetKnown() { losStatus &= LosType::KNOWN; }
+	bool IsKnown() const { return losStatus & LosType::KNOWN; }
 };
 
 } // namespace circuit

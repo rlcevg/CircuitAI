@@ -263,9 +263,8 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
-		UnitDef* def = cdef->GetUnitDef();
-		if ((def->GetSpeed() == 0) && (blockInfos.find(kv.first) == blockInfos.end())) {
-			ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+		if (!cdef->IsMobile() && (blockInfos.find(kv.first) == blockInfos.end())) {
+			ssize = int2(cdef->GetUnitDef()->GetXSize() / 2, cdef->GetUnitDef()->GetZSize() / 2);
 			bsize = ssize + int2(4, 4);
 			blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::UNKNOWN, ignoreMask);
 		}

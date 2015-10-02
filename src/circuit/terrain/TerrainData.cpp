@@ -175,38 +175,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 
 			udMobileType[def->GetUnitDefId()] = -1;
 
-		} else if (def->GetSpeed() <= 0) {
-
-			float minWaterDepth = def->GetMinWaterDepth();
-			float maxWaterDepth = def->GetMaxWaterDepth();
-			bool canHover = def->IsAbleToHover();
-			bool canFloat = def->IsFloater();
-			// FIXME: MaxSlope is not provided by engine's interface for buildings!
-			STerrainMapImmobileType* IT = nullptr;
-			int itIdx = 0;
-			for (auto& it : immobileType) {
-				if (((it.maxElevation == -minWaterDepth) && (it.canHover == canHover) && (it.canFloat == canFloat)) &&
-					((it.minElevation == -maxWaterDepth) || ((it.canHover || it.canFloat) && (it.minElevation <= 0) && (-maxWaterDepth <= 0))))
-				{
-					IT = &it;
-					break;
-				}
-				++itIdx;
-			}
-			if (IT == nullptr) {
-				STerrainMapImmobileType IT2;
-				immobileType.push_back(IT2);
-				IT = &immobileType.back();
-				itIdx = immobileType.size() - 1;
-				IT->maxElevation = -minWaterDepth;
-				IT->minElevation = -maxWaterDepth;
-				IT->canHover = canHover;
-				IT->canFloat = canFloat;
-			}
-			IT->udCount++;
-			udImmobileType[def->GetUnitDefId()] = itIdx;
-
-		} else {
+		} else if (def->GetSpeed() > .0f) {
 
 			float minWaterDepth = def->GetMinWaterDepth();
 			float maxWaterDepth = def->GetMaxWaterDepth();
@@ -246,6 +215,37 @@ void CTerrainData::Init(CCircuitAI* circuit)
 			}
 			MT->udCount++;
 			udMobileType[def->GetUnitDefId()] = mtIdx;
+
+		} else {
+
+			float minWaterDepth = def->GetMinWaterDepth();
+			float maxWaterDepth = def->GetMaxWaterDepth();
+			bool canHover = def->IsAbleToHover();
+			bool canFloat = def->IsFloater();
+			// FIXME: MaxSlope is not provided by engine's interface for buildings!
+			STerrainMapImmobileType* IT = nullptr;
+			int itIdx = 0;
+			for (auto& it : immobileType) {
+				if (((it.maxElevation == -minWaterDepth) && (it.canHover == canHover) && (it.canFloat == canFloat)) &&
+					((it.minElevation == -maxWaterDepth) || ((it.canHover || it.canFloat) && (it.minElevation <= 0) && (-maxWaterDepth <= 0))))
+				{
+					IT = &it;
+					break;
+				}
+				++itIdx;
+			}
+			if (IT == nullptr) {
+				STerrainMapImmobileType IT2;
+				immobileType.push_back(IT2);
+				IT = &immobileType.back();
+				itIdx = immobileType.size() - 1;
+				IT->maxElevation = -minWaterDepth;
+				IT->minElevation = -maxWaterDepth;
+				IT->canHover = canHover;
+				IT->canFloat = canFloat;
+			}
+			IT->udCount++;
+			udImmobileType[def->GetUnitDefId()] = itIdx;
 		}
 	}
 	utils::free_clear(defs);

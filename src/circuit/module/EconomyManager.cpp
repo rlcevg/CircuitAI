@@ -139,9 +139,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
 		CCircuitDef* cdef = kv.second;
-		UnitDef* def = cdef->GetUnitDef();
-		if (def->GetSpeed() <= 0) {
-			const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+		if (!cdef->IsMobile()) {
+			const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
 			auto it = customParams.find("income_energy");
 			if ((it != customParams.end()) && (utils::string_to_float(it->second) > 1)) {
 				// TODO: Filter only defs that we are able to build

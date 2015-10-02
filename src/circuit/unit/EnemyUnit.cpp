@@ -26,7 +26,6 @@ CEnemyUnit::CEnemyUnit(Unit* unit, CCircuitDef* cdef)
 		, threat(.0f)
 		, range(0)
 		, rangeDecloak(0)
-		, isKnown(false)
 		, losStatus(LosType::NONE)
 {
 	SetCircuitDef(cdef);
