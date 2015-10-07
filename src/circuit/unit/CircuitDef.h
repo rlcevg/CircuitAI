@@ -26,7 +26,7 @@ public:
 
 	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
-	CCircuitDef(CCircuitAI* circuit, springai::UnitDef* def, std::unordered_set<Id>& buildOpts);
+	CCircuitDef(CCircuitAI* circuit, springai::UnitDef* def, std::unordered_set<Id>& buildOpts, springai::Resource* res);
 	virtual ~CCircuitDef();
 
 	Id GetId() const { return id; }
@@ -68,6 +68,8 @@ public:
 
 	bool IsMobile() const { return isMobile; }
 
+	float GetCost() const { return cost; }
+
 private:
 	Id id;
 	springai::UnitDef* def;  // owner
@@ -89,6 +91,8 @@ private:
 	bool isAntiWater;
 
 	bool isMobile;
+
+	float cost;
 };
 
 inline bool CCircuitDef::CanBuild(Id buildDefId) const

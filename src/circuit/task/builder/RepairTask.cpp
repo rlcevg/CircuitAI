@@ -39,7 +39,7 @@ void CBRepairTask::Execute(CCircuitUnit* unit)
 			manager->FallbackTask(unit);
 			return;
 		}
-		cost = target->GetCircuitDef()->GetUnitDef()->GetCost(manager->GetCircuit()->GetEconomyManager()->GetMetalRes());
+		cost = target->GetCircuitDef()->GetCost();
 		targetId = target->GetId();
 	}
 
@@ -70,8 +70,8 @@ void CBRepairTask::Finish()
 //	CCircuitUnit* target = circuit->GetFriendlyUnit(targetId);
 //	// FIXME: Replace const 1000.0f with build time?
 //	if ((target != nullptr) && (target->GetUnit()->GetMaxSpeed() <= 0)) {
-//		UnitDef* def = target->GetCircuitDef()->GetUnitDef();
-//		if ((def->GetMaxWeaponRange() <= .0f) && (def->GetCost(circuit->GetEconomyManager()->GetMetalRes()) > 1000.0f)) {
+//		CCircuitDef* cdef = target->GetCircuitDef();
+//		if ((cdef->GetUnitDef()->GetMaxWeaponRange() <= .0f) && (cdef->GetCost() > 1000.0f)) {
 //			circuit->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
 //		}
 //	}
@@ -108,7 +108,7 @@ void CBRepairTask::SetTarget(CCircuitUnit* unit)
 {
 	target = unit;
 	if (unit != nullptr) {
-		cost = unit->GetCircuitDef()->GetUnitDef()->GetCost(manager->GetCircuit()->GetEconomyManager()->GetMetalRes());
+		cost = unit->GetCircuitDef()->GetCost();
 		position = buildPos = unit->GetUnit()->GetPos();
 		targetId = unit->GetId();
 //		buildDef = unit->GetCircuitDef();

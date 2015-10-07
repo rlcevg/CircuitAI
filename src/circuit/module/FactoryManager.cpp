@@ -37,9 +37,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 							FRAMES_PER_SEC * 60,
 							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 1);
 	const int interval = 4;
-	const int offset = circuit->GetSkirmishAIId() % interval + circuit->GetSkirmishAIId() * 2;
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateIdle, this), interval, offset + 1);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateAssist, this), interval, offset + 4);
+	const int offset = circuit->GetSkirmishAIId() % interval;
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateIdle, this), interval, offset + 0);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateAssist, this), interval, offset + 2);
 
 	/*
 	 * factory handlers
@@ -618,61 +618,52 @@ CRecruitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 IBuilderTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 {
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	Resource* metalRes = economyManager->GetMetalRes();
 	bool isMetalEmpty = economyManager->IsMetalEmpty();
 	CCircuitUnit* repairTarget = nullptr;
 	CCircuitUnit* buildTarget = nullptr;
 	bool isBuildMobile = true;
 	const AIFloat3& pos = unit->GetUnit()->GetPos();
 	float radius = unit->GetCircuitDef()->GetBuildDistance();
-	float sqRadius = radius * radius;
 
-	/*
-	 * Check for damaged units
-	 */
 	float maxCost = MAX_BUILD_SEC * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor();
 	CCircuitDef* terraDef = circuit->GetBuilderManager()->GetTerraDef();
 	circuit->UpdateFriendlyUnits();
-	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
-	for (auto u : units) {
+	// NOTE: OOAICallback::GetFriendlyUnitsIn depends on unit's radius
+	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius * 0.9f));
+	for (Unit* u : units) {
 		CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
 		if (candUnit == nullptr) {
 			continue;
 		}
 		if (u->IsBeingBuilt()) {
-			if ((pos.SqDistance2D(u->GetPos()) < sqRadius)) {
-				CCircuitDef* cdef = candUnit->GetCircuitDef();
-				if (isBuildMobile && (!isMetalEmpty || (*cdef == *terraDef) || (cdef->GetUnitDef()->GetCost(metalRes) < maxCost))) {
-					isBuildMobile = candUnit->GetUnit()->GetMaxSpeed() > 0;
-					buildTarget = candUnit;
-				}
+			CCircuitDef* cdef = candUnit->GetCircuitDef();
+			if (isBuildMobile && (!isMetalEmpty || (*cdef == *terraDef) || (cdef->GetCost() < maxCost))) {
+				isBuildMobile = candUnit->GetCircuitDef()->IsMobile();
+				buildTarget = candUnit;
 			}
-		} else if (isMetalEmpty && (u->GetHealth() < u->GetMaxHealth()) && (pos.SqDistance2D(u->GetPos()) < sqRadius)) {
+		} else if ((repairTarget == nullptr) && (u->GetHealth() < u->GetMaxHealth())) {
 			repairTarget = candUnit;
-			break;
+			if (isMetalEmpty) {
+				break;
+			}
 		}
 	}
 	utils::free_clear(units);
+	if (!isMetalEmpty && (buildTarget != nullptr)) {
+		// Construction task
+		return EnqueueRepair(IBuilderTask::Priority::NORMAL, buildTarget);
+	}
 	if (repairTarget != nullptr) {
 		// Repair task
 		return EnqueueRepair(IBuilderTask::Priority::NORMAL, repairTarget);
 	}
-
-	/*
-	 * Check metal storage and unit under construction
-	 */
 	if (isMetalEmpty) {
 		// Reclaim task
 		auto features = std::move(circuit->GetCallback()->GetFeaturesIn(pos, radius));
-		bool valid = !features.empty();
-		if (valid) {
+		if (!features.empty()) {
 			utils::free_clear(features);
 			return EnqueueReclaim(IBuilderTask::Priority::NORMAL, pos, radius);
 		}
-	}
-	if (buildTarget != nullptr) {
-		// Construction task
-		return EnqueueRepair(IBuilderTask::Priority::NORMAL, buildTarget);
 	}
 
 	return nullptr;

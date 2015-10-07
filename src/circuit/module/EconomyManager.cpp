@@ -160,9 +160,9 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	const int size = sizeof(engies) / sizeof(engies[0]);
 	CLagrangeInterPol::Vector x(size), y(size);
 	for (int i = 0; i < size; ++i) {
-		UnitDef* def = circuit->GetCircuitDef(engies[i])->GetUnitDef();
-		float make = utils::string_to_float(def->GetCustomParams().find("income_energy")->second);
-		x[i] = def->GetCost(metalRes) / make;
+		CCircuitDef* cdef = circuit->GetCircuitDef(engies[i]);
+		float make = utils::string_to_float(cdef->GetUnitDef()->GetCustomParams().find("income_energy")->second);
+		x[i] = cdef->GetCost() / make;
 		y[i] = limits[i] + 0.5;  // +0.5 to be sure precision errors will not decrease integer part
 	}
 	engyPol = new CLagrangeInterPol(x, y);  // Alternatively use CGaussSolver to compute polynomial - faster on reuse
@@ -250,11 +250,11 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 	availEnergyDefs.insert(diffDefs.begin(), diffDefs.end());
 
 	for (auto cdef : diffDefs) {
-		UnitDef* def = cdef->GetUnitDef();
 		SEnergyInfo engy;
 		engy.cdef = cdef;
-		engy.cost = def->GetCost(metalRes);
-		engy.costDivMake = engy.cost / utils::string_to_float(def->GetCustomParams().find("income_energy")->second);
+		engy.cost = cdef->GetCost();
+		float make = utils::string_to_float(cdef->GetUnitDef()->GetCustomParams().find("income_energy")->second);
+		engy.costDivMake = engy.cost / make;
 		engy.limit = engyPol->GetValueAt(engy.costDivMake);
 		energyInfos.push_back(engy);
 	}
@@ -396,8 +396,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	// check uncolonized mexes
 	bool isEnergyStalling = IsEnergyStalling();
 	if (!isEnergyStalling && mexDef->IsAvailable()) {
-		UnitDef* metalDef =  mexDef->GetUnitDef();
-		float cost = metalDef->GetCost(metalRes);
+		float cost = mexDef->GetCost();
 		int maxCount = builderManager->GetBuilderPower() / cost * 4 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < maxCount) {
 			CMetalManager* metalManager = circuit->GetMetalManager();
@@ -405,6 +404,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			Map* map = circuit->GetMap();
 			CMetalManager::MexPredicate predicate;
 			if (unit != nullptr) {
+				UnitDef* metalDef =  mexDef->GetUnitDef();
 				CTerrainManager* terrainManager = circuit->GetTerrainManager();
 				predicate = [&spots, metalManager, map, metalDef, terrainManager, unit](int index) {
 					return (metalManager->IsOpenSpot(index) &&
@@ -694,7 +694,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 		return nullptr;
 	}
 
-	float cost = pylonDef->GetUnitDef()->GetCost(metalRes);
+	float cost = pylonDef->GetCost();
 	int count = builderManager->GetBuilderPower() / cost * 8 + 1;
 	if (builderManager->GetTasks(IBuilderTask::BuildType::PYLON).size() < count) {
 		CEnergyGrid* grid = circuit->GetEnergyGrid();

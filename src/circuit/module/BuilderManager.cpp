@@ -300,7 +300,7 @@ IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 										   bool isActive,
 										   int timeout)
 {
-	float cost = buildDef->GetUnitDef()->GetCost(circuit->GetEconomyManager()->GetMetalRes());
+	float cost = buildDef->GetCost();
 	return AddTask(priority, buildDef, position, type, cost, isShake, isActive, timeout);
 }
 
@@ -663,7 +663,7 @@ void CBuilderManager::Watchdog()
 				float maxHealth = u->GetMaxHealth();
 				float buildPercent = (maxHealth - u->GetHealth()) / maxHealth;
 				CCircuitDef* cdef = unit->GetCircuitDef();
-				if ((cdef->GetUnitDef()->GetCost(metalRes) * buildPercent < maxCost) || (*cdef == *terraDef)) {
+				if ((cdef->GetCost() * buildPercent < maxCost) || (*cdef == *terraDef)) {
 					unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
 				}
 			} else if (u->GetHealth() < u->GetMaxHealth()) {

@@ -86,8 +86,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	 * Defence handlers
 	 */
 	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
-		Resource* metalRes = this->circuit->GetEconomyManager()->GetMetalRes();
-		float defCost = unit->GetCircuitDef()->GetUnitDef()->GetCost(metalRes);
+		float defCost = unit->GetCircuitDef()->GetCost();
 		CDefenceMatrix* defence = this->circuit->GetDefenceMatrix();
 		CDefenceMatrix::SDefPoint* point = defence->GetDefPoint(unit->GetUnit()->GetPos(), defCost);
 		if (point != nullptr) {
@@ -288,13 +287,12 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 		return;
 	}
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	Resource* metalRes = economyManager->GetMetalRes();
 	float totalCost = .0f;
 	IBuilderTask* parentTask = nullptr;
 	const char* defenders[] = {"corllt", "corrad", "armartic", "corhlt", "corrazor", "armnanotc", "cordoom"/*, "corjamt", "armanni", "corbhmth"*/};
 	for (const char* name : defenders) {
 		defDef = circuit->GetCircuitDef(name);
-		float defCost = defDef->GetUnitDef()->GetCost(metalRes);
+		float defCost = defDef->GetCost();
 		totalCost += defCost;
 		if (totalCost <= closestPoint->cost) {
 			continue;
@@ -316,8 +314,7 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 
 void CMilitaryManager::AbortDefence(CBDefenceTask* task)
 {
-	Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
-	float defCost = task->GetBuildDef()->GetUnitDef()->GetCost(metalRes);
+	float defCost = task->GetBuildDef()->GetCost();
 	CDefenceMatrix::SDefPoint* point = circuit->GetDefenceMatrix()->GetDefPoint(task->GetPosition(), defCost);
 	if (point != nullptr) {
 		if ((task->GetTarget() == nullptr) && (point->cost >= defCost)) {
@@ -325,7 +322,7 @@ void CMilitaryManager::AbortDefence(CBDefenceTask* task)
 		}
 		IBuilderTask* next = task->GetNextTask();
 		while (next != nullptr) {
-			defCost = next->GetBuildDef()->GetUnitDef()->GetCost(metalRes);
+			defCost = next->GetBuildDef()->GetCost();
 			if (point->cost >= defCost) {
 				point->cost -= defCost;
 			}

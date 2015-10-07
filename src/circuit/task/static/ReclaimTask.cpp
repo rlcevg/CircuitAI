@@ -22,6 +22,7 @@ CSReclaimTask::CSReclaimTask(ITaskManager* mgr, Priority priority,
 							 const springai::AIFloat3& position,
 							 float cost, int timeout, float radius)
 		: CBReclaimTask(mgr, priority, position, cost, timeout, radius)
+		, updCount(0)
 {
 }
 
@@ -35,20 +36,17 @@ void CSReclaimTask::Update()
 	CCircuitAI* circuit = manager->GetCircuit();
 	if (circuit->GetEconomyManager()->IsMetalFull()) {
 		manager->AbortTask(this);
-	} else {
-		/*
-		 * Check for damaged units
-		 */
+	} else if ((updCount++ % 4 == 0) && !units.empty()) {
+		// Check for damaged units
 		CCircuitUnit* repairTarget = nullptr;
 		circuit->UpdateFriendlyUnits();
-		float sqRadius = radius * radius;
-		auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, radius));
-		for (auto u : us) {
+		auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f));
+		for (Unit* u : us) {
 			CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
 			if (candUnit == nullptr) {
 				continue;
 			}
-			if (!u->IsBeingBuilt() && (u->GetHealth() < u->GetMaxHealth()) && (position.SqDistance2D(u->GetPos()) < sqRadius)) {
+			if (!u->IsBeingBuilt() && (u->GetHealth() < u->GetMaxHealth())) {
 				repairTarget = candUnit;
 				break;
 			}

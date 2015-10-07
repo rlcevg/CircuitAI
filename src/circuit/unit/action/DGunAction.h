@@ -21,6 +21,7 @@ public:
 
 private:
 	float range;
+	int updCount;
 };
 
 } // namespace circuit

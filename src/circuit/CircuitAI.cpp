@@ -33,8 +33,8 @@
 #include "Map.h"
 #include "Log.h"
 #include "Pathing.h"
-#include "MoveData.h"
 #include "Drawer.h"
+#include "Resource.h"
 #include "GameRulesParam.h"
 #include "SkirmishAI.h"
 #include "WrappUnit.h"
@@ -948,6 +948,7 @@ void CCircuitAI::InitUnitDefs()
 	if (!gameAttribute->GetTerrainData().IsInitialized()) {
 		gameAttribute->GetTerrainData().Init(this);
 	}
+	Resource* res = callback->GetResourceByName("Metal");
 	const std::vector<UnitDef*>& unitDefs = callback->GetUnitDefs();
 	for (UnitDef* ud : unitDefs) {
 		auto options = std::move(ud->GetBuildOptions());
@@ -956,11 +957,12 @@ void CCircuitAI::InitUnitDefs()
 			opts.insert(buildDef->GetUnitDefId());
 			delete buildDef;
 		}
-		CCircuitDef* cdef = new CCircuitDef(this, ud, opts);
+		CCircuitDef* cdef = new CCircuitDef(this, ud, opts, res);
 
 		defsByName[ud->GetName()] = cdef;
 		defsById[cdef->GetId()] = cdef;
 	}
+	delete res;
 
 	for (auto& kv : GetCircuitDefs()) {
 		CCircuitDef* cdef = kv.second;

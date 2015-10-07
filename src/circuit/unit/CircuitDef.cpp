@@ -17,7 +17,7 @@ namespace circuit {
 
 using namespace springai;
 
-CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts)
+CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts, Resource* res)
 		: id(def->GetUnitDefId())
 		, def(def)
 		, count(0)
@@ -74,12 +74,17 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 		it = customParams.find("disarmdamageonly");
 		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
-			scale = 0.2f;
+			scale = 0.5f;
 		}
 
 		it = customParams.find("timeslow_onlyslow");
 		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
-			scale = 0.2f;
+			scale = 0.5f;
+		}
+
+		it = customParams.find("is_capture");
+		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
+			scale = 2.0f;
 		}
 
 		float reloadTime = wd->GetReload();
@@ -106,6 +111,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	isAntiWater = (targetCategory & circuit->GetWaterCategory()) || isWater;
 
 	isMobile = def->GetSpeed() > .0f;
+
+	cost = def->GetCost(res);
 }
 
 CCircuitDef::~CCircuitDef()

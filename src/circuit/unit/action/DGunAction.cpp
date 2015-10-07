@@ -13,6 +13,7 @@
 #include "OOAICallback.h"
 #include "AISCommands.h"
 #include "Weapon.h"
+#include "Drawer.h"
 
 namespace circuit {
 
@@ -21,6 +22,7 @@ using namespace springai;
 CDGunAction::CDGunAction(CCircuitUnit* owner, float range)
 		: IUnitAction(owner, Type::DGUN)
 		, range(range)
+		, updCount(0)
 {
 }
 
@@ -31,6 +33,9 @@ CDGunAction::~CDGunAction()
 
 void CDGunAction::Update(CCircuitAI* circuit)
 {
+	if (updCount++ % 4 != 0) {
+		return;
+	}
 	isBlocking = false;
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	// NOTE: Paralyzer doesn't increase ReloadFrame beyond currentFrame, but disarmer does.
@@ -38,8 +43,8 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	if ((unit->GetDGun()->GetReloadFrame() > circuit->GetLastFrame()) || unit->GetUnit()->IsParalyzed() /*|| unit->IsDisarmed()*/) {
 		return;
 	}
-	Unit* u = unit->GetUnit();
-	auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(u->GetPos(), range));
+	const AIFloat3& pos = unit->GetUnit()->GetPos();
+	auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(pos, range));
 	if (enemies.empty()) {
 		return;
 	}
@@ -49,9 +54,15 @@ void CDGunAction::Update(CCircuitAI* circuit)
 		}
 		CEnemyUnit* enemy = circuit->GetEnemyUnit(e);
 		if ((enemy != nullptr) && (enemy->GetThreat() > 0.1f)) {
-			u->DGun(e, UNIT_COMMAND_OPTION_ALT_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 5);
-			isBlocking = true;
-			break;
+			const AIFloat3& dir = (enemy->GetPos() - pos).Normalize();
+			// NOTE: C API also returns rayLen
+			CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, range * 1.2f, unit->GetUnit(), 0);
+
+			if (hitUID == enemy->GetId()) {
+				unit->GetUnit()->DGun(e, UNIT_COMMAND_OPTION_ALT_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 5);
+				isBlocking = true;
+				break;
+			}
 		}
 	}
 	utils::free_clear(enemies);
