@@ -747,6 +747,7 @@ void CEconomyManager::UpdateMorph()
 		} else {
 			unit->Morph();
 			it = morphees.erase(it);
+			break;  // one unit at a time
 		}
 	}
 }

@@ -26,7 +26,6 @@ using namespace springai;
 CRetreatTask::CRetreatTask(ITaskManager* mgr)
 		: IUnitTask(mgr, Priority::NORMAL, Type::RETREAT)
 		, updateSlice(0)
-		, updCount(0)
 {
 }
 
@@ -125,15 +124,16 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CFactoryManager* factoryManager = circuit->GetFactoryManager();
-	AIFloat3 pos = factoryManager->GetClosestHaven(unit);
-	if (pos == -RgtVector) {
-		pos = circuit->GetSetupManager()->GetBasePos();
+	AIFloat3 haven = factoryManager->GetClosestHaven(unit);
+	if (haven == -RgtVector) {
+		haven = circuit->GetSetupManager()->GetBasePos();
 	}
 	const float maxDist = factoryManager->GetAssistDef()->GetBuildDistance();
 	Unit* u = unit->GetUnit();
-	if (u->GetPos().SqDistance2D(pos) > maxDist * maxDist) {
+	const AIFloat3& unitPos = u->GetPos();
+	if (unitPos.SqDistance2D(haven) > maxDist * maxDist) {
 		// TODO: push MoveAction into unit? to avoid enemy fire
-		u->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 1);
+		u->MoveTo(haven, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 1);
 		// TODO: Add fail counter?
 	} else {
 		// TODO: push WaitAction into unit
@@ -141,7 +141,6 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		params.push_back(0.0f);
 		u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
-		const AIFloat3& unitPos = u->GetPos();
 		AIFloat3 pos = unitPos;
 		const float size = SQUARE_SIZE * 50;
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();

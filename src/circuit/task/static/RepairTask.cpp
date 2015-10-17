@@ -13,6 +13,7 @@
 #include "util/utils.h"
 
 #include "OOAICallback.h"
+#include "Feature.h"
 
 namespace circuit {
 
@@ -20,7 +21,6 @@ using namespace springai;
 
 CSRepairTask::CSRepairTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, int timeout)
 		: CBRepairTask(mgr, priority, target, timeout)
-		, updCount(0)
 {
 }
 

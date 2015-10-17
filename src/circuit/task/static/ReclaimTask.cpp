@@ -22,7 +22,6 @@ CSReclaimTask::CSReclaimTask(ITaskManager* mgr, Priority priority,
 							 const springai::AIFloat3& position,
 							 float cost, int timeout, float radius)
 		: CBReclaimTask(mgr, priority, position, cost, timeout, radius)
-		, updCount(0)
 {
 }
 

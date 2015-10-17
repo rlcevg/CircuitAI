@@ -31,7 +31,6 @@ public:
 private:
 	std::set<CCircuitUnit*> updateUnits;
 	unsigned int updateSlice;
-	unsigned int updCount;
 };
 
 } // namespace circuit

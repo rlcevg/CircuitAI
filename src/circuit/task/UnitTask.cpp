@@ -17,6 +17,7 @@ IUnitTask::IUnitTask(ITaskManager* mgr, Priority priority, Type type)
 		: manager(mgr)
 		, priority(priority)
 		, type(type)
+		, updCount(0)
 {
 }
 

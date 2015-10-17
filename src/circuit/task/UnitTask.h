@@ -50,11 +50,15 @@ public:
 	Type GetType() const { return type; }
 	ITaskManager* GetManager() const { return manager; }
 
+	void ResetUpd() { updCount = 0; }
+
 protected:
 	ITaskManager* manager;
 	std::set<CCircuitUnit*> units;
 	Priority priority;
 	Type type;
+
+	unsigned int updCount;
 };
 
 } // namespace circuit

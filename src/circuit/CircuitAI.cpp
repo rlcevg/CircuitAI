@@ -699,6 +699,21 @@ int CCircuitAI::EnemyEnterLOS(CEnemyUnit* enemy)
 {
 	threatMap->EnemyEnterLOS(enemy);
 
+	// Force unit's reaction
+	auto friendlies = std::move(callback->GetFriendlyUnitsIn(enemy->GetPos(), 300.0f));
+	if (!friendlies.empty()) {
+		for (Unit* f : friendlies) {
+			if (f == nullptr) {
+				continue;
+			}
+			CCircuitUnit* unit = GetTeamUnit(f->GetUnitId());
+			if ((unit != nullptr) && (unit->GetTask() != nullptr)) {
+				unit->GetTask()->ResetUpd();
+			}
+			delete f;
+		}
+	}
+
 	return 0;  // signaling: OK
 }
 

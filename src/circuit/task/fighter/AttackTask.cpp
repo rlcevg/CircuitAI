@@ -23,7 +23,6 @@ using namespace springai;
 CAttackTask::CAttackTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::ATTACK)
 		, isUpdating(false)
-		, updCount(0)
 {
 }
 

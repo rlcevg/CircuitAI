@@ -22,9 +22,6 @@ public:
 	virtual void Update();
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
-
-private:
-	unsigned int updCount;
 };
 
 } // namespace circuit

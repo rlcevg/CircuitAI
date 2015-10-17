@@ -206,6 +206,9 @@ float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos
 	if (micropather->FindBestPathToPointOnRadius(XY2Node(sx, sy), XY2Node(ex, ey), &path, &pathCost, radius) == CMicroPather::SOLVED) {
 		posPath.reserve(path.size());
 
+		// TODO: Consider performing transformations in place where move_along_path executed.
+		//       Current task implementations recalc path every ~2 seconds,
+		//       therefore only first few positions actually used.
 		Map* map = terrainData->GetMap();
 		for (void* node : path) {
 			float3 mypos = Node2Pos(node);

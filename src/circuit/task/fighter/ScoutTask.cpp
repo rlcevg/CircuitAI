@@ -27,7 +27,6 @@ using namespace springai;
 CScoutTask::CScoutTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::SCOUT)
 		, isUpdating(false)
-		, updCount(0)
 		, scoutIndex(0)
 {
 }
