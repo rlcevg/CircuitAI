@@ -50,13 +50,9 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 	} else {
 		position = bestTarget->GetPos();
 		float range = u->GetMaxRange();
-		if ((bestTarget->GetCircuitDef() != nullptr) && (minSqDist < range * range)) {
-			int targetCat = bestTarget->GetCircuitDef()->GetUnitDef()->GetCategory();
-			int noChaseCat = unit->GetCircuitDef()->GetUnitDef()->GetNoChaseCategory();
-			if ((targetCat & noChaseCat) != 0) {
-				u->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
-				return;
-			}
+		if (minSqDist < range * range) {
+			u->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
+			return;
 		}
 	}
 	u->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
@@ -83,6 +79,7 @@ CEnemyUnit* CAttackTask::FindBestTarget(CCircuitUnit* unit, float& minSqDist)
 	const AIFloat3& pos = unit->GetUnit()->GetPos();
 	STerrainMapArea* area = unit->GetArea();
 	float power = threatMap->GetUnitThreat(unit);
+	int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
 
 	CEnemyUnit* bestTarget = nullptr;
 	minSqDist = std::numeric_limits<float>::max();
@@ -96,6 +93,13 @@ CEnemyUnit* CAttackTask::FindBestTarget(CCircuitUnit* unit, float& minSqDist)
 		{
 			continue;
 		}
+		if (enemy->GetCircuitDef() != nullptr) {
+			int targetCat = enemy->GetCircuitDef()->GetCategory();
+			if ((targetCat & canTargetCat) == 0) {
+				continue;
+			}
+		}
+
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
 		if (sqDist < minSqDist) {
 			bestTarget = enemy;

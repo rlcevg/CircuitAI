@@ -27,7 +27,6 @@ namespace circuit {
 
 class IBuilderTask;
 class CLagrangeInterPol;
-class CCircuitDef;
 class CGameTask;
 
 class CEconomyManager: public IModule {

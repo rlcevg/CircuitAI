@@ -8,6 +8,8 @@
 #ifndef SRC_CIRCUIT_MODULE_MODULE_H_
 #define SRC_CIRCUIT_MODULE_MODULE_H_
 
+#include "unit/CircuitDef.h"
+
 #include <unordered_map>
 #include <functional>
 
@@ -32,9 +34,9 @@ public:
 	virtual int UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId);
 
 protected:
-	using Handlers1 = std::unordered_map<int, std::function<void (CCircuitUnit* unit)>>;
-	using Handlers2 = std::unordered_map<int, std::function<void (CCircuitUnit* unit, CCircuitUnit* other)>>;
-	using EHandlers = std::unordered_map<int, std::function<void (CCircuitUnit* unit, CEnemyUnit* other)>>;
+	using Handlers1 = std::unordered_map<CCircuitDef::Id, std::function<void (CCircuitUnit* unit)>>;
+	using Handlers2 = std::unordered_map<CCircuitDef::Id, std::function<void (CCircuitUnit* unit, CCircuitUnit* other)>>;
+	using EHandlers = std::unordered_map<CCircuitDef::Id, std::function<void (CCircuitUnit* unit, CEnemyUnit* other)>>;
 
 	CCircuitAI* circuit;
 };

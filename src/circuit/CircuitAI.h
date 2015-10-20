@@ -202,6 +202,8 @@ public:
 	int GetAirCategory()   const { return airCategory; }
 	int GetLandCategory()  const { return landCategory; }
 	int GetWaterCategory() const { return waterCategory; }
+	int GetGoodCategory()  const { return goodCategory; }
+	float GetLosConv()     const { return losResConv; }
 
 private:
 	// debug
@@ -240,9 +242,12 @@ private:
 	std::shared_ptr<CMilitaryManager> militaryManager;
 	std::list<std::shared_ptr<IModule>> modules;
 
+	// TODO: Move into GameAttribute? Or use locally
 	int airCategory;
 	int landCategory;
 	int waterCategory;
+	int goodCategory;
+	float losResConv;
 
 #ifdef DEBUG_VIS
 private:

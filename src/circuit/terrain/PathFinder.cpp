@@ -74,6 +74,18 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 	for (int i = 0; i < totalcells; ++i) {
 		airMoveArray[i] = true;
 	}
+	// make sure that the edges are no-go
+	for (int i = 0; i < pathMapXSize; ++i) {
+		airMoveArray[i] = false;
+		int k = pathMapXSize * (pathMapYSize - 1) + i;
+		airMoveArray[k] = false;
+	}
+	for (int i = 0; i < pathMapYSize; ++i) {
+		int k = i * pathMapXSize;
+		airMoveArray[k] = false;
+		k = i * pathMapXSize + pathMapXSize - 1;
+		airMoveArray[k] = false;
+	}
 	moveArrays.push_back(airMoveArray);
 
 	blockArray.resize(totalcells, 0);
@@ -145,7 +157,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap)
 	float* costArray;
 	if (unit->GetUnit()->IsCloaked()) {
 		costArray = threatMap->GetCloakThreatArray();
-	} else if (cdef->GetUnitDef()->IsAbleToFly()) {
+	} else if (cdef->IsAbleToFly()) {
 		costArray = threatMap->GetAirThreatArray();
 	} else if (unit->GetUnit()->GetPos().y < -10.0f) {
 		costArray = threatMap->GetWaterThreatArray();

@@ -51,7 +51,6 @@ public:
 
 	float GetUnitThreat(CCircuitUnit* unit) const;
 	int GetSquareSize() const { return squareSize; }
-	int GetLosConv() const { return losResConv; }
 
 private:
 	using Threats = std::vector<float>;

@@ -76,6 +76,8 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, airCategory(0)
 		, landCategory(0)
 		, waterCategory(0)
+		, goodCategory(0)
+		, losResConv(.0f)
 #ifdef DEBUG_VIS
 		, debugDrawer(nullptr)
 #endif
@@ -697,21 +699,27 @@ int CCircuitAI::UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 
 int CCircuitAI::EnemyEnterLOS(CEnemyUnit* enemy)
 {
+	bool isKnownBefore = enemy->IsKnown() && (enemy->IsInRadar() || !enemy->GetCircuitDef()->IsMobile());
+
 	threatMap->EnemyEnterLOS(enemy);
 
+	if (isKnownBefore) {
+		return 0;  // signaling: OK
+	}
 	// Force unit's reaction
-	auto friendlies = std::move(callback->GetFriendlyUnitsIn(enemy->GetPos(), 300.0f));
-	if (!friendlies.empty()) {
-		for (Unit* f : friendlies) {
-			if (f == nullptr) {
-				continue;
-			}
-			CCircuitUnit* unit = GetTeamUnit(f->GetUnitId());
-			if ((unit != nullptr) && (unit->GetTask() != nullptr)) {
-				unit->GetTask()->ResetUpd();
-			}
-			delete f;
+	auto friendlies = std::move(callback->GetFriendlyUnitsIn(enemy->GetPos(), 500.0f));
+	if (friendlies.empty()) {
+		return 0;  // signaling: OK
+	}
+	for (Unit* f : friendlies) {
+		if (f == nullptr) {
+			continue;
 		}
+		CCircuitUnit* unit = GetTeamUnit(f->GetUnitId());
+		if ((unit != nullptr) && (unit->GetTask() != nullptr)) {
+			unit->GetTask()->ResetUpd();
+		}
+		delete f;
 	}
 
 	return 0;  // signaling: OK
@@ -757,7 +765,7 @@ int CCircuitAI::EnemyDestroyed(CEnemyUnit* enemy)
 int CCircuitAI::PlayerCommand(std::vector<CCircuitUnit*>& units)
 {
 	for (CCircuitUnit* unit : units) {
-		if (unit != nullptr) {
+		if ((unit != nullptr) && (unit->GetTask() != nullptr)) {
 			ITaskManager* mgr = unit->GetTask()->GetManager();
 			mgr->AssignTask(unit, new CPlayerTask(mgr));
 		}
@@ -958,6 +966,10 @@ void CCircuitAI::InitUnitDefs()
 	airCategory   = game->GetCategoriesFlag("FIXEDWING GUNSHIP");
 	landCategory  = game->GetCategoriesFlag("LAND SINK TURRET SHIP SWIM FLOAT HOVER");
 	waterCategory = game->GetCategoriesFlag("SUB");
+	goodCategory  = ~game->GetCategoriesFlag("TERRAFORM STUPIDTARGET");
+	Mod* mod = callback->GetMod();
+	losResConv = SQUARE_SIZE << mod->GetLosMipLevel();
+	delete mod;
 
 	CTerrainData& terrainData = gameAttribute->GetTerrainData();
 	if (!gameAttribute->GetTerrainData().IsInitialized()) {
@@ -981,7 +993,7 @@ void CCircuitAI::InitUnitDefs()
 
 	for (auto& kv : GetCircuitDefs()) {
 		CCircuitDef* cdef = kv.second;
-		if (cdef->GetUnitDef()->IsAbleToFly()) {
+		if (cdef->IsAbleToFly()) {
 		} else if (!cdef->IsMobile()) {  // for immobile units
 			cdef->SetImmobileId(terrainData.udImmobileType[cdef->GetId()]);
 			// If a unit can build mobile units then it will inherit mobileType from it's options

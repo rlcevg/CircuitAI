@@ -89,10 +89,11 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		unit->GetTask()->OnUnitDamaged(unit, attacker);
 	};
 	auto workerDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
-		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
+		IUnitTask* task = unit->GetTask();
+		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
-		if (unit->GetTask() == nullTask) {  // alternative: unit->GetUnit()->IsBeingBuilt()
+		if (task == nullTask) {  // alternative: unit->GetUnit()->IsBeingBuilt()
 			return;
 		}
 		--buildAreas[unit->GetArea()][unit->GetCircuitDef()];

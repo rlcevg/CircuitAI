@@ -86,6 +86,7 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 void CRetreatTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	unsigned int count = updCount;
 	if (updateUnits.empty()) {
 		updateUnits = units;  // copy units
 		updateSlice = updateUnits.size() / TEAM_SLOWUPDATE_RATE;
@@ -101,7 +102,7 @@ void CRetreatTask::Update()
 		Unit* u = ass->GetUnit();
 		if (u->GetHealth() >= u->GetMaxHealth() * 0.8f) {
 			RemoveAssignee(ass);
-		} else if (updCount % 4 == 0) {
+		} else if (count % 4 == 0) {
 			Execute(ass);
 		} else {
 			ass->Update(circuit);

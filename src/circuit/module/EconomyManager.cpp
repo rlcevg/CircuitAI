@@ -14,6 +14,7 @@
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/math/LagrangeInterPol.h"
+#include "util/GameAttribute.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
@@ -92,7 +93,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	//       Cloaker
 
 	/*
-	 * factorycloak handlers
+	 * factory handlers
 	 */
 	auto factoryFinishedHandler = [this](CCircuitUnit* unit) {
 		// check factory's cluster
@@ -111,14 +112,12 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			}
 		}
 	};
-	int unitDefId = circuit->GetCircuitDef("factorycloak")->GetId();
-	finishedHandler[unitDefId] = factoryFinishedHandler;
-	destroyedHandler[unitDefId] = factoryDestroyedHandler;
-	// FIXME: EXPERIMENTAL
-	unitDefId = circuit->GetCircuitDef("striderhub")->GetId();
-	finishedHandler[unitDefId] = factoryFinishedHandler;
-	destroyedHandler[unitDefId] = factoryDestroyedHandler;
-	// FIXME: EXPERIMENTAL
+	const char* factories[] = {"factorycloak", "factorygunship", "striderhub"};
+	for (const char* name : factories) {
+		int unitDefId = circuit->GetCircuitDef(name)->GetId();
+		finishedHandler[unitDefId] = factoryFinishedHandler;
+		destroyedHandler[unitDefId] = factoryDestroyedHandler;
+	}
 
 	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
 	ecoFactor = circuit->GetAllyTeam()->GetSize() * 0.25f + 0.75f;
@@ -771,7 +770,17 @@ void CEconomyManager::Init()
 			if (param != nullptr) {
 				if (param->GetValueFloat() == 1) {
 					CBuilderManager* builderManager = circuit->GetBuilderManager();
-					task = builderManager->EnqueueTask(IUnitTask::Priority::HIGH, circuit->GetCircuitDef("factorycloak"), pos,
+					const char* factories[] = {"factorycloak", "factorygunship"};
+					const int size = sizeof(factories) / sizeof(factories[0]);
+					const CAllyTeam::TeamIds& teamIds = circuit->GetAllyTeam()->GetTeamIds();
+					std::set<CAllyTeam::Id> circIds;  // sort id
+					for (CCircuitAI* circ : circuit->GetGameAttribute()->GetCircuits()) {
+						if (teamIds.find(circ->GetTeamId()) != teamIds.end()) {
+							circIds.insert(circ->GetTeamId());
+						}
+					}
+					const int choice = std::distance(circIds.begin(), circIds.find(circuit->GetTeamId())) % size;
+					task = builderManager->EnqueueTask(IUnitTask::Priority::HIGH, circuit->GetCircuitDef(factories[choice]), pos,
 													   IBuilderTask::BuildType::FACTORY);
 					static_cast<ITaskManager*>(builderManager)->AssignTask(commander, task);
 				}

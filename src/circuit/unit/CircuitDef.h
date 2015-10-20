@@ -56,6 +56,9 @@ public:
 	float GetDGunRange() const { return dgunRange; }
 	springai::WeaponMount* GetDGunMount() const { return dgunMount; }
 	float GetDPS() const { return dps; }
+	int GetCategory() const { return category; }
+	int GetTargetCategory() const { return targetCategory; }
+	int GetNoChaseCategory() const { return noChaseCategory; }
 
 	void SetImmobileId(STerrainMapImmobileType::Id immobileId) { immobileTypeId = immobileId; }
 	STerrainMapImmobileType::Id GetImmobileId() const { return immobileTypeId; }
@@ -66,9 +69,11 @@ public:
 	bool IsAntiLand()  const { return isAntiLand; }
 	bool IsAntiWater() const { return isAntiWater; }
 
-	bool IsMobile() const { return isMobile; }
+	bool IsMobile()    const { return isMobile; }
+	bool IsAbleToFly() const { return isAbleToFly; }
 
-	float GetCost() const { return cost; }
+	float GetLosRadius() const { return losRadius; }
+	float GetCost()      const { return cost; }
 
 private:
 	Id id;
@@ -82,6 +87,9 @@ private:
 	float dgunRange;
 	springai::WeaponMount* dgunMount;
 	float dps;
+	int category;
+	int targetCategory;
+	int noChaseCategory;
 
 	STerrainMapImmobileType::Id immobileTypeId;
 	STerrainMapMobileType::Id   mobileTypeId;
@@ -91,7 +99,9 @@ private:
 	bool isAntiWater;
 
 	bool isMobile;
+	bool isAbleToFly;
 
+	float losRadius;
 	float cost;
 };
 

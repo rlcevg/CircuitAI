@@ -145,7 +145,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 //		fighterInfos.erase(unit);
 //	};
 
-	const char* names[] = {"armpw", "spherepole"};
+	const char* names[] = {"armpw", "spherepole",
+						   "bladew", "armkam"};
 	for (const char* name : names) {
 		scoutDefs.insert(circuit->GetCircuitDef(name));
 	}

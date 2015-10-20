@@ -23,7 +23,6 @@ namespace springai {
 
 namespace circuit {
 
-class CCircuitDef;
 class CEnergyLink;
 
 class CBuilderManager: public IUnitModule {

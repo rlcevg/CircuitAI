@@ -27,6 +27,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 //		, dgunReload(-1)
 		, dgunRange(.0f)
 		, dgunMount(nullptr)
+		, dps(.0f)
+		, targetCategory(0)
 		, mobileTypeId(-1)
 		, immobileTypeId(-1)
 {
@@ -55,16 +57,14 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		}
 	}
 
-	dps = 0.0f;
-	int targetCategory = 0;
 	bool isTracks = false;
-	bool isWater = false;
+//	bool isWater = false;
 	auto mounts = std::move(def->GetWeaponMounts());
 	for (WeaponMount* mount : mounts) {
 		WeaponDef* wd = mount->GetWeaponDef();
 		const std::map<std::string, std::string>& customParams = wd->GetCustomParams();
 
-		float scale = wd->IsParalyzer() ? 0.2f : 1.0f;
+		float scale = wd->IsParalyzer() ? 0.5f : 1.0f;
 
 		float extraDmg = .0f;
 		auto it = customParams.find("extra_damage");
@@ -101,17 +101,41 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		dps += ldps * wd->GetSalvoSize() * scale / damages.size() / reloadTime;
 		targetCategory |= mount->GetOnlyTargetCategory();
 		isTracks |= (wd->GetProjectileSpeed() * FRAMES_PER_SEC >= 500.0f) || wd->IsTracks();
-		isWater |= wd->IsWaterWeapon();
+//		isWater |= wd->IsWaterWeapon();
 
 		delete wd;
 		delete mount;
 	}
+	category = def->GetCategory();
+	noChaseCategory = def->GetNoChaseCategory();
+
 	isAntiAir   = (targetCategory & circuit->GetAirCategory()) && isTracks;
 	isAntiLand  = (targetCategory & circuit->GetLandCategory());
-	isAntiWater = (targetCategory & circuit->GetWaterCategory()) || isWater;
+	isAntiWater = (targetCategory & circuit->GetWaterCategory())/* || isWater*/;
 
 	isMobile = def->GetSpeed() > .0f;
+	isAbleToFly = def->IsAbleToFly();
 
+	if (isMobile && (dps < 0.1f)) {  // mobile bombs
+		WeaponDef* wd = def->GetDeathExplosion();
+		if (wd->GetAreaOfEffect() > 100.0f) {
+			Damage* damage = wd->GetDamage();
+			const std::vector<float>& damages = damage->GetTypes();
+			delete damage;
+			float ldps = .0f;
+			for (float dmg : damages) {
+				ldps += dmg;
+			}
+			dps = ldps * wd->GetSalvoSize() / damages.size();
+			targetCategory = wd->GetOnlyTargetCategory();
+			if (~targetCategory == 0) {  // FIXME: Is it portable?
+				targetCategory = circuit->GetGoodCategory();
+			}
+		}
+		delete wd;
+	}
+
+	losRadius = def->GetLosRadius() * circuit->GetLosConv();
 	cost = def->GetCost(res);
 }
 

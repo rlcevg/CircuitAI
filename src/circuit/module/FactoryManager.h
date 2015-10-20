@@ -8,9 +8,9 @@
 #ifndef SRC_CIRCUIT_MODULE_FACTORYMANAGER_H_
 #define SRC_CIRCUIT_MODULE_FACTORYMANAGER_H_
 
+#include "module/UnitModule.h"
 #include "task/RecruitTask.h"
 #include "task/builder/BuilderTask.h"
-#include "module/UnitModule.h"
 
 #include <map>
 #include <vector>
@@ -18,7 +18,7 @@
 
 namespace circuit {
 
-class CCircuitDef;
+class CEconomyManager;
 
 class CFactoryManager: public IUnitModule {
 public:
@@ -95,6 +95,16 @@ private:
 		bool hasBuilder;
 	};
 	std::list<SFactory> factories;  // facory 1:n nano
+
+	struct SFactoryDef {
+		CCircuitDef* builderDef;
+		std::vector<CCircuitDef*> buildDefs;
+		std::vector<float> prob0;
+		std::vector<float> prob1;
+		std::function<bool (CEconomyManager* mgr)> criteria;  // prob0 criterion
+		const std::vector<float>& GetProb(CEconomyManager* mgr) const { return criteria(mgr) ? prob0 : prob1; }
+	};
+	std::unordered_map<CCircuitDef::Id, SFactoryDef> factoryDefs;
 
 	CCircuitDef* assistDef;
 	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> assists;  // nano 1:n factory

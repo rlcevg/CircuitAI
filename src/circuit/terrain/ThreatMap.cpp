@@ -291,7 +291,7 @@ float CThreatMap::GetAllThreatAt(const AIFloat3& position) const
 void CThreatMap::SetThreatType(CCircuitUnit* unit)
 {
 	assert(unit != nullptr);
-	if (unit->GetCircuitDef()->GetUnitDef()->IsAbleToFly()) {
+	if (unit->GetCircuitDef()->IsAbleToFly()) {
 		pthreats = &airThreat;
 	} else if (unit->GetUnit()->GetPos().y < -10.0f) {
 		pthreats = &waterThreat;
@@ -312,7 +312,7 @@ float CThreatMap::GetThreatAt(CCircuitUnit* unit, const AIFloat3& position) cons
 	assert(unit != nullptr);
 	const int z = position.z / squareSize;
 	const int x = position.x / squareSize;
-	if (unit->GetCircuitDef()->GetUnitDef()->IsAbleToFly()) {
+	if (unit->GetCircuitDef()->IsAbleToFly()) {
 		return airThreat[z * width + x] - THREAT_VAL_BASE;
 	}
 	if (unit->GetUnit()->GetPos().y < -10.0f) {
@@ -356,23 +356,25 @@ void CThreatMap::AddEnemyUnitAll(const CEnemyUnit* e, const float scale)
 	const int rangeSq = e->GetRange() * e->GetRange();
 	const int rangeCloakSq = e->GetDecloakRange() * e->GetDecloakRange();
 
-	const int beginX = std::max(int(posx - e->GetRange()    ),      0);
-	const int endX   = std::min(int(posx + e->GetRange() + 1),  width);
-	const int beginZ = std::max(int(posz - e->GetRange()    ),      0);
-	const int endZ   = std::min(int(posz + e->GetRange() + 1), height);
+	// Threat circles are large, decrease it by 1 for micro-optimization
+	const int beginX = std::max(int(posx - e->GetRange() + 1),      0);
+	const int endX   = std::min(int(posx + e->GetRange()    ),  width);
+	const int beginZ = std::max(int(posz - e->GetRange() + 1),      0);
+	const int endZ   = std::min(int(posz + e->GetRange()    ), height);
 
 	for (int x = beginX; x < endX; ++x) {
 		const int dxSq = (posx - x) * (posx - x);
 		for (int z = beginZ; z < endZ; ++z) {
 			const int dzSq = (posz - z) * (posz - z);
 
-			if (dxSq + dzSq <= rangeSq) {
+			const int sum = dxSq + dzSq;
+			if (sum <= rangeSq) {
 				const int index = z * width + x;
 				airThreat[index]   = std::max(airThreat[index]   + threat, THREAT_VAL_BASE);
 				landThreat[index]  = std::max(landThreat[index]  + threat, THREAT_VAL_BASE);
 				waterThreat[index] = std::max(waterThreat[index] + threat, THREAT_VAL_BASE);
 
-				if (dxSq + dzSq <= rangeCloakSq) {  // Assuming decloak range <= weapon range
+				if (sum <= rangeCloakSq) {  // Assuming decloak range <= weapon range
 					cloakThreat[index] = std::max(cloakThreat[index] + threatCloak, THREAT_VAL_BASE);
 				}
 			}
@@ -388,10 +390,11 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, Threats& threats, const float
 	const float threat = e->GetThreat() * scale/* - 0.1f*/;
 	const int rangeSq = e->GetRange() * e->GetRange();
 
-	const int beginX = std::max(int(posx - e->GetRange()    ),      0);
-	const int endX   = std::min(int(posx + e->GetRange() + 1),  width);
-	const int beginZ = std::max(int(posz - e->GetRange()    ),      0);
-	const int endZ   = std::min(int(posz + e->GetRange() + 1), height);
+	// Threat circles are large, decrease it by 1 for micro-optimization
+	const int beginX = std::max(int(posx - e->GetRange() + 1),      0);
+	const int endX   = std::min(int(posx + e->GetRange()    ),  width);
+	const int beginZ = std::max(int(posz - e->GetRange() + 1),      0);
+	const int endZ   = std::min(int(posz + e->GetRange()    ), height);
 
 	for (int x = beginX; x < endX; ++x) {
 		const int dxSq = (posx - x) * (posx - x);
@@ -422,6 +425,7 @@ void CThreatMap::AddDecloaker(const CEnemyUnit* e, const float scale)
 	const float threatCloak = 10.0f * scale;
 	const int rangeCloakSq = e->GetDecloakRange() * e->GetDecloakRange();
 
+	// Decloak ranges are small, full range shouldn't hit performance
 	const int beginX = std::max(int(posx - e->GetDecloakRange()    ),      0);
 	const int endX   = std::min(int(posx + e->GetDecloakRange() + 1),  width);
 	const int beginZ = std::max(int(posz - e->GetDecloakRange()    ),      0);
@@ -475,8 +479,8 @@ bool CThreatMap::IsInLOS(const AIFloat3& pos) const
 	// the last value, bottom right, is at index (width/res * height/res - 1)
 
 	// convert from world coordinates to losmap coordinates
-	const int x = pos.x / losResConv;
-	const int z = pos.z / losResConv;
+	const int x = (int)pos.x / losResConv;
+	const int z = (int)pos.z / losResConv;
 	return losMap[z * losWidth + x] > 0;
 }
 

@@ -52,7 +52,6 @@ private:
 	CCircuitUnit::Id id;
 	springai::Unit* unit;  // owner
 	CCircuitDef* circuitDef;
-
 	int lastSeen;
 
 	springai::Weapon* dgun;
@@ -69,6 +68,7 @@ public:
 	void SetInLOS() { losStatus |= LosType::LOS; }
 	void SetInRadar() { losStatus |= LosType::RADAR; }
 	void SetHidden() { losStatus |= LosType::HIDDEN; }
+	void SetKnown() { losStatus |= LosType::KNOWN; }
 	void ClearInLOS() { losStatus &= ~LosType::LOS; }
 	void ClearInRadar() { losStatus &= ~LosType::RADAR; }
 	void ClearHidden() { losStatus &= ~LosType::HIDDEN; }
@@ -77,7 +77,6 @@ public:
 	bool IsInRadarOrLOS() const { return losStatus & (LosType::RADAR | LosType::LOS); }
 	bool NotInRadarAndLOS() const { return (losStatus & (LosType::RADAR | LosType::LOS)) == 0; }
 	bool IsHidden() const { return losStatus & LosType::HIDDEN; }
-	void SetKnown() { losStatus &= LosType::KNOWN; }
 	bool IsKnown() const { return losStatus & LosType::KNOWN; }
 };
 

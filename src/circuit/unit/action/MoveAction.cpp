@@ -23,7 +23,8 @@ CMoveAction::CMoveAction(CCircuitUnit* owner)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	int squareSize = unit->GetManager()->GetCircuit()->GetPathfinder()->GetSquareSize();
-	increment = (DEFAULT_SLACK / squareSize + 1);
+	// Flying units have larger step
+	increment = ((unit->GetCircuitDef()->IsAbleToFly() + 1) * DEFAULT_SLACK / squareSize + 1);
 	minSqDist = squareSize * increment / 2;
 	minSqDist *= minSqDist;
 }

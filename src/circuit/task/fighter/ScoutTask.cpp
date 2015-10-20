@@ -125,13 +125,16 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, F3Vec& path)
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	AIFloat3 pos = unit->GetUnit()->GetPos();
+	Unit* u = unit->GetUnit();
+	AIFloat3 pos = u->GetPos();
 	STerrainMapArea* area = unit->GetArea();
 	float power = threatMap->GetUnitThreat(unit) * 0.8f;
-	int noChaseCat = unit->GetCircuitDef()->GetUnitDef()->GetNoChaseCategory();
-	float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
-						   unit->GetCircuitDef()->GetUnitDef()->GetLosRadius() * threatMap->GetLosConv());
+	int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
+	int noChaseCat = unit->GetCircuitDef()->GetNoChaseCategory();
+	float range = std::max(u->GetMaxRange() + threatMap->GetSquareSize() * 2,
+						   unit->GetCircuitDef()->GetLosRadius());
 	float minSqDist = range * range;
+	float rayRange = range * 1.2f;
 	float maxThreat = .0f;
 
 	CEnemyUnit* bestTarget = nullptr;
@@ -147,26 +150,36 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, F3Vec& path)
 		{
 			continue;
 		}
-		float sqDist = pos.SqDistance2D(enemy->GetPos());
-		if (sqDist < minSqDist) {
-			if (enemy->GetThreat() > maxThreat) {
-				bestTarget = enemy;
-				minSqDist = sqDist;
-				maxThreat = enemy->GetThreat();
-			} else if (bestTarget == nullptr) {
-				if (enemy->GetCircuitDef() != nullptr) {
-					int targetCat = enemy->GetCircuitDef()->GetUnitDef()->GetCategory();
-					if ((targetCat & noChaseCat) == 0) {
-						mediumTarget = enemy;
-					}
-				}
-				if (mediumTarget == nullptr) {
-					worstTarget = enemy;
-				}
+		int targetCat;
+		if (enemy->GetCircuitDef() != nullptr) {
+			targetCat = enemy->GetCircuitDef()->GetCategory();
+			if ((targetCat & canTargetCat) == 0) {
+				continue;
 			}
 		} else {
-			enemyPositions.push_back(enemy->GetPos());
+			targetCat = UNKNOWN_CATEGORY;
 		}
+
+		float sqDist = pos.SqDistance2D(enemy->GetPos());
+		if (sqDist < minSqDist) {
+			const AIFloat3& dir = (enemy->GetPos() - pos).Normalize();
+			CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, u, 0);
+			if (hitUID == enemy->GetId()) {
+				if (enemy->GetThreat() > maxThreat) {
+					bestTarget = enemy;
+					minSqDist = sqDist;
+					maxThreat = enemy->GetThreat();
+				} else if (bestTarget == nullptr) {
+					if ((targetCat & noChaseCat) == 0) {
+						mediumTarget = enemy;
+					} else if (mediumTarget == nullptr) {
+						worstTarget = enemy;
+					}
+				}
+				continue;
+			}
+		}
+		enemyPositions.push_back(enemy->GetPos());
 	}
 	if (bestTarget == nullptr) {
 		bestTarget = (mediumTarget != nullptr) ? mediumTarget : worstTarget;

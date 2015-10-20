@@ -16,7 +16,6 @@
 
 namespace circuit {
 
-class CCircuitDef;
 class CBDefenceTask;
 
 class CMilitaryManager: public IUnitModule {
