@@ -81,7 +81,7 @@ CEnergyGrid::CEnergyGrid(CCircuitAI* circuit)
 		, toggleFrame(-1)
 #endif
 {
-	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CEnergyGrid::Init, this));
+	circuit->GetScheduler()->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CEnergyGrid::Init, this));
 }
 
 CEnergyGrid::~CEnergyGrid()
@@ -231,7 +231,6 @@ void CEnergyGrid::Init()
 
 	linkedClusters.resize(clusters.size(), false);
 
-	// FIXME: No-metal-spots maps can crash: check !links.empty()
 	links.reserve(boost::num_edges(clusterGraph));
 	CMetalData::Graph::edge_iterator edgeIt, edgeEnd;
 	std::tie(edgeIt, edgeEnd) = boost::edges(clusterGraph);
@@ -248,7 +247,7 @@ void CEnergyGrid::Init()
 
 void CEnergyGrid::MarkAllyPylons(const std::list<CCircuitUnit*>& pylons)
 {
-	decltype(markedPylons) prevUnits = std::move(markedPylons);
+	auto prevUnits = std::move(markedPylons);
 	markedPylons.clear();
 	auto first1  = pylons.begin();
 	auto last1   = pylons.end();

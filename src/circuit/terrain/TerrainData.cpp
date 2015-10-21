@@ -153,11 +153,11 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	terrainWidth = mapWidth * SQUARE_SIZE;
 	terrainHeight = mapHeight * SQUARE_SIZE;
 	convertStoP = DEFAULT_SLACK;  // = 2^x, should not be less than 16 (2*SUQARE_SIZE)
-	if ((mapWidth / convertStoP) * (mapHeight / convertStoP) < 8 * 8) {
-		convertStoP /= 2; // Smaller Sectors, more detailed analysis
-//	} else if ((mapWidth / 16) * (mapHeight / 16) > 20 * 20 ) {
-//		convertStoP *= 2; // Larger Sectors, less detailed analysis
-	}
+//	if ((mapWidth / 64) * (mapHeight / 64) < 8 * 8) {
+//		convertStoP /= 2; // Smaller Sectors, more detailed analysis
+//	} else if ((mapWidth / 64) * (mapHeight / 64) > 20 * 20) {
+		convertStoP *= 2; // Larger Sectors, less detailed analysis
+//	}
 	sectorXSize = (SQUARE_SIZE * mapWidth) / convertStoP;
 	sectorZSize = (SQUARE_SIZE * mapHeight) / convertStoP;
 

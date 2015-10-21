@@ -408,7 +408,7 @@ void CTerrainManager::MarkAllyBuildings()
 	int teamId = circuit->GetTeamId();
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 
-	decltype(markedAllies) prevUnits = std::move(markedAllies);
+	auto prevUnits = std::move(markedAllies);
 	markedAllies.clear();
 	auto first1  = friendlies.begin();
 	auto last1   = friendlies.end();

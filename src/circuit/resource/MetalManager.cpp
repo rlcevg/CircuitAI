@@ -247,7 +247,7 @@ void CMetalManager::MarkAllyMexes(const std::list<CCircuitUnit*>& mexes)
 	}
 	markFrame = circuit->GetLastFrame();
 
-	decltype(markedMexes) prevUnits = std::move(markedMexes);
+	auto prevUnits = std::move(markedMexes);
 	markedMexes.clear();
 	auto first1  = mexes.begin();
 	auto last1   = mexes.end();

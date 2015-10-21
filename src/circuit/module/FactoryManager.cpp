@@ -618,20 +618,22 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	float metalIncome = std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	if ((builderManager->GetBuilderPower() < metalIncome * 2.0f) && (rand() < RAND_MAX / 2)) {
-		auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
-		if ((it == factoryDefs.end()) || !it->second.builderDef->IsAvailable()) {
-			return nullptr;
-		}
+	if ((builderManager->GetBuilderPower() >= metalIncome * 2.0f) || (rand() >= RAND_MAX / 2)) {
+		return nullptr;
+	}
 
-		CCircuitDef* buildDef = it->second.builderDef;
-		CCircuitUnit* factory = GetRandomFactory(buildDef);
-		if (factory != nullptr) {
-			const AIFloat3& buildPos = factory->GetUnit()->GetPos();
-			CTerrainManager* terrainManager = circuit->GetTerrainManager();
-			float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
-			return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::BuildType::BUILDPOWER, radius);
-		}
+	auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
+	if ((it == factoryDefs.end()) || !it->second.builderDef->IsAvailable()) {
+		return nullptr;
+	}
+
+	CCircuitDef* buildDef = it->second.builderDef;
+	CCircuitUnit* factory = GetRandomFactory(buildDef);
+	if (factory != nullptr) {
+		const AIFloat3& buildPos = factory->GetUnit()->GetPos();
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
+		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::BuildType::BUILDPOWER, radius);
 	}
 
 	return nullptr;
@@ -644,28 +646,29 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 
 	auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
-	if (it != factoryDefs.end()) {
-		const SFactoryDef& facDef = it->second;
-		const std::vector<float>& prob = facDef.GetProb(circuit->GetEconomyManager());
+	if (it == factoryDefs.end()) {
+		return nullptr;
+	}
+	const SFactoryDef& facDef = it->second;
+	const std::vector<float>& prob = facDef.GetProb(circuit->GetEconomyManager());
 
-		int choice = 0;
-		float dice = rand() / (float)RAND_MAX;
-		float total;
-		for (int i = 0; i < prob.size(); ++i) {
-			total += prob[i];
-			if (dice < total) {
-				choice = i;
-				break;
-			}
+	int choice = 0;
+	float dice = rand() / (float)RAND_MAX;
+	float total;
+	for (int i = 0; i < prob.size(); ++i) {
+		total += prob[i];
+		if (dice < total) {
+			choice = i;
+			break;
 		}
+	}
 
-		CCircuitDef* buildDef = facDef.buildDefs[choice];
-		if (buildDef->IsAvailable()) {
-			const AIFloat3& buildPos = unit->GetUnit()->GetPos();
-			UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
-			float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
-			return EnqueueTask(CRecruitTask::Priority::LOW, buildDef, buildPos, CRecruitTask::BuildType::DEFAULT, radius);
-		}
+	CCircuitDef* buildDef = facDef.buildDefs[choice];
+	if (buildDef->IsAvailable()) {
+		const AIFloat3& buildPos = unit->GetUnit()->GetPos();
+		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
+		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
+		return EnqueueTask(CRecruitTask::Priority::LOW, buildDef, buildPos, CRecruitTask::BuildType::DEFAULT, radius);
 	}
 
 	return nullptr;
