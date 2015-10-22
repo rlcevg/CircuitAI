@@ -346,15 +346,17 @@ void CMicroPather::FixStartEndNode(void** startNode, void** endNode)
 	int x = index - y * mapSizeX;
 
 	// no node can be at the edge!
-	if (x == 0)
+	if (x == 0) {
 		x = 1;
-	else if (x == mapSizeX)
-		x = mapSizeX - 1;
+	} else if (x == mapSizeX - 1) {
+		x = mapSizeX - 2;
+	}
 
-	if (y == 0)
+	if (y == 0) {
 		y = 1;
-	else if (y == mapSizeY)
-		y = mapSizeY - 1;
+	} else if (y == mapSizeY - 1) {
+		y = mapSizeY - 2;
+	}
 
 	*startNode = (void*) static_cast<intptr_t>(y * mapSizeX + x);
 	index = (size_t) *endNode;
@@ -362,22 +364,24 @@ void CMicroPather::FixStartEndNode(void** startNode, void** endNode)
 	x = index - y * mapSizeX;
 
 	// no node can be at the edge!
-	if (x == 0)
+	if (x == 0) {
 		x = 1;
-	else if (x == mapSizeX)
-		x = mapSizeX - 1;
+	} else if (x == mapSizeX - 1) {
+		x = mapSizeX - 2;
+	}
 
-	if (y == 0)
+	if (y == 0) {
 		y = 1;
-	else if (y == mapSizeY)
-		y = mapSizeY - 1;
+	} else if (y == mapSizeY - 1) {
+		y = mapSizeY - 2;
+	}
 
 	xEndNode = x;
 	yEndNode = y;
 	*endNode = (void*) static_cast<intptr_t>(y * mapSizeX + x);
 }
 
-void CMicroPather::FixNode( void** Node)
+void CMicroPather::FixNode(void** Node)
 {
 	size_t index = (size_t) *Node;
 	int y = index / mapSizeX;
@@ -387,15 +391,17 @@ void CMicroPather::FixNode( void** Node)
 	assert(index <= (unsigned int) ((unsigned int)mapSizeX * mapSizeY));
 
 	// no node can be at the edge!
-	if (x == 0)
+	if (x == 0) {
 		x = 1;
-	else if (x == mapSizeX)
-		x = mapSizeX - 1;
+	} else if (x == mapSizeX - 1) {
+		x = mapSizeX - 2;
+	}
 
-	if (y == 0)
+	if (y == 0) {
 		y = 1;
-	else if (y == mapSizeY)
-		y = mapSizeY - 1;
+	} else if (y == mapSizeY - 1) {
+		y = mapSizeY - 2;
+	}
 
 	*Node = (void*) static_cast<intptr_t>(y * mapSizeX + x);
 }

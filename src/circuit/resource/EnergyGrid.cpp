@@ -247,7 +247,7 @@ void CEnergyGrid::Init()
 
 void CEnergyGrid::MarkAllyPylons(const std::list<CCircuitUnit*>& pylons)
 {
-	auto prevUnits = std::move(markedPylons);
+	decltype(markedPylons) prevUnits = std::move(markedPylons);
 	markedPylons.clear();
 	auto first1  = pylons.begin();
 	auto last1   = pylons.end();

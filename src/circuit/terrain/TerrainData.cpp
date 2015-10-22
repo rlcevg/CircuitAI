@@ -153,11 +153,11 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	terrainWidth = mapWidth * SQUARE_SIZE;
 	terrainHeight = mapHeight * SQUARE_SIZE;
 	convertStoP = DEFAULT_SLACK;  // = 2^x, should not be less than 16 (2*SUQARE_SIZE)
-//	if ((mapWidth / 64) * (mapHeight / 64) < 8 * 8) {
-//		convertStoP /= 2; // Smaller Sectors, more detailed analysis
-//	} else if ((mapWidth / 64) * (mapHeight / 64) > 20 * 20) {
+	if ((mapWidth / 64) * (mapHeight / 64) < 8 * 8) {
+		convertStoP /= 2; // Smaller Sectors, more detailed analysis
+	} else if ((mapWidth / 64) * (mapHeight / 64) > 20 * 20) {
 		convertStoP *= 2; // Larger Sectors, less detailed analysis
-//	}
+	}
 	sectorXSize = (SQUARE_SIZE * mapWidth) / convertStoP;
 	sectorZSize = (SQUARE_SIZE * mapHeight) / convertStoP;
 
@@ -301,8 +301,8 @@ void CTerrainData::Init(CCircuitAI* circuit)
 
 					if (sector[i].minElevation > standardHeightMap[iH]) {
 						sector[i].minElevation = standardHeightMap[iH];
-						if (minElevation > standardHeightMap[i]) {
-							minElevation = standardHeightMap[i];
+						if (minElevation > standardHeightMap[iH]) {
+							minElevation = standardHeightMap[iH];
 						}
 					} else if (sector[i].maxElevation < standardHeightMap[iH]) {
 						sector[i].maxElevation = standardHeightMap[iH];
@@ -732,8 +732,8 @@ void CTerrainData::UpdateAreas()
 
 					if (sector[i].minElevation > standardHeightMap[iH]) {
 						sector[i].minElevation = standardHeightMap[iH];
-						if (minElevation > standardHeightMap[i]) {
-							minElevation = standardHeightMap[i];
+						if (minElevation > standardHeightMap[iH]) {
+							minElevation = standardHeightMap[iH];
 						}
 					} else if (sector[i].maxElevation < standardHeightMap[iH]) {
 						sector[i].maxElevation = standardHeightMap[iH];

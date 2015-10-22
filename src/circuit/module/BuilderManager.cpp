@@ -465,10 +465,11 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	}
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CPathFinder* pathfinder = circuit->GetPathfinder();
 	terrainManager->CorrectPosition(pos);
-	circuit->GetPathfinder()->SetMapData(unit, circuit->GetThreatMap());
+	pathfinder->SetMapData(unit, circuit->GetThreatMap());
 	float maxSpeed = unit->GetUnit()->GetMaxSpeed();
-	int buildDistance = unit->GetCircuitDef()->GetBuildDistance();
+	int buildDistance = std::max<int>(unit->GetCircuitDef()->GetBuildDistance(), pathfinder->GetSquareSize());
 	float metric = std::numeric_limits<float>::max();
 	for (auto& tasks : builderTasks) {
 		for (auto candidate : tasks) {
@@ -491,7 +492,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 				}
 
 				Unit* tu = target->GetUnit();
-				dist = circuit->GetPathfinder()->PathCost(pos, buildPos, buildDistance);
+				dist = pathfinder->PathCost(pos, buildPos, buildDistance);
 				if (dist * weight < metric) {
 					float maxHealth = tu->GetMaxHealth();
 					float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
@@ -507,7 +508,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 					continue;
 				}
 
-				dist = circuit->GetPathfinder()->PathCost(pos, buildPos, buildDistance);
+				dist = pathfinder->PathCost(pos, buildPos, buildDistance);
 				valid = ((dist * weight < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));
 			}
 

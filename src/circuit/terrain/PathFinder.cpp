@@ -44,7 +44,7 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 	micropather  = new CMicroPather(this, pathMapXSize, pathMapYSize);
 
 	const std::vector<STerrainMapMobileType>& moveTypes = terrainData->pAreaData.load()->mobileType;
-	moveArrays.reserve(moveTypes.size() + 1);
+	moveArrays.reserve(moveTypes.size());
 
 	int totalcells = pathMapXSize * pathMapYSize;
 	for (const STerrainMapMobileType& mt : moveTypes) {
@@ -86,7 +86,6 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 		k = i * pathMapXSize + pathMapXSize - 1;
 		airMoveArray[k] = false;
 	}
-	moveArrays.push_back(airMoveArray);
 
 	blockArray.resize(totalcells, 0);
 }
@@ -94,10 +93,10 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 CPathFinder::~CPathFinder()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	// airMoveArray will be deleted inside loop
 	for (bool* ma : moveArrays) {
 		delete[] ma;
 	}
+	delete[] airMoveArray;
 	delete micropather;
 }
 
