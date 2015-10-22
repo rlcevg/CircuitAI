@@ -35,7 +35,7 @@ void CSRepairTask::Update()
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	if (economyManager->GetAvgMetalIncome() < savedIncome * 0.6f) {
 		manager->AbortTask(this);
-	} else if ((updCount++ % 4 == 0) && !units.empty()) {
+	} else if ((++updCount % 4 == 0) && !units.empty()) {
 		CCircuitUnit* target = circuit->GetFriendlyUnit(targetId);
 		if (target == nullptr) {
 			manager->AbortTask(this);

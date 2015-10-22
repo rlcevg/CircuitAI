@@ -86,13 +86,13 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 void CRetreatTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	unsigned int count = updCount;
 	if (updateUnits.empty()) {
 		updateUnits = units;  // copy units
 		updateSlice = updateUnits.size() / TEAM_SLOWUPDATE_RATE;
 		++updCount;
 	}
 
+	bool isExecute = (updCount % 4 == 0);
 	auto it = updateUnits.begin();
 	unsigned int i = 0;
 	while (it != updateUnits.end()) {
@@ -102,7 +102,7 @@ void CRetreatTask::Update()
 		Unit* u = ass->GetUnit();
 		if (u->GetHealth() >= u->GetMaxHealth() * 0.8f) {
 			RemoveAssignee(ass);
-		} else if (count % 4 == 0) {
+		} else if (ass->IsForceExecute() || isExecute) {
 			Execute(ass);
 		} else {
 			ass->Update(circuit);
@@ -143,18 +143,18 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 		AIFloat3 pos = unitPos;
-		const float size = SQUARE_SIZE * 50;
+		const float size = SQUARE_SIZE * 32;
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		float centerX = terrainManager->GetTerrainWidth() / 2;
 		float centerZ = terrainManager->GetTerrainHeight() / 2;
-		pos.x += (pos.x > centerX) ? -size : size;
-		pos.z += (pos.z > centerZ) ? -size : size;
+		pos.x += (pos.x > centerX) ? size : -size;
+		pos.z += (pos.z > centerZ) ? size : -size;
 		AIFloat3 oldPos = pos;
 		terrainManager->CorrectPosition(pos);
-		if (oldPos != pos) {
+		if (oldPos.SqDistance2D(pos) > SQUARE_SIZE * SQUARE_SIZE) {
 			pos = unitPos;
-			pos.x += (pos.x > centerX) ? size : -size;
-			pos.z += (pos.z > centerZ) ? size : -size;
+			pos.x += (pos.x > centerX) ? -size : size;
+			pos.z += (pos.z > centerZ) ? -size : size;
 		}
 		u->PatrolTo(pos);
 

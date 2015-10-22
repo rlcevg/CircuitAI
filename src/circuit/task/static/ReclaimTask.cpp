@@ -35,7 +35,7 @@ void CSReclaimTask::Update()
 	CCircuitAI* circuit = manager->GetCircuit();
 	if (circuit->GetEconomyManager()->IsMetalFull()) {
 		manager->AbortTask(this);
-	} else if ((updCount++ % 4 == 0) && !units.empty()) {
+	} else if ((++updCount % 4 == 0) && !units.empty()) {
 		// Check for damaged units
 		CCircuitUnit* repairTarget = nullptr;
 		circuit->UpdateFriendlyUnits();

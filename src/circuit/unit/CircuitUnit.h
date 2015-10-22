@@ -57,6 +57,9 @@ public:
 
 	bool IsMoveFailed(int frame);
 
+	void ForceExecute() { isForceExecute = true; }
+	bool IsForceExecute();
+
 	springai::Weapon* GetDGun() const { return dgun; }
 	bool IsDisarmed();
 	float GetDPS();
@@ -79,6 +82,7 @@ private:
 
 	int moveFails;
 	int failFrame;
+	bool isForceExecute;  // TODO: Replace by CExecuteAction?
 
 	springai::Weapon* dgun;
 	springai::UnitRulesParam* disarmParam;

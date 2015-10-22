@@ -26,7 +26,6 @@ using namespace springai;
 
 CScoutTask::CScoutTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::SCOUT)
-		, isUpdating(false)
 		, scoutIndex(0)
 {
 }
@@ -47,6 +46,23 @@ void CScoutTask::AssignTo(CCircuitUnit* unit)
 
 void CScoutTask::Execute(CCircuitUnit* unit)
 {
+	Execute(unit, false);
+}
+
+void CScoutTask::Update()
+{
+	bool isExecute = (++updCount % 4 == 0);
+	for (CCircuitUnit* unit : units) {
+		if (unit->IsForceExecute() || isExecute) {
+			Execute(unit, true);
+		} else {
+			IFighterTask::Update();
+		}
+	}
+}
+
+void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
+{
 	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
 	if (act->GetType() != IUnitAction::Type::MOVE) {
 		return;
@@ -54,7 +70,8 @@ void CScoutTask::Execute(CCircuitUnit* unit)
 	CMoveAction* moveAction = static_cast<CMoveAction*>(act);
 
 	F3Vec path;
-	CEnemyUnit* bestTarget = FindBestTarget(unit, path);
+	const AIFloat3& pos = unit->GetUnit()->GetPos();
+	CEnemyUnit* bestTarget = FindBestTarget(unit, pos, path);
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	if (bestTarget != nullptr) {
@@ -73,13 +90,14 @@ void CScoutTask::Execute(CCircuitUnit* unit)
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	const CMetalData::Metals& spots = metalManager->GetSpots();
-	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, position) < threatMap->GetUnitThreat(unit));
+	const AIFloat3& threatPos = moveAction->IsActive() ? position : pos;
+	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < threatMap->GetUnitThreat(unit));
 	if (!spots.empty()) {
 		if (!proceed) {
 			scoutIndex = circuit->GetMilitaryManager()->GetScoutIndex();
 		}
 
-		AIFloat3 startPos = unit->GetUnit()->GetPos();
+		AIFloat3 startPos = pos;
 		AIFloat3 endPos = spots[scoutIndex].position;
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
@@ -106,27 +124,12 @@ void CScoutTask::Execute(CCircuitUnit* unit)
 	moveAction->SetActive(false);
 }
 
-void CScoutTask::Update()
-{
-	if (updCount++ % 4 == 0) {
-		// FIXME: Update group target
-		isUpdating = true;
-		for (CCircuitUnit* unit : units) {
-			Execute(unit);
-		}
-		isUpdating = false;
-	} else {
-		IFighterTask::Update();
-	}
-}
-
-CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, F3Vec& path)
+CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	Unit* u = unit->GetUnit();
-	AIFloat3 pos = u->GetPos();
 	STerrainMapArea* area = unit->GetArea();
 	float power = threatMap->GetUnitThreat(unit) * 0.8f;
 	int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
@@ -190,8 +193,9 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, F3Vec& path)
 		return bestTarget;
 	}
 
+	AIFloat3 startPos = pos;
 	circuit->GetPathfinder()->SetMapData(unit, threatMap);
-	circuit->GetPathfinder()->FindBestPath(path, pos, range * 0.5f, enemyPositions);
+	circuit->GetPathfinder()->FindBestPath(path, startPos, range * 0.5f, enemyPositions);
 
 	return nullptr;
 }

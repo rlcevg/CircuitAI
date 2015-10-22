@@ -22,7 +22,6 @@ using namespace springai;
 
 CAttackTask::CAttackTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::ATTACK)
-		, isUpdating(false)
 {
 }
 
@@ -32,6 +31,23 @@ CAttackTask::~CAttackTask()
 }
 
 void CAttackTask::Execute(CCircuitUnit* unit)
+{
+	Execute(unit, false);
+}
+
+void CAttackTask::Update()
+{
+	bool isExecute = (++updCount % 4 == 0);
+	for (CCircuitUnit* unit : units) {
+		if (unit->IsForceExecute() || isExecute) {
+			Execute(unit, true);
+		} else {
+			IFighterTask::Update();
+		}
+	}
+}
+
+void CAttackTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
 	Unit* u = unit->GetUnit();
 
@@ -58,19 +74,6 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 	u->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
 }
 
-void CAttackTask::Update()
-{
-	if (updCount++ % 4 == 0) {
-		isUpdating = true;
-		for (CCircuitUnit* unit : units) {
-			Execute(unit);
-		}
-		isUpdating = false;
-	} else {
-		IFighterTask::Update();
-	}
-}
-
 CEnemyUnit* CAttackTask::FindBestTarget(CCircuitUnit* unit, float& minSqDist)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -93,11 +96,9 @@ CEnemyUnit* CAttackTask::FindBestTarget(CCircuitUnit* unit, float& minSqDist)
 		{
 			continue;
 		}
-		if (enemy->GetCircuitDef() != nullptr) {
-			int targetCat = enemy->GetCircuitDef()->GetCategory();
-			if ((targetCat & canTargetCat) == 0) {
-				continue;
-			}
+		CCircuitDef* edef = enemy->GetCircuitDef();
+		if ((edef != nullptr) && ((edef->GetCategory() & canTargetCat) == 0)) {
+			continue;
 		}
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());

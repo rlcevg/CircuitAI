@@ -24,10 +24,10 @@ public:
 	virtual void Update();
 
 private:
-	bool isUpdating;
 	int scoutIndex;
 
-	CEnemyUnit* FindBestTarget(CCircuitUnit* unit, F3Vec& path);
+	void Execute(CCircuitUnit* unit, bool isUpdating);
+	CEnemyUnit* FindBestTarget(CCircuitUnit* unit, const springai::AIFloat3& pos, F3Vec& path);
 };
 
 } // namespace circuit

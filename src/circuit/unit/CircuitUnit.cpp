@@ -28,6 +28,7 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* cdef)
 		, disarmParam(nullptr)
 		, moveFails(0)
 		, failFrame(-1)
+		, isForceExecute(false)
 		, isMorphing(false)
 {
 	WeaponMount* wpMnt = circuitDef->GetDGunMount();
@@ -53,6 +54,13 @@ bool CCircuitUnit::IsMoveFailed(int frame)
 	}
 	failFrame = frame;
 	return ++moveFails > TASK_RETRIES * 2;
+}
+
+bool CCircuitUnit::IsForceExecute()
+{
+	bool result = isForceExecute;
+	isForceExecute = false;
+	return result;
 }
 
 bool CCircuitUnit::IsDisarmed()

@@ -106,8 +106,15 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		delete wd;
 		delete mount;
 	}
-	category = def->GetCategory();
 	noChaseCategory = def->GetNoChaseCategory();
+
+	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+	auto it = customParams.find("is_drone");
+	if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
+		category = ~circuit->GetGoodCategory();
+	} else {
+		category = def->GetCategory();
+	}
 
 	isAntiAir   = (targetCategory & circuit->GetAirCategory()) && isTracks;
 	isAntiLand  = (targetCategory & circuit->GetLandCategory());
@@ -128,7 +135,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			}
 			dps = ldps * wd->GetSalvoSize() / damages.size();
 			targetCategory = wd->GetOnlyTargetCategory();
-			if (~targetCategory == 0) {  // FIXME: Is it portable?
+			if (~targetCategory == 0) {
 				targetCategory = circuit->GetGoodCategory();
 			}
 		}

@@ -48,21 +48,28 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	if (enemies.empty()) {
 		return;
 	}
+	int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
 	for (Unit* e : enemies) {
 		if (e == nullptr) {
 			continue;
 		}
 		CEnemyUnit* enemy = circuit->GetEnemyUnit(e);
-		if ((enemy != nullptr) && (enemy->GetThreat() > 0.1f)) {
-			const AIFloat3& dir = (enemy->GetPos() - pos).Normalize();
-			// NOTE: C API also returns rayLen
-			CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, range * 1.2f, unit->GetUnit(), 0);
+		if ((enemy == nullptr) || (enemy->GetThreat() < 0.1f)) {
+			continue;
+		}
+		CCircuitDef* edef = enemy->GetCircuitDef();
+		if ((edef != nullptr) && ((edef->GetCategory() & canTargetCat) == 0)) {
+			continue;
+		}
 
-			if (hitUID == enemy->GetId()) {
-				unit->GetUnit()->DGun(e, UNIT_COMMAND_OPTION_ALT_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 5);
-				isBlocking = true;
-				break;
-			}
+		const AIFloat3& dir = (enemy->GetPos() - pos).Normalize();
+		// NOTE: C API also returns rayLen
+		CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, range * 1.2f, unit->GetUnit(), 0);
+
+		if (hitUID == enemy->GetId()) {
+			unit->GetUnit()->DGun(e, UNIT_COMMAND_OPTION_ALT_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 5);
+			isBlocking = true;
+			break;
 		}
 	}
 	utils::free_clear(enemies);

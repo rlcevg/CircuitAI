@@ -21,8 +21,7 @@ public:
 	virtual void Update();
 
 private:
-	bool isUpdating;
-
+	void Execute(CCircuitUnit* unit, bool isUpdating);
 	CEnemyUnit* FindBestTarget(CCircuitUnit* unit, float& minSqDist);
 };
 

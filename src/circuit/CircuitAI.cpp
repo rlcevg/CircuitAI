@@ -717,7 +717,7 @@ int CCircuitAI::EnemyEnterLOS(CEnemyUnit* enemy)
 		}
 		CCircuitUnit* unit = GetTeamUnit(f->GetUnitId());
 		if ((unit != nullptr) && (unit->GetTask() != nullptr)) {
-			unit->GetTask()->ResetUpd();
+			unit->ForceExecute();
 		}
 		delete f;
 	}
