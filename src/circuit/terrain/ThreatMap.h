@@ -96,7 +96,7 @@ private:
 	int losWidth;
 	int losResConv;
 
-	Threats* pthreats;
+	float* pthreats;
 
 #ifdef DEBUG_VIS
 private:

@@ -52,7 +52,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		}
 	};
 	auto attackerIdleHandler = [this](CCircuitUnit* unit) {
-		// FIXME: Moving units spam Idle events (Tactical AI to blame?)
+		// NOTE: Avoid instant task reassignment, though it may be not relevant for attackers
 		if (this->circuit->GetLastFrame() - unit->GetTaskFrame() > FRAMES_PER_SEC) {
 			unit->GetTask()->OnUnitIdle(unit);
 		}

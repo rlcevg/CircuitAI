@@ -19,6 +19,7 @@
 
 #include "AISCommands.h"
 #include "Map.h"
+#include "Drawer.h"
 
 namespace circuit {
 
