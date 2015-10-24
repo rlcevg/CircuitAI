@@ -138,7 +138,6 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 	float range = std::max(u->GetMaxRange() + threatMap->GetSquareSize() * 2,
 						   unit->GetCircuitDef()->GetLosRadius());
 	float minSqDist = range * range;
-	float rayRange = range * 1.2f;
 	float maxThreat = .0f;
 
 	CEnemyUnit* bestTarget = nullptr;
@@ -165,8 +164,9 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 		}
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
-		if (sqDist < minSqDist) {
-			const AIFloat3& dir = (enemy->GetPos() - pos).Normalize();
+		if (enemy->IsInRadarOrLOS() && (sqDist < minSqDist)) {
+			AIFloat3 dir = enemy->GetUnit()->GetPos() - pos;
+			float rayRange = dir.LengthNormalize();
 			CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, u, 0);
 			if (hitUID == enemy->GetId()) {
 				if (enemy->GetThreat() > maxThreat) {

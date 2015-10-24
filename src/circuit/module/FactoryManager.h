@@ -64,7 +64,7 @@ public:
 	CRecruitTask* UpdateFirePower(CCircuitUnit* unit);
 
 private:
-	CRecruitTask* CreateFactoryTask(CCircuitUnit* unit);
+	IUnitTask* CreateFactoryTask(CCircuitUnit* unit);
 	IBuilderTask* CreateAssistTask(CCircuitUnit* unit);
 
 	void Watchdog();

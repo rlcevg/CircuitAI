@@ -38,7 +38,7 @@ CThreatMap::CThreatMap(CCircuitAI* circuit)
 	landThreat.resize(width * height, THREAT_VAL_BASE);
 	waterThreat.resize(width * height, THREAT_VAL_BASE);
 	cloakThreat.resize(width * height, THREAT_VAL_BASE);
-	pthreats = &landThreat[0];
+	threatArray = &landThreat[0];
 
 	Map* map = circuit->GetMap();
 	Mod* mod = circuit->GetCallback()->GetMod();
@@ -292,11 +292,11 @@ void CThreatMap::SetThreatType(CCircuitUnit* unit)
 {
 	assert(unit != nullptr);
 	if (unit->GetCircuitDef()->IsAbleToFly()) {
-		pthreats = &airThreat[0];
+		threatArray = &airThreat[0];
 	} else if (unit->GetUnit()->GetPos().y < -10.0f) {
-		pthreats = &waterThreat[0];
+		threatArray = &waterThreat[0];
 	} else {
-		pthreats = &landThreat[0];
+		threatArray = &landThreat[0];
 	}
 }
 
@@ -304,7 +304,7 @@ float CThreatMap::GetThreatAt(const AIFloat3& position) const
 {
 	const int z = (int)position.z / squareSize;
 	const int x = (int)position.x / squareSize;
-	return pthreats[z * width + x] - THREAT_VAL_BASE;
+	return threatArray[z * width + x] - THREAT_VAL_BASE;
 }
 
 float CThreatMap::GetThreatAt(CCircuitUnit* unit, const AIFloat3& position) const

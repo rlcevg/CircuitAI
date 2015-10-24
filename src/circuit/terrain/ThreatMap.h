@@ -89,14 +89,13 @@ private:
 	Threats landThreat;  // surface
 	Threats waterThreat;  // under water
 	Threats cloakThreat;
+	float* threatArray;
 
 //	std::vector<int> radarMap;
 	std::vector<int> losMap;
 //	int radarWidth;
 	int losWidth;
 	int losResConv;
-
-	float* pthreats;
 
 #ifdef DEBUG_VIS
 private:

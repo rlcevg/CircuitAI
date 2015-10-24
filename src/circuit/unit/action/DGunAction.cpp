@@ -54,7 +54,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 			continue;
 		}
 		CEnemyUnit* enemy = circuit->GetEnemyUnit(e);
-		if ((enemy == nullptr) || (enemy->GetThreat() < 0.1f)) {
+		if ((enemy == nullptr) || enemy->NotInRadarAndLOS() || (enemy->GetThreat() < 0.1f)) {
 			continue;
 		}
 		CCircuitDef* edef = enemy->GetCircuitDef();
@@ -62,9 +62,10 @@ void CDGunAction::Update(CCircuitAI* circuit)
 			continue;
 		}
 
-		const AIFloat3& dir = (enemy->GetPos() - pos).Normalize();
+		AIFloat3 dir = enemy->GetUnit()->GetPos() - pos;
+		float rayRange = dir.LengthNormalize();
 		// NOTE: C API also returns rayLen
-		CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, range * 1.2f, unit->GetUnit(), 0);
+		CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, unit->GetUnit(), 0);
 
 		if (hitUID == enemy->GetId()) {
 			unit->GetUnit()->DGun(e, UNIT_COMMAND_OPTION_ALT_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 5);

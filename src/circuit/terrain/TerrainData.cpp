@@ -103,7 +103,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	waterIsAVoid = false;
 
 	float waterDamage = map->GetWaterDamage();  // scaled by (UNIT_SLOWUPDATE_RATE / GAME_SPEED)
-	std::string waterText = "  Water Damage: " + utils::float_to_string(waterDamage, "%-.*G");
+	std::string waterText = "  Water Damage: " + utils::float_to_string(waterDamage/*, "%-.*G"*/);
 	// @see rts/Sim/MoveTypes/MoveDefHandler.cpp
 	if (waterDamage > 0) {  // >= MAX_ALLOWED_WATER_DAMAGE_GMM
 		waterIsHarmful = true;
@@ -345,16 +345,16 @@ void CTerrainData::Init(CCircuitAI* circuit)
 		} else if (it.canFloat || (it.minElevation < -10000)) {
 			itText += "any";
 		} else {
-			itText += utils::float_to_string(it.minElevation, "%-.*G");
+			itText += utils::float_to_string(it.minElevation/*, "%-.*G"*/);
 		}
 		itText += " / ";
 		if (it.maxElevation < 10000) {
-			itText += utils::float_to_string(it.maxElevation, "%-.*G");
+			itText += utils::float_to_string(it.maxElevation/*, "%-.*G"*/);
 		} else {
 			itText += "any";
 		}
 		float percentMap = (100.0 * it.sector.size()) / (sectorXSize * sectorZSize);
-		itText += ")  \tIs buildable across " + utils::float_to_string(percentMap, "%-.4G") + "%% of the map. (used by %d unit-defs)";
+		itText += ")  \tIs buildable across " + utils::float_to_string(percentMap/*, "%-.4G"*/) + "%% of the map. (used by %d unit-defs)";
 		circuit->LOG(itText.c_str(), it.udCount);
 	}
 

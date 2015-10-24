@@ -519,7 +519,7 @@ void CFactoryManager::AssignTask(CCircuitUnit* unit)
 
 	} else {
 
-		CRecruitTask* task = nullptr;
+		IUnitTask* task = nullptr;
 		decltype(factoryTasks)::iterator iter = factoryTasks.begin();
 		for (; iter != factoryTasks.end(); ++iter) {
 			if ((*iter)->CanAssignTo(unit)) {
@@ -674,14 +674,19 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	return nullptr;
 }
 
-CRecruitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
+IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 {
-	CRecruitTask* task = UpdateBuildPower(unit);
+	IUnitTask* task = UpdateBuildPower(unit);
 	if (task != nullptr) {
 		return task;
 	}
 
-	return UpdateFirePower(unit);
+	task = UpdateFirePower(unit);
+	if (task != nullptr) {
+		return task;
+	}
+
+	return nullTask;
 }
 
 IBuilderTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)

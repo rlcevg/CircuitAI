@@ -100,7 +100,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		}
 		dps += ldps * wd->GetSalvoSize() * scale / damages.size() / reloadTime;
 		targetCategory |= mount->GetOnlyTargetCategory();
+
 		isTracks |= (wd->GetProjectileSpeed() * FRAMES_PER_SEC >= 500.0f) || wd->IsTracks();
+		std::string weaponType(wd->GetType());  // Instant-hit
+		isTracks |= (weaponType == "BeamLaser") || (weaponType == "LightningCannon") || (weaponType == "Rifle");
 //		isWater |= wd->IsWaterWeapon();
 
 		delete wd;
@@ -116,7 +119,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		category = def->GetCategory();
 	}
 
-	isAntiAir   = (targetCategory & circuit->GetAirCategory()) || isTracks;
+	// NOTE: isTracks filters units with slow weapon (hermit, recluse, rocko)
+	isAntiAir   = (targetCategory & circuit->GetAirCategory()) && isTracks;
 	isAntiLand  = (targetCategory & circuit->GetLandCategory());
 	isAntiWater = (targetCategory & circuit->GetWaterCategory())/* || isWater*/;
 
