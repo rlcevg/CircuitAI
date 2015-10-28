@@ -41,7 +41,7 @@ public:
 
 	void MakeDefence(const springai::AIFloat3& pos);
 	void AbortDefence(CBDefenceTask* task);
-	int GetScoutIndex();
+	springai::AIFloat3 GetScoutPosition(CCircuitUnit* unit);
 
 private:
 	void Init();

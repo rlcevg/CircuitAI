@@ -138,12 +138,8 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		pos = position;
 	}
 
-	CTerrainManager::TerrainPredicate predicate = [terrainManager, unit](const AIFloat3& p) {
-		return terrainManager->CanBuildAt(unit, p);
-	};
-	float searchRadius = 200.0f * SQUARE_SIZE;
-	facing = FindFacing(buildDef, pos);
-	buildPos = terrainManager->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
+	const float searchRadius = 200.0f * SQUARE_SIZE;
+	FindBuildSite(unit, pos, searchRadius);
 
 	if (buildPos != -RgtVector) {
 		terrainManager->AddBlocker(buildDef, buildPos, facing);
@@ -263,9 +259,9 @@ void IBuilderTask::UpdateTarget(CCircuitUnit* unit)
 {
 	SetTarget(unit);
 
-	int frame = manager->GetCircuit()->GetLastFrame();
+	int frame = manager->GetCircuit()->GetLastFrame() + FRAMES_PER_SEC * 60;
 	for (auto ass : units) {
-		ass->GetUnit()->Build(buildDef->GetUnitDef(), buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		ass->GetUnit()->Build(buildDef->GetUnitDef(), buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame);
 	}
 }
 
@@ -274,18 +270,23 @@ bool IBuilderTask::IsEqualBuildPos(const AIFloat3& pos) const
 	return (math::fabs(pos.x - buildPos.x) <= SQUARE_SIZE) && (math::fabs(pos.z - buildPos.z) <= SQUARE_SIZE);
 }
 
-int IBuilderTask::FindFacing(CCircuitDef* buildDef, const springai::AIFloat3& position)
+void IBuilderTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, float searchRadius)
 {
-	int facing = UNIT_COMMAND_BUILD_NO_FACING;
 	CTerrainManager* terrainManager = manager->GetCircuit()->GetTerrainManager();
+
+//	facing = UNIT_COMMAND_BUILD_NO_FACING;
 	float terWidth = terrainManager->GetTerrainWidth();
 	float terHeight = terrainManager->GetTerrainHeight();
-	if (math::fabs(terWidth - 2 * position.x) > math::fabs(terHeight - 2 * position.z)) {
-		facing = (2 * position.x > terWidth) ? UNIT_FACING_WEST : UNIT_FACING_EAST;
+	if (math::fabs(terWidth - 2 * pos.x) > math::fabs(terHeight - 2 * pos.z)) {
+		facing = (2 * pos.x > terWidth) ? UNIT_FACING_WEST : UNIT_FACING_EAST;
 	} else {
-		facing = (2 * position.z > terHeight) ? UNIT_FACING_NORTH : UNIT_FACING_SOUTH;
+		facing = (2 * pos.z > terHeight) ? UNIT_FACING_NORTH : UNIT_FACING_SOUTH;
 	}
-	return facing;
+
+	CTerrainManager::TerrainPredicate predicate = [terrainManager, builder](const AIFloat3& p) {
+		return terrainManager->CanBuildAt(builder, p);
+	};
+	buildPos = terrainManager->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
 }
 
 } // namespace circuit

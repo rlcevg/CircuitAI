@@ -293,7 +293,7 @@ void CThreatMap::SetThreatType(CCircuitUnit* unit)
 	assert(unit != nullptr);
 	if (unit->GetCircuitDef()->IsAbleToFly()) {
 		threatArray = &airThreat[0];
-	} else if (unit->GetUnit()->GetPos().y < -10.0f) {
+	} else if (unit->GetUnit()->GetPos().y < -SQUARE_SIZE * 4) {
 		threatArray = &waterThreat[0];
 	} else {
 		threatArray = &landThreat[0];
@@ -315,7 +315,7 @@ float CThreatMap::GetThreatAt(CCircuitUnit* unit, const AIFloat3& position) cons
 	if (unit->GetCircuitDef()->IsAbleToFly()) {
 		return airThreat[z * width + x] - THREAT_VAL_BASE;
 	}
-	if (unit->GetUnit()->GetPos().y < -10.0f) {
+	if (unit->GetUnit()->GetPos().y < -SQUARE_SIZE * 4) {
 		return waterThreat[z * width + x] - THREAT_VAL_BASE;
 	}
 	return landThreat[z * width + x] - THREAT_VAL_BASE;

@@ -11,7 +11,6 @@
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
-#include "resource/MetalManager.h"
 #include "unit/EnemyUnit.h"
 #include "unit/action/MoveAction.h"
 #include "CircuitAI.h"
@@ -27,7 +26,6 @@ using namespace springai;
 
 CScoutTask::CScoutTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::SCOUT)
-		, scoutIndex(0)
 {
 }
 
@@ -88,25 +86,24 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		return;
 	}
 
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	const CMetalData::Metals& spots = metalManager->GetSpots();
 	const AIFloat3& threatPos = moveAction->IsActive() ? position : pos;
 	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < threatMap->GetUnitThreat(unit));
-	if (!spots.empty()) {
-		if (!proceed) {
-			scoutIndex = circuit->GetMilitaryManager()->GetScoutIndex();
-		}
+	if (!proceed) {
+		position = circuit->GetMilitaryManager()->GetScoutPosition(unit);
+	}
 
+	if ((position != -RgtVector) && terrainManager->CanMoveToPos(unit->GetArea(), position)) {
 		AIFloat3 startPos = pos;
-		AIFloat3 endPos = spots[scoutIndex].position;
+		AIFloat3 endPos = position;
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(unit, threatMap);
 		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
 
 		if (!path.empty()) {
-			position = path.back();
+//			position = path.back();
 			moveAction->SetPath(path);
 			moveAction->SetActive(true);
 			unit->Update(circuit);
@@ -117,7 +114,6 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	if (proceed) {
 		return;
 	}
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	float x = rand() % (terrainManager->GetTerrainWidth() + 1);
 	float z = rand() % (terrainManager->GetTerrainHeight() + 1);
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);

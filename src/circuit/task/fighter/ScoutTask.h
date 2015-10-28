@@ -24,8 +24,6 @@ public:
 	virtual void Update();
 
 private:
-	int scoutIndex;
-
 	void Execute(CCircuitUnit* unit, bool isUpdating);
 	CEnemyUnit* FindBestTarget(CCircuitUnit* unit, const springai::AIFloat3& pos, F3Vec& path);
 };

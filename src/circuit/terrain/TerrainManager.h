@@ -155,6 +155,11 @@ public:
 	bool CanBuildAt(CCircuitUnit* unit, const springai::AIFloat3& destination);
 	bool CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const springai::AIFloat3& destination);
 
+	float GetPercentLand() const { return areaData->percentLand; }
+	bool IsWaterSector(const springai::AIFloat3& position) const {
+		return areaData->sector[GetSectorIndex(position)].isWater;
+	}
+
 	void UpdateAreaUsers();
 	void DidUpdateAreaUsers() { terrainData->DidUpdateAreaUsers(); }
 private:

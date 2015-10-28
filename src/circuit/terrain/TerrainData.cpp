@@ -15,6 +15,7 @@
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
+#include "Sim/MoveTypes/MoveDefHandler.h"
 #include "OOAICallback.h"
 #include "Log.h"
 #include "Map.h"
@@ -177,13 +178,13 @@ void CTerrainData::Init(CCircuitAI* circuit)
 
 		} else if (def->GetSpeed() > .0f) {
 
-			float minWaterDepth = def->GetMinWaterDepth();
-			float maxWaterDepth = def->GetMaxWaterDepth();
-			bool canHover = def->IsAbleToHover();
-			bool canFloat = def->IsFloater();
 			std::shared_ptr<MoveData> moveData(def->GetMoveData());
 			float maxSlope = moveData->GetMaxSlope();
 			float depth = moveData->GetDepth();
+			float minWaterDepth = (moveData->GetSpeedModClass() == MoveDef::Ship) ? depth : def->GetMinWaterDepth();
+			float maxWaterDepth = def->GetMaxWaterDepth();
+			bool canHover = def->IsAbleToHover();
+			bool canFloat = def->IsFloater();
 			STerrainMapMobileType* MT = nullptr;
 			int mtIdx = 0;
 			for (; mtIdx < mobileType.size(); ++mtIdx) {
@@ -222,7 +223,6 @@ void CTerrainData::Init(CCircuitAI* circuit)
 			float maxWaterDepth = def->GetMaxWaterDepth();
 			bool canHover = def->IsAbleToHover();
 			bool canFloat = def->IsFloater();
-			// FIXME: MaxSlope is not provided by engine's interface for buildings!
 			STerrainMapImmobileType* IT = nullptr;
 			int itIdx = 0;
 			for (auto& it : immobileType) {
@@ -488,11 +488,17 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	SAreaData& nextAreaData = (pAreaData.load() == &areaData0) ? areaData1 : areaData0;
 	nextAreaData.mobileType = mobileType;
 	for (auto& mt : nextAreaData.mobileType) {
+		mt.areaLargest = nullptr;
 		std::list<STerrainMapArea*> cpAreas;
 		for (auto area : mt.area) {
 			STerrainMapArea* cpArea = new STerrainMapArea(&mt);
 			for (auto& kv : area->sector) {
 				cpArea->sector[kv.first] = &mt.sector[kv.first];
+			}
+			cpArea->percentOfMap = area->percentOfMap;
+			cpArea->areaUsable = area->areaUsable;
+			if ((mt.areaLargest == nullptr) || (mt.areaLargest->percentOfMap < cpArea->percentOfMap)) {
+				mt.areaLargest = cpArea;
 			}
 			cpAreas.push_back(cpArea);
 		}

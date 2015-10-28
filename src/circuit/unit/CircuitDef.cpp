@@ -126,6 +126,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 	isMobile = def->GetSpeed() > .0f;
 	isAbleToFly = def->IsAbleToFly();
+	isFloater = def->IsFloater();
 
 	if (isMobile && (dps < 0.1f)) {  // mobile bombs
 		WeaponDef* wd = def->GetDeathExplosion();

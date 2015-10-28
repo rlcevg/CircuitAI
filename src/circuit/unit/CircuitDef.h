@@ -71,6 +71,7 @@ public:
 
 	bool IsMobile()    const { return isMobile; }
 	bool IsAbleToFly() const { return isAbleToFly; }
+	bool IsFloater()   const { return isFloater; }
 
 	float GetLosRadius() const { return losRadius; }
 	float GetCost()      const { return cost; }
@@ -100,6 +101,7 @@ private:
 
 	bool isMobile;
 	bool isAbleToFly;
+	bool isFloater;
 
 	float losRadius;
 	float cost;

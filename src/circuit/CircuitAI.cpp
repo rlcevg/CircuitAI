@@ -360,17 +360,19 @@ bool CCircuitAI::IsModValid()
 	char* tmp = new char [strlen(version) + 1];
 	strcpy(tmp, version);
 	const char* tok = strtok(tmp, "v.");
-	while (tok != nullptr) {
-		int ver = atoi(tok);
-		if (ver < minModVer[i]) {
-			delete[] tmp;
-			LOG("Zero-K must be 1.3.8.14 or higher!");
-			return false;
+	if (strcmp(tmp, tok) != 0) {  // allow non-standart $VERSION
+		while (tok != nullptr) {
+			int ver = atoi(tok);
+			if (ver < minModVer[i]) {
+				delete[] tmp;
+				LOG("Zero-K must be 1.3.8.14 or higher!");
+				return false;
+			}
+			if ((ver > minModVer[i]) || (++i >= sizeof(minModVer) / sizeof(minModVer[0]))) {
+				break;
+			}
+			tok = strtok(nullptr, ".");
 		}
-		if ((ver > minModVer[i]) || (++i >= sizeof(minModVer) / sizeof(minModVer[0]))) {
-			break;
-		}
-		tok = strtok(nullptr, ".");
 	}
 	delete[] tmp;
 
@@ -993,40 +995,43 @@ void CCircuitAI::InitUnitDefs()
 
 	for (auto& kv : GetCircuitDefs()) {
 		CCircuitDef* cdef = kv.second;
+
 		if (cdef->IsAbleToFly()) {
+
 		} else if (!cdef->IsMobile()) {  // for immobile units
+
 			cdef->SetImmobileId(terrainData.udImmobileType[cdef->GetId()]);
 			// If a unit can build mobile units then it will inherit mobileType from it's options
-			std::map<STerrainMapMobileType::Id, int> mtCount;
-			cdef->GetBuildOptions();
+			std::map<STerrainMapMobileType::Id, float> mtUsability;
 			for (CCircuitDef::Id buildId : cdef->GetBuildOptions()) {
 				CCircuitDef* bdef = GetCircuitDef(buildId);
 				if ((bdef == nullptr) || !bdef->IsMobile()) {
 					continue;
 				}
 				STerrainMapMobileType::Id mtId = terrainData.udMobileType[bdef->GetId()];
+				if ((mtId < 0) || (mtUsability.find(mtId) != mtUsability.end())) {
+					continue;
+				}
 				STerrainMapMobileType& mt = terrainData.areaData0.mobileType[mtId];
 				if (mt.area.empty()) {
 					continue;
 				}
-				auto it = mtCount.find(mtId);
-				if (it != mtCount.end()) {
-					it->second++;
-				} else {
-					mtCount[mtId] = 1;
-				}
+				mtUsability[mtId] = mt.areaLargest->percentOfMap;
 			}
-			int iMost = 0;
-			STerrainMapMobileType::Id mtId = cdef->GetMobileId();
-			for (auto& mtkv : mtCount) {
-				if (mtkv.second > iMost) {
+			float useMost = .0f;
+			STerrainMapMobileType::Id mtId = cdef->GetMobileId();  // -1
+			for (auto& mtkv : mtUsability) {
+				if (mtkv.second > useMost) {
 					mtId = mtkv.first;
-					iMost = mtkv.second;
+					useMost = mtkv.second;
 				}
 			}
 			cdef->SetMobileId(mtId);
+
 		} else {  // for mobile units
+
 			cdef->SetMobileId(terrainData.udMobileType[cdef->GetId()]);
+
 		}
 	}
 }

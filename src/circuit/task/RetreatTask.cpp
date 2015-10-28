@@ -100,7 +100,7 @@ void CRetreatTask::Update()
 		it = updateUnits.erase(it);
 
 		Unit* u = ass->GetUnit();
-		if (u->GetHealth() >= u->GetMaxHealth() * 0.8f) {
+		if (u->GetHealth() >= u->GetMaxHealth() * (ass->GetCircuitDef()->IsAbleToFly() ? 0.99f : 0.9f)) {
 			RemoveAssignee(ass);
 		} else if (ass->IsForceExecute() || isExecute) {
 			Execute(ass);
@@ -143,7 +143,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 		AIFloat3 pos = unitPos;
-		const float size = SQUARE_SIZE * 32;
+		const float size = SQUARE_SIZE * 50;
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		float centerX = terrainManager->GetTerrainWidth() / 2;
 		float centerZ = terrainManager->GetTerrainHeight() / 2;

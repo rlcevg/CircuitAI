@@ -191,7 +191,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 			if (!inBoxIndices.empty()) {
 				const CMetalData::Metals& spots = metalManager->GetSpots();
 				CTerrainManager* terrainManager = circuit->GetTerrainManager();
-				STerrainMapMobileType* mobileType = terrainManager->GetMobileTypeById(circuit->GetCircuitDef("armrectr")->GetMobileId());
+				STerrainMapMobileType* mobileType = terrainManager->GetMobileTypeById(circuit->GetCircuitDef("armcom1")->GetMobileId());
 				std::vector<int> filteredIndices;
 				for (auto idx : inBoxIndices) {
 					int iS = terrainManager->GetSectorIndex(spots[idx].position);

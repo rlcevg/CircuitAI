@@ -19,8 +19,11 @@ public:
 				  float cost, bool isShake, int timeout);
 	virtual ~CBFactoryTask();
 
+protected:
+	virtual void Finish();
+
 private:
-	virtual int FindFacing(CCircuitDef* buildDef, const springai::AIFloat3& position) override;
+	virtual void FindBuildSite(CCircuitUnit* builder, const springai::AIFloat3& pos, float searchRadius) override;
 };
 
 } // namespace circuit

@@ -96,7 +96,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	 * factory handlers
 	 */
 	auto factoryFinishedHandler = [this](CCircuitUnit* unit) {
-		// check factory's cluster
 		int index = this->circuit->GetMetalManager()->FindNearestCluster(unit->GetUnit()->GetPos());
 		if (index >= 0) {
 			clusterInfos[index].factory = unit;
@@ -112,11 +111,14 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			}
 		}
 	};
-	const char* factories[] = {"factorycloak", "factorygunship", "striderhub"};
-	for (const char* name : factories) {
-		int unitDefId = circuit->GetCircuitDef(name)->GetId();
-		finishedHandler[unitDefId] = factoryFinishedHandler;
-		destroyedHandler[unitDefId] = factoryDestroyedHandler;
+	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
+	for (auto& kv : allDefs) {
+		CCircuitDef* cdef = kv.second;
+		if (!cdef->IsMobile() && cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
+			CCircuitDef::Id unitDefId = kv.first;
+			finishedHandler[unitDefId] = factoryFinishedHandler;
+			destroyedHandler[unitDefId] = factoryDestroyedHandler;
+		}
 	}
 
 	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
@@ -135,16 +137,21 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			energyIncome += income;
 		}
 	};
-	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	for (auto& kv : allDefs) {
 		CCircuitDef* cdef = kv.second;
 		if (!cdef->IsMobile()) {
 			const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
 			auto it = customParams.find("income_energy");
 			if ((it != customParams.end()) && (utils::string_to_float(it->second) > 1)) {
-				// TODO: Filter only defs that we are able to build
-				allEnergyDefs.insert(cdef);
+				// TODO: Filter only defs that we are able to build (disabledunits)
 				finishedHandler[kv.first] = energyFinishedHandler;
+				if (!cdef->IsAvailable() || ((terrainManager->GetPercentLand() < 40.0) &&
+					(terrainManager->GetImmobileTypeById(cdef->GetImmobileId())->minElevation >= .0f)))
+				{
+					continue;
+				}
+				allEnergyDefs.insert(cdef);
 			} else if (((it = customParams.find("ismex")) != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 				mexDef = cdef;  // cormex
 			}
@@ -154,15 +161,25 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	// TODO: Make configurable
 	// Using cafus, armfus, armsolar as control points
 	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
-	const char* engies[] = {"cafus", "armfus", "armsolar"};
-	const int limits[] = {3, 2, 10};  // TODO: range randomize
-	const int size = sizeof(engies) / sizeof(engies[0]);
+	// TODO: randomize ranges
+	std::array<std::pair<const char*, int>, 3> landEngies = {
+			std::make_pair("cafus", 3),
+			std::make_pair("armfus", 2),
+			std::make_pair("armsolar", 10)
+	};
+	std::array<std::pair<const char*, int>, 3> waterEngies = {
+			std::make_pair("cafus", 3),
+			std::make_pair("armfus", 2),
+			std::make_pair("armwin", 20)
+	};
+	std::array<std::pair<const char*, int>, 3>& engies = (terrainManager->GetPercentLand() < 40.0) ? waterEngies : landEngies;
+	const int size = engies.size();
 	CLagrangeInterPol::Vector x(size), y(size);
 	for (int i = 0; i < size; ++i) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(engies[i]);
+		CCircuitDef* cdef = circuit->GetCircuitDef(engies[i].first);
 		float make = utils::string_to_float(cdef->GetUnitDef()->GetCustomParams().find("income_energy")->second);
 		x[i] = cdef->GetCost() / make;
-		y[i] = limits[i] + 0.5;  // +0.5 to be sure precision errors will not decrease integer part
+		y[i] = engies[i].second + 0.5;  // +0.5 to be sure precision errors will not decrease integer part
 	}
 	engyPol = new CLagrangeInterPol(x, y);  // Alternatively use CGaussSolver to compute polynomial - faster on reuse
 
@@ -607,7 +624,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 
 	CCircuitDef* striderDef = circuit->GetCircuitDef("striderhub");
 	bool isStriderValid = (factoryManager->GetFactoryCount() > 0) && (striderDef->GetCount() == 0) && striderDef->IsAvailable();
-	CCircuitDef* facDef = isStriderValid ? striderDef : circuit->GetCircuitDef("factorycloak");
+	CCircuitDef* facDef = isStriderValid ? striderDef : circuit->GetCircuitDef(/*"factorycloak"*/"factoryplane");
 	if (facDef->IsAvailable()) {
 		CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
 			return clusterInfos[v.second].factory == nullptr;
@@ -770,7 +787,7 @@ void CEconomyManager::Init()
 			if (param != nullptr) {
 				if (param->GetValueFloat() == 1) {
 					CBuilderManager* builderManager = circuit->GetBuilderManager();
-					const char* factories[] = {"factorycloak", "factorygunship"};
+					const char* factories[] = {"factorycloak", "factorygunship", "factoryamph", "factoryspider"};
 					const int size = sizeof(factories) / sizeof(factories[0]);
 					const CAllyTeam::TeamIds& teamIds = circuit->GetAllyTeam()->GetTeamIds();
 					std::set<CAllyTeam::Id> circIds;  // sort id
@@ -780,7 +797,9 @@ void CEconomyManager::Init()
 						}
 					}
 					const int choice = std::distance(circIds.begin(), circIds.find(circuit->GetTeamId())) % size;
-					task = builderManager->EnqueueTask(IUnitTask::Priority::HIGH, circuit->GetCircuitDef(factories[choice]), pos,
+					CCircuitDef* facDef = circuit->GetCircuitDef(/*factories[choice]*/"factoryship");
+					AIFloat3 buildPos = circuit->GetTerrainManager()->GetBuildPosition(facDef, pos);
+					task = builderManager->EnqueueTask(IUnitTask::Priority::HIGH, facDef, buildPos,
 													   IBuilderTask::BuildType::FACTORY);
 					static_cast<ITaskManager*>(builderManager)->AssignTask(commander, task);
 				}

@@ -18,9 +18,12 @@
 #include "task/fighter/DefendTask.h"
 #include "task/fighter/ScoutTask.h"
 #include "task/fighter/AttackTask.h"
+#include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
+
+#include "Map.h"
 
 namespace circuit {
 
@@ -49,6 +52,12 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			idleTask->AssignTo(unit);
 		} else {
 			nullTask->RemoveAssignee(unit);
+		}
+
+		if (unit->GetCircuitDef()->IsAbleToFly()) {
+			std::vector<float> params;
+			params.push_back(2.0f);
+			unit->GetUnit()->ExecuteCustomCommand(CMD_RETREAT, params);
 		}
 	};
 	auto attackerIdleHandler = [this](CCircuitUnit* unit) {
@@ -148,8 +157,18 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 //		fighterInfos.erase(unit);
 //	};
 
-	const char* names[] = {"armpw", "spherepole",
-						   "bladew", "armkam"};
+	const char* names[] = {"armpw", "spherepole",					// factorycloak
+						   "bladew", "armkam",						// factorygunship
+						   "amphraider3", "amphraider2",			// factoryamph
+						   "armflea", "armspy",						// factoryspider
+						   "corclog", "corak",						// factoryshield
+						   "corfav", "corgator",					// factoryveh
+						   "puppy", "corpyro",						// factoryjump
+						   "corsh",									// factoryhover
+						   "shipscout", "subraider", "shipraider",	// factoryship
+						   "fighter", "corawac",					// factoryplane
+						   "logkoda",								// factorytank
+	};
 	for (const char* name : names) {
 		scoutDefs.insert(circuit->GetCircuitDef(name));
 	}
@@ -293,7 +312,11 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	float totalCost = .0f;
 	IBuilderTask* parentTask = nullptr;
-	const char* defenders[] = {"corllt", "corrad", "armartic", "corhlt", "corrazor", "armnanotc", "cordoom"/*, "corjamt", "armanni", "corbhmth"*/};
+	std::array<const char*, 8> landDefenders = {"corllt", "corrad", "armartic", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
+	std::array<const char*, 8> waterDefenders = {"turrettorp", "armsonar", "corllt", "corrad", "corrazor", "armnanotc", "turrettorp", "corhlt"};
+	// FIXME: pos may contain wrong y because clusters hold average income there.
+	bool isWater = circuit->GetTerrainManager()->IsWaterSector(pos) && circuit->GetMap()->GetElevationAt(pos.x, pos.z) < -SQUARE_SIZE * 4;
+	std::array<const char*, 8>& defenders = isWater ? waterDefenders : landDefenders;
 	for (const char* name : defenders) {
 		defDef = circuit->GetCircuitDef(name);
 		float defCost = defDef->GetCost();
@@ -336,25 +359,28 @@ void CMilitaryManager::AbortDefence(CBDefenceTask* task)
 
 }
 
-int CMilitaryManager::GetScoutIndex()
+AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 {
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	STerrainMapArea* area = unit->GetArea();
 	CMetalManager* metalManager = circuit->GetMetalManager();
+	const CMetalData::Metals& spots = metalManager->GetSpots();
 	int prevIdx = curScoutIdx;
 	while (curScoutIdx < scoutPath.size()) {
-		int result = scoutPath[curScoutIdx++];
-		if (!metalManager->IsMexInFinished(result)) {
-			return result;
+		int index = scoutPath[curScoutIdx++];
+		if (!metalManager->IsMexInFinished(index) && terrainManager->CanMoveToPos(area, spots[index].position)) {
+			return spots[index].position;
 		}
 	}
 	curScoutIdx = 0;
 	while (curScoutIdx < prevIdx) {
-		int result = scoutPath[curScoutIdx++];
-		if (!metalManager->IsMexInFinished(result)) {
-			return result;
+		int index = scoutPath[curScoutIdx++];
+		if (!metalManager->IsMexInFinished(index) && terrainManager->CanMoveToPos(area, spots[index].position)) {
+			return spots[index].position;
 		}
 	}
-	++curScoutIdx %= scoutPath.size();
-	return scoutPath[curScoutIdx];
+//	++curScoutIdx %= scoutPath.size();
+	return -RgtVector;
 }
 
 void CMilitaryManager::Init()

@@ -167,7 +167,7 @@ void CMetalManager::ClusterizeMetal()
 	metalData->SetClusterizing(true);
 
 	// prepare parameters
-	MoveData* moveData = circuit->GetCircuitDef("armrectr")->GetUnitDef()->GetMoveData();
+	MoveData* moveData = circuit->GetCircuitDef("armcom1")->GetUnitDef()->GetMoveData();
 	int pathType = moveData->GetPathType();
 	delete moveData;
 	UnitDef* def = circuit->GetCircuitDef("armestor")->GetUnitDef();

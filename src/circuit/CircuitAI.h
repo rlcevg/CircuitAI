@@ -243,9 +243,9 @@ private:
 	std::list<std::shared_ptr<IModule>> modules;
 
 	// TODO: Move into GameAttribute? Or use locally
-	int airCategory;
-	int landCategory;
-	int waterCategory;
+	int airCategory;  // over surface
+	int landCategory;  // on surface
+	int waterCategory;  // under surface
 	int goodCategory;
 	float losResConv;
 

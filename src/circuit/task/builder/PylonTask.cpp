@@ -63,12 +63,8 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 	}
 
 	circuit->GetThreatMap()->SetThreatType(unit);
-	CTerrainManager::TerrainPredicate predicate = [terrainManager, unit](const AIFloat3& p) {
-		return terrainManager->CanBuildAt(unit, p);
-	};
-	float searchRadius = circuit->GetEconomyManager()->GetPylonRange() * 0.5f;
-	facing = FindFacing(buildDef, position);
-	buildPos = terrainManager->FindBuildSite(buildDef, position, searchRadius, facing, predicate);
+	const float searchRadius = circuit->GetEconomyManager()->GetPylonRange() * 0.5f;
+	FindBuildSite(unit, position, searchRadius);
 
 	if (buildPos != -RgtVector) {
 		terrainManager->AddBlocker(buildDef, buildPos, facing);

@@ -61,18 +61,20 @@ inline IBlockMask::BlockType IBlockMask::GetTypeSouth(int x, int z)
 
 inline IBlockMask::BlockType IBlockMask::GetTypeEast(int x, int z)
 {
-	return mask[x * zsize + (zsize - 1 - z)];
+//	return GetTypeSouth(xsize - 1 - z, x);
+	return mask[(x + 1) * xsize - 1 - z];
 }
 
 inline IBlockMask::BlockType IBlockMask::GetTypeNorth(int x, int z)
 {
-//	return mask[(zsize - 1 - z) * xsize + (xsize - 1 - x)];
+//	return GetTypeSouth(xsize - 1 - x, zsize - 1 - z);
 	return mask[(zsize - z) * xsize - 1 - x];
 }
 
 inline IBlockMask::BlockType IBlockMask::GetTypeWest(int x, int z)
 {
-	return mask[(xsize - 1 - x) * zsize + z];
+//	return GetTypeSouth(z, zsize - 1 - x);
+	return mask[(zsize - 1 - x) * xsize + z];
 }
 
 inline int IBlockMask::GetIgnoreMask()

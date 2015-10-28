@@ -24,7 +24,7 @@ namespace circuit {
 #define CMD_MORPH_STOP			32210
 #define CMD_PRIORITY			34220
 #define CMD_MISC_PRIORITY		34221
-//#define CMD_RETREAT				34223
+#define CMD_RETREAT				34223
 #define CMD_TERRAFORM_INTERNAL	39801
 
 class CCircuitDef;

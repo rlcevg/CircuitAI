@@ -82,7 +82,7 @@ public:
 	int GetLastTouched() const { return lastTouched; }
 
 protected:
-	virtual int FindFacing(CCircuitDef* buildDef, const springai::AIFloat3& position);
+	virtual void FindBuildSite(CCircuitUnit* builder, const springai::AIFloat3& pos, float searchRadius);
 
 	springai::AIFloat3 position;
 	bool isShake;  // Alter/randomize position

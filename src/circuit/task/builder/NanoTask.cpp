@@ -49,7 +49,6 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (buildPos != -RgtVector) {
-		facing = FindFacing(buildDef, buildPos);
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
 			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 			return;
@@ -68,12 +67,8 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 	}
 
 	circuit->GetThreatMap()->SetThreatType(unit);
-	CTerrainManager::TerrainPredicate predicate = [terrainManager, unit](const AIFloat3& p) {
-		return terrainManager->CanBuildAt(unit, p);
-	};
 	float searchRadius = buildDef->GetBuildDistance();
-	facing = FindFacing(buildDef, pos);
-	buildPos = terrainManager->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
+	FindBuildSite(unit, pos, searchRadius);
 
 	if (buildPos != -RgtVector) {
 		terrainManager->AddBlocker(buildDef, buildPos, facing);

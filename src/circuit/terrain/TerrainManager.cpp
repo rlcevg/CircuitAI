@@ -52,16 +52,31 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	int ignoreMask;
 
 	// offset in South facing
-	offset = int2(0, 4);
 	ignoreMask = STRUCT_BIT(NONE);
-	const char* factories[] = {"factorycloak", "factoryamph", "factoryhover", "factoryjump", "factoryshield", "factoryspider", "factorytank", "factoryveh"};
-	for (const char* fac : factories) {
+	offset = int2(0, 4);
+	const char* landFactories[] = {"factorycloak", "factoryamph", "factoryhover", "factoryjump", "factoryshield", "factoryspider", "factorytank", "factoryveh"};
+	for (const char* fac : landFactories) {
 		cdef = circuit->GetCircuitDef(fac);
 		def = cdef->GetUnitDef();
 		ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 		bsize = ssize + int2(8, 8);
 		blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::FACTORY, ignoreMask);
 	}
+	offset = int2(0, 0);
+	const char* airFactories[] = {"factoryplane", "factorygunship"};
+	for (const char* fac : airFactories) {
+		cdef = circuit->GetCircuitDef(fac);
+		def = cdef->GetUnitDef();
+		ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+		bsize = ssize + int2(4, 4);
+		blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::FACTORY, ignoreMask);
+	}
+	offset = int2(0, 4);
+	cdef = circuit->GetCircuitDef("factoryship");
+	def = cdef->GetUnitDef();
+	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+	bsize = ssize + int2(10, 12);
+	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::FACTORY, ignoreMask);
 
 	cdef = circuit->GetCircuitDef("striderhub");
 	def = cdef->GetUnitDef();
@@ -219,7 +234,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 				 STRUCT_BIT(ENGY_HIGH);
 	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
 
-	const char* striders[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco"};
+	const char* striders[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"};
 	for (const char* strider : striders) {
 		cdef = circuit->GetCircuitDef(strider);
 		def = cdef->GetUnitDef();
@@ -914,8 +929,6 @@ void CTerrainManager::MarkBlockerByMask(const SStructure& building, bool block, 
 	const int notIgnore = ~mask->GetIgnoreMask();
 	SBlockingMap::StructType structType = mask->GetStructType();
 
-	Map* map = circuit->GetMap();
-
 #define DO_MARK(facingType)												\
 	if (block) {														\
 		DECLARE_MARKER(facingType, AddBlocker, AddStruct);				\
@@ -1319,7 +1332,7 @@ void CTerrainManager::UpdateAreaUsers()
 //	int widthX = circuit->GetMap()->GetWidth();
 //	int heightZ = circuit->GetMap()->GetHeight();
 //	int widthSX = widthX / 2;
-//	MoveData* moveDef = circuit->GetCircuitDef("armrectr")->GetUnitDef()->GetMoveData();
+//	MoveData* moveDef = circuit->GetCircuitDef("armcom1")->GetUnitDef()->GetMoveData();
 //	float maxSlope = moveDef->GetMaxSlope();
 //	float depth = moveDef->GetDepth();
 //	float slopeMod = moveDef->GetSlopeMod();
