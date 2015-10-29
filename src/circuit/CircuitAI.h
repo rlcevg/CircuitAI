@@ -9,7 +9,6 @@
 #define SRC_CIRCUIT_CIRCUIT_H_
 
 #include "unit/AllyTeam.h"
-#include "unit/CircuitDef.h"
 
 #include <memory>
 #include <unordered_map>

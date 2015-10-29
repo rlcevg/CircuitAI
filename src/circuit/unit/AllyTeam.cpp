@@ -10,6 +10,7 @@
 #include "resource/EnergyGrid.h"
 #include "setup/DefenceMatrix.h"
 #include "terrain/PathFinder.h"
+#include "terrain/TerrainData.h"
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
 #include "util/Scheduler.h"
@@ -33,8 +34,9 @@ bool CAllyTeam::SBox::ContainsPoint(const AIFloat3& point) const
 CAllyTeam::CAllyTeam(const TeamIds& tids, const SBox& sb)
 		: teamIds(tids)
 		, startBox(sb)
-		, lastUpdate(-1)
 		, initCount(0)
+		, lastUpdate(-1)
+		, factoryIdx(0)
 {
 }
 
@@ -70,6 +72,46 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 	energyLink = std::make_shared<CEnergyGrid>(circuit);
 	defence = std::make_shared<CDefenceMatrix>(circuit);
 	pathfinder = std::make_shared<CPathFinder>(&circuit->GetGameAttribute()->GetTerrainData());
+
+	const char* factories[] = {
+		"factorycloak",
+		"factoryamph",
+		"factoryhover",
+		"factoryjump",
+		"factoryshield",
+		"factoryspider",
+		"factorytank",
+		"factoryveh",
+		"factoryplane",
+		"factorygunship",
+		"factoryship",
+	};
+	const int size = sizeof(factories) / sizeof(factories[0]);
+	factoryBuilds.reserve(size);
+	std::map<STerrainMapMobileType::Id, float> percents;
+	CTerrainData& terrainData = circuit->GetGameAttribute()->GetTerrainData();
+	const std::vector<STerrainMapImmobileType>& immobileType = terrainData.areaData0.immobileType;
+	const std::vector<STerrainMapMobileType>& mobileType = terrainData.areaData0.mobileType;
+	for (const char* fac : factories) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(fac);
+		STerrainMapImmobileType::Id itId = cdef->GetImmobileId();
+		if ((itId < 0) || !immobileType[itId].typeUsable) {  // safety check
+			continue;
+		}
+
+		STerrainMapMobileType::Id mtId = cdef->GetMobileId();
+		if (mtId < 0) {
+			factoryBuilds.push_back(cdef->GetId());
+			percents[cdef->GetId()] = (40.0 + rand() / (float)RAND_MAX * 40.0);
+		} else if (mobileType[mtId].typeUsable) {
+			factoryBuilds.push_back(cdef->GetId());
+			percents[cdef->GetId()] = mobileType[mtId].areaLargest->percentOfMap;
+		}
+	}
+	auto cmp = [circuit, &percents](const CCircuitDef::Id aId, const CCircuitDef::Id bId) {
+		return percents[aId] > percents[bId];
+	};
+	std::sort(factoryBuilds.begin(), factoryBuilds.end(), cmp);
 }
 
 void CAllyTeam::Release()
@@ -119,6 +161,11 @@ CCircuitUnit* CAllyTeam::GetFriendlyUnit(CCircuitUnit::Id unitId) const
 {
 	decltype(friendlyUnits)::const_iterator it = friendlyUnits.find(unitId);
 	return (it != friendlyUnits.end()) ? it->second : nullptr;
+}
+
+CCircuitDef* CAllyTeam::GetFactoryToBuild(CCircuitAI* circuit) const
+{
+	return circuit->GetCircuitDef(factoryBuilds[factoryIdx]);
 }
 
 } // namespace circuit

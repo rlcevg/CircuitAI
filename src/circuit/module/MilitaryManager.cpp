@@ -23,8 +23,6 @@
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
-#include "Map.h"
-
 namespace circuit {
 
 using namespace springai;
@@ -32,7 +30,7 @@ using namespace springai;
 CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit)
 		, updateSlice(0)
-		, curScoutIdx(0)
+		, scoutIdx(0)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CMilitaryManager::Init, this));
@@ -312,10 +310,9 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	float totalCost = .0f;
 	IBuilderTask* parentTask = nullptr;
+	bool isWater = circuit->GetTerrainManager()->IsWaterSector(pos);
 	std::array<const char*, 8> landDefenders = {"corllt", "corrad", "armartic", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
 	std::array<const char*, 8> waterDefenders = {"turrettorp", "armsonar", "corllt", "corrad", "corrazor", "armnanotc", "turrettorp", "corhlt"};
-	// FIXME: pos may contain wrong y because clusters hold average income there.
-	bool isWater = circuit->GetTerrainManager()->IsWaterSector(pos) && circuit->GetMap()->GetElevationAt(pos.x, pos.z) < -SQUARE_SIZE * 4;
 	std::array<const char*, 8>& defenders = isWater ? waterDefenders : landDefenders;
 	for (const char* name : defenders) {
 		defDef = circuit->GetCircuitDef(name);
@@ -365,21 +362,21 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 	STerrainMapArea* area = unit->GetArea();
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	const CMetalData::Metals& spots = metalManager->GetSpots();
-	int prevIdx = curScoutIdx;
-	while (curScoutIdx < scoutPath.size()) {
-		int index = scoutPath[curScoutIdx++];
+	int prevIdx = scoutIdx;
+	while (scoutIdx < scoutPath.size()) {
+		int index = scoutPath[scoutIdx++];
 		if (!metalManager->IsMexInFinished(index) && terrainManager->CanMoveToPos(area, spots[index].position)) {
 			return spots[index].position;
 		}
 	}
-	curScoutIdx = 0;
-	while (curScoutIdx < prevIdx) {
-		int index = scoutPath[curScoutIdx++];
+	scoutIdx = 0;
+	while (scoutIdx < prevIdx) {
+		int index = scoutPath[scoutIdx++];
 		if (!metalManager->IsMexInFinished(index) && terrainManager->CanMoveToPos(area, spots[index].position)) {
 			return spots[index].position;
 		}
 	}
-//	++curScoutIdx %= scoutPath.size();
+//	++scoutIdx %= scoutPath.size();
 	return -RgtVector;
 }
 

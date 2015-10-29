@@ -418,6 +418,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	energyLink = allyTeam->GetEnergyLink();
 	defence = allyTeam->GetDefenceMatrix();
 	pathfinder = allyTeam->GetPathfinder();
+
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
 
 	// NOTE: EconomyManager uses metal clusters and must be initialized after MetalManager::ClusterizeMetal
@@ -1005,7 +1006,7 @@ void CCircuitAI::InitUnitDefs()
 			std::map<STerrainMapMobileType::Id, float> mtUsability;
 			for (CCircuitDef::Id buildId : cdef->GetBuildOptions()) {
 				CCircuitDef* bdef = GetCircuitDef(buildId);
-				if ((bdef == nullptr) || !bdef->IsMobile()) {
+				if ((bdef == nullptr) || !bdef->IsMobile() || (bdef->GetDPS() < 10.1f)) {
 					continue;
 				}
 				STerrainMapMobileType::Id mtId = terrainData.udMobileType[bdef->GetId()];

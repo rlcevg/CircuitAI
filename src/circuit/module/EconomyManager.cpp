@@ -14,7 +14,6 @@
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/math/LagrangeInterPol.h"
-#include "util/GameAttribute.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
@@ -591,6 +590,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		return nullptr;
 	}
 
+	// check nanos
 	CCircuitUnit* factory = factoryManager->NeedUpgrade();
 	if ((factory != nullptr) && assistDef->IsAvailable()) {
 		Unit* u = factory->GetUnit();
@@ -622,9 +622,10 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		}
 	}
 
+	// check factories
 	CCircuitDef* striderDef = circuit->GetCircuitDef("striderhub");
 	bool isStriderValid = (factoryManager->GetFactoryCount() > 0) && (striderDef->GetCount() == 0) && striderDef->IsAvailable();
-	CCircuitDef* facDef = isStriderValid ? striderDef : circuit->GetCircuitDef(/*"factorycloak"*/"factoryplane");
+	CCircuitDef* facDef = isStriderValid ? striderDef : circuit->GetAllyTeam()->GetFactoryToBuild(circuit);
 	if (facDef->IsAvailable()) {
 		CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
 			return clusterInfos[v.second].factory == nullptr;
@@ -648,6 +649,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			if (terrainManager->CanBeBuiltAt(facDef, buildPos) &&
 				((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 			{
+				circuit->GetAllyTeam()->AdvanceFactoryIdx();
 				return builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos, IBuilderTask::BuildType::FACTORY);
 			}
 		}
@@ -784,27 +786,18 @@ void CEconomyManager::Init()
 			Unit* u = commander->GetUnit();
 			const AIFloat3& pos = u->GetPos();
 			UnitRulesParam* param = u->GetUnitRulesParamByName("facplop");
-			if (param != nullptr) {
-				if (param->GetValueFloat() == 1) {
-					CBuilderManager* builderManager = circuit->GetBuilderManager();
-					const char* factories[] = {"factorycloak", "factorygunship", "factoryamph", "factoryspider"};
-					const int size = sizeof(factories) / sizeof(factories[0]);
-					const CAllyTeam::TeamIds& teamIds = circuit->GetAllyTeam()->GetTeamIds();
-					std::set<CAllyTeam::Id> circIds;  // sort id
-					for (CCircuitAI* circ : circuit->GetGameAttribute()->GetCircuits()) {
-						if (teamIds.find(circ->GetTeamId()) != teamIds.end()) {
-							circIds.insert(circ->GetTeamId());
-						}
-					}
-					const int choice = std::distance(circIds.begin(), circIds.find(circuit->GetTeamId())) % size;
-					CCircuitDef* facDef = circuit->GetCircuitDef(/*factories[choice]*/"factoryship");
-					AIFloat3 buildPos = circuit->GetTerrainManager()->GetBuildPosition(facDef, pos);
-					task = builderManager->EnqueueTask(IUnitTask::Priority::HIGH, facDef, buildPos,
-													   IBuilderTask::BuildType::FACTORY);
-					static_cast<ITaskManager*>(builderManager)->AssignTask(commander, task);
-				}
-				delete param;
+			if ((param != nullptr) && (param->GetValueFloat() == 1)) {
+				CAllyTeam* allyTeam = circuit->GetAllyTeam();
+				CCircuitDef* facDef = allyTeam->GetFactoryToBuild(circuit);
+				allyTeam->AdvanceFactoryIdx();
+
+				AIFloat3 buildPos = circuit->GetTerrainManager()->GetBuildPosition(facDef, pos);
+				CBuilderManager* builderManager = circuit->GetBuilderManager();
+				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos,
+												   IBuilderTask::BuildType::FACTORY);
+				static_cast<ITaskManager*>(builderManager)->AssignTask(commander, task);
 			}
+			delete param;
 		}
 
 		SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();

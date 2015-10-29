@@ -119,15 +119,17 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		}
 
 		// check if any factory with builders left
-		bool valid = false;
+		bool hasBuilder = false;
 		for (SFactory& fac : factories) {
 			if (fac.hasBuilder) {
-				valid = true;
+				hasBuilder = true;
 				break;
 			}
 		}
-		if (!valid) {
-			CCircuitDef* facDef = this->circuit->GetCircuitDef("factorycloak");
+		if (!hasBuilder) {
+			CAllyTeam* allyTeam = this->circuit->GetAllyTeam();
+			CCircuitDef* facDef = allyTeam->GetFactoryToBuild(this->circuit);
+			allyTeam->AdvanceFactoryIdx();
 			this->circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, -RgtVector,
 															IBuilderTask::BuildType::FACTORY);
 		}
@@ -261,105 +263,105 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 	};
 	#undef NUM
 	const SFactoryPreDef facDefs[] = {
-			SFactoryPreDef("factorycloak", "armrectr", 10,
-					//glaive,  scythe,       rocko,     warrior,  zeus,      hammer,   sniper,     tick,      eraser,          gremlin
-					{"armpw", "spherepole", "armrock", "armwar", "armzeus", "armham", "armsnipe", "armtick", "spherecloaker", "armjeth"},
-					{.60,     .01,          .15,       .10,      .05,       .05,      .01,        .01,       .00,             .02},
-					{.01,     .30,          .05,       .05,      .30,       .01,      .17,        .01,       .00,             .10},
-					[](CEconomyManager* mgr) {
-						return (mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40) || mgr->IsEnergyEmpty();
-					}
-			),
-			SFactoryPreDef("factorygunship", "armca", 10,
-					//blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator   trident
-					{"blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans", "gunshipaa"},
-					{.10,         .15,      .30,      .36,              .05,        .02,         .00,      .00,       .00,         .02},
-					{.01,         .01,      .01,      .10,              .57,        .15,         .05,      .00,       .00,         .10},
-					[](CEconomyManager* mgr) {
-						return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-					}
-			),
-			SFactoryPreDef("factoryamph", "amphcon", 7,
-					//duck,          archer,        buoy,          scallop,    grizzly,       djinn,      angler
-					{"amphraider3", "amphraider2", "amphfloater", "amphriot", "amphassault", "amphtele", "amphaa"},
-					{.60,           .10,           .15,           .14,        .00,           .00,        .01},
-					{.01,           .10,           .20,           .20,        .39,           .00,        .10},
-					[](CEconomyManager* mgr) {
-						return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-					}
-			),
-			SFactoryPreDef("factoryspider", "arm_spider", 8,
-					//flea,      hermit,          venom,       redback,      recluse,   crabe,      infiltrator, tarantula
-					{"armflea", "spiderassault", "arm_venom", "spiderriot", "armsptk", "armcrabe", "armspy",    "spideraa"},
-					{.20,       .30,             .10,         .10,          .27,       .00,        .01,         .02},
-					{.01,       .01,             .01,         .10,          .12,       .60,        .05,         .10},
-					[](CEconomyManager* mgr) {
-						return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-					}
-			),
-			SFactoryPreDef("factoryshield", "cornecro", 10,
-					//dirtbag,   bandit,  rogue,      thug,      outlaw,   felon,         racketeer,    roach,      aspis,          vandal
-					{"corclog", "corak", "corstorm", "corthud", "cormak", "shieldfelon", "shieldarty", "corroach", "core_spectre", "corcrash"},
-					{.10,       .30,     .10,        .18,       .10,      .05,           .10,          .05,        .00,            .02},
-					{.01,       .01,     .20,        .30,       .10,      .10,           .17,          .01,        .00,            .10},
-					[](CEconomyManager* mgr) {
-						return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-					}
-			),
-			SFactoryPreDef("factoryveh", "corned", 9,
-					//dart,     scorcher,   slasher,   leveler,    ravager,   dominatrix,   wolverine, impaler,   crasher
-					{"corfav", "corgator", "cormist", "corlevlr", "corraid", "capturecar", "corgarp", "armmerl", "vehaa"},
-					{.10,      .37,        .10,       .10,        .10,       .10,          .10,       .01,       .02},
-					{.01,      .04,        .10,       .10,        .30,       .20,          .05,       .10,       .10},
-					[](CEconomyManager* mgr) {
-						return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-					}
-			),
-			SFactoryPreDef("factoryjump", "corfast", 9,
-					//puppy,   pyro,      placeholder,     moderator,  jack,     sumo,      firewalker,   skuttle,   archangel
-					{"puppy", "corpyro", "jumpblackhole", "slowmort", "corcan", "corsumo", "firewalker", "corsktl", "armaak"},
-					{.07,     .60,       .05,             .10,        .05,      .00,       .10,          .01,       .02},
-					{.01,     .10,       .10,             .10,        .30,      .05,       .20,          .04,       .10},
-					[](CEconomyManager* mgr) {
-						return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-					}
-			),
-			SFactoryPreDef("factoryhover", "corch", 7,
-					//dagger,  scalpel,    halberd,        claymore,           mace,        penetrator, flail
-					{"corsh", "nsaclash", "hoverassault", "hoverdepthcharge", "hoverriot", "armmanni", "hoveraa"},
-					{.60,     .10,        .17,            .01,                .10,         .00,        .02},
-					{.01,     .20,        .30,            .01,                .20,         .18,        .10},
-					[](CEconomyManager* mgr) {
-						return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-					}
-			),
-			SFactoryPreDef("factoryship", "shipcon", 9,
-					//skeeter,     snake,       typhoon,      hunter,     enforcer,    crusader,   serpent,   surfboard,  shredder
-					{"shipscout", "subraider", "shipraider", "shiptorp", "shipskirm", "shiparty", "subarty", "armtboat", "shipaa"},
-					{.10,         .30,         .30,          .17,        .05,         .05,        .01,       .00,        .02},
-					{.01,         .10,         .10,          .20,        .10,         .20,        .19,       .00,        .10},
-					[](CEconomyManager* mgr) {
-						return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-					}
-			),
-			SFactoryPreDef("factoryplane", "armca", 7,
-					//swift,     hawk,      raven,     phoenix,    thunderbird,         wyvern,    vulture
-					{"fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "corawac"},
-					{.64,       .10,       .20,       .01,        .05,                 .00,       .00},
-					{.10,       .10,       .10,       .10,        .10,                 .40,       .10},
-					[](CEconomyManager* mgr) {
-						return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-					}
-			),
-			SFactoryPreDef("factorytank", "coracv", 8,
-					//kodachi,   panther,   banisher,  reaper,    goliath,  pillager,  tremor, copperhead
-					{"logkoda", "panther", "tawf114", "correap", "corgol", "cormart", "trem", "corsent"},
-					{.20,       .47,       .30,       .00,       .00,      .01,       .00,    .02},
-					{.01,       .09,       .10,       .30,       .10,      .20,       .10,    .10},
-					[](CEconomyManager* mgr) {
-						return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-					}
-			),
+		SFactoryPreDef("factorycloak", "armrectr", 10,
+			//glaive,  scythe,       rocko,     warrior,  zeus,      hammer,   sniper,     tick,      eraser,          gremlin
+			{"armpw", "spherepole", "armrock", "armwar", "armzeus", "armham", "armsnipe", "armtick", "spherecloaker", "armjeth"},
+			{.60,     .01,          .15,       .10,      .05,       .05,      .01,        .01,       .00,             .02},
+			{.01,     .30,          .05,       .05,      .30,       .01,      .17,        .01,       .00,             .10},
+			[](CEconomyManager* mgr) {
+				return (mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40) || mgr->IsEnergyEmpty();
+			}
+		),
+		SFactoryPreDef("factorygunship", "armca", 10,
+			//blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator   trident
+			{"blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans", "gunshipaa"},
+			{.10,         .15,      .30,      .36,              .05,        .02,         .00,      .00,       .00,         .02},
+			{.01,         .01,      .01,      .10,              .57,        .15,         .05,      .00,       .00,         .10},
+			[](CEconomyManager* mgr) {
+				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
+			}
+		),
+		SFactoryPreDef("factoryamph", "amphcon", 7,
+			//duck,          archer,        buoy,          scallop,    grizzly,       djinn,      angler
+			{"amphraider3", "amphraider2", "amphfloater", "amphriot", "amphassault", "amphtele", "amphaa"},
+			{.60,           .10,           .15,           .14,        .00,           .00,        .01},
+			{.01,           .10,           .20,           .20,        .39,           .00,        .10},
+			[](CEconomyManager* mgr) {
+				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
+			}
+		),
+		SFactoryPreDef("factoryspider", "arm_spider", 8,
+			//flea,      hermit,          venom,       redback,      recluse,   crabe,      infiltrator, tarantula
+			{"armflea", "spiderassault", "arm_venom", "spiderriot", "armsptk", "armcrabe", "armspy",    "spideraa"},
+			{.20,       .30,             .10,         .10,          .27,       .00,        .01,         .02},
+			{.01,       .01,             .01,         .10,          .12,       .60,        .05,         .10},
+			[](CEconomyManager* mgr) {
+				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
+			}
+		),
+		SFactoryPreDef("factoryshield", "cornecro", 10,
+			//dirtbag,   bandit,  rogue,      thug,      outlaw,   felon,         racketeer,    roach,      aspis,          vandal
+			{"corclog", "corak", "corstorm", "corthud", "cormak", "shieldfelon", "shieldarty", "corroach", "core_spectre", "corcrash"},
+			{.10,       .30,     .10,        .18,       .10,      .05,           .10,          .05,        .00,            .02},
+			{.01,       .01,     .20,        .30,       .10,      .10,           .17,          .01,        .00,            .10},
+			[](CEconomyManager* mgr) {
+				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
+			}
+		),
+		SFactoryPreDef("factoryveh", "corned", 9,
+			//dart,     scorcher,   slasher,   leveler,    ravager,   dominatrix,   wolverine, impaler,   crasher
+			{"corfav", "corgator", "cormist", "corlevlr", "corraid", "capturecar", "corgarp", "armmerl", "vehaa"},
+			{.10,      .37,        .10,       .10,        .10,       .10,          .10,       .01,       .02},
+			{.01,      .04,        .10,       .10,        .30,       .20,          .05,       .10,       .10},
+			[](CEconomyManager* mgr) {
+				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
+			}
+		),
+		SFactoryPreDef("factoryjump", "corfast", 9,
+			//puppy,   pyro,      placeholder,     moderator,  jack,     sumo,      firewalker,   skuttle,   archangel
+			{"puppy", "corpyro", "jumpblackhole", "slowmort", "corcan", "corsumo", "firewalker", "corsktl", "armaak"},
+			{.07,     .60,       .05,             .10,        .05,      .00,       .10,          .01,       .02},
+			{.01,     .10,       .10,             .10,        .30,      .05,       .20,          .04,       .10},
+			[](CEconomyManager* mgr) {
+				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
+			}
+		),
+		SFactoryPreDef("factoryhover", "corch", 7,
+			//dagger,  scalpel,    halberd,        claymore,           mace,        penetrator, flail
+			{"corsh", "nsaclash", "hoverassault", "hoverdepthcharge", "hoverriot", "armmanni", "hoveraa"},
+			{.60,     .10,        .17,            .01,                .10,         .00,        .02},
+			{.01,     .20,        .30,            .01,                .20,         .18,        .10},
+			[](CEconomyManager* mgr) {
+				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
+			}
+		),
+		SFactoryPreDef("factoryship", "shipcon", 9,
+			//skeeter,     snake,       typhoon,      hunter,     enforcer,    crusader,   serpent,   surfboard,  shredder
+			{"shipscout", "subraider", "shipraider", "shiptorp", "shipskirm", "shiparty", "subarty", "armtboat", "shipaa"},
+			{.10,         .30,         .30,          .17,        .05,         .05,        .01,       .00,        .02},
+			{.01,         .10,         .10,          .20,        .10,         .20,        .19,       .00,        .10},
+			[](CEconomyManager* mgr) {
+				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
+			}
+		),
+		SFactoryPreDef("factoryplane", "armca", 7,
+			//swift,     hawk,      raven,     phoenix,    thunderbird,         wyvern,    vulture
+			{"fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "corawac"},
+			{.64,       .10,       .20,       .01,        .05,                 .00,       .00},
+			{.10,       .10,       .10,       .10,        .10,                 .40,       .10},
+			[](CEconomyManager* mgr) {
+				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
+			}
+		),
+		SFactoryPreDef("factorytank", "coracv", 8,
+			//kodachi,   panther,   banisher,  reaper,    goliath,  pillager,  tremor, copperhead
+			{"logkoda", "panther", "tawf114", "correap", "corgol", "cormart", "trem", "corsent"},
+			{.20,       .47,       .30,       .00,       .00,      .01,       .00,    .02},
+			{.01,       .09,       .10,       .30,       .10,      .20,       .10,    .10},
+			[](CEconomyManager* mgr) {
+				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
+			}
+		),
 	};
 	for (const SFactoryPreDef& facPreDef : facDefs) {
 		SFactoryDef facDef;

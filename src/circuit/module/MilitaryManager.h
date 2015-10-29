@@ -63,7 +63,7 @@ private:
 
 	std::set<CCircuitDef*> scoutDefs;
 	std::vector<int> scoutPath;  // list of cluster ids
-	unsigned int curScoutIdx;
+	unsigned int scoutIdx;
 };
 
 } // namespace circuit
