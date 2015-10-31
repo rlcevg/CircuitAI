@@ -130,10 +130,21 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		auto it = std::find(energyInfos.begin(), energyInfos.end(), unit->GetCircuitDef());
 		if (it != energyInfos.end()) {
 			float income = it->cost / it->costDivMake;
-			for (int i = 0; i < INCOME_SAMPLES; i++) {
+			for (int i = 0; i < INCOME_SAMPLES; ++i) {
 				energyIncomes[i] += income;
 			}
 			energyIncome += income;
+		}
+	};
+	auto mexFinishedHandler = [this](CCircuitUnit* unit) {
+		UnitRulesParam* p = unit->GetUnit()->GetUnitRulesParamByName("mexIncome");
+		if (p != nullptr) {
+			float income = p->GetValueFloat();
+			for (int i = 0; i < INCOME_SAMPLES; ++i) {
+				metalIncomes[i] += income;
+			}
+			metalIncome += income;
+			delete p;
 		}
 	};
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
@@ -152,6 +163,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				}
 				allEnergyDefs.insert(cdef);
 			} else if (((it = customParams.find("ismex")) != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
+				finishedHandler[kv.first] = mexFinishedHandler;
 				mexDef = cdef;  // cormex
 			}
 		}
@@ -626,7 +638,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	CCircuitDef* striderDef = circuit->GetCircuitDef("striderhub");
 	bool isStriderValid = (factoryManager->GetFactoryCount() > 0) && (striderDef->GetCount() == 0) && striderDef->IsAvailable();
 	CCircuitDef* facDef = isStriderValid ? striderDef : circuit->GetAllyTeam()->GetFactoryToBuild(circuit);
-	if (facDef->IsAvailable()) {
+	if (facDef != nullptr) {
 		CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
 			return clusterInfos[v.second].factory == nullptr;
 		};
@@ -753,7 +765,7 @@ void CEconomyManager::UpdateMorph()
 
 	float energyIncome = GetAvgEnergyIncome();
 	float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
-	if ((metalIncome < 10) || (GetMetalPull() > metalIncome)) {
+	if ((metalIncome < 10) || IsMetalEmpty() || (GetMetalPull() > metalIncome)) {
 		return;
 	}
 
@@ -787,15 +799,16 @@ void CEconomyManager::Init()
 			const AIFloat3& pos = u->GetPos();
 			UnitRulesParam* param = u->GetUnitRulesParamByName("facplop");
 			if ((param != nullptr) && (param->GetValueFloat() == 1)) {
-				CAllyTeam* allyTeam = circuit->GetAllyTeam();
-				CCircuitDef* facDef = allyTeam->GetFactoryToBuild(circuit);
-				allyTeam->AdvanceFactoryIdx();
+				CCircuitDef* facDef = circuit->GetAllyTeam()->GetFactoryToBuild(circuit);
+				if (facDef != nullptr) {
+					circuit->GetAllyTeam()->AdvanceFactoryIdx();
 
-				AIFloat3 buildPos = circuit->GetTerrainManager()->GetBuildPosition(facDef, pos);
-				CBuilderManager* builderManager = circuit->GetBuilderManager();
-				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos,
-												   IBuilderTask::BuildType::FACTORY);
-				static_cast<ITaskManager*>(builderManager)->AssignTask(commander, task);
+					AIFloat3 buildPos = circuit->GetTerrainManager()->GetBuildPosition(facDef, pos);
+					CBuilderManager* builderManager = circuit->GetBuilderManager();
+					task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos,
+													   IBuilderTask::BuildType::FACTORY);
+					static_cast<ITaskManager*>(builderManager)->AssignTask(commander, task);
+				}
 			}
 			delete param;
 		}

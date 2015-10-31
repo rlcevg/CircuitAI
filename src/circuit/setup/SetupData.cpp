@@ -24,7 +24,7 @@ CSetupData::~CSetupData()
 	utils::free_clear(allyTeams);
 }
 
-void CSetupData::Init(const std::vector<CAllyTeam*>& ats, const BoxMap& bm, CGameSetup::StartPosType spt)
+void CSetupData::Init(const AllyMap& ats, const BoxMap& bm, CGameSetup::StartPosType spt)
 {
 	allyTeams = ats;
 	boxes = bm;

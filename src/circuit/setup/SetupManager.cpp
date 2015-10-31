@@ -115,6 +115,16 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 		startPosType = CGameSetup::StartPosType::StartPos_Fixed;
 	}
 
+	// Count number of alliances
+	std::regex patternAlly("\\[allyteam(\\d+)\\]");
+	start = script.begin();
+	end = script.end();
+	while (std::regex_search(start, end, section, patternAlly)) {
+		int allyTeamId = utils::string_to_int(section[1]);
+		allies[allyTeamId];  // create empty alliance
+		start = section[0].second;
+	}
+
 	// Detect team alliances
 	std::regex patternTeam("\\[team(\\d+)\\]\\s*\\{([^\\}]*)\\}");
 	std::regex patternAllyId("allyteam=(\\d+);");
@@ -141,7 +151,7 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 
 	// Remap teams, create ally-teams
 	// @see rts/Game/GameSetup.cpp CGameSetup::Init
-	std::vector<CAllyTeam*> allyTeams;
+	CSetupData::AllyMap allyTeams;
 	allyTeams.reserve(allies.size());
 	for (const auto& kv : allies) {
 		const OrigTeamIds& data = kv.second;

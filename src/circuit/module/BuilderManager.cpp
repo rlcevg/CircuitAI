@@ -164,7 +164,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	/*
 	 * strider handlers
 	 */
-//	const char* striders[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco"};
+//	const char* striders[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"};
 //	for (auto strider : striders) {
 //		createdHandler[circuit->GetCircuitDef(strider)->GetId()] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 //			unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::LOW, unit);

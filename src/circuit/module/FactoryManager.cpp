@@ -99,6 +99,23 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
+		// check if any factory with builders left
+		bool hasBuilder = false;
+		for (SFactory& fac : factories) {
+			if (fac.hasBuilder) {
+				hasBuilder = true;
+				break;
+			}
+		}
+		if (!hasBuilder) {
+			CCircuitDef* facDef = this->circuit->GetAllyTeam()->GetFactoryToBuild(this->circuit);
+			if (facDef != nullptr) {
+				this->circuit->GetAllyTeam()->AdvanceFactoryIdx();
+				this->circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, -RgtVector,
+																IBuilderTask::BuildType::FACTORY);
+			}
+		}
+
 		if (task == nullTask) {  // alternative: unit->GetUnit()->IsBeingBuilt()
 			return;
 		}
@@ -116,22 +133,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			}
 			factories.erase(it);
 			break;
-		}
-
-		// check if any factory with builders left
-		bool hasBuilder = false;
-		for (SFactory& fac : factories) {
-			if (fac.hasBuilder) {
-				hasBuilder = true;
-				break;
-			}
-		}
-		if (!hasBuilder) {
-			CAllyTeam* allyTeam = this->circuit->GetAllyTeam();
-			CCircuitDef* facDef = allyTeam->GetFactoryToBuild(this->circuit);
-			allyTeam->AdvanceFactoryIdx();
-			this->circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, -RgtVector,
-															IBuilderTask::BuildType::FACTORY);
 		}
 	};
 
@@ -266,7 +267,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		SFactoryPreDef("factorycloak", "armrectr", 10,
 			//glaive,  scythe,       rocko,     warrior,  zeus,      hammer,   sniper,     tick,      eraser,          gremlin
 			{"armpw", "spherepole", "armrock", "armwar", "armzeus", "armham", "armsnipe", "armtick", "spherecloaker", "armjeth"},
-			{.60,     .01,          .15,       .10,      .05,       .05,      .01,        .01,       .00,             .02},
+			{.60,     .02,          .15,       .10,      .05,       .05,      .00,        .01,       .00,             .02},
 			{.01,     .30,          .05,       .05,      .30,       .01,      .17,        .01,       .00,             .10},
 			[](CEconomyManager* mgr) {
 				return (mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40) || mgr->IsEnergyEmpty();

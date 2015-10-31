@@ -59,7 +59,7 @@ public:
 	CCircuitUnit* GetFriendlyUnit(CCircuitUnit::Id unitId) const;
 	const Units& GetFriendlyUnits() const { return friendlyUnits; }
 
-	CCircuitDef* GetFactoryToBuild(CCircuitAI* circuit) const;
+	CCircuitDef* GetFactoryToBuild(CCircuitAI* circuit);
 	void AdvanceFactoryIdx() { ++factoryIdx %= factoryBuilds.size(); }
 
 	std::shared_ptr<CMetalManager>& GetMetalManager() { return metalManager; }

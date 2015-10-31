@@ -648,7 +648,7 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 		UnregisterTeamUnit(unit);
 	} else {
 		IUnitTask* prevTask = unit->GetTask();
-		if (prevTask->GetType() != IUnitTask::Type::RETREAT) {
+		if ((prevTask != nullptr) && (prevTask->GetType() != IUnitTask::Type::RETREAT)) {
 			ITaskManager* mgr = prevTask->GetManager();
 			// TODO: Make sure prevTask is valid and can be assigned
 			mgr->AssignTask(unit, new CStuckTask(mgr));
@@ -678,6 +678,12 @@ int CCircuitAI::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 
 int CCircuitAI::UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 {
+	CEnemyUnit* enemy = GetEnemyUnit(unit->GetId());
+	if (enemy != nullptr) {
+		EnemyDestroyed(enemy);
+		UnregisterEnemyUnit(enemy);
+	}
+
 	// it might not have been given to us! Could have been given to another team
 	if (teamId == newTeamId) {
 		for (auto& module : modules) {
@@ -1014,10 +1020,7 @@ void CCircuitAI::InitUnitDefs()
 					continue;
 				}
 				STerrainMapMobileType& mt = terrainData.areaData0.mobileType[mtId];
-				if (mt.area.empty()) {
-					continue;
-				}
-				mtUsability[mtId] = mt.areaLargest->percentOfMap;
+				mtUsability[mtId] = mt.area.empty() ? 00.0 : mt.areaLargest->percentOfMap;
 			}
 			float useMost = .0f;
 			STerrainMapMobileType::Id mtId = cdef->GetMobileId();  // -1

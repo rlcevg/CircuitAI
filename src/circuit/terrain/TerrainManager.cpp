@@ -51,9 +51,8 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	int radius;
 	int ignoreMask;
 
-	// offset in South facing
 	ignoreMask = STRUCT_BIT(NONE);
-	offset = int2(0, 4);
+	offset = int2(0, 4);  // in South facing
 	const char* landFactories[] = {"factorycloak", "factoryamph", "factoryhover", "factoryjump", "factoryshield", "factoryspider", "factorytank", "factoryveh"};
 	for (const char* fac : landFactories) {
 		cdef = circuit->GetCircuitDef(fac);

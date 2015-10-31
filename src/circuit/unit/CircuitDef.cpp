@@ -69,7 +69,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		float extraDmg = .0f;
 		auto it = customParams.find("extra_damage");
 		if (it != customParams.end()) {
-			extraDmg = utils::string_to_float(it->second);
+			extraDmg += utils::string_to_float(it->second);
 		}
 
 		it = customParams.find("disarmdamageonly");
@@ -87,9 +87,18 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			scale = 2.0f;
 		}
 
+		it = customParams.find("area_damage_dps");
+		if (it != customParams.end()) {
+			extraDmg += utils::string_to_float(it->second);
+			it = customParams.find("area_damage_is_impulse");
+			if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
+				scale = 0.02f;
+			}
+		}
+
 		float reloadTime = wd->GetReload();
 		if (extraDmg > 0.1f) {
-			dps += extraDmg * wd->GetSalvoSize() / reloadTime;
+			dps += extraDmg * wd->GetSalvoSize() / reloadTime * scale;
 		}
 		Damage* damage = wd->GetDamage();
 		const std::vector<float>& damages = damage->GetTypes();
@@ -98,7 +107,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		for (float dmg : damages) {
 			ldps += dmg;
 		}
-		dps += ldps * wd->GetSalvoSize() * scale / damages.size() / reloadTime;
+		dps += ldps * wd->GetSalvoSize() / damages.size() / reloadTime * scale;
 		targetCategory |= mount->GetOnlyTargetCategory();
 
 		isTracks |= (wd->GetProjectileSpeed() * FRAMES_PER_SEC >= 500.0f) || wd->IsTracks();

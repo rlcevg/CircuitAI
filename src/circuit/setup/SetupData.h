@@ -18,11 +18,12 @@ namespace circuit {
 
 class CSetupData {
 public:
-	using BoxMap = std::map<int, CAllyTeam::SBox>;
+	using BoxMap = std::map<int, CAllyTeam::SBox>;  // <start_box_id, box>
+	using AllyMap = std::vector<CAllyTeam*>;
 
 	CSetupData();
 	virtual ~CSetupData();
-	void Init(const std::vector<CAllyTeam*>& ats, const BoxMap& bm,
+	void Init(const AllyMap& ats, const BoxMap& bm,
 			  CGameSetup::StartPosType spt = CGameSetup::StartPosType::StartPos_ChooseInGame);
 
 	bool IsInitialized() const { return initialized; }
@@ -34,7 +35,7 @@ public:
 private:
 	bool initialized;
 	CGameSetup::StartPosType startPosType;
-	std::vector<CAllyTeam*> allyTeams;  // owner
+	AllyMap allyTeams;  // owner
 	BoxMap boxes;
 };
 

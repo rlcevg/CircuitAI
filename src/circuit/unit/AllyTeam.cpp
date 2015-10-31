@@ -95,17 +95,18 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 	for (const char* fac : factories) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(fac);
 		STerrainMapImmobileType::Id itId = cdef->GetImmobileId();
-		if ((itId < 0) || !immobileType[itId].typeUsable) {  // safety check
+		if ((itId < 0) || !immobileType[itId].typeUsable) {
 			continue;
 		}
 
 		STerrainMapMobileType::Id mtId = cdef->GetMobileId();
 		if (mtId < 0) {
 			factoryBuilds.push_back(cdef->GetId());
-			percents[cdef->GetId()] = (40.0 + rand() / (float)RAND_MAX * 40.0);
+			percents[cdef->GetId()] = 50.0 + rand() / (float)RAND_MAX * 50.0;
 		} else if (mobileType[mtId].typeUsable) {
 			factoryBuilds.push_back(cdef->GetId());
-			percents[cdef->GetId()] = mobileType[mtId].areaLargest->percentOfMap;
+			float shift = rand() / (float)RAND_MAX * 40.0 - 20.0;
+			percents[cdef->GetId()] = mobileType[mtId].areaLargest->percentOfMap + shift;
 		}
 	}
 	auto cmp = [circuit, &percents](const CCircuitDef::Id aId, const CCircuitDef::Id bId) {
@@ -163,9 +164,16 @@ CCircuitUnit* CAllyTeam::GetFriendlyUnit(CCircuitUnit::Id unitId) const
 	return (it != friendlyUnits.end()) ? it->second : nullptr;
 }
 
-CCircuitDef* CAllyTeam::GetFactoryToBuild(CCircuitAI* circuit) const
+CCircuitDef* CAllyTeam::GetFactoryToBuild(CCircuitAI* circuit)
 {
-	return circuit->GetCircuitDef(factoryBuilds[factoryIdx]);
+	for (int i = 0; i < factoryBuilds.size(); ++i) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(factoryBuilds[factoryIdx]);
+		if (cdef->IsAvailable()) {
+			return cdef;
+		}
+		AdvanceFactoryIdx();
+	}
+	return nullptr;
 }
 
 } // namespace circuit
