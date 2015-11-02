@@ -594,11 +594,10 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	// check buildpower
 	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome()) * ecoFactor;
 	CCircuitDef* assistDef = factoryManager->GetAssistDef();
-	float factoryFactor = (metalIncome - assistDef->GetUnitDef()->GetBuildSpeed()) * 1.5f;
-	if ((factoryManager->GetFactoryPower() >= factoryFactor) ||
-		!builderManager->GetTasks(IBuilderTask::BuildType::FACTORY).empty() ||
-		!builderManager->GetTasks(IBuilderTask::BuildType::NANO).empty())
-	{
+	float factoryFactor = (metalIncome - assistDef->GetBuildSpeed()) * 1.5f;
+	const int nanoSize = builderManager->GetTasks(IBuilderTask::BuildType::NANO).size();
+	float factoryPower = factoryManager->GetFactoryPower() + nanoSize * assistDef->GetBuildSpeed();
+	if ((factoryPower >= factoryFactor) || !builderManager->GetTasks(IBuilderTask::BuildType::FACTORY).empty()) {
 		return nullptr;
 	}
 

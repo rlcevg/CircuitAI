@@ -33,6 +33,7 @@ public:
 	springai::UnitDef* GetUnitDef() const { return def; }
 	const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
 	float GetBuildDistance() const { return buildDistance; }
+	float GetBuildSpeed() const { return buildSpeed; }
 	inline bool CanBuild(Id buildDefId) const;
 	inline bool CanBuild(CCircuitDef* buildDef) const;
 	int GetCount() const { return count; }
@@ -76,11 +77,14 @@ public:
 	float GetLosRadius() const { return losRadius; }
 	float GetCost()      const { return cost; }
 
+	const springai::AIFloat3& GetMidPosOffset() const { return midPosOffset; }
+
 private:
 	Id id;
 	springai::UnitDef* def;  // owner
 	std::unordered_set<Id> buildOptions;
 	float buildDistance;
+	float buildSpeed;
 	int count;
 	int buildCounts;  // number of builder defs able to build this def;
 
@@ -105,6 +109,8 @@ private:
 
 	float losRadius;
 	float cost;
+
+	springai::AIFloat3 midPosOffset;
 };
 
 inline bool CCircuitDef::CanBuild(Id buildDefId) const

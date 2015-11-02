@@ -35,9 +35,8 @@ CRecruitTask::~CRecruitTask()
 
 bool CRecruitTask::CanAssignTo(CCircuitUnit* unit)
 {
-	Unit* u = unit->GetUnit();
-	const AIFloat3& pos = u->GetPos();
-	return position.SqDistance2D(pos) <= sqradius;
+	return (target == nullptr) && unit->GetCircuitDef()->CanBuild(buildDef) &&
+			position.SqDistance2D(unit->GetUnit()->GetPos()) <= sqradius;
 }
 
 void CRecruitTask::Execute(CCircuitUnit* unit)
@@ -65,31 +64,6 @@ void CRecruitTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 void CRecruitTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	RemoveAssignee(unit);
-}
-
-const AIFloat3& CRecruitTask::GetTaskPos() const
-{
-	return position;
-}
-
-CCircuitDef* CRecruitTask::GetBuildDef() const
-{
-	return buildDef;
-}
-
-CRecruitTask::BuildType CRecruitTask::GetBuildType() const
-{
-	return buildType;
-}
-
-void CRecruitTask::SetTarget(CCircuitUnit* unit)
-{
-	target = unit;
-}
-
-CCircuitUnit* CRecruitTask::GetTarget() const
-{
-	return target;
 }
 
 } // namespace circuit

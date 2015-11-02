@@ -311,7 +311,7 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	float totalCost = .0f;
 	IBuilderTask* parentTask = nullptr;
 	bool isWater = circuit->GetTerrainManager()->IsWaterSector(pos);
-	std::array<const char*, 8> landDefenders = {"corllt", "corrad", "armartic", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
+	std::array<const char*, 8> landDefenders = {"corllt", "corrad", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
 	std::array<const char*, 8> waterDefenders = {"turrettorp", "armsonar", "corllt", "corrad", "corrazor", "armnanotc", "turrettorp", "corhlt"};
 	std::array<const char*, 8>& defenders = isWater ? waterDefenders : landDefenders;
 	for (const char* name : defenders) {

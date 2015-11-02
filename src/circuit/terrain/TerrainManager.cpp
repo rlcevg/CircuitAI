@@ -79,7 +79,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 
 	cdef = circuit->GetCircuitDef("striderhub");
 	def = cdef->GetUnitDef();
-	radius = 250 /*cdef->GetBuildDistance()*/ / (SQUARE_SIZE * 2);
+	radius = 220 /*cdef->GetBuildDistance()*/ / (SQUARE_SIZE * 2);
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(NONE);
@@ -1219,6 +1219,9 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 		}
 	} else if (immobileType != nullptr) {  // buildings
 		sector = GetClosestSector(immobileType, iS);
+		if (sector == nullptr) {
+			return false;  // do not use buildings with typeUsable=false
+		}
 	} else {
 		return true;  // flying units
 	}

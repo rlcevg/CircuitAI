@@ -73,6 +73,8 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 	defence = std::make_shared<CDefenceMatrix>(circuit);
 	pathfinder = std::make_shared<CPathFinder>(&circuit->GetGameAttribute()->GetTerrainData());
 
+	// TODO: Move factory selection into CFactoryManager?
+	//       Can't figure how as this should work per ally team.
 	const char* factories[] = {
 		"factorycloak",
 		"factoryamph",

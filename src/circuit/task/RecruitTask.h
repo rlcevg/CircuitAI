@@ -33,13 +33,13 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
 
-	const springai::AIFloat3& GetTaskPos() const;
-	CCircuitDef* GetBuildDef() const;
+	const springai::AIFloat3& GetTaskPos() const { return position; }
+	CCircuitDef* GetBuildDef() const { return buildDef; }
 
-	BuildType GetBuildType() const;
+	BuildType GetBuildType() const { return buildType; }
 
-	void SetTarget(CCircuitUnit* unit);
-	CCircuitUnit* GetTarget() const;
+	void SetTarget(CCircuitUnit* unit) { target = unit; }
+	CCircuitUnit* GetTarget() const { return target; }
 
 private:
 	springai::AIFloat3 position;

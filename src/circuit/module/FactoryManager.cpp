@@ -60,7 +60,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 
 		unit->GetUnit()->SetFireState(2);
 
-		factoryPower += unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+		factoryPower += unit->GetCircuitDef()->GetBuildSpeed();
 
 		// check nanos around
 		std::set<CCircuitUnit*> nanos;
@@ -80,7 +80,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 
 				std::set<CCircuitUnit*>& facs = assists[ass];
 				if (facs.empty()) {
-					factoryPower += ass->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+					factoryPower += ass->GetCircuitDef()->GetBuildSpeed();
 				}
 				facs.insert(unit);
 			}
@@ -119,7 +119,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		if (task == nullTask) {  // alternative: unit->GetUnit()->IsBeingBuilt()
 			return;
 		}
-		factoryPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+		factoryPower -= unit->GetCircuitDef()->GetBuildSpeed();
 		for (auto it = factories.begin(); it != factories.end(); ++it) {
 			if (it->unit != unit) {
 				continue;
@@ -128,7 +128,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 				std::set<CCircuitUnit*>& facs = assists[ass];
 				facs.erase(unit);
 				if (facs.empty()) {
-					factoryPower -= ass->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+					factoryPower -= ass->GetCircuitDef()->GetBuildSpeed();
 				}
 			}
 			factories.erase(it);
@@ -172,7 +172,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			facs.insert(fac.unit);
 		}
 		if (!facs.empty()) {
-			factoryPower += unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+			factoryPower += unit->GetCircuitDef()->GetBuildSpeed();
 
 			bool isInHaven = false;
 			for (const AIFloat3& hav : havens) {
@@ -216,7 +216,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			}
 		}
 		if (!assists[unit].empty()) {
-			factoryPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+			factoryPower -= unit->GetCircuitDef()->GetBuildSpeed();
 		}
 		assists.erase(unit);
 	};
@@ -349,7 +349,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			//swift,     hawk,      raven,     phoenix,    thunderbird,         wyvern,    vulture
 			{"fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "corawac"},
 			{.64,       .10,       .20,       .01,        .05,                 .00,       .00},
-			{.10,       .10,       .10,       .10,        .10,                 .40,       .10},
+			{.10,       .10,       .10,       .10,        .10,                 .50,       .00},  // FIXME: Separate RaidTask from ScoutTask, then add vulture
 			[](CEconomyManager* mgr) {
 				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
 			}
@@ -387,7 +387,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 	finishedHandler[defId] = [this, defId](CCircuitUnit* unit) {
 		unit->SetManager(this);
 
-		factoryPower += unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+		factoryPower += unit->GetCircuitDef()->GetBuildSpeed();
 		Unit* u = unit->GetUnit();
 		CRecruitTask* task = new CRecruitTask(this, IUnitTask::Priority::HIGH, nullptr, ZeroVector, CRecruitTask::BuildType::FIREPOWER, unit->GetCircuitDef()->GetBuildDistance());
 		unit->SetTask(task);
@@ -409,7 +409,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 
 				std::set<CCircuitUnit*>& facs = assists[ass];
 				if (facs.empty()) {
-					factoryPower += ass->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+					factoryPower += ass->GetCircuitDef()->GetBuildSpeed();
 				}
 				facs.insert(unit);
 			}
@@ -435,9 +435,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		const std::array<float, 10> lp1 = {.10,          .30,        .25,     .07,        .10,         .15,        .03,       .00,          .00,    .00};
 		const std::array<float, 10> wp0 = {.50,          .00,        .00,     .00,        .00,         .00,        .00,       .00,          .25,    .25};
 		const std::array<float, 10> wp1 = {.10,          .00,        .00,     .00,        .00,         .00,        .10,       .00,          .40,    .40};
-		const std::array<float, 10>& prob0 = isWater ? wp0 : lp0;
-		const std::array<float, 10>& prob1 = isWater ? wp1 : lp1;
-		const std::array<float, 10>& prob = (metalIncome < 100) ? prob0 : prob1;
+		const std::array<float, 10>& prob = (metalIncome < 100) ? (isWater ? wp0 : lp0) : (isWater ? wp1 : lp1);
 		int choice = 0;
 		float dice = rand() / (float)RAND_MAX;
 		float total;
@@ -458,7 +456,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		if (unit->GetUnit()->IsBeingBuilt()) {
 			return;
 		}
-		factoryPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+		factoryPower -= unit->GetCircuitDef()->GetBuildSpeed();
 		for (auto it = factories.begin(); it != factories.end(); ++it) {
 			if (it->unit != unit) {
 				continue;
@@ -467,7 +465,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 				std::set<CCircuitUnit*>& facs = assists[ass];
 				facs.erase(unit);
 				if (facs.empty()) {
-					factoryPower -= ass->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+					factoryPower -= ass->GetCircuitDef()->GetBuildSpeed();
 				}
 			}
 			factories.erase(it);

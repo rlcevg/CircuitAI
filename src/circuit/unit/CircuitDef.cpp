@@ -13,16 +13,16 @@
 #include "WeaponDef.h"
 #include "Damage.h"
 
+#include <regex>
+
 namespace circuit {
 
 using namespace springai;
 
 CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts, Resource* res)
-		: id(def->GetUnitDefId())
-		, def(def)
+		: def(def)
 		, count(0)
 		, buildOptions(buildOpts)
-		, buildDistance(def->GetBuildDistance())
 		, buildCounts(0)
 //		, dgunReload(-1)
 		, dgunRange(.0f)
@@ -32,6 +32,11 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, mobileTypeId(-1)
 		, immobileTypeId(-1)
 {
+	id = def->GetUnitDefId();
+
+	buildDistance = def->GetBuildDistance();
+	buildSpeed = def->GetBuildSpeed();
+
 	if (def->CanManualFire()) {
 		float bestReload = std::numeric_limits<float>::max();
 		float bestRange;
@@ -126,6 +131,22 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		category = ~circuit->GetGoodCategory();
 	} else {
 		category = def->GetCategory();
+	}
+
+	it = customParams.find("midposoffset");
+	if (it != customParams.end()) {
+		const std::string& str = it->second;
+		std::string::const_iterator start = str.begin();
+		std::string::const_iterator end = str.end();
+		std::regex pattern("(-?\\d+)");
+		std::smatch section;
+		int index = 0;
+		while (std::regex_search(start, end, section, pattern)) {
+			midPosOffset[index++] = utils::string_to_float(section[1]);
+			start = section[0].second;
+		}
+	} else {
+		midPosOffset = ZeroVector;
 	}
 
 	// NOTE: isTracks filters units with slow weapon (hermit, recluse, rocko)

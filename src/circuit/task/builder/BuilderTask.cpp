@@ -63,7 +63,7 @@ void IBuilderTask::AssignTo(CCircuitUnit* unit)
 
 	IUnitTask::AssignTo(unit);
 
-	buildPower += unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+	buildPower += unit->GetCircuitDef()->GetBuildSpeed();
 	if (position == -RgtVector) {
 		position = unit->GetUnit()->GetPos();
 	}
@@ -77,7 +77,7 @@ void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 		lastTouched = manager->GetCircuit()->GetLastFrame();
 	}
 
-	buildPower -= unit->GetCircuitDef()->GetUnitDef()->GetBuildSpeed();
+	buildPower -= unit->GetCircuitDef()->GetBuildSpeed();
 }
 
 void IBuilderTask::Execute(CCircuitUnit* unit)
@@ -244,11 +244,6 @@ void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 	}
 }
 
-const AIFloat3& IBuilderTask::GetPosition() const
-{
-	return (buildPos != -RgtVector) ? buildPos : position;
-}
-
 void IBuilderTask::SetTarget(CCircuitUnit* unit)
 {
 	target = unit;
@@ -265,8 +260,30 @@ void IBuilderTask::UpdateTarget(CCircuitUnit* unit)
 	}
 }
 
-bool IBuilderTask::IsEqualBuildPos(const AIFloat3& pos) const
+bool IBuilderTask::IsEqualBuildPos(CCircuitUnit* unit) const
 {
+	AIFloat3 pos = unit->GetUnit()->GetPos();
+	const AIFloat3& offset = unit->GetCircuitDef()->GetMidPosOffset();
+	int facing = unit->GetUnit()->GetBuildingFacing();
+	switch (facing) {
+		default:
+		case UNIT_FACING_SOUTH: {
+			pos.x -= offset.x;
+			pos.z -= offset.z;
+		} break;
+		case UNIT_FACING_EAST: {
+			pos.x -= offset.z;
+			pos.z += offset.x;
+		} break;
+		case UNIT_FACING_NORTH: {
+			pos.x += offset.x;
+			pos.z += offset.z;
+		} break;
+		case UNIT_FACING_WEST: {
+			pos.x += offset.z;
+			pos.z -= offset.x;
+		} break;
+	}
 	return (math::fabs(pos.x - buildPos.x) <= SQUARE_SIZE) && (math::fabs(pos.z - buildPos.z) <= SQUARE_SIZE);
 }
 

@@ -64,13 +64,13 @@ public:
 
 	void SetBuildPos(const springai::AIFloat3& pos) { buildPos = pos; }
 	const springai::AIFloat3& GetBuildPos() const { return buildPos; }
-	const springai::AIFloat3& GetPosition() const;  // return buildPos if set, position otherwise
+	const springai::AIFloat3& GetPosition() const { return (buildPos != -RgtVector) ? buildPos : position; }
 
 	virtual void SetTarget(CCircuitUnit* unit);
 	CCircuitUnit* GetTarget() const { return target; }
 	void UpdateTarget(CCircuitUnit* unit);
 
-	bool IsEqualBuildPos(const springai::AIFloat3& pos) const;
+	bool IsEqualBuildPos(CCircuitUnit* unit) const;
 	bool IsStructure() const { return buildType <= BuildType::MEX; }
 
 	void SetFacing(int value) { facing = value; }
