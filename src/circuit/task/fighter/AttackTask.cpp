@@ -96,6 +96,9 @@ CEnemyUnit* CAttackTask::FindBestTarget(CCircuitUnit* unit, float& minSqDist)
 		{
 			continue;
 		}
+		if (((canTargetCat & circuit->GetWaterCategory()) == 0) && (enemy->GetPos().y < -SQUARE_SIZE * 4)) {
+			continue;
+		}
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if ((edef != nullptr) && ((edef->GetCategory() & canTargetCat) == 0)) {
 			continue;

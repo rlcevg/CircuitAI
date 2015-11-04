@@ -37,31 +37,9 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	buildDistance = def->GetBuildDistance();
 	buildSpeed = def->GetBuildSpeed();
 
-	if (def->CanManualFire()) {
-		float bestReload = std::numeric_limits<float>::max();
-		float bestRange;
-		WeaponMount* bestMount = nullptr;
-		auto mounts = std::move(def->GetWeaponMounts());
-		for (WeaponMount* mount : mounts) {
-			WeaponDef* wd = mount->GetWeaponDef();
-			float reload;
-			if (wd->IsManualFire() && ((reload = wd->GetReload()) < bestReload)) {
-				bestReload = reload;
-				bestRange = wd->GetRange();
-				delete bestMount;
-				bestMount = mount;
-			} else {
-				delete mount;
-			}
-			delete wd;
-		}
-		if (bestReload < std::numeric_limits<float>::max()) {
-//			dgunReload = math::ceil(bestReload * FRAMES_PER_SEC)/* + FRAMES_PER_SEC*/;
-			dgunRange = bestRange;
-			dgunMount = bestMount;
-		}
-	}
-
+	float bestReload = std::numeric_limits<float>::max();
+	float bestRange;
+	WeaponMount* bestMount = nullptr;
 	bool isTracks = false;
 //	bool isWater = false;
 	auto mounts = std::move(def->GetWeaponMounts());
@@ -120,9 +98,25 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		isTracks |= (weaponType == "BeamLaser") || (weaponType == "LightningCannon") || (weaponType == "Rifle");
 //		isWater |= wd->IsWaterWeapon();
 
+		float reload;
+		if (wd->IsManualFire() && ((reload = wd->GetReload()) < bestReload)) {
+			bestReload = reload;
+			bestRange = wd->GetRange();
+			delete bestMount;
+			bestMount = mount;
+		} else {
+			delete mount;
+		}
 		delete wd;
-		delete mount;
 	}
+
+	isManualFire = def->CanManualFire();
+	if (bestReload < std::numeric_limits<float>::max()) {
+//		dgunReload = math::ceil(bestReload * FRAMES_PER_SEC)/* + FRAMES_PER_SEC*/;
+		dgunRange = bestRange;
+		dgunMount = bestMount;
+	}
+
 	noChaseCategory = def->GetNoChaseCategory();
 
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
@@ -160,7 +154,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 	if (isMobile && (dps < 0.1f)) {  // mobile bombs
 		WeaponDef* wd = def->GetDeathExplosion();
-		if (wd->GetAreaOfEffect() > 100.0f) {
+		if (wd->GetAreaOfEffect() > 80.0f) {
 			Damage* damage = wd->GetDamage();
 			const std::vector<float>& damages = damage->GetTypes();
 			delete damage;

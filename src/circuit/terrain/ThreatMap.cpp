@@ -20,6 +20,7 @@ namespace circuit {
 using namespace springai;
 
 #define THREAT_VAL_BASE		1.0f
+#define THREAT_DECAY		0.05f
 
 CThreatMap::CThreatMap(CCircuitAI* circuit)
 		: circuit(circuit)
@@ -30,14 +31,15 @@ CThreatMap::CThreatMap(CCircuitAI* circuit)
 	squareSize = circuit->GetTerrainManager()->GetConvertStoP();
 	width = circuit->GetTerrainManager()->GetTerrainWidth() / squareSize;
 	height = circuit->GetTerrainManager()->GetTerrainHeight() / squareSize;
+	mapSize = width * height;
 
 	rangeDefault = (DEFAULT_SLACK * 4) / squareSize;
 	distCloak = (DEFAULT_SLACK * 3) / squareSize;
 
-	airThreat.resize(width * height, THREAT_VAL_BASE);
-	landThreat.resize(width * height, THREAT_VAL_BASE);
-	waterThreat.resize(width * height, THREAT_VAL_BASE);
-	cloakThreat.resize(width * height, THREAT_VAL_BASE);
+	airThreat.resize(mapSize, THREAT_VAL_BASE);
+	landThreat.resize(mapSize, THREAT_VAL_BASE);
+	waterThreat.resize(mapSize, THREAT_VAL_BASE);
+	cloakThreat.resize(mapSize, THREAT_VAL_BASE);
 	threatArray = &landThreat[0];
 
 	Map* map = circuit->GetMap();
@@ -120,6 +122,14 @@ void CThreatMap::Update()
 				AddDecloaker(e);
 			}
 		}
+	}
+
+	// decay whole threatMap to compensate for precision errors
+	for (int index = 0; index < mapSize; ++index) {
+		airThreat[index]   = std::max<float>(airThreat[index]   - THREAT_DECAY, THREAT_VAL_BASE);
+		landThreat[index]  = std::max<float>(landThreat[index]  - THREAT_DECAY, THREAT_VAL_BASE);
+		waterThreat[index] = std::max<float>(waterThreat[index] - THREAT_DECAY, THREAT_VAL_BASE);
+		// except for cloakThreat
 	}
 
 #ifdef DEBUG_VIS
@@ -323,7 +333,7 @@ float CThreatMap::GetThreatAt(CCircuitUnit* unit, const AIFloat3& position) cons
 
 float CThreatMap::GetUnitThreat(CCircuitUnit* unit) const
 {
-	return unit->GetDPS() * unit->GetUnit()->GetHealth()/* / unit->GetUnit()->GetMaxHealth()*/;
+	return unit->GetDPS() * sqrtf(unit->GetUnit()->GetHealth() / 100.0f);  // / unit->GetUnit()->GetMaxHealth();
 }
 
 void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, const float scale)
@@ -351,8 +361,8 @@ void CThreatMap::AddEnemyUnitAll(const CEnemyUnit* e, const float scale)
 	const int posx = (int)e->GetPos().x / squareSize;
 	const int posz = (int)e->GetPos().z / squareSize;
 
-	const float threat = e->GetThreat() * scale/* - 0.1f*/;
-	const float threatCloak = 10.0f * scale;
+	const float threat = e->GetThreat() * scale/* - THREAT_DECAY*/;
+	const float threatCloak = 8.0f * scale;
 	const int rangeSq = e->GetRange() * e->GetRange();
 	const int rangeCloakSq = e->GetDecloakRange() * e->GetDecloakRange();
 
@@ -370,12 +380,12 @@ void CThreatMap::AddEnemyUnitAll(const CEnemyUnit* e, const float scale)
 			const int sum = dxSq + dzSq;
 			if (sum <= rangeSq) {
 				const int index = z * width + x;
-				airThreat[index]   = std::max(airThreat[index]   + threat, THREAT_VAL_BASE);
-				landThreat[index]  = std::max(landThreat[index]  + threat, THREAT_VAL_BASE);
-				waterThreat[index] = std::max(waterThreat[index] + threat, THREAT_VAL_BASE);
+				airThreat[index]   = std::max<float>(airThreat[index]   + threat, THREAT_VAL_BASE);
+				landThreat[index]  = std::max<float>(landThreat[index]  + threat, THREAT_VAL_BASE);
+				waterThreat[index] = std::max<float>(waterThreat[index] + threat, THREAT_VAL_BASE);
 
 				if (sum <= rangeCloakSq) {  // Assuming decloak range <= weapon range
-					cloakThreat[index] = std::max(cloakThreat[index] + threatCloak, THREAT_VAL_BASE);
+					cloakThreat[index] = std::max<float>(cloakThreat[index] + threatCloak, THREAT_VAL_BASE);
 				}
 			}
 		}
@@ -387,7 +397,7 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, Threats& threats, const float
 	const int posx = (int)e->GetPos().x / squareSize;
 	const int posz = (int)e->GetPos().z / squareSize;
 
-	const float threat = e->GetThreat() * scale/* - 0.1f*/;
+	const float threat = e->GetThreat() * scale/* - THREAT_DECAY*/;
 	const int rangeSq = e->GetRange() * e->GetRange();
 
 	// Threat circles are large, decrease it by 1 for micro-optimization
@@ -407,7 +417,7 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, Threats& threats, const float
 				// (which may arise due to floating-point drift)
 				// nor with zero-cost nodes (see MP::SetMapData,
 				// threat is not used as an additive overlay)
-				threats[index] = std::max(threats[index] + threat, THREAT_VAL_BASE);
+				threats[index] = std::max<float>(threats[index] + threat, THREAT_VAL_BASE);
 
 //				currSumThreat += threat;
 			}
@@ -422,7 +432,7 @@ void CThreatMap::AddDecloaker(const CEnemyUnit* e, const float scale)
 	const int posx = (int)e->GetPos().x / squareSize;
 	const int posz = (int)e->GetPos().z / squareSize;
 
-	const float threatCloak = 10.0f * scale;
+	const float threatCloak = 8.0f * scale;
 	const int rangeCloakSq = e->GetDecloakRange() * e->GetDecloakRange();
 
 	// Decloak ranges are small, full range shouldn't hit performance
@@ -438,7 +448,7 @@ void CThreatMap::AddDecloaker(const CEnemyUnit* e, const float scale)
 
 			if (dxSq + dzSq <= rangeCloakSq) {
 				const int index = z * width + x;
-				cloakThreat[index] = std::max(cloakThreat[index] + threatCloak, THREAT_VAL_BASE);
+				cloakThreat[index] = std::max<float>(cloakThreat[index] + threatCloak, THREAT_VAL_BASE);
 			}
 		}
 	}
@@ -468,7 +478,11 @@ float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
 		return THREAT_VAL_BASE;  // or 0
 	}
 	const float dps = std::min(enemy->GetDPS(), 2000.0f);
-	const float dpsMod = std::max(enemy->GetUnit()->GetHealth(), .0f)/* / enemy->GetUnit()->GetMaxHealth()*/;
+	const float health = enemy->GetUnit()->GetHealth();
+	if (health <= .0f) {
+		return .0f;
+	}
+	const float dpsMod = sqrtf(health / 100.0f);  // / enemy->GetUnit()->GetMaxHealth();
 	return dps * dpsMod;
 }
 
@@ -506,25 +520,25 @@ void CThreatMap::UpdateVis()
 	float* dbgMap;
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[0];
 	for (int i = 0; i < airThreat.size(); ++i) {
-		dbgMap[i] = std::min((airThreat[i] - THREAT_VAL_BASE) / 40000.0f /*currMaxThreat*/, 1.0f);
+		dbgMap[i] = std::min<float>((airThreat[i] - THREAT_VAL_BASE) / 40.0f /*currMaxThreat*/, 1.0f);
 	}
 	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap);
 
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[1];
 	for (int i = 0; i < landThreat.size(); ++i) {
-		dbgMap[i] = std::min((landThreat[i] - THREAT_VAL_BASE) / 40000.0f, 1.0f);
+		dbgMap[i] = std::min<float>((landThreat[i] - THREAT_VAL_BASE) / 40.0f, 1.0f);
 	}
 	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap);
 
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[2];
 	for (int i = 0; i < waterThreat.size(); ++i) {
-		dbgMap[i] = std::min((waterThreat[i] - THREAT_VAL_BASE) / 40000.0f, 1.0f);
+		dbgMap[i] = std::min<float>((waterThreat[i] - THREAT_VAL_BASE) / 40.0f, 1.0f);
 	}
 	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap);
 
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[3];
 	for (int i = 0; i < cloakThreat.size(); ++i) {
-		dbgMap[i] = std::min((cloakThreat[i] - THREAT_VAL_BASE) / 10.0f, 1.0f);
+		dbgMap[i] = std::min<float>((cloakThreat[i] - THREAT_VAL_BASE) / 8.0f, 1.0f);
 	}
 	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap);
 }

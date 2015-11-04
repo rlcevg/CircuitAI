@@ -53,9 +53,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		}
 
 		if (unit->GetCircuitDef()->IsAbleToFly()) {
-			std::vector<float> params;
-			params.push_back(2.0f);
-			unit->GetUnit()->ExecuteCustomCommand(CMD_RETREAT, params);
+			unit->GetUnit()->ExecuteCustomCommand(CMD_RETREAT, {2.0f});
 		}
 	};
 	auto attackerIdleHandler = [this](CCircuitUnit* unit) {
@@ -311,9 +309,9 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	float totalCost = .0f;
 	IBuilderTask* parentTask = nullptr;
 	bool isWater = circuit->GetTerrainManager()->IsWaterSector(pos);
-	std::array<const char*, 8> landDefenders = {"corllt", "corrad", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
-	std::array<const char*, 8> waterDefenders = {"turrettorp", "armsonar", "corllt", "corrad", "corrazor", "armnanotc", "turrettorp", "corhlt"};
-	std::array<const char*, 8>& defenders = isWater ? waterDefenders : landDefenders;
+	std::array<const char*, 9> landDefenders = {"corllt", "corrad", "corrl", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
+	std::array<const char*, 9> waterDefenders = {"turrettorp", "armsonar", "corllt", "corrad", "corrazor", "armnanotc", "turrettorp", "corhlt", "turrettorp"};
+	std::array<const char*, 9>& defenders = isWater ? waterDefenders : landDefenders;
 	for (const char* name : defenders) {
 		defDef = circuit->GetCircuitDef(name);
 		float defCost = defDef->GetCost();

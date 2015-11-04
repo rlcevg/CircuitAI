@@ -158,7 +158,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap)
 		costArray = threatMap->GetCloakThreatArray();
 	} else if (cdef->IsAbleToFly()) {
 		costArray = threatMap->GetAirThreatArray();
-	} else if (unit->GetUnit()->GetPos().y < -10.0f) {
+	} else if (unit->GetUnit()->GetPos().y < -SQUARE_SIZE * 4) {
 		costArray = threatMap->GetWaterThreatArray();
 	} else {
 		costArray = threatMap->GetLandThreatArray();

@@ -11,7 +11,6 @@
 #include "util/utils.h"
 
 #include "OOAICallback.h"
-#include "AISCommands.h"
 #include "Weapon.h"
 #include "Drawer.h"
 
@@ -68,7 +67,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 		CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, unit->GetUnit(), 0);
 
 		if (hitUID == enemy->GetId()) {
-			unit->GetUnit()->DGun(e, UNIT_COMMAND_OPTION_ALT_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 5);
+			unit->ManualFire(e, circuit->GetLastFrame() + FRAMES_PER_SEC * 5);
 			isBlocking = true;
 			break;
 		}

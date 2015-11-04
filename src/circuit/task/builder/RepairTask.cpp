@@ -46,10 +46,7 @@ void CBRepairTask::Execute(CCircuitUnit* unit)
 	CCircuitUnit* target = manager->GetCircuit()->GetFriendlyUnit(targetId);
 	if (target != nullptr) {
 		Unit* u = unit->GetUnit();
-		std::vector<float> params;
-		params.push_back(static_cast<float>(priority));
-		u->ExecuteCustomCommand(CMD_PRIORITY, params);
-
+		u->ExecuteCustomCommand(CMD_PRIORITY, {static_cast<float>(priority)});
 		u->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
 	} else {
 		manager->AbortTask(this);

@@ -63,7 +63,7 @@ bool CEnemyUnit::IsDisarmed()
 float CEnemyUnit::GetDPS()
 {
 	if (circuitDef == nullptr) {  // unknown enemy is a threat
-		return 10.0f;
+		return 16.0f;
 	}
 	float dps = circuitDef->GetDPS();
 	if (dps < 0.1f) {

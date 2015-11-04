@@ -608,6 +608,23 @@ int CCircuitAI::Message(int playerId, const char* message)
 		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
 		LOG("%f, %f, %f, %i", endPos.x, endPos.y, endPos.z, pathfinder->GetDbgType());
 	}
+	// FIXME: DEBUG
+	else if (strncmp(message, "~mex", 4) == 0) {
+		int index = metalManager->FindNearestSpot(map->GetMousePos());
+		LOG("%i", metalManager->IsOpenSpot(index));
+		const CMetalData::Metals& spots = metalManager->GetSpots();
+		CCircuitUnit* unit = nullptr;
+		auto selection = std::move(callback->GetSelectedUnits());
+		if (!selection.empty()) {
+			unit = GetTeamUnit(selection[0]->GetUnitId());
+			utils::free_clear(selection);
+			LOG("%i", terrainManager->CanBuildAt(unit, spots[index].position));
+			LOG("%f", threatMap->GetThreatAt(spots[index].position));
+		}
+		UnitDef* metalDef = GetCircuitDef("cormex")->GetUnitDef();
+		LOG("%i", map->IsPossibleToBuildAt(metalDef, spots[index].position, -1));
+	}
+	// FIXME: DEBUG
 #endif
 
 	return 0;  // signaling: OK

@@ -468,7 +468,7 @@ void CEnergyGrid::UpdateVis()
 			height = 18.0f;
 		}
 		AIFloat3 pos0 = link.GetV0()->pos;
-		const AIFloat3 dir = (link.GetV1()->pos - pos0) / 10.0f;
+		const AIFloat3 dir = (link.GetV1()->pos - pos0) / 10;
 		pos0.y = map->GetElevationAt(pos0.x, pos0.z) + height;
 		for (int i = 0; i < 10; ++i) {
 			AIFloat3 pos1 = pos0 + dir;
@@ -491,7 +491,7 @@ void CEnergyGrid::UpdateVis()
 		const AIFloat3& posFrom = clusters[boost::source(edge, clusterGraph)].geoCentr;
 		const AIFloat3& posTo = clusters[boost::target(edge, clusterGraph)].geoCentr;
 		AIFloat3 pos0 = posFrom;
-		const AIFloat3 dir = (posTo - pos0) / 10.0f;
+		const AIFloat3 dir = (posTo - pos0) / 10;
 		pos0.y = map->GetElevationAt(pos0.x, pos0.z) + 19.0f;
 		for (int i = 0; i < 10; ++i) {
 			AIFloat3 pos1 = pos0 + dir;

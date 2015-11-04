@@ -138,9 +138,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		// TODO: Add fail counter?
 	} else {
 		// TODO: push WaitAction into unit
-		std::vector<float> params;
-		params.push_back(0.0f);
-		u->ExecuteCustomCommand(CMD_PRIORITY, params);
+		u->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
 
 		AIFloat3 pos = unitPos;
 		const float size = SQUARE_SIZE * 50;

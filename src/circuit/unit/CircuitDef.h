@@ -53,6 +53,7 @@ public:
 	void DecBuild() { --buildCounts; }
 	int GetBuildCount() const { return buildCounts; }
 
+	bool IsManualFire() const { return isManualFire; }
 //	int GetDGunReload() const { return dgunReload; }
 	float GetDGunRange() const { return dgunRange; }
 	springai::WeaponMount* GetDGunMount() const { return dgunMount; }
@@ -88,6 +89,7 @@ private:
 	int count;
 	int buildCounts;  // number of builder defs able to build this def;
 
+	bool isManualFire;
 //	int dgunReload;  // frames in ticks
 	float dgunRange;
 	springai::WeaponMount* dgunMount;

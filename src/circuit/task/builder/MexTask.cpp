@@ -39,10 +39,7 @@ CBMexTask::~CBMexTask()
 void CBMexTask::Execute(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();
-
-	std::vector<float> params;
-	params.push_back(static_cast<float>(priority));
-	u->ExecuteCustomCommand(CMD_PRIORITY, params);
+	u->ExecuteCustomCommand(CMD_PRIORITY, {static_cast<float>(priority)});
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	if (target != nullptr) {

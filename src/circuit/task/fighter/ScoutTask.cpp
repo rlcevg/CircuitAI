@@ -149,6 +149,9 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 		{
 			continue;
 		}
+		if (((canTargetCat & circuit->GetWaterCategory()) == 0) && (enemy->GetPos().y < -SQUARE_SIZE * 4)) {
+			continue;
+		}
 		int targetCat;
 		if (enemy->GetCircuitDef() != nullptr) {
 			targetCat = enemy->GetCircuitDef()->GetCategory();

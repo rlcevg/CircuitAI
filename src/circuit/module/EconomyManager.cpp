@@ -635,7 +635,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 
 	// check factories
 	CCircuitDef* striderDef = circuit->GetCircuitDef("striderhub");
-	bool isStriderValid = (factoryManager->GetFactoryCount() > 0) && (striderDef->GetCount() == 0) && striderDef->IsAvailable();
+	bool isStriderValid = (factoryManager->GetFactoryCount() > 1) && (striderDef->GetCount() == 0) && striderDef->IsAvailable();
 	CCircuitDef* facDef = isStriderValid ? striderDef : circuit->GetAllyTeam()->GetFactoryToBuild(circuit);
 	if (facDef != nullptr) {
 		CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {

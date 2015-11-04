@@ -53,6 +53,10 @@ public:
 	int GetSquareSize() const { return squareSize; }
 
 private:
+	/*
+	 * http://stackoverflow.com/questions/872544/precision-of-floating-point
+	 * Single precision: for accuracy of +/-0.5 (or 2^-1) the maximum size that the number can be is 2^23.
+	 */
 	using Threats = std::vector<float>;
 	CCircuitAI* circuit;
 
@@ -79,6 +83,7 @@ private:
 	int squareSize;
 	int width;
 	int height;
+	int mapSize;
 
 	int rangeDefault;
 	int distCloak;

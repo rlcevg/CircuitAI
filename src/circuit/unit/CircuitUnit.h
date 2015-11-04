@@ -25,6 +25,8 @@ namespace circuit {
 #define CMD_PRIORITY			34220
 #define CMD_MISC_PRIORITY		34221
 #define CMD_RETREAT				34223
+#define CMD_ONECLICK_WEAPON		35000
+#define CMD_JUMP				38521
 #define CMD_TERRAFORM_INTERNAL	39801
 
 class CCircuitDef;
@@ -61,6 +63,7 @@ public:
 	bool IsForceExecute();
 
 	springai::Weapon* GetDGun() const { return dgun; }
+	void ManualFire(springai::Unit* enemy, int timeOut);
 	bool IsDisarmed();
 	float GetDPS();
 

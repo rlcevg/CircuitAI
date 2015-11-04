@@ -79,11 +79,11 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 
 	cdef = circuit->GetCircuitDef("striderhub");
 	def = cdef->GetUnitDef();
-	radius = 220 /*cdef->GetBuildDistance()*/ / (SQUARE_SIZE * 2);
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	offset = int2(0, 0);
+	bsize = ssize + int2(10, 10);
+	offset = int2(0, 6);
 	ignoreMask = STRUCT_BIT(NONE);
-	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
+	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
 
 	cdef = circuit->GetCircuitDef("armsolar");
 	def = cdef->GetUnitDef();

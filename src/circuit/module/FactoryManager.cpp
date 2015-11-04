@@ -155,10 +155,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 
 		Unit* u = unit->GetUnit();
 		const AIFloat3& assPos = u->GetPos();
-
-		std::vector<float> params;
-		params.push_back(0.0f);
-		u->ExecuteCustomCommand(CMD_PRIORITY, params);
+		u->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
 
 		// check factory nano belongs to
 		float radius = unit->GetCircuitDef()->GetBuildDistance();
@@ -418,20 +415,19 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		utils::free_clear(units);
 		factories.emplace_back(unit, nanos, 9, false);
 
-		std::vector<float> params;
-		params.push_back(2.0f);
-		u->ExecuteCustomCommand(CMD_PRIORITY, params);
-
+		u->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
 //		u->SetRepeat(true);
+
 		idleHandler[defId](unit);
 	};
 	idleHandler[defId] = [this](CCircuitUnit* unit) {
+		CEconomyManager* economyManager = this->circuit->GetEconomyManager();
 		CTerrainManager* terrainManager = this->circuit->GetTerrainManager();
 		AIFloat3 pos = unit->GetUnit()->GetPos();
 		bool isWater = terrainManager->IsWaterSector(pos);
-		float metalIncome = this->circuit->GetEconomyManager()->GetAvgMetalIncome();
+		float metalIncome = economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor();
 		const char* names[]             = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"};
-		const std::array<float, 10> lp0 = {.01,          .30,        .39,     .10,        .10,         .10,        .00,       .00,          .00,    .00};
+		const std::array<float, 10> lp0 = {.01,          .10,        .69,     .05,        .10,         .05,        .00,       .00,          .00,    .00};
 		const std::array<float, 10> lp1 = {.10,          .30,        .25,     .07,        .10,         .15,        .03,       .00,          .00,    .00};
 		const std::array<float, 10> wp0 = {.50,          .00,        .00,     .00,        .00,         .00,        .00,       .00,          .25,    .25};
 		const std::array<float, 10> wp1 = {.10,          .00,        .00,     .00,        .00,         .00,        .10,       .00,          .40,    .40};

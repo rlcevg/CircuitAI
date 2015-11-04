@@ -10,6 +10,7 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+#include "AISCommands.h"
 #include "UnitRulesParam.h"
 #include "Weapon.h"
 
@@ -63,6 +64,15 @@ bool CCircuitUnit::IsForceExecute()
 	return result;
 }
 
+void CCircuitUnit::ManualFire(Unit* enemy, int timeOut)
+{
+	if (circuitDef->IsManualFire()) {
+		unit->DGun(enemy, UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
+	} else {
+		unit->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
+	}
+}
+
 bool CCircuitUnit::IsDisarmed()
 {
 	if (disarmParam == nullptr) {
@@ -90,19 +100,15 @@ float CCircuitUnit::GetDPS()
 void CCircuitUnit::Morph()
 {
 	isMorphing = true;
-	std::vector<float> params;
-	unit->ExecuteCustomCommand(CMD_MORPH, params);
-	params.push_back(.0f);
-	unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, params);
+	unit->ExecuteCustomCommand(CMD_MORPH, {});
+	unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, {0.0f});
 }
 
 void CCircuitUnit::StopMorph()
 {
 	isMorphing = false;
-	std::vector<float> params;
-	unit->ExecuteCustomCommand(CMD_MORPH_STOP, params);
-	params.push_back(1.0f);
-	unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, params);
+	unit->ExecuteCustomCommand(CMD_MORPH_STOP, {});
+	unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, {1.0f});
 }
 
 } // namespace circuit

@@ -46,10 +46,7 @@ void CBPatrolTask::RemoveAssignee(CCircuitUnit* unit)
 void CBPatrolTask::Execute(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();
-
-	std::vector<float> params;
-	params.push_back(0.0f);
-	u->ExecuteCustomCommand(CMD_PRIORITY, params);
+	u->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
 
 	const float size = SQUARE_SIZE * 100;
 	CTerrainManager* terrainManager = manager->GetCircuit()->GetTerrainManager();
