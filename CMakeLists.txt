@@ -2,10 +2,10 @@
 #
 
 set(mySourceDirRel         "src/") # Common values are "" or "src"
-set(additionalSources      ${CUtils_SRC})
+#set(additionalSources      ${CUtils_SRC})
 #set(additionalCompileFlags "-Isrc/lib/ -Isrc/circuit/ -O1 -DDEBUG -DDEBUG_VIS")
-set(additionalCompileFlags "-Isrc/lib/ -Isrc/circuit/ -DDEBUG_VIS")
-set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET})
+set(additionalCompileFlags "-I${CMAKE_CURRENT_SOURCE_DIR}/src/lib/ -I${CMAKE_CURRENT_SOURCE_DIR}/src/circuit/ -DDEBUG_VIS")
+set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils)
 
 
 if    (BUILD_Cpp_AIWRAPPER)
