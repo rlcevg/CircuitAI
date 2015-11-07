@@ -351,7 +351,7 @@ bool CCircuitAI::IsModValid()
 	delete mod;
 
 	if (strstr(name, "Zero-K") == nullptr) {
-		LOG("Only Zero-K mod is supported!");
+		LOG("Only Zero-K game is supported!");
 		return false;
 	}
 

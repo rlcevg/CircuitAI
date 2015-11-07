@@ -63,9 +63,9 @@ struct STerrainMapAreaSector {
 
 struct STerrainMapArea {
 	STerrainMapArea(STerrainMapMobileType* TMMobileType) :
+		areaUsable(false),
 		mobileType(TMMobileType),
-		percentOfMap(.0f),
-		areaUsable(false)
+		percentOfMap(.0f)
 	{};
 
 	bool areaUsable;  // Should units of this type be used in this area
@@ -84,13 +84,13 @@ struct STerrainMapMobileType {
 	STerrainMapMobileType() :
 		typeUsable(false),
 		areaLargest(nullptr),
-		udCount(0),
-		canFloat(false),
-		canHover(false),
-		minElevation(.0f),
-		maxElevation(.0f),
 		maxSlope(.0f),
-		moveData(nullptr)
+		maxElevation(.0f),
+		minElevation(.0f),
+		canHover(false),
+		canFloat(false),
+		moveData(nullptr),
+		udCount(0)
 	{};
 	~STerrainMapMobileType();
 
@@ -111,11 +111,11 @@ struct STerrainMapMobileType {
 
 struct STerrainMapSector {
 	STerrainMapSector() :
+		isWater(false),
 		percentLand(.0f),
-		maxSlope(.0f),
-		maxElevation(.0f),
 		minElevation(.0f),
-		isWater(false)
+		maxElevation(.0f),
+		maxSlope(.0f)
 	{};
 
 	bool isWater;  // (Water = true) (Land = false)
@@ -132,12 +132,12 @@ struct STerrainMapImmobileType {
 	using Id = int;
 
 	STerrainMapImmobileType() :
-		udCount(0),
-		canFloat(false),
-		canHover(false),
+		typeUsable(false),
 		minElevation(.0f),
 		maxElevation(.0f),
-		typeUsable(false)
+		canHover(false),
+		canFloat(false),
+		udCount(0)
 	{};
 
 	bool typeUsable;  // Should units of this type be used on this map
