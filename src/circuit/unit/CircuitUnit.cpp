@@ -26,10 +26,10 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* cdef)
 		, taskFrame(-1)
 		, manager(nullptr)
 		, area(nullptr)
-		, disarmParam(nullptr)
 		, moveFails(0)
 		, failFrame(-1)
 		, isForceExecute(false)
+		, disarmParam(nullptr)
 		, isMorphing(false)
 {
 	WeaponMount* wpMnt = circuitDef->GetDGunMount();
@@ -39,7 +39,9 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* cdef)
 CCircuitUnit::~CCircuitUnit()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	delete unit, dgun, disarmParam;
+	delete unit;
+	delete dgun;
+	delete disarmParam;
 }
 
 void CCircuitUnit::SetTask(IUnitTask* task)

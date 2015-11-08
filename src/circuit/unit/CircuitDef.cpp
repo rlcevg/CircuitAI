@@ -21,16 +21,16 @@ using namespace springai;
 
 CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts, Resource* res)
 		: def(def)
-		, count(0)
 		, buildOptions(buildOpts)
+		, count(0)
 		, buildCounts(0)
 //		, dgunReload(-1)
 		, dgunRange(.0f)
 		, dgunMount(nullptr)
 		, dps(.0f)
 		, targetCategory(0)
-		, mobileTypeId(-1)
 		, immobileTypeId(-1)
+		, mobileTypeId(-1)
 {
 	id = def->GetUnitDefId();
 
@@ -178,7 +178,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 CCircuitDef::~CCircuitDef()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	delete def, dgunMount;
+	delete def;
+	delete dgunMount;
 }
 
 CCircuitDef& CCircuitDef::operator++()

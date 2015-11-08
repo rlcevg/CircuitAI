@@ -47,12 +47,12 @@ int CTerrainData::convertStoP(1);
 Map* CTerrainData::map(nullptr);
 
 CTerrainData::CTerrainData()
-		: waterIsHarmful(false)
+		: pAreaData(&areaData0)
+		, waterIsHarmful(false)
 		, waterIsAVoid(false)
 		, sectorXSize(0)
 		, sectorZSize(0)
 		, gameAttribute(nullptr)
-		, pAreaData(&areaData0)
 		, pHeightMap(&heightMap0)
 		, isUpdating(false)
 		, aiToUpdate(0)
@@ -1167,7 +1167,7 @@ void CTerrainData::UpdateVis()
 		debugDrawer->DrawTex(win.first, win.second);
 	}
 
-	int itId = 0;
+	//int itId = 0;
 	for (const STerrainMapImmobileType& mt : areaData.immobileType) {
 		std::pair<Uint32, float*> win = sdlWindows[winNum++];
 		for (int i = 0; i < sectorXSize * sectorZSize; ++i) {
@@ -1190,7 +1190,7 @@ void CTerrainData::ToggleVis(int frame)
 	if (sdlWindows.empty()) {
 		// ~area
 		SAreaData& areaData = *GetNextAreaData();
-		std::vector<STerrainMapSector>& sector = areaData.sector;
+		//std::vector<STerrainMapSector>& sector = areaData.sector;
 
 		std::pair<Uint32, float*> win;
 		win.second = new float [sectorXSize * sectorZSize * 3];

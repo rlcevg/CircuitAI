@@ -19,9 +19,9 @@ using namespace springai;
 CEnemyUnit::CEnemyUnit(Unit* unit, CCircuitDef* cdef)
 		: id(unit->GetUnitId())
 		, unit(unit)
+		, lastSeen(-1)
 		, dgun(nullptr)
 		, disarmParam(nullptr)
-		, lastSeen(-1)
 		, pos(ZeroVector)
 		, threat(.0f)
 		, range(0)
@@ -34,7 +34,9 @@ CEnemyUnit::CEnemyUnit(Unit* unit, CCircuitDef* cdef)
 CEnemyUnit::~CEnemyUnit()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	delete unit, dgun, disarmParam;
+	delete unit;
+	delete dgun;
+	delete disarmParam;
 }
 
 void CEnemyUnit::SetCircuitDef(CCircuitDef* cdef)
