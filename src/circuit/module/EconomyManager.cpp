@@ -213,8 +213,13 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 CEconomyManager::~CEconomyManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	delete metalRes, energyRes, economy, empParam, eepParam;
-	delete odeiParam, odecParam/*, odeoParam, odteParam, odaParam*/;
+	delete metalRes;
+	delete energyRes;
+	delete economy;
+	delete empParam;
+	delete eepParam;
+	delete odeiParam;
+	delete odecParam;/*, odeoParam, odteParam, odaParam*/;
 	delete engyPol;
 	morph = nullptr;
 }
@@ -647,7 +652,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		if (index >= 0) {
 			const CMetalData::Clusters& clusters = metalManager->GetClusters();
 			AIFloat3 buildPos = clusters[index].geoCentr;
-			UnitDef* facUDef = facDef->GetUnitDef();
+//			UnitDef* facUDef = facDef->GetUnitDef();
 
 			AIFloat3 center = AIFloat3(terrainManager->GetTerrainWidth() / 2, 0, terrainManager->GetTerrainHeight() / 2);
 			float size = (center.SqDistance2D(circuit->GetSetupManager()->GetStartPos()) > center.SqDistance2D(buildPos)) ? -200.0f : 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;

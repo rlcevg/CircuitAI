@@ -64,8 +64,8 @@ using namespace NSMicroPather;
 class OpenQueueBH {
 public:
 	OpenQueueBH(PathNode** heapArray)
-		: size(0)
-		, heapArray(heapArray)
+		: heapArray(heapArray)
+		, size(0)
 	{}
 
 	~OpenQueueBH() {}
@@ -181,7 +181,10 @@ private:
 
 
 CMicroPather::CMicroPather(Graph* _graph, int sizeX, int sizeY)
-		: ALLOCATE(sizeX * sizeY)
+		: mapSizeX(sizeX)
+		, mapSizeY(sizeY)
+		, isRunning(false)
+		, ALLOCATE(sizeX * sizeY)
 		, BLOCKSIZE(ALLOCATE - 1)
 		, graph(_graph)
 		, pathNodeMem(0)
@@ -189,9 +192,6 @@ CMicroPather::CMicroPather(Graph* _graph, int sizeX, int sizeY)
 		, pathNodeCount(0)
 		, frame(0)
 		, checksum(0)
-		, mapSizeX(sizeX)
-		, mapSizeY(sizeY)
-		, isRunning(false)
 {
 //	@param allocate		The block size that the node cache is allocated from. In some
 //						cases setting this parameter will improve the perfomance of the pather.

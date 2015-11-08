@@ -31,7 +31,7 @@
 namespace utils {
 
 #ifdef DEBUG
-	#define PRINT_DEBUG(fmt, ...)	printf((std::string("<CircuitAI DEBUG> ") + utils::string_format(std::string(fmt), ##__VA_ARGS__)).c_str())
+	#define PRINT_DEBUG(fmt, ...)	printf("<CircuitAI DEBUG> " fmt , ##__VA_ARGS__)
 #else
 	#define PRINT_DEBUG(fmt, ...)
 #endif
@@ -59,7 +59,7 @@ template <class C> void free_clear(C& cntr)
 	cntr.clear();
 }
 
-static std::string string_format(const std::string fmt_str, ...)
+static inline std::string string_format(const std::string fmt_str, ...)
 {
     int final_n, n = ((int)fmt_str.size()) * 2; /* reserve 2 times as much as the length of the fmt_str */
     std::string str;
@@ -86,7 +86,7 @@ static inline std::string int_to_string(int i, const std::string &format = "%i")
 	return std::string(buf);
 }
 
-static int string_to_int(const std::string &str)
+static inline int string_to_int(const std::string &str)
 {
     try {
         std::size_t lastChar;
@@ -111,7 +111,7 @@ static inline std::string float_to_string(float f, const std::string &format = "
 	return std::string(buf);
 }
 
-static float string_to_float(const std::string &str)
+static inline float string_to_float(const std::string &str)
 {
     try {
         std::size_t lastChar;

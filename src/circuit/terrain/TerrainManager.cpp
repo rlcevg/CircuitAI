@@ -666,6 +666,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 						}																					\
 						break;																				\
 					}																						\
+					case IBlockMask::BlockType::OPEN: { break; }																						\
 				}																							\
 			}																								\
 		}																									\
@@ -783,6 +784,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 						}																					\
 						break;																				\
 					}																						\
+					case IBlockMask::BlockType::OPEN: { break; }													\
 				}																							\
 			}																								\
 		}																									\
@@ -911,6 +913,7 @@ void CTerrainManager::MarkBlockerByMask(const SStructure& building, bool block, 
 					blockingMap.structOp(x, z, structType, notIgnore);	\
 					break;												\
 				}														\
+				case IBlockMask::BlockType::OPEN: { break; }					\
 			}															\
 		}																\
 	}

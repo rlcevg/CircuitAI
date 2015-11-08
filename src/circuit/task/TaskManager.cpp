@@ -22,7 +22,9 @@ ITaskManager::ITaskManager()
 
 ITaskManager::~ITaskManager()
 {
-	delete nullTask, idleTask, retreatTask;
+	delete nullTask;
+	delete idleTask;
+	delete retreatTask;
 }
 
 void ITaskManager::AssignTask(CCircuitUnit* unit, IUnitTask* task)
