@@ -145,7 +145,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		if (unit->GetUnit()->IsBeingBuilt() || !IsBuilderInArea(unit->GetCircuitDef(), pos)) {
 			this->circuit->GetMetalManager()->SetOpenSpot(pos, true);
 		} else {
-			EnqueueTask(IBuilderTask::Priority::HIGH, unit->GetCircuitDef(), pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
+			EnqueueTask(IBuilderTask::Priority::NORMAL, unit->GetCircuitDef(), pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
 		}
 	};
 
@@ -467,8 +467,9 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	terrainManager->CorrectPosition(pos);
 	pathfinder->SetMapData(unit, circuit->GetThreatMap());
-	float maxSpeed = unit->GetUnit()->GetMaxSpeed();
-	int buildDistance = std::max<int>(unit->GetCircuitDef()->GetBuildDistance(), pathfinder->GetSquareSize());
+	const float maxThreat = circuit->GetThreatMap()->GetMapSize();
+	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize();
+	const int buildDistance = std::max<int>(unit->GetCircuitDef()->GetBuildDistance(), pathfinder->GetSquareSize());
 	float metric = std::numeric_limits<float>::max();
 	for (auto& tasks : builderTasks) {
 		for (auto candidate : tasks) {
@@ -492,6 +493,10 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 
 				Unit* tu = target->GetUnit();
 				dist = pathfinder->PathCost(pos, buildPos, buildDistance);
+				if (dist > maxThreat) {
+					continue;
+				}
+
 				if (dist * weight < metric) {
 					float maxHealth = tu->GetMaxHealth();
 					float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
@@ -508,6 +513,10 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 				}
 
 				dist = pathfinder->PathCost(pos, buildPos, buildDistance);
+				if (dist > maxThreat) {
+					continue;
+				}
+
 				valid = ((dist * weight < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));
 			}
 

@@ -477,11 +477,11 @@ float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
 	if (enemy->GetRange() > 2000 / squareSize) {
 		return THREAT_VAL_BASE;  // or 0
 	}
-	const float dps = std::min(enemy->GetDPS(), 2000.0f);
 	const float health = enemy->GetUnit()->GetHealth();
 	if (health <= .0f) {
 		return .0f;
 	}
+	const float dps = std::min(enemy->GetDPS(), 2000.0f);
 	const float dpsMod = sqrtf(health / 100.0f);  // / enemy->GetUnit()->GetMaxHealth();
 	return dps * dpsMod;
 }
@@ -571,7 +571,7 @@ void CThreatMap::ToggleVis()
 
 		UpdateVis();
 	} else {
-		for (const std::pair<Uint32, float*> win : sdlWindows) {
+		for (const std::pair<Uint32, float*>& win : sdlWindows) {
 			circuit->GetDebugDrawer()->DelSDLWindow(win.first);
 			delete[] win.second;
 		}

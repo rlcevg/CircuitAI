@@ -1167,7 +1167,6 @@ void CTerrainData::UpdateVis()
 		debugDrawer->DrawTex(win.first, win.second);
 	}
 
-	//int itId = 0;
 	for (const STerrainMapImmobileType& mt : areaData.immobileType) {
 		std::pair<Uint32, float*> win = sdlWindows[winNum++];
 		for (int i = 0; i < sectorXSize * sectorZSize; ++i) {
@@ -1190,7 +1189,6 @@ void CTerrainData::ToggleVis(int frame)
 	if (sdlWindows.empty()) {
 		// ~area
 		SAreaData& areaData = *GetNextAreaData();
-		//std::vector<STerrainMapSector>& sector = areaData.sector;
 
 		std::pair<Uint32, float*> win;
 		win.second = new float [sectorXSize * sectorZSize * 3];
@@ -1218,7 +1216,7 @@ void CTerrainData::ToggleVis(int frame)
 
 		UpdateVis();
 	} else {
-		for (const std::pair<Uint32, float*> win : sdlWindows) {
+		for (const std::pair<Uint32, float*>& win : sdlWindows) {
 			debugDrawer->DelSDLWindow(win.first);
 			delete[] win.second;
 		}

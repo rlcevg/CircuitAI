@@ -454,7 +454,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			int index = metalManager->GetMexToBuild(position, predicate);
 			if (index != -1) {
 				const AIFloat3& pos = spots[index].position;
-				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost);
+				task = builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, mexDef, pos, IBuilderTask::BuildType::MEX, cost);
 				task->SetBuildPos(pos);
 				metalManager->SetOpenSpot(index, false);
 				return task;
@@ -579,7 +579,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		if ((buildPos != -RgtVector) && terrainManager->CanBeBuiltAt(bestDef, buildPos) &&
 			((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 		{
-			IBuilderTask::Priority priority = isEnergyStalling ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
+			IBuilderTask::Priority priority = /*isEnergyStalling ? IBuilderTask::Priority::HIGH :*/ IBuilderTask::Priority::NORMAL;
 			return builderManager->EnqueueTask(priority, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, cost);
 		}
 	}
@@ -652,7 +652,6 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		if (index >= 0) {
 			const CMetalData::Clusters& clusters = metalManager->GetClusters();
 			AIFloat3 buildPos = clusters[index].geoCentr;
-//			UnitDef* facUDef = facDef->GetUnitDef();
 
 			AIFloat3 center = AIFloat3(terrainManager->GetTerrainWidth() / 2, 0, terrainManager->GetTerrainHeight() / 2);
 			float size = (center.SqDistance2D(circuit->GetSetupManager()->GetStartPos()) > center.SqDistance2D(buildPos)) ? -200.0f : 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;

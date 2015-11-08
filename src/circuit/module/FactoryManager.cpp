@@ -87,9 +87,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			delete ndef;
 		}
 		utils::free_clear(units);
-		factories.emplace_back(unit, nanos, 3, true);
+		factories.emplace_back(unit, nanos, 1, true);
 
-		this->circuit->GetSetupManager()->SetBasePos(pos);
+//		this->circuit->GetSetupManager()->SetBasePos(pos);
 	};
 	auto factoryIdleHandler = [this](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
@@ -355,7 +355,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			//kodachi,   panther,   banisher,  reaper,    goliath,  pillager,  tremor, copperhead
 			{"logkoda", "panther", "tawf114", "correap", "corgol", "cormart", "trem", "corsent"},
 			{.20,       .47,       .30,       .00,       .00,      .01,       .00,    .02},
-			{.01,       .09,       .10,       .30,       .10,      .20,       .10,    .10},
+			{.01,       .09,       .10,       .39,       .10,      .20,       .01,    .10},
 			[](CEconomyManager* mgr) {
 				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
 			}
