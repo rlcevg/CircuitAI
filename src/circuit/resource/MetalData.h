@@ -29,7 +29,7 @@ class CRagMatrix;
 
 class CMetalData {
 private:
-	// Note: Pointtree is also a very pretty candidate for range searches.
+	// NOTE: Pointtree is also a very pretty candidate for range searches.
 	// Because map coordinates are big enough we can use only integer part.
 	// @see https://github.com/Warzone2100/warzone2100/blob/master/src/pointtree.cpp
 	using point = bg::model::point<float, 2, bg::cs::cartesian>;
@@ -57,7 +57,7 @@ public:
 	using Metals = std::vector<SMetal>;
 	using MetalNode = std::pair<point, int>;  // spots indexer
 	using MetalPredicate = std::function<bool (MetalNode const& v)>;
-	using MetalIndices = std::vector<unsigned int>;
+	using MetalIndices = std::vector<int>;
 	struct SCluster {
 		MetalIndices idxSpots;
 		springai::AIFloat3 geoCentr;

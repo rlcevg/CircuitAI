@@ -175,17 +175,17 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 	const CHierarchCluster::Clusters& iclusters = clust.Clusterize(*distMatrix, maxDistance);
 
 	// Fill cluster structures, calculate centers
-	unsigned nclusters = iclusters.size();
+	int nclusters = iclusters.size();
 	clusters.resize(nclusters);
 	clusterTree.clear();
 	CEncloseCircle enclose;
-	for (unsigned i = 0; i < nclusters; i++) {
+	for (int i = 0; i < nclusters; ++i) {
 		SCluster& c = clusters[i];
 		c.idxSpots.clear();
 		AIFloat3 centr = ZeroVector;
 		std::vector<AIFloat3> points;
 		points.reserve(iclusters[i].size());
-		for (unsigned j = 0; j < iclusters[i].size(); j++) {
+		for (unsigned j = 0; j < iclusters[i].size(); ++j) {
 			c.idxSpots.push_back(iclusters[i][j]);
 			const AIFloat3& pos = spots[iclusters[i][j]].position;
 			points.push_back(pos);
@@ -213,10 +213,10 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 	boost::polygon::construct_voronoi(vorPoints.begin(), vorPoints.end(), &clustVoronoi);
 
 	// Convert voronoi_diagram to "Delaunay" in BGL (Boost Graph Library)
-	std::map<int, std::set<int>> verts;
+	std::map<std::size_t, std::set<std::size_t>> verts;
 	Graph g(nclusters);
-	int edgeCount = 0;  // counts each edge twice
-	std::vector<std::pair<int, int>> edges;
+	unsigned edgeCount = 0;  // counts each edge twice
+	std::vector<std::pair<std::size_t, std::size_t>> edges;
 	edges.reserve(clustVoronoi.edges().size() / 2);
 	for (auto& edge : clustVoronoi.edges()) {
 		std::size_t idx0 = edge.cell()->source_index();
@@ -226,7 +226,7 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 		if (it != verts.end()) {
 			it->second.insert(idx1);
 		} else {
-			std::set<int> v;
+			std::set<std::size_t> v;
 			v.insert(idx1);
 			verts[idx0] = v;
 		}
@@ -235,9 +235,9 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 			edges.push_back(std::make_pair(idx0, idx1));
 		}
 	}
-	auto badEdge = [&verts, this](int A, int B) {
-		for (int C : verts[A]) {
-			std::set<int>& vs = verts[C];
+	auto badEdge = [&verts, this](std::size_t A, std::size_t B) {
+		for (std::size_t C : verts[A]) {
+			std::set<std::size_t>& vs = verts[C];
 			if (vs.find(B) != vs.end()) {
 				float AB = clusters[A].geoCentr.distance(clusters[B].geoCentr);
 				float BC = clusters[B].geoCentr.distance(clusters[C].geoCentr);
@@ -250,8 +250,8 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 		return false;
 	};
 	int edgeIndex = 0;
-	for (std::pair<int, int>& e : edges) {
-		int A = e.first, B = e.second;
+	for (std::pair<std::size_t, std::size_t>& e : edges) {
+		std::size_t A = e.first, B = e.second;
 		if (badEdge(A, B)) {
 			continue;
 		}
