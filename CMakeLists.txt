@@ -4,7 +4,7 @@
 set(mySourceDirRel         "src/") # Common values are "" or "src"
 #set(additionalSources      ${CUtils_SRC})
 #set(additionalCompileFlags "-Isrc/lib/ -Isrc/circuit/ -O1 -DDEBUG -DDEBUG_VIS -Wall -Wextra")
-set(additionalCompileFlags "-DDEBUG_VIS")
+set(additionalCompileFlags "-DDEBUG_VIS -Wall")
 set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils)
 
 

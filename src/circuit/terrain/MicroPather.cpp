@@ -46,18 +46,14 @@
 #include "terrain/MicroPather.h"
 
 #include <cstdlib>  // malloc(), free()
-#include <cassert>
 #include <cmath>
 #include <cstdint>
-
+//#undef NDEBUG
+#include <cassert>
 
 #define USE_NODEATINDEX100
-#define USE_ASSERTIONS
-// #define DEBUG_PATH
-// #define DEBUG_PATH_DEEP
-// #define USE_LIST
-
-
+//#define USE_ASSERTIONS
+//#define DEBUG_PATH
 
 using namespace NSMicroPather;
 
@@ -470,8 +466,8 @@ int CMicroPather::Solve(void* startNode, void* endNode, std::vector<void*>* path
 			const int xstart = indexStart - ystart * mapSizeX;
 
 			// no node can be at the edge!
-			assert(xstart != 0 && xstart != mapSizeX);
-			assert(ystart != 0 && ystart != mapSizeY);
+			assert((xstart != 0) && (xstart != mapSizeX - 1));
+			assert((ystart != 0) && (ystart != mapSizeY - 1));
 			#endif
 
 			float nodeCostFromStart = node->costFromStart;
@@ -497,8 +493,8 @@ int CMicroPather::Solve(void* startNode, void* endNode, std::vector<void*>* path
 				assert(canMoveArray[yend * mapSizeX + xend]);
 
 				// no node can be at the edge!
-				assert(xend != 0 && xend != mapSizeX);
-				assert(yend != 0 && yend != mapSizeY);
+				assert((xend != 0) && (xend != mapSizeX - 1));
+				assert((yend != 0) && (yend != mapSizeY - 1));
 				#endif
 
 				float newCost = nodeCostFromStart;
@@ -515,7 +511,7 @@ int CMicroPather::Solve(void* startNode, void* endNode, std::vector<void*>* path
 				directNode->costFromStart = newCost;
 				directNode->totalCost = newCost + LeastCostEstimateLocal(indexEnd);
 				#ifdef USE_ASSERTIONS
-				assert(indexEnd == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
+				assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
 				#endif
 
 				if (directNode->inOpen) {
@@ -617,8 +613,8 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*
 			const int xstart = indexStart - ystart * mapSizeX;
 
 			// no node can be at the edge!
-			assert(xstart > 0 && xstart < (mapSizeX - 1));
-			assert(ystart > 0 && ystart < (mapSizeY - 1));
+			assert((xstart > 0) && (xstart < mapSizeX - 1));
+			assert((ystart > 0) && (ystart < mapSizeY - 1));
 			#endif
 
 			const float nodeCostFromStart = node->costFromStart;
@@ -641,8 +637,8 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*
 				const int xend = indexEnd - yend * mapSizeX;
 
 				// no node can be at the edge!
-				assert(xend > 0 && (xend < mapSizeX - 1));
-				assert(yend > 0 && (yend < mapSizeY - 1));
+				assert((xend > 0) && (xend < mapSizeX - 1));
+				assert((yend > 0) && (yend < mapSizeY - 1));
 
 				// we can move to that spot
 				assert(canMoveArray[yend * mapSizeX + xend]);
@@ -664,7 +660,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*
 				directNode->totalCost = newCost + LeastCostEstimateLocal(indexEnd);
 
 				#ifdef USE_ASSERTIONS
-				assert(indexEnd == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
+				assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
 				#endif
 
 				if (directNode->inOpen) {
@@ -801,8 +797,8 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode, st
 				assert(canMoveArray[yend * mapSizeX + xend]);
 
 				// no node can be at the edge!
-				assert(xend != 0 && xend != mapSizeX);
-				assert(yend != 0 && yend != mapSizeY);
+				assert((xend != 0) && (xend != mapSizeX - 1));
+				assert((yend != 0) && (yend != mapSizeY - 1));
 				#endif
 
 				float newCost = nodeCostFromStart;
@@ -820,7 +816,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode, st
 				directNode->totalCost = newCost + LeastCostEstimateLocal(indexEnd);
 
 				#ifdef USE_ASSERTIONS
-				assert(indexEnd == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
+				assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
 				#endif
 
 				if (directNode->inOpen) {
