@@ -57,7 +57,7 @@ public:
 	using Metals = std::vector<SMetal>;
 	using MetalNode = std::pair<point, int>;  // spots indexer
 	using MetalPredicate = std::function<bool (MetalNode const& v)>;
-	using MetalIndices = std::vector<int>;
+	using MetalIndices = std::vector<unsigned int>;
 	struct SCluster {
 		MetalIndices idxSpots;
 		springai::AIFloat3 geoCentr;

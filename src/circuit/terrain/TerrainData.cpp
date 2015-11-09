@@ -187,7 +187,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 			bool canFloat = def->IsFloater();
 			STerrainMapMobileType* MT = nullptr;
 			int mtIdx = 0;
-			for (; mtIdx < mobileType.size(); ++mtIdx) {
+			for (; (unsigned)mtIdx < mobileType.size(); ++mtIdx) {
 				STerrainMapMobileType& mt = mobileType[mtIdx];
 				if (((mt.maxElevation == -minWaterDepth) && (mt.maxSlope == maxSlope) && (mt.canHover == canHover) && (mt.canFloat == canFloat)) &&
 					((mt.minElevation == -depth) || ((mt.canHover || mt.canFloat) && (mt.minElevation <= 0) && (-maxWaterDepth <= 0))))

@@ -40,9 +40,9 @@ CDefenceMatrix::SDefPoint* CDefenceMatrix::GetDefPoint(const AIFloat3& pos, floa
 	}
 
 	DefPoints& defPoints = clusterInfos[index].defPoints;
-	int idx = 0;
+	unsigned idx = 0;
 	float dist = pos.distance2D(defPoints[idx].position);
-	for (int i = 1; i < defPoints.size(); ++i) {
+	for (unsigned i = 1; i < defPoints.size(); ++i) {
 		if (defPoints[i].cost >= defCost) {
 			float tmp = pos.distance2D(defPoints[i].position);
 			if (tmp < dist) {
@@ -66,7 +66,7 @@ void CDefenceMatrix::Init(CCircuitAI* circuit)
 	CHierarchCluster clust;
 	CEncloseCircle enclose;
 
-	for (int k = 0; k < clusters.size(); ++k) {
+	for (unsigned k = 0; k < clusters.size(); ++k) {
 		const CMetalData::MetalIndices& idxSpots = clusters[k].idxSpots;
 		int nrows = idxSpots.size();
 		CRagMatrix distmatrix(nrows);
@@ -79,12 +79,12 @@ void CDefenceMatrix::Init(CCircuitAI* circuit)
 		const CHierarchCluster::Clusters& iclusters = clust.Clusterize(distmatrix, maxDistance);
 
 		DefPoints& defPoints = clusterInfos[k].defPoints;
-		int nclusters = iclusters.size();
+		unsigned nclusters = iclusters.size();
 		defPoints.reserve(nclusters);
-		for (int i = 0; i < nclusters; ++i) {
+		for (unsigned i = 0; i < nclusters; ++i) {
 			std::vector<AIFloat3> points;
 			points.reserve(iclusters[i].size());
-			for (int j = 0; j < iclusters[i].size(); ++j) {
+			for (unsigned j = 0; j < iclusters[i].size(); ++j) {
 				points.push_back(spots[idxSpots[iclusters[i][j]]].position);
 			}
 			enclose.MakeCircle(points);

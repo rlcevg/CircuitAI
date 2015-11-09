@@ -168,7 +168,7 @@ CCircuitUnit* CAllyTeam::GetFriendlyUnit(CCircuitUnit::Id unitId) const
 
 CCircuitDef* CAllyTeam::GetFactoryToBuild(CCircuitAI* circuit)
 {
-	for (int i = 0; i < factoryBuilds.size(); ++i) {
+	for (unsigned i = 0; i < factoryBuilds.size(); ++i) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(factoryBuilds[factoryIdx]);
 		if (cdef->IsAvailable()) {
 			return cdef;

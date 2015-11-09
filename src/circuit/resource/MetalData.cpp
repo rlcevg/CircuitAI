@@ -175,17 +175,17 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 	const CHierarchCluster::Clusters& iclusters = clust.Clusterize(*distMatrix, maxDistance);
 
 	// Fill cluster structures, calculate centers
-	int nclusters = iclusters.size();
+	unsigned nclusters = iclusters.size();
 	clusters.resize(nclusters);
 	clusterTree.clear();
 	CEncloseCircle enclose;
-	for (int i = 0; i < nclusters; i++) {
+	for (unsigned i = 0; i < nclusters; i++) {
 		SCluster& c = clusters[i];
 		c.idxSpots.clear();
 		AIFloat3 centr = ZeroVector;
 		std::vector<AIFloat3> points;
 		points.reserve(iclusters[i].size());
-		for (int j = 0; j < iclusters[i].size(); j++) {
+		for (unsigned j = 0; j < iclusters[i].size(); j++) {
 			c.idxSpots.push_back(iclusters[i][j]);
 			const AIFloat3& pos = spots[iclusters[i][j]].position;
 			points.push_back(pos);

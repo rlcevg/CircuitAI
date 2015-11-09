@@ -432,10 +432,10 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		const std::array<float, 10> wp0 = {.50,          .00,        .00,     .00,        .00,         .00,        .00,       .00,          .25,    .25};
 		const std::array<float, 10> wp1 = {.10,          .00,        .00,     .00,        .00,         .00,        .10,       .00,          .40,    .40};
 		const std::array<float, 10>& prob = (metalIncome < 100) ? (isWater ? wp0 : lp0) : (isWater ? wp1 : lp1);
-		int choice = 0;
+		unsigned choice = 0;
 		float dice = rand() / (float)RAND_MAX;
 		float total;
-		for (int i = 0; i < prob.size(); ++i) {
+		for (unsigned i = 0; i < prob.size(); ++i) {
 			total += prob[i];
 			if (dice < total) {
 				choice = i;
@@ -650,7 +650,7 @@ CCircuitUnit* CFactoryManager::NeedUpgrade()
 	if (factories.empty()) {
 		return nullptr;
 	}
-	int facSize = factories.size();
+	unsigned facSize = factories.size();
 	for (auto it = factories.rbegin(); it != factories.rend(); ++it) {
 		SFactory& fac = *it;
 		if (fac.nanos.size() < facSize * fac.weight) {
@@ -741,10 +741,10 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	const SFactoryDef& facDef = it->second;
 	const std::vector<float>& prob = facDef.GetProb(circuit->GetEconomyManager());
 
-	int choice = 0;
+	unsigned choice = 0;
 	float dice = rand() / (float)RAND_MAX;
 	float total;
-	for (int i = 0; i < prob.size(); ++i) {
+	for (unsigned i = 0; i < prob.size(); ++i) {
 		total += prob[i];
 		if (dice < total) {
 			choice = i;

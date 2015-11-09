@@ -101,8 +101,8 @@ private:
 		int clusterId;
 	};
 	struct SClusterInfo {
-		int queuedCount;
-		int finishedCount;
+		unsigned int queuedCount;
+		unsigned int finishedCount;
 	};
 	std::vector<SMetalInfo> metalInfos;
 	std::vector<SClusterInfo> clusterInfos;

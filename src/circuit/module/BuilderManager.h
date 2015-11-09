@@ -38,7 +38,7 @@ public:
 
 	CCircuitDef* GetTerraDef() const { return terraDef; }
 
-	int GetWorkerCount() const { return workers.size(); }
+	unsigned int GetWorkerCount() const { return workers.size(); }
 	float GetBuilderPower() const { return builderPower; }
 	bool CanEnqueueTask() const { return builderTasksCount < workers.size() * 2; }
 	const std::set<IBuilderTask*>& GetTasks(IBuilderTask::BuildType type);
@@ -121,7 +121,7 @@ private:
 
 	std::map<CCircuitUnit*, IBuilderTask*> unfinishedUnits;
 	std::vector<std::set<IBuilderTask*>> builderTasks;  // owner
-	int builderTasksCount;
+	unsigned int builderTasksCount;
 	float builderPower;
 	std::set<IBuilderTask*> updateTasks;  // temporary tasks holder to keep updating every task
 	std::set<IBuilderTask*> deleteTasks;

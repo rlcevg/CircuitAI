@@ -83,7 +83,7 @@ private:
 	unsigned int updateSlice;
 
 	struct SFactory {
-		SFactory(CCircuitUnit* u, const std::set<CCircuitUnit*>& n, int w, bool h)
+		SFactory(CCircuitUnit* u, const std::set<CCircuitUnit*>& n, unsigned int w, bool h)
 			: unit(u)
 			, nanos(n)
 			, weight(w)
@@ -91,7 +91,7 @@ private:
 		{}
 		CCircuitUnit* unit;
 		std::set<CCircuitUnit*> nanos;
-		int weight;
+		unsigned int weight;
 		bool hasBuilder;
 	};
 	std::list<SFactory> factories;  // facory 1:n nano

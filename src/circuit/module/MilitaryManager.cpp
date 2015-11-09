@@ -360,7 +360,7 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 	STerrainMapArea* area = unit->GetArea();
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	const CMetalData::Metals& spots = metalManager->GetSpots();
-	int prevIdx = scoutIdx;
+	decltype(scoutIdx) prevIdx = scoutIdx;
 	while (scoutIdx < scoutPath.size()) {
 		int index = scoutPath[scoutIdx++];
 		if (!metalManager->IsMexInFinished(index) && terrainManager->CanMoveToPos(area, spots[index].position)) {
@@ -384,7 +384,7 @@ void CMilitaryManager::Init()
 	const CMetalData::Metals& spots = metalManager->GetSpots();
 
 	scoutPath.reserve(spots.size());
-	for (int i = 0; i < spots.size(); ++i) {
+	for (unsigned i = 0; i < spots.size(); ++i) {
 		scoutPath.push_back(i);
 	}
 	const AIFloat3& pos = circuit->GetSetupManager()->GetStartPos();

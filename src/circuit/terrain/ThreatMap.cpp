@@ -519,25 +519,25 @@ void CThreatMap::UpdateVis()
 	Uint32 sdlWindowId;
 	float* dbgMap;
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[0];
-	for (int i = 0; i < airThreat.size(); ++i) {
+	for (unsigned i = 0; i < airThreat.size(); ++i) {
 		dbgMap[i] = std::min<float>((airThreat[i] - THREAT_VAL_BASE) / 40.0f /*currMaxThreat*/, 1.0f);
 	}
 	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap);
 
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[1];
-	for (int i = 0; i < landThreat.size(); ++i) {
+	for (unsigned i = 0; i < landThreat.size(); ++i) {
 		dbgMap[i] = std::min<float>((landThreat[i] - THREAT_VAL_BASE) / 40.0f, 1.0f);
 	}
 	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap);
 
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[2];
-	for (int i = 0; i < waterThreat.size(); ++i) {
+	for (unsigned i = 0; i < waterThreat.size(); ++i) {
 		dbgMap[i] = std::min<float>((waterThreat[i] - THREAT_VAL_BASE) / 40.0f, 1.0f);
 	}
 	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap);
 
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[3];
-	for (int i = 0; i < cloakThreat.size(); ++i) {
+	for (unsigned i = 0; i < cloakThreat.size(); ++i) {
 		dbgMap[i] = std::min<float>((cloakThreat[i] - THREAT_VAL_BASE) / 8.0f, 1.0f);
 	}
 	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap);

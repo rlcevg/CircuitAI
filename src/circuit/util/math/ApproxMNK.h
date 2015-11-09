@@ -16,7 +16,7 @@ class CApproxMNK {
 public:
 	using Vector = std::vector<float>;
 
-	CApproxMNK(int n, const Vector& X, const Vector& Y);
+	CApproxMNK(unsigned int n, const Vector& X, const Vector& Y);
 	virtual ~CApproxMNK();
 
 	float GetValueAt(float x);

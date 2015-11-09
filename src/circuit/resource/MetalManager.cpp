@@ -197,8 +197,8 @@ void CMetalManager::ClusterizeMetal()
 void CMetalManager::Init()
 {
 	clusterInfos.resize(GetClusters().size(), {0});
-	for (int i = 0; i < clusterInfos.size(); ++i) {
-		for (int idx : GetClusters()[i].idxSpots) {
+	for (unsigned i = 0; i < clusterInfos.size(); ++i) {
+		for (unsigned idx : GetClusters()[i].idxSpots) {
 			metalInfos[idx].clusterId = i;
 		}
 	}

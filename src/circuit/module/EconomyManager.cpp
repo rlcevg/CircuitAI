@@ -429,7 +429,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	bool isEnergyStalling = IsEnergyStalling();
 	if (!isEnergyStalling && mexDef->IsAvailable()) {
 		float cost = mexDef->GetCost();
-		int maxCount = builderManager->GetBuilderPower() / cost * 4 + 1;
+		unsigned maxCount = builderManager->GetBuilderPower() / cost * 4 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < maxCount) {
 			CMetalManager* metalManager = circuit->GetMetalManager();
 			const CMetalData::Metals& spots = metalManager->GetSpots();
@@ -475,7 +475,7 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 	}
 	IBuilderTask* task = nullptr;
 
-	if (IsMetalFull() || builderManager->GetTasks(IBuilderTask::BuildType::RECLAIM).size() >= builderManager->GetWorkerCount() / 3) {
+	if (IsMetalFull() || (builderManager->GetTasks(IBuilderTask::BuildType::RECLAIM).size() >= builderManager->GetWorkerCount() / 3)) {
 		return nullptr;
 	}
 	float travelDistance = unit->GetUnit()->GetMaxSpeed() * FRAMES_PER_SEC * ((GetMetalPull() * 0.8f > GetAvgMetalIncome()) ? 300 : 30);
@@ -728,7 +728,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 	}
 
 	float cost = pylonDef->GetCost();
-	int count = builderManager->GetBuilderPower() / cost * 8 + 1;
+	unsigned count = builderManager->GetBuilderPower() / cost * 8 + 1;
 	if (builderManager->GetTasks(IBuilderTask::BuildType::PYLON).size() < count) {
 		CEnergyGrid* grid = circuit->GetEnergyGrid();
 		grid->Update();
@@ -790,7 +790,7 @@ void CEconomyManager::Init()
 	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
 	clusterInfos.resize(clusters.size());
 
-	for (int k = 0; k < clusters.size(); ++k) {
+	for (unsigned k = 0; k < clusters.size(); ++k) {
 		clusterInfos[k] = {nullptr};
 	}
 

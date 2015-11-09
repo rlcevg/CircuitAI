@@ -356,7 +356,7 @@ bool CCircuitAI::IsModValid()
 	}
 
 	const int minModVer[] = {1, 3, 8, 14};
-	int i = 0;
+	unsigned i = 0;
 	char* tmp = new char [strlen(version) + 1];
 	strcpy(tmp, version);
 	const char* tok = strtok(tmp, "v.");

@@ -123,7 +123,7 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 	const std::vector<STerrainMapMobileType>& moveTypes = terrainData->GetNextAreaData()->mobileType;
 	const int totalcells = pathMapXSize * pathMapYSize;
 	const int blockThreshold = granularity * granularity / 4;
-	for (int j = 0; j < moveTypes.size(); ++j) {
+	for (unsigned j = 0; j < moveTypes.size(); ++j) {
 		const STerrainMapMobileType& mt = moveTypes[j];
 		bool* moveArray = moveArrays[j];
 
@@ -410,7 +410,7 @@ void CPathFinder::UpdateVis(const F3Vec& path)
 
 	Figure* fig = circuit->GetDrawer()->GetFigure();
 	int figId = fig->DrawLine(ZeroVector, ZeroVector, 16.0f, true, FRAMES_PER_SEC * 5, 0);
-	for (int i = 1; i < path.size(); ++i) {
+	for (unsigned i = 1; i < path.size(); ++i) {
 		fig->DrawLine(path[i - 1], path[i], 16.0f, true, FRAMES_PER_SEC * 20, figId);
 	}
 	fig->SetColor(figId, AIColor(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX), 255);

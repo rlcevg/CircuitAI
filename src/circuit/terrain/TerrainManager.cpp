@@ -1440,7 +1440,7 @@ void CTerrainManager::UpdateAreaUsers()
 void CTerrainManager::UpdateVis()
 {
 	if (dbgTextureId >= 0) {
-		for (int i = 0; i < blockingMap.gridLow.size(); ++i) {
+		for (unsigned i = 0; i < blockingMap.gridLow.size(); ++i) {
 			dbgMap[i] = (blockingMap.gridLow[i].blockerMask > 0) ? 1.0f : 0.0f;
 		}
 		circuit->GetDebugDrawer()->UpdateOverlayTexture(dbgTextureId, dbgMap, 0, 0, blockingMap.columnsLow, blockingMap.rowsLow);
@@ -1457,7 +1457,7 @@ void CTerrainManager::ToggleVis()
 		// /spectator
 		// "~block"
 		dbgMap = new float [blockingMap.gridLow.size()];
-		for (int i = 0; i < blockingMap.gridLow.size(); ++i) {
+		for (unsigned i = 0; i < blockingMap.gridLow.size(); ++i) {
 			dbgMap[i] = (blockingMap.gridLow[i].blockerMask > 0) ? 1.0f : 0.0f;
 		}
 		dbgTextureId = circuit->GetDebugDrawer()->AddOverlayTexture(dbgMap, blockingMap.columnsLow, blockingMap.rowsLow);

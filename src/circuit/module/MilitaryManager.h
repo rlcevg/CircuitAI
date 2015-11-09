@@ -62,7 +62,7 @@ private:
 	unsigned int updateSlice;
 
 	std::set<CCircuitDef*> scoutDefs;
-	std::vector<int> scoutPath;  // list of cluster ids
+	std::vector<unsigned int> scoutPath;  // list of cluster ids
 	unsigned int scoutIdx;
 };
 
