@@ -163,7 +163,7 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 
 	decltype(rangePylons) candDefs = rangePylons;
 	while (!candDefs.empty()) {
-		CCircuitDef::Id defId;
+		CCircuitDef::Id defId = -1;
 		float range;
 		auto it = candDefs.rbegin();
 		for (; it != candDefs.rend(); ++it) {
@@ -176,7 +176,7 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 		}
 
 		outDef = circuit->GetCircuitDef(defId);
-		if (!outDef->IsAvailable()) {
+		if ((outDef == nullptr) || !outDef->IsAvailable()) {
 			outPos = -RgtVector;
 			candDefs.erase(range);
 			continue;

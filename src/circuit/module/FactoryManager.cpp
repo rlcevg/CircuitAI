@@ -434,7 +434,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		const std::array<float, 10>& prob = (metalIncome < 100) ? (isWater ? wp0 : lp0) : (isWater ? wp1 : lp1);
 		unsigned choice = 0;
 		float dice = rand() / (float)RAND_MAX;
-		float total;
+		float total = .0f;
 		for (unsigned i = 0; i < prob.size(); ++i) {
 			total += prob[i];
 			if (dice < total) {
@@ -743,7 +743,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 
 	unsigned choice = 0;
 	float dice = rand() / (float)RAND_MAX;
-	float total;
+	float total = .0f;
 	for (unsigned i = 0; i < prob.size(); ++i) {
 		total += prob[i];
 		if (dice < total) {

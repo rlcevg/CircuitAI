@@ -38,7 +38,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	buildSpeed = def->GetBuildSpeed();
 
 	float bestReload = std::numeric_limits<float>::max();
-	float bestRange;
+	float bestRange = .0f;
 	WeaponMount* bestMount = nullptr;
 	bool isTracks = false;
 //	bool isWater = false;

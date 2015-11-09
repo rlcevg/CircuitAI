@@ -655,7 +655,7 @@ void CTerrainData::UpdateAreas()
 		*its++ = s;
 	}
 	decltype(areaData.mobileType)::iterator itmt = mobileType.begin();
-	for (auto& mt : prevAreaData.mobileType) {
+	for (unsigned i = 0; i < prevAreaData.mobileType.size(); ++i) {
 		itmt->areaLargest = nullptr;
 		for (auto& as : itmt->sector) {
 			as.area = nullptr;

@@ -231,6 +231,7 @@ IUnitTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 {
 	IFighterTask* task;
 	switch (type) {
+		default:
 		case IFighterTask::FightType::DEFEND: {
 			task = new CDefendTask(this);
 			break;
