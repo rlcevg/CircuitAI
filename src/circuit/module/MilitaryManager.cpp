@@ -322,8 +322,10 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 		}
 		if (totalCost < maxCost) {
 			closestPoint->cost += defCost;
-			IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, closestPoint->position,
-															 IBuilderTask::BuildType::DEFENCE, true, (parentTask == nullptr));
+			bool isFirst = (parentTask == nullptr);
+			IBuilderTask::Priority priority = isFirst ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
+			IBuilderTask* task = builderManager->EnqueueTask(priority, defDef, closestPoint->position,
+															 IBuilderTask::BuildType::DEFENCE, true, isFirst);
 			if (parentTask != nullptr) {
 				parentTask->SetNextTask(task);
 			}

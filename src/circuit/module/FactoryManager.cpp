@@ -291,7 +291,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		SFactoryPreDef("factoryspider", "arm_spider", 8,
 			//flea,      hermit,          venom,       redback,      recluse,   crabe,      infiltrator, tarantula
 			{"armflea", "spiderassault", "arm_venom", "spiderriot", "armsptk", "armcrabe", "armspy",    "spideraa"},
-			{.20,       .30,             .10,         .10,          .27,       .00,        .01,         .02},
+			{.32,       .25,             .10,         .10,          .20,       .00,        .01,         .02},
 			{.01,       .01,             .01,         .10,          .12,       .60,        .05,         .10},
 			[](CEconomyManager* mgr) {
 				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
@@ -706,8 +706,7 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	float metalIncome = std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
-	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	if ((builderManager->GetBuilderPower() >= metalIncome * 2.0f) || (rand() >= RAND_MAX / 2)) {
+	if ((circuit->GetBuilderManager()->GetBuilderPower() >= metalIncome * 2.0f) || (rand() >= RAND_MAX / 2)) {
 		return nullptr;
 	}
 
@@ -814,7 +813,8 @@ IBuilderTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 	utils::free_clear(units);
 	if (!isMetalEmpty && (buildTarget != nullptr)) {
 		// Construction task
-		return EnqueueRepair(IBuilderTask::Priority::NORMAL, buildTarget);
+		IBuilderTask::Priority priority = isBuildMobile ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
+		return EnqueueRepair(priority, buildTarget);
 	}
 	if (repairTarget != nullptr) {
 		// Repair task
