@@ -23,6 +23,9 @@
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
+#include "AISCommands.h"
+#include "WeaponDef.h"
+
 namespace circuit {
 
 using namespace springai;
@@ -34,6 +37,27 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CMilitaryManager::Init, this));
+
+	CCircuitDef::Id unitDefId;
+	/*
+	 * Defence handlers
+	 */
+	auto defenceFinishedHandler = [this](CCircuitUnit* unit) {
+		unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+	};
+	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+		float defCost = unit->GetCircuitDef()->GetCost();
+		CDefenceMatrix* defence = this->circuit->GetDefenceMatrix();
+		CDefenceMatrix::SDefPoint* point = defence->GetDefPoint(unit->GetUnit()->GetPos(), defCost);
+		if (point != nullptr) {
+			point->cost -= defCost;
+		}
+	};
+	const char* defenders[] = {"corllt", "corrad", "armsonar", "corhlt", "turrettorp", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armartic", "corjamt", "armanni", "corbhmth"*/};
+	for (const char* name : defenders) {
+		unitDefId = circuit->GetCircuitDef(name)->GetId();
+		destroyedHandler[unitDefId] = defenceDestroyedHandler;
+	}
 
 	/*
 	 * Attacker handlers
@@ -73,7 +97,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
-		if ((cdef->GetDPS() < 0.1f) || !cdef->IsMobile() || cdef->GetUnitDef()->IsBuilder()) {
+		if ((cdef->GetDPS() < 0.1f) || cdef->GetUnitDef()->IsBuilder()) {
 			continue;
 		}
 		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
@@ -81,30 +105,22 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 			continue;
 		}
-		CCircuitDef::Id unitDefId = kv.first;
-		createdHandler[unitDefId] = attackerCreatedHandler;
-		finishedHandler[unitDefId] = attackerFinishedHandler;
-		idleHandler[unitDefId] = attackerIdleHandler;
-		damagedHandler[unitDefId] = attackerDamagedHandler;
-		destroyedHandler[unitDefId] = attackerDestroyedHandler;
-	}
-
-	CCircuitDef::Id unitDefId;
-	/*
-	 * Defence handlers
-	 */
-	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
-		float defCost = unit->GetCircuitDef()->GetCost();
-		CDefenceMatrix* defence = this->circuit->GetDefenceMatrix();
-		CDefenceMatrix::SDefPoint* point = defence->GetDefPoint(unit->GetUnit()->GetPos(), defCost);
-		if (point != nullptr) {
-			point->cost -= defCost;
+		if (cdef->IsMobile()) {
+			unitDefId = kv.first;
+			createdHandler[unitDefId] = attackerCreatedHandler;
+			finishedHandler[unitDefId] = attackerFinishedHandler;
+			idleHandler[unitDefId] = attackerIdleHandler;
+			damagedHandler[unitDefId] = attackerDamagedHandler;
+			destroyedHandler[unitDefId] = attackerDestroyedHandler;
+		} else {
+			WeaponDef* wd = cdef->GetUnitDef()->GetStockpileDef();
+			if (wd == nullptr) {
+				continue;
+			}
+			unitDefId = kv.first;
+			finishedHandler[unitDefId] = defenceFinishedHandler;
+			delete wd;
 		}
-	};
-	const char* defenders[] = {"corllt", "corrad", "armartic", "corhlt", "corrazor", "armnanotc", "cordoom"/*, "corjamt", "armanni", "corbhmth"*/};
-	for (const char* name : defenders) {
-		unitDefId = circuit->GetCircuitDef(name)->GetId();
-		destroyedHandler[unitDefId] = defenceDestroyedHandler;
 	}
 
 	/*
