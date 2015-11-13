@@ -58,6 +58,8 @@ public:
 	float GetDGunRange() const { return dgunRange; }
 	springai::WeaponMount* GetDGunMount() const { return dgunMount; }
 	float GetDPS() const { return dps; }
+	float GetPower() const { return power; }
+	float GetMaxRange() const { return maxRange; }
 	int GetCategory() const { return category; }
 	int GetTargetCategory() const { return targetCategory; }
 	int GetNoChaseCategory() const { return noChaseCategory; }
@@ -67,14 +69,16 @@ public:
 	void SetMobileId(STerrainMapMobileType::Id mobileId) { mobileTypeId = mobileId; }
 	STerrainMapMobileType::Id GetMobileId() const { return mobileTypeId; }
 
+	bool IsAttacker()  const { return dps > .1f; }
 	bool IsAntiAir()   const { return isAntiAir; }
 	bool IsAntiLand()  const { return isAntiLand; }
 	bool IsAntiWater() const { return isAntiWater; }
 
-	bool IsMobile()    const { return isMobile; }
+	bool IsMobile()    const { return speed > .1f; }
 	bool IsAbleToFly() const { return isAbleToFly; }
 	bool IsFloater()   const { return isFloater; }
 
+	float GetSpeed()     const { return speed; }
 	float GetLosRadius() const { return losRadius; }
 	float GetCost()      const { return cost; }
 
@@ -94,6 +98,8 @@ private:
 	float dgunRange;
 	springai::WeaponMount* dgunMount;
 	float dps;
+	float power;  // attack power / UnitDef threat
+	float maxRange;
 	int category;
 	int targetCategory;
 	int noChaseCategory;
@@ -105,10 +111,10 @@ private:
 	bool isAntiLand;
 	bool isAntiWater;
 
-	bool isMobile;
 	bool isAbleToFly;
 	bool isFloater;
 
+	float speed;
 	float losRadius;
 	float cost;
 

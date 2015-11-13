@@ -14,10 +14,15 @@ namespace circuit {
 
 class CDefendTask: public IFighterTask {
 public:
-	CDefendTask(ITaskManager* mgr);
+	CDefendTask(ITaskManager* mgr, float maxPower);
 	virtual ~CDefendTask();
 
+	virtual bool CanAssignTo(CCircuitUnit* unit);
+
 	virtual void Execute(CCircuitUnit* unit);
+
+private:
+	float maxPower;
 };
 
 } // namespace circuit

@@ -34,6 +34,11 @@ CScoutTask::~CScoutTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
+bool CScoutTask::CanAssignTo(CCircuitUnit* unit)
+{
+	return units.empty();
+}
+
 void CScoutTask::AssignTo(CCircuitUnit* unit)
 {
 	IFighterTask::AssignTo(unit);
@@ -119,6 +124,13 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
 	moveAction->SetActive(false);
+}
+
+void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
+{
+	IFighterTask::OnUnitIdle(unit);
+
+	manager->DoneTask(this);
 }
 
 CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)

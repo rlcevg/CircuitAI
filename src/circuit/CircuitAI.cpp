@@ -1012,7 +1012,7 @@ void CCircuitAI::InitUnitDefs()
 			std::map<STerrainMapMobileType::Id, float> mtUsability;
 			for (CCircuitDef::Id buildId : cdef->GetBuildOptions()) {
 				CCircuitDef* bdef = GetCircuitDef(buildId);
-				if ((bdef == nullptr) || !bdef->IsMobile() || (bdef->GetDPS() < 10.1f)) {
+				if ((bdef == nullptr) || !bdef->IsMobile() || !bdef->IsAttacker()) {
 					continue;
 				}
 				STerrainMapMobileType::Id mtId = terrainData.udMobileType[bdef->GetId()];

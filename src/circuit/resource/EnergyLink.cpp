@@ -15,12 +15,12 @@ namespace circuit {
 
 using namespace springai;
 
-CEnergyLink::CEnergyLink(int idx0, const AIFloat3& P0, int idx1, const AIFloat3& P1) :
-		v0(new SVertex(idx0, P0)),
-		v1(new SVertex(idx1, P1)),
-		isBeingBuilt(false),
-		isFinished(false),
-		isValid(true)
+CEnergyLink::CEnergyLink(int idx0, const AIFloat3& P0, int idx1, const AIFloat3& P1)
+		: v0(new SVertex(idx0, P0))
+		, v1(new SVertex(idx1, P1))
+		, isBeingBuilt(false)
+		, isFinished(false)
+		, isValid(true)
 {
 }
 

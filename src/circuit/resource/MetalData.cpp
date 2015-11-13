@@ -14,9 +14,9 @@ namespace circuit {
 
 using namespace springai;
 
-CMetalData::CMetalData() :
-		initialized(false),
-		isClusterizing(false)
+CMetalData::CMetalData()
+		: initialized(false)
+		, isClusterizing(false)
 {
 }
 

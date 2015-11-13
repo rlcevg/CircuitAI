@@ -8,7 +8,9 @@
 #include "task/fighter/FighterTask.h"
 #include "task/TaskManager.h"
 #include "task/RetreatTask.h"
+#include "terrain/ThreatMap.h"
 #include "unit/action/DGunAction.h"
+#include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 
 namespace circuit {
@@ -19,6 +21,8 @@ IFighterTask::IFighterTask(ITaskManager* mgr, FightType type)
 		: IUnitTask(mgr, Priority::NORMAL, Type::FIGHTER)
 		, fightType(type)
 		, position(-RgtVector)
+		, attackPower(.0f)
+		, target(nullptr)
 {
 }
 
@@ -29,6 +33,8 @@ IFighterTask::~IFighterTask()
 void IFighterTask::AssignTo(CCircuitUnit* unit)
 {
 	IUnitTask::AssignTo(unit);
+
+	attackPower += unit->GetCircuitDef()->GetPower();
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->GetDGunMount() != nullptr) {
@@ -41,13 +47,11 @@ void IFighterTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IUnitTask::RemoveAssignee(unit);
 
-	manager->AbortTask(this);
+	attackPower -= unit->GetCircuitDef()->GetPower();
 }
 
 void IFighterTask::Update()
 {
-	// TODO: Monitor threat? Or do it on EnemySeen/EnemyDestroyed?
-
 	CCircuitAI* circuit = manager->GetCircuit();
 	for (CCircuitUnit* unit : units) {
 		unit->Update(circuit);
@@ -57,7 +61,10 @@ void IFighterTask::Update()
 void IFighterTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	// TODO: Wait for others if goal reached? Or we stuck far away?
-	manager->AbortTask(this);
+
+	if (unit->IsRetreat()) {
+		manager->AssignTask(unit, manager->GetRetreatTask());
+	}
 }
 
 void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
@@ -68,14 +75,21 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 		return;
 	}
 
-	manager->AssignTask(unit, manager->GetRetreatTask());
-	manager->AbortTask(this);
+	CThreatMap* threatMap = manager->GetCircuit()->GetThreatMap();
+	const float range = unit->GetCircuitDef()->GetMaxRange();
+	if ((target != nullptr) && target->IsInLOS() &&
+		(target->GetPos().SqDistance2D(u->GetPos()) < range * range) &&
+		(target->GetThreat() < threatMap->GetUnitThreat(unit)))
+	{
+		unit->SetRetreat(true);
+	} else {
+		manager->AssignTask(unit, manager->GetRetreatTask());
+	}
 }
 
 void IFighterTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
-//	RemoveAssignee(unit);
-	manager->AbortTask(this);
+	RemoveAssignee(unit);
 }
 
 } // namespace circuit

@@ -56,7 +56,7 @@ void IUnitTask::Close(bool done)
 	}
 
 	CIdleTask* idleTask = manager->GetIdleTask();
-	for (auto unit : units) {
+	for (CCircuitUnit* unit : units) {
 		idleTask->AssignTo(unit);
 	}
 	units.clear();

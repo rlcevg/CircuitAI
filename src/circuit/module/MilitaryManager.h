@@ -29,9 +29,9 @@ public:
 	virtual int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 
-	IUnitTask* EnqueueTask(IFighterTask::FightType type);
+	IFighterTask* EnqueueTask(IFighterTask::FightType type);
 private:
-	void DequeueTask(IUnitTask* task, bool done = false);
+	void DequeueTask(IFighterTask* task, bool done = false);
 
 public:
 	virtual void AssignTask(CCircuitUnit* unit);
@@ -56,14 +56,18 @@ private:
 	EHandlers damagedHandler;
 	EHandlers destroyedHandler;
 
-	std::set<IUnitTask*> fighterTasks;  // owner
-	std::set<IUnitTask*> updateTasks;
-	std::set<IUnitTask*> deleteTasks;
+	std::set<IFighterTask*> fighterTasks;  // owner
+	std::set<IFighterTask*> updateTasks;
+	std::set<IFighterTask*> deleteTasks;
 	unsigned int updateSlice;
 
 	std::set<CCircuitDef*> scoutDefs;
 	std::vector<unsigned int> scoutPath;  // list of cluster ids
 	unsigned int scoutIdx;
+
+	// FIXME: DEBUG
+	float curPowah;
+	// FIXME: DEBUG
 };
 
 } // namespace circuit

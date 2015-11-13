@@ -22,12 +22,44 @@ using namespace springai;
 
 CAttackTask::CAttackTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::ATTACK)
+		, lowestRange(100000.0f)
+		, highestRange(1.0f)
+		, lowestSpeed(100000.0f)
+		, highestSpeed(1.0f)
+		, groupPos(-RgtVector)
+		, minPower(.0f)
 {
 }
 
 CAttackTask::~CAttackTask()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+}
+
+bool CAttackTask::CanAssignTo(CCircuitUnit* unit)
+{
+	return false;
+}
+
+void CAttackTask::AssignTo(CCircuitUnit* unit)
+{
+	IFighterTask::AssignTo(unit);
+
+	lowestRange  = std::min(lowestRange,  unit->GetCircuitDef()->GetMaxRange());
+	highestRange = std::max(highestRange, unit->GetCircuitDef()->GetMaxRange());
+	lowestSpeed  = std::min(lowestSpeed,  unit->GetCircuitDef()->GetSpeed());
+	highestSpeed = std::max(highestSpeed, unit->GetCircuitDef()->GetSpeed());
+
+	minPower += unit->GetCircuitDef()->GetPower() / 4;
+}
+
+void CAttackTask::RemoveAssignee(CCircuitUnit* unit)
+{
+	IFighterTask::RemoveAssignee(unit);
+
+	if (attackPower < minPower) {
+		manager->AbortTask(this);
+	}
 }
 
 void CAttackTask::Execute(CCircuitUnit* unit)
@@ -38,43 +70,60 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 void CAttackTask::Update()
 {
 	bool isExecute = (++updCount % 4 == 0);
-	for (CCircuitUnit* unit : units) {
-		if (unit->IsForceExecute() || isExecute) {
-			Execute(unit, true);
-		} else {
-			IFighterTask::Update();
+	if (!isExecute) {
+		IFighterTask::Update();
+		for (CCircuitUnit* unit : units) {
+			isExecute |= unit->IsForceExecute();
+		}
+	}
+	if (isExecute) {
+		Execute(*units.begin(), true);
+		for (CCircuitUnit* unit : units) {
+			if (target != nullptr) {
+				float range = unit->GetUnit()->GetMaxRange();
+				if (position.SqDistance2D(unit->GetUnit()->GetPos()) < range * range) {
+					unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, manager->GetCircuit()->GetLastFrame() + FRAMES_PER_SEC * 300);
+					continue;
+				}
+			}
+			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, manager->GetCircuit()->GetLastFrame() + FRAMES_PER_SEC * 300);
+			unit->GetUnit()->SetWantedMaxSpeed(lowestSpeed);
 		}
 	}
 }
 
 void CAttackTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
-	Unit* u = unit->GetUnit();
+	if ((units.size() > 1) && !isUpdating) {
+		return;
+	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	Unit* u = unit->GetUnit();
 
 	float minSqDist;
-	CEnemyUnit* bestTarget = FindBestTarget(unit, minSqDist);
+	FindTarget(unit, minSqDist);
 
-	if (bestTarget == nullptr) {
+	if (target == nullptr) {
 		if (!isUpdating) {
 			float x = rand() % (terrainManager->GetTerrainWidth() + 1);
 			float z = rand() % (terrainManager->GetTerrainHeight() + 1);
 			position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 		}
 	} else {
-		position = bestTarget->GetPos();
+		position = target->GetPos();
 		float range = u->GetMaxRange();
 		if (minSqDist < range * range) {
-			u->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
+			u->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
 			return;
 		}
 	}
 	u->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
+	u->SetWantedMaxSpeed(lowestSpeed);
 }
 
-CEnemyUnit* CAttackTask::FindBestTarget(CCircuitUnit* unit, float& minSqDist)
+void CAttackTask::FindTarget(CCircuitUnit* unit, float& minSqDist)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
@@ -84,7 +133,7 @@ CEnemyUnit* CAttackTask::FindBestTarget(CCircuitUnit* unit, float& minSqDist)
 	float power = threatMap->GetUnitThreat(unit);
 	int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
 
-	CEnemyUnit* bestTarget = nullptr;
+	target = nullptr;
 	minSqDist = std::numeric_limits<float>::max();
 
 	threatMap->SetThreatType(unit);
@@ -106,12 +155,10 @@ CEnemyUnit* CAttackTask::FindBestTarget(CCircuitUnit* unit, float& minSqDist)
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
 		if (sqDist < minSqDist) {
-			bestTarget = enemy;
+			target = enemy;
 			minSqDist = sqDist;
 		}
 	}
-
-	return bestTarget;
 }
 
 } // namespace circuit

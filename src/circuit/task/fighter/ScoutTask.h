@@ -18,10 +18,13 @@ public:
 	CScoutTask(ITaskManager* mgr);
 	virtual ~CScoutTask();
 
+	virtual bool CanAssignTo(CCircuitUnit* unit);
 	virtual void AssignTo(CCircuitUnit* unit);
 
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
+
+	virtual void OnUnitIdle(CCircuitUnit* unit);
 
 private:
 	void Execute(CCircuitUnit* unit, bool isUpdating);

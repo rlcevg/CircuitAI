@@ -62,7 +62,7 @@ void CDefenceMatrix::Init(CCircuitAI* circuit)
 	clusterInfos.resize(clusters.size());
 
 	Map* map = circuit->GetMap();
-	float maxDistance = circuit->GetCircuitDef("corllt")->GetUnitDef()->GetMaxWeaponRange() * 0.75f * 2;
+	float maxDistance = circuit->GetCircuitDef("corllt")->GetMaxRange() * 0.75f * 2;
 	CHierarchCluster clust;
 	CEncloseCircle enclose;
 

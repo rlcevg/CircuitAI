@@ -34,6 +34,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit)
 		, updateSlice(0)
 		, scoutIdx(0)
+		, curPowah(.0f)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CMilitaryManager::Init, this));
@@ -97,7 +98,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
-		if ((cdef->GetDPS() < 0.1f) || cdef->GetUnitDef()->IsBuilder()) {
+		if (!cdef->IsAttacker() || cdef->GetUnitDef()->IsBuilder()) {
 			continue;
 		}
 		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
@@ -174,7 +175,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 						   "amphraider3", "amphraider2",			// factoryamph
 						   "armflea", "armspy",						// factoryspider
 						   "corclog", "corak",						// factoryshield
-						   "corfav", "corgator",					// factoryveh
+						   "corfav", "corgator", "capturecar"		// factoryveh
 						   "puppy", "corpyro",						// factoryjump
 						   "corsh",									// factoryhover
 						   "shipscout", "subraider", "shipraider",	// factoryship
@@ -243,13 +244,14 @@ int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 	return 0; //signaling: OK
 }
 
-IUnitTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
+IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 {
 	IFighterTask* task;
 	switch (type) {
 		default:
 		case IFighterTask::FightType::DEFEND: {
-			task = new CDefendTask(this);
+			curPowah += 300.0f;
+			task = new CDefendTask(this, curPowah);  // TODO: pass enemy's threat
 			break;
 		}
 		case IFighterTask::FightType::SCOUT: {
@@ -266,7 +268,7 @@ IUnitTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 	return task;
 }
 
-void CMilitaryManager::DequeueTask(IUnitTask* task, bool done)
+void CMilitaryManager::DequeueTask(IFighterTask* task, bool done)
 {
 	auto it = fighterTasks.find(task);
 	if (it != fighterTasks.end()) {
@@ -278,20 +280,33 @@ void CMilitaryManager::DequeueTask(IUnitTask* task, bool done)
 
 void CMilitaryManager::AssignTask(CCircuitUnit* unit)
 {
-	IFighterTask::FightType type = (scoutDefs.find(unit->GetCircuitDef()) != scoutDefs.end()) ?
-			IFighterTask::FightType::SCOUT :
-			IFighterTask::FightType::ATTACK;
-	EnqueueTask(type)->AssignTo(unit);
+	IFighterTask* task = nullptr;
+
+	for (IFighterTask* candidate : fighterTasks) {
+		if (!candidate->CanAssignTo(unit)) {
+			continue;
+		}
+		task = candidate;
+		break;
+	}
+
+	if (task == nullptr) {
+		bool isScout = (scoutDefs.find(unit->GetCircuitDef()) != scoutDefs.end());
+		IFighterTask::FightType type = isScout ? IFighterTask::FightType::SCOUT : IFighterTask::FightType::DEFEND;
+		task = EnqueueTask(type);
+	}
+
+	task->AssignTo(unit);
 }
 
 void CMilitaryManager::AbortTask(IUnitTask* task)
 {
-	DequeueTask(task, false);
+	DequeueTask(static_cast<IFighterTask*>(task), false);
 }
 
 void CMilitaryManager::DoneTask(IUnitTask* task)
 {
-	DequeueTask(task, false);
+	DequeueTask(static_cast<IFighterTask*>(task), true);
 }
 
 void CMilitaryManager::FallbackTask(CCircuitUnit* unit)

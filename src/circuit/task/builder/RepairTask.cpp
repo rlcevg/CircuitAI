@@ -68,7 +68,7 @@ void CBRepairTask::Finish()
 //	// FIXME: Replace const 1000.0f with build time?
 //	if ((target != nullptr) && (target->GetUnit()->GetMaxSpeed() <= 0)) {
 //		CCircuitDef* cdef = target->GetCircuitDef();
-//		if ((cdef->GetUnitDef()->GetMaxWeaponRange() <= .0f) && (cdef->GetCost() > 1000.0f)) {
+//		if ((cdef->GetMaxRange() <= .0f) && (cdef->GetCost() > 1000.0f)) {
 //			circuit->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
 //		}
 //	}

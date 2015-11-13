@@ -413,7 +413,7 @@ void CPathFinder::UpdateVis(const F3Vec& path)
 	for (unsigned i = 1; i < path.size(); ++i) {
 		fig->DrawLine(path[i - 1], path[i], 16.0f, true, FRAMES_PER_SEC * 20, figId);
 	}
-	fig->SetColor(figId, AIColor(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX), 255);
+	fig->SetColor(figId, AIColor((float)rand() / RAND_MAX, (float)rand() / RAND_MAX, (float)rand() / RAND_MAX), 255);
 	delete fig;
 }
 

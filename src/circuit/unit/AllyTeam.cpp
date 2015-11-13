@@ -104,10 +104,10 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 		STerrainMapMobileType::Id mtId = cdef->GetMobileId();
 		if (mtId < 0) {
 			factoryBuilds.push_back(cdef->GetId());
-			percents[cdef->GetId()] = 60.0 + rand() / (float)RAND_MAX * 50.0;
+			percents[cdef->GetId()] = 60.0 + (float)rand() / RAND_MAX * 50.0;
 		} else if (mobileType[mtId].typeUsable) {
 			factoryBuilds.push_back(cdef->GetId());
-			float shift = rand() / (float)RAND_MAX * 40.0 - 20.0;
+			float shift = (float)rand() / RAND_MAX * 40.0 - 20.0;
 			percents[cdef->GetId()] = mobileType[mtId].areaLargest->percentOfMap + shift;
 		}
 	}

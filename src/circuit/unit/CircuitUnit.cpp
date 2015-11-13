@@ -31,6 +31,7 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* cdef)
 		, isForceExecute(false)
 		, disarmParam(nullptr)
 		, isMorphing(false)
+		, isRetreat(false)
 {
 	WeaponMount* wpMnt = circuitDef->GetDGunMount();
 	dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);

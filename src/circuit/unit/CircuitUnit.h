@@ -71,6 +71,9 @@ public:
 	void StopMorph();
 	bool IsMorphing() const { return isMorphing; }
 
+	void SetRetreat(bool value) { isRetreat = value; }
+	bool IsRetreat() const { return isRetreat; }
+
 	bool operator==(const CCircuitUnit& rhs) { return id == rhs.id; }
 	bool operator!=(const CCircuitUnit& rhs) { return id != rhs.id; }
 
@@ -90,6 +93,7 @@ private:
 	springai::Weapon* dgun;
 	springai::UnitRulesParam* disarmParam;
 	bool isMorphing;
+	bool isRetreat;
 };
 
 } // namespace circuit

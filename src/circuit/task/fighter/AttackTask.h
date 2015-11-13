@@ -17,12 +17,24 @@ public:
 	CAttackTask(ITaskManager* mgr);
 	virtual ~CAttackTask();
 
+	virtual bool CanAssignTo(CCircuitUnit* unit);
+	virtual void AssignTo(CCircuitUnit* unit);
+	virtual void RemoveAssignee(CCircuitUnit* unit);
+
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
 
 private:
 	void Execute(CCircuitUnit* unit, bool isUpdating);
-	CEnemyUnit* FindBestTarget(CCircuitUnit* unit, float& minSqDist);
+	void FindTarget(CCircuitUnit* unit, float& minSqDist);
+
+	float lowestRange;
+	float highestRange;
+	float lowestSpeed;
+	float highestSpeed;
+	springai::AIFloat3 groupPos;
+
+	float minPower;
 };
 
 } // namespace circuit

@@ -28,15 +28,62 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, dgunRange(.0f)
 		, dgunMount(nullptr)
 		, dps(.0f)
+		, power(.0f)
 		, targetCategory(0)
 		, immobileTypeId(-1)
 		, mobileTypeId(-1)
+		, isAntiAir(false)
+		, isAntiLand(false)
+		, isAntiWater(false)
 {
 	id = def->GetUnitDefId();
 
 	buildDistance = def->GetBuildDistance();
-	buildSpeed = def->GetBuildSpeed();
+	buildSpeed    = def->GetBuildSpeed();
 
+	isManualFire    = def->CanManualFire();
+	noChaseCategory = def->GetNoChaseCategory();
+
+	isAbleToFly = def->IsAbleToFly();
+	isFloater   = def->IsFloater();
+
+	maxRange  = def->GetMaxWeaponRange();
+	speed     = def->GetSpeed() / FRAMES_PER_SEC;  // NOTE: SetMaxWantedSpeed expects value/FRAMES_PER_SEC
+	losRadius = def->GetLosRadius() * circuit->GetLosConv();
+	cost      = def->GetCost(res);
+
+	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+	auto it = customParams.find("is_drone");
+	if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
+		category = ~circuit->GetGoodCategory();
+	} else {
+		category = def->GetCategory();
+	}
+
+	it = customParams.find("midposoffset");
+	if (it != customParams.end()) {
+		const std::string& str = it->second;
+		std::string::const_iterator start = str.begin();
+		std::string::const_iterator end = str.end();
+		std::regex pattern("(-?\\d+)");
+		std::smatch section;
+		int index = 0;
+		while (std::regex_search(start, end, section, pattern)) {
+			midPosOffset[index++] = utils::string_to_float(section[1]);
+			start = section[0].second;
+		}
+	} else {
+		midPosOffset = ZeroVector;
+	}
+
+	if (!def->IsAbleToAttack()) {
+		// NOTE: Aspis (mobile shield) has 10 damage for some reason, filter out such units.
+		return;
+	}
+
+	/*
+	 * DPS and Weapon calculations
+	 */
 	float bestReload = std::numeric_limits<float>::max();
 	float bestRange = .0f;
 	WeaponMount* bestMount = nullptr;
@@ -110,49 +157,13 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		delete wd;
 	}
 
-	isManualFire = def->CanManualFire();
 	if (bestReload < std::numeric_limits<float>::max()) {
 //		dgunReload = math::ceil(bestReload * FRAMES_PER_SEC)/* + FRAMES_PER_SEC*/;
 		dgunRange = bestRange;
 		dgunMount = bestMount;
 	}
 
-	noChaseCategory = def->GetNoChaseCategory();
-
-	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
-	auto it = customParams.find("is_drone");
-	if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
-		category = ~circuit->GetGoodCategory();
-	} else {
-		category = def->GetCategory();
-	}
-
-	it = customParams.find("midposoffset");
-	if (it != customParams.end()) {
-		const std::string& str = it->second;
-		std::string::const_iterator start = str.begin();
-		std::string::const_iterator end = str.end();
-		std::regex pattern("(-?\\d+)");
-		std::smatch section;
-		int index = 0;
-		while (std::regex_search(start, end, section, pattern)) {
-			midPosOffset[index++] = utils::string_to_float(section[1]);
-			start = section[0].second;
-		}
-	} else {
-		midPosOffset = ZeroVector;
-	}
-
-	// NOTE: isTracks filters units with slow weapon (hermit, recluse, rocko)
-	isAntiAir   = (targetCategory & circuit->GetAirCategory()) && isTracks;
-	isAntiLand  = (targetCategory & circuit->GetLandCategory());
-	isAntiWater = (targetCategory & circuit->GetWaterCategory())/* || isWater*/;
-
-	isMobile = def->GetSpeed() > .0f;
-	isAbleToFly = def->IsAbleToFly();
-	isFloater = def->IsFloater();
-
-	if (isMobile && (dps < 0.1f)) {  // mobile bombs
+	if (IsMobile() && !IsAttacker()) {  // mobile bomb?
 		WeaponDef* wd = def->GetDeathExplosion();
 		if (wd->GetAreaOfEffect() > 80.0f) {
 			Damage* damage = wd->GetDamage();
@@ -171,8 +182,12 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		delete wd;
 	}
 
-	losRadius = def->GetLosRadius() * circuit->GetLosConv();
-	cost = def->GetCost(res);
+	// NOTE: isTracks filters units with slow weapon (hermit, recluse, rocko)
+	isAntiAir   = (targetCategory & circuit->GetAirCategory()) && isTracks;
+	isAntiLand  = (targetCategory & circuit->GetLandCategory());
+	isAntiWater = (targetCategory & circuit->GetWaterCategory())/* || isWater*/;
+
+	power = dps * sqrtf(def->GetHealth() / 100.0f);
 }
 
 CCircuitDef::~CCircuitDef()

@@ -24,11 +24,11 @@ public:
 	virtual void OnStart();
 	virtual void OnEnd();
 
-	void SetFinished(bool val) { isFinished = val; }
+	void SetFinished(bool value) { isFinished = value; }
 	bool IsFinished() const { return isFinished; }
-	void SetBlocking(bool val) { isBlocking = val; }
+	void SetBlocking(bool value) { isBlocking = value; }
 	bool IsBlocking() const { return isBlocking; }
-	void SetActive(bool val) { isActive = val; }
+	void SetActive(bool value) { isActive = value; }
 	bool IsActive() const { return isActive; }
 
 protected:

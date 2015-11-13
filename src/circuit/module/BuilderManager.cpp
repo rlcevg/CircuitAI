@@ -472,7 +472,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	const int buildDistance = std::max<int>(unit->GetCircuitDef()->GetBuildDistance(), pathfinder->GetSquareSize());
 	float metric = std::numeric_limits<float>::max();
 	for (auto& tasks : builderTasks) {
-		for (auto candidate : tasks) {
+		for (IBuilderTask* candidate : tasks) {
 			if (!candidate->CanAssignTo(unit)) {
 				continue;
 			}

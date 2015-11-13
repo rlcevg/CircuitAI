@@ -100,7 +100,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 	 */
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitDef* def = circuit->GetCircuitDef("corrl");
-	float range = def->GetUnitDef()->GetMaxWeaponRange();
+	float range = def->GetMaxRange();
 	float testRange = range + 200.0f;  // 200 elmos
 	const AIFloat3& pos = unit->GetUnit()->GetPos();
 	if (buildPos.SqDistance2D(pos) < testRange * testRange) {

@@ -43,8 +43,8 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 		CDGunAction* act = new CDGunAction(unit, cdef->GetDGunRange() * 0.8f);
 		unit->PushBack(act);
 	}
-
 	unit->PushBack(new CMoveAction(unit));
+	unit->SetRetreat(true);
 }
 
 void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
@@ -52,6 +52,7 @@ void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
 	IUnitTask::RemoveAssignee(unit);
 
 	updateUnits.erase(unit);
+	unit->SetRetreat(false);
 }
 
 void CRetreatTask::Execute(CCircuitUnit* unit)

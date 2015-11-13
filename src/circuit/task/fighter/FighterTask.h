@@ -24,7 +24,7 @@ public:
 	virtual ~IFighterTask();
 
 	virtual void AssignTo(CCircuitUnit* unit);
-	virtual void RemoveAssignee(CCircuitUnit* unit);  // FIXME: Remove when proper task assignment implemented
+	virtual void RemoveAssignee(CCircuitUnit* unit);
 
 	virtual void Update();
 
@@ -37,6 +37,9 @@ public:
 protected:
 	FightType fightType;
 	springai::AIFloat3 position;
+
+	float attackPower;
+	CEnemyUnit* target;
 };
 
 } // namespace circuit

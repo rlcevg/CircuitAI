@@ -179,7 +179,7 @@ void IBuilderTask::Update()
 void IBuilderTask::Finish()
 {
 	// FIXME: Replace const 1000.0f with build time?
-//	if ((cost > 1000.0f) && (buildDef != nullptr) && (buildDef->GetUnitDef()->GetMaxWeaponRange() <= .0f)) {
+//	if ((cost > 1000.0f) && (buildDef != nullptr) && (buildDef->GetMaxRange() <= .0f)) {
 //		manager->GetCircuit()->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
 //	}
 
@@ -252,7 +252,7 @@ void IBuilderTask::UpdateTarget(CCircuitUnit* unit)
 	SetTarget(unit);
 
 	int frame = manager->GetCircuit()->GetLastFrame() + FRAMES_PER_SEC * 60;
-	for (auto ass : units) {
+	for (CCircuitUnit* ass : units) {
 		ass->GetUnit()->Build(buildDef->GetUnitDef(), buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame);
 	}
 }

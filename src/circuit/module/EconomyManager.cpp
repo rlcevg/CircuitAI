@@ -579,7 +579,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		if ((buildPos != -RgtVector) && terrainManager->CanBeBuiltAt(bestDef, buildPos) &&
 			((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 		{
-			IBuilderTask::Priority priority = /*isEnergyStalling ? IBuilderTask::Priority::HIGH :*/ IBuilderTask::Priority::NORMAL;
+			IBuilderTask::Priority priority = isEnergyStalling ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
 			return builderManager->EnqueueTask(priority, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, cost);
 		}
 	}

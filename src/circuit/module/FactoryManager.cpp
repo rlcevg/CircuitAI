@@ -433,7 +433,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		const std::array<float, 10> wp1 = {.10,          .00,        .00,     .00,        .00,         .00,        .10,       .00,          .40,    .40};
 		const std::array<float, 10>& prob = (metalIncome < 100) ? (isWater ? wp0 : lp0) : (isWater ? wp1 : lp1);
 		unsigned choice = 0;
-		float dice = rand() / (float)RAND_MAX;
+		float dice = (float)rand() / RAND_MAX;
 		float total = .0f;
 		for (unsigned i = 0; i < prob.size(); ++i) {
 			total += prob[i];
@@ -706,7 +706,7 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	float metalIncome = std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
-	if ((circuit->GetBuilderManager()->GetBuilderPower() >= metalIncome * 2.0f) || (rand() >= RAND_MAX / 2)) {
+	if ((circuit->GetBuilderManager()->GetBuilderPower() >= metalIncome * 1.5f) || (rand() >= RAND_MAX / 2)) {
 		return nullptr;
 	}
 
@@ -741,7 +741,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	const std::vector<float>& prob = facDef.GetProb(circuit->GetEconomyManager());
 
 	unsigned choice = 0;
-	float dice = rand() / (float)RAND_MAX;
+	float dice = (float)rand() / RAND_MAX;
 	float total = .0f;
 	for (unsigned i = 0; i < prob.size(); ++i) {
 		total += prob[i];
