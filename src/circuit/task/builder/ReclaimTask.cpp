@@ -55,6 +55,7 @@ void CBReclaimTask::Execute(CCircuitUnit* unit)
 	Unit* u = unit->GetUnit();
 //	u->ExecuteCustomCommand(CMD_PRIORITY, {static_cast<float>(priority)});
 
+	int frame = manager->GetCircuit()->GetLastFrame();
 	if (target == nullptr) {
 		AIFloat3 pos;
 		float reclRadius;
@@ -68,9 +69,9 @@ void CBReclaimTask::Execute(CCircuitUnit* unit)
 			pos = position;
 			reclRadius = radius;
 		}
-		u->ReclaimInArea(pos, reclRadius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->ReclaimInArea(pos, reclRadius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 	} else {
-		u->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 	}
 }
 
@@ -89,13 +90,13 @@ void CBReclaimTask::Update()
 		 */
 		// FIXME: Works only with 1 task per worker
 		CCircuitUnit* unit = *units.begin();
-		Unit* u = unit->GetUnit();
-		const AIFloat3& pos = u->GetPos();
+		int frame = circuit->GetLastFrame();
+		const AIFloat3& pos = unit->GetPos(frame);
 		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(pos, 300.0f));
 		if (!enemies.empty()) {
 			for (Unit* enemy : enemies) {
 				if ((enemy != nullptr) && enemy->IsBeingBuilt()) {
-					u->ReclaimUnit(enemy, UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+					unit->GetUnit()->ReclaimUnit(enemy, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 					utils::free_clear(enemies);
 					return;
 				}
@@ -129,7 +130,8 @@ void CBReclaimTask::Update()
 				}
 			}
 			if (minSqDist < std::numeric_limits<float>::max()) {
-				u->ReclaimInArea(reclPos, unit->GetCircuitDef()->GetBuildDistance(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+				const float radius = unit->GetCircuitDef()->GetBuildDistance();
+				unit->GetUnit()->ReclaimInArea(reclPos, radius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 			}
 			utils::free_clear(features);
 		}

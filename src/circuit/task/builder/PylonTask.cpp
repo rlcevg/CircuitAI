@@ -43,16 +43,17 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 	u->ExecuteCustomCommand(CMD_PRIORITY, {static_cast<float>(priority)});
 
 	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
-		Unit* tu = target->GetUnit();
-		u->Build(target->GetCircuitDef()->GetUnitDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+		int facing = target->GetUnit()->GetBuildingFacing();
+		u->Build(target->GetCircuitDef()->GetUnitDef(), target->GetPos(frame), facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 		return;
 	}
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (buildPos != -RgtVector) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
-			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 			return;
 		} else {
 			terrainManager->RemoveBlocker(buildDef, buildPos, facing);
@@ -65,7 +66,7 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 
 	if (buildPos != -RgtVector) {
 		terrainManager->AddBlocker(buildDef, buildPos, facing);
-		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 	} else {
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);

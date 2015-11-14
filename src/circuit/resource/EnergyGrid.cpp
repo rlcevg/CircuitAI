@@ -254,9 +254,9 @@ void CEnergyGrid::MarkAllyPylons(const std::list<CCircuitUnit*>& pylons)
 	auto first2  = prevUnits.begin();
 	auto last2   = prevUnits.end();
 	auto d_first = std::back_inserter(markedPylons);
-	auto addPylon = [&d_first, this](const CCircuitUnit* unit) {
+	auto addPylon = [&d_first, this](CCircuitUnit* unit) {
 		*d_first++ = unit->GetId();
-		AddPylon(unit->GetId(), unit->GetCircuitDef()->GetId(), unit->GetUnit()->GetPos());
+		AddPylon(unit->GetId(), unit->GetCircuitDef()->GetId(), unit->GetPos(this->circuit->GetLastFrame()));
 	};
 	auto delPylon = [this](const CCircuitUnit::Id unitId) {
 		RemovePylon(unitId);

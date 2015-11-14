@@ -816,7 +816,7 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(CCircuitUnit::Id unitId)
 	unit = new CCircuitUnit(u, cdef);
 	delete unitDef;
 
-	unit->SetArea(terrainManager->GetCurrentMapArea(cdef, u->GetPos()));
+	unit->SetArea(terrainManager->GetCurrentMapArea(cdef, unit->GetPos(lastFrame)));
 
 	teamUnits[unitId] = unit;
 	cdef->Inc();

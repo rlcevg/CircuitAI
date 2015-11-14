@@ -33,12 +33,12 @@ void CStuckTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CStuckTask::Execute(CCircuitUnit* unit)
 {
-	Unit* u = unit->GetUnit();
-	AIFloat3 pos = u->GetPos();
+	int frame = manager->GetCircuit()->GetLastFrame();
+	AIFloat3 pos = unit->GetPos(frame);
 	AIFloat3 d((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
 	d.Normalize();
 	pos += d * SQUARE_SIZE * 20;
-	u->MoveTo(pos, 0, manager->GetCircuit()->GetLastFrame() + FRAMES_PER_SEC * 10);
+	unit->GetUnit()->MoveTo(pos, 0, frame + FRAMES_PER_SEC * 10);
 }
 
 void CStuckTask::Update()

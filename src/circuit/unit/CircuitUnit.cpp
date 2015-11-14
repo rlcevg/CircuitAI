@@ -26,6 +26,7 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* cdef)
 		, taskFrame(-1)
 		, manager(nullptr)
 		, area(nullptr)
+		, posFrame(-1)
 		, moveFails(0)
 		, failFrame(-1)
 		, isForceExecute(false)
@@ -49,6 +50,15 @@ void CCircuitUnit::SetTask(IUnitTask* task)
 {
 	this->task = task;
 	taskFrame = manager->GetCircuit()->GetLastFrame();
+}
+
+const springai::AIFloat3& CCircuitUnit::GetPos(int frame)
+{
+	if (posFrame < frame) {
+		posFrame = frame;
+		position = unit->GetPos();
+	}
+	return position;
 }
 
 bool CCircuitUnit::IsMoveFailed(int frame)

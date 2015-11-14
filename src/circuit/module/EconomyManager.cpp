@@ -95,7 +95,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	 * factory handlers
 	 */
 	auto factoryFinishedHandler = [this](CCircuitUnit* unit) {
-		int index = this->circuit->GetMetalManager()->FindNearestCluster(unit->GetUnit()->GetPos());
+		int frame = this->circuit->GetLastFrame();
+		int index = this->circuit->GetMetalManager()->FindNearestCluster(unit->GetPos(frame));
 		if (index >= 0) {
 			clusterInfos[index].factory = unit;
 		}
@@ -609,9 +610,8 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	// check nanos
 	CCircuitUnit* factory = factoryManager->NeedUpgrade();
 	if ((factory != nullptr) && assistDef->IsAvailable()) {
-		Unit* u = factory->GetUnit();
-		AIFloat3 buildPos = u->GetPos();
-		switch (u->GetBuildingFacing()) {
+		AIFloat3 buildPos = factory->GetPos(circuit->GetLastFrame());
+		switch (factory->GetUnit()->GetBuildingFacing()) {
 			default:
 			case UNIT_FACING_SOUTH:
 				buildPos.z -= 200.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
@@ -798,9 +798,8 @@ void CEconomyManager::Init()
 		CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
 		IBuilderTask* task = nullptr;
 		if (commander != nullptr) {
-			Unit* u = commander->GetUnit();
-			const AIFloat3& pos = u->GetPos();
-			UnitRulesParam* param = u->GetUnitRulesParamByName("facplop");
+			const AIFloat3& pos = commander->GetPos(circuit->GetLastFrame());
+			UnitRulesParam* param = commander->GetUnit()->GetUnitRulesParamByName("facplop");
 			if ((param != nullptr) && (param->GetValueFloat() == 1)) {
 				CCircuitDef* facDef = circuit->GetAllyTeam()->GetFactoryToBuild(circuit);
 				if (facDef != nullptr) {

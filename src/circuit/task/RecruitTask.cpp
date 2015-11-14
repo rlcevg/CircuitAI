@@ -6,9 +6,11 @@
  */
 
 #include "task/RecruitTask.h"
+#include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
 #include "util/utils.h"
+#include "CircuitAI.h"
 
 #include "AISCommands.h"
 
@@ -36,14 +38,13 @@ CRecruitTask::~CRecruitTask()
 bool CRecruitTask::CanAssignTo(CCircuitUnit* unit)
 {
 	return (target == nullptr) && unit->GetCircuitDef()->CanBuild(buildDef) &&
-			position.SqDistance2D(unit->GetUnit()->GetPos()) <= sqradius;
+		   (position.SqDistance2D(unit->GetPos(manager->GetCircuit()->GetLastFrame())) <= sqradius);
 }
 
 void CRecruitTask::Execute(CCircuitUnit* unit)
 {
-	Unit* u = unit->GetUnit();
-	const AIFloat3& buildPos = u->GetPos();
-	u->Build(buildDef->GetUnitDef(), buildPos, UNIT_COMMAND_BUILD_NO_FACING);
+	const AIFloat3& buildPos = unit->GetPos(manager->GetCircuit()->GetLastFrame());
+	unit->GetUnit()->Build(buildDef->GetUnitDef(), buildPos, UNIT_COMMAND_BUILD_NO_FACING);
 }
 
 void CRecruitTask::Update()

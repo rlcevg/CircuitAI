@@ -148,7 +148,7 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 	micropather->Reset();
 }
 
-void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap)
+void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame)
 {
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	STerrainMapMobileType::Id mobileTypeId = cdef->GetMobileId();
@@ -158,7 +158,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap)
 		costArray = threatMap->GetCloakThreatArray();
 	} else if (cdef->IsAbleToFly()) {
 		costArray = threatMap->GetAirThreatArray();
-	} else if (unit->GetUnit()->GetPos().y < -SQUARE_SIZE * 4) {
+	} else if (unit->GetPos(frame).y < -SQUARE_SIZE * 4) {
 		costArray = threatMap->GetWaterThreatArray();
 	} else {
 		costArray = threatMap->GetLandThreatArray();

@@ -37,7 +37,7 @@ public:
 	springai::AIFloat3 Node2Pos(void* node);
 	void* Pos2Node(springai::AIFloat3 pos);
 
-	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap);
+	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
 
 	unsigned Checksum() const { return micropather->Checksum(); }
 	float MakePath(F3Vec& posPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);

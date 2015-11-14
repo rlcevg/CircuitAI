@@ -75,10 +75,11 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 		return;
 	}
 
-	CThreatMap* threatMap = manager->GetCircuit()->GetThreatMap();
+	CCircuitAI* circuit = manager->GetCircuit();
+	CThreatMap* threatMap = circuit->GetThreatMap();
 	const float range = unit->GetCircuitDef()->GetMaxRange();
 	if ((target != nullptr) && target->IsInLOS() &&
-		(target->GetPos().SqDistance2D(u->GetPos()) < range * range) &&
+		(target->GetPos().SqDistance2D(unit->GetPos(circuit->GetLastFrame())) < range * range) &&
 		(target->GetThreat() < threatMap->GetUnitThreat(unit)))
 	{
 		unit->SetRetreat(true);

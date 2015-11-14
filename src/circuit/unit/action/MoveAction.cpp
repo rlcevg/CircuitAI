@@ -51,8 +51,8 @@ CMoveAction::~CMoveAction()
 void CMoveAction::Update(CCircuitAI* circuit)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
-	Unit* u = unit->GetUnit();
-	const AIFloat3& pos = u->GetPos();
+	int frame = circuit->GetLastFrame();
+	const AIFloat3& pos = unit->GetPos(frame);
 	int pathMaxIndex = path.size() - 1;
 
 	int lastStep = pathIterator;
@@ -70,11 +70,11 @@ void CMoveAction::Update(CCircuitAI* circuit)
 		return;
 	}
 	pathIterator = step;
-	u->MoveTo(path[step], UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+	unit->GetUnit()->MoveTo(path[step], UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 
 	for (int i = 0; (step < pathMaxIndex) && (i < 2); ++i) {
 		step = std::min(step + increment, pathMaxIndex);
-		u->MoveTo(path[step], UNIT_COMMAND_OPTION_SHIFT_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+		unit->GetUnit()->MoveTo(path[step], UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60);
 	}
 }
 

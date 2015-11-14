@@ -42,16 +42,17 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	u->ExecuteCustomCommand(CMD_PRIORITY, {static_cast<float>(priority)});
 
 	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
-		Unit* tu = target->GetUnit();
-		u->Build(target->GetCircuitDef()->GetUnitDef(), tu->GetPos(), tu->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+		int facing = target->GetUnit()->GetBuildingFacing();
+		u->Build(target->GetCircuitDef()->GetUnitDef(), target->GetPos(frame), facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 		return;
 	}
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (buildPos != -RgtVector) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
-			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 			return;
 		} else {
 			metalManager->SetOpenSpot(buildPos, true);
@@ -74,7 +75,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 //
 //	if (buildPos != -RgtVector) {
 //		metalManager->SetOpenSpot(buildPos, false);
-//		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+//		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 //	} else {
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);
@@ -102,7 +103,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 	CCircuitDef* def = circuit->GetCircuitDef("corrl");
 	float range = def->GetMaxRange();
 	float testRange = range + 200.0f;  // 200 elmos
-	const AIFloat3& pos = unit->GetUnit()->GetPos();
+	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	if (buildPos.SqDistance2D(pos) < testRange * testRange) {
 		int mexDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
 		// TODO: Use internal CCircuitAI::GetEnemyUnits?

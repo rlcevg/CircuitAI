@@ -429,11 +429,11 @@ void CTerrainManager::MarkAllyBuildings()
 	auto first2  = prevUnits.begin();
 	auto last2   = prevUnits.end();
 	auto d_first = std::back_inserter(markedAllies);
-	auto addStructure = [&d_first, mexDef, this](const CCircuitUnit* unit) {
+	auto addStructure = [&d_first, mexDef, this](CCircuitUnit* unit) {
 		SStructure building;
 		building.unitId = unit->GetId();
 		building.cdef = unit->GetCircuitDef();
-		building.pos = unit->GetUnit()->GetPos();
+		building.pos = unit->GetPos(this->circuit->GetLastFrame());
 		building.facing = unit->GetUnit()->GetBuildingFacing();
 		*d_first++ = building;
 		if (*building.cdef != *mexDef) {
@@ -448,7 +448,7 @@ void CTerrainManager::MarkAllyBuildings()
 
 	// @see std::set_symmetric_difference + std::set_intersection
 	while (first1 != last1) {
-		const CCircuitUnit* unit = first1->second;
+		CCircuitUnit* unit = first1->second;
 		if ((unit->GetUnit()->GetTeam() == teamId) || (unit->GetUnit()->GetMaxSpeed() > 0)) {
 			++first1;
 			continue;
@@ -456,7 +456,7 @@ void CTerrainManager::MarkAllyBuildings()
 		if (first2 == last2) {
 			addStructure(unit);  // everything else in first1..last1 is new units
 			while (++first1 != last1) {
-				const CCircuitUnit* unit = first1->second;
+				CCircuitUnit* unit = first1->second;
 				if ((unit->GetUnit()->GetTeam() == teamId) || (unit->GetUnit()->GetMaxSpeed() > 0)) {
 					continue;
 				}
@@ -1241,7 +1241,7 @@ bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination
 		return false;
 	}
 	if (unit->GetCircuitDef()->GetImmobileId() != -1) {  // A hub or factory
-		return unit->GetUnit()->GetPos().distance2D(destination) < unit->GetCircuitDef()->GetBuildDistance();
+		return unit->GetPos(circuit->GetLastFrame()).distance2D(destination) < unit->GetCircuitDef()->GetBuildDistance();
 	}
 	STerrainMapArea* area = unit->GetArea();
 	if (area == nullptr) {  // A flying unit
@@ -1272,6 +1272,7 @@ bool CTerrainManager::CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* build
 void CTerrainManager::UpdateAreaUsers()
 {
 	areaData = terrainData->GetNextAreaData();
+	int frame = circuit->GetLastFrame();
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
 
@@ -1279,7 +1280,7 @@ void CTerrainManager::UpdateAreaUsers()
 		STerrainMapMobileType* mobileType = GetMobileTypeById(unit->GetCircuitDef()->GetMobileId());
 		if (mobileType != nullptr) {
 			// other mobile units & their factories
-			AIFloat3 pos = unit->GetUnit()->GetPos();
+			AIFloat3 pos = unit->GetPos(frame);
 			CorrectPosition(pos);
 			int iS = GetSectorIndex(pos);
 

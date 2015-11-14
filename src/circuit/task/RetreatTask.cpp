@@ -64,8 +64,9 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 	CMoveAction* moveAction = static_cast<CMoveAction*>(act);
 
 	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
 	CFactoryManager* factoryManager = circuit->GetFactoryManager();
-	AIFloat3 startPos = unit->GetUnit()->GetPos();
+	AIFloat3 startPos = unit->GetPos(frame);
 	AIFloat3 endPos = factoryManager->GetClosestHaven(unit);
 	if (endPos == -RgtVector) {
 		endPos = circuit->GetSetupManager()->GetBasePos();
@@ -74,7 +75,7 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	float range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
-	pathfinder->SetMapData(unit, circuit->GetThreatMap());
+	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
 	pathfinder->MakePath(path, startPos, endPos, range);
 
 	if (path.empty()) {
@@ -131,15 +132,15 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		haven = circuit->GetSetupManager()->GetBasePos();
 	}
 	const float maxDist = factoryManager->GetAssistDef()->GetBuildDistance();
-	Unit* u = unit->GetUnit();
-	const AIFloat3& unitPos = u->GetPos();
+	int frame = circuit->GetLastFrame();
+	const AIFloat3& unitPos = unit->GetPos(frame);
 	if (unitPos.SqDistance2D(haven) > maxDist * maxDist) {
 		// TODO: push MoveAction into unit? to avoid enemy fire
-		u->MoveTo(haven, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 1);
+		unit->GetUnit()->MoveTo(haven, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 1);
 		// TODO: Add fail counter?
 	} else {
 		// TODO: push WaitAction into unit
-		u->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
+		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
 
 		AIFloat3 pos = unitPos;
 		const float size = SQUARE_SIZE * 50;
@@ -155,7 +156,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 			pos.x += (pos.x > centerX) ? -size : size;
 			pos.z += (pos.z > centerZ) ? -size : size;
 		}
-		u->PatrolTo(pos);
+		unit->GetUnit()->PatrolTo(pos);
 
 		IUnitAction* act = static_cast<IUnitAction*>(unit->End());
 		if (act->GetType() == IUnitAction::Type::MOVE) {

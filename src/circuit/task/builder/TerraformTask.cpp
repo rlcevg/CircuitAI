@@ -17,7 +17,7 @@ namespace circuit {
 using namespace springai;
 
 CBTerraformTask::CBTerraformTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, float cost, int timeout)
-		: IBuilderTask(mgr, priority, target->GetCircuitDef(), target->GetUnit()->GetPos(), BuildType::TERRAFORM, cost, false, timeout)
+		: IBuilderTask(mgr, priority, target->GetCircuitDef(), target->GetPos(mgr->GetCircuit()->GetLastFrame()), BuildType::TERRAFORM, cost, false, timeout)
 		, targetId(target->GetId())
 {
 	facing = target->GetUnit()->GetBuildingFacing();
@@ -80,7 +80,7 @@ void CBTerraformTask::Cancel()
 void CBTerraformTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	float range = unit->GetCircuitDef()->GetBuildDistance() * 2;
-	const AIFloat3& pos = unit->GetUnit()->GetPos();
+	const AIFloat3& pos = unit->GetPos(manager->GetCircuit()->GetLastFrame());
 	if (position.SqDistance2D(pos) < range * range) {
 		manager->DoneTask(this);
 	} else {

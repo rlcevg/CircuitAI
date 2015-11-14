@@ -250,14 +250,14 @@ CAllyTeam* CSetupManager::GetAllyTeam() const
 void CSetupManager::FindCommander()
 {
 	std::vector<Unit*> units = circuit->GetCallback()->GetTeamUnits();
-	for (auto unit : units) {
-		UnitDef* def = unit->GetDef();
+	for (Unit* u : units) {
+		UnitDef* def = u->GetDef();
 		bool valid = def->IsBuilder();
 		delete def;
 		if (valid) {
-			commanderId = unit->GetUnitId();
+			commanderId = u->GetUnitId();
 //			if (startPos == -RgtVector) {
-				SetStartPos(unit->GetPos());
+				SetStartPos(u->GetPos());
 //			}
 			break;
 		}

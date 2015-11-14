@@ -47,9 +47,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
 	};
 	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+		int frame = this->circuit->GetLastFrame();
 		float defCost = unit->GetCircuitDef()->GetCost();
 		CDefenceMatrix* defence = this->circuit->GetDefenceMatrix();
-		CDefenceMatrix::SDefPoint* point = defence->GetDefPoint(unit->GetUnit()->GetPos(), defCost);
+		CDefenceMatrix::SDefPoint* point = defence->GetDefPoint(unit->GetPos(frame), defCost);
 		if (point != nullptr) {
 			point->cost -= defCost;
 		}
@@ -148,7 +149,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 //				params.push_back(2.0f);
 //				u->ExecuteCustomCommand(CMD_PRIORITY, params);
 //
-//				const AIFloat3& pos = attacker->GetUnit()->GetPos();
+//				const AIFloat3& pos = attacker->GetPos();
 //				params.clear();
 //				params.push_back(1.0f);  // 1: terraform_type, 1 == level
 //				params.push_back(this->circuit->GetTeamId());  // 2: teamId

@@ -254,9 +254,9 @@ void CMetalManager::MarkAllyMexes(const std::list<CCircuitUnit*>& mexes)
 	auto first2  = prevUnits.begin();
 	auto last2   = prevUnits.end();
 	auto d_first = std::back_inserter(markedMexes);
-	auto addMex = [&d_first, this](const CCircuitUnit* unit) {
+	auto addMex = [&d_first, this](CCircuitUnit* unit) {
 		SMex mex;
-		mex.index = FindNearestSpot(unit->GetUnit()->GetPos());
+		mex.index = FindNearestSpot(unit->GetPos(this->circuit->GetLastFrame()));
 		if (mex.index != -1) {
 			mex.unitId = unit->GetId();
 			*d_first++ = mex;

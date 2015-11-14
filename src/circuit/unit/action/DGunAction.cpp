@@ -37,12 +37,13 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	}
 	isBlocking = false;
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
+	int frame = circuit->GetLastFrame();
 	// NOTE: Paralyzer doesn't increase ReloadFrame beyond currentFrame, but disarmer does.
 	//       Also checking disarm is more expensive (because of UnitRulesParam).
-	if ((unit->GetDGun()->GetReloadFrame() > circuit->GetLastFrame()) || unit->GetUnit()->IsParalyzed() /*|| unit->IsDisarmed()*/) {
+	if ((unit->GetDGun()->GetReloadFrame() > frame) || unit->GetUnit()->IsParalyzed() /*|| unit->IsDisarmed()*/) {
 		return;
 	}
-	const AIFloat3& pos = unit->GetUnit()->GetPos();
+	const AIFloat3& pos = unit->GetPos(frame);
 	auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(pos, range));
 	if (enemies.empty()) {
 		return;
@@ -67,7 +68,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 		CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, unit->GetUnit(), 0);
 
 		if (hitUID == enemy->GetId()) {
-			unit->ManualFire(e, circuit->GetLastFrame() + FRAMES_PER_SEC * 5);
+			unit->ManualFire(e, frame + FRAMES_PER_SEC * 5);
 			isBlocking = true;
 			break;
 		}

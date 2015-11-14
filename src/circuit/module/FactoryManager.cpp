@@ -65,7 +65,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		// check nanos around
 		std::set<CCircuitUnit*> nanos;
 		float radius = assistDef->GetBuildDistance();
-		const AIFloat3& pos = unit->GetUnit()->GetPos();
+		const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
 		auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
 		int nanoId = assistDef->GetId();
 		int teamId = this->circuit->GetTeamId();
@@ -153,16 +153,16 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			nullTask->RemoveAssignee(unit);
 		}
 
-		Unit* u = unit->GetUnit();
-		const AIFloat3& assPos = u->GetPos();
-		u->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
+		int frame = this->circuit->GetLastFrame();
+		const AIFloat3& assPos = unit->GetPos(frame);
+		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
 
 		// check factory nano belongs to
 		float radius = unit->GetCircuitDef()->GetBuildDistance();
 		float qradius = radius * radius;
 		std::set<CCircuitUnit*>& facs = assists[unit];
 		for (SFactory& fac : factories) {
-			if (assPos.SqDistance2D(fac.unit->GetUnit()->GetPos()) >= qradius) {
+			if (assPos.SqDistance2D(fac.unit->GetPos(frame)) >= qradius) {
 				continue;
 			}
 			fac.nanos.insert(unit);
@@ -195,7 +195,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		if (task == nullTask) {  // alternative: unit->GetUnit()->IsBeingBuilt()
 			return;
 		}
-		const AIFloat3& assPos = unit->GetUnit()->GetPos();
+		const AIFloat3& assPos = unit->GetPos(this->circuit->GetLastFrame());
 		float radius = unit->GetCircuitDef()->GetBuildDistance();
 		float qradius = radius * radius;
 		for (SFactory& fac : factories) {
@@ -385,14 +385,14 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		unit->SetManager(this);
 
 		factoryPower += unit->GetCircuitDef()->GetBuildSpeed();
-		Unit* u = unit->GetUnit();
 		CRecruitTask* task = new CRecruitTask(this, IUnitTask::Priority::HIGH, nullptr, ZeroVector, CRecruitTask::BuildType::FIREPOWER, unit->GetCircuitDef()->GetBuildDistance());
 		unit->SetTask(task);
 
 		// check nanos around
 		std::set<CCircuitUnit*> nanos;
+		int frame = this->circuit->GetLastFrame();
 		float radius = assistDef->GetBuildDistance();
-		auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(u->GetPos(), radius));
+		auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(unit->GetPos(frame), radius));
 		int nanoId = assistDef->GetId();
 		int teamId = this->circuit->GetTeamId();
 		for (auto nano : units) {
@@ -415,15 +415,16 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		utils::free_clear(units);
 		factories.emplace_back(unit, nanos, 9, false);
 
-		u->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
-//		u->SetRepeat(true);
+		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
+//		unit->GetUnit()->SetRepeat(true);
 
 		idleHandler[defId](unit);
 	};
 	idleHandler[defId] = [this](CCircuitUnit* unit) {
 		CEconomyManager* economyManager = this->circuit->GetEconomyManager();
 		CTerrainManager* terrainManager = this->circuit->GetTerrainManager();
-		AIFloat3 pos = unit->GetUnit()->GetPos();
+		int frame = this->circuit->GetLastFrame();
+		AIFloat3 pos = unit->GetPos(frame);
 		bool isWater = terrainManager->IsWaterSector(pos);
 		float metalIncome = economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor();
 		const char* names[]             = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"};
@@ -445,7 +446,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		CCircuitDef* striderDef = this->circuit->GetCircuitDef(names[choice]);
 		pos = terrainManager->FindBuildSite(striderDef, pos, this->circuit->GetCircuitDef("striderhub")->GetBuildDistance(), -1);
 		if (pos != -RgtVector) {
-			unit->GetUnit()->Build(striderDef->GetUnitDef(), pos, -1, 0, this->circuit->GetLastFrame() + FRAMES_PER_SEC * 10);
+			unit->GetUnit()->Build(striderDef->GetUnitDef(), pos, -1, 0, frame + FRAMES_PER_SEC * 10);
 		}
 	};
 	destroyedHandler[defId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
@@ -682,7 +683,7 @@ AIFloat3 CFactoryManager::GetClosestHaven(CCircuitUnit* unit) const
 		return -RgtVector;
 	}
 	float metric = std::numeric_limits<float>::max();
-	const AIFloat3& position = unit->GetUnit()->GetPos();
+	const AIFloat3& position = unit->GetPos(circuit->GetLastFrame());
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	auto it = havens.begin(), havIt = havens.end();
 	for (; it != havens.end(); ++it) {
@@ -718,7 +719,7 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 	CCircuitDef* buildDef = it->second.builderDef;
 	CCircuitUnit* factory = GetRandomFactory(buildDef);
 	if (factory != nullptr) {
-		const AIFloat3& buildPos = factory->GetUnit()->GetPos();
+		const AIFloat3& buildPos = factory->GetPos(circuit->GetLastFrame());
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
 		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::BuildType::BUILDPOWER, radius);
@@ -753,7 +754,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 
 	CCircuitDef* buildDef = facDef.buildDefs[choice];
 	if (buildDef->IsAvailable()) {
-		const AIFloat3& buildPos = unit->GetUnit()->GetPos();
+		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
 		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
 		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
 		return EnqueueTask(CRecruitTask::Priority::LOW, buildDef, buildPos, CRecruitTask::BuildType::DEFAULT, radius);
@@ -784,7 +785,7 @@ IBuilderTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 	CCircuitUnit* repairTarget = nullptr;
 	CCircuitUnit* buildTarget = nullptr;
 	bool isBuildMobile = true;
-	const AIFloat3& pos = unit->GetUnit()->GetPos();
+	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	float radius = unit->GetCircuitDef()->GetBuildDistance();
 
 	float maxCost = MAX_BUILD_SEC * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor();

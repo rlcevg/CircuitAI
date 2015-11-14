@@ -32,7 +32,6 @@ private:
 	float highestRange;
 	float lowestSpeed;
 	float highestSpeed;
-	springai::AIFloat3 groupPos;
 
 	float minPower;
 };

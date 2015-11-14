@@ -36,7 +36,7 @@ public:
 
 protected:
 	FightType fightType;
-	springai::AIFloat3 position;
+	springai::AIFloat3 position;  // attack/scout position
 
 	float attackPower;
 	CEnemyUnit* target;

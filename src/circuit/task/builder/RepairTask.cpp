@@ -43,11 +43,12 @@ void CBRepairTask::Execute(CCircuitUnit* unit)
 		targetId = target->GetId();
 	}
 
-	CCircuitUnit* target = manager->GetCircuit()->GetFriendlyUnit(targetId);
+	CCircuitAI* circuit = manager->GetCircuit();
+	CCircuitUnit* target = circuit->GetFriendlyUnit(targetId);
 	if (target != nullptr) {
 		Unit* u = unit->GetUnit();
 		u->ExecuteCustomCommand(CMD_PRIORITY, {static_cast<float>(priority)});
-		u->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, FRAMES_PER_SEC * 60);
+		u->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 	} else {
 		manager->AbortTask(this);
 	}
@@ -106,7 +107,7 @@ void CBRepairTask::SetTarget(CCircuitUnit* unit)
 	target = unit;
 	if (unit != nullptr) {
 		cost = unit->GetCircuitDef()->GetCost();
-		position = buildPos = unit->GetUnit()->GetPos();
+		position = buildPos = unit->GetPos(manager->GetCircuit()->GetLastFrame());
 		targetId = unit->GetId();
 //		buildDef = unit->GetCircuitDef();
 	} else {
@@ -119,16 +120,15 @@ void CBRepairTask::SetTarget(CCircuitUnit* unit)
 
 CCircuitUnit* CBRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 {
-	CCircuitUnit* target = nullptr;
-	Unit* su = unit->GetUnit();
-	const AIFloat3& pos = su->GetPos();
-	float maxSpeed = su->GetMaxSpeed();
-	float radius = unit->GetCircuitDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 30;
 	CCircuitAI* circuit = manager->GetCircuit();
+	CCircuitUnit* target = nullptr;
+	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
+	float maxSpeed = unit->GetUnit()->GetMaxSpeed();
+	float radius = unit->GetCircuitDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 30;
 
 	circuit->UpdateFriendlyUnits();
 	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
-	for (auto u : units) {
+	for (Unit* u : units) {
 		if ((u != nullptr) && u->GetHealth() < u->GetMaxHealth() && u->GetVel().Length() <= maxSpeed * 1.5f) {
 			target = circuit->GetFriendlyUnit(u);
 			if (target != nullptr) {

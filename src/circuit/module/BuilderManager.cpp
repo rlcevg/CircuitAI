@@ -108,8 +108,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	 * building handlers
 	 */
 	auto buildingDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
-		Unit* u = unit->GetUnit();
-		this->circuit->GetTerrainManager()->RemoveBlocker(unit->GetCircuitDef(), u->GetPos(), u->GetBuildingFacing());
+		int frame = this->circuit->GetLastFrame();
+		int facing = unit->GetUnit()->GetBuildingFacing();
+		this->circuit->GetTerrainManager()->RemoveBlocker(unit->GetCircuitDef(), unit->GetPos(frame), facing);
 	};
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
@@ -141,7 +142,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 	 */
 	CCircuitDef::Id unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
-		const AIFloat3& pos = unit->GetUnit()->GetPos();
+		const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
 		if (unit->GetUnit()->IsBeingBuilt() || !IsBuilderInArea(unit->GetCircuitDef(), pos)) {
 			this->circuit->GetMetalManager()->SetOpenSpot(pos, true);
 		} else {
@@ -454,7 +455,8 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 void CBuilderManager::AssignTask(CCircuitUnit* unit)
 {
 	IBuilderTask* task = nullptr;
-	AIFloat3 pos = unit->GetUnit()->GetPos();
+	int frame = circuit->GetLastFrame();
+	AIFloat3 pos = unit->GetPos(frame);
 
 	circuit->GetThreatMap()->SetThreatType(unit);
 	task = circuit->GetEconomyManager()->UpdateMetalTasks(pos, unit);
@@ -466,7 +468,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	terrainManager->CorrectPosition(pos);
-	pathfinder->SetMapData(unit, circuit->GetThreatMap());
+	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
 	const float maxThreat = circuit->GetThreatMap()->GetMapSize();
 	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize();
 	const int buildDistance = std::max<int>(unit->GetCircuitDef()->GetBuildDistance(), pathfinder->GetSquareSize());
@@ -549,7 +551,8 @@ void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 {
 	DequeueTask(static_cast<IBuilderTask*>(unit->GetTask()));
 
-	IBuilderTask* task = EnqueuePatrol(IBuilderTask::Priority::LOW, unit->GetUnit()->GetPos(), .0f, FRAMES_PER_SEC * 20);
+	int frame = circuit->GetLastFrame();
+	IBuilderTask* task = EnqueuePatrol(IBuilderTask::Priority::LOW, unit->GetPos(frame), .0f, FRAMES_PER_SEC * 20);
 	task->AssignTo(unit);
 	task->Execute(unit);
 }

@@ -57,6 +57,8 @@ public:
 	void SetArea(STerrainMapArea* area) { this->area = area; }
 	STerrainMapArea* GetArea() const { return area; }
 
+	const springai::AIFloat3& GetPos(int frame);
+
 	bool IsMoveFailed(int frame);
 
 	void ForceExecute() { isForceExecute = true; }
@@ -85,6 +87,9 @@ private:
 	int taskFrame;
 	IUnitManager* manager;
 	STerrainMapArea* area;  // = nullptr if a unit flies
+
+	int posFrame;
+	springai::AIFloat3 position;
 
 	int moveFails;
 	int failFrame;

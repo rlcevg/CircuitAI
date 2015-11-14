@@ -73,14 +73,15 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	}
 	CMoveAction* moveAction = static_cast<CMoveAction*>(act);
 
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
 	F3Vec path;
-	const AIFloat3& pos = unit->GetUnit()->GetPos();
+	const AIFloat3& pos = unit->GetPos(frame);
 	CEnemyUnit* bestTarget = FindBestTarget(unit, pos, path);
 
-	CCircuitAI* circuit = manager->GetCircuit();
 	if (bestTarget != nullptr) {
 		position = bestTarget->GetPos();
-		unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
+		unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 		moveAction->SetActive(false);
 		return;
 	} else if (!path.empty()) {
@@ -104,7 +105,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		AIFloat3 endPos = position;
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
-		pathfinder->SetMapData(unit, threatMap);
+		pathfinder->SetMapData(unit, threatMap, frame);
 		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
 
 		if (!path.empty()) {
@@ -122,7 +123,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	float x = rand() % (terrainManager->GetTerrainWidth() + 1);
 	float z = rand() % (terrainManager->GetTerrainHeight() + 1);
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
-	unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 300);
+	unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 	moveAction->SetActive(false);
 }
 
@@ -206,7 +207,7 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 	}
 
 	AIFloat3 startPos = pos;
-	circuit->GetPathfinder()->SetMapData(unit, threatMap);
+	circuit->GetPathfinder()->SetMapData(unit, threatMap, circuit->GetLastFrame());
 	circuit->GetPathfinder()->FindBestPath(path, startPos, range * 0.5f, enemyPositions);
 
 	return nullptr;

@@ -52,10 +52,11 @@ void CBEnergyTask::Finish()
 	CCircuitDef* pylonDef = economyManager->GetPylonDef();
 	float ourRange = circuit->GetEnergyGrid()->GetPylonRange(buildDef->GetId());
 	float pylonRange = economyManager->GetPylonRange();
-	circuit->UpdateFriendlyUnits();
 	float radius = pylonRange + ourRange;
+	int frame = circuit->GetLastFrame();
+	circuit->UpdateFriendlyUnits();
 	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(buildPos, radius));
-	for (auto u : units) {
+	for (Unit* u : units) {
 		CCircuitUnit* p = circuit->GetFriendlyUnit(u);
 		if (p == nullptr) {
 			continue;
@@ -64,7 +65,7 @@ void CBEnergyTask::Finish()
 		//        @see rts/Sim/Misc/QaudField.cpp
 		//        ...CQuadField::GetUnitsExact(const float3& pos, float radius, bool spherical)
 		//        const float totRad = radius + u->radius; -- suspicious
-		if ((*p->GetCircuitDef() == *pylonDef) && (buildPos.SqDistance2D(u->GetPos()) < radius * radius)) {
+		if ((*p->GetCircuitDef() == *pylonDef) && (buildPos.SqDistance2D(p->GetPos(frame)) < radius * radius)) {
 			foundPylon = true;
 			break;
 		}
