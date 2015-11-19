@@ -67,9 +67,9 @@ void CBRepairTask::Finish()
 //	CCircuitAI* circuit = manager->GetCircuit();
 //	CCircuitUnit* target = circuit->GetFriendlyUnit(targetId);
 //	// FIXME: Replace const 1000.0f with build time?
-//	if ((target != nullptr) && (target->GetUnit()->GetMaxSpeed() <= 0)) {
+//	if (target != nullptr) {
 //		CCircuitDef* cdef = target->GetCircuitDef();
-//		if ((cdef->GetMaxRange() <= .0f) && (cdef->GetCost() > 1000.0f)) {
+//		if (!cdef->IsMobile() && !cdef->IsAttacker() && (cdef->GetCost() > 1000.0f)) {
 //			circuit->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
 //		}
 //	}

@@ -449,7 +449,7 @@ void CTerrainManager::MarkAllyBuildings()
 	// @see std::set_symmetric_difference + std::set_intersection
 	while (first1 != last1) {
 		CCircuitUnit* unit = first1->second;
-		if ((unit->GetUnit()->GetTeam() == teamId) || (unit->GetUnit()->GetMaxSpeed() > 0)) {
+		if (unit->GetCircuitDef()->IsMobile() || (unit->GetUnit()->GetTeam() == teamId)) {
 			++first1;
 			continue;
 		}
@@ -457,7 +457,7 @@ void CTerrainManager::MarkAllyBuildings()
 			addStructure(unit);  // everything else in first1..last1 is new units
 			while (++first1 != last1) {
 				CCircuitUnit* unit = first1->second;
-				if ((unit->GetUnit()->GetTeam() == teamId) || (unit->GetUnit()->GetMaxSpeed() > 0)) {
+				if (unit->GetCircuitDef()->IsMobile() || (unit->GetUnit()->GetTeam() == teamId)) {
 					continue;
 				}
 				addStructure(unit);
@@ -666,7 +666,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 						}																					\
 						break;																				\
 					}																						\
-					case IBlockMask::BlockType::OPEN: { break; }																						\
+					case IBlockMask::BlockType::OPEN: { break; }											\
 				}																							\
 			}																								\
 		}																									\
@@ -784,7 +784,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 						}																					\
 						break;																				\
 					}																						\
-					case IBlockMask::BlockType::OPEN: { break; }													\
+					case IBlockMask::BlockType::OPEN: { break; }											\
 				}																							\
 			}																								\
 		}																									\
@@ -913,7 +913,7 @@ void CTerrainManager::MarkBlockerByMask(const SStructure& building, bool block, 
 					blockingMap.structOp(x, z, structType, notIgnore);	\
 					break;												\
 				}														\
-				case IBlockMask::BlockType::OPEN: { break; }					\
+				case IBlockMask::BlockType::OPEN: { break; }			\
 			}															\
 		}																\
 	}
@@ -981,20 +981,24 @@ void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 	const int x1 = int(pos.x / (SQUARE_SIZE * 2)) - (xsize / 2), x2 = x1 + xsize;
 	const int z1 = int(pos.z / (SQUARE_SIZE * 2)) - (zsize / 2), z2 = z1 + zsize;
 
+	int2 m1(x1, z1);
+	int2 m2(x2, z2);
+	blockingMap.Bound(m1, m2);
+
 	const SBlockingMap::StructType structType = SBlockingMap::StructType::UNKNOWN;
 	const int notIgnore = static_cast<int>(SBlockingMap::StructMask::ALL);
 
 	if (block) {
-		for (int z = z1; z < z2; z++) {
-			for (int x = x1; x < x2; x++) {
+		for (int z = m1.y; z < m2.y; z++) {
+			for (int x = m1.x; x < m2.x; x++) {
 				blockingMap.AddStruct(x, z, structType, notIgnore);
 			}
 		}
 	} else {
 		// NOTE: This can mess up things if unit is inside factory :/
 		// SOLUTION: Do not mark movable units
-		for (int z = z1; z < z2; z++) {
-			for (int x = x1; x < x2; x++) {
+		for (int z = m1.y; z < m2.y; z++) {
+			for (int x = m1.x; x < m2.x; x++) {
 				blockingMap.RemoveStruct(x, z, structType, notIgnore);
 			}
 		}
@@ -1212,6 +1216,9 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 	STerrainMapImmobileType* immobileType = GetImmobileTypeById(cdef->GetImmobileId());
 	if (mobileType != nullptr) {  // a factory or mobile unit
 		STerrainMapAreaSector* AS = GetAlternativeSector(nullptr, iS, mobileType);
+		if (AS == nullptr) {
+			return false;  // FIXME: do not use units with typeUsable=false
+		}
 		if (immobileType != nullptr) {  // a factory
 			sector = GetAlternativeSector(AS->area, iS, immobileType);
 			if (sector == nullptr) {
@@ -1223,7 +1230,7 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 	} else if (immobileType != nullptr) {  // buildings
 		sector = GetClosestSector(immobileType, iS);
 		if (sector == nullptr) {
-			return false;  // do not use buildings with typeUsable=false
+			return false;  // FIXME: do not use buildings with typeUsable=false
 		}
 	} else {
 		return true;  // flying units

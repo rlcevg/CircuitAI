@@ -670,8 +670,8 @@ void CBuilderManager::Watchdog()
 	// TODO: Include special units
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
-		Unit* u = unit->GetUnit();
-		if ((unfinishedUnits.find(unit) == unfinishedUnits.end()) && (u->GetMaxSpeed() <= 0)) {
+		if ((unfinishedUnits.find(unit) == unfinishedUnits.end()) && unit->GetCircuitDef()->IsMobile()) {
+			Unit* u = unit->GetUnit();
 			if (u->IsBeingBuilt()) {
 				float maxHealth = u->GetMaxHealth();
 				float buildPercent = (maxHealth - u->GetHealth()) / maxHealth;

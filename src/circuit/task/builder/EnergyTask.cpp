@@ -35,6 +35,8 @@ CBEnergyTask::~CBEnergyTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
+// TODO: On Update monitor isEnergyStalling value and adjust build priority accordingly
+
 void CBEnergyTask::Finish()
 {
 	IBuilderTask::Finish();
