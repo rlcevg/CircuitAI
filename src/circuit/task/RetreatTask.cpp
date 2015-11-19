@@ -16,8 +16,8 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
-// FIXME: Remove
 #include "AISCommands.h"
+//#include "Weapon.h"
 
 namespace circuit {
 
@@ -102,7 +102,16 @@ void CRetreatTask::Update()
 		it = updateUnits.erase(it);
 
 		Unit* u = ass->GetUnit();
-		if (u->GetHealth() >= u->GetMaxHealth() * (ass->GetCircuitDef()->IsAbleToFly() ? 0.99f : 0.9f)) {
+		const float healthPerc = u->GetHealth() / u->GetMaxHealth();
+		bool isRepaired;
+		// FIXME: Wait until 101.0 engine
+//		if (ass->GetShield() != nullptr) {
+//			isRepaired = (healthPerc > 0.9f) && (ass->GetShield()->GetShieldPower() > ass->GetCircuitDef()->GetMaxShield() * 0.9f);
+//		} else {
+			isRepaired = (healthPerc > (ass->GetCircuitDef()->IsAbleToFly() ? 0.99f : 0.9f));
+//		}
+
+		if (isRepaired) {
 			RemoveAssignee(ass);
 		} else if (ass->IsForceExecute() || isExecute) {
 			Execute(ass);

@@ -34,8 +34,11 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* cdef)
 		, isMorphing(false)
 		, isRetreat(false)
 {
-	WeaponMount* wpMnt = circuitDef->GetDGunMount();
+	WeaponMount* wpMnt;
+	wpMnt = circuitDef->GetDGunMount();
 	dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
+	wpMnt = circuitDef->GetShieldMount();
+	shield = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
 }
 
 CCircuitUnit::~CCircuitUnit()
@@ -43,6 +46,7 @@ CCircuitUnit::~CCircuitUnit()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete unit;
 	delete dgun;
+	delete shield;
 	delete disarmParam;
 }
 
@@ -52,9 +56,9 @@ void CCircuitUnit::SetTask(IUnitTask* task)
 	taskFrame = manager->GetCircuit()->GetLastFrame();
 }
 
-const springai::AIFloat3& CCircuitUnit::GetPos(int frame)
+const AIFloat3& CCircuitUnit::GetPos(int frame)
 {
-	if (posFrame < frame) {
+	if (posFrame != frame) {
 		posFrame = frame;
 		position = unit->GetPos();
 	}

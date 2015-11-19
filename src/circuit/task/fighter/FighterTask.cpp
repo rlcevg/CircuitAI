@@ -13,6 +13,8 @@
 #include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 
+//#include "Weapon.h"
+
 namespace circuit {
 
 using namespace springai;
@@ -48,6 +50,9 @@ void IFighterTask::RemoveAssignee(CCircuitUnit* unit)
 	IUnitTask::RemoveAssignee(unit);
 
 	attackPower -= unit->GetCircuitDef()->GetPower();
+	// FIXME: DEBUG
+	manager->AbortTask(this);
+	// FIXME: DEBUG
 }
 
 void IFighterTask::Update()
@@ -64,28 +69,43 @@ void IFighterTask::OnUnitIdle(CCircuitUnit* unit)
 
 	if (unit->IsRetreat()) {
 		manager->AssignTask(unit, manager->GetRetreatTask());
+		return;
 	}
+	// FIXME: DEBUG
+	manager->AbortTask(this);
+	// FIXME: DEBUG
 }
 
 void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	Unit* u = unit->GetUnit();
-	// TODO: floating retreat coefficient
-	if (u->GetHealth() > u->GetMaxHealth() * 0.6f) {
+	const float healthPerc = u->GetHealth() / u->GetMaxHealth();
+	// FIXME: Wait until 101.0 engine
+//	if (unit->GetShield() != nullptr) {
+//		if ((healthPerc > 0.6f) && (unit->GetShield()->GetShieldPower() > unit->GetCircuitDef()->GetMaxShield() * 0.1f)) {
+//			return;
+//		}
+//	} else
+	if (healthPerc > 0.6f) {  // TODO: floating retreat coefficient
+		return;
+	} else if (healthPerc < 0.2f) {  // stuck units workaround: they don't shoot and don't see distant threat
+		manager->AssignTask(unit, manager->GetRetreatTask());
 		return;
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const float range = unit->GetCircuitDef()->GetMaxRange();
-	if ((target != nullptr) && target->IsInLOS() &&
-		(target->GetPos().SqDistance2D(unit->GetPos(circuit->GetLastFrame())) < range * range) &&
-		(target->GetThreat() < threatMap->GetUnitThreat(unit)))
-	{
-		unit->SetRetreat(true);
-	} else {
+	if ((target == nullptr) || !target->IsInLOS()) {
 		manager->AssignTask(unit, manager->GetRetreatTask());
+		return;
 	}
+	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
+	if ((target->GetPos().SqDistance2D(pos) > range * range) ||	(threatMap->GetThreatAt(unit, pos) > threatMap->GetUnitThreat(unit))) {
+		manager->AssignTask(unit, manager->GetRetreatTask());
+		return;
+	}
+	unit->SetRetreat(true);
 }
 
 void IFighterTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)

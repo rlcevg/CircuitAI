@@ -12,6 +12,8 @@
 
 namespace circuit {
 
+struct STerrainMapArea;
+
 class CAttackTask: public IFighterTask {
 public:
 	CAttackTask(ITaskManager* mgr);
@@ -32,8 +34,13 @@ private:
 	float highestRange;
 	float lowestSpeed;
 	float highestSpeed;
+	// NOTE: Using unit instead of area directly may save from processing UpdateAreaUsers
+	CCircuitUnit* leader;  // slowest, weakest unit
 
 	float minPower;
+
+	bool isRegroup;
+	bool isAttack;
 };
 
 } // namespace circuit

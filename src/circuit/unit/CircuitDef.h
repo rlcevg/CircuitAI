@@ -57,9 +57,11 @@ public:
 //	int GetDGunReload() const { return dgunReload; }
 	float GetDGunRange() const { return dgunRange; }
 	springai::WeaponMount* GetDGunMount() const { return dgunMount; }
+	springai::WeaponMount* GetShieldMount() const { return shieldMount; }
 	float GetDPS() const { return dps; }
 	float GetPower() const { return power; }
 	float GetMaxRange() const { return maxRange; }
+	float GetMaxShield() const { return maxShield; }
 	int GetCategory() const { return category; }
 	int GetTargetCategory() const { return targetCategory; }
 	int GetNoChaseCategory() const { return noChaseCategory; }
@@ -97,9 +99,11 @@ private:
 //	int dgunReload;  // frames in ticks
 	float dgunRange;
 	springai::WeaponMount* dgunMount;
+	springai::WeaponMount* shieldMount;
 	float dps;
 	float power;  // attack power / UnitDef threat
 	float maxRange;
+	float maxShield;
 	int category;
 	int targetCategory;
 	int noChaseCategory;

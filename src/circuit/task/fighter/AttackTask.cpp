@@ -23,11 +23,14 @@ using namespace springai;
 
 CAttackTask::CAttackTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::ATTACK)
-		, lowestRange(100000.0f)
-		, highestRange(1.0f)
-		, lowestSpeed(100000.0f)
-		, highestSpeed(1.0f)
+		, lowestRange(std::numeric_limits<float>::max())
+		, highestRange(.0f)
+		, lowestSpeed(std::numeric_limits<float>::max())
+		, highestSpeed(.0f)
+		, leader(nullptr)
 		, minPower(.0f)
+		, isRegroup(false)
+		, isAttack(false)
 {
 }
 
@@ -45,10 +48,23 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 {
 	IFighterTask::AssignTo(unit);
 
-	lowestRange  = std::min(lowestRange,  unit->GetCircuitDef()->GetMaxRange());
-	highestRange = std::max(highestRange, unit->GetCircuitDef()->GetMaxRange());
-	lowestSpeed  = std::min(lowestSpeed,  unit->GetCircuitDef()->GetSpeed());
-	highestSpeed = std::max(highestSpeed, unit->GetCircuitDef()->GetSpeed());
+	if (leader == nullptr) {
+		lowestRange  = unit->GetCircuitDef()->GetMaxRange();
+		highestRange = unit->GetCircuitDef()->GetMaxRange();
+		lowestSpeed  = unit->GetCircuitDef()->GetSpeed();
+		highestSpeed = unit->GetCircuitDef()->GetSpeed();
+		leader = unit;
+	} else {
+		lowestRange  = std::min(lowestRange,  unit->GetCircuitDef()->GetMaxRange());
+		highestRange = std::max(highestRange, unit->GetCircuitDef()->GetMaxRange());
+		lowestSpeed  = std::min(lowestSpeed,  unit->GetCircuitDef()->GetSpeed());
+		highestSpeed = std::max(highestSpeed, unit->GetCircuitDef()->GetSpeed());
+		if (leader->GetArea() == nullptr) {
+			leader = unit;
+		} else if ((unit->GetArea() != nullptr) && (unit->GetArea()->percentOfMap < leader->GetArea()->percentOfMap)) {
+			leader = unit;
+		}
+	}
 
 	minPower += unit->GetCircuitDef()->GetPower() / 4;
 
@@ -61,6 +77,24 @@ void CAttackTask::RemoveAssignee(CCircuitUnit* unit)
 
 	if (attackPower < minPower) {
 		manager->AbortTask(this);
+		return;
+	}
+
+	lowestRange  = std::numeric_limits<float>::max();
+	highestRange = .0f;
+	lowestSpeed  = std::numeric_limits<float>::max();
+	highestSpeed = .0f;
+	leader = *units.begin();
+	for (CCircuitUnit* ass : units) {
+		lowestRange  = std::min(lowestRange,  ass->GetCircuitDef()->GetMaxRange());
+		highestRange = std::max(highestRange, ass->GetCircuitDef()->GetMaxRange());
+		lowestSpeed  = std::min(lowestSpeed,  ass->GetCircuitDef()->GetSpeed());
+		highestSpeed = std::max(highestSpeed, ass->GetCircuitDef()->GetSpeed());
+		if (leader->GetArea() == nullptr) {
+			leader = ass;
+		} else if ((ass->GetArea() != nullptr) && (ass->GetArea()->percentOfMap < leader->GetArea()->percentOfMap)) {
+			leader = ass;
+		}
 	}
 }
 
@@ -71,25 +105,54 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 
 void CAttackTask::Update()
 {
-	int frame = manager->GetCircuit()->GetLastFrame();
-	if (++updCount % 16 == 0) {
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
+	if (!isAttack && (updCount % 16 == 0)) {
+		std::vector<CCircuitUnit*> veterans;
+		veterans.reserve(units.size());
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();;
 		AIFloat3 groupPos(ZeroVector);
 		for (CCircuitUnit* unit : units) {
-			groupPos += unit->GetPos(frame);
+			AIFloat3 pos = unit->GetPos(frame);
+			terrainManager->CorrectPosition(pos);
+			if (terrainManager->CanMoveToPos(unit->GetArea(), pos)) {
+				groupPos += pos;
+				veterans.push_back(unit);
+			}
 		}
-		groupPos /= units.size();
+		groupPos /= veterans.size();
 
-		// find the unit closest to the center (since the actual center might be on a hill or something)
+		// find the unit closest to the center (since the actual center might be unreachable)
 		float sqMinDist = std::numeric_limits<float>::max();
+		float sqMaxDist = .0f;
 		CCircuitUnit* closestUnit = *units.begin();
-		for (CCircuitUnit* unit : units) {
+		for (CCircuitUnit* unit : veterans) {
 			const float sqDist = groupPos.SqDistance2D(unit->GetPos(frame));
 			if (sqDist < sqMinDist) {
 				sqMinDist = sqDist;
 				closestUnit = unit;
 			}
+			if (sqDist > sqMaxDist) {
+				sqMaxDist = sqDist;
+			}
 		}
 		groupPos = closestUnit->GetPos(frame);
+
+		// have to regroup?
+		const float regroupDist = std::max<float>(SQUARE_SIZE * 4 * veterans.size(), highestRange);
+		if (sqMaxDist > regroupDist * regroupDist) {
+			isRegroup = true;
+			for (CCircuitUnit* unit : units) {
+				unit->GetUnit()->MoveTo(groupPos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+				unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+			}
+		} else {
+			isRegroup = false;
+		}
+	}
+
+	if (isRegroup) {
+		return;
 	}
 
 
@@ -101,17 +164,22 @@ void CAttackTask::Update()
 		}
 	}
 	if (isExecute) {
-		Execute(*units.begin(), true);
+		Execute(leader, true);
+		const float sqHighestRange = highestRange * highestRange;
 		for (CCircuitUnit* unit : units) {
+			const float sqDist = position.SqDistance2D(unit->GetPos(frame));
 			if (target != nullptr) {
-				float range = unit->GetUnit()->GetMaxRange();
-				if (position.SqDistance2D(unit->GetPos(frame)) < range * range) {
+				const float range = unit->GetUnit()->GetMaxRange();
+				if (sqDist < range * range) {
 					unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+					unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+					isAttack = true;
 					continue;
 				}
 			}
 			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
-			unit->GetUnit()->SetWantedMaxSpeed(lowestSpeed);
+			unit->GetUnit()->SetWantedMaxSpeed((sqDist > sqHighestRange) ? lowestSpeed : MAX_SPEED);
+			isAttack = false;
 		}
 	}
 }
@@ -124,7 +192,7 @@ void CAttackTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	Unit* u = unit->GetUnit();
+	int frame = manager->GetCircuit()->GetLastFrame();
 
 	float minSqDist;
 	FindTarget(unit, minSqDist);
@@ -135,16 +203,20 @@ void CAttackTask::Execute(CCircuitUnit* unit, bool isUpdating)
 			float z = rand() % (terrainManager->GetTerrainHeight() + 1);
 			position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 		}
+		minSqDist = position.SqDistance2D(unit->GetPos(frame));
 	} else {
 		position = target->GetPos();
-		float range = u->GetMaxRange();
+		const float range = unit->GetUnit()->GetMaxRange();
 		if (minSqDist < range * range) {
-			u->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+			isAttack = true;
 			return;
 		}
 	}
-	u->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
-	u->SetWantedMaxSpeed(lowestSpeed);
+	unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+	unit->GetUnit()->SetWantedMaxSpeed((minSqDist > highestRange * highestRange) ? lowestSpeed : MAX_SPEED);
+	isAttack = false;
 }
 
 void CAttackTask::FindTarget(CCircuitUnit* unit, float& minSqDist)
@@ -154,7 +226,6 @@ void CAttackTask::FindTarget(CCircuitUnit* unit, float& minSqDist)
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = unit->GetArea();
-	float power = threatMap->GetUnitThreat(unit);
 	int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
 
 	target = nullptr;
@@ -164,7 +235,7 @@ void CAttackTask::FindTarget(CCircuitUnit* unit, float& minSqDist)
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden() || (threatMap->GetThreatAt(enemy->GetPos()) >= power) ||
+		if (enemy->IsHidden() || (threatMap->GetThreatAt(enemy->GetPos()) >= attackPower) ||
 			!terrainManager->CanMoveToPos(area, enemy->GetPos()))
 		{
 			continue;
@@ -177,7 +248,7 @@ void CAttackTask::FindTarget(CCircuitUnit* unit, float& minSqDist)
 			continue;
 		}
 
-		float sqDist = pos.SqDistance2D(enemy->GetPos());
+		const float sqDist = pos.SqDistance2D(enemy->GetPos());
 		if (sqDist < minSqDist) {
 			target = enemy;
 			minSqDist = sqDist;

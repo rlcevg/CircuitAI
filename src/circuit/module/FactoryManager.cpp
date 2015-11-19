@@ -432,7 +432,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		const std::array<float, 10> lp1 = {.10,          .30,        .25,     .07,        .10,         .15,        .03,       .00,          .00,    .00};
 		const std::array<float, 10> wp0 = {.50,          .00,        .00,     .00,        .00,         .00,        .00,       .00,          .25,    .25};
 		const std::array<float, 10> wp1 = {.10,          .00,        .00,     .00,        .00,         .00,        .10,       .00,          .40,    .40};
-		const std::array<float, 10>& prob = (metalIncome < 100) ? (isWater ? wp0 : lp0) : (isWater ? wp1 : lp1);
+		const std::array<float, 10>& prob = (metalIncome < 120) ? (isWater ? wp0 : lp0) : (isWater ? wp1 : lp1);
 		unsigned choice = 0;
 		float dice = (float)rand() / RAND_MAX;
 		float total = .0f;

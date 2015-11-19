@@ -20,6 +20,7 @@ public:
 
 	virtual bool CanAssignTo(CCircuitUnit* unit);
 	virtual void AssignTo(CCircuitUnit* unit);
+	virtual void RemoveAssignee(CCircuitUnit* unit);
 
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();

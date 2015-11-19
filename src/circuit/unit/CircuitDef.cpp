@@ -12,6 +12,7 @@
 #include "WeaponMount.h"
 #include "WeaponDef.h"
 #include "Damage.h"
+#include "Shield.h"
 
 #include <regex>
 
@@ -27,8 +28,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 //		, dgunReload(-1)
 		, dgunRange(.0f)
 		, dgunMount(nullptr)
+		, shieldMount(nullptr)
 		, dps(.0f)
 		, power(.0f)
+		, maxShield(.0f)
 		, targetCategory(0)
 		, immobileTypeId(-1)
 		, mobileTypeId(-1)
@@ -76,8 +79,29 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		midPosOffset = ZeroVector;
 	}
 
+	WeaponDef* sd = def->GetShieldDef();
+	bool isShield = (sd != nullptr);
+	if (isShield) {
+		Shield* shield = sd->GetShield();
+		maxShield = shield->GetPower();
+		delete shield;
+	}
+	delete sd;
+
 	if (!def->IsAbleToAttack()) {
-		// NOTE: Aspis (mobile shield) has 10 damage for some reason, filter out such units.
+		if (isShield) {
+			auto mounts = std::move(def->GetWeaponMounts());
+			for (WeaponMount* mount : mounts) {
+				WeaponDef* wd = mount->GetWeaponDef();
+				if ((shieldMount == nullptr) && wd->IsShield()) {
+					shieldMount = mount;  // NOTE: Unit may have more than 1 shield
+				} else {
+					delete mount;
+				}
+				delete wd;
+			}
+		}
+		// NOTE: Aspis (mobile shield) has 10 damage for some reason, break
 		return;
 	}
 
@@ -151,6 +175,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			bestRange = wd->GetRange();
 			delete bestMount;
 			bestMount = mount;
+		} else if ((shieldMount == nullptr) && wd->IsShield()) {
+			shieldMount = mount;  // NOTE: Unit may have more than 1 shield
 		} else {
 			delete mount;
 		}
@@ -195,6 +221,7 @@ CCircuitDef::~CCircuitDef()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete def;
 	delete dgunMount;
+	delete shieldMount;
 }
 
 CCircuitDef& CCircuitDef::operator++()

@@ -251,7 +251,7 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 	switch (type) {
 		default:
 		case IFighterTask::FightType::DEFEND: {
-			curPowah += 300.0f;
+//			curPowah += 300.0f;
 			task = new CDefendTask(this, curPowah);  // TODO: pass enemy's threat
 			break;
 		}
@@ -283,19 +283,19 @@ void CMilitaryManager::AssignTask(CCircuitUnit* unit)
 {
 	IFighterTask* task = nullptr;
 
-	for (IFighterTask* candidate : fighterTasks) {
-		if (!candidate->CanAssignTo(unit)) {
-			continue;
-		}
-		task = candidate;
-		break;
-	}
-
-	if (task == nullptr) {
+//	for (IFighterTask* candidate : fighterTasks) {
+//		if (!candidate->CanAssignTo(unit)) {
+//			continue;
+//		}
+//		task = candidate;
+//		break;
+//	}
+//
+//	if (task == nullptr) {
 		bool isScout = (scoutDefs.find(unit->GetCircuitDef()) != scoutDefs.end());
 		IFighterTask::FightType type = isScout ? IFighterTask::FightType::SCOUT : IFighterTask::FightType::DEFEND;
 		task = EnqueueTask(type);
-	}
+//	}
 
 	task->AssignTo(unit);
 }

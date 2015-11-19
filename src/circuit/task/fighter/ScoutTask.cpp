@@ -48,6 +48,11 @@ void CScoutTask::AssignTo(CCircuitUnit* unit)
 	moveAction->SetActive(false);
 }
 
+void CScoutTask::RemoveAssignee(CCircuitUnit* unit)
+{
+	manager->AbortTask(this);
+}
+
 void CScoutTask::Execute(CCircuitUnit* unit)
 {
 	Execute(unit, false);
@@ -82,6 +87,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	if (bestTarget != nullptr) {
 		position = bestTarget->GetPos();
 		unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
 		moveAction->SetActive(false);
 		return;
 	} else if (!path.empty()) {
@@ -124,6 +130,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	float z = rand() % (terrainManager->GetTerrainHeight() + 1);
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+	unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
 	moveAction->SetActive(false);
 }
 

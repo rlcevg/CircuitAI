@@ -345,13 +345,25 @@ int CCircuitAI::HandleEndEvent(int topic, const void* data)
 
 bool CCircuitAI::IsModValid()
 {
+	const int minEngineVer = 100;
+	const char* engineVersion = sAICallback->Engine_Version_getMajor(skirmishAIId);
+	int ver = atoi(engineVersion);
+	if (ver < minEngineVer) {
+		LOG("Engine must be 100.0 or higher! (%s)", engineVersion);
+		return false;
+	}
+
 	Mod* mod = callback->GetMod();
 	const char* name = mod->GetHumanName();
 	const char* version = mod->GetVersion();
 	delete mod;
+	if ((name == nullptr) || (version == nullptr)) {
+		LOG("Can't get name or version of the game. Aborting!");  // NOTE: Sign of messed up spring installation
+		return false;
+	}
 
-	if (strstr(name, "Zero-K") == nullptr) {
-		LOG("Only Zero-K game is supported!");
+	if ((strstr(name, "Zero-K") == nullptr)) {
+		LOG("Only Zero-K game is supported! (%s)", name);
 		return false;
 	}
 
@@ -365,7 +377,7 @@ bool CCircuitAI::IsModValid()
 			int ver = atoi(tok);
 			if (ver < minModVer[i]) {
 				delete[] tmp;
-				LOG("Zero-K must be 1.3.8.14 or higher!");
+				LOG("Zero-K must be 1.3.8.14 or higher! (%s)", version);
 				return false;
 			}
 			if ((ver > minModVer[i]) || (++i >= sizeof(minModVer) / sizeof(minModVer[0]))) {
@@ -375,13 +387,6 @@ bool CCircuitAI::IsModValid()
 		}
 	}
 	delete[] tmp;
-
-	const int minEngineVer = 100;
-	int ver = atoi(sAICallback->Engine_Version_getMajor(skirmishAIId));
-	if (ver < minEngineVer) {
-		LOG("Engine must be 100.0 or higher!");
-		return false;
-	}
 
 	return true;
 }

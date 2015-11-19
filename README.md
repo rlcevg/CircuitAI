@@ -1,4 +1,4 @@
 CircuitAI
 =========
 
-Spring RTS local native AI
+Spring RTS local native AI for Zero-K only.

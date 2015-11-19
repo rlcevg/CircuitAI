@@ -29,6 +29,8 @@ namespace circuit {
 #define CMD_JUMP				38521
 #define CMD_TERRAFORM_INTERNAL	39801
 
+#define MAX_SPEED	1e6f
+
 class CCircuitDef;
 class IUnitTask;
 class IUnitManager;
@@ -65,6 +67,7 @@ public:
 	bool IsForceExecute();
 
 	springai::Weapon* GetDGun() const { return dgun; }
+	springai::Weapon* GetShield() const { return shield; }
 	void ManualFire(springai::Unit* enemy, int timeOut);
 	bool IsDisarmed();
 	float GetDPS();
@@ -96,6 +99,7 @@ private:
 	bool isForceExecute;  // TODO: Replace by CExecuteAction?
 
 	springai::Weapon* dgun;
+	springai::Weapon* shield;
 	springai::UnitRulesParam* disarmParam;
 	bool isMorphing;
 	bool isRetreat;

@@ -39,6 +39,7 @@ void CDefendTask::Execute(CCircuitUnit* unit)
 {
 	if (attackPower < maxPower) {
 		unit->GetUnit()->MoveTo(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, manager->GetCircuit()->GetLastFrame() + FRAMES_PER_SEC * 60);
+		unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
 		return;
 	}
 	// NOTE: Atm DefendTask is actually GatheringTask, does nothing more
