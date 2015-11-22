@@ -670,7 +670,7 @@ void CBuilderManager::Watchdog()
 	// TODO: Include special units
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
-		if ((unfinishedUnits.find(unit) == unfinishedUnits.end()) && unit->GetCircuitDef()->IsMobile()) {
+		if ((unfinishedUnits.find(unit) == unfinishedUnits.end()) && !unit->GetCircuitDef()->IsMobile()) {
 			Unit* u = unit->GetUnit();
 			if (u->IsBeingBuilt()) {
 				float maxHealth = u->GetMaxHealth();

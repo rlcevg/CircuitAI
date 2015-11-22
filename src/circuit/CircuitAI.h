@@ -204,6 +204,8 @@ public:
 	int GetGoodCategory()  const { return goodCategory; }
 	float GetLosConv()     const { return losResConv; }
 
+	bool LocatePath(std::string& filename);
+
 private:
 	// debug
 //	void DrawClusters();

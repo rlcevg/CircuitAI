@@ -50,7 +50,11 @@ void CScoutTask::AssignTo(CCircuitUnit* unit)
 
 void CScoutTask::RemoveAssignee(CCircuitUnit* unit)
 {
-	manager->AbortTask(this);
+	IFighterTask::RemoveAssignee(unit);
+
+	if (units.empty()) {
+		manager->AbortTask(this);
+	}
 }
 
 void CScoutTask::Execute(CCircuitUnit* unit)
@@ -138,7 +142,7 @@ void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	IFighterTask::OnUnitIdle(unit);
 
-	manager->DoneTask(this);
+	RemoveAssignee(unit);
 }
 
 CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)

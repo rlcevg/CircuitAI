@@ -220,7 +220,7 @@ CEconomyManager::~CEconomyManager()
 	delete empParam;
 	delete eepParam;
 	delete odeiParam;
-	delete odecParam;/*, odeoParam, odteParam, odaParam*/;
+	delete odecParam;/*, delete odeoParam, delete odteParam, delete odaParam*/;
 	delete engyPol;
 	morph = nullptr;
 }

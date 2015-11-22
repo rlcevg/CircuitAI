@@ -17,11 +17,13 @@
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
+#include "json/json.h"
 
 #include "AIFloat3.h"
 #include "OOAICallback.h"
 #include "Command.h"
 #include "Feature.h"
+#include "File.h"
 
 namespace circuit {
 
@@ -238,143 +240,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		}
 	}
 
-	#define NUM 10
-	struct SFactoryPreDef {
-		SFactoryPreDef(const char* n, const char* b, const int num, const std::array<const char*, NUM>& is,
-					   const std::array<float, NUM>& p0, const std::array<float, NUM>& p1,
-					   const std::function<bool (CEconomyManager* mgr)>& crit)
-			: name(n)
-			, builder(b)
-			, num(num)
-			, items(is)
-			, prob0(p0)
-			, prob1(p1)
-			, criteria(crit)
-		{}
-		const char* name;
-		const char* builder;
-		const int num;
-		const std::array<const char*, NUM> items;
-		const std::array<float, NUM> prob0;
-		const std::array<float, NUM> prob1;
-		const std::function<bool (CEconomyManager* mgr)> criteria;  // prob0 criterion
-	};
-	#undef NUM
-	const SFactoryPreDef facDefs[] = {
-		SFactoryPreDef("factorycloak", "armrectr", 10,
-			//glaive,  scythe,       rocko,     warrior,  zeus,      hammer,   sniper,     tick,      eraser,          gremlin
-			{"armpw", "spherepole", "armrock", "armwar", "armzeus", "armham", "armsnipe", "armtick", "spherecloaker", "armjeth"},
-			{.60,     .02,          .15,       .10,      .05,       .05,      .00,        .01,       .00,             .02},
-			{.01,     .30,          .05,       .05,      .30,       .01,      .17,        .01,       .00,             .10},
-			[](CEconomyManager* mgr) {
-				return (mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40) || mgr->IsEnergyEmpty();
-			}
-		),
-		SFactoryPreDef("factorygunship", "armca", 10,
-			//blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator   trident
-			{"blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans", "gunshipaa"},
-			{.10,         .15,      .30,      .36,              .05,        .02,         .00,      .00,       .00,         .02},
-			{.01,         .01,      .01,      .10,              .57,        .15,         .05,      .00,       .00,         .10},
-			[](CEconomyManager* mgr) {
-				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-			}
-		),
-		SFactoryPreDef("factoryamph", "amphcon", 7,
-			//duck,          archer,        buoy,          scallop,    grizzly,       djinn,      angler
-			{"amphraider3", "amphraider2", "amphfloater", "amphriot", "amphassault", "amphtele", "amphaa"},
-			{.60,           .10,           .15,           .14,        .00,           .00,        .01},
-			{.01,           .10,           .20,           .20,        .39,           .00,        .10},
-			[](CEconomyManager* mgr) {
-				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-			}
-		),
-		SFactoryPreDef("factoryspider", "arm_spider", 8,
-			//flea,      hermit,          venom,       redback,      recluse,   crabe,      infiltrator, tarantula
-			{"armflea", "spiderassault", "arm_venom", "spiderriot", "armsptk", "armcrabe", "armspy",    "spideraa"},
-			{.32,       .25,             .10,         .10,          .20,       .00,        .01,         .02},
-			{.01,       .01,             .01,         .10,          .12,       .60,        .05,         .10},
-			[](CEconomyManager* mgr) {
-				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-			}
-		),
-		SFactoryPreDef("factoryshield", "cornecro", 10,
-			//dirtbag,   bandit,  rogue,      thug,      outlaw,   felon,         racketeer,    roach,      aspis,          vandal
-			{"corclog", "corak", "corstorm", "corthud", "cormak", "shieldfelon", "shieldarty", "corroach", "core_spectre", "corcrash"},
-			{.10,       .30,     .10,        .18,       .10,      .05,           .10,          .05,        .00,            .02},
-			{.01,       .01,     .20,        .30,       .10,      .10,           .17,          .01,        .00,            .10},
-			[](CEconomyManager* mgr) {
-				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-			}
-		),
-		SFactoryPreDef("factoryveh", "corned", 9,
-			//dart,     scorcher,   slasher,   leveler,    ravager,   dominatrix,   wolverine, impaler,   crasher
-			{"corfav", "corgator", "cormist", "corlevlr", "corraid", "capturecar", "corgarp", "armmerl", "vehaa"},
-			{.10,      .37,        .10,       .10,        .10,       .10,          .10,       .01,       .02},
-			{.01,      .04,        .10,       .10,        .30,       .20,          .05,       .10,       .10},
-			[](CEconomyManager* mgr) {
-				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-			}
-		),
-		SFactoryPreDef("factoryjump", "corfast", 9,
-			//puppy,   pyro,      placeholder,     moderator,  jack,     sumo,      firewalker,   skuttle,   archangel
-			{"puppy", "corpyro", "jumpblackhole", "slowmort", "corcan", "corsumo", "firewalker", "corsktl", "armaak"},
-			{.07,     .60,       .05,             .10,        .05,      .00,       .10,          .01,       .02},
-			{.01,     .10,       .10,             .10,        .30,      .05,       .20,          .04,       .10},
-			[](CEconomyManager* mgr) {
-				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-			}
-		),
-		SFactoryPreDef("factoryhover", "corch", 7,
-			//dagger,  scalpel,    halberd,        claymore,           mace,        penetrator, flail
-			{"corsh", "nsaclash", "hoverassault", "hoverdepthcharge", "hoverriot", "armmanni", "hoveraa"},
-			{.60,     .10,        .17,            .01,                .10,         .00,        .02},
-			{.01,     .20,        .30,            .01,                .20,         .18,        .10},
-			[](CEconomyManager* mgr) {
-				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-			}
-		),
-		SFactoryPreDef("factoryship", "shipcon", 9,
-			//skeeter,     snake,       typhoon,      hunter,     enforcer,    crusader,   serpent,   surfboard,  shredder
-			{"shipscout", "subraider", "shipraider", "shiptorp", "shipskirm", "shiparty", "subarty", "armtboat", "shipaa"},
-			{.10,         .30,         .30,          .17,        .05,         .05,        .01,       .00,        .02},
-			{.01,         .10,         .10,          .20,        .10,         .20,        .19,       .00,        .10},
-			[](CEconomyManager* mgr) {
-				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-			}
-		),
-		SFactoryPreDef("factoryplane", "armca", 7,
-			//swift,     hawk,      raven,     phoenix,    thunderbird,         wyvern,    vulture
-			{"fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "corawac"},
-			{.64,       .10,       .20,       .01,        .05,                 .00,       .00},
-			{.10,       .10,       .10,       .10,        .10,                 .50,       .00},  // FIXME: Separate RaidTask from ScoutTask, then add vulture
-			[](CEconomyManager* mgr) {
-				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-			}
-		),
-		SFactoryPreDef("factorytank", "coracv", 8,
-			//kodachi,   panther,   banisher,  reaper,    goliath,  pillager,  tremor, copperhead
-			{"logkoda", "panther", "tawf114", "correap", "corgol", "cormart", "trem", "corsent"},
-			{.20,       .47,       .30,       .00,       .00,      .01,       .00,    .02},
-			{.01,       .09,       .10,       .39,       .10,      .20,       .01,    .10},
-			[](CEconomyManager* mgr) {
-				return mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < 40;
-			}
-		),
-	};
-	for (const SFactoryPreDef& facPreDef : facDefs) {
-		SFactoryDef facDef;
-		facDef.builderDef = circuit->GetCircuitDef(facPreDef.builder);
-		facDef.buildDefs.reserve(facPreDef.num);
-		facDef.prob0.reserve(facPreDef.num);
-		facDef.prob1.reserve(facPreDef.num);
-		for (int i = 0; i < facPreDef.num; ++i) {
-			facDef.buildDefs.push_back(circuit->GetCircuitDef(facPreDef.items[i]));
-			facDef.prob0.push_back(facPreDef.prob0[i]);
-			facDef.prob1.push_back(facPreDef.prob1[i]);
-		}
-		facDef.criteria = facPreDef.criteria;
-		factoryDefs[circuit->GetCircuitDef(facPreDef.name)->GetId()] = facDef;
-	}
+	ReadFactoryConfig();
 
 	// FIXME: EXPERIMENTAL
 	/*
@@ -761,6 +627,70 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 
 	return nullptr;
+}
+
+void CFactoryManager::ReadFactoryConfig()
+{
+	// locate file
+	std::string filename("config.json");
+	if (!circuit->LocatePath(filename)){
+		circuit->LOG("Config file is missing!");
+		return;
+	}
+
+	// read config file
+	File* file = circuit->GetCallback()->GetFile();
+	int fileSize = file->GetSize(filename.c_str());
+	if (fileSize <= 0) {
+		circuit->LOG("Malformed config file!");
+		return;
+	}
+	char* configJson = new char [fileSize + 1];
+	file->GetContent(filename.c_str(), configJson, fileSize);
+	configJson[fileSize] = 0;
+	delete file;
+
+	// parse config
+	Json::Value root;
+	Json::Reader json;
+	bool isOk = json.parse(configJson, root, false);
+	delete[] configJson;
+	if (!isOk) {
+		circuit->LOG("Malformed config format!");
+		return;
+	}
+
+	const Json::Value& factories = root["factories"];
+	for (auto fac : root["factories"].getMemberNames()) {
+		const Json::Value& factory = factories[fac];
+		SFactoryDef facDef;
+		facDef.builderDef = circuit->GetCircuitDef(factory["builder_def"].asCString());
+
+		const Json::Value& items = factory["unit_def"];
+		const Json::Value& prob0 = factory["low_inc"];
+		const Json::Value& prob1 = factory["high_inc"];
+		facDef.buildDefs.reserve(items.size());
+		facDef.prob0.reserve(items.size());
+		facDef.prob1.reserve(items.size());
+		for (unsigned i = 0; i < items.size(); ++i) {
+			facDef.buildDefs.push_back(circuit->GetCircuitDef(items[i].asCString()));
+			facDef.prob0.push_back(prob0[i].asFloat());
+			facDef.prob1.push_back(prob1[i].asFloat());
+		}
+
+		const float highIncome = factory["high_income"].asFloat();
+		if (factory["require_energy"].asBool()) {
+			facDef.criteria = [highIncome](CEconomyManager* mgr) {
+				return (mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < highIncome) || mgr->IsEnergyEmpty();
+			};
+		} else {
+			facDef.criteria = [highIncome](CEconomyManager* mgr) {
+				return (mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < highIncome);
+			};
+		}
+
+		factoryDefs[circuit->GetCircuitDef(fac.c_str())->GetId()] = facDef;
+	}
 }
 
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)

@@ -26,17 +26,17 @@ local options = {
 			{
 				key  = 'easy',
 				name = 'Easy',
-				desc = 'The AI will attack seamlessly.',
+				desc = 'Easy AI.',
 			},
 			{
 				key  = 'normal',
 				name = 'Normal',
-				desc = 'The AI will try to think before attack.',
+				desc = 'Casual AI.',
 			},
 			{
 				key  = 'hard',
 				name = 'Hard',
-				desc = 'The AI will do its best.',
+				desc = 'Los-cheating AI.',
 			},
 		},
 	},

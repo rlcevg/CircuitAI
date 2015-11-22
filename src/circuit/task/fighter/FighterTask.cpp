@@ -50,9 +50,6 @@ void IFighterTask::RemoveAssignee(CCircuitUnit* unit)
 	IUnitTask::RemoveAssignee(unit);
 
 	attackPower -= unit->GetCircuitDef()->GetPower();
-	// FIXME: DEBUG
-	manager->AbortTask(this);
-	// FIXME: DEBUG
 }
 
 void IFighterTask::Update()
@@ -71,9 +68,6 @@ void IFighterTask::OnUnitIdle(CCircuitUnit* unit)
 		manager->AssignTask(unit, manager->GetRetreatTask());
 		return;
 	}
-	// FIXME: DEBUG
-	manager->AbortTask(this);
-	// FIXME: DEBUG
 }
 
 void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)

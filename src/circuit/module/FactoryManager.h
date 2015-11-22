@@ -64,6 +64,8 @@ public:
 	CRecruitTask* UpdateFirePower(CCircuitUnit* unit);
 
 private:
+	void ReadFactoryConfig();
+
 	IUnitTask* CreateFactoryTask(CCircuitUnit* unit);
 	IBuilderTask* CreateAssistTask(CCircuitUnit* unit);
 
