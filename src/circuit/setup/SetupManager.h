@@ -8,6 +8,8 @@
 #ifndef SRC_CIRCUIT_STATIC_SETUPMANAGER_H_
 #define SRC_CIRCUIT_STATIC_SETUPMANAGER_H_
 
+#include "json/json-forwards.h"
+
 #include "AIFloat3.h"
 
 namespace circuit {
@@ -25,6 +27,10 @@ public:
 	virtual ~CSetupManager();
 	void ParseSetupScript(const char* setupScript);
 
+	bool OpenConfig();
+	void CloseConfig();
+	const Json::Value& GetConfig() const { return *config; }
+
 	bool HasStartBoxes() const;
 	bool CanChooseStartPos() const;
 
@@ -39,9 +45,11 @@ public:
 
 private:
 	void FindCommander();
+	bool LocatePath(std::string& filename);
 
 	CCircuitAI* circuit;
 	CSetupData* setupData;
+	Json::Value* config;  // owner;
 
 	int commanderId;
 	springai::AIFloat3 startPos;

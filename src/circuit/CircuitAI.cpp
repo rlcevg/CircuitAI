@@ -42,7 +42,6 @@
 #include "WrappTeam.h"
 #include "Mod.h"
 #include "Cheats.h"
-#include "DataDirs.h"
 //#include "WrappCurrentCommand.h"
 
 namespace circuit {
@@ -64,7 +63,7 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, difficulty(Difficulty::NORMAL)
 		, allyAware(true)
 		, initialized(false)
-		, lastFrame(-1)
+		, lastFrame(0)
 		, skirmishAIId(callback != NULL ? callback->GetSkirmishAIId() : -1)
 		, sAICallback(nullptr)
 		, callback(callback)
@@ -416,6 +415,9 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	InitUnitDefs();  // Inits TerrainData
 
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
+	if (!setupManager->OpenConfig()) {
+		return ERROR_INIT;
+	}
 	allyTeam = setupManager->GetAllyTeam();
 	allyAware &= allyTeam->GetSize() > 1;
 
@@ -461,6 +463,8 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 		cheats->SetEventsEnabled(true);
 		delete cheats;
 	}
+
+	setupManager->CloseConfig();
 
 	initialized = true;
 
@@ -1044,20 +1048,6 @@ void CCircuitAI::InitUnitDefs()
 
 		}
 	}
-}
-
-bool CCircuitAI::LocatePath(std::string& filename)
-{
-	static const size_t absPath_sizeMax = 2048;
-	char absPath[absPath_sizeMax];
-	DataDirs* datadirs = callback->GetDataDirs();
-	const bool dir = !filename.empty() && (*filename.rbegin() == '/' || *filename.rbegin() == '\\');
-	const bool located = datadirs->LocatePath(absPath, absPath_sizeMax, filename.c_str(), false /*writable*/, false /*create*/, dir, false /*common*/);
-	if (located) {
-		filename = absPath;
-	}
-	delete datadirs;
-	return located;
 }
 
 //// debug

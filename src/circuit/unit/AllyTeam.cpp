@@ -9,12 +9,14 @@
 #include "resource/MetalManager.h"
 #include "resource/EnergyGrid.h"
 #include "setup/DefenceMatrix.h"
+#include "setup/SetupManager.h"
 #include "terrain/PathFinder.h"
 #include "terrain/TerrainData.h"
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
+#include "json/json.h"
 
 #include "AIFloat3.h"
 #include "OOAICallback.h"
@@ -75,27 +77,19 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 
 	// TODO: Move factory selection into CFactoryManager?
 	//       Can't figure how as this should work per ally team.
-	const char* factories[] = {
-		"factorycloak",
-		"factoryamph",
-		"factoryhover",
-		"factoryjump",
-		"factoryshield",
-		"factoryspider",
-		"factorytank",
-		"factoryveh",
-		"factoryplane",
-		"factorygunship",
-		"factoryship",
-	};
-	const int size = sizeof(factories) / sizeof(factories[0]);
-	factoryBuilds.reserve(size);
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const Json::Value& factories = root["factories"];
+	factoryBuilds.reserve(factories.size());
+
 	std::map<STerrainMapMobileType::Id, float> percents;
 	CTerrainData& terrainData = circuit->GetGameAttribute()->GetTerrainData();
 	const std::vector<STerrainMapImmobileType>& immobileType = terrainData.areaData0.immobileType;
 	const std::vector<STerrainMapMobileType>& mobileType = terrainData.areaData0.mobileType;
-	for (const char* fac : factories) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(fac);
+	for (const std::string& fac : factories.getMemberNames()) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(fac.c_str());
+		if (cdef == nullptr) {
+			continue;
+		}
 		STerrainMapImmobileType::Id itId = cdef->GetImmobileId();
 		if ((itId < 0) || !immobileType[itId].typeUsable) {
 			continue;

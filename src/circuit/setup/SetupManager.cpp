@@ -12,10 +12,13 @@
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
+#include "json/json.h"
 
 #include "OOAICallback.h"
 #include "Game.h"
 #include "Map.h"
+#include "DataDirs.h"
+#include "File.h"
 
 #include <map>
 #include <regex>
@@ -24,12 +27,13 @@ namespace circuit {
 
 using namespace springai;
 
-CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData) :
-		circuit(circuit),
-		setupData(setupData),
-		commanderId(-1),
-		startPos(-RgtVector),
-		basePos(-RgtVector)
+CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
+		: circuit(circuit)
+		, setupData(setupData)
+		, config(nullptr)
+		, commanderId(-1)
+		, startPos(-RgtVector)
+		, basePos(-RgtVector)
 {
 	if (!setupData->IsInitialized()) {
 		ParseSetupScript(circuit->GetGame()->GetSetupScript());
@@ -40,6 +44,7 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData) :
 CSetupManager::~CSetupManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	delete config;
 }
 
 void CSetupManager::ParseSetupScript(const char* setupScript)
@@ -167,6 +172,49 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 	setupData->Init(allyTeams, boxes, startPosType);
 }
 
+bool CSetupManager::OpenConfig()
+{
+	// locate file
+	std::string filename("config.json");
+	if (!LocatePath(filename)){
+		circuit->LOG("Config file is missing!");
+		return false;
+	}
+
+	// read config file
+	File* file = circuit->GetCallback()->GetFile();
+	int fileSize = file->GetSize(filename.c_str());
+	if (fileSize <= 0) {
+		circuit->LOG("Malformed config file!");
+		delete file;
+		return false;
+	}
+	char* configJson = new char [fileSize + 1];
+	file->GetContent(filename.c_str(), configJson, fileSize);
+	configJson[fileSize] = 0;
+	delete file;
+
+	// parse config
+	config = new Json::Value;
+	Json::Reader json;
+	bool isOk = json.parse(configJson, *config, false);
+	delete[] configJson;
+	if (!isOk) {
+		circuit->LOG("Malformed config format!");
+		delete config;
+		config = nullptr;
+		return false;
+	}
+
+	return true;
+}
+
+void CSetupManager::CloseConfig()
+{
+	delete config;
+	config = nullptr;
+}
+
 bool CSetupManager::HasStartBoxes() const
 {
 	return setupData->IsInitialized();
@@ -263,6 +311,20 @@ void CSetupManager::FindCommander()
 		}
 	}
 	utils::free_clear(units);
+}
+
+bool CSetupManager::LocatePath(std::string& filename)
+{
+	static const size_t absPath_sizeMax = 2048;
+	char absPath[absPath_sizeMax];
+	DataDirs* datadirs = circuit->GetCallback()->GetDataDirs();
+	const bool dir = !filename.empty() && (*filename.rbegin() == '/' || *filename.rbegin() == '\\');
+	const bool located = datadirs->LocatePath(absPath, absPath_sizeMax, filename.c_str(), false /*writable*/, false /*create*/, dir, false /*common*/);
+	if (located) {
+		filename = absPath;
+	}
+	delete datadirs;
+	return located;
 }
 
 } // namespace circuit

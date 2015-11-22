@@ -1,5 +1,6 @@
 // Mono-space font required
 {
+// Section defines wich factories to use
 "factories": {
 	"factorycloak": {
 		// If income < high_income*eps value then 'lowInc' probability will be used, 'highInc' otherwise;
@@ -136,6 +137,42 @@
 		"high_inc": [ 0.01,      0.09,      0.10,      0.39,      0.10,     0.20,      0.01,   0.10]
 	}
 },
+
+// Utins defined as scouts will use pathfinder to visit each uncolonized mex
+"scouts": [
+	// factorycloak
+	"armpw", "spherepole",
+
+	// factorygunship
+	"bladew", "armkam",
+
+	// factoryamph
+	"amphraider3", "amphraider2",
+
+	// factoryspider
+	"armflea", "armspy",
+
+	// factoryshield
+	"corclog", "corak",
+
+	// factoryveh
+	"corfav", "corgator", "capturecar",
+
+	// factoryjump
+	"puppy", "corpyro",
+
+	// factoryhover
+	"corsh",
+
+	// factoryship
+	"shipscout", "subraider", "shipraider",
+
+	// factoryplane
+	"fighter", "corawac",
+
+	// factorytank
+	"logkoda"
+],
 
 // IGNORED
 "retreat": {

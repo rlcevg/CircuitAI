@@ -23,7 +23,6 @@
 #include "OOAICallback.h"
 #include "Command.h"
 #include "Feature.h"
-#include "File.h"
 
 namespace circuit {
 
@@ -89,7 +88,10 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			delete ndef;
 		}
 		utils::free_clear(units);
-		factories.emplace_back(unit, nanos, 1, true);
+
+		auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
+		bool hasBuilder = (it != factoryDefs.end()) && (it->second.builderDef != nullptr);
+		factories.emplace_back(unit, nanos, 1, hasBuilder);
 
 //		this->circuit->GetSetupManager()->SetBasePos(pos);
 	};
@@ -578,11 +580,14 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 	}
 
 	auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
-	if ((it == factoryDefs.end()) || !it->second.builderDef->IsAvailable()) {
+	if (it == factoryDefs.end()) {
+		return nullptr;
+	}
+	CCircuitDef* buildDef = it->second.builderDef;
+	if ((buildDef == nullptr) || !buildDef->IsAvailable()) {
 		return nullptr;
 	}
 
-	CCircuitDef* buildDef = it->second.builderDef;
 	CCircuitUnit* factory = GetRandomFactory(buildDef);
 	if (factory != nullptr) {
 		const AIFloat3& buildPos = factory->GetPos(circuit->GetLastFrame());
@@ -619,7 +624,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 
 	CCircuitDef* buildDef = facDef.buildDefs[choice];
-	if (buildDef->IsAvailable()) {
+	if ((buildDef != nullptr) && buildDef->IsAvailable()) {
 		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
 		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
 		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
@@ -631,39 +636,17 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 
 void CFactoryManager::ReadFactoryConfig()
 {
-	// locate file
-	std::string filename("config.json");
-	if (!circuit->LocatePath(filename)){
-		circuit->LOG("Config file is missing!");
-		return;
-	}
-
-	// read config file
-	File* file = circuit->GetCallback()->GetFile();
-	int fileSize = file->GetSize(filename.c_str());
-	if (fileSize <= 0) {
-		circuit->LOG("Malformed config file!");
-		return;
-	}
-	char* configJson = new char [fileSize + 1];
-	file->GetContent(filename.c_str(), configJson, fileSize);
-	configJson[fileSize] = 0;
-	delete file;
-
-	// parse config
-	Json::Value root;
-	Json::Reader json;
-	bool isOk = json.parse(configJson, root, false);
-	delete[] configJson;
-	if (!isOk) {
-		circuit->LOG("Malformed config format!");
-		return;
-	}
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 
 	const Json::Value& factories = root["factories"];
-	for (auto fac : root["factories"].getMemberNames()) {
+	for (const std::string& fac : factories.getMemberNames()) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(fac.c_str());
+		if (cdef == nullptr) {
+			continue;
+		}
 		const Json::Value& factory = factories[fac];
 		SFactoryDef facDef;
+
 		facDef.builderDef = circuit->GetCircuitDef(factory["builder_def"].asCString());
 
 		const Json::Value& items = factory["unit_def"];
@@ -677,6 +660,9 @@ void CFactoryManager::ReadFactoryConfig()
 			facDef.prob0.push_back(prob0[i].asFloat());
 			facDef.prob1.push_back(prob1[i].asFloat());
 		}
+		if (facDef.buildDefs.empty()) {
+			facDef.buildDefs.push_back(nullptr);
+		}
 
 		const float highIncome = factory["high_income"].asFloat();
 		if (factory["require_energy"].asBool()) {
@@ -689,7 +675,7 @@ void CFactoryManager::ReadFactoryConfig()
 			};
 		}
 
-		factoryDefs[circuit->GetCircuitDef(fac.c_str())->GetId()] = facDef;
+		factoryDefs[cdef->GetId()] = facDef;
 	}
 }
 

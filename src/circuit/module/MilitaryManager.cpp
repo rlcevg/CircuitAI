@@ -22,6 +22,7 @@
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
+#include "json/json.h"
 
 #include "AISCommands.h"
 #include "WeaponDef.h"
@@ -171,20 +172,13 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 //		fighterInfos.erase(unit);
 //	};
 
-	const char* names[] = {"armpw", "spherepole",					// factorycloak
-						   "bladew", "armkam",						// factorygunship
-						   "amphraider3", "amphraider2",			// factoryamph
-						   "armflea", "armspy",						// factoryspider
-						   "corclog", "corak",						// factoryshield
-						   "corfav", "corgator", "capturecar"		// factoryveh
-						   "puppy", "corpyro",						// factoryjump
-						   "corsh",									// factoryhover
-						   "shipscout", "subraider", "shipraider",	// factoryship
-						   "fighter", "corawac",					// factoryplane
-						   "logkoda",								// factorytank
-	};
-	for (const char* name : names) {
-		scoutDefs.insert(circuit->GetCircuitDef(name));
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	for (const Json::Value& scout : root["scouts"]) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(scout.asCString());
+		if (cdef == nullptr) {
+			continue;
+		}
+		scoutDefs.insert(cdef);
 	}
 }
 
