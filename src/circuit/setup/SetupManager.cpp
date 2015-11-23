@@ -19,6 +19,7 @@
 #include "Map.h"
 #include "DataDirs.h"
 #include "File.h"
+#include "Log.h"
 
 #include <map>
 #include <regex>

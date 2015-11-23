@@ -6,13 +6,14 @@
 		// If income < high_income*eps value then 'lowInc' probability will be used, 'highInc' otherwise;
 		// eps=(teamSize+3)/4
 		"high_income": 40,
-		// 'require_energy' adds energy requirement for high_inc stage
+		// 'require_energy' adds energy requirement for high_inc stage: fallback to low_inc on low energy
 		"require_energy": true,
 
 		"builder_def": "armrectr",
 
 		//            glaive,  scythe,       rocko,     warrior,  zeus,      hammer,   sniper,     tick,      eraser,          gremlin
 		"unit_def": ["armpw", "spherepole", "armrock", "armwar", "armzeus", "armham", "armsnipe", "armtick", "spherecloaker", "armjeth"],
+		// build probabilities, sum == 1.0
 		"low_inc":  [ 0.60,    0.02,         0.15,      0.10,     0.05,      0.05,     0.00,       0.01,      0.00,            0.02],
 		"high_inc": [ 0.01,    0.30,         0.05,      0.05,     0.30,      0.01,     0.17,       0.01,      0.00,            0.10]
 	},
@@ -138,7 +139,7 @@
 	}
 },
 
-// Utins defined as scouts will use pathfinder to visit each uncolonized mex
+// Units defined as scouts will use pathfinder to visit each uncolonized mex
 "scouts": [
 	// factorycloak
 	"armpw", "spherepole",

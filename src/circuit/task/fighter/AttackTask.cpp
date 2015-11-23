@@ -184,6 +184,15 @@ void CAttackTask::Update()
 	}
 }
 
+// FIXME: DEBUG
+void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
+{
+	IFighterTask::OnUnitIdle(unit);
+
+	if (units.find(unit) != units.end()) RemoveAssignee(unit);
+}
+// FIXME: DEBUG
+
 void CAttackTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
 	if ((units.size() > 1) && !isUpdating) {
