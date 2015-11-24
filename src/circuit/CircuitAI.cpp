@@ -48,6 +48,7 @@ namespace circuit {
 
 using namespace springai;
 
+#define RELEASE_NO_CONFIG	100
 #ifdef DEBUG
 	#define PRINT_TOPIC(txt, topic)	LOG("<CircuitAI> %s topic: %i, SkirmishAIId: %i", txt, topic, skirmishAIId)
 #else
@@ -411,11 +412,12 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	scheduler = std::make_shared<CScheduler>();
 	scheduler->Init(scheduler);
 
-	InitOptions();
+	std::string cfgName = InitOptions();
 	InitUnitDefs();  // Inits TerrainData
 
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
-	if (!setupManager->OpenConfig()) {
+	if (!setupManager->OpenConfig(cfgName)) {
+		Release(RELEASE_NO_CONFIG);
 		return ERROR_INIT;
 	}
 	allyTeam = setupManager->GetAllyTeam();
@@ -485,7 +487,9 @@ int CCircuitAI::Release(int reason)
 	if (reason == 1) {
 		gameAttribute->SetGameEnd(true);
 	}
-	terrainManager->DidUpdateAreaUsers();
+	if (terrainManager != nullptr) {
+		terrainManager->DidUpdateAreaUsers();
+	}
 
 	scheduler->ProcessRelease();
 	scheduler = nullptr;
@@ -511,7 +515,9 @@ int CCircuitAI::Release(int reason)
 		delete kv.second;
 	}
 	enemyUnits.clear();
-	allyTeam->Release();
+	if (allyTeam != nullptr) {
+		allyTeam->Release();
+	}
 	for (auto& kv : defsById) {
 		delete kv.second;
 	}
@@ -937,7 +943,7 @@ CEnemyUnit* CCircuitAI::GetEnemyUnit(CCircuitUnit::Id unitId) const
 	return (it != enemyUnits.end()) ? it->second : nullptr;
 }
 
-void CCircuitAI::InitOptions()
+std::string CCircuitAI::InitOptions()
 {
 	OptionValues* options = skirmishAI->GetOptionValues();
 	const char* value;
@@ -964,7 +970,17 @@ void CCircuitAI::InitOptions()
 					(strncmp(value, trueVal1, sizeof(trueVal1)) == 0);
 	}
 
+	std::string cfgName;
+	value = options->GetValueByKey("config");
+	if ((value != nullptr) && strlen(value) > 0) {
+		cfgName = value;
+	} else {
+		const char* configs[] = {easy, normal};
+		cfgName = configs[std::min(static_cast<size_t>(difficulty), sizeof(configs) / sizeof(configs[0]))];
+	}
+
 	delete options;
+	return cfgName;
 }
 
 CCircuitDef* CCircuitAI::GetCircuitDef(const char* name)

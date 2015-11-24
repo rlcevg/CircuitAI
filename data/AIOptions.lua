@@ -33,11 +33,11 @@ local options = {
 				name = 'Normal',
 				desc = 'Casual AI.',
 			},
-			{
-				key  = 'hard',
-				name = 'Hard',
-				desc = 'Los-cheating AI.',
-			},
+			--{
+			--	key  = 'hard',
+			--	name = 'Hard',
+			--	desc = 'Los-cheating AI. Requires engine 101.0+',
+			--},
 		},
 	},
 	{ -- bool
@@ -48,7 +48,13 @@ local options = {
 		section = 'performance',
 		def     = true,
 	},
+	{ -- string
+		key     = 'config',
+		name    = 'Units config',
+		desc    = 'Play with arbitrary config of your choice.\nkey: config',
+		type    = 'string',
+		def     = '',
+	},
 }
 
 return options
-

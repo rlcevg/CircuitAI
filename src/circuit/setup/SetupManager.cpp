@@ -173,12 +173,13 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 	setupData->Init(allyTeams, boxes, startPosType);
 }
 
-bool CSetupManager::OpenConfig()
+bool CSetupManager::OpenConfig(const std::string& cfgName)
 {
 	// locate file
-	std::string filename("config.json");
+	std::string filename("config" SLASH);
+	filename += (cfgName.find(".json") == std::string::npos) ? (cfgName + ".json") : cfgName;
 	if (!LocatePath(filename)){
-		circuit->LOG("Config file is missing!");
+		circuit->LOG("Config file is missing! (%s)", filename.c_str());
 		return false;
 	}
 
@@ -186,22 +187,22 @@ bool CSetupManager::OpenConfig()
 	File* file = circuit->GetCallback()->GetFile();
 	int fileSize = file->GetSize(filename.c_str());
 	if (fileSize <= 0) {
-		circuit->LOG("Malformed config file!");
+		circuit->LOG("Malformed config file! (%s)", filename.c_str());
 		delete file;
 		return false;
 	}
-	char* configJson = new char [fileSize + 1];
-	file->GetContent(filename.c_str(), configJson, fileSize);
-	configJson[fileSize] = 0;
+	char* cfgJson = new char [fileSize + 1];
+	file->GetContent(filename.c_str(), cfgJson, fileSize);
+	cfgJson[fileSize] = 0;
 	delete file;
 
 	// parse config
 	config = new Json::Value;
 	Json::Reader json;
-	bool isOk = json.parse(configJson, *config, false);
-	delete[] configJson;
+	bool isOk = json.parse(cfgJson, *config, false);
+	delete[] cfgJson;
 	if (!isOk) {
-		circuit->LOG("Malformed config format!");
+		circuit->LOG("Malformed config format! (%s)", filename.c_str());
 		delete config;
 		config = nullptr;
 		return false;

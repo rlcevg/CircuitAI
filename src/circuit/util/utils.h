@@ -36,6 +36,12 @@ namespace utils {
 	#define PRINT_DEBUG(fmt, ...)
 #endif
 
+#ifdef _WIN32
+	#define SLASH "\\"
+#else
+	#define SLASH "/"
+#endif
+
 //template<typename Iter, typename RandomGenerator>
 //Iter select_randomly(Iter start, Iter end, RandomGenerator& g) {
 //	std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);

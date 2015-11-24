@@ -145,7 +145,7 @@ public:
 	Difficulty GetDifficulty() const { return difficulty; }
 	bool IsAllyAware() const { return allyAware; }
 private:
-	void InitOptions();
+	std::string InitOptions();
 	Difficulty difficulty;
 	bool allyAware;
 // ---- AIOptions.lua ---- END

@@ -27,7 +27,7 @@ public:
 	virtual ~CSetupManager();
 	void ParseSetupScript(const char* setupScript);
 
-	bool OpenConfig();
+	bool OpenConfig(const std::string& cfgName);
 	void CloseConfig();
 	const Json::Value& GetConfig() const { return *config; }
 

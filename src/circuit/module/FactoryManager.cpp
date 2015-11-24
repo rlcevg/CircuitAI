@@ -23,6 +23,7 @@
 #include "OOAICallback.h"
 #include "Command.h"
 #include "Feature.h"
+#include "Log.h"
 
 namespace circuit {
 
@@ -655,13 +656,29 @@ void CFactoryManager::ReadFactoryConfig()
 		facDef.buildDefs.reserve(items.size());
 		facDef.prob0.reserve(items.size());
 		facDef.prob1.reserve(items.size());
+		float sum0 = .0f, sum1 = .0f;
 		for (unsigned i = 0; i < items.size(); ++i) {
-			facDef.buildDefs.push_back(circuit->GetCircuitDef(items[i].asCString()));
-			facDef.prob0.push_back(prob0[i].asFloat());
-			facDef.prob1.push_back(prob1[i].asFloat());
+			CCircuitDef* udef = circuit->GetCircuitDef(items[i].asCString());
+			if (udef == nullptr) {
+				continue;
+			}
+			facDef.buildDefs.push_back(udef);
+			const float p0 = prob0[i].asFloat();
+			sum0 += p0;
+			facDef.prob0.push_back(p0);
+			const float p1 = prob1[i].asFloat();
+			sum1 += p1;
+			facDef.prob1.push_back(p1);
 		}
 		if (facDef.buildDefs.empty()) {
 			facDef.buildDefs.push_back(nullptr);
+		} else {
+			if (fabs(sum0 - 1.0f) > 0.0001f) {
+				circuit->LOG("CONFIG: %s's low_inc probability = %f", fac.c_str(), sum0);
+			}
+			if (fabs(sum1 - 1.0f) > 0.0001f) {
+				circuit->LOG("CONFIG: %s's high_inc probability = %f", fac.c_str(), sum1);
+			}
 		}
 
 		const float highIncome = factory["high_income"].asFloat();
