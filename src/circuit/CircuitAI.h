@@ -166,7 +166,7 @@ public:
 	CCircuitDef* GetCircuitDef(CCircuitDef::Id unitDefId);
 private:
 	void InitUnitDefs();
-	CircuitDefs  defsById;  // owner
+	CircuitDefs defsById;  // owner
 	NamedDefs defsByName;
 // ---- UnitDefs ---- END
 

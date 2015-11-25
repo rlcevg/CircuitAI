@@ -243,7 +243,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		}
 	}
 
-	ReadFactoryConfig();
+	ReadConfig();
 
 	// FIXME: EXPERIMENTAL
 	/*
@@ -650,7 +650,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	return nullptr;
 }
 
-void CFactoryManager::ReadFactoryConfig()
+void CFactoryManager::ReadConfig()
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 

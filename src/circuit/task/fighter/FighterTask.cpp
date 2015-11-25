@@ -80,7 +80,7 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 //			return;
 //		}
 //	} else
-	if (healthPerc > 0.6f) {  // TODO: floating retreat coefficient
+	if (healthPerc > unit->GetCircuitDef()->GetRetreat()) {
 		return;
 	} else if (healthPerc < 0.2f) {  // stuck units workaround: they don't shoot and don't see distant threat
 		manager->AssignTask(unit, manager->GetRetreatTask());

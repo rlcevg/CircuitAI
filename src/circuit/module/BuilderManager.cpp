@@ -33,6 +33,7 @@
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
+#include "json/json.h"
 
 #include "Command.h"
 
@@ -113,6 +114,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 		this->circuit->GetTerrainManager()->RemoveBlocker(unit->GetCircuitDef(), unit->GetPos(frame), facing);
 	};
 
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const Json::Value& retreats = root["retreat"];
+	const float builderRet = retreats["_builder_"].asFloat();
+
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
@@ -131,6 +136,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
 					workerMobileTypes.insert(mtId);
 				}
 				workerDefs.insert(cdef);
+
+				const char* name = cdef->GetUnitDef()->GetName();
+				cdef->SetRetreat(retreats.get(name, builderRet).asFloat());
 			}
 		} else {
 			destroyedHandler[kv.first] = buildingDestroyedHandler;

@@ -221,8 +221,7 @@ void IBuilderTask::OnUnitIdle(CCircuitUnit* unit)
 void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	Unit* u = unit->GetUnit();
-	// TODO: floating retreat coefficient
-	if (u->GetHealth() >= u->GetMaxHealth() * 0.8f) {
+	if (u->GetHealth() >= u->GetMaxHealth() * unit->GetCircuitDef()->GetRetreat()) {
 		return;
 	}
 

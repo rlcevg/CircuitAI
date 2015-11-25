@@ -97,6 +97,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 	};
 
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const Json::Value& retreats = root["retreat"];
+	const float fighterRet = retreats["_fighter_"].asFloat();
+
 	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
@@ -115,6 +119,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			idleHandler[unitDefId] = attackerIdleHandler;
 			damagedHandler[unitDefId] = attackerDamagedHandler;
 			destroyedHandler[unitDefId] = attackerDestroyedHandler;
+
+			const char* name = cdef->GetUnitDef()->GetName();
+			cdef->SetRetreat(retreats.get(name, fighterRet).asFloat());
 		} else {
 			WeaponDef* wd = cdef->GetUnitDef()->GetStockpileDef();
 			if (wd == nullptr) {
@@ -172,7 +179,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 //		fighterInfos.erase(unit);
 //	};
 
-	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	for (const Json::Value& scout : root["scouts"]) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(scout.asCString());
 		if (cdef == nullptr) {

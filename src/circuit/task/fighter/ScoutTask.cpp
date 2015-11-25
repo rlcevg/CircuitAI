@@ -155,8 +155,9 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 	float power = threatMap->GetUnitThreat(unit) * 0.8f;
 	int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
 	int noChaseCat = unit->GetCircuitDef()->GetNoChaseCategory();
-	float range = std::max(u->GetMaxRange() + threatMap->GetSquareSize() * 2,
-						   unit->GetCircuitDef()->GetLosRadius());
+//	float range = std::max(u->GetMaxRange() + threatMap->GetSquareSize() * 2,
+//						   unit->GetCircuitDef()->GetLosRadius());
+	float range = std::max(u->GetMaxRange(), threatMap->GetSquareSize() * 2.0f);
 	float minSqDist = range * range;
 	float maxThreat = .0f;
 

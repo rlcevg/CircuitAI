@@ -165,10 +165,15 @@
 	"logkoda"
 ],
 
-// IGNORED
+// If unit's health drops below specified percent it will retreat
 "retreat": {
-	// If unit's health drops below specified percent it will retreat
-	"builder": 0.8,
-	"fighter": 0.4
+	// default value for all builders
+	"_builder_": 0.8,
+
+	// default value for all fighters
+	"_fighter_": 0.4,
+
+	"blastwing": 0.1,
+	"spherepole": 0.2
 }
 }

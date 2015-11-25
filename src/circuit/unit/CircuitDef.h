@@ -84,6 +84,9 @@ public:
 	float GetLosRadius() const { return losRadius; }
 	float GetCost()      const { return cost; }
 
+	void SetRetreat(float value) { retreat = value; }
+	float GetRetreat()   const { return retreat; }
+
 	const springai::AIFloat3& GetMidPosOffset() const { return midPosOffset; }
 
 private:
@@ -121,6 +124,7 @@ private:
 	float speed;
 	float losRadius;
 	float cost;
+	float retreat;
 
 	springai::AIFloat3 midPosOffset;
 };

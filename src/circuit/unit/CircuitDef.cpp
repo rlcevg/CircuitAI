@@ -38,6 +38,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, isAntiAir(false)
 		, isAntiLand(false)
 		, isAntiWater(false)
+		, retreat(.0f)
 {
 	id = def->GetUnitDefId();
 
