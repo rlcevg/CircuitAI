@@ -611,13 +611,28 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		return nullptr;
 	}
 	const SFactoryDef& facDef = it->second;
-	const std::vector<float>& prob = facDef.GetProb(circuit->GetEconomyManager());
+
+	CEconomyManager* mgr = circuit->GetEconomyManager();
+	const float metalIncome = std::min(mgr->GetAvgMetalIncome(), mgr->GetAvgEnergyIncome()) * mgr->GetEcoFactor();
+	auto facIt = facDef.tiers.begin();
+	if ((metalIncome >= facDef.incomes[facIt->first]) && !(facDef.isRequireEnergy && mgr->IsEnergyEmpty())) {
+		while (facIt != facDef.tiers.end()) {
+			if (metalIncome < facDef.incomes[facIt->first]) {
+				break;
+			}
+			++facIt;
+		}
+		if (facIt == facDef.tiers.end()) {
+			--facIt;
+		}
+	}
+	const std::vector<float>& probs = facIt->second;
 
 	unsigned choice = 0;
 	float dice = (float)rand() / RAND_MAX;
 	float total = .0f;
-	for (unsigned i = 0; i < prob.size(); ++i) {
-		total += prob[i];
+	for (unsigned i = 0; i < probs.size(); ++i) {
+		total += probs[i];
 		if (dice < total) {
 			choice = i;
 			break;
@@ -650,46 +665,55 @@ void CFactoryManager::ReadFactoryConfig()
 
 		facDef.builderDef = circuit->GetCircuitDef(factory["builder_def"].asCString());
 
+		facDef.isRequireEnergy = factory.get("require_energy", false).asBool();
+
 		const Json::Value& items = factory["unit_def"];
-		const Json::Value& prob0 = factory["low_inc"];
-		const Json::Value& prob1 = factory["high_inc"];
+		const Json::Value& tiers = factory["income_tier"];
 		facDef.buildDefs.reserve(items.size());
-		facDef.prob0.reserve(items.size());
-		facDef.prob1.reserve(items.size());
-		float sum0 = .0f, sum1 = .0f;
+		const unsigned tierSize = tiers.size();
+		facDef.incomes.reserve(tierSize);
 		for (unsigned i = 0; i < items.size(); ++i) {
 			CCircuitDef* udef = circuit->GetCircuitDef(items[i].asCString());
 			if (udef == nullptr) {
 				continue;
 			}
 			facDef.buildDefs.push_back(udef);
-			const float p0 = prob0[i].asFloat();
-			sum0 += p0;
-			facDef.prob0.push_back(p0);
-			const float p1 = prob1[i].asFloat();
-			sum1 += p1;
-			facDef.prob1.push_back(p1);
 		}
+
 		if (facDef.buildDefs.empty()) {
 			facDef.buildDefs.push_back(nullptr);
 		} else {
-			if (fabs(sum0 - 1.0f) > 0.0001f) {
-				circuit->LOG("CONFIG: %s's low_inc probability = %f", fac.c_str(), sum0);
+			const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
+			auto fillProbs = [this, &cfgName, &facDef, &fac, &factory](unsigned i) {
+				const Json::Value& tier = factory[utils::int_to_string(i, "tier%i")];
+				if (tier == Json::Value::null) {
+					return false;
+				}
+				std::vector<float>& probs = facDef.tiers[i];
+				probs.reserve(facDef.buildDefs.size());
+				float sum = .0f;
+				for (unsigned j = 0; j < facDef.buildDefs.size(); ++j) {
+					const float p = tier[j].asFloat();
+					sum += p;
+					probs.push_back(p);
+				}
+				if (fabs(sum - 1.0f) > 0.0001f) {
+					circuit->LOG("CONFIG %s: %s's tier%i total probability = %f", cfgName.c_str(), fac.c_str(), i, sum);
+				}
+				return true;
+			};
+			unsigned i = 0;
+			for (; i < tierSize; ++i) {
+				facDef.incomes.push_back(tiers[i].asFloat());
+				fillProbs(i);
 			}
-			if (fabs(sum1 - 1.0f) > 0.0001f) {
-				circuit->LOG("CONFIG: %s's high_inc probability = %f", fac.c_str(), sum1);
-			}
+			fillProbs(i);
 		}
-
-		const float highIncome = factory["high_income"].asFloat();
-		if (factory["require_energy"].asBool()) {
-			facDef.criteria = [highIncome](CEconomyManager* mgr) {
-				return (mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < highIncome) || mgr->IsEnergyEmpty();
-			};
-		} else {
-			facDef.criteria = [highIncome](CEconomyManager* mgr) {
-				return (mgr->GetAvgMetalIncome() * mgr->GetEcoFactor() < highIncome);
-			};
+		if (facDef.incomes.empty()) {
+			facDef.incomes.push_back(std::numeric_limits<float>::max());
+		}
+		if (facDef.tiers.empty()) {
+			facDef.tiers[0];  // create empty tier
 		}
 
 		factoryDefs[cdef->GetId()] = facDef;

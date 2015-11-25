@@ -30,6 +30,7 @@ public:
 	bool OpenConfig(const std::string& cfgName);
 	void CloseConfig();
 	const Json::Value& GetConfig() const { return *config; }
+	const std::string& GetConfigName() const { return configName; }
 
 	bool HasStartBoxes() const;
 	bool CanChooseStartPos() const;
@@ -39,6 +40,8 @@ public:
 	const springai::AIFloat3& GetStartPos() const { return startPos; }
 	void SetBasePos(const springai::AIFloat3& pos) { basePos = pos; }
 	const springai::AIFloat3& GetBasePos() const { return basePos; }
+
+	void PickCommander();
 
 	CCircuitUnit* GetCommander() const;
 	CAllyTeam* GetAllyTeam() const;
@@ -50,6 +53,7 @@ private:
 	CCircuitAI* circuit;
 	CSetupData* setupData;
 	Json::Value* config;  // owner;
+	std::string configName;
 
 	int commanderId;
 	springai::AIFloat3 startPos;

@@ -50,7 +50,7 @@ local options = {
 	},
 	{ -- string
 		key     = 'config',
-		name    = 'Units config',
+		name    = 'Config',
 		desc    = 'Play with arbitrary config of your choice.\nkey: config',
 		type    = 'string',
 		def     = '',

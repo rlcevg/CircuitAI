@@ -444,6 +444,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 			setupManager->PickStartPos(this, CSetupManager::StartPosType::MIDDLE);
 		}
 	}
+	setupManager->PickCommander();
 
 	builderManager = std::make_shared<CBuilderManager>(this);
 	factoryManager = std::make_shared<CFactoryManager>(this);

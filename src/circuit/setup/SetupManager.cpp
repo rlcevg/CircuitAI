@@ -20,6 +20,7 @@
 #include "DataDirs.h"
 #include "File.h"
 #include "Log.h"
+#include "Lua.h"
 
 #include <map>
 #include <regex>
@@ -177,9 +178,10 @@ bool CSetupManager::OpenConfig(const std::string& cfgName)
 {
 	// locate file
 	std::string filename("config" SLASH);
-	filename += (cfgName.find(".json") == std::string::npos) ? (cfgName + ".json") : cfgName;
+	configName = (cfgName.find(".json") == std::string::npos) ? (cfgName + ".json") : cfgName;
+	filename += configName;
 	if (!LocatePath(filename)){
-		circuit->LOG("Config file is missing! (%s)", filename.c_str());
+		circuit->LOG("Config file is missing! (%s)", configName.c_str());
 		return false;
 	}
 
@@ -187,7 +189,7 @@ bool CSetupManager::OpenConfig(const std::string& cfgName)
 	File* file = circuit->GetCallback()->GetFile();
 	int fileSize = file->GetSize(filename.c_str());
 	if (fileSize <= 0) {
-		circuit->LOG("Malformed config file! (%s)", filename.c_str());
+		circuit->LOG("Malformed config file! (%s)", configName.c_str());
 		delete file;
 		return false;
 	}
@@ -202,7 +204,7 @@ bool CSetupManager::OpenConfig(const std::string& cfgName)
 	bool isOk = json.parse(cfgJson, *config, false);
 	delete[] cfgJson;
 	if (!isOk) {
-		circuit->LOG("Malformed config format! (%s)", filename.c_str());
+		circuit->LOG("Malformed config format! (%s)", configName.c_str());
 		delete config;
 		config = nullptr;
 		return false;
@@ -285,6 +287,31 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 	AIFloat3 pos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	SetStartPos(pos);
 	circuit->GetGame()->SendStartPosition(false, pos);
+}
+
+void CSetupManager::PickCommander()
+{
+	std::vector<CCircuitDef*> commanders;
+	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
+	for (auto& kv : defs) {
+		CCircuitDef* cdef = kv.second;
+
+		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
+		auto it = customParams.find("level");
+		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 0)) {
+			commanders.push_back(cdef);
+		}
+	}
+	if (commanders.empty()) {
+		return;
+	}
+
+	int index = rand() % commanders.size();
+	std::string cmd("ai_commander:");
+	cmd += commanders[index]->GetUnitDef()->GetName();
+	Lua* lua = circuit->GetCallback()->GetLua();
+	lua->CallRules(cmd.c_str(), cmd.size());
+	delete lua;
 }
 
 CCircuitUnit* CSetupManager::GetCommander() const

@@ -101,10 +101,9 @@ private:
 	struct SFactoryDef {
 		CCircuitDef* builderDef;
 		std::vector<CCircuitDef*> buildDefs;
-		std::vector<float> prob0;
-		std::vector<float> prob1;
-		std::function<bool (CEconomyManager* mgr)> criteria;  // prob0 criterion
-		const std::vector<float>& GetProb(CEconomyManager* mgr) const { return criteria(mgr) ? prob0 : prob1; }
+		std::map<unsigned, std::vector<float>> tiers;
+		std::vector<float> incomes;
+		bool isRequireEnergy;
 	};
 	std::unordered_map<CCircuitDef::Id, SFactoryDef> factoryDefs;
 

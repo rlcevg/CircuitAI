@@ -204,10 +204,15 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	auto comDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		RemoveMorphee(unit);
 	};
-	const char* coms[] = {"armcom0", "armcom1", "armcom2", "armcom3", "armcom4"};
-	for (const char* name : coms) {
-		finishedHandler[circuit->GetCircuitDef(name)->GetId()] = comFinishedHandler;
-		destroyedHandler[circuit->GetCircuitDef(name)->GetId()] = comDestroyedHandler;
+	for (auto& kv : allDefs) {
+		CCircuitDef* cdef = kv.second;
+		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
+		auto it = customParams.find("level");
+		// TODO: Identify max level
+		if ((it != customParams.end()) && (utils::string_to_int(it->second) < 5)) {
+			finishedHandler[cdef->GetId()] = comFinishedHandler;
+			destroyedHandler[cdef->GetId()] = comDestroyedHandler;
+		}
 	}
 }
 
@@ -841,7 +846,7 @@ void CEconomyManager::UpdateEconomy()
 	isEnergyStalling = std::min(GetAvgMetalIncome() - GetMetalPull(), .0f) * 0.9f > std::min(GetAvgEnergyIncome() - GetEnergyPull(), .0f);
 	float curEnergy = economy->GetCurrent(energyRes);
 	float storEnergy = economy->GetStorage(energyRes) - HIDDEN_ENERGY;
-	isEnergyEmpty = curEnergy < storEnergy * 0.5f;
+	isEnergyEmpty = curEnergy < storEnergy * 0.2f;
 }
 
 } // namespace circuit

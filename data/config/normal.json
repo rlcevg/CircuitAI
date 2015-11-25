@@ -3,127 +3,129 @@
 // Section defines wich factories to use
 "factories": {
 	"factorycloak": {
-		// If income*eps < high_income then 'lowInc' probability will be used, 'highInc' otherwise;
+		// If income*eps < income_tier[N] then 'tierN' probability will be used,
 		// eps=(teamSize+3)/4
-		"high_income": 35,
-		// 'require_energy' adds energy requirement for high_inc stage: fallback to low_inc on low energy
+		"income_tier": [35],
+
+		// 'require_energy' adds energy requirement for tierN (N>0): fallback to lowest tier on low energy
 		"require_energy": true,
 
 		"builder_def": "armrectr",
 
 		//            glaive,  scythe,       rocko,     warrior,  zeus,      hammer,   sniper,     tick,      eraser,          gremlin
 		"unit_def": ["armpw", "spherepole", "armrock", "armwar", "armzeus", "armham", "armsnipe", "armtick", "spherecloaker", "armjeth"],
-		// build probabilities, sum == 1.0
-		"low_inc":  [ 0.45,    0.23,         0.15,      0.05,     0.05,      0.05,     0.00,       0.01,      0.00,            0.01],
-		"high_inc": [ 0.07,    0.20,         0.00,      0.00,     0.25,      0.25,     0.17,       0.01,      0.00,            0.05]
+
+		// build probabilities, sum must be 1.0 (if it's not infolog will shout)
+		"tier0":    [ 0.45,    0.23,         0.15,      0.05,     0.05,      0.05,     0.00,       0.01,      0.00,            0.01],
+		"tier1":    [ 0.07,    0.20,         0.00,      0.00,     0.25,      0.25,     0.17,       0.01,      0.00,            0.05]
 	},
 
 	"factorygunship": {
-		"high_income": 20,
+		"income_tier": [20],
 		"require_energy": false,
 
 		"builder_def": "armca",
 
 		//            blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator   trident
 		"unit_def": ["blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans", "gunshipaa"],
-		"low_inc":  [ 0.10,        0.00,     0.65,     0.13,             0.10,       0.01,        0.00,     0.00,      0.00,        0.01],
-		"high_inc": [ 0.01,        0.01,     0.00,     0.16,             0.71,       0.01,        0.05,     0.00,      0.00,        0.05]
+		"tier0":    [ 0.10,        0.00,     0.65,     0.13,             0.10,       0.01,        0.00,     0.00,      0.00,        0.01],
+		"tier1":    [ 0.01,        0.01,     0.00,     0.16,             0.71,       0.01,        0.05,     0.00,      0.00,        0.05]
 	},
 
 	"factoryamph": {
-		"high_income": 35,
+		"income_tier": [35],
 		"require_energy": false,
 
 		"builder_def": "amphcon",
 
 		//            duck,          archer,        buoy,          scallop,    grizzly,       djinn,      angler
 		"unit_def": ["amphraider3", "amphraider2", "amphfloater", "amphriot", "amphassault", "amphtele", "amphaa"],
-		"low_inc":  [ 0.50,          0.05,          0.25,          0.18,       0.00,          0.00,       0.02],
-		"high_inc": [ 0.14,          0.01,          0.40,          0.10,       0.30,          0.00,       0.05]
+		"tier0":    [ 0.50,          0.05,          0.25,          0.18,       0.00,          0.00,       0.02],
+		"tier1":    [ 0.14,          0.01,          0.40,          0.10,       0.30,          0.00,       0.05]
 	},
 
 	"factoryspider": {
-		"high_income": 35,
+		"income_tier": [35],
 		"require_energy": false,
 
 		"builder_def": "arm_spider",
 
 		//            flea,      hermit,          venom,       redback,      recluse,   crabe,      infiltrator, tarantula
 		"unit_def": ["armflea", "spiderassault", "arm_venom", "spiderriot", "armsptk", "armcrabe", "armspy",    "spideraa"],
-		"low_inc":  [ 0.67,      0.14,            0.03,        0.08,         0.08,      0.00,       0.00,        0.00],
-		"high_inc": [ 0.55,      0.23,            0.00,        0.04,         0.04,      0.13,       0.00,        0.01]
+		"tier0":    [ 0.67,      0.14,            0.03,        0.08,         0.08,      0.00,       0.00,        0.00],
+		"tier1":    [ 0.55,      0.23,            0.00,        0.04,         0.04,      0.13,       0.00,        0.01]
 	},
 
 	"factoryshield": {
-		"high_income": 35,
+		"income_tier": [35],
 		"require_energy": false,
 
 		"builder_def": "cornecro",
 
 		//            dirtbag,   bandit,  rogue,      thug,      outlaw,   felon,         racketeer,    roach,      aspis,          vandal
 		"unit_def": ["corclog", "corak", "corstorm", "corthud", "cormak", "shieldfelon", "shieldarty", "corroach", "core_spectre", "corcrash"],
-		"low_inc":  [ 0.10,      0.36,    0.20,       0.18,      0.02,     0.02,          0.10,         0.01,       0.00,           0.01],
-		"high_inc": [ 0.10,      0.04,    0.17,       0.45,      0.02,     0.05,          0.15,         0.01,       0.00,           0.01]
+		"tier0":    [ 0.10,      0.36,    0.20,       0.18,      0.02,     0.02,          0.10,         0.01,       0.00,           0.01],
+		"tier1":    [ 0.10,      0.04,    0.17,       0.45,      0.02,     0.05,          0.15,         0.01,       0.00,           0.01]
 	},
 
 	"factoryveh": {
-		"high_income": 35,
+		"income_tier": [35],
 		"require_energy": false,
 
 		"builder_def": "corned",
 
 		//            dart,     scorcher,   slasher,   leveler,    ravager,   dominatrix,   wolverine, impaler,   crasher
 		"unit_def": ["corfav", "corgator", "cormist", "corlevlr", "corraid", "capturecar", "corgarp", "armmerl", "vehaa"],
-		"low_inc":  [ 0.10,     0.05,       0.20,      0.26,       0.20,      0.02,         0.16,      0.00,      0.01],
-		"high_inc": [ 0.01,     0.02,       0.00,      0.10,       0.64,      0.01,         0.10,      0.10,      0.02]
+		"tier0":    [ 0.10,     0.05,       0.20,      0.26,       0.20,      0.02,         0.16,      0.00,      0.01],
+		"tier1":    [ 0.01,     0.02,       0.00,      0.10,       0.64,      0.01,         0.10,      0.10,      0.02]
 	},
 
 	"factoryhover": {
-		"high_income": 35,
+		"income_tier": [35],
 		"require_energy": false,
 
 		"builder_def": "corch",
 
 		//            dagger,  scalpel,    halberd,        claymore,           mace,        penetrator, flail
 		"unit_def": ["corsh", "nsaclash", "hoverassault", "hoverdepthcharge", "hoverriot", "armmanni", "hoveraa"],
-		"low_inc":  [ 0.25,    0.47,       0.17,           0.00,               0.10,        0.00,       0.01],
-		"high_inc": [ 0.01,    0.55,       0.10,           0.01,               0.10,        0.18,       0.05]
+		"tier0":    [ 0.25,    0.47,       0.17,           0.00,               0.10,        0.00,       0.01],
+		"tier1":    [ 0.01,    0.55,       0.10,           0.01,               0.10,        0.18,       0.05]
 	},
 
 	"factoryship": {
-		"high_income": 40,
+		"income_tier": [40],
 		"require_energy": false,
 
 		"builder_def": "shipcon",
 
 		//            skeeter,     snake,       typhoon,      hunter,     enforcer,    crusader,   serpent,   surfboard,  shredder
 		"unit_def": ["shipscout", "subraider", "shipraider", "shiptorp", "shipskirm", "shiparty", "subarty", "armtboat", "shipaa"],
-		"low_inc":  [ 0.10,        0.30,        0.30,         0.17,       0.05,        0.05,       0.01,      0.00,       0.02],
-		"high_inc": [ 0.01,        0.10,        0.10,         0.20,       0.10,        0.20,       0.19,      0.00,       0.10]
+		"tier0":    [ 0.10,        0.30,        0.30,         0.17,       0.05,        0.05,       0.01,      0.00,       0.02],
+		"tier1":    [ 0.01,        0.10,        0.10,         0.20,       0.10,        0.20,       0.19,      0.00,       0.10]
 	},
 
 	"factoryplane": {
-		"high_income": 40,
+		"income_tier": [40],
 		"require_energy": false,
 
 		"builder_def": "armca",
 
 		//            swift,     hawk,      raven,     phoenix,    thunderbird,         wyvern,    vulture
 		"unit_def": ["fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "_corawac"],
-		"low_inc":  [ 0.27,      0.00,      0.68,      0.05,       0.00,                0.00,      0.08],
-		"high_inc": [ 0.36,      0.01,      0.32,      0.01,       0.05,                0.25,      0.05]
+		"tier0":    [ 0.27,      0.00,      0.68,      0.05,       0.00,                0.00,      0.08],
+		"tier1":    [ 0.36,      0.01,      0.32,      0.01,       0.05,                0.25,      0.05]
 	},
 
 	"factorytank": {
-		"high_income": 25,
+		"income_tier": [25],
 		"require_energy": false,
 
 		"builder_def": "coracv",
 
 		//            kodachi,   panther,   banisher,  reaper,    goliath,  pillager,  tremor, copperhead
 		"unit_def": ["logkoda", "panther", "tawf114", "correap", "corgol", "cormart", "trem", "corsent"],
-		"low_inc":  [ 0.59,      0.01,      0.30,      0.10,      0.00,     0.00,      0.00,   0.00],
-		"high_inc": [ 0.10,      0.00,      0.10,      0.50,      0.15,     0.10,      0.00,   0.05]
+		"tier0":    [ 0.59,      0.01,      0.30,      0.10,      0.00,     0.00,      0.00,   0.00],
+		"tier1":    [ 0.10,      0.00,      0.10,      0.50,      0.15,     0.10,      0.00,   0.05]
 	}
 },
 
