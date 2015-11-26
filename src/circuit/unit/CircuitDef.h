@@ -137,7 +137,7 @@ inline bool CCircuitDef::CanBuild(Id buildDefId) const
 inline bool CCircuitDef::CanBuild(CCircuitDef* buildDef) const
 {
 	// FIXME: Remove Patrol/Reclaim/Terra tasks from CBuildManager::builderTasks
-	return (buildDef != nullptr) ? CanBuild(buildDef->GetId()) : false;
+	return (buildDef != nullptr) ? CanBuild(buildDef->GetId()) : false/*true*/;
 }
 
 } // namespace circuit

@@ -16,11 +16,11 @@ namespace circuit {
 class CBTerraformTask: public IBuilderTask {
 public:
 	CBTerraformTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, float cost = 1.0f, int timeout = 0);
+	CBTerraformTask(ITaskManager* mgr, Priority priority, const springai::AIFloat3& position, float cost = 1.0f, int timeout = 0);
 	virtual ~CBTerraformTask();
 
 	virtual void Execute(CCircuitUnit* unit);
 protected:
-	virtual void Finish();
 	virtual void Cancel();
 
 public:

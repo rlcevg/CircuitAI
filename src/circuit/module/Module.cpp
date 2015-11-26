@@ -10,8 +10,8 @@
 
 namespace circuit {
 
-IModule::IModule(CCircuitAI* circuit) :
-		circuit(circuit)
+IModule::IModule(CCircuitAI* circuit)
+		: circuit(circuit)
 {
 }
 

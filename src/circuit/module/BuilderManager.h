@@ -80,7 +80,9 @@ public:
 								int timeout = ASSIGN_TIMEOUT);
 	IBuilderTask* EnqueueTerraform(IBuilderTask::Priority priority,
 								   CCircuitUnit* target,
+								   const springai::AIFloat3& position = -RgtVector,
 								   float cost = 1.0f,
+								   bool isActive = true,
 								   int timeout = ASSIGN_TIMEOUT);
 private:
 	IBuilderTask* AddTask(IBuilderTask::Priority priority,

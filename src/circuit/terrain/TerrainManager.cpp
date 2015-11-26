@@ -236,6 +236,15 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 				 STRUCT_BIT(ENGY_HIGH);
 	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
 
+// FIXME: DEBUG
+//	cdef = circuit->GetCircuitDef("terraunit");
+//	ssize = int2(3 + 4, 3 + 4);
+//	bsize = ssize;
+//	offset = int2(0, 0);
+//	ignoreMask = STRUCT_BIT(NONE);
+//	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
+// FIXME: DEBUG
+
 	const char* striders[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"};
 	for (const char* strider : striders) {
 		cdef = circuit->GetCircuitDef(strider);

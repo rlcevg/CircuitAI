@@ -29,10 +29,10 @@ namespace circuit {
 
 using namespace springai;
 
-CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
-		IUnitModule(circuit),
-		factoryPower(.0f),
-		assistDef(nullptr)
+CFactoryManager::CFactoryManager(CCircuitAI* circuit)
+		: IUnitModule(circuit)
+		, factoryPower(.0f)
+		, assistDef(nullptr)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::Watchdog, this),
@@ -104,24 +104,27 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
-		// check if any factory with builders left
-		bool hasBuilder = false;
-		for (SFactory& fac : factories) {
-			if (fac.hasBuilder) {
-				hasBuilder = true;
-				break;
+		auto checkBuilderFactory = [this]() {
+			// check if any factory with builders left
+			bool hasBuilder = false;
+			for (SFactory& fac : factories) {
+				if (fac.hasBuilder) {
+					hasBuilder = true;
+					break;
+				}
 			}
-		}
-		if (!hasBuilder) {
-			CCircuitDef* facDef = this->circuit->GetAllyTeam()->GetFactoryToBuild(this->circuit);
-			if (facDef != nullptr) {
-				this->circuit->GetAllyTeam()->AdvanceFactoryIdx();
-				this->circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, -RgtVector,
-																IBuilderTask::BuildType::FACTORY);
+			if (!hasBuilder) {
+				CCircuitDef* facDef = this->circuit->GetAllyTeam()->GetFactoryToBuild(this->circuit);
+				if (facDef != nullptr) {
+					this->circuit->GetAllyTeam()->AdvanceFactoryIdx();
+					this->circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, -RgtVector,
+																	IBuilderTask::BuildType::FACTORY);
+				}
 			}
-		}
+		};
 
 		if (task == nullTask) {  // alternative: unit->GetUnit()->IsBeingBuilt()
+			checkBuilderFactory();
 			return;
 		}
 		factoryPower -= unit->GetCircuitDef()->GetBuildSpeed();
@@ -139,6 +142,8 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 			factories.erase(it);
 			break;
 		}
+
+		checkBuilderFactory();
 	};
 
 	/*

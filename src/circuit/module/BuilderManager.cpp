@@ -41,10 +41,10 @@ namespace circuit {
 
 using namespace springai;
 
-CBuilderManager::CBuilderManager(CCircuitAI* circuit) :
-		IUnitModule(circuit),
-		builderTasksCount(0),
-		builderPower(.0f)
+CBuilderManager::CBuilderManager(CCircuitAI* circuit)
+		: IUnitModule(circuit)
+		, builderTasksCount(0)
+		, builderPower(.0f)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Watchdog, this),
@@ -365,12 +365,21 @@ IBuilderTask* CBuilderManager::EnqueueRepair(IBuilderTask::Priority priority,
 
 IBuilderTask* CBuilderManager::EnqueueTerraform(IBuilderTask::Priority priority,
 												CCircuitUnit* target,
+												const AIFloat3& position,
 												float cost,
+												bool isActive,
 												int timeout)
 {
-	IBuilderTask* task = new CBTerraformTask(this, priority, target, cost, timeout);
-	builderTasks[static_cast<int>(IBuilderTask::BuildType::TERRAFORM)].insert(task);
-	builderTasksCount++;
+	IBuilderTask* task;
+	if (target == nullptr) {
+		task = new CBTerraformTask(this, priority, position, cost, timeout);
+	} else {
+		task = new CBTerraformTask(this, priority, target, cost, timeout);
+	}
+	if (isActive) {
+		builderTasks[static_cast<int>(IBuilderTask::BuildType::TERRAFORM)].insert(task);
+		builderTasksCount++;
+	}
 	return task;
 }
 

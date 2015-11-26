@@ -9,10 +9,10 @@
 
 namespace circuit {
 
-IUnitModule::IUnitModule(CCircuitAI* circuit) :
-		IModule(circuit),
-		IUnitManager(),
-		ITaskManager()
+IUnitModule::IUnitModule(CCircuitAI* circuit)
+		: IModule(circuit)
+		, IUnitManager()
+		, ITaskManager()
 {
 }
 

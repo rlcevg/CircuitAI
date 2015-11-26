@@ -56,7 +56,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			point->cost -= defCost;
 		}
 	};
-	const char* defenders[] = {"corllt", "corrad", "armsonar", "corhlt", "turrettorp", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armartic", "corjamt", "armanni", "corbhmth"*/};
+	const char* defenders[] = {"corllt", "corrl", "corrad", "armsonar", "armdeva", "corhlt", "turrettorp", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armartic", "corjamt", "armanni", "corbhmth"*/};
 	for (const char* name : defenders) {
 		unitDefId = circuit->GetCircuitDef(name)->GetId();
 		destroyedHandler[unitDefId] = defenceDestroyedHandler;
@@ -342,7 +342,10 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	float totalCost = .0f;
 	IBuilderTask* parentTask = nullptr;
 	bool isWater = circuit->GetTerrainManager()->IsWaterSector(pos);
-	std::array<const char*, 9> landDefenders = {"corllt", "corrad", "corrl", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
+	std::array<const char*, 9> landDefenders = {"corllt", "corrl", "corrad", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
+// FIXME: DEBUG
+//	std::array<const char*, 9> landDefenders = {"armdeva", "corllt", "corrad", "corrl", "corrazor", "armnanotc", "corrl", "corrl", "corrl"};
+// FIXME: DEBUG
 	std::array<const char*, 9> waterDefenders = {"turrettorp", "armsonar", "corllt", "corrad", "corrazor", "armnanotc", "turrettorp", "corhlt", "turrettorp"};
 	std::array<const char*, 9>& defenders = isWater ? waterDefenders : landDefenders;
 	for (const char* name : defenders) {
@@ -355,6 +358,18 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 		if (totalCost < maxCost) {
 			closestPoint->cost += defCost;
 			bool isFirst = (parentTask == nullptr);
+// FIXME: DEBUG
+//			if (std::string("armdeva") == name) {
+//				const float terraCost = 1.0f;
+//				closestPoint->cost += terraCost;
+//				IBuilderTask* task = builderManager->EnqueueTerraform(IBuilderTask::Priority::HIGH, nullptr, closestPoint->position, terraCost, isFirst);
+//				if (parentTask != nullptr) {
+//					parentTask->SetNextTask(task);
+//				}
+//				parentTask = task;
+//				isFirst = false;
+//			}
+// FIXME: DEBUG
 			IBuilderTask::Priority priority = isFirst ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
 			IBuilderTask* task = builderManager->EnqueueTask(priority, defDef, closestPoint->position,
 															 IBuilderTask::BuildType::DEFENCE, true, isFirst);
@@ -379,7 +394,11 @@ void CMilitaryManager::AbortDefence(CBDefenceTask* task)
 		}
 		IBuilderTask* next = task->GetNextTask();
 		while (next != nullptr) {
-			defCost = next->GetBuildDef()->GetCost();
+			if (next->GetBuildDef() != nullptr) {
+				defCost = next->GetBuildDef()->GetCost();
+			} else{
+				defCost = next->GetCost();
+			}
 			if (point->cost >= defCost) {
 				point->cost -= defCost;
 			}
