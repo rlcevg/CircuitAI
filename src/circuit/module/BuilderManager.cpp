@@ -762,14 +762,14 @@ void CBuilderManager::UpdateAreaUsers()
 
 	std::set<IBuilderTask*> removeTasks;
 	for (auto& tasks : builderTasks) {
-		for (auto task : tasks) {
+		for (IBuilderTask* task : tasks) {
 			CCircuitDef* cdef = task->GetBuildDef();
 			if ((cdef != nullptr) && !IsBuilderInArea(cdef, task->GetPosition())) {
 				removeTasks.insert(task);
 			}
 		}
 	}
-	for (auto task : removeTasks) {
+	for (IBuilderTask* task : removeTasks) {
 		AbortTask(task);
 	}
 }

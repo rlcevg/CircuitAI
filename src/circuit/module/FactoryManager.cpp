@@ -290,32 +290,46 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit) :
 		idleHandler[defId](unit);
 	};
 	idleHandler[defId] = [this](CCircuitUnit* unit) {
-		CEconomyManager* economyManager = this->circuit->GetEconomyManager();
 		CTerrainManager* terrainManager = this->circuit->GetTerrainManager();
 		int frame = this->circuit->GetLastFrame();
 		AIFloat3 pos = unit->GetPos(frame);
 		bool isWater = terrainManager->IsWaterSector(pos);
-		float metalIncome = economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor();
-		const char* names[]             = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"};
-		const std::array<float, 10> lp0 = {.01,          .10,        .69,     .05,        .10,         .05,        .00,       .00,          .00,    .00};
-		const std::array<float, 10> lp1 = {.10,          .30,        .25,     .07,        .10,         .15,        .03,       .00,          .00,    .00};
-		const std::array<float, 10> wp0 = {.50,          .00,        .00,     .00,        .00,         .00,        .00,       .00,          .25,    .25};
-		const std::array<float, 10> wp1 = {.10,          .00,        .00,     .00,        .00,         .00,        .10,       .00,          .40,    .40};
-		const std::array<float, 10>& prob = (metalIncome < 120) ? (isWater ? wp0 : lp0) : (isWater ? wp1 : lp1);
+
+		CEconomyManager* mgr = this->circuit->GetEconomyManager();
+		const float metalIncome = std::min(mgr->GetAvgMetalIncome(), mgr->GetAvgEnergyIncome()) * mgr->GetEcoFactor();
+		std::map<unsigned, std::vector<float>>& tiers = isWater ? striderHubDef.waterTiers : striderHubDef.landTiers;
+
+		auto facIt = tiers.begin();
+		if ((metalIncome >= striderHubDef.incomes[facIt->first]) && !(striderHubDef.isRequireEnergy && mgr->IsEnergyEmpty())) {
+			while (facIt != tiers.end()) {
+				if (metalIncome < striderHubDef.incomes[facIt->first]) {
+					break;
+				}
+				++facIt;
+			}
+			if (facIt == tiers.end()) {
+				--facIt;
+			}
+		}
+		const std::vector<float>& probs = facIt->second;
+
 		unsigned choice = 0;
 		float dice = (float)rand() / RAND_MAX;
 		float total = .0f;
-		for (unsigned i = 0; i < prob.size(); ++i) {
-			total += prob[i];
+		for (unsigned i = 0; i < probs.size(); ++i) {
+			total += probs[i];
 			if (dice < total) {
 				choice = i;
 				break;
 			}
 		}
-		CCircuitDef* striderDef = this->circuit->GetCircuitDef(names[choice]);
-		pos = terrainManager->FindBuildSite(striderDef, pos, this->circuit->GetCircuitDef("striderhub")->GetBuildDistance(), -1);
-		if (pos != -RgtVector) {
-			unit->GetUnit()->Build(striderDef->GetUnitDef(), pos, -1, 0, frame + FRAMES_PER_SEC * 10);
+
+		CCircuitDef* striderDef = striderHubDef.buildDefs[choice];
+		if (striderDef != nullptr) {
+			pos = terrainManager->FindBuildSite(striderDef, pos, this->circuit->GetCircuitDef("striderhub")->GetBuildDistance(), -1);
+			if (pos != -RgtVector) {
+				unit->GetUnit()->Build(striderDef->GetUnitDef(), pos, -1, 0, frame + FRAMES_PER_SEC * 10);
+			}
 		}
 	};
 	destroyedHandler[defId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
@@ -654,6 +668,9 @@ void CFactoryManager::ReadConfig()
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 
+	/*
+	 * Factories
+	 */
 	const Json::Value& factories = root["factories"];
 	for (const std::string& fac : factories.getMemberNames()) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(fac.c_str());
@@ -717,6 +734,66 @@ void CFactoryManager::ReadConfig()
 		}
 
 		factoryDefs[cdef->GetId()] = facDef;
+	}
+
+	/*
+	 * Strider hub
+	 */
+	const Json::Value& striderHub = root["strider"];
+	const Json::Value& items = striderHub["unit_def"];
+	const Json::Value& tiers = striderHub["income_tier"];
+
+	striderHubDef.isRequireEnergy = striderHub.get("require_energy", false).asBool();
+
+	striderHubDef.buildDefs.reserve(items.size());
+	const unsigned tierSize = tiers.size();
+	striderHubDef.incomes.reserve(tierSize);
+	for (unsigned i = 0; i < items.size(); ++i) {
+		CCircuitDef* udef = circuit->GetCircuitDef(items[i].asCString());
+		if (udef == nullptr) {
+			continue;
+		}
+		striderHubDef.buildDefs.push_back(udef);
+	}
+
+	if (striderHubDef.buildDefs.empty()) {
+		striderHubDef.buildDefs.push_back(nullptr);
+	} else {
+		const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
+		auto fillProbs = [this, &cfgName, &striderHub](unsigned i, const char* tierName, std::vector<float>& probs) {
+			const Json::Value& tier = striderHub[utils::int_to_string(i, tierName)];
+			if (tier == Json::Value::null) {
+				return false;
+			}
+			probs.reserve(striderHubDef.buildDefs.size());
+			float sum = .0f;
+			for (unsigned j = 0; j < striderHubDef.buildDefs.size(); ++j) {
+				const float p = tier[j].asFloat();
+				sum += p;
+				probs.push_back(p);
+			}
+			if (fabs(sum - 1.0f) > 0.0001f) {
+				circuit->LOG("CONFIG %s: strider's tier%i total probability = %f", cfgName.c_str(), i, sum);
+			}
+			return true;
+		};
+		unsigned i = 0;
+		for (; i < tierSize; ++i) {
+			striderHubDef.incomes.push_back(tiers[i].asFloat());
+			fillProbs(i, "land_tier%i", striderHubDef.landTiers[i]);
+			fillProbs(i, "water_tier%i", striderHubDef.waterTiers[i]);
+		}
+		fillProbs(i, "land_tier%i", striderHubDef.landTiers[i]);
+		fillProbs(i, "water_tier%i", striderHubDef.waterTiers[i]);
+	}
+	if (striderHubDef.incomes.empty()) {
+		striderHubDef.incomes.push_back(std::numeric_limits<float>::max());
+	}
+	if (striderHubDef.landTiers.empty()) {
+		striderHubDef.landTiers[0];  // create empty tier
+	}
+	if (striderHubDef.waterTiers.empty()) {
+		striderHubDef.waterTiers[0];  // create empty tier
 	}
 }
 

@@ -77,6 +77,9 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 
 	// TODO: Move factory selection into CFactoryManager?
 	//       Can't figure how as this should work per ally team.
+	/*
+	 * Prepare factory choices
+	 */
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const Json::Value& factories = root["factories"];
 	factoryBuilds.reserve(factories.size());
@@ -95,14 +98,16 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 			continue;
 		}
 
+		// TODO: Replace importance with proper terrain analysis (size, hardness, unit's power, speed)
+		const float importance = factories[fac].get("importance", 1.0f).asFloat();
 		STerrainMapMobileType::Id mtId = cdef->GetMobileId();
 		if (mtId < 0) {
 			factoryBuilds.push_back(cdef->GetId());
-			percents[cdef->GetId()] = 60.0 + (float)rand() / RAND_MAX * 50.0;
+			percents[cdef->GetId()] = 60.0 * importance + (float)rand() / RAND_MAX * 50.0;
 		} else if (mobileType[mtId].typeUsable) {
 			factoryBuilds.push_back(cdef->GetId());
 			float shift = (float)rand() / RAND_MAX * 40.0 - 20.0;
-			percents[cdef->GetId()] = mobileType[mtId].areaLargest->percentOfMap + shift;
+			percents[cdef->GetId()] = mobileType[mtId].areaLargest->percentOfMap * importance + shift;
 		}
 	}
 	auto cmp = [circuit, &percents](const CCircuitDef::Id aId, const CCircuitDef::Id bId) {

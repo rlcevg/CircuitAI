@@ -106,6 +106,13 @@ private:
 		bool isRequireEnergy;
 	};
 	std::unordered_map<CCircuitDef::Id, SFactoryDef> factoryDefs;
+	struct SStriderHubDef {
+		std::vector<CCircuitDef*> buildDefs;
+		std::map<unsigned, std::vector<float>> landTiers;
+		std::map<unsigned, std::vector<float>> waterTiers;
+		std::vector<float> incomes;
+		bool isRequireEnergy;
+	} striderHubDef;
 
 	CCircuitDef* assistDef;
 	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> assists;  // nano 1:n factory

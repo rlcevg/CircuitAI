@@ -175,9 +175,14 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
 	// TODO: randomize ranges
 	std::array<std::pair<const char*, int>, 3> landEngies = {
-			std::make_pair("cafus", 3),
-			std::make_pair("armfus", 2),
-			std::make_pair("armsolar", 10)
+//			std::make_pair("cafus", 3),
+//			std::make_pair("armfus", 2),
+//			std::make_pair("armsolar", 10)
+// FIXME: DEBUG
+			std::make_pair("cafus", 1),
+			std::make_pair("armfus", 3),
+			std::make_pair("armsolar", 15)
+// FIXME: DEBUG
 	};
 	std::array<std::pair<const char*, int>, 3> waterEngies = {
 			std::make_pair("cafus", 3),
@@ -532,7 +537,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	// Select proper energy UnitDef to build
 	CCircuitDef* bestDef = nullptr;
 	float cost;
-	metalIncome = std::min(metalIncome, energyIncome);
+	metalIncome = std::min(metalIncome, energyIncome) * 0.5f;
 	float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome);
 	int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
 	float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.1f : ecoFactor);
@@ -578,6 +583,14 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			if (index >= 0) {
 				const CMetalData::Clusters& clusters = metalManager->GetClusters();
 				buildPos = clusters[index].geoCentr;
+// FIXME: DEBUG
+				if (cost > 1000.0f) {
+					AIFloat3 mapCenter(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
+					buildPos += (buildPos - mapCenter).Normalize2D() * 300;
+					CCircuitDef* bdef = (unit == nullptr) ? bestDef : unit->GetCircuitDef();
+					buildPos = circuit->GetTerrainManager()->GetBuildPosition(bdef, buildPos);
+				}
+// FIXME: DEBUG
 			}
 		}
 
