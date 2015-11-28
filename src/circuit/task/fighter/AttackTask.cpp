@@ -13,6 +13,10 @@
 #include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
+// FIXME: DEBUG
+#include "setup/SetupManager.h"
+// FIXME: DEBUG
+
 
 #include "AISCommands.h"
 #include "Map.h"
@@ -167,6 +171,9 @@ void CAttackTask::Update()
 		Execute(leader, true);
 		const float sqHighestRange = highestRange * highestRange;
 		for (CCircuitUnit* unit : units) {
+			if (unit == leader) {
+				continue;
+			}
 			const float sqDist = position.SqDistance2D(unit->GetPos(frame));
 			if (target != nullptr) {
 				const float range = unit->GetUnit()->GetMaxRange();
@@ -176,6 +183,16 @@ void CAttackTask::Update()
 					isAttack = true;
 					continue;
 				}
+// FIXME: DEBUG
+			} else {
+				// Guard commander
+				if ((circuit->GetLastFrame() > FRAMES_PER_SEC * 300) && (circuit->GetSetupManager()->GetCommander() != nullptr)) {
+					unit->GetUnit()->Guard(circuit->GetSetupManager()->GetCommander()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+					unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+					isAttack = false;
+					continue;
+				}
+// FIXME: DEBUG
 			}
 			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 			unit->GetUnit()->SetWantedMaxSpeed((sqDist > sqHighestRange) ? lowestSpeed : MAX_SPEED);
@@ -208,6 +225,16 @@ void CAttackTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	if (target == nullptr) {
 		if (!isUpdating) {
+// FIXME: DEBUG
+			// Guard commander
+			if ((circuit->GetLastFrame() > FRAMES_PER_SEC * 300) && (circuit->GetSetupManager()->GetCommander() != nullptr)) {
+				unit->GetUnit()->Guard(circuit->GetSetupManager()->GetCommander()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+				unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+				isAttack = false;
+				return;
+			}
+// FIXME: DEBUG
+
 			float x = rand() % (terrainManager->GetTerrainWidth() + 1);
 			float z = rand() % (terrainManager->GetTerrainHeight() + 1);
 			position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);

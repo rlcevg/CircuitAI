@@ -661,6 +661,7 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 {
 	if (unit->IsMoveFailed(lastFrame)) {
 		unit->GetUnit()->Stop();
+		unit->GetUnit()->SetMoveState(2);
 		UnitDestroyed(unit, nullptr);
 		UnregisterTeamUnit(unit);
 	} else {

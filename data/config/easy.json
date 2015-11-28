@@ -19,26 +19,28 @@
 		"unit_def": ["armpw", "spherepole", "armrock", "armwar", "armzeus", "armham", "armsnipe", "armtick", "spherecloaker", "armjeth"],
 
 		// build probabilities, sum must be 1.0 (if it's not, infolog will shout)
-		"tier0":    [ 0.62,    0.02,         0.15,      0.10,     0.05,      0.05,     0.00,       0.00,      0.00,            0.01],
+		"tier0":    [ 0.62,    0.02,         0.15,      0.10,     0.05,      0.05,     0.00,       0.00,      0.00,            0.1],
 
 		// it is possible to skip tiers, e.g.
-		// "tier1":    [ 0.45,    0.12,         0.10,      0.05,     0.15,      0.05,     0.05,       0.01,      0.00,            0.02],
+		// "tier1":    [ 0.45,    0.12,         0.10,      0.05,     0.15,      0.05,     0.05,       0.01,      0.00,            0.2],
 		"tier2":    [ 0.15,    0.25,         0.05,      0.05,     0.25,      0.01,     0.13,       0.01,      0.00,            0.10],
 		"tier3":    [ 0.01,    0.30,         0.00,      0.05,     0.33,      0.01,     0.20,       0.00,      0.00,            0.10],
 
-		"builder_def": "armrectr"
+		"anti_air_def": "armjeth",  // gremlin
+		"builder_def": "armrectr"  // conjurer
 	},
 
 	"factorygunship": {
 		"require_energy": false,
 
 		"income_tier": [40],
-		//            blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator   trident
+		//            blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator,   trident
 		"unit_def": ["blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans", "gunshipaa"],
 		"tier0":    [ 0.10,        0.15,     0.30,     0.36,             0.05,       0.02,        0.00,     0.00,      0.00,        0.02],
 		"tier1":    [ 0.01,        0.01,     0.01,     0.10,             0.57,       0.15,        0.05,     0.00,      0.00,        0.10],
 
-		"builder_def": "armca"
+		"anti_air_def": "gunshipaa",  // trident
+		"builder_def": "armca"  // crane
 	},
 
 	"factoryamph": {
@@ -50,7 +52,8 @@
 		"tier0":    [ 0.60,          0.10,          0.15,          0.13,       0.00,          0.00,       0.02],
 		"tier1":    [ 0.01,          0.10,          0.20,          0.20,       0.39,          0.00,       0.10],
 
-		"builder_def": "amphcon"
+		"anti_air_def": "amphaa",  // angler
+		"builder_def": "amphcon"  // conch
 	},
 
 	"factoryspider": {
@@ -62,7 +65,8 @@
 		"tier0":    [ 0.32,      0.25,            0.10,        0.10,         0.20,      0.00,       0.01,        0.02],
 		"tier1":    [ 0.01,      0.01,            0.01,        0.10,         0.12,      0.60,       0.05,        0.10],
 
-		"builder_def": "arm_spider"
+		"anti_air_def": "spideraa",  // tarantula
+		"builder_def": "arm_spider"  // weaver
 	},
 
 	"factoryshield": {
@@ -74,7 +78,8 @@
 		"tier0":    [ 0.10,      0.30,    0.10,       0.18,      0.10,     0.05,          0.10,         0.05,       0.00,           0.02],
 		"tier1":    [ 0.01,      0.01,    0.20,       0.30,      0.10,     0.10,          0.17,         0.01,       0.00,           0.10],
 
-		"builder_def": "cornecro"
+		"anti_air_def": "corcrash",  // vandal
+		"builder_def": "cornecro"  // convict
 	},
 
 	"factoryveh": {
@@ -86,7 +91,8 @@
 		"tier0":    [ 0.10,     0.37,       0.10,      0.10,       0.10,      0.10,         0.10,      0.01,      0.02],
 		"tier1":    [ 0.01,     0.04,       0.10,      0.10,       0.30,      0.20,         0.05,      0.10,      0.10],
 
-		"builder_def": "corned"
+		"anti_air_def": "vehaa",  // crasher
+		"builder_def": "corned"  // mason
 	},
 
 	"factoryjump": {
@@ -98,7 +104,8 @@
 		"tier0":    [ 0.07,    0.60,      0.05,            0.10,       0.05,     0.00,      0.10,         0.01,      0.02],
 		"tier1":    [ 0.01,    0.10,      0.10,            0.10,       0.30,     0.05,      0.20,         0.04,      0.10],
 
-		"builder_def": "corfast"
+		"anti_air_def": "armaak",  // archangel
+		"builder_def": "corfast"  // freaker
 	},
 
 	"factoryhover": {
@@ -110,7 +117,8 @@
 		"tier0":    [ 0.60,    0.10,       0.17,           0.01,               0.10,        0.00,       0.02],
 		"tier1":    [ 0.01,    0.20,       0.30,           0.01,               0.20,        0.18,       0.10],
 
-		"builder_def": "corch"
+		"anti_air_def": "hoveraa",  // flail
+		"builder_def": "corch"  // quill
 	},
 
 	"factoryship": {
@@ -123,7 +131,8 @@
 		"tier0":    [ 0.10,        0.30,        0.30,         0.17,       0.05,        0.05,       0.01,      0.00,       0.02],
 		"tier1":    [ 0.01,        0.10,        0.10,         0.20,       0.10,        0.20,       0.19,      0.00,       0.10],
 
-		"builder_def": "shipcon"
+		"anti_air_def": "shipaa",  // shredder
+		"builder_def": "shipcon"  // mariner
 	},
 
 	"factoryplane": {
@@ -135,7 +144,8 @@
 		"tier0":    [ 0.64,      0.10,      0.20,      0.01,       0.05,                0.00,      0.00],
 		"tier1":    [ 0.10,      0.10,      0.10,      0.10,       0.10,                0.50,      0.00],
 
-		"builder_def": "armca"
+		"anti_air_def": "fighter",  // swift
+		"builder_def": "armca"  // crane
 	},
 
 	"factorytank": {
@@ -147,7 +157,8 @@
 		"tier0":    [ 0.20,      0.47,      0.30,      0.00,      0.00,     0.01,      0.00,   0.02],
 		"tier1":    [ 0.01,      0.09,      0.10,      0.39,      0.10,     0.20,      0.01,   0.10],
 
-		"builder_def": "coracv"
+		"anti_air_def": "corsent",  // copperhead
+		"builder_def": "coracv"  // welder
 	}
 },
 

@@ -27,6 +27,9 @@ CThreatMap::CThreatMap(CCircuitAI* circuit)
 //		, currMaxThreat(.0f)  // maximum threat (normalizer)
 //		, currSumThreat(.0f)  // threat summed over all cells
 //		, currAvgThreat(.0f)  // average threat over all cells
+		, airPower(.0f)
+		, landPower(.0f)
+		, waterPower(.0f)
 {
 	squareSize = circuit->GetTerrainManager()->GetConvertStoP();
 	width = circuit->GetTerrainManager()->GetTerrainWidth() / squareSize;
@@ -131,6 +134,9 @@ void CThreatMap::Update()
 		waterThreat[index] = std::max<float>(waterThreat[index] - THREAT_DECAY, THREAT_VAL_BASE);
 		// except for cloakThreat
 	}
+	airPower   = std::max(airPower   - THREAT_DECAY, .0f);
+	landPower  = std::max(landPower  - THREAT_DECAY, .0f);
+	waterPower = std::max(waterPower - THREAT_DECAY, .0f);
 
 #ifdef DEBUG_VIS
 	UpdateVis();
@@ -354,6 +360,17 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, const float scale)
 		AddEnemyUnit(e, waterThreat, scale);
 	}
 	AddDecloaker(e, scale);
+
+	const float power = e->GetThreat() * scale;
+	if (cdef->IsAbleToFly()) {
+		airPower += power;
+		return;
+	}
+	// FIXME: Too simplified
+	if (cdef->GetUnitDef()->IsAbleToSubmerge()) {
+		waterPower += power;
+	}
+	landPower += power;
 }
 
 void CThreatMap::AddEnemyUnitAll(const CEnemyUnit* e, const float scale)
@@ -476,6 +493,9 @@ float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
 {
 	if (enemy->GetRange() > 2000 / squareSize) {
 		return THREAT_VAL_BASE;  // or 0
+	}
+	if (enemy->GetUnit()->IsBeingBuilt()) {
+		return .0f;
 	}
 	const float health = enemy->GetUnit()->GetHealth();
 	if (health <= .0f) {

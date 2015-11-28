@@ -84,7 +84,12 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 
 void CBMexTask::Finish()
 {
-	manager->GetCircuit()->GetMilitaryManager()->MakeDefence(buildPos);
+	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->GetMilitaryManager()->MakeDefence(buildPos);
+
+	if (circuit->GetEconomyManager()->GetAvgMetalIncome() > 8.0f) {
+		circuit->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
+	}
 }
 
 void CBMexTask::Cancel()

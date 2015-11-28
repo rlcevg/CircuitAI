@@ -6,138 +6,268 @@
 		// adjusts the priority of factory choice (factories with map_percent < 20 are ignored)
 		// map_percent is [20..100]
 		// priority ~= map_percent * importance + random(-20..+20)
-		"importance": 1.0,
+		"importance": 0.9,
 
 		// 'require_energy' adds energy requirement for tierN (N>0): fallback to lowest tier on low energy
 		"require_energy": true,
 
 		// If income*eps < income_tier[N] then 'tierN' probability will be used,
 		// eps=(teamSize+3)/4
-		"income_tier": [35],
+		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
 
-		//            glaive,  scythe,       rocko,     warrior,  zeus,      hammer,   sniper,     tick,      eraser,          gremlin
-		"unit_def": ["armpw", "spherepole", "armrock", "armwar", "armzeus", "armham", "armsnipe", "armtick", "spherecloaker", "armjeth"],
+		//            glaive,  scythe,       rocko,     warrior,  zeus,      hammer,   sniper,     tick,      eraser
+		"unit_def": ["armpw", "spherepole", "armrock", "armwar", "armzeus", "armham", "armsnipe", "armtick", "spherecloaker"],
 
-		// build probabilities, sum must be 1.0 (if it's not, infolog will shout)
-		"tier0":    [ 0.45,    0.23,         0.15,      0.05,     0.05,      0.05,     0.00,       0.01,      0.00,            0.01],
+		// 0-8m Opening - Glaives & Warriors most important for scouting, map control and defence.
+		"tier0":    [ 0.80,    0.04,         0.00,      0.15,     0.00,      0.00,     0.00,       0.01,      0.00],
 
-		// it is possible to skip tiers
-		"tier1":    [ 0.07,    0.20,         0.00,      0.00,     0.25,      0.25,     0.17,       0.01,      0.00,            0.05],
+		// 9-16m Early Game - Map control still important but move towards Scythe raiding and Riot defense from raider balls.
+		"tier1":    [ 0.65,    0.12,         0.00,      0.22,     0.00,      0.00,     0.00,       0.01,      0.00],
 
-		"builder_def": "armrectr"
+		// 17-24m Expanding - Good size terriotiry now, so less scouting and begin producing a little assault/arty on the side.
+		"tier2":    [ 0.40,    0.25,         0.00,      0.17,     0.11,      0.04,     0.02,       0.01,      0.00],
+
+		// 25-32m Expansions meet - Economy can afford to begin producing in bulk so unit compositions alter.
+		"tier3":    [ 0.22,    0.38,         0.00,      0.13,     0.17,      0.07,     0.03,       0.00,      0.00],
+
+		// 33m -40m Solid Fronts - Now we stop raiding and start pushing.
+		"tier4":    [ 0.15,    0.06,         0.42,      0.02,     0.20,      0.10,     0.05,       0.00,      0.00],
+
+		// 41m - 56m Mid Game - we must have 2 facs by now, stop making balanced compositions and start being abusive.
+		"tier5":    [ 0.10,    0.35,         0.00,      0.00,     0.25,      0.20,     0.10,       0.00,      0.00],
+
+		// 57m - 72m Late Game - we must have 2 facs & Striders by now, go nuts!
+		"tier6":    [ 0.20,    0.20,         0.00,      0.00,     0.20,      0.25,     0.15,       0.00,      0.00],
+
+		// 72m - 88m+ Late late Game - This fac sucks!
+		"tier7":    [ 0.10,    0.15,         0.00,      0.00,     0.30,      0.20,     0.25,       0.00,      0.00],
+
+		"anti_air_def": "armjeth",  // gremlin
+		"builder_def": "armrectr"  // conjurer
 	},
 
 	"factorygunship": {
+		"importance": 0.8,
 		"require_energy": false,
+		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
+		//            blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator
+		"unit_def": ["blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans"],
+		// 0-8m Opening - Blastwing and banshee Harass
+		"tier0":    [ 0.58,        0.00,     0.38,     0.02,             0.00,       0.02,        0.00,     0.00,      0.00],
+		// 9-16m Early Game - Banshee with a chance of Blackdawn
+		"tier1":    [ 0.10,        0.00,     0.38,     0.10,             0.02,       0.40,        0.00,     0.00,      0.00],
+		// 17-24m Expanding - Time to start a-makin Brawlers
+		"tier2":    [ 0.74,        0.00,     0.00,     0.00,             0.23,       0.02,        0.01,     0.00,      0.00],
+		// 25-32m Expansions meet - Time to keep a-makin Brawlers
+		"tier3":    [ 0.72,        0.00,     0.00,     0.00,             0.23,       0.02,        0.03,     0.00,      0.00],
+		// 33m -40m Solid Fronts - Brawlers with a chance of Krow
+		"tier4":    [ 0.60,        0.00,     0.00,     0.00,             0.34,       0.01,        0.05,     0.00,      0.00],
+		// 41m - 56m Mid Game - Brawlers with a bigger chance of Krow
+		"tier5":    [ 0.60,        0.00,     0.00,     0.00,             0.31,       0.01,        0.08,     0.00,      0.00],
+		// 57m - 72m Late Game - we must have 2 facs & Striders by now, go nuts!
+		"tier6":    [ 0.60,        0.00,     0.00,     0.00,             0.25,       0.00,        0.15,     0.00,      0.00],
+		// 72m - 88m+ Late late Game - Spam Krows!
+		"tier7":    [ 0.60,        0.00,     0.00,     0.00,             0.00,       0.00,        0.40,     0.00,      0.00],
 
-		"income_tier": [20],
-		//            blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator   trident
-		"unit_def": ["blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans", "gunshipaa"],
-		"tier0":    [ 0.10,        0.00,     0.65,     0.13,             0.10,       0.01,        0.00,     0.00,      0.00,        0.01],
-		"tier1":    [ 0.01,        0.01,     0.00,     0.16,             0.71,       0.01,        0.05,     0.00,      0.00,        0.05],
-
-		"builder_def": "armca"
+		"anti_air_def": "gunshipaa",  // trident
+		"builder_def": "armca"  // crane
 	},
 
 	"factoryamph": {
 		"require_energy": false,
+		"importance": 1.05,
+		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
+		//            duck,          archer,        buoy,          scallop,    grizzly,       djinn
+		"unit_def": ["amphraider3", "amphraider2", "amphfloater", "amphriot", "amphassault", "amphtele"],
+		// 0-8m Opening - Ducks and Archers
+		"tier0":    [ 0.83,          0.15,          0.00,          0.02,       0.00,          0.00],
+		// 9-16m Early Game - Still mostly Ducks, Ducks are amazing
+		"tier1":    [ 0.80,          0.12,          0.02,          0.06,       0.00,          0.00],
+		// 17-24m Expanding - Less Ducks, more Scallop/Bouy
+		"tier2":    [ 0.75,          0.07,          0.08,          0.10,       0.00,          0.00],
+		// 25-32m Expansions meet - Time to start producing Bouy
+		"tier3":    [ 0.60,          0.02,          0.22,          0.15,       0.01,          0.00],
+		// 33m -40m Solid Fronts - Time to start producing even more Bouy
+		"tier4":    [ 0.40,          0.02,          0.33,          0.20,       0.05,          0.00],
+		// 41m - 56m Mid Game - Switch to Grizzly
+		"tier5":    [ 0.40,          0.02,          0.33,          0.12,       0.13,          0.00],
+		// 57m - 72m Late Game -  MORE Grizzly
+		"tier6":    [ 0.25,          0.02,          0.40,          0.15,       0.18,          0.00],
+		// 72m - 88m+ Late late Game - SPAM GRIZZLY
+		"tier7":    [ 0.25,          0.02,          0.35,          0.12,       0.26,          0.00],
 
-		"income_tier": [35],
-		//            duck,          archer,        buoy,          scallop,    grizzly,       djinn,      angler
-		"unit_def": ["amphraider3", "amphraider2", "amphfloater", "amphriot", "amphassault", "amphtele", "amphaa"],
-		"tier0":    [ 0.50,          0.05,          0.25,          0.18,       0.00,          0.00,       0.02],
-		"tier1":    [ 0.14,          0.01,          0.40,          0.10,       0.30,          0.00,       0.05],
-
-		"builder_def": "amphcon"
+		"anti_air_def": "amphaa",  // angler
+		"builder_def": "amphcon"  // conch
 	},
 
 	"factoryspider": {
 		"require_energy": false,
+		"importance": 1.0,
+		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
+		//            flea,      hermit,          venom,       redback,      recluse,   crabe,      infiltrator
+		"unit_def": ["armflea", "spiderassault", "arm_venom", "spiderriot", "armsptk", "armcrabe", "armspy"],
+		// 0-8m Opening - Opening turbo Flea spam & Riots		
+		"tier0":    [ 0.87,      0.00,            0.02,        0.11,         0.00,      0.00,       0.00],
+		// 9-16m Early Game - Reducing Flea spam, still mostly Riots
+		"tier1":    [ 0.75,      0.05,            0.02,        0.16,         0.02,      0.00,       0.00],
+		// 17-24m Expanding - Slant production towards Hermit & Redback
+		"tier2":    [ 0.70,      0.15,            0.01,        0.08,         0.06,      0.00,       0.00],
+		// 25-32m Expansions meet - Slant production towards Hermit & Recluse
+		"tier3":    [ 0.50,      0.24,            0.00,        0.09,         0.14,      0.03,       0.00],
+		// 33m -40m Solid Fronts - 	Greater Emphasis on Hermit & Crabbe
+		"tier4":    [ 0.48,      0.25,            0.00,        0.08,         0.12,      0.07,       0.00],
+		// 41m - 56m Mid Game - We need more Crabbes
+		"tier5":    [ 0.60,      0.24,            0.00,        0.04,         0.03,      0.09,       0.00],
+		// 57m - 72m Late Game -  MORE CRABBES
+		"tier6":    [ 0.62,      0.20,            0.00,        0.03,         0.02,      0.13,       0.00],
+		// 72m - 88m+ Late late Game - TURBO CRABBES
+		"tier7":    [ 0.62,      0.15,            0.00,        0.06,         0.00,      0.17,       0.00],
 
-		"income_tier": [35],
-		//            flea,      hermit,          venom,       redback,      recluse,   crabe,      infiltrator, tarantula
-		"unit_def": ["armflea", "spiderassault", "arm_venom", "spiderriot", "armsptk", "armcrabe", "armspy",    "spideraa"],
-		"tier0":    [ 0.67,      0.14,            0.03,        0.08,         0.08,      0.00,       0.00,        0.00],
-		"tier1":    [ 0.55,      0.23,            0.00,        0.04,         0.04,      0.13,       0.00,        0.01],
-
-		"builder_def": "arm_spider"
-	},
-
-	"factoryshield": {
-		"require_energy": false,
-
-		"income_tier": [35],
-		//            dirtbag,   bandit,  rogue,      thug,      outlaw,   felon,         racketeer,    roach,      aspis,          vandal
-		"unit_def": ["corclog", "corak", "corstorm", "corthud", "cormak", "shieldfelon", "shieldarty", "corroach", "core_spectre", "corcrash"],
-		"tier0":    [ 0.10,      0.36,    0.20,       0.18,      0.02,     0.02,          0.10,         0.01,       0.00,           0.01],
-		"tier1":    [ 0.10,      0.04,    0.17,       0.45,      0.02,     0.05,          0.15,         0.01,       0.00,           0.01],
-
-		"builder_def": "cornecro"
+		"anti_air_def": "spideraa",  // tarantula
+		"builder_def": "arm_spider"  // weaver
 	},
 
 	"factoryveh": {
-		"importance": 1.3,
+		"importance": 1.15,
 		"require_energy": false,
 
-		"income_tier": [35],
-		//            dart,     scorcher,   slasher,   leveler,    ravager,   dominatrix,   wolverine, impaler,   crasher
-		"unit_def": ["corfav", "corgator", "cormist", "corlevlr", "corraid", "capturecar", "corgarp", "armmerl", "vehaa"],
-		"tier0":    [ 0.10,     0.05,       0.20,      0.26,       0.20,      0.02,         0.16,      0.00,      0.01],
-		"tier1":    [ 0.01,     0.02,       0.00,      0.10,       0.64,      0.01,         0.10,      0.10,      0.02],
+		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
+		//            dart,     scorcher,   slasher,   leveler,    ravager,   dominatrix,   wolverine, impaler
+		"unit_def": ["corfav", "corgator", "cormist", "corlevlr", "corraid", "capturecar", "corgarp", "armmerl"],
+		// 0-8m Opening - Dart, Riot & Slasher	
+		"tier0":    [ 0.63,     0.03,       0.12,      0.22,       0.00,      0.00,         0.00,      0.00],
+		// 9-16m Early Game - Slasher/Riot with an occasional Ravager
+		"tier1":    [ 0.37,     0.02,       0.27,      0.24,       0.10,      0.00,         0.00,      0.00],
+		// 17-24m Expanding - Less scouting and Riot, more Ravager
+		"tier2":    [ 0.34,     0.00,       0.23,      0.19,       0.16,      0.00,         0.08,      0.00],
+		// 25-32m Expansions meet - Begin serious Ravager production	
+		"tier3":    [ 0.24,     0.00,       0.18,      0.20,       0.24,      0.01,         0.13,      0.00],
+		// 33m -40m Solid Fronts - 	Overdrive Ravager production				
+		"tier4":    [ 0.23,     0.00,       0.12,      0.15,       0.34,      0.01,         0.15,      0.00],
+		// 41m - 56m Mid Game - Drop Slashers, more Artillery	
+		"tier5":    [ 0.21,     0.00,       0.06,      0.11,       0.40,      0.01,         0.18,      0.03],
+		// 57m - 72m Late Game -  More artillery and Ravager	
+		"tier6":    [ 0.16,     0.00,       0.05,      0.10,       0.41,      0.01,         0.20,      0.07],
+		// 72m - 88m+ Late late Game - Maximum Artillery			
+		"tier7":    [ 0.13,     0.00,       0.00,      0.10,       0.33,      0.01,         0.27,      0.16],
 
-		"builder_def": "corned"
+		"anti_air_def": "vehaa",  // crasher
+		"builder_def": "corned"  // mason
 	},
 
 	"factoryhover": {
 		"require_energy": false,
+		"importance": 1.1,
+		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
+		//            dagger,  scalpel,    halberd,        claymore,           mace,        penetrator
+		"unit_def": ["corsh", "nsaclash", "hoverassault", "hoverdepthcharge", "hoverriot", "armmanni"],
+		// 0-8m Opening - Raiders and Riots
+		"tier0":    [ 0.80,    0.00,       0.00,           0.00,               0.20,        0.00],
+		// 9-16m Early Game - Mostly Mace, some support
+		"tier1":    [ 0.67,    0.06,       0.05,           0.00,               0.22,        0.00],
+		// 17-24m Expanding - MAXIMUM OP Scalpel time
+		"tier2":    [ 0.25,    0.50,       0.10,           0.00,               0.15,        0.00],
+		// 25-32m Expansions meet - Mix in some Halberds
+		"tier3":    [ 0.20,    0.48,       0.18,           0.01,               0.10,        0.03],
+		// 33m -40m Solid Fronts - 	More Halberd and Pene
+		"tier4":    [ 0.10,    0.46,       0.26,           0.01,               0.10,        0.07],
+		// 41m - 56m Mid Game - Even more Halberd and Pene
+		"tier5":    [ 0.10,    0.30,       0.36,           0.01,               0.13,        0.10],
+		// 57m - 72m Late Game - More Pene
+		"tier6":    [ 0.10,    0.30,       0.35,           0.01,               0.10,        0.14],
+		// 72m - 88m+ Late late Game - MAXIMUM PENE
+		"tier7":    [ 0.10,    0.30,       0.33,           0.00,               0.10,        0.17],
 
-		"income_tier": [35],
-		//            dagger,  scalpel,    halberd,        claymore,           mace,        penetrator, flail
-		"unit_def": ["corsh", "nsaclash", "hoverassault", "hoverdepthcharge", "hoverriot", "armmanni", "hoveraa"],
-		"tier0":    [ 0.25,    0.47,       0.17,           0.00,               0.10,        0.00,       0.01],
-		"tier1":    [ 0.01,    0.55,       0.10,           0.01,               0.10,        0.18,       0.05],
-
-		"builder_def": "corch"
-	},
-
-	"factoryship": {
-		"importance": 1.5,
-		"require_energy": false,
-
-		"income_tier": [40],
-		//            skeeter,     snake,       typhoon,      hunter,     enforcer,    crusader,   serpent,   surfboard,  shredder
-		"unit_def": ["shipscout", "subraider", "shipraider", "shiptorp", "shipskirm", "shiparty", "subarty", "armtboat", "shipaa"],
-		"tier0":    [ 0.10,        0.30,        0.30,         0.17,       0.05,        0.05,       0.01,      0.00,       0.02],
-		"tier1":    [ 0.01,        0.10,        0.10,         0.20,       0.10,        0.20,       0.19,      0.00,       0.10],
-
-		"builder_def": "shipcon"
+		"anti_air_def": "hoveraa",  // flail
+		"builder_def": "corch"  // quill
 	},
 
 	"factoryplane": {
 		"require_energy": false,
-
-		"income_tier": [40],
+		"importance": 0.8,
+		"income_tier": [10, 20, 30, 40],
 		//            swift,     hawk,      raven,     phoenix,    thunderbird,         wyvern,    vulture
-		"unit_def": ["fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "_corawac"],
-		"tier0":    [ 0.27,      0.00,      0.68,      0.05,       0.00,                0.00,      0.08],
-		"tier1":    [ 0.36,      0.01,      0.32,      0.01,       0.05,                0.25,      0.05],
+		"unit_def": ["fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "corawac"],
+		// 0-10m Early Game
+		"tier0":    [ 0.50,      0.00,      0.17,      0.28,       0.00,                0.00,      0.05],
+		// 11-20m Expansion
+		"tier1":    [ 0.25,      0.00,      0.45,      0.20,       0.05,                0.00,      0.05],
+		// 21-30m Fronts
+		"tier2":    [ 0.25,      0.00,      0.38,      0.02,       0.10,                0.20,      0.05],
+		// 31-40m Mid onwards
+		"tier3":    [ 0.20,      0.00,      0.18,      0.02,       0.20,                0.35,      0.05],
 
-		"builder_def": "armca"
+		"anti_air_def": "fighter",  // swift
+		"builder_def": "armca"  // crane
 	},
 
 	"factorytank": {
-		"importance": 1.3,
+		"importance": 1.05,
 		"require_energy": false,
 
-		"income_tier": [15, 25],
-		//            kodachi,   panther,   banisher,  reaper,    goliath,  pillager,  tremor, copperhead
-		"unit_def": ["logkoda", "panther", "tawf114", "correap", "corgol", "cormart", "trem", "corsent"],
-		"tier0":    [ 0.59,      0.11,      0.30,      0.00,      0.00,     0.00,      0.00,   0.00],
-		"tier1":    [ 0.59,      0.01,      0.30,      0.10,      0.00,     0.00,      0.00,   0.00],
-		"tier2":    [ 0.10,      0.00,      0.10,      0.50,      0.15,     0.10,      0.00,   0.05],
+		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
+		//            kodachi,   panther,   banisher,  reaper,    goliath,  pillager,  tremor
+		"unit_def": ["logkoda", "panther", "tawf114", "correap", "corgol", "cormart", "trem"],
+		// 0-8m Opening - Koda and Banisher
+		"tier0":    [ 0.70,      0.00,      0.30,      0.00,      0.00,     0.00,      0.00],
+		// 9-16m Early Game - Mostly Banisher
+		"tier1":    [ 0.55,      0.00,      0.35,      0.10,      0.00,     0.00,      0.00],
+		// 17-24m Expanding - Begin mixing in Reapers!
+		"tier2":    [ 0.34,      0.00,      0.38,      0.25,      0.00,     0.03,      0.00],
+		// 25-32m Expansions meet - More Reapers!
+		"tier3":    [ 0.33,      0.00,      0.26,      0.33,      0.05,     0.03,      0.00],
+		// 33m -40m Solid Fronts - 	MAXIMUM REAPERS
+		"tier4":    [ 0.30,      0.00,      0.17,      0.40,      0.09,     0.04,      0.00],
+		// 41m - 56m Mid Game - More arty & Golly
+		"tier5":    [ 0.22,      0.00,      0.15,      0.43,      0.11,     0.09,      0.00],
+		// 57m - 72m Late Game - Even more arty & Golly
+		"tier6":    [ 0.10,      0.00,      0.15,      0.45,      0.16,     0.12,      0.02],
+		// 72m - 88m+ Late late Game - MAXIMUM GOLLY
+		"tier7":    [ 0.10,      0.00,      0.10,      0.25,      0.36,     0.16,      0.03],
 
-		"builder_def": "coracv"
-	}
+		"anti_air_def": "corsent",  // copperhead
+		"builder_def": "coracv"  // welder
+	},
+
+	"_factoryjump": {
+		"require_energy": false,
+
+		"income_tier": [40],
+		//            puppy,   pyro,      placeholder,     moderator,  jack,     sumo,      firewalker,   skuttle
+		"unit_def": ["puppy", "corpyro", "jumpblackhole", "slowmort", "corcan", "corsumo", "firewalker", "corsktl"],
+		"tier0":    [ 0.07,    0.60,      0.05,            0.10,       0.05,     0.00,      0.10,         0.01],
+		"tier1":    [ 0.01,    0.10,      0.10,            0.10,       0.30,     0.05,      0.20,         0.04],
+
+		"anti_air_def": "armaak",  // archangel
+		"builder_def": "corfast"  // freaker
+	},
+
+	"_factoryshield": {
+		"require_energy": false,
+
+		"income_tier": [40],
+		//            dirtbag,   bandit,  rogue,      thug,      outlaw,   felon,         racketeer,    roach,      aspis
+		"unit_def": ["corclog", "corak", "corstorm", "corthud", "cormak", "shieldfelon", "shieldarty", "corroach", "core_spectre"],
+		"tier0":    [ 0.10,      0.30,    0.10,       0.18,      0.10,     0.05,          0.10,         0.05,       0.00],
+		"tier1":    [ 0.01,      0.01,    0.20,       0.30,      0.10,     0.10,          0.17,         0.01,       0.00],
+
+		"anti_air_def": "corcrash",  // vandal
+		"builder_def": "cornecro"  // convict
+	},
+
+	"factoryship": {
+		"importance": 1.1,
+		"require_energy": false,
+
+		"income_tier": [40],
+		//            skeeter,     snake,       typhoon,      hunter,     enforcer,    crusader,   serpent,   surfboard
+		"unit_def": ["shipscout", "subraider", "shipraider", "shiptorp", "shipskirm", "shiparty", "subarty", "armtboat"],
+		"tier0":    [ 0.10,        0.30,        0.30,         0.17,       0.05,        0.05,       0.01,      0.00],
+		"tier1":    [ 0.01,        0.10,        0.10,         0.20,       0.10,        0.20,       0.19,      0.00],
+
+		"anti_air_def": "shipaa",  // shredder
+		"builder_def": "shipcon"  // mariner
+	},
 },
 
 "strider": {
@@ -145,8 +275,8 @@
 	//               ultimatum,    scorpion,   dante,   catapult,   funnelweb,   bantha,     detriment, leviathan,    reef,   warlord
 	"unit_def":    ["armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"],
 
-	"land_tier0":  [ 0.01,         0.10,       0.69,    0.05,       0.10,        0.05,       0.00,      0.00,         0.00,   0.00],
-	"land_tier1":  [ 0.10,         0.30,       0.25,    0.07,       0.10,        0.15,       0.03,      0.00,         0.00,   0.00],
+	"land_tier0":  [ 0.01,         0.05,       0.83,    0.05,       0.05,        0.01,       0.00,      0.00,         0.00,   0.00],
+	"land_tier1":  [ 0.05,         0.10,       0.50,    0.07,       0.10,        0.15,       0.03,      0.00,         0.00,   0.00],
 
 	"water_tier0": [ 0.50,         0.00,       0.00,    0.00,       0.00,        0.00,       0.00,      0.00,         0.25,   0.25],
 	"water_tier1": [ 0.10,         0.00,       0.00,    0.00,       0.00,        0.00,       0.10,      0.00,         0.40,   0.40],
@@ -160,7 +290,7 @@
 	"armpw",
 
 	// factorygunship
-	"bladew", "armkam",
+	"armkam",
 
 	// factoryamph
 	"amphraider3", "amphraider2",
@@ -196,9 +326,71 @@
 	"_builder_": 0.8,
 
 	// default value for all fighters
-	"_fighter_": 0.4,
+	"_fighter_": 0.5,
 
+	// Gunship lab
 	"blastwing": 0.1,
-	"spherepole": 0.2
+	"armkam": 0.4, 
+	"gunshipsupport": 0.5, 
+	"blackdawn": 0.7,
+	"corcrw": 0.4,
+
+	// Cloaky lab
+	"spherepole": 0.25,  // stops dealing damage once retreating
+	"armpw": 0.1,  // disposable
+	"armrock": 0.35,  // mostly disposable
+	"armzeus": 0.4,  // assaults need to assault
+	"armham": 0.8,
+	"armsnipe": 0.9,
+	"armtick": 0.1,
+
+	// Amph Lab
+	"amphraider3": 0.35,  // pretty disposable
+	"amphraider2": 0.5,
+	"amphfloater": 0.35,  // too slow to be retreating all the time
+	"amphriot": 0.35,  // too slow to be retreating all the time
+	"amphassault": 0.45,
+
+	// Spider Lab
+	"armflea": 0.1,
+	"spiderassault": 0.5,
+	"arm_venom": 0.5,
+	"spiderriot": 0.45, 
+	"armsptk": 0.6,
+	"armcrabe": 0.3,
+
+	// Vehicle Lab
+	"corfav": 0.1,
+	"corgator": 0.5,
+	"cormist": 0.25,  // cannot retreat
+	"corlevlr": 0.5,
+	"corraid": 0.40,  // assaults need to assault
+	"capturecar": 0.6,
+	"corgarp": 0.8,
+	"armmerl": 0.9,
+
+	// Hover Lab
+	"corsh": 0.5,
+	"nsaclash": 0.6,
+	"hoverassault": 0.4,
+	"hoverdepthcharge": 0.6,
+	"hoverriot": 0.5, 
+	"armmanni": 0.9,
+
+	// Heavy Tanks
+	"logkoda": 0.5,
+	"tawf114": 0.5,
+	"correap": 0.4,
+	"corgol":0.4, 
+	"cormart": 0.9,
+	"trem": 0.9,
+
+	// Striders
+	"armcomdgun": 0.7,
+	"scorpion": 0.4,
+	"dante": 0.4,
+	"armraven": 0.9,
+	"funnelweb": 0.8,
+	"armbanth": 0.4
 }
 }

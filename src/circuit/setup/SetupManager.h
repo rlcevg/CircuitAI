@@ -8,6 +8,7 @@
 #ifndef SRC_CIRCUIT_STATIC_SETUPMANAGER_H_
 #define SRC_CIRCUIT_STATIC_SETUPMANAGER_H_
 
+#include "unit/CircuitUnit.h"
 #include "json/json-forwards.h"
 
 #include "AIFloat3.h"
@@ -16,7 +17,6 @@ namespace circuit {
 
 class CCircuitAI;
 class CSetupData;
-class CCircuitUnit;
 class CAllyTeam;
 
 class CSetupManager {
@@ -42,8 +42,9 @@ public:
 	const springai::AIFloat3& GetBasePos() const { return basePos; }
 
 	void PickCommander();
-
+	void SetCommander(CCircuitUnit* unit) { commanderId = unit->GetId(); }
 	CCircuitUnit* GetCommander() const;
+
 	CAllyTeam* GetAllyTeam() const;
 
 private:
@@ -55,7 +56,7 @@ private:
 	Json::Value* config;  // owner;
 	std::string configName;
 
-	int commanderId;
+	CCircuitUnit::Id commanderId;
 	springai::AIFloat3 startPos;
 	springai::AIFloat3 basePos;
 };

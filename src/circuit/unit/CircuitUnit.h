@@ -27,6 +27,7 @@ namespace circuit {
 #define CMD_RETREAT				34223
 #define CMD_ONECLICK_WEAPON		35000
 #define CMD_JUMP				38521
+#define CMD_AIR_STRAFE			39381
 #define CMD_TERRAFORM_INTERNAL	39801
 
 #define MAX_SPEED	1e6f

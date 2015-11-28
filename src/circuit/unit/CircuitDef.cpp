@@ -90,6 +90,11 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	delete sd;
 
 	if (!def->IsAbleToAttack()) {
+// FIXME: DEBUG
+		if (std::string("corawac") == def->GetName()) {
+			dps = 10.0f;
+		}
+// FIXME: DEBUG
 		if (isShield) {
 			auto mounts = std::move(def->GetWeaponMounts());
 			for (WeaponMount* mount : mounts) {
@@ -165,15 +170,17 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		dps += ldps * wd->GetSalvoSize() / damages.size() / reloadTime * scale;
 		targetCategory |= mount->GetOnlyTargetCategory();
 
-		isTracks |= (wd->GetProjectileSpeed() * FRAMES_PER_SEC >= 500.0f) || wd->IsTracks();
-		std::string weaponType(wd->GetType());  // Instant-hit
-		isTracks |= (weaponType == "BeamLaser") || (weaponType == "LightningCannon") || (weaponType == "Rifle");
+		float range = wd->GetRange();
+		if (range > 400.0f) {
+			isTracks |= (wd->GetProjectileSpeed() * FRAMES_PER_SEC >= 400.0f) || wd->IsTracks();
+			std::string weaponType(wd->GetType());  // Instant-hit
+			isTracks |= (weaponType == "BeamLaser") || (weaponType == "LightningCannon") || (weaponType == "Rifle");
+		}
 //		isWater |= wd->IsWaterWeapon();
 
-		float reload;
-		if (wd->IsManualFire() && ((reload = wd->GetReload()) < bestReload)) {
-			bestReload = reload;
-			bestRange = wd->GetRange();
+		if (wd->IsManualFire() && (reloadTime < bestReload)) {
+			bestReload = reloadTime;
+			bestRange = range;
 			delete bestMount;
 			bestMount = mount;
 		} else if ((shieldMount == nullptr) && wd->IsShield()) {

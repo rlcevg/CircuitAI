@@ -37,6 +37,10 @@ public:
 	void EnemyDestroyed(CEnemyUnit* enemy);
 
 //	float GetAverageThreat() const { return currAvgThreat + 1.0f; }
+	float GetAirPower() const { return airPower; }
+	float GetLandPower() const { return landPower; }
+	float GetWaterPower() const { return waterPower; }
+
 	float GetAllThreatAt(const springai::AIFloat3& position) const;
 	void SetThreatType(CCircuitUnit* unit);
 	float GetThreatAt(const springai::AIFloat3& position) const;
@@ -62,13 +66,13 @@ private:
 	CCircuitAI* circuit;
 
 	void AddEnemyUnit(const CEnemyUnit* e, const float scale = 1.0f);
-	void DelEnemyUnit(const CEnemyUnit* e) { AddEnemyUnit(e, -1.0f); };
+	void DelEnemyUnit(const CEnemyUnit* e) { AddEnemyUnit(e, -1.0f); }
 	void AddEnemyUnitAll(const CEnemyUnit* e, const float scale = 1.0f);
-	void DelEnemyUnitAll(const CEnemyUnit* e) { AddEnemyUnitAll(e, -1.0f); };
+	void DelEnemyUnitAll(const CEnemyUnit* e) { AddEnemyUnitAll(e, -1.0f); }
 	void AddEnemyUnit(const CEnemyUnit* e, Threats& threats, const float scale = 1.0f);
-	void DelEnemyUnit(const CEnemyUnit* e, Threats& threats) { AddEnemyUnit(e, threats, -1.0f); };
+	void DelEnemyUnit(const CEnemyUnit* e, Threats& threats) { AddEnemyUnit(e, threats, -1.0f); }
 	void AddDecloaker(const CEnemyUnit* e, const float scale = 1.0f);
-	void DelDecloaker(const CEnemyUnit* e) { AddDecloaker(e, -1.0f); };
+	void DelDecloaker(const CEnemyUnit* e) { AddDecloaker(e, -1.0f); }
 
 	int GetEnemyUnitRange(const CEnemyUnit* e) const;
 	int GetCloakRange(const CEnemyUnit* e) const;
@@ -80,6 +84,9 @@ private:
 //	float currAvgThreat;
 //	float currMaxThreat;
 //	float currSumThreat;
+	float airPower;
+	float landPower;
+	float waterPower;
 
 	int squareSize;
 	int width;

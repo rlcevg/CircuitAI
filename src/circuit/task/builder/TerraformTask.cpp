@@ -102,8 +102,8 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 	u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 	UnitDef* unitDef = buildDef->GetUnitDef();
-	float offsetX = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 3 * SQUARE_SIZE + 1;
-	float offsetZ = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 3 * SQUARE_SIZE + 1;
+	float offsetX = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 0/*3*/ * SQUARE_SIZE + 0/*1*/;
+	float offsetZ = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 0/*3*/ * SQUARE_SIZE + 0/*1*/;
 	params.clear();
 	params.push_back(1.0f);  // 1: terraform_type, 1 == level
 	params.push_back(manager->GetCircuit()->GetTeamId());  // 2: teamId

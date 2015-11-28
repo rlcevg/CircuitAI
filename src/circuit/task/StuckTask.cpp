@@ -38,7 +38,7 @@ void CStuckTask::Execute(CCircuitUnit* unit)
 	AIFloat3 d((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
 	d.Normalize();
 	pos += d * SQUARE_SIZE * 20;
-	unit->GetUnit()->MoveTo(pos, 0, frame + FRAMES_PER_SEC * 10);
+	unit->GetUnit()->MoveTo(pos, 0, frame + FRAMES_PER_SEC);
 }
 
 void CStuckTask::Update()

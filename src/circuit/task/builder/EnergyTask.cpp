@@ -135,29 +135,29 @@ void CBEnergyTask::Finish()
 	parent1->SetNextTask(builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, fdef, pos, IBuilderTask::BuildType::DEFENCE, true, false, 0));
 	parent1 = parent1->GetNextTask();
 
-	if (rand() < RAND_MAX / 2) {
-		cdef = circuit->GetCircuitDef("missiletower");
-		pos = buildPos + AIFloat3(-offsetX, 0, 0);
-		pos = terrainManager->GetBuildPosition(bdef, pos);
-		parent0->SetNextTask(builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE, true, false, 0));
-		parent0 = parent0->GetNextTask();
-		pos = buildPos + AIFloat3(+offsetX, 0, 0);
-		pos = terrainManager->GetBuildPosition(bdef, pos);
-		parent0->SetNextTask(builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE, true, false, 0));
-		parent0 = parent0->GetNextTask();
-		pos = buildPos + AIFloat3(0, 0, -offsetZ);
-		pos = terrainManager->GetBuildPosition(bdef, pos);
-		parent1->SetNextTask(builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE, true, false, 0));
-		parent1 = parent1->GetNextTask();
-		pos = buildPos + AIFloat3(0, 0, +offsetZ);
-		pos = terrainManager->GetBuildPosition(bdef, pos);
-		parent1->SetNextTask(builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE, true, false, 0));
-		parent1 = parent1->GetNextTask();
-	} else {
+//	if (rand() < RAND_MAX / 2) {
+//		cdef = circuit->GetCircuitDef("missiletower");
+//		pos = buildPos + AIFloat3(-offsetX, 0, 0);
+//		pos = terrainManager->GetBuildPosition(bdef, pos);
+//		parent0->SetNextTask(builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE, true, false, 0));
+//		parent0 = parent0->GetNextTask();
+//		pos = buildPos + AIFloat3(+offsetX, 0, 0);
+//		pos = terrainManager->GetBuildPosition(bdef, pos);
+//		parent0->SetNextTask(builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE, true, false, 0));
+//		parent0 = parent0->GetNextTask();
+//		pos = buildPos + AIFloat3(0, 0, -offsetZ);
+//		pos = terrainManager->GetBuildPosition(bdef, pos);
+//		parent1->SetNextTask(builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE, true, false, 0));
+//		parent1 = parent1->GetNextTask();
+//		pos = buildPos + AIFloat3(0, 0, +offsetZ);
+//		pos = terrainManager->GetBuildPosition(bdef, pos);
+//		parent1->SetNextTask(builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE, true, false, 0));
+//		parent1 = parent1->GetNextTask();
+//	} else {
 		cdef = circuit->GetCircuitDef("screamer");
 		parent1->SetNextTask(builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::BIG_GUN, true, false, 0));
 		parent1 = parent1->GetNextTask();
-	}
+//	}
 
 	cdef = circuit->GetCircuitDef("corjamt");
 	pos = buildPos + AIFloat3(-offsetX, 0, 0);

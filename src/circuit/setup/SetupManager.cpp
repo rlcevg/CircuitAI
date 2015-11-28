@@ -292,6 +292,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 void CSetupManager::PickCommander()
 {
 	std::vector<CCircuitDef*> commanders;
+	CCircuitDef* riot = nullptr;
 	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
@@ -300,15 +301,19 @@ void CSetupManager::PickCommander()
 		auto it = customParams.find("level");
 		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 0)) {
 			commanders.push_back(cdef);
+// FIXME: DEBUG
+			if ((riot == nullptr) && (std::string("comm_cai_riot_0") == cdef->GetUnitDef()->GetName())) {
+				riot = cdef;
+			}
+// FIXME: DEBUG
 		}
 	}
 	if (commanders.empty()) {
 		return;
 	}
 
-	int index = rand() % commanders.size();
 	std::string cmd("ai_commander:");
-	cmd += commanders[index]->GetUnitDef()->GetName();
+	cmd += ((riot == nullptr) ? commanders[rand() % commanders.size()] : riot)->GetUnitDef()->GetName();
 	Lua* lua = circuit->GetCallback()->GetLua();
 	lua->CallRules(cmd.c_str(), cmd.size());
 	delete lua;

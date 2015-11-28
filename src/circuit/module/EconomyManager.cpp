@@ -773,6 +773,9 @@ void CEconomyManager::AddMorphee(CCircuitUnit* unit)
 	if (morph == nullptr) {
 		morph = std::make_shared<CGameTask>(&CEconomyManager::UpdateMorph, this);
 		circuit->GetScheduler()->RunTaskEvery(morph, FRAMES_PER_SEC * 20);
+// FIXME: DEBUG
+		circuit->GetSetupManager()->SetCommander(unit);
+// FIXME: DEBUG
 	}
 }
 
@@ -813,8 +816,8 @@ void CEconomyManager::Init()
 	}
 
 	auto subinit = [this]() {
+		CScheduler* scheduler = circuit->GetScheduler().get();
 		CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-		IBuilderTask* task = nullptr;
 		if (commander != nullptr) {
 			const AIFloat3& pos = commander->GetPos(circuit->GetLastFrame());
 			UnitRulesParam* param = commander->GetUnit()->GetUnitRulesParamByName("facplop");
@@ -825,18 +828,28 @@ void CEconomyManager::Init()
 
 					AIFloat3 buildPos = circuit->GetTerrainManager()->GetBuildPosition(facDef, pos);
 					CBuilderManager* builderManager = circuit->GetBuilderManager();
-					task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos,
+					IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos,
 													   IBuilderTask::BuildType::FACTORY);
 					static_cast<ITaskManager*>(builderManager)->AssignTask(commander, task);
+
+					builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, circuit->GetCircuitDef("corllt"), buildPos,
+												IBuilderTask::BuildType::DEFENCE);
 				}
 			}
 			delete param;
+
+			// Force to morph commander
+			scheduler->RunTaskAt(std::make_shared<CGameTask>([this](){
+				CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+				if (commander != nullptr) {
+					commander->Morph();
+				}
+			}), FRAMES_PER_SEC * 180);
 		}
 
 		SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();
 		const int interval = ais->GetSize() * FRAMES_PER_SEC;
 		delete ais;
-		CScheduler* scheduler = circuit->GetScheduler().get();
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks), this),
 								interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this), interval, circuit->GetSkirmishAIId() + 1);

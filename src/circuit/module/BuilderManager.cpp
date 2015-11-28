@@ -173,12 +173,13 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	/*
 	 * strider handlers
 	 */
-//	const char* striders[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"};
-//	for (auto strider : striders) {
-//		createdHandler[circuit->GetCircuitDef(strider)->GetId()] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
+	const char* striders[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"};
+	for (auto strider : striders) {
+		createdHandler[circuit->GetCircuitDef(strider)->GetId()] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
+			unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
 //			unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::LOW, unit);
-//		};
-//	}
+		};
+	}
 	// FIXME: EXPERIMENTAL
 }
 

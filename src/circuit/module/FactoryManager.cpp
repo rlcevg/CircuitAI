@@ -8,6 +8,7 @@
 #include "module/FactoryManager.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"
+#include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "task/NullTask.h"
@@ -331,6 +332,22 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 		CCircuitDef* striderDef = striderHubDef.buildDefs[choice];
 		if (striderDef != nullptr) {
+			const float size = DEFAULT_SLACK / 2;
+			switch (unit->GetUnit()->GetBuildingFacing()) {
+				default:
+				case UNIT_FACING_SOUTH: {  // z++
+					pos.z += size;
+				} break;
+				case UNIT_FACING_EAST: {  // x++
+					pos.x += size;
+				} break;
+				case UNIT_FACING_NORTH: {  // z--
+					pos.z -= size;
+				} break;
+				case UNIT_FACING_WEST: {  // x--
+					pos.x -= size;
+				} break;
+			}
 			pos = terrainManager->FindBuildSite(striderDef, pos, this->circuit->GetCircuitDef("striderhub")->GetBuildDistance(), -1);
 			if (pos != -RgtVector) {
 				unit->GetUnit()->Build(striderDef->GetUnitDef(), pos, -1, 0, frame + FRAMES_PER_SEC * 10);
@@ -631,6 +648,16 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 	const SFactoryDef& facDef = it->second;
 
+	if (circuit->GetMilitaryManager()->IsNeedAA()) {
+		CCircuitDef* buildDef = facDef.antiAirDef;
+		if ((buildDef != nullptr) && buildDef->IsAvailable()) {
+			const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
+			UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
+			float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
+			return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::BuildType::AA, radius);
+		}
+	}
+
 	CEconomyManager* mgr = circuit->GetEconomyManager();
 	const float metalIncome = std::min(mgr->GetAvgMetalIncome(), mgr->GetAvgEnergyIncome()) * mgr->GetEcoFactor();
 	auto facIt = facDef.tiers.begin();
@@ -663,7 +690,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
 		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
 		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
-		return EnqueueTask(CRecruitTask::Priority::LOW, buildDef, buildPos, CRecruitTask::BuildType::DEFAULT, radius);
+		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::BuildType::FIREPOWER, radius);
 	}
 
 	return nullptr;
@@ -686,7 +713,7 @@ void CFactoryManager::ReadConfig()
 		SFactoryDef facDef;
 
 		facDef.builderDef = circuit->GetCircuitDef(factory["builder_def"].asCString());
-
+		facDef.antiAirDef = circuit->GetCircuitDef(factory["anti_air_def"].asCString());
 		facDef.isRequireEnergy = factory.get("require_energy", false).asBool();
 
 		const Json::Value& items = factory["unit_def"];
@@ -765,8 +792,8 @@ void CFactoryManager::ReadConfig()
 		striderHubDef.buildDefs.push_back(nullptr);
 	} else {
 		const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
-		auto fillProbs = [this, &cfgName, &striderHub](unsigned i, const char* tierName, std::vector<float>& probs) {
-			const Json::Value& tier = striderHub[utils::int_to_string(i, tierName)];
+		auto fillProbs = [this, &cfgName, &striderHub](unsigned i, const char* tierType, std::vector<float>& probs) {
+			const Json::Value& tier = striderHub[utils::int_to_string(i, std::string(tierType) + "%i")];
 			if (tier == Json::Value::null) {
 				return false;
 			}
@@ -778,18 +805,18 @@ void CFactoryManager::ReadConfig()
 				probs.push_back(p);
 			}
 			if (fabs(sum - 1.0f) > 0.0001f) {
-				circuit->LOG("CONFIG %s: strider's tier%i total probability = %f", cfgName.c_str(), i, sum);
+				circuit->LOG("CONFIG %s: strider's %s%i total probability = %f", cfgName.c_str(), tierType, i, sum);
 			}
 			return true;
 		};
 		unsigned i = 0;
 		for (; i < tierSize; ++i) {
 			striderHubDef.incomes.push_back(tiers[i].asFloat());
-			fillProbs(i, "land_tier%i", striderHubDef.landTiers[i]);
-			fillProbs(i, "water_tier%i", striderHubDef.waterTiers[i]);
+			fillProbs(i, "land_tier", striderHubDef.landTiers[i]);
+			fillProbs(i, "water_tier", striderHubDef.waterTiers[i]);
 		}
-		fillProbs(i, "land_tier%i", striderHubDef.landTiers[i]);
-		fillProbs(i, "water_tier%i", striderHubDef.waterTiers[i]);
+		fillProbs(i, "land_tier", striderHubDef.landTiers[i]);
+		fillProbs(i, "water_tier", striderHubDef.waterTiers[i]);
 	}
 	if (striderHubDef.incomes.empty()) {
 		striderHubDef.incomes.push_back(std::numeric_limits<float>::max());

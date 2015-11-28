@@ -19,6 +19,7 @@
 #include "task/fighter/ScoutTask.h"
 #include "task/fighter/AttackTask.h"
 #include "terrain/TerrainManager.h"
+#include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -35,6 +36,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit)
 		, updateSlice(0)
 		, scoutIdx(0)
+		, powerAA(.0f)
+		, powerLand(.0f)
+		, powerWater(.0f)
 		, curPowah(.0f)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
@@ -79,8 +83,15 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			nullTask->RemoveAssignee(unit);
 		}
 
+		AddPower(unit->GetCircuitDef());
+
 		if (unit->GetCircuitDef()->IsAbleToFly()) {
 			unit->GetUnit()->ExecuteCustomCommand(CMD_RETREAT, {2.0f});
+// FIXME: DEBUG
+			if (std::string("armbrawl") == unit->GetCircuitDef()->GetUnitDef()->GetName()) {
+				unit->GetUnit()->ExecuteCustomCommand(CMD_AIR_STRAFE, {0.0f});
+			}
+// FIXME: DEBUG
 		}
 	};
 	auto attackerIdleHandler = [this](CCircuitUnit* unit) {
@@ -95,6 +106,12 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	auto attackerDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
+
+		if (unit->GetTask() == nullTask) {
+			return;
+		}
+
+		DelPower(unit->GetCircuitDef());
 	};
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
@@ -341,14 +358,16 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	float totalCost = .0f;
 	IBuilderTask* parentTask = nullptr;
-	bool isWater = circuit->GetTerrainManager()->IsWaterSector(pos);
-	std::array<const char*, 9> landDefenders = {"corllt", "corrl", "corrad", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
+//	bool isWater = circuit->GetTerrainManager()->IsWaterSector(pos);
+//	std::array<const char*, 9> landDefenders = {"corllt", "corrl", "corrad", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
 // FIXME: DEBUG
-//	std::array<const char*, 9> landDefenders = {"armdeva", "corllt", "corrad", "corrl", "corrazor", "armnanotc", "corrl", "corrl", "corrl"};
+//	std::array<const char*, 8> landDefenders = {"corllt", "corrl", "corrad", "corllt", "corllt", "corrazor", "armnanotc", "corrl"};
+	std::array<const char*, 1> landDefenders = {"corllt"/*, "corrl", "corrad"*/};
 // FIXME: DEBUG
-	std::array<const char*, 9> waterDefenders = {"turrettorp", "armsonar", "corllt", "corrad", "corrazor", "armnanotc", "turrettorp", "corhlt", "turrettorp"};
-	std::array<const char*, 9>& defenders = isWater ? waterDefenders : landDefenders;
-	for (const char* name : defenders) {
+//	std::array<const char*, 8> waterDefenders = {"turrettorp", "armsonar", "corllt", "corrad", "corrazor", "armnanotc", "turrettorp", "corhlt"};
+//	std::array<const char*, 8>& defenders = isWater ? waterDefenders : landDefenders;
+//	for (const char* name : defenders) {
+	for (const char* name : landDefenders) {
 		defDef = circuit->GetCircuitDef(name);
 		float defCost = defDef->GetCost();
 		totalCost += defCost;
@@ -432,6 +451,11 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 	return -RgtVector;
 }
 
+bool CMilitaryManager::IsNeedAA() const
+{
+	return circuit->GetThreatMap()->GetAirPower() > powerAA;
+}
+
 void CMilitaryManager::Init()
 {
 	CMetalManager* metalManager = circuit->GetMetalManager();
@@ -489,6 +513,19 @@ void CMilitaryManager::UpdateFight()
 	if (updateTasks.empty()) {
 		updateTasks = fighterTasks;
 		updateSlice = updateTasks.size() / TEAM_SLOWUPDATE_RATE;
+	}
+}
+
+void CMilitaryManager::AddPower(CCircuitDef* cdef, const float scale)
+{
+	if (cdef->IsAntiAir()) {
+		powerAA += cdef->GetPower() * scale;
+	}
+	if (cdef->IsAntiLand()) {
+		powerLand += cdef->GetPower() * scale;
+	}
+	if (cdef->IsAntiWater()) {
+		powerWater += cdef->GetPower() * scale;
 	}
 }
 
