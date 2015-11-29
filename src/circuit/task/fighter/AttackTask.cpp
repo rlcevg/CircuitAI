@@ -7,16 +7,13 @@
 
 #include "task/fighter/AttackTask.h"
 #include "task/TaskManager.h"
+#include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "unit/action/MoveAction.h"
 #include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
-// FIXME: DEBUG
-#include "setup/SetupManager.h"
-// FIXME: DEBUG
-
 
 #include "AISCommands.h"
 #include "Map.h"
@@ -183,7 +180,6 @@ void CAttackTask::Update()
 					isAttack = true;
 					continue;
 				}
-// FIXME: DEBUG
 			} else {
 				// Guard commander
 				if ((circuit->GetLastFrame() > FRAMES_PER_SEC * 300) && (circuit->GetSetupManager()->GetCommander() != nullptr)) {
@@ -192,7 +188,6 @@ void CAttackTask::Update()
 					isAttack = false;
 					continue;
 				}
-// FIXME: DEBUG
 			}
 			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 			unit->GetUnit()->SetWantedMaxSpeed((sqDist > sqHighestRange) ? lowestSpeed : MAX_SPEED);
@@ -225,7 +220,6 @@ void CAttackTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	if (target == nullptr) {
 		if (!isUpdating) {
-// FIXME: DEBUG
 			// Guard commander
 			if ((circuit->GetLastFrame() > FRAMES_PER_SEC * 300) && (circuit->GetSetupManager()->GetCommander() != nullptr)) {
 				unit->GetUnit()->Guard(circuit->GetSetupManager()->GetCommander()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
@@ -233,7 +227,6 @@ void CAttackTask::Execute(CCircuitUnit* unit, bool isUpdating)
 				isAttack = false;
 				return;
 			}
-// FIXME: DEBUG
 
 			float x = rand() % (terrainManager->GetTerrainWidth() + 1);
 			float z = rand() % (terrainManager->GetTerrainHeight() + 1);

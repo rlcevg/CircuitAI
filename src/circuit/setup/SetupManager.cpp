@@ -293,6 +293,7 @@ void CSetupManager::PickCommander()
 {
 	std::vector<CCircuitDef*> commanders;
 	CCircuitDef* riot = nullptr;
+	float bestPower = .0f;
 	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
@@ -301,11 +302,14 @@ void CSetupManager::PickCommander()
 		auto it = customParams.find("level");
 		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 0)) {
 			commanders.push_back(cdef);
-// FIXME: DEBUG
-			if ((riot == nullptr) && (std::string("comm_cai_riot_0") == cdef->GetUnitDef()->GetName())) {
+
+			std::string lvl0 = cdef->GetUnitDef()->GetName();
+			std::string lvl5 = lvl0.substr(0, lvl0.size() - 1) + "5";
+			CCircuitDef* lvl5Def = circuit->GetCircuitDef(lvl5.c_str());
+			if ((lvl5Def != nullptr) && (bestPower < lvl5Def->GetPower())) {  // comm_cai_riot_0
+				bestPower = lvl5Def->GetPower();
 				riot = cdef;
 			}
-// FIXME: DEBUG
 		}
 	}
 	if (commanders.empty()) {

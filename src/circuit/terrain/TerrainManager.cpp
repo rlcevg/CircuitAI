@@ -129,10 +129,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	def = cdef->GetUnitDef();
 	wpDef = def->GetDeathExplosion();
 	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
-//	radius -= radius / 6 * (std::min(circuit->GetAllyTeam()->GetSize(), 4) - 1);  // [radius ~ 1 player ; radius/2 ~ 4+ players]
-// FIXME: DEBUG
-	radius /= 2;
-// FIXME: DEBUG
+	radius -= radius / 6 * (std::min(circuit->GetAllyTeam()->GetSize(), 4) - 1);  // [radius ~ 1 player ; radius/2 ~ 4+ players]
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);

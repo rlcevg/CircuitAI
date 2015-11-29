@@ -19,8 +19,12 @@ public:
 				 float cost, bool isShake, int timeout);
 	virtual ~CBEnergyTask();
 
+	virtual void Update();
+
 protected:
 	virtual void Finish();
+
+	bool isStalling;
 };
 
 } // namespace circuit

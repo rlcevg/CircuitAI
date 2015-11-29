@@ -27,6 +27,7 @@ CBEnergyTask::CBEnergyTask(ITaskManager* mgr, Priority priority,
 						   CCircuitDef* buildDef, const AIFloat3& position,
 						   float cost, bool isShake, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, BuildType::ENERGY, cost, isShake, timeout)
+		, isStalling(false)
 {
 }
 
@@ -35,7 +36,21 @@ CBEnergyTask::~CBEnergyTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-// TODO: On Update monitor isEnergyStalling value and adjust build priority accordingly
+void CBEnergyTask::Update()
+{
+	IBuilderTask::Update();
+	if (units.empty() || (target == nullptr)) {
+		return;
+	}
+
+	bool isEnergyStalling = manager->GetCircuit()->GetEconomyManager()->IsEnergyStalling();
+	if (isStalling == isEnergyStalling) {
+		return;
+	}
+	isStalling = isEnergyStalling;
+	priority = isEnergyStalling ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
+	target->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {static_cast<float>(priority)});
+}
 
 void CBEnergyTask::Finish()
 {
@@ -198,10 +213,10 @@ void CBEnergyTask::Finish()
 	parent0->SetNextTask(builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::NANO, false, false, 0));
 	parent0 = parent0->GetNextTask();
 
-	if (rand() < RAND_MAX / 2) {
+//	if (rand() < RAND_MAX / 2) {
 		cdef = circuit->GetCircuitDef("armamd");
 		parent0->SetNextTask(builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::BIG_GUN, true, false, 0));
-	}
+//	}
 }
 
 } // namespace circuit

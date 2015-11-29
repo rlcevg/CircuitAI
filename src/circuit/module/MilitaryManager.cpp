@@ -87,11 +87,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 		if (unit->GetCircuitDef()->IsAbleToFly()) {
 			unit->GetUnit()->ExecuteCustomCommand(CMD_RETREAT, {2.0f});
-// FIXME: DEBUG
-			if (std::string("armbrawl") == unit->GetCircuitDef()->GetUnitDef()->GetName()) {
+			if (unit->GetCircuitDef()->GetMaxRange() > 600.0f) {  // armbrawl
 				unit->GetUnit()->ExecuteCustomCommand(CMD_AIR_STRAFE, {0.0f});
 			}
-// FIXME: DEBUG
 		}
 	};
 	auto attackerIdleHandler = [this](CCircuitUnit* unit) {
@@ -358,16 +356,11 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	float totalCost = .0f;
 	IBuilderTask* parentTask = nullptr;
-//	bool isWater = circuit->GetTerrainManager()->IsWaterSector(pos);
-//	std::array<const char*, 9> landDefenders = {"corllt", "corrl", "corrad", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
-// FIXME: DEBUG
-//	std::array<const char*, 8> landDefenders = {"corllt", "corrl", "corrad", "corllt", "corllt", "corrazor", "armnanotc", "corrl"};
-	std::array<const char*, 1> landDefenders = {"corllt"/*, "corrl", "corrad"*/};
-// FIXME: DEBUG
-//	std::array<const char*, 8> waterDefenders = {"turrettorp", "armsonar", "corllt", "corrad", "corrazor", "armnanotc", "turrettorp", "corhlt"};
-//	std::array<const char*, 8>& defenders = isWater ? waterDefenders : landDefenders;
-//	for (const char* name : defenders) {
-	for (const char* name : landDefenders) {
+	bool isWater = circuit->GetTerrainManager()->IsWaterSector(pos);
+	std::array<const char*, 9> landDefenders = {"corllt", "corrl", "corrad", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
+	std::array<const char*, 9> waterDefenders = {"turrettorp", "armsonar", "corllt", "corrad", "corrazor", "armnanotc", "turrettorp", "corhlt", "turrettorp"};
+	std::array<const char*, 9>& defenders = isWater ? waterDefenders : landDefenders;
+	for (const char* name : defenders) {
 		defDef = circuit->GetCircuitDef(name);
 		float defCost = defDef->GetCost();
 		totalCost += defCost;
@@ -377,18 +370,6 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 		if (totalCost < maxCost) {
 			closestPoint->cost += defCost;
 			bool isFirst = (parentTask == nullptr);
-// FIXME: DEBUG
-//			if (std::string("armdeva") == name) {
-//				const float terraCost = 1.0f;
-//				closestPoint->cost += terraCost;
-//				IBuilderTask* task = builderManager->EnqueueTerraform(IBuilderTask::Priority::HIGH, nullptr, closestPoint->position, terraCost, isFirst);
-//				if (parentTask != nullptr) {
-//					parentTask->SetNextTask(task);
-//				}
-//				parentTask = task;
-//				isFirst = false;
-//			}
-// FIXME: DEBUG
 			IBuilderTask::Priority priority = isFirst ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
 			IBuilderTask* task = builderManager->EnqueueTask(priority, defDef, closestPoint->position,
 															 IBuilderTask::BuildType::DEFENCE, true, isFirst);
@@ -453,7 +434,7 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 
 bool CMilitaryManager::IsNeedAA() const
 {
-	return circuit->GetThreatMap()->GetAirPower() > powerAA;
+	return circuit->GetThreatMap()->GetAirPower() * 1.2f > powerAA;
 }
 
 void CMilitaryManager::Init()

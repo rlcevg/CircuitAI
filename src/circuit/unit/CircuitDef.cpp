@@ -90,11 +90,11 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	delete sd;
 
 	if (!def->IsAbleToAttack()) {
-// FIXME: DEBUG
+		// FIXME: Decouple ScoutTask into RaidTask and ScoutTask
 		if (std::string("corawac") == def->GetName()) {
 			dps = 10.0f;
 		}
-// FIXME: DEBUG
+
 		if (isShield) {
 			auto mounts = std::move(def->GetWeaponMounts());
 			for (WeaponMount* mount : mounts) {

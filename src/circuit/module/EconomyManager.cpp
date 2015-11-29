@@ -175,17 +175,12 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
 	// TODO: randomize ranges
 	std::array<std::pair<const char*, int>, 3> landEngies = {
-//			std::make_pair("cafus", 3),
-//			std::make_pair("armfus", 2),
-//			std::make_pair("armsolar", 10)
-// FIXME: DEBUG
-			std::make_pair("cafus", 1),
-			std::make_pair("armfus", 3),
-			std::make_pair("armsolar", 15)
-// FIXME: DEBUG
+			std::make_pair("cafus", 2),
+			std::make_pair("armfus", 2),
+			std::make_pair("armsolar", 10)
 	};
 	std::array<std::pair<const char*, int>, 3> waterEngies = {
-			std::make_pair("cafus", 3),
+			std::make_pair("cafus", 2),
 			std::make_pair("armfus", 2),
 			std::make_pair("armwin", 20)
 	};
@@ -205,6 +200,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	 */
 	auto comFinishedHandler = [this](CCircuitUnit* unit) {
 		AddMorphee(unit);
+		this->circuit->GetSetupManager()->SetCommander(unit);
 	};
 	auto comDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		RemoveMorphee(unit);
@@ -213,8 +209,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		CCircuitDef* cdef = kv.second;
 		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
 		auto it = customParams.find("level");
-		// TODO: Identify max level
-		if ((it != customParams.end()) && (utils::string_to_int(it->second) < 5)) {
+		if ((it != customParams.end()) && (utils::string_to_int(it->second) <= 5)) {  // TODO: Identify max level
+			// NOTE: 5th level is needed only to set proper commander
 			finishedHandler[cdef->GetId()] = comFinishedHandler;
 			destroyedHandler[cdef->GetId()] = comDestroyedHandler;
 		}
@@ -773,9 +769,6 @@ void CEconomyManager::AddMorphee(CCircuitUnit* unit)
 	if (morph == nullptr) {
 		morph = std::make_shared<CGameTask>(&CEconomyManager::UpdateMorph, this);
 		circuit->GetScheduler()->RunTaskEvery(morph, FRAMES_PER_SEC * 20);
-// FIXME: DEBUG
-		circuit->GetSetupManager()->SetCommander(unit);
-// FIXME: DEBUG
 	}
 }
 
@@ -844,7 +837,7 @@ void CEconomyManager::Init()
 				if (commander != nullptr) {
 					commander->Morph();
 				}
-			}), FRAMES_PER_SEC * 180);
+			}), FRAMES_PER_SEC * 120);
 		}
 
 		SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();
