@@ -37,9 +37,11 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 		, startPos(-RgtVector)
 		, basePos(-RgtVector)
 {
+	const char* setupScript = circuit->GetGame()->GetSetupScript();
 	if (!setupData->IsInitialized()) {
-		ParseSetupScript(circuit->GetGame()->GetSetupScript());
+		ParseSetupScript(setupScript);
 	}
+	DisabledUnits(setupScript);
 	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>(&CSetupManager::FindCommander, this));
 }
 
@@ -172,6 +174,29 @@ void CSetupManager::ParseSetupScript(const char* setupScript)
 	}
 
 	setupData->Init(allyTeams, boxes, startPosType);
+}
+
+void CSetupManager::DisabledUnits(const char* setupScript)
+{
+	std::string script(setupScript);
+	std::regex patternDisabled("disabledunits=(.*);");
+	std::string::const_iterator start = script.begin();
+	std::string::const_iterator end = script.end();
+	std::smatch section;
+	if (std::regex_search(start, end, section, patternDisabled)) {
+		// !setoptions disabledunits=raveparty+zenith+mahlaze
+		std::string opt_str = section[1];
+		start = opt_str.begin();
+		end = opt_str.end();
+		std::regex patternUnit("\\w+");
+		while (std::regex_search(start, end, section, patternUnit)) {
+			CCircuitDef* cdef = circuit->GetCircuitDef(std::string(section[0]).c_str());
+			if (cdef != nullptr) {
+				cdef->SetMaxThisUnit(0);
+			}
+			start = section[0].second;
+		}
+	}
 }
 
 bool CSetupManager::OpenConfig(const std::string& cfgName)

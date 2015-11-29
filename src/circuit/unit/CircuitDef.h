@@ -48,7 +48,9 @@ public:
 	bool operator==(const CCircuitDef& rhs) { return id == rhs.id; }
 	bool operator!=(const CCircuitDef& rhs) { return id != rhs.id; }
 
-	bool IsAvailable() const { return def->GetMaxThisUnit() > count; }
+	void SetMaxThisUnit(int value) { maxThisUnit = value; }
+	bool IsAvailable() const { return maxThisUnit > count; }
+
 	void IncBuild() { ++buildCounts; }
 	void DecBuild() { --buildCounts; }
 	int GetBuildCount() const { return buildCounts; }
@@ -76,9 +78,10 @@ public:
 	bool IsAntiLand()  const { return isAntiLand; }
 	bool IsAntiWater() const { return isAntiWater; }
 
-	bool IsMobile()    const { return speed > .1f; }
-	bool IsAbleToFly() const { return isAbleToFly; }
-	bool IsFloater()   const { return isFloater; }
+	bool IsMobile()         const { return speed > .1f; }
+	bool IsAbleToFly()      const { return isAbleToFly; }
+	bool IsAbleToSubmerge() const { return isAbleToSubmerge; }
+	bool IsFloater()        const { return isFloater; }
 
 	float GetSpeed()     const { return speed; }
 	float GetLosRadius() const { return losRadius; }
@@ -97,6 +100,7 @@ private:
 	float buildSpeed;
 	int count;
 	int buildCounts;  // number of builder defs able to build this def;
+	int maxThisUnit;
 
 	bool isManualFire;
 //	int dgunReload;  // frames in ticks
@@ -119,6 +123,7 @@ private:
 	bool isAntiWater;
 
 	bool isAbleToFly;
+	bool isAbleToSubmerge;
 	bool isFloater;
 
 	float speed;

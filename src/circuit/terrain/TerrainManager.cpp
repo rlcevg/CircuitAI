@@ -267,7 +267,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 
 	const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
 	def = mexDef->GetUnitDef();
-	int size = std::max(def->GetXSize(), def->GetZSize()) / 2 + 4;
+	int size = std::max(def->GetXSize(), def->GetZSize()) / 2/* + 4*/;
 	int& xsize = size, &zsize = size;
 	int notIgnoreMask = STRUCT_BIT(FACTORY);
 	for (auto& spot : spots) {

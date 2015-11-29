@@ -229,27 +229,29 @@
 		"builder_def": "coracv"  // welder
 	},
 
+	// Remove "_" to enable factory
 	"_factoryjump": {
 		"require_energy": false,
 
 		"income_tier": [40],
 		//            puppy,   pyro,      placeholder,     moderator,  jack,     sumo,      firewalker,   skuttle
 		"unit_def": ["puppy", "corpyro", "jumpblackhole", "slowmort", "corcan", "corsumo", "firewalker", "corsktl"],
-		"tier0":    [ 0.07,    0.60,      0.05,            0.10,       0.05,     0.00,      0.10,         0.01],
-		"tier1":    [ 0.01,    0.10,      0.10,            0.10,       0.30,     0.05,      0.20,         0.04],
+		"tier0":    [ 0.09,    0.60,      0.05,            0.10,       0.05,     0.00,      0.10,         0.01],
+		"tier1":    [ 0.01,    0.20,      0.10,            0.10,       0.30,     0.05,      0.20,         0.04],
 
 		"anti_air_def": "armaak",  // archangel
 		"builder_def": "corfast"  // freaker
 	},
 
+	// Remove "_" to enable factory
 	"_factoryshield": {
 		"require_energy": false,
 
 		"income_tier": [40],
 		//            dirtbag,   bandit,  rogue,      thug,      outlaw,   felon,         racketeer,    roach,      aspis
 		"unit_def": ["corclog", "corak", "corstorm", "corthud", "cormak", "shieldfelon", "shieldarty", "corroach", "core_spectre"],
-		"tier0":    [ 0.10,      0.30,    0.10,       0.18,      0.10,     0.05,          0.10,         0.05,       0.00],
-		"tier1":    [ 0.01,      0.01,    0.20,       0.30,      0.10,     0.10,          0.17,         0.01,       0.00],
+		"tier0":    [ 0.10,      0.30,    0.10,       0.20,      0.10,     0.05,          0.10,         0.05,       0.00],
+		"tier1":    [ 0.01,      0.01,    0.20,       0.35,      0.10,     0.10,          0.22,         0.01,       0.00],
 
 		"anti_air_def": "corcrash",  // vandal
 		"builder_def": "cornecro"  // convict
@@ -262,12 +264,12 @@
 		"income_tier": [40],
 		//            skeeter,     snake,       typhoon,      hunter,     enforcer,    crusader,   serpent,   surfboard
 		"unit_def": ["shipscout", "subraider", "shipraider", "shiptorp", "shipskirm", "shiparty", "subarty", "armtboat"],
-		"tier0":    [ 0.10,        0.30,        0.30,         0.17,       0.05,        0.05,       0.01,      0.00],
-		"tier1":    [ 0.01,        0.10,        0.10,         0.20,       0.10,        0.20,       0.19,      0.00],
+		"tier0":    [ 0.10,        0.32,        0.30,         0.17,       0.05,        0.05,       0.01,      0.00],
+		"tier1":    [ 0.01,        0.10,        0.10,         0.20,       0.15,        0.25,       0.19,      0.00],
 
 		"anti_air_def": "shipaa",  // shredder
 		"builder_def": "shipcon"  // mariner
-	},
+	}
 },
 
 "strider": {

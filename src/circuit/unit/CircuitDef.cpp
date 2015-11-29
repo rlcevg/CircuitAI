@@ -44,12 +44,14 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 	buildDistance = def->GetBuildDistance();
 	buildSpeed    = def->GetBuildSpeed();
+	maxThisUnit   = def->GetMaxThisUnit();
 
 	isManualFire    = def->CanManualFire();
 	noChaseCategory = def->GetNoChaseCategory();
 
-	isAbleToFly = def->IsAbleToFly();
-	isFloater   = def->IsFloater();
+	isAbleToFly      = def->IsAbleToFly();
+	isAbleToSubmerge = def->IsAbleToSubmerge();
+	isFloater        = def->IsFloater();
 
 	maxRange  = def->GetMaxWeaponRange();
 	speed     = def->GetSpeed() / FRAMES_PER_SEC;  // NOTE: SetMaxWantedSpeed expects value/FRAMES_PER_SEC

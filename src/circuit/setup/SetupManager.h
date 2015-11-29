@@ -26,6 +26,7 @@ public:
 	CSetupManager(CCircuitAI* circuit, CSetupData* setupData);
 	virtual ~CSetupManager();
 	void ParseSetupScript(const char* setupScript);
+	void DisabledUnits(const char* setupScript);
 
 	bool OpenConfig(const std::string& cfgName);
 	void CloseConfig();

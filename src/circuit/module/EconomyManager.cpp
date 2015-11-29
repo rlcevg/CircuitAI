@@ -533,7 +533,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	// Select proper energy UnitDef to build
 	CCircuitDef* bestDef = nullptr;
 	float cost;
-	metalIncome = std::min(metalIncome, energyIncome) * 0.5f;
+	metalIncome = std::min(metalIncome, energyIncome)/* * 0.5f*/;
 	float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome);
 	int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
 	float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.1f : ecoFactor);
@@ -579,14 +579,12 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			if (index >= 0) {
 				const CMetalData::Clusters& clusters = metalManager->GetClusters();
 				buildPos = clusters[index].geoCentr;
-// FIXME: DEBUG
-				if (cost > 1000.0f) {
-					AIFloat3 mapCenter(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
-					buildPos += (buildPos - mapCenter).Normalize2D() * 300;
-					CCircuitDef* bdef = (unit == nullptr) ? bestDef : unit->GetCircuitDef();
-					buildPos = circuit->GetTerrainManager()->GetBuildPosition(bdef, buildPos);
-				}
-// FIXME: DEBUG
+
+				// TODO: Calc enemy vector and move position into opposite direction
+				AIFloat3 mapCenter(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
+				buildPos += (buildPos - mapCenter).Normalize2D() * 300.0f * (cost / energyInfos.front().cost);
+				CCircuitDef* bdef = (unit == nullptr) ? bestDef : unit->GetCircuitDef();
+				buildPos = circuit->GetTerrainManager()->GetBuildPosition(bdef, buildPos);
 			}
 		}
 
@@ -628,16 +626,16 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		switch (factory->GetUnit()->GetBuildingFacing()) {
 			default:
 			case UNIT_FACING_SOUTH:
-				buildPos.z -= 200.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
+				buildPos.z -= 128.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
 				break;
 			case UNIT_FACING_EAST:
-				buildPos.x -= 200.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
+				buildPos.x -= 128.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
 				break;
 			case UNIT_FACING_NORTH:
-				buildPos.z += 200.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
+				buildPos.z += 128.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
 				break;
 			case UNIT_FACING_WEST:
-				buildPos.x += 200.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
+				buildPos.x += 128.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
 				break;
 		}
 

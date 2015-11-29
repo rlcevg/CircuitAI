@@ -313,6 +313,7 @@ int CDebugDrawer::WindowEventFilter(void* userdata, SDL_Event* event)
 		case SDL_USEREVENT: {
 			return self->HasWindow(event->window.windowID) ? 0 : 1;
 		} break;
+		default: break;
 	};
 	return 1;
 }

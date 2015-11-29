@@ -366,11 +366,20 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, const float scale)
 		airPower += power;
 		return;
 	}
-	// FIXME: Too simplified
-	if (cdef->GetUnitDef()->IsAbleToSubmerge()) {
+	if (cdef->IsAbleToSubmerge()) {
 		waterPower += power;
 	}
-	landPower += power;
+	if (cdef->IsMobile()) {
+		STerrainMapMobileType* mt = circuit->GetTerrainManager()->GetMobileTypeById(cdef->GetMobileId());
+		if (mt->maxElevation > .0f) {
+			landPower += power;
+		}
+	} else {
+		STerrainMapImmobileType* it = circuit->GetTerrainManager()->GetImmobileTypeById(cdef->GetImmobileId());
+		if (it->maxElevation > .0f) {
+			landPower += power;
+		}
+	}
 }
 
 void CThreatMap::AddEnemyUnitAll(const CEnemyUnit* e, const float scale)

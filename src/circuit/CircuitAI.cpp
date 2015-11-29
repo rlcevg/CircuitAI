@@ -349,8 +349,8 @@ bool CCircuitAI::IsModValid()
 	const int minEngineVer = 100;
 	const char* engineVersion = sAICallback->Engine_Version_getMajor(skirmishAIId);
 	int ver = atoi(engineVersion);
-	if (ver != minEngineVer) {
-		LOG("Engine must be 100.0! (%s)", engineVersion);
+	if (ver < minEngineVer) {
+		LOG("Engine must be 100.0 or higher! (%s)", engineVersion);
 		return false;
 	}
 
@@ -359,7 +359,7 @@ bool CCircuitAI::IsModValid()
 	const char* version = mod->GetVersion();
 	delete mod;
 	if ((name == nullptr) || (version == nullptr)) {
-		LOG("Can't get name or version of the game. Aborting!");  // NOTE: Sign of messed up spring installation
+		LOG("Can't get name or version of the game. Aborting!");  // NOTE: Sign of messed up spring/AI installation
 		return false;
 	}
 

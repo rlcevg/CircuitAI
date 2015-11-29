@@ -102,10 +102,11 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		unit->GetTask()->OnUnitDamaged(unit, attacker);
 	};
 	auto attackerDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
-		unit->GetTask()->OnUnitDestroyed(unit, attacker);  // can change task
+		IUnitTask* task = unit->GetTask();
+		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
-		if (unit->GetTask() == nullTask) {
+		if (task == nullTask) {
 			return;
 		}
 
@@ -499,14 +500,15 @@ void CMilitaryManager::UpdateFight()
 
 void CMilitaryManager::AddPower(CCircuitDef* cdef, const float scale)
 {
+	const float power = cdef->GetPower() * scale;
 	if (cdef->IsAntiAir()) {
-		powerAA += cdef->GetPower() * scale;
+		powerAA += power;
 	}
 	if (cdef->IsAntiLand()) {
-		powerLand += cdef->GetPower() * scale;
+		powerLand += power;
 	}
 	if (cdef->IsAntiWater()) {
-		powerWater += cdef->GetPower() * scale;
+		powerWater += power;
 	}
 }
 
