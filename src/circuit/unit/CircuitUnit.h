@@ -20,6 +20,7 @@ namespace circuit {
 
 //#define CMD_RETREAT_ZONE		10001
 //#define CMD_SETHAVEN			CMD_RETREAT_ZONE
+#define CMD_ORBIT				13923
 #define CMD_MORPH				31210
 #define CMD_MORPH_STOP			32210
 #define CMD_PRIORITY			34220
@@ -72,6 +73,8 @@ public:
 	void ManualFire(springai::Unit* enemy, int timeOut);
 	bool IsDisarmed();
 	float GetDPS();
+
+	void Guard(CCircuitUnit* target, int timeout);
 
 	void Morph();
 	void StopMorph();

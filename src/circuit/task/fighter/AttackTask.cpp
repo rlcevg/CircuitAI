@@ -156,7 +156,6 @@ void CAttackTask::Update()
 		return;
 	}
 
-
 	bool isExecute = (++updCount % 4 == 0);
 	if (!isExecute) {
 		IFighterTask::Update();
@@ -182,9 +181,11 @@ void CAttackTask::Update()
 				}
 			} else {
 				// Guard commander
-				if ((circuit->GetLastFrame() > FRAMES_PER_SEC * 300) && (circuit->GetSetupManager()->GetCommander() != nullptr)) {
-					unit->GetUnit()->Guard(circuit->GetSetupManager()->GetCommander()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
-					unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+				CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+				if ((frame > FRAMES_PER_SEC * 300) && (commander != nullptr) &&
+					circuit->GetTerrainManager()->CanMoveToPos(commander->GetArea(), commander->GetPos(frame)))
+				{
+					unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
 					isAttack = false;
 					continue;
 				}
@@ -213,7 +214,7 @@ void CAttackTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	int frame = manager->GetCircuit()->GetLastFrame();
+	int frame = circuit->GetLastFrame();
 
 	float minSqDist;
 	FindTarget(unit, minSqDist);
@@ -221,9 +222,11 @@ void CAttackTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	if (target == nullptr) {
 		if (!isUpdating) {
 			// Guard commander
-			if ((circuit->GetLastFrame() > FRAMES_PER_SEC * 300) && (circuit->GetSetupManager()->GetCommander() != nullptr)) {
-				unit->GetUnit()->Guard(circuit->GetSetupManager()->GetCommander()->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
-				unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+			CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+			if ((frame > FRAMES_PER_SEC * 300) && (commander != nullptr) &&
+				terrainManager->CanMoveToPos(commander->GetArea(), commander->GetPos(frame)))
+			{
+				unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
 				isAttack = false;
 				return;
 			}

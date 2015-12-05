@@ -502,13 +502,13 @@ void CMilitaryManager::AddPower(CCircuitDef* cdef, const float scale)
 {
 	const float power = cdef->GetPower() * scale;
 	if (cdef->IsAntiAir()) {
-		powerAA += power;
+		powerAA = std::max(powerAA + power, .0f);
 	}
 	if (cdef->IsAntiLand()) {
-		powerLand += power;
+		powerLand = std::max(powerLand + power, .0f);
 	}
 	if (cdef->IsAntiWater()) {
-		powerWater += power;
+		powerWater = std::max(powerWater + power, .0f);
 	}
 }
 

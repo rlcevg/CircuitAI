@@ -209,6 +209,11 @@ static inline void sleep(int64_t seconds)
 //	return denominator * denominator / numerator;
 //};
 
+static inline bool is_equal_pos(const springai::AIFloat3& posA, const springai::AIFloat3& posB, const float slack = SQUARE_SIZE * 2)
+{
+	return (math::fabs(posA.x - posB.x) <= slack) && (math::fabs(posA.z - posB.z) <= slack);
+}
+
 } // namespace utils
 
 #endif // SRC_CIRCUIT_UTIL_UTILS_H_

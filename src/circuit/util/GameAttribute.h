@@ -26,7 +26,7 @@ public:
 	virtual ~CGameAttribute();
 
 	void SetGameEnd(bool value);
-	bool IsGameEnd() const { return gameEnd; }
+	bool IsGameEnd() const { return isGameEnd; }
 	void RegisterAI(CCircuitAI* circuit) { circuits.insert(circuit); }
 	void UnregisterAI(CCircuitAI* circuit) { circuits.erase(circuit); }
 
@@ -36,7 +36,7 @@ public:
 	CTerrainData& GetTerrainData() { return terrainData; }
 
 private:
-	bool gameEnd;
+	bool isGameEnd;
 	Circuits circuits;
 	CSetupData setupData;
 	CMetalData metalData;

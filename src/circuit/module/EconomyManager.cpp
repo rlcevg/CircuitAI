@@ -175,13 +175,13 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
 	// TODO: randomize ranges
 	std::array<std::pair<const char*, int>, 3> landEngies = {
-			std::make_pair("cafus", 2),
-			std::make_pair("armfus", 2),
-			std::make_pair("armsolar", 10)
+			std::make_pair("cafus", 1),  // 1-2
+			std::make_pair("armfus", 3),  // 2-3
+			std::make_pair("armsolar", 12)  // 10-15
 	};
 	std::array<std::pair<const char*, int>, 3> waterEngies = {
-			std::make_pair("cafus", 2),
-			std::make_pair("armfus", 2),
+			std::make_pair("cafus", 1),
+			std::make_pair("armfus", 3),
 			std::make_pair("armwin", 20)
 	};
 	std::array<std::pair<const char*, int>, 3>& engies = (terrainManager->GetPercentLand() < 40.0) ? waterEngies : landEngies;
@@ -652,7 +652,8 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 
 	// check factories
 	CCircuitDef* striderDef = circuit->GetCircuitDef("striderhub");
-	bool isStriderValid = (factoryManager->GetFactoryCount() > 1) && (striderDef->GetCount() == 0) && striderDef->IsAvailable();
+	bool isStriderValid = ((factoryManager->GetFactoryCount() > 1) || (rand() < RAND_MAX / 2)) &&
+							(striderDef->GetCount() == 0) && striderDef->IsAvailable();
 	CCircuitDef* facDef = isStriderValid ? striderDef : circuit->GetAllyTeam()->GetFactoryToBuild(circuit);
 	if (facDef != nullptr) {
 		CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {

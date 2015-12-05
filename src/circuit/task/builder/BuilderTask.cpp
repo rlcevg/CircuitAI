@@ -89,7 +89,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		int facing = target->GetUnit()->GetBuildingFacing();
-		u->Build(target->GetCircuitDef()->GetUnitDef(), target->GetPos(frame), facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		u->Build(target->GetCircuitDef()->GetUnitDef(), buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 		return;
 	}
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
@@ -249,7 +249,8 @@ void IBuilderTask::SetTarget(CCircuitUnit* unit)
 
 void IBuilderTask::UpdateTarget(CCircuitUnit* unit)
 {
-	SetTarget(unit);
+	// NOTE: Can't use SetTarget because unit->GetPos() may be different from buildPos
+	target = unit;
 
 	int frame = manager->GetCircuit()->GetLastFrame() + FRAMES_PER_SEC * 60;
 	for (CCircuitUnit* ass : units) {
@@ -281,7 +282,9 @@ bool IBuilderTask::IsEqualBuildPos(CCircuitUnit* unit) const
 			pos.z -= offset.x;
 		} break;
 	}
-	return (math::fabs(pos.x - buildPos.x) <= SQUARE_SIZE) && (math::fabs(pos.z - buildPos.z) <= SQUARE_SIZE);
+	// NOTE: Unit's position is affected by collisionVolumeOffsets, and there is no way to retrieve it.
+	//       Hence absurdly large error slack, @see factoryship.lua
+	return utils::is_equal_pos(pos, buildPos, SQUARE_SIZE * 2);
 }
 
 void IBuilderTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, float searchRadius)

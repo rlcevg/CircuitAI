@@ -36,6 +36,11 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 		, dbgMap(nullptr)
 #endif
 {
+	if (!terrainData->IsInitialized()) {
+		terrainData->Init(circuit);
+	}
+	areaData = terrainData->pAreaData.load();
+
 	ResetBuildFrame();
 	CCircuitDef* mexDef = circuit->GetCircuitDef("cormex");
 
@@ -101,7 +106,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	cdef = circuit->GetCircuitDef("armwin");
 	def = cdef->GetUnitDef();
 	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
+	radius = (GetPercentLand() < 40.0) ? 1 : wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
 	delete wpDef;
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
@@ -292,11 +297,6 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 			blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::UNKNOWN, ignoreMask);
 		}
 	}
-
-	if (!terrainData->IsInitialized()) {
-		terrainData->Init(circuit);
-	}
-	areaData = terrainData->pAreaData.load();
 }
 
 CTerrainManager::~CTerrainManager()

@@ -114,6 +114,13 @@ float CCircuitUnit::GetDPS()
 	return dps;
 }
 
+void CCircuitUnit::Guard(CCircuitUnit* target, int timeout)
+{
+	unit->ExecuteCustomCommand(CMD_ORBIT, {(float)target->GetId(), 300.0f}, UNIT_COMMAND_OPTION_INTERNAL_ORDER, timeout);
+//	unit->Guard(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, timeout);
+//	unit->SetWantedMaxSpeed(MAX_SPEED);
+}
+
 void CCircuitUnit::Morph()
 {
 	isMorphing = true;

@@ -14,7 +14,7 @@ namespace circuit {
 using namespace springai;
 
 CGameAttribute::CGameAttribute()
-		: gameEnd(false)
+		: isGameEnd(false)
 {
 	srand(time(nullptr));
 }
@@ -26,7 +26,7 @@ CGameAttribute::~CGameAttribute()
 
 void CGameAttribute::SetGameEnd(bool value)
 {
-	if (gameEnd == value) {
+	if (isGameEnd == value) {
 		return;
 	}
 
@@ -35,7 +35,7 @@ void CGameAttribute::SetGameEnd(bool value)
 			circuit->NotifyGameEnd();
 		}
 	}
-	gameEnd = value;
+	isGameEnd = value;
 }
 
 } // namespace circuit

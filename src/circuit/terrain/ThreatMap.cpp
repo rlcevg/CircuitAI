@@ -504,7 +504,7 @@ float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
 		return THREAT_VAL_BASE;  // or 0
 	}
 	if (enemy->GetUnit()->IsBeingBuilt()) {
-		return .0f;
+		return THREAT_VAL_BASE;
 	}
 	const float health = enemy->GetUnit()->GetHealth();
 	if (health <= .0f) {

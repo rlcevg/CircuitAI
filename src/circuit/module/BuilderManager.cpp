@@ -210,10 +210,10 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 
 	IBuilderTask* taskB = static_cast<IBuilderTask*>(task);
 	if (unit->GetUnit()->IsBeingBuilt()) {
-		// FIXME: Try to cope with wrong event order, when different units created within same task.
-		//        Real example: unit starts building, but hlt kills structure right away. UnitDestroyed invoked and new task assigned to unit.
-		//        But for some engine-bugged reason unit is not idle and retries same building. UnitCreated invoked for new task with wrong target.
-		//        Next workaround unfortunately doesn't mark bugged building on blocking map.
+		// NOTE: Try to cope with wrong event order, when different units created within same task.
+		//       Real example: unit starts building, but hlt kills structure right away. UnitDestroyed invoked and new task assigned to unit.
+		//       But for some engine-bugged reason unit is not idle and retries same building. UnitCreated invoked for new task with wrong target.
+		//       Next workaround unfortunately doesn't mark bugged building on blocking map.
 		// TODO: Create additional task to build/reclaim lost unit
 		if ((taskB->GetTarget() == nullptr) && (taskB->GetBuildDef() != nullptr) &&
 			(*taskB->GetBuildDef() == *unit->GetCircuitDef()) && taskB->IsEqualBuildPos(unit))
