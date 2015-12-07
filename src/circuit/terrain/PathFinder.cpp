@@ -158,10 +158,10 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 		costArray = threatMap->GetCloakThreatArray();
 	} else if (cdef->IsAbleToFly()) {
 		costArray = threatMap->GetAirThreatArray();
-	} else if (unit->GetPos(frame).y < -SQUARE_SIZE * 4) {
-		costArray = threatMap->GetWaterThreatArray();
+	} else if (cdef->IsAmphibious()) {
+		costArray = threatMap->GetAmphThreatArray();
 	} else {
-		costArray = threatMap->GetLandThreatArray();
+		costArray = threatMap->GetSurfThreatArray();
 	}
 	micropather->SetMapData(moveArray, costArray);
 }
@@ -398,7 +398,7 @@ void CPathFinder::SetMapData(CThreatMap* threatMap)
 	}
 	STerrainMapMobileType::Id mobileTypeId = dbgDef->GetMobileId();
 	bool* moveArray = (mobileTypeId < 0) ? airMoveArray : moveArrays[mobileTypeId];
-	float* costArray[] = {threatMap->GetAirThreatArray(), threatMap->GetLandThreatArray(), threatMap->GetWaterThreatArray(), threatMap->GetCloakThreatArray()};
+	float* costArray[] = {threatMap->GetAirThreatArray(), threatMap->GetSurfThreatArray(), threatMap->GetAmphThreatArray(), threatMap->GetCloakThreatArray()};
 	micropather->SetMapData(moveArray, costArray[dbgType]);
 }
 

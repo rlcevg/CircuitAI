@@ -180,7 +180,7 @@ void IBuilderTask::Update()
 void IBuilderTask::Finish()
 {
 	// FIXME: Replace const 1000.0f with build time?
-//	if ((cost > 1000.0f) && (buildDef != nullptr) && (buildDef->GetMaxRange() <= .0f)) {
+//	if ((cost > 1000.0f) && (buildDef != nullptr) && !buildDef->IsAttacker()) {
 //		manager->GetCircuit()->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
 //	}
 

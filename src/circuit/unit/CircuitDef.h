@@ -13,6 +13,7 @@
 #include "UnitDef.h"
 
 #include <unordered_set>
+#include <array>
 
 namespace springai {
 	class WeaponMount;
@@ -23,11 +24,14 @@ namespace circuit {
 class CCircuitDef {
 public:
 	using Id = int;
+	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, COUNT};
 
 	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
 	CCircuitDef(CCircuitAI* circuit, springai::UnitDef* def, std::unordered_set<Id>& buildOpts, springai::Resource* res);
 	virtual ~CCircuitDef();
+
+	void Init(CCircuitAI* circuit);
 
 	Id GetId() const { return id; }
 	springai::UnitDef* GetUnitDef() const { return def; }
@@ -62,15 +66,13 @@ public:
 	springai::WeaponMount* GetShieldMount() const { return shieldMount; }
 	float GetDPS() const { return dps; }
 	float GetPower() const { return power; }
-	float GetMaxRange() const { return maxRange; }
+	float GetMaxRange(RangeType type = RangeType::MAX) const { return maxRange[static_cast<unsigned>(type)]; }
 	float GetMaxShield() const { return maxShield; }
 	int GetCategory() const { return category; }
 	int GetTargetCategory() const { return targetCategory; }
 	int GetNoChaseCategory() const { return noChaseCategory; }
 
-	void SetImmobileId(STerrainMapImmobileType::Id immobileId) { immobileTypeId = immobileId; }
 	STerrainMapImmobileType::Id GetImmobileId() const { return immobileTypeId; }
-	void SetMobileId(STerrainMapMobileType::Id mobileId) { mobileTypeId = mobileId; }
 	STerrainMapMobileType::Id GetMobileId() const { return mobileTypeId; }
 
 	bool IsAttacker()  const { return dps > .1f; }
@@ -78,10 +80,11 @@ public:
 	bool IsAntiLand()  const { return isAntiLand; }
 	bool IsAntiWater() const { return isAntiWater; }
 
-	bool IsMobile()         const { return speed > .1f; }
-	bool IsAbleToFly()      const { return isAbleToFly; }
-	bool IsAbleToSubmerge() const { return isAbleToSubmerge; }
-	bool IsFloater()        const { return isFloater; }
+	bool IsMobile()     const { return speed > .1f; }
+	bool IsAbleToFly()  const { return isAbleToFly; }
+	bool IsFloater()    const { return isFloater; }
+	bool IsSubmarine()  const { return isSubmarine; }
+	bool IsAmphibious() const { return isAmphibious; }
 
 	float GetSpeed()     const { return speed; }
 	float GetLosRadius() const { return losRadius; }
@@ -107,9 +110,9 @@ private:
 	float dgunRange;
 	springai::WeaponMount* dgunMount;
 	springai::WeaponMount* shieldMount;
-	float dps;
+	float dps;  // TODO: split dps like ranges on air, land, water
 	float power;  // attack power / UnitDef threat
-	float maxRange;
+	std::array<float, static_cast<unsigned>(RangeType::COUNT)> maxRange;
 	float maxShield;
 	int category;
 	int targetCategory;
@@ -123,8 +126,9 @@ private:
 	bool isAntiWater;
 
 	bool isAbleToFly;
-	bool isAbleToSubmerge;
 	bool isFloater;
+	bool isSubmarine;
+	bool isAmphibious;
 
 	float speed;
 	float losRadius;

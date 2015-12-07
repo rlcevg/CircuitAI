@@ -160,6 +160,7 @@ public:
 		return areaData->sector[GetSectorIndex(position)].isWater;
 	}
 
+	SAreaData* GetAreaData() const { return areaData; }
 	void UpdateAreaUsers();
 	void DidUpdateAreaUsers() { terrainData->DidUpdateAreaUsers(); }
 private:

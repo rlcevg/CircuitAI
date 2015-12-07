@@ -114,6 +114,16 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 		return percents[aId] > percents[bId];
 	};
 	std::sort(factoryBuilds.begin(), factoryBuilds.end(), cmp);
+
+	// Don't start with air
+	if (!factoryBuilds.empty() && (circuit->GetCircuitDef(factoryBuilds.front())->GetMobileId() < 0)) {
+		for (CCircuitDef::Id& defId : factoryBuilds) {
+			if (circuit->GetCircuitDef(defId)->GetMobileId() >= 0) {
+				std::swap(factoryBuilds.front(), defId);
+				break;
+			}
+		}
+	}
 }
 
 void CAllyTeam::Release()

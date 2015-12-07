@@ -495,6 +495,7 @@ int CCircuitAI::Release(int reason)
 	scheduler->ProcessRelease();
 	scheduler = nullptr;
 
+	threatMap = nullptr;
 	modules.clear();
 	militaryManager = nullptr;
 	economyManager = nullptr;
@@ -502,7 +503,6 @@ int CCircuitAI::Release(int reason)
 	builderManager = nullptr;
 	terrainManager = nullptr;
 	metalManager = nullptr;
-	threatMap = nullptr;
 	energyLink = nullptr;
 	defence = nullptr;
 	pathfinder = nullptr;
@@ -1008,7 +1008,6 @@ void CCircuitAI::InitUnitDefs()
 	losResConv = SQUARE_SIZE << mod->GetLosMipLevel();
 	delete mod;
 
-	CTerrainData& terrainData = gameAttribute->GetTerrainData();
 	if (!gameAttribute->GetTerrainData().IsInitialized()) {
 		gameAttribute->GetTerrainData().Init(this);
 	}
@@ -1029,42 +1028,7 @@ void CCircuitAI::InitUnitDefs()
 	delete res;
 
 	for (auto& kv : GetCircuitDefs()) {
-		CCircuitDef* cdef = kv.second;
-
-		if (cdef->IsAbleToFly()) {
-
-		} else if (!cdef->IsMobile()) {  // for immobile units
-
-			cdef->SetImmobileId(terrainData.udImmobileType[cdef->GetId()]);
-			// If a unit can build mobile units then it will inherit mobileType from it's options
-			std::map<STerrainMapMobileType::Id, float> mtUsability;
-			for (CCircuitDef::Id buildId : cdef->GetBuildOptions()) {
-				CCircuitDef* bdef = GetCircuitDef(buildId);
-				if ((bdef == nullptr) || !bdef->IsMobile() || !bdef->IsAttacker()) {
-					continue;
-				}
-				STerrainMapMobileType::Id mtId = terrainData.udMobileType[bdef->GetId()];
-				if ((mtId < 0) || (mtUsability.find(mtId) != mtUsability.end())) {
-					continue;
-				}
-				STerrainMapMobileType& mt = terrainData.areaData0.mobileType[mtId];
-				mtUsability[mtId] = mt.area.empty() ? 00.0 : mt.areaLargest->percentOfMap;
-			}
-			float useMost = .0f;
-			STerrainMapMobileType::Id mtId = cdef->GetMobileId();  // -1
-			for (auto& mtkv : mtUsability) {
-				if (mtkv.second > useMost) {
-					mtId = mtkv.first;
-					useMost = mtkv.second;
-				}
-			}
-			cdef->SetMobileId(mtId);
-
-		} else {  // for mobile units
-
-			cdef->SetMobileId(terrainData.udMobileType[cdef->GetId()]);
-
-		}
+		kv.second->Init(this);
 	}
 }
 

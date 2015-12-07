@@ -47,7 +47,7 @@
 	},
 
 	"factorygunship": {
-		"importance": 0.8,
+		"importance": 0.9,
 		"require_energy": false,
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
 		//            blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator
@@ -184,7 +184,7 @@
 
 	"factoryplane": {
 		"require_energy": false,
-		"importance": 0.8,
+		"importance": 0.9,
 		"income_tier": [10, 20, 30, 40],
 		//            swift,     hawk,      raven,     phoenix,    thunderbird,         wyvern,    vulture
 		"unit_def": ["fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "corawac"],

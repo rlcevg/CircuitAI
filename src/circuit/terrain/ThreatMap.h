@@ -47,8 +47,8 @@ public:
 	float GetThreatAt(CCircuitUnit* unit, const springai::AIFloat3& position) const;
 
 	float* GetAirThreatArray() { return &airThreat[0]; }
-	float* GetLandThreatArray() { return &landThreat[0]; }
-	float* GetWaterThreatArray() { return &waterThreat[0]; }
+	float* GetSurfThreatArray() { return &surfThreat[0]; }
+	float* GetAmphThreatArray() { return &amphThreat[0]; }
 	float* GetCloakThreatArray() { return &cloakThreat[0]; }
 	int GetThreatMapWidth() const { return width; }
 	int GetThreatMapHeight() const { return height; }
@@ -64,17 +64,20 @@ private:
 	 */
 	using Threats = std::vector<float>;
 	CCircuitAI* circuit;
+	SAreaData* areaData;
 
 	void AddEnemyUnit(const CEnemyUnit* e, const float scale = 1.0f);
 	void DelEnemyUnit(const CEnemyUnit* e) { AddEnemyUnit(e, -1.0f); }
 	void AddEnemyUnitAll(const CEnemyUnit* e, const float scale = 1.0f);
 	void DelEnemyUnitAll(const CEnemyUnit* e) { AddEnemyUnitAll(e, -1.0f); }
-	void AddEnemyUnit(const CEnemyUnit* e, Threats& threats, const float scale = 1.0f);
-	void DelEnemyUnit(const CEnemyUnit* e, Threats& threats) { AddEnemyUnit(e, threats, -1.0f); }
+	void AddEnemyAir(const CEnemyUnit* e, const float scale = 1.0f);
+	void DelEnemyAir(const CEnemyUnit* e) { AddEnemyAir(e, -1.0f); }
+	void AddEnemyAmph(const CEnemyUnit* e, const float scale = 1.0f);
+	void DelEnemyAmph(const CEnemyUnit* e) { AddEnemyAmph(e, -1.0f); }
 	void AddDecloaker(const CEnemyUnit* e, const float scale = 1.0f);
 	void DelDecloaker(const CEnemyUnit* e) { AddDecloaker(e, -1.0f); }
 
-	int GetEnemyUnitRange(const CEnemyUnit* e) const;
+	void SetEnemyUnitRange(CEnemyUnit* e) const;
 	int GetCloakRange(const CEnemyUnit* e) const;
 	float GetEnemyUnitThreat(CEnemyUnit* enemy) const;
 
@@ -99,8 +102,8 @@ private:
 	CCircuitAI::EnemyUnits hostileUnits;
 	CCircuitAI::EnemyUnits peaceUnits;
 	Threats airThreat;
-	Threats landThreat;  // surface
-	Threats waterThreat;  // under water
+	Threats surfThreat;  // surface (water and land)
+	Threats amphThreat;  // under water and surface on land
 	Threats cloakThreat;
 	float* threatArray;
 

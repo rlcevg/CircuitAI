@@ -258,8 +258,9 @@ void CAttackTask::FindTarget(CCircuitUnit* unit, float& minSqDist)
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = unit->GetArea();
-	int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
-	int noChaseCat = unit->GetCircuitDef()->GetNoChaseCategory();
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	int canTargetCat = cdef->GetTargetCategory();
+	int noChaseCat = cdef->GetNoChaseCategory();
 
 	target = nullptr;
 	minSqDist = std::numeric_limits<float>::max();
@@ -273,7 +274,7 @@ void CAttackTask::FindTarget(CCircuitUnit* unit, float& minSqDist)
 		{
 			continue;
 		}
-		if (((canTargetCat & circuit->GetWaterCategory()) == 0) && (enemy->GetPos().y < -SQUARE_SIZE * 4)) {
+		if (!cdef->IsAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) {
 			continue;
 		}
 		CCircuitDef* edef = enemy->GetCircuitDef();

@@ -150,13 +150,13 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	Unit* u = unit->GetUnit();
 	STerrainMapArea* area = unit->GetArea();
+	CCircuitDef* cdef = unit->GetCircuitDef();
 	float power = threatMap->GetUnitThreat(unit) * 0.8f;
-	int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
-	int noChaseCat = unit->GetCircuitDef()->GetNoChaseCategory();
-	float range = std::max(u->GetMaxRange() + threatMap->GetSquareSize() * 2,
-						   unit->GetCircuitDef()->GetLosRadius());
+	int canTargetCat = cdef->GetTargetCategory();
+	int noChaseCat = cdef->GetNoChaseCategory();
+	float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
+						   cdef->GetLosRadius());
 	float minSqDist = range * range;
 	float maxThreat = .0f;
 
@@ -173,7 +173,7 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 		{
 			continue;
 		}
-		if (((canTargetCat & circuit->GetWaterCategory()) == 0) && (enemy->GetPos().y < -SQUARE_SIZE * 4)) {
+		if (!cdef->IsAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) {
 			continue;
 		}
 		int targetCat;

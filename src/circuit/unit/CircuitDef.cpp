@@ -7,12 +7,14 @@
 
 #include "unit/CircuitDef.h"
 #include "CircuitAI.h"
+#include "util/GameAttribute.h"
 #include "util/utils.h"
 
 #include "WeaponMount.h"
 #include "WeaponDef.h"
 #include "Damage.h"
 #include "Shield.h"
+#include "MoveData.h"
 
 #include <regex>
 
@@ -31,6 +33,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, shieldMount(nullptr)
 		, dps(.0f)
 		, power(.0f)
+		, maxRange({.0f})
 		, maxShield(.0f)
 		, targetCategory(0)
 		, immobileTypeId(-1)
@@ -38,6 +41,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, isAntiAir(false)
 		, isAntiLand(false)
 		, isAntiWater(false)
+		, isAmphibious(false)
 		, retreat(.0f)
 {
 	id = def->GetUnitDefId();
@@ -46,14 +50,16 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	buildSpeed    = def->GetBuildSpeed();
 	maxThisUnit   = def->GetMaxThisUnit();
 
+	maxRange[static_cast<unsigned>(RangeType::MAX)] = def->GetMaxWeaponRange();
 	isManualFire    = def->CanManualFire();
 	noChaseCategory = def->GetNoChaseCategory();
 
-	isAbleToFly      = def->IsAbleToFly();
-	isAbleToSubmerge = def->IsAbleToSubmerge();
-	isFloater        = def->IsFloater();
+	MoveData* md = def->GetMoveData();
+	isSubmarine = (md == nullptr) ? false : md->IsSubMarine();
+	delete md;
+	isAbleToFly = def->IsAbleToFly();
+	isFloater   = def->IsFloater() && !isSubmarine;
 
-	maxRange  = def->GetMaxWeaponRange();
 	speed     = def->GetSpeed() / FRAMES_PER_SEC;  // NOTE: SetMaxWantedSpeed expects value/FRAMES_PER_SEC
 	losRadius = def->GetLosRadius() * circuit->GetLosConv();
 	cost      = def->GetCost(res);
@@ -119,8 +125,9 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	float bestReload = std::numeric_limits<float>::max();
 	float bestRange = .0f;
 	WeaponMount* bestMount = nullptr;
-	bool isTracks = false;
-//	bool isWater = false;
+	bool canTargetAir = false;
+	bool canTargetLand = false;
+	bool canTargetWater = false;
 	auto mounts = std::move(def->GetWeaponMounts());
 	for (WeaponMount* mount : mounts) {
 		WeaponDef* wd = mount->GetWeaponDef();
@@ -170,15 +177,36 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			ldps += dmg;
 		}
 		dps += ldps * wd->GetSalvoSize() / damages.size() / reloadTime * scale;
-		targetCategory |= mount->GetOnlyTargetCategory();
+		int weaponCat = mount->GetOnlyTargetCategory();
+		targetCategory |= weaponCat;
 
+		std::string wt(wd->GetType());
+		bool isAirWeapon = false;
 		float range = wd->GetRange();
 		if (range > 400.0f) {
-			isTracks |= (wd->GetProjectileSpeed() * FRAMES_PER_SEC >= 400.0f) || wd->IsTracks();
-			std::string weaponType(wd->GetType());  // Instant-hit
-			isTracks |= (weaponType == "BeamLaser") || (weaponType == "LightningCannon") || (weaponType == "Rifle");
+			isAirWeapon = ((wt == "Cannon") || (wt == "DGun") || (wt == "EmgCannon") || (wt == "Flame") ||
+					(wt == "LaserCannon") || (wt == "AircraftBomb")) && (wd->GetProjectileSpeed() * FRAMES_PER_SEC >= 400.0f);  // Cannons with fast projectiles
+			isAirWeapon |= (wt == "BeamLaser") || (wt == "LightningCannon") || (wt == "Rifle") ||  // Instant-hit
+					(((wt == "MissileLauncher") || (wt == "StarburstLauncher") || ((wt == "TorpedoLauncher") && wd->IsSubMissile())) && wd->IsTracks());  // Missiles
+			canTargetAir |= isAirWeapon;
 		}
-//		isWater |= wd->IsWaterWeapon();
+		bool isLandWeapon = ((wt != "TorpedoLauncher") || wd->IsSubMissile());
+		canTargetLand |= isLandWeapon;
+		bool isWaterWeapon = wd->IsWaterWeapon();
+		canTargetWater |= isWaterWeapon;
+
+		if ((weaponCat & circuit->GetAirCategory()) && isAirWeapon) {
+			float& mr = maxRange[static_cast<unsigned>(RangeType::AIR)];
+			mr = std::max(mr, range);
+		}
+		if ((weaponCat & circuit->GetLandCategory()) && isLandWeapon) {
+			float& mr = maxRange[static_cast<unsigned>(RangeType::LAND)];
+			mr = std::max(mr, range);
+		}
+		if ((weaponCat & circuit->GetWaterCategory()) && isWaterWeapon) {
+			float& mr = maxRange[static_cast<unsigned>(RangeType::WATER)];
+			mr = std::max(mr, range);
+		}
 
 		if (wd->IsManualFire() && (reloadTime < bestReload)) {
 			bestReload = reloadTime;
@@ -219,9 +247,9 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	}
 
 	// NOTE: isTracks filters units with slow weapon (hermit, recluse, rocko)
-	isAntiAir   = (targetCategory & circuit->GetAirCategory()) && isTracks;
-	isAntiLand  = (targetCategory & circuit->GetLandCategory());
-	isAntiWater = (targetCategory & circuit->GetWaterCategory())/* || isWater*/;
+	isAntiAir   = (targetCategory & circuit->GetAirCategory()) && canTargetAir;
+	isAntiLand  = (targetCategory & circuit->GetLandCategory()) && canTargetLand;
+	isAntiWater = (targetCategory & circuit->GetWaterCategory()) && canTargetWater;
 
 	power = dps * sqrtf(def->GetHealth() / 100.0f);
 }
@@ -232,6 +260,56 @@ CCircuitDef::~CCircuitDef()
 	delete def;
 	delete dgunMount;
 	delete shieldMount;
+}
+
+void CCircuitDef::Init(CCircuitAI* circuit)
+{
+	CTerrainData& terrainData = circuit->GetGameAttribute()->GetTerrainData();
+	assert(terrainData.IsInitialized());
+
+	if (IsAbleToFly()) {
+
+	} else if (!IsMobile()) {  // for immobile units
+
+		immobileTypeId = terrainData.udImmobileType[GetId()];
+		// If a unit can build mobile units then it will inherit mobileType from it's options
+		std::map<STerrainMapMobileType::Id, float> mtUsability;
+		for (CCircuitDef::Id buildId : GetBuildOptions()) {
+			CCircuitDef* bdef = circuit->GetCircuitDef(buildId);
+			if ((bdef == nullptr) || !bdef->IsMobile() || !bdef->IsAttacker()) {
+				continue;
+			}
+			STerrainMapMobileType::Id mtId = terrainData.udMobileType[bdef->GetId()];
+			if ((mtId < 0) || (mtUsability.find(mtId) != mtUsability.end())) {
+				continue;
+			}
+			STerrainMapMobileType& mt = terrainData.areaData0.mobileType[mtId];
+			mtUsability[mtId] = mt.area.empty() ? 00.0 : mt.areaLargest->percentOfMap;
+		}
+		float useMost = .0f;
+		STerrainMapMobileType::Id mtId = mobileTypeId;  // -1
+		for (auto& mtkv : mtUsability) {
+			if (mtkv.second > useMost) {
+				mtId = mtkv.first;
+				useMost = mtkv.second;
+			}
+		}
+		mobileTypeId = mtId;
+
+	} else {  // for mobile units
+
+		mobileTypeId = terrainData.udMobileType[GetId()];
+	}
+
+	if (IsMobile()) {
+		if (mobileTypeId >= 0) {
+			STerrainMapMobileType& mt = terrainData.areaData0.mobileType[mobileTypeId];
+			isAmphibious = ((mt.minElevation < -SQUARE_SIZE * 5) || (mt.maxElevation < SQUARE_SIZE * 5)) && !IsFloater();
+		}
+	} else {
+		STerrainMapImmobileType& it = terrainData.areaData0.immobileType[immobileTypeId];
+		isAmphibious = ((it.minElevation < -SQUARE_SIZE * 5) || (it.maxElevation < SQUARE_SIZE * 5)) && !IsFloater();
+	}
 }
 
 CCircuitDef& CCircuitDef::operator++()

@@ -14,6 +14,8 @@ namespace circuit {
 
 class CEnemyUnit {
 public:
+	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, CLOAK = 4, COUNT};
+
 	CEnemyUnit(const CEnemyUnit& that) = delete;
 	CEnemyUnit& operator=(const CEnemyUnit&) = delete;
 	CEnemyUnit(springai::Unit* unit, CCircuitDef* cdef);
@@ -39,11 +41,8 @@ public:
 	float GetThreat() const { return threat; }
 	void DecayThreat(float decay) { threat *= decay; }
 
-	void SetRange(int r) { range = r; }
-	int GetRange() const { return range; }
-
-	void SetDecloakRange(int r) { rangeDecloak = r; }
-	int GetDecloakRange() const { return rangeDecloak; }
+	void SetRange(RangeType t, int r) { range[static_cast<unsigned>(t)] = r; }
+	int GetRange(RangeType t = CEnemyUnit::RangeType::MAX) const { return range[static_cast<unsigned>(t)]; }
 
 	bool operator==(const CCircuitUnit& rhs) { return id == rhs.GetId(); }
 	bool operator!=(const CCircuitUnit& rhs) { return id != rhs.GetId(); }
@@ -60,8 +59,7 @@ private:
 	enum LosType: char {NONE = 0x00, LOS = 0x01, RADAR = 0x02, HIDDEN = 0x04, KNOWN = 0x08};
 	springai::AIFloat3 pos;
 	float threat;
-	int range;
-	int rangeDecloak;
+	std::array<int, static_cast<unsigned>(RangeType::COUNT)> range;
 
 	std::underlying_type<LosType>::type losStatus;
 public:
