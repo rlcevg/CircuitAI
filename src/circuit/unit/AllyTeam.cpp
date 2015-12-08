@@ -6,6 +6,7 @@
  */
 
 #include "unit/AllyTeam.h"
+#include "unit/FactoryData.h"
 #include "resource/MetalManager.h"
 #include "resource/EnergyGrid.h"
 #include "setup/DefenceMatrix.h"
@@ -16,7 +17,6 @@
 #include "util/GameAttribute.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
-#include "json/json.h"
 
 #include "AIFloat3.h"
 #include "OOAICallback.h"
@@ -38,7 +38,6 @@ CAllyTeam::CAllyTeam(const TeamIds& tids, const SBox& sb)
 		, startBox(sb)
 		, initCount(0)
 		, lastUpdate(-1)
-		, factoryIdx(0)
 {
 }
 
@@ -74,56 +73,7 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 	energyLink = std::make_shared<CEnergyGrid>(circuit);
 	defence = std::make_shared<CDefenceMatrix>(circuit);
 	pathfinder = std::make_shared<CPathFinder>(&circuit->GetGameAttribute()->GetTerrainData());
-
-	// TODO: Move factory selection into CFactoryManager?
-	//       Can't figure how as this should work per ally team.
-	/*
-	 * Prepare factory choices
-	 */
-	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const Json::Value& factories = root["factories"];
-	factoryBuilds.reserve(factories.size());
-
-	std::map<STerrainMapMobileType::Id, float> percents;
-	CTerrainData& terrainData = circuit->GetGameAttribute()->GetTerrainData();
-	const std::vector<STerrainMapImmobileType>& immobileType = terrainData.areaData0.immobileType;
-	const std::vector<STerrainMapMobileType>& mobileType = terrainData.areaData0.mobileType;
-	for (const std::string& fac : factories.getMemberNames()) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(fac.c_str());
-		if (cdef == nullptr) {
-			continue;
-		}
-		STerrainMapImmobileType::Id itId = cdef->GetImmobileId();
-		if ((itId < 0) || !immobileType[itId].typeUsable) {
-			continue;
-		}
-
-		// TODO: Replace importance with proper terrain analysis (size, hardness, unit's power, speed)
-		const float importance = factories[fac].get("importance", 1.0f).asFloat();
-		STerrainMapMobileType::Id mtId = cdef->GetMobileId();
-		if (mtId < 0) {
-			factoryBuilds.push_back(cdef->GetId());
-			percents[cdef->GetId()] = 60.0 * importance + (float)rand() / RAND_MAX * 50.0;
-		} else if (mobileType[mtId].typeUsable) {
-			factoryBuilds.push_back(cdef->GetId());
-			float shift = (float)rand() / RAND_MAX * 40.0 - 20.0;
-			percents[cdef->GetId()] = mobileType[mtId].areaLargest->percentOfMap * importance + shift;
-		}
-	}
-	auto cmp = [circuit, &percents](const CCircuitDef::Id aId, const CCircuitDef::Id bId) {
-		return percents[aId] > percents[bId];
-	};
-	std::sort(factoryBuilds.begin(), factoryBuilds.end(), cmp);
-
-	// Don't start with air
-	if (!factoryBuilds.empty() && (circuit->GetCircuitDef(factoryBuilds.front())->GetMobileId() < 0)) {
-		for (CCircuitDef::Id& defId : factoryBuilds) {
-			if (circuit->GetCircuitDef(defId)->GetMobileId() >= 0) {
-				std::swap(factoryBuilds.front(), defId);
-				break;
-			}
-		}
-	}
+	factoryData = std::make_shared<CFactoryData>(circuit);
 }
 
 void CAllyTeam::Release()
@@ -141,6 +91,7 @@ void CAllyTeam::Release()
 	energyLink = nullptr;
 	defence = nullptr;
 	pathfinder = nullptr;
+	factoryData = nullptr;
 }
 
 void CAllyTeam::UpdateFriendlyUnits(CCircuitAI* circuit)
@@ -173,18 +124,6 @@ CCircuitUnit* CAllyTeam::GetFriendlyUnit(CCircuitUnit::Id unitId) const
 {
 	decltype(friendlyUnits)::const_iterator it = friendlyUnits.find(unitId);
 	return (it != friendlyUnits.end()) ? it->second : nullptr;
-}
-
-CCircuitDef* CAllyTeam::GetFactoryToBuild(CCircuitAI* circuit)
-{
-	for (unsigned i = 0; i < factoryBuilds.size(); ++i) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(factoryBuilds[factoryIdx]);
-		if (cdef->IsAvailable()) {
-			return cdef;
-		}
-		AdvanceFactoryIdx();
-	}
-	return nullptr;
 }
 
 } // namespace circuit

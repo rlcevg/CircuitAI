@@ -425,8 +425,6 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 	allyTeam->Init(this);
 	metalManager = allyTeam->GetMetalManager();
-	energyLink = allyTeam->GetEnergyLink();
-	defence = allyTeam->GetDefenceMatrix();
 	pathfinder = allyTeam->GetPathfinder();
 
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
@@ -503,8 +501,6 @@ int CCircuitAI::Release(int reason)
 	builderManager = nullptr;
 	terrainManager = nullptr;
 	metalManager = nullptr;
-	energyLink = nullptr;
-	defence = nullptr;
 	pathfinder = nullptr;
 	setupManager = nullptr;
 

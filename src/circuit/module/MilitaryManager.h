@@ -17,6 +17,7 @@
 namespace circuit {
 
 class CBDefenceTask;
+class CDefenceMatrix;
 
 class CMilitaryManager: public IUnitModule {
 public:
@@ -65,6 +66,8 @@ private:
 	std::set<IFighterTask*> updateTasks;
 	std::set<IFighterTask*> deleteTasks;
 	unsigned int updateSlice;
+
+	CDefenceMatrix* defence;
 
 	std::set<CCircuitDef*> scoutDefs;
 	std::vector<unsigned int> scoutPath;  // list of cluster ids

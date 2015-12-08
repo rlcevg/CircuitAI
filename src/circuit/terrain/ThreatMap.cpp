@@ -368,10 +368,10 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, const float scale)
 		return;
 	}
 
-	if (cdef->IsAntiAir()) {
+	if (cdef->HasAntiAir()) {
 		AddEnemyAir(e, scale);
 	}
-	if (cdef->IsAntiLand() || cdef->IsAntiWater()) {
+	if (cdef->HasAntiLand() || cdef->HasAntiWater()) {
 		AddEnemyAmph(e, scale);
 	}
 	AddDecloaker(e, scale);
@@ -513,15 +513,15 @@ void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const
 	int range;
 	int maxRange;
 
-	range = cdef->IsAntiAir() ? ((int)cdef->GetMaxRange(CCircuitDef::RangeType::AIR) + slack) / squareSize : 0;
+	range = cdef->HasAntiAir() ? ((int)cdef->GetMaxRange(CCircuitDef::RangeType::AIR) + slack) / squareSize : 0;
 	e->SetRange(CEnemyUnit::RangeType::AIR, range);
 	maxRange = range;
 
-	range = cdef->IsAntiLand() ? ((int)cdef->GetMaxRange(CCircuitDef::RangeType::LAND) + slack) / squareSize : 0;
+	range = cdef->HasAntiLand() ? ((int)cdef->GetMaxRange(CCircuitDef::RangeType::LAND) + slack) / squareSize : 0;
 	e->SetRange(CEnemyUnit::RangeType::LAND, range);
 	maxRange = std::max(maxRange, range);
 
-	range = cdef->IsAntiWater() ? ((int)cdef->GetMaxRange(CCircuitDef::RangeType::WATER) + slack) / squareSize : 0;
+	range = cdef->HasAntiWater() ? ((int)cdef->GetMaxRange(CCircuitDef::RangeType::WATER) + slack) / squareSize : 0;
 	e->SetRange(CEnemyUnit::RangeType::WATER, range);
 	maxRange = std::max(maxRange, range);
 

@@ -19,6 +19,7 @@
 namespace circuit {
 
 class CEconomyManager;
+class CFactoryData;
 
 class CFactoryManager: public IUnitModule {
 public:
@@ -63,6 +64,9 @@ public:
 	CRecruitTask* UpdateBuildPower(CCircuitUnit* unit);
 	CRecruitTask* UpdateFirePower(CCircuitUnit* unit);
 
+	CCircuitDef* GetFactoryToBuild(CCircuitAI* circuit);
+	void AdvanceFactoryIdx();
+
 private:
 	void ReadConfig();
 
@@ -84,6 +88,7 @@ private:
 	std::set<CRecruitTask*> deleteTasks;
 	unsigned int updateSlice;
 
+	CFactoryData* factoryData;
 	struct SFactory {
 		SFactory(CCircuitUnit* u, const std::set<CCircuitUnit*>& n, unsigned int w, bool h)
 			: unit(u)

@@ -5,8 +5,10 @@
 	"factorycloak": {
 		// adjusts the priority of factory choice (factories with map_percent < 20 are ignored)
 		// map_percent is [20..100]
-		// priority ~= map_percent * importance + random(-20..+20)
-		"importance": 0.9,
+		// On start: priority ~= map_percent * importance0 + random(-20..+20)
+		// During game: priority ~= map_percent * importance1 + random(-20..+20)
+		// importanceN = 1.0 by default if not set
+		"importance": [0.9, 0.3],
 
 		// 'require_energy' adds energy requirement for tierN (N>0): fallback to lowest tier on low energy
 		"require_energy": true,
@@ -47,8 +49,9 @@
 	},
 
 	"factorygunship": {
-		"importance": 0.9,
+		"importance": [0.9],
 		"require_energy": false,
+
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
 		//            blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator
 		"unit_def": ["blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans"],
@@ -74,8 +77,9 @@
 	},
 
 	"factoryamph": {
+		"importance": [1.05],
 		"require_energy": false,
-		"importance": 1.05,
+
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
 		//            duck,          archer,        buoy,          scallop,    grizzly,       djinn
 		"unit_def": ["amphraider3", "amphraider2", "amphfloater", "amphriot", "amphassault", "amphtele"],
@@ -101,8 +105,9 @@
 	},
 
 	"factoryspider": {
+		"importance": [1.0],
 		"require_energy": false,
-		"importance": 1.0,
+
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
 		//            flea,      hermit,          venom,       redback,      recluse,   crabe,      infiltrator
 		"unit_def": ["armflea", "spiderassault", "arm_venom", "spiderriot", "armsptk", "armcrabe", "armspy"],
@@ -128,7 +133,7 @@
 	},
 
 	"factoryveh": {
-		"importance": 1.15,
+		"importance": [1.15],
 		"require_energy": false,
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
@@ -156,8 +161,9 @@
 	},
 
 	"factoryhover": {
+		"importance": [1.1],
 		"require_energy": false,
-		"importance": 1.1,
+
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
 		//            dagger,  scalpel,    halberd,        claymore,           mace,        penetrator
 		"unit_def": ["corsh", "nsaclash", "hoverassault", "hoverdepthcharge", "hoverriot", "armmanni"],
@@ -183,8 +189,9 @@
 	},
 
 	"factoryplane": {
+		"importance": [0.9],
 		"require_energy": false,
-		"importance": 0.9,
+
 		"income_tier": [10, 20, 30, 40],
 		//            swift,     hawk,      raven,     phoenix,    thunderbird,         wyvern,    vulture
 		"unit_def": ["fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "corawac"],
@@ -202,7 +209,7 @@
 	},
 
 	"factorytank": {
-		"importance": 1.05,
+		"importance": [1.05],
 		"require_energy": false,
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
@@ -258,7 +265,7 @@
 	},
 
 	"factoryship": {
-		"importance": 1.1,
+		"importance": [1.15],
 		"require_energy": false,
 
 		"income_tier": [40],

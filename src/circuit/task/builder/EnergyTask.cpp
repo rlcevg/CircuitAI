@@ -67,7 +67,7 @@ void CBEnergyTask::Finish()
 	bool foundPylon = false;
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	CCircuitDef* pylonDef = economyManager->GetPylonDef();
-	float ourRange = circuit->GetEnergyGrid()->GetPylonRange(buildDef->GetId());
+	float ourRange = economyManager->GetEnergyGrid()->GetPylonRange(buildDef->GetId());
 	float pylonRange = economyManager->GetPylonRange();
 	float radius = pylonRange + ourRange;
 	int frame = circuit->GetLastFrame();

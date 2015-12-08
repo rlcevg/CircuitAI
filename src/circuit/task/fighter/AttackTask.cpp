@@ -274,7 +274,7 @@ void CAttackTask::FindTarget(CCircuitUnit* unit, float& minSqDist)
 		{
 			continue;
 		}
-		if (!cdef->IsAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) {
+		if (!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) {
 			continue;
 		}
 		CCircuitDef* edef = enemy->GetCircuitDef();

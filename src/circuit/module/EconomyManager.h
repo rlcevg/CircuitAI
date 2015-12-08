@@ -28,6 +28,7 @@ namespace circuit {
 class IBuilderTask;
 class CLagrangeInterPol;
 class CGameTask;
+class CEnergyGrid;
 
 class CEconomyManager: public IModule {
 public:
@@ -41,6 +42,7 @@ public:
 
 	springai::Resource* GetMetalRes() const { return metalRes; }
 	springai::Resource* GetEnergyRes() const { return energyRes; }
+	CEnergyGrid* GetEnergyGrid() const { return energyGrid; }
 	CCircuitDef* GetMexDef() const { return mexDef; }
 	CCircuitDef* GetPylonDef() const { return pylonDef; }
 	float GetPylonRange() const { return pylonRange; }
@@ -80,6 +82,7 @@ private:
 	springai::Resource* metalRes;
 	springai::Resource* energyRes;
 	springai::Economy* economy;
+	CEnergyGrid* energyGrid;
 
 	struct SClusterInfo {
 		CCircuitUnit* factory;

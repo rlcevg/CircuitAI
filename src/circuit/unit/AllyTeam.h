@@ -9,7 +9,6 @@
 #define SRC_CIRCUIT_SETUP_ALLYTEAM_H_
 
 #include "unit/CircuitUnit.h"
-#include "unit/CircuitDef.h"
 
 #include <memory>
 #include <map>
@@ -26,6 +25,7 @@ class CMetalManager;
 class CEnergyGrid;
 class CDefenceMatrix;
 class CPathFinder;
+class CFactoryData;
 
 class CAllyTeam {
 public:
@@ -59,13 +59,11 @@ public:
 	CCircuitUnit* GetFriendlyUnit(CCircuitUnit::Id unitId) const;
 	const Units& GetFriendlyUnits() const { return friendlyUnits; }
 
-	CCircuitDef* GetFactoryToBuild(CCircuitAI* circuit);
-	void AdvanceFactoryIdx() { ++factoryIdx %= factoryBuilds.size(); }
-
 	std::shared_ptr<CMetalManager>& GetMetalManager() { return metalManager; }
 	std::shared_ptr<CEnergyGrid>& GetEnergyLink() { return energyLink; }
 	std::shared_ptr<CDefenceMatrix>& GetDefenceMatrix() { return defence; }
 	std::shared_ptr<CPathFinder>& GetPathfinder() { return pathfinder; }
+	std::shared_ptr<CFactoryData>& GetFactoryData() { return factoryData; }
 
 private:
 	TeamIds teamIds;
@@ -75,13 +73,11 @@ private:
 	int lastUpdate;
 	Units friendlyUnits;  // owner
 
-	std::vector<CCircuitDef::Id> factoryBuilds;
-	int factoryIdx;
-
 	std::shared_ptr<CMetalManager> metalManager;
 	std::shared_ptr<CEnergyGrid> energyLink;
 	std::shared_ptr<CDefenceMatrix> defence;
 	std::shared_ptr<CPathFinder> pathfinder;
+	std::shared_ptr<CFactoryData> factoryData;
 };
 
 } // namespace circuit

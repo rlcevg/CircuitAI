@@ -54,7 +54,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		int frame = this->circuit->GetLastFrame();
 		float defCost = unit->GetCircuitDef()->GetCost();
-		CDefenceMatrix* defence = this->circuit->GetDefenceMatrix();
 		CDefenceMatrix::SDefPoint* point = defence->GetDefPoint(unit->GetPos(frame), defCost);
 		if (point != nullptr) {
 			point->cost -= defCost;
@@ -194,6 +193,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 //	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 //		fighterInfos.erase(unit);
 //	};
+
+	defence = circuit->GetAllyTeam()->GetDefenceMatrix().get();
 
 	for (const Json::Value& scout : root["scouts"]) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(scout.asCString());
@@ -339,7 +340,6 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	CCircuitDef* defDef;
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	float maxCost = MIN_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
-	CDefenceMatrix* defence = circuit->GetDefenceMatrix();
 	CDefenceMatrix::SDefPoint* closestPoint = nullptr;
 	float minDist = std::numeric_limits<float>::max();
 	for (CDefenceMatrix::SDefPoint& defPoint : defence->GetDefPoints(index)) {
@@ -388,7 +388,7 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 void CMilitaryManager::AbortDefence(CBDefenceTask* task)
 {
 	float defCost = task->GetBuildDef()->GetCost();
-	CDefenceMatrix::SDefPoint* point = circuit->GetDefenceMatrix()->GetDefPoint(task->GetPosition(), defCost);
+	CDefenceMatrix::SDefPoint* point = defence->GetDefPoint(task->GetPosition(), defCost);
 	if (point != nullptr) {
 		if ((task->GetTarget() == nullptr) && (point->cost >= defCost)) {
 			point->cost -= defCost;
@@ -501,13 +501,13 @@ void CMilitaryManager::UpdateFight()
 void CMilitaryManager::AddPower(CCircuitDef* cdef, const float scale)
 {
 	const float power = cdef->GetPower() * scale;
-	if (cdef->IsAntiAir()) {
+	if (cdef->HasAntiAir()) {
 		powerAA = std::max(powerAA + power, .0f);
 	}
-	if (cdef->IsAntiLand()) {
+	if (cdef->HasAntiLand()) {
 		powerLand = std::max(powerLand + power, .0f);
 	}
-	if (cdef->IsAntiWater()) {
+	if (cdef->HasAntiWater()) {
 		powerWater = std::max(powerWater + power, .0f);
 	}
 }

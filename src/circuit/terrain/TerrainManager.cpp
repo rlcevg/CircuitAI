@@ -55,7 +55,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	int2 ssize;
 	int radius;
 	int ignoreMask;
-	bool isWaterMap = (GetPercentLand() < 40.0);
+	bool isWaterMap = GetPercentLand() < 40.0;
 
 	ignoreMask = STRUCT_BIT(NONE);
 	offset = int2(0, 4);  // in South facing

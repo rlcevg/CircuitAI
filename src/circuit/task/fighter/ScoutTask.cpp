@@ -173,7 +173,7 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 		{
 			continue;
 		}
-		if (!cdef->IsAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) {
+		if (!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) {
 			continue;
 		}
 		int targetCat;

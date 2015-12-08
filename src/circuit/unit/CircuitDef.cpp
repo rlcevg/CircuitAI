@@ -38,9 +38,9 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, targetCategory(0)
 		, immobileTypeId(-1)
 		, mobileTypeId(-1)
-		, isAntiAir(false)
-		, isAntiLand(false)
-		, isAntiWater(false)
+		, hasAntiAir(false)
+		, hasAntiLand(false)
+		, hasAntiWater(false)
 		, isAmphibious(false)
 		, retreat(.0f)
 {
@@ -247,9 +247,9 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	}
 
 	// NOTE: isTracks filters units with slow weapon (hermit, recluse, rocko)
-	isAntiAir   = (targetCategory & circuit->GetAirCategory()) && canTargetAir;
-	isAntiLand  = (targetCategory & circuit->GetLandCategory()) && canTargetLand;
-	isAntiWater = (targetCategory & circuit->GetWaterCategory()) && canTargetWater;
+	hasAntiAir   = (targetCategory & circuit->GetAirCategory()) && canTargetAir;
+	hasAntiLand  = (targetCategory & circuit->GetLandCategory()) && canTargetLand;
+	hasAntiWater = (targetCategory & circuit->GetWaterCategory()) && canTargetWater;
 
 	power = dps * sqrtf(def->GetHealth() / 100.0f);
 }

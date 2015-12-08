@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_CIRCUIT_H_
 
 #include "unit/AllyTeam.h"
+#include "unit/CircuitDef.h"
 
 #include <memory>
 #include <unordered_map>
@@ -188,8 +189,6 @@ public:
 	springai::Team*         GetTeam()       const { return team.get(); }
 	CSetupManager*    GetSetupManager()    const { return setupManager.get(); }
 	CMetalManager*    GetMetalManager()    const { return metalManager.get(); }
-	CEnergyGrid*      GetEnergyGrid()      const { return energyLink.get(); }
-	CDefenceMatrix*   GetDefenceMatrix()   const { return defence.get(); }
 	CThreatMap*       GetThreatMap()       const { return threatMap.get(); }
 	CPathFinder*      GetPathfinder()      const { return pathfinder.get(); }
 	CTerrainManager*  GetTerrainManager()  const { return terrainManager.get(); }
@@ -230,8 +229,6 @@ private:
 	std::shared_ptr<CScheduler> scheduler;
 	std::shared_ptr<CSetupManager> setupManager;
 	std::shared_ptr<CMetalManager> metalManager;
-	std::shared_ptr<CEnergyGrid> energyLink;
-	std::shared_ptr<CDefenceMatrix> defence;
 	std::shared_ptr<CThreatMap> threatMap;
 	std::shared_ptr<CPathFinder> pathfinder;
 	std::shared_ptr<CTerrainManager> terrainManager;

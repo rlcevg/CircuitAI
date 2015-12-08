@@ -75,10 +75,10 @@ public:
 	STerrainMapImmobileType::Id GetImmobileId() const { return immobileTypeId; }
 	STerrainMapMobileType::Id GetMobileId() const { return mobileTypeId; }
 
-	bool IsAttacker()  const { return dps > .1f; }
-	bool IsAntiAir()   const { return isAntiAir; }
-	bool IsAntiLand()  const { return isAntiLand; }
-	bool IsAntiWater() const { return isAntiWater; }
+	bool IsAttacker()   const { return dps > .1f; }
+	bool HasAntiAir()   const { return hasAntiAir; }
+	bool HasAntiLand()  const { return hasAntiLand; }
+	bool HasAntiWater() const { return hasAntiWater; }
 
 	bool IsMobile()     const { return speed > .1f; }
 	bool IsAbleToFly()  const { return isAbleToFly; }
@@ -121,9 +121,9 @@ private:
 	STerrainMapImmobileType::Id immobileTypeId;
 	STerrainMapMobileType::Id   mobileTypeId;
 
-	bool isAntiAir;
-	bool isAntiLand;
-	bool isAntiWater;
+	bool hasAntiAir;  // air layer
+	bool hasAntiLand;  // surface (water and land)
+	bool hasAntiWater;  // under water
 
 	bool isAbleToFly;
 	bool isFloater;

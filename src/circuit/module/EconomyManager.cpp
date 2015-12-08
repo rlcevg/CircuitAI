@@ -61,6 +61,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	metalRes = circuit->GetCallback()->GetResourceByName("Metal");
 	energyRes = circuit->GetCallback()->GetResourceByName("Energy");
 	economy = circuit->GetCallback()->GetEconomy();
+	energyGrid = circuit->GetAllyTeam()->GetEnergyLink().get();
 
 	metalIncomes.resize(INCOME_SAMPLES, .0f);
 	energyIncomes.resize(INCOME_SAMPLES, .0f);
@@ -654,30 +655,32 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	CCircuitDef* striderDef = circuit->GetCircuitDef("striderhub");
 	bool isStriderValid = ((factoryManager->GetFactoryCount() > 1) || (rand() < RAND_MAX / 2)) &&
 							(striderDef->GetCount() == 0) && striderDef->IsAvailable();
-	CCircuitDef* facDef = isStriderValid ? striderDef : circuit->GetAllyTeam()->GetFactoryToBuild(circuit);
+	CCircuitDef* facDef = isStriderValid ? striderDef : factoryManager->GetFactoryToBuild(circuit);
 	if (facDef != nullptr) {
 		CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
 			return clusterInfos[v.second].factory == nullptr;
 		};
 		CMetalManager* metalManager = circuit->GetMetalManager();
 		int index = metalManager->FindNearestCluster(position, predicate);
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		if (index >= 0) {
 			const CMetalData::Clusters& clusters = metalManager->GetClusters();
 			AIFloat3 buildPos = clusters[index].geoCentr;
 
+			CTerrainManager* terrainManager = circuit->GetTerrainManager();
 			AIFloat3 center = AIFloat3(terrainManager->GetTerrainWidth() / 2, 0, terrainManager->GetTerrainHeight() / 2);
 			float size = (center.SqDistance2D(circuit->GetSetupManager()->GetStartPos()) > center.SqDistance2D(buildPos)) ? -200.0f : 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
 			buildPos.x += (buildPos.x > center.x) ? -size : size;
 			buildPos.z += (buildPos.z > center.z) ? -size : size;
 
-			CCircuitDef* bdef = (unit == nullptr) ? facDef : unit->GetCircuitDef();
+			CCircuitDef* bdef = isStriderValid ?
+					circuit->GetCircuitDef((terrainManager->GetPercentLand() < 40.0) ? "reef" : "dante") :
+					(unit == nullptr) ? facDef : unit->GetCircuitDef();
 			buildPos = terrainManager->GetBuildPosition(bdef, buildPos);
 
 			if (terrainManager->CanBeBuiltAt(facDef, buildPos) &&
 				((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 			{
-				circuit->GetAllyTeam()->AdvanceFactoryIdx();
+				factoryManager->AdvanceFactoryIdx();
 				return builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos, IBuilderTask::BuildType::FACTORY);
 			}
 		}
@@ -743,18 +746,17 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 	float cost = pylonDef->GetCost();
 	unsigned count = builderManager->GetBuilderPower() / cost * 8 + 1;
 	if (builderManager->GetTasks(IBuilderTask::BuildType::PYLON).size() < count) {
-		CEnergyGrid* grid = circuit->GetEnergyGrid();
-		grid->Update();
+		energyGrid->Update();
 
 		CCircuitDef* buildDef;
 		AIFloat3 buildPos;
-		CEnergyLink* link = grid->GetLinkToBuild(buildDef, buildPos);
+		CEnergyLink* link = energyGrid->GetLinkToBuild(buildDef, buildPos);
 		if (link != nullptr) {
 			if ((buildPos != -RgtVector) && builderManager->IsBuilderInArea(buildDef, buildPos)) {
 				return builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, buildDef, buildPos, link, cost);
 			} else {
 				link->SetValid(false);  // FIXME: Reset valid on timer? Or when air con appears
-				grid->SetForceRebuild(true);
+				energyGrid->SetForceRebuild(true);
 			}
 		}
 	}
@@ -814,9 +816,9 @@ void CEconomyManager::Init()
 			const AIFloat3& pos = commander->GetPos(circuit->GetLastFrame());
 			UnitRulesParam* param = commander->GetUnit()->GetUnitRulesParamByName("facplop");
 			if ((param != nullptr) && (param->GetValueFloat() == 1)) {
-				CCircuitDef* facDef = circuit->GetAllyTeam()->GetFactoryToBuild(circuit);
+				CCircuitDef* facDef = circuit->GetFactoryManager()->GetFactoryToBuild(circuit);
 				if (facDef != nullptr) {
-					circuit->GetAllyTeam()->AdvanceFactoryIdx();
+					circuit->GetFactoryManager()->AdvanceFactoryIdx();
 
 					AIFloat3 buildPos = circuit->GetTerrainManager()->GetBuildPosition(facDef, pos);
 					CBuilderManager* builderManager = circuit->GetBuilderManager();

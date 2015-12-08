@@ -15,6 +15,7 @@
 #include "task/IdleTask.h"
 #include "task/static/RepairTask.h"
 #include "task/static/ReclaimTask.h"
+#include "unit/FactoryData.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -115,9 +116,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 				}
 			}
 			if (!hasBuilder) {
-				CCircuitDef* facDef = this->circuit->GetAllyTeam()->GetFactoryToBuild(this->circuit);
+				CCircuitDef* facDef = GetFactoryToBuild(this->circuit);
 				if (facDef != nullptr) {
-					this->circuit->GetAllyTeam()->AdvanceFactoryIdx();
+					AdvanceFactoryIdx();
 					this->circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, -RgtVector,
 																	IBuilderTask::BuildType::FACTORY);
 				}
@@ -249,6 +250,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		}
 	}
 
+	factoryData = circuit->GetAllyTeam()->GetFactoryData().get();
 	ReadConfig();
 
 	// FIXME: EXPERIMENTAL
@@ -298,12 +300,11 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 	idleHandler[defId] = [this](CCircuitUnit* unit) {
 		CTerrainManager* terrainManager = this->circuit->GetTerrainManager();
 		int frame = this->circuit->GetLastFrame();
-		AIFloat3 pos = unit->GetPos(frame);
-		bool isWater = terrainManager->IsWaterSector(pos);
+		bool isWaterMap = terrainManager->GetPercentLand() < 40.0;
 
 		CEconomyManager* mgr = this->circuit->GetEconomyManager();
 		const float metalIncome = std::min(mgr->GetAvgMetalIncome(), mgr->GetAvgEnergyIncome()) * mgr->GetEcoFactor();
-		std::map<unsigned, std::vector<float>>& tiers = isWater ? striderHubDef.waterTiers : striderHubDef.landTiers;
+		std::map<unsigned, std::vector<float>>& tiers = isWaterMap ? striderHubDef.waterTiers : striderHubDef.landTiers;
 
 		auto facIt = tiers.begin();
 		if ((metalIncome >= striderHubDef.incomes[facIt->first]) && !(striderHubDef.isRequireEnergy && mgr->IsEnergyEmpty())) {
@@ -332,6 +333,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 		CCircuitDef* striderDef = striderHubDef.buildDefs[choice];
 		if (striderDef != nullptr) {
+			AIFloat3 pos = unit->GetPos(frame);
 			const float size = DEFAULT_SLACK / 2;
 			switch (unit->GetUnit()->GetBuildingFacing()) {
 				default:
@@ -694,6 +696,16 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 
 	return nullptr;
+}
+
+CCircuitDef* CFactoryManager::GetFactoryToBuild(CCircuitAI* circuit)
+{
+	return factoryData->GetFactoryToBuild(circuit);
+}
+
+void CFactoryManager::AdvanceFactoryIdx()
+{
+	factoryData->AdvanceFactoryIdx();
 }
 
 void CFactoryManager::ReadConfig()

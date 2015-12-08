@@ -101,7 +101,7 @@ private:
 
 	CCircuitAI::EnemyUnits hostileUnits;
 	CCircuitAI::EnemyUnits peaceUnits;
-	Threats airThreat;
+	Threats airThreat;  // air layer
 	Threats surfThreat;  // surface (water and land)
 	Threats amphThreat;  // under water and surface on land
 	Threats cloakThreat;
