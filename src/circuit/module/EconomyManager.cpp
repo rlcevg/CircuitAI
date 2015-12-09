@@ -16,6 +16,7 @@
 #include "util/math/LagrangeInterPol.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
+#include "json/json.h"
 
 #include "AISCommands.h"
 #include "OOAICallback.h"
@@ -171,30 +172,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		}
 	}
 
-	// TODO: Make configurable
-	// Using cafus, armfus, armsolar as control points
-	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
-	// TODO: randomize ranges
-	std::array<std::pair<const char*, int>, 3> landEngies = {
-			std::make_pair("cafus", 1),  // 1-2
-			std::make_pair("armfus", 3),  // 2-3
-			std::make_pair("armsolar", 12)  // 10-15
-	};
-	std::array<std::pair<const char*, int>, 3> waterEngies = {
-			std::make_pair("cafus", 1),
-			std::make_pair("armfus", 3),
-			std::make_pair("armwin", 20)
-	};
-	std::array<std::pair<const char*, int>, 3>& engies = (terrainManager->GetPercentLand() < 40.0) ? waterEngies : landEngies;
-	const int size = engies.size();
-	CLagrangeInterPol::Vector x(size), y(size);
-	for (int i = 0; i < size; ++i) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(engies[i].first);
-		float make = utils::string_to_float(cdef->GetUnitDef()->GetCustomParams().find("income_energy")->second);
-		x[i] = cdef->GetCost() / make;
-		y[i] = engies[i].second + 0.5;  // +0.5 to be sure precision errors will not decrease integer part
-	}
-	engyPol = new CLagrangeInterPol(x, y);  // Alternatively use CGaussSolver to compute polynomial - faster on reuse
+	ReadConfig();
 
 	/*
 	 * Morphing
@@ -534,7 +512,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	// Select proper energy UnitDef to build
 	CCircuitDef* bestDef = nullptr;
 	float cost;
-	metalIncome = std::min(metalIncome, energyIncome)/* * 0.5f*/;
+	metalIncome = std::min(metalIncome, energyIncome) * incomeFactor;
 	float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome);
 	int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
 	float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.1f : ecoFactor);
@@ -568,7 +546,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		AIFloat3 buildPos = -RgtVector;
 
 		CMetalManager* metalManager = circuit->GetMetalManager();
-		if (cost / std::min(builderManager->GetBuilderPower(), metalIncome) < MIN_BUILD_SEC) {
+		if (cost / buildPower < MIN_BUILD_SEC) {
 			int index = metalManager->FindNearestSpot(position);
 			if (index != -1) {
 				const CMetalData::Metals& spots = metalManager->GetSpots();
@@ -797,6 +775,63 @@ void CEconomyManager::UpdateMorph()
 			break;  // one unit at a time
 		}
 	}
+}
+
+void CEconomyManager::ReadConfig()
+{
+	// Using cafus, armfus, armsolar as control points
+	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const Json::Value& energy = root["energy"];
+
+	incomeFactor = energy.get("income_factor", 1.0f).asFloat();
+
+	std::array<std::pair<std::string, int>, 3> landEngies;
+	const Json::Value& land = energy["land"];
+	unsigned li = 0;
+	for (const std::string& engy : land.getMemberNames()) {
+		const int min = land[engy][0].asInt();
+		const int max = land[engy].get(1, min).asInt();
+		const int limit = min + rand() % (max - min + 1);
+		landEngies[li++] = std::make_pair(engy, limit);
+		if (li >= 3) {
+			break;
+		}
+	}
+
+	std::array<std::pair<std::string, int>, 3> waterEngies;
+	const Json::Value& water = energy["water"];
+	unsigned wi = 0;
+	for (const std::string& engy : water.getMemberNames()) {
+		const int min = water[engy][0].asInt();
+		const int max = water[engy].get(1, min).asInt();
+		const int limit = min + rand() % (max - min + 1);
+		waterEngies[wi++] = std::make_pair(engy, limit);
+		if (wi >= 3) {
+			break;
+		}
+	}
+
+	bool isWaterMap = circuit->GetTerrainManager()->GetPercentLand() < 40.0;
+	std::array<std::pair<std::string, int>, 3>& engies = isWaterMap ? waterEngies : landEngies;
+	CLagrangeInterPol::Vector x(engies.size()), y(engies.size());
+	for (unsigned i = 0; i < engies.size(); ++i) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(engies[i].first.c_str());
+		float make = utils::string_to_float(cdef->GetUnitDef()->GetCustomParams().find("income_energy")->second);
+		x[i] = cdef->GetCost() / make;
+		y[i] = engies[i].second + 0.5;  // +0.5 to be sure precision errors will not decrease integer part
+	}
+	engyPol = new CLagrangeInterPol(x, y);  // Alternatively use CGaussSolver to compute polynomial - faster on reuse
+
+	// NOTE: Alternative to CLagrangeInterPol
+//	CGaussSolver solve;
+//	CGaussSolver::Matrix a = {
+//		{1, x[0], x[0]*x[0]},
+//		{1, x[1], x[1]*x[1]},
+//		{1, x[2], x[2]*x[2]}
+//	};
+//	CGaussSolver::Vector r = solve.Solve(a, y);
+//	circuit->LOG("y = %f*x^0 + %f*x^1 + %f*x^2", r[0], r[1], r[2]);
 }
 
 void CEconomyManager::Init()

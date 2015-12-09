@@ -73,6 +73,7 @@ public:
 	void UpdateMorph();
 
 private:
+	void ReadConfig();
 	void Init();
 
 	Handlers2 createdHandler;
@@ -105,6 +106,7 @@ private:
 	CLagrangeInterPol* engyPol;
 
 	float ecoFactor;
+	float incomeFactor;
 
 	// TODO: Didn't see any improvements. Remove avg?
 	std::vector<float> metalIncomes;

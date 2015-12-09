@@ -84,7 +84,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, bool isStart)
 		}
 
 		STerrainMapMobileType::Id mtId = cdef->GetMobileId();
-		if (mtId < 0) {
+		if (mtId < 0) {  // air
 			availFacs.push_back(sfac);
 			percents[sfac.id] = sfac.offset + importance * 60.0;
 		} else if (mobileType[mtId].typeUsable) {
