@@ -421,20 +421,20 @@ void CThreatMap::AddEnemyAir(const CEnemyUnit* e, const float scale)
 	const int endZ   = std::min(int(posz + range    ), height);
 
 	for (int x = beginX; x < endX; ++x) {
-		const int dxSq = (posx - x) * (posx - x);
+		const int rrx = rangeSq - SQUARE(posx - x);
 		for (int z = beginZ; z < endZ; ++z) {
-			const int dzSq = (posz - z) * (posz - z);
-
-			if (dxSq + dzSq <= rangeSq) {
-				const int index = z * width + x;
-				// MicroPather cannot deal with negative costs
-				// (which may arise due to floating-point drift)
-				// nor with zero-cost nodes (see MP::SetMapData,
-				// threat is not used as an additive overlay)
-				airThreat[index] = std::max<float>(airThreat[index] + threat, THREAT_BASE);
-
-//				currSumThreat += threat;
+			if (SQUARE(posz - z) > rrx) {
+				continue;
 			}
+
+			const int index = z * width + x;
+			// MicroPather cannot deal with negative costs
+			// (which may arise due to floating-point drift)
+			// nor with zero-cost nodes (see MP::SetMapData,
+			// threat is not used as an additive overlay)
+			airThreat[index] = std::max<float>(airThreat[index] + threat, THREAT_BASE);
+
+//			currSumThreat += threat;
 		}
 	}
 
@@ -452,6 +452,7 @@ void CThreatMap::AddEnemyAmph(const CEnemyUnit* e, const float scale)
 	const int rangeWater = e->GetRange(CEnemyUnit::RangeType::WATER);
 	const int rangeWaterSq = SQUARE(rangeWater);
 	const int range = std::max(rangeLand, rangeWater);
+	const std::vector<STerrainMapSector>& sector = areaData->sector;
 
 	const int beginX = std::max(int(posx - range + 1),      0);
 	const int endX   = std::min(int(posx + range    ),  width);
@@ -459,14 +460,14 @@ void CThreatMap::AddEnemyAmph(const CEnemyUnit* e, const float scale)
 	const int endZ   = std::min(int(posz + range    ), height);
 
 	for (int x = beginX; x < endX; ++x) {
-		const int dxSq = (posx - x) * (posx - x);
+		const int dxSq = SQUARE(posx - x);
 		for (int z = beginZ; z < endZ; ++z) {
-			const int dzSq = (posz - z) * (posz - z);
+			const int dzSq = SQUARE(posz - z);
 
 			const int sum = dxSq + dzSq;
 			const int index = z * width + x;
-			bool isWaterThreat = (sum <= rangeWaterSq) && areaData->sector[index].isWater;
-			if (isWaterThreat || ((sum <= rangeLandSq) && (areaData->sector[index].position.y >= -SQUARE_SIZE * 5)))
+			bool isWaterThreat = (sum <= rangeWaterSq) && sector[index].isWater;
+			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[index].position.y >= -SQUARE_SIZE * 5)))
 			{
 				amphThreat[index] = std::max<float>(amphThreat[index] + threat, THREAT_BASE);
 			}
@@ -493,14 +494,13 @@ void CThreatMap::AddDecloaker(const CEnemyUnit* e, const float scale)
 	const int endZ   = std::min(int(posz + rangeCloak + 1), height);
 
 	for (int x = beginX; x < endX; ++x) {
-		const int dxSq = (posx - x) * (posx - x);
+		const int rrx = rangeCloakSq - SQUARE(posx - x);
 		for (int z = beginZ; z < endZ; ++z) {
-			const int dzSq = (posz - z) * (posz - z);
-
-			if (dxSq + dzSq <= rangeCloakSq) {
-				const int index = z * width + x;
-				cloakThreat[index] = std::max<float>(cloakThreat[index] + threatCloak, THREAT_BASE);
+			if (SQUARE(posz - z) > rrx) {
+				continue;
 			}
+			const int index = z * width + x;
+			cloakThreat[index] = std::max<float>(cloakThreat[index] + threatCloak, THREAT_BASE);
 		}
 	}
 }

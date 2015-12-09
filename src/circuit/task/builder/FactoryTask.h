@@ -21,6 +21,7 @@ public:
 
 protected:
 	virtual void Finish();
+	virtual void Cancel();
 
 private:
 	virtual void FindBuildSite(CCircuitUnit* builder, const springai::AIFloat3& pos, float searchRadius) override;

@@ -8,6 +8,7 @@
 #include "task/builder/FactoryTask.h"
 #include "task/TaskManager.h"
 #include "module/BuilderManager.h"
+#include "module/FactoryManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -31,6 +32,7 @@ CBFactoryTask::CBFactoryTask(ITaskManager* mgr, Priority priority,
 							 float cost, bool isShake, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, BuildType::FACTORY, cost, isShake, timeout)
 {
+	manager->GetCircuit()->GetFactoryManager()->AddFactory(buildDef);
 }
 
 CBFactoryTask::~CBFactoryTask()
@@ -42,6 +44,7 @@ void CBFactoryTask::Finish()
 {
 	IBuilderTask::Finish();
 
+	// FIXME: No hardcoded strings allowed out of AI initialization
 	if (std::string("factoryplane") != buildDef->GetUnitDef()->GetName()) {
 		return;
 	}
@@ -49,6 +52,15 @@ void CBFactoryTask::Finish()
 	CCircuitDef* repairDef = circuit->GetCircuitDef("armasp");
 	circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, repairDef, buildPos,
 											  IBuilderTask::BuildType::FACTORY);
+}
+
+void CBFactoryTask::Cancel()
+{
+	IBuilderTask::Cancel();
+
+	if (target == nullptr) {
+		manager->GetCircuit()->GetFactoryManager()->DelFactory(buildDef);
+	}
 }
 
 void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, float searchRadius)

@@ -64,8 +64,9 @@ public:
 	CRecruitTask* UpdateBuildPower(CCircuitUnit* unit);
 	CRecruitTask* UpdateFirePower(CCircuitUnit* unit);
 
-	CCircuitDef* GetFactoryToBuild(CCircuitAI* circuit);
-	void AdvanceFactoryIdx();
+	CCircuitDef* GetFactoryToBuild(CCircuitAI* circuit, bool isStart = false);
+	void AddFactory(CCircuitDef* cdef);
+	void DelFactory(CCircuitDef* cdef);
 
 private:
 	void ReadConfig();

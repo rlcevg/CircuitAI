@@ -106,6 +106,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
+		DelFactory(unit->GetCircuitDef());
 		auto checkBuilderFactory = [this]() {
 			// check if any factory with builders left
 			bool hasBuilder = false;
@@ -118,7 +119,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			if (!hasBuilder) {
 				CCircuitDef* facDef = GetFactoryToBuild(this->circuit);
 				if (facDef != nullptr) {
-					AdvanceFactoryIdx();
 					this->circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, -RgtVector,
 																	IBuilderTask::BuildType::FACTORY);
 				}
@@ -698,14 +698,19 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	return nullptr;
 }
 
-CCircuitDef* CFactoryManager::GetFactoryToBuild(CCircuitAI* circuit)
+CCircuitDef* CFactoryManager::GetFactoryToBuild(CCircuitAI* circuit, bool isStart)
 {
-	return factoryData->GetFactoryToBuild(circuit);
+	return factoryData->GetFactoryToBuild(circuit, isStart);
 }
 
-void CFactoryManager::AdvanceFactoryIdx()
+void CFactoryManager::AddFactory(CCircuitDef* cdef)
 {
-	factoryData->AdvanceFactoryIdx();
+	factoryData->AddFactory(cdef);
+}
+
+void CFactoryManager::DelFactory(CCircuitDef* cdef)
+{
+	factoryData->DelFactory(cdef);
 }
 
 void CFactoryManager::ReadConfig()

@@ -714,7 +714,9 @@ void CTerrainData::UpdateAreas()
 			int i = (z * sectorXSize) + x;
 			changedSectors.insert(i);
 
-			sector[i].position.y = map->GetElevationAt(sector[i].position.x, sector[i].position.z);
+			int xi = sector[i].position.x / SQUARE_SIZE;
+			int zi = sector[i].position.z / SQUARE_SIZE;
+			sector[i].position.y = standardHeightMap[zi * heightMapXSize + xi];
 
 			sector[i].maxSlope = .0f;
 			int iMapS = ((z * convertStoSM) * slopeMapXSize) + x * convertStoSM;

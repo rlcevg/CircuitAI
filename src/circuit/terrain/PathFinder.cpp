@@ -154,7 +154,9 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 	STerrainMapMobileType::Id mobileTypeId = cdef->GetMobileId();
 	bool* moveArray = (mobileTypeId < 0) ? airMoveArray : moveArrays[mobileTypeId];
 	float* costArray;
-	if (unit->GetUnit()->IsCloaked()) {
+	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
+		costArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
+	} else if (unit->GetUnit()->IsCloaked()) {
 		costArray = threatMap->GetCloakThreatArray();
 	} else if (cdef->IsAbleToFly()) {
 		costArray = threatMap->GetAirThreatArray();

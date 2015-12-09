@@ -680,7 +680,6 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			if (terrainManager->CanBeBuiltAt(facDef, buildPos) &&
 				((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 			{
-				factoryManager->AdvanceFactoryIdx();
 				return builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos, IBuilderTask::BuildType::FACTORY);
 			}
 		}
@@ -816,10 +815,8 @@ void CEconomyManager::Init()
 			const AIFloat3& pos = commander->GetPos(circuit->GetLastFrame());
 			UnitRulesParam* param = commander->GetUnit()->GetUnitRulesParamByName("facplop");
 			if ((param != nullptr) && (param->GetValueFloat() == 1)) {
-				CCircuitDef* facDef = circuit->GetFactoryManager()->GetFactoryToBuild(circuit);
+				CCircuitDef* facDef = circuit->GetFactoryManager()->GetFactoryToBuild(circuit, true);
 				if (facDef != nullptr) {
-					circuit->GetFactoryManager()->AdvanceFactoryIdx();
-
 					AIFloat3 buildPos = circuit->GetTerrainManager()->GetBuildPosition(facDef, pos);
 					CBuilderManager* builderManager = circuit->GetBuilderManager();
 					IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos,

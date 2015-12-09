@@ -70,9 +70,9 @@ private:
 	void DelEnemyUnit(const CEnemyUnit* e) { AddEnemyUnit(e, -1.0f); }
 	void AddEnemyUnitAll(const CEnemyUnit* e, const float scale = 1.0f);
 	void DelEnemyUnitAll(const CEnemyUnit* e) { AddEnemyUnitAll(e, -1.0f); }
-	void AddEnemyAir(const CEnemyUnit* e, const float scale = 1.0f);
+	void AddEnemyAir(const CEnemyUnit* e, const float scale = 1.0f);  // Enemy AntiAir
 	void DelEnemyAir(const CEnemyUnit* e) { AddEnemyAir(e, -1.0f); }
-	void AddEnemyAmph(const CEnemyUnit* e, const float scale = 1.0f);
+	void AddEnemyAmph(const CEnemyUnit* e, const float scale = 1.0f);  // Enemy AntiAmph
 	void DelEnemyAmph(const CEnemyUnit* e) { AddEnemyAmph(e, -1.0f); }
 	void AddDecloaker(const CEnemyUnit* e, const float scale = 1.0f);
 	void DelDecloaker(const CEnemyUnit* e) { AddDecloaker(e, -1.0f); }

@@ -10,6 +10,8 @@
 
 #include "unit/CircuitDef.h"
 
+#include <unordered_map>
+
 namespace circuit {
 
 class CCircuitAI;
@@ -19,17 +21,20 @@ public:
 	CFactoryData(CCircuitAI *circuit);
 	virtual ~CFactoryData();
 
-	CCircuitDef* GetFactoryToBuild(CCircuitAI* circuit);
-	void AdvanceFactoryIdx() { ++factoryIdx %= factoryBuilds.size(); }
+	CCircuitDef* GetFactoryToBuild(CCircuitAI* circuit, bool isStart = false);
+	void AddFactory(CCircuitDef* cdef);
+	void DelFactory(CCircuitDef* cdef);
 
 private:
 	struct SFactory {
 		CCircuitDef::Id id;
 		float startImp;  // importance[0]
 		float switchImp;  // importance[1]
+		float offset;
+		int count;
 	};
-	std::vector<SFactory> factoryBuilds;
-	int factoryIdx;
+	std::unordered_map<CCircuitDef::Id, SFactory> allFactories;
+	bool isFirstChoice;
 };
 
 } // namespace circuit

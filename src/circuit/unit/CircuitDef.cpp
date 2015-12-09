@@ -57,8 +57,9 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	MoveData* md = def->GetMoveData();
 	isSubmarine = (md == nullptr) ? false : md->IsSubMarine();
 	delete md;
-	isAbleToFly = def->IsAbleToFly();
-	isFloater   = def->IsFloater() && !isSubmarine;
+	isAbleToFly    = def->IsAbleToFly();
+	isFloater      = def->IsFloater() && !isSubmarine;
+	isSonarStealth = def->IsSonarStealth();
 
 	speed     = def->GetSpeed() / FRAMES_PER_SEC;  // NOTE: SetMaxWantedSpeed expects value/FRAMES_PER_SEC
 	losRadius = def->GetLosRadius() * circuit->GetLosConv();
@@ -310,6 +311,7 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 		STerrainMapImmobileType& it = terrainData.areaData0.immobileType[immobileTypeId];
 		isAmphibious = ((it.minElevation < -SQUARE_SIZE * 5) || (it.maxElevation < SQUARE_SIZE * 5)) && !IsFloater();
 	}
+
 }
 
 CCircuitDef& CCircuitDef::operator++()

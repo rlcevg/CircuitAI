@@ -80,11 +80,12 @@ public:
 	bool HasAntiLand()  const { return hasAntiLand; }
 	bool HasAntiWater() const { return hasAntiWater; }
 
-	bool IsMobile()     const { return speed > .1f; }
-	bool IsAbleToFly()  const { return isAbleToFly; }
-	bool IsFloater()    const { return isFloater; }
-	bool IsSubmarine()  const { return isSubmarine; }
-	bool IsAmphibious() const { return isAmphibious; }
+	bool IsMobile()       const { return speed > .1f; }
+	bool IsAbleToFly()    const { return isAbleToFly; }
+	bool IsFloater()      const { return isFloater; }
+	bool IsSubmarine()    const { return isSubmarine; }
+	bool IsAmphibious()   const { return isAmphibious; }
+	bool IsSonarStealth() const { return isSonarStealth; }
 
 	float GetSpeed()     const { return speed; }
 	float GetLosRadius() const { return losRadius; }
@@ -129,6 +130,7 @@ private:
 	bool isFloater;
 	bool isSubmarine;
 	bool isAmphibious;
+	bool isSonarStealth;
 
 	float speed;
 	float losRadius;
