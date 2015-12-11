@@ -21,6 +21,7 @@ namespace circuit {
 //#define CMD_RETREAT_ZONE		10001
 //#define CMD_SETHAVEN			CMD_RETREAT_ZONE
 #define CMD_ORBIT				13923
+#define CMD_ORBIT_DRAW			13924
 #define CMD_MORPH				31210
 #define CMD_MORPH_STOP			32210
 #define CMD_PRIORITY			34220

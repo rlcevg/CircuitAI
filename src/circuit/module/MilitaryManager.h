@@ -45,8 +45,10 @@ public:
 	springai::AIFloat3 GetScoutPosition(CCircuitUnit* unit);
 
 	bool IsNeedAA() const;
+	bool IsNeedArty() const;
 
 private:
+	void ReadConfig();
 	void Init();
 
 	void UpdateIdle();
@@ -73,7 +75,8 @@ private:
 	std::vector<unsigned int> scoutPath;  // list of cluster ids
 	unsigned int scoutIdx;
 
-	float powerAA;
+	float powerAA, ratioAA;
+	float powerArty, ratioArty;
 	float powerLand;
 	float powerWater;
 

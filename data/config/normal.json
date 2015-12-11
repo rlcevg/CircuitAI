@@ -44,6 +44,7 @@
 		// 72m - 88m+ Late late Game - This fac sucks!
 		"tier7":    [ 0.10,    0.15,         0.00,      0.00,     0.30,      0.20,     0.25,       0.00,      0.00],
 
+		"artillery_def": "armham",  // hammer
 		"anti_air_def": "armjeth",  // gremlin
 		"builder_def": "armrectr"  // conjurer
 	},
@@ -72,6 +73,7 @@
 		// 72m - 88m+ Late late Game - Spam Krows!
 		"tier7":    [ 0.60,        0.00,     0.00,     0.00,             0.00,       0.00,        0.40,     0.00,      0.00],
 
+		"artillery_def": "armbrawl",  // brawler
 		"anti_air_def": "gunshipaa",  // trident
 		"builder_def": "armca"  // crane
 	},
@@ -100,6 +102,7 @@
 		// 72m - 88m+ Late late Game - SPAM GRIZZLY
 		"tier7":    [ 0.25,          0.02,          0.35,          0.12,       0.26,          0.00],
 
+		"artillery_def": "amphfloater",  // buoy
 		"anti_air_def": "amphaa",  // angler
 		"builder_def": "amphcon"  // conch
 	},
@@ -128,6 +131,7 @@
 		// 72m - 88m+ Late late Game - TURBO CRABBES
 		"tier7":    [ 0.62,      0.15,            0.00,        0.06,         0.00,      0.17,       0.00],
 
+		"artillery_def": "armsptk",  // recluse
 		"anti_air_def": "spideraa",  // tarantula
 		"builder_def": "arm_spider"  // weaver
 	},
@@ -156,6 +160,7 @@
 		// 72m - 88m+ Late late Game - Maximum Artillery			
 		"tier7":    [ 0.13,     0.00,       0.00,      0.10,       0.33,      0.01,         0.27,      0.16],
 
+		"artillery_def": "corgarp",  // wolverine
 		"anti_air_def": "vehaa",  // crasher
 		"builder_def": "corned"  // mason
 	},
@@ -184,6 +189,7 @@
 		// 72m - 88m+ Late late Game - MAXIMUM PENE
 		"tier7":    [ 0.10,    0.30,       0.33,           0.00,               0.10,        0.17],
 
+		"artillery_def": "armmanni",  // penetrator
 		"anti_air_def": "hoveraa",  // flail
 		"builder_def": "corch"  // quill
 	},
@@ -204,6 +210,7 @@
 		// 31-40m Mid onwards
 		"tier3":    [ 0.20,      0.00,      0.18,      0.02,       0.20,                0.35,      0.05],
 
+		"artillery_def": "corshad",  // raven
 		"anti_air_def": "fighter",  // swift
 		"builder_def": "armca"  // crane
 	},
@@ -232,12 +239,13 @@
 		// 72m - 88m+ Late late Game - MAXIMUM GOLLY
 		"tier7":    [ 0.10,      0.00,      0.10,      0.25,      0.36,     0.16,      0.03],
 
+		"artillery_def": "cormart",  // pillager
 		"anti_air_def": "corsent",  // copperhead
 		"builder_def": "coracv"  // welder
 	},
 
-	// Remove "_" to enable factory
-	"_factoryjump": {
+	"factoryjump": {
+		"importance": [0, 0],
 		"require_energy": false,
 
 		"income_tier": [40],
@@ -246,12 +254,13 @@
 		"tier0":    [ 0.09,    0.60,      0.05,            0.10,       0.05,     0.00,      0.10,         0.01],
 		"tier1":    [ 0.01,    0.20,      0.10,            0.10,       0.30,     0.05,      0.20,         0.04],
 
+		"artillery_def": "firewalker",  // firewalker
 		"anti_air_def": "armaak",  // archangel
 		"builder_def": "corfast"  // freaker
 	},
 
-	// Remove "_" to enable factory
-	"_factoryshield": {
+	"factoryshield": {
+		"importance": [0, 0],
 		"require_energy": false,
 
 		"income_tier": [40],
@@ -260,6 +269,7 @@
 		"tier0":    [ 0.10,      0.30,    0.10,       0.20,      0.10,     0.05,          0.10,         0.05,       0.00],
 		"tier1":    [ 0.01,      0.01,    0.20,       0.35,      0.10,     0.10,          0.22,         0.01,       0.00],
 
+		"artillery_def": "shieldarty",  // racketeer
 		"anti_air_def": "corcrash",  // vandal
 		"builder_def": "cornecro"  // convict
 	},
@@ -274,21 +284,23 @@
 		"tier0":    [ 0.10,        0.32,        0.30,         0.17,       0.05,        0.05,       0.01,      0.00],
 		"tier1":    [ 0.01,        0.10,        0.10,         0.20,       0.15,        0.25,       0.19,      0.00],
 
+		"artillery_def": "shiparty",  // crusader
 		"anti_air_def": "shipaa",  // shredder
 		"builder_def": "shipcon"  // mariner
 	}
 },
 
 "strider": {
-	"income_tier": [120],
+	"income_tier": [60, 120],
 	//               ultimatum,    scorpion,   dante,   catapult,   funnelweb,   bantha,     detriment, leviathan,    reef,   warlord
 	"unit_def":    ["armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"],
 
 	"land_tier0":  [ 0.01,         0.05,       0.83,    0.05,       0.05,        0.01,       0.00,      0.00,         0.00,   0.00],
-	"land_tier1":  [ 0.05,         0.10,       0.50,    0.07,       0.10,        0.15,       0.03,      0.00,         0.00,   0.00],
+	"land_tier1":  [ 0.03,         0.15,       0.32,    0.25,       0.15,        0.10,       0.00,      0.00,         0.00,   0.00],
+	"land_tier2":  [ 0.05,         0.10,       0.40,    0.17,       0.10,        0.15,       0.03,      0.00,         0.00,   0.00],
 
-	"water_tier0": [ 0.50,         0.00,       0.00,    0.00,       0.00,        0.00,       0.00,      0.00,         0.25,   0.25],
-	"water_tier1": [ 0.10,         0.00,       0.00,    0.00,       0.00,        0.00,       0.10,      0.00,         0.40,   0.40],
+	"water_tier1": [ 0.50,         0.00,       0.00,    0.00,       0.00,        0.00,       0.00,      0.00,         0.25,   0.25],
+	"water_tier2": [ 0.10,         0.00,       0.00,    0.00,       0.00,        0.00,       0.10,      0.00,         0.40,   0.40],
 
 	"require_energy": false
 },
@@ -414,12 +426,15 @@
 //   "geo": x=500/25=20, y = P(20) = 31.82 - 70.0358 + 38.113789 ~= 0
 //   "armwin": x=35/1.2=29.17, y = P(29.17) ~= 4
 //
-// Metal income condition for energy structure is: (structure_cost*16) / (metalIncome*income_factor)^2 < 40.
-// Config in example with income_factor=0.8 leads to:
-//   1) nothing if number of singus reached limit (1..2),
+// Metal income condition for energy structure is: income > sqrt(structure_cost*0.4).
+// Energy buildings are sorted by structure_cost/energy_make (asc).
+// Config in example with income_factor=0.8 leads to next build choice:
+//   1) nothing if number of singus reached limit (1),
 //   2) singus if income > 50 or number of fusions reached limit (3),
-//   3) fusions if income > 25 or number of solars reached limit (10..15),
-//   4) solars if income > 6.6125 or estalling.
+//   (ignored) geos if income > 17.68 or number of fusions reached limit (3),
+//   3) fusions if income > 25 or number of wind/tidal reached limit (4),
+//   4) wind/tidal if income > 4.68 or number of solars reached limit (13),
+//   5) solars if income > 6.61 or nothing else to build.
 "energy": {
 	// If land area >= 40% of the map then "land" config used, "water" otherwise
 	"land": {
@@ -435,5 +450,12 @@
 		"armwin": [20]
 	},
 	"income_factor": 0.8
+},
+
+// Build special units when threat*value > power*eps; eps=(teamSize+3)/4
+// AA condition for 1v1: air_threat*1.2 > aa_power*1.
+"response_ratio": {
+	"anti_air": 1.2,
+	"artillery": 0.5
 }
 }

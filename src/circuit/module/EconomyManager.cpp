@@ -516,7 +516,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome);
 	int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
 	float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.1f : ecoFactor);
-	for (auto& engy : energyInfos) {  // sorted by high-tech first
+	for (const SEnergyInfo& engy : energyInfos) {  // sorted by high-tech first
 		// TODO: Add geothermal powerplant support
 		if (!engy.cdef->IsAvailable() || engy.cdef->GetUnitDef()->IsNeedGeo()) {
 			continue;
@@ -531,7 +531,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 				//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
 				//       solar       geothermal    fusion         singu           ...
 				//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
-				if (cost * 16.0f / (buildPower * buildPower) < maxBuildTime) {
+				if (cost * 16.0f < maxBuildTime * SQUARE(buildPower)) {
 					break;
 				}
 			}
@@ -546,7 +546,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		AIFloat3 buildPos = -RgtVector;
 
 		CMetalManager* metalManager = circuit->GetMetalManager();
-		if (cost / buildPower < MIN_BUILD_SEC) {
+		if (cost < MIN_BUILD_SEC * buildPower) {
 			int index = metalManager->FindNearestSpot(position);
 			if (index != -1) {
 				const CMetalData::Metals& spots = metalManager->GetSpots();

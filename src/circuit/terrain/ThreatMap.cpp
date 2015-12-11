@@ -28,6 +28,7 @@ CThreatMap::CThreatMap(CCircuitAI* circuit)
 //		, currSumThreat(.0f)  // threat summed over all cells
 //		, currAvgThreat(.0f)  // average threat over all cells
 		, airPower(.0f)
+		, staticPower(.0f)
 		, landPower(.0f)
 		, waterPower(.0f)
 {
@@ -145,9 +146,10 @@ void CThreatMap::Update()
 		amphThreat[index] = std::max<float>(amphThreat[index] - THREAT_DECAY, THREAT_BASE);
 		// except for cloakThreat
 	}
-	airPower   = std::max(airPower   - THREAT_DECAY, .0f);
-	landPower  = std::max(landPower  - THREAT_DECAY, .0f);
-	waterPower = std::max(waterPower - THREAT_DECAY, .0f);
+	airPower    = std::max(airPower    - THREAT_DECAY, .0f);
+	staticPower = std::max(staticPower - THREAT_DECAY, .0f);
+	landPower   = std::max(landPower   - THREAT_DECAY, .0f);
+	waterPower  = std::max(waterPower  - THREAT_DECAY, .0f);
 
 #ifdef DEBUG_VIS
 	UpdateVis();
@@ -395,6 +397,7 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, const float scale)
 		if (it->minElevation < -SQUARE_SIZE * 5) {
 			waterPower += power;
 		}
+		staticPower += power;
 	}
 }
 

@@ -659,6 +659,15 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::BuildType::AA, radius);
 		}
 	}
+	if (circuit->GetMilitaryManager()->IsNeedArty()) {
+		CCircuitDef* buildDef = facDef.artyDef;
+		if ((buildDef != nullptr) && buildDef->IsAvailable()) {
+			const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
+			UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
+			float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
+			return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::BuildType::ARTY, radius);
+		}
+	}
 
 	CEconomyManager* mgr = circuit->GetEconomyManager();
 	const float metalIncome = std::min(mgr->GetAvgMetalIncome(), mgr->GetAvgEnergyIncome()) * mgr->GetEcoFactor();
@@ -730,7 +739,18 @@ void CFactoryManager::ReadConfig()
 		SFactoryDef facDef;
 
 		facDef.builderDef = circuit->GetCircuitDef(factory["builder_def"].asCString());
+		if (facDef.builderDef != nullptr) {
+			facDef.builderDef->SetRole(CCircuitDef::RoleType::BUILDER);
+		}
 		facDef.antiAirDef = circuit->GetCircuitDef(factory["anti_air_def"].asCString());
+		if (facDef.antiAirDef != nullptr) {
+			facDef.antiAirDef->SetRole(CCircuitDef::RoleType::AA);
+		}
+		facDef.artyDef = circuit->GetCircuitDef(factory["artillery_def"].asCString());
+		if (facDef.artyDef != nullptr) {
+			facDef.artyDef->SetRole(CCircuitDef::RoleType::ARTY);
+		}
+
 		facDef.isRequireEnergy = factory.get("require_energy", false).asBool();
 
 		const Json::Value& items = factory["unit_def"];

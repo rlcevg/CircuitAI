@@ -25,6 +25,8 @@ class CCircuitDef {
 public:
 	using Id = int;
 	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, COUNT};
+	enum RoleType: char {BUILDER = 0x01, SCOUT = 0x02, RAIDER = 0x04, ASSAULT = 0x08,
+						 ARTY    = 0x10, AA    = 0x20};
 
 	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
@@ -35,6 +37,15 @@ public:
 
 	Id GetId() const { return id; }
 	springai::UnitDef* GetUnitDef() const { return def; }
+
+	void SetRole(RoleType value) { role |= value; }
+	bool IsBuilder() const { return role & RoleType::BUILDER; }
+	bool IsScout()   const { return role & RoleType::SCOUT; }
+	bool IsRaider()  const { return role & RoleType::RAIDER; }
+	bool IsAssault() const { return role & RoleType::ASSAULT; }
+	bool IsArty()    const { return role & RoleType::ARTY; }
+	bool IsAA()      const { return role & RoleType::AA; }
+
 	const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
 	float GetBuildDistance() const { return buildDistance; }
 	float GetBuildSpeed() const { return buildSpeed; }
@@ -99,6 +110,7 @@ public:
 private:
 	Id id;
 	springai::UnitDef* def;  // owner
+	std::underlying_type<RoleType>::type role;
 	std::unordered_set<Id> buildOptions;
 	float buildDistance;
 	float buildSpeed;

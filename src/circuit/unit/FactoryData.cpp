@@ -46,12 +46,6 @@ CFactoryData::CFactoryData(CCircuitAI *circuit)
 			sfac.switchImp = importance.get((unsigned)1, 1.0f).asFloat();
 		}
 
-		if (cdef->GetMobileId() < 0) {  // air
-			sfac.offset = (float)rand() / RAND_MAX * 50.0;
-		} else {
-			sfac.offset = (float)rand() / RAND_MAX * 40.0 - 20.0;
-		}
-
 		allFactories[sfac.id] = sfac;
 	}
 }
@@ -86,10 +80,12 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, bool isStart)
 		STerrainMapMobileType::Id mtId = cdef->GetMobileId();
 		if (mtId < 0) {  // air
 			availFacs.push_back(sfac);
-			percents[sfac.id] = sfac.offset + importance * 60.0;
+			const float offset = (float)rand() / RAND_MAX * 50.0;
+			percents[sfac.id] = offset + importance * 60.0;
 		} else if (mobileType[mtId].typeUsable) {
 			availFacs.push_back(sfac);
-			percents[sfac.id] = sfac.offset + importance * mobileType[mtId].areaLargest->percentOfMap;
+			const float offset = (float)rand() / RAND_MAX * 40.0 - 20.0;
+			percents[sfac.id] = offset + importance * mobileType[mtId].areaLargest->percentOfMap;
 		}
 	}
 

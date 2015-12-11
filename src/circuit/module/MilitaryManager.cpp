@@ -37,6 +37,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		, updateSlice(0)
 		, scoutIdx(0)
 		, powerAA(.0f)
+		, powerArty(.0f)
 		, powerLand(.0f)
 		, powerWater(.0f)
 		, curPowah(.0f)
@@ -112,6 +113,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		DelPower(unit->GetCircuitDef());
 	};
 
+	ReadConfig();
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const Json::Value& retreats = root["retreat"];
 	const float fighterRet = retreats["_fighter_"].asFloat();
@@ -435,7 +437,25 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 
 bool CMilitaryManager::IsNeedAA() const
 {
-	return circuit->GetThreatMap()->GetAirPower() * 1.2f > powerAA;
+	const float airThreat = circuit->GetThreatMap()->GetAirPower();
+	const float ecoFactor = circuit->GetEconomyManager()->GetEcoFactor();
+	return airThreat * ratioAA > powerAA * ecoFactor;
+}
+
+bool CMilitaryManager::IsNeedArty() const
+{
+	const float staticThreat = circuit->GetThreatMap()->GetStaticPower();
+	const float ecoFactor = circuit->GetEconomyManager()->GetEcoFactor();
+	return staticThreat * ratioArty > powerArty * ecoFactor;
+}
+
+void CMilitaryManager::ReadConfig()
+{
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const Json::Value& ratio = root["response_ratio"];
+
+	ratioAA   = ratio.get("anti_air",  1.0f).asFloat();
+	ratioArty = ratio.get("artillery", 1.0f).asFloat();
 }
 
 void CMilitaryManager::Init()
@@ -501,8 +521,11 @@ void CMilitaryManager::UpdateFight()
 void CMilitaryManager::AddPower(CCircuitDef* cdef, const float scale)
 {
 	const float power = cdef->GetPower() * scale;
-	if (cdef->HasAntiAir()) {
+	if (cdef->IsAA()) {
 		powerAA = std::max(powerAA + power, .0f);
+	}
+	if (cdef->IsArty()) {
+		powerArty = std::max(powerArty + power, .0f);
 	}
 	if (cdef->HasAntiLand()) {
 		powerLand = std::max(powerLand + power, .0f);

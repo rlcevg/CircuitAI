@@ -16,7 +16,7 @@ class CCircuitDef;
 
 class CRecruitTask: public IUnitTask {
 public:
-	enum class BuildType: char {BUILDPOWER = 0, FIREPOWER, AA, CLOAK, DEFAULT = FIREPOWER};
+	enum class BuildType: char {BUILDPOWER = 0, FIREPOWER, AA, ARTY, CLOAK, DEFAULT = FIREPOWER};
 
 public:
 	CRecruitTask(ITaskManager* mgr, Priority priority,

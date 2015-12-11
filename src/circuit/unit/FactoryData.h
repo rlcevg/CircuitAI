@@ -30,7 +30,6 @@ private:
 		CCircuitDef::Id id;
 		float startImp;  // importance[0]
 		float switchImp;  // importance[1]
-		float offset;
 		int count;
 	};
 	std::unordered_map<CCircuitDef::Id, SFactory> allFactories;

@@ -107,6 +107,7 @@ private:
 	struct SFactoryDef {
 		CCircuitDef* builderDef;
 		CCircuitDef* antiAirDef;
+		CCircuitDef* artyDef;
 		std::vector<CCircuitDef*> buildDefs;
 		std::map<unsigned, std::vector<float>> tiers;
 		std::vector<float> incomes;

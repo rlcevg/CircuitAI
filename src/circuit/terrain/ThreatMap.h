@@ -37,9 +37,10 @@ public:
 	void EnemyDestroyed(CEnemyUnit* enemy);
 
 //	float GetAverageThreat() const { return currAvgThreat + 1.0f; }
-	float GetAirPower() const { return airPower; }
-	float GetLandPower() const { return landPower; }
-	float GetWaterPower() const { return waterPower; }
+	float GetAirPower()    const { return airPower; }
+	float GetStaticPower() const { return staticPower; }
+	float GetLandPower()   const { return landPower; }
+	float GetWaterPower()  const { return waterPower; }
 
 	float GetAllThreatAt(const springai::AIFloat3& position) const;
 	void SetThreatType(CCircuitUnit* unit);
@@ -88,6 +89,7 @@ private:
 //	float currMaxThreat;
 //	float currSumThreat;
 	float airPower;
+	float staticPower;
 	float landPower;
 	float waterPower;
 

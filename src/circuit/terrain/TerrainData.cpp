@@ -109,10 +109,10 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	if (waterDamage > 0) {  // >= MAX_ALLOWED_WATER_DAMAGE_GMM
 		waterIsHarmful = true;
 		waterText += " (This map's water is harmful to land units";
-		if (waterDamage >= MAX_ALLOWED_WATER_DAMAGE_HMM) {
+//		if (waterDamage >= MAX_ALLOWED_WATER_DAMAGE_HMM) {  // TODO: Mark water blocks as threat?
 			waterIsAVoid = true;
 			waterText += " as well as hovercraft";
-		}
+//		}
 		waterText += ")";
 	}
 	circuit->LOG(waterText.c_str());
