@@ -73,9 +73,9 @@ void CMoveAction::Update(CCircuitAI* circuit)
 	unit->GetUnit()->MoveTo(path[step], UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 	unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
 
-	for (int i = 0; (step < pathMaxIndex) && (i < 2); ++i) {
+	for (int i = 2; (step < pathMaxIndex) && (i < 4); ++i) {
 		step = std::min(step + increment, pathMaxIndex);
-		unit->GetUnit()->MoveTo(path[step], UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60);
+		unit->GetUnit()->MoveTo(path[step], UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60 * i);
 	}
 }
 

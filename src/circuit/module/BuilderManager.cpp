@@ -151,11 +151,20 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	CCircuitDef::Id unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
-		if (unit->GetUnit()->IsBeingBuilt() || !IsBuilderInArea(unit->GetCircuitDef(), pos)) {
-			this->circuit->GetMetalManager()->SetOpenSpot(pos, true);
-		} else {
-			EnqueueTask(IBuilderTask::Priority::NORMAL, unit->GetCircuitDef(), pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
+		CCircuitDef* mexDef = unit->GetCircuitDef();
+		this->circuit->GetMetalManager()->SetOpenSpot(pos, true);
+		if (unit->GetUnit()->IsBeingBuilt()) {
+			return;
 		}
+		// Check mex position in 10 seconds
+		this->circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this, mexDef, pos]() {
+			if (this->circuit->GetMetalManager()->IsOpenSpot(pos) &&
+				this->circuit->GetBuilderManager()->IsBuilderInArea(mexDef, pos) &&
+				(this->circuit->GetThreatMap()->GetAllThreatAt(pos) <= MIN_THREAT))
+			{
+				EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
+			}
+		}), FRAMES_PER_SEC * 10);
 	};
 
 	builderTasks.resize(static_cast<int>(IBuilderTask::BuildType::TASKS_COUNT));

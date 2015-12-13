@@ -206,7 +206,9 @@ CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 				continue;
 //			}
 		}
-		enemyPositions.push_back(enemy->GetPos());
+		if (sqDist < SQUARE(2000)) {  // maxSqDist
+			enemyPositions.push_back(enemy->GetPos());
+		}
 	}
 	if (bestTarget == nullptr) {
 		bestTarget = (mediumTarget != nullptr) ? mediumTarget : worstTarget;

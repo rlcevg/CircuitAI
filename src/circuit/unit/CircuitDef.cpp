@@ -24,9 +24,11 @@ using namespace springai;
 
 CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts, Resource* res)
 		: def(def)
+		, role(RoleType::NONE)
 		, buildOptions(buildOpts)
 		, count(0)
 		, buildCounts(0)
+		, hasDGunAA(false)
 //		, dgunReload(-1)
 		, dgunRange(.0f)
 		, dgunMount(nullptr)
@@ -214,6 +216,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			bestRange = range;
 			delete bestMount;
 			bestMount = mount;
+			hasDGunAA |= (weaponCat & circuit->GetAirCategory()) && isAirWeapon;
 		} else if ((shieldMount == nullptr) && wd->IsShield()) {
 			shieldMount = mount;  // NOTE: Unit may have more than 1 shield
 		} else {

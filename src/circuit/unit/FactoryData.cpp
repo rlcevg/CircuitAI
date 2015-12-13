@@ -94,8 +94,8 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, bool isStart)
 	}
 
 	auto cmp = [circuit, &percents](const SFactory& a, const SFactory& b) {
-		if (a.count > b.count) {
-			return false;
+		if (a.count < b.count) {
+			return true;
 		}
 		return percents[a.id] > percents[b.id];
 	};

@@ -49,6 +49,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 		return;
 	}
 	int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
+	bool notDGunAA = !unit->GetCircuitDef()->HasDGunAA();
 	for (Unit* e : enemies) {
 		if (e == nullptr) {
 			continue;
@@ -58,7 +59,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 			continue;
 		}
 		CCircuitDef* edef = enemy->GetCircuitDef();
-		if ((edef != nullptr) && ((edef->GetCategory() & canTargetCat) == 0)) {
+		if ((edef == nullptr) || ((edef->GetCategory() & canTargetCat) == 0) || (edef->IsAbleToFly() && notDGunAA)) {
 			continue;
 		}
 

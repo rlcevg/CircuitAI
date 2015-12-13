@@ -220,6 +220,15 @@ void CMetalManager::SetOpenSpot(const springai::AIFloat3& pos, bool value)
 	}
 }
 
+bool CMetalManager::IsOpenSpot(const springai::AIFloat3& pos) const
+{
+	int index = FindNearestSpot(pos);
+	if (index != -1) {
+		return IsOpenSpot(index);
+	}
+	return false;
+}
+
 void CMetalManager::MarkAllyMexes()
 {
 	if (markFrame /*+ FRAMES_PER_SEC*/ >= circuit->GetLastFrame()) {

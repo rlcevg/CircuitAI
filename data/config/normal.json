@@ -429,12 +429,13 @@
 // Metal income condition for energy structure is: income > sqrt(structure_cost*0.4).
 // Energy buildings are sorted by structure_cost/energy_make (asc).
 // Config in example with income_factor=0.8 leads to next build choice:
-//   1) nothing if number of singus reached limit (1),
-//   2) singus if income > 50 or number of fusions reached limit (3),
-//   (ignored) geos if income > 17.68 or number of fusions reached limit (3),
-//   3) fusions if income > 25 or number of wind/tidal reached limit (4),
-//   4) wind/tidal if income > 4.68 or number of solars reached limit (13),
-//   5) solars if income > 6.61 or nothing else to build.
+//   1) nothing if singu_limit >= 1;
+//   2) else if singu_limit < 1 and income > 50 then singu;
+//   (ignored) else if geo_limit < 0 and income > 17.68 then geo;
+//   3) else if fusion_limit < 3 and income > 25 then fusion;
+//   4) else if tidal_limit < 4 and income > 4.68 then wind/tidal;
+//   5) else if solar_limit < 13 and income > 6.61 then solar;
+//   6) if nothing selected then build lowest energy that didn't reach its limit, disregard income.
 "energy": {
 	// If land area >= 40% of the map then "land" config used, "water" otherwise
 	"land": {
@@ -456,6 +457,6 @@
 // AA condition for 1v1: air_threat*1.2 > aa_power*1.
 "response_ratio": {
 	"anti_air": 1.2,
-	"artillery": 0.5
+	"artillery": 0.2
 }
 }

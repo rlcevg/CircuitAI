@@ -95,7 +95,9 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 		return;
 	}
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
-	if ((target->GetPos().SqDistance2D(pos) > range * range) ||	(threatMap->GetThreatAt(unit, pos) > threatMap->GetUnitThreat(unit))) {
+	if ((target->GetPos().SqDistance2D(pos) > range * range) ||
+		(threatMap->GetThreatAt(unit, pos) * 2 > threatMap->GetUnitThreat(unit)))
+	{
 		manager->AssignTask(unit, manager->GetRetreatTask());
 		return;
 	}

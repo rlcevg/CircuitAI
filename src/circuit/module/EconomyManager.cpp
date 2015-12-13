@@ -515,7 +515,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	metalIncome = std::min(metalIncome, energyIncome) * incomeFactor;
 	float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome);
 	int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
-	float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.1f : ecoFactor);
+	float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.8f : ecoFactor);
 	for (const SEnergyInfo& engy : energyInfos) {  // sorted by high-tech first
 		// TODO: Add geothermal powerplant support
 		if (!engy.cdef->IsAvailable() || engy.cdef->GetUnitDef()->IsNeedGeo()) {
@@ -591,7 +591,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	// check buildpower
 	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome()) * ecoFactor;
 	CCircuitDef* assistDef = factoryManager->GetAssistDef();
-	float factoryFactor = (metalIncome - assistDef->GetBuildSpeed()) * 1.5f;
+	float factoryFactor = (metalIncome - assistDef->GetBuildSpeed()) * 1.2f;
 	const int nanoSize = builderManager->GetTasks(IBuilderTask::BuildType::NANO).size();
 	float factoryPower = factoryManager->GetFactoryPower() + nanoSize * assistDef->GetBuildSpeed();
 	if ((factoryPower >= factoryFactor) || !builderManager->GetTasks(IBuilderTask::BuildType::FACTORY).empty()) {
@@ -746,7 +746,7 @@ void CEconomyManager::AddMorphee(CCircuitUnit* unit)
 	morphees.insert(unit);
 	if (morph == nullptr) {
 		morph = std::make_shared<CGameTask>(&CEconomyManager::UpdateMorph, this);
-		circuit->GetScheduler()->RunTaskEvery(morph, FRAMES_PER_SEC * 20);
+		circuit->GetScheduler()->RunTaskEvery(morph, FRAMES_PER_SEC * 10);
 	}
 }
 
@@ -760,7 +760,7 @@ void CEconomyManager::UpdateMorph()
 
 	float energyIncome = GetAvgEnergyIncome();
 	float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
-	if ((metalIncome < 10) || IsMetalEmpty() || (GetMetalPull() > metalIncome)) {
+	if ((metalIncome < 10) || !IsMetalFull() || (GetMetalPull() > metalIncome)) {
 		return;
 	}
 
@@ -864,13 +864,17 @@ void CEconomyManager::Init()
 			}
 			delete param;
 
-			// Force to morph commander
-			scheduler->RunTaskAt(std::make_shared<CGameTask>([this](){
-				CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-				if (commander != nullptr) {
-					commander->Morph();
-				}
-			}), FRAMES_PER_SEC * 120);
+			// Force commander level 0 to morph
+			const std::map<std::string, std::string>& customParams = commander->GetCircuitDef()->GetUnitDef()->GetCustomParams();
+			auto it = customParams.find("level");
+			if ((it != customParams.end()) && (utils::string_to_int(it->second) == 0)) {
+				scheduler->RunTaskAt(std::make_shared<CGameTask>([this]() {
+					CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+					if (commander != nullptr) {
+						commander->Morph();
+					}
+				}), FRAMES_PER_SEC * 120);
+			}
 		}
 
 		SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();

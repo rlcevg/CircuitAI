@@ -26,7 +26,7 @@ public:
 	using Id = int;
 	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, COUNT};
 	enum RoleType: char {BUILDER = 0x01, SCOUT = 0x02, RAIDER = 0x04, ASSAULT = 0x08,
-						 ARTY    = 0x10, AA    = 0x20};
+						 ARTY    = 0x10, AA    = 0x20, NONE   = 0x00};
 
 	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
@@ -71,6 +71,7 @@ public:
 	int GetBuildCount() const { return buildCounts; }
 
 	bool IsManualFire() const { return isManualFire; }
+	bool HasDGunAA() const { return hasDGunAA; }
 //	int GetDGunReload() const { return dgunReload; }
 	float GetDGunRange() const { return dgunRange; }
 	springai::WeaponMount* GetDGunMount() const { return dgunMount; }
@@ -119,6 +120,7 @@ private:
 	int maxThisUnit;
 
 	bool isManualFire;
+	bool hasDGunAA;
 //	int dgunReload;  // frames in ticks
 	float dgunRange;
 	springai::WeaponMount* dgunMount;
