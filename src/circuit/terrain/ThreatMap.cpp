@@ -146,10 +146,10 @@ void CThreatMap::Update()
 		amphThreat[index] = std::max<float>(amphThreat[index] - THREAT_DECAY, THREAT_BASE);
 		// except for cloakThreat
 	}
-	airPower    = std::max(airPower    - THREAT_DECAY, .0f);
-	staticPower = std::max(staticPower - THREAT_DECAY, .0f);
-	landPower   = std::max(landPower   - THREAT_DECAY, .0f);
-	waterPower  = std::max(waterPower  - THREAT_DECAY, .0f);
+//	airPower    = std::max(airPower    - THREAT_DECAY, .0f);
+//	staticPower = std::max(staticPower - THREAT_DECAY, .0f);
+//	landPower   = std::max(landPower   - THREAT_DECAY, .0f);
+//	waterPower  = std::max(waterPower  - THREAT_DECAY, .0f);
 
 #ifdef DEBUG_VIS
 	UpdateVis();
@@ -378,7 +378,8 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, const float scale)
 	}
 	AddDecloaker(e, scale);
 
-	const float power = e->GetThreat() * scale;
+//	const float power = e->GetThreat() * scale;
+	const float power = cdef->GetCost() * scale;
 	if (cdef->IsAbleToFly()) {
 		airPower += power;
 	} else if (cdef->IsMobile()) {

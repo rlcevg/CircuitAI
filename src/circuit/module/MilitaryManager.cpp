@@ -40,6 +40,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		, powerArty(.0f)
 		, powerLand(.0f)
 		, powerWater(.0f)
+		, powerSum(.0f)
 		, curPowah(.0f)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
@@ -439,14 +440,14 @@ bool CMilitaryManager::IsNeedAA() const
 {
 	const float airThreat = circuit->GetThreatMap()->GetAirPower();
 	const float ecoFactor = circuit->GetEconomyManager()->GetEcoFactor();
-	return airThreat * ratioAA > powerAA * ecoFactor;
+	return (airThreat * ratioAA > powerAA * ecoFactor) && (powerAA < maxPercAA * powerSum);
 }
 
 bool CMilitaryManager::IsNeedArty() const
 {
 	const float staticThreat = circuit->GetThreatMap()->GetStaticPower();
 	const float ecoFactor = circuit->GetEconomyManager()->GetEcoFactor();
-	return staticThreat * ratioArty > powerArty * ecoFactor;
+	return (staticThreat * ratioArty > powerArty * ecoFactor) && (powerArty < maxPercArty * powerSum);
 }
 
 void CMilitaryManager::ReadConfig()
@@ -454,8 +455,23 @@ void CMilitaryManager::ReadConfig()
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const Json::Value& ratio = root["response_ratio"];
 
-	ratioAA   = ratio.get("anti_air",  1.0f).asFloat();
-	ratioArty = ratio.get("artillery", 1.0f).asFloat();
+	const Json::Value& antiAir = ratio["anti_air"];
+	if (antiAir == Json::Value::null) {
+		ratioAA   = 1.0f;
+		maxPercAA = 1.0f;
+	} else {
+		ratioAA   = antiAir.get(unsigned(0), 1.0f).asFloat();
+		maxPercAA = antiAir.get(unsigned(1), 1.0f).asFloat();
+	}
+
+	const Json::Value& artillery = ratio["artillery"];
+	if (artillery == Json::Value::null) {
+		ratioArty   = 1.0f;
+		maxPercArty = 1.0f;
+	} else {
+		ratioArty   = artillery.get(unsigned(0), 1.0f).asFloat();
+		maxPercArty = artillery.get(unsigned(1), 1.0f).asFloat();
+	}
 }
 
 void CMilitaryManager::Init()
@@ -520,7 +536,8 @@ void CMilitaryManager::UpdateFight()
 
 void CMilitaryManager::AddPower(CCircuitDef* cdef, const float scale)
 {
-	const float power = cdef->GetPower() * scale;
+//	const float power = cdef->GetPower() * scale;
+	const float power = cdef->GetCost() * scale;
 	if (cdef->IsAA()) {
 		powerAA = std::max(powerAA + power, .0f);
 	}
@@ -533,6 +550,7 @@ void CMilitaryManager::AddPower(CCircuitDef* cdef, const float scale)
 	if (cdef->HasAntiWater()) {
 		powerWater = std::max(powerWater + power, .0f);
 	}
+	powerSum += power;
 }
 
 } // namespace circuit

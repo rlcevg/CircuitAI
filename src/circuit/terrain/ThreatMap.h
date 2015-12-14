@@ -88,7 +88,7 @@ private:
 //	float currAvgThreat;
 //	float currMaxThreat;
 //	float currSumThreat;
-	float airPower;
+	float airPower;  // FIXME: power = metal, replace by threat
 	float staticPower;
 	float landPower;
 	float waterPower;

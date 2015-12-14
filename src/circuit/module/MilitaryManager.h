@@ -75,10 +75,11 @@ private:
 	std::vector<unsigned int> scoutPath;  // list of cluster ids
 	unsigned int scoutIdx;
 
-	float powerAA, ratioAA;
-	float powerArty, ratioArty;
+	float powerAA, ratioAA, maxPercAA;
+	float powerArty, ratioArty, maxPercArty;
 	float powerLand;
 	float powerWater;
+	float powerSum;
 
 	// FIXME: DEBUG
 	float curPowah;
