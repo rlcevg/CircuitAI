@@ -37,10 +37,10 @@ public:
 	void EnemyDestroyed(CEnemyUnit* enemy);
 
 //	float GetAverageThreat() const { return currAvgThreat + 1.0f; }
-	float GetAirPower()    const { return airPower; }
-	float GetStaticPower() const { return staticPower; }
-	float GetLandPower()   const { return landPower; }
-	float GetWaterPower()  const { return waterPower; }
+	float GetAirMetal()    const { return airMetal; }
+	float GetStaticMetal() const { return staticMetal; }
+	float GetLandMetal()   const { return landMetal; }
+	float GetWaterMetal()  const { return waterMetal; }
 
 	float GetAllThreatAt(const springai::AIFloat3& position) const;
 	void SetThreatType(CCircuitUnit* unit);
@@ -77,6 +77,8 @@ private:
 	void DelEnemyAmph(const CEnemyUnit* e) { AddEnemyAmph(e, -1.0f); }
 	void AddDecloaker(const CEnemyUnit* e, const float scale = 1.0f);
 	void DelDecloaker(const CEnemyUnit* e) { AddDecloaker(e, -1.0f); }
+	void AddEnemyMetal(const CEnemyUnit* e, const float scale = 1.0f);
+	void DelEnemyMetal(const CEnemyUnit* e) { AddEnemyMetal(e, -1.0f); }
 
 	void SetEnemyUnitRange(CEnemyUnit* e) const;
 	int GetCloakRange(const CEnemyUnit* e) const;
@@ -88,10 +90,10 @@ private:
 //	float currAvgThreat;
 //	float currMaxThreat;
 //	float currSumThreat;
-	float airPower;  // FIXME: power = metal, replace by threat
-	float staticPower;
-	float landPower;
-	float waterPower;
+	float airMetal;
+	float staticMetal;
+	float landMetal;
+	float waterMetal;
 
 	int squareSize;
 	int width;

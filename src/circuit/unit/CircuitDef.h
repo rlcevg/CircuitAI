@@ -126,7 +126,7 @@ private:
 	springai::WeaponMount* dgunMount;
 	springai::WeaponMount* shieldMount;
 	float dps;  // TODO: split dps like ranges on air, land, water
-	float power;  // attack power / UnitDef threat
+	float power;  // attack power = UnitDef's max threat
 	std::array<float, static_cast<unsigned>(RangeType::COUNT)> maxRange;
 	float maxShield;
 	int category;

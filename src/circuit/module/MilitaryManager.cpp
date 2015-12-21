@@ -36,11 +36,11 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit)
 		, updateSlice(0)
 		, scoutIdx(0)
-		, powerAA(.0f)
-		, powerArty(.0f)
-		, powerLand(.0f)
-		, powerWater(.0f)
-		, powerSum(.0f)
+		, metalAA(.0f)
+		, metalArty(.0f)
+		, metalLand(.0f)
+		, metalWater(.0f)
+		, metalSum(.0f)
 		, curPowah(.0f)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
@@ -438,16 +438,16 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 
 bool CMilitaryManager::IsNeedAA() const
 {
-	const float airThreat = circuit->GetThreatMap()->GetAirPower();
+	const float airThreat = circuit->GetThreatMap()->GetAirMetal();
 	const float ecoFactor = circuit->GetEconomyManager()->GetEcoFactor();
-	return (airThreat * ratioAA > powerAA * ecoFactor) && (powerAA < maxPercAA * powerSum);
+	return (airThreat * ratioAA > metalAA * ecoFactor) && (metalAA < maxPercAA * metalSum);
 }
 
 bool CMilitaryManager::IsNeedArty() const
 {
-	const float staticThreat = circuit->GetThreatMap()->GetStaticPower();
+	const float staticThreat = circuit->GetThreatMap()->GetStaticMetal();
 	const float ecoFactor = circuit->GetEconomyManager()->GetEcoFactor();
-	return (staticThreat * ratioArty > powerArty * ecoFactor) && (powerArty < maxPercArty * powerSum);
+	return (staticThreat * ratioArty > metalArty * ecoFactor) && (metalArty < maxPercArty * metalSum);
 }
 
 void CMilitaryManager::ReadConfig()
@@ -536,21 +536,20 @@ void CMilitaryManager::UpdateFight()
 
 void CMilitaryManager::AddPower(CCircuitDef* cdef, const float scale)
 {
-//	const float power = cdef->GetPower() * scale;
-	const float power = cdef->GetCost() * scale;
+	const float cost = cdef->GetCost() * scale;
 	if (cdef->IsAA()) {
-		powerAA = std::max(powerAA + power, .0f);
+		metalAA = std::max(metalAA + cost, .0f);
 	}
 	if (cdef->IsArty()) {
-		powerArty = std::max(powerArty + power, .0f);
+		metalArty = std::max(metalArty + cost, .0f);
 	}
 	if (cdef->HasAntiLand()) {
-		powerLand = std::max(powerLand + power, .0f);
+		metalLand = std::max(metalLand + cost, .0f);
 	}
 	if (cdef->HasAntiWater()) {
-		powerWater = std::max(powerWater + power, .0f);
+		metalWater = std::max(metalWater + cost, .0f);
 	}
-	powerSum += power;
+	metalSum += cost;
 }
 
 } // namespace circuit

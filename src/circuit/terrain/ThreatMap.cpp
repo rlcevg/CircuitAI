@@ -27,10 +27,10 @@ CThreatMap::CThreatMap(CCircuitAI* circuit)
 //		, currMaxThreat(.0f)  // maximum threat (normalizer)
 //		, currSumThreat(.0f)  // threat summed over all cells
 //		, currAvgThreat(.0f)  // average threat over all cells
-		, airPower(.0f)
-		, staticPower(.0f)
-		, landPower(.0f)
-		, waterPower(.0f)
+		, airMetal(.0f)
+		, staticMetal(.0f)
+		, landMetal(.0f)
+		, waterMetal(.0f)
 {
 	areaData = circuit->GetTerrainManager()->GetAreaData();
 	squareSize = circuit->GetTerrainManager()->GetConvertStoP();
@@ -146,10 +146,10 @@ void CThreatMap::Update()
 		amphThreat[index] = std::max<float>(amphThreat[index] - THREAT_DECAY, THREAT_BASE);
 		// except for cloakThreat
 	}
-//	airPower    = std::max(airPower    - THREAT_DECAY, .0f);
-//	staticPower = std::max(staticPower - THREAT_DECAY, .0f);
-//	landPower   = std::max(landPower   - THREAT_DECAY, .0f);
-//	waterPower  = std::max(waterPower  - THREAT_DECAY, .0f);
+//	airMetal    = std::max(airMetal    - THREAT_DECAY, .0f);
+//	staticMetal = std::max(staticMetal - THREAT_DECAY, .0f);
+//	landMetal   = std::max(landMetal   - THREAT_DECAY, .0f);
+//	waterMetal  = std::max(waterMetal  - THREAT_DECAY, .0f);
 
 #ifdef DEBUG_VIS
 	UpdateVis();
@@ -201,6 +201,7 @@ void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 
 	if (hostileUnits.find(enemy->GetId()) == hostileUnits.end()) {
 		hostileUnits[enemy->GetId()] = enemy;
+		AddEnemyMetal(enemy);
 	} else if (enemy->IsHidden()) {
 		enemy->ClearHidden();
 	} else if (enemy->IsKnown()) {
@@ -308,6 +309,7 @@ void CThreatMap::EnemyDestroyed(CEnemyUnit* enemy)
 	if (!enemy->IsHidden()) {
 		DelEnemyUnit(enemy);
 	}
+	DelEnemyMetal(enemy);
 	hostileUnits.erase(it);
 }
 
@@ -377,29 +379,6 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit* e, const float scale)
 		AddEnemyAmph(e, scale);
 	}
 	AddDecloaker(e, scale);
-
-//	const float power = e->GetThreat() * scale;
-	const float power = cdef->GetCost() * scale;
-	if (cdef->IsAbleToFly()) {
-		airPower += power;
-	} else if (cdef->IsMobile()) {
-		STerrainMapMobileType* mt = circuit->GetTerrainManager()->GetMobileTypeById(cdef->GetMobileId());
-		if (mt->maxElevation > SQUARE_SIZE * 5) {
-			landPower += power;
-		}
-		if (mt->minElevation < -SQUARE_SIZE * 5) {
-			waterPower += power;
-		}
-	} else {
-		STerrainMapImmobileType* it = circuit->GetTerrainManager()->GetImmobileTypeById(cdef->GetImmobileId());
-		if (it->maxElevation > SQUARE_SIZE * 5) {
-			landPower += power;
-		}
-		if (it->minElevation < -SQUARE_SIZE * 5) {
-			waterPower += power;
-		}
-		staticPower += power;
-	}
 }
 
 void CThreatMap::AddEnemyUnitAll(const CEnemyUnit* e, const float scale)
@@ -505,6 +484,36 @@ void CThreatMap::AddDecloaker(const CEnemyUnit* e, const float scale)
 			}
 			const int index = z * width + x;
 			cloakThreat[index] = std::max<float>(cloakThreat[index] + threatCloak, THREAT_BASE);
+		}
+	}
+}
+
+void CThreatMap::AddEnemyMetal(const CEnemyUnit* e, const float scale)
+{
+	CCircuitDef* cdef = e->GetCircuitDef();
+	assert(cdef != nullptr);
+
+	const float cost = cdef->GetCost() * scale;
+	if (cdef->IsAbleToFly()) {
+		airMetal += cost;
+	} else if (cdef->IsMobile()) {
+		STerrainMapMobileType* mt = circuit->GetTerrainManager()->GetMobileTypeById(cdef->GetMobileId());
+		if (mt->maxElevation > SQUARE_SIZE * 5) {
+			landMetal += cost;
+		}
+		if (mt->minElevation < -SQUARE_SIZE * 5) {
+			waterMetal += cost;
+		}
+	} else {
+		STerrainMapImmobileType* it = circuit->GetTerrainManager()->GetImmobileTypeById(cdef->GetImmobileId());
+		if (it->maxElevation > SQUARE_SIZE * 5) {
+			landMetal += cost;
+		}
+		if (it->minElevation < -SQUARE_SIZE * 5) {
+			waterMetal += cost;
+		}
+		if (cdef->HasAntiLand()) {
+			staticMetal += cost;
 		}
 	}
 }
