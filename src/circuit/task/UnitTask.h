@@ -24,7 +24,7 @@ public:
 	enum class Type: char {PLAYER, STUCK, IDLE, RETREAT, BUILDER, FACTORY, FIGHTER};
 
 protected:
-	IUnitTask(ITaskManager* mgr, Priority priority, Type type);
+	IUnitTask(ITaskManager* mgr, Priority priority, Type type, int timeout);
 public:
 	virtual ~IUnitTask();
 
@@ -50,11 +50,17 @@ public:
 	Type GetType() const { return type; }
 	ITaskManager* GetManager() const { return manager; }
 
+	int GetLastTouched() const { return lastTouched; }
+	int GetTimeout() const { return timeout; }
+
 protected:
 	ITaskManager* manager;
 	std::set<CCircuitUnit*> units;
 	Priority priority;
 	Type type;
+
+	int lastTouched;
+	int timeout;
 
 	unsigned int updCount;
 };

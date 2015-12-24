@@ -18,6 +18,7 @@ namespace circuit {
 
 class CBDefenceTask;
 class CDefenceMatrix;
+class CRetreatTask;
 
 class CMilitaryManager: public IUnitModule {
 public:
@@ -31,6 +32,7 @@ public:
 	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 
 	IFighterTask* EnqueueTask(IFighterTask::FightType type);
+	CRetreatTask* EnqueueRetreat();
 private:
 	void DequeueTask(IFighterTask* task, bool done = false);
 
@@ -64,10 +66,15 @@ private:
 	EHandlers damagedHandler;
 	EHandlers destroyedHandler;
 
-	std::set<IFighterTask*> fighterTasks;  // owner
-	std::set<IFighterTask*> updateTasks;
-	std::set<IFighterTask*> deleteTasks;
-	unsigned int updateSlice;
+	std::set<IFighterTask*> fightTasks;  // owner
+	std::set<IFighterTask*> fightUpdateTasks;
+	std::set<IFighterTask*> fightDeleteTasks;
+	unsigned int fightUpdateSlice;
+
+	std::set<CRetreatTask*> retreatTasks;  // owner
+	std::set<CRetreatTask*> retUpdateTasks;
+	std::set<CRetreatTask*> retDeleteTasks;
+	unsigned int retUpdateSlice;
 
 	CDefenceMatrix* defence;
 

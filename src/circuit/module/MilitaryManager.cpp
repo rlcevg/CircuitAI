@@ -34,7 +34,8 @@ using namespace springai;
 
 CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit)
-		, updateSlice(0)
+		, fightUpdateSlice(0)
+		, retUpdateSlice(0)
 		, scoutIdx(0)
 		, metalAA(.0f)
 		, metalArty(.0f)
@@ -211,8 +212,11 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 CMilitaryManager::~CMilitaryManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	utils::free_clear(fighterTasks);
-	utils::free_clear(deleteTasks);
+	utils::free_clear(fightTasks);
+	utils::free_clear(fightDeleteTasks);
+
+	utils::free_clear(retreatTasks);
+	utils::free_clear(retDeleteTasks);
 }
 
 int CMilitaryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -285,17 +289,24 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 		}
 	}
 
-	fighterTasks.insert(task);
+	fightTasks.insert(task);
+	return task;
+}
+
+CRetreatTask* CMilitaryManager::EnqueueRetreat()
+{
+	CRetreatTask* task = new CRetreatTask(this);
+	retreatTasks.insert(task);
 	return task;
 }
 
 void CMilitaryManager::DequeueTask(IFighterTask* task, bool done)
 {
-	auto it = fighterTasks.find(task);
-	if (it != fighterTasks.end()) {
-		fighterTasks.erase(it);
+	auto it = fightTasks.find(task);
+	if (it != fightTasks.end()) {
+		fightTasks.erase(it);
 		task->Close(done);
-		deleteTasks.insert(task);
+		fightDeleteTasks.insert(task);
 	}
 }
 
@@ -504,33 +515,55 @@ void CMilitaryManager::UpdateIdle()
 
 void CMilitaryManager::UpdateRetreat()
 {
-	retreatTask->Update();
-}
-
-void CMilitaryManager::UpdateFight()
-{
-	if (!deleteTasks.empty()) {
-		for (auto task : deleteTasks) {
-			updateTasks.erase(task);
+	if (!retDeleteTasks.empty()) {
+		for (auto task : retDeleteTasks) {
+			retUpdateTasks.erase(task);
 			delete task;
 		}
-		deleteTasks.clear();
+		retDeleteTasks.clear();
 	}
 
-	auto it = updateTasks.begin();
+	auto it = retUpdateTasks.begin();
 	unsigned int i = 0;
-	while (it != updateTasks.end()) {
+	while (it != retUpdateTasks.end()) {
 		(*it)->Update();
 
-		it = updateTasks.erase(it);
-		if (++i >= updateSlice) {
+		it = retUpdateTasks.erase(it);
+		if (++i >= retUpdateSlice) {
 			break;
 		}
 	}
 
-	if (updateTasks.empty()) {
-		updateTasks = fighterTasks;
-		updateSlice = updateTasks.size() / TEAM_SLOWUPDATE_RATE;
+	if (retUpdateTasks.empty()) {
+		retUpdateTasks = retreatTasks;
+		retUpdateSlice = retUpdateTasks.size() / TEAM_SLOWUPDATE_RATE;
+	}
+}
+
+void CMilitaryManager::UpdateFight()
+{
+	if (!fightDeleteTasks.empty()) {
+		for (auto task : fightDeleteTasks) {
+			fightUpdateTasks.erase(task);
+			delete task;
+		}
+		fightDeleteTasks.clear();
+	}
+
+	auto it = fightUpdateTasks.begin();
+	unsigned int i = 0;
+	while (it != fightUpdateTasks.end()) {
+		(*it)->Update();
+
+		it = fightUpdateTasks.erase(it);
+		if (++i >= fightUpdateSlice) {
+			break;
+		}
+	}
+
+	if (fightUpdateTasks.empty()) {
+		fightUpdateTasks = fightTasks;
+		fightUpdateSlice = fightUpdateTasks.size() / TEAM_SLOWUPDATE_RATE;
 	}
 }
 

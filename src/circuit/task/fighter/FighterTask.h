@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_TASK_FIGHTER_FIGHTERTASK_H_
 
 #include "task/UnitTask.h"
+#include "util/Defines.h"
 
 namespace circuit {
 
@@ -19,7 +20,7 @@ public:
 	enum class FightType: char {DEFEND, SCOUT, ATTACK};
 
 protected:
-	IFighterTask(ITaskManager* mgr, FightType type);
+	IFighterTask(ITaskManager* mgr, FightType type, int timeout = ASSIGN_TIMEOUT);
 public:
 	virtual ~IFighterTask();
 

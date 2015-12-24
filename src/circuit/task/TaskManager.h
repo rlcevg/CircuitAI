@@ -15,7 +15,6 @@ class CCircuitAI;
 class CCircuitUnit;
 class CNullTask;
 class CIdleTask;
-class CRetreatTask;
 
 class ITaskManager {
 protected:
@@ -31,13 +30,12 @@ public:
 	virtual void DoneTask(IUnitTask* task) = 0;
 	virtual void FallbackTask(CCircuitUnit* unit) = 0;
 
+	void Init();
 	CIdleTask* GetIdleTask() const { return idleTask; }
-	CRetreatTask* GetRetreatTask() const { return retreatTask; }
 
 protected:
 	CNullTask* nullTask;
 	CIdleTask* idleTask;
-	CRetreatTask* retreatTask;
 };
 
 } // namespace circuit

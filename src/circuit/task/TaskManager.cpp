@@ -14,17 +14,15 @@
 namespace circuit {
 
 ITaskManager::ITaskManager()
+		: nullTask(nullptr)
+		, idleTask(nullptr)
 {
-	nullTask = new CNullTask(this);
-	idleTask = new CIdleTask(this);
-	retreatTask = new CRetreatTask(this);
 }
 
 ITaskManager::~ITaskManager()
 {
 	delete nullTask;
 	delete idleTask;
-	delete retreatTask;
 }
 
 void ITaskManager::AssignTask(CCircuitUnit* unit, IUnitTask* task)
@@ -32,6 +30,12 @@ void ITaskManager::AssignTask(CCircuitUnit* unit, IUnitTask* task)
 	unit->GetTask()->RemoveAssignee(unit);
 	task->AssignTo(unit);
 	task->Execute(unit);
+}
+
+void ITaskManager::Init()
+{
+	nullTask = new CNullTask(this);
+	idleTask = new CIdleTask(this);
 }
 
 } // namespace circuit

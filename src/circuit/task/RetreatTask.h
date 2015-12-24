@@ -9,12 +9,13 @@
 #define SRC_CIRCUIT_TASK_RETREATTASK_H_
 
 #include "task/UnitTask.h"
+#include "util/Defines.h"
 
 namespace circuit {
 
 class CRetreatTask: public IUnitTask {
 public:
-	CRetreatTask(ITaskManager* mgr);
+	CRetreatTask(ITaskManager* mgr, int timeout = ASSIGN_TIMEOUT);
 	virtual ~CRetreatTask();
 
 	virtual void AssignTo(CCircuitUnit* unit);
@@ -22,15 +23,13 @@ public:
 
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
-	virtual void Close(bool done);
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
 
 private:
-	std::set<CCircuitUnit*> updateUnits;
-	unsigned int updateSlice;
+	CCircuitUnit* repairer;
 };
 
 } // namespace circuit

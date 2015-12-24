@@ -29,7 +29,7 @@ using namespace springai;
 IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 		CCircuitDef* buildDef, const AIFloat3& position,
 		BuildType type, float cost, bool isShake, int timeout)
-				: IUnitTask(mgr, priority, Type::BUILDER)
+				: IUnitTask(mgr, priority, Type::BUILDER, timeout)
 				, position(position)
 				, isShake(isShake)
 				, buildDef(buildDef)
@@ -40,12 +40,9 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 				, buildPos(-RgtVector)
 				, facing(UNIT_COMMAND_BUILD_NO_FACING)
 				, nextTask(nullptr)
-				, timeout(timeout)
 				, buildFails(0)
 {
-	CCircuitAI* circuit = manager->GetCircuit();
-	lastTouched = circuit->GetLastFrame();
-	savedIncome = circuit->GetEconomyManager()->GetAvgMetalIncome();
+	savedIncome = manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome();
 }
 
 IBuilderTask::~IBuilderTask()
@@ -59,8 +56,6 @@ bool IBuilderTask::CanAssignTo(CCircuitUnit* unit)
 
 void IBuilderTask::AssignTo(CCircuitUnit* unit)
 {
-	lastTouched = -1;
-
 	IUnitTask::AssignTo(unit);
 
 	buildPower += unit->GetCircuitDef()->GetBuildSpeed();
@@ -72,10 +67,6 @@ void IBuilderTask::AssignTo(CCircuitUnit* unit)
 void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IUnitTask::RemoveAssignee(unit);
-
-	if (units.empty()) {
-		lastTouched = manager->GetCircuit()->GetLastFrame();
-	}
 
 	buildPower -= unit->GetCircuitDef()->GetBuildSpeed();
 }
@@ -229,7 +220,8 @@ void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 		manager->AbortTask(this);
 	}
 
-	manager->AssignTask(unit, manager->GetRetreatTask());
+	CRetreatTask* task = manager->GetCircuit()->GetBuilderManager()->EnqueueRetreat();
+	manager->AssignTask(unit, task);
 }
 
 void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)

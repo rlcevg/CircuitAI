@@ -8,6 +8,7 @@
 #include "task/fighter/FighterTask.h"
 #include "task/TaskManager.h"
 #include "task/RetreatTask.h"
+#include "module/MilitaryManager.h"
 #include "terrain/ThreatMap.h"
 #include "unit/action/DGunAction.h"
 #include "unit/EnemyUnit.h"
@@ -19,8 +20,8 @@ namespace circuit {
 
 using namespace springai;
 
-IFighterTask::IFighterTask(ITaskManager* mgr, FightType type)
-		: IUnitTask(mgr, Priority::NORMAL, Type::FIGHTER)
+IFighterTask::IFighterTask(ITaskManager* mgr, FightType type, int timeout)
+		: IUnitTask(mgr, Priority::NORMAL, Type::FIGHTER, timeout)
 		, fightType(type)
 		, position(-RgtVector)
 		, attackPower(.0f)
@@ -65,7 +66,8 @@ void IFighterTask::OnUnitIdle(CCircuitUnit* unit)
 	// TODO: Wait for others if goal reached? Or we stuck far away?
 
 	if (unit->IsRetreat()) {
-		manager->AssignTask(unit, manager->GetRetreatTask());
+		CRetreatTask* task = manager->GetCircuit()->GetMilitaryManager()->EnqueueRetreat();
+		manager->AssignTask(unit, task);
 		return;
 	}
 }
@@ -83,7 +85,8 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	if (healthPerc > unit->GetCircuitDef()->GetRetreat()) {
 		return;
 	} else if (healthPerc < 0.2f) {  // stuck units workaround: they don't shoot and don't see distant threat
-		manager->AssignTask(unit, manager->GetRetreatTask());
+		CRetreatTask* task = manager->GetCircuit()->GetMilitaryManager()->EnqueueRetreat();
+		manager->AssignTask(unit, task);
 		return;
 	}
 
@@ -91,14 +94,16 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const float range = unit->GetCircuitDef()->GetMaxRange();
 	if ((target == nullptr) || !target->IsInLOS()) {
-		manager->AssignTask(unit, manager->GetRetreatTask());
+		CRetreatTask* task = circuit->GetMilitaryManager()->EnqueueRetreat();
+		manager->AssignTask(unit, task);
 		return;
 	}
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	if ((target->GetPos().SqDistance2D(pos) > range * range) ||
 		(threatMap->GetThreatAt(unit, pos) * 2 > threatMap->GetUnitThreat(unit)))
 	{
-		manager->AssignTask(unit, manager->GetRetreatTask());
+		CRetreatTask* task = circuit->GetMilitaryManager()->EnqueueRetreat();
+		manager->AssignTask(unit, task);
 		return;
 	}
 	unit->SetRetreat(true);

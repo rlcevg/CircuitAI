@@ -98,7 +98,8 @@ void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 		return;
 	}
 
-	manager->AssignTask(unit, manager->GetRetreatTask());
+	CRetreatTask* task = manager->GetCircuit()->GetBuilderManager()->EnqueueRetreat();
+	manager->AssignTask(unit, task);
 }
 
 void CBRepairTask::SetTarget(CCircuitUnit* unit)
@@ -109,6 +110,9 @@ void CBRepairTask::SetTarget(CCircuitUnit* unit)
 		position = buildPos = unit->GetPos(manager->GetCircuit()->GetLastFrame());
 		targetId = unit->GetId();
 //		buildDef = unit->GetCircuitDef();
+		if (!unit->GetUnit()->IsBeingBuilt()) {
+			savedIncome = .0f;
+		}
 	} else {
 		cost = 1000.0f;
 		position = buildPos = -RgtVector;

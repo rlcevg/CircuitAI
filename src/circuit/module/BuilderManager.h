@@ -24,6 +24,7 @@ namespace springai {
 namespace circuit {
 
 class CEnergyLink;
+class CRetreatTask;
 
 class CBuilderManager: public IUnitModule {
 public:
@@ -40,7 +41,7 @@ public:
 
 	unsigned int GetWorkerCount() const { return workers.size(); }
 	float GetBuilderPower() const { return builderPower; }
-	bool CanEnqueueTask() const { return builderTasksCount < workers.size() * 2; }
+	bool CanEnqueueTask() const { return buildTasksCount < workers.size() * 2; }
 	const std::set<IBuilderTask*>& GetTasks(IBuilderTask::BuildType type);
 	void ActivateTask(IBuilderTask* task);
 	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,
@@ -65,6 +66,9 @@ public:
 							   float cost,
 							   bool isActive = true,
 							   int timeout = ASSIGN_TIMEOUT);
+	IBuilderTask* EnqueueRepair(IBuilderTask::Priority priority,
+								CCircuitUnit* target,
+								int timeout = ASSIGN_TIMEOUT);
 	IBuilderTask* EnqueuePatrol(IBuilderTask::Priority priority,
 								const springai::AIFloat3& position,
 								float cost,
@@ -75,15 +79,14 @@ public:
 								 int timeout,
 								 float radius = .0f,
 								 bool isMetal = true);
-	IBuilderTask* EnqueueRepair(IBuilderTask::Priority priority,
-								CCircuitUnit* target,
-								int timeout = ASSIGN_TIMEOUT);
 	IBuilderTask* EnqueueTerraform(IBuilderTask::Priority priority,
 								   CCircuitUnit* target,
 								   const springai::AIFloat3& position = -RgtVector,
 								   float cost = 1.0f,
 								   bool isActive = true,
 								   int timeout = ASSIGN_TIMEOUT);
+	CRetreatTask* EnqueueRetreat();
+
 private:
 	IBuilderTask* AddTask(IBuilderTask::Priority priority,
 						  CCircuitDef* buildDef,
@@ -112,7 +115,7 @@ private:
 
 	void Watchdog();
 	void UpdateIdle();
-	void UpdateRetreat();
+	void UpdateMisc();
 	void UpdateBuild();
 
 	Handlers2 createdHandler;
@@ -122,12 +125,17 @@ private:
 	EHandlers destroyedHandler;
 
 	std::map<CCircuitUnit*, IBuilderTask*> unfinishedUnits;
-	std::vector<std::set<IBuilderTask*>> builderTasks;  // owner
-	unsigned int builderTasksCount;
+	std::vector<std::set<IBuilderTask*>> buildTasks;  // owner, UnitDef based tasks
+	unsigned int buildTasksCount;
 	float builderPower;
-	std::set<IBuilderTask*> updateTasks;  // temporary tasks holder to keep updating every task
-	std::set<IBuilderTask*> deleteTasks;
-	unsigned int updateSlice;
+	std::set<IBuilderTask*> buildUpdateTasks;  // temporary tasks holder to keep updating every task
+	std::set<IBuilderTask*> buildDeleteTasks;
+	unsigned int buildUpdateSlice;
+
+	std::set<IUnitTask*> miscTasks;  // owner, tasks without UnitDef (patrol, reclaim, terraform, retreat)
+	std::set<IUnitTask*> miscUpdateTasks;
+	std::set<IUnitTask*> miscDeleteTasks;
+	unsigned int miscUpdateSlice;
 
 	std::set<CCircuitUnit*> workers;
 

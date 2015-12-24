@@ -984,7 +984,7 @@ std::string CCircuitAI::InitOptions()
 CCircuitDef* CCircuitAI::GetCircuitDef(const char* name)
 {
 	auto it = defsByName.find(name);
-	// FIXME: Return manually created object with MAX_INT id? As there is no nullptr checks along the code
+	// NOTE: For the sake of AI's health it should not return nullptr
 	return (it != defsByName.end()) ? it->second : nullptr;
 }
 

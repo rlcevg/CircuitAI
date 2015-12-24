@@ -5,6 +5,8 @@
  *	  Author: rlcevg
  */
 
+#ifdef DEBUG_VIS
+
 #include "util/DebugDrawer.h"
 #include "util/utils.h"
 #include "CircuitAI.h"
@@ -319,3 +321,5 @@ int CDebugDrawer::WindowEventFilter(void* userdata, SDL_Event* event)
 }
 
 } // namespace circuit
+
+#endif

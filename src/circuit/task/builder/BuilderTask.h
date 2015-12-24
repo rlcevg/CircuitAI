@@ -28,8 +28,10 @@ public:
 		BIG_GUN,  // super weapons
 		RADAR,
 		MEX,
-		TERRAFORM, REPAIR, RECLAIM, PATROL,  // Other builder actions
-		TASKS_COUNT, DEFAULT = BIG_GUN
+		REPAIR,
+		TASKS_COUNT,  // build-tasks count
+		TERRAFORM, RECLAIM, PATROL,  // builder actions that don't have UnitDef as target
+		DEFAULT = BIG_GUN
 	};
 
 protected:
@@ -60,7 +62,6 @@ public:
 	BuildType GetBuildType() const { return buildType; }
 	float GetBuildPower() const { return buildPower; }
 	float GetCost() const { return cost; }
-	int GetTimeout() const { return timeout; }
 
 	void SetBuildPos(const springai::AIFloat3& pos) { buildPos = pos; }
 	const springai::AIFloat3& GetBuildPos() const { return buildPos; }
@@ -71,15 +72,12 @@ public:
 	void UpdateTarget(CCircuitUnit* unit);
 
 	bool IsEqualBuildPos(CCircuitUnit* unit) const;
-	bool IsStructure() const { return buildType <= BuildType::MEX; }
 
 	void SetFacing(int value) { facing = value; }
 	int GetFacing() const { return facing; }
 
 	void SetNextTask(IBuilderTask* task) { nextTask = task; }
 	IBuilderTask* GetNextTask() const { return nextTask; }
-
-	int GetLastTouched() const { return lastTouched; }
 
 protected:
 	virtual void FindBuildSite(CCircuitUnit* builder, const springai::AIFloat3& pos, float searchRadius);
@@ -95,9 +93,6 @@ protected:
 	springai::AIFloat3 buildPos;
 	int facing;
 	IBuilderTask* nextTask;
-
-	int lastTouched;
-	int timeout;
 
 	float savedIncome;
 	int buildFails;

@@ -43,8 +43,10 @@ using namespace springai;
 
 CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		: IUnitModule(circuit)
-		, builderTasksCount(0)
+		, buildTasksCount(0)
 		, builderPower(.0f)
+		, buildUpdateSlice(0)
+		, miscUpdateSlice(0)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Watchdog, this),
@@ -172,7 +174,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		}), FRAMES_PER_SEC * 10);
 	};
 
-	builderTasks.resize(static_cast<int>(IBuilderTask::BuildType::TASKS_COUNT));
+	buildTasks.resize(static_cast<int>(IBuilderTask::BuildType::TASKS_COUNT));
 
 	for (auto mtId : workerMobileTypes) {
 		for (auto area : terrainManager->GetMobileTypeById(mtId)->area) {
@@ -191,7 +193,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	for (auto strider : striders) {
 		createdHandler[circuit->GetCircuitDef(strider)->GetId()] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 			unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
-//			unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::LOW, unit);
+//			EnqueueRepair(IBuilderTask::Priority::LOW, unit);
 		};
 	}
 	// FIXME: EXPERIMENTAL
@@ -200,10 +202,13 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 CBuilderManager::~CBuilderManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	for (auto& tasks : builderTasks) {
+	for (auto& tasks : buildTasks) {
 		utils::free_clear(tasks);
 	}
-	utils::free_clear(deleteTasks);
+	utils::free_clear(buildDeleteTasks);
+
+	utils::free_clear(miscTasks);
+	utils::free_clear(miscDeleteTasks);
 }
 
 int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -295,13 +300,17 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType type)
 {
 	// Auto-creates empty list
-	return builderTasks[static_cast<int>(type)];
+	return buildTasks[static_cast<int>(type)];
 }
 
 void CBuilderManager::ActivateTask(IBuilderTask* task)
 {
-	builderTasks[static_cast<int>(task->GetBuildType())].insert(task);
-	builderTasksCount++;
+	if ((task->GetType() == IUnitTask::Type::BUILDER) && (task->GetBuildType() < IBuilderTask::BuildType::TASKS_COUNT)) {
+		buildTasks[static_cast<int>(task->GetBuildType())].insert(task);
+		buildTasksCount++;
+	} else {
+		miscTasks.insert(task);
+	}
 }
 
 IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
@@ -338,9 +347,24 @@ IBuilderTask* CBuilderManager::EnqueuePylon(IBuilderTask::Priority priority,
 {
 	IBuilderTask* task = new CBPylonTask(this, priority, buildDef, position, link, cost, timeout);
 	if (isActive) {
-		builderTasks[static_cast<int>(IBuilderTask::BuildType::PYLON)].insert(task);
-		builderTasksCount++;
+		buildTasks[static_cast<int>(IBuilderTask::BuildType::PYLON)].insert(task);
+		buildTasksCount++;
 	}
+	return task;
+}
+
+IBuilderTask* CBuilderManager::EnqueueRepair(IBuilderTask::Priority priority,
+											 CCircuitUnit* target,
+											 int timeout)
+{
+	auto it = unfinishedUnits.find(target);
+	if (it != unfinishedUnits.end()) {
+		return it->second;
+	}
+	IBuilderTask* task = new CBRepairTask(this, priority, target, timeout);
+	buildTasks[static_cast<int>(IBuilderTask::BuildType::REPAIR)].insert(task);
+	buildTasksCount++;
+	unfinishedUnits[target] = task;
 	return task;
 }
 
@@ -350,8 +374,7 @@ IBuilderTask* CBuilderManager::EnqueuePatrol(IBuilderTask::Priority priority,
 											 int timeout)
 {
 	IBuilderTask* task = new CBPatrolTask(this, priority, position, cost, timeout);
-	builderTasks[static_cast<int>(IBuilderTask::BuildType::PATROL)].insert(task);
-	builderTasksCount++;
+	miscTasks.insert(task);
 	return task;
 }
 
@@ -363,18 +386,7 @@ IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
 											  bool isMetal)
 {
 	IBuilderTask* task = new CBReclaimTask(this, priority, position, cost, timeout, radius, isMetal);
-	builderTasks[static_cast<int>(IBuilderTask::BuildType::RECLAIM)].insert(task);
-	builderTasksCount++;
-	return task;
-}
-
-IBuilderTask* CBuilderManager::EnqueueRepair(IBuilderTask::Priority priority,
-											 CCircuitUnit* target,
-											 int timeout)
-{
-	IBuilderTask* task = new CBRepairTask(this, priority, target, timeout);
-	builderTasks[static_cast<int>(IBuilderTask::BuildType::REPAIR)].insert(task);
-	builderTasksCount++;
+	miscTasks.insert(task);
 	return task;
 }
 
@@ -392,9 +404,15 @@ IBuilderTask* CBuilderManager::EnqueueTerraform(IBuilderTask::Priority priority,
 		task = new CBTerraformTask(this, priority, target, cost, timeout);
 	}
 	if (isActive) {
-		builderTasks[static_cast<int>(IBuilderTask::BuildType::TERRAFORM)].insert(task);
-		builderTasksCount++;
+		miscTasks.insert(task);
 	}
+	return task;
+}
+
+CRetreatTask* CBuilderManager::EnqueueRetreat()
+{
+	CRetreatTask* task = new CRetreatTask(this);
+	miscTasks.insert(task);
 	return task;
 }
 
@@ -449,8 +467,8 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 	}
 
 	if (isActive) {
-		builderTasks[static_cast<int>(type)].insert(task);
-		builderTasksCount++;
+		buildTasks[static_cast<int>(type)].insert(task);
+		buildTasksCount++;
 	}
 	// TODO: Send NewTask message
 	return task;
@@ -458,14 +476,23 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 
 void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
 {
-	std::set<IBuilderTask*>& tasks = builderTasks[static_cast<int>(task->GetBuildType())];
-	auto it = tasks.find(task);
-	if (it != tasks.end()) {
-		unfinishedUnits.erase(task->GetTarget());
-		tasks.erase(it);
-		task->Close(done);
-		deleteTasks.insert(task);
-		builderTasksCount--;
+	if ((task->GetType() == IUnitTask::Type::BUILDER) && (task->GetBuildType() < IBuilderTask::BuildType::TASKS_COUNT)) {
+		std::set<IBuilderTask*>& tasks = buildTasks[static_cast<int>(task->GetBuildType())];
+		auto it = tasks.find(task);
+		if (it != tasks.end()) {
+			unfinishedUnits.erase(task->GetTarget());
+			tasks.erase(it);
+			task->Close(done);
+			buildDeleteTasks.insert(task);
+			buildTasksCount--;
+		}
+	} else {
+		auto it = miscTasks.find(task);
+		if (it != miscTasks.end()) {
+			miscTasks.erase(task);
+			task->Close(done);
+			miscDeleteTasks.insert(task);
+		}
 	}
 }
 
@@ -505,7 +532,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize();
 	const int buildDistance = std::max<int>(unit->GetCircuitDef()->GetBuildDistance(), pathfinder->GetSquareSize());
 	float metric = std::numeric_limits<float>::max();
-	for (auto& tasks : builderTasks) {
+	for (auto& tasks : buildTasks) {
 		for (IBuilderTask* candidate : tasks) {
 			if (!candidate->CanAssignTo(unit)) {
 				continue;
@@ -525,13 +552,13 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 					continue;
 				}
 
-				Unit* tu = target->GetUnit();
 				dist = pathfinder->PathCost(pos, buildPos, buildDistance);
 				if (dist > maxThreat) {
 					continue;
 				}
 
 				if (dist * weight < metric) {
+					Unit* tu = target->GetUnit();
 					float maxHealth = tu->GetMaxHealth();
 					float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
 					valid = (((maxHealth - tu->GetHealth()) * 0.6f) > healthSpeed * (dist / (maxSpeed * FRAMES_PER_SEC)));
@@ -595,7 +622,7 @@ void CBuilderManager::Init()
 	const int interval = 8;
 	const int offset = circuit->GetSkirmishAIId() % interval;
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateRetreat, this), interval, offset + 1);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateMisc, this), interval, offset + 1);
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 2);
 }
 
@@ -613,7 +640,7 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 	CCircuitDef* buildDef = circuit->GetCircuitDef("armwin");
 	if ((metalIncome < 50) && (buildDef->GetCount() < 10) && buildDef->IsAvailable()) {
 		task = EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
-	} else if (metalIncome < 150) {
+	} else if (metalIncome < 150) {  // TODO: Calc income of the map
 		task = EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
 	} else {
 		const std::set<IBuilderTask*>& tasks = GetTasks(IBuilderTask::BuildType::BIG_GUN);
@@ -709,10 +736,10 @@ void CBuilderManager::Watchdog()
 				float buildPercent = (maxHealth - u->GetHealth()) / maxHealth;
 				CCircuitDef* cdef = unit->GetCircuitDef();
 				if ((cdef->GetCost() * buildPercent < maxCost) || (*cdef == *terraDef)) {
-					unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+					EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
 				}
 			} else if (u->GetHealth() < u->GetMaxHealth()) {
-				unfinishedUnits[unit] = EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+				EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
 			}
 		}
 	}
@@ -723,25 +750,56 @@ void CBuilderManager::UpdateIdle()
 	idleTask->Update();
 }
 
-void CBuilderManager::UpdateRetreat()
+void CBuilderManager::UpdateMisc()
 {
-	retreatTask->Update();
+	if (!miscDeleteTasks.empty()) {
+		for (IUnitTask* task : miscDeleteTasks) {
+			miscUpdateTasks.erase(task);
+			delete task;
+		}
+		miscDeleteTasks.clear();
+	}
+
+	auto it = miscUpdateTasks.begin();
+	unsigned int i = 0;
+	int lastFrame = circuit->GetLastFrame();
+	while (it != miscUpdateTasks.end()) {
+		IUnitTask* task = *it;
+
+		int frame = task->GetLastTouched();
+		int timeout = task->GetTimeout();
+		if ((frame != -1) && (timeout > 0) && (lastFrame - frame >= timeout)) {
+			AbortTask(task);
+		} else {
+			task->Update();
+		}
+
+		it = miscUpdateTasks.erase(it);
+		if (++i >= miscUpdateSlice) {
+			break;
+		}
+	}
+
+	if (miscUpdateTasks.empty()) {
+		miscUpdateTasks.insert(miscTasks.begin(), miscTasks.end());
+		miscUpdateSlice = miscUpdateTasks.size() / TEAM_SLOWUPDATE_RATE;
+	}
 }
 
 void CBuilderManager::UpdateBuild()
 {
-	if (!deleteTasks.empty()) {
-		for (IBuilderTask* task : deleteTasks) {
-			updateTasks.erase(task);
+	if (!buildDeleteTasks.empty()) {
+		for (IBuilderTask* task : buildDeleteTasks) {
+			buildUpdateTasks.erase(task);
 			delete task;
 		}
-		deleteTasks.clear();
+		buildDeleteTasks.clear();
 	}
 
-	auto it = updateTasks.begin();
+	auto it = buildUpdateTasks.begin();
 	unsigned int i = 0;
 	int lastFrame = circuit->GetLastFrame();
-	while (it != updateTasks.end()) {
+	while (it != buildUpdateTasks.end()) {
 		IBuilderTask* task = *it;
 
 		int frame = task->GetLastTouched();
@@ -752,17 +810,17 @@ void CBuilderManager::UpdateBuild()
 			task->Update();
 		}
 
-		it = updateTasks.erase(it);
-		if (++i >= updateSlice) {
+		it = buildUpdateTasks.erase(it);
+		if (++i >= buildUpdateSlice) {
 			break;
 		}
 	}
 
-	if (updateTasks.empty()) {
-		for (auto& tasks : builderTasks) {
-			updateTasks.insert(tasks.begin(), tasks.end());
+	if (buildUpdateTasks.empty()) {
+		for (auto& tasks : buildTasks) {
+			buildUpdateTasks.insert(tasks.begin(), tasks.end());
 		}
-		updateSlice = updateTasks.size() / TEAM_SLOWUPDATE_RATE;
+		buildUpdateSlice = buildUpdateTasks.size() / TEAM_SLOWUPDATE_RATE;
 	}
 }
 
@@ -785,7 +843,7 @@ void CBuilderManager::UpdateAreaUsers()
 	}
 
 	std::set<IBuilderTask*> removeTasks;
-	for (auto& tasks : builderTasks) {
+	for (auto& tasks : buildTasks) {
 		for (IBuilderTask* task : tasks) {
 			CCircuitDef* cdef = task->GetBuildDef();
 			if ((cdef != nullptr) && !IsBuilderInArea(cdef, task->GetPosition())) {

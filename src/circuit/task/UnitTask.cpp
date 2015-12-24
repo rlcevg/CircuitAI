@@ -10,15 +10,18 @@
 #include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
 #include "unit/action/IdleAction.h"
+#include "CircuitAI.h"
 
 namespace circuit {
 
-IUnitTask::IUnitTask(ITaskManager* mgr, Priority priority, Type type)
+IUnitTask::IUnitTask(ITaskManager* mgr, Priority priority, Type type, int timeout)
 		: manager(mgr)
 		, priority(priority)
 		, type(type)
+		, timeout(timeout)
 		, updCount(0)
 {
+	lastTouched = manager->GetCircuit()->GetLastFrame();
 }
 
 IUnitTask::~IUnitTask()
@@ -32,6 +35,8 @@ bool IUnitTask::CanAssignTo(CCircuitUnit* unit)
 
 void IUnitTask::AssignTo(CCircuitUnit* unit)
 {
+	lastTouched = -1;
+
 	manager->GetIdleTask()->RemoveAssignee(unit);
 	unit->SetTask(this);
 	units.insert(unit);
@@ -45,6 +50,10 @@ void IUnitTask::RemoveAssignee(CCircuitUnit* unit)
 	unit->Clear();
 
 	manager->GetIdleTask()->AssignTo(unit);
+
+	if (units.empty()) {
+		lastTouched = manager->GetCircuit()->GetLastFrame();
+	}
 }
 
 void IUnitTask::Close(bool done)

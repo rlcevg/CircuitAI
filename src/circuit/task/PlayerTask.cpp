@@ -12,7 +12,7 @@
 namespace circuit {
 
 CPlayerTask::CPlayerTask(ITaskManager* mgr)
-		: IUnitTask(mgr, Priority::HIGH, Type::PLAYER)
+		: IUnitTask(mgr, Priority::HIGH, Type::PLAYER, -1)
 {
 }
 

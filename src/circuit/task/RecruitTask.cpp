@@ -21,7 +21,7 @@ using namespace springai;
 CRecruitTask::CRecruitTask(ITaskManager* mgr, Priority priority,
 		CCircuitDef* buildDef, const AIFloat3& position,
 		BuildType type, float radius)
-				: IUnitTask(mgr, priority, Type::FACTORY)
+				: IUnitTask(mgr, priority, Type::FACTORY, -1)
 				, position(position)
 				, buildDef(buildDef)
 				, buildType(type)

@@ -7,6 +7,7 @@
 
 #include "task/RetreatTask.h"
 #include "task/TaskManager.h"
+#include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/PathFinder.h"
@@ -23,9 +24,9 @@ namespace circuit {
 
 using namespace springai;
 
-CRetreatTask::CRetreatTask(ITaskManager* mgr)
-		: IUnitTask(mgr, Priority::NORMAL, Type::RETREAT)
-		, updateSlice(0)
+CRetreatTask::CRetreatTask(ITaskManager* mgr, int timeout)
+		: IUnitTask(mgr, Priority::NORMAL, Type::RETREAT, timeout)
+		, repairer(nullptr)
 {
 }
 
@@ -45,14 +46,20 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	}
 	unit->PushBack(new CMoveAction(unit));
 	unit->SetRetreat(true);
+
+	// Mobile repair
+	CBuilderManager* builderManager = manager->GetCircuit()->GetBuilderManager();
+	builderManager->EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
 }
 
 void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IUnitTask::RemoveAssignee(unit);
 
-	updateUnits.erase(unit);
 	unit->SetRetreat(false);
+	if (units.empty()) {
+		manager->DoneTask(this);
+	}
 }
 
 void CRetreatTask::Execute(CCircuitUnit* unit)
@@ -88,48 +95,27 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 void CRetreatTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	if (updateUnits.empty()) {
-		updateUnits = units;  // copy units
-		updateSlice = updateUnits.size() / TEAM_SLOWUPDATE_RATE;
-		++updCount;
-	}
-
-	bool isExecute = (updCount % 4 == 0);
-	auto it = updateUnits.begin();
-	unsigned int i = 0;
-	while (it != updateUnits.end()) {
-		CCircuitUnit* ass = *it;
-		it = updateUnits.erase(it);
-
-		Unit* u = ass->GetUnit();
+	bool isExecute = (++updCount % 4 == 0);
+	auto assignees = units;
+	for (CCircuitUnit* unit : assignees) {
+		Unit* u = unit->GetUnit();
 		const float healthPerc = u->GetHealth() / u->GetMaxHealth();
 		bool isRepaired;
 		// FIXME: Wait until 101.0 engine
 //		if (ass->GetShield() != nullptr) {
-//			isRepaired = (healthPerc > 0.9f) && (ass->GetShield()->GetShieldPower() > ass->GetCircuitDef()->GetMaxShield() * 0.9f);
+//			isRepaired = (healthPerc > 0.9f) && (unit->GetShield()->GetShieldPower() > unit->GetCircuitDef()->GetMaxShield() * 0.9f);
 //		} else {
-			isRepaired = (healthPerc > (ass->GetCircuitDef()->IsAbleToFly() ? 0.99f : 0.9f));
+			isRepaired = (healthPerc > (unit->GetCircuitDef()->IsAbleToFly() ? 0.99f : 0.9f));
 //		}
 
 		if (isRepaired) {
-			RemoveAssignee(ass);
-		} else if (ass->IsForceExecute() || isExecute) {
-			Execute(ass);
+			RemoveAssignee(unit);
+		} else if (unit->IsForceExecute() || isExecute) {
+			Execute(unit);
 		} else {
-			ass->Update(circuit);
-		}
-
-		if (++i >= updateSlice) {
-			break;
+			unit->Update(circuit);
 		}
 	}
-}
-
-void CRetreatTask::Close(bool done)
-{
-	updateUnits.clear();
-
-	IUnitTask::Close(done);
 }
 
 void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)

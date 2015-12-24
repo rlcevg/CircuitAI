@@ -25,8 +25,9 @@ class CCircuitDef {
 public:
 	using Id = int;
 	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, COUNT};
-	enum RoleType: char {BUILDER = 0x01, SCOUT = 0x02, RAIDER = 0x04, ASSAULT = 0x08,
-						 ARTY    = 0x10, AA    = 0x20, NONE   = 0x00};
+	enum RoleType: int {BUILDER = 0x0001, SCOUT   = 0x0002, RAIDER  = 0x0004, RIOT = 0x0008,
+						ASSAULT = 0x0010, HEAVY   = 0x0020, SKIRM   = 0x0040, ARTY = 0x0080,
+						AA      = 0x0100, LSTATIC = 0x0200, HSTATIC = 0x0400, NONE = 0x0000};
 
 	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
@@ -49,8 +50,8 @@ public:
 	const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
 	float GetBuildDistance() const { return buildDistance; }
 	float GetBuildSpeed() const { return buildSpeed; }
-	inline bool CanBuild(Id buildDefId) const;
-	inline bool CanBuild(CCircuitDef* buildDef) const;
+	inline bool CanBuild(Id buildDefId) const {	return buildOptions.find(buildDefId) != buildOptions.end(); }
+	inline bool CanBuild(CCircuitDef* buildDef) const { return CanBuild(buildDef->GetId()); }
 	int GetCount() const { return count; }
 
 	void Inc() { ++count; }
@@ -153,17 +154,6 @@ private:
 
 	springai::AIFloat3 midPosOffset;
 };
-
-inline bool CCircuitDef::CanBuild(Id buildDefId) const
-{
-	return buildOptions.find(buildDefId) != buildOptions.end();
-}
-
-inline bool CCircuitDef::CanBuild(CCircuitDef* buildDef) const
-{
-	// FIXME: Remove Patrol/Reclaim/Terra tasks from CBuildManager::builderTasks
-	return (buildDef != nullptr) ? CanBuild(buildDef->GetId()) : false/*true*/;
-}
 
 } // namespace circuit
 

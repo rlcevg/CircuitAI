@@ -14,6 +14,7 @@ IUnitModule::IUnitModule(CCircuitAI* circuit)
 		, IUnitManager()
 		, ITaskManager()
 {
+	Init();
 }
 
 IUnitModule::~IUnitModule()

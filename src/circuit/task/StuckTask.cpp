@@ -15,7 +15,7 @@ namespace circuit {
 using namespace springai;
 
 CStuckTask::CStuckTask(ITaskManager* mgr)
-		: IUnitTask(mgr, Priority::NORMAL, Type::STUCK)
+		: IUnitTask(mgr, Priority::NORMAL, Type::STUCK, -1)
 {
 }
 
