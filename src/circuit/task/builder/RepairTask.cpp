@@ -31,24 +31,45 @@ CBRepairTask::~CBRepairTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
+void CBRepairTask::RemoveAssignee(CCircuitUnit* unit)
+{
+	IBuilderTask::RemoveAssignee(unit);
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	CCircuitUnit* repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
+	if (repTarget != nullptr) {
+		IUnitTask* task = repTarget->GetTask();
+		if ((task != nullptr) && (task->GetType() == IUnitTask::Type::RETREAT)) {
+			static_cast<CRetreatTask*>(task)->SetRepairer(units.empty() ? nullptr : *units.begin());
+		}
+	}
+}
+
 void CBRepairTask::Execute(CCircuitUnit* unit)
 {
+	CCircuitAI* circuit = manager->GetCircuit();
+	CCircuitUnit* repTarget;
 	if (targetId == -1) {
-		CCircuitUnit* target = FindUnitToAssist(unit);
-		if (target == nullptr) {
+		repTarget = FindUnitToAssist(unit);
+		if (repTarget == nullptr) {
 			manager->FallbackTask(unit);
 			return;
 		}
-		cost = target->GetCircuitDef()->GetCost();
-		targetId = target->GetId();
+		cost = repTarget->GetCircuitDef()->GetCost();
+		targetId = repTarget->GetId();
+	} else {
+		repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
 	}
 
-	CCircuitAI* circuit = manager->GetCircuit();
-	CCircuitUnit* target = circuit->GetFriendlyUnit(targetId);
-	if (target != nullptr) {
+	if (repTarget != nullptr) {
 		Unit* u = unit->GetUnit();
 		u->ExecuteCustomCommand(CMD_PRIORITY, {static_cast<float>(priority)});
-		u->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+		u->Repair(repTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+
+		IUnitTask* task = repTarget->GetTask();
+		if ((task != nullptr) && (task->GetType() == IUnitTask::Type::RETREAT)) {
+			static_cast<CRetreatTask*>(task)->UpdateRepairer(unit);
+		}
 	} else {
 		manager->AbortTask(this);
 	}
@@ -104,8 +125,8 @@ void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 
 void CBRepairTask::SetTarget(CCircuitUnit* unit)
 {
-	target = unit;
 	if (unit != nullptr) {
+		target = manager->GetCircuit()->GetTeamUnit(unit->GetId());
 		cost = unit->GetCircuitDef()->GetCost();
 		position = buildPos = unit->GetPos(manager->GetCircuit()->GetLastFrame());
 		targetId = unit->GetId();
@@ -114,6 +135,7 @@ void CBRepairTask::SetTarget(CCircuitUnit* unit)
 			savedIncome = .0f;
 		}
 	} else {
+		target = nullptr;
 		cost = 1000.0f;
 		position = buildPos = -RgtVector;
 		targetId = -1;

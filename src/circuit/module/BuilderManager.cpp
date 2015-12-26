@@ -528,7 +528,7 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	terrainManager->CorrectPosition(pos);
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	const float maxThreat = circuit->GetThreatMap()->GetMapSize();
+	const float maxThreat = circuit->GetThreatMap()->GetMapSize();  // FIXME: Threat was decreased, so this should be decreased too. Use perimeter?
 	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize();
 	const int buildDistance = std::max<int>(unit->GetCircuitDef()->GetBuildDistance(), pathfinder->GetSquareSize());
 	float metric = std::numeric_limits<float>::max();
@@ -640,7 +640,7 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 	CCircuitDef* buildDef = circuit->GetCircuitDef("armwin");
 	if ((metalIncome < 50) && (buildDef->GetCount() < 10) && buildDef->IsAvailable()) {
 		task = EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
-	} else if (metalIncome < 150) {  // TODO: Calc income of the map
+	} else if (metalIncome < 120) {  // TODO: Calc income of the map
 		task = EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
 	} else {
 		const std::set<IBuilderTask*>& tasks = GetTasks(IBuilderTask::BuildType::BIG_GUN);

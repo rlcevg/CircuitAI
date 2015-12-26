@@ -36,13 +36,13 @@ void CSRepairTask::Update()
 	if (economyManager->GetAvgMetalIncome() < savedIncome * 0.6f) {
 		manager->AbortTask(this);
 	} else if ((++updCount % 4 == 0) && !units.empty()) {
-		CCircuitUnit* target = circuit->GetFriendlyUnit(targetId);
-		if (target == nullptr) {
+		CCircuitUnit* repTarget = circuit->GetFriendlyUnit(targetId);
+		if (repTarget == nullptr) {
 			manager->AbortTask(this);
 			return;
 		}
 		IBuilderTask* task = nullptr;
-		if (target->GetUnit()->IsBeingBuilt()) {
+		if (repTarget->GetUnit()->IsBeingBuilt()) {
 			if (economyManager->IsMetalEmpty()) {
 				// Check for damaged units
 				circuit->UpdateFriendlyUnits();

@@ -309,7 +309,7 @@
 // Units defined as scouts will use pathfinder to visit each uncolonized mex
 "scouts": [
 	// factorycloak
-	"armpw",
+	"armpw", "spherepole",
 
 	// factorygunship
 	"armkam",

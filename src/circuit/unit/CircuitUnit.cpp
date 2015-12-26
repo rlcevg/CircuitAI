@@ -31,6 +31,8 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* cdef)
 		, failFrame(-1)
 		, isForceExecute(false)
 		, disarmParam(nullptr)
+		, isDisarmed(false)
+		, disarmFrame(-1)
 		, isMorphing(false)
 		, isRetreat(false)
 {
@@ -58,6 +60,8 @@ void CCircuitUnit::SetTask(IUnitTask* task)
 
 const AIFloat3& CCircuitUnit::GetPos(int frame)
 {
+	// NOTE: Ally units don't have manager, hence
+	//       manager->GetCircuit()->GetLastFrame() will crash
 	if (posFrame != frame) {
 		posFrame = frame;
 		position = unit->GetPos();
@@ -92,13 +96,18 @@ void CCircuitUnit::ManualFire(Unit* enemy, int timeOut)
 
 bool CCircuitUnit::IsDisarmed()
 {
-	if (disarmParam == nullptr) {
-		disarmParam = unit->GetUnitRulesParamByName("disarmed");
+	int frame = manager->GetCircuit()->GetLastFrame();
+	if (disarmFrame != frame) {
+		disarmFrame = frame;
 		if (disarmParam == nullptr) {
-			return false;
+			disarmParam = unit->GetUnitRulesParamByName("disarmed");
+			if (disarmParam == nullptr) {
+				return isDisarmed = false;
+			}
 		}
+		isDisarmed = disarmParam->GetValueFloat() > .0f;
 	}
-	return disarmParam->GetValueFloat() > .0f;
+	return isDisarmed;
 }
 
 float CCircuitUnit::GetDPS()

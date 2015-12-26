@@ -72,16 +72,24 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
-	CFactoryManager* factoryManager = circuit->GetFactoryManager();
+	CPathFinder* pathfinder = circuit->GetPathfinder();
 	AIFloat3 startPos = unit->GetPos(frame);
-	AIFloat3 endPos = factoryManager->GetClosestHaven(unit);
-	if (endPos == -RgtVector) {
-		endPos = circuit->GetSetupManager()->GetBasePos();
+	AIFloat3 endPos;
+	float range;
+
+	if (repairer != nullptr) {
+		endPos = repairer->GetPos(frame);
+		range = pathfinder->GetSquareSize();
+	} else {
+		CFactoryManager* factoryManager = circuit->GetFactoryManager();
+		endPos = factoryManager->GetClosestHaven(unit);
+		if (endPos == -RgtVector) {
+			endPos = circuit->GetSetupManager()->GetBasePos();
+		}
+		range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
 	}
 	F3Vec path;
 
-	CPathFinder* pathfinder = circuit->GetPathfinder();
-	float range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
 	pathfinder->MakePath(path, startPos, endPos, range);
 
@@ -108,7 +116,7 @@ void CRetreatTask::Update()
 			isRepaired = (healthPerc > (unit->GetCircuitDef()->IsAbleToFly() ? 0.99f : 0.9f));
 //		}
 
-		if (isRepaired) {
+		if (isRepaired && !unit->IsDisarmed()) {
 			RemoveAssignee(unit);
 		} else if (unit->IsForceExecute() || isExecute) {
 			Execute(unit);
@@ -121,13 +129,13 @@ void CRetreatTask::Update()
 void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
 	CFactoryManager* factoryManager = circuit->GetFactoryManager();
-	AIFloat3 haven = factoryManager->GetClosestHaven(unit);
+	AIFloat3 haven = (repairer != nullptr) ? repairer->GetPos(frame) : factoryManager->GetClosestHaven(unit);
 	if (haven == -RgtVector) {
 		haven = circuit->GetSetupManager()->GetBasePos();
 	}
 	const float maxDist = factoryManager->GetAssistDef()->GetBuildDistance();
-	int frame = circuit->GetLastFrame();
 	const AIFloat3& unitPos = unit->GetPos(frame);
 	if (unitPos.SqDistance2D(haven) > maxDist * maxDist) {
 		// TODO: push MoveAction into unit? to avoid enemy fire
@@ -135,10 +143,10 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		// TODO: Add fail counter?
 	} else {
 		// TODO: push WaitAction into unit
-		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
+//		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
 
 		AIFloat3 pos = unitPos;
-		const float size = SQUARE_SIZE * 50;
+		const float size = SQUARE_SIZE * 16;
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		float centerX = terrainManager->GetTerrainWidth() / 2;
 		float centerZ = terrainManager->GetTerrainHeight() / 2;
@@ -151,6 +159,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 			pos.x += (pos.x > centerX) ? -size : size;
 			pos.z += (pos.z > centerZ) ? -size : size;
 		}
+		pos = terrainManager->GetBuildPosition(unit->GetCircuitDef(), pos);
 		unit->GetUnit()->PatrolTo(pos);
 
 		IUnitAction* act = static_cast<IUnitAction*>(unit->End());
@@ -168,6 +177,38 @@ void CRetreatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 void CRetreatTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	RemoveAssignee(unit);
+}
+
+void CRetreatTask::UpdateRepairer(CCircuitUnit* unit)
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	AIFloat3 startPos = (*units.begin())->GetPos(frame);
+	AIFloat3 endPos;
+	float range;
+
+	if (repairer != nullptr) {
+		endPos = repairer->GetPos(frame);
+		range = pathfinder->GetSquareSize();
+	} else {
+		CFactoryManager* factoryManager = circuit->GetFactoryManager();
+		endPos = factoryManager->GetClosestHaven(unit);
+		if (endPos == -RgtVector) {
+			endPos = circuit->GetSetupManager()->GetBasePos();
+		}
+		range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
+	}
+
+	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
+	float prevCost = pathfinder->PathCost(startPos, endPos, range);
+
+	endPos = unit->GetPos(frame);
+	float nextCost = pathfinder->PathCost(startPos, endPos, range);
+
+	if (prevCost > nextCost) {
+		SetRepairer(unit);
+	}
 }
 
 } // namespace circuit

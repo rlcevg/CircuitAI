@@ -106,53 +106,7 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 
 void CAttackTask::Update()
 {
-	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
-	if (!isAttack && (updCount % 16 == 0)) {
-		std::vector<CCircuitUnit*> veterans;
-		veterans.reserve(units.size());
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();;
-		AIFloat3 groupPos(ZeroVector);
-		for (CCircuitUnit* unit : units) {
-			AIFloat3 pos = unit->GetPos(frame);
-			terrainManager->CorrectPosition(pos);
-			if (terrainManager->CanMoveToPos(unit->GetArea(), pos)) {
-				groupPos += pos;
-				veterans.push_back(unit);
-			}
-		}
-		groupPos /= veterans.size();
-
-		// find the unit closest to the center (since the actual center might be unreachable)
-		float sqMinDist = std::numeric_limits<float>::max();
-		float sqMaxDist = .0f;
-		CCircuitUnit* closestUnit = *units.begin();
-		for (CCircuitUnit* unit : veterans) {
-			const float sqDist = groupPos.SqDistance2D(unit->GetPos(frame));
-			if (sqDist < sqMinDist) {
-				sqMinDist = sqDist;
-				closestUnit = unit;
-			}
-			if (sqDist > sqMaxDist) {
-				sqMaxDist = sqDist;
-			}
-		}
-		groupPos = closestUnit->GetPos(frame);
-
-		// have to regroup?
-		const float regroupDist = std::max<float>(SQUARE_SIZE * 4 * veterans.size(), highestRange);
-		if (sqMaxDist > regroupDist * regroupDist) {
-			isRegroup = true;
-			for (CCircuitUnit* unit : units) {
-				unit->GetUnit()->MoveTo(groupPos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
-				unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
-			}
-		} else {
-			isRegroup = false;
-		}
-	}
-
-	if (isRegroup) {
+	if (IsRegroup()) {
 		return;
 	}
 
@@ -163,37 +117,40 @@ void CAttackTask::Update()
 			isExecute |= unit->IsForceExecute();
 		}
 	}
-	if (isExecute) {
-		Execute(leader, true);
-		const float sqHighestRange = highestRange * highestRange;
-		for (CCircuitUnit* unit : units) {
-			if (unit == leader) {
+	if (!isExecute) {
+		return;
+	}
+	Execute(leader, true);
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
+	const float sqHighestRange = highestRange * highestRange;
+	for (CCircuitUnit* unit : units) {
+		if (unit == leader) {
+			continue;
+		}
+		const float sqDist = position.SqDistance2D(unit->GetPos(frame));
+		if (target != nullptr) {
+			const float range = unit->GetUnit()->GetMaxRange();
+			if (sqDist < range * range) {
+				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+				unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+				isAttack = true;
 				continue;
 			}
-			const float sqDist = position.SqDistance2D(unit->GetPos(frame));
-			if (target != nullptr) {
-				const float range = unit->GetUnit()->GetMaxRange();
-				if (sqDist < range * range) {
-					unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
-					unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
-					isAttack = true;
-					continue;
-				}
-			} else {
-				// Guard commander
-				CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-				if ((frame > FRAMES_PER_SEC * 300) && (commander != nullptr) &&
-					circuit->GetTerrainManager()->CanMoveToPos(commander->GetArea(), commander->GetPos(frame)))
-				{
-					unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
-					isAttack = false;
-					continue;
-				}
+		} else {
+			// Guard commander
+			CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+			if ((frame > FRAMES_PER_SEC * 300) && (commander != nullptr) &&
+				circuit->GetTerrainManager()->CanMoveToPos(commander->GetArea(), commander->GetPos(frame)))
+			{
+				unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
+				isAttack = false;
+				continue;
 			}
-			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
-			unit->GetUnit()->SetWantedMaxSpeed((sqDist > sqHighestRange) ? lowestSpeed : MAX_SPEED);
-			isAttack = false;
 		}
+		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		unit->GetUnit()->SetWantedMaxSpeed((sqDist > sqHighestRange) ? lowestSpeed : MAX_SPEED);
+		isAttack = false;
 	}
 }
 
@@ -293,6 +250,61 @@ void CAttackTask::FindTarget(CCircuitUnit* unit, float& minSqDist)
 			minSqDist = sqDist;
 		}
 	}
+}
+
+bool CAttackTask::IsRegroup()
+{
+	if (isAttack || (updCount % 16 != 0)) {
+		return isRegroup;
+	}
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
+	std::vector<CCircuitUnit*> veterans;
+	veterans.reserve(units.size());
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();;
+	AIFloat3 groupPos(ZeroVector);
+	for (CCircuitUnit* unit : units) {
+		AIFloat3 pos = unit->GetPos(frame);
+		terrainManager->CorrectPosition(pos);
+		if (terrainManager->CanMoveToPos(unit->GetArea(), pos)) {
+			groupPos += pos;
+			veterans.push_back(unit);
+		}
+	}
+	if (veterans.empty()) {
+		return isRegroup = false;
+	}
+	groupPos /= veterans.size();
+
+	// find the unit closest to the center (since the actual center might be unreachable)
+	float sqMinDist = std::numeric_limits<float>::max();
+	float sqMaxDist = .0f;
+	CCircuitUnit* closestUnit = *units.begin();
+	for (CCircuitUnit* unit : veterans) {
+		const float sqDist = groupPos.SqDistance2D(unit->GetPos(frame));
+		if (sqDist < sqMinDist) {
+			sqMinDist = sqDist;
+			closestUnit = unit;
+		}
+		if (sqDist > sqMaxDist) {
+			sqMaxDist = sqDist;
+		}
+	}
+	groupPos = closestUnit->GetPos(frame);  // TODO: Why not use leader?
+
+	// have to regroup?
+	const float regroupDist = std::max<float>(SQUARE_SIZE * 4 * veterans.size(), highestRange);
+	if (sqMaxDist > regroupDist * regroupDist) {
+		isRegroup = true;
+		for (CCircuitUnit* unit : units) {
+			unit->GetUnit()->MoveTo(groupPos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+		}
+	} else {
+		isRegroup = false;
+	}
+	return isRegroup;
 }
 
 } // namespace circuit

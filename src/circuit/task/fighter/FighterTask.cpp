@@ -82,7 +82,7 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 //			return;
 //		}
 //	} else
-	if (healthPerc > unit->GetCircuitDef()->GetRetreat()) {
+	if ((healthPerc > unit->GetCircuitDef()->GetRetreat()) && !unit->IsDisarmed()) {
 		return;
 	} else if (healthPerc < 0.2f) {  // stuck units workaround: they don't shoot and don't see distant threat
 		CRetreatTask* task = manager->GetCircuit()->GetMilitaryManager()->EnqueueRetreat();

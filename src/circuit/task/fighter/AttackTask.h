@@ -33,13 +33,14 @@ public:
 private:
 	void Execute(CCircuitUnit* unit, bool isUpdating);
 	void FindTarget(CCircuitUnit* unit, float& minSqDist);
+	bool IsRegroup();
 
 	float lowestRange;
 	float highestRange;
 	float lowestSpeed;
 	float highestSpeed;
 	// NOTE: Using unit instead of area directly may save from processing UpdateAreaUsers
-	CCircuitUnit* leader;  // slowest, weakest unit
+	CCircuitUnit* leader;  // slowest, weakest unit, true leader
 
 	float minPower;
 

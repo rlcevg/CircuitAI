@@ -105,7 +105,11 @@ private:
 
 	springai::Weapon* dgun;
 	springai::Weapon* shield;
+
 	springai::UnitRulesParam* disarmParam;
+	bool isDisarmed;
+	int disarmFrame;
+
 	bool isMorphing;
 	bool isRetreat;
 };

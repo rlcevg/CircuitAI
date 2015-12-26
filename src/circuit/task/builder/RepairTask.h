@@ -20,6 +20,8 @@ public:
 	CBRepairTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, int timeout = 0);
 	virtual ~CBRepairTask();
 
+	virtual void RemoveAssignee(CCircuitUnit* unit);
+
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
 protected:
