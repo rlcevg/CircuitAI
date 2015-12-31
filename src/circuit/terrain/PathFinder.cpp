@@ -237,11 +237,13 @@ float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos
 	return pathCost;
 }
 
+/*
+ * WARNING: startPos must be correct
+ */
 float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius)
 {
 	path.clear();
 
-	// startPos must be correct
 	terrainData->CorrectPosition(endPos);
 
 	float pathCost = 0.0f;

@@ -162,7 +162,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		if (unit->GetUnit()->IsBeingBuilt()) {
 			return;
 		}
-		// Check mex position in 10 seconds
+		// Check mex position in 20 seconds
 		this->circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this, mexDef, pos, index]() {
 			if (this->circuit->GetMetalManager()->IsOpenSpot(index) &&
 				this->circuit->GetBuilderManager()->IsBuilderInArea(mexDef, pos) &&
@@ -171,7 +171,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 				EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
 				this->circuit->GetMetalManager()->SetOpenSpot(index, false);
 			}
-		}), FRAMES_PER_SEC * 10);
+		}), FRAMES_PER_SEC * 20);
 	};
 
 	buildTasks.resize(static_cast<int>(IBuilderTask::BuildType::TASKS_COUNT));
@@ -253,6 +253,10 @@ int CBuilderManager::UnitFinished(CCircuitUnit* unit)
 	if (iter != unfinishedUnits.end()) {
 		DoneTask(iter->second);
 	}
+	auto itre = repairedUnits.find(unit->GetId());
+	if (itre != repairedUnits.end()) {
+		DoneTask(itre->second);
+	}
 
 	auto search = finishedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != finishedHandler.end()) {
@@ -287,6 +291,10 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 	auto iter = unfinishedUnits.find(unit);
 	if (iter != unfinishedUnits.end()) {
 		AbortTask(iter->second);
+	}
+	auto itre = repairedUnits.find(unit->GetId());
+	if (itre != repairedUnits.end()) {
+		AbortTask(itre->second);
 	}
 
 	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
@@ -357,14 +365,14 @@ IBuilderTask* CBuilderManager::EnqueueRepair(IBuilderTask::Priority priority,
 											 CCircuitUnit* target,
 											 int timeout)
 {
-	auto it = unfinishedUnits.find(target);
-	if (it != unfinishedUnits.end()) {
+	auto it = repairedUnits.find(target->GetId());
+	if (it != repairedUnits.end()) {
 		return it->second;
 	}
-	IBuilderTask* task = new CBRepairTask(this, priority, target, timeout);
+	CBRepairTask* task = new CBRepairTask(this, priority, target, timeout);
 	buildTasks[static_cast<int>(IBuilderTask::BuildType::REPAIR)].insert(task);
 	buildTasksCount++;
-	unfinishedUnits[target] = task;
+	repairedUnits[target->GetId()] = task;
 	return task;
 }
 
@@ -480,7 +488,11 @@ void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
 		std::set<IBuilderTask*>& tasks = buildTasks[static_cast<int>(task->GetBuildType())];
 		auto it = tasks.find(task);
 		if (it != tasks.end()) {
-			unfinishedUnits.erase(task->GetTarget());
+			if (task->GetBuildType() == IBuilderTask::BuildType::REPAIR) {
+				repairedUnits.erase(static_cast<CBRepairTask*>(task)->GetTargetId());
+			} else {
+				unfinishedUnits.erase(task->GetTarget());
+			}
 			tasks.erase(it);
 			task->Close(done);
 			buildDeleteTasks.insert(task);
@@ -729,7 +741,7 @@ void CBuilderManager::Watchdog()
 	// TODO: Include special units
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
-		if ((unfinishedUnits.find(unit) == unfinishedUnits.end()) && !unit->GetCircuitDef()->IsMobile()) {
+		if (!unit->GetCircuitDef()->IsMobile() && (unfinishedUnits.find(unit) == unfinishedUnits.end())) {
 			Unit* u = unit->GetUnit();
 			if (u->IsBeingBuilt()) {
 				float maxHealth = u->GetMaxHealth();

@@ -30,6 +30,7 @@ public:
 		MEX,
 		REPAIR,
 		TASKS_COUNT,  // build-tasks count
+		RECRUIT,
 		TERRAFORM, RECLAIM, PATROL,  // builder actions that don't have UnitDef as target
 		DEFAULT = BIG_GUN
 	};
@@ -38,6 +39,9 @@ protected:
 	IBuilderTask(ITaskManager* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
 				 BuildType type, float cost, bool isShake = true, int timeout = ASSIGN_TIMEOUT);
+	IBuilderTask(ITaskManager* mgr, Priority priority,
+				 CCircuitDef* buildDef, const springai::AIFloat3& position,
+				 float cost, int timeout = ASSIGN_TIMEOUT);
 public:
 	virtual ~IBuilderTask();
 

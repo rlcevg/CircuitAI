@@ -11,6 +11,7 @@
 #include "module/UnitModule.h"
 #include "task/builder/BuilderTask.h"
 #include "terrain/TerrainData.h"
+#include "unit/CircuitUnit.h"
 
 #include <map>
 #include <set>
@@ -25,6 +26,7 @@ namespace circuit {
 
 class CEnergyLink;
 class CRetreatTask;
+class CBRepairTask;
 
 class CBuilderManager: public IUnitModule {
 public:
@@ -125,6 +127,7 @@ private:
 	EHandlers destroyedHandler;
 
 	std::map<CCircuitUnit*, IBuilderTask*> unfinishedUnits;
+	std::map<CCircuitUnit::Id, CBRepairTask*> repairedUnits;
 	std::vector<std::set<IBuilderTask*>> buildTasks;  // owner, UnitDef based tasks
 	unsigned int buildTasksCount;
 	float builderPower;

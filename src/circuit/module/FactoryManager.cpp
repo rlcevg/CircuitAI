@@ -262,7 +262,8 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		unit->SetManager(this);
 
 		factoryPower += unit->GetCircuitDef()->GetBuildSpeed();
-		CRecruitTask* task = new CRecruitTask(this, IUnitTask::Priority::HIGH, nullptr, ZeroVector, CRecruitTask::BuildType::FIREPOWER, unit->GetCircuitDef()->GetBuildDistance());
+		CRecruitTask* task = new CRecruitTask(this, IUnitTask::Priority::HIGH, nullptr, ZeroVector,
+											  CRecruitTask::RecruitType::FIREPOWER, unit->GetCircuitDef()->GetBuildDistance());
 		unit->SetTask(task);
 
 		// check nanos around
@@ -290,7 +291,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			delete ndef;
 		}
 		utils::free_clear(units);
-		factories.emplace_back(unit, nanos, 9, false);
+		factories.emplace_back(unit, nanos, 4, false);
 
 		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
 //		unit->GetUnit()->SetRepeat(true);
@@ -422,6 +423,10 @@ int CFactoryManager::UnitFinished(CCircuitUnit* unit)
 	if (iter != unfinishedUnits.end()) {
 		DoneTask(iter->second);
 	}
+	auto itre = repairedUnits.find(unit->GetId());
+	if (itre != repairedUnits.end()) {
+		DoneTask(itre->second);
+	}
 
 	auto search = finishedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != finishedHandler.end()) {
@@ -443,11 +448,13 @@ int CFactoryManager::UnitIdle(CCircuitUnit* unit)
 
 int CFactoryManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
-	if (unit->GetUnit()->IsBeingBuilt()) {
-		auto iter = unfinishedUnits.find(unit);
-		if (iter != unfinishedUnits.end()) {
-			AbortTask(iter->second);
-		}
+	auto iter = unfinishedUnits.find(unit);
+	if (iter != unfinishedUnits.end()) {
+		AbortTask(iter->second);
+	}
+	auto itre = repairedUnits.find(unit->GetId());
+	if (itre != repairedUnits.end()) {
+		AbortTask(itre->second);
 	}
 
 	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
@@ -461,7 +468,7 @@ int CFactoryManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 CRecruitTask* CFactoryManager::EnqueueTask(CRecruitTask::Priority priority,
 										   CCircuitDef* buildDef,
 										   const AIFloat3& position,
-										   CRecruitTask::BuildType type,
+										   CRecruitTask::RecruitType type,
 										   float radius)
 {
 	CRecruitTask* task = new CRecruitTask(this, priority, buildDef, position, type, radius);
@@ -482,8 +489,13 @@ IBuilderTask* CFactoryManager::EnqueueReclaim(IBuilderTask::Priority priority,
 IBuilderTask* CFactoryManager::EnqueueRepair(IBuilderTask::Priority priority,
 											 CCircuitUnit* target)
 {
+	auto it = repairedUnits.find(target->GetId());
+	if (it != repairedUnits.end()) {
+		return it->second;
+	}
 	IBuilderTask* task = new CSRepairTask(this, priority, target);
 	assistTasks.insert(task);
+	repairedUnits[target->GetId()] = task;
 	return task;
 }
 
@@ -500,6 +512,9 @@ void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 	}
 	auto ita = assistTasks.find(static_cast<IBuilderTask*>(task));
 	if (ita != assistTasks.end()) {
+		if (static_cast<IBuilderTask*>(task)->GetBuildType() == IBuilderTask::BuildType::REPAIR) {
+			repairedUnits.erase(static_cast<CSRepairTask*>(task)->GetTargetId());
+		}
 		assistTasks.erase(ita);
 		task->Close(done);
 		deleteAssists.insert(static_cast<IBuilderTask*>(task));
@@ -632,7 +647,7 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 		const AIFloat3& buildPos = factory->GetPos(circuit->GetLastFrame());
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
-		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::BuildType::BUILDPOWER, radius);
+		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::BUILDPOWER, radius);
 	}
 
 	return nullptr;
@@ -656,7 +671,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
 			UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
 			float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
-			return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::BuildType::AA, radius);
+			return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::AA, radius);
 		}
 	}
 	if (circuit->GetMilitaryManager()->IsNeedArty()) {
@@ -665,7 +680,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
 			UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
 			float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
-			return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::BuildType::ARTY, radius);
+			return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::ARTY, radius);
 		}
 	}
 
@@ -701,7 +716,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
 		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
 		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
-		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::BuildType::FIREPOWER, radius);
+		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::FIREPOWER, radius);
 	}
 
 	return nullptr;

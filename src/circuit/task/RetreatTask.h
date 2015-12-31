@@ -28,8 +28,9 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
 
-	void UpdateRepairer(CCircuitUnit* unit);
+	void CheckRepairer(CCircuitUnit* unit);
 	void SetRepairer(CCircuitUnit* unit) { repairer = unit; }
+	CCircuitUnit* GetRepairer() const { return repairer; }
 
 private:
 	CCircuitUnit* repairer;

@@ -44,14 +44,21 @@ void CBFactoryTask::Finish()
 {
 	IBuilderTask::Finish();
 
-	// FIXME: No hardcoded strings allowed out of AI initialization
-	if (std::string("factoryplane") != buildDef->GetUnitDef()->GetName()) {
-		return;
-	}
 	CCircuitAI* circuit = manager->GetCircuit();
-	CCircuitDef* repairDef = circuit->GetCircuitDef("armasp");
-	circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, repairDef, buildPos,
-											  IBuilderTask::BuildType::FACTORY);
+	// FIXME: No hardcoded strings allowed out of AI initialization
+	if (std::string("factoryplane") == buildDef->GetUnitDef()->GetName()) {
+		CCircuitDef* repairDef = circuit->GetCircuitDef("armasp");
+		IBuilderTask* parent = circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, repairDef, buildPos,
+																		 IBuilderTask::BuildType::FACTORY, true, true, 0);
+		CCircuitDef* nanoDef = circuit->GetCircuitDef("armnanotc");
+		IBuilderTask* subTask = circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, nanoDef, buildPos,
+																		  IBuilderTask::BuildType::NANO, true, false, 0);
+		parent->SetNextTask(subTask);
+	} else if (std::string("factorygunship") == buildDef->GetUnitDef()->GetName()) {
+		CCircuitDef* repairDef = circuit->GetCircuitDef("armnanotc");
+		circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, repairDef, buildPos,
+												  IBuilderTask::BuildType::NANO);
+	}
 }
 
 void CBFactoryTask::Cancel()

@@ -98,8 +98,8 @@ private:
 	int UnitMoveFailed(CCircuitUnit* unit);
 	int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
 	int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
-	int UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId);  // TODO: Use Team class?
-	int UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId);  // TODO: Use Team class?
+	int UnitGiven(CCircuitUnit::Id unitId, int oldTeamId, int newTeamId);
+	int UnitCaptured(CCircuitUnit::Id unitId, int oldTeamId, int newTeamId);
 	int EnemyEnterLOS(CEnemyUnit* enemy);
 	int EnemyLeaveLOS(CEnemyUnit* enemy);
 	int EnemyEnterRadar(CEnemyUnit* enemy);

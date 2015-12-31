@@ -187,7 +187,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 //				params.push_back(0.0f);  // 7: volumeSelection?
 //				params.push_back(pos.x);  //  8: i + 0 control point x
 //				params.push_back(pos.z);  //  9: i + 1 control point z
-//				params.push_back(u->GetUnitId());  // 10: i + 2 unitId
+//				params.push_back(unit->GetId());  // 10: i + 2 unitId
 //				u->ExecuteCustomCommand(CMD_TERRAFORM_INTERNAL, params);
 //
 //				fighterInfos[unit].isTerraforming = true;
@@ -450,38 +450,43 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 bool CMilitaryManager::IsNeedAA() const
 {
 	const float airThreat = circuit->GetThreatMap()->GetAirMetal();
-	const float ecoFactor = circuit->GetEconomyManager()->GetEcoFactor();
-	return (airThreat * ratioAA > metalAA * ecoFactor) && (metalAA < maxPercAA * metalSum);
+	return (airThreat * ratioAA > metalAA * factorAA) && (metalAA < maxPercAA * metalSum);
 }
 
 bool CMilitaryManager::IsNeedArty() const
 {
 	const float staticThreat = circuit->GetThreatMap()->GetStaticMetal();
-	const float ecoFactor = circuit->GetEconomyManager()->GetEcoFactor();
-	return (staticThreat * ratioArty > metalArty * ecoFactor) && (metalArty < maxPercArty * metalSum);
+	return (staticThreat * ratioArty > metalArty * factorArty) && (metalArty < maxPercArty * metalSum);
 }
 
 void CMilitaryManager::ReadConfig()
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const Json::Value& ratio = root["response_ratio"];
+	const Json::Value& ratio = root["response"];
+	const float teamSize = circuit->GetAllyTeam()->GetSize();
 
 	const Json::Value& antiAir = ratio["anti_air"];
 	if (antiAir == Json::Value::null) {
 		ratioAA   = 1.0f;
 		maxPercAA = 1.0f;
+		factorAA  = teamSize;
 	} else {
-		ratioAA   = antiAir.get(unsigned(0), 1.0f).asFloat();
-		maxPercAA = antiAir.get(unsigned(1), 1.0f).asFloat();
+		ratioAA   = antiAir.get("ratio", 1.0f).asFloat();
+		maxPercAA = antiAir.get("max_percent", 1.0f).asFloat();
+		const float stepAA = antiAir.get("eps_step", 1.0f).asFloat();
+		factorAA  = (teamSize - 1.0f) * stepAA + 1.0f;
 	}
 
 	const Json::Value& artillery = ratio["artillery"];
 	if (artillery == Json::Value::null) {
 		ratioArty   = 1.0f;
 		maxPercArty = 1.0f;
+		factorArty  = teamSize;
 	} else {
-		ratioArty   = artillery.get(unsigned(0), 1.0f).asFloat();
-		maxPercArty = artillery.get(unsigned(1), 1.0f).asFloat();
+		ratioArty   = artillery.get("ratio", 1.0f).asFloat();
+		maxPercArty = artillery.get("max_percent", 1.0f).asFloat();
+		const float stepArty = artillery.get("eps_step", 1.0f).asFloat();
+		factorArty  = (teamSize - 1.0f) * stepArty + 1.0f;
 	}
 }
 

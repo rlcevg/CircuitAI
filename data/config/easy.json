@@ -255,11 +255,18 @@
 	"income_factor": 0.8
 },
 
-// Build special units when enemy_metal*value > response_metal*eps; eps=(teamSize+3)/4
-// AA condition for 1v1: (air_metal*0.6 > aa_metal*1) and (aa_metal < army_metal*0.8).
-"response_ratio": {
-	// "<response_type>": [<ratio>, <max_percent_in_army>]
-	"anti_air": [0.6, 0.8],
-	"artillery": [0.2, 0.5]
+// Build special units when enemy_metal*ratio > response_metal*eps; eps=teamSize*eps_step+(1-eps_step)
+// AA condition for 3v3: (air_metal*0.6 > aa_metal*3) and (aa_metal < army_metal*0.8).
+"response": {
+	"anti_air": {
+		"ratio": 0.6,
+		"max_percent": 0.8,
+		"eps_step": 1.0
+	},
+	"artillery": {
+		"ratio": 0.2,
+		"max_percent": 0.5,
+		"eps_step": 1.0
+	}
 }
 }

@@ -9,8 +9,8 @@
 #define SRC_CIRCUIT_MODULE_FACTORYMANAGER_H_
 
 #include "module/UnitModule.h"
-#include "task/RecruitTask.h"
-#include "task/builder/BuilderTask.h"
+#include "task/static/RecruitTask.h"
+#include "unit/CircuitUnit.h"
 
 #include <map>
 #include <vector>
@@ -34,7 +34,7 @@ public:
 	CRecruitTask* EnqueueTask(CRecruitTask::Priority priority,
 							  CCircuitDef* buildDef,
 							  const springai::AIFloat3& position,
-							  CRecruitTask::BuildType type,
+							  CRecruitTask::RecruitType type,
 							  float radius);
 	IBuilderTask* EnqueueReclaim(IBuilderTask::Priority priority,
 								 const springai::AIFloat3& position,
@@ -83,7 +83,7 @@ private:
 	Handlers1 idleHandler;
 	EHandlers destroyedHandler;
 
-	std::map<CCircuitUnit*, CRecruitTask*> unfinishedUnits;
+	std::map<CCircuitUnit*, IBuilderTask*> unfinishedUnits;
 	std::set<CRecruitTask*> factoryTasks;  // owner
 	float factoryPower;
 	std::set<CRecruitTask*> deleteTasks;
@@ -125,6 +125,7 @@ private:
 	CCircuitDef* assistDef;
 	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> assists;  // nano 1:n factory
 	std::list<springai::AIFloat3> havens;  // position behind factory
+	std::map<CCircuitUnit::Id, IBuilderTask*> repairedUnits;
 	std::set<IBuilderTask*> assistTasks;  // owner
 	std::set<IBuilderTask*> updateAssists;
 	std::set<IBuilderTask*> deleteAssists;

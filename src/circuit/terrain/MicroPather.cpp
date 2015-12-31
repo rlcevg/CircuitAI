@@ -51,7 +51,6 @@
 //#undef NDEBUG
 #include <cassert>
 
-#define USE_NODEATINDEX100
 //#define USE_ASSERTIONS
 //#define DEBUG_PATH
 

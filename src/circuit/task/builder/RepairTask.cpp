@@ -10,6 +10,7 @@
 #include "task/TaskManager.h"
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
+#include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -37,11 +38,20 @@ void CBRepairTask::RemoveAssignee(CCircuitUnit* unit)
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitUnit* repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
-	if (repTarget != nullptr) {
-		IUnitTask* task = repTarget->GetTask();
-		if ((task != nullptr) && (task->GetType() == IUnitTask::Type::RETREAT)) {
-			static_cast<CRetreatTask*>(task)->SetRepairer(units.empty() ? nullptr : *units.begin());
-		}
+	if (repTarget == nullptr) {
+		return;
+	}
+	IUnitTask* task = repTarget->GetTask();
+	if ((task == nullptr) || (task->GetType() != IUnitTask::Type::RETREAT)) {
+		return;
+	}
+	CRetreatTask* retTask = static_cast<CRetreatTask*>(task);
+	if (retTask->GetRepairer() != unit) {
+		return;
+	}
+	retTask->SetRepairer(nullptr);
+	if (!units.empty()) {
+		retTask->CheckRepairer(*units.begin());
 	}
 }
 
@@ -68,7 +78,7 @@ void CBRepairTask::Execute(CCircuitUnit* unit)
 
 		IUnitTask* task = repTarget->GetTask();
 		if ((task != nullptr) && (task->GetType() == IUnitTask::Type::RETREAT)) {
-			static_cast<CRetreatTask*>(task)->UpdateRepairer(unit);
+			static_cast<CRetreatTask*>(task)->CheckRepairer(unit);
 		}
 	} else {
 		manager->AbortTask(this);
@@ -94,10 +104,29 @@ void CBRepairTask::Finish()
 //			circuit->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
 //		}
 //	}
+
+	Cancel();
 }
 
 void CBRepairTask::Cancel()
 {
+	CCircuitAI* circuit = manager->GetCircuit();
+	CCircuitUnit* repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
+	if (repTarget == nullptr) {
+		return;
+	}
+	IUnitTask* task = repTarget->GetTask();
+	if ((task == nullptr) || (task->GetType() != IUnitTask::Type::RETREAT)) {
+		return;
+	}
+	CRetreatTask* retTask = static_cast<CRetreatTask*>(task);
+	CCircuitUnit* repairer = retTask->GetRepairer();
+	for (CCircuitUnit* unit : units) {
+		if (repairer == unit) {
+			retTask->SetRepairer(nullptr);
+			break;
+		}
+	}
 }
 
 void CBRepairTask::OnUnitIdle(CCircuitUnit* unit)
@@ -126,9 +155,11 @@ void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 void CBRepairTask::SetTarget(CCircuitUnit* unit)
 {
 	if (unit != nullptr) {
-		target = manager->GetCircuit()->GetTeamUnit(unit->GetId());
+		CCircuitAI* circuit = manager->GetCircuit();
+		target = circuit->GetTeamUnit(unit->GetId());
 		cost = unit->GetCircuitDef()->GetCost();
-		position = buildPos = unit->GetPos(manager->GetCircuit()->GetLastFrame());
+		position = buildPos = unit->GetPos(circuit->GetLastFrame());
+		circuit->GetTerrainManager()->CorrectPosition(buildPos);  // position will contain non-corrected value
 		targetId = unit->GetId();
 //		buildDef = unit->GetCircuitDef();
 		if (!unit->GetUnit()->IsBeingBuilt()) {

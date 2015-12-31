@@ -33,6 +33,7 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
 
 	virtual void SetTarget(CCircuitUnit* unit);
+	CCircuitUnit::Id GetTargetId() const { return targetId; }
 
 protected:
 	CCircuitUnit* FindUnitToAssist(CCircuitUnit* unit);

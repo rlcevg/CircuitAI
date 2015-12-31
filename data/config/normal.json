@@ -50,24 +50,24 @@
 	},
 
 	"factorygunship": {
-		"importance": [0.9, 2.0],
+		"importance": [1.0, 2.0],
 		"require_energy": false,
 
-		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
+		"income_tier": [7, 16, 24, 32, 40, 56, 72, 88],
 		//            blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator
 		"unit_def": ["blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans"],
 		// 0-8m Opening - Blastwing and banshee Harass
-		"tier0":    [ 0.58,        0.00,     0.38,     0.02,             0.00,       0.02,        0.00,     0.00,      0.00],
+		"tier0":    [ 0.68,        0.00,     0.05,     0.25,             0.00,       0.02,        0.00,     0.00,      0.00],
 		// 9-16m Early Game - Banshee with a chance of Blackdawn
-		"tier1":    [ 0.10,        0.00,     0.38,     0.10,             0.02,       0.40,        0.00,     0.00,      0.00],
+		"tier1":    [ 0.20,        0.00,     0.08,     0.60,             0.02,       0.10,        0.00,     0.00,      0.00],
 		// 17-24m Expanding - Time to start a-makin Brawlers
-		"tier2":    [ 0.74,        0.00,     0.00,     0.00,             0.23,       0.02,        0.01,     0.00,      0.00],
+		"tier2":    [ 0.44,        0.00,     0.00,     0.45,             0.08,       0.02,        0.01,     0.00,      0.00],
 		// 25-32m Expansions meet - Time to keep a-makin Brawlers
-		"tier3":    [ 0.72,        0.00,     0.00,     0.00,             0.24,       0.02,        0.02,     0.00,      0.00],
+		"tier3":    [ 0.52,        0.00,     0.00,     0.34,             0.10,       0.02,        0.02,     0.00,      0.00],
 		// 33m -40m Solid Fronts - Brawlers with a chance of Krow
-		"tier4":    [ 0.60,        0.00,     0.00,     0.00,             0.35,       0.01,        0.04,     0.00,      0.00],
+		"tier4":    [ 0.50,        0.00,     0.00,     0.29,             0.16,       0.01,        0.04,     0.00,      0.00],
 		// 41m - 56m Mid Game - Brawlers with a bigger chance of Krow
-		"tier5":    [ 0.60,        0.00,     0.00,     0.00,             0.33,       0.01,        0.06,     0.00,      0.00],
+		"tier5":    [ 0.60,        0.00,     0.00,     0.17,             0.17,       0.01,        0.05,     0.00,      0.00],
 		// 57m - 72m Late Game - we must have 2 facs & Striders by now, go nuts!
 		"tier6":    [ 0.60,        0.00,     0.00,     0.00,             0.30,       0.02,        0.08,     0.00,      0.00],
 		// 72m - 88m+ Late late Game - Spam Krows!
@@ -75,7 +75,7 @@
 
 		"artillery_def": "armbrawl",  // brawler
 		"anti_air_def": "gunshipaa",  // trident
-		"builder_def": "armca"  // crane
+		"builder_def": "armca"  // crane//
 	},
 
 	"factoryamph": {
@@ -115,23 +115,23 @@
 		//            flea,      hermit,          venom,       redback,      recluse,   crabe,      infiltrator
 		"unit_def": ["armflea", "spiderassault", "arm_venom", "spiderriot", "armsptk", "armcrabe", "armspy"],
 		// 0-8m Opening - Opening turbo Flea spam & Riots		
-		"tier0":    [ 0.87,      0.00,            0.02,        0.11,         0.00,      0.00,       0.00],
+		"tier0":    [ 0.87,      0.00,            0.00,        0.13,         0.00,      0.00,       0.00],
 		// 9-16m Early Game - Reducing Flea spam, still mostly Riots
-		"tier1":    [ 0.75,      0.07,            0.02,        0.16,         0.00,      0.00,       0.00],
+		"tier1":    [ 0.76,      0.12,            0.01,        0.06,         0.05,      0.00,       0.00],
 		// 17-24m Expanding - Slant production towards Hermit & Redback
-		"tier2":    [ 0.70,      0.21,            0.01,        0.08,         0.00,      0.00,       0.00],
+		"tier2":    [ 0.70,      0.18,            0.01,        0.04,         0.07,      0.00,       0.00],
 		// 25-32m Expansions meet - Slant production towards Hermit & Recluse
-		"tier3":    [ 0.69,      0.23,            0.00,        0.06,         0.00,      0.02,       0.00],
+		"tier3":    [ 0.69,      0.18,            0.00,        0.04,         0.09,      0.00,       0.00],
 		// 33m -40m Solid Fronts - 	Greater Emphasis on Hermit & Crabbe
-		"tier4":    [ 0.70,      0.22,            0.00,        0.05,         0.00,      0.03,       0.00],
+		"tier4":    [ 0.70,      0.19,            0.00,        0.03,         0.08,      0.00,       0.00],
 		// 41m - 56m Mid Game - We need more Crabbes
-		"tier5":    [ 0.70,      0.22,            0.00,        0.04,         0.00,      0.04,       0.00],
+		"tier5":    [ 0.70,      0.20,            0.00,        0.03,         0.07,      0.00,       0.00],
 		// 57m - 72m Late Game -  MORE CRABBES
-		"tier6":    [ 0.70,      0.22,            0.00,        0.02,         0.00,      0.06,       0.00],
+		"tier6":    [ 0.70,      0.20,            0.00,        0.03,         0.07,      0.00,       0.00],
 		// 72m - 88m+ Late late Game - TURBO CRABBES
-		"tier7":    [ 0.70,      0.23,            0.00,        0.00,         0.00,      0.07,       0.00],
+		"tier7":    [ 0.70,      0.20,            0.00,        0.03,         0.07,      0.00,       0.00],
 
-		"artillery_def": "armsptk",  // recluse
+		"artillery_def": "armcrabe",  // recluse
 		"anti_air_def": "spideraa",  // tarantula
 		"builder_def": "arm_spider"  // weaver
 	},
@@ -177,17 +177,17 @@
 		// 9-16m Early Game - Mostly Mace, some support
 		"tier1":    [ 0.67,    0.06,       0.05,           0.00,               0.22,        0.00],
 		// 17-24m Expanding - MAXIMUM OP Scalpel time
-		"tier2":    [ 0.40,    0.30,       0.15,           0.00,               0.15,        0.00],
+		"tier2":    [ 0.40,    0.20,       0.25,           0.00,               0.15,        0.00],
 		// 25-32m Expansions meet - Mix in some Halberds
-		"tier3":    [ 0.20,    0.48,       0.21,           0.01,               0.10,        0.00],
+		"tier3":    [ 0.20,    0.38,       0.31,           0.01,               0.10,        0.00],
 		// 33m -40m Solid Fronts - 	More Halberd and Pene
-		"tier4":    [ 0.17,    0.46,       0.26,           0.01,               0.10,        0.00],
+		"tier4":    [ 0.17,    0.36,       0.36,           0.01,               0.10,        0.00],
 		// 41m - 56m Mid Game - Even more Halberd and Pene
-		"tier5":    [ 0.20,    0.30,       0.36,           0.01,               0.13,        0.00],
+		"tier5":    [ 0.20,    0.20,       0.46,           0.01,               0.13,        0.00],
 		// 57m - 72m Late Game - More Pene
-		"tier6":    [ 0.24,    0.30,       0.35,           0.01,               0.10,        0.00],
+		"tier6":    [ 0.24,    0.20,       0.45,           0.01,               0.10,        0.00],
 		// 72m - 88m+ Late late Game - MAXIMUM PENE
-		"tier7":    [ 0.27,    0.30,       0.33,           0.00,               0.10,        0.00],
+		"tier7":    [ 0.27,    0.20,       0.43,           0.00,               0.10,        0.00],
 
 		"artillery_def": "armmanni",  // penetrator
 		"anti_air_def": "hoveraa",  // flail
@@ -198,21 +198,27 @@
 		"importance": [0.9, 2.0],
 		"require_energy": false,
 
-		"income_tier": [10, 20, 30, 40],
+		"income_tier": [10, 20, 30, 40, 50, 60, 70],
 		//            swift,     hawk,      raven,     phoenix,    thunderbird,         wyvern,    vulture
 		"unit_def": ["fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "corawac"],
 		// 0-10m Early Game
 		"tier0":    [ 0.10,      0.00,      0.47,      0.38,       0.00,                0.00,      0.05],
 		// 11-20m Expansion
-		"tier1":    [ 0.10,      0.00,      0.60,      0.20,       0.05,                0.00,      0.05],
+		"tier1":    [ 0.10,      0.00,      0.64,      0.20,       0.01,                0.00,      0.05],
 		// 21-30m Fronts
-		"tier2":    [ 0.10,      0.00,      0.58,      0.07,       0.10,                0.10,      0.05],
+		"tier2":    [ 0.02,      0.00,      0.80,      0.07,       0.01,                0.05,      0.05],
 		// 31-40m Mid onwards
-		"tier3":    [ 0.10,      0.00,      0.53,      0.07,       0.10,                0.15,      0.05],
+		"tier3":    [ 0.02,      0.00,      0.79,      0.03,       0.01,                0.10,      0.05],
+		// 41-50m Mid
+		"tier5":    [ 0.02,      0.00,      0.77,      0.03,       0.01,                0.12,      0.05],
+		// 51-60m Late Mid
+		"tier6":    [ 0.02,      0.00,      0.75,      0.03,       0.01,                0.14,      0.05],
+		// 61-70m Late
+		"tier7":    [ 0.02,      0.00,      0.73,      0.03,       0.01,                0.16,      0.05],
 
 		"artillery_def": "corshad",  // raven
 		"anti_air_def": "fighter",  // swift
-		"builder_def": "armca"  // crane
+		"builder_def": "corshad" // crane
 	},
 
 	"factorytank": {
@@ -235,9 +241,9 @@
 		// 41m - 56m Mid Game - More arty & Golly
 		"tier5":    [ 0.28,      0.00,      0.18,      0.43,      0.11,     0.00,      0.00],
 		// 57m - 72m Late Game - Even more arty & Golly
-		"tier6":    [ 0.22,      0.00,      0.15,      0.45,      0.16,     0.00,      0.02],
+		"tier6":    [ 0.22,      0.00,      0.15,      0.43,      0.16,     0.00,      0.04],
 		// 72m - 88m+ Late late Game - MAXIMUM GOLLY
-		"tier7":    [ 0.26,      0.00,      0.10,      0.25,      0.36,     0.00,      0.03],
+		"tier7":    [ 0.26,      0.00,      0.10,      0.23,      0.36,     0.00,      0.05],
 
 		"artillery_def": "cormart",  // pillager
 		"anti_air_def": "corsent",  // copperhead
@@ -291,19 +297,20 @@
 },
 
 "strider": {
-	"income_tier": [60, 120],
+	"income_tier": [60, 80, 100],
 	//               ultimatum,    scorpion,   dante,   catapult,   funnelweb,   bantha,     detriment, leviathan,    reef,   warlord
 	"unit_def":    ["armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"],
 
-	"land_tier0":  [ 0.01,         0.10,       0.83,    0.00,       0.05,        0.01,       0.00,      0.00,         0.00,   0.00],
-	"land_tier1":  [ 0.03,         0.25,       0.42,    0.05,       0.15,        0.10,       0.00,      0.00,         0.00,   0.00],
-	"land_tier2":  [ 0.05,         0.16,       0.46,    0.05,       0.10,        0.15,       0.03,      0.00,         0.00,   0.00],
+	"land_tier0":  [ 0.01,         0.10,       0.81,    0.00,       0.05,        0.03,       0.00,      0.00,         0.00,   0.00],
+	"land_tier1":  [ 0.03,         0.14,       0.22,    0.24,       0.20,        0.16,       0.01,      0.00,         0.00,   0.00],
+	"land_tier2":  [ 0.05,         0.10,       0.16,    0.35,       0.10,        0.21,       0.03,      0.00,         0.00,   0.00],
+	"land_tier3":  [ 0.05,         0.10,       0.01,    0.26,       0.10,        0.35,       0.13,      0.00,         0.00,   0.00],
 
 	"water_tier1": [ 0.50,         0.00,       0.00,    0.00,       0.00,        0.00,       0.00,      0.00,         0.25,   0.25],
 	"water_tier2": [ 0.10,         0.00,       0.00,    0.00,       0.00,        0.00,       0.10,      0.00,         0.40,   0.40],
 
 	"require_energy": false
-	//"artillery_def": "armraven"  // Raven
+	//"artillery_def": "armraven"  // catapult
 },
 
 // Units defined as scouts will use pathfinder to visit each uncolonized mex
@@ -312,7 +319,7 @@
 	"armpw", "spherepole",
 
 	// factorygunship
-	"armkam",
+	"armkam", "blastwing", "gunshipsupport", "blackdawn", "armbrawl",
 
 	// factoryamph
 	"amphraider3", "amphraider2",
@@ -337,6 +344,9 @@
 
 	// factoryplane
 	"fighter", "corawac",
+	
+	// Strider
+	"armcomdgun", "scorpion",
 
 	// factorytank
 	"logkoda"
@@ -352,9 +362,9 @@
 
 	// Gunship lab
 	"blastwing": 0.1,
-	"armkam": 0.4, 
-	"gunshipsupport": 0.5, 
-	"blackdawn": 0.7,
+	"armkam": 0.8, 
+	"gunshipsupport": 0.8, 
+	"blackdawn": 0.8,
 	"corcrw": 0.4,
 
 	// Cloaky lab
@@ -377,7 +387,7 @@
 	"armflea": 0.1,
 	"spiderassault": 0.5,
 	"arm_venom": 0.8,
-	"spiderriot": 0.5, 
+	"spiderriot": 0.55, 
 	"armsptk": 0.6,
 	"armcrabe": 0.5,
 
@@ -396,24 +406,24 @@
 	"nsaclash": 0.6,
 	"hoverassault": 0.4,
 	"hoverdepthcharge": 0.6,
-	"hoverriot": 0.5, 
+	"hoverriot": 0.6, 
 	"armmanni": 0.9,
 
 	// Heavy Tanks
-	"logkoda": 0.5,
-	"tawf114": 0.5,
-	"correap": 0.5,
-	"corgol":0.4, 
+	"logkoda": 0.6,
+	"tawf114": 0.55,
+	"correap": 0.55,
+	"corgol":0.5, 
 	"cormart": 0.9,
 	"trem": 0.9,
 
 	// Striders
 	"armcomdgun": 0.7,
 	"scorpion": 0.4,
-	"dante": 0.4,
+	"dante": 0.5,
 	"armraven": 0.9,
 	"funnelweb": 0.8,
-	"armbanth": 0.4
+	"armbanth": 0.5
 },
 
 // Limits of energy structures partly defined by parabola in space (structure_cost/energyMake, unit_limit).
@@ -451,14 +461,21 @@
 		"armfus": [4],
 		"armwin": [20]
 	},
-	"income_factor": 0.7
+	"income_factor": 0.72
 },
 
-// Build special units when enemy_metal*value > response_metal*eps; eps=(teamSize+3)/4
-// AA condition for 1v1: (air_metal*0.6 > aa_metal*1) and (aa_metal < army_metal*0.8).
-"response_ratio": {
-	// "<response_type>": [<ratio>, <max_percent_in_army>]
-	"anti_air": [0.7, 0.7],
-	"artillery": [0.42, 0.4]
+// Build special units when enemy_metal*ratio > response_metal*eps; eps=teamSize*eps_step+(1-eps_step)
+// AA condition for 3v3: (air_metal*0.7 > aa_metal*3) and (aa_metal < army_metal*0.45).
+"response": {
+	"anti_air": {
+		"ratio": 0.7,
+		"max_percent": 0.45,
+		"eps_step": 1.0
+	},
+	"artillery": {
+		"ratio": 1.0,
+		"max_percent": 0.45,
+		"eps_step": 1.0
+	}
 }
 }

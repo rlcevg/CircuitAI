@@ -105,7 +105,7 @@ void CAllyTeam::UpdateFriendlyUnits(CCircuitAI* circuit)
 	}
 	friendlyUnits.clear();
 	const std::vector<Unit*>& units = circuit->GetCallback()->GetFriendlyUnits();
-	for (auto u : units) {
+	for (Unit* u : units) {
 		// FIXME: Why engine returns vector with some nullptrs?
 		// TODO: Check every GetEnemy/FriendlyUnits for nullptr
 		if (u == nullptr) {

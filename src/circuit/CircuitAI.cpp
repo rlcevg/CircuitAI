@@ -191,20 +191,13 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		case EVENT_UNIT_GIVEN: {
 			PRINT_TOPIC("EVENT_UNIT_GIVEN", topic);
 			struct SUnitGivenEvent* evt = (struct SUnitGivenEvent*)data;
-			CCircuitUnit* unit = RegisterTeamUnit(evt->unitId);
-			ret = (unit != nullptr) ? this->UnitGiven(unit, evt->oldTeamId, evt->newTeamId) : ERROR_UNIT_GIVEN;
+			ret = this->UnitGiven(evt->unitId, evt->oldTeamId, evt->newTeamId);
 			break;
 		}
 		case EVENT_UNIT_CAPTURED: {
 			PRINT_TOPIC("EVENT_UNIT_CAPTURED", topic);
 			struct SUnitCapturedEvent* evt = (struct SUnitCapturedEvent*)data;
-			CCircuitUnit* unit = GetTeamUnit(evt->unitId);
-			if (unit != nullptr) {
-				ret = this->UnitCaptured(unit, evt->oldTeamId, evt->newTeamId);
-				UnregisterTeamUnit(unit);
-			} else {
-				ret = ERROR_UNIT_CAPTURED;
-			}
+			ret = this->UnitCaptured(evt->unitId, evt->oldTeamId, evt->newTeamId);
 			break;
 		}
 		case EVENT_ENEMY_ENTER_LOS: {
@@ -690,32 +683,48 @@ int CCircuitAI::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId)
+int CCircuitAI::UnitGiven(CCircuitUnit::Id unitId, int oldTeamId, int newTeamId)
 {
-	CEnemyUnit* enemy = GetEnemyUnit(unit->GetId());
+	CEnemyUnit* enemy = GetEnemyUnit(unitId);
 	if (enemy != nullptr) {
 		EnemyDestroyed(enemy);
 		UnregisterEnemyUnit(enemy);
 	}
 
 	// it might not have been given to us! Could have been given to another team
-	if (teamId == newTeamId) {
-		for (auto& module : modules) {
-			module->UnitGiven(unit, oldTeamId, newTeamId);
-		}
+	if (teamId != newTeamId) {
+		return 0;  // signaling: OK
+	}
+
+	CCircuitUnit* unit = RegisterTeamUnit(unitId);
+	if (unit == nullptr) {
+		return ERROR_UNIT_GIVEN;
+	}
+
+	for (auto& module : modules) {
+		module->UnitGiven(unit, oldTeamId, newTeamId);
 	}
 
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId)
+int CCircuitAI::UnitCaptured(CCircuitUnit::Id unitId, int oldTeamId, int newTeamId)
 {
 	// it might not have been captured from us! Could have been captured from another team
-	if (teamId == oldTeamId) {
-		for (auto& module : modules) {
-			module->UnitCaptured(unit, oldTeamId, newTeamId);
-		}
+	if (teamId != oldTeamId) {
+		return 0;  // signaling: OK
 	}
+
+	CCircuitUnit* unit = GetTeamUnit(unitId);
+	if (unit == nullptr) {
+		return ERROR_UNIT_CAPTURED;
+	}
+
+	for (auto& module : modules) {
+		module->UnitCaptured(unit, oldTeamId, newTeamId);
+	}
+
+	UnregisterTeamUnit(unit);
 
 	return 0;  // signaling: OK
 }
@@ -840,10 +849,7 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(CCircuitUnit::Id unitId)
 
 void CCircuitAI::UnregisterTeamUnit(CCircuitUnit* unit)
 {
-	Unit* u = unit->GetUnit();
-	int unitId = u->GetUnitId();
-
-	teamUnits.erase(unitId);
+	teamUnits.erase(unit->GetId());
 	defsById[unit->GetCircuitDef()->GetId()]->Dec();
 
 	delete unit;
@@ -915,8 +921,7 @@ void CCircuitAI::UpdateEnemyUnits()
 		// FIXME: Unit id validation. No EnemyDestroyed sometimes apparently
 		if (enemy->IsInRadarOrLOS() && (enemy->GetUnit()->GetPos() == ZeroVector)) {
 			EnemyDestroyed(enemy);
-			// UnregisterEnemyUnit(enemy)
-			it = enemyUnits.erase(it);
+			it = enemyUnits.erase(it);  // UnregisterEnemyUnit(enemy)
 			delete enemy;
 			continue;
 		}
@@ -924,8 +929,7 @@ void CCircuitAI::UpdateEnemyUnits()
 		int frame = enemy->GetLastSeen();
 		if ((frame != -1) && (lastFrame - frame >= FRAMES_PER_SEC * 600)) {
 			EnemyDestroyed(enemy);
-			// UnregisterEnemyUnit(enemy)
-			it = enemyUnits.erase(it);
+			it = enemyUnits.erase(it);  // UnregisterEnemyUnit(enemy)
 			delete enemy;
 		} else {
 			++it;

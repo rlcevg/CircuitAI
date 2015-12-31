@@ -21,7 +21,10 @@
 
 #ifdef DEBUG_VIS
 #include "DebugDrawer.h"
+#define DEBUG_LOG
+#endif
 
+#ifdef DEBUG_LOG
 #include "Map.h"  // to get Drawer
 #include "Drawer.h"
 #include "Log.h"

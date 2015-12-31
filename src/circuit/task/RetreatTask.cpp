@@ -48,6 +48,7 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	unit->SetRetreat(true);
 
 	// Mobile repair
+	// FIXME: Don't create repair task for planes
 	CBuilderManager* builderManager = manager->GetCircuit()->GetBuilderManager();
 	builderManager->EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
 }
@@ -179,7 +180,7 @@ void CRetreatTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 	RemoveAssignee(unit);
 }
 
-void CRetreatTask::UpdateRepairer(CCircuitUnit* unit)
+void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
@@ -200,6 +201,7 @@ void CRetreatTask::UpdateRepairer(CCircuitUnit* unit)
 		range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
 	}
 
+	circuit->GetTerrainManager()->CorrectPosition(startPos);
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
 	float prevCost = pathfinder->PathCost(startPos, endPos, range);
 

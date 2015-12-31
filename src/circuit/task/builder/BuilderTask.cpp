@@ -45,6 +45,25 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 	savedIncome = manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome();
 }
 
+IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
+		CCircuitDef* buildDef, const AIFloat3& position,
+		float cost, int timeout)
+				: IUnitTask(mgr, priority, Type::FACTORY, timeout)
+				, position(position)
+				, isShake(false)
+				, buildDef(buildDef)
+				, buildType(BuildType::RECRUIT)
+				, buildPower(.0f)
+				, cost(cost)
+				, target(nullptr)
+				, buildPos(-RgtVector)
+				, facing(UNIT_COMMAND_BUILD_NO_FACING)
+				, nextTask(nullptr)
+				, buildFails(0)
+{
+	savedIncome = manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome();
+}
+
 IBuilderTask::~IBuilderTask()
 {
 }
@@ -92,7 +111,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		} else {
 			terrainManager->RemoveBlocker(buildDef, buildPos, facing);
 			// FIXME: If enemy blocked position then reset will have no effect
-//			terrain->ResetBuildFrame();
+//			terrainManager->ResetBuildFrame();
 		}
 	}
 
@@ -226,10 +245,11 @@ void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 
 void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
-	if (((target != nullptr) && (units.size() > 1)) || unit->IsMorphing()) {
-		RemoveAssignee(unit);
-	} else {
+	// NOTE: AbortTask usually do not call RemoveAssignee for each unit
+	if (((target == nullptr) || units.empty()) && !unit->IsMorphing()) {
 		manager->AbortTask(this);
+	} else {
+		RemoveAssignee(unit);
 	}
 }
 
