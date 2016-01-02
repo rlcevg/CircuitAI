@@ -48,6 +48,8 @@ CFactoryData::CFactoryData(CCircuitAI *circuit)
 
 		allFactories[sfac.id] = sfac;
 	}
+
+	striderChance = root["strider"].get("chance", 0.5f).asFloat();
 }
 
 CFactoryData::~CFactoryData()

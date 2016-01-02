@@ -95,6 +95,7 @@ public:
 
 	bool IsMobile()       const { return speed > .1f; }
 	bool IsAbleToFly()    const { return isAbleToFly; }
+	bool IsPlane()        const { return isPlane; }
 	bool IsFloater()      const { return isFloater; }
 	bool IsSubmarine()    const { return isSubmarine; }
 	bool IsAmphibious()   const { return isAmphibious; }
@@ -142,6 +143,7 @@ private:
 	bool hasAntiWater;  // under water
 
 	bool isAbleToFly;
+	bool isPlane;
 	bool isFloater;
 	bool isSubmarine;
 	bool isAmphibious;

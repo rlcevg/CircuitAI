@@ -156,6 +156,7 @@
 },
 
 "strider": {
+	"chance": 0.1,  // chance to switch as 2nd factory
 	"income_tier": [120],
 	//               ultimatum,    scorpion,   dante,   catapult,   funnelweb,   bantha,     detriment, leviathan,    reef,   warlord
 	"unit_def":    ["armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"],

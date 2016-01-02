@@ -65,6 +65,7 @@ public:
 	CRecruitTask* UpdateFirePower(CCircuitUnit* unit);
 
 	CCircuitDef* GetFactoryToBuild(CCircuitAI* circuit, bool isStart = false);
+	float GetStriderChance() const;
 	void AddFactory(CCircuitDef* cdef);
 	void DelFactory(CCircuitDef* cdef);
 

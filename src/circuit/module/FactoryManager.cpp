@@ -727,6 +727,11 @@ CCircuitDef* CFactoryManager::GetFactoryToBuild(CCircuitAI* circuit, bool isStar
 	return factoryData->GetFactoryToBuild(circuit, isStart);
 }
 
+float CFactoryManager::GetStriderChance() const
+{
+	return factoryData->GetStriderChance();
+}
+
 void CFactoryManager::AddFactory(CCircuitDef* cdef)
 {
 	factoryData->AddFactory(cdef);

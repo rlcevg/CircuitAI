@@ -11,6 +11,7 @@
 #include "module/FactoryManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
+#include "util/Scheduler.h"
 #include "util/utils.h"
 
 #include "AISCommands.h"
@@ -45,19 +46,24 @@ void CBFactoryTask::Finish()
 	IBuilderTask::Finish();
 
 	CCircuitAI* circuit = manager->GetCircuit();
+	const AIFloat3& pos = buildPos;
 	// FIXME: No hardcoded strings allowed out of AI initialization
 	if (std::string("factoryplane") == buildDef->GetUnitDef()->GetName()) {
-		CCircuitDef* repairDef = circuit->GetCircuitDef("armasp");
-		IBuilderTask* parent = circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, repairDef, buildPos,
-																		 IBuilderTask::BuildType::FACTORY, true, true, 0);
-		CCircuitDef* nanoDef = circuit->GetCircuitDef("armnanotc");
-		IBuilderTask* subTask = circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, nanoDef, buildPos,
-																		  IBuilderTask::BuildType::NANO, true, false, 0);
-		parent->SetNextTask(subTask);
+		circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([circuit, pos]() {
+			CCircuitDef* nanoDef = circuit->GetCircuitDef("armnanotc");
+			IBuilderTask* parent = circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::HIGH, nanoDef, pos,
+																			  IBuilderTask::BuildType::NANO, true, true, 0);
+			CCircuitDef* repairDef = circuit->GetCircuitDef("armasp");
+			IBuilderTask* subTask = circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::HIGH, repairDef, pos,
+																			 IBuilderTask::BuildType::FACTORY, true, false, 0);
+			parent->SetNextTask(subTask);
+		}), (circuit->GetLastFrame() > FRAMES_PER_SEC * 300) ? 0 : FRAMES_PER_SEC * 60);
 	} else if (std::string("factorygunship") == buildDef->GetUnitDef()->GetName()) {
-		CCircuitDef* repairDef = circuit->GetCircuitDef("armnanotc");
-		circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, repairDef, buildPos,
-												  IBuilderTask::BuildType::NANO);
+		circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([circuit, pos]() {
+			CCircuitDef* repairDef = circuit->GetCircuitDef("armnanotc");
+			circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::HIGH, repairDef, pos,
+													  IBuilderTask::BuildType::NANO);
+		}), (circuit->GetLastFrame() > FRAMES_PER_SEC * 300) ? 0 : FRAMES_PER_SEC * 60);
 	}
 }
 

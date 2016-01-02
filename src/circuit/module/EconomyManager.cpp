@@ -631,7 +631,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 
 	// check factories
 	CCircuitDef* striderDef = circuit->GetCircuitDef("striderhub");
-	bool isStriderValid = ((factoryManager->GetFactoryCount() > 1) || (rand() < RAND_MAX / 4)) &&
+	bool isStriderValid = ((factoryManager->GetFactoryCount() > 1) || ((float)rand() / RAND_MAX < factoryManager->GetStriderChance())) &&
 							(striderDef->GetCount() == 0) && striderDef->IsAvailable();
 	CCircuitDef* facDef = isStriderValid ? striderDef : factoryManager->GetFactoryToBuild(circuit);
 	if (facDef != nullptr) {

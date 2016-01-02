@@ -60,6 +60,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	isSubmarine = (md == nullptr) ? false : md->IsSubMarine();
 	delete md;
 	isAbleToFly    = def->IsAbleToFly();
+	isPlane        = !def->IsHoverAttack() && isAbleToFly;
 	isFloater      = def->IsFloater() && !isSubmarine;
 	isSonarStealth = def->IsSonarStealth();
 
@@ -186,7 +187,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		std::string wt(wd->GetType());
 		bool isAirWeapon = false;
 		float range = wd->GetRange();
-		if (range > 400.0f) {
+		if (range > 300.0f) {
 			isAirWeapon = ((wt == "Cannon") || (wt == "DGun") || (wt == "EmgCannon") || (wt == "Flame") ||
 					(wt == "LaserCannon") || (wt == "AircraftBomb")) && (wd->GetProjectileSpeed() * FRAMES_PER_SEC >= 400.0f);  // Cannons with fast projectiles
 			isAirWeapon |= (wt == "BeamLaser") || (wt == "LightningCannon") || (wt == "Rifle") ||  // Instant-hit

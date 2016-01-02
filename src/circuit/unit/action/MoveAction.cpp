@@ -25,7 +25,9 @@ CMoveAction::CMoveAction(CCircuitUnit* owner)
 	int squareSize = unit->GetManager()->GetCircuit()->GetPathfinder()->GetSquareSize();
 	// TODO: calc increment from unit's speed
 	int incMod;
-	if (unit->GetCircuitDef()->IsAbleToFly()) {
+	if (unit->GetCircuitDef()->IsPlane()) {
+		incMod = 5;
+	} else if (unit->GetCircuitDef()->IsAbleToFly()) {
 		incMod = 3;
 	} else if (unit->GetCircuitDef()->IsFloater()) {
 		incMod = 2;

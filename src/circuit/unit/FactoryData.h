@@ -22,6 +22,7 @@ public:
 	virtual ~CFactoryData();
 
 	CCircuitDef* GetFactoryToBuild(CCircuitAI* circuit, bool isStart = false);
+	float GetStriderChance() const { return striderChance; }
 	void AddFactory(CCircuitDef* cdef);
 	void DelFactory(CCircuitDef* cdef);
 
@@ -34,6 +35,7 @@ private:
 	};
 	std::unordered_map<CCircuitDef::Id, SFactory> allFactories;
 	bool isFirstChoice;
+	float striderChance;
 };
 
 } // namespace circuit

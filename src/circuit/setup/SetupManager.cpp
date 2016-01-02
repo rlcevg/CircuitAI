@@ -271,6 +271,19 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 
 	switch (type) {
 		case StartPosType::METAL_SPOT: {
+			// FIXME: DEBUG
+//			Lua* lua = circuit->GetCallback()->GetLua();
+//			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
+//			for (const CMetalData::SMetal& spot : spots) {
+//				std::string cmd("ai_is_valid_startpos:");
+//				circuit->LOG("%s", cmd.c_str());
+//				cmd += utils::int_to_string(spot.position.x) + "/" + utils::int_to_string(spot.position.z);
+//				std::string result = lua->CallRules(cmd.c_str(), cmd.size());
+//				circuit->GetDrawer()->AddPoint(spot.position, result.c_str());
+//				circuit->LOG("%s", cmd.c_str());
+//			}
+//			delete lua;
+			// FIXME: DEBUG
 			AIFloat3 posFrom(box.left, 0, box.top);
 			AIFloat3 posTo(box.right, 0, box.bottom);
 			CMetalManager* metalManager = circuit->GetMetalManager();

@@ -4,7 +4,7 @@
 set(mySourceDirRel         "src/") # Common values are "" or "src"
 #set(additionalCompileFlags "-Isrc/lib/ -Isrc/circuit/ -O1 -DDEBUG -DDEBUG_VIS -DDEBUG_LOG -Wall -Wextra -D_GLIBCXX_USE_CXX11_ABI=0")
 # Spring 100.0 was compiled with old ABI
-set(additionalCompileFlags "-Wall -D_GLIBCXX_USE_CXX11_ABI=0")
+set(additionalCompileFlags "-DDEBUG_VIS -Wall -D_GLIBCXX_USE_CXX11_ABI=1")
 set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils)
 
 set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libgcc -static-libstdc++")

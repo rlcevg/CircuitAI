@@ -48,9 +48,10 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	unit->SetRetreat(true);
 
 	// Mobile repair
-	// FIXME: Don't create repair task for planes
-	CBuilderManager* builderManager = manager->GetCircuit()->GetBuilderManager();
-	builderManager->EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+	if (!cdef->IsPlane()) {
+		CBuilderManager* builderManager = manager->GetCircuit()->GetBuilderManager();
+		builderManager->EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+	}
 }
 
 void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
@@ -112,9 +113,9 @@ void CRetreatTask::Update()
 		bool isRepaired;
 		// FIXME: Wait until 101.0 engine
 //		if (ass->GetShield() != nullptr) {
-//			isRepaired = (healthPerc > 0.9f) && (unit->GetShield()->GetShieldPower() > unit->GetCircuitDef()->GetMaxShield() * 0.9f);
+//			isRepaired = (healthPerc > 0.98f) && (unit->GetShield()->GetShieldPower() > unit->GetCircuitDef()->GetMaxShield() * 0.9f);
 //		} else {
-			isRepaired = (healthPerc > (unit->GetCircuitDef()->IsAbleToFly() ? 0.99f : 0.9f));
+			isRepaired = healthPerc > 0.98f;
 //		}
 
 		if (isRepaired && !unit->IsDisarmed()) {
@@ -160,7 +161,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 			pos.x += (pos.x > centerX) ? -size : size;
 			pos.z += (pos.z > centerZ) ? -size : size;
 		}
-		pos = terrainManager->GetBuildPosition(unit->GetCircuitDef(), pos);
+		pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), pos, maxDist, UNIT_COMMAND_BUILD_NO_FACING);
 		unit->GetUnit()->PatrolTo(pos);
 
 		IUnitAction* act = static_cast<IUnitAction*>(unit->End());
@@ -189,7 +190,8 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
 	AIFloat3 endPos;
 	float range;
 
-	if (repairer != nullptr) {
+	bool isRepairer = repairer != nullptr;
+	if (isRepairer) {
 		endPos = repairer->GetPos(frame);
 		range = pathfinder->GetSquareSize();
 	} else {
@@ -204,9 +206,15 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
 	circuit->GetTerrainManager()->CorrectPosition(startPos);
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
 	float prevCost = pathfinder->PathCost(startPos, endPos, range);
+	if (isRepairer && repairer->GetCircuitDef()->IsMobile()) {
+		prevCost /= 2;
+	}
 
 	endPos = unit->GetPos(frame);
 	float nextCost = pathfinder->PathCost(startPos, endPos, range);
+	if (unit->GetCircuitDef()->IsMobile()) {
+		nextCost /= 2;
+	}
 
 	if (prevCost > nextCost) {
 		SetRepairer(unit);
