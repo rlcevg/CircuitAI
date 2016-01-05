@@ -447,16 +447,18 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 	return -RgtVector;
 }
 
-bool CMilitaryManager::IsNeedAA() const
+bool CMilitaryManager::IsNeedAA(CCircuitDef* cdef) const
 {
 	const float airThreat = circuit->GetThreatMap()->GetAirMetal();
-	return (airThreat * ratioAA > metalAA * factorAA) && (metalAA < maxPercAA * metalSum);
+	const float nextMetalAA = metalAA + cdef->GetCost();
+	return (airThreat * ratioAA > nextMetalAA * factorAA) && (nextMetalAA < maxPercAA * metalSum);
 }
 
-bool CMilitaryManager::IsNeedArty() const
+bool CMilitaryManager::IsNeedArty(CCircuitDef* cdef) const
 {
 	const float staticThreat = circuit->GetThreatMap()->GetStaticMetal();
-	return (staticThreat * ratioArty > metalArty * factorArty) && (metalArty < maxPercArty * metalSum);
+	const float nextMetalArty = metalArty + cdef->GetCost();
+	return (staticThreat * ratioArty > nextMetalArty * factorArty) && (nextMetalArty < maxPercArty * metalSum);
 }
 
 void CMilitaryManager::ReadConfig()

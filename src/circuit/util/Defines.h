@@ -37,7 +37,8 @@
 #define MAX_TRAVEL_SEC	60
 #define ASSIGN_TIMEOUT	FRAMES_PER_SEC * 300
 
-#define SQUARE(x)	((x) * (x))
+#define SQUARE(x)		((x) * (x))
+#define THREAT_BASE		1.0f
 
 typedef std::vector<springai::AIFloat3> F3Vec;
 

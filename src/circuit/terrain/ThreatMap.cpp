@@ -19,8 +19,7 @@ namespace circuit {
 
 using namespace springai;
 
-#define THREAT_BASE			1.0f
-#define THREAT_DECAY		0.05f
+#define THREAT_DECAY	0.05f
 
 CThreatMap::CThreatMap(CCircuitAI* circuit)
 		: circuit(circuit)

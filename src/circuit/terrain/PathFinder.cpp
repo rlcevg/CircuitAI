@@ -260,6 +260,29 @@ float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloa
 	return pathCost;
 }
 
+/*
+ * WARNING: startPos must be correct
+ */
+float CPathFinder::PathCostDirect(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius)
+{
+	path.clear();
+
+	terrainData->CorrectPosition(endPos);
+
+	float pathCost = 0.0f;
+
+	const int ex = int(endPos.x / squareSize);
+	const int ey = int(endPos.z / squareSize);
+	const int sy = int(startPos.z / squareSize);
+	const int sx = int(startPos.x / squareSize);
+
+	radius /= squareSize;
+
+	micropather->FindDirectPathToPointOnRadius(XY2Node(sx, sy), XY2Node(ex, ey), &path, &pathCost, radius);
+
+	return pathCost;
+}
+
 float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRange, F3Vec& possibleTargets)
 {
 	float pathCost = 0.0f;

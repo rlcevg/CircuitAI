@@ -540,7 +540,6 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	terrainManager->CorrectPosition(pos);
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	const float maxThreat = circuit->GetThreatMap()->GetMapSize();  // FIXME: Threat was decreased, so this should be decreased too. Use perimeter?
 	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize();
 	const int buildDistance = std::max<int>(unit->GetCircuitDef()->GetBuildDistance(), pathfinder->GetSquareSize());
 	float metric = std::numeric_limits<float>::max();
@@ -560,12 +559,12 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 			if (target != nullptr) {
 				AIFloat3 buildPos = candidate->GetBuildPos();
 
-				if (!terrainManager->CanBuildAt(unit, buildPos)) {
+				if (!terrainManager->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
 					continue;
 				}
 
 				dist = pathfinder->PathCost(pos, buildPos, buildDistance);
-				if (dist > maxThreat) {
+				if (dist > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
 					continue;
 				}
 
@@ -581,12 +580,12 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 				const AIFloat3& bp = candidate->GetPosition();
 				AIFloat3 buildPos = (bp != -RgtVector) ? bp : pos;
 
-				if (!terrainManager->CanBuildAt(unit, buildPos)) {
+				if (!terrainManager->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
 					continue;
 				}
 
 				dist = pathfinder->PathCost(pos, buildPos, buildDistance);
-				if (dist > maxThreat) {
+				if (dist > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
 					continue;
 				}
 

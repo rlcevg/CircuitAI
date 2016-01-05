@@ -658,6 +658,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	if (!CanEnqueueTask()) {
 		return nullptr;
 	}
+	CCircuitDef* buildDef;
 
 	auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
 	if (it == factoryDefs.end()) {
@@ -665,23 +666,19 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 	const SFactoryDef& facDef = it->second;
 
-	if (circuit->GetMilitaryManager()->IsNeedAA()) {
-		CCircuitDef* buildDef = facDef.antiAirDef;
-		if ((buildDef != nullptr) && buildDef->IsAvailable()) {
-			const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
-			UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
-			float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
-			return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::AA, radius);
-		}
+	buildDef = facDef.antiAirDef;
+	if ((buildDef != nullptr) && circuit->GetMilitaryManager()->IsNeedAA(buildDef) && buildDef->IsAvailable()) {
+		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
+		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
+		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
+		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::AA, radius);
 	}
-	if (circuit->GetMilitaryManager()->IsNeedArty()) {
-		CCircuitDef* buildDef = facDef.artyDef;
-		if ((buildDef != nullptr) && buildDef->IsAvailable()) {
-			const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
-			UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
-			float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
-			return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::ARTY, radius);
-		}
+	buildDef = facDef.artyDef;
+	if ((buildDef != nullptr) && circuit->GetMilitaryManager()->IsNeedArty(buildDef) && buildDef->IsAvailable()) {
+		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
+		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
+		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
+		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::ARTY, radius);
 	}
 
 	CEconomyManager* mgr = circuit->GetEconomyManager();
@@ -711,7 +708,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		}
 	}
 
-	CCircuitDef* buildDef = facDef.buildDefs[choice];
+	buildDef = facDef.buildDefs[choice];
 	if ((buildDef != nullptr) && buildDef->IsAvailable()) {
 		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
 		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();

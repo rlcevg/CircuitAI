@@ -42,6 +42,7 @@ public:
 	unsigned Checksum() const { return micropather->Checksum(); }
 	float MakePath(F3Vec& posPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
 	float PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
+	float PathCostDirect(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
 	float FindBestPath(F3Vec& posPath, springai::AIFloat3& startPos, float myMaxRange, F3Vec& possibleTargets);
 	float FindBestPathToRadius(F3Vec& posPath, springai::AIFloat3& startPos, float radiusAroundTarget, const springai::AIFloat3& target);
 

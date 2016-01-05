@@ -46,8 +46,8 @@ public:
 	void AbortDefence(CBDefenceTask* task);
 	springai::AIFloat3 GetScoutPosition(CCircuitUnit* unit);
 
-	bool IsNeedAA() const;
-	bool IsNeedArty() const;
+	bool IsNeedAA(CCircuitDef* cdef) const;
+	bool IsNeedArty(CCircuitDef* cdef) const;
 
 private:
 	void ReadConfig();
