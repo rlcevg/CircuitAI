@@ -132,7 +132,7 @@ void CAttackTask::Update()
 		if (target != nullptr) {
 			const float range = unit->GetUnit()->GetMaxRange();
 			if (sqDist < range * range) {
-				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 				unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
 				isAttack = true;
 				continue;
@@ -148,7 +148,7 @@ void CAttackTask::Update()
 				continue;
 			}
 		}
-		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		unit->GetUnit()->SetWantedMaxSpeed((sqDist > sqHighestRange) ? lowestSpeed : MAX_SPEED);
 		isAttack = false;
 	}
@@ -197,13 +197,13 @@ void CAttackTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		position = target->GetPos();
 		const float range = unit->GetUnit()->GetMaxRange();
 		if (minSqDist < range * range) {
-			unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
 			isAttack = true;
 			return;
 		}
 	}
-	unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+	unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 	unit->GetUnit()->SetWantedMaxSpeed((minSqDist > highestRange * highestRange) ? lowestSpeed : MAX_SPEED);
 	isAttack = false;
 }
@@ -298,7 +298,7 @@ bool CAttackTask::IsRegroup()
 	if (sqMaxDist > regroupDist * regroupDist) {
 		isRegroup = true;
 		for (CCircuitUnit* unit : units) {
-			unit->GetUnit()->MoveTo(groupPos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->MoveTo(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
 		}
 	} else {

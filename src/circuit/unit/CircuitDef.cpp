@@ -33,6 +33,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, dgunRange(.0f)
 		, dgunMount(nullptr)
 		, shieldMount(nullptr)
+		, weaponMount(nullptr)
 		, dps(.0f)
 		, power(.0f)
 		, maxRange({.0f})
@@ -43,6 +44,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, hasAntiAir(false)
 		, hasAntiLand(false)
 		, hasAntiWater(false)
+		, isBomber(false)
 		, isAmphibious(false)
 		, retreat(.0f)
 {
@@ -126,9 +128,11 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	/*
 	 * DPS and Weapon calculations
 	 */
-	float bestReload = std::numeric_limits<float>::max();
-	float bestRange = .0f;
-	WeaponMount* bestMount = nullptr;
+	float bestDGunReload = std::numeric_limits<float>::max();
+	float bestDGunRange = .0f;
+	float bestWpRange = std::numeric_limits<float>::max();
+	WeaponMount* bestDGunMnt = nullptr;
+	WeaponMount* bestWpMnt = nullptr;
 	bool canTargetAir = false;
 	bool canTargetLand = false;
 	bool canTargetWater = false;
@@ -185,6 +189,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		targetCategory |= weaponCat;
 
 		std::string wt(wd->GetType());
+		isBomber |= (wt == "AircraftBomb");
+
 		bool isAirWeapon = false;
 		float range = wd->GetRange();
 		if (range > 300.0f) {
@@ -212,24 +218,35 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			mr = std::max(mr, range);
 		}
 
-		if (wd->IsManualFire() && (reloadTime < bestReload)) {
-			bestReload = reloadTime;
-			bestRange = range;
-			delete bestMount;
-			bestMount = mount;
+		if (wd->IsManualFire() && (reloadTime < bestDGunReload)) {
+			bestDGunReload = reloadTime;
+			bestDGunRange = range;
+			delete bestDGunMnt;
+			bestDGunMnt = mount;
 			hasDGunAA |= (weaponCat & circuit->GetAirCategory()) && isAirWeapon;
-		} else if ((shieldMount == nullptr) && wd->IsShield()) {
-			shieldMount = mount;  // NOTE: Unit may have more than 1 shield
+		} else if (wd->IsShield()) {
+			if (shieldMount == nullptr) {
+				shieldMount = mount;  // NOTE: Unit may have more than 1 shield
+			} else {
+				delete mount;
+			}
+		} else if (range < bestWpRange) {
+			delete bestWpMnt;
+			bestWpMnt = mount;
+			bestWpRange = range;
 		} else {
 			delete mount;
 		}
 		delete wd;
 	}
 
-	if (bestReload < std::numeric_limits<float>::max()) {
+	if (bestDGunReload < std::numeric_limits<float>::max()) {
 //		dgunReload = math::ceil(bestReload * FRAMES_PER_SEC)/* + FRAMES_PER_SEC*/;
-		dgunRange = bestRange;
-		dgunMount = bestMount;
+		dgunRange = bestDGunRange;
+		dgunMount = bestDGunMnt;
+	}
+	if (bestWpRange < std::numeric_limits<float>::max()) {
+		weaponMount = bestWpMnt;
 	}
 
 	if (IsMobile() && !IsAttacker()) {  // mobile bomb?
@@ -265,6 +282,7 @@ CCircuitDef::~CCircuitDef()
 	delete def;
 	delete dgunMount;
 	delete shieldMount;
+	delete weaponMount;
 }
 
 void CCircuitDef::Init(CCircuitAI* circuit)
@@ -273,6 +291,10 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 	assert(terrainData.IsInitialized());
 
 	if (IsAbleToFly()) {
+
+		if (def->IsBuilder() && !GetBuildOptions().empty()) {
+			SetMaxThisUnit(2);
+		}
 
 	} else if (!IsMobile()) {  // for immobile units
 

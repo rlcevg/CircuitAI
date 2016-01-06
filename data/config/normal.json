@@ -119,17 +119,17 @@
 		// 9-16m Early Game - Reducing Flea spam, still mostly Riots
 		"tier1":    [ 0.76,      0.12,            0.01,        0.06,         0.05,      0.00,       0.00],
 		// 17-24m Expanding - Slant production towards Hermit & Redback
-		"tier2":    [ 0.70,      0.18,            0.01,        0.04,         0.07,      0.00,       0.00],
+		"tier2":    [ 0.69,      0.18,            0.01,        0.04,         0.07,      0.01,       0.00],
 		// 25-32m Expansions meet - Slant production towards Hermit & Recluse
-		"tier3":    [ 0.69,      0.18,            0.00,        0.04,         0.09,      0.00,       0.00],
+		"tier3":    [ 0.69,      0.18,            0.00,        0.04,         0.07,      0.02,       0.00],
 		// 33m -40m Solid Fronts - 	Greater Emphasis on Hermit & Crabbe
-		"tier4":    [ 0.70,      0.19,            0.00,        0.03,         0.08,      0.00,       0.00],
+		"tier4":    [ 0.70,      0.19,            0.00,        0.03,         0.05,      0.03,       0.00],
 		// 41m - 56m Mid Game - We need more Crabbes
-		"tier5":    [ 0.70,      0.20,            0.00,        0.03,         0.07,      0.00,       0.00],
+		"tier5":    [ 0.70,      0.20,            0.00,        0.03,         0.03,      0.04,       0.00],
 		// 57m - 72m Late Game -  MORE CRABBES
-		"tier6":    [ 0.70,      0.20,            0.00,        0.03,         0.07,      0.00,       0.00],
+		"tier6":    [ 0.70,      0.20,            0.00,        0.03,         0.02,      0.05,       0.00],
 		// 72m - 88m+ Late late Game - TURBO CRABBES
-		"tier7":    [ 0.70,      0.20,            0.00,        0.03,         0.07,      0.00,       0.00],
+		"tier7":    [ 0.66,      0.20,            0.00,        0.03,         0.01,      0.10,       0.00],
 
 		"artillery_def": "armcrabe",  // recluse
 		"anti_air_def": "spideraa",  // tarantula
@@ -417,6 +417,15 @@
 	"corgol":0.5, 
 	"cormart": 0.9,
 	"trem": 0.9,
+
+	// FIXME: Air planes (remove zk-retreat)
+	"fighter": 0.6,
+	"corvamp": 0.6,
+	"corshad": 0.6,
+	"corhurc2": 0.6,
+	"armstiletto_laser": 0.6,
+	"armcybr": 0.6,
+	"corawac": 0.6,
 
 	// Striders
 	"armcomdgun": 0.7,

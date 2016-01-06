@@ -1,11 +1,11 @@
 /*
- * ScoutTask.cpp
+ * BombTask.cpp
  *
- *  Created on: Jan 28, 2015
+ *  Created on: Jan 6, 2016
  *      Author: rlcevg
  */
 
-#include "task/fighter/ScoutTask.h"
+#include "task/fighter/BombTask.h"
 #include "task/TaskManager.h"
 #include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
@@ -24,22 +24,22 @@ namespace circuit {
 
 using namespace springai;
 
-CScoutTask::CScoutTask(ITaskManager* mgr)
-		: IFighterTask(mgr, FightType::SCOUT)
+CBombTask::CBombTask(ITaskManager* mgr)
+		: IFighterTask(mgr, FightType::BOMB)
 {
 }
 
-CScoutTask::~CScoutTask()
+CBombTask::~CBombTask()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-bool CScoutTask::CanAssignTo(CCircuitUnit* unit)
+bool CBombTask::CanAssignTo(CCircuitUnit* unit)
 {
 	return units.empty();
 }
 
-void CScoutTask::AssignTo(CCircuitUnit* unit)
+void CBombTask::AssignTo(CCircuitUnit* unit)
 {
 	IFighterTask::AssignTo(unit);
 
@@ -48,7 +48,7 @@ void CScoutTask::AssignTo(CCircuitUnit* unit)
 	moveAction->SetActive(false);
 }
 
-void CScoutTask::RemoveAssignee(CCircuitUnit* unit)
+void CBombTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IFighterTask::RemoveAssignee(unit);
 
@@ -57,12 +57,12 @@ void CScoutTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void CScoutTask::Execute(CCircuitUnit* unit)
+void CBombTask::Execute(CCircuitUnit* unit)
 {
 	Execute(unit, false);
 }
 
-void CScoutTask::Update()
+void CBombTask::Update()
 {
 	bool isExecute = (++updCount % 4 == 0);
 	for (CCircuitUnit* unit : units) {
@@ -74,7 +74,7 @@ void CScoutTask::Update()
 	}
 }
 
-void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
+void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
 	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
 	if (act->GetType() != IUnitAction::Type::MOVE) {
@@ -84,6 +84,12 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
+	if (!unit->IsWeaponReady(frame)) {  // is unit armed?
+		// force rearm/repair
+		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		return;
+	}
+
 	F3Vec path;
 	const AIFloat3& pos = unit->GetPos(frame);
 	CEnemyUnit* bestTarget = FindBestTarget(unit, pos, path);
@@ -91,7 +97,6 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	if (bestTarget != nullptr) {
 		position = bestTarget->GetPos();
 		unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-		unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
 		moveAction->SetActive(false);
 		return;
 	} else if (!path.empty()) {
@@ -134,18 +139,17 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	float z = rand() % (terrainManager->GetTerrainHeight() + 1);
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-	unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
 	moveAction->SetActive(false);
 }
 
-void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
+void CBombTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	IFighterTask::OnUnitIdle(unit);
 
 	if (units.find(unit) != units.end()) RemoveAssignee(unit);
 }
 
-CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
+CEnemyUnit* CBombTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();

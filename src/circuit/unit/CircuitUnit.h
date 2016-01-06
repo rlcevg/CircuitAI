@@ -69,10 +69,14 @@ public:
 	void ForceExecute() { isForceExecute = true; }
 	bool IsForceExecute();
 
+	springai::Weapon* GetWeapon() const { return weapon; }
 	springai::Weapon* GetDGun() const { return dgun; }
 	springai::Weapon* GetShield() const { return shield; }
 	void ManualFire(springai::Unit* enemy, int timeOut);
-	bool IsDisarmed();
+	bool IsDisarmed(int frame);
+	bool IsWeaponReady(int frame);
+	bool IsDGunReady(int frame);
+//	bool IsShieldCharged(float percent);
 	float GetDPS();
 
 	void Guard(CCircuitUnit* target, int timeout);
@@ -80,9 +84,6 @@ public:
 	void Morph();
 	void StopMorph();
 	bool IsMorphing() const { return isMorphing; }
-
-	void SetRetreat(bool value) { isRetreat = value; }
-	bool IsRetreat() const { return isRetreat; }
 
 	bool operator==(const CCircuitUnit& rhs) { return id == rhs.id; }
 	bool operator!=(const CCircuitUnit& rhs) { return id != rhs.id; }
@@ -103,6 +104,7 @@ private:
 	int failFrame;
 	bool isForceExecute;  // TODO: Replace by CExecuteAction?
 
+	springai::Weapon* weapon;  // main weapon
 	springai::Weapon* dgun;
 	springai::Weapon* shield;
 
@@ -110,8 +112,11 @@ private:
 	bool isDisarmed;
 	int disarmFrame;
 
+	springai::UnitRulesParam* ammoParam;
+	bool isWeaponReady;
+	int ammoFrame;
+
 	bool isMorphing;
-	bool isRetreat;
 };
 
 } // namespace circuit

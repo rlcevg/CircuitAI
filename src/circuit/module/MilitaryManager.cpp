@@ -18,6 +18,7 @@
 #include "task/fighter/DefendTask.h"
 #include "task/fighter/ScoutTask.h"
 #include "task/fighter/AttackTask.h"
+#include "task/fighter/BombTask.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
@@ -26,6 +27,7 @@
 #include "json/json.h"
 
 #include "AISCommands.h"
+#include "Command.h"
 #include "WeaponDef.h"
 
 namespace circuit {
@@ -45,6 +47,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		, curPowah(.0f)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::Watchdog, this),
+							FRAMES_PER_SEC * 60,
+							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 12);
 	scheduler->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CMilitaryManager::Init, this));
 
 	CCircuitDef::Id unitDefId;
@@ -85,7 +90,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			nullTask->RemoveAssignee(unit);
 		}
 
-		AddPower(unit->GetCircuitDef());
+		AddPower(unit);
 
 		if (unit->GetCircuitDef()->IsAbleToFly()) {
 			unit->GetUnit()->ExecuteCustomCommand(CMD_RETREAT, {2.0f});
@@ -112,7 +117,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			return;
 		}
 
-		DelPower(unit->GetCircuitDef());
+		DelPower(unit);
 	};
 
 	ReadConfig();
@@ -287,6 +292,10 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			task = new CAttackTask(this);
 			break;
 		}
+		case IFighterTask::FightType::BOMB: {
+			task = new CBombTask(this);
+			break;
+		}
 	}
 
 	fightTasks.insert(task);
@@ -323,8 +332,14 @@ void CMilitaryManager::AssignTask(CCircuitUnit* unit)
 //	}
 //
 //	if (task == nullptr) {
-		bool isScout = (scoutDefs.find(unit->GetCircuitDef()) != scoutDefs.end());
-		IFighterTask::FightType type = isScout ? IFighterTask::FightType::SCOUT : IFighterTask::FightType::DEFEND;
+		IFighterTask::FightType type;
+		if (scoutDefs.find(unit->GetCircuitDef()) != scoutDefs.end()) {
+			type = IFighterTask::FightType::SCOUT;
+		} else if (unit->GetCircuitDef()->IsBomber()) {
+			type = IFighterTask::FightType::BOMB;
+		} else {
+			type = IFighterTask::FightType::DEFEND;
+		}
 		task = EnqueueTask(type);
 //	}
 
@@ -515,6 +530,18 @@ void CMilitaryManager::Init()
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateRetreat, this), interval, offset + 2);
 }
 
+void CMilitaryManager::Watchdog()
+{
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	for (CCircuitUnit* unit : army) {
+		auto commands = std::move(unit->GetUnit()->GetCurrentCommands());
+		if (commands.empty()) {
+			UnitIdle(unit);
+		}
+		utils::free_clear(commands);
+	}
+}
+
 void CMilitaryManager::UpdateIdle()
 {
 	idleTask->Update();
@@ -574,22 +601,46 @@ void CMilitaryManager::UpdateFight()
 	}
 }
 
-void CMilitaryManager::AddPower(CCircuitDef* cdef, const float scale)
+void CMilitaryManager::AddPower(CCircuitUnit* unit)
 {
-	const float cost = cdef->GetCost() * scale;
-	if (cdef->IsAA()) {
-		metalAA = std::max(metalAA + cost, .0f);
+	army.insert(unit);
+
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	const float cost = cdef->GetCost();
+	if (cdef->IsRoleAA()) {
+		metalAA += cost;
 	}
-	if (cdef->IsArty()) {
-		metalArty = std::max(metalArty + cost, .0f);
+	if (cdef->IsRoleArty()) {
+		metalArty += cost;
 	}
 	if (cdef->HasAntiLand()) {
-		metalLand = std::max(metalLand + cost, .0f);
+		metalLand += cost;
 	}
 	if (cdef->HasAntiWater()) {
-		metalWater = std::max(metalWater + cost, .0f);
+		metalWater += cost;
 	}
 	metalSum += cost;
+}
+
+void CMilitaryManager::DelPower(CCircuitUnit* unit)
+{
+	army.erase(unit);
+
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	const float cost = cdef->GetCost();
+	if (cdef->IsRoleAA()) {
+		metalAA = std::max(metalAA - cost, .0f);
+	}
+	if (cdef->IsRoleArty()) {
+		metalArty = std::max(metalArty - cost, .0f);
+	}
+	if (cdef->HasAntiLand()) {
+		metalLand = std::max(metalLand - cost, .0f);
+	}
+	if (cdef->HasAntiWater()) {
+		metalWater = std::max(metalWater - cost, .0f);
+	}
+	metalSum = std::max(metalSum - cost, .0f);
 }
 
 } // namespace circuit

@@ -14,7 +14,7 @@
 #include <vector>
 
 #define FRAMES_PER_SEC		GAME_SPEED
-#define WATCHDOG_COUNT		2
+#define WATCHDOG_COUNT		3
 #define PYLON_RANGE			500.0f
 #define TASK_RETRIES		10
 #define DEBUG_MARK			0xBAD0C0DE
@@ -32,7 +32,7 @@
 // x--
 #define UNIT_FACING_WEST	3
 
-#define MIN_BUILD_SEC	20
+#define MIN_BUILD_SEC	10
 #define MAX_BUILD_SEC	40
 #define MAX_TRAVEL_SEC	60
 #define ASSIGN_TIMEOUT	FRAMES_PER_SEC * 300

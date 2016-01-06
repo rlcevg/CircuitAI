@@ -53,12 +53,13 @@ private:
 	void ReadConfig();
 	void Init();
 
+	void Watchdog();
 	void UpdateIdle();
 	void UpdateRetreat();
 	void UpdateFight();
 
-	void AddPower(CCircuitDef* cdef, const float scale = 1.0f);
-	void DelPower(CCircuitDef* cdef) { AddPower(cdef, -1.0f); }
+	void AddPower(CCircuitUnit* unit);
+	void DelPower(CCircuitUnit* unit);
 
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
@@ -87,6 +88,8 @@ private:
 	float metalLand;
 	float metalWater;
 	float metalSum;
+
+	std::set<CCircuitUnit*> army;
 
 	// FIXME: DEBUG
 	float curPowah;

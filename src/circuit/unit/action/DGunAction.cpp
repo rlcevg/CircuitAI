@@ -11,7 +11,6 @@
 #include "util/utils.h"
 
 #include "OOAICallback.h"
-#include "Weapon.h"
 #include "Drawer.h"
 
 namespace circuit {
@@ -40,7 +39,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	int frame = circuit->GetLastFrame();
 	// NOTE: Paralyzer doesn't increase ReloadFrame beyond currentFrame, but disarmer does.
 	//       Also checking disarm is more expensive (because of UnitRulesParam).
-	if ((unit->GetDGun()->GetReloadFrame() > frame) || unit->GetUnit()->IsParalyzed() /*|| unit->IsDisarmed()*/) {
+	if (!unit->IsDGunReady(frame) || unit->GetUnit()->IsParalyzed() /*|| unit->IsDisarmed(frame)*/) {
 		return;
 	}
 	const AIFloat3& pos = unit->GetPos(frame);

@@ -39,7 +39,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::Watchdog, this),
 							FRAMES_PER_SEC * 60,
-							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 1);
+							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 11);
 	const int interval = 4;
 	const int offset = circuit->GetSkirmishAIId() % interval;
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateIdle, this), interval, offset + 0);
@@ -964,7 +964,7 @@ void CFactoryManager::Watchdog()
 		utils::free_clear(commands);
 	};
 
-	for (auto& fac : factories) {
+	for (SFactory& fac : factories) {
 		checkIdler(fac.unit);
 	}
 

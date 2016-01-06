@@ -33,14 +33,18 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* cdef)
 		, disarmParam(nullptr)
 		, isDisarmed(false)
 		, disarmFrame(-1)
+		, ammoParam(nullptr)
+		, isWeaponReady(true)
+		, ammoFrame(-1)
 		, isMorphing(false)
-		, isRetreat(false)
 {
 	WeaponMount* wpMnt;
 	wpMnt = circuitDef->GetDGunMount();
 	dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
 	wpMnt = circuitDef->GetShieldMount();
 	shield = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
+	wpMnt = circuitDef->GetWeaponMount();
+	weapon = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
 }
 
 CCircuitUnit::~CCircuitUnit()
@@ -94,9 +98,8 @@ void CCircuitUnit::ManualFire(Unit* enemy, int timeOut)
 	}
 }
 
-bool CCircuitUnit::IsDisarmed()
+bool CCircuitUnit::IsDisarmed(int frame)
 {
-	int frame = manager->GetCircuit()->GetLastFrame();
 	if (disarmFrame != frame) {
 		disarmFrame = frame;
 		if (disarmParam == nullptr) {
@@ -110,13 +113,42 @@ bool CCircuitUnit::IsDisarmed()
 	return isDisarmed;
 }
 
+bool CCircuitUnit::IsWeaponReady(int frame)
+{
+	if (ammoFrame != frame) {
+		ammoFrame = frame;
+		if (circuitDef->IsPlane()) {
+			if (ammoParam == nullptr) {
+				ammoParam = unit->GetUnitRulesParamByName("noammo");
+				if (ammoParam == nullptr) {
+					return isWeaponReady = true;
+				}
+			}
+			isWeaponReady = ammoParam->GetValueFloat() < 1.0f;
+		} else {
+			isWeaponReady = (weapon == nullptr) ? false : weapon->GetReloadFrame() <= frame;
+		}
+	}
+	return isWeaponReady;
+}
+
+bool CCircuitUnit::IsDGunReady(int frame)
+{
+	return dgun->GetReloadFrame() <= frame;
+}
+
+//bool CCircuitUnit::IsShieldCharged(float percent)
+//{
+//	return shield->GetShieldPower() > circuitDef->GetMaxShield() * percent;
+//}
+
 float CCircuitUnit::GetDPS()
 {
 	float dps = circuitDef->GetDPS();
 	if (dps < 0.1f) {
 		return .0f;
 	}
-	if (unit->IsParalyzed() || IsDisarmed()) {
+	if (unit->IsParalyzed() || IsDisarmed(manager->GetCircuit()->GetLastFrame())) {
 		return 1.0f;
 	}
 	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;

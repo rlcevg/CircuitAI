@@ -330,7 +330,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 void CSetupManager::PickCommander()
 {
 	std::vector<CCircuitDef*> commanders;
-	CCircuitDef* riot = nullptr;
+	CCircuitDef* supCom = nullptr;
 	float bestPower = .0f;
 	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
@@ -344,9 +344,9 @@ void CSetupManager::PickCommander()
 			std::string lvl0 = cdef->GetUnitDef()->GetName();
 			std::string lvl5 = lvl0.substr(0, lvl0.size() - 1) + "5";
 			CCircuitDef* lvl5Def = circuit->GetCircuitDef(lvl5.c_str());
-			if ((lvl5Def != nullptr) && (bestPower < lvl5Def->GetPower())) {  // comm_cai_riot_0
-				bestPower = lvl5Def->GetPower();
-				riot = cdef;
+			if ((lvl5Def != nullptr) && (bestPower < lvl5Def->GetUnitDef()->GetAutoHeal())) {
+				bestPower = lvl5Def->GetUnitDef()->GetAutoHeal();
+				supCom = cdef;
 			}
 		}
 	}
@@ -355,7 +355,7 @@ void CSetupManager::PickCommander()
 	}
 
 	std::string cmd("ai_commander:");
-	cmd += ((riot == nullptr) ? commanders[rand() % commanders.size()] : riot)->GetUnitDef()->GetName();
+	cmd += ((supCom == nullptr) ? commanders[rand() % commanders.size()] : supCom)->GetUnitDef()->GetName();
 	Lua* lua = circuit->GetCallback()->GetLua();
 	lua->CallRules(cmd.c_str(), cmd.size());
 	delete lua;

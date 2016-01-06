@@ -18,7 +18,6 @@
 #include "util/utils.h"
 
 #include "AISCommands.h"
-//#include "Weapon.h"
 
 namespace circuit {
 
@@ -44,11 +43,11 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 		CDGunAction* act = new CDGunAction(unit, cdef->GetDGunRange() * 0.8f);
 		unit->PushBack(act);
 	}
-	unit->PushBack(new CMoveAction(unit));
-	unit->SetRetreat(true);
 
-	// Mobile repair
 	if (!cdef->IsPlane()) {
+		unit->PushBack(new CMoveAction(unit));
+
+		// Mobile repair
 		CBuilderManager* builderManager = manager->GetCircuit()->GetBuilderManager();
 		builderManager->EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
 	}
@@ -58,7 +57,6 @@ void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IUnitTask::RemoveAssignee(unit);
 
-	unit->SetRetreat(false);
 	if (units.empty()) {
 		manager->DoneTask(this);
 	}
@@ -105,6 +103,7 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 void CRetreatTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
 	bool isExecute = (++updCount % 4 == 0);
 	auto assignees = units;
 	for (CCircuitUnit* unit : assignees) {
@@ -113,12 +112,12 @@ void CRetreatTask::Update()
 		bool isRepaired;
 		// FIXME: Wait until 101.0 engine
 //		if (ass->GetShield() != nullptr) {
-//			isRepaired = (healthPerc > 0.98f) && (unit->GetShield()->GetShieldPower() > unit->GetCircuitDef()->GetMaxShield() * 0.9f);
+//			isRepaired = (healthPerc > 0.98f) && unit->IsShieldCharged(0.9f));
 //		} else {
 			isRepaired = healthPerc > 0.98f;
 //		}
 
-		if (isRepaired && !unit->IsDisarmed()) {
+		if (isRepaired && !unit->IsDisarmed(frame)) {
 			RemoveAssignee(unit);
 		} else if (unit->IsForceExecute() || isExecute) {
 			Execute(unit);
@@ -137,11 +136,18 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 	if (haven == -RgtVector) {
 		haven = circuit->GetSetupManager()->GetBasePos();
 	}
+
+	if (unit->GetCircuitDef()->IsPlane()) {
+		// force rearm/repair
+		unit->GetUnit()->Fight(haven, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		return;
+	}
+
 	const float maxDist = factoryManager->GetAssistDef()->GetBuildDistance();
 	const AIFloat3& unitPos = unit->GetPos(frame);
 	if (unitPos.SqDistance2D(haven) > maxDist * maxDist) {
 		// TODO: push MoveAction into unit? to avoid enemy fire
-		unit->GetUnit()->MoveTo(haven, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 1);
+		unit->GetUnit()->MoveTo(haven, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 1);
 		// TODO: Add fail counter?
 	} else {
 		// TODO: push WaitAction into unit

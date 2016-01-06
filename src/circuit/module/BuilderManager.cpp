@@ -51,7 +51,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Watchdog, this),
 							FRAMES_PER_SEC * 60,
-							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 0);
+							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 10);
 	// Init after parallel clusterization
 	scheduler->RunParallelTask(CGameTask::emptyTask,
 							   std::make_shared<CGameTask>(&CBuilderManager::Init, this));
@@ -166,7 +166,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		this->circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this, mexDef, pos, index]() {
 			if (this->circuit->GetMetalManager()->IsOpenSpot(index) &&
 				this->circuit->GetBuilderManager()->IsBuilderInArea(mexDef, pos) &&
-				(this->circuit->GetThreatMap()->GetAllThreatAt(pos) <= MIN_THREAT))
+				this->circuit->GetTerrainManager()->CanBeBuiltAt(mexDef, pos))
 			{
 				EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
 				this->circuit->GetMetalManager()->SetOpenSpot(index, false);

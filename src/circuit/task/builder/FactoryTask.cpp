@@ -57,13 +57,13 @@ void CBFactoryTask::Finish()
 			IBuilderTask* subTask = circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::HIGH, repairDef, pos,
 																			 IBuilderTask::BuildType::FACTORY, true, false, 0);
 			parent->SetNextTask(subTask);
-		}), (circuit->GetLastFrame() > FRAMES_PER_SEC * 300) ? 0 : FRAMES_PER_SEC * 60);
+		}), (circuit->GetLastFrame() > FRAMES_PER_SEC * 300) ? 0 : FRAMES_PER_SEC * MAX_BUILD_SEC);
 	} else if (std::string("factorygunship") == buildDef->GetUnitDef()->GetName()) {
 		circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([circuit, pos]() {
 			CCircuitDef* repairDef = circuit->GetCircuitDef("armnanotc");
 			circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::HIGH, repairDef, pos,
 													  IBuilderTask::BuildType::NANO);
-		}), (circuit->GetLastFrame() > FRAMES_PER_SEC * 300) ? 0 : FRAMES_PER_SEC * 60);
+		}), (circuit->GetLastFrame() > FRAMES_PER_SEC * 300) ? 0 : FRAMES_PER_SEC * MAX_BUILD_SEC);
 	}
 }
 

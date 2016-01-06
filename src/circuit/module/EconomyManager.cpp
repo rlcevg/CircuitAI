@@ -859,7 +859,7 @@ void CEconomyManager::Init()
 					static_cast<ITaskManager*>(builderManager)->AssignTask(commander, task);
 
 					builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, circuit->GetCircuitDef("corllt"), buildPos,
-												IBuilderTask::BuildType::DEFENCE);
+												IBuilderTask::BuildType::DEFENCE, true, true, 0);
 				}
 			}
 			delete param;

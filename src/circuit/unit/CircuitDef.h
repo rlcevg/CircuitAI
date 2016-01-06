@@ -40,12 +40,12 @@ public:
 	springai::UnitDef* GetUnitDef() const { return def; }
 
 	void SetRole(RoleType value) { role |= value; }
-	bool IsBuilder() const { return role & RoleType::BUILDER; }
-	bool IsScout()   const { return role & RoleType::SCOUT; }
-	bool IsRaider()  const { return role & RoleType::RAIDER; }
-	bool IsAssault() const { return role & RoleType::ASSAULT; }
-	bool IsArty()    const { return role & RoleType::ARTY; }
-	bool IsAA()      const { return role & RoleType::AA; }
+	bool IsRoleBuilder() const { return role & RoleType::BUILDER; }
+	bool IsRoleScout()   const { return role & RoleType::SCOUT; }
+	bool IsRoleRaider()  const { return role & RoleType::RAIDER; }
+	bool IsRoleAssault() const { return role & RoleType::ASSAULT; }
+	bool IsRoleArty()    const { return role & RoleType::ARTY; }
+	bool IsRoleAA()      const { return role & RoleType::AA; }
 
 	const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
 	float GetBuildDistance() const { return buildDistance; }
@@ -77,6 +77,7 @@ public:
 	float GetDGunRange() const { return dgunRange; }
 	springai::WeaponMount* GetDGunMount() const { return dgunMount; }
 	springai::WeaponMount* GetShieldMount() const { return shieldMount; }
+	springai::WeaponMount* GetWeaponMount() const { return weaponMount; }
 	float GetDPS() const { return dps; }
 	float GetPower() const { return power; }
 	float GetMaxRange(RangeType type = RangeType::MAX) const { return maxRange[static_cast<unsigned>(type)]; }
@@ -96,6 +97,7 @@ public:
 	bool IsMobile()       const { return speed > .1f; }
 	bool IsAbleToFly()    const { return isAbleToFly; }
 	bool IsPlane()        const { return isPlane; }
+	bool IsBomber()       const { return isBomber; }
 	bool IsFloater()      const { return isFloater; }
 	bool IsSubmarine()    const { return isSubmarine; }
 	bool IsAmphibious()   const { return isAmphibious; }
@@ -127,6 +129,7 @@ private:
 	float dgunRange;
 	springai::WeaponMount* dgunMount;
 	springai::WeaponMount* shieldMount;
+	springai::WeaponMount* weaponMount;
 	float dps;  // TODO: split dps like ranges on air, land, water
 	float power;  // attack power = UnitDef's max threat
 	std::array<float, static_cast<unsigned>(RangeType::COUNT)> maxRange;
@@ -143,7 +146,8 @@ private:
 	bool hasAntiWater;  // under water
 
 	bool isAbleToFly;
-	bool isPlane;
+	bool isPlane;  // no hover attack
+	bool isBomber;  // must rearm
 	bool isFloater;
 	bool isSubmarine;
 	bool isAmphibious;

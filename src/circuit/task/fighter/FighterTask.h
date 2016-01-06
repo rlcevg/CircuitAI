@@ -17,7 +17,7 @@ class CEnemyUnit;
 
 class IFighterTask: public IUnitTask {
 public:
-	enum class FightType: char {DEFEND, SCOUT, ATTACK};
+	enum class FightType: char {DEFEND, SCOUT, RAID, ATTACK, BOMB, AA, ARTY};
 
 protected:
 	IFighterTask(ITaskManager* mgr, FightType type, int timeout = ASSIGN_TIMEOUT);
@@ -41,6 +41,8 @@ protected:
 
 	float attackPower;
 	CEnemyUnit* target;
+
+	std::set<CCircuitUnit*> cowards;
 };
 
 } // namespace circuit
