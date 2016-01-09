@@ -138,7 +138,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 
 	if (unit->GetCircuitDef()->IsPlane()) {
-		// force rearm/repair
+		// force rearm/repair | CMD_FIND_PAD
 		unit->GetUnit()->Fight(haven, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		return;
 	}
@@ -213,13 +213,13 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
 	float prevCost = pathfinder->PathCost(startPos, endPos, range);
 	if (isRepairer && repairer->GetCircuitDef()->IsMobile()) {
-		prevCost /= 2;
+		prevCost /= 4;
 	}
 
 	endPos = unit->GetPos(frame);
 	float nextCost = pathfinder->PathCost(startPos, endPos, range);
 	if (unit->GetCircuitDef()->IsMobile()) {
-		nextCost /= 2;
+		nextCost /= 4;
 	}
 
 	if (prevCost > nextCost) {

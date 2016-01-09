@@ -24,6 +24,7 @@ namespace circuit {
 #define CMD_ORBIT_DRAW			13924
 #define CMD_MORPH				31210
 #define CMD_MORPH_STOP			32210
+#define CMD_FIND_PAD			33411
 #define CMD_PRIORITY			34220
 #define CMD_MISC_PRIORITY		34221
 #define CMD_RETREAT				34223

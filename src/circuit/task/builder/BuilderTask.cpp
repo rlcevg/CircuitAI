@@ -118,7 +118,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	circuit->GetThreatMap()->SetThreatType(unit);
 	// FIXME: Replace const 999.0f with build time?
 	if (circuit->IsAllyAware() && (cost > 999.0f)) {
-//		circuit->UpdateFriendlyUnits();
+		circuit->UpdateFriendlyUnits();
 		auto friendlies = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, cost));
 		for (Unit* au : friendlies) {
 			CCircuitUnit* alu = circuit->GetFriendlyUnit(au);

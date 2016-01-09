@@ -166,7 +166,7 @@ void CCircuitUnit::Morph()
 {
 	isMorphing = true;
 	unit->ExecuteCustomCommand(CMD_MORPH, {});
-	unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, {0.0f});
+	unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, {1.0f});
 }
 
 void CCircuitUnit::StopMorph()

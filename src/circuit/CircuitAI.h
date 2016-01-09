@@ -200,7 +200,7 @@ public:
 	int GetAirCategory()   const { return airCategory; }
 	int GetLandCategory()  const { return landCategory; }
 	int GetWaterCategory() const { return waterCategory; }
-	int GetGoodCategory()  const { return goodCategory; }
+	int GetBadCategory()   const { return badCategory; }
 	float GetLosConv()     const { return losResConv; }
 
 private:
@@ -242,7 +242,7 @@ private:
 	int airCategory;  // over surface
 	int landCategory;  // on surface
 	int waterCategory;  // under surface
-	int goodCategory;
+	int badCategory;
 	float losResConv;
 
 #ifdef DEBUG_VIS

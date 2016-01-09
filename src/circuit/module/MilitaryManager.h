@@ -79,7 +79,6 @@ private:
 
 	CDefenceMatrix* defence;
 
-	std::set<CCircuitDef*> scoutDefs;
 	std::vector<unsigned int> scoutPath;  // list of cluster ids
 	unsigned int scoutIdx;
 

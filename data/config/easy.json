@@ -206,6 +206,9 @@
 	"logkoda"
 ],
 
+// Rearm-addictive units, require airpad
+"bombers": ["corshad", "corhurc2", "armstiletto_laser", "armcybr"],
+
 // If unit's health drops below specified percent it will retreat
 "retreat": {
 	// default value for all builders
@@ -257,7 +260,7 @@
 },
 
 // Build special units when enemy_metal*ratio > response_metal*eps; eps=teamSize*eps_step+(1-eps_step)
-// AA condition for 3v3: (air_metal*0.6 > aa_metal*3) and (aa_metal < army_metal*0.8).
+// AA condition for 3v3: (air_metal*0.6 > (aa_metal+aa_cost)*3) and (aa_metal+aa_cost < army_metal*0.8).
 "response": {
 	"anti_air": {
 		"ratio": 0.6,

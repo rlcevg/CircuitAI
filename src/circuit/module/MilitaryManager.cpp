@@ -204,14 +204,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 //	};
 
 	defence = circuit->GetAllyTeam()->GetDefenceMatrix().get();
-
-	for (const Json::Value& scout : root["scouts"]) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(scout.asCString());
-		if (cdef == nullptr) {
-			continue;
-		}
-		scoutDefs.insert(cdef);
-	}
 }
 
 CMilitaryManager::~CMilitaryManager()
@@ -333,9 +325,9 @@ void CMilitaryManager::AssignTask(CCircuitUnit* unit)
 //
 //	if (task == nullptr) {
 		IFighterTask::FightType type;
-		if (scoutDefs.find(unit->GetCircuitDef()) != scoutDefs.end()) {
+		if (unit->GetCircuitDef()->IsRoleScout()) {
 			type = IFighterTask::FightType::SCOUT;
-		} else if (unit->GetCircuitDef()->IsBomber()) {
+		} else if (unit->GetCircuitDef()->IsRoleBomber()) {
 			type = IFighterTask::FightType::BOMB;
 		} else {
 			type = IFighterTask::FightType::DEFEND;
@@ -504,6 +496,22 @@ void CMilitaryManager::ReadConfig()
 		maxPercArty = artillery.get("max_percent", 1.0f).asFloat();
 		const float stepArty = artillery.get("eps_step", 1.0f).asFloat();
 		factorArty  = (teamSize - 1.0f) * stepArty + 1.0f;
+	}
+
+	for (const Json::Value& scout : root["scouts"]) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(scout.asCString());
+		if (cdef == nullptr) {
+			continue;
+		}
+		cdef->SetRole(CCircuitDef::RoleType::SCOUT);
+	}
+
+	for (const Json::Value& bomber : root["bombers"]) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(bomber.asCString());
+		if (cdef == nullptr) {
+			continue;
+		}
+		cdef->SetRole(CCircuitDef::RoleType::BOMBER);
 	}
 }
 

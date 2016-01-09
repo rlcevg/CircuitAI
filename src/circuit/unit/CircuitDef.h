@@ -27,7 +27,7 @@ public:
 	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, COUNT};
 	enum RoleType: int {BUILDER = 0x0001, SCOUT   = 0x0002, RAIDER  = 0x0004, RIOT = 0x0008,
 						ASSAULT = 0x0010, HEAVY   = 0x0020, SKIRM   = 0x0040, ARTY = 0x0080,
-						AA      = 0x0100, LSTATIC = 0x0200, HSTATIC = 0x0400, NONE = 0x0000};
+						AA      = 0x0100, BOMBER  = 0x0200, STATIC  = 0x0400, NONE = 0x0000};
 
 	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
@@ -46,6 +46,7 @@ public:
 	bool IsRoleAssault() const { return role & RoleType::ASSAULT; }
 	bool IsRoleArty()    const { return role & RoleType::ARTY; }
 	bool IsRoleAA()      const { return role & RoleType::AA; }
+	bool IsRoleBomber()  const { return role & RoleType::BOMBER; }
 
 	const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
 	float GetBuildDistance() const { return buildDistance; }
@@ -97,7 +98,6 @@ public:
 	bool IsMobile()       const { return speed > .1f; }
 	bool IsAbleToFly()    const { return isAbleToFly; }
 	bool IsPlane()        const { return isPlane; }
-	bool IsBomber()       const { return isBomber; }
 	bool IsFloater()      const { return isFloater; }
 	bool IsSubmarine()    const { return isSubmarine; }
 	bool IsAmphibious()   const { return isAmphibious; }
@@ -147,7 +147,6 @@ private:
 
 	bool isAbleToFly;
 	bool isPlane;  // no hover attack
-	bool isBomber;  // must rearm
 	bool isFloater;
 	bool isSubmarine;
 	bool isAmphibious;

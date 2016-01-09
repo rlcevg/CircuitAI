@@ -44,7 +44,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, hasAntiAir(false)
 		, hasAntiLand(false)
 		, hasAntiWater(false)
-		, isBomber(false)
 		, isAmphibious(false)
 		, retreat(.0f)
 {
@@ -56,7 +55,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 	maxRange[static_cast<unsigned>(RangeType::MAX)] = def->GetMaxWeaponRange();
 	isManualFire    = def->CanManualFire();
-	noChaseCategory = def->GetNoChaseCategory();
+	noChaseCategory = def->GetNoChaseCategory() | circuit->GetBadCategory();
 
 	MoveData* md = def->GetMoveData();
 	isSubmarine = (md == nullptr) ? false : md->IsSubMarine();
@@ -73,7 +72,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto it = customParams.find("is_drone");
 	if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
-		category = ~circuit->GetGoodCategory();
+		category = circuit->GetBadCategory();
 	} else {
 		category = def->GetCategory();
 	}
@@ -189,8 +188,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		targetCategory |= weaponCat;
 
 		std::string wt(wd->GetType());
-		isBomber |= (wt == "AircraftBomb");
-
 		bool isAirWeapon = false;
 		float range = wd->GetRange();
 		if (range > 300.0f) {
@@ -262,7 +259,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			dps = ldps * wd->GetSalvoSize() / damages.size();
 			targetCategory = wd->GetOnlyTargetCategory();
 			if (~targetCategory == 0) {
-				targetCategory = circuit->GetGoodCategory();
+				targetCategory = ~circuit->GetBadCategory();
 			}
 		}
 		delete wd;

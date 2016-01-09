@@ -85,7 +85,7 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
 	if (!unit->IsWeaponReady(frame)) {  // is unit armed?
-		// force rearm/repair
+		// force rearm/repair | CMD_FIND_PAD
 		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		return;
 	}
