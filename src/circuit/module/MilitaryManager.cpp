@@ -26,6 +26,7 @@
 #include "util/utils.h"
 #include "json/json.h"
 
+#include "OOAICallback.h"
 #include "AISCommands.h"
 #include "Command.h"
 #include "WeaponDef.h"
@@ -67,7 +68,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			point->cost -= defCost;
 		}
 	};
-	const char* defenders[] = {"corllt", "corrl", "corrad", "armsonar", "armdeva", "corhlt", "turrettorp", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armartic", "corjamt", "armanni", "corbhmth"*/};
+	const char* defenders[] = {"corllt", "corrl", "armdeva", "corhlt", "turrettorp", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armartic", "corjamt", "armanni", "corbhmth"*/};
 	for (const char* name : defenders) {
 		unitDefId = circuit->GetCircuitDef(name)->GetId();
 		destroyedHandler[unitDefId] = defenceDestroyedHandler;
@@ -101,9 +102,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	};
 	auto attackerIdleHandler = [this](CCircuitUnit* unit) {
 		// NOTE: Avoid instant task reassignment, though it may be not relevant for attackers
-		if (this->circuit->GetLastFrame() - unit->GetTaskFrame() > FRAMES_PER_SEC) {
+//		if (this->circuit->GetLastFrame() - unit->GetTaskFrame() > FRAMES_PER_SEC) {
 			unit->GetTask()->OnUnitIdle(unit);
-		}
+//		}
 	};
 	auto attackerDamagedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		unit->GetTask()->OnUnitDamaged(unit, attacker);
@@ -311,7 +312,7 @@ void CMilitaryManager::DequeueTask(IFighterTask* task, bool done)
 	}
 }
 
-void CMilitaryManager::AssignTask(CCircuitUnit* unit)
+IUnitTask* CMilitaryManager::GetTask(CCircuitUnit* unit)
 {
 	IFighterTask* task = nullptr;
 
@@ -335,7 +336,7 @@ void CMilitaryManager::AssignTask(CCircuitUnit* unit)
 		task = EnqueueTask(type);
 //	}
 
-	task->AssignTo(unit);
+	return task;
 }
 
 void CMilitaryManager::AbortTask(IUnitTask* task)
@@ -379,9 +380,11 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	float totalCost = .0f;
 	IBuilderTask* parentTask = nullptr;
 	bool isWater = circuit->GetTerrainManager()->IsWaterSector(pos);
-	std::array<const char*, 9> landDefenders = {"corllt", "corrl", "corrad", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
-	std::array<const char*, 9> waterDefenders = {"turrettorp", "armsonar", "corllt", "corrad", "corrazor", "armnanotc", "turrettorp", "corhlt", "turrettorp"};
-	std::array<const char*, 9>& defenders = isWater ? waterDefenders : landDefenders;
+//	std::array<const char*, 9> landDefenders = {"corllt", "corrl", "corrad", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
+//	std::array<const char*, 9> waterDefenders = {"turrettorp", "armsonar", "corllt", "corrad", "corrazor", "armnanotc", "turrettorp", "corhlt", "turrettorp"};
+	std::array<const char*, 1> landDefenders = {"corllt", /*"corrl", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt", "armanni", "corbhmth"*/};
+	std::array<const char*, 1> waterDefenders = {"turrettorp", /*"corllt", "corrazor", "armnanotc", "turrettorp", "corhlt", "turrettorp"*/};
+	std::array<const char*, 1>& defenders = isWater ? waterDefenders : landDefenders;
 	for (const char* name : defenders) {
 		defDef = circuit->GetCircuitDef(name);
 		float defCost = defDef->GetCost();
@@ -394,7 +397,7 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 			bool isFirst = (parentTask == nullptr);
 			IBuilderTask::Priority priority = isFirst ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
 			IBuilderTask* task = builderManager->EnqueueTask(priority, defDef, closestPoint->position,
-															 IBuilderTask::BuildType::DEFENCE, true, isFirst);
+															 IBuilderTask::BuildType::DEFENCE, defCost, true, isFirst);
 			if (parentTask != nullptr) {
 				parentTask->SetNextTask(task);
 			}
@@ -403,6 +406,44 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 			// TODO: Auto-sort defenders by cost OR remove break?
 			break;
 		}
+	}
+
+	auto checkSensor = [this, closestPoint, builderManager](IBuilderTask::BuildType type, CCircuitDef* cdef, float range) {
+		bool isBuilt = false;
+		auto friendlies = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(closestPoint->position, range));
+		for (Unit* au : friendlies) {
+			if (au == nullptr) {
+				continue;
+			}
+			UnitDef* udef = au->GetDef();
+			CCircuitDef::Id defId = udef->GetUnitDefId();
+			delete udef;
+			if (defId == cdef->GetId()) {
+				isBuilt = true;
+				break;
+			}
+		}
+		utils::free_clear(friendlies);
+		if (!isBuilt) {
+			IBuilderTask* task = nullptr;
+			const float qdist = range * range;
+			for (IBuilderTask* t : builderManager->GetTasks(type)) {
+				if (closestPoint->position.SqDistance2D(t->GetTaskPos()) < qdist) {
+					task = t;
+					break;
+				}
+			}
+			if (task == nullptr) {
+				builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, closestPoint->position, type);
+			}
+		}
+	};
+	// radar
+	defDef = circuit->GetCircuitDef("corrad");
+	checkSensor(IBuilderTask::BuildType::RADAR, defDef, defDef->GetUnitDef()->GetRadarRadius() / 1.4142f);
+	if (isWater) {  // sonar
+		defDef = circuit->GetCircuitDef("armsonar");
+		checkSensor(IBuilderTask::BuildType::SONAR, defDef, defDef->GetUnitDef()->GetSonarRadius());
 	}
 }
 

@@ -25,7 +25,8 @@ public:
 	virtual CCircuitAI* GetCircuit() = 0;
 
 	void AssignTask(CCircuitUnit* unit, IUnitTask* task);
-	virtual void AssignTask(CCircuitUnit* unit) = 0;
+	void AssignTask(CCircuitUnit* unit);
+	virtual IUnitTask* GetTask(CCircuitUnit*) = 0;
 	virtual void AbortTask(IUnitTask* task) = 0;
 	virtual void DoneTask(IUnitTask* task) = 0;
 	virtual void FallbackTask(CCircuitUnit* unit) = 0;

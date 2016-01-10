@@ -46,7 +46,7 @@ private:
 	void DequeueTask(IUnitTask* task, bool done = false);
 
 public:
-	virtual void AssignTask(CCircuitUnit* unit);
+	virtual IUnitTask* GetTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
 	virtual void DoneTask(IUnitTask* task);
 	virtual void FallbackTask(CCircuitUnit* unit);

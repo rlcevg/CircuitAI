@@ -42,7 +42,7 @@ CAttackTask::~CAttackTask()
 
 bool CAttackTask::CanAssignTo(CCircuitUnit* unit)
 {
-	return false;
+	return units.empty();
 }
 
 void CAttackTask::AssignTo(CCircuitUnit* unit)

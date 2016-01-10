@@ -468,7 +468,8 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(position, travelDistance));
 	if (!features.empty()) {
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		AIFloat3 reclPos;
+		AIFloat3 pos;
+		float cost = .0f;
 		float minSqDist = std::numeric_limits<float>::max();
 		for (Feature* feature : features) {
 			AIFloat3 featPos = feature->GetPosition();
@@ -484,12 +485,23 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 			}
 			float sqDist = position.SqDistance2D(featPos);
 			if (sqDist < minSqDist) {
-				reclPos = featPos;
+				pos = featPos;
+				cost = reclaimValue;
 				minSqDist = sqDist;
 			}
 		}
 		if (minSqDist < std::numeric_limits<float>::max()) {
-			task = builderManager->EnqueueReclaim(IBuilderTask::Priority::NORMAL, reclPos, 1.0f, FRAMES_PER_SEC * 300, unit->GetCircuitDef()->GetBuildDistance());
+			IBuilderTask* task = nullptr;
+			for (IBuilderTask* t : builderManager->GetTasks(IBuilderTask::BuildType::RECLAIM)) {
+				if (utils::is_equal_pos(pos, t->GetTaskPos())) {
+					task = t;
+					break;
+				}
+			}
+			if (task == nullptr) {
+				task = builderManager->EnqueueReclaim(IBuilderTask::Priority::NORMAL, pos, cost, FRAMES_PER_SEC * 300,
+													  unit->GetCircuitDef()->GetBuildDistance());
+			}
 		}
 		utils::free_clear(features);
 	}
@@ -847,34 +859,37 @@ void CEconomyManager::Init()
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
 		if (commander != nullptr) {
+			AIFloat3 buildPos = -RgtVector;
 			const AIFloat3& pos = commander->GetPos(circuit->GetLastFrame());
 			UnitRulesParam* param = commander->GetUnit()->GetUnitRulesParamByName("facplop");
 			if ((param != nullptr) && (param->GetValueFloat() == 1)) {
 				CCircuitDef* facDef = circuit->GetFactoryManager()->GetFactoryToBuild(circuit, true);
 				if (facDef != nullptr) {
-					AIFloat3 buildPos = circuit->GetTerrainManager()->GetBuildPosition(facDef, pos);
+					buildPos = circuit->GetTerrainManager()->GetBuildPosition(facDef, pos);
 					CBuilderManager* builderManager = circuit->GetBuilderManager();
 					IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos,
 													   IBuilderTask::BuildType::FACTORY);
 					static_cast<ITaskManager*>(builderManager)->AssignTask(commander, task);
-
-					builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, circuit->GetCircuitDef("corllt"), buildPos,
-												IBuilderTask::BuildType::DEFENCE, true, true, 0);
 				}
 			}
 			delete param;
 
-			// Force commander level 0 to morph
-			const std::map<std::string, std::string>& customParams = commander->GetCircuitDef()->GetUnitDef()->GetCustomParams();
-			auto it = customParams.find("level");
-			if ((it != customParams.end()) && (utils::string_to_int(it->second) == 0)) {
-				scheduler->RunTaskAt(std::make_shared<CGameTask>([this]() {
-					CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-					if (commander != nullptr) {
+			scheduler->RunTaskAt(std::make_shared<CGameTask>([this, buildPos]() {
+				// Force commander level 0 to morph
+				CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+				if (commander != nullptr) {
+					const std::map<std::string, std::string>& customParams = commander->GetCircuitDef()->GetUnitDef()->GetCustomParams();
+					auto it = customParams.find("level");
+					if ((it != customParams.end()) && (utils::string_to_int(it->second) == 0)) {
 						commander->Morph();
 					}
-				}), FRAMES_PER_SEC * 120);
-			}
+				}
+				// Build factory defence
+				if (buildPos != -RgtVector) {
+					circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, circuit->GetCircuitDef("corllt"), buildPos,
+															  IBuilderTask::BuildType::DEFENCE, true, true, 0);
+				}
+			}), FRAMES_PER_SEC * 120);
 		}
 
 		SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();

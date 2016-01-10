@@ -27,11 +27,13 @@ public:
 		BUNKER,  // ddm, anni
 		BIG_GUN,  // super weapons
 		RADAR,
+		SONAR,
 		MEX,
 		REPAIR,
+		RECLAIM,
 		TASKS_COUNT,  // build-tasks count
 		RECRUIT,
-		TERRAFORM, RECLAIM, PATROL,  // builder actions that don't have UnitDef as target
+		TERRAFORM, PATROL,  // builder actions that don't have UnitDef as target
 		DEFAULT = BIG_GUN
 	};
 
@@ -84,6 +86,8 @@ public:
 	IBuilderTask* GetNextTask() const { return nextTask; }
 
 protected:
+	void HideAssignee(CCircuitUnit* unit);
+	void ShowAssignee(CCircuitUnit* unit);
 	virtual void FindBuildSite(CCircuitUnit* builder, const springai::AIFloat3& pos, float searchRadius);
 
 	springai::AIFloat3 position;

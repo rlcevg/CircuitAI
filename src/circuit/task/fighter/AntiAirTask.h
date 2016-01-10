@@ -14,8 +14,13 @@ namespace circuit {
 
 class CAntiAirTask: public IFighterTask {
 public:
-	CAntiAirTask(ITaskManager* mgr);
+	CAntiAirTask(ITaskManager* mgr, float enemyAir);
 	virtual ~CAntiAirTask();
+
+	virtual bool CanAssignTo(CCircuitUnit* unit);
+
+private:
+	float enemyAir;
 };
 
 } // namespace circuit

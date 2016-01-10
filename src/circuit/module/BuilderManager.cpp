@@ -25,6 +25,7 @@
 #include "task/builder/BunkerTask.h"
 #include "task/builder/BigGunTask.h"
 #include "task/builder/RadarTask.h"
+#include "task/builder/SonarTask.h"
 #include "task/builder/MexTask.h"
 #include "task/builder/TerraformTask.h"
 #include "task/builder/RepairTask.h"
@@ -84,9 +85,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		// FIXME: Avoid instant task reassignment, its only valid on build order fail.
 		//        Can cause idle builder, but Watchdog should catch it eventually.
 		//        Unfortunately can't use EVENT_COMMAND_FINISHED because there is no unique commandId like unitId
-		if (this->circuit->GetLastFrame() - unit->GetTaskFrame() > FRAMES_PER_SEC) {
+//		if (this->circuit->GetLastFrame() - unit->GetTaskFrame() > FRAMES_PER_SEC) {
 			unit->GetTask()->OnUnitIdle(unit);
-		}
+//		}
 	};
 	auto workerDamagedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		unit->GetTask()->OnUnitDamaged(unit, attacker);
@@ -307,6 +308,7 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 
 const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType type)
 {
+	assert(type < IBuilderTask::BuildType::TASKS_COUNT);
 	// Auto-creates empty list
 	return buildTasks[static_cast<int>(type)];
 }
@@ -376,16 +378,6 @@ IBuilderTask* CBuilderManager::EnqueueRepair(IBuilderTask::Priority priority,
 	return task;
 }
 
-IBuilderTask* CBuilderManager::EnqueuePatrol(IBuilderTask::Priority priority,
-											 const AIFloat3& position,
-											 float cost,
-											 int timeout)
-{
-	IBuilderTask* task = new CBPatrolTask(this, priority, position, cost, timeout);
-	miscTasks.insert(task);
-	return task;
-}
-
 IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
 											  const AIFloat3& position,
 											  float cost,
@@ -394,6 +386,17 @@ IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
 											  bool isMetal)
 {
 	IBuilderTask* task = new CBReclaimTask(this, priority, position, cost, timeout, radius, isMetal);
+	buildTasks[static_cast<int>(IBuilderTask::BuildType::RECLAIM)].insert(task);
+	buildTasksCount++;
+	return task;
+}
+
+IBuilderTask* CBuilderManager::EnqueuePatrol(IBuilderTask::Priority priority,
+											 const AIFloat3& position,
+											 float cost,
+											 int timeout)
+{
+	IBuilderTask* task = new CBPatrolTask(this, priority, position, cost, timeout);
 	miscTasks.insert(task);
 	return task;
 }
@@ -468,6 +471,10 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 			task = new CBRadarTask(this, priority, buildDef, position, cost, isShake, timeout);
 			break;
 		}
+		case IBuilderTask::BuildType::SONAR: {
+			task = new CBSonarTask(this, priority, buildDef, position, cost, isShake, timeout);
+			break;
+		}
 		case IBuilderTask::BuildType::MEX: {
 			task = new CBMexTask(this, priority, buildDef, position, cost, timeout);
 			break;
@@ -478,7 +485,6 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 		buildTasks[static_cast<int>(type)].insert(task);
 		buildTasksCount++;
 	}
-	// TODO: Send NewTask message
 	return task;
 }
 
@@ -523,7 +529,7 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 	return false;
 }
 
-void CBuilderManager::AssignTask(CCircuitUnit* unit)
+IUnitTask* CBuilderManager::GetTask(CCircuitUnit* unit)
 {
 	IBuilderTask* task = nullptr;
 	int frame = circuit->GetLastFrame();
@@ -531,10 +537,9 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 
 	circuit->GetThreatMap()->SetThreatType(unit);
 	task = circuit->GetEconomyManager()->UpdateMetalTasks(pos, unit);
-	if (task != nullptr) {
-		task->AssignTo(unit);
-		return;
-	}
+//	if (task != nullptr) {
+//		return task;
+//	}
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
@@ -600,10 +605,13 @@ void CBuilderManager::AssignTask(CCircuitUnit* unit)
 	}
 
 	if (task == nullptr) {
+		if (unit->GetTask() != idleTask) {
+			return nullptr;  // current task is in danger or unreachable
+		}
 		task = CreateBuilderTask(pos, unit);
 	}
 
-	task->AssignTo(unit);
+	return task;
 }
 
 void CBuilderManager::AbortTask(IUnitTask* task)

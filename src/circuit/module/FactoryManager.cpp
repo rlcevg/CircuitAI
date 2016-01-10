@@ -521,17 +521,15 @@ void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 	}
 }
 
-void CFactoryManager::AssignTask(CCircuitUnit* unit)
+IUnitTask* CFactoryManager::GetTask(CCircuitUnit* unit)
 {
+	IUnitTask* task = nullptr;
+
 	if (unit->GetCircuitDef() == assistDef) {  // FIXME: Check Id instead pointers?
-		IBuilderTask* task = CreateAssistTask(unit);
-		if (task != nullptr) {  // if nullptr then continue to Wait (or Idle)
-			task->AssignTo(unit);
-		}
+		task = CreateAssistTask(unit);
 
 	} else {
 
-		IUnitTask* task = nullptr;
 		decltype(factoryTasks)::iterator iter = factoryTasks.begin();
 		for (; iter != factoryTasks.end(); ++iter) {
 			if ((*iter)->CanAssignTo(unit)) {
@@ -542,15 +540,10 @@ void CFactoryManager::AssignTask(CCircuitUnit* unit)
 
 		if (task == nullptr) {
 			task = CreateFactoryTask(unit);
-
-//			iter = factoryTasks.begin();
 		}
-
-		task->AssignTo(unit);
-//		if (task->IsFull()) {
-//			factoryTasks.splice(factoryTasks.end(), factoryTasks, iter);  // move task to back
-//		}
 	}
+
+	return task;  // if nullptr then continue to Wait (or Idle)
 }
 
 void CFactoryManager::AbortTask(IUnitTask* task)

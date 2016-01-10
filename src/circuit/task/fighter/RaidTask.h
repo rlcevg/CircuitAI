@@ -16,6 +16,8 @@ class CRaidTask: public IFighterTask {
 public:
 	CRaidTask(ITaskManager* mgr);
 	virtual ~CRaidTask();
+
+	virtual bool CanAssignTo(CCircuitUnit* unit);
 };
 
 } // namespace circuit

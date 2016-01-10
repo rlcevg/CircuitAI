@@ -9,16 +9,19 @@
 
 namespace circuit {
 
-CAntiAirTask::CAntiAirTask(ITaskManager* mgr)
+CAntiAirTask::CAntiAirTask(ITaskManager* mgr, float enemyAir)
 		: IFighterTask(mgr, FightType::AA)
+		, enemyAir(enemyAir)
 {
-	// TODO Auto-generated constructor stub
-
 }
 
 CAntiAirTask::~CAntiAirTask()
 {
-	// TODO Auto-generated destructor stub
+}
+
+bool CAntiAirTask::CanAssignTo(CCircuitUnit* unit)
+{
+	return attackPower < enemyAir;
 }
 
 } // namespace circuit

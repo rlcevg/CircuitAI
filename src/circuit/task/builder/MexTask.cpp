@@ -130,7 +130,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 		if (blocked) {
 			CBuilderManager* builderManager = circuit->GetBuilderManager();
 			IBuilderTask* task = nullptr;
-			float qdist = 200.0f * 200.0f;  // 200 elmos
+			const float qdist = 200.0f * 200.0f;  // 200 elmos
 			// TODO: Push tasks into bgi::rtree
 			for (IBuilderTask* t : builderManager->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
 				if (pos.SqDistance2D(t->GetTaskPos()) < qdist) {

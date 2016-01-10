@@ -71,16 +71,16 @@ public:
 	IBuilderTask* EnqueueRepair(IBuilderTask::Priority priority,
 								CCircuitUnit* target,
 								int timeout = ASSIGN_TIMEOUT);
-	IBuilderTask* EnqueuePatrol(IBuilderTask::Priority priority,
-								const springai::AIFloat3& position,
-								float cost,
-								int timeout);
 	IBuilderTask* EnqueueReclaim(IBuilderTask::Priority priority,
 								 const springai::AIFloat3& position,
 								 float cost,
 								 int timeout,
 								 float radius = .0f,
 								 bool isMetal = true);
+	IBuilderTask* EnqueuePatrol(IBuilderTask::Priority priority,
+								const springai::AIFloat3& position,
+								float cost,
+								int timeout);
 	IBuilderTask* EnqueueTerraform(IBuilderTask::Priority priority,
 								   CCircuitUnit* target,
 								   const springai::AIFloat3& position = -RgtVector,
@@ -103,7 +103,7 @@ private:
 public:
 	bool IsBuilderInArea(CCircuitDef* buildDef, const springai::AIFloat3& position);  // Check if build-area has proper builder
 
-	virtual void AssignTask(CCircuitUnit* unit);
+	virtual IUnitTask* GetTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
 	virtual void DoneTask(IUnitTask* task);
 	virtual void FallbackTask(CCircuitUnit* unit);

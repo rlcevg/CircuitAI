@@ -36,6 +36,7 @@ void CBRepairTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IBuilderTask::RemoveAssignee(unit);
 
+	// Inform repair-target task/unit
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitUnit* repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
 	if (repTarget == nullptr) {

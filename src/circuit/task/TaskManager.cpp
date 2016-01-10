@@ -32,6 +32,14 @@ void ITaskManager::AssignTask(CCircuitUnit* unit, IUnitTask* task)
 	task->Execute(unit);
 }
 
+void ITaskManager::AssignTask(CCircuitUnit* unit)
+{
+	IUnitTask* task = GetTask(unit);
+	if (task != nullptr) {
+		task->AssignTo(unit);
+	}
+}
+
 void ITaskManager::Init()
 {
 	nullTask = new CNullTask(this);

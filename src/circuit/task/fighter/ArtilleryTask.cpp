@@ -21,4 +21,9 @@ CArtilleryTask::~CArtilleryTask()
 	// TODO Auto-generated destructor stub
 }
 
+bool CArtilleryTask::CanAssignTo(CCircuitUnit* unit)
+{
+	return units.empty();
+}
+
 } // namespace circuit

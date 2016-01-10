@@ -77,7 +77,7 @@ void IBuilderTask::AssignTo(CCircuitUnit* unit)
 {
 	IUnitTask::AssignTo(unit);
 
-	buildPower += unit->GetCircuitDef()->GetBuildSpeed();
+	ShowAssignee(unit);
 	if (position == -RgtVector) {
 		position = unit->GetPos(manager->GetCircuit()->GetLastFrame());
 	}
@@ -87,7 +87,7 @@ void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IUnitTask::RemoveAssignee(unit);
 
-	buildPower -= unit->GetCircuitDef()->GetBuildSpeed();
+	HideAssignee(unit);
 }
 
 void IBuilderTask::Execute(CCircuitUnit* unit)
@@ -184,6 +184,18 @@ void IBuilderTask::Update()
 	// FIXME: Replace const 1000.0f with build time?
 	if ((cost > 1000.0f) && (circuit->GetEconomyManager()->GetAvgMetalIncome() < savedIncome * 0.6f)) {
 		manager->AbortTask(this);
+		return;
+	}
+
+	// Reassign task if required
+	auto assignees = units;
+	for (CCircuitUnit* unit : assignees) {
+		HideAssignee(unit);
+		IUnitTask* task = manager->GetTask(unit);
+		ShowAssignee(unit);
+		if ((task != nullptr) && (task != this)) {
+			manager->AssignTask(unit, task);
+		}
 	}
 }
 
@@ -297,6 +309,16 @@ bool IBuilderTask::IsEqualBuildPos(CCircuitUnit* unit) const
 	// NOTE: Unit's position is affected by collisionVolumeOffsets, and there is no way to retrieve it.
 	//       Hence absurdly large error slack, @see factoryship.lua
 	return utils::is_equal_pos(pos, buildPos, SQUARE_SIZE * 2);
+}
+
+void IBuilderTask::HideAssignee(CCircuitUnit* unit)
+{
+	buildPower -= unit->GetCircuitDef()->GetBuildSpeed();
+}
+
+void IBuilderTask::ShowAssignee(CCircuitUnit* unit)
+{
+	buildPower += unit->GetCircuitDef()->GetBuildSpeed();
 }
 
 void IBuilderTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, float searchRadius)

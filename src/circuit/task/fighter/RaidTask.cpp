@@ -21,4 +21,9 @@ CRaidTask::~CRaidTask()
 	// TODO Auto-generated destructor stub
 }
 
+bool CRaidTask::CanAssignTo(CCircuitUnit* unit)
+{
+	return units.empty();
+}
+
 } // namespace circuit
