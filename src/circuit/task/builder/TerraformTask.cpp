@@ -46,7 +46,7 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 		Unit* u = unit->GetUnit();
 
 		std::vector<float> params;
-		params.push_back(static_cast<float>(priority));
+		params.push_back(ClampPriority());
 		u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 		if (buildPos == -RgtVector) {
@@ -98,7 +98,7 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 	Unit* u = unit->GetUnit();
 
 	std::vector<float> params;
-	params.push_back(static_cast<float>(priority));
+	params.push_back(ClampPriority());
 	u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
 	UnitDef* unitDef = buildDef->GetUnitDef();

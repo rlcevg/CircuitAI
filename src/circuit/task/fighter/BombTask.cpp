@@ -18,7 +18,6 @@
 
 #include "AISCommands.h"
 #include "Map.h"
-#include "Drawer.h"
 
 namespace circuit {
 
@@ -152,9 +151,7 @@ void CBombTask::OnUnitIdle(CCircuitUnit* unit)
 CEnemyUnit* CBombTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	STerrainMapArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	float power = threatMap->GetUnitThreat(unit) * 0.8f;
 	int canTargetCat = cdef->GetTargetCategory();
@@ -172,9 +169,7 @@ CEnemyUnit* CBombTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden() || (threatMap->GetThreatAt(enemy->GetPos()) >= power) ||
-			!terrainManager->CanMoveToPos(area, enemy->GetPos()))
-		{
+		if (enemy->IsHidden() || (threatMap->GetThreatAt(enemy->GetPos()) >= power)) {
 			continue;
 		}
 		if (!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) {
@@ -192,23 +187,18 @@ CEnemyUnit* CBombTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
 		if (enemy->IsInRadarOrLOS() && (sqDist < minSqDist)) {
-//			AIFloat3 dir = enemy->GetUnit()->GetPos() - pos;
-//			float rayRange = dir.LengthNormalize();
-//			CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, u, 0);
-//			if (hitUID == enemy->GetId()) {
-				if ((enemy->GetThreat() > maxThreat) && !enemy->GetUnit()->IsBeingBuilt()) {
-					bestTarget = enemy;
-					minSqDist = sqDist;
-					maxThreat = enemy->GetThreat();
-				} else if (bestTarget == nullptr) {
-					if ((targetCat & noChaseCat) == 0) {
-						mediumTarget = enemy;
-					} else if (mediumTarget == nullptr) {
-						worstTarget = enemy;
-					}
+			if ((enemy->GetThreat() > maxThreat) && !enemy->GetUnit()->IsBeingBuilt()) {
+				bestTarget = enemy;
+				minSqDist = sqDist;
+				maxThreat = enemy->GetThreat();
+			} else if (bestTarget == nullptr) {
+				if ((targetCat & noChaseCat) == 0) {
+					mediumTarget = enemy;
+				} else if (mediumTarget == nullptr) {
+					worstTarget = enemy;
 				}
-				continue;
-//			}
+			}
+			continue;
 		}
 		if (sqDist < SQUARE(2000)) {  // maxSqDist
 			enemyPositions.push_back(enemy->GetPos());

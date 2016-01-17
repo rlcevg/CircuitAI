@@ -60,7 +60,7 @@ void CBReclaimTask::RemoveAssignee(CCircuitUnit* unit)
 void CBReclaimTask::Execute(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();
-//	u->ExecuteCustomCommand(CMD_PRIORITY, {static_cast<float>(priority)});
+//	u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
 
 	int frame = manager->GetCircuit()->GetLastFrame();
 	if (target == nullptr) {

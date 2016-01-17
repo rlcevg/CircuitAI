@@ -577,7 +577,7 @@ IUnitTask* CBuilderManager::GetTask(CCircuitUnit* unit)
 					Unit* tu = target->GetUnit();
 					float maxHealth = tu->GetMaxHealth();
 					float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
-					valid = (((maxHealth - tu->GetHealth()) * 0.6f) > healthSpeed * (dist / (maxSpeed * FRAMES_PER_SEC)));
+					valid = (((maxHealth - tu->GetHealth()) * 0.6f) * (maxSpeed * FRAMES_PER_SEC) > healthSpeed * dist);
 				}
 
 			} else {
@@ -594,7 +594,7 @@ IUnitTask* CBuilderManager::GetTask(CCircuitUnit* unit)
 					continue;
 				}
 
-				valid = ((dist * weight < metric) && (dist / (maxSpeed * FRAMES_PER_SEC) < MAX_TRAVEL_SEC));
+				valid = ((dist * weight < metric) && (dist < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC)));
 			}
 
 			if (valid) {

@@ -18,6 +18,17 @@ public:
 	virtual ~CArtilleryTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit);
+	virtual void AssignTo(CCircuitUnit* unit);
+	virtual void RemoveAssignee(CCircuitUnit* unit);
+
+	virtual void Execute(CCircuitUnit* unit);
+	virtual void Update();
+
+	virtual void OnUnitIdle(CCircuitUnit* unit);
+
+private:
+	void Execute(CCircuitUnit* unit, bool isUpdating);
+	CEnemyUnit* FindBestTarget(CCircuitUnit* unit, const springai::AIFloat3& pos, F3Vec& path);
 };
 
 } // namespace circuit

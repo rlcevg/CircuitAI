@@ -40,7 +40,7 @@ CBPylonTask::~CBPylonTask()
 void CBPylonTask::Execute(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();
-	u->ExecuteCustomCommand(CMD_PRIORITY, {static_cast<float>(priority)});
+	u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();

@@ -6,24 +6,262 @@
  */
 
 #include "task/fighter/ArtilleryTask.h"
+#include "task/TaskManager.h"
+#include "module/MilitaryManager.h"
+#include "terrain/TerrainManager.h"
+#include "terrain/ThreatMap.h"
+#include "terrain/PathFinder.h"
+#include "unit/EnemyUnit.h"
+#include "unit/action/MoveAction.h"
+#include "CircuitAI.h"
+#include "util/utils.h"
+
+#include "AISCommands.h"
+#include "Map.h"
 
 namespace circuit {
+
+using namespace springai;
 
 CArtilleryTask::CArtilleryTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::ARTY)
 {
-	// TODO Auto-generated constructor stub
-
 }
 
 CArtilleryTask::~CArtilleryTask()
 {
-	// TODO Auto-generated destructor stub
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool CArtilleryTask::CanAssignTo(CCircuitUnit* unit)
 {
 	return units.empty();
+}
+
+void CArtilleryTask::AssignTo(CCircuitUnit* unit)
+{
+	IFighterTask::AssignTo(unit);
+
+	CMoveAction* moveAction = new CMoveAction(unit);
+	unit->PushBack(moveAction);
+	moveAction->SetActive(false);
+}
+
+void CArtilleryTask::RemoveAssignee(CCircuitUnit* unit)
+{
+	IFighterTask::RemoveAssignee(unit);
+
+	if (units.empty()) {
+		manager->AbortTask(this);
+	}
+}
+
+void CArtilleryTask::Execute(CCircuitUnit* unit)
+{
+	Execute(unit, false);
+}
+
+void CArtilleryTask::Update()
+{
+	bool isExecute = (++updCount % 4 == 0);
+	for (CCircuitUnit* unit : units) {
+		if (unit->IsForceExecute() || isExecute) {
+			Execute(unit, true);
+		} else {
+			IFighterTask::Update();
+		}
+	}
+}
+
+void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
+{
+	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
+	if (act->GetType() != IUnitAction::Type::MOVE) {
+		return;
+	}
+	CMoveAction* moveAction = static_cast<CMoveAction*>(act);
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
+	F3Vec path;
+	const AIFloat3& pos = unit->GetPos(frame);
+	CEnemyUnit* bestTarget = FindBestTarget(unit, pos, path);
+
+	if (bestTarget != nullptr) {
+		unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		moveAction->SetActive(false);
+		return;
+	} else if (!path.empty()) {
+		if (path.size() > 2) {
+			moveAction->SetPath(path);
+			moveAction->SetActive(true);
+			unit->Update(circuit);
+		} else {
+			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		}
+		return;
+	}
+
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	const AIFloat3& threatPos = moveAction->IsActive() ? position : pos;
+	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < threatMap->GetUnitThreat(unit));
+	if (!proceed) {
+		position = circuit->GetMilitaryManager()->GetScoutPosition(unit);
+	}
+
+	if ((position != -RgtVector) && terrainManager->CanMoveToPos(unit->GetArea(), position)) {
+		AIFloat3 startPos = pos;
+		AIFloat3 endPos = position;
+
+		CPathFinder* pathfinder = circuit->GetPathfinder();
+		pathfinder->SetMapData(unit, threatMap, frame);
+		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
+
+		if (!path.empty()) {
+			moveAction->SetPath(path);
+			moveAction->SetActive(true);
+			unit->Update(circuit);
+			return;
+		}
+	}
+
+	if (proceed) {
+		return;
+	}
+	float x = rand() % (terrainManager->GetTerrainWidth() + 1);
+	float z = rand() % (terrainManager->GetTerrainHeight() + 1);
+	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
+	unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+	moveAction->SetActive(false);
+}
+
+void CArtilleryTask::OnUnitIdle(CCircuitUnit* unit)
+{
+	IFighterTask::OnUnitIdle(unit);
+
+	if (units.find(unit) != units.end()) RemoveAssignee(unit);
+}
+
+CEnemyUnit* CArtilleryTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	const int canTargetCat = cdef->GetTargetCategory();
+	const int noChaseCat = cdef->GetNoChaseCategory();
+	const float range = std::max(unit->GetUnit()->GetMaxRange(), (float)threatMap->GetSquareSize() * 2);
+	float minSqDist = SQUARE(range);
+	float maxThreat = .0f;
+
+	F3Vec enemyPositions;
+	threatMap->SetThreatType(unit);
+	pathfinder->SetMapData(unit, threatMap, circuit->GetLastFrame());
+	bool isPosSafe = (threatMap->GetThreatAt(pos) <= MIN_THREAT);
+
+	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
+	if (isPosSafe) {
+		CEnemyUnit* bestTarget = nullptr;
+		CEnemyUnit* mediumTarget = nullptr;
+		CEnemyUnit* worstTarget = nullptr;
+		for (auto& kv : enemies) {
+			CEnemyUnit* enemy = kv.second;
+			if (enemy->IsHidden() ||
+				(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
+			{
+				continue;
+			}
+
+			if ((enemy->GetCircuitDef() == nullptr)/* || enemy->GetCircuitDef()->IsMobile()*/) {
+				continue;
+			}
+			int targetCat = enemy->GetCircuitDef()->GetCategory();
+			if ((targetCat & canTargetCat) == 0) {
+				continue;
+			}
+
+			const float sqDist = pos.SqDistance2D(enemy->GetPos());
+			if (enemy->IsInRadarOrLOS() && (sqDist < minSqDist)) {
+				if (enemy->GetThreat() > maxThreat) {
+					bestTarget = enemy;
+					minSqDist = sqDist;
+					maxThreat = enemy->GetThreat();
+				} else if (bestTarget == nullptr) {
+					if ((targetCat & noChaseCat) == 0) {
+						mediumTarget = enemy;
+					} else if (mediumTarget == nullptr) {
+						worstTarget = enemy;
+					}
+				}
+				continue;
+			}
+			if (sqDist < SQUARE(2000)) {  // maxSqDist
+				enemyPositions.push_back(enemy->GetPos());
+			}
+		}
+		if (bestTarget == nullptr) {
+			bestTarget = (mediumTarget != nullptr) ? mediumTarget : worstTarget;
+		}
+		if (bestTarget != nullptr) {
+			position = bestTarget->GetPos();
+			return bestTarget;
+		}
+
+	} else {
+
+		for (auto& kv : enemies) {
+			CEnemyUnit* enemy = kv.second;
+			if (enemy->IsHidden() ||
+				(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
+			{
+				continue;
+			}
+
+			if ((enemy->GetCircuitDef() == nullptr) || enemy->GetCircuitDef()->IsMobile()) {
+				continue;
+			}
+			int targetCat = enemy->GetCircuitDef()->GetCategory();
+			if ((targetCat & canTargetCat) == 0) {
+				continue;
+			}
+
+			if (pos.SqDistance2D(enemy->GetPos()) < SQUARE(2000)) {  // maxSqDist
+				enemyPositions.push_back(enemy->GetPos());
+			}
+		}
+	}
+
+	path.clear();
+	if (enemyPositions.empty()) {
+		return nullptr;
+	}
+
+	AIFloat3 startPos = pos;
+	pathfinder->FindBestPath(path, startPos, threatMap->GetSquareSize(), enemyPositions);
+
+	// Check if safe path exists and shrink the path to maxRange position
+	if (path.empty()) {
+		position = -RgtVector;
+		return nullptr;
+	}
+	const float sqRange = SQUARE(range);
+	auto it = path.rbegin();
+	for (; it != path.rend(); ++it) {
+		if (path.back().SqDistance2D(*it) > sqRange) {
+			break;
+		}
+	}
+	--it;
+	if (threatMap->GetThreatAt(*it) > MIN_THREAT) {
+		position = -RgtVector;
+		path.clear();
+	} else {
+		position = path.back();
+		path.resize(std::distance(it, path.rend()));
+	}
+
+	return nullptr;
 }
 
 } // namespace circuit

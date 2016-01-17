@@ -85,6 +85,8 @@ public:
 	void SetNextTask(IBuilderTask* task) { nextTask = task; }
 	IBuilderTask* GetNextTask() const { return nextTask; }
 
+	float ClampPriority() const { return std::min(static_cast<float>(priority), 2.0f); }
+
 protected:
 	void HideAssignee(CCircuitUnit* unit);
 	void ShowAssignee(CCircuitUnit* unit);

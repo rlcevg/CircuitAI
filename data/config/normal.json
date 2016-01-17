@@ -73,7 +73,8 @@
 		// 72m - 88m+ Late late Game - Spam Krows!
 		"tier7":    [ 0.60,        0.00,     0.00,     0.00,             0.30,       0.00,        0.10,     0.00,      0.00],
 
-		"artillery_def": "corcrw",  // Krow
+//		"artillery_def": "corcrw",  // Krow
+		"artillery_def": "armbrawl",  // brawler
 		"anti_air_def": "gunshipaa",  // trident
 		"builder_def": "armca"  // crane//
 	},
@@ -320,7 +321,7 @@
 	"armpw", "spherepole", "armjeth",
 
 	// factorygunship
-	"armkam", "blastwing", "gunshipsupport", "blackdawn", "armbrawl", "gunshipaa",
+	"armkam", "blastwing", "gunshipsupport", "blackdawn", "gunshipaa",
 
 	// factoryamph
 	"amphraider3", "amphraider2", "amphaa",

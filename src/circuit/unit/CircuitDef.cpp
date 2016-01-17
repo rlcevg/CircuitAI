@@ -55,6 +55,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 	maxRange[static_cast<unsigned>(RangeType::MAX)] = def->GetMaxWeaponRange();
 	isManualFire    = def->CanManualFire();
+	category        = def->GetCategory();
 	noChaseCategory = def->GetNoChaseCategory() | circuit->GetBadCategory();
 
 	MoveData* md = def->GetMoveData();
@@ -72,9 +73,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto it = customParams.find("is_drone");
 	if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
-		category = circuit->GetBadCategory();
-	} else {
-		category = def->GetCategory();
+		category |= circuit->GetBadCategory();
 	}
 
 	it = customParams.find("midposoffset");
@@ -187,7 +186,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		int weaponCat = mount->GetOnlyTargetCategory();
 		targetCategory |= weaponCat;
 
-		std::string wt(wd->GetType());
+		std::string wt(wd->GetType());  // @see https://springrts.com/wiki/Gamedev:WeaponDefs
 		bool isAirWeapon = false;
 		float range = wd->GetRange();
 		if (range > 300.0f) {
@@ -261,6 +260,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			if (~targetCategory == 0) {
 				targetCategory = ~circuit->GetBadCategory();
 			}
+			category |= circuit->GetBadCategory();  // do not chase bombs
 		}
 		delete wd;
 	}
@@ -334,7 +334,6 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 		STerrainMapImmobileType& it = terrainData.areaData0.immobileType[immobileTypeId];
 		isAmphibious = ((it.minElevation < -SQUARE_SIZE * 5) || (it.maxElevation < SQUARE_SIZE * 5)) && !IsFloater();
 	}
-
 }
 
 CCircuitDef& CCircuitDef::operator++()

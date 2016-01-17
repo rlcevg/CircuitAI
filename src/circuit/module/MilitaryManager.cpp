@@ -19,6 +19,7 @@
 #include "task/fighter/ScoutTask.h"
 #include "task/fighter/AttackTask.h"
 #include "task/fighter/BombTask.h"
+#include "task/fighter/ArtilleryTask.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
@@ -289,6 +290,10 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			task = new CBombTask(this);
 			break;
 		}
+		case IFighterTask::FightType::ARTY: {
+			task = new CArtilleryTask(this);
+			break;
+		}
 	}
 
 	fightTasks.insert(task);
@@ -330,6 +335,8 @@ IUnitTask* CMilitaryManager::GetTask(CCircuitUnit* unit)
 			type = IFighterTask::FightType::SCOUT;
 		} else if (unit->GetCircuitDef()->IsRoleBomber()) {
 			type = IFighterTask::FightType::BOMB;
+		} else if (unit->GetCircuitDef()->IsRoleArty()) {
+			type = IFighterTask::FightType::ARTY;
 		} else {
 			type = IFighterTask::FightType::DEFEND;
 		}

@@ -93,7 +93,7 @@ void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 void IBuilderTask::Execute(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();
-	u->ExecuteCustomCommand(CMD_PRIORITY, {static_cast<float>(priority)});
+	u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
@@ -188,14 +188,15 @@ void IBuilderTask::Update()
 	}
 
 	// Reassign task if required
-	auto assignees = units;
-	for (CCircuitUnit* unit : assignees) {
-		HideAssignee(unit);
-		IUnitTask* task = manager->GetTask(unit);
-		ShowAssignee(unit);
-		if ((task != nullptr) && (task != this)) {
-			manager->AssignTask(unit, task);
-		}
+	if (units.empty()) {
+		return;
+	}
+	CCircuitUnit* unit = *units.begin();
+	HideAssignee(unit);
+	IUnitTask* task = manager->GetTask(unit);
+	ShowAssignee(unit);
+	if ((task != nullptr) && (task != this)) {
+		manager->AssignTask(unit, task);
 	}
 }
 

@@ -106,7 +106,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
-		DelFactory(unit->GetCircuitDef());
+//		DelFactory(unit->GetCircuitDef());
 		auto checkBuilderFactory = [this]() {
 			// check if any factory with builders left
 			bool hasBuilder = false;
@@ -119,7 +119,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			if (!hasBuilder) {
 				CCircuitDef* facDef = GetFactoryToBuild(this->circuit);
 				if (facDef != nullptr) {
-					this->circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, -RgtVector,
+					this->circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NOW, facDef, -RgtVector,
 																	IBuilderTask::BuildType::FACTORY);
 				}
 			}

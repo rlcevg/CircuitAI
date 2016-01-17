@@ -50,7 +50,7 @@ void CBEnergyTask::Update()
 	}
 	isStalling = isEnergyStalling;
 	priority = isEnergyStalling ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
-	target->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {static_cast<float>(priority)});
+	target->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
 }
 
 void CBEnergyTask::Finish()
