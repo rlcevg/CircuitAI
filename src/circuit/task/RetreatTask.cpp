@@ -167,7 +167,10 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 			pos.x += (pos.x > centerX) ? -size : size;
 			pos.z += (pos.z > centerZ) ? -size : size;
 		}
-		pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), pos, maxDist, UNIT_COMMAND_BUILD_NO_FACING);
+		CTerrainManager::TerrainPredicate predicate = [unitPos](const AIFloat3& p) {
+			return unitPos.SqDistance2D(p) > SQUARE(SQUARE_SIZE * 8);
+		};
+		pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), pos, maxDist, UNIT_COMMAND_BUILD_NO_FACING, predicate);
 		unit->GetUnit()->PatrolTo(pos);
 
 		IUnitAction* act = static_cast<IUnitAction*>(unit->End());

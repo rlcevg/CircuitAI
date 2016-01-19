@@ -17,7 +17,7 @@ class CEnemyUnit;
 
 class IFighterTask: public IUnitTask {
 public:
-	enum class FightType: char {DEFEND, SCOUT, RAID, ATTACK, BOMB, AA, ARTY};
+	enum class FightType: char {RALLY, DEFEND, SCOUT, RAID, ATTACK, BOMB, AA, ARTY};
 
 protected:
 	IFighterTask(ITaskManager* mgr, FightType type, int timeout = ASSIGN_TIMEOUT);

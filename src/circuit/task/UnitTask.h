@@ -21,7 +21,7 @@ class ITaskManager;
 class IUnitTask {  // CSquad, IAction
 public:
 	enum class Priority: char {LOW = 0, NORMAL = 1, HIGH = 2, NOW = 99};
-	enum class Type: char {PLAYER, STUCK, IDLE, RETREAT, BUILDER, FACTORY, FIGHTER};
+	enum class Type: char {PLAYER, IDLE, RETREAT, BUILDER, FACTORY, FIGHTER};
 
 protected:
 	IUnitTask(ITaskManager* mgr, Priority priority, Type type, int timeout);
@@ -44,6 +44,7 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) = 0;
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) = 0;
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) = 0;
+	void OnUnitMoveFailed(CCircuitUnit* unit);
 
 	const std::set<CCircuitUnit*>& GetAssignees() const { return units; }
 	Priority GetPriority() const { return priority; }

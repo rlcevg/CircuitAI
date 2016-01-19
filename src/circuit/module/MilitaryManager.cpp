@@ -15,6 +15,7 @@
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
 #include "task/builder/DefenceTask.h"
+#include "task/fighter/RallyTask.h"
 #include "task/fighter/DefendTask.h"
 #include "task/fighter/ScoutTask.h"
 #include "task/fighter/AttackTask.h"
@@ -45,8 +46,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		, metalArty(.0f)
 		, metalLand(.0f)
 		, metalWater(.0f)
-		, metalSum(.0f)
-		, curPowah(.0f)
+		, metalArmy(.0f)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::Watchdog, this),
@@ -273,9 +273,14 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 	IFighterTask* task;
 	switch (type) {
 		default:
+		case IFighterTask::FightType::RALLY: {
+			CEconomyManager* economyManager = circuit->GetEconomyManager();
+			float power = economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor() * 64.0f;
+			task = new CRallyTask(this, power);  // TODO: pass enemy's threat
+			break;
+		}
 		case IFighterTask::FightType::DEFEND: {
-//			curPowah += 300.0f;
-			task = new CDefendTask(this, curPowah);  // TODO: pass enemy's threat
+			task = new CDefendTask(this, 1.0f);
 			break;
 		}
 		case IFighterTask::FightType::SCOUT: {
@@ -321,15 +326,22 @@ IUnitTask* CMilitaryManager::GetTask(CCircuitUnit* unit)
 {
 	IFighterTask* task = nullptr;
 
-//	for (IFighterTask* candidate : fighterTasks) {
-//		if (!candidate->CanAssignTo(unit)) {
-//			continue;
-//		}
-//		task = candidate;
-//		break;
-//	}
-//
-//	if (task == nullptr) {
+	std::underlying_type<CCircuitDef::RoleType>::type role =
+		CCircuitDef::RoleType::AA |
+		CCircuitDef::RoleType::ARTY |
+		CCircuitDef::RoleType::SCOUT |
+		CCircuitDef::RoleType::BOMBER;
+	if ((unit->GetCircuitDef()->GetRole() & role) == 0) {
+		for (IFighterTask* candidate : fightTasks) {
+			if (!candidate->CanAssignTo(unit)) {
+				continue;
+			}
+			task = candidate;
+			break;
+		}
+	}
+
+	if (task == nullptr) {
 		IFighterTask::FightType type;
 		if (unit->GetCircuitDef()->IsRoleScout()) {
 			type = IFighterTask::FightType::SCOUT;
@@ -338,10 +350,10 @@ IUnitTask* CMilitaryManager::GetTask(CCircuitUnit* unit)
 		} else if (unit->GetCircuitDef()->IsRoleArty()) {
 			type = IFighterTask::FightType::ARTY;
 		} else {
-			type = IFighterTask::FightType::DEFEND;
+			type = IFighterTask::FightType::RALLY;
 		}
 		task = EnqueueTask(type);
-//	}
+	}
 
 	return task;
 }
@@ -506,14 +518,19 @@ bool CMilitaryManager::IsNeedAA(CCircuitDef* cdef) const
 {
 	const float airThreat = circuit->GetThreatMap()->GetAirMetal();
 	const float nextMetalAA = metalAA + cdef->GetCost();
-	return (airThreat * ratioAA > nextMetalAA * factorAA) && (nextMetalAA < maxPercAA * metalSum);
+	return (airThreat * ratioAA > nextMetalAA * factorAA) && (nextMetalAA < maxPercAA * metalArmy);
 }
 
 bool CMilitaryManager::IsNeedArty(CCircuitDef* cdef) const
 {
 	const float staticThreat = circuit->GetThreatMap()->GetStaticMetal();
 	const float nextMetalArty = metalArty + cdef->GetCost();
-	return (staticThreat * ratioArty > nextMetalArty * factorArty) && (nextMetalArty < maxPercArty * metalSum);
+	return (staticThreat * ratioArty > nextMetalArty * factorArty) && (nextMetalArty < maxPercArty * metalArmy);
+}
+
+bool CMilitaryManager::IsNeedBigGun(CCircuitDef* cdef) const
+{
+	return metalArmy * circuit->GetEconomyManager()->GetEcoFactor() > cdef->GetCost();
 }
 
 void CMilitaryManager::ReadConfig()
@@ -675,7 +692,7 @@ void CMilitaryManager::AddPower(CCircuitUnit* unit)
 	if (cdef->HasAntiWater()) {
 		metalWater += cost;
 	}
-	metalSum += cost;
+	metalArmy += cost;
 }
 
 void CMilitaryManager::DelPower(CCircuitUnit* unit)
@@ -696,7 +713,7 @@ void CMilitaryManager::DelPower(CCircuitUnit* unit)
 	if (cdef->HasAntiWater()) {
 		metalWater = std::max(metalWater - cost, .0f);
 	}
-	metalSum = std::max(metalSum - cost, .0f);
+	metalArmy = std::max(metalArmy - cost, .0f);
 }
 
 } // namespace circuit

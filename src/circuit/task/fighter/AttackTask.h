@@ -26,10 +26,6 @@ public:
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
 
-	// FIXME: DEBUG
-	virtual void OnUnitIdle(CCircuitUnit* unit);
-	// FIXME: DEBUG
-
 private:
 	void Execute(CCircuitUnit* unit, bool isUpdating);
 	void FindTarget(CCircuitUnit* unit, float& minSqDist);

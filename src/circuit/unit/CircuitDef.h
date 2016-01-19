@@ -40,9 +40,11 @@ public:
 	springai::UnitDef* GetUnitDef() const { return def; }
 
 	void SetRole(RoleType value) { role |= value; }
+	std::underlying_type<RoleType>::type GetRole() const { return role; }
 	bool IsRoleBuilder() const { return role & RoleType::BUILDER; }
 	bool IsRoleScout()   const { return role & RoleType::SCOUT; }
 	bool IsRoleRaider()  const { return role & RoleType::RAIDER; }
+	bool IsRoleRiot()    const { return role & RoleType::RIOT; }
 	bool IsRoleAssault() const { return role & RoleType::ASSAULT; }
 	bool IsRoleArty()    const { return role & RoleType::ARTY; }
 	bool IsRoleAA()      const { return role & RoleType::AA; }

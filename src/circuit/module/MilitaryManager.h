@@ -48,6 +48,7 @@ public:
 
 	bool IsNeedAA(CCircuitDef* cdef) const;
 	bool IsNeedArty(CCircuitDef* cdef) const;
+	bool IsNeedBigGun(CCircuitDef* cdef) const;
 
 private:
 	void ReadConfig();
@@ -86,13 +87,9 @@ private:
 	float metalArty, ratioArty, maxPercArty, factorArty;
 	float metalLand;
 	float metalWater;
-	float metalSum;
+	float metalArmy;
 
 	std::set<CCircuitUnit*> army;
-
-	// FIXME: DEBUG
-	float curPowah;
-	// FIXME: DEBUG
 };
 
 } // namespace circuit

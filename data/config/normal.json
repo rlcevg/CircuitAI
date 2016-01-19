@@ -103,7 +103,6 @@
 		// 72m - 88m+ Late late Game - SPAM GRIZZLY
 		"tier7":    [ 0.05,          0.02,          0.55,          0.12,       0.26,          0.00],
 
-		"artillery_def": "amphassault",  // grizzly
 		"anti_air_def": "amphaa",  // angler
 		"builder_def": "amphcon"  // conch
 	},
@@ -132,7 +131,6 @@
 		// 72m - 88m+ Late late Game - TURBO CRABBES
 		"tier7":    [ 0.66,      0.20,            0.00,        0.03,         0.01,      0.10,       0.00],
 
-		"artillery_def": "armcrabe",  // crabe
 		"anti_air_def": "spideraa",  // tarantula
 		"builder_def": "arm_spider"  // weaver
 	},
@@ -217,7 +215,6 @@
 		// 61-70m Late
 		"tier7":    [ 0.02,      0.00,      0.73,      0.03,       0.01,                0.16,      0.05],
 
-		"artillery_def": "armcybr",  // Licho
 		"anti_air_def": "fighter",  // swift
 		"builder_def": "armca" // crane
 	},

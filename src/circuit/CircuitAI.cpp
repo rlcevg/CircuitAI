@@ -16,7 +16,6 @@
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
 #include "task/PlayerTask.h"
-#include "task/StuckTask.h"
 #include "unit/EnemyUnit.h"
 #include "util/GameAttribute.h"
 #include "util/Scheduler.h"
@@ -653,13 +652,8 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 		unit->GetUnit()->SetMoveState(2);
 		UnitDestroyed(unit, nullptr);
 		UnregisterTeamUnit(unit);
-	} else {
-		IUnitTask* prevTask = unit->GetTask();
-		if ((prevTask != nullptr) && (prevTask->GetType() != IUnitTask::Type::RETREAT)) {
-			ITaskManager* mgr = prevTask->GetManager();
-			// TODO: Make sure prevTask is valid and can be assigned
-			mgr->AssignTask(unit, new CStuckTask(mgr));
-		}
+	} else if (unit->GetTask() != nullptr) {
+		unit->GetTask()->OnUnitMoveFailed(unit);
 	}
 
 	return 0;  // signaling: OK

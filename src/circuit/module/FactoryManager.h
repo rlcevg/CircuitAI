@@ -68,6 +68,7 @@ public:
 	float GetStriderChance() const;
 	void AddFactory(CCircuitDef* cdef);
 	void DelFactory(CCircuitDef* cdef);
+	CCircuitDef* GetBuilderDef(CCircuitDef* facDef) const;
 
 private:
 	void ReadConfig();

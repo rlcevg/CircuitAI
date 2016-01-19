@@ -193,9 +193,14 @@ void IBuilderTask::Update()
 	}
 	CCircuitUnit* unit = *units.begin();
 	HideAssignee(unit);
-	IUnitTask* task = manager->GetTask(unit);
+	IBuilderTask* task = static_cast<IBuilderTask*>(manager->GetTask(unit));
 	ShowAssignee(unit);
-	if ((task != nullptr) && (task != this)) {
+	if (task == nullptr) {
+		return;
+	}
+	if ((task->GetBuildType() != buildType) ||
+		(task->GetPosition().SqDistance2D(GetPosition()) > SQUARE(256.0f)))
+	{
 		manager->AssignTask(unit, task);
 	}
 }

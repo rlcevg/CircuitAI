@@ -142,7 +142,9 @@ void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	IFighterTask::OnUnitIdle(unit);
 
-	if (units.find(unit) != units.end()) RemoveAssignee(unit);
+	if (units.find(unit) != units.end()) {
+		RemoveAssignee(unit);
+	}
 }
 
 CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)

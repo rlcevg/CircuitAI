@@ -11,8 +11,11 @@
 #include "unit/CircuitUnit.h"
 #include "unit/action/IdleAction.h"
 #include "CircuitAI.h"
+#include "util/utils.h"
 
 namespace circuit {
+
+using namespace springai;
 
 IUnitTask::IUnitTask(ITaskManager* mgr, Priority priority, Type type, int timeout)
 		: manager(mgr)
@@ -77,6 +80,16 @@ void IUnitTask::Finish()
 
 void IUnitTask::Cancel()
 {
+}
+
+void IUnitTask::OnUnitMoveFailed(CCircuitUnit* unit)
+{
+	int frame = manager->GetCircuit()->GetLastFrame();
+	AIFloat3 pos = unit->GetPos(frame);
+	AIFloat3 d((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
+	d.Normalize();
+	pos += d * SQUARE_SIZE * 20;
+	unit->GetUnit()->MoveTo(pos, 0, frame + FRAMES_PER_SEC);
 }
 
 } // namespace circuit

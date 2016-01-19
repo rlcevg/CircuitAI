@@ -500,7 +500,7 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 			}
 			if (task == nullptr) {
 				task = builderManager->EnqueueReclaim(IBuilderTask::Priority::NORMAL, pos, cost, FRAMES_PER_SEC * 300,
-													  unit->GetCircuitDef()->GetBuildDistance());
+													  8.0f/*unit->GetCircuitDef()->GetBuildDistance()*/);
 			}
 		}
 		utils::free_clear(features);
@@ -863,13 +863,21 @@ void CEconomyManager::Init()
 			const AIFloat3& pos = commander->GetPos(circuit->GetLastFrame());
 			UnitRulesParam* param = commander->GetUnit()->GetUnitRulesParamByName("facplop");
 			if ((param != nullptr) && (param->GetValueFloat() == 1)) {
-				CCircuitDef* facDef = circuit->GetFactoryManager()->GetFactoryToBuild(circuit, true);
+				CFactoryManager* factoryManager = circuit->GetFactoryManager();
+				CCircuitDef* facDef = factoryManager->GetFactoryToBuild(circuit, true);
 				if (facDef != nullptr) {
-					buildPos = circuit->GetTerrainManager()->GetBuildPosition(facDef, pos);
+					// Enqueue factory
+					CTerrainManager* terrainManager = circuit->GetTerrainManager();
+					buildPos = terrainManager->GetBuildPosition(facDef, pos);
 					CBuilderManager* builderManager = circuit->GetBuilderManager();
 					IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::NOW, facDef, buildPos,
 													   IBuilderTask::BuildType::FACTORY);
 					static_cast<ITaskManager*>(builderManager)->AssignTask(commander, task);
+
+					// Enqueue first builder
+					float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
+					CCircuitDef* buildDef = factoryManager->GetBuilderDef(facDef);
+					factoryManager->EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::BUILDPOWER, radius);
 				}
 			}
 			delete param;
@@ -889,7 +897,7 @@ void CEconomyManager::Init()
 					circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, circuit->GetCircuitDef("corllt"), buildPos,
 															  IBuilderTask::BuildType::DEFENCE, true, true, 0);
 				}
-			}), FRAMES_PER_SEC * 120);
+			}), FRAMES_PER_SEC * 60);
 		}
 
 		SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();
@@ -914,10 +922,10 @@ void CEconomyManager::UpdateEconomy()
 	float storMetal = economy->GetStorage(metalRes);
 	isMetalEmpty = curMetal < storMetal * 0.2f;
 	isMetalFull = curMetal > storMetal * 0.8f;
-	isEnergyStalling = std::min(GetAvgMetalIncome() - GetMetalPull(), .0f) * 0.9f > std::min(GetAvgEnergyIncome() - GetEnergyPull(), .0f);
+	isEnergyStalling = std::min(GetAvgMetalIncome() - GetMetalPull(), .0f) > std::min(GetAvgEnergyIncome() - GetEnergyPull(), .0f);
 	float curEnergy = economy->GetCurrent(energyRes);
 	float storEnergy = economy->GetStorage(energyRes) - HIDDEN_ENERGY;
-	isEnergyEmpty = curEnergy < storEnergy * 0.2f;
+	isEnergyEmpty = curEnergy < storEnergy * 0.1f;
 }
 
 } // namespace circuit

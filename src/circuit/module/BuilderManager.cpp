@@ -7,6 +7,7 @@
 
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
+#include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
@@ -15,7 +16,6 @@
 #include "task/NullTask.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
-#include "task/StuckTask.h"
 #include "task/builder/FactoryTask.h"
 #include "task/builder/NanoTask.h"
 #include "task/builder/StoreTask.h"
@@ -236,7 +236,7 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		//       Next workaround unfortunately doesn't mark bugged building on blocking map.
 		// TODO: Create additional task to build/reclaim lost unit
 		if ((taskB->GetTarget() == nullptr) && (taskB->GetBuildDef() != nullptr) &&
-			(*taskB->GetBuildDef() == *unit->GetCircuitDef()) && taskB->IsEqualBuildPos(unit))
+			(*taskB->GetBuildDef() == *unit->GetCircuitDef())/* && taskB->IsEqualBuildPos(unit)*/)
 		{
 			taskB->UpdateTarget(unit);
 			unfinishedUnits[unit] = taskB;
@@ -545,7 +545,7 @@ IUnitTask* CBuilderManager::GetTask(CCircuitUnit* unit)
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	terrainManager->CorrectPosition(pos);
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize();
+	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
 	const int buildDistance = std::max<int>(unit->GetCircuitDef()->GetBuildDistance(), pathfinder->GetSquareSize());
 	float metric = std::numeric_limits<float>::max();
 	for (auto& tasks : buildTasks) {
@@ -557,7 +557,7 @@ IUnitTask* CBuilderManager::GetTask(CCircuitUnit* unit)
 			// Check time-distance to target
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
 			weight = 1.0f / (weight * weight);
-			float dist;
+			float distCost;
 			bool valid = false;
 
 			CCircuitUnit* target = candidate->GetTarget();
@@ -568,16 +568,17 @@ IUnitTask* CBuilderManager::GetTask(CCircuitUnit* unit)
 					continue;
 				}
 
-				dist = pathfinder->PathCost(pos, buildPos, buildDistance);
-				if (dist > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
+				distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
+				if (distCost > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
 					continue;
 				}
+				distCost = std::max(distCost, THREAT_BASE);
 
-				if (dist * weight < metric) {
+				if (distCost * weight < metric) {
 					Unit* tu = target->GetUnit();
 					float maxHealth = tu->GetMaxHealth();
 					float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
-					valid = (((maxHealth - tu->GetHealth()) * 0.6f) * (maxSpeed * FRAMES_PER_SEC) > healthSpeed * dist);
+					valid = (((maxHealth - tu->GetHealth()) * 0.6f) * (maxSpeed * FRAMES_PER_SEC) > healthSpeed * distCost);
 				}
 
 			} else {
@@ -589,17 +590,18 @@ IUnitTask* CBuilderManager::GetTask(CCircuitUnit* unit)
 					continue;
 				}
 
-				dist = pathfinder->PathCost(pos, buildPos, buildDistance);
-				if (dist > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
+				distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
+				if (distCost > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
 					continue;
 				}
+				distCost = std::max(distCost, THREAT_BASE);
 
-				valid = ((dist * weight < metric) && (dist < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC)));
+				valid = ((distCost * weight < metric) && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC)));
 			}
 
 			if (valid) {
 				task = candidate;
-				metric = dist * weight;
+				metric = distCost * weight;
 			}
 		}
 	}
@@ -659,13 +661,13 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 	CCircuitDef* buildDef = circuit->GetCircuitDef("armwin");
 	if ((metalIncome < 50) && (buildDef->GetCount() < 10) && buildDef->IsAvailable()) {
 		task = EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
-	} else if (metalIncome < 120) {  // TODO: Calc income of the map
+	} else if (metalIncome < 150) {  // TODO: Calc income of the map
 		task = EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
 	} else {
 		const std::set<IBuilderTask*>& tasks = GetTasks(IBuilderTask::BuildType::BIG_GUN);
 		if (tasks.empty()) {
 			buildDef = circuit->GetCircuitDef("raveparty");
-			if ((buildDef->GetCount() < 1) && buildDef->IsAvailable()) {
+			if (circuit->GetMilitaryManager()->IsNeedBigGun(buildDef) && (buildDef->GetCount() < 1) && buildDef->IsAvailable()) {
 				task = EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, circuit->GetSetupManager()->GetBasePos(), IBuilderTask::BuildType::BIG_GUN);
 			} else {
 				task = EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
@@ -738,7 +740,7 @@ void CBuilderManager::Watchdog()
 		auto commands = std::move(u->GetCurrentCommands());
 		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())
 		if (commands.empty() && (u->GetResourceUse(metalRes) == .0f) && (u->GetVel() == ZeroVector)) {
-			static_cast<ITaskManager*>(this)->AssignTask(worker, new CStuckTask(this));
+			worker->GetTask()->OnUnitMoveFailed(worker);
 		}
 		utils::free_clear(commands);
 	}

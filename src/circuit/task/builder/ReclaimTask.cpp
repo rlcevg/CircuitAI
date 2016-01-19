@@ -137,7 +137,7 @@ void CBReclaimTask::Update()
 				}
 			}
 			if (minSqDist < std::numeric_limits<float>::max()) {
-				const float radius = unit->GetCircuitDef()->GetBuildDistance();
+				const float radius = 8.0f;  // unit->GetCircuitDef()->GetBuildDistance();
 				unit->GetUnit()->ReclaimInArea(reclPos, radius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 			}
 			utils::free_clear(features);

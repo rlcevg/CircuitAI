@@ -62,7 +62,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			nullTask->RemoveAssignee(unit);
 		}
 
-		unit->GetUnit()->SetFireState(2);
+//		unit->GetUnit()->SetFireState(2);
 
 		factoryPower += unit->GetCircuitDef()->GetBuildSpeed();
 
@@ -73,12 +73,12 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
 		int nanoId = assistDef->GetId();
 		int teamId = this->circuit->GetTeamId();
-		for (auto nano : units) {
+		for (Unit* nano : units) {
 			if (nano == nullptr) {
 				continue;
 			}
 			UnitDef* ndef = nano->GetDef();
-			if (ndef->GetUnitDefId() == nanoId && nano->GetTeam() == teamId) {
+			if (ndef->GetUnitDefId() == nanoId && (nano->GetTeam() == teamId) && !nano->IsBeingBuilt()) {
 				CCircuitUnit* ass = this->circuit->GetTeamUnit(nano->GetUnitId());
 				nanos.insert(ass);
 
@@ -170,11 +170,11 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
 
 		// check factory nano belongs to
-		float radius = unit->GetCircuitDef()->GetBuildDistance();
-		float qradius = radius * radius;
+		const float radius = unit->GetCircuitDef()->GetBuildDistance();
+		const float sqRadius = SQUARE(radius);
 		std::set<CCircuitUnit*>& facs = assists[unit];
 		for (SFactory& fac : factories) {
-			if (assPos.SqDistance2D(fac.unit->GetPos(frame)) >= qradius) {
+			if (assPos.SqDistance2D(fac.unit->GetPos(frame)) >= sqRadius) {
 				continue;
 			}
 			fac.nanos.insert(unit);
@@ -185,7 +185,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 			bool isInHaven = false;
 			for (const AIFloat3& hav : havens) {
-				if (assPos.SqDistance2D(hav) < qradius) {
+				if (assPos.SqDistance2D(hav) < sqRadius) {
 					isInHaven = true;
 					break;
 				}
@@ -208,15 +208,15 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			return;
 		}
 		const AIFloat3& assPos = unit->GetPos(this->circuit->GetLastFrame());
-		float radius = unit->GetCircuitDef()->GetBuildDistance();
-		float qradius = radius * radius;
+		const float radius = unit->GetCircuitDef()->GetBuildDistance();
+		const float sqRadius = SQUARE(radius);
 		for (SFactory& fac : factories) {
 			if ((fac.nanos.erase(unit) == 0) || !fac.nanos.empty()) {
 				continue;
 			}
 			auto it = havens.begin();
 			while (it != havens.end()) {
-				if (it->SqDistance2D(assPos) < qradius) {
+				if (it->SqDistance2D(assPos) < sqRadius) {
 					it = havens.erase(it);
 					// TODO: Send HavenDestroyed message?
 				} else {
@@ -268,17 +268,17 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 		// check nanos around
 		std::set<CCircuitUnit*> nanos;
-		int frame = this->circuit->GetLastFrame();
 		float radius = assistDef->GetBuildDistance();
-		auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(unit->GetPos(frame), radius));
+		const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
+		auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
 		int nanoId = assistDef->GetId();
 		int teamId = this->circuit->GetTeamId();
-		for (auto nano : units) {
+		for (Unit* nano : units) {
 			if (nano == nullptr) {
 				continue;
 			}
 			UnitDef* ndef = nano->GetDef();
-			if (ndef->GetUnitDefId() == nanoId && nano->GetTeam() == teamId) {
+			if (ndef->GetUnitDefId() == nanoId && (nano->GetTeam() == teamId) && !nano->IsBeingBuilt()) {
 				CCircuitUnit* ass = this->circuit->GetTeamUnit(nano->GetUnitId());
 				nanos.insert(ass);
 
@@ -732,6 +732,12 @@ void CFactoryManager::DelFactory(CCircuitDef* cdef)
 	factoryData->DelFactory(cdef);
 }
 
+CCircuitDef* CFactoryManager::GetBuilderDef(CCircuitDef* facDef) const
+{
+	auto it = factoryDefs.find(facDef->GetId());
+	return (it != factoryDefs.end()) ? it->second.builderDef : nullptr;
+}
+
 void CFactoryManager::ReadConfig()
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
@@ -748,15 +754,15 @@ void CFactoryManager::ReadConfig()
 		const Json::Value& factory = factories[fac];
 		SFactoryDef facDef;
 
-		facDef.builderDef = circuit->GetCircuitDef(factory["builder_def"].asCString());
+		facDef.builderDef = circuit->GetCircuitDef(factory.get("builder_def", "").asCString());
 		if (facDef.builderDef != nullptr) {
 			facDef.builderDef->SetRole(CCircuitDef::RoleType::BUILDER);
 		}
-		facDef.antiAirDef = circuit->GetCircuitDef(factory["anti_air_def"].asCString());
+		facDef.antiAirDef = circuit->GetCircuitDef(factory.get("anti_air_def", "").asCString());
 		if (facDef.antiAirDef != nullptr) {
 			facDef.antiAirDef->SetRole(CCircuitDef::RoleType::AA);
 		}
-		facDef.artyDef = circuit->GetCircuitDef(factory["artillery_def"].asCString());
+		facDef.artyDef = circuit->GetCircuitDef(factory.get("artillery_def", "").asCString());
 		if (facDef.artyDef != nullptr) {
 			facDef.artyDef->SetRole(CCircuitDef::RoleType::ARTY);
 		}
@@ -874,6 +880,10 @@ void CFactoryManager::ReadConfig()
 	if (striderHubDef.waterTiers.empty()) {
 		striderHubDef.waterTiers[0];  // create empty tier
 	}
+
+	// FIXME: DEBUG
+	circuit->GetCircuitDef("armraven")->SetRole(CCircuitDef::RoleType::ARTY);
+	// FIXME: DEBUG
 }
 
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)

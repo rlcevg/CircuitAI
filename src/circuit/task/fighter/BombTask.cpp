@@ -145,7 +145,9 @@ void CBombTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	IFighterTask::OnUnitIdle(unit);
 
-	if (units.find(unit) != units.end()) RemoveAssignee(unit);
+	if (units.find(unit) != units.end()) {
+		RemoveAssignee(unit);
+	}
 }
 
 CEnemyUnit* CBombTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
@@ -153,12 +155,12 @@ CEnemyUnit* CBombTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F
 	CCircuitAI* circuit = manager->GetCircuit();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	float power = threatMap->GetUnitThreat(unit) * 0.8f;
-	int canTargetCat = cdef->GetTargetCategory();
-	int noChaseCat = cdef->GetNoChaseCategory();
-	float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
+	const float power = threatMap->GetUnitThreat(unit) * 0.8f;
+	const int canTargetCat = cdef->GetTargetCategory();
+	const int noChaseCat = cdef->GetNoChaseCategory();
+	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
 						   cdef->GetLosRadius());
-	float minSqDist = range * range;
+	const float sqRange = SQUARE(range);
 	float maxThreat = .0f;
 
 	CEnemyUnit* bestTarget = nullptr;
@@ -186,10 +188,9 @@ CEnemyUnit* CBombTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F
 		}
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
-		if (enemy->IsInRadarOrLOS() && (sqDist < minSqDist)) {
+		if (enemy->IsInRadarOrLOS() && (sqDist < sqRange)) {
 			if ((enemy->GetThreat() > maxThreat) && !enemy->GetUnit()->IsBeingBuilt()) {
 				bestTarget = enemy;
-				minSqDist = sqDist;
 				maxThreat = enemy->GetThreat();
 			} else if (bestTarget == nullptr) {
 				if ((targetCat & noChaseCat) == 0) {

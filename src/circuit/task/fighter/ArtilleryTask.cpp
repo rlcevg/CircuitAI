@@ -140,7 +140,9 @@ void CArtilleryTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	IFighterTask::OnUnitIdle(unit);
 
-	if (units.find(unit) != units.end()) RemoveAssignee(unit);
+	if (units.find(unit) != units.end()) {
+		RemoveAssignee(unit);
+	}
 }
 
 CEnemyUnit* CArtilleryTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
@@ -152,8 +154,7 @@ CEnemyUnit* CArtilleryTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& p
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float range = std::max(unit->GetUnit()->GetMaxRange(), (float)threatMap->GetSquareSize() * 2);
-	float minSqDist = SQUARE(range);
-	float maxThreat = .0f;
+	const float minSqDist = SQUARE(range);
 
 	F3Vec enemyPositions;
 	threatMap->SetThreatType(unit);
@@ -162,54 +163,11 @@ CEnemyUnit* CArtilleryTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& p
 
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	if (isPosSafe) {
+		// Select target or position to attack
+		float maxThreat = .0f;
 		CEnemyUnit* bestTarget = nullptr;
 		CEnemyUnit* mediumTarget = nullptr;
 		CEnemyUnit* worstTarget = nullptr;
-		for (auto& kv : enemies) {
-			CEnemyUnit* enemy = kv.second;
-			if (enemy->IsHidden() ||
-				(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
-			{
-				continue;
-			}
-
-			if ((enemy->GetCircuitDef() == nullptr)/* || enemy->GetCircuitDef()->IsMobile()*/) {
-				continue;
-			}
-			int targetCat = enemy->GetCircuitDef()->GetCategory();
-			if ((targetCat & canTargetCat) == 0) {
-				continue;
-			}
-
-			const float sqDist = pos.SqDistance2D(enemy->GetPos());
-			if (enemy->IsInRadarOrLOS() && (sqDist < minSqDist)) {
-				if (enemy->GetThreat() > maxThreat) {
-					bestTarget = enemy;
-					minSqDist = sqDist;
-					maxThreat = enemy->GetThreat();
-				} else if (bestTarget == nullptr) {
-					if ((targetCat & noChaseCat) == 0) {
-						mediumTarget = enemy;
-					} else if (mediumTarget == nullptr) {
-						worstTarget = enemy;
-					}
-				}
-				continue;
-			}
-			if (sqDist < SQUARE(2000)) {  // maxSqDist
-				enemyPositions.push_back(enemy->GetPos());
-			}
-		}
-		if (bestTarget == nullptr) {
-			bestTarget = (mediumTarget != nullptr) ? mediumTarget : worstTarget;
-		}
-		if (bestTarget != nullptr) {
-			position = bestTarget->GetPos();
-			return bestTarget;
-		}
-
-	} else {
-
 		for (auto& kv : enemies) {
 			CEnemyUnit* enemy = kv.second;
 			if (enemy->IsHidden() ||
@@ -226,39 +184,111 @@ CEnemyUnit* CArtilleryTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& p
 				continue;
 			}
 
-			if (pos.SqDistance2D(enemy->GetPos()) < SQUARE(2000)) {  // maxSqDist
+			const float sqDist = pos.SqDistance2D(enemy->GetPos());
+			if (enemy->IsInRadarOrLOS() && (sqDist < minSqDist)) {
+				if (enemy->GetThreat() > maxThreat) {
+					bestTarget = enemy;
+					maxThreat = enemy->GetThreat();
+				} else if (bestTarget == nullptr) {
+					if ((targetCat & noChaseCat) == 0) {
+						mediumTarget = enemy;
+					} else if (mediumTarget == nullptr) {
+						worstTarget = enemy;
+					}
+				}
+				continue;
+			}
+
+			if ((targetCat & noChaseCat) != 0) {
+				continue;
+			}
+			if (sqDist < SQUARE(2000)) {  // maxSqDist
 				enemyPositions.push_back(enemy->GetPos());
 			}
 		}
-	}
-
-	path.clear();
-	if (enemyPositions.empty()) {
-		return nullptr;
-	}
-
-	AIFloat3 startPos = pos;
-	pathfinder->FindBestPath(path, startPos, threatMap->GetSquareSize(), enemyPositions);
-
-	// Check if safe path exists and shrink the path to maxRange position
-	if (path.empty()) {
-		position = -RgtVector;
-		return nullptr;
-	}
-	const float sqRange = SQUARE(range);
-	auto it = path.rbegin();
-	for (; it != path.rend(); ++it) {
-		if (path.back().SqDistance2D(*it) > sqRange) {
-			break;
+		if (bestTarget == nullptr) {
+			bestTarget = (mediumTarget != nullptr) ? mediumTarget : worstTarget;
 		}
-	}
-	--it;
-	if (threatMap->GetThreatAt(*it) > MIN_THREAT) {
-		position = -RgtVector;
+		if (bestTarget != nullptr) {
+			position = bestTarget->GetPos();
+			return bestTarget;
+		}
+
 		path.clear();
+		if (enemyPositions.empty()) {
+			return nullptr;
+		}
+
+		AIFloat3 startPos = pos;
+		pathfinder->FindBestPath(path, startPos, threatMap->GetSquareSize(), enemyPositions);
+
+		// Check if safe path exists and shrink the path to maxRange position
+		if (path.empty()) {
+			position = -RgtVector;
+			return nullptr;
+		}
+		const float sqRange = SQUARE(range);
+		auto it = path.rbegin();
+		for (; it != path.rend(); ++it) {
+			if (path.back().SqDistance2D(*it) > sqRange) {
+				break;
+			}
+		}
+		--it;
+		if (threatMap->GetThreatAt(*it) > MIN_THREAT) {
+			position = -RgtVector;
+			path.clear();
+		} else {
+			position = path.back();
+			path.resize(std::distance(it, path.rend()));
+		}
 	} else {
-		position = path.back();
-		path.resize(std::distance(it, path.rend()));
+		// Avoid closest units and choose safe position
+		for (auto& kv : enemies) {
+			CEnemyUnit* enemy = kv.second;
+			if (enemy->IsHidden() ||
+				(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
+			{
+				continue;
+			}
+
+			if ((enemy->GetCircuitDef() == nullptr) || enemy->GetCircuitDef()->IsMobile()) {
+				continue;
+			}
+			int targetCat = enemy->GetCircuitDef()->GetCategory();
+			if (((targetCat & canTargetCat) == 0) || ((targetCat & noChaseCat) != 0)) {
+				continue;
+			}
+
+			const float sqDist = pos.SqDistance2D(enemy->GetPos());
+			if (sqDist < minSqDist) {
+				continue;
+			}
+
+			if (sqDist < SQUARE(2000)) {  // maxSqDist
+				enemyPositions.push_back(enemy->GetPos());
+			}
+		}
+
+		path.clear();
+		if (enemyPositions.empty()) {
+			return nullptr;
+		}
+
+		AIFloat3 startPos = pos;
+		pathfinder->FindBestPath(path, startPos, range, enemyPositions);
+
+		// Check if safe path exists and shrink the path to maxRange position
+		if (path.empty()) {
+			position = -RgtVector;
+			return nullptr;
+		}
+		if (threatMap->GetThreatAt(path.back()) > MIN_THREAT) {
+			position = -RgtVector;
+			path.clear();
+		} else {
+			position = path.back();
+		}
 	}
 
 	return nullptr;

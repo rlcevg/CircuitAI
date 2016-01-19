@@ -67,7 +67,7 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 		}
 	}
 
-	minPower += unit->GetCircuitDef()->GetPower() / 4;
+	minPower += unit->GetCircuitDef()->GetPower() / 8;
 
 //	unit->PushBack(new CMoveAction(unit));
 }
@@ -153,15 +153,6 @@ void CAttackTask::Update()
 		isAttack = false;
 	}
 }
-
-// FIXME: DEBUG
-void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
-{
-	IFighterTask::OnUnitIdle(unit);
-
-	if (units.find(unit) != units.end()) RemoveAssignee(unit);
-}
-// FIXME: DEBUG
 
 void CAttackTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
