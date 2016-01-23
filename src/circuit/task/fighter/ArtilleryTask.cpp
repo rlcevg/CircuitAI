@@ -85,7 +85,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	int frame = circuit->GetLastFrame();
 	F3Vec path;
 	const AIFloat3& pos = unit->GetPos(frame);
-	CEnemyUnit* bestTarget = FindBestTarget(unit, pos, path);
+	CEnemyUnit* bestTarget = FindTarget(unit, pos, path);
 
 	if (bestTarget != nullptr) {
 		unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
@@ -145,7 +145,7 @@ void CArtilleryTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-CEnemyUnit* CArtilleryTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
+CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
@@ -176,7 +176,7 @@ CEnemyUnit* CArtilleryTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& p
 				continue;
 			}
 
-			if ((enemy->GetCircuitDef() == nullptr) || enemy->GetCircuitDef()->IsMobile()) {
+			if (enemy->GetCircuitDef() == nullptr) {
 				continue;
 			}
 			int targetCat = enemy->GetCircuitDef()->GetCategory();
@@ -199,7 +199,7 @@ CEnemyUnit* CArtilleryTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& p
 				continue;
 			}
 
-			if ((targetCat & noChaseCat) != 0) {
+			if (enemy->GetCircuitDef()->IsMobile() || ((targetCat & noChaseCat) != 0)) {
 				continue;
 			}
 			if (sqDist < SQUARE(2000)) {  // maxSqDist

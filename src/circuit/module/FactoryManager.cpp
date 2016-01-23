@@ -108,6 +108,10 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 //		DelFactory(unit->GetCircuitDef());
 		auto checkBuilderFactory = [this]() {
+			CBuilderManager* builderManager = this->circuit->GetBuilderManager();
+			if (!builderManager->GetTasks(IBuilderTask::BuildType::FACTORY).empty()) {
+				return;
+			}
 			// check if any factory with builders left
 			bool hasBuilder = false;
 			for (SFactory& fac : factories) {
@@ -119,8 +123,8 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			if (!hasBuilder) {
 				CCircuitDef* facDef = GetFactoryToBuild(this->circuit);
 				if (facDef != nullptr) {
-					this->circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NOW, facDef, -RgtVector,
-																	IBuilderTask::BuildType::FACTORY);
+					builderManager->EnqueueTask(IBuilderTask::Priority::NOW, facDef, -RgtVector,
+												IBuilderTask::BuildType::FACTORY);
 				}
 			}
 		};
@@ -562,10 +566,6 @@ void CFactoryManager::FallbackTask(CCircuitUnit* unit)
 
 CCircuitUnit* CFactoryManager::NeedUpgrade()
 {
-	// TODO: Wrap into predicate
-	if (factories.empty()) {
-		return nullptr;
-	}
 	unsigned facSize = factories.size();
 	for (auto it = factories.rbegin(); it != factories.rend(); ++it) {
 		SFactory& fac = *it;
@@ -591,6 +591,33 @@ CCircuitUnit* CFactoryManager::GetRandomFactory(CCircuitDef* buildDef)
 	std::advance(it, rand() % facs.size());
 	return *it;
 }
+
+//CCircuitUnit* CFactoryManager::GetRandomFactory(const AIFloat3& position, CCircuitDef::RoleType role)
+//{
+//	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+//	AIFloat3 pos = position;
+//	terrainManager->CorrectPosition(pos);
+//	int iS = terrainManager->GetSectorIndex(pos);
+//	std::list<CCircuitUnit*> facs;
+//	for (SFactory& fac : factories) {
+//		STerrainMapArea* area = fac.unit->GetArea();
+//		if ((area == nullptr) || (area->sector.find(iS) == area->sector.end())) {
+//			continue;
+//		}
+//		for (CCircuitDef::Id bdId : fac.unit->GetCircuitDef()->GetBuildOptions()) {
+//			if (circuit->GetCircuitDef(bdId)->IsRoleRiot()) {
+//				facs.push_back(fac.unit);
+//				break;
+//			}
+//		}
+//	}
+//	if (facs.empty()) {
+//		return nullptr;
+//	}
+//	auto it = facs.begin();
+//	std::advance(it, rand() % facs.size());
+//	return *it;
+//}
 
 AIFloat3 CFactoryManager::GetClosestHaven(CCircuitUnit* unit) const
 {
@@ -881,9 +908,37 @@ void CFactoryManager::ReadConfig()
 		striderHubDef.waterTiers[0];  // create empty tier
 	}
 
-	// FIXME: DEBUG
-	circuit->GetCircuitDef("armraven")->SetRole(CCircuitDef::RoleType::ARTY);
-	// FIXME: DEBUG
+	for (const Json::Value& scout : root["scout"]) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(scout.asCString());
+		if (cdef == nullptr) {
+			continue;
+		}
+		cdef->SetRole(CCircuitDef::RoleType::SCOUT);
+	}
+
+	for (const Json::Value& bomber : root["bomber"]) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(bomber.asCString());
+		if (cdef == nullptr) {
+			continue;
+		}
+		cdef->SetRole(CCircuitDef::RoleType::BOMBER);
+	}
+
+	for (const Json::Value& bomber : root["riot"]) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(bomber.asCString());
+		if (cdef == nullptr) {
+			continue;
+		}
+		cdef->SetRole(CCircuitDef::RoleType::RIOT);
+	}
+
+	for (const Json::Value& bomber : root["artillery"]) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(bomber.asCString());
+		if (cdef == nullptr) {
+			continue;
+		}
+		cdef->SetRole(CCircuitDef::RoleType::ARTY);
+	}
 }
 
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)

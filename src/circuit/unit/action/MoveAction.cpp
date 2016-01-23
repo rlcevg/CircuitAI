@@ -23,13 +23,12 @@ CMoveAction::CMoveAction(CCircuitUnit* owner)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	int squareSize = unit->GetManager()->GetCircuit()->GetPathfinder()->GetSquareSize();
-	// TODO: calc increment from unit's speed
 	int incMod;
 	if (unit->GetCircuitDef()->IsPlane()) {
 		incMod = 5;
 	} else if (unit->GetCircuitDef()->IsAbleToFly()) {
 		incMod = 3;
-	} else if (unit->GetCircuitDef()->IsFloater()) {
+	} else if (unit->GetCircuitDef()->IsTurnLarge()) {
 		incMod = 2;
 	} else {
 		incMod = 1;

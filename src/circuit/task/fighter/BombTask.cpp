@@ -91,7 +91,7 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	F3Vec path;
 	const AIFloat3& pos = unit->GetPos(frame);
-	CEnemyUnit* bestTarget = FindBestTarget(unit, pos, path);
+	CEnemyUnit* bestTarget = FindTarget(unit, pos, path);
 
 	if (bestTarget != nullptr) {
 		position = bestTarget->GetPos();
@@ -150,7 +150,7 @@ void CBombTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-CEnemyUnit* CBombTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
+CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CThreatMap* threatMap = circuit->GetThreatMap();

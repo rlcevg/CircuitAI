@@ -313,7 +313,7 @@
 },
 
 // Units defined as scouts will use pathfinder to visit each uncolonized mex
-"scouts": [
+"scout": [
 	// factorycloak
 	"armpw", "spherepole", "armjeth",
 
@@ -343,16 +343,47 @@
 
 	// factoryplane
 	"fighter", "corawac",
-	
-	// Strider
-	"armcomdgun", "scorpion", "armbanth",
 
 	// factorytank
-	"logkoda", "corsent"
+	"logkoda", "corsent",
+
+	// Strider
+	"armcomdgun", "scorpion", "armbanth"
 ],
 
 // Rearm-addictive units, require airpad
-"bombers": ["corshad", "corhurc2", "armstiletto_laser", "armcybr"],
+"bomber": ["corshad", "corhurc2", "armstiletto_laser", "armcybr"],
+
+"riot": [
+	// factorycloak
+	"armwar",
+
+	// factoryamph
+	"amphraider2", "amphriot",
+
+	// factoryspider
+	"arm_venom", "spiderriot",
+
+	// factoryshield
+	"cormak",
+
+	// factoryveh
+	"corlevlr",
+
+	// factoryjump
+	"corpyro",
+
+	// factoryhover
+	"hoverriot",
+
+	// factoryship
+	"shiptorp",
+
+	// factorytank
+	"tawf114"
+],
+
+"artillery": ["armraven", "funnelweb"],
 
 // If unit's health drops below specified percent it will retreat
 "retreat": {

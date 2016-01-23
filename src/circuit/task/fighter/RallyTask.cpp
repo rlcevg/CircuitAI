@@ -9,8 +9,8 @@
 #include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
-#include "util/utils.h"
 #include "CircuitAI.h"
+#include "util/utils.h"
 
 #include "AISCommands.h"
 
@@ -46,6 +46,7 @@ void CRallyTask::Execute(CCircuitUnit* unit)
 		unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
 		return;
 	}
+
 	IFighterTask* task = static_cast<CMilitaryManager*>(manager)->EnqueueTask(IFighterTask::FightType::ATTACK);
 	decltype(units) tmpUnits = units;
 	for (CCircuitUnit* ass : tmpUnits) {

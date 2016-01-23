@@ -275,12 +275,8 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 		default:
 		case IFighterTask::FightType::RALLY: {
 			CEconomyManager* economyManager = circuit->GetEconomyManager();
-			float power = economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor() * 64.0f;
+			float power = economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor() * 32.0f;
 			task = new CRallyTask(this, power);  // TODO: pass enemy's threat
-			break;
-		}
-		case IFighterTask::FightType::DEFEND: {
-			task = new CDefendTask(this, 1.0f);
 			break;
 		}
 		case IFighterTask::FightType::SCOUT: {
@@ -301,6 +297,13 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 		}
 	}
 
+	fightTasks.insert(task);
+	return task;
+}
+
+IFighterTask* CMilitaryManager::EnqueueDefend(CCircuitUnit* vip)
+{
+	IFighterTask* task = new CDefendTask(this, vip, 1.0f);
 	fightTasks.insert(task);
 	return task;
 }
@@ -561,22 +564,6 @@ void CMilitaryManager::ReadConfig()
 		maxPercArty = artillery.get("max_percent", 1.0f).asFloat();
 		const float stepArty = artillery.get("eps_step", 1.0f).asFloat();
 		factorArty  = (teamSize - 1.0f) * stepArty + 1.0f;
-	}
-
-	for (const Json::Value& scout : root["scouts"]) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(scout.asCString());
-		if (cdef == nullptr) {
-			continue;
-		}
-		cdef->SetRole(CCircuitDef::RoleType::SCOUT);
-	}
-
-	for (const Json::Value& bomber : root["bombers"]) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(bomber.asCString());
-		if (cdef == nullptr) {
-			continue;
-		}
-		cdef->SetRole(CCircuitDef::RoleType::BOMBER);
 	}
 }
 

@@ -104,6 +104,7 @@ public:
 	bool IsSubmarine()    const { return isSubmarine; }
 	bool IsAmphibious()   const { return isAmphibious; }
 	bool IsSonarStealth() const { return isSonarStealth; }
+	bool IsTurnLarge()    const { return isTurnLarge; }
 
 	float GetSpeed()     const { return speed; }
 	float GetLosRadius() const { return losRadius; }
@@ -147,12 +148,14 @@ private:
 	bool hasAntiLand;  // surface (water and land)
 	bool hasAntiWater;  // under water
 
+	// TODO: Use bit field?
 	bool isAbleToFly;
 	bool isPlane;  // no hover attack
 	bool isFloater;
 	bool isSubmarine;
 	bool isAmphibious;
 	bool isSonarStealth;
+	bool isTurnLarge;
 
 	float speed;
 	float losRadius;

@@ -78,6 +78,19 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 		builderPower += unit->GetCircuitDef()->GetBuildSpeed();
 		workers.insert(unit);
+//		if ((workers.size() <= this->circuit->GetEconomyManager()->GetAvgMetalIncome() / 4.0f) &&
+//			!unit->GetCircuitDef()->IsAbleToFly())
+//		{
+//			this->circuit->GetMilitaryManager()->EnqueueDefend(unit);
+//
+//			CTerrainManager* terrainManager = this->circuit->GetTerrainManager();
+//			CFactoryManager* factoryManager = this->circuit->GetFactoryManager();
+//			float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
+//			CCircuitUnit* facDef = factoryManager->GetRandomFactory(unit->GetPos(this->circuit->GetLastFrame()));
+//			CCircuitDef* buildDef = factoryManager->GetRiotDef(facDef);
+//			const AIFloat3& buildPos = this->circuit->GetSetupManager()->GetBasePos();
+//			factoryManager->EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::BUILDPOWER, radius);
+//		}
 
 		AddBuildList(unit);
 	};

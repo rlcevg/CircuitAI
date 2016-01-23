@@ -86,7 +86,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	int frame = circuit->GetLastFrame();
 	F3Vec path;
 	const AIFloat3& pos = unit->GetPos(frame);
-	CEnemyUnit* bestTarget = FindBestTarget(unit, pos, path);
+	CEnemyUnit* bestTarget = FindTarget(unit, pos, path);
 
 	if (bestTarget != nullptr) {
 		position = bestTarget->GetPos();
@@ -147,7 +147,7 @@ void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-CEnemyUnit* CScoutTask::FindBestTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
+CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();

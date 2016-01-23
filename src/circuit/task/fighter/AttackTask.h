@@ -8,40 +8,26 @@
 #ifndef SRC_CIRCUIT_TASK_FIGHTER_ATTACKTASK_H_
 #define SRC_CIRCUIT_TASK_FIGHTER_ATTACKTASK_H_
 
-#include "task/fighter/FighterTask.h"
+#include "task/fighter/SquadTask.h"
 
 namespace circuit {
 
 struct STerrainMapArea;
 
-class CAttackTask: public IFighterTask {
+class CAttackTask: public ISquadTask {
 public:
 	CAttackTask(ITaskManager* mgr);
 	virtual ~CAttackTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit);
-	virtual void AssignTo(CCircuitUnit* unit);
-	virtual void RemoveAssignee(CCircuitUnit* unit);
 
-	virtual void Execute(CCircuitUnit* unit);
+	virtual void Execute(CCircuitUnit* unit) {}
 	virtual void Update();
 
+	virtual void OnUnitIdle(CCircuitUnit* unit);
+
 private:
-	void Execute(CCircuitUnit* unit, bool isUpdating);
-	void FindTarget(CCircuitUnit* unit, float& minSqDist);
-	bool IsRegroup();
-
-	float lowestRange;
-	float highestRange;
-	float lowestSpeed;
-	float highestSpeed;
-	// NOTE: Using unit instead of area directly may save from processing UpdateAreaUsers
-	CCircuitUnit* leader;  // slowest, weakest unit, true leader
-
-	float minPower;
-
-	bool isRegroup;
-	bool isAttack;
+	void FindTarget(CCircuitUnit* unit);
 };
 
 } // namespace circuit

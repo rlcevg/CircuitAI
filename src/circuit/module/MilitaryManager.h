@@ -32,6 +32,7 @@ public:
 	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 
 	IFighterTask* EnqueueTask(IFighterTask::FightType type);
+	IFighterTask* EnqueueDefend(CCircuitUnit* vip);
 	CRetreatTask* EnqueueRetreat();
 private:
 	void DequeueTask(IFighterTask* task, bool done = false);
