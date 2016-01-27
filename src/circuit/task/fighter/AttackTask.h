@@ -9,6 +9,9 @@
 #define SRC_CIRCUIT_TASK_FIGHTER_ATTACKTASK_H_
 
 #include "task/fighter/SquadTask.h"
+#include "util/Defines.h"
+
+#include <memory>
 
 namespace circuit {
 
@@ -20,14 +23,17 @@ public:
 	virtual ~CAttackTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit);
+	virtual void AssignTo(CCircuitUnit* unit);
 
-	virtual void Execute(CCircuitUnit* unit) {}
+	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 
 private:
-	void FindTarget(CCircuitUnit* unit);
+	void FindTarget();
+
+	std::shared_ptr<F3Vec> pPath;
 };
 
 } // namespace circuit

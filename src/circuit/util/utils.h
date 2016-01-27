@@ -217,6 +217,18 @@ static inline bool is_equal_pos(const springai::AIFloat3& posA, const springai::
 	return (math::fabs(posA.x - posB.x) <= slack) && (math::fabs(posA.z - posB.z) <= slack);
 }
 
+static inline springai::AIFloat3 get_near_pos(const springai::AIFloat3& pos, float range)
+{
+	springai::AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
+	return pos + offset * range;
+}
+
+static inline springai::AIFloat3 get_radial_pos(const springai::AIFloat3& pos, float radius)
+{
+	springai::AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
+	return pos + offset.Normalize2D() * radius;
+}
+
 } // namespace utils
 
 #endif // SRC_CIRCUIT_UTIL_UTILS_H_

@@ -114,7 +114,6 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	ignoreMask = STRUCT_BIT(MEX) |
 				 STRUCT_BIT(ENGY_MID) |
 				 STRUCT_BIT(ENGY_HIGH) |
-				 STRUCT_BIT(DEF_LOW) |
 				 STRUCT_BIT(PYLON) |
 				 STRUCT_BIT(NANO);
 	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_LOW, ignoreMask);
@@ -177,8 +176,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	radius = 100 / (SQUARE_SIZE * 2);
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(ENGY_LOW) |
-				 STRUCT_BIT(ENGY_MID) |
+	ignoreMask = STRUCT_BIT(ENGY_MID) |
 				 STRUCT_BIT(ENGY_HIGH) |
 				 STRUCT_BIT(PYLON) |
 				 STRUCT_BIT(NANO);
@@ -189,8 +187,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	radius = 100 / (SQUARE_SIZE * 2);
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
 	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(ENGY_LOW) |
-				 STRUCT_BIT(ENGY_MID) |
+	ignoreMask = STRUCT_BIT(ENGY_MID) |
 				 STRUCT_BIT(ENGY_HIGH) |
 				 STRUCT_BIT(PYLON) |
 				 STRUCT_BIT(NANO);

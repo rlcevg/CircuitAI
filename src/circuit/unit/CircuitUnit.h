@@ -33,8 +33,6 @@ namespace circuit {
 #define CMD_AIR_STRAFE			39381
 #define CMD_TERRAFORM_INTERNAL	39801
 
-#define MAX_SPEED	1e6f
-
 class CCircuitDef;
 class IUnitTask;
 class IUnitManager;

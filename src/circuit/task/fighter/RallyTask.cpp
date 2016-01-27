@@ -22,8 +22,8 @@ CRallyTask::CRallyTask(ITaskManager* mgr, float maxPower)
 		: IFighterTask(mgr, FightType::RALLY)
 		, maxPower(maxPower)
 {
-	AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
-	position = manager->GetCircuit()->GetSetupManager()->GetBasePos() + offset.Normalize2D() * SQUARE_SIZE * 32;
+	const AIFloat3& pos = manager->GetCircuit()->GetSetupManager()->GetBasePos();
+	position = utils::get_radial_pos(pos, SQUARE_SIZE * 32);
 }
 
 CRallyTask::~CRallyTask()
@@ -33,7 +33,21 @@ CRallyTask::~CRallyTask()
 
 bool CRallyTask::CanAssignTo(CCircuitUnit* unit)
 {
-	return attackPower < maxPower;
+	if (units.empty()) {
+		return true;
+	}
+	if (attackPower >= maxPower) {
+		return false;
+	}
+	CCircuitDef* cdef = (*units.begin())->GetCircuitDef();
+	if ((cdef->IsAbleToFly() && unit->GetCircuitDef()->IsAbleToFly()) ||
+		(cdef->IsAmphibious() && unit->GetCircuitDef()->IsAmphibious()) ||
+		(cdef->IsLander() && unit->GetCircuitDef()->IsLander()) ||
+		(cdef->IsFloater() && unit->GetCircuitDef()->IsFloater()))
+	{
+		return true;
+	}
+	return false;
 }
 
 void CRallyTask::Execute(CCircuitUnit* unit)

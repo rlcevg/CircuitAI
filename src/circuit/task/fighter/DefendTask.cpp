@@ -7,7 +7,6 @@
 
 #include "task/fighter/DefendTask.h"
 #include "task/TaskManager.h"
-#include "setup/SetupManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -20,8 +19,6 @@ CDefendTask::CDefendTask(ITaskManager* mgr, CCircuitUnit* vip, float maxPower)
 		, vipId(vip->GetId())
 		, maxPower(maxPower)
 {
-	AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
-	position = manager->GetCircuit()->GetSetupManager()->GetBasePos() + offset.Normalize2D() * SQUARE_SIZE * 32;
 }
 
 CDefendTask::~CDefendTask()

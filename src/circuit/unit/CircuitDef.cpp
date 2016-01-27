@@ -45,6 +45,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, hasAntiLand(false)
 		, hasAntiWater(false)
 		, isAmphibious(false)
+		, isLander(false)
 		, retreat(.0f)
 {
 	id = def->GetUnitDefId();
@@ -190,13 +191,13 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		std::string wt(wd->GetType());  // @see https://springrts.com/wiki/Gamedev:WeaponDefs
 		bool isAirWeapon = false;
 		float range = wd->GetRange();
-		if (range > 300.0f) {
-			isAirWeapon = ((wt == "Cannon") || (wt == "DGun") || (wt == "EmgCannon") || (wt == "Flame") ||
-					(wt == "LaserCannon") || (wt == "AircraftBomb")) && (wd->GetProjectileSpeed() * FRAMES_PER_SEC >= 400.0f);  // Cannons with fast projectiles
-			isAirWeapon |= (wt == "BeamLaser") || (wt == "LightningCannon") || (wt == "Rifle") ||  // Instant-hit
-					(((wt == "MissileLauncher") || (wt == "StarburstLauncher") || ((wt == "TorpedoLauncher") && wd->IsSubMissile())) && wd->IsTracks());  // Missiles
-			canTargetAir |= isAirWeapon;
-		}
+
+		isAirWeapon = ((wt == "Cannon") || (wt == "DGun") || (wt == "EmgCannon") || (wt == "Flame") ||
+				(wt == "LaserCannon") || (wt == "AircraftBomb")) && (wd->GetProjectileSpeed() * FRAMES_PER_SEC >= .75f * range);  // Cannons with fast projectiles
+		isAirWeapon |= (wt == "BeamLaser") || (wt == "LightningCannon") || (wt == "Rifle") ||  // Instant-hit
+				(((wt == "MissileLauncher") || (wt == "StarburstLauncher") || ((wt == "TorpedoLauncher") && wd->IsSubMissile())) && wd->IsTracks());  // Missiles
+		canTargetAir |= isAirWeapon;
+
 		bool isLandWeapon = ((wt != "TorpedoLauncher") || wd->IsSubMissile());
 		canTargetLand |= isLandWeapon;
 		bool isWaterWeapon = wd->IsWaterWeapon();
@@ -335,6 +336,7 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 		STerrainMapImmobileType& it = terrainData.areaData0.immobileType[immobileTypeId];
 		isAmphibious = ((it.minElevation < -SQUARE_SIZE * 5) || (it.maxElevation < SQUARE_SIZE * 5)) && !IsFloater();
 	}
+	isLander = !IsFloater() && !IsAbleToFly() && !IsAmphibious() && !IsSubmarine();
 }
 
 CCircuitDef& CCircuitDef::operator++()

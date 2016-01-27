@@ -22,7 +22,7 @@ public:
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 
 protected:
-	bool IsRegroup();
+	bool IsMustRegroup();
 
 	float lowestRange;
 	float highestRange;

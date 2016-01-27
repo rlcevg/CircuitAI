@@ -1,11 +1,11 @@
 /*
- * MoveAction.cpp
+ * FightAction.cpp
  *
  *  Created on: Jan 13, 2015
  *      Author: rlcevg
  */
 
-#include "unit/action/MoveAction.h"
+#include "unit/action/FightAction.h"
 #include "unit/UnitManager.h"
 #include "terrain/PathFinder.h"
 #include "CircuitAI.h"
@@ -17,7 +17,7 @@ namespace circuit {
 
 using namespace springai;
 
-CMoveAction::CMoveAction(CCircuitUnit* owner, float speed)
+CFightAction::CFightAction(CCircuitUnit* owner, float speed)
 		: IUnitAction(owner, Type::MOVE)
 		, speed(speed)
 		, pathIterator(0)
@@ -39,18 +39,18 @@ CMoveAction::CMoveAction(CCircuitUnit* owner, float speed)
 	minSqDist *= minSqDist;
 }
 
-CMoveAction::CMoveAction(CCircuitUnit* owner, const std::shared_ptr<F3Vec>& pPath, float speed)
-		: CMoveAction(owner, speed)
+CFightAction::CFightAction(CCircuitUnit* owner, const std::shared_ptr<F3Vec>& pPath, float speed)
+		: CFightAction(owner, speed)
 {
 	this->pPath = pPath;
 }
 
-CMoveAction::~CMoveAction()
+CFightAction::~CFightAction()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CMoveAction::Update(CCircuitAI* circuit)
+void CFightAction::Update(CCircuitAI* circuit)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	int frame = circuit->GetLastFrame();
@@ -72,16 +72,16 @@ void CMoveAction::Update(CCircuitAI* circuit)
 		return;
 	}
 	pathIterator = step;
-	unit->GetUnit()->MoveTo((*pPath)[step], UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+	unit->GetUnit()->Fight((*pPath)[step], UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 	unit->GetUnit()->SetWantedMaxSpeed(speed);
 
 	for (int i = 2; (step < pathMaxIndex) && (i < 4); ++i) {
 		step = std::min(step + increment, pathMaxIndex);
-		unit->GetUnit()->MoveTo((*pPath)[step], UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY|UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60 * i);
+		unit->GetUnit()->Fight((*pPath)[step], UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY|UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60 * i);
 	}
 }
 
-void CMoveAction::SetPath(const std::shared_ptr<F3Vec>& pPath, float speed)
+void CFightAction::SetPath(const std::shared_ptr<F3Vec>& pPath, float speed)
 {
 	pathIterator = 0;
 	this->pPath = pPath;

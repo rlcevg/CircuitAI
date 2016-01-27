@@ -56,13 +56,7 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 	}
 
 	// Alter/randomize position
-	AIFloat3 pos;
-	if (isShake) {
-		AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
-		pos = position + offset * SQUARE_SIZE * 16;
-	} else {
-		pos = position;
-	}
+	AIFloat3 pos = isShake ? utils::get_near_pos(position, SQUARE_SIZE * 32) : position;
 
 	circuit->GetThreatMap()->SetThreatType(unit);
 	float searchRadius = buildDef->GetBuildDistance();

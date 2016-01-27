@@ -7,12 +7,9 @@
 
 #include "task/fighter/SquadTask.h"
 #include "task/TaskManager.h"
-#include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
-
-#include "AISCommands.h"
 
 namespace circuit {
 
@@ -87,58 +84,39 @@ void ISquadTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-bool ISquadTask::IsRegroup()
+bool ISquadTask::IsMustRegroup()
 {
 	if (isAttack || (updCount % 16 != 0)) {
-		return isRegroup;
+		return false;
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
-	std::vector<CCircuitUnit*> veterans;
-	veterans.reserve(units.size());
+	std::vector<CCircuitUnit*> validUnits;
+	validUnits.reserve(units.size());
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();;
-	AIFloat3 groupPos(ZeroVector);
 	for (CCircuitUnit* unit : units) {
 		AIFloat3 pos = unit->GetPos(frame);
 		terrainManager->CorrectPosition(pos);
 		if (terrainManager->CanMoveToPos(unit->GetArea(), pos)) {
-			groupPos += pos;
-			veterans.push_back(unit);
+			validUnits.push_back(unit);
 		}
 	}
-	if (veterans.empty()) {
+	if (validUnits.empty()) {
 		return isRegroup = false;
 	}
-	groupPos /= veterans.size();
+	const AIFloat3& groupPos = leader->GetPos(frame);
 
-	// find the unit closest to the center (since the actual center might be unreachable)
-	float sqMinDist = std::numeric_limits<float>::max();
-	float sqMaxDist = .0f;
-	CCircuitUnit* closestUnit = *units.begin();
-	for (CCircuitUnit* unit : veterans) {
+	isRegroup = false;
+	const float sqMaxDist = SQUARE(std::max<float>(SQUARE_SIZE * 4 * validUnits.size(), highestRange));
+	for (CCircuitUnit* unit : units) {
 		const float sqDist = groupPos.SqDistance2D(unit->GetPos(frame));
-		if (sqDist < sqMinDist) {
-			sqMinDist = sqDist;
-			closestUnit = unit;
-		}
 		if (sqDist > sqMaxDist) {
-			sqMaxDist = sqDist;
+			isRegroup = true;
+			break;
 		}
 	}
-	groupPos = closestUnit->GetPos(frame);  // TODO: Why not use leader?
 
-	// have to regroup?
-	const float regroupDist = std::max<float>(SQUARE_SIZE * 4 * veterans.size(), highestRange);
-	if (sqMaxDist > regroupDist * regroupDist) {
-		isRegroup = true;
-		for (CCircuitUnit* unit : units) {
-			unit->GetUnit()->MoveTo(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-			unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
-		}
-	} else {
-		isRegroup = false;
-	}
 	return isRegroup;
 }
 

@@ -10,7 +10,6 @@
 #include "module/MilitaryManager.h"
 #include "terrain/ThreatMap.h"
 #include "unit/action/DGunAction.h"
-//#include "unit/action/MoveAction.h"
 #include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 
@@ -42,8 +41,6 @@ void IFighterTask::AssignTo(CCircuitUnit* unit)
 		CDGunAction* act = new CDGunAction(unit, cdef->GetDGunRange() * 0.9f);
 		unit->PushBack(act);
 	}
-
-//	unit->PushBack(new CMoveAction(unit));
 }
 
 void IFighterTask::RemoveAssignee(CCircuitUnit* unit)

@@ -8,6 +8,7 @@
 #include "task/fighter/ArtilleryTask.h"
 #include "task/TaskManager.h"
 #include "module/MilitaryManager.h"
+#include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
@@ -26,6 +27,7 @@ using namespace springai;
 CArtilleryTask::CArtilleryTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::ARTY)
 {
+	position = manager->GetCircuit()->GetSetupManager()->GetBasePos();
 }
 
 CArtilleryTask::~CArtilleryTask()
@@ -83,17 +85,17 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
-	F3Vec path;
 	const AIFloat3& pos = unit->GetPos(frame);
-	CEnemyUnit* bestTarget = FindTarget(unit, pos, path);
+	std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
+	CEnemyUnit* bestTarget = FindTarget(unit, pos, *pPath);
 
 	if (bestTarget != nullptr) {
 		unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		moveAction->SetActive(false);
 		return;
-	} else if (!path.empty()) {
-		if (path.size() > 2) {
-			moveAction->SetPath(path);
+	} else if (!pPath->empty()) {
+		if (pPath->size() > 2) {
+			moveAction->SetPath(pPath);
 			moveAction->SetActive(true);
 			unit->Update(circuit);
 		} else {
@@ -116,10 +118,10 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(unit, threatMap, frame);
-		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
+		pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 
-		if (!path.empty()) {
-			moveAction->SetPath(path);
+		if (!pPath->empty()) {
+			moveAction->SetPath(pPath);
 			moveAction->SetActive(true);
 			unit->Update(circuit);
 			return;
@@ -147,6 +149,13 @@ void CArtilleryTask::OnUnitIdle(CCircuitUnit* unit)
 
 CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
 {
+	auto fallback = [this](CCircuitAI* circuit, const AIFloat3& pos, F3Vec& path, CPathFinder* pathfinder) {
+		position = circuit->GetSetupManager()->GetBasePos();
+		AIFloat3 startPos = pos;
+		AIFloat3 endPos = position;
+		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
+	};
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	CThreatMap* threatMap = circuit->GetThreatMap();
@@ -224,7 +233,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 
 		// Check if safe path exists and shrink the path to maxRange position
 		if (path.empty()) {
-			position = -RgtVector;
+			fallback(circuit, pos, path, pathfinder);
 			return nullptr;
 		}
 		const float sqRange = SQUARE(range);
@@ -236,8 +245,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 		}
 		--it;
 		if (threatMap->GetThreatAt(*it) > MIN_THREAT) {
-			position = -RgtVector;
-			path.clear();
+			fallback(circuit, pos, path, pathfinder);
 		} else {
 			position = path.back();
 			path.resize(std::distance(it, path.rend()));
@@ -280,12 +288,11 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 
 		// Check if safe path exists and shrink the path to maxRange position
 		if (path.empty()) {
-			position = -RgtVector;
+			fallback(circuit, pos, path, pathfinder);
 			return nullptr;
 		}
 		if (threatMap->GetThreatAt(path.back()) > MIN_THREAT) {
-			position = -RgtVector;
-			path.clear();
+			fallback(circuit, pos, path, pathfinder);
 		} else {
 			position = path.back();
 		}

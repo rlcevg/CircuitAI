@@ -142,21 +142,21 @@
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
 		//            dart,     scorcher,   slasher,   leveler,    ravager,   dominatrix,   wolverine, impaler
 		"unit_def": ["corfav", "corgator", "cormist", "corlevlr", "corraid", "capturecar", "corgarp", "armmerl"],
-		// 0-8m Opening - Dart, Riot & Slasher	
+		// 0-8m Opening - Dart, Riot & Slasher
 		"tier0":    [ 0.63,     0.03,       0.12,      0.22,       0.00,      0.00,         0.00,      0.00],
 		// 9-16m Early Game - Slasher/Riot with an occasional Ravager
 		"tier1":    [ 0.41,     0.02,       0.31,      0.15,       0.11,      0.00,         0.00,      0.00],
 		// 17-24m Expanding - Less scouting and Riot, more Ravager
 		"tier2":    [ 0.40,     0.00,       0.24,      0.12,       0.20,      0.00,         0.04,      0.00],
-		// 25-32m Expansions meet - Begin serious Ravager production	
+		// 25-32m Expansions meet - Begin serious Ravager production
 		"tier3":    [ 0.35,     0.00,       0.21,      0.10,       0.26,      0.02,         0.06,      0.00],
-		// 33m -40m Solid Fronts - 	Overdrive Ravager production				
+		// 33m -40m Solid Fronts - 	Overdrive Ravager production
 		"tier4":    [ 0.35,     0.00,       0.14,      0.10,       0.31,      0.02,         0.08,      0.00],
-		// 41m - 56m Mid Game - Drop Slashers, more Artillery	
+		// 41m - 56m Mid Game - Drop Slashers, more Artillery
 		"tier5":    [ 0.33,     0.00,       0.09,      0.10,       0.37,      0.01,         0.07,      0.03],
-		// 57m - 72m Late Game -  More artillery and Ravager	
+		// 57m - 72m Late Game -  More artillery and Ravager
 		"tier6":    [ 0.35,     0.00,       0.00,      0.07,       0.40,      0.02,         0.11,      0.05],
-		// 72m - 88m+ Late late Game - Maximum Artillery			
+		// 72m - 88m+ Late late Game - Maximum Artillery
 		"tier7":    [ 0.34,     0.00,       0.00,      0.06,       0.43,      0.05,         0.05,      0.07],
 
 		"artillery_def": "armmerl",  // impaler
@@ -318,7 +318,7 @@
 	"armpw", "spherepole", "armjeth",
 
 	// factorygunship
-	"armkam", "blastwing", "gunshipsupport", "blackdawn", "gunshipaa",
+	"armkam", "blastwing", "gunshipaa",
 
 	// factoryamph
 	"amphraider3", "amphraider2", "amphaa",

@@ -103,6 +103,7 @@ public:
 	bool IsFloater()      const { return isFloater; }
 	bool IsSubmarine()    const { return isSubmarine; }
 	bool IsAmphibious()   const { return isAmphibious; }
+	bool IsLander()       const { return isLander; }
 	bool IsSonarStealth() const { return isSonarStealth; }
 	bool IsTurnLarge()    const { return isTurnLarge; }
 
@@ -154,6 +155,7 @@ private:
 	bool isFloater;
 	bool isSubmarine;
 	bool isAmphibious;
+	bool isLander;
 	bool isSonarStealth;
 	bool isTurnLarge;
 

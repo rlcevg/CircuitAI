@@ -89,18 +89,18 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		return;
 	}
 
-	F3Vec path;
 	const AIFloat3& pos = unit->GetPos(frame);
-	CEnemyUnit* bestTarget = FindTarget(unit, pos, path);
+	std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
+	CEnemyUnit* bestTarget = FindTarget(unit, pos, *pPath);
 
 	if (bestTarget != nullptr) {
 		position = bestTarget->GetPos();
 		unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		moveAction->SetActive(false);
 		return;
-	} else if (!path.empty()) {
-		position = path.back();
-		moveAction->SetPath(path);
+	} else if (!pPath->empty()) {
+		position = pPath->back();
+		moveAction->SetPath(pPath);
 		moveAction->SetActive(true);
 		unit->Update(circuit);
 		return;
@@ -120,11 +120,11 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(unit, threatMap, frame);
-		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
+		pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 
-		if (!path.empty()) {
+		if (!pPath->empty()) {
 //			position = path.back();
-			moveAction->SetPath(path);
+			moveAction->SetPath(pPath);
 			moveAction->SetActive(true);
 			unit->Update(circuit);
 			return;
@@ -156,6 +156,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float power = threatMap->GetUnitThreat(unit) * 0.8f;
+	const float speed = cdef->GetSpeed();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
@@ -179,6 +180,9 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 		}
 		int targetCat;
 		if (enemy->GetCircuitDef() != nullptr) {
+			if (enemy->GetCircuitDef()->GetSpeed() * 1.8f > speed) {
+				continue;
+			}
 			targetCat = enemy->GetCircuitDef()->GetCategory();
 			if ((targetCat & canTargetCat) == 0) {
 				continue;

@@ -84,9 +84,9 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
-	F3Vec path;
 	const AIFloat3& pos = unit->GetPos(frame);
-	CEnemyUnit* bestTarget = FindTarget(unit, pos, path);
+	std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
+	CEnemyUnit* bestTarget = FindTarget(unit, pos, *pPath);
 
 	if (bestTarget != nullptr) {
 		position = bestTarget->GetPos();
@@ -94,9 +94,9 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
 		moveAction->SetActive(false);
 		return;
-	} else if (!path.empty()) {
-		position = path.back();
-		moveAction->SetPath(path);
+	} else if (!pPath->empty()) {
+		position = pPath->back();
+		moveAction->SetPath(pPath);
 		moveAction->SetActive(true);
 		unit->Update(circuit);
 		return;
@@ -116,11 +116,11 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(unit, threatMap, frame);
-		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
+		pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 
-		if (!path.empty()) {
+		if (!pPath->empty()) {
 //			position = path.back();
-			moveAction->SetPath(path);
+			moveAction->SetPath(pPath);
 			moveAction->SetActive(true);
 			unit->Update(circuit);
 			return;

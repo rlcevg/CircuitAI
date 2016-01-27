@@ -88,15 +88,15 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 		}
 		range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
 	}
-	F3Vec path;
+	std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
 
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	pathfinder->MakePath(path, startPos, endPos, range);
+	pathfinder->MakePath(*pPath, startPos, endPos, range);
 
-	if (path.empty()) {
-		path.push_back(endPos);
+	if (pPath->empty()) {
+		pPath->push_back(endPos);
 	}
-	moveAction->SetPath(path);
+	moveAction->SetPath(pPath);
 	unit->Update(circuit);
 }
 

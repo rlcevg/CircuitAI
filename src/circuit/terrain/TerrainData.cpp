@@ -525,7 +525,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 		}
 	}
 
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::CheckHeightMap, this), FRAMES_PER_SEC * 60);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::CheckHeightMap, this), FRAMES_PER_SEC * 20);
 	scheduler->RunOnRelease(std::make_shared<CGameTask>(&CTerrainData::DelegateAuthority, this, circuit));
 
 #ifdef DEBUG_VIS
@@ -613,7 +613,7 @@ void CTerrainData::DelegateAuthority(CCircuitAI* curOwner)
 		if (circuit->IsInitialized() && (circuit != curOwner)) {
 			map = circuit->GetMap();
 			scheduler = circuit->GetScheduler();
-			scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::CheckHeightMap, this), FRAMES_PER_SEC * 60);
+			scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::CheckHeightMap, this), FRAMES_PER_SEC * 20);
 			scheduler->RunTaskAfter(std::make_shared<CGameTask>(&CTerrainData::CheckHeightMap, this), FRAMES_PER_SEC);
 			scheduler->RunOnRelease(std::make_shared<CGameTask>(&CTerrainData::DelegateAuthority, this, circuit));
 			break;

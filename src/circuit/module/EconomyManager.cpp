@@ -415,7 +415,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	bool isEnergyStalling = IsEnergyStalling();
 	if (!isEnergyStalling && mexDef->IsAvailable()) {
 		float cost = mexDef->GetCost();
-		unsigned maxCount = builderManager->GetBuilderPower() / cost * 4 + 1;
+		unsigned maxCount = builderManager->GetBuilderPower() / cost * 16 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < maxCount) {
 			CMetalManager* metalManager = circuit->GetMetalManager();
 			const CMetalData::Metals& spots = metalManager->GetSpots();
@@ -897,7 +897,7 @@ void CEconomyManager::Init()
 					circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, circuit->GetCircuitDef("corllt"), buildPos,
 															  IBuilderTask::BuildType::DEFENCE, true, true, 0);
 				}
-			}), FRAMES_PER_SEC * 60);
+			}), FRAMES_PER_SEC * 120);
 		}
 
 		SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();

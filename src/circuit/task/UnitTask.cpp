@@ -85,10 +85,7 @@ void IUnitTask::Cancel()
 void IUnitTask::OnUnitMoveFailed(CCircuitUnit* unit)
 {
 	int frame = manager->GetCircuit()->GetLastFrame();
-	AIFloat3 pos = unit->GetPos(frame);
-	AIFloat3 d((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
-	d.Normalize();
-	pos += d * SQUARE_SIZE * 20;
+	const AIFloat3& pos = utils::get_radial_pos(unit->GetPos(frame), SQUARE_SIZE * 32);
 	unit->GetUnit()->MoveTo(pos, 0, frame + FRAMES_PER_SEC);
 }
 
