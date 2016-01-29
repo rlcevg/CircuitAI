@@ -377,7 +377,8 @@ void CMilitaryManager::FallbackTask(CCircuitUnit* unit)
 
 void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 {
-	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
+	CMetalManager* metalManager = circuit->GetMetalManager();
+	int index = metalManager->FindNearestCluster(pos);
 	if (index < 0) {
 		return;
 	}
@@ -404,10 +405,36 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	bool isWater = circuit->GetTerrainManager()->IsWaterSector(pos);
 //	std::array<const char*, 9> landDefenders = {"corllt", "corrl", "corrad", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
 //	std::array<const char*, 9> waterDefenders = {"turrettorp", "armsonar", "corllt", "corrad", "corrazor", "armnanotc", "turrettorp", "corhlt", "turrettorp"};
-	std::array<const char*, 1> landDefenders = {"corllt", /*"corrl", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt", "armanni", "corbhmth"*/};
-	std::array<const char*, 1> waterDefenders = {"turrettorp", /*"corllt", "corrazor", "armnanotc", "turrettorp", "corhlt", "turrettorp"*/};
-	std::array<const char*, 1>& defenders = isWater ? waterDefenders : landDefenders;
-	for (const char* name : defenders) {
+	std::array<const char*, 7> landDefenders = {"corllt", "corrl", "corrl", "corrl", "corhlt", "corrazor", "armnanotc"};
+	std::array<const char*, 7> waterDefenders = {"turrettorp", "corrl", "turrettorp", "turrettorp", "corhlt", "corrazor", "armnanotc"};
+	std::array<const char*, 7>& defenders = isWater ? waterDefenders : landDefenders;
+
+	// Front-line porc
+	bool isPorc = false;
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	const CMetalData::Clusters& clusters = metalManager->GetClusters();
+	const CMetalData::Metals& spots = metalManager->GetSpots();
+	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
+	CMetalData::Graph::out_edge_iterator outEdgeIt, outEdgeEnd;
+	std::tie(outEdgeIt, outEdgeEnd) = boost::out_edges(index, clusterGraph);
+	for (; (outEdgeIt != outEdgeEnd) && !isPorc; ++outEdgeIt) {
+		const CMetalData::EdgeDesc& edgeId = *outEdgeIt;
+		int idx0 = boost::target(edgeId, clusterGraph);
+		if (metalManager->IsClusterFinished(idx0)) {
+			continue;
+		}
+		// check if there is enemy neighbor
+		for (int idx : clusters[idx0].idxSpots) {
+			if (threatMap->GetAllThreatAt(spots[idx].position) > MIN_THREAT * 5) {
+				isPorc = true;
+				break;
+			}
+		}
+	}
+	unsigned num = isPorc ? 7 : 1;
+
+	for (unsigned i = 0; i < num; ++i) {
+		const char* name = defenders[i];
 		defDef = circuit->GetCircuitDef(name);
 		float defCost = defDef->GetCost();
 		totalCost += defCost;
@@ -430,6 +457,7 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 		}
 	}
 
+	// Build sensors
 	auto checkSensor = [this, closestPoint, builderManager](IBuilderTask::BuildType type, CCircuitDef* cdef, float range) {
 		bool isBuilt = false;
 		auto friendlies = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(closestPoint->position, range));

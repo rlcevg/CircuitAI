@@ -12,6 +12,7 @@
 #include "util/utils.h"
 
 #include "AISCommands.h"
+#include "Command.h"
 
 namespace circuit {
 
@@ -68,12 +69,22 @@ void CMoveAction::Update(CCircuitAI* circuit)
 		sqNextDistToStep = pos.SqDistance2D((*pPath)[step]);
 	}
 
+	float stepSpeed;
 	if ((pathIterator == lastStep) && ((int)sqDistToStep > minSqDist)) {
-		return;
+		auto commands = std::move(unit->GetUnit()->GetCurrentCommands());
+		bool isEmpty = commands.empty();
+		utils::free_clear(commands);
+		if (isEmpty) {
+			stepSpeed = MAX_SPEED;
+		} else {
+			return;
+		}
+	} else {
+		stepSpeed = speed;
 	}
 	pathIterator = step;
 	unit->GetUnit()->MoveTo((*pPath)[step], UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-	unit->GetUnit()->SetWantedMaxSpeed(speed);
+	unit->GetUnit()->SetWantedMaxSpeed(stepSpeed);
 
 	for (int i = 2; (step < pathMaxIndex) && (i < 4); ++i) {
 		step = std::min(step + increment, pathMaxIndex);

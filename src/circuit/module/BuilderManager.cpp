@@ -249,7 +249,7 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		//       Next workaround unfortunately doesn't mark bugged building on blocking map.
 		// TODO: Create additional task to build/reclaim lost unit
 		if ((taskB->GetTarget() == nullptr) && (taskB->GetBuildDef() != nullptr) &&
-			(*taskB->GetBuildDef() == *unit->GetCircuitDef())/* && taskB->IsEqualBuildPos(unit)*/)
+			(*taskB->GetBuildDef() == *unit->GetCircuitDef()) && taskB->IsEqualBuildPos(unit))
 		{
 			taskB->UpdateTarget(unit);
 			unfinishedUnits[unit] = taskB;
@@ -589,9 +589,10 @@ IUnitTask* CBuilderManager::GetTask(CCircuitUnit* unit)
 
 				if (distCost * weight < metric) {
 					Unit* tu = target->GetUnit();
-					float maxHealth = tu->GetMaxHealth();
-					float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
-					valid = (((maxHealth - tu->GetHealth()) * 0.6f) * (maxSpeed * FRAMES_PER_SEC) > healthSpeed * distCost);
+					const float maxHealth = tu->GetMaxHealth();
+					const float health = tu->GetHealth() - maxHealth * 0.005f;
+					const float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
+					valid = (((maxHealth - health) * 0.6f) * (maxSpeed * FRAMES_PER_SEC) > healthSpeed * distCost);
 				}
 
 			} else {

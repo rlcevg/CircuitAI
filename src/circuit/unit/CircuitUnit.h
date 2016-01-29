@@ -18,8 +18,8 @@ namespace springai {
 
 namespace circuit {
 
-//#define CMD_RETREAT_ZONE		10001
-//#define CMD_SETHAVEN			CMD_RETREAT_ZONE
+#define CMD_RETREAT_ZONE		10001
+#define CMD_SETHAVEN			CMD_RETREAT_ZONE
 #define CMD_ORBIT				13923
 #define CMD_ORBIT_DRAW			13924
 #define CMD_MORPH				31210
@@ -28,6 +28,8 @@ namespace circuit {
 #define CMD_PRIORITY			34220
 #define CMD_MISC_PRIORITY		34221
 #define CMD_RETREAT				34223
+#define CMD_UNIT_SET_TARGET		34923
+#define CMD_UNIT_CANCEL_TARGET	34924
 #define CMD_ONECLICK_WEAPON		35000
 #define CMD_JUMP				38521
 #define CMD_AIR_STRAFE			39381

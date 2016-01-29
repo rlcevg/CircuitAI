@@ -91,6 +91,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	if (bestTarget != nullptr) {
 		unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)bestTarget->GetId()});
 		moveAction->SetActive(false);
 		return;
 	} else if (!pPath->empty()) {

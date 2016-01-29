@@ -922,7 +922,7 @@ void CEconomyManager::UpdateEconomy()
 	float storMetal = economy->GetStorage(metalRes);
 	isMetalEmpty = curMetal < storMetal * 0.2f;
 	isMetalFull = curMetal > storMetal * 0.8f;
-	isEnergyStalling = std::min(GetAvgMetalIncome() - GetMetalPull(), .0f) > std::min(GetAvgEnergyIncome() - GetEnergyPull(), .0f);
+	isEnergyStalling = std::min(GetAvgMetalIncome() - GetMetalPull(), .0f) * 0.98f > std::min(GetAvgEnergyIncome() - GetEnergyPull(), .0f);
 	float curEnergy = economy->GetCurrent(energyRes);
 	float storEnergy = economy->GetStorage(energyRes) - HIDDEN_ENERGY;
 	isEnergyEmpty = curEnergy < storEnergy * 0.1f;

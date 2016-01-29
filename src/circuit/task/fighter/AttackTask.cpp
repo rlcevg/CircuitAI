@@ -68,13 +68,17 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 
 void CAttackTask::Execute(CCircuitUnit* unit)
 {
-	if (isRegroup || isAttack || pPath->empty()) {
+	if (isRegroup || isAttack) {
 		return;
 	}
-	CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-	fightAction->SetPath(pPath, lowestSpeed);
-	fightAction->SetActive(true);
-//	unit->Update(manager->GetCircuit());  // NOTE: Do not spam commands
+	if (pPath->empty()) {
+		Update();
+	} else {
+		CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
+		fightAction->SetPath(pPath, lowestSpeed);
+		fightAction->SetActive(true);
+//		unit->Update(manager->GetCircuit());  // NOTE: Do not spam commands
+	}
 }
 
 void CAttackTask::Update()
@@ -132,9 +136,10 @@ void CAttackTask::Update()
 		}
 		if (isAttack) {
 			for (CCircuitUnit* unit : units) {
-				const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 16);
+				const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
 				unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 				unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+				unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 
 				CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
 				fightAction->SetActive(false);
