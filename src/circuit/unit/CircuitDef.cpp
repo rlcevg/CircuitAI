@@ -272,7 +272,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	hasAntiLand  = (targetCategory & circuit->GetLandCategory()) && canTargetLand;
 	hasAntiWater = (targetCategory & circuit->GetWaterCategory()) && canTargetWater;
 
-	power = dps * sqrtf(def->GetHealth() / 100.0f);
+	power = dps * sqrtf(def->GetHealth() / 100.0f) / MIN_THREAT;
 }
 
 CCircuitDef::~CCircuitDef()

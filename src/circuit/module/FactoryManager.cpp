@@ -908,36 +908,21 @@ void CFactoryManager::ReadConfig()
 		striderHubDef.waterTiers[0];  // create empty tier
 	}
 
-	for (const Json::Value& scout : root["scout"]) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(scout.asCString());
-		if (cdef == nullptr) {
-			continue;
+	std::vector<std::pair<const char*, CCircuitDef::RoleType>> roles = {
+		std::make_pair("scout",     CCircuitDef::RoleType::SCOUT),
+		std::make_pair("bomber",    CCircuitDef::RoleType::BOMBER),
+		std::make_pair("riot",      CCircuitDef::RoleType::RIOT),
+		std::make_pair("melee",     CCircuitDef::RoleType::MELEE),
+		std::make_pair("artillery", CCircuitDef::RoleType::ARTY),
+	};
+	for (auto& pair : roles) {
+		for (const Json::Value& scout : root[pair.first]) {
+			CCircuitDef* cdef = circuit->GetCircuitDef(scout.asCString());
+			if (cdef == nullptr) {
+				continue;
+			}
+			cdef->SetRole(pair.second);
 		}
-		cdef->SetRole(CCircuitDef::RoleType::SCOUT);
-	}
-
-	for (const Json::Value& bomber : root["bomber"]) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(bomber.asCString());
-		if (cdef == nullptr) {
-			continue;
-		}
-		cdef->SetRole(CCircuitDef::RoleType::BOMBER);
-	}
-
-	for (const Json::Value& bomber : root["riot"]) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(bomber.asCString());
-		if (cdef == nullptr) {
-			continue;
-		}
-		cdef->SetRole(CCircuitDef::RoleType::RIOT);
-	}
-
-	for (const Json::Value& bomber : root["artillery"]) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(bomber.asCString());
-		if (cdef == nullptr) {
-			continue;
-		}
-		cdef->SetRole(CCircuitDef::RoleType::ARTY);
 	}
 }
 

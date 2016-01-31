@@ -9,7 +9,6 @@
 #define SRC_CIRCUIT_TASK_FIGHTER_ATTACKTASK_H_
 
 #include "task/fighter/SquadTask.h"
-#include "util/Defines.h"
 
 #include <memory>
 

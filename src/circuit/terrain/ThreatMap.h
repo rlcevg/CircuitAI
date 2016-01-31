@@ -67,16 +67,16 @@ private:
 	CCircuitAI* circuit;
 	SAreaData* areaData;
 
-	void AddEnemyUnit(const CEnemyUnit* e, const float scale = 1.0f);
-	void DelEnemyUnit(const CEnemyUnit* e) { AddEnemyUnit(e, -1.0f); }
-	void AddEnemyUnitAll(const CEnemyUnit* e, const float scale = 1.0f);
-	void DelEnemyUnitAll(const CEnemyUnit* e) { AddEnemyUnitAll(e, -1.0f); }
-	void AddEnemyAir(const CEnemyUnit* e, const float scale = 1.0f);  // Enemy AntiAir
-	void DelEnemyAir(const CEnemyUnit* e) { AddEnemyAir(e, -1.0f); }
-	void AddEnemyAmph(const CEnemyUnit* e, const float scale = 1.0f);  // Enemy AntiAmph
-	void DelEnemyAmph(const CEnemyUnit* e) { AddEnemyAmph(e, -1.0f); }
-	void AddDecloaker(const CEnemyUnit* e, const float scale = 1.0f);
-	void DelDecloaker(const CEnemyUnit* e) { AddDecloaker(e, -1.0f); }
+	void AddEnemyUnit(const CEnemyUnit* e);
+	void DelEnemyUnit(const CEnemyUnit* e);
+	void AddEnemyUnitAll(const CEnemyUnit* e);
+	void DelEnemyUnitAll(const CEnemyUnit* e);
+	void AddEnemyAir(const CEnemyUnit* e);  // Enemy AntiAir
+	void DelEnemyAir(const CEnemyUnit* e);
+	void AddEnemyAmph(const CEnemyUnit* e);  // Enemy AntiAmph
+	void DelEnemyAmph(const CEnemyUnit* e);
+	void AddDecloaker(const CEnemyUnit* e);
+	void DelDecloaker(const CEnemyUnit* e);
 	void AddEnemyMetal(const CEnemyUnit* e, const float scale = 1.0f);
 	void DelEnemyMetal(const CEnemyUnit* e) { AddEnemyMetal(e, -1.0f); }
 

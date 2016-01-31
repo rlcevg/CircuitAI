@@ -443,12 +443,15 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost);
 				task->SetBuildPos(pos);
 				metalManager->SetOpenSpot(index, false);
-				return task;
+//				return task;
 			}
 		}
 	}
 
-	task = isEnergyStalling ? UpdateEnergyTasks(position, unit) : UpdateReclaimTasks(position, unit);
+	IBuilderTask* subTask = isEnergyStalling ? UpdateEnergyTasks(position, unit) : UpdateReclaimTasks(position, unit);
+	if (task == nullptr) {
+		task = subTask;
+	}
 
 	return task;
 }

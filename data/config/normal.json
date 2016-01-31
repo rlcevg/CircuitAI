@@ -321,7 +321,7 @@
 	"armkam", "blastwing", "gunshipaa",
 
 	// factoryamph
-	"amphraider3", "amphraider2", "amphaa",
+	"amphraider3", "amphaa",
 
 	// factoryspider
 	"armflea", "armspy", "spideraa",
@@ -348,7 +348,7 @@
 	"logkoda", "corsent",
 
 	// Strider
-	"armcomdgun", "scorpion", "armbanth"
+	"armcomdgun", "scorpion"
 ],
 
 // Rearm-addictive units, require airpad
@@ -383,6 +383,15 @@
 	"tawf114"
 ],
 
+"melee": [
+	// factoryamph
+	"amphraider2",
+
+	// Strider
+	"dante", "armbanth", "armorco"
+],
+
+//  In addition to factory's artillery_def
 "artillery": ["armraven", "funnelweb"],
 
 // If unit's health drops below specified percent it will retreat

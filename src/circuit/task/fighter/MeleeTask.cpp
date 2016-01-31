@@ -1,11 +1,11 @@
 /*
- * ScoutTask.cpp
+ * MeleeTask.cpp
  *
- *  Created on: Jan 28, 2015
+ *  Created on: Jan 29, 2016
  *      Author: rlcevg
  */
 
-#include "task/fighter/ScoutTask.h"
+#include "task/fighter/MeleeTask.h"
 #include "task/TaskManager.h"
 #include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
@@ -18,28 +18,27 @@
 
 #include "AISCommands.h"
 #include "Map.h"
-//#include "Drawer.h"
 
 namespace circuit {
 
 using namespace springai;
 
-CScoutTask::CScoutTask(ITaskManager* mgr)
+CMeleeTask::CMeleeTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::SCOUT)
 {
 }
 
-CScoutTask::~CScoutTask()
+CMeleeTask::~CMeleeTask()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-bool CScoutTask::CanAssignTo(CCircuitUnit* unit)
+bool CMeleeTask::CanAssignTo(CCircuitUnit* unit)
 {
 	return units.empty();
 }
 
-void CScoutTask::AssignTo(CCircuitUnit* unit)
+void CMeleeTask::AssignTo(CCircuitUnit* unit)
 {
 	IFighterTask::AssignTo(unit);
 
@@ -48,7 +47,7 @@ void CScoutTask::AssignTo(CCircuitUnit* unit)
 	moveAction->SetActive(false);
 }
 
-void CScoutTask::RemoveAssignee(CCircuitUnit* unit)
+void CMeleeTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IFighterTask::RemoveAssignee(unit);
 
@@ -57,12 +56,12 @@ void CScoutTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void CScoutTask::Execute(CCircuitUnit* unit)
+void CMeleeTask::Execute(CCircuitUnit* unit)
 {
 	Execute(unit, false);
 }
 
-void CScoutTask::Update()
+void CMeleeTask::Update()
 {
 	bool isExecute = (++updCount % 4 == 0);
 	for (CCircuitUnit* unit : units) {
@@ -74,7 +73,7 @@ void CScoutTask::Update()
 	}
 }
 
-void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
+void CMeleeTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
 	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
 	if (act->GetType() != IUnitAction::Type::MOVE) {
@@ -90,7 +89,8 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	if (bestTarget != nullptr) {
 		position = bestTarget->GetPos();
-		unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		const AIFloat3& pos = utils::get_radial_pos(position, SQUARE_SIZE * 8);
+		unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
 		unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)bestTarget->GetId()});
 		moveAction->SetActive(false);
@@ -139,7 +139,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	moveAction->SetActive(false);
 }
 
-void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
+void CMeleeTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	IFighterTask::OnUnitIdle(unit);
 
@@ -148,14 +148,14 @@ void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
+CEnemyUnit* CMeleeTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	STerrainMapArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	float power = threatMap->GetUnitThreat(unit) * 0.8f;
+	float power = threatMap->GetUnitThreat(unit);
 	int canTargetCat = cdef->GetTargetCategory();
 	int noChaseCat = cdef->GetNoChaseCategory();
 	float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
@@ -191,23 +191,18 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
 		if (enemy->IsInRadarOrLOS() && (sqDist < minSqDist)) {
-//			AIFloat3 dir = enemy->GetUnit()->GetPos() - pos;
-//			float rayRange = dir.LengthNormalize();
-//			CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, u, 0);
-//			if (hitUID == enemy->GetId()) {
-				if ((enemy->GetThreat() > maxThreat) && !enemy->GetUnit()->IsBeingBuilt()) {
-					bestTarget = enemy;
-					minSqDist = sqDist;
-					maxThreat = enemy->GetThreat();
-				} else if (bestTarget == nullptr) {
-					if ((targetCat & noChaseCat) == 0) {
-						mediumTarget = enemy;
-					} else if (mediumTarget == nullptr) {
-						worstTarget = enemy;
-					}
+			if ((enemy->GetThreat() > maxThreat) && !enemy->GetUnit()->IsBeingBuilt()) {
+				bestTarget = enemy;
+				minSqDist = sqDist;
+				maxThreat = enemy->GetThreat();
+			} else if (bestTarget == nullptr) {
+				if ((targetCat & noChaseCat) == 0) {
+					mediumTarget = enemy;
+				} else if (mediumTarget == nullptr) {
+					worstTarget = enemy;
 				}
-				continue;
-//			}
+			}
+			continue;
 		}
 		if (sqDist < SQUARE(2000)) {  // maxSqDist
 			enemyPositions.push_back(enemy->GetPos());

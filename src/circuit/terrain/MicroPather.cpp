@@ -49,6 +49,7 @@
 #include <cstdlib>  // malloc(), free()
 #include <cmath>
 #include <cstdint>
+#include <limits>
 //#undef NDEBUG
 #include <cassert>
 
@@ -264,7 +265,6 @@ PathNode* CMicroPather::AllocatePathNode()
 			result = &pathNodeMem[i];
 			++pathNodeCount;
 			result->Init(0, FLT_BIG, 0);
-			result->isEndNode = 0;
 		}
 
 		result = newBlock;
@@ -330,9 +330,18 @@ float CMicroPather::LeastCostEstimateLocal(int nodeStartIndex)
 
 	const int dx = abs(xStart - xEndNode);
 	const int dy = abs(yStart - yEndNode);
-	const int strait = abs(dx - dy);
+//	const int strait = abs(dx - dy);
+//
+//	return (strait + SQRT_2 * std::min(dx, dy));
 
-	return (strait + 1.41f * std::min(dx, dy));
+	/*
+	 * Same as above but a bit less code
+	 * @see http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html#diagonal-distance
+	 * constexpr float D = 1.0f;
+	 * constexpr float D2 = 1.4142f;  // sqrt(2)
+	 * heuristic = D * (dx + dy) + (D2 - 2 * D) * min(dx, dy);
+	 */
+	return (dx + dy) - 0.5858f * std::min(dx, dy);
 }
 
 void CMicroPather::FixStartEndNode(void** startNode, void** endNode)
@@ -499,7 +508,7 @@ int CMicroPather::Solve(void* startNode, void* endNode, std::vector<void*>* path
 
 				float newCost = nodeCostFromStart;
 
-				newCost += (i > 3) ? costArray[indexEnd] * 1.41f : costArray[indexEnd];
+				newCost += (i > 3) ? costArray[indexEnd] * SQRT_2 : costArray[indexEnd];
 
 				if (directNode->costFromStart <= newCost) {
 					// do nothing, this path is not better than existing one
@@ -530,20 +539,20 @@ int CMicroPather::Solve(void* startNode, void* endNode, std::vector<void*>* path
 	return NO_SOLUTION;
 }
 
-int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*> endNodes, std::vector<void*>* path, float* cost)
+int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*>& endNodes, std::vector<void*>& targets, std::vector<void*>* path, float* cost)
 {
 	assert(!isRunning);
 	isRunning = true;
 	*cost = 0.0f;
 
-	for (unsigned i = 0; i < ALLOCATE; i++) {
-		PathNode* theNode = &pathNodeMem[i];
-
-		if (theNode->isEndNode) {
-			theNode->isEndNode = 0;
-			assert(theNode->isEndNode == 0);
-		}
-	}
+//	for (unsigned i = 0; i < ALLOCATE; i++) {
+//		PathNode* theNode = &pathNodeMem[i];
+//
+//		if (theNode->isEndNode) {
+//			theNode->isEndNode = 0;
+//			assert(theNode->isEndNode == 0);
+//		}
+//	}
 
 	if (endNodes.size() <= 0) {
 		// just fail fast
@@ -552,7 +561,26 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*
 	}
 
 	{
+		// select best end node
 		void* endNode = endNodes[0];
+		const int yStart = (size_t)startNode / mapSizeX;
+		const int xStart = (size_t)startNode - yStart * mapSizeX;
+
+		float leastCost = std::numeric_limits<float>::max();
+		for (void*& target : targets) {
+			FixNode(&target);
+			const int y = (size_t)target / mapSizeX;
+			const int x = (size_t)target - y * mapSizeX;
+
+			const int dx = abs(xStart - x);
+			const int dy = abs(yStart - y);
+			const float cost = (dx + dy) - 0.5858f * std::min(dx, dy);
+
+			if (leastCost > cost) {
+				leastCost = cost;
+				endNode = target;
+			}
+		}
 		FixStartEndNode(&startNode, &endNode);
 
 		if (!canMoveArray[(size_t)startNode]) {
@@ -567,11 +595,25 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*
 		Reset();
 	}
 
+	// fill multiple goals
+	goals.clear();
+//	goals.reserve(targets.size());
+	goals.reserve(ALLOCATE);
+	for (void*& target : targets) {
+		FixNode(&target);
+		PathNode* tempNode = GetNode((size_t)target);
+		tempNode->isTarget = 0;
+
+		const int y = (size_t)target / mapSizeX;
+		const int x = (size_t)target - y * mapSizeX;
+		goals.push_back({x, y});
+	}
+
 	// Make the priority queue
 	OpenQueueBH open(heapArrayMem);
 
 	{
-		const float estToGoal = LeastCostEstimateLocal( (size_t) startNode);
+		const float estToGoal = LeastCostEstimateLocal((size_t)startNode);
 
 		PathNode* tempStartNode = &pathNodeMem[(size_t) startNode];
 		tempStartNode->Reuse(frame);
@@ -646,8 +688,8 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*
 
 				float newCost = nodeCostFromStart;
 
-				// sqrt(2) ~= 1.41f
-				newCost += (i > 3) ? costArray[indexEnd] * 1.41f : costArray[indexEnd];
+				// sqrt(2) ~= 1.4142f
+				newCost += (i > 3) ? costArray[indexEnd] * SQRT_2 : costArray[indexEnd];
 
 				if (directNode->costFromStart <= newCost) {
 					// do nothing, this path is not better than existing one
@@ -658,6 +700,161 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*
 				directNode->parent = node;
 				directNode->costFromStart = newCost;
 				directNode->totalCost = newCost + LeastCostEstimateLocal(indexEnd);
+
+				#ifdef USE_ASSERTIONS
+				assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
+				#endif
+
+				if (directNode->inOpen) {
+					open.Update(directNode);
+				} else {
+					directNode->inClosed = 0;
+					open.Push(directNode);
+				}
+			}
+		}
+
+		node->inClosed = 1;
+	}
+
+	// unmark the endNodes
+	for (unsigned i = 0; i < endNodes.size(); i++) {
+		PathNode* tempEndNode = &pathNodeMem[(size_t)endNodes[i]];
+		tempEndNode->isEndNode = 0;
+	}
+
+	isRunning = false;
+	return NO_SOLUTION;
+}
+
+int CMicroPather::FindBestPathToAnyGivenPoint2(void* startNode, std::vector<void*>& endNodes, std::vector<void*>* path, float* cost)
+{
+	assert(!isRunning);
+	isRunning = true;
+	*cost = 0.0f;
+
+//	for (unsigned i = 0; i < ALLOCATE; i++) {
+//		PathNode* theNode = &pathNodeMem[i];
+//
+//		if (theNode->isEndNode) {
+//			theNode->isEndNode = 0;
+//			assert(theNode->isEndNode == 0);
+//		}
+//	}
+
+	if (endNodes.size() <= 0) {
+		// just fail fast
+		isRunning = false;
+		return NO_SOLUTION;
+	}
+
+	{
+		void* endNode = endNodes[0];
+		FixStartEndNode(&startNode, &endNode);
+
+		if (!canMoveArray[(size_t)startNode]) {
+			// L("Pather: trying to move from a blocked start pos");
+		}
+	}
+
+	++frame;
+
+	if (frame > 65534) {
+		// L("frame > 65534, pather reset needed");
+		Reset();
+	}
+
+	// Make the priority queue
+	OpenQueueBH open(heapArrayMem);
+
+	{
+		const float estToGoal = 0;
+
+		PathNode* tempStartNode = &pathNodeMem[(size_t) startNode];
+		tempStartNode->Reuse(frame);
+		tempStartNode->costFromStart = 0;
+		tempStartNode->totalCost = estToGoal;
+		open.Push(tempStartNode);
+	}
+
+	// mark the endNodes
+	for (unsigned i = 0; i < endNodes.size(); i++) {
+		FixNode(&endNodes[i]);
+		PathNode* tempEndNode = &pathNodeMem[(size_t) endNodes[i]];
+		tempEndNode->isEndNode = 1;
+	}
+
+	while (!open.Empty()) {
+		PathNode* node = open.Pop();
+
+		if (node->isEndNode) {
+			void* theEndNode = (void*) ((((size_t) node) - ((size_t) pathNodeMem)) / sizeof(PathNode));
+
+			GoalReached(node, startNode, theEndNode, path);
+			*cost = node->costFromStart;
+			isRunning = false;
+
+			// unmark the endNodes
+			for (unsigned i = 0; i < endNodes.size(); i++) {
+				PathNode* tempEndNode = &pathNodeMem[(size_t) endNodes[i]];
+				tempEndNode->isEndNode = 0;
+			}
+
+			return SOLVED;
+		} else {
+			// we have not reached the goal, add the neighbors (emulate GetNodeNeighbors)
+			const int indexStart = (((size_t) node) - ((size_t) pathNodeMem)) / sizeof(PathNode);
+
+			#ifdef USE_ASSERTIONS
+			const int ystart = indexStart / mapSizeX;
+			const int xstart = indexStart - ystart * mapSizeX;
+
+			// no node can be at the edge!
+			assert((xstart > 0) && (xstart < mapSizeX - 1));
+			assert((ystart > 0) && (ystart < mapSizeY - 1));
+			#endif
+
+			const float nodeCostFromStart = node->costFromStart;
+
+			for (int i = 0; i < 8; ++i) {
+				const int indexEnd = offsets[i] + indexStart;
+
+				if (!canMoveArray[indexEnd]) {
+					continue;
+				}
+
+				PathNode* directNode = &pathNodeMem[indexEnd];
+
+				if (directNode->frame != frame) {
+					directNode->Reuse(frame);
+				}
+
+				#ifdef USE_ASSERTIONS
+				const int yend = indexEnd / mapSizeX;
+				const int xend = indexEnd - yend * mapSizeX;
+
+				// no node can be at the edge!
+				assert((xend > 0) && (xend < mapSizeX - 1));
+				assert((yend > 0) && (yend < mapSizeY - 1));
+
+				// we can move to that spot
+				assert(canMoveArray[yend * mapSizeX + xend]);
+				#endif
+
+				float newCost = nodeCostFromStart;
+
+				// sqrt(2) ~= 1.4142f
+				newCost += (i > 3) ? costArray[indexEnd] * SQRT_2 : costArray[indexEnd];
+
+				if (directNode->costFromStart <= newCost) {
+					// do nothing, this path is not better than existing one
+					continue;
+				}
+
+				// it's better, update its data
+				directNode->parent = node;
+				directNode->costFromStart = newCost;
+				directNode->totalCost = newCost;
 
 				#ifdef USE_ASSERTIONS
 				assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
@@ -803,7 +1000,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode, st
 
 				float newCost = nodeCostFromStart;
 
-				newCost += (i > 3) ? costArray[indexEnd] * 1.41f : costArray[indexEnd];
+				newCost += (i > 3) ? costArray[indexEnd] * SQRT_2 : costArray[indexEnd];
 
 				if (directNode->costFromStart <= newCost) {
 					// do nothing, this path is not better than existing one
@@ -953,7 +1150,7 @@ int CMicroPather::FindDirectPathToPointOnRadius(void* startNode, void* endNode, 
 
 				float newCost = nodeCostFromStart;
 
-				newCost += (i > 3) ? THREAT_BASE * 1.41f : THREAT_BASE;
+				newCost += (i > 3) ? THREAT_BASE * SQRT_2 : THREAT_BASE;
 
 				if (directNode->costFromStart <= newCost) {
 					// do nothing, this path is not better than existing one

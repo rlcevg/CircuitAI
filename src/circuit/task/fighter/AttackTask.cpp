@@ -202,6 +202,7 @@ void CAttackTask::FindTarget()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
+	const float speed = cdef->GetSpeed();
 	int canTargetCat = cdef->GetTargetCategory();
 	int noChaseCat = cdef->GetNoChaseCategory();
 
@@ -224,6 +225,9 @@ void CAttackTask::FindTarget()
 		}
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
+			if (edef->GetSpeed() > speed) {
+				continue;
+			}
 			if (((edef->GetCategory() & canTargetCat) == 0) || ((edef->GetCategory() & noChaseCat) != 0)) {
 				continue;
 			}

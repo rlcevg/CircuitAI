@@ -1,21 +1,21 @@
 /*
- * ScoutTask.h
+ * MeleeTask.h
  *
- *  Created on: Jan 28, 2015
+ *  Created on: Jan 29, 2016
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_TASK_FIGHTER_SCOUTTASK_H_
-#define SRC_CIRCUIT_TASK_FIGHTER_SCOUTTASK_H_
+#ifndef SRC_CIRCUIT_TASK_FIGHTER_MELEETASK_H_
+#define SRC_CIRCUIT_TASK_FIGHTER_MELEETASK_H_
 
 #include "task/fighter/FighterTask.h"
 
 namespace circuit {
 
-class CScoutTask: public IFighterTask {
+class CMeleeTask: public IFighterTask {
 public:
-	CScoutTask(ITaskManager* mgr);
-	virtual ~CScoutTask();
+	CMeleeTask(ITaskManager* mgr);
+	virtual ~CMeleeTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit);
 	virtual void AssignTo(CCircuitUnit* unit);
@@ -33,4 +33,4 @@ private:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_TASK_FIGHTER_SCOUTTASK_H_
+#endif // SRC_CIRCUIT_TASK_FIGHTER_MELEETASK_H_

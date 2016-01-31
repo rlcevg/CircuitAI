@@ -369,13 +369,21 @@ float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRan
 		offsetSize = index;
 	}
 
+	std::vector<void*> nodeTargets;
+	nodeTargets.reserve(possibleTargets.size());
 	for (unsigned int i = 0; i < possibleTargets.size(); i++) {
 		AIFloat3& f = possibleTargets[i];
-		int x, y;
-		// TODO: make the circle here
 
 		terrainData->CorrectPosition(f);
-		Node2XY(Pos2Node(f), &x, &y);
+		void* node = Pos2Node(f);
+		NSMicroPather::PathNode* pn = micropather->GetNode((size_t)node);
+		if (pn->isTarget) {
+			continue;
+		}
+		pn->isTarget = 1;
+
+		int x, y;
+		Node2XY(node, &x, &y);
 
 		for (unsigned int j = 0; j < offsetSize; j++) {
 			const int sx = x + offsets[j].first;
@@ -389,14 +397,57 @@ float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRan
 
 	terrainData->CorrectPosition(startPos);
 
-	if (micropather->FindBestPathToAnyGivenPoint(Pos2Node(startPos), endNodes, &path, &pathCost) == CMicroPather::SOLVED) {
-        posPath.reserve(path.size());
+	// FIXME: DEBUG
+	int result;
+	{
+		path.clear();
+		using clock = std::chrono::high_resolution_clock;
+		using std::chrono::microseconds;
+		clock::time_point t0 = clock::now();
+		auto res = micropather->FindBestPathToAnyGivenPoint(Pos2Node(startPos), endNodes, nodeTargets, &path, &pathCost);
+		clock::time_point t1 = clock::now();
+		if (circuit != nullptr) {
+			auto time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+			static size_t totalTime = 0;
+			totalTime += time;
+			if (res == CMicroPather::SOLVED) {
+				int x, y;
+				Node2XY(path.back(), &x, &y);
+				circuit->LOG("SOLVED res1 = (%i, %i) | time = %i | totalTime = %i | size = %i", x, y, time, totalTime, possibleTargets.size());
+			} else {
+				circuit->LOG("NO PATH res1 = 0 | time = %i | totalTime = %i | size = %i", time, totalTime, possibleTargets.size());
+			}
+		}
+	}
+	{
+		path.clear();
+		using clock = std::chrono::high_resolution_clock;
+		using std::chrono::microseconds;
+		clock::time_point t0 = clock::now();
+		auto res = micropather->FindBestPathToAnyGivenPoint2(Pos2Node(startPos), endNodes, &path, &pathCost);
+		clock::time_point t1 = clock::now();
+		if (circuit != nullptr) {
+			auto time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+			static size_t totalTime = 0;
+			totalTime += time;
+			if (res == CMicroPather::SOLVED) {
+				int x, y;
+				Node2XY(path.back(), &x, &y);
+				circuit->LOG("SOLVED res2 = (%i, %i) | time = %i | totalTime = %i | size = %i", x, y, time, totalTime, possibleTargets.size());
+			} else {
+				circuit->LOG("NO PATH res2 = 0 | time = %i | totalTime = %i | size = %i", time, totalTime, possibleTargets.size());
+			}
+		}
+		result = res;
+	}
+
+//	if (micropather->FindBestPathToAnyGivenPoint(Pos2Node(startPos), endNodes, nodeTargets, &path, &pathCost) == CMicroPather::SOLVED) {
+	if (result == CMicroPather::SOLVED) {
+	// FIXME: DEBUG
+		posPath.reserve(path.size());
 
 		Map* map = terrainData->GetMap();
 		for (unsigned i = 0; i < path.size(); i++) {
-			int x, y;
-
-			Node2XY(path[i], &x, &y);
 			float3 mypos = Node2Pos(path[i]);
 			mypos.y = map->GetElevationAt(mypos.x, mypos.z);
 			posPath.push_back(mypos);

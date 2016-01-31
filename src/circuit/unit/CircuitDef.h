@@ -25,9 +25,9 @@ class CCircuitDef {
 public:
 	using Id = int;
 	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, COUNT};
-	enum RoleType: int {BUILDER = 0x0001, SCOUT   = 0x0002, RAIDER  = 0x0004, RIOT = 0x0008,
-						ASSAULT = 0x0010, HEAVY   = 0x0020, SKIRM   = 0x0040, ARTY = 0x0080,
-						AA      = 0x0100, BOMBER  = 0x0200, STATIC  = 0x0400, NONE = 0x0000};
+	enum RoleType: int {BUILDER = 0x0001, SCOUT   = 0x0002, RAIDER  = 0x0004, RIOT  = 0x0008,
+						ASSAULT = 0x0010, HEAVY   = 0x0020, BOMBER  = 0x0040, MELEE = 0x0080,
+						ARTY    = 0x0100, AA      = 0x0200, STATIC  = 0x0400, NONE  = 0x0000};
 
 	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
@@ -46,9 +46,10 @@ public:
 	bool IsRoleRaider()  const { return role & RoleType::RAIDER; }
 	bool IsRoleRiot()    const { return role & RoleType::RIOT; }
 	bool IsRoleAssault() const { return role & RoleType::ASSAULT; }
+	bool IsRoleBomber()  const { return role & RoleType::BOMBER; }
+	bool IsRoleMelee()   const { return role & RoleType::MELEE; }
 	bool IsRoleArty()    const { return role & RoleType::ARTY; }
 	bool IsRoleAA()      const { return role & RoleType::AA; }
-	bool IsRoleBomber()  const { return role & RoleType::BOMBER; }
 
 	const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
 	float GetBuildDistance() const { return buildDistance; }

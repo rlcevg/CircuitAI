@@ -58,6 +58,8 @@
 #ifndef GRINNINGLIZARD_MICROPATHER_INCLUDED
 #define GRINNINGLIZARD_MICROPATHER_INCLUDED
 
+#include "System/type2.h"
+
 #include <vector>
 #include <cfloat>
 
@@ -136,6 +138,7 @@ namespace NSMicroPather {
 				#endif
 				inOpen = 0;
 				inClosed = 0;
+				isTarget = 0;
 				isEndNode = 0;
 			}
 
@@ -165,6 +168,7 @@ namespace NSMicroPather {
 
 			unsigned inOpen:1;
 			unsigned inClosed:1;
+			unsigned isTarget:1;
 			unsigned isEndNode:1;	// this must be cleared by the call that sets it
 			unsigned frame:16;		// this might be set to more that 16
 
@@ -219,6 +223,8 @@ namespace NSMicroPather {
 			CMicroPather(Graph* graph, int sizeX, int sizeY);
 			~CMicroPather();
 
+			PathNode* GetNode(int indexNode) const { return &pathNodeMem[indexNode]; }
+
 			/*
 			 * Solve for the path from start to end.
 			 *
@@ -247,10 +253,14 @@ namespace NSMicroPather {
 			int mapSizeY;
 			int offsets[8];
 			int xEndNode, yEndNode;
+			std::vector<int2> goals;
 			bool isRunning;
 			void SetMapData(bool* canMoveArray, float* costArray);
 			int FindBestPathToPointOnRadius(void* startNode, void* endNode, std::vector<void*>* path, float* cost, int radius);
-			int FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*> endNodes, std::vector<void*>* path, float* cost);
+			int FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*>& endNodes,
+											std::vector<void*>& targets, std::vector<void*>* path, float* cost);
+			int FindBestPathToAnyGivenPoint2(void* startNode, std::vector<void*>& endNodes,
+											 std::vector<void*>* path, float* cost);
 			int FindDirectPathToPointOnRadius(void* startNode, void* endNode, std::vector<void*>* path, float* cost, int radius);
 
 		private:

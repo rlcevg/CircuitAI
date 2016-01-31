@@ -39,6 +39,7 @@
 
 #define SQUARE(x)		((x) * (x))
 #define THREAT_BASE		1.0f
+#define SQRT_2			1.4142f
 
 #define MAX_SPEED		1e6f
 typedef std::vector<springai::AIFloat3> F3Vec;

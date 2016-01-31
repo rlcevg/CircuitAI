@@ -20,6 +20,7 @@
 #include "task/fighter/ScoutTask.h"
 #include "task/fighter/AttackTask.h"
 #include "task/fighter/BombTask.h"
+#include "task/fighter/MeleeTask.h"
 #include "task/fighter/ArtilleryTask.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
@@ -276,7 +277,7 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 		case IFighterTask::FightType::RALLY: {
 			CEconomyManager* economyManager = circuit->GetEconomyManager();
 			float power = economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor() * 32.0f;
-			task = new CRallyTask(this, power);  // TODO: pass enemy's threat
+			task = new CRallyTask(this, /*power*/1);  // TODO: pass enemy's threat
 			break;
 		}
 		case IFighterTask::FightType::SCOUT: {
@@ -289,6 +290,10 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 		}
 		case IFighterTask::FightType::BOMB: {
 			task = new CBombTask(this);
+			break;
+		}
+		case IFighterTask::FightType::MELEE: {
+			task = new CMeleeTask(this);
 			break;
 		}
 		case IFighterTask::FightType::ARTY: {
@@ -330,10 +335,11 @@ IUnitTask* CMilitaryManager::GetTask(CCircuitUnit* unit)
 	IFighterTask* task = nullptr;
 
 	std::underlying_type<CCircuitDef::RoleType>::type role =
-		CCircuitDef::RoleType::AA |
-		CCircuitDef::RoleType::ARTY |
 		CCircuitDef::RoleType::SCOUT |
-		CCircuitDef::RoleType::BOMBER;
+		CCircuitDef::RoleType::BOMBER |
+		CCircuitDef::RoleType::MELEE |
+		CCircuitDef::RoleType::ARTY |
+		CCircuitDef::RoleType::AA;
 	if ((unit->GetCircuitDef()->GetRole() & role) == 0) {
 		for (IFighterTask* candidate : fightTasks) {
 			if (!candidate->CanAssignTo(unit)) {
@@ -350,8 +356,12 @@ IUnitTask* CMilitaryManager::GetTask(CCircuitUnit* unit)
 			type = IFighterTask::FightType::SCOUT;
 		} else if (unit->GetCircuitDef()->IsRoleBomber()) {
 			type = IFighterTask::FightType::BOMB;
+		} else if (unit->GetCircuitDef()->IsRoleMelee()) {
+			type = IFighterTask::FightType::MELEE;
 		} else if (unit->GetCircuitDef()->IsRoleArty()) {
 			type = IFighterTask::FightType::ARTY;
+//		} else if (unit->GetCircuitDef()->IsRoleAA()) {
+//			type = IFighterTask::FightType::AA;
 		} else {
 			type = IFighterTask::FightType::RALLY;
 		}
@@ -384,7 +394,7 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	}
 	CCircuitDef* defDef;
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	float maxCost = MIN_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
+	float maxCost = MIN_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome()) * economyManager->GetEcoFactor();
 	CDefenceMatrix::SDefPoint* closestPoint = nullptr;
 	float minDist = std::numeric_limits<float>::max();
 	for (CDefenceMatrix::SDefPoint& defPoint : defence->GetDefPoints(index)) {
@@ -490,7 +500,7 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	};
 	// radar
 	defDef = circuit->GetCircuitDef("corrad");
-	checkSensor(IBuilderTask::BuildType::RADAR, defDef, defDef->GetUnitDef()->GetRadarRadius() / 1.4142f);
+	checkSensor(IBuilderTask::BuildType::RADAR, defDef, defDef->GetUnitDef()->GetRadarRadius() / SQRT_2);
 	if (isWater) {  // sonar
 		defDef = circuit->GetCircuitDef("armsonar");
 		checkSensor(IBuilderTask::BuildType::SONAR, defDef, defDef->GetUnitDef()->GetSonarRadius());
