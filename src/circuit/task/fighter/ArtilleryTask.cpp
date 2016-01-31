@@ -169,7 +169,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 	F3Vec enemyPositions;
 	threatMap->SetThreatType(unit);
 	pathfinder->SetMapData(unit, threatMap, circuit->GetLastFrame());
-	bool isPosSafe = (threatMap->GetThreatAt(pos) <= MIN_THREAT);
+	bool isPosSafe = (threatMap->GetThreatAt(pos) <= THREAT_MIN);
 
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	if (isPosSafe) {
@@ -245,7 +245,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 			}
 		}
 		--it;
-		if (threatMap->GetThreatAt(*it) > MIN_THREAT) {
+		if (threatMap->GetThreatAt(*it) > THREAT_MIN) {
 			fallback(circuit, pos, path, pathfinder);
 		} else {
 			position = path.back();
@@ -292,7 +292,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 			fallback(circuit, pos, path, pathfinder);
 			return nullptr;
 		}
-		if (threatMap->GetThreatAt(path.back()) > MIN_THREAT) {
+		if (threatMap->GetThreatAt(path.back()) > THREAT_MIN) {
 			fallback(circuit, pos, path, pathfinder);
 		} else {
 			position = path.back();

@@ -58,8 +58,6 @@
 #ifndef GRINNINGLIZARD_MICROPATHER_INCLUDED
 #define GRINNINGLIZARD_MICROPATHER_INCLUDED
 
-#include "System/type2.h"
-
 #include <vector>
 #include <cfloat>
 
@@ -253,20 +251,18 @@ namespace NSMicroPather {
 			int mapSizeY;
 			int offsets[8];
 			int xEndNode, yEndNode;
-			std::vector<int2> goals;
 			bool isRunning;
 			void SetMapData(bool* canMoveArray, float* costArray);
+			int FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*>& endNodes, std::vector<void*>& targets,
+											std::vector<void*>* path, float* cost);
 			int FindBestPathToPointOnRadius(void* startNode, void* endNode, std::vector<void*>* path, float* cost, int radius);
-			int FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*>& endNodes,
-											std::vector<void*>& targets, std::vector<void*>* path, float* cost);
-			int FindBestPathToAnyGivenPoint2(void* startNode, std::vector<void*>& endNodes,
-											 std::vector<void*>* path, float* cost);
 			int FindDirectPathToPointOnRadius(void* startNode, void* endNode, std::vector<void*>* path, float* cost, int radius);
 
 		private:
 			void GoalReached(PathNode* node, void* start, void* end, std::vector<void*> *path);
-			void FixStartEndNode(void** startNode, void** endNode);
 			float LeastCostEstimateLocal(int nodeStartIndex);
+			static inline float DiagonalDistance(int xStart, int yStart, int xEnd, int yEnd);
+			void FixStartEndNode(void** startNode, void** endNode);
 			void FixNode(void** Node);
 
 			// allocates the node array, don't call more than once

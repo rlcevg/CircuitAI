@@ -13,14 +13,13 @@
 
 #include <vector>
 
+#define SQUARE(x)			((x) * (x))
+#define SQRT_2				1.4142f
 #define FRAMES_PER_SEC		GAME_SPEED
 #define WATCHDOG_COUNT		3
 #define PYLON_RANGE			500.0f
 #define TASK_RETRIES		10
 #define DEBUG_MARK			0xBAD0C0DE
-#define THREAT_RES			8
-#define MIN_THREAT			20.0f
-#define DEFAULT_SLACK		(SQUARE_SIZE * THREAT_RES)
 #define UNKNOWN_CATEGORY	0xFFFFFFFF
 
 // z++
@@ -37,9 +36,11 @@
 #define MAX_TRAVEL_SEC	60
 #define ASSIGN_TIMEOUT	(FRAMES_PER_SEC * 300)
 
-#define SQUARE(x)		((x) * (x))
 #define THREAT_BASE		1.0f
-#define SQRT_2			1.4142f
+#define THREAT_MOD		(1.0f / 20.0f)
+#define THREAT_MIN		2.0f
+#define THREAT_RES		8
+#define DEFAULT_SLACK	(SQUARE_SIZE * THREAT_RES)
 
 #define MAX_SPEED		1e6f
 typedef std::vector<springai::AIFloat3> F3Vec;

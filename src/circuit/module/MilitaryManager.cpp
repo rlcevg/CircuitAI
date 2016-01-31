@@ -435,7 +435,7 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 		}
 		// check if there is enemy neighbor
 		for (int idx : clusters[idx0].idxSpots) {
-			if (threatMap->GetAllThreatAt(spots[idx].position) > MIN_THREAT * 5) {
+			if (threatMap->GetAllThreatAt(spots[idx].position) > THREAT_MIN * 5) {
 				isPorc = true;
 				break;
 			}
