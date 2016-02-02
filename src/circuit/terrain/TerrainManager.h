@@ -45,7 +45,7 @@ public:
 
 public:
 	void AddBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing);
-	void RemoveBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing);
+	void DelBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing);
 	void ResetBuildFrame();
 	// TODO: Use IsInBounds test and Bound operation only if mask or search offsets (endr) are out of bounds
 	// TODO: Based on map complexity use BFS or circle to calculate build offset
@@ -61,6 +61,8 @@ public:
 									 TerrainPredicate& predicate);
 
 	const SBlockingMap& GetBlockingMap();
+
+	bool ResignAllyBuilding(CCircuitUnit* unit);
 
 private:
 	int markFrame;

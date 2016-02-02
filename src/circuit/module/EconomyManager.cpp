@@ -78,7 +78,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateResourceIncome, this), TEAM_SLOWUPDATE_RATE);
-	scheduler->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CEconomyManager::Init, this));
+	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CEconomyManager::Init, this));
 
 	// TODO: Group handlers
 	//       Raider:       Glaive, Bandit, Scorcher, Pyro, Panther, Scrubber, Duck
@@ -188,8 +188,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		CCircuitDef* cdef = kv.second;
 		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
 		auto it = customParams.find("level");
-		if ((it != customParams.end()) && (utils::string_to_int(it->second) <= 5)) {  // TODO: Identify max level
-			// NOTE: 5th level is needed only to set proper commander
+		if ((it != customParams.end()) && (utils::string_to_int(it->second) <= 6)) {  // TODO: Identify max level
+			// NOTE: last level is needed only to set proper commander
 			finishedHandler[cdef->GetId()] = comFinishedHandler;
 			destroyedHandler[cdef->GetId()] = comDestroyedHandler;
 		}
@@ -205,9 +205,8 @@ CEconomyManager::~CEconomyManager()
 	delete empParam;
 	delete eepParam;
 	delete odeiParam;
-	delete odecParam;/*, delete odeoParam, delete odteParam, delete odaParam*/;
+	delete odecParam/*, delete odeoParam, delete odteParam, delete odaParam*/;
 	delete engyPol;
-	morph = nullptr;
 }
 
 int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -234,7 +233,7 @@ int CEconomyManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	// NOTE: If more actions should be done then consider moving into damagedHandler
 	if (unit->IsMorphing() && (unit->GetUnit()->GetHealth() < unit->GetUnit()->GetMaxHealth() * 0.5f)) {
-		unit->StopMorph();
+		unit->StopUpgrade();  // StopMorph();
 		AddMorphee(unit);
 	}
 
@@ -665,9 +664,14 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			buildPos.x += (buildPos.x > center.x) ? -size : size;
 			buildPos.z += (buildPos.z > center.z) ? -size : size;
 
-			CCircuitDef* bdef = isStriderValid ?
-					circuit->GetCircuitDef((terrainManager->GetPercentLand() < 40.0) ? "reef" : "dante") :
-					(unit == nullptr) ? facDef : unit->GetCircuitDef();
+			CCircuitDef* bdef;
+			if (isStriderValid) {
+				CCircuitDef* landDef = circuit->GetCircuitDef("dante");
+				STerrainMapArea* area = terrainManager->GetMobileTypeById(landDef->GetMobileId())->areaLargest;
+				bdef = ((area == nullptr) || (area->percentOfMap < 40.0)) ? circuit->GetCircuitDef("reef") : landDef;
+			} else {
+				bdef = (unit == nullptr) ? facDef : unit->GetCircuitDef();
+			}
 			buildPos = terrainManager->GetBuildPosition(bdef, buildPos);
 
 			if (terrainManager->CanBeBuiltAt(facDef, buildPos) &&
@@ -775,7 +779,7 @@ void CEconomyManager::UpdateMorph()
 
 	float energyIncome = GetAvgEnergyIncome();
 	float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
-	if ((metalIncome < 10) || !IsMetalFull() || (GetMetalPull() > metalIncome)) {
+	if ((metalIncome < 10) || !IsMetalFull() || (GetMetalPull() * 0.8f > metalIncome)) {
 		return;
 	}
 
@@ -785,7 +789,7 @@ void CEconomyManager::UpdateMorph()
 		if (unit->GetUnit()->GetHealth() < unit->GetUnit()->GetMaxHealth() * 0.8f) {
 			++it;
 		} else {
-			unit->Morph();
+			unit->Upgrade();  // Morph();
 			it = morphees.erase(it);
 			break;  // one unit at a time
 		}
@@ -891,8 +895,8 @@ void CEconomyManager::Init()
 				if (commander != nullptr) {
 					const std::map<std::string, std::string>& customParams = commander->GetCircuitDef()->GetUnitDef()->GetCustomParams();
 					auto it = customParams.find("level");
-					if ((it != customParams.end()) && (utils::string_to_int(it->second) == 0)) {
-						commander->Morph();
+					if ((it != customParams.end()) && (utils::string_to_int(it->second) <= 1)) {
+						commander->Upgrade();  // Morph();
 					}
 				}
 				// Build factory defence

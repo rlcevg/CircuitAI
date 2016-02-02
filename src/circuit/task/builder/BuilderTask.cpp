@@ -109,7 +109,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 			return;
 		} else {
-			terrainManager->RemoveBlocker(buildDef, buildPos, facing);
+			terrainManager->DelBlocker(buildDef, buildPos, facing);
 			// FIXME: If enemy blocked position then reset will have no effect
 //			terrainManager->ResetBuildFrame();
 		}
@@ -216,7 +216,7 @@ void IBuilderTask::Finish()
 void IBuilderTask::Cancel()
 {
 	if ((target == nullptr) && (buildPos != -RgtVector)) {
-		manager->GetCircuit()->GetTerrainManager()->RemoveBlocker(buildDef, buildPos, facing);
+		manager->GetCircuit()->GetTerrainManager()->DelBlocker(buildDef, buildPos, facing);
 	}
 
 	// Destroy queue

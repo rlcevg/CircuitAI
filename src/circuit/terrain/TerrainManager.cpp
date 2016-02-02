@@ -323,7 +323,7 @@ void CTerrainManager::AddBlocker(CCircuitDef* cdef, const AIFloat3& pos, int fac
 #endif
 }
 
-void CTerrainManager::RemoveBlocker(CCircuitDef* cdef, const AIFloat3& pos, int facing)
+void CTerrainManager::DelBlocker(CCircuitDef* cdef, const AIFloat3& pos, int facing)
 {
 	SStructure building = {-1, cdef, pos, facing};
 	MarkBlocker(building, false);
@@ -415,6 +415,19 @@ const SBlockingMap& CTerrainManager::GetBlockingMap()
 		MarkAllyBuildings();
 	}
 	return blockingMap;
+}
+
+bool CTerrainManager::ResignAllyBuilding(CCircuitUnit* unit)
+{
+	auto it = markedAllies.cbegin();
+	while (it != markedAllies.cend()) {
+		if (it->unitId == unit->GetId()) {
+			markedAllies.erase(it);
+			return true;
+		}
+		++it;
+	}
+	return false;
 }
 
 void CTerrainManager::MarkAllyBuildings()
@@ -942,7 +955,7 @@ void CTerrainManager::MarkBlockerByMask(const SStructure& building, bool block, 
 	if (block) {														\
 		DECLARE_MARKER(facingType, AddBlocker, AddStruct);				\
 	} else {															\
-		DECLARE_MARKER(facingType, RemoveBlocker, RemoveStruct);		\
+		DECLARE_MARKER(facingType, DelBlocker, DelStruct);				\
 	}
 
 	switch (facing) {
@@ -1006,7 +1019,7 @@ void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 		// SOLUTION: Do not mark movable units
 		for (int z = m1.y; z < m2.y; z++) {
 			for (int x = m1.x; x < m2.x; x++) {
-				blockingMap.RemoveStruct(x, z, structType, notIgnore);
+				blockingMap.DelStruct(x, z, structType, notIgnore);
 			}
 		}
 	}

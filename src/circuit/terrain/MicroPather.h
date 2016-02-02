@@ -256,7 +256,8 @@ namespace NSMicroPather {
 			int FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*>& endNodes, std::vector<void*>& targets,
 											std::vector<void*>* path, float* cost);
 			int FindBestPathToPointOnRadius(void* startNode, void* endNode, std::vector<void*>* path, float* cost, int radius);
-			int FindDirectPathToPointOnRadius(void* startNode, void* endNode, std::vector<void*>* path, float* cost, int radius);
+			int FindBestCostToPointOnRadius(void* startNode, void* endNode, float* cost, int radius);
+			int FindDirectCostToPointOnRadius(void* startNode, void* endNode, float* cost, int radius);
 
 		private:
 			void GoalReached(PathNode* node, void* start, void* end, std::vector<void*> *path);

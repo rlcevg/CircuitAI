@@ -16,6 +16,7 @@ namespace circuit {
 using namespace springai;
 
 CEncloseCircle::CEncloseCircle()
+		: radius(.0f)
 {
 }
 

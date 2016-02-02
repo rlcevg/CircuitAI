@@ -23,8 +23,7 @@ using namespace springai;
 CDefenceMatrix::CDefenceMatrix(CCircuitAI* circuit)
 		: metalManager(nullptr)
 {
-	CScheduler* scheduler = circuit->GetScheduler().get();
-	scheduler->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CDefenceMatrix::Init, this, circuit));
+	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>(&CDefenceMatrix::Init, this, circuit));
 }
 
 CDefenceMatrix::~CDefenceMatrix()

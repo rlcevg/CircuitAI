@@ -56,7 +56,7 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 			return;
 		} else {
-			terrainManager->RemoveBlocker(buildDef, buildPos, facing);
+			terrainManager->DelBlocker(buildDef, buildPos, facing);
 		}
 	}
 

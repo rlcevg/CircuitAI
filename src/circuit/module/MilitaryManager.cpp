@@ -53,7 +53,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::Watchdog, this),
 							FRAMES_PER_SEC * 60,
 							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 12);
-	scheduler->RunParallelTask(CGameTask::emptyTask, std::make_shared<CGameTask>(&CMilitaryManager::Init, this));
+	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CMilitaryManager::Init, this));
 
 	CCircuitDef::Id unitDefId;
 	/*

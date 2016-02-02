@@ -43,7 +43,7 @@ public:
 
 	unsigned int GetWorkerCount() const { return workers.size(); }
 	float GetBuilderPower() const { return builderPower; }
-	bool CanEnqueueTask() const { return buildTasksCount < workers.size() * 2; }
+	bool CanEnqueueTask() const { return buildTasksCount < workers.size() * 4; }
 	const std::set<IBuilderTask*>& GetTasks(IBuilderTask::BuildType type);
 	void ActivateTask(IBuilderTask* task);
 	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,

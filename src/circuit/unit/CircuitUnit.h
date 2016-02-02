@@ -18,22 +18,24 @@ namespace springai {
 
 namespace circuit {
 
-#define CMD_RETREAT_ZONE		10001
-#define CMD_SETHAVEN			CMD_RETREAT_ZONE
-#define CMD_ORBIT				13923
-#define CMD_ORBIT_DRAW			13924
-#define CMD_MORPH				31210
-#define CMD_MORPH_STOP			32210
-#define CMD_FIND_PAD			33411
-#define CMD_PRIORITY			34220
-#define CMD_MISC_PRIORITY		34221
-#define CMD_RETREAT				34223
-#define CMD_UNIT_SET_TARGET		34923
-#define CMD_UNIT_CANCEL_TARGET	34924
-#define CMD_ONECLICK_WEAPON		35000
-#define CMD_JUMP				38521
-#define CMD_AIR_STRAFE			39381
-#define CMD_TERRAFORM_INTERNAL	39801
+#define CMD_RETREAT_ZONE			10001
+#define CMD_SETHAVEN				CMD_RETREAT_ZONE
+#define CMD_ORBIT					13923
+#define CMD_ORBIT_DRAW				13924
+#define CMD_MORPH_UPGRADE_INTERNAL	31207
+#define CMD_UPGRADE_STOP			31208
+#define CMD_MORPH					31210
+#define CMD_MORPH_STOP				32210
+#define CMD_FIND_PAD				33411
+#define CMD_PRIORITY				34220
+#define CMD_MISC_PRIORITY			34221
+#define CMD_RETREAT					34223
+#define CMD_UNIT_SET_TARGET			34923
+#define CMD_UNIT_CANCEL_TARGET		34924
+#define CMD_ONECLICK_WEAPON			35000
+#define CMD_JUMP					38521
+#define CMD_AIR_STRAFE				39381
+#define CMD_TERRAFORM_INTERNAL		39801
 
 class CCircuitDef;
 class IUnitTask;
@@ -84,6 +86,8 @@ public:
 
 	void Morph();
 	void StopMorph();
+	void Upgrade();
+	void StopUpgrade();
 	bool IsMorphing() const { return isMorphing; }
 
 	bool operator==(const CCircuitUnit& rhs) { return id == rhs.id; }

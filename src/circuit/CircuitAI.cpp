@@ -360,7 +360,7 @@ bool CCircuitAI::IsModValid()
 		return false;
 	}
 
-	const int minModVer[] = {1, 3, 8, 14};
+	const int minModVer[] = {1, 4, 2, 5};
 	unsigned i = 0;
 	char* tmp = new char [strlen(version) + 1];
 	strcpy(tmp, version);
@@ -370,7 +370,7 @@ bool CCircuitAI::IsModValid()
 			int ver = atoi(tok);
 			if (ver < minModVer[i]) {
 				delete[] tmp;
-				LOG("Zero-K must be 1.3.8.14 or higher! (%s)", version);
+				LOG("Zero-K must be 1.4.2.5 or higher! (%s)", version);
 				return false;
 			}
 			if ((ver > minModVer[i]) || (++i >= sizeof(minModVer) / sizeof(minModVer[0]))) {
@@ -426,10 +426,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 	if (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos()) {
 		if (metalManager->HasMetalSpots()) {
-			// Parallel task is only to ensure its execution after CMetalManager::Clusterize
-			scheduler->RunParallelTask(std::make_shared<CGameTask>([this]() {
-				setupManager->PickStartPos(this, CSetupManager::StartPosType::METAL_SPOT);
-			}));
+			setupManager->PickStartPos(this, CSetupManager::StartPosType::METAL_SPOT);
 		} else {
 			setupManager->PickStartPos(this, CSetupManager::StartPosType::MIDDLE);
 		}

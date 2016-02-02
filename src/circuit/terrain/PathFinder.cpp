@@ -242,8 +242,6 @@ float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos
  */
 float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius)
 {
-	path.clear();
-
 	terrainData->CorrectPosition(endPos);
 
 	float pathCost = 0.0f;
@@ -255,7 +253,7 @@ float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloa
 
 	radius /= squareSize;
 
-	micropather->FindBestPathToPointOnRadius(XY2Node(sx, sy), XY2Node(ex, ey), &path, &pathCost, radius);
+	micropather->FindBestCostToPointOnRadius(XY2Node(sx, sy), XY2Node(ex, ey), &pathCost, radius);
 
 	return pathCost;
 }
@@ -265,8 +263,6 @@ float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloa
  */
 float CPathFinder::PathCostDirect(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius)
 {
-	path.clear();
-
 	terrainData->CorrectPosition(endPos);
 
 	float pathCost = 0.0f;
@@ -278,7 +274,7 @@ float CPathFinder::PathCostDirect(const springai::AIFloat3& startPos, springai::
 
 	radius /= squareSize;
 
-	micropather->FindDirectPathToPointOnRadius(XY2Node(sx, sy), XY2Node(ex, ey), &path, &pathCost, radius);
+	micropather->FindDirectCostToPointOnRadius(XY2Node(sx, sy), XY2Node(ex, ey), &pathCost, radius);
 
 	return pathCost;
 }

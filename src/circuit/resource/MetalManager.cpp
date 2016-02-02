@@ -10,7 +10,6 @@
 #include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
 #include "util/math/RagMatrix.h"
-#include "util/Scheduler.h"
 #include "util/utils.h"
 #include "json/json.h"
 
@@ -190,8 +189,9 @@ void CMetalManager::ClusterizeMetal()
 		}
 	}
 
-	// TODO: Remove parallelism (and fix Init everywhere)
-	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CMetalData::Clusterize, metalData, maxDistance, pdistmatrix));
+	// NOTE: Parallel clusterization was here,
+	//       but bugs appeared: no communication with spring/lua
+	metalData->Clusterize(maxDistance, pdistmatrix);
 }
 
 void CMetalManager::Init()

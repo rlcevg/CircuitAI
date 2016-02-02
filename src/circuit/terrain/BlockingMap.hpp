@@ -76,7 +76,7 @@ inline void SBlockingMap::AddBlocker(int x, int z, StructType structType)
 	}
 }
 
-inline void SBlockingMap::RemoveBlocker(int x, int z, StructType structType)
+inline void SBlockingMap::DelBlocker(int x, int z, StructType structType)
 {
 	SBlockCell& cell = grid[z * columns + x];
 	if (--cell.blockerCounts[static_cast<int>(structType)] == 0) {
@@ -103,7 +103,7 @@ inline void SBlockingMap::AddStruct(int x, int z, StructType structType, int not
 	cell.structMask = GetStructMask(structType);
 }
 
-inline void SBlockingMap::RemoveStruct(int x, int z, StructType structType, int notIgnoreMask)
+inline void SBlockingMap::DelStruct(int x, int z, StructType structType, int notIgnoreMask)
 {
 	SBlockCell& cell = grid[z * columns + x];
 	cell.notIgnoreMask = 0;

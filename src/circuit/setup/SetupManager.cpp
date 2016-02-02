@@ -271,42 +271,67 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 
 	switch (type) {
 		case StartPosType::METAL_SPOT: {
-			// FIXME: DEBUG
-//			Lua* lua = circuit->GetCallback()->GetLua();
-//			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
-//			for (const CMetalData::SMetal& spot : spots) {
-//				std::string cmd("ai_is_valid_startpos:");
-//				circuit->LOG("%s", cmd.c_str());
-//				cmd += utils::int_to_string(spot.position.x) + "/" + utils::int_to_string(spot.position.z);
-//				std::string result = lua->CallRules(cmd.c_str(), cmd.size());
-//				circuit->GetDrawer()->AddPoint(spot.position, result.c_str());
-//				circuit->LOG("%s", cmd.c_str());
-//			}
-//			delete lua;
-			// FIXME: DEBUG
-			AIFloat3 posFrom(box.left, 0, box.top);
-			AIFloat3 posTo(box.right, 0, box.bottom);
-			CMetalManager* metalManager = circuit->GetMetalManager();
-			CMetalData::MetalIndices inBoxIndices = metalManager->FindWithinRangeSpots(posFrom, posTo);
-			if (!inBoxIndices.empty()) {
-				const CMetalData::Metals& spots = metalManager->GetSpots();
-				CTerrainManager* terrainManager = circuit->GetTerrainManager();
-				STerrainMapMobileType* mobileType = terrainManager->GetMobileTypeById(circuit->GetCircuitDef("armcom1")->GetMobileId());
-				std::vector<int> filteredIndices;
-				for (auto idx : inBoxIndices) {
-					int iS = terrainManager->GetSectorIndex(spots[idx].position);
-					STerrainMapArea* area = mobileType->sector[iS].area;
-					if ((area != nullptr) && area->areaUsable) {
-						filteredIndices.push_back(idx);
-					}
+			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
+			CMetalData::MetalIndices indices;
+			indices.reserve(spots.size());
+			for (unsigned idx = 0; idx < spots.size(); ++idx) {
+				indices.push_back(idx);
+			}
+			std::random_shuffle(indices.begin(), indices.end());
+
+			CTerrainManager* terrainManager = circuit->GetTerrainManager();
+			STerrainMapMobileType* mobileType = terrainManager->GetMobileTypeById(circuit->GetCircuitDef("armcom1")->GetMobileId());
+			Lua* lua = circuit->GetCallback()->GetLua();
+			bool isDone = false;
+
+			for (unsigned idx : indices) {
+				std::string cmd("ai_is_valid_startpos:");
+				const CMetalData::SMetal& spot = spots[idx];
+				cmd += utils::int_to_string(spot.position.x) + "/" + utils::int_to_string(spot.position.z);
+				std::string result = lua->CallRules(cmd.c_str(), cmd.size());
+				if (result != "1") {
+					continue;
 				}
-				if (!filteredIndices.empty()) {
-					const AIFloat3& pos = spots[filteredIndices[rand() % filteredIndices.size()]].position;
-					x = pos.x;
-					z = pos.z;
+
+				int iS = terrainManager->GetSectorIndex(spots[idx].position);
+				STerrainMapArea* area = mobileType->sector[iS].area;
+				if ((area != nullptr) && area->areaUsable) {
+					x = spot.position.x;
+					z = spot.position.z;
+					isDone = true;
 					break;
 				}
 			}
+
+			delete lua;
+			if (isDone) {
+				break;
+			}
+
+//			AIFloat3 posFrom(box.left, 0, box.top);
+//			AIFloat3 posTo(box.right, 0, box.bottom);
+//			CMetalManager* metalManager = circuit->GetMetalManager();
+//			CMetalData::MetalIndices inBoxIndices = metalManager->FindWithinRangeSpots(posFrom, posTo);
+//			if (!inBoxIndices.empty()) {
+//				const CMetalData::Metals& spots = metalManager->GetSpots();
+//				CTerrainManager* terrainManager = circuit->GetTerrainManager();
+//				STerrainMapMobileType* mobileType = terrainManager->GetMobileTypeById(circuit->GetCircuitDef("armcom1")->GetMobileId());
+//				std::vector<int> filteredIndices;
+//				for (auto idx : inBoxIndices) {
+//					int iS = terrainManager->GetSectorIndex(spots[idx].position);
+//					STerrainMapArea* area = mobileType->sector[iS].area;
+//					if ((area != nullptr) && area->areaUsable) {
+//						filteredIndices.push_back(idx);
+//					}
+//				}
+//				if (!filteredIndices.empty()) {
+//					const AIFloat3& pos = spots[filteredIndices[rand() % filteredIndices.size()]].position;
+//					x = pos.x;
+//					z = pos.z;
+//					break;
+//				}
+//			}
+
 			random(box, x, z);
 			break;
 		}
@@ -329,25 +354,35 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 
 void CSetupManager::PickCommander()
 {
+	/*
+	 * dyntrainer_recon_base
+	 * dyntrainer_support_base
+	 * dyntrainer_assault_base
+	 * dyntrainer_strike_base
+	 */
 	std::vector<CCircuitDef*> commanders;
 	CCircuitDef* supCom = nullptr;
 	float bestPower = .0f;
+
 	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
 		CCircuitDef* cdef = kv.second;
 
+		std::string lvl1 = cdef->GetUnitDef()->GetName();
+		if ((lvl1.find("dyntrainer_") != 0) || (lvl1.find("_base") != lvl1.size() - 5)) {
+			continue;
+		}
+
 		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
 		auto it = customParams.find("level");
-		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 0)) {
-			commanders.push_back(cdef);
+		if ((it == customParams.end()) || (utils::string_to_int(it->second) != 1)) {
+			continue;
+		}
+		commanders.push_back(cdef);
 
-			std::string lvl0 = cdef->GetUnitDef()->GetName();
-			std::string lvl5 = lvl0.substr(0, lvl0.size() - 1) + "5";
-			CCircuitDef* lvl5Def = circuit->GetCircuitDef(lvl5.c_str());
-			if ((lvl5Def != nullptr) && (bestPower < lvl5Def->GetUnitDef()->GetAutoHeal())) {
-				bestPower = lvl5Def->GetUnitDef()->GetAutoHeal();
-				supCom = cdef;
-			}
+		if (bestPower < cdef->GetBuildDistance()) {  // No more UnitDef->GetAutoHeal() :(
+			bestPower = cdef->GetBuildDistance();
+			supCom = cdef;
 		}
 	}
 	if (commanders.empty()) {

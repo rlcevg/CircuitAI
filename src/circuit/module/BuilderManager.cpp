@@ -53,9 +53,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Watchdog, this),
 							FRAMES_PER_SEC * 60,
 							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 10);
-	// Init after parallel clusterization
-	scheduler->RunParallelTask(CGameTask::emptyTask,
-							   std::make_shared<CGameTask>(&CBuilderManager::Init, this));
+	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CBuilderManager::Init, this));
 
 	/*
 	 * worker handlers
@@ -124,10 +122,21 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	/*
 	 * building handlers
 	 */
+	auto buildingDamagedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+		EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+	};
 	auto buildingDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		int frame = this->circuit->GetLastFrame();
 		int facing = unit->GetUnit()->GetBuildingFacing();
-		this->circuit->GetTerrainManager()->RemoveBlocker(unit->GetCircuitDef(), unit->GetPos(frame), facing);
+		this->circuit->GetTerrainManager()->DelBlocker(unit->GetCircuitDef(), unit->GetPos(frame), facing);
+	};
+
+	/*
+	 * heavy handlers
+	 */
+	auto heavyCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
+		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
+		EnqueueRepair(IBuilderTask::Priority::LOW, unit);
 	};
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
@@ -137,14 +146,14 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
 	for (auto& kv : defs) {
+		CCircuitDef::Id unitDefId = kv.first;
 		CCircuitDef* cdef = kv.second;
 		if (cdef->IsMobile()) {
 			if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
-				CCircuitDef::Id unitDefId = kv.first;
-				createdHandler[unitDefId] = workerCreatedHandler;
-				finishedHandler[unitDefId] = workerFinishedHandler;
-				idleHandler[unitDefId] = workerIdleHandler;
-				damagedHandler[unitDefId] = workerDamagedHandler;
+				createdHandler[unitDefId]   = workerCreatedHandler;
+				finishedHandler[unitDefId]  = workerFinishedHandler;
+				idleHandler[unitDefId]      = workerIdleHandler;
+				damagedHandler[unitDefId]   = workerDamagedHandler;
 				destroyedHandler[unitDefId] = workerDestroyedHandler;
 
 				int mtId = terrainManager->GetMobileTypeId(unitDefId);
@@ -155,9 +164,12 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 				const char* name = cdef->GetUnitDef()->GetName();
 				cdef->SetRetreat(retreats.get(name, builderRet).asFloat());
+			} else if (cdef->GetCost() > 1999.0f) {
+				createdHandler[unitDefId] = heavyCreatedHandler;
 			}
 		} else {
-			destroyedHandler[kv.first] = buildingDestroyedHandler;
+			damagedHandler[unitDefId]   = buildingDamagedHandler;
+			destroyedHandler[unitDefId] = buildingDestroyedHandler;
 		}
 	}
 
@@ -198,19 +210,6 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	buildAreas[nullptr] = std::map<CCircuitDef*, int>();  // air
 
 	terraDef = circuit->GetCircuitDef("terraunit");
-
-	// FIXME: EXPERIMENTAL
-	/*
-	 * strider handlers
-	 */
-	const char* striders[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"};
-	for (auto strider : striders) {
-		createdHandler[circuit->GetCircuitDef(strider)->GetId()] = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
-			unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
-//			EnqueueRepair(IBuilderTask::Priority::LOW, unit);
-		};
-	}
-	// FIXME: EXPERIMENTAL
 }
 
 CBuilderManager::~CBuilderManager()
@@ -233,6 +232,12 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 	}
 
 	if (builder == nullptr) {
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		if (!unit->GetCircuitDef()->IsMobile() && !terrainManager->ResignAllyBuilding(unit)) {
+			// enemy unit captured
+			const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
+			terrainManager->AddBlocker(unit->GetCircuitDef(), pos, unit->GetUnit()->GetBuildingFacing());
+		}
 		return 0; //signaling: OK
 	}
 
@@ -675,7 +680,7 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 	CCircuitDef* buildDef = circuit->GetCircuitDef("armwin");
 	if ((metalIncome < 50) && (buildDef->GetCount() < 10) && buildDef->IsAvailable()) {
 		task = EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
-	} else if (metalIncome < 150) {  // TODO: Calc income of the map
+	} else if (metalIncome < 120) {  // TODO: Calc income of the map
 		task = EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
 	} else {
 		const std::set<IBuilderTask*>& tasks = GetTasks(IBuilderTask::BuildType::BIG_GUN);
@@ -773,8 +778,8 @@ void CBuilderManager::Watchdog()
 				if ((cdef->GetCost() * buildPercent < maxCost) || (*cdef == *terraDef)) {
 					EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
 				}
-			} else if (u->GetHealth() < u->GetMaxHealth()) {
-				EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+//			} else if (u->GetHealth() < u->GetMaxHealth()) {
+//				EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
 			}
 		}
 	}
