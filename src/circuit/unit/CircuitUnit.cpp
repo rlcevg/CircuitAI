@@ -89,9 +89,23 @@ bool CCircuitUnit::IsForceExecute()
 	return result;
 }
 
+bool CCircuitUnit::HasDGun()
+{
+	if (circuitDef->GetDGunMount() == nullptr) {
+		return false;
+	}
+	// NOTE: Don't want to cache it: only dynamic commanders have this.
+	//       Disabled in CCircuitDef
+//	UnitRulesParam* dgunParam = unit->GetUnitRulesParamByName("comm_weapon_manual_1");
+//	if (dgunParam != nullptr) {
+//		return dgunParam->GetValueFloat() > .0f;
+//	}
+	return true;
+}
+
 void CCircuitUnit::ManualFire(Unit* enemy, int timeOut)
 {
-	if (circuitDef->IsManualFire()) {
+	if (circuitDef->HasDGun()) {
 		unit->DGun(enemy, UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
 	} else {
 		unit->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, UNIT_COMMAND_OPTION_ALT_KEY, timeOut);

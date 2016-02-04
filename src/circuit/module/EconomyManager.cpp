@@ -439,7 +439,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			int index = metalManager->GetMexToBuild(position, predicate);
 			if (index != -1) {
 				const AIFloat3& pos = spots[index].position;
-				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost);
+				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost, .0f);
 				task->SetBuildPos(pos);
 				metalManager->SetOpenSpot(index, false);
 //				return task;
@@ -458,7 +458,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	if (!builderManager->CanEnqueueTask() || (unit == nullptr)) {
+	if (/*!builderManager->CanEnqueueTask() || */(unit == nullptr)) {
 		return nullptr;
 	}
 	IBuilderTask* task = nullptr;
@@ -586,7 +586,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 		{
 			IBuilderTask::Priority priority = isEnergyStalling ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
-			return builderManager->EnqueueTask(priority, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, cost);
+			return builderManager->EnqueueTask(priority, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, cost, SQUARE_SIZE * 16.0f);
 		}
 	}
 
@@ -639,7 +639,8 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		if (terrainManager->CanBeBuiltAt(assistDef, buildPos) &&
 			((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 		{
-			return builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, assistDef, buildPos, IBuilderTask::BuildType::NANO);
+			return builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, assistDef, buildPos,
+											   IBuilderTask::BuildType::NANO, SQUARE_SIZE * 8, true);
 		}
 	}
 
@@ -677,7 +678,8 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			if (terrainManager->CanBeBuiltAt(facDef, buildPos) &&
 				((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 			{
-				return builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos, IBuilderTask::BuildType::FACTORY);
+				return builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos,
+												   IBuilderTask::BuildType::FACTORY);
 			}
 		}
 	}

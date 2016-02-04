@@ -14,8 +14,8 @@ using namespace springai;
 
 CBBigGunTask::CBBigGunTask(ITaskManager* mgr, Priority priority,
 						   CCircuitDef* buildDef, const AIFloat3& position,
-						   float cost, bool isShake, int timeout)
-		: IBuilderTask(mgr, priority, buildDef, position, BuildType::BIG_GUN, cost, isShake, timeout)
+						   float cost, float shake, int timeout)
+		: IBuilderTask(mgr, priority, buildDef, position, BuildType::BIG_GUN, cost, shake, timeout)
 {
 }
 

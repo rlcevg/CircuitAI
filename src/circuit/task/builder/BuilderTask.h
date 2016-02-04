@@ -40,7 +40,7 @@ public:
 protected:
 	IBuilderTask(ITaskManager* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
-				 BuildType type, float cost, bool isShake = true, int timeout = ASSIGN_TIMEOUT);
+				 BuildType type, float cost, float shake = SQUARE_SIZE * 32, int timeout = ASSIGN_TIMEOUT);
 	IBuilderTask(ITaskManager* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
 				 float cost, int timeout = ASSIGN_TIMEOUT);
@@ -93,7 +93,7 @@ protected:
 	virtual void FindBuildSite(CCircuitUnit* builder, const springai::AIFloat3& pos, float searchRadius);
 
 	springai::AIFloat3 position;
-	bool isShake;  // Alter/randomize position
+	float shake;  // Alter/randomize position by offset
 	CCircuitDef* buildDef;
 
 	BuildType buildType;

@@ -72,6 +72,7 @@ public:
 	void ForceExecute() { isForceExecute = true; }
 	bool IsForceExecute();
 
+	bool HasDGun();
 	springai::Weapon* GetWeapon() const { return weapon; }
 	springai::Weapon* GetDGun() const { return dgun; }
 	springai::Weapon* GetShield() const { return shield; }

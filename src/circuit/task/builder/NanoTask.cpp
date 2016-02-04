@@ -22,8 +22,8 @@ using namespace springai;
 
 CBNanoTask::CBNanoTask(ITaskManager* mgr, Priority priority,
 					   CCircuitDef* buildDef, const AIFloat3& position,
-					   float cost, bool isShake, int timeout) :
-		IBuilderTask(mgr, priority, buildDef, position, BuildType::NANO, cost, isShake, timeout)
+					   float cost, float shake, int timeout) :
+		IBuilderTask(mgr, priority, buildDef, position, BuildType::NANO, cost, shake, timeout)
 {
 }
 
@@ -56,7 +56,7 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 	}
 
 	// Alter/randomize position
-	AIFloat3 pos = isShake ? utils::get_near_pos(position, SQUARE_SIZE * 32) : position;
+	AIFloat3 pos = (shake > .0f) ? utils::get_near_pos(position, shake) : position;
 
 	circuit->GetThreatMap()->SetThreatType(unit);
 	float searchRadius = buildDef->GetBuildDistance();

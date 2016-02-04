@@ -129,7 +129,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			}
 		};
 
-		if (task == nullTask) {  // alternative: unit->GetUnit()->IsBeingBuilt()
+		if (unit->GetUnit()->IsBeingBuilt()) {  // alternative: task == nullTask
 			checkBuilderFactory();
 			return;
 		}
@@ -208,7 +208,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
-		if (task == nullTask) {  // alternative: unit->GetUnit()->IsBeingBuilt()
+		if (unit->GetUnit()->IsBeingBuilt()) {  // alternative: task == nullTask
 			return;
 		}
 		const AIFloat3& assPos = unit->GetPos(this->circuit->GetLastFrame());

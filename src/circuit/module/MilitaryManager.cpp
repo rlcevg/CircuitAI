@@ -116,7 +116,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
-		if (task == nullTask) {
+		if (unit->GetUnit()->IsBeingBuilt()) {  // alternative: task == nullTask
 			return;
 		}
 
@@ -322,11 +322,20 @@ CRetreatTask* CMilitaryManager::EnqueueRetreat()
 
 void CMilitaryManager::DequeueTask(IFighterTask* task, bool done)
 {
-	auto it = fightTasks.find(task);
-	if (it != fightTasks.end()) {
-		fightTasks.erase(it);
-		task->Close(done);
-		fightDeleteTasks.insert(task);
+	if (task->GetType() == IUnitTask::Type::FIGHTER) {
+		auto it = fightTasks.find(task);
+		if (it != fightTasks.end()) {
+			fightTasks.erase(it);
+			task->Close(done);
+			fightDeleteTasks.insert(task);
+		}
+	} else {
+		auto it = retreatTasks.find(task);
+		if (it != retreatTasks.end()) {
+			retreatTasks.erase(task);
+			task->Close(done);
+			retDeleteTasks.insert(task);
+		}
 	}
 }
 
@@ -456,7 +465,7 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 			bool isFirst = (parentTask == nullptr);
 			IBuilderTask::Priority priority = isFirst ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
 			IBuilderTask* task = builderManager->EnqueueTask(priority, defDef, closestPoint->position,
-															 IBuilderTask::BuildType::DEFENCE, defCost, true, isFirst);
+															 IBuilderTask::BuildType::DEFENCE, defCost, SQUARE_SIZE * 32, isFirst);
 			if (parentTask != nullptr) {
 				parentTask->SetNextTask(task);
 			}

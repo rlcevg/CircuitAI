@@ -55,7 +55,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	maxThisUnit   = def->GetMaxThisUnit();
 
 	maxRange[static_cast<unsigned>(RangeType::MAX)] = def->GetMaxWeaponRange();
-	isManualFire    = def->CanManualFire();
+	hasDGun         = def->CanManualFire();
 	category        = def->GetCategory();
 	noChaseCategory = def->GetNoChaseCategory() | circuit->GetBadCategory();
 
@@ -217,11 +217,18 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		}
 
 		if (wd->IsManualFire() && (reloadTime < bestDGunReload)) {
-			bestDGunReload = reloadTime;
-			bestDGunRange = range;
-			delete bestDGunMnt;
-			bestDGunMnt = mount;
-			hasDGunAA |= (weaponCat & circuit->GetAirCategory()) && isAirWeapon;
+			// NOTE: Disable commander's dgun, because no usage atm
+			if (customParams.find("manualfire") == customParams.end()) {
+				bestDGunReload = reloadTime;
+				bestDGunRange = range;
+				delete bestDGunMnt;
+				bestDGunMnt = mount;
+				hasDGunAA |= (weaponCat & circuit->GetAirCategory()) && isAirWeapon;
+			} else {
+				// FIXME: Dynamo com workaround
+				dps *= 0.25f;
+				delete mount;
+			}
 		} else if (wd->IsShield()) {
 			if (shieldMount == nullptr) {
 				shieldMount = mount;  // NOTE: Unit may have more than 1 shield
@@ -273,6 +280,9 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	hasAntiWater = (targetCategory & circuit->GetWaterCategory()) && canTargetWater;
 
 	power = dps * sqrtf(def->GetHealth() / 100.0f) * THREAT_MOD;
+	// fixme: DEBUG
+	circuit->LOG("%s | %f", def->GetName(), power);
+	// fixme: DEBUG
 }
 
 CCircuitDef::~CCircuitDef()

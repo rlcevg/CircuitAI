@@ -24,16 +24,16 @@ CFightAction::CFightAction(CCircuitUnit* owner, float speed)
 		, pathIterator(0)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
+	CCircuitDef* cdef = unit->GetCircuitDef();
 	int squareSize = unit->GetManager()->GetCircuit()->GetPathfinder()->GetSquareSize();
-	int incMod;
-	if (unit->GetCircuitDef()->IsPlane()) {
-		incMod = 5;
-	} else if (unit->GetCircuitDef()->IsAbleToFly()) {
-		incMod = 3;
-	} else if (unit->GetCircuitDef()->IsTurnLarge()) {
-		incMod = 2;
-	} else {
-		incMod = 1;
+	int size = std::max(cdef->GetUnitDef()->GetXSize(), cdef->GetUnitDef()->GetZSize());
+	int incMod = std::max(size / 4, 1);
+	if (cdef->IsPlane()) {
+		incMod *= 5;
+	} else if (cdef->IsAbleToFly()) {
+		incMod *= 3;
+	} else if (cdef->IsTurnLarge()) {
+		incMod *= 2;
 	}
 	increment = incMod * DEFAULT_SLACK / squareSize + 1;
 	minSqDist = squareSize * increment / 2;

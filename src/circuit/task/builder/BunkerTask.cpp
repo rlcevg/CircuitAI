@@ -14,8 +14,8 @@ using namespace springai;
 
 CBBunkerTask::CBBunkerTask(ITaskManager* mgr, Priority priority,
 						   CCircuitDef* buildDef, const AIFloat3& position,
-						   float cost, bool isShake, int timeout)
-		: IBuilderTask(mgr, priority, buildDef, position, BuildType::BUNKER, cost, isShake, timeout)
+						   float cost, float shake, int timeout)
+		: IBuilderTask(mgr, priority, buildDef, position, BuildType::BUNKER, cost, shake, timeout)
 {
 }
 

@@ -74,9 +74,9 @@ private:
 	std::set<IFighterTask*> fightDeleteTasks;
 	unsigned int fightUpdateSlice;
 
-	std::set<CRetreatTask*> retreatTasks;  // owner
-	std::set<CRetreatTask*> retUpdateTasks;
-	std::set<CRetreatTask*> retDeleteTasks;
+	std::set<IUnitTask*> retreatTasks;  // owner
+	std::set<IUnitTask*> retUpdateTasks;
+	std::set<IUnitTask*> retDeleteTasks;
 	unsigned int retUpdateSlice;
 
 	CDefenceMatrix* defence;

@@ -86,8 +86,8 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	cdef = circuit->GetCircuitDef("striderhub");
 	def = cdef->GetUnitDef();
 	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	bsize = ssize + (isWaterMap ? int2(16, 16) : int2(10, 10));
-	offset = isWaterMap ? int2(0, 12) : int2(0, 6);
+	bsize = ssize + int2(16, 16);
+	offset = int2(0, 12);
 	ignoreMask = STRUCT_BIT(NONE);
 	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
 

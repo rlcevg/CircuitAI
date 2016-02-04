@@ -28,10 +28,10 @@ using namespace springai;
 
 IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 		CCircuitDef* buildDef, const AIFloat3& position,
-		BuildType type, float cost, bool isShake, int timeout)
+		BuildType type, float cost, float shake, int timeout)
 				: IUnitTask(mgr, priority, Type::BUILDER, timeout)
 				, position(position)
-				, isShake(isShake)
+				, shake(shake)
 				, buildDef(buildDef)
 				, buildType(type)
 				, buildPower(.0f)
@@ -50,7 +50,7 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 		float cost, int timeout)
 				: IUnitTask(mgr, priority, Type::FACTORY, timeout)
 				, position(position)
-				, isShake(false)
+				, shake(.0f)
 				, buildDef(buildDef)
 				, buildType(BuildType::RECRUIT)
 				, buildPower(.0f)
@@ -138,7 +138,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	}
 
 	// Alter/randomize position
-	AIFloat3 pos = isShake ? utils::get_near_pos(position, SQUARE_SIZE * 32) : position;
+	AIFloat3 pos = (shake > .0f) ? utils::get_near_pos(position, shake) : position;
 
 	const float searchRadius = 200.0f * SQUARE_SIZE;
 	FindBuildSite(unit, pos, searchRadius);
@@ -189,12 +189,11 @@ void IBuilderTask::Update()
 	HideAssignee(unit);
 	IBuilderTask* task = static_cast<IBuilderTask*>(manager->GetTask(unit));
 	ShowAssignee(unit);
-	if (task == nullptr) {
+	if ((task == nullptr) || (task->GetBuildType() == buildType)) {
 		return;
 	}
-	if ((task->GetBuildType() != buildType) ||
-		(task->GetPosition().SqDistance2D(GetPosition()) > SQUARE(256.0f)))
-	{
+	const float sqDist = unit->GetPos(circuit->GetLastFrame()).SqDistance2D(GetPosition());
+	if (sqDist > SQUARE(unit->GetCircuitDef()->GetBuildDistance())) {
 		manager->AssignTask(unit, task);
 	}
 }

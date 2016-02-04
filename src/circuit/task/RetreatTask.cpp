@@ -38,13 +38,12 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 {
 	IUnitTask::AssignTo(unit);
 
-	CCircuitDef* cdef = unit->GetCircuitDef();
-	if (cdef->GetDGunMount() != nullptr) {
-		CDGunAction* act = new CDGunAction(unit, cdef->GetDGunRange() * 0.8f);
+	if (unit->HasDGun()) {
+		CDGunAction* act = new CDGunAction(unit, unit->GetCircuitDef()->GetDGunRange() * 0.8f);
 		unit->PushBack(act);
 	}
 
-	if (!cdef->IsPlane()) {
+	if (!unit->GetCircuitDef()->IsPlane()) {
 		unit->PushBack(new CMoveAction(unit));
 
 		// Mobile repair

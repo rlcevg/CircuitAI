@@ -108,7 +108,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
-		if (task == nullTask) {  // alternative: unit->GetUnit()->IsBeingBuilt()
+		if (unit->GetUnit()->IsBeingBuilt()) {  // alternative: task == nullTask
 			return;
 		}
 		--buildAreas[unit->GetArea()][unit->GetCircuitDef()];
@@ -136,7 +136,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	 */
 	auto heavyCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
-		EnqueueRepair(IBuilderTask::Priority::LOW, unit);
+//		EnqueueRepair(IBuilderTask::Priority::LOW, unit);
 	};
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
@@ -346,23 +346,23 @@ IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 										   const AIFloat3& position,
 										   IBuilderTask::BuildType type,
 										   float cost,
-										   bool isShake,
+										   float shake,
 										   bool isActive,
 										   int timeout)
 {
-	return AddTask(priority, buildDef, position, type, cost, isShake, isActive, timeout);
+	return AddTask(priority, buildDef, position, type, cost, shake, isActive, timeout);
 }
 
 IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 										   CCircuitDef* buildDef,
 										   const AIFloat3& position,
 										   IBuilderTask::BuildType type,
-										   bool isShake,
+										   float shake,
 										   bool isActive,
 										   int timeout)
 {
 	float cost = buildDef->GetCost();
-	return AddTask(priority, buildDef, position, type, cost, isShake, isActive, timeout);
+	return AddTask(priority, buildDef, position, type, cost, shake, isActive, timeout);
 }
 
 IBuilderTask* CBuilderManager::EnqueuePylon(IBuilderTask::Priority priority,
@@ -450,47 +450,47 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 									   const AIFloat3& position,
 									   IBuilderTask::BuildType type,
 									   float cost,
-									   bool isShake,
+									   float shake,
 									   bool isActive,
 									   int timeout)
 {
 	IBuilderTask* task;
 	switch (type) {
 		case IBuilderTask::BuildType::FACTORY: {
-			task = new CBFactoryTask(this, priority, buildDef, position, cost, isShake, timeout);
+			task = new CBFactoryTask(this, priority, buildDef, position, cost, shake, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::NANO: {
-			task = new CBNanoTask(this, priority, buildDef, position, cost, isShake, timeout);
+			task = new CBNanoTask(this, priority, buildDef, position, cost, shake, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::STORE: {
-			task = new CBStoreTask(this, priority, buildDef, position, cost, isShake, timeout);
+			task = new CBStoreTask(this, priority, buildDef, position, cost, shake, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::ENERGY: {
-			task = new CBEnergyTask(this, priority, buildDef, position, cost, isShake, timeout);
+			task = new CBEnergyTask(this, priority, buildDef, position, cost, shake, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::DEFENCE: {
-			task = new CBDefenceTask(this, priority, buildDef, position, cost, isShake, timeout);
+			task = new CBDefenceTask(this, priority, buildDef, position, cost, shake, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::BUNKER: {
-			task = new CBBunkerTask(this, priority, buildDef, position, cost, isShake, timeout);
+			task = new CBBunkerTask(this, priority, buildDef, position, cost, shake, timeout);
 			break;
 		}
 		default:
 		case IBuilderTask::BuildType::BIG_GUN: {
-			task = new CBBigGunTask(this, priority, buildDef, position, cost, isShake, timeout);
+			task = new CBBigGunTask(this, priority, buildDef, position, cost, shake, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::RADAR: {
-			task = new CBRadarTask(this, priority, buildDef, position, cost, isShake, timeout);
+			task = new CBRadarTask(this, priority, buildDef, position, cost, shake, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::SONAR: {
-			task = new CBSonarTask(this, priority, buildDef, position, cost, isShake, timeout);
+			task = new CBSonarTask(this, priority, buildDef, position, cost, shake, timeout);
 			break;
 		}
 		case IBuilderTask::BuildType::MEX: {

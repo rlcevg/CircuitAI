@@ -75,7 +75,7 @@ public:
 	void DecBuild() { --buildCounts; }
 	int GetBuildCount() const { return buildCounts; }
 
-	bool IsManualFire() const { return isManualFire; }
+	bool HasDGun() const { return hasDGun; }
 	bool HasDGunAA() const { return hasDGunAA; }
 //	int GetDGunReload() const { return dgunReload; }
 	float GetDGunRange() const { return dgunRange; }
@@ -128,7 +128,7 @@ private:
 	int buildCounts;  // number of builder defs able to build this def;
 	int maxThisUnit;
 
-	bool isManualFire;
+	bool hasDGun;
 	bool hasDGunAA;
 //	int dgunReload;  // frames in ticks
 	float dgunRange;

@@ -36,9 +36,8 @@ void IFighterTask::AssignTo(CCircuitUnit* unit)
 
 	attackPower += unit->GetCircuitDef()->GetPower();
 
-	CCircuitDef* cdef = unit->GetCircuitDef();
-	if (cdef->GetDGunMount() != nullptr) {
-		CDGunAction* act = new CDGunAction(unit, cdef->GetDGunRange() * 0.9f);
+	if (unit->HasDGun()) {
+		CDGunAction* act = new CDGunAction(unit, unit->GetCircuitDef()->GetDGunRange() * 0.9f);
 		unit->PushBack(act);
 	}
 }
