@@ -64,8 +64,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	economy = circuit->GetCallback()->GetEconomy();
 	energyGrid = circuit->GetAllyTeam()->GetEnergyLink().get();
 
-	metalIncomes.resize(INCOME_SAMPLES, .0f);
-	energyIncomes.resize(INCOME_SAMPLES, .0f);
+	metalIncomes.resize(INCOME_SAMPLES, 8.0f);  // Init metal income
+	energyIncomes.resize(INCOME_SAMPLES, 16.0f);  // Init energy income
 
 	pylonDef = circuit->GetCircuitDef("armestor");
 	UnitDef* def = pylonDef->GetUnitDef();
@@ -442,15 +442,12 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost, .0f);
 				task->SetBuildPos(pos);
 				metalManager->SetOpenSpot(index, false);
-//				return task;
+				return task;
 			}
 		}
 	}
 
-	IBuilderTask* subTask = isEnergyStalling ? UpdateEnergyTasks(position, unit) : UpdateReclaimTasks(position, unit);
-	if (task == nullptr) {
-		task = subTask;
-	}
+	task = isEnergyStalling ? UpdateEnergyTasks(position, unit) : UpdateReclaimTasks(position, unit);
 
 	return task;
 }

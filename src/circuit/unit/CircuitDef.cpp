@@ -68,7 +68,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	delete md;
 	isAbleToFly    = def->IsAbleToFly();
 	isPlane        = !def->IsHoverAttack() && isAbleToFly;
-	isFloater      = def->IsFloater() && !isSubmarine;
+	isFloater      = def->IsFloater() && !isSubmarine && !isAbleToFly;
 	isSonarStealth = def->IsSonarStealth();
 	isTurnLarge    = (speed / def->GetTurnRate() > 0.003);
 
@@ -280,9 +280,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	hasAntiWater = (targetCategory & circuit->GetWaterCategory()) && canTargetWater;
 
 	power = dps * sqrtf(def->GetHealth() / 100.0f) * THREAT_MOD;
-	// fixme: DEBUG
-	circuit->LOG("%s | %f", def->GetName(), power);
-	// fixme: DEBUG
 }
 
 CCircuitDef::~CCircuitDef()

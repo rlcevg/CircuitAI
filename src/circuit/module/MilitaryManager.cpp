@@ -300,6 +300,10 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			task = new CArtilleryTask(this);
 			break;
 		}
+//		case IFighterTask::FightType::AA: {
+//			task = new CAntiAirTask(this);
+//			break;
+//		}
 	}
 
 	fightTasks.insert(task);
