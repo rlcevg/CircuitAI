@@ -64,8 +64,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	economy = circuit->GetCallback()->GetEconomy();
 	energyGrid = circuit->GetAllyTeam()->GetEnergyLink().get();
 
-	metalIncomes.resize(INCOME_SAMPLES, 8.0f);  // Init metal income
-	energyIncomes.resize(INCOME_SAMPLES, 16.0f);  // Init energy income
+	metalIncomes.resize(INCOME_SAMPLES, 4.0f);  // Init metal income
+	energyIncomes.resize(INCOME_SAMPLES, 6.0f);  // Init energy income
 
 	pylonDef = circuit->GetCircuitDef("armestor");
 	UnitDef* def = pylonDef->GetUnitDef();

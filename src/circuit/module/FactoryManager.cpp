@@ -93,8 +93,13 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		utils::free_clear(units);
 
 		auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
-		bool hasBuilder = (it != factoryDefs.end()) && (it->second.builderDef != nullptr);
-		factories.emplace_back(unit, nanos, 1, hasBuilder);
+		if (it != factoryDefs.end()) {
+			const SFactoryDef& facDef = it->second;
+			bool hasBuilder = (facDef.GetBuilderDef() != nullptr);
+			factories.emplace_back(unit, nanos, facDef.nanoCount, hasBuilder);
+		} else {
+			factories.emplace_back(unit, nanos, 0, false);
+		}
 
 //		this->circuit->GetSetupManager()->SetBasePos(pos);
 	};
@@ -256,133 +261,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 	factoryData = circuit->GetAllyTeam()->GetFactoryData().get();
 	ReadConfig();
-
-	// FIXME: EXPERIMENTAL
-	/*
-	 * striderhub handlers
-	 */
-	CCircuitDef::Id defId = circuit->GetCircuitDef("striderhub")->GetId();
-	finishedHandler[defId] = [this, defId](CCircuitUnit* unit) {
-		unit->SetManager(this);
-
-		factoryPower += unit->GetCircuitDef()->GetBuildSpeed();
-		CRecruitTask* task = new CRecruitTask(this, IUnitTask::Priority::HIGH, nullptr, ZeroVector,
-											  CRecruitTask::RecruitType::FIREPOWER, unit->GetCircuitDef()->GetBuildDistance());
-		unit->SetTask(task);
-
-		// check nanos around
-		std::set<CCircuitUnit*> nanos;
-		float radius = assistDef->GetBuildDistance();
-		const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
-		auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
-		int nanoId = assistDef->GetId();
-		int teamId = this->circuit->GetTeamId();
-		for (Unit* nano : units) {
-			if (nano == nullptr) {
-				continue;
-			}
-			UnitDef* ndef = nano->GetDef();
-			if (ndef->GetUnitDefId() == nanoId && (nano->GetTeam() == teamId) && !nano->IsBeingBuilt()) {
-				CCircuitUnit* ass = this->circuit->GetTeamUnit(nano->GetUnitId());
-				nanos.insert(ass);
-
-				std::set<CCircuitUnit*>& facs = assists[ass];
-				if (facs.empty()) {
-					factoryPower += ass->GetCircuitDef()->GetBuildSpeed();
-				}
-				facs.insert(unit);
-			}
-			delete ndef;
-		}
-		utils::free_clear(units);
-		factories.emplace_back(unit, nanos, 4, false);
-
-		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
-//		unit->GetUnit()->SetRepeat(true);
-
-		idleHandler[defId](unit);
-	};
-	idleHandler[defId] = [this](CCircuitUnit* unit) {
-		CTerrainManager* terrainManager = this->circuit->GetTerrainManager();
-		int frame = this->circuit->GetLastFrame();
-		bool isWaterMap = terrainManager->GetPercentLand() < 40.0;
-
-		CEconomyManager* mgr = this->circuit->GetEconomyManager();
-		const float metalIncome = std::min(mgr->GetAvgMetalIncome(), mgr->GetAvgEnergyIncome()) * mgr->GetEcoFactor();
-		std::map<unsigned, std::vector<float>>& tiers = isWaterMap ? striderHubDef.waterTiers : striderHubDef.landTiers;
-
-		auto facIt = tiers.begin();
-		if ((metalIncome >= striderHubDef.incomes[facIt->first]) && !(striderHubDef.isRequireEnergy && mgr->IsEnergyEmpty())) {
-			while (facIt != tiers.end()) {
-				if (metalIncome < striderHubDef.incomes[facIt->first]) {
-					break;
-				}
-				++facIt;
-			}
-			if (facIt == tiers.end()) {
-				--facIt;
-			}
-		}
-		const std::vector<float>& probs = facIt->second;
-
-		unsigned choice = 0;
-		float dice = (float)rand() / RAND_MAX;
-		float total = .0f;
-		for (unsigned i = 0; i < probs.size(); ++i) {
-			total += probs[i];
-			if (dice < total) {
-				choice = i;
-				break;
-			}
-		}
-
-		CCircuitDef* striderDef = striderHubDef.buildDefs[choice];
-		if (striderDef != nullptr) {
-			AIFloat3 pos = unit->GetPos(frame);
-			const float size = DEFAULT_SLACK / 2;
-			switch (unit->GetUnit()->GetBuildingFacing()) {
-				default:
-				case UNIT_FACING_SOUTH: {  // z++
-					pos.z += size;
-				} break;
-				case UNIT_FACING_EAST: {  // x++
-					pos.x += size;
-				} break;
-				case UNIT_FACING_NORTH: {  // z--
-					pos.z -= size;
-				} break;
-				case UNIT_FACING_WEST: {  // x--
-					pos.x -= size;
-				} break;
-			}
-			pos = terrainManager->FindBuildSite(striderDef, pos, this->circuit->GetCircuitDef("striderhub")->GetBuildDistance(), -1);
-			if (pos != -RgtVector) {
-				unit->GetUnit()->Build(striderDef->GetUnitDef(), pos, -1, 0, frame + FRAMES_PER_SEC * 10);
-			}
-		}
-	};
-	destroyedHandler[defId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
-		if (unit->GetUnit()->IsBeingBuilt()) {
-			return;
-		}
-		factoryPower -= unit->GetCircuitDef()->GetBuildSpeed();
-		for (auto it = factories.begin(); it != factories.end(); ++it) {
-			if (it->unit != unit) {
-				continue;
-			}
-			for (CCircuitUnit* ass : it->nanos) {
-				std::set<CCircuitUnit*>& facs = assists[ass];
-				facs.erase(unit);
-				if (facs.empty()) {
-					factoryPower -= ass->GetCircuitDef()->GetBuildSpeed();
-				}
-			}
-			factories.erase(it);
-			break;
-		}
-		delete unit->GetTask();
-	};
-	// FIXME: EXPERIMENTAL
 }
 
 CFactoryManager::~CFactoryManager()
@@ -505,7 +383,6 @@ IBuilderTask* CFactoryManager::EnqueueRepair(IBuilderTask::Priority priority,
 
 void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 {
-	// TODO: Convert CRecruitTask into IBuilderTask
 	auto itf = factoryTasks.find(static_cast<CRecruitTask*>(task));
 	if (itf != factoryTasks.end()) {
 		unfinishedUnits.erase(static_cast<CRecruitTask*>(task)->GetTarget());
@@ -529,7 +406,7 @@ IUnitTask* CFactoryManager::GetTask(CCircuitUnit* unit)
 {
 	IUnitTask* task = nullptr;
 
-	if (unit->GetCircuitDef() == assistDef) {  // FIXME: Check Id instead pointers?
+	if (unit->GetCircuitDef() == assistDef) {
 		task = CreateAssistTask(unit);
 
 	} else {
@@ -657,7 +534,7 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 	if (it == factoryDefs.end()) {
 		return nullptr;
 	}
-	CCircuitDef* buildDef = it->second.builderDef;
+	CCircuitDef* buildDef = it->second.GetBuilderDef();
 	if ((buildDef == nullptr) || !buildDef->IsAvailable()) {
 		return nullptr;
 	}
@@ -686,14 +563,14 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 	const SFactoryDef& facDef = it->second;
 
-	buildDef = facDef.antiAirDef;
+	buildDef = facDef.GetAADef();
 	if ((buildDef != nullptr) && circuit->GetMilitaryManager()->IsNeedAA(buildDef) && buildDef->IsAvailable()) {
 		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
 		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
 		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
 		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::AA, radius);
 	}
-	buildDef = facDef.artyDef;
+	buildDef = facDef.GetArtyDef();
 	if ((buildDef != nullptr) && circuit->GetMilitaryManager()->IsNeedArty(buildDef) && buildDef->IsAvailable()) {
 		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
 		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
@@ -703,15 +580,17 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 
 	CEconomyManager* mgr = circuit->GetEconomyManager();
 	const float metalIncome = std::min(mgr->GetAvgMetalIncome(), mgr->GetAvgEnergyIncome()) * mgr->GetEcoFactor();
-	auto facIt = facDef.tiers.begin();
+	bool isWaterMap = circuit->GetTerrainManager()->GetPercentLand() < 40.0;
+	const SFactoryDef::Tiers& tiers = isWaterMap ? facDef.waterTiers : facDef.landTiers;
+	auto facIt = tiers.begin();
 	if ((metalIncome >= facDef.incomes[facIt->first]) && !(facDef.isRequireEnergy && mgr->IsEnergyEmpty())) {
-		while (facIt != facDef.tiers.end()) {
+		while (facIt != tiers.end()) {
 			if (metalIncome < facDef.incomes[facIt->first]) {
 				break;
 			}
 			++facIt;
 		}
-		if (facIt == facDef.tiers.end()) {
+		if (facIt == tiers.end()) {
 			--facIt;
 		}
 	}
@@ -762,12 +641,37 @@ void CFactoryManager::DelFactory(CCircuitDef* cdef)
 CCircuitDef* CFactoryManager::GetBuilderDef(CCircuitDef* facDef) const
 {
 	auto it = factoryDefs.find(facDef->GetId());
-	return (it != factoryDefs.end()) ? it->second.builderDef : nullptr;
+	return (it != factoryDefs.end()) ? it->second.GetBuilderDef() : nullptr;
 }
 
 void CFactoryManager::ReadConfig()
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+
+	/*
+	 * Roles
+	 */
+	std::map<CCircuitDef::RoleType, std::set<CCircuitDef::Id>> roles;
+	std::vector<std::pair<const char*, CCircuitDef::RoleType>> roleNames = {
+		std::make_pair("builder",   CCircuitDef::RoleType::BUILDER),
+		std::make_pair("scout",     CCircuitDef::RoleType::SCOUT),
+		std::make_pair("bomber",    CCircuitDef::RoleType::BOMBER),
+		std::make_pair("riot",      CCircuitDef::RoleType::RIOT),
+		std::make_pair("melee",     CCircuitDef::RoleType::MELEE),
+		std::make_pair("artillery", CCircuitDef::RoleType::ARTY),
+		std::make_pair("anti_air",  CCircuitDef::RoleType::AA),
+	};
+	for (auto& pair : roleNames) {
+		for (const Json::Value& scout : root[pair.first]) {
+			CCircuitDef* cdef = circuit->GetCircuitDef(scout.asCString());
+			if (cdef == nullptr) {
+				continue;
+			}
+			cdef->SetRole(pair.second);
+
+			roles[pair.second].insert(cdef->GetId());
+		}
+	}
 
 	/*
 	 * Factories
@@ -781,17 +685,24 @@ void CFactoryManager::ReadConfig()
 		const Json::Value& factory = factories[fac];
 		SFactoryDef facDef;
 
-		facDef.builderDef = circuit->GetCircuitDef(factory.get("builder_def", "").asCString());
-		if (facDef.builderDef != nullptr) {
-			facDef.builderDef->SetRole(CCircuitDef::RoleType::BUILDER);
-		}
-		facDef.antiAirDef = circuit->GetCircuitDef(factory.get("anti_air_def", "").asCString());
-		if (facDef.antiAirDef != nullptr) {
-			facDef.antiAirDef->SetRole(CCircuitDef::RoleType::AA);
-		}
-		facDef.artyDef = circuit->GetCircuitDef(factory.get("artillery_def", "").asCString());
-		if (facDef.artyDef != nullptr) {
-			facDef.artyDef->SetRole(CCircuitDef::RoleType::ARTY);
+		const std::unordered_set<CCircuitDef::Id>& options = cdef->GetBuildOptions();
+		std::vector<CCircuitDef::RoleType> facRoles = {
+			CCircuitDef::RoleType::BUILDER,
+			CCircuitDef::RoleType::RIOT,
+			CCircuitDef::RoleType::ARTY,
+			CCircuitDef::RoleType::AA,
+		};
+
+		for (const CCircuitDef::RoleType type : facRoles) {
+			CCircuitDef* rdef = nullptr;
+			const std::set<CCircuitDef::Id>& builders = roles[type];
+			for (const CCircuitDef::Id bid : builders) {
+				if (options.find(bid) != options.end()) {
+					rdef = circuit->GetCircuitDef(bid);
+					break;
+				}
+			}
+			facDef.roleDefs[type] = rdef;
 		}
 
 		facDef.isRequireEnergy = factory.get("require_energy", false).asBool();
@@ -813,12 +724,16 @@ void CFactoryManager::ReadConfig()
 			facDef.buildDefs.push_back(nullptr);
 		} else {
 			const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
-			auto fillProbs = [this, &cfgName, &facDef, &fac, &factory](unsigned i) {
-				const Json::Value& tier = factory[utils::int_to_string(i, "tier%i")];
+			auto fillProbs = [this, &cfgName, &facDef, &fac, &factory](unsigned i, const char* type, SFactoryDef::Tiers& tiers) {
+				const Json::Value& tierType = factory[type];
+				if (tierType == Json::Value::null) {
+					return false;
+				}
+				const Json::Value& tier = tierType[utils::int_to_string(i, "tier%i")];
 				if (tier == Json::Value::null) {
 					return false;
 				}
-				std::vector<float>& probs = facDef.tiers[i];
+				std::vector<float>& probs = tiers[i];
 				probs.reserve(facDef.buildDefs.size());
 				float sum = .0f;
 				for (unsigned j = 0; j < facDef.buildDefs.size(); ++j) {
@@ -827,102 +742,32 @@ void CFactoryManager::ReadConfig()
 					probs.push_back(p);
 				}
 				if (fabs(sum - 1.0f) > 0.0001f) {
-					circuit->LOG("CONFIG %s: %s's tier%i total probability = %f", cfgName.c_str(), fac.c_str(), i, sum);
+					circuit->LOG("CONFIG %s: %s's %s_tier%i total probability = %f", cfgName.c_str(), fac.c_str(), type, i, sum);
 				}
 				return true;
 			};
 			unsigned i = 0;
 			for (; i < tierSize; ++i) {
 				facDef.incomes.push_back(tiers[i].asFloat());
-				fillProbs(i);
+				fillProbs(i, "land", facDef.landTiers);
+				fillProbs(i, "water", facDef.waterTiers);
 			}
-			fillProbs(i);
+			fillProbs(i, "land", facDef.landTiers);
+			fillProbs(i, "water", facDef.waterTiers);
 		}
 		if (facDef.incomes.empty()) {
 			facDef.incomes.push_back(std::numeric_limits<float>::max());
 		}
-		if (facDef.tiers.empty()) {
-			facDef.tiers[0];  // create empty tier
+		if (facDef.landTiers.empty()) {
+			facDef.landTiers[0];  // create empty tier
 		}
+		if (facDef.waterTiers.empty()) {
+			facDef.waterTiers[0];  // create empty tier
+		}
+
+		facDef.nanoCount = factory.get("caretaker", 1).asUInt();
 
 		factoryDefs[cdef->GetId()] = facDef;
-	}
-
-	/*
-	 * Strider hub
-	 */
-	const Json::Value& striderHub = root["strider"];
-	const Json::Value& items = striderHub["unit_def"];
-	const Json::Value& tiers = striderHub["income_tier"];
-
-	striderHubDef.isRequireEnergy = striderHub.get("require_energy", false).asBool();
-
-	striderHubDef.buildDefs.reserve(items.size());
-	const unsigned tierSize = tiers.size();
-	striderHubDef.incomes.reserve(tierSize);
-	for (unsigned i = 0; i < items.size(); ++i) {
-		CCircuitDef* udef = circuit->GetCircuitDef(items[i].asCString());
-		if (udef == nullptr) {
-			continue;
-		}
-		striderHubDef.buildDefs.push_back(udef);
-	}
-
-	if (striderHubDef.buildDefs.empty()) {
-		striderHubDef.buildDefs.push_back(nullptr);
-	} else {
-		const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
-		auto fillProbs = [this, &cfgName, &striderHub](unsigned i, const char* tierType, std::vector<float>& probs) {
-			const Json::Value& tier = striderHub[utils::int_to_string(i, std::string(tierType) + "%i")];
-			if (tier == Json::Value::null) {
-				return false;
-			}
-			probs.reserve(striderHubDef.buildDefs.size());
-			float sum = .0f;
-			for (unsigned j = 0; j < striderHubDef.buildDefs.size(); ++j) {
-				const float p = tier[j].asFloat();
-				sum += p;
-				probs.push_back(p);
-			}
-			if (fabs(sum - 1.0f) > 0.0001f) {
-				circuit->LOG("CONFIG %s: strider's %s%i total probability = %f", cfgName.c_str(), tierType, i, sum);
-			}
-			return true;
-		};
-		unsigned i = 0;
-		for (; i < tierSize; ++i) {
-			striderHubDef.incomes.push_back(tiers[i].asFloat());
-			fillProbs(i, "land_tier", striderHubDef.landTiers[i]);
-			fillProbs(i, "water_tier", striderHubDef.waterTiers[i]);
-		}
-		fillProbs(i, "land_tier", striderHubDef.landTiers[i]);
-		fillProbs(i, "water_tier", striderHubDef.waterTiers[i]);
-	}
-	if (striderHubDef.incomes.empty()) {
-		striderHubDef.incomes.push_back(std::numeric_limits<float>::max());
-	}
-	if (striderHubDef.landTiers.empty()) {
-		striderHubDef.landTiers[0];  // create empty tier
-	}
-	if (striderHubDef.waterTiers.empty()) {
-		striderHubDef.waterTiers[0];  // create empty tier
-	}
-
-	std::vector<std::pair<const char*, CCircuitDef::RoleType>> roles = {
-		std::make_pair("scout",     CCircuitDef::RoleType::SCOUT),
-		std::make_pair("bomber",    CCircuitDef::RoleType::BOMBER),
-		std::make_pair("riot",      CCircuitDef::RoleType::RIOT),
-		std::make_pair("melee",     CCircuitDef::RoleType::MELEE),
-		std::make_pair("artillery", CCircuitDef::RoleType::ARTY),
-	};
-	for (auto& pair : roles) {
-		for (const Json::Value& scout : root[pair.first]) {
-			CCircuitDef* cdef = circuit->GetCircuitDef(scout.asCString());
-			if (cdef == nullptr) {
-				continue;
-			}
-			cdef->SetRole(pair.second);
-		}
 	}
 }
 

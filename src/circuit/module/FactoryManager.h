@@ -108,22 +108,23 @@ private:
 	std::list<SFactory> factories;  // facory 1:n nano
 
 	struct SFactoryDef {
-		CCircuitDef* builderDef;
-		CCircuitDef* antiAirDef;
-		CCircuitDef* artyDef;
+		using Tiers = std::map<unsigned, std::vector<float>>;
+		SFactoryDef()
+			: isRequireEnergy(false)
+			, nanoCount(0)
+		{}
+		CCircuitDef* GetBuilderDef() const { return roleDefs.find(CCircuitDef::RoleType::BUILDER)->second; }
+		CCircuitDef* GetArtyDef()    const { return roleDefs.find(CCircuitDef::RoleType::ARTY)->second; }
+		CCircuitDef* GetAADef()      const { return roleDefs.find(CCircuitDef::RoleType::AA)->second; }
+		std::unordered_map<std::underlying_type<CCircuitDef::RoleType>::type, CCircuitDef*> roleDefs;
 		std::vector<CCircuitDef*> buildDefs;
-		std::map<unsigned, std::vector<float>> tiers;
+		Tiers landTiers;
+		Tiers waterTiers;
 		std::vector<float> incomes;
 		bool isRequireEnergy;
+		unsigned int nanoCount;
 	};
 	std::unordered_map<CCircuitDef::Id, SFactoryDef> factoryDefs;
-	struct SStriderHubDef {
-		std::vector<CCircuitDef*> buildDefs;
-		std::map<unsigned, std::vector<float>> landTiers;
-		std::map<unsigned, std::vector<float>> waterTiers;
-		std::vector<float> incomes;
-		bool isRequireEnergy;
-	} striderHubDef;
 
 	CCircuitDef* assistDef;
 	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> assists;  // nano 1:n factory

@@ -7,6 +7,7 @@
 
 #include "task/static/RecruitTask.h"
 #include "task/TaskManager.h"
+#include "terrain/TerrainManager.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
 #include "util/utils.h"
@@ -42,8 +43,40 @@ bool CRecruitTask::CanAssignTo(CCircuitUnit* unit)
 
 void CRecruitTask::Execute(CCircuitUnit* unit)
 {
-	const AIFloat3& buildPos = unit->GetPos(manager->GetCircuit()->GetLastFrame());
-	unit->GetUnit()->Build(buildDef->GetUnitDef(), buildPos, UNIT_COMMAND_BUILD_NO_FACING);
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
+
+	const float buildDistance = unit->GetCircuitDef()->GetBuildDistance();
+	if (buildDistance > 200.0f) {
+		// striderhub
+		AIFloat3 pos = unit->GetPos(frame);
+		const float size = DEFAULT_SLACK / 2;
+		switch (unit->GetUnit()->GetBuildingFacing()) {
+			default:
+			case UNIT_FACING_SOUTH: {  // z++
+				pos.z += size;
+			} break;
+			case UNIT_FACING_EAST: {  // x++
+				pos.x += size;
+			} break;
+			case UNIT_FACING_NORTH: {  // z--
+				pos.z -= size;
+			} break;
+			case UNIT_FACING_WEST: {  // x--
+				pos.x -= size;
+			} break;
+		}
+		buildPos = circuit->GetTerrainManager()->FindBuildSite(buildDef, pos, buildDistance, UNIT_COMMAND_BUILD_NO_FACING);
+	} else {
+		// factory
+		buildPos = unit->GetPos(frame);
+	}
+
+	if (buildPos != -RgtVector) {
+		unit->GetUnit()->Build(buildDef->GetUnitDef(), buildPos, UNIT_COMMAND_BUILD_NO_FACING, 0, frame + FRAMES_PER_SEC * 10);
+	} else {
+		manager->AbortTask(this);
+	}
 }
 
 void CRecruitTask::Update()
