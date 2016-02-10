@@ -642,10 +642,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	}
 
 	// check factories
-	CCircuitDef* striderDef = circuit->GetCircuitDef("striderhub");
-	bool isStriderValid = ((factoryManager->GetFactoryCount() > 1) || ((float)rand() / RAND_MAX < factoryManager->GetStriderChance())) &&
-							(striderDef->GetCount() == 0) && striderDef->IsAvailable();
-	CCircuitDef* facDef = isStriderValid ? striderDef : factoryManager->GetFactoryToBuild(circuit);
+	CCircuitDef* facDef = factoryManager->GetFactoryToBuild(circuit);
 	if (facDef != nullptr) {
 		CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
 			return clusterInfos[v.second].factory == nullptr;
@@ -662,14 +659,23 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			buildPos.x += (buildPos.x > center.x) ? -size : size;
 			buildPos.z += (buildPos.z > center.z) ? -size : size;
 
+			// identify area to build by factory representatives
 			CCircuitDef* bdef;
-			if (isStriderValid) {
-				CCircuitDef* landDef = circuit->GetCircuitDef("dante");
-				STerrainMapArea* area = terrainManager->GetMobileTypeById(landDef->GetMobileId())->areaLargest;
-				bdef = ((area == nullptr) || (area->percentOfMap < 40.0)) ? circuit->GetCircuitDef("reef") : landDef;
+			CCircuitDef* landDef = factoryManager->GetLandDef(facDef);
+			if (landDef != nullptr) {
+				if (landDef->GetMobileId() < 0) {
+					bdef = landDef;
+				} else {
+					STerrainMapArea* area = terrainManager->GetMobileTypeById(landDef->GetMobileId())->areaLargest;
+					bdef = ((area == nullptr) || (area->percentOfMap < 40.0)) ? factoryManager->GetWaterDef(facDef) : landDef;
+				}
 			} else {
-				bdef = (unit == nullptr) ? facDef : unit->GetCircuitDef();
+				bdef = factoryManager->GetWaterDef(facDef);
 			}
+			if (bdef == nullptr) {
+				return nullptr;
+			}
+
 			buildPos = terrainManager->GetBuildPosition(bdef, buildPos);
 
 			if (terrainManager->CanBeBuiltAt(facDef, buildPos) &&

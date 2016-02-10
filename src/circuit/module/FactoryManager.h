@@ -66,10 +66,11 @@ public:
 	CRecruitTask* UpdateFirePower(CCircuitUnit* unit);
 
 	CCircuitDef* GetFactoryToBuild(CCircuitAI* circuit, bool isStart = false);
-	float GetStriderChance() const;
 	void AddFactory(CCircuitDef* cdef);
 	void DelFactory(CCircuitDef* cdef);
 	CCircuitDef* GetBuilderDef(CCircuitDef* facDef) const;
+	CCircuitDef* GetLandDef(CCircuitDef* facDef) const;
+	CCircuitDef* GetWaterDef(CCircuitDef* facDef) const;
 
 private:
 	void ReadConfig();
@@ -110,7 +111,9 @@ private:
 	struct SFactoryDef {
 		using Tiers = std::map<unsigned, std::vector<float>>;
 		SFactoryDef()
-			: isRequireEnergy(false)
+			: landDef(nullptr)
+			, waterDef(nullptr)
+			, isRequireEnergy(false)
 			, nanoCount(0)
 		{}
 		CCircuitDef* GetBuilderDef() const { return roleDefs.find(CCircuitDef::RoleType::BUILDER)->second; }
@@ -120,6 +123,8 @@ private:
 		std::vector<CCircuitDef*> buildDefs;
 		Tiers landTiers;
 		Tiers waterTiers;
+		CCircuitDef* landDef;
+		CCircuitDef* waterDef;
 		std::vector<float> incomes;
 		bool isRequireEnergy;
 		unsigned int nanoCount;

@@ -48,8 +48,6 @@ CFactoryData::CFactoryData(CCircuitAI *circuit)
 
 		allFactories[sfac.id] = sfac;
 	}
-
-	striderChance = root["strider"].get("chance", 0.5f).asFloat();
 }
 
 CFactoryData::~CFactoryData()
@@ -95,7 +93,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, bool isStart)
 		return nullptr;
 	}
 
-	auto cmp = [circuit, &percents](const SFactory& a, const SFactory& b) {
+	auto cmp = [&percents](const SFactory& a, const SFactory& b) {
 		if (a.count < b.count) {
 			return true;
 		} else if (a.count > b.count) {

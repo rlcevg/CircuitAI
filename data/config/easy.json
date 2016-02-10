@@ -17,104 +17,107 @@
 		// eps=(teamSize+3)/4
 		"income_tier": [12, 25.5, 40],
 
-		//            glaive,  scythe,       rocko,     warrior,  zeus,      hammer,   sniper,     tick,      eraser,          gremlin
-		"unit_def": ["armpw", "spherepole", "armrock", "armwar", "armzeus", "armham", "armsnipe", "armtick", "spherecloaker", "armjeth"],
+		//                 conjurer    glaive,  scythe,       rocko,     warrior,  zeus,      hammer,   sniper,     tick,      eraser,          gremlin
+		"unit_def":      ["armrectr", "armpw", "spherepole", "armrock", "armwar", "armzeus", "armham", "armsnipe", "armtick", "spherecloaker", "armjeth"],
 
-		// build probabilities, sum must be 1.0 (if it's not, infolog will shout)
-		"tier0":    [ 0.53,    0.02,         0.15,      0.10,     0.05,      0.05,     0.00,       0.00,      0.00,            0.1],
+		"land": {
+			// build probabilities, sum must be 1.0 (if it's not, infolog will shout)
+			"tier0": [ 0.00,       0.53,    0.02,         0.15,      0.10,     0.05,      0.05,     0.00,       0.00,      0.00,            0.1],
 
-		// it is possible to skip tiers, e.g.
-		// "tier1":    [ 0.45,    0.12,         0.10,      0.05,     0.15,      0.05,     0.05,       0.01,      0.00,            0.2],
-		"tier2":    [ 0.15,    0.25,         0.05,      0.05,     0.25,      0.01,     0.13,       0.01,      0.00,            0.10],
-		"tier3":    [ 0.01,    0.30,         0.00,      0.05,     0.33,      0.01,     0.20,       0.00,      0.00,            0.10],
+			// it is possible to skip tiers, e.g.
+			// "tier1": [ 0.00,       0.45,    0.12,         0.10,      0.05,     0.15,      0.05,     0.05,       0.01,      0.00,            0.2],
+			"tier2": [ 0.00,       0.15,    0.25,         0.05,      0.05,     0.25,      0.01,     0.13,       0.01,      0.00,            0.10],
+			"tier3": [ 0.00,       0.01,    0.30,         0.00,      0.05,     0.33,      0.01,     0.20,       0.00,      0.00,            0.10]
+		},
 
-		"artillery_def": "armham",  // hammer
-		"anti_air_def": "armjeth",  // gremlin
-		"builder_def": "armrectr"  // conjurer
+		"water": {
+			"tier2": [ 1.00,       0.00,    0.00,         0.00,      0.00,     0.00,      0.00,     0.00,       0.00,      0.00,            0.0],
+			"tier3": [ 0.00,       0.00,    0.00,         0.00,      0.00,     0.00,      0.00,     0.00,       0.00,      1.00,            0.0]
+		}
 	},
 
 	"factorygunship": {
 		"require_energy": false,
 
 		"income_tier": [40],
-		//            blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator,   trident
-		"unit_def": ["blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans", "gunshipaa"],
-		"tier0":    [ 0.10,        0.15,     0.30,     0.36,             0.05,       0.02,        0.00,     0.00,      0.00,        0.02],
-		"tier1":    [ 0.01,        0.01,     0.01,     0.10,             0.57,       0.15,        0.05,     0.00,      0.00,        0.10],
-
-		"builder_def": "armca"  // crane
+		//                 crane,   blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator,   trident
+		"unit_def":      ["armca", "blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans", "gunshipaa"],
+		"land": {
+			"tier0": [ 0.00,    0.10,        0.15,     0.30,     0.36,             0.05,       0.02,        0.00,     0.00,      0.00,        0.02],
+			"tier1": [ 0.00,    0.01,        0.01,     0.01,     0.10,             0.57,       0.15,        0.05,     0.00,      0.00,        0.10]
+		}
 	},
 
 	"factoryamph": {
 		"require_energy": false,
 
 		"income_tier": [40],
-		//            duck,          archer,        buoy,          scallop,    grizzly,       djinn,      angler
-		"unit_def": ["amphraider3", "amphraider2", "amphfloater", "amphriot", "amphassault", "amphtele", "amphaa"],
-		"tier0":    [ 0.60,          0.10,          0.15,          0.13,       0.00,          0.00,       0.02],
-		"tier1":    [ 0.01,          0.10,          0.20,          0.20,       0.39,          0.00,       0.10],
-
-		"builder_def": "amphcon"  // conch
+		//                 conch,     duck,          archer,        buoy,          scallop,    grizzly,       djinn,      angler
+		"unit_def":      ["amphcon", "amphraider3", "amphraider2", "amphfloater", "amphriot", "amphassault", "amphtele", "amphaa"],
+		"land": {
+			"tier0": [ 0.00,      0.60,          0.10,          0.15,          0.13,       0.00,          0.00,       0.02],
+			"tier1": [ 0.00,      0.01,          0.10,          0.20,          0.20,       0.39,          0.00,       0.10]
+		}
 	},
 
 	"factoryspider": {
 		"require_energy": false,
 
 		"income_tier": [40],
-		//            flea,      hermit,          venom,       redback,      recluse,   crabe,      infiltrator, tarantula
-		"unit_def": ["armflea", "spiderassault", "arm_venom", "spiderriot", "armsptk", "armcrabe", "armspy",    "spideraa"],
-		"tier0":    [ 0.32,      0.25,            0.10,        0.10,         0.20,      0.00,       0.01,        0.02],
-		"tier1":    [ 0.01,      0.01,            0.01,        0.10,         0.12,      0.60,       0.05,        0.10],
-
-		"builder_def": "arm_spider"  // weaver
+		//                 weaver,       flea,      hermit,          venom,       redback,      recluse,   crabe,      infiltrator, tarantula
+		"unit_def":      ["arm_spider", "armflea", "spiderassault", "arm_venom", "spiderriot", "armsptk", "armcrabe", "armspy",    "spideraa"],
+		"land": {
+			"tier0": [ 0.00,         0.32,      0.25,            0.10,        0.10,         0.20,      0.00,       0.01,        0.02],
+			"tier1": [ 0.00,         0.01,      0.01,            0.01,        0.10,         0.12,      0.60,       0.05,        0.10]
+		}
 	},
 
 	"factoryshield": {
 		"require_energy": false,
 
 		"income_tier": [40],
-		//            dirtbag,   bandit,  rogue,      thug,      outlaw,   felon,         racketeer,    roach,      aspis,          vandal
-		"unit_def": ["corclog", "corak", "corstorm", "corthud", "cormak", "shieldfelon", "shieldarty", "corroach", "core_spectre", "corcrash"],
-		"tier0":    [ 0.10,      0.30,    0.10,       0.18,      0.10,     0.05,          0.10,         0.05,       0.00,           0.02],
-		"tier1":    [ 0.01,      0.01,    0.20,       0.30,      0.10,     0.10,          0.17,         0.01,       0.00,           0.10],
-
-		"builder_def": "cornecro"  // convict
+		//                 convict,    dirtbag,   bandit,  rogue,      thug,      outlaw,   felon,         racketeer,    roach,      aspis,          vandal
+		"unit_def":      ["cornecro", "corclog", "corak", "corstorm", "corthud", "cormak", "shieldfelon", "shieldarty", "corroach", "core_spectre", "corcrash"],
+		"land": {
+			"tier0": [ 0.00,      0.10,      0.30,    0.10,       0.18,      0.10,     0.05,          0.10,         0.05,       0.00,           0.02],
+			"tier1": [ 0.00,      0.01,      0.01,    0.20,       0.30,      0.10,     0.10,          0.17,         0.01,       0.00,           0.10]
+		}
 	},
 
 	"factoryveh": {
 		"require_energy": false,
 
 		"income_tier": [40],
-		//            dart,     scorcher,   slasher,   leveler,    ravager,   dominatrix,   wolverine, impaler,   crasher
-		"unit_def": ["corfav", "corgator", "cormist", "corlevlr", "corraid", "capturecar", "corgarp", "armmerl", "vehaa"],
-		"tier0":    [ 0.10,     0.37,       0.10,      0.10,       0.10,      0.10,         0.10,      0.01,      0.02],
-		"tier1":    [ 0.01,     0.04,       0.10,      0.10,       0.30,      0.20,         0.05,      0.10,      0.10],
-
-		"builder_def": "corned"  // mason
+		//                 mason,    dart,     scorcher,   slasher,   leveler,    ravager,   dominatrix,   wolverine, impaler,   crasher
+		"unit_def":      ["corned", "corfav", "corgator", "cormist", "corlevlr", "corraid", "capturecar", "corgarp", "armmerl", "vehaa"],
+		"land": {
+			"tier0": [ 0.00,     0.10,     0.37,       0.10,      0.10,       0.10,      0.10,         0.10,      0.01,      0.02],
+			"tier1": [ 0.00,     0.01,     0.04,       0.10,      0.10,       0.30,      0.20,         0.05,      0.10,      0.10]
+		}
 	},
 
 	"factoryjump": {
 		"require_energy": false,
 
 		"income_tier": [40],
-		//            puppy,   pyro,      placeholder,     moderator,  jack,     sumo,      firewalker,   skuttle,   archangel
-		"unit_def": ["puppy", "corpyro", "jumpblackhole", "slowmort", "corcan", "corsumo", "firewalker", "corsktl", "armaak"],
-		"tier0":    [ 0.07,    0.60,      0.05,            0.10,       0.05,     0.00,      0.10,         0.01,      0.02],
-		"tier1":    [ 0.01,    0.10,      0.10,            0.10,       0.30,     0.05,      0.20,         0.04,      0.10],
-
-		"builder_def": "corfast"  // freaker
+		//                 freaker,   puppy,   pyro,      placeholder,     moderator,  jack,     sumo,      firewalker,   skuttle,   archangel
+		"unit_def":      ["corfast", "puppy", "corpyro", "jumpblackhole", "slowmort", "corcan", "corsumo", "firewalker", "corsktl", "armaak"],
+		"land": {
+			"tier0": [ 0.00,      0.07,    0.60,      0.05,            0.10,       0.05,     0.00,      0.10,         0.01,      0.02],
+			"tier1": [ 0.00,      0.01,    0.10,      0.10,            0.10,       0.30,     0.05,      0.20,         0.04,      0.10]
+		}
 	},
 
 	"factoryhover": {
 		"require_energy": false,
 
 		"income_tier": [40],
-		//            dagger,  scalpel,    halberd,        claymore,           mace,        penetrator, flail
-		"unit_def": ["corsh", "nsaclash", "hoverassault", "hoverdepthcharge", "hoverriot", "armmanni", "hoveraa"],
-		"tier0":    [ 0.60,    0.10,       0.17,           0.01,               0.10,        0.00,       0.02],
-		"tier1":    [ 0.01,    0.20,       0.30,           0.01,               0.20,        0.18,       0.10],
-
-		"builder_def": "corch"  // quill
+		//                 quill,   dagger,  scalpel,    halberd,        claymore,           mace,        penetrator, flail
+		"unit_def":      ["corch", "corsh", "nsaclash", "hoverassault", "hoverdepthcharge", "hoverriot", "armmanni", "hoveraa"],
+		"land": {
+			"tier0": [ 0.00,    0.60,    0.10,       0.17,           0.01,               0.10,        0.00,       0.02],
+			"tier1": [ 0.00,    0.01,    0.20,       0.30,           0.01,               0.20,        0.18,       0.10]
+		}
 	},
 
 	"factoryship": {
@@ -122,53 +125,57 @@
 		"require_energy": false,
 
 		"income_tier": [40],
-		//            skeeter,     snake,       typhoon,      hunter,     enforcer,    crusader,   serpent,   surfboard,  shredder
-		"unit_def": ["shipscout", "subraider", "shipraider", "shiptorp", "shipskirm", "shiparty", "subarty", "armtboat", "shipaa"],
-		"tier0":    [ 0.10,        0.30,        0.30,         0.17,       0.05,        0.05,       0.01,      0.00,       0.02],
-		"tier1":    [ 0.01,        0.10,        0.10,         0.20,       0.10,        0.20,       0.19,      0.00,       0.10],
-
-		"builder_def": "shipcon"  // mariner
+		//                 mariner,   skeeter,     snake,       typhoon,      hunter,     enforcer,    crusader,   serpent,   surfboard,  shredder
+		"unit_def":      ["shipcon", "shipscout", "subraider", "shipraider", "shiptorp", "shipskirm", "shiparty", "subarty", "armtboat", "shipaa"],
+		"land": {
+			"tier0": [ 0.00,      0.10,        0.30,        0.30,         0.17,       0.05,        0.05,       0.01,      0.00,       0.02],
+			"tier1": [ 0.00,      0.01,        0.10,        0.10,         0.20,       0.10,        0.20,       0.19,      0.00,       0.10]
+		}
 	},
 
 	"factoryplane": {
 		"require_energy": false,
 
 		"income_tier": [40],
-		//            swift,     hawk,      raven,     phoenix,    thunderbird,         wyvern,    vulture
-		"unit_def": ["fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "corawac"],
-		"tier0":    [ 0.64,      0.10,      0.20,      0.01,       0.05,                0.00,      0.00],
-		"tier1":    [ 0.10,      0.10,      0.10,      0.10,       0.10,                0.50,      0.00],
-
-		"builder_def": "armca"  // crane
+		//                 crane,   swift,     hawk,      raven,     phoenix,    thunderbird,         wyvern,    vulture
+		"unit_def":      ["armca", "fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "corawac"],
+		"land": {
+			"tier0": [ 0.00,    0.64,      0.10,      0.20,      0.01,       0.05,                0.00,      0.00],
+			"tier1": [ 0.00,    0.10,      0.10,      0.10,      0.10,       0.10,                0.50,      0.00]
+		}
 	},
 
 	"factorytank": {
 		"require_energy": false,
 
 		"income_tier": [40],
-		//            kodachi,   panther,   banisher,  reaper,    goliath,  pillager,  tremor, copperhead
-		"unit_def": ["logkoda", "panther", "tawf114", "correap", "corgol", "cormart", "trem", "corsent"],
-		"tier0":    [ 0.20,      0.47,      0.30,      0.00,      0.00,     0.01,      0.00,   0.02],
-		"tier1":    [ 0.01,      0.09,      0.10,      0.39,      0.10,     0.20,      0.01,   0.10],
+		//                 welder,   kodachi,   panther,   banisher,  reaper,    goliath,  pillager,  tremor, copperhead
+		"unit_def":      ["coracv", "logkoda", "panther", "tawf114", "correap", "corgol", "cormart", "trem", "corsent"],
+		"land": {
+			"tier0": [ 0.00,     0.20,      0.47,      0.30,      0.00,      0.00,     0.01,      0.00,   0.02],
+			"tier1": [ 0.00,     0.01,      0.09,      0.10,      0.39,      0.10,     0.20,      0.01,   0.10]
+		}
+	},
 
-		"builder_def": "coracv"  // welder
+	"striderhub": {
+		"importance": [0, 1.0],
+		"require_energy": false,
+		"income_tier": [120],
+		//                 ultimatum,    scorpion,   dante,   catapult,   funnelweb,   bantha,     detriment, leviathan,    reef,   warlord
+		"unit_def":      ["armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"],
+		"land": {
+			"tier0": [ 0.01,         0.10,       0.69,    0.05,       0.10,        0.05,       0.00,      0.00,         0.00,   0.00],
+			"tier1": [ 0.10,         0.30,       0.25,    0.07,       0.10,        0.15,       0.03,      0.00,         0.00,   0.00]
+		},
+		"water": {
+			"tier0": [ 0.50,         0.00,       0.00,    0.00,       0.00,        0.00,       0.00,      0.00,         0.25,   0.25],
+			"tier1": [ 0.10,         0.00,       0.00,    0.00,       0.00,        0.00,       0.10,      0.00,         0.40,   0.40]
+		}
 	}
 },
 
-"strider": {
-	"chance": 0.1,  // chance to switch as 2nd factory
-	"income_tier": [120],
-	//               ultimatum,    scorpion,   dante,   catapult,   funnelweb,   bantha,     detriment, leviathan,    reef,   warlord
-	"unit_def":    ["armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"],
 
-	"land_tier0":  [ 0.01,         0.10,       0.69,    0.05,       0.10,        0.05,       0.00,      0.00,         0.00,   0.00],
-	"land_tier1":  [ 0.10,         0.30,       0.25,    0.07,       0.10,        0.15,       0.03,      0.00,         0.00,   0.00],
-
-	"water_tier0": [ 0.50,         0.00,       0.00,    0.00,       0.00,        0.00,       0.00,      0.00,         0.25,   0.25],
-	"water_tier1": [ 0.10,         0.00,       0.00,    0.00,       0.00,        0.00,       0.10,      0.00,         0.40,   0.40],
-
-	"require_energy": false
-},
+"builder": ["armrectr", "armca", "amphcon", "arm_spider", "corned", "corch", "coracv", "corfast", "cornecro", "shipcon"],
 
 // Units defined as scouts will use pathfinder to visit each uncolonized mex
 "scout": [
@@ -206,9 +213,6 @@
 	"logkoda"
 ],
 
-// Rearm-addictive units, require airpad
-"bomber": ["corshad", "corhurc2", "armstiletto_laser", "armcybr"],
-
 "riot": [
 	// factorycloak
 	"armwar",
@@ -238,10 +242,15 @@
 	"tawf114"
 ],
 
-"melee": ["dante", "armbanth", "armorco"],
+// Rearm-addictive units, require airpad
+"bomber": ["corshad", "corhurc2", "armstiletto_laser", "armcybr"],
 
-//  In addition to factory's artillery_def
-"artillery": ["armraven", "funnelweb"],
+"melee": ["amphraider2"],
+
+"artillery": ["armham", "armbrawl", "armmerl", "armmanni", "cormart", "firewalker", "shieldarty", "shiparty"],
+
+"anti_air": ["armjeth", "gunshipaa", "amphaa", "spideraa", "corcrash", "vehaa", "armaak", "hoveraa", "shipaa", "fighter", "corsent"],
+
 
 // If unit's health drops below specified percent it will retreat
 "retreat": {

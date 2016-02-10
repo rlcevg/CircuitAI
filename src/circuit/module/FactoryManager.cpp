@@ -623,11 +623,6 @@ CCircuitDef* CFactoryManager::GetFactoryToBuild(CCircuitAI* circuit, bool isStar
 	return factoryData->GetFactoryToBuild(circuit, isStart);
 }
 
-float CFactoryManager::GetStriderChance() const
-{
-	return factoryData->GetStriderChance();
-}
-
 void CFactoryManager::AddFactory(CCircuitDef* cdef)
 {
 	factoryData->AddFactory(cdef);
@@ -642,6 +637,18 @@ CCircuitDef* CFactoryManager::GetBuilderDef(CCircuitDef* facDef) const
 {
 	auto it = factoryDefs.find(facDef->GetId());
 	return (it != factoryDefs.end()) ? it->second.GetBuilderDef() : nullptr;
+}
+
+CCircuitDef* CFactoryManager::GetLandDef(CCircuitDef* facDef) const
+{
+	auto it = factoryDefs.find(facDef->GetId());
+	return (it != factoryDefs.end()) ? it->second.landDef : nullptr;
+}
+
+CCircuitDef* CFactoryManager::GetWaterDef(CCircuitDef* facDef) const
+{
+	auto it = factoryDefs.find(facDef->GetId());
+	return (it != factoryDefs.end()) ? it->second.waterDef : nullptr;
 }
 
 void CFactoryManager::ReadConfig()
@@ -676,6 +683,7 @@ void CFactoryManager::ReadConfig()
 	/*
 	 * Factories
 	 */
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	const Json::Value& factories = root["factories"];
 	for (const std::string& fac : factories.getMemberNames()) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(fac.c_str());
@@ -712,13 +720,44 @@ void CFactoryManager::ReadConfig()
 		facDef.buildDefs.reserve(items.size());
 		const unsigned tierSize = tiers.size();
 		facDef.incomes.reserve(tierSize);
+
+		CCircuitDef* landDef = nullptr;
+		CCircuitDef* waterDef = nullptr;
+		float landSize = std::numeric_limits<float>::max();
+		float waterSize = std::numeric_limits<float>::max();
+
 		for (unsigned i = 0; i < items.size(); ++i) {
 			CCircuitDef* udef = circuit->GetCircuitDef(items[i].asCString());
 			if (udef == nullptr) {
 				continue;
 			}
 			facDef.buildDefs.push_back(udef);
+
+			// identify surface representatives
+			if (udef->GetMobileId() < 0) {
+				if (landDef == nullptr) {
+					landDef = udef;
+				}
+				if (waterDef == nullptr) {
+					waterDef = udef;
+				}
+				continue;
+			}
+			STerrainMapArea* area = terrainManager->GetMobileTypeById(udef->GetMobileId())->areaLargest;
+			if (area == nullptr) {
+				continue;
+			}
+			if ((area->mobileType->maxElevation > -SQUARE_SIZE * 5) && (landSize > area->percentOfMap)) {
+				landSize = area->percentOfMap;
+				landDef = udef;
+			}
+			if (((area->mobileType->minElevation < SQUARE_SIZE * 5) || udef->IsFloater()) && (waterSize > area->percentOfMap)) {
+				waterSize = area->percentOfMap;
+				waterDef = udef;
+			}
 		}
+		facDef.landDef = landDef;
+		facDef.waterDef = waterDef;
 
 		if (facDef.buildDefs.empty()) {
 			facDef.buildDefs.push_back(nullptr);
@@ -759,10 +798,14 @@ void CFactoryManager::ReadConfig()
 			facDef.incomes.push_back(std::numeric_limits<float>::max());
 		}
 		if (facDef.landTiers.empty()) {
-			facDef.landTiers[0];  // create empty tier
+			if (!facDef.waterTiers.empty()) {
+				facDef.landTiers = facDef.waterTiers;
+			} else {
+				facDef.landTiers[0];  // create empty tier
+			}
 		}
 		if (facDef.waterTiers.empty()) {
-			facDef.waterTiers[0];  // create empty tier
+			facDef.waterTiers = facDef.landTiers;
 		}
 
 		facDef.nanoCount = factory.get("caretaker", 1).asUInt();

@@ -296,20 +296,18 @@
 	},
 
 	"striderhub": {
-		"importance": [0, 1.0],
+		"importance": [0, 1.5],
 		"require_energy": false,
 
 		"income_tier": [60, 80, 100],
 		//                 ultimatum,    scorpion,   dante,   catapult,   funnelweb,   bantha,     detriment, leviathan,    reef,   warlord
 		"unit_def":      ["armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"],
-
 		"land": {
 			"tier0": [ 0.01,         0.10,       0.81,    0.00,       0.05,        0.03,       0.00,      0.00,         0.00,   0.00],
 			"tier1": [ 0.03,         0.14,       0.22,    0.24,       0.20,        0.16,       0.01,      0.00,         0.00,   0.00],
 			"tier2": [ 0.05,         0.10,       0.16,    0.35,       0.10,        0.21,       0.03,      0.00,         0.00,   0.00],
 			"tier3": [ 0.05,         0.10,       0.01,    0.26,       0.10,        0.35,       0.13,      0.00,         0.00,   0.00]
 		},
-
 		"water": {
 			"tier1": [ 0.50,         0.00,       0.00,    0.00,       0.00,        0.00,       0.00,      0.00,         0.25,   0.25],
 			"tier2": [ 0.10,         0.00,       0.00,    0.00,       0.00,        0.00,       0.10,      0.00,         0.40,   0.40]
