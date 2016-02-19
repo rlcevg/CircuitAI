@@ -17,7 +17,7 @@ public:
 	CAntiAirTask(ITaskManager* mgr, float enemyAir);
 	virtual ~CAntiAirTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit);
+	virtual bool CanAssignTo(CCircuitUnit* unit) const;
 
 private:
 	float enemyAir;

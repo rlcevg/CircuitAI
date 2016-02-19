@@ -6,6 +6,8 @@
  */
 
 #include "task/fighter/AntiAirTask.h"
+#include "CircuitAI.h"
+#include "util/utils.h"
 
 namespace circuit {
 
@@ -17,11 +19,12 @@ CAntiAirTask::CAntiAirTask(ITaskManager* mgr, float enemyAir)
 
 CAntiAirTask::~CAntiAirTask()
 {
+	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-bool CAntiAirTask::CanAssignTo(CCircuitUnit* unit)
+bool CAntiAirTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return attackPower < enemyAir;
+	return (attackPower < enemyAir) && unit->GetCircuitDef()->IsRoleAA();
 }
 
 } // namespace circuit

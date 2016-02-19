@@ -1,31 +1,30 @@
 /*
  * DefendTask.h
  *
- *  Created on: Jan 28, 2015
+ *  Created on: Feb 12, 2016
  *      Author: rlcevg
  */
 
 #ifndef SRC_CIRCUIT_TASK_FIGHTER_DEFENDTASK_H_
 #define SRC_CIRCUIT_TASK_FIGHTER_DEFENDTASK_H_
 
-#include "task/fighter/FighterTask.h"
-#include "unit/CircuitUnit.h"
+#include "task/fighter/SquadTask.h"
 
 namespace circuit {
 
-class CDefendTask: public IFighterTask {
+class CDefendTask: public ISquadTask {
 public:
-	CDefendTask(ITaskManager* mgr, CCircuitUnit* vip, float maxPower);
+	CDefendTask(ITaskManager* mgr, const springai::AIFloat3& position, float maxPower);
 	virtual ~CDefendTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit);
+	virtual bool CanAssignTo(CCircuitUnit* unit) const;
 
 	virtual void Execute(CCircuitUnit* unit);
-
-	virtual void OnUnitIdle(CCircuitUnit* unit);
+	virtual void Update();
+protected:
+	virtual void Cancel();
 
 private:
-	CCircuitUnit::Id vipId;
 	float maxPower;
 };
 

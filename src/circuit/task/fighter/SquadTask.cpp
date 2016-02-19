@@ -22,7 +22,6 @@ ISquadTask::ISquadTask(ITaskManager* mgr, FightType type)
 		, lowestSpeed(std::numeric_limits<float>::max())
 		, highestSpeed(.0f)
 		, leader(nullptr)
-		, minPower(.0f)
 		, isRegroup(false)
 		, isAttack(false)
 {
@@ -35,8 +34,6 @@ ISquadTask::~ISquadTask()
 void ISquadTask::AssignTo(CCircuitUnit* unit)
 {
 	IFighterTask::AssignTo(unit);
-
-	minPower += unit->GetCircuitDef()->GetPower() / 8;
 
 	if (leader == nullptr) {
 		lowestRange  = unit->GetCircuitDef()->GetMaxRange();
@@ -60,18 +57,19 @@ void ISquadTask::AssignTo(CCircuitUnit* unit)
 void ISquadTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IFighterTask::RemoveAssignee(unit);
-
-	if (attackPower < minPower) {
-		manager->AbortTask(this);
+	if (units.empty()) {
+		leader = nullptr;
+		lowestRange = lowestSpeed = std::numeric_limits<float>::max();
+		highestRange = highestSpeed = .0f;
 		return;
 	}
 
-	lowestRange  = std::numeric_limits<float>::max();
-	highestRange = .0f;
-	lowestSpeed  = std::numeric_limits<float>::max();
-	highestSpeed = .0f;
-	leader = *units.begin();
-	for (CCircuitUnit* ass : units) {
+	auto it = units.begin();
+	leader = *it;
+	lowestRange = highestRange = leader->GetCircuitDef()->GetMaxRange();
+	lowestSpeed = highestSpeed = leader->GetCircuitDef()->GetSpeed();
+	while (++it != units.end()) {
+		CCircuitUnit* ass = *it;
 		lowestRange  = std::min(lowestRange,  ass->GetCircuitDef()->GetMaxRange());
 		highestRange = std::max(highestRange, ass->GetCircuitDef()->GetMaxRange());
 		lowestSpeed  = std::min(lowestSpeed,  ass->GetCircuitDef()->GetSpeed());

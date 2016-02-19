@@ -8,6 +8,7 @@
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
+#include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "resource/MetalManager.h"
 #include "resource/EnergyGrid.h"
@@ -414,7 +415,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	bool isEnergyStalling = IsEnergyStalling();
 	if (!isEnergyStalling && mexDef->IsAvailable()) {
 		float cost = mexDef->GetCost();
-		unsigned maxCount = builderManager->GetBuilderPower() / cost * 16 + 1;
+		unsigned maxCount = builderManager->GetBuilderPower() / cost * 8 + 1;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < maxCount) {
 			CMetalManager* metalManager = circuit->GetMetalManager();
 			const CMetalData::Metals& spots = metalManager->GetSpots();
@@ -438,6 +439,11 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			}
 			int index = metalManager->GetMexToBuild(position, predicate);
 			if (index != -1) {
+				int cluster = metalManager->GetCluster(index);
+				if (!circuit->GetMilitaryManager()->HasDefence(cluster)) {
+					circuit->GetMilitaryManager()->AddDefendTask(cluster);
+				}
+
 				const AIFloat3& pos = spots[index].position;
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost, .0f);
 				task->SetBuildPos(pos);
@@ -861,11 +867,7 @@ void CEconomyManager::ReadConfig()
 void CEconomyManager::Init()
 {
 	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
-	clusterInfos.resize(clusters.size());
-
-	for (unsigned k = 0; k < clusters.size(); ++k) {
-		clusterInfos[k] = {nullptr};
-	}
+	clusterInfos.resize(clusters.size(), {nullptr});
 
 	auto subinit = [this]() {
 		CScheduler* scheduler = circuit->GetScheduler().get();
@@ -888,7 +890,7 @@ void CEconomyManager::Init()
 
 					// Enqueue first builder
 					float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
-					CCircuitDef* buildDef = factoryManager->GetBuilderDef(facDef);
+					CCircuitDef* buildDef = factoryManager->GetRoleDef(facDef, CCircuitDef::RoleType::BUILDER);
 					factoryManager->EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::BUILDPOWER, radius);
 				}
 			}

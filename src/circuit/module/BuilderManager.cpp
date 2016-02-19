@@ -76,19 +76,6 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 		builderPower += unit->GetCircuitDef()->GetBuildSpeed();
 		workers.insert(unit);
-//		if ((workers.size() <= this->circuit->GetEconomyManager()->GetAvgMetalIncome() / 4.0f) &&
-//			!unit->GetCircuitDef()->IsAbleToFly())
-//		{
-//			this->circuit->GetMilitaryManager()->EnqueueDefend(unit);
-//
-//			CTerrainManager* terrainManager = this->circuit->GetTerrainManager();
-//			CFactoryManager* factoryManager = this->circuit->GetFactoryManager();
-//			float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
-//			CCircuitUnit* facDef = factoryManager->GetRandomFactory(unit->GetPos(this->circuit->GetLastFrame()));
-//			CCircuitDef* buildDef = factoryManager->GetRiotDef(facDef);
-//			const AIFloat3& buildPos = this->circuit->GetSetupManager()->GetBasePos();
-//			factoryManager->EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::BUILDPOWER, radius);
-//		}
 
 		AddBuildList(unit);
 	};
@@ -135,8 +122,11 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	 * heavy handlers
 	 */
 	auto heavyCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
-		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
-//		EnqueueRepair(IBuilderTask::Priority::LOW, unit);
+		CEconomyManager* economyManager = this->circuit->GetEconomyManager();
+		if (economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor() > 16.0f) {
+			unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
+//			EnqueueRepair(IBuilderTask::Priority::LOW, unit);
+		}
 	};
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
@@ -164,7 +154,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 				const char* name = cdef->GetUnitDef()->GetName();
 				cdef->SetRetreat(retreats.get(name, builderRet).asFloat());
-			} else if (cdef->GetCost() > 1999.0f) {
+			} else if (cdef->GetCost() > 999.0f) {
 				createdHandler[unitDefId] = heavyCreatedHandler;
 			}
 		} else {
@@ -215,7 +205,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 CBuilderManager::~CBuilderManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	for (auto& tasks : buildTasks) {
+	for (std::set<IBuilderTask*>& tasks : buildTasks) {
 		utils::free_clear(tasks);
 	}
 	utils::free_clear(buildDeleteTasks);
@@ -324,10 +314,9 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 	return 0; //signaling: OK
 }
 
-const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType type)
+const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType type) const
 {
 	assert(type < IBuilderTask::BuildType::TASKS_COUNT);
-	// Auto-creates empty list
 	return buildTasks[static_cast<int>(type)];
 }
 
@@ -547,13 +536,13 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 	return false;
 }
 
-IUnitTask* CBuilderManager::GetTask(CCircuitUnit* unit)
+IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 {
-	IBuilderTask* task = nullptr;
+	circuit->GetThreatMap()->SetThreatType(unit);
+	const IBuilderTask* task = nullptr;
 	int frame = circuit->GetLastFrame();
 	AIFloat3 pos = unit->GetPos(frame);
 
-	circuit->GetThreatMap()->SetThreatType(unit);
 	task = circuit->GetEconomyManager()->UpdateMetalTasks(pos, unit);
 //	if (task != nullptr) {
 //		return task;
@@ -566,8 +555,8 @@ IUnitTask* CBuilderManager::GetTask(CCircuitUnit* unit)
 	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
 	const int buildDistance = std::max<int>(unit->GetCircuitDef()->GetBuildDistance(), pathfinder->GetSquareSize());
 	float metric = std::numeric_limits<float>::max();
-	for (auto& tasks : buildTasks) {
-		for (IBuilderTask* candidate : tasks) {
+	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
+		for (const IBuilderTask* candidate : tasks) {
 			if (!candidate->CanAssignTo(unit)) {
 				continue;
 			}
@@ -632,7 +621,7 @@ IUnitTask* CBuilderManager::GetTask(CCircuitUnit* unit)
 		task = CreateBuilderTask(pos, unit);
 	}
 
-	return task;
+	return const_cast<IBuilderTask*>(task);
 }
 
 void CBuilderManager::AbortTask(IUnitTask* task)

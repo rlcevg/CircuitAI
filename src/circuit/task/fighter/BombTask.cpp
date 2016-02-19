@@ -33,16 +33,17 @@ CBombTask::~CBombTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-bool CBombTask::CanAssignTo(CCircuitUnit* unit)
+bool CBombTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return units.empty();
+	return units.empty() && unit->GetCircuitDef()->IsRoleBomber();
 }
 
 void CBombTask::AssignTo(CCircuitUnit* unit)
 {
 	IFighterTask::AssignTo(unit);
 
-	CMoveAction* moveAction = new CMoveAction(unit);
+	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
+	CMoveAction* moveAction = new CMoveAction(unit, squareSize);
 	unit->PushBack(moveAction);
 	moveAction->SetActive(false);
 }
@@ -50,7 +51,6 @@ void CBombTask::AssignTo(CCircuitUnit* unit)
 void CBombTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IFighterTask::RemoveAssignee(unit);
-
 	if (units.empty()) {
 		manager->AbortTask(this);
 	}
@@ -155,7 +155,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	CCircuitAI* circuit = manager->GetCircuit();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float power = threatMap->GetUnitThreat(unit) * 4.0f;
+	const float power = threatMap->GetUnitThreat(unit) * 8.0f;
 	const float speed = cdef->GetSpeed();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
@@ -205,7 +205,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 			}
 			continue;
 		}
-		if (sqDist < SQUARE(2000)) {  // maxSqDist
+		if (sqDist < SQUARE(2000.f)) {  // maxSqDist
 			enemyPositions.push_back(enemy->GetPos());
 		}
 	}

@@ -36,6 +36,24 @@ CBMexTask::~CBMexTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
+bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
+{
+	if (!IBuilderTask::CanAssignTo(unit)) {
+		return false;
+	}
+	if (unit->GetCircuitDef()->IsAttacker()) {
+		return true;
+	}
+	CCircuitAI* circuit = manager->GetCircuit();
+	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
+	int cluster = circuit->GetMetalManager()->FindNearestCluster(GetPosition());
+	if ((cluster < 0) || militaryManager->HasDefence(cluster)) {
+		return true;
+	}
+	IUnitTask* defend = militaryManager->GetDefendTask(cluster);
+	return (defend != nullptr) && (!defend->GetAssignees().empty());
+}
+
 void CBMexTask::Execute(CCircuitUnit* unit)
 {
 	Unit* u = unit->GetUnit();

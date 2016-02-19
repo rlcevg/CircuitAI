@@ -35,16 +35,17 @@ CArtilleryTask::~CArtilleryTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-bool CArtilleryTask::CanAssignTo(CCircuitUnit* unit)
+bool CArtilleryTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return units.empty();
+	return units.empty() && unit->GetCircuitDef()->IsRoleArty();
 }
 
 void CArtilleryTask::AssignTo(CCircuitUnit* unit)
 {
 	IFighterTask::AssignTo(unit);
 
-	CMoveAction* moveAction = new CMoveAction(unit);
+	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
+	CMoveAction* moveAction = new CMoveAction(unit, squareSize);
 	unit->PushBack(moveAction);
 	moveAction->SetActive(false);
 }
@@ -52,7 +53,6 @@ void CArtilleryTask::AssignTo(CCircuitUnit* unit)
 void CArtilleryTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IFighterTask::RemoveAssignee(unit);
-
 	if (units.empty()) {
 		manager->AbortTask(this);
 	}
@@ -212,7 +212,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 			if (enemy->GetCircuitDef()->IsMobile() || ((targetCat & noChaseCat) != 0)) {
 				continue;
 			}
-			if (sqDist < SQUARE(2000)) {  // maxSqDist
+			if (sqDist < SQUARE(2000.f)) {  // maxSqDist
 				enemyPositions.push_back(enemy->GetPos());
 			}
 		}
@@ -274,7 +274,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 				continue;
 			}
 
-			if (sqDist < SQUARE(2000)) {  // maxSqDist
+			if (sqDist < SQUARE(2000.f)) {  // maxSqDist
 				enemyPositions.push_back(enemy->GetPos());
 			}
 		}

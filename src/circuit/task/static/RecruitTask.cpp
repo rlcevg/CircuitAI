@@ -35,7 +35,7 @@ CRecruitTask::~CRecruitTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-bool CRecruitTask::CanAssignTo(CCircuitUnit* unit)
+bool CRecruitTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	return (target == nullptr) && unit->GetCircuitDef()->CanBuild(buildDef) &&
 		   (position.SqDistance2D(unit->GetPos(manager->GetCircuit()->GetLastFrame())) <= sqradius);

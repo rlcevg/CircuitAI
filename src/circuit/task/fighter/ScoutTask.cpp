@@ -34,16 +34,17 @@ CScoutTask::~CScoutTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-bool CScoutTask::CanAssignTo(CCircuitUnit* unit)
+bool CScoutTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return units.empty();
+	return units.empty() && unit->GetCircuitDef()->IsRoleScout();
 }
 
 void CScoutTask::AssignTo(CCircuitUnit* unit)
 {
 	IFighterTask::AssignTo(unit);
 
-	CMoveAction* moveAction = new CMoveAction(unit);
+	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
+	CMoveAction* moveAction = new CMoveAction(unit, squareSize);
 	unit->PushBack(moveAction);
 	moveAction->SetActive(false);
 }
@@ -51,7 +52,6 @@ void CScoutTask::AssignTo(CCircuitUnit* unit)
 void CScoutTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IFighterTask::RemoveAssignee(unit);
-
 	if (units.empty()) {
 		manager->AbortTask(this);
 	}
@@ -91,7 +91,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	if (bestTarget != nullptr) {
 		position = bestTarget->GetPos();
 		unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-		unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 		unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)bestTarget->GetId()});
 		moveAction->SetActive(false);
 		return;
@@ -135,7 +135,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	float z = rand() % (terrainManager->GetTerrainHeight() + 1);
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-	unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+	unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 	moveAction->SetActive(false);
 }
 
@@ -209,7 +209,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 				continue;
 //			}
 		}
-		if (sqDist < SQUARE(2000)) {  // maxSqDist
+		if (sqDist < SQUARE(2000.f)) {  // maxSqDist
 			enemyPositions.push_back(enemy->GetPos());
 		}
 	}

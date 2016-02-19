@@ -17,7 +17,7 @@ public:
 	CRaidTask(ITaskManager* mgr);
 	virtual ~CRaidTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit);
+	virtual bool CanAssignTo(CCircuitUnit* unit) const;
 };
 
 } // namespace circuit

@@ -89,6 +89,7 @@ public:
 		return clusterInfos[index].queuedCount >= GetClusters()[index].idxSpots.size();
 	}
 	bool IsMexInFinished(int index) const;
+	int GetCluster(int index) const { return metalInfos[index].clusterId; }
 
 	using MexPredicate = std::function<bool (int index)>;
 	int GetMexToBuild(const springai::AIFloat3& pos, MexPredicate& predicate);

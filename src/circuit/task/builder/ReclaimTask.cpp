@@ -36,7 +36,7 @@ CBReclaimTask::~CBReclaimTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-bool CBReclaimTask::CanAssignTo(CCircuitUnit* unit)
+bool CBReclaimTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	return cost > buildPower * MAX_BUILD_SEC;
 }
@@ -51,7 +51,6 @@ void CBReclaimTask::AssignTo(CCircuitUnit* unit)
 void CBReclaimTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IBuilderTask::RemoveAssignee(unit);
-
 	if (units.empty()) {
 		manager->AbortTask(this);
 	}

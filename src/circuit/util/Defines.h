@@ -42,7 +42,6 @@
 #define THREAT_RES		8
 #define DEFAULT_SLACK	(SQUARE_SIZE * THREAT_RES)
 
-#define MAX_SPEED		1e6f
 typedef std::vector<springai::AIFloat3> F3Vec;
 
 #endif // SRC_CIRCUIT_UTIL_DEFINES_H_

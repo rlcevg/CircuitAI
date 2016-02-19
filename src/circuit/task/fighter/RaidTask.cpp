@@ -21,7 +21,7 @@ CRaidTask::~CRaidTask()
 	// TODO Auto-generated destructor stub
 }
 
-bool CRaidTask::CanAssignTo(CCircuitUnit* unit)
+bool CRaidTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	return units.empty();
 }

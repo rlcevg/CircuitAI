@@ -54,7 +54,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 			continue;
 		}
 		CEnemyUnit* enemy = circuit->GetEnemyUnit(e);
-		if ((enemy == nullptr) || enemy->NotInRadarAndLOS() || (enemy->GetThreat() < 0.1f)) {
+		if ((enemy == nullptr) || enemy->NotInRadarAndLOS() || (enemy->GetThreat() < THREAT_MIN)) {
 			continue;
 		}
 		CCircuitDef* edef = enemy->GetCircuitDef();

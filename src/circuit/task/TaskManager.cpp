@@ -34,7 +34,7 @@ void ITaskManager::AssignTask(CCircuitUnit* unit, IUnitTask* task)
 
 void ITaskManager::AssignTask(CCircuitUnit* unit)
 {
-	IUnitTask* task = GetTask(unit);
+	IUnitTask* task = MakeTask(unit);
 	if (task != nullptr) {
 		task->AssignTo(unit);
 	}

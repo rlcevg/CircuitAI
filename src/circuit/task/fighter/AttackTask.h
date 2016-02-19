@@ -21,8 +21,9 @@ public:
 	CAttackTask(ITaskManager* mgr);
 	virtual ~CAttackTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit);
+	virtual bool CanAssignTo(CCircuitUnit* unit) const;
 	virtual void AssignTo(CCircuitUnit* unit);
+	virtual void RemoveAssignee(CCircuitUnit* unit);
 
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
@@ -33,6 +34,7 @@ private:
 	void FindTarget();
 
 	std::shared_ptr<F3Vec> pPath;
+	float minPower;
 };
 
 } // namespace circuit

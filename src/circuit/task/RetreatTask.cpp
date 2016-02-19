@@ -44,18 +44,18 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	}
 
 	if (!unit->GetCircuitDef()->IsPlane()) {
-		unit->PushBack(new CMoveAction(unit));
+		int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
+		unit->PushBack(new CMoveAction(unit, squareSize));
 
 		// Mobile repair
 		CBuilderManager* builderManager = manager->GetCircuit()->GetBuilderManager();
-		builderManager->EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+		builderManager->EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
 	}
 }
 
 void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IUnitTask::RemoveAssignee(unit);
-
 	if (units.empty()) {
 		manager->DoneTask(this);
 	}
@@ -123,6 +123,19 @@ void CRetreatTask::Update()
 		} else {
 			unit->Update(circuit);
 		}
+	}
+}
+
+void CRetreatTask::Finish()
+{
+	Cancel();
+}
+
+void CRetreatTask::Cancel()
+{
+	if (repairer != nullptr) {
+		IUnitTask* repairerTask = repairer->GetTask();
+		repairerTask->GetManager()->AbortTask(repairerTask);
 	}
 }
 
@@ -198,7 +211,7 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
 	AIFloat3 endPos;
 	float range;
 
-	bool isRepairer = repairer != nullptr;
+	bool isRepairer = (repairer != nullptr);
 	if (isRepairer) {
 		endPos = repairer->GetPos(frame);
 		range = pathfinder->GetSquareSize();

@@ -23,7 +23,11 @@ public:
 
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
+protected:
+	virtual void Finish();
+	virtual void Cancel();
 
+public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);

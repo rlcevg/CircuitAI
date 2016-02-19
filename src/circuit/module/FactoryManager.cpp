@@ -95,7 +95,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
 		if (it != factoryDefs.end()) {
 			const SFactoryDef& facDef = it->second;
-			bool hasBuilder = (facDef.GetBuilderDef() != nullptr);
+			bool hasBuilder = (facDef.GetRoleDef(CCircuitDef::RoleType::BUILDER) != nullptr);
 			factories.emplace_back(unit, nanos, facDef.nanoCount, hasBuilder);
 		} else {
 			factories.emplace_back(unit, nanos, 0, false);
@@ -402,7 +402,7 @@ void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 	}
 }
 
-IUnitTask* CFactoryManager::GetTask(CCircuitUnit* unit)
+IUnitTask* CFactoryManager::MakeTask(CCircuitUnit* unit)
 {
 	IUnitTask* task = nullptr;
 
@@ -469,32 +469,34 @@ CCircuitUnit* CFactoryManager::GetRandomFactory(CCircuitDef* buildDef)
 	return *it;
 }
 
-//CCircuitUnit* CFactoryManager::GetRandomFactory(const AIFloat3& position, CCircuitDef::RoleType role)
-//{
-//	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-//	AIFloat3 pos = position;
-//	terrainManager->CorrectPosition(pos);
-//	int iS = terrainManager->GetSectorIndex(pos);
-//	std::list<CCircuitUnit*> facs;
-//	for (SFactory& fac : factories) {
-//		STerrainMapArea* area = fac.unit->GetArea();
-//		if ((area == nullptr) || (area->sector.find(iS) == area->sector.end())) {
-//			continue;
-//		}
-//		for (CCircuitDef::Id bdId : fac.unit->GetCircuitDef()->GetBuildOptions()) {
-//			if (circuit->GetCircuitDef(bdId)->IsRoleRiot()) {
-//				facs.push_back(fac.unit);
-//				break;
-//			}
-//		}
-//	}
-//	if (facs.empty()) {
-//		return nullptr;
-//	}
-//	auto it = facs.begin();
-//	std::advance(it, rand() % facs.size());
-//	return *it;
-//}
+CCircuitDef* CFactoryManager::GetClosestDef(AIFloat3& position, CCircuitDef::RoleType role)
+{
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	terrainManager->CorrectPosition(position);
+	int iS = terrainManager->GetSectorIndex(position);
+	CCircuitDef* roleDef = nullptr;
+	float minSqDist = std::numeric_limits<float>::max();
+	int frame = circuit->GetLastFrame();
+	for (SFactory& fac : factories) {
+		STerrainMapArea* area = fac.unit->GetArea();
+		if ((area == nullptr) || (area->sector.find(iS) == area->sector.end())) {
+			continue;
+		}
+		const AIFloat3& facPos = fac.unit->GetPos(frame);
+		float sqDist = position.SqDistance2D(facPos);
+		if (minSqDist < sqDist) {
+			continue;
+		}
+		const SFactoryDef& facDef = factoryDefs.find(fac.unit->GetCircuitDef()->GetId())->second;
+		CCircuitDef* cdef = facDef.GetRoleDef(role);
+		if (cdef != nullptr) {
+			roleDef = cdef;
+			minSqDist = sqDist;
+			position = facPos;
+		}
+	}
+	return roleDef;
+}
 
 AIFloat3 CFactoryManager::GetClosestHaven(CCircuitUnit* unit) const
 {
@@ -534,7 +536,7 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 	if (it == factoryDefs.end()) {
 		return nullptr;
 	}
-	CCircuitDef* buildDef = it->second.GetBuilderDef();
+	CCircuitDef* buildDef = it->second.GetRoleDef(CCircuitDef::RoleType::BUILDER);
 	if ((buildDef == nullptr) || !buildDef->IsAvailable()) {
 		return nullptr;
 	}
@@ -563,14 +565,14 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 	const SFactoryDef& facDef = it->second;
 
-	buildDef = facDef.GetAADef();
+	buildDef = facDef.GetRoleDef(CCircuitDef::RoleType::AA);
 	if ((buildDef != nullptr) && circuit->GetMilitaryManager()->IsNeedAA(buildDef) && buildDef->IsAvailable()) {
 		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
 		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
 		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
 		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::AA, radius);
 	}
-	buildDef = facDef.GetArtyDef();
+	buildDef = facDef.GetRoleDef(CCircuitDef::RoleType::ARTY);
 	if ((buildDef != nullptr) && circuit->GetMilitaryManager()->IsNeedArty(buildDef) && buildDef->IsAvailable()) {
 		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
 		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
@@ -578,12 +580,12 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::ARTY, radius);
 	}
 
-	CEconomyManager* mgr = circuit->GetEconomyManager();
-	const float metalIncome = std::min(mgr->GetAvgMetalIncome(), mgr->GetAvgEnergyIncome()) * mgr->GetEcoFactor();
+	CEconomyManager* em = circuit->GetEconomyManager();
+	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
 	bool isWaterMap = circuit->GetTerrainManager()->GetPercentLand() < 40.0;
 	const SFactoryDef::Tiers& tiers = isWaterMap ? facDef.waterTiers : facDef.landTiers;
 	auto facIt = tiers.begin();
-	if ((metalIncome >= facDef.incomes[facIt->first]) && !(facDef.isRequireEnergy && mgr->IsEnergyEmpty())) {
+	if ((metalIncome >= facDef.incomes[facIt->first]) && !(facDef.isRequireEnergy && em->IsEnergyEmpty())) {
 		while (facIt != tiers.end()) {
 			if (metalIncome < facDef.incomes[facIt->first]) {
 				break;
@@ -633,10 +635,10 @@ void CFactoryManager::DelFactory(CCircuitDef* cdef)
 	factoryData->DelFactory(cdef);
 }
 
-CCircuitDef* CFactoryManager::GetBuilderDef(CCircuitDef* facDef) const
+CCircuitDef* CFactoryManager::GetRoleDef(CCircuitDef* facDef, CCircuitDef::RoleType role) const
 {
 	auto it = factoryDefs.find(facDef->GetId());
-	return (it != factoryDefs.end()) ? it->second.GetBuilderDef() : nullptr;
+	return (it != factoryDefs.end()) ? it->second.GetRoleDef(role) : nullptr;
 }
 
 CCircuitDef* CFactoryManager::GetLandDef(CCircuitDef* facDef) const
@@ -702,12 +704,17 @@ void CFactoryManager::ReadConfig()
 		};
 
 		for (const CCircuitDef::RoleType type : facRoles) {
+			float minCost = std::numeric_limits<float>::max();
 			CCircuitDef* rdef = nullptr;
-			const std::set<CCircuitDef::Id>& builders = roles[type];
-			for (const CCircuitDef::Id bid : builders) {
-				if (options.find(bid) != options.end()) {
-					rdef = circuit->GetCircuitDef(bid);
-					break;
+			const std::set<CCircuitDef::Id>& defIds = roles[type];
+			for (const CCircuitDef::Id bid : defIds) {
+				if (options.find(bid) == options.end()) {
+					continue;
+				}
+				CCircuitDef* tdef = circuit->GetCircuitDef(bid);
+				if (minCost > tdef->GetCost()) {
+					minCost = tdef->GetCost();
+					rdef = tdef;
 				}
 			}
 			facDef.roleDefs[type] = rdef;

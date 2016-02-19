@@ -16,6 +16,7 @@
 #include "task/RetreatTask.h"
 #include "task/builder/DefenceTask.h"
 #include "task/fighter/RallyTask.h"
+#include "task/fighter/GuardTask.h"
 #include "task/fighter/DefendTask.h"
 #include "task/fighter/ScoutTask.h"
 #include "task/fighter/AttackTask.h"
@@ -24,6 +25,7 @@
 #include "task/fighter/ArtilleryTask.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
+#include "terrain/PathFinder.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -207,12 +209,16 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 //	};
 
 	defence = circuit->GetAllyTeam()->GetDefenceMatrix().get();
+
+	fightTasks.resize(static_cast<int>(IFighterTask::FightType::TASKS_COUNT));
 }
 
 CMilitaryManager::~CMilitaryManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	utils::free_clear(fightTasks);
+	for (std::set<IFighterTask*>& tasks : fightTasks) {
+		utils::free_clear(tasks);
+	}
 	utils::free_clear(fightDeleteTasks);
 
 	utils::free_clear(retreatTasks);
@@ -306,14 +312,14 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 //		}
 	}
 
-	fightTasks.insert(task);
+	fightTasks[static_cast<int>(type)].insert(task);
 	return task;
 }
 
-IFighterTask* CMilitaryManager::EnqueueDefend(CCircuitUnit* vip)
+IFighterTask* CMilitaryManager::EnqueueGuard(CCircuitUnit* vip)
 {
-	IFighterTask* task = new CDefendTask(this, vip, 1.0f);
-	fightTasks.insert(task);
+	IFighterTask* task = new CGuardTask(this, vip, 1.0f);
+	fightTasks[static_cast<int>(IFighterTask::FightType::GUARD)].insert(task);
 	return task;
 }
 
@@ -327,9 +333,10 @@ CRetreatTask* CMilitaryManager::EnqueueRetreat()
 void CMilitaryManager::DequeueTask(IFighterTask* task, bool done)
 {
 	if (task->GetType() == IUnitTask::Type::FIGHTER) {
-		auto it = fightTasks.find(task);
-		if (it != fightTasks.end()) {
-			fightTasks.erase(it);
+		std::set<IFighterTask*>& tasks = fightTasks[static_cast<int>(task->GetFightType())];
+		auto it = tasks.find(task);
+		if (it != tasks.end()) {
+			tasks.erase(it);
 			task->Close(done);
 			fightDeleteTasks.insert(task);
 		}
@@ -343,23 +350,43 @@ void CMilitaryManager::DequeueTask(IFighterTask* task, bool done)
 	}
 }
 
-IUnitTask* CMilitaryManager::GetTask(CCircuitUnit* unit)
+IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 {
-	IFighterTask* task = nullptr;
+	circuit->GetThreatMap()->SetThreatType(unit);
+	const IFighterTask* task = nullptr;
+	int frame = circuit->GetLastFrame();
+	AIFloat3 pos = unit->GetPos(frame);
+	STerrainMapArea* area = unit->GetArea();
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	terrainManager->CorrectPosition(pos);
+	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
+	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
+	const int distance = std::max<int>(unit->GetCircuitDef()->GetMaxRange(), pathfinder->GetSquareSize());
+	float metric = std::numeric_limits<float>::max();
 
-	std::underlying_type<CCircuitDef::RoleType>::type role =
-		CCircuitDef::RoleType::SCOUT |
-		CCircuitDef::RoleType::BOMBER |
-		CCircuitDef::RoleType::MELEE |
-		CCircuitDef::RoleType::ARTY |
-		CCircuitDef::RoleType::AA;
-	if ((unit->GetCircuitDef()->GetRole() & role) == 0) {
-		for (IFighterTask* candidate : fightTasks) {
+	for (const std::set<IFighterTask*>& tasks : fightTasks) {
+		for (const IFighterTask* candidate : tasks) {
 			if (!candidate->CanAssignTo(unit)) {
 				continue;
 			}
-			task = candidate;
-			break;
+
+			// Check time-distance to target
+			float distCost;
+
+			const AIFloat3& tp = candidate->GetPosition();
+			AIFloat3 taskPos = (tp != -RgtVector) ? tp : pos;
+
+			if (!terrainManager->CanMoveToPos(area, taskPos)) {  // ensure that path always exists
+				continue;
+			}
+
+			distCost = std::max(pathfinder->PathCost(pos, taskPos, distance), THREAT_BASE);
+
+			if ((distCost < metric) && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC))) {
+				task = candidate;
+				metric = distCost;
+			}
 		}
 	}
 
@@ -381,7 +408,7 @@ IUnitTask* CMilitaryManager::GetTask(CCircuitUnit* unit)
 		task = EnqueueTask(type);
 	}
 
-	return task;
+	return const_cast<IFighterTask*>(task);
 }
 
 void CMilitaryManager::AbortTask(IUnitTask* task)
@@ -410,7 +437,8 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	float maxCost = MIN_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome()) * economyManager->GetEcoFactor();
 	CDefenceMatrix::SDefPoint* closestPoint = nullptr;
 	float minDist = std::numeric_limits<float>::max();
-	for (CDefenceMatrix::SDefPoint& defPoint : defence->GetDefPoints(index)) {
+	std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
+	for (CDefenceMatrix::SDefPoint& defPoint : points) {
 		if (defPoint.cost < maxCost) {
 			float dist = defPoint.position.SqDistance2D(pos);
 			if ((closestPoint == nullptr) || (dist < minDist)) {
@@ -544,6 +572,17 @@ void CMilitaryManager::AbortDefence(CBDefenceTask* task)
 
 }
 
+bool CMilitaryManager::HasDefence(int cluster)
+{
+	const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(cluster);
+	for (const CDefenceMatrix::SDefPoint& defPoint : points) {
+		if (defPoint.cost > .5f) {
+			return true;
+		}
+	}
+	return false;
+}
+
 AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 {
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
@@ -566,6 +605,37 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 	}
 //	++scoutIdx %= scoutPath.size();
 	return -RgtVector;
+}
+
+IFighterTask* CMilitaryManager::AddDefendTask(int cluster)
+{
+	IFighterTask* task = clusterInfos[cluster].defence;
+	if (task != nullptr) {
+		return task;
+	}
+
+	const AIFloat3& pos = circuit->GetMetalManager()->GetClusters()[cluster].geoCentr;
+//	task = EnqueueTask(IFighterTask::FightType::DEFEND, pos, 1.0f);
+	task = new CDefendTask(this, pos, 1.0f);
+	fightTasks[static_cast<int>(IFighterTask::FightType::DEFEND)].insert(task);
+	clusterInfos[cluster].defence = task;
+	return task;
+}
+
+IFighterTask* CMilitaryManager::DelDefendTask(const AIFloat3& pos)
+{
+	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
+	if (index < 0) {
+		return nullptr;
+	}
+
+	IFighterTask* task = clusterInfos[index].defence;
+	if (task == nullptr) {
+		return nullptr;
+	}
+
+	clusterInfos[index].defence = nullptr;
+	return task;
 }
 
 bool CMilitaryManager::IsNeedAA(CCircuitDef* cdef) const
@@ -622,6 +692,7 @@ void CMilitaryManager::Init()
 {
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	const CMetalData::Metals& spots = metalManager->GetSpots();
+	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 
 	scoutPath.reserve(spots.size());
 	for (unsigned i = 0; i < spots.size(); ++i) {
@@ -632,6 +703,8 @@ void CMilitaryManager::Init()
 		return pos.SqDistance2D(spots[a].position) > pos.SqDistance2D(spots[b].position);
 	};
 	std::sort(scoutPath.begin(), scoutPath.end(), compare);
+
+	clusterInfos.resize(clusters.size(), {nullptr});
 
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	const int interval = 4;
@@ -707,7 +780,9 @@ void CMilitaryManager::UpdateFight()
 	}
 
 	if (fightUpdateTasks.empty()) {
-		fightUpdateTasks = fightTasks;
+		for (auto& tasks : fightTasks) {
+			fightUpdateTasks.insert(tasks.begin(), tasks.end());
+		}
 		fightUpdateSlice = fightUpdateTasks.size() / TEAM_SLOWUPDATE_RATE;
 	}
 }

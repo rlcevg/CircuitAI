@@ -44,8 +44,9 @@ public:
 	unsigned int GetWorkerCount() const { return workers.size(); }
 	float GetBuilderPower() const { return builderPower; }
 	bool CanEnqueueTask() const { return buildTasksCount < workers.size() * 8; }
-	const std::set<IBuilderTask*>& GetTasks(IBuilderTask::BuildType type);
+	const std::set<IBuilderTask*>& GetTasks(IBuilderTask::BuildType type) const;
 	void ActivateTask(IBuilderTask* task);
+
 	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,
 							  CCircuitDef* buildDef,
 							  const springai::AIFloat3& position,
@@ -103,7 +104,7 @@ private:
 public:
 	bool IsBuilderInArea(CCircuitDef* buildDef, const springai::AIFloat3& position);  // Check if build-area has proper builder
 
-	virtual IUnitTask* GetTask(CCircuitUnit* unit);
+	virtual IUnitTask* MakeTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
 	virtual void DoneTask(IUnitTask* task);
 	virtual void FallbackTask(CCircuitUnit* unit);
@@ -135,7 +136,7 @@ private:
 	std::set<IBuilderTask*> buildDeleteTasks;
 	unsigned int buildUpdateSlice;
 
-	std::set<IUnitTask*> miscTasks;  // owner, tasks without UnitDef (patrol, reclaim, terraform, retreat)
+	std::set<IUnitTask*> miscTasks;  // owner, tasks without UnitDef (patrol, terraform, retreat)
 	std::set<IUnitTask*> miscUpdateTasks;
 	std::set<IUnitTask*> miscDeleteTasks;
 	unsigned int miscUpdateSlice;

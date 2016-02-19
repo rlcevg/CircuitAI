@@ -31,21 +31,30 @@ public:
 	virtual int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 
+	const std::set<IFighterTask*>& GetTasks(IFighterTask::FightType type) const {
+		return fightTasks[static_cast<int>(type)];
+	}
+
 	IFighterTask* EnqueueTask(IFighterTask::FightType type);
-	IFighterTask* EnqueueDefend(CCircuitUnit* vip);
+	IFighterTask* EnqueueGuard(CCircuitUnit* vip);
 	CRetreatTask* EnqueueRetreat();
 private:
 	void DequeueTask(IFighterTask* task, bool done = false);
 
 public:
-	virtual IUnitTask* GetTask(CCircuitUnit* unit);
+	virtual IUnitTask* MakeTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
 	virtual void DoneTask(IUnitTask* task);
 	virtual void FallbackTask(CCircuitUnit* unit);
 
 	void MakeDefence(const springai::AIFloat3& pos);
 	void AbortDefence(CBDefenceTask* task);
+	bool HasDefence(int cluster);
 	springai::AIFloat3 GetScoutPosition(CCircuitUnit* unit);
+
+	IFighterTask* AddDefendTask(int cluster);
+	IFighterTask* DelDefendTask(const springai::AIFloat3& pos);
+	IFighterTask* GetDefendTask(int cluster) const { return clusterInfos[cluster].defence; }
 
 	bool IsNeedAA(CCircuitDef* cdef) const;
 	bool IsNeedArty(CCircuitDef* cdef) const;
@@ -69,7 +78,7 @@ private:
 	EHandlers damagedHandler;
 	EHandlers destroyedHandler;
 
-	std::set<IFighterTask*> fightTasks;  // owner
+	std::vector<std::set<IFighterTask*>> fightTasks;  // owner
 	std::set<IFighterTask*> fightUpdateTasks;
 	std::set<IFighterTask*> fightDeleteTasks;
 	unsigned int fightUpdateSlice;
@@ -91,6 +100,11 @@ private:
 	float metalArmy;
 
 	std::set<CCircuitUnit*> army;
+
+	struct SClusterInfo {
+		IFighterTask* defence;
+	};
+	std::vector<SClusterInfo> clusterInfos;
 };
 
 } // namespace circuit

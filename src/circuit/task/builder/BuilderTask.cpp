@@ -68,7 +68,7 @@ IBuilderTask::~IBuilderTask()
 {
 }
 
-bool IBuilderTask::CanAssignTo(CCircuitUnit* unit)
+bool IBuilderTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	return (((target != nullptr) || unit->GetCircuitDef()->CanBuild(buildDef)) && (cost > buildPower * MIN_BUILD_SEC));
 }
@@ -187,7 +187,7 @@ void IBuilderTask::Update()
 	}
 	CCircuitUnit* unit = *units.begin();
 	HideAssignee(unit);
-	IBuilderTask* task = static_cast<IBuilderTask*>(manager->GetTask(unit));
+	IBuilderTask* task = static_cast<IBuilderTask*>(manager->MakeTask(unit));
 	ShowAssignee(unit);
 	if ((task == nullptr) || (task->GetBuildType() == buildType)) {
 		return;

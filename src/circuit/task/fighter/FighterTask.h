@@ -17,7 +17,7 @@ class CEnemyUnit;
 
 class IFighterTask: public IUnitTask {
 public:
-	enum class FightType: char {RALLY, DEFEND, SCOUT, RAID, ATTACK, BOMB, MELEE, ARTY, AA};
+	enum class FightType: char {RALLY = 0, GUARD, DEFEND, SCOUT, RAID, ATTACK, BOMB, MELEE, ARTY, AA, TASKS_COUNT};
 
 protected:
 	IFighterTask(ITaskManager* mgr, FightType type, int timeout = ASSIGN_TIMEOUT);
@@ -34,6 +34,7 @@ public:
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
 
 	FightType GetFightType() const { return fightType; }
+	const springai::AIFloat3& GetPosition() const { return position; }
 
 protected:
 	FightType fightType;

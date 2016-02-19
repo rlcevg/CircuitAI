@@ -34,6 +34,7 @@ CBDefenceTask::~CBDefenceTask()
 void CBDefenceTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	// Reclaim turret blockers
 	const float radius = 128.0f;  // buildDef->GetMaxRange() * 0.5f;
 	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(buildPos, radius));
 	if (!features.empty()) {
@@ -42,6 +43,11 @@ void CBDefenceTask::Finish()
 			manager->AssignTask(*units.begin(), recl);
 		}
 		utils::free_clear(features);
+	}
+
+	IUnitTask* task = circuit->GetMilitaryManager()->DelDefendTask(buildPos);
+	if (task != nullptr) {
+		task->GetManager()->DoneTask(task);
 	}
 
 	IBuilderTask::Finish();

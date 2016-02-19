@@ -31,7 +31,7 @@ IUnitTask::~IUnitTask()
 {
 }
 
-bool IUnitTask::CanAssignTo(CCircuitUnit* unit)
+bool IUnitTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	return true;
 }

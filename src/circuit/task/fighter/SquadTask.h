@@ -30,7 +30,6 @@ protected:
 	float highestSpeed;
 	// NOTE: Using unit instead of area directly may save from processing UpdateAreaUsers
 	CCircuitUnit* leader;  // slowest, weakest unit, true leader
-	float minPower;
 
 	bool isRegroup;
 	bool isAttack;

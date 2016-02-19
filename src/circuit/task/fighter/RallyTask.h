@@ -17,7 +17,7 @@ public:
 	CRallyTask(ITaskManager* mgr, float maxPower);
 	virtual ~CRallyTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit);
+	virtual bool CanAssignTo(CCircuitUnit* unit) const;
 
 	virtual void Execute(CCircuitUnit* unit);
 

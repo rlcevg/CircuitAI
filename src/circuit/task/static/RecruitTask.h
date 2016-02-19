@@ -24,7 +24,7 @@ public:
 				 RecruitType type, float radius);
 	virtual ~CRecruitTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit);
+	virtual bool CanAssignTo(CCircuitUnit* unit) const;
 
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();

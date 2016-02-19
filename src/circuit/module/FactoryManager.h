@@ -46,7 +46,7 @@ private:
 	void DequeueTask(IUnitTask* task, bool done = false);
 
 public:
-	virtual IUnitTask* GetTask(CCircuitUnit* unit);
+	virtual IUnitTask* MakeTask(CCircuitUnit* unit);
 	virtual void AbortTask(IUnitTask* task);
 	virtual void DoneTask(IUnitTask* task);
 	virtual void FallbackTask(CCircuitUnit* unit);
@@ -57,7 +57,7 @@ public:
 	const std::set<CRecruitTask*>& GetTasks() const { return factoryTasks; }
 	CCircuitUnit* NeedUpgrade();
 	CCircuitUnit* GetRandomFactory(CCircuitDef* buildDef);
-//	CCircuitUnit* GetRandomFactory(const springai::AIFloat3& position, CCircuitDef::RoleType role);
+	CCircuitDef* GetClosestDef(springai::AIFloat3& position, CCircuitDef::RoleType role);
 
 	CCircuitDef* GetAssistDef() const { return assistDef; }
 	springai::AIFloat3 GetClosestHaven(CCircuitUnit* unit) const;
@@ -68,7 +68,7 @@ public:
 	CCircuitDef* GetFactoryToBuild(CCircuitAI* circuit, bool isStart = false);
 	void AddFactory(CCircuitDef* cdef);
 	void DelFactory(CCircuitDef* cdef);
-	CCircuitDef* GetBuilderDef(CCircuitDef* facDef) const;
+	CCircuitDef* GetRoleDef(CCircuitDef* facDef, CCircuitDef::RoleType role) const;
 	CCircuitDef* GetLandDef(CCircuitDef* facDef) const;
 	CCircuitDef* GetWaterDef(CCircuitDef* facDef) const;
 
@@ -116,9 +116,7 @@ private:
 			, isRequireEnergy(false)
 			, nanoCount(0)
 		{}
-		CCircuitDef* GetBuilderDef() const { return roleDefs.find(CCircuitDef::RoleType::BUILDER)->second; }
-		CCircuitDef* GetArtyDef()    const { return roleDefs.find(CCircuitDef::RoleType::ARTY)->second; }
-		CCircuitDef* GetAADef()      const { return roleDefs.find(CCircuitDef::RoleType::AA)->second; }
+		CCircuitDef* GetRoleDef(CCircuitDef::RoleType role) const { return roleDefs.find(role)->second; }
 		std::unordered_map<std::underlying_type<CCircuitDef::RoleType>::type, CCircuitDef*> roleDefs;
 		std::vector<CCircuitDef*> buildDefs;
 		Tiers landTiers;

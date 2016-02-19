@@ -19,7 +19,7 @@ public:
 				  float cost, int timeout, float radius = .0f, bool isMetal = true);
 	virtual ~CBReclaimTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit);
+	virtual bool CanAssignTo(CCircuitUnit* unit) const;
 	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);  // FIXME: Remove when proper task assignment implemented
 

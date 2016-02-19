@@ -406,6 +406,12 @@
 
 // If unit's health drops below specified percent it will retreat
 "retreat": {
+	// retreat with fight command
+	"_siege_": ["armcrabe", "cormist"],
+
+	// hold fire on retreat
+	"_hold_fire_": ["hoverassault"],
+
 	// default value for all builders
 	"_builder_": 0.8,
 

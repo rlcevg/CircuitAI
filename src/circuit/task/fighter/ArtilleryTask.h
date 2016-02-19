@@ -17,7 +17,7 @@ public:
 	CArtilleryTask(ITaskManager* mgr);
 	virtual ~CArtilleryTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit);
+	virtual bool CanAssignTo(CCircuitUnit* unit) const;
 	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 

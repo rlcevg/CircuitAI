@@ -26,6 +26,7 @@ using namespace springai;
 CAttackTask::CAttackTask(ITaskManager* mgr)
 		: ISquadTask(mgr, FightType::ATTACK)
 		, pPath(std::make_shared<F3Vec>())
+		, minPower(.0f)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
@@ -38,13 +39,13 @@ CAttackTask::~CAttackTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-bool CAttackTask::CanAssignTo(CCircuitUnit* unit)
+bool CAttackTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	if (leader == nullptr) {
 		return true;
 	}
 	int frame = manager->GetCircuit()->GetLastFrame();
-	if (leader->GetPos(frame).SqDistance2D(unit->GetPos(frame)) > SQUARE(1000.0f)) {
+	if (leader->GetPos(frame).SqDistance2D(unit->GetPos(frame)) > SQUARE(1000.f)) {
 		return false;
 	}
 	if ((leader->GetCircuitDef()->IsAbleToFly() && unit->GetCircuitDef()->IsAbleToFly()) ||
@@ -61,9 +62,21 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 {
 	ISquadTask::AssignTo(unit);
 
-	CFightAction* fightAction = new CFightAction(unit);
+	minPower += unit->GetCircuitDef()->GetPower() / 8;
+
+	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
+	CFightAction* fightAction = new CFightAction(unit, squareSize);
 	unit->PushBack(fightAction);
 	fightAction->SetActive(false);
+}
+
+void CAttackTask::RemoveAssignee(CCircuitUnit* unit)
+{
+	ISquadTask::RemoveAssignee(unit);
+
+	if (attackPower < minPower) {
+		manager->AbortTask(this);
+	}
 }
 
 void CAttackTask::Execute(CCircuitUnit* unit)
@@ -94,7 +107,7 @@ void CAttackTask::Update()
 			for (CCircuitUnit* unit : units) {
 				const AIFloat3& pos = utils::get_near_pos(groupPos, SQUARE_SIZE * 32);
 				unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-				unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+				unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 
 				CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
 				fightAction->SetActive(false);
@@ -138,7 +151,7 @@ void CAttackTask::Update()
 			for (CCircuitUnit* unit : units) {
 				const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
 				unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-				unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+				unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 				unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 
 				CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
@@ -181,6 +194,9 @@ void CAttackTask::Update()
 void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	ISquadTask::OnUnitIdle(unit);
+	if (units.empty()) {
+		return;
+	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	if (position.SqDistance2D(leader->GetPos(circuit->GetLastFrame())) < SQUARE(lowestRange)) {
@@ -203,8 +219,8 @@ void CAttackTask::FindTarget()
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const float speed = cdef->GetSpeed();
-	int canTargetCat = cdef->GetTargetCategory();
-	int noChaseCat = cdef->GetNoChaseCategory();
+	const int canTargetCat = cdef->GetTargetCategory();
+	const int noChaseCat = cdef->GetNoChaseCategory();
 
 	target = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();

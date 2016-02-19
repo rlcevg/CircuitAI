@@ -26,7 +26,7 @@ public:
 
 	void AssignTask(CCircuitUnit* unit, IUnitTask* task);
 	void AssignTask(CCircuitUnit* unit);
-	virtual IUnitTask* GetTask(CCircuitUnit*) = 0;
+	virtual IUnitTask* MakeTask(CCircuitUnit*) = 0;
 	virtual void AbortTask(IUnitTask* task) = 0;
 	virtual void DoneTask(IUnitTask* task) = 0;
 	virtual void FallbackTask(CCircuitUnit* unit) = 0;

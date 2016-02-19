@@ -59,7 +59,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	category        = def->GetCategory();
 	noChaseCategory = def->GetNoChaseCategory() | circuit->GetBadCategory();
 
-	speed     = def->GetSpeed() / FRAMES_PER_SEC;  // NOTE: SetMaxWantedSpeed expects value/FRAMES_PER_SEC
+	speed     = def->GetSpeed() / FRAMES_PER_SEC;  // NOTE: SetWantedMaxSpeed expects value/FRAMES_PER_SEC
 	losRadius = def->GetLosRadius() * circuit->GetLosConv();
 	cost      = def->GetCost(res);
 
@@ -70,7 +70,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	isPlane        = !def->IsHoverAttack() && isAbleToFly;
 	isFloater      = def->IsFloater() && !isSubmarine && !isAbleToFly;
 	isSonarStealth = def->IsSonarStealth();
-	isTurnLarge    = (speed / def->GetTurnRate() > 0.003);
+	isTurnLarge    = (speed / (def->GetTurnRate() + 1e-3f) > 0.003f);
 
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto it = customParams.find("is_drone");

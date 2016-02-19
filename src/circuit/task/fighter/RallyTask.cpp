@@ -31,7 +31,7 @@ CRallyTask::~CRallyTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-bool CRallyTask::CanAssignTo(CCircuitUnit* unit)
+bool CRallyTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	if (units.empty()) {
 		return true;
@@ -57,7 +57,7 @@ void CRallyTask::Execute(CCircuitUnit* unit)
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		AIFloat3 pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), position, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
 		unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
-		unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 		return;
 	}
 

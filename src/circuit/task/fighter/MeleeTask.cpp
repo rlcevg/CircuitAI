@@ -33,16 +33,17 @@ CMeleeTask::~CMeleeTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-bool CMeleeTask::CanAssignTo(CCircuitUnit* unit)
+bool CMeleeTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return units.empty();
+	return units.empty() && unit->GetCircuitDef()->IsRoleMelee();
 }
 
 void CMeleeTask::AssignTo(CCircuitUnit* unit)
 {
 	IFighterTask::AssignTo(unit);
 
-	CMoveAction* moveAction = new CMoveAction(unit);
+	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
+	CMoveAction* moveAction = new CMoveAction(unit, squareSize);
 	unit->PushBack(moveAction);
 	moveAction->SetActive(false);
 }
@@ -50,7 +51,6 @@ void CMeleeTask::AssignTo(CCircuitUnit* unit)
 void CMeleeTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IFighterTask::RemoveAssignee(unit);
-
 	if (units.empty()) {
 		manager->AbortTask(this);
 	}
@@ -91,7 +91,7 @@ void CMeleeTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		position = bestTarget->GetPos();
 		const AIFloat3& pos = utils::get_radial_pos(position, SQUARE_SIZE * 8);
 		unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-		unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 		unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)bestTarget->GetId()});
 		moveAction->SetActive(false);
 		return;
@@ -135,7 +135,7 @@ void CMeleeTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	float z = rand() % (terrainManager->GetTerrainHeight() + 1);
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-	unit->GetUnit()->SetWantedMaxSpeed(MAX_SPEED);
+	unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 	moveAction->SetActive(false);
 }
 
@@ -155,11 +155,12 @@ CEnemyUnit* CMeleeTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	STerrainMapArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	float power = threatMap->GetUnitThreat(unit);
-	int canTargetCat = cdef->GetTargetCategory();
-	int noChaseCat = cdef->GetNoChaseCategory();
-	float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
-						   cdef->GetLosRadius());
+	const float speed = cdef->GetSpeed();
+	const float power = threatMap->GetUnitThreat(unit);
+	const int canTargetCat = cdef->GetTargetCategory();
+	const int noChaseCat = cdef->GetNoChaseCategory();
+	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
+								 cdef->GetLosRadius());
 	float minSqDist = range * range;
 	float maxThreat = .0f;
 
@@ -180,8 +181,12 @@ CEnemyUnit* CMeleeTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 			continue;
 		}
 		int targetCat;
-		if (enemy->GetCircuitDef() != nullptr) {
-			targetCat = enemy->GetCircuitDef()->GetCategory();
+		CCircuitDef* edef = enemy->GetCircuitDef();
+		if (edef != nullptr) {
+			if (edef->GetSpeed() > speed) {
+				continue;
+			}
+			targetCat = edef->GetCategory();
 			if ((targetCat & canTargetCat) == 0) {
 				continue;
 			}
@@ -204,7 +209,7 @@ CEnemyUnit* CMeleeTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 			}
 			continue;
 		}
-		if (sqDist < SQUARE(2000)) {  // maxSqDist
+		if (sqDist < SQUARE(2000.f)) {  // maxSqDist
 			enemyPositions.push_back(enemy->GetPos());
 		}
 	}
