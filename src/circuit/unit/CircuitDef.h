@@ -108,6 +108,11 @@ public:
 	bool IsSonarStealth() const { return isSonarStealth; }
 	bool IsTurnLarge()    const { return isTurnLarge; }
 
+	void SetSiege(bool value)    { isSiege = value; }
+	void SetHoldFire(bool value) { isHoldFire = value; }
+	bool IsSiege()    const { return isSiege; }
+	bool IsHoldFire() const { return isHoldFire; }
+
 	float GetSpeed()     const { return speed; }
 	float GetLosRadius() const { return losRadius; }
 	float GetCost()      const { return cost; }
@@ -159,6 +164,10 @@ private:
 	bool isLander;
 	bool isSonarStealth;
 	bool isTurnLarge;
+
+	// Retreat options
+	bool isSiege;  // Use Fight on retreat instead of Move
+	bool isHoldFire;  // Hold fire no retreat
 
 	float speed;
 	float losRadius;

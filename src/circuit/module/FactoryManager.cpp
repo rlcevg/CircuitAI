@@ -111,6 +111,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
+		// NOTE: Do not del if factory rotation wanted
 //		DelFactory(unit->GetCircuitDef());
 		auto checkBuilderFactory = [this]() {
 			CBuilderManager* builderManager = this->circuit->GetBuilderManager();

@@ -14,6 +14,7 @@
 #include "terrain/TerrainManager.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/MoveAction.h"
+#include "unit/action/FightAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -43,14 +44,26 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 		unit->PushBack(act);
 	}
 
-	if (!unit->GetCircuitDef()->IsPlane()) {
-		int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
-		unit->PushBack(new CMoveAction(unit, squareSize));
-
-		// Mobile repair
-		CBuilderManager* builderManager = manager->GetCircuit()->GetBuilderManager();
-		builderManager->EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
+	if (unit->GetCircuitDef()->IsPlane()) {
+		return;
 	}
+
+	if (unit->GetCircuitDef()->IsHoldFire()) {
+		unit->GetUnit()->SetFireState(0);
+	}
+
+	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
+	ITravelAction* travelAction;
+	if (unit->GetCircuitDef()->IsSiege()) {
+		travelAction = new CFightAction(unit, squareSize);
+	} else {
+		travelAction = new CMoveAction(unit, squareSize);
+	}
+	unit->PushBack(travelAction);
+
+	// Mobile repair
+	CBuilderManager* builderManager = manager->GetCircuit()->GetBuilderManager();
+	builderManager->EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
 }
 
 void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
@@ -59,15 +72,19 @@ void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
 	if (units.empty()) {
 		manager->DoneTask(this);
 	}
+
+	if (unit->GetCircuitDef()->IsHoldFire()) {
+		unit->GetUnit()->SetFireState(2);
+	}
 }
 
 void CRetreatTask::Execute(CCircuitUnit* unit)
 {
 	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-	if (act->GetType() != IUnitAction::Type::MOVE) {
+	if ((act->GetType() & (IUnitAction::Type::MOVE | IUnitAction::Type::FIGHT)) == 0) {
 		return;
 	}
-	CMoveAction* moveAction = static_cast<CMoveAction*>(act);
+	ITravelAction* moveAction = static_cast<ITravelAction*>(act);
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
@@ -186,8 +203,8 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		unit->GetUnit()->PatrolTo(pos);
 
 		IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-		if (act->GetType() == IUnitAction::Type::MOVE) {
-			static_cast<CMoveAction*>(act)->SetFinished(true);
+		if ((act->GetType() & (IUnitAction::Type::MOVE | IUnitAction::Type::FIGHT)) != 0) {
+			static_cast<ITravelAction*>(act)->SetFinished(true);
 		}
 	}
 }

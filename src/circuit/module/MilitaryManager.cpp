@@ -686,6 +686,26 @@ void CMilitaryManager::ReadConfig()
 		const float stepArty = artillery.get("eps_step", 1.0f).asFloat();
 		factorArty  = (teamSize - 1.0f) * stepArty + 1.0f;
 	}
+
+	const Json::Value& retreats = root["retreat"];
+
+	const Json::Value& siege = retreats["_siege_"];
+	for (unsigned i = 0; i < siege.size(); ++i) {
+		CCircuitDef* udef = circuit->GetCircuitDef(siege[i].asCString());
+		if (udef == nullptr) {
+			continue;
+		}
+		udef->SetSiege(true);
+	}
+
+	const Json::Value& holdFire = retreats["_hold_fire_"];
+	for (unsigned i = 0; i < holdFire.size(); ++i) {
+		CCircuitDef* udef = circuit->GetCircuitDef(holdFire[i].asCString());
+		if (udef == nullptr) {
+			continue;
+		}
+		udef->SetHoldFire(true);
+	}
 }
 
 void CMilitaryManager::Init()

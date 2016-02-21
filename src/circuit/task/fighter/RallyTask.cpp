@@ -56,6 +56,7 @@ void CRallyTask::Execute(CCircuitUnit* unit)
 		CCircuitAI* circuit = manager->GetCircuit();
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		AIFloat3 pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), position, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
+
 		unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 		return;
