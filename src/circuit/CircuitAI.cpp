@@ -969,7 +969,7 @@ std::string CCircuitAI::InitOptions()
 		cfgName = value;
 	} else {
 		const char* configs[] = {easy, normal};
-		cfgName = configs[std::min(static_cast<size_t>(difficulty), sizeof(configs) / sizeof(configs[0]))];
+		cfgName = configs[std::min(static_cast<size_t>(difficulty), sizeof(configs) / sizeof(configs[0]) - 1)];
 	}
 
 	delete options;

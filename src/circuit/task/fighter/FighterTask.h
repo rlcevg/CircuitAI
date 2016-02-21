@@ -36,7 +36,12 @@ public:
 	FightType GetFightType() const { return fightType; }
 	const springai::AIFloat3& GetPosition() const { return position; }
 
+	CEnemyUnit* GetTarget() const { return target; }
+	void ClearTarget() { target = nullptr; }  // Only for ~CEnemyUnit
+
 protected:
+	void SetTarget(CEnemyUnit* enemy);
+
 	FightType fightType;
 	springai::AIFloat3 position;  // attack/scout position
 

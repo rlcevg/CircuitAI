@@ -222,7 +222,7 @@ void CAttackTask::FindTarget()
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 
-	target = nullptr;
+	CEnemyUnit* bestTarget = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
 
 	threatMap->SetThreatType(leader);
@@ -253,13 +253,14 @@ void CAttackTask::FindTarget()
 		}
 
 		const float sqDist = pos.SqDistance2D(enemy->GetPos());
-		if (sqDist < minSqDist) {
-			target = enemy;
+		if (minSqDist > sqDist) {
 			minSqDist = sqDist;
+			bestTarget = enemy;
 		}
 	}
 
-	if (target != nullptr) {
+	SetTarget(bestTarget);
+	if (bestTarget != nullptr) {
 		position = target->GetPos();
 	}
 	AIFloat3 startPos = pos;

@@ -7,6 +7,7 @@
 
 #include "unit/EnemyUnit.h"
 #include "unit/CircuitDef.h"
+#include "task/fighter/FighterTask.h"
 #include "util/utils.h"
 
 #include "UnitRulesParam.h"
@@ -33,6 +34,10 @@ CEnemyUnit::CEnemyUnit(Unit* unit, CCircuitDef* cdef)
 CEnemyUnit::~CEnemyUnit()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	for (IFighterTask* task : tasks) {
+		task->ClearTarget();
+	}
+
 	delete unit;
 	delete dgun;
 	delete disarmParam;

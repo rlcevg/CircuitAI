@@ -28,6 +28,9 @@ IFighterTask::IFighterTask(ITaskManager* mgr, FightType type, int timeout)
 
 IFighterTask::~IFighterTask()
 {
+	if (target != nullptr) {
+		target->UnbindTask(this);
+	}
 }
 
 void IFighterTask::AssignTo(CCircuitUnit* unit)
@@ -111,6 +114,17 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 void IFighterTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	RemoveAssignee(unit);
+}
+
+void IFighterTask::SetTarget(CEnemyUnit* enemy)
+{
+	if (target != nullptr) {
+		target->UnbindTask(this);
+	}
+	if (enemy != nullptr) {
+		enemy->BindTask(this);
+	}
+	target = enemy;
 }
 
 } // namespace circuit

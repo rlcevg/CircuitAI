@@ -10,7 +10,11 @@
 
 #include "unit/CircuitUnit.h"
 
+#include <set>
+
 namespace circuit {
+
+class IFighterTask;
 
 class CEnemyUnit {
 public:
@@ -26,6 +30,9 @@ public:
 
 	void SetCircuitDef(CCircuitDef* cdef);
 	CCircuitDef* GetCircuitDef() const { return circuitDef; }
+
+	void BindTask(IFighterTask* task) { tasks.insert(task); }
+	void UnbindTask(IFighterTask* task) { tasks.erase(task); }
 
 	void SetLastSeen(int frame) { lastSeen = frame; }
 	int GetLastSeen() const { return lastSeen; }
@@ -51,6 +58,7 @@ private:
 	CCircuitUnit::Id id;
 	springai::Unit* unit;  // owner
 	CCircuitDef* circuitDef;
+	std::set<IFighterTask*> tasks;
 	int lastSeen;
 
 	springai::Weapon* dgun;

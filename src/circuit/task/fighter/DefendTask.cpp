@@ -61,8 +61,10 @@ void CDefendTask::Execute(CCircuitUnit* unit)
 		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 		return;
 	}
+
+	CEnemyUnit* bestTarget = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
-	target = nullptr;
+
 	for (Unit* e : enemies) {
 		if (e == nullptr) {
 			continue;
@@ -72,12 +74,14 @@ void CDefendTask::Execute(CCircuitUnit* unit)
 			float sqDist = GetPosition().SqDistance2D(enemy->GetPos());
 			if (minSqDist > sqDist) {
 				minSqDist = sqDist;
-				target = enemy;
+				bestTarget = enemy;
 			}
 		}
 		delete e;
 	}
-	if (target != nullptr) {
+
+	SetTarget(bestTarget);
+	if (bestTarget != nullptr) {
 		const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
 		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
