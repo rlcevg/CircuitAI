@@ -32,7 +32,7 @@ public:
 	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 
 	const std::set<IFighterTask*>& GetTasks(IFighterTask::FightType type) const {
-		return fightTasks[static_cast<int>(type)];
+		return fightTasks[static_cast<IFighterTask::FT>(type)];
 	}
 
 	IFighterTask* EnqueueTask(IFighterTask::FightType type);
@@ -93,13 +93,16 @@ private:
 	std::vector<unsigned int> scoutPath;  // list of cluster ids
 	unsigned int scoutIdx;
 
-	float metalAA, ratioAA, maxPercAA, factorAA;
-	float metalArty, ratioArty, maxPercArty, factorArty;
-	float metalLand;
-	float metalWater;
-	float metalArmy;
+	struct SRoleInfo {
+		float metal;
+		float ratio;
+		float maxPerc;
+		float factor;
+	};
+	std::vector<SRoleInfo> roleInfos;
 
 	std::set<CCircuitUnit*> army;
+	float metalArmy;
 
 	struct SClusterInfo {
 		IFighterTask* defence;

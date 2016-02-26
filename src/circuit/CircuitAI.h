@@ -10,13 +10,13 @@
 
 #include "unit/AllyTeam.h"
 #include "unit/CircuitDef.h"
+#include "util/Defines.h"
 
 #include <memory>
 #include <unordered_map>
 #include <map>
 #include <list>
 #include <vector>
-#include <string.h>
 
 namespace springai {
 	class OOAICallback;
@@ -152,12 +152,6 @@ private:
 // ---- AIOptions.lua ---- END
 
 // ---- UnitDefs ---- BEGIN
-private:
-	struct cmp_str {
-		bool operator()(char const* a, char const* b) {
-			return strcmp(a, b) < 0;
-		}
-	};
 public:
 	using CircuitDefs = std::unordered_map<CCircuitDef::Id, CCircuitDef*>;
 	using NamedDefs = std::map<const char*, CCircuitDef*, cmp_str>;

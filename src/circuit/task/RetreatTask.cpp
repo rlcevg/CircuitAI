@@ -81,10 +81,10 @@ void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
 void CRetreatTask::Execute(CCircuitUnit* unit)
 {
 	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-	if ((act->GetType() & (IUnitAction::Type::MOVE | IUnitAction::Type::FIGHT)) == 0) {
+	if (!act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT)) {
 		return;
 	}
-	ITravelAction* moveAction = static_cast<ITravelAction*>(act);
+	ITravelAction* travelAction = static_cast<ITravelAction*>(act);
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
@@ -112,7 +112,7 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 	if (pPath->empty()) {
 		pPath->push_back(endPos);
 	}
-	moveAction->SetPath(pPath);
+	travelAction->SetPath(pPath);
 	unit->Update(circuit);
 }
 
@@ -203,7 +203,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		unit->GetUnit()->PatrolTo(pos);
 
 		IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-		if ((act->GetType() & (IUnitAction::Type::MOVE | IUnitAction::Type::FIGHT)) != 0) {
+		if (act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT)) {
 			static_cast<ITravelAction*>(act)->SetFinished(true);
 		}
 	}

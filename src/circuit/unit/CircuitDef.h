@@ -24,10 +24,18 @@ namespace circuit {
 class CCircuitDef {
 public:
 	using Id = int;
-	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, COUNT};
-	enum RoleType: int {BUILDER = 0x0001, SCOUT   = 0x0002, RAIDER  = 0x0004, RIOT  = 0x0008,
-						ASSAULT = 0x0010, HEAVY   = 0x0020, BOMBER  = 0x0040, MELEE = 0x0080,
-						ARTY    = 0x0100, AA      = 0x0200, STATIC  = 0x0400, NONE  = 0x0000};
+	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, TOTAL_COUNT};
+	enum class RoleType: int {BUILDER = 0, RAIDER, RIOT, ASSAULT, SKIRM, ARTY, AIR, STATIC, SCOUT, HEAVY, BOMBER, MELEE, AH, AA, TOTAL_COUNT};
+	enum RoleMask: int {BUILDER = 0x0001, RAIDER = 0x0002, RIOT   = 0x0004, ASSAULT = 0x0008,
+						SKIRM   = 0x0010, ARTY   = 0x0020, AIR    = 0x0040, STATIC  = 0x0080,
+						SCOUT   = 0x0100, HEAVY  = 0x0200, BOMBER = 0x0400, MELEE   = 0x0800,
+						AH      = 0x1000, AA     = 0x2000, NONE   = 0x0000};
+	using RangeT = std::underlying_type<RangeType>::type;
+	using RoleT = std::underlying_type<RoleType>::type;
+	using RoleM = std::underlying_type<RoleMask>::type;
+
+	static RoleM GetMask(RoleT type) { return 1 << type; }
+	static RoleMask GetMask(RoleType type) { return static_cast<RoleMask>(1 << static_cast<RoleT>(type)); }
 
 	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
@@ -39,17 +47,17 @@ public:
 	Id GetId() const { return id; }
 	springai::UnitDef* GetUnitDef() const { return def; }
 
-	void SetRole(RoleType value) { role |= value; }
-	std::underlying_type<RoleType>::type GetRole() const { return role; }
-	bool IsRoleBuilder() const { return role & RoleType::BUILDER; }
-	bool IsRoleScout()   const { return role & RoleType::SCOUT; }
-	bool IsRoleRaider()  const { return role & RoleType::RAIDER; }
-	bool IsRoleRiot()    const { return role & RoleType::RIOT; }
-	bool IsRoleAssault() const { return role & RoleType::ASSAULT; }
-	bool IsRoleBomber()  const { return role & RoleType::BOMBER; }
-	bool IsRoleMelee()   const { return role & RoleType::MELEE; }
-	bool IsRoleArty()    const { return role & RoleType::ARTY; }
-	bool IsRoleAA()      const { return role & RoleType::AA; }
+	void AddRole(RoleType value) { role |= GetMask(value); }
+	std::underlying_type<RoleMask>::type GetRole() const { return role; }
+	bool IsRoleBuilder() const { return role & RoleMask::BUILDER; }
+	bool IsRoleScout()   const { return role & RoleMask::SCOUT; }
+	bool IsRoleRaider()  const { return role & RoleMask::RAIDER; }
+	bool IsRoleRiot()    const { return role & RoleMask::RIOT; }
+	bool IsRoleAssault() const { return role & RoleMask::ASSAULT; }
+	bool IsRoleBomber()  const { return role & RoleMask::BOMBER; }
+	bool IsRoleMelee()   const { return role & RoleMask::MELEE; }
+	bool IsRoleArty()    const { return role & RoleMask::ARTY; }
+	bool IsRoleAA()      const { return role & RoleMask::AA; }
 
 	const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
 	float GetBuildDistance() const { return buildDistance; }
@@ -84,7 +92,7 @@ public:
 	springai::WeaponMount* GetWeaponMount() const { return weaponMount; }
 	float GetDPS() const { return dps; }
 	float GetPower() const { return power; }
-	float GetMaxRange(RangeType type = RangeType::MAX) const { return maxRange[static_cast<unsigned>(type)]; }
+	float GetMaxRange(RangeType type = RangeType::MAX) const { return maxRange[static_cast<RangeT>(type)]; }
 	float GetMaxShield() const { return maxShield; }
 	int GetCategory() const { return category; }
 	int GetTargetCategory() const { return targetCategory; }
@@ -125,7 +133,7 @@ public:
 private:
 	Id id;
 	springai::UnitDef* def;  // owner
-	std::underlying_type<RoleType>::type role;
+	std::underlying_type<RoleMask>::type role;
 	std::unordered_set<Id> buildOptions;
 	float buildDistance;
 	float buildSpeed;
@@ -142,7 +150,7 @@ private:
 	springai::WeaponMount* weaponMount;
 	float dps;  // TODO: split dps like ranges on air, land, water
 	float power;  // attack power = UnitDef's max threat
-	std::array<float, static_cast<unsigned>(RangeType::COUNT)> maxRange;
+	std::array<float, static_cast<RangeT>(RangeType::TOTAL_COUNT)> maxRange;
 	float maxShield;
 	int category;
 	int targetCategory;

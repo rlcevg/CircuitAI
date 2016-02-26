@@ -12,7 +12,7 @@ namespace circuit {
 
 IUnitAction::IUnitAction(CCircuitUnit* owner, Type type)
 		: IAction(owner)
-		, type(type)
+		, mask(GetMask(type))
 {
 }
 

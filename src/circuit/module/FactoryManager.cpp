@@ -661,25 +661,37 @@ void CFactoryManager::ReadConfig()
 	/*
 	 * Roles
 	 */
-	std::map<CCircuitDef::RoleType, std::set<CCircuitDef::Id>> roles;
-	std::vector<std::pair<const char*, CCircuitDef::RoleType>> roleNames = {
-		std::make_pair("builder",   CCircuitDef::RoleType::BUILDER),
-		std::make_pair("scout",     CCircuitDef::RoleType::SCOUT),
-		std::make_pair("bomber",    CCircuitDef::RoleType::BOMBER),
-		std::make_pair("riot",      CCircuitDef::RoleType::RIOT),
-		std::make_pair("melee",     CCircuitDef::RoleType::MELEE),
-		std::make_pair("artillery", CCircuitDef::RoleType::ARTY),
-		std::make_pair("anti_air",  CCircuitDef::RoleType::AA),
+	std::map<CCircuitDef::RoleType, std::set<CCircuitDef::Id>> roleDefs;
+	std::map<const char*, CCircuitDef::RoleType, cmp_str> roleNames = {
+		{"builder",    CCircuitDef::RoleType::BUILDER},
+		{"raider",     CCircuitDef::RoleType::RAIDER},
+		{"riot",       CCircuitDef::RoleType::RIOT},
+		{"assault",    CCircuitDef::RoleType::ASSAULT},
+		{"skirmish",   CCircuitDef::RoleType::SKIRM},
+		{"artillery",  CCircuitDef::RoleType::ARTY},
+		{"air",        CCircuitDef::RoleType::AIR},
+		{"static",     CCircuitDef::RoleType::STATIC},
+		{"scout",      CCircuitDef::RoleType::SCOUT},
+		{"heavy",      CCircuitDef::RoleType::HEAVY},
+		{"bomber",     CCircuitDef::RoleType::BOMBER},
+		{"melee",      CCircuitDef::RoleType::MELEE},
+		{"anti_heavy", CCircuitDef::RoleType::AH},
+		{"anti_air",   CCircuitDef::RoleType::AA},
 	};
-	for (auto& pair : roleNames) {
-		for (const Json::Value& scout : root[pair.first]) {
-			CCircuitDef* cdef = circuit->GetCircuitDef(scout.asCString());
-			if (cdef == nullptr) {
+	const Json::Value& roles = root["role"];
+	for (const std::string& defName : roles.getMemberNames()) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());
+		if (cdef == nullptr) {
+			continue;
+		}
+		const Json::Value& defRoles = roles[defName];
+		for (unsigned i = 0; i < defRoles.size(); ++i) {
+			auto it = roleNames.find(defRoles[i].asCString());
+			if (it == roleNames.end()) {
 				continue;
 			}
-			cdef->SetRole(pair.second);
-
-			roles[pair.second].insert(cdef->GetId());
+			cdef->AddRole(it->second);
+			roleDefs[it->second].insert(cdef->GetId());
 		}
 	}
 
@@ -687,7 +699,7 @@ void CFactoryManager::ReadConfig()
 	 * Factories
 	 */
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	const Json::Value& factories = root["factories"];
+	const Json::Value& factories = root["factory"];
 	for (const std::string& fac : factories.getMemberNames()) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(fac.c_str());
 		if (cdef == nullptr) {
@@ -704,10 +716,11 @@ void CFactoryManager::ReadConfig()
 			CCircuitDef::RoleType::AA,
 		};
 
+		facDef.roleDefs.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT), nullptr);
 		for (const CCircuitDef::RoleType type : facRoles) {
 			float minCost = std::numeric_limits<float>::max();
 			CCircuitDef* rdef = nullptr;
-			const std::set<CCircuitDef::Id>& defIds = roles[type];
+			const std::set<CCircuitDef::Id>& defIds = roleDefs[type];
 			for (const CCircuitDef::Id bid : defIds) {
 				if (options.find(bid) == options.end()) {
 					continue;
@@ -718,7 +731,7 @@ void CFactoryManager::ReadConfig()
 					rdef = tdef;
 				}
 			}
-			facDef.roleDefs[type] = rdef;
+			facDef.roleDefs[static_cast<CCircuitDef::RoleT>(type)] = rdef;
 		}
 
 		facDef.isRequireEnergy = factory.get("require_energy", false).asBool();

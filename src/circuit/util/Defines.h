@@ -12,6 +12,7 @@
 #include "AIFloat3.h"
 
 #include <vector>
+#include <string.h>
 
 #define SQUARE(x)			((x) * (x))
 #define SQRT_2				1.4142f
@@ -43,5 +44,11 @@
 #define DEFAULT_SLACK	(SQUARE_SIZE * THREAT_RES)
 
 typedef std::vector<springai::AIFloat3> F3Vec;
+
+struct cmp_str {
+	bool operator()(char const* a, char const* b) {
+		return strcmp(a, b) < 0;
+	}
+};
 
 #endif // SRC_CIRCUIT_UTIL_DEFINES_H_

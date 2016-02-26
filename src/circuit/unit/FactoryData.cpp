@@ -20,7 +20,7 @@ CFactoryData::CFactoryData(CCircuitAI *circuit)
 		: isFirstChoice(true)
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const Json::Value& factories = root["factories"];
+	const Json::Value& factories = root["factory"];
 
 	for (const std::string& fac : factories.getMemberNames()) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(fac.c_str());

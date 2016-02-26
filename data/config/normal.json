@@ -1,7 +1,7 @@
 // Mono-space font required
 {
 // Section defines wich factories to use
-"factories": {
+"factory": {
 	"factorycloak": {
 		// Adjusts the priority of factory choice (factories with map_percent < 20 are ignored)
 		// map_percent is [20..100]
@@ -317,92 +317,193 @@
 	}
 },
 
+"role": {
+	// Main roles: builder, raider, riot, assault, skirmish, artillery, anti_air, air, static
+	// Auto-assigned roles: builder, air, static
+	// Support roles: scout, heavy, bomber, melee, anti_heavy
+	// First value defines main role and the way enemy will counter it
 
-"builder": ["armrectr", "armca", "amphcon", "arm_spider", "corned", "corch", "coracv", "corfast", "cornecro", "shipcon"],
-
-// Units defined as scouts will use pathfinder to visit each uncolonized mex
-"scout": [
 	// factorycloak
-	"armpw", "spherepole", "armjeth",
+	"armrectr": ["builder"],
+	"armpw": ["raider", "scout"],
+	"spherepole": ["raider"],
+	"armrock": ["skirmish"],
+	"armwar": ["riot"],
+	"armzeus": ["assault"],
+	"armham": ["artillery"],
+	"armsnipe": ["artillery"],
+	"armtick": [],
+	"spherecloaker": [],
+	"armjeth": ["anti_air"],
 
+	// "air" will be auto-set for every flying unit
 	// factorygunship
-	"armkam", "blastwing", "gunshipaa",
+	"armca": ["air", "builder"],
+	"blastwing": ["air"],
+	"bladew": ["air", "raider", "scout"],
+	"armkam": ["air", "raider"],
+	"gunshipsupport": ["air"],
+	"armbrawl": ["air", "artillery"],
+	"blackdawn":["air"],
+	"corcrw": ["air"],
+	"corvalk": ["air"],
+	"corbtrans": ["air"],
+	"gunshipaa": ["air", "anti_air"],
 
 	// factoryamph
-	"amphraider3", "amphaa",
+	"amphcon": ["builder"],
+	"amphraider3": ["raider", "scout"],
+	"amphraider2": ["riot", "melee"],
+	"amphfloater": ["skirmish"],
+	"amphriot": ["riot"],
+	"amphassault": ["assault"],
+	"amphtele": [],
+	"amphaa": ["anti_air"],
 
 	// factoryspider
-	"armflea", "armspy", "spideraa",
+	"arm_spider": ["builder"],
+	"armflea": ["raider", "scout"],
+	"spiderassault": ["assault"],
+	"arm_venom": ["riot"],
+	"spiderriot": ["riot"],
+	"armsptk": ["skirmish"],
+	"armcrabe": ["assault"],
+	"armspy": ["scout"],
+	"spideraa": ["anti_air"],
 
 	// factoryshield
-	"corclog", "corak", "corcrash",
+	"cornecro": ["builder"],
+	"corclog": ["scout"],
+	"corak": ["raider", "scout"],
+	"corstorm": ["skirmish"],
+	"corthud": ["assault"],
+	"cormak": ["riot"],
+	"shieldfelon": ["assault", "riot"],
+	"shieldarty": ["artillery"],
+	"corroach": [],
+	"core_spectre": [],
+	"corcrash": ["anti_air"],
 
 	// factoryveh
-	"corfav", "corgator", "capturecar", "vehaa",
+	"corned": ["builder"],
+	"corfav": ["scout"],
+	"corgator": ["raider"],
+	"cormist": ["skirmish"],
+	"corlevlr": ["riot"],
+	"corraid": ["assault"],
+	"capturecar": ["raider"],
+	"corgarp": ["skirmish"],
+	"armmerl": ["artillery"],
+	"vehaa": ["anti_air"],
 
 	// factoryjump
-	"puppy", "corpyro", "armaak",
+	"corfast": ["builder"],
+	"puppy": ["raider", "scout"],
+	"corpyro": ["raider"],
+	"jumpblackhole": ["skirmish"],
+	"slowmort": ["skirmish"],
+	"corcan": ["assault"],
+	"corsumo": ["riot", "skirmish"],
+	"firewalker": ["artillery"],
+	"corsktl": [],
+	"armaak": ["anti_air"],
 
 	// factoryhover
-	"corsh", "hoveraa",
+	"corch": ["builder"],
+	"corsh": ["raider", "scout"],
+	"nsaclash": ["skirmish"],
+	"hoverassault": ["assault"],
+	"hoverdepthcharge": [],
+	"hoverriot": ["riot"],
+	"armmanni": ["artillery"],
+	"hoveraa": ["anti_air"],
 
 	// factoryship
-	"shipscout", "subraider", "shipraider", "shipaa",
+	"shipcon": ["builder"],
+	"shipscout": ["scout"],
+	"subraider": ["raider"],
+	"shipraider": ["raider"],
+	"shiptorp": ["riot"],
+	"shipskirm": ["skirmish"],
+	"shiparty": ["artillery"],
+	"subarty": ["artillery"],
+	"armtboat": [],
+	"shipaa": ["anti_air"],
 
 	// factoryplane
-	"fighter", "corawac",
+	"armca": ["air", "builder"],
+	"fighter": ["air", "raider", "scout"],
+	"corvamp": ["air", "anti_air"],
+	"corshad": ["air", "bomber"],
+	"corhurc2": ["air", "bomber"],
+	"armstiletto_laser": ["air", "bomber"],
+	"armcybr": ["air", "bomber"],
+	"corawac": ["air", "scout"],
 
 	// factorytank
-	"logkoda", "corsent",
+	"coracv": ["builder"],
+	"logkoda": ["raider", "scout"],
+	"panther": ["raider"],
+	"tawf114": ["riot"],
+	"correap": ["assault"],
+	"corgol": ["assault"],
+	"cormart": ["artillery"],
+	"trem": ["artillery"],
+	"corsent": ["anti_air"],
 
-	// Strider
-	"armcomdgun", "scorpion"
-],
+	// striderhub
+	"armcomdgun": ["scout"],
+	"scorpion": ["scout"],
+	"dante": ["melee"],
+	"armraven": ["artillery"],
+	"funnelweb": ["artillery"],
+	"armbanth": ["melee"],
+	"armorco": ["melee"],
+	"cornukesub": [],
+	"reef": ["artillery"],
+	"corbats": ["artillery"]
+},
 
-"riot": [
-	// factorycloak
-	"armwar",
-
-	// factoryamph
-	"amphraider2", "amphriot",
-
-	// factoryspider
-	"arm_venom", "spiderriot",
-
-	// factoryshield
-	"cormak",
-
-	// factoryveh
-	"corlevlr",
-
-	// factoryjump
-	"corpyro",
-
-	// factoryhover
-	"hoverriot",
-
-	// factoryship
-	"shiptorp",
-
-	// factorytank
-	"tawf114"
-],
-
-// Rearm-addictive units, require airpad
-"bomber": ["corshad", "corhurc2", "armstiletto_laser", "armcybr"],
-
-"melee": [
-	// factoryamph
-	"amphraider2",
-
-	// Strider
-	"dante", "armbanth", "armorco"
-],
-
-"artillery": ["armham", "armbrawl", "armmerl", "armmanni", "cormart", "firewalker", "shieldarty", "shiparty", "armraven", "funnelweb"],
-
-"anti_air": ["armjeth", "gunshipaa", "amphaa", "spideraa", "corcrash", "vehaa", "armaak", "hoveraa", "shipaa", "fighter", "corsent"],
-
+// Build special units when enemy_metal*ratio > response_metal*eps; eps=teamSize*eps_step+(1-eps_step)
+// AA condition for 3v3: (air_metal*0.7 > (aa_metal+aa_cost)*1.8) and (aa_metal+aa_cost < army_metal*0.45).
+"response": {
+	"raider": {
+		"contr": ["skirmish", "artillery", "anti_air"],
+		"ratio": 1.1,
+		"max_percent": 0.45,
+		"eps_step": 0.4
+	},
+	"riot": {
+		"contr": ["raider"],
+		"ratio": 1.1,
+		"max_percent": 0.45,
+		"eps_step": 0.4
+	},
+	"assault": {
+		"contr": ["riot", "static"],
+		"ratio": 1.1,
+		"max_percent": 0.45,
+		"eps_step": 0.4
+	},
+	"skirmish": {
+		"contr": ["riot", "assault"],
+		"ratio": 1.1,
+		"max_percent": 0.45,
+		"eps_step": 0.4
+	},
+	"anti_air": {
+		"contr": ["air"],
+		"ratio": 0.8,
+		"max_percent": 0.45,
+		"eps_step": 0.4
+	},
+	"artillery": {
+		"contr": ["static"],
+		"ratio": 1.1,
+		"max_percent": 0.45,
+		"eps_step": 0.4
+	}
+},
 
 // If unit's health drops below specified percent it will retreat
 "retreat": {
@@ -530,20 +631,5 @@
 		"armwin": [20]
 	},
 	"income_factor": 0.74
-},
-
-// Build special units when enemy_metal*ratio > response_metal*eps; eps=teamSize*eps_step+(1-eps_step)
-// AA condition for 3v3: (air_metal*0.7 > (aa_metal+aa_cost)*1.8) and (aa_metal+aa_cost < army_metal*0.45).
-"response": {
-	"anti_air": {
-		"ratio": 0.8,
-		"max_percent": 0.45,
-		"eps_step": 0.4
-	},
-	"artillery": {
-		"ratio": 1.1,
-		"max_percent": 0.45,
-		"eps_step": 0.4
-	}
 }
 }

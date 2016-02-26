@@ -24,7 +24,7 @@ using namespace springai;
 
 CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts, Resource* res)
 		: def(def)
-		, role(RoleType::NONE)
+		, role(RoleMask::NONE)
 		, buildOptions(buildOpts)
 		, count(0)
 		, buildCounts(0)
@@ -56,7 +56,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	buildSpeed    = def->GetBuildSpeed();
 	maxThisUnit   = def->GetMaxThisUnit();
 
-	maxRange[static_cast<unsigned>(RangeType::MAX)] = def->GetMaxWeaponRange();
+	maxRange[static_cast<RangeT>(RangeType::MAX)] = def->GetMaxWeaponRange();
 	hasDGun         = def->CanManualFire();
 	category        = def->GetCategory();
 	noChaseCategory = def->GetNoChaseCategory() | circuit->GetBadCategory();
@@ -206,15 +206,15 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		canTargetWater |= isWaterWeapon;
 
 		if ((weaponCat & circuit->GetAirCategory()) && isAirWeapon) {
-			float& mr = maxRange[static_cast<unsigned>(RangeType::AIR)];
+			float& mr = maxRange[static_cast<RangeT>(RangeType::AIR)];
 			mr = std::max(mr, range);
 		}
 		if ((weaponCat & circuit->GetLandCategory()) && isLandWeapon) {
-			float& mr = maxRange[static_cast<unsigned>(RangeType::LAND)];
+			float& mr = maxRange[static_cast<RangeT>(RangeType::LAND)];
 			mr = std::max(mr, range);
 		}
 		if ((weaponCat & circuit->GetWaterCategory()) && isWaterWeapon) {
-			float& mr = maxRange[static_cast<unsigned>(RangeType::WATER)];
+			float& mr = maxRange[static_cast<RangeT>(RangeType::WATER)];
 			mr = std::max(mr, range);
 		}
 

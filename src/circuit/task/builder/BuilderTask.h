@@ -36,6 +36,7 @@ public:
 		TERRAFORM, PATROL,  // builder actions that don't have UnitDef as target
 		DEFAULT = BIG_GUN
 	};
+	using BT = std::underlying_type<BuildType>::type;
 
 protected:
 	IBuilderTask(ITaskManager* mgr, Priority priority,

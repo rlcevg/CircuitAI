@@ -13,7 +13,7 @@
 #include <vector>
 
 #define GRID_RATIO_LOW		8
-#define STRUCT_BIT(bits)	static_cast<int>(SBlockingMap::StructMask::bits)
+#define STRUCT_BIT(bits)	static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::bits)
 
 namespace circuit {
 
@@ -23,15 +23,17 @@ struct SBlockingMap {
 								ENGY_HIGH = 0x0010,   PYLON = 0x0020,  DEF_LOW = 0x0040,  DEF_MID = 0x0080,
 								 DEF_HIGH = 0x0100, SPECIAL = 0x0200,     NANO = 0x0400,  UNKNOWN = 0x0800,
 									 NONE = 0x0000,     ALL = 0xFFFF};
+	using ST = std::underlying_type<StructType>::type;
+	using SM = std::underlying_type<StructMask>::type;
 
 	inline bool IsStruct(int x, int z, StructMask structMask) const;
-	inline bool IsBlocked(int x, int z, int notIgnoreMask) const;
-	inline bool IsBlockedLow(int xLow, int zLow, int notIgnoreMask) const;
-	inline void MarkBlocker(int x, int z, StructType structType, int notIgnoreMask);
+	inline bool IsBlocked(int x, int z, SM notIgnoreMask) const;
+	inline bool IsBlockedLow(int xLow, int zLow, SM notIgnoreMask) const;
+	inline void MarkBlocker(int x, int z, StructType structType, SM notIgnoreMask);
 	inline void AddBlocker(int x, int z, StructType structType);
 	inline void DelBlocker(int x, int z, StructType structType);
-	inline void AddStruct(int x, int z, StructType structType, int notIgnoreMask);
-	inline void DelStruct(int x, int z, StructType structType, int notIgnoreMask);
+	inline void AddStruct(int x, int z, StructType structType, SM notIgnoreMask);
+	inline void DelStruct(int x, int z, StructType structType, SM notIgnoreMask);
 
 	inline bool IsInBounds(const int2& r1, const int2& r2) const;
 	inline bool IsInBoundsLow(int x, int z) const;
@@ -40,18 +42,18 @@ struct SBlockingMap {
 	static inline StructMask GetStructMask(StructType structType);
 
 	struct SBlockCell {
-		int blockerMask;
-		int notIgnoreMask;  // = ~ignoreMask
+		SM blockerMask;
+		SM notIgnoreMask;  // = ~ignoreMask
 		StructMask structMask;
-		unsigned int blockerCounts[static_cast<int>(StructType::TOTAL_COUNT)];
+		unsigned int blockerCounts[static_cast<ST>(StructType::TOTAL_COUNT)];
 	};
 	std::vector<SBlockCell> grid;  // granularity Map::GetWidth / 2,  Map::GetHeight / 2
 	int columns;
 	int rows;
 
 	struct SBlockCellLow {
-		int blockerMask;
-		unsigned int blockerCounts[static_cast<int>(StructType::TOTAL_COUNT)];
+		SM blockerMask;
+		unsigned int blockerCounts[static_cast<ST>(StructType::TOTAL_COUNT)];
 	};
 	// TODO: Replace with QuadTree
 	std::vector<SBlockCellLow> gridLow;  // granularity Map::GetWidth / 16, Map::GetHeight / 16

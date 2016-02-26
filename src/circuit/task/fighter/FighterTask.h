@@ -18,6 +18,7 @@ class CEnemyUnit;
 class IFighterTask: public IUnitTask {
 public:
 	enum class FightType: char {RALLY = 0, GUARD, DEFEND, SCOUT, RAID, ATTACK, BOMB, MELEE, ARTY, AA, TASKS_COUNT};
+	using FT = std::underlying_type<FightType>::type;
 
 protected:
 	IFighterTask(ITaskManager* mgr, FightType type, int timeout = ASSIGN_TIMEOUT);

@@ -369,7 +369,7 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
 	auto isOpenSite = [this](const int2& s1, const int2& s2) {
-		const int notIgnore = static_cast<int>(SBlockingMap::StructMask::ALL);
+		const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::ALL);
 		for (int x = s1.x; x < s2.x; x++) {
 			for (int z = s1.y; z < s2.y; z++) {
 				if (blockingMap.IsBlocked(x, z, notIgnore)) {
@@ -586,7 +586,7 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(CCircuitDef* cdef, const AIFloat3& po
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
 	auto isOpenSite = [this](const int2& s1, const int2& s2) {
-		const int notIgnore = static_cast<int>(SBlockingMap::StructMask::ALL);
+		const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::ALL);
 		for (int x = s1.x; x < s2.x; x++) {
 			for (int z = s1.y; z < s2.y; z++) {
 				if (blockingMap.IsBlocked(x, z, notIgnore)) {
@@ -607,7 +607,7 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(CCircuitDef* cdef, const AIFloat3& po
 	const int cornerX1 = int(pos.x / (SQUARE_SIZE * 2)) - (xsize / 2);
 	const int cornerZ1 = int(pos.z / (SQUARE_SIZE * 2)) - (zsize / 2);
 
-	const int notIgnore = static_cast<int>(SBlockingMap::StructMask::ALL);
+	const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::ALL);
 
 	AIFloat3 probePos(ZeroVector);
 	Map* map = circuit->GetMap();
@@ -1006,7 +1006,7 @@ void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 	blockingMap.Bound(m1, m2);
 
 	const SBlockingMap::StructType structType = SBlockingMap::StructType::UNKNOWN;
-	const int notIgnore = static_cast<int>(SBlockingMap::StructMask::ALL);
+	const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::ALL);
 
 	if (block) {
 		for (int z = m1.y; z < m2.y; z++) {

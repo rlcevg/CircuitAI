@@ -110,14 +110,18 @@ private:
 
 	struct SFactoryDef {
 		using Tiers = std::map<unsigned, std::vector<float>>;
+
 		SFactoryDef()
 			: landDef(nullptr)
 			, waterDef(nullptr)
 			, isRequireEnergy(false)
 			, nanoCount(0)
 		{}
-		CCircuitDef* GetRoleDef(CCircuitDef::RoleType role) const { return roleDefs.find(role)->second; }
-		std::unordered_map<std::underlying_type<CCircuitDef::RoleType>::type, CCircuitDef*> roleDefs;
+		CCircuitDef* GetRoleDef(CCircuitDef::RoleType role) const {
+			return roleDefs[static_cast<CCircuitDef::RoleT>(role)];
+		}
+
+		std::vector<CCircuitDef*> roleDefs;  // cheapest role def
 		std::vector<CCircuitDef*> buildDefs;
 		Tiers landTiers;
 		Tiers waterTiers;

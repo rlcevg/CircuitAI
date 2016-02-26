@@ -18,7 +18,8 @@ class IFighterTask;
 
 class CEnemyUnit {
 public:
-	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, CLOAK = 4, COUNT};
+	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, CLOAK = 4, TOTAL_COUNT};
+	using RT = std::underlying_type<RangeType>::type;
 
 	CEnemyUnit(const CEnemyUnit& that) = delete;
 	CEnemyUnit& operator=(const CEnemyUnit&) = delete;
@@ -48,8 +49,8 @@ public:
 	float GetThreat() const { return threat; }
 	void DecayThreat(float decay) { threat *= decay; }
 
-	void SetRange(RangeType t, int r) { range[static_cast<unsigned>(t)] = r; }
-	int GetRange(RangeType t = CEnemyUnit::RangeType::MAX) const { return range[static_cast<unsigned>(t)]; }
+	void SetRange(RangeType t, int r) { range[static_cast<RT>(t)] = r; }
+	int GetRange(RangeType t = RangeType::MAX) const { return range[static_cast<RT>(t)]; }
 
 	bool operator==(const CCircuitUnit& rhs) { return id == rhs.GetId(); }
 	bool operator!=(const CCircuitUnit& rhs) { return id != rhs.GetId(); }
@@ -64,26 +65,26 @@ private:
 	springai::Weapon* dgun;
 	springai::UnitRulesParam* disarmParam;
 
-	enum LosType: char {NONE = 0x00, LOS = 0x01, RADAR = 0x02, HIDDEN = 0x04, KNOWN = 0x08};
+	enum LosMask: char {NONE = 0x00, LOS = 0x01, RADAR = 0x02, HIDDEN = 0x04, KNOWN = 0x08};
 	springai::AIFloat3 pos;
 	float threat;
-	std::array<int, static_cast<unsigned>(RangeType::COUNT)> range;
+	std::array<int, static_cast<RT>(RangeType::TOTAL_COUNT)> range;
 
-	std::underlying_type<LosType>::type losStatus;
+	std::underlying_type<LosMask>::type losStatus;
 public:
-	void SetInLOS() { losStatus |= LosType::LOS; }
-	void SetInRadar() { losStatus |= LosType::RADAR; }
-	void SetHidden() { losStatus |= LosType::HIDDEN; }
-	void SetKnown() { losStatus |= LosType::KNOWN; }
-	void ClearInLOS() { losStatus &= ~LosType::LOS; }
-	void ClearInRadar() { losStatus &= ~LosType::RADAR; }
-	void ClearHidden() { losStatus &= ~LosType::HIDDEN; }
-	bool IsInLOS() const { return losStatus & LosType::LOS; }
-	bool IsInRadar() const { return losStatus & LosType::RADAR; }
-	bool IsInRadarOrLOS() const { return losStatus & (LosType::RADAR | LosType::LOS); }
-	bool NotInRadarAndLOS() const { return (losStatus & (LosType::RADAR | LosType::LOS)) == 0; }
-	bool IsHidden() const { return losStatus & LosType::HIDDEN; }
-	bool IsKnown() const { return losStatus & LosType::KNOWN; }
+	void SetInLOS() { losStatus |= LosMask::LOS; }
+	void SetInRadar() { losStatus |= LosMask::RADAR; }
+	void SetHidden() { losStatus |= LosMask::HIDDEN; }
+	void SetKnown() { losStatus |= LosMask::KNOWN; }
+	void ClearInLOS() { losStatus &= ~LosMask::LOS; }
+	void ClearInRadar() { losStatus &= ~LosMask::RADAR; }
+	void ClearHidden() { losStatus &= ~LosMask::HIDDEN; }
+	bool IsInLOS() const { return losStatus & LosMask::LOS; }
+	bool IsInRadar() const { return losStatus & LosMask::RADAR; }
+	bool IsInRadarOrLOS() const { return losStatus & (LosMask::RADAR | LosMask::LOS); }
+	bool NotInRadarAndLOS() const { return (losStatus & (LosMask::RADAR | LosMask::LOS)) == 0; }
+	bool IsHidden() const { return losStatus & LosMask::HIDDEN; }
+	bool IsKnown() const { return losStatus & LosMask::KNOWN; }
 };
 
 } // namespace circuit

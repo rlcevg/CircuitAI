@@ -78,7 +78,7 @@ void CArtilleryTask::Update()
 void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
 	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-	if (act->GetType() != IUnitAction::Type::MOVE) {
+	if (!act->IsEqual(IUnitAction::Mask::MOVE)) {
 		return;
 	}
 	CMoveAction* moveAction = static_cast<CMoveAction*>(act);

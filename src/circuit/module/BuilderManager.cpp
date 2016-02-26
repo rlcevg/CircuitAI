@@ -190,7 +190,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		}), FRAMES_PER_SEC * 20);
 	};
 
-	buildTasks.resize(static_cast<int>(IBuilderTask::BuildType::TASKS_COUNT));
+	buildTasks.resize(static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::TASKS_COUNT));
 
 	for (auto mtId : workerMobileTypes) {
 		for (auto area : terrainManager->GetMobileTypeById(mtId)->area) {
@@ -317,13 +317,13 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType type) const
 {
 	assert(type < IBuilderTask::BuildType::TASKS_COUNT);
-	return buildTasks[static_cast<int>(type)];
+	return buildTasks[static_cast<IBuilderTask::BT>(type)];
 }
 
 void CBuilderManager::ActivateTask(IBuilderTask* task)
 {
 	if ((task->GetType() == IUnitTask::Type::BUILDER) && (task->GetBuildType() < IBuilderTask::BuildType::TASKS_COUNT)) {
-		buildTasks[static_cast<int>(task->GetBuildType())].insert(task);
+		buildTasks[static_cast<IBuilderTask::BT>(task->GetBuildType())].insert(task);
 		buildTasksCount++;
 	} else {
 		miscTasks.insert(task);
@@ -364,7 +364,7 @@ IBuilderTask* CBuilderManager::EnqueuePylon(IBuilderTask::Priority priority,
 {
 	IBuilderTask* task = new CBPylonTask(this, priority, buildDef, position, link, cost, timeout);
 	if (isActive) {
-		buildTasks[static_cast<int>(IBuilderTask::BuildType::PYLON)].insert(task);
+		buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::PYLON)].insert(task);
 		buildTasksCount++;
 	}
 	return task;
@@ -379,7 +379,7 @@ IBuilderTask* CBuilderManager::EnqueueRepair(IBuilderTask::Priority priority,
 		return it->second;
 	}
 	CBRepairTask* task = new CBRepairTask(this, priority, target, timeout);
-	buildTasks[static_cast<int>(IBuilderTask::BuildType::REPAIR)].insert(task);
+	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::REPAIR)].insert(task);
 	buildTasksCount++;
 	repairedUnits[target->GetId()] = task;
 	return task;
@@ -393,7 +393,7 @@ IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
 											  bool isMetal)
 {
 	IBuilderTask* task = new CBReclaimTask(this, priority, position, cost, timeout, radius, isMetal);
-	buildTasks[static_cast<int>(IBuilderTask::BuildType::RECLAIM)].insert(task);
+	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::RECLAIM)].insert(task);
 	buildTasksCount++;
 	return task;
 }
@@ -489,7 +489,7 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 	}
 
 	if (isActive) {
-		buildTasks[static_cast<int>(type)].insert(task);
+		buildTasks[static_cast<IBuilderTask::BT>(type)].insert(task);
 		buildTasksCount++;
 	}
 	return task;
@@ -498,7 +498,7 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
 {
 	if ((task->GetType() == IUnitTask::Type::BUILDER) && (task->GetBuildType() < IBuilderTask::BuildType::TASKS_COUNT)) {
-		std::set<IBuilderTask*>& tasks = buildTasks[static_cast<int>(task->GetBuildType())];
+		std::set<IBuilderTask*>& tasks = buildTasks[static_cast<IBuilderTask::BT>(task->GetBuildType())];
 		auto it = tasks.find(task);
 		if (it != tasks.end()) {
 			if (task->GetBuildType() == IBuilderTask::BuildType::REPAIR) {
