@@ -32,8 +32,8 @@ protected:
 public:
 	virtual ~IUnitAction();
 
-	bool IsAny(M value) const { return (mask & value) != 0; }
-	bool IsEqual(M value) const { return mask == value; }
+	bool IsAny(M value)     const { return (mask & value) != 0; }
+	bool IsEqual(M value)   const { return mask == value; }
 	bool IsContain(M value) const { return (mask & value) == value; }
 
 protected:

@@ -44,6 +44,7 @@ public:
 	springai::Resource* GetEnergyRes() const { return energyRes; }
 	CEnergyGrid* GetEnergyGrid() const { return energyGrid; }
 	CCircuitDef* GetMexDef() const { return mexDef; }
+	CCircuitDef* GetLowEnergy(const springai::AIFloat3& pos) const;
 	CCircuitDef* GetPylonDef() const { return pylonDef; }
 	float GetPylonRange() const { return pylonRange; }
 	void AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs);  // add available energy defs

@@ -657,6 +657,7 @@ CCircuitDef* CFactoryManager::GetWaterDef(CCircuitDef* facDef) const
 void CFactoryManager::ReadConfig()
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
 
 	/*
 	 * Roles
@@ -684,14 +685,33 @@ void CFactoryManager::ReadConfig()
 		if (cdef == nullptr) {
 			continue;
 		}
+
 		const Json::Value& defRoles = roles[defName];
 		for (unsigned i = 0; i < defRoles.size(); ++i) {
-			auto it = roleNames.find(defRoles[i].asCString());
+			const char* roleName = defRoles[i].asCString();
+			auto it = roleNames.find(roleName);
 			if (it == roleNames.end()) {
+				circuit->LOG("CONFIG %s: %s has unknown role '%s'", cfgName.c_str(), defName.c_str(), roleName);
 				continue;
 			}
+			if (cdef->IsRoleEqual(CCircuitDef::RoleMask::NONE)) {
+				cdef->SetMainRole(it->second);
+			}
 			cdef->AddRole(it->second);
+
 			roleDefs[it->second].insert(cdef->GetId());
+		}
+
+		// Auto-set roles
+		if (cdef->IsAbleToFly()) {
+			cdef->SetMainRole(CCircuitDef::RoleType::AIR);
+			cdef->AddRole(CCircuitDef::RoleType::AIR);
+		} else if (!cdef->IsMobile() && cdef->IsAttacker() && cdef->HasAntiLand()) {
+			cdef->SetMainRole(CCircuitDef::RoleType::STATIC);
+			cdef->AddRole(CCircuitDef::RoleType::STATIC);
+		} else if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
+			cdef->SetMainRole(CCircuitDef::RoleType::BUILDER);
+			cdef->AddRole(CCircuitDef::RoleType::BUILDER);
 		}
 	}
 
@@ -783,7 +803,6 @@ void CFactoryManager::ReadConfig()
 		if (facDef.buildDefs.empty()) {
 			facDef.buildDefs.push_back(nullptr);
 		} else {
-			const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
 			auto fillProbs = [this, &cfgName, &facDef, &fac, &factory](unsigned i, const char* type, SFactoryDef::Tiers& tiers) {
 				const Json::Value& tierType = factory[type];
 				if (tierType == Json::Value::null) {

@@ -68,12 +68,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	metalIncomes.resize(INCOME_SAMPLES, 4.0f);  // Init metal income
 	energyIncomes.resize(INCOME_SAMPLES, 6.0f);  // Init energy income
 
-	pylonDef = circuit->GetCircuitDef("armestor");
-	UnitDef* def = pylonDef->GetUnitDef();
-	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
-	auto search = customParams.find("pylonrange");
-	pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : PYLON_RANGE;
-
 	// TODO: Use A* ai planning... or sth... STRIPS https://ru.wikipedia.org/wiki/STRIPS
 	//       https://ru.wikipedia.org/wiki/Марковский_процесс_принятия_решений
 
@@ -152,11 +146,24 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		}
 	};
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CCircuitDef* pylonCandy = nullptr;
+	float maxAreaDivCost = .0f;
+
 	for (auto& kv : allDefs) {
 		CCircuitDef* cdef = kv.second;
 		if (!cdef->IsMobile()) {
 			const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
-			auto it = customParams.find("income_energy");
+
+			auto it = customParams.find("pylonrange");
+			if (it != customParams.end()) {
+				float areaDivCost = M_PI * SQUARE(utils::string_to_float(it->second)) / cdef->GetCost();
+				if (maxAreaDivCost < areaDivCost) {
+					maxAreaDivCost = areaDivCost;
+					pylonCandy = cdef;  // armestor
+				}
+			}
+
+			it = customParams.find("income_energy");
 			if ((it != customParams.end()) && (utils::string_to_float(it->second) > 1)) {
 				// TODO: Filter only defs that we are able to build (disabledunits)
 				finishedHandler[kv.first] = energyFinishedHandler;
@@ -172,6 +179,12 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			}
 		}
 	}
+
+	pylonDef = pylonCandy;
+	UnitDef* def = pylonDef->GetUnitDef();
+	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+	auto search = customParams.find("pylonrange");
+	pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : PYLON_RANGE;
 
 	ReadConfig();
 
@@ -249,6 +262,21 @@ int CEconomyManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 	}
 
 	return 0; //signaling: OK
+}
+
+CCircuitDef* CEconomyManager::GetLowEnergy(const AIFloat3& pos) const
+{
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CCircuitDef* candidate = nullptr;
+	auto it = energyInfos.rbegin();
+	while (it != energyInfos.rend()) {
+		if (terrainManager->CanBeBuiltAt(it->cdef, pos)) {
+			candidate = it->cdef;
+			break;
+		}
+		++it;
+	}
+	return candidate;
 }
 
 void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)

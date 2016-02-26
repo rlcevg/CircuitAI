@@ -671,7 +671,11 @@ void CMilitaryManager::ReadConfig()
 	const float teamSize = circuit->GetAllyTeam()->GetSize();
 	roleInfos.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT), {.0f});
 	std::pair<const char*, CCircuitDef::RoleType> responseNames[] = {
-		std::make_pair("anti_air", CCircuitDef::RoleType::AA),
+		std::make_pair("raider",    CCircuitDef::RoleType::RAIDER),
+		std::make_pair("riot",      CCircuitDef::RoleType::RIOT),
+		std::make_pair("assault",   CCircuitDef::RoleType::ASSAULT),
+		std::make_pair("skirmish",  CCircuitDef::RoleType::SKIRM),
+		std::make_pair("anti_air",  CCircuitDef::RoleType::AA),
 		std::make_pair("artillery", CCircuitDef::RoleType::ARTY)
 	};
 	for (const auto& pair : responseNames) {
@@ -691,7 +695,7 @@ void CMilitaryManager::ReadConfig()
 
 	const Json::Value& retreats = root["retreat"];
 	std::pair<const char*, void (CCircuitDef::*)(bool)> retreatNames[] = {
-		std::make_pair("_siege_", &CCircuitDef::SetSiege),
+		std::make_pair("_siege_",     &CCircuitDef::SetSiege),
 		std::make_pair("_hold_fire_", &CCircuitDef::SetHoldFire)
 	};
 	for (const auto& pair : retreatNames) {
@@ -813,7 +817,7 @@ void CMilitaryManager::AddPower(CCircuitUnit* unit)
 	const float cost = cdef->GetCost();
 	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT));
 	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT); ++i) {
-		if ((cdef->GetRole() & CCircuitDef::GetMask(i)) != 0) {
+		if (cdef->IsRoleAny(CCircuitDef::GetMask(i))) {
 			roleInfos[i].metal += cost;
 		}
 	}
@@ -828,7 +832,7 @@ void CMilitaryManager::DelPower(CCircuitUnit* unit)
 	const float cost = cdef->GetCost();
 	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT));
 	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT); ++i) {
-		if ((cdef->GetRole() & CCircuitDef::GetMask(i)) != 0) {
+		if (cdef->IsRoleAny(CCircuitDef::GetMask(i))) {
 			float& metal = roleInfos[i].metal;
 			metal = std::max(metal - cost, .0f);
 		}

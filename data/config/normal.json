@@ -321,7 +321,7 @@
 	// Main roles: builder, raider, riot, assault, skirmish, artillery, anti_air, air, static
 	// Auto-assigned roles: builder, air, static
 	// Support roles: scout, heavy, bomber, melee, anti_heavy
-	// First value defines main role and the way enemy will counter it
+	// First value defines main role and the way to counter it
 
 	// factorycloak
 	"armrectr": ["builder"],
@@ -336,7 +336,6 @@
 	"spherecloaker": [],
 	"armjeth": ["anti_air"],
 
-	// "air" will be auto-set for every flying unit
 	// factorygunship
 	"armca": ["air", "builder"],
 	"blastwing": ["air"],
@@ -454,7 +453,7 @@
 	// striderhub
 	"armcomdgun": ["scout"],
 	"scorpion": ["scout"],
-	"dante": ["melee"],
+	"dante": ["riot", "melee"],
 	"armraven": ["artillery"],
 	"funnelweb": ["artillery"],
 	"armbanth": ["melee"],

@@ -65,12 +65,14 @@ private:
 	springai::Weapon* dgun;
 	springai::UnitRulesParam* disarmParam;
 
-	enum LosMask: char {NONE = 0x00, LOS = 0x01, RADAR = 0x02, HIDDEN = 0x04, KNOWN = 0x08};
 	springai::AIFloat3 pos;
 	float threat;
 	std::array<int, static_cast<RT>(RangeType::TOTAL_COUNT)> range;
 
-	std::underlying_type<LosMask>::type losStatus;
+	enum LosMask: char {NONE = 0x00, LOS = 0x01, RADAR = 0x02, HIDDEN = 0x04, KNOWN = 0x08};
+	using LM = std::underlying_type<LosMask>::type;
+
+	LM losStatus;
 public:
 	void SetInLOS() { losStatus |= LosMask::LOS; }
 	void SetInRadar() { losStatus |= LosMask::RADAR; }

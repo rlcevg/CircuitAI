@@ -24,6 +24,7 @@ using namespace springai;
 
 CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts, Resource* res)
 		: def(def)
+		, mainRole(RoleType::SCOUT)
 		, role(RoleMask::NONE)
 		, buildOptions(buildOpts)
 		, count(0)

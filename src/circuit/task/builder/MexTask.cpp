@@ -44,6 +44,7 @@ bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 	if (unit->GetCircuitDef()->IsAttacker()) {
 		return true;
 	}
+	// TODO: Naked expansion on big maps
 	CCircuitAI* circuit = manager->GetCircuit();
 	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
 	int cluster = circuit->GetMetalManager()->FindNearestCluster(GetPosition());
@@ -104,6 +105,12 @@ void CBMexTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	circuit->GetMilitaryManager()->MakeDefence(buildPos);
+
+	CCircuitDef* energyDef = circuit->GetEconomyManager()->GetLowEnergy(buildPos);
+	if ((energyDef != nullptr) && energyDef->IsAvailable()) {
+		circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, energyDef, buildPos,
+												  IBuilderTask::BuildType::ENERGY, SQUARE_SIZE * 8.0f, true);
+	}
 
 //	if (circuit->GetEconomyManager()->GetAvgMetalIncome() > 8.0f) {
 //		circuit->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);

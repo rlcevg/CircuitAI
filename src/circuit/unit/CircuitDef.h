@@ -47,8 +47,14 @@ public:
 	Id GetId() const { return id; }
 	springai::UnitDef* GetUnitDef() const { return def; }
 
+	void SetMainRole(RoleType type) { mainRole = type; }
+	RoleT GetMainRole() const { return static_cast<RoleT>(mainRole); }
+
 	void AddRole(RoleType value) { role |= GetMask(value); }
-	std::underlying_type<RoleMask>::type GetRole() const { return role; }
+	bool IsRoleAny(RoleM value)     const { return (role & value) != 0; }
+	bool IsRoleEqual(RoleM value)   const { return role == value; }
+	bool IsRoleContain(RoleM value) const { return (role & value) == value; }
+
 	bool IsRoleBuilder() const { return role & RoleMask::BUILDER; }
 	bool IsRoleScout()   const { return role & RoleMask::SCOUT; }
 	bool IsRoleRaider()  const { return role & RoleMask::RAIDER; }
@@ -133,7 +139,8 @@ public:
 private:
 	Id id;
 	springai::UnitDef* def;  // owner
-	std::underlying_type<RoleMask>::type role;
+	RoleType mainRole;
+	RoleM role;
 	std::unordered_set<Id> buildOptions;
 	float buildDistance;
 	float buildSpeed;
