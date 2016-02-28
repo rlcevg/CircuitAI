@@ -39,15 +39,7 @@ void CBDefenceTask::Finish()
 	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(buildPos, radius));
 	if (!features.empty()) {
 		IBuilderTask* recl = circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, buildPos, .0f, FRAMES_PER_SEC * 60, radius, false);
-		if (!units.empty()) {
-			manager->AssignTask(*units.begin(), recl);
-		}
 		utils::free_clear(features);
-	}
-
-	IUnitTask* task = circuit->GetMilitaryManager()->DelDefendTask(buildPos);
-	if (task != nullptr) {
-		task->GetManager()->DoneTask(task);
 	}
 
 	IBuilderTask::Finish();

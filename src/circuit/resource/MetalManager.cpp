@@ -169,6 +169,7 @@ void CMetalManager::ClusterizeMetal()
 	MoveData* moveData = circuit->GetCircuitDef("armcom1")->GetUnitDef()->GetMoveData();
 	int pathType = moveData->GetPathType();
 	delete moveData;
+	// FIXME: Use pylonDef from EconomyManager
 	UnitDef* def = circuit->GetCircuitDef("armestor")->GetUnitDef();
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto search = customParams.find("pylonrange");

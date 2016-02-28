@@ -126,8 +126,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	const Json::Value& retreats = root["retreat"];
 	const float fighterRet = retreats["_fighter_"].asFloat();
 
-	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
-	for (auto& kv : defs) {
+	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
+	for (auto& kv : allDefs) {
 		CCircuitDef* cdef = kv.second;
 		if (!cdef->IsAttacker() || cdef->GetUnitDef()->IsBuilder()) {
 			continue;
@@ -350,41 +350,62 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 {
 	circuit->GetThreatMap()->SetThreatType(unit);
 	const IFighterTask* task = nullptr;
-	int frame = circuit->GetLastFrame();
-	AIFloat3 pos = unit->GetPos(frame);
-	STerrainMapArea* area = unit->GetArea();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CPathFinder* pathfinder = circuit->GetPathfinder();
-	terrainManager->CorrectPosition(pos);
-	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
-	const int distance = std::max<int>(unit->GetCircuitDef()->GetMaxRange(), pathfinder->GetSquareSize());
-	float metric = std::numeric_limits<float>::max();
+	// FIXME: COMPATIBILITY
+//	int frame = circuit->GetLastFrame();
+//	AIFloat3 pos = unit->GetPos(frame);
+//	STerrainMapArea* area = unit->GetArea();
+//	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+//	CPathFinder* pathfinder = circuit->GetPathfinder();
+//	terrainManager->CorrectPosition(pos);
+//	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
+//	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
+//	const int distance = std::max<int>(unit->GetCircuitDef()->GetMaxRange(), pathfinder->GetSquareSize());
+//	float metric = std::numeric_limits<float>::max();
+//
+//	for (const std::set<IFighterTask*>& tasks : fightTasks) {
+//		for (const IFighterTask* candidate : tasks) {
+//			if (!candidate->CanAssignTo(unit)) {
+//				continue;
+//			}
+//
+//			// Check time-distance to target
+//			float distCost;
+//
+//			const AIFloat3& tp = candidate->GetPosition();
+//			AIFloat3 taskPos = (tp != -RgtVector) ? tp : pos;
+//
+//			if (!terrainManager->CanMoveToPos(area, taskPos)) {  // ensure that path always exists
+//				continue;
+//			}
+//
+//			distCost = std::max(pathfinder->PathCost(pos, taskPos, distance), THREAT_BASE);
+//
+//			if ((distCost < metric) && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC))) {
+//				task = candidate;
+//				metric = distCost;
+//			}
+//		}
+//	}
 
-	for (const std::set<IFighterTask*>& tasks : fightTasks) {
-		for (const IFighterTask* candidate : tasks) {
-			if (!candidate->CanAssignTo(unit)) {
-				continue;
-			}
-
-			// Check time-distance to target
-			float distCost;
-
-			const AIFloat3& tp = candidate->GetPosition();
-			AIFloat3 taskPos = (tp != -RgtVector) ? tp : pos;
-
-			if (!terrainManager->CanMoveToPos(area, taskPos)) {  // ensure that path always exists
-				continue;
-			}
-
-			distCost = std::max(pathfinder->PathCost(pos, taskPos, distance), THREAT_BASE);
-
-			if ((distCost < metric) && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC))) {
+	CCircuitDef::RoleM role =
+		CCircuitDef::RoleMask::SCOUT |
+		CCircuitDef::RoleMask::BOMBER |
+		CCircuitDef::RoleMask::MELEE |
+		CCircuitDef::RoleMask::ARTY |
+		CCircuitDef::RoleMask::AA;
+	if (!unit->GetCircuitDef()->IsRoleAny(role)) {
+		circuit->LOG("%s", unit->GetCircuitDef()->GetUnitDef()->GetHumanName());
+		for (const std::set<IFighterTask*>& tasks : fightTasks) {
+			for (const IFighterTask* candidate : tasks) {
+				if (!candidate->CanAssignTo(unit)) {
+					continue;
+				}
 				task = candidate;
-				metric = distCost;
+				break;
 			}
 		}
 	}
+	// FIXME: COMPATIBILITY
 
 	if (task == nullptr) {
 		IFighterTask::FightType type;
@@ -570,6 +591,9 @@ void CMilitaryManager::AbortDefence(CBDefenceTask* task)
 
 bool CMilitaryManager::HasDefence(int cluster)
 {
+	// FIXME: COMPATIBILITY
+	return true;
+	// FIXME: COMPATIBILITY
 	const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(cluster);
 	for (const CDefenceMatrix::SDefPoint& defPoint : points) {
 		if (defPoint.cost > .5f) {
@@ -605,6 +629,9 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 
 IFighterTask* CMilitaryManager::AddDefendTask(int cluster)
 {
+	// FIXME: COMPATIBILITY
+	return nullptr;
+	// FIXME: COMPATIBILITY
 	IFighterTask* task = clusterInfos[cluster].defence;
 	if (task != nullptr) {
 		return task;
@@ -620,17 +647,28 @@ IFighterTask* CMilitaryManager::AddDefendTask(int cluster)
 
 IFighterTask* CMilitaryManager::DelDefendTask(const AIFloat3& pos)
 {
+	// FIXME: COMPATIBILITY
+	return nullptr;
+	// FIXME: COMPATIBILITY
 	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
 	if (index < 0) {
 		return nullptr;
 	}
 
-	IFighterTask* task = clusterInfos[index].defence;
+	return DelDefendTask(index);
+}
+
+IFighterTask* CMilitaryManager::DelDefendTask(int cluster)
+{
+	// FIXME: COMPATIBILITY
+	return nullptr;
+	// FIXME: COMPATIBILITY
+	IFighterTask* task = clusterInfos[cluster].defence;
 	if (task == nullptr) {
 		return nullptr;
 	}
 
-	clusterInfos[index].defence = nullptr;
+	clusterInfos[cluster].defence = nullptr;
 	return task;
 }
 

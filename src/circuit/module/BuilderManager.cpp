@@ -134,8 +134,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	const float builderRet = retreats["_builder_"].asFloat();
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
-	for (auto& kv : defs) {
+	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
+	for (auto& kv : allDefs) {
 		CCircuitDef::Id unitDefId = kv.first;
 		CCircuitDef* cdef = kv.second;
 		if (cdef->IsMobile()) {
@@ -199,7 +199,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	}
 	buildAreas[nullptr] = std::map<CCircuitDef*, int>();  // air
 
-	terraDef = circuit->GetCircuitDef("terraunit");
+	terraDef = circuit->GetCircuitDef("terraunit");  // TODO: Move into config
 }
 
 CBuilderManager::~CBuilderManager()

@@ -321,7 +321,7 @@
 	// Main roles: builder, raider, riot, assault, skirmish, artillery, anti_air, air, static
 	// Auto-assigned roles: builder, air, static
 	// Support roles: scout, heavy, bomber, melee, anti_heavy
-	// First value defines main role and the way to counter it
+	// First value with response defines main role and the way to counter it
 
 	// factorycloak
 	"armrectr": ["builder"],
@@ -467,37 +467,37 @@
 // AA condition for 3v3: (air_metal*0.7 > (aa_metal+aa_cost)*1.8) and (aa_metal+aa_cost < army_metal*0.45).
 "response": {
 	"raider": {
-		"contr": ["skirmish", "artillery", "anti_air"],
+		"vs": ["skirmish", "artillery", "anti_air"],
 		"ratio": 1.1,
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"riot": {
-		"contr": ["raider"],
+		"vs": ["raider"],
 		"ratio": 1.1,
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"assault": {
-		"contr": ["riot", "static"],
+		"vs": ["riot", "static"],
 		"ratio": 1.1,
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"skirmish": {
-		"contr": ["riot", "assault"],
+		"vs": ["riot", "assault"],
 		"ratio": 1.1,
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"anti_air": {
-		"contr": ["air"],
+		"vs": ["air"],
 		"ratio": 0.8,
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"artillery": {
-		"contr": ["static"],
+		"vs": ["static"],
 		"ratio": 1.1,
 		"max_percent": 0.45,
 		"eps_step": 0.4

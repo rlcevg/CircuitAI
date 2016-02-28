@@ -44,6 +44,9 @@ bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 	if (unit->GetCircuitDef()->IsAttacker()) {
 		return true;
 	}
+	// FIXME: COMPATIBILITY
+	return true;
+	// FIXME: COMPATIBILITY
 	// TODO: Naked expansion on big maps
 	CCircuitAI* circuit = manager->GetCircuit();
 	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();

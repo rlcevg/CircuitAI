@@ -10,6 +10,7 @@
 #include "terrain/TerrainManager.h"
 #include "module/FactoryManager.h"
 #include "module/MilitaryManager.h"
+#include "resource/MetalManager.h"
 #include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -90,6 +91,20 @@ void CDefendTask::Execute(CCircuitUnit* unit)
 
 void CDefendTask::Update()
 {
+	if (updCount % 8 == 0) {
+		CCircuitAI* circuit = manager->GetCircuit();
+		CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
+		int cluster = circuit->GetMetalManager()->FindNearestCluster(position);
+		if ((cluster >= 0) && militaryManager->HasDefence(cluster)) {
+			IUnitTask* task = circuit->GetMilitaryManager()->DelDefendTask(cluster);
+			if (task != nullptr) {
+				task->GetManager()->DoneTask(task);
+			}
+			// FIXME: Addg general defend-complete condition?
+			return;
+		}
+	}
+
 	bool isExecute = (++updCount % 4 == 0);
 	for (CCircuitUnit* unit : units) {
 		if (unit->IsForceExecute() || isExecute) {

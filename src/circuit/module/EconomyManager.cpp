@@ -75,19 +75,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateResourceIncome, this), TEAM_SLOWUPDATE_RATE);
 	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CEconomyManager::Init, this));
 
-	// TODO: Group handlers
-	//       Raider:       Glaive, Bandit, Scorcher, Pyro, Panther, Scrubber, Duck
-	//       Assault:      Zeus, Thug, Ravager, Hermit, Reaper
-	//       Skirmisher:   Rocko, Rogue, Recluse, Scalpel, Buoy
-	//       Riot:         Warrior, Outlaw, Leveler, Mace, Scallop
-	//       Artillery:    Hammer, Wolverine, Impaler, Firewalker, Pillager, Tremor
-	//       Scout:        Flea, Dart, Puppy
-	//       Anti-Air:     Gremlin, Vandal, Crasher, Archangel, Tarantula, Copperhead, Flail, Angler
-	//       Support:      Slasher, Penetrator, Felon, Moderator, (Dominatrix?)
-	//       Mobile Bombs: Tick, Roach, Skuttle
-	//       Shield
-	//       Cloaker
-
 	/*
 	 * factory handlers
 	 */
@@ -108,21 +95,12 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			}
 		}
 	};
-	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
-	for (auto& kv : allDefs) {
-		CCircuitDef* cdef = kv.second;
-		if (!cdef->IsMobile() && cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
-			CCircuitDef::Id unitDefId = kv.first;
-			finishedHandler[unitDefId] = factoryFinishedHandler;
-			destroyedHandler[unitDefId] = factoryDestroyedHandler;
-		}
-	}
 
 	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
 	ecoFactor = circuit->GetAllyTeam()->GetSize() * 0.25f + 0.75f;
 
 	/*
-	 * Identify resource buildings
+	 * resources
 	 */
 	auto energyFinishedHandler = [this](CCircuitUnit* unit) {
 		auto it = std::find(energyInfos.begin(), energyInfos.end(), unit->GetCircuitDef());
@@ -145,15 +123,29 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			delete p;
 		}
 	};
+
+	/*
+	 * morphing
+	 */
+	auto comFinishedHandler = [this](CCircuitUnit* unit) {
+		AddMorphee(unit);
+		this->circuit->GetSetupManager()->SetCommander(unit);
+	};
+	auto comDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+		RemoveMorphee(unit);
+	};
+
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CCircuitDef* pylonCandy = nullptr;
 	float maxAreaDivCost = .0f;
 
+	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
 		CCircuitDef* cdef = kv.second;
-		if (!cdef->IsMobile()) {
-			const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
+		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
 
+		if (!cdef->IsMobile()) {
+			// pylon
 			auto it = customParams.find("pylonrange");
 			if (it != customParams.end()) {
 				float areaDivCost = M_PI * SQUARE(utils::string_to_float(it->second)) / cdef->GetCost();
@@ -163,9 +155,15 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				}
 			}
 
+			if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
+				// factory
+				finishedHandler[cdef->GetId()] = factoryFinishedHandler;
+				destroyedHandler[cdef->GetId()] = factoryDestroyedHandler;
+			}
+
 			it = customParams.find("income_energy");
 			if ((it != customParams.end()) && (utils::string_to_float(it->second) > 1)) {
-				// TODO: Filter only defs that we are able to build (disabledunits)
+				// energy
 				finishedHandler[kv.first] = energyFinishedHandler;
 				if (!cdef->IsAvailable() || ((terrainManager->GetPercentLand() < 40.0) &&
 					(terrainManager->GetImmobileTypeById(cdef->GetImmobileId())->minElevation >= .0f)))
@@ -174,8 +172,19 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				}
 				allEnergyDefs.insert(cdef);
 			} else if (((it = customParams.find("ismex")) != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
+				// mex
 				finishedHandler[kv.first] = mexFinishedHandler;
 				mexDef = cdef;  // cormex
+			}
+
+		} else {
+
+			// commander
+			auto it = customParams.find("level");
+			if ((it != customParams.end()) && (utils::string_to_int(it->second) <= 6)) {  // TODO: Identify max level
+				// NOTE: last level is needed only to set proper commander
+				finishedHandler[cdef->GetId()] = comFinishedHandler;
+				destroyedHandler[cdef->GetId()] = comDestroyedHandler;
 			}
 		}
 	}
@@ -187,27 +196,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : PYLON_RANGE;
 
 	ReadConfig();
-
-	/*
-	 * Morphing
-	 */
-	auto comFinishedHandler = [this](CCircuitUnit* unit) {
-		AddMorphee(unit);
-		this->circuit->GetSetupManager()->SetCommander(unit);
-	};
-	auto comDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
-		RemoveMorphee(unit);
-	};
-	for (auto& kv : allDefs) {
-		CCircuitDef* cdef = kv.second;
-		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
-		auto it = customParams.find("level");
-		if ((it != customParams.end()) && (utils::string_to_int(it->second) <= 6)) {  // TODO: Identify max level
-			// NOTE: last level is needed only to set proper commander
-			finishedHandler[cdef->GetId()] = comFinishedHandler;
-			destroyedHandler[cdef->GetId()] = comDestroyedHandler;
-		}
-	}
 }
 
 CEconomyManager::~CEconomyManager()

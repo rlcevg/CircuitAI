@@ -54,6 +54,7 @@ public:
 
 	IFighterTask* AddDefendTask(int cluster);
 	IFighterTask* DelDefendTask(const springai::AIFloat3& pos);
+	IFighterTask* DelDefendTask(int cluster);
 	IFighterTask* GetDefendTask(int cluster) const { return clusterInfos[cluster].defence; }
 
 	bool IsNeedAA(CCircuitDef* cdef) const;

@@ -240,6 +240,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		assists.erase(unit);
 	};
 
+	float maxBuildDist = .0f;
+	CCircuitDef* assistCandy = nullptr;
+
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
 		CCircuitDef* cdef = kv.second;
@@ -250,15 +253,18 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 				finishedHandler[unitDefId] = factoryFinishedHandler;
 				idleHandler[unitDefId] = factoryIdleHandler;
 				destroyedHandler[unitDefId] = factoryDestroyedHandler;
-			} else {
+			} else if (maxBuildDist < cdef->GetBuildDistance()) {
+				maxBuildDist = cdef->GetBuildDistance();
 				createdHandler[unitDefId] = assistCreatedHandler;
 				finishedHandler[unitDefId] = assistFinishedHandler;
 				idleHandler[unitDefId] = assistIdleHandler;
 				destroyedHandler[unitDefId] = assistDestroyedHandler;
-				assistDef = cdef;
+				assistCandy = cdef;
 			}
 		}
 	}
+
+	assistDef = assistCandy;
 
 	factoryData = circuit->GetAllyTeam()->GetFactoryData().get();
 	ReadConfig();
