@@ -394,7 +394,6 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 		CCircuitDef::RoleMask::ARTY |
 		CCircuitDef::RoleMask::AA;
 	if (!unit->GetCircuitDef()->IsRoleAny(role)) {
-		circuit->LOG("%s", unit->GetCircuitDef()->GetUnitDef()->GetHumanName());
 		for (const std::set<IFighterTask*>& tasks : fightTasks) {
 			for (const IFighterTask* candidate : tasks) {
 				if (!candidate->CanAssignTo(unit)) {
