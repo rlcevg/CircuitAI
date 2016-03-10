@@ -57,9 +57,10 @@ public:
 	IFighterTask* DelDefendTask(int cluster);
 	IFighterTask* GetDefendTask(int cluster) const { return clusterInfos[cluster].defence; }
 
-	bool IsNeedAA(CCircuitDef* cdef) const;
-	bool IsNeedArty(CCircuitDef* cdef) const;
+	bool IsNeedRole(CCircuitDef* cdef, CCircuitDef::RoleType type) const;
 	bool IsNeedBigGun(CCircuitDef* cdef) const;
+
+	void UpdateDefenceTasks();
 
 private:
 	void ReadConfig();
@@ -99,6 +100,8 @@ private:
 		float ratio;
 		float maxPerc;
 		float factor;
+		std::set<CCircuitUnit*> units;
+		std::vector<CCircuitDef::RoleType> vs;
 	};
 	std::vector<SRoleInfo> roleInfos;
 

@@ -26,10 +26,6 @@ CThreatMap::CThreatMap(CCircuitAI* circuit)
 //		, currMaxThreat(.0f)  // maximum threat (normalizer)
 //		, currSumThreat(.0f)  // threat summed over all cells
 //		, currAvgThreat(.0f)  // average threat over all cells
-		, airMetal(.0f)
-		, staticMetal(.0f)
-		, landMetal(.0f)
-		, waterMetal(.0f)
 {
 	areaData = circuit->GetTerrainManager()->GetAreaData();
 	squareSize = circuit->GetTerrainManager()->GetConvertStoP();
@@ -57,6 +53,12 @@ CThreatMap::CThreatMap(CCircuitAI* circuit)
 	losMap = std::move(map->GetLosMap());
 	losWidth = map->GetWidth() >> losMipLevel;
 	losResConv = SQUARE_SIZE << losMipLevel;
+
+	roleMetals.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT), .0f);
+	// FIXME: DEBUG
+	AIFloat3 medPos(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
+	kmeans = new CKMeansCluster(medPos);
+	// FIXME: DEBUG
 }
 
 CThreatMap::~CThreatMap()
@@ -69,6 +71,9 @@ CThreatMap::~CThreatMap()
 		delete[] win.second;
 	}
 #endif
+	// FIXME: DEBUG
+	delete kmeans;
+	// FIXME: DEBUG
 }
 
 void CThreatMap::Update()
@@ -152,6 +157,34 @@ void CThreatMap::Update()
 
 #ifdef DEBUG_VIS
 	UpdateVis();
+	// FIXME: DEBUG
+	if (!hostileUnits.empty()) {
+		static int iii = 0;
+		static std::vector<AIFloat3> poses;
+		if (iii % 5 == 0) {
+			for (const AIFloat3& pos : poses) {
+				circuit->GetDrawer()->DeletePointsAndLines(pos);
+			}
+		}
+
+		std::vector<AIFloat3> unitPosition;
+		unitPosition.reserve(hostileUnits.size());
+		for (const auto& kv : hostileUnits) {
+			unitPosition.push_back(kv.second->GetPos());
+		}
+		// calculate a new K. change the formula to adjust max K, needs to be 1 minimum.
+		constexpr float KMEANS_BASE_MAX_K = 32;
+		int kMeansK = int(std::min((float) (KMEANS_BASE_MAX_K), 1.0f + sqrtf((float) unitPosition.size())));
+		kmeans->Iteration(unitPosition, kMeansK);
+
+		if (iii++ % 5 == 0) {
+			poses = kmeans->GetMeans();
+			for (int i = 0; i < poses.size(); ++i) {
+				circuit->GetDrawer()->AddPoint(kmeans->GetMeans()[i], utils::int_to_string(i).c_str());
+			}
+		}
+	}
+	// FIXME: DEBUG
 #endif
 }
 
@@ -614,28 +647,7 @@ void CThreatMap::AddEnemyMetal(const CEnemyUnit* e, const float scale)
 	assert(cdef != nullptr);
 
 	const float cost = cdef->GetCost() * scale;
-	if (cdef->IsAbleToFly()) {
-		airMetal += cost;
-	} else if (cdef->IsMobile()) {
-		STerrainMapMobileType* mt = circuit->GetTerrainManager()->GetMobileTypeById(cdef->GetMobileId());
-		if (mt->maxElevation > SQUARE_SIZE * 5) {
-			landMetal += cost;
-		}
-		if (mt->minElevation < -SQUARE_SIZE * 5) {
-			waterMetal += cost;
-		}
-	} else {
-		STerrainMapImmobileType* it = circuit->GetTerrainManager()->GetImmobileTypeById(cdef->GetImmobileId());
-		if (it->maxElevation > SQUARE_SIZE * 5) {
-			landMetal += cost;
-		}
-		if (it->minElevation < -SQUARE_SIZE * 5) {
-			waterMetal += cost;
-		}
-		if (cdef->HasAntiLand()) {
-			staticMetal += cost;
-		}
-	}
+	roleMetals[cdef->GetMainRole()] += cost;
 }
 
 void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const

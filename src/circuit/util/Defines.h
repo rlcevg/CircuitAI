@@ -39,7 +39,7 @@
 
 #define THREAT_BASE		1.0f
 #define THREAT_MOD		(1.0f / 20.0f)
-#define THREAT_MIN		4.0f
+#define THREAT_MIN		2.0f
 #define THREAT_RES		8
 #define DEFAULT_SLACK	(SQUARE_SIZE * THREAT_RES)
 

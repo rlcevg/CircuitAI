@@ -592,7 +592,7 @@ IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 			} else {
 
 				const AIFloat3& bp = candidate->GetPosition();
-				AIFloat3 buildPos = (bp != -RgtVector) ? bp : pos;
+				AIFloat3 buildPos = utils::is_valid(bp) ? bp : pos;
 
 				if (!terrainManager->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
 					continue;

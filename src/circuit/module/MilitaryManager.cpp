@@ -350,61 +350,41 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 {
 	circuit->GetThreatMap()->SetThreatType(unit);
 	const IFighterTask* task = nullptr;
-	// FIXME: COMPATIBILITY
-//	int frame = circuit->GetLastFrame();
-//	AIFloat3 pos = unit->GetPos(frame);
-//	STerrainMapArea* area = unit->GetArea();
-//	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-//	CPathFinder* pathfinder = circuit->GetPathfinder();
-//	terrainManager->CorrectPosition(pos);
-//	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-//	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
-//	const int distance = std::max<int>(unit->GetCircuitDef()->GetMaxRange(), pathfinder->GetSquareSize());
-//	float metric = std::numeric_limits<float>::max();
-//
-//	for (const std::set<IFighterTask*>& tasks : fightTasks) {
-//		for (const IFighterTask* candidate : tasks) {
-//			if (!candidate->CanAssignTo(unit)) {
-//				continue;
-//			}
-//
-//			// Check time-distance to target
-//			float distCost;
-//
-//			const AIFloat3& tp = candidate->GetPosition();
-//			AIFloat3 taskPos = (tp != -RgtVector) ? tp : pos;
-//
-//			if (!terrainManager->CanMoveToPos(area, taskPos)) {  // ensure that path always exists
-//				continue;
-//			}
-//
-//			distCost = std::max(pathfinder->PathCost(pos, taskPos, distance), THREAT_BASE);
-//
-//			if ((distCost < metric) && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC))) {
-//				task = candidate;
-//				metric = distCost;
-//			}
-//		}
-//	}
+	int frame = circuit->GetLastFrame();
+	AIFloat3 pos = unit->GetPos(frame);
+	STerrainMapArea* area = unit->GetArea();
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	terrainManager->CorrectPosition(pos);
+	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
+	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
+	const int distance = std::max<int>(unit->GetCircuitDef()->GetMaxRange(), pathfinder->GetSquareSize());
+	float metric = std::numeric_limits<float>::max();
 
-	CCircuitDef::RoleM role =
-		CCircuitDef::RoleMask::SCOUT |
-		CCircuitDef::RoleMask::BOMBER |
-		CCircuitDef::RoleMask::MELEE |
-		CCircuitDef::RoleMask::ARTY |
-		CCircuitDef::RoleMask::AA;
-	if (!unit->GetCircuitDef()->IsRoleAny(role)) {
-		for (const std::set<IFighterTask*>& tasks : fightTasks) {
-			for (const IFighterTask* candidate : tasks) {
-				if (!candidate->CanAssignTo(unit)) {
-					continue;
-				}
+	for (const std::set<IFighterTask*>& tasks : fightTasks) {
+		for (const IFighterTask* candidate : tasks) {
+			if (!candidate->CanAssignTo(unit)) {
+				continue;
+			}
+
+			// Check time-distance to target
+			float distCost;
+
+			const AIFloat3& tp = candidate->GetPosition();
+			AIFloat3 taskPos = utils::is_valid(tp) ? tp : pos;
+
+			if (!terrainManager->CanMoveToPos(area, taskPos)) {  // ensure that path always exists
+				continue;
+			}
+
+			distCost = std::max(pathfinder->PathCost(pos, taskPos, distance), THREAT_BASE);
+
+			if ((distCost < metric) && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC))) {
 				task = candidate;
-				break;
+				metric = distCost;
 			}
 		}
 	}
-	// FIXME: COMPATIBILITY
 
 	if (task == nullptr) {
 		IFighterTask::FightType type;
@@ -590,9 +570,6 @@ void CMilitaryManager::AbortDefence(CBDefenceTask* task)
 
 bool CMilitaryManager::HasDefence(int cluster)
 {
-	// FIXME: COMPATIBILITY
-	return true;
-	// FIXME: COMPATIBILITY
 	const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(cluster);
 	for (const CDefenceMatrix::SDefPoint& defPoint : points) {
 		if (defPoint.cost > .5f) {
@@ -628,9 +605,6 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 
 IFighterTask* CMilitaryManager::AddDefendTask(int cluster)
 {
-	// FIXME: COMPATIBILITY
-	return nullptr;
-	// FIXME: COMPATIBILITY
 	IFighterTask* task = clusterInfos[cluster].defence;
 	if (task != nullptr) {
 		return task;
@@ -646,9 +620,6 @@ IFighterTask* CMilitaryManager::AddDefendTask(int cluster)
 
 IFighterTask* CMilitaryManager::DelDefendTask(const AIFloat3& pos)
 {
-	// FIXME: COMPATIBILITY
-	return nullptr;
-	// FIXME: COMPATIBILITY
 	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
 	if (index < 0) {
 		return nullptr;
@@ -659,9 +630,6 @@ IFighterTask* CMilitaryManager::DelDefendTask(const AIFloat3& pos)
 
 IFighterTask* CMilitaryManager::DelDefendTask(int cluster)
 {
-	// FIXME: COMPATIBILITY
-	return nullptr;
-	// FIXME: COMPATIBILITY
 	IFighterTask* task = clusterInfos[cluster].defence;
 	if (task == nullptr) {
 		return nullptr;
@@ -671,28 +639,18 @@ IFighterTask* CMilitaryManager::DelDefendTask(int cluster)
 	return task;
 }
 
-//bool CMilitaryManager::IsNeedRole(CCircuitDef* cdef, CCircuitDef::RoleType type) const
-//{
-//	const SRoleInfo& info = roleInfos[type];
-//	const float threat = circuit->GetThreatMap()->GetAirMetal(); ??
-//	const float nextMetal = info.metal + cdef->GetCost();
-//	return (threat * info.ratio > nextMetal * info.factor) && (nextMetal < info.maxPerc * metalArmy);
-//}
-
-bool CMilitaryManager::IsNeedAA(CCircuitDef* cdef) const
+bool CMilitaryManager::IsNeedRole(CCircuitDef* cdef, CCircuitDef::RoleType type) const
 {
-	const SRoleInfo& info = roleInfos[static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::AA)];
-	const float airThreat = circuit->GetThreatMap()->GetAirMetal();
-	const float nextMetalAA = info.metal + cdef->GetCost();
-	return (airThreat * info.ratio > nextMetalAA * info.factor) && (nextMetalAA < info.maxPerc * metalArmy);
-}
-
-bool CMilitaryManager::IsNeedArty(CCircuitDef* cdef) const
-{
-	const SRoleInfo& info = roleInfos[static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::ARTY)];
-	const float staticThreat = circuit->GetThreatMap()->GetStaticMetal();
-	const float nextMetalArty = info.metal + cdef->GetCost();
-	return (staticThreat * info.ratio > nextMetalArty * info.factor) && (nextMetalArty < info.maxPerc * metalArmy);
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	const SRoleInfo& info = roleInfos[static_cast<CCircuitDef::RoleT>(type)];
+	for (const CCircuitDef::RoleType vsType: info.vs) {
+		const float metal = threatMap->GetRoleMetal(vsType);
+		const float nextMetal = info.metal + cdef->GetCost();
+		if ((metal * info.ratio > nextMetal * info.factor) && (nextMetal < info.maxPerc * metalArmy)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 bool CMilitaryManager::IsNeedBigGun(CCircuitDef* cdef) const
@@ -700,9 +658,31 @@ bool CMilitaryManager::IsNeedBigGun(CCircuitDef* cdef) const
 	return metalArmy * circuit->GetEconomyManager()->GetEcoFactor() > cdef->GetCost();
 }
 
+void CMilitaryManager::UpdateDefenceTasks()
+{
+
+}
+
 void CMilitaryManager::ReadConfig()
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
+	std::map<const char*, CCircuitDef::RoleType, cmp_str> roleNames = {
+		{"builder",    CCircuitDef::RoleType::BUILDER},
+		{"raider",     CCircuitDef::RoleType::RAIDER},
+		{"riot",       CCircuitDef::RoleType::RIOT},
+		{"assault",    CCircuitDef::RoleType::ASSAULT},
+		{"skirmish",   CCircuitDef::RoleType::SKIRM},
+		{"artillery",  CCircuitDef::RoleType::ARTY},
+		{"air",        CCircuitDef::RoleType::AIR},
+		{"static",     CCircuitDef::RoleType::STATIC},
+		{"scout",      CCircuitDef::RoleType::SCOUT},
+		{"heavy",      CCircuitDef::RoleType::HEAVY},
+		{"bomber",     CCircuitDef::RoleType::BOMBER},
+		{"melee",      CCircuitDef::RoleType::MELEE},
+		{"anti_heavy", CCircuitDef::RoleType::AH},
+		{"anti_air",   CCircuitDef::RoleType::AA},
+	};
 
 	const Json::Value& ratio = root["response"];
 	const float teamSize = circuit->GetAllyTeam()->GetSize();
@@ -727,6 +707,17 @@ void CMilitaryManager::ReadConfig()
 			info.maxPerc = response.get("max_percent", 1.0f).asFloat();
 			const float step = response.get("eps_step", 1.0f).asFloat();
 			info.factor  = (teamSize - 1.0f) * step + 1.0f;
+
+			const Json::Value& vs = response["vs"];
+			for (const Json::Value& contr : vs) {
+				const char* roleName = contr.asCString();
+				auto it = roleNames.find(roleName);
+				if (it == roleNames.end()) {
+					circuit->LOG("CONFIG %s: response %s vs unknown role '%s'", cfgName.c_str(), pair.first, roleName);
+					continue;
+				}
+				info.vs.push_back(roleNames[roleName]);
+			}
 		}
 	}
 
@@ -737,8 +728,8 @@ void CMilitaryManager::ReadConfig()
 	};
 	for (const auto& pair : retreatNames) {
 		const Json::Value& siege = retreats[pair.first];
-		for (unsigned i = 0; i < siege.size(); ++i) {
-			CCircuitDef* udef = circuit->GetCircuitDef(siege[i].asCString());
+		for (const Json::Value& s : siege) {
+			CCircuitDef* udef = circuit->GetCircuitDef(s.asCString());
 			if (udef == nullptr) {
 				continue;
 			}
@@ -856,6 +847,7 @@ void CMilitaryManager::AddPower(CCircuitUnit* unit)
 	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT); ++i) {
 		if (cdef->IsRoleAny(CCircuitDef::GetMask(i))) {
 			roleInfos[i].metal += cost;
+			roleInfos[i].units.insert(unit);
 		}
 	}
 	metalArmy += cost;
@@ -872,6 +864,7 @@ void CMilitaryManager::DelPower(CCircuitUnit* unit)
 		if (cdef->IsRoleAny(CCircuitDef::GetMask(i))) {
 			float& metal = roleInfos[i].metal;
 			metal = std::max(metal - cost, .0f);
+			roleInfos[i].units.erase(unit);
 		}
 	}
 	metalArmy = std::max(metalArmy - cost, .0f);

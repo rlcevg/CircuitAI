@@ -33,11 +33,11 @@ local options = {
 				name = 'Normal',
 				desc = 'Casual AI.',
 			},
-			--{
-			--	key  = 'hard',
-			--	name = 'Hard',
-			--	desc = 'Los-cheating AI. Requires engine 101.0+',
-			--},
+			{
+				key  = 'hard',
+				name = 'Hard',
+				desc = 'Los-cheating AI.',
+			},
 		},
 	},
 	{ -- bool

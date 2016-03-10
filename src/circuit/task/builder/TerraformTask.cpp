@@ -49,7 +49,7 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 		params.push_back(ClampPriority());
 		u->ExecuteCustomCommand(CMD_PRIORITY, params);
 
-		if (buildPos == -RgtVector) {
+		if (!utils::is_valid(buildPos)) {
 			CTerrainManager* terrainManager = circuit->GetTerrainManager();
 			CTerrainManager::TerrainPredicate predicate = [terrainManager, unit](const AIFloat3& p) {
 				return terrainManager->CanBuildAt(unit, p);
@@ -57,7 +57,7 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 			CCircuitDef* cdef = circuit->GetCircuitDef("terraunit");
 			buildPos = terrainManager->FindBuildSite(cdef, position, 600.0f, facing, predicate);
 		}
-		if (buildPos == -RgtVector) {
+		if (!utils::is_valid(buildPos)) {
 			manager->DoneTask(this);
 			return;
 		}

@@ -9,7 +9,7 @@
 #define SRC_CIRCUIT_TASK_BUILDER_BUILDERTASK_H_
 
 #include "task/UnitTask.h"
-#include "util/Defines.h"
+#include "util/utils.h"
 
 namespace circuit {
 
@@ -72,7 +72,7 @@ public:
 
 	void SetBuildPos(const springai::AIFloat3& pos) { buildPos = pos; }
 	const springai::AIFloat3& GetBuildPos() const { return buildPos; }
-	const springai::AIFloat3& GetPosition() const { return (buildPos != -RgtVector) ? buildPos : position; }
+	const springai::AIFloat3& GetPosition() const { return utils::is_valid(buildPos) ? buildPos : position; }
 
 	virtual void SetTarget(CCircuitUnit* unit);
 	CCircuitUnit* GetTarget() const { return target; }

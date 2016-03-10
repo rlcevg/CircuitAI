@@ -169,7 +169,7 @@ void CBEnergyTask::Finish()
 			break;
 	}
 	pos = terrainManager->GetBuildPosition(bdef, pos);
-	if (cdef->GetCost() < circuit->GetThreatMap()->GetAirMetal() * 0.5f) {
+	if (cdef->GetCost() < circuit->GetThreatMap()->GetRoleMetal(CCircuitDef::RoleType::AIR) * 0.5f) {
 		parent1->SetNextTask(builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE, true, false, 0));
 		parent1 = parent1->GetNextTask();
 	} else {

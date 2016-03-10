@@ -51,7 +51,7 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 	}
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	UnitDef* buildUDef = buildDef->GetUnitDef();
-	if (buildPos != -RgtVector) {
+	if (utils::is_valid(buildPos)) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
 			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 			return;
@@ -64,7 +64,7 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 	const float searchRadius = circuit->GetEconomyManager()->GetPylonRange() * 0.5f;
 	FindBuildSite(unit, position, searchRadius);
 
-	if (buildPos != -RgtVector) {
+	if (utils::is_valid(buildPos)) {
 		terrainManager->AddBlocker(buildDef, buildPos, facing);
 		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 	} else {

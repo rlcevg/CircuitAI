@@ -96,7 +96,7 @@ void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, fl
 	Map* map = circuit->GetMap();
 	auto checkFacing = [this, map, terrainManager, &predicate, &pos, searchRadius]() {
 		buildPos = terrainManager->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
-		if (buildPos == -RgtVector) {
+		if (!utils::is_valid(buildPos)) {
 			return false;
 		}
 

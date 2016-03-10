@@ -1,3 +1,3 @@
 make CircuitAI -j8
-cp AI/Skirmish/CircuitAI/libSkirmishAI.so ~/.spring/engine/100.0/AI/Skirmish/CircuitAI/0.8.2/
+cp AI/Skirmish/CircuitAI/libSkirmishAI.so ~/.spring/engine/101.0-test/AI/Skirmish/CircuitAI/0.8.2/
 echo "Done!"

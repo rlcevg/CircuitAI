@@ -38,9 +38,11 @@ void CBDefenceTask::Finish()
 	const float radius = 128.0f;  // buildDef->GetMaxRange() * 0.5f;
 	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(buildPos, radius));
 	if (!features.empty()) {
-		IBuilderTask* recl = circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, buildPos, .0f, FRAMES_PER_SEC * 60, radius, false);
+		circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, buildPos, .0f, FRAMES_PER_SEC * 60, radius, false);
 		utils::free_clear(features);
 	}
+
+	circuit->GetMilitaryManager()->UpdateDefenceTasks();
 
 	IBuilderTask::Finish();
 }

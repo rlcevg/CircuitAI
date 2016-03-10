@@ -113,7 +113,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		position = circuit->GetMilitaryManager()->GetScoutPosition(unit);
 	}
 
-	if ((position != -RgtVector) && terrainManager->CanMoveToPos(unit->GetArea(), position)) {
+	if (utils::is_valid(position) && terrainManager->CanMoveToPos(unit->GetArea(), position)) {
 		AIFloat3 startPos = pos;
 		AIFloat3 endPos = position;
 

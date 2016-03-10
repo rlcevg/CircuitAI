@@ -415,7 +415,7 @@ void CSetupManager::FindCommander()
 		delete def;
 		if (valid) {
 			commanderId = u->GetUnitId();
-//			if (startPos == -RgtVector) {
+//			if (!utils::is_valid(startPos)) {
 				SetStartPos(u->GetPos());
 //			}
 			break;

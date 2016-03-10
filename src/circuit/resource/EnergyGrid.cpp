@@ -192,11 +192,11 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 		}
 
 		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, sweetPos, searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
-		if (outPos == -RgtVector) {
+		if (utils::is_valid(outPos)) {
+			break;
+		} else {
 //			candDefs.erase(std::next(it).base());  // http://stackoverflow.com/questions/1830158/how-to-call-erase-with-a-reverse-iterator
 			candDefs.erase(range);
-		} else {
-			break;
 		}
 	}
 

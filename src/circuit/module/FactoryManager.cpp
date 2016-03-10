@@ -572,19 +572,18 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 	const SFactoryDef& facDef = it->second;
 
-	buildDef = facDef.GetRoleDef(CCircuitDef::RoleType::AA);
-	if ((buildDef != nullptr) && circuit->GetMilitaryManager()->IsNeedAA(buildDef) && buildDef->IsAvailable()) {
-		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
-		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
-		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
-		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::AA, radius);
-	}
-	buildDef = facDef.GetRoleDef(CCircuitDef::RoleType::ARTY);
-	if ((buildDef != nullptr) && circuit->GetMilitaryManager()->IsNeedArty(buildDef) && buildDef->IsAvailable()) {
-		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
-		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
-		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
-		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::ARTY, radius);
+	std::pair<CCircuitDef::RoleType, CRecruitTask::RecruitType> responses[] = {
+		std::make_pair(CCircuitDef::RoleType::AA,   CRecruitTask::RecruitType::AA),
+		std::make_pair(CCircuitDef::RoleType::ARTY, CRecruitTask::RecruitType::ARTY),
+	};
+	for (const auto& pair : responses) {
+		buildDef = facDef.GetRoleDef(pair.first);
+		if ((buildDef != nullptr) && circuit->GetMilitaryManager()->IsNeedRole(buildDef, pair.first) && buildDef->IsAvailable()) {
+			const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
+			UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
+			float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
+			return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, pair.second, radius);
+		}
 	}
 
 	CEconomyManager* em = circuit->GetEconomyManager();
@@ -693,8 +692,8 @@ void CFactoryManager::ReadConfig()
 		}
 
 		const Json::Value& defRoles = roles[defName];
-		for (unsigned i = 0; i < defRoles.size(); ++i) {
-			const char* roleName = defRoles[i].asCString();
+		for (const Json::Value& dr : defRoles) {
+			const char* roleName = dr.asCString();
 			auto it = roleNames.find(roleName);
 			if (it == roleNames.end()) {
 				circuit->LOG("CONFIG %s: %s has unknown role '%s'", cfgName.c_str(), defName.c_str(), roleName);

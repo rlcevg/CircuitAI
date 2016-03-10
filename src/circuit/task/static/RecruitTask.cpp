@@ -72,7 +72,7 @@ void CRecruitTask::Execute(CCircuitUnit* unit)
 		buildPos = unit->GetPos(frame);
 	}
 
-	if (buildPos != -RgtVector) {
+	if (utils::is_valid(buildPos)) {
 		unit->GetUnit()->Build(buildDef->GetUnitDef(), buildPos, UNIT_COMMAND_BUILD_NO_FACING, 0, frame + FRAMES_PER_SEC * 10);
 	} else {
 		manager->AbortTask(this);

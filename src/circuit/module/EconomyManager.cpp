@@ -601,7 +601,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		}
 
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		if ((buildPos != -RgtVector) && terrainManager->CanBeBuiltAt(bestDef, buildPos) &&
+		if (utils::is_valid(buildPos) && terrainManager->CanBeBuiltAt(bestDef, buildPos) &&
 			((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 		{
 			IBuilderTask::Priority priority = isEnergyStalling ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
@@ -775,7 +775,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 		AIFloat3 buildPos;
 		CEnergyLink* link = energyGrid->GetLinkToBuild(buildDef, buildPos);
 		if (link != nullptr) {
-			if ((buildPos != -RgtVector) && builderManager->IsBuilderInArea(buildDef, buildPos)) {
+			if (utils::is_valid(buildPos) && builderManager->IsBuilderInArea(buildDef, buildPos)) {
 				return builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, buildDef, buildPos, link, cost);
 			} else {
 				link->SetValid(false);  // FIXME: Reset valid on timer? Or when air con appears
@@ -923,7 +923,7 @@ void CEconomyManager::Init()
 					}
 				}
 				// Build factory defence
-				if (buildPos != -RgtVector) {
+				if (utils::is_valid(buildPos)) {
 					circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, circuit->GetCircuitDef("corllt"), buildPos,
 															  IBuilderTask::BuildType::DEFENCE, true, true, 0);
 				}

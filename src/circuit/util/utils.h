@@ -70,22 +70,22 @@ template <class C> void free_clear(C& cntr)
 
 static inline std::string string_format(const std::string fmt_str, ...)
 {
-    int final_n, n = ((int)fmt_str.size()) * 2; /* reserve 2 times as much as the length of the fmt_str */
-    std::string str;
-    std::unique_ptr<char[]> formatted;
-    va_list ap;
-    while(1) {
-        formatted.reset(new char[n]); /* wrap the plain char array into the unique_ptr */
-        strcpy(&formatted[0], fmt_str.c_str());
-        va_start(ap, fmt_str);
-        final_n = vsnprintf(&formatted[0], n, fmt_str.c_str(), ap);
-        va_end(ap);
-        if (final_n < 0 || final_n >= n)
-            n += abs(final_n - n + 1);
-        else
-            break;
-    }
-    return std::string(formatted.get());
+	int final_n, n = ((int)fmt_str.size()) * 2; /* reserve 2 times as much as the length of the fmt_str */
+	std::string str;
+	std::unique_ptr<char[]> formatted;
+	va_list ap;
+	while(1) {
+		formatted.reset(new char[n]); /* wrap the plain char array into the unique_ptr */
+		strcpy(&formatted[0], fmt_str.c_str());
+		va_start(ap, fmt_str);
+		final_n = vsnprintf(&formatted[0], n, fmt_str.c_str(), ap);
+		va_end(ap);
+		if (final_n < 0 || final_n >= n)
+			n += abs(final_n - n + 1);
+		else
+			break;
+	}
+	return std::string(formatted.get());
 }
 
 static inline std::string int_to_string(int i, const std::string &format = "%i")
@@ -97,20 +97,20 @@ static inline std::string int_to_string(int i, const std::string &format = "%i")
 
 static inline int string_to_int(const std::string &str)
 {
-    try {
-        std::size_t lastChar;
-        int result = std::stoi(str, &lastChar, 10);
-        if (lastChar != str.size()) {
-        	return 0;
-        }
-        return result;
-    }
-    catch (std::invalid_argument &) {
-        return 0;
-    }
-    catch (std::out_of_range &) {
-        return 0;
-    }
+	try {
+		std::size_t lastChar;
+		int result = std::stoi(str, &lastChar, 10);
+		if (lastChar != str.size()) {
+			return 0;
+		}
+		return result;
+	}
+	catch (std::invalid_argument &) {
+		return 0;
+	}
+	catch (std::out_of_range &) {
+		return 0;
+	}
 }
 
 static inline std::string float_to_string(float f, const std::string &format = "%f")
@@ -122,17 +122,17 @@ static inline std::string float_to_string(float f, const std::string &format = "
 
 static inline float string_to_float(const std::string &str)
 {
-    try {
-        std::size_t lastChar;
-        float result = std::stof(str, &lastChar);
-        if (lastChar != str.size()) {
-        	return 0.0f;
-        }
-        return result;
-    }
-    catch (...) {
-        return 0;
-    }
+	try {
+		std::size_t lastChar;
+		float result = std::stof(str, &lastChar);
+		if (lastChar != str.size()) {
+			return 0.f;
+		}
+		return result;
+	}
+	catch (...) {
+		return 0;
+	}
 }
 
 static inline void sleep(int64_t seconds)
@@ -219,14 +219,20 @@ static inline bool is_equal_pos(const springai::AIFloat3& posA, const springai::
 
 static inline springai::AIFloat3 get_near_pos(const springai::AIFloat3& pos, float range)
 {
-	springai::AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
+	springai::AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.f, (float)rand() / RAND_MAX - 0.5f);
 	return pos + offset * range;
 }
 
 static inline springai::AIFloat3 get_radial_pos(const springai::AIFloat3& pos, float radius)
 {
-	springai::AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.0f, (float)rand() / RAND_MAX - 0.5f);
-	return pos + offset.Normalize2D() * radius;
+	float angle = (float)rand() / RAND_MAX * 2 * M_PI;
+	springai::AIFloat3 offset(std::cos(angle), 0.f, std::sin(angle));
+	return pos + offset * radius;
+}
+
+static inline bool is_valid(const springai::AIFloat3& pos)
+{
+	return pos.x != -RgtVector.x;
 }
 
 } // namespace utils

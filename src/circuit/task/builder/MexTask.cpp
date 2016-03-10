@@ -44,9 +44,6 @@ bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 	if (unit->GetCircuitDef()->IsAttacker()) {
 		return true;
 	}
-	// FIXME: COMPATIBILITY
-	return true;
-	// FIXME: COMPATIBILITY
 	// TODO: Naked expansion on big maps
 	CCircuitAI* circuit = manager->GetCircuit();
 	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
@@ -72,7 +69,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	}
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	UnitDef* buildUDef = buildDef->GetUnitDef();
-	if (buildPos != -RgtVector) {
+	if (utils::is_valid(buildPos)) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
 			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 			return;
@@ -95,7 +92,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 //	int index = metalManager->FindNearestSpot(position, predicate);
 //	buildPos = (index >= 0) ? spots[index].position : AIFloat3(-RgtVector);
 //
-//	if (buildPos != -RgtVector) {
+//	if (utils::is_valid(buildPos)) {
 //		metalManager->SetOpenSpot(buildPos, false);
 //		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 //	} else {
@@ -122,7 +119,7 @@ void CBMexTask::Finish()
 
 void CBMexTask::Cancel()
 {
-	if ((target == nullptr) && (buildPos != -RgtVector)) {
+	if ((target == nullptr) && utils::is_valid(buildPos)) {
 		manager->GetCircuit()->GetMetalManager()->SetOpenSpot(buildPos, true);
 	}
 }

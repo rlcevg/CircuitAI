@@ -99,7 +99,7 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 	} else {
 		CFactoryManager* factoryManager = circuit->GetFactoryManager();
 		endPos = factoryManager->GetClosestHaven(unit);
-		if (endPos == -RgtVector) {
+		if (!utils::is_valid(endPos)) {
 			endPos = circuit->GetSetupManager()->GetBasePos();
 		}
 		range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
@@ -162,7 +162,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 	int frame = circuit->GetLastFrame();
 	CFactoryManager* factoryManager = circuit->GetFactoryManager();
 	AIFloat3 haven = (repairer != nullptr) ? repairer->GetPos(frame) : factoryManager->GetClosestHaven(unit);
-	if (haven == -RgtVector) {
+	if (!utils::is_valid(haven)) {
 		haven = circuit->GetSetupManager()->GetBasePos();
 	}
 
@@ -235,7 +235,7 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
 	} else {
 		CFactoryManager* factoryManager = circuit->GetFactoryManager();
 		endPos = factoryManager->GetClosestHaven(unit);
-		if (endPos == -RgtVector) {
+		if (!utils::is_valid(endPos)) {
 			endPos = circuit->GetSetupManager()->GetBasePos();
 		}
 		range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();

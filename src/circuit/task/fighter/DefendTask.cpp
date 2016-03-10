@@ -34,7 +34,7 @@ CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, float maxP
 	CCircuitDef* buildDef = factoryManager->GetClosestDef(pos, CCircuitDef::RoleType::RIOT);
 	if (buildDef != nullptr) {
 		factoryManager->EnqueueTask(CRecruitTask::Priority::HIGH, buildDef, pos,
-									CRecruitTask::RecruitType::FIREPOWER, 1000.f);
+									CRecruitTask::RecruitType::FIREPOWER, SQUARE(SQUARE_SIZE));
 	}
 }
 

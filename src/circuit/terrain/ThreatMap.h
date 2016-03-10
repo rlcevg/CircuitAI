@@ -10,6 +10,9 @@
 #define SRC_CIRCUIT_TERRAIN_THREATMAP_H_
 
 #include "CircuitAI.h"
+// FIXME: DEBUG
+#include "util/math/KMeansCluster.h"
+// FIXME: DEBUG
 
 #include <map>
 #include <vector>
@@ -37,10 +40,9 @@ public:
 	void EnemyDestroyed(CEnemyUnit* enemy);
 
 //	float GetAverageThreat() const { return currAvgThreat + 1.0f; }
-	float GetAirMetal()    const { return airMetal; }
-	float GetStaticMetal() const { return staticMetal; }
-	float GetLandMetal()   const { return landMetal; }
-	float GetWaterMetal()  const { return waterMetal; }
+	float GetRoleMetal(CCircuitDef::RoleType type) const {
+		return roleMetals[static_cast<CCircuitDef::RoleT>(type)];
+	}
 
 	float GetAllThreatAt(const springai::AIFloat3& position) const;
 	void SetThreatType(CCircuitUnit* unit);
@@ -90,10 +92,8 @@ private:
 //	float currAvgThreat;
 //	float currMaxThreat;
 //	float currSumThreat;
-	float airMetal;
-	float staticMetal;
-	float landMetal;
-	float waterMetal;
+	// FIXME: Movo into EnemyGroup. MilitaryManager should take care of land/water units based on group attributes?
+	std::vector<float> roleMetals;
 
 	int squareSize;
 	int width;
@@ -119,6 +119,8 @@ private:
 
 #ifdef DEBUG_VIS
 private:
+	CKMeansCluster* kmeans;
+
 	std::vector<std::pair<uint32_t, float*>> sdlWindows;
 	void UpdateVis();
 public:
