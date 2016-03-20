@@ -12,7 +12,7 @@ namespace circuit {
 
 using namespace springai;
 
-CKMeansCluster::CKMeansCluster(const AIFloat3& initPos)
+CKMeansCluster::CKMeansCluster(const springai::AIFloat3& initPos)
 {
 	means.push_back(initPos);
 }
@@ -26,9 +26,9 @@ CKMeansCluster::~CKMeansCluster()
  * 2d only, ignores y component.
  * @see KAIK/AttackHandler::KMeansIteration for general reference
  */
-void CKMeansCluster::Iteration(std::vector<AIFloat3> unitPositions, int newK)
+void CKMeansCluster::Iteration(const std::vector<AIFloat3>& unitPositions, int newK)
 {
-	assert(newK > 0 && means.size() > 0);
+	assert(newK > 0/* && means.size() > 0*/);
 	int numUnits = unitPositions.size();
 	// change the number of means according to newK
 	int oldK = means.size();
@@ -72,6 +72,7 @@ void CKMeansCluster::Iteration(std::vector<AIFloat3> unitPositions, int newK)
 	std::vector<AIFloat3>& newMeans = means;
 	std::fill(newMeans.begin(), newMeans.end(), ZeroVector);
 
+	// TODO: Return unitsClosestMeanID at this point or make some Visitor to calc other attributes of the group
 	for (int i = 0; i < numUnits; i++) {
 		int meanIndex = unitsClosestMeanID[i];
 		 // don't divide by 0

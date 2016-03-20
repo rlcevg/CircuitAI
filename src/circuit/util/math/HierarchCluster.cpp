@@ -72,9 +72,4 @@ const CHierarchCluster::Clusters& CHierarchCluster::Clusterize(CRagMatrix& distm
 	return iclusters;
 }
 
-const CHierarchCluster::Clusters& CHierarchCluster::GetClusters() const
-{
-	return iclusters;
-}
-
 } // namespace circuit

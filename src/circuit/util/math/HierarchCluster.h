@@ -22,7 +22,7 @@ public:
 	virtual ~CHierarchCluster();
 
 	const Clusters& Clusterize(CRagMatrix& distmatrix, float maxDistance);
-	const Clusters& GetClusters() const;
+	const Clusters& GetClusters() const { return iclusters; }
 
 private:
 	Clusters iclusters;

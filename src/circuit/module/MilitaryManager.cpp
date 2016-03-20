@@ -26,7 +26,9 @@
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
+#include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
+#include "util/math/KMeansCluster.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 #include "json/json.h"
@@ -207,6 +209,40 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	defence = circuit->GetAllyTeam()->GetDefenceMatrix().get();
 
 	fightTasks.resize(static_cast<IFighterTask::FT>(IFighterTask::FightType::TASKS_COUNT));
+
+	AIFloat3 medPos(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
+	enemyGroups = new CKMeansCluster(medPos);
+	// FIXME: DEBUG
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>([this]() {
+		if (this->circuit->GetEnemyUnits().empty()) {
+			return;
+		}
+		static int iii = 0;
+		static std::vector<AIFloat3> poses;
+		if (iii % 5 == 0) {
+			for (const AIFloat3& pos : poses) {
+				this->circuit->GetDrawer()->DeletePointsAndLines(pos);
+			}
+		}
+
+		std::vector<AIFloat3> unitPosition;
+		unitPosition.reserve(this->circuit->GetEnemyUnits().size());
+		for (const auto& kv : this->circuit->GetEnemyUnits()) {
+			unitPosition.push_back(kv.second->GetPos());
+		}
+		// calculate a new K. change the formula to adjust max K, needs to be 1 minimum.
+		constexpr int KMEANS_BASE_MAX_K = 32;
+		int kMeansK = std::min(KMEANS_BASE_MAX_K, 1 + (int)sqrtf(unitPosition.size()));
+		enemyGroups->Iteration(unitPosition, kMeansK);
+
+		if (iii++ % 5 == 0) {
+			poses = enemyGroups->GetMeans();
+			for (int i = 0; i < poses.size(); ++i) {
+				this->circuit->GetDrawer()->AddPoint(enemyGroups->GetMeans()[i], utils::int_to_string(i).c_str());
+			}
+		}
+	}), FRAMES_PER_SEC, circuit->GetSkirmishAIId() + 13);
+	// FIXME: DEBUG
 }
 
 CMilitaryManager::~CMilitaryManager()
@@ -219,6 +255,8 @@ CMilitaryManager::~CMilitaryManager()
 
 	utils::free_clear(retreatTasks);
 	utils::free_clear(retDeleteTasks);
+
+	delete enemyGroups;
 }
 
 int CMilitaryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)

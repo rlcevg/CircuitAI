@@ -10,7 +10,6 @@
 #include "task/fighter/FighterTask.h"
 #include "util/utils.h"
 
-#include "UnitRulesParam.h"
 #include "Weapon.h"
 
 namespace circuit {
@@ -22,7 +21,6 @@ CEnemyUnit::CEnemyUnit(Unit* unit, CCircuitDef* cdef)
 		, unit(unit)
 		, lastSeen(-1)
 		, dgun(nullptr)
-		, disarmParam(nullptr)
 		, pos(ZeroVector)
 		, threat(.0f)
 		, range({0})
@@ -40,7 +38,6 @@ CEnemyUnit::~CEnemyUnit()
 
 	delete unit;
 	delete dgun;
-	delete disarmParam;
 }
 
 void CEnemyUnit::SetCircuitDef(CCircuitDef* cdef)
@@ -57,13 +54,7 @@ void CEnemyUnit::SetCircuitDef(CCircuitDef* cdef)
 
 bool CEnemyUnit::IsDisarmed()
 {
-	if (disarmParam == nullptr) {
-		disarmParam = unit->GetUnitRulesParamByName("disarmed");
-		if (disarmParam == nullptr) {
-			return false;
-		}
-	}
-	return disarmParam->GetValueFloat() > .0f;
+	return unit->GetRulesParamFloat("disarmed", 0) > .0f;
 }
 
 float CEnemyUnit::GetDPS()

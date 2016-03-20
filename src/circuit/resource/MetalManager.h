@@ -11,10 +11,6 @@
 #include "resource/MetalData.h"
 #include "unit/CircuitUnit.h"
 
-namespace springai {
-	class GameRulesParam;
-}
-
 namespace circuit {
 
 class CCircuitAI;
@@ -29,7 +25,7 @@ public:
 	virtual ~CMetalManager();
 
 	void ParseMetalSpots(const char* metalJson);
-	void ParseMetalSpots(const std::vector<springai::GameRulesParam*>& metalParams);
+	void ParseMetalSpots(springai::Game* game);
 
 	bool HasMetalSpots() const { return (metalData->IsInitialized() && !metalData->IsEmpty()); }
 	bool HasMetalClusters() const { return !metalData->GetClusters().empty(); }

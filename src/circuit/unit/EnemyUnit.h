@@ -63,7 +63,6 @@ private:
 	int lastSeen;
 
 	springai::Weapon* dgun;
-	springai::UnitRulesParam* disarmParam;
 
 	springai::AIFloat3 pos;
 	float threat;

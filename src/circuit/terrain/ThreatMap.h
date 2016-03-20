@@ -10,9 +10,6 @@
 #define SRC_CIRCUIT_TERRAIN_THREATMAP_H_
 
 #include "CircuitAI.h"
-// FIXME: DEBUG
-#include "util/math/KMeansCluster.h"
-// FIXME: DEBUG
 
 #include <map>
 #include <vector>
@@ -92,7 +89,7 @@ private:
 //	float currAvgThreat;
 //	float currMaxThreat;
 //	float currSumThreat;
-	// FIXME: Movo into EnemyGroup. MilitaryManager should take care of land/water units based on group attributes?
+	// FIXME: Move into EnemyGroup. MilitaryManager should take care of land/water units based on group attributes?
 	std::vector<float> roleMetals;
 
 	int squareSize;
@@ -119,8 +116,6 @@ private:
 
 #ifdef DEBUG_VIS
 private:
-	CKMeansCluster* kmeans;
-
 	std::vector<std::pair<uint32_t, float*>> sdlWindows;
 	void UpdateVis();
 public:

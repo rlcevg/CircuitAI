@@ -11,7 +11,6 @@
 #include "util/utils.h"
 
 #include "AISCommands.h"
-#include "UnitRulesParam.h"
 #include "Weapon.h"
 
 namespace circuit {
@@ -30,10 +29,8 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* cdef)
 		, moveFails(0)
 		, failFrame(-1)
 		, isForceExecute(false)
-		, disarmParam(nullptr)
 		, isDisarmed(false)
 		, disarmFrame(-1)
-		, ammoParam(nullptr)
 		, isWeaponReady(true)
 		, ammoFrame(-1)
 		, isMorphing(false)
@@ -53,7 +50,6 @@ CCircuitUnit::~CCircuitUnit()
 	delete unit;
 	delete dgun;
 	delete shield;
-	delete disarmParam;
 }
 
 void CCircuitUnit::SetTask(IUnitTask* task)
@@ -96,10 +92,7 @@ bool CCircuitUnit::HasDGun()
 	}
 	// NOTE: Don't want to cache it: only dynamic commanders have this.
 	//       Disabled in CCircuitDef
-//	UnitRulesParam* dgunParam = unit->GetUnitRulesParamByName("comm_weapon_manual_1");
-//	if (dgunParam != nullptr) {
-//		return dgunParam->GetValueFloat() > .0f;
-//	}
+//	return unit->GetRulesParamFloat("comm_weapon_manual_1", 1) > .0f;
 	return true;
 }
 
@@ -116,13 +109,7 @@ bool CCircuitUnit::IsDisarmed(int frame)
 {
 	if (disarmFrame != frame) {
 		disarmFrame = frame;
-		if (disarmParam == nullptr) {
-			disarmParam = unit->GetUnitRulesParamByName("disarmed");
-			if (disarmParam == nullptr) {
-				return isDisarmed = false;
-			}
-		}
-		isDisarmed = disarmParam->GetValueFloat() > .0f;
+		isDisarmed = unit->GetRulesParamFloat("disarmed", 0) > .0f;
 	}
 	return isDisarmed;
 }
@@ -132,13 +119,7 @@ bool CCircuitUnit::IsWeaponReady(int frame)
 	if (ammoFrame != frame) {
 		ammoFrame = frame;
 		if (circuitDef->IsPlane()) {
-			if (ammoParam == nullptr) {
-				ammoParam = unit->GetUnitRulesParamByName("noammo");
-				if (ammoParam == nullptr) {
-					return isWeaponReady = true;
-				}
-			}
-			isWeaponReady = ammoParam->GetValueFloat() < 1.0f;
+			isWeaponReady = unit->GetRulesParamFloat("noammo", 0) < 1.f;
 		} else {
 			isWeaponReady = (weapon == nullptr) ? false : weapon->GetReloadFrame() <= frame;
 		}
@@ -208,26 +189,9 @@ void CCircuitUnit::Upgrade()
 	 * NewModules = params[N+1..M]
 	 */
 
-	UnitRulesParam* levelParam = unit->GetUnitRulesParamByName("comm_level");
-	float level = 0;
-	if (levelParam != nullptr) {
-		level = levelParam->GetValueFloat();
-	}
-	delete levelParam;
-
-	UnitRulesParam* chassisParam = unit->GetUnitRulesParamByName("comm_chassis");
-	float chassis = 0;
-	if (chassisParam != nullptr) {
-		chassis = chassisParam->GetValueFloat();
-	}
-	delete chassisParam;
-
-	UnitRulesParam* alreadyCountParam = unit->GetUnitRulesParamByName("comm_module_count");
-	float alreadyCount = 0;
-	if (alreadyCountParam != nullptr) {
-		alreadyCount = alreadyCountParam->GetValueFloat();
-	}
-	delete alreadyCountParam;
+	float level = unit->GetRulesParamFloat("comm_level", 0.f);
+	float chassis = unit->GetRulesParamFloat("comm_chassis", 0.f);
+	float alreadyCount = unit->GetRulesParamFloat("comm_module_count", 0.f);
 
 	static std::vector<std::vector<float>> newModules = {
 		std::vector<float>({14, 31}),  // shotgun, radar
@@ -261,11 +225,10 @@ void CCircuitUnit::Upgrade()
 
 	for (int i = 1; i <= alreadyCount; ++i) {
 		std::string modId = utils::int_to_string(i, "comm_module_%i");
-		UnitRulesParam* moduleParam = unit->GetUnitRulesParamByName(modId.c_str());
-		if (moduleParam != nullptr) {
-			upgrade.push_back(moduleParam->GetValueFloat());
+		float value = unit->GetRulesParamFloat(modId.c_str(), -1.f);
+		if (value != -1.f) {
+			upgrade.push_back(value);
 		}
-		delete moduleParam;
 	}
 
 	upgrade.insert(upgrade.end(), newModules[index].begin(), newModules[index].end());

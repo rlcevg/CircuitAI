@@ -34,7 +34,6 @@
 #include "Pathing.h"
 #include "Drawer.h"
 #include "Resource.h"
-#include "GameRulesParam.h"
 #include "SkirmishAI.h"
 #include "WrappUnit.h"
 #include "OptionValues.h"

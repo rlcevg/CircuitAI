@@ -19,6 +19,7 @@ namespace circuit {
 class CBDefenceTask;
 class CDefenceMatrix;
 class CRetreatTask;
+class CKMeansCluster;
 
 class CMilitaryManager: public IUnitModule {
 public:
@@ -107,6 +108,7 @@ private:
 
 	std::set<CCircuitUnit*> army;
 	float metalArmy;
+	CKMeansCluster* enemyGroups;
 
 	struct SClusterInfo {
 		IFighterTask* defence;

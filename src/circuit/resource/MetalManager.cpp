@@ -14,7 +14,6 @@
 #include "json/json.h"
 
 #include "Game.h"
-#include "GameRulesParam.h"
 #include "MoveData.h"
 #include "Pathing.h"
 
@@ -79,9 +78,7 @@ CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData)
 {
 	if (!metalData->IsInitialized()) {
 		// TODO: Add metal zone and no-metal-spots maps support
-		std::vector<GameRulesParam*> gameRulesParams = circuit->GetGame()->GetGameRulesParams();
-		ParseMetalSpots(gameRulesParams);
-		utils::free_clear(gameRulesParams);
+		ParseMetalSpots(circuit->GetGame());
 	}
 	metalInfos.resize(metalData->GetSpots().size(), {true, -1});
 }
@@ -114,47 +111,24 @@ void CMetalManager::ParseMetalSpots(const char* metalJson)
 	metalData->Init(spots);
 }
 
-void CMetalManager::ParseMetalSpots(const std::vector<GameRulesParam*>& gameParams)
+void CMetalManager::ParseMetalSpots(Game* game)
 {
-	int mexCount = 0;
-	for (auto param : gameParams) {
-		if (strcmp(param->GetName(), "mex_count") == 0) {
-			mexCount = param->GetValueFloat();
-			break;
-		}
-	}
-
+	int mexCount = game->GetRulesParamFloat("mex_count", -1);
 	if (mexCount <= 0) {
 		return;
 	}
 
 	std::vector<CMetalData::SMetal> spots(mexCount);
-	int i = 0;
-	for (auto param : gameParams) {
-		const char* name = param->GetName();
-		if (strncmp(name, "mex_", 4) == 0) {
-			if (strncmp(name + 4, "x", 1) == 0) {
-				int idx = std::atoi(name + 5);
-				spots[idx - 1].position.x = param->GetValueFloat();
-				i++;
-			} else if (strncmp(name + 4, "y", 1) == 0) {
-				int idx = std::atoi(name + 5);
-				spots[idx - 1].position.y = param->GetValueFloat();
-				i++;
-			} else if (strncmp(name + 4, "z", 1) == 0) {
-				int idx = std::atoi(name + 5);
-				spots[idx - 1].position.z = param->GetValueFloat();
-				i++;
-			} else if (strncmp(name + 4, "metal", 5) == 0) {
-				int idx = std::atoi(name + 9);
-				spots[idx - 1].income = param->GetValueFloat();
-				i++;
-			}
-
-			if (i >= mexCount * 4) {
-				break;
-			}
-		}
+	for (int i = 0; i < mexCount; ++i) {
+		std::string param;
+		param = utils::int_to_string(i + 1, "mex_x%i");
+		spots[i].position.x = game->GetRulesParamFloat(param.c_str(), 0.f);
+		param = utils::int_to_string(i + 1, "mex_y%i");
+		spots[i].position.y = game->GetRulesParamFloat(param.c_str(), 0.f);
+		param = utils::int_to_string(i + 1, "mex_z%i");
+		spots[i].position.z = game->GetRulesParamFloat(param.c_str(), 0.f);
+		param = utils::int_to_string(i + 1, "mex_metal%i");
+		spots[i].income = game->GetRulesParamFloat(param.c_str(), 0.f);
 	}
 
 	metalData->Init(spots);
