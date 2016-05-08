@@ -29,17 +29,14 @@ public:
 
 	void Update();
 
-	void EnemyEnterLOS(CEnemyUnit* enemy);
+	bool EnemyEnterLOS(CEnemyUnit* enemy);
 	void EnemyLeaveLOS(CEnemyUnit* enemy);
 	void EnemyEnterRadar(CEnemyUnit* enemy);
 	void EnemyLeaveRadar(CEnemyUnit* enemy);
 	void EnemyDamaged(CEnemyUnit* enemy);
-	void EnemyDestroyed(CEnemyUnit* enemy);
+	bool EnemyDestroyed(CEnemyUnit* enemy);
 
 //	float GetAverageThreat() const { return currAvgThreat + 1.0f; }
-	float GetRoleMetal(CCircuitDef::RoleType type) const {
-		return roleMetals[static_cast<CCircuitDef::RoleT>(type)];
-	}
 
 	float GetAllThreatAt(const springai::AIFloat3& position) const;
 	void SetThreatType(CCircuitUnit* unit);
@@ -76,8 +73,6 @@ private:
 	void DelEnemyAmph(const CEnemyUnit* e);
 	void AddDecloaker(const CEnemyUnit* e);
 	void DelDecloaker(const CEnemyUnit* e);
-	void AddEnemyMetal(const CEnemyUnit* e, const float scale = 1.0f);
-	void DelEnemyMetal(const CEnemyUnit* e) { AddEnemyMetal(e, -1.0f); }
 
 	void SetEnemyUnitRange(CEnemyUnit* e) const;
 	int GetCloakRange(const CEnemyUnit* e) const;
@@ -89,8 +84,6 @@ private:
 //	float currAvgThreat;
 //	float currMaxThreat;
 //	float currSumThreat;
-	// FIXME: Move into EnemyGroup. MilitaryManager should take care of land/water units based on group attributes?
-	std::vector<float> roleMetals;
 
 	int squareSize;
 	int width;

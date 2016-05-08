@@ -10,6 +10,7 @@
 
 #include "module/UnitModule.h"
 #include "task/fighter/FighterTask.h"
+#include "CircuitAI.h"
 
 #include <vector>
 #include <set>
@@ -19,7 +20,6 @@ namespace circuit {
 class CBDefenceTask;
 class CDefenceMatrix;
 class CRetreatTask;
-class CKMeansCluster;
 
 class CMilitaryManager: public IUnitModule {
 public:
@@ -58,6 +58,12 @@ public:
 	IFighterTask* DelDefendTask(int cluster);
 	IFighterTask* GetDefendTask(int cluster) const { return clusterInfos[cluster].defence; }
 
+	float GetEnemyMetal(CCircuitDef::RoleType type) const {
+		return enemyMetals[static_cast<CCircuitDef::RoleT>(type)];
+	}
+	void AddEnemyMetal(const CEnemyUnit* e, const float scale = 1.0f);
+	void DelEnemyMetal(const CEnemyUnit* e) { AddEnemyMetal(e, -1.0f); }
+
 	bool IsNeedRole(CCircuitDef* cdef, CCircuitDef::RoleType type) const;
 	bool IsNeedBigGun(CCircuitDef* cdef) const;
 
@@ -74,6 +80,7 @@ private:
 
 	void AddPower(CCircuitUnit* unit);
 	void DelPower(CCircuitUnit* unit);
+	void KMeansIteration(const CCircuitAI::EnemyUnits& units, int newK);
 
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
@@ -108,7 +115,15 @@ private:
 
 	std::set<CCircuitUnit*> army;
 	float metalArmy;
-	CKMeansCluster* enemyGroups;
+
+	std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT)> enemyMetals{};
+	struct SEnemyGroup {
+		SEnemyGroup(const springai::AIFloat3& p) : pos(p) {}
+		std::vector<CCircuitUnit::Id> units;
+		springai::AIFloat3 pos;
+		std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT)> roleMetals{};
+	};
+	std::vector<SEnemyGroup> enemyGroups;
 
 	struct SClusterInfo {
 		IFighterTask* defence;

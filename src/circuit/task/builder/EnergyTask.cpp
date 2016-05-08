@@ -10,10 +10,10 @@
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
 #include "module/EconomyManager.h"
+#include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
 #include "resource/EnergyGrid.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -169,7 +169,7 @@ void CBEnergyTask::Finish()
 			break;
 	}
 	pos = terrainManager->GetBuildPosition(bdef, pos);
-	if (cdef->GetCost() < circuit->GetThreatMap()->GetRoleMetal(CCircuitDef::RoleType::AIR) * 0.5f) {
+	if (cdef->GetCost() < circuit->GetMilitaryManager()->GetEnemyMetal(CCircuitDef::RoleType::AIR) * 0.5f) {
 		parent1->SetNextTask(builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, pos, IBuilderTask::BuildType::DEFENCE, true, false, 0));
 		parent1 = parent1->GetNextTask();
 	} else {

@@ -28,7 +28,6 @@
 #include "terrain/PathFinder.h"
 #include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
-#include "util/math/KMeansCluster.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 #include "json/json.h"
@@ -211,36 +210,32 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	fightTasks.resize(static_cast<IFighterTask::FT>(IFighterTask::FightType::TASKS_COUNT));
 
 	AIFloat3 medPos(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
-	enemyGroups = new CKMeansCluster(medPos);
+	enemyGroups.push_back(SEnemyGroup(medPos));
 	// FIXME: DEBUG
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>([this]() {
 		if (this->circuit->GetEnemyUnits().empty()) {
 			return;
 		}
-		static int iii = 0;
-		static std::vector<AIFloat3> poses;
-		if (iii % 5 == 0) {
-			for (const AIFloat3& pos : poses) {
-				this->circuit->GetDrawer()->DeletePointsAndLines(pos);
-			}
-		}
+//		static int iii = 0;
+//		static std::vector<AIFloat3> poses;
+//		if (iii % 5 == 0) {
+//			for (const AIFloat3& pos : poses) {
+//				this->circuit->GetDrawer()->DeletePointsAndLines(pos);
+//			}
+//		}
 
-		std::vector<AIFloat3> unitPosition;
-		unitPosition.reserve(this->circuit->GetEnemyUnits().size());
-		for (const auto& kv : this->circuit->GetEnemyUnits()) {
-			unitPosition.push_back(kv.second->GetPos());
-		}
 		// calculate a new K. change the formula to adjust max K, needs to be 1 minimum.
 		constexpr int KMEANS_BASE_MAX_K = 32;
-		int kMeansK = std::min(KMEANS_BASE_MAX_K, 1 + (int)sqrtf(unitPosition.size()));
-		enemyGroups->Iteration(unitPosition, kMeansK);
+		int kMeansK = std::min(KMEANS_BASE_MAX_K, 1 + (int)sqrtf(this->circuit->GetEnemyUnits().size()));
+		KMeansIteration(this->circuit->GetEnemyUnits(), kMeansK);
 
-		if (iii++ % 5 == 0) {
-			poses = enemyGroups->GetMeans();
-			for (int i = 0; i < poses.size(); ++i) {
-				this->circuit->GetDrawer()->AddPoint(enemyGroups->GetMeans()[i], utils::int_to_string(i).c_str());
-			}
-		}
+//		if (iii++ % 5 == 0) {
+//			poses.resize(enemyGroups.size());
+//			for (int i = 0; i < enemyGroups.size(); ++i) {
+//				poses[i] = enemyGroups[i].pos;
+//				this->circuit->GetDrawer()->AddPoint(poses[i], utils::int_to_string(i).c_str());
+//			}
+//		}
 	}), FRAMES_PER_SEC, circuit->GetSkirmishAIId() + 13);
 	// FIXME: DEBUG
 }
@@ -255,8 +250,6 @@ CMilitaryManager::~CMilitaryManager()
 
 	utils::free_clear(retreatTasks);
 	utils::free_clear(retDeleteTasks);
-
-	delete enemyGroups;
 }
 
 int CMilitaryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -677,14 +670,22 @@ IFighterTask* CMilitaryManager::DelDefendTask(int cluster)
 	return task;
 }
 
+void CMilitaryManager::AddEnemyMetal(const CEnemyUnit* e, const float scale)
+{
+	CCircuitDef* cdef = e->GetCircuitDef();
+	assert(cdef != nullptr);
+
+	const float cost = cdef->GetCost() * scale;
+	enemyMetals[cdef->GetMainRole()] += cost;
+}
+
 bool CMilitaryManager::IsNeedRole(CCircuitDef* cdef, CCircuitDef::RoleType type) const
 {
-	CThreatMap* threatMap = circuit->GetThreatMap();
 	const SRoleInfo& info = roleInfos[static_cast<CCircuitDef::RoleT>(type)];
-	for (const CCircuitDef::RoleType vsType: info.vs) {
-		const float metal = threatMap->GetRoleMetal(vsType);
+	for (const CCircuitDef::RoleType vsType : info.vs) {
+		const float enemyMetal = GetEnemyMetal(vsType);
 		const float nextMetal = info.metal + cdef->GetCost();
-		if ((metal * info.ratio > nextMetal * info.factor) && (nextMetal < info.maxPerc * metalArmy)) {
+		if ((enemyMetal * info.ratio > nextMetal * info.factor) && (nextMetal < info.maxPerc * metalArmy)) {
 			return true;
 		}
 	}
@@ -906,6 +907,92 @@ void CMilitaryManager::DelPower(CCircuitUnit* unit)
 		}
 	}
 	metalArmy = std::max(metalArmy - cost, .0f);
+}
+
+/*
+ * 2d only, ignores y component.
+ * @see KAIK/AttackHandler::KMeansIteration for general reference
+ */
+void CMilitaryManager::KMeansIteration(const CCircuitAI::EnemyUnits& units, int newK)
+{
+	// change the number of means according to newK
+	assert(newK > 0/* && enemyGoups.size() > 0*/);
+	// add a new means, just use one of the positions
+	AIFloat3 newMeansPosition = units.begin()->second->GetPos();
+//	newMeansPosition.y = circuit->GetMap()->GetElevationAt(newMeansPosition.x, newMeansPosition.z) + K_MEANS_ELEVATION;
+	enemyGroups.resize(newK, SEnemyGroup(newMeansPosition));
+
+	// check all positions and assign them to means, complexity n*k for one iteration
+	std::vector<int> unitsClosestMeanID(units.size(), -1);
+	std::vector<int> numUnitsAssignedToMean(newK, 0);
+
+	{
+		int i = 0;
+		for (const auto& kv : units) {
+			AIFloat3 unitPos = kv.second->GetPos();
+			float closestDistance = std::numeric_limits<float>::max();
+			int closestIndex = -1;
+
+			for (int m = 0; m < newK; m++) {
+				const AIFloat3& mean = enemyGroups[m].pos;
+				float distance = unitPos.SqDistance2D(mean);
+
+				if (distance < closestDistance) {
+					closestDistance = distance;
+					closestIndex = m;
+				}
+			}
+
+			// position i is closest to the mean at closestIndex
+			unitsClosestMeanID[i++] = closestIndex;
+			numUnitsAssignedToMean[closestIndex]++;
+		}
+	}
+
+	// change the means according to which positions are assigned to them
+	// use meanAverage for indexes with 0 pos'es assigned
+	// make a new means list
+//	std::vector<AIFloat3> newMeans(newK, ZeroVector);
+	std::vector<SEnemyGroup>& newMeans = enemyGroups;
+	for (unsigned i = 0; i < newMeans.size(); i++) {
+		SEnemyGroup& eg = newMeans[i];
+		eg.units.clear();
+		eg.units.reserve(numUnitsAssignedToMean[i]);
+		eg.pos = ZeroVector;
+		std::fill(eg.roleMetals.begin(), eg.roleMetals.end(), 0.f);
+	}
+
+	{
+		int i = 0;
+		for (const auto& kv : units) {
+			int meanIndex = unitsClosestMeanID[i++];
+			SEnemyGroup& eg = newMeans[meanIndex];
+
+			// don't divide by 0
+			float num = std::max(1, numUnitsAssignedToMean[meanIndex]);
+			eg.pos += kv.second->GetPos() / num;
+
+			eg.units.push_back(kv.first);
+
+			CCircuitDef* cdef = kv.second->GetCircuitDef();
+			if (cdef != nullptr) {
+				eg.roleMetals[cdef->GetMainRole()] += cdef->GetCost();
+			}
+		}
+	}
+
+	// do a check and see if there are any empty means and set the height
+	for (int i = 0; i < newK; i++) {
+		// if a newmean is unchanged, set it to the new means pos instead of (0, 0, 0)
+		if (newMeans[i].pos == ZeroVector) {
+			newMeans[i] = newMeansPosition;
+		} else {
+			// get the proper elevation for the y-coord
+//			newMeans[i].pos.y = circuit->GetMap()->GetElevationAt(newMeans[i].pos.x, newMeans[i].pos.z) + K_MEANS_ELEVATION;
+		}
+	}
+
+//	return newMeans;
 }
 
 } // namespace circuit

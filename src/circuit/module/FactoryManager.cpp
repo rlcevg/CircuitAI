@@ -614,6 +614,29 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			break;
 		}
 	}
+//	float mag = 0.f;
+//	for (unsigned i = 0; i < probs.size(); ++i) {
+//		CMilitaryManager::SRoleInfo& info = circuit->GetMilitaryManager()->roleInfos[facDef.buildDefs[i]->GetMainRole()];
+//		if (info.vs.empty()) {
+//			continue;
+//		}
+//		mag += probs[i] * circuit->GetMilitaryManager()->GetEnemyMetal(info.vs[0]);
+//	}
+//	unsigned choice = 0;
+//	float dice = (float)rand() / RAND_MAX * mag;
+//	float total = .0f;
+//	for (unsigned i = 0; i < probs.size(); ++i) {
+//		CMilitaryManager::SRoleInfo& info = circuit->GetMilitaryManager()->roleInfos[facDef.buildDefs[i]->GetMainRole()];
+//		if (info.vs.empty()) {
+//			continue;
+//		}
+//		total += probs[i] * circuit->GetMilitaryManager()->GetEnemyMetal(info.vs[0]);
+//		if (dice < total) {
+//			choice = i;
+//			break;
+//		}
+//	}
+
 
 	buildDef = facDef.buildDefs[choice];
 	if ((buildDef != nullptr) && buildDef->IsAvailable()) {

@@ -53,8 +53,6 @@ CThreatMap::CThreatMap(CCircuitAI* circuit)
 	losMap = std::move(map->GetLosMap());
 	losWidth = map->GetWidth() >> losMipLevel;
 	losResConv = SQUARE_SIZE << losMipLevel;
-
-	roleMetals.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT), .0f);
 }
 
 CThreatMap::~CThreatMap()
@@ -153,7 +151,7 @@ void CThreatMap::Update()
 #endif
 }
 
-void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
+bool CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 {
 	// Possible cases:
 	// (1) Unknown enemy that has been detected for the first time
@@ -193,12 +191,12 @@ void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 		enemy->SetKnown();
 
 		AddDecloaker(enemy);
-		return;
+		return false;
 	}
 
-	if (hostileUnits.find(enemy->GetId()) == hostileUnits.end()) {
+	bool isNew = (hostileUnits.find(enemy->GetId()) == hostileUnits.end());
+	if (isNew) {
 		hostileUnits[enemy->GetId()] = enemy;
-		AddEnemyMetal(enemy);
 	} else if (enemy->IsHidden()) {
 		enemy->ClearHidden();
 	} else if (enemy->IsKnown()) {
@@ -215,6 +213,7 @@ void CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 	enemy->SetKnown();
 
 	AddEnemyUnit(enemy);
+	return isNew;
 }
 
 void CThreatMap::EnemyLeaveLOS(CEnemyUnit* enemy)
@@ -292,7 +291,7 @@ void CThreatMap::EnemyDamaged(CEnemyUnit* enemy)
 	AddEnemyUnit(enemy);
 }
 
-void CThreatMap::EnemyDestroyed(CEnemyUnit* enemy)
+bool CThreatMap::EnemyDestroyed(CEnemyUnit* enemy)
 {
 	auto it = hostileUnits.find(enemy->GetId());
 	if (it == hostileUnits.end()) {
@@ -300,16 +299,14 @@ void CThreatMap::EnemyDestroyed(CEnemyUnit* enemy)
 			DelDecloaker(enemy);
 		}
 		peaceUnits.erase(enemy->GetId());
-		return;
+		return false;
 	}
 
 	if (!enemy->IsHidden()) {
 		DelEnemyUnit(enemy);
 	}
-	if (enemy->IsKnown()) {
-		DelEnemyMetal(enemy);
-	}
 	hostileUnits.erase(it);
+	return enemy->IsKnown();
 }
 
 float CThreatMap::GetAllThreatAt(const AIFloat3& position) const
@@ -604,15 +601,6 @@ void CThreatMap::DelDecloaker(const CEnemyUnit* e)
 			cloakThreat[index] = std::max<float>(cloakThreat[index] - threatCloak, THREAT_BASE);
 		}
 	}
-}
-
-void CThreatMap::AddEnemyMetal(const CEnemyUnit* e, const float scale)
-{
-	CCircuitDef* cdef = e->GetCircuitDef();
-	assert(cdef != nullptr);
-
-	const float cost = cdef->GetCost() * scale;
-	roleMetals[cdef->GetMainRole()] += cost;
 }
 
 void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const

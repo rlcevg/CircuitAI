@@ -723,7 +723,9 @@ int CCircuitAI::EnemyEnterLOS(CEnemyUnit* enemy)
 {
 	bool isKnownBefore = enemy->IsKnown() && (enemy->IsInRadar() || !enemy->GetCircuitDef()->IsMobile());
 
-	threatMap->EnemyEnterLOS(enemy);
+	if (threatMap->EnemyEnterLOS(enemy)) {
+		militaryManager->AddEnemyMetal(enemy);
+	}
 
 	if (isKnownBefore) {
 		return 0;  // signaling: OK
@@ -779,7 +781,9 @@ int CCircuitAI::EnemyDamaged(CEnemyUnit* enemy)
 
 int CCircuitAI::EnemyDestroyed(CEnemyUnit* enemy)
 {
-	threatMap->EnemyDestroyed(enemy);
+	if (threatMap->EnemyDestroyed(enemy)) {
+		militaryManager->DelEnemyMetal(enemy);
+	}
 
 	return 0;  // signaling: OK
 }
