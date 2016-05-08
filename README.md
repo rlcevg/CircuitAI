@@ -17,6 +17,7 @@ Required steps on linux:
 $ git clone https://github.com/spring/spring.git
 $ cd spring && git checkout tags/100.0
 $ git clone https://github.com/rlcevg/CircuitAI.git AI/Skirmish/CircuitAI
+$ cd AI/Skirmish/CircuitAI && git checkout v0.8.2 && cd ../../..
 $ cmake . && make CircuitAI
 ```
 
