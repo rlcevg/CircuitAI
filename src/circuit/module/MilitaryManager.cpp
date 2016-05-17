@@ -691,11 +691,11 @@ float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
 {
 	const SRoleInfo& info = roleInfos[cdef->GetMainRole()];
 	float maxProb = 0.f;
-	for (auto& pair : info.vs) {
-		const float enemyMetal = GetEnemyMetal(pair.first);
+	for (const SRoleInfo::SVsInfo& vs : info.vs) {
+		const float enemyMetal = GetEnemyMetal(vs.role);
 		const float nextMetal = info.metal + cdef->GetCost();
-		const float prob = enemyMetal * pair.second;
-		if ((prob > nextMetal * info.factor) && (nextMetal < info.maxPerc * metalArmy) && (prob > maxProb)) {
+		const float prob = enemyMetal * vs.importance;
+		if ((enemyMetal * vs.ratio > nextMetal * info.factor) && (nextMetal < info.maxPerc * metalArmy) && (prob > maxProb)) {
 			maxProb = prob;
 		}
 	}
@@ -756,14 +756,18 @@ void CMilitaryManager::ReadConfig()
 			info.factor  = (teamSize - 1.0f) * step + 1.0f;
 
 			const Json::Value& vs = response["vs"];
-			for (const std::string& contr : vs.getMemberNames()) {
-				const char* roleName = contr.c_str();
+			const Json::Value& ratio = response["ratio"];
+			const Json::Value& importance = response["importance"];
+			for (unsigned i = 0; i < vs.size(); ++i) {
+				const char* roleName = vs[i].asCString();
 				auto it = roleNames.find(roleName);
 				if (it == roleNames.end()) {
 					circuit->LOG("CONFIG %s: response %s vs unknown role '%s'", cfgName.c_str(), pair.first, roleName);
 					continue;
 				}
-				info.vs.push_back(std::make_pair(roleNames[roleName], vs[contr].asFloat()));
+				float rat = ratio.get(i, 1.0f).asFloat();
+				float imp = importance.get(i, 1.0f).asFloat();
+				info.vs.push_back(SRoleInfo::SVsInfo(roleNames[roleName], rat, imp));
 			}
 		}
 	}

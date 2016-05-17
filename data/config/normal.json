@@ -464,36 +464,50 @@
 },
 
 // Build special units when enemy_metal*ratio > response_metal*eps; eps=teamSize*eps_step+(1-eps_step)
-// AA condition for 3v3: (air_metal*0.7 > (aa_metal+aa_cost)*1.8) and (aa_metal+aa_cost < army_metal*0.45).
+// AA condition for 3v3: (enemy_air_metal*0.8 > (aa_metal+aa_cost)*1.8) and (aa_metal+aa_cost < army_metal*0.45)
+//
+// Probability of UnitDef for AA role depends on income tier: (tierN[UnitDef]+0.5)*enemy_air_metal*importance
+// armjeth probability for tier 1: 0.5*enemy_air_metal*4.0
 "response": {
 	"raider": {
-		// "vs": {"<role>": <ratio>, ...}
-		"vs": {"skirmish": 1.1, "artillery": 1.1, "anti_air": 1.1},
+		"vs":         ["skirmish", "artillery", "anti_air"],
+		"ratio":      [ 1.1,        1.1,         1.1],
+		"importance": [ 1.0,        2.0,         1.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"riot": {
-		"vs": {"raider": 1.1},
+		"vs":         ["raider"],
+		"ratio":      [ 1.1],
+		"importance": [ 1.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"assault": {
-		"vs": {"riot": 1.1, "static": 1.1},
+		"vs":         ["riot", "static"],
+		"ratio":      [ 1.1,    1.1],
+		"importance": [ 1.0,    1.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"skirmish": {
-		"vs": {"riot": 1.1, "assault": 1.1},
+		"vs":         ["riot", "assault"],
+		"ratio":      [ 1.1,    1.1],
+		"importance": [ 1.0,    1.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"anti_air": {
-		"vs": {"air": 0.8},
+		"vs":         ["air"],
+		"ratio":      [ 0.8],
+		"importance": [ 4.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"artillery": {
-		"vs": {"static": 1.1},
+		"vs":         ["static"],
+		"ratio":      [ 1.1],
+		"importance": [ 2.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	}

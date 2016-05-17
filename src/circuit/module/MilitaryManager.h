@@ -108,7 +108,13 @@ private:
 		float maxPerc;
 		float factor;
 		std::set<CCircuitUnit*> units;
-		std::vector<std::pair<CCircuitDef::RoleType, float>> vs;
+		struct SVsInfo {
+			SVsInfo(CCircuitDef::RoleType t, float r, float i) : role(t), ratio(r), importance(i) {}
+			CCircuitDef::RoleType role;
+			float ratio;
+			float importance;
+		};
+		std::vector<SVsInfo> vs;
 	};
 	std::vector<SRoleInfo> roleInfos;
 
