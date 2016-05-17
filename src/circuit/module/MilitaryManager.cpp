@@ -36,6 +36,7 @@
 #include "AISCommands.h"
 #include "Command.h"
 #include "WeaponDef.h"
+#include "Log.h"
 
 namespace circuit {
 
@@ -224,10 +225,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 //			}
 //		}
 
-		// calculate a new K. change the formula to adjust max K, needs to be 1 minimum.
-		constexpr int KMEANS_BASE_MAX_K = 32;
-		int kMeansK = std::min(KMEANS_BASE_MAX_K, 1 + (int)sqrtf(this->circuit->GetEnemyUnits().size()));
-		KMeansIteration(this->circuit->GetEnemyUnits(), kMeansK);
+		KMeansIteration();
 
 //		if (iii++ % 5 == 0) {
 //			poses.resize(enemyGroups.size());
@@ -925,8 +923,13 @@ void CMilitaryManager::DelPower(CCircuitUnit* unit)
  * 2d only, ignores y component.
  * @see KAIK/AttackHandler::KMeansIteration for general reference
  */
-void CMilitaryManager::KMeansIteration(const CCircuitAI::EnemyUnits& units, int newK)
+void CMilitaryManager::KMeansIteration()
 {
+	const CCircuitAI::EnemyUnits& units = circuit->GetEnemyUnits();
+	// calculate a new K. change the formula to adjust max K, needs to be 1 minimum.
+	constexpr int KMEANS_BASE_MAX_K = 32;
+	int newK = std::min(KMEANS_BASE_MAX_K, 1 + (int)sqrtf(units.size()));
+
 	// change the number of means according to newK
 	assert(newK > 0/* && enemyGoups.size() > 0*/);
 	// add a new means, just use one of the positions

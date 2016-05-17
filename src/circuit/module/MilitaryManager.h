@@ -10,7 +10,8 @@
 
 #include "module/UnitModule.h"
 #include "task/fighter/FighterTask.h"
-#include "CircuitAI.h"
+#include "unit/CircuitUnit.h"
+#include "unit/CircuitDef.h"
 
 #include <vector>
 #include <set>
@@ -80,7 +81,7 @@ private:
 
 	void AddPower(CCircuitUnit* unit);
 	void DelPower(CCircuitUnit* unit);
-	void KMeansIteration(const CCircuitAI::EnemyUnits& units, int newK);
+	void KMeansIteration();
 
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
@@ -121,12 +122,12 @@ private:
 	std::set<CCircuitUnit*> army;
 	float metalArmy;
 
-	std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT)> enemyMetals{0.f};
+	std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT)> enemyMetals{{0.f}};
 	struct SEnemyGroup {
 		SEnemyGroup(const springai::AIFloat3& p) : pos(p) {}
 		std::vector<CCircuitUnit::Id> units;
 		springai::AIFloat3 pos;
-		std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT)> roleMetals{0.f};
+		std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT)> roleMetals{{0.f}};
 	};
 	std::vector<SEnemyGroup> enemyGroups;
 
