@@ -61,11 +61,11 @@ public:
 	float GetEnemyMetal(CCircuitDef::RoleType type) const {
 		return enemyMetals[static_cast<CCircuitDef::RoleT>(type)];
 	}
-	void AddEnemyMetal(const CEnemyUnit* e, const float scale = 1.0f);
-	void DelEnemyMetal(const CEnemyUnit* e) { AddEnemyMetal(e, -1.0f); }
+	void AddEnemyMetal(const CEnemyUnit* e);
+	void DelEnemyMetal(const CEnemyUnit* e);
 
-	bool IsNeedRole(CCircuitDef* cdef, CCircuitDef::RoleType type) const;
-	bool IsNeedBigGun(CCircuitDef* cdef) const;
+	float RoleProbability(const CCircuitDef* cdef) const;
+	bool IsNeedBigGun(const CCircuitDef* cdef) const;
 
 	void UpdateDefenceTasks();
 
@@ -105,23 +105,22 @@ private:
 
 	struct SRoleInfo {
 		float metal;
-		float ratio;
 		float maxPerc;
 		float factor;
 		std::set<CCircuitUnit*> units;
-		std::vector<CCircuitDef::RoleType> vs;
+		std::vector<std::pair<CCircuitDef::RoleType, float>> vs;
 	};
 	std::vector<SRoleInfo> roleInfos;
 
 	std::set<CCircuitUnit*> army;
 	float metalArmy;
 
-	std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT)> enemyMetals{};
+	std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT)> enemyMetals{0.f};
 	struct SEnemyGroup {
 		SEnemyGroup(const springai::AIFloat3& p) : pos(p) {}
 		std::vector<CCircuitUnit::Id> units;
 		springai::AIFloat3 pos;
-		std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT)> roleMetals{};
+		std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT)> roleMetals{0.f};
 	};
 	std::vector<SEnemyGroup> enemyGroups;
 

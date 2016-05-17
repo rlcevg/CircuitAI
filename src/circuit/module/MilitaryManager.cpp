@@ -670,29 +670,39 @@ IFighterTask* CMilitaryManager::DelDefendTask(int cluster)
 	return task;
 }
 
-void CMilitaryManager::AddEnemyMetal(const CEnemyUnit* e, const float scale)
+void CMilitaryManager::AddEnemyMetal(const CEnemyUnit* e)
 {
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	const float cost = cdef->GetCost() * scale;
-	enemyMetals[cdef->GetMainRole()] += cost;
+	enemyMetals[cdef->GetMainRole()] += cdef->GetCost();
 }
 
-bool CMilitaryManager::IsNeedRole(CCircuitDef* cdef, CCircuitDef::RoleType type) const
+void CMilitaryManager::DelEnemyMetal(const CEnemyUnit* e)
 {
-	const SRoleInfo& info = roleInfos[static_cast<CCircuitDef::RoleT>(type)];
-	for (const CCircuitDef::RoleType vsType : info.vs) {
-		const float enemyMetal = GetEnemyMetal(vsType);
+	CCircuitDef* cdef = e->GetCircuitDef();
+	assert(cdef != nullptr);
+
+	float& metal = enemyMetals[cdef->GetMainRole()];
+	metal = std::max(metal - cdef->GetCost(), 0.f);
+}
+
+float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
+{
+	const SRoleInfo& info = roleInfos[cdef->GetMainRole()];
+	float maxProb = 0.f;
+	for (auto& pair : info.vs) {
+		const float enemyMetal = GetEnemyMetal(pair.first);
 		const float nextMetal = info.metal + cdef->GetCost();
-		if ((enemyMetal * info.ratio > nextMetal * info.factor) && (nextMetal < info.maxPerc * metalArmy)) {
-			return true;
+		const float prob = enemyMetal * pair.second;
+		if ((prob > nextMetal * info.factor) && (nextMetal < info.maxPerc * metalArmy) && (prob > maxProb)) {
+			maxProb = prob;
 		}
 	}
-	return false;
+	return maxProb;
 }
 
-bool CMilitaryManager::IsNeedBigGun(CCircuitDef* cdef) const
+bool CMilitaryManager::IsNeedBigGun(const CCircuitDef* cdef) const
 {
 	return metalArmy * circuit->GetEconomyManager()->GetEcoFactor() > cdef->GetCost();
 }
@@ -723,7 +733,7 @@ void CMilitaryManager::ReadConfig()
 		{"anti_air",   CCircuitDef::RoleType::AA},
 	};
 
-	const Json::Value& ratio = root["response"];
+	const Json::Value& responses = root["response"];
 	const float teamSize = circuit->GetAllyTeam()->GetSize();
 	roleInfos.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT), {.0f});
 	std::pair<const char*, CCircuitDef::RoleType> responseNames[] = {
@@ -736,26 +746,24 @@ void CMilitaryManager::ReadConfig()
 	};
 	for (const auto& pair : responseNames) {
 		SRoleInfo& info = roleInfos[static_cast<CCircuitDef::RoleT>(pair.second)];
-		const Json::Value& response = ratio[pair.first];
+		const Json::Value& response = responses[pair.first];
 		if (response == Json::Value::null) {
-			info.ratio   = 1.0f;
 			info.maxPerc = 1.0f;
 			info.factor  = teamSize;
 		} else {
-			info.ratio   = response.get("ratio", 1.0f).asFloat();
 			info.maxPerc = response.get("max_percent", 1.0f).asFloat();
 			const float step = response.get("eps_step", 1.0f).asFloat();
 			info.factor  = (teamSize - 1.0f) * step + 1.0f;
 
 			const Json::Value& vs = response["vs"];
-			for (const Json::Value& contr : vs) {
-				const char* roleName = contr.asCString();
+			for (const std::string& contr : vs.getMemberNames()) {
+				const char* roleName = contr.c_str();
 				auto it = roleNames.find(roleName);
 				if (it == roleNames.end()) {
 					circuit->LOG("CONFIG %s: response %s vs unknown role '%s'", cfgName.c_str(), pair.first, roleName);
 					continue;
 				}
-				info.vs.push_back(roleNames[roleName]);
+				info.vs.push_back(std::make_pair(roleNames[roleName], vs[contr].asFloat()));
 			}
 		}
 	}

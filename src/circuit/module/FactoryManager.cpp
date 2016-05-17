@@ -564,7 +564,6 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	if (!CanEnqueueTask()) {
 		return nullptr;
 	}
-	CCircuitDef* buildDef;
 
 	auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
 	if (it == factoryDefs.end()) {
@@ -572,19 +571,8 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 	const SFactoryDef& facDef = it->second;
 
-	std::pair<CCircuitDef::RoleType, CRecruitTask::RecruitType> responses[] = {
-		std::make_pair(CCircuitDef::RoleType::AA,   CRecruitTask::RecruitType::AA),
-		std::make_pair(CCircuitDef::RoleType::ARTY, CRecruitTask::RecruitType::ARTY),
-	};
-	for (const auto& pair : responses) {
-		buildDef = facDef.GetRoleDef(pair.first);
-		if ((buildDef != nullptr) && circuit->GetMilitaryManager()->IsNeedRole(buildDef, pair.first) && buildDef->IsAvailable()) {
-			const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
-			UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
-			float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
-			return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, pair.second, radius);
-		}
-	}
+	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
+	CCircuitDef* buildDef/* = nullptr*/;
 
 	CEconomyManager* em = circuit->GetEconomyManager();
 	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
@@ -604,45 +592,49 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 	const std::vector<float>& probs = facIt->second;
 
-	unsigned choice = 0;
-	float dice = (float)rand() / RAND_MAX;
-	float total = .0f;
-	for (unsigned i = 0; i < probs.size(); ++i) {
-		total += probs[i];
-		if (dice < total) {
-			choice = i;
-			break;
+	std::vector<std::pair<CCircuitDef*, float>> candidates;
+	candidates.reserve(facDef.buildDefs.size());
+	float mag = 0.f;
+	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
+		CCircuitDef* bd = facDef.buildDefs[i];
+		// (probs[i] + 0.5f) hints preferable buildDef within same role
+		float prob = militaryManager->RoleProbability(bd) * (probs[i] + 0.5f);
+		if (prob > 0.f) {
+			candidates.push_back(std::make_pair(bd, prob));
+			mag += prob;
 		}
 	}
-//	float mag = 0.f;
-//	for (unsigned i = 0; i < probs.size(); ++i) {
-//		CMilitaryManager::SRoleInfo& info = circuit->GetMilitaryManager()->roleInfos[facDef.buildDefs[i]->GetMainRole()];
-//		if (info.vs.empty()) {
-//			continue;
-//		}
-//		mag += probs[i] * circuit->GetMilitaryManager()->GetEnemyMetal(info.vs[0]);
-//	}
-//	unsigned choice = 0;
-//	float dice = (float)rand() / RAND_MAX * mag;
-//	float total = .0f;
-//	for (unsigned i = 0; i < probs.size(); ++i) {
-//		CMilitaryManager::SRoleInfo& info = circuit->GetMilitaryManager()->roleInfos[facDef.buildDefs[i]->GetMainRole()];
-//		if (info.vs.empty()) {
-//			continue;
-//		}
-//		total += probs[i] * circuit->GetMilitaryManager()->GetEnemyMetal(info.vs[0]);
-//		if (dice < total) {
-//			choice = i;
-//			break;
-//		}
-//	}
 
+	if (!candidates.empty()) {
+		buildDef = candidates.front().first;
+		float dice = (float)rand() / RAND_MAX * mag;
+		float total = .0f;
+		for (auto& pair : candidates) {
+			total += pair.second;
+			if (dice < total) {
+				buildDef = pair.first;
+				break;
+			}
+		}
+	} else {
+		unsigned choice = 0;
+		float dice = (float)rand() / RAND_MAX;
+		float total = .0f;
+		for (unsigned i = 0; i < probs.size(); ++i) {
+			total += probs[i];
+			if (dice < total) {
+				choice = i;
+				break;
+			}
+		}
+		buildDef = facDef.buildDefs[choice];
+	}
 
-	buildDef = facDef.buildDefs[choice];
-	if ((buildDef != nullptr) && buildDef->IsAvailable()) {
+	if (/*(buildDef != nullptr) && */buildDef->IsAvailable()) {
 		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
 		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
 		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
+		// FIXME CCircuitDef::RoleType <-> CRecruitTask::RecruitType relations
 		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::FIREPOWER, radius);
 	}
 
@@ -825,43 +817,43 @@ void CFactoryManager::ReadConfig()
 				waterDef = udef;
 			}
 		}
+		if (facDef.buildDefs.empty()) {
+			continue;  // ignore empty factory
+		}
 		facDef.landDef = landDef;
 		facDef.waterDef = waterDef;
 
-		if (facDef.buildDefs.empty()) {
-			facDef.buildDefs.push_back(nullptr);
-		} else {
-			auto fillProbs = [this, &cfgName, &facDef, &fac, &factory](unsigned i, const char* type, SFactoryDef::Tiers& tiers) {
-				const Json::Value& tierType = factory[type];
-				if (tierType == Json::Value::null) {
-					return false;
-				}
-				const Json::Value& tier = tierType[utils::int_to_string(i, "tier%i")];
-				if (tier == Json::Value::null) {
-					return false;
-				}
-				std::vector<float>& probs = tiers[i];
-				probs.reserve(facDef.buildDefs.size());
-				float sum = .0f;
-				for (unsigned j = 0; j < facDef.buildDefs.size(); ++j) {
-					const float p = tier[j].asFloat();
-					sum += p;
-					probs.push_back(p);
-				}
-				if (fabs(sum - 1.0f) > 0.0001f) {
-					circuit->LOG("CONFIG %s: %s's %s_tier%i total probability = %f", cfgName.c_str(), fac.c_str(), type, i, sum);
-				}
-				return true;
-			};
-			unsigned i = 0;
-			for (; i < tierSize; ++i) {
-				facDef.incomes.push_back(tiers[i].asFloat());
-				fillProbs(i, "land", facDef.landTiers);
-				fillProbs(i, "water", facDef.waterTiers);
+		auto fillProbs = [this, &cfgName, &facDef, &fac, &factory](unsigned i, const char* type, SFactoryDef::Tiers& tiers) {
+			const Json::Value& tierType = factory[type];
+			if (tierType == Json::Value::null) {
+				return false;
 			}
+			const Json::Value& tier = tierType[utils::int_to_string(i, "tier%i")];
+			if (tier == Json::Value::null) {
+				return false;
+			}
+			std::vector<float>& probs = tiers[i];
+			probs.reserve(facDef.buildDefs.size());
+			float sum = .0f;
+			for (unsigned j = 0; j < facDef.buildDefs.size(); ++j) {
+				const float p = tier[j].asFloat();
+				sum += p;
+				probs.push_back(p);
+			}
+			if (fabs(sum - 1.0f) > 0.0001f) {
+				circuit->LOG("CONFIG %s: %s's %s_tier%i total probability = %f", cfgName.c_str(), fac.c_str(), type, i, sum);
+			}
+			return true;
+		};
+		unsigned i = 0;
+		for (; i < tierSize; ++i) {
+			facDef.incomes.push_back(tiers[i].asFloat());
 			fillProbs(i, "land", facDef.landTiers);
 			fillProbs(i, "water", facDef.waterTiers);
 		}
+		fillProbs(i, "land", facDef.landTiers);
+		fillProbs(i, "water", facDef.waterTiers);
+
 		if (facDef.incomes.empty()) {
 			facDef.incomes.push_back(std::numeric_limits<float>::max());
 		}

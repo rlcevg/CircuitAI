@@ -159,6 +159,7 @@ bool CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 	// (3) Known enemy that already was in LOS enters again
 
 	enemy->SetInLOS();
+	bool isKnown = enemy->IsKnown();
 
 	if (enemy->GetDPS() < 0.1f) {
 		if (enemy->GetThreat() > .0f) {  // (2)
@@ -191,11 +192,10 @@ bool CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 		enemy->SetKnown();
 
 		AddDecloaker(enemy);
-		return false;
+		return !isKnown;
 	}
 
-	bool isNew = (hostileUnits.find(enemy->GetId()) == hostileUnits.end());
-	if (isNew) {
+	if (hostileUnits.find(enemy->GetId()) == hostileUnits.end()) {
 		hostileUnits[enemy->GetId()] = enemy;
 	} else if (enemy->IsHidden()) {
 		enemy->ClearHidden();
@@ -213,7 +213,7 @@ bool CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 	enemy->SetKnown();
 
 	AddEnemyUnit(enemy);
-	return isNew;
+	return !isKnown;
 }
 
 void CThreatMap::EnemyLeaveLOS(CEnemyUnit* enemy)
@@ -299,7 +299,7 @@ bool CThreatMap::EnemyDestroyed(CEnemyUnit* enemy)
 			DelDecloaker(enemy);
 		}
 		peaceUnits.erase(enemy->GetId());
-		return false;
+		return enemy->IsKnown();
 	}
 
 	if (!enemy->IsHidden()) {

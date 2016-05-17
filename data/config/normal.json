@@ -467,38 +467,33 @@
 // AA condition for 3v3: (air_metal*0.7 > (aa_metal+aa_cost)*1.8) and (aa_metal+aa_cost < army_metal*0.45).
 "response": {
 	"raider": {
-		"vs": ["skirmish", "artillery", "anti_air"],
-		"ratio": 1.1,
+		// "vs": {"<role>": <ratio>, ...}
+		"vs": {"skirmish": 1.1, "artillery": 1.1, "anti_air": 1.1},
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"riot": {
-		"vs": ["raider"],
-		"ratio": 1.1,
+		"vs": {"raider": 1.1},
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"assault": {
-		"vs": ["riot", "static"],
-		"ratio": 1.1,
+		"vs": {"riot": 1.1, "static": 1.1},
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"skirmish": {
-		"vs": ["riot", "assault"],
-		"ratio": 1.1,
+		"vs": {"riot": 1.1, "assault": 1.1},
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"anti_air": {
-		"vs": ["air"],
-		"ratio": 0.8,
+		"vs": {"air": 0.8},
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"artillery": {
-		"vs": ["static"],
-		"ratio": 1.1,
+		"vs": {"static": 1.1},
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	}
