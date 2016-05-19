@@ -157,34 +157,34 @@ static inline void sleep(int64_t seconds)
 //		throw std::runtime_error("failed writing to file");
 //	}
 //}
-//
-//static bool IsFSGoodChar(const char c)
-//{
-//	if ((c >= '0') && (c <= '9')) {
-//		return true;
-//	} else if ((c >= 'a') && (c <= 'z')) {
-//		return true;
-//	} else if ((c >= 'A') && (c <= 'Z')) {
-//		return true;
-//	} else if ((c == '.') || (c == '_') || (c == '-')) {
-//		return true;
-//	}
-//
-//	return false;
-//}
-//
-//static std::string MakeFileSystemCompatible(const std::string& str)
-//{
-//	std::string cleaned = str;
-//
-//	for (std::string::size_type i=0; i < cleaned.size(); i++) {
-//		if (!IsFSGoodChar(cleaned[i])) {
-//			cleaned[i] = '_';
-//		}
-//	}
-//
-//	return cleaned;
-//}
+
+static inline bool IsFSGoodChar(const char c)
+{
+	if ((c >= '0') && (c <= '9')) {
+		return true;
+	} else if ((c >= 'a') && (c <= 'z')) {
+		return true;
+	} else if ((c >= 'A') && (c <= 'Z')) {
+		return true;
+	} else if ((c == '.') || (c == '_') || (c == '-')) {
+		return true;
+	}
+
+	return false;
+}
+
+static inline std::string MakeFileSystemCompatible(const std::string& str)
+{
+	std::string cleaned = str;
+
+	for (std::string::size_type i=0; i < cleaned.size(); i++) {
+		if (!IsFSGoodChar(cleaned[i])) {
+			cleaned[i] = '_';
+		}
+	}
+
+	return cleaned;
+}
 
 ///*
 // *  Check if projected point onto line lies between 2 end-points

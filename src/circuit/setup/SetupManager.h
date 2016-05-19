@@ -15,6 +15,12 @@
 
 namespace circuit {
 
+namespace setup {
+	static constexpr char easy[]{"easy"};
+	static constexpr char normal[]{"normal"};
+	static constexpr char hard[]{"hard"};
+}
+
 class CCircuitAI;
 class CSetupData;
 class CAllyTeam;
@@ -51,6 +57,8 @@ public:
 private:
 	void FindCommander();
 	bool LocatePath(std::string& filename);
+	const char* ReadConfig(const std::string& filename);
+	Json::Value* ParseConfig(const char* cfgJson);
 
 	CCircuitAI* circuit;
 	CSetupData* setupData;

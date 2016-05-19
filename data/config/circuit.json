@@ -1,6 +1,13 @@
 // Mono-space font required
 {
-// Section defines wich factories to use
+// --- EASY config ---
+"easy": {  // Null AI
+},
+// --- EASY config ---
+
+// --- NORMAL config ---
+"normal": {
+// Define factories
 "factory": {
 	"factorycloak": {
 		// Adjusts the priority of factory choice (factories with map_percent < 20 are ignored)
@@ -453,7 +460,7 @@
 	// striderhub
 	"armcomdgun": ["scout"],
 	"scorpion": ["scout"],
-	"dante": ["riot", "melee"],
+	"dante": ["melee"],  // FIXME: Can't be "riot" because of DefendTask
 	"armraven": ["artillery"],
 	"funnelweb": ["artillery"],
 	"armbanth": ["melee"],
@@ -464,41 +471,50 @@
 },
 
 // Build special units when enemy_metal*ratio > response_metal*eps; eps=teamSize*eps_step+(1-eps_step)
-// AA condition for 3v3: (air_metal*0.7 > (aa_metal+aa_cost)*1.8) and (aa_metal+aa_cost < army_metal*0.45).
+// AA condition for 3v3: (enemy_air_metal*0.8 > (aa_metal+aa_cost)*1.8) and (aa_metal+aa_cost < army_metal*0.45)
+//
+// Probability of UnitDef for AA role depends on income tier: (tierN[UnitDef]+0.5)*enemy_air_metal*importance
+// armjeth probability for tier 1: 0.5*enemy_air_metal*4.0
 "response": {
 	"raider": {
-		"vs": ["skirmish", "artillery", "anti_air"],
-		"ratio": 1.1,
+		"vs":         ["skirmish", "artillery", "anti_air"],
+		"ratio":      [ 1.1,        1.1,         1.1],
+		"importance": [ 1.0,        2.0,         1.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"riot": {
-		"vs": ["raider"],
-		"ratio": 1.1,
+		"vs":         ["raider"],
+		"ratio":      [ 1.1],
+		"importance": [ 1.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"assault": {
-		"vs": ["riot", "static"],
-		"ratio": 1.1,
+		"vs":         ["riot", "static"],
+		"ratio":      [ 1.1,    1.1],
+		"importance": [ 1.0,    1.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"skirmish": {
-		"vs": ["riot", "assault"],
-		"ratio": 1.1,
+		"vs":         ["riot", "assault"],
+		"ratio":      [ 1.1,    1.1],
+		"importance": [ 1.0,    1.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"anti_air": {
-		"vs": ["air"],
-		"ratio": 0.8,
+		"vs":         ["air"],
+		"ratio":      [ 0.8],
+		"importance": [ 4.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
 	"artillery": {
-		"vs": ["static"],
-		"ratio": 1.1,
+		"vs":         ["static"],
+		"ratio":      [ 1.1],
+		"importance": [ 2.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	}
@@ -631,4 +647,13 @@
 	},
 	"income_factor": 0.74
 }
+},
+// --- NORMAL config ---
+
+// --- HARD config COMMENTED ---
+// "hard": {},
+// --- HARD config COMMENTED ---
+
+// Fallback config
+"default": "normal"
 }

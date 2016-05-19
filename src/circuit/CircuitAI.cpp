@@ -538,9 +538,10 @@ int CCircuitAI::Update(int frame)
 
 int CCircuitAI::Message(int playerId, const char* message)
 {
+#ifdef DEBUG_VIS
 	const char cmdPos[]    = "~стройсь\0";
 	const char cmdSelfD[]  = "~Згинь, нечистая сила!\0";
-#ifdef DEBUG_VIS
+
 	const char cmdBlock[]  = "~block\0";
 	const char cmdThreat[] = "~threat\0";
 	const char cmdArea[]   = "~area\0";
@@ -557,10 +558,11 @@ int CCircuitAI::Message(int playerId, const char* message)
 
 	size_t msgLength = strlen(message);
 
+
+#ifdef DEBUG_VIS
 	if ((msgLength == strlen(cmdPos)) && (strcmp(message, cmdPos) == 0)) {
 		setupManager->PickStartPos(this, CSetupManager::StartPosType::RANDOM);
 	}
-
 	else if ((msgLength == strlen(cmdSelfD)) && (strcmp(message, cmdSelfD) == 0)) {
 		std::vector<Unit*> units = callback->GetTeamUnits();
 		for (auto u : units) {
@@ -569,7 +571,6 @@ int CCircuitAI::Message(int playerId, const char* message)
 		utils::free_clear(units);
 	}
 
-#ifdef DEBUG_VIS
 	else if ((msgLength == strlen(cmdBlock)) && (strcmp(message, cmdBlock) == 0)) {
 		terrainManager->ToggleVis();
 	}
@@ -943,19 +944,16 @@ std::string CCircuitAI::InitOptions()
 {
 	OptionValues* options = skirmishAI->GetOptionValues();
 	const char* value;
-	const char easy[] = "easy";
-	const char normal[] = "normal";
-	const char hard[] = "hard";
 	const char trueVal0[] = "true";
 	const char trueVal1[] = "1";
 
 	value = options->GetValueByKey("difficulty");
 	if (value != nullptr) {
-		if (strncmp(value, easy, sizeof(easy)) == 0) {
+		if (strncmp(value, setup::easy, sizeof(setup::easy)) == 0) {
 			difficulty = Difficulty::EASY;
-		} else if (strncmp(value, normal, sizeof(normal)) == 0) {
+		} else if (strncmp(value, setup::normal, sizeof(setup::normal)) == 0) {
 			difficulty = Difficulty::NORMAL;
-		} else if (strncmp(value, hard, sizeof(hard)) == 0) {
+		} else if (strncmp(value, setup::hard, sizeof(setup::hard)) == 0) {
 			difficulty = Difficulty::HARD;
 		}
 	}
@@ -966,14 +964,8 @@ std::string CCircuitAI::InitOptions()
 					(strncmp(value, trueVal1, sizeof(trueVal1)) == 0);
 	}
 
-	std::string cfgName;
 	value = options->GetValueByKey("config");
-	if ((value != nullptr) && strlen(value) > 0) {
-		cfgName = value;
-	} else {
-		const char* configs[] = {easy, normal};
-		cfgName = configs[std::min(static_cast<size_t>(difficulty), sizeof(configs) / sizeof(configs[0]) - 1)];
-	}
+	std::string cfgName = ((value != nullptr) && strlen(value) > 0) ? value : "";
 
 	delete options;
 	return cfgName;

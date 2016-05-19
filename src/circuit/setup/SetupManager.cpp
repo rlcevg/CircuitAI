@@ -201,41 +201,71 @@ void CSetupManager::DisabledUnits(const char* setupScript)
 
 bool CSetupManager::OpenConfig(const std::string& cfgName)
 {
-	// locate file
+	if (cfgName.empty()) {
+		/*
+		 * Locate map specific config
+		 */
+		Map* map = circuit->GetMap();
+		std::string filename = "LuaRules/Configs/CircuitAI/";
+		configName = utils::MakeFileSystemCompatible(map->GetName()) + ".json";
+		filename += configName;
+
+		const char* cfgJson = ReadConfig(filename);
+		if (cfgJson != nullptr) {
+			config = ParseConfig(cfgJson);
+			delete[] cfgJson;
+
+			if (config != nullptr) {
+				return true;
+			}
+		}
+	}
+
+	std::string cfgDefault("circuit");
+	{
+		/*
+		 * Locate game specific config
+		 */
+		std::string filename = "LuaRules/Configs/CircuitAI/";
+		configName = cfgDefault + ".json";
+		filename += configName;
+
+		const char* cfgJson = ReadConfig(filename);
+		if (cfgJson != nullptr) {
+			config = ParseConfig(cfgJson);
+			delete[] cfgJson;
+
+			if (config != nullptr) {
+				return true;
+			}
+		}
+	}
+	if (!cfgName.empty()) {
+		cfgDefault = cfgName;
+	}
+
+	/*
+	 * Locate global config
+	 */
 	std::string filename("config" SLASH);
-	configName = (cfgName.find(".json") == std::string::npos) ? (cfgName + ".json") : cfgName;
+	configName = (cfgDefault.find(".json") == std::string::npos) ? (cfgDefault + ".json") : cfgDefault;
 	filename += configName;
 	if (!LocatePath(filename)){
 		circuit->LOG("Config file is missing! (%s)", configName.c_str());
 		return false;
 	}
 
-	// read config file
-	File* file = circuit->GetCallback()->GetFile();
-	int fileSize = file->GetSize(filename.c_str());
-	if (fileSize <= 0) {
-		circuit->LOG("Malformed config file! (%s)", configName.c_str());
-		delete file;
+	// read config
+	const char* cfgJson = ReadConfig(filename);
+	if (cfgJson == nullptr) {
 		return false;
 	}
-	char* cfgJson = new char [fileSize + 1];
-	file->GetContent(filename.c_str(), cfgJson, fileSize);
-	cfgJson[fileSize] = 0;
-	delete file;
 
 	// parse config
-	config = new Json::Value;
-	Json::Reader json;
-	bool isOk = json.parse(cfgJson, *config, false);
+	config = ParseConfig(cfgJson);
 	delete[] cfgJson;
-	if (!isOk) {
-		circuit->LOG("Malformed config format! (%s)", configName.c_str());
-		delete config;
-		config = nullptr;
-		return false;
-	}
 
-	return true;
+	return (config != nullptr);
 }
 
 void CSetupManager::CloseConfig()
@@ -436,6 +466,51 @@ bool CSetupManager::LocatePath(std::string& filename)
 	}
 	delete datadirs;
 	return located;
+}
+
+const char* CSetupManager::ReadConfig(const std::string& filename)
+{
+	File* file = circuit->GetCallback()->GetFile();
+	int fileSize = file->GetSize(filename.c_str());
+	if (fileSize <= 0) {
+		circuit->LOG("Malformed config file! (%s)", configName.c_str());
+		delete file;
+		return nullptr;
+	}
+
+	char* cfgJson = new char [fileSize + 1];
+	file->GetContent(filename.c_str(), cfgJson, fileSize);
+	cfgJson[fileSize] = 0;
+	delete file;
+	return cfgJson;
+}
+
+Json::Value* CSetupManager::ParseConfig(const char* cfgJson)
+{
+	Json::Value jsonAll;
+	Json::Reader json;
+	bool isOk = json.parse(cfgJson, jsonAll, false);
+	if (!isOk) {
+		circuit->LOG("Malformed config format! (%s)", configName.c_str());
+		return nullptr;
+	}
+
+	const char* diffs[] = {setup::easy, setup::normal, setup::hard};
+	const char* diffName = diffs[static_cast<size_t>(circuit->GetDifficulty())];
+	Json::Value& jsonDiff = jsonAll[diffName];
+	if (jsonDiff == Json::Value::null) {
+		circuit->LOG("Malformed difficulty! (%s : %s)", configName.c_str(), diffName);
+		const char* diffDefault = jsonAll.get("default", "normal").asCString();
+		jsonDiff = jsonAll[diffDefault];
+		if (jsonDiff == Json::Value::null) {
+			circuit->LOG("Malformed difficulty! (%s : %s)", configName.c_str(), diffDefault);
+			return nullptr;
+		}
+	}
+
+	Json::Value* cfg = new Json::Value;
+	*cfg = jsonDiff;
+	return cfg;
 }
 
 } // namespace circuit
