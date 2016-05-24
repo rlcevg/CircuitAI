@@ -24,6 +24,7 @@
 #include "resource/EnergyGrid.h"
 #endif
 
+#include "System/Util.h"
 #include "AISEvents.h"
 #include "AISCommands.h"
 #include "SSkirmishAICallback.h"	// "direct" C API
@@ -550,7 +551,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 
 	const char cmdName[]   = "~name";
 	const char cmdEnd[]    = "~end";
-#endif
+//#endif
 
 	if (message[0] != '~') {
 		return 0;
@@ -558,8 +559,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 
 	size_t msgLength = strlen(message);
 
-
-#ifdef DEBUG_VIS
+//#ifdef DEBUG_VIS
 	if ((msgLength == strlen(cmdPos)) && (strcmp(message, cmdPos) == 0)) {
 		setupManager->PickStartPos(this, CSetupManager::StartPosType::RANDOM);
 	}
@@ -944,8 +944,6 @@ std::string CCircuitAI::InitOptions()
 {
 	OptionValues* options = skirmishAI->GetOptionValues();
 	const char* value;
-	const char trueVal0[] = "true";
-	const char trueVal1[] = "1";
 
 	value = options->GetValueByKey("difficulty");
 	if (value != nullptr) {
@@ -960,8 +958,7 @@ std::string CCircuitAI::InitOptions()
 
 	value = options->GetValueByKey("ally_aware");
 	if (value != nullptr) {
-		allyAware = (strncmp(value, trueVal0, sizeof(trueVal0)) == 0) ||
-					(strncmp(value, trueVal1, sizeof(trueVal1)) == 0);
+		allyAware = StringToBool(value);
 	}
 
 	value = options->GetValueByKey("config");

@@ -868,7 +868,9 @@ void CEconomyManager::Init()
 					// Enqueue first builder
 					float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
 					CCircuitDef* buildDef = factoryManager->GetRoleDef(facDef, CCircuitDef::RoleType::BUILDER);
-					factoryManager->EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::BUILDPOWER, radius);
+					if ((buildDef != nullptr) && buildDef->IsAvailable()) {
+						factoryManager->EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::BUILDPOWER, radius);
+					}
 				}
 			}
 
@@ -884,8 +886,11 @@ void CEconomyManager::Init()
 				}
 				// Build factory defence
 				if (utils::is_valid(buildPos)) {
-					circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, circuit->GetCircuitDef("corllt"), buildPos,
-															  IBuilderTask::BuildType::DEFENCE, true, true, 0);
+					CCircuitDef* buildDef = circuit->GetCircuitDef("corllt");
+					if ((buildDef != nullptr) && buildDef->IsAvailable()) {
+						circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, buildPos,
+																  IBuilderTask::BuildType::DEFENCE, true, true, 0);
+					}
 				}
 			}), FRAMES_PER_SEC * 120);
 		}

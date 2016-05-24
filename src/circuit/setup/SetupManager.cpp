@@ -22,7 +22,6 @@
 #include "Log.h"
 #include "Lua.h"
 
-#include <map>
 #include <regex>
 
 namespace circuit {
@@ -39,7 +38,7 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 {
 	const char* setupScript = circuit->GetGame()->GetSetupScript();
 	if (!setupData->IsInitialized()) {
-		ParseSetupScript(setupScript);
+		setupData->ParseSetupScript(circuit, setupScript);
 	}
 	DisabledUnits(setupScript);
 	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>(&CSetupManager::FindCommander, this));
@@ -49,131 +48,6 @@ CSetupManager::~CSetupManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete config;
-}
-
-void CSetupManager::ParseSetupScript(const char* setupScript)
-{
-	std::string script(setupScript);
-	std::map<int, int> teamIdsRemap;
-	using OrigTeamIds = std::set<int>;
-	std::map<int, OrigTeamIds> allies;
-	CSetupData::BoxMap boxes;
-
-	// Detect start boxes
-	Map* map = circuit->GetMap();
-	float width = map->GetWidth() * SQUARE_SIZE;
-	float height = map->GetHeight() * SQUARE_SIZE;
-
-	std::string::const_iterator start = script.begin();
-	std::string::const_iterator end = script.end();
-	std::regex patternBox("startboxes=(.*);");
-	std::smatch section;
-	bool isZkBox = std::regex_search(start, end, section, patternBox);
-	if (isZkBox) {
-		// zk way
-		// startboxes=return { [0] = { 0, 0, 0.25, 1 }, [1] = { 0.75, 0, 1, 1 }, };
-		// @see Zero-K.sdd/LuaRules/Gadgets/start_boxes.lua
-		std::string lua_str = section[1];
-		start = lua_str.begin();
-		end = lua_str.end();
-		std::regex patternAlly("\\[(\\d+)\\][^\\{]*\\{[ ,]*(\\d+\\.?\\d*)[ ,]*(\\d+\\.?\\d*)[ ,]*(\\d+\\.?\\d*)[ ,]*(\\d+\\.?\\d*)[^\\}]\\}");
-		while (std::regex_search(start, end, section, patternAlly)) {
-			int allyTeamId = utils::string_to_int(section[1]);
-
-			CAllyTeam::SBox startbox;
-			startbox.left   = utils::string_to_float(section[2]) * width;
-			startbox.top    = utils::string_to_float(section[3]) * height;
-			startbox.right  = utils::string_to_float(section[4]) * width;
-			startbox.bottom = utils::string_to_float(section[5]) * height;
-			boxes[allyTeamId] = startbox;
-
-			start = section[0].second;
-		}
-	} else {
-		// engine way
-		std::regex patternAlly("\\[allyteam(\\d+)\\]\\s*\\{([^\\}]*)\\}");
-		std::regex patternRect("startrect\\w+=(\\d+(\\.\\d+)?);");
-		while (std::regex_search(start, end, section, patternAlly)) {
-			int allyTeamId = utils::string_to_int(section[1]);
-
-			std::string allyBody = section[2];
-			std::sregex_token_iterator iter(allyBody.begin(), allyBody.end(), patternRect, 1);
-			std::sregex_token_iterator end;
-			CAllyTeam::SBox startbox;
-			for (int i = 0; iter != end && i < 4; ++iter, i++) {
-				startbox.edge[i] = utils::string_to_float(*iter);
-			}
-
-			startbox.bottom *= height;
-			startbox.left   *= width;
-			startbox.right  *= width;
-			startbox.top    *= height;
-			boxes[allyTeamId] = startbox;
-
-			start = section[0].second;
-		}
-	}
-
-	// Detect start position type
-	CGameSetup::StartPosType startPosType;
-	std::cmatch matchPosType;
-	std::regex patternPosType("startpostype=(\\d+)");
-	if (std::regex_search(setupScript, matchPosType, patternPosType)) {
-		startPosType = static_cast<CGameSetup::StartPosType>(std::atoi(matchPosType[1].first));
-	} else {
-		startPosType = CGameSetup::StartPosType::StartPos_Fixed;
-	}
-
-	// Count number of alliances
-	std::regex patternAlly("\\[allyteam(\\d+)\\]");
-	start = script.begin();
-	end = script.end();
-	while (std::regex_search(start, end, section, patternAlly)) {
-		int allyTeamId = utils::string_to_int(section[1]);
-		allies[allyTeamId];  // create empty alliance
-		start = section[0].second;
-	}
-
-	// Detect team alliances
-	std::regex patternTeam("\\[team(\\d+)\\]\\s*\\{([^\\}]*)\\}");
-	std::regex patternAllyId("allyteam=(\\d+);");
-	start = script.begin();
-	end = script.end();
-	while (std::regex_search(start, end, section, patternTeam)) {
-		int teamId = utils::string_to_int(section[1]);
-		teamIdsRemap[teamId] = teamId;
-
-		std::string teamBody = section[2];
-		std::smatch matchAllyId;
-		if (std::regex_search(teamBody, matchAllyId, patternAllyId)) {
-			int allyTeamId = utils::string_to_int(matchAllyId[1]);
-			allies[allyTeamId].insert(teamId);
-		}
-
-		start = section[0].second;
-	}
-	// Make team remapper
-	int i = 0;
-	for (auto& kv : teamIdsRemap) {
-		kv.second = i++;
-	}
-
-	// Remap teams, create ally-teams
-	// @see rts/Game/GameSetup.cpp CGameSetup::Init
-	CSetupData::AllyMap allyTeams;
-	allyTeams.reserve(allies.size());
-	for (const auto& kv : allies) {
-		const OrigTeamIds& data = kv.second;
-
-		CAllyTeam::TeamIds teamIds;
-		teamIds.reserve(data.size());
-		for (auto id : data) {
-			teamIds.insert(teamIdsRemap[id]);
-		}
-		allyTeams.push_back(new CAllyTeam(teamIds, isZkBox ? boxes[0] : boxes[kv.first]));
-	}
-
-	setupData->Init(allyTeams, boxes, startPosType);
 }
 
 void CSetupManager::DisabledUnits(const char* setupScript)
@@ -201,9 +75,23 @@ void CSetupManager::DisabledUnits(const char* setupScript)
 
 bool CSetupManager::OpenConfig(const std::string& cfgName)
 {
+	std::string cfgDefault;
 	if (cfgName.empty()) {
 		/*
-		 * Locate map specific config
+		 * Try startscript specific config
+		 */
+		configName = "startscript";
+		std::string strJson = setupData->GetConfigJson(circuit->GetSkirmishAIId());
+		if (!strJson.empty()) {
+			config = ParseConfig(strJson.c_str());
+
+			if (config != nullptr) {
+				return true;
+			}
+		}
+
+		/*
+		 * Try map specific config
 		 */
 		Map* map = circuit->GetMap();
 		std::string filename = "LuaRules/Configs/CircuitAI/";
@@ -219,18 +107,16 @@ bool CSetupManager::OpenConfig(const std::string& cfgName)
 				return true;
 			}
 		}
-	}
 
-	std::string cfgDefault("circuit");
-	{
 		/*
-		 * Locate game specific config
+		 * Try game specific config
 		 */
-		std::string filename = "LuaRules/Configs/CircuitAI/";
+		cfgDefault = "circuit";
+		filename = "LuaRules/Configs/CircuitAI/Default/";
 		configName = cfgDefault + ".json";
 		filename += configName;
 
-		const char* cfgJson = ReadConfig(filename);
+		cfgJson = ReadConfig(filename);
 		if (cfgJson != nullptr) {
 			config = ParseConfig(cfgJson);
 			delete[] cfgJson;
@@ -239,8 +125,8 @@ bool CSetupManager::OpenConfig(const std::string& cfgName)
 				return true;
 			}
 		}
-	}
-	if (!cfgName.empty()) {
+
+	} else {
 		cfgDefault = cfgName;
 	}
 
@@ -255,13 +141,11 @@ bool CSetupManager::OpenConfig(const std::string& cfgName)
 		return false;
 	}
 
-	// read config
 	const char* cfgJson = ReadConfig(filename);
 	if (cfgJson == nullptr) {
 		return false;
 	}
 
-	// parse config
 	config = ParseConfig(cfgJson);
 	delete[] cfgJson;
 
@@ -473,7 +357,7 @@ const char* CSetupManager::ReadConfig(const std::string& filename)
 	File* file = circuit->GetCallback()->GetFile();
 	int fileSize = file->GetSize(filename.c_str());
 	if (fileSize <= 0) {
-		circuit->LOG("Malformed config file! (%s)", configName.c_str());
+		circuit->LOG("Missing config file! (%s)", filename.c_str());
 		delete file;
 		return nullptr;
 	}
