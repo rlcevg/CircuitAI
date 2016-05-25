@@ -160,7 +160,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 	int noChaseCat = cdef->GetNoChaseCategory();
 	float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
 						   cdef->GetLosRadius());
-	float minSqDist = range * range;
+	float minSqDist = SQUARE(range);
 	float maxThreat = .0f;
 
 	CEnemyUnit* bestTarget = nullptr;

@@ -195,7 +195,6 @@ public:
 	int GetLandCategory()  const { return landCategory; }
 	int GetWaterCategory() const { return waterCategory; }
 	int GetBadCategory()   const { return badCategory; }
-	float GetLosConv()     const { return losResConv; }
 
 private:
 	// debug
@@ -237,7 +236,6 @@ private:
 	int landCategory;  // on surface
 	int waterCategory;  // under surface
 	int badCategory;
-	float losResConv;
 
 #ifdef DEBUG_VIS
 private:

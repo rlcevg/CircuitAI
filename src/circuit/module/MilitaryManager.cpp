@@ -126,7 +126,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	ReadConfig();
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const Json::Value& retreats = root["retreat"];
-	const float fighterRet = retreats["_fighter_"].asFloat();
+	const float fighterRet = retreats.get("_fighter_", 0.5f).asFloat();
 
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
@@ -210,32 +210,33 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 	fightTasks.resize(static_cast<IFighterTask::FT>(IFighterTask::FightType::TASKS_COUNT));
 
-	AIFloat3 medPos(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
-	enemyGroups.push_back(SEnemyGroup(medPos));
-	// FIXME: DEBUG
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>([this]() {
-		if (this->circuit->GetEnemyUnits().empty()) {
-			return;
-		}
-//		static int iii = 0;
-//		static std::vector<AIFloat3> poses;
-//		if (iii % 5 == 0) {
-//			for (const AIFloat3& pos : poses) {
-//				this->circuit->GetDrawer()->DeletePointsAndLines(pos);
-//			}
+	// FIXME: Resume K-Means experiment
+//	AIFloat3 medPos(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
+//	enemyGroups.push_back(SEnemyGroup(medPos));
+//	// FIXME: Move into proper place
+//	scheduler->RunTaskEvery(std::make_shared<CGameTask>([this]() {
+//		if (this->circuit->GetEnemyUnits().empty()) {
+//			return;
 //		}
-
-		KMeansIteration();
-
-//		if (iii++ % 5 == 0) {
-//			poses.resize(enemyGroups.size());
-//			for (int i = 0; i < enemyGroups.size(); ++i) {
-//				poses[i] = enemyGroups[i].pos;
-//				this->circuit->GetDrawer()->AddPoint(poses[i], utils::int_to_string(i).c_str());
-//			}
-//		}
-	}), FRAMES_PER_SEC, circuit->GetSkirmishAIId() + 13);
-	// FIXME: DEBUG
+////		static int iii = 0;
+////		static std::vector<AIFloat3> poses;
+////		if (iii % 5 == 0) {
+////			for (const AIFloat3& pos : poses) {
+////				this->circuit->GetDrawer()->DeletePointsAndLines(pos);
+////			}
+////		}
+//
+//		KMeansIteration();
+//
+////		if (iii++ % 5 == 0) {
+////			poses.resize(enemyGroups.size());
+////			for (int i = 0; i < enemyGroups.size(); ++i) {
+////				poses[i] = enemyGroups[i].pos;
+////				this->circuit->GetDrawer()->AddPoint(poses[i], utils::int_to_string(i).c_str());
+////			}
+////		}
+//	}), FRAMES_PER_SEC, circuit->GetSkirmishAIId() + 13);
+	// FIXME: Resume K-Means experiment
 }
 
 CMilitaryManager::~CMilitaryManager()
@@ -379,38 +380,48 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 {
 	circuit->GetThreatMap()->SetThreatType(unit);
 	const IFighterTask* task = nullptr;
-	int frame = circuit->GetLastFrame();
-	AIFloat3 pos = unit->GetPos(frame);
-	STerrainMapArea* area = unit->GetArea();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CPathFinder* pathfinder = circuit->GetPathfinder();
-	terrainManager->CorrectPosition(pos);
-	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
-	const int distance = std::max<int>(unit->GetCircuitDef()->GetMaxRange(), pathfinder->GetSquareSize());
-	float metric = std::numeric_limits<float>::max();
+	// FIXME: Finish central task assignment system
+	const CCircuitDef::RoleM role =
+			CCircuitDef::RoleMask::SCOUT |
+			CCircuitDef::RoleMask::BOMBER |
+			CCircuitDef::RoleMask::MELEE |
+			CCircuitDef::RoleMask::ARTY |
+			CCircuitDef::RoleMask::AA;
+	if (!unit->GetCircuitDef()->IsRoleAny(role)) {
+	// FIXME: Finish central task assignment system
+		int frame = circuit->GetLastFrame();
+		AIFloat3 pos = unit->GetPos(frame);
+		STerrainMapArea* area = unit->GetArea();
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		CPathFinder* pathfinder = circuit->GetPathfinder();
+		terrainManager->CorrectPosition(pos);
+		pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
+		const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
+		const int distance = std::max<int>(unit->GetCircuitDef()->GetMaxRange(), pathfinder->GetSquareSize());
+		float metric = std::numeric_limits<float>::max();
 
-	for (const std::set<IFighterTask*>& tasks : fightTasks) {
-		for (const IFighterTask* candidate : tasks) {
-			if (!candidate->CanAssignTo(unit)) {
-				continue;
-			}
+		for (const std::set<IFighterTask*>& tasks : fightTasks) {
+			for (const IFighterTask* candidate : tasks) {
+				if (!candidate->CanAssignTo(unit)) {
+					continue;
+				}
 
-			// Check time-distance to target
-			float distCost;
+				// Check time-distance to target
+				float distCost;
 
-			const AIFloat3& tp = candidate->GetPosition();
-			AIFloat3 taskPos = utils::is_valid(tp) ? tp : pos;
+				const AIFloat3& tp = candidate->GetPosition();
+				AIFloat3 taskPos = utils::is_valid(tp) ? tp : pos;
 
-			if (!terrainManager->CanMoveToPos(area, taskPos)) {  // ensure that path always exists
-				continue;
-			}
+				if (!terrainManager->CanMoveToPos(area, taskPos)) {  // ensure that path always exists
+					continue;
+				}
 
-			distCost = std::max(pathfinder->PathCost(pos, taskPos, distance), THREAT_BASE);
+				distCost = std::max(pathfinder->PathCost(pos, taskPos, distance), THREAT_BASE);
 
-			if ((distCost < metric) && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC))) {
-				task = candidate;
-				metric = distCost;
+				if ((distCost < metric) && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC))) {
+					task = candidate;
+					metric = distCost;
+				}
 			}
 		}
 	}
@@ -599,6 +610,10 @@ void CMilitaryManager::AbortDefence(CBDefenceTask* task)
 
 bool CMilitaryManager::HasDefence(int cluster)
 {
+	// FIXME: Resume fighter/DefendTask experiment
+	return true;
+	// FIXME: Resume fighter/DefendTask experiment
+
 	const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(cluster);
 	for (const CDefenceMatrix::SDefPoint& defPoint : points) {
 		if (defPoint.cost > .5f) {
@@ -634,6 +649,10 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 
 IFighterTask* CMilitaryManager::AddDefendTask(int cluster)
 {
+	// FIXME: Resume fighter/DefendTask experiment
+	return nullptr;
+	// FIXME: Resume fighter/DefendTask experiment
+
 	IFighterTask* task = clusterInfos[cluster].defence;
 	if (task != nullptr) {
 		return task;
@@ -649,6 +668,10 @@ IFighterTask* CMilitaryManager::AddDefendTask(int cluster)
 
 IFighterTask* CMilitaryManager::DelDefendTask(const AIFloat3& pos)
 {
+	// FIXME: Resume fighter/DefendTask experiment
+	return nullptr;
+	// FIXME: Resume fighter/DefendTask experiment
+
 	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
 	if (index < 0) {
 		return nullptr;
@@ -659,6 +682,10 @@ IFighterTask* CMilitaryManager::DelDefendTask(const AIFloat3& pos)
 
 IFighterTask* CMilitaryManager::DelDefendTask(int cluster)
 {
+	// FIXME: Resume fighter/DefendTask experiment
+	return nullptr;
+	// FIXME: Resume fighter/DefendTask experiment
+
 	IFighterTask* task = clusterInfos[cluster].defence;
 	if (task == nullptr) {
 		return nullptr;
@@ -745,7 +772,7 @@ void CMilitaryManager::ReadConfig()
 	for (const auto& pair : responseNames) {
 		SRoleInfo& info = roleInfos[static_cast<CCircuitDef::RoleT>(pair.second)];
 		const Json::Value& response = responses[pair.first];
-		if (response == Json::Value::null) {
+		if (response.isNull()) {
 			info.maxPerc = 1.0f;
 			info.factor  = teamSize;
 		} else {

@@ -92,13 +92,14 @@ TdfParser::~TdfParser()
 {
 }
 
-void TdfParser::print(std::ostream & out) const {
+void TdfParser::print(std::ostream & out) const
+{
 	root_section.print(out);
 }
 
 
-bool TdfParser::parse_buffer(char const* buf, size_t size) {
-
+bool TdfParser::parse_buffer(char const* buf, size_t size)
+{
 	std::list<std::string> junk_data;
 	tdf_grammar grammar(&root_section, &junk_data);
 	parse_info<char const*> info;

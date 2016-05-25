@@ -2,6 +2,10 @@
 {
 // --- EASY config ---
 "easy": {  // Null AI
+"energy": {
+	"land": { "cafus": [1], "armfus": [2], "armsolar": [3] },
+	"water": { "cafus": [1], "armfus": [2], "armwin": [3] }
+}
 },
 // --- EASY config ---
 

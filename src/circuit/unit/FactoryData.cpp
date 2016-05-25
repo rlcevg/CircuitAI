@@ -38,7 +38,7 @@ CFactoryData::CFactoryData(CCircuitAI *circuit)
 
 		// TODO: Replace importance with proper terrain analysis (size, hardness, unit's power, speed)
 		const Json::Value& importance = factories[fac]["importance"];
-		if (importance == Json::Value::null) {
+		if (importance.isNull()) {
 			sfac.startImp = 1.0f;
 			sfac.switchImp = 1.0f;
 		} else {

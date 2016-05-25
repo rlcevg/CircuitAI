@@ -131,7 +131,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const Json::Value& retreats = root["retreat"];
-	const float builderRet = retreats["_builder_"].asFloat();
+	const float builderRet = retreats.get("_builder_", 0.8f).asFloat();
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();

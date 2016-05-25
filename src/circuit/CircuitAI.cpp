@@ -63,7 +63,7 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, difficulty(Difficulty::NORMAL)
 		, allyAware(true)
 		, initialized(false)
-		, lastFrame(0)
+		, lastFrame(-1)
 		, skirmishAIId(callback != NULL ? callback->GetSkirmishAIId() : -1)
 		, sAICallback(nullptr)
 		, callback(callback)
@@ -77,7 +77,6 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, landCategory(0)
 		, waterCategory(0)
 		, badCategory(0)
-		, losResConv(.0f)
 #ifdef DEBUG_VIS
 		, debugDrawer(nullptr)
 #endif
@@ -987,9 +986,6 @@ void CCircuitAI::InitUnitDefs()
 	landCategory  = game->GetCategoriesFlag("LAND SINK TURRET SHIP SWIM FLOAT HOVER");
 	waterCategory = game->GetCategoriesFlag("SUB");
 	badCategory   = game->GetCategoriesFlag("TERRAFORM STUPIDTARGET MINE");
-	Mod* mod = callback->GetMod();
-	losResConv = SQUARE_SIZE << mod->GetLosMipLevel();
-	delete mod;
 
 	if (!gameAttribute->GetTerrainData().IsInitialized()) {
 		gameAttribute->GetTerrainData().Init(this);

@@ -38,6 +38,10 @@ CBMexTask::~CBMexTask()
 
 bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 {
+	// FIXME: Resume fighter/DefendTask experiment
+	return IBuilderTask::CanAssignTo(unit);
+	// FIXME: Resume fighter/DefendTask experiment
+
 	if (!IBuilderTask::CanAssignTo(unit)) {
 		return false;
 	}

@@ -825,11 +825,11 @@ void CFactoryManager::ReadConfig()
 
 		auto fillProbs = [this, &cfgName, &facDef, &fac, &factory](unsigned i, const char* type, SFactoryDef::Tiers& tiers) {
 			const Json::Value& tierType = factory[type];
-			if (tierType == Json::Value::null) {
+			if (tierType.isNull()) {
 				return false;
 			}
 			const Json::Value& tier = tierType[utils::int_to_string(i, "tier%i")];
-			if (tier == Json::Value::null) {
+			if (tier.isNull()) {
 				return false;
 			}
 			std::vector<float>& probs = tiers[i];

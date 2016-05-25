@@ -46,7 +46,7 @@ void CSetupData::ParseSetupScript(CCircuitAI* circuit, const char* setupScript)
 
 	std::string::const_iterator start = script.begin();
 	std::string::const_iterator end = script.end();
-	std::regex patternBox("startboxes=(.*);");
+	std::regex patternBox("startboxes=(.*);", std::regex::ECMAScript | std::regex::icase);
 	std::smatch section;
 	bool isZkBox = std::regex_search(start, end, section, patternBox);
 	if (isZkBox) {
@@ -71,8 +71,8 @@ void CSetupData::ParseSetupScript(CCircuitAI* circuit, const char* setupScript)
 		}
 	} else {
 		// engine way
-		std::regex patternAlly("\\[allyteam(\\d+)\\]\\s*\\{([^\\}]*)\\}");
-		std::regex patternRect("startrect\\w+=(\\d+(\\.\\d+)?);");
+		std::regex patternAlly("\\[allyteam(\\d+)\\]\\s*\\{([^\\}]*)\\}", std::regex::ECMAScript | std::regex::icase);
+		std::regex patternRect("startrect\\w+=(\\d+(\\.\\d+)?);", std::regex::ECMAScript | std::regex::icase);
 		while (std::regex_search(start, end, section, patternAlly)) {
 			int allyTeamId = utils::string_to_int(section[1]);
 
@@ -97,7 +97,7 @@ void CSetupData::ParseSetupScript(CCircuitAI* circuit, const char* setupScript)
 	// Detect start position type
 	CGameSetup::StartPosType startPosType;
 	std::cmatch matchPosType;
-	std::regex patternPosType("startpostype=(\\d+)");
+	std::regex patternPosType("startpostype=(\\d+)", std::regex::ECMAScript | std::regex::icase);
 	if (std::regex_search(setupScript, matchPosType, patternPosType)) {
 		startPosType = static_cast<CGameSetup::StartPosType>(std::atoi(matchPosType[1].first));
 	} else {
@@ -105,7 +105,7 @@ void CSetupData::ParseSetupScript(CCircuitAI* circuit, const char* setupScript)
 	}
 
 	// Count number of alliances
-	std::regex patternAlly("\\[allyteam(\\d+)\\]");
+	std::regex patternAlly("\\[allyteam(\\d+)\\]", std::regex::ECMAScript | std::regex::icase);
 	start = script.begin();
 	end = script.end();
 	while (std::regex_search(start, end, section, patternAlly)) {
@@ -115,8 +115,8 @@ void CSetupData::ParseSetupScript(CCircuitAI* circuit, const char* setupScript)
 	}
 
 	// Detect team alliances
-	std::regex patternTeam("\\[team(\\d+)\\]\\s*\\{([^\\}]*)\\}");
-	std::regex patternAllyId("allyteam=(\\d+);");
+	std::regex patternTeam("\\[team(\\d+)\\]\\s*\\{([^\\}]*)\\}", std::regex::ECMAScript | std::regex::icase);
+	std::regex patternAllyId("allyteam=(\\d+);", std::regex::ECMAScript | std::regex::icase);
 	start = script.begin();
 	end = script.end();
 	while (std::regex_search(start, end, section, patternTeam)) {

@@ -163,7 +163,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
-	const float range = std::max(unit->GetUnit()->GetMaxRange(), (float)threatMap->GetSquareSize() * 2);
+	const float range = std::max(cdef->GetMaxRange(), (float)threatMap->GetSquareSize() * 2);
 	const float minSqDist = SQUARE(range);
 
 	F3Vec enemyPositions;

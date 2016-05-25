@@ -53,7 +53,7 @@ CSetupManager::~CSetupManager()
 void CSetupManager::DisabledUnits(const char* setupScript)
 {
 	std::string script(setupScript);
-	std::regex patternDisabled("disabledunits=(.*);");
+	std::regex patternDisabled("disabledunits=(.*);", std::regex::ECMAScript | std::regex::icase);
 	std::string::const_iterator start = script.begin();
 	std::string::const_iterator end = script.end();
 	std::smatch section;
@@ -382,12 +382,12 @@ Json::Value* CSetupManager::ParseConfig(const char* cfgJson)
 	const char* diffs[] = {setup::easy, setup::normal, setup::hard};
 	const char* diffName = diffs[static_cast<size_t>(circuit->GetDifficulty())];
 	Json::Value& jsonDiff = jsonAll[diffName];
-	if (jsonDiff == Json::Value::null) {
+	if (jsonDiff.isNull()) {
 		circuit->LOG("Malformed difficulty! (%s : %s)", configName.c_str(), diffName);
-		const char* diffDefault = jsonAll.get("default", "normal").asCString();
+		const std::string& diffDefault = jsonAll.get("default", "normal").asString();
 		jsonDiff = jsonAll[diffDefault];
-		if (jsonDiff == Json::Value::null) {
-			circuit->LOG("Malformed difficulty! (%s : %s)", configName.c_str(), diffDefault);
+		if (jsonDiff.isNull()) {
+			circuit->LOG("Malformed difficulty! (%s : %s)", configName.c_str(), diffDefault.c_str());
 			return nullptr;
 		}
 	}

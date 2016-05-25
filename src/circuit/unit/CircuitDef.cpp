@@ -63,7 +63,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	noChaseCategory = def->GetNoChaseCategory() | circuit->GetBadCategory();
 
 	speed     = def->GetSpeed() / FRAMES_PER_SEC;  // NOTE: SetWantedMaxSpeed expects value/FRAMES_PER_SEC
-	losRadius = def->GetLosRadius() * circuit->GetLosConv();
+	losRadius = def->GetLosRadius();
 	cost      = def->GetCost(res);
 
 	MoveData* md = def->GetMoveData();
@@ -212,7 +212,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		}
 		if ((weaponCat & circuit->GetLandCategory()) && isLandWeapon) {
 			float& mr = maxRange[static_cast<RangeT>(RangeType::LAND)];
-			mr = std::max(mr, range);
+			mr = std::max(mr, ((isAbleToFly && wt == "Cannon")) ? range * 1.25f : range);
 		}
 		if ((weaponCat & circuit->GetWaterCategory()) && isWaterWeapon) {
 			float& mr = maxRange[static_cast<RangeT>(RangeType::WATER)];
