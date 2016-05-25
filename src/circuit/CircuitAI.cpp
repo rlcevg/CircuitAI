@@ -411,6 +411,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 		Release(RELEASE_NO_CONFIG);
 		return ERROR_INIT;
 	}
+	setupManager->ReadConfig();
 	allyTeam = setupManager->GetAllyTeam();
 	allyAware &= allyTeam->GetSize() > 1;
 

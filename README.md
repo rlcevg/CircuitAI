@@ -11,7 +11,7 @@ Spring RTS local native AI for Zero-K.
 *gcc 5 should be prefered over 4.9 ([std::list::size](https://gcc.gnu.org/gcc-5/changes.html))
 
 ### Compiling
-Build process of native AI described in [wiki of Spring RTS  engine](https://springrts.com/wiki/AI:Development:Lang:Cpp).
+Build process of native AI described in the [wiki](https://springrts.com/wiki/AI:Development:Lang:Cpp) of Spring RTS engine.
 Required steps on linux:
 ```
 $ git clone https://github.com/spring/spring.git
@@ -23,7 +23,7 @@ $ cmake . && make CircuitAI
 
 ### Installing
 To install the AI, put files into proper directory, see CppTestAI or Shard for reference.
-An example location of `libSkirmishAI.so` on linux would be `/home/<user>/.spring/engine/<engine version>/AI/Skirmish/Circuit/<AI version>/libSkirmishAI.so`
+An example location of `libSkirmishAI.so` on linux would be `/home/<user>/.spring/engine/<engine version>/AI/Skirmish/CircuitAI/<AI version>/libSkirmishAI.so`
 
 ### Linux troubleshooting
 Dead AI upon match start: ensure that `libSkirmishAI.so` is compatible with `AI/Interfaces/C/0.1/libAIInterface.so` (i.e. replace it with own build)

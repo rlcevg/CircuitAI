@@ -8,6 +8,7 @@
 #include "task/fighter/FighterTask.h"
 #include "task/RetreatTask.h"
 #include "module/MilitaryManager.h"
+#include "setup/SetupManager.h"
 #include "terrain/ThreatMap.h"
 #include "unit/action/DGunAction.h"
 #include "unit/EnemyUnit.h"
@@ -37,10 +38,12 @@ void IFighterTask::AssignTo(CCircuitUnit* unit)
 {
 	IUnitTask::AssignTo(unit);
 
-	attackPower += unit->GetCircuitDef()->GetPower();
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	attackPower += cdef->GetPower();
 
 	if (unit->HasDGun()) {
-		CDGunAction* act = new CDGunAction(unit, unit->GetCircuitDef()->GetDGunRange() * 0.9f);
+		const float range = std::max(cdef->GetDGunRange() * 1.1f, cdef->GetLosRadius());
+		CDGunAction* act = new CDGunAction(unit, range);
 		unit->PushBack(act);
 	}
 }
@@ -77,15 +80,15 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
+	CCircuitDef* cdef = unit->GetCircuitDef();
 	Unit* u = unit->GetUnit();
 	const float healthPerc = u->GetHealth() / u->GetMaxHealth();
-	// FIXME: Wait until 101.0 engine
-//	if (unit->GetShield() != nullptr) {
-//		if ((healthPerc > 0.6f) && unit->IsShieldCharged(0.1f)) {
-//			return;
-//		}
-//	} else
-	if ((healthPerc > unit->GetCircuitDef()->GetRetreat()) && !unit->IsDisarmed(frame)) {
+	if (unit->GetShield() != nullptr) {
+		const float minShield = circuit->GetSetupManager()->GetRetreatShield();
+		if ((healthPerc > cdef->GetRetreat()) && unit->IsShieldCharged(minShield)) {
+			return;
+		}
+	} else if ((healthPerc > cdef->GetRetreat()) && !unit->IsDisarmed(frame)) {
 		return;
 	} else if (healthPerc < 0.2f) {  // stuck units workaround: they don't shoot and don't see distant threat
 		CRetreatTask* task = manager->GetCircuit()->GetMilitaryManager()->EnqueueRetreat();
@@ -94,7 +97,7 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	}
 
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	const float range = unit->GetCircuitDef()->GetMaxRange();
+	const float range = cdef->GetMaxRange();
 	if ((target == nullptr) || !target->IsInLOS()) {
 		CRetreatTask* task = circuit->GetMilitaryManager()->EnqueueRetreat();
 		manager->AssignTask(unit, task);

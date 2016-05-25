@@ -32,6 +32,7 @@ public:
 
 	IAction* Begin() const { return actions.front(); }
 	IAction* End() const { return actions.back(); }
+	IAction* Blocker() const { return blocker; }
 
 	bool IsEmpty() const { return actions.empty(); }
 	void Clear();
@@ -40,8 +41,8 @@ protected:
 	std::list<IAction*>::iterator Remove(std::list<IAction*>::iterator it);
 
 	int startFrame;
-	int duration;
 	std::list<IAction*> actions;  // owner
+	IAction* blocker;
 };
 
 } // namespace circuit

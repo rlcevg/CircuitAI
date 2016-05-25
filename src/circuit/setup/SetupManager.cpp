@@ -35,6 +35,7 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 		, commanderId(-1)
 		, startPos(-RgtVector)
 		, basePos(-RgtVector)
+		, retreatShield(0.f)
 {
 	const char* setupScript = circuit->GetGame()->GetSetupScript();
 	if (!setupData->IsInitialized()) {
@@ -318,6 +319,13 @@ CCircuitUnit* CSetupManager::GetCommander() const
 CAllyTeam* CSetupManager::GetAllyTeam() const
 {
 	return setupData->GetAllyTeam(circuit->GetAllyTeamId());
+}
+
+void CSetupManager::ReadConfig()
+{
+	const Json::Value& root = GetConfig();
+	const Json::Value& retreats = root["retreat"];
+	retreatShield = retreats.get("_shield_", 0.1f).asFloat();
 }
 
 void CSetupManager::FindCommander()

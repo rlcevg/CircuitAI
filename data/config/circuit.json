@@ -538,6 +538,9 @@
 	// default value for all fighters
 	"_fighter_": 0.5,
 
+	// minimum shield power
+	"_shield_": 0.1,
+
 	// Gunship lab
 	"armca": 0.99,
 	"blastwing": 0.01,
@@ -596,7 +599,7 @@
 	"cormart": 0.9,
 	"trem": 0.9,
 
-	// FIXME: Air planes (remove zk-retreat)
+	// FIXME: Air planes doesn't use circuit-retreat (remove zk-retreat)
 	"fighter": 0.6,
 	"corvamp": 0.6,
 	"corshad": 0.6,

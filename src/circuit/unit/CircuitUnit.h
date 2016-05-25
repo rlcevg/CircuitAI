@@ -80,7 +80,7 @@ public:
 	bool IsDisarmed(int frame);
 	bool IsWeaponReady(int frame);
 	bool IsDGunReady(int frame);
-//	bool IsShieldCharged(float percent);
+	bool IsShieldCharged(float percent);
 	float GetDPS();
 
 	void Guard(CCircuitUnit* target, int timeout);

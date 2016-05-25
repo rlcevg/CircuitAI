@@ -39,22 +39,23 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 {
 	IUnitTask::AssignTo(unit);
 
+	CCircuitDef* cdef = unit->GetCircuitDef();
 	if (unit->HasDGun()) {
-		CDGunAction* act = new CDGunAction(unit, unit->GetCircuitDef()->GetDGunRange() * 0.8f);
+		CDGunAction* act = new CDGunAction(unit, cdef->GetDGunRange() * 0.8f);
 		unit->PushBack(act);
 	}
 
-	if (unit->GetCircuitDef()->IsPlane()) {
+	if (cdef->IsPlane()) {
 		return;
 	}
 
-	if (unit->GetCircuitDef()->IsHoldFire()) {
+	if (cdef->IsHoldFire()) {
 		unit->GetUnit()->SetFireState(0);
 	}
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
-	if (unit->GetCircuitDef()->IsSiege()) {
+	if (cdef->IsSiege()) {
 		travelAction = new CFightAction(unit, squareSize);
 	} else {
 		travelAction = new CMoveAction(unit, squareSize);
@@ -126,12 +127,11 @@ void CRetreatTask::Update()
 		Unit* u = unit->GetUnit();
 		const float healthPerc = u->GetHealth() / u->GetMaxHealth();
 		bool isRepaired;
-		// FIXME: Wait until 101.0 engine
-//		if (ass->GetShield() != nullptr) {
-//			isRepaired = (healthPerc > 0.98f) && unit->IsShieldCharged(0.9f));
-//		} else {
+		if (unit->GetShield() != nullptr) {
+			isRepaired = (healthPerc > 0.98f) && unit->IsShieldCharged(0.9f);
+		} else {
 			isRepaired = healthPerc > 0.98f;
-//		}
+		}
 
 		if (isRepaired && !unit->IsDisarmed(frame)) {
 			RemoveAssignee(unit);

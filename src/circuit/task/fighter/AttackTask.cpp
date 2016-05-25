@@ -140,7 +140,7 @@ void CAttackTask::Update()
 	int frame = circuit->GetLastFrame();
 	isAttack = false;
 	if (target != nullptr) {
-		const float sqHighestRange = highestRange * highestRange;
+		const float sqHighestRange = SQUARE(highestRange);
 		for (CCircuitUnit* unit : units) {
 			if (position.SqDistance2D(unit->GetPos(frame)) < sqHighestRange) {
 				isAttack = true;
@@ -149,6 +149,10 @@ void CAttackTask::Update()
 		}
 		if (isAttack) {
 			for (CCircuitUnit* unit : units) {
+				if (unit->Blocker() != nullptr) {
+					continue;  // Do not interrupt current action
+				}
+
 				const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
 				unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 				unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
@@ -165,6 +169,10 @@ void CAttackTask::Update()
 			circuit->GetTerrainManager()->CanMoveToPos(commander->GetArea(), commander->GetPos(frame)))
 		{
 			for (CCircuitUnit* unit : units) {
+				if (unit->Blocker() != nullptr) {
+					continue;  // Do not interrupt current action
+				}
+
 				unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
 
 				CFightAction* fightAction = static_cast<CFightAction*>(unit->End());

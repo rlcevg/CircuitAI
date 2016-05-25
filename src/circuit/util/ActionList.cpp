@@ -14,9 +14,9 @@
 
 namespace circuit {
 
-CActionList::CActionList() :
-		startFrame(-1),
-		duration(-1)
+CActionList::CActionList()
+		: startFrame(-1)
+		, blocker(nullptr)
 {
 }
 
@@ -36,7 +36,8 @@ void CActionList::Update(CCircuitAI* circuit)
 		}
 
 		if (action->IsBlocking()) {
-			break;
+			blocker = action;
+			return;
 		}
 
 		if (action->IsFinished()) {
@@ -46,6 +47,7 @@ void CActionList::Update(CCircuitAI* circuit)
 			++itAction;
 		}
 	}
+	blocker = nullptr;
 }
 
 void CActionList::PushFront(IAction* action)

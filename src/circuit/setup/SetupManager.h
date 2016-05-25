@@ -53,6 +53,9 @@ public:
 
 	CAllyTeam* GetAllyTeam() const;
 
+	void ReadConfig();
+	float GetRetreatShield() const { return retreatShield; }
+
 private:
 	void FindCommander();
 	bool LocatePath(std::string& filename);
@@ -67,6 +70,8 @@ private:
 	CCircuitUnit::Id commanderId;
 	springai::AIFloat3 startPos;
 	springai::AIFloat3 basePos;
+
+	float retreatShield;
 };
 
 } // namespace circuit

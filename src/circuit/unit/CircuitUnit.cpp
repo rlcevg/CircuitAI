@@ -101,7 +101,8 @@ void CCircuitUnit::ManualFire(Unit* enemy, int timeOut)
 	if (circuitDef->HasDGun()) {
 		unit->DGun(enemy, UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
 	} else {
-		unit->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
+		unit->MoveTo(enemy->GetPos(), UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
+		unit->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, UNIT_COMMAND_OPTION_SHIFT_KEY, timeOut);
 	}
 }
 
@@ -132,10 +133,10 @@ bool CCircuitUnit::IsDGunReady(int frame)
 	return dgun->GetReloadFrame() <= frame;
 }
 
-//bool CCircuitUnit::IsShieldCharged(float percent)
-//{
-//	return shield->GetShieldPower() > circuitDef->GetMaxShield() * percent;
-//}
+bool CCircuitUnit::IsShieldCharged(float percent)
+{
+	return shield->GetShieldPower() > circuitDef->GetMaxShield() * percent;
+}
 
 float CCircuitUnit::GetDPS()
 {
