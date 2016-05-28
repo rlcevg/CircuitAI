@@ -464,7 +464,7 @@
 	// striderhub
 	"armcomdgun": ["scout"],
 	"scorpion": ["scout"],
-	"dante": ["melee"],  // FIXME: Can't be "riot" because of DefendTask
+	"dante": ["melee", "riot"],  // FIXME: Can't be "riot" because of DefendTask
 	"armraven": ["artillery"],
 	"funnelweb": ["artillery"],
 	"armbanth": ["melee"],

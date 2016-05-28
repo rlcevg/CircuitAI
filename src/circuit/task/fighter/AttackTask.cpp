@@ -169,10 +169,6 @@ void CAttackTask::Update()
 			circuit->GetTerrainManager()->CanMoveToPos(commander->GetArea(), commander->GetPos(frame)))
 		{
 			for (CCircuitUnit* unit : units) {
-				if (unit->Blocker() != nullptr) {
-					continue;  // Do not interrupt current action
-				}
-
 				unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
 
 				CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
