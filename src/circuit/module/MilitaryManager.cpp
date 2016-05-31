@@ -104,9 +104,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	};
 	auto attackerIdleHandler = [this](CCircuitUnit* unit) {
 		// NOTE: Avoid instant task reassignment, though it may be not relevant for attackers
-//		if (this->circuit->GetLastFrame() - unit->GetTaskFrame() > FRAMES_PER_SEC) {
+		if (this->circuit->GetLastFrame() - unit->GetTaskFrame() > FRAMES_PER_SEC) {
 			unit->GetTask()->OnUnitIdle(unit);
-//		}
+		}
 	};
 	auto attackerDamagedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		unit->GetTask()->OnUnitDamaged(unit, attacker);

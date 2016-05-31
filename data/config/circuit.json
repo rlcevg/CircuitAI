@@ -397,7 +397,7 @@
 	// factoryveh
 	"corned": ["builder"],
 	"corfav": ["scout"],
-	"corgator": ["raider"],
+	"corgator": ["melee", "raider"],
 	"cormist": ["skirmish"],
 	"corlevlr": ["riot"],
 	"corraid": ["assault"],

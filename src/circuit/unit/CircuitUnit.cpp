@@ -55,7 +55,7 @@ CCircuitUnit::~CCircuitUnit()
 void CCircuitUnit::SetTask(IUnitTask* task)
 {
 	this->task = task;
-	taskFrame = manager->GetCircuit()->GetLastFrame();
+	SetTaskFrame(manager->GetCircuit()->GetLastFrame());
 }
 
 const AIFloat3& CCircuitUnit::GetPos(int frame)

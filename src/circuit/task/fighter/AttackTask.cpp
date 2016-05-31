@@ -121,17 +121,17 @@ void CAttackTask::Update()
 		for (CCircuitUnit* unit : units) {
 			isExecute |= unit->IsForceExecute();
 		}
-	}
-	if (!isExecute) {
-		if (wasRegroup) {
-			for (CCircuitUnit* unit : units) {
-				CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-				fightAction->SetPath(pPath, lowestSpeed);
-				fightAction->SetActive(true);
+		if (!isExecute) {
+			if (wasRegroup) {
+				for (CCircuitUnit* unit : units) {
+					CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
+					fightAction->SetPath(pPath, lowestSpeed);
+					fightAction->SetActive(true);
+				}
 			}
+			ISquadTask::Update();
+			return;
 		}
-		ISquadTask::Update();
-		return;
 	}
 
 	FindTarget();
@@ -203,7 +203,8 @@ void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	if (position.SqDistance2D(leader->GetPos(circuit->GetLastFrame())) < SQUARE(lowestRange)) {
+	const float maxDist = std::max<float>(lowestRange, circuit->GetPathfinder()->GetSquareSize());
+	if (position.SqDistance2D(leader->GetPos(circuit->GetLastFrame())) < SQUARE(maxDist)) {
 		float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
 		float z = rand() % (circuit->GetTerrainManager()->GetTerrainHeight() + 1);
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
@@ -273,7 +274,7 @@ void CAttackTask::FindTarget()
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	pathfinder->MakePath(*pPath, startPos, endPos, std::max<float>(lowestRange, pathfinder->GetSquareSize()));
+	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 }
 
 } // namespace circuit

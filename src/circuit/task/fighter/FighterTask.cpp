@@ -66,13 +66,13 @@ void IFighterTask::Update()
 
 void IFighterTask::OnUnitIdle(CCircuitUnit* unit)
 {
-	// TODO: Wait for others if goal reached? Or we stuck far away?
-
 	auto it = cowards.find(unit);
 	if (it != cowards.end()) {
 		cowards.erase(it);
 		CRetreatTask* task = manager->GetCircuit()->GetMilitaryManager()->EnqueueRetreat();
 		manager->AssignTask(unit, task);
+	} else {
+		unit->SetTaskFrame(manager->GetCircuit()->GetLastFrame());
 	}
 }
 

@@ -57,6 +57,7 @@ public:
 
 	void SetTask(IUnitTask* task);
 	IUnitTask* GetTask() const { return task; }
+	void SetTaskFrame(int frame) { taskFrame = frame; }
 	int GetTaskFrame() const { return taskFrame; }
 
 	void SetManager(IUnitManager* mgr) { manager = mgr; }
