@@ -43,15 +43,18 @@ CThreatMap::CThreatMap(CCircuitAI* circuit)
 	threatArray = &surfThreat[0];
 
 	Map* map = circuit->GetMap();
+	int mapWidth = map->GetWidth();
 	Mod* mod = circuit->GetCallback()->GetMod();
 	int losMipLevel = mod->GetLosMipLevel();
+	int radarMipLevel = mod->GetRadarMipLevel();
 	delete mod;
 
 //	radarMap = std::move(map->GetRadarMap());
-//	radarWidth = map->GetWidth() / 8;
-
+	radarWidth = mapWidth >> radarMipLevel;
+	sonarMap = std::move(map->GetSonarMap());
+	radarResConv = SQUARE_SIZE << radarMipLevel;
 	losMap = std::move(map->GetLosMap());
-	losWidth = map->GetWidth() >> losMipLevel;
+	losWidth = mapWidth >> losMipLevel;
 	losResConv = SQUARE_SIZE << losMipLevel;
 }
 
@@ -70,6 +73,7 @@ CThreatMap::~CThreatMap()
 void CThreatMap::Update()
 {
 //	radarMap = std::move(circuit->GetMap()->GetRadarMap());
+	sonarMap = std::move(circuit->GetMap()->GetSonarMap());
 	losMap = std::move(circuit->GetMap()->GetLosMap());
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 //	currMaxThreat = .0f;
@@ -659,6 +663,13 @@ bool CThreatMap::IsInLOS(const AIFloat3& pos) const
 	// the value for the full resolution position (x, z) is at index ((z * width + x) / res)
 	// the last value, bottom right, is at index (width/res * height/res - 1)
 
+	if (pos.y < -SQUARE_SIZE * 5) {  // Mod->GetRequireSonarUnderWater() = true
+		const int x = (int)pos.x / radarResConv;
+		const int z = (int)pos.z / radarResConv;
+		if (sonarMap[z * radarWidth + x] <= 0) {
+			return false;
+		}
+	}
 	// convert from world coordinates to losmap coordinates
 	const int x = (int)pos.x / losResConv;
 	const int z = (int)pos.z / losResConv;
@@ -671,9 +682,9 @@ bool CThreatMap::IsInLOS(const AIFloat3& pos) const
 //	// the last value, bottom right, is at index (width/8 * height/8 - 1)
 //
 //	// convert from world coordinates to radarmap coordinates
-//	const int x = pos.x / (SQUARE_SIZE * 8);
-//	const int z = pos.z / (SQUARE_SIZE * 8);
-//	return radarMap[z * radarWidth + x] > 0;
+//	const int x = (int)pos.x / radarResConv;
+//	const int z = (int)pos.z / radarResConv;
+//	return ((pos.y < -SQUARE_SIZE * 5) ? sonarMap : radarMap)[z * radarWidth + x] > 0;
 //}
 
 #ifdef DEBUG_VIS

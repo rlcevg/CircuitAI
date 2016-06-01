@@ -102,8 +102,10 @@ private:
 	float* threatArray;
 
 //	std::vector<int> radarMap;
+	std::vector<int> sonarMap;
 	std::vector<int> losMap;
-//	int radarWidth;
+	int radarWidth;
+	int radarResConv;
 	int losWidth;
 	int losResConv;
 

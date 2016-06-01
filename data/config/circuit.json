@@ -65,25 +65,25 @@
 		"require_energy": false,
 
 		"income_tier": [7, 16, 24, 32, 40, 56, 72, 88],
-		//                 crane,   blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator,  trident
-		"unit_def":      ["armca", "blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans", "gunshipaa"],
+		//                 wasp,         blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator,  trident
+		"unit_def":      ["gunshipcon", "blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans", "gunshipaa"],
 		"land": {
 			// 0-8m Opening - Blastwing and banshee Harass
-			"tier0": [ 0.00,    0.68,        0.00,     0.10,     0.20,             0.00,       0.02,        0.00,     0.00,      0.00,        0.00],
+			"tier0": [ 0.00,         0.68,        0.00,     0.10,     0.20,             0.00,       0.02,        0.00,     0.00,      0.00,        0.00],
 			// 9-16m Early Game - Banshee with a chance of Blackdawn
-			"tier1": [ 0.00,    0.20,        0.00,     0.02,     0.61,             0.07,       0.10,        0.00,     0.00,      0.00,        0.00],
+			"tier1": [ 0.00,         0.20,        0.00,     0.02,     0.61,             0.07,       0.10,        0.00,     0.00,      0.00,        0.00],
 			// 17-24m Expanding - Time to start a-makin Brawlers
-			"tier2": [ 0.00,    0.44,        0.00,     0.00,     0.40,             0.12,       0.03,        0.01,     0.00,      0.00,        0.00],
+			"tier2": [ 0.00,         0.44,        0.00,     0.00,     0.40,             0.12,       0.03,        0.01,     0.00,      0.00,        0.00],
 			// 25-32m Expansions meet - Time to keep a-makin Brawlers
-			"tier3": [ 0.00,    0.50,        0.00,     0.00,     0.30,             0.15,       0.03,        0.02,     0.00,      0.00,        0.00],
+			"tier3": [ 0.00,         0.50,        0.00,     0.00,     0.30,             0.15,       0.03,        0.02,     0.00,      0.00,        0.00],
 			// 33m -40m Solid Fronts - Brawlers with a chance of Krow
-			"tier4": [ 0.00,    0.50,        0.00,     0.00,     0.27,             0.17,       0.02,        0.04,     0.00,      0.00,        0.00],
+			"tier4": [ 0.00,         0.50,        0.00,     0.00,     0.27,             0.17,       0.02,        0.04,     0.00,      0.00,        0.00],
 			// 41m - 56m Mid Game - Brawlers with a bigger chance of Krow
-			"tier5": [ 0.00,    0.60,        0.00,     0.00,     0.17,             0.17,       0.01,        0.05,     0.00,      0.00,        0.00],
+			"tier5": [ 0.00,         0.60,        0.00,     0.00,     0.17,             0.17,       0.01,        0.05,     0.00,      0.00,        0.00],
 			// 57m - 72m Late Game - we must have 2 facs & Striders by now, go nuts!
-			"tier6": [ 0.00,    0.60,        0.00,     0.00,     0.00,             0.30,       0.02,        0.08,     0.00,      0.00,        0.00],
+			"tier6": [ 0.00,         0.60,        0.00,     0.00,     0.00,             0.30,       0.02,        0.08,     0.00,      0.00,        0.00],
 			// 72m - 88m+ Late late Game - Spam Krows!
-			"tier7": [ 0.00,    0.60,        0.00,     0.00,     0.00,             0.30,       0.00,        0.10,     0.00,      0.00,        0.00]
+			"tier7": [ 0.00,         0.60,        0.00,     0.00,     0.00,             0.30,       0.00,        0.10,     0.00,      0.00,        0.00]
 		},
 
 		"caretaker": 1
@@ -348,7 +348,7 @@
 	"armjeth": ["anti_air"],
 
 	// factorygunship
-	"armca": ["air", "builder"],
+	"gunshipcon": ["air", "builder"],
 	"blastwing": ["air"],
 	"bladew": ["air", "raider", "scout"],
 	"armkam": ["air", "raider"],
@@ -542,7 +542,7 @@
 	"_shield_": 0.1,
 
 	// Gunship lab
-	"armca": 0.99,
+	"gunshipcon": 0.99,
 	"blastwing": 0.01,
 	"armkam": 0.9,
 	"gunshipsupport": 0.8,
@@ -600,6 +600,7 @@
 	"trem": 0.9,
 
 	// FIXME: Air planes doesn't use circuit-retreat (remove zk-retreat)
+	"armca": 0.99,
 	"fighter": 0.6,
 	"corvamp": 0.6,
 	"corshad": 0.6,

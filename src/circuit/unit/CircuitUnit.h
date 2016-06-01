@@ -100,6 +100,8 @@ private:
 	springai::Unit* unit;  // owner
 	CCircuitDef* circuitDef;  // TODO: Replace with CCircuitDef::Id?
 	IUnitTask* task;
+	// NOTE: taskFrame assigned on task change and OnUnitIdle to workaround idle spam.
+	//       Proper fix: do not issue any commands OnUnitIdle, delay them until next frame?
 	int taskFrame;
 	IUnitManager* manager;
 	STerrainMapArea* area;  // = nullptr if a unit flies

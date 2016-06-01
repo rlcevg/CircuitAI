@@ -83,7 +83,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		// FIXME: Avoid instant task reassignment, its only valid on build order fail.
 		//        Can cause idle builder, but Watchdog should catch it eventually.
 		//        Unfortunately can't use EVENT_COMMAND_FINISHED because there is no unique commandId like unitId
-		if (this->circuit->GetLastFrame() - unit->GetTaskFrame() > FRAMES_PER_SEC) {
+		if (this->circuit->GetLastFrame() > unit->GetTaskFrame()/* + FRAMES_PER_SEC*/) {
 			unit->GetTask()->OnUnitIdle(unit);
 		}
 	};
