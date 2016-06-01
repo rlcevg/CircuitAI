@@ -149,7 +149,7 @@ bool TdfParser::parse_buffer(char const* buf, size_t size)
 
 	if (!message.empty()) {
 		circuit->LOG("Parse error '%s' in %s at line %i column %i near\n%s",
-				message.c_str(), filename.c_str(), IntToString(error_it.get_position().line), IntToString(error_it.get_position().column), error_it.get_currentline().c_str());
+				message.c_str(), filename.c_str(), error_it.get_position().line, error_it.get_position().column, error_it.get_currentline().c_str());
 		return false;
 	}
 
@@ -164,7 +164,7 @@ bool TdfParser::parse_buffer(char const* buf, size_t size)
 		}
 
 		circuit->LOG("Parse error in %s at line %i column %i near\n%s",
-				filename.c_str(), IntToString(error_it.get_position().line), IntToString(error_it.get_position().column), error_it.get_currentline().c_str());
+				filename.c_str(), error_it.get_position().line, error_it.get_position().column, error_it.get_currentline().c_str());
 		return false;
 	}
 

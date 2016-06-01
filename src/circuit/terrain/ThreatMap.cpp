@@ -663,6 +663,8 @@ bool CThreatMap::IsInLOS(const AIFloat3& pos) const
 	// the value for the full resolution position (x, z) is at index ((z * width + x) / res)
 	// the last value, bottom right, is at index (width/res * height/res - 1)
 
+	// FIXME: @see rts/Sim/Objects/SolidObject.cpp CSolidObject::UpdatePhysicalState
+	//        for proper "underwater" implementation
 	if (pos.y < -SQUARE_SIZE * 5) {  // Mod->GetRequireSonarUnderWater() = true
 		const int x = (int)pos.x / radarResConv;
 		const int z = (int)pos.z / radarResConv;
