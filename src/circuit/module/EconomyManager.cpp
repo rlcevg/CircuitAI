@@ -280,7 +280,7 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 	auto compare = [](const SEnergyInfo& e1, const SEnergyInfo& e2) {
 		return e1.costDivMake < e2.costDivMake;
 	};
-	energyInfos.sort(compare);
+	std::sort(energyInfos.begin(), energyInfos.end(), compare);
 }
 
 void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
@@ -304,6 +304,8 @@ void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 		auto search = diffDefs.find(it->cdef);
 		if (search != diffDefs.end()) {
 			it = energyInfos.erase(it);
+		} else {
+			++it;
 		}
 	}
 }

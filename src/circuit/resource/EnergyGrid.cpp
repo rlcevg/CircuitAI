@@ -98,8 +98,10 @@ void CEnergyGrid::Update()
 
 	circuit->UpdateFriendlyUnits();
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
-	std::list<CCircuitUnit*> mexes, pylons;
 	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
+	std::vector<CCircuitUnit*> mexes, pylons;
+	mexes.reserve(friendlies.size());
+	pylons.reserve(friendlies.size());
 	for (auto& kv : friendlies) {
 		CCircuitUnit* unit = kv.second;
 		if (*unit->GetCircuitDef() == *mexDef) {
@@ -245,7 +247,7 @@ void CEnergyGrid::Init()
 	ownedClusters = CMetalData::Graph(boost::num_vertices(clusterGraph));
 }
 
-void CEnergyGrid::MarkAllyPylons(const std::list<CCircuitUnit*>& pylons)
+void CEnergyGrid::MarkAllyPylons(const std::vector<CCircuitUnit*>& pylons)
 {
 	decltype(markedPylons) prevUnits = std::move(markedPylons);
 	markedPylons.clear();

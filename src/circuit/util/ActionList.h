@@ -9,7 +9,7 @@
 #ifndef SRC_CIRCUIT_UTIL_ACTIONLIST_H_
 #define SRC_CIRCUIT_UTIL_ACTIONLIST_H_
 
-#include <list>
+#include <deque>
 
 namespace circuit {
 
@@ -26,9 +26,9 @@ public:
 	void PushFront(IAction* action);
 	void PushBack(IAction* action);
 	void InsertBefore(IAction* action);
-	void InsertBefore(std::list<IAction*>::iterator it, IAction* action);
+	void InsertBefore(std::deque<IAction*>::iterator it, IAction* action);
 	void InsertAfter(IAction* action);
-	void InsertAfter(std::list<IAction*>::iterator it, IAction* action);
+	void InsertAfter(std::deque<IAction*>::iterator it, IAction* action);
 
 	IAction* Begin() const { return actions.front(); }
 	IAction* End() const { return actions.back(); }
@@ -38,10 +38,10 @@ public:
 	void Clear();
 
 protected:
-	std::list<IAction*>::iterator Remove(std::list<IAction*>::iterator it);
+	std::deque<IAction*>::iterator Remove(std::deque<IAction*>::iterator it);
 
 	int startFrame;
-	std::list<IAction*> actions;  // owner
+	std::deque<IAction*> actions;  // owner
 	IAction* blocker;
 };
 

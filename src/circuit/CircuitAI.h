@@ -15,7 +15,6 @@
 #include <memory>
 #include <unordered_map>
 #include <map>
-#include <list>
 #include <vector>
 
 namespace springai {
@@ -229,7 +228,7 @@ private:
 	std::shared_ptr<CFactoryManager> factoryManager;
 	std::shared_ptr<CEconomyManager> economyManager;
 	std::shared_ptr<CMilitaryManager> militaryManager;
-	std::list<std::shared_ptr<IModule>> modules;
+	std::vector<std::shared_ptr<IModule>> modules;
 
 	// TODO: Move into GameAttribute? Or use locally
 	int airCategory;  // over surface

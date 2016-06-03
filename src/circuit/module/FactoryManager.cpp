@@ -462,7 +462,8 @@ CCircuitUnit* CFactoryManager::NeedUpgrade()
 
 CCircuitUnit* CFactoryManager::GetRandomFactory(CCircuitDef* buildDef)
 {
-	std::list<CCircuitUnit*> facs;
+	std::vector<CCircuitUnit*> facs;
+	facs.reserve(factories.size());
 	for (SFactory& fac : factories) {
 		if (fac.unit->GetCircuitDef()->CanBuild(buildDef)) {
 			facs.push_back(fac.unit);

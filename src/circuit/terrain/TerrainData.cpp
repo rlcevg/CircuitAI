@@ -36,11 +36,6 @@ using namespace springai;
 #define MAX_ALLOWED_WATER_DAMAGE_GMM	1e3f
 #define MAX_ALLOWED_WATER_DAMAGE_HMM	1e4f
 
-STerrainMapMobileType::~STerrainMapMobileType()
-{
-	utils::free_clear(area);
-}
-
 int CTerrainData::terrainWidth(0);
 int CTerrainData::terrainHeight(0);
 int CTerrainData::convertStoP(1);
@@ -402,7 +397,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 
 			if (!sectorSearch.empty()) {
 				i = sectorSearch.front();
-				mt.area.back()->sector[i] = &mt.sector[i];
+				mt.area.back().sector[i] = &mt.sector[i];
 				iX = i % sectorXSize;
 				iZ = i / sectorXSize;
 				if ((sectorsRemaining.find(i - 1) != sectorsRemaining.end()) && (iX > 0)) {  // Search left
@@ -425,8 +420,8 @@ void CTerrainData::Init(CCircuitAI* circuit)
 
 			} else {
 
-				if ((areaSize > 0) && ((areaSize == MAP_AREA_LIST_SIZE) || (mt.area.back()->sector.size() <= MAMinimalSectors) ||
-					(100. * float(mt.area.back()->sector.size()) / float(sectorXSize * sectorZSize) <= MAMinimalSectorPercent)))
+				if ((areaSize > 0) && ((areaSize == MAP_AREA_LIST_SIZE) || (mt.area.back().sector.size() <= MAMinimalSectors) ||
+					(100. * float(mt.area.back().sector.size()) / float(sectorXSize * sectorZSize) <= MAMinimalSectorPercent)))
 				{
 					// Too many areas detected. Find, erase & ignore the smallest one that was found so far
 					if (areaSize == MAP_AREA_LIST_SIZE) {
@@ -435,11 +430,10 @@ void CTerrainData::Init(CCircuitAI* circuit)
 					decltype(mt.area)::iterator it, itArea;
 					it = itArea = mt.area.begin();
 					for (++it; it != mt.area.end(); ++it) {
-						if ((*it)->sector.size() < (*itArea)->sector.size()) {
+						if (it->sector.size() < itArea->sector.size()) {
 							itArea = it;
 						}
 					}
-					delete *itArea;
 					mt.area.erase(itArea);
 					areaSize--;
 				}
@@ -447,36 +441,35 @@ void CTerrainData::Init(CCircuitAI* circuit)
 				i = *sectorsRemaining.begin();
 				sectorSearch.push_back(i);
 				sectorsRemaining.erase(i);
-				mt.area.push_back(new STerrainMapArea(&mt));
+				mt.area.emplace_back(&mt);
 				areaSize++;
 			}
 		}
-		if ((areaSize > 0) && ((mt.area.back()->sector.size() <= MAMinimalSectors) ||
-			(100.0 * float(mt.area.back()->sector.size()) / float(sectorXSize * sectorZSize) <= MAMinimalSectorPercent)))
+		if ((areaSize > 0) && ((mt.area.back().sector.size() <= MAMinimalSectors) ||
+			(100.0 * float(mt.area.back().sector.size()) / float(sectorXSize * sectorZSize) <= MAMinimalSectorPercent)))
 		{
 			areaSize--;
-			delete mt.area.back();
 			mt.area.pop_back();
 		}
 
 		// Calculations
 		float percentOfMap = 0.0;
-		for (auto area : mt.area) {
-			for (auto& iS : area->sector) {
-				iS.second->area = area;
+		for (auto& area : mt.area) {
+			for (auto& iS : area.sector) {
+				iS.second->area = &area;
 			}
-			area->percentOfMap = (100.0 * area->sector.size()) / (sectorXSize * sectorZSize);
-			if (area->percentOfMap >= 20.0 ) {  // A map area occupying 20% of the map
-				area->areaUsable = true;
+			area.percentOfMap = (100.0 * area.sector.size()) / (sectorXSize * sectorZSize);
+			if (area.percentOfMap >= 20.0 ) {  // A map area occupying 20% of the map
+				area.areaUsable = true;
 				mt.typeUsable = true;
 			} else {
-				area->areaUsable = false;
+				area.areaUsable = false;
 			}
-			if ((mt.areaLargest == nullptr) || (mt.areaLargest->percentOfMap < area->percentOfMap)) {
-				mt.areaLargest = area;
+			if ((mt.areaLargest == nullptr) || (mt.areaLargest->percentOfMap < area.percentOfMap)) {
+				mt.areaLargest = &area;
 			}
 
-			percentOfMap += area->percentOfMap;
+			percentOfMap += area.percentOfMap;
 		}
 		mtText << "  \tHas " << areaSize << " Map-Area(s) occupying " << percentOfMap << "%% of the map. (used by " << mt.udCount << " unit-defs)";
 		circuit->LOG(mtText.str().c_str());
@@ -489,20 +482,16 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	nextAreaData.mobileType = mobileType;
 	for (auto& mt : nextAreaData.mobileType) {
 		mt.areaLargest = nullptr;
-		std::list<STerrainMapArea*> cpAreas;
-		for (auto area : mt.area) {
-			STerrainMapArea* cpArea = new STerrainMapArea(&mt);
-			for (auto& kv : area->sector) {
-				cpArea->sector[kv.first] = &mt.sector[kv.first];
+		for (auto& area : mt.area) {
+			area.mobileType = &mt;
+			for (auto& kv : area.sector) {
+				kv.second = &mt.sector[kv.first];
+				kv.second->area = &area;
 			}
-			cpArea->percentOfMap = area->percentOfMap;
-			cpArea->areaUsable = area->areaUsable;
-			if ((mt.areaLargest == nullptr) || (mt.areaLargest->percentOfMap < cpArea->percentOfMap)) {
-				mt.areaLargest = cpArea;
+			if ((mt.areaLargest == nullptr) || (mt.areaLargest->percentOfMap < area.percentOfMap)) {
+				mt.areaLargest = &area;
 			}
-			cpAreas.push_back(cpArea);
 		}
-		mt.area = cpAreas;
 	}
 	nextAreaData.immobileType = immobileType;
 	nextAreaData.sector = sector;
@@ -663,7 +652,7 @@ void CTerrainData::UpdateAreas()
 			as.sectorAlternativeM.clear();
 			as.sectorAlternativeI.clear();
 		}
-		utils::free_clear(itmt->area);
+		itmt->area.clear();
 		++itmt;
 	}
 	decltype(areaData.immobileType)::iterator itit = immobileType.begin();
@@ -818,7 +807,7 @@ void CTerrainData::UpdateAreas()
 
 				if (!sectorSearch.empty()) {
 					i = sectorSearch.front();
-					mt.area.back()->sector[i] = &mt.sector[i];
+					mt.area.back().sector[i] = &mt.sector[i];
 					iX = i % sectorXSize;
 					iZ = i / sectorXSize;
 					if ((sectorsRemaining.find(i - 1) != sectorsRemaining.end()) && (iX > 0)) {  // Search left
@@ -841,17 +830,16 @@ void CTerrainData::UpdateAreas()
 
 				} else {
 
-					if ((areaSize > 0) && ((areaSize == MAP_AREA_LIST_SIZE) || (mt.area.back()->sector.size() <= MAMinimalSectors) ||
-						(100. * float(mt.area.back()->sector.size()) / float(sectorXSize * sectorZSize) <= MAMinimalSectorPercent)))
+					if ((areaSize > 0) && ((areaSize == MAP_AREA_LIST_SIZE) || (mt.area.back().sector.size() <= MAMinimalSectors) ||
+						(100. * float(mt.area.back().sector.size()) / float(sectorXSize * sectorZSize) <= MAMinimalSectorPercent)))
 					{
 						decltype(mt.area)::iterator it, itArea;
 						it = itArea = mt.area.begin();
 						for (++it; it != mt.area.end(); ++it) {
-							if ((*it)->sector.size() < (*itArea)->sector.size()) {
+							if (it->sector.size() < itArea->sector.size()) {
 								itArea = it;
 							}
 						}
-						delete *itArea;
 						mt.area.erase(itArea);
 						areaSize--;
 					}
@@ -859,43 +847,42 @@ void CTerrainData::UpdateAreas()
 					i = *sectorsRemaining.begin();
 					sectorSearch.push_back(i);
 					sectorsRemaining.erase(i);
-					mt.area.push_back(new STerrainMapArea(&mt));
+					mt.area.emplace_back(&mt);
 					areaSize++;
 				}
 			}
-			if ((areaSize > 0) && ((mt.area.back()->sector.size() <= MAMinimalSectors) ||
-				(100.0 * float(mt.area.back()->sector.size()) / float(sectorXSize * sectorZSize) <= MAMinimalSectorPercent)))
+			if ((areaSize > 0) && ((mt.area.back().sector.size() <= MAMinimalSectors) ||
+				(100.0 * float(mt.area.back().sector.size()) / float(sectorXSize * sectorZSize) <= MAMinimalSectorPercent)))
 			{
-				delete mt.area.back();
 				mt.area.pop_back();
 			}
 
 		} else {  // should not rebuild
 
 			// Copy mt.area from previous areaData
-			for (auto area : itmt->area) {
-				STerrainMapArea* cpArea = new STerrainMapArea(&mt);
-				for (auto& kv : area->sector) {
-					cpArea->sector[kv.first] = &mt.sector[kv.first];
+			for (auto& area : itmt->area) {
+				mt.area.emplace_back(&mt);
+				std::map<int, STerrainMapAreaSector*>& sector = mt.area.back().sector;
+				for (auto& kv : area.sector) {
+					sector[kv.first] = &mt.sector[kv.first];
 				}
-				mt.area.push_back(cpArea);
 			}
 		}
 
 		// Calculations
-		for (auto area : mt.area) {
-			for (auto& iS : area->sector) {
-				iS.second->area = area;
+		for (auto& area : mt.area) {
+			for (auto& iS : area.sector) {
+				iS.second->area = &area;
 			}
-			area->percentOfMap = (100.0 * area->sector.size()) / (sectorXSize * sectorZSize);
-			if (area->percentOfMap >= 20.0 ) {  // A map area occupying 20% of the map
-				area->areaUsable = true;
+			area.percentOfMap = (100.0 * area.sector.size()) / (sectorXSize * sectorZSize);
+			if (area.percentOfMap >= 20.0 ) {  // A map area occupying 20% of the map
+				area.areaUsable = true;
 				mt.typeUsable = true;
 			} else {
-				area->areaUsable = false;
+				area.areaUsable = false;
 			}
-			if ((mt.areaLargest == nullptr) || (mt.areaLargest->percentOfMap < area->percentOfMap)) {
-				mt.areaLargest = area;
+			if ((mt.areaLargest == nullptr) || (mt.areaLargest->percentOfMap < area.percentOfMap)) {
+				mt.areaLargest = &area;
 			}
 		}
 

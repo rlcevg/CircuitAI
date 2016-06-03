@@ -72,7 +72,7 @@ template <typename T>
 void CMultiQueue<T>::RemoveAllIf(ConditionFunction condition)
 {
 	std::unique_lock<std::mutex> mlock(_mutex);
-	typename std::list<T>::iterator iter = _queue.begin();
+	typename std::deque<T>::iterator iter = _queue.begin();
 	while (iter != _queue.end()) {
 		if (condition(*iter)) {
 			iter = _queue.erase(iter);

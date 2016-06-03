@@ -22,7 +22,6 @@
 #include "AIFloat3.h"
 
 #include <map>
-#include <list>
 #include <vector>
 #include <atomic>
 #include <memory>
@@ -92,12 +91,10 @@ struct STerrainMapMobileType {
 		moveData(nullptr),
 		udCount(0)
 	{};
-	~STerrainMapMobileType();
 
 	bool typeUsable;  // Should units of this type be used on this map
 	std::vector<STerrainMapAreaSector> sector;  // Each MoveType has it's own sector list, GlobalTerrainMap->GetSectorIndex() gives an index
-	// TODO: Make plain list of STerrainMapArea, not pointers?
-	std::list<STerrainMapArea*> area;  // Each MoveType has it's own MapArea list
+	std::vector<STerrainMapArea> area;  // Each MoveType has it's own MapArea list
 	STerrainMapArea* areaLargest;  // Largest area usable by this type, otherwise = 0
 
 	float maxSlope;      // = MoveData*->maxSlope

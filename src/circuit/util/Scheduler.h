@@ -12,7 +12,6 @@
 #include "util/GameTask.h"
 #include "util/Defines.h"
 
-#include <list>
 #include <memory>
 #include <thread>
 #include <atomic>
@@ -90,7 +89,7 @@ private:
 			BaseContainer(task), frame(frame) {}
 		int frame;
 	};
-	std::list<OnceTask> onceTasks;
+	std::vector<OnceTask> onceTasks;
 
 	struct RepeatTask: public BaseContainer {
 		RepeatTask(std::shared_ptr<CGameTask> task, int frameInterval, int lastFrame) :
@@ -98,9 +97,9 @@ private:
 		int frameInterval;
 		int lastFrame;
 	};
-	std::list<RepeatTask> repeatTasks;
+	std::vector<RepeatTask> repeatTasks;
 
-	std::list<std::shared_ptr<CGameTask>> removeTasks;
+	std::vector<std::shared_ptr<CGameTask>> removeTasks;
 
 	struct WorkTask: public BaseContainer {
 		WorkTask(std::weak_ptr<CScheduler> scheduler, std::shared_ptr<CGameTask> task, std::shared_ptr<CGameTask> onComplete) :
@@ -118,7 +117,7 @@ private:
 	};
 	CMultiQueue<FinishTask> finishTasks;
 
-	std::list<std::shared_ptr<CGameTask>> releaseTasks;
+	std::vector<std::shared_ptr<CGameTask>> releaseTasks;
 
 	static std::thread workerThread;
 	static std::atomic<bool> workerRunning;

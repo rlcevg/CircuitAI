@@ -77,7 +77,7 @@ public:
 	bool IsOpenSpot(int index) const { return metalInfos[index].isOpen; }
 	bool IsOpenSpot(const springai::AIFloat3& pos) const;
 	void MarkAllyMexes();
-	void MarkAllyMexes(const std::list<CCircuitUnit*>& mexes);
+	void MarkAllyMexes(const std::vector<CCircuitUnit*>& mexes);
 	bool IsClusterFinished(int index) const {
 		return clusterInfos[index].finishedCount >= GetClusters()[index].idxSpots.size();
 	}

@@ -34,7 +34,7 @@ public:
 
 class detect_cluster: public boost::dijkstra_visitor<> {
 public:
-	detect_cluster(CMetalManager* mgr, CMetalManager::MexPredicate& pred, std::list<int>& outIdxs)
+	detect_cluster(CMetalManager* mgr, CMetalManager::MexPredicate& pred, std::vector<int>& outIdxs)
 		: manager(mgr)
 		, predicate(pred)
 		, pindices(&outIdxs)
@@ -55,7 +55,7 @@ public:
 	}
 	CMetalManager* manager;
 	CMetalManager::MexPredicate predicate;
-	std::list<int>* pindices;
+	std::vector<int>* pindices;
 };
 
 struct mex_tree {
@@ -212,8 +212,9 @@ void CMetalManager::MarkAllyMexes()
 
 	circuit->UpdateFriendlyUnits();
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
-	std::list<CCircuitUnit*> mexes, pylons;
 	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
+	std::vector<CCircuitUnit*> mexes;
+	mexes.reserve(friendlies.size());
 	for (auto& kv : friendlies) {
 		CCircuitUnit* unit = kv.second;
 		if (*unit->GetCircuitDef() == *mexDef) {
@@ -224,7 +225,7 @@ void CMetalManager::MarkAllyMexes()
 	MarkAllyMexes(mexes);
 }
 
-void CMetalManager::MarkAllyMexes(const std::list<CCircuitUnit*>& mexes)
+void CMetalManager::MarkAllyMexes(const std::vector<CCircuitUnit*>& mexes)
 {
 	if (markFrame /*+ FRAMES_PER_SEC*/ >= circuit->GetLastFrame()) {
 		return;
@@ -298,7 +299,8 @@ int CMetalManager::GetMexToBuild(const AIFloat3& pos, MexPredicate& predicate)
 	const CMetalData::Graph& graph = GetGraph();
 	boost::filtered_graph<CMetalData::Graph, boost::keep_all, mex_tree> fg(graph, boost::keep_all(), filter);
 	auto w_map = boost::get(&CMetalData::SEdge::weight, fg);
-	std::list<int> indices;
+	std::vector<int> indices;
+	indices.reserve(8);
 	detect_cluster vis(this, predicate, indices);
 	int result = -1;
 	try {

@@ -28,7 +28,7 @@ CActionList::~CActionList()
 
 void CActionList::Update(CCircuitAI* circuit)
 {
-	std::list<IAction*>::iterator itAction = actions.begin();
+	std::deque<IAction*>::iterator itAction = actions.begin();
 	while (itAction != actions.end()) {
 		IAction* action = *itAction;
 		if (action->IsActive()) {
@@ -68,7 +68,7 @@ void CActionList::InsertBefore(IAction* action)
 	InsertBefore(it, action);
 }
 
-void CActionList::InsertBefore(std::list<IAction*>::iterator it, IAction* action)
+void CActionList::InsertBefore(std::deque<IAction*>::iterator it, IAction* action)
 {
 	actions.insert(it, action);
 	action->OnStart();
@@ -93,7 +93,7 @@ void CActionList::Clear()
 	utils::free_clear(actions);
 }
 
-std::list<IAction*>::iterator CActionList::Remove(std::list<IAction*>::iterator it)
+std::deque<IAction*>::iterator CActionList::Remove(std::deque<IAction*>::iterator it)
 {
 	delete *it;
 	return actions.erase(it);

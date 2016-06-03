@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_UTIL_MULTIQUEUE_H_
 #define SRC_CIRCUIT_UTIL_MULTIQUEUE_H_
 
-#include <list>
+#include <deque>
 #include <mutex>
 #include <condition_variable>
 #include <functional>
@@ -47,7 +47,7 @@ public:
 	CMultiQueue& operator=(const CMultiQueue&) = delete; // disable assignment
 
 private:
-	std::list<T> _queue;
+	std::deque<T> _queue;
 	std::mutex _mutex;
 	std::condition_variable _cond;
 };

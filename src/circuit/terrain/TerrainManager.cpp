@@ -1167,10 +1167,10 @@ STerrainMapAreaSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* so
 	STerrainMapArea* largestArea = destinationMT->areaLargest;
 	float bestDistance = -1.0;
 	float bestMidDistance = -1.0;
-	const std::list<STerrainMapArea*>& TMAreas = destinationMT->area;
-	for (auto area : TMAreas) {
-		if (area->areaUsable || !largestArea->areaUsable) {
-			STerrainMapAreaSector* CAS = GetClosestSector(area, sourceSIndex);
+	const std::vector<STerrainMapArea>& TMAreas = destinationMT->area;
+	for (auto& area : TMAreas) {
+		if (area.areaUsable || !largestArea->areaUsable) {
+			STerrainMapAreaSector* CAS = GetClosestSector(const_cast<STerrainMapArea*>(&area), sourceSIndex);
 			float midDistance; // how much of a gap exists between the two areas (source & destination)
 			if ((sourceArea == nullptr) || (sourceArea == TMSectors[GetSectorIndex(CAS->S->position)].area)) {
 				midDistance = 0.0;
@@ -1184,7 +1184,7 @@ STerrainMapAreaSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* so
 			}
 			if (midDistance == bestMidDistance) {
 				float distance = position.distance2D(CAS->S->position);
-				if ((bestAS == nullptr) || (distance * area->percentOfMap < bestDistance * bestAS->area->percentOfMap)) {
+				if ((bestAS == nullptr) || (distance * area.percentOfMap < bestDistance * bestAS->area->percentOfMap)) {
 					bestAS = CAS;
 					bestDistance = distance;
 				}

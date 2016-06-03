@@ -16,7 +16,6 @@
 #include <set>
 #include <map>
 #include <unordered_map>
-#include <list>
 
 namespace circuit {
 
@@ -50,13 +49,13 @@ private:
 	std::vector<CEnergyLink> links;  // Graph's exterior property
 	link_iterator_t linkIt;  // Alternative: links[clusterGraph[*linkEdgeIt].index]
 
-	void MarkAllyPylons(const std::list<CCircuitUnit*>& pylons);
+	void MarkAllyPylons(const std::vector<CCircuitUnit*>& pylons);
 	void AddPylon(CCircuitUnit::Id unitId, CCircuitDef::Id defId, const springai::AIFloat3& pos);
 	void RemovePylon(CCircuitUnit::Id unitId);
 	void CheckGrid();
 
-	std::list<int> linkClusters;
-	std::list<int> unlinkClusters;
+	std::vector<int> linkClusters;
+	std::vector<int> unlinkClusters;
 	std::set<CMetalData::EdgeDesc> spanningTree;
 	CMetalData::Graph ownedClusters;
 	bool isForceRebuild;

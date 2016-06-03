@@ -13,8 +13,6 @@
 #include "unit/CircuitUnit.h"
 
 #include <map>
-#include <vector>
-#include <list>
 
 namespace circuit {
 
@@ -106,7 +104,7 @@ private:
 		unsigned int weight;
 		bool hasBuilder;
 	};
-	std::list<SFactory> factories;  // facory 1:n nano
+	std::vector<SFactory> factories;  // facory 1:n nano
 
 	struct SFactoryDef {
 		using Tiers = std::map<unsigned, std::vector<float>>;
@@ -135,7 +133,7 @@ private:
 
 	CCircuitDef* assistDef;
 	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> assists;  // nano 1:n factory
-	std::list<springai::AIFloat3> havens;  // position behind factory
+	std::vector<springai::AIFloat3> havens;  // position behind factory
 	std::map<CCircuitUnit::Id, IBuilderTask*> repairedUnits;
 	std::set<IBuilderTask*> assistTasks;  // owner
 	std::set<IBuilderTask*> updateAssists;

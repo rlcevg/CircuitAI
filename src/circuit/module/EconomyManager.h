@@ -12,8 +12,6 @@
 
 #include "AIFloat3.h"
 
-#include <vector>
-#include <list>
 #include <set>
 #include <memory>
 
@@ -102,7 +100,7 @@ private:
 		int limit;
 		bool operator==(const CCircuitDef* d) { return cdef == d; }
 	};
-	std::list<SEnergyInfo> energyInfos;
+	std::vector<SEnergyInfo> energyInfos;
 	CLagrangeInterPol* engyPol;
 
 	float ecoFactor;

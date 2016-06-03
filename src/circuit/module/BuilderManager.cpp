@@ -193,8 +193,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	buildTasks.resize(static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::TASKS_COUNT));
 
 	for (auto mtId : workerMobileTypes) {
-		for (auto area : terrainManager->GetMobileTypeById(mtId)->area) {
-			buildAreas[area] = std::map<CCircuitDef*, int>();
+		for (auto& area : terrainManager->GetMobileTypeById(mtId)->area) {
+			buildAreas[&area] = std::map<CCircuitDef*, int>();
 		}
 	}
 	buildAreas[nullptr] = std::map<CCircuitDef*, int>();  // air
@@ -858,8 +858,8 @@ void CBuilderManager::UpdateAreaUsers()
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	buildAreas.clear();
 	for (auto mtId : workerMobileTypes) {
-		for (auto area : terrainManager->GetMobileTypeById(mtId)->area) {
-			buildAreas[area] = std::map<CCircuitDef*, int>();
+		for (auto& area : terrainManager->GetMobileTypeById(mtId)->area) {
+			buildAreas[&area] = std::map<CCircuitDef*, int>();
 		}
 	}
 	buildAreas[nullptr] = std::map<CCircuitDef*, int>();  // air
