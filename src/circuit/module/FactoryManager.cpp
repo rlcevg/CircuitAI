@@ -151,7 +151,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 					factoryPower -= ass->GetCircuitDef()->GetBuildSpeed();
 				}
 			}
-			factories.erase(it);
+//			factories.erase(it);  // NOTE: micro-opt
+			*it = factories.back();
+			factories.pop_back();
 			break;
 		}
 
@@ -227,7 +229,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			auto it = havens.begin();
 			while (it != havens.end()) {
 				if (it->SqDistance2D(assPos) < sqRadius) {
-					it = havens.erase(it);
+//					it = havens.erase(it);  // NOTE: micro-opt
+					*it = havens.back();
+					havens.pop_back();
 					// TODO: Send HavenDestroyed message?
 				} else {
 					++it;
@@ -462,8 +466,8 @@ CCircuitUnit* CFactoryManager::NeedUpgrade()
 
 CCircuitUnit* CFactoryManager::GetRandomFactory(CCircuitDef* buildDef)
 {
-	std::vector<CCircuitUnit*> facs;
-	facs.reserve(factories.size());
+	static std::vector<CCircuitUnit*> facs;  // NOTE: micro-opt
+//	facs.reserve(factories.size());
 	for (SFactory& fac : factories) {
 		if (fac.unit->GetCircuitDef()->CanBuild(buildDef)) {
 			facs.push_back(fac.unit);
@@ -474,7 +478,9 @@ CCircuitUnit* CFactoryManager::GetRandomFactory(CCircuitDef* buildDef)
 	}
 	auto it = facs.begin();
 	std::advance(it, rand() % facs.size());
-	return *it;
+	CCircuitUnit* result = *it;
+	facs.clear();
+	return result;
 }
 
 CCircuitDef* CFactoryManager::GetClosestDef(AIFloat3& position, CCircuitDef::RoleType role)
@@ -593,8 +599,8 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 	const std::vector<float>& probs = facIt->second;
 
-	std::vector<std::pair<CCircuitDef*, float>> candidates;
-	candidates.reserve(facDef.buildDefs.size());
+	static std::vector<std::pair<CCircuitDef*, float>> candidates;  // NOTE: micro-opt
+//	candidates.reserve(facDef.buildDefs.size());
 	float mag = 0.f;
 	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
 		CCircuitDef* bd = facDef.buildDefs[i];
@@ -617,6 +623,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 				break;
 			}
 		}
+		candidates.clear();
 	} else {
 		unsigned choice = 0;
 		float dice = (float)rand() / RAND_MAX;

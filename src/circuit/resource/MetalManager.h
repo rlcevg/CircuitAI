@@ -13,6 +13,9 @@
 
 namespace circuit {
 
+// NOTE: micro-opt
+static std::vector<CCircuitUnit*> tmpMexes;
+
 class CCircuitAI;
 class CMetalData;
 class CScheduler;

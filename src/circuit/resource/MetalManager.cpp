@@ -213,16 +213,18 @@ void CMetalManager::MarkAllyMexes()
 	circuit->UpdateFriendlyUnits();
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
-	std::vector<CCircuitUnit*> mexes;
-	mexes.reserve(friendlies.size());
+//	std::vector<CCircuitUnit*> tmpMexes;
+//	tmpMexes.reserve(friendlies.size());
 	for (auto& kv : friendlies) {
 		CCircuitUnit* unit = kv.second;
 		if (*unit->GetCircuitDef() == *mexDef) {
-			mexes.push_back(unit);
+			tmpMexes.push_back(unit);
 		}
 	}
 
-	MarkAllyMexes(mexes);
+	MarkAllyMexes(tmpMexes);
+
+	tmpMexes.clear();
 }
 
 void CMetalManager::MarkAllyMexes(const std::vector<CCircuitUnit*>& mexes)
@@ -299,8 +301,7 @@ int CMetalManager::GetMexToBuild(const AIFloat3& pos, MexPredicate& predicate)
 	const CMetalData::Graph& graph = GetGraph();
 	boost::filtered_graph<CMetalData::Graph, boost::keep_all, mex_tree> fg(graph, boost::keep_all(), filter);
 	auto w_map = boost::get(&CMetalData::SEdge::weight, fg);
-	std::vector<int> indices;
-	indices.reserve(8);
+	static std::vector<int> indices;  // NOTE: micro-opt
 	detect_cluster vis(this, predicate, indices);
 	int result = -1;
 	try {
@@ -315,6 +316,8 @@ int CMetalManager::GetMexToBuild(const AIFloat3& pos, MexPredicate& predicate)
 			}
 		}
 	}
+
+	indices.clear();
 	return result;
 }
 

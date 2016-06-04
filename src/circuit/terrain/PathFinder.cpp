@@ -299,8 +299,8 @@ float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRan
 	std::vector<int> xend;
 
 	// make a list with the points that will count as end nodes
-	std::vector<void*> endNodes;
-	endNodes.reserve(possibleTargets.size() * radius * 10);
+	static std::vector<void*> endNodes;  // NOTE: micro-opt
+//	endNodes.reserve(possibleTargets.size() * radius * 10);
 
 	{
 		const unsigned int DoubleRadius = radius * 2;
@@ -365,8 +365,8 @@ float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRan
 		offsetSize = index;
 	}
 
-	std::vector<void*> nodeTargets;
-	nodeTargets.reserve(possibleTargets.size());
+	static std::vector<void*> nodeTargets;  // NOTE: micro-opt
+//	nodeTargets.reserve(possibleTargets.size());
 	for (unsigned int i = 0; i < possibleTargets.size(); i++) {
 		AIFloat3& f = possibleTargets[i];
 
@@ -412,6 +412,8 @@ float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRan
 	UpdateVis(posPath);
 #endif
 
+	endNodes.clear();
+	nodeTargets.clear();
 	return pathCost;
 }
 

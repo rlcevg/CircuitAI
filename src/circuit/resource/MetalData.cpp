@@ -14,6 +14,9 @@ namespace circuit {
 
 using namespace springai;
 
+// NOTE: micro-opt
+static std::vector<CMetalData::MetalNode> result_n;
+
 CMetalData::CMetalData()
 		: initialized(false)
 		, isClusterizing(false)
@@ -120,49 +123,55 @@ const CMetalData::MetalIndices CMetalData::FindWithinRangeSpots(const AIFloat3& 
 
 const int CMetalData::FindNearestCluster(const AIFloat3& pos) const
 {
-	std::vector<MetalNode> result_n;
+//	std::vector<MetalNode> result_n;
 	clusterTree.query(bgi::nearest(point(pos.x, pos.z), 1), std::back_inserter(result_n));
 
 	if (!result_n.empty()) {
-		return result_n.front().second;
+		int result = result_n.front().second;
+		result_n.clear();
+		return result;
 	}
 	return -1;
 }
 
 const int CMetalData::FindNearestCluster(const AIFloat3& pos, MetalPredicate& predicate) const
 {
-	std::vector<MetalNode> result_n;
+//	std::vector<MetalNode> result_n;
 	clusterTree.query(bgi::nearest(point(pos.x, pos.z), 1) && bgi::satisfies(predicate), std::back_inserter(result_n));
 
 	if (!result_n.empty()) {
-		return result_n.front().second;
+		int result = result_n.front().second;
+		result_n.clear();
+		return result;
 	}
 	return -1;
 }
 
 const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& pos, int num) const
 {
-	std::vector<MetalNode> result_n;
-	result_n.reserve(num);
+//	std::vector<MetalNode> result_n;
+//	result_n.reserve(num);
 	clusterTree.query(bgi::nearest(point(pos.x, pos.z), num), std::back_inserter(result_n));
 
 	MetalIndices result;
 	for (auto& node : result_n) {
 		result.push_back(node.second);
 	}
+	result_n.clear();
 	return result;
 }
 
 const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& pos, int num, MetalPredicate& predicate) const
 {
-	std::vector<MetalNode> result_n;
-	result_n.reserve(num);
+//	std::vector<MetalNode> result_n;
+//	result_n.reserve(num);
 	clusterTree.query(bgi::nearest(point(pos.x, pos.z), num) && bgi::satisfies(predicate), std::back_inserter(result_n));
 
 	MetalIndices result;
 	for (auto& node : result_n) {
 		result.push_back(node.second);
 	}
+	result_n.clear();
 	return result;
 }
 

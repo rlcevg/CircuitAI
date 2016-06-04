@@ -75,7 +75,9 @@ void CMultiQueue<T>::RemoveAllIf(ConditionFunction condition)
 	typename std::deque<T>::iterator iter = _queue.begin();
 	while (iter != _queue.end()) {
 		if (condition(*iter)) {
-			iter = _queue.erase(iter);
+//			iter = _queue.erase(iter);  // NOTE: micro-opt
+			*iter = _queue.back();
+			_queue.pop_back();
 		} else {
 			++iter;
 		}

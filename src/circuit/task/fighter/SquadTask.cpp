@@ -90,8 +90,8 @@ bool ISquadTask::IsMustRegroup()
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
-	std::vector<CCircuitUnit*> validUnits;
-	validUnits.reserve(units.size());
+	static std::vector<CCircuitUnit*> validUnits;  // NOTE: micro-opt
+//	validUnits.reserve(units.size());
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();;
 	for (CCircuitUnit* unit : units) {
 		AIFloat3 pos = unit->GetPos(frame);
@@ -115,6 +115,7 @@ bool ISquadTask::IsMustRegroup()
 		}
 	}
 
+	validUnits.clear();
 	return isRegroup;
 }
 

@@ -99,24 +99,27 @@ void CEnergyGrid::Update()
 	circuit->UpdateFriendlyUnits();
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
-	std::vector<CCircuitUnit*> mexes, pylons;
-	mexes.reserve(friendlies.size());
-	pylons.reserve(friendlies.size());
+//	std::vector<CCircuitUnit*> tmpMexes, tmpPylons;
+//	tmpMexes.reserve(friendlies.size());
+//	tmpPylons.reserve(friendlies.size());
 	for (auto& kv : friendlies) {
 		CCircuitUnit* unit = kv.second;
 		if (*unit->GetCircuitDef() == *mexDef) {
-			mexes.push_back(unit);
+			tmpMexes.push_back(unit);
 		} else if (pylonRanges.find(unit->GetCircuitDef()->GetId()) != pylonRanges.end()) {
-			pylons.push_back(unit);
+			tmpPylons.push_back(unit);
 		}
 	}
 
-	circuit->GetMetalManager()->MarkAllyMexes(mexes);
+	circuit->GetMetalManager()->MarkAllyMexes(tmpMexes);
 	MarkClusters();
 	RebuildTree();
 
-	MarkAllyPylons(pylons);
+	MarkAllyPylons(tmpPylons);
 	CheckGrid();
+
+	tmpMexes.clear();
+	tmpPylons.clear();
 }
 
 CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
