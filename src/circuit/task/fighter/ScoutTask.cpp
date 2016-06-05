@@ -155,11 +155,12 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	STerrainMapArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	float power = threatMap->GetUnitThreat(unit) * 0.8f;
-	int canTargetCat = cdef->GetTargetCategory();
-	int noChaseCat = cdef->GetNoChaseCategory();
-	float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
-						   cdef->GetLosRadius());
+	const float speed = cdef->GetSpeed();
+	const float power = threatMap->GetUnitThreat(unit) * 0.8f;
+	const int canTargetCat = cdef->GetTargetCategory();
+	const int noChaseCat = cdef->GetNoChaseCategory();
+	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
+								 cdef->GetLosRadius());
 	float minSqDist = SQUARE(range);
 	float maxThreat = .0f;
 
@@ -180,8 +181,12 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 			continue;
 		}
 		int targetCat;
-		if (enemy->GetCircuitDef() != nullptr) {
-			targetCat = enemy->GetCircuitDef()->GetCategory();
+		CCircuitDef* edef = enemy->GetCircuitDef();
+		if (edef != nullptr) {
+			if (edef->GetSpeed() > speed) {
+				continue;
+			}
+			targetCat = edef->GetCategory();
 			if ((targetCat & canTargetCat) == 0) {
 				continue;
 			}

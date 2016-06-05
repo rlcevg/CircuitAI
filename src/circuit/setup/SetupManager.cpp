@@ -92,7 +92,7 @@ bool CSetupManager::OpenConfig(const std::string& cfgName)
 		}
 
 		/*
-		 * Try map specific config
+		 * Try game specific config
 		 */
 		Map* map = circuit->GetMap();
 		std::string filename = "LuaRules/Configs/CircuitAI/";
@@ -110,7 +110,7 @@ bool CSetupManager::OpenConfig(const std::string& cfgName)
 		}
 
 		/*
-		 * Try game specific config
+		 * Try default game specific config
 		 */
 		cfgDefault = "circuit";
 		filename = "LuaRules/Configs/CircuitAI/Default/";
@@ -132,7 +132,7 @@ bool CSetupManager::OpenConfig(const std::string& cfgName)
 	}
 
 	/*
-	 * Locate global config
+	 * Locate default config
 	 */
 	std::string filename("config" SLASH);
 	configName = (cfgDefault.find(".json") == std::string::npos) ? (cfgDefault + ".json") : cfgDefault;

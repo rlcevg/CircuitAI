@@ -38,7 +38,7 @@ Vagrant.configure(2) do |config|
       cp /vagrant/CMakeLists.txt spring/AI/Skirmish/CircuitAI/
       cp /vagrant/VERSION spring/AI/Skirmish/CircuitAI/
       
-      cd spring && git checkout tags/100.0
+      cd spring && git checkout tags/102.0
       cmake . && make CircuitAI -j2 > ~/CircuitAI.log 2>&1
       cp AI/Skirmish/CircuitAI/libSkirmishAI.so /vagrant/
     fi
