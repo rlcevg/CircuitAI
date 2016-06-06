@@ -213,7 +213,7 @@ void CMetalManager::MarkAllyMexes()
 	circuit->UpdateFriendlyUnits();
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
-//	std::vector<CCircuitUnit*> tmpMexes;
+	std::vector<CCircuitUnit*> tmpMexes;
 //	tmpMexes.reserve(friendlies.size());
 	for (auto& kv : friendlies) {
 		CCircuitUnit* unit = kv.second;

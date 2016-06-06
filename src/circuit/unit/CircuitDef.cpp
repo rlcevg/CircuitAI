@@ -89,7 +89,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		std::regex pattern("(-?\\d+)");
 		std::smatch section;
 		int index = 0;
-		while (std::regex_search(start, end, section, pattern)) {
+		while (std::regex_search(start, end, section, pattern) && (index < 3)) {
 			midPosOffset[index++] = utils::string_to_float(section[1]);
 			start = section[0].second;
 		}
@@ -212,7 +212,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		}
 		if ((weaponCat & circuit->GetLandCategory()) && isLandWeapon) {
 			float& mr = maxRange[static_cast<RangeT>(RangeType::LAND)];
-			mr = std::max(mr, ((isAbleToFly && wt == "Cannon")) ? range * 1.25f : range);
+			mr = std::max(mr, (isAbleToFly && (wt == "Cannon")) ? range * 1.25f : range);
 		}
 		if ((weaponCat & circuit->GetWaterCategory()) && isWaterWeapon) {
 			float& mr = maxRange[static_cast<RangeT>(RangeType::WATER)];

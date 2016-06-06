@@ -45,79 +45,91 @@ void CMetalData::Init(const Metals& spots)
 
 const int CMetalData::FindNearestSpot(const AIFloat3& pos) const
 {
-	std::vector<MetalNode> result_n;
+//	std::vector<MetalNode> result_n;
 	metalTree.query(bgi::nearest(point(pos.x, pos.z), 1), std::back_inserter(result_n));
 
 	if (!result_n.empty()) {
-		return result_n.front().second;
+		int result = result_n.front().second;
+		result_n.clear();
+		return result;
 	}
 	return -1;
 }
 
 const int CMetalData::FindNearestSpot(const AIFloat3& pos, MetalPredicate& predicate) const
 {
-	std::vector<MetalNode> result_n;
+//	std::vector<MetalNode> result_n;
 	metalTree.query(bgi::nearest(point(pos.x, pos.z), 1) && bgi::satisfies(predicate), std::back_inserter(result_n));
 
 	if (!result_n.empty()) {
-		return result_n.front().second;
+		int result = result_n.front().second;
+		result_n.clear();
+		return result;
 	}
 	return -1;
 }
 
 const CMetalData::MetalIndices CMetalData::FindNearestSpots(const AIFloat3& pos, int num) const
 {
-	std::vector<MetalNode> result_n;
-	result_n.reserve(num);
+//	std::vector<MetalNode> result_n;
+//	result_n.reserve(num);
 	metalTree.query(bgi::nearest(point(pos.x, pos.z), num), std::back_inserter(result_n));
 
 	MetalIndices result;
+	result.reserve(result_n.size());
 	for (auto& node : result_n) {
 		result.push_back(node.second);
 	}
+	result_n.clear();
 	return result;
 }
 
 const CMetalData::MetalIndices CMetalData::FindNearestSpots(const AIFloat3& pos, int num, MetalPredicate& predicate) const
 {
-	std::vector<MetalNode> result_n;
-	result_n.reserve(num);
+//	std::vector<MetalNode> result_n;
+//	result_n.reserve(num);
 	metalTree.query(bgi::nearest(point(pos.x, pos.z), num) && bgi::satisfies(predicate), std::back_inserter(result_n));
 
 	MetalIndices result;
+	result.reserve(result_n.size());
 	for (auto& node : result_n) {
 		result.push_back(node.second);
 	}
+	result_n.clear();
 	return result;
 }
 
 const CMetalData::MetalIndices CMetalData::FindWithinDistanceSpots(const AIFloat3& pos, float maxDistance) const
 {
-	std::vector<MetalNode> returned_values;
+//	std::vector<MetalNode> result_n;
 	point sought = point(pos.x, pos.z);
 	box enc_box(point(pos.x - maxDistance, pos.z - maxDistance), point(pos.x + maxDistance, pos.z + maxDistance));
 	auto predicate = [&maxDistance, &sought](MetalNode const& v) {
 		return bg::distance(v.first, sought) < maxDistance;
 	};
-	metalTree.query(bgi::within(enc_box) && bgi::satisfies(predicate), std::back_inserter(returned_values));
+	metalTree.query(bgi::within(enc_box) && bgi::satisfies(predicate), std::back_inserter(result_n));
 
 	MetalIndices result;
-	for (auto& node : returned_values) {
+	result.reserve(result_n.size());
+	for (auto& node : result_n) {
 		result.push_back(node.second);
 	}
+	result_n.clear();
 	return result;
 }
 
 const CMetalData::MetalIndices CMetalData::FindWithinRangeSpots(const AIFloat3& posFrom, const AIFloat3& posTo) const
 {
 	box query_box(point(posFrom.x, posFrom.z), point(posTo.x, posTo.z));
-	std::vector<MetalNode> result_s;
-	metalTree.query(bgi::within(query_box), std::back_inserter(result_s));
+//	std::vector<MetalNode> result_n;
+	metalTree.query(bgi::within(query_box), std::back_inserter(result_n));
 
 	MetalIndices result;
-	for (auto& node : result_s) {
+	result.reserve(result_n.size());
+	for (auto& node : result_n) {
 		result.push_back(node.second);
 	}
+	result_n.clear();
 	return result;
 }
 
@@ -154,6 +166,7 @@ const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& p
 	clusterTree.query(bgi::nearest(point(pos.x, pos.z), num), std::back_inserter(result_n));
 
 	MetalIndices result;
+	result.reserve(result_n.size());
 	for (auto& node : result_n) {
 		result.push_back(node.second);
 	}
@@ -168,6 +181,7 @@ const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& p
 	clusterTree.query(bgi::nearest(point(pos.x, pos.z), num) && bgi::satisfies(predicate), std::back_inserter(result_n));
 
 	MetalIndices result;
+	result.reserve(result_n.size());
 	for (auto& node : result_n) {
 		result.push_back(node.second);
 	}

@@ -13,8 +13,7 @@
 
 namespace circuit {
 
-// NOTE: micro-opt
-static std::vector<CCircuitUnit*> tmpMexes;
+extern std::vector<CCircuitUnit*> tmpMexes;  // NOTE: micro-opt
 
 class CCircuitAI;
 class CMetalData;

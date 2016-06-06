@@ -337,11 +337,11 @@ int CCircuitAI::HandleEndEvent(int topic, const void* data)
 
 bool CCircuitAI::IsModValid()
 {
-	const int minEngineVer = 100;
+	const int minEngineVer = 101;
 	const char* engineVersion = sAICallback->Engine_Version_getMajor(skirmishAIId);
 	int ver = atoi(engineVersion);
 	if (ver < minEngineVer) {
-		LOG("Engine must be 100.0 or higher! (%s)", engineVersion);
+		LOG("Engine must be %i or higher! (Current: %s)", minEngineVer, engineVersion);
 		return false;
 	}
 

@@ -19,9 +19,6 @@
 
 namespace circuit {
 
-// NOTE: micro-opt
-static std::vector<CCircuitUnit*> tmpPylons;
-
 class CCircuitAI;
 
 class CEnergyGrid {

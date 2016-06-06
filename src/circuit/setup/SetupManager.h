@@ -16,9 +16,9 @@
 namespace circuit {
 
 namespace setup {
-	static constexpr char easy[]{"easy"};
-	static constexpr char normal[]{"normal"};
-	static constexpr char hard[]{"hard"};
+	constexpr char easy[]{"easy"};
+	constexpr char normal[]{"normal"};
+	constexpr char hard[]{"hard"};
 }
 
 class CCircuitAI;

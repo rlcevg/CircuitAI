@@ -99,7 +99,8 @@ void CEnergyGrid::Update()
 	circuit->UpdateFriendlyUnits();
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
-//	std::vector<CCircuitUnit*> tmpMexes, tmpPylons;
+	std::vector<CCircuitUnit*> tmpMexes;
+	static std::vector<CCircuitUnit*> tmpPylons;  // NOTE: micro-opt
 //	tmpMexes.reserve(friendlies.size());
 //	tmpPylons.reserve(friendlies.size());
 	for (auto& kv : friendlies) {
