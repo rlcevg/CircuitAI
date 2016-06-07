@@ -92,21 +92,27 @@ void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 
 void IBuilderTask::Execute(CCircuitUnit* unit)
 {
-	Unit* u = unit->GetUnit();
-	u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
-
 	CCircuitAI* circuit = manager->GetCircuit();
+	Unit* u = unit->GetUnit();
+	TRY_UNIT(circuit, unit,
+		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+	)
+
 	int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		int facing = target->GetUnit()->GetBuildingFacing();
-		u->Build(target->GetCircuitDef()->GetUnitDef(), buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		TRY_UNIT(circuit, unit,
+			u->Build(target->GetCircuitDef()->GetUnitDef(), buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		)
 		return;
 	}
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (utils::is_valid(buildPos)) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
-			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			TRY_UNIT(circuit, unit,
+				u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			)
 			return;
 		} else {
 			terrainManager->DelBlocker(buildDef, buildPos, facing);
@@ -128,7 +134,9 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 			if ((*alu->GetCircuitDef() == *buildDef) && au->IsBeingBuilt()) {
 				const AIFloat3& pos = alu->GetPos(frame);
 				if (terrainManager->CanBuildAt(unit, pos)) {
-					u->Build(buildUDef, pos, au->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+					TRY_UNIT(circuit, unit,
+						u->Build(buildUDef, pos, au->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+					)
 					utils::free_clear(friendlies);
 					return;
 				}
@@ -145,7 +153,9 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 
 	if (utils::is_valid(buildPos)) {
 		terrainManager->AddBlocker(buildDef, buildPos, facing);
-		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		TRY_UNIT(circuit, unit,
+			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		)
 	} else {
 		// TODO: Select new proper BasePos, like near metal cluster.
 		int terWidth = terrainManager->GetTerrainWidth();
@@ -275,9 +285,12 @@ void IBuilderTask::UpdateTarget(CCircuitUnit* unit)
 	// NOTE: Can't use SetTarget because unit->GetPos() may be different from buildPos
 	target = unit;
 
-	int frame = manager->GetCircuit()->GetLastFrame() + FRAMES_PER_SEC * 60;
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 	for (CCircuitUnit* ass : units) {
-		ass->GetUnit()->Build(buildDef->GetUnitDef(), buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame);
+		TRY_UNIT(circuit, ass,
+			ass->GetUnit()->Build(buildDef->GetUnitDef(), buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame);
+		)
 	}
 }
 

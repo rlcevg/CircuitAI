@@ -74,8 +74,10 @@ void CBRepairTask::Execute(CCircuitUnit* unit)
 
 	if (repTarget != nullptr) {
 		Unit* u = unit->GetUnit();
-		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
-		u->Repair(repTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+		TRY_UNIT(circuit, unit,
+			u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+			u->Repair(repTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+		)
 
 		IUnitTask* task = repTarget->GetTask();
 		if ((task != nullptr) && (task->GetType() == IUnitTask::Type::RETREAT)) {

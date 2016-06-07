@@ -62,7 +62,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			nullTask->RemoveAssignee(unit);
 		}
 
-//		unit->GetUnit()->SetFireState(2);
+//		TRY_UNIT(circuit, unit,
+//			unit->GetUnit()->SetFireState(2);
+//		)
 
 		factoryPower += unit->GetCircuitDef()->GetBuildSpeed();
 
@@ -179,7 +181,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 		int frame = this->circuit->GetLastFrame();
 		const AIFloat3& assPos = unit->GetPos(frame);
-		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
+		TRY_UNIT(this->circuit, unit,
+			unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
+		)
 
 		// check factory nano belongs to
 		const float radius = unit->GetCircuitDef()->GetBuildDistance();

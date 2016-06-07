@@ -84,9 +84,12 @@ void IUnitTask::Cancel()
 
 void IUnitTask::OnUnitMoveFailed(CCircuitUnit* unit)
 {
-	int frame = manager->GetCircuit()->GetLastFrame();
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = utils::get_radial_pos(unit->GetPos(frame), SQUARE_SIZE * 32);
-	unit->GetUnit()->MoveTo(pos, 0, frame + FRAMES_PER_SEC);
+	TRY_UNIT(circuit, unit,
+		unit->GetUnit()->MoveTo(pos, 0, frame + FRAMES_PER_SEC);
+	)
 }
 
 } // namespace circuit

@@ -44,13 +44,16 @@ void CBEnergyTask::Update()
 		return;
 	}
 
-	bool isEnergyStalling = manager->GetCircuit()->GetEconomyManager()->IsEnergyStalling();
+	CCircuitAI* circuit = manager->GetCircuit();
+	bool isEnergyStalling = circuit->GetEconomyManager()->IsEnergyStalling();
 	if (isStalling == isEnergyStalling) {
 		return;
 	}
 	isStalling = isEnergyStalling;
 	priority = isEnergyStalling ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
-	target->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+	TRY_UNIT(circuit, target,
+		target->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+	)
 }
 
 void CBEnergyTask::Finish()

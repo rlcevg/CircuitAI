@@ -60,7 +60,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	 * Defence handlers
 	 */
 	auto defenceFinishedHandler = [this](CCircuitUnit* unit) {
-		unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+		TRY_UNIT(this->circuit, unit,
+			unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+		)
 	};
 	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		int frame = this->circuit->GetLastFrame();
@@ -96,10 +98,12 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		AddPower(unit);
 
 		if (unit->GetCircuitDef()->IsAbleToFly()) {
-			unit->GetUnit()->ExecuteCustomCommand(CMD_RETREAT, {2.0f});
-			if (unit->GetCircuitDef()->GetMaxRange() > 600.0f) {  // armbrawl
-				unit->GetUnit()->ExecuteCustomCommand(CMD_AIR_STRAFE, {0.0f});
-			}
+			TRY_UNIT(this->circuit, unit,
+				unit->GetUnit()->ExecuteCustomCommand(CMD_RETREAT, {2.0f});
+				if (unit->GetCircuitDef()->GetMaxRange() > 600.0f) {  // armbrawl
+					unit->GetUnit()->ExecuteCustomCommand(CMD_AIR_STRAFE, {0.0f});
+				}
+			)
 		}
 	};
 	auto attackerIdleHandler = [this](CCircuitUnit* unit) {
@@ -165,46 +169,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	 */
 	unitDefId = circuit->GetCircuitDef("raveparty")->GetId();
 	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
-		unit->GetUnit()->SetTrajectory(1);
+		TRY_UNIT(this->circuit, unit,
+			unit->GetUnit()->SetTrajectory(1);
+		)
 	};
-
-//	/*
-//	 * armrectr handlers
-//	 */
-//	unitDefId = attrib->GetUnitDefByName("armrectr")->GetUnitDefId();
-//	idleHandler[unitDefId] = [this](CCircuitUnit* unit) {
-//		fighterInfos.erase(unit);
-//	};
-//	damagedHandler[unitDefId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
-//		if (attacker != nullptr) {
-//			auto search = fighterInfos.find(unit);
-//			if (search == fighterInfos.end()) {
-//				Unit* u = unit->GetUnit();
-//				std::vector<float> params;
-//				params.push_back(2.0f);
-//				u->ExecuteCustomCommand(CMD_PRIORITY, params);
-//
-//				const AIFloat3& pos = attacker->GetPos();
-//				params.clear();
-//				params.push_back(1.0f);  // 1: terraform_type, 1 == level
-//				params.push_back(this->circuit->GetTeamId());  // 2: teamId
-//				params.push_back(0.0f);  // 3: terraform type - 0 == Wall, else == Area
-//				params.push_back(pos.y - 42.0f);  // 4: terraformHeight
-//				params.push_back(1.0f);  // 5: number of control points
-//				params.push_back(1.0f);  // 6: units count?
-//				params.push_back(0.0f);  // 7: volumeSelection?
-//				params.push_back(pos.x);  //  8: i + 0 control point x
-//				params.push_back(pos.z);  //  9: i + 1 control point z
-//				params.push_back(unit->GetId());  // 10: i + 2 unitId
-//				u->ExecuteCustomCommand(CMD_TERRAFORM_INTERNAL, params);
-//
-//				fighterInfos[unit].isTerraforming = true;
-//			}
-//		}
-//	};
-//	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
-//		fighterInfos.erase(unit);
-//	};
 
 	defence = circuit->GetAllyTeam()->GetDefenceMatrix().get();
 

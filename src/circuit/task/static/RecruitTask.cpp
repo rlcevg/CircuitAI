@@ -73,7 +73,9 @@ void CRecruitTask::Execute(CCircuitUnit* unit)
 	}
 
 	if (utils::is_valid(buildPos)) {
-		unit->GetUnit()->Build(buildDef->GetUnitDef(), buildPos, UNIT_COMMAND_BUILD_NO_FACING, 0, frame + FRAMES_PER_SEC * 10);
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->Build(buildDef->GetUnitDef(), buildPos, UNIT_COMMAND_BUILD_NO_FACING, 0, frame + FRAMES_PER_SEC * 10);
+		)
 	} else {
 		manager->AbortTask(this);
 	}
@@ -91,6 +93,7 @@ void CRecruitTask::Finish()
 
 void CRecruitTask::Cancel()
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	for (CCircuitUnit* unit : units) {
 		// Clear build-queue
 		auto commands = std::move(unit->GetUnit()->GetCurrentCommands());
@@ -103,8 +106,10 @@ void CRecruitTask::Cancel()
 			}
 			delete cmd;
 		}
-		int frame = manager->GetCircuit()->GetLastFrame() + FRAMES_PER_SEC * 60;
-		unit->GetUnit()->ExecuteCustomCommand(CMD_REMOVE, params, UNIT_COMMAND_OPTION_ALT_KEY|UNIT_COMMAND_OPTION_CONTROL_KEY, frame);
+		int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->ExecuteCustomCommand(CMD_REMOVE, params, UNIT_COMMAND_OPTION_ALT_KEY|UNIT_COMMAND_OPTION_CONTROL_KEY, frame);
+		)
 	}
 }
 

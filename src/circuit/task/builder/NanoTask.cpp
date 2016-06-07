@@ -34,21 +34,27 @@ CBNanoTask::~CBNanoTask()
 
 void CBNanoTask::Execute(CCircuitUnit* unit)
 {
-	Unit* u = unit->GetUnit();
-	u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
-
 	CCircuitAI* circuit = manager->GetCircuit();
+	Unit* u = unit->GetUnit();
+	TRY_UNIT(circuit, unit,
+		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+	)
+
 	int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		int facing = target->GetUnit()->GetBuildingFacing();
-		u->Build(target->GetCircuitDef()->GetUnitDef(), target->GetPos(frame), facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		TRY_UNIT(circuit, unit,
+			u->Build(target->GetCircuitDef()->GetUnitDef(), target->GetPos(frame), facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		)
 		return;
 	}
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (utils::is_valid(buildPos)) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
-			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			TRY_UNIT(circuit, unit,
+				u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			)
 			return;
 		} else {
 			terrainManager->DelBlocker(buildDef, buildPos, facing);
@@ -64,7 +70,9 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 
 	if (utils::is_valid(buildPos)) {
 		terrainManager->AddBlocker(buildDef, buildPos, facing);
-		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		TRY_UNIT(circuit, unit,
+			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		)
 	} else {
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);

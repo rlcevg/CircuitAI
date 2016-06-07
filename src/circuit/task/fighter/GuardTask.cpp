@@ -33,10 +33,13 @@ bool CGuardTask::CanAssignTo(CCircuitUnit* unit) const
 
 void CGuardTask::Execute(CCircuitUnit* unit)
 {
-	CCircuitUnit* vip = manager->GetCircuit()->GetTeamUnit(vipId);
+	CCircuitAI* circuit = manager->GetCircuit();
+	CCircuitUnit* vip = circuit->GetTeamUnit(vipId);
 	if (vip != nullptr) {
-		unit->GetUnit()->Guard(vip->GetUnit());
-		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->Guard(vip->GetUnit());
+			unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+		)
 	} else {
 		manager->AbortTask(this);
 	}
@@ -44,11 +47,14 @@ void CGuardTask::Execute(CCircuitUnit* unit)
 
 void CGuardTask::OnUnitIdle(CCircuitUnit* unit)
 {
-	CCircuitUnit* vip = manager->GetCircuit()->GetTeamUnit(vipId);
+	CCircuitAI* circuit = manager->GetCircuit();
+	CCircuitUnit* vip = circuit->GetTeamUnit(vipId);
 	if (vip == nullptr) {
 		manager->AbortTask(this);
 	} else {
-		unit->GetUnit()->Guard(vip->GetUnit());
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->Guard(vip->GetUnit());
+		)
 	}
 }
 

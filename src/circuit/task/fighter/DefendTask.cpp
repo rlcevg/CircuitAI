@@ -58,8 +58,10 @@ void CDefendTask::Execute(CCircuitUnit* unit)
 		terrainManager->CorrectPosition(pos);
 		pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), pos, 300.f, UNIT_COMMAND_BUILD_NO_FACING);
 
-		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
-		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+		)
 		return;
 	}
 
@@ -84,8 +86,10 @@ void CDefendTask::Execute(CCircuitUnit* unit)
 	SetTarget(bestTarget);
 	if (bestTarget != nullptr) {
 		const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
-		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
-		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+		)
 	}
 }
 

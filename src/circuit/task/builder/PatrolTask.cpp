@@ -45,15 +45,18 @@ void CBPatrolTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CBPatrolTask::Execute(CCircuitUnit* unit)
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	Unit* u = unit->GetUnit();
-	u->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
+	TRY_UNIT(circuit, unit,
+		u->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
 
-	const float size = SQUARE_SIZE * 100;
-	CTerrainManager* terrainManager = manager->GetCircuit()->GetTerrainManager();
-	AIFloat3 pos = position;
-	pos.x += (pos.x > terrainManager->GetTerrainWidth() / 2) ? -size : size;
-	pos.z += (pos.z > terrainManager->GetTerrainHeight() / 2) ? -size : size;
-	u->PatrolTo(pos);
+		const float size = SQUARE_SIZE * 100;
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		AIFloat3 pos = position;
+		pos.x += (pos.x > terrainManager->GetTerrainWidth() / 2) ? -size : size;
+		pos.z += (pos.z > terrainManager->GetTerrainHeight() / 2) ? -size : size;
+		u->PatrolTo(pos);
+	)
 }
 
 void CBPatrolTask::Update()

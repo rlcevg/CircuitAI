@@ -61,21 +61,27 @@ bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 
 void CBMexTask::Execute(CCircuitUnit* unit)
 {
-	Unit* u = unit->GetUnit();
-	u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
-
 	CCircuitAI* circuit = manager->GetCircuit();
+	Unit* u = unit->GetUnit();
+	TRY_UNIT(circuit, unit,
+		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+	)
+
 	int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		int facing = target->GetUnit()->GetBuildingFacing();
-		u->Build(target->GetCircuitDef()->GetUnitDef(), target->GetPos(frame), facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		TRY_UNIT(circuit, unit,
+			u->Build(target->GetCircuitDef()->GetUnitDef(), target->GetPos(frame), facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		)
 		return;
 	}
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (utils::is_valid(buildPos)) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
-			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			TRY_UNIT(circuit, unit,
+				u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			)
 			return;
 		} else {
 			metalManager->SetOpenSpot(buildPos, true);
@@ -98,7 +104,9 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 //
 //	if (utils::is_valid(buildPos)) {
 //		metalManager->SetOpenSpot(buildPos, false);
-//		u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+//		TRY_UNIT(circuit, unit,
+//			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+//		)
 //	} else {
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);

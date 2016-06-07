@@ -90,9 +90,11 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	if (bestTarget != nullptr) {
 		position = bestTarget->GetPos();
-		unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
-		unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)bestTarget->GetId()});
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+			unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)bestTarget->GetId()});
+		)
 		moveAction->SetActive(false);
 		return;
 	} else if (!pPath->empty()) {
@@ -134,8 +136,10 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	float x = rand() % (terrainManager->GetTerrainWidth() + 1);
 	float z = rand() % (terrainManager->GetTerrainHeight() + 1);
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
-	unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-	unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+	TRY_UNIT(circuit, unit,
+		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+	)
 	moveAction->SetActive(false);
 }
 

@@ -49,11 +49,14 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 		return;
 	}
 
+	CCircuitAI* circuit = manager->GetCircuit();
 	if (cdef->IsHoldFire()) {
-		unit->GetUnit()->SetFireState(0);
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->SetFireState(0);
+		)
 	}
 
-	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
+	int squareSize = circuit->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
 	if (cdef->IsSiege()) {
 		travelAction = new CFightAction(unit, squareSize);
@@ -63,7 +66,7 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	unit->PushBack(travelAction);
 
 	// Mobile repair
-	CBuilderManager* builderManager = manager->GetCircuit()->GetBuilderManager();
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	builderManager->EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
 }
 
@@ -75,7 +78,9 @@ void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 
 	if (unit->GetCircuitDef()->IsHoldFire()) {
-		unit->GetUnit()->SetFireState(2);
+		TRY_UNIT(manager->GetCircuit(), unit,
+			unit->GetUnit()->SetFireState(2);
+		)
 	}
 }
 
@@ -168,7 +173,9 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 
 	if (unit->GetCircuitDef()->IsPlane()) {
 		// force rearm/repair | CMD_FIND_PAD
-		unit->GetUnit()->Fight(haven, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->Fight(haven, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		)
 		return;
 	}
 
@@ -176,12 +183,12 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 	const AIFloat3& unitPos = unit->GetPos(frame);
 	if (unitPos.SqDistance2D(haven) > maxDist * maxDist) {
 		// TODO: push MoveAction into unit? to avoid enemy fire
-		unit->GetUnit()->MoveTo(haven, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 1);
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->MoveTo(haven, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 1);
+		)
 		// TODO: Add fail counter?
 	} else {
 		// TODO: push WaitAction into unit
-//		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
-
 		AIFloat3 pos = unitPos;
 		const float size = SQUARE_SIZE * 16;
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
@@ -200,7 +207,10 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 			return unitPos.SqDistance2D(p) > SQUARE(SQUARE_SIZE * 8);
 		};
 		pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), pos, maxDist, UNIT_COMMAND_BUILD_NO_FACING, predicate);
-		unit->GetUnit()->PatrolTo(pos);
+		TRY_UNIT(circuit, unit,
+//			unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
+			unit->GetUnit()->PatrolTo(pos);
+		)
 
 		IUnitAction* act = static_cast<IUnitAction*>(unit->End());
 		if (act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT)) {

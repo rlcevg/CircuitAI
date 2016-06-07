@@ -18,6 +18,8 @@ namespace springai {
 
 namespace circuit {
 
+#define TRY_UNIT(c, u, x)	try { x } catch (const std::exception& e) { c->Garbage(u, e.what()); }
+
 #define CMD_RETREAT_ZONE			10001
 #define CMD_SETHAVEN				CMD_RETREAT_ZONE
 #define CMD_ORBIT					13923

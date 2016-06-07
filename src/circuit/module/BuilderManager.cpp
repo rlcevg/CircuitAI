@@ -124,8 +124,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	auto heavyCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 		CEconomyManager* economyManager = this->circuit->GetEconomyManager();
 		if (economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor() > 16.0f) {
-			unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
-//			EnqueueRepair(IBuilderTask::Priority::LOW, unit);
+			TRY_UNIT(this->circuit, unit,
+				unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
+//				EnqueueRepair(IBuilderTask::Priority::LOW, unit);
+			)
 		}
 	};
 

@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <map>
 #include <vector>
+#include <set>
 
 namespace springai {
 	class OOAICallback;
@@ -114,6 +115,7 @@ private:
 	CCircuitUnit* RegisterTeamUnit(CCircuitUnit::Id unitId);
 	void UnregisterTeamUnit(CCircuitUnit* unit);
 public:
+	void Garbage(CCircuitUnit* unit, const char* message);
 	CCircuitUnit* GetTeamUnit(CCircuitUnit::Id unitId) const;
 	const CAllyTeam::Units& GetTeamUnits() const { return teamUnits; }
 
@@ -135,6 +137,7 @@ public:
 	CAllyTeam* GetAllyTeam() const { return allyTeam; }
 
 private:
+	std::set<CCircuitUnit*> garbage;
 	CAllyTeam::Units teamUnits;  // owner
 	EnemyUnits enemyUnits;  // owner
 	CAllyTeam* allyTeam;

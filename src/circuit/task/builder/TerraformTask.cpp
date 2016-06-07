@@ -45,10 +45,6 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 	if (targetId == -1) {
 		Unit* u = unit->GetUnit();
 
-		std::vector<float> params;
-		params.push_back(ClampPriority());
-		u->ExecuteCustomCommand(CMD_PRIORITY, params);
-
 		if (!utils::is_valid(buildPos)) {
 			CTerrainManager* terrainManager = circuit->GetTerrainManager();
 			CTerrainManager::TerrainPredicate predicate = [terrainManager, unit](const AIFloat3& p) {
@@ -64,7 +60,7 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 
 		float offsetX = 2 * SQUARE_SIZE;
 		float offsetZ = 2 * SQUARE_SIZE;
-		params.clear();
+		std::vector<float> params;
 		params.push_back(1.0f);  // 1: terraform_type, 1 == level
 		params.push_back(manager->GetCircuit()->GetTeamId());  // 2: teamId
 		params.push_back(1.0f);  // 3: terraform type - 0 == Wall, else == Area
@@ -83,7 +79,10 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 		params.push_back(buildPos.x - offsetX);  //  8: i + 8 control point x
 		params.push_back(buildPos.z - offsetZ);  //  9: i + 9 control point z
 		params.push_back(unit->GetId());  // 10: i + 10 unitId
-		u->ExecuteCustomCommand(CMD_TERRAFORM_INTERNAL, params);
+		TRY_UNIT(circuit, unit,
+			u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+			u->ExecuteCustomCommand(CMD_TERRAFORM_INTERNAL, params);
+		)
 		return;
 	}
 
@@ -97,14 +96,10 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 
 	Unit* u = unit->GetUnit();
 
-	std::vector<float> params;
-	params.push_back(ClampPriority());
-	u->ExecuteCustomCommand(CMD_PRIORITY, params);
-
 	UnitDef* unitDef = buildDef->GetUnitDef();
 	float offsetX = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 0/*3*/ * SQUARE_SIZE + 0/*1*/;
 	float offsetZ = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 0/*3*/ * SQUARE_SIZE + 0/*1*/;
-	params.clear();
+	std::vector<float> params;
 	params.push_back(1.0f);  // 1: terraform_type, 1 == level
 	params.push_back(manager->GetCircuit()->GetTeamId());  // 2: teamId
 	params.push_back(0.0f);  // 3: terraform type - 0 == Wall, else == Area
@@ -123,7 +118,10 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 	params.push_back(position.x - offsetX);  //  8: i + 8 control point x
 	params.push_back(position.z - offsetZ);  //  9: i + 9 control point z
 	params.push_back(unit->GetId());  // 10: i + 10 unitId
-	u->ExecuteCustomCommand(CMD_TERRAFORM_INTERNAL, params);
+	TRY_UNIT(circuit, unit,
+		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+		u->ExecuteCustomCommand(CMD_TERRAFORM_INTERNAL, params);
+	)
 
 	// TODO: Enqueue "move out" action for nearby units
 }

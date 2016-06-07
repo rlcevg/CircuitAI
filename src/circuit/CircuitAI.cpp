@@ -525,6 +525,12 @@ int CCircuitAI::Update(int frame)
 {
 	lastFrame = frame;
 
+	if (!garbage.empty()) {
+		CCircuitUnit* unit = *garbage.begin();
+		UnitDestroyed(unit, nullptr);
+		UnregisterTeamUnit(unit);
+	}
+
 	scheduler->ProcessTasks(frame);
 
 #ifdef DEBUG_VIS
@@ -645,8 +651,10 @@ int CCircuitAI::UnitIdle(CCircuitUnit* unit)
 int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 {
 	if (unit->IsMoveFailed(lastFrame)) {
-		unit->GetUnit()->Stop();
-		unit->GetUnit()->SetMoveState(2);
+		TRY_UNIT(this, unit,
+			unit->GetUnit()->Stop();
+			unit->GetUnit()->SetMoveState(2);
+		)
 		UnitDestroyed(unit, nullptr);
 		UnregisterTeamUnit(unit);
 	} else if (unit->GetTask() != nullptr) {
@@ -847,7 +855,15 @@ void CCircuitAI::UnregisterTeamUnit(CCircuitUnit* unit)
 	teamUnits.erase(unit->GetId());
 	defsById[unit->GetCircuitDef()->GetId()]->Dec();
 
+	garbage.erase(unit);
+
 	delete unit;
+}
+
+void CCircuitAI::Garbage(CCircuitUnit* unit, const char* message)
+{
+	garbage.insert(unit);
+	LOG("Garbage unitId: %i message: %s", unit->GetId(), message);
 }
 
 CCircuitUnit* CCircuitAI::GetTeamUnit(CCircuitUnit::Id unitId) const

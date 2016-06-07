@@ -106,8 +106,10 @@ void CAttackTask::Update()
 			const AIFloat3& groupPos = leader->GetPos(frame);
 			for (CCircuitUnit* unit : units) {
 				const AIFloat3& pos = utils::get_near_pos(groupPos, SQUARE_SIZE * 32);
-				unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-				unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+				TRY_UNIT(circuit, unit,
+					unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+					unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+				)
 
 				CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
 				fightAction->SetActive(false);
@@ -154,9 +156,11 @@ void CAttackTask::Update()
 				}
 
 				const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
-				unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-				unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
-				unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
+				TRY_UNIT(circuit, unit,
+					unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+					unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+					unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
+				)
 
 				CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
 				fightAction->SetActive(false);
@@ -179,8 +183,10 @@ void CAttackTask::Update()
 	}
 	if (pPath->empty()) {  // should never happen
 		for (CCircuitUnit* unit : units) {
-			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-			unit->GetUnit()->SetWantedMaxSpeed(lowestSpeed);
+			TRY_UNIT(circuit, unit,
+				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+				unit->GetUnit()->SetWantedMaxSpeed(lowestSpeed);
+			)
 
 			CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
 			fightAction->SetActive(false);

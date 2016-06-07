@@ -58,15 +58,18 @@ void CBReclaimTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CBReclaimTask::Execute(CCircuitUnit* unit)
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	Unit* u = unit->GetUnit();
-//	u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+//	TRY_UNIT(circuit, unit,
+//		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+//	)
 
-	int frame = manager->GetCircuit()->GetLastFrame();
+	int frame = circuit->GetLastFrame();
 	if (target == nullptr) {
 		AIFloat3 pos;
 		float reclRadius;
 		if ((radius == .0f) || !utils::is_valid(position)) {
-			CTerrainManager* terrainManager = manager->GetCircuit()->GetTerrainManager();
+			CTerrainManager* terrainManager = circuit->GetTerrainManager();
 			float width = terrainManager->GetTerrainWidth() / 2;
 			float height = terrainManager->GetTerrainHeight() / 2;
 			pos = AIFloat3(width, 0, height);
@@ -75,9 +78,13 @@ void CBReclaimTask::Execute(CCircuitUnit* unit)
 			pos = position;
 			reclRadius = radius;
 		}
-		u->ReclaimInArea(pos, reclRadius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		TRY_UNIT(circuit, unit,
+			u->ReclaimInArea(pos, reclRadius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		)
 	} else {
-		u->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		TRY_UNIT(circuit, unit,
+			u->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		)
 	}
 }
 
@@ -102,7 +109,9 @@ void CBReclaimTask::Update()
 		if (!enemies.empty()) {
 			for (Unit* enemy : enemies) {
 				if ((enemy != nullptr) && enemy->IsBeingBuilt()) {
-					unit->GetUnit()->ReclaimUnit(enemy, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+					TRY_UNIT(circuit, unit,
+						unit->GetUnit()->ReclaimUnit(enemy, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+					)
 					utils::free_clear(enemies);
 					return;
 				}
@@ -137,7 +146,9 @@ void CBReclaimTask::Update()
 			}
 			if (minSqDist < std::numeric_limits<float>::max()) {
 				const float radius = 8.0f;  // unit->GetCircuitDef()->GetBuildDistance();
-				unit->GetUnit()->ReclaimInArea(reclPos, radius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+				TRY_UNIT(circuit, unit,
+					unit->GetUnit()->ReclaimInArea(reclPos, radius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+				)
 			}
 			utils::free_clear(features);
 		}

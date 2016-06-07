@@ -98,12 +98,14 @@ bool CCircuitUnit::HasDGun()
 
 void CCircuitUnit::ManualFire(Unit* enemy, int timeOut)
 {
-	if (circuitDef->HasDGun()) {
-		unit->DGun(enemy, UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
-	} else {
-		unit->MoveTo(enemy->GetPos(), UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
-		unit->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, UNIT_COMMAND_OPTION_SHIFT_KEY, timeOut);
-	}
+	TRY_UNIT(manager->GetCircuit(), this,
+		if (circuitDef->HasDGun()) {
+			unit->DGun(enemy, UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
+		} else {
+			unit->MoveTo(enemy->GetPos(), UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
+			unit->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, UNIT_COMMAND_OPTION_SHIFT_KEY, timeOut);
+		}
+	)
 }
 
 bool CCircuitUnit::IsDisarmed(int frame)
@@ -153,23 +155,29 @@ float CCircuitUnit::GetDPS()
 
 void CCircuitUnit::Guard(CCircuitUnit* target, int timeout)
 {
-	unit->ExecuteCustomCommand(CMD_ORBIT, {(float)target->GetId(), 300.0f}, UNIT_COMMAND_OPTION_INTERNAL_ORDER, timeout);
-//	unit->Guard(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, timeout);
-//	unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+	TRY_UNIT(manager->GetCircuit(), this,
+		unit->ExecuteCustomCommand(CMD_ORBIT, {(float)target->GetId(), 300.0f}, UNIT_COMMAND_OPTION_INTERNAL_ORDER, timeout);
+//		unit->Guard(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, timeout);
+//		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+	)
 }
 
 void CCircuitUnit::Morph()
 {
 	isMorphing = true;
-	unit->ExecuteCustomCommand(CMD_MORPH, {});
-	unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, {1.0f});
+	TRY_UNIT(manager->GetCircuit(), this,
+		unit->ExecuteCustomCommand(CMD_MORPH, {});
+		unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, {1.0f});
+	)
 }
 
 void CCircuitUnit::StopMorph()
 {
 	isMorphing = false;
-	unit->ExecuteCustomCommand(CMD_MORPH_STOP, {});
-	unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, {1.0f});
+	TRY_UNIT(manager->GetCircuit(), this,
+		unit->ExecuteCustomCommand(CMD_MORPH_STOP, {});
+		unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, {1.0f});
+	)
 }
 
 void CCircuitUnit::Upgrade()
@@ -234,15 +242,19 @@ void CCircuitUnit::Upgrade()
 
 	upgrade.insert(upgrade.end(), newModules[index].begin(), newModules[index].end());
 
-	unit->ExecuteCustomCommand(CMD_MORPH_UPGRADE_INTERNAL, upgrade);
-	unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, {1.0f});
+	TRY_UNIT(manager->GetCircuit(), this,
+		unit->ExecuteCustomCommand(CMD_MORPH_UPGRADE_INTERNAL, upgrade);
+		unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, {1.0f});
+	)
 }
 
 void CCircuitUnit::StopUpgrade()
 {
 	isMorphing = false;
-	unit->ExecuteCustomCommand(CMD_UPGRADE_STOP, {});
-	unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, {1.0f});
+	TRY_UNIT(manager->GetCircuit(), this,
+		unit->ExecuteCustomCommand(CMD_UPGRADE_STOP, {});
+		unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, {1.0f});
+	)
 }
 
 } // namespace circuit
