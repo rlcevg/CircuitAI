@@ -63,7 +63,9 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, difficulty(Difficulty::NORMAL)
 		, allyAware(true)
 		, initialized(false)
-		, lastFrame(-1)
+		// NOTE: assert(lastFrame != -1): CCircuitUnit initialized with -1
+		//       and lastFrame check will misbehave until first update event.
+		, lastFrame(0)
 		, skirmishAIId(callback != NULL ? callback->GetSkirmishAIId() : -1)
 		, sAICallback(nullptr)
 		, callback(callback)

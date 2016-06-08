@@ -150,7 +150,7 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 	/*
 	 * Find best build def and position
 	 */
-	float searchRadius = circuit->GetEconomyManager()->GetPylonRange() * 0.5f;
+	const float searchRadius = circuit->GetEconomyManager()->GetPylonRange() * 0.5f;
 
 	CEnergyLink::SVertex* v0 = link->GetV0();
 	CEnergyLink::SVertex* v1 = link->GetV1();
@@ -175,8 +175,8 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 		for (; it != candDefs.rend(); ++it) {
 			defId = it->second;
 			range = it->first;
-			float dist = pylon0->range + pylon1->range + range;
-			if (pylon0->pos.SqDistance2D(pylon1->pos) > dist * dist) {
+			const float dist = pylon0->range + pylon1->range + range;
+			if (pylon0->pos.SqDistance2D(pylon1->pos) > SQUARE(dist)) {
 				break;
 			}
 		}
@@ -190,8 +190,8 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 
 		AIFloat3 dir = pylon1->pos - pylon0->pos;
 		AIFloat3 sweetPos;
-		float dist = pylon0->range + pylon1->range + range * 2.0f;
-		if (dir.SqLength2D() < dist * dist) {
+		const float dist = pylon0->range + pylon1->range + range * 2.0f;
+		if (dir.SqLength2D() < SQUARE(dist)) {
 			sweetPos = (pylon0->pos + dir.Normalize2D() * (pylon0->range - pylon1->range) + pylon1->pos) * 0.5f;
 		} else {
 			sweetPos = pylon0->pos + dir.Normalize2D() * (pylon0->range + range) * 0.95f;

@@ -742,8 +742,15 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 			if (utils::is_valid(buildPos) && builderManager->IsBuilderInArea(buildDef, buildPos)) {
 				return builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, buildDef, buildPos, link, cost);
 			} else {
-				link->SetValid(false);  // FIXME: Reset valid on timer? Or when air con appears
+				link->SetValid(false);
 				energyGrid->SetForceRebuild(true);
+				// TODO: Optimize: when invalid link appears start watchdog gametask
+				//       that will traverse invalidLinks vector and enable link on timeout.
+				//       When invalidLinks is empty remove watchdog gametask.
+				circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([link](CEnergyGrid* energyGrid) {
+					link->SetValid(true);
+					energyGrid->SetForceRebuild(true);
+				}, energyGrid), FRAMES_PER_SEC * 120);
 			}
 		}
 	}
