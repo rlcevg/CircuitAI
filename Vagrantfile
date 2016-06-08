@@ -23,10 +23,11 @@ Vagrant.configure(2) do |config|
       libogg-dev libvorbis-dev libfreetype6-dev p7zip-full libxcursor-dev \
       libboost-thread-dev libboost-regex-dev libboost-system-dev \
       libboost-program-options-dev libboost-signals-dev \
-      libboost-chrono-dev libboost-filesystem-dev libunwind8-dev
+      libboost-chrono-dev libboost-filesystem-dev libunwind8-dev \
+      libcurl4-openssl-dev
     
-    apt-get install -y gcc-5 g++-5
-    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5
+    apt-get install -y gcc-4.9 g++-4.9
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.9
   SHELL
 
   $script = <<-SCRIPT

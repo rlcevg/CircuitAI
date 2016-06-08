@@ -8,7 +8,7 @@ Spring RTS local native AI for Zero-K.
 * boost 1.54+
 * SDL2 (optional)
 
-*gcc 5+ should be prefered over 4.9 ([std::list::size](https://gcc.gnu.org/gcc-5/changes.html))
+*gcc 4.9.3 recommended, [gcc 5+](https://gcc.gnu.org/gcc-5/changes.html) had issues as official spring sits on 4.8
 
 ### Compiling
 Build process of native AI described in the [wiki](https://springrts.com/wiki/AI:Development:Lang:Cpp) of Spring RTS engine.
