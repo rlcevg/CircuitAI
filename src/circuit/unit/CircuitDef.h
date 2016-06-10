@@ -134,7 +134,7 @@ public:
 	void SetRetreat(float value) { retreat = value; }
 	float GetRetreat()   const { return retreat; }
 
-//	const springai::AIFloat3& GetMidPosOffset() const { return midPosOffset; }
+	const springai::AIFloat3& GetMidPosOffset() const { return midPosOffset; }
 
 private:
 	Id id;
@@ -189,7 +189,7 @@ private:
 	float cost;
 	float retreat;
 
-//	springai::AIFloat3 midPosOffset;
+	springai::AIFloat3 midPosOffset;
 };
 
 } // namespace circuit

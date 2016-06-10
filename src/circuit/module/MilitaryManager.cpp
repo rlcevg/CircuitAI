@@ -94,6 +94,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		} else {
 			nullTask->RemoveAssignee(unit);
 		}
+		this->circuit->AddActionUnit(unit);
 
 		AddPower(unit);
 

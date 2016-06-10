@@ -196,7 +196,7 @@ void CAttackTask::Update()
 			CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
 			fightAction->SetPath(pPath, lowestSpeed);
 			fightAction->SetActive(true);
-			unit->Update(circuit);
+//			unit->Update(circuit);
 		}
 	}
 }

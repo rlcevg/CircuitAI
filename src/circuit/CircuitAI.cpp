@@ -60,6 +60,7 @@ unsigned int CCircuitAI::gaCounter = 0;
 CCircuitAI::CCircuitAI(OOAICallback* callback)
 		: eventHandler(&CCircuitAI::HandleGameEvent)
 		, allyTeam(nullptr)
+		, actionIterator(0)
 		, difficulty(Difficulty::NORMAL)
 		, allyAware(true)
 		, initialized(false)
@@ -534,6 +535,7 @@ int CCircuitAI::Update(int frame)
 	}
 
 	scheduler->ProcessTasks(frame);
+	SlowUpdate();
 
 #ifdef DEBUG_VIS
 	if (frame % FRAMES_PER_SEC == 0) {
@@ -857,8 +859,12 @@ void CCircuitAI::UnregisterTeamUnit(CCircuitUnit* unit)
 	teamUnits.erase(unit->GetId());
 	defsById[unit->GetCircuitDef()->GetId()]->Dec();
 
-	garbage.erase(unit);
+	(unit->GetTask() == nullptr) ? DeleteTeamUnit(unit) : unit->Dead();
+}
 
+void CCircuitAI::DeleteTeamUnit(CCircuitUnit* unit)
+{
+	garbage.erase(unit);
 	delete unit;
 }
 
@@ -958,6 +964,29 @@ CEnemyUnit* CCircuitAI::GetEnemyUnit(CCircuitUnit::Id unitId) const
 {
 	auto it = enemyUnits.find(unitId);
 	return (it != enemyUnits.end()) ? it->second : nullptr;
+}
+
+void CCircuitAI::SlowUpdate()
+{
+	if (actionIterator >= actionUnits.size()) {
+		actionIterator = 0;
+	}
+
+	// stagger the SlowUpdate's
+	unsigned int n = (actionUnits.size() / FRAMES_PER_SEC) + 1;
+
+	while ((actionIterator < actionUnits.size()) && (n != 0)) {
+		CCircuitUnit* unit = actionUnits[actionIterator];
+		if (unit->IsDead()) {
+			actionUnits[actionIterator] = actionUnits.back();
+			actionUnits.pop_back();
+			DeleteTeamUnit(unit);
+		} else {
+			unit->Update(this);
+			++actionIterator;
+			n--;
+		}
+	}
 }
 
 std::string CCircuitAI::InitOptions()

@@ -100,7 +100,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		if (pPath->size() > 2) {
 			moveAction->SetPath(pPath);
 			moveAction->SetActive(true);
-			unit->Update(circuit);
+//			unit->Update(circuit);
 		} else {
 			TRY_UNIT(circuit, unit,
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
@@ -128,7 +128,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		if (!pPath->empty()) {
 			moveAction->SetPath(pPath);
 			moveAction->SetActive(true);
-			unit->Update(circuit);
+//			unit->Update(circuit);
 			return;
 		}
 	}

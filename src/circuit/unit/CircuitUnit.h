@@ -75,6 +75,9 @@ public:
 	void ForceExecute() { isForceExecute = true; }
 	bool IsForceExecute();
 
+	void Dead() { isDead = true; }
+	bool IsDead() const { return isDead; }
+
 	bool HasDGun();
 	springai::Weapon* GetWeapon() const { return weapon; }
 	springai::Weapon* GetDGun() const { return dgun; }
@@ -114,6 +117,7 @@ private:
 	int moveFails;
 	int failFrame;
 	bool isForceExecute;  // TODO: Replace by CExecuteAction?
+	bool isDead;
 
 	springai::Weapon* weapon;  // main weapon
 	springai::Weapon* dgun;

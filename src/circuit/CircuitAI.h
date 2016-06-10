@@ -114,6 +114,7 @@ private:
 private:
 	CCircuitUnit* RegisterTeamUnit(CCircuitUnit::Id unitId);
 	void UnregisterTeamUnit(CCircuitUnit* unit);
+	void DeleteTeamUnit(CCircuitUnit* unit);
 public:
 	void Garbage(CCircuitUnit* unit, const char* message);
 	CCircuitUnit* GetTeamUnit(CCircuitUnit::Id unitId) const;
@@ -136,11 +137,19 @@ public:
 
 	CAllyTeam* GetAllyTeam() const { return allyTeam; }
 
+	void AddActionUnit(CCircuitUnit* unit) { actionUnits.push_back(unit); }
+
 private:
-	std::set<CCircuitUnit*> garbage;
+	void SlowUpdate();
+
 	CAllyTeam::Units teamUnits;  // owner
 	EnemyUnits enemyUnits;  // owner
 	CAllyTeam* allyTeam;
+
+	std::vector<CCircuitUnit*> actionUnits;
+	unsigned int actionIterator;
+
+	std::set<CCircuitUnit*> garbage;
 // ---- Units ---- END
 
 // ---- AIOptions.lua ---- BEGIN

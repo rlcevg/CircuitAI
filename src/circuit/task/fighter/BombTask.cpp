@@ -106,7 +106,7 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		position = pPath->back();
 		moveAction->SetPath(pPath);
 		moveAction->SetActive(true);
-		unit->Update(circuit);
+//		unit->Update(circuit);
 		return;
 	}
 
@@ -130,7 +130,7 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 //			position = path.back();
 			moveAction->SetPath(pPath);
 			moveAction->SetActive(true);
-			unit->Update(circuit);
+//			unit->Update(circuit);
 			return;
 		}
 	}

@@ -71,6 +71,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		} else {
 			nullTask->RemoveAssignee(unit);
 		}
+		this->circuit->AddActionUnit(unit);
 
 		++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 

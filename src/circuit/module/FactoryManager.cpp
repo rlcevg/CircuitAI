@@ -61,6 +61,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		} else {
 			nullTask->RemoveAssignee(unit);
 		}
+		this->circuit->AddActionUnit(unit);
 
 //		TRY_UNIT(circuit, unit,
 //			unit->GetUnit()->SetFireState(2);
@@ -178,6 +179,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		} else {
 			nullTask->RemoveAssignee(unit);
 		}
+		this->circuit->AddActionUnit(unit);
 
 		int frame = this->circuit->GetLastFrame();
 		const AIFloat3& assPos = unit->GetPos(frame);
