@@ -140,7 +140,7 @@ public:
 	void AddActionUnit(CCircuitUnit* unit) { actionUnits.push_back(unit); }
 
 private:
-	void SlowUpdate();
+	void ActionUpdate();
 
 	CAllyTeam::Units teamUnits;  // owner
 	EnemyUnits enemyUnits;  // owner

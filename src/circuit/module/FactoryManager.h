@@ -130,6 +130,7 @@ private:
 		unsigned int nanoCount;
 	};
 	std::unordered_map<CCircuitDef::Id, SFactoryDef> factoryDefs;
+	float bpRatio;
 
 	CCircuitDef* assistDef;
 	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> assists;  // nano 1:n factory

@@ -13,6 +13,8 @@
 "normal": {
 // Define factories
 "factory": {
+	"_buildpower_": 1.25,  // Mobile buildpower to metal income ratio
+
 	"factorycloak": {
 		// Adjusts the priority of factory choice (factories with map_percent < 20 are ignored)
 		// map_percent is [20..100]

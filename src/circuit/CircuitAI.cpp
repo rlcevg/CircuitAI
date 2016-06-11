@@ -47,6 +47,7 @@ namespace circuit {
 
 using namespace springai;
 
+#define ACTION_UPDATE_RATE	128
 #define RELEASE_NO_CONFIG	100
 #ifdef DEBUG
 	#define PRINT_TOPIC(txt, topic)	LOG("<CircuitAI> %s topic: %i, SkirmishAIId: %i", txt, topic, skirmishAIId)
@@ -535,7 +536,7 @@ int CCircuitAI::Update(int frame)
 	}
 
 	scheduler->ProcessTasks(frame);
-	SlowUpdate();
+	ActionUpdate();
 
 #ifdef DEBUG_VIS
 	if (frame % FRAMES_PER_SEC == 0) {
@@ -966,14 +967,14 @@ CEnemyUnit* CCircuitAI::GetEnemyUnit(CCircuitUnit::Id unitId) const
 	return (it != enemyUnits.end()) ? it->second : nullptr;
 }
 
-void CCircuitAI::SlowUpdate()
+void CCircuitAI::ActionUpdate()
 {
 	if (actionIterator >= actionUnits.size()) {
 		actionIterator = 0;
 	}
 
 	// stagger the SlowUpdate's
-	unsigned int n = (actionUnits.size() / FRAMES_PER_SEC) + 1;
+	unsigned int n = (actionUnits.size() / ACTION_UPDATE_RATE) + 1;
 
 	while ((actionIterator < actionUnits.size()) && (n != 0)) {
 		CCircuitUnit* unit = actionUnits[actionIterator];

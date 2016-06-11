@@ -34,6 +34,7 @@ using namespace springai;
 CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit)
 		, factoryPower(.0f)
+		, bpRatio(1.f)
 		, assistDef(nullptr)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
@@ -63,9 +64,10 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		}
 		this->circuit->AddActionUnit(unit);
 
-//		TRY_UNIT(circuit, unit,
+		TRY_UNIT(this->circuit, unit,
 //			unit->GetUnit()->SetFireState(2);
-//		)
+			unit->GetUnit()->SetRepeat(true);
+		)
 
 		factoryPower += unit->GetCircuitDef()->GetBuildSpeed();
 
@@ -548,7 +550,7 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	float metalIncome = std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
-	if ((circuit->GetBuilderManager()->GetBuilderPower() >= metalIncome * 1.5f) || (rand() >= RAND_MAX / 2)) {
+	if ((circuit->GetBuilderManager()->GetBuilderPower() >= metalIncome * bpRatio) || (rand() >= RAND_MAX / 2)) {
 		return nullptr;
 	}
 
@@ -886,6 +888,8 @@ void CFactoryManager::ReadConfig()
 
 		factoryDefs[cdef->GetId()] = facDef;
 	}
+
+	bpRatio = factories.get("_buildpower_", 1.f).asFloat();
 }
 
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
