@@ -63,12 +63,15 @@ void CBombTask::Execute(CCircuitUnit* unit)
 
 void CBombTask::Update()
 {
-	bool isExecute = (++updCount % 4 == 0);
-	for (CCircuitUnit* unit : units) {
-		if (unit->IsForceExecute() || isExecute) {
+	if (++updCount % 4 == 0) {
+		for (CCircuitUnit* unit : units) {
 			Execute(unit, true);
-		} else {
-			IFighterTask::Update();
+		}
+	} else {
+		for (CCircuitUnit* unit : units) {
+			if (unit->IsForceExecute()) {
+				Execute(unit, true);
+			}
 		}
 	}
 }
@@ -106,7 +109,6 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		position = pPath->back();
 		moveAction->SetPath(pPath);
 		moveAction->SetActive(true);
-//		unit->Update(circuit);
 		return;
 	}
 
@@ -130,7 +132,6 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 //			position = path.back();
 			moveAction->SetPath(pPath);
 			moveAction->SetActive(true);
-//			unit->Update(circuit);
 			return;
 		}
 	}

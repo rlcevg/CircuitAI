@@ -14,6 +14,8 @@
 
 namespace circuit {
 
+CIdleAction CActionList::idleAction(nullptr);
+
 CActionList::CActionList()
 		: startFrame(-1)
 		, blocker(nullptr)

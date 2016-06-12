@@ -23,6 +23,8 @@ namespace circuit {
 
 using namespace springai;
 
+#define MIN_POWER_DIV	8
+
 CAttackTask::CAttackTask(ITaskManager* mgr)
 		: ISquadTask(mgr, FightType::ATTACK)
 		, pPath(std::make_shared<F3Vec>())
@@ -62,7 +64,7 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 {
 	ISquadTask::AssignTo(unit);
 
-	minPower += unit->GetCircuitDef()->GetPower() / 8;
+	minPower += unit->GetCircuitDef()->GetPower() / MIN_POWER_DIV;
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
 	CFightAction* fightAction = new CFightAction(unit, squareSize);
@@ -90,13 +92,15 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 		CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
 		fightAction->SetPath(pPath, lowestSpeed);
 		fightAction->SetActive(true);
-//		unit->Update(manager->GetCircuit());  // NOTE: Do not spam commands
 	}
 }
 
 void CAttackTask::Update()
 {
 	++updCount;
+	/*
+	 * Regroup if required
+	 */
 	bool wasRegroup = isRegroup;
 	bool mustRegroup = IsMustRegroup();
 	if (isRegroup) {
@@ -136,6 +140,21 @@ void CAttackTask::Update()
 		}
 	}
 
+	/*
+	 * Merge tasks if possible
+	 */
+	ISquadTask* task = GetMergeTask();
+	if (task != nullptr) {
+		task->Merge(units, attackPower);
+		units.clear();
+		// TODO: Deal with cowards?
+		manager->AbortTask(this);
+		return;
+	}
+
+	/*
+	 * Update target, squad state
+	 */
 	FindTarget();
 
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -196,7 +215,6 @@ void CAttackTask::Update()
 			CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
 			fightAction->SetPath(pPath, lowestSpeed);
 			fightAction->SetActive(true);
-//			unit->Update(circuit);
 		}
 	}
 }
@@ -219,6 +237,12 @@ void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
 	if (units.find(unit) != units.end()) {
 		Execute(unit);  // NOTE: Not sure if it has effect
 	}
+}
+
+void CAttackTask::Merge(const std::set<CCircuitUnit*>& rookies, float power)
+{
+	ISquadTask::Merge(rookies, power);
+	minPower += power / MIN_POWER_DIV;
 }
 
 void CAttackTask::FindTarget()

@@ -31,6 +31,7 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 
 private:
+	virtual void Merge(const std::set<CCircuitUnit*>& rookies, float power);
 	void FindTarget();
 
 	std::shared_ptr<F3Vec> pPath;

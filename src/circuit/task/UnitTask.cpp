@@ -9,7 +9,6 @@
 #include "task/IdleTask.h"
 #include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
-#include "unit/action/IdleAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -43,8 +42,6 @@ void IUnitTask::AssignTo(CCircuitUnit* unit)
 	manager->GetIdleTask()->RemoveAssignee(unit);
 	unit->SetTask(this);
 	units.insert(unit);
-
-	unit->PushBack(new CIdleAction(unit));
 }
 
 void IUnitTask::RemoveAssignee(CCircuitUnit* unit)

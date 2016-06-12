@@ -35,6 +35,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit)
 		, factoryPower(.0f)
 		, bpRatio(1.f)
+		, reWeight(.5f)
 		, assistDef(nullptr)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
@@ -132,7 +133,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 				}
 			}
 			if (!hasBuilder) {
-				CCircuitDef* facDef = GetFactoryToBuild(this->circuit);
+				CCircuitDef* facDef = GetFactoryToBuild();
 				if (facDef != nullptr) {
 					builderManager->EnqueueTask(IBuilderTask::Priority::NOW, facDef, -RgtVector,
 												IBuilderTask::BuildType::FACTORY);
@@ -609,20 +610,20 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 
 	static std::vector<std::pair<CCircuitDef*, float>> candidates;  // NOTE: micro-opt
 //	candidates.reserve(facDef.buildDefs.size());
-	float mag = 0.f;
+	float magnitude = 0.f;
 	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
 		CCircuitDef* bd = facDef.buildDefs[i];
-		// (probs[i] + 0.5f) hints preferable buildDef within same role
-		float prob = militaryManager->RoleProbability(bd) * (probs[i] + 0.5f);
+		// (probs[i] + response_weight) hints preferable buildDef within same role
+		float prob = militaryManager->RoleProbability(bd) * (probs[i] + reWeight);
 		if (prob > 0.f) {
 			candidates.push_back(std::make_pair(bd, prob));
-			mag += prob;
+			magnitude += prob;
 		}
 	}
 
 	if (!candidates.empty()) {
 		buildDef = candidates.front().first;
-		float dice = (float)rand() / RAND_MAX * mag;
+		float dice = (float)rand() / RAND_MAX * magnitude;
 		float total = .0f;
 		for (auto& pair : candidates) {
 			total += pair.second;
@@ -657,7 +658,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	return nullptr;
 }
 
-CCircuitDef* CFactoryManager::GetFactoryToBuild(CCircuitAI* circuit, bool isStart)
+CCircuitDef* CFactoryManager::GetFactoryToBuild(bool isStart)
 {
 	return factoryData->GetFactoryToBuild(circuit, isStart);
 }
@@ -890,6 +891,7 @@ void CFactoryManager::ReadConfig()
 	}
 
 	bpRatio = factories.get("_buildpower_", 1.f).asFloat();
+	reWeight = root["response"].get("_weight_", .5f).asFloat();
 }
 
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)

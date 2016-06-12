@@ -276,8 +276,8 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 	switch (type) {
 		default:
 		case IFighterTask::FightType::RALLY: {
-			CEconomyManager* economyManager = circuit->GetEconomyManager();
-			float power = economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor() * 32.0f;
+//			CEconomyManager* economyManager = circuit->GetEconomyManager();
+//			float power = economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor() * 32.0f;
 			task = new CRallyTask(this, /*power*/1);  // TODO: pass enemy's threat
 			break;
 		}
@@ -366,6 +366,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 		terrainManager->CorrectPosition(pos);
 		pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
 		const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
+		const float maxDistCost = MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC);
 		const int distance = std::max<int>(unit->GetCircuitDef()->GetMaxRange(), pathfinder->GetSquareSize());
 		float metric = std::numeric_limits<float>::max();
 
@@ -387,7 +388,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 
 				distCost = std::max(pathfinder->PathCost(pos, taskPos, distance), THREAT_BASE);
 
-				if ((distCost < metric) && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC))) {
+				if ((distCost < metric) && (distCost < maxDistCost)) {
 					task = candidate;
 					metric = distCost;
 				}

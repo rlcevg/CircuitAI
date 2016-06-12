@@ -63,7 +63,7 @@ public:
 	CRecruitTask* UpdateBuildPower(CCircuitUnit* unit);
 	CRecruitTask* UpdateFirePower(CCircuitUnit* unit);
 
-	CCircuitDef* GetFactoryToBuild(CCircuitAI* circuit, bool isStart = false);
+	CCircuitDef* GetFactoryToBuild(bool isStart = false);
 	void AddFactory(CCircuitDef* cdef);
 	void DelFactory(CCircuitDef* cdef);
 	CCircuitDef* GetRoleDef(CCircuitDef* facDef, CCircuitDef::RoleType role) const;
@@ -131,6 +131,7 @@ private:
 	};
 	std::unordered_map<CCircuitDef::Id, SFactoryDef> factoryDefs;
 	float bpRatio;
+	float reWeight;
 
 	CCircuitDef* assistDef;
 	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> assists;  // nano 1:n factory

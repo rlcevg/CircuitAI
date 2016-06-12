@@ -119,7 +119,6 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 		pPath->push_back(endPos);
 	}
 	travelAction->SetPath(pPath);
-//	unit->Update(circuit);
 }
 
 void CRetreatTask::Update()
@@ -142,8 +141,6 @@ void CRetreatTask::Update()
 			RemoveAssignee(unit);
 		} else if (unit->IsForceExecute() || isExecute) {
 			Execute(unit);
-		} else {
-//			unit->Update(circuit);
 		}
 	}
 }

@@ -482,6 +482,8 @@
 // Probability of UnitDef for AA role depends on income tier: (tierN[UnitDef]+0.5)*enemy_air_metal*importance
 // armjeth probability for tier 1: 0.5*enemy_air_metal*4.0
 "response": {
+	"_weight_": 0.25,  // base weight of response probability
+
 	"raider": {
 		"vs":         ["skirmish", "artillery", "anti_air"],
 		"ratio":      [ 1.1,        1.1,         1.1],

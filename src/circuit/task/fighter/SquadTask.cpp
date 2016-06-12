@@ -7,7 +7,9 @@
 
 #include "task/fighter/SquadTask.h"
 #include "task/TaskManager.h"
+#include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
+#include "terrain/PathFinder.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -64,6 +66,22 @@ void ISquadTask::RemoveAssignee(CCircuitUnit* unit)
 		return;
 	}
 
+	FindLeader();
+}
+
+void ISquadTask::Merge(const std::set<CCircuitUnit*>& rookies, float power)
+{
+	units.insert(rookies.begin(), rookies.end());
+	for (CCircuitUnit* unit : rookies) {
+		unit->SetTask(this);
+	}
+	attackPower += power;
+
+	FindLeader();
+}
+
+void ISquadTask::FindLeader()
+{
 	auto it = units.begin();
 	leader = *it;
 	lowestRange = highestRange = leader->GetCircuitDef()->GetMaxRange();
@@ -80,6 +98,48 @@ void ISquadTask::RemoveAssignee(CCircuitUnit* unit)
 			leader = ass;
 		}
 	}
+}
+
+ISquadTask* ISquadTask::GetMergeTask() const
+{
+	const IFighterTask* task = nullptr;
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
+
+	AIFloat3 pos = leader->GetPos(frame);
+	STerrainMapArea* area = leader->GetArea();
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	terrainManager->CorrectPosition(pos);
+	pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
+	const int distance = pathfinder->GetSquareSize();
+	float metric = std::numeric_limits<float>::max();
+
+	const std::set<IFighterTask*>& tasks = static_cast<CMilitaryManager*>(manager)->GetTasks(fightType);
+	for (const IFighterTask* candidate : tasks) {
+		if ((candidate == this) || !candidate->CanAssignTo(leader)) {
+			continue;
+		}
+
+		// Check time-distance to target
+		float distCost;
+
+		const AIFloat3& tp = candidate->GetPosition();
+		AIFloat3 taskPos = utils::is_valid(tp) ? tp : pos;
+
+		if (!terrainManager->CanMoveToPos(area, taskPos)) {  // ensure that path always exists
+			continue;
+		}
+
+		distCost = std::max(pathfinder->PathCost(pos, taskPos, distance), THREAT_BASE);
+
+		if ((distCost < metric) && (distCost < MAX_TRAVEL_SEC * THREAT_BASE)) {
+			task = candidate;
+			metric = distCost;
+		}
+	}
+
+	return static_cast<ISquadTask*>(const_cast<IFighterTask*>(task));
 }
 
 bool ISquadTask::IsMustRegroup()

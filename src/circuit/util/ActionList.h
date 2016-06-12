@@ -9,6 +9,8 @@
 #ifndef SRC_CIRCUIT_UTIL_ACTIONLIST_H_
 #define SRC_CIRCUIT_UTIL_ACTIONLIST_H_
 
+#include "unit/action/IdleAction.h"
+
 #include <deque>
 
 namespace circuit {
@@ -30,8 +32,8 @@ public:
 	void InsertAfter(IAction* action);
 	void InsertAfter(std::deque<IAction*>::iterator it, IAction* action);
 
-	IAction* Begin() const { return actions.front(); }
-	IAction* End() const { return actions.back(); }
+	IAction* Begin() const { return IsEmpty() ? &idleAction : actions.front(); }
+	IAction* End() const { return IsEmpty() ? &idleAction : actions.back(); }
 	IAction* Blocker() const { return blocker; }
 
 	bool IsEmpty() const { return actions.empty(); }
@@ -43,6 +45,8 @@ protected:
 	int startFrame;
 	std::deque<IAction*> actions;  // owner
 	IAction* blocker;
+
+	static CIdleAction idleAction;
 };
 
 } // namespace circuit

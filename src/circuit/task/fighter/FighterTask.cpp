@@ -58,10 +58,6 @@ void IFighterTask::RemoveAssignee(CCircuitUnit* unit)
 
 void IFighterTask::Update()
 {
-//	CCircuitAI* circuit = manager->GetCircuit();
-//	for (CCircuitUnit* unit : units) {
-//		unit->Update(circuit);
-//	}
 }
 
 void IFighterTask::OnUnitIdle(CCircuitUnit* unit)

@@ -21,7 +21,13 @@ public:
 	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 
+	virtual void Merge(const std::set<CCircuitUnit*>& rookies, float power);
+
+private:
+	void FindLeader();
+
 protected:
+	ISquadTask* GetMergeTask() const;
 	bool IsMustRegroup();
 
 	float lowestRange;
