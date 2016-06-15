@@ -297,28 +297,27 @@ void IBuilderTask::UpdateTarget(CCircuitUnit* unit)
 bool IBuilderTask::IsEqualBuildPos(CCircuitUnit* unit) const
 {
 	AIFloat3 pos = unit->GetPos(manager->GetCircuit()->GetLastFrame());
-	// NOTE: Spring102 doesn't need midPos offset
-//	const AIFloat3& offset = unit->GetCircuitDef()->GetMidPosOffset();
-//	int facing = unit->GetUnit()->GetBuildingFacing();
-//	switch (facing) {
-//		default:
-//		case UNIT_FACING_SOUTH: {
-//			pos.x -= offset.x;
-//			pos.z -= offset.z;
-//		} break;
-//		case UNIT_FACING_EAST: {
-//			pos.x -= offset.z;
-//			pos.z += offset.x;
-//		} break;
-//		case UNIT_FACING_NORTH: {
-//			pos.x += offset.x;
-//			pos.z += offset.z;
-//		} break;
-//		case UNIT_FACING_WEST: {
-//			pos.x += offset.z;
-//			pos.z -= offset.x;
-//		} break;
-//	}
+	const AIFloat3& offset = unit->GetCircuitDef()->GetMidPosOffset();
+	int facing = unit->GetUnit()->GetBuildingFacing();
+	switch (facing) {
+		default:
+		case UNIT_FACING_SOUTH: {
+			pos.x -= offset.x;
+			pos.z -= offset.z;
+		} break;
+		case UNIT_FACING_EAST: {
+			pos.x -= offset.z;
+			pos.z += offset.x;
+		} break;
+		case UNIT_FACING_NORTH: {
+			pos.x += offset.x;
+			pos.z += offset.z;
+		} break;
+		case UNIT_FACING_WEST: {
+			pos.x += offset.z;
+			pos.z -= offset.x;
+		} break;
+	}
 	// NOTE: Unit's position is affected by collisionVolumeOffsets, and there is no way to retrieve it.
 	//       Hence absurdly large error slack, @see factoryship.lua
 	return utils::is_equal_pos(pos, buildPos, SQUARE_SIZE * 2);

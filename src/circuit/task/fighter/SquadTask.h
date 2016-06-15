@@ -23,8 +23,10 @@ public:
 
 	virtual void Merge(const std::set<CCircuitUnit*>& rookies, float power);
 
+	const springai::AIFloat3& GetLeaderPos(int frame) const;
+
 private:
-	void FindLeader();
+	void FindLeader(decltype(units)::iterator itBegin, decltype(units)::iterator itEnd);
 
 protected:
 	ISquadTask* GetMergeTask() const;
@@ -36,6 +38,7 @@ protected:
 	float highestSpeed;
 	// NOTE: Using unit instead of area directly may save from processing UpdateAreaUsers
 	CCircuitUnit* leader;  // slowest, weakest unit, true leader
+	springai::AIFloat3 groupPos;
 
 	bool isRegroup;
 	bool isAttack;

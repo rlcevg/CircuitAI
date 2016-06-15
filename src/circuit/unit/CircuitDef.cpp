@@ -16,7 +16,7 @@
 #include "Shield.h"
 #include "MoveData.h"
 
-//#include <regex>
+#include <regex>
 
 namespace circuit {
 
@@ -81,21 +81,21 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		category |= circuit->GetBadCategory();
 	}
 
-//	it = customParams.find("midposoffset");
-//	if (it != customParams.end()) {
-//		const std::string& str = it->second;
-//		std::string::const_iterator start = str.begin();
-//		std::string::const_iterator end = str.end();
-//		std::regex pattern("(-?\\d+)");
-//		std::smatch section;
-//		int index = 0;
-//		while (std::regex_search(start, end, section, pattern) && (index < 3)) {
-//			midPosOffset[index++] = utils::string_to_float(section[1]);
-//			start = section[0].second;
-//		}
-//	} else {
-//		midPosOffset = ZeroVector;
-//	}
+	it = customParams.find("midposoffset");
+	if (it != customParams.end()) {
+		const std::string& str = it->second;
+		std::string::const_iterator start = str.begin();
+		std::string::const_iterator end = str.end();
+		std::regex pattern("(-?\\d+)");
+		std::smatch section;
+		int index = 0;
+		while (std::regex_search(start, end, section, pattern) && (index < 3)) {
+			midPosOffset[index++] = utils::string_to_float(section[1]);
+			start = section[0].second;
+		}
+	} else {
+		midPosOffset = ZeroVector;
+	}
 
 	WeaponDef* sd = def->GetShieldDef();
 	bool isShield = (sd != nullptr);

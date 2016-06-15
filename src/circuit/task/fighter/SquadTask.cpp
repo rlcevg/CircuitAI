@@ -17,6 +17,8 @@ namespace circuit {
 
 using namespace springai;
 
+#define MAX_MERGE_COST	(64 * THREAT_BASE)
+
 ISquadTask::ISquadTask(ITaskManager* mgr, FightType type)
 		: IFighterTask(mgr, type)
 		, lowestRange(std::numeric_limits<float>::max())
@@ -24,6 +26,7 @@ ISquadTask::ISquadTask(ITaskManager* mgr, FightType type)
 		, lowestSpeed(std::numeric_limits<float>::max())
 		, highestSpeed(.0f)
 		, leader(nullptr)
+		, groupPos(-RgtVector)
 		, isRegroup(false)
 		, isAttack(false)
 {
@@ -66,7 +69,10 @@ void ISquadTask::RemoveAssignee(CCircuitUnit* unit)
 		return;
 	}
 
-	FindLeader();
+	leader = *units.begin();
+	lowestRange = highestRange = leader->GetCircuitDef()->GetMaxRange();
+	lowestSpeed = highestSpeed = leader->GetCircuitDef()->GetSpeed();
+	FindLeader(++units.begin(), units.end());
 }
 
 void ISquadTask::Merge(const std::set<CCircuitUnit*>& rookies, float power)
@@ -77,17 +83,18 @@ void ISquadTask::Merge(const std::set<CCircuitUnit*>& rookies, float power)
 	}
 	attackPower += power;
 
-	FindLeader();
+	FindLeader(rookies.begin(), rookies.end());
 }
 
-void ISquadTask::FindLeader()
+const AIFloat3& ISquadTask::GetLeaderPos(int frame) const
 {
-	auto it = units.begin();
-	leader = *it;
-	lowestRange = highestRange = leader->GetCircuitDef()->GetMaxRange();
-	lowestSpeed = highestSpeed = leader->GetCircuitDef()->GetSpeed();
-	while (++it != units.end()) {
-		CCircuitUnit* ass = *it;
+	return (leader != nullptr) ? leader->GetPos(frame) : GetPosition();
+}
+
+void ISquadTask::FindLeader(decltype(units)::iterator itBegin, decltype(units)::iterator itEnd)
+{
+	for (; itBegin != itEnd; ++itBegin) {
+		CCircuitUnit* ass = *itBegin;
 		lowestRange  = std::min(lowestRange,  ass->GetCircuitDef()->GetMaxRange());
 		highestRange = std::max(highestRange, ass->GetCircuitDef()->GetMaxRange());
 		lowestSpeed  = std::min(lowestSpeed,  ass->GetCircuitDef()->GetSpeed());
@@ -102,7 +109,7 @@ void ISquadTask::FindLeader()
 
 ISquadTask* ISquadTask::GetMergeTask() const
 {
-	const IFighterTask* task = nullptr;
+	const ISquadTask* task = nullptr;
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
 
@@ -117,14 +124,18 @@ ISquadTask* ISquadTask::GetMergeTask() const
 
 	const std::set<IFighterTask*>& tasks = static_cast<CMilitaryManager*>(manager)->GetTasks(fightType);
 	for (const IFighterTask* candidate : tasks) {
-		if ((candidate == this) || !candidate->CanAssignTo(leader)) {
+		if ((candidate == this) ||
+			(candidate->GetAttackPower() < attackPower) ||
+			!candidate->CanAssignTo(leader))
+		{
 			continue;
 		}
+		const ISquadTask* candy = static_cast<const ISquadTask*>(candidate);
 
 		// Check time-distance to target
 		float distCost;
 
-		const AIFloat3& tp = candidate->GetPosition();
+		const AIFloat3& tp = candy->GetLeaderPos(frame);
 		AIFloat3 taskPos = utils::is_valid(tp) ? tp : pos;
 
 		if (!terrainManager->CanMoveToPos(area, taskPos)) {  // ensure that path always exists
@@ -133,13 +144,13 @@ ISquadTask* ISquadTask::GetMergeTask() const
 
 		distCost = std::max(pathfinder->PathCost(pos, taskPos, distance), THREAT_BASE);
 
-		if ((distCost < metric) && (distCost < MAX_TRAVEL_SEC * THREAT_BASE)) {
-			task = candidate;
+		if ((distCost < metric) && (distCost < MAX_MERGE_COST)) {
+			task = candy;
 			metric = distCost;
 		}
 	}
 
-	return static_cast<ISquadTask*>(const_cast<IFighterTask*>(task));
+	return const_cast<ISquadTask*>(task);
 }
 
 bool ISquadTask::IsMustRegroup()
@@ -163,7 +174,9 @@ bool ISquadTask::IsMustRegroup()
 	if (validUnits.empty()) {
 		return isRegroup = false;
 	}
-	const AIFloat3& groupPos = leader->GetPos(frame);
+	if (!isRegroup) {
+		groupPos = leader->GetPos(frame);
+	}
 
 	isRegroup = false;
 	const float sqMaxDist = SQUARE(std::max<float>(SQUARE_SIZE * 4 * validUnits.size(), highestRange));

@@ -98,6 +98,21 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 void CAttackTask::Update()
 {
 	++updCount;
+
+	/*
+	 * Merge tasks if possible
+	 */
+	if (updCount % 32 == 1) {
+		ISquadTask* task = GetMergeTask();
+		if (task != nullptr) {
+			task->Merge(units, attackPower);
+			units.clear();
+			// TODO: Deal with cowards?
+			manager->AbortTask(this);
+			return;
+		}
+	}
+
 	/*
 	 * Regroup if required
 	 */
@@ -106,12 +121,10 @@ void CAttackTask::Update()
 	if (isRegroup) {
 		if (mustRegroup) {
 			CCircuitAI* circuit = manager->GetCircuit();
-			int frame = circuit->GetLastFrame();
-			const AIFloat3& groupPos = leader->GetPos(frame);
+			int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 			for (CCircuitUnit* unit : units) {
-				const AIFloat3& pos = utils::get_near_pos(groupPos, SQUARE_SIZE * 32);
 				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+					unit->GetUnit()->Fight(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 					unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 				)
 
@@ -122,38 +135,26 @@ void CAttackTask::Update()
 		return;
 	}
 
-	bool isExecute = (updCount % 4 == 0);
+	bool isExecute = (updCount % 4 == 2);
 	if (!isExecute) {
 		for (CCircuitUnit* unit : units) {
 			isExecute |= unit->IsForceExecute();
 		}
 		if (!isExecute) {
-			if (wasRegroup) {
+			if (wasRegroup && !pPath->empty()) {
 				for (CCircuitUnit* unit : units) {
 					CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
 					fightAction->SetPath(pPath, lowestSpeed);
 					fightAction->SetActive(true);
 				}
 			}
-			ISquadTask::Update();
+//			ISquadTask::Update();
 			return;
 		}
 	}
 
 	/*
-	 * Merge tasks if possible
-	 */
-	ISquadTask* task = GetMergeTask();
-	if (task != nullptr) {
-		task->Merge(units, attackPower);
-		units.clear();
-		// TODO: Deal with cowards?
-		manager->AbortTask(this);
-		return;
-	}
-
-	/*
-	 * Update target, squad state
+	 * Update target
 	 */
 	FindTarget();
 
