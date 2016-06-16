@@ -23,6 +23,7 @@
 #include "task/fighter/BombTask.h"
 #include "task/fighter/MeleeTask.h"
 #include "task/fighter/ArtilleryTask.h"
+#include "task/fighter/AntiAirTask.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
@@ -301,10 +302,10 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			task = new CArtilleryTask(this);
 			break;
 		}
-//		case IFighterTask::FightType::AA: {
-//			task = new CAntiAirTask(this);
-//			break;
-//		}
+		case IFighterTask::FightType::AA: {
+			task = new CAntiAirTask(this);
+			break;
+		}
 	}
 
 	fightTasks[static_cast<IFighterTask::FT>(type)].insert(task);
@@ -406,8 +407,8 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 			type = IFighterTask::FightType::MELEE;
 		} else if (unit->GetCircuitDef()->IsRoleArty()) {
 			type = IFighterTask::FightType::ARTY;
-//		} else if (unit->GetCircuitDef()->IsRoleAA()) {
-//			type = IFighterTask::FightType::AA;
+		} else if (unit->GetCircuitDef()->IsRoleAA()) {
+			type = IFighterTask::FightType::AA;
 		} else {
 			type = IFighterTask::FightType::RALLY;
 		}

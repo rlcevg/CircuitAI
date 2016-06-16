@@ -14,8 +14,6 @@
 
 namespace circuit {
 
-struct STerrainMapArea;
-
 class CAttackTask: public ISquadTask {
 public:
 	CAttackTask(ITaskManager* mgr);

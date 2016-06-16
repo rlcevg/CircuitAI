@@ -8,19 +8,30 @@
 #ifndef SRC_CIRCUIT_TASK_FIGHTER_ANTIAIRTASK_H_
 #define SRC_CIRCUIT_TASK_FIGHTER_ANTIAIRTASK_H_
 
-#include "task/fighter/FighterTask.h"
+#include "task/fighter/SquadTask.h"
+
+#include <memory>
 
 namespace circuit {
 
-class CAntiAirTask: public IFighterTask {
+class CAntiAirTask: public ISquadTask {
 public:
-	CAntiAirTask(ITaskManager* mgr, float enemyAir);
+	CAntiAirTask(ITaskManager* mgr);
 	virtual ~CAntiAirTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const;
+	virtual void AssignTo(CCircuitUnit* unit);
+	virtual void RemoveAssignee(CCircuitUnit* unit);
+
+	virtual void Execute(CCircuitUnit* unit);
+	virtual void Update();
+
+	virtual void OnUnitIdle(CCircuitUnit* unit);
 
 private:
-	float enemyAir;
+	void FindTarget();
+
+	std::shared_ptr<F3Vec> pPath;
 };
 
 } // namespace circuit

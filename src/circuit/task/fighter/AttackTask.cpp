@@ -190,7 +190,7 @@ void CAttackTask::Update()
 	} else {
 		CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
 		if ((frame > FRAMES_PER_SEC * 300) && (commander != nullptr) &&
-			circuit->GetTerrainManager()->CanMoveToPos(commander->GetArea(), commander->GetPos(frame)))
+			circuit->GetTerrainManager()->CanMoveToPos(leader->GetArea(), commander->GetPos(frame)))
 		{
 			for (CCircuitUnit* unit : units) {
 				unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
