@@ -19,6 +19,7 @@
 #include "task/fighter/GuardTask.h"
 #include "task/fighter/DefendTask.h"
 #include "task/fighter/ScoutTask.h"
+#include "task/fighter/RaidTask.h"
 #include "task/fighter/AttackTask.h"
 #include "task/fighter/BombTask.h"
 #include "task/fighter/MeleeTask.h"
@@ -137,7 +138,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
 		CCircuitDef* cdef = kv.second;
-		if (!cdef->IsAttacker() || cdef->GetUnitDef()->IsBuilder()) {
+		if (cdef->GetUnitDef()->IsBuilder()) {
 			continue;
 		}
 		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
@@ -155,7 +156,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 			const char* name = cdef->GetUnitDef()->GetName();
 			cdef->SetRetreat(retreats.get(name, fighterRet).asFloat());
-		} else {
+		} else if (cdef->IsAttacker()) {
 			WeaponDef* wd = cdef->GetUnitDef()->GetStockpileDef();
 			if (wd == nullptr) {
 				continue;
@@ -286,6 +287,10 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			task = new CScoutTask(this);
 			break;
 		}
+		case IFighterTask::FightType::RAID: {
+			task = new CRaidTask(this);
+			break;
+		}
 		case IFighterTask::FightType::ATTACK: {
 			task = new CAttackTask(this);
 			break;
@@ -352,6 +357,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 	const IFighterTask* task = nullptr;
 	// FIXME: Finish central task assignment system
 	const CCircuitDef::RoleM role =
+			CCircuitDef::RoleMask::RAIDER |
 			CCircuitDef::RoleMask::SCOUT |
 			CCircuitDef::RoleMask::BOMBER |
 			CCircuitDef::RoleMask::MELEE |
@@ -399,7 +405,13 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 
 	if (task == nullptr) {
 		IFighterTask::FightType type;
-		if (unit->GetCircuitDef()->IsRoleScout()) {
+		if (unit->GetCircuitDef()->IsRoleRaider()) {
+			if (unit->GetCircuitDef()->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
+				type = IFighterTask::FightType::SCOUT;
+			} else {
+				type = IFighterTask::FightType::RAID;
+			}
+		} else if (unit->GetCircuitDef()->IsRoleScout()) {
 			type = IFighterTask::FightType::SCOUT;
 		} else if (unit->GetCircuitDef()->IsRoleBomber()) {
 			type = IFighterTask::FightType::BOMB;
@@ -783,6 +795,10 @@ void CMilitaryManager::ReadConfig()
 			(udef->*pair.second)(true);
 		}
 	}
+
+	const Json::Value& quotas = root["quota"];
+	maxScouts = quotas.get("scout", 3).asUInt();
+	maxRaiders = quotas.get("raider", 5).asUInt();
 }
 
 void CMilitaryManager::Init()

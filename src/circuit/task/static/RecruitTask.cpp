@@ -108,7 +108,7 @@ void CRecruitTask::Cancel()
 		}
 		int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->ExecuteCustomCommand(CMD_REMOVE, params, UNIT_COMMAND_OPTION_ALT_KEY|UNIT_COMMAND_OPTION_CONTROL_KEY, frame);
+			unit->GetUnit()->ExecuteCustomCommand(CMD_REMOVE, params, UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY, frame);
 		)
 	}
 }

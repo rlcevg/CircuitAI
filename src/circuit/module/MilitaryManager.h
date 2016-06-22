@@ -70,6 +70,9 @@ public:
 
 	void UpdateDefenceTasks();
 
+	unsigned int GetMaxScouts() const { return maxScouts; }
+	unsigned int GetMaxRaiders() const { return maxRaiders; }
+
 private:
 	void ReadConfig();
 	void Init();
@@ -135,6 +138,9 @@ private:
 		IFighterTask* defence;
 	};
 	std::vector<SClusterInfo> clusterInfos;
+
+	unsigned int maxRaiders;
+	unsigned int maxScouts;
 };
 
 } // namespace circuit

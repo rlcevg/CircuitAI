@@ -68,6 +68,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		TRY_UNIT(this->circuit, unit,
 //			unit->GetUnit()->SetFireState(2);
 			unit->GetUnit()->SetRepeat(true);
+			unit->GetUnit()->SetIdleMode(0);
 		)
 
 		factoryPower += unit->GetCircuitDef()->GetBuildSpeed();

@@ -107,11 +107,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	delete sd;
 
 	if (!def->IsAbleToAttack()) {
-		// FIXME: Decouple ScoutTask into RaidTask and ScoutTask
-		if (std::string("corawac") == def->GetName()) {
-			dps = 10.0f;
-		}
-
 		if (isShield) {
 			auto mounts = std::move(def->GetWeaponMounts());
 			for (WeaponMount* mount : mounts) {
@@ -139,6 +134,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	bool canTargetAir = false;
 	bool canTargetLand = false;
 	bool canTargetWater = false;
+	float dmg = 0.f;
 	auto mounts = std::move(def->GetWeaponMounts());
 	for (WeaponMount* mount : mounts) {
 		WeaponDef* wd = mount->GetWeaponDef();
@@ -184,9 +180,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		const std::vector<float>& damages = damage->GetTypes();
 		delete damage;
 		float ldps = .0f;
-		for (float dmg : damages) {
-			ldps += dmg;
+		for (float d : damages) {
+			ldps += d;
 		}
+		dmg += ldps;
 		dps += ldps * wd->GetSalvoSize() / damages.size() / reloadTime * scale;
 		int weaponCat = mount->GetOnlyTargetCategory();
 		targetCategory |= weaponCat;
@@ -229,7 +226,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 				hasDGunAA |= (weaponCat & circuit->GetAirCategory()) && isAirWeapon;
 			} else {
 				// FIXME: Dynamo com workaround
-				dps *= 0.25f;
+				// dps *= 0.5f;
 				delete mount;
 			}
 		} else if (wd->IsShield()) {
@@ -264,9 +261,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			const std::vector<float>& damages = damage->GetTypes();
 			delete damage;
 			float ldps = .0f;
-			for (float dmg : damages) {
-				ldps += dmg;
+			for (float d : damages) {
+				ldps += d;
 			}
+			dmg += ldps;
 			dps = ldps * wd->GetSalvoSize() / damages.size();
 			targetCategory = wd->GetOnlyTargetCategory();
 			if (~targetCategory == 0) {
@@ -282,7 +280,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	hasAntiLand  = (targetCategory & circuit->GetLandCategory()) && canTargetLand;
 	hasAntiWater = (targetCategory & circuit->GetWaterCategory()) && canTargetWater;
 
-	power = dps * sqrtf(def->GetHealth() / 100.0f) * THREAT_MOD;
+	dps = sqrtf(dps) * sqrtf(dmg);
+	power = dps * sqrtf(def->GetHealth()) * THREAT_MOD;
 }
 
 CCircuitDef::~CCircuitDef()

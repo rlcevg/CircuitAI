@@ -95,7 +95,6 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		position = bestTarget->GetPos();
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-			unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 			unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)bestTarget->GetId()});
 		)
 		moveAction->SetActive(false);
@@ -110,7 +109,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& threatPos = moveAction->IsActive() ? position : pos;
-	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < threatMap->GetUnitThreat(unit));
+	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < std::max(threatMap->GetUnitThreat(unit), THREAT_BASE));
 	if (!proceed) {
 		position = circuit->GetMilitaryManager()->GetScoutPosition(unit);
 	}
@@ -139,7 +138,6 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 	)
 	moveAction->SetActive(false);
 }
@@ -177,14 +175,13 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden() || (threatMap->GetThreatAt(enemy->GetPos()) >= power) ||
-			!terrainManager->CanMoveToPos(area, enemy->GetPos()))
+		if (enemy->IsHidden() || (power <= threatMap->GetThreatAt(enemy->GetPos())) ||
+			!terrainManager->CanMoveToPos(area, enemy->GetPos()) ||
+			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
 		{
 			continue;
 		}
-		if (!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) {
-			continue;
-		}
+
 		int targetCat;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {

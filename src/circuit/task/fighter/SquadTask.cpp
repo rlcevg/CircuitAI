@@ -10,6 +10,7 @@
 #include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/PathFinder.h"
+#include "unit/action/TravelAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -27,6 +28,7 @@ ISquadTask::ISquadTask(ITaskManager* mgr, FightType type)
 		, highestSpeed(.0f)
 		, leader(nullptr)
 		, groupPos(-RgtVector)
+		, pPath(std::make_shared<F3Vec>())
 		, isRegroup(false)
 		, isAttack(false)
 {
@@ -82,6 +84,13 @@ void ISquadTask::Merge(const std::set<CCircuitUnit*>& rookies, float power)
 		unit->SetTask(this);
 	}
 	attackPower += power;
+
+	bool isActive = static_cast<ITravelAction*>(leader->End())->IsActive();
+	for (CCircuitUnit* unit : rookies) {
+		ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+		travelAction->SetPath(pPath);
+		travelAction->SetActive(isActive);
+	}
 
 	FindLeader(rookies.begin(), rookies.end());
 }
@@ -179,7 +188,7 @@ bool ISquadTask::IsMustRegroup()
 	}
 
 	isRegroup = false;
-	const float sqMaxDist = SQUARE(std::max<float>(SQUARE_SIZE * 4 * validUnits.size(), highestRange));
+	const float sqMaxDist = SQUARE(std::max<float>(SQUARE_SIZE * 8 * validUnits.size(), highestRange));
 	for (CCircuitUnit* unit : units) {
 		const float sqDist = groupPos.SqDistance2D(unit->GetPos(frame));
 		if (sqDist > sqMaxDist) {

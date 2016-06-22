@@ -95,7 +95,6 @@ void CMeleeTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		const AIFloat3& pos = utils::get_radial_pos(position, SQUARE_SIZE * 8);
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-			unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 			unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)bestTarget->GetId()});
 		)
 		moveAction->SetActive(false);
@@ -139,7 +138,6 @@ void CMeleeTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 	)
 	moveAction->SetActive(false);
 }
@@ -177,14 +175,14 @@ CEnemyUnit* CMeleeTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden() || (threatMap->GetThreatAt(enemy->GetPos()) >= power) ||
-			!terrainManager->CanMoveToPos(area, enemy->GetPos()))
+		if (enemy->IsHidden() ||
+			(power <= threatMap->GetThreatAt(enemy->GetPos())) ||
+			!terrainManager->CanMoveToPos(area, enemy->GetPos()) ||
+			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
 		{
 			continue;
 		}
-		if (!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) {
-			continue;
-		}
+
 		int targetCat;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {

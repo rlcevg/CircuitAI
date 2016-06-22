@@ -27,7 +27,6 @@ using namespace springai;
 
 CAttackTask::CAttackTask(ITaskManager* mgr)
 		: ISquadTask(mgr, FightType::ATTACK)
-		, pPath(std::make_shared<F3Vec>())
 		, minPower(.0f)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -243,6 +242,7 @@ void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
 void CAttackTask::Merge(const std::set<CCircuitUnit*>& rookies, float power)
 {
 	ISquadTask::Merge(rookies, power);
+
 	minPower += power / MIN_POWER_DIV;
 }
 
@@ -257,6 +257,7 @@ void CAttackTask::FindTarget()
 	const float speed = cdef->GetSpeed();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
+	const float power = attackPower * 0.5f;
 
 	CEnemyUnit* bestTarget = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
@@ -265,16 +266,14 @@ void CAttackTask::FindTarget()
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden()) {
+		if (enemy->IsHidden() ||
+			(power <= threatMap->GetThreatAt(enemy->GetPos())) ||
+			!terrainManager->CanMoveToPos(area, enemy->GetPos()) ||
+			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
+		{
 			continue;
 		}
-		float threat = threatMap->GetThreatAt(enemy->GetPos());
-		if ((attackPower <= threat) || !terrainManager->CanMoveToPos(area, enemy->GetPos())) {
-			continue;
-		}
-		if (!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) {
-			continue;
-		}
+
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			if (edef->GetSpeed() > speed) {

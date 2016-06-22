@@ -70,6 +70,13 @@ const AIFloat3& CCircuitUnit::GetPos(int frame)
 	return position;
 }
 
+bool CCircuitUnit::IsStuck(const springai::AIFloat3& pos)
+{
+	bool isStuck = (lastPos == pos);
+	lastPos = pos;
+	return isStuck;
+}
+
 bool CCircuitUnit::IsMoveFailed(int frame)
 {
 	if (frame - failFrame >= FRAMES_PER_SEC * 3) {

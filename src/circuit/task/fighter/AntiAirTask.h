@@ -10,8 +10,6 @@
 
 #include "task/fighter/SquadTask.h"
 
-#include <memory>
-
 namespace circuit {
 
 class CAntiAirTask: public ISquadTask {
@@ -30,8 +28,6 @@ public:
 
 private:
 	void FindTarget();
-
-	std::shared_ptr<F3Vec> pPath;
 };
 
 } // namespace circuit

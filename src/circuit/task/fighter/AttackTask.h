@@ -10,8 +10,6 @@
 
 #include "task/fighter/SquadTask.h"
 
-#include <memory>
-
 namespace circuit {
 
 class CAttackTask: public ISquadTask {
@@ -32,7 +30,6 @@ private:
 	virtual void Merge(const std::set<CCircuitUnit*>& rookies, float power);
 	void FindTarget();
 
-	std::shared_ptr<F3Vec> pPath;
 	float minPower;
 };
 

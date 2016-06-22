@@ -25,7 +25,6 @@ using namespace springai;
 
 CAntiAirTask::CAntiAirTask(ITaskManager* mgr)
 		: ISquadTask(mgr, FightType::AA)
-		, pPath(std::make_shared<F3Vec>())
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
@@ -40,21 +39,16 @@ CAntiAirTask::~CAntiAirTask()
 
 bool CAntiAirTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	if (!unit->GetCircuitDef()->IsRoleAA()) {
+	if (!unit->GetCircuitDef()->IsRoleAA() ||
+		(unit->GetCircuitDef() != leader->GetCircuitDef()))
+	{
 		return false;
 	}
 	int frame = manager->GetCircuit()->GetLastFrame();
 	if (leader->GetPos(frame).SqDistance2D(unit->GetPos(frame)) > SQUARE(1000.f)) {
 		return false;
 	}
-	if ((leader->GetCircuitDef()->IsAbleToFly() && unit->GetCircuitDef()->IsAbleToFly()) ||
-		(leader->GetCircuitDef()->IsAmphibious() && unit->GetCircuitDef()->IsAmphibious()) ||
-		(leader->GetCircuitDef()->IsLander() && unit->GetCircuitDef()->IsLander()) ||
-		(leader->GetCircuitDef()->IsFloater() && unit->GetCircuitDef()->IsFloater()))
-	{
-		return true;
-	}
-	return false;
+	return true;
 }
 
 void CAntiAirTask::AssignTo(CCircuitUnit* unit)
@@ -85,7 +79,7 @@ void CAntiAirTask::Execute(CCircuitUnit* unit)
 		Update();
 	} else {
 		CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-		fightAction->SetPath(pPath, MAX_UNIT_SPEED);
+		fightAction->SetPath(pPath);
 		fightAction->SetActive(true);
 	}
 }
@@ -137,7 +131,7 @@ void CAntiAirTask::Update()
 			if (wasRegroup && !pPath->empty()) {
 				for (CCircuitUnit* unit : units) {
 					CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-					fightAction->SetPath(pPath, MAX_UNIT_SPEED);
+					fightAction->SetPath(pPath);
 					fightAction->SetActive(true);
 				}
 			}
@@ -200,7 +194,7 @@ void CAntiAirTask::Update()
 	} else {
 		for (CCircuitUnit* unit : units) {
 			CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-			fightAction->SetPath(pPath, MAX_UNIT_SPEED);
+			fightAction->SetPath(pPath);
 			fightAction->SetActive(true);
 		}
 	}

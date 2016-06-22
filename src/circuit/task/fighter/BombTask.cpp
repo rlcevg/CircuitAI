@@ -179,12 +179,13 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden() || (power <= threatMap->GetThreatAt(enemy->GetPos()) - enemy->GetThreat())) {
+		if (enemy->IsHidden() ||
+			(power <= threatMap->GetThreatAt(enemy->GetPos()) - enemy->GetThreat()) ||
+			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
+		{
 			continue;
 		}
-		if (!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) {
-			continue;
-		}
+
 		int targetCat;
 		if (enemy->GetCircuitDef() != nullptr) {
 			if (enemy->GetCircuitDef()->GetSpeed() * 1.8f > speed) {

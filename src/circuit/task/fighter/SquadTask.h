@@ -10,6 +10,8 @@
 
 #include "task/fighter/FighterTask.h"
 
+#include <memory>
+
 namespace circuit {
 
 class ISquadTask: public IFighterTask {
@@ -39,6 +41,7 @@ protected:
 	// NOTE: Using unit instead of area directly may save from processing UpdateAreaUsers
 	CCircuitUnit* leader;  // slowest, weakest unit, true leader
 	springai::AIFloat3 groupPos;
+	std::shared_ptr<F3Vec> pPath;
 
 	bool isRegroup;
 	bool isAttack;

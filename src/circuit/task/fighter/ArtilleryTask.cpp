@@ -193,10 +193,11 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 				continue;
 			}
 
-			if (enemy->GetCircuitDef() == nullptr) {
+			CCircuitDef* edef = enemy->GetCircuitDef();
+			if (edef == nullptr) {
 				continue;
 			}
-			int targetCat = enemy->GetCircuitDef()->GetCategory();
+			int targetCat = edef->GetCategory();
 			if ((targetCat & canTargetCat) == 0) {
 				continue;
 			}
@@ -216,7 +217,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 				continue;
 			}
 
-			if (enemy->GetCircuitDef()->IsMobile() || ((targetCat & noChaseCat) != 0)) {
+			if (edef->IsMobile() || ((targetCat & noChaseCat) != 0)) {
 				continue;
 			}
 			if (sqDist < SQUARE(2000.f)) {  // maxSqDist
@@ -268,10 +269,11 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 				continue;
 			}
 
-			if ((enemy->GetCircuitDef() == nullptr) || enemy->GetCircuitDef()->IsMobile()) {
+			CCircuitDef* edef = enemy->GetCircuitDef();
+			if ((edef == nullptr) || edef->IsMobile()) {
 				continue;
 			}
-			int targetCat = enemy->GetCircuitDef()->GetCategory();
+			int targetCat = edef->GetCategory();
 			if (((targetCat & canTargetCat) == 0) || ((targetCat & noChaseCat) != 0)) {
 				continue;
 			}

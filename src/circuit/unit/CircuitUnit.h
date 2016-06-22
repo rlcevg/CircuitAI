@@ -69,6 +69,7 @@ public:
 	STerrainMapArea* GetArea() const { return area; }
 
 	const springai::AIFloat3& GetPos(int frame);
+	bool IsStuck(const springai::AIFloat3& pos);
 
 	bool IsMoveFailed(int frame);
 
@@ -113,6 +114,7 @@ private:
 
 	int posFrame;
 	springai::AIFloat3 position;
+	springai::AIFloat3 lastPos;  // Idle-bug workaround
 
 	int moveFails;
 	int failFrame;

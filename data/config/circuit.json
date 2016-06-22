@@ -330,6 +330,12 @@
 	}
 },
 
+// Squad units quotas
+"quota": {
+	"scout": 3,
+	"raider": 5
+},
+
 "role": {
 	// Main roles: builder, raider, riot, assault, skirmish, artillery, anti_air, air, static
 	// Auto-assigned roles: builder, air, static
@@ -374,7 +380,7 @@
 
 	// factoryspider
 	"arm_spider": ["builder"],
-	"armflea": ["raider", "scout"],
+	"armflea": ["scout"],
 	"spiderassault": ["assault"],
 	"arm_venom": ["riot"],
 	"spiderriot": ["riot"],
@@ -465,7 +471,7 @@
 
 	// striderhub
 	"armcomdgun": ["scout"],
-	"scorpion": ["scout"],
+	"scorpion": ["anti_heavy", "raider"],
 	"dante": ["melee", "riot"],  // FIXME: Can't be "riot" because of DefendTask
 	"armraven": ["artillery"],
 	"funnelweb": ["artillery"],
@@ -619,7 +625,8 @@
 	"dante": 0.5,
 	"armraven": 0.9,
 	"funnelweb": 0.8,
-	"armbanth": 0.5
+	"armbanth": 0.5,
+	"armorco": 0.01
 },
 
 // Limits of energy structures partly defined by parabola in space (structure_cost/energyMake, unit_limit).
