@@ -64,6 +64,7 @@ public:
 	bool IsRoleMelee()   const { return role & RoleMask::MELEE; }
 	bool IsRoleArty()    const { return role & RoleMask::ARTY; }
 	bool IsRoleAA()      const { return role & RoleMask::AA; }
+	bool IsRoleAH()      const { return role & RoleMask::AH; }
 
 	const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
 	float GetBuildDistance() const { return buildDistance; }
@@ -97,6 +98,7 @@ public:
 	springai::WeaponMount* GetShieldMount() const { return shieldMount; }
 	springai::WeaponMount* GetWeaponMount() const { return weaponMount; }
 	float GetDPS() const { return dps; }
+	float GetDamage() const { return dmg; }
 	float GetPower() const { return power; }
 	float GetMaxRange(RangeType type = RangeType::MAX) const { return maxRange[static_cast<RangeT>(type)]; }
 	float GetMaxShield() const { return maxShield; }
@@ -156,6 +158,7 @@ private:
 	springai::WeaponMount* shieldMount;
 	springai::WeaponMount* weaponMount;
 	float dps;  // TODO: split dps like ranges on air, land, water
+	float dmg;
 	float power;  // attack power = UnitDef's max threat
 	std::array<float, static_cast<RangeT>(RangeType::TOTAL_COUNT)> maxRange;
 	float maxShield;

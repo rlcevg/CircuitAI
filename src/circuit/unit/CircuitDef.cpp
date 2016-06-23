@@ -36,6 +36,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, shieldMount(nullptr)
 		, weaponMount(nullptr)
 		, dps(.0f)
+		, dmg(.0f)
 		, power(.0f)
 		, maxRange({.0f})
 		, maxShield(.0f)
@@ -134,7 +135,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	bool canTargetAir = false;
 	bool canTargetLand = false;
 	bool canTargetWater = false;
-	float dmg = 0.f;
 	auto mounts = std::move(def->GetWeaponMounts());
 	for (WeaponMount* mount : mounts) {
 		WeaponDef* wd = mount->GetWeaponDef();
@@ -226,7 +226,12 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 				hasDGunAA |= (weaponCat & circuit->GetAirCategory()) && isAirWeapon;
 			} else {
 				// FIXME: Dynamo com workaround
-				// dps *= 0.5f;
+				it = customParams.find("statsdamage");
+				dps = dmg = (it != customParams.end()) ? utils::string_to_float(it->second) : 100.0f;
+				for (RangeType rt : {RangeType::AIR, RangeType::LAND, RangeType::WATER}) {
+					float& mr = maxRange[static_cast<RangeT>(rt)];
+					mr = std::min(mr, 400.0f);
+				}
 				delete mount;
 			}
 		} else if (wd->IsShield()) {
@@ -280,8 +285,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	hasAntiLand  = (targetCategory & circuit->GetLandCategory()) && canTargetLand;
 	hasAntiWater = (targetCategory & circuit->GetWaterCategory()) && canTargetWater;
 
-	dps = sqrtf(dps) * sqrtf(dmg);
-	power = dps * sqrtf(def->GetHealth()) * THREAT_MOD;
+	dmg = sqrtf(dps) * sqrtf(dmg) * THREAT_MOD;
+	power = dmg * sqrtf(def->GetHealth());
 }
 
 CCircuitDef::~CCircuitDef()

@@ -7,6 +7,7 @@
 
 #include "task/fighter/AntiAirTask.h"
 #include "task/TaskManager.h"
+#include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
@@ -25,6 +26,7 @@ using namespace springai;
 
 CAntiAirTask::CAntiAirTask(ITaskManager* mgr)
 		: ISquadTask(mgr, FightType::AA)
+		, isDanger(false)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
@@ -140,12 +142,44 @@ void CAntiAirTask::Update()
 	}
 
 	/*
+	 * Check safety
+	 */
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
+
+	if (isDanger) {
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		static F3Vec ourPositions;  // NOTE: micro-opt
+		const std::set<IFighterTask*>& tasks = circuit->GetMilitaryManager()->GetTasks(IFighterTask::FightType::ATTACK);
+		for (IFighterTask* task : tasks) {
+			const AIFloat3& ourPos = static_cast<ISquadTask*>(task)->GetLeaderPos(frame);
+			if (terrainManager->CanMoveToPos(leader->GetArea(), ourPos)) {
+				ourPositions.push_back(ourPos);
+			}
+		}
+		AIFloat3 startPos = leader->GetPos(frame);
+		CPathFinder* pathfinder = circuit->GetPathfinder();
+		pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
+		pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions);
+
+		ourPositions.clear();
+		if (!pPath->empty()) {
+			position = pPath->back();
+			for (CCircuitUnit* unit : units) {
+				CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
+				fightAction->SetPath(pPath);
+				fightAction->SetActive(true);
+			}
+			isDanger = false;
+			return;
+		}
+	}
+
+	/*
 	 * Update target
 	 */
 	FindTarget();
 
-	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
 	isAttack = false;
 	if (target != nullptr) {
 		const float sqHighestRange = SQUARE(highestRange);
@@ -220,6 +254,13 @@ void CAntiAirTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
+void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+{
+	ISquadTask::OnUnitDamaged(unit, attacker);
+
+	isDanger = true;
+}
+
 void CAntiAirTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -238,13 +279,13 @@ void CAntiAirTask::FindTarget()
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden()) {
+		if (enemy->IsHidden() ||
+			(attackPower <= threatMap->GetThreatAt(enemy->GetPos()) - enemy->GetThreat()) ||
+			!terrainManager->CanMoveToPos(area, enemy->GetPos()))
+		{
 			continue;
 		}
-		float threat = threatMap->GetThreatAt(enemy->GetPos());
-		if ((attackPower <= threat - enemy->GetThreat()) || !terrainManager->CanMoveToPos(area, enemy->GetPos())) {
-			continue;
-		}
+
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			if (((edef->GetCategory() & canTargetCat) == 0) || ((edef->GetCategory() & noChaseCat) != 0)) {

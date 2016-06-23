@@ -73,4 +73,20 @@ float CEnemyUnit::GetDPS()
 	return dps;
 }
 
+float CEnemyUnit::GetDamage()
+{
+	if (circuitDef == nullptr) {  // unknown enemy is a threat
+		return 0.08f;
+	}
+	float dmg = circuitDef->GetDamage();
+	if (dmg < 1e-3f) {
+		return .0f;
+	}
+	if (unit->IsParalyzed() || unit->IsBeingBuilt() || IsDisarmed()) {
+		return 0.01f;
+	}
+	return dmg;
+}
+
+
 } // namespace circuit

@@ -156,7 +156,7 @@ void CRaidTask::Update()
 	if (target != nullptr) {
 		position = target->GetPos();
 		for (CCircuitUnit* unit : units) {
-			const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), lowestRange);
+			const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
 			TRY_UNIT(circuit, unit,
 				unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60);
@@ -244,7 +244,7 @@ void CRaidTask::FindTarget()
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
-	const float speed = cdef->GetSpeed();
+	const float speed = SQUARE(highestSpeed);
 	const float power = attackPower * 0.5f;
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
@@ -265,7 +265,7 @@ void CRaidTask::FindTarget()
 			(power <= threatMap->GetThreatAt(enemy->GetPos())) ||
 			!terrainManager->CanMoveToPos(area, enemy->GetPos()) ||
 			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) ||
-			(enemy->GetUnit()->GetSpeed() > speed))
+			(enemy->GetUnit()->GetVel().SqLength2D() > speed))
 		{
 			continue;
 		}

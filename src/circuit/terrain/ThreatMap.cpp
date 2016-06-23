@@ -267,7 +267,7 @@ void CThreatMap::EnemyEnterRadar(CEnemyUnit* enemy)
 	circuit->GetTerrainManager()->CorrectPosition(pos);
 	enemy->SetPos(pos);
 	if (isNew) {  // unknown enemy enters radar for the first time
-		enemy->SetThreat(enemy->GetDPS());  // TODO: Randomize
+		enemy->SetThreat(enemy->GetDamage());  // TODO: Randomize
 		enemy->SetRange(CEnemyUnit::RangeType::MAX, rangeDefault);
 		enemy->SetRange(CEnemyUnit::RangeType::AIR, rangeDefault);
 		enemy->SetRange(CEnemyUnit::RangeType::LAND, rangeDefault);
@@ -361,7 +361,7 @@ float CThreatMap::GetThreatAt(CCircuitUnit* unit, const AIFloat3& position) cons
 
 float CThreatMap::GetUnitThreat(CCircuitUnit* unit) const
 {
-	return unit->GetDPS() * sqrtf(unit->GetUnit()->GetHealth()) * THREAT_MOD;  // / unit->GetUnit()->GetMaxHealth();
+	return unit->GetDamage() * sqrtf(unit->GetUnit()->GetHealth());  // / unit->GetUnit()->GetMaxHealth();
 }
 
 void CThreatMap::AddEnemyUnit(const CEnemyUnit* e)
@@ -652,9 +652,7 @@ float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
 	if (health <= .0f) {
 		return .0f;
 	}
-	const float dps = /*std::min(*/enemy->GetDPS()/*, 2000.0f)*/;
-	const float dpsMod = sqrtf(health) * THREAT_MOD;  // / enemy->GetUnit()->GetMaxHealth();
-	return dps * dpsMod;
+	return enemy->GetDamage() * sqrtf(health);  // / unit->GetUnit()->GetMaxHealth();
 }
 
 bool CThreatMap::IsInLOS(const AIFloat3& pos) const

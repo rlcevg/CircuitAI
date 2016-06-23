@@ -683,7 +683,7 @@ void CMilitaryManager::AddEnemyMetal(const CEnemyUnit* e)
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	enemyMetals[cdef->GetMainRole()] += cdef->GetCost();
+	enemyMetals[cdef->GetMainRole()] += cdef->GetCost();  // GetEnemyRole
 }
 
 void CMilitaryManager::DelEnemyMetal(const CEnemyUnit* e)
@@ -691,7 +691,7 @@ void CMilitaryManager::DelEnemyMetal(const CEnemyUnit* e)
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	float& metal = enemyMetals[cdef->GetMainRole()];
+	float& metal = enemyMetals[cdef->GetMainRole()];  // GetEnemyRole
 	metal = std::max(metal - cdef->GetCost(), 0.f);
 }
 

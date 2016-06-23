@@ -187,11 +187,12 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 		}
 
 		int targetCat;
-		if (enemy->GetCircuitDef() != nullptr) {
-			if (enemy->GetCircuitDef()->GetSpeed() * 1.8f > speed) {
+		CCircuitDef* edef = enemy->GetCircuitDef();
+		if (edef != nullptr) {
+			if (edef->GetSpeed() * 1.8f > speed) {
 				continue;
 			}
-			targetCat = enemy->GetCircuitDef()->GetCategory();
+			targetCat = edef->GetCategory();
 			if ((targetCat & canTargetCat) == 0) {
 				continue;
 			}

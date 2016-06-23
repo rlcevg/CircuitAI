@@ -89,6 +89,7 @@ public:
 	bool IsDGunReady(int frame);
 	bool IsShieldCharged(float percent);
 	float GetDPS();
+	float GetDamage();
 
 	void Guard(CCircuitUnit* target, int timeout);
 

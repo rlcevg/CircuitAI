@@ -170,7 +170,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 	CEnemyUnit* bestTarget = nullptr;
 	CEnemyUnit* mediumTarget = nullptr;
 	CEnemyUnit* worstTarget = nullptr;
-	F3Vec enemyPositions;
+	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(unit);
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
@@ -233,6 +233,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 	circuit->GetPathfinder()->SetMapData(unit, threatMap, circuit->GetLastFrame());
 	circuit->GetPathfinder()->FindBestPath(path, startPos, range * 0.5f, enemyPositions);
 
+	enemyPositions.clear();
 	return nullptr;
 }
 

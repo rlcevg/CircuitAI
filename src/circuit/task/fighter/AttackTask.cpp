@@ -254,10 +254,10 @@ void CAttackTask::FindTarget()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
-	const float speed = cdef->GetSpeed();
+	const float speed = SQUARE(highestSpeed);
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
-	const float power = attackPower * 0.5f;
+	const float power = attackPower * 0.8f;
 
 	CEnemyUnit* bestTarget = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
@@ -269,20 +269,17 @@ void CAttackTask::FindTarget()
 		if (enemy->IsHidden() ||
 			(power <= threatMap->GetThreatAt(enemy->GetPos())) ||
 			!terrainManager->CanMoveToPos(area, enemy->GetPos()) ||
-			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
+			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) ||
+			(enemy->GetUnit()->GetVel().SqLength2D() > speed))
 		{
 			continue;
 		}
 
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
-			if (edef->GetSpeed() > speed) {
-				continue;
-			}
-			if (((edef->GetCategory() & canTargetCat) == 0) || ((edef->GetCategory() & noChaseCat) != 0)) {
-				continue;
-			}
-			if (enemy->GetUnit()->IsBeingBuilt()) {
+			if (((edef->GetCategory() & canTargetCat) == 0) || ((edef->GetCategory() & noChaseCat) != 0) ||
+				(enemy->GetUnit()->IsBeingBuilt()))
+			{
 				continue;
 			}
 		}

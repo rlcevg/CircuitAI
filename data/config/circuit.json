@@ -330,10 +330,9 @@
 	}
 },
 
-// Squad units quotas
 "quota": {
-	"scout": 3,
-	"raider": 5
+	"scout": 3,  // max scout units
+	"raider": 5  // avg number of units in raider squad
 },
 
 "role": {
@@ -470,7 +469,7 @@
 	"corsent": ["anti_air"],
 
 	// striderhub
-	"armcomdgun": ["scout"],
+	"armcomdgun": ["anti_heavy", "raider"],
 	"scorpion": ["anti_heavy", "raider"],
 	"dante": ["melee", "riot"],  // FIXME: Can't be "riot" because of DefendTask
 	"armraven": ["artillery"],

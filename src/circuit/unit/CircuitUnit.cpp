@@ -161,6 +161,18 @@ float CCircuitUnit::GetDPS()
 	return dps;
 }
 
+float CCircuitUnit::GetDamage()
+{
+	float dmg = circuitDef->GetDamage();
+	if (dmg < 1e-3f) {
+		return .0f;
+	}
+	if (unit->IsParalyzed() || IsDisarmed(manager->GetCircuit()->GetLastFrame())) {
+		return 0.01f;
+	}
+	return dmg;
+}
+
 void CCircuitUnit::Guard(CCircuitUnit* target, int timeout)
 {
 	TRY_UNIT(manager->GetCircuit(), this,

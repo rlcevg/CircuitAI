@@ -41,6 +41,7 @@ public:
 	springai::Weapon* GetDGun() const { return dgun; }
 	bool IsDisarmed();
 	float GetDPS();
+	float GetDamage();
 
 	void SetPos(const springai::AIFloat3& p) { pos = p; }
 	const springai::AIFloat3& GetPos() const { return pos; }
