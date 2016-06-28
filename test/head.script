@@ -222,7 +222,7 @@ startposx=662;
 startposz=780;
 teamleader=6;
 }
-gametype=Zero-K v1.4.6.9;
+gametype=Zero-K v1.4.6.11;
 hostip=;
 hostport=8452;
 ishost=1;

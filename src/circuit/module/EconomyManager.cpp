@@ -911,7 +911,7 @@ void CEconomyManager::Init()
 					CCircuitDef* buildDef = circuit->GetCircuitDef("corllt");
 					if ((buildDef != nullptr) && buildDef->IsAvailable()) {
 						circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, buildPos,
-																  IBuilderTask::BuildType::DEFENCE, true, true, 0);
+																  IBuilderTask::BuildType::DEFENCE, 0.f, true, 0);
 					}
 				}
 			}), FRAMES_PER_SEC * 120);

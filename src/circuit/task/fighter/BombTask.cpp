@@ -35,7 +35,7 @@ CBombTask::~CBombTask()
 
 bool CBombTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return units.empty() && unit->GetCircuitDef()->IsRoleBomber();
+	return units.empty() && unit->GetCircuitDef()->IsAttrBomber();
 }
 
 void CBombTask::AssignTo(CCircuitUnit* unit)

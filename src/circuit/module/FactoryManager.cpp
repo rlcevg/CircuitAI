@@ -698,59 +698,109 @@ void CFactoryManager::ReadConfig()
 	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
 
 	/*
-	 * Roles
+	 * Roles, attributes and retreat
 	 */
 	std::map<CCircuitDef::RoleType, std::set<CCircuitDef::Id>> roleDefs;
 	std::map<const char*, CCircuitDef::RoleType, cmp_str> roleNames = {
 		{"builder",    CCircuitDef::RoleType::BUILDER},
+		{"scout",      CCircuitDef::RoleType::SCOUT},
 		{"raider",     CCircuitDef::RoleType::RAIDER},
 		{"riot",       CCircuitDef::RoleType::RIOT},
 		{"assault",    CCircuitDef::RoleType::ASSAULT},
 		{"skirmish",   CCircuitDef::RoleType::SKIRM},
 		{"artillery",  CCircuitDef::RoleType::ARTY},
+		{"anti_air",   CCircuitDef::RoleType::AA},
+		{"anti_heavy", CCircuitDef::RoleType::AH},
+		{"mine",       CCircuitDef::RoleType::MINE},
+		{"support",    CCircuitDef::RoleType::SUPPORT},
+		{"transport",  CCircuitDef::RoleType::TRANS},
 		{"air",        CCircuitDef::RoleType::AIR},
 		{"static",     CCircuitDef::RoleType::STATIC},
-		{"scout",      CCircuitDef::RoleType::SCOUT},
 		{"heavy",      CCircuitDef::RoleType::HEAVY},
-		{"bomber",     CCircuitDef::RoleType::BOMBER},
-		{"melee",      CCircuitDef::RoleType::MELEE},
-		{"anti_heavy", CCircuitDef::RoleType::AH},
-		{"anti_air",   CCircuitDef::RoleType::AA},
 	};
-	const Json::Value& roles = root["role"];
-	for (const std::string& defName : roles.getMemberNames()) {
+	std::map<const char*, CCircuitDef::AttrType, cmp_str> attrNames = {
+		{"bomber",    CCircuitDef::AttrType::BOMBER},
+		{"melee",     CCircuitDef::AttrType::MELEE},
+		{"siege",     CCircuitDef::AttrType::SIEGE},
+		{"hold_fire", CCircuitDef::AttrType::HOLD_FIRE},
+		{"stockpile", CCircuitDef::AttrType::STOCK},
+	};
+	const Json::Value& behaviours = root["behaviour"];
+	for (const std::string& defName : behaviours.getMemberNames()) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());
 		if (cdef == nullptr) {
 			continue;
 		}
 
-		const Json::Value& defRoles = roles[defName];
-		for (const Json::Value& dr : defRoles) {
-			const char* roleName = dr.asCString();
-			auto it = roleNames.find(roleName);
+		// Auto-assign roles
+		auto setRoles = [cdef](CCircuitDef::RoleType type) {
+			cdef->SetMainRole(type);
+			cdef->SetEnemyRole(type);
+			cdef->AddRole(type);
+		};
+		if (cdef->IsAbleToFly()) {
+			setRoles(CCircuitDef::RoleType::AIR);
+		} else if (!cdef->IsMobile() && cdef->IsAttacker() && cdef->HasAntiLand()) {
+			setRoles(CCircuitDef::RoleType::STATIC);
+		} else if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
+			setRoles(CCircuitDef::RoleType::BUILDER);
+		}
+
+		// Read roles from config
+		const Json::Value& behaviour = behaviours[defName];
+		const Json::Value& role = behaviour["role"];
+		if (role.empty()) {
+			circuit->LOG("CONFIG %s: '%s' has no role", cfgName.c_str(), defName.c_str());
+			continue;
+		}
+
+		const char* mainName = role[0].asCString();
+		auto it = roleNames.find(mainName);
+		if (it == roleNames.end()) {
+			circuit->LOG("CONFIG %s: %s has unknown main role '%s'", cfgName.c_str(), defName.c_str(), mainName);
+			continue;
+		}
+		cdef->SetMainRole(it->second);
+		cdef->AddRole(it->second);
+		roleDefs[it->second].insert(cdef->GetId());
+
+		const Json::Value& enemyRole = role[1];
+		if (enemyRole.isNull()) {
+			cdef->SetEnemyRole(it->second);
+		} else {
+			const char* enemyName = enemyRole.asCString();
+			it = roleNames.find(enemyName);
 			if (it == roleNames.end()) {
-				circuit->LOG("CONFIG %s: %s has unknown role '%s'", cfgName.c_str(), defName.c_str(), roleName);
+				circuit->LOG("CONFIG %s: %s has unknown enemy role '%s'", cfgName.c_str(), defName.c_str(), enemyName);
 				continue;
 			}
-			if (cdef->IsRoleEqual(CCircuitDef::RoleMask::NONE)) {
-				cdef->SetMainRole(it->second);
-			}
+			cdef->SetEnemyRole(it->second);
 			cdef->AddRole(it->second);
-
-			roleDefs[it->second].insert(cdef->GetId());
 		}
 
-		// Auto-set roles
-		if (cdef->IsAbleToFly()) {
-			cdef->SetMainRole(CCircuitDef::RoleType::AIR);
-			cdef->AddRole(CCircuitDef::RoleType::AIR);
-		} else if (!cdef->IsMobile() && cdef->IsAttacker() && cdef->HasAntiLand()) {
-			cdef->SetMainRole(CCircuitDef::RoleType::STATIC);
-			cdef->AddRole(CCircuitDef::RoleType::STATIC);
-		} else if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
-			cdef->SetMainRole(CCircuitDef::RoleType::BUILDER);
-			cdef->AddRole(CCircuitDef::RoleType::BUILDER);
+		const Json::Value& attributes = behaviour["attribute"];
+		for (const Json::Value& attr : attributes) {
+			const std::string& attrName = attr.asString();
+			it = roleNames.find(attrName.c_str());
+			if (it == roleNames.end()) {
+				auto it = attrNames.find(attrName.c_str());
+				if (it == attrNames.end()) {
+					if (attrName.substr(0, 5) == "limit") {
+						cdef->SetMaxThisUnit(utils::string_to_int(attrName.substr(5)));
+					} else {
+						circuit->LOG("CONFIG %s: %s has unknown attribute '%s'", cfgName.c_str(), defName.c_str(), attrName.c_str());
+						continue;
+					}
+				} else {
+					cdef->AddAttribute(it->second);
+				}
+			} else {
+				cdef->AddRole(it->second);
+				roleDefs[it->second].insert(cdef->GetId());
+			}
 		}
+
+		cdef->SetRetreat(behaviour.get("retreat", -1.f).asFloat());
 	}
 
 	/*
@@ -767,14 +817,14 @@ void CFactoryManager::ReadConfig()
 		SFactoryDef facDef;
 
 		const std::unordered_set<CCircuitDef::Id>& options = cdef->GetBuildOptions();
-		std::vector<CCircuitDef::RoleType> facRoles = {
+		std::vector<CCircuitDef::RoleType> facRoles = {  // NOTE: used to create tasks on Event (like DefendTask), fix/improve
 			CCircuitDef::RoleType::BUILDER,
 			CCircuitDef::RoleType::RIOT,
 			CCircuitDef::RoleType::ARTY,
 			CCircuitDef::RoleType::AA,
 		};
 
-		facDef.roleDefs.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT), nullptr);
+		facDef.roleDefs.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_), nullptr);
 		for (const CCircuitDef::RoleType type : facRoles) {
 			float minCost = std::numeric_limits<float>::max();
 			CCircuitDef* rdef = nullptr;

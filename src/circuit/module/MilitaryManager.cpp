@@ -132,8 +132,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 	ReadConfig();
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const Json::Value& retreats = root["retreat"];
-	const float fighterRet = retreats.get("_fighter_", 0.5f).asFloat();
+	const float fighterRet = root["retreat"].get("fighter", 0.5f).asFloat();
 
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
@@ -154,8 +153,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			damagedHandler[unitDefId] = attackerDamagedHandler;
 			destroyedHandler[unitDefId] = attackerDestroyedHandler;
 
-			const char* name = cdef->GetUnitDef()->GetName();
-			cdef->SetRetreat(retreats.get(name, fighterRet).asFloat());
+			if (cdef->GetRetreat() < 0.f) {
+				cdef->SetRetreat(fighterRet);
+			}
 		} else if (cdef->IsAttacker()) {
 			WeaponDef* wd = cdef->GetUnitDef()->GetStockpileDef();
 			if (wd == nullptr) {
@@ -359,8 +359,8 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 	const CCircuitDef::RoleM role =
 			CCircuitDef::RoleMask::RAIDER |
 			CCircuitDef::RoleMask::SCOUT |
-			CCircuitDef::RoleMask::BOMBER |
-			CCircuitDef::RoleMask::MELEE |
+			CCircuitDef::AttrMask::BOMBER |
+			CCircuitDef::AttrMask::MELEE |
 			CCircuitDef::RoleMask::ARTY |
 			CCircuitDef::RoleMask::AA;
 	if (!unit->GetCircuitDef()->IsRoleAny(role)) {
@@ -413,9 +413,9 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 			}
 		} else if (unit->GetCircuitDef()->IsRoleScout()) {
 			type = IFighterTask::FightType::SCOUT;
-		} else if (unit->GetCircuitDef()->IsRoleBomber()) {
+		} else if (unit->GetCircuitDef()->IsAttrBomber()) {
 			type = IFighterTask::FightType::BOMB;
-		} else if (unit->GetCircuitDef()->IsRoleMelee()) {
+		} else if (unit->GetCircuitDef()->IsAttrMelee()) {
 			type = IFighterTask::FightType::MELEE;
 		} else if (unit->GetCircuitDef()->IsRoleArty()) {
 			type = IFighterTask::FightType::ARTY;
@@ -683,7 +683,7 @@ void CMilitaryManager::AddEnemyMetal(const CEnemyUnit* e)
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	enemyMetals[cdef->GetMainRole()] += cdef->GetCost();  // GetEnemyRole
+	enemyMetals[cdef->GetEnemyRole()] += cdef->GetCost();
 }
 
 void CMilitaryManager::DelEnemyMetal(const CEnemyUnit* e)
@@ -691,7 +691,7 @@ void CMilitaryManager::DelEnemyMetal(const CEnemyUnit* e)
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	float& metal = enemyMetals[cdef->GetMainRole()];  // GetEnemyRole
+	float& metal = enemyMetals[cdef->GetEnemyRole()];
 	metal = std::max(metal - cdef->GetCost(), 0.f);
 }
 
@@ -726,73 +726,52 @@ void CMilitaryManager::ReadConfig()
 	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
 	std::map<const char*, CCircuitDef::RoleType, cmp_str> roleNames = {
 		{"builder",    CCircuitDef::RoleType::BUILDER},
+		{"scout",      CCircuitDef::RoleType::SCOUT},
 		{"raider",     CCircuitDef::RoleType::RAIDER},
 		{"riot",       CCircuitDef::RoleType::RIOT},
 		{"assault",    CCircuitDef::RoleType::ASSAULT},
 		{"skirmish",   CCircuitDef::RoleType::SKIRM},
 		{"artillery",  CCircuitDef::RoleType::ARTY},
+		{"anti_air",   CCircuitDef::RoleType::AA},
+		{"anti_heavy", CCircuitDef::RoleType::AH},
+		{"mine",       CCircuitDef::RoleType::MINE},
+		{"support",    CCircuitDef::RoleType::SUPPORT},
+		{"transport",  CCircuitDef::RoleType::TRANS},
 		{"air",        CCircuitDef::RoleType::AIR},
 		{"static",     CCircuitDef::RoleType::STATIC},
-		{"scout",      CCircuitDef::RoleType::SCOUT},
 		{"heavy",      CCircuitDef::RoleType::HEAVY},
-		{"bomber",     CCircuitDef::RoleType::BOMBER},
-		{"melee",      CCircuitDef::RoleType::MELEE},
-		{"anti_heavy", CCircuitDef::RoleType::AH},
-		{"anti_air",   CCircuitDef::RoleType::AA},
 	};
 
 	const Json::Value& responses = root["response"];
 	const float teamSize = circuit->GetAllyTeam()->GetSize();
-	roleInfos.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT), {.0f});
-	std::pair<const char*, CCircuitDef::RoleType> responseNames[] = {
-		std::make_pair("raider",    CCircuitDef::RoleType::RAIDER),
-		std::make_pair("riot",      CCircuitDef::RoleType::RIOT),
-		std::make_pair("assault",   CCircuitDef::RoleType::ASSAULT),
-		std::make_pair("skirmish",  CCircuitDef::RoleType::SKIRM),
-		std::make_pair("anti_air",  CCircuitDef::RoleType::AA),
-		std::make_pair("artillery", CCircuitDef::RoleType::ARTY)
-	};
-	for (const auto& pair : responseNames) {
+	roleInfos.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_), {.0f});
+	for (const auto& pair : roleNames) {
 		SRoleInfo& info = roleInfos[static_cast<CCircuitDef::RoleT>(pair.second)];
 		const Json::Value& response = responses[pair.first];
+
 		if (response.isNull()) {
 			info.maxPerc = 1.0f;
 			info.factor  = teamSize;
-		} else {
-			info.maxPerc = response.get("max_percent", 1.0f).asFloat();
-			const float step = response.get("eps_step", 1.0f).asFloat();
-			info.factor  = (teamSize - 1.0f) * step + 1.0f;
-
-			const Json::Value& vs = response["vs"];
-			const Json::Value& ratio = response["ratio"];
-			const Json::Value& importance = response["importance"];
-			for (unsigned i = 0; i < vs.size(); ++i) {
-				const char* roleName = vs[i].asCString();
-				auto it = roleNames.find(roleName);
-				if (it == roleNames.end()) {
-					circuit->LOG("CONFIG %s: response %s vs unknown role '%s'", cfgName.c_str(), pair.first, roleName);
-					continue;
-				}
-				float rat = ratio.get(i, 1.0f).asFloat();
-				float imp = importance.get(i, 1.0f).asFloat();
-				info.vs.push_back(SRoleInfo::SVsInfo(roleNames[roleName], rat, imp));
-			}
+			continue;
 		}
-	}
 
-	const Json::Value& retreats = root["retreat"];
-	std::pair<const char*, void (CCircuitDef::*)(bool)> retreatNames[] = {
-		std::make_pair("_siege_",     &CCircuitDef::SetSiege),
-		std::make_pair("_hold_fire_", &CCircuitDef::SetHoldFire)
-	};
-	for (const auto& pair : retreatNames) {
-		const Json::Value& siege = retreats[pair.first];
-		for (const Json::Value& s : siege) {
-			CCircuitDef* udef = circuit->GetCircuitDef(s.asCString());
-			if (udef == nullptr) {
+		info.maxPerc = response.get("max_percent", 1.0f).asFloat();
+		const float step = response.get("eps_step", 1.0f).asFloat();
+		info.factor  = (teamSize - 1.0f) * step + 1.0f;
+
+		const Json::Value& vs = response["vs"];
+		const Json::Value& ratio = response["ratio"];
+		const Json::Value& importance = response["importance"];
+		for (unsigned i = 0; i < vs.size(); ++i) {
+			const char* roleName = vs[i].asCString();
+			auto it = roleNames.find(roleName);
+			if (it == roleNames.end()) {
+				circuit->LOG("CONFIG %s: response %s vs unknown role '%s'", cfgName.c_str(), pair.first, roleName);
 				continue;
 			}
-			(udef->*pair.second)(true);
+			float rat = ratio.get(i, 1.0f).asFloat();
+			float imp = importance.get(i, 1.0f).asFloat();
+			info.vs.push_back(SRoleInfo::SVsInfo(roleNames[roleName], rat, imp));
 		}
 	}
 
@@ -906,8 +885,8 @@ void CMilitaryManager::AddPower(CCircuitUnit* unit)
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float cost = cdef->GetCost();
-	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT));
-	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT); ++i) {
+	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_));
+	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
 		if (cdef->IsRoleAny(CCircuitDef::GetMask(i))) {
 			roleInfos[i].metal += cost;
 			roleInfos[i].units.insert(unit);
@@ -922,8 +901,8 @@ void CMilitaryManager::DelPower(CCircuitUnit* unit)
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float cost = cdef->GetCost();
-	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT));
-	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT); ++i) {
+	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_));
+	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
 		if (cdef->IsRoleAny(CCircuitDef::GetMask(i))) {
 			float& metal = roleInfos[i].metal;
 			metal = std::max(metal - cost, .0f);

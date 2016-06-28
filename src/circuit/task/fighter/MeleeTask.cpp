@@ -35,7 +35,7 @@ CMeleeTask::~CMeleeTask()
 
 bool CMeleeTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return units.empty() && unit->GetCircuitDef()->IsRoleMelee();
+	return units.empty() && unit->GetCircuitDef()->IsAttrMelee();
 }
 
 void CMeleeTask::AssignTo(CCircuitUnit* unit)

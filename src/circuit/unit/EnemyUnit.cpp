@@ -88,5 +88,4 @@ float CEnemyUnit::GetDamage()
 	return dmg;
 }
 
-
 } // namespace circuit

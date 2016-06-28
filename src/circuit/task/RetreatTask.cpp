@@ -50,7 +50,7 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	if (cdef->IsHoldFire()) {
+	if (cdef->IsAttrHoldFire()) {
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->SetFireState(0);
 		)
@@ -58,7 +58,7 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 
 	int squareSize = circuit->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
-	if (cdef->IsSiege()) {
+	if (cdef->IsAttrSiege()) {
 		travelAction = new CFightAction(unit, squareSize);
 	} else {
 		travelAction = new CMoveAction(unit, squareSize);
@@ -77,7 +77,7 @@ void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
 		manager->DoneTask(this);
 	}
 
-	if (unit->GetCircuitDef()->IsHoldFire()) {
+	if (unit->GetCircuitDef()->IsAttrHoldFire()) {
 		TRY_UNIT(manager->GetCircuit(), unit,
 			unit->GetUnit()->SetFireState(2);
 		)

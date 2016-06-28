@@ -30,8 +30,8 @@
 		// eps=(teamSize+3)/4
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
 
-		//                 conjurer,   glaive,  scythe,       rocko,     warrior,  zeus,      hammer,   sniper,     tick,      eraser,          gremlin
-		"unit_def":      ["armrectr", "armpw", "spherepole", "armrock", "armwar", "armzeus", "armham", "armsnipe", "armtick", "spherecloaker", "armjeth"],
+		//             conjurer,   glaive,  scythe,       rocko,     warrior,  zeus,      hammer,   sniper,     tick,      eraser,          gremlin
+		"unit_def":  ["armrectr", "armpw", "spherepole", "armrock", "armwar", "armzeus", "armham", "armsnipe", "armtick", "spherecloaker", "armjeth"],
 
 		"land": {
 			// 0-8m Opening - Glaives & Warriors most important for scouting, map control and defence.
@@ -67,8 +67,8 @@
 		"require_energy": false,
 
 		"income_tier": [7, 16, 24, 32, 40, 56, 72, 88],
-		//                 wasp,         blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator,  trident
-		"unit_def":      ["gunshipcon", "blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans", "gunshipaa"],
+		//             wasp,         blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator,  trident
+		"unit_def":  ["gunshipcon", "blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans", "gunshipaa"],
 		"land": {
 			// 0-8m Opening - Blastwing and banshee Harass
 			"tier0": [ 0.00,         0.68,        0.00,     0.10,     0.20,             0.00,       0.02,        0.00,     0.00,      0.00,        0.00],
@@ -96,8 +96,8 @@
 		"require_energy": false,
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
-		//                 conch,     duck,          archer,        buoy,          scallop,    grizzly,       djinn,      angler
-		"unit_def":      ["amphcon", "amphraider3", "amphraider2", "amphfloater", "amphriot", "amphassault", "amphtele", "amphaa"],
+		//             conch,     duck,          archer,        buoy,          scallop,    grizzly,       djinn,      angler
+		"unit_def":  ["amphcon", "amphraider3", "amphraider2", "amphfloater", "amphriot", "amphassault", "amphtele", "amphaa"],
 		"land": {
 			// 0-8m Opening - Ducks and Archers
 			"tier0": [ 0.00,      0.63,          0.25,          0.00,          0.12,       0.00,          0.00,       0.00],
@@ -125,8 +125,8 @@
 		"require_energy": false,
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
-		//                 weaver,       flea,      hermit,          venom,       redback,      recluse,   crabe,      infiltrator, tarantula
-		"unit_def":      ["arm_spider", "armflea", "spiderassault", "arm_venom", "spiderriot", "armsptk", "armcrabe", "armspy",    "spideraa"],
+		//             weaver,       flea,      hermit,          venom,       redback,      recluse,   crabe,      infiltrator, tarantula
+		"unit_def":  ["arm_spider", "armflea", "spiderassault", "arm_venom", "spiderriot", "armsptk", "armcrabe", "armspy",    "spideraa"],
 		"land": {
 			// 0-8m Opening - Opening turbo Flea spam & Riots		
 			"tier0": [ 0.00,         0.87,      0.00,            0.00,        0.13,         0.00,      0.00,       0.00,        0.00],
@@ -154,8 +154,8 @@
 		"require_energy": false,
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
-		//                 mason,    dart,     scorcher,   slasher,   leveler,    ravager,   dominatrix,   wolverine, impaler,   crasher
-		"unit_def":      ["corned", "corfav", "corgator", "cormist", "corlevlr", "corraid", "capturecar", "corgarp", "armmerl", "vehaa"],
+		//             mason,    dart,     scorcher,   slasher,   leveler,    ravager,   dominatrix,   wolverine, impaler,   crasher
+		"unit_def":  ["corned", "corfav", "corgator", "cormist", "corlevlr", "corraid", "capturecar", "corgarp", "armmerl", "vehaa"],
 		"land": {
 			// 0-8m Opening - Dart, Riot & Slasher
 			"tier0": [ 0.00,     0.63,     0.03,       0.12,      0.22,       0.00,      0.00,         0.00,      0.00,      0.00],
@@ -183,8 +183,8 @@
 		"require_energy": false,
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
-		//                 quill,   dagger,  scalpel,    halberd,        claymore,           mace,        penetrator, flail
-		"unit_def":      ["corch", "corsh", "nsaclash", "hoverassault", "hoverdepthcharge", "hoverriot", "armmanni", "hoveraa"],
+		//             quill,   dagger,  scalpel,    halberd,        claymore,           mace,        penetrator, flail
+		"unit_def":  ["corch", "corsh", "nsaclash", "hoverassault", "hoverdepthcharge", "hoverriot", "armmanni", "hoveraa"],
 		"land": {
 			// 0-8m Opening - Raiders and Riots
 			"tier0": [ 0.00,    0.65,    0.00,       0.00,           0.00,               0.35,        0.00,       0.00],
@@ -212,8 +212,8 @@
 		"require_energy": false,
 
 		"income_tier": [10, 20, 30, 40, 50, 60, 70],
-		//                 crane,   swift,     hawk,      raven,     phoenix,    thunderbird,         wyvern,    vulture
-		"unit_def":      ["armca", "fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "corawac"],
+		//             crane,   swift,     hawk,      raven,     phoenix,    thunderbird,         wyvern,    vulture
+		"unit_def":  ["armca", "fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "corawac"],
 		"land": {
 			// 0-10m Early Game
 			"tier0": [ 0.00,    0.10,      0.00,      0.47,      0.38,       0.00,                0.00,      0.05],
@@ -239,8 +239,8 @@
 		"require_energy": false,
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
-		//                 welder,   kodachi,   panther,   banisher,  reaper,    goliath,  pillager,  tremor, copperhead
-		"unit_def":      ["coracv", "logkoda", "panther", "tawf114", "correap", "corgol", "cormart", "trem", "corsent"],
+		//             welder,   kodachi,   panther,   banisher,  reaper,    goliath,  pillager,  tremor, copperhead
+		"unit_def":  ["coracv", "logkoda", "panther", "tawf114", "correap", "corgol", "cormart", "trem", "corsent"],
 		"land": {
 			// 0-8m Opening - Koda and Banisher
 			"tier0": [ 0.00,     0.70,      0.00,      0.30,      0.00,      0.00,     0.00,      0.00,   0.00],
@@ -268,8 +268,8 @@
 		"require_energy": false,
 
 		"income_tier": [40],
-		//                 freaker,   puppy,   pyro,      placeholder,     moderator,  jack,     sumo,      firewalker,   skuttle,   archangel
-		"unit_def":      ["corfast", "puppy", "corpyro", "jumpblackhole", "slowmort", "corcan", "corsumo", "firewalker", "corsktl", "armaak"],
+		//             freaker,   puppy,   pyro,      placeholder,     moderator,  jack,     sumo,      firewalker,   skuttle,   archangel
+		"unit_def":  ["corfast", "puppy", "corpyro", "jumpblackhole", "slowmort", "corcan", "corsumo", "firewalker", "corsktl", "armaak"],
 		"land": {
 			"tier0": [ 0.00,      0.09,    0.60,      0.05,            0.10,       0.05,     0.00,      0.10,         0.01,      0.00],
 			"tier1": [ 0.00,      0.01,    0.20,      0.10,            0.10,       0.30,     0.05,      0.20,         0.04,      0.00]
@@ -283,8 +283,8 @@
 		"require_energy": false,
 
 		"income_tier": [40],
-		//                 convict,    dirtbag,   bandit,  rogue,      thug,      outlaw,   felon,         racketeer,    roach,      aspis,          vandal
-		"unit_def":      ["cornecro", "corclog", "corak", "corstorm", "corthud", "cormak", "shieldfelon", "shieldarty", "corroach", "core_spectre", "corcrash"],
+		//             convict,    dirtbag,   bandit,  rogue,      thug,      outlaw,   felon,         racketeer,    roach,      aspis,          vandal
+		"unit_def":  ["cornecro", "corclog", "corak", "corstorm", "corthud", "cormak", "shieldfelon", "shieldarty", "corroach", "core_spectre", "corcrash"],
 		"land": {
 			"tier0": [ 0.00,       0.10,      0.30,    0.10,       0.20,      0.10,     0.05,          0.10,         0.05,       0.00,           0.00],
 			"tier1": [ 0.00,       0.00,      0.00,    0.00,       0.00,      0.00,     0.00,          1.00,         0.00,       0.00,           0.00]
@@ -298,8 +298,8 @@
 		"require_energy": false,
 
 		"income_tier": [40],
-		//                 mariner    skeeter,     snake,       typhoon,      hunter,     enforcer,    crusader,   serpent,   surfboard,  shredder
-		"unit_def":      ["shipcon", "shipscout", "subraider", "shipraider", "shiptorp", "shipskirm", "shiparty", "subarty", "armtboat", "shipaa"],
+		//             mariner    skeeter,     snake,       typhoon,      hunter,     enforcer,    crusader,   serpent,   surfboard,  shredder
+		"unit_def":  ["shipcon", "shipscout", "subraider", "shipraider", "shiptorp", "shipskirm", "shiparty", "subarty", "armtboat", "shipaa"],
 		"water": {
 			"tier0": [ 0.00,      0.10,        0.32,        0.30,         0.17,       0.05,        0.05,       0.01,      0.00,       0.00],
 			"tier1": [ 0.00,      0.01,        0.10,        0.10,         0.20,       0.15,        0.25,       0.19,      0.00,       0.00]
@@ -313,8 +313,8 @@
 		"require_energy": false,
 
 		"income_tier": [60, 80, 100],
-		//                 ultimatum,    scorpion,   dante,   catapult,   funnelweb,   bantha,     detriment, leviathan,    reef,   warlord
-		"unit_def":      ["armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"],
+		//             ultimatum,    scorpion,   dante,   catapult,   funnelweb,   bantha,     detriment, leviathan,    reef,   warlord
+		"unit_def":  ["armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"],
 		"land": {
 			"tier0": [ 0.01,         0.10,       0.81,    0.00,       0.05,        0.03,       0.00,      0.00,         0.00,   0.00],
 			"tier1": [ 0.03,         0.14,       0.22,    0.24,       0.20,        0.16,       0.01,      0.00,         0.00,   0.00],
@@ -335,164 +335,503 @@
 	"raider": 5  // avg number of units in raider squad
 },
 
-"role": {
-	// Main roles: builder, raider, riot, assault, skirmish, artillery, anti_air, air, static
-	// Auto-assigned roles: builder, air, static
-	// Support roles: scout, heavy, bomber, melee, anti_heavy
-	// First value with response defines main role and the way to counter it
+// If unit's health drops below specified percent it will retreat
+"retreat": {
+	"builder": 0.8,  // default value for all builders
+	"fighter": 0.5,  // default value for all not-builder units
+	"shield": 0.1  // minimum shield power
+},
 
+"behaviour": {
 	// factorycloak
-	"armrectr": ["builder"],
-	"armpw": ["raider", "scout"],
-	"spherepole": ["raider"],
-	"armrock": ["skirmish"],
-	"armwar": ["riot"],
-	"armzeus": ["assault"],
-	"armham": ["artillery"],
-	"armsnipe": ["artillery"],
-	"armtick": [],
-	"spherecloaker": [],
-	"armjeth": ["anti_air"],
+	"armrectr": {
+		// "role": [<main>, <enemy>]
+		// <main> is the role to make desicions of when to build it and what task to assign
+		// <enemy> is to decide how to counter enemy unit, if missing then equals to <main>
+		// Roles: builder, scout, raider, riot, assault, skirmish, artillery, anti_air, anti_heavy, mine, support, transport, air, static, heavy
+		// Auto-assigned roles: builder, air, static
+		"role": ["builder"]
+
+		// Attributes - optinal roles and unit states: bomber, melee, siege, hold_fire, limit<N>
+		// "bomber" - special bomber task assignment and target selection
+		// "melee" - always move close to target, disregard attack range
+		// "siege" - use fight command on retreat instead of move
+		// "hold_fire" - hold fire on retreat
+		// "stockpile" - load weapon before any task (NOT IMPLEMENTED)
+		// "limit<N>" - limits number of units by <N>
+//		"attribute": [],
+
+		// minimum hp percent before retreat
+//		"retreat": 0.8
+	},
+	"armpw": {
+		"role": ["raider"],
+		"attribute": ["scout"],
+		"retreat": 0.1  // disposable
+	},
+	"spherepole": {
+		"role": ["raider"],
+		"retreat": 0.25  // stops dealing damage once retreating
+	},
+	"armrock": {
+		"role": ["skirmish"],
+		"retreat": 0.35  // mostly disposable
+	},
+	"armwar": {
+		"role": ["riot"]
+	},
+	"armzeus": {
+		"role": ["assault"],
+		"retreat": 0.5  // assaults need to assault
+	},
+	"armham": {
+		"role": ["artillery"],
+		"retreat": 0.8
+	},
+	"armsnipe": {
+		"role": ["artillery"],
+		"retreat": 0.9
+	},
+	"armtick": {
+		"role": ["mine"],
+		"retreat": 0.01
+	},
+	"spherecloaker": {
+		"role": ["support"]
+	},
+	"armjeth": {
+		"role": ["anti_air"]
+	},
 
 	// factorygunship
-	"gunshipcon": ["air", "builder"],
-	"blastwing": ["air"],
-	"bladew": ["air", "raider", "scout"],
-	"armkam": ["air", "raider"],
-	"gunshipsupport": ["air"],
-	"armbrawl": ["air", "artillery"],
-	"blackdawn":["air"],
-	"corcrw": ["air"],
-	"corvalk": ["air"],
-	"corbtrans": ["air"],
-	"gunshipaa": ["air", "anti_air"],
+	"gunshipcon": {
+		"role": ["builder", "air"],
+		"attribute": ["limit2"],
+		"retreat": 0.99
+	},
+	"blastwing": {
+		"role": ["mine", "air"],
+		"retreat": 0.01
+	},
+	"bladew": {
+		"role": ["scout", "air"],
+		"attribute": ["anti_heavy"]
+	},
+	"armkam": {
+		"role": ["raider", "air"],
+		"retreat": 0.9
+	},
+	"gunshipsupport": {
+		"role": ["riot", "air"],
+		"retreat": 0.8
+	},
+	"armbrawl": {
+		"role": ["artillery", "air"]
+	},
+	"blackdawn": {
+		"role": ["assault", "air"],
+		"retreat": 0.67
+	},
+	"corcrw": {
+		"role": ["assault", "air"],
+		"retreat": 0.4
+	},
+	"corvalk": {
+		"role": ["transport", "air"]
+	},
+	"corbtrans": {
+		"role": ["transport", "air"]
+	},
+	"gunshipaa": {
+		"role": ["anti_air", "air"]
+	},
 
 	// factoryamph
-	"amphcon": ["builder"],
-	"amphraider3": ["raider", "scout"],
-	"amphraider2": ["riot", "melee"],
-	"amphfloater": ["skirmish"],
-	"amphriot": ["riot"],
-	"amphassault": ["assault"],
-	"amphtele": [],
-	"amphaa": ["anti_air"],
+	"amphcon": {
+		"role": ["builder"]
+	},
+	"amphraider3": {
+		"role": ["raider"],
+		"attribute": ["scout"],
+		"retreat": 0.35  // pretty disposable
+	},
+	"amphraider2": {
+		"role": ["riot"],
+		"attribute": ["melee"],
+		"retreat": 0.5
+	},
+	"amphfloater": {
+		"role": ["skirmish"],
+		"retreat": 0.35  // too slow to be retreating all the time
+	},
+	"amphriot": {
+		"role": ["riot"],
+		"retreat": 0.35  // too slow to be retreating all the time
+	},
+	"amphassault": {
+		"role": ["assault", "heavy"],
+		"retreat": 0.45
+	},
+	"amphtele": {
+		"role": ["transport"]
+	},
+	"amphaa": {
+		"role": ["anti_air"]
+	},
 
 	// factoryspider
-	"arm_spider": ["builder"],
-	"armflea": ["scout"],
-	"spiderassault": ["assault"],
-	"arm_venom": ["riot"],
-	"spiderriot": ["riot"],
-	"armsptk": ["skirmish"],
-	"armcrabe": ["assault"],
-	"armspy": ["scout"],
-	"spideraa": ["anti_air"],
+	"arm_spider": {
+		"role": ["builder"]
+	},
+	"armflea": {
+		"role": ["scout"],
+		"retreat": 0.01
+	},
+	"spiderassault": {
+		"role": ["assault"],
+		"retreat": 0.5
+	},
+	"arm_venom": {
+		"role": ["riot"],
+		"retreat": 0.8
+	},
+	"spiderriot": {
+		"role": ["riot"],
+		"retreat": 0.55
+	},
+	"armsptk": {
+		"role": ["skirmish"],
+		"retreat": 0.8
+	},
+	"armcrabe": {
+		"role": ["assault", "heavy"],
+		"attribute": ["siege"],
+		"retreat": 0.65
+	},
+	"armspy": {
+		"role": ["scout"],
+		"attribute": ["anti_heavy"]
+	},
+	"spideraa": {
+		"role": ["anti_air"]
+	},
 
 	// factoryshield
-	"cornecro": ["builder"],
-	"corclog": ["scout"],
-	"corak": ["raider", "scout"],
-	"corstorm": ["skirmish"],
-	"corthud": ["assault"],
-	"cormak": ["riot"],
-	"shieldfelon": ["assault", "riot"],
-	"shieldarty": ["artillery"],
-	"corroach": [],
-	"core_spectre": [],
-	"corcrash": ["anti_air"],
+	"cornecro": {
+		"role": ["builder"]
+	},
+	"corclog": {
+		"role": ["scout"]
+	},
+	"corak": {
+		"role": ["raider"],
+		"attribute": ["scout"]
+	},
+	"corstorm": {
+		"role": ["skirmish"]
+	},
+	"corthud": {
+		"role": ["assault"]
+	},
+	"cormak": {
+		"role": ["riot"]
+	},
+	"shieldfelon": {
+		"role": ["assault"],
+		"attribute": ["riot"]
+	},
+	"shieldarty": {
+		"role": ["artillery"]
+	},
+	"corroach": {
+		"role": ["mine"]
+	},
+	"core_spectre": {
+		"role": ["support"]
+	},
+	"corcrash": {
+		"role": ["anti_air"]
+	},
 
 	// factoryveh
-	"corned": ["builder"],
-	"corfav": ["scout"],
-	"corgator": ["melee", "raider"],
-	"cormist": ["skirmish"],
-	"corlevlr": ["riot"],
-	"corraid": ["assault"],
-	"capturecar": ["raider"],
-	"corgarp": ["skirmish"],
-	"armmerl": ["artillery"],
-	"vehaa": ["anti_air"],
+	"corned": {
+		"role": ["builder"]
+	},
+	"corfav": {
+		"role": ["scout"],
+		"retreat": 0.01
+	},
+	"corgator": {
+		"role": ["raider"],
+		"attribute": ["melee"],
+		"retreat": 0.5
+	},
+	"cormist": {
+		"role": ["skirmish"],
+		"attribute": ["siege"],
+		"retreat": 0.25  // cannot retreat
+	},
+	"corlevlr": {
+		"role": ["riot"],
+		"retreat": 0.7
+	},
+	"corraid": {
+		"role": ["assault"],
+		"retreat": 0.6  // slow to turn around
+	},
+	"capturecar": {
+		"role": ["raider"],
+		"retreat": 0.7
+	},
+	"corgarp": {
+		"role": ["skirmish"],
+		"retreat": 0.7
+	},
+	"armmerl": {
+		"role": ["artillery"],
+		"retreat": 0.9
+	},
+	"vehaa": {
+		"role": ["anti_air"]
+	},
 
 	// factoryjump
-	"corfast": ["builder"],
-	"puppy": ["raider", "scout"],
-	"corpyro": ["raider"],
-	"jumpblackhole": ["skirmish"],
-	"slowmort": ["skirmish"],
-	"corcan": ["assault"],
-	"corsumo": ["riot", "skirmish"],
-	"firewalker": ["artillery"],
-	"corsktl": [],
-	"armaak": ["anti_air"],
+	"corfast": {
+		"role": ["builder"]
+	},
+	"puppy": {
+		"role": ["raider"],
+		"attribute": ["scout"]
+	},
+	"corpyro": {
+		"role": ["raider"]
+	},
+	"jumpblackhole": {
+		"role": ["skirmish"]
+	},
+	"slowmort": {
+		"role": ["skirmish"]
+	},
+	"corcan": {
+		"role": ["assault"]
+	},
+	"corsumo": {
+		"role": ["riot", "heavy"]
+	},
+	"firewalker": {
+		"role": ["artillery"]
+	},
+	"corsktl": {
+		"role": ["mine"],
+		"attribute": ["anti_heavy"]
+	},
+	"armaak": {
+		"role": ["anti_air"]
+	},
 
 	// factoryhover
-	"corch": ["builder"],
-	"corsh": ["raider", "scout"],
-	"nsaclash": ["skirmish"],
-	"hoverassault": ["assault"],
-	"hoverdepthcharge": [],
-	"hoverriot": ["riot"],
-	"armmanni": ["artillery"],
-	"hoveraa": ["anti_air"],
+	"corch": {
+		"role": ["builder"]
+	},
+	"corsh": {
+		"role": ["raider"],
+		"attribute": ["scout"],
+		"retreat": 0.5
+	},
+	"nsaclash": {
+		"role": ["skirmish"],
+		"retreat": 0.6
+	},
+	"hoverassault": {
+		"role": ["assault"],
+		"attribute": ["hold_fire"],
+		"retreat": 0.4
+	},
+	"hoverdepthcharge": {
+		"role": ["riot"],
+		"attribute": ["melee"],
+		"retreat": 0.6
+	},
+	"hoverriot": {
+		"role": ["riot"],
+		"retreat": 0.6
+	},
+	"armmanni": {
+		"role": ["artillery"],
+		"retreat": 0.9
+	},
+	"hoveraa": {
+		"role": ["anti_air"]
+	},
 
 	// factoryship
-	"shipcon": ["builder"],
-	"shipscout": ["scout"],
-	"subraider": ["raider"],
-	"shipraider": ["raider"],
-	"shiptorp": ["riot"],
-	"shipskirm": ["skirmish"],
-	"shiparty": ["artillery"],
-	"subarty": ["artillery"],
-	"armtboat": [],
-	"shipaa": ["anti_air"],
+	"shipcon": {
+		"role": ["builder"]
+	},
+	"shipscout": {
+		"role": ["scout"]
+	},
+	"subraider": {
+		"role": ["raider"]
+	},
+	"shipraider": {
+		"role": ["raider"]
+	},
+	"shiptorp": {
+		"role": ["riot"]
+	},
+	"shipskirm": {
+		"role": ["skirmish"]
+	},
+	"shiparty": {
+		"role" :["artillery"]
+	},
+	"subarty": {
+		"role": ["artillery"]
+	},
+	"armtboat": {
+		"role": ["transport"]
+	},
+	"shipaa": {
+		"role": ["anti_air"]
+	},
 
 	// factoryplane
-	"armca": ["air", "builder"],
-	"fighter": ["air", "raider", "scout"],
-	"corvamp": ["air", "anti_air"],
-	"corshad": ["air", "bomber"],
-	"corhurc2": ["air", "bomber"],
-	"armstiletto_laser": ["air", "bomber"],
-	"armcybr": ["air", "bomber"],
-	"corawac": ["air", "scout"],
+	// FIXME: Air planes doesn't use circuit-retreat (remove zk-retreat)
+	"armca": {
+		"role": ["builder", "air"],
+		"attribute": ["limit2"],
+		"retreat": 0.99
+	},
+	"fighter": {
+		"role": ["raider", "air"],
+		"attribute": ["scout"],
+		"retreat": 0.6
+	},
+	"corvamp": {
+		"role": ["anti_air", "air"],
+		"retreat": 0.6
+	},
+	"corshad": {
+		"role": ["assault", "air"],
+		"attribute": ["bomber"],
+		"retreat": 0.6
+	},
+	"corhurc2": {
+		"role": ["riot", "air"],
+		"attribute": ["bomber"],
+		"retreat": 0.6
+	},
+	"armstiletto_laser": {
+		"role": ["assault", "air"],
+		"attribute": ["bomber"],
+		"retreat": 0.6
+	},
+	"armcybr": {
+		"role": ["assault", "air"],
+		"attribute": ["bomber", "anti_heavy"],
+		"retreat": 0.6
+	},
+	"corawac": {
+		"role": ["scout", "air"],
+		"retreat": 0.6
+	},
 
 	// factorytank
-	"coracv": ["builder"],
-	"logkoda": ["raider", "scout"],
-	"panther": ["raider"],
-	"tawf114": ["riot"],
-	"correap": ["assault"],
-	"corgol": ["assault"],
-	"cormart": ["artillery"],
-	"trem": ["artillery"],
-	"corsent": ["anti_air"],
+	"coracv": {
+		"role": ["builder"]
+	},
+	"logkoda": {
+		"role": ["raider"],
+		"attribute": ["scout"],
+		"retreat": 0.6
+	},
+	"panther": {
+		"role": ["raider"]
+	},
+	"tawf114": {
+		"role": ["riot"],
+		"retreat": 0.55
+	},
+	"correap": {
+		"role": ["assault"],
+		"retreat": 0.55
+	},
+	"corgol": {
+		"role": ["assault", "heavy"],
+		"retreat": 0.5
+	},
+	"cormart": {
+		"role": ["artillery"],
+		"retreat": 0.9
+	},
+	"trem": {
+		"role": ["artillery"],
+		"retreat": 0.9
+	},
+	"corsent": {
+		"role": ["anti_air"]
+	},
 
 	// striderhub
-	"armcomdgun": ["anti_heavy", "raider"],
-	"scorpion": ["anti_heavy", "raider"],
-	"dante": ["melee", "riot"],  // FIXME: Can't be "riot" because of DefendTask
-	"armraven": ["artillery"],
-	"funnelweb": ["artillery"],
-	"armbanth": ["melee"],
-	"armorco": ["melee"],
-	"cornukesub": [],
-	"reef": ["artillery"],
-	"corbats": ["artillery"]
+	// FIXME: Do striders have to use response/role system? Consider DefendTask (dante-riot)
+	"armcomdgun": {
+		"role": ["raider"],
+		"attribute": ["anti_heavy"],
+		"retreat": 0.7
+	},
+	"scorpion": {
+		"role": ["raider", "heavy"],
+		"attribute": ["anti_heavy"],
+		"retreat": 0.4
+	},
+	"dante": {
+		"role": ["riot", "heavy"],
+		"attribute": ["melee"],
+		"retreat": 0.5
+	},
+	"armraven": {
+		"role": ["artillery", "heavy"],
+		"retreat": 0.9
+	},
+	"funnelweb": {
+		"role": ["artillery", "heavy"],
+		"retreat": 0.8
+	},
+	"armbanth": {
+		"role": ["assault", "heavy"],
+		"attribute": ["melee"],
+		"retreat": 0.5
+	},
+	"armorco": {
+		"role": ["assault", "heavy"],
+		"attribute": ["melee"],
+		"retreat": 0.01  // no retreat, demolish enemy base
+	},
+	"cornukesub": {
+		"role": ["artillery"],
+		"attribute": ["stockpile"]
+	},
+	"reef": {
+		"role": ["artillery"]
+	},
+	"corbats": {
+		"role": ["artillery"]
+	}
 },
 
 // Build special units when enemy_metal*ratio > response_metal*eps; eps=teamSize*eps_step+(1-eps_step)
 // AA condition for 3v3: (enemy_air_metal*0.8 > (aa_metal+aa_cost)*1.8) and (aa_metal+aa_cost < army_metal*0.45)
 //
-// Probability of UnitDef for AA role depends on income tier: (tierN[UnitDef]+0.5)*enemy_air_metal*importance
-// armjeth probability for tier 1: 0.5*enemy_air_metal*4.0
+// Probability of UnitDef for AA role depends on income tier: (tierN[UnitDef]+_weight_)*enemy_air_metal*importance
+// armjeth probability for tier 1: 0.25*enemy_air_metal*4.0
 "response": {
 	"_weight_": 0.25,  // base weight of response probability
 
 	"raider": {
-		"vs":         ["skirmish", "artillery", "anti_air"],
-		"ratio":      [ 1.1,        1.1,         1.1],
-		"importance": [ 1.0,        2.0,         1.0],
+		"vs":         ["skirmish", "artillery", "anti_air", "scout"],
+		"ratio":      [ 1.1,        1.1,         1.1,        1.1],
+		"importance": [ 1.0,        2.0,         1.0,        1.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
@@ -530,102 +869,14 @@
 		"importance": [ 2.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
+	},
+	"anti_heavy": {
+		"vs":         ["heavy"],
+		"ratio":      [ 0.8],
+		"importance": [ 4.0],
+		"max_percent": 0.45,
+		"eps_step": 0.4
 	}
-},
-
-// If unit's health drops below specified percent it will retreat
-"retreat": {
-	// retreat with fight command
-	"_siege_": ["armcrabe", "cormist"],
-
-	// hold fire on retreat
-	"_hold_fire_": ["hoverassault"],
-
-	// default value for all builders
-	"_builder_": 0.8,
-
-	// default value for all fighters
-	"_fighter_": 0.5,
-
-	// minimum shield power
-	"_shield_": 0.1,
-
-	// Gunship lab
-	"gunshipcon": 0.99,
-	"blastwing": 0.01,
-	"armkam": 0.9,
-	"gunshipsupport": 0.8,
-	"blackdawn": 0.67,
-	"corcrw": 0.4,
-
-	// Cloaky lab
-	"spherepole": 0.25,  // stops dealing damage once retreating
-	"armpw": 0.1,  // disposable
-	"armrock": 0.35,  // mostly disposable
-	"armzeus": 0.5,  // assaults need to assault
-	"armham": 0.8,
-	"armsnipe": 0.9,
-	"armtick": 0.1,
-
-	// Amph Lab
-	"amphraider3": 0.35,  // pretty disposable
-	"amphraider2": 0.5,
-	"amphfloater": 0.35,  // too slow to be retreating all the time
-	"amphriot": 0.35,  // too slow to be retreating all the time
-	"amphassault": 0.45,
-
-	// Spider Lab
-	"armflea": 0.01,
-	"spiderassault": 0.5,
-	"arm_venom": 0.8,
-	"spiderriot": 0.55, 
-	"armsptk": 0.8,
-	"armcrabe": 0.65,
-
-	// Vehicle Lab
-	"corfav": 0.1,
-	"corgator": 0.5,
-	"cormist": 0.25,  // cannot retreat
-	"corlevlr": 0.7,
-	"corraid": 0.6,  // slow to turn around
-	"capturecar": 0.7,
-	"corgarp": 0.7,
-	"armmerl": 0.9,
-
-	// Hover Lab
-	"corsh": 0.5,
-	"nsaclash": 0.6,
-	"hoverassault": 0.4,
-	"hoverdepthcharge": 0.6,
-	"hoverriot": 0.6,
-	"armmanni": 0.9,
-
-	// Heavy Tanks
-	"logkoda": 0.6,
-	"tawf114": 0.55,
-	"correap": 0.55,
-	"corgol":0.5, 
-	"cormart": 0.9,
-	"trem": 0.9,
-
-	// FIXME: Air planes doesn't use circuit-retreat (remove zk-retreat)
-	"armca": 0.99,
-	"fighter": 0.6,
-	"corvamp": 0.6,
-	"corshad": 0.6,
-	"corhurc2": 0.6,
-	"armstiletto_laser": 0.6,
-	"armcybr": 0.6,
-	"corawac": 0.6,
-
-	// Striders
-	"armcomdgun": 0.7,
-	"scorpion": 0.4,
-	"dante": 0.5,
-	"armraven": 0.9,
-	"funnelweb": 0.8,
-	"armbanth": 0.5,
-	"armorco": 0.01
 },
 
 // Limits of energy structures partly defined by parabola in space (structure_cost/energyMake, unit_limit).

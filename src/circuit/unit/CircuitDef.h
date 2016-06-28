@@ -24,18 +24,30 @@ namespace circuit {
 class CCircuitDef {
 public:
 	using Id = int;
-	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, TOTAL_COUNT};
-	enum class RoleType: int {BUILDER = 0, RAIDER, RIOT, ASSAULT, SKIRM, ARTY, AIR, STATIC, SCOUT, HEAVY, BOMBER, MELEE, AH, AA, TOTAL_COUNT};
-	enum RoleMask: int {BUILDER = 0x0001, RAIDER = 0x0002, RIOT   = 0x0004, ASSAULT = 0x0008,
-						SKIRM   = 0x0010, ARTY   = 0x0020, AIR    = 0x0040, STATIC  = 0x0080,
-						SCOUT   = 0x0100, HEAVY  = 0x0200, BOMBER = 0x0400, MELEE   = 0x0800,
-						AH      = 0x1000, AA     = 0x2000, NONE   = 0x0000};
+	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, _SIZE_};
 	using RangeT = std::underlying_type<RangeType>::type;
+
+	enum class RoleType: unsigned int {BUILDER = 0, SCOUT, RAIDER, RIOT, ASSAULT, SKIRM, ARTY, AA, AH, MINE, SUPPORT, TRANS, AIR, STATIC, HEAVY, _SIZE_};
+	enum RoleMask: unsigned int {BUILDER = 0x0001, SCOUT   = 0x0002, RAIDER  = 0x0004, RIOT   = 0x0008,
+								 ASSAULT = 0x0010, SKIRM   = 0x0020, ARTY    = 0x0040, AA     = 0x0080,
+								 AH      = 0x0100, MINE    = 0x0200, SUPPORT = 0x0400, TRANS  = 0x0800,
+								 AIR     = 0x1000, STATIC  = 0x2000, HEAVY   = 0x4000, NONE   = 0x0000};
 	using RoleT = std::underlying_type<RoleType>::type;
 	using RoleM = std::underlying_type<RoleMask>::type;
 
+	/*
+	 * BOMBER:     special bomber task assignment and target selection
+	 * MELEE:      always move close to target, disregard attack range
+	 * SIEGE:      use Fight on retreat instead of Move
+	 * HOLD_FIRE:  hold fire on retreat
+	 * STOCKPILE:  load weapon before any task (NOT IMPLEMENTED)
+	 * "limit<N>": limits number of units by <N> (applied on init)
+	 */
+	enum class AttrType: RoleT {BOMBER = static_cast<RoleT>(RoleType::_SIZE_), MELEE, SIEGE, HOLD_FIRE, STOCK, _SIZE_};
+	enum AttrMask: RoleM {BOMBER = 0x08000,
+						  MELEE  = 0x10000, SIEGE = 0x20000, HOLD_FIRE = 0x40000, STOCK = 0x80000};
+
 	static RoleM GetMask(RoleT type) { return 1 << type; }
-	static RoleMask GetMask(RoleType type) { return static_cast<RoleMask>(1 << static_cast<RoleT>(type)); }
 
 	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
@@ -49,22 +61,28 @@ public:
 
 	void SetMainRole(RoleType type) { mainRole = type; }
 	RoleT GetMainRole() const { return static_cast<RoleT>(mainRole); }
+	void SetEnemyRole(RoleType type) { enemyRole = type; }
+	RoleT GetEnemyRole() const { return static_cast<RoleT>(enemyRole); }
 
-	void AddRole(RoleType value) { role |= GetMask(value); }
+	void AddAttribute(AttrType value) { role |= GetMask(static_cast<RoleT>(value)); }
+	void AddRole(RoleType value) { role |= GetMask(static_cast<RoleT>(value)); }
 	bool IsRoleAny(RoleM value)     const { return (role & value) != 0; }
 	bool IsRoleEqual(RoleM value)   const { return role == value; }
 	bool IsRoleContain(RoleM value) const { return (role & value) == value; }
 
-	bool IsRoleBuilder() const { return role & RoleMask::BUILDER; }
-	bool IsRoleScout()   const { return role & RoleMask::SCOUT; }
-	bool IsRoleRaider()  const { return role & RoleMask::RAIDER; }
-	bool IsRoleRiot()    const { return role & RoleMask::RIOT; }
-	bool IsRoleAssault() const { return role & RoleMask::ASSAULT; }
-	bool IsRoleBomber()  const { return role & RoleMask::BOMBER; }
-	bool IsRoleMelee()   const { return role & RoleMask::MELEE; }
-	bool IsRoleArty()    const { return role & RoleMask::ARTY; }
-	bool IsRoleAA()      const { return role & RoleMask::AA; }
-	bool IsRoleAH()      const { return role & RoleMask::AH; }
+	bool IsRoleBuilder()  const { return role & RoleMask::BUILDER; }
+	bool IsRoleScout()    const { return role & RoleMask::SCOUT; }
+	bool IsRoleRaider()   const { return role & RoleMask::RAIDER; }
+	bool IsRoleRiot()     const { return role & RoleMask::RIOT; }
+	bool IsRoleAssault()  const { return role & RoleMask::ASSAULT; }
+	bool IsRoleArty()     const { return role & RoleMask::ARTY; }
+	bool IsRoleAA()       const { return role & RoleMask::AA; }
+	bool IsRoleAH()       const { return role & RoleMask::AH; }
+
+	bool IsAttrBomber()   const { return role & AttrMask::BOMBER; }
+	bool IsAttrMelee()    const { return role & AttrMask::MELEE; }
+	bool IsAttrSiege()    const { return role & AttrMask::SIEGE; }
+	bool IsAttrHoldFire() const { return role & AttrMask::HOLD_FIRE; }
 
 	const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
 	float GetBuildDistance() const { return buildDistance; }
@@ -124,11 +142,6 @@ public:
 	bool IsSonarStealth() const { return isSonarStealth; }
 	bool IsTurnLarge()    const { return isTurnLarge; }
 
-	void SetSiege(bool value)    { isSiege = value; }
-	void SetHoldFire(bool value) { isHoldFire = value; }
-	bool IsSiege()    const { return isSiege; }
-	bool IsHoldFire() const { return isHoldFire; }
-
 	float GetSpeed()     const { return speed; }
 	float GetLosRadius() const { return losRadius; }
 	float GetCost()      const { return cost; }
@@ -142,6 +155,7 @@ private:
 	Id id;
 	springai::UnitDef* def;  // owner
 	RoleType mainRole;
+	RoleType enemyRole;
 	RoleM role;
 	std::unordered_set<Id> buildOptions;
 	float buildDistance;
@@ -160,7 +174,7 @@ private:
 	float dps;  // TODO: split dps like ranges on air, land, water
 	float dmg;
 	float power;  // attack power = UnitDef's max threat
-	std::array<float, static_cast<RangeT>(RangeType::TOTAL_COUNT)> maxRange;
+	std::array<float, static_cast<RangeT>(RangeType::_SIZE_)> maxRange;
 	float maxShield;
 	int category;
 	int targetCategory;
@@ -182,10 +196,6 @@ private:
 	bool isLander;
 	bool isSonarStealth;
 	bool isTurnLarge;
-
-	// Retreat options
-	bool isSiege;  // Use Fight on retreat instead of Move
-	bool isHoldFire;  // Hold fire no retreat
 
 	float speed;
 	float losRadius;

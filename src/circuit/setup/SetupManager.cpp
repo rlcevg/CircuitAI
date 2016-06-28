@@ -323,9 +323,7 @@ CAllyTeam* CSetupManager::GetAllyTeam() const
 
 void CSetupManager::ReadConfig()
 {
-	const Json::Value& root = GetConfig();
-	const Json::Value& retreats = root["retreat"];
-	retreatShield = retreats.get("_shield_", 0.1f).asFloat();
+	retreatShield = GetConfig()["retreat"].get("shield", 0.1f).asFloat();
 }
 
 void CSetupManager::FindCommander()

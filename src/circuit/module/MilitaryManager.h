@@ -125,12 +125,12 @@ private:
 	std::set<CCircuitUnit*> army;
 	float metalArmy;
 
-	std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT)> enemyMetals{{0.f}};
+	std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> enemyMetals{{0.f}};
 	struct SEnemyGroup {
 		SEnemyGroup(const springai::AIFloat3& p) : pos(p) {}
 		std::vector<CCircuitUnit::Id> units;
 		springai::AIFloat3 pos;
-		std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::TOTAL_COUNT)> roleMetals{{0.f}};
+		std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> roleMetals{{0.f}};
 	};
 	std::vector<SEnemyGroup> enemyGroups;
 

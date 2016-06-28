@@ -25,6 +25,7 @@ using namespace springai;
 CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts, Resource* res)
 		: def(def)
 		, mainRole(RoleType::SCOUT)
+		, enemyRole(RoleType::SCOUT)
 		, role(RoleMask::NONE)
 		, buildOptions(buildOpts)
 		, count(0)
@@ -48,9 +49,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, hasAntiWater(false)
 		, isAmphibious(false)
 		, isLander(false)
-		, isSiege(false)
-		, isHoldFire(false)
-		, retreat(.0f)
+		, retreat(-1.f)
 {
 	id = def->GetUnitDefId();
 
@@ -304,10 +303,6 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 	assert(terrainData.IsInitialized());
 
 	if (IsAbleToFly()) {
-
-		if (def->IsBuilder() && !GetBuildOptions().empty()) {
-			SetMaxThisUnit(2);
-		}
 
 	} else if (!IsMobile()) {  // for immobile units
 

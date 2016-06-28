@@ -18,7 +18,7 @@ class IFighterTask;
 
 class CEnemyUnit {
 public:
-	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, CLOAK = 4, TOTAL_COUNT};
+	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, CLOAK = 4, _SIZE_};
 	using RT = std::underlying_type<RangeType>::type;
 
 	CEnemyUnit(const CEnemyUnit& that) = delete;
@@ -67,7 +67,7 @@ private:
 
 	springai::AIFloat3 pos;
 	float threat;
-	std::array<int, static_cast<RT>(RangeType::TOTAL_COUNT)> range;
+	std::array<int, static_cast<RT>(RangeType::_SIZE_)> range;
 
 	enum LosMask: char {NONE = 0x00, LOS = 0x01, RADAR = 0x02, HIDDEN = 0x04, KNOWN = 0x08};
 	using LM = std::underlying_type<LosMask>::type;
