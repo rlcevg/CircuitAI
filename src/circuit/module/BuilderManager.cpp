@@ -644,18 +644,9 @@ void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 
 	int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
-	CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-	if (commander == unit) {
-		CCircuitDef* def = circuit->GetCircuitDef("corrl");
-		IBuilderTask* task = EnqueueTask(IBuilderTask::Priority::HIGH, def, pos,
-										 IBuilderTask::BuildType::DEFENCE);
-		task->AssignTo(unit);
-		task->Execute(unit);
-	} else {
-		IBuilderTask* task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 20);
-		task->AssignTo(unit);
-		task->Execute(unit);
-	}
+	IBuilderTask* task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 20);
+	task->AssignTo(unit);
+	task->Execute(unit);
 }
 
 void CBuilderManager::Init()

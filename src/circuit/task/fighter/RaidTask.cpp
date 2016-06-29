@@ -154,17 +154,30 @@ void CRaidTask::Update()
 	int frame = circuit->GetLastFrame();
 	isAttack = false;
 	if (target != nullptr) {
+		isAttack = true;
 		position = target->GetPos();
-		for (CCircuitUnit* unit : units) {
-			const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
-			TRY_UNIT(circuit, unit,
-				unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60);
-				unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
-			)
+		if (leader->GetCircuitDef()->IsAbleToFly()) {
+			for (CCircuitUnit* unit : units) {
+				TRY_UNIT(circuit, unit,
+					unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+					unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
+				)
 
-			CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
-			moveAction->SetActive(false);
+				CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
+				moveAction->SetActive(false);
+			}
+		} else {
+			for (CCircuitUnit* unit : units) {
+				const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
+				TRY_UNIT(circuit, unit,
+					unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+					unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60);
+					unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
+				)
+
+				CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
+				moveAction->SetActive(false);
+			}
 		}
 		return;
 	} else if (!pPath->empty()) {
@@ -261,7 +274,7 @@ void CRaidTask::FindTarget()
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden() ||
+		if (enemy->IsHidden() || (enemy->GetTasks().size() > 1) ||
 			(power <= threatMap->GetThreatAt(enemy->GetPos())) ||
 			!terrainManager->CanMoveToPos(area, enemy->GetPos()) ||
 			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) ||

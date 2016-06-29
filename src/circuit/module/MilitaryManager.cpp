@@ -22,7 +22,6 @@
 #include "task/fighter/RaidTask.h"
 #include "task/fighter/AttackTask.h"
 #include "task/fighter/BombTask.h"
-#include "task/fighter/MeleeTask.h"
 #include "task/fighter/ArtilleryTask.h"
 #include "task/fighter/AntiAirTask.h"
 #include "terrain/TerrainManager.h"
@@ -100,12 +99,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 		AddPower(unit);
 
-		if (unit->GetCircuitDef()->IsAbleToFly()) {
+		if (unit->GetCircuitDef()->IsAbleToFly() && (unit->GetCircuitDef()->GetMaxRange() > 600.0f)) {  // armbrawl
 			TRY_UNIT(this->circuit, unit,
-				unit->GetUnit()->ExecuteCustomCommand(CMD_RETREAT, {2.0f});
-				if (unit->GetCircuitDef()->GetMaxRange() > 600.0f) {  // armbrawl
-					unit->GetUnit()->ExecuteCustomCommand(CMD_AIR_STRAFE, {0.0f});
-				}
+				unit->GetUnit()->ExecuteCustomCommand(CMD_AIR_STRAFE, {0.0f});
 			)
 		}
 	};
@@ -299,10 +295,6 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			task = new CBombTask(this);
 			break;
 		}
-		case IFighterTask::FightType::MELEE: {
-			task = new CMeleeTask(this);
-			break;
-		}
 		case IFighterTask::FightType::ARTY: {
 			task = new CArtilleryTask(this);
 			break;
@@ -415,8 +407,6 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 			type = IFighterTask::FightType::SCOUT;
 		} else if (unit->GetCircuitDef()->IsAttrBomber()) {
 			type = IFighterTask::FightType::BOMB;
-		} else if (unit->GetCircuitDef()->IsAttrMelee()) {
-			type = IFighterTask::FightType::MELEE;
 		} else if (unit->GetCircuitDef()->IsRoleArty()) {
 			type = IFighterTask::FightType::ARTY;
 		} else if (unit->GetCircuitDef()->IsRoleAA()) {

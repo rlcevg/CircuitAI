@@ -27,6 +27,7 @@ using namespace springai;
 CRetreatTask::CRetreatTask(ITaskManager* mgr, int timeout)
 		: IUnitTask(mgr, Priority::NORMAL, Type::RETREAT, timeout)
 		, repairer(nullptr)
+		, isIgnoreIdle(false)
 {
 }
 
@@ -45,15 +46,21 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 		unit->PushBack(act);
 	}
 
-	if (cdef->IsPlane()) {
-		return;
-	}
-
 	CCircuitAI* circuit = manager->GetCircuit();
 	if (cdef->IsAttrHoldFire()) {
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->SetFireState(0);
 		)
+	}
+	if (cdef->IsAttrBoost()) {
+		int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
+		TRY_UNIT(circuit, unit,
+			if (cdef->IsPlane()) {
+				unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame);
+			}
+			unit->GetUnit()->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame);
+		)
+		return;
 	}
 
 	int squareSize = circuit->GetPathfinder()->GetSquareSize();
@@ -162,18 +169,29 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
+
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	if (cdef->IsPlane()) {
+		if (isIgnoreIdle) {
+			isIgnoreIdle = false;
+			return;
+		}
+		IUnitAction* act = static_cast<IUnitAction*>(unit->End());
+		if (act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT)) {
+			static_cast<ITravelAction*>(act)->SetFinished(true);
+		}
+
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		)
+		isIgnoreIdle = true;
+		return;
+	}
+
 	CFactoryManager* factoryManager = circuit->GetFactoryManager();
 	AIFloat3 haven = (repairer != nullptr) ? repairer->GetPos(frame) : factoryManager->GetClosestHaven(unit);
 	if (!utils::is_valid(haven)) {
 		haven = circuit->GetSetupManager()->GetBasePos();
-	}
-
-	if (unit->GetCircuitDef()->IsPlane()) {
-		// force rearm/repair | CMD_FIND_PAD
-		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Fight(haven, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-		)
-		return;
 	}
 
 	const float maxDist = factoryManager->GetAssistDef()->GetBuildDistance();
@@ -203,7 +221,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		CTerrainManager::TerrainPredicate predicate = [unitPos](const AIFloat3& p) {
 			return unitPos.SqDistance2D(p) > SQUARE(SQUARE_SIZE * 8);
 		};
-		pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), pos, maxDist, UNIT_COMMAND_BUILD_NO_FACING, predicate);
+		pos = terrainManager->FindBuildSite(cdef, pos, maxDist, UNIT_COMMAND_BUILD_NO_FACING, predicate);
 		TRY_UNIT(circuit, unit,
 //			unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
 			unit->GetUnit()->PatrolTo(pos);

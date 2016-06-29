@@ -25,10 +25,13 @@ public:
 	virtual void Update();
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
 
 private:
 	void Execute(CCircuitUnit* unit, bool isUpdating);
 	CEnemyUnit* FindTarget(CCircuitUnit* unit, const springai::AIFloat3& pos, F3Vec& path);
+
+	bool isDanger;
 };
 
 } // namespace circuit

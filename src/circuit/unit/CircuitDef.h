@@ -27,6 +27,9 @@ public:
 	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, _SIZE_};
 	using RangeT = std::underlying_type<RangeType>::type;
 
+	// TODO:
+	// Not implemented: anti_heavy, mine, support, transport
+	// No special task: air, static, heavy
 	enum class RoleType: unsigned int {BUILDER = 0, SCOUT, RAIDER, RIOT, ASSAULT, SKIRM, ARTY, AA, AH, MINE, SUPPORT, TRANS, AIR, STATIC, HEAVY, _SIZE_};
 	enum RoleMask: unsigned int {BUILDER = 0x0001, SCOUT   = 0x0002, RAIDER  = 0x0004, RIOT   = 0x0008,
 								 ASSAULT = 0x0010, SKIRM   = 0x0020, ARTY    = 0x0040, AA     = 0x0080,
@@ -40,12 +43,13 @@ public:
 	 * MELEE:      always move close to target, disregard attack range
 	 * SIEGE:      use Fight on retreat instead of Move
 	 * HOLD_FIRE:  hold fire on retreat
+	 * BOOST:      boost speed on retreat
 	 * STOCKPILE:  load weapon before any task (NOT IMPLEMENTED)
-	 * "limit<N>": limits number of units by <N> (applied on init)
 	 */
-	enum class AttrType: RoleT {BOMBER = static_cast<RoleT>(RoleType::_SIZE_), MELEE, SIEGE, HOLD_FIRE, STOCK, _SIZE_};
-	enum AttrMask: RoleM {BOMBER = 0x08000,
-						  MELEE  = 0x10000, SIEGE = 0x20000, HOLD_FIRE = 0x40000, STOCK = 0x80000};
+	enum class AttrType: RoleT {BOMBER = static_cast<RoleT>(RoleType::_SIZE_), MELEE, SIEGE, HOLD_FIRE, BOOST, STOCK, _SIZE_};
+	enum AttrMask: RoleM {BOMBER = 0x008000,
+						  MELEE  = 0x010000, SIEGE = 0x020000, HOLD_FIRE = 0x040000, BOOST = 0x080000,
+						  STOCK  = 0x100000};
 
 	static RoleM GetMask(RoleT type) { return 1 << type; }
 
@@ -83,6 +87,8 @@ public:
 	bool IsAttrMelee()    const { return role & AttrMask::MELEE; }
 	bool IsAttrSiege()    const { return role & AttrMask::SIEGE; }
 	bool IsAttrHoldFire() const { return role & AttrMask::HOLD_FIRE; }
+	bool IsAttrBoost()    const { return role & AttrMask::BOOST; }
+	bool IsAttrStock()    const { return role & AttrMask::STOCK; }
 
 	const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
 	float GetBuildDistance() const { return buildDistance; }

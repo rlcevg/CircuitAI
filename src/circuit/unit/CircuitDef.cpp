@@ -81,6 +81,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		category |= circuit->GetBadCategory();
 	}
 
+//	if (customParams.find("boost_speed_mult") != customParams.end()) {
+//		AddAttribute(AttrType::BOOST);
+//	}
+
 	it = customParams.find("midposoffset");
 	if (it != customParams.end()) {
 		const std::string& str = it->second;

@@ -25,6 +25,7 @@ using namespace springai;
 
 CBombTask::CBombTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::BOMB)
+		, isDanger(false)
 {
 }
 
@@ -87,21 +88,27 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
 	if (!unit->IsWeaponReady(frame)) {  // is unit armed?
-		// force rearm/repair | CMD_FIND_PAD
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
+		SetTarget(nullptr);
 		return;
+	}
+
+	if ((target != nullptr) && isDanger) {
+		return;
+	} else {
+		isDanger = false;
 	}
 
 	const AIFloat3& pos = unit->GetPos(frame);
 	std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
-	CEnemyUnit* bestTarget = FindTarget(unit, pos, *pPath);
+	SetTarget(FindTarget(unit, pos, *pPath));
 
-	if (bestTarget != nullptr) {
-		position = bestTarget->GetPos();
+	if (target != nullptr) {
+		position = target->GetPos();
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
 		moveAction->SetActive(false);
 		return;
@@ -157,6 +164,15 @@ void CBombTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
+void CBombTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+{
+	if (target == nullptr) {
+		IFighterTask::OnUnitDamaged(unit, attacker);
+	}
+
+	isDanger = true;
+}
+
 CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -179,7 +195,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden() ||
+		if (enemy->IsHidden() || (enemy->GetTasks().size() > 1) ||
 			(power <= threatMap->GetThreatAt(enemy->GetPos()) - enemy->GetThreat()) ||
 			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
 		{

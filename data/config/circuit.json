@@ -352,16 +352,19 @@
 		// Auto-assigned roles: builder, air, static
 		"role": ["builder"]
 
-		// Attributes - optinal roles and unit states: bomber, melee, siege, hold_fire, limit<N>
+		// Attributes - optinal roles and unit states: bomber, melee, siege, hold_fire, boost, stockpile
 		// "bomber" - special bomber task assignment and target selection
 		// "melee" - always move close to target, disregard attack range
 		// "siege" - use fight command on retreat instead of move
 		// "hold_fire" - hold fire on retreat
+		// "boost" - boost speed on retreat
 		// "stockpile" - load weapon before any task (NOT IMPLEMENTED)
-		// "limit<N>" - limits number of units by <N>
 //		"attribute": [],
 
-		// minimum hp percent before retreat
+		// Limits number of units
+//		"limit": 10,
+
+		// Minimum hp percent before retreat
 //		"retreat": 0.8
 	},
 	"armpw": {
@@ -406,7 +409,7 @@
 	// factorygunship
 	"gunshipcon": {
 		"role": ["builder", "air"],
-		"attribute": ["limit2"],
+		"limit": 2,
 		"retreat": 0.99
 	},
 	"blastwing": {
@@ -697,15 +700,14 @@
 	},
 
 	// factoryplane
-	// FIXME: Air planes doesn't use circuit-retreat (remove zk-retreat)
 	"armca": {
 		"role": ["builder", "air"],
-		"attribute": ["limit2"],
+		"limit": 2,
 		"retreat": 0.99
 	},
 	"fighter": {
-		"role": ["raider", "air"],
-		"attribute": ["scout"],
+		"role": ["anti_air", "air"],
+		"attribute": ["scout", "boost"],
 		"retreat": 0.6
 	},
 	"corvamp": {
@@ -776,13 +778,13 @@
 	// striderhub
 	// FIXME: Do striders have to use response/role system? Consider DefendTask (dante-riot)
 	"armcomdgun": {
-		"role": ["raider"],
-		"attribute": ["anti_heavy"],
+		"role": ["anti_heavy"],
+		"attribute": ["raider"],
 		"retreat": 0.7
 	},
 	"scorpion": {
-		"role": ["raider", "heavy"],
-		"attribute": ["anti_heavy"],
+		"role": ["anti_heavy", "heavy"],
+		"attribute": ["raider"],
 		"retreat": 0.4
 	},
 	"dante": {

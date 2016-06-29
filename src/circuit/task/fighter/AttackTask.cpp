@@ -12,6 +12,7 @@
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
 #include "unit/action/FightAction.h"
+#include "unit/action/MoveAction.h"
 #include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -66,9 +67,14 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 	minPower += unit->GetCircuitDef()->GetPower() / MIN_POWER_DIV;
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
-	CFightAction* fightAction = new CFightAction(unit, squareSize);
-	unit->PushBack(fightAction);
-	fightAction->SetActive(false);
+	ITravelAction* travelAction;
+	if (unit->GetCircuitDef()->IsAttrMelee()) {
+		travelAction = new CMoveAction(unit, squareSize);
+	} else {
+		travelAction = new CFightAction(unit, squareSize);
+	}
+	unit->PushBack(travelAction);
+	travelAction->SetActive(false);
 }
 
 void CAttackTask::RemoveAssignee(CCircuitUnit* unit)
@@ -88,9 +94,9 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 	if (pPath->empty()) {
 		Update();
 	} else {
-		CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-		fightAction->SetPath(pPath, lowestSpeed);
-		fightAction->SetActive(true);
+		ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+		travelAction->SetPath(pPath, lowestSpeed);
+		travelAction->SetActive(true);
 	}
 }
 
@@ -127,8 +133,8 @@ void CAttackTask::Update()
 					unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 				)
 
-				CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-				fightAction->SetActive(false);
+				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+				travelAction->SetActive(false);
 			}
 		}
 		return;
@@ -142,9 +148,9 @@ void CAttackTask::Update()
 		if (!isExecute) {
 			if (wasRegroup && !pPath->empty()) {
 				for (CCircuitUnit* unit : units) {
-					CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-					fightAction->SetPath(pPath, lowestSpeed);
-					fightAction->SetActive(true);
+					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+					travelAction->SetPath(pPath, lowestSpeed);
+					travelAction->SetActive(true);
 				}
 			}
 //			ISquadTask::Update();
@@ -176,13 +182,17 @@ void CAttackTask::Update()
 
 				const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
 				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+					if (unit->GetCircuitDef()->IsAttrMelee()) {
+						unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+					} else {
+						unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+					}
 					unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 					unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 				)
 
-				CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-				fightAction->SetActive(false);
+				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+				travelAction->SetActive(false);
 			}
 			return;
 		}
@@ -194,8 +204,8 @@ void CAttackTask::Update()
 			for (CCircuitUnit* unit : units) {
 				unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
 
-				CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-				fightAction->SetActive(false);
+				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+				travelAction->SetActive(false);
 			}
 			return;
 		}
@@ -207,14 +217,14 @@ void CAttackTask::Update()
 				unit->GetUnit()->SetWantedMaxSpeed(lowestSpeed);
 			)
 
-			CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-			fightAction->SetActive(false);
+			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+			travelAction->SetActive(false);
 		}
 	} else {
 		for (CCircuitUnit* unit : units) {
-			CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-			fightAction->SetPath(pPath, lowestSpeed);
-			fightAction->SetActive(true);
+			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+			travelAction->SetPath(pPath, lowestSpeed);
+			travelAction->SetActive(true);
 		}
 	}
 }
@@ -266,7 +276,7 @@ void CAttackTask::FindTarget()
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden() ||
+		if (enemy->IsHidden() || (enemy->GetTasks().size() > 1) ||
 			(power <= threatMap->GetThreatAt(enemy->GetPos())) ||
 			!terrainManager->CanMoveToPos(area, enemy->GetPos()) ||
 			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) ||

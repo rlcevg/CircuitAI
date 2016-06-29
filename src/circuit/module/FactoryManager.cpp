@@ -723,6 +723,7 @@ void CFactoryManager::ReadConfig()
 		{"melee",     CCircuitDef::AttrType::MELEE},
 		{"siege",     CCircuitDef::AttrType::SIEGE},
 		{"hold_fire", CCircuitDef::AttrType::HOLD_FIRE},
+		{"boost",     CCircuitDef::AttrType::BOOST},
 		{"stockpile", CCircuitDef::AttrType::STOCK},
 	};
 	const Json::Value& behaviours = root["behaviour"];
@@ -778,6 +779,7 @@ void CFactoryManager::ReadConfig()
 			cdef->AddRole(it->second);
 		}
 
+		// Read optional roles and attributes
 		const Json::Value& attributes = behaviour["attribute"];
 		for (const Json::Value& attr : attributes) {
 			const std::string& attrName = attr.asString();
@@ -785,12 +787,8 @@ void CFactoryManager::ReadConfig()
 			if (it == roleNames.end()) {
 				auto it = attrNames.find(attrName.c_str());
 				if (it == attrNames.end()) {
-					if (attrName.substr(0, 5) == "limit") {
-						cdef->SetMaxThisUnit(utils::string_to_int(attrName.substr(5)));
-					} else {
-						circuit->LOG("CONFIG %s: %s has unknown attribute '%s'", cfgName.c_str(), defName.c_str(), attrName.c_str());
-						continue;
-					}
+					circuit->LOG("CONFIG %s: %s has unknown attribute '%s'", cfgName.c_str(), defName.c_str(), attrName.c_str());
+					continue;
 				} else {
 					cdef->AddAttribute(it->second);
 				}
@@ -800,7 +798,12 @@ void CFactoryManager::ReadConfig()
 			}
 		}
 
-		cdef->SetRetreat(behaviour.get("retreat", -1.f).asFloat());
+		const Json::Value& limit = behaviour["limit"];
+		if (!limit.isNull()) {
+			cdef->SetMaxThisUnit(limit.asUInt());
+		}
+
+		cdef->SetRetreat(behaviour.get("retreat", cdef->GetRetreat()).asFloat());
 	}
 
 	/*

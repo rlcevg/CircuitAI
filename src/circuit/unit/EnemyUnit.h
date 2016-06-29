@@ -34,6 +34,7 @@ public:
 
 	void BindTask(IFighterTask* task) { tasks.insert(task); }
 	void UnbindTask(IFighterTask* task) { tasks.erase(task); }
+	const std::set<IFighterTask*>& GetTasks() const { return tasks; }
 
 	void SetLastSeen(int frame) { lastSeen = frame; }
 	int GetLastSeen() const { return lastSeen; }
