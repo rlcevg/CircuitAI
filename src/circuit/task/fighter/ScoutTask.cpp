@@ -145,7 +145,6 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	IFighterTask::OnUnitIdle(unit);
-
 	if (units.find(unit) != units.end()) {
 		RemoveAssignee(unit);
 	}

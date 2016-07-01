@@ -82,6 +82,7 @@ public:
 	bool IsRoleArty()     const { return role & RoleMask::ARTY; }
 	bool IsRoleAA()       const { return role & RoleMask::AA; }
 	bool IsRoleAH()       const { return role & RoleMask::AH; }
+	bool IsRoleHeavy()    const { return role & RoleMask::HEAVY; }
 
 	bool IsAttrBomber()   const { return role & AttrMask::BOMBER; }
 	bool IsAttrMelee()    const { return role & AttrMask::MELEE; }
@@ -147,6 +148,7 @@ public:
 	bool IsLander()       const { return isLander; }
 	bool IsSonarStealth() const { return isSonarStealth; }
 	bool IsTurnLarge()    const { return isTurnLarge; }
+	bool IsAbleToCloak()  const { return isAbleToCloak; }
 
 	float GetSpeed()     const { return speed; }
 	float GetLosRadius() const { return losRadius; }
@@ -202,6 +204,7 @@ private:
 	bool isLander;
 	bool isSonarStealth;
 	bool isTurnLarge;
+	bool isAbleToCloak;
 
 	float speed;
 	float losRadius;

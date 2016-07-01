@@ -24,6 +24,7 @@
 #include "task/fighter/BombTask.h"
 #include "task/fighter/ArtilleryTask.h"
 #include "task/fighter/AntiAirTask.h"
+#include "task/fighter/AntiHeavyTask.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
@@ -303,6 +304,10 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			task = new CAntiAirTask(this);
 			break;
 		}
+		case IFighterTask::FightType::AH: {
+			task = new CAntiHeavyTask(this);
+			break;
+		}
 	}
 
 	fightTasks[static_cast<IFighterTask::FT>(type)].insert(task);
@@ -352,9 +357,9 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 			CCircuitDef::RoleMask::RAIDER |
 			CCircuitDef::RoleMask::SCOUT |
 			CCircuitDef::AttrMask::BOMBER |
-			CCircuitDef::AttrMask::MELEE |
 			CCircuitDef::RoleMask::ARTY |
-			CCircuitDef::RoleMask::AA;
+			CCircuitDef::RoleMask::AA |
+			CCircuitDef::RoleMask::AH;
 	if (!unit->GetCircuitDef()->IsRoleAny(role)) {
 	// FIXME: Finish central task assignment system
 		int frame = circuit->GetLastFrame();
@@ -396,23 +401,27 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 	}
 
 	if (task == nullptr) {
+		static const std::map<CCircuitDef::RoleT, IFighterTask::FightType> types = {
+			{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::SCOUT), IFighterTask::FightType::SCOUT},
+			{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::RAIDER), IFighterTask::FightType::RAID},
+			{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::ARTY), IFighterTask::FightType::ARTY},
+			{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::AA), IFighterTask::FightType::AA},
+			{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::AH), IFighterTask::FightType::AH},
+		};
 		IFighterTask::FightType type;
-		if (unit->GetCircuitDef()->IsRoleRaider()) {
-			if (unit->GetCircuitDef()->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
+		CCircuitDef* cdef = unit->GetCircuitDef();
+		auto it = types.find(unit->GetCircuitDef()->GetMainRole());
+		if (it != types.end()) {
+			type = it->second;
+			if ((type == IFighterTask::FightType::RAID) && cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
 				type = IFighterTask::FightType::SCOUT;
-			} else {
-				type = IFighterTask::FightType::RAID;
 			}
-		} else if (unit->GetCircuitDef()->IsRoleScout()) {
-			type = IFighterTask::FightType::SCOUT;
-		} else if (unit->GetCircuitDef()->IsAttrBomber()) {
-			type = IFighterTask::FightType::BOMB;
-		} else if (unit->GetCircuitDef()->IsRoleArty()) {
-			type = IFighterTask::FightType::ARTY;
-		} else if (unit->GetCircuitDef()->IsRoleAA()) {
-			type = IFighterTask::FightType::AA;
 		} else {
-			type = IFighterTask::FightType::RALLY;
+			if (cdef->IsAttrBomber()) {
+				type = IFighterTask::FightType::BOMB;
+			} else {
+				type = IFighterTask::FightType::RALLY;
+			}
 		}
 		task = EnqueueTask(type);
 	}

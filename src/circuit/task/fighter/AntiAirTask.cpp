@@ -66,7 +66,6 @@ void CAntiAirTask::AssignTo(CCircuitUnit* unit)
 void CAntiAirTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	ISquadTask::RemoveAssignee(unit);
-
 	if (units.empty()) {
 		manager->AbortTask(this);
 	}

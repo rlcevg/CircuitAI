@@ -74,6 +74,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	isFloater      = def->IsFloater() && !isSubmarine && !isAbleToFly;
 	isSonarStealth = def->IsSonarStealth();
 	isTurnLarge    = (speed / (def->GetTurnRate() + 1e-3f) > 0.003f);
+	isAbleToCloak  = def->IsAbleToCloak();
 
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto it = customParams.find("is_drone");

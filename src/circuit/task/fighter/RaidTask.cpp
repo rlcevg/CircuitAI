@@ -70,7 +70,6 @@ void CRaidTask::AssignTo(CCircuitUnit* unit)
 void CRaidTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	ISquadTask::RemoveAssignee(unit);
-
 	if (units.empty()) {
 		manager->AbortTask(this);
 	}

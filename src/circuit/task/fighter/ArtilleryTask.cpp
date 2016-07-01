@@ -149,7 +149,6 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 void CArtilleryTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	IFighterTask::OnUnitIdle(unit);
-
 	if (units.find(unit) != units.end()) {
 		RemoveAssignee(unit);
 	}

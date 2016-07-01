@@ -158,7 +158,6 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 void CBombTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	IFighterTask::OnUnitIdle(unit);
-
 	if (units.find(unit) != units.end()) {
 		RemoveAssignee(unit);
 	}
