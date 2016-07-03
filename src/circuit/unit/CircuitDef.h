@@ -44,12 +44,13 @@ public:
 	 * SIEGE:      use Fight on retreat instead of Move
 	 * HOLD_FIRE:  hold fire on retreat
 	 * BOOST:      boost speed on retreat
+	 * NO_JUMP:    disable jump on retreat
 	 * STOCKPILE:  load weapon before any task (NOT IMPLEMENTED)
 	 */
-	enum class AttrType: RoleT {BOMBER = static_cast<RoleT>(RoleType::_SIZE_), MELEE, SIEGE, HOLD_FIRE, BOOST, STOCK, _SIZE_};
-	enum AttrMask: RoleM {BOMBER = 0x008000,
-						  MELEE  = 0x010000, SIEGE = 0x020000, HOLD_FIRE = 0x040000, BOOST = 0x080000,
-						  STOCK  = 0x100000};
+	enum class AttrType: RoleT {BOMBER = static_cast<RoleT>(RoleType::_SIZE_), MELEE, SIEGE, HOLD_FIRE, BOOST, NO_JUMP, STOCK, _SIZE_};
+	enum AttrMask: RoleM {BOMBER  = 0x008000,
+						  MELEE   = 0x010000, SIEGE = 0x020000, HOLD_FIRE = 0x040000, BOOST = 0x080000,
+						  NO_JUMP = 0x100000, STOCK = 0x200000};
 
 	static RoleM GetMask(RoleT type) { return 1 << type; }
 
@@ -89,6 +90,7 @@ public:
 	bool IsAttrSiege()    const { return role & AttrMask::SIEGE; }
 	bool IsAttrHoldFire() const { return role & AttrMask::HOLD_FIRE; }
 	bool IsAttrBoost()    const { return role & AttrMask::BOOST; }
+	bool IsAttrNoJump()   const { return role & AttrMask::NO_JUMP; }
 	bool IsAttrStock()    const { return role & AttrMask::STOCK; }
 
 	const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
@@ -149,10 +151,12 @@ public:
 	bool IsSonarStealth() const { return isSonarStealth; }
 	bool IsTurnLarge()    const { return isTurnLarge; }
 	bool IsAbleToCloak()  const { return isAbleToCloak; }
+	bool IsAbleToJump()   const { return isAbleToJump; }
 
 	float GetSpeed()     const { return speed; }
 	float GetLosRadius() const { return losRadius; }
 	float GetCost()      const { return cost; }
+	float GetJumpRange() const { return jumpRange; }
 
 	void SetRetreat(float value) { retreat = value; }
 	float GetRetreat()   const { return retreat; }
@@ -205,10 +209,12 @@ private:
 	bool isSonarStealth;
 	bool isTurnLarge;
 	bool isAbleToCloak;
+	bool isAbleToJump;
 
 	float speed;
 	float losRadius;
 	float cost;
+	float jumpRange;
 	float retreat;
 
 	springai::AIFloat3 midPosOffset;

@@ -264,15 +264,15 @@
 	},
 
 	"factoryjump": {
-		"importance": [0, 0],
+		"importance": [1.0, 1.0],
 		"require_energy": false,
 
 		"income_tier": [40],
 		//             freaker,   puppy,   pyro,      placeholder,     moderator,  jack,     sumo,      firewalker,   skuttle,   archangel
 		"unit_def":  ["corfast", "puppy", "corpyro", "jumpblackhole", "slowmort", "corcan", "corsumo", "firewalker", "corsktl", "armaak"],
 		"land": {
-			"tier0": [ 0.00,      0.09,    0.60,      0.05,            0.10,       0.05,     0.00,      0.10,         0.01,      0.00],
-			"tier1": [ 0.00,      0.01,    0.20,      0.10,            0.10,       0.30,     0.05,      0.20,         0.04,      0.00]
+			"tier0": [ 0.00,      0.10,    0.70,      0.05,            0.10,       0.05,     0.00,      0.00,         0.00,      0.00],
+			"tier1": [ 0.00,      0.01,    0.24,      0.10,            0.10,       0.45,     0.05,      0.05,         0.00,      0.00]
 		},
 
 		"caretaker": 1
@@ -358,6 +358,7 @@
 		// "siege" - use fight command on retreat instead of move
 		// "hold_fire" - hold fire on retreat
 		// "boost" - boost speed on retreat
+		// "no_jump" - disable jump on retreat
 		// "stockpile" - load weapon before any task (NOT IMPLEMENTED)
 //		"attribute": [],
 
@@ -512,8 +513,8 @@
 		"retreat": 0.65
 	},
 	"armspy": {
-		"role": ["scout"],
-		"attribute": ["anti_heavy"]
+		"role": ["anti_heavy"],
+		"attribute": ["scout"]
 	},
 	"spideraa": {
 		"role": ["anti_air"]
@@ -619,14 +620,14 @@
 		"role": ["assault"]
 	},
 	"corsumo": {
-		"role": ["riot", "heavy"]
+		"role": ["riot", "heavy"],
+		"attribute": ["no_jump"]
 	},
 	"firewalker": {
 		"role": ["artillery"]
 	},
 	"corsktl": {
-		"role": ["mine"],
-		"attribute": ["anti_heavy"]
+		"role": ["anti_heavy", "mine"]
 	},
 	"armaak": {
 		"role": ["anti_air"]
@@ -731,7 +732,7 @@
 	},
 	"armcybr": {
 		"role": ["assault", "air"],
-		"attribute": ["bomber", "anti_heavy"],
+		"attribute": ["bomber"],
 		"retreat": 0.6
 	},
 	"corawac": {
@@ -874,7 +875,7 @@
 	},
 	"anti_heavy": {
 		"vs":         ["heavy"],
-		"ratio":      [ 0.8],
+		"ratio":      [ 0.6],
 		"importance": [ 4.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4

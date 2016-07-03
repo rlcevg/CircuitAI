@@ -973,7 +973,7 @@ void CCircuitAI::ActionUpdate()
 		actionIterator = 0;
 	}
 
-	// stagger the SlowUpdate's
+	// stagger the Update's
 	unsigned int n = (actionUnits.size() / ACTION_UPDATE_RATE) + 1;
 
 	while ((actionIterator < actionUnits.size()) && (n != 0)) {

@@ -724,6 +724,7 @@ void CFactoryManager::ReadConfig()
 		{"siege",     CCircuitDef::AttrType::SIEGE},
 		{"hold_fire", CCircuitDef::AttrType::HOLD_FIRE},
 		{"boost",     CCircuitDef::AttrType::BOOST},
+		{"no_jump",   CCircuitDef::AttrType::NO_JUMP},
 		{"stockpile", CCircuitDef::AttrType::STOCK},
 	};
 	const Json::Value& behaviours = root["behaviour"];
@@ -1047,7 +1048,7 @@ void CFactoryManager::UpdateAssist()
 {
 	utils::free_clear(deleteTasks);
 	if (!deleteAssists.empty()) {
-		for (auto task : deleteAssists) {
+		for (IBuilderTask* task : deleteAssists) {
 			updateAssists.erase(task);
 			delete task;
 		}

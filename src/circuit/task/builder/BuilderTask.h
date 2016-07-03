@@ -31,7 +31,7 @@ public:
 		MEX,
 		REPAIR,
 		RECLAIM,
-		TASKS_COUNT,  // build-tasks count
+		_SIZE_,  // build-tasks count
 		RECRUIT,
 		TERRAFORM, PATROL,  // builder actions that don't have UnitDef as target
 		DEFAULT = BIG_GUN

@@ -55,6 +55,7 @@ bool CAntiHeavyTask::CanAssignTo(CCircuitUnit* unit) const
 void CAntiHeavyTask::AssignTo(CCircuitUnit* unit)
 {
 	ISquadTask::AssignTo(unit);
+	highestRange = std::max(highestRange, unit->GetCircuitDef()->GetLosRadius());
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	if (unit->GetCircuitDef()->IsAbleToCloak()) {
@@ -74,6 +75,8 @@ void CAntiHeavyTask::RemoveAssignee(CCircuitUnit* unit)
 	ISquadTask::RemoveAssignee(unit);
 	if (units.empty()) {
 		manager->AbortTask(this);
+	} else {
+		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetLosRadius());
 	}
 
 	if (unit->GetCircuitDef()->IsAbleToCloak()) {
@@ -88,9 +91,7 @@ void CAntiHeavyTask::Execute(CCircuitUnit* unit)
 	if (isRegroup || isAttack) {
 		return;
 	}
-	if (pPath->empty()) {
-		Update();
-	} else {
+	if (!pPath->empty()) {
 		CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
 		moveAction->SetPath(pPath);
 		moveAction->SetActive(true);
@@ -171,7 +172,13 @@ void CAntiHeavyTask::Update()
 		if (isAttack) {
 			for (CCircuitUnit* unit : units) {
 				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+					if (unit->IsJumpReady()) {
+						const AIFloat3& pos = target->GetPos();
+						unit->GetUnit()->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+						unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60);
+					} else {
+						unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+					}
 					unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 				)
 
@@ -245,15 +252,15 @@ void CAntiHeavyTask::FindTarget()
 	CEnemyUnit* bestTarget = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
 
-	std::function<bool (CCircuitDef* edef)> badCondition;
+	std::function<bool (CEnemyUnit* enemy)> badCondition;
 	if (circuit->GetMilitaryManager()->GetEnemyMetal(CCircuitDef::RoleType::HEAVY) > .1f) {
-		badCondition = [](CCircuitDef* edef) {
-			return !edef->IsRoleHeavy();
+		badCondition = [](CEnemyUnit* enemy) {
+			return !enemy->GetCircuitDef()->IsRoleHeavy() || enemy->GetUnit()->IsParalyzed();
 		};
 	} else {
 		const int noChaseCat = cdef->GetNoChaseCategory();
-		badCondition = [noChaseCat](CCircuitDef* edef) {
-			return (edef->GetCategory() & noChaseCat) != 0;
+		badCondition = [noChaseCat](CEnemyUnit* enemy) {
+			return (enemy->GetCircuitDef()->GetCategory() & noChaseCat) != 0;
 		};
 	}
 	threatMap->SetThreatType(leader);
@@ -269,7 +276,7 @@ void CAntiHeavyTask::FindTarget()
 
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
-			if (((edef->GetCategory() & canTargetCat) == 0) || badCondition(edef)) {
+			if (((edef->GetCategory() & canTargetCat) == 0) || badCondition(enemy)) {
 				continue;
 			}
 		}

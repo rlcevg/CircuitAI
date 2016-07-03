@@ -193,7 +193,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		}), FRAMES_PER_SEC * 20);
 	};
 
-	buildTasks.resize(static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::TASKS_COUNT));
+	buildTasks.resize(static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::_SIZE_));
 
 	for (auto mtId : workerMobileTypes) {
 		for (auto& area : terrainManager->GetMobileTypeById(mtId)->area) {
@@ -319,13 +319,13 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 
 const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType type) const
 {
-	assert(type < IBuilderTask::BuildType::TASKS_COUNT);
+	assert(type < IBuilderTask::BuildType::_SIZE_);
 	return buildTasks[static_cast<IBuilderTask::BT>(type)];
 }
 
 void CBuilderManager::ActivateTask(IBuilderTask* task)
 {
-	if ((task->GetType() == IUnitTask::Type::BUILDER) && (task->GetBuildType() < IBuilderTask::BuildType::TASKS_COUNT)) {
+	if ((task->GetType() == IUnitTask::Type::BUILDER) && (task->GetBuildType() < IBuilderTask::BuildType::_SIZE_)) {
 		buildTasks[static_cast<IBuilderTask::BT>(task->GetBuildType())].insert(task);
 		buildTasksCount++;
 	} else {
@@ -500,7 +500,7 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 
 void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
 {
-	if ((task->GetType() == IUnitTask::Type::BUILDER) && (task->GetBuildType() < IBuilderTask::BuildType::TASKS_COUNT)) {
+	if ((task->GetType() == IUnitTask::Type::BUILDER) && (task->GetBuildType() < IBuilderTask::BuildType::_SIZE_)) {
 		std::set<IBuilderTask*>& tasks = buildTasks[static_cast<IBuilderTask::BT>(task->GetBuildType())];
 		auto it = tasks.find(task);
 		if (it != tasks.end()) {

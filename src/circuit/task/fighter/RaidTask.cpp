@@ -59,7 +59,7 @@ bool CRaidTask::CanAssignTo(CCircuitUnit* unit) const
 void CRaidTask::AssignTo(CCircuitUnit* unit)
 {
 	ISquadTask::AssignTo(unit);
-	highestRange = std::max(highestRange, 500.f);
+	highestRange = std::max(highestRange, unit->GetCircuitDef()->GetLosRadius());
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
 	CMoveAction* moveAction = new CMoveAction(unit, squareSize);
@@ -72,6 +72,8 @@ void CRaidTask::RemoveAssignee(CCircuitUnit* unit)
 	ISquadTask::RemoveAssignee(unit);
 	if (units.empty()) {
 		manager->AbortTask(this);
+	} else {
+		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetLosRadius());
 	}
 }
 
@@ -80,9 +82,7 @@ void CRaidTask::Execute(CCircuitUnit* unit)
 	if (isRegroup || isAttack) {
 		return;
 	}
-	if (pPath->empty()) {
-		Update();
-	} else {
+	if (!pPath->empty()) {
 		CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
 		moveAction->SetPath(pPath);
 		moveAction->SetActive(true);

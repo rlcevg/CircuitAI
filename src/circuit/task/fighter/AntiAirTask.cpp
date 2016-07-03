@@ -76,9 +76,7 @@ void CAntiAirTask::Execute(CCircuitUnit* unit)
 	if (isRegroup || isAttack) {
 		return;
 	}
-	if (pPath->empty()) {
-		Update();
-	} else {
+	if (!pPath->empty()) {
 		CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
 		fightAction->SetPath(pPath);
 		fightAction->SetActive(true);

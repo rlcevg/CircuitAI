@@ -46,8 +46,7 @@ using namespace springai;
 
 CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit)
-		, fightUpdateSlice(0)
-		, retUpdateSlice(0)
+		, fightIterator(0)
 		, scoutIdx(0)
 		, metalArmy(.0f)
 {
@@ -176,7 +175,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 	defence = circuit->GetAllyTeam()->GetDefenceMatrix().get();
 
-	fightTasks.resize(static_cast<IFighterTask::FT>(IFighterTask::FightType::TASKS_COUNT));
+	fightTasks.resize(static_cast<IFighterTask::FT>(IFighterTask::FightType::_SIZE_));
 
 	// FIXME: Resume K-Means experiment
 //	AIFloat3 medPos(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
@@ -210,13 +209,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 CMilitaryManager::~CMilitaryManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	for (std::set<IFighterTask*>& tasks : fightTasks) {
-		utils::free_clear(tasks);
-	}
-	utils::free_clear(fightDeleteTasks);
-
-	utils::free_clear(retreatTasks);
-	utils::free_clear(retDeleteTasks);
+	utils::free_clear(fightUpdates);
 }
 
 int CMilitaryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -311,6 +304,7 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 	}
 
 	fightTasks[static_cast<IFighterTask::FT>(type)].insert(task);
+	fightUpdates.push_back(task);
 	return task;
 }
 
@@ -318,115 +312,55 @@ IFighterTask* CMilitaryManager::EnqueueGuard(CCircuitUnit* vip)
 {
 	IFighterTask* task = new CGuardTask(this, vip, 1.0f);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::GUARD)].insert(task);
+	fightUpdates.push_back(task);
 	return task;
 }
 
 CRetreatTask* CMilitaryManager::EnqueueRetreat()
 {
 	CRetreatTask* task = new CRetreatTask(this);
-	retreatTasks.insert(task);
+	fightUpdates.push_back(task);
 	return task;
 }
 
 void CMilitaryManager::DequeueTask(IFighterTask* task, bool done)
 {
 	if (task->GetType() == IUnitTask::Type::FIGHTER) {
-		std::set<IFighterTask*>& tasks = fightTasks[static_cast<IFighterTask::FT>(task->GetFightType())];
-		auto it = tasks.find(task);
-		if (it != tasks.end()) {
-			tasks.erase(it);
-			task->Close(done);
-			fightDeleteTasks.insert(task);
-		}
-	} else {
-		auto it = retreatTasks.find(task);
-		if (it != retreatTasks.end()) {
-			retreatTasks.erase(task);
-			task->Close(done);
-			retDeleteTasks.insert(task);
-		}
+		fightTasks[static_cast<IFighterTask::FT>(task->GetFightType())].erase(task);
 	}
+	task->Dead();
+	task->Close(done);
 }
 
 IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 {
-	circuit->GetThreatMap()->SetThreatType(unit);
-	const IFighterTask* task = nullptr;
-	// FIXME: Finish central task assignment system
-	const CCircuitDef::RoleM role =
-			CCircuitDef::RoleMask::RAIDER |
-			CCircuitDef::RoleMask::SCOUT |
-			CCircuitDef::AttrMask::BOMBER |
-			CCircuitDef::RoleMask::ARTY |
-			CCircuitDef::RoleMask::AA |
-			CCircuitDef::RoleMask::AH;
-	if (!unit->GetCircuitDef()->IsRoleAny(role)) {
-	// FIXME: Finish central task assignment system
-		int frame = circuit->GetLastFrame();
-		AIFloat3 pos = unit->GetPos(frame);
-		STerrainMapArea* area = unit->GetArea();
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		CPathFinder* pathfinder = circuit->GetPathfinder();
-		terrainManager->CorrectPosition(pos);
-		pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-		const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
-		const float maxDistCost = MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC);
-		const int distance = std::max<int>(unit->GetCircuitDef()->GetMaxRange(), pathfinder->GetSquareSize());
-		float metric = std::numeric_limits<float>::max();
-
-		for (const std::set<IFighterTask*>& tasks : fightTasks) {
-			for (const IFighterTask* candidate : tasks) {
-				if (!candidate->CanAssignTo(unit)) {
-					continue;
-				}
-
-				// Check time-distance to target
-				float distCost;
-
-				const AIFloat3& tp = candidate->GetPosition();
-				AIFloat3 taskPos = utils::is_valid(tp) ? tp : pos;
-
-				if (!terrainManager->CanMoveToPos(area, taskPos)) {  // ensure that path always exists
-					continue;
-				}
-
-				distCost = std::max(pathfinder->PathCost(pos, taskPos, distance), THREAT_BASE);
-
-				if ((distCost < metric) && (distCost < maxDistCost)) {
-					task = candidate;
-					metric = distCost;
-				}
-			}
+	// FIXME: Make central task assignment system.
+	//        MilitaryManager should decide what tasks to merge.
+	static const std::map<CCircuitDef::RoleT, IFighterTask::FightType> types = {
+		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::SCOUT), IFighterTask::FightType::SCOUT},
+		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::RAIDER), IFighterTask::FightType::RAID},
+		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::ARTY), IFighterTask::FightType::ARTY},
+		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::AA), IFighterTask::FightType::AA},
+		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::AH), IFighterTask::FightType::AH},
+	};
+	IFighterTask::FightType type;
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	auto it = types.find(unit->GetCircuitDef()->GetMainRole());
+	if (it != types.end()) {
+		type = it->second;
+		if ((type == IFighterTask::FightType::RAID) && cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
+			type = IFighterTask::FightType::SCOUT;
 		}
-	}
-
-	if (task == nullptr) {
-		static const std::map<CCircuitDef::RoleT, IFighterTask::FightType> types = {
-			{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::SCOUT), IFighterTask::FightType::SCOUT},
-			{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::RAIDER), IFighterTask::FightType::RAID},
-			{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::ARTY), IFighterTask::FightType::ARTY},
-			{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::AA), IFighterTask::FightType::AA},
-			{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::AH), IFighterTask::FightType::AH},
-		};
-		IFighterTask::FightType type;
-		CCircuitDef* cdef = unit->GetCircuitDef();
-		auto it = types.find(unit->GetCircuitDef()->GetMainRole());
-		if (it != types.end()) {
-			type = it->second;
-			if ((type == IFighterTask::FightType::RAID) && cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
-				type = IFighterTask::FightType::SCOUT;
-			}
+	} else {
+		if (cdef->IsAttrBomber()) {
+			type = IFighterTask::FightType::BOMB;
 		} else {
-			if (cdef->IsAttrBomber()) {
-				type = IFighterTask::FightType::BOMB;
-			} else {
-				type = IFighterTask::FightType::RALLY;
-			}
+			type = IFighterTask::FightType::ATTACK;
 		}
-		task = EnqueueTask(type);
 	}
+	IFighterTask* task = EnqueueTask(type);
 
-	return const_cast<IFighterTask*>(task);
+	return task;
 }
 
 void CMilitaryManager::AbortTask(IUnitTask* task)
@@ -802,7 +736,6 @@ void CMilitaryManager::Init()
 	const int offset = circuit->GetSkirmishAIId() % interval;
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateIdle, this), interval, offset + 0);
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateFight, this), interval / 2, offset + 1);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateRetreat, this), interval, offset + 2);
 }
 
 void CMilitaryManager::Watchdog()
@@ -822,59 +755,26 @@ void CMilitaryManager::UpdateIdle()
 	idleTask->Update();
 }
 
-void CMilitaryManager::UpdateRetreat()
-{
-	if (!retDeleteTasks.empty()) {
-		for (auto task : retDeleteTasks) {
-			retUpdateTasks.erase(task);
-			delete task;
-		}
-		retDeleteTasks.clear();
-	}
-
-	auto it = retUpdateTasks.begin();
-	unsigned int i = 0;
-	while (it != retUpdateTasks.end()) {
-		(*it)->Update();
-
-		it = retUpdateTasks.erase(it);
-		if (++i >= retUpdateSlice) {
-			break;
-		}
-	}
-
-	if (retUpdateTasks.empty()) {
-		retUpdateTasks = retreatTasks;
-		retUpdateSlice = retUpdateTasks.size() / TEAM_SLOWUPDATE_RATE;
-	}
-}
-
 void CMilitaryManager::UpdateFight()
 {
-	if (!fightDeleteTasks.empty()) {
-		for (auto task : fightDeleteTasks) {
-			fightUpdateTasks.erase(task);
+	if (fightIterator >= fightUpdates.size()) {
+		fightIterator = 0;
+	}
+
+	// stagger the Update's
+	unsigned int n = (fightUpdates.size() / TEAM_SLOWUPDATE_RATE) + 1;
+
+	while ((fightIterator < fightUpdates.size()) && (n != 0)) {
+		IUnitTask* task = fightUpdates[fightIterator];
+		if (task->IsDead()) {
+			fightUpdates[fightIterator] = fightUpdates.back();
+			fightUpdates.pop_back();
 			delete task;
+		} else {
+			task->Update();
+			++fightIterator;
+			n--;
 		}
-		fightDeleteTasks.clear();
-	}
-
-	auto it = fightUpdateTasks.begin();
-	unsigned int i = 0;
-	while (it != fightUpdateTasks.end()) {
-		(*it)->Update();
-
-		it = fightUpdateTasks.erase(it);
-		if (++i >= fightUpdateSlice) {
-			break;
-		}
-	}
-
-	if (fightUpdateTasks.empty()) {
-		for (auto& tasks : fightTasks) {
-			fightUpdateTasks.insert(tasks.begin(), tasks.end());
-		}
-		fightUpdateSlice = fightUpdateTasks.size() / TEAM_SLOWUPDATE_RATE;
 	}
 }
 

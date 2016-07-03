@@ -49,6 +49,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, hasAntiWater(false)
 		, isAmphibious(false)
 		, isLander(false)
+		, jumpRange(.0f)
 		, retreat(-1.f)
 {
 	id = def->GetUnitDefId();
@@ -77,7 +78,14 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	isAbleToCloak  = def->IsAbleToCloak();
 
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
-	auto it = customParams.find("is_drone");
+	auto it = customParams.find("canjump");
+	isAbleToJump = (it != customParams.end()) && (utils::string_to_int(it->second) == 1);
+	if (isAbleToJump) {
+		it = customParams.find("jump_range");
+		jumpRange = (it != customParams.end()) ? utils::string_to_float(it->second) : 400.0f;
+	}
+
+	it = customParams.find("is_drone");
 	if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 		category |= circuit->GetBadCategory();
 	}
@@ -85,6 +93,12 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 //	if (customParams.find("boost_speed_mult") != customParams.end()) {
 //		AddAttribute(AttrType::BOOST);
 //	}
+
+	bool isDynamic = false;
+	if (customParams.find("level") != customParams.end()) {
+		AddRole(RoleType::HEAVY);
+		isDynamic = customParams.find("dynamic_comm") != customParams.end();
+	}
 
 	it = customParams.find("midposoffset");
 	if (it != customParams.end()) {
@@ -220,6 +234,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			mr = std::max(mr, range);
 		}
 
+		if (isDynamic) {  // FIXME: Dynamo com workaround
+			it = customParams.find("statsdamage");
+			dps = dmg = (it != customParams.end()) ? utils::string_to_float(it->second) : 100.0f;
+		}
 		if (wd->IsManualFire() && (reloadTime < bestDGunReload)) {
 			// NOTE: Disable commander's dgun, because no usage atm
 			if (customParams.find("manualfire") == customParams.end()) {
@@ -228,14 +246,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 				delete bestDGunMnt;
 				bestDGunMnt = mount;
 				hasDGunAA |= (weaponCat & circuit->GetAirCategory()) && isAirWeapon;
-			} else {
-				// FIXME: Dynamo com workaround
-				it = customParams.find("statsdamage");
-				dps = dmg = (it != customParams.end()) ? utils::string_to_float(it->second) : 100.0f;
-				for (RangeType rt : {RangeType::AIR, RangeType::LAND, RangeType::WATER}) {
-					float& mr = maxRange[static_cast<RangeT>(rt)];
-					mr = std::min(mr, 400.0f);
-				}
+			} else {  // FIXME: Dynamo com workaround
 				delete mount;
 			}
 		} else if (wd->IsShield()) {
@@ -252,6 +263,14 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			delete mount;
 		}
 		delete wd;
+	}
+	if (isDynamic) {  // FIXME: Dynamo com workaround
+		dps /= mounts.size();
+		dmg /= mounts.size();
+		for (RangeType rt : {RangeType::AIR, RangeType::LAND, RangeType::WATER}) {
+			float& mr = maxRange[static_cast<RangeT>(rt)];
+			mr = std::min(mr, 400.0f);
+		}
 	}
 
 	if (bestDGunReload < std::numeric_limits<float>::max()) {

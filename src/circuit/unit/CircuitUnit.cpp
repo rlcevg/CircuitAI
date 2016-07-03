@@ -100,7 +100,7 @@ bool CCircuitUnit::HasDGun()
 	}
 	// NOTE: Don't want to cache it: only dynamic commanders have this.
 	//       Disabled in CCircuitDef
-//	return unit->GetRulesParamFloat("comm_weapon_manual_1", 1) > .0f;
+//	return unit->GetRulesParamFloat("comm_weapon_manual_1", 1) > 0.f;
 	return true;
 }
 
@@ -120,7 +120,7 @@ bool CCircuitUnit::IsDisarmed(int frame)
 {
 	if (disarmFrame != frame) {
 		disarmFrame = frame;
-		isDisarmed = unit->GetRulesParamFloat("disarmed", 0) > .0f;
+		isDisarmed = unit->GetRulesParamFloat("disarmed", 0) > 0.f;
 	}
 	return isDisarmed;
 }
@@ -148,11 +148,16 @@ bool CCircuitUnit::IsShieldCharged(float percent)
 	return shield->GetShieldPower() > circuitDef->GetMaxShield() * percent;
 }
 
+bool CCircuitUnit::IsJumpReady()
+{
+	return circuitDef->IsAbleToJump() && !(unit->GetRulesParamFloat("jumpReload", 1) < 1.f);
+}
+
 float CCircuitUnit::GetDPS()
 {
 	float dps = circuitDef->GetDPS();
 	if (dps < 0.1f) {
-		return .0f;
+		return 0.f;
 	}
 	if (unit->IsParalyzed() || IsDisarmed(manager->GetCircuit()->GetLastFrame())) {
 		return 1.0f;
@@ -165,7 +170,7 @@ float CCircuitUnit::GetDamage()
 {
 	float dmg = circuitDef->GetDamage();
 	if (dmg < 1e-3f) {
-		return .0f;
+		return 0.f;
 	}
 	if (unit->IsParalyzed() || IsDisarmed(manager->GetCircuit()->GetLastFrame())) {
 		return 0.01f;

@@ -54,6 +54,9 @@ public:
 	int GetLastTouched() const { return lastTouched; }
 	int GetTimeout() const { return timeout; }
 
+	void Dead() { isDead = true; }
+	bool IsDead() const { return isDead; }
+
 protected:
 	ITaskManager* manager;
 	std::set<CCircuitUnit*> units;
@@ -64,6 +67,7 @@ protected:
 	int timeout;
 
 	unsigned int updCount;
+	bool isDead;
 };
 
 } // namespace circuit

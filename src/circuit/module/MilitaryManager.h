@@ -79,7 +79,6 @@ private:
 
 	void Watchdog();
 	void UpdateIdle();
-	void UpdateRetreat();
 	void UpdateFight();
 
 	void AddPower(CCircuitUnit* unit);
@@ -92,15 +91,9 @@ private:
 	EHandlers damagedHandler;
 	EHandlers destroyedHandler;
 
-	std::vector<std::set<IFighterTask*>> fightTasks;  // owner
-	std::set<IFighterTask*> fightUpdateTasks;
-	std::set<IFighterTask*> fightDeleteTasks;
-	unsigned int fightUpdateSlice;
-
-	std::set<IUnitTask*> retreatTasks;  // owner
-	std::set<IUnitTask*> retUpdateTasks;
-	std::set<IUnitTask*> retDeleteTasks;
-	unsigned int retUpdateSlice;
+	std::vector<std::set<IFighterTask*>> fightTasks;
+	std::vector<IUnitTask*> fightUpdates;  // owner
+	unsigned int fightIterator;
 
 	CDefenceMatrix* defence;
 

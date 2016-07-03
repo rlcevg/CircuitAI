@@ -18,8 +18,6 @@ namespace circuit {
 
 using namespace springai;
 
-#define MAX_MERGE_COST	(64 * THREAT_BASE)
-
 ISquadTask::ISquadTask(ITaskManager* mgr, FightType type)
 		: IFighterTask(mgr, type)
 		, lowestRange(std::numeric_limits<float>::max())
@@ -79,18 +77,16 @@ void ISquadTask::RemoveAssignee(CCircuitUnit* unit)
 
 void ISquadTask::Merge(const std::set<CCircuitUnit*>& rookies, float power)
 {
-	units.insert(rookies.begin(), rookies.end());
-	for (CCircuitUnit* unit : rookies) {
-		unit->SetTask(this);
-	}
-	attackPower += power;
-
 	bool isActive = static_cast<ITravelAction*>(leader->End())->IsActive();
 	for (CCircuitUnit* unit : rookies) {
+		unit->SetTask(this);
+
 		ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
 		travelAction->SetPath(pPath);
 		travelAction->SetActive(isActive);
 	}
+	units.insert(rookies.begin(), rookies.end());
+	attackPower += power;
 
 	FindLeader(rookies.begin(), rookies.end());
 }
@@ -128,6 +124,8 @@ ISquadTask* ISquadTask::GetMergeTask() const
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	terrainManager->CorrectPosition(pos);
 	pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
+	const float maxSpeed = lowestSpeed / pathfinder->GetSquareSize() * THREAT_BASE;
+	const float maxDistCost = MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC);
 	const int distance = pathfinder->GetSquareSize();
 	float metric = std::numeric_limits<float>::max();
 
@@ -153,7 +151,7 @@ ISquadTask* ISquadTask::GetMergeTask() const
 
 		distCost = std::max(pathfinder->PathCost(pos, taskPos, distance), THREAT_BASE);
 
-		if ((distCost < metric) && (distCost < MAX_MERGE_COST)) {
+		if ((distCost < metric) && (distCost < maxDistCost)) {
 			task = candy;
 			metric = distCost;
 		}

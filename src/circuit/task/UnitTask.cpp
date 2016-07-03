@@ -22,6 +22,7 @@ IUnitTask::IUnitTask(ITaskManager* mgr, Priority priority, Type type, int timeou
 		, type(type)
 		, timeout(timeout)
 		, updCount(0)
+		, isDead(false)
 {
 	lastTouched = manager->GetCircuit()->GetLastFrame();
 }

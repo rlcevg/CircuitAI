@@ -15,6 +15,7 @@
 #include "unit/action/DGunAction.h"
 #include "unit/action/MoveAction.h"
 #include "unit/action/FightAction.h"
+#include "unit/action/JumpAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -65,7 +66,9 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 
 	int squareSize = circuit->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
-	if (cdef->IsAttrSiege()) {
+	if (cdef->IsAbleToJump() && !cdef->IsAttrNoJump()) {
+		travelAction = new CJumpAction(unit, squareSize);
+	} else if (cdef->IsAttrSiege()) {
 		travelAction = new CFightAction(unit, squareSize);
 	} else {
 		travelAction = new CMoveAction(unit, squareSize);
@@ -94,7 +97,7 @@ void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
 void CRetreatTask::Execute(CCircuitUnit* unit)
 {
 	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-	if (!act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT)) {
+	if (!act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT | IUnitAction::Mask::JUMP)) {
 		return;
 	}
 	ITravelAction* travelAction = static_cast<ITravelAction*>(act);
@@ -177,7 +180,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 			return;
 		}
 		IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-		if (act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT)) {
+		if (act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT | IUnitAction::Mask::JUMP)) {
 			static_cast<ITravelAction*>(act)->SetFinished(true);
 		}
 
@@ -228,7 +231,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		)
 
 		IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-		if (act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT)) {
+		if (act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT | IUnitAction::Mask::JUMP)) {
 			static_cast<ITravelAction*>(act)->SetFinished(true);
 		}
 	}

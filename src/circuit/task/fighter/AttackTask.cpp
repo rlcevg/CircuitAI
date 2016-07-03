@@ -63,6 +63,7 @@ bool CAttackTask::CanAssignTo(CCircuitUnit* unit) const
 void CAttackTask::AssignTo(CCircuitUnit* unit)
 {
 	ISquadTask::AssignTo(unit);
+	highestRange = std::max(highestRange, unit->GetCircuitDef()->GetLosRadius());
 
 	minPower += unit->GetCircuitDef()->GetPower() / MIN_POWER_DIV;
 
@@ -82,6 +83,8 @@ void CAttackTask::RemoveAssignee(CCircuitUnit* unit)
 	ISquadTask::RemoveAssignee(unit);
 	if (attackPower < minPower) {
 		manager->AbortTask(this);
+	} else {
+		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetLosRadius());
 	}
 }
 
@@ -90,9 +93,7 @@ void CAttackTask::Execute(CCircuitUnit* unit)
 	if (isRegroup || isAttack) {
 		return;
 	}
-	if (pPath->empty()) {
-		Update();
-	} else {
+	if (!pPath->empty()) {
 		ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
 		travelAction->SetPath(pPath, lowestSpeed);
 		travelAction->SetActive(true);
@@ -181,7 +182,10 @@ void CAttackTask::Update()
 
 				const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
 				TRY_UNIT(circuit, unit,
-					if (unit->GetCircuitDef()->IsAttrMelee()) {
+					if (unit->IsJumpReady()) {
+						unit->GetUnit()->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+						unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60);
+					} else if (unit->GetCircuitDef()->IsAttrMelee()) {
 						unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 					} else {
 						unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
