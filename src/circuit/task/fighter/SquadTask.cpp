@@ -40,6 +40,10 @@ void ISquadTask::AssignTo(CCircuitUnit* unit)
 {
 	IFighterTask::AssignTo(unit);
 
+	if (unit->GetCircuitDef()->IsRoleSupport()) {
+		return;
+	}
+
 	if (leader == nullptr) {
 		lowestRange  = unit->GetCircuitDef()->GetMaxRange();
 		highestRange = unit->GetCircuitDef()->GetMaxRange();
@@ -62,31 +66,34 @@ void ISquadTask::AssignTo(CCircuitUnit* unit)
 void ISquadTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IFighterTask::RemoveAssignee(unit);
+	leader = nullptr;
+	lowestRange = lowestSpeed = std::numeric_limits<float>::max();
+	highestRange = highestSpeed = .0f;
 	if (units.empty()) {
-		leader = nullptr;
-		lowestRange = lowestSpeed = std::numeric_limits<float>::max();
-		highestRange = highestSpeed = .0f;
 		return;
 	}
 
-	leader = *units.begin();
-	lowestRange = highestRange = leader->GetCircuitDef()->GetMaxRange();
-	lowestSpeed = highestSpeed = leader->GetCircuitDef()->GetSpeed();
-	FindLeader(++units.begin(), units.end());
+	FindLeader(units.begin(), units.end());
 }
 
-void ISquadTask::Merge(const std::set<CCircuitUnit*>& rookies, float power)
+void ISquadTask::Merge(ISquadTask* task)
 {
+	const std::set<CCircuitUnit*>& rookies = task->GetAssignees();
 	bool isActive = static_cast<ITravelAction*>(leader->End())->IsActive();
 	for (CCircuitUnit* unit : rookies) {
 		unit->SetTask(this);
-
+		if (unit->GetCircuitDef()->IsRoleSupport()) {
+			TRY_UNIT(manager->GetCircuit(), unit,
+				unit->GetUnit()->Guard(leader->GetUnit());
+			)
+			continue;
+		}
 		ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
 		travelAction->SetPath(pPath);
 		travelAction->SetActive(isActive);
 	}
 	units.insert(rookies.begin(), rookies.end());
-	attackPower += power;
+	attackPower += task->GetAttackPower();
 
 	FindLeader(rookies.begin(), rookies.end());
 }
@@ -98,8 +105,25 @@ const AIFloat3& ISquadTask::GetLeaderPos(int frame) const
 
 void ISquadTask::FindLeader(decltype(units)::iterator itBegin, decltype(units)::iterator itEnd)
 {
+	if (leader == nullptr) {
+		for (; itBegin != itEnd; ++itBegin) {
+			CCircuitUnit* ass = *itBegin;
+			if (!ass->GetCircuitDef()->IsRoleSupport()) {
+				lowestRange  = ass->GetCircuitDef()->GetMaxRange();
+				highestRange = ass->GetCircuitDef()->GetMaxRange();
+				lowestSpeed  = ass->GetCircuitDef()->GetSpeed();
+				highestSpeed = ass->GetCircuitDef()->GetSpeed();
+				leader = ass;
+				++itBegin;
+				break;
+			}
+		}
+	}
 	for (; itBegin != itEnd; ++itBegin) {
 		CCircuitUnit* ass = *itBegin;
+		if (ass->GetCircuitDef()->IsRoleSupport()) {
+			continue;
+		}
 		lowestRange  = std::min(lowestRange,  ass->GetCircuitDef()->GetMaxRange());
 		highestRange = std::max(highestRange, ass->GetCircuitDef()->GetMaxRange());
 		lowestSpeed  = std::min(lowestSpeed,  ass->GetCircuitDef()->GetSpeed());

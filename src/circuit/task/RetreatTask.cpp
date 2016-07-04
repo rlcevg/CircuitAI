@@ -12,6 +12,7 @@
 #include "setup/SetupManager.h"
 #include "terrain/PathFinder.h"
 #include "terrain/TerrainManager.h"
+#include "terrain/ThreatMap.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/MoveAction.h"
 #include "unit/action/FightAction.h"
@@ -122,8 +123,9 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 	}
 	std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
 
+	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit);
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	pathfinder->MakePath(*pPath, startPos, endPos, range);
+	pathfinder->MakePath(*pPath, startPos, endPos, range, minThreat);
 
 	if (pPath->empty()) {
 		pPath->push_back(endPos);

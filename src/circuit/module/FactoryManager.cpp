@@ -711,21 +711,22 @@ void CFactoryManager::ReadConfig()
 		{"artillery",  CCircuitDef::RoleType::ARTY},
 		{"anti_air",   CCircuitDef::RoleType::AA},
 		{"anti_heavy", CCircuitDef::RoleType::AH},
-		{"mine",       CCircuitDef::RoleType::MINE},
+		{"bomber",     CCircuitDef::RoleType::BOMBER},
 		{"support",    CCircuitDef::RoleType::SUPPORT},
+		{"mine",       CCircuitDef::RoleType::MINE},
 		{"transport",  CCircuitDef::RoleType::TRANS},
 		{"air",        CCircuitDef::RoleType::AIR},
 		{"static",     CCircuitDef::RoleType::STATIC},
 		{"heavy",      CCircuitDef::RoleType::HEAVY},
 	};
 	std::map<const char*, CCircuitDef::AttrType, cmp_str> attrNames = {
-		{"bomber",    CCircuitDef::AttrType::BOMBER},
 		{"melee",     CCircuitDef::AttrType::MELEE},
 		{"siege",     CCircuitDef::AttrType::SIEGE},
 		{"hold_fire", CCircuitDef::AttrType::HOLD_FIRE},
 		{"boost",     CCircuitDef::AttrType::BOOST},
 		{"no_jump",   CCircuitDef::AttrType::NO_JUMP},
 		{"stockpile", CCircuitDef::AttrType::STOCK},
+		{"no_strafe", CCircuitDef::AttrType::NO_STRAFE},
 	};
 	const Json::Value& behaviours = root["behaviour"];
 	for (const std::string& defName : behaviours.getMemberNames()) {

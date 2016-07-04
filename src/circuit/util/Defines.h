@@ -38,7 +38,7 @@
 #define ASSIGN_TIMEOUT	(FRAMES_PER_SEC * 300)
 
 #define THREAT_BASE		1.0f
-#define THREAT_MOD		(1.0f / 1000.0f)
+#define THREAT_MOD		(1.0f / 512.0f)
 #define THREAT_MIN		2.0f
 #define THREAT_RES		8
 #define DEFAULT_SLACK	(SQUARE_SIZE * THREAT_RES)

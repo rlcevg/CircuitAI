@@ -23,8 +23,9 @@ public:
 	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 
-	virtual void Merge(const std::set<CCircuitUnit*>& rookies, float power);
+	virtual void Merge(ISquadTask* task);
 
+	CCircuitUnit* GetLeader() const { return leader; }
 	const springai::AIFloat3& GetLeaderPos(int frame) const;
 
 private:

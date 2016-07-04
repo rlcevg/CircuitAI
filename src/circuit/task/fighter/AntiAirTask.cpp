@@ -93,7 +93,7 @@ void CAntiAirTask::Update()
 	if (updCount % 32 == 1) {
 		ISquadTask* task = GetMergeTask();
 		if (task != nullptr) {
-			task->Merge(units, attackPower);
+			task->Merge(this);
 			units.clear();
 			manager->AbortTask(this);
 			return;

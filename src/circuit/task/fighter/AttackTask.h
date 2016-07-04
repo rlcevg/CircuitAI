@@ -27,7 +27,7 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 
 private:
-	virtual void Merge(const std::set<CCircuitUnit*>& rookies, float power);
+	virtual void Merge(ISquadTask* task);
 	void FindTarget();
 
 	float minPower;

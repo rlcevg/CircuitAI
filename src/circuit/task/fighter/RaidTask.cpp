@@ -99,7 +99,7 @@ void CRaidTask::Update()
 	if (updCount % 32 == 1) {
 		ISquadTask* task = GetMergeTask();
 		if (task != nullptr) {
-			task->Merge(units, attackPower);
+			task->Merge(this);
 			units.clear();
 			manager->AbortTask(this);
 			return;
@@ -116,8 +116,10 @@ void CRaidTask::Update()
 			CCircuitAI* circuit = manager->GetCircuit();
 			int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 			for (CCircuitUnit* unit : units) {
+				const AIFloat3& pos = utils::get_radial_pos(groupPos, SQUARE_SIZE * 8);
 				TRY_UNIT(circuit, unit,
 					unit->GetUnit()->MoveTo(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
+					unit->GetUnit()->PatrolTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame);
 				)
 
 				CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
@@ -283,22 +285,25 @@ void CRaidTask::FindTarget()
 		}
 
 		int targetCat;
+		float defPower;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
 			if ((targetCat & canTargetCat) == 0) {
 				continue;
 			}
+			defPower = edef->GetPower();
 		} else {
 			targetCat = UNKNOWN_CATEGORY;
+			defPower = enemy->GetThreat();
 		}
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
 		if (enemy->IsInRadarOrLOS() && (sqDist < minSqDist)) {
-			if ((enemy->GetThreat() > maxThreat) && !enemy->GetUnit()->IsBeingBuilt()) {
+			if ((defPower > maxThreat) && !enemy->GetUnit()->IsBeingBuilt()) {
 				bestTarget = enemy;
 				minSqDist = sqDist;
-				maxThreat = enemy->GetThreat();
+				maxThreat = defPower;
 			} else if (bestTarget == nullptr) {
 				if ((targetCat & noChaseCat) == 0) {
 					mediumTarget = enemy;

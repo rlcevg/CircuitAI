@@ -8,7 +8,7 @@
 #include "task/fighter/DefendTask.h"
 #include "task/TaskManager.h"
 #include "terrain/TerrainManager.h"
-#include "module/FactoryManager.h"
+//#include "module/FactoryManager.h"
 #include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
 #include "unit/EnemyUnit.h"
@@ -22,20 +22,20 @@ namespace circuit {
 
 using namespace springai;
 
-CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, float maxPower)
+CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, unsigned maxSize)
 		: ISquadTask(mgr, FightType::DEFEND)
-		, maxPower(maxPower)
+		, maxSize(maxSize)
 {
 	this->position = position;
 
-	CCircuitAI* circuit = manager->GetCircuit();
-	CFactoryManager* factoryManager = circuit->GetFactoryManager();
-	AIFloat3 pos = position;
-	CCircuitDef* buildDef = factoryManager->GetClosestDef(pos, CCircuitDef::RoleType::RIOT);
-	if (buildDef != nullptr) {
-		factoryManager->EnqueueTask(CRecruitTask::Priority::HIGH, buildDef, pos,
-									CRecruitTask::RecruitType::FIREPOWER, SQUARE(SQUARE_SIZE));
-	}
+//	CCircuitAI* circuit = manager->GetCircuit();
+//	CFactoryManager* factoryManager = circuit->GetFactoryManager();
+//	AIFloat3 pos = position;
+//	CCircuitDef* buildDef = factoryManager->GetClosestDef(pos, CCircuitDef::RoleType::RIOT);
+//	if (buildDef != nullptr) {
+//		factoryManager->EnqueueTask(CRecruitTask::Priority::HIGH, buildDef, pos,
+//									CRecruitTask::RecruitType::FIREPOWER, SQUARE(SQUARE_SIZE));
+//	}
 }
 
 CDefendTask::~CDefendTask()
@@ -45,7 +45,7 @@ CDefendTask::~CDefendTask()
 
 bool CDefendTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return (attackPower < maxPower) && unit->GetCircuitDef()->IsRoleRiot();
+	return (units.size() < maxSize) && unit->GetCircuitDef()->IsRoleRiot();
 }
 
 void CDefendTask::Execute(CCircuitUnit* unit)
@@ -104,7 +104,7 @@ void CDefendTask::Update()
 			if (task != nullptr) {
 				task->GetManager()->DoneTask(task);
 			}
-			// FIXME: Addg general defend-complete condition?
+			// FIXME: Add general defend-complete condition?
 			return;
 		}
 	}

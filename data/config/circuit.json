@@ -348,18 +348,19 @@
 		// "role": [<main>, <enemy>]
 		// <main> is the role to make desicions of when to build it and what task to assign
 		// <enemy> is to decide how to counter enemy unit, if missing then equals to <main>
-		// Roles: builder, scout, raider, riot, assault, skirmish, artillery, anti_air, anti_heavy, mine, support, transport, air, static, heavy
+		// Roles: builder, scout, raider, riot, assault, skirmish, artillery, anti_air, anti_heavy, bomber, support, mine, transport, air, static, heavy
 		// Auto-assigned roles: builder, air, static
 		"role": ["builder"]
 
-		// Attributes - optinal roles and unit states: bomber, melee, siege, hold_fire, boost, stockpile
-		// "bomber" - special bomber task assignment and target selection
+		// Attributes - optinal states: melee, siege, hold_fire, boost, stockpile, no_strafe
 		// "melee" - always move close to target, disregard attack range
 		// "siege" - use fight command on retreat instead of move
 		// "hold_fire" - hold fire on retreat
 		// "boost" - boost speed on retreat
 		// "no_jump" - disable jump on retreat
 		// "stockpile" - load weapon before any task (NOT IMPLEMENTED)
+		// "no_strafe" - disable gunship's strafe
+		
 //		"attribute": [],
 
 		// Limits number of units
@@ -375,7 +376,7 @@
 	},
 	"spherepole": {
 		"role": ["raider"],
-		"retreat": 0.25  // stops dealing damage once retreating
+		"retreat": 0.5  // stops dealing damage once retreating
 	},
 	"armrock": {
 		"role": ["skirmish"],
@@ -401,7 +402,8 @@
 		"retreat": 0.01
 	},
 	"spherecloaker": {
-		"role": ["support"]
+		"role": ["support", "scout"],
+		"limit": 2
 	},
 	"armjeth": {
 		"role": ["anti_air"]
@@ -430,7 +432,8 @@
 		"retreat": 0.8
 	},
 	"armbrawl": {
-		"role": ["artillery", "air"]
+		"role": ["artillery", "air"],
+		"attribute": ["no_strafe"]
 	},
 	"blackdawn": {
 		"role": ["assault", "air"],
@@ -438,7 +441,7 @@
 	},
 	"corcrw": {
 		"role": ["assault", "air"],
-		"retreat": 0.4
+		"retreat": 0.5
 	},
 	"corvalk": {
 		"role": ["transport", "air"]
@@ -545,13 +548,14 @@
 		"attribute": ["riot"]
 	},
 	"shieldarty": {
-		"role": ["artillery"]
+		"role": ["assault", "scout"],
+		"attribute": ["support"]
 	},
 	"corroach": {
 		"role": ["mine"]
 	},
 	"core_spectre": {
-		"role": ["support"]
+		"role": ["support", "scout"]
 	},
 	"corcrash": {
 		"role": ["anti_air"]
@@ -716,23 +720,23 @@
 		"retreat": 0.6
 	},
 	"corshad": {
-		"role": ["assault", "air"],
-		"attribute": ["bomber"],
+		"role": ["bomber", "air"],
+		"attribute": ["assault"],
 		"retreat": 0.6
 	},
 	"corhurc2": {
-		"role": ["riot", "air"],
-		"attribute": ["bomber"],
+		"role": ["bomber", "air"],
+		"attribute": ["riot"],
 		"retreat": 0.6
 	},
 	"armstiletto_laser": {
-		"role": ["assault", "air"],
-		"attribute": ["bomber"],
+		"role": ["bomber", "air"],
+		"attribute": ["assault"],
 		"retreat": 0.6
 	},
 	"armcybr": {
-		"role": ["assault", "air"],
-		"attribute": ["bomber"],
+		"role": ["bomber", "air"],
+		"attribute": ["anti_heavy"],
 		"retreat": 0.6
 	},
 	"corawac": {
@@ -798,7 +802,8 @@
 		"retreat": 0.9
 	},
 	"funnelweb": {
-		"role": ["artillery", "heavy"],
+		"role": ["assault", "heavy"],
+		"attribute": ["support"],
 		"retreat": 0.8
 	},
 	"armbanth": {
@@ -833,7 +838,7 @@
 
 	"raider": {
 		"vs":         ["skirmish", "artillery", "anti_air", "scout"],
-		"ratio":      [ 1.1,        1.1,         1.1,        1.1],
+		"ratio":      [ 0.8,        1.1,         1.1,        0.8],
 		"importance": [ 1.0,        2.0,         1.0,        1.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4

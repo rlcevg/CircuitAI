@@ -14,7 +14,7 @@ namespace circuit {
 
 class CDefendTask: public ISquadTask {
 public:
-	CDefendTask(ITaskManager* mgr, const springai::AIFloat3& position, float maxPower);
+	CDefendTask(ITaskManager* mgr, const springai::AIFloat3& position, unsigned maxSize);
 	virtual ~CDefendTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const;
@@ -25,7 +25,7 @@ protected:
 	virtual void Cancel();
 
 private:
-	float maxPower;
+	unsigned int maxSize;
 };
 
 } // namespace circuit

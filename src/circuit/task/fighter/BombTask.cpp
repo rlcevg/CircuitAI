@@ -36,7 +36,7 @@ CBombTask::~CBombTask()
 
 bool CBombTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return units.empty() && unit->GetCircuitDef()->IsAttrBomber();
+	return units.empty() && unit->GetCircuitDef()->IsRoleBomber();
 }
 
 void CBombTask::AssignTo(CCircuitUnit* unit)
@@ -202,6 +202,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 		}
 
 		int targetCat;
+		float defPower;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			if (edef->GetSpeed() * 1.8f > speed) {
@@ -211,15 +212,17 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 			if ((targetCat & canTargetCat) == 0) {
 				continue;
 			}
+			defPower = edef->GetPower();
 		} else {
 			targetCat = UNKNOWN_CATEGORY;
+			defPower = enemy->GetThreat();
 		}
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
 		if (enemy->IsInRadarOrLOS() && (sqDist < sqRange)) {
-			if (enemy->GetThreat() > maxThreat) {
+			if (defPower > maxThreat) {
 				bestTarget = enemy;
-				maxThreat = enemy->GetThreat();
+				maxThreat = defPower;
 			} else if (bestTarget == nullptr) {
 				if ((targetCat & noChaseCat) == 0) {
 					mediumTarget = enemy;

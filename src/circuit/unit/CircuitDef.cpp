@@ -234,10 +234,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			mr = std::max(mr, range);
 		}
 
-		if (isDynamic) {  // FIXME: Dynamo com workaround
-			it = customParams.find("statsdamage");
-			dps = dmg = (it != customParams.end()) ? utils::string_to_float(it->second) : 100.0f;
-		}
 		if (wd->IsManualFire() && (reloadTime < bestDGunReload)) {
 			// NOTE: Disable commander's dgun, because no usage atm
 			if (customParams.find("manualfire") == customParams.end()) {

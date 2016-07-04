@@ -183,6 +183,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 		}
 
 		int targetCat;
+		float defPower;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			if (edef->GetSpeed() > speed) {
@@ -192,8 +193,10 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 			if ((targetCat & canTargetCat) == 0) {
 				continue;
 			}
+			defPower = edef->GetPower();
 		} else {
 			targetCat = UNKNOWN_CATEGORY;
+			defPower = enemy->GetThreat();
 		}
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
@@ -202,10 +205,10 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 //			float rayRange = dir.LengthNormalize();
 //			CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, u, 0);
 //			if (hitUID == enemy->GetId()) {
-				if ((enemy->GetThreat() > maxThreat) && !enemy->GetUnit()->IsBeingBuilt()) {
+				if ((defPower > maxThreat) && !enemy->GetUnit()->IsBeingBuilt()) {
 					bestTarget = enemy;
 					minSqDist = sqDist;
-					maxThreat = enemy->GetThreat();
+					maxThreat = defPower;
 				} else if (bestTarget == nullptr) {
 					if ((targetCat & noChaseCat) == 0) {
 						mediumTarget = enemy;

@@ -884,7 +884,7 @@ void CEconomyManager::Init()
 					buildPos = terrainManager->GetBuildPosition(facDef, pos);
 					CBuilderManager* builderManager = circuit->GetBuilderManager();
 					IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::NOW, facDef, buildPos,
-													   IBuilderTask::BuildType::FACTORY);
+																	 IBuilderTask::BuildType::FACTORY);
 					static_cast<ITaskManager*>(builderManager)->AssignTask(commander, task);
 
 					// Enqueue first builder

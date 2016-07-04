@@ -13,6 +13,7 @@
 #include "terrain/PathFinder.h"
 #include "unit/action/FightAction.h"
 #include "unit/action/MoveAction.h"
+#include "unit/action/SupportAction.h"
 #include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -43,15 +44,17 @@ CAttackTask::~CAttackTask()
 
 bool CAttackTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	if (leader == nullptr) {
-		return true;
-	}
+	assert(leader != nullptr);
 	int frame = manager->GetCircuit()->GetLastFrame();
 	if (leader->GetPos(frame).SqDistance2D(unit->GetPos(frame)) > SQUARE(1000.f)) {
 		return false;
 	}
+	if (unit->GetCircuitDef()->IsAmphibious() &&
+		(leader->GetCircuitDef()->IsAmphibious() || leader->GetCircuitDef()->IsLander() || leader->GetCircuitDef()->IsFloater()))
+	{
+		return true;
+	}
 	if ((leader->GetCircuitDef()->IsAbleToFly() && unit->GetCircuitDef()->IsAbleToFly()) ||
-		(leader->GetCircuitDef()->IsAmphibious() && unit->GetCircuitDef()->IsAmphibious()) ||
 		(leader->GetCircuitDef()->IsLander() && unit->GetCircuitDef()->IsLander()) ||
 		(leader->GetCircuitDef()->IsFloater() && unit->GetCircuitDef()->IsFloater()))
 	{
@@ -67,6 +70,10 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 
 	minPower += unit->GetCircuitDef()->GetPower() / MIN_POWER_DIV;
 
+	if (unit->GetCircuitDef()->IsRoleSupport()) {
+		unit->PushBack(new CSupportAction(unit));
+	}
+
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
 	if (unit->GetCircuitDef()->IsAttrMelee()) {
@@ -81,7 +88,7 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 void CAttackTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	ISquadTask::RemoveAssignee(unit);
-	if (attackPower < minPower) {
+	if ((attackPower <= minPower) || (leader == nullptr)) {
 		manager->AbortTask(this);
 	} else {
 		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetLosRadius());
@@ -110,7 +117,7 @@ void CAttackTask::Update()
 	if (updCount % 32 == 1) {
 		ISquadTask* task = GetMergeTask();
 		if (task != nullptr) {
-			task->Merge(units, attackPower);
+			task->Merge(this);
 			units.clear();
 			// TODO: Deal with cowards?
 			manager->AbortTask(this);
@@ -128,9 +135,11 @@ void CAttackTask::Update()
 			CCircuitAI* circuit = manager->GetCircuit();
 			int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 			for (CCircuitUnit* unit : units) {
+				const AIFloat3& pos = utils::get_radial_pos(groupPos, SQUARE_SIZE * 8);
 				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->Fight(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
+					unit->GetUnit()->MoveTo(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 					unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+					unit->GetUnit()->PatrolTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame);
 				)
 
 				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
@@ -252,11 +261,11 @@ void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-void CAttackTask::Merge(const std::set<CCircuitUnit*>& rookies, float power)
+void CAttackTask::Merge(ISquadTask* task)
 {
-	ISquadTask::Merge(rookies, power);
+	ISquadTask::Merge(task);
 
-	minPower += power / MIN_POWER_DIV;
+	minPower += task->GetAttackPower() / MIN_POWER_DIV;
 }
 
 void CAttackTask::FindTarget()
@@ -314,7 +323,7 @@ void CAttackTask::FindTarget()
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
+	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize(), power);
 }
 
 } // namespace circuit

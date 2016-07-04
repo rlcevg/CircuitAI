@@ -13,7 +13,7 @@
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
 #include "unit/EnemyUnit.h"
-#include "unit/action/MoveAction.h"
+#include "unit/action/FightAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -45,9 +45,9 @@ void CArtilleryTask::AssignTo(CCircuitUnit* unit)
 	IFighterTask::AssignTo(unit);
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
-	CMoveAction* moveAction = new CMoveAction(unit, squareSize);
-	unit->PushBack(moveAction);
-	moveAction->SetActive(false);
+	CFightAction* fightAction = new CFightAction(unit, squareSize);
+	unit->PushBack(fightAction);
+	fightAction->SetActive(false);
 }
 
 void CArtilleryTask::RemoveAssignee(CCircuitUnit* unit)
@@ -81,10 +81,10 @@ void CArtilleryTask::Update()
 void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
 	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-	if (!act->IsEqual(IUnitAction::Mask::MOVE)) {
+	if (!act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT | IUnitAction::Mask::JUMP)) {
 		return;
 	}
-	CMoveAction* moveAction = static_cast<CMoveAction*>(act);
+	ITravelAction* travelAction = static_cast<ITravelAction*>(act);
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
@@ -97,12 +97,12 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 			unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)bestTarget->GetId()});
 		)
-		moveAction->SetActive(false);
+		travelAction->SetActive(false);
 		return;
 	} else if (!pPath->empty()) {
 		if (pPath->size() > 2) {
-			moveAction->SetPath(pPath);
-			moveAction->SetActive(true);
+			travelAction->SetPath(pPath);
+			travelAction->SetActive(true);
 		} else {
 			TRY_UNIT(circuit, unit,
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
@@ -113,7 +113,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	const AIFloat3& threatPos = moveAction->IsActive() ? position : pos;
+	const AIFloat3& threatPos = travelAction->IsActive() ? position : pos;
 	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < threatMap->GetUnitThreat(unit));
 	if (!proceed) {
 		position = circuit->GetMilitaryManager()->GetScoutPosition(unit);
@@ -128,8 +128,8 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 
 		if (!pPath->empty()) {
-			moveAction->SetPath(pPath);
-			moveAction->SetActive(true);
+			travelAction->SetPath(pPath);
+			travelAction->SetActive(true);
 			return;
 		}
 	}
@@ -143,7 +143,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 	)
-	moveAction->SetActive(false);
+	travelAction->SetActive(false);
 }
 
 void CArtilleryTask::OnUnitIdle(CCircuitUnit* unit)
@@ -203,9 +203,9 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 
 			const float sqDist = pos.SqDistance2D(enemy->GetPos());
 			if (enemy->IsInRadarOrLOS() && (sqDist < minSqDist)) {
-				if (enemy->GetThreat() > maxThreat) {
+				if (edef->GetPower() > maxThreat) {
 					bestTarget = enemy;
-					maxThreat = enemy->GetThreat();
+					maxThreat = edef->GetPower();
 				} else if (bestTarget == nullptr) {
 					if ((targetCat & noChaseCat) == 0) {
 						mediumTarget = enemy;

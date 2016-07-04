@@ -237,6 +237,43 @@ float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos
 	return pathCost;
 }
 
+float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos, int radius, float threat)
+{
+	path.clear();
+
+	terrainData->CorrectPosition(startPos);
+	terrainData->CorrectPosition(endPos);
+
+	float pathCost = 0.0f;
+
+	const int ex = int(endPos.x / squareSize);
+	const int ey = int(endPos.z / squareSize);
+	const int sy = int(startPos.z / squareSize);
+	const int sx = int(startPos.x / squareSize);
+
+	radius /= squareSize;
+
+	if (micropather->FindBestPathToPointOnRadius(XY2Node(sx, sy), XY2Node(ex, ey), &path, &pathCost, radius, threat) == CMicroPather::SOLVED) {
+		posPath.reserve(path.size());
+
+		// TODO: Consider performing transformations in place where move_along_path executed.
+		//       Current task implementations recalc path every ~2 seconds,
+		//       therefore only first few positions actually used.
+		Map* map = terrainData->GetMap();
+		for (void* node : path) {
+			float3 mypos = Node2Pos(node);
+			mypos.y = map->GetElevationAt(mypos.x, mypos.z);
+			posPath.push_back(mypos);
+		}
+	}
+
+#ifdef DEBUG_VIS
+	UpdateVis(posPath);
+#endif
+
+	return pathCost;
+}
+
 /*
  * WARNING: startPos must be correct
  */

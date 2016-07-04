@@ -25,6 +25,7 @@
 #include "task/fighter/ArtilleryTask.h"
 #include "task/fighter/AntiAirTask.h"
 #include "task/fighter/AntiHeavyTask.h"
+#include "task/fighter/SupportTask.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
@@ -99,10 +100,17 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 		AddPower(unit);
 
-		if (unit->GetCircuitDef()->IsAbleToFly() && (unit->GetCircuitDef()->GetMaxRange() > 600.0f)) {  // armbrawl
-			TRY_UNIT(this->circuit, unit,
-				unit->GetUnit()->ExecuteCustomCommand(CMD_AIR_STRAFE, {0.0f});
-			)
+		if (unit->GetCircuitDef()->IsAbleToFly()) {
+			if (unit->GetCircuitDef()->IsAttrNoStrafe()) {
+				TRY_UNIT(this->circuit, unit,
+					unit->GetUnit()->ExecuteCustomCommand(CMD_AIR_STRAFE, {0.0f});
+				)
+			}
+			if (unit->GetCircuitDef()->IsRoleMine()) {
+				TRY_UNIT(this->circuit, unit,
+					unit->GetUnit()->SetIdleMode(1);
+				)
+			}
 		}
 	};
 	auto attackerIdleHandler = [this](CCircuitUnit* unit) {
@@ -301,6 +309,10 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			task = new CAntiHeavyTask(this);
 			break;
 		}
+		case IFighterTask::FightType::SUPPORT: {
+			task = new CSupportTask(this);
+			break;
+		}
 	}
 
 	fightTasks[static_cast<IFighterTask::FT>(type)].insert(task);
@@ -337,23 +349,25 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 	// FIXME: Make central task assignment system.
 	//        MilitaryManager should decide what tasks to merge.
 	static const std::map<CCircuitDef::RoleT, IFighterTask::FightType> types = {
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::SCOUT), IFighterTask::FightType::SCOUT},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::RAIDER), IFighterTask::FightType::RAID},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::ARTY), IFighterTask::FightType::ARTY},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::AA), IFighterTask::FightType::AA},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::AH), IFighterTask::FightType::AH},
+		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::SCOUT),   IFighterTask::FightType::SCOUT},
+		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::RAIDER),  IFighterTask::FightType::RAID},
+		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::ARTY),    IFighterTask::FightType::ARTY},
+		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::AA),      IFighterTask::FightType::AA},
+		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::AH),      IFighterTask::FightType::AH},
+		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::BOMBER),  IFighterTask::FightType::BOMB},
+		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::SUPPORT), IFighterTask::FightType::SUPPORT},
 	};
 	IFighterTask::FightType type;
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	auto it = types.find(unit->GetCircuitDef()->GetMainRole());
-	if (it != types.end()) {
-		type = it->second;
-		if ((type == IFighterTask::FightType::RAID) && cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
-			type = IFighterTask::FightType::SCOUT;
-		}
+	if (cdef->IsRoleSupport()) {
+		type = IFighterTask::FightType::SUPPORT;
 	} else {
-		if (cdef->IsAttrBomber()) {
-			type = IFighterTask::FightType::BOMB;
+		auto it = types.find(cdef->GetMainRole());
+		if (it != types.end()) {
+			type = it->second;
+			if ((type == IFighterTask::FightType::RAID) && cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
+				type = IFighterTask::FightType::SCOUT;
+			}
 		} else {
 			type = IFighterTask::FightType::ATTACK;
 		}
@@ -667,8 +681,9 @@ void CMilitaryManager::ReadConfig()
 		{"artillery",  CCircuitDef::RoleType::ARTY},
 		{"anti_air",   CCircuitDef::RoleType::AA},
 		{"anti_heavy", CCircuitDef::RoleType::AH},
-		{"mine",       CCircuitDef::RoleType::MINE},
+		{"bomber",     CCircuitDef::RoleType::BOMBER},
 		{"support",    CCircuitDef::RoleType::SUPPORT},
+		{"mine",       CCircuitDef::RoleType::MINE},
 		{"transport",  CCircuitDef::RoleType::TRANS},
 		{"air",        CCircuitDef::RoleType::AIR},
 		{"static",     CCircuitDef::RoleType::STATIC},
