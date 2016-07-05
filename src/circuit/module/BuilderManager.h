@@ -118,7 +118,6 @@ private:
 
 	void Watchdog();
 	void UpdateIdle();
-	void UpdateMisc();
 	void UpdateBuild();
 
 	Handlers2 createdHandler;
@@ -129,17 +128,11 @@ private:
 
 	std::map<CCircuitUnit*, IBuilderTask*> unfinishedUnits;
 	std::map<CCircuitUnit::Id, CBRepairTask*> repairedUnits;
-	std::vector<std::set<IBuilderTask*>> buildTasks;  // owner, UnitDef based tasks
+	std::vector<std::set<IBuilderTask*>> buildTasks;  // UnitDef based tasks
 	unsigned int buildTasksCount;
 	float builderPower;
-	std::set<IBuilderTask*> buildUpdateTasks;  // temporary tasks holder to keep updating every task
-	std::set<IBuilderTask*> buildDeleteTasks;
-	unsigned int buildUpdateSlice;
-
-	std::set<IUnitTask*> miscTasks;  // owner, tasks without UnitDef (patrol, terraform, retreat)
-	std::set<IUnitTask*> miscUpdateTasks;
-	std::set<IUnitTask*> miscDeleteTasks;
-	unsigned int miscUpdateSlice;
+	std::vector<IUnitTask*> buildUpdates;  // owner
+	unsigned int buildIterator;
 
 	std::set<CCircuitUnit*> workers;
 

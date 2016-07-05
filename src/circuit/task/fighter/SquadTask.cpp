@@ -40,10 +40,6 @@ void ISquadTask::AssignTo(CCircuitUnit* unit)
 {
 	IFighterTask::AssignTo(unit);
 
-	if (unit->GetCircuitDef()->IsRoleSupport()) {
-		return;
-	}
-
 	if (leader == nullptr) {
 		lowestRange  = unit->GetCircuitDef()->GetMaxRange();
 		highestRange = unit->GetCircuitDef()->GetMaxRange();
@@ -55,6 +51,9 @@ void ISquadTask::AssignTo(CCircuitUnit* unit)
 		highestRange = std::max(highestRange, unit->GetCircuitDef()->GetMaxRange());
 		lowestSpeed  = std::min(lowestSpeed,  unit->GetCircuitDef()->GetSpeed());
 		highestSpeed = std::max(highestSpeed, unit->GetCircuitDef()->GetSpeed());
+		if (unit->GetCircuitDef()->IsRoleSupport()) {
+			return;
+		}
 		if (leader->GetArea() == nullptr) {
 			leader = unit;
 		} else if ((unit->GetArea() != nullptr) && (unit->GetArea()->percentOfMap < leader->GetArea()->percentOfMap)) {
@@ -83,9 +82,6 @@ void ISquadTask::Merge(ISquadTask* task)
 	for (CCircuitUnit* unit : rookies) {
 		unit->SetTask(this);
 		if (unit->GetCircuitDef()->IsRoleSupport()) {
-			TRY_UNIT(manager->GetCircuit(), unit,
-				unit->GetUnit()->Guard(leader->GetUnit());
-			)
 			continue;
 		}
 		ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
@@ -108,11 +104,11 @@ void ISquadTask::FindLeader(decltype(units)::iterator itBegin, decltype(units)::
 	if (leader == nullptr) {
 		for (; itBegin != itEnd; ++itBegin) {
 			CCircuitUnit* ass = *itBegin;
+			lowestRange  = std::min(lowestRange,  ass->GetCircuitDef()->GetMaxRange());
+			highestRange = std::max(highestRange, ass->GetCircuitDef()->GetMaxRange());
+			lowestSpeed  = std::min(lowestSpeed,  ass->GetCircuitDef()->GetSpeed());
+			highestSpeed = std::max(highestSpeed, ass->GetCircuitDef()->GetSpeed());
 			if (!ass->GetCircuitDef()->IsRoleSupport()) {
-				lowestRange  = ass->GetCircuitDef()->GetMaxRange();
-				highestRange = ass->GetCircuitDef()->GetMaxRange();
-				lowestSpeed  = ass->GetCircuitDef()->GetSpeed();
-				highestSpeed = ass->GetCircuitDef()->GetSpeed();
 				leader = ass;
 				++itBegin;
 				break;
@@ -121,13 +117,13 @@ void ISquadTask::FindLeader(decltype(units)::iterator itBegin, decltype(units)::
 	}
 	for (; itBegin != itEnd; ++itBegin) {
 		CCircuitUnit* ass = *itBegin;
-		if (ass->GetCircuitDef()->IsRoleSupport()) {
-			continue;
-		}
 		lowestRange  = std::min(lowestRange,  ass->GetCircuitDef()->GetMaxRange());
 		highestRange = std::max(highestRange, ass->GetCircuitDef()->GetMaxRange());
 		lowestSpeed  = std::min(lowestSpeed,  ass->GetCircuitDef()->GetSpeed());
 		highestSpeed = std::max(highestSpeed, ass->GetCircuitDef()->GetSpeed());
+		if (ass->GetCircuitDef()->IsRoleSupport()) {
+			continue;
+		}
 		if (leader->GetArea() == nullptr) {
 			leader = ass;
 		} else if ((ass->GetArea() != nullptr) && (ass->GetArea()->percentOfMap < leader->GetArea()->percentOfMap)) {

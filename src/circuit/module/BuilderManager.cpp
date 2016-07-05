@@ -46,8 +46,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		: IUnitModule(circuit)
 		, buildTasksCount(0)
 		, builderPower(.0f)
-		, buildUpdateSlice(0)
-		, miscUpdateSlice(0)
+		, buildIterator(0)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Watchdog, this),
@@ -208,13 +207,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 CBuilderManager::~CBuilderManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	for (std::set<IBuilderTask*>& tasks : buildTasks) {
-		utils::free_clear(tasks);
-	}
-	utils::free_clear(buildDeleteTasks);
-
-	utils::free_clear(miscTasks);
-	utils::free_clear(miscDeleteTasks);
+	utils::free_clear(buildUpdates);
 }
 
 int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -328,9 +321,8 @@ void CBuilderManager::ActivateTask(IBuilderTask* task)
 	if ((task->GetType() == IUnitTask::Type::BUILDER) && (task->GetBuildType() < IBuilderTask::BuildType::_SIZE_)) {
 		buildTasks[static_cast<IBuilderTask::BT>(task->GetBuildType())].insert(task);
 		buildTasksCount++;
-	} else {
-		miscTasks.insert(task);
 	}
+	buildUpdates.push_back(task);
 }
 
 IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
@@ -369,6 +361,7 @@ IBuilderTask* CBuilderManager::EnqueuePylon(IBuilderTask::Priority priority,
 	if (isActive) {
 		buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::PYLON)].insert(task);
 		buildTasksCount++;
+		buildUpdates.push_back(task);
 	}
 	return task;
 }
@@ -384,6 +377,7 @@ IBuilderTask* CBuilderManager::EnqueueRepair(IBuilderTask::Priority priority,
 	CBRepairTask* task = new CBRepairTask(this, priority, target, timeout);
 	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::REPAIR)].insert(task);
 	buildTasksCount++;
+	buildUpdates.push_back(task);
 	repairedUnits[target->GetId()] = task;
 	return task;
 }
@@ -398,6 +392,7 @@ IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
 	IBuilderTask* task = new CBReclaimTask(this, priority, position, cost, timeout, radius, isMetal);
 	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::RECLAIM)].insert(task);
 	buildTasksCount++;
+	buildUpdates.push_back(task);
 	return task;
 }
 
@@ -407,7 +402,7 @@ IBuilderTask* CBuilderManager::EnqueuePatrol(IBuilderTask::Priority priority,
 											 int timeout)
 {
 	IBuilderTask* task = new CBPatrolTask(this, priority, position, cost, timeout);
-	miscTasks.insert(task);
+	buildUpdates.push_back(task);
 	return task;
 }
 
@@ -425,7 +420,7 @@ IBuilderTask* CBuilderManager::EnqueueTerraform(IBuilderTask::Priority priority,
 		task = new CBTerraformTask(this, priority, target, cost, timeout);
 	}
 	if (isActive) {
-		miscTasks.insert(task);
+		buildUpdates.push_back(task);
 	}
 	return task;
 }
@@ -433,7 +428,7 @@ IBuilderTask* CBuilderManager::EnqueueTerraform(IBuilderTask::Priority priority,
 CRetreatTask* CBuilderManager::EnqueueRetreat()
 {
 	CRetreatTask* task = new CRetreatTask(this);
-	miscTasks.insert(task);
+	buildUpdates.push_back(task);
 	return task;
 }
 
@@ -494,6 +489,7 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 	if (isActive) {
 		buildTasks[static_cast<IBuilderTask::BT>(type)].insert(task);
 		buildTasksCount++;
+		buildUpdates.push_back(task);
 	}
 	return task;
 }
@@ -510,18 +506,11 @@ void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
 				unfinishedUnits.erase(task->GetTarget());
 			}
 			tasks.erase(it);
-			task->Close(done);
-			buildDeleteTasks.insert(task);
 			buildTasksCount--;
 		}
-	} else {
-		auto it = miscTasks.find(task);
-		if (it != miscTasks.end()) {
-			miscTasks.erase(task);
-			task->Close(done);
-			miscDeleteTasks.insert(task);
-		}
 	}
+	task->Dead();
+	task->Close(done);
 }
 
 bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& position)
@@ -655,8 +644,7 @@ void CBuilderManager::Init()
 	const int interval = 8;
 	const int offset = circuit->GetSkirmishAIId() % interval;
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateMisc, this), interval, offset + 1);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 2);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 1);
 }
 
 IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCircuitUnit* unit)
@@ -783,77 +771,33 @@ void CBuilderManager::UpdateIdle()
 	idleTask->Update();
 }
 
-void CBuilderManager::UpdateMisc()
-{
-	if (!miscDeleteTasks.empty()) {
-		for (IUnitTask* task : miscDeleteTasks) {
-			miscUpdateTasks.erase(task);
-			delete task;
-		}
-		miscDeleteTasks.clear();
-	}
-
-	auto it = miscUpdateTasks.begin();
-	unsigned int i = 0;
-	int lastFrame = circuit->GetLastFrame();
-	while (it != miscUpdateTasks.end()) {
-		IUnitTask* task = *it;
-
-		int frame = task->GetLastTouched();
-		int timeout = task->GetTimeout();
-		if ((frame != -1) && (timeout > 0) && (lastFrame - frame >= timeout)) {
-			AbortTask(task);
-		} else {
-			task->Update();
-		}
-
-		it = miscUpdateTasks.erase(it);
-		if (++i >= miscUpdateSlice) {
-			break;
-		}
-	}
-
-	if (miscUpdateTasks.empty()) {
-		miscUpdateTasks.insert(miscTasks.begin(), miscTasks.end());
-		miscUpdateSlice = miscUpdateTasks.size() / TEAM_SLOWUPDATE_RATE;
-	}
-}
-
 void CBuilderManager::UpdateBuild()
 {
-	if (!buildDeleteTasks.empty()) {
-		for (IBuilderTask* task : buildDeleteTasks) {
-			buildUpdateTasks.erase(task);
-			delete task;
-		}
-		buildDeleteTasks.clear();
+	if (buildIterator >= buildUpdates.size()) {
+		buildIterator = 0;
 	}
 
-	auto it = buildUpdateTasks.begin();
-	unsigned int i = 0;
 	int lastFrame = circuit->GetLastFrame();
-	while (it != buildUpdateTasks.end()) {
-		IBuilderTask* task = *it;
+	// stagger the Update's
+	unsigned int n = (buildUpdates.size() / TEAM_SLOWUPDATE_RATE) + 1;
 
-		int frame = task->GetLastTouched();
-		int timeout = task->GetTimeout();
-		if ((frame != -1) && (timeout > 0) && (lastFrame - frame >= timeout)) {
-			AbortTask(task);
+	while ((buildIterator < buildUpdates.size()) && (n != 0)) {
+		IUnitTask* task = buildUpdates[buildIterator];
+		if (task->IsDead()) {
+			buildUpdates[buildIterator] = buildUpdates.back();
+			buildUpdates.pop_back();
+			delete task;
 		} else {
-			task->Update();
+			int frame = task->GetLastTouched();
+			int timeout = task->GetTimeout();
+			if ((frame != -1) && (timeout > 0) && (lastFrame - frame >= timeout)) {
+				AbortTask(task);
+			} else {
+				task->Update();
+			}
+			++buildIterator;
+			n--;
 		}
-
-		it = buildUpdateTasks.erase(it);
-		if (++i >= buildUpdateSlice) {
-			break;
-		}
-	}
-
-	if (buildUpdateTasks.empty()) {
-		for (auto& tasks : buildTasks) {
-			buildUpdateTasks.insert(tasks.begin(), tasks.end());
-		}
-		buildUpdateSlice = buildUpdateTasks.size() / TEAM_SLOWUPDATE_RATE;
 	}
 }
 
