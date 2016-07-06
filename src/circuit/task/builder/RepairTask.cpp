@@ -72,7 +72,7 @@ void CBRepairTask::Execute(CCircuitUnit* unit)
 		repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
 	}
 
-	if (repTarget != nullptr) {
+	if ((repTarget != nullptr) && (repTarget->GetUnit()->GetHealth() < repTarget->GetUnit()->GetMaxHealth())) {
 		Unit* u = unit->GetUnit();
 		TRY_UNIT(circuit, unit,
 			u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});

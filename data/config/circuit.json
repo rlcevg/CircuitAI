@@ -264,7 +264,7 @@
 	},
 
 	"factoryjump": {
-		"importance": [1.0, 1.0],
+		"importance": [0.8, 1.0],
 		"require_energy": false,
 
 		"income_tier": [40],
@@ -339,7 +339,7 @@
 "retreat": {
 	"builder": 0.8,  // default value for all builders
 	"fighter": 0.5,  // default value for all not-builder units
-	"shield": 0.1  // minimum shield power
+	"shield": [0.1, 0.6]  // [<empty>, <full>] shield power
 },
 
 "behaviour": {

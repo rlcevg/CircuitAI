@@ -133,6 +133,10 @@ void CBReclaimTask::Update()
 					continue;
 				}
 				FeatureDef* featDef = feature->GetDef();
+				if (!featDef->IsReclaimable()) {
+					delete featDef;
+					continue;
+				}
 				float reclaimValue = featDef->GetContainedResource(metalRes)/* * feature->GetReclaimLeft()*/;
 				delete featDef;
 				if (reclaimValue < 1.0f) {

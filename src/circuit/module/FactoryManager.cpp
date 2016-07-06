@@ -37,6 +37,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		, bpRatio(1.f)
 		, reWeight(.5f)
 		, assistDef(nullptr)
+		, assistIterator(0)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::Watchdog, this),
@@ -290,7 +291,6 @@ CFactoryManager::~CFactoryManager()
 	utils::free_clear(factoryTasks);
 	utils::free_clear(deleteTasks);
 	utils::free_clear(assistTasks);
-	utils::free_clear(deleteAssists);
 }
 
 int CFactoryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -385,7 +385,7 @@ IBuilderTask* CFactoryManager::EnqueueReclaim(IBuilderTask::Priority priority,
 											  int timeout)
 {
 	IBuilderTask* task = new CSReclaimTask(this, priority, position, .0f, timeout, radius);
-	assistTasks.insert(task);
+	assistTasks.push_back(task);
 	return task;
 }
 
@@ -397,7 +397,7 @@ IBuilderTask* CFactoryManager::EnqueueRepair(IBuilderTask::Priority priority,
 		return it->second;
 	}
 	IBuilderTask* task = new CSRepairTask(this, priority, target);
-	assistTasks.insert(task);
+	assistTasks.push_back(task);
 	repairedUnits[target->GetId()] = task;
 	return task;
 }
@@ -412,15 +412,12 @@ void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 		deleteTasks.insert(static_cast<CRecruitTask*>(task));
 		return;
 	}
-	auto ita = assistTasks.find(static_cast<IBuilderTask*>(task));
-	if (ita != assistTasks.end()) {
-		if (static_cast<IBuilderTask*>(task)->GetBuildType() == IBuilderTask::BuildType::REPAIR) {
-			repairedUnits.erase(static_cast<CSRepairTask*>(task)->GetTargetId());
-		}
-		assistTasks.erase(ita);
-		task->Close(done);
-		deleteAssists.insert(static_cast<IBuilderTask*>(task));
+
+	if (static_cast<IBuilderTask*>(task)->GetBuildType() == IBuilderTask::BuildType::REPAIR) {
+		repairedUnits.erase(static_cast<CSRepairTask*>(task)->GetTargetId());
 	}
+	task->Dead();
+	task->Close(done);
 }
 
 IUnitTask* CFactoryManager::MakeTask(CCircuitUnit* unit)
@@ -1048,28 +1045,25 @@ void CFactoryManager::UpdateIdle()
 void CFactoryManager::UpdateAssist()
 {
 	utils::free_clear(deleteTasks);
-	if (!deleteAssists.empty()) {
-		for (IBuilderTask* task : deleteAssists) {
-			updateAssists.erase(task);
+
+	if (assistIterator >= assistTasks.size()) {
+		assistIterator = 0;
+	}
+
+	// stagger the Update's
+	unsigned int n = (assistTasks.size() / TEAM_SLOWUPDATE_RATE) + 1;
+
+	while ((assistIterator < assistTasks.size()) && (n != 0)) {
+		IUnitTask* task = assistTasks[assistIterator];
+		if (task->IsDead()) {
+			assistTasks[assistIterator] = assistTasks.back();
+			assistTasks.pop_back();
 			delete task;
+		} else {
+			task->Update();
+			++assistIterator;
+			n--;
 		}
-		deleteAssists.clear();
-	}
-
-	auto it = updateAssists.begin();
-	unsigned int i = 0;
-	while (it != updateAssists.end()) {
-		(*it)->Update();
-
-		it = updateAssists.erase(it);
-		if (++i >= updateSlice) {
-			break;
-		}
-	}
-
-	if (updateAssists.empty()) {
-		updateAssists = assistTasks;
-		updateSlice = updateAssists.size() / TEAM_SLOWUPDATE_RATE;
 	}
 }
 

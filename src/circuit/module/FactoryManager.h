@@ -89,7 +89,6 @@ private:
 	std::set<CRecruitTask*> factoryTasks;  // owner
 	float factoryPower;
 	std::set<CRecruitTask*> deleteTasks;
-	unsigned int updateSlice;
 
 	CFactoryData* factoryData;
 	struct SFactory {
@@ -137,9 +136,8 @@ private:
 	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> assists;  // nano 1:n factory
 	std::vector<springai::AIFloat3> havens;  // position behind factory
 	std::map<CCircuitUnit::Id, IBuilderTask*> repairedUnits;
-	std::set<IBuilderTask*> assistTasks;  // owner
-	std::set<IBuilderTask*> updateAssists;
-	std::set<IBuilderTask*> deleteAssists;
+	std::vector<IBuilderTask*> assistTasks;  // owner
+	unsigned int assistIterator;
 };
 
 } // namespace circuit

@@ -177,7 +177,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	CCircuitAI* circuit = manager->GetCircuit();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float power = threatMap->GetUnitThreat(unit);
+	const float power = threatMap->GetUnitThreat(unit) * 2.0f;
 	const float speed = cdef->GetSpeed();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
@@ -194,7 +194,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden() || (enemy->GetTasks().size() > 1) ||
+		if (enemy->IsHidden() ||
 			(power <= threatMap->GetThreatAt(enemy->GetPos()) - enemy->GetThreat()) ||
 			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
 		{
@@ -216,6 +216,14 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 		} else {
 			targetCat = UNKNOWN_CATEGORY;
 			defPower = enemy->GetThreat();
+		}
+
+		float sumPower = 0.f;
+		for (IFighterTask* task : enemy->GetTasks()) {
+			sumPower += task->GetAttackPower();
+		}
+		if (sumPower > defPower) {
+			continue;
 		}
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());

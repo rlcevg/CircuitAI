@@ -77,8 +77,10 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	unit->PushBack(travelAction);
 
 	// Mobile repair
-	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	builderManager->EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
+	if (!cdef->IsPlane()) {
+		CBuilderManager* builderManager = circuit->GetBuilderManager();
+		builderManager->EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
+	}
 }
 
 void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
@@ -144,7 +146,7 @@ void CRetreatTask::Update()
 		const float healthPerc = u->GetHealth() / u->GetMaxHealth();
 		bool isRepaired;
 		if (unit->GetShield() != nullptr) {
-			isRepaired = (healthPerc > 0.98f) && unit->IsShieldCharged(0.9f);
+			isRepaired = (healthPerc > 0.98f) && unit->IsShieldCharged(circuit->GetSetupManager()->GetFullShield());
 		} else {
 			isRepaired = healthPerc > 0.98f;
 		}

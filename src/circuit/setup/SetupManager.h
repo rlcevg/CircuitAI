@@ -54,7 +54,8 @@ public:
 	CAllyTeam* GetAllyTeam() const;
 
 	void ReadConfig();
-	float GetRetreatShield() const { return retreatShield; }
+	float GetEmptyShield() const { return emptyShield; }
+	float GetFullShield() const { return fullShield; }
 
 private:
 	void FindCommander();
@@ -71,7 +72,8 @@ private:
 	springai::AIFloat3 startPos;
 	springai::AIFloat3 basePos;
 
-	float retreatShield;
+	float emptyShield;
+	float fullShield;
 };
 
 } // namespace circuit

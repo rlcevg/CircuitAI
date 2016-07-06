@@ -13,7 +13,7 @@
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
 #include "unit/EnemyUnit.h"
-#include "unit/action/FightAction.h"
+#include "unit/action/MoveAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -45,9 +45,9 @@ void CArtilleryTask::AssignTo(CCircuitUnit* unit)
 	IFighterTask::AssignTo(unit);
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
-	CFightAction* fightAction = new CFightAction(unit, squareSize);
-	unit->PushBack(fightAction);
-	fightAction->SetActive(false);
+	CMoveAction* travelAction = new CMoveAction(unit, squareSize);
+	unit->PushBack(travelAction);
+	travelAction->SetActive(false);
 }
 
 void CArtilleryTask::RemoveAssignee(CCircuitUnit* unit)

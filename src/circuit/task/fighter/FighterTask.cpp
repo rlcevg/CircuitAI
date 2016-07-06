@@ -80,7 +80,7 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	Unit* u = unit->GetUnit();
 	const float healthPerc = u->GetHealth() / u->GetMaxHealth();
 	if (unit->GetShield() != nullptr) {
-		const float minShield = circuit->GetSetupManager()->GetRetreatShield();
+		const float minShield = circuit->GetSetupManager()->GetEmptyShield();
 		if ((healthPerc > cdef->GetRetreat()) && unit->IsShieldCharged(minShield)) {
 			return;
 		}

@@ -35,7 +35,7 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 		, commanderId(-1)
 		, startPos(-RgtVector)
 		, basePos(-RgtVector)
-		, retreatShield(0.f)
+		, emptyShield(0.f)
 {
 	const char* setupScript = circuit->GetGame()->GetSetupScript();
 	if (!setupData->IsInitialized()) {
@@ -323,7 +323,9 @@ CAllyTeam* CSetupManager::GetAllyTeam() const
 
 void CSetupManager::ReadConfig()
 {
-	retreatShield = GetConfig()["retreat"].get("shield", 0.1f).asFloat();
+	const Json::Value& shield = GetConfig()["retreat"]["shield"];
+	emptyShield = shield.get((unsigned)0, 0.1f).asFloat();
+	fullShield = shield.get((unsigned)1, 0.6f).asFloat();
 }
 
 void CSetupManager::FindCommander()
