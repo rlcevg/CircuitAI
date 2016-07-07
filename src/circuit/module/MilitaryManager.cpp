@@ -281,6 +281,10 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			task = new CRallyTask(this, /*power*/1);  // TODO: pass enemy's threat
 			break;
 		}
+		case IFighterTask::FightType::DEFEND: {
+			task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), maxGuards);
+			break;
+		}
 		case IFighterTask::FightType::SCOUT: {
 			task = new CScoutTask(this);
 			break;
@@ -369,7 +373,11 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 				type = IFighterTask::FightType::SCOUT;
 			}
 		} else {
-			type = IFighterTask::FightType::ATTACK;
+			if (GetTasks(IFighterTask::FightType::ATTACK).empty()) {
+				type = IFighterTask::FightType::DEFEND;
+			} else {
+				type = IFighterTask::FightType::ATTACK;
+			}
 		}
 	}
 	IFighterTask* task = EnqueueTask(type);
@@ -589,8 +597,8 @@ IFighterTask* CMilitaryManager::AddDefendTask(int cluster)
 	}
 
 	const AIFloat3& pos = circuit->GetMetalManager()->GetClusters()[cluster].geoCentr;
-//	task = EnqueueTask(IFighterTask::FightType::DEFEND, pos, 1.0f);
-	task = new CDefendTask(this, pos, 1.0f);
+//	task = EnqueueTask(IFighterTask::FightType::DEFEND, pos, 1);
+	task = new CDefendTask(this, pos, 1);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
 	clusterInfos[cluster].defence = task;
 	return task;
@@ -726,6 +734,7 @@ void CMilitaryManager::ReadConfig()
 	const Json::Value& quotas = root["quota"];
 	maxScouts = quotas.get("scout", 3).asUInt();
 	maxRaiders = quotas.get("raider", 5).asUInt();
+	maxGuards = quotas.get("guard", 2).asUInt();
 }
 
 void CMilitaryManager::Init()

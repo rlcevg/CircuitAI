@@ -134,6 +134,7 @@ private:
 
 	unsigned int maxRaiders;
 	unsigned int maxScouts;
+	unsigned int maxGuards;
 };
 
 } // namespace circuit

@@ -18,13 +18,15 @@ public:
 	virtual ~CDefendTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const;
+	virtual void RemoveAssignee(CCircuitUnit* unit);
 
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
-protected:
-	virtual void Cancel();
 
 private:
+	virtual void Merge(ISquadTask* task);
+	void FindTarget();
+
 	unsigned int maxSize;
 };
 

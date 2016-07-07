@@ -332,7 +332,8 @@
 
 "quota": {
 	"scout": 3,  // max scout units
-	"raider": 5  // avg number of units in raider squad
+	"raider": 5,  // avg number of units in raider squad
+	"guard": 2  // number of base defenders
 },
 
 // If unit's health drops below specified percent it will retreat

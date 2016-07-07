@@ -145,6 +145,8 @@ void CAntiAirTask::Update()
 	int frame = circuit->GetLastFrame();
 
 	if (isDanger) {
+		// TODO: When in danger finish CFightAction and push CMoveAction.
+		//       When safe swap back to CFightAction
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		static F3Vec ourPositions;  // NOTE: micro-opt
 		const std::set<IFighterTask*>& tasks = circuit->GetMilitaryManager()->GetTasks(IFighterTask::FightType::ATTACK);

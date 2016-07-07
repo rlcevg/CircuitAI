@@ -34,7 +34,7 @@ CThreatMap::CThreatMap(CCircuitAI* circuit)
 	mapSize = width * height;
 
 	rangeDefault = (DEFAULT_SLACK * 4) / squareSize;
-	distCloak = (DEFAULT_SLACK * 3) / squareSize;
+	distCloak = (DEFAULT_SLACK * 4) / squareSize;
 
 	airThreat.resize(mapSize, THREAT_BASE);
 	surfThreat.resize(mapSize, THREAT_BASE);
@@ -637,7 +637,7 @@ int CThreatMap::GetCloakRange(const CEnemyUnit* e) const
 	assert(e->GetCircuitDef() != nullptr);
 	const int sizeX = e->GetCircuitDef()->GetUnitDef()->GetXSize() * (SQUARE_SIZE / 2);
 	const int sizeZ = e->GetCircuitDef()->GetUnitDef()->GetZSize() * (SQUARE_SIZE / 2);
-	return (int)sqrtf(sizeX * sizeX + sizeZ * sizeZ) / squareSize + distCloak;
+	return (int)sqrtf(SQUARE(sizeX) + SQUARE(sizeZ)) / squareSize + distCloak;
 }
 
 float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const

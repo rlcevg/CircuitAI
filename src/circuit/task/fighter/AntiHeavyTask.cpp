@@ -136,7 +136,7 @@ void CAntiHeavyTask::Update()
 		return;
 	}
 
-	bool isExecute = (updCount % 4 == 2);
+	bool isExecute = (updCount % 2 == 0);
 	if (!isExecute) {
 		for (CCircuitUnit* unit : units) {
 			isExecute |= unit->IsForceExecute();
@@ -156,50 +156,59 @@ void CAntiHeavyTask::Update()
 	/*
 	 * Update target
 	 */
-	FindTarget();
-
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
-	isAttack = false;
-	if (target != nullptr) {
-		const float sqHighestRange = SQUARE(highestRange);
-		for (CCircuitUnit* unit : units) {
-			if (position.SqDistance2D(unit->GetPos(frame)) < sqHighestRange) {
-				isAttack = true;
-				break;
-			}
-		}
-		if (isAttack) {
-			for (CCircuitUnit* unit : units) {
-				TRY_UNIT(circuit, unit,
-					if (unit->IsJumpReady()) {
-						const AIFloat3& pos = target->GetPos();
-						unit->GetUnit()->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-						unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60);
-					} else {
-						unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-					}
-					unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
-				)
+	if (leader->IsWeaponReady(frame)) {
+		FindTarget();
 
-				CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
-				moveAction->SetActive(false);
+		isAttack = false;
+		if (target != nullptr) {
+			const float sqHighestRange = SQUARE(highestRange);
+			for (CCircuitUnit* unit : units) {
+				if (position.SqDistance2D(unit->GetPos(frame)) < sqHighestRange) {
+					isAttack = true;
+					break;
+				}
 			}
-			return;
+			if (isAttack) {
+				for (CCircuitUnit* unit : units) {
+					TRY_UNIT(circuit, unit,
+						if (unit->IsJumpReady()) {
+							const AIFloat3& pos = target->GetPos();
+							unit->GetUnit()->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+							unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60);
+						} else {
+							unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+						}
+						unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
+					)
+
+					CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
+					moveAction->SetActive(false);
+				}
+				return;
+			}
+		} else {
+			CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+			if ((commander != nullptr) &&
+				circuit->GetTerrainManager()->CanMoveToPos(leader->GetArea(), commander->GetPos(frame)))
+			{
+				for (CCircuitUnit* unit : units) {
+					unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
+
+					CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
+					moveAction->SetActive(false);
+				}
+				return;
+			}
 		}
 	} else {
-		CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-		if ((commander != nullptr) &&
-			circuit->GetTerrainManager()->CanMoveToPos(leader->GetArea(), commander->GetPos(frame)))
-		{
-			for (CCircuitUnit* unit : units) {
-				unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
-
-				CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
-				moveAction->SetActive(false);
-			}
-			return;
-		}
+		position = circuit->GetSetupManager()->GetBasePos();
+		AIFloat3 startPos = leader->GetPos(frame);
+		pPath->clear();
+		CPathFinder* pathfinder = circuit->GetPathfinder();
+		pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
+		pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize());
 	}
 	if (pPath->empty()) {  // should never happen
 		for (CCircuitUnit* unit : units) {
@@ -242,9 +251,10 @@ void CAntiHeavyTask::OnUnitIdle(CCircuitUnit* unit)
 void CAntiHeavyTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
+	const AIFloat3& pos = leader->GetPos(frame);
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const int canTargetCat = cdef->GetTargetCategory();
@@ -255,7 +265,7 @@ void CAntiHeavyTask::FindTarget()
 	std::function<bool (CEnemyUnit* enemy)> badCondition;
 	if (circuit->GetMilitaryManager()->GetEnemyMetal(CCircuitDef::RoleType::HEAVY) > .1f) {
 		badCondition = [](CEnemyUnit* enemy) {
-			return !enemy->GetCircuitDef()->IsRoleHeavy() || enemy->GetUnit()->IsParalyzed();
+			return !enemy->GetCircuitDef()->IsRoleHeavy();
 		};
 	} else {
 		const int noChaseCat = cdef->GetNoChaseCategory();
@@ -297,9 +307,8 @@ void CAntiHeavyTask::FindTarget()
 	pPath->clear();
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
+	pathfinder->SetMapData(leader, threatMap, frame);
 	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
-
 }
 
 } // namespace circuit

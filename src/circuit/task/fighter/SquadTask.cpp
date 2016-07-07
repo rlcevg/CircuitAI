@@ -182,7 +182,7 @@ ISquadTask* ISquadTask::GetMergeTask() const
 
 bool ISquadTask::IsMustRegroup()
 {
-	if (isAttack || (updCount % 16 != 0)) {
+	if (isAttack || (updCount % 16 != 15)) {
 		return false;
 	}
 
