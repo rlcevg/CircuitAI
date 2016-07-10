@@ -71,7 +71,7 @@ void CDefendTask::Update()
 			for (CCircuitUnit* ass : tmpUnits) {
 				manager->AssignTask(ass, task);
 			}
-			manager->DoneTask(this);
+//			manager->DoneTask(this);  // NOTE: RemoveAssignee will abort task
 			return;
 		}
 

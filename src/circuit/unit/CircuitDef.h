@@ -204,7 +204,6 @@ private:
 	bool hasAntiWater;  // under water
 
 	// TODO: Use bit field?
-	bool isAbleToFly;
 	bool isPlane;  // no hover attack
 	bool isFloater;
 	bool isSubmarine;
@@ -212,6 +211,7 @@ private:
 	bool isLander;
 	bool isSonarStealth;
 	bool isTurnLarge;
+	bool isAbleToFly;
 	bool isAbleToCloak;
 	bool isAbleToJump;
 

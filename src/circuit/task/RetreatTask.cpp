@@ -125,7 +125,7 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 	}
 	std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
 
-	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit);
+	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit) * 0.125f;
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
 	pathfinder->MakePath(*pPath, startPos, endPos, range, minThreat);
 

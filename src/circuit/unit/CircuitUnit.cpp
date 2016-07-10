@@ -178,6 +178,14 @@ float CCircuitUnit::GetDamage()
 	return dmg;
 }
 
+float CCircuitUnit::GetShieldPower()
+{
+	if (shield != nullptr) {
+		return shield->GetShieldPower();
+	}
+	return 0.f;
+}
+
 void CCircuitUnit::Guard(CCircuitUnit* target, int timeout)
 {
 	TRY_UNIT(manager->GetCircuit(), this,
@@ -228,26 +236,26 @@ void CCircuitUnit::Upgrade()
 	float alreadyCount = unit->GetRulesParamFloat("comm_module_count", 0.f);
 
 	static std::vector<std::vector<float>> newModules = {
-		std::vector<float>({14, 31}),  // shotgun, radar
-		std::vector<float>({35, 35}),  // companion drones
-		std::vector<float>({16, 36, 36}),  // sniper, battle drones
-		std::vector<float>({36, 36, 36}),  // battle drones
-		std::vector<float>({36, 36, 36}),  // battle drones
+		std::vector<float>({13, 30}),  // shotgun, radar
+		std::vector<float>({34, 34}),  // companion drones
+		std::vector<float>({15, 35, 35}),  // sniper, battle drones
+		std::vector<float>({35, 35, 35}),  // battle drones
+		std::vector<float>({35, 35, 35}),  // battle drones
 
-		std::vector<float>({35, 35, 35}),  // companion drones
-		std::vector<float>({35, 35, 35}),  // companion drones
-		std::vector<float>({41, 41, 41}),  // speed
-		std::vector<float>({41, 41, 41}),  // speed
-		std::vector<float>({41, 41, 38}),  // speed, armour
-		std::vector<float>({38, 38, 38}),  // armour
-		std::vector<float>({38, 38, 38}),  // armour
-		std::vector<float>({38, 37, 37}),  // armour, autoheal
-		std::vector<float>({37, 37, 37}),  // autoheal
-		std::vector<float>({37, 37, 37}),  // autoheal
-		std::vector<float>({43, 43, 43}),  // builder
-		std::vector<float>({43, 43, 43}),  // builder
-		std::vector<float>({43, 43, 30}),  // builder, jammer
-		std::vector<float>({33, 28, 34}),  // area cloak, disruptor ammo, lazarus
+		std::vector<float>({34, 34, 34}),  // companion drones
+		std::vector<float>({34, 34, 34}),  // companion drones
+		std::vector<float>({40, 40, 40}),  // speed
+		std::vector<float>({40, 40, 40}),  // speed
+		std::vector<float>({40, 40, 37}),  // speed, armour
+		std::vector<float>({37, 37, 37}),  // armour
+		std::vector<float>({37, 37, 37}),  // armour
+		std::vector<float>({37, 36, 36}),  // armour, autoheal
+		std::vector<float>({36, 36, 36}),  // autoheal
+		std::vector<float>({36, 36, 36}),  // autoheal
+		std::vector<float>({42, 42, 42}),  // builder
+		std::vector<float>({42, 42, 42}),  // builder
+		std::vector<float>({42, 42, 29}),  // builder, jammer
+		std::vector<float>({32, 27, 33}),  // area cloak, disruptor ammo, lazarus
 	};
 	unsigned index = std::min<unsigned>(level, newModules.size() - 1);
 

@@ -43,6 +43,7 @@ public:
 	bool IsDisarmed();
 	float GetDPS();
 	float GetDamage();
+	float GetShieldPower();
 
 	void SetPos(const springai::AIFloat3& p) { pos = p; }
 	const springai::AIFloat3& GetPos() const { return pos; }

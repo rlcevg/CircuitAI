@@ -96,7 +96,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 	bool isDynamic = false;
 	if (customParams.find("level") != customParams.end()) {
-		AddRole(RoleType::HEAVY);
 		isDynamic = customParams.find("dynamic_comm") != customParams.end();
 	}
 
@@ -305,7 +304,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	hasAntiWater = (targetCategory & circuit->GetWaterCategory()) && canTargetWater;
 
 	dmg = sqrtf(dps) * sqrtf(dmg) * THREAT_MOD;
-	power = dmg * sqrtf(def->GetHealth());
+	power = dmg * sqrtf(def->GetHealth() + maxShield);
 }
 
 CCircuitDef::~CCircuitDef()

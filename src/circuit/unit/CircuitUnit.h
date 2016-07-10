@@ -91,6 +91,7 @@ public:
 	bool IsJumpReady();
 	float GetDPS();
 	float GetDamage();
+	float GetShieldPower();
 
 	void Guard(CCircuitUnit* target, int timeout);
 

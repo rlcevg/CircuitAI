@@ -361,7 +361,8 @@ float CThreatMap::GetThreatAt(CCircuitUnit* unit, const AIFloat3& position) cons
 
 float CThreatMap::GetUnitThreat(CCircuitUnit* unit) const
 {
-	return unit->GetDamage() * sqrtf(unit->GetUnit()->GetHealth());  // / unit->GetUnit()->GetMaxHealth();
+	float health = unit->GetUnit()->GetHealth() + unit->GetShieldPower();
+	return unit->GetDamage() * sqrtf(health);  // / unit->GetUnit()->GetMaxHealth();
 }
 
 void CThreatMap::AddEnemyUnit(const CEnemyUnit* e)
@@ -427,16 +428,19 @@ void CThreatMap::AddEnemyAir(const CEnemyUnit* e)
 	const int endZ   = std::min(int(posz + range    ), height);
 
 	for (int x = beginX; x < endX; ++x) {
-		const int rrx = rangeSq - SQUARE(posx - x);
+		const int dxSq = SQUARE(posx - x);
 		for (int z = beginZ; z < endZ; ++z) {
-			if (SQUARE(posz - z) > rrx) {
+			const int dzSq = SQUARE(posz - z);
+			const int sum = dxSq + dzSq;
+			if (sum > rangeSq) {
 				continue;
 			}
 
 			const int index = z * width + x;
-			airThreat[index] += threat;
+			const float heat = threat * (1.0f - 0.75f * sqrtf(sum) / range);
+			airThreat[index] += heat;
 
-//			currSumThreat += threat;
+//			currSumThreat += heat;
 		}
 	}
 
@@ -459,9 +463,11 @@ void CThreatMap::DelEnemyAir(const CEnemyUnit* e)
 	const int endZ   = std::min(int(posz + range    ), height);
 
 	for (int x = beginX; x < endX; ++x) {
-		const int rrx = rangeSq - SQUARE(posx - x);
+		const int dxSq = SQUARE(posx - x);
 		for (int z = beginZ; z < endZ; ++z) {
-			if (SQUARE(posz - z) > rrx) {
+			const int dzSq = SQUARE(posz - z);
+			const int sum = dxSq + dzSq;
+			if (sum > rangeSq) {
 				continue;
 			}
 
@@ -470,9 +476,10 @@ void CThreatMap::DelEnemyAir(const CEnemyUnit* e)
 			// (which may arise due to floating-point drift)
 			// nor with zero-cost nodes (see MP::SetMapData,
 			// threat is not used as an additive overlay)
-			airThreat[index] = std::max<float>(airThreat[index] - threat, THREAT_BASE);
+			const float heat = threat * (1.0f - 0.75f * sqrtf(sum) / range);
+			airThreat[index] = std::max<float>(airThreat[index] - heat, THREAT_BASE);
 
-//			currSumThreat -= threat;
+//			currSumThreat -= heat;
 		}
 	}
 
@@ -504,13 +511,14 @@ void CThreatMap::AddEnemyAmph(const CEnemyUnit* e)
 
 			const int sum = dxSq + dzSq;
 			const int index = z * width + x;
+			const float heat = threat * (1.0f - 0.75f * sqrtf(sum) / range);
 			bool isWaterThreat = (sum <= rangeWaterSq) && sector[index].isWater;
 			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[index].position.y >= -SQUARE_SIZE * 5)))
 			{
-				amphThreat[index] += threat;
+				amphThreat[index] += heat;
 			}
 			if (isWaterThreat || (sum <= rangeLandSq)) {
-				surfThreat[index] += threat;
+				surfThreat[index] += heat;
 			}
 		}
 	}
@@ -541,13 +549,14 @@ void CThreatMap::DelEnemyAmph(const CEnemyUnit* e)
 
 			const int sum = dxSq + dzSq;
 			const int index = z * width + x;
+			const float heat = threat * (1.0f - 0.75f * sqrtf(sum) / range);
 			bool isWaterThreat = (sum <= rangeWaterSq) && sector[index].isWater;
 			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[index].position.y >= -SQUARE_SIZE * 5)))
 			{
-				amphThreat[index] = std::max<float>(amphThreat[index] - threat, THREAT_BASE);
+				amphThreat[index] = std::max<float>(amphThreat[index] - heat, THREAT_BASE);
 			}
 			if (isWaterThreat || (sum <= rangeLandSq)) {
-				surfThreat[index] = std::max<float>(surfThreat[index] - threat, THREAT_BASE);
+				surfThreat[index] = std::max<float>(surfThreat[index] - heat, THREAT_BASE);
 			}
 		}
 	}
@@ -569,13 +578,17 @@ void CThreatMap::AddDecloaker(const CEnemyUnit* e)
 	const int endZ   = std::min(int(posz + rangeCloak + 1), height);
 
 	for (int x = beginX; x < endX; ++x) {
-		const int rrx = rangeCloakSq - SQUARE(posx - x);
+		const int dxSq = SQUARE(posx - x);
 		for (int z = beginZ; z < endZ; ++z) {
-			if (SQUARE(posz - z) > rrx) {
+			const int dzSq = SQUARE(posz - z);
+			const int sum = dxSq + dzSq;
+			if (sum > rangeCloakSq) {
 				continue;
 			}
+
 			const int index = z * width + x;
-			cloakThreat[index] += threatCloak;
+			const float heat = threatCloak * (1.0f - 0.75f * sqrtf(sum) / rangeCloak);
+			cloakThreat[index] += heat;
 		}
 	}
 }
@@ -596,15 +609,28 @@ void CThreatMap::DelDecloaker(const CEnemyUnit* e)
 	const int endZ   = std::min(int(posz + rangeCloak + 1), height);
 
 	for (int x = beginX; x < endX; ++x) {
-		const int rrx = rangeCloakSq - SQUARE(posx - x);
+		const int dxSq = SQUARE(posx - x);
 		for (int z = beginZ; z < endZ; ++z) {
-			if (SQUARE(posz - z) > rrx) {
+			const int dzSq = SQUARE(posz - z);
+			const int sum = dxSq + dzSq;
+			if (sum > rangeCloakSq) {
 				continue;
 			}
+
 			const int index = z * width + x;
-			cloakThreat[index] = std::max<float>(cloakThreat[index] - threatCloak, THREAT_BASE);
+			const float heat = threatCloak * (1.0f - 0.75f * sqrtf(sum) / rangeCloak);
+			cloakThreat[index] = std::max<float>(cloakThreat[index] - heat, THREAT_BASE);
 		}
 	}
+
+//	for (int x = beginX; x < endX; ++x) {
+//		const int rrx = rangeCloakSq - SQUARE(posx - x);
+//		for (int z = beginZ; z < endZ; ++z) {
+//			if (SQUARE(posz - z) > rrx) continue;
+//			const int index = z * width + x;
+//			cloakThreat[index] = std::max<float>(cloakThreat[index] - threatCloak, THREAT_BASE);
+//		}
+//	}
 }
 
 void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const
@@ -652,7 +678,7 @@ float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
 	if (health <= .0f) {
 		return .0f;
 	}
-	return enemy->GetDamage() * sqrtf(health);  // / unit->GetUnit()->GetMaxHealth();
+	return enemy->GetDamage() * sqrtf(health + enemy->GetShieldPower());  // / unit->GetUnit()->GetMaxHealth();
 }
 
 bool CThreatMap::IsInLOS(const AIFloat3& pos) const

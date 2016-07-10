@@ -100,6 +100,7 @@ private:
 	Threats amphThreat;  // under water and surface on land
 	Threats cloakThreat;
 	float* threatArray;
+	// TODO: shield-map - units under shield should get threat boost
 
 //	std::vector<int> radarMap;
 	std::vector<int> sonarMap;

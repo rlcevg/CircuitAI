@@ -15,9 +15,9 @@ std::thread CScheduler::workerThread;
 std::atomic<bool> CScheduler::workerRunning(false);
 unsigned int CScheduler::counterInstance = 0;
 
-CScheduler::CScheduler() :
-		lastFrame(-1),
-		isProcessing(false)
+CScheduler::CScheduler()
+		: lastFrame(-1)
+		, isProcessing(false)
 {
 	counterInstance++;
 }

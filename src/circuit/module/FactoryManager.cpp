@@ -277,6 +277,25 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 				assistCandy = cdef;
 			}
 		}
+
+		// Auto-assign roles
+		auto setRoles = [cdef](CCircuitDef::RoleType type) {
+			cdef->SetMainRole(type);
+			cdef->SetEnemyRole(type);
+			cdef->AddRole(type);
+		};
+		if (cdef->IsAbleToFly()) {
+			setRoles(CCircuitDef::RoleType::AIR);
+		} else if (!cdef->IsMobile() && cdef->IsAttacker() && cdef->HasAntiLand()) {
+			setRoles(CCircuitDef::RoleType::STATIC);
+		} else if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
+			setRoles(CCircuitDef::RoleType::BUILDER);
+		}
+		auto customParams = std::move(cdef->GetUnitDef()->GetCustomParams());
+		if (customParams.find("level") != customParams.end()) {
+			cdef->SetEnemyRole(CCircuitDef::RoleType::HEAVY);
+			cdef->AddRole(CCircuitDef::RoleType::HEAVY);
+		}
 	}
 
 	assistDef = assistCandy;
@@ -730,20 +749,6 @@ void CFactoryManager::ReadConfig()
 		CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());
 		if (cdef == nullptr) {
 			continue;
-		}
-
-		// Auto-assign roles
-		auto setRoles = [cdef](CCircuitDef::RoleType type) {
-			cdef->SetMainRole(type);
-			cdef->SetEnemyRole(type);
-			cdef->AddRole(type);
-		};
-		if (cdef->IsAbleToFly()) {
-			setRoles(CCircuitDef::RoleType::AIR);
-		} else if (!cdef->IsMobile() && cdef->IsAttacker() && cdef->HasAntiLand()) {
-			setRoles(CCircuitDef::RoleType::STATIC);
-		} else if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
-			setRoles(CCircuitDef::RoleType::BUILDER);
 		}
 
 		// Read roles from config

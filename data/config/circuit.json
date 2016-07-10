@@ -309,7 +309,7 @@
 	},
 
 	"striderhub": {
-		"importance": [0, 1.5],
+		"importance": [0, 2.0],
 		"require_energy": false,
 
 		"income_tier": [60, 80, 100],
@@ -392,10 +392,11 @@
 	},
 	"armham": {
 		"role": ["artillery"],
+		"attribute": ["support"],
 		"retreat": 0.8
 	},
 	"armsnipe": {
-		"role": ["artillery"],
+		"role": ["anti_heavy", "artillery"],
 		"retreat": 0.9
 	},
 	"armtick": {
@@ -434,7 +435,7 @@
 	},
 	"armbrawl": {
 		"role": ["artillery", "air"],
-		"attribute": ["no_strafe"]
+		"attribute": ["support"]  // no_strafe ?
 	},
 	"blackdawn": {
 		"role": ["assault", "air"],
@@ -516,9 +517,9 @@
 		"attribute": ["siege"],
 		"retreat": 0.65
 	},
-	"armspy": {
-		"role": ["anti_heavy"],
-		"attribute": ["scout"]
+	"armspy": {  // disabled, anti_heavy attribute does nothing
+		"role": ["scout"],
+		"attribute": ["anti_heavy"]
 	},
 	"spideraa": {
 		"role": ["anti_air"]
@@ -598,6 +599,7 @@
 	},
 	"armmerl": {
 		"role": ["artillery"],
+		"attribute": ["support"],
 		"retreat": 0.9
 	},
 	"vehaa": {
@@ -629,7 +631,8 @@
 		"attribute": ["no_jump"]
 	},
 	"firewalker": {
-		"role": ["artillery"]
+		"role": ["artillery"],
+		"attribute": ["support"]
 	},
 	"corsktl": {
 		"role": ["anti_heavy", "mine"]
@@ -667,6 +670,7 @@
 	},
 	"armmanni": {
 		"role": ["artillery"],
+		"attribute": ["support"],
 		"retreat": 0.9
 	},
 	"hoveraa": {
@@ -693,10 +697,12 @@
 		"role": ["skirmish"]
 	},
 	"shiparty": {
-		"role" :["artillery"]
+		"role" :["artillery"],
+		"attribute": ["support"]
 	},
 	"subarty": {
-		"role": ["artillery"]
+		"role": ["artillery"],
+		"attribute": ["support"]
 	},
 	"armtboat": {
 		"role": ["transport"]
@@ -771,10 +777,12 @@
 	},
 	"cormart": {
 		"role": ["artillery"],
+		"attribute": ["support"],
 		"retreat": 0.9
 	},
 	"trem": {
 		"role": ["artillery"],
+		"attribute": ["support"],
 		"retreat": 0.9
 	},
 	"corsent": {
@@ -800,6 +808,7 @@
 	},
 	"armraven": {
 		"role": ["artillery", "heavy"],
+		"attribute": ["support"],
 		"retreat": 0.9
 	},
 	"funnelweb": {
@@ -839,7 +848,7 @@
 
 	"raider": {
 		"vs":         ["skirmish", "artillery", "anti_air", "scout"],
-		"ratio":      [ 0.8,        1.1,         1.1,        0.8],
+		"ratio":      [ 0.4,        0.5,         0.5,        0.4],
 		"importance": [ 1.0,        2.0,         1.0,        1.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4

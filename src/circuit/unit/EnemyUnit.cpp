@@ -88,4 +88,12 @@ float CEnemyUnit::GetDamage()
 	return dmg;
 }
 
+float CEnemyUnit::GetShieldPower()
+{
+	if (circuitDef == nullptr) {
+		return .0f;
+	}
+	return circuitDef->GetMaxShield();
+}
+
 } // namespace circuit

@@ -533,6 +533,7 @@ int CCircuitAI::Update(int frame)
 		CCircuitUnit* unit = *garbage.begin();
 		UnitDestroyed(unit, nullptr);
 		UnregisterTeamUnit(unit);
+		garbage.erase(unit);  // NOTE: UnregisterTeamUnit may erase unit
 	}
 
 	scheduler->ProcessTasks(frame);
