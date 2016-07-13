@@ -33,7 +33,7 @@ public:
 		RECLAIM,
 		_SIZE_,  // build-tasks count
 		RECRUIT,
-		TERRAFORM, PATROL,  // builder actions that don't have UnitDef as target
+		TERRAFORM, PATROL, GUARD,  // builder actions that don't have UnitDef as target
 		DEFAULT = BIG_GUN
 	};
 	using BT = std::underlying_type<BuildType>::type;

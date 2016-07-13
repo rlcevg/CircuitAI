@@ -88,6 +88,9 @@ public:
 								   float cost = 1.0f,
 								   bool isActive = true,
 								   int timeout = ASSIGN_TIMEOUT);
+	IBuilderTask* EnqueueGuard(IBuilderTask::Priority priority,
+							   CCircuitUnit* target,
+							   int timeout = ASSIGN_TIMEOUT);
 	CRetreatTask* EnqueueRetreat();
 
 private:
@@ -111,6 +114,8 @@ public:
 
 private:
 	void Init();
+	IBuilderTask* MakeCommTask(CCircuitUnit* unit);
+	IBuilderTask* MakeBuilderTask(CCircuitUnit* unit);
 	IBuilderTask* CreateBuilderTask(const springai::AIFloat3& position, CCircuitUnit* unit);
 
 	void AddBuildList(CCircuitUnit* unit);

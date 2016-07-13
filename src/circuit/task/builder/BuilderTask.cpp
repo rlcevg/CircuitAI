@@ -70,7 +70,7 @@ IBuilderTask::~IBuilderTask()
 
 bool IBuilderTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return (((target != nullptr) || unit->GetCircuitDef()->CanBuild(buildDef)) && (cost > buildPower * MIN_BUILD_SEC));
+	return ((target != nullptr) || unit->GetCircuitDef()->CanBuild(buildDef)) && (cost > buildPower * MIN_BUILD_SEC);
 }
 
 void IBuilderTask::AssignTo(CCircuitUnit* unit)

@@ -70,7 +70,7 @@ void CRaidTask::AssignTo(CCircuitUnit* unit)
 void CRaidTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	ISquadTask::RemoveAssignee(unit);
-	if (units.empty()) {
+	if (leader == nullptr) {
 		manager->AbortTask(this);
 	} else {
 		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetLosRadius());
@@ -158,23 +158,31 @@ void CRaidTask::Update()
 		isAttack = true;
 		position = target->GetPos();
 		if (leader->GetCircuitDef()->IsAbleToFly()) {
-			for (CCircuitUnit* unit : units) {
-				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-					unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
-				)
+			if (target->GetUnit()->IsCloaked()) {
+				for (CCircuitUnit* unit : units) {
+					const AIFloat3& pos = target->GetPos();
+					TRY_UNIT(circuit, unit,
+						unit->GetUnit()->ExecuteCustomCommand(CMD_ATTACK_GROUND, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+					)
 
-				CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
-				moveAction->SetActive(false);
+					CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
+					moveAction->SetActive(false);
+				}
+			} else {
+				for (CCircuitUnit* unit : units) {
+					TRY_UNIT(circuit, unit,
+						unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+						unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
+					)
+
+					CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
+					moveAction->SetActive(false);
+				}
 			}
 		} else {
 			for (CCircuitUnit* unit : units) {
 				const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
-				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-					unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60);
-					unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
-				)
+				unit->Attack(pos, target, frame + FRAMES_PER_SEC * 60);
 
 				CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
 				moveAction->SetActive(false);
@@ -267,10 +275,11 @@ void CRaidTask::FindTarget()
 	float minSqDist = SQUARE(range);
 	float maxThreat = .0f;
 
+	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
 	CEnemyUnit* bestTarget = nullptr;
 	CEnemyUnit* mediumTarget = nullptr;
 	CEnemyUnit* worstTarget = nullptr;
-	F3Vec enemyPositions;
+	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(leader);
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
@@ -320,16 +329,21 @@ void CRaidTask::FindTarget()
 	if (bestTarget == nullptr) {
 		bestTarget = (mediumTarget != nullptr) ? mediumTarget : worstTarget;
 	}
-	SetTarget(bestTarget);
 
 	pPath->clear();
-	if ((bestTarget != nullptr) || enemyPositions.empty()) {
+	if (bestTarget != nullptr) {
+		SetTarget(bestTarget);
+		enemyPositions.clear();
+		return;
+	}
+	if (enemyPositions.empty()) {
 		return;
 	}
 
 	AIFloat3 startPos = pos;
 	circuit->GetPathfinder()->SetMapData(leader, threatMap, circuit->GetLastFrame());
 	circuit->GetPathfinder()->FindBestPath(*pPath, startPos, range * 0.5f, enemyPositions);
+	enemyPositions.clear();
 }
 
 } // namespace circuit

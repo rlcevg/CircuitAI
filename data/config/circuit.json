@@ -92,7 +92,7 @@
 	},
 
 	"factoryamph": {
-		"importance": [0.9, 1.0],
+		"importance": [0.8, 1.0],
 		"require_energy": false,
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
@@ -121,7 +121,7 @@
 	},
 
 	"factoryspider": {
-		"importance": [0.9, 1.0],
+		"importance": [0.8, 1.0],
 		"require_energy": false,
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
@@ -333,7 +333,7 @@
 "quota": {
 	"scout": 3,  // max scout units
 	"raider": 5,  // avg number of units in raider squad
-	"guard": 2  // number of base defenders
+	"guard": 3  // number of base defenders
 },
 
 // If unit's health drops below specified percent it will retreat
@@ -434,8 +434,8 @@
 		"retreat": 0.8
 	},
 	"armbrawl": {
-		"role": ["artillery", "air"],
-		"attribute": ["support"]  // no_strafe ?
+		"role": ["assault", "air"],
+		"attribute": ["no_strafe"]
 	},
 	"blackdawn": {
 		"role": ["assault", "air"],
@@ -599,7 +599,6 @@
 	},
 	"armmerl": {
 		"role": ["artillery"],
-		"attribute": ["support"],
 		"retreat": 0.9
 	},
 	"vehaa": {
@@ -669,7 +668,7 @@
 		"retreat": 0.6
 	},
 	"armmanni": {
-		"role": ["artillery"],
+		"role": ["artillery", "heavy"],
 		"attribute": ["support"],
 		"retreat": 0.9
 	},
@@ -777,7 +776,6 @@
 	},
 	"cormart": {
 		"role": ["artillery"],
-		"attribute": ["support"],
 		"retreat": 0.9
 	},
 	"trem": {
@@ -868,9 +866,9 @@
 		"eps_step": 0.4
 	},
 	"skirmish": {
-		"vs":         ["riot", "assault"],
-		"ratio":      [ 1.1,    1.1],
-		"importance": [ 1.0,    1.0],
+		"vs":         ["riot", "assault", "skirmish"],
+		"ratio":      [ 1.1,    1.1,       1.1],
+		"importance": [ 1.0,    1.0,       1.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
@@ -890,9 +888,9 @@
 	},
 	"anti_heavy": {
 		"vs":         ["heavy"],
-		"ratio":      [ 0.6],
+		"ratio":      [ 0.8],
 		"importance": [ 4.0],
-		"max_percent": 0.45,
+		"max_percent": 0.80,
 		"eps_step": 0.4
 	}
 },

@@ -58,15 +58,15 @@ void CAntiAirTask::AssignTo(CCircuitUnit* unit)
 	ISquadTask::AssignTo(unit);
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
-	CFightAction* fightAction = new CFightAction(unit, squareSize);
-	unit->PushBack(fightAction);
-	fightAction->SetActive(false);
+	CFightAction* travelAction = new CFightAction(unit, squareSize);
+	unit->PushBack(travelAction);
+	travelAction->SetActive(false);
 }
 
 void CAntiAirTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	ISquadTask::RemoveAssignee(unit);
-	if (units.empty()) {
+	if (leader == nullptr) {
 		manager->AbortTask(this);
 	}
 }
@@ -77,9 +77,9 @@ void CAntiAirTask::Execute(CCircuitUnit* unit)
 		return;
 	}
 	if (!pPath->empty()) {
-		CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-		fightAction->SetPath(pPath);
-		fightAction->SetActive(true);
+		ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+		travelAction->SetPath(pPath);
+		travelAction->SetActive(true);
 	}
 }
 
@@ -114,8 +114,8 @@ void CAntiAirTask::Update()
 					unit->GetUnit()->Fight(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 				)
 
-				CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-				fightAction->SetActive(false);
+				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+				travelAction->SetActive(false);
 			}
 		}
 		return;
@@ -129,9 +129,9 @@ void CAntiAirTask::Update()
 		if (!isExecute) {
 			if (wasRegroup && !pPath->empty()) {
 				for (CCircuitUnit* unit : units) {
-					CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-					fightAction->SetPath(pPath);
-					fightAction->SetActive(true);
+					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+					travelAction->SetPath(pPath);
+					travelAction->SetActive(true);
 				}
 			}
 			return;
@@ -165,9 +165,9 @@ void CAntiAirTask::Update()
 		if (!pPath->empty()) {
 			position = pPath->back();
 			for (CCircuitUnit* unit : units) {
-				CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-				fightAction->SetPath(pPath);
-				fightAction->SetActive(true);
+				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+				travelAction->SetPath(pPath);
+				travelAction->SetActive(true);
 			}
 			isDanger = false;
 			return;
@@ -196,8 +196,8 @@ void CAntiAirTask::Update()
 					unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 				)
 
-				CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-				fightAction->SetActive(false);
+				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+				travelAction->SetActive(false);
 			}
 			return;
 		}
@@ -209,8 +209,8 @@ void CAntiAirTask::Update()
 			for (CCircuitUnit* unit : units) {
 				unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
 
-				CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-				fightAction->SetActive(false);
+				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+				travelAction->SetActive(false);
 			}
 			return;
 		}
@@ -221,14 +221,14 @@ void CAntiAirTask::Update()
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
 
-			CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-			fightAction->SetActive(false);
+			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+			travelAction->SetActive(false);
 		}
 	} else {
 		for (CCircuitUnit* unit : units) {
-			CFightAction* fightAction = static_cast<CFightAction*>(unit->End());
-			fightAction->SetPath(pPath);
-			fightAction->SetActive(true);
+			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+			travelAction->SetPath(pPath);
+			travelAction->SetActive(true);
 		}
 	}
 }

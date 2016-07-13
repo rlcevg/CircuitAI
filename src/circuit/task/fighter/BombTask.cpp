@@ -108,7 +108,12 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	if (target != nullptr) {
 		position = target->GetPos();
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			if (target->GetUnit()->IsCloaked()) {
+				unit->GetUnit()->ExecuteCustomCommand(CMD_ATTACK_GROUND, {position.x, position.y, position.z},
+													  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			} else {
+				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			}
 		)
 		moveAction->SetActive(false);
 		return;
@@ -177,7 +182,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	CCircuitAI* circuit = manager->GetCircuit();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float power = threatMap->GetUnitThreat(unit) * 2.0f;
+	const float power = threatMap->GetUnitThreat(unit);
 	const float speed = cdef->GetSpeed();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
@@ -189,7 +194,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	CEnemyUnit* bestTarget = nullptr;
 	CEnemyUnit* mediumTarget = nullptr;
 	CEnemyUnit* worstTarget = nullptr;
-	F3Vec enemyPositions;
+	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(unit);
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
@@ -250,12 +255,14 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 
 	path.clear();
 	if ((bestTarget != nullptr) || enemyPositions.empty()) {
+		enemyPositions.clear();
 		return bestTarget;
 	}
 
 	AIFloat3 startPos = pos;
 	circuit->GetPathfinder()->SetMapData(unit, threatMap, circuit->GetLastFrame());
 	circuit->GetPathfinder()->FindBestPath(path, startPos, range * 0.5f, enemyPositions);
+	enemyPositions.clear();
 
 	return nullptr;
 }

@@ -64,6 +64,11 @@ void CAntiHeavyTask::AssignTo(CCircuitUnit* unit)
 		)
 	}
 
+	IUnitAction* act = static_cast<IUnitAction*>(unit->Begin());
+	if (act->IsEqual(IUnitAction::Mask::DGUN)) {
+		act->SetActive(false);
+	}
+
 	int squareSize = circuit->GetPathfinder()->GetSquareSize();
 	CMoveAction* moveAction = new CMoveAction(unit, squareSize);
 	unit->PushBack(moveAction);
@@ -73,7 +78,7 @@ void CAntiHeavyTask::AssignTo(CCircuitUnit* unit)
 void CAntiHeavyTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	ISquadTask::RemoveAssignee(unit);
-	if (units.empty()) {
+	if (leader == nullptr) {
 		manager->AbortTask(this);
 	} else {
 		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetLosRadius());
@@ -158,7 +163,10 @@ void CAntiHeavyTask::Update()
 	 */
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
-	if (leader->IsWeaponReady(frame)) {
+	if (leader->GetCircuitDef()->IsRoleMine() ||
+		(leader->GetCircuitDef()->GetReloadTime() < FRAMES_PER_SEC * 5) ||
+		leader->IsWeaponReady(frame))
+	{
 		FindTarget();
 
 		isAttack = false;
@@ -171,20 +179,29 @@ void CAntiHeavyTask::Update()
 				}
 			}
 			if (isAttack) {
-				for (CCircuitUnit* unit : units) {
-					TRY_UNIT(circuit, unit,
-						if (unit->IsJumpReady()) {
-							const AIFloat3& pos = target->GetPos();
-							unit->GetUnit()->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-							unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60);
-						} else {
-							unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-						}
-						unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
-					)
+				if (target->GetUnit()->IsCloaked()) {
+					const AIFloat3& pos = target->GetPos();
+					for (CCircuitUnit* unit : units) {
+						unit->Attack(pos, target, frame + FRAMES_PER_SEC * 60);
 
-					CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
-					moveAction->SetActive(false);
+						IUnitAction* act = static_cast<IUnitAction*>(unit->Begin());
+						if (act->IsEqual(IUnitAction::Mask::DGUN)) {
+							act->SetActive(true);
+						}
+						CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
+						moveAction->SetActive(false);
+					}
+				} else {
+					for (CCircuitUnit* unit : units) {
+						unit->Attack(target, frame + FRAMES_PER_SEC * 60);
+
+						IUnitAction* act = static_cast<IUnitAction*>(unit->Begin());
+						if (act->IsEqual(IUnitAction::Mask::DGUN)) {
+							act->SetActive(true);
+						}
+						CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
+						moveAction->SetActive(false);
+					}
 				}
 				return;
 			}
@@ -208,7 +225,7 @@ void CAntiHeavyTask::Update()
 		pPath->clear();
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
-		pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize());
+		pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize() * 4);
 	}
 	if (pPath->empty()) {  // should never happen
 		for (CCircuitUnit* unit : units) {
@@ -245,6 +262,23 @@ void CAntiHeavyTask::OnUnitIdle(CCircuitUnit* unit)
 
 	if (units.find(unit) != units.end()) {
 		Execute(unit);  // NOTE: Not sure if it has effect
+	}
+}
+
+void CAntiHeavyTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+{
+	ISquadTask::OnUnitDamaged(unit, attacker);
+
+	if (attacker != nullptr) {
+		if (unit->GetCircuitDef()->IsAbleToCloak()) {
+			TRY_UNIT(manager->GetCircuit(), unit,
+				unit->GetUnit()->SetFireState(2);
+			)
+		}
+		IUnitAction* act = static_cast<IUnitAction*>(unit->Begin());
+		if (act->IsEqual(IUnitAction::Mask::DGUN)) {
+			act->SetActive(true);
+		}
 	}
 }
 

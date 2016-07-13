@@ -48,9 +48,9 @@ public:
 	 * STOCK:      stockpile weapon before any task (NOT IMPLEMENTED)
 	 * NO_STRAFE:  disable gunship's strafe
 	 */
-	enum class AttrType: RoleT {MELEE = static_cast<RoleT>(RoleType::_SIZE_), SIEGE, HOLD_FIRE, BOOST, NO_JUMP, STOCK, NO_STRAFE, _SIZE_};
+	enum class AttrType: RoleT {MELEE = static_cast<RoleT>(RoleType::_SIZE_), SIEGE, HOLD_FIRE, BOOST, NO_JUMP, STOCK, NO_STRAFE, COMM, _SIZE_};
 	enum AttrMask: RoleM {MELEE   = 0x010000, SIEGE = 0x020000, HOLD_FIRE = 0x040000, BOOST = 0x080000,
-						  NO_JUMP = 0x100000, STOCK = 0x200000, NO_STRAFE = 0x400000};
+						  NO_JUMP = 0x100000, STOCK = 0x200000, NO_STRAFE = 0x400000, COMM  = 0x800000};
 
 	static RoleM GetMask(RoleT type) { return 1 << type; }
 
@@ -96,6 +96,7 @@ public:
 	bool IsAttrNoJump()   const { return role & AttrMask::NO_JUMP; }
 	bool IsAttrStock()    const { return role & AttrMask::STOCK; }
 	bool IsAttrNoStrafe() const { return role & AttrMask::NO_STRAFE; }
+	bool IsAttrComm()     const { return role & AttrMask::COMM; }
 
 	const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
 	float GetBuildDistance() const { return buildDistance; }
@@ -133,6 +134,7 @@ public:
 	float GetPower() const { return power; }
 	float GetMaxRange(RangeType type = RangeType::MAX) const { return maxRange[static_cast<RangeT>(type)]; }
 	float GetMaxShield() const { return maxShield; }
+	int GetReloadTime() const { return reloadTime; }
 	int GetCategory() const { return category; }
 	int GetTargetCategory() const { return targetCategory; }
 	int GetNoChaseCategory() const { return noChaseCategory; }
@@ -160,6 +162,7 @@ public:
 	float GetSpeed()     const { return speed; }
 	float GetLosRadius() const { return losRadius; }
 	float GetCost()      const { return cost; }
+	float GetCloakCost() const { return cloakCost; }
 	float GetJumpRange() const { return jumpRange; }
 
 	void SetRetreat(float value) { retreat = value; }
@@ -192,6 +195,7 @@ private:
 	float power;  // attack power = UnitDef's max threat
 	std::array<float, static_cast<RangeT>(RangeType::_SIZE_)> maxRange;
 	float maxShield;
+	int reloadTime;  // frames in ticks
 	int category;
 	int targetCategory;
 	int noChaseCategory;
@@ -218,6 +222,7 @@ private:
 	float speed;
 	float losRadius;
 	float cost;
+	float cloakCost;
 	float jumpRange;
 	float retreat;
 

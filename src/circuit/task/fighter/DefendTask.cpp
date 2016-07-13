@@ -40,7 +40,7 @@ bool CDefendTask::CanAssignTo(CCircuitUnit* unit) const
 void CDefendTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	ISquadTask::RemoveAssignee(unit);
-	if (units.empty()) {
+	if (leader == nullptr) {
 		manager->AbortTask(this);
 	}
 }
@@ -49,7 +49,9 @@ void CDefendTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	AIFloat3 pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), position, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
+	AIFloat3 pos = utils::get_radial_pos(position, SQUARE_SIZE * 16);
+	terrainManager->CorrectPosition(pos);
+	pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
 
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
@@ -124,10 +126,7 @@ void CDefendTask::Update()
 		isAttack = true;
 		for (CCircuitUnit* unit : units) {
 			const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
-			TRY_UNIT(circuit, unit,
-				unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
-				unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
-			)
+			unit->Attack(pos, frame);
 		}
 	} else {
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();

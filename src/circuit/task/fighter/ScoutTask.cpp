@@ -89,13 +89,19 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
 	std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
+	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
 	SetTarget(FindTarget(unit, pos, *pPath));
 
 	if (target != nullptr) {
 		position = target->GetPos();
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-			unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
+			if (target->GetUnit()->IsCloaked()) {
+				unit->GetUnit()->ExecuteCustomCommand(CMD_ATTACK_GROUND, {position.x, position.y, position.z},
+													  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			} else {
+				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+				unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
+			}
 		)
 		moveAction->SetActive(false);
 		return;
@@ -229,14 +235,15 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 
 	path.clear();
 	if ((bestTarget != nullptr) || enemyPositions.empty()) {
+		enemyPositions.clear();
 		return bestTarget;
 	}
 
 	AIFloat3 startPos = pos;
 	circuit->GetPathfinder()->SetMapData(unit, threatMap, circuit->GetLastFrame());
 	circuit->GetPathfinder()->FindBestPath(path, startPos, range * 0.5f, enemyPositions);
-
 	enemyPositions.clear();
+
 	return nullptr;
 }
 

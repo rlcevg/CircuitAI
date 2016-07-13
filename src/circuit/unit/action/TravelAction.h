@@ -31,6 +31,7 @@ protected:
 	int pathIterator;
 	int increment;
 	int minSqDist;
+	bool isForce;
 };
 
 } // namespace circuit

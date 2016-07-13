@@ -23,6 +23,7 @@ using namespace springai;
 CSupportTask::CSupportTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::SUPPORT)
 		, updCount(0)
+		, isWait(false)
 {
 	const AIFloat3& pos = manager->GetCircuit()->GetSetupManager()->GetBasePos();
 	position = utils::get_radial_pos(pos, SQUARE_SIZE * 32);
@@ -43,14 +44,21 @@ void CSupportTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CSupportTask::Execute(CCircuitUnit* unit)
 {
+	if (isWait) {
+		return;
+	}
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	AIFloat3 pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), position, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
+	AIFloat3 pos = utils::get_radial_pos(position, SQUARE_SIZE * 16);
+	terrainManager->CorrectPosition(pos);
+	pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
 
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 	)
+	isWait = true;
 }
 
 void CSupportTask::Update()
@@ -59,47 +67,58 @@ void CSupportTask::Update()
 		return;
 	}
 
+	CCircuitUnit* unit = *units.begin();
 	const std::set<IFighterTask*>& tasks = static_cast<CMilitaryManager*>(manager)->GetTasks(IFighterTask::FightType::ATTACK);
 	if (tasks.empty()) {
+		Execute(unit);
 		return;
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
-	F3Vec ourPositions;
-	ourPositions.reserve(tasks.size());
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	static F3Vec ourPositions;  // NOTE: micro-opt
+//	ourPositions.reserve(tasks.size());
 	for (IFighterTask* candy : tasks) {
-		ourPositions.push_back(static_cast<ISquadTask*>(candy)->GetLeaderPos(frame));
+		const AIFloat3& pos = static_cast<ISquadTask*>(candy)->GetLeaderPos(frame);
+		if (terrainManager->CanMoveToPos(unit->GetArea(), pos)) {
+			ourPositions.push_back(pos);
+		}
+	}
+	if (ourPositions.empty()) {
+		Execute(unit);
+		return;
 	}
 
 	F3Vec path;
-	CCircuitUnit* unit = *units.begin();
 	AIFloat3 startPos = unit->GetPos(frame);
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
 	pathfinder->FindBestPath(path, startPos, pathfinder->GetSquareSize(), ourPositions);
+	ourPositions.clear();
 	if (path.empty()) {
+		Execute(unit);
 		return;
 	}
 
-	IFighterTask* task = *tasks.begin();
 	const AIFloat3& endPos = path.back();
-	float minSqDist = std::numeric_limits<float>::max();
-	for (IFighterTask* candy : tasks) {
-		float sqDist = endPos.SqDistance2D(static_cast<ISquadTask*>(candy)->GetLeaderPos(frame));
-		if (minSqDist > sqDist) {
-			minSqDist = sqDist;
-			task = candy;
-		}
-	}
-
 	if (startPos.SqDistance2D(endPos) < SQUARE(1000.f)) {
+		IFighterTask* task = *tasks.begin();
+		float minSqDist = std::numeric_limits<float>::max();
+		for (IFighterTask* candy : tasks) {
+			float sqDist = endPos.SqDistance2D(static_cast<ISquadTask*>(candy)->GetLeaderPos(frame));
+			if (minSqDist > sqDist) {
+				minSqDist = sqDist;
+				task = candy;
+			}
+		}
 		manager->AssignTask(unit, task);
 //		manager->DoneTask(this);  // NOTE: RemoveAssignee will abort task
 	} else {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->MoveTo(endPos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->Fight(endPos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 		)
+		isWait = false;
 	}
 }
 

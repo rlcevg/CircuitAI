@@ -56,7 +56,7 @@ bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 		return true;
 	}
 	IUnitTask* defend = militaryManager->GetDefendTask(cluster);
-	return (defend != nullptr) && (!defend->GetAssignees().empty());
+	return (defend != nullptr) && !defend->GetAssignees().empty();
 }
 
 void CBMexTask::Execute(CCircuitUnit* unit)

@@ -135,12 +135,7 @@ void CAttackTask::Update()
 			CCircuitAI* circuit = manager->GetCircuit();
 			int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 			for (CCircuitUnit* unit : units) {
-				const AIFloat3& pos = utils::get_radial_pos(groupPos, SQUARE_SIZE * 8);
-				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->MoveTo(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
-					unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
-					unit->GetUnit()->PatrolTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame);
-				)
+				unit->Gather(groupPos, frame);
 
 				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
 				travelAction->SetActive(false);
@@ -168,6 +163,10 @@ void CAttackTask::Update()
 	}
 
 	/*
+	 * TODO: Check safety
+	 */
+
+	/*
 	 * Update target
 	 */
 	FindTarget();
@@ -190,18 +189,7 @@ void CAttackTask::Update()
 				}
 
 				const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
-				TRY_UNIT(circuit, unit,
-					if (unit->IsJumpReady()) {
-						unit->GetUnit()->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-						unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60);
-					} else if (unit->GetCircuitDef()->IsAttrMelee()) {
-						unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-					} else {
-						unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-					}
-					unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
-					unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
-				)
+				unit->Attack(pos, target, frame + FRAMES_PER_SEC * 60);
 
 				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
 				travelAction->SetActive(false);
@@ -284,6 +272,7 @@ void CAttackTask::FindTarget()
 	CEnemyUnit* bestTarget = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
 
+	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
 	threatMap->SetThreatType(leader);
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
@@ -313,8 +302,8 @@ void CAttackTask::FindTarget()
 		}
 	}
 
-	SetTarget(bestTarget);
 	if (bestTarget != nullptr) {
+		SetTarget(bestTarget);
 		position = target->GetPos();
 	}
 	AIFloat3 startPos = pos;
@@ -324,6 +313,7 @@ void CAttackTask::FindTarget()
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
 	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize(), power);
+	// TODO: Bottleneck check, i.e. path cost
 }
 
 } // namespace circuit

@@ -41,6 +41,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, power(.0f)
 		, maxRange({.0f})
 		, maxShield(.0f)
+		, reloadTime(0)
 		, targetCategory(0)
 		, immobileTypeId(-1)
 		, mobileTypeId(-1)
@@ -66,6 +67,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	speed     = def->GetSpeed() / FRAMES_PER_SEC;  // NOTE: SetWantedMaxSpeed expects value/FRAMES_PER_SEC
 	losRadius = def->GetLosRadius();
 	cost      = def->GetCost(res);
+	cloakCost = std::max(def->GetCloakCost(), def->GetCloakCostMoving());
 
 	MoveData* md = def->GetMoveData();
 	isSubmarine = (md == nullptr) ? false : md->IsSubMarine();
@@ -97,6 +99,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	bool isDynamic = false;
 	if (customParams.find("level") != customParams.end()) {
 		isDynamic = customParams.find("dynamic_comm") != customParams.end();
+		AddAttribute(AttrType::COMM);
 	}
 
 	it = customParams.find("midposoffset");
@@ -144,6 +147,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	/*
 	 * DPS and Weapon calculations
 	 */
+	float minReloadTime = std::numeric_limits<float>::max();
 	float bestDGunReload = std::numeric_limits<float>::max();
 	float bestDGunRange = .0f;
 	float bestWpRange = std::numeric_limits<float>::max();
@@ -189,7 +193,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			}
 		}
 
-		float reloadTime = wd->GetReload();
+		float reloadTime = wd->GetReload();  // seconds
+		if (minReloadTime > reloadTime) {
+			minReloadTime = reloadTime;
+		}
 		if (extraDmg > 0.1f) {
 			dps += extraDmg * wd->GetSalvoSize() / reloadTime * scale;
 		}
@@ -268,6 +275,9 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		}
 	}
 
+	if (minReloadTime < std::numeric_limits<float>::max()) {
+ 		reloadTime = minReloadTime * FRAMES_PER_SEC;
+	}
 	if (bestDGunReload < std::numeric_limits<float>::max()) {
 //		dgunReload = math::ceil(bestReload * FRAMES_PER_SEC)/* + FRAMES_PER_SEC*/;
 		dgunRange = bestDGunRange;

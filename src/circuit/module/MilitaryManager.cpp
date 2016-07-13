@@ -326,7 +326,7 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 
 IFighterTask* CMilitaryManager::EnqueueGuard(CCircuitUnit* vip)
 {
-	IFighterTask* task = new CGuardTask(this, vip, 1.0f);
+	IFighterTask* task = new CFGuardTask(this, vip, 1.0f);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::GUARD)].insert(task);
 	fightUpdates.push_back(task);
 	return task;
@@ -364,7 +364,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 	IFighterTask::FightType type;
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsRoleSupport()) {
-		type = IFighterTask::FightType::SUPPORT;
+		type = GetTasks(IFighterTask::FightType::ATTACK).empty() ? IFighterTask::FightType::DEFEND : IFighterTask::FightType::SUPPORT;
 	} else {
 		auto it = types.find(cdef->GetMainRole());
 		if (it != types.end()) {
@@ -373,11 +373,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 				type = IFighterTask::FightType::SCOUT;
 			}
 		} else {
-			if (GetTasks(IFighterTask::FightType::ATTACK).empty()) {
-				type = IFighterTask::FightType::DEFEND;
-			} else {
-				type = IFighterTask::FightType::ATTACK;
-			}
+			type = GetTasks(IFighterTask::FightType::ATTACK).empty() ? IFighterTask::FightType::DEFEND : IFighterTask::FightType::ATTACK;
 		}
 	}
 	IFighterTask* task = EnqueueTask(type);
@@ -633,21 +629,22 @@ IFighterTask* CMilitaryManager::DelDefendTask(int cluster)
 	return task;
 }
 
-void CMilitaryManager::AddEnemyMetal(const CEnemyUnit* e)
+void CMilitaryManager::AddEnemyMetal(CEnemyUnit* e)
 {
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	enemyMetals[cdef->GetEnemyRole()] += cdef->GetCost();
+	e->SetCost(e->GetUnit()->GetRulesParamFloat("comm_cost", cdef->GetCost()));
+	enemyMetals[cdef->GetEnemyRole()] += e->GetCost();
 }
 
-void CMilitaryManager::DelEnemyMetal(const CEnemyUnit* e)
+void CMilitaryManager::DelEnemyMetal(CEnemyUnit* e)
 {
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
 	float& metal = enemyMetals[cdef->GetEnemyRole()];
-	metal = std::max(metal - cdef->GetCost(), 0.f);
+	metal = std::max(metal - e->GetCost(), 0.f);
 }
 
 float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
@@ -658,7 +655,10 @@ float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
 		const float enemyMetal = GetEnemyMetal(vs.role);
 		const float nextMetal = info.metal + cdef->GetCost();
 		const float prob = enemyMetal * vs.importance;
-		if ((enemyMetal * vs.ratio > nextMetal * info.factor) && (nextMetal < info.maxPerc * metalArmy) && (prob > maxProb)) {
+		if ((prob > maxProb) &&
+			(enemyMetal * vs.ratio >= nextMetal * info.factor) &&
+			(nextMetal <= (metalArmy + cdef->GetCost()) * info.maxPerc))
+		{
 			maxProb = prob;
 		}
 	}

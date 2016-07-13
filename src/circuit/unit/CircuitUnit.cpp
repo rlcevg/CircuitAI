@@ -7,6 +7,7 @@
 
 #include "unit/CircuitUnit.h"
 #include "unit/UnitManager.h"
+#include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -186,12 +187,70 @@ float CCircuitUnit::GetShieldPower()
 	return 0.f;
 }
 
+void CCircuitUnit::Attack(CEnemyUnit* target, int timeout)
+{
+	TRY_UNIT(manager->GetCircuit(), this,
+		if (IsJumpReady()) {
+			const AIFloat3& pos = target->GetPos();
+			unit->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+			unit->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+		} else if (circuitDef->IsAttrMelee()) {
+			unit->MoveTo(target->GetPos(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+			unit->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+		} else {
+			unit->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+		}
+		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+	)
+}
+
+void CCircuitUnit::Attack(const AIFloat3& pos, int timeout)
+{
+	TRY_UNIT(manager->GetCircuit(), this,
+		if (IsJumpReady()) {
+			unit->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+			unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+		} else if (circuitDef->IsAttrMelee()) {
+			unit->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+		} else {
+			unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+		}
+		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+	)
+}
+
+void CCircuitUnit::Attack(const AIFloat3& pos, CEnemyUnit* target, int timeout)
+{
+	TRY_UNIT(manager->GetCircuit(), this,
+		if (IsJumpReady()) {
+			unit->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+			unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+		} else if (circuitDef->IsAttrMelee()) {
+			unit->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+		} else {
+			unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+		}
+		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+		unit->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
+	)
+}
+
 void CCircuitUnit::Guard(CCircuitUnit* target, int timeout)
 {
 	TRY_UNIT(manager->GetCircuit(), this,
 		unit->ExecuteCustomCommand(CMD_ORBIT, {(float)target->GetId(), 300.0f}, UNIT_COMMAND_OPTION_INTERNAL_ORDER, timeout);
 //		unit->Guard(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, timeout);
 //		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+	)
+}
+
+void CCircuitUnit::Gather(const AIFloat3& groupPos, int timeout)
+{
+	const AIFloat3& pos = utils::get_radial_pos(groupPos, SQUARE_SIZE * 8);
+	TRY_UNIT(manager->GetCircuit(), this,
+		unit->MoveTo(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+		unit->PatrolTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
 	)
 }
 

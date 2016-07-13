@@ -39,6 +39,9 @@ public:
 	void SetLastSeen(int frame) { lastSeen = frame; }
 	int GetLastSeen() const { return lastSeen; }
 
+	void SetCost(float value) { cost = value; }
+	float GetCost() const { return cost; }
+
 	springai::Weapon* GetDGun() const { return dgun; }
 	bool IsDisarmed();
 	float GetDPS();
@@ -65,8 +68,8 @@ private:
 	std::set<IFighterTask*> tasks;
 	int lastSeen;
 
+	float cost;
 	springai::Weapon* dgun;
-
 	springai::AIFloat3 pos;
 	float threat;
 	std::array<int, static_cast<RT>(RangeType::_SIZE_)> range;

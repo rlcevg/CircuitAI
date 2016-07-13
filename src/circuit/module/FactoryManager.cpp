@@ -100,6 +100,10 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		}
 		utils::free_clear(units);
 
+		if (factories.empty()) {
+			this->circuit->GetSetupManager()->SetBasePos(pos);
+		}
+
 		auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
 		if (it != factoryDefs.end()) {
 			const SFactoryDef& facDef = it->second;
@@ -108,8 +112,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		} else {
 			factories.emplace_back(unit, nanos, 0, false);
 		}
-
-//		this->circuit->GetSetupManager()->SetBasePos(pos);
 	};
 	auto factoryIdleHandler = [this](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
@@ -123,9 +125,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 //		DelFactory(unit->GetCircuitDef());
 		auto checkBuilderFactory = [this]() {
 			CBuilderManager* builderManager = this->circuit->GetBuilderManager();
-			if (!builderManager->GetTasks(IBuilderTask::BuildType::FACTORY).empty()) {
-				return;
-			}
 			// check if any factory with builders left
 			bool hasBuilder = false;
 			for (SFactory& fac : factories) {
@@ -135,10 +134,26 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 				}
 			}
 			if (!hasBuilder) {
-				CCircuitDef* facDef = GetFactoryToBuild();
-				if (facDef != nullptr) {
-					builderManager->EnqueueTask(IBuilderTask::Priority::NOW, facDef, -RgtVector,
-												IBuilderTask::BuildType::FACTORY);
+				// check queued factories
+				std::set<IBuilderTask*> tasks = builderManager->GetTasks(IBuilderTask::BuildType::FACTORY);
+				for (IBuilderTask* task : tasks) {
+					auto it = factoryDefs.find(task->GetBuildDef()->GetId());
+					if (it != factoryDefs.end()) {
+						const SFactoryDef& facDef = it->second;
+						hasBuilder = (facDef.GetRoleDef(CCircuitDef::RoleType::BUILDER) != nullptr);
+						if (hasBuilder) {
+							break;
+						}
+						builderManager->AbortTask(task);
+					}
+				}
+				if (!hasBuilder) {
+					// queue new factory with builder
+					CCircuitDef* facDef = GetFactoryToBuild(true);
+					if (facDef != nullptr) {
+						builderManager->EnqueueTask(IBuilderTask::Priority::NOW, facDef, -RgtVector,
+													IBuilderTask::BuildType::FACTORY);
+					}
 				}
 			}
 		};
@@ -163,6 +178,11 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			*it = factories.back();
 			factories.pop_back();
 			break;
+		}
+
+		if (!factories.empty()) {
+			const AIFloat3& pos = factories.front().unit->GetPos(this->circuit->GetLastFrame());
+			this->circuit->GetSetupManager()->SetBasePos(pos);
 		}
 
 		checkBuilderFactory();
@@ -509,6 +529,29 @@ CCircuitUnit* CFactoryManager::GetRandomFactory(CCircuitDef* buildDef)
 	return result;
 }
 
+CCircuitUnit* CFactoryManager::GetClosestFactory(AIFloat3 position)
+{
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	terrainManager->CorrectPosition(position);
+	int iS = terrainManager->GetSectorIndex(position);
+	CCircuitUnit* factory = nullptr;
+	float minSqDist = std::numeric_limits<float>::max();
+	int frame = circuit->GetLastFrame();
+	for (SFactory& fac : factories) {
+		STerrainMapArea* area = fac.unit->GetArea();
+		if ((area != nullptr) && (area->sector.find(iS) == area->sector.end())) {
+			continue;
+		}
+		const AIFloat3& facPos = fac.unit->GetPos(frame);
+		float sqDist = position.SqDistance2D(facPos);
+		if (minSqDist > sqDist) {
+			minSqDist = sqDist;
+			factory = fac.unit;
+		}
+	}
+	return factory;
+}
+
 CCircuitDef* CFactoryManager::GetClosestDef(AIFloat3& position, CCircuitDef::RoleType role)
 {
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
@@ -519,7 +562,7 @@ CCircuitDef* CFactoryManager::GetClosestDef(AIFloat3& position, CCircuitDef::Rol
 	int frame = circuit->GetLastFrame();
 	for (SFactory& fac : factories) {
 		STerrainMapArea* area = fac.unit->GetArea();
-		if ((area == nullptr) || (area->sector.find(iS) == area->sector.end())) {
+		if ((area != nullptr) && (area->sector.find(iS) == area->sector.end())) {
 			continue;
 		}
 		const AIFloat3& facPos = fac.unit->GetPos(frame);
@@ -627,9 +670,13 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 
 	static std::vector<std::pair<CCircuitDef*, float>> candidates;  // NOTE: micro-opt
 //	candidates.reserve(facDef.buildDefs.size());
+	const float energyNet = em->GetAvgEnergyIncome() - em->GetEnergyPull();
 	float magnitude = 0.f;
 	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
 		CCircuitDef* bd = facDef.buildDefs[i];
+		if ((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) {
+			continue;
+		}
 		// (probs[i] + response_weight) hints preferable buildDef within same role
 		float prob = militaryManager->RoleProbability(bd) * (probs[i] + reWeight);
 		if (prob > 0.f) {

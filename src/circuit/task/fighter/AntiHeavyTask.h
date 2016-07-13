@@ -25,6 +25,7 @@ public:
 	virtual void Update();
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
 
 private:
 	void FindTarget();

@@ -8,6 +8,7 @@
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
 #include "module/MilitaryManager.h"
+#include "module/FactoryManager.h"
 #include "resource/MetalManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
@@ -31,6 +32,7 @@
 #include "task/builder/RepairTask.h"
 #include "task/builder/ReclaimTask.h"
 #include "task/builder/PatrolTask.h"
+#include "task/builder/GuardTask.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -425,6 +427,15 @@ IBuilderTask* CBuilderManager::EnqueueTerraform(IBuilderTask::Priority priority,
 	return task;
 }
 
+IBuilderTask* CBuilderManager::EnqueueGuard(IBuilderTask::Priority priority,
+											CCircuitUnit* target,
+											int timeout)
+{
+	IBuilderTask* task = new CBGuardTask(this, priority, target, timeout);
+	buildUpdates.push_back(task);
+	return task;
+}
+
 CRetreatTask* CBuilderManager::EnqueueRetreat()
 {
 	CRetreatTask* task = new CRetreatTask(this);
@@ -530,6 +541,122 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 
 IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 {
+	return unit->GetCircuitDef()->IsAttrComm() ? MakeCommTask(unit) : MakeBuilderTask(unit);
+}
+
+void CBuilderManager::AbortTask(IUnitTask* task)
+{
+	// NOTE: Don't send Stop command, save some traffic.
+	DequeueTask(static_cast<IBuilderTask*>(task), false);
+}
+
+void CBuilderManager::DoneTask(IUnitTask* task)
+{
+	DequeueTask(static_cast<IBuilderTask*>(task), true);
+}
+
+void CBuilderManager::FallbackTask(CCircuitUnit* unit)
+{
+	DequeueTask(static_cast<IBuilderTask*>(unit->GetTask()));
+
+	int frame = circuit->GetLastFrame();
+	const AIFloat3& pos = unit->GetPos(frame);
+	IBuilderTask* task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 20);
+	task->AssignTo(unit);
+	task->Execute(unit);
+}
+
+void CBuilderManager::Init()
+{
+	CScheduler* scheduler = circuit->GetScheduler().get();
+	const int interval = 8;
+	const int offset = circuit->GetSkirmishAIId() % interval;
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 1);
+}
+
+IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
+{
+	circuit->GetThreatMap()->SetThreatType(unit);
+	const IBuilderTask* task = nullptr;
+	int frame = circuit->GetLastFrame();
+	AIFloat3 pos = unit->GetPos(frame);
+
+	circuit->GetEconomyManager()->UpdateMetalTasks(pos, unit);
+
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	terrainManager->CorrectPosition(pos);
+	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
+	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
+	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
+	float metric = std::numeric_limits<float>::max();
+	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
+		for (const IBuilderTask* candidate : tasks) {
+			if (!candidate->CanAssignTo(unit)) {
+				continue;
+			}
+			const AIFloat3& bp = candidate->GetPosition();
+			AIFloat3 buildPos = utils::is_valid(bp) ? bp : pos;
+			if (basePos.SqDistance2D(buildPos) > SQUARE(2000.f)) {
+				continue;
+			}
+
+			// Check time-distance to target
+			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
+			weight = 1.0f / (weight * weight);
+			float distCost;
+			bool valid = false;
+
+			if (!terrainManager->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
+				continue;
+			}
+
+			distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
+			if (distCost > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
+				continue;
+			}
+			distCost = std::max(distCost, THREAT_BASE);
+
+			CCircuitUnit* target = candidate->GetTarget();
+			if ((target != nullptr) && (distCost * weight < metric)) {
+				Unit* tu = target->GetUnit();
+				const float maxHealth = tu->GetMaxHealth();
+				const float health = tu->GetHealth() - maxHealth * 0.005f;
+				const float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
+				valid = (((maxHealth - health) * 0.6f) * (maxSpeed * FRAMES_PER_SEC) > healthSpeed * distCost);
+			} else {
+				valid = ((distCost * weight < metric) && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC)));
+			}
+
+			if (valid) {
+				task = candidate;
+				metric = distCost * weight;
+			}
+		}
+	}
+
+	if ((task == nullptr) &&
+		((unit->GetTask()->GetType() != IUnitTask::Type::BUILDER) || (static_cast<IBuilderTask*>(unit->GetTask())->GetBuildType() != IBuilderTask::BuildType::GUARD)))
+	{
+		CCircuitUnit* vip = circuit->GetFactoryManager()->GetClosestFactory(pos);
+		if (vip != nullptr) {
+			task = EnqueueGuard(IBuilderTask::Priority::HIGH, vip, FRAMES_PER_SEC * 60);
+		} else {
+			CCircuitDef* buildDef = circuit->GetCircuitDef("corrl");
+			if (buildDef->IsAvailable()) {
+				task = EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, pos, IBuilderTask::BuildType::DEFENCE);
+			}
+		}
+	}
+
+	return const_cast<IBuilderTask*>(task);
+}
+
+IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
+{
 	circuit->GetThreatMap()->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
 	int frame = circuit->GetLastFrame();
@@ -544,8 +671,9 @@ IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	terrainManager->CorrectPosition(pos);
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
+	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
-	const int buildDistance = std::max<int>(unit->GetCircuitDef()->GetBuildDistance(), pathfinder->GetSquareSize());
+	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
@@ -614,37 +742,6 @@ IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 	}
 
 	return const_cast<IBuilderTask*>(task);
-}
-
-void CBuilderManager::AbortTask(IUnitTask* task)
-{
-	// NOTE: Don't send Stop command, save some traffic.
-	DequeueTask(static_cast<IBuilderTask*>(task), false);
-}
-
-void CBuilderManager::DoneTask(IUnitTask* task)
-{
-	DequeueTask(static_cast<IBuilderTask*>(task), true);
-}
-
-void CBuilderManager::FallbackTask(CCircuitUnit* unit)
-{
-	DequeueTask(static_cast<IBuilderTask*>(unit->GetTask()));
-
-	int frame = circuit->GetLastFrame();
-	const AIFloat3& pos = unit->GetPos(frame);
-	IBuilderTask* task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 20);
-	task->AssignTo(unit);
-	task->Execute(unit);
-}
-
-void CBuilderManager::Init()
-{
-	CScheduler* scheduler = circuit->GetScheduler().get();
-	const int interval = 8;
-	const int offset = circuit->GetSkirmishAIId() % interval;
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 1);
 }
 
 IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCircuitUnit* unit)

@@ -55,6 +55,7 @@ public:
 	const std::set<CRecruitTask*>& GetTasks() const { return factoryTasks; }
 	CCircuitUnit* NeedUpgrade();
 	CCircuitUnit* GetRandomFactory(CCircuitDef* buildDef);
+	CCircuitUnit* GetClosestFactory(springai::AIFloat3 position);
 	CCircuitDef* GetClosestDef(springai::AIFloat3& position, CCircuitDef::RoleType role);
 
 	CCircuitDef* GetAssistDef() const { return assistDef; }

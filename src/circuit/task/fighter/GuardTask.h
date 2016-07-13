@@ -13,10 +13,10 @@
 
 namespace circuit {
 
-class CGuardTask: public IFighterTask {
+class CFGuardTask: public IFighterTask {
 public:
-	CGuardTask(ITaskManager* mgr, CCircuitUnit* vip, float maxPower);
-	virtual ~CGuardTask();
+	CFGuardTask(ITaskManager* mgr, CCircuitUnit* vip, float maxPower);
+	virtual ~CFGuardTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const;
 

@@ -24,6 +24,7 @@ public:
 
 private:
 	unsigned int updCount;
+	bool isWait;
 };
 
 } // namespace circuit

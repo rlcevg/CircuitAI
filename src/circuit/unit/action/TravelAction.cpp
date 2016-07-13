@@ -20,6 +20,7 @@ ITravelAction::ITravelAction(CCircuitUnit* owner, Type type, int squareSize, flo
 		: IUnitAction(owner, type)
 		, speed(speed)
 		, pathIterator(0)
+		, isForce(true)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	CCircuitDef* cdef = unit->GetCircuitDef();
@@ -52,6 +53,7 @@ void ITravelAction::SetPath(const std::shared_ptr<F3Vec>& pPath, float speed)
 	pathIterator = 0;
 	this->pPath = pPath;
 	this->speed = speed;
+	isForce = true;
 }
 
 int ITravelAction::CalcSpeedStep(int frame, float& stepSpeed)
@@ -71,7 +73,7 @@ int ITravelAction::CalcSpeedStep(int frame, float& stepSpeed)
 		sqNextDistToStep = pos.SqDistance2D((*pPath)[step]);
 	}
 
-	if ((pathIterator == lastStep) && ((int)sqDistToStep > minSqDist) && !unit->IsStuck(pos)) {
+	if (!isForce && (pathIterator == lastStep) && ((int)sqDistToStep > minSqDist) && !unit->IsStuck(pos)) {
 		auto commands = std::move(unit->GetUnit()->GetCurrentCommands());
 		bool isEmpty = commands.empty();
 		utils::free_clear(commands);
@@ -85,8 +87,8 @@ int ITravelAction::CalcSpeedStep(int frame, float& stepSpeed)
 	}
 	pathIterator = step;
 
+	isForce = false;
 	return pathMaxIndex;
 }
-
 
 } // namespace circuit

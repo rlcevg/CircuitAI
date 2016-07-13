@@ -46,9 +46,11 @@ void CEnemyUnit::SetCircuitDef(CCircuitDef* cdef)
 	delete dgun;
 	if (cdef == nullptr) {
 		dgun = nullptr;
+		cost = 0.f;
 	} else {
 		WeaponMount* wpMnt = circuitDef->GetDGunMount();
 		dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
+		cost = cdef->GetCost();
 	}
 }
 

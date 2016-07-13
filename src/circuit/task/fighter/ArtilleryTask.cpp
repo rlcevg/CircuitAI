@@ -172,7 +172,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 	const float range = std::max(cdef->GetMaxRange(), (float)threatMap->GetSquareSize() * 2);
 	const float minSqDist = SQUARE(range);
 
-	F3Vec enemyPositions;
+	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(unit);
 	pathfinder->SetMapData(unit, threatMap, circuit->GetLastFrame());
 	bool isPosSafe = (threatMap->GetThreatAt(pos) <= THREAT_MIN);
@@ -238,6 +238,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 
 		AIFloat3 startPos = pos;
 		pathfinder->FindBestPath(path, startPos, threatMap->GetSquareSize(), enemyPositions);
+		enemyPositions.clear();
 
 		// Check if safe path exists and shrink the path to maxRange position
 		if (path.empty()) {
@@ -294,6 +295,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 
 		AIFloat3 startPos = pos;
 		pathfinder->FindBestPath(path, startPos, range, enemyPositions);
+		enemyPositions.clear();
 
 		// Check if safe path exists and shrink the path to maxRange position
 		if (path.empty()) {

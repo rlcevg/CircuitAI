@@ -20,6 +20,7 @@ namespace circuit {
 
 #define TRY_UNIT(c, u, x)	try { x } catch (const std::exception& e) { c->Garbage(u, e.what()); }
 
+#define CMD_ATTACK_GROUND			20
 #define CMD_RETREAT_ZONE			10001
 #define CMD_SETHAVEN				CMD_RETREAT_ZONE
 #define CMD_ORBIT					13923
@@ -40,6 +41,7 @@ namespace circuit {
 #define CMD_TERRAFORM_INTERNAL		39801
 
 class CCircuitDef;
+class CEnemyUnit;
 class IUnitTask;
 class IUnitManager;
 struct STerrainMapArea;
@@ -93,7 +95,11 @@ public:
 	float GetDamage();
 	float GetShieldPower();
 
+	void Attack(CEnemyUnit* target, int timeout);
+	void Attack(const springai::AIFloat3& pos, int timeout);
+	void Attack(const springai::AIFloat3& pos, CEnemyUnit* target, int timeout);
 	void Guard(CCircuitUnit* target, int timeout);
+	void Gather(const springai::AIFloat3& groupPos, int timeout);
 
 	void Morph();
 	void StopMorph();
