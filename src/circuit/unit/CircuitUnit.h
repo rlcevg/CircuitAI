@@ -71,7 +71,6 @@ public:
 	STerrainMapArea* GetArea() const { return area; }
 
 	const springai::AIFloat3& GetPos(int frame);
-	bool IsStuck(const springai::AIFloat3& pos);
 
 	bool IsMoveFailed(int frame);
 
@@ -96,8 +95,8 @@ public:
 	float GetShieldPower();
 
 	void Attack(CEnemyUnit* target, int timeout);
-	void Attack(const springai::AIFloat3& pos, int timeout);
-	void Attack(const springai::AIFloat3& pos, CEnemyUnit* target, int timeout);
+	void Attack(const springai::AIFloat3& position, int timeout);
+	void Attack(const springai::AIFloat3& position, CEnemyUnit* target, int timeout);
 	void Guard(CCircuitUnit* target, int timeout);
 	void Gather(const springai::AIFloat3& groupPos, int timeout);
 
@@ -123,7 +122,6 @@ private:
 
 	int posFrame;
 	springai::AIFloat3 position;
-	springai::AIFloat3 lastPos;  // Idle-bug workaround
 
 	int moveFails;
 	int failFrame;

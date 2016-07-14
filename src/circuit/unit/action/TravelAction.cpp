@@ -10,8 +10,6 @@
 #include "unit/CircuitDef.h"
 #include "util/utils.h"
 
-#include "Command.h"
-
 namespace circuit {
 
 using namespace springai;
@@ -73,15 +71,8 @@ int ITravelAction::CalcSpeedStep(int frame, float& stepSpeed)
 		sqNextDistToStep = pos.SqDistance2D((*pPath)[step]);
 	}
 
-	if (!isForce && (pathIterator == lastStep) && ((int)sqDistToStep > minSqDist) && !unit->IsStuck(pos)) {
-		auto commands = std::move(unit->GetUnit()->GetCurrentCommands());
-		bool isEmpty = commands.empty();
-		utils::free_clear(commands);
-		if (isEmpty) {  // FIXME: Spring102 bug: unit has commands but doesn't execute them
-			stepSpeed = MAX_UNIT_SPEED;
-		} else {
-			return -1;
-		}
+	if (!isForce && (pathIterator == lastStep) && ((int)sqDistToStep > minSqDist)) {
+		return -1;
 	} else {
 		stepSpeed = speed;
 	}

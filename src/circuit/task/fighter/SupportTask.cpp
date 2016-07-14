@@ -50,7 +50,7 @@ void CSupportTask::Execute(CCircuitUnit* unit)
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	AIFloat3 pos = utils::get_radial_pos(position, SQUARE_SIZE * 16);
+	AIFloat3 pos = position;
 	terrainManager->CorrectPosition(pos);
 	pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
 

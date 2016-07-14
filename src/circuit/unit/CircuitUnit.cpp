@@ -71,13 +71,6 @@ const AIFloat3& CCircuitUnit::GetPos(int frame)
 	return position;
 }
 
-bool CCircuitUnit::IsStuck(const springai::AIFloat3& pos)
-{
-	bool isStuck = (lastPos == pos);
-	lastPos = pos;
-	return isStuck;
-}
-
 bool CCircuitUnit::IsMoveFailed(int frame)
 {
 	if (frame - failFrame >= FRAMES_PER_SEC * 3) {
@@ -204,8 +197,9 @@ void CCircuitUnit::Attack(CEnemyUnit* target, int timeout)
 	)
 }
 
-void CCircuitUnit::Attack(const AIFloat3& pos, int timeout)
+void CCircuitUnit::Attack(const AIFloat3& position, int timeout)
 {
+	const AIFloat3& pos = utils::get_radial_pos(position, SQUARE_SIZE * 8);
 	TRY_UNIT(manager->GetCircuit(), this,
 		if (IsJumpReady()) {
 			unit->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
@@ -219,8 +213,9 @@ void CCircuitUnit::Attack(const AIFloat3& pos, int timeout)
 	)
 }
 
-void CCircuitUnit::Attack(const AIFloat3& pos, CEnemyUnit* target, int timeout)
+void CCircuitUnit::Attack(const AIFloat3& position, CEnemyUnit* target, int timeout)
 {
+	const AIFloat3& pos = utils::get_radial_pos(position, SQUARE_SIZE * 8);
 	TRY_UNIT(manager->GetCircuit(), this,
 		if (IsJumpReady()) {
 			unit->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);

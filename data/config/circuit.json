@@ -373,7 +373,7 @@
 	"armpw": {
 		"role": ["raider"],
 		"attribute": ["scout"],
-		"retreat": 0.1  // disposable
+		"retreat": 0.8
 	},
 	"spherepole": {
 		"role": ["raider"],

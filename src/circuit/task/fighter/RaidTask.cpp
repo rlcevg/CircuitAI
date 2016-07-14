@@ -129,7 +129,7 @@ void CRaidTask::Update()
 		return;
 	}
 
-	bool isExecute = (updCount % 4 == 2);
+	bool isExecute = (updCount % 2 == 0);
 	if (!isExecute) {
 		for (CCircuitUnit* unit : units) {
 			isExecute |= unit->IsForceExecute();
@@ -181,8 +181,7 @@ void CRaidTask::Update()
 			}
 		} else {
 			for (CCircuitUnit* unit : units) {
-				const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
-				unit->Attack(pos, target, frame + FRAMES_PER_SEC * 60);
+				unit->Attack(target->GetPos(), target, frame + FRAMES_PER_SEC * 60);
 
 				CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
 				moveAction->SetActive(false);
@@ -267,13 +266,14 @@ void CRaidTask::FindTarget()
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	const float speed = SQUARE(highestSpeed);
-	const float power = attackPower * 0.5f;
+	const float maxPower = attackPower * 0.5f;
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float range = std::max(leader->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
 								 cdef->GetLosRadius());
 	float minSqDist = SQUARE(range);
-	float maxThreat = .0f;
+	float maxThreat = 0.f;
+	float minPower = maxPower;
 
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
 	CEnemyUnit* bestTarget = nullptr;
@@ -284,8 +284,11 @@ void CRaidTask::FindTarget()
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden() || (enemy->GetTasks().size() > 1) ||
-			(power <= threatMap->GetThreatAt(enemy->GetPos())) ||
+		if (enemy->IsHidden() || (enemy->GetTasks().size() > 1)) {
+			continue;
+		}
+		const float power = threatMap->GetThreatAt(enemy->GetPos());
+		if ((maxPower <= power) ||
 			!terrainManager->CanMoveToPos(area, enemy->GetPos()) ||
 			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) ||
 			(enemy->GetUnit()->GetVel().SqLength2D() > speed))
@@ -308,10 +311,11 @@ void CRaidTask::FindTarget()
 		}
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
-		if (enemy->IsInRadarOrLOS() && (sqDist < minSqDist)) {
-			if ((defPower > maxThreat) && !enemy->GetUnit()->IsBeingBuilt()) {
+		if (enemy->IsInRadarOrLOS() && (sqDist < minSqDist) && (minPower > power)) {
+			if ((maxThreat < defPower) && !enemy->GetUnit()->IsBeingBuilt()) {
 				bestTarget = enemy;
 				minSqDist = sqDist;
+				minPower = power;
 				maxThreat = defPower;
 			} else if (bestTarget == nullptr) {
 				if ((targetCat & noChaseCat) == 0) {

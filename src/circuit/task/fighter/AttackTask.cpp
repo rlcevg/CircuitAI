@@ -25,7 +25,7 @@ namespace circuit {
 
 using namespace springai;
 
-#define MIN_POWER_DIV	8
+#define MIN_POWER_DIV	4
 
 CAttackTask::CAttackTask(ITaskManager* mgr)
 		: ISquadTask(mgr, FightType::ATTACK)
@@ -188,8 +188,7 @@ void CAttackTask::Update()
 					continue;  // Do not interrupt current action
 				}
 
-				const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
-				unit->Attack(pos, target, frame + FRAMES_PER_SEC * 60);
+				unit->Attack(target->GetPos(), target, frame + FRAMES_PER_SEC * 60);
 
 				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
 				travelAction->SetActive(false);

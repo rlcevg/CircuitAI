@@ -78,7 +78,7 @@ float CEnemyUnit::GetDPS()
 float CEnemyUnit::GetDamage()
 {
 	if (circuitDef == nullptr) {  // unknown enemy is a threat
-		return 0.08f;
+		return 0.1f;
 	}
 	float dmg = circuitDef->GetDamage();
 	if (dmg < 1e-3f) {

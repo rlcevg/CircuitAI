@@ -64,7 +64,7 @@ void CScoutTask::Execute(CCircuitUnit* unit)
 
 void CScoutTask::Update()
 {
-	if (++updCount % 4 == 0) {
+	if (++updCount % 2 == 0) {
 		for (CCircuitUnit* unit : units) {
 			Execute(unit, true);
 		}
@@ -94,15 +94,14 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	if (target != nullptr) {
 		position = target->GetPos();
-		TRY_UNIT(circuit, unit,
-			if (target->GetUnit()->IsCloaked()) {
+		if (target->GetUnit()->IsCloaked()) {
+			TRY_UNIT(circuit, unit,
 				unit->GetUnit()->ExecuteCustomCommand(CMD_ATTACK_GROUND, {position.x, position.y, position.z},
 													  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-			} else {
-				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-				unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
-			}
-		)
+			)
+		} else {
+			unit->Attack(target, frame + FRAMES_PER_SEC * 60);
+		}
 		moveAction->SetActive(false);
 		return;
 	} else if (!pPath->empty()) {
@@ -164,13 +163,14 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 	STerrainMapArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float speed = cdef->GetSpeed();
-	const float power = threatMap->GetUnitThreat(unit) * 0.8f;
+	const float maxPower = threatMap->GetUnitThreat(unit) * 0.75f;
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
 								 cdef->GetLosRadius());
 	float minSqDist = SQUARE(range);
-	float maxThreat = .0f;
+	float maxThreat = 0.f;
+	float minPower = maxPower;
 
 	CEnemyUnit* bestTarget = nullptr;
 	CEnemyUnit* mediumTarget = nullptr;
@@ -180,8 +180,11 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden() || (enemy->GetTasks().size() > 1) ||
-			(power <= threatMap->GetThreatAt(enemy->GetPos())) ||
+		if (enemy->IsHidden() || (enemy->GetTasks().size() > 1)) {
+			continue;
+		}
+		const float power = threatMap->GetThreatAt(enemy->GetPos());
+		if ((maxPower <= power) ||
 			!terrainManager->CanMoveToPos(area, enemy->GetPos()) ||
 			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
 		{
@@ -206,14 +209,15 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 		}
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
-		if (enemy->IsInRadarOrLOS() && (sqDist < minSqDist)) {
+		if (enemy->IsInRadarOrLOS() && (sqDist < minSqDist) && (minPower > power)) {
 //			AIFloat3 dir = enemy->GetUnit()->GetPos() - pos;
 //			float rayRange = dir.LengthNormalize();
 //			CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, u, 0);
 //			if (hitUID == enemy->GetId()) {
-				if ((defPower > maxThreat) && !enemy->GetUnit()->IsBeingBuilt()) {
+				if ((maxThreat < defPower) && !enemy->GetUnit()->IsBeingBuilt()) {
 					bestTarget = enemy;
 					minSqDist = sqDist;
+					minPower = power;
 					maxThreat = defPower;
 				} else if (bestTarget == nullptr) {
 					if ((targetCat & noChaseCat) == 0) {

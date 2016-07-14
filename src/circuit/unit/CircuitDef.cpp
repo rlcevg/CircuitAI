@@ -198,17 +198,26 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			minReloadTime = reloadTime;
 		}
 		if (extraDmg > 0.1f) {
+			dmg += extraDmg;
 			dps += extraDmg * wd->GetSalvoSize() / reloadTime * scale;
 		}
-		Damage* damage = wd->GetDamage();
-		const std::vector<float>& damages = damage->GetTypes();
-		delete damage;
-		float ldps = .0f;
-		for (float d : damages) {
-			ldps += d;
+
+		float ldmg = .0f;
+		it = customParams.find("statsdamage");
+		if (it != customParams.end()) {
+			ldmg = utils::string_to_float(it->second);
+		} else {
+			Damage* damage = wd->GetDamage();
+			const std::vector<float>& damages = damage->GetTypes();
+			delete damage;
+			for (float d : damages) {
+				ldmg += d;
+			}
+			ldmg /= damages.size();
 		}
-		dmg += ldps;
-		dps += ldps * wd->GetSalvoSize() / damages.size() / reloadTime * scale;
+		ldmg *= std::pow(2.0f, (wd->IsDynDamageInverted() ? 1 : -1) * wd->GetDynDamageExp());
+		dmg += ldmg;
+		dps += ldmg * wd->GetSalvoSize() / reloadTime * scale;
 		int weaponCat = mount->GetOnlyTargetCategory();
 		targetCategory |= weaponCat;
 
@@ -313,7 +322,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	hasAntiLand  = (targetCategory & circuit->GetLandCategory()) && canTargetLand;
 	hasAntiWater = (targetCategory & circuit->GetWaterCategory()) && canTargetWater;
 
-	dmg = sqrtf(dps) * sqrtf(dmg) * THREAT_MOD;
+	dmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
 	power = dmg * sqrtf(def->GetHealth() + maxShield);
 }
 
