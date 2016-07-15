@@ -62,8 +62,8 @@ public:
 	float GetEnemyMetal(CCircuitDef::RoleType type) const {
 		return enemyMetals[static_cast<CCircuitDef::RoleT>(type)];
 	}
-	void AddEnemyMetal(CEnemyUnit* e);
-	void DelEnemyMetal(CEnemyUnit* e);
+	void AddEnemyMetal(const CEnemyUnit* e);
+	void DelEnemyMetal(const CEnemyUnit* e);
 
 	float RoleProbability(const CCircuitDef* cdef) const;
 	bool IsNeedBigGun(const CCircuitDef* cdef) const;

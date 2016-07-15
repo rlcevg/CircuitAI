@@ -369,8 +369,18 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 		auto it = types.find(cdef->GetMainRole());
 		if (it != types.end()) {
 			type = it->second;
-			if ((type == IFighterTask::FightType::RAID) && cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
-				type = IFighterTask::FightType::SCOUT;
+			switch (type) {
+				case IFighterTask::FightType::RAID: {
+					if (cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
+						type = IFighterTask::FightType::SCOUT;
+					}
+				} break;
+				case IFighterTask::FightType::AH: {
+					if (GetEnemyMetal(CCircuitDef::RoleType::HEAVY) < 1.f) {
+						type = IFighterTask::FightType::ATTACK;
+					}
+				} break;
+				default: break;
 			}
 		} else {
 			type = GetTasks(IFighterTask::FightType::ATTACK).empty() ? IFighterTask::FightType::DEFEND : IFighterTask::FightType::ATTACK;
@@ -629,16 +639,15 @@ IFighterTask* CMilitaryManager::DelDefendTask(int cluster)
 	return task;
 }
 
-void CMilitaryManager::AddEnemyMetal(CEnemyUnit* e)
+void CMilitaryManager::AddEnemyMetal(const CEnemyUnit* e)
 {
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	e->SetCost(e->GetUnit()->GetRulesParamFloat("comm_cost", cdef->GetCost()));
 	enemyMetals[cdef->GetEnemyRole()] += e->GetCost();
 }
 
-void CMilitaryManager::DelEnemyMetal(CEnemyUnit* e)
+void CMilitaryManager::DelEnemyMetal(const CEnemyUnit* e)
 {
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);

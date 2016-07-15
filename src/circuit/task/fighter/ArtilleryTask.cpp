@@ -122,12 +122,14 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	if (utils::is_valid(position) && terrainManager->CanMoveToPos(unit->GetArea(), position)) {
 		AIFloat3 startPos = pos;
 		AIFloat3 endPos = position;
+//		pPath->clear();
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(unit, threatMap, frame);
 		pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 
-		if (!pPath->empty()) {
+		proceed = pPath->size() > 2;
+		if (proceed) {
 			travelAction->SetPath(pPath);
 			travelAction->SetActive(true);
 			return;

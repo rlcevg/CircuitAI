@@ -44,9 +44,9 @@ void CScoutTask::AssignTo(CCircuitUnit* unit)
 	IFighterTask::AssignTo(unit);
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
-	CMoveAction* moveAction = new CMoveAction(unit, squareSize);
-	unit->PushBack(moveAction);
-	moveAction->SetActive(false);
+	CMoveAction* travelAction = new CMoveAction(unit, squareSize);
+	unit->PushBack(travelAction);
+	travelAction->SetActive(false);
 }
 
 void CScoutTask::RemoveAssignee(CCircuitUnit* unit)
@@ -80,10 +80,10 @@ void CScoutTask::Update()
 void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
 	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-	if (!act->IsEqual(IUnitAction::Mask::MOVE)) {
+	if (!act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT | IUnitAction::Mask::JUMP)) {
 		return;
 	}
-	CMoveAction* moveAction = static_cast<CMoveAction*>(act);
+	ITravelAction* travelAction = static_cast<ITravelAction*>(act);
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
@@ -102,19 +102,20 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		} else {
 			unit->Attack(target, frame + FRAMES_PER_SEC * 60);
 		}
-		moveAction->SetActive(false);
+		travelAction->SetActive(false);
 		return;
 	} else if (!pPath->empty()) {
 		position = pPath->back();
-		moveAction->SetPath(pPath);
-		moveAction->SetActive(true);
+		travelAction->SetPath(pPath);
+		travelAction->SetActive(true);
 		return;
 	}
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	const AIFloat3& threatPos = moveAction->IsActive() ? position : pos;
-	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < std::max(threatMap->GetUnitThreat(unit), THREAT_BASE));
+	const AIFloat3& threatPos = travelAction->IsActive() ? position : pos;
+	// NOTE: Use max(unit_threat, THREAT_MIN) for no-weapon scouts
+	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < std::max(threatMap->GetUnitThreat(unit), THREAT_MIN) * 0.75f);
 	if (!proceed) {
 		position = circuit->GetMilitaryManager()->GetScoutPosition(unit);
 	}
@@ -122,15 +123,17 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	if (utils::is_valid(position) && terrainManager->CanMoveToPos(unit->GetArea(), position)) {
 		AIFloat3 startPos = pos;
 		AIFloat3 endPos = position;
+//		pPath->clear();
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(unit, threatMap, frame);
 		pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 
-		if (!pPath->empty()) {
+		proceed = pPath->size() > 2;
+		if (proceed) {
 //			position = path.back();
-			moveAction->SetPath(pPath);
-			moveAction->SetActive(true);
+			travelAction->SetPath(pPath);
+			travelAction->SetActive(true);
 			return;
 		}
 	}
@@ -144,7 +147,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 	)
-	moveAction->SetActive(false);
+	travelAction->SetActive(false);
 }
 
 void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
@@ -162,7 +165,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	STerrainMapArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float speed = cdef->GetSpeed();
+	const float speed = cdef->GetSpeed() * 0.9f;
 	const float maxPower = threatMap->GetUnitThreat(unit) * 0.75f;
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
@@ -173,7 +176,6 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 	float minPower = maxPower;
 
 	CEnemyUnit* bestTarget = nullptr;
-	CEnemyUnit* mediumTarget = nullptr;
 	CEnemyUnit* worstTarget = nullptr;
 	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(unit);
@@ -186,7 +188,8 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 		const float power = threatMap->GetThreatAt(enemy->GetPos());
 		if ((maxPower <= power) ||
 			!terrainManager->CanMoveToPos(area, enemy->GetPos()) ||
-			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
+			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) ||
+			(enemy->GetUnit()->GetVel().SqLength2D() >= speed))
 		{
 			continue;
 		}
@@ -195,9 +198,6 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 		float defPower;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
-			if (edef->GetSpeed() > speed) {
-				continue;
-			}
 			targetCat = edef->GetCategory();
 			if ((targetCat & canTargetCat) == 0) {
 				continue;
@@ -209,32 +209,32 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 		}
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
-		if (enemy->IsInRadarOrLOS() && (sqDist < minSqDist) && (minPower > power)) {
-//			AIFloat3 dir = enemy->GetUnit()->GetPos() - pos;
-//			float rayRange = dir.LengthNormalize();
-//			CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, u, 0);
-//			if (hitUID == enemy->GetId()) {
-				if ((maxThreat < defPower) && !enemy->GetUnit()->IsBeingBuilt()) {
-					bestTarget = enemy;
-					minSqDist = sqDist;
-					minPower = power;
-					maxThreat = defPower;
-				} else if (bestTarget == nullptr) {
-					if ((targetCat & noChaseCat) == 0) {
-						mediumTarget = enemy;
-					} else if (mediumTarget == nullptr) {
+		if ((minPower > power) && (minSqDist > sqDist)) {
+			if (enemy->IsInRadarOrLOS()) {
+//				AIFloat3 dir = enemy->GetUnit()->GetPos() - pos;
+//				float rayRange = dir.LengthNormalize();
+//				CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, u, 0);
+//				if (hitUID == enemy->GetId()) {
+					if (((targetCat & noChaseCat) == 0) && !enemy->GetUnit()->IsBeingBuilt()) {
+						if (maxThreat <= defPower) {
+							bestTarget = enemy;
+							minSqDist = sqDist;
+							maxThreat = defPower;
+						}
+						minPower = power;
+					} else if (bestTarget == nullptr) {
 						worstTarget = enemy;
 					}
-				}
-				continue;
-//			}
+//				}
+			}
+			continue;
 		}
 		if (sqDist < SQUARE(2000.f)) {  // maxSqDist
 			enemyPositions.push_back(enemy->GetPos());
 		}
 	}
 	if (bestTarget == nullptr) {
-		bestTarget = (mediumTarget != nullptr) ? mediumTarget : worstTarget;
+		bestTarget = worstTarget;
 	}
 
 	path.clear();

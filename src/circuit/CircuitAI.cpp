@@ -905,8 +905,12 @@ CEnemyUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS)
 	if (unit != nullptr) {
 		if (isInLOS/* && (unit->GetCircuitDef() == nullptr)*/) {
 			UnitDef* unitDef = unit->GetUnit()->GetDef();
-			unit->SetCircuitDef(defsById[unitDef->GetUnitDefId()]);
+			CCircuitDef::Id unitDefId = unitDef->GetUnitDefId();
 			delete unitDef;
+			if ((unit->GetCircuitDef() == nullptr) || unit->GetCircuitDef()->GetId() != unitDefId) {
+				unit->SetCircuitDef(defsById[unitDefId]);
+				unit->SetCost(unit->GetUnit()->GetRulesParamFloat("comm_cost", unit->GetCost()));
+			}
 		}
 		return unit;
 	}

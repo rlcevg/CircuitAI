@@ -70,9 +70,9 @@ void CAntiHeavyTask::AssignTo(CCircuitUnit* unit)
 	}
 
 	int squareSize = circuit->GetPathfinder()->GetSquareSize();
-	CMoveAction* moveAction = new CMoveAction(unit, squareSize);
-	unit->PushBack(moveAction);
-	moveAction->SetActive(false);
+	CMoveAction* travelAction = new CMoveAction(unit, squareSize);
+	unit->PushBack(travelAction);
+	travelAction->SetActive(false);
 }
 
 void CAntiHeavyTask::RemoveAssignee(CCircuitUnit* unit)
@@ -97,9 +97,9 @@ void CAntiHeavyTask::Execute(CCircuitUnit* unit)
 		return;
 	}
 	if (!pPath->empty()) {
-		CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
-		moveAction->SetPath(pPath);
-		moveAction->SetActive(true);
+		ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+		travelAction->SetPath(pPath);
+		travelAction->SetActive(true);
 	}
 }
 
@@ -111,6 +111,10 @@ void CAntiHeavyTask::Update()
 	 * Merge tasks if possible
 	 */
 	if (updCount % 32 == 1) {
+		if (manager->GetCircuit()->GetMilitaryManager()->GetEnemyMetal(CCircuitDef::RoleType::HEAVY) < 1.f) {
+			manager->AbortTask(this);
+			return;
+		}
 		ISquadTask* task = GetMergeTask();
 		if (task != nullptr) {
 			task->Merge(this);
@@ -134,8 +138,8 @@ void CAntiHeavyTask::Update()
 					unit->GetUnit()->Fight(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 				)
 
-				CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
-				moveAction->SetActive(false);
+				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+				travelAction->SetActive(false);
 			}
 		}
 		return;
@@ -149,9 +153,9 @@ void CAntiHeavyTask::Update()
 		if (!isExecute) {
 			if (wasRegroup && !pPath->empty()) {
 				for (CCircuitUnit* unit : units) {
-					CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
-					moveAction->SetPath(pPath);
-					moveAction->SetActive(true);
+					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+					travelAction->SetPath(pPath);
+					travelAction->SetActive(true);
 				}
 			}
 			return;
@@ -171,40 +175,41 @@ void CAntiHeavyTask::Update()
 
 		isAttack = false;
 		if (target != nullptr) {
-			const float sqHighestRange = SQUARE(highestRange);
+			isAttack = true;
+			position = target->GetPos();
+			if (target->GetUnit()->IsCloaked()) {
+				const AIFloat3& pos = target->GetPos();
+				for (CCircuitUnit* unit : units) {
+					unit->Attack(pos, target, frame + FRAMES_PER_SEC * 60);
+
+					IUnitAction* act = static_cast<IUnitAction*>(unit->Begin());
+					if (act->IsEqual(IUnitAction::Mask::DGUN)) {
+						act->SetActive(true);
+					}
+					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+					travelAction->SetActive(false);
+				}
+			} else {
+				for (CCircuitUnit* unit : units) {
+					unit->Attack(target, frame + FRAMES_PER_SEC * 60);
+
+					IUnitAction* act = static_cast<IUnitAction*>(unit->Begin());
+					if (act->IsEqual(IUnitAction::Mask::DGUN)) {
+						act->SetActive(true);
+					}
+					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+					travelAction->SetActive(false);
+				}
+			}
+			return;
+		} else if (!pPath->empty()) {
+			position = pPath->back();
 			for (CCircuitUnit* unit : units) {
-				if (position.SqDistance2D(unit->GetPos(frame)) < sqHighestRange) {
-					isAttack = true;
-					break;
-				}
+				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+				travelAction->SetPath(pPath);
+				travelAction->SetActive(true);
 			}
-			if (isAttack) {
-				if (target->GetUnit()->IsCloaked()) {
-					const AIFloat3& pos = target->GetPos();
-					for (CCircuitUnit* unit : units) {
-						unit->Attack(pos, target, frame + FRAMES_PER_SEC * 60);
-
-						IUnitAction* act = static_cast<IUnitAction*>(unit->Begin());
-						if (act->IsEqual(IUnitAction::Mask::DGUN)) {
-							act->SetActive(true);
-						}
-						CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
-						moveAction->SetActive(false);
-					}
-				} else {
-					for (CCircuitUnit* unit : units) {
-						unit->Attack(target, frame + FRAMES_PER_SEC * 60);
-
-						IUnitAction* act = static_cast<IUnitAction*>(unit->Begin());
-						if (act->IsEqual(IUnitAction::Mask::DGUN)) {
-							act->SetActive(true);
-						}
-						CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
-						moveAction->SetActive(false);
-					}
-				}
-				return;
-			}
+			return;
 		} else {
 			CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
 			if ((commander != nullptr) &&
@@ -213,8 +218,8 @@ void CAntiHeavyTask::Update()
 				for (CCircuitUnit* unit : units) {
 					unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
 
-					CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
-					moveAction->SetActive(false);
+					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+					travelAction->SetActive(false);
 				}
 				return;
 			}
@@ -233,14 +238,14 @@ void CAntiHeavyTask::Update()
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
 
-			CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
-			moveAction->SetActive(false);
+			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+			travelAction->SetActive(false);
 		}
 	} else {
 		for (CCircuitUnit* unit : units) {
-			CMoveAction* moveAction = static_cast<CMoveAction*>(unit->End());
-			moveAction->SetPath(pPath);
-			moveAction->SetActive(true);
+			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+			travelAction->SetPath(pPath);
+			travelAction->SetActive(true);
 		}
 	}
 }
@@ -285,28 +290,18 @@ void CAntiHeavyTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 void CAntiHeavyTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	const AIFloat3& pos = leader->GetPos(frame);
+	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const int canTargetCat = cdef->GetTargetCategory();
+	const float range = std::max(highestRange, threatMap->GetSquareSize() * 2.0f);
+	const float losSqDist = SQUARE(range);
+	float minSqDist = losSqDist;
 
 	CEnemyUnit* bestTarget = nullptr;
-	float minSqDist = std::numeric_limits<float>::max();
-
-	std::function<bool (CEnemyUnit* enemy)> badCondition;
-	if (circuit->GetMilitaryManager()->GetEnemyMetal(CCircuitDef::RoleType::HEAVY) > .1f) {
-		badCondition = [](CEnemyUnit* enemy) {
-			return !enemy->GetCircuitDef()->IsRoleHeavy();
-		};
-	} else {
-		const int noChaseCat = cdef->GetNoChaseCategory();
-		badCondition = [noChaseCat](CEnemyUnit* enemy) {
-			return (enemy->GetCircuitDef()->GetCategory() & noChaseCat) != 0;
-		};
-	}
+	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(leader);
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
@@ -320,7 +315,7 @@ void CAntiHeavyTask::FindTarget()
 
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
-			if (((edef->GetCategory() & canTargetCat) == 0) || badCondition(enemy)) {
+			if (((edef->GetCategory() & canTargetCat) == 0) || !edef->IsRoleHeavy()) {
 				continue;
 			}
 		}
@@ -329,20 +324,25 @@ void CAntiHeavyTask::FindTarget()
 		if (minSqDist > sqDist) {
 			minSqDist = sqDist;
 			bestTarget = enemy;
+		} else if (losSqDist <= sqDist) {
+			enemyPositions.push_back(enemy->GetPos());
 		}
 	}
 
+	pPath->clear();
 	SetTarget(bestTarget);
 	if (bestTarget != nullptr) {
-		position = target->GetPos();
+		enemyPositions.clear();
+		return;
 	}
-	AIFloat3 startPos = pos;
-	AIFloat3 endPos = position;
-	pPath->clear();
+	if (enemyPositions.empty()) {
+		return;
+	}
 
-	CPathFinder* pathfinder = circuit->GetPathfinder();
-	pathfinder->SetMapData(leader, threatMap, frame);
-	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
+	AIFloat3 startPos = pos;
+	circuit->GetPathfinder()->SetMapData(leader, threatMap, circuit->GetLastFrame());
+	circuit->GetPathfinder()->FindBestPath(*pPath, startPos, range * 0.5f, enemyPositions);
+	enemyPositions.clear();
 }
 
 } // namespace circuit

@@ -85,7 +85,7 @@ float CEnemyUnit::GetDamage()
 		return .0f;
 	}
 	if (unit->IsParalyzed() || unit->IsBeingBuilt() || IsDisarmed()) {
-		return 0.01f;
+		return 1e-3f;
 	}
 	return dmg;
 }

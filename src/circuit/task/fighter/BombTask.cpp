@@ -44,9 +44,9 @@ void CBombTask::AssignTo(CCircuitUnit* unit)
 	IFighterTask::AssignTo(unit);
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
-	CMoveAction* moveAction = new CMoveAction(unit, squareSize);
-	unit->PushBack(moveAction);
-	moveAction->SetActive(false);
+	CMoveAction* travelAction = new CMoveAction(unit, squareSize);
+	unit->PushBack(travelAction);
+	travelAction->SetActive(false);
 }
 
 void CBombTask::RemoveAssignee(CCircuitUnit* unit)
@@ -80,10 +80,10 @@ void CBombTask::Update()
 void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
 	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-	if (!act->IsEqual(IUnitAction::Mask::MOVE)) {
+	if (!act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT | IUnitAction::Mask::JUMP)) {
 		return;
 	}
-	CMoveAction* moveAction = static_cast<CMoveAction*>(act);
+	ITravelAction* travelAction = static_cast<ITravelAction*>(act);
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
@@ -115,18 +115,18 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			}
 		)
-		moveAction->SetActive(false);
+		travelAction->SetActive(false);
 		return;
 	} else if (!pPath->empty()) {
 		position = pPath->back();
-		moveAction->SetPath(pPath);
-		moveAction->SetActive(true);
+		travelAction->SetPath(pPath);
+		travelAction->SetActive(true);
 		return;
 	}
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	const AIFloat3& threatPos = moveAction->IsActive() ? position : pos;
+	const AIFloat3& threatPos = travelAction->IsActive() ? position : pos;
 	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < threatMap->GetUnitThreat(unit));
 	if (!proceed) {
 		position = circuit->GetMilitaryManager()->GetScoutPosition(unit);
@@ -135,15 +135,17 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	if (utils::is_valid(position) && terrainManager->CanMoveToPos(unit->GetArea(), position)) {
 		AIFloat3 startPos = pos;
 		AIFloat3 endPos = position;
+//		pPath->clear();
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(unit, threatMap, frame);
 		pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 
-		if (!pPath->empty()) {
+		proceed = pPath->size() > 2;
+		if (proceed) {
 //			position = path.back();
-			moveAction->SetPath(pPath);
-			moveAction->SetActive(true);
+			travelAction->SetPath(pPath);
+			travelAction->SetActive(true);
 			return;
 		}
 	}
@@ -157,7 +159,7 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 	)
-	moveAction->SetActive(false);
+	travelAction->SetActive(false);
 }
 
 void CBombTask::OnUnitIdle(CCircuitUnit* unit)
