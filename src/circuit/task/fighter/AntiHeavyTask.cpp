@@ -13,6 +13,7 @@
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
 #include "unit/action/MoveAction.h"
+#include "unit/action/FightAction.h"
 #include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -69,8 +70,13 @@ void CAntiHeavyTask::AssignTo(CCircuitUnit* unit)
 		act->SetActive(false);
 	}
 
-	int squareSize = circuit->GetPathfinder()->GetSquareSize();
-	CMoveAction* travelAction = new CMoveAction(unit, squareSize);
+	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
+	ITravelAction* travelAction;
+	if (unit->GetCircuitDef()->IsAttrSiege()) {
+		travelAction = new CFightAction(unit, squareSize);
+	} else {
+		travelAction = new CMoveAction(unit, squareSize);
+	}
 	unit->PushBack(travelAction);
 	travelAction->SetActive(false);
 }
@@ -296,6 +302,7 @@ void CAntiHeavyTask::FindTarget()
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const int canTargetCat = cdef->GetTargetCategory();
+	const float airRange = cdef->GetMaxRange(CCircuitDef::RangeType::AIR);
 	const float range = std::max(highestRange, threatMap->GetSquareSize() * 2.0f);
 	const float losSqDist = SQUARE(range);
 	float minSqDist = losSqDist;
@@ -306,26 +313,31 @@ void CAntiHeavyTask::FindTarget()
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden() ||
-			(attackPower <= threatMap->GetThreatAt(enemy->GetPos()) - enemy->GetThreat()) ||
-			!terrainManager->CanMoveToPos(area, enemy->GetPos()))
+		if (enemy->IsHidden()) {
+			continue;
+		}
+		const AIFloat3& ePos = enemy->GetPos();
+		if ((attackPower <= threatMap->GetThreatAt(ePos) - enemy->GetThreat()) ||
+			!terrainManager->CanMoveToPos(area, ePos) ||
+			(ePos.z - circuit->GetMap()->GetElevationAt(ePos.x, ePos.z) > airRange))
 		{
 			continue;
 		}
 
 		CCircuitDef* edef = enemy->GetCircuitDef();
-		if (edef != nullptr) {
-			if (((edef->GetCategory() & canTargetCat) == 0) || !edef->IsRoleHeavy()) {
-				continue;
-			}
+		if (edef == nullptr) {
+			continue;
+		}
+		if (((edef->GetCategory() & canTargetCat) == 0) || !edef->IsRoleHeavy()) {
+			continue;
 		}
 
-		const float sqDist = pos.SqDistance2D(enemy->GetPos());
+		const float sqDist = pos.SqDistance2D(ePos);
 		if (minSqDist > sqDist) {
 			minSqDist = sqDist;
 			bestTarget = enemy;
 		} else if (losSqDist <= sqDist) {
-			enemyPositions.push_back(enemy->GetPos());
+			enemyPositions.push_back(ePos);
 		}
 	}
 

@@ -181,9 +181,9 @@ void CAntiAirTask::Update()
 
 	isAttack = false;
 	if (target != nullptr) {
-		const float sqHighestRange = SQUARE(highestRange);
+		const float sqRange = SQUARE(lowestRange);
 		for (CCircuitUnit* unit : units) {
-			if (position.SqDistance2D(unit->GetPos(frame)) < sqHighestRange) {
+			if (position.SqDistance2D(unit->GetPos(frame)) < sqRange) {
 				isAttack = true;
 				break;
 			}

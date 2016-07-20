@@ -376,7 +376,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 					}
 				} break;
 				case IFighterTask::FightType::AH: {
-					if (GetEnemyMetal(CCircuitDef::RoleType::HEAVY) < 1.f) {
+					if (!cdef->IsRoleMine() && (GetEnemyMetal(CCircuitDef::RoleType::HEAVY) < 1.f)) {
 						type = IFighterTask::FightType::ATTACK;
 					}
 				} break;

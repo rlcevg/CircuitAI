@@ -361,7 +361,7 @@ float CThreatMap::GetThreatAt(CCircuitUnit* unit, const AIFloat3& position) cons
 
 float CThreatMap::GetUnitThreat(CCircuitUnit* unit) const
 {
-	float health = unit->GetUnit()->GetHealth() + unit->GetShieldPower();
+	float health = unit->GetUnit()->GetHealth() + unit->GetShieldPower() * 2.0f;
 	return unit->GetDamage() * sqrtf(health);  // / unit->GetUnit()->GetMaxHealth();
 }
 
@@ -567,7 +567,7 @@ void CThreatMap::AddDecloaker(const CEnemyUnit* e)
 	const int posx = (int)e->GetPos().x / squareSize;
 	const int posz = (int)e->GetPos().z / squareSize;
 
-	const float threatCloak = 16.0f;
+	const float threatCloak = 8 * THREAT_BASE;
 	const int rangeCloak = e->GetRange(CEnemyUnit::RangeType::CLOAK);
 	const int rangeCloakSq = SQUARE(rangeCloak);
 
@@ -598,7 +598,7 @@ void CThreatMap::DelDecloaker(const CEnemyUnit* e)
 	const int posx = (int)e->GetPos().x / squareSize;
 	const int posz = (int)e->GetPos().z / squareSize;
 
-	const float threatCloak = 16.0f;
+	const float threatCloak = 8 * THREAT_BASE;
 	const int rangeCloak = e->GetRange(CEnemyUnit::RangeType::CLOAK);
 	const int rangeCloakSq = SQUARE(rangeCloak);
 
@@ -660,10 +660,16 @@ void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const
 
 int CThreatMap::GetCloakRange(const CEnemyUnit* e) const
 {
-	assert(e->GetCircuitDef() != nullptr);
-	const int sizeX = e->GetCircuitDef()->GetUnitDef()->GetXSize() * (SQUARE_SIZE / 2);
-	const int sizeZ = e->GetCircuitDef()->GetUnitDef()->GetZSize() * (SQUARE_SIZE / 2);
-	return (int)sqrtf(SQUARE(sizeX) + SQUARE(sizeZ)) / squareSize + distCloak;
+	CCircuitDef* edef = e->GetCircuitDef();
+	assert(edef != nullptr);
+
+	const int sizeX = edef->GetUnitDef()->GetXSize() * (SQUARE_SIZE / 2);
+	const int sizeZ = edef->GetUnitDef()->GetZSize() * (SQUARE_SIZE / 2);
+	int threatRange = distCloak;
+	if (edef->IsMobile()) {
+		threatRange += (DEFAULT_SLACK * 2) / squareSize;
+	}
+	return (int)sqrtf(SQUARE(sizeX) + SQUARE(sizeZ)) / squareSize + threatRange;
 }
 
 float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
@@ -678,7 +684,7 @@ float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
 	if (health <= .0f) {
 		return .0f;
 	}
-	return enemy->GetDamage() * sqrtf(health + enemy->GetShieldPower());  // / unit->GetUnit()->GetMaxHealth();
+	return enemy->GetDamage() * sqrtf(health + enemy->GetShieldPower() * 2.0f);  // / unit->GetUnit()->GetMaxHealth();
 }
 
 bool CThreatMap::IsInLOS(const AIFloat3& pos) const

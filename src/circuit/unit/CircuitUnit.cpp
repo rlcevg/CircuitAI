@@ -194,6 +194,7 @@ void CCircuitUnit::Attack(CEnemyUnit* target, int timeout)
 			unit->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
 		}
 		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+		unit->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 	)
 }
 
@@ -225,6 +226,7 @@ void CCircuitUnit::Attack(const AIFloat3& position, CEnemyUnit* target, int time
 		} else {
 			unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
 		}
+		unit->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
 		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 		unit->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 	)

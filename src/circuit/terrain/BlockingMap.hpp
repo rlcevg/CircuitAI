@@ -108,7 +108,7 @@ inline bool SBlockingMap::IsInBounds(const int2& r1, const int2& r2) const
 
 inline bool SBlockingMap::IsInBoundsLow(int x, int z) const
 {
-	return (x >= 0) && (z >= 0) && (x < columnsLow) && (z < rowsLow);
+	return ((unsigned)x < (unsigned)columnsLow) && ((unsigned)z < (unsigned)rowsLow);
 }
 
 inline void SBlockingMap::Bound(int2& r1, int2& r2)

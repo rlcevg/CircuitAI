@@ -229,6 +229,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 				(wt == "LaserCannon") || (wt == "AircraftBomb")) && (wd->GetProjectileSpeed() * FRAMES_PER_SEC >= .75f * range);  // Cannons with fast projectiles
 		isAirWeapon |= (wt == "BeamLaser") || (wt == "LightningCannon") || (wt == "Rifle") ||  // Instant-hit
 				(((wt == "MissileLauncher") || (wt == "StarburstLauncher") || ((wt == "TorpedoLauncher") && wd->IsSubMissile())) && wd->IsTracks());  // Missiles
+		isAirWeapon &= (range > 150.f);
 		canTargetAir |= isAirWeapon;
 
 		bool isLandWeapon = ((wt != "TorpedoLauncher") || wd->IsSubMissile());
@@ -323,7 +324,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	hasAntiWater = (targetCategory & circuit->GetWaterCategory()) && canTargetWater;
 
 	dmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
-	power = dmg * sqrtf(def->GetHealth() + maxShield);
+	power = dmg * sqrtf(def->GetHealth() + maxShield * 2.0f);
 }
 
 CCircuitDef::~CCircuitDef()

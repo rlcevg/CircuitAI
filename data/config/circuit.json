@@ -355,7 +355,7 @@
 
 		// Attributes - optinal states: melee, siege, hold_fire, boost, stockpile, no_strafe
 		// "melee" - always move close to target, disregard attack range
-		// "siege" - use fight command on retreat instead of move
+		// "siege" - mostly use fight command instead of move
 		// "hold_fire" - hold fire on retreat
 		// "boost" - boost speed on retreat
 		// "no_jump" - disable jump on retreat
@@ -547,7 +547,7 @@
 		"role": ["riot"]
 	},
 	"shieldfelon": {
-		"role": ["assault"],
+		"role": ["assault", "heavy"],
 		"attribute": ["riot"]
 	},
 	"shieldarty": {
@@ -769,7 +769,7 @@
 		"retreat": 0.55
 	},
 	"correap": {
-		"role": ["assault"],
+		"role": ["assault", "heavy"],
 		"retreat": 0.55
 	},
 	"corgol": {
@@ -891,7 +891,7 @@
 	"anti_heavy": {
 		"vs":         ["heavy"],
 		"ratio":      [ 0.8],
-		"importance": [ 4.0],
+		"importance": [ 2.0],
 		"max_percent": 0.80,
 		"eps_step": 0.4
 	}

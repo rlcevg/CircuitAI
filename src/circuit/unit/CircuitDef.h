@@ -41,7 +41,7 @@ public:
 
 	/*
 	 * MELEE:      always move close to target, disregard attack range
-	 * SIEGE:      use Fight on retreat instead of Move
+	 * SIEGE:      mostly use Fight instead of Move
 	 * HOLD_FIRE:  hold fire on retreat
 	 * BOOST:      boost speed on retreat
 	 * NO_JUMP:    disable jump on retreat

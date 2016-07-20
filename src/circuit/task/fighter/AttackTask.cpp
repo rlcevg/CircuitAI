@@ -76,10 +76,10 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
-	if (unit->GetCircuitDef()->IsAttrMelee()) {
-		travelAction = new CMoveAction(unit, squareSize);
-	} else {
+	if (unit->GetCircuitDef()->IsAttrSiege()) {
 		travelAction = new CFightAction(unit, squareSize);
+	} else {
+		travelAction = new CMoveAction(unit, squareSize);
 	}
 	unit->PushBack(travelAction);
 	travelAction->SetActive(false);
@@ -175,9 +175,9 @@ void CAttackTask::Update()
 	int frame = circuit->GetLastFrame();
 	isAttack = false;
 	if (target != nullptr) {
-		const float sqHighestRange = SQUARE(highestRange);
+		const float sqRange = SQUARE(lowestRange);
 		for (CCircuitUnit* unit : units) {
-			if (position.SqDistance2D(unit->GetPos(frame)) < sqHighestRange) {
+			if (position.SqDistance2D(unit->GetPos(frame)) < sqRange) {
 				isAttack = true;
 				break;
 			}
@@ -266,7 +266,8 @@ void CAttackTask::FindTarget()
 	const float speed = SQUARE(highestSpeed);
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
-	const float power = attackPower * 0.8f;
+	const float maxPower = attackPower * 0.8f;
+	const float airRange = cdef->GetMaxRange(CCircuitDef::RangeType::AIR);
 
 	CEnemyUnit* bestTarget = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
@@ -276,11 +277,15 @@ void CAttackTask::FindTarget()
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden() || (enemy->GetTasks().size() > 1) ||
-			(power <= threatMap->GetThreatAt(enemy->GetPos())) ||
-			!terrainManager->CanMoveToPos(area, enemy->GetPos()) ||
-			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)) ||
-			(enemy->GetUnit()->GetVel().SqLength2D() > speed))
+		if (enemy->IsHidden() || (enemy->GetTasks().size() > 1)) {
+			continue;
+		}
+		const AIFloat3& ePos = enemy->GetPos();
+		if ((maxPower <= threatMap->GetThreatAt(ePos)) ||
+			!terrainManager->CanMoveToPos(area, ePos) ||
+			(!cdef->HasAntiWater() && (ePos.y < -SQUARE_SIZE * 5)) ||
+			(enemy->GetUnit()->GetVel().SqLength2D() > speed) ||
+			(ePos.z - circuit->GetMap()->GetElevationAt(ePos.x, ePos.z) > airRange))
 		{
 			continue;
 		}
@@ -294,7 +299,7 @@ void CAttackTask::FindTarget()
 			}
 		}
 
-		const float sqDist = pos.SqDistance2D(enemy->GetPos());
+		const float sqDist = pos.SqDistance2D(ePos);
 		if (minSqDist > sqDist) {
 			minSqDist = sqDist;
 			bestTarget = enemy;
@@ -311,7 +316,7 @@ void CAttackTask::FindTarget()
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize(), power);
+	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize(), minPower);
 	// TODO: Bottleneck check, i.e. path cost
 }
 
