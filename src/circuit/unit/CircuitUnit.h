@@ -80,6 +80,9 @@ public:
 	void Dead() { isDead = true; }
 	bool IsDead() const { return isDead; }
 
+	void SetDamagedFrame(int frame) { damagedFrame = frame; }
+	int GetDamagedFrame() const { return damagedFrame; }
+
 	bool HasDGun();
 	springai::Weapon* GetWeapon() const { return weapon; }
 	springai::Weapon* GetDGun() const { return dgun; }
@@ -127,6 +130,8 @@ private:
 	int failFrame;
 	bool isForceExecute;  // TODO: Replace by CExecuteAction?
 	bool isDead;
+
+	int damagedFrame;
 
 	springai::Weapon* weapon;  // main weapon
 	springai::Weapon* dgun;

@@ -1262,11 +1262,8 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 	return sector->position.distance2D(GetSector(iS).position) < range;
 }
 
-bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination)
+bool CTerrainManager::CanBuildAtUnsafe(CCircuitUnit* unit, const AIFloat3& destination)
 {
-	if (circuit->GetThreatMap()->GetThreatAt(destination) > THREAT_MIN) {
-		return false;
-	}
 	if (unit->GetCircuitDef()->GetImmobileId() != -1) {  // A hub or factory
 		return unit->GetPos(circuit->GetLastFrame()).distance2D(destination) < unit->GetCircuitDef()->GetBuildDistance();
 	}
@@ -1279,6 +1276,14 @@ bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination
 		return true;
 	}
 	return GetClosestSector(area, iS)->S->position.distance2D(destination) < unit->GetCircuitDef()->GetBuildDistance();
+}
+
+bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination)
+{
+	if (circuit->GetThreatMap()->GetThreatAt(destination) > THREAT_MIN) {
+		return false;
+	}
+	return CanBuildAtUnsafe(unit, destination);
 }
 
 bool CTerrainManager::CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const AIFloat3& destination)

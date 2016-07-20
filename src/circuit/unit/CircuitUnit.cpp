@@ -31,6 +31,7 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* cdef)
 		, failFrame(-1)
 		, isForceExecute(false)
 		, isDead(false)
+		, damagedFrame(-1)
 		, isDisarmed(false)
 		, disarmFrame(-1)
 		, isWeaponReady(true)
@@ -186,13 +187,12 @@ void CCircuitUnit::Attack(CEnemyUnit* target, int timeout)
 		if (IsJumpReady()) {
 			const AIFloat3& pos = target->GetPos();
 			unit->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
-			unit->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
 		} else if (circuitDef->IsAttrMelee()) {
 			unit->MoveTo(target->GetPos(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
-			unit->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
 		} else {
-			unit->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+			unit->Fight(target->GetPos(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
 		}
+		unit->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
 		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 		unit->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 	)

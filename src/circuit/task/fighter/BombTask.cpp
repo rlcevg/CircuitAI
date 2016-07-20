@@ -212,6 +212,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 
 		int targetCat;
 		float defPower;
+		bool isBuilder;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			if (edef->GetSpeed() * 1.8f > speed) {
@@ -222,9 +223,11 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 				continue;
 			}
 			defPower = edef->GetPower();
+			isBuilder = edef->IsRoleBuilder();
 		} else {
 			targetCat = UNKNOWN_CATEGORY;
 			defPower = enemy->GetThreat();
+			isBuilder = false;
 		}
 
 		float sumPower = 0.f;
@@ -238,7 +241,11 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
 		if ((minPower > power) && (minSqDist > sqDist)) {
 			if (enemy->IsInRadarOrLOS() && ((targetCat & noChaseCat) == 0) && !enemy->GetUnit()->IsBeingBuilt()) {
-				if (maxThreat <= defPower) {
+				if (isBuilder) {
+					bestTarget = enemy;
+					minSqDist = sqDist;
+					maxThreat = std::numeric_limits<float>::max();
+				} else if (maxThreat <= defPower) {
 					bestTarget = enemy;
 					minSqDist = sqDist;
 					maxThreat = defPower;

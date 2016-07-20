@@ -167,6 +167,7 @@ void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
 CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	Map* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	STerrainMapArea* area = unit->GetArea();
@@ -198,13 +199,14 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 			!terrainManager->CanMoveToPos(area, ePos) ||
 			(!cdef->HasAntiWater() && (ePos.y < -SQUARE_SIZE * 5)) ||
 			(enemy->GetUnit()->GetVel().SqLength2D() >= speed) ||
-			(ePos.z - circuit->GetMap()->GetElevationAt(ePos.x, ePos.z) > airRange))
+			(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > airRange))
 		{
 			continue;
 		}
 
 		int targetCat;
 		float defPower;
+		bool isBuilder;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
@@ -212,9 +214,11 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 				continue;
 			}
 			defPower = edef->GetPower();
+			isBuilder = edef->IsRoleBuilder();
 		} else {
 			targetCat = UNKNOWN_CATEGORY;
 			defPower = enemy->GetThreat();
+			isBuilder = false;
 		}
 
 		float sqDist = pos.SqDistance2D(ePos);
@@ -225,7 +229,11 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 //				CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, u, 0);
 //				if (hitUID == enemy->GetId()) {
 					if (((targetCat & noChaseCat) == 0) && !enemy->GetUnit()->IsBeingBuilt()) {
-						if (maxThreat <= defPower) {
+						if (isBuilder) {
+							bestTarget = enemy;
+							minSqDist = sqDist;
+							maxThreat = std::numeric_limits<float>::max();
+						} else if (maxThreat <= defPower) {
 							bestTarget = enemy;
 							minSqDist = sqDist;
 							maxThreat = defPower;

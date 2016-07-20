@@ -672,6 +672,12 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 
 int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
+	int damagedFrame = unit->GetDamagedFrame();
+	unit->SetDamagedFrame(lastFrame);
+	if (lastFrame <= damagedFrame + FRAMES_PER_SEC) {
+		return 0;
+	}
+
 	for (auto& module : modules) {
 		module->UnitDamaged(unit, attacker);
 	}

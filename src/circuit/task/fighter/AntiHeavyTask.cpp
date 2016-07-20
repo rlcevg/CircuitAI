@@ -70,7 +70,7 @@ void CAntiHeavyTask::AssignTo(CCircuitUnit* unit)
 		act->SetActive(false);
 	}
 
-	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
+	int squareSize = circuit->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
 	if (unit->GetCircuitDef()->IsAttrSiege()) {
 		travelAction = new CFightAction(unit, squareSize);
@@ -296,6 +296,7 @@ void CAntiHeavyTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 void CAntiHeavyTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	Map* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
@@ -319,7 +320,7 @@ void CAntiHeavyTask::FindTarget()
 		const AIFloat3& ePos = enemy->GetPos();
 		if ((attackPower <= threatMap->GetThreatAt(ePos) - enemy->GetThreat()) ||
 			!terrainManager->CanMoveToPos(area, ePos) ||
-			(ePos.z - circuit->GetMap()->GetElevationAt(ePos.x, ePos.z) > airRange))
+			(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > airRange))
 		{
 			continue;
 		}
@@ -353,7 +354,7 @@ void CAntiHeavyTask::FindTarget()
 
 	AIFloat3 startPos = pos;
 	circuit->GetPathfinder()->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	circuit->GetPathfinder()->FindBestPath(*pPath, startPos, range * 0.5f, enemyPositions);
+	circuit->GetPathfinder()->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions);
 	enemyPositions.clear();
 }
 

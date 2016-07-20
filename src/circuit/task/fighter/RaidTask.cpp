@@ -208,7 +208,7 @@ void CRaidTask::Update()
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& pos = leader->GetPos(frame);
 	const AIFloat3& threatPos = static_cast<ITravelAction*>(leader->End())->IsActive() ? position : pos;
-	if (attackPower * 0.5f <= threatMap->GetThreatAt(leader, threatPos)) {
+	if (attackPower * 0.75f <= threatMap->GetThreatAt(leader, threatPos)) {
 		position = circuit->GetMilitaryManager()->GetScoutPosition(leader);
 	}
 
@@ -267,13 +267,14 @@ void CRaidTask::OnUnitIdle(CCircuitUnit* unit)
 void CRaidTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	Map* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	const float speed = SQUARE(highestSpeed * 0.9f);
-	const float maxPower = attackPower * 0.5f;
+	const float maxPower = attackPower * 0.75f;
 	const float airRange = cdef->GetMaxRange(CCircuitDef::RangeType::AIR);
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
@@ -300,13 +301,14 @@ void CRaidTask::FindTarget()
 			!terrainManager->CanMoveToPos(area, ePos) ||
 			(!cdef->HasAntiWater() && (ePos.y < -SQUARE_SIZE * 5)) ||
 			(enemy->GetUnit()->GetVel().SqLength2D() >= speed) ||
-			(ePos.z - circuit->GetMap()->GetElevationAt(ePos.x, ePos.z) > airRange))
+			(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > airRange))
 		{
 			continue;
 		}
 
 		int targetCat;
 		float defPower;
+		bool isBuilder;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
@@ -314,16 +316,22 @@ void CRaidTask::FindTarget()
 				continue;
 			}
 			defPower = edef->GetPower();
+			isBuilder = edef->IsRoleBuilder();
 		} else {
 			targetCat = UNKNOWN_CATEGORY;
 			defPower = enemy->GetThreat();
+			isBuilder = false;
 		}
 
 		float sqDist = pos.SqDistance2D(ePos);
 		if ((minPower > power) && (minSqDist > sqDist)) {
 			if (enemy->IsInRadarOrLOS()) {
 				if (((targetCat & noChaseCat) == 0) && !enemy->GetUnit()->IsBeingBuilt()) {
-					if (maxThreat <= defPower) {
+					if (isBuilder) {
+						bestTarget = enemy;
+						minSqDist = sqDist;
+						maxThreat = std::numeric_limits<float>::max();
+					} else if (maxThreat <= defPower) {
 						bestTarget = enemy;
 						minSqDist = sqDist;
 						maxThreat = defPower;

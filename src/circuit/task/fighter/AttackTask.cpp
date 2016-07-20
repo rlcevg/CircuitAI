@@ -258,6 +258,7 @@ void CAttackTask::Merge(ISquadTask* task)
 void CAttackTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	Map* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
@@ -285,7 +286,7 @@ void CAttackTask::FindTarget()
 			!terrainManager->CanMoveToPos(area, ePos) ||
 			(!cdef->HasAntiWater() && (ePos.y < -SQUARE_SIZE * 5)) ||
 			(enemy->GetUnit()->GetVel().SqLength2D() > speed) ||
-			(ePos.z - circuit->GetMap()->GetElevationAt(ePos.x, ePos.z) > airRange))
+			(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > airRange))
 		{
 			continue;
 		}

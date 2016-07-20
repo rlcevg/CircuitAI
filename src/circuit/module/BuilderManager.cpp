@@ -112,7 +112,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	 * building handlers
 	 */
 	auto buildingDamagedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
-		EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+		EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
 	};
 	auto buildingDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		int frame = this->circuit->GetLastFrame();
@@ -605,20 +605,19 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 			}
 
 			// Check time-distance to target
-			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
-			weight = 1.0f / (weight * weight);
-			float distCost;
-			bool valid = false;
-
 			if (!terrainManager->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
 				continue;
 			}
 
-			distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
+			float distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
 			if (distCost > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
 				continue;
 			}
 			distCost = std::max(distCost, THREAT_BASE);
+
+			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
+			weight = 1.0f / (weight * weight);
+			bool valid = false;
 
 			CCircuitUnit* target = candidate->GetTarget();
 			if ((target != nullptr) && (distCost * weight < metric)) {
@@ -643,7 +642,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 	{
 		CCircuitUnit* vip = circuit->GetFactoryManager()->GetClosestFactory(pos);
 		if (vip != nullptr) {
-			task = EnqueueGuard(IBuilderTask::Priority::HIGH, vip, FRAMES_PER_SEC * 60);
+			task = EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, FRAMES_PER_SEC * 60);
 		} else {
 			CCircuitDef* buildDef = circuit->GetCircuitDef("corrl");
 			if (buildDef->IsAvailable()) {
@@ -657,7 +656,8 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 
 IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 {
-	circuit->GetThreatMap()->SetThreatType(unit);
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	threatMap->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
 	int frame = circuit->GetLastFrame();
 	AIFloat3 pos = unit->GetPos(frame);
@@ -670,9 +670,10 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	terrainManager->CorrectPosition(pos);
-	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
+	pathfinder->SetMapData(unit, threatMap, frame);
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
+	const float maxThreat = threatMap->GetUnitThreat(unit);
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
@@ -682,25 +683,29 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 			}
 
 			// Check time-distance to target
+			const AIFloat3& bp = candidate->GetPosition();
+			AIFloat3 buildPos = utils::is_valid(bp) ? bp : pos;
+
+			CCircuitDef* buildDef = candidate->GetBuildDef();
+			const float buildThreat = (buildDef != nullptr) ? buildDef->GetPower() : 0.f;
+			if ((threatMap->GetThreatAt(buildPos) > maxThreat + buildThreat) ||
+				!terrainManager->CanBuildAtUnsafe(unit, buildPos))  // ensure that path always exists
+			{
+				continue;
+			}
+
+			float distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
+			if (distCost > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
+				continue;
+			}
+			distCost = std::max(distCost, THREAT_BASE);
+
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
 			weight = 1.0f / (weight * weight);
-			float distCost;
 			bool valid = false;
 
 			CCircuitUnit* target = candidate->GetTarget();
 			if (target != nullptr) {
-				AIFloat3 buildPos = candidate->GetBuildPos();
-
-				if (!terrainManager->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
-					continue;
-				}
-
-				distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
-				if (distCost > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
-					continue;
-				}
-				distCost = std::max(distCost, THREAT_BASE);
-
 				if (distCost * weight < metric) {
 					Unit* tu = target->GetUnit();
 					const float maxHealth = tu->GetMaxHealth();
@@ -708,22 +713,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 					const float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
 					valid = (((maxHealth - health) * 0.6f) * (maxSpeed * FRAMES_PER_SEC) > healthSpeed * distCost);
 				}
-
 			} else {
-
-				const AIFloat3& bp = candidate->GetPosition();
-				AIFloat3 buildPos = utils::is_valid(bp) ? bp : pos;
-
-				if (!terrainManager->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
-					continue;
-				}
-
-				distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
-				if (distCost > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
-					continue;
-				}
-				distCost = std::max(distCost, THREAT_BASE);
-
 				valid = ((distCost * weight < metric) && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC)));
 			}
 
