@@ -163,7 +163,7 @@ bool CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 	// (3) Known enemy that already was in LOS enters again
 
 	enemy->SetInLOS();
-	bool isKnown = enemy->IsKnown();
+	bool wasKnown = enemy->IsKnown();
 
 	if (enemy->GetDPS() < 0.1f) {
 		if (enemy->GetThreat() > .0f) {  // (2)
@@ -196,7 +196,7 @@ bool CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 		enemy->SetKnown();
 
 		AddDecloaker(enemy);
-		return !isKnown;
+		return !wasKnown;
 	}
 
 	if (hostileUnits.find(enemy->GetId()) == hostileUnits.end()) {
@@ -217,7 +217,7 @@ bool CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 	enemy->SetKnown();
 
 	AddEnemyUnit(enemy);
-	return !isKnown;
+	return !wasKnown;
 }
 
 void CThreatMap::EnemyLeaveLOS(CEnemyUnit* enemy)
@@ -602,11 +602,11 @@ void CThreatMap::DelDecloaker(const CEnemyUnit* e)
 	const int rangeCloak = e->GetRange(CEnemyUnit::RangeType::CLOAK);
 	const int rangeCloakSq = SQUARE(rangeCloak);
 
-	// Decloak ranges are small, full range shouldn't hit performance
-	const int beginX = std::max(int(posx - rangeCloak    ),      0);
-	const int endX   = std::min(int(posx + rangeCloak + 1),  width);
-	const int beginZ = std::max(int(posz - rangeCloak    ),      0);
-	const int endZ   = std::min(int(posz + rangeCloak + 1), height);
+	// For small decloak ranges full range shouldn't hit performance
+	const int beginX = std::max(int(posx - rangeCloak + 1),      0);
+	const int endX   = std::min(int(posx + rangeCloak    ),  width);
+	const int beginZ = std::max(int(posz - rangeCloak + 1),      0);
+	const int endZ   = std::min(int(posz + rangeCloak    ), height);
 
 	for (int x = beginX; x < endX; ++x) {
 		const int dxSq = SQUARE(posx - x);

@@ -206,6 +206,7 @@ public:
 	int GetLandCategory()  const { return landCategory; }
 	int GetWaterCategory() const { return waterCategory; }
 	int GetBadCategory()   const { return badCategory; }
+	int GetGoodCategory()  const { return goodCategory; }
 
 private:
 	// debug
@@ -247,6 +248,7 @@ private:
 	int landCategory;  // on surface
 	int waterCategory;  // under surface
 	int badCategory;
+	int goodCategory;
 
 #ifdef DEBUG_VIS
 private:

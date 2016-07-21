@@ -377,7 +377,7 @@
 	},
 	"spherepole": {
 		"role": ["raider"],
-		"retreat": 0.5  // stops dealing damage once retreating
+		"retreat": 0.6
 	},
 	"armrock": {
 		"role": ["skirmish"],

@@ -116,7 +116,11 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 void CBMexTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	circuit->GetMilitaryManager()->MakeDefence(buildPos);
+//	CMetalManager* metalManager = circuit->GetMetalManager();
+//	int index = metalManager->FindNearestCluster(buildPos);
+//	if ((index >= 0) && metalManager->IsClusterFinished(index)) {
+		circuit->GetMilitaryManager()->MakeDefence(buildPos);
+//	}
 
 	CCircuitDef* energyDef = circuit->GetEconomyManager()->GetLowEnergy(buildPos);
 	if ((energyDef != nullptr) && energyDef->IsAvailable()) {
@@ -167,7 +171,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 		if (blocked) {
 			CBuilderManager* builderManager = circuit->GetBuilderManager();
 			IBuilderTask* task = nullptr;
-			const float qdist = 200.0f * 200.0f;  // 200 elmos
+			const float qdist = SQUARE(200.0f);  // 200 elmos
 			// TODO: Push tasks into bgi::rtree
 			for (IBuilderTask* t : builderManager->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
 				if (pos.SqDistance2D(t->GetTaskPos()) < qdist) {

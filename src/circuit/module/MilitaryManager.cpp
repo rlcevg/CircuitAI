@@ -364,7 +364,10 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 	IFighterTask::FightType type;
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsRoleSupport()) {
-		type = GetTasks(IFighterTask::FightType::ATTACK).empty() ? IFighterTask::FightType::DEFEND : IFighterTask::FightType::SUPPORT;
+		type = IFighterTask::FightType::SUPPORT;
+		if (cdef->IsAttacker() && GetTasks(IFighterTask::FightType::ATTACK).empty()) {
+			type = IFighterTask::FightType::DEFEND;
+		}
 	} else {
 		auto it = types.find(cdef->GetMainRole());
 		if (it != types.end()) {

@@ -672,11 +672,10 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 
 int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
-	int damagedFrame = unit->GetDamagedFrame();
-	unit->SetDamagedFrame(lastFrame);
-	if (lastFrame <= damagedFrame + FRAMES_PER_SEC) {
+	if (lastFrame <= unit->GetDamagedFrame() + FRAMES_PER_SEC / 5) {
 		return 0;
 	}
+	unit->SetDamagedFrame(lastFrame);
 
 	for (auto& module : modules) {
 		module->UnitDamaged(unit, attacker);
@@ -1048,6 +1047,7 @@ void CCircuitAI::InitUnitDefs()
 	landCategory  = game->GetCategoriesFlag("LAND SINK TURRET SHIP SWIM FLOAT HOVER");
 	waterCategory = game->GetCategoriesFlag("SUB");
 	badCategory   = game->GetCategoriesFlag("TERRAFORM STUPIDTARGET MINE");
+	goodCategory  = game->GetCategoriesFlag("TURRET FLOAT");
 
 	if (!gameAttribute->GetTerrainData().IsInitialized()) {
 		gameAttribute->GetTerrainData().Init(this);

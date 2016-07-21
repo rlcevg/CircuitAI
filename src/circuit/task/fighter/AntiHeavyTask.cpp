@@ -56,7 +56,7 @@ bool CAntiHeavyTask::CanAssignTo(CCircuitUnit* unit) const
 void CAntiHeavyTask::AssignTo(CCircuitUnit* unit)
 {
 	ISquadTask::AssignTo(unit);
-	highestRange = std::max(highestRange, unit->GetCircuitDef()->GetLosRadius());
+	highestRange = std::min(highestRange, unit->GetCircuitDef()->GetLosRadius());
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	if (unit->GetCircuitDef()->IsAbleToCloak()) {
@@ -87,7 +87,7 @@ void CAntiHeavyTask::RemoveAssignee(CCircuitUnit* unit)
 	if (leader == nullptr) {
 		manager->AbortTask(this);
 	} else {
-		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetLosRadius());
+		highestRange = std::min(highestRange, leader->GetCircuitDef()->GetLosRadius());
 	}
 
 	if (unit->GetCircuitDef()->IsAbleToCloak()) {
@@ -319,17 +319,16 @@ void CAntiHeavyTask::FindTarget()
 		}
 		const AIFloat3& ePos = enemy->GetPos();
 		if ((attackPower <= threatMap->GetThreatAt(ePos) - enemy->GetThreat()) ||
-			!terrainManager->CanMoveToPos(area, ePos) ||
-			(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > airRange))
+			!terrainManager->CanMoveToPos(area, ePos))
 		{
 			continue;
 		}
 
 		CCircuitDef* edef = enemy->GetCircuitDef();
-		if (edef == nullptr) {
-			continue;
-		}
-		if (((edef->GetCategory() & canTargetCat) == 0) || !edef->IsRoleHeavy()) {
+		if ((edef == nullptr) || !edef->IsRoleHeavy() ||
+			((edef->GetCategory() & canTargetCat) == 0) ||
+			(edef->IsAbleToFly() && (ePos.y - map->GetElevationAt(ePos.x, ePos.z) > airRange)))
+		{
 			continue;
 		}
 

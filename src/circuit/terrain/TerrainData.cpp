@@ -567,7 +567,8 @@ void CTerrainData::CorrectPosition(AIFloat3& position)
 	} else if (position.z > terrainHeight - 2) {
 		position.z = terrainHeight - 2;
 	}
-	position.y = map->GetElevationAt(position.x, position.z);
+	// NOTE: Breaks flying units
+//	position.y = map->GetElevationAt(position.x, position.z);
 }
 
 //int CTerrainData::GetFileValue(int& fileSize, char*& file, std::string entry)

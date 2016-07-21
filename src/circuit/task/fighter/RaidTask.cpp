@@ -300,8 +300,7 @@ void CRaidTask::FindTarget()
 		if ((maxPower <= power) ||
 			!terrainManager->CanMoveToPos(area, ePos) ||
 			(!cdef->HasAntiWater() && (ePos.y < -SQUARE_SIZE * 5)) ||
-			(enemy->GetUnit()->GetVel().SqLength2D() >= speed) ||
-			(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > airRange))
+			(enemy->GetUnit()->GetVel().SqLength2D() >= speed))
 		{
 			continue;
 		}
@@ -312,7 +311,9 @@ void CRaidTask::FindTarget()
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
-			if ((targetCat & canTargetCat) == 0) {
+			if (((targetCat & canTargetCat) == 0) ||
+				(edef->IsAbleToFly() && (ePos.y - map->GetElevationAt(ePos.x, ePos.z) > airRange)))
+			{
 				continue;
 			}
 			defPower = edef->GetPower();

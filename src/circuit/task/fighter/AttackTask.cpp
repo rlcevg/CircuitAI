@@ -76,10 +76,10 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
-	if (unit->GetCircuitDef()->IsAttrSiege()) {
-		travelAction = new CFightAction(unit, squareSize);
-	} else {
+	if (unit->GetCircuitDef()->IsAttrMelee()) {
 		travelAction = new CMoveAction(unit, squareSize);
+	} else {
+		travelAction = new CFightAction(unit, squareSize);
 	}
 	unit->PushBack(travelAction);
 	travelAction->SetActive(false);
@@ -278,15 +278,14 @@ void CAttackTask::FindTarget()
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden() || (enemy->GetTasks().size() > 1)) {
+		if (enemy->IsHidden() || !enemy->GetTasks().empty()) {
 			continue;
 		}
 		const AIFloat3& ePos = enemy->GetPos();
 		if ((maxPower <= threatMap->GetThreatAt(ePos)) ||
 			!terrainManager->CanMoveToPos(area, ePos) ||
 			(!cdef->HasAntiWater() && (ePos.y < -SQUARE_SIZE * 5)) ||
-			(enemy->GetUnit()->GetVel().SqLength2D() > speed) ||
-			(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > airRange))
+			(enemy->GetUnit()->GetVel().SqLength2D() > speed))
 		{
 			continue;
 		}
@@ -294,7 +293,8 @@ void CAttackTask::FindTarget()
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			if (((edef->GetCategory() & canTargetCat) == 0) || ((edef->GetCategory() & noChaseCat) != 0) ||
-				(enemy->GetUnit()->IsBeingBuilt()))
+				(edef->IsAbleToFly() && (ePos.y - map->GetElevationAt(ePos.x, ePos.z) > airRange)) ||
+				enemy->GetUnit()->IsBeingBuilt())
 			{
 				continue;
 			}

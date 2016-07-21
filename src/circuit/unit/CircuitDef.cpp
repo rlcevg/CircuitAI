@@ -62,7 +62,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	maxRange[static_cast<RangeT>(RangeType::MAX)] = def->GetMaxWeaponRange();
 	hasDGun         = def->CanManualFire();
 	category        = def->GetCategory();
-	noChaseCategory = def->GetNoChaseCategory() | circuit->GetBadCategory();
+	noChaseCategory = (def->GetNoChaseCategory() | circuit->GetBadCategory()) & ~circuit->GetGoodCategory();
 
 	speed     = def->GetSpeed() / FRAMES_PER_SEC;  // NOTE: SetWantedMaxSpeed expects value/FRAMES_PER_SEC
 	losRadius = def->GetLosRadius();
