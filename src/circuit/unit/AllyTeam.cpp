@@ -122,4 +122,23 @@ CCircuitUnit* CAllyTeam::GetFriendlyUnit(CCircuitUnit::Id unitId) const
 	return (it != friendlyUnits.end()) ? it->second : nullptr;
 }
 
+void CAllyTeam::OccupyCluster(int clusterId, int teamId)
+{
+	auto it = occupants.find(clusterId);
+	if (it != occupants.end()) {
+		it->second.count++;
+	} else {
+		occupants.insert(std::make_pair(clusterId, SClusterTeam(teamId, 1)));
+	}
+}
+
+CAllyTeam::SClusterTeam CAllyTeam::GetClusterTeam(int clusterId)
+{
+	auto it = occupants.find(clusterId);
+	if (it != occupants.end()) {
+		return it->second;
+	}
+	return SClusterTeam(-1);
+}
+
 } // namespace circuit

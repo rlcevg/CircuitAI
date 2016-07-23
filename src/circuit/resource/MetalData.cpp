@@ -18,7 +18,7 @@ using namespace springai;
 static std::vector<CMetalData::MetalNode> result_n;
 
 CMetalData::CMetalData()
-		: initialized(false)
+		: isInitialized(false)
 		, isClusterizing(false)
 {
 }
@@ -30,7 +30,7 @@ CMetalData::~CMetalData()
 
 void CMetalData::Init(const Metals& spots)
 {
-	if (initialized) {
+	if (isInitialized) {
 		metalTree.clear();
 	}
 
@@ -40,7 +40,7 @@ void CMetalData::Init(const Metals& spots)
     	point p(spot.position.x, spot.position.z);
         metalTree.insert(std::make_pair(p, i++));
     }
-    initialized = true;
+    isInitialized = true;
 }
 
 const int CMetalData::FindNearestSpot(const AIFloat3& pos) const

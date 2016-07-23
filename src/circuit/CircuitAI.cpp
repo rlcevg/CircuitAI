@@ -64,7 +64,8 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, actionIterator(0)
 		, difficulty(Difficulty::NORMAL)
 		, allyAware(true)
-		, initialized(false)
+		, isInitialized(false)
+		, isResigned(false)
 		// NOTE: assert(lastFrame != -1): CCircuitUnit initialized with -1
 		//       and lastFrame check will misbehave until first update event.
 		, lastFrame(0)
@@ -81,6 +82,7 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, landCategory(0)
 		, waterCategory(0)
 		, badCategory(0)
+		, goodCategory(0)
 #ifdef DEBUG_VIS
 		, debugDrawer(nullptr)
 #endif
@@ -93,7 +95,7 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 CCircuitAI::~CCircuitAI()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	if (initialized) {
+	if (isInitialized) {
 		Release(0);
 	}
 }
@@ -460,7 +462,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 	setupManager->CloseConfig();
 
-	initialized = true;
+	isInitialized = true;
 
 	// FIXME: DEBUG
 //	if (skirmishAIId == 1) {
@@ -476,6 +478,10 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 int CCircuitAI::Release(int reason)
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	if (!isInitialized) {
+		return 0;
+	}
+
 	if (reason == 1) {
 		gameAttribute->SetGameEnd(true);
 	}
@@ -520,7 +526,7 @@ int CCircuitAI::Release(int reason)
 	debugDrawer = nullptr;
 #endif
 
-	initialized = false;
+	isInitialized = false;
 
 	return 0;  // signaling: OK
 }
@@ -528,6 +534,11 @@ int CCircuitAI::Release(int reason)
 int CCircuitAI::Update(int frame)
 {
 	lastFrame = frame;
+	if (isResigned) {
+		Release(0);
+		NotifyGameEnd();
+		return 0;
+	}
 
 	if (!garbage.empty()) {
 		CCircuitUnit* unit = *garbage.begin();

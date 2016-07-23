@@ -79,6 +79,7 @@ public:
 public:
 	int HandleEvent(int topic, const void* data);
 	void NotifyGameEnd();
+	void Resign() { isResigned = true; }
 private:
 	typedef int (CCircuitAI::*EventHandlerPtr)(int topic, const void* data);
 	int HandleGameEvent(int topic, const void* data);
@@ -177,7 +178,7 @@ private:
 // ---- UnitDefs ---- END
 
 public:
-	bool IsInitialized() const { return initialized; }
+	bool IsInitialized() const { return isInitialized; }
 	CGameAttribute* GetGameAttribute() const { return gameAttribute.get(); }
 	std::shared_ptr<CScheduler>& GetScheduler() { return scheduler; }
 	int GetLastFrame()    const { return lastFrame; }
@@ -212,7 +213,8 @@ private:
 	// debug
 //	void DrawClusters();
 
-	bool initialized;
+	bool isInitialized;
+	bool isResigned;
 	int lastFrame;
 	int skirmishAIId;
 	int teamId;

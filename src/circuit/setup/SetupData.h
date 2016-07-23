@@ -28,7 +28,7 @@ public:
 	void Init(const AllyMap& ats, const BoxMap& bm, const ConfigMap& cs,
 			  CGameSetup::StartPosType spt = CGameSetup::StartPosType::StartPos_ChooseInGame);
 
-	bool IsInitialized() const { return initialized; }
+	bool IsInitialized() const { return isInitialized; }
 	bool CanChooseStartPos() const { return startPosType == CGameSetup::StartPos_ChooseInGame; }
 
 	CAllyTeam* GetAllyTeam(int allyTeamId) const { return allyTeams[allyTeamId]; }
@@ -36,7 +36,7 @@ public:
 	const std::string& GetConfigJson(int skirmishAIId) { return configJsons[skirmishAIId]; }
 
 private:
-	bool initialized;
+	bool isInitialized;
 	CGameSetup::StartPosType startPosType;
 	AllyMap allyTeams;  // owner
 	BoxMap boxes;

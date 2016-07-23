@@ -52,7 +52,7 @@ CTerrainData::CTerrainData()
 		, isUpdating(false)
 		, aiToUpdate(0)
 //		, isClusterizing(false)
-		, initialized(false)
+		, isInitialized(false)
 #ifdef DEBUG_VIS
 		, toggleFrame(-1)
 #endif
@@ -552,7 +552,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 //	circuit->LOG(deb.str().c_str());
 #endif
 
-	initialized = true;
+	isInitialized = true;
 }
 
 void CTerrainData::CorrectPosition(AIFloat3& position)

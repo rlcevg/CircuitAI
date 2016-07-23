@@ -172,7 +172,8 @@ bool CSetupManager::CanChooseStartPos() const
 void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 {
 	float x, z;
-	const CAllyTeam::SBox& box = circuit->GetAllyTeam()->GetStartBox();
+	CAllyTeam* allyTeam = circuit->GetAllyTeam();
+	const CAllyTeam::SBox& box = allyTeam->GetStartBox();
 
 	auto random = [](const CAllyTeam::SBox& box, float& x, float& z) {
 		int min, max;
@@ -186,40 +187,51 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 
 	switch (type) {
 		case StartPosType::METAL_SPOT: {
+			const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
 			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
-			CMetalData::MetalIndices indices;
-			indices.reserve(spots.size());
-			for (unsigned idx = 0; idx < spots.size(); ++idx) {
-				indices.push_back(idx);
-			}
-			std::random_shuffle(indices.begin(), indices.end());
-
 			CTerrainManager* terrainManager = circuit->GetTerrainManager();
 			STerrainMapMobileType* mobileType = terrainManager->GetMobileTypeById(circuit->GetCircuitDef("armcom1")->GetMobileId());
 			Lua* lua = circuit->GetCallback()->GetLua();
-			bool isDone = false;
 
-			for (unsigned idx : indices) {
-				std::string cmd("ai_is_valid_startpos:");
-				const CMetalData::SMetal& spot = spots[idx];
-				cmd += utils::int_to_string(spot.position.x) + "/" + utils::int_to_string(spot.position.z);
-				std::string result = lua->CallRules(cmd.c_str(), cmd.size());
-				if (result != "1") {
-					continue;
-				}
+			std::map<int, CMetalData::MetalIndices> validPoints;
+			for (unsigned idx = 0; idx < clusters.size(); ++idx) {
+				for (int i : clusters[idx].idxSpots) {
+					std::string cmd("ai_is_valid_startpos:");
+					const CMetalData::SMetal& spot = spots[i];
+					cmd += utils::int_to_string(spot.position.x) + "/" + utils::int_to_string(spot.position.z);
+					std::string result = lua->CallRules(cmd.c_str(), cmd.size());
+					if (result != "1") {
+						continue;
+					}
 
-				int iS = terrainManager->GetSectorIndex(spots[idx].position);
-				STerrainMapArea* area = mobileType->sector[iS].area;
-				if ((area != nullptr) && area->areaUsable) {
-					x = spot.position.x;
-					z = spot.position.z;
-					isDone = true;
-					break;
+					int iS = terrainManager->GetSectorIndex(spots[i].position);
+					STerrainMapArea* area = mobileType->sector[iS].area;
+					if ((area != nullptr) && area->areaUsable) {
+						validPoints[idx].push_back(i);
+					}
 				}
 			}
 
 			delete lua;
-			if (isDone) {
+			if (!validPoints.empty()) {
+				std::vector<std::pair<int, unsigned>> validClusters;
+				for (auto& kv : validPoints) {
+					validClusters.push_back(std::make_pair(kv.first, allyTeam->GetClusterTeam(kv.first).count));
+				}
+				std::random_shuffle(validClusters.begin(), validClusters.end());
+
+				auto cmp = [](const std::pair<int, unsigned>& a, const std::pair<int, unsigned>& b) {
+					return a.second < b.second;
+				};
+				std::sort(validClusters.begin(), validClusters.end(), cmp);
+
+				int clusterId = validClusters.front().first;
+				allyTeam->OccupyCluster(clusterId, circuit->GetTeamId());
+
+				const CMetalData::MetalIndices& indices = validPoints[clusterId];
+				const CMetalData::SMetal& spot = spots[indices[rand() % indices.size()]];
+				x = spot.position.x;
+				z = spot.position.z;
 				break;
 			}
 

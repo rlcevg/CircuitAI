@@ -112,11 +112,65 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	};
 
 	/*
-	 * morphing
+	 * morph & plop
 	 */
 	auto comFinishedHandler = [this](CCircuitUnit* unit) {
 		AddMorphee(unit);
 		this->circuit->GetSetupManager()->SetCommander(unit);
+
+		CCircuitUnit::Id unitId = unit->GetId();
+		this->circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this, unitId]() {
+			CCircuitUnit* unit = this->circuit->GetTeamUnit(unitId);
+			if (unit == nullptr) {
+				return;
+			}
+			int frame = this->circuit->GetLastFrame();
+			bool isStart = (frame < FRAMES_PER_SEC * 10);
+			AIFloat3 buildPos = -RgtVector;
+			if (unit->GetUnit()->GetRulesParamFloat("facplop", 0) == 1) {
+				CFactoryManager* factoryManager = this->circuit->GetFactoryManager();
+				CCircuitDef* facDef = factoryManager->GetFactoryToBuild(isStart);
+				if (facDef != nullptr) {
+					// Enqueue factory
+					const AIFloat3& pos = unit->GetPos(frame);
+					CTerrainManager* terrainManager = this->circuit->GetTerrainManager();
+					buildPos = terrainManager->GetBuildPosition(facDef, pos);
+					CBuilderManager* builderManager = this->circuit->GetBuilderManager();
+					IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::NOW, facDef, buildPos,
+																	 IBuilderTask::BuildType::FACTORY, 1.f, SQUARE_SIZE * 32, true, 0);
+					static_cast<ITaskManager*>(builderManager)->AssignTask(unit, task);
+
+					// Enqueue first builder
+					float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
+					CCircuitDef* buildDef = factoryManager->GetRoleDef(facDef, CCircuitDef::RoleType::BUILDER);
+					if ((buildDef != nullptr) && buildDef->IsAvailable()) {
+						factoryManager->EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::BUILDPOWER, radius);
+					}
+				}
+			}
+
+			if (isStart) {
+				this->circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>([this, unitId, buildPos]() {
+					// Force commander level 0 to morph
+					CCircuitUnit* unit = this->circuit->GetTeamUnit(unitId);
+					if (unit != nullptr) {
+						const std::map<std::string, std::string>& customParams = unit->GetCircuitDef()->GetUnitDef()->GetCustomParams();
+						auto it = customParams.find("level");
+						if ((it != customParams.end()) && (utils::string_to_int(it->second) <= 1)) {
+							unit->Upgrade();  // Morph();
+						}
+					}
+					// Build factory defence
+					if (utils::is_valid(buildPos)) {
+						CCircuitDef* buildDef = this->circuit->GetCircuitDef("corllt");
+						if ((buildDef != nullptr) && buildDef->IsAvailable()) {
+							this->circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, buildPos,
+																			IBuilderTask::BuildType::DEFENCE, 0.f, true, 0);
+						}
+					}
+				}), FRAMES_PER_SEC * 120);
+			}
+		}), FRAMES_PER_SEC);
 	};
 	auto comDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		RemoveMorphee(unit);
@@ -858,13 +912,13 @@ void CEconomyManager::ReadConfig()
 	engyPol = new CLagrangeInterPol(x, y);  // Alternatively use CGaussSolver to compute polynomial - faster on reuse
 
 	// NOTE: Alternative to CLagrangeInterPol
-//	CGaussSolver solve;
+//	CGaussSolver solver;
 //	CGaussSolver::Matrix a = {
 //		{1, x[0], x[0]*x[0]},
 //		{1, x[1], x[1]*x[1]},
 //		{1, x[2], x[2]*x[2]}
 //	};
-//	CGaussSolver::Vector r = solve.Solve(a, y);
+//	CGaussSolver::Vector r = solver.Solve(a, y);
 //	circuit->LOG("y = %f*x^0 + %f*x^1 + %f*x^2", r[0], r[1], r[2]);
 }
 
@@ -873,63 +927,37 @@ void CEconomyManager::Init()
 	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
 	clusterInfos.resize(clusters.size(), {nullptr});
 
-	auto subinit = [this]() {
-		CScheduler* scheduler = circuit->GetScheduler().get();
-		CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-		if (commander != nullptr) {
-			AIFloat3 buildPos = -RgtVector;
-			const AIFloat3& pos = commander->GetPos(circuit->GetLastFrame());
-			if (commander->GetUnit()->GetRulesParamFloat("facplop", 0) == 1) {
-				CFactoryManager* factoryManager = circuit->GetFactoryManager();
-				CCircuitDef* facDef = factoryManager->GetFactoryToBuild(true);
-				if (facDef != nullptr) {
-					// Enqueue factory
-					CTerrainManager* terrainManager = circuit->GetTerrainManager();
-					buildPos = terrainManager->GetBuildPosition(facDef, pos);
-					CBuilderManager* builderManager = circuit->GetBuilderManager();
-					IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::NOW, facDef, buildPos,
-																	 IBuilderTask::BuildType::FACTORY);
-					static_cast<ITaskManager*>(builderManager)->AssignTask(commander, task);
-
-					// Enqueue first builder
-					float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
-					CCircuitDef* buildDef = factoryManager->GetRoleDef(facDef, CCircuitDef::RoleType::BUILDER);
-					if ((buildDef != nullptr) && buildDef->IsAvailable()) {
-						factoryManager->EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::BUILDPOWER, radius);
-					}
-				}
+	CScheduler* scheduler = circuit->GetScheduler().get();
+	CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+	if (commander != nullptr) {
+		const AIFloat3& pos = commander->GetPos(circuit->GetLastFrame());
+		int clusterId = circuit->GetMetalManager()->FindNearestCluster(pos);
+		int ownerId = circuit->GetAllyTeam()->GetClusterTeam(clusterId).teamId;
+		if (ownerId < 0) {
+			ownerId = circuit->GetTeamId();
+			circuit->GetAllyTeam()->OccupyCluster(clusterId, ownerId);
+		} else if (ownerId != circuit->GetTeamId()) {
+			// Resign
+			std::vector<Unit*> migrants;
+			for (auto& kv : circuit->GetTeamUnits()) {
+				migrants.push_back(kv.second->GetUnit());
 			}
-
-			scheduler->RunTaskAt(std::make_shared<CGameTask>([this, buildPos]() {
-				// Force commander level 0 to morph
-				CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-				if (commander != nullptr) {
-					const std::map<std::string, std::string>& customParams = commander->GetCircuitDef()->GetUnitDef()->GetCustomParams();
-					auto it = customParams.find("level");
-					if ((it != customParams.end()) && (utils::string_to_int(it->second) <= 1)) {
-						commander->Upgrade();  // Morph();
-					}
+			economy->SendUnits(migrants, ownerId);
+			// Double check
+			scheduler->RunTaskAfter(std::make_shared<CGameTask>([this]() {
+				if (circuit->GetTeamUnits().empty()) {
+					circuit->Resign();
 				}
-				// Build factory defence
-				if (utils::is_valid(buildPos)) {
-					CCircuitDef* buildDef = circuit->GetCircuitDef("corllt");
-					if ((buildDef != nullptr) && buildDef->IsAvailable()) {
-						circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, buildPos,
-																  IBuilderTask::BuildType::DEFENCE, 0.f, true, 0);
-					}
-				}
-			}), FRAMES_PER_SEC * 120);
+			}), FRAMES_PER_SEC * 10);
 		}
+	}
 
-		SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();
-		const int interval = ais->GetSize() * FRAMES_PER_SEC;
-		delete ais;
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks), this),
-								interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this), interval, circuit->GetSkirmishAIId() + 1);
-	};
-	// Try to avoid blocked factories on start
-	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(subinit), circuit->GetSkirmishAIId() * 2);
+	SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();
+	const int interval = ais->GetSize() * FRAMES_PER_SEC;
+	delete ais;
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks), this),
+							interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this), interval, circuit->GetSkirmishAIId() + 1);
 }
 
 void CEconomyManager::UpdateEconomy()

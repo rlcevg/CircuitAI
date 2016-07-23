@@ -29,7 +29,7 @@ CDebugDrawer::CDebugDrawer(CCircuitAI* circuit, const struct SSkirmishAICallback
 		: circuit(circuit)
 		, sAICallback(sAICallback)
 		, debug(circuit->GetCallback()->GetDebug())
-		, initialized(false)
+		, isInitialized(false)
 {
 }
 
@@ -37,7 +37,7 @@ CDebugDrawer::~CDebugDrawer()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete debug;
-	if (initialized) {
+	if (isInitialized) {
 		Release();
 	}
 }
@@ -92,7 +92,7 @@ int CDebugDrawer::Init()
 		SDL_SetEventFilter(CDebugDrawer::WindowEventFilter, this);
 	}
 
-	initialized = true;
+	isInitialized = true;
 	return 0;
 }
 
@@ -120,7 +120,7 @@ void CDebugDrawer::Release()
 
 	SDL_GL_MakeCurrent(prevWin, prevContext);
 //	SDL_Quit();
-	initialized = false;
+	isInitialized = false;
 }
 
 Uint32 CDebugDrawer::AddSDLWindow(int width, int height, const char* label)

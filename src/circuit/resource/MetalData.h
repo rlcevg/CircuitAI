@@ -70,7 +70,7 @@ public:
 	virtual ~CMetalData();
 	void Init(const Metals& spots);
 
-	bool IsInitialized() const { return initialized; }
+	bool IsInitialized() const { return isInitialized; }
 	bool IsEmpty() const { return spots.empty(); }
 
 	bool IsClusterizing() const { return isClusterizing.load(); }
@@ -105,7 +105,7 @@ public:
 	const SMetal& operator[](int idx) const { return spots[idx]; }
 
 private:
-	bool initialized;
+	bool isInitialized;
 	Metals spots;
 	// TODO: Find out more about bgi::rtree, bgi::linear, bgi::quadratic, bgi::rstar, packing algorithm?
 	using MetalTree = bgi::rtree<MetalNode, bgi::rstar<16, 4>>;

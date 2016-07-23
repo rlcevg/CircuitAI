@@ -43,6 +43,12 @@ public:
 
 		bool ContainsPoint(const springai::AIFloat3& point) const;
 	};
+	struct SClusterTeam {
+		SClusterTeam(int tid) : teamId(tid), count(0) {}
+		SClusterTeam(int tid, unsigned cnt) : teamId(tid), count(cnt) {}
+		int teamId;  // cluster leader
+		unsigned count;  // number of commanders
+	};
 
 public:
 	CAllyTeam(const TeamIds& tids, const SBox& sb);
@@ -65,6 +71,9 @@ public:
 	std::shared_ptr<CPathFinder>& GetPathfinder() { return pathfinder; }
 	std::shared_ptr<CFactoryData>& GetFactoryData() { return factoryData; }
 
+	void OccupyCluster(int clusterId, int teamId);
+	SClusterTeam GetClusterTeam(int clusterId);
+
 private:
 	TeamIds teamIds;
 	SBox startBox;
@@ -72,6 +81,8 @@ private:
 	int initCount;
 	int lastUpdate;
 	Units friendlyUnits;  // owner
+
+	std::map<int, SClusterTeam> occupants;  // Cluster owner on start. clusterId: SClusterTeam
 
 	std::shared_ptr<CMetalManager> metalManager;
 	std::shared_ptr<CEnergyGrid> energyLink;

@@ -19,7 +19,7 @@ namespace circuit {
 using namespace springai;
 
 CSetupData::CSetupData() :
-		initialized(false),
+		isInitialized(false),
 		startPosType(CGameSetup::StartPosType::StartPos_Fixed)
 {
 }
@@ -176,7 +176,7 @@ void CSetupData::Init(const AllyMap& ats, const BoxMap& bm, const ConfigMap& cs,
 	startPosType = spt;
 	configJsons = cs;
 
-	initialized = true;
+	isInitialized = true;
 }
 
 } // namespace circuit

@@ -224,7 +224,7 @@ private:
 
 // ---- UNUSED so far ---- BEGIN
 public:
-	bool IsInitialized() const { return initialized; }
+	bool IsInitialized() const { return isInitialized; }
 //	bool IsClusterizing() const { return isClusterizing.load(); }
 //	void SetClusterizing(bool value) { isClusterizing = value; }
 //
@@ -239,7 +239,7 @@ public:
 //	void ClearMetalClusters(springai::Drawer* drawer);
 //
 private:
-	bool initialized;
+	bool isInitialized;
 //	std::vector<springai::AIFloat3> points;
 //
 //	std::atomic<bool> isClusterizing;

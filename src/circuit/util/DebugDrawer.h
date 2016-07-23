@@ -53,7 +53,7 @@ private:
 	const struct SSkirmishAICallback* sAICallback;
 	springai::Debug* debug;
 
-	bool initialized;
+	bool isInitialized;
 	struct SWindow {
 		SDL_Window* window;
 		SDL_GLContext glcontext;
