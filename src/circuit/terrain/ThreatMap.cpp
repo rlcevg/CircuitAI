@@ -567,7 +567,7 @@ void CThreatMap::AddDecloaker(const CEnemyUnit* e)
 	const int posx = (int)e->GetPos().x / squareSize;
 	const int posz = (int)e->GetPos().z / squareSize;
 
-	const float threatCloak = 8 * THREAT_BASE;
+	const float threatCloak = 16 * THREAT_BASE;
 	const int rangeCloak = e->GetRange(CEnemyUnit::RangeType::CLOAK);
 	const int rangeCloakSq = SQUARE(rangeCloak);
 
@@ -598,7 +598,7 @@ void CThreatMap::DelDecloaker(const CEnemyUnit* e)
 	const int posx = (int)e->GetPos().x / squareSize;
 	const int posz = (int)e->GetPos().z / squareSize;
 
-	const float threatCloak = 8 * THREAT_BASE;
+	const float threatCloak = 16 * THREAT_BASE;
 	const int rangeCloak = e->GetRange(CEnemyUnit::RangeType::CLOAK);
 	const int rangeCloakSq = SQUARE(rangeCloak);
 

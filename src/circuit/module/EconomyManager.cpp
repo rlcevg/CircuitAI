@@ -22,7 +22,6 @@
 #include "AISCommands.h"
 #include "OOAICallback.h"
 #include "Map.h"
-#include "SkirmishAIs.h"
 #include "Resource.h"
 #include "Economy.h"
 #include "Feature.h"
@@ -482,7 +481,6 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				const AIFloat3& pos = spots[index].position;
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost, .0f);
 				task->SetBuildPos(pos);
-				metalManager->SetOpenSpot(index, false);
 				return task;
 			}
 		}
@@ -952,9 +950,7 @@ void CEconomyManager::Init()
 		}
 	}
 
-	SkirmishAIs* ais = circuit->GetCallback()->GetSkirmishAIs();
-	const int interval = ais->GetSize() * FRAMES_PER_SEC;
-	delete ais;
+	const int interval = circuit->GetAllyTeam()->GetSize() * FRAMES_PER_SEC;
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks), this),
 							interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this), interval, circuit->GetSkirmishAIId() + 1);

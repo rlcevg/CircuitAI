@@ -785,11 +785,13 @@ void CFactoryManager::ReadConfig()
 	std::map<const char*, CCircuitDef::AttrType, cmp_str> attrNames = {
 		{"melee",     CCircuitDef::AttrType::MELEE},
 		{"siege",     CCircuitDef::AttrType::SIEGE},
-		{"hold_fire", CCircuitDef::AttrType::HOLD_FIRE},
-		{"boost",     CCircuitDef::AttrType::BOOST},
+		{"open_fire", CCircuitDef::AttrType::OPEN_FIRE},
 		{"no_jump",   CCircuitDef::AttrType::NO_JUMP},
-		{"stockpile", CCircuitDef::AttrType::STOCK},
+		{"boost",     CCircuitDef::AttrType::BOOST},
+		{"comm",      CCircuitDef::AttrType::COMM},
+		{"hold_fire", CCircuitDef::AttrType::HOLD_FIRE},
 		{"no_strafe", CCircuitDef::AttrType::NO_STRAFE},
+		{"stockpile", CCircuitDef::AttrType::STOCK},
 	};
 	const Json::Value& behaviours = root["behaviour"];
 	for (const std::string& defName : behaviours.getMemberNames()) {

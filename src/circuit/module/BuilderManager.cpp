@@ -189,7 +189,6 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 				this->circuit->GetTerrainManager()->CanBeBuiltAt(mexDef, pos))
 			{
 				EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
-				this->circuit->GetMetalManager()->SetOpenSpot(index, false);
 			}
 		}), FRAMES_PER_SEC * 20);
 	};

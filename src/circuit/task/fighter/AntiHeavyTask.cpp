@@ -56,10 +56,11 @@ bool CAntiHeavyTask::CanAssignTo(CCircuitUnit* unit) const
 void CAntiHeavyTask::AssignTo(CCircuitUnit* unit)
 {
 	ISquadTask::AssignTo(unit);
-	highestRange = std::min(highestRange, unit->GetCircuitDef()->GetLosRadius());
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	highestRange = std::max(highestRange, cdef->GetLosRadius());
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	if (unit->GetCircuitDef()->IsAbleToCloak()) {
+	if (cdef->IsAbleToCloak() && !cdef->IsAttrOpenFire()) {
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->SetFireState(1);
 		)
@@ -72,7 +73,7 @@ void CAntiHeavyTask::AssignTo(CCircuitUnit* unit)
 
 	int squareSize = circuit->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
-	if (unit->GetCircuitDef()->IsAttrSiege()) {
+	if (cdef->IsAttrSiege()) {
 		travelAction = new CFightAction(unit, squareSize);
 	} else {
 		travelAction = new CMoveAction(unit, squareSize);
@@ -87,7 +88,7 @@ void CAntiHeavyTask::RemoveAssignee(CCircuitUnit* unit)
 	if (leader == nullptr) {
 		manager->AbortTask(this);
 	} else {
-		highestRange = std::min(highestRange, leader->GetCircuitDef()->GetLosRadius());
+		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetLosRadius());
 	}
 
 	if (unit->GetCircuitDef()->IsAbleToCloak()) {
@@ -183,28 +184,35 @@ void CAntiHeavyTask::Update()
 		if (target != nullptr) {
 			isAttack = true;
 			position = target->GetPos();
+			float power = 0.f;
+			CEnemyUnit* target = this->target;
+			auto subattack = [&power, target](CCircuitUnit* unit) {
+				IUnitAction* act = static_cast<IUnitAction*>(unit->Begin());
+				if (act->IsEqual(IUnitAction::Mask::DGUN)) {
+					act->SetActive(true);
+				}
+				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+				travelAction->SetActive(false);
+
+				power += unit->GetCircuitDef()->GetPower();
+				return target->GetThreat() < power;
+			};
 			if (target->GetUnit()->IsCloaked()) {
 				const AIFloat3& pos = target->GetPos();
 				for (CCircuitUnit* unit : units) {
 					unit->Attack(pos, target, frame + FRAMES_PER_SEC * 60);
 
-					IUnitAction* act = static_cast<IUnitAction*>(unit->Begin());
-					if (act->IsEqual(IUnitAction::Mask::DGUN)) {
-						act->SetActive(true);
+					if (subattack(unit)) {
+						break;
 					}
-					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-					travelAction->SetActive(false);
 				}
 			} else {
 				for (CCircuitUnit* unit : units) {
 					unit->Attack(target, frame + FRAMES_PER_SEC * 60);
 
-					IUnitAction* act = static_cast<IUnitAction*>(unit->Begin());
-					if (act->IsEqual(IUnitAction::Mask::DGUN)) {
-						act->SetActive(true);
+					if (subattack(unit)) {
+						break;
 					}
-					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-					travelAction->SetActive(false);
 				}
 			}
 			return;

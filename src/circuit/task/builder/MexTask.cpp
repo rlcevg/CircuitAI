@@ -78,13 +78,17 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (utils::is_valid(buildPos)) {
+		int index = metalManager->FindNearestSpot(buildPos);
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
-			TRY_UNIT(circuit, unit,
-				u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
-			)
-			return;
+			if ((units.size() > 1) || metalManager->IsOpenSpot(index)) {
+				metalManager->SetOpenSpot(index, false);
+				TRY_UNIT(circuit, unit,
+					u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+				)
+				return;
+			}
 		} else {
-			metalManager->SetOpenSpot(buildPos, true);
+			metalManager->SetOpenSpot(index, true);
 		}
 	}
 

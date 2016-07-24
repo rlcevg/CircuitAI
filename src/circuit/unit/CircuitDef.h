@@ -42,15 +42,18 @@ public:
 	/*
 	 * MELEE:      always move close to target, disregard attack range
 	 * SIEGE:      mostly use Fight instead of Move
-	 * HOLD_FIRE:  hold fire on retreat
-	 * BOOST:      boost speed on retreat
+	 * OPEN_FIRE:  always fire at enemy
 	 * NO_JUMP:    disable jump on retreat
-	 * STOCK:      stockpile weapon before any task (NOT IMPLEMENTED)
+	 * BOOST:      boost speed on retreat
+	 * COMM:       commander
+	 * HOLD_FIRE:  hold fire on retreat
 	 * NO_STRAFE:  disable gunship's strafe
+	 * STOCK:      stockpile weapon before any task (NOT IMPLEMENTED)
 	 */
-	enum class AttrType: RoleT {MELEE = static_cast<RoleT>(RoleType::_SIZE_), SIEGE, HOLD_FIRE, BOOST, NO_JUMP, STOCK, NO_STRAFE, COMM, _SIZE_};
-	enum AttrMask: RoleM {MELEE   = 0x010000, SIEGE = 0x020000, HOLD_FIRE = 0x040000, BOOST = 0x080000,
-						  NO_JUMP = 0x100000, STOCK = 0x200000, NO_STRAFE = 0x400000, COMM  = 0x800000};
+	enum class AttrType: RoleT {MELEE = static_cast<RoleT>(RoleType::_SIZE_), SIEGE, OPEN_FIRE, NO_JUMP, BOOST, COMM, HOLD_FIRE, NO_STRAFE, STOCK, _SIZE_};
+	enum AttrMask: RoleM {MELEE = 0x0010000, SIEGE = 0x0020000, OPEN_FIRE = 0x0040000, NO_JUMP   = 0x0080000,
+						  BOOST = 0x0100000, COMM  = 0x0200000, HOLD_FIRE = 0x0400000, NO_STRAFE = 0x0800000,
+						  STOCK = 0x1000000};
 
 	static RoleM GetMask(RoleT type) { return 1 << type; }
 
@@ -91,6 +94,7 @@ public:
 
 	bool IsAttrMelee()    const { return role & AttrMask::MELEE; }
 	bool IsAttrSiege()    const { return role & AttrMask::SIEGE; }
+	bool IsAttrOpenFire() const { return role & AttrMask::OPEN_FIRE; }
 	bool IsAttrHoldFire() const { return role & AttrMask::HOLD_FIRE; }
 	bool IsAttrBoost()    const { return role & AttrMask::BOOST; }
 	bool IsAttrNoJump()   const { return role & AttrMask::NO_JUMP; }

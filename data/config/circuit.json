@@ -356,12 +356,14 @@
 		// Attributes - optinal states: melee, siege, hold_fire, boost, stockpile, no_strafe
 		// "melee" - always move close to target, disregard attack range
 		// "siege" - mostly use fight command instead of move
-		// "hold_fire" - hold fire on retreat
-		// "boost" - boost speed on retreat
+		// "open_fire" - always fire at enemy
 		// "no_jump" - disable jump on retreat
-		// "stockpile" - load weapon before any task (NOT IMPLEMENTED)
+		// "boost" - boost speed on retreat
+		// "comm" - commander, auto-assigned
+		// "hold_fire" - hold fire on retreat
 		// "no_strafe" - disable gunship's strafe
-		
+		// "stockpile" - load weapon before any task (NOT IMPLEMENTED)
+
 //		"attribute": ["boost", "no_strafe"],
 
 		// Limits number of units
@@ -397,6 +399,7 @@
 	},
 	"armsnipe": {
 		"role": ["anti_heavy", "artillery"],
+		"attribute": ["open_fire"],
 		"retreat": 0.9
 	},
 	"armtick": {
