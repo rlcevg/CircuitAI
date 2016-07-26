@@ -179,16 +179,18 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			return;
 		}
 		this->circuit->GetMetalManager()->SetOpenSpot(index, true);
+		this->circuit->GetEconomyManager()->SetOpenSpot(index, true);
 		if (unit->GetUnit()->IsBeingBuilt()) {
 			return;
 		}
 		// Check mex position in 20 seconds
 		this->circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this, mexDef, pos, index]() {
-			if (this->circuit->GetMetalManager()->IsOpenSpot(index) &&
+			if (this->circuit->GetEconomyManager()->IsOpenSpot(index) &&
 				this->circuit->GetBuilderManager()->IsBuilderInArea(mexDef, pos) &&
 				this->circuit->GetTerrainManager()->CanBeBuiltAt(mexDef, pos))
 			{
 				EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
+				this->circuit->GetEconomyManager()->SetOpenSpot(index, false);
 			}
 		}), FRAMES_PER_SEC * 20);
 	};

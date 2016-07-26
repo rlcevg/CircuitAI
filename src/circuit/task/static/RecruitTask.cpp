@@ -7,6 +7,8 @@
 
 #include "task/static/RecruitTask.h"
 #include "task/TaskManager.h"
+#include "module/EconomyManager.h"
+#include "module/FactoryManager.h"
 #include "terrain/TerrainManager.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
@@ -27,6 +29,7 @@ CRecruitTask::CRecruitTask(ITaskManager* mgr, Priority priority,
 				: IBuilderTask(mgr, priority, buildDef, position, .0f, -1)
 				, recruitType(type)
 				, sqradius(radius * radius)
+				, isWait(false)
 {
 }
 
@@ -44,6 +47,9 @@ bool CRecruitTask::CanAssignTo(CCircuitUnit* unit) const
 void CRecruitTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	TRY_UNIT(circuit, unit,
+		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+	)
 	int frame = circuit->GetLastFrame();
 
 	const float buildDistance = unit->GetCircuitDef()->GetBuildDistance();
@@ -83,7 +89,32 @@ void CRecruitTask::Execute(CCircuitUnit* unit)
 
 void CRecruitTask::Update()
 {
-	// TODO: Analyze nearby situation, enemies
+	if (units.empty()) {
+		return;
+	}
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	bool hasMetal = economyManager->GetAvgMetalIncome() * 2.0f > economyManager->GetMetalPull();
+	if (isWait) {
+		if (hasMetal) {
+			isWait = false;
+			for (CCircuitUnit* unit : units) {
+				TRY_UNIT(circuit, unit,
+					unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+				)
+			}
+		}
+	} else {
+		if (!hasMetal) {
+			isWait = true;
+			for (CCircuitUnit* unit : units) {
+				TRY_UNIT(circuit, unit,
+					unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {0});
+				)
+			}
+		}
+	}
 }
 
 void CRecruitTask::Finish()
@@ -106,9 +137,8 @@ void CRecruitTask::Cancel()
 			}
 			delete cmd;
 		}
-		int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->ExecuteCustomCommand(CMD_REMOVE, params, UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY, frame);
+			unit->GetUnit()->ExecuteCustomCommand(CMD_REMOVE, params, UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
 		)
 	}
 }

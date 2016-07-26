@@ -58,6 +58,9 @@ public:
 	bool IsEnergyStalling();
 	bool IsEnergyEmpty();
 
+	bool IsOpenSpot(int spotId) const;
+	void SetOpenSpot(int spotId, bool value) { openSpots[spotId] = value; }
+
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	IBuilderTask* UpdateReclaimTasks(const springai::AIFloat3& position, CCircuitUnit* unit);
 	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
@@ -73,6 +76,7 @@ public:
 private:
 	void ReadConfig();
 	void Init();
+	void UpdateEconomy();
 
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
@@ -82,6 +86,10 @@ private:
 	springai::Resource* energyRes;
 	springai::Economy* economy;
 	CEnergyGrid* energyGrid;
+
+	// NOTE: MetalManager::SetOpenSpot used by whole allyTeam. Therefore
+	//       local spot's state descriptor needed for better expansion
+	std::vector<bool> openSpots;  // AI-local metal info
 
 	struct SClusterInfo {
 		CCircuitUnit* factory;
@@ -113,7 +121,6 @@ private:
 	float metalIncome;
 	float energyIncome;
 
-	void UpdateEconomy();
 	int ecoFrame;
 	bool isMetalEmpty;
 	bool isMetalFull;

@@ -175,7 +175,7 @@ void CAttackTask::Update()
 	int frame = circuit->GetLastFrame();
 	isAttack = false;
 	if (target != nullptr) {
-		const float sqRange = SQUARE(lowestRange);
+		const float sqRange = SQUARE(highestRange);
 		for (CCircuitUnit* unit : units) {
 			if (position.SqDistance2D(unit->GetPos(frame)) < sqRange) {
 				isAttack = true;

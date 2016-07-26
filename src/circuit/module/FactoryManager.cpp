@@ -15,6 +15,7 @@
 #include "task/IdleTask.h"
 #include "task/static/RepairTask.h"
 #include "task/static/ReclaimTask.h"
+#include "task/static/WaitTask.h"
 #include "unit/FactoryData.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
@@ -33,11 +34,11 @@ using namespace springai;
 
 CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit)
+		, updateIterator(0)
 		, factoryPower(.0f)
+		, assistDef(nullptr)
 		, bpRatio(1.f)
 		, reWeight(.5f)
-		, assistDef(nullptr)
-		, assistIterator(0)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::Watchdog, this),
@@ -46,7 +47,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 	const int interval = 4;
 	const int offset = circuit->GetSkirmishAIId() % interval;
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateIdle, this), interval, offset + 0);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateAssist, this), interval, offset + 2);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateFactory, this), interval, offset + 2);
 
 	/*
 	 * factory handlers
@@ -327,9 +328,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 CFactoryManager::~CFactoryManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	utils::free_clear(factoryTasks);
-	utils::free_clear(deleteTasks);
-	utils::free_clear(assistTasks);
+	utils::free_clear(updateTasks);
 }
 
 int CFactoryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -415,6 +414,14 @@ CRecruitTask* CFactoryManager::EnqueueTask(CRecruitTask::Priority priority,
 {
 	CRecruitTask* task = new CRecruitTask(this, priority, buildDef, position, type, radius);
 	factoryTasks.insert(task);
+	updateTasks.push_back(task);
+	return task;
+}
+
+IUnitTask* CFactoryManager::EnqueueWait(int timeout)
+{
+	CWaitTask* task = new CWaitTask(this, timeout);
+	updateTasks.push_back(task);
 	return task;
 }
 
@@ -424,7 +431,7 @@ IBuilderTask* CFactoryManager::EnqueueReclaim(IBuilderTask::Priority priority,
 											  int timeout)
 {
 	IBuilderTask* task = new CSReclaimTask(this, priority, position, .0f, timeout, radius);
-	assistTasks.push_back(task);
+	updateTasks.push_back(task);
 	return task;
 }
 
@@ -436,24 +443,22 @@ IBuilderTask* CFactoryManager::EnqueueRepair(IBuilderTask::Priority priority,
 		return it->second;
 	}
 	IBuilderTask* task = new CSRepairTask(this, priority, target);
-	assistTasks.push_back(task);
+	updateTasks.push_back(task);
 	repairedUnits[target->GetId()] = task;
 	return task;
 }
 
 void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 {
-	auto itf = factoryTasks.find(static_cast<CRecruitTask*>(task));
-	if (itf != factoryTasks.end()) {
-		unfinishedUnits.erase(static_cast<CRecruitTask*>(task)->GetTarget());
-		factoryTasks.erase(itf);
-		task->Close(done);
-		deleteTasks.insert(static_cast<CRecruitTask*>(task));
-		return;
-	}
-
-	if (static_cast<IBuilderTask*>(task)->GetBuildType() == IBuilderTask::BuildType::REPAIR) {
-		repairedUnits.erase(static_cast<CSRepairTask*>(task)->GetTargetId());
+	switch (static_cast<IBuilderTask*>(task)->GetBuildType()) {
+		case IBuilderTask::BuildType::RECRUIT: {
+			factoryTasks.erase(static_cast<CRecruitTask*>(task));
+			unfinishedUnits.erase(static_cast<CRecruitTask*>(task)->GetTarget());
+		} break;
+		case IBuilderTask::BuildType::REPAIR: {
+			repairedUnits.erase(static_cast<CSRepairTask*>(task)->GetTargetId());
+		} break;
+		default: break;  // RECLAIM, WAIT
 	}
 	task->Dead();
 	task->Close(done);
@@ -461,17 +466,16 @@ void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 
 IUnitTask* CFactoryManager::MakeTask(CCircuitUnit* unit)
 {
-	IUnitTask* task = nullptr;
+	const IUnitTask* task = nullptr;
 
 	if (unit->GetCircuitDef() == assistDef) {
 		task = CreateAssistTask(unit);
 
 	} else {
 
-		decltype(factoryTasks)::iterator iter = factoryTasks.begin();
-		for (; iter != factoryTasks.end(); ++iter) {
-			if ((*iter)->CanAssignTo(unit)) {
-				task = static_cast<CRecruitTask*>(*iter);
+		for (const CRecruitTask* candy : factoryTasks) {
+			if (candy->CanAssignTo(unit)) {
+				task = candy;
 				break;
 			}
 		}
@@ -481,7 +485,7 @@ IUnitTask* CFactoryManager::MakeTask(CCircuitUnit* unit)
 		}
 	}
 
-	return task;  // if nullptr then continue to Wait (or Idle)
+	return const_cast<IUnitTask*>(task);  // if nullptr then continue to Wait (or Idle)
 }
 
 void CFactoryManager::AbortTask(IUnitTask* task)
@@ -1003,6 +1007,11 @@ void CFactoryManager::ReadConfig()
 
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 {
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	if (economyManager->GetAvgMetalIncome() * 2.0f < economyManager->GetMetalPull()) {
+		return EnqueueWait(FRAMES_PER_SEC * 5);
+	}
+
 	IUnitTask* task = UpdateBuildPower(unit);
 	if (task != nullptr) {
 		return task;
@@ -1016,7 +1025,7 @@ IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 	return nullTask;
 }
 
-IBuilderTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
+IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 {
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	bool isMetalEmpty = economyManager->IsMetalEmpty();
@@ -1068,7 +1077,7 @@ IBuilderTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 		}
 	}
 
-	return nullptr;
+	return EnqueueWait(FRAMES_PER_SEC * 3);
 }
 
 void CFactoryManager::Watchdog()
@@ -1096,26 +1105,31 @@ void CFactoryManager::UpdateIdle()
 	idleTask->Update();
 }
 
-void CFactoryManager::UpdateAssist()
+void CFactoryManager::UpdateFactory()
 {
-	utils::free_clear(deleteTasks);
-
-	if (assistIterator >= assistTasks.size()) {
-		assistIterator = 0;
+	if (updateIterator >= updateTasks.size()) {
+		updateIterator = 0;
 	}
 
+	int lastFrame = circuit->GetLastFrame();
 	// stagger the Update's
-	unsigned int n = (assistTasks.size() / TEAM_SLOWUPDATE_RATE) + 1;
+	unsigned int n = (updateTasks.size() / TEAM_SLOWUPDATE_RATE) + 1;
 
-	while ((assistIterator < assistTasks.size()) && (n != 0)) {
-		IUnitTask* task = assistTasks[assistIterator];
+	while ((updateIterator < updateTasks.size()) && (n != 0)) {
+		IUnitTask* task = updateTasks[updateIterator];
 		if (task->IsDead()) {
-			assistTasks[assistIterator] = assistTasks.back();
-			assistTasks.pop_back();
+			updateTasks[updateIterator] = updateTasks.back();
+			updateTasks.pop_back();
 			delete task;
 		} else {
-			task->Update();
-			++assistIterator;
+			int frame = task->GetLastTouched();
+			int timeout = task->GetTimeout();
+			if ((frame != -1) && (timeout > 0) && (lastFrame - frame >= timeout)) {
+				AbortTask(task);
+			} else {
+				task->Update();
+			}
+			++updateIterator;
 			n--;
 		}
 	}

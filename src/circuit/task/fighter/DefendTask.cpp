@@ -70,8 +70,8 @@ void CDefendTask::Update()
 		if (units.size() >= maxSize) {
 			IFighterTask* task = static_cast<CMilitaryManager*>(manager)->EnqueueTask(IFighterTask::FightType::ATTACK);
 			decltype(units) tmpUnits = units;
-			for (CCircuitUnit* ass : tmpUnits) {
-				manager->AssignTask(ass, task);
+			for (CCircuitUnit* unit : tmpUnits) {
+				manager->AssignTask(unit, task);
 			}
 //			manager->DoneTask(this);  // NOTE: RemoveAssignee will abort task
 			return;

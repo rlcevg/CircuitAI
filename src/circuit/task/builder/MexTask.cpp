@@ -86,35 +86,17 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 					u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 				)
 				return;
+			} else {
+				circuit->GetEconomyManager()->SetOpenSpot(index, true);
 			}
 		} else {
 			metalManager->SetOpenSpot(index, true);
+			circuit->GetEconomyManager()->SetOpenSpot(index, true);
 		}
 	}
 
-	// FIXME: Unsafe fallback expansion (mex can be behind enemy lines)
-//	const CMetalData::Metals& spots = metalManager->GetSpots();
-//	Map* map = circuit->GetMap();
-//	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-//	circuit->GetThreatMap()->SetThreatType(unit);
-//	CMetalData::MetalPredicate predicate = [&spots, metalManager, map, buildUDef, terrainManager, unit](CMetalData::MetalNode const& v) {
-//		int index = v.second;
-//		return (metalManager->IsOpenSpot(index) &&
-//				terrainManager->CanBuildAt(unit, spots[index].position) &&
-//				map->IsPossibleToBuildAt(buildUDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
-//	};
-//	int index = metalManager->FindNearestSpot(position, predicate);
-//	buildPos = (index >= 0) ? spots[index].position : AIFloat3(-RgtVector);
-//
-//	if (utils::is_valid(buildPos)) {
-//		metalManager->SetOpenSpot(buildPos, false);
-//		TRY_UNIT(circuit, unit,
-//			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
-//		)
-//	} else {
-		// Fallback to Guard/Assist/Patrol
-		manager->FallbackTask(unit);
-//	}
+	// Fallback to Guard/Assist/Patrol
+	manager->FallbackTask(unit);
 }
 
 void CBMexTask::Finish()
@@ -140,7 +122,10 @@ void CBMexTask::Finish()
 void CBMexTask::Cancel()
 {
 	if ((target == nullptr) && utils::is_valid(buildPos)) {
-		manager->GetCircuit()->GetMetalManager()->SetOpenSpot(buildPos, true);
+		CCircuitAI* circuit = manager->GetCircuit();
+		int index = circuit->GetMetalManager()->FindNearestSpot(buildPos);
+		circuit->GetMetalManager()->SetOpenSpot(index, true);
+		circuit->GetEconomyManager()->SetOpenSpot(index, true);
 	}
 }
 

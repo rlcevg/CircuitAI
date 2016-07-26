@@ -139,11 +139,13 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 																	 IBuilderTask::BuildType::FACTORY, 1.f, SQUARE_SIZE * 32, true, 0);
 					static_cast<ITaskManager*>(builderManager)->AssignTask(unit, task);
 
-					// Enqueue first builder
-					float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
-					CCircuitDef* buildDef = factoryManager->GetRoleDef(facDef, CCircuitDef::RoleType::BUILDER);
-					if ((buildDef != nullptr) && buildDef->IsAvailable()) {
-						factoryManager->EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::BUILDPOWER, radius);
+					if (builderManager->GetWorkerCount() < 3) {
+						// Enqueue first builder
+						float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
+						CCircuitDef* buildDef = factoryManager->GetRoleDef(facDef, CCircuitDef::RoleType::BUILDER);
+						if ((buildDef != nullptr) && buildDef->IsAvailable()) {
+							factoryManager->EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::BUILDPOWER, radius);
+						}
 					}
 				}
 			}
@@ -436,6 +438,11 @@ bool CEconomyManager::IsEnergyEmpty()
 	return isEnergyEmpty;
 }
 
+bool CEconomyManager::IsOpenSpot(int spotId) const
+{
+	return openSpots[spotId] && circuit->GetMetalManager()->IsOpenSpot(spotId);
+}
+
 IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
@@ -458,15 +465,15 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			if (unit != nullptr) {
 				UnitDef* metalDef =  mexDef->GetUnitDef();
 				CTerrainManager* terrainManager = circuit->GetTerrainManager();
-				predicate = [&spots, metalManager, map, metalDef, terrainManager, unit](int index) {
-					return (metalManager->IsOpenSpot(index) &&
+				predicate = [this, &spots, map, metalDef, terrainManager, unit](int index) {
+					return (IsOpenSpot(index) &&
 							terrainManager->CanBuildAt(unit, spots[index].position) &&
 							map->IsPossibleToBuildAt(metalDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};
 			} else {
 				CCircuitDef* mexDef = this->mexDef;
-				predicate = [&spots, metalManager, map, mexDef, builderManager](int index) {
-					return (metalManager->IsOpenSpot(index) &&
+				predicate = [this, &spots, map, mexDef, builderManager](int index) {
+					return (IsOpenSpot(index) &&
 							builderManager->IsBuilderInArea(mexDef, spots[index].position) &&
 							map->IsPossibleToBuildAt(mexDef->GetUnitDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};
@@ -481,6 +488,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				const AIFloat3& pos = spots[index].position;
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost, .0f);
 				task->SetBuildPos(pos);
+				SetOpenSpot(index, false);
 				return task;
 			}
 		}
@@ -922,14 +930,17 @@ void CEconomyManager::ReadConfig()
 
 void CEconomyManager::Init()
 {
-	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
-	clusterInfos.resize(clusters.size(), {nullptr});
+	CMetalManager* metalManager = circuit->GetMetalManager();
+	size_t clSize = metalManager->GetClusters().size();
+	clusterInfos.resize(clSize, {nullptr});
+	size_t spSize = metalManager->GetSpots().size();
+	openSpots.resize(spSize, true);
 
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
 	if (commander != nullptr) {
 		const AIFloat3& pos = commander->GetPos(circuit->GetLastFrame());
-		int clusterId = circuit->GetMetalManager()->FindNearestCluster(pos);
+		int clusterId = metalManager->FindNearestCluster(pos);
 		int ownerId = circuit->GetAllyTeam()->GetClusterTeam(clusterId).teamId;
 		if (ownerId < 0) {
 			ownerId = circuit->GetTeamId();

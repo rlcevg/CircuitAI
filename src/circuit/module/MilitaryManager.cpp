@@ -360,6 +360,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::AH),      IFighterTask::FightType::AH},
 		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::BOMBER),  IFighterTask::FightType::BOMB},
 		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::SUPPORT), IFighterTask::FightType::SUPPORT},
+		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::MINE),    IFighterTask::FightType::SCOUT},  // FIXME
 	};
 	IFighterTask::FightType type;
 	CCircuitDef* cdef = unit->GetCircuitDef();
@@ -436,7 +437,7 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	float totalCost = .0f;
 	IBuilderTask* parentTask = nullptr;
-	bool isWater = circuit->GetTerrainManager()->IsWaterSector(pos);
+	bool isWater = circuit->GetMap()->GetElevationAt(pos.x, pos.z) < -SQUARE_SIZE * 5;  // circuit->GetTerrainManager()->IsWaterSector(pos);
 //	std::array<const char*, 9> landDefenders = {"corllt", "corrl", "corrad", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
 //	std::array<const char*, 9> waterDefenders = {"turrettorp", "armsonar", "corllt", "corrad", "corrazor", "armnanotc", "turrettorp", "corhlt", "turrettorp"};
 	std::array<const char*, 7> landDefenders = {"corllt", "corrl", "corrl", "corrl", "corhlt", "corrazor", "armnanotc"};

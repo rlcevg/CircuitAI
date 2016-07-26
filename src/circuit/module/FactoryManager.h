@@ -34,6 +34,7 @@ public:
 							  const springai::AIFloat3& position,
 							  CRecruitTask::RecruitType type,
 							  float radius);
+	IUnitTask* EnqueueWait(int timeout);
 	IBuilderTask* EnqueueReclaim(IBuilderTask::Priority priority,
 								 const springai::AIFloat3& position,
 								 float radius,
@@ -75,11 +76,11 @@ private:
 	void ReadConfig();
 
 	IUnitTask* CreateFactoryTask(CCircuitUnit* unit);
-	IBuilderTask* CreateAssistTask(CCircuitUnit* unit);
+	IUnitTask* CreateAssistTask(CCircuitUnit* unit);
 
 	void Watchdog();
 	void UpdateIdle();
-	void UpdateAssist();
+	void UpdateFactory();
 
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
@@ -87,9 +88,15 @@ private:
 	EHandlers destroyedHandler;
 
 	std::map<CCircuitUnit*, IBuilderTask*> unfinishedUnits;
-	std::set<CRecruitTask*> factoryTasks;  // owner
+	std::set<CRecruitTask*> factoryTasks;
+	std::vector<IUnitTask*> updateTasks;  // owner
+	unsigned int updateIterator;
 	float factoryPower;
-	std::set<CRecruitTask*> deleteTasks;
+
+	CCircuitDef* assistDef;
+	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> assists;  // nano 1:n factory
+	std::vector<springai::AIFloat3> havens;  // position behind factory
+	std::map<CCircuitUnit::Id, IBuilderTask*> repairedUnits;
 
 	CFactoryData* factoryData;
 	struct SFactory {
@@ -132,13 +139,6 @@ private:
 	std::unordered_map<CCircuitDef::Id, SFactoryDef> factoryDefs;
 	float bpRatio;
 	float reWeight;
-
-	CCircuitDef* assistDef;
-	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> assists;  // nano 1:n factory
-	std::vector<springai::AIFloat3> havens;  // position behind factory
-	std::map<CCircuitUnit::Id, IBuilderTask*> repairedUnits;
-	std::vector<IBuilderTask*> assistTasks;  // owner
-	unsigned int assistIterator;
 };
 
 } // namespace circuit
