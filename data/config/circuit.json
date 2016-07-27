@@ -838,6 +838,23 @@
 	},
 	"corbats": {
 		"role": ["artillery"]
+	},
+
+	// static defences
+	"cordoom": {
+		"role": ["static", "heavy"]
+	},
+	"missilesilo": {
+		"role": ["static", "heavy"]
+	},
+	"armanni": {
+		"role": ["static", "heavy"]
+	},
+	"armfus": {
+		"role": ["static", "heavy"]
+	},
+	"cafus": {
+		"role": ["static", "heavy"]
 	}
 },
 

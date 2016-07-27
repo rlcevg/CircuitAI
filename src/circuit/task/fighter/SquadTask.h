@@ -44,6 +44,7 @@ protected:
 	springai::AIFloat3 groupPos;
 	std::shared_ptr<F3Vec> pPath;
 
+	int groupFrame;
 	bool isRegroup;
 	bool isAttack;
 };

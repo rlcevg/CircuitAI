@@ -44,6 +44,8 @@ void CArtilleryTask::AssignTo(CCircuitUnit* unit)
 {
 	IFighterTask::AssignTo(unit);
 
+	unit->GetUnit()->SetMoveState(0);
+
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
 	CMoveAction* travelAction = new CMoveAction(unit, squareSize);
 	unit->PushBack(travelAction);
@@ -56,6 +58,8 @@ void CArtilleryTask::RemoveAssignee(CCircuitUnit* unit)
 	if (units.empty()) {
 		manager->AbortTask(this);
 	}
+
+	unit->GetUnit()->SetMoveState(1);
 }
 
 void CArtilleryTask::Execute(CCircuitUnit* unit)

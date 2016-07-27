@@ -419,7 +419,7 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	}
 	CCircuitDef* defDef;
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	float maxCost = MIN_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome()) * economyManager->GetEcoFactor();
+	float maxCost = MIN_BUILD_SEC * 2 * std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome()) * economyManager->GetEcoFactor();
 	CDefenceMatrix::SDefPoint* closestPoint = nullptr;
 	float minDist = std::numeric_limits<float>::max();
 	std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
@@ -441,8 +441,8 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	bool isWater = circuit->GetMap()->GetElevationAt(pos.x, pos.z) < -SQUARE_SIZE * 5;  // circuit->GetTerrainManager()->IsWaterSector(pos);
 //	std::array<const char*, 9> landDefenders = {"corllt", "corrl", "corrad", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
 //	std::array<const char*, 9> waterDefenders = {"turrettorp", "armsonar", "corllt", "corrad", "corrazor", "armnanotc", "turrettorp", "corhlt", "turrettorp"};
-	std::array<const char*, 7> landDefenders = {"corllt", "corrl", "corrl", "corrl", "corhlt", "corrazor", "armnanotc"};
-	std::array<const char*, 7> waterDefenders = {"turrettorp", "corrl", "turrettorp", "turrettorp", "corhlt", "corrazor", "armnanotc"};
+	std::array<const char*, 7> landDefenders = {"corllt", "armnanotc", "corrl", "corrl", "corrl", "corhlt", "corrazor"};
+	std::array<const char*, 7> waterDefenders = {"turrettorp", "armnanotc", "corrl", "turrettorp", "turrettorp", "corhlt", "corrazor"};
 	std::array<const char*, 7>& defenders = isWater ? waterDefenders : landDefenders;
 
 	// Front-line porc

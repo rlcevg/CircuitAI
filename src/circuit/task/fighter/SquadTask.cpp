@@ -27,6 +27,7 @@ ISquadTask::ISquadTask(ITaskManager* mgr, FightType type)
 		, leader(nullptr)
 		, groupPos(-RgtVector)
 		, pPath(std::make_shared<F3Vec>())
+		, groupFrame(0)
 		, isRegroup(false)
 		, isAttack(false)
 {
@@ -201,8 +202,26 @@ bool ISquadTask::IsMustRegroup()
 	if (validUnits.empty()) {
 		return isRegroup = false;
 	}
+
 	if (!isRegroup) {
 		groupPos = leader->GetPos(frame);
+		groupFrame = frame;
+	} else if (frame >= groupFrame + FRAMES_PER_SEC * 60) {
+		// eliminate buggy units
+		const float sqMaxDist = SQUARE(std::max<float>(SQUARE_SIZE * 8 * validUnits.size(), highestRange));
+		for (CCircuitUnit* unit : units) {
+			const float sqDist = groupPos.SqDistance2D(unit->GetPos(frame));
+			if ((sqDist > sqMaxDist) && (unit->GetTaskFrame() < groupFrame)) {
+				TRY_UNIT(circuit, unit,
+					unit->GetUnit()->Stop();
+					unit->GetUnit()->SetMoveState(2);
+				)
+				circuit->Garbage(unit, "stuck");
+			}
+		}
+
+		validUnits.clear();
+		return isRegroup = false;
 	}
 
 	isRegroup = false;

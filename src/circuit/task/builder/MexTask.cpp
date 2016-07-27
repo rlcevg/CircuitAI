@@ -79,19 +79,21 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (utils::is_valid(buildPos)) {
 		int index = metalManager->FindNearestSpot(buildPos);
-		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
-			if ((units.size() > 1) || metalManager->IsOpenSpot(index)) {
-				metalManager->SetOpenSpot(index, false);
-				TRY_UNIT(circuit, unit,
-					u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
-				)
-				return;
+		if (index >= 0) {
+			if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
+				if ((units.size() > 1) || metalManager->IsOpenSpot(index)) {
+					metalManager->SetOpenSpot(index, false);
+					TRY_UNIT(circuit, unit,
+						u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+					)
+					return;
+				} else {
+					circuit->GetEconomyManager()->SetOpenSpot(index, true);
+				}
 			} else {
+				metalManager->SetOpenSpot(index, true);
 				circuit->GetEconomyManager()->SetOpenSpot(index, true);
 			}
-		} else {
-			metalManager->SetOpenSpot(index, true);
-			circuit->GetEconomyManager()->SetOpenSpot(index, true);
 		}
 	}
 
@@ -104,7 +106,7 @@ void CBMexTask::Finish()
 	CCircuitAI* circuit = manager->GetCircuit();
 //	CMetalManager* metalManager = circuit->GetMetalManager();
 //	int index = metalManager->FindNearestCluster(buildPos);
-//	if ((index >= 0) && metalManager->IsClusterFinished(index)) {
+//	if ((index >= 0) && (metalManager->IsClusterQueued(index) || metalManager->IsClusterFinished(index))) {
 		circuit->GetMilitaryManager()->MakeDefence(buildPos);
 //	}
 
