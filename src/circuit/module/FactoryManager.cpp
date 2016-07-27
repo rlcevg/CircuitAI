@@ -150,7 +150,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 				}
 				if (!hasBuilder) {
 					// queue new factory with builder
-					CCircuitDef* facDef = GetFactoryToBuild(true);
+					CCircuitDef* facDef = GetFactoryToBuild(-RgtVector, true);
 					if (facDef != nullptr) {
 						builderManager->EnqueueTask(IBuilderTask::Priority::NOW, facDef, -RgtVector,
 													IBuilderTask::BuildType::FACTORY);
@@ -726,9 +726,9 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	return nullptr;
 }
 
-CCircuitDef* CFactoryManager::GetFactoryToBuild(bool isStart)
+CCircuitDef* CFactoryManager::GetFactoryToBuild(AIFloat3 position, bool isStart)
 {
-	return factoryData->GetFactoryToBuild(circuit, isStart);
+	return factoryData->GetFactoryToBuild(circuit, position, isStart);
 }
 
 void CFactoryManager::AddFactory(CCircuitDef* cdef)

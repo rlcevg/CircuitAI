@@ -275,7 +275,7 @@ void CRaidTask::FindTarget()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	const float speed = SQUARE(highestSpeed * 0.9f);
 	const float maxPower = attackPower * 0.75f;
-	const float airRange = cdef->GetMaxRange(CCircuitDef::RangeType::AIR);
+	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float range = std::max(leader->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
@@ -312,7 +312,7 @@ void CRaidTask::FindTarget()
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
 			if (((targetCat & canTargetCat) == 0) ||
-				(edef->IsAbleToFly() && (ePos.y - map->GetElevationAt(ePos.x, ePos.z) > airRange)))
+				(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > weaponRange))
 			{
 				continue;
 			}

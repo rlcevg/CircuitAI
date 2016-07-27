@@ -65,7 +65,7 @@ public:
 	CRecruitTask* UpdateBuildPower(CCircuitUnit* unit);
 	CRecruitTask* UpdateFirePower(CCircuitUnit* unit);
 
-	CCircuitDef* GetFactoryToBuild(bool isStart = false);
+	CCircuitDef* GetFactoryToBuild(springai::AIFloat3 position = -RgtVector, bool isStart = false);
 	void AddFactory(CCircuitDef* cdef);
 	void DelFactory(CCircuitDef* cdef);
 	CCircuitDef* GetRoleDef(CCircuitDef* facDef, CCircuitDef::RoleType role) const;

@@ -879,7 +879,7 @@
 	},
 	"anti_air": {
 		"vs":         ["air"],
-		"ratio":      [ 0.8],
+		"ratio":      [ 0.6],
 		"importance": [ 4.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
@@ -893,7 +893,7 @@
 	},
 	"anti_heavy": {
 		"vs":         ["heavy"],
-		"ratio":      [ 0.8],
+		"ratio":      [ 0.6],
 		"importance": [ 2.0],
 		"max_percent": 0.80,
 		"eps_step": 0.4

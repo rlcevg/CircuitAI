@@ -128,10 +128,10 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			AIFloat3 buildPos = -RgtVector;
 			if (unit->GetUnit()->GetRulesParamFloat("facplop", 0) == 1) {
 				CFactoryManager* factoryManager = this->circuit->GetFactoryManager();
-				CCircuitDef* facDef = factoryManager->GetFactoryToBuild(isStart);
+				const AIFloat3& pos = unit->GetPos(frame);
+				CCircuitDef* facDef = factoryManager->GetFactoryToBuild(pos, isStart);
 				if (facDef != nullptr) {
 					// Enqueue factory
-					const AIFloat3& pos = unit->GetPos(frame);
 					CTerrainManager* terrainManager = this->circuit->GetTerrainManager();
 					buildPos = terrainManager->GetBuildPosition(facDef, pos);
 					CBuilderManager* builderManager = this->circuit->GetBuilderManager();

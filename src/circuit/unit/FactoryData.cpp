@@ -16,6 +16,8 @@
 
 namespace circuit {
 
+using namespace springai;
+
 CFactoryData::CFactoryData(CCircuitAI *circuit)
 		: isFirstChoice(true)
 {
@@ -55,21 +57,35 @@ CFactoryData::~CFactoryData()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, bool isStart)
+CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 position, bool isStart)
 {
 	std::vector<SFactory> availFacs;
 	std::map<CCircuitDef::Id, float> percents;
-	SAreaData* areaData = circuit->GetTerrainManager()->GetAreaData();
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	SAreaData* areaData = terrainManager->GetAreaData();
 	const std::vector<STerrainMapImmobileType>& immobileType = areaData->immobileType;
 	const std::vector<STerrainMapMobileType>& mobileType = areaData->mobileType;
+
+	std::function<bool (CCircuitDef*)> predicate;
+	bool isPosValid = utils::is_valid(position);
+	terrainManager->CorrectPosition(position);
+	if (isPosValid) {
+		predicate = [position, terrainManager](CCircuitDef* cdef) {
+			return terrainManager->CanBeBuiltAt(cdef, position);
+		};
+	} else {
+		predicate = [](CCircuitDef* cdef) {
+			return true;
+		};
+	}
+
 	for (const auto& kv : allFactories) {
 		const SFactory& sfac = kv.second;
 		CCircuitDef* cdef = circuit->GetCircuitDef(sfac.id);
-		if (!cdef->IsAvailable()) {
-			continue;
-		}
-		STerrainMapImmobileType::Id itId = cdef->GetImmobileId();
-		if (!immobileType[itId].typeUsable) {
+		if (!cdef->IsAvailable() ||
+			!immobileType[cdef->GetImmobileId()].typeUsable ||
+			!predicate(cdef))
+		{
 			continue;
 		}
 		const float importance = isStart ? sfac.startImp : sfac.switchImp;
@@ -104,7 +120,9 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, bool isStart)
 	std::sort(availFacs.begin(), availFacs.end(), cmp);
 
 	// Don't start with air
-	if (isFirstChoice && (circuit->GetCircuitDef(availFacs.front().id)->GetMobileId() < 0)) {
+	if ((isFirstChoice || (isPosValid && terrainManager->IsWaterSector(position))) &&
+		(circuit->GetCircuitDef(availFacs.front().id)->GetMobileId() < 0))
+	{
 		for (SFactory& fac : availFacs) {
 			if (circuit->GetCircuitDef(fac.id)->GetMobileId() >= 0) {
 				std::swap(availFacs.front(), fac);

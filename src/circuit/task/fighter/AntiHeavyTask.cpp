@@ -311,7 +311,7 @@ void CAntiHeavyTask::FindTarget()
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const int canTargetCat = cdef->GetTargetCategory();
-	const float airRange = cdef->GetMaxRange(CCircuitDef::RangeType::AIR);
+	const float weaponRange = cdef->GetMaxRange();
 	const float range = std::max(highestRange, threatMap->GetSquareSize() * 2.0f);
 	const float losSqDist = SQUARE(range);
 	float minSqDist = losSqDist;
@@ -335,7 +335,7 @@ void CAntiHeavyTask::FindTarget()
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if ((edef == nullptr) || !edef->IsRoleHeavy() ||
 			((edef->GetCategory() & canTargetCat) == 0) ||
-			(edef->IsAbleToFly() && (ePos.y - map->GetElevationAt(ePos.x, ePos.z) > airRange)))
+			(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > weaponRange))
 		{
 			continue;
 		}

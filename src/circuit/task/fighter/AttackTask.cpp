@@ -268,7 +268,7 @@ void CAttackTask::FindTarget()
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float maxPower = attackPower * 0.8f;
-	const float airRange = cdef->GetMaxRange(CCircuitDef::RangeType::AIR);
+	const float weaponRange = cdef->GetMaxRange();
 
 	CEnemyUnit* bestTarget = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
@@ -293,7 +293,7 @@ void CAttackTask::FindTarget()
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			if (((edef->GetCategory() & canTargetCat) == 0) || ((edef->GetCategory() & noChaseCat) != 0) ||
-				(edef->IsAbleToFly() && (ePos.y - map->GetElevationAt(ePos.x, ePos.z) > airRange)) ||
+				(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > weaponRange) ||
 				enemy->GetUnit()->IsBeingBuilt())
 			{
 				continue;

@@ -174,7 +174,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float speed = SQUARE(cdef->GetSpeed() * 1.1f);
 	const float maxPower = threatMap->GetUnitThreat(unit) * 0.75f;
-	const float airRange = cdef->GetMaxRange(CCircuitDef::RangeType::AIR);
+	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
@@ -210,7 +210,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
 			if (((targetCat & canTargetCat) == 0) ||
-				(edef->IsAbleToFly() && (ePos.y - map->GetElevationAt(ePos.x, ePos.z) > airRange)))
+				(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > weaponRange))
 			{
 				continue;
 			}
