@@ -40,6 +40,7 @@
 #include "Command.h"
 #include "WeaponDef.h"
 #include "Log.h"
+#include "Map.h"
 
 namespace circuit {
 
