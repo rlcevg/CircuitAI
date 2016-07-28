@@ -58,6 +58,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 12);
 	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CMilitaryManager::Init, this));
 
+	ReadConfig();
+
 	CCircuitDef::Id unitDefId;
 	/*
 	 * Defence handlers
@@ -75,10 +77,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			point->cost -= defCost;
 		}
 	};
-	const char* defenders[] = {"corllt", "corrl", "armdeva", "corhlt", "turrettorp", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armartic", "corjamt", "armanni", "corbhmth"*/};
-	for (const char* name : defenders) {
-		unitDefId = circuit->GetCircuitDef(name)->GetId();
-		destroyedHandler[unitDefId] = defenceDestroyedHandler;
+	for (const CCircuitDef* cdef : defenderDefs) {
+		destroyedHandler[cdef->GetId()] = defenceDestroyedHandler;
 	}
 
 	/*
@@ -135,7 +135,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		DelPower(unit);
 	};
 
-	ReadConfig();
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const float fighterRet = root["retreat"].get("fighter", 0.5f).asFloat();
 
@@ -173,14 +172,15 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	}
 
 	/*
-	 * raveparty handlers
+	 * superweapon handlers
 	 */
-	unitDefId = circuit->GetCircuitDef("raveparty")->GetId();
-	finishedHandler[unitDefId] = [this](CCircuitUnit* unit) {
-		TRY_UNIT(this->circuit, unit,
-			unit->GetUnit()->SetTrajectory(1);
-		)
-	};
+	if ((bigGunDef != nullptr) && bigGunDef->IsAvailable()) {
+		finishedHandler[bigGunDef->GetId()] = [this](CCircuitUnit* unit) {
+			TRY_UNIT(this->circuit, unit,
+				unit->GetUnit()->SetTrajectory(1);
+			)
+		};
+	}
 
 	defence = circuit->GetAllyTeam()->GetDefenceMatrix().get();
 
@@ -417,7 +417,6 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	if (index < 0) {
 		return;
 	}
-	CCircuitDef* defDef;
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	float maxCost = MIN_BUILD_SEC * 2 * std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome()) * economyManager->GetEcoFactor();
 	CDefenceMatrix::SDefPoint* closestPoint = nullptr;
@@ -438,12 +437,10 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	float totalCost = .0f;
 	IBuilderTask* parentTask = nullptr;
-	bool isWater = circuit->GetMap()->GetElevationAt(pos.x, pos.z) < -SQUARE_SIZE * 5;  // circuit->GetTerrainManager()->IsWaterSector(pos);
-//	std::array<const char*, 9> landDefenders = {"corllt", "corrl", "corrad", "corrl", "corhlt", "corrazor", "armnanotc", "cordoom", "corjamt"/*, "armanni", "corbhmth"*/};
-//	std::array<const char*, 9> waterDefenders = {"turrettorp", "armsonar", "corllt", "corrad", "corrazor", "armnanotc", "turrettorp", "corhlt", "turrettorp"};
-	std::array<const char*, 7> landDefenders = {"corllt", "armnanotc", "corrl", "corrl", "corrl", "corhlt", "corrazor"};
-	std::array<const char*, 7> waterDefenders = {"turrettorp", "armnanotc", "corrl", "turrettorp", "turrettorp", "corhlt", "corrazor"};
-	std::array<const char*, 7>& defenders = isWater ? waterDefenders : landDefenders;
+	// NOTE: circuit->GetTerrainManager()->IsWaterSector(pos) checks whole sector
+	//       but water recognized as height < 0
+	bool isWater = circuit->GetMap()->GetElevationAt(pos.x, pos.z) < -SQUARE_SIZE * 5;
+	std::vector<CCircuitDef*>& defenders = isWater ? waterDefenders : landDefenders;
 
 	// Front-line porc
 	bool isPorc = false;
@@ -467,11 +464,13 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 			}
 		}
 	}
-	unsigned num = isPorc ? 7 : 1;
+	unsigned num = std::min<unsigned>(isPorc ? defenders.size() : 1, defenders.size());
 
 	for (unsigned i = 0; i < num; ++i) {
-		const char* name = defenders[i];
-		defDef = circuit->GetCircuitDef(name);
+		CCircuitDef* defDef = defenders[i];
+		if (!defDef->IsAvailable()) {
+			continue;
+		}
 		float defCost = defDef->GetCost();
 		totalCost += defCost;
 		if (totalCost <= closestPoint->cost) {
@@ -525,11 +524,11 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 		}
 	};
 	// radar
-	defDef = circuit->GetCircuitDef("corrad");
-	checkSensor(IBuilderTask::BuildType::RADAR, defDef, defDef->GetUnitDef()->GetRadarRadius() / SQRT_2);
-	if (isWater) {  // sonar
-		defDef = circuit->GetCircuitDef("armsonar");
-		checkSensor(IBuilderTask::BuildType::SONAR, defDef, defDef->GetUnitDef()->GetSonarRadius());
+	if ((radarDef != nullptr) && radarDef->IsAvailable()) {
+		checkSensor(IBuilderTask::BuildType::RADAR, radarDef, radarDef->GetUnitDef()->GetRadarRadius() / SQRT_2);
+	}
+	if (isWater && (sonarDef != nullptr) && sonarDef->IsAvailable()) {  // sonar
+		checkSensor(IBuilderTask::BuildType::SONAR, sonarDef, sonarDef->GetUnitDef()->GetSonarRadius());
 	}
 }
 
@@ -749,6 +748,36 @@ void CMilitaryManager::ReadConfig()
 	maxScouts = quotas.get("scout", 3).asUInt();
 	maxRaiders = quotas.get("raider", 5).asUInt();
 	maxGuards = quotas.get("guard", 2).asUInt();
+
+	const Json::Value& porc = root["porcupine"];
+	const Json::Value& defs = porc["unit_def"];
+	defenderDefs.reserve(defs.size());
+	for (const Json::Value& def : defs) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(def.asCString());
+		if (cdef != nullptr) {
+			defenderDefs.push_back(cdef);
+		}
+	}
+	const Json::Value& land = porc["land"];
+	landDefenders.reserve(land.size());
+	for (const Json::Value& idx : land) {
+		unsigned index = idx.asUInt();
+		if (index < defenderDefs.size()) {
+			landDefenders.push_back(defenderDefs[index]);
+		}
+	}
+	const Json::Value& watr = porc["water"];
+	waterDefenders.reserve(watr.size());
+	for (const Json::Value& idx : watr) {
+		unsigned index = idx.asUInt();
+		if (index < defenderDefs.size()) {
+			waterDefenders.push_back(defenderDefs[index]);
+		}
+	}
+
+	radarDef = circuit->GetCircuitDef(porc.get("radar", "").asCString());
+	sonarDef = circuit->GetCircuitDef(porc.get("sonar", "").asCString());
+	bigGunDef = circuit->GetCircuitDef(porc.get("superweapon", "").asCString());
 }
 
 void CMilitaryManager::Init()

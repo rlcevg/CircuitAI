@@ -73,6 +73,8 @@ public:
 	unsigned int GetMaxScouts() const { return maxScouts; }
 	unsigned int GetMaxRaiders() const { return maxRaiders; }
 
+	CCircuitDef* GetBigGunDef() const { return bigGunDef; }
+
 private:
 	void ReadConfig();
 	void Init();
@@ -135,6 +137,13 @@ private:
 	unsigned int maxRaiders;
 	unsigned int maxScouts;
 	unsigned int maxGuards;
+
+	std::vector<CCircuitDef*> defenderDefs;
+	std::vector<CCircuitDef*> landDefenders;
+	std::vector<CCircuitDef*> waterDefenders;
+	CCircuitDef* radarDef;
+	CCircuitDef* sonarDef;
+	CCircuitDef* bigGunDef;
 };
 
 } // namespace circuit

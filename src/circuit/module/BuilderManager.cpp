@@ -754,8 +754,8 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 	} else {
 		const std::set<IBuilderTask*>& tasks = GetTasks(IBuilderTask::BuildType::BIG_GUN);
 		if (tasks.empty()) {
-			buildDef = circuit->GetCircuitDef("raveparty");
-			if (circuit->GetMilitaryManager()->IsNeedBigGun(buildDef) && (buildDef->GetCount() < 1) && buildDef->IsAvailable()) {
+			buildDef = circuit->GetMilitaryManager()->GetBigGunDef();
+			if ((buildDef != nullptr) && circuit->GetMilitaryManager()->IsNeedBigGun(buildDef) && (buildDef->GetCount() < 1) && buildDef->IsAvailable()) {
 				task = EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, circuit->GetSetupManager()->GetBasePos(), IBuilderTask::BuildType::BIG_GUN);
 			} else {
 				task = EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
