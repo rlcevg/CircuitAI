@@ -36,6 +36,8 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 		, startPos(-RgtVector)
 		, basePos(-RgtVector)
 		, emptyShield(0.f)
+		, commChoice(nullptr)
+		, morphFrame(-1)
 {
 	const char* setupScript = circuit->GetGame()->GetSetupScript();
 	if (!setupData->IsInitialized()) {
@@ -281,43 +283,38 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 
 void CSetupManager::PickCommander()
 {
-	/*
-	 * dyntrainer_recon_base
-	 * dyntrainer_support_base
-	 * dyntrainer_assault_base
-	 * dyntrainer_strike_base
-	 */
-	std::vector<CCircuitDef*> commanders;
-	CCircuitDef* supCom = nullptr;
+	std::vector<CCircuitDef*> comms;
 	float bestPower = .0f;
 
-	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
-	for (auto& kv : defs) {
-		CCircuitDef* cdef = kv.second;
+	if (commChoice == nullptr) {
+		const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
+		for (auto& kv : defs) {
+			CCircuitDef* cdef = kv.second;
 
-		std::string lvl1 = cdef->GetUnitDef()->GetName();
-		if ((lvl1.find("dyntrainer_") != 0) || (lvl1.find("_base") != lvl1.size() - 5)) {
-			continue;
-		}
+			std::string lvl1 = cdef->GetUnitDef()->GetName();
+			if ((lvl1.find("dyntrainer_") != 0) || (lvl1.find("_base") != lvl1.size() - 5)) {
+				continue;
+			}
 
-		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
-		auto it = customParams.find("level");
-		if ((it == customParams.end()) || (utils::string_to_int(it->second) != 1)) {
-			continue;
-		}
-		commanders.push_back(cdef);
+			const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
+			auto it = customParams.find("level");
+			if ((it == customParams.end()) || (utils::string_to_int(it->second) != 1)) {
+				continue;
+			}
+			comms.push_back(cdef);
 
-		if (bestPower < cdef->GetBuildDistance()) {  // No more UnitDef->GetAutoHeal() :(
-			bestPower = cdef->GetBuildDistance();
-			supCom = cdef;
+			if (bestPower < cdef->GetBuildDistance()) {  // No more UnitDef->GetAutoHeal() :(
+				bestPower = cdef->GetBuildDistance();
+				commChoice = cdef;
+			}
 		}
-	}
-	if (commanders.empty()) {
-		return;
+		if (comms.empty()) {
+			return;
+		}
 	}
 
 	std::string cmd("ai_commander:");
-	cmd += ((supCom == nullptr) ? commanders[rand() % commanders.size()] : supCom)->GetUnitDef()->GetName();
+	cmd += ((commChoice == nullptr) ? comms[rand() % comms.size()] : commChoice)->GetUnitDef()->GetName();
 	Lua* lua = circuit->GetCallback()->GetLua();
 	lua->CallRules(cmd.c_str(), cmd.size());
 	delete lua;
@@ -335,9 +332,67 @@ CAllyTeam* CSetupManager::GetAllyTeam() const
 
 void CSetupManager::ReadConfig()
 {
-	const Json::Value& shield = GetConfig()["retreat"]["shield"];
+	const Json::Value& root = GetConfig();
+	const Json::Value& shield = root["retreat"]["shield"];
 	emptyShield = shield.get((unsigned)0, 0.1f).asFloat();
 	fullShield = shield.get((unsigned)1, 0.6f).asFloat();
+
+	const Json::Value& commanders = root["commander"];
+	std::vector<CCircuitDef*> commChoices;
+	commChoices.reserve(commanders.size());
+	float magnitude = 0.f;
+	std::vector<float> weight;
+	weight.reserve(commanders.size());
+	CCircuitDef::RoleName& roleNames = CCircuitDef::GetRoleNames();
+
+	for (const std::string& defName : commanders.getMemberNames()) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());
+		if (cdef == nullptr) {
+			continue;
+		}
+
+		commChoices.push_back(cdef);
+
+		const Json::Value& comm = commanders[defName];
+		const float imp = comm.get("importance", 0.f).asFloat();
+		magnitude += imp;
+		weight.push_back(imp);
+
+		const Json::Value& upgr = comm["upgrade"];
+		modules.reserve(upgr.size());
+		for (const Json::Value& lvl : upgr) {
+			std::vector<float> mdls;
+			for (const Json::Value& m : lvl) {
+				mdls.push_back(m.asFloat());
+			}
+			modules.push_back(mdls);
+		}
+
+		morphFrame = comm.get("morph_after", -1).asInt();
+
+		const Json::Value& strt = comm["start"];
+		opener.reserve(strt.size());
+		for (const Json::Value& role : strt) {
+			auto it = roleNames.find(role.asCString());
+			if (it != roleNames.end()) {
+				opener.push_back(it->second);
+			}
+		}
+	}
+
+	if (!commChoices.empty()) {
+		unsigned choice = 0;
+		float dice = (float)rand() / RAND_MAX;
+		float total = .0f;
+		for (unsigned i = 0; i < weight.size(); ++i) {
+			total += weight[i];
+			if (dice < total) {
+				choice = i;
+				break;
+			}
+		}
+		commChoice = commChoices[choice];
+	}
 }
 
 void CSetupManager::FindCommander()

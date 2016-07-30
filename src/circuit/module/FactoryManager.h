@@ -53,7 +53,7 @@ public:
 	int GetFactoryCount() const { return factories.size(); }
 	float GetFactoryPower() const { return factoryPower; }
 	bool CanEnqueueTask() const { return factoryTasks.size() < factories.size() * 2; }
-	const std::set<CRecruitTask*>& GetTasks() const { return factoryTasks; }
+	const std::vector<CRecruitTask*>& GetTasks() const { return factoryTasks; }
 	CCircuitUnit* NeedUpgrade();
 	CCircuitUnit* GetRandomFactory(CCircuitDef* buildDef);
 	CCircuitUnit* GetClosestFactory(springai::AIFloat3 position);
@@ -74,6 +74,7 @@ public:
 
 private:
 	void ReadConfig();
+	void BaseDefence(const springai::AIFloat3& pos);
 
 	IUnitTask* CreateFactoryTask(CCircuitUnit* unit);
 	IUnitTask* CreateAssistTask(CCircuitUnit* unit);
@@ -88,7 +89,7 @@ private:
 	EHandlers destroyedHandler;
 
 	std::map<CCircuitUnit*, IBuilderTask*> unfinishedUnits;
-	std::set<CRecruitTask*> factoryTasks;
+	std::vector<CRecruitTask*> factoryTasks;  // order matters
 	std::vector<IUnitTask*> updateTasks;  // owner
 	unsigned int updateIterator;
 	float factoryPower;

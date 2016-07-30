@@ -86,9 +86,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		}
 	};
 
-	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
-	ecoFactor = circuit->GetAllyTeam()->GetSize() * 0.25f + 0.75f;
-
 	/*
 	 * resources
 	 */
@@ -127,9 +124,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			bool isStart = (frame < FRAMES_PER_SEC * 10);
 			AIFloat3 buildPos = -RgtVector;
 			if (unit->GetUnit()->GetRulesParamFloat("facplop", 0) == 1) {
-				CFactoryManager* factoryManager = this->circuit->GetFactoryManager();
 				const AIFloat3& pos = unit->GetPos(frame);
-				CCircuitDef* facDef = factoryManager->GetFactoryToBuild(pos, isStart);
+				CCircuitDef* facDef = this->circuit->GetFactoryManager()->GetFactoryToBuild(pos, isStart);
 				if (facDef != nullptr) {
 					// Enqueue factory
 					CTerrainManager* terrainManager = this->circuit->GetTerrainManager();
@@ -140,18 +136,13 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 					static_cast<ITaskManager*>(builderManager)->AssignTask(unit, task);
 
 					if (builderManager->GetWorkerCount() < 3) {
-						// Enqueue first builder
-						float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
-						CCircuitDef* buildDef = factoryManager->GetRoleDef(facDef, CCircuitDef::RoleType::BUILDER);
-						if ((buildDef != nullptr) && buildDef->IsAvailable()) {
-							factoryManager->EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::BUILDPOWER, radius);
-						}
+						OpenStrategy(facDef, buildPos);
 					}
 				}
 			}
 
 			if (isStart) {
-				this->circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>([this, unitId, buildPos]() {
+				this->circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>([this, unitId]() {
 					// Force commander level 0 to morph
 					CCircuitUnit* unit = this->circuit->GetTeamUnit(unitId);
 					if (unit != nullptr) {
@@ -161,15 +152,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 							unit->Upgrade();  // Morph();
 						}
 					}
-					// Build factory defence
-					if (utils::is_valid(buildPos)) {
-						CCircuitDef* buildDef = this->circuit->GetCircuitDef("corllt");
-						if ((buildDef != nullptr) && buildDef->IsAvailable()) {
-							this->circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, buildPos,
-																			IBuilderTask::BuildType::DEFENCE, 0.f, true, 0);
-						}
-					}
-				}), FRAMES_PER_SEC * 120);
+				}), FRAMES_PER_SEC * this->circuit->GetSetupManager()->GetMorphFrame());
 			}
 		}), FRAMES_PER_SEC);
 	};
@@ -873,11 +856,14 @@ void CEconomyManager::UpdateMorph()
 
 void CEconomyManager::ReadConfig()
 {
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const float ecoSlope = root["economy"].get("slope", 0.25f).asFloat();
+	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
+	ecoFactor = circuit->GetAllyTeam()->GetSize() * ecoSlope + (1.0f - ecoSlope);
+
 	// Using cafus, armfus, armsolar as control points
 	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
-	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const Json::Value& energy = root["energy"];
-
 	incomeFactor = energy.get("income_factor", 1.0f).asFloat();
 
 	std::array<std::pair<std::string, int>, 3> landEngies;
@@ -964,7 +950,32 @@ void CEconomyManager::Init()
 	const int interval = circuit->GetAllyTeam()->GetSize() * FRAMES_PER_SEC;
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks), this),
 							interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this), interval, circuit->GetSkirmishAIId() + 1);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this),
+							interval, circuit->GetSkirmishAIId() + 1);
+}
+
+void CEconomyManager::OpenStrategy(CCircuitDef* facDef, const AIFloat3& pos)
+{
+	CFactoryManager* factoryManager = circuit->GetFactoryManager();
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
+	const std::vector<CCircuitDef::RoleType>& opener = circuit->GetSetupManager()->GetOpener();
+	for (CCircuitDef::RoleType type : opener) {
+		CCircuitDef* buildDef = factoryManager->GetRoleDef(facDef, type);
+		if ((buildDef == nullptr) || !buildDef->IsAvailable()) {
+			continue;
+		}
+		CRecruitTask::Priority priotiry;
+		CRecruitTask::RecruitType recruit;
+		if (type == CCircuitDef::RoleType::BUILDER) {
+			priotiry = CRecruitTask::Priority::NORMAL;
+			recruit  = CRecruitTask::RecruitType::BUILDPOWER;
+		} else {
+			priotiry = CRecruitTask::Priority::HIGH;
+			recruit  = CRecruitTask::RecruitType::FIREPOWER;
+		}
+		factoryManager->EnqueueTask(priotiry, buildDef, pos, recruit, radius);
+	}
 }
 
 void CEconomyManager::UpdateEconomy()

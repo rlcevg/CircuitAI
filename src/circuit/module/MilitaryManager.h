@@ -73,6 +73,7 @@ public:
 	unsigned int GetMaxScouts() const { return maxScouts; }
 	unsigned int GetMaxRaiders() const { return maxRaiders; }
 
+	const std::vector<std::pair<CCircuitDef*, int>>& GetBaseDefence() const { return baseDefence; }
 	CCircuitDef* GetBigGunDef() const { return bigGunDef; }
 
 private:
@@ -141,6 +142,7 @@ private:
 	std::vector<CCircuitDef*> defenderDefs;
 	std::vector<CCircuitDef*> landDefenders;
 	std::vector<CCircuitDef*> waterDefenders;
+	std::vector<std::pair<CCircuitDef*, int>> baseDefence;
 	CCircuitDef* radarDef;
 	CCircuitDef* sonarDef;
 	CCircuitDef* bigGunDef;

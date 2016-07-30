@@ -21,7 +21,7 @@
 		// On start: priority ~= map_percent * importance0 + random(-20..+20)
 		// During game: priority ~= map_percent * importance1 + random(-20..+20)
 		// importanceN = 1.0 by default if not set
-		"importance": [0.9, 0.2],
+		"importance": [0.8, 0.2],
 
 		// 'require_energy' adds energy requirement for tierN (N>0): fallback to lowest tier on low energy
 		"require_energy": true,
@@ -35,7 +35,7 @@
 
 		"land": {
 			// 0-8m Opening - Glaives & Warriors most important for scouting, map control and defence.
-			"tier0": [ 0.00,       0.60,    0.24,         0.00,      0.15,     0.00,      0.00,     0.00,       0.01,      0.00,            0.00],
+			"tier0": [ 0.00,       0.95,    0.00,         0.00,      0.05,     0.00,      0.00,     0.00,       0.00,      0.00,            0.00],
 
 			// 9-16m Early Game - Map control still important but move towards Scythe raiding and Riot defense from raider balls.
 			"tier1": [ 0.00,       0.50,    0.27,         0.00,      0.22,     0.00,      0.00,     0.00,       0.01,      0.00,            0.00],
@@ -811,12 +811,11 @@
 	},
 	"armraven": {
 		"role": ["artillery", "heavy"],
-		"attribute": ["support"],
 		"retreat": 0.9
 	},
 	"funnelweb": {
 		"role": ["assault", "heavy"],
-		"attribute": ["support"],
+		"attribute": ["support", "melee"],
 		"retreat": 0.8
 	},
 	"armbanth": {
@@ -917,6 +916,10 @@
 	}
 },
 
+"economy": {
+	"slope": 0.125
+},
+
 // Limits of energy structures partly defined by parabola in space (structure_cost/energyMake, unit_limit).
 // Parabola defined by 3 control points.
 // For example land config:
@@ -958,13 +961,60 @@
 "porcupine": {
 	//            0         1        2          3         4             5           6            7          8          9           10         11
 	"unit_def": ["corllt", "corrl", "armdeva", "corhlt", "turrettorp", "corrazor", "armnanotc", "cordoom", "corjamt", "armartic", "armanni", "corbhmth"],
+	// Actual number of defences per cluster bounded by income
 	"land":  [0, 6, 1, 1, 1, 3, 5],
 	"water": [4, 6, 1, 4, 4, 3, 5],
+
+	// Base defence and time to build it, in seconds
+	"base": [[0, 120]],
 
 	"radar": "corrad",
 	"sonar": "armsonar",
 
+	// Simple weapons (nuke/zenith not supported)
 	"superweapon": "raveparty"
+},
+
+"commander": {
+	"dyntrainer_support_base": {
+		// Choice importance, 0 by default
+		"importance": 1.0,
+
+		// List of dynamic module IDs
+		"upgrade": [
+			[13, 30],  // shotgun, radar
+			[34, 34],  // companion drones
+			[15, 35, 35],  // sniper, battle drones
+			[35, 35, 35],  // battle drones
+			[35, 35, 35],  // battle drones
+			[34, 34, 34],  // companion drones
+			[34, 34, 34],  // companion drones
+			[40, 40, 40],  // speed
+			[40, 40, 40],  // speed
+			[40, 40, 37],  // speed, armour
+			[37, 37, 37],  // armour
+			[37, 37, 37],  // armour
+			[37, 36, 36],  // armour, autoheal
+			[36, 36, 36],  // autoheal
+			[36, 36, 36],  // autoheal
+			[42, 42, 42],  // builder
+			[42, 42, 42],  // builder
+			[42, 42, 29],  // builder, jammer
+			[32, 27, 33]  // area cloak, disruptor ammo, lazarus
+		],
+
+		// Force-morph delay, in seconds
+		"morph_after": 120,
+
+		// Starting units (order matters)
+		"start": ["raider", "raider", "builder"]
+	},
+	"dyntrainer_recon_base": {
+	},
+	"dyntrainer_assault_base": {
+	},
+	"dyntrainer_strike_base": {
+	}
 }
 },
 // --- NORMAL config ---

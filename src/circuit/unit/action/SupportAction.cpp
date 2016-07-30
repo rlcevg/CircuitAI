@@ -35,12 +35,20 @@ void CSupportAction::Update(CCircuitAI* circuit)
 	}
 
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
+	const bool isGuard = unit->GetCircuitDef()->IsAttrMelee();
+	if (isGuard && (updCount % 8 != 1)) {
+		return;
+	}
+
 	CCircuitUnit* leader = static_cast<ISquadTask*>(unit->GetTask())->GetLeader();
 	int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = leader->GetPos(frame);
 	TRY_UNIT(circuit, unit,
-//		unit->GetUnit()->Guard(leader->GetUnit());
-		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		if (isGuard) {
+			unit->GetUnit()->Guard(leader->GetUnit());
+		} else {
+			unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		}
 	)
 }
 

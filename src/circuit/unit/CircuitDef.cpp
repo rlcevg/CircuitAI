@@ -22,6 +22,45 @@ namespace circuit {
 
 using namespace springai;
 
+CCircuitDef::RoleName& CCircuitDef::GetRoleNames()
+{
+	static RoleName roleNames = {
+		{"builder",    CCircuitDef::RoleType::BUILDER},
+		{"scout",      CCircuitDef::RoleType::SCOUT},
+		{"raider",     CCircuitDef::RoleType::RAIDER},
+		{"riot",       CCircuitDef::RoleType::RIOT},
+		{"assault",    CCircuitDef::RoleType::ASSAULT},
+		{"skirmish",   CCircuitDef::RoleType::SKIRM},
+		{"artillery",  CCircuitDef::RoleType::ARTY},
+		{"anti_air",   CCircuitDef::RoleType::AA},
+		{"anti_heavy", CCircuitDef::RoleType::AH},
+		{"bomber",     CCircuitDef::RoleType::BOMBER},
+		{"support",    CCircuitDef::RoleType::SUPPORT},
+		{"mine",       CCircuitDef::RoleType::MINE},
+		{"transport",  CCircuitDef::RoleType::TRANS},
+		{"air",        CCircuitDef::RoleType::AIR},
+		{"static",     CCircuitDef::RoleType::STATIC},
+		{"heavy",      CCircuitDef::RoleType::HEAVY},
+	};
+	return roleNames;
+}
+
+CCircuitDef::AttrName& CCircuitDef::GetAttrNames()
+{
+	static AttrName attrNames = {
+		{"melee",     CCircuitDef::AttrType::MELEE},
+		{"siege",     CCircuitDef::AttrType::SIEGE},
+		{"open_fire", CCircuitDef::AttrType::OPEN_FIRE},
+		{"no_jump",   CCircuitDef::AttrType::NO_JUMP},
+		{"boost",     CCircuitDef::AttrType::BOOST},
+		{"comm",      CCircuitDef::AttrType::COMM},
+		{"hold_fire", CCircuitDef::AttrType::HOLD_FIRE},
+		{"no_strafe", CCircuitDef::AttrType::NO_STRAFE},
+		{"stockpile", CCircuitDef::AttrType::STOCK},
+	};
+	return attrNames;
+}
+
 CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts, Resource* res)
 		: def(def)
 		, mainRole(RoleType::SCOUT)

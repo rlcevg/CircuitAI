@@ -311,6 +311,7 @@ void CAntiHeavyTask::FindTarget()
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const int canTargetCat = cdef->GetTargetCategory();
+	const float maxPower = attackPower * 2.0f;
 	const float weaponRange = cdef->GetMaxRange();
 	const float range = std::max(highestRange, threatMap->GetSquareSize() * 2.0f);
 	const float losSqDist = SQUARE(range);
@@ -326,7 +327,7 @@ void CAntiHeavyTask::FindTarget()
 			continue;
 		}
 		const AIFloat3& ePos = enemy->GetPos();
-		if ((attackPower <= threatMap->GetThreatAt(ePos) - enemy->GetThreat()) ||
+		if ((maxPower <= threatMap->GetThreatAt(ePos) - enemy->GetThreat()) ||
 			!terrainManager->CanMoveToPos(area, ePos))
 		{
 			continue;

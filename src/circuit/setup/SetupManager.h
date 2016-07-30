@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_STATIC_SETUPMANAGER_H_
 
 #include "unit/CircuitUnit.h"
+#include "unit/CircuitDef.h"
 #include "json/json-forwards.h"
 
 #include "AIFloat3.h"
@@ -57,6 +58,12 @@ public:
 	float GetEmptyShield() const { return emptyShield; }
 	float GetFullShield() const { return fullShield; }
 
+	const std::vector<float>& GetModules(unsigned level) const {
+		return modules[std::min<unsigned>(level, modules.size() - 1)];
+	}
+	int GetMorphFrame() const { return morphFrame; }
+	const std::vector<CCircuitDef::RoleType>& GetOpener() const { return opener; }
+
 private:
 	void FindCommander();
 	bool LocatePath(std::string& filename);
@@ -74,6 +81,11 @@ private:
 
 	float emptyShield;
 	float fullShield;
+
+	CCircuitDef* commChoice;
+	std::vector<std::vector<float>> modules;
+	int morphFrame;
+	std::vector<CCircuitDef::RoleType> opener;
 };
 
 } // namespace circuit

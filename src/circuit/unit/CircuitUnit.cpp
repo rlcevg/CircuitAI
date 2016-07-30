@@ -8,6 +8,7 @@
 #include "unit/CircuitUnit.h"
 #include "unit/UnitManager.h"
 #include "unit/EnemyUnit.h"
+#include "setup/SetupManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -292,35 +293,14 @@ void CCircuitUnit::Upgrade()
 	float chassis = unit->GetRulesParamFloat("comm_chassis", 0.f);
 	float alreadyCount = unit->GetRulesParamFloat("comm_module_count", 0.f);
 
-	static std::vector<std::vector<float>> newModules = {
-		std::vector<float>({13, 30}),  // shotgun, radar
-		std::vector<float>({34, 34}),  // companion drones
-		std::vector<float>({15, 35, 35}),  // sniper, battle drones
-		std::vector<float>({35, 35, 35}),  // battle drones
-		std::vector<float>({35, 35, 35}),  // battle drones
-
-		std::vector<float>({34, 34, 34}),  // companion drones
-		std::vector<float>({34, 34, 34}),  // companion drones
-		std::vector<float>({40, 40, 40}),  // speed
-		std::vector<float>({40, 40, 40}),  // speed
-		std::vector<float>({40, 40, 37}),  // speed, armour
-		std::vector<float>({37, 37, 37}),  // armour
-		std::vector<float>({37, 37, 37}),  // armour
-		std::vector<float>({37, 36, 36}),  // armour, autoheal
-		std::vector<float>({36, 36, 36}),  // autoheal
-		std::vector<float>({36, 36, 36}),  // autoheal
-		std::vector<float>({42, 42, 42}),  // builder
-		std::vector<float>({42, 42, 42}),  // builder
-		std::vector<float>({42, 42, 29}),  // builder, jammer
-		std::vector<float>({32, 27, 33}),  // area cloak, disruptor ammo, lazarus
-	};
-	unsigned index = std::min<unsigned>(level, newModules.size() - 1);
+	assert(manager != nullptr);
+	const std::vector<float>& newModules = manager->GetCircuit()->GetSetupManager()->GetModules(level);
 
 	std::vector<float> upgrade;
 	upgrade.push_back(level);
 	upgrade.push_back(chassis);
 	upgrade.push_back(alreadyCount);
-	upgrade.push_back(newModules[index].size());
+	upgrade.push_back(newModules.size());
 
 	for (int i = 1; i <= alreadyCount; ++i) {
 		std::string modId = utils::int_to_string(i, "comm_module_%i");
@@ -330,7 +310,7 @@ void CCircuitUnit::Upgrade()
 		}
 	}
 
-	upgrade.insert(upgrade.end(), newModules[index].begin(), newModules[index].end());
+	upgrade.insert(upgrade.end(), newModules.begin(), newModules.end());
 
 	TRY_UNIT(manager->GetCircuit(), this,
 		unit->ExecuteCustomCommand(CMD_MORPH_UPGRADE_INTERNAL, upgrade);

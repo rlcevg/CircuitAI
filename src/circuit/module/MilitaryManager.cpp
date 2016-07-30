@@ -417,8 +417,8 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	if (index < 0) {
 		return;
 	}
-	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	float maxCost = MIN_BUILD_SEC * 2 * std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome()) * economyManager->GetEcoFactor();
+	CEconomyManager* em = circuit->GetEconomyManager();
+	float maxCost = MIN_BUILD_SEC * std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
 	CDefenceMatrix::SDefPoint* closestPoint = nullptr;
 	float minDist = std::numeric_limits<float>::max();
 	std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
@@ -692,24 +692,7 @@ void CMilitaryManager::ReadConfig()
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
-	std::map<const char*, CCircuitDef::RoleType, cmp_str> roleNames = {
-		{"builder",    CCircuitDef::RoleType::BUILDER},
-		{"scout",      CCircuitDef::RoleType::SCOUT},
-		{"raider",     CCircuitDef::RoleType::RAIDER},
-		{"riot",       CCircuitDef::RoleType::RIOT},
-		{"assault",    CCircuitDef::RoleType::ASSAULT},
-		{"skirmish",   CCircuitDef::RoleType::SKIRM},
-		{"artillery",  CCircuitDef::RoleType::ARTY},
-		{"anti_air",   CCircuitDef::RoleType::AA},
-		{"anti_heavy", CCircuitDef::RoleType::AH},
-		{"bomber",     CCircuitDef::RoleType::BOMBER},
-		{"support",    CCircuitDef::RoleType::SUPPORT},
-		{"mine",       CCircuitDef::RoleType::MINE},
-		{"transport",  CCircuitDef::RoleType::TRANS},
-		{"air",        CCircuitDef::RoleType::AIR},
-		{"static",     CCircuitDef::RoleType::STATIC},
-		{"heavy",      CCircuitDef::RoleType::HEAVY},
-	};
+	CCircuitDef::RoleName& roleNames = CCircuitDef::GetRoleNames();
 
 	const Json::Value& responses = root["response"];
 	const float teamSize = circuit->GetAllyTeam()->GetSize();
@@ -773,6 +756,17 @@ void CMilitaryManager::ReadConfig()
 		if (index < defenderDefs.size()) {
 			waterDefenders.push_back(defenderDefs[index]);
 		}
+	}
+
+	const Json::Value& base = porc["base"];
+	baseDefence.reserve(base.size());
+	for (const Json::Value& pair : base) {
+		unsigned index = pair.get((unsigned)0, -1).asUInt();
+		if (index >= defenderDefs.size()) {
+			continue;
+		}
+		int frame = pair.get((unsigned)1, 0).asInt();
+		baseDefence.push_back(std::make_pair(defenderDefs[index], frame));
 	}
 
 	radarDef = circuit->GetCircuitDef(porc.get("radar", "").asCString());

@@ -103,6 +103,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 		if (factories.empty()) {
 			this->circuit->GetSetupManager()->SetBasePos(pos);
+			BaseDefence(pos);
 		}
 
 		auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
@@ -413,7 +414,7 @@ CRecruitTask* CFactoryManager::EnqueueTask(CRecruitTask::Priority priority,
 										   float radius)
 {
 	CRecruitTask* task = new CRecruitTask(this, priority, buildDef, position, type, radius);
-	factoryTasks.insert(task);
+	factoryTasks.push_back(task);
 	updateTasks.push_back(task);
 	return task;
 }
@@ -452,7 +453,10 @@ void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 {
 	switch (static_cast<IBuilderTask*>(task)->GetBuildType()) {
 		case IBuilderTask::BuildType::RECRUIT: {
-			factoryTasks.erase(static_cast<CRecruitTask*>(task));
+			auto it = std::find(factoryTasks.begin(), factoryTasks.end(), task);
+			if (it != factoryTasks.end()) {
+				factoryTasks.erase(it);
+			}
 			unfinishedUnits.erase(static_cast<CRecruitTask*>(task)->GetTarget());
 		} break;
 		case IBuilderTask::BuildType::REPAIR: {
@@ -702,6 +706,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		}
 		candidates.clear();
 	} else {
+		// NOTE: Probability choice ignores energy cloak cost
 		unsigned choice = 0;
 		float dice = (float)rand() / RAND_MAX;
 		float total = .0f;
@@ -768,35 +773,8 @@ void CFactoryManager::ReadConfig()
 	 * Roles, attributes and retreat
 	 */
 	std::map<CCircuitDef::RoleType, std::set<CCircuitDef::Id>> roleDefs;
-	std::map<const char*, CCircuitDef::RoleType, cmp_str> roleNames = {
-		{"builder",    CCircuitDef::RoleType::BUILDER},
-		{"scout",      CCircuitDef::RoleType::SCOUT},
-		{"raider",     CCircuitDef::RoleType::RAIDER},
-		{"riot",       CCircuitDef::RoleType::RIOT},
-		{"assault",    CCircuitDef::RoleType::ASSAULT},
-		{"skirmish",   CCircuitDef::RoleType::SKIRM},
-		{"artillery",  CCircuitDef::RoleType::ARTY},
-		{"anti_air",   CCircuitDef::RoleType::AA},
-		{"anti_heavy", CCircuitDef::RoleType::AH},
-		{"bomber",     CCircuitDef::RoleType::BOMBER},
-		{"support",    CCircuitDef::RoleType::SUPPORT},
-		{"mine",       CCircuitDef::RoleType::MINE},
-		{"transport",  CCircuitDef::RoleType::TRANS},
-		{"air",        CCircuitDef::RoleType::AIR},
-		{"static",     CCircuitDef::RoleType::STATIC},
-		{"heavy",      CCircuitDef::RoleType::HEAVY},
-	};
-	std::map<const char*, CCircuitDef::AttrType, cmp_str> attrNames = {
-		{"melee",     CCircuitDef::AttrType::MELEE},
-		{"siege",     CCircuitDef::AttrType::SIEGE},
-		{"open_fire", CCircuitDef::AttrType::OPEN_FIRE},
-		{"no_jump",   CCircuitDef::AttrType::NO_JUMP},
-		{"boost",     CCircuitDef::AttrType::BOOST},
-		{"comm",      CCircuitDef::AttrType::COMM},
-		{"hold_fire", CCircuitDef::AttrType::HOLD_FIRE},
-		{"no_strafe", CCircuitDef::AttrType::NO_STRAFE},
-		{"stockpile", CCircuitDef::AttrType::STOCK},
-	};
+	CCircuitDef::RoleName& roleNames = CCircuitDef::GetRoleNames();
+	CCircuitDef::AttrName& attrNames = CCircuitDef::GetAttrNames();
 	const Json::Value& behaviours = root["behaviour"];
 	for (const std::string& defName : behaviours.getMemberNames()) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());
@@ -875,19 +853,14 @@ void CFactoryManager::ReadConfig()
 		}
 		const Json::Value& factory = factories[fac];
 		SFactoryDef facDef;
-
 		const std::unordered_set<CCircuitDef::Id>& options = cdef->GetBuildOptions();
-		std::vector<CCircuitDef::RoleType> facRoles = {  // NOTE: used to create tasks on Event (like DefendTask), fix/improve
-			CCircuitDef::RoleType::BUILDER,
-			CCircuitDef::RoleType::RIOT,
-			CCircuitDef::RoleType::ARTY,
-			CCircuitDef::RoleType::AA,
-		};
 
+		// NOTE: used to create tasks on Event (like DefendTask), fix/improve
 		facDef.roleDefs.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_), nullptr);
-		for (const CCircuitDef::RoleType type : facRoles) {
+		for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
 			float minCost = std::numeric_limits<float>::max();
 			CCircuitDef* rdef = nullptr;
+			const CCircuitDef::RoleType type = static_cast<CCircuitDef::RoleType>(i);
 			const std::set<CCircuitDef::Id>& defIds = roleDefs[type];
 			for (const CCircuitDef::Id bid : defIds) {
 				if (options.find(bid) == options.end()) {
@@ -1003,6 +976,20 @@ void CFactoryManager::ReadConfig()
 
 	bpRatio = factories.get("_buildpower_", 1.f).asFloat();
 	reWeight = root["response"].get("_weight_", .5f).asFloat();
+}
+
+void CFactoryManager::BaseDefence(const AIFloat3& pos)
+{
+	CScheduler* scheduler = circuit->GetScheduler().get();
+	for (auto& kv : circuit->GetMilitaryManager()->GetBaseDefence()) {
+		CCircuitDef* buildDef = kv.first;
+		if (buildDef->IsAvailable()) {
+			scheduler->RunTaskAt(std::make_shared<CGameTask>([this, buildDef, pos]() {
+				circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, pos,
+														  IBuilderTask::BuildType::DEFENCE, 0.f, true, 0);
+			}), FRAMES_PER_SEC * kv.second);
+		}
+	}
 }
 
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)

@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_UNIT_CIRCUITDEF_H_
 
 #include "terrain/TerrainData.h"
+#include "util/Defines.h"
 
 #include "UnitDef.h"
 
@@ -56,6 +57,11 @@ public:
 						  STOCK = 0x1000000};
 
 	static RoleM GetMask(RoleT type) { return 1 << type; }
+
+	using RoleName = std::map<const char*, CCircuitDef::RoleType, cmp_str>;
+	using AttrName = std::map<const char*, CCircuitDef::AttrType, cmp_str>;
+	static RoleName& GetRoleNames();
+	static AttrName& GetAttrNames();
 
 	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
