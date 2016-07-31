@@ -7,6 +7,7 @@
 
 #include "task/builder/TerraformTask.h"
 #include "task/TaskManager.h"
+#include "module/BuilderManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -50,7 +51,7 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 			CTerrainManager::TerrainPredicate predicate = [terrainManager, unit](const AIFloat3& p) {
 				return terrainManager->CanBuildAt(unit, p);
 			};
-			CCircuitDef* cdef = circuit->GetCircuitDef("terraunit");
+			CCircuitDef* cdef = circuit->GetBuilderManager()->GetTerraDef();
 			buildPos = terrainManager->FindBuildSite(cdef, position, 600.0f, facing, predicate);
 		}
 		if (!utils::is_valid(buildPos)) {

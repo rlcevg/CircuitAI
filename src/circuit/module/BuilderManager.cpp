@@ -204,7 +204,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	}
 	buildAreas[nullptr] = std::map<CCircuitDef*, int>();  // air
 
-	terraDef = circuit->GetCircuitDef("terraunit");  // TODO: Move into config
+	ReadConfig();
 }
 
 CBuilderManager::~CBuilderManager()
@@ -567,6 +567,15 @@ void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 	task->Execute(unit);
 }
 
+void CBuilderManager::ReadConfig()
+{
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	terraDef = circuit->GetCircuitDef(root["economy"].get("terra_def", "").asCString());
+	if (terraDef == nullptr) {
+		terraDef = circuit->GetEconomyManager()->GetDefaultDef();
+	}
+}
+
 void CBuilderManager::Init()
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
@@ -645,8 +654,8 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 		if (vip != nullptr) {
 			task = EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, FRAMES_PER_SEC * 60);
 		} else {
-			CCircuitDef* buildDef = circuit->GetCircuitDef("corrl");
-			if (buildDef->IsAvailable()) {
+			CCircuitDef* buildDef = circuit->GetMilitaryManager()->GetDefaultPorc();
+			if ((buildDef != nullptr) && buildDef->IsAvailable()) {
 				task = EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, pos, IBuilderTask::BuildType::DEFENCE);
 			}
 		}

@@ -134,21 +134,16 @@ void CMetalManager::ParseMetalSpots(Game* game)
 	metalData->Init(spots);
 }
 
-void CMetalManager::ClusterizeMetal()
+void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	metalData->SetClusterizing(true);
 
 	// prepare parameters
-	MoveData* moveData = circuit->GetCircuitDef("armcom1")->GetUnitDef()->GetMoveData();
+	MoveData* moveData = commDef->GetUnitDef()->GetMoveData();
 	int pathType = moveData->GetPathType();
 	delete moveData;
-	// FIXME: Use pylonDef from EconomyManager
-	UnitDef* def = circuit->GetCircuitDef("armestor")->GetUnitDef();
-	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
-	auto search = customParams.find("pylonrange");
-	float radius = (search != customParams.end()) ? utils::string_to_float(search->second) : PYLON_RANGE;
-	float maxDistance = radius * 2;
+	const float maxDistance = circuit->GetEconomyManager()->GetPylonRange() * 2;
 	Pathing* pathing = circuit->GetPathing();
 
 	const CMetalData::Metals& spots = metalData->GetSpots();

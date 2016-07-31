@@ -113,6 +113,7 @@ public:
 	virtual void FallbackTask(CCircuitUnit* unit);
 
 private:
+	void ReadConfig();
 	void Init();
 	IBuilderTask* MakeCommTask(CCircuitUnit* unit);
 	IBuilderTask* MakeBuilderTask(CCircuitUnit* unit);

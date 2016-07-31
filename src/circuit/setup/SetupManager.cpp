@@ -192,7 +192,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 			const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
 			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
 			CTerrainManager* terrainManager = circuit->GetTerrainManager();
-			STerrainMapMobileType* mobileType = terrainManager->GetMobileTypeById(circuit->GetCircuitDef("armcom1")->GetMobileId());
+			STerrainMapMobileType* mobileType = terrainManager->GetMobileTypeById(commChoice->GetMobileId());
 			Lua* lua = circuit->GetCallback()->GetLua();
 
 			std::map<int, CMetalData::MetalIndices> validPoints;
@@ -244,7 +244,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 //			if (!inBoxIndices.empty()) {
 //				const CMetalData::Metals& spots = metalManager->GetSpots();
 //				CTerrainManager* terrainManager = circuit->GetTerrainManager();
-//				STerrainMapMobileType* mobileType = terrainManager->GetMobileTypeById(circuit->GetCircuitDef("armcom1")->GetMobileId());
+//				STerrainMapMobileType* mobileType = terrainManager->GetMobileTypeById(commChoice->GetMobileId());
 //				std::vector<int> filteredIndices;
 //				for (auto idx : inBoxIndices) {
 //					int iS = terrainManager->GetSectorIndex(spots[idx].position);
@@ -281,7 +281,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 	circuit->GetGame()->SendStartPosition(false, pos);
 }
 
-void CSetupManager::PickCommander()
+bool CSetupManager::PickCommander()
 {
 	std::vector<CCircuitDef*> comms;
 	float bestPower = .0f;
@@ -309,7 +309,7 @@ void CSetupManager::PickCommander()
 			}
 		}
 		if (comms.empty()) {
-			return;
+			return false;
 		}
 	}
 
@@ -318,6 +318,8 @@ void CSetupManager::PickCommander()
 	Lua* lua = circuit->GetCallback()->GetLua();
 	lua->CallRules(cmd.c_str(), cmd.size());
 	delete lua;
+
+	return true;
 }
 
 CCircuitUnit* CSetupManager::GetCommander() const

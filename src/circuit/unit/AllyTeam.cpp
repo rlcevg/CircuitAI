@@ -62,7 +62,7 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 
 	metalManager = std::make_shared<CMetalManager>(circuit, &circuit->GetGameAttribute()->GetMetalData());
 	if (metalManager->HasMetalSpots() && !metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
-		metalManager->ClusterizeMetal();
+		metalManager->ClusterizeMetal(circuit->GetSetupManager()->GetCommChoice());
 	}
 	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>(&CMetalManager::Init, metalManager));
 

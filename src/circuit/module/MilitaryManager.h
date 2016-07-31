@@ -65,6 +65,7 @@ public:
 	void AddEnemyMetal(const CEnemyUnit* e);
 	void DelEnemyMetal(const CEnemyUnit* e);
 
+	float GetMetalArmy() const { return metalArmy; }
 	float RoleProbability(const CCircuitDef* cdef) const;
 	bool IsNeedBigGun(const CCircuitDef* cdef) const;
 
@@ -75,6 +76,7 @@ public:
 
 	const std::vector<std::pair<CCircuitDef*, int>>& GetBaseDefence() const { return baseDefence; }
 	CCircuitDef* GetBigGunDef() const { return bigGunDef; }
+	CCircuitDef* GetDefaultPorc() const { return defaultPorc; }
 
 private:
 	void ReadConfig();
@@ -146,6 +148,7 @@ private:
 	CCircuitDef* radarDef;
 	CCircuitDef* sonarDef;
 	CCircuitDef* bigGunDef;
+	CCircuitDef* defaultPorc;
 };
 
 } // namespace circuit

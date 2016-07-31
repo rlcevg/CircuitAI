@@ -26,8 +26,7 @@
 		// 'require_energy' adds energy requirement for tierN (N>0): fallback to lowest tier on low energy
 		"require_energy": true,
 
-		// If income*eps < income_tier[N] then 'tierN' probability will be used,
-		// eps=(teamSize+3)/4
+		// If income*ecoFactor < income_tier[N] then 'tierN' probability will be used
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
 
 		//             conjurer,   glaive,  scythe,       rocko,     warrior,  zeus,      hammer,   sniper,     tick,      eraser,          gremlin
@@ -917,7 +916,14 @@
 },
 
 "economy": {
-	"slope": 0.125
+	// Scales metal income
+	// ecoFactor = teamSize*eps_step+(1-eps_step)
+	"eps_step": 0.125,
+
+	"terra_def": "terraunit",
+
+	// Unknown UnitDef replacer
+	"default": "corrl"
 },
 
 // Limits of energy structures partly defined by parabola in space (structure_cost/energyMake, unit_limit).
@@ -968,11 +974,11 @@
 	// Base defence and time to build it, in seconds
 	"base": [[0, 120]],
 
-	"radar": "corrad",
-	"sonar": "armsonar",
-
 	// Simple weapons (nuke/zenith not supported)
-	"superweapon": "raveparty"
+	"superweapon": "raveparty",
+
+	// Fallback defence
+	"default": "corrl"
 },
 
 "commander": {

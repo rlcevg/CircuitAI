@@ -48,7 +48,8 @@ namespace circuit {
 using namespace springai;
 
 #define ACTION_UPDATE_RATE	128
-#define RELEASE_NO_CONFIG	100
+#define RELEASE_CONFIG		100
+#define RELEASE_COMMANDER	101
 #ifdef DEBUG
 	#define PRINT_TOPIC(txt, topic)	LOG("<CircuitAI> %s topic: %i, SkirmishAIId: %i", txt, topic, skirmishAIId)
 #else
@@ -392,7 +393,7 @@ bool CCircuitAI::IsModValid()
 int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICallback)
 {
 	this->skirmishAIId = skirmishAIId;
-	// FIXME: Due to chewed API only SSkirmishAICallback have access to Engine
+	// NOTE: Due to chewed API only SSkirmishAICallback have access to Engine
 	this->sAICallback = sAICallback;
 	if (!IsModValid()) {
 		return ERROR_INIT;
@@ -414,21 +415,25 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
 	if (!setupManager->OpenConfig(cfgName)) {
-		Release(RELEASE_NO_CONFIG);
+		Release(RELEASE_CONFIG);
 		return ERROR_INIT;
 	}
 	setupManager->ReadConfig();
+	if (!setupManager->PickCommander()) {
+		Release(RELEASE_COMMANDER);
+		return ERROR_INIT;
+	}
 	allyTeam = setupManager->GetAllyTeam();
 	allyAware &= allyTeam->GetSize() > 1;
+
+	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
+	economyManager = std::make_shared<CEconomyManager>(this);
 
 	allyTeam->Init(this);
 	metalManager = allyTeam->GetMetalManager();
 	pathfinder = allyTeam->GetPathfinder();
 
-	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
-
-	// NOTE: EconomyManager uses metal clusters and must be initialized after MetalManager::ClusterizeMetal
-	economyManager = std::make_shared<CEconomyManager>(this);
+	terrainManager->Init();
 
 	if (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos()) {
 		if (metalManager->HasMetalSpots()) {
@@ -437,7 +442,6 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 			setupManager->PickStartPos(this, CSetupManager::StartPosType::MIDDLE);
 		}
 	}
-	setupManager->PickCommander();
 
 	builderManager = std::make_shared<CBuilderManager>(this);
 	factoryManager = std::make_shared<CFactoryManager>(this);
@@ -463,15 +467,6 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	setupManager->CloseConfig();
 
 	isInitialized = true;
-
-	// FIXME: DEBUG
-//	if (skirmishAIId == 1) {
-//		scheduler->RunTaskAt(std::make_shared<CGameTask>([this]() {
-//			terrainManager->ClusterizeTerrain();
-//		}));
-//	}
-	// FIXME: DEBUG
-
 	return 0;  // signaling: OK
 }
 

@@ -48,7 +48,8 @@ public:
 	void SetBasePos(const springai::AIFloat3& pos) { basePos = pos; }
 	const springai::AIFloat3& GetBasePos() const { return basePos; }
 
-	void PickCommander();
+	bool PickCommander();
+	CCircuitDef* GetCommChoice() const { return commChoice; }
 	void SetCommander(CCircuitUnit* unit) { commanderId = unit->GetId(); }
 	CCircuitUnit* GetCommander() const;
 

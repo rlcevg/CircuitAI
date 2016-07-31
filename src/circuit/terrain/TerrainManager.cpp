@@ -268,21 +268,6 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	SBlockingMap::SBlockCellLow cellLow = {0};
 	blockingMap.gridLow.resize(blockingMap.columnsLow * blockingMap.rowsLow, cellLow);
 
-	const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
-	def = mexDef->GetUnitDef();
-	int size = std::max(def->GetXSize(), def->GetZSize()) / 2/* + 4*/;
-	int& xsize = size, &zsize = size;
-	int notIgnoreMask = STRUCT_BIT(FACTORY);
-	for (auto& spot : spots) {
-		const int x1 = int(spot.position.x / (SQUARE_SIZE << 1)) - (xsize >> 1), x2 = x1 + xsize;
-		const int z1 = int(spot.position.z / (SQUARE_SIZE << 1)) - (zsize >> 1), z2 = z1 + zsize;
-		for (int z = z1; z < z2; z++) {
-			for (int x = x1; x < x2; x++) {
-				blockingMap.MarkBlocker(x, z, SBlockingMap::StructType::MEX, notIgnoreMask);
-			}
-		}
-	}
-
 	offset = int2(0, 0);
 	ignoreMask = STRUCT_BIT(PYLON) |
 				 STRUCT_BIT(ENGY_HIGH);
@@ -311,6 +296,24 @@ CTerrainManager::~CTerrainManager()
 		delete[] dbgMap;
 	}
 #endif
+}
+
+void CTerrainManager::Init()
+{
+	const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
+	UnitDef* def = circuit->GetEconomyManager()->GetMexDef()->GetUnitDef();
+	int size = std::max(def->GetXSize(), def->GetZSize()) / 2/* + 4*/;
+	int& xsize = size, &zsize = size;
+	int notIgnoreMask = STRUCT_BIT(FACTORY);
+	for (auto& spot : spots) {
+		const int x1 = int(spot.position.x / (SQUARE_SIZE << 1)) - (xsize >> 1), x2 = x1 + xsize;
+		const int z1 = int(spot.position.z / (SQUARE_SIZE << 1)) - (zsize >> 1), z2 = z1 + zsize;
+		for (int z = z1; z < z2; z++) {
+			for (int x = x1; x < x2; x++) {
+				blockingMap.MarkBlocker(x, z, SBlockingMap::StructType::MEX, notIgnoreMask);
+			}
+		}
+	}
 }
 
 void CTerrainManager::AddBlocker(CCircuitDef* cdef, const AIFloat3& pos, int facing)
@@ -1330,144 +1333,6 @@ void CTerrainManager::UpdateAreaUsers()
 
 	DidUpdateAreaUsers();
 }
-
-//void CTerrainManager::ClusterizeTerrain()
-//{
-//	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-//	terrainData->SetClusterizing(true);
-//
-//	// step 1: Create waypoints
-//	Pathing* pathing = circuit->GetPathing();
-//	Map* map = circuit->GetMap();
-//	const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
-//	std::vector<AIFloat3> wayPoints;
-//	for (auto& spot : spots) {
-//		AIFloat3 start = spot.position;
-//		for (auto& s : spots) {
-//			if (spot.position == s.position) {
-//				continue;
-//			}
-//			AIFloat3 end = s.position;
-//			int pathId = pathing->InitPath(start, end, 4, .0f);
-//			AIFloat3 lastPoint, point(start);
-//			int j = 0;
-//			do {
-//				lastPoint = point;
-//				point = pathing->GetNextWaypoint(pathId);
-//				if (point.x <= 0 || point.z <= 0) {
-//					break;
-//				}
-//				if (j++ % 32 == 0) {
-//					wayPoints.push_back(point);
-//				}
-//			} while ((lastPoint != point) && (point.x > 0 && point.z > 0));
-//			pathing->FreePath(pathId);
-//		}
-//	}
-//
-//	// step 2: Create path traversability map
-//	// @see path traversability map rts/
-//	int widthX = circuit->GetMap()->GetWidth();
-//	int heightZ = circuit->GetMap()->GetHeight();
-//	int widthSX = widthX / 2;
-//	MoveData* moveDef = circuit->GetCircuitDef("armcom1")->GetUnitDef()->GetMoveData();
-//	float maxSlope = moveDef->GetMaxSlope();
-//	float depth = moveDef->GetDepth();
-//	float slopeMod = moveDef->GetSlopeMod();
-//	const std::vector<float>& heightMap = circuit->GetMap()->GetHeightMap();
-//	const std::vector<float>& slopeMap = circuit->GetMap()->GetSlopeMap();
-//
-//	std::vector<float> traversMap(widthX * heightZ);
-//
-//	auto posSpeedMod = [](float maxSlope, float depth, float slopeMod, float depthMod, float height, float slope) {
-//		float speedMod = 0.0f;
-//
-//		// slope too steep or square too deep?
-//		if (slope > maxSlope)
-//			return speedMod;
-//		if (-height > depth)
-//			return speedMod;
-//
-//		// slope-mod
-//		speedMod = 1.0f / (1.0f + slope * slopeMod);
-//		// FIXME: Read waterDamageCost from mapInfo
-////			speedMod *= (height < 0.0f) ? waterDamageCost : 1.0f;
-//		speedMod *= depthMod;
-//
-//		return speedMod;
-//	};
-//
-//	for (int hz = 0; hz < heightZ; ++hz) {
-//		for (int hx = 0; hx < widthX; ++hx) {
-//			const int sx = hx / 2;  // hx >> 1;
-//			const int sz = hz / 2;  // hz >> 1;
-////				const bool losSqr = losHandler->InLos(sqx, sqy, gu->myAllyTeam);
-//
-//			float scale = 1.0f;
-//
-//			// TODO: First implement blocking map
-////				if (los || losSqr) {
-////					if (CMoveMath::IsBlocked(*md, sqx,     sqy    , NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
-////					if (CMoveMath::IsBlocked(*md, sqx + 1, sqy    , NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
-////					if (CMoveMath::IsBlocked(*md, sqx,     sqy + 1, NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
-////					if (CMoveMath::IsBlocked(*md, sqx + 1, sqy + 1, NULL) & CMoveMath::BLOCK_STRUCTURE) { scale -= 0.25f; }
-////				}
-//
-//			int idx = hz * widthX + hx;
-//			float height = heightMap[idx];
-//			float slope = slopeMap[sz * widthSX + sx];
-//			float depthMod = moveDef->GetDepthMod(height);
-//			traversMap[idx] = posSpeedMod(maxSlope, depth, slopeMod, depthMod, height, slope);
-//			// FIXME: blocking map first
-////				const SColor& smc = GetSpeedModColor(sm * scale);
-//		}
-//	}
-//	delete moveDef;
-//
-//	// step 3: Filter key waypoints
-//	printf("points size: %i\n", wayPoints.size());
-//	auto iter = wayPoints.begin();
-//	while (iter != wayPoints.end()) {
-//		bool isKey = false;
-//		if ((iter->z / SQUARE_SIZE - 10 >= 0 && iter->z / SQUARE_SIZE + 10 < heightZ) && (iter->x / SQUARE_SIZE - 10 >= 0 && iter->x / SQUARE_SIZE + 10 < widthX)) {
-//			int idx = (int)(iter->z / SQUARE_SIZE) * widthX + (int)(iter->x / SQUARE_SIZE);
-//			if (traversMap[idx] > 0.8) {
-//				for (int hz = -10; hz <= 10; ++hz) {
-//					for (int hx = -10; hx <= 10; ++hx) {
-//						idx = (int)(iter->z / SQUARE_SIZE + hz) * widthX + iter->x / SQUARE_SIZE + hx;
-//						if (traversMap[idx] < 0.8) {
-//							isKey = true;
-//							break;
-//						}
-//					}
-//					if (isKey) {
-//						break;
-//					}
-//				}
-//			}
-//		}
-//		if (!isKey) {
-//			iter = wayPoints.erase(iter);
-//		} else {
-//			++iter;
-//		}
-//	}
-//
-//	// step 4: Clusterize key waypoints
-//	float maxDistance = circuit->GetCircuitDef("cordoom")->GetMaxRange() * 2;
-//	maxDistance *= maxDistance;
-//	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CTerrainData::Clusterize, terrainData, wayPoints, maxDistance, circuit));
-//}
-//
-//const std::vector<springai::AIFloat3>& CTerrainManager::GetDefencePoints() const
-//{
-//	return terrainData->GetDefencePoints();
-//}
-//
-//const std::vector<springai::AIFloat3>& CTerrainManager::GetDefencePerimeter() const
-//{
-//	return terrainData->GetDefencePerimeter();
-//}
 
 #ifdef DEBUG_VIS
 void CTerrainManager::UpdateVis()

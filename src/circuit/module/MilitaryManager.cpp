@@ -51,6 +51,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		, fightIterator(0)
 		, scoutIdx(0)
 		, metalArmy(.0f)
+		, radarDef(nullptr)
+		, sonarDef(nullptr)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::Watchdog, this),
@@ -137,6 +139,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const float fighterRet = root["retreat"].get("fighter", 0.5f).asFloat();
+	float maxRadarDivCost = 0.f;
+	float maxSonarDivCost = 0.f;
 
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
@@ -168,13 +172,24 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			unitDefId = kv.first;
 			finishedHandler[unitDefId] = defenceFinishedHandler;
 			delete wd;
+		} else {
+			float radiusDivCost = cdef->GetUnitDef()->GetRadarRadius() / cdef->GetCost();
+			if (maxRadarDivCost < radiusDivCost) {
+				maxRadarDivCost = radiusDivCost;
+				radarDef = cdef;
+			}
+			radiusDivCost = cdef->GetUnitDef()->GetSonarRadius() / cdef->GetCost();
+			if (maxSonarDivCost < radiusDivCost) {
+				maxSonarDivCost = radiusDivCost;
+				sonarDef = cdef;
+			}
 		}
 	}
 
 	/*
 	 * superweapon handlers
 	 */
-	if ((bigGunDef != nullptr) && bigGunDef->IsAvailable()) {
+	if (bigGunDef != nullptr) {
 		finishedHandler[bigGunDef->GetId()] = [this](CCircuitUnit* unit) {
 			TRY_UNIT(this->circuit, unit,
 				unit->GetUnit()->SetTrajectory(1);
@@ -769,9 +784,8 @@ void CMilitaryManager::ReadConfig()
 		baseDefence.push_back(std::make_pair(defenderDefs[index], frame));
 	}
 
-	radarDef = circuit->GetCircuitDef(porc.get("radar", "").asCString());
-	sonarDef = circuit->GetCircuitDef(porc.get("sonar", "").asCString());
 	bigGunDef = circuit->GetCircuitDef(porc.get("superweapon", "").asCString());
+	defaultPorc = circuit->GetCircuitDef(porc.get("default", "").asCString());
 }
 
 void CMilitaryManager::Init()

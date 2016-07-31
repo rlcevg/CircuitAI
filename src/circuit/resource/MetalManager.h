@@ -33,7 +33,7 @@ public:
 	bool HasMetalClusters() const { return !metalData->GetClusters().empty(); }
 	bool IsClusterizing() const { return metalData->IsClusterizing(); }
 
-	void ClusterizeMetal();
+	void ClusterizeMetal(CCircuitDef* commDef);
 	void Init();
 
 public:

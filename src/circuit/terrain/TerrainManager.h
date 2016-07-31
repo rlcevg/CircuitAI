@@ -44,6 +44,7 @@ public:
 	int GetTerrainHeight() const { return terrainData->terrainHeight; }
 
 public:
+	void Init();
 	void AddBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing);
 	void DelBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing);
 	void ResetBuildFrame();
@@ -169,12 +170,6 @@ public:
 	void DidUpdateAreaUsers() { terrainData->DidUpdateAreaUsers(); }
 private:
 	SAreaData* areaData;
-
-//public:
-//	void ClusterizeTerrain();
-//	const std::vector<springai::AIFloat3>& GetDefencePoints() const;
-//	const std::vector<springai::AIFloat3>& GetDefencePerimeter() const;
-private:
 	CTerrainData* terrainData;
 
 #ifdef DEBUG_VIS

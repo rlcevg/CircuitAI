@@ -679,10 +679,13 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	static std::vector<std::pair<CCircuitDef*, float>> candidates;  // NOTE: micro-opt
 //	candidates.reserve(facDef.buildDefs.size());
 	const float energyNet = em->GetAvgEnergyIncome() - em->GetEnergyPull();
+	const float maxCost = militaryManager->GetMetalArmy();
 	float magnitude = 0.f;
 	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
 		CCircuitDef* bd = facDef.buildDefs[i];
-		if ((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) {
+		if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) ||
+			(bd->GetCost() > maxCost))
+		{
 			continue;
 		}
 		// (probs[i] + response_weight) hints preferable buildDef within same role
@@ -706,7 +709,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		}
 		candidates.clear();
 	} else {
-		// NOTE: Probability choice ignores energy cloak cost
+		// NOTE: Ignores cloakCost and maxCost
 		unsigned choice = 0;
 		float dice = (float)rand() / RAND_MAX;
 		float total = .0f;
@@ -851,11 +854,12 @@ void CFactoryManager::ReadConfig()
 		if (cdef == nullptr) {
 			continue;
 		}
+
 		const Json::Value& factory = factories[fac];
 		SFactoryDef facDef;
-		const std::unordered_set<CCircuitDef::Id>& options = cdef->GetBuildOptions();
 
 		// NOTE: used to create tasks on Event (like DefendTask), fix/improve
+		const std::unordered_set<CCircuitDef::Id>& options = cdef->GetBuildOptions();
 		facDef.roleDefs.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_), nullptr);
 		for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
 			float minCost = std::numeric_limits<float>::max();

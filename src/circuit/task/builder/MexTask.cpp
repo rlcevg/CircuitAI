@@ -113,7 +113,7 @@ void CBMexTask::Finish()
 //	}
 
 	CCircuitDef* energyDef = circuit->GetEconomyManager()->GetLowEnergy(buildPos);
-	if ((energyDef != nullptr) && energyDef->IsAvailable()) {
+	if (energyDef != nullptr) {
 		circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, energyDef, buildPos,
 												  IBuilderTask::BuildType::ENERGY, SQUARE_SIZE * 8.0f, true);
 	}
@@ -139,11 +139,16 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 	 * Check if unit is idle because of enemy mex ahead and build turret if so.
 	 */
 	CCircuitAI* circuit = manager->GetCircuit();
-	CCircuitDef* def = circuit->GetCircuitDef("corrl");
-	float range = def->GetMaxRange();
-	float testRange = range + 200.0f;  // 200 elmos
+	CCircuitDef* def = circuit->GetMilitaryManager()->GetDefaultPorc();
+	if ((def == nullptr) || !def->IsAvailable()) {
+		IBuilderTask::OnUnitIdle(unit);
+		return;
+	}
+
+	const float range = def->GetMaxRange();
+	const float testRange = range + 200.0f;  // 200 elmos
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
-	if (buildPos.SqDistance2D(pos) < testRange * testRange) {
+	if (buildPos.SqDistance2D(pos) < SQUARE(testRange)) {
 		int mexDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
 		// TODO: Use internal CCircuitAI::GetEnemyUnits?
 		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(buildPos, SQUARE_SIZE));

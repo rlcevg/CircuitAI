@@ -46,6 +46,7 @@ public:
 	float GetPylonRange() const { return pylonRange; }
 	void AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs);  // add available energy defs
 	void RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs);
+	CCircuitDef* GetDefaultDef() const { return defaultDef; }
 
 	void UpdateResourceIncome();
 	float GetAvgMetalIncome() const { return metalIncome; }
@@ -100,6 +101,9 @@ private:
 	CCircuitDef* pylonDef;  // TODO: Move into CEnergyGrid?
 
 	CCircuitDef* mexDef;
+	CCircuitDef* storeDef;
+	CCircuitDef* defaultDef;
+
 	std::set<CCircuitDef*> allEnergyDefs;
 	std::set<CCircuitDef*> availEnergyDefs;
 	struct SEnergyInfo {

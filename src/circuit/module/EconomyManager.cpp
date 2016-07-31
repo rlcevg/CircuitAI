@@ -34,9 +34,14 @@ using namespace springai;
 
 #define INCOME_SAMPLES	5
 #define HIDDEN_ENERGY	10000.0f
+#define PYLON_RANGE		500.0f
 
 CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		: IModule(circuit)
+		, energyGrid(nullptr)
+		, pylonDef(nullptr)
+		, mexDef(nullptr)
+		, storeDef(nullptr)
 		, indexRes(0)
 		, metalIncome(.0f)
 		, energyIncome(.0f)
@@ -53,7 +58,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	metalRes = circuit->GetCallback()->GetResourceByName("Metal");
 	energyRes = circuit->GetCallback()->GetResourceByName("Energy");
 	economy = circuit->GetCallback()->GetEconomy();
-	energyGrid = circuit->GetAllyTeam()->GetEnergyLink().get();
 
 	metalIncomes.resize(INCOME_SAMPLES, 4.0f);  // Init metal income
 	energyIncomes.resize(INCOME_SAMPLES, 6.0f);  // Init energy income
@@ -161,8 +165,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	};
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CCircuitDef* pylonCandy = nullptr;
 	float maxAreaDivCost = .0f;
+	float maxStoreDivCost = .0f;
 
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
@@ -176,8 +180,15 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				float areaDivCost = M_PI * SQUARE(utils::string_to_float(it->second)) / cdef->GetCost();
 				if (maxAreaDivCost < areaDivCost) {
 					maxAreaDivCost = areaDivCost;
-					pylonCandy = cdef;  // armestor
+					pylonDef = cdef;  // armestor
 				}
+			}
+
+			// storage
+			float storeDivCost = cdef->GetUnitDef()->GetStorage(metalRes) / cdef->GetCost();
+			if (maxStoreDivCost < storeDivCost) {
+				maxStoreDivCost = storeDivCost;
+				storeDef = cdef;
 			}
 
 			if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
@@ -213,10 +224,14 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			}
 		}
 	}
+	if (mexDef == nullptr) {
+		mexDef = defaultDef;
+	}
 
-	pylonDef = pylonCandy;
-	UnitDef* def = pylonDef->GetUnitDef();
-	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
+	if (pylonDef == nullptr) {
+		pylonDef = defaultDef;
+	}
+	const std::map<std::string, std::string>& customParams = pylonDef->GetUnitDef()->GetCustomParams();
 	auto search = customParams.find("pylonrange");
 	pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : PYLON_RANGE;
 
@@ -276,16 +291,17 @@ int CEconomyManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 CCircuitDef* CEconomyManager::GetLowEnergy(const AIFloat3& pos) const
 {
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CCircuitDef* candidate = nullptr;
+	CCircuitDef* result = nullptr;
 	auto it = energyInfos.rbegin();
 	while (it != energyInfos.rend()) {
-		if (terrainManager->CanBeBuiltAt(it->cdef, pos)) {
-			candidate = it->cdef;
+		CCircuitDef* candy = it->cdef;
+		if (terrainManager->CanBeBuiltAt(candy, pos) && candy->IsAvailable()) {
+			result = candy;
 			break;
 		}
 		++it;
 	}
-	return candidate;
+	return result;
 }
 
 void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
@@ -744,10 +760,9 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 		return nullptr;
 	}
 
-	CCircuitDef* storeDef = circuit->GetCircuitDef("armmstor");
-
 	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
-	if (!builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() ||
+	if ((storeDef == nullptr) ||
+		!builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() ||
 		(economy->GetStorage(metalRes) > 10 * metalIncome) ||
 		(storeDef->GetCount() >= 5) ||
 		!storeDef->IsAvailable())
@@ -857,9 +872,9 @@ void CEconomyManager::UpdateMorph()
 void CEconomyManager::ReadConfig()
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const float ecoSlope = root["economy"].get("slope", 0.25f).asFloat();
+	const float step = root["economy"].get("eps_step", 0.25f).asFloat();
 	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
-	ecoFactor = circuit->GetAllyTeam()->GetSize() * ecoSlope + (1.0f - ecoSlope);
+	ecoFactor = (circuit->GetAllyTeam()->GetSize() - 1.0f) * step + 1.0f;
 
 	// Using cafus, armfus, armsolar as control points
 	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
@@ -912,10 +927,16 @@ void CEconomyManager::ReadConfig()
 //	};
 //	CGaussSolver::Vector r = solver.Solve(a, y);
 //	circuit->LOG("y = %f*x^0 + %f*x^1 + %f*x^2", r[0], r[1], r[2]);
+
+	// NOTE: Must have
+	defaultDef = circuit->GetCircuitDef(root["economy"]["default"].asCString());
 }
 
 void CEconomyManager::Init()
 {
+	CAllyTeam* allyTeam = circuit->GetAllyTeam();
+	energyGrid = allyTeam->GetEnergyLink().get();
+
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	size_t clSize = metalManager->GetClusters().size();
 	clusterInfos.resize(clSize, {nullptr});
@@ -927,10 +948,10 @@ void CEconomyManager::Init()
 	if (commander != nullptr) {
 		const AIFloat3& pos = commander->GetPos(circuit->GetLastFrame());
 		int clusterId = metalManager->FindNearestCluster(pos);
-		int ownerId = circuit->GetAllyTeam()->GetClusterTeam(clusterId).teamId;
+		int ownerId = allyTeam->GetClusterTeam(clusterId).teamId;
 		if (ownerId < 0) {
 			ownerId = circuit->GetTeamId();
-			circuit->GetAllyTeam()->OccupyCluster(clusterId, ownerId);
+			allyTeam->OccupyCluster(clusterId, ownerId);
 		} else if (ownerId != circuit->GetTeamId()) {
 			// Resign
 			std::vector<Unit*> migrants;
@@ -947,7 +968,7 @@ void CEconomyManager::Init()
 		}
 	}
 
-	const int interval = circuit->GetAllyTeam()->GetSize() * FRAMES_PER_SEC;
+	const int interval = allyTeam->GetSize() * FRAMES_PER_SEC;
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks), this),
 							interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this),
