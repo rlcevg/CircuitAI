@@ -2,7 +2,7 @@
  * WaitTask.cpp
  *
  *  Created on: Jul 24, 2016
- *      Author: evgenij
+ *      Author: rlcevg
  */
 
 #include "task/static/WaitTask.h"

@@ -177,10 +177,12 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			// pylon
 			auto it = customParams.find("pylonrange");
 			if (it != customParams.end()) {
-				float areaDivCost = M_PI * SQUARE(utils::string_to_float(it->second)) / cdef->GetCost();
+				const float range = utils::string_to_float(it->second);
+				float areaDivCost = M_PI * SQUARE(range) / cdef->GetCost();
 				if (maxAreaDivCost < areaDivCost) {
 					maxAreaDivCost = areaDivCost;
 					pylonDef = cdef;  // armestor
+					pylonRange = range;
 				}
 			}
 
@@ -227,13 +229,10 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	if (mexDef == nullptr) {
 		mexDef = defaultDef;
 	}
-
 	if (pylonDef == nullptr) {
 		pylonDef = defaultDef;
+		pylonRange = PYLON_RANGE;
 	}
-	const std::map<std::string, std::string>& customParams = pylonDef->GetUnitDef()->GetCustomParams();
-	auto search = customParams.find("pylonrange");
-	pylonRange = (search != customParams.end()) ? utils::string_to_float(search->second) : PYLON_RANGE;
 
 	ReadConfig();
 }
@@ -295,7 +294,7 @@ CCircuitDef* CEconomyManager::GetLowEnergy(const AIFloat3& pos) const
 	auto it = energyInfos.rbegin();
 	while (it != energyInfos.rend()) {
 		CCircuitDef* candy = it->cdef;
-		if (terrainManager->CanBeBuiltAt(candy, pos) && candy->IsAvailable()) {
+		if (candy->IsAvailable() && terrainManager->CanBeBuiltAt(candy, pos)) {
 			result = candy;
 			break;
 		}
@@ -872,6 +871,7 @@ void CEconomyManager::UpdateMorph()
 void CEconomyManager::ReadConfig()
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
 	const float step = root["economy"].get("eps_step", 0.25f).asFloat();
 	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
 	ecoFactor = (circuit->GetAllyTeam()->GetSize() - 1.0f) * step + 1.0f;
@@ -912,6 +912,10 @@ void CEconomyManager::ReadConfig()
 	CLagrangeInterPol::Vector x(engies.size()), y(engies.size());
 	for (unsigned i = 0; i < engies.size(); ++i) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(engies[i].first.c_str());
+		if (cdef == nullptr) {
+			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), engies[i].first.c_str());
+			continue;
+		}
 		float make = utils::string_to_float(cdef->GetUnitDef()->GetCustomParams().find("income_energy")->second);
 		x[i] = cdef->GetCost() / make;
 		y[i] = engies[i].second + 0.5;  // +0.5 to be sure precision errors will not decrease integer part

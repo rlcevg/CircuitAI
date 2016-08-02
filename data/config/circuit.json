@@ -13,8 +13,6 @@
 "normal": {
 // Define factories
 "factory": {
-	"_buildpower_": 1.25,  // Mobile buildpower to metal income ratio
-
 	"factorycloak": {
 		// Adjusts the priority of factory choice (factories with map_percent < 20 are ignored)
 		// map_percent is [20..100]
@@ -581,7 +579,7 @@
 		"retreat": 0.5
 	},
 	"cormist": {
-		"role": ["skirmish"],
+		"role": ["assault"],
 		"attribute": ["siege"],
 		"retreat": 0.25  // cannot retreat
 	},
@@ -888,7 +886,7 @@
 	"skirmish": {
 		"vs":         ["riot", "assault"],
 		"ratio":      [ 1.1,    1.1],
-		"importance": [ 1.0,    1.0],
+		"importance": [ 1.5,    1.2],
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
@@ -919,6 +917,9 @@
 	// Scales metal income
 	// ecoFactor = teamSize*eps_step+(1-eps_step)
 	"eps_step": 0.125,
+
+	// Mobile buildpower to metal income ratio
+	"buildpower": 1.25,
 
 	"terra_def": "terraunit",
 
@@ -961,7 +962,9 @@
 		"armfus": [4],
 		"armwin": [20]
 	},
-	"income_factor": 0.74
+	"income_factor": 0.74,
+
+	"pylon": ["armestor", "armsolar", "armwin"]
 },
 
 "porcupine": {
@@ -1020,6 +1023,121 @@
 	"dyntrainer_assault_base": {
 	},
 	"dyntrainer_strike_base": {
+	}
+},
+
+"building": {
+	"class_land": {
+		// Unit of measurement: 1 size/yard/radius = SQUARE_SIZE * 2 = 16 elmos, integer
+		"fac_land": {
+			"type": ["rectangle", "factory"],
+			"offset": [0, 4],  // in South facing, default: [0, 0]
+//			"size": [7, 7],  // default: "original"
+			"yard": [8, 8]  // default: [0, 0]
+//			"ignore": ["none"]  // default: ["none"]
+		},
+		"fac_air": {
+			"type": ["rectangle", "factory"],
+			"yard": [4, 4]
+		},
+		"fac_water": {
+			"type": ["rectangle", "factory"],
+			"offset": [0, 4],
+			"yard": [10, 12]
+		},
+		"fac_strider": {
+			"type": ["rectangle", "special"],
+			"offset": [0, 12],
+			"yard": [16, 16]
+		},
+		"solar": {
+			"type": ["rectangle", "engy_low"],
+			"ignore": ["mex", "engy_mid", "engy_high", "def_low", "pylon", "nano"]
+		},
+		"wind": {
+			"type": ["circle", "engy_low"],
+//			"radius": "explosion",  // default: "explosion"
+			"ignore": ["mex", "engy_mid", "engy_high", "pylon", "nano"]
+		},
+		"fusion": {
+			"type": ["circle", "engy_mid"],
+			"ignore": ["mex", "pylon", "def_low"]
+		},
+		"singu": {
+			"type": ["circle", "engy_high"],
+			"radius": "expl_ally",  // [radius ~ 1 player .. radius/2 ~ 4+ players]
+			"ignore": ["mex", "engy_low", "def_low", "pylon", "nano"]
+		},
+		"pylon": {
+			"type": ["circle", "pylon"],
+			"not_ignore": ["factory", "pylon"]  // default: ["all"]
+		},
+		"store": {
+			"type": ["rectangle", "mex"],
+			"not_ignore": ["factory"]
+		},
+		"mex": {
+			"type": ["rectangle", "mex"],
+			"not_ignore": ["factory", "pylon"]
+		},
+		"def_low": {
+			"type": ["circle", "def_low"],
+			"radius": 6,  // 100 / (SQUARE_SIZE * 2)
+			"ignore": ["engy_mid", "engy_high", "pylon", "nano"]
+		},
+		"caretaker": {
+			"type": ["rectangle", "nano"],
+			"ignore": ["mex", "def_low", "engy_mid", "pylon", "engy_high"]
+		},
+		"superweapon": {
+			"type": ["circle", "special"],
+			"ignore": ["mex", "def_low", "pylon", "engy_high"]
+		},
+		"protector": {
+			"type": ["circle", "special"],
+			"ignore": ["mex", "def_low", "engy_mid", "pylon", "engy_high"]
+		},
+//		"terraform": {
+//			"type": ["rectangle", "special"],
+//			"size": [7, 7]  // int2(3 + 4, 3 + 4)
+//		},
+		"strider": {
+			"type": ["rectangle", "special"],
+			"yard": [4, 4],
+			"ignore": ["all"]
+		},
+		"_default_": {
+			"type": ["rectangle", "unknown"],
+			"yard": [4, 4],
+			"ignore": ["pylon", "engy_high"]
+		}
+	},
+	// Water overrides land
+	"class_water" : {
+		"wind": {
+			"type": ["circle", "engy_low"],
+			"radius": 1,  // default: "explosion"
+			"ignore": ["mex", "engy_mid", "engy_high", "pylon", "nano"]
+		}
+	},
+	"instance": {
+		"fac_land": ["factorycloak", "factoryamph", "factoryhover", "factoryjump", "factoryshield", "factoryspider", "factorytank", "factoryveh"],
+		"fac_air": ["factoryplane", "factorygunship"],
+		"fac_water": ["factoryship"],
+		"fac_strider": ["striderhub"],
+		"solar": ["armsolar"],
+		"wind": ["armwin"],
+		"fusion": ["armfus"],
+		"singu": ["cafus"],
+		"pylon": ["armestor"],
+		"store": ["armmstor"],
+		"mex": ["cormex"],
+		"def_low": ["corrl", "corllt"],
+		"caretaker": ["armnanotc"],
+		"superweapon": ["raveparty"],
+		"protector": ["armamd"],
+//		"terraform": ["terraunit"],
+		"strider": ["armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"]
 	}
 }
 },

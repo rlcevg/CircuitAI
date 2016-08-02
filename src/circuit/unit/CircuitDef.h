@@ -9,7 +9,6 @@
 #define SRC_CIRCUIT_UNIT_CIRCUITDEF_H_
 
 #include "terrain/TerrainData.h"
-#include "util/Defines.h"
 
 #include "UnitDef.h"
 
@@ -58,10 +57,10 @@ public:
 
 	static RoleM GetMask(RoleT type) { return 1 << type; }
 
-	using RoleName = std::map<const char*, CCircuitDef::RoleType, cmp_str>;
-	using AttrName = std::map<const char*, CCircuitDef::AttrType, cmp_str>;
-	static RoleName& GetRoleNames();
-	static AttrName& GetAttrNames();
+	using RoleName = std::map<std::string, RoleType>;
+	using AttrName = std::map<std::string, AttrType>;
+	static RoleName& GetRoleNames() { return roleNames; }
+	static AttrName& GetAttrNames() { return attrNames; }
 
 	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
@@ -181,6 +180,9 @@ public:
 	const springai::AIFloat3& GetMidPosOffset() const { return midPosOffset; }
 
 private:
+	static RoleName roleNames;
+	static AttrName attrNames;
+
 	Id id;
 	springai::UnitDef* def;  // owner
 	RoleType mainRole;

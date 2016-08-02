@@ -13,9 +13,11 @@
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"  // Only for UpdateAreaUsers
 #include "resource/MetalManager.h"
+#include "setup/SetupManager.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
+#include "json/json.h"
 
 #include "Map.h"
 #include "OOAICallback.h"
@@ -42,219 +44,6 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	areaData = terrainData->pAreaData.load();
 
 	ResetBuildFrame();
-	CCircuitDef* mexDef = circuit->GetCircuitDef("cormex");
-
-	/*
-	 * building masks
-	 */
-	CCircuitDef* cdef;
-	UnitDef* def;
-	WeaponDef* wpDef;
-	int2 offset;
-	int2 bsize;
-	int2 ssize;
-	int radius;
-	int ignoreMask;
-	bool isWaterMap = GetPercentLand() < 40.0;
-
-	ignoreMask = STRUCT_BIT(NONE);
-	offset = int2(0, 4);  // in South facing
-	const char* landFactories[] = {"factorycloak", "factoryamph", "factoryhover", "factoryjump", "factoryshield", "factoryspider", "factorytank", "factoryveh"};
-	for (const char* fac : landFactories) {
-		cdef = circuit->GetCircuitDef(fac);
-		def = cdef->GetUnitDef();
-		ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-		bsize = ssize + int2(8, 8);
-		blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::FACTORY, ignoreMask);
-	}
-	offset = int2(0, 0);
-	const char* airFactories[] = {"factoryplane", "factorygunship"};
-	for (const char* fac : airFactories) {
-		cdef = circuit->GetCircuitDef(fac);
-		def = cdef->GetUnitDef();
-		ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-		bsize = ssize + int2(4, 4);
-		blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::FACTORY, ignoreMask);
-	}
-	offset = int2(0, 4);
-	cdef = circuit->GetCircuitDef("factoryship");
-	def = cdef->GetUnitDef();
-	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	bsize = ssize + int2(10, 12);
-	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::FACTORY, ignoreMask);
-
-	cdef = circuit->GetCircuitDef("striderhub");
-	def = cdef->GetUnitDef();
-	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	bsize = ssize + int2(16, 16);
-	offset = int2(0, 12);
-	ignoreMask = STRUCT_BIT(NONE);
-	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
-
-	cdef = circuit->GetCircuitDef("armsolar");
-	def = cdef->GetUnitDef();
-	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	bsize = ssize;
-	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(MEX) |
-				 STRUCT_BIT(ENGY_MID) |
-				 STRUCT_BIT(ENGY_HIGH) |
-				 STRUCT_BIT(DEF_LOW) |
-				 STRUCT_BIT(PYLON) |
-				 STRUCT_BIT(NANO);
-	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::ENGY_LOW, ignoreMask);
-
-	cdef = circuit->GetCircuitDef("armwin");
-	def = cdef->GetUnitDef();
-	wpDef = def->GetDeathExplosion();
-	radius = isWaterMap ? 1 : wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
-	delete wpDef;
-	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(MEX) |
-				 STRUCT_BIT(ENGY_MID) |
-				 STRUCT_BIT(ENGY_HIGH) |
-				 STRUCT_BIT(PYLON) |
-				 STRUCT_BIT(NANO);
-	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_LOW, ignoreMask);
-
-	cdef = circuit->GetCircuitDef("armfus");
-	def = cdef->GetUnitDef();
-	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
-	delete wpDef;
-	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(MEX) |
-				 STRUCT_BIT(PYLON) |
-				 STRUCT_BIT(DEF_LOW);
-	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_MID, ignoreMask);
-
-	cdef = circuit->GetCircuitDef("cafus");
-	def = cdef->GetUnitDef();
-	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
-	radius -= radius / 6 * (std::min(circuit->GetAllyTeam()->GetSize(), 4) - 1);  // [radius ~ 1 player ; radius/2 ~ 4+ players]
-	delete wpDef;
-	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(MEX) |
-				 STRUCT_BIT(ENGY_LOW) |
-				 STRUCT_BIT(DEF_LOW) |
-				 STRUCT_BIT(PYLON) |
-				 STRUCT_BIT(NANO);
-	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::ENGY_HIGH, ignoreMask);
-
-	cdef = circuit->GetCircuitDef("armestor");
-	def = cdef->GetUnitDef();
-	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
-	delete wpDef;
-	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(ALL) & ~(STRUCT_BIT(FACTORY) | STRUCT_BIT(PYLON));
-	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::PYLON, ignoreMask);
-
-	cdef = circuit->GetCircuitDef("armmstor");
-	def = cdef->GetUnitDef();
-	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	bsize = ssize;
-	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(ALL) & ~STRUCT_BIT(FACTORY);
-	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::MEX, ignoreMask);
-
-	cdef = mexDef;
-	def = cdef->GetUnitDef();  // cormex
-	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	bsize = ssize;
-	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(ALL) & ~(STRUCT_BIT(FACTORY) | STRUCT_BIT(PYLON));
-	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::MEX, ignoreMask);
-
-	cdef = circuit->GetCircuitDef("corrl");
-	def = cdef->GetUnitDef();
-	radius = 100 / (SQUARE_SIZE * 2);
-	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(ENGY_MID) |
-				 STRUCT_BIT(ENGY_HIGH) |
-				 STRUCT_BIT(PYLON) |
-				 STRUCT_BIT(NANO);
-	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::DEF_LOW, ignoreMask);
-
-	cdef = circuit->GetCircuitDef("corllt");
-	def = cdef->GetUnitDef();
-	radius = 100 / (SQUARE_SIZE * 2);
-	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(ENGY_MID) |
-				 STRUCT_BIT(ENGY_HIGH) |
-				 STRUCT_BIT(PYLON) |
-				 STRUCT_BIT(NANO);
-	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::DEF_LOW, ignoreMask);
-
-	cdef = circuit->GetCircuitDef("armnanotc");
-	def = cdef->GetUnitDef();
-//	wpDef = def->GetDeathExplosion();
-//	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
-//	delete wpDef;
-	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-//	bsize = int2(radius * 2 - (ssize.x % 2), radius * 2 - (ssize.y % 2));
-	bsize = ssize;
-	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(MEX) |
-				 STRUCT_BIT(DEF_LOW) |
-				 STRUCT_BIT(ENGY_MID) |
-				 STRUCT_BIT(PYLON) |
-				 STRUCT_BIT(ENGY_HIGH);
-	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::NANO, ignoreMask);
-
-	cdef = circuit->GetCircuitDef("raveparty");
-	def = cdef->GetUnitDef();
-	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
-	delete wpDef;
-	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(MEX) |
-				 STRUCT_BIT(DEF_LOW) |
-				 STRUCT_BIT(PYLON) |
-				 STRUCT_BIT(ENGY_HIGH);
-	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
-
-	cdef = circuit->GetCircuitDef("armamd");
-	def = cdef->GetUnitDef();
-	wpDef = def->GetDeathExplosion();
-	radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
-	delete wpDef;
-	ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(MEX) |
-				 STRUCT_BIT(DEF_LOW) |
-				 STRUCT_BIT(ENGY_MID) |
-				 STRUCT_BIT(PYLON) |
-				 STRUCT_BIT(ENGY_HIGH);
-	blockInfos[cdef->GetId()] = new CBlockCircle(offset, radius, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
-
-// FIXME: DEBUG
-//	cdef = circuit->GetCircuitDef("terraunit");
-//	ssize = int2(3 + 4, 3 + 4);
-//	bsize = ssize;
-//	offset = int2(0, 0);
-//	ignoreMask = STRUCT_BIT(NONE);
-//	blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
-// FIXME: DEBUG
-
-	const char* striders[] = {"armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"};
-	for (const char* strider : striders) {
-		cdef = circuit->GetCircuitDef(strider);
-		def = cdef->GetUnitDef();
-		ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
-		bsize = ssize + int2(4, 4);
-		offset = int2(0, 0);
-		ignoreMask = STRUCT_BIT(ALL);
-		blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::SPECIAL, ignoreMask);
-	}
 
 	Map* map = circuit->GetMap();
 	int mapWidth = map->GetWidth();
@@ -268,18 +57,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	SBlockingMap::SBlockCellLow cellLow = {0};
 	blockingMap.gridLow.resize(blockingMap.columnsLow * blockingMap.rowsLow, cellLow);
 
-	offset = int2(0, 0);
-	ignoreMask = STRUCT_BIT(PYLON) |
-				 STRUCT_BIT(ENGY_HIGH);
-	const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
-	for (auto& kv : defs) {
-		CCircuitDef* cdef = kv.second;
-		if (!cdef->IsMobile() && (blockInfos.find(kv.first) == blockInfos.end())) {
-			ssize = int2(cdef->GetUnitDef()->GetXSize() / 2, cdef->GetUnitDef()->GetZSize() / 2);
-			bsize = ssize + int2(4, 4);
-			blockInfos[cdef->GetId()] = new CBlockRectangle(offset, bsize, ssize, SBlockingMap::StructType::UNKNOWN, ignoreMask);
-		}
-	}
+	ReadConfig();
 }
 
 CTerrainManager::~CTerrainManager()
@@ -296,6 +74,206 @@ CTerrainManager::~CTerrainManager()
 		delete[] dbgMap;
 	}
 #endif
+}
+
+void CTerrainManager::ReadConfig()
+{
+	/*
+	 * Building masks
+	 */
+	struct SBlockDesc {
+		SBlockingMap::StructType structType;
+		int structIdx;
+		int2 offset;
+		int2 yard;
+		int radius;
+		int radIdx;
+		int2 ssize;
+		int sizeIdx;
+		int ignoreMask;
+	};
+
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
+	const Json::Value& block = root["building"];
+	SBlockingMap::StructTypes& structTypes = SBlockingMap::GetStructTypes();
+	SBlockingMap::StructMasks& structMasks = SBlockingMap::GetStructMasks();
+	const std::array<std::string, 2> blockNames = {"rectangle", "circle"};
+	enum {RECTANGLE = 0, CIRCLE};
+	const std::array<std::string, 2> radNames = {"explosion", "expl_ally"};
+	enum {EXPLOSION = 0, EXPL_ALLY};
+	const bool isWaterMap = GetPercentLand() < 40.0;
+
+	const Json::Value& clLand = block["class_land"];
+	const Json::Value& clWater = block["class_water"];
+	const Json::Value& instance = block["instance"];
+
+	auto readBlockDesc = [this, &cfgName, &structTypes, &structMasks, &blockNames, &radNames]
+						 (const char* clName, const Json::Value& cls, SBlockDesc& outDesc)
+	{
+		const Json::Value& type = cls["type"];
+		const std::string& strST = type.get((unsigned)1, "").asString();
+		auto it = structTypes.find(strST);
+		if (it == structTypes.end()) {
+			circuit->LOG("CONFIG %s: '%s' has unknown struct type '%s'", cfgName.c_str(), clName, strST.c_str());
+			return false;
+		}
+		outDesc.structType = it->second;
+
+		outDesc.structIdx = -1;
+		const std::string& strBT = type.get((unsigned)0, "").asString();
+		for (unsigned i = 0; i < blockNames.size(); ++i) {
+			if (strBT == blockNames[i]) {
+				outDesc.structIdx = i;
+				break;
+			}
+		}
+		if (outDesc.structIdx < 0) {
+			circuit->LOG("CONFIG %s: '%s' has unknown block type '%s'", cfgName.c_str(), clName, strBT.c_str());
+			return false;
+		}
+
+		const Json::Value& offs = cls["offset"];
+		outDesc.offset = int2(offs.get((unsigned)0, 0).asInt(), offs.get((unsigned)1, 0).asInt());
+
+		outDesc.radIdx = -1;
+		switch (outDesc.structIdx) {
+			default:
+			case RECTANGLE: {
+				const Json::Value& rd = cls["yard"];
+				outDesc.yard = int2(rd.get((unsigned)0, 0).asInt(), rd.get((unsigned)1, 0).asInt());
+			} break;
+			case CIRCLE: {
+				const Json::Value& rad = cls["radius"];
+				if (rad.empty()) {
+					outDesc.radIdx = EXPLOSION;
+				} else if (rad.isString()) {
+					const std::string& strRad = rad.asString();
+					for (unsigned i = 0; i < radNames.size(); ++i) {
+						if (strRad == radNames[i]) {
+							outDesc.radIdx = i;
+							break;
+						}
+					}
+					if (outDesc.radIdx < 0) {
+						circuit->LOG("CONFIG %s: '%s' has unknown radius '%s'", cfgName.c_str(), clName, strRad.c_str());
+						outDesc.radIdx = EXPLOSION;
+					}
+				} else {
+					outDesc.radius = rad.asInt();
+				}
+			} break;
+		}
+
+		outDesc.sizeIdx = -1;
+		const Json::Value& size = cls["size"];
+		if (!size.empty()) {
+			outDesc.ssize = int2(size.get((unsigned)0, 0).asInt(), size.get((unsigned)1, 0).asInt());
+			outDesc.sizeIdx = 0;
+		}
+
+		outDesc.ignoreMask = STRUCT_BIT(NONE);
+		const Json::Value& ignore = cls["ignore"];
+		if (!ignore.empty()) {
+			for (const Json::Value& mask : ignore) {
+				auto it = structMasks.find(mask.asString());
+				if (it == structMasks.end()) {
+					circuit->LOG("CONFIG %s: '%s' has unknown ignore type '%s'", cfgName.c_str(), clName, mask.asCString());
+				} else {
+					outDesc.ignoreMask |= static_cast<SBlockingMap::SM>(it->second);
+				}
+			}
+		} else {
+			const Json::Value& notIgnore = cls["not_ignore"];
+			if (!notIgnore.empty()) {
+				int notIgnoreMask = STRUCT_BIT(NONE);
+				for (const Json::Value& mask : notIgnore) {
+					auto it = structMasks.find(mask.asString());
+					if (it == structMasks.end()) {
+						circuit->LOG("CONFIG %s: '%s' has unknown not_ignore type '%s'", cfgName.c_str(), clName, mask.asCString());
+					} else {
+						notIgnoreMask |= static_cast<SBlockingMap::SM>(it->second);
+					}
+				}
+				outDesc.ignoreMask = STRUCT_BIT(ALL) & ~notIgnoreMask;
+			}
+		}
+
+		return true;
+	};
+
+	auto createBlockInfo = [this](SBlockDesc& blockDesc, UnitDef* def) {
+		if (blockDesc.sizeIdx < 0) {
+			blockDesc.ssize = int2(def->GetXSize() / 2, def->GetZSize() / 2);
+		}
+
+		IBlockMask* blocker;
+		switch (blockDesc.structIdx) {
+			default:
+			case RECTANGLE: {
+				int2 bsize = blockDesc.ssize + blockDesc.yard;
+				blocker = new CBlockRectangle(blockDesc.offset, bsize, blockDesc.ssize, blockDesc.structType, blockDesc.ignoreMask);
+			} break;
+			case CIRCLE: {
+				switch (blockDesc.radIdx) {
+					case EXPLOSION: {
+						WeaponDef* wpDef = def->GetDeathExplosion();
+						blockDesc.radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
+						delete wpDef;
+					} break;
+					case EXPL_ALLY: {
+						WeaponDef* wpDef = def->GetDeathExplosion();
+						blockDesc.radius = wpDef->GetAreaOfEffect() / (SQUARE_SIZE * 2);
+						// [radius ~ 1 player ; radius/2 ~ 4+ players]
+						blockDesc.radius -= blockDesc.radius / 6 * (std::min(circuit->GetAllyTeam()->GetSize(), 4) - 1);
+						delete wpDef;
+					} break;
+					default: break;
+				}
+				blocker = new CBlockCircle(blockDesc.offset, blockDesc.radius, blockDesc.ssize, blockDesc.structType, blockDesc.ignoreMask);
+			} break;
+		}
+		return blocker;
+	};
+
+	for (const std::string& clName : instance.getMemberNames()) {
+		Json::Value cls = isWaterMap ? clWater[clName] : Json::Value::null;
+		if (cls.empty()) {
+			cls = clLand[clName];
+			if (cls.empty()) {
+				circuit->LOG("CONFIG %s: unknown instances of class '%s'", cfgName.c_str(), clName.c_str());
+				continue;
+			}
+		}
+
+		SBlockDesc blockDesc;
+		if (!readBlockDesc(clName.c_str(), cls, blockDesc)) {
+			continue;
+		}
+
+		const Json::Value& defNames = instance[clName];
+		for (const Json::Value& def : defNames) {
+			CCircuitDef* cdef = circuit->GetCircuitDef(def.asCString());
+			if (cdef == nullptr) {
+				circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), def.asCString());
+				continue;
+			}
+
+			blockInfos[cdef->GetId()] = createBlockInfo(blockDesc, cdef->GetUnitDef());
+		}
+	}
+
+	SBlockDesc blockDesc;
+	const char* defName = "_default_";
+	if (readBlockDesc(defName, clLand[defName], blockDesc)) {
+		const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
+		for (auto& kv : defs) {
+			CCircuitDef* cdef = kv.second;
+			if (!cdef->IsMobile() && (blockInfos.find(kv.first) == blockInfos.end())) {
+				blockInfos[cdef->GetId()] = createBlockInfo(blockDesc, cdef->GetUnitDef());
+			}
+		}
+	}
 }
 
 void CTerrainManager::Init()

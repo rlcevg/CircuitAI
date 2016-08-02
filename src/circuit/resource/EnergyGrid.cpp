@@ -14,6 +14,7 @@
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
+#include "json/json.h"
 
 #include "AISCommands.h"
 #ifdef DEBUG_VIS
@@ -82,6 +83,17 @@ CEnergyGrid::CEnergyGrid(CCircuitAI* circuit)
 #endif
 {
 	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>(&CEnergyGrid::Init, this));
+
+	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
+	for (auto& kv : allDefs) {
+		const std::map<std::string, std::string>& customParams = kv.second->GetUnitDef()->GetCustomParams();
+		auto it = customParams.find("pylonrange");
+		if (it != customParams.end()) {
+			pylonRanges[kv.first] = utils::string_to_float(it->second);
+		}
+	}
+
+	ReadConfig();
 }
 
 CEnergyGrid::~CEnergyGrid()
@@ -215,22 +227,23 @@ float CEnergyGrid::GetPylonRange(CCircuitDef::Id defId)
 	return (it != pylonRanges.end()) ? it->second : .0f;
 }
 
-void CEnergyGrid::Init()
+void CEnergyGrid::ReadConfig()
 {
-	for (auto& kv : circuit->GetCircuitDefs()) {
-		const std::map<std::string, std::string>& customParams = kv.second->GetUnitDef()->GetCustomParams();
-		auto it = customParams.find("pylonrange");
-		if (it != customParams.end()) {
-			pylonRanges[kv.first] = utils::string_to_float(it->second);
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
+	const Json::Value& pylons = root["energy"]["pylon"];
+	for (const Json::Value& pyl : pylons) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(pyl.asCString());
+		if (cdef == nullptr) {
+			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), pyl.asCString());
+		} else {
+			rangePylons[pylonRanges[cdef->GetId()]] = cdef->GetId();
 		}
 	}
-	// FIXME: const names
-	const char* names[] = {"armestor", "armsolar", "armwin"};
-	for (const char* name : names) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(name);
-		rangePylons[pylonRanges[cdef->GetId()]] = cdef->GetId();
-	}
+}
 
+void CEnergyGrid::Init()
+{
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();

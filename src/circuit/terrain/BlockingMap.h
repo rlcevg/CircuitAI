@@ -11,6 +11,7 @@
 #include "System/type2.h"
 
 #include <vector>
+#include <map>
 
 #define GRID_RATIO_LOW		8
 #define STRUCT_BIT(bits)	static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::bits)
@@ -25,6 +26,11 @@ struct SBlockingMap {
 									 NONE = 0x0000,     ALL = 0xFFFF};
 	using ST = std::underlying_type<StructType>::type;
 	using SM = std::underlying_type<StructMask>::type;
+	using StructTypes = std::map<std::string, StructType>;
+	using StructMasks = std::map<std::string, StructMask>;
+
+	static inline StructTypes& GetStructTypes() { return structTypes; }
+	static inline StructMasks& GetStructMasks() { return structMasks; }
 
 	inline bool IsStruct(int x, int z, StructMask structMask) const;
 	inline bool IsBlocked(int x, int z, SM notIgnoreMask) const;
@@ -40,6 +46,9 @@ struct SBlockingMap {
 	inline void Bound(int2& r1, int2& r2);
 
 	static inline StructMask GetStructMask(StructType structType);
+
+	static StructTypes structTypes;
+	static StructMasks structMasks;
 
 	struct SBlockCell {
 		SM blockerMask;

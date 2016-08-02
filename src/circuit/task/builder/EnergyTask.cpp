@@ -82,11 +82,11 @@ void CBEnergyTask::Finish()
 		if (p == nullptr) {
 			continue;
 		}
-		// FIXME: Is SqDistance2D necessary? Or must subtract model radius of pylon from "radius" variable
+		// NOTE: Is SqDistance2D necessary? Or must subtract model radius of pylon from "radius" variable
 		//        @see rts/Sim/Misc/QaudField.cpp
 		//        ...CQuadField::GetUnitsExact(const float3& pos, float radius, bool spherical)
 		//        const float totRad = radius + u->radius; -- suspicious
-		if ((*p->GetCircuitDef() == *pylonDef) && (buildPos.SqDistance2D(p->GetPos(frame)) < radius * radius)) {
+		if ((*p->GetCircuitDef() == *pylonDef) && (buildPos.SqDistance2D(p->GetPos(frame)) < SQUARE(radius))) {
 			foundPylon = true;
 			break;
 		}

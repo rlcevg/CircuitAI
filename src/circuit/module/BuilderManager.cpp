@@ -746,17 +746,24 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 
 IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCircuitUnit* unit)
 {
-	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	CEconomyManager* em = circuit->GetEconomyManager();
 	IBuilderTask* task;
-	task = economyManager->UpdateEnergyTasks(position, unit);
+	task = em->UpdateEnergyTasks(position, unit);
 	if (task != nullptr) {
 		return task;
 	}
 
 	// FIXME: Eco rules. It should never get here
-	float metalIncome = std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome()) * economyManager->GetEcoFactor();
-	CCircuitDef* buildDef = circuit->GetCircuitDef("armwin");
-	if ((metalIncome < 50) && (buildDef->GetCount() < 10) && buildDef->IsAvailable()) {
+	CCircuitDef* buildDef/* = nullptr*/;
+	float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
+	bool isLowIncome = metalIncome < 50;
+	if (isLowIncome) {
+		buildDef = em->GetLowEnergy(position);
+		if (buildDef == nullptr) {  // position can be in danger
+			buildDef = em->GetDefaultDef();
+		}
+	}
+	if (isLowIncome && (buildDef->GetCount() < 10) && buildDef->IsAvailable()) {
 		task = EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
 	} else if (metalIncome < 120) {  // TODO: Calc income of the map
 		task = EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
@@ -764,8 +771,11 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 		const std::set<IBuilderTask*>& tasks = GetTasks(IBuilderTask::BuildType::BIG_GUN);
 		if (tasks.empty()) {
 			buildDef = circuit->GetMilitaryManager()->GetBigGunDef();
-			if ((buildDef != nullptr) && circuit->GetMilitaryManager()->IsNeedBigGun(buildDef) && (buildDef->GetCount() < 1) && buildDef->IsAvailable()) {
-				task = EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, circuit->GetSetupManager()->GetBasePos(), IBuilderTask::BuildType::BIG_GUN);
+			if ((buildDef != nullptr) && circuit->GetMilitaryManager()->IsNeedBigGun(buildDef) &&
+				(buildDef->GetCount() < 1) && buildDef->IsAvailable())
+			{
+				task = EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, circuit->GetSetupManager()->GetBasePos(),
+								   IBuilderTask::BuildType::BIG_GUN);
 			} else {
 				task = EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
 			}

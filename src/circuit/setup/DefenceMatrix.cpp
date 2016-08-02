@@ -6,7 +6,9 @@
  */
 
 #include "setup/DefenceMatrix.h"
+#include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
+#include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/math/HierarchCluster.h"
 #include "util/math/RagMatrix.h"
@@ -60,8 +62,13 @@ void CDefenceMatrix::Init(CCircuitAI* circuit)
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	clusterInfos.resize(clusters.size());
 
+	bool isWaterMap = circuit->GetTerrainManager()->GetPercentLand() < 40.0;
+	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
+	const std::vector<CCircuitDef*>& defenders = isWaterMap ? militaryManager->GetWaterDefenders() : militaryManager->GetLandDefenders();
+	CCircuitDef* rangeDef = defenders.empty() ? militaryManager->GetDefaultPorc() : defenders.front();
+
 	Map* map = circuit->GetMap();
-	float maxDistance = circuit->GetCircuitDef("corllt")->GetMaxRange() * 0.75f * 2;
+	float maxDistance = rangeDef->GetMaxRange() * 0.75f * 2;
 	CHierarchCluster clust;
 	CEncloseCircle enclose;
 

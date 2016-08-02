@@ -10,8 +10,8 @@
 
 namespace circuit {
 
-CBlockRectangle::CBlockRectangle(const int2& offset, const int2& bsize, const int2& ssize, SBlockingMap::StructType structType, int ignoreMask) :
-		IBlockMask(structType, ignoreMask)
+CBlockRectangle::CBlockRectangle(const int2& offset, const int2& bsize, const int2& ssize, SBlockingMap::StructType structType, int ignoreMask)
+		: IBlockMask(structType, ignoreMask)
 {
 	BlockRects rects = Init(offset, bsize, ssize);
 	int2& b1 = rects.b1;

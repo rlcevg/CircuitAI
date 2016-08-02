@@ -782,6 +782,7 @@ void CFactoryManager::ReadConfig()
 	for (const std::string& defName : behaviours.getMemberNames()) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());
 		if (cdef == nullptr) {
+			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), defName.c_str());
 			continue;
 		}
 
@@ -793,10 +794,10 @@ void CFactoryManager::ReadConfig()
 			continue;
 		}
 
-		const char* mainName = role[0].asCString();
+		const std::string& mainName = role[0].asString();
 		auto it = roleNames.find(mainName);
 		if (it == roleNames.end()) {
-			circuit->LOG("CONFIG %s: %s has unknown main role '%s'", cfgName.c_str(), defName.c_str(), mainName);
+			circuit->LOG("CONFIG %s: %s has unknown main role '%s'", cfgName.c_str(), defName.c_str(), mainName.c_str());
 			continue;
 		}
 		cdef->SetMainRole(it->second);
@@ -807,10 +808,10 @@ void CFactoryManager::ReadConfig()
 		if (enemyRole.isNull()) {
 			cdef->SetEnemyRole(it->second);
 		} else {
-			const char* enemyName = enemyRole.asCString();
+			const std::string& enemyName = enemyRole.asString();
 			it = roleNames.find(enemyName);
 			if (it == roleNames.end()) {
-				circuit->LOG("CONFIG %s: %s has unknown enemy role '%s'", cfgName.c_str(), defName.c_str(), enemyName);
+				circuit->LOG("CONFIG %s: %s has unknown enemy role '%s'", cfgName.c_str(), defName.c_str(), enemyName.c_str());
 				continue;
 			}
 			cdef->SetEnemyRole(it->second);
@@ -821,9 +822,9 @@ void CFactoryManager::ReadConfig()
 		const Json::Value& attributes = behaviour["attribute"];
 		for (const Json::Value& attr : attributes) {
 			const std::string& attrName = attr.asString();
-			it = roleNames.find(attrName.c_str());
+			it = roleNames.find(attrName);
 			if (it == roleNames.end()) {
-				auto it = attrNames.find(attrName.c_str());
+				auto it = attrNames.find(attrName);
 				if (it == attrNames.end()) {
 					circuit->LOG("CONFIG %s: %s has unknown attribute '%s'", cfgName.c_str(), defName.c_str(), attrName.c_str());
 					continue;
@@ -852,6 +853,7 @@ void CFactoryManager::ReadConfig()
 	for (const std::string& fac : factories.getMemberNames()) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(fac.c_str());
 		if (cdef == nullptr) {
+			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), fac.c_str());
 			continue;
 		}
 
@@ -978,7 +980,7 @@ void CFactoryManager::ReadConfig()
 		factoryDefs[cdef->GetId()] = facDef;
 	}
 
-	bpRatio = factories.get("_buildpower_", 1.f).asFloat();
+	bpRatio = root["economy"].get("buildpower", 1.f).asFloat();
 	reWeight = root["response"].get("_weight_", .5f).asFloat();
 }
 

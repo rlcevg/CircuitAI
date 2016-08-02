@@ -74,6 +74,8 @@ public:
 	unsigned int GetMaxScouts() const { return maxScouts; }
 	unsigned int GetMaxRaiders() const { return maxRaiders; }
 
+	const std::vector<CCircuitDef*>& GetLandDefenders() const { return landDefenders; }
+	const std::vector<CCircuitDef*>& GetWaterDefenders() const { return waterDefenders; }
 	const std::vector<std::pair<CCircuitDef*, int>>& GetBaseDefence() const { return baseDefence; }
 	CCircuitDef* GetBigGunDef() const { return bigGunDef; }
 	CCircuitDef* GetDefaultPorc() const { return defaultPorc; }

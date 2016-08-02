@@ -335,6 +335,7 @@ CAllyTeam* CSetupManager::GetAllyTeam() const
 void CSetupManager::ReadConfig()
 {
 	const Json::Value& root = GetConfig();
+	const std::string& cfgName = GetConfigName();
 	const Json::Value& shield = root["retreat"]["shield"];
 	emptyShield = shield.get((unsigned)0, 0.1f).asFloat();
 	fullShield = shield.get((unsigned)1, 0.6f).asFloat();
@@ -350,6 +351,7 @@ void CSetupManager::ReadConfig()
 	for (const std::string& defName : commanders.getMemberNames()) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());
 		if (cdef == nullptr) {
+			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), defName.c_str());
 			continue;
 		}
 
@@ -375,7 +377,7 @@ void CSetupManager::ReadConfig()
 		const Json::Value& strt = comm["start"];
 		opener.reserve(strt.size());
 		for (const Json::Value& role : strt) {
-			auto it = roleNames.find(role.asCString());
+			auto it = roleNames.find(role.asString());
 			if (it != roleNames.end()) {
 				opener.push_back(it->second);
 			}

@@ -36,6 +36,7 @@ public:
 	float GetPylonRange(CCircuitDef::Id defId);
 
 private:
+	void ReadConfig();
 	void Init();
 	CCircuitAI* circuit;
 

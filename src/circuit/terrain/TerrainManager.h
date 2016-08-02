@@ -38,6 +38,7 @@ public:
 	virtual ~CTerrainManager();
 private:
 	CCircuitAI* circuit;
+	void ReadConfig();
 
 public:
 	int GetTerrainWidth() const { return terrainData->terrainWidth; }
