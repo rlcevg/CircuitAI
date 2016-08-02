@@ -70,7 +70,11 @@ void CScoutTask::Execute(CCircuitUnit* unit)
 
 void CScoutTask::Update()
 {
-	if (++updCount % 2 == 0) {
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
+
+	if ((++updCount % 2 == 0) && (frame >= lastTouched + FRAMES_PER_SEC)) {
+		lastTouched = frame;
 		for (CCircuitUnit* unit : units) {
 			Execute(unit, true);
 		}

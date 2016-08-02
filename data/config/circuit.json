@@ -200,6 +200,12 @@
 			// 72m - 88m+ Late late Game - MAXIMUM PENE
 			"tier7": [ 0.00,    0.27,    0.17,       0.41,           0.00,               0.10,        0.05,       0.00]
 		},
+		"water": {
+			// 33m -40m
+			"tier4": [ 0.00,    0.49,    0.10,       0.20,           0.10,               0.10,        0.01,       0.00],
+			// 41m - 88m+
+			"tier5": [ 0.00,    0.24,    0.05,       0.41,           0.20,               0.05,        0.05,       0.00]
+		},
 
 		"caretaker": 2
 	},
@@ -346,7 +352,7 @@
 		// "role": [<main>, <enemy>]
 		// <main> is the role to make desicions of when to build it and what task to assign
 		// <enemy> is to decide how to counter enemy unit, if missing then equals to <main>
-		// Roles: builder, scout, raider, riot, assault, skirmish, artillery, anti_air, anti_heavy, bomber, support, mine, transport, air, static, heavy
+		// Roles: builder, scout, raider, riot, assault, skirmish, artillery, anti_air, anti_sub, anti_heavy, bomber, support, mine, transport, air, sub, static, heavy
 		// Auto-assigned roles: builder, air, static
 		"role": ["builder"]
 
@@ -661,7 +667,7 @@
 		"retreat": 0.4
 	},
 	"hoverdepthcharge": {
-		"role": ["riot"],
+		"role": ["anti_sub", "riot"],
 		"attribute": ["melee"],
 		"retreat": 0.6
 	},
@@ -686,13 +692,13 @@
 		"role": ["scout"]
 	},
 	"subraider": {
-		"role": ["raider"]
+		"role": ["raider", "sub"]
 	},
 	"shipraider": {
 		"role": ["raider"]
 	},
 	"shiptorp": {
-		"role": ["riot"]
+		"role": ["anti_sub", "riot"]
 	},
 	"shipskirm": {
 		"role": ["skirmish"]
@@ -702,7 +708,7 @@
 		"attribute": ["support"]
 	},
 	"subarty": {
-		"role": ["artillery"],
+		"role": ["artillery", "sub"],
 		"attribute": ["support"]
 	},
 	"armtboat": {
@@ -855,7 +861,7 @@
 },
 
 // Build special units when enemy_metal*ratio > response_metal*eps; eps=teamSize*eps_step+(1-eps_step)
-// AA condition for 3v3: (enemy_air_metal*0.8 > (aa_metal+aa_cost)*1.8) and (aa_metal+aa_cost < army_metal*0.45)
+// AA condition for 3v3: (enemy_air_metal*0.6 > (aa_metal+aa_cost)*1.8) and (aa_metal+aa_cost < army_metal*0.45)
 //
 // Probability of UnitDef for AA role depends on income tier: (tierN[UnitDef]+_weight_)*enemy_air_metal*importance
 // armjeth probability for tier 1: 0.25*enemy_air_metal*4.0
@@ -890,6 +896,13 @@
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
+	"artillery": {
+		"vs":         ["static"],
+		"ratio":      [ 0.6],
+		"importance": [ 1.0],
+		"max_percent": 0.45,
+		"eps_step": 0.4
+	},
 	"anti_air": {
 		"vs":         ["air"],
 		"ratio":      [ 0.6],
@@ -897,10 +910,10 @@
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
-	"artillery": {
-		"vs":         ["static"],
-		"ratio":      [ 0.6],
-		"importance": [ 1.0],
+	"anti_sub": {
+		"vs":         ["sub"],
+		"ratio":      [ 1.0],
+		"importance": [ 2.0],
 		"max_percent": 0.45,
 		"eps_step": 0.4
 	},
@@ -1028,12 +1041,25 @@
 
 "building": {
 	"class_land": {
-		// Unit of measurement: 1 size/yard/radius = SQUARE_SIZE * 2 = 16 elmos, integer
 		"fac_land": {
+			// "type": [<blocker_shape>, <structure_type>]
+			// Available blocker_shape: rectangle, circle.
+			// Available structure_type: factory, mex, engy_low, engy_mid, engy_high, pylon, def_low, def_mid, def_high, special, nano, unknown
 			"type": ["rectangle", "factory"],
-			"offset": [0, 4],  // in South facing, default: [0, 0]
-//			"size": [7, 7],  // default: "original"
+
+			// Unit of measurement: 1 size/yard/radius = SQUARE_SIZE * 2 = 16 elmos, integer.
+			// Offset in South facing
+			"offset": [0, 4],  // default: [0, 0]
+
+			// Size of a blocker without yard
+//			"size": [7, 7],  // default: size of a unit
+
+			// Spacer, blocker_size = size + yard
 			"yard": [8, 8]  // default: [0, 0]
+
+			// "ignore": [<structure_type>, <structure_type>, ...]
+			// Ignore specified structures.
+			// Additional values: none, all
 //			"ignore": ["none"]  // default: ["none"]
 		},
 		"fac_air": {
@@ -1056,6 +1082,8 @@
 		},
 		"wind": {
 			"type": ["circle", "engy_low"],
+			// Integer radius of a blocker or desciption string.
+			// Available string values: explosion, expl_ally
 //			"radius": "explosion",  // default: "explosion"
 			"ignore": ["mex", "engy_mid", "engy_high", "pylon", "nano"]
 		},
@@ -1112,7 +1140,7 @@
 			"ignore": ["pylon", "engy_high"]
 		}
 	},
-	// Water overrides land
+	// Water overrides land. Map considered as water if amount of land < 40%
 	"class_water" : {
 		"wind": {
 			"type": ["circle", "engy_low"],

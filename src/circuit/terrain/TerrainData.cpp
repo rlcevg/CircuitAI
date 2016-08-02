@@ -567,7 +567,7 @@ void CTerrainData::CorrectPosition(AIFloat3& position)
 	} else if (position.z > terrainHeight - 2) {
 		position.z = terrainHeight - 2;
 	}
-	// NOTE: Breaks flying units
+	// NOTE: Breaks flying and submerged units
 //	position.y = map->GetElevationAt(position.x, position.z);
 }
 

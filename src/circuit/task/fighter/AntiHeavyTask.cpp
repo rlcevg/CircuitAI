@@ -152,7 +152,9 @@ void CAntiHeavyTask::Update()
 		return;
 	}
 
-	bool isExecute = (updCount % 2 == 0);
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
+	bool isExecute = (updCount % 2 == 0) && (frame >= lastTouched + FRAMES_PER_SEC);
 	if (!isExecute) {
 		for (CCircuitUnit* unit : units) {
 			isExecute |= unit->IsForceExecute();
@@ -168,12 +170,11 @@ void CAntiHeavyTask::Update()
 			return;
 		}
 	}
+	lastTouched = frame;
 
 	/*
 	 * Update target
 	 */
-	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
 	if (leader->GetCircuitDef()->IsRoleMine() ||
 		(leader->GetCircuitDef()->GetReloadTime() < FRAMES_PER_SEC * 5) ||
 		leader->IsWeaponReady(frame))

@@ -27,15 +27,19 @@ public:
 	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, _SIZE_};
 	using RangeT = std::underlying_type<RangeType>::type;
 
-	// TODO:
+	// TODO: Rebuild response system on unit vs unit basis (opposed to role vs role).
 	// Not implemented: mine, transport
-	// No special task: air, static, heavy
-	enum class RoleType: unsigned int {BUILDER = 0, SCOUT, RAIDER, RIOT, ASSAULT, SKIRM, ARTY, AA, AH, BOMBER, SUPPORT, MINE, TRANS, AIR, STATIC, HEAVY, _SIZE_};
-	enum RoleMask: unsigned int {BUILDER = 0x0001, SCOUT   = 0x0002, RAIDER  = 0x0004, RIOT  = 0x0008,
-								 ASSAULT = 0x0010, SKIRM   = 0x0020, ARTY    = 0x0040, AA    = 0x0080,
-								 AH      = 0x0100, BOMBER  = 0x0200, SUPPORT = 0x0400, MINE  = 0x0800,
-								 TRANS   = 0x1000, AIR     = 0x2000, STATIC  = 0x4000, HEAVY = 0x8000,
-								 NONE    = 0x0000};
+	// No special task: air, sub, static, heavy
+	enum class RoleType: unsigned int {BUILDER = 0, SCOUT, RAIDER, RIOT,
+									   ASSAULT, SKIRM, ARTY, AA,
+									   AS, AH, BOMBER, SUPPORT,
+									   MINE, TRANS, AIR, SUB,
+									   STATIC, HEAVY, _SIZE_};
+	enum RoleMask: unsigned int {BUILDER = 0x00001, SCOUT = 0x00002, RAIDER = 0x00004, RIOT    = 0x00008,
+								 ASSAULT = 0x00010, SKIRM = 0x00020, ARTY   = 0x00040, AA      = 0x00080,
+								 AS      = 0x00100, AH    = 0x00200, BOMBER = 0x00400, SUPPORT = 0x00800,
+								 MINE    = 0x01000, TRANS = 0x02000, AIR    = 0x04000, SUB     = 0x08000,
+								 STATIC  = 0x10000, HEAVY = 0x20000, NONE   = 0x00000};
 	using RoleT = std::underlying_type<RoleType>::type;
 	using RoleM = std::underlying_type<RoleMask>::type;
 
@@ -48,12 +52,14 @@ public:
 	 * COMM:       commander
 	 * HOLD_FIRE:  hold fire on retreat
 	 * NO_STRAFE:  disable gunship's strafe
-	 * STOCK:      stockpile weapon before any task (NOT IMPLEMENTED)
+	 * STOCK:      stockpile weapon before any task (Not implemented)
 	 */
-	enum class AttrType: RoleT {MELEE = static_cast<RoleT>(RoleType::_SIZE_), SIEGE, OPEN_FIRE, NO_JUMP, BOOST, COMM, HOLD_FIRE, NO_STRAFE, STOCK, _SIZE_};
-	enum AttrMask: RoleM {MELEE = 0x0010000, SIEGE = 0x0020000, OPEN_FIRE = 0x0040000, NO_JUMP   = 0x0080000,
-						  BOOST = 0x0100000, COMM  = 0x0200000, HOLD_FIRE = 0x0400000, NO_STRAFE = 0x0800000,
-						  STOCK = 0x1000000};
+	enum class AttrType: RoleT {MELEE = static_cast<RoleT>(RoleType::_SIZE_), SIEGE,
+								OPEN_FIRE, NO_JUMP, BOOST, COMM,
+								HOLD_FIRE, NO_STRAFE, STOCK, _SIZE_};
+	enum AttrMask: RoleM {MELEE     = 0x0040000, SIEGE     = 0x0080000,
+						  OPEN_FIRE = 0x0100000, NO_JUMP   = 0x0200000, BOOST = 0x0400000, COMM = 0x0800000,
+						  HOLD_FIRE = 0x1000000, NO_STRAFE = 0x2000000, STOCK = 0x4000000};
 
 	static RoleM GetMask(RoleT type) { return 1 << type; }
 
@@ -88,13 +94,18 @@ public:
 	bool IsRoleRaider()   const { return role & RoleMask::RAIDER; }
 	bool IsRoleRiot()     const { return role & RoleMask::RIOT; }
 	bool IsRoleAssault()  const { return role & RoleMask::ASSAULT; }
+	bool IsRoleSkirm()    const { return role & RoleMask::SKIRM; }
 	bool IsRoleArty()     const { return role & RoleMask::ARTY; }
 	bool IsRoleAA()       const { return role & RoleMask::AA; }
+	bool IsRoleAS()       const { return role & RoleMask::AS; }
 	bool IsRoleAH()       const { return role & RoleMask::AH; }
 	bool IsRoleBomber()   const { return role & RoleMask::BOMBER; }
 	bool IsRoleSupport()  const { return role & RoleMask::SUPPORT; }
 	bool IsRoleMine()     const { return role & RoleMask::MINE; }
 	bool IsRoleTrans()    const { return role & RoleMask::TRANS; }
+	bool IsRoleAir()      const { return role & RoleMask::AIR; }
+	bool IsRoleSub()      const { return role & RoleMask::SUB; }
+	bool IsRoleStatic()   const { return role & RoleMask::STATIC; }
 	bool IsRoleHeavy()    const { return role & RoleMask::HEAVY; }
 
 	bool IsAttrMelee()    const { return role & AttrMask::MELEE; }

@@ -539,10 +539,10 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 		}
 	};
 	// radar
-	if ((radarDef != nullptr) && radarDef->IsAvailable()) {
+	if ((radarDef != nullptr) && radarDef->IsAvailable() && (radarDef->GetCost() < maxCost)) {
 		checkSensor(IBuilderTask::BuildType::RADAR, radarDef, radarDef->GetUnitDef()->GetRadarRadius() / SQRT_2);
 	}
-	if (isWater && (sonarDef != nullptr) && sonarDef->IsAvailable()) {  // sonar
+	if (isWater && (sonarDef != nullptr) && sonarDef->IsAvailable() && (sonarDef->GetCost() < maxCost)) {  // sonar
 		checkSensor(IBuilderTask::BuildType::SONAR, sonarDef, sonarDef->GetUnitDef()->GetSonarRadius());
 	}
 }

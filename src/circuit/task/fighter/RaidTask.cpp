@@ -135,7 +135,9 @@ void CRaidTask::Update()
 		return;
 	}
 
-	bool isExecute = (updCount % 2 == 0);
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
+	bool isExecute = (updCount % 2 == 0) && (frame >= lastTouched + FRAMES_PER_SEC);
 	if (!isExecute) {
 		for (CCircuitUnit* unit : units) {
 			isExecute |= unit->IsForceExecute();
@@ -151,14 +153,13 @@ void CRaidTask::Update()
 			return;
 		}
 	}
+	lastTouched = frame;
 
 	/*
 	 * Update target
 	 */
 	FindTarget();
 
-	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
 	isAttack = false;
 	if (target != nullptr) {
 		isAttack = true;
