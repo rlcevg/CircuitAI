@@ -106,11 +106,17 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 void CBMexTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-//	CMetalManager* metalManager = circuit->GetMetalManager();
-//	int index = metalManager->FindNearestCluster(buildPos);
-//	if ((index >= 0) && (metalManager->IsClusterQueued(index) || metalManager->IsClusterFinished(index))) {
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	const float metalIncome = std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
+	if (metalIncome > 10) {
 		circuit->GetMilitaryManager()->MakeDefence(buildPos);
-//	}
+	} else {
+		CMetalManager* metalManager = circuit->GetMetalManager();
+		int index = metalManager->FindNearestCluster(buildPos);
+		if ((index >= 0) && (metalManager->IsClusterQueued(index) || metalManager->IsClusterFinished(index))) {
+			circuit->GetMilitaryManager()->MakeDefence(buildPos);
+		}
+	}
 
 	CCircuitDef* energyDef = circuit->GetEconomyManager()->GetLowEnergy(buildPos);
 	if (energyDef != nullptr) {

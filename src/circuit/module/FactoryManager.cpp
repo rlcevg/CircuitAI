@@ -24,6 +24,7 @@
 
 #include "AIFloat3.h"
 #include "OOAICallback.h"
+#include "AISCommands.h"
 #include "Command.h"
 #include "Feature.h"
 #include "Log.h"
@@ -618,7 +619,7 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 	}
 
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	float metalIncome = std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
+	const float metalIncome = std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
 	if ((circuit->GetBuilderManager()->GetBuilderPower() >= metalIncome * bpRatio) || (rand() >= RAND_MAX / 2)) {
 		return nullptr;
 	}
@@ -736,7 +737,11 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 
 CCircuitDef* CFactoryManager::GetFactoryToBuild(AIFloat3 position, bool isStart)
 {
-	return factoryData->GetFactoryToBuild(circuit, position, isStart);
+	CCircuitDef* facDef = factoryData->GetFactoryToBuild(circuit, position, isStart);
+	if ((facDef == nullptr) && utils::is_valid(position)) {
+		facDef = factoryData->GetFactoryToBuild(circuit, -RgtVector, isStart);
+	}
+	return facDef;
 }
 
 void CFactoryManager::AddFactory(CCircuitDef* cdef)

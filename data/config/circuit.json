@@ -1039,6 +1039,72 @@
 	}
 },
 
+// Actions on building finished event
+"build_chain": {
+	// Available build names: factory, nano, store, pylon, energy, defence, bunker, big_gun, radar, sonar, mex, repair
+	"energy": {
+		// <UnitDef>: {<elements>}
+		"cafus": {
+			// Available elements:
+			// "energy": <boolean>
+			// "pylon": <boolean>
+			// "porc": <boolean>
+			// "hub": [
+			//     // chain1
+			//     [[<UnitDef1>, <offset>, <condition>], [<UnitDef2>, <direction>, <condition>], ...],
+			//     // chain2
+			//     [[<chain2_UnitDef1>, [x, z]], [<chain2_UnitDef2>, {"left": x}, "air"], ...],
+			//     ...
+			// ]
+			// <offset>: [x, z] in South facing, elmos
+			// <direction>: left, right, front, back
+			// <condition>: air, no_air, maybe
+
+			// Build pylon in direction of nearby mex cluster
+			"pylon": true,
+
+			// Build chain of units
+			"hub": [
+				[  // chain1
+					["corllt", [-80, -80]],
+					["armartic", [-80, -80]],
+					["corgrav", [-60, 60]],
+					["corrl", [-60, 60]],
+					["screamer", {"front": 40}, "air"],
+					["corflak", {"front": 40}, "no_air"],
+					["corjamt", {"front": 40}],
+					["corjamt", {"back": 40}],
+					["armnanotc", {"back": 20}]
+				],
+				[  // chain2
+					["corllt", [80, 80]],
+					["armartic", [80, 80]],
+					["corgrav", [60, -60]],
+					["corrl", [60, -60]],
+					["missiletower", {"front": 20}, "no_air"],
+					["corjamt", {"left": 40}],
+					["corjamt", {"right": 40}],
+					["armamd", {"front": 0}, "maybe"]
+				]
+			]
+		}
+	},
+	"factory": {
+		"factoryplane": {
+			"hub": [[["armnanotc", {"back": 0}], ["armasp", {"front": 0}]]]
+		},
+		"factorygunship": {
+			"hub": [[["armnanotc", {"back": 0}]]]
+		}
+	},
+	"mex": {
+		"cormex": {
+			"energy": true,
+			"porc": true
+		}
+	}
+},
+
 "building": {
 	"class_land": {
 		"fac_land": {

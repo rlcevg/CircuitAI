@@ -568,16 +568,16 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 
 	// check energy / metal ratio
 	float metalIncome = GetAvgMetalIncome();
-	float energyIncome = GetAvgEnergyIncome();
-	bool isEnergyStalling = IsEnergyStalling();
+	const float energyIncome = GetAvgEnergyIncome();
+	const bool isEnergyStalling = IsEnergyStalling();
 
 	// Select proper energy UnitDef to build
 	CCircuitDef* bestDef = nullptr;
 	float cost/* = 1.f*/;
 	metalIncome = std::min(metalIncome, energyIncome) * incomeFactor;
-	float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome);
-	int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
-	float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.8f : ecoFactor);
+	const float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome);
+	const int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
+	const float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.8f : ecoFactor);
 
 	for (const SEnergyInfo& engy : energyInfos) {  // sorted by high-tech first
 		// TODO: Add geothermal powerplant support
@@ -653,11 +653,11 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	CFactoryManager* factoryManager = circuit->GetFactoryManager();
 
 	// check buildpower
-	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome()) * ecoFactor;
+	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome()) * ecoFactor;
 	CCircuitDef* assistDef = factoryManager->GetAssistDef();
-	float factoryFactor = (metalIncome - assistDef->GetBuildSpeed()) * 1.2f;
+	const float factoryFactor = (metalIncome - assistDef->GetBuildSpeed()) * 1.2f;
 	const int nanoSize = builderManager->GetTasks(IBuilderTask::BuildType::NANO).size();
-	float factoryPower = factoryManager->GetFactoryPower() + nanoSize * assistDef->GetBuildSpeed();
+	const float factoryPower = factoryManager->GetFactoryPower() + nanoSize * assistDef->GetBuildSpeed();
 	if ((factoryPower >= factoryFactor) || !builderManager->GetTasks(IBuilderTask::BuildType::FACTORY).empty()) {
 		return nullptr;
 	}
@@ -695,11 +695,6 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	}
 
 	// check factories
-	CCircuitDef* facDef = factoryManager->GetFactoryToBuild();
-	if (facDef == nullptr) {
-		return nullptr;
-	}
-
 	CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
 		return clusterInfos[v.second].factory == nullptr;
 	};
@@ -711,6 +706,12 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	AIFloat3 buildPos = clusters[index].geoCentr;
+
+	const bool isStart = (factoryManager->GetFactoryCount() == 0);
+	CCircuitDef* facDef = factoryManager->GetFactoryToBuild(buildPos, isStart);
+	if (facDef == nullptr) {
+		return nullptr;
+	}
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	AIFloat3 center = AIFloat3(terrainManager->GetTerrainWidth() / 2, 0, terrainManager->GetTerrainHeight() / 2);
@@ -759,7 +760,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 		return nullptr;
 	}
 
-	float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
+	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
 	if ((storeDef == nullptr) ||
 		!builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() ||
 		(economy->GetStorage(metalRes) > 10 * metalIncome) ||
@@ -794,13 +795,13 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 		return nullptr;
 	}
 
-	float energyIncome = GetAvgEnergyIncome();
-	float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
+	const float energyIncome = GetAvgEnergyIncome();
+	const float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
 	if ((metalIncome * ecoFactor < 10) || (energyIncome < 80) || !pylonDef->IsAvailable()) {
 		return nullptr;
 	}
 
-	float cost = pylonDef->GetCost();
+	const float cost = pylonDef->GetCost();
 	unsigned count = builderManager->GetBuilderPower() / cost * 8 + 1;
 	if (builderManager->GetTasks(IBuilderTask::BuildType::PYLON).size() >= count) {
 		return nullptr;
@@ -849,8 +850,8 @@ void CEconomyManager::UpdateMorph()
 		return;
 	}
 
-	float energyIncome = GetAvgEnergyIncome();
-	float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
+	const float energyIncome = GetAvgEnergyIncome();
+	const float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
 	if ((metalIncome < 10) || !IsMetalFull() || (GetMetalPull() * 0.8f > metalIncome)) {
 		return;
 	}

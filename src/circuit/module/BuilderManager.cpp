@@ -608,21 +608,35 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 			if (!candidate->CanAssignTo(unit)) {
 				continue;
 			}
+
+			// Check time-distance to target
 			const AIFloat3& bp = candidate->GetPosition();
 			AIFloat3 buildPos = utils::is_valid(bp) ? bp : pos;
 			if (basePos.SqDistance2D(buildPos) > SQUARE(2000.f)) {
 				continue;
 			}
 
-			// Check time-distance to target
-			if (!terrainManager->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
-				continue;
+			float distCost;
+			if (candidate->GetPriority() == IBuilderTask::Priority::NOW) {
+				// Disregard safety
+				if (!terrainManager->CanBuildAtUnsafe(unit, buildPos)) {  // ensure that path always exists
+					continue;
+				}
+
+				distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
+
+			} else {
+
+				if (!terrainManager->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
+					continue;
+				}
+
+				distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
+				if (distCost > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
+					continue;
+				}
 			}
 
-			float distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
-			if (distCost > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
-				continue;
-			}
 			distCost = std::max(distCost, THREAT_BASE);
 
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
@@ -696,18 +710,31 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 			const AIFloat3& bp = candidate->GetPosition();
 			AIFloat3 buildPos = utils::is_valid(bp) ? bp : pos;
 
-			CCircuitDef* buildDef = candidate->GetBuildDef();
-			const float buildThreat = (buildDef != nullptr) ? buildDef->GetPower() : 0.f;
-			if ((threatMap->GetThreatAt(buildPos) > maxThreat + buildThreat) ||
-				!terrainManager->CanBuildAtUnsafe(unit, buildPos))  // ensure that path always exists
-			{
-				continue;
+			float distCost;
+			if (candidate->GetPriority() == IBuilderTask::Priority::NOW) {
+				// Disregard safety
+				if (!terrainManager->CanBuildAtUnsafe(unit, buildPos)) {  // ensure that path always exists
+					continue;
+				}
+
+				distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
+
+			} else {
+
+				CCircuitDef* buildDef = candidate->GetBuildDef();
+				const float buildThreat = (buildDef != nullptr) ? buildDef->GetPower() : 0.f;
+				if ((threatMap->GetThreatAt(buildPos) > maxThreat + buildThreat) ||
+					!terrainManager->CanBuildAtUnsafe(unit, buildPos))  // ensure that path always exists
+				{
+					continue;
+				}
+
+				distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
+				if (distCost > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
+					continue;
+				}
 			}
 
-			float distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
-			if (distCost > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
-				continue;
-			}
 			distCost = std::max(distCost, THREAT_BASE);
 
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
@@ -755,8 +782,8 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 
 	// FIXME: Eco rules. It should never get here
 	CCircuitDef* buildDef/* = nullptr*/;
-	float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
-	bool isLowIncome = metalIncome < 50;
+	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
+	const bool isLowIncome = metalIncome < 50;
 	if (isLowIncome) {
 		buildDef = em->GetLowEnergy(position);
 		if (buildDef == nullptr) {  // position can be in danger

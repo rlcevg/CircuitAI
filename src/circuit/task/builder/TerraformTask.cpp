@@ -59,11 +59,11 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 			return;
 		}
 
-		float offsetX = 2 * SQUARE_SIZE;
-		float offsetZ = 2 * SQUARE_SIZE;
+		const float offsetX = 2 * SQUARE_SIZE;
+		const float offsetZ = 2 * SQUARE_SIZE;
 		std::vector<float> params;
-		params.push_back(1.0f);  // 1: terraform_type, 1 == level
-		params.push_back(manager->GetCircuit()->GetTeamId());  // 2: teamId
+		params.push_back(1.0f);  // 1: terraform_type, 1 == level, 5 == restore
+		params.push_back(circuit->GetTeamId());  // 2: teamId
 		params.push_back(1.0f);  // 3: terraform type - 0 == Wall, else == Area
 		params.push_back(circuit->GetMap()->GetElevationAt(position.x, position.z) + 128.0f);  // 4: terraformHeight
 		params.push_back(5.0f);  // 5: number of control points
@@ -98,11 +98,11 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 	Unit* u = unit->GetUnit();
 
 	UnitDef* unitDef = buildDef->GetUnitDef();
-	float offsetX = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 0/*3*/ * SQUARE_SIZE + 0/*1*/;
-	float offsetZ = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 0/*3*/ * SQUARE_SIZE + 0/*1*/;
+	const float offsetX = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 0/*3*/ * SQUARE_SIZE + 0/*1*/;
+	const float offsetZ = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 0/*3*/ * SQUARE_SIZE + 0/*1*/;
 	std::vector<float> params;
 	params.push_back(1.0f);  // 1: terraform_type, 1 == level
-	params.push_back(manager->GetCircuit()->GetTeamId());  // 2: teamId
+	params.push_back(circuit->GetTeamId());  // 2: teamId
 	params.push_back(0.0f);  // 3: terraform type - 0 == Wall, else == Area
 	params.push_back(circuit->GetMap()->GetElevationAt(position.x, position.z) + unitDef->GetHeight());  // 4: terraformHeight
 	params.push_back(5.0f);  // 5: number of control points
