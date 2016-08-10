@@ -210,14 +210,16 @@ void IBuilderTask::Update()
 
 void IBuilderTask::Finish()
 {
+	CBuilderManager* builderManager = manager->GetCircuit()->GetBuilderManager();
+
 	// FIXME: Replace const 1000.0f with build time?
 //	if ((cost > 1000.0f) && (buildDef != nullptr) && !buildDef->IsAttacker()) {
-//		manager->GetCircuit()->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
+//		builderManager->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
 //	}
 
 	// Advance queue
 	if (nextTask != nullptr) {
-		manager->GetCircuit()->GetBuilderManager()->ActivateTask(nextTask);
+		builderManager->ActivateTask(nextTask);
 		nextTask = nullptr;
 	}
 }

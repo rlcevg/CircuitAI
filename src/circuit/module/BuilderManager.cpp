@@ -54,7 +54,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Watchdog, this),
 							FRAMES_PER_SEC * 60,
 							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 10);
-	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CBuilderManager::Init, this));
+	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CBuilderManager::Init, this), FRAMES_PER_SEC * 2);
 
 	/*
 	 * worker handlers

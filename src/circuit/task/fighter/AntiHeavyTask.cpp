@@ -312,7 +312,7 @@ void CAntiHeavyTask::FindTarget()
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const int canTargetCat = cdef->GetTargetCategory();
-	const float maxPower = attackPower * 2.0f;
+	const float maxPower = attackPower * 8.0f;
 	const float weaponRange = cdef->GetMaxRange();
 	const float range = std::max(highestRange, threatMap->GetSquareSize() * 2.0f);
 	const float losSqDist = SQUARE(range);

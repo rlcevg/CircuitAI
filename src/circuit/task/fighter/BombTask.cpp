@@ -184,7 +184,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	CCircuitAI* circuit = manager->GetCircuit();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float maxPower = threatMap->GetUnitThreat(unit) * 2.0f;
+	const float maxPower = threatMap->GetUnitThreat(unit);
 	const float speed = cdef->GetSpeed();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
@@ -192,7 +192,6 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 								 cdef->GetLosRadius());
 	float minSqDist = SQUARE(range);
 	float maxThreat = .0f;
-	float minPower = maxPower;
 
 	CEnemyUnit* bestTarget = nullptr;
 	static F3Vec enemyPositions;  // NOTE: micro-opt
@@ -215,7 +214,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 		bool isBuilder;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
-			if (edef->GetSpeed() * 1.8f > speed) {
+			if (edef->GetSpeed() * 1.5f > speed) {
 				continue;
 			}
 			targetCat = edef->GetCategory();
@@ -230,16 +229,16 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 			isBuilder = false;
 		}
 
-		float sumPower = 0.f;
-		for (IFighterTask* task : enemy->GetTasks()) {
-			sumPower += task->GetAttackPower();
-		}
-		if (sumPower > defPower) {
-			continue;
-		}
+//		float sumPower = 0.f;
+//		for (IFighterTask* task : enemy->GetTasks()) {
+//			sumPower += task->GetAttackPower();
+//		}
+//		if (sumPower > defPower) {
+//			continue;
+//		}
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
-		if ((minPower > power) && (minSqDist > sqDist)) {
+		if (minSqDist > sqDist) {
 			if (enemy->IsInRadarOrLOS() && ((targetCat & noChaseCat) == 0) && !enemy->GetUnit()->IsBeingBuilt()) {
 				if (isBuilder) {
 					bestTarget = enemy;
@@ -250,7 +249,6 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 					minSqDist = sqDist;
 					maxThreat = defPower;
 				}
-				minPower = power;
 			}
 			continue;
 		}

@@ -332,16 +332,30 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 	if (IsMobile() && !IsAttacker()) {  // mobile bomb?
 		WeaponDef* wd = def->GetDeathExplosion();
-		if (wd->GetAreaOfEffect() > 80.0f) {
-			Damage* damage = wd->GetDamage();
-			const std::vector<float>& damages = damage->GetTypes();
-			delete damage;
-			float ldps = .0f;
-			for (float d : damages) {
-				ldps += d;
+		const float aoe = wd->GetAreaOfEffect();
+		if (aoe > 64.0f) {
+			// power
+			float ldmg = .0f;
+			it = customParams.find("statsdamage");
+			if (it != customParams.end()) {
+				ldmg = utils::string_to_float(it->second);
+			} else {
+				Damage* damage = wd->GetDamage();
+				const std::vector<float>& damages = damage->GetTypes();
+				delete damage;
+				for (float d : damages) {
+					ldmg += d;
+				}
+				ldmg /= damages.size();
 			}
-			dmg += ldps;
-			dps = ldps * wd->GetSalvoSize() / damages.size();
+			dmg += ldmg;
+			dps = ldmg * wd->GetSalvoSize();
+			// range
+			for (RangeT rt = 0; rt < static_cast<RangeT>(RangeType::_SIZE_); ++rt) {
+				float& mr = maxRange[rt];
+				mr = std::max(mr, aoe);
+			}
+			// category
 			targetCategory = wd->GetOnlyTargetCategory();
 			if (~targetCategory == 0) {
 				targetCategory = ~circuit->GetBadCategory();
