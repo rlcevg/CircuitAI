@@ -19,7 +19,10 @@ public:
 	CBTerraformTask(ITaskManager* mgr, Priority priority, const springai::AIFloat3& position, float cost = 1.0f, int timeout = 0);
 	virtual ~CBTerraformTask();
 
+	virtual void RemoveAssignee(CCircuitUnit* unit);
+
 	virtual void Execute(CCircuitUnit* unit);
+	virtual void Update();
 protected:
 	virtual void Cancel();
 
@@ -27,6 +30,7 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 
 protected:
+	bool isFirstTry;
 	CCircuitUnit::Id targetId;  // Ignore "target" as it could be destroyed
 };
 

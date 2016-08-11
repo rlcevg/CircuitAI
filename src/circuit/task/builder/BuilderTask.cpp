@@ -6,11 +6,14 @@
  */
 
 #include "task/builder/BuilderTask.h"
+#include "task/builder/BuildChain.h"
 #include "task/RetreatTask.h"
 #include "task/TaskManager.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"
+#include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
+#include "resource/EnergyGrid.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
@@ -25,6 +28,21 @@
 namespace circuit {
 
 using namespace springai;
+
+IBuilderTask::BuildName IBuilderTask::buildNames = {
+	{"factory", IBuilderTask::BuildType::FACTORY},
+	{"nano",    IBuilderTask::BuildType::NANO},
+	{"store",   IBuilderTask::BuildType::STORE},
+	{"pylon",   IBuilderTask::BuildType::PYLON},
+	{"energy",  IBuilderTask::BuildType::ENERGY},
+	{"defence", IBuilderTask::BuildType::DEFENCE},
+	{"bunker",  IBuilderTask::BuildType::BUNKER},
+	{"big_gun", IBuilderTask::BuildType::BIG_GUN},
+	{"radar",   IBuilderTask::BuildType::RADAR},
+	{"sonar",   IBuilderTask::BuildType::SONAR},
+	{"mex",     IBuilderTask::BuildType::MEX},
+	{"repair",  IBuilderTask::BuildType::REPAIR},
+};
 
 IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 		CCircuitDef* buildDef, const AIFloat3& position,
@@ -211,11 +229,12 @@ void IBuilderTask::Update()
 void IBuilderTask::Finish()
 {
 	CBuilderManager* builderManager = manager->GetCircuit()->GetBuilderManager();
-
-	// FIXME: Replace const 1000.0f with build time?
-//	if ((cost > 1000.0f) && (buildDef != nullptr) && !buildDef->IsAttacker()) {
-//		builderManager->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
-//	}
+	if (buildDef != nullptr) {
+		SBuildChain* chain = builderManager->GetBuildChain(buildType, buildDef);
+		if (chain != nullptr) {
+			ExecuteChain(chain);
+		}
+	}
 
 	// Advance queue
 	if (nextTask != nullptr) {
@@ -352,6 +371,144 @@ void IBuilderTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, flo
 		return terrainManager->CanBuildAt(builder, p);
 	};
 	buildPos = terrainManager->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
+}
+
+void IBuilderTask::ExecuteChain(SBuildChain* chain)
+{
+	assert(chain != nullptr);
+	CCircuitAI* circuit = manager->GetCircuit();
+
+	if (chain->isEnergy) {
+		CCircuitDef* energyDef = circuit->GetEconomyManager()->GetLowEnergy(buildPos);
+		if (energyDef != nullptr) {
+			circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, energyDef, buildPos,
+													  IBuilderTask::BuildType::ENERGY, SQUARE_SIZE * 8.0f, true);
+		}
+	}
+
+	if (chain->isPylon) {
+		bool foundPylon = false;
+		CEconomyManager* economyManager = circuit->GetEconomyManager();
+		CCircuitDef* pylonDef = economyManager->GetPylonDef();
+		float ourRange = economyManager->GetEnergyGrid()->GetPylonRange(buildDef->GetId());
+		float pylonRange = economyManager->GetPylonRange();
+		float radius = pylonRange + ourRange;
+		int frame = circuit->GetLastFrame();
+		circuit->UpdateFriendlyUnits();
+		auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(buildPos, radius));
+		for (Unit* u : units) {
+			CCircuitUnit* p = circuit->GetFriendlyUnit(u);
+			if (p == nullptr) {
+				continue;
+			}
+			// NOTE: Is SqDistance2D necessary? Or must subtract model radius of pylon from "radius" variable
+			//        @see rts/Sim/Misc/QaudField.cpp
+			//        ...CQuadField::GetUnitsExact(const float3& pos, float radius, bool spherical)
+			//        const float totRad = radius + u->radius; -- suspicious
+			if ((*p->GetCircuitDef() == *pylonDef) && (buildPos.SqDistance2D(p->GetPos(frame)) < SQUARE(radius))) {
+				foundPylon = true;
+				break;
+			}
+		}
+		utils::free_clear(units);
+		if (!foundPylon) {
+			AIFloat3 pos = buildPos;
+			CMetalManager* metalManager = circuit->GetMetalManager();
+			int index = metalManager->FindNearestCluster(pos);
+			if (index >= 0) {
+				const AIFloat3& clPos = metalManager->GetClusters()[index].geoCentr;
+				AIFloat3 dir = clPos - pos;
+				float dist = ourRange /*+ pylonRange*/ + pylonRange * 1.8f;
+				if (dir.SqLength2D() < dist * dist) {
+					pos = (pos /*+ dir.Normalize2D() * (ourRange - pylonRange)*/ + clPos) * 0.5f;
+				} else {
+					pos += dir.Normalize2D() * (ourRange + pylonRange) * 0.9f;
+				}
+			}
+			circuit->GetBuilderManager()->EnqueuePylon(IBuilderTask::Priority::HIGH, pylonDef, pos, nullptr, 1.0f);
+		}
+	}
+
+	if (chain->isPorc) {
+		CEconomyManager* economyManager = circuit->GetEconomyManager();
+		const float metalIncome = std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
+		if (metalIncome > 10) {
+			circuit->GetMilitaryManager()->MakeDefence(buildPos);
+		} else {
+			CMetalManager* metalManager = circuit->GetMetalManager();
+			int index = metalManager->FindNearestCluster(buildPos);
+			if ((index >= 0) && (metalManager->IsClusterQueued(index) || metalManager->IsClusterFinished(index))) {
+				circuit->GetMilitaryManager()->MakeDefence(buildPos);
+			}
+		}
+	}
+
+	if (chain->isTerra) {
+		if (circuit->GetEconomyManager()->GetAvgMetalIncome() > 10) {
+			circuit->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
+		}
+	}
+
+	if (!chain->hub.empty()) {
+		// TODO: Implement BuildWait action - semaphore for group of tasks / task's queue
+		// FIXME: Using builder's def because MaxSlope is not provided by engine's interface for buildings!
+		//        and CTerrainManager::CanBuildAt returns false in many cases
+		CCircuitDef* bdef = units.empty() ? circuit->GetSetupManager()->GetCommChoice() : (*this->units.begin())->GetCircuitDef();
+		CBuilderManager* builderManager = circuit->GetBuilderManager();
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
+
+		for (auto& queue : chain->hub) {
+			IBuilderTask* parent = nullptr;
+
+			for (const SBuildInfo& bi : queue) {
+				bool isValid = true;
+				switch (bi.condition) {
+					case SBuildInfo::Condition::AIR: {
+						isValid = bi.cdef->GetCost() < militaryManager->GetEnemyMetal(CCircuitDef::RoleType::AIR);
+					} break;
+					case SBuildInfo::Condition::NO_AIR: {
+						isValid = bi.cdef->GetCost() > militaryManager->GetEnemyMetal(CCircuitDef::RoleType::AIR);
+					} break;
+					case SBuildInfo::Condition::MAYBE: {
+						isValid = rand() < RAND_MAX / 2;
+					} break;
+					case SBuildInfo::Condition::ALWAYS:
+					default: break;
+				}
+				if (!isValid) {
+					continue;
+				}
+
+				AIFloat3 offset = bi.offset;
+				if (bi.direction != SBuildInfo::Direction::NONE) {
+					switch (facing) {
+						default:
+						case UNIT_FACING_SOUTH:
+							break;
+						case UNIT_FACING_EAST:
+							offset = AIFloat3(offset.z, 0.f, -offset.x);
+							break;
+						case UNIT_FACING_NORTH:
+							offset = AIFloat3(-offset.x, 0.f, -offset.z);
+							break;
+						case UNIT_FACING_WEST:
+							offset = AIFloat3(-offset.z, 0.f, offset.x);
+							break;
+					}
+				}
+				AIFloat3 pos = buildPos + offset;
+				pos = terrainManager->GetBuildPosition(bdef, pos);
+
+				if (parent == nullptr) {
+					parent = builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, bi.cdef, pos, bi.buildType, 0.f, true, 0);
+				} else {
+					parent->SetNextTask(builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, bi.cdef, pos, bi.buildType, 0.f, false, 0));
+					parent = parent->GetNextTask();
+				}
+			}
+		}
+	}
 }
 
 } // namespace circuit

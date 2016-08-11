@@ -33,6 +33,7 @@
 #include "task/builder/ReclaimTask.h"
 #include "task/builder/PatrolTask.h"
 #include "task/builder/GuardTask.h"
+#include "task/builder/BuildChain.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -123,15 +124,15 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	/*
 	 * heavy handlers
 	 */
-	auto heavyCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
-		CEconomyManager* economyManager = this->circuit->GetEconomyManager();
-		if (economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor() > 16.0f) {
-			TRY_UNIT(this->circuit, unit,
-				unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
-//				EnqueueRepair(IBuilderTask::Priority::LOW, unit);
-			)
-		}
-	};
+//	auto heavyCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
+//		CEconomyManager* economyManager = this->circuit->GetEconomyManager();
+//		if (economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor() > 32.0f) {
+//			TRY_UNIT(this->circuit, unit,
+//				unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
+////				EnqueueRepair(IBuilderTask::Priority::LOW, unit);
+//			)
+//		}
+//	};
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const float builderRet = root["retreat"].get("builder", 0.8f).asFloat();
@@ -158,8 +159,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 				if (cdef->GetRetreat() < 0.f) {
 					cdef->SetRetreat(builderRet);
 				}
-			} else if (cdef->GetCost() > 999.0f) {
-				createdHandler[unitDefId] = heavyCreatedHandler;
+//			} else if (cdef->GetCost() > 999.0f) {
+//				createdHandler[unitDefId] = heavyCreatedHandler;
 			}
 		} else {
 			damagedHandler[unitDefId]   = buildingDamagedHandler;
@@ -211,6 +212,11 @@ CBuilderManager::~CBuilderManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	utils::free_clear(buildUpdates);
+	for (auto& kv1 : buildChains) {
+		for (auto& kv2 : kv1.second) {
+			delete kv2.second;
+		}
+	}
 }
 
 int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -423,6 +429,8 @@ IBuilderTask* CBuilderManager::EnqueueTerraform(IBuilderTask::Priority priority,
 		task = new CBTerraformTask(this, priority, target, cost, timeout);
 	}
 	if (isActive) {
+		buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::TERRAFORM)].insert(task);
+		buildTasksCount++;
 		buildUpdates.push_back(task);
 	}
 	return task;
@@ -567,12 +575,136 @@ void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 	task->Execute(unit);
 }
 
+SBuildChain* CBuilderManager::GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef)
+{
+	auto it1 = buildChains.find(buildType);
+	if (it1 == buildChains.end()) {
+		return nullptr;
+	}
+	auto it2 = it1->second.find(cdef);
+	if (it2 == it1->second.end()) {
+		return nullptr;
+	}
+	return it2->second;
+}
+
 void CBuilderManager::ReadConfig()
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
+
 	terraDef = circuit->GetCircuitDef(root["economy"].get("terra_def", "").asCString());
 	if (terraDef == nullptr) {
 		terraDef = circuit->GetEconomyManager()->GetDefaultDef();
+	}
+
+	IBuilderTask::BuildName& buildNames = IBuilderTask::GetBuildNames();
+	const Json::Value& build = root["build_chain"];
+	for (const std::string& catName : build.getMemberNames()) {
+		auto it = buildNames.find(catName);
+		if (it == buildNames.end()) {
+			circuit->LOG("CONFIG %s: has unknown category '%s'", cfgName.c_str(), catName.c_str());
+			continue;
+		}
+
+		std::unordered_map<CCircuitDef*, SBuildChain*>& defMap = buildChains[it->second];
+		const Json::Value& catChain = build[catName];
+		for (const std::string& defName : catChain.getMemberNames()) {
+			CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());
+			if (cdef == nullptr) {
+				circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), defName.c_str());
+				continue;
+			}
+
+			SBuildChain bc;
+			const Json::Value& buildQueue = catChain[defName];
+			bc.isEnergy = buildQueue.get("energy", false).asBool();
+			bc.isPylon = buildQueue.get("pylon", false).asBool();
+			bc.isPorc = buildQueue.get("porc", false).asBool();
+			bc.isTerra = buildQueue.get("terra", false).asBool();
+
+			const Json::Value& hub = buildQueue["hub"];
+			bc.hub.reserve(hub.size());
+			for (const Json::Value& que : hub) {
+				std::vector<SBuildInfo> queue;
+				queue.reserve(que.size());
+				for (const Json::Value& part : que) {
+					SBuildInfo bi;
+
+					const std::string& partName = part.get("unit", "").asString();
+					bi.cdef = circuit->GetCircuitDef(partName.c_str());
+					if (bi.cdef == nullptr) {
+						circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), partName.c_str());
+						continue;
+					}
+
+					const std::string& cat = part.get("category", "").asString();
+					auto it = buildNames.find(cat);
+					if (it == buildNames.end()) {
+						circuit->LOG("CONFIG %s: has unknown category '%s'", cfgName.c_str(), cat.c_str());
+						continue;
+					}
+					bi.buildType = it->second;
+
+					UnitDef* unitDef = cdef->GetUnitDef();
+					bi.offset = ZeroVector;
+					bi.direction = SBuildInfo::Direction::NONE;
+					const Json::Value& off = part["offset"];
+					if (off.isArray()) {
+						bi.offset = AIFloat3(off.get((unsigned)0, 0.f).asFloat(), 0.f, off.get((unsigned)1, 0.f).asFloat());
+						if (bi.offset.x < -1e-3f) {
+							bi.offset.x -= unitDef->GetXSize() * SQUARE_SIZE / 2;
+						} else if (bi.offset.x > 1e-3f) {
+							bi.offset.x += unitDef->GetXSize() * SQUARE_SIZE / 2;
+						}
+						if (bi.offset.z < -1e-3f) {
+							bi.offset.z -= unitDef->GetZSize() * SQUARE_SIZE / 2;
+						} else if (bi.offset.z > 1e-3f) {
+							bi.offset.z += unitDef->GetZSize() * SQUARE_SIZE / 2;
+						}
+					} else if (off.isObject() && !off.empty()) {
+						float delta = 0.f;
+						SBuildInfo::DirName& dirNames = SBuildInfo::GetDirNames();
+						std::string dir = off.getMemberNames().front();
+						auto it = dirNames.find(dir);
+						if (it != dirNames.end()) {
+							bi.direction = it->second;
+							delta = off[dir].asFloat();
+						}
+						switch (bi.direction) {
+							case DIRECTION(LEFT): {
+								bi.offset.x = delta + unitDef->GetXSize() * SQUARE_SIZE / 2;
+							} break;
+							case DIRECTION(RIGHT): {
+								bi.offset.x = -(delta + unitDef->GetXSize() * SQUARE_SIZE / 2);
+							} break;
+							case DIRECTION(FRONT): {
+								bi.offset.z = delta + unitDef->GetZSize() * SQUARE_SIZE / 2;
+							} break;
+							case DIRECTION(BACK): {
+								bi.offset.z = -(delta + unitDef->GetZSize() * SQUARE_SIZE / 2);
+							} break;
+							default: break;
+						}
+					}
+
+					bi.condition = SBuildInfo::Condition::ALWAYS;
+					const std::string& cond = part.get("condition", "").asString();
+					if (!cond.empty()) {
+						SBuildInfo::CondName& condNames = SBuildInfo::GetCondNames();
+						auto it = condNames.find(cond);
+						if (it != condNames.end()) {
+							bi.condition = it->second;
+						}
+					}
+
+					queue.push_back(bi);
+				}
+				bc.hub.push_back(queue);
+			}
+
+			defMap[cdef] = new SBuildChain(bc);
+		}
 	}
 }
 

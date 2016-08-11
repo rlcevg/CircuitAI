@@ -282,7 +282,7 @@
 	},
 
 	"factoryshield": {
-		"importance": [0, 0.3],
+		"importance": [0, 0.5],
 		"require_energy": false,
 
 		"income_tier": [40],
@@ -842,22 +842,15 @@
 		"role": ["artillery"]
 	},
 
-	// static defences
-	"cordoom": {
-		"role": ["static", "heavy"]
-	},
-	"missilesilo": {
-		"role": ["static", "heavy"]
-	},
-	"armanni": {
-		"role": ["static", "heavy"]
-	},
-	"armfus": {
-		"role": ["static", "heavy"]
-	},
-	"cafus": {
-		"role": ["static", "heavy"]
-	}
+	// statics
+	"corsilo": {"role": ["static", "heavy"]},
+	"missilesilo": {"role": ["static", "heavy"]},
+	"raveparty": {"role": ["static", "heavy"]},
+	"zenith": {"role": ["static", "heavy"]},
+	"armbrtha": {"role": ["static", "heavy"]},
+	"cordoom": {"role": ["static", "heavy"]},
+	"armanni": {"role": ["static", "heavy"]},
+	"cafus": {"role": ["static", "heavy"]}
 },
 
 // Build special units when enemy_metal*ratio > response_metal*eps; eps=teamSize*eps_step+(1-eps_step)
@@ -1050,6 +1043,7 @@
 			// "energy": <boolean>
 			// "pylon": <boolean>
 			// "porc": <boolean>
+			// "terra": <boolean>
 			// "hub": [
 			//     // chain1
 			//     [{<unit1>, <category>, <offset>, <condition>}, {<unit2>, <category>, <offset>, <condition>}, ...],
@@ -1070,18 +1064,18 @@
 			"hub": [
 				[  // chain1
 					{"unit": "corllt", "category": "defence", "offset": [-80, -80]},
-					{"unit": "armartic", "category": "defence", "offset": [-80, -80]},
+					{"unit": "armartic", "category": "defence", "offset": {"left": 80}},
 					{"unit": "corgrav", "category": "defence", "offset": [-60, 60]},
 					{"unit": "corrl", "category": "defence", "offset": [-60, 60]},
 					{"unit": "screamer", "category": "defence", "offset": {"front": 40}, "condition": "air"},
 					{"unit": "corflak", "category": "defence", "offset": {"front": 40}, "condition": "no_air"},
 					{"unit": "corjamt", "category": "defence", "offset": {"front": 40}},
 					{"unit": "corjamt", "category": "defence", "offset": {"back": 40}},
-					{"unit": "armnanotc", "category": "defence", "offset": {"back": 20}}
+					{"unit": "armnanotc", "category": "defence", "offset": {"back": 0}}
 				],
 				[  // chain2
 					{"unit": "corllt", "category": "defence", "offset": [80, 80]},
-					{"unit": "armartic", "category": "defence", "offset": [80, 80]},
+					{"unit": "armartic", "category": "defence", "offset": {"right": 80}},
 					{"unit": "corgrav", "category": "defence", "offset": [60, -60]},
 					{"unit": "corrl", "category": "defence", "offset": [60, -60]},
 					{"unit": "missiletower", "category": "defence", "offset": {"front": 20}, "condition": "no_air"},
@@ -1090,6 +1084,9 @@
 					{"unit": "armamd", "category": "defence", "offset": {"front": 0}, "condition": "maybe"}
 				]
 			]
+		},
+		"armfus": {
+			"pylon": true
 		}
 	},
 	"factory": {
@@ -1105,6 +1102,7 @@
 	},
 	"mex": {
 		"cormex": {
+//			"terra": true,
 			"energy": true,
 			"porc": true
 		}

@@ -103,32 +103,6 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	manager->FallbackTask(unit);
 }
 
-void CBMexTask::Finish()
-{
-	CCircuitAI* circuit = manager->GetCircuit();
-	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	const float metalIncome = std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
-	if (metalIncome > 10) {
-		circuit->GetMilitaryManager()->MakeDefence(buildPos);
-	} else {
-		CMetalManager* metalManager = circuit->GetMetalManager();
-		int index = metalManager->FindNearestCluster(buildPos);
-		if ((index >= 0) && (metalManager->IsClusterQueued(index) || metalManager->IsClusterFinished(index))) {
-			circuit->GetMilitaryManager()->MakeDefence(buildPos);
-		}
-	}
-
-	CCircuitDef* energyDef = circuit->GetEconomyManager()->GetLowEnergy(buildPos);
-	if (energyDef != nullptr) {
-		circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, energyDef, buildPos,
-												  IBuilderTask::BuildType::ENERGY, SQUARE_SIZE * 8.0f, true);
-	}
-
-//	if (circuit->GetEconomyManager()->GetAvgMetalIncome() > 8.0f) {
-//		circuit->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
-//	}
-}
-
 void CBMexTask::Cancel()
 {
 	if ((target == nullptr) && utils::is_valid(buildPos)) {

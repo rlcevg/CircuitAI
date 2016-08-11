@@ -28,6 +28,8 @@ class CEnergyLink;
 class CRetreatTask;
 class CBRepairTask;
 
+struct SBuildChain;
+
 class CBuilderManager: public IUnitModule {
 public:
 	CBuilderManager(CCircuitAI* circuit);
@@ -112,6 +114,8 @@ public:
 	virtual void DoneTask(IUnitTask* task);
 	virtual void FallbackTask(CCircuitUnit* unit);
 
+	SBuildChain* GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef);
+
 private:
 	void ReadConfig();
 	void Init();
@@ -143,6 +147,8 @@ private:
 	std::set<CCircuitUnit*> workers;
 
 	CCircuitDef* terraDef;
+
+	std::unordered_map<IBuilderTask::BuildType, std::unordered_map<CCircuitDef*, SBuildChain*>> buildChains;  // owner
 
 public:
 	void UpdateAreaUsers();

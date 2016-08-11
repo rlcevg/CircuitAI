@@ -15,6 +15,8 @@ namespace circuit {
 
 class CCircuitDef;
 
+struct SBuildChain;
+
 class IBuilderTask: public IUnitTask {
 public:
 	enum class BuildType: char {
@@ -31,12 +33,18 @@ public:
 		MEX,
 		REPAIR,
 		RECLAIM,
-		_SIZE_,  // build-tasks count
-		RECRUIT,
-		TERRAFORM, PATROL, GUARD,  // builder actions that don't have UnitDef as target
+		TERRAFORM,
+		_SIZE_,  // selectable tasks count
+		RECRUIT,  // builder actions that can't be reassigned
+		PATROL, GUARD,
 		DEFAULT = BIG_GUN
 	};
 	using BT = std::underlying_type<BuildType>::type;
+
+	using BuildName = std::map<std::string, BuildType>;
+	static BuildName& GetBuildNames() { return buildNames; }
+private:
+	static BuildName buildNames;
 
 protected:
 	IBuilderTask(ITaskManager* mgr, Priority priority,
@@ -92,6 +100,8 @@ protected:
 	void HideAssignee(CCircuitUnit* unit);
 	void ShowAssignee(CCircuitUnit* unit);
 	virtual void FindBuildSite(CCircuitUnit* builder, const springai::AIFloat3& pos, float searchRadius);
+
+	void ExecuteChain(SBuildChain* chain);
 
 	springai::AIFloat3 position;
 	float shake;  // Alter/randomize position by offset

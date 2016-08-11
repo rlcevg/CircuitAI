@@ -279,9 +279,16 @@ void CTerrainManager::ReadConfig()
 void CTerrainManager::Init()
 {
 	const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
-	UnitDef* def = circuit->GetEconomyManager()->GetMexDef()->GetUnitDef();
-	int size = std::max(def->GetXSize(), def->GetZSize()) / 2/* + 4*/;
-	int& xsize = size, &zsize = size;
+	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
+	int xsize, zsize;
+	auto it = blockInfos.find(mexDef->GetId());
+	if (it != blockInfos.end()) {
+		xsize = it->second->GetXSize();
+		zsize = it->second->GetZSize();
+	} else {
+		xsize = mexDef->GetUnitDef()->GetXSize() / 2;
+		zsize = mexDef->GetUnitDef()->GetZSize() / 2;
+	}
 	int notIgnoreMask = STRUCT_BIT(FACTORY);
 	for (auto& spot : spots) {
 		const int x1 = int(spot.position.x / (SQUARE_SIZE << 1)) - (xsize >> 1), x2 = x1 + xsize;

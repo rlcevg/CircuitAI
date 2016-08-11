@@ -20,7 +20,6 @@ public:
 	virtual ~CBFactoryTask();
 
 protected:
-	virtual void Finish();
 	virtual void Cancel();
 
 private:

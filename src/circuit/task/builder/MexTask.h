@@ -23,7 +23,6 @@ public:
 
 	virtual void Execute(CCircuitUnit* unit);
 protected:
-	virtual void Finish();
 	virtual void Cancel();
 
 public:

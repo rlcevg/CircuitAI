@@ -22,8 +22,6 @@ public:
 	virtual void Update();
 
 protected:
-	virtual void Finish();
-
 	bool isStalling;
 };
 

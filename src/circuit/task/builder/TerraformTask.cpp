@@ -20,6 +20,7 @@ using namespace springai;
 
 CBTerraformTask::CBTerraformTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, float cost, int timeout)
 		: IBuilderTask(mgr, priority, target->GetCircuitDef(), target->GetPos(mgr->GetCircuit()->GetLastFrame()), BuildType::TERRAFORM, cost, false, timeout)
+		, isFirstTry(true)
 		, targetId(target->GetId())
 {
 	facing = target->GetUnit()->GetBuildingFacing();
@@ -27,6 +28,7 @@ CBTerraformTask::CBTerraformTask(ITaskManager* mgr, Priority priority, CCircuitU
 
 CBTerraformTask::CBTerraformTask(ITaskManager* mgr, Priority priority, const AIFloat3& position, float cost, int timeout)
 		: IBuilderTask(mgr, priority, nullptr, position, BuildType::TERRAFORM, cost, false, timeout)
+		, isFirstTry(true)
 		, targetId(-1)
 {
 }
@@ -36,9 +38,21 @@ CBTerraformTask::~CBTerraformTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
+void CBTerraformTask::RemoveAssignee(CCircuitUnit* unit)
+{
+	IBuilderTask::RemoveAssignee(unit);
+	if (units.empty()) {
+		manager->AbortTask(this);
+	}
+}
+
 void CBTerraformTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	if (!isFirstTry) {
+		return;
+	}
+	isFirstTry = false;
 
 	/*
 	 * Terraform blank position
@@ -98,8 +112,8 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 	Unit* u = unit->GetUnit();
 
 	UnitDef* unitDef = buildDef->GetUnitDef();
-	const float offsetX = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 0/*3*/ * SQUARE_SIZE + 0/*1*/;
-	const float offsetZ = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 0/*3*/ * SQUARE_SIZE + 0/*1*/;
+	const float offsetX = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 1 * SQUARE_SIZE + 1;
+	const float offsetZ = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 1 * SQUARE_SIZE + 1;
 	std::vector<float> params;
 	params.push_back(1.0f);  // 1: terraform_type, 1 == level
 	params.push_back(circuit->GetTeamId());  // 2: teamId
@@ -125,6 +139,10 @@ void CBTerraformTask::Execute(CCircuitUnit* unit)
 	)
 
 	// TODO: Enqueue "move out" action for nearby units
+}
+
+void CBTerraformTask::Update()
+{
 }
 
 void CBTerraformTask::Cancel()
