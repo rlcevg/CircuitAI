@@ -781,9 +781,9 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 				const float maxHealth = tu->GetMaxHealth();
 				const float health = tu->GetHealth() - maxHealth * 0.005f;
 				const float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
-				valid = (((maxHealth - health) * 0.6f) * (maxSpeed * FRAMES_PER_SEC) > healthSpeed * distCost);
+				valid = ((maxHealth - health) * 0.6f) * (maxSpeed * FRAMES_PER_SEC) > healthSpeed * distCost;
 			} else {
-				valid = ((distCost * weight < metric) && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC)));
+				valid = (distCost * weight < metric) && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC));
 			}
 
 			if (valid) {
@@ -883,7 +883,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 					valid = (((maxHealth - health) * 0.6f) * (maxSpeed * FRAMES_PER_SEC) > healthSpeed * distCost);
 				}
 			} else {
-				valid = ((distCost * weight < metric) && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC)));
+				valid = (distCost * weight < metric)/* && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC))*/;
 			}
 
 			if (valid) {
@@ -906,8 +906,11 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCircuitUnit* unit)
 {
 	CEconomyManager* em = circuit->GetEconomyManager();
-	IBuilderTask* task;
-	task = em->UpdateEnergyTasks(position, unit);
+	IBuilderTask* task = em->UpdateEnergyTasks(position, unit);
+	if (task != nullptr) {
+		return task;
+	}
+	task = em->UpdateReclaimTasks(position, unit, false);
 	if (task != nullptr) {
 		return task;
 	}
@@ -923,28 +926,23 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 		}
 	}
 	if (isLowIncome && (buildDef->GetCount() < 10) && buildDef->IsAvailable()) {
-		task = EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
-	} else if (metalIncome < 120) {  // TODO: Calc income of the map
-		task = EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
-	} else {
+		return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
+	}
+
+	buildDef = circuit->GetMilitaryManager()->GetBigGunDef();
+	if ((buildDef != nullptr) && (buildDef->GetCost() < 180 * metalIncome)) {  // Can build in 3 minutes?
 		const std::set<IBuilderTask*>& tasks = GetTasks(IBuilderTask::BuildType::BIG_GUN);
 		if (tasks.empty()) {
-			buildDef = circuit->GetMilitaryManager()->GetBigGunDef();
-			if ((buildDef != nullptr) && circuit->GetMilitaryManager()->IsNeedBigGun(buildDef) &&
-				(buildDef->GetCount() < 1) && buildDef->IsAvailable())
-			{
-				task = EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, circuit->GetSetupManager()->GetBasePos(),
+			if (circuit->GetMilitaryManager()->IsNeedBigGun(buildDef) && buildDef->IsAvailable()) {
+				return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, circuit->GetSetupManager()->GetBasePos(),
 								   IBuilderTask::BuildType::BIG_GUN);
-			} else {
-				task = EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
 			}
 		} else {
-			task = *tasks.begin();
+			return *tasks.begin();
 		}
 	}
 
-	assert(task != nullptr);
-	return task;
+	return EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
 }
 
 void CBuilderManager::AddBuildList(CCircuitUnit* unit)

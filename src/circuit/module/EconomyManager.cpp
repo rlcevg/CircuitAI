@@ -497,7 +497,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	return task;
 }
 
-IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCircuitUnit* unit)
+IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCircuitUnit* unit, bool isNear)
 {
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	if (/*!builderManager->CanEnqueueTask() || */(unit == nullptr)) {
@@ -508,8 +508,13 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 		return nullptr;
 	}
 
-	float travelDistance = unit->GetUnit()->GetMaxSpeed() * FRAMES_PER_SEC * ((GetMetalPull() * 0.8f > GetAvgMetalIncome()) ? 300 : 30);
-	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(position, travelDistance));
+	std::vector<Feature*> features;
+	if (isNear) {
+		const float distance = unit->GetUnit()->GetMaxSpeed() * FRAMES_PER_SEC * ((GetMetalPull() * 0.8f > GetAvgMetalIncome()) ? 300 : 30);
+		features = std::move(circuit->GetCallback()->GetFeaturesIn(position, distance));
+	} else {
+		features = std::move(circuit->GetCallback()->GetFeatures());
+	}
 	if (features.empty()) {
 		return nullptr;
 	}

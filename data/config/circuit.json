@@ -28,7 +28,7 @@
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
 
 		//             conjurer,   glaive,  scythe,       rocko,     warrior,  zeus,      hammer,   sniper,     tick,      eraser,          gremlin
-		"unit_def":  ["armrectr", "armpw", "spherepole", "armrock", "armwar", "armzeus", "armham", "armsnipe", "armtick", "spherecloaker", "armjeth"],
+		"unit":      ["armrectr", "armpw", "spherepole", "armrock", "armwar", "armzeus", "armham", "armsnipe", "armtick", "spherecloaker", "armjeth"],
 
 		"land": {
 			// 0-8m Opening - Glaives & Warriors most important for scouting, map control and defence.
@@ -65,7 +65,7 @@
 
 		"income_tier": [7, 16, 24, 32, 40, 56, 72, 88],
 		//             wasp,         blastwing,   gnat,     banshee,  rapier,           brawler,    blackdawn,   krow,     valkyrie,  vindicator,  trident
-		"unit_def":  ["gunshipcon", "blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans", "gunshipaa"],
+		"unit":      ["gunshipcon", "blastwing", "bladew", "armkam", "gunshipsupport", "armbrawl", "blackdawn", "corcrw", "corvalk", "corbtrans", "gunshipaa"],
 		"land": {
 			// 0-8m Opening - Blastwing and banshee Harass
 			"tier0": [ 0.00,         0.68,        0.00,     0.10,     0.20,             0.00,       0.02,        0.00,     0.00,      0.00,        0.00],
@@ -94,7 +94,7 @@
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
 		//             conch,     duck,          archer,        buoy,          scallop,    grizzly,       djinn,      angler
-		"unit_def":  ["amphcon", "amphraider3", "amphraider2", "amphfloater", "amphriot", "amphassault", "amphtele", "amphaa"],
+		"unit":      ["amphcon", "amphraider3", "amphraider2", "amphfloater", "amphriot", "amphassault", "amphtele", "amphaa"],
 		"land": {
 			// 0-8m Opening - Ducks and Archers
 			"tier0": [ 0.00,      0.63,          0.25,          0.00,          0.12,       0.00,          0.00,       0.00],
@@ -123,7 +123,7 @@
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
 		//             weaver,       flea,      hermit,          venom,       redback,      recluse,   crabe,      infiltrator, tarantula
-		"unit_def":  ["arm_spider", "armflea", "spiderassault", "arm_venom", "spiderriot", "armsptk", "armcrabe", "armspy",    "spideraa"],
+		"unit":      ["arm_spider", "armflea", "spiderassault", "arm_venom", "spiderriot", "armsptk", "armcrabe", "armspy",    "spideraa"],
 		"land": {
 			// 0-8m Opening - Opening turbo Flea spam & Riots		
 			"tier0": [ 0.00,         0.87,      0.00,            0.00,        0.13,         0.00,      0.00,       0.00,        0.00],
@@ -152,7 +152,7 @@
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
 		//             mason,    dart,     scorcher,   slasher,   leveler,    ravager,   dominatrix,   wolverine, impaler,   crasher
-		"unit_def":  ["corned", "corfav", "corgator", "cormist", "corlevlr", "corraid", "capturecar", "corgarp", "armmerl", "vehaa"],
+		"unit":      ["corned", "corfav", "corgator", "cormist", "corlevlr", "corraid", "capturecar", "corgarp", "armmerl", "vehaa"],
 		"land": {
 			// 0-8m Opening - Dart, Riot & Slasher
 			"tier0": [ 0.00,     0.63,     0.03,       0.12,      0.22,       0.00,      0.00,         0.00,      0.00,      0.00],
@@ -181,7 +181,7 @@
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
 		//             quill,   dagger,  scalpel,    halberd,        claymore,           mace,        penetrator, flail
-		"unit_def":  ["corch", "corsh", "nsaclash", "hoverassault", "hoverdepthcharge", "hoverriot", "armmanni", "hoveraa"],
+		"unit":      ["corch", "corsh", "nsaclash", "hoverassault", "hoverdepthcharge", "hoverriot", "armmanni", "hoveraa"],
 		"land": {
 			// 0-8m Opening - Raiders and Riots
 			"tier0": [ 0.00,    0.65,    0.00,       0.00,           0.00,               0.35,        0.00,       0.00],
@@ -216,7 +216,7 @@
 
 		"income_tier": [10, 20, 30, 40, 50, 60, 70],
 		//             crane,   swift,     hawk,      raven,     phoenix,    thunderbird,         wyvern,    vulture
-		"unit_def":  ["armca", "fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "corawac"],
+		"unit":      ["armca", "fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "corawac"],
 		"land": {
 			// 0-10m Early Game
 			"tier0": [ 0.00,    0.10,      0.00,      0.47,      0.38,       0.00,                0.00,      0.05],
@@ -243,7 +243,7 @@
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72, 88],
 		//             welder,   kodachi,   panther,   banisher,  reaper,    goliath,  pillager,  tremor, copperhead
-		"unit_def":  ["coracv", "logkoda", "panther", "tawf114", "correap", "corgol", "cormart", "trem", "corsent"],
+		"unit":      ["coracv", "logkoda", "panther", "tawf114", "correap", "corgol", "cormart", "trem", "corsent"],
 		"land": {
 			// 0-8m Opening - Koda and Banisher
 			"tier0": [ 0.00,     0.70,      0.00,      0.30,      0.00,      0.00,     0.00,      0.00,   0.00],
@@ -272,7 +272,7 @@
 
 		"income_tier": [40],
 		//             freaker,   puppy,   pyro,      placeholder,     moderator,  jack,     sumo,      firewalker,   skuttle,   archangel
-		"unit_def":  ["corfast", "puppy", "corpyro", "jumpblackhole", "slowmort", "corcan", "corsumo", "firewalker", "corsktl", "armaak"],
+		"unit":      ["corfast", "puppy", "corpyro", "jumpblackhole", "slowmort", "corcan", "corsumo", "firewalker", "corsktl", "armaak"],
 		"land": {
 			"tier0": [ 0.00,      0.10,    0.70,      0.05,            0.10,       0.05,     0.00,      0.00,         0.00,      0.00],
 			"tier1": [ 0.00,      0.01,    0.24,      0.10,            0.10,       0.45,     0.05,      0.05,         0.00,      0.00]
@@ -287,7 +287,7 @@
 
 		"income_tier": [40],
 		//             convict,    dirtbag,   bandit,  rogue,      thug,      outlaw,   felon,         racketeer,    roach,      aspis,          vandal
-		"unit_def":  ["cornecro", "corclog", "corak", "corstorm", "corthud", "cormak", "shieldfelon", "shieldarty", "corroach", "core_spectre", "corcrash"],
+		"unit":      ["cornecro", "corclog", "corak", "corstorm", "corthud", "cormak", "shieldfelon", "shieldarty", "corroach", "core_spectre", "corcrash"],
 		"land": {
 			"tier0": [ 0.00,       0.10,      0.30,    0.10,       0.20,      0.10,     0.05,          0.10,         0.05,       0.00,           0.00],
 			"tier1": [ 0.00,       0.00,      0.00,    0.00,       0.00,      0.00,     0.00,          0.90,         0.00,       0.10,           0.00]
@@ -302,7 +302,7 @@
 
 		"income_tier": [40],
 		//             mariner    skeeter,     snake,       typhoon,      hunter,     enforcer,    crusader,   serpent,   surfboard,  shredder
-		"unit_def":  ["shipcon", "shipscout", "subraider", "shipraider", "shiptorp", "shipskirm", "shiparty", "subarty", "armtboat", "shipaa"],
+		"unit":      ["shipcon", "shipscout", "subraider", "shipraider", "shiptorp", "shipskirm", "shiparty", "subarty", "armtboat", "shipaa"],
 		"water": {
 			"tier0": [ 0.00,      0.10,        0.32,        0.30,         0.17,       0.05,        0.05,       0.01,      0.00,       0.00],
 			"tier1": [ 0.00,      0.01,        0.10,        0.10,         0.20,       0.15,        0.25,       0.19,      0.00,       0.00]
@@ -317,7 +317,7 @@
 
 		"income_tier": [60, 80, 100],
 		//             ultimatum,    scorpion,   dante,   catapult,   funnelweb,   bantha,     detriment, leviathan,    reef,   warlord
-		"unit_def":  ["armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"],
+		"unit":      ["armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"],
 		"land": {
 			"tier0": [ 0.01,         0.10,       0.81,    0.00,       0.05,        0.03,       0.00,      0.00,         0.00,   0.00],
 			"tier1": [ 0.03,         0.14,       0.22,    0.24,       0.20,        0.16,       0.01,      0.00,         0.00,   0.00],
@@ -366,6 +366,7 @@
 		// "hold_fire" - hold fire on retreat
 		// "no_strafe" - disable gunship's strafe
 		// "stockpile" - load weapon before any task (NOT IMPLEMENTED), auto-assigned
+		// "super" - superweapon, auto-assigned to porcupine items
 
 //		"attribute": ["boost", "no_strafe"],
 
@@ -975,7 +976,7 @@
 
 "porcupine": {
 	//            0         1        2          3         4             5           6            7          8          9           10         11
-	"unit_def": ["corllt", "corrl", "armdeva", "corhlt", "turrettorp", "corrazor", "armnanotc", "cordoom", "corjamt", "armartic", "armanni", "corbhmth"],
+	"unit": ["corllt", "corrl", "armdeva", "corhlt", "turrettorp", "corrazor", "armnanotc", "cordoom", "corjamt", "armartic", "armanni", "corbhmth"],
 	// Actual number of defences per cluster bounded by income
 	"land":  [0, 6, 1, 1, 1, 3, 5],
 	"water": [4, 6, 1, 4, 4, 3, 5],
@@ -983,8 +984,11 @@
 	// Base defence and time to build it, in seconds
 	"base": [[0, 120]],
 
-	// Simple weapons (nuke/zenith not supported)
-	"superweapon": "raveparty",
+	"superweapon": {
+		"unit":   ["raveparty", "corsilo", "armbrtha", "zenith"],
+		"weight": [ 0.6,         0.2,       0.1,        0.1],
+		"limit":  [ 1,           1,         2,          1]
+	},
 
 	// Fallback defence
 	"default": "corrl"
@@ -1232,7 +1236,7 @@
 		"mex": ["cormex"],
 		"def_low": ["corrl", "corllt"],
 		"caretaker": ["armnanotc"],
-		"superweapon": ["raveparty"],
+		"superweapon": ["raveparty", "corsilo", "armbrtha", "zenith"],
 		"protector": ["armamd"],
 //		"terraform": ["terraunit"],
 		"strider": ["armcomdgun", "scorpion", "dante", "armraven", "funnelweb", "armbanth", "armorco", "cornukesub", "reef", "corbats"]

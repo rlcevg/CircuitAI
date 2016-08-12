@@ -390,42 +390,44 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 		bool foundPylon = false;
 		CEconomyManager* economyManager = circuit->GetEconomyManager();
 		CCircuitDef* pylonDef = economyManager->GetPylonDef();
-		float ourRange = economyManager->GetEnergyGrid()->GetPylonRange(buildDef->GetId());
-		float pylonRange = economyManager->GetPylonRange();
-		float radius = pylonRange + ourRange;
-		int frame = circuit->GetLastFrame();
-		circuit->UpdateFriendlyUnits();
-		auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(buildPos, radius));
-		for (Unit* u : units) {
-			CCircuitUnit* p = circuit->GetFriendlyUnit(u);
-			if (p == nullptr) {
-				continue;
-			}
-			// NOTE: Is SqDistance2D necessary? Or must subtract model radius of pylon from "radius" variable
-			//        @see rts/Sim/Misc/QaudField.cpp
-			//        ...CQuadField::GetUnitsExact(const float3& pos, float radius, bool spherical)
-			//        const float totRad = radius + u->radius; -- suspicious
-			if ((*p->GetCircuitDef() == *pylonDef) && (buildPos.SqDistance2D(p->GetPos(frame)) < SQUARE(radius))) {
-				foundPylon = true;
-				break;
-			}
-		}
-		utils::free_clear(units);
-		if (!foundPylon) {
-			AIFloat3 pos = buildPos;
-			CMetalManager* metalManager = circuit->GetMetalManager();
-			int index = metalManager->FindNearestCluster(pos);
-			if (index >= 0) {
-				const AIFloat3& clPos = metalManager->GetClusters()[index].geoCentr;
-				AIFloat3 dir = clPos - pos;
-				float dist = ourRange /*+ pylonRange*/ + pylonRange * 1.8f;
-				if (dir.SqLength2D() < dist * dist) {
-					pos = (pos /*+ dir.Normalize2D() * (ourRange - pylonRange)*/ + clPos) * 0.5f;
-				} else {
-					pos += dir.Normalize2D() * (ourRange + pylonRange) * 0.9f;
+		if (pylonDef->IsAvailable()) {
+			float ourRange = economyManager->GetEnergyGrid()->GetPylonRange(buildDef->GetId());
+			float pylonRange = economyManager->GetPylonRange();
+			float radius = pylonRange + ourRange;
+			int frame = circuit->GetLastFrame();
+			circuit->UpdateFriendlyUnits();
+			auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(buildPos, radius));
+			for (Unit* u : units) {
+				CCircuitUnit* p = circuit->GetFriendlyUnit(u);
+				if (p == nullptr) {
+					continue;
+				}
+				// NOTE: Is SqDistance2D necessary? Or must subtract model radius of pylon from "radius" variable
+				//        @see rts/Sim/Misc/QaudField.cpp
+				//        ...CQuadField::GetUnitsExact(const float3& pos, float radius, bool spherical)
+				//        const float totRad = radius + u->radius; -- suspicious
+				if ((*p->GetCircuitDef() == *pylonDef) && (buildPos.SqDistance2D(p->GetPos(frame)) < SQUARE(radius))) {
+					foundPylon = true;
+					break;
 				}
 			}
-			circuit->GetBuilderManager()->EnqueuePylon(IBuilderTask::Priority::HIGH, pylonDef, pos, nullptr, 1.0f);
+			utils::free_clear(units);
+			if (!foundPylon) {
+				AIFloat3 pos = buildPos;
+				CMetalManager* metalManager = circuit->GetMetalManager();
+				int index = metalManager->FindNearestCluster(pos);
+				if (index >= 0) {
+					const AIFloat3& clPos = metalManager->GetClusters()[index].geoCentr;
+					AIFloat3 dir = clPos - pos;
+					float dist = ourRange /*+ pylonRange*/ + pylonRange * 1.8f;
+					if (dir.SqLength2D() < dist * dist) {
+						pos = (pos /*+ dir.Normalize2D() * (ourRange - pylonRange)*/ + clPos) * 0.5f;
+					} else {
+						pos += dir.Normalize2D() * (ourRange + pylonRange) * 0.9f;
+					}
+				}
+				circuit->GetBuilderManager()->EnqueuePylon(IBuilderTask::Priority::HIGH, pylonDef, pos, nullptr, 1.0f);
+			}
 		}
 	}
 
@@ -462,6 +464,9 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 			IBuilderTask* parent = nullptr;
 
 			for (const SBuildInfo& bi : queue) {
+				if (!bi.cdef->IsAvailable()) {
+					continue;
+				}
 				bool isValid = true;
 				switch (bi.condition) {
 					case SBuildInfo::Condition::AIR: {

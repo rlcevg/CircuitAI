@@ -54,6 +54,7 @@ CCircuitDef::AttrName CCircuitDef::attrNames = {
 	{"hold_fire", CCircuitDef::AttrType::HOLD_FIRE},
 	{"no_strafe", CCircuitDef::AttrType::NO_STRAFE},
 	{"stockpile", CCircuitDef::AttrType::STOCK},
+	{"super",     CCircuitDef::AttrType::SUPER},
 };
 
 CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts, Resource* res)
@@ -125,6 +126,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	it = customParams.find("is_drone");
 	if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 		category |= circuit->GetBadCategory();
+		cost *= 0.1f;
 	}
 
 //	if (customParams.find("boost_speed_mult") != customParams.end()) {
@@ -197,7 +199,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	bool canTargetAir = false;
 	bool canTargetLand = false;
 	bool canTargetWater = false;
-//	const float mapGravity = circuit->GetMap()->GetGravity();
 	auto mounts = std::move(def->GetWeaponMounts());
 	for (WeaponMount* mount : mounts) {
 		WeaponDef* wd = mount->GetWeaponDef();
@@ -267,16 +268,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		bool isAirWeapon = false;
 		const float projectileSpeed = wd->GetProjectileSpeed();
 		float range = wd->GetRange();
-
-//		if (wt == "Cannon") {
-//			const float heightBoostFactor = wd->GetHeightBoostFactor();
-//			const float myGravity = wd->GetMyGravity();
-//			const float gravity = (myGravity == 0) ? mapGravity : -myGravity;
-//			range = CalcCannonRange(-def->GetWantedHeight(), range, projectileSpeed, heightBoostFactor, gravity);
-//			// FIXME: DEBUG
-//			circuit->LOG("%s | %f | %f", def->GetName(), wd->GetRange(), range);
-//			// FIXME: DEBUG
-//		}
 
 		isAirWeapon = ((wt == "Cannon") || (wt == "DGun") || (wt == "EmgCannon") || (wt == "Flame") ||
 				(wt == "LaserCannon") || (wt == "AircraftBomb")) && (projectileSpeed * FRAMES_PER_SEC >= .75f * range);  // Cannons with fast projectiles
@@ -393,7 +384,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	// TODO: Include projectile-speed/range
 	dmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
 	power = dmg * sqrtf(def->GetHealth() + maxShield * 2.0f);
-
 }
 
 CCircuitDef::~CCircuitDef()
@@ -481,40 +471,6 @@ CCircuitDef& CCircuitDef::operator--()
 //	CCircuitDef temp = *this;
 //	count--;
 //	return temp;
-//}
-
-/*
- * @see rts/Sim/Weapons/Cannon.cpp
- * @see rts/Rendering/GL/glExtra.cpp glBallisticCircle()
- */
-//float CCircuitDef::CalcCannonRange(float yDiff, float range, float projectileSpeed, float heightBoostFactor, float gravity)
-//{
-//	auto getRange2D = [projectileSpeed, heightBoostFactor, gravity](float yDiff, float rFact) {
-//		const float speedFactor = 0.7071067f; // sin pi/4 == cos pi/4
-//		const float smoothHeight = 100.0f;  // completely arbitrary
-//		const float speed2d = projectileSpeed * speedFactor; // speed in one direction in max-range case
-//		const float speed2dSq = speed2d * speed2d;
-//
-//		if (yDiff < -smoothHeight) {
-//			yDiff *= heightBoostFactor;
-//		} else if (yDiff < 0.0f) {
-//			// smooth a bit
-//			// f(0) == 1, f(smoothHeight) == heightBoostFactor
-//			yDiff *= 1.0f + (heightBoostFactor - 1.0f) * (-yDiff)/smoothHeight;
-//		}
-//
-//		const float root1 = speed2dSq + 2.0f * gravity * yDiff;
-//
-//		if (root1 < 0.0f) {
-//			return 0.0f;
-//		}
-//
-//		return (rFact * (speed2dSq + speed2d * math::sqrt(root1)) / (-gravity));
-//	};
-//
-//	float rangeFactor = utils::clamp(range / getRange2D(0.0f, 1.0f), 0.0f, 1.0f);
-//
-//	return getRange2D(yDiff, rangeFactor);
 //}
 
 } // namespace circuit

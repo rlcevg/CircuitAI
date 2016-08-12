@@ -238,7 +238,7 @@ static inline bool is_valid(const springai::AIFloat3& pos)
 	return pos.x != -RgtVector.x;
 }
 
-template<class T> constexpr T clamp(const T v, const T vmin, const T vmax)
+template<class T> static inline constexpr T clamp(const T v, const T vmin, const T vmax)
 {
 	return std::min(vmax, std::max(vmin, v));
 }

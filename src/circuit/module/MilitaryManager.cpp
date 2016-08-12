@@ -39,7 +39,6 @@
 #include "OOAICallback.h"
 #include "AISCommands.h"
 #include "Command.h"
-#include "WeaponDef.h"
 #include "Log.h"
 #include "Map.h"
 
@@ -138,6 +137,41 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		DelPower(unit);
 	};
 
+	/*
+	 * Superweapon handlers
+	 */
+	auto superCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
+		if (unit->GetTask() == nullptr) {
+			unit->SetManager(this);
+			nullTask->AssignTo(unit);
+		}
+	};
+	auto superFinishedHandler = [this](CCircuitUnit* unit) {
+		IFighterTask* task = EnqueueTask(IFighterTask::FightType::SUPER);
+		if (unit->GetTask() == nullptr) {
+			unit->SetManager(this);
+			task->AssignTo(unit);
+			task->Execute(unit);
+		} else {
+			nullTask->RemoveAssignee(unit);
+			AssignTask(unit, task);
+		}
+		this->circuit->AddActionUnit(unit);
+
+		TRY_UNIT(this->circuit, unit,
+			unit->GetUnit()->SetTrajectory(1);
+			if (unit->GetCircuitDef()->IsAttrStock()) {
+				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+				unit->GetUnit()->ExecuteCustomCommand(CMD_MISC_PRIORITY, {2.0f});
+			}
+		)
+	};
+	auto superDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+		IUnitTask* task = unit->GetTask();
+		task->OnUnitDestroyed(unit, attacker);  // can change task
+		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
+	};
+
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const float fighterRet = root["retreat"].get("fighter", 0.5f).asFloat();
 	float maxRadarDivCost = 0.f;
@@ -166,13 +200,15 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 				cdef->SetRetreat(fighterRet);
 			}
 		} else if (cdef->IsAttacker()) {
-			WeaponDef* wd = cdef->GetUnitDef()->GetStockpileDef();
-			if (wd == nullptr) {
-				continue;
+			if (cdef->IsAttrSuper()) {
+				unitDefId = kv.first;
+				createdHandler[unitDefId] = superCreatedHandler;
+				finishedHandler[unitDefId] = superFinishedHandler;
+				destroyedHandler[unitDefId] = superDestroyedHandler;
+			} else if (cdef->IsAttrStock()) {
+				unitDefId = kv.first;
+				finishedHandler[unitDefId] = defenceFinishedHandler;
 			}
-			unitDefId = kv.first;
-			finishedHandler[unitDefId] = defenceFinishedHandler;
-			delete wd;
 		} else {
 			float radiusDivCost = cdef->GetUnitDef()->GetRadarRadius() / cdef->GetCost();
 			if (maxRadarDivCost < radiusDivCost) {
@@ -185,31 +221,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 				sonarDef = cdef;
 			}
 		}
-	}
-
-	/*
-	 * superweapon handlers
-	 */
-	if (bigGunDef != nullptr) {
-		finishedHandler[bigGunDef->GetId()] = [this](CCircuitUnit* unit) {
-			this->circuit->AddActionUnit(unit);
-			unit->SetManager(this);
-			IFighterTask* task = EnqueueTask(IFighterTask::FightType::SUPER);
-			task->AssignTo(unit);
-			task->Execute(unit);
-			TRY_UNIT(this->circuit, unit,
-				unit->GetUnit()->SetTrajectory(1);
-				if (unit->GetCircuitDef()->IsAttrStock()) {
-					unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
-					unit->GetUnit()->ExecuteCustomCommand(CMD_MISC_PRIORITY, {2.0f});
-				}
-			)
-		};
-		destroyedHandler[bigGunDef->GetId()] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
-			IUnitTask* task = unit->GetTask();
-			task->OnUnitDestroyed(unit, attacker);  // can change task
-			unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
-		};
 	}
 
 	defence = circuit->GetAllyTeam()->GetDefenceMatrix().get();
@@ -742,7 +753,7 @@ void CMilitaryManager::ReadConfig()
 	maxGuards = quotas.get("guard", 2).asUInt();
 
 	const Json::Value& porc = root["porcupine"];
-	const Json::Value& defs = porc["unit_def"];
+	const Json::Value& defs = porc["unit"];
 	defenderDefs.reserve(defs.size());
 	for (const Json::Value& def : defs) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(def.asCString());
@@ -780,7 +791,46 @@ void CMilitaryManager::ReadConfig()
 		baseDefence.push_back(std::make_pair(defenderDefs[index], frame));
 	}
 
-	bigGunDef = circuit->GetCircuitDef(porc.get("superweapon", "").asCString());
+	const Json::Value& super = porc["superweapon"];
+	const Json::Value& items = super["unit"];
+	const Json::Value& probs = super["weight"];
+	const Json::Value& limit = super["limit"];
+	struct SSuperInfo {
+		CCircuitDef* cdef;
+		float prob;
+		int limit;
+	};
+	std::vector<SSuperInfo> supers;
+	supers.reserve(items.size());
+	float magnitude = 0.f;
+	for (unsigned i = 0; i < items.size(); ++i) {
+		SSuperInfo si;
+		si.cdef = circuit->GetCircuitDef(items[i].asCString());
+		if (si.cdef == nullptr) {
+			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), items[i].asCString());
+			continue;
+		}
+		si.cdef->AddAttribute(CCircuitDef::AttrType::SUPER);
+		si.limit = limit.get(i, 1).asInt();
+		si.prob = probs.get(i, 1.f).asFloat();
+		magnitude += si.prob;
+		supers.push_back(si);
+	}
+	if (!supers.empty()) {
+		unsigned choice = 0;
+		float dice = (float)rand() / RAND_MAX * magnitude;
+		float total = .0f;
+		for (unsigned i = 0; i < supers.size(); ++i) {
+			total += supers[i].prob;
+			if (dice < total) {
+				choice = i;
+				break;
+			}
+		}
+		bigGunDef = supers[choice].cdef;
+		bigGunDef->SetMaxThisUnit(std::min(supers[choice].limit, bigGunDef->GetMaxThisUnit()));
+	}
+
 	defaultPorc = circuit->GetCircuitDef(porc.get("default", "").asCString());
 }
 
@@ -947,19 +997,22 @@ void CMilitaryManager::KMeansIteration()
 		for (const auto& kv : units) {
 			int meanIndex = unitsClosestMeanID[i++];
 			SEnemyGroup& eg = newMeans[meanIndex];
+			CEnemyUnit* enemy = kv.second;
 
 			// don't divide by 0
 			float num = std::max(1, numUnitsAssignedToMean[meanIndex]);
-			eg.pos += kv.second->GetPos() / num;
+			eg.pos += enemy->GetPos() / num;
 
 			eg.units.push_back(kv.first);
 
-			CCircuitDef* cdef = kv.second->GetCircuitDef();
+			CCircuitDef* cdef = enemy->GetCircuitDef();
 			if (cdef != nullptr) {
 				eg.roleCosts[cdef->GetMainRole()] += cdef->GetCost();
-				eg.cost += cdef->GetCost();
+				if (!enemy->IsHidden()) {
+					eg.cost += cdef->GetCost();
+				}
 			}
-			eg.threat += kv.second->GetThreat();
+			eg.threat += enemy->GetThreat();
 		}
 	}
 

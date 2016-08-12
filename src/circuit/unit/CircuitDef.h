@@ -53,13 +53,14 @@ public:
 	 * HOLD_FIRE:  hold fire on retreat
 	 * NO_STRAFE:  disable gunship's strafe
 	 * STOCK:      stockpile weapon before any task (Not implemented)
+	 * SUPER:      superweapon
 	 */
 	enum class AttrType: RoleT {MELEE = static_cast<RoleT>(RoleType::_SIZE_), SIEGE,
 								OPEN_FIRE, NO_JUMP, BOOST, COMM,
-								HOLD_FIRE, NO_STRAFE, STOCK, _SIZE_};
+								HOLD_FIRE, NO_STRAFE, STOCK, SUPER, _SIZE_};
 	enum AttrMask: RoleM {MELEE     = 0x0040000, SIEGE     = 0x0080000,
-						  OPEN_FIRE = 0x0100000, NO_JUMP   = 0x0200000, BOOST = 0x0400000, COMM = 0x0800000,
-						  HOLD_FIRE = 0x1000000, NO_STRAFE = 0x2000000, STOCK = 0x4000000};
+						  OPEN_FIRE = 0x0100000, NO_JUMP   = 0x0200000, BOOST = 0x0400000, COMM  = 0x0800000,
+						  HOLD_FIRE = 0x1000000, NO_STRAFE = 0x2000000, STOCK = 0x4000000, SUPER = 0x8000000};
 
 	static RoleM GetMask(RoleT type) { return 1 << type; }
 
@@ -111,12 +112,13 @@ public:
 	bool IsAttrMelee()    const { return role & AttrMask::MELEE; }
 	bool IsAttrSiege()    const { return role & AttrMask::SIEGE; }
 	bool IsAttrOpenFire() const { return role & AttrMask::OPEN_FIRE; }
-	bool IsAttrHoldFire() const { return role & AttrMask::HOLD_FIRE; }
-	bool IsAttrBoost()    const { return role & AttrMask::BOOST; }
 	bool IsAttrNoJump()   const { return role & AttrMask::NO_JUMP; }
-	bool IsAttrStock()    const { return role & AttrMask::STOCK; }
-	bool IsAttrNoStrafe() const { return role & AttrMask::NO_STRAFE; }
+	bool IsAttrBoost()    const { return role & AttrMask::BOOST; }
 	bool IsAttrComm()     const { return role & AttrMask::COMM; }
+	bool IsAttrHoldFire() const { return role & AttrMask::HOLD_FIRE; }
+	bool IsAttrNoStrafe() const { return role & AttrMask::NO_STRAFE; }
+	bool IsAttrStock()    const { return role & AttrMask::STOCK; }
+	bool IsAttrSuper()    const { return role & AttrMask::SUPER; }
 
 	const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
 	float GetBuildDistance() const { return buildDistance; }
@@ -136,6 +138,7 @@ public:
 	bool operator!=(const CCircuitDef& rhs) { return id != rhs.id; }
 
 	void SetMaxThisUnit(int value) { maxThisUnit = value; }
+	int GetMaxThisUnit() const { return maxThisUnit; }
 	bool IsAvailable() const { return maxThisUnit > count; }
 
 	void IncBuild() { ++buildCounts; }
@@ -192,8 +195,6 @@ public:
 	const springai::AIFloat3& GetMidPosOffset() const { return midPosOffset; }
 
 private:
-//	float CalcCannonRange(float yDiff, float range, float projectileSpeed, float heightBoostFactor, float gravity);
-
 	static RoleName roleNames;
 	static AttrName attrNames;
 

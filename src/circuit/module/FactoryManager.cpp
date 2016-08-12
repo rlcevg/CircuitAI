@@ -844,7 +844,7 @@ void CFactoryManager::ReadConfig()
 
 		const Json::Value& limit = behaviour["limit"];
 		if (!limit.isNull()) {
-			cdef->SetMaxThisUnit(limit.asUInt());
+			cdef->SetMaxThisUnit(std::min(limit.asInt(), cdef->GetMaxThisUnit()));
 		}
 
 		cdef->SetRetreat(behaviour.get("retreat", cdef->GetRetreat()).asFloat());
@@ -888,7 +888,7 @@ void CFactoryManager::ReadConfig()
 
 		facDef.isRequireEnergy = factory.get("require_energy", false).asBool();
 
-		const Json::Value& items = factory["unit_def"];
+		const Json::Value& items = factory["unit"];
 		const Json::Value& tiers = factory["income_tier"];
 		facDef.buildDefs.reserve(items.size());
 		const unsigned tierSize = tiers.size();
@@ -902,6 +902,7 @@ void CFactoryManager::ReadConfig()
 		for (unsigned i = 0; i < items.size(); ++i) {
 			CCircuitDef* udef = circuit->GetCircuitDef(items[i].asCString());
 			if (udef == nullptr) {
+				circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), items[i].asCString());
 				continue;
 			}
 			facDef.buildDefs.push_back(udef);

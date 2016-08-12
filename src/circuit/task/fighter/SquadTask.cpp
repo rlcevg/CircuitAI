@@ -214,7 +214,7 @@ bool ISquadTask::IsMustRegroup()
 			const AIFloat3& pos = unit->GetPos(frame);
 			const float sqDist = groupPos.SqDistance2D(pos);
 			if ((sqDist > sqMaxDist) &&
-				((unit->GetTaskFrame() > groupFrame) || terrainManager->CanMoveToPos(unit->GetArea(), pos)))
+				((unit->GetTaskFrame() < groupFrame) || !terrainManager->CanMoveToPos(unit->GetArea(), pos)))
 			{
 				TRY_UNIT(circuit, unit,
 					unit->GetUnit()->Stop();
