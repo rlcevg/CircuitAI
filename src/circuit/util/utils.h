@@ -238,6 +238,11 @@ static inline bool is_valid(const springai::AIFloat3& pos)
 	return pos.x != -RgtVector.x;
 }
 
+template<class T> constexpr T clamp(const T v, const T vmin, const T vmax)
+{
+	return std::min(vmax, std::max(vmin, v));
+}
+
 } // namespace utils
 
 #endif // SRC_CIRCUIT_UTIL_UTILS_H_

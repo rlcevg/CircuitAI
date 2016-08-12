@@ -26,6 +26,7 @@ ISquadTask::ISquadTask(ITaskManager* mgr, FightType type)
 		, highestSpeed(.0f)
 		, leader(nullptr)
 		, groupPos(-RgtVector)
+		, prevGroupPos(-RgtVector)
 		, pPath(std::make_shared<F3Vec>())
 		, groupFrame(0)
 		, isRegroup(false)
@@ -210,8 +211,11 @@ bool ISquadTask::IsMustRegroup()
 		// eliminate buggy units
 		const float sqMaxDist = SQUARE(std::max<float>(SQUARE_SIZE * 8 * validUnits.size(), highestRange));
 		for (CCircuitUnit* unit : units) {
-			const float sqDist = groupPos.SqDistance2D(unit->GetPos(frame));
-			if ((sqDist > sqMaxDist) && (unit->GetTaskFrame() < groupFrame)) {
+			const AIFloat3& pos = unit->GetPos(frame);
+			const float sqDist = groupPos.SqDistance2D(pos);
+			if ((sqDist > sqMaxDist) &&
+				((unit->GetTaskFrame() > groupFrame) || terrainManager->CanMoveToPos(unit->GetArea(), pos)))
+			{
 				TRY_UNIT(circuit, unit,
 					unit->GetUnit()->Stop();
 					unit->GetUnit()->SetMoveState(2);
@@ -224,6 +228,7 @@ bool ISquadTask::IsMustRegroup()
 		return isRegroup = false;
 	}
 
+	bool wasRegroup = isRegroup;
 	isRegroup = false;
 	const float sqMaxDist = SQUARE(std::max<float>(SQUARE_SIZE * 8 * validUnits.size(), highestRange));
 	for (CCircuitUnit* unit : units) {
@@ -232,6 +237,17 @@ bool ISquadTask::IsMustRegroup()
 			isRegroup = true;
 			break;
 		}
+	}
+
+	if (!wasRegroup && isRegroup) {
+		if (utils::is_equal_pos(prevGroupPos, groupPos)) {
+			TRY_UNIT(circuit, leader,
+				leader->GetUnit()->Stop();
+				leader->GetUnit()->SetMoveState(2);
+			)
+			circuit->Garbage(leader, "stuck");
+		}
+		prevGroupPos = groupPos;
 	}
 
 	validUnits.clear();

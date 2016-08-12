@@ -183,6 +183,7 @@ public:
 	float GetLosRadius() const { return losRadius; }
 	float GetCost()      const { return cost; }
 	float GetCloakCost() const { return cloakCost; }
+//	float GetAltitude()  const { return altitude; }
 	float GetJumpRange() const { return jumpRange; }
 
 	void SetRetreat(float value) { retreat = value; }
@@ -191,6 +192,8 @@ public:
 	const springai::AIFloat3& GetMidPosOffset() const { return midPosOffset; }
 
 private:
+//	float CalcCannonRange(float yDiff, float range, float projectileSpeed, float heightBoostFactor, float gravity);
+
 	static RoleName roleNames;
 	static AttrName attrNames;
 
@@ -246,6 +249,7 @@ private:
 	float losRadius;
 	float cost;
 	float cloakCost;
+//	float altitude;
 	float jumpRange;
 	float retreat;
 

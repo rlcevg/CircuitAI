@@ -680,7 +680,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	static std::vector<std::pair<CCircuitDef*, float>> candidates;  // NOTE: micro-opt
 //	candidates.reserve(facDef.buildDefs.size());
 	const float energyNet = em->GetAvgEnergyIncome() - em->GetEnergyPull();
-	const float maxCost = militaryManager->GetMetalArmy();
+	const float maxCost = militaryManager->GetArmyCost();
 	float magnitude = 0.f;
 	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
 		CCircuitDef* bd = facDef.buildDefs[i];

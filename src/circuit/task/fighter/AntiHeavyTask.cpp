@@ -118,7 +118,7 @@ void CAntiHeavyTask::Update()
 	 * Merge tasks if possible
 	 */
 	if (updCount % 32 == 1) {
-		if (manager->GetCircuit()->GetMilitaryManager()->GetEnemyMetal(CCircuitDef::RoleType::HEAVY) < 1.f) {
+		if (manager->GetCircuit()->GetMilitaryManager()->GetEnemyCost(CCircuitDef::RoleType::HEAVY) < 1.f) {
 			manager->AbortTask(this);
 			return;
 		}
@@ -196,7 +196,7 @@ void CAntiHeavyTask::Update()
 				travelAction->SetActive(false);
 
 				power += unit->GetCircuitDef()->GetPower();
-				return target->GetThreat() < power;
+				return unit->GetCircuitDef()->IsRoleMine() ? (target->GetThreat() < power) : false;
 			};
 			if (target->GetUnit()->IsCloaked()) {
 				const AIFloat3& pos = target->GetPos();
@@ -312,7 +312,7 @@ void CAntiHeavyTask::FindTarget()
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const int canTargetCat = cdef->GetTargetCategory();
-	const float maxPower = attackPower * 8.0f;
+	const float maxPower = attackPower * 4.0f;
 	const float weaponRange = cdef->GetMaxRange();
 	const float range = std::max(highestRange, threatMap->GetSquareSize() * 2.0f);
 	const float losSqDist = SQUARE(range);

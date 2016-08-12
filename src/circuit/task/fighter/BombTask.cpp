@@ -185,6 +185,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxPower = threatMap->GetUnitThreat(unit);
+//	const float maxAltitude = cdef->GetAltitude();
 	const float speed = cdef->GetSpeed();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
@@ -210,6 +211,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 		}
 
 		int targetCat;
+//		float altitude;
 		float defPower;
 		bool isBuilder;
 		CCircuitDef* edef = enemy->GetCircuitDef();
@@ -221,10 +223,12 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 			if ((targetCat & canTargetCat) == 0) {
 				continue;
 			}
+//			altitude = edef->GetAltitude();
 			defPower = edef->GetPower();
 			isBuilder = edef->IsRoleBuilder();
 		} else {
 			targetCat = UNKNOWN_CATEGORY;
+//			altitude = 0.f;
 			defPower = enemy->GetThreat();
 			isBuilder = false;
 		}
@@ -239,7 +243,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
 		if (minSqDist > sqDist) {
-			if (enemy->IsInRadarOrLOS() && ((targetCat & noChaseCat) == 0) && !enemy->GetUnit()->IsBeingBuilt()) {
+			if (enemy->IsInRadarOrLOS() && ((targetCat & noChaseCat) == 0)/* && (altitude < maxAltitude)*/) {
 				if (isBuilder) {
 					bestTarget = enemy;
 					minSqDist = sqDist;

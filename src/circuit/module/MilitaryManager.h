@@ -24,6 +24,15 @@ class CRetreatTask;
 
 class CMilitaryManager: public IUnitModule {
 public:
+	struct SEnemyGroup {
+		SEnemyGroup(const springai::AIFloat3& p) : pos(p), cost(0.f), threat(0.f) {}
+		std::vector<CCircuitUnit::Id> units;
+		springai::AIFloat3 pos;
+		std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> roleCosts{{0.f}};
+		float cost;
+		float threat;
+	};
+
 	CMilitaryManager(CCircuitAI* circuit);
 	virtual ~CMilitaryManager();
 
@@ -59,13 +68,15 @@ public:
 	IFighterTask* DelDefendTask(int cluster);
 	IFighterTask* GetDefendTask(int cluster) const { return clusterInfos[cluster].defence; }
 
-	float GetEnemyMetal(CCircuitDef::RoleType type) const {
-		return enemyMetals[static_cast<CCircuitDef::RoleT>(type)];
+	float GetEnemyCost(CCircuitDef::RoleType type) const {
+		return enemyCosts[static_cast<CCircuitDef::RoleT>(type)];
 	}
-	void AddEnemyMetal(const CEnemyUnit* e);
-	void DelEnemyMetal(const CEnemyUnit* e);
+	void AddEnemyCost(const CEnemyUnit* e);
+	void DelEnemyCost(const CEnemyUnit* e);
+	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return enemyGroups; }
+	void UpdateEnemyGroups() { KMeansIteration(); }
 
-	float GetMetalArmy() const { return metalArmy; }
+	float GetArmyCost() const { return armyCost; }
 	float RoleProbability(const CCircuitDef* cdef) const;
 	bool IsNeedBigGun(const CCircuitDef* cdef) const;
 
@@ -108,7 +119,7 @@ private:
 	unsigned int scoutIdx;
 
 	struct SRoleInfo {
-		float metal;
+		float cost;
 		float maxPerc;
 		float factor;
 		std::set<CCircuitUnit*> units;
@@ -123,15 +134,9 @@ private:
 	std::vector<SRoleInfo> roleInfos;
 
 	std::set<CCircuitUnit*> army;
-	float metalArmy;
+	float armyCost;
 
-	std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> enemyMetals{{0.f}};
-	struct SEnemyGroup {
-		SEnemyGroup(const springai::AIFloat3& p) : pos(p) {}
-		std::vector<CCircuitUnit::Id> units;
-		springai::AIFloat3 pos;
-		std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> roleMetals{{0.f}};
-	};
+	std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> enemyCosts{{0.f}};
 	std::vector<SEnemyGroup> enemyGroups;
 
 	struct SClusterInfo {

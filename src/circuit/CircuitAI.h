@@ -146,6 +146,8 @@ private:
 	CAllyTeam::Units teamUnits;  // owner
 	EnemyUnits enemyUnits;  // owner
 	CAllyTeam* allyTeam;
+	int uEnemyMark;
+	int kEnemyMark;
 
 	std::vector<CCircuitUnit*> actionUnits;
 	unsigned int actionIterator;

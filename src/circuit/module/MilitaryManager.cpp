@@ -26,6 +26,7 @@
 #include "task/fighter/AntiAirTask.h"
 #include "task/fighter/AntiHeavyTask.h"
 #include "task/fighter/SupportTask.h"
+#include "task/static/SuperTask.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
@@ -50,7 +51,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit)
 		, fightIterator(0)
 		, scoutIdx(0)
-		, metalArmy(.0f)
+		, armyCost(.0f)
 		, radarDef(nullptr)
 		, sonarDef(nullptr)
 {
@@ -191,9 +192,23 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	 */
 	if (bigGunDef != nullptr) {
 		finishedHandler[bigGunDef->GetId()] = [this](CCircuitUnit* unit) {
+			this->circuit->AddActionUnit(unit);
+			unit->SetManager(this);
+			IFighterTask* task = EnqueueTask(IFighterTask::FightType::SUPER);
+			task->AssignTo(unit);
+			task->Execute(unit);
 			TRY_UNIT(this->circuit, unit,
 				unit->GetUnit()->SetTrajectory(1);
+				if (unit->GetCircuitDef()->IsAttrStock()) {
+					unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+					unit->GetUnit()->ExecuteCustomCommand(CMD_MISC_PRIORITY, {2.0f});
+				}
 			)
+		};
+		destroyedHandler[bigGunDef->GetId()] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+			IUnitTask* task = unit->GetTask();
+			task->OnUnitDestroyed(unit, attacker);  // can change task
+			unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 		};
 	}
 
@@ -201,33 +216,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 	fightTasks.resize(static_cast<IFighterTask::FT>(IFighterTask::FightType::_SIZE_));
 
-	// FIXME: Resume K-Means experiment
-//	AIFloat3 medPos(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
-//	enemyGroups.push_back(SEnemyGroup(medPos));
-//	// FIXME: Move into proper place
-//	scheduler->RunTaskEvery(std::make_shared<CGameTask>([this]() {
-//		if (this->circuit->GetEnemyUnits().empty()) {
-//			return;
-//		}
-////		static int iii = 0;
-////		static std::vector<AIFloat3> poses;
-////		if (iii % 5 == 0) {
-////			for (const AIFloat3& pos : poses) {
-////				this->circuit->GetDrawer()->DeletePointsAndLines(pos);
-////			}
-////		}
-//
-//		KMeansIteration();
-//
-////		if (iii++ % 5 == 0) {
-////			poses.resize(enemyGroups.size());
-////			for (int i = 0; i < enemyGroups.size(); ++i) {
-////				poses[i] = enemyGroups[i].pos;
-////				this->circuit->GetDrawer()->AddPoint(poses[i], utils::int_to_string(i).c_str());
-////			}
-////		}
-//	}), FRAMES_PER_SEC, circuit->GetSkirmishAIId() + 13);
-	// FIXME: Resume K-Means experiment
+	AIFloat3 medPos(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
+	enemyGroups.push_back(SEnemyGroup(medPos));
 }
 
 CMilitaryManager::~CMilitaryManager()
@@ -333,6 +323,10 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			task = new CSupportTask(this);
 			break;
 		}
+		case IFighterTask::FightType::SUPER: {
+			task = new CSuperTask(this);
+			break;
+		}
 	}
 
 	fightTasks[static_cast<IFighterTask::FT>(type)].insert(task);
@@ -396,7 +390,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 					}
 				} break;
 				case IFighterTask::FightType::AH: {
-					if (!cdef->IsRoleMine() && (GetEnemyMetal(CCircuitDef::RoleType::HEAVY) < 1.f)) {
+					if (!cdef->IsRoleMine() && (GetEnemyCost(CCircuitDef::RoleType::HEAVY) < 1.f)) {
 						type = IFighterTask::FightType::ATTACK;
 					}
 				} break;
@@ -658,20 +652,20 @@ IFighterTask* CMilitaryManager::DelDefendTask(int cluster)
 	return task;
 }
 
-void CMilitaryManager::AddEnemyMetal(const CEnemyUnit* e)
+void CMilitaryManager::AddEnemyCost(const CEnemyUnit* e)
 {
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	enemyMetals[cdef->GetEnemyRole()] += e->GetCost();
+	enemyCosts[cdef->GetEnemyRole()] += e->GetCost();
 }
 
-void CMilitaryManager::DelEnemyMetal(const CEnemyUnit* e)
+void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
 {
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	float& metal = enemyMetals[cdef->GetEnemyRole()];
+	float& metal = enemyCosts[cdef->GetEnemyRole()];
 	metal = std::max(metal - e->GetCost(), 0.f);
 }
 
@@ -680,12 +674,12 @@ float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
 	const SRoleInfo& info = roleInfos[cdef->GetMainRole()];
 	float maxProb = 0.f;
 	for (const SRoleInfo::SVsInfo& vs : info.vs) {
-		const float enemyMetal = GetEnemyMetal(vs.role);
-		const float nextMetal = info.metal + cdef->GetCost();
+		const float enemyMetal = GetEnemyCost(vs.role);
+		const float nextMetal = info.cost + cdef->GetCost();
 		const float prob = enemyMetal * vs.importance;
 		if ((prob > maxProb) &&
 			(enemyMetal * vs.ratio >= nextMetal * info.factor) &&
-			(nextMetal <= (metalArmy + cdef->GetCost()) * info.maxPerc))
+			(nextMetal <= (armyCost + cdef->GetCost()) * info.maxPerc))
 		{
 			maxProb = prob;
 		}
@@ -695,7 +689,7 @@ float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
 
 bool CMilitaryManager::IsNeedBigGun(const CCircuitDef* cdef) const
 {
-	return metalArmy * circuit->GetEconomyManager()->GetEcoFactor() > cdef->GetCost();
+	return armyCost * circuit->GetEconomyManager()->GetEcoFactor() > cdef->GetCost();
 }
 
 void CMilitaryManager::UpdateDefenceTasks()
@@ -864,11 +858,11 @@ void CMilitaryManager::AddPower(CCircuitUnit* unit)
 	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_));
 	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
 		if (cdef->IsRoleAny(CCircuitDef::GetMask(i))) {
-			roleInfos[i].metal += cost;
+			roleInfos[i].cost += cost;
 			roleInfos[i].units.insert(unit);
 		}
 	}
-	metalArmy += cost;
+	armyCost += cost;
 }
 
 void CMilitaryManager::DelPower(CCircuitUnit* unit)
@@ -880,12 +874,12 @@ void CMilitaryManager::DelPower(CCircuitUnit* unit)
 	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_));
 	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
 		if (cdef->IsRoleAny(CCircuitDef::GetMask(i))) {
-			float& metal = roleInfos[i].metal;
+			float& metal = roleInfos[i].cost;
 			metal = std::max(metal - cost, .0f);
 			roleInfos[i].units.erase(unit);
 		}
 	}
-	metalArmy = std::max(metalArmy - cost, .0f);
+	armyCost = std::max(armyCost - cost, .0f);
 }
 
 /*
@@ -943,7 +937,9 @@ void CMilitaryManager::KMeansIteration()
 		eg.units.clear();
 		eg.units.reserve(numUnitsAssignedToMean[i]);
 		eg.pos = ZeroVector;
-		std::fill(eg.roleMetals.begin(), eg.roleMetals.end(), 0.f);
+		std::fill(eg.roleCosts.begin(), eg.roleCosts.end(), 0.f);
+		eg.cost = 0.f;
+		eg.threat = 0.f;
 	}
 
 	{
@@ -960,8 +956,10 @@ void CMilitaryManager::KMeansIteration()
 
 			CCircuitDef* cdef = kv.second->GetCircuitDef();
 			if (cdef != nullptr) {
-				eg.roleMetals[cdef->GetMainRole()] += cdef->GetCost();
+				eg.roleCosts[cdef->GetMainRole()] += cdef->GetCost();
+				eg.cost += cdef->GetCost();
 			}
+			eg.threat += kv.second->GetThreat();
 		}
 	}
 

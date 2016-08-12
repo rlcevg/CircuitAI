@@ -465,10 +465,10 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 				bool isValid = true;
 				switch (bi.condition) {
 					case SBuildInfo::Condition::AIR: {
-						isValid = bi.cdef->GetCost() < militaryManager->GetEnemyMetal(CCircuitDef::RoleType::AIR);
+						isValid = bi.cdef->GetCost() < militaryManager->GetEnemyCost(CCircuitDef::RoleType::AIR);
 					} break;
 					case SBuildInfo::Condition::NO_AIR: {
-						isValid = bi.cdef->GetCost() > militaryManager->GetEnemyMetal(CCircuitDef::RoleType::AIR);
+						isValid = bi.cdef->GetCost() > militaryManager->GetEnemyCost(CCircuitDef::RoleType::AIR);
 					} break;
 					case SBuildInfo::Condition::MAYBE: {
 						isValid = rand() < RAND_MAX / 2;

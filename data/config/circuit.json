@@ -365,7 +365,7 @@
 		// "comm" - commander, auto-assigned
 		// "hold_fire" - hold fire on retreat
 		// "no_strafe" - disable gunship's strafe
-		// "stockpile" - load weapon before any task (NOT IMPLEMENTED)
+		// "stockpile" - load weapon before any task (NOT IMPLEMENTED), auto-assigned
 
 //		"attribute": ["boost", "no_strafe"],
 
@@ -1065,7 +1065,7 @@
 				[  // chain1
 					{"unit": "corllt", "category": "defence", "offset": [-80, -80]},
 					{"unit": "armartic", "category": "defence", "offset": {"left": 80}},
-					{"unit": "corgrav", "category": "defence", "offset": [-60, 60]},
+					{"unit": "corgrav", "category": "defence", "offset": [-70, 70]},
 					{"unit": "corrl", "category": "defence", "offset": [-60, 60]},
 					{"unit": "screamer", "category": "defence", "offset": {"front": 40}, "condition": "air"},
 					{"unit": "corflak", "category": "defence", "offset": {"front": 40}, "condition": "no_air"},
@@ -1076,7 +1076,7 @@
 				[  // chain2
 					{"unit": "corllt", "category": "defence", "offset": [80, 80]},
 					{"unit": "armartic", "category": "defence", "offset": {"right": 80}},
-					{"unit": "corgrav", "category": "defence", "offset": [60, -60]},
+					{"unit": "corgrav", "category": "defence", "offset": [70, -70]},
 					{"unit": "corrl", "category": "defence", "offset": [60, -60]},
 					{"unit": "missiletower", "category": "defence", "offset": {"front": 20}, "condition": "no_air"},
 					{"unit": "corjamt", "category": "defence", "offset": {"left": 40}},

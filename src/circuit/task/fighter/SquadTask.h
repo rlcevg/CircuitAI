@@ -42,6 +42,7 @@ protected:
 	// NOTE: Using unit instead of area directly may save from processing UpdateAreaUsers
 	CCircuitUnit* leader;  // slowest, weakest unit, true leader
 	springai::AIFloat3 groupPos;
+	springai::AIFloat3 prevGroupPos;
 	std::shared_ptr<F3Vec> pPath;
 
 	int groupFrame;

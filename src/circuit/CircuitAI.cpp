@@ -62,6 +62,8 @@ unsigned int CCircuitAI::gaCounter = 0;
 CCircuitAI::CCircuitAI(OOAICallback* callback)
 		: eventHandler(&CCircuitAI::HandleGameEvent)
 		, allyTeam(nullptr)
+		, uEnemyMark(0)
+		, kEnemyMark(0)
 		, actionIterator(0)
 		, difficulty(Difficulty::NORMAL)
 		, allyAware(true)
@@ -454,8 +456,8 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	modules.push_back(factoryManager);
 
 	threatMap = std::make_shared<CThreatMap>(this);
-	const int offset = skirmishAIId % FRAMES_PER_SEC;
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CCircuitAI::UpdateEnemyUnits, this), FRAMES_PER_SEC, offset);
+	uEnemyMark = skirmishAIId % FRAMES_PER_SEC;
+	kEnemyMark = (skirmishAIId + FRAMES_PER_SEC / 2) % FRAMES_PER_SEC;
 
 	if (difficulty == Difficulty::HARD) {
 		Cheats* cheats = callback->GetCheats();
@@ -540,6 +542,15 @@ int CCircuitAI::Update(int frame)
 		UnitDestroyed(unit, nullptr);
 		UnregisterTeamUnit(unit);
 		garbage.erase(unit);  // NOTE: UnregisterTeamUnit may erase unit
+	}
+
+	if (!enemyUnits.empty()) {
+		int mark = frame % FRAMES_PER_SEC;
+		if (mark ==  uEnemyMark) {
+			UpdateEnemyUnits();
+		} else if (mark == kEnemyMark) {
+			militaryManager->UpdateEnemyGroups();
+		}
 	}
 
 	scheduler->ProcessTasks(frame);
@@ -750,7 +761,7 @@ int CCircuitAI::EnemyEnterLOS(CEnemyUnit* enemy)
 	bool isKnownBefore = enemy->IsKnown() && (enemy->IsInRadar() || !enemy->GetCircuitDef()->IsMobile());
 
 	if (threatMap->EnemyEnterLOS(enemy)) {
-		militaryManager->AddEnemyMetal(enemy);
+		militaryManager->AddEnemyCost(enemy);
 	}
 
 	if (isKnownBefore) {
@@ -808,7 +819,7 @@ int CCircuitAI::EnemyDamaged(CEnemyUnit* enemy)
 int CCircuitAI::EnemyDestroyed(CEnemyUnit* enemy)
 {
 	if (threatMap->EnemyDestroyed(enemy)) {
-		militaryManager->DelEnemyMetal(enemy);
+		militaryManager->DelEnemyCost(enemy);
 	}
 
 	return 0;  // signaling: OK
