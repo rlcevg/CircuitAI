@@ -271,6 +271,13 @@ void CCircuitUnit::StopMorph()
 	)
 }
 
+bool CCircuitUnit::IsUpgradable()
+{
+	unsigned level = unit->GetRulesParamFloat("comm_level", 0.f);
+	assert(manager != nullptr);
+	return manager->GetCircuit()->GetSetupManager()->HasModules(level);
+}
+
 void CCircuitUnit::Upgrade()
 {
 	isMorphing = true;

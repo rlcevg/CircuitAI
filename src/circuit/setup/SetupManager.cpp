@@ -340,15 +340,16 @@ void CSetupManager::ReadConfig()
 	emptyShield = shield.get((unsigned)0, 0.1f).asFloat();
 	fullShield = shield.get((unsigned)1, 0.6f).asFloat();
 
-	const Json::Value& commanders = root["commander"];
+	const Json::Value& comm = root["commander"];
+	const Json::Value& items = comm["unit"];
 	std::vector<CCircuitDef*> commChoices;
-	commChoices.reserve(commanders.size());
+	commChoices.reserve(items.size());
 	float magnitude = 0.f;
 	std::vector<float> weight;
-	weight.reserve(commanders.size());
+	weight.reserve(items.size());
 	CCircuitDef::RoleName& roleNames = CCircuitDef::GetRoleNames();
 
-	for (const std::string& defName : commanders.getMemberNames()) {
+	for (const std::string& defName : items.getMemberNames()) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());
 		if (cdef == nullptr) {
 			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), defName.c_str());
@@ -357,20 +358,10 @@ void CSetupManager::ReadConfig()
 
 		commChoices.push_back(cdef);
 
-		const Json::Value& comm = commanders[defName];
+		const Json::Value& comm = items[defName];
 		const float imp = comm.get("importance", 0.f).asFloat();
 		magnitude += imp;
 		weight.push_back(imp);
-
-		const Json::Value& upgr = comm["upgrade"];
-		modules.reserve(upgr.size());
-		for (const Json::Value& lvl : upgr) {
-			std::vector<float> mdls;
-			for (const Json::Value& m : lvl) {
-				mdls.push_back(m.asFloat());
-			}
-			modules.push_back(mdls);
-		}
 
 		morphFrame = comm.get("morph_after", -1).asInt();
 
@@ -382,6 +373,17 @@ void CSetupManager::ReadConfig()
 				opener.push_back(it->second);
 			}
 		}
+	}
+
+	// FIXME: Tie upgrades to UnitDef
+	const Json::Value& upgr = comm["upgrade"];
+	modules.reserve(upgr.size());
+	for (const Json::Value& lvl : upgr) {
+		std::vector<float> mdls;
+		for (const Json::Value& m : lvl) {
+			mdls.push_back(m.asFloat());
+		}
+		modules.push_back(mdls);
 	}
 
 	if (!commChoices.empty()) {

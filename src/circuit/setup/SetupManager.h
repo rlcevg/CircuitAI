@@ -59,6 +59,7 @@ public:
 	float GetEmptyShield() const { return emptyShield; }
 	float GetFullShield() const { return fullShield; }
 
+	bool HasModules(unsigned level) const { return modules.size() > level; }
 	const std::vector<float>& GetModules(unsigned level) const {
 		return modules[std::min<unsigned>(level, modules.size() - 1)];
 	}

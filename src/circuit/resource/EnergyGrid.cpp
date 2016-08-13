@@ -163,6 +163,7 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 	/*
 	 * Find best build def and position
 	 */
+	outDef = nullptr;
 	const float searchRadius = circuit->GetEconomyManager()->GetPylonRange() * 0.5f;
 
 	CEnergyLink::SVertex* v0 = link->GetV0();
@@ -232,8 +233,8 @@ void CEnergyGrid::ReadConfig()
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
-	const Json::Value& pylons = root["energy"]["pylon"];
-	for (const Json::Value& pyl : pylons) {
+	const Json::Value& pylon = root["economy"]["energy"]["pylon"];
+	for (const Json::Value& pyl : pylon) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(pyl.asCString());
 		if (cdef == nullptr) {
 			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), pyl.asCString());

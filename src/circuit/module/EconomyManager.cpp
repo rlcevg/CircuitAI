@@ -146,7 +146,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				}
 			}
 
-			if (isStart) {
+			if (isStart && (this->circuit->GetSetupManager()->GetMorphFrame() >= 0)) {
 				this->circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>([this, unitId]() {
 					// Force commander level 0 to morph
 					CCircuitUnit* unit = this->circuit->GetTeamUnit(unitId);
@@ -818,7 +818,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 	CCircuitDef* buildDef;
 	AIFloat3 buildPos;
 	CEnergyLink* link = energyGrid->GetLinkToBuild(buildDef, buildPos);
-	if (link == nullptr) {
+	if ((link == nullptr) || (buildDef == nullptr)) {
 		return nullptr;
 	}
 
@@ -841,6 +841,9 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 
 void CEconomyManager::AddMorphee(CCircuitUnit* unit)
 {
+	if (!unit->IsUpgradable()) {
+		return;
+	}
 	morphees.insert(unit);
 	if (morph == nullptr) {
 		morph = std::make_shared<CGameTask>(&CEconomyManager::UpdateMorph, this);
@@ -879,13 +882,14 @@ void CEconomyManager::ReadConfig()
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
-	const float step = root["economy"].get("eps_step", 0.25f).asFloat();
+	const Json::Value& econ = root["economy"];
+	const float step = econ.get("eps_step", 0.25f).asFloat();
 	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
 	ecoFactor = (circuit->GetAllyTeam()->GetSize() - 1.0f) * step + 1.0f;
 
 	// Using cafus, armfus, armsolar as control points
 	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
-	const Json::Value& energy = root["energy"];
+	const Json::Value& energy = econ["energy"];
 	incomeFactor = energy.get("income_factor", 1.0f).asFloat();
 
 	std::array<std::pair<std::string, int>, 3> landEngies;
@@ -940,7 +944,7 @@ void CEconomyManager::ReadConfig()
 //	circuit->LOG("y = %f*x^0 + %f*x^1 + %f*x^2", r[0], r[1], r[2]);
 
 	// NOTE: Must have
-	defaultDef = circuit->GetCircuitDef(root["economy"]["default"].asCString());
+	defaultDef = circuit->GetCircuitDef(econ["default"].asCString());
 }
 
 void CEconomyManager::Init()

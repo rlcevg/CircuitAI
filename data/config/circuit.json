@@ -2,10 +2,8 @@
 {
 // --- EASY config ---
 "easy": {  // Null AI
-"energy": {
-	"land": { "cafus": [1], "armfus": [2], "armsolar": [3] },
-	"water": { "cafus": [1], "armfus": [2], "armwin": [3] }
-}
+"economy": {"energy": {"land": {"cafus": [1], "armfus": [2], "armsolar": [3]}, "water": {"cafus": [1], "armfus": [2], "armwin": [3]}}, "default": "corrl"},
+"porcupine": {"default": "corrl"}
 },
 // --- EASY config ---
 
@@ -922,6 +920,46 @@
 },
 
 "economy": {
+	// Limits of energy structures partly defined by parabola in space (structure_cost/energyMake, unit_limit).
+	// Parabola defined by 3 control points.
+	// For example land config:
+	//   P0 = cafus: (4000/225; random(1..2)) = (17.78, 1)
+	//   P1 = armfus: (1000/35; random(3)) = (28.57, 3)
+	//   P2 = armsolar: (70/2; random(10..15)) = (35, 13)
+	// P(x) => y = 0.079550*x*x - 3.501790*x + 38.113789
+	// Then parabola P(x) defines limit for
+	//   "geo": x=500/25=20, y = P(20) = 31.82 - 70.0358 + 38.113789 ~= 0
+	//   "armwin": x=35/1.2=29.17, y = P(29.17) ~= 4
+	//
+	// Metal income condition for energy structure is: income > sqrt(structure_cost*0.4).
+	// Energy buildings are sorted by structure_cost/energy_make (asc).
+	// Config in example with income_factor=0.8 leads to next build choice:
+	//   1) nothing if singu_limit >= 1;
+	//   2) else if singu_limit < 1 and income > 50 then singu;
+	//   (ignored) else if geo_limit < 0 and income > 17.68 then geo;
+	//   3) else if fusion_limit < 3 and income > 25 then fusion;
+	//   4) else if tidal_limit < 4 and income > 4.68 then wind/tidal;
+	//   5) else if solar_limit < 13 and income > 6.61 then solar;
+	//   6) if nothing selected then build lowest energy that didn't reach its limit, disregard income.
+	"energy": {
+		// If land area >= 40% of the map then "land" config used, "water" otherwise
+		"land": {
+			// "<energy_def>": [<lower limit>, <upper limit>]
+			// limit = random(<lower limit>..<upper limit>)
+			"cafus": [1, 1],
+			"armfus": [4],
+			"armsolar": [10, 15]
+		},
+		"water": {
+			"cafus": [1],
+			"armfus": [4],
+			"armwin": [20]
+		},
+		"income_factor": 0.74,
+
+		"pylon": ["armestor", "armsolar", "armwin"]
+	},
+
 	// Scales metal income
 	// ecoFactor = teamSize*eps_step+(1-eps_step)
 	"eps_step": 0.125,
@@ -933,46 +971,6 @@
 
 	// Unknown UnitDef replacer
 	"default": "corrl"
-},
-
-// Limits of energy structures partly defined by parabola in space (structure_cost/energyMake, unit_limit).
-// Parabola defined by 3 control points.
-// For example land config:
-//   P0 = cafus: (4000/225; random(1..2)) = (17.78, 1)
-//   P1 = armfus: (1000/35; random(3)) = (28.57, 3)
-//   P2 = armsolar: (70/2; random(10..15)) = (35, 13)
-// P(x) => y = 0.079550*x*x - 3.501790*x + 38.113789
-// Then parabola P(x) defines limit for
-//   "geo": x=500/25=20, y = P(20) = 31.82 - 70.0358 + 38.113789 ~= 0
-//   "armwin": x=35/1.2=29.17, y = P(29.17) ~= 4
-//
-// Metal income condition for energy structure is: income > sqrt(structure_cost*0.4).
-// Energy buildings are sorted by structure_cost/energy_make (asc).
-// Config in example with income_factor=0.8 leads to next build choice:
-//   1) nothing if singu_limit >= 1;
-//   2) else if singu_limit < 1 and income > 50 then singu;
-//   (ignored) else if geo_limit < 0 and income > 17.68 then geo;
-//   3) else if fusion_limit < 3 and income > 25 then fusion;
-//   4) else if tidal_limit < 4 and income > 4.68 then wind/tidal;
-//   5) else if solar_limit < 13 and income > 6.61 then solar;
-//   6) if nothing selected then build lowest energy that didn't reach its limit, disregard income.
-"energy": {
-	// If land area >= 40% of the map then "land" config used, "water" otherwise
-	"land": {
-		// "<energy_def>": [<lower limit>, <upper limit>]
-		// limit = random(<lower limit>..<upper limit>)
-		"cafus": [1, 1],
-		"armfus": [4],
-		"armsolar": [10, 15]
-	},
-	"water": {
-		"cafus": [1],
-		"armfus": [4],
-		"armwin": [20]
-	},
-	"income_factor": 0.74,
-
-	"pylon": ["armestor", "armsolar", "armwin"]
 },
 
 "porcupine": {
@@ -996,45 +994,46 @@
 },
 
 "commander": {
-	"dyntrainer_support_base": {
-		// Choice importance, 0 by default
-		"importance": 1.0,
+	"unit": {
+		"dyntrainer_support_base": {
+			// Choice importance, 0 by default
+			"importance": 1.0,
 
-		// List of dynamic module IDs
-		"upgrade": [
-			[13, 30],  // shotgun, radar
-			[34, 34],  // companion drones
-			[15, 35, 35],  // sniper, battle drones
-			[35, 35, 35],  // battle drones
-			[35, 35, 35],  // battle drones
-			[34, 34, 34],  // companion drones
-			[34, 34, 34],  // companion drones
-			[40, 40, 40],  // speed
-			[40, 40, 40],  // speed
-			[40, 40, 37],  // speed, armour
-			[37, 37, 37],  // armour
-			[37, 37, 37],  // armour
-			[37, 36, 36],  // armour, autoheal
-			[36, 36, 36],  // autoheal
-			[36, 36, 36],  // autoheal
-			[42, 42, 42],  // builder
-			[42, 42, 42],  // builder
-			[42, 42, 29],  // builder, jammer
-			[32, 27, 33]  // area cloak, disruptor ammo, lazarus
-		],
+			// Force-morph delay, in seconds
+			"morph_after": 120,
 
-		// Force-morph delay, in seconds
-		"morph_after": 120,
-
-		// Starting units (order matters)
-		"start": ["raider", "raider", "builder"]
+			// Starting units (order matters)
+			"start": ["raider", "raider", "builder"]
+		},
+		"dyntrainer_recon_base": {
+		},
+		"dyntrainer_assault_base": {
+		},
+		"dyntrainer_strike_base": {
+		}
 	},
-	"dyntrainer_recon_base": {
-	},
-	"dyntrainer_assault_base": {
-	},
-	"dyntrainer_strike_base": {
-	}
+	// List of dynamic module IDs
+	"upgrade": [
+		[13, 30],  // shotgun, radar
+		[34, 34],  // companion drones
+		[15, 35, 35],  // sniper, battle drones
+		[35, 35, 35],  // battle drones
+		[35, 35, 35],  // battle drones
+		[34, 34, 34],  // companion drones
+		[34, 34, 34],  // companion drones
+		[40, 40, 40],  // speed
+		[40, 40, 40],  // speed
+		[40, 40, 37],  // speed, armour
+		[37, 37, 37],  // armour
+		[37, 37, 37],  // armour
+		[37, 36, 36],  // armour, autoheal
+		[36, 36, 36],  // autoheal
+		[36, 36, 36],  // autoheal
+		[42, 42, 42],  // builder
+		[42, 42, 42],  // builder
+		[42, 42, 29],  // builder, jammer
+		[32, 27, 33]  // area cloak, disruptor ammo, lazarus
+	]
 },
 
 // Actions on building finished event

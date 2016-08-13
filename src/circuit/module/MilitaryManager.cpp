@@ -831,7 +831,8 @@ void CMilitaryManager::ReadConfig()
 		bigGunDef->SetMaxThisUnit(std::min(supers[choice].limit, bigGunDef->GetMaxThisUnit()));
 	}
 
-	defaultPorc = circuit->GetCircuitDef(porc.get("default", "").asCString());
+	// NOTE: Must have
+	defaultPorc = circuit->GetCircuitDef(porc["default"].asCString());
 }
 
 void CMilitaryManager::Init()

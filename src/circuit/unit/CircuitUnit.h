@@ -105,6 +105,7 @@ public:
 
 	void Morph();
 	void StopMorph();
+	bool IsUpgradable();
 	void Upgrade();
 	void StopUpgrade();
 	bool IsMorphing() const { return isMorphing; }
