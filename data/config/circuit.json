@@ -851,6 +851,7 @@
 	"armbrtha": {"role": ["static", "heavy"]},
 	"cordoom": {"role": ["static", "heavy"]},
 	"armanni": {"role": ["static", "heavy"]},
+	"armamd": {"role": ["static", "heavy"]},
 	"cafus": {"role": ["static", "heavy"]}
 },
 

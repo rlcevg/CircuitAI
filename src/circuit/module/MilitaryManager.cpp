@@ -1012,7 +1012,9 @@ void CMilitaryManager::KMeansIteration()
 					eg.cost += cdef->GetCost();
 				}
 			}
-			eg.threat += enemy->GetThreat();
+			if (!enemy->IsHidden()) {
+				eg.threat += enemy->GetThreat();
+			}
 		}
 	}
 
