@@ -24,6 +24,7 @@
 #include "WeaponDef.h"
 #include "Pathing.h"
 #include "MoveData.h"
+#include "Log.h"
 
 namespace circuit {
 

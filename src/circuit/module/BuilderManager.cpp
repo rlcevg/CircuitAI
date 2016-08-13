@@ -40,6 +40,7 @@
 #include "json/json.h"
 
 #include "Command.h"
+#include "Log.h"
 
 namespace circuit {
 
@@ -577,7 +578,7 @@ void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 
 SBuildChain* CBuilderManager::GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef)
 {
-	auto it1 = buildChains.find(buildType);
+	auto it1 = buildChains.find(static_cast<IBuilderTask::BT>(buildType));
 	if (it1 == buildChains.end()) {
 		return nullptr;
 	}
@@ -607,7 +608,7 @@ void CBuilderManager::ReadConfig()
 			continue;
 		}
 
-		std::unordered_map<CCircuitDef*, SBuildChain*>& defMap = buildChains[it->second];
+		std::unordered_map<CCircuitDef*, SBuildChain*>& defMap = buildChains[static_cast<IBuilderTask::BT>(it->second)];
 		const Json::Value& catChain = build[catName];
 		for (const std::string& defName : catChain.getMemberNames()) {
 			CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());

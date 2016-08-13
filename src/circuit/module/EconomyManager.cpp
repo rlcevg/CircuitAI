@@ -27,6 +27,7 @@
 #include "Feature.h"
 #include "FeatureDef.h"
 #include "Team.h"
+#include "Log.h"
 
 namespace circuit {
 

@@ -738,7 +738,7 @@ void CMilitaryManager::ReadConfig()
 			const std::string& roleName = vs[i].asString();
 			auto it = roleNames.find(roleName);
 			if (it == roleNames.end()) {
-				circuit->LOG("CONFIG %s: response %s vs unknown role '%s'", cfgName.c_str(), pair.first, roleName.c_str());
+				circuit->LOG("CONFIG %s: response %s vs unknown role '%s'", cfgName.c_str(), pair.first.c_str(), roleName.c_str());
 				continue;
 			}
 			float rat = ratio.get(i, 1.0f).asFloat();

@@ -148,7 +148,7 @@ private:
 
 	CCircuitDef* terraDef;
 
-	std::unordered_map<IBuilderTask::BuildType, std::unordered_map<CCircuitDef*, SBuildChain*>> buildChains;  // owner
+	std::unordered_map<IBuilderTask::BT, std::unordered_map<CCircuitDef*, SBuildChain*>> buildChains;  // owner
 
 public:
 	void UpdateAreaUsers();

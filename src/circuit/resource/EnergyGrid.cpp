@@ -17,6 +17,7 @@
 #include "json/json.h"
 
 #include "AISCommands.h"
+#include "Log.h"
 #ifdef DEBUG_VIS
 #include "Figure.h"
 #endif

@@ -11,6 +11,8 @@
 #include "task/UnitTask.h"
 #include "util/utils.h"
 
+#include <map>
+
 namespace circuit {
 
 class CCircuitDef;
