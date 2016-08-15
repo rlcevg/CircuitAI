@@ -154,7 +154,9 @@ public:
 	springai::WeaponMount* GetWeaponMount() const { return weaponMount; }
 	float GetDPS() const { return dps; }
 	float GetDamage() const { return dmg; }
+	float GetAoe() const { return aoe; }
 	float GetPower() const { return power; }
+	float GetMinRange() const { return minRange; }
 	float GetMaxRange(RangeType type = RangeType::MAX) const { return maxRange[static_cast<RangeT>(type)]; }
 	float GetMaxShield() const { return maxShield; }
 	int GetReloadTime() const { return reloadTime; }
@@ -186,6 +188,7 @@ public:
 	float GetLosRadius() const { return losRadius; }
 	float GetCost()      const { return cost; }
 	float GetCloakCost() const { return cloakCost; }
+	float GetStockCost() const { return stockCost; }
 //	float GetAltitude()  const { return altitude; }
 	float GetJumpRange() const { return jumpRange; }
 
@@ -219,7 +222,9 @@ private:
 	springai::WeaponMount* weaponMount;
 	float dps;  // TODO: split dps like ranges on air, land, water
 	float dmg;
+	float aoe;  // radius
 	float power;  // attack power = UnitDef's max threat
+	float minRange;
 	std::array<float, static_cast<RangeT>(RangeType::_SIZE_)> maxRange;
 	float maxShield;
 	int reloadTime;  // frames in ticks
@@ -250,6 +255,7 @@ private:
 	float losRadius;
 	float cost;
 	float cloakCost;
+	float stockCost;
 //	float altitude;
 	float jumpRange;
 	float retreat;

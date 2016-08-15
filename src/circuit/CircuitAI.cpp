@@ -450,10 +450,10 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	militaryManager = std::make_shared<CMilitaryManager>(this);
 
 	// TODO: Remove EconomyManager from module (move abilities to BuilderManager).
-	modules.push_back(economyManager);
 	modules.push_back(militaryManager);
 	modules.push_back(builderManager);
 	modules.push_back(factoryManager);
+	modules.push_back(economyManager);  // NOTE: Units use manager, but ain't assigned here
 
 	threatMap = std::make_shared<CThreatMap>(this);
 	uEnemyMark = skirmishAIId % FRAMES_PER_SEC;

@@ -73,7 +73,9 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, weaponMount(nullptr)
 		, dps(.0f)
 		, dmg(.0f)
+		, aoe(.0f)
 		, power(.0f)
+		, minRange(.0f)
 		, maxRange({.0f})
 		, maxShield(.0f)
 		, reloadTime(0)
@@ -85,6 +87,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, hasAntiWater(false)
 		, isAmphibious(false)
 		, isLander(false)
+		, stockCost(.0f)
 		, jumpRange(.0f)
 		, retreat(-1.f)
 {
@@ -183,6 +186,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 	WeaponDef* stockDef = def->GetStockpileDef();
 	if (stockDef != nullptr) {
+		it = customParams.find("stockpilecost");
+		if (it != customParams.end()) {
+			stockCost = utils::string_to_float(it->second);
+		}
 		AddAttribute(AttrType::STOCK);
 		delete stockDef;
 	}
@@ -190,6 +197,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	/*
 	 * DPS and Weapon calculations
 	 */
+	minRange = std::numeric_limits<float>::max();
 	float minReloadTime = std::numeric_limits<float>::max();
 	float bestDGunReload = std::numeric_limits<float>::max();
 	float bestDGunRange = .0f;
@@ -264,6 +272,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		int weaponCat = mount->GetOnlyTargetCategory();
 		targetCategory |= weaponCat;
 
+		aoe = std::max(aoe, wd->GetAreaOfEffect());
+
 		std::string wt(wd->GetType());  // @see https://springrts.com/wiki/Gamedev:WeaponDefs
 		bool isAirWeapon = false;
 		const float projectileSpeed = wd->GetProjectileSpeed();
@@ -281,6 +291,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		bool isWaterWeapon = wd->IsWaterWeapon();
 		canTargetWater |= isWaterWeapon;
 
+		minRange = std::min(minRange, range);
 		if ((weaponCat & circuit->GetAirCategory()) && isAirWeapon) {
 			float& mr = maxRange[static_cast<RangeT>(RangeType::AIR)];
 			mr = std::max(mr, range);
@@ -323,6 +334,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	if (isDynamic) {  // FIXME: Dynamo com workaround
 		dps /= mounts.size();
 		dmg /= mounts.size();
+		// NOTE: minRange should be fine
 		for (RangeType rt : {RangeType::AIR, RangeType::LAND, RangeType::WATER}) {
 			float& mr = maxRange[static_cast<RangeT>(rt)];
 			mr = std::min(mr, 400.0f);
@@ -343,7 +355,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 	if (IsMobile() && !IsAttacker()) {  // mobile bomb?
 		WeaponDef* wd = def->GetDeathExplosion();
-		const float aoe = wd->GetAreaOfEffect();
+		aoe = wd->GetAreaOfEffect();
 		if (aoe > 64.0f) {
 			// power
 			float ldmg = .0f;
@@ -362,6 +374,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			dmg += ldmg;
 			dps = ldmg * wd->GetSalvoSize();
 			// range
+			minRange = aoe;
 			for (RangeT rt = 0; rt < static_cast<RangeT>(RangeType::_SIZE_); ++rt) {
 				float& mr = maxRange[rt];
 				mr = std::max(mr, aoe);

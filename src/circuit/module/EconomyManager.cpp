@@ -168,6 +168,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	float maxAreaDivCost = .0f;
 	float maxStoreDivCost = .0f;
+	CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
 
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
@@ -175,45 +176,49 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
 
 		if (!cdef->IsMobile()) {
-			// pylon
-			auto it = customParams.find("pylonrange");
-			if (it != customParams.end()) {
-				const float range = utils::string_to_float(it->second);
-				float areaDivCost = M_PI * SQUARE(range) / cdef->GetCost();
-				if (maxAreaDivCost < areaDivCost) {
-					maxAreaDivCost = areaDivCost;
-					pylonDef = cdef;  // armestor
-					pylonRange = range;
+			if (commDef->CanBuild(cdef)) {
+				// pylon
+				auto it = customParams.find("pylonrange");
+				if (it != customParams.end()) {
+					const float range = utils::string_to_float(it->second);
+					float areaDivCost = M_PI * SQUARE(range) / cdef->GetCost();
+					if (maxAreaDivCost < areaDivCost) {
+						maxAreaDivCost = areaDivCost;
+						pylonDef = cdef;  // armestor
+						pylonRange = range;
+					}
+				}
+
+				// storage
+				float storeDivCost = cdef->GetUnitDef()->GetStorage(metalRes) / cdef->GetCost();
+				if (maxStoreDivCost < storeDivCost) {
+					maxStoreDivCost = storeDivCost;
+					storeDef = cdef;  // armmstor
+				}
+
+				// mex
+				if (((it = customParams.find("ismex")) != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
+					finishedHandler[kv.first] = mexFinishedHandler;
+					mexDef = cdef;  // cormex
 				}
 			}
 
-			// storage
-			float storeDivCost = cdef->GetUnitDef()->GetStorage(metalRes) / cdef->GetCost();
-			if (maxStoreDivCost < storeDivCost) {
-				maxStoreDivCost = storeDivCost;
-				storeDef = cdef;
-			}
-
+			// factory
 			if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
-				// factory
 				finishedHandler[cdef->GetId()] = factoryFinishedHandler;
 				destroyedHandler[cdef->GetId()] = factoryDestroyedHandler;
 			}
 
-			it = customParams.find("income_energy");
+			// energy
+			auto it = customParams.find("income_energy");
 			if ((it != customParams.end()) && (utils::string_to_float(it->second) > 1)) {
-				// energy
 				finishedHandler[kv.first] = energyFinishedHandler;
-				if (!cdef->IsAvailable() || ((terrainManager->GetPercentLand() < 40.0) &&
+				if (!cdef->IsAvailable() || (terrainManager->IsWaterMap() &&
 					(terrainManager->GetImmobileTypeById(cdef->GetImmobileId())->minElevation >= .0f)))
 				{
 					continue;
 				}
 				allEnergyDefs.insert(cdef);
-			} else if (((it = customParams.find("ismex")) != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
-				// mex
-				finishedHandler[kv.first] = mexFinishedHandler;
-				mexDef = cdef;  // cormex
 			}
 
 		} else {
@@ -288,7 +293,7 @@ int CEconomyManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 	return 0; //signaling: OK
 }
 
-CCircuitDef* CEconomyManager::GetLowEnergy(const AIFloat3& pos) const
+CCircuitDef* CEconomyManager::GetLowEnergy(const AIFloat3& pos, float& outMake) const
 {
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CCircuitDef* result = nullptr;
@@ -297,6 +302,7 @@ CCircuitDef* CEconomyManager::GetLowEnergy(const AIFloat3& pos) const
 		CCircuitDef* candy = it->cdef;
 		if (candy->IsAvailable() && terrainManager->CanBeBuiltAt(candy, pos)) {
 			result = candy;
+			outMake = it->make;
 			break;
 		}
 		++it;
@@ -324,8 +330,8 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 		SEnergyInfo engy;
 		engy.cdef = cdef;
 		engy.cost = cdef->GetCost();
-		float make = utils::string_to_float(cdef->GetUnitDef()->GetCustomParams().find("income_energy")->second);
-		engy.costDivMake = engy.cost / make;
+		engy.make = utils::string_to_float(cdef->GetUnitDef()->GetCustomParams().find("income_energy")->second);
+		engy.costDivMake = engy.cost / engy.make;
 		engy.limit = engyPol->GetValueAt(engy.costDivMake);
 		energyInfos.push_back(engy);
 	}
@@ -583,7 +589,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	metalIncome = std::min(metalIncome, energyIncome) * incomeFactor;
 	const float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome);
 	const int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
-	const float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.8f : ecoFactor);
+	const float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.5f : ecoFactor);
 
 	for (const SEnergyInfo& engy : energyInfos) {  // sorted by high-tech first
 		// TODO: Add geothermal powerplant support
@@ -720,7 +726,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	}
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	AIFloat3 center = AIFloat3(terrainManager->GetTerrainWidth() / 2, 0, terrainManager->GetTerrainHeight() / 2);
+	AIFloat3 center(terrainManager->GetTerrainWidth() / 2, 0, terrainManager->GetTerrainHeight() / 2);
 	float size = (center.SqDistance2D(circuit->GetSetupManager()->GetStartPos()) > center.SqDistance2D(buildPos)) ? -200.0f : 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
 	buildPos.x += (buildPos.x > center.x) ? -size : size;
 	buildPos.z += (buildPos.z > center.z) ? -size : size;
@@ -733,6 +739,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			bdef = landDef;
 		} else {
 			STerrainMapArea* area = terrainManager->GetMobileTypeById(landDef->GetMobileId())->areaLargest;
+			// FIXME: area->percentOfMap < 40.0 doesn't seem right as water identifier
 			bdef = ((area == nullptr) || (area->percentOfMap < 40.0)) ? factoryManager->GetWaterDef(facDef) : landDef;
 		}
 	} else {
@@ -918,7 +925,7 @@ void CEconomyManager::ReadConfig()
 		}
 	}
 
-	bool isWaterMap = circuit->GetTerrainManager()->GetPercentLand() < 40.0;
+	const bool isWaterMap = circuit->GetTerrainManager()->IsWaterMap();
 	std::array<std::pair<std::string, int>, 3>& engies = isWaterMap ? waterEngies : landEngies;
 	CLagrangeInterPol::Vector x(engies.size()), y(engies.size());
 	for (unsigned i = 0; i < engies.size(); ++i) {

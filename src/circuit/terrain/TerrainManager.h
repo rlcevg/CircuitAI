@@ -162,6 +162,7 @@ public:
 	bool CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const springai::AIFloat3& destination);
 
 	float GetPercentLand() const { return areaData->percentLand; }
+	bool IsWaterMap() const { return areaData->percentLand < 40.0; }
 	bool IsWaterSector(const springai::AIFloat3& position) const {
 		return areaData->sector[GetSectorIndex(position)].isWater;
 	}

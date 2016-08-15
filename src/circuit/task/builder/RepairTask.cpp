@@ -14,8 +14,8 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
-#include "AISCommands.h"
 #include "OOAICallback.h"
+#include "AISCommands.h"
 
 namespace circuit {
 

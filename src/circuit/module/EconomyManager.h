@@ -41,7 +41,7 @@ public:
 	springai::Resource* GetEnergyRes() const { return energyRes; }
 	CEnergyGrid* GetEnergyGrid() const { return energyGrid; }
 	CCircuitDef* GetMexDef() const { return mexDef; }
-	CCircuitDef* GetLowEnergy(const springai::AIFloat3& pos) const;
+	CCircuitDef* GetLowEnergy(const springai::AIFloat3& pos, float& outMake) const;
 	CCircuitDef* GetPylonDef() const { return pylonDef; }
 	float GetPylonRange() const { return pylonRange; }
 	void AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs);  // add available energy defs
@@ -109,6 +109,7 @@ private:
 	struct SEnergyInfo {
 		CCircuitDef* cdef;
 		float cost;
+		float make;
 		float costDivMake;
 		int limit;
 		bool operator==(const CCircuitDef* d) { return cdef == d; }

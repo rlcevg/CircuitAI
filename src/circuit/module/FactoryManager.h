@@ -71,6 +71,7 @@ public:
 	CCircuitDef* GetRoleDef(CCircuitDef* facDef, CCircuitDef::RoleType role) const;
 	CCircuitDef* GetLandDef(CCircuitDef* facDef) const;
 	CCircuitDef* GetWaterDef(CCircuitDef* facDef) const;
+	float GetAvgSpeed(CCircuitDef* facDef) const;
 
 private:
 	void ReadConfig();
@@ -122,6 +123,7 @@ private:
 			, waterDef(nullptr)
 			, isRequireEnergy(false)
 			, nanoCount(0)
+			, avgSpeed(0.f)
 		{}
 		CCircuitDef* GetRoleDef(CCircuitDef::RoleType role) const {
 			return roleDefs[static_cast<CCircuitDef::RoleT>(role)];
@@ -136,6 +138,7 @@ private:
 		std::vector<float> incomes;
 		bool isRequireEnergy;
 		unsigned int nanoCount;
+		float avgSpeed;
 	};
 	std::unordered_map<CCircuitDef::Id, SFactoryDef> factoryDefs;
 	float bpRatio;

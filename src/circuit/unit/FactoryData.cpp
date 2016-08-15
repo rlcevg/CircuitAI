@@ -6,6 +6,7 @@
  */
 
 #include "unit/FactoryData.h"
+#include "module/FactoryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
@@ -79,6 +80,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 		};
 	}
 
+	CFactoryManager* factoryManager = circuit->GetFactoryManager();
 	for (const auto& kv : allFactories) {
 		const SFactory& sfac = kv.second;
 		CCircuitDef* cdef = circuit->GetCircuitDef(sfac.id);
@@ -97,11 +99,13 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 		if (mtId < 0) {  // air
 			availFacs.push_back(sfac);
 			const float offset = (float)rand() / RAND_MAX * 50.0;
-			percents[sfac.id] = offset + importance * 60.0;
+			const float speed = factoryManager->GetAvgSpeed(cdef);
+			percents[sfac.id] = (offset + importance * 60.0) * speed;
 		} else if (mobileType[mtId].typeUsable) {
 			availFacs.push_back(sfac);
 			const float offset = (float)rand() / RAND_MAX * 40.0 - 20.0;
-			percents[sfac.id] = offset + importance * mobileType[mtId].areaLargest->percentOfMap;
+			const float speed = factoryManager->GetAvgSpeed(cdef);
+			percents[sfac.id] = (offset + importance * mobileType[mtId].areaLargest->percentOfMap) * speed;
 		}
 	}
 

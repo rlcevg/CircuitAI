@@ -92,6 +92,10 @@ public:
 	using MexPredicate = std::function<bool (int index)>;
 	int GetMexToBuild(const springai::AIFloat3& pos, MexPredicate& predicate);
 
+	float GetMinIncome() const { return metalData->GetMinIncome(); }
+	float GetAvgIncome() const { return metalData->GetAvgIncome(); }
+	float GetMaxIncome() const { return metalData->GetMaxIncome(); }
+
 private:
 	CCircuitAI* circuit;
 	CMetalData* metalData;

@@ -619,10 +619,13 @@ void CBuilderManager::ReadConfig()
 
 			SBuildChain bc;
 			const Json::Value& buildQueue = catChain[defName];
-			bc.isEnergy = buildQueue.get("energy", false).asBool();
 			bc.isPylon = buildQueue.get("pylon", false).asBool();
 			bc.isPorc = buildQueue.get("porc", false).asBool();
 			bc.isTerra = buildQueue.get("terra", false).asBool();
+
+			const Json::Value& engy = buildQueue["energy"];
+			bc.isMex = engy.isString();
+			bc.isEnergy = bc.isMex ? true : engy.asBool();
 
 			const Json::Value& hub = buildQueue["hub"];
 			bc.hub.reserve(hub.size());
@@ -919,27 +922,27 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 	// FIXME: Eco rules. It should never get here
 	CCircuitDef* buildDef/* = nullptr*/;
 	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
-	const bool isLowIncome = metalIncome < 50;
-	if (isLowIncome) {
-		buildDef = em->GetLowEnergy(position);
+	if (metalIncome < 50) {
+		float energyMake;
+		buildDef = em->GetLowEnergy(position, energyMake);
 		if (buildDef == nullptr) {  // position can be in danger
 			buildDef = em->GetDefaultDef();
 		}
-	}
-	if (isLowIncome && (buildDef->GetCount() < 10) && buildDef->IsAvailable()) {
-		return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
-	}
-
-	buildDef = circuit->GetMilitaryManager()->GetBigGunDef();
-	if ((buildDef != nullptr) && (buildDef->GetCost() < 180 * metalIncome)) {  // Can build in 3 minutes?
-		const std::set<IBuilderTask*>& tasks = GetTasks(IBuilderTask::BuildType::BIG_GUN);
-		if (tasks.empty()) {
-			if (circuit->GetMilitaryManager()->IsNeedBigGun(buildDef) && buildDef->IsAvailable()) {
-				return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, circuit->GetSetupManager()->GetBasePos(),
-								   IBuilderTask::BuildType::BIG_GUN);
+		if ((buildDef->GetCount() < 10) && buildDef->IsAvailable()) {
+			return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
+		}
+	} else {
+		buildDef = circuit->GetMilitaryManager()->GetBigGunDef();
+		if ((buildDef != nullptr) && (buildDef->GetCost() < 240 * metalIncome)) {  // Can build in 4 minutes?
+			const std::set<IBuilderTask*>& tasks = GetTasks(IBuilderTask::BuildType::BIG_GUN);
+			if (tasks.empty()) {
+				if (circuit->GetMilitaryManager()->IsNeedBigGun(buildDef) && buildDef->IsAvailable()) {
+					return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, circuit->GetSetupManager()->GetBasePos(),
+									   IBuilderTask::BuildType::BIG_GUN);
+				}
+			} else {
+				return *tasks.begin();
 			}
-		} else {
-			return *tasks.begin();
 		}
 	}
 

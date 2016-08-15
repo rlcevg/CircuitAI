@@ -19,6 +19,9 @@ static std::vector<CMetalData::MetalNode> result_n;
 
 CMetalData::CMetalData()
 		: isInitialized(false)
+		, minIncome(std::numeric_limits<float>::max())
+		, avgIncome(0.f)
+		, maxIncome(0.f)
 		, isClusterizing(false)
 {
 }
@@ -36,11 +39,17 @@ void CMetalData::Init(const Metals& spots)
 
 	this->spots = spots;
 	int i = 0;
-    for (auto& spot : spots) {
-    	point p(spot.position.x, spot.position.z);
-        metalTree.insert(std::make_pair(p, i++));
-    }
-    isInitialized = true;
+	for (auto& spot : spots) {
+		point p(spot.position.x, spot.position.z);
+		metalTree.insert(std::make_pair(p, i++));
+		minIncome = std::min(minIncome, spot.income);
+		maxIncome = std::max(maxIncome, spot.income);
+		avgIncome += spot.income;
+	}
+	if (!spots.empty()) {
+		avgIncome /= spots.size();
+	}
+	isInitialized = true;
 }
 
 const int CMetalData::FindNearestSpot(const AIFloat3& pos) const
@@ -204,15 +213,17 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 	CEncloseCircle enclose;
 	for (int i = 0; i < nclusters; ++i) {
 		SCluster& c = clusters[i];
+		c.income = 0.f;
 		c.idxSpots.clear();
 		AIFloat3 centr = ZeroVector;
 		std::vector<AIFloat3> points;
 		points.reserve(iclusters[i].size());
 		for (unsigned j = 0; j < iclusters[i].size(); ++j) {
 			c.idxSpots.push_back(iclusters[i][j]);
-			const AIFloat3& pos = spots[iclusters[i][j]].position;
-			points.push_back(pos);
-			centr += pos;
+			const SMetal& spot = spots[iclusters[i][j]];
+			points.push_back(spot.position);
+			centr += spot.position;
+			c.income += spot.income;
 		}
 		centr /= iclusters[i].size();
 		c.weightCentr = centr;

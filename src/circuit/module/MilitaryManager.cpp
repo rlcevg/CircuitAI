@@ -176,6 +176,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	const float fighterRet = root["retreat"].get("fighter", 0.5f).asFloat();
 	float maxRadarDivCost = 0.f;
 	float maxSonarDivCost = 0.f;
+	CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
 
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
@@ -209,7 +210,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 				unitDefId = kv.first;
 				finishedHandler[unitDefId] = defenceFinishedHandler;
 			}
-		} else {
+		} else if (commDef->CanBuild(cdef)) {
 			float radiusDivCost = cdef->GetUnitDef()->GetRadarRadius() / cdef->GetCost();
 			if (maxRadarDivCost < radiusDivCost) {
 				maxRadarDivCost = radiusDivCost;
@@ -408,7 +409,8 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 				default: break;
 			}
 		} else {
-			type = GetTasks(IFighterTask::FightType::ATTACK).empty() ? IFighterTask::FightType::DEFEND : IFighterTask::FightType::ATTACK;
+			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty() && !cdef->IsRoleHeavy();
+			type = isDefend ? IFighterTask::FightType::DEFEND : IFighterTask::FightType::ATTACK;
 		}
 	}
 	IFighterTask* task = EnqueueTask(type);
@@ -463,24 +465,31 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	std::vector<CCircuitDef*>& defenders = isWater ? waterDefenders : landDefenders;
 
 	// Front-line porc
-	bool isPorc = false;
-	CThreatMap* threatMap = circuit->GetThreatMap();
-	const CMetalData::Clusters& clusters = metalManager->GetClusters();
-	const CMetalData::Metals& spots = metalManager->GetSpots();
-	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
-	CMetalData::Graph::out_edge_iterator outEdgeIt, outEdgeEnd;
-	std::tie(outEdgeIt, outEdgeEnd) = boost::out_edges(index, clusterGraph);
-	for (; (outEdgeIt != outEdgeEnd) && !isPorc; ++outEdgeIt) {
-		const CMetalData::EdgeDesc& edgeId = *outEdgeIt;
-		int idx0 = boost::target(edgeId, clusterGraph);
-		if (metalManager->IsClusterFinished(idx0)) {
-			continue;
-		}
-		// check if there is enemy neighbor
-		for (int idx : clusters[idx0].idxSpots) {
-			if (threatMap->GetAllThreatAt(spots[idx].position) > THREAT_MIN * 5) {
-				isPorc = true;
-				break;
+	bool isPorc = metalManager->GetMaxIncome() > metalManager->GetAvgIncome() + 1.f;
+	if (isPorc) {
+		const float income = (metalManager->GetAvgIncome() + metalManager->GetMaxIncome()) * 0.5f;
+		int spotId = metalManager->FindNearestSpot(pos);
+		isPorc = metalManager->GetSpots()[spotId].income > income;
+	}
+	if (!isPorc) {
+		CThreatMap* threatMap = circuit->GetThreatMap();
+		const CMetalData::Clusters& clusters = metalManager->GetClusters();
+		const CMetalData::Metals& spots = metalManager->GetSpots();
+		const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
+		CMetalData::Graph::out_edge_iterator outEdgeIt, outEdgeEnd;
+		std::tie(outEdgeIt, outEdgeEnd) = boost::out_edges(index, clusterGraph);
+		for (; (outEdgeIt != outEdgeEnd) && !isPorc; ++outEdgeIt) {
+			const CMetalData::EdgeDesc& edgeId = *outEdgeIt;
+			int idx0 = boost::target(edgeId, clusterGraph);
+			if (metalManager->IsClusterFinished(idx0)) {
+				continue;
+			}
+			// check if there is enemy neighbor
+			for (int idx : clusters[idx0].idxSpots) {
+				if (threatMap->GetAllThreatAt(spots[idx].position) > THREAT_MIN * 2) {
+					isPorc = true;
+					break;
+				}
 			}
 		}
 	}
@@ -687,7 +696,7 @@ float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
 	for (const SRoleInfo::SVsInfo& vs : info.vs) {
 		const float enemyMetal = GetEnemyCost(vs.role);
 		const float nextMetal = info.cost + cdef->GetCost();
-		const float prob = enemyMetal * vs.importance;
+		const float prob = enemyMetal / info.cost * vs.importance;
 		if ((prob > maxProb) &&
 			(enemyMetal * vs.ratio >= nextMetal * info.factor) &&
 			(nextMetal <= (armyCost + cdef->GetCost()) * info.maxPerc))
@@ -705,7 +714,7 @@ bool CMilitaryManager::IsNeedBigGun(const CCircuitDef* cdef) const
 
 void CMilitaryManager::UpdateDefenceTasks()
 {
-
+	// TODO: Porc push
 }
 
 void CMilitaryManager::ReadConfig()
@@ -1009,7 +1018,7 @@ void CMilitaryManager::KMeansIteration()
 			CCircuitDef* cdef = enemy->GetCircuitDef();
 			if (cdef != nullptr) {
 				eg.roleCosts[cdef->GetMainRole()] += cdef->GetCost();
-				if (!enemy->IsHidden()) {
+				if (!enemy->IsHidden() && (!cdef->IsMobile() || enemy->IsInRadarOrLOS())) {
 					eg.cost += cdef->GetCost();
 				}
 			}

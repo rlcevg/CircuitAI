@@ -62,6 +62,7 @@ public:
 		MetalIndices idxSpots;
 		springai::AIFloat3 geoCentr;
 		springai::AIFloat3 weightCentr;
+		float income;
 	};
 	using Clusters = std::vector<SCluster>;
 
@@ -75,6 +76,10 @@ public:
 
 	bool IsClusterizing() const { return isClusterizing.load(); }
 	void SetClusterizing(bool value) { isClusterizing = value; }
+
+	float GetMinIncome() const { return minIncome; }
+	float GetAvgIncome() const { return avgIncome; }
+	float GetMaxIncome() const { return maxIncome; }
 
 	const Metals& GetSpots() const { return spots; }
 	const int FindNearestSpot(const springai::AIFloat3& pos) const;
@@ -110,6 +115,9 @@ private:
 	// TODO: Find out more about bgi::rtree, bgi::linear, bgi::quadratic, bgi::rstar, packing algorithm?
 	using MetalTree = bgi::rtree<MetalNode, bgi::rstar<16, 4>>;
 	MetalTree metalTree;
+	float minIncome;
+	float avgIncome;
+	float maxIncome;
 
 	Clusters clusters;
 	using ClusterTree = bgi::rtree<MetalNode, bgi::quadratic<16>>;

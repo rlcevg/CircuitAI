@@ -38,6 +38,7 @@ struct SBuildInfo {
 
 struct SBuildChain {
 	bool isEnergy;
+	bool isMex;
 	bool isPylon;
 	bool isPorc;
 	bool isTerra;

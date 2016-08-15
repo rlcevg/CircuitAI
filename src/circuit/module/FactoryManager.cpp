@@ -280,6 +280,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 	float maxBuildDist = .0f;
 	CCircuitDef* assistCandy = nullptr;
+	CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
 
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
@@ -297,7 +298,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 				finishedHandler[unitDefId] = assistFinishedHandler;
 				idleHandler[unitDefId] = assistIdleHandler;
 				destroyedHandler[unitDefId] = assistDestroyedHandler;
-				assistCandy = cdef;
+				if (commDef->CanBuild(cdef)) {
+					assistCandy = cdef;
+				}
 			}
 		}
 
@@ -661,7 +664,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 
 	CEconomyManager* em = circuit->GetEconomyManager();
 	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
-	bool isWaterMap = circuit->GetTerrainManager()->GetPercentLand() < 40.0;
+	const bool isWaterMap = circuit->GetTerrainManager()->IsWaterMap();
 	const SFactoryDef::Tiers& tiers = isWaterMap ? facDef.waterTiers : facDef.landTiers;
 	auto facIt = tiers.begin();
 	if ((metalIncome >= facDef.incomes[facIt->first]) && !(facDef.isRequireEnergy && em->IsEnergyEmpty())) {
@@ -770,6 +773,12 @@ CCircuitDef* CFactoryManager::GetWaterDef(CCircuitDef* facDef) const
 {
 	auto it = factoryDefs.find(facDef->GetId());
 	return (it != factoryDefs.end()) ? it->second.waterDef : nullptr;
+}
+
+float CFactoryManager::GetAvgSpeed(CCircuitDef* facDef) const
+{
+	auto it = factoryDefs.find(facDef->GetId());
+	return (it != factoryDefs.end()) ? it->second.avgSpeed : 0.f;
 }
 
 void CFactoryManager::ReadConfig()
@@ -906,6 +915,7 @@ void CFactoryManager::ReadConfig()
 				continue;
 			}
 			facDef.buildDefs.push_back(udef);
+			facDef.avgSpeed += udef->GetSpeed();
 
 			// identify surface representatives
 			if (udef->GetMobileId() < 0) {
@@ -933,6 +943,7 @@ void CFactoryManager::ReadConfig()
 		if (facDef.buildDefs.empty()) {
 			continue;  // ignore empty factory
 		}
+		facDef.avgSpeed /= facDef.buildDefs.size();
 		facDef.landDef = landDef;
 		facDef.waterDef = waterDef;
 

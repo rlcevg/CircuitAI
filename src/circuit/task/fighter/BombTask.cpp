@@ -184,9 +184,10 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	CCircuitAI* circuit = manager->GetCircuit();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float maxPower = threatMap->GetUnitThreat(unit);
+	const float scale = (cdef->GetMinRange() > 400.0f) ? 8.0f : 1.0f;
+	const float maxPower = threatMap->GetUnitThreat(unit) * scale;
 //	const float maxAltitude = cdef->GetAltitude();
-	const float speed = cdef->GetSpeed();
+	const float speed = cdef->GetSpeed() / 1.75f;
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
@@ -216,7 +217,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 		bool isBuilder;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
-			if (edef->GetSpeed() * 1.5f > speed) {
+			if (edef->GetSpeed() > speed) {
 				continue;
 			}
 			targetCat = edef->GetCategory();

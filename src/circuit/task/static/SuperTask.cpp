@@ -6,6 +6,7 @@
  */
 
 #include "task/static/SuperTask.h"
+#include "task/fighter/SquadTask.h"
 #include "task/TaskManager.h"
 #include "module/MilitaryManager.h"
 #include "unit/EnemyUnit.h"
@@ -18,11 +19,12 @@ namespace circuit {
 
 using namespace springai;
 
-#define TARGET_DELAY	(FRAMES_PER_SEC * 20)
+#define TARGET_DELAY	(FRAMES_PER_SEC * 10)
 
 CSuperTask::CSuperTask(ITaskManager* mgr)
 		: IFighterTask(mgr, IFighterTask::FightType::SUPER)
 		, targetFrame(0)
+		, isAttack(false)
 {
 }
 
@@ -55,24 +57,54 @@ void CSuperTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
+	CCircuitUnit* unit = *units.begin();
 	if (targetFrame + TARGET_DELAY > frame) {
+		if (isAttack && unit->GetCircuitDef()->IsAttrHoldFire()) {
+			TRY_UNIT(circuit, unit,
+				unit->GetUnit()->Stop();
+			)
+			isAttack = false;
+		}
 		return;
 	}
 
-	CCircuitUnit* unit = *units.begin();
-	const float maxSqRange = SQUARE(unit->GetCircuitDef()->GetMaxRange());
-	float maxCost = 0.f;
+	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	const float maxSqRange = SQUARE(cdef->GetMaxRange());
+	const float sqAoe = SQUARE(cdef->GetAoe() * 1.2f);
+	float cost = 0.f;
 	int groupIdx = -1;
-	const std::vector<CMilitaryManager::SEnemyGroup>& groups = circuit->GetMilitaryManager()->GetEnemyGroups();
+	const std::array<const std::set<IFighterTask*>*, 3> avoidTasks = {  // NOTE: ISquadTask only
+		&militaryManager->GetTasks(IFighterTask::FightType::ATTACK),
+		&militaryManager->GetTasks(IFighterTask::FightType::AH),
+		&militaryManager->GetTasks(IFighterTask::FightType::AA),
+	};
+	const std::vector<CMilitaryManager::SEnemyGroup>& groups = militaryManager->GetEnemyGroups();
 	for (unsigned i = 0; i < groups.size(); ++i) {
 		const CMilitaryManager::SEnemyGroup& group = groups[i];
-		if ((maxCost < group.cost) && (position.SqDistance2D(group.pos) < maxSqRange)) {
-			maxCost = group.cost;
+		if ((cost >= group.cost) || (position.SqDistance2D(group.pos) >= maxSqRange)) {
+			continue;
+		}
+		bool isAvoid = true;
+		for (const std::set<IFighterTask*>* tasks : avoidTasks) {
+			for (const IFighterTask* task : *tasks) {
+				const AIFloat3& leaderPos = static_cast<const ISquadTask*>(task)->GetLeaderPos(frame);
+				if (leaderPos.SqDistance2D(group.pos) < sqAoe) {
+					isAvoid = false;
+					break;
+				}
+			}
+			if (!isAvoid) {
+				break;
+			}
+		}
+		if (isAvoid) {
+			cost = group.cost;
 			groupIdx = i;
 		}
 	}
-	const float scale = unit->GetCircuitDef()->IsAttrStock() ? 1.0f : 0.1f;
-	if (maxCost < unit->GetCircuitDef()->GetCost() * scale) {
+	const float maxCost = cdef->IsAttrStock() ? cdef->GetStockCost() * 2.0f : cdef->GetCost() * 0.1f;
+	if (cost < maxCost) {
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->Stop();
 		)
@@ -103,6 +135,7 @@ void CSuperTask::Update()
 												  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
 		targetFrame = frame;
+		isAttack = true;
 	}
 }
 

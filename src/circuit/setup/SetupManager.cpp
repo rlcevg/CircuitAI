@@ -216,14 +216,29 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 
 			delete lua;
 			if (!validPoints.empty()) {
-				std::vector<std::pair<int, unsigned>> validClusters;
+				struct SCluster {
+					unsigned count;
+					float distDivIncome;
+				};
+				const AIFloat3 center(terrainManager->GetTerrainWidth() / 2.f, 0.f, terrainManager->GetTerrainHeight() / 2.f);
+				std::vector<std::pair<int, SCluster>> validClusters;
 				for (auto& kv : validPoints) {
-					validClusters.push_back(std::make_pair(kv.first, allyTeam->GetClusterTeam(kv.first).count));
+					SCluster c;
+					c.count = allyTeam->GetClusterTeam(kv.first).count;
+					const CMetalData::SCluster& cl = clusters[kv.first];
+					const float income = cl.income + (float)rand() / RAND_MAX * 0.5f - 0.25f;
+					c.distDivIncome = center.SqDistance2D(cl.geoCentr) / income;
+					validClusters.push_back(std::make_pair(kv.first, c));
 				}
 				std::random_shuffle(validClusters.begin(), validClusters.end());
 
-				auto cmp = [](const std::pair<int, unsigned>& a, const std::pair<int, unsigned>& b) {
-					return a.second < b.second;
+				auto cmp = [&clusters](const std::pair<int, SCluster>& a, const std::pair<int, SCluster>& b) {
+					if (a.second.count < b.second.count) {
+						return true;
+					} else if (a.second.count > b.second.count) {
+						return false;
+					}
+					return a.second.distDivIncome < b.second.distDivIncome;
 				};
 				std::sort(validClusters.begin(), validClusters.end(), cmp);
 

@@ -62,7 +62,7 @@ void CDefenceMatrix::Init(CCircuitAI* circuit)
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	clusterInfos.resize(clusters.size());
 
-	bool isWaterMap = circuit->GetTerrainManager()->GetPercentLand() < 40.0;
+	const bool isWaterMap = circuit->GetTerrainManager()->IsWaterMap();
 	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
 	const std::vector<CCircuitDef*>& defenders = isWaterMap ? militaryManager->GetWaterDefenders() : militaryManager->GetLandDefenders();
 	CCircuitDef* rangeDef = defenders.empty() ? militaryManager->GetDefaultPorc() : defenders.front();

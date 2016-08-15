@@ -379,10 +379,18 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 	CCircuitAI* circuit = manager->GetCircuit();
 
 	if (chain->isEnergy) {
-		CCircuitDef* energyDef = circuit->GetEconomyManager()->GetLowEnergy(buildPos);
+		float energyMake;
+		CCircuitDef* energyDef = circuit->GetEconomyManager()->GetLowEnergy(buildPos, energyMake);
 		if (energyDef != nullptr) {
-			circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, energyDef, buildPos,
-													  IBuilderTask::BuildType::ENERGY, SQUARE_SIZE * 8.0f, true);
+			bool isValid = true;
+			if (chain->isMex) {
+				int index = circuit->GetMetalManager()->FindNearestSpot(buildPos);
+				isValid = (index >= 0) && (circuit->GetMetalManager()->GetSpots()[index].income > energyMake * 0.8f);
+			}
+			if (isValid) {
+				circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, energyDef, buildPos,
+														  IBuilderTask::BuildType::ENERGY, SQUARE_SIZE * 8.0f, true);
+			}
 		}
 	}
 
