@@ -26,14 +26,19 @@ public:
 	void DelFactory(CCircuitDef* cdef);
 
 private:
+	bool isFirstChoice;
 	struct SFactory {
 		CCircuitDef::Id id;
 		float startImp;  // importance[0]
 		float switchImp;  // importance[1]
 		int count;
+		float avgSpeed;
 	};
+	float airMapPerc;
+	float minOffset;
+	float lenOffset;
+	float speedFactor;
 	std::unordered_map<CCircuitDef::Id, SFactory> allFactories;
-	bool isFirstChoice;
 };
 
 } // namespace circuit

@@ -728,6 +728,9 @@ int CCircuitAI::UnitGiven(CCircuitUnit::Id unitId, int oldTeamId, int newTeamId)
 		return ERROR_UNIT_GIVEN;
 	}
 
+	TRY_UNIT(this, unit,
+		unit->GetUnit()->Stop();
+	)
 	for (auto& module : modules) {
 		module->UnitGiven(unit, oldTeamId, newTeamId);
 	}

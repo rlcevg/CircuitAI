@@ -150,6 +150,11 @@ private:
 
 	std::unordered_map<IBuilderTask::BT, std::unordered_map<CCircuitDef*, SBuildChain*>> buildChains;  // owner
 
+	struct SSuper {
+		float minIncome;  // metal per second
+		float maxTime;  // seconds
+	} super;
+
 public:
 	void UpdateAreaUsers();
 private:

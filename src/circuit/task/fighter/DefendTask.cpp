@@ -7,8 +7,8 @@
 
 #include "task/fighter/DefendTask.h"
 #include "task/TaskManager.h"
-#include "terrain/TerrainManager.h"
 #include "module/MilitaryManager.h"
+#include "terrain/TerrainManager.h"
 #include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -87,23 +87,8 @@ void CDefendTask::Update()
 	}
 
 	/*
-	 * Regroup if required
+	 * No regroup
 	 */
-	bool mustRegroup = IsMustRegroup();
-	if (isRegroup) {
-		if (mustRegroup) {
-			CCircuitAI* circuit = manager->GetCircuit();
-			int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
-			for (CCircuitUnit* unit : units) {
-				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->Fight(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
-					unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
-				)
-			}
-		}
-		return;
-	}
-
 	bool isExecute = (updCount % 8 == 2);
 	if (!isExecute) {
 		for (CCircuitUnit* unit : units) {

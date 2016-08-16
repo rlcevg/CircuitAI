@@ -20,6 +20,8 @@ namespace circuit {
 using namespace springai;
 
 #define TARGET_DELAY	(FRAMES_PER_SEC * 10)
+// NOTE: Nuke flies to target after attack command for about 30 seconds
+#define STOCK_DELAY		(FRAMES_PER_SEC * 40)
 
 CSuperTask::CSuperTask(ITaskManager* mgr)
 		: IFighterTask(mgr, IFighterTask::FightType::SUPER)
@@ -58,13 +60,17 @@ void CSuperTask::Update()
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
 	CCircuitUnit* unit = *units.begin();
-	if (targetFrame + TARGET_DELAY > frame) {
-		if (isAttack && unit->GetCircuitDef()->IsAttrHoldFire()) {
-			TRY_UNIT(circuit, unit,
-				unit->GetUnit()->Stop();
-			)
-			isAttack = false;
+	if (unit->GetCircuitDef()->IsAttrHoldFire()) {
+		if (targetFrame + STOCK_DELAY > frame) {
+			if (isAttack && (targetFrame + TARGET_DELAY <= frame)) {
+				TRY_UNIT(circuit, unit,
+					unit->GetUnit()->Stop();
+				)
+				isAttack = false;
+			}
+			return;
 		}
+	} else if (targetFrame + TARGET_DELAY > frame) {
 		return;
 	}
 
@@ -103,7 +109,7 @@ void CSuperTask::Update()
 			groupIdx = i;
 		}
 	}
-	const float maxCost = cdef->IsAttrStock() ? cdef->GetStockCost() * 2.0f : cdef->GetCost() * 0.1f;
+	const float maxCost = cdef->IsAttrStock() ? cdef->GetStockCost() : cdef->GetCost() * 0.1f;
 	if (cost < maxCost) {
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->Stop();

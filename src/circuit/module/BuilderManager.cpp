@@ -78,7 +78,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 		++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 
-		builderPower += unit->GetCircuitDef()->GetBuildSpeed();
+		if (!unit->GetCircuitDef()->IsAttrComm()) {
+			builderPower += unit->GetCircuitDef()->GetBuildSpeed();
+		}
 		workers.insert(unit);
 
 		AddBuildList(unit);
@@ -104,7 +106,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		}
 		--buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 
-		builderPower -= unit->GetCircuitDef()->GetBuildSpeed();
+		if (!unit->GetCircuitDef()->IsAttrComm()) {
+			builderPower -= unit->GetCircuitDef()->GetBuildSpeed();
+		}
 		workers.erase(unit);
 
 		RemoveBuildList(unit);
@@ -598,6 +602,9 @@ void CBuilderManager::ReadConfig()
 	if (terraDef == nullptr) {
 		terraDef = circuit->GetEconomyManager()->GetDefaultDef();
 	}
+	const Json::Value& superCond = root["economy"]["condition"];
+	super.minIncome = superCond.get((unsigned)0, 50.f).asFloat();
+	super.maxTime = superCond.get((unsigned)1, 300.f).asFloat();
 
 	IBuilderTask::BuildName& buildNames = IBuilderTask::GetBuildNames();
 	const Json::Value& build = root["build_chain"];
@@ -922,7 +929,7 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 	// FIXME: Eco rules. It should never get here
 	CCircuitDef* buildDef/* = nullptr*/;
 	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
-	if (metalIncome < 50) {
+	if (metalIncome < super.minIncome) {
 		float energyMake;
 		buildDef = em->GetLowEnergy(position, energyMake);
 		if (buildDef == nullptr) {  // position can be in danger
@@ -932,12 +939,14 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 			return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
 		}
 	} else {
-		buildDef = circuit->GetMilitaryManager()->GetBigGunDef();
-		if ((buildDef != nullptr) && (buildDef->GetCost() < 240 * metalIncome)) {  // Can build in 4 minutes?
+		CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
+		buildDef = militaryManager->GetBigGunDef();
+		if ((buildDef != nullptr) && (buildDef->GetCost() < super.maxTime * metalIncome)) {
 			const std::set<IBuilderTask*>& tasks = GetTasks(IBuilderTask::BuildType::BIG_GUN);
 			if (tasks.empty()) {
-				if (circuit->GetMilitaryManager()->IsNeedBigGun(buildDef) && buildDef->IsAvailable()) {
-					return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, circuit->GetSetupManager()->GetBasePos(),
+				if (buildDef->IsAvailable() && militaryManager->IsNeedBigGun(buildDef)) {
+					AIFloat3 pos = militaryManager->GetBigGunPos(buildDef);
+					return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, pos,
 									   IBuilderTask::BuildType::BIG_GUN);
 				}
 			} else {

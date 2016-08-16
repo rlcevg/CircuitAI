@@ -184,7 +184,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	CCircuitAI* circuit = manager->GetCircuit();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float scale = (cdef->GetMinRange() > 400.0f) ? 8.0f : 1.0f;
+	const float scale = (cdef->GetMinRange() > 400.0f) ? 8.0f : 0.5f;
 	const float maxPower = threatMap->GetUnitThreat(unit) * scale;
 //	const float maxAltitude = cdef->GetAltitude();
 	const float speed = cdef->GetSpeed() / 1.75f;
@@ -192,10 +192,12 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
 								 cdef->GetLosRadius());
-	float minSqDist = SQUARE(range);
+	float sqRange = SQUARE(range);
 	float maxThreat = .0f;
 
 	CEnemyUnit* bestTarget = nullptr;
+	CEnemyUnit* mediumTarget = nullptr;
+	CEnemyUnit* worstTarget = nullptr;
 	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(unit);
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
@@ -234,25 +236,29 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 			isBuilder = false;
 		}
 
-//		float sumPower = 0.f;
-//		for (IFighterTask* task : enemy->GetTasks()) {
-//			sumPower += task->GetAttackPower();
-//		}
-//		if (sumPower > defPower) {
-//			continue;
-//		}
+		float sumPower = 0.f;
+		for (IFighterTask* task : enemy->GetTasks()) {
+			sumPower += task->GetAttackPower();
+		}
+		if (sumPower > defPower) {
+			continue;
+		}
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
-		if (minSqDist > sqDist) {
-			if (enemy->IsInRadarOrLOS() && ((targetCat & noChaseCat) == 0)/* && (altitude < maxAltitude)*/) {
+		if (sqDist < sqRange) {
+			if (enemy->IsInRadarOrLOS()/* && (altitude < maxAltitude)*/) {
 				if (isBuilder) {
 					bestTarget = enemy;
-					minSqDist = sqDist;
 					maxThreat = std::numeric_limits<float>::max();
 				} else if (maxThreat <= defPower) {
 					bestTarget = enemy;
-					minSqDist = sqDist;
 					maxThreat = defPower;
+				} else if (bestTarget == nullptr) {
+					if ((targetCat & noChaseCat) == 0) {
+						mediumTarget = enemy;
+					} else if (mediumTarget == nullptr) {
+						worstTarget = enemy;
+					}
 				}
 			}
 			continue;
@@ -260,6 +266,9 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 		if (sqDist < SQUARE(2000.f)) {  // maxSqDist
 			enemyPositions.push_back(enemy->GetPos());
 		}
+	}
+	if (bestTarget == nullptr) {
+		bestTarget = (mediumTarget != nullptr) ? mediumTarget : worstTarget;
 	}
 
 	path.clear();

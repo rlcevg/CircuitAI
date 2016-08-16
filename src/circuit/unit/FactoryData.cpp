@@ -6,7 +6,6 @@
  */
 
 #include "unit/FactoryData.h"
-#include "module/FactoryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
@@ -23,7 +22,11 @@ CFactoryData::CFactoryData(CCircuitAI *circuit)
 		: isFirstChoice(true)
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const Json::Value& factories = root["factory"];
+	const Json::Value& factory = root["factory"];
+	const Json::Value& factories = factory["unit"];
+
+	float minSpeed = std::numeric_limits<float>::max();
+	float maxSpeed = 0.f;
 
 	for (const std::string& fac : factories.getMemberNames()) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(fac.c_str());
@@ -39,8 +42,9 @@ CFactoryData::CFactoryData(CCircuitAI *circuit)
 		sfac.id = cdef->GetId();
 		sfac.count = 0;
 
+		const Json::Value& factory = factories[fac];
 		// TODO: Replace importance with proper terrain analysis (size, hardness, unit's power, speed)
-		const Json::Value& importance = factories[fac]["importance"];
+		const Json::Value& importance = factory["importance"];
 		if (importance.isNull()) {
 			sfac.startImp = 1.0f;
 			sfac.switchImp = 1.0f;
@@ -49,8 +53,38 @@ CFactoryData::CFactoryData(CCircuitAI *circuit)
 			sfac.switchImp = importance.get((unsigned)1, 1.0f).asFloat();
 		}
 
+		const Json::Value& items = factory["unit"];
+		unsigned size = 0;
+		for (const Json::Value& item : items) {
+			CCircuitDef* udef = circuit->GetCircuitDef(item.asCString());
+			if (udef != nullptr) {
+				sfac.avgSpeed += udef->GetSpeed();
+				++size;
+			}
+		}
+		if (size > 0) {
+			sfac.avgSpeed /= size;
+		}
+		minSpeed = std::min(minSpeed, sfac.avgSpeed);
+		maxSpeed = std::max(maxSpeed, sfac.avgSpeed);
+
 		allFactories[sfac.id] = sfac;
 	}
+
+	const Json::Value& select = factory["select"];
+	const Json::Value& offset = select["offset"];
+	const Json::Value& speed = select["speed"];
+	const Json::Value& map = select["map"];
+	airMapPerc = select.get("air_map", 80.0f).asFloat();
+	minOffset = offset.get((unsigned)0, -20.0f).asFloat();
+	const float maxOffset = offset.get((unsigned)1, 20.0f).asFloat();
+	lenOffset = maxOffset - minOffset;
+	const float minSpPerc = speed.get((unsigned)0, 0.0f).asFloat();
+	const float maxSpPerc = speed.get((unsigned)1, 40.0f).asFloat();
+	const float minMap = map.get((unsigned)0, 8.0f).asFloat();
+	const float maxMap = map.get((unsigned)1, 32.0f).asFloat();
+	const float mapSize = (circuit->GetMap()->GetWidth() / 64) * (circuit->GetMap()->GetHeight() / 64);
+	speedFactor = (maxSpPerc - minSpPerc) / (SQUARE(maxMap) * maxSpeed - SQUARE(minMap) * minSpeed) * mapSize;
 }
 
 CFactoryData::~CFactoryData()
@@ -60,6 +94,7 @@ CFactoryData::~CFactoryData()
 
 CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 position, bool isStart)
 {
+
 	std::vector<SFactory> availFacs;
 	std::map<CCircuitDef::Id, float> percents;
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
@@ -80,7 +115,6 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 		};
 	}
 
-	CFactoryManager* factoryManager = circuit->GetFactoryManager();
 	for (const auto& kv : allFactories) {
 		const SFactory& sfac = kv.second;
 		CCircuitDef* cdef = circuit->GetCircuitDef(sfac.id);
@@ -96,16 +130,12 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 		}
 
 		STerrainMapMobileType::Id mtId = cdef->GetMobileId();
-		if (mtId < 0) {  // air
+		if ((mtId < 0) || mobileType[mtId].typeUsable) {
 			availFacs.push_back(sfac);
-			const float offset = (float)rand() / RAND_MAX * 50.0;
-			const float speed = factoryManager->GetAvgSpeed(cdef);
-			percents[sfac.id] = (offset + importance * 60.0) * speed;
-		} else if (mobileType[mtId].typeUsable) {
-			availFacs.push_back(sfac);
-			const float offset = (float)rand() / RAND_MAX * 40.0 - 20.0;
-			const float speed = factoryManager->GetAvgSpeed(cdef);
-			percents[sfac.id] = (offset + importance * mobileType[mtId].areaLargest->percentOfMap) * speed;
+			const float offset = (float)rand() / RAND_MAX * lenOffset + minOffset;
+			const float speedPercent = speedFactor * sfac.avgSpeed;
+			const float mapPercent = (mtId < 0) ? airMapPerc : mobileType[mtId].areaLargest->percentOfMap;
+			percents[sfac.id] = offset + importance * (mapPercent + speedPercent);
 		}
 	}
 

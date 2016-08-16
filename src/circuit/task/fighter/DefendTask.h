@@ -23,6 +23,9 @@ public:
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
 
+	void SetPosition(const springai::AIFloat3& pos) { position = pos; }
+	void SetWantedTarget(CEnemyUnit* enemy) { SetTarget(enemy); }
+
 private:
 	virtual void Merge(ISquadTask* task);
 	void FindTarget();

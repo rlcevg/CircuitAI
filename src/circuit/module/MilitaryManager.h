@@ -79,6 +79,7 @@ public:
 	float GetArmyCost() const { return armyCost; }
 	float RoleProbability(const CCircuitDef* cdef) const;
 	bool IsNeedBigGun(const CCircuitDef* cdef) const;
+	springai::AIFloat3 GetBigGunPos(CCircuitDef* bigDef) const;
 
 	void UpdateDefenceTasks();
 
@@ -152,6 +153,7 @@ private:
 	std::vector<CCircuitDef*> landDefenders;
 	std::vector<CCircuitDef*> waterDefenders;
 	std::vector<std::pair<CCircuitDef*, int>> baseDefence;
+	unsigned int preventCount;
 	CCircuitDef* radarDef;
 	CCircuitDef* sonarDef;
 	CCircuitDef* bigGunDef;

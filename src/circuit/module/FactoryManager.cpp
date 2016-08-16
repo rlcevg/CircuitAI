@@ -775,12 +775,6 @@ CCircuitDef* CFactoryManager::GetWaterDef(CCircuitDef* facDef) const
 	return (it != factoryDefs.end()) ? it->second.waterDef : nullptr;
 }
 
-float CFactoryManager::GetAvgSpeed(CCircuitDef* facDef) const
-{
-	auto it = factoryDefs.find(facDef->GetId());
-	return (it != factoryDefs.end()) ? it->second.avgSpeed : 0.f;
-}
-
 void CFactoryManager::ReadConfig()
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
@@ -863,7 +857,7 @@ void CFactoryManager::ReadConfig()
 	 * Factories
 	 */
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	const Json::Value& factories = root["factory"];
+	const Json::Value& factories = root["factory"]["unit"];
 	for (const std::string& fac : factories.getMemberNames()) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(fac.c_str());
 		if (cdef == nullptr) {
@@ -915,7 +909,6 @@ void CFactoryManager::ReadConfig()
 				continue;
 			}
 			facDef.buildDefs.push_back(udef);
-			facDef.avgSpeed += udef->GetSpeed();
 
 			// identify surface representatives
 			if (udef->GetMobileId() < 0) {
@@ -943,7 +936,6 @@ void CFactoryManager::ReadConfig()
 		if (facDef.buildDefs.empty()) {
 			continue;  // ignore empty factory
 		}
-		facDef.avgSpeed /= facDef.buildDefs.size();
 		facDef.landDef = landDef;
 		facDef.waterDef = waterDef;
 

@@ -159,6 +159,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		this->circuit->AddActionUnit(unit);
 
 		TRY_UNIT(this->circuit, unit,
+			unit->GetUnit()->SetFireState(1);
 			unit->GetUnit()->SetTrajectory(1);
 			if (unit->GetCircuitDef()->IsAttrStock()) {
 				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
@@ -172,6 +173,32 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 	};
 
+	/*
+	 * Defend buildings handler
+	 */
+	auto structDamagedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+		const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
+		CTerrainManager* terrainManager = this->circuit->GetTerrainManager();
+		CDefendTask* defendTask = nullptr;
+		float minSqDist = std::numeric_limits<float>::max();
+		const std::set<IFighterTask*>& tasks = GetTasks(IFighterTask::FightType::DEFEND);
+		for (IFighterTask* task : tasks) {
+			CDefendTask* dt = static_cast<CDefendTask*>(task);
+			if (dt->GetTarget() != nullptr) {
+				continue;
+			}
+			const float sqDist = pos.SqDistance2D(dt->GetPosition());
+			if ((minSqDist < sqDist) && (terrainManager->CanMoveToPos(dt->GetLeader()->GetArea(), pos))) {
+				minSqDist = sqDist;
+				defendTask = dt;
+			}
+		}
+		if (defendTask != nullptr) {
+			defendTask->SetPosition(pos);
+			defendTask->SetWantedTarget(attacker);
+		}
+	};
+
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const float fighterRet = root["retreat"].get("fighter", 0.5f).asFloat();
 	float maxRadarDivCost = 0.f;
@@ -180,8 +207,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
+		unitDefId = kv.first;
 		CCircuitDef* cdef = kv.second;
 		if (cdef->GetUnitDef()->IsBuilder()) {
+			damagedHandler[unitDefId] = structDamagedHandler;
 			continue;
 		}
 		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
@@ -190,7 +219,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			continue;
 		}
 		if (cdef->IsMobile()) {
-			unitDefId = kv.first;
 			createdHandler[unitDefId] = attackerCreatedHandler;
 			finishedHandler[unitDefId] = attackerFinishedHandler;
 			idleHandler[unitDefId] = attackerIdleHandler;
@@ -200,26 +228,28 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			if (cdef->GetRetreat() < 0.f) {
 				cdef->SetRetreat(fighterRet);
 			}
-		} else if (cdef->IsAttacker()) {
-			if (cdef->IsAttrSuper()) {
-				unitDefId = kv.first;
-				createdHandler[unitDefId] = superCreatedHandler;
-				finishedHandler[unitDefId] = superFinishedHandler;
-				destroyedHandler[unitDefId] = superDestroyedHandler;
-			} else if (cdef->IsAttrStock()) {
-				unitDefId = kv.first;
-				finishedHandler[unitDefId] = defenceFinishedHandler;
+		} else {
+			damagedHandler[unitDefId] = structDamagedHandler;
+			if (cdef->IsAttacker()) {
+				if (cdef->IsAttrSuper()) {
+					createdHandler[unitDefId] = superCreatedHandler;
+					finishedHandler[unitDefId] = superFinishedHandler;
+					destroyedHandler[unitDefId] = superDestroyedHandler;
+				} else if (cdef->IsAttrStock()) {
+					finishedHandler[unitDefId] = defenceFinishedHandler;
+				}
 			}
-		} else if (commDef->CanBuild(cdef)) {
-			float radiusDivCost = cdef->GetUnitDef()->GetRadarRadius() / cdef->GetCost();
-			if (maxRadarDivCost < radiusDivCost) {
-				maxRadarDivCost = radiusDivCost;
-				radarDef = cdef;
-			}
-			radiusDivCost = cdef->GetUnitDef()->GetSonarRadius() / cdef->GetCost();
-			if (maxSonarDivCost < radiusDivCost) {
-				maxSonarDivCost = radiusDivCost;
-				sonarDef = cdef;
+			if (commDef->CanBuild(cdef)) {
+				float radiusDivCost = cdef->GetUnitDef()->GetRadarRadius() / cdef->GetCost();
+				if (maxRadarDivCost < radiusDivCost) {
+					maxRadarDivCost = radiusDivCost;
+					radarDef = cdef;
+				}
+				radiusDivCost = cdef->GetUnitDef()->GetSonarRadius() / cdef->GetCost();
+				if (maxSonarDivCost < radiusDivCost) {
+					maxSonarDivCost = radiusDivCost;
+					sonarDef = cdef;
+				}
 			}
 		}
 	}
@@ -493,7 +523,7 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 			}
 		}
 	}
-	unsigned num = std::min<unsigned>(isPorc ? defenders.size() : 1, defenders.size());
+	unsigned num = std::min<unsigned>(isPorc ? defenders.size() : preventCount, defenders.size());
 
 	for (unsigned i = 0; i < num; ++i) {
 		CCircuitDef* defDef = defenders[i];
@@ -712,8 +742,61 @@ bool CMilitaryManager::IsNeedBigGun(const CCircuitDef* cdef) const
 	return armyCost * circuit->GetEconomyManager()->GetEcoFactor() > cdef->GetCost();
 }
 
+AIFloat3 CMilitaryManager::GetBigGunPos(CCircuitDef* bigDef) const
+{
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	AIFloat3 pos = circuit->GetSetupManager()->GetBasePos();
+	if (bigDef->GetMaxRange() < std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight())) {
+		CMetalManager* metalManager = circuit->GetMetalManager();
+		const CMetalData::Clusters& clusters = metalManager->GetClusters();
+		unsigned size = 1;
+		for (unsigned i = 0; i < clusters.size(); ++i) {
+			if (metalManager->IsClusterFinished(i)) {
+				pos += clusters[i].geoCentr;
+				++size;
+			}
+		}
+		pos /= size;
+	}
+	return pos;
+}
+
 void CMilitaryManager::UpdateDefenceTasks()
 {
+	/*
+	 * Defend expansion
+	 */
+	const std::set<IFighterTask*>& tasks = GetTasks(IFighterTask::FightType::DEFEND);
+	if (tasks.empty()) {
+		return;
+	}
+	CMetalManager* mm = circuit->GetMetalManager();
+	CEconomyManager* em = circuit->GetEconomyManager();
+	CTerrainManager* tm = circuit->GetTerrainManager();
+	const CMetalData::Metals& spots = mm->GetSpots();
+	const CMetalData::Clusters& clusters = mm->GetClusters();
+	for (IFighterTask* task : tasks) {
+		CDefendTask* dt = static_cast<CDefendTask*>(task);
+		if (dt->GetTarget() != nullptr) {
+			continue;
+		}
+		STerrainMapArea* area = dt->GetLeader()->GetArea();
+		CMetalData::MetalPredicate predicate = [em, tm, area, &spots, &clusters](const CMetalData::MetalNode& v) {
+			const CMetalData::MetalIndices& idcs = clusters[v.second].idxSpots;
+			for (int idx : idcs) {
+				if (!em->IsOpenSpot(idx) && tm->CanMoveToPos(area, spots[idx].position)) {
+					return true;
+				}
+			}
+			return false;
+		};
+		AIFloat3 center(tm->GetTerrainWidth() / 2, 0, tm->GetTerrainHeight() / 2);
+		int index = mm->FindNearestCluster(center, predicate);
+		if (index >= 0) {
+			dt->SetPosition(clusters[index].geoCentr);
+		}
+	}
+
 	// TODO: Porc push
 }
 
@@ -789,6 +872,8 @@ void CMilitaryManager::ReadConfig()
 		}
 	}
 
+	preventCount = porc.get("prevent", 1).asUInt();
+
 	const Json::Value& base = porc["base"];
 	baseDefence.reserve(base.size());
 	for (const Json::Value& pair : base) {
@@ -840,8 +925,10 @@ void CMilitaryManager::ReadConfig()
 		bigGunDef->SetMaxThisUnit(std::min(supers[choice].limit, bigGunDef->GetMaxThisUnit()));
 	}
 
-	// NOTE: Must have
-	defaultPorc = circuit->GetCircuitDef(porc["default"].asCString());
+	defaultPorc = circuit->GetCircuitDef(porc.get("default", "").asCString());
+	if (defaultPorc == nullptr) {
+		defaultPorc = circuit->GetEconomyManager()->GetDefaultDef();
+	}
 }
 
 void CMilitaryManager::Init()
@@ -867,6 +954,7 @@ void CMilitaryManager::Init()
 	const int offset = circuit->GetSkirmishAIId() % interval;
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateIdle, this), interval, offset + 0);
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateFight, this), interval / 2, offset + 1);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefenceTasks, this), FRAMES_PER_SEC * 10, offset + 2);
 }
 
 void CMilitaryManager::Watchdog()
