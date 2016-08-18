@@ -222,10 +222,37 @@ CBuilderManager::~CBuilderManager()
 			delete kv2.second;
 		}
 	}
+	// FIXME: DEBUG
+	circuit->LOG("CBuilderManager::UnitCreated | max: %li", event[0].maxTime);
+	circuit->LOG("CBuilderManager::UnitCreated | avg: %li", event[0].sumTime / event[0].count);
+	circuit->LOG("CBuilderManager::UnitFinished | max: %li", event[1].maxTime);
+	circuit->LOG("CBuilderManager::UnitFinished | avg: %li", event[1].sumTime / event[1].count);
+	circuit->LOG("CBuilderManager::UnitIdle | max: %li", event[2].maxTime);
+	circuit->LOG("CBuilderManager::UnitIdle | avg: %li", event[2].sumTime / event[2].count);
+	circuit->LOG("CBuilderManager::UnitDamaged | max: %li", event[3].maxTime);
+	circuit->LOG("CBuilderManager::UnitDamaged | avg: %li", event[3].sumTime / event[3].count);
+	circuit->LOG("CBuilderManager::UnitDestroyed | max: %li", event[4].maxTime);
+	circuit->LOG("CBuilderManager::UnitDestroyed | avg: %li", event[4].sumTime / event[4].count);
+
+	circuit->LOG("CBuilderManager::Watchdog | max: %li", event[5].maxTime);
+	circuit->LOG("CBuilderManager::Watchdog | avg: %li", event[5].sumTime / event[5].count);
+	circuit->LOG("CBuilderManager::UpdateIdle | max: %li", event[6].maxTime);
+	circuit->LOG("CBuilderManager::UpdateIdle | avg: %li", event[6].sumTime / event[6].count);
+	circuit->LOG("CBuilderManager::UpdateBuild | max: %li", event[7].maxTime);
+	circuit->LOG("CBuilderManager::UpdateBuild | avg: %li", event[7].sumTime / event[7].count);
+
+	circuit->LOG("CBuilderManager::MakeTask | max: %li", event[8].maxTime);
+	circuit->LOG("CBuilderManager::MakeTask | avg: %li", event[8].sumTime / event[8].count);
+	// FIXME: DEBUG
 }
 
 int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 {
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	auto search = createdHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != createdHandler.end()) {
 		search->second(unit, builder);
@@ -263,11 +290,25 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		DoneTask(taskB);
 	}
 
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[0].maxTime < time) {
+		event[0].maxTime = time;
+	}
+	event[0].sumTime += time;
+	event[0].count++;
+	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
 int CBuilderManager::UnitFinished(CCircuitUnit* unit)
 {
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	auto iter = unfinishedUnits.find(unit);
 	if (iter != unfinishedUnits.end()) {
 		DoneTask(iter->second);
@@ -282,31 +323,73 @@ int CBuilderManager::UnitFinished(CCircuitUnit* unit)
 		search->second(unit);
 	}
 
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[1].maxTime < time) {
+		event[1].maxTime = time;
+	}
+	event[1].sumTime += time;
+	event[1].count++;
+	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
 int CBuilderManager::UnitIdle(CCircuitUnit* unit)
 {
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	auto search = idleHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != idleHandler.end()) {
 		search->second(unit);
 	}
 
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[2].maxTime < time) {
+		event[2].maxTime = time;
+	}
+	event[2].sumTime += time;
+	event[2].count++;
+	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
 int CBuilderManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	auto search = damagedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != damagedHandler.end()) {
 		search->second(unit, attacker);
 	}
 
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[3].maxTime < time) {
+		event[3].maxTime = time;
+	}
+	event[3].sumTime += time;
+	event[3].count++;
+	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
 int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	auto iter = unfinishedUnits.find(unit);
 	if (iter != unfinishedUnits.end()) {
 		AbortTask(iter->second);
@@ -321,6 +404,15 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 		search->second(unit, attacker);
 	}
 
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[4].maxTime < time) {
+		event[4].maxTime = time;
+	}
+	event[4].sumTime += time;
+	event[4].count++;
+	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
@@ -555,7 +647,24 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 
 IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 {
-	return unit->GetCircuitDef()->IsAttrComm() ? MakeCommTask(unit) : MakeBuilderTask(unit);
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
+//	return unit->GetCircuitDef()->IsAttrComm() ? MakeCommTask(unit) : MakeBuilderTask(unit);
+	// FIXME: DEBUG
+	IUnitTask* t = unit->GetCircuitDef()->IsAttrComm() ? MakeCommTask(unit) : MakeBuilderTask(unit);
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[8].maxTime < time) {
+		event[8].maxTime = time;
+	}
+	event[8].sumTime += time;
+	event[8].count++;
+	circuit->LOG("MakeTask: %i", circuit->GetLastFrame());
+	return t;
+	// FIXME: DEBUG
 }
 
 void CBuilderManager::AbortTask(IUnitTask* task)
@@ -774,8 +883,8 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 					continue;
 				}
 
-				distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
-				if (distCost > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
+				distCost = pathfinder->PathCostDirect(pos, buildPos, buildDistance);
+				if (distCost < 0.0f) {
 					continue;
 				}
 			}
@@ -783,7 +892,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 			distCost = std::max(distCost, THREAT_BASE);
 
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
-			weight = 1.0f / (weight * weight);
+			weight = 1.0f / SQUARE(weight);
 			bool valid = false;
 
 			CCircuitUnit* target = candidate->GetTarget();
@@ -823,6 +932,11 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 
 IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 {
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	threatMap->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
@@ -833,6 +947,12 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 //	if (task != nullptr) {
 //		return task;
 //	}
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	circuit->LOG("Make time0: %i", time);
+	t0 = clock::now();
+	// FIXME: DEBUG
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
@@ -872,8 +992,8 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 					continue;
 				}
 
-				distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
-				if (distCost > pathfinder->PathCostDirect(pos, buildPos, buildDistance) * 1.05f) {
+				distCost = pathfinder->PathCostDirect(pos, buildPos, buildDistance);
+				if (distCost < 0.0f) {
 					continue;
 				}
 			}
@@ -881,7 +1001,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 			distCost = std::max(distCost, THREAT_BASE);
 
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
-			weight = 1.0f / (weight * weight);
+			weight = 1.0f / SQUARE(weight);
 			bool valid = false;
 
 			CCircuitUnit* target = candidate->GetTarget();
@@ -903,6 +1023,12 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 			}
 		}
 	}
+	// FIXME: DEBUG
+	t1 = clock::now();
+	time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	circuit->LOG("Make time1: %i", time);
+	t0 = clock::now();
+	// FIXME: DEBUG
 
 	if (task == nullptr) {
 		if (unit->GetTask() != idleTask) {
@@ -910,6 +1036,11 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 		}
 		task = CreateBuilderTask(pos, unit);
 	}
+	// FIXME: DEBUG
+	t1 = clock::now();
+	time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	circuit->LOG("Make time2: %i", time);
+	// FIXME: DEBUG
 
 	return const_cast<IBuilderTask*>(task);
 }
@@ -1009,6 +1140,11 @@ void CBuilderManager::RemoveBuildList(CCircuitUnit* unit)
 void CBuilderManager::Watchdog()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	Resource* metalRes = economyManager->GetMetalRes();
 	// somehow workers get stuck
@@ -1041,15 +1177,43 @@ void CBuilderManager::Watchdog()
 			}
 		}
 	}
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[5].maxTime < time) {
+		event[5].maxTime = time;
+	}
+	event[5].sumTime += time;
+	event[5].count++;
+	// FIXME: DEBUG
 }
 
 void CBuilderManager::UpdateIdle()
 {
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	idleTask->Update();
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[6].maxTime < time) {
+		event[6].maxTime = time;
+	}
+	event[6].sumTime += time;
+	event[6].count++;
+	// FIXME: DEBUG
 }
 
 void CBuilderManager::UpdateBuild()
 {
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	if (buildIterator >= buildUpdates.size()) {
 		buildIterator = 0;
 	}
@@ -1076,6 +1240,15 @@ void CBuilderManager::UpdateBuild()
 			n--;
 		}
 	}
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[7].maxTime < time) {
+		event[7].maxTime = time;
+	}
+	event[7].sumTime += time;
+	event[7].count++;
+	// FIXME: DEBUG
 }
 
 void CBuilderManager::UpdateAreaUsers()

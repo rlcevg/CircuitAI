@@ -62,6 +62,7 @@ public:
 	bool IsOpenSpot(int spotId) const;
 	void SetOpenSpot(int spotId, bool value) { openSpots[spotId] = value; }
 
+	IBuilderTask* UpdateMetalTasks();
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	IBuilderTask* UpdateReclaimTasks(const springai::AIFloat3& position, CCircuitUnit* unit, bool isNear = true);
 	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
@@ -140,6 +141,14 @@ private:
 
 	std::shared_ptr<CGameTask> morph;
 	std::set<CCircuitUnit*> morphees;
+	// FIXME: DEBUG
+	struct SEvent {
+		SEvent() : sumTime(0), count(0), maxTime(0) {}
+		size_t sumTime;
+		size_t count;
+		size_t maxTime;
+	} event[6];
+	// FIXME: DEBUG
 };
 
 } // namespace circuit

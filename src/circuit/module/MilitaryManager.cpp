@@ -240,14 +240,16 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 				}
 			}
 			if (commDef->CanBuild(cdef)) {
-				float radiusDivCost = cdef->GetUnitDef()->GetRadarRadius() / cdef->GetCost();
-				if (maxRadarDivCost < radiusDivCost) {
-					maxRadarDivCost = radiusDivCost;
+				float range = cdef->GetUnitDef()->GetRadarRadius();
+				float areaDivCost = M_PI * SQUARE(range) / cdef->GetCost();
+				if (maxRadarDivCost < areaDivCost) {
+					maxRadarDivCost = areaDivCost;
 					radarDef = cdef;
 				}
-				radiusDivCost = cdef->GetUnitDef()->GetSonarRadius() / cdef->GetCost();
-				if (maxSonarDivCost < radiusDivCost) {
-					maxSonarDivCost = radiusDivCost;
+				range = cdef->GetUnitDef()->GetSonarRadius();
+				areaDivCost = M_PI * SQUARE(range) / cdef->GetCost();
+				if (maxSonarDivCost < areaDivCost) {
+					maxSonarDivCost = areaDivCost;
 					sonarDef = cdef;
 				}
 			}
@@ -266,55 +268,144 @@ CMilitaryManager::~CMilitaryManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	utils::free_clear(fightUpdates);
+	// FIXME: DEBUG
+	circuit->LOG("CMilitaryManager::UnitCreated | max: %li", event[0].maxTime);
+	circuit->LOG("CMilitaryManager::UnitCreated | avg: %li", event[0].sumTime / event[0].count);
+	circuit->LOG("CMilitaryManager::UnitFinished | max: %li", event[1].maxTime);
+	circuit->LOG("CMilitaryManager::UnitFinished | avg: %li", event[1].sumTime / event[1].count);
+	circuit->LOG("CMilitaryManager::UnitIdle | max: %li", event[2].maxTime);
+	circuit->LOG("CMilitaryManager::UnitIdle | avg: %li", event[2].sumTime / event[2].count);
+	circuit->LOG("CMilitaryManager::UnitDamaged | max: %li", event[3].maxTime);
+	circuit->LOG("CMilitaryManager::UnitDamaged | avg: %li", event[3].sumTime / event[3].count);
+	circuit->LOG("CMilitaryManager::UnitDestroyed | max: %li", event[4].maxTime);
+	circuit->LOG("CMilitaryManager::UnitDestroyed | avg: %li", event[4].sumTime / event[4].count);
+
+	circuit->LOG("CMilitaryManager::Watchdog | max: %li", event[5].maxTime);
+	circuit->LOG("CMilitaryManager::Watchdog | avg: %li", event[5].sumTime / event[5].count);
+	circuit->LOG("CMilitaryManager::UpdateIdle | max: %li", event[6].maxTime);
+	circuit->LOG("CMilitaryManager::UpdateIdle | avg: %li", event[6].sumTime / event[6].count);
+	circuit->LOG("CMilitaryManager::UpdateFight | max: %li", event[7].maxTime);
+	circuit->LOG("CMilitaryManager::UpdateFight | avg: %li", event[7].sumTime / event[7].count);
+	// FIXME: DEBUG
 }
 
 int CMilitaryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 {
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	auto search = createdHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != createdHandler.end()) {
 		search->second(unit, builder);
 	}
 
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[0].maxTime < time) {
+		event[0].maxTime = time;
+	}
+	event[0].sumTime += time;
+	event[0].count++;
+	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
 int CMilitaryManager::UnitFinished(CCircuitUnit* unit)
 {
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	auto search = finishedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != finishedHandler.end()) {
 		search->second(unit);
 	}
 
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[1].maxTime < time) {
+		event[1].maxTime = time;
+	}
+	event[1].sumTime += time;
+	event[1].count++;
+	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
 int CMilitaryManager::UnitIdle(CCircuitUnit* unit)
 {
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	auto search = idleHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != idleHandler.end()) {
 		search->second(unit);
 	}
 
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[2].maxTime < time) {
+		event[2].maxTime = time;
+	}
+	event[2].sumTime += time;
+	event[2].count++;
+	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
 int CMilitaryManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	auto search = damagedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != damagedHandler.end()) {
 		search->second(unit, attacker);
 	}
 
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[3].maxTime < time) {
+		event[3].maxTime = time;
+	}
+	event[3].sumTime += time;
+	event[3].count++;
+	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
 int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != destroyedHandler.end()) {
 		search->second(unit, attacker);
 	}
 
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[4].maxTime < time) {
+		event[4].maxTime = time;
+	}
+	event[4].sumTime += time;
+	event[4].count++;
+	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
@@ -470,7 +561,8 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 		return;
 	}
 	CEconomyManager* em = circuit->GetEconomyManager();
-	float maxCost = MIN_BUILD_SEC * std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
+	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
+	float maxCost = MIN_BUILD_SEC * importance * metalIncome;
 	CDefenceMatrix::SDefPoint* closestPoint = nullptr;
 	float minDist = std::numeric_limits<float>::max();
 	std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
@@ -873,6 +965,7 @@ void CMilitaryManager::ReadConfig()
 	}
 
 	preventCount = porc.get("prevent", 1).asUInt();
+	importance = porc.get("importance", 1.0f).asFloat();
 
 	const Json::Value& base = porc["base"];
 	baseDefence.reserve(base.size());
@@ -960,6 +1053,11 @@ void CMilitaryManager::Init()
 void CMilitaryManager::Watchdog()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	for (CCircuitUnit* unit : army) {
 		auto commands = std::move(unit->GetUnit()->GetCurrentCommands());
 		if (commands.empty()) {
@@ -967,15 +1065,43 @@ void CMilitaryManager::Watchdog()
 		}
 		utils::free_clear(commands);
 	}
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[5].maxTime < time) {
+		event[5].maxTime = time;
+	}
+	event[5].sumTime += time;
+	event[5].count++;
+	// FIXME: DEBUG
 }
 
 void CMilitaryManager::UpdateIdle()
 {
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	idleTask->Update();
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[6].maxTime < time) {
+		event[6].maxTime = time;
+	}
+	event[6].sumTime += time;
+	event[6].count++;
+	// FIXME: DEBUG
 }
 
 void CMilitaryManager::UpdateFight()
 {
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::microseconds;
+	clock::time_point t0 = clock::now();
+	// FIXME: DEBUG
 	if (fightIterator >= fightUpdates.size()) {
 		fightIterator = 0;
 	}
@@ -995,6 +1121,15 @@ void CMilitaryManager::UpdateFight()
 			n--;
 		}
 	}
+	// FIXME: DEBUG
+	clock::time_point t1 = clock::now();
+	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
+	if (event[7].maxTime < time) {
+		event[7].maxTime = time;
+	}
+	event[7].sumTime += time;
+	event[7].count++;
+	// FIXME: DEBUG
 }
 
 void CMilitaryManager::AddPower(CCircuitUnit* unit)

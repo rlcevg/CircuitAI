@@ -842,14 +842,14 @@
 		"retreat": 0.01  // no retreat, demolish enemy base
 	},
 	"cornukesub": {
-		"role": ["artillery"],
+		"role": ["artillery", "heavy"],
 		"attribute": ["stockpile"]
 	},
 	"reef": {
-		"role": ["artillery"]
+		"role": ["artillery", "heavy"]
 	},
 	"corbats": {
-		"role": ["artillery"]
+		"role": ["artillery", "heavy"]
 	},
 
 	// statics
@@ -992,9 +992,10 @@
 	"land":  [0, 1, 6, 1, 1, 3, 5],
 	"water": [4, 1, 6, 4, 4, 3, 5],
 	"prevent": 1,  // number of preventive defnces
+	"importance": 1.0,  // income bound factor
 
 	// Base defence and time to build it, in seconds
-	"base": [[0, 120]],
+	"base": [[1, 60], [0, 120]],
 
 	"superweapon": {
 		"unit":   ["raveparty", "corsilo", "armbrtha", "zenith"],
@@ -1015,7 +1016,7 @@
 			"importance": 1.0,
 
 			// Force-morph delay, in seconds
-			"morph_after": 120,
+			"morph_after": 180,
 
 			// Starting units (order matters)
 			"start": ["raider", "raider", "builder"]

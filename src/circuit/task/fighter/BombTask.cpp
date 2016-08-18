@@ -190,8 +190,8 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	const float speed = cdef->GetSpeed() / 1.75f;
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
-	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
-								 cdef->GetLosRadius());
+	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize(),
+								 cdef->GetLosRadius()) * 2;
 	float sqRange = SQUARE(range);
 	float maxThreat = .0f;
 

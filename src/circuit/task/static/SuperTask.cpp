@@ -77,7 +77,7 @@ void CSuperTask::Update()
 	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSqRange = SQUARE(cdef->GetMaxRange());
-	const float sqAoe = SQUARE(cdef->GetAoe() * 1.2f);
+	const float sqAoe = SQUARE(cdef->GetAoe() * 1.25f);
 	float cost = 0.f;
 	int groupIdx = -1;
 	const std::array<const std::set<IFighterTask*>*, 3> avoidTasks = {  // NOTE: ISquadTask only

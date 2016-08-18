@@ -323,6 +323,30 @@ void CMicroPather::GoalReached(PathNode* node, void* start, void* end, std::vect
 	#endif
 }
 
+float CMicroPather::CheckSafety(PathNode* node)
+{
+	PathNode* it = node;
+	float prevCost = THREAT_BASE;
+
+	while (it->parent) {
+		size_t index = (((size_t) it) - ((size_t) pathNodeMem)) / sizeof(PathNode);
+		const float cost = costArray[index];
+		if (cost < prevCost) {
+			return -1.0f;
+		}
+		prevCost = cost;
+		it = it->parent;
+	}
+
+	size_t index = (((size_t) it) - ((size_t) pathNodeMem)) / sizeof(PathNode);
+	const float cost = costArray[(size_t)index];
+	if (cost < prevCost) {
+		return -1.0f;
+	}
+
+	return node->costFromStart;
+}
+
 float CMicroPather::LeastCostEstimateLocal(int nodeStartIndex)
 {
 	const int yStart = nodeStartIndex / mapSizeX;
@@ -1159,7 +1183,7 @@ int CMicroPather::FindDirectCostToPointOnRadius(void* startNode, void* endNode, 
 {
 	assert(!isRunning);
 	isRunning = true;
-	*cost = 0.0f;
+	*cost = -1.0f;
 
 	if (radius <= 0) {
 		// just fail fast
@@ -1228,7 +1252,7 @@ int CMicroPather::FindDirectCostToPointOnRadius(void* startNode, void* endNode, 
 			if (relativeX <= xend[relativeY]) {
 				// L("Its a hit: " << counter);
 
-				*cost = node->costFromStart;
+				*cost = CheckSafety(node);
 				isRunning = false;
 				return SOLVED;
 			}

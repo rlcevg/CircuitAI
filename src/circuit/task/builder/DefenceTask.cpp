@@ -42,8 +42,6 @@ void CBDefenceTask::Finish()
 		utils::free_clear(features);
 	}
 
-	circuit->GetMilitaryManager()->UpdateDefenceTasks();
-
 	IBuilderTask::Finish();
 }
 

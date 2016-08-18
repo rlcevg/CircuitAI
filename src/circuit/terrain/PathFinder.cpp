@@ -302,7 +302,7 @@ float CPathFinder::PathCostDirect(const springai::AIFloat3& startPos, springai::
 {
 	terrainData->CorrectPosition(endPos);
 
-	float pathCost = 0.0f;
+	float pathCost = -1.0f;
 
 	const int ex = int(endPos.x / squareSize);
 	const int ey = int(endPos.z / squareSize);

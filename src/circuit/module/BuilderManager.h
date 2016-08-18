@@ -155,6 +155,15 @@ private:
 		float maxTime;  // seconds
 	} super;
 
+	// FIXME: DEBUG
+	struct SEvent {
+		SEvent() : sumTime(0), count(0), maxTime(0) {}
+		size_t sumTime;
+		size_t count;
+		size_t maxTime;
+	} event[9];
+	// FIXME: DEBUG
+
 public:
 	void UpdateAreaUsers();
 private:

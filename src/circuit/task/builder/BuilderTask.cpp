@@ -214,14 +214,14 @@ void IBuilderTask::Update()
 		return;
 	}
 	CCircuitUnit* unit = *units.begin();
+	const float sqDist = unit->GetPos(circuit->GetLastFrame()).SqDistance2D(GetPosition());
+	if (sqDist <= SQUARE(unit->GetCircuitDef()->GetBuildDistance())) {
+		return;
+	}
 	HideAssignee(unit);
 	IBuilderTask* task = static_cast<IBuilderTask*>(manager->MakeTask(unit));
 	ShowAssignee(unit);
-	if ((task == nullptr) || (task->GetBuildType() == buildType)) {
-		return;
-	}
-	const float sqDist = unit->GetPos(circuit->GetLastFrame()).SqDistance2D(GetPosition());
-	if (sqDist > SQUARE(unit->GetCircuitDef()->GetBuildDistance())) {
+	if ((task != nullptr) && (task->GetBuildType() != buildType)) {
 		manager->AssignTask(unit, task);
 	}
 }
