@@ -159,14 +159,6 @@ private:
 	CCircuitDef* sonarDef;
 	CCircuitDef* bigGunDef;
 	CCircuitDef* defaultPorc;
-	// FIXME: DEBUG
-	struct SEvent {
-		SEvent() : sumTime(0), count(0), maxTime(0) {}
-		size_t sumTime;
-		size_t count;
-		size_t maxTime;
-	} event[8];
-	// FIXME: DEBUG
 };
 
 } // namespace circuit

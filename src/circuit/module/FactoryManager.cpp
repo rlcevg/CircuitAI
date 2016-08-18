@@ -334,61 +334,21 @@ CFactoryManager::~CFactoryManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	utils::free_clear(updateTasks);
-	// FIXME: DEBUG
-	circuit->LOG("CFactoryManager::UnitCreated | max: %li", event[0].maxTime);
-	circuit->LOG("CFactoryManager::UnitCreated | avg: %li", event[0].sumTime / event[0].count);
-	circuit->LOG("CFactoryManager::UnitFinished | max: %li", event[1].maxTime);
-	circuit->LOG("CFactoryManager::UnitFinished | avg: %li", event[1].sumTime / event[1].count);
-	circuit->LOG("CFactoryManager::UnitDamaged | max: %li", event[2].maxTime);
-	circuit->LOG("CFactoryManager::UnitDamaged | avg: %li", event[2].sumTime / event[2].count);
-	circuit->LOG("CFactoryManager::UnitDestroyed | max: %li", event[3].maxTime);
-	circuit->LOG("CFactoryManager::UnitDestroyed | avg: %li", event[3].sumTime / event[3].count);
-
-	circuit->LOG("CFactoryManager::Watchdog | max: %li", event[4].maxTime);
-	circuit->LOG("CFactoryManager::Watchdog | avg: %li", event[4].sumTime / event[4].count);
-	circuit->LOG("CFactoryManager::UpdateIdle | max: %li", event[5].maxTime);
-	circuit->LOG("CFactoryManager::UpdateIdle | avg: %li", event[5].sumTime / event[5].count);
-	circuit->LOG("CFactoryManager::UpdateFactory | max: %li", event[6].maxTime);
-	circuit->LOG("CFactoryManager::UpdateFactory | avg: %li", event[6].sumTime / event[6].count);
-	// FIXME: DEBUG
 }
 
 int CFactoryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 {
-	// FIXME: DEBUG
-	using clock = std::chrono::high_resolution_clock;
-	using std::chrono::microseconds;
-	clock::time_point t0 = clock::now();
-	// FIXME: DEBUG
 	auto search = createdHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != createdHandler.end()) {
 		search->second(unit, builder);
 	}
 
 	if (builder == nullptr) {
-		// FIXME: DEBUG
-		clock::time_point t1 = clock::now();
-		size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-		if (event[0].maxTime < time) {
-			event[0].maxTime = time;
-		}
-		event[0].sumTime += time;
-		event[0].count++;
-		// FIXME: DEBUG
 		return 0; //signaling: OK
 	}
 
 	IUnitTask* task = builder->GetTask();
 	if (task->GetType() != IUnitTask::Type::FACTORY) {
-		// FIXME: DEBUG
-		clock::time_point t1 = clock::now();
-		size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-		if (event[0].maxTime < time) {
-			event[0].maxTime = time;
-		}
-		event[0].sumTime += time;
-		event[0].count++;
-		// FIXME: DEBUG
 		return 0; //signaling: OK
 	}
 
@@ -400,25 +360,11 @@ int CFactoryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		}
 	}
 
-	// FIXME: DEBUG
-	clock::time_point t1 = clock::now();
-	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-	if (event[0].maxTime < time) {
-		event[0].maxTime = time;
-	}
-	event[0].sumTime += time;
-	event[0].count++;
-	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
 int CFactoryManager::UnitFinished(CCircuitUnit* unit)
 {
-	// FIXME: DEBUG
-	using clock = std::chrono::high_resolution_clock;
-	using std::chrono::microseconds;
-	clock::time_point t0 = clock::now();
-	// FIXME: DEBUG
 	auto iter = unfinishedUnits.find(unit);
 	if (iter != unfinishedUnits.end()) {
 		DoneTask(iter->second);
@@ -433,49 +379,21 @@ int CFactoryManager::UnitFinished(CCircuitUnit* unit)
 		search->second(unit);
 	}
 
-	// FIXME: DEBUG
-	clock::time_point t1 = clock::now();
-	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-	if (event[1].maxTime < time) {
-		event[1].maxTime = time;
-	}
-	event[1].sumTime += time;
-	event[1].count++;
-	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
 int CFactoryManager::UnitIdle(CCircuitUnit* unit)
 {
-	// FIXME: DEBUG
-	using clock = std::chrono::high_resolution_clock;
-	using std::chrono::microseconds;
-	clock::time_point t0 = clock::now();
-	// FIXME: DEBUG
 	auto search = idleHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != idleHandler.end()) {
 		search->second(unit);
 	}
 
-	// FIXME: DEBUG
-	clock::time_point t1 = clock::now();
-	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-	if (event[2].maxTime < time) {
-		event[2].maxTime = time;
-	}
-	event[2].sumTime += time;
-	event[2].count++;
-	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
 int CFactoryManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
-	// FIXME: DEBUG
-	using clock = std::chrono::high_resolution_clock;
-	using std::chrono::microseconds;
-	clock::time_point t0 = clock::now();
-	// FIXME: DEBUG
 	auto iter = unfinishedUnits.find(unit);
 	if (iter != unfinishedUnits.end()) {
 		AbortTask(iter->second);
@@ -490,15 +408,6 @@ int CFactoryManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 		search->second(unit, attacker);
 	}
 
-	// FIXME: DEBUG
-	clock::time_point t1 = clock::now();
-	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-	if (event[3].maxTime < time) {
-		event[3].maxTime = time;
-	}
-	event[3].sumTime += time;
-	event[3].count++;
-	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
@@ -714,7 +623,7 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	const float metalIncome = std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
-	if ((circuit->GetBuilderManager()->GetBuilderPower() >= metalIncome * bpRatio) || (rand() >= RAND_MAX / 2)) {
+	if ((circuit->GetBuilderManager()->GetBuildPower() >= metalIncome * bpRatio) || (rand() >= RAND_MAX / 2)) {
 		return nullptr;
 	}
 
@@ -1176,11 +1085,6 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 void CFactoryManager::Watchdog()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	// FIXME: DEBUG
-	using clock = std::chrono::high_resolution_clock;
-	using std::chrono::microseconds;
-	clock::time_point t0 = clock::now();
-	// FIXME: DEBUG
 	auto checkIdler = [this](CCircuitUnit* unit) {
 		auto commands = std::move(unit->GetUnit()->GetCurrentCommands());
 		if (commands.empty()) {
@@ -1196,43 +1100,15 @@ void CFactoryManager::Watchdog()
 	for (auto& kv : assists) {
 		checkIdler(kv.first);
 	}
-	// FIXME: DEBUG
-	clock::time_point t1 = clock::now();
-	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-	if (event[4].maxTime < time) {
-		event[4].maxTime = time;
-	}
-	event[4].sumTime += time;
-	event[4].count++;
-	// FIXME: DEBUG
 }
 
 void CFactoryManager::UpdateIdle()
 {
-	// FIXME: DEBUG
-	using clock = std::chrono::high_resolution_clock;
-	using std::chrono::microseconds;
-	clock::time_point t0 = clock::now();
-	// FIXME: DEBUG
 	idleTask->Update();
-	// FIXME: DEBUG
-	clock::time_point t1 = clock::now();
-	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-	if (event[5].maxTime < time) {
-		event[5].maxTime = time;
-	}
-	event[5].sumTime += time;
-	event[5].count++;
-	// FIXME: DEBUG
 }
 
 void CFactoryManager::UpdateFactory()
 {
-	// FIXME: DEBUG
-	using clock = std::chrono::high_resolution_clock;
-	using std::chrono::microseconds;
-	clock::time_point t0 = clock::now();
-	// FIXME: DEBUG
 	if (updateIterator >= updateTasks.size()) {
 		updateIterator = 0;
 	}
@@ -1259,15 +1135,6 @@ void CFactoryManager::UpdateFactory()
 			n--;
 		}
 	}
-	// FIXME: DEBUG
-	clock::time_point t1 = clock::now();
-	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-	if (event[6].maxTime < time) {
-		event[6].maxTime = time;
-	}
-	event[6].sumTime += time;
-	event[6].count++;
-	// FIXME: DEBUG
 }
 
 } // namespace circuit

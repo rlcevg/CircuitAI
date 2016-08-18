@@ -12,9 +12,6 @@
 
 #include <unordered_map>
 #include <functional>
-// FIXME: DEBUG
-#include <chrono>
-// FIXME: DEBUG
 
 namespace circuit {
 

@@ -140,14 +140,6 @@ private:
 	std::unordered_map<CCircuitDef::Id, SFactoryDef> factoryDefs;
 	float bpRatio;
 	float reWeight;
-	// FIXME: DEBUG
-	struct SEvent {
-		SEvent() : sumTime(0), count(0), maxTime(0) {}
-		size_t sumTime;
-		size_t count;
-		size_t maxTime;
-	} event[7];
-	// FIXME: DEBUG
 };
 
 } // namespace circuit

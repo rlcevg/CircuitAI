@@ -250,117 +250,46 @@ CEconomyManager::~CEconomyManager()
 	delete energyRes;
 	delete economy;
 	delete engyPol;
-	// FIXME: DEBUG
-	circuit->LOG("CEconomyManager::UnitCreated | max: %li", event[0].maxTime);
-	circuit->LOG("CEconomyManager::UnitCreated | avg: %li", event[0].sumTime / event[0].count);
-	circuit->LOG("CEconomyManager::UnitFinished | max: %li", event[1].maxTime);
-	circuit->LOG("CEconomyManager::UnitFinished | avg: %li", event[1].sumTime / event[1].count);
-	circuit->LOG("CEconomyManager::UnitDamaged | max: %li", event[2].maxTime);
-	circuit->LOG("CEconomyManager::UnitDamaged | avg: %li", event[2].sumTime / event[2].count);
-	circuit->LOG("CEconomyManager::UnitDestroyed | max: %li", event[3].maxTime);
-	circuit->LOG("CEconomyManager::UnitDestroyed | avg: %li", event[3].sumTime / event[3].count);
-
-	circuit->LOG("CEconomyManager::UpdateFactoryTasks | max: %li", event[4].maxTime);
-	circuit->LOG("CEconomyManager::UpdateFactoryTasks | avg: %li", event[4].sumTime / event[4].count);
-	circuit->LOG("CEconomyManager::UpdateMetalTasks | max: %li", event[5].maxTime);
-	circuit->LOG("CEconomyManager::UpdateMetalTasks | avg: %li", event[5].sumTime / event[5].count);
-	// FIXME: DEBUG
 }
 
 int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 {
-	// FIXME: DEBUG
-	using clock = std::chrono::high_resolution_clock;
-	using std::chrono::microseconds;
-	clock::time_point t0 = clock::now();
-	// FIXME: DEBUG
 	auto search = createdHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != createdHandler.end()) {
 		search->second(unit, builder);
 	}
 
-	// FIXME: DEBUG
-	clock::time_point t1 = clock::now();
-	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-	if (event[0].maxTime < time) {
-		event[0].maxTime = time;
-	}
-	event[0].sumTime += time;
-	event[0].count++;
-	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
 int CEconomyManager::UnitFinished(CCircuitUnit* unit)
 {
-	// FIXME: DEBUG
-	using clock = std::chrono::high_resolution_clock;
-	using std::chrono::microseconds;
-	clock::time_point t0 = clock::now();
-	// FIXME: DEBUG
 	auto search = finishedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != finishedHandler.end()) {
 		search->second(unit);
 	}
 
-	// FIXME: DEBUG
-	clock::time_point t1 = clock::now();
-	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-	if (event[1].maxTime < time) {
-		event[1].maxTime = time;
-	}
-	event[1].sumTime += time;
-	event[1].count++;
-	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
 int CEconomyManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
-	// FIXME: DEBUG
-	using clock = std::chrono::high_resolution_clock;
-	using std::chrono::microseconds;
-	clock::time_point t0 = clock::now();
-	// FIXME: DEBUG
 	// NOTE: If more actions should be done then consider moving into damagedHandler
 	if (unit->IsMorphing() && (unit->GetUnit()->GetHealth() < unit->GetUnit()->GetMaxHealth() * 0.5f)) {
 		unit->StopUpgrade();  // StopMorph();
 		AddMorphee(unit);
 	}
 
-	// FIXME: DEBUG
-	clock::time_point t1 = clock::now();
-	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-	if (event[2].maxTime < time) {
-		event[2].maxTime = time;
-	}
-	event[2].sumTime += time;
-	event[2].count++;
-	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
 int CEconomyManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
-	// FIXME: DEBUG
-	using clock = std::chrono::high_resolution_clock;
-	using std::chrono::microseconds;
-	clock::time_point t0 = clock::now();
-	// FIXME: DEBUG
 	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != destroyedHandler.end()) {
 		search->second(unit, attacker);
 	}
 
-	// FIXME: DEBUG
-	clock::time_point t1 = clock::now();
-	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-	if (event[3].maxTime < time) {
-		event[3].maxTime = time;
-	}
-	event[3].sumTime += time;
-	event[3].count++;
-	// FIXME: DEBUG
 	return 0; //signaling: OK
 }
 
@@ -519,29 +448,31 @@ bool CEconomyManager::IsOpenSpot(int spotId) const
 	return openSpots[spotId] && circuit->GetMetalManager()->IsOpenSpot(spotId);
 }
 
-IBuilderTask* CEconomyManager::UpdateMetalTasks()
+IBuilderTask* CEconomyManager::MakeEconomyTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
-	return nullptr;
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	if (!builderManager->CanEnqueueTask()) {
+		return nullptr;
+	}
+	CMetalManager* metalManager = circuit->GetMetalManager();
+	int index = metalManager->FindNearestCluster(position);
+	if ((index < 0) || (clusterInfos[index].metalFrame + FRAMES_PER_SEC >= circuit->GetLastFrame())) {
+		return nullptr;
+	}
+	clusterInfos[index].metalFrame = circuit->GetLastFrame();
+
+	IBuilderTask* task = UpdateMetalTasks(position, unit);
+	if (task != nullptr) {
+		return task;
+	}
+
+	return task;
 }
 
 IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
-	// FIXME: DEBUG
-	using clock = std::chrono::high_resolution_clock;
-	using std::chrono::microseconds;
-	clock::time_point t0 = clock::now();
-	// FIXME: DEBUG
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	if (!builderManager->CanEnqueueTask()) {
-		// FIXME: DEBUG
-		clock::time_point t1 = clock::now();
-		size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-		if (event[5].maxTime < time) {
-			event[5].maxTime = time;
-		}
-		event[5].sumTime += time;
-		event[5].count++;
-		// FIXME: DEBUG
 		return nullptr;
 	}
 
@@ -551,7 +482,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	bool isEnergyStalling = IsEnergyStalling();
 	if (!isEnergyStalling && mexDef->IsAvailable()) {
 		float cost = mexDef->GetCost();
-		unsigned maxCount = builderManager->GetBuilderPower() / cost * 8 + 2;
+		unsigned maxCount = builderManager->GetBuildPower() / cost * 8 + 2;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < maxCount) {
 			CMetalManager* metalManager = circuit->GetMetalManager();
 			const CMetalData::Metals& spots = metalManager->GetSpots();
@@ -584,34 +515,13 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost, .0f);
 				task->SetBuildPos(pos);
 				SetOpenSpot(index, false);
-				// FIXME: DEBUG
-				clock::time_point t1 = clock::now();
-				size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-				if (event[5].maxTime < time) {
-					event[5].maxTime = time;
-				}
-				event[5].sumTime += time;
-				event[5].count++;
-				// FIXME: DEBUG
 				return task;
 			}
 		}
 	}
 
 	task = isEnergyStalling ? UpdateEnergyTasks(position, unit) : UpdateReclaimTasks(position, unit);
-	if (task == nullptr) {
-		task = UpdateStorageTasks();
-	}
 
-	// FIXME: DEBUG
-	clock::time_point t1 = clock::now();
-	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-	if (event[5].maxTime < time) {
-		event[5].maxTime = time;
-	}
-	event[5].sumTime += time;
-	event[5].count++;
-	// FIXME: DEBUG
 	return task;
 }
 
@@ -698,7 +608,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	CCircuitDef* bestDef = nullptr;
 	float cost/* = 1.f*/;
 	metalIncome = std::min(metalIncome, energyIncome) * incomeFactor;
-	const float buildPower = std::min(builderManager->GetBuilderPower(), metalIncome);
+	const float buildPower = std::min(builderManager->GetBuildPower(), metalIncome);
 	const int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
 	const float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.25f : ecoFactor);
 
@@ -734,7 +644,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	// Find place to build
 	AIFloat3 buildPos = -RgtVector;
 	CMetalManager* metalManager = circuit->GetMetalManager();
-	if (cost < MIN_BUILD_SEC * buildPower) {
+	if (cost < 1000.0f) {
 		int index = metalManager->FindNearestSpot(position);
 		if (index != -1) {
 			const CMetalData::Metals& spots = metalManager->GetSpots();
@@ -768,22 +678,8 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 
 IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
-	// FIXME: DEBUG
-	using clock = std::chrono::high_resolution_clock;
-	using std::chrono::microseconds;
-	clock::time_point t0 = clock::now();
-	// FIXME: DEBUG
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	if (!builderManager->CanEnqueueTask()) {
-		// FIXME: DEBUG
-		clock::time_point t1 = clock::now();
-		size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-		if (event[4].maxTime < time) {
-			event[4].maxTime = time;
-		}
-		event[4].sumTime += time;
-		event[4].count++;
-		// FIXME: DEBUG
 		return nullptr;
 	}
 
@@ -796,15 +692,6 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	const int nanoSize = builderManager->GetTasks(IBuilderTask::BuildType::NANO).size();
 	const float factoryPower = factoryManager->GetFactoryPower() + nanoSize * assistDef->GetBuildSpeed();
 	if ((factoryPower >= factoryFactor) || !builderManager->GetTasks(IBuilderTask::BuildType::FACTORY).empty()) {
-		// FIXME: DEBUG
-		clock::time_point t1 = clock::now();
-		size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-		if (event[4].maxTime < time) {
-			event[4].maxTime = time;
-		}
-		event[4].sumTime += time;
-		event[4].count++;
-		// FIXME: DEBUG
 		return nullptr;
 	}
 
@@ -835,15 +722,6 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		if (terrainManager->CanBeBuiltAt(assistDef, buildPos) &&
 			((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 		{
-			// FIXME: DEBUG
-			clock::time_point t1 = clock::now();
-			size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-			if (event[4].maxTime < time) {
-				event[4].maxTime = time;
-			}
-			event[4].sumTime += time;
-			event[4].count++;
-			// FIXME: DEBUG
 			return builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, assistDef, buildPos,
 											   IBuilderTask::BuildType::NANO, SQUARE_SIZE * 8, true);
 		}
@@ -856,15 +734,6 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	int index = metalManager->FindNearestCluster(position, predicate);
 	if (index < 0) {
-		// FIXME: DEBUG
-		clock::time_point t1 = clock::now();
-		size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-		if (event[4].maxTime < time) {
-			event[4].maxTime = time;
-		}
-		event[4].sumTime += time;
-		event[4].count++;
-		// FIXME: DEBUG
 		return nullptr;
 	}
 
@@ -874,15 +743,6 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	const bool isStart = (factoryManager->GetFactoryCount() == 0);
 	CCircuitDef* facDef = factoryManager->GetFactoryToBuild(buildPos, isStart);
 	if (facDef == nullptr) {
-		// FIXME: DEBUG
-		clock::time_point t1 = clock::now();
-		size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-		if (event[4].maxTime < time) {
-			event[4].maxTime = time;
-		}
-		event[4].sumTime += time;
-		event[4].count++;
-		// FIXME: DEBUG
 		return nullptr;
 	}
 
@@ -907,15 +767,6 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		bdef = factoryManager->GetWaterDef(facDef);
 	}
 	if (bdef == nullptr) {
-		// FIXME: DEBUG
-		clock::time_point t1 = clock::now();
-		size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-		if (event[4].maxTime < time) {
-			event[4].maxTime = time;
-		}
-		event[4].sumTime += time;
-		event[4].count++;
-		// FIXME: DEBUG
 		return nullptr;
 	}
 
@@ -924,28 +775,10 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	if (terrainManager->CanBeBuiltAt(facDef, buildPos) &&
 		((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 	{
-		// FIXME: DEBUG
-		clock::time_point t1 = clock::now();
-		size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-		if (event[4].maxTime < time) {
-			event[4].maxTime = time;
-		}
-		event[4].sumTime += time;
-		event[4].count++;
-		// FIXME: DEBUG
 		return builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos,
 										   IBuilderTask::BuildType::FACTORY);
 	}
 
-	// FIXME: DEBUG
-	clock::time_point t1 = clock::now();
-	size_t time = std::chrono::duration_cast<microseconds>(t1 - t0).count();
-	if (event[4].maxTime < time) {
-		event[4].maxTime = time;
-	}
-	event[4].sumTime += time;
-	event[4].count++;
-	// FIXME: DEBUG
 	return nullptr;
 }
 
@@ -1003,7 +836,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 	}
 
 	const float cost = pylonDef->GetCost();
-	unsigned count = builderManager->GetBuilderPower() / cost * 8 + 1;
+	unsigned count = builderManager->GetBuildPower() / cost * 8 + 1;
 	if (builderManager->GetTasks(IBuilderTask::BuildType::PYLON).size() >= count) {
 		return nullptr;
 	}
@@ -1149,7 +982,7 @@ void CEconomyManager::Init()
 
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	size_t clSize = metalManager->GetClusters().size();
-	clusterInfos.resize(clSize, {nullptr});
+	clusterInfos.resize(clSize, {nullptr, -FRAMES_PER_SEC});
 	size_t spSize = metalManager->GetSpots().size();
 	openSpots.resize(spSize, true);
 
@@ -1178,14 +1011,11 @@ void CEconomyManager::Init()
 		}
 	}
 
-	const int interFac = allyTeam->GetSize() * FRAMES_PER_SEC;
+	const int interval = allyTeam->GetSize() * FRAMES_PER_SEC;
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks), this),
-							interFac, circuit->GetSkirmishAIId() + 0 + 10 * interFac);
-//	const int interEco = FRAMES_PER_SEC;
-//	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateMetalTasks, this),
-//							interEco, circuit->GetSkirmishAIId() + 1 + interEco / 2);
+							interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this),
-							interFac, circuit->GetSkirmishAIId() + 1 + interFac / 2);
+							interval, circuit->GetSkirmishAIId() + 1 + interval / 2);
 }
 
 void CEconomyManager::OpenStrategy(CCircuitDef* facDef, const AIFloat3& pos)

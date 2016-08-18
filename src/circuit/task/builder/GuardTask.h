@@ -20,6 +20,7 @@ public:
 	virtual ~CBGuardTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const;
+	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 
 	virtual void Execute(CCircuitUnit* unit);

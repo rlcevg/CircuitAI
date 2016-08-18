@@ -44,7 +44,9 @@ public:
 	CCircuitDef* GetTerraDef() const { return terraDef; }
 
 	unsigned int GetWorkerCount() const { return workers.size(); }
-	float GetBuilderPower() const { return builderPower; }
+	void AddBuildPower(CCircuitUnit* unit);
+	void DelBuildPower(CCircuitUnit* unit);
+	float GetBuildPower() const { return buildPower; }
 	bool CanEnqueueTask() const { return buildTasksCount < workers.size() * 8; }
 	const std::set<IBuilderTask*>& GetTasks(IBuilderTask::BuildType type) const;
 	void ActivateTask(IBuilderTask* task);
@@ -140,7 +142,7 @@ private:
 	std::map<CCircuitUnit::Id, CBRepairTask*> repairedUnits;
 	std::vector<std::set<IBuilderTask*>> buildTasks;  // UnitDef based tasks
 	unsigned int buildTasksCount;
-	float builderPower;
+	float buildPower;
 	std::vector<IUnitTask*> buildUpdates;  // owner
 	unsigned int buildIterator;
 
@@ -154,15 +156,6 @@ private:
 		float minIncome;  // metal per second
 		float maxTime;  // seconds
 	} super;
-
-	// FIXME: DEBUG
-	struct SEvent {
-		SEvent() : sumTime(0), count(0), maxTime(0) {}
-		size_t sumTime;
-		size_t count;
-		size_t maxTime;
-	} event[9];
-	// FIXME: DEBUG
 
 public:
 	void UpdateAreaUsers();

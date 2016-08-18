@@ -7,6 +7,7 @@
 
 #include "task/builder/GuardTask.h"
 #include "task/TaskManager.h"
+#include "module/BuilderManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -28,12 +29,21 @@ bool CBGuardTask::CanAssignTo(CCircuitUnit* unit) const
 	return true;
 }
 
+void CBGuardTask::AssignTo(CCircuitUnit* unit)
+{
+	IBuilderTask::AssignTo(unit);
+
+	static_cast<CBuilderManager*>(manager)->DelBuildPower(unit);
+}
+
 void CBGuardTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IBuilderTask::RemoveAssignee(unit);
 	if (units.empty()) {
 		manager->AbortTask(this);
 	}
+
+	static_cast<CBuilderManager*>(manager)->AddBuildPower(unit);
 }
 
 void CBGuardTask::Execute(CCircuitUnit* unit)
