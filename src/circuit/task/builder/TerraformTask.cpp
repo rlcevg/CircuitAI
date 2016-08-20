@@ -19,7 +19,7 @@ namespace circuit {
 using namespace springai;
 
 CBTerraformTask::CBTerraformTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, float cost, int timeout)
-		: IBuilderTask(mgr, priority, target->GetCircuitDef(), target->GetPos(mgr->GetCircuit()->GetLastFrame()), BuildType::TERRAFORM, cost, false, timeout)
+		: IBuilderTask(mgr, priority, target->GetCircuitDef(), target->GetPos(mgr->GetCircuit()->GetLastFrame()), BuildType::TERRAFORM, cost, 0.f, timeout)
 		, isFirstTry(true)
 		, targetId(target->GetId())
 {
@@ -27,7 +27,7 @@ CBTerraformTask::CBTerraformTask(ITaskManager* mgr, Priority priority, CCircuitU
 }
 
 CBTerraformTask::CBTerraformTask(ITaskManager* mgr, Priority priority, const AIFloat3& position, float cost, int timeout)
-		: IBuilderTask(mgr, priority, nullptr, position, BuildType::TERRAFORM, cost, false, timeout)
+		: IBuilderTask(mgr, priority, nullptr, position, BuildType::TERRAFORM, cost, 0.f, timeout)
 		, isFirstTry(true)
 		, targetId(-1)
 {

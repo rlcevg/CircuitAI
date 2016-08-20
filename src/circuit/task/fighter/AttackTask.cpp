@@ -261,6 +261,7 @@ void CAttackTask::FindTarget()
 	Map* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
+	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
@@ -271,6 +272,7 @@ void CAttackTask::FindTarget()
 	const float weaponRange = cdef->GetMaxRange();
 
 	CEnemyUnit* bestTarget = nullptr;
+	const float sqOBDist = pos.SqDistance2D(basePos);
 	float minSqDist = std::numeric_limits<float>::max();
 
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
@@ -282,7 +284,9 @@ void CAttackTask::FindTarget()
 			continue;
 		}
 		const AIFloat3& ePos = enemy->GetPos();
-		if ((maxPower <= threatMap->GetThreatAt(ePos)) ||
+		const float sqBEDist = ePos.SqDistance2D(basePos);
+		const float scale = sqBEDist / sqOBDist;
+		if ((maxPower <= threatMap->GetThreatAt(ePos)) * scale ||
 			!terrainManager->CanMoveToPos(area, ePos) ||
 			(!cdef->HasAntiWater() && (ePos.y < -SQUARE_SIZE * 5)) ||
 			(enemy->GetUnit()->GetVel().SqLength2D() > speed))
@@ -300,9 +304,9 @@ void CAttackTask::FindTarget()
 			}
 		}
 
-		const float sqDist = pos.SqDistance2D(ePos);
-		if (minSqDist > sqDist) {
-			minSqDist = sqDist;
+		const float sqOEDist = pos.SqDistance2D(ePos) * scale;
+		if (minSqDist > sqOEDist) {
+			minSqDist = sqOEDist;
 			bestTarget = enemy;
 		}
 	}

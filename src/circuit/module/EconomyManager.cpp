@@ -679,13 +679,38 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	if (!builderManager->CanEnqueueTask()) {
+	if (!builderManager->CanEnqueueTask() ||
+		!builderManager->GetTasks(IBuilderTask::BuildType::FACTORY).empty())
+	{
 		return nullptr;
 	}
 
+	/*
+	 * check air pads
+	 */
 	CFactoryManager* factoryManager = circuit->GetFactoryManager();
+	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
+	CCircuitDef* airpadDef = factoryManager->GetAirpadDef();
+	const unsigned airpadFactor = SQUARE(airpadDef->GetCount() * 4);
+	if (airpadDef->IsAvailable() &&
+		(militaryManager->GetRoleUnits(CCircuitDef::RoleType::BOMBER).size() > airpadFactor))
+	{
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		CCircuitDef* bdef = (unit == nullptr) ? airpadDef : unit->GetCircuitDef();
+		AIFloat3 buildPos = circuit->GetSetupManager()->GetBasePos();
+		buildPos = terrainManager->GetBuildPosition(bdef, buildPos);
 
-	// check buildpower
+		if (terrainManager->CanBeBuiltAt(airpadDef, buildPos) &&
+			((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
+		{
+			return builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, airpadDef, buildPos,
+											   IBuilderTask::BuildType::FACTORY);
+		}
+	}
+
+	/*
+	 * check buildpower
+	 */
 	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome()) * ecoFactor;
 	CCircuitDef* assistDef = factoryManager->GetAssistDef();
 	const float factoryFactor = (metalIncome - assistDef->GetBuildSpeed()) * 1.2f;
@@ -695,7 +720,9 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		return nullptr;
 	}
 
-	// check nanos
+	/*
+	 * check nanos
+	 */
 	CCircuitUnit* factory = factoryManager->NeedUpgrade();
 	if ((factory != nullptr) && assistDef->IsAvailable()) {
 		AIFloat3 buildPos = factory->GetPos(circuit->GetLastFrame());
@@ -727,17 +754,33 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		}
 	}
 
-	// check factories
+	/*
+	 * check factories
+	 */
+	const AIFloat3& enemyPos = militaryManager->GetEnemyPos();
+	AIFloat3 pos(circuit->GetSetupManager()->GetBasePos());
+	CMetalManager* metalManager = circuit->GetMetalManager();
+	AIFloat3 center = (pos + enemyPos) * 0.5f;
+	float minSqDist = std::numeric_limits<float>::max();
+	const CMetalData::Clusters& clusters = metalManager->GetClusters();
+	for (unsigned i = 0; i < clusters.size(); ++i) {
+		if (!metalManager->IsClusterFinished(i)) {
+			continue;
+		}
+		const float sqDist = center.SqDistance2D(clusters[i].geoCentr);
+		if (minSqDist > sqDist) {
+			minSqDist = sqDist;
+			pos = clusters[i].geoCentr;
+		}
+	}
+
 	CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
 		return clusterInfos[v.second].factory == nullptr;
 	};
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	int index = metalManager->FindNearestCluster(position, predicate);
+	int index = metalManager->FindNearestCluster(pos, predicate);
 	if (index < 0) {
 		return nullptr;
 	}
-
-	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	AIFloat3 buildPos = clusters[index].geoCentr;
 
 	const bool isStart = (factoryManager->GetFactoryCount() == 0);
@@ -745,14 +788,18 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	if (facDef == nullptr) {
 		return nullptr;
 	}
+	if (facDef->IsRoleSupport()) {
+		buildPos = circuit->GetSetupManager()->GetBasePos();
+	}
 
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	AIFloat3 center(terrainManager->GetTerrainWidth() / 2, 0, terrainManager->GetTerrainHeight() / 2);
-	float size = (center.SqDistance2D(circuit->GetSetupManager()->GetStartPos()) > center.SqDistance2D(buildPos)) ? -200.0f : 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
-	buildPos.x += (buildPos.x > center.x) ? -size : size;
-	buildPos.z += (buildPos.z > center.z) ? -size : size;
+	const float sqStartDist = enemyPos.SqDistance2D(circuit->GetSetupManager()->GetStartPos());
+	const float sqBuildDist = enemyPos.SqDistance2D(buildPos);
+	float size = (sqStartDist > sqBuildDist) ? -200.0f : 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
+	buildPos.x += (buildPos.x > enemyPos.x) ? -size : size;
+	buildPos.z += (buildPos.z > enemyPos.z) ? -size : size;
 
 	// identify area to build by factory representatives
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CCircuitDef* bdef;
 	CCircuitDef* landDef = factoryManager->GetLandDef(facDef);
 	if (landDef != nullptr) {

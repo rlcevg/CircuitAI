@@ -25,9 +25,20 @@ using namespace springai;
 CBReclaimTask::CBReclaimTask(ITaskManager* mgr, Priority priority,
 							 const AIFloat3& position,
 							 float cost, int timeout, float radius, bool isMetal)
-		: IBuilderTask(mgr, priority, nullptr, position, BuildType::RECLAIM, cost, false, timeout)
+		: IBuilderTask(mgr, priority, nullptr, position, BuildType::RECLAIM, cost, 0.f, timeout)
 		, radius(radius)
 		, isMetal(isMetal)
+		, targetId(-1)
+{
+}
+
+CBReclaimTask::CBReclaimTask(ITaskManager* mgr, Priority priority,
+							 CCircuitUnit* target,
+							 int timeout)
+		: IBuilderTask(mgr, priority, nullptr, -RgtVector, BuildType::RECLAIM, 1000.0f, 0.f, timeout)
+		, radius(0.f)
+		, isMetal(false)
+		, targetId(target->GetId())
 {
 }
 
@@ -65,7 +76,7 @@ void CBReclaimTask::Execute(CCircuitUnit* unit)
 //	)
 
 	int frame = circuit->GetLastFrame();
-	if (target == nullptr) {
+	if (targetId < 0) {
 		AIFloat3 pos;
 		float reclRadius;
 		if ((radius == .0f) || !utils::is_valid(position)) {
@@ -81,10 +92,16 @@ void CBReclaimTask::Execute(CCircuitUnit* unit)
 		TRY_UNIT(circuit, unit,
 			u->ReclaimInArea(pos, reclRadius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 		)
-	} else {
+		return;
+	}
+
+	target = circuit->GetTeamUnit(targetId);
+	if (target != nullptr) {
 		TRY_UNIT(circuit, unit,
 			u->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 		)
+	} else {
+		manager->AbortTask(this);
 	}
 }
 

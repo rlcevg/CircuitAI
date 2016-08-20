@@ -74,8 +74,12 @@ public:
 	void AddEnemyCost(const CEnemyUnit* e);
 	void DelEnemyCost(const CEnemyUnit* e);
 	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return enemyGroups; }
+	const springai::AIFloat3& GetEnemyPos() const { return enemyPos; }
 	void UpdateEnemyGroups() { KMeansIteration(); }
 
+	const std::set<CCircuitUnit*>& GetRoleUnits(CCircuitDef::RoleType type) const {
+		return roleInfos[static_cast<CCircuitDef::RoleT>(type)].units;
+	}
 	float GetArmyCost() const { return armyCost; }
 	float RoleProbability(const CCircuitDef* cdef) const;
 	bool IsNeedBigGun(const CCircuitDef* cdef) const;
@@ -139,6 +143,7 @@ private:
 
 	std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> enemyCosts{{0.f}};
 	std::vector<SEnemyGroup> enemyGroups;
+	springai::AIFloat3 enemyPos;
 
 	struct SClusterInfo {
 		IFighterTask* defence;

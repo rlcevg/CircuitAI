@@ -59,6 +59,7 @@ public:
 	CCircuitUnit* GetClosestFactory(springai::AIFloat3 position);
 	CCircuitDef* GetClosestDef(springai::AIFloat3& position, CCircuitDef::RoleType role);
 
+	CCircuitDef* GetAirpadDef() const { return airpadDef; }
 	CCircuitDef* GetAssistDef() const { return assistDef; }
 	springai::AIFloat3 GetClosestHaven(CCircuitUnit* unit) const;
 
@@ -94,6 +95,7 @@ private:
 	unsigned int updateIterator;
 	float factoryPower;
 
+	CCircuitDef* airpadDef;
 	CCircuitDef* assistDef;
 	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> assists;  // nano 1:n factory
 	std::vector<springai::AIFloat3> havens;  // position behind factory

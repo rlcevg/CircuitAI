@@ -862,7 +862,12 @@
 	"cordoom": {"role": ["static", "heavy"]},
 	"armanni": {"role": ["static", "heavy"]},
 	"armamd": {"role": ["static", "heavy"]},
-	"cafus": {"role": ["static", "heavy"]}
+	"cafus": {"role": ["static", "heavy"]},
+
+	// support factories won't be built in front
+	"factoryplane": {"role": ["static"], "attribute": ["support"]},
+	"factorygunship": {"role": ["static"], "attribute": ["support"]},
+	"striderhub": {"role": ["static"], "attribute": ["support"]}
 },
 
 // Build special units when enemy_metal*ratio > response_metal*eps; eps=teamSize*eps_step+(1-eps_step)
@@ -979,7 +984,8 @@
 	// Mobile buildpower to metal income ratio
 	"buildpower": 1.25,
 
-	"terra_def": "terraunit",
+	"terra": "terraunit",
+	"airpad": "armasp",
 
 	// Unknown UnitDef replacer
 	"default": "corrl"
@@ -992,7 +998,7 @@
 	"land":  [0, 1, 6, 1, 1, 3, 5],
 	"water": [4, 1, 6, 4, 4, 3, 5],
 	"prevent": 1,  // number of preventive defnces
-	"importance": 1.0,  // income bound factor
+	"importance": 2.0,  // income bound factor
 
 	// Base defence and time to build it, in seconds
 	"base": [[1, 60], [0, 120]],
@@ -1111,10 +1117,7 @@
 	},
 	"factory": {
 		"factoryplane": {
-			"hub": [[
-				{"unit": "armnanotc", "category": "nano", "offset": {"back": 0}},
-				{"unit": "armasp", "category": "factory", "offset": {"front": 0}}
-			]]
+			"hub": [[{"unit": "armnanotc", "category": "nano", "offset": {"back": 0}}]]
 		},
 		"factorygunship": {
 			"hub": [[{"unit": "armnanotc", "category": "nano", "offset": {"back": 0}}]]
@@ -1154,7 +1157,7 @@
 		},
 		"fac_air": {
 			"type": ["rectangle", "factory"],
-			"yard": [4, 4]
+			"yard": [8, 8]
 		},
 		"fac_water": {
 			"type": ["rectangle", "factory"],
@@ -1240,7 +1243,7 @@
 	},
 	"instance": {
 		"fac_land": ["factorycloak", "factoryamph", "factoryhover", "factoryjump", "factoryshield", "factoryspider", "factorytank", "factoryveh"],
-		"fac_air": ["factoryplane", "factorygunship"],
+		"fac_air": ["factoryplane", "factorygunship", "armasp"],
 		"fac_water": ["factoryship"],
 		"fac_strider": ["striderhub"],
 		"solar": ["armsolar"],

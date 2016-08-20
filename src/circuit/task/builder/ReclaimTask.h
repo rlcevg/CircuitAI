@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_TASK_BUILDER_RECLAIMTASK_H_
 
 #include "task/builder/BuilderTask.h"
+#include "unit/CircuitUnit.h"
 
 namespace circuit {
 
@@ -17,6 +18,9 @@ public:
 	CBReclaimTask(ITaskManager* mgr, Priority priority,
 				  const springai::AIFloat3& position,
 				  float cost, int timeout, float radius = .0f, bool isMetal = true);
+	CBReclaimTask(ITaskManager* mgr, Priority priority,
+				  CCircuitUnit* target,
+				  int timeout);
 	virtual ~CBReclaimTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const;
@@ -35,6 +39,7 @@ public:
 protected:
 	float radius;
 	bool isMetal;
+	CCircuitUnit::Id targetId;
 };
 
 } // namespace circuit

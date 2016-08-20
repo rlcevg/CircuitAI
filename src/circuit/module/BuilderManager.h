@@ -27,6 +27,7 @@ namespace circuit {
 class CEnergyLink;
 class CRetreatTask;
 class CBRepairTask;
+class CBReclaimTask;
 
 struct SBuildChain;
 
@@ -82,6 +83,9 @@ public:
 								 int timeout,
 								 float radius = .0f,
 								 bool isMetal = true);
+	IBuilderTask* EnqueueReclaim(IBuilderTask::Priority priority,
+								 CCircuitUnit* target,
+								 int timeout = ASSIGN_TIMEOUT);
 	IBuilderTask* EnqueuePatrol(IBuilderTask::Priority priority,
 								const springai::AIFloat3& position,
 								float cost,
@@ -140,6 +144,7 @@ private:
 
 	std::map<CCircuitUnit*, IBuilderTask*> unfinishedUnits;
 	std::map<CCircuitUnit::Id, CBRepairTask*> repairedUnits;
+	std::map<CCircuitUnit*, CBReclaimTask*> reclaimedUnits;
 	std::vector<std::set<IBuilderTask*>> buildTasks;  // UnitDef based tasks
 	unsigned int buildTasksCount;
 	float buildPower;

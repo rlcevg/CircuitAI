@@ -220,14 +220,14 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 					unsigned count;
 					float distDivIncome;
 				};
-				const AIFloat3 center(terrainManager->GetTerrainWidth() / 2.f, 0.f, terrainManager->GetTerrainHeight() / 2.f);
+				const AIFloat3 center(terrainManager->GetTerrainWidth() / 2, 0, terrainManager->GetTerrainHeight() / 2);
 				std::vector<std::pair<int, SCluster>> validClusters;
 				for (auto& kv : validPoints) {
 					SCluster c;
 					c.count = allyTeam->GetClusterTeam(kv.first).count;
 					const CMetalData::SCluster& cl = clusters[kv.first];
-					const float income = cl.income + (float)rand() / RAND_MAX * 0.5f - 0.25f;
-					c.distDivIncome = center.SqDistance2D(cl.geoCentr) / income;
+					const float income = cl.income + (float)rand() / RAND_MAX - 0.5f;
+					c.distDivIncome = center.distance(cl.geoCentr) / income;
 					validClusters.push_back(std::make_pair(kv.first, c));
 				}
 				std::random_shuffle(validClusters.begin(), validClusters.end());

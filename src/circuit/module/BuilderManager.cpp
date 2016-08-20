@@ -272,6 +272,10 @@ int CBuilderManager::UnitFinished(CCircuitUnit* unit)
 	if (itre != repairedUnits.end()) {
 		DoneTask(itre->second);
 	}
+	auto itcl = reclaimedUnits.find(unit);
+	if (itcl != reclaimedUnits.end()) {
+		DoneTask(itcl->second);
+	}
 
 	auto search = finishedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != finishedHandler.end()) {
@@ -310,6 +314,10 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 	auto itre = repairedUnits.find(unit->GetId());
 	if (itre != repairedUnits.end()) {
 		AbortTask(itre->second);
+	}
+	auto itcl = reclaimedUnits.find(unit);
+	if (itcl != reclaimedUnits.end()) {
+		AbortTask(itcl->second);
 	}
 
 	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
@@ -413,6 +421,22 @@ IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
 	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::RECLAIM)].insert(task);
 	buildTasksCount++;
 	buildUpdates.push_back(task);
+	return task;
+}
+
+IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
+											  CCircuitUnit* target,
+											  int timeout)
+{
+	auto it = reclaimedUnits.find(target);
+	if (it != reclaimedUnits.end()) {
+		return it->second;
+	}
+	CBReclaimTask* task = new CBReclaimTask(this, priority, target, timeout);
+	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::RECLAIM)].insert(task);
+	buildTasksCount++;
+	buildUpdates.push_back(task);
+	reclaimedUnits[target] = task;
 	return task;
 }
 
@@ -531,10 +555,16 @@ void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
 		std::set<IBuilderTask*>& tasks = buildTasks[static_cast<IBuilderTask::BT>(task->GetBuildType())];
 		auto it = tasks.find(task);
 		if (it != tasks.end()) {
-			if (task->GetBuildType() == IBuilderTask::BuildType::REPAIR) {
-				repairedUnits.erase(static_cast<CBRepairTask*>(task)->GetTargetId());
-			} else {
-				unfinishedUnits.erase(task->GetTarget());
+			switch (task->GetBuildType()) {
+				case IBuilderTask::BuildType::REPAIR: {
+					repairedUnits.erase(static_cast<CBRepairTask*>(task)->GetTargetId());
+				} break;
+				case IBuilderTask::BuildType::RECLAIM: {
+					reclaimedUnits.erase(task->GetTarget());
+				} break;
+				default: {
+					unfinishedUnits.erase(task->GetTarget());
+				} break;
 			}
 			tasks.erase(it);
 			buildTasksCount--;
@@ -604,13 +634,14 @@ void CBuilderManager::ReadConfig()
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
 
-	terraDef = circuit->GetCircuitDef(root["economy"].get("terra_def", "").asCString());
+	terraDef = circuit->GetCircuitDef(root["economy"].get("terra", "").asCString());
 	if (terraDef == nullptr) {
 		terraDef = circuit->GetEconomyManager()->GetDefaultDef();
 	}
-	const Json::Value& superCond = root["economy"]["condition"];
-	super.minIncome = superCond.get((unsigned)0, 50.f).asFloat();
-	super.maxTime = superCond.get((unsigned)1, 300.f).asFloat();
+
+	const Json::Value& cond = root["porcupine"]["condition"];
+	super.minIncome = cond.get((unsigned)0, 50.f).asFloat();
+	super.maxTime = cond.get((unsigned)1, 300.f).asFloat();
 
 	IBuilderTask::BuildName& buildNames = IBuilderTask::GetBuildNames();
 	const Json::Value& build = root["build_chain"];
@@ -1034,7 +1065,11 @@ void CBuilderManager::Watchdog()
 	// TODO: Include special units
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
-		if (!unit->GetCircuitDef()->IsMobile() && (unfinishedUnits.find(unit) == unfinishedUnits.end())) {
+		if (!unit->GetCircuitDef()->IsMobile() &&
+			(unfinishedUnits.find(unit) == unfinishedUnits.end()) &&
+			(repairedUnits.find(unit->GetId()) == repairedUnits.end()) &&
+			(reclaimedUnits.find(unit) == reclaimedUnits.end()))
+		{
 			Unit* u = unit->GetUnit();
 			if (u->IsBeingBuilt()) {
 				float maxHealth = u->GetMaxHealth();
@@ -1042,6 +1077,8 @@ void CBuilderManager::Watchdog()
 				CCircuitDef* cdef = unit->GetCircuitDef();
 				if ((cdef->GetCost() * buildPercent < maxCost) || (*cdef == *terraDef)) {
 					EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+				} else {
+					EnqueueReclaim(IBuilderTask::Priority::NORMAL, unit);
 				}
 //			} else if (u->GetHealth() < u->GetMaxHealth()) {
 //				EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);

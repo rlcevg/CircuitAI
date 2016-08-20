@@ -780,6 +780,11 @@ void CFactoryManager::ReadConfig()
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
 
+	airpadDef = circuit->GetCircuitDef(root["economy"].get("airpad", "").asCString());
+	if (airpadDef == nullptr) {
+		airpadDef = circuit->GetEconomyManager()->GetDefaultDef();
+	}
+
 	/*
 	 * Roles, attributes and retreat
 	 */

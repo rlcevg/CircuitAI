@@ -27,7 +27,7 @@ using namespace springai;
 CBMexTask::CBMexTask(ITaskManager* mgr, Priority priority,
 					 CCircuitDef* buildDef, const AIFloat3& position,
 					 float cost, int timeout)
-		: IBuilderTask(mgr, priority, buildDef, position, BuildType::MEX, cost, false, timeout)
+		: IBuilderTask(mgr, priority, buildDef, position, BuildType::MEX, cost, 0.f, timeout)
 		, isFirstTry(true)
 {
 }

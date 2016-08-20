@@ -260,8 +260,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 	fightTasks.resize(static_cast<IFighterTask::FT>(IFighterTask::FightType::_SIZE_));
 
-	AIFloat3 medPos(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
-	enemyGroups.push_back(SEnemyGroup(medPos));
+	enemyPos = AIFloat3(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
+	enemyGroups.push_back(SEnemyGroup(enemyPos));
 }
 
 CMilitaryManager::~CMilitaryManager()
@@ -1125,6 +1125,7 @@ void CMilitaryManager::KMeansIteration()
 	}
 
 	// do a check and see if there are any empty means and set the height
+	enemyPos = ZeroVector;
 	for (int i = 0; i < newK; i++) {
 		// if a newmean is unchanged, set it to the new means pos instead of (0, 0, 0)
 		if (newMeans[i].pos == ZeroVector) {
@@ -1133,7 +1134,9 @@ void CMilitaryManager::KMeansIteration()
 			// get the proper elevation for the y-coord
 //			newMeans[i].pos.y = circuit->GetMap()->GetElevationAt(newMeans[i].pos.x, newMeans[i].pos.z) + K_MEANS_ELEVATION;
 		}
+		enemyPos += newMeans[i].pos;
 	}
+	enemyPos /= newK;
 
 //	return newMeans;
 }
