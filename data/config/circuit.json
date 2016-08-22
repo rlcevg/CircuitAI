@@ -335,7 +335,6 @@
 	"select": {
 		"air_map": 80,
 		"offset": [-20, 20],
-
 		// Speed factor: 8x8 ~ 0%, 24x24 ~ 40%
 		"speed": [0, 40],
 		"map": [8, 24]
@@ -863,6 +862,7 @@
 	"armanni": {"role": ["static", "heavy"]},
 	"armamd": {"role": ["static", "heavy"]},
 	"cafus": {"role": ["static", "heavy"]},
+	"screamer": {"role": ["static", "heavy"]},
 
 	// support factories won't be built in front
 	"factoryplane": {"role": ["static"], "attribute": ["support"]},
@@ -997,8 +997,13 @@
 	// Actual number of defences per cluster bounded by income
 	"land":  [0, 1, 6, 1, 1, 3, 5],
 	"water": [4, 1, 6, 4, 4, 3, 5],
-	"prevent": 1,  // number of preventive defnces
-	"importance": 2.0,  // income bound factor
+	"prevent": 1,  // number of preventive defences
+	"amount": {  // income bound factor
+		"offset": [-0.2, 0.2],
+		// Amount factor: 8x8 ~ 2.0, 24x24 ~ 1.0
+		"factor": [2.0, 1.0],
+		"map": [8, 24]
+	},
 
 	// Base defence and time to build it, in seconds
 	"base": [[1, 60], [0, 120]],

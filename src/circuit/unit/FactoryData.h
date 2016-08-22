@@ -37,6 +37,7 @@ private:
 	float airMapPerc;
 	float minOffset;
 	float lenOffset;
+	float minSpPerc;
 	float speedFactor;
 	std::unordered_map<CCircuitDef::Id, SFactory> allFactories;
 };

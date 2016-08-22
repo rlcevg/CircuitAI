@@ -159,7 +159,7 @@ private:
 	std::vector<CCircuitDef*> waterDefenders;
 	std::vector<std::pair<CCircuitDef*, int>> baseDefence;
 	unsigned int preventCount;
-	float importance;
+	float amountFactor;
 	CCircuitDef* radarDef;
 	CCircuitDef* sonarDef;
 	CCircuitDef* bigGunDef;

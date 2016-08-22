@@ -1042,14 +1042,15 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	float radius = unit->GetCircuitDef()->GetBuildDistance();
 
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	CCircuitDef* terraDef = builderManager->GetTerraDef();
 	float maxCost = MAX_BUILD_SEC * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor();
-	CCircuitDef* terraDef = circuit->GetBuilderManager()->GetTerraDef();
 	circuit->UpdateFriendlyUnits();
 	// NOTE: OOAICallback::GetFriendlyUnitsIn depends on unit's radius
 	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius * 0.9f));
 	for (Unit* u : units) {
 		CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
-		if (candUnit == nullptr) {
+		if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {
 			continue;
 		}
 		if (u->IsBeingBuilt()) {

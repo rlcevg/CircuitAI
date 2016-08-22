@@ -7,6 +7,7 @@
 
 #include "task/static/ReclaimTask.h"
 #include "task/TaskManager.h"
+#include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
 #include "module/FactoryManager.h"
 #include "CircuitAI.h"
@@ -37,12 +38,13 @@ void CSReclaimTask::Update()
 		manager->AbortTask(this);
 	} else if ((++updCount % 4 == 0) && !units.empty()) {
 		// Check for damaged units
+		CBuilderManager* builderManager = circuit->GetBuilderManager();
 		CCircuitUnit* repairTarget = nullptr;
 		circuit->UpdateFriendlyUnits();
 		auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f));
 		for (Unit* u : us) {
 			CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
-			if (candUnit == nullptr) {
+			if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {
 				continue;
 			}
 			if (!u->IsBeingBuilt() && (u->GetHealth() < u->GetMaxHealth())) {

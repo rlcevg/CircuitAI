@@ -122,6 +122,8 @@ public:
 
 	SBuildChain* GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef);
 
+	bool IsReclaimed(CCircuitUnit* unit) const { return reclaimedUnits.find(unit) != reclaimedUnits.end(); }
+
 private:
 	void ReadConfig();
 	void Init();

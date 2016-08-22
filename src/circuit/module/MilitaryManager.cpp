@@ -473,7 +473,7 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	}
 	CEconomyManager* em = circuit->GetEconomyManager();
 	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
-	float maxCost = MIN_BUILD_SEC * importance * metalIncome;
+	float maxCost = MIN_BUILD_SEC * amountFactor * metalIncome;
 	CDefenceMatrix::SDefPoint* closestPoint = nullptr;
 	float minDist = std::numeric_limits<float>::max();
 	std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
@@ -880,7 +880,19 @@ void CMilitaryManager::ReadConfig()
 	}
 
 	preventCount = porc.get("prevent", 1).asUInt();
-	importance = porc.get("importance", 1.0f).asFloat();
+	const Json::Value& amount = porc["amount"];
+	const Json::Value& amOff = amount["offset"];
+	const Json::Value& amFac = amount["factor"];
+	const Json::Value& amMap = amount["map"];
+	const float minOffset = amOff.get((unsigned)0, -0.2f).asFloat();
+	const float maxOffset = amOff.get((unsigned)1, 0.2f).asFloat();
+	const float offset = (float)rand() / RAND_MAX * (maxOffset - minOffset) + minOffset;
+	const float minFactor = amFac.get((unsigned)0, 2.0f).asFloat();
+	const float maxFactor = amFac.get((unsigned)1, 1.0f).asFloat();
+	const float minMap = amMap.get((unsigned)0, 8.0f).asFloat();
+	const float maxMap = amMap.get((unsigned)1, 24.0f).asFloat();
+	const float mapSize = (circuit->GetMap()->GetWidth() / 64) * (circuit->GetMap()->GetHeight() / 64);
+	amountFactor = (maxFactor - minFactor) / (SQUARE(maxMap) - SQUARE(minMap)) * mapSize + minFactor + offset;
 
 	const Json::Value& base = porc["base"];
 	baseDefence.reserve(base.size());

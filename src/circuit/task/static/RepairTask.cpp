@@ -7,6 +7,7 @@
 
 #include "task/static/RepairTask.h"
 #include "task/TaskManager.h"
+#include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
 #include "module/FactoryManager.h"
 #include "CircuitAI.h"
@@ -45,12 +46,13 @@ void CSRepairTask::Update()
 		if (repTarget->GetUnit()->IsBeingBuilt()) {
 			if (economyManager->IsMetalEmpty()) {
 				// Check for damaged units
+				CBuilderManager* builderManager = circuit->GetBuilderManager();
 				circuit->UpdateFriendlyUnits();
 				float radius = (*units.begin())->GetCircuitDef()->GetBuildDistance();
 				auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f));
 				for (Unit* u : us) {
 					CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
-					if (candUnit == nullptr) {
+					if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {
 						continue;
 					}
 					if (!u->IsBeingBuilt() && (u->GetHealth() < u->GetMaxHealth())) {
@@ -70,13 +72,14 @@ void CSRepairTask::Update()
 			}
 		} else if (economyManager->IsMetalFull()) {
 			// Check for units under construction
+			CBuilderManager* builderManager = circuit->GetBuilderManager();
 			float maxCost = MAX_BUILD_SEC * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor();
 			circuit->UpdateFriendlyUnits();
 			float radius = (*units.begin())->GetCircuitDef()->GetBuildDistance();
 			auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f));
 			for (Unit* u : us) {
 				CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
-				if (candUnit == nullptr) {
+				if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {
 					continue;
 				}
 				if (u->IsBeingBuilt() && (candUnit->GetCircuitDef()->GetCost() < maxCost)) {

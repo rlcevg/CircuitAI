@@ -81,10 +81,10 @@ CFactoryData::CFactoryData(CCircuitAI *circuit)
 	minOffset = offset.get((unsigned)0, -20.0f).asFloat();
 	const float maxOffset = offset.get((unsigned)1, 20.0f).asFloat();
 	lenOffset = maxOffset - minOffset;
-	const float minSpPerc = speed.get((unsigned)0, 0.0f).asFloat();
+	minSpPerc = speed.get((unsigned)0, 0.0f).asFloat();
 	const float maxSpPerc = speed.get((unsigned)1, 40.0f).asFloat();
 	const float minMap = map.get((unsigned)0, 8.0f).asFloat();
-	const float maxMap = map.get((unsigned)1, 32.0f).asFloat();
+	const float maxMap = map.get((unsigned)1, 24.0f).asFloat();
 	const float mapSize = (circuit->GetMap()->GetWidth() / 64) * (circuit->GetMap()->GetHeight() / 64);
 	speedFactor = (maxSpPerc - minSpPerc) / (SQUARE(maxMap) * maxSpeed - SQUARE(minMap) * minSpeed) * mapSize;
 }
@@ -135,7 +135,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 		if ((mtId < 0) || mobileType[mtId].typeUsable) {
 			availFacs.push_back(sfac);
 			const float offset = (float)rand() / RAND_MAX * lenOffset + minOffset;
-			const float speedPercent = speedFactor * sfac.avgSpeed;
+			const float speedPercent = speedFactor * sfac.avgSpeed + minSpPerc;
 			const float mapPercent = (mtId < 0) ? airMapPerc : mobileType[mtId].areaLargest->percentOfMap;
 			percents[sfac.id] = offset + importance * (mapPercent + speedPercent);
 		}

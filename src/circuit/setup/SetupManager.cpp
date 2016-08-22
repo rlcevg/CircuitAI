@@ -21,6 +21,8 @@
 #include "File.h"
 #include "Log.h"
 #include "Lua.h"
+#include "SkirmishAI.h"
+#include "Info.h"
 
 #include <regex>
 
@@ -97,7 +99,11 @@ bool CSetupManager::OpenConfig(const std::string& cfgName)
 		 * Try game specific config
 		 */
 		Map* map = circuit->GetMap();
-		std::string filename = "LuaRules/Configs/CircuitAI/";
+		SkirmishAI* skirmishAI = circuit->GetSkirmishAI();
+		Info* info = skirmishAI->GetInfo();
+		const char* version = info->GetValueByKey("version");
+		delete info;
+		std::string filename = std::string("LuaRules/Configs/CircuitAI/") + version + "/";
 		configName = utils::MakeFileSystemCompatible(map->GetName()) + ".json";
 		filename += configName;
 
@@ -115,7 +121,7 @@ bool CSetupManager::OpenConfig(const std::string& cfgName)
 		 * Try default game specific config
 		 */
 		cfgDefault = "circuit";
-		filename = "LuaRules/Configs/CircuitAI/Default/";
+		filename = std::string("LuaRules/Configs/CircuitAI/") + version + "/Default/";
 		configName = cfgDefault + ".json";
 		filename += configName;
 
