@@ -31,4 +31,3 @@ Dead AI upon match start: ensure that `libSkirmishAI.so` is compatible with `AI/
 For those who lost all hope, behold: [Vagrant](https://docs.vagrantup.com/v2/).
 Just navigate to Vagrantfile and do "vagrant up". It will take some time to warm up, install all dependencies and compile Circuit for the first time.
 Subsequent builds should be done manually, see Vagrantfile for reference.
-([Regarding long startup](http://stackoverflow.com/questions/29012531/package-a-new-base-box))

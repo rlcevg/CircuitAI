@@ -467,6 +467,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	}
 
 	setupManager->CloseConfig();
+	setupManager->Welcome();
 
 	isInitialized = true;
 	return 0;  // signaling: OK

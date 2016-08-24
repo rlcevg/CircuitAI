@@ -893,6 +893,7 @@ void CMilitaryManager::ReadConfig()
 	const float maxMap = amMap.get((unsigned)1, 24.0f).asFloat();
 	const float mapSize = (circuit->GetMap()->GetWidth() / 64) * (circuit->GetMap()->GetHeight() / 64);
 	amountFactor = (maxFactor - minFactor) / (SQUARE(maxMap) - SQUARE(minMap)) * mapSize + minFactor + offset;
+//	amountFactor = std::max(amountFactor, 0.f);
 
 	const Json::Value& base = porc["base"];
 	baseDefence.reserve(base.size());

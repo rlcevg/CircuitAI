@@ -17,7 +17,7 @@ Vagrant.configure(2) do |config|
   config.vm.provision "shell", name: "install", inline: <<-SHELL
     add-apt-repository -y ppa:ubuntu-toolchain-r/test
     apt-get update
-    
+
     apt-get install -y build-essential cmake git
     apt-get install -y libglew-dev libsdl2-dev libdevil-dev libopenal-dev \
       libogg-dev libvorbis-dev libfreetype6-dev p7zip-full libxcursor-dev \
@@ -25,7 +25,7 @@ Vagrant.configure(2) do |config|
       libboost-program-options-dev libboost-signals-dev \
       libboost-chrono-dev libboost-filesystem-dev libunwind8-dev \
       libcurl4-openssl-dev
-    
+
     apt-get install -y gcc-4.9 g++-4.9
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.9
   SHELL
@@ -33,14 +33,15 @@ Vagrant.configure(2) do |config|
   $script = <<-SCRIPT
     if [ ! -d ~/spring ]; then
       cd ~ && git clone https://github.com/spring/spring.git spring
-      
+
       mkdir spring/AI/Skirmish/CircuitAI
       cp -r /vagrant/src spring/AI/Skirmish/CircuitAI/src
       cp /vagrant/CMakeLists.txt spring/AI/Skirmish/CircuitAI/
       cp /vagrant/VERSION spring/AI/Skirmish/CircuitAI/
-      
-      cd spring && git checkout tags/102.0
-      cmake . && make CircuitAI -j2 > ~/CircuitAI.log 2>&1
+
+      cd spring && git checkout tags/103.0
+      git submodule init && git submodule update
+      cmake -DAI_TYPES=NATIVE . && make CircuitAI -j2 > ~/CircuitAI.log 2>&1
       cp AI/Skirmish/CircuitAI/libSkirmishAI.so /vagrant/
     fi
   SCRIPT

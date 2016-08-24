@@ -66,6 +66,8 @@ public:
 	int GetMorphFrame() const { return morphFrame; }
 	const std::vector<CCircuitDef::RoleType>& GetOpener() const { return opener; }
 
+	void Welcome() const;
+
 private:
 	void FindCommander();
 	bool LocatePath(std::string& filename);
