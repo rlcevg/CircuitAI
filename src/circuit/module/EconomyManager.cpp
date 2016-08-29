@@ -695,9 +695,19 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	if (airpadDef->IsAvailable() &&
 		(militaryManager->GetRoleUnits(CCircuitDef::RoleType::BOMBER).size() > airpadFactor))
 	{
+		CCircuitDef* bdef;
+		AIFloat3 buildPos;
+		if (unit == nullptr) {
+			bdef = airpadDef;
+			buildPos = factoryManager->GetClosestHaven(circuit->GetSetupManager()->GetBasePos());
+		} else {
+			bdef = unit->GetCircuitDef();
+			buildPos = factoryManager->GetClosestHaven(unit);
+		}
+		if (!utils::is_valid(buildPos)) {
+			buildPos = circuit->GetSetupManager()->GetBasePos();
+		}
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		CCircuitDef* bdef = (unit == nullptr) ? airpadDef : unit->GetCircuitDef();
-		AIFloat3 buildPos = circuit->GetSetupManager()->GetBasePos();
 		buildPos = terrainManager->GetBuildPosition(bdef, buildPos);
 
 		if (terrainManager->CanBeBuiltAt(airpadDef, buildPos) &&

@@ -615,6 +615,23 @@ AIFloat3 CFactoryManager::GetClosestHaven(CCircuitUnit* unit) const
 	return (havIt != havens.end()) ? *havIt : AIFloat3(-RgtVector);
 }
 
+AIFloat3 CFactoryManager::GetClosestHaven(const AIFloat3& position) const
+{
+	if (havens.empty()) {
+		return -RgtVector;
+	}
+	float metric = std::numeric_limits<float>::max();
+	auto it = havens.begin(), havIt = havens.end();
+	for (; it != havens.end(); ++it) {
+		float qdist = it->SqDistance2D(position);
+		if (qdist < metric) {
+			havIt = it;
+			metric = qdist;
+		}
+	}
+	return (havIt != havens.end()) ? *havIt : AIFloat3(-RgtVector);
+}
+
 CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 {
 	if (!CanEnqueueTask()) {
@@ -850,6 +867,11 @@ void CFactoryManager::ReadConfig()
 			}
 		}
 
+		const Json::Value& reload = behaviour["reload"];
+		if (!reload.isNull()) {
+			cdef->SetReloadTime(reload.asFloat() * FRAMES_PER_SEC);
+		}
+
 		const Json::Value& limit = behaviour["limit"];
 		if (!limit.isNull()) {
 			cdef->SetMaxThisUnit(std::min(limit.asInt(), cdef->GetMaxThisUnit()));
@@ -862,7 +884,7 @@ void CFactoryManager::ReadConfig()
 	 * Factories
 	 */
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	const Json::Value& factories = root["factory"]["unit"];
+	const Json::Value& factories = root["factory"];
 	for (const std::string& fac : factories.getMemberNames()) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(fac.c_str());
 		if (cdef == nullptr) {

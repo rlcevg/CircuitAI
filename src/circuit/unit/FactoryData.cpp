@@ -24,8 +24,7 @@ CFactoryData::CFactoryData(CCircuitAI *circuit)
 		: isFirstChoice(true)
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const Json::Value& factory = root["factory"];
-	const Json::Value& factories = factory["unit"];
+	const Json::Value& factories = root["factory"];
 
 	float minSpeed = std::numeric_limits<float>::max();
 	float maxSpeed = 0.f;
@@ -73,7 +72,7 @@ CFactoryData::CFactoryData(CCircuitAI *circuit)
 		allFactories[sfac.id] = sfac;
 	}
 
-	const Json::Value& select = factory["select"];
+	const Json::Value& select = root["select"];
 	const Json::Value& offset = select["offset"];
 	const Json::Value& speed = select["speed"];
 	const Json::Value& map = select["map"];

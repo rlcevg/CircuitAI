@@ -263,9 +263,9 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 			}
 			continue;
 		}
-		if (sqDist < SQUARE(2000.f)) {  // maxSqDist
+//		if (sqDist < SQUARE(2000.f)) {  // maxSqDist
 			enemyPositions.push_back(enemy->GetPos());
-		}
+//		}
 	}
 	if (bestTarget == nullptr) {
 		bestTarget = (mediumTarget != nullptr) ? mediumTarget : worstTarget;

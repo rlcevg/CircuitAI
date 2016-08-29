@@ -62,6 +62,7 @@ public:
 	CCircuitDef* GetAirpadDef() const { return airpadDef; }
 	CCircuitDef* GetAssistDef() const { return assistDef; }
 	springai::AIFloat3 GetClosestHaven(CCircuitUnit* unit) const;
+	springai::AIFloat3 GetClosestHaven(const springai::AIFloat3& position) const;
 
 	CRecruitTask* UpdateBuildPower(CCircuitUnit* unit);
 	CRecruitTask* UpdateFirePower(CCircuitUnit* unit);

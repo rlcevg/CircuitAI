@@ -103,18 +103,19 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 		AddPower(unit);
 
-		if (unit->GetCircuitDef()->IsAbleToFly()) {
-			if (unit->GetCircuitDef()->IsAttrNoStrafe()) {
-				TRY_UNIT(this->circuit, unit,
+		TRY_UNIT(this->circuit, unit,
+			if (unit->GetCircuitDef()->IsAbleToFly()) {
+				if (unit->GetCircuitDef()->IsAttrNoStrafe()) {
 					unit->GetUnit()->ExecuteCustomCommand(CMD_AIR_STRAFE, {0.0f});
-				)
-			}
-			if (unit->GetCircuitDef()->IsRoleMine()) {
-				TRY_UNIT(this->circuit, unit,
+				}
+				if (unit->GetCircuitDef()->IsRoleMine()) {
 					unit->GetUnit()->SetIdleMode(1);
-				)
+				}
 			}
-		}
+			if (unit->GetCircuitDef()->IsRoleArty()) {
+				unit->GetUnit()->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {0.0f});
+			}
+		)
 	};
 	auto attackerIdleHandler = [this](CCircuitUnit* unit) {
 		// NOTE: Avoid instant task reassignment, though it may be not relevant for attackers
@@ -159,7 +160,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		this->circuit->AddActionUnit(unit);
 
 		TRY_UNIT(this->circuit, unit,
-			unit->GetUnit()->SetFireState(1);
+			unit->GetUnit()->SetFireState(0);
 			unit->GetUnit()->SetTrajectory(1);
 			if (unit->GetCircuitDef()->IsAttrStock()) {
 				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
@@ -733,7 +734,7 @@ float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
 	for (const SRoleInfo::SVsInfo& vs : info.vs) {
 		const float enemyMetal = GetEnemyCost(vs.role);
 		const float nextMetal = info.cost + cdef->GetCost();
-		const float prob = enemyMetal / info.cost * vs.importance;
+		const float prob = enemyMetal / (info.cost + 1.f) * vs.importance;
 		if ((prob > maxProb) &&
 			(enemyMetal * vs.ratio >= nextMetal * info.factor) &&
 			(nextMetal <= (armyCost + cdef->GetCost()) * info.maxPerc))
@@ -909,11 +910,9 @@ void CMilitaryManager::ReadConfig()
 	const Json::Value& super = porc["superweapon"];
 	const Json::Value& items = super["unit"];
 	const Json::Value& probs = super["weight"];
-	const Json::Value& limit = super["limit"];
 	struct SSuperInfo {
 		CCircuitDef* cdef;
 		float prob;
-		int limit;
 	};
 	std::vector<SSuperInfo> supers;
 	supers.reserve(items.size());
@@ -926,7 +925,6 @@ void CMilitaryManager::ReadConfig()
 			continue;
 		}
 		si.cdef->AddAttribute(CCircuitDef::AttrType::SUPER);
-		si.limit = limit.get(i, 1).asInt();
 		si.prob = probs.get(i, 1.f).asFloat();
 		magnitude += si.prob;
 		supers.push_back(si);
@@ -943,7 +941,6 @@ void CMilitaryManager::ReadConfig()
 			}
 		}
 		bigGunDef = supers[choice].cdef;
-		bigGunDef->SetMaxThisUnit(std::min(supers[choice].limit, bigGunDef->GetMaxThisUnit()));
 	}
 
 	defaultPorc = circuit->GetCircuitDef(porc.get("default", "").asCString());

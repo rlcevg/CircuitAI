@@ -164,6 +164,8 @@ public:
 	int GetTargetCategory() const { return targetCategory; }
 	int GetNoChaseCategory() const { return noChaseCategory; }
 
+	void SetReloadTime(int time) { reloadTime = time; }
+
 	STerrainMapImmobileType::Id GetImmobileId() const { return immobileTypeId; }
 	STerrainMapMobileType::Id GetMobileId() const { return mobileTypeId; }
 

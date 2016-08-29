@@ -104,21 +104,15 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		travelAction->SetActive(false);
 		return;
 	} else if (!pPath->empty()) {
-		if (pPath->size() > 2) {
-			travelAction->SetPath(pPath);
-			travelAction->SetActive(true);
-//		} else {
-//			TRY_UNIT(circuit, unit,
-//				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-//			)
-		}
+		travelAction->SetPath(pPath);
+		travelAction->SetActive(true);
 		return;
 	}
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& threatPos = travelAction->IsActive() ? position : pos;
-	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < threatMap->GetUnitThreat(unit));
+	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < THREAT_MIN);
 	if (!proceed) {
 		position = circuit->GetMilitaryManager()->GetScoutPosition(unit);
 	}
@@ -175,8 +169,8 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
-	const float range = std::max(cdef->GetMaxRange(), (float)threatMap->GetSquareSize() * 2);
-	const float minSqDist = SQUARE(range);
+	float range = cdef->GetMaxRange();
+	float minSqDist = SQUARE(range);
 
 	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(unit);
@@ -185,14 +179,14 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	if (isPosSafe) {
-		// Select target or position to attack
+		// Трубка 15, прицел 120, бац, бац …и мимо!
 		float maxThreat = .0f;
 		CEnemyUnit* bestTarget = nullptr;
 		CEnemyUnit* mediumTarget = nullptr;
 		CEnemyUnit* worstTarget = nullptr;
 		for (auto& kv : enemies) {
 			CEnemyUnit* enemy = kv.second;
-			if (enemy->IsHidden() ||
+			if (!enemy->IsInRadarOrLOS() ||
 				(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
 			{
 				continue;
@@ -208,10 +202,15 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 			}
 
 			const float sqDist = pos.SqDistance2D(enemy->GetPos());
-			if (enemy->IsInRadarOrLOS() && (sqDist < minSqDist)) {
-				if (edef->GetPower() > maxThreat) {
+			if (sqDist < minSqDist) {
+				if (edef->IsRoleBuilder()) {
 					bestTarget = enemy;
-					maxThreat = edef->GetPower();
+					minSqDist = sqDist;
+					maxThreat = std::numeric_limits<float>::max();
+				} else if (edef->GetPower() > maxThreat) {
+					bestTarget = enemy;
+					minSqDist = sqDist;
+					maxThreat = edef->GetPower() * (edef->IsMobile() ? 0.1f : 1.0f);
 				} else if (bestTarget == nullptr) {
 					if ((targetCat & noChaseCat) == 0) {
 						mediumTarget = enemy;
@@ -225,9 +224,9 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 			if (edef->IsMobile() || ((targetCat & noChaseCat) != 0)) {
 				continue;
 			}
-			if (sqDist < SQUARE(2000.f)) {  // maxSqDist
+//			if (sqDist < SQUARE(2000.f)) {  // maxSqDist
 				enemyPositions.push_back(enemy->GetPos());
-			}
+//			}
 		}
 		if (bestTarget == nullptr) {
 			bestTarget = (mediumTarget != nullptr) ? mediumTarget : worstTarget;
@@ -236,40 +235,11 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 			position = bestTarget->GetPos();
 			return bestTarget;
 		}
-
-		path.clear();
-		if (enemyPositions.empty()) {
-			return nullptr;
-		}
-
-		AIFloat3 startPos = pos;
-		pathfinder->FindBestPath(path, startPos, threatMap->GetSquareSize(), enemyPositions);
-		enemyPositions.clear();
-
-		// Check if safe path exists and shrink the path to maxRange position
-		if (path.empty()) {
-			fallback(circuit, pos, path, pathfinder);
-			return nullptr;
-		}
-		const float sqRange = SQUARE(range);
-		auto it = path.rbegin();
-		for (; it != path.rend(); ++it) {
-			if (path.back().SqDistance2D(*it) > sqRange) {
-				break;
-			}
-		}
-		--it;
-		if (threatMap->GetThreatAt(*it) > THREAT_MIN) {
-			fallback(circuit, pos, path, pathfinder);
-		} else {
-			position = path.back();
-			path.resize(std::distance(it, path.rend()));
-		}
 	} else {
 		// Avoid closest units and choose safe position
 		for (auto& kv : enemies) {
 			CEnemyUnit* enemy = kv.second;
-			if (enemy->IsHidden() ||
+			if (!enemy->IsInRadarOrLOS() ||
 				(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
 			{
 				continue;
@@ -289,30 +259,31 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 				continue;
 			}
 
-			if (sqDist < SQUARE(2000.f)) {  // maxSqDist
+//			if (sqDist < SQUARE(2000.f)) {  // maxSqDist
 				enemyPositions.push_back(enemy->GetPos());
-			}
+//			}
 		}
+	}
 
-		path.clear();
-		if (enemyPositions.empty()) {
-			return nullptr;
-		}
+	path.clear();
+	if (enemyPositions.empty()) {
+		return nullptr;
+	}
 
-		AIFloat3 startPos = pos;
-		pathfinder->FindBestPath(path, startPos, range, enemyPositions);
-		enemyPositions.clear();
+	AIFloat3 startPos = pos;
+	range = std::max(range - threatMap->GetSquareSize(), (float)threatMap->GetSquareSize());
+	pathfinder->FindBestPath(path, startPos, range, enemyPositions);
+	enemyPositions.clear();
 
-		// Check if safe path exists and shrink the path to maxRange position
-		if (path.empty()) {
-			fallback(circuit, pos, path, pathfinder);
-			return nullptr;
-		}
-		if (threatMap->GetThreatAt(path.back()) > THREAT_MIN) {
-			fallback(circuit, pos, path, pathfinder);
-		} else {
-			position = path.back();
-		}
+	// Check if safe path exists
+	if (path.empty()) {
+		fallback(circuit, pos, path, pathfinder);
+		return nullptr;
+	}
+	if (threatMap->GetThreatAt(path.back()) > THREAT_MIN) {
+		fallback(circuit, pos, path, pathfinder);
+	} else {
+		position = path.back();
 	}
 
 	return nullptr;

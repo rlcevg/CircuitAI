@@ -20,8 +20,6 @@ namespace circuit {
 using namespace springai;
 
 #define TARGET_DELAY	(FRAMES_PER_SEC * 10)
-// NOTE: Nuke flies to target after attack command for about 30 seconds
-#define STOCK_DELAY		(FRAMES_PER_SEC * 40)
 
 CSuperTask::CSuperTask(ITaskManager* mgr)
 		: IFighterTask(mgr, IFighterTask::FightType::SUPER)
@@ -61,7 +59,7 @@ void CSuperTask::Update()
 	int frame = circuit->GetLastFrame();
 	CCircuitUnit* unit = *units.begin();
 	if (unit->GetCircuitDef()->IsAttrHoldFire()) {
-		if (targetFrame + STOCK_DELAY > frame) {
+		if (targetFrame + (unit->GetCircuitDef()->GetReloadTime() + TARGET_DELAY) > frame) {
 			if (isAttack && (targetFrame + TARGET_DELAY <= frame)) {
 				TRY_UNIT(circuit, unit,
 					unit->GetUnit()->Stop();

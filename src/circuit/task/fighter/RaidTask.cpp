@@ -345,9 +345,9 @@ void CRaidTask::FindTarget()
 			}
 			continue;
 		}
-		if (sqDist < SQUARE(2000.f)) {  // maxSqDist
+//		if (sqDist < SQUARE(2000.f)) {  // maxSqDist
 			enemyPositions.push_back(ePos);
-		}
+//		}
 	}
 	if (bestTarget == nullptr) {
 		bestTarget = worstTarget;
