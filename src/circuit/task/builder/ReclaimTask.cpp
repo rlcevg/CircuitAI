@@ -25,84 +25,20 @@ using namespace springai;
 CBReclaimTask::CBReclaimTask(ITaskManager* mgr, Priority priority,
 							 const AIFloat3& position,
 							 float cost, int timeout, float radius, bool isMetal)
-		: IBuilderTask(mgr, priority, nullptr, position, BuildType::RECLAIM, cost, 0.f, timeout)
-		, radius(radius)
-		, isMetal(isMetal)
-		, targetId(-1)
+		: IReclaimTask(mgr, priority, Type::BUILDER, position, cost, timeout, radius, isMetal)
 {
 }
 
 CBReclaimTask::CBReclaimTask(ITaskManager* mgr, Priority priority,
 							 CCircuitUnit* target,
 							 int timeout)
-		: IBuilderTask(mgr, priority, nullptr, -RgtVector, BuildType::RECLAIM, 1000.0f, 0.f, timeout)
-		, radius(0.f)
-		, isMetal(false)
-		, targetId(target->GetId())
+		: IReclaimTask(mgr, priority, Type::BUILDER, target, timeout)
 {
 }
 
 CBReclaimTask::~CBReclaimTask()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-}
-
-bool CBReclaimTask::CanAssignTo(CCircuitUnit* unit) const
-{
-	return cost > buildPower * MAX_BUILD_SEC;
-}
-
-void CBReclaimTask::AssignTo(CCircuitUnit* unit)
-{
-	IBuilderTask::AssignTo(unit);
-
-	lastTouched = manager->GetCircuit()->GetLastFrame();
-}
-
-void CBReclaimTask::RemoveAssignee(CCircuitUnit* unit)
-{
-	IBuilderTask::RemoveAssignee(unit);
-	if (units.empty()) {
-		manager->AbortTask(this);
-	}
-}
-
-void CBReclaimTask::Execute(CCircuitUnit* unit)
-{
-	CCircuitAI* circuit = manager->GetCircuit();
-	Unit* u = unit->GetUnit();
-//	TRY_UNIT(circuit, unit,
-//		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
-//	)
-
-	int frame = circuit->GetLastFrame();
-	if (targetId < 0) {
-		AIFloat3 pos;
-		float reclRadius;
-		if ((radius == .0f) || !utils::is_valid(position)) {
-			CTerrainManager* terrainManager = circuit->GetTerrainManager();
-			float width = terrainManager->GetTerrainWidth() / 2;
-			float height = terrainManager->GetTerrainHeight() / 2;
-			pos = AIFloat3(width, 0, height);
-			reclRadius = sqrtf(width * width + height * height);
-		} else {
-			pos = position;
-			reclRadius = radius;
-		}
-		TRY_UNIT(circuit, unit,
-			u->ReclaimInArea(pos, reclRadius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
-		)
-		return;
-	}
-
-	target = circuit->GetTeamUnit(targetId);
-	if (target != nullptr) {
-		TRY_UNIT(circuit, unit,
-			u->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
-		)
-	} else {
-		manager->AbortTask(this);
-	}
 }
 
 void CBReclaimTask::Update()
@@ -174,19 +110,6 @@ void CBReclaimTask::Update()
 			utils::free_clear(features);
 		}
 	}
-}
-
-void CBReclaimTask::Finish()
-{
-}
-
-void CBReclaimTask::Cancel()
-{
-}
-
-void CBReclaimTask::OnUnitIdle(CCircuitUnit* unit)
-{
-	manager->AbortTask(this);
 }
 
 } // namespace circuit

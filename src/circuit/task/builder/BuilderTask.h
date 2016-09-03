@@ -51,10 +51,7 @@ private:
 protected:
 	IBuilderTask(ITaskManager* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
-				 BuildType type, float cost, float shake = SQUARE_SIZE * 32, int timeout = ASSIGN_TIMEOUT);
-	IBuilderTask(ITaskManager* mgr, Priority priority,
-				 CCircuitDef* buildDef, const springai::AIFloat3& position,
-				 float cost, int timeout = ASSIGN_TIMEOUT);
+				 Type type, BuildType buildType, float cost, float shake = SQUARE_SIZE * 32, int timeout = ASSIGN_TIMEOUT);
 public:
 	virtual ~IBuilderTask();
 

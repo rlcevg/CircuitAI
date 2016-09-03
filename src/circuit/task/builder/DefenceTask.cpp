@@ -22,7 +22,7 @@ using namespace springai;
 CBDefenceTask::CBDefenceTask(ITaskManager* mgr, Priority priority,
 							 CCircuitDef* buildDef, const AIFloat3& position,
 							 float cost, float shake, int timeout)
-		: IBuilderTask(mgr, priority, buildDef, position, BuildType::DEFENCE, cost, shake, timeout)
+		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::DEFENCE, cost, shake, timeout)
 {
 }
 

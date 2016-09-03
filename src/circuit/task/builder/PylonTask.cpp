@@ -24,7 +24,7 @@ using namespace springai;
 CBPylonTask::CBPylonTask(ITaskManager* mgr, Priority priority,
 						 CCircuitDef* buildDef, const AIFloat3& position,
 						 CEnergyLink* link, float cost, int timeout)
-		: IBuilderTask(mgr, priority, buildDef, position, BuildType::PYLON, cost, 0.f, timeout)
+		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::PYLON, cost, 0.f, timeout)
 		, link(link)
 {
 	if (link != nullptr) {

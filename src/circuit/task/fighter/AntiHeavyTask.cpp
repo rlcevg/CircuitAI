@@ -311,6 +311,7 @@ void CAntiHeavyTask::FindTarget()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
+	const bool notAA = !cdef->HasAntiAir();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const float maxPower = attackPower * 4.0f;
 	const float weaponRange = cdef->GetMaxRange();
@@ -337,6 +338,7 @@ void CAntiHeavyTask::FindTarget()
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if ((edef == nullptr) || !edef->IsRoleHeavy() ||
 			((edef->GetCategory() & canTargetCat) == 0) ||
+			(edef->IsAbleToFly() && notAA) ||
 			(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > weaponRange))
 		{
 			continue;

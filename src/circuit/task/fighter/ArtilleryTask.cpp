@@ -167,6 +167,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
+	const bool notAW = !cdef->HasAntiWater();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	float range = cdef->GetMaxRange();
@@ -187,7 +188,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 		for (auto& kv : enemies) {
 			CEnemyUnit* enemy = kv.second;
 			if (!enemy->IsInRadarOrLOS() ||
-				(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
+				(notAW && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
 			{
 				continue;
 			}
@@ -240,7 +241,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 		for (auto& kv : enemies) {
 			CEnemyUnit* enemy = kv.second;
 			if (!enemy->IsInRadarOrLOS() ||
-				(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
+				(notAW && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
 			{
 				continue;
 			}

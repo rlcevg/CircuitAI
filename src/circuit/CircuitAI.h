@@ -97,7 +97,7 @@ private:
 	int UnitFinished(CCircuitUnit* unit);
 	int UnitIdle(CCircuitUnit* unit);
 	int UnitMoveFailed(CCircuitUnit* unit);
-	int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
+	int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker, int weaponId);
 	int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
 	int UnitGiven(CCircuitUnit::Id unitId, int oldTeamId, int newTeamId);
 	int UnitCaptured(CCircuitUnit::Id unitId, int oldTeamId, int newTeamId);

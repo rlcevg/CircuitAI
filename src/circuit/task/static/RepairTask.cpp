@@ -21,7 +21,7 @@ namespace circuit {
 using namespace springai;
 
 CSRepairTask::CSRepairTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, int timeout)
-		: CBRepairTask(mgr, priority, target, timeout)
+		: IRepairTask(mgr, priority, Type::FACTORY, target, timeout)
 {
 }
 
@@ -102,6 +102,11 @@ void CSRepairTask::Update()
 void CSRepairTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	manager->DoneTask(this);
+}
+
+void CSRepairTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+{
+	// TODO: Terraform attacker into dust
 }
 
 } // namespace circuit

@@ -8,11 +8,11 @@
 #ifndef SRC_CIRCUIT_TASK_STATIC_RECLAIMTASK_H_
 #define SRC_CIRCUIT_TASK_STATIC_RECLAIMTASK_H_
 
-#include "task/builder/ReclaimTask.h"
+#include "task/common/ReclaimTask.h"
 
 namespace circuit {
 
-class CSReclaimTask: public CBReclaimTask {
+class CSReclaimTask: public IReclaimTask {
 public:
 	CSReclaimTask(ITaskManager* mgr, Priority priority,
 				  const springai::AIFloat3& position,
@@ -21,7 +21,7 @@ public:
 
 	virtual void Update();
 
-	virtual void OnUnitIdle(CCircuitUnit* unit);
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
 };
 
 } // namespace circuit

@@ -45,39 +45,20 @@ IBuilderTask::BuildName IBuilderTask::buildNames = {
 };
 
 IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
-		CCircuitDef* buildDef, const AIFloat3& position,
-		BuildType type, float cost, float shake, int timeout)
-				: IUnitTask(mgr, priority, Type::BUILDER, timeout)
-				, position(position)
-				, shake(shake)
-				, buildDef(buildDef)
-				, buildType(type)
-				, buildPower(.0f)
-				, cost(cost)
-				, target(nullptr)
-				, buildPos(-RgtVector)
-				, facing(UNIT_COMMAND_BUILD_NO_FACING)
-				, nextTask(nullptr)
-				, buildFails(0)
-{
-	savedIncome = manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome();
-}
-
-IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
-		CCircuitDef* buildDef, const AIFloat3& position,
-		float cost, int timeout)
-				: IUnitTask(mgr, priority, Type::FACTORY, timeout)
-				, position(position)
-				, shake(.0f)
-				, buildDef(buildDef)
-				, buildType(BuildType::RECRUIT)
-				, buildPower(.0f)
-				, cost(cost)
-				, target(nullptr)
-				, buildPos(-RgtVector)
-				, facing(UNIT_COMMAND_BUILD_NO_FACING)
-				, nextTask(nullptr)
-				, buildFails(0)
+						   CCircuitDef* buildDef, const AIFloat3& position,
+						   Type type, BuildType buildType, float cost, float shake, int timeout)
+		: IUnitTask(mgr, priority, type, timeout)
+		, position(position)
+		, shake(shake)
+		, buildDef(buildDef)
+		, buildType(buildType)
+		, buildPower(.0f)
+		, cost(cost)
+		, target(nullptr)
+		, buildPos(-RgtVector)
+		, facing(UNIT_COMMAND_BUILD_NO_FACING)
+		, nextTask(nullptr)
+		, buildFails(0)
 {
 	savedIncome = manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome();
 }

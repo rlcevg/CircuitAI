@@ -274,6 +274,8 @@ void CRaidTask::FindTarget()
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
+	const bool notAW = !cdef->HasAntiWater();
+	const bool notAA = !cdef->HasAntiAir();
 	const float speed = SQUARE(highestSpeed * 0.9f);
 	const float maxPower = attackPower * 0.75f;
 	const float weaponRange = cdef->GetMaxRange();
@@ -300,7 +302,7 @@ void CRaidTask::FindTarget()
 		const float power = threatMap->GetThreatAt(ePos);
 		if ((maxPower <= power) ||
 			!terrainManager->CanMoveToPos(area, ePos) ||
-			(!cdef->HasAntiWater() && (ePos.y < -SQUARE_SIZE * 5)) ||
+			(notAW && (ePos.y < -SQUARE_SIZE * 5)) ||
 			(enemy->GetUnit()->GetVel().SqLength2D() >= speed))
 		{
 			continue;
@@ -313,6 +315,7 @@ void CRaidTask::FindTarget()
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
 			if (((targetCat & canTargetCat) == 0) ||
+				(edef->IsAbleToFly() && notAA) ||
 				(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > weaponRange))
 			{
 				continue;

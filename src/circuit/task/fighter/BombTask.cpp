@@ -184,6 +184,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	CCircuitAI* circuit = manager->GetCircuit();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
+	const bool notAW = !cdef->HasAntiWater();
 	const float scale = (cdef->GetMinRange() > 400.0f) ? 8.0f : 0.5f;
 	const float maxPower = threatMap->GetUnitThreat(unit) * scale;
 //	const float maxAltitude = cdef->GetAltitude();
@@ -208,7 +209,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 		}
 		float power = threatMap->GetThreatAt(enemy->GetPos()) - enemy->GetThreat();
 		if ((maxPower <= power) ||
-			(!cdef->HasAntiWater() && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
+			(notAW && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
 		{
 			continue;
 		}

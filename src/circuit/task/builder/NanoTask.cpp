@@ -23,7 +23,7 @@ using namespace springai;
 CBNanoTask::CBNanoTask(ITaskManager* mgr, Priority priority,
 					   CCircuitDef* buildDef, const AIFloat3& position,
 					   float cost, float shake, int timeout) :
-		IBuilderTask(mgr, priority, buildDef, position, BuildType::NANO, cost, shake, timeout)
+		IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::NANO, cost, shake, timeout)
 {
 }
 

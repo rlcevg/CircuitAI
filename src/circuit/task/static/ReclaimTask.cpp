@@ -22,7 +22,7 @@ using namespace springai;
 CSReclaimTask::CSReclaimTask(ITaskManager* mgr, Priority priority,
 							 const springai::AIFloat3& position,
 							 float cost, int timeout, float radius)
-		: CBReclaimTask(mgr, priority, position, cost, timeout, radius)
+		: IReclaimTask(mgr, priority, Type::FACTORY, position, cost, timeout, radius)
 {
 }
 
@@ -65,9 +65,9 @@ void CSReclaimTask::Update()
 	}
 }
 
-void CSReclaimTask::OnUnitIdle(CCircuitUnit* unit)
+void CSReclaimTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
-	manager->DoneTask(this);
+	// TODO: Terraform attacker into dust
 }
 
 } // namespace circuit

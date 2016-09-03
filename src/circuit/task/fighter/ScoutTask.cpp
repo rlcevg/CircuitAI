@@ -176,6 +176,8 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	STerrainMapArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
+	const bool notAW = !cdef->HasAntiWater();
+	const bool notAA = !cdef->HasAntiAir();
 	const float speed = SQUARE(cdef->GetSpeed() * 1.1f);
 	const float maxPower = threatMap->GetUnitThreat(unit) * 0.75f;
 	const float weaponRange = cdef->GetMaxRange();
@@ -201,7 +203,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 		const float power = threatMap->GetThreatAt(ePos);
 		if ((maxPower <= power) ||
 			!terrainManager->CanMoveToPos(area, ePos) ||
-			(!cdef->HasAntiWater() && (ePos.y < -SQUARE_SIZE * 5)) ||
+			(notAW && (ePos.y < -SQUARE_SIZE * 5)) ||
 			(enemy->GetUnit()->GetVel().SqLength2D() >= speed))
 		{
 			continue;
@@ -214,6 +216,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
 			if (((targetCat & canTargetCat) == 0) ||
+				(edef->IsAbleToFly() && notAA) ||
 				(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > weaponRange))
 			{
 				continue;

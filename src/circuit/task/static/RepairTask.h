@@ -8,11 +8,11 @@
 #ifndef SRC_CIRCUIT_TASK_STATIC_REPAIRTASK_H_
 #define SRC_CIRCUIT_TASK_STATIC_REPAIRTASK_H_
 
-#include "task/builder/RepairTask.h"
+#include "task/common/RepairTask.h"
 
 namespace circuit {
 
-class CSRepairTask: public CBRepairTask {
+class CSRepairTask: public IRepairTask {
 public:
 	CSRepairTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, int timeout = 0);
 	virtual ~CSRepairTask();
@@ -20,6 +20,7 @@ public:
 	virtual void Update();
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
 };
 
 } // namespace circuit

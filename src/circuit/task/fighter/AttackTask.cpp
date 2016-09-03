@@ -265,6 +265,8 @@ void CAttackTask::FindTarget()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
+	const bool notAW = !cdef->HasAntiWater();
+	const bool notAA = !cdef->HasAntiAir();
 	const float speed = SQUARE(highestSpeed);
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
@@ -288,7 +290,7 @@ void CAttackTask::FindTarget()
 		const float scale = sqBEDist / sqOBDist;
 		if ((maxPower <= threatMap->GetThreatAt(ePos)) * scale ||
 			!terrainManager->CanMoveToPos(area, ePos) ||
-			(!cdef->HasAntiWater() && (ePos.y < -SQUARE_SIZE * 5)) ||
+			(notAW && (ePos.y < -SQUARE_SIZE * 5)) ||
 			(enemy->GetUnit()->GetVel().SqLength2D() > speed))
 		{
 			continue;
@@ -297,6 +299,7 @@ void CAttackTask::FindTarget()
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			if (((edef->GetCategory() & canTargetCat) == 0) || ((edef->GetCategory() & noChaseCat) != 0) ||
+				(edef->IsAbleToFly() && notAA) ||
 				(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > weaponRange) ||
 				enemy->GetUnit()->IsBeingBuilt())
 			{

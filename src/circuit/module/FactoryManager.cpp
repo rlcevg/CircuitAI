@@ -455,19 +455,21 @@ IBuilderTask* CFactoryManager::EnqueueRepair(IBuilderTask::Priority priority,
 
 void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 {
-	switch (static_cast<IBuilderTask*>(task)->GetBuildType()) {
-		case IBuilderTask::BuildType::RECRUIT: {
-			auto it = std::find(factoryTasks.begin(), factoryTasks.end(), task);
-			if (it != factoryTasks.end()) {
-				factoryTasks.erase(it);
-			}
-			unfinishedUnits.erase(static_cast<CRecruitTask*>(task)->GetTarget());
-		} break;
-		case IBuilderTask::BuildType::REPAIR: {
-			repairedUnits.erase(static_cast<CSRepairTask*>(task)->GetTargetId());
-		} break;
-		default: break;  // RECLAIM, WAIT
-	}
+	if (task->GetType() == IUnitTask::Type::FACTORY) {
+		switch (static_cast<IBuilderTask*>(task)->GetBuildType()) {
+			case IBuilderTask::BuildType::RECRUIT: {
+				auto it = std::find(factoryTasks.begin(), factoryTasks.end(), task);
+				if (it != factoryTasks.end()) {
+					factoryTasks.erase(it);
+				}
+				unfinishedUnits.erase(static_cast<CRecruitTask*>(task)->GetTarget());
+			} break;
+			case IBuilderTask::BuildType::REPAIR: {
+				repairedUnits.erase(static_cast<CSRepairTask*>(task)->GetTargetId());
+			} break;
+			default: break;  // RECLAIM
+		}
+	}  // WAIT
 	task->Dead();
 	task->Close(done);
 }

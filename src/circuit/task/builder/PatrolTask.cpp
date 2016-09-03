@@ -20,7 +20,7 @@ using namespace springai;
 CBPatrolTask::CBPatrolTask(ITaskManager* mgr, Priority priority,
 						   const AIFloat3& position,
 						   float cost, int timeout)
-		: IBuilderTask(mgr, priority, nullptr, position, BuildType::PATROL, cost, 0.f, timeout)
+		: IBuilderTask(mgr, priority, nullptr, position, Type::BUILDER, BuildType::PATROL, cost, 0.f, timeout)
 {
 }
 

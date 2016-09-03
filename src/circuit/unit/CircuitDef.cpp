@@ -159,7 +159,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	}
 
 	WeaponDef* sd = def->GetShieldDef();
-	bool isShield = (sd != nullptr);
+	const bool isShield = (sd != nullptr);
 	if (isShield) {
 		Shield* shield = sd->GetShield();
 		maxShield = shield->GetPower();
@@ -211,6 +211,12 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	for (WeaponMount* mount : mounts) {
 		WeaponDef* wd = mount->GetWeaponDef();
 		const std::map<std::string, std::string>& customParams = wd->GetCustomParams();
+
+		if (customParams.find("fake_weapon") != customParams.end()) {
+			delete wd;
+			delete mount;
+			continue;
+		}
 
 		float scale = wd->IsParalyzer() ? 0.5f : 1.0f;
 
