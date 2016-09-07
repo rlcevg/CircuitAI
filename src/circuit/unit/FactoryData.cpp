@@ -95,7 +95,6 @@ CFactoryData::~CFactoryData()
 
 CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 position, bool isStart)
 {
-
 	std::vector<SFactory> availFacs;
 	std::map<CCircuitDef::Id, float> percents;
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();

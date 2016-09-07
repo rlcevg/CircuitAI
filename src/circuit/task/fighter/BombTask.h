@@ -29,9 +29,7 @@ public:
 
 private:
 	void Execute(CCircuitUnit* unit, bool isUpdating);
-	CEnemyUnit* FindTarget(CCircuitUnit* unit, const springai::AIFloat3& pos, F3Vec& path);
-
-	bool isDanger;
+	CEnemyUnit* FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, const springai::AIFloat3& pos, F3Vec& path);
 };
 
 } // namespace circuit

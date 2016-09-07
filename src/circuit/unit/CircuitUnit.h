@@ -81,14 +81,14 @@ public:
 	void Dead() { isDead = true; }
 	bool IsDead() const { return isDead; }
 
-	void SetDamagedFrame(int frame) { damagedFrame = frame; }
-	int GetDamagedFrame() const { return damagedFrame; }
+//	void SetDamagedFrame(int frame) { damagedFrame = frame; }
+//	int GetDamagedFrame() const { return damagedFrame; }
 
 	bool HasDGun();
 	springai::Weapon* GetWeapon() const { return weapon; }
 	springai::Weapon* GetDGun() const { return dgun; }
 	springai::Weapon* GetShield() const { return shield; }
-	void ManualFire(springai::Unit* enemy, int timeOut);
+	void ManualFire(CEnemyUnit* target, int timeOut);
 	bool IsDisarmed(int frame);
 	bool IsWeaponReady(int frame);
 	bool IsDGunReady(int frame);
@@ -128,12 +128,11 @@ private:
 	int posFrame;
 	springai::AIFloat3 position;
 
+//	int damagedFrame;
 	int moveFails;
 	int failFrame;
 	bool isForceExecute;  // TODO: Replace by CExecuteAction?
 	bool isDead;
-
-	int damagedFrame;
 
 	springai::Weapon* weapon;  // main weapon
 	springai::Weapon* dgun;

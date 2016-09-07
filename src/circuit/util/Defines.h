@@ -14,7 +14,7 @@
 #include <vector>
 #include <string.h>
 
-#define SQUARE(x)			((x) * (x))
+template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 #define SQRT_2				1.4142f
 #define FRAMES_PER_SEC		GAME_SPEED
 #define WATCHDOG_COUNT		3

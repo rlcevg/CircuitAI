@@ -47,13 +47,18 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	if (enemies.empty()) {
 		return;
 	}
+
 	int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
 	bool notDGunAA = !unit->GetCircuitDef()->HasDGunAA();
+	CEnemyUnit* bestTarget = nullptr;
+	float maxThreat = 0.f;
+
 	for (Unit* e : enemies) {
 		if (e == nullptr) {
 			continue;
 		}
 		CEnemyUnit* enemy = circuit->GetEnemyUnit(e);
+		delete e;  // replaces utils::free_clear(enemies);
 		if ((enemy == nullptr) || enemy->NotInRadarAndLOS() || (enemy->GetThreat() < THREAT_MIN)) {
 			continue;
 		}
@@ -64,16 +69,25 @@ void CDGunAction::Update(CCircuitAI* circuit)
 
 		AIFloat3 dir = enemy->GetUnit()->GetPos() - pos;
 		float rayRange = dir.LengthNormalize();
-		// NOTE: C API also returns rayLen
+		// NOTE: TraceRay check is mostly to ensure shot won't go into terrain.
+		//       Doesn't properly work with standoff weapons.
+		//       C API also returns rayLen.
 		CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, unit->GetUnit(), 0);
+		if (hitUID != enemy->GetId()) {
+			continue;
+		}
 
-		if (hitUID == enemy->GetId()) {
-			unit->ManualFire(e, frame + FRAMES_PER_SEC * 5);
-			isBlocking = true;
-			break;
+		const float defPower = edef->GetPower();
+		if (maxThreat < defPower) {
+			maxThreat = defPower;
+			bestTarget = enemy;
 		}
 	}
-	utils::free_clear(enemies);
+
+	if (bestTarget != nullptr) {
+		unit->ManualFire(bestTarget, frame + FRAMES_PER_SEC * 5);
+		isBlocking = true;
+	}
 }
 
 } // namespace circuit

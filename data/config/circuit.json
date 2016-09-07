@@ -868,7 +868,7 @@
 	"zenith": {
 		"role": ["static", "heavy"],
 		"attribute": ["hold_fire"],  // burst attacks
-		"reload": 105.0,  // 105 / 0.7 = 150 meteorsControlled
+		"reload": 105.0,  // 105sec / 0.7sec/met = 150 meteorsControlled
 		"limit": 1
 	},
 	"armbrtha": {

@@ -179,7 +179,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			struct SUnitDamagedEvent* evt = (struct SUnitDamagedEvent*)data;
 			CEnemyUnit* attacker = GetEnemyUnit(evt->attacker);
 			CCircuitUnit* unit = GetTeamUnit(evt->unit);
-			ret = (unit != nullptr) ? this->UnitDamaged(unit, attacker, evt->weaponDefId) : ERROR_UNIT_DAMAGED;
+			ret = (unit != nullptr) ? this->UnitDamaged(unit, attacker/*, evt->weaponDefId*/) : ERROR_UNIT_DAMAGED;
 			break;
 		}
 		case EVENT_UNIT_DESTROYED: {
@@ -688,12 +688,13 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker, int weaponId)
+int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker/*, int weaponId*/)
 {
-	if (lastFrame <= unit->GetDamagedFrame() + FRAMES_PER_SEC / 5) {
-		return 0;
-	}
-	unit->SetDamagedFrame(lastFrame);
+	// FIXME: Doesn't work well with multi-shots (duck)
+//	if (lastFrame <= unit->GetDamagedFrame() + FRAMES_PER_SEC / 5) {
+//		return 0;
+//	}
+//	unit->SetDamagedFrame(lastFrame);
 
 	for (auto& module : modules) {
 		module->UnitDamaged(unit, attacker);

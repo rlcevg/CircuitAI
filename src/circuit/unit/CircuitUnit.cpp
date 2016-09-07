@@ -28,11 +28,11 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* cdef)
 		, manager(nullptr)
 		, area(nullptr)
 		, posFrame(-1)
+//		, damagedFrame(-1)
 		, moveFails(0)
 		, failFrame(-1)
 		, isForceExecute(false)
 		, isDead(false)
-		, damagedFrame(-1)
 		, isDisarmed(false)
 		, disarmFrame(-1)
 		, isWeaponReady(true)
@@ -100,13 +100,13 @@ bool CCircuitUnit::HasDGun()
 	return true;
 }
 
-void CCircuitUnit::ManualFire(Unit* enemy, int timeOut)
+void CCircuitUnit::ManualFire(CEnemyUnit* target, int timeOut)
 {
 	TRY_UNIT(manager->GetCircuit(), this,
 		if (circuitDef->HasDGun()) {
-			unit->DGun(enemy, UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
+			unit->DGun(target->GetUnit(), UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
 		} else {
-			unit->MoveTo(enemy->GetPos(), UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
+			unit->MoveTo(target->GetPos(), UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
 			unit->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, UNIT_COMMAND_OPTION_SHIFT_KEY, timeOut);
 		}
 	)

@@ -25,7 +25,6 @@ using namespace springai;
 
 CBombTask::CBombTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::BOMB)
-		, isDanger(false)
 {
 }
 
@@ -87,23 +86,21 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
-	if (!unit->IsWeaponReady(frame)) {  // is unit armed?
-		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-		)
+	if (!unit->IsWeaponReady(frame)) {  // reload empty unit
+		if (updCount % 32 == 0) {
+			TRY_UNIT(circuit, unit,
+				unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			)
+		}
 		SetTarget(nullptr);
 		return;
 	}
 
-	if ((target != nullptr) && isDanger) {
-		return;
-	} else {
-		isDanger = false;
-	}
-
 	const AIFloat3& pos = unit->GetPos(frame);
 	std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
-	SetTarget(FindTarget(unit, pos, *pPath));
+	CEnemyUnit* lastTarget = target;
+	SetTarget(nullptr);
+	SetTarget(FindTarget(unit, lastTarget, pos, *pPath));
 
 	if (target != nullptr) {
 		position = target->GetPos();
@@ -111,7 +108,7 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 			if (target->GetUnit()->IsCloaked()) {
 				unit->GetUnit()->ExecuteCustomCommand(CMD_ATTACK_GROUND, {position.x, position.y, position.z},
 													  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-			} else {
+			} else if (lastTarget != target) {
 				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			}
 		)
@@ -166,21 +163,28 @@ void CBombTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	IFighterTask::OnUnitIdle(unit);
 	if (units.find(unit) != units.end()) {
-		RemoveAssignee(unit);
+		Update();
 	}
 }
 
 void CBombTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
+	// Do not retreat if bomber is close to target
 	if (target == nullptr) {
 		IFighterTask::OnUnitDamaged(unit, attacker);
+	} else {
+		const AIFloat3& pos = unit->GetPos(manager->GetCircuit()->GetLastFrame());
+		if (pos.SqDistance2D(target->GetPos()) > SQUARE(unit->GetCircuitDef()->GetLosRadius())) {
+			IFighterTask::OnUnitDamaged(unit, attacker);
+		}
 	}
-
-	isDanger = true;
 }
 
-CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
+CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, const AIFloat3& pos, F3Vec& path)
 {
+	// TODO: 1) Bombers should constantly harass undefended targets and not suicide.
+	//       2) Fat target getting close to base should gain priority and be attacked by group if high AA threat.
+	//       3) Avoid RoleAA targets.
 	CCircuitAI* circuit = manager->GetCircuit();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
@@ -191,9 +195,9 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	const float speed = cdef->GetSpeed() / 1.75f;
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
-	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize(),
-								 cdef->GetLosRadius()) * 2;
-	float sqRange = SQUARE(range);
+//	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize(),
+//								 cdef->GetLosRadius()) * 2;
+	const float sqRange = (lastTarget != nullptr) ? pos.SqDistance2D(lastTarget->GetPos()) + 1.f : SQUARE(2000.0f);
 	float maxThreat = .0f;
 
 	CEnemyUnit* bestTarget = nullptr;
@@ -246,20 +250,18 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 		}
 
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
-		if (sqDist < sqRange) {
-			if (enemy->IsInRadarOrLOS()/* && (altitude < maxAltitude)*/) {
-				if (isBuilder) {
-					bestTarget = enemy;
-					maxThreat = std::numeric_limits<float>::max();
-				} else if (maxThreat <= defPower) {
-					bestTarget = enemy;
-					maxThreat = defPower;
-				} else if (bestTarget == nullptr) {
-					if ((targetCat & noChaseCat) == 0) {
-						mediumTarget = enemy;
-					} else if (mediumTarget == nullptr) {
-						worstTarget = enemy;
-					}
+		if ((sqDist < sqRange) && enemy->IsInRadarOrLOS()/* && (altitude < maxAltitude)*/) {
+			if (isBuilder) {
+				bestTarget = enemy;
+				maxThreat = std::numeric_limits<float>::max();
+			} else if (maxThreat <= defPower) {
+				bestTarget = enemy;
+				maxThreat = defPower;
+			} else if (bestTarget == nullptr) {
+				if ((targetCat & noChaseCat) == 0) {
+					mediumTarget = enemy;
+				} else if (mediumTarget == nullptr) {
+					worstTarget = enemy;
 				}
 			}
 			continue;
@@ -282,8 +284,9 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec
 	}
 
 	AIFloat3 startPos = pos;
+	const float range = std::max<float>(cdef->GetLosRadius(), threatMap->GetSquareSize());
 	circuit->GetPathfinder()->SetMapData(unit, threatMap, circuit->GetLastFrame());
-	circuit->GetPathfinder()->FindBestPath(path, startPos, range * 0.5f, enemyPositions);
+	circuit->GetPathfinder()->FindBestPath(path, startPos, range, enemyPositions);
 	enemyPositions.clear();
 
 	return nullptr;
