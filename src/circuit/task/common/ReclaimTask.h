@@ -39,7 +39,6 @@ public:
 protected:
 	float radius;
 	bool isMetal;
-	CCircuitUnit::Id targetId;
 };
 
 } // namespace circuit

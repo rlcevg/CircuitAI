@@ -197,6 +197,9 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				}
 
 				// mex
+				// BA: float metalConverts = unitDef->GetMakesResource(metalRes);
+				//     float metalExtracts = unitDef->GetExtractsResource(metalRes);
+				//     float netMetal = unitDef->GetResourceMake(metalRes) - unitDef->GetUpkeep(metalRes);
 				if (((it = customParams.find("ismex")) != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 					finishedHandler[kv.first] = mexFinishedHandler;
 					mexDef = cdef;  // cormex
@@ -210,6 +213,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			}
 
 			// energy
+			// BA: float netEnergy = unitDef->GetResourceMake(energyRes) - unitDef->GetUpkeep(energyRes);
 			auto it = customParams.find("income_energy");
 			if ((it != customParams.end()) && (utils::string_to_float(it->second) > 1)) {
 				finishedHandler[kv.first] = energyFinishedHandler;
@@ -232,6 +236,9 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			}
 		}
 	}
+
+	ReadConfig();
+
 	if (mexDef == nullptr) {
 		mexDef = defaultDef;
 	}
@@ -239,8 +246,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		pylonDef = defaultDef;
 		pylonRange = PYLON_RANGE;
 	}
-
-	ReadConfig();
 }
 
 CEconomyManager::~CEconomyManager()
@@ -726,7 +731,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	const float factoryFactor = (metalIncome - assistDef->GetBuildSpeed()) * 1.2f;
 	const int nanoSize = builderManager->GetTasks(IBuilderTask::BuildType::NANO).size();
 	const float factoryPower = factoryManager->GetFactoryPower() + nanoSize * assistDef->GetBuildSpeed();
-	if ((factoryPower >= factoryFactor) || !builderManager->GetTasks(IBuilderTask::BuildType::FACTORY).empty()) {
+	if (factoryPower >= factoryFactor) {
 		return nullptr;
 	}
 

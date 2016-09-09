@@ -14,6 +14,10 @@
 #include <vector>
 #include <string.h>
 
+#ifdef DEBUG_VIS
+#define DEBUG_LOG
+#endif
+
 template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 #define SQRT_2				1.4142f
 #define FRAMES_PER_SEC		GAME_SPEED

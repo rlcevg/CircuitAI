@@ -424,6 +424,7 @@ void CSetupManager::ReadConfig()
 
 void CSetupManager::Welcome() const
 {
+#ifdef DEBUG_LOG
 	Info* info = circuit->GetSkirmishAI()->GetInfo();
 	const char* name = info->GetValueByKey("name");
 	const char* version = info->GetValueByKey("version");
@@ -432,6 +433,7 @@ void CSetupManager::Welcome() const
 	welcome += std::string(name) + " " + std::string(version) + utils::int_to_string(id, " (%i)\nGood fun, have luck!");
 	delete info;
 	circuit->GetGame()->SendTextMessage(welcome.c_str(), 0);
+#endif
 }
 
 void CSetupManager::FindCommander()

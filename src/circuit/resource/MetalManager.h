@@ -27,7 +27,7 @@ public:
 	virtual ~CMetalManager();
 
 	void ParseMetalSpots(const char* metalJson);
-	void ParseMetalSpots(springai::Game* game);
+	void ParseMetalSpots();
 
 	bool HasMetalSpots() const { return (metalData->IsInitialized() && !metalData->IsEmpty()); }
 	bool HasMetalClusters() const { return !metalData->GetClusters().empty(); }

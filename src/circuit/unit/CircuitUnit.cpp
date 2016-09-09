@@ -104,7 +104,7 @@ void CCircuitUnit::ManualFire(CEnemyUnit* target, int timeOut)
 {
 	TRY_UNIT(manager->GetCircuit(), this,
 		if (circuitDef->HasDGun()) {
-			unit->DGun(target->GetUnit(), UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
+			unit->DGun(target->GetUnit(), UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY, timeOut);
 		} else {
 			unit->MoveTo(target->GetPos(), UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
 			unit->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, UNIT_COMMAND_OPTION_SHIFT_KEY, timeOut);

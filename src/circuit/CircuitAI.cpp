@@ -331,7 +331,11 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		}
 	}
 
+#ifdef DEBUG_LOG
 	return ret;
+#else
+	return 0;
+#endif
 }
 
 int CCircuitAI::HandleEndEvent(int topic, const void* data)
@@ -445,8 +449,8 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 		}
 	}
 
-	builderManager = std::make_shared<CBuilderManager>(this);
 	factoryManager = std::make_shared<CFactoryManager>(this);
+	builderManager = std::make_shared<CBuilderManager>(this);
 	militaryManager = std::make_shared<CMilitaryManager>(this);
 
 	// TODO: Remove EconomyManager from module (move abilities to BuilderManager).
@@ -902,7 +906,9 @@ void CCircuitAI::Garbage(CCircuitUnit* unit, const char* message)
 	// NOTE: Happens because engine can send EVENT_UNIT_FINISHED after EVENT_UNIT_DESTROYED.
 	//       Engine should not send events with isDead units.
 	garbage.insert(unit);
+#ifdef DEBUG_LOG
 	LOG("AI: %i | Garbage unit: %i | message: %s", skirmishAIId, unit->GetId(), message);
+#endif
 }
 
 CCircuitUnit* CCircuitAI::GetTeamUnit(CCircuitUnit::Id unitId) const

@@ -56,18 +56,20 @@ CFactoryData::CFactoryData(CCircuitAI *circuit)
 
 		const Json::Value& items = factory["unit"];
 		unsigned size = 0;
+		float avgSpeed = 0.f;
 		for (const Json::Value& item : items) {
 			CCircuitDef* udef = circuit->GetCircuitDef(item.asCString());
 			if (udef != nullptr) {
-				sfac.avgSpeed += udef->GetSpeed();
+				avgSpeed += udef->GetSpeed();
 				++size;
 			}
 		}
 		if (size > 0) {
-			sfac.avgSpeed /= size;
+			avgSpeed /= size;
 		}
-		minSpeed = std::min(minSpeed, sfac.avgSpeed);
-		maxSpeed = std::max(maxSpeed, sfac.avgSpeed);
+		minSpeed = std::min(minSpeed, avgSpeed);
+		maxSpeed = std::max(maxSpeed, avgSpeed);
+		sfac.mapSpeedPerc = avgSpeed;
 
 		allFactories[sfac.id] = sfac;
 	}
@@ -80,12 +82,17 @@ CFactoryData::CFactoryData(CCircuitAI *circuit)
 	minOffset = offset.get((unsigned)0, -20.0f).asFloat();
 	const float maxOffset = offset.get((unsigned)1, 20.0f).asFloat();
 	lenOffset = maxOffset - minOffset;
-	minSpPerc = speed.get((unsigned)0, 0.0f).asFloat();
+	const float minSpPerc = speed.get((unsigned)0, 0.0f).asFloat();
 	const float maxSpPerc = speed.get((unsigned)1, 40.0f).asFloat();
 	const float minMap = map.get((unsigned)0, 8.0f).asFloat();
 	const float maxMap = map.get((unsigned)1, 24.0f).asFloat();
+	const float minMapSp = SQUARE(minMap) * minSpeed;
 	const float mapSize = (circuit->GetMap()->GetWidth() / 64) * (circuit->GetMap()->GetHeight() / 64);
-	speedFactor = (maxSpPerc - minSpPerc) / (SQUARE(maxMap) * maxSpeed - SQUARE(minMap) * minSpeed) * mapSize;
+	const float speedFactor = (maxSpPerc - minSpPerc) / (SQUARE(maxMap) * maxSpeed - minMapSp);
+	for (auto& kv : allFactories) {
+		float avgSpeed = kv.second.mapSpeedPerc;
+		kv.second.mapSpeedPerc = speedFactor * (mapSize * avgSpeed - minMapSp) + minSpPerc;
+	}
 }
 
 CFactoryData::~CFactoryData()
@@ -133,7 +140,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 		if ((mtId < 0) || mobileType[mtId].typeUsable) {
 			availFacs.push_back(sfac);
 			const float offset = (float)rand() / RAND_MAX * lenOffset + minOffset;
-			const float speedPercent = speedFactor * sfac.avgSpeed + minSpPerc;
+			const float speedPercent = sfac.mapSpeedPerc;
 			const float mapPercent = (mtId < 0) ? airMapPerc : mobileType[mtId].areaLargest->percentOfMap;
 			percents[sfac.id] = offset + importance * (mapPercent + speedPercent);
 		}

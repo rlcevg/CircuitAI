@@ -279,7 +279,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 	};
 
 	float maxBuildDist = .0f;
-	CCircuitDef* assistCandy = nullptr;
 	CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
 
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
@@ -299,7 +298,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 				idleHandler[unitDefId] = assistIdleHandler;
 				destroyedHandler[unitDefId] = assistDestroyedHandler;
 				if (commDef->CanBuild(cdef)) {
-					assistCandy = cdef;
+					assistDef = cdef;
 				}
 			}
 		}
@@ -324,10 +323,13 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		}
 	}
 
-	assistDef = assistCandy;
+	ReadConfig();
+
+	if (assistDef == nullptr) {
+		assistDef = circuit->GetEconomyManager()->GetDefaultDef();
+	}
 
 	factoryData = circuit->GetAllyTeam()->GetFactoryData().get();
-	ReadConfig();
 }
 
 CFactoryManager::~CFactoryManager()

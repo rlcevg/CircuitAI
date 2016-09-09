@@ -32,13 +32,11 @@ private:
 		float startImp;  // importance[0]
 		float switchImp;  // importance[1]
 		int count;
-		float avgSpeed;
+		float mapSpeedPerc;
 	};
 	float airMapPerc;
 	float minOffset;
 	float lenOffset;
-	float minSpPerc;
-	float speedFactor;
 	std::unordered_map<CCircuitDef::Id, SFactory> allFactories;
 };
 

@@ -78,7 +78,7 @@ CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData)
 {
 	if (!metalData->IsInitialized()) {
 		// TODO: Add metal zone and no-metal-spots maps support
-		ParseMetalSpots(circuit->GetGame());
+		ParseMetalSpots();
 	}
 	metalInfos.resize(metalData->GetSpots().size(), {true, -1});
 }
@@ -111,24 +111,58 @@ void CMetalManager::ParseMetalSpots(const char* metalJson)
 	metalData->Init(spots);
 }
 
-void CMetalManager::ParseMetalSpots(Game* game)
+void CMetalManager::ParseMetalSpots()
 {
+	Game* game = circuit->GetGame();
+	std::vector<CMetalData::SMetal> spots;
+
 	int mexCount = game->GetRulesParamFloat("mex_count", -1);
 	if (mexCount <= 0) {
-		return;
-	}
+		// FIXME: Replace metal-map workaround by own grid-spot generator
+		Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
+		auto spotsPos = std::move(circuit->GetMap()->GetResourceMapSpotsPositions(metalRes));
+		const unsigned width = circuit->GetMap()->GetWidth();
+		const unsigned height = circuit->GetMap()->GetHeight();
+		const float mapSize = (width / 64) * (height / 64);
+		const float offset = (float)rand() / RAND_MAX * 50.f - 25.f;
+		//  8x8  ~  80 spots +-25
+		// 24x24 ~ 240 spots +-25
+		unsigned mexCount = (240.f - 80.f) / (SQUARE(24.f) - SQUARE(8.f)) * (mapSize - SQUARE(8.f)) + 80.f + offset;
+		unsigned inc;
+		if (spotsPos.size() > mexCount) {
+			inc = spotsPos.size() / mexCount;
+			spots.reserve(mexCount);
+		} else {
+			inc = 1;
+			spots.reserve(spotsPos.size());
+		}
+		UnitDef* mexDef = circuit->GetEconomyManager()->GetMexDef()->GetUnitDef();
+		const int xsize = mexDef->GetXSize();
+		const int zsize = mexDef->GetZSize();
+		for (unsigned i = 0; i < spotsPos.size(); i += inc) {
+			const AIFloat3& pos = spotsPos[i];
+			const unsigned x1 = int(pos.x) / SQUARE_SIZE - (xsize / 2), x2 = x1 + xsize;
+			const unsigned z1 = int(pos.z) / SQUARE_SIZE - (zsize / 2), z2 = z1 + zsize;
+			if ((x1 < x2) && (x2 < width) && (z1 < z2) && (z2 < height)) {
+				spots.push_back({pos.y, pos});
+			}
+		}
 
-	std::vector<CMetalData::SMetal> spots(mexCount);
-	for (int i = 0; i < mexCount; ++i) {
-		std::string param;
-		param = utils::int_to_string(i + 1, "mex_x%i");
-		spots[i].position.x = game->GetRulesParamFloat(param.c_str(), 0.f);
-		param = utils::int_to_string(i + 1, "mex_y%i");
-		spots[i].position.y = game->GetRulesParamFloat(param.c_str(), 0.f);
-		param = utils::int_to_string(i + 1, "mex_z%i");
-		spots[i].position.z = game->GetRulesParamFloat(param.c_str(), 0.f);
-		param = utils::int_to_string(i + 1, "mex_metal%i");
-		spots[i].income = game->GetRulesParamFloat(param.c_str(), 0.f);
+	} else {
+
+		mexCount = std::min(mexCount, 1000);  // safety measure
+		spots.resize(mexCount);
+		for (int i = 0; i < mexCount; ++i) {
+			std::string param;
+			param = utils::int_to_string(i + 1, "mex_x%i");
+			spots[i].position.x = game->GetRulesParamFloat(param.c_str(), 0.f);
+			param = utils::int_to_string(i + 1, "mex_y%i");
+			spots[i].position.y = game->GetRulesParamFloat(param.c_str(), 0.f);
+			param = utils::int_to_string(i + 1, "mex_z%i");
+			spots[i].position.z = game->GetRulesParamFloat(param.c_str(), 0.f);
+			param = utils::int_to_string(i + 1, "mex_metal%i");
+			spots[i].income = game->GetRulesParamFloat(param.c_str(), 0.f);
+		}
 	}
 
 	metalData->Init(spots);

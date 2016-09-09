@@ -294,8 +294,11 @@ void CTerrainManager::Init()
 	for (auto& spot : spots) {
 		const int x1 = int(spot.position.x / (SQUARE_SIZE << 1)) - (xsize >> 1), x2 = x1 + xsize;
 		const int z1 = int(spot.position.z / (SQUARE_SIZE << 1)) - (zsize >> 1), z2 = z1 + zsize;
-		for (int z = z1; z < z2; z++) {
-			for (int x = x1; x < x2; x++) {
+		int2 m1(x1, z1);
+		int2 m2(x2, z2);
+		blockingMap.Bound(m1, m2);
+		for (int z = m1.y; z < m2.y; z++) {
+			for (int x = m1.x; x < m2.x; x++) {
 				blockingMap.MarkBlocker(x, z, SBlockingMap::StructType::MEX, notIgnoreMask);
 			}
 		}

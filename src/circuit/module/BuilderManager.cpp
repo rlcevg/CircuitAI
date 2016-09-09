@@ -197,6 +197,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		}), FRAMES_PER_SEC * 20);
 	};
 
+	ReadConfig();
+
 	buildTasks.resize(static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::_SIZE_));
 
 	for (auto mtId : workerMobileTypes) {
@@ -205,8 +207,6 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		}
 	}
 	buildAreas[nullptr] = std::map<CCircuitDef*, int>();  // air
-
-	ReadConfig();
 }
 
 CBuilderManager::~CBuilderManager()
@@ -274,7 +274,7 @@ int CBuilderManager::UnitFinished(CCircuitUnit* unit)
 	}
 	auto itcl = reclaimedUnits.find(unit);
 	if (itcl != reclaimedUnits.end()) {
-		DoneTask(itcl->second);
+		AbortTask(itcl->second);
 	}
 
 	auto search = finishedHandler.find(unit->GetCircuitDef()->GetId());
@@ -317,7 +317,7 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 	}
 	auto itcl = reclaimedUnits.find(unit);
 	if (itcl != reclaimedUnits.end()) {
-		AbortTask(itcl->second);
+		DoneTask(itcl->second);
 	}
 
 	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
@@ -925,6 +925,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 			CCircuitUnit* target = candidate->GetTarget();
 			if (target != nullptr) {
 				if (distCost * weight < metric) {
+					// BA: float time_to_build = targetDef->GetBuildTime() / workerDef->GetBuildSpeed();
 					Unit* tu = target->GetUnit();
 					const float maxHealth = tu->GetMaxHealth();
 					const float health = tu->GetHealth() - maxHealth * 0.005f;

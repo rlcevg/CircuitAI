@@ -60,9 +60,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 12);
 	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CMilitaryManager::Init, this));
 
-	ReadConfig();
-
-	CCircuitDef::Id unitDefId;
 	/*
 	 * Defence handlers
 	 */
@@ -200,6 +197,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		}
 	};
 
+	ReadConfig();
+
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const float fighterRet = root["retreat"].get("fighter", 0.5f).asFloat();
 	float maxRadarDivCost = 0.f;
@@ -208,7 +207,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
-		unitDefId = kv.first;
+		CCircuitDef::Id unitDefId = kv.first;
 		CCircuitDef* cdef = kv.second;
 		if (cdef->GetUnitDef()->IsBuilder()) {
 			damagedHandler[unitDefId] = structDamagedHandler;
@@ -893,7 +892,7 @@ void CMilitaryManager::ReadConfig()
 	const float minMap = amMap.get((unsigned)0, 8.0f).asFloat();
 	const float maxMap = amMap.get((unsigned)1, 24.0f).asFloat();
 	const float mapSize = (circuit->GetMap()->GetWidth() / 64) * (circuit->GetMap()->GetHeight() / 64);
-	amountFactor = (maxFactor - minFactor) / (SQUARE(maxMap) - SQUARE(minMap)) * mapSize + minFactor + offset;
+	amountFactor = (maxFactor - minFactor) / (SQUARE(maxMap) - SQUARE(minMap)) * (mapSize - SQUARE(minMap)) + minFactor + offset;
 //	amountFactor = std::max(amountFactor, 0.f);
 
 	const Json::Value& base = porc["base"];
