@@ -55,6 +55,7 @@ public:
 	virtual ~CAllyTeam();
 
 	int GetSize() const { return teamIds.size(); }
+	int GetAliveSize() const { return initCount; }
 	const TeamIds& GetTeamIds() const { return teamIds; }
 	const SBox& GetStartBox() const { return startBox; }
 

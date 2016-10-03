@@ -76,11 +76,11 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
-	if (unit->GetCircuitDef()->IsAttrMelee()) {
+//	if (unit->GetCircuitDef()->IsAttrMelee()) {
 		travelAction = new CMoveAction(unit, squareSize);
-	} else {
-		travelAction = new CFightAction(unit, squareSize);
-	}
+//	} else {
+//		travelAction = new CFightAction(unit, squareSize);
+//	}
 	unit->PushBack(travelAction);
 	travelAction->SetActive(false);
 }

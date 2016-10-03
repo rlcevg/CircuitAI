@@ -119,6 +119,7 @@ private:
 	std::vector<SEnergyInfo> energyInfos;
 	CLagrangeInterPol* engyPol;
 
+	float ecoStep;
 	float ecoFactor;
 	float incomeFactor;
 

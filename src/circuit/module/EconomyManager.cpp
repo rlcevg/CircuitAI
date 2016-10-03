@@ -588,7 +588,7 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 			}
 		}
 		if (task == nullptr) {
-			task = builderManager->EnqueueReclaim(IBuilderTask::Priority::NORMAL, pos, cost, FRAMES_PER_SEC * 300,
+			task = builderManager->EnqueueReclaim(IBuilderTask::Priority::HIGH, pos, cost, FRAMES_PER_SEC * 300,
 												  8.0f/*unit->GetCircuitDef()->GetBuildDistance()*/);
 		}
 	}
@@ -973,9 +973,8 @@ void CEconomyManager::ReadConfig()
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
 	const Json::Value& econ = root["economy"];
-	const float step = econ.get("eps_step", 0.25f).asFloat();
-	// FIXME: Cost thresholds/ecoFactor should rely on alive allies
-	ecoFactor = (circuit->GetAllyTeam()->GetSize() - 1.0f) * step + 1.0f;
+	ecoStep = econ.get("eps_step", 0.25f).asFloat();
+	ecoFactor = (circuit->GetAllyTeam()->GetSize() - 1.0f) * ecoStep + 1.0f;
 
 	// Using cafus, armfus, armsolar as control points
 	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
@@ -1072,6 +1071,10 @@ void CEconomyManager::Init()
 			}), FRAMES_PER_SEC * 10);
 		}
 	}
+
+	scheduler->RunTaskAfter(std::make_shared<CGameTask>([this]() {
+		ecoFactor = (circuit->GetAllyTeam()->GetAliveSize() - 1.0f) * ecoStep + 1.0f;
+	}), FRAMES_PER_SEC * 11);
 
 	const int interval = allyTeam->GetSize() * FRAMES_PER_SEC;
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks), this),

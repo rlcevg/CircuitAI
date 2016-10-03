@@ -331,11 +331,10 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		}
 	}
 
-#ifdef DEBUG_LOG
-	return ret;
-#else
-	return 0;
+#ifndef DEBUG_LOG
+	ret = 0;
 #endif
+	return ret;
 }
 
 int CCircuitAI::HandleEndEvent(int topic, const void* data)

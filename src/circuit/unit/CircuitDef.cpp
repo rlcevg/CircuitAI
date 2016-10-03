@@ -106,6 +106,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	losRadius = def->GetLosRadius();
 	cost      = def->GetCost(res);
 	cloakCost = std::max(def->GetCloakCost(), def->GetCloakCostMoving());
+	buildTime = def->GetBuildTime();
 //	altitude  = def->GetWantedHeight();
 
 	MoveData* md = def->GetMoveData();
@@ -129,7 +130,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	it = customParams.find("is_drone");
 	if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 		category |= circuit->GetBadCategory();
-		cost *= 0.1f;
+		cost *= 0.1f;  // avoid threat metal
 	}
 
 //	if (customParams.find("boost_speed_mult") != customParams.end()) {

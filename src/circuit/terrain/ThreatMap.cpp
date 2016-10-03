@@ -15,9 +15,6 @@
 #include "Mod.h"
 #include "Map.h"
 
-//#undef NDEBUG
-#include <cassert>
-
 namespace circuit {
 
 using namespace springai;

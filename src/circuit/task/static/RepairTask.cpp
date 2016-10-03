@@ -82,7 +82,7 @@ void CSRepairTask::Update()
 				if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {
 					continue;
 				}
-				if (u->IsBeingBuilt() && (candUnit->GetCircuitDef()->GetCost() < maxCost)) {
+				if (u->IsBeingBuilt() && (candUnit->GetCircuitDef()->GetBuildTime() < maxCost)) {
 					task = circuit->GetFactoryManager()->EnqueueRepair(IBuilderTask::Priority::NORMAL, candUnit);
 					break;
 				}

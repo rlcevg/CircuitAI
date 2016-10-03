@@ -12,7 +12,7 @@
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
-#include "unit/action/FightAction.h"
+#include "unit/action/MoveAction.h"
 #include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -41,9 +41,13 @@ CAntiAirTask::~CAntiAirTask()
 
 bool CAntiAirTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	if (!unit->GetCircuitDef()->IsRoleAA() ||
-		(unit->GetCircuitDef() != leader->GetCircuitDef()))
-	{
+	if (!unit->GetCircuitDef()->IsRoleAA()) {
+		return false;
+	}
+	if (unit->GetCircuitDef()->IsPlane()) {
+		return true;
+	}
+	if (unit->GetCircuitDef() != leader->GetCircuitDef()) {
 		return false;
 	}
 	int frame = manager->GetCircuit()->GetLastFrame();
@@ -58,7 +62,7 @@ void CAntiAirTask::AssignTo(CCircuitUnit* unit)
 	ISquadTask::AssignTo(unit);
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
-	CFightAction* travelAction = new CFightAction(unit, squareSize);
+	CMoveAction* travelAction = new CMoveAction(unit, squareSize);
 	unit->PushBack(travelAction);
 	travelAction->SetActive(false);
 }

@@ -784,7 +784,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
-	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
+//	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
@@ -795,9 +795,10 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 			// Check time-distance to target
 			const AIFloat3& bp = candidate->GetPosition();
 			AIFloat3 buildPos = utils::is_valid(bp) ? bp : pos;
-			if (basePos.SqDistance2D(buildPos) > SQUARE(2000.f)) {
-				continue;
-			}
+			// FIXME: Make max distance configurable
+//			if (basePos.SqDistance2D(buildPos) > SQUARE(2000.f)) {
+//				continue;
+//			}
 
 			float distCost;
 			if (candidate->GetPriority() == IBuilderTask::Priority::NOW) {
@@ -1079,7 +1080,7 @@ void CBuilderManager::Watchdog()
 				float maxHealth = u->GetMaxHealth();
 				float buildPercent = (maxHealth - u->GetHealth()) / maxHealth;
 				CCircuitDef* cdef = unit->GetCircuitDef();
-				if ((cdef->GetCost() * buildPercent < maxCost) || (*cdef == *terraDef)) {
+				if ((cdef->GetBuildTime() * buildPercent < maxCost) || (*cdef == *terraDef)) {
 					EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
 				} else {
 					EnqueueReclaim(IBuilderTask::Priority::NORMAL, unit);

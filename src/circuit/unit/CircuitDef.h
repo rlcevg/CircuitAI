@@ -191,6 +191,7 @@ public:
 	float GetCost()      const { return cost; }
 	float GetCloakCost() const { return cloakCost; }
 	float GetStockCost() const { return stockCost; }
+	float GetBuildTime() const { return buildTime; }
 //	float GetAltitude()  const { return altitude; }
 	float GetJumpRange() const { return jumpRange; }
 
@@ -258,6 +259,7 @@ private:
 	float cost;
 	float cloakCost;
 	float stockCost;
+	float buildTime;
 //	float altitude;
 	float jumpRange;
 	float retreat;
