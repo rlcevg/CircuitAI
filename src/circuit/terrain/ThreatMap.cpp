@@ -15,6 +15,9 @@
 #include "Mod.h"
 #include "Map.h"
 
+//#undef NDEBUG
+#include <cassert>
+
 namespace circuit {
 
 using namespace springai;
@@ -710,8 +713,8 @@ bool CThreatMap::IsInLOS(const AIFloat3& pos) const
 
 //bool CThreatMap::IsInRadar(const AIFloat3& pos) const
 //{
-//	// the value for the full resolution position (x, z) is at index ((z * width + x) / 8)
-//	// the last value, bottom right, is at index (width/8 * height/8 - 1)
+//	// the value for the full resolution position (x, z) is at index ((z * width + x) / res)
+//	// the last value, bottom right, is at index (width/res * height/res - 1)
 //
 //	// convert from world coordinates to radarmap coordinates
 //	const int x = (int)pos.x / radarResConv;

@@ -10,7 +10,7 @@ set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils)
 if ("${CMAKE_SYSTEM}" MATCHES "ARCH")
 	set(additionalCompileFlags "-DDEBUG_VIS -Wall -D_GLIBCXX_USE_CXX11_ABI=1")
 else ()
-	set(additionalCompileFlags "-DDEBUG_LOG -Wall -D_GLIBCXX_USE_CXX11_ABI=0")
+	set(additionalCompileFlags "-Wall -D_GLIBCXX_USE_CXX11_ABI=0")
 endif ()
 
 set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libgcc -static-libstdc++")

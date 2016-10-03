@@ -16,6 +16,7 @@
 #include "Game.h"
 #include "MoveData.h"
 #include "Pathing.h"
+#include "Map.h"
 
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <boost/graph/filtered_graph.hpp>
