@@ -20,8 +20,9 @@ namespace circuit {
 
 using namespace springai;
 
-CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, unsigned maxSize)
+CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, FightType promote, unsigned maxSize)
 		: ISquadTask(mgr, FightType::DEFEND)
+		, promote(promote)
 		, maxSize(maxSize)
 {
 	this->position = position;
@@ -34,7 +35,7 @@ CDefendTask::~CDefendTask()
 
 bool CDefendTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return units.size() < maxSize;
+	return (units.size() < maxSize) && (static_cast<CDefendTask*>(unit->GetTask())->GetPromote() == promote);
 }
 
 void CDefendTask::RemoveAssignee(CCircuitUnit* unit)
@@ -106,9 +107,9 @@ void CDefendTask::Update()
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
-	isAttack = false;
+	state = State::ROAM;
 	if (target != nullptr) {
-		isAttack = true;
+		state = State::ENGAGE;
 		for (CCircuitUnit* unit : units) {
 			unit->Attack(target->GetPos(), frame);
 		}

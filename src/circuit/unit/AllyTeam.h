@@ -55,7 +55,7 @@ public:
 	virtual ~CAllyTeam();
 
 	int GetSize() const { return teamIds.size(); }
-	int GetAliveSize() const { return initCount; }
+	int GetAliveSize() const { return GetSize() - resignSize; }
 	const TeamIds& GetTeamIds() const { return teamIds; }
 	const SBox& GetStartBox() const { return startBox; }
 
@@ -80,6 +80,7 @@ private:
 	SBox startBox;
 
 	int initCount;
+	int resignSize;
 	int lastUpdate;
 	Units friendlyUnits;  // owner
 

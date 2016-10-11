@@ -26,7 +26,6 @@ using namespace springai;
 
 CAntiAirTask::CAntiAirTask(ITaskManager* mgr)
 		: ISquadTask(mgr, FightType::AA)
-		, isDanger(false)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
@@ -41,13 +40,9 @@ CAntiAirTask::~CAntiAirTask()
 
 bool CAntiAirTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	if (!unit->GetCircuitDef()->IsRoleAA()) {
-		return false;
-	}
-	if (unit->GetCircuitDef()->IsPlane()) {
-		return true;
-	}
-	if (unit->GetCircuitDef() != leader->GetCircuitDef()) {
+	if (!unit->GetCircuitDef()->IsRoleAA() ||
+		(unit->GetCircuitDef() != leader->GetCircuitDef()))
+	{
 		return false;
 	}
 	int frame = manager->GetCircuit()->GetLastFrame();
@@ -77,7 +72,7 @@ void CAntiAirTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CAntiAirTask::Execute(CCircuitUnit* unit)
 {
-	if (isRegroup || isAttack) {
+	if ((State::REGROUP == state) || (State::ENGAGE == state)) {
 		return;
 	}
 	if (!pPath->empty()) {
@@ -90,6 +85,28 @@ void CAntiAirTask::Execute(CCircuitUnit* unit)
 void CAntiAirTask::Update()
 {
 	++updCount;
+
+	/*
+	 * Check safety
+	 */
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
+
+	if (State::DISENGAGE == state) {
+		const float maxDist = std::max<float>(lowestRange, circuit->GetPathfinder()->GetSquareSize());
+		if (position.SqDistance2D(leader->GetPos(frame)) < SQUARE(maxDist)) {
+			state = State::ROAM;
+		} else {
+			AIFloat3 startPos = leader->GetPos(frame);
+			pPath->clear();
+			CPathFinder* pathfinder = circuit->GetPathfinder();
+			pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
+			pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize());
+			if (!pPath->empty()) {
+				return;
+			}
+		}
+	}
 
 	/*
 	 * Merge tasks if possible
@@ -107,9 +124,9 @@ void CAntiAirTask::Update()
 	/*
 	 * Regroup if required
 	 */
-	bool wasRegroup = isRegroup;
+	bool wasRegroup = (State::REGROUP == state);
 	bool mustRegroup = IsMustRegroup();
-	if (isRegroup) {
+	if (State::REGROUP == state) {
 		if (mustRegroup) {
 			CCircuitAI* circuit = manager->GetCircuit();
 			int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
@@ -143,56 +160,20 @@ void CAntiAirTask::Update()
 	}
 
 	/*
-	 * Check safety
-	 */
-	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
-
-	if (isDanger) {
-		// TODO: When in danger finish CFightAction and push CMoveAction.
-		//       When safe swap back to CFightAction
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		static F3Vec ourPositions;  // NOTE: micro-opt
-		const std::set<IFighterTask*>& tasks = circuit->GetMilitaryManager()->GetTasks(IFighterTask::FightType::ATTACK);
-		for (IFighterTask* task : tasks) {
-			const AIFloat3& ourPos = static_cast<ISquadTask*>(task)->GetLeaderPos(frame);
-			if (terrainManager->CanMoveToPos(leader->GetArea(), ourPos)) {
-				ourPositions.push_back(ourPos);
-			}
-		}
-		AIFloat3 startPos = leader->GetPos(frame);
-		CPathFinder* pathfinder = circuit->GetPathfinder();
-		pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
-		pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions);
-
-		ourPositions.clear();
-		if (!pPath->empty()) {
-			position = pPath->back();
-			for (CCircuitUnit* unit : units) {
-				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-				travelAction->SetPath(pPath);
-				travelAction->SetActive(true);
-			}
-			isDanger = false;
-			return;
-		}
-	}
-
-	/*
 	 * Update target
 	 */
 	FindTarget();
 
-	isAttack = false;
+	state = State::ROAM;
 	if (target != nullptr) {
 		const float sqRange = SQUARE(lowestRange);
 		for (CCircuitUnit* unit : units) {
 			if (position.SqDistance2D(unit->GetPos(frame)) < sqRange) {
-				isAttack = true;
+				state = State::ENGAGE;
 				break;
 			}
 		}
-		if (isAttack) {
+		if (State::ENGAGE == state) {
 			for (CCircuitUnit* unit : units) {
 				const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
 				TRY_UNIT(circuit, unit,
@@ -240,7 +221,7 @@ void CAntiAirTask::Update()
 void CAntiAirTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	ISquadTask::OnUnitIdle(unit);
-	if (units.empty()) {
+	if ((leader == nullptr) || (State::DISENGAGE == state)) {
 		return;
 	}
 
@@ -261,7 +242,32 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	ISquadTask::OnUnitDamaged(unit, attacker);
 
-	isDanger = true;
+	if ((leader == nullptr) || (State::DISENGAGE == state) ||
+		((attacker != nullptr) && (attacker->GetCircuitDef() != nullptr) && attacker->GetCircuitDef()->IsAbleToFly()))
+	{
+		return;
+	}
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
+	static F3Vec ourPositions;  // NOTE: micro-opt
+	AIFloat3 startPos = leader->GetPos(frame);
+	circuit->GetMilitaryManager()->FillSafePos(startPos, leader->GetArea(), ourPositions);
+
+	pPath->clear();
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
+	pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions);
+	ourPositions.clear();
+
+	if (!pPath->empty()) {
+		position = pPath->back();
+		for (CCircuitUnit* unit : units) {
+			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+			travelAction->SetPath(pPath);
+			travelAction->SetActive(true);
+		}
+		state = State::DISENGAGE;
+	}
 }
 
 void CAntiAirTask::FindTarget()

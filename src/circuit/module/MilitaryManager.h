@@ -47,6 +47,7 @@ public:
 	}
 
 	IFighterTask* EnqueueTask(IFighterTask::FightType type);
+	IFighterTask* EnqueueDefend(IFighterTask::FightType promote, unsigned size);
 	IFighterTask* EnqueueGuard(CCircuitUnit* vip);
 	CRetreatTask* EnqueueRetreat();
 private:
@@ -62,6 +63,7 @@ public:
 	void AbortDefence(CBDefenceTask* task);
 	bool HasDefence(int cluster);
 	springai::AIFloat3 GetScoutPosition(CCircuitUnit* unit);
+	void FillSafePos(const springai::AIFloat3& pos, STerrainMapArea* area, F3Vec& outPositions);
 
 	IFighterTask* AddDefendTask(int cluster);
 	IFighterTask* DelDefendTask(const springai::AIFloat3& pos);
@@ -88,7 +90,7 @@ public:
 	void UpdateDefenceTasks();
 
 	unsigned int GetMaxScouts() const { return maxScouts; }
-	unsigned int GetMaxRaiders() const { return maxRaiders; }
+	unsigned int GetAvgRaiders() const { return avgRaiders; }
 
 	const std::vector<CCircuitDef*>& GetLandDefenders() const { return landDefenders; }
 	const std::vector<CCircuitDef*>& GetWaterDefenders() const { return waterDefenders; }
@@ -150,9 +152,10 @@ private:
 	};
 	std::vector<SClusterInfo> clusterInfos;
 
-	unsigned int maxRaiders;
+	unsigned int minRaiders;
+	unsigned int avgRaiders;
 	unsigned int maxScouts;
-	unsigned int maxGuards;
+	unsigned int minAttackers;
 
 	std::vector<CCircuitDef*> defenderDefs;
 	std::vector<CCircuitDef*> landDefenders;

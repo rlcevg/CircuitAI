@@ -25,7 +25,6 @@ public:
 
 private:
 	int targetFrame;
-	bool isAttack;
 };
 
 } // namespace circuit

@@ -29,8 +29,6 @@ public:
 
 private:
 	void FindTarget();
-
-	bool isDanger;
 };
 
 } // namespace circuit

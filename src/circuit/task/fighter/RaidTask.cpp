@@ -47,7 +47,7 @@ bool CRaidTask::CanAssignTo(CCircuitUnit* unit) const
 		return false;
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
-	if (units.size() > circuit->GetMilitaryManager()->GetMaxRaiders()) {
+	if (units.size() > circuit->GetMilitaryManager()->GetAvgRaiders()) {
 		return false;
 	}
 	int frame = circuit->GetLastFrame();
@@ -85,7 +85,7 @@ void CRaidTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CRaidTask::Execute(CCircuitUnit* unit)
 {
-	if (isRegroup || isAttack) {
+	if ((State::REGROUP == state) || (State::ENGAGE == state)) {
 		return;
 	}
 	if (!pPath->empty()) {
@@ -115,9 +115,9 @@ void CRaidTask::Update()
 	/*
 	 * Regroup if required
 	 */
-	bool wasRegroup = isRegroup;
+	bool wasRegroup = (State::REGROUP == state);
 	bool mustRegroup = IsMustRegroup();
-	if (isRegroup) {
+	if (State::REGROUP == state) {
 		if (mustRegroup) {
 			CCircuitAI* circuit = manager->GetCircuit();
 			int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
@@ -160,9 +160,9 @@ void CRaidTask::Update()
 	 */
 	FindTarget();
 
-	isAttack = false;
+	state = State::ROAM;
 	if (target != nullptr) {
-		isAttack = true;
+		state = State::ENGAGE;
 		position = target->GetPos();
 		if (leader->GetCircuitDef()->IsAbleToFly()) {
 			if (target->GetUnit()->IsCloaked()) {

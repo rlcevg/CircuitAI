@@ -100,7 +100,7 @@ void CAntiHeavyTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CAntiHeavyTask::Execute(CCircuitUnit* unit)
 {
-	if (isRegroup || isAttack) {
+	if ((State::REGROUP == state) || (State::ENGAGE == state)) {
 		return;
 	}
 	if (!pPath->empty()) {
@@ -134,9 +134,9 @@ void CAntiHeavyTask::Update()
 	/*
 	 * Regroup if required
 	 */
-	bool wasRegroup = isRegroup;
+	bool wasRegroup = (State::REGROUP == state);
 	bool mustRegroup = IsMustRegroup();
-	if (isRegroup) {
+	if (State::REGROUP == state) {
 		if (mustRegroup) {
 			CCircuitAI* circuit = manager->GetCircuit();
 			int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
@@ -181,9 +181,9 @@ void CAntiHeavyTask::Update()
 	{
 		FindTarget();
 
-		isAttack = false;
+		state = State::ROAM;
 		if (target != nullptr) {
-			isAttack = true;
+			state = State::ENGAGE;
 			position = target->GetPos();
 			float power = 0.f;
 			CEnemyUnit* target = this->target;

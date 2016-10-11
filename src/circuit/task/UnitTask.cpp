@@ -20,6 +20,7 @@ IUnitTask::IUnitTask(ITaskManager* mgr, Priority priority, Type type, int timeou
 		: manager(mgr)
 		, priority(priority)
 		, type(type)
+		, state(State::ROAM)
 		, timeout(timeout)
 		, updCount(0)
 		, isDead(false)

@@ -46,8 +46,6 @@ protected:
 	std::shared_ptr<F3Vec> pPath;
 
 	int groupFrame;
-	bool isRegroup;
-	bool isAttack;
 };
 
 } // namespace circuit

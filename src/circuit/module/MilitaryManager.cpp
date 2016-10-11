@@ -331,10 +331,6 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			task = new CRallyTask(this, /*power*/1);  // TODO: pass enemy's threat
 			break;
 		}
-		case IFighterTask::FightType::DEFEND: {
-			task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), maxGuards);
-			break;
-		}
 		case IFighterTask::FightType::SCOUT: {
 			task = new CScoutTask(this);
 			break;
@@ -378,6 +374,14 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 	return task;
 }
 
+IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType promote, unsigned size)
+{
+	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), promote, size);
+	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
+	fightUpdates.push_back(task);
+	return task;
+}
+
 IFighterTask* CMilitaryManager::EnqueueGuard(CCircuitUnit* vip)
 {
 	IFighterTask* task = new CFGuardTask(this, vip, 1.0f);
@@ -416,36 +420,40 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::SUPPORT), IFighterTask::FightType::SUPPORT},
 		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::MINE),    IFighterTask::FightType::SCOUT},  // FIXME
 	};
-	IFighterTask::FightType type;
+	IFighterTask* task = nullptr;
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsRoleSupport()) {
-		type = IFighterTask::FightType::SUPPORT;
 		if (cdef->IsAttacker() && GetTasks(IFighterTask::FightType::ATTACK).empty()) {
-			type = IFighterTask::FightType::DEFEND;
+			task = EnqueueDefend(IFighterTask::FightType::ATTACK, minAttackers);
+		} else {
+			task = EnqueueTask(IFighterTask::FightType::SUPPORT);
 		}
 	} else {
 		auto it = types.find(cdef->GetMainRole());
 		if (it != types.end()) {
-			type = it->second;
-			switch (type) {
+			switch (it->second) {
 				case IFighterTask::FightType::RAID: {
 					if (cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
-						type = IFighterTask::FightType::SCOUT;
+						task = EnqueueTask(IFighterTask::FightType::SCOUT);
+					} else if (GetTasks(IFighterTask::FightType::RAID).empty()) {
+						task = EnqueueDefend(IFighterTask::FightType::RAID, minRaiders);
 					}
 				} break;
 				case IFighterTask::FightType::AH: {
 					if (!cdef->IsRoleMine() && (GetEnemyCost(CCircuitDef::RoleType::HEAVY) < 1.f)) {
-						type = IFighterTask::FightType::ATTACK;
+						task = EnqueueTask(IFighterTask::FightType::ATTACK);
 					}
 				} break;
 				default: break;
 			}
+			if (task == nullptr) {
+				task = EnqueueTask(it->second);
+			}
 		} else {
 			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty() && !cdef->IsRoleHeavy();
-			type = isDefend ? IFighterTask::FightType::DEFEND : IFighterTask::FightType::ATTACK;
+			task = isDefend ? EnqueueDefend(IFighterTask::FightType::ATTACK, minAttackers) : EnqueueTask(IFighterTask::FightType::ATTACK);
 		}
 	}
-	IFighterTask* task = EnqueueTask(type);
 
 	return task;
 }
@@ -661,23 +669,57 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 	return -RgtVector;
 }
 
+void CMilitaryManager::FillSafePos(const AIFloat3& pos, STerrainMapArea* area, F3Vec& outPositions)
+{
+	outPositions.push_back(circuit->GetSetupManager()->GetBasePos());
+
+	CDefenceMatrix* defMat = defence;
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CMetalData::MetalPredicate predicate = [defMat, terrainManager, area](const CMetalData::MetalNode& v) {
+		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(v.second);
+		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
+			if ((defPoint.cost > 100.0f) && terrainManager->CanMoveToPos(area, defPoint.position)) {
+				return true;
+			}
+		}
+		return false;
+	};
+	CMetalManager* metalManager = circuit->GetMetalManager();
+	int index = metalManager->FindNearestCluster(pos, predicate);
+	if (index >= 0) {
+		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
+		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
+			outPositions.push_back(defPoint.position);
+		}
+	}
+
+	int frame = circuit->GetLastFrame();
+	const std::set<IFighterTask*>& tasks = GetTasks(IFighterTask::FightType::ATTACK);
+	for (IFighterTask* task : tasks) {
+		const AIFloat3& ourPos = static_cast<ISquadTask*>(task)->GetLeaderPos(frame);
+		if (terrainManager->CanMoveToPos(area, ourPos)) {
+			outPositions.push_back(ourPos);
+		}
+	}
+}
+
 IFighterTask* CMilitaryManager::AddDefendTask(int cluster)
 {
 	// FIXME: Resume fighter/DefendTask experiment
 	return nullptr;
 	// FIXME: Resume fighter/DefendTask experiment
 
-	IFighterTask* task = clusterInfos[cluster].defence;
-	if (task != nullptr) {
-		return task;
-	}
-
-	const AIFloat3& pos = circuit->GetMetalManager()->GetClusters()[cluster].geoCentr;
-//	task = EnqueueTask(IFighterTask::FightType::DEFEND, pos, 1);
-	task = new CDefendTask(this, pos, 1);
-	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
-	clusterInfos[cluster].defence = task;
-	return task;
+//	IFighterTask* task = clusterInfos[cluster].defence;
+//	if (task != nullptr) {
+//		return task;
+//	}
+//
+//	const AIFloat3& pos = circuit->GetMetalManager()->GetClusters()[cluster].geoCentr;
+////	task = EnqueueTask(IFighterTask::FightType::DEFEND, pos, 1);
+//	task = new CGuardTask(this, pos, 1);
+//	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
+//	clusterInfos[cluster].defence = task;
+//	return task;
 }
 
 IFighterTask* CMilitaryManager::DelDefendTask(const AIFloat3& pos)
@@ -686,12 +728,12 @@ IFighterTask* CMilitaryManager::DelDefendTask(const AIFloat3& pos)
 	return nullptr;
 	// FIXME: Resume fighter/DefendTask experiment
 
-	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
-	if (index < 0) {
-		return nullptr;
-	}
-
-	return DelDefendTask(index);
+//	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
+//	if (index < 0) {
+//		return nullptr;
+//	}
+//
+//	return DelDefendTask(index);
 }
 
 IFighterTask* CMilitaryManager::DelDefendTask(int cluster)
@@ -700,13 +742,13 @@ IFighterTask* CMilitaryManager::DelDefendTask(int cluster)
 	return nullptr;
 	// FIXME: Resume fighter/DefendTask experiment
 
-	IFighterTask* task = clusterInfos[cluster].defence;
-	if (task == nullptr) {
-		return nullptr;
-	}
-
-	clusterInfos[cluster].defence = nullptr;
-	return task;
+//	IFighterTask* task = clusterInfos[cluster].defence;
+//	if (task == nullptr) {
+//		return nullptr;
+//	}
+//
+//	clusterInfos[cluster].defence = nullptr;
+//	return task;
 }
 
 void CMilitaryManager::AddEnemyCost(const CEnemyUnit* e)
@@ -848,8 +890,9 @@ void CMilitaryManager::ReadConfig()
 
 	const Json::Value& quotas = root["quota"];
 	maxScouts = quotas.get("scout", 3).asUInt();
-	maxRaiders = quotas.get("raider", 5).asUInt();
-	maxGuards = quotas.get("guard", 2).asUInt();
+	minRaiders = quotas["raid"].get((unsigned)0, 3).asUInt();
+	avgRaiders = quotas["raid"].get((unsigned)1, 5).asUInt();
+	minAttackers = quotas.get("attack", 2).asUInt();
 
 	const Json::Value& porc = root["porcupine"];
 	const Json::Value& defs = porc["unit"];
@@ -1072,7 +1115,11 @@ void CMilitaryManager::KMeansIteration()
 	{
 		int i = 0;
 		for (const auto& kv : units) {
-			AIFloat3 unitPos = kv.second->GetPos();
+			CEnemyUnit* enemy = kv.second;
+			if (enemy->IsHidden()) {
+				continue;
+			}
+			AIFloat3 unitPos = enemy->GetPos();
 			float closestDistance = std::numeric_limits<float>::max();
 			int closestIndex = -1;
 
@@ -1110,9 +1157,12 @@ void CMilitaryManager::KMeansIteration()
 	{
 		int i = 0;
 		for (const auto& kv : units) {
+			CEnemyUnit* enemy = kv.second;
+			if (enemy->IsHidden()) {
+				continue;
+			}
 			int meanIndex = unitsClosestMeanID[i++];
 			SEnemyGroup& eg = newMeans[meanIndex];
-			CEnemyUnit* enemy = kv.second;
 
 			// don't divide by 0
 			float num = std::max(1, numUnitsAssignedToMean[meanIndex]);
@@ -1123,13 +1173,11 @@ void CMilitaryManager::KMeansIteration()
 			CCircuitDef* cdef = enemy->GetCircuitDef();
 			if (cdef != nullptr) {
 				eg.roleCosts[cdef->GetMainRole()] += cdef->GetCost();
-				if (!enemy->IsHidden() && (!cdef->IsMobile() || enemy->IsInRadarOrLOS())) {
+				if (!cdef->IsMobile() || enemy->IsInRadarOrLOS()) {
 					eg.cost += cdef->GetCost();
 				}
 			}
-			if (!enemy->IsHidden()) {
-				eg.threat += enemy->GetThreat();
-			}
+			eg.threat += enemy->GetThreat();
 		}
 	}
 

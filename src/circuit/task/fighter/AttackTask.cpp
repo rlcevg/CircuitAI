@@ -76,11 +76,11 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
-//	if (unit->GetCircuitDef()->IsAttrMelee()) {
+	if (unit->GetCircuitDef()->IsAttrMelee()) {
 		travelAction = new CMoveAction(unit, squareSize);
-//	} else {
-//		travelAction = new CFightAction(unit, squareSize);
-//	}
+	} else {
+		travelAction = new CFightAction(unit, squareSize);
+	}
 	unit->PushBack(travelAction);
 	travelAction->SetActive(false);
 }
@@ -97,7 +97,7 @@ void CAttackTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CAttackTask::Execute(CCircuitUnit* unit)
 {
-	if (isRegroup || isAttack) {
+	if ((State::REGROUP == state) || (State::ENGAGE == state)) {
 		return;
 	}
 	if (!pPath->empty()) {
@@ -128,9 +128,9 @@ void CAttackTask::Update()
 	/*
 	 * Regroup if required
 	 */
-	bool wasRegroup = isRegroup;
+	bool wasRegroup = (State::REGROUP == state);
 	bool mustRegroup = IsMustRegroup();
-	if (isRegroup) {
+	if (State::REGROUP == state) {
 		if (mustRegroup) {
 			CCircuitAI* circuit = manager->GetCircuit();
 			int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
@@ -173,16 +173,16 @@ void CAttackTask::Update()
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
-	isAttack = false;
+	state = State::ROAM;
 	if (target != nullptr) {
 		const float sqRange = SQUARE(highestRange);
 		for (CCircuitUnit* unit : units) {
 			if (position.SqDistance2D(unit->GetPos(frame)) < sqRange) {
-				isAttack = true;
+				state = State::ENGAGE;
 				break;
 			}
 		}
-		if (isAttack) {
+		if (State::ENGAGE == state) {
 			for (CCircuitUnit* unit : units) {
 				if (unit->Blocker() != nullptr) {
 					continue;  // Do not interrupt current action
@@ -288,7 +288,7 @@ void CAttackTask::FindTarget()
 		const AIFloat3& ePos = enemy->GetPos();
 		const float sqBEDist = ePos.SqDistance2D(basePos);
 		const float scale = sqBEDist / sqOBDist;
-		if ((maxPower <= threatMap->GetThreatAt(ePos)) * scale ||
+		if ((maxPower <= threatMap->GetThreatAt(ePos) * scale) ||
 			!terrainManager->CanMoveToPos(area, ePos) ||
 			(notAW && (ePos.y < -SQUARE_SIZE * 5)) ||
 			(enemy->GetUnit()->GetVel().SqLength2D() > speed))

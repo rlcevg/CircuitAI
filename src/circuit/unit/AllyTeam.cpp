@@ -36,6 +36,7 @@ CAllyTeam::CAllyTeam(const TeamIds& tids, const SBox& sb)
 		: teamIds(tids)
 		, startBox(sb)
 		, initCount(0)
+		, resignSize(0)
 		, lastUpdate(-1)
 {
 }
@@ -74,6 +75,7 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 
 void CAllyTeam::Release()
 {
+	resignSize++;
 	if (--initCount > 0) {
 		return;
 	}

@@ -24,7 +24,6 @@ using namespace springai;
 CSuperTask::CSuperTask(ITaskManager* mgr)
 		: IFighterTask(mgr, IFighterTask::FightType::SUPER)
 		, targetFrame(0)
-		, isAttack(false)
 {
 }
 
@@ -60,11 +59,11 @@ void CSuperTask::Update()
 	CCircuitUnit* unit = *units.begin();
 	if (unit->GetCircuitDef()->IsAttrHoldFire()) {
 		if (targetFrame + (unit->GetCircuitDef()->GetReloadTime() + TARGET_DELAY) > frame) {
-			if (isAttack && (targetFrame + TARGET_DELAY <= frame)) {
+			if ((State::ENGAGE == state) && (targetFrame + TARGET_DELAY <= frame)) {
 				TRY_UNIT(circuit, unit,
 					unit->GetUnit()->Stop();
 				)
-				isAttack = false;
+				state = State::ROAM;
 			}
 			return;
 		}
@@ -133,13 +132,17 @@ void CSuperTask::Update()
 	}
 	SetTarget(bestTarget);
 	if (target != nullptr) {
-		const AIFloat3& pos = target->GetPos();
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->ExecuteCustomCommand(CMD_ATTACK_GROUND, {pos.x, pos.y, pos.z},
-												  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			if (target->IsInRadarOrLOS()) {
+				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			} else {
+				const AIFloat3& pos = target->GetPos();
+				unit->GetUnit()->ExecuteCustomCommand(CMD_ATTACK_GROUND, {pos.x, pos.y, pos.z},
+													  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			}
 		)
 		targetFrame = frame;
-		isAttack = true;
+		state = State::ENGAGE;
 	}
 }
 

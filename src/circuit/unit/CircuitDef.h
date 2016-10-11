@@ -185,6 +185,7 @@ public:
 	bool IsTurnLarge()    const { return isTurnLarge; }
 	bool IsAbleToCloak()  const { return isAbleToCloak; }
 	bool IsAbleToJump()   const { return isAbleToJump; }
+	bool IsAssistable()   const { return buildTime < 1e6f; }
 
 	float GetSpeed()     const { return speed; }
 	float GetLosRadius() const { return losRadius; }

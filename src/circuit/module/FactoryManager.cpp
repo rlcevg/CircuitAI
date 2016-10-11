@@ -1081,7 +1081,8 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 		}
 		if (u->IsBeingBuilt()) {
 			CCircuitDef* cdef = candUnit->GetCircuitDef();
-			if (isBuildMobile && (!isMetalEmpty || (*cdef == *terraDef) || (cdef->GetBuildTime() < maxCost))) {
+			if (isBuildMobile && ((!isMetalEmpty && cdef->IsAssistable()) || (*cdef == *terraDef) || (cdef->GetBuildTime() < maxCost)))
+			{
 				isBuildMobile = candUnit->GetCircuitDef()->IsMobile();
 				buildTarget = candUnit;
 			}
