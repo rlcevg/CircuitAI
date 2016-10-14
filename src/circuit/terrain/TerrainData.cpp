@@ -38,6 +38,8 @@ using namespace springai;
 
 int CTerrainData::terrainWidth(0);
 int CTerrainData::terrainHeight(0);
+float CTerrainData::boundX(0.f);
+float CTerrainData::boundZ(0.f);
 int CTerrainData::convertStoP(1);
 Map* CTerrainData::map(nullptr);
 
@@ -148,6 +150,8 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	int mapHeight = map->GetHeight();
 	terrainWidth = mapWidth * SQUARE_SIZE;
 	terrainHeight = mapHeight * SQUARE_SIZE;
+	boundX = terrainWidth + BOUND_EXT;
+	boundZ = terrainHeight + BOUND_EXT;
 	convertStoP = DEFAULT_SLACK;  // = 2^x, should not be less than 16 (2*SUQARE_SIZE)
 	if ((mapWidth / 64) * (mapHeight / 64) < 8 * 8) {
 		convertStoP /= 2; // Smaller Sectors, more detailed analysis

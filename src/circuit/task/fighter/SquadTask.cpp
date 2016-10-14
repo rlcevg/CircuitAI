@@ -254,4 +254,13 @@ bool ISquadTask::IsMustRegroup()
 	return State::REGROUP == state;
 }
 
+void ISquadTask::ActivePath(float speed)
+{
+	for (CCircuitUnit* unit : units) {
+		ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+		travelAction->SetPath(pPath, speed);
+		travelAction->SetActive(true);
+	}
+}
+
 } // namespace circuit

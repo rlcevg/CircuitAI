@@ -93,18 +93,23 @@ void CAntiAirTask::Update()
 	int frame = circuit->GetLastFrame();
 
 	if (State::DISENGAGE == state) {
-		const float maxDist = std::max<float>(lowestRange, circuit->GetPathfinder()->GetSquareSize());
-		if (position.SqDistance2D(leader->GetPos(frame)) < SQUARE(maxDist)) {
-			state = State::ROAM;
-		} else {
-			AIFloat3 startPos = leader->GetPos(frame);
-			pPath->clear();
-			CPathFinder* pathfinder = circuit->GetPathfinder();
-			pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
-			pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize());
-			if (!pPath->empty()) {
-				return;
+		if (updCount % 32 == 1) {
+			const float maxDist = std::max<float>(lowestRange, circuit->GetPathfinder()->GetSquareSize());
+			if (position.SqDistance2D(leader->GetPos(frame)) < SQUARE(maxDist)) {
+				state = State::ROAM;
+			} else {
+				AIFloat3 startPos = leader->GetPos(frame);
+				pPath->clear();
+				CPathFinder* pathfinder = circuit->GetPathfinder();
+				pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
+				pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize());
+				if (!pPath->empty()) {
+					ActivePath();
+					return;
+				}
 			}
+		} else {
+			return;
 		}
 	}
 
@@ -149,11 +154,7 @@ void CAntiAirTask::Update()
 		}
 		if (!isExecute) {
 			if (wasRegroup && !pPath->empty()) {
-				for (CCircuitUnit* unit : units) {
-					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-					travelAction->SetPath(pPath);
-					travelAction->SetActive(true);
-				}
+				ActivePath();
 			}
 			return;
 		}
@@ -210,11 +211,7 @@ void CAntiAirTask::Update()
 			travelAction->SetActive(false);
 		}
 	} else {
-		for (CCircuitUnit* unit : units) {
-			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-			travelAction->SetPath(pPath);
-			travelAction->SetActive(true);
-		}
+		ActivePath();
 	}
 }
 
@@ -261,11 +258,7 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 
 	if (!pPath->empty()) {
 		position = pPath->back();
-		for (CCircuitUnit* unit : units) {
-			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-			travelAction->SetPath(pPath);
-			travelAction->SetActive(true);
-		}
+		ActivePath();
 		state = State::DISENGAGE;
 	}
 }

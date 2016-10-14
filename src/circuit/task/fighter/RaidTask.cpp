@@ -144,11 +144,7 @@ void CRaidTask::Update()
 		}
 		if (!isExecute) {
 			if (wasRegroup && !pPath->empty()) {
-				for (CCircuitUnit* unit : units) {
-					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-					travelAction->SetPath(pPath);
-					travelAction->SetActive(true);
-				}
+				ActivePath();
 			}
 			return;
 		}
@@ -197,11 +193,7 @@ void CRaidTask::Update()
 		return;
 	} else if (!pPath->empty()) {
 		position = pPath->back();
-		for (CCircuitUnit* unit : units) {
-			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-			travelAction->SetPath(pPath);
-			travelAction->SetActive(true);
-		}
+		ActivePath();
 		return;
 	}
 
@@ -224,11 +216,7 @@ void CRaidTask::Update()
 
 		if (pPath->size() > 2) {
 //			position = path.back();
-			for (CCircuitUnit* unit : units) {
-				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-				travelAction->SetPath(pPath);
-				travelAction->SetActive(true);
-			}
+			ActivePath();
 			return;
 		}
 	}

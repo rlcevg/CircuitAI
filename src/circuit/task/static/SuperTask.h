@@ -25,6 +25,7 @@ public:
 
 private:
 	int targetFrame;
+	springai::AIFloat3 targetPos;
 };
 
 } // namespace circuit

@@ -22,7 +22,6 @@ namespace circuit {
 
 class CCircuitAI;
 class IBlockMask;
-class CTerrainData;
 struct STerrainMapArea;
 struct STerrainMapMobileType;
 struct STerrainMapImmobileType;
@@ -41,8 +40,8 @@ private:
 	void ReadConfig();
 
 public:
-	int GetTerrainWidth() const { return terrainData->terrainWidth; }
-	int GetTerrainHeight() const { return terrainData->terrainHeight; }
+	static inline int GetTerrainWidth() { return CTerrainData::terrainWidth; }
+	static inline int GetTerrainHeight() { return CTerrainData::terrainHeight; }
 
 public:
 	void Init();
@@ -173,6 +172,7 @@ public:
 private:
 	SAreaData* areaData;
 	CTerrainData* terrainData;
+
 
 #ifdef DEBUG_VIS
 private:

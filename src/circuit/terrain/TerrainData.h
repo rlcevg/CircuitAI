@@ -75,7 +75,7 @@ struct STerrainMapArea {
 	float percentOfMap;  // 0-100
 };
 
-#define MAP_AREA_LIST_SIZE 50
+#define MAP_AREA_LIST_SIZE	50
 
 struct STerrainMapMobileType {
 	using Id = int;
@@ -162,6 +162,8 @@ struct SAreaData {
 	float percentLand;    // 0 to 100 (used by cRAIUnitDefHandler)
 };
 
+#define BOUND_EXT	3e3f
+
 class CTerrainData {
 public:
 	CTerrainData();
@@ -172,6 +174,12 @@ public:
 	static void CorrectPosition(springai::AIFloat3& position);
 	static int terrainWidth;
 	static int terrainHeight;
+
+	static inline bool IsNotInBounds(const springai::AIFloat3& pos) {
+		return (pos.x < -BOUND_EXT) || (pos.z < -BOUND_EXT) || (pos.x > boundX) || (pos.z > boundZ) || (pos == ZeroVector);
+	}
+	static float boundX;
+	static float boundZ;
 
 // ---- RAI's GlobalTerrainMap ---- BEGIN
 	int GetSectorIndex(const springai::AIFloat3& position) const {  // use IsSectorValid() to insure the index is valid

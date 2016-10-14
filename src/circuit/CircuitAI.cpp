@@ -978,7 +978,7 @@ void CCircuitAI::UpdateEnemyUnits()
 		CEnemyUnit* enemy = it->second;
 
 		// FIXME: Unit id validation. No EnemyDestroyed sometimes apparently
-		if (enemy->IsInRadarOrLOS() && (enemy->GetUnit()->GetPos() == ZeroVector)) {
+		if (enemy->IsInRadarOrLOS() && CTerrainData::IsNotInBounds(enemy->GetUnit()->GetPos())) {
 			EnemyDestroyed(enemy);
 			it = enemyUnits.erase(it);  // UnregisterEnemyUnit(enemy)
 			delete enemy;

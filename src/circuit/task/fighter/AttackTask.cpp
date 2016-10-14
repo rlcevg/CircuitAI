@@ -151,11 +151,7 @@ void CAttackTask::Update()
 		}
 		if (!isExecute) {
 			if (wasRegroup && !pPath->empty()) {
-				for (CCircuitUnit* unit : units) {
-					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-					travelAction->SetPath(pPath, lowestSpeed);
-					travelAction->SetActive(true);
-				}
+				ActivePath(lowestSpeed);
 			}
 //			ISquadTask::Update();
 			return;
@@ -220,11 +216,7 @@ void CAttackTask::Update()
 			travelAction->SetActive(false);
 		}
 	} else {
-		for (CCircuitUnit* unit : units) {
-			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-			travelAction->SetPath(pPath, lowestSpeed);
-			travelAction->SetActive(true);
-		}
+		ActivePath(lowestSpeed);
 	}
 }
 
