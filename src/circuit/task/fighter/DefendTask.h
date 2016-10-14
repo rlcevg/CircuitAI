@@ -14,10 +14,11 @@ namespace circuit {
 
 class CDefendTask: public ISquadTask {
 public:
-	CDefendTask(ITaskManager* mgr, const springai::AIFloat3& position, FightType promote, unsigned maxSize);
+	CDefendTask(ITaskManager* mgr, const springai::AIFloat3& position, FightType promote, float maxCost);
 	virtual ~CDefendTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const;
+	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 
 	virtual void Execute(CCircuitUnit* unit);
@@ -34,7 +35,8 @@ private:
 	void FindTarget();
 
 	FightType promote;
-	unsigned int maxSize;
+	float maxCost;
+	float cost;
 };
 
 } // namespace circuit

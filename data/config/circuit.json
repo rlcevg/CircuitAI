@@ -341,8 +341,8 @@
 
 "quota": {
 	"scout": 2,  // max scout units out of raiders
-	"raid": [4, 7],  // [<min>, <avg>] size of raider squad
-	"attack": 3  // min size of attack group
+	"raid": [300, 500],  // [<min>, <avg>] cost of raider squad
+	"attack": 800  // min cost of attack group
 },
 
 // If unit's health drops below specified percent it will retreat

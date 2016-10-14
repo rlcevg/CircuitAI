@@ -25,8 +25,10 @@ namespace circuit {
 
 using namespace springai;
 
-CRaidTask::CRaidTask(ITaskManager* mgr)
+CRaidTask::CRaidTask(ITaskManager* mgr, float maxCost)
 		: ISquadTask(mgr, FightType::RAID)
+		, maxCost(maxCost)
+		, cost(0.f)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
@@ -47,7 +49,7 @@ bool CRaidTask::CanAssignTo(CCircuitUnit* unit) const
 		return false;
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
-	if (units.size() > circuit->GetMilitaryManager()->GetAvgRaiders()) {
+	if (cost > maxCost) {
 		return false;
 	}
 	int frame = circuit->GetLastFrame();
@@ -61,6 +63,7 @@ void CRaidTask::AssignTo(CCircuitUnit* unit)
 {
 	ISquadTask::AssignTo(unit);
 	highestRange = std::max(highestRange, unit->GetCircuitDef()->GetLosRadius());
+	cost += unit->GetCircuitDef()->GetCost();
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
@@ -80,6 +83,7 @@ void CRaidTask::RemoveAssignee(CCircuitUnit* unit)
 		manager->AbortTask(this);
 	} else {
 		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetLosRadius());
+		cost -= unit->GetCircuitDef()->GetCost();
 	}
 }
 

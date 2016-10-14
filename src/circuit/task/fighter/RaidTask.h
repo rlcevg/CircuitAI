@@ -14,7 +14,7 @@ namespace circuit {
 
 class CRaidTask: public ISquadTask {
 public:
-	CRaidTask(ITaskManager* mgr);
+	CRaidTask(ITaskManager* mgr, float maxCost);
 	virtual ~CRaidTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const;
@@ -28,6 +28,9 @@ public:
 
 private:
 	void FindTarget();
+
+	float maxCost;
+	float cost;
 };
 
 } // namespace circuit

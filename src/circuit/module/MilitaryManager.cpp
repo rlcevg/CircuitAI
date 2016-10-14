@@ -336,7 +336,7 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			break;
 		}
 		case IFighterTask::FightType::RAID: {
-			task = new CRaidTask(this);
+			task = new CRaidTask(this, avgRaiders);
 			break;
 		}
 		case IFighterTask::FightType::ATTACK: {
@@ -374,9 +374,9 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 	return task;
 }
 
-IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType promote, unsigned size)
+IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType promote, float cost)
 {
-	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), promote, size);
+	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), promote, cost);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
 	fightUpdates.push_back(task);
 	return task;
@@ -890,9 +890,9 @@ void CMilitaryManager::ReadConfig()
 
 	const Json::Value& quotas = root["quota"];
 	maxScouts = quotas.get("scout", 3).asUInt();
-	minRaiders = quotas["raid"].get((unsigned)0, 3).asUInt();
-	avgRaiders = quotas["raid"].get((unsigned)1, 5).asUInt();
-	minAttackers = quotas.get("attack", 2).asUInt();
+	minRaiders = quotas["raid"].get((unsigned)0, 300.f).asFloat();
+	avgRaiders = quotas["raid"].get((unsigned)1, 500.f).asFloat();
+	minAttackers = quotas.get("attack", 800.f).asFloat();
 
 	const Json::Value& porc = root["porcupine"];
 	const Json::Value& defs = porc["unit"];

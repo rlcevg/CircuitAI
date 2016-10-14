@@ -20,10 +20,11 @@ namespace circuit {
 
 using namespace springai;
 
-CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, FightType promote, unsigned maxSize)
+CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, FightType promote, float maxCost)
 		: ISquadTask(mgr, FightType::DEFEND)
 		, promote(promote)
-		, maxSize(maxSize)
+		, maxCost(maxCost)
+		, cost(0.f)
 {
 	this->position = position;
 }
@@ -35,7 +36,13 @@ CDefendTask::~CDefendTask()
 
 bool CDefendTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return (units.size() < maxSize) && (static_cast<CDefendTask*>(unit->GetTask())->GetPromote() == promote);
+	return (cost < maxCost) && (static_cast<CDefendTask*>(unit->GetTask())->GetPromote() == promote);
+}
+
+void CDefendTask::AssignTo(CCircuitUnit* unit)
+{
+	ISquadTask::AssignTo(unit);
+	cost += unit->GetCircuitDef()->GetCost();
 }
 
 void CDefendTask::RemoveAssignee(CCircuitUnit* unit)
@@ -43,6 +50,8 @@ void CDefendTask::RemoveAssignee(CCircuitUnit* unit)
 	ISquadTask::RemoveAssignee(unit);
 	if (leader == nullptr) {
 		manager->AbortTask(this);
+	} else {
+		cost -= unit->GetCircuitDef()->GetCost();
 	}
 }
 
@@ -68,8 +77,8 @@ void CDefendTask::Update()
 	 * Merge tasks if possible
 	 */
 	if (updCount % 32 == 1) {
-		if (units.size() >= maxSize) {
-			IFighterTask* task = static_cast<CMilitaryManager*>(manager)->EnqueueTask(IFighterTask::FightType::ATTACK);
+		if (cost >= maxCost) {
+			IFighterTask* task = static_cast<CMilitaryManager*>(manager)->EnqueueTask(promote);
 			decltype(units) tmpUnits = units;
 			for (CCircuitUnit* unit : tmpUnits) {
 				manager->AssignTask(unit, task);
