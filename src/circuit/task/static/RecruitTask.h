@@ -42,7 +42,6 @@ public:
 private:
 	RecruitType recruitType;
 	float sqradius;
-	bool isWait;
 };
 
 } // namespace circuit

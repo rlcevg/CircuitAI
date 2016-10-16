@@ -44,7 +44,8 @@ void CSRepairTask::Update()
 		}
 		IBuilderTask* task = nullptr;
 		if (repTarget->GetUnit()->IsBeingBuilt()) {
-			if (economyManager->IsMetalEmpty()) {
+			CFactoryManager* factoryManager = circuit->GetFactoryManager();
+			if (economyManager->IsMetalEmpty() && !factoryManager->IsHighPriority(repTarget)) {
 				// Check for damaged units
 				CBuilderManager* builderManager = circuit->GetBuilderManager();
 				circuit->UpdateFriendlyUnits();
@@ -56,7 +57,7 @@ void CSRepairTask::Update()
 						continue;
 					}
 					if (!u->IsBeingBuilt() && (u->GetHealth() < u->GetMaxHealth())) {
-						task = circuit->GetFactoryManager()->EnqueueRepair(IBuilderTask::Priority::NORMAL, candUnit);
+						task = factoryManager->EnqueueRepair(IBuilderTask::Priority::NORMAL, candUnit);
 						break;
 					}
 				}
@@ -66,12 +67,13 @@ void CSRepairTask::Update()
 					auto features = std::move(circuit->GetCallback()->GetFeaturesIn(position, radius));
 					if (!features.empty()) {
 						utils::free_clear(features);
-						task = circuit->GetFactoryManager()->EnqueueReclaim(IBuilderTask::Priority::NORMAL, position, radius);
+						task = factoryManager->EnqueueReclaim(IBuilderTask::Priority::NORMAL, position, radius);
 					}
 				}
 			}
 		} else if (economyManager->IsMetalFull()) {
 			// Check for units under construction
+			CFactoryManager* factoryManager = circuit->GetFactoryManager();
 			CBuilderManager* builderManager = circuit->GetBuilderManager();
 			float maxCost = MAX_BUILD_SEC * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor();
 			circuit->UpdateFriendlyUnits();
@@ -82,8 +84,10 @@ void CSRepairTask::Update()
 				if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {
 					continue;
 				}
-				if (u->IsBeingBuilt() && (candUnit->GetCircuitDef()->GetBuildTime() < maxCost)) {
-					task = circuit->GetFactoryManager()->EnqueueRepair(IBuilderTask::Priority::NORMAL, candUnit);
+				bool isHighPrio = factoryManager->IsHighPriority(candUnit);
+				if (u->IsBeingBuilt() && ((candUnit->GetCircuitDef()->GetBuildTime() < maxCost) || isHighPrio)) {
+					IBuilderTask::Priority priority = isHighPrio ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
+					task = factoryManager->EnqueueRepair(priority, candUnit);
 					break;
 				}
 			}

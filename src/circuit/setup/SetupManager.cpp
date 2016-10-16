@@ -39,7 +39,6 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 		, basePos(-RgtVector)
 		, emptyShield(0.f)
 		, commChoice(nullptr)
-		, morphFrame(-1)
 {
 	const char* setupScript = circuit->GetGame()->GetSetupScript();
 	if (!setupData->IsInitialized()) {
@@ -362,6 +361,8 @@ void CSetupManager::ReadConfig()
 	fullShield = shield.get((unsigned)1, 0.6f).asFloat();
 
 	const Json::Value& comm = root["commander"];
+	const std::string& prefix = comm["prefix"].asString();
+	const std::string& suffix = comm["suffix"].asString();
 	const Json::Value& items = comm["unit"];
 	std::vector<CCircuitDef*> commChoices;
 	commChoices.reserve(items.size());
@@ -370,41 +371,71 @@ void CSetupManager::ReadConfig()
 	weight.reserve(items.size());
 	CCircuitDef::RoleName& roleNames = CCircuitDef::GetRoleNames();
 
-	for (const std::string& defName : items.getMemberNames()) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());
+	for (const std::string& commName : items.getMemberNames()) {
+		CCircuitDef* cdef = circuit->GetCircuitDef((prefix + commName + suffix).c_str());
 		if (cdef == nullptr) {
-			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), defName.c_str());
+			circuit->LOG("CONFIG %s: has unknown commander '%s'", cfgName.c_str(), commName.c_str());
 			continue;
 		}
 
 		commChoices.push_back(cdef);
 
-		const Json::Value& comm = items[defName];
+		const Json::Value& comm = items[commName];
 		const float imp = comm.get("importance", 0.f).asFloat();
 		magnitude += imp;
 		weight.push_back(imp);
 
-		morphFrame = comm.get("morph_after", -1).asInt();
-
 		const Json::Value& strt = comm["start"];
-		opener.reserve(strt.size());
-		for (const Json::Value& role : strt) {
+		const Json::Value& defStrt = strt["default"];
+		SStart& facStart = start[cdef->GetId()];
+		facStart.defaultStart.reserve(defStrt.size());
+		for (const Json::Value& role : defStrt) {
 			auto it = roleNames.find(role.asString());
-			if (it != roleNames.end()) {
-				opener.push_back(it->second);
+			if (it == roleNames.end()) {
+				circuit->LOG("CONFIG %s: default start has unknown role '%s'", cfgName.c_str(), role.asCString());
+			} else {
+				facStart.defaultStart.push_back(it->second);
 			}
 		}
-	}
-
-	// FIXME: Tie upgrades to UnitDef
-	const Json::Value& upgr = comm["upgrade"];
-	modules.reserve(upgr.size());
-	for (const Json::Value& lvl : upgr) {
-		std::vector<float> mdls;
-		for (const Json::Value& m : lvl) {
-			mdls.push_back(m.asFloat());
+		const Json::Value& facStrt = strt["factory"];
+		for (const std::string& defName : facStrt.getMemberNames()) {
+			CCircuitDef* fdef = circuit->GetCircuitDef(defName.c_str());
+			if (fdef == nullptr) {
+				circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), defName.c_str());
+				continue;
+			}
+			const Json::Value& multiStrt = facStrt[defName];
+			std::vector<SOpener>& facOpeners = facStart.openers[fdef->GetId()];
+			facOpeners.reserve(multiStrt.size());
+			for (const Json::Value& opener : multiStrt) {
+				const float prob = opener.get((unsigned)0, 1.f).asFloat();
+				const Json::Value& roles = opener[1];
+				std::vector<CCircuitDef::RoleType> queue;
+				queue.reserve(roles.size());
+				for (const Json::Value& role : roles) {
+					auto it = roleNames.find(role.asString());
+					if (it == roleNames.end()) {
+						circuit->LOG("CONFIG %s: %s start has unknown role '%s'", cfgName.c_str(), defName.c_str(), role.asCString());
+					} else {
+						queue.push_back(it->second);
+					}
+				}
+				facOpeners.emplace_back(prob, queue);
+			}
 		}
-		modules.push_back(mdls);
+
+		SMorph& morph = morphs[commName];
+		morph.frame = comm.get("morph_after", -1).asInt();
+
+		const Json::Value& upgr = comm["upgrade"];
+		morph.modules.reserve(upgr.size());
+		for (const Json::Value& lvl : upgr) {
+			std::vector<float> mdls;
+			for (const Json::Value& m : lvl) {
+				mdls.push_back(m.asFloat());
+			}
+			morph.modules.push_back(mdls);
+		}
 	}
 
 	if (!commChoices.empty()) {
@@ -420,6 +451,68 @@ void CSetupManager::ReadConfig()
 		}
 		commChoice = commChoices[choice];
 	}
+}
+
+bool CSetupManager::HasModules(const CCircuitDef* cdef, unsigned level) const
+{
+	std::string name = cdef->GetUnitDef()->GetName();
+	for (auto& kv : morphs) {
+		if (kv.first.find(name) != std::string::npos) {
+			return kv.second.modules.size() > level;
+		}
+	}
+	return false;
+}
+
+const std::vector<float>& CSetupManager::GetModules(const CCircuitDef* cdef, unsigned level) const
+{
+	std::string name = cdef->GetUnitDef()->GetName();
+	for (auto& kv : morphs) {
+		if (kv.first.find(name) != std::string::npos) {
+			const std::vector<std::vector<float>>& modules = kv.second.modules;
+			return modules[std::min<unsigned>(level, modules.size() - 1)];
+		}
+	}
+	const std::vector<std::vector<float>>& modules = morphs.begin()->second.modules;
+	return modules[std::min<unsigned>(level, modules.size() - 1)];
+}
+
+int CSetupManager::GetMorphFrame(const CCircuitDef* cdef) const
+{
+	std::string name = cdef->GetUnitDef()->GetName();
+	for (auto& kv : morphs) {
+		if (kv.first.find(name) != std::string::npos) {
+			return kv.second.frame;
+		}
+	}
+	return -1;
+}
+
+const std::vector<CCircuitDef::RoleType>* CSetupManager::GetOpener(const CCircuitDef* facDef) const
+{
+	auto its = start.find(commChoice->GetId());
+	if (its == start.end()) {
+		return nullptr;
+	}
+
+	auto ito = its->second.openers.find(facDef->GetId());
+	if (ito == its->second.openers.end()) {
+		return &its->second.defaultStart;
+	}
+
+	float magnitude = 0.f;
+	for (const SOpener& opener : ito->second) {
+		magnitude += opener.prob;
+	}
+	float dice = (float)rand() / RAND_MAX * magnitude;
+	float total = .0f;
+	for (const SOpener& opener : ito->second) {
+		total += opener.prob;
+		if (dice < total) {
+			return &opener.queue;
+		}
+	}
+	return &its->second.defaultStart;
 }
 
 void CSetupManager::Welcome() const

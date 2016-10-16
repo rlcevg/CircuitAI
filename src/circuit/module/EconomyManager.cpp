@@ -146,7 +146,11 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				}
 			}
 
-			if (isStart && (this->circuit->GetSetupManager()->GetMorphFrame() >= 0)) {
+			if (!isStart) {
+				return;
+			}
+			int morphFrame = this->circuit->GetSetupManager()->GetMorphFrame(unit->GetCircuitDef());
+			if (morphFrame >= 0) {
 				this->circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>([this, unitId]() {
 					// Force commander level 0 to morph
 					CCircuitUnit* unit = this->circuit->GetTeamUnit(unitId);
@@ -157,7 +161,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 							unit->Upgrade();  // Morph();
 						}
 					}
-				}), FRAMES_PER_SEC * this->circuit->GetSetupManager()->GetMorphFrame());
+				}), FRAMES_PER_SEC * morphFrame);
 			}
 		}), FRAMES_PER_SEC);
 	};
@@ -1088,8 +1092,11 @@ void CEconomyManager::OpenStrategy(CCircuitDef* facDef, const AIFloat3& pos)
 	CFactoryManager* factoryManager = circuit->GetFactoryManager();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
-	const std::vector<CCircuitDef::RoleType>& opener = circuit->GetSetupManager()->GetOpener();
-	for (CCircuitDef::RoleType type : opener) {
+	const std::vector<CCircuitDef::RoleType>* opener = circuit->GetSetupManager()->GetOpener(facDef);
+	if (opener == nullptr) {
+		return;
+	}
+	for (CCircuitDef::RoleType type : *opener) {
 		CCircuitDef* buildDef = factoryManager->GetRoleDef(facDef, type);
 		if ((buildDef == nullptr) || !buildDef->IsAvailable()) {
 			continue;

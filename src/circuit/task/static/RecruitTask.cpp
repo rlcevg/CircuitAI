@@ -29,7 +29,6 @@ CRecruitTask::CRecruitTask(ITaskManager* mgr, Priority priority,
 		: IBuilderTask(mgr, priority, buildDef, position, Type::FACTORY, BuildType::RECRUIT, .0f, .0f, -1)
 		, recruitType(type)
 		, sqradius(radius * radius)
-		, isWait(false)
 {
 }
 
@@ -96,9 +95,9 @@ void CRecruitTask::Update()
 	CCircuitAI* circuit = manager->GetCircuit();
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	bool hasMetal = economyManager->GetAvgMetalIncome() * 2.0f > economyManager->GetMetalPull();
-	if (isWait) {
+	if (State::DISENGAGE == state) {
 		if (hasMetal) {
-			isWait = false;
+			state = State::ROAM;  // Not wait
 			for (CCircuitUnit* unit : units) {
 				TRY_UNIT(circuit, unit,
 					unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
@@ -107,7 +106,7 @@ void CRecruitTask::Update()
 		}
 	} else {
 		if (!hasMetal) {
-			isWait = true;
+			state = State::DISENGAGE;  // Wait
 			for (CCircuitUnit* unit : units) {
 				TRY_UNIT(circuit, unit,
 					unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {0});

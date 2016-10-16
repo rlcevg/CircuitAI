@@ -59,12 +59,10 @@ public:
 	float GetEmptyShield() const { return emptyShield; }
 	float GetFullShield() const { return fullShield; }
 
-	bool HasModules(unsigned level) const { return modules.size() > level; }
-	const std::vector<float>& GetModules(unsigned level) const {
-		return modules[std::min<unsigned>(level, modules.size() - 1)];
-	}
-	int GetMorphFrame() const { return morphFrame; }
-	const std::vector<CCircuitDef::RoleType>& GetOpener() const { return opener; }
+	bool HasModules(const CCircuitDef* cdef, unsigned level) const;
+	const std::vector<float>& GetModules(const CCircuitDef* cdef, unsigned level) const;
+	int GetMorphFrame(const CCircuitDef* cdef) const;
+	const std::vector<CCircuitDef::RoleType>* GetOpener(const CCircuitDef* facDef) const;
 
 	void Welcome() const;
 
@@ -87,9 +85,22 @@ private:
 	float fullShield;
 
 	CCircuitDef* commChoice;
-	std::vector<std::vector<float>> modules;
-	int morphFrame;
-	std::vector<CCircuitDef::RoleType> opener;
+	struct SMorph {
+		std::vector<std::vector<float>> modules;
+		int frame;
+	};
+	std::map<std::string, SMorph> morphs;
+
+	struct SOpener {
+		SOpener(float p, const std::vector<CCircuitDef::RoleType>& q) : prob(p), queue(q) {}
+		float prob;
+		std::vector<CCircuitDef::RoleType> queue;
+	};
+	struct SStart {
+		std::map<CCircuitDef::Id, std::vector<SOpener>> openers;  // fac: openers
+		std::vector<CCircuitDef::RoleType> defaultStart;
+	};
+	std::map<CCircuitDef::Id, SStart> start;  // comm: start
 };
 
 } // namespace circuit

@@ -275,7 +275,7 @@ bool CCircuitUnit::IsUpgradable()
 {
 	unsigned level = unit->GetRulesParamFloat("comm_level", 0.f);
 	assert(manager != nullptr);
-	return manager->GetCircuit()->GetSetupManager()->HasModules(level);
+	return manager->GetCircuit()->GetSetupManager()->HasModules(circuitDef, level);
 }
 
 void CCircuitUnit::Upgrade()
@@ -301,7 +301,7 @@ void CCircuitUnit::Upgrade()
 	float alreadyCount = unit->GetRulesParamFloat("comm_module_count", 0.f);
 
 	assert(manager != nullptr);
-	const std::vector<float>& newModules = manager->GetCircuit()->GetSetupManager()->GetModules(level);
+	const std::vector<float>& newModules = manager->GetCircuit()->GetSetupManager()->GetModules(circuitDef, level);
 
 	std::vector<float> upgrade;
 	upgrade.push_back(level);

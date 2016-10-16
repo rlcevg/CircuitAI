@@ -1059,8 +1059,10 @@
 },
 
 "commander": {
+	"prefix": "dyntrainer_",
+	"suffix": "_base",
 	"unit": {
-		"dyntrainer_support_base": {
+		"support": {
 			// Choice importance, 0 by default
 			"importance": 1.0,
 
@@ -1068,37 +1070,50 @@
 			"morph_after": 180,
 
 			// Starting units (order matters)
-			"start": ["raider", "raider", "builder"]
+			"start": {
+				"factory": {
+					"factorycloak": [
+						// [<weight>, [<role>, <role>, ...]]
+						[0.5, ["raider", "riot", "builder"]],
+						[0.5, ["builder", "raider", "raider"]]
+					],
+					"factorygunship": [
+						[0.5, ["scout", "riot", "raider"]],
+						[0.5, ["builder", "raider", "raider"]]
+					]
+				},
+				"default": ["raider", "raider", "builder"]
+			},
+			// List of dynamic module IDs
+			"upgrade": [
+				[13, 30],  // shotgun, radar
+				[34, 34],  // companion drones
+				[15, 35, 35],  // sniper, battle drones
+				[35, 35, 35],  // battle drones
+				[35, 35, 35],  // battle drones
+				[34, 34, 34],  // companion drones
+				[34, 34, 34],  // companion drones
+				[40, 40, 40],  // speed
+				[40, 40, 40],  // speed
+				[40, 40, 37],  // speed, armour
+				[37, 37, 37],  // armour
+				[37, 37, 37],  // armour
+				[37, 36, 36],  // armour, autoheal
+				[36, 36, 36],  // autoheal
+				[36, 36, 36],  // autoheal
+				[42, 42, 42],  // builder
+				[42, 42, 42],  // builder
+				[42, 42, 29],  // builder, jammer
+				[32, 27, 33]  // area cloak, disruptor ammo, lazarus
+			]
 		},
-		"dyntrainer_recon_base": {
+		"recon": {
 		},
-		"dyntrainer_assault_base": {
+		"assault": {
 		},
-		"dyntrainer_strike_base": {
+		"strike": {
 		}
-	},
-	// List of dynamic module IDs
-	"upgrade": [
-		[13, 30],  // shotgun, radar
-		[34, 34],  // companion drones
-		[15, 35, 35],  // sniper, battle drones
-		[35, 35, 35],  // battle drones
-		[35, 35, 35],  // battle drones
-		[34, 34, 34],  // companion drones
-		[34, 34, 34],  // companion drones
-		[40, 40, 40],  // speed
-		[40, 40, 40],  // speed
-		[40, 40, 37],  // speed, armour
-		[37, 37, 37],  // armour
-		[37, 37, 37],  // armour
-		[37, 36, 36],  // armour, autoheal
-		[36, 36, 36],  // autoheal
-		[36, 36, 36],  // autoheal
-		[42, 42, 42],  // builder
-		[42, 42, 42],  // builder
-		[42, 42, 29],  // builder, jammer
-		[32, 27, 33]  // area cloak, disruptor ammo, lazarus
-	]
+	}
 },
 
 // Actions on building finished event

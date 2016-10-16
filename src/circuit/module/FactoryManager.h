@@ -66,6 +66,7 @@ public:
 
 	CRecruitTask* UpdateBuildPower(CCircuitUnit* unit);
 	CRecruitTask* UpdateFirePower(CCircuitUnit* unit);
+	bool IsHighPriority(CCircuitUnit* unit) const;
 
 	CCircuitDef* GetFactoryToBuild(springai::AIFloat3 position = -RgtVector, bool isStart = false);
 	void AddFactory(CCircuitDef* cdef);

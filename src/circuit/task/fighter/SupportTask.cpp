@@ -23,7 +23,6 @@ using namespace springai;
 CSupportTask::CSupportTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::SUPPORT)
 		, updCount(0)
-		, isWait(false)
 {
 	const AIFloat3& pos = manager->GetCircuit()->GetSetupManager()->GetBasePos();
 	position = utils::get_radial_pos(pos, SQUARE_SIZE * 32);
@@ -44,7 +43,7 @@ void CSupportTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CSupportTask::Execute(CCircuitUnit* unit)
 {
-	if (isWait) {
+	if (State::DISENGAGE == state) {
 		return;
 	}
 
@@ -58,7 +57,7 @@ void CSupportTask::Execute(CCircuitUnit* unit)
 		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 	)
-	isWait = true;
+	state = State::DISENGAGE;  // Wait
 }
 
 void CSupportTask::Update()
@@ -118,7 +117,7 @@ void CSupportTask::Update()
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->Fight(endPos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 		)
-		isWait = false;
+		state = State::ROAM;  // Not wait
 	}
 }
 

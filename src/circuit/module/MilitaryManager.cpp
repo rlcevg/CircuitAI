@@ -51,6 +51,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		, fightIterator(0)
 		, scoutIdx(0)
 		, armyCost(.0f)
+//		, enemyArmyCost(.0f)
 		, radarDef(nullptr)
 		, sonarDef(nullptr)
 {
@@ -757,6 +758,9 @@ void CMilitaryManager::AddEnemyCost(const CEnemyUnit* e)
 	assert(cdef != nullptr);
 
 	enemyCosts[cdef->GetEnemyRole()] += e->GetCost();
+//	if (cdef->IsMobile() && cdef->IsAttacker()) {
+//		enemyArmyCost += e->GetCost();
+//	}
 }
 
 void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
@@ -766,6 +770,9 @@ void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
 
 	float& metal = enemyCosts[cdef->GetEnemyRole()];
 	metal = std::max(metal - e->GetCost(), 0.f);
+//	if (cdef->IsMobile() && cdef->IsAttacker()) {
+//		enemyArmyCost = std::max(enemyArmyCost - e->GetCost(), 0.f);
+//	}
 }
 
 float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
