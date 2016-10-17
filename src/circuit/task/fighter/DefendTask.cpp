@@ -138,9 +138,9 @@ void CDefendTask::Merge(ISquadTask* task)
 	const std::set<CCircuitUnit*>& rookies = task->GetAssignees();
 	for (CCircuitUnit* unit : rookies) {
 		unit->SetTask(this);
-		cost += unit->GetCircuitDef()->GetCost();
 	}
 	units.insert(rookies.begin(), rookies.end());
+	cost += static_cast<CDefendTask*>(task)->GetCost();
 }
 
 void CDefendTask::FindTarget()

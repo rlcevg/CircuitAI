@@ -121,12 +121,10 @@ void ISquadTask::FindLeader(decltype(units)::iterator itBegin, decltype(units)::
 		highestRange = std::max(highestRange, ass->GetCircuitDef()->GetMaxRange());
 		lowestSpeed  = std::min(lowestSpeed,  ass->GetCircuitDef()->GetSpeed());
 		highestSpeed = std::max(highestSpeed, ass->GetCircuitDef()->GetSpeed());
-		if (ass->GetCircuitDef()->IsRoleSupport()) {
+		if (ass->GetCircuitDef()->IsRoleSupport() || (ass->GetArea() == nullptr)) {
 			continue;
 		}
-		if (leader->GetArea() == nullptr) {
-			leader = ass;
-		} else if ((ass->GetArea() != nullptr) && (ass->GetArea()->percentOfMap < leader->GetArea()->percentOfMap)) {
+		if ((leader->GetArea() == nullptr) || (ass->GetArea()->percentOfMap < leader->GetArea()->percentOfMap)) {
 			leader = ass;
 		}
 	}

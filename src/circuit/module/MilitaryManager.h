@@ -77,7 +77,6 @@ public:
 	void DelEnemyCost(const CEnemyUnit* e);
 	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return enemyGroups; }
 	const springai::AIFloat3& GetEnemyPos() const { return enemyPos; }
-//	bool IsArmyUrgent() const { return armyCost * enemyFactor < enemyArmyCost; }
 	void UpdateEnemyGroups() { KMeansIteration(); }
 
 	const std::set<CCircuitUnit*>& GetRoleUnits(CCircuitDef::RoleType type) const {
@@ -144,8 +143,6 @@ private:
 	std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> enemyCosts{{0.f}};
 	std::vector<SEnemyGroup> enemyGroups;
 	springai::AIFloat3 enemyPos;
-//	float enemyArmyCost;
-//	float enemyFactor;
 
 	struct SClusterInfo {
 		IFighterTask* defence;

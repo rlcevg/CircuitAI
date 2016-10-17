@@ -1073,8 +1073,7 @@
 			"start": {
 				"factory": {
 					"factorycloak": [
-						// [<weight>, [<role>, <role>, ...]]
-						[0.5, ["raider", "riot", "builder"]],
+						[0.5, ["raider", "riot", "builder"]],  // [<weight>, [<role>, <role>, ...]]
 						[0.5, ["builder", "raider", "raider"]]
 					],
 					"factorygunship": [

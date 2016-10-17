@@ -749,15 +749,12 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		buildDef = facDef.buildDefs[choice];
 	}
 
-//	for (Team* team : circuit->GetCallback()->GetEnemyTeams()) {
-//		circuit->GetGame()->GetTeamAllyTeam(team->GetTeamId());
-//	}
 	if (/*(buildDef != nullptr) && */buildDef->IsAvailable()) {
 		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
 		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
 		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
 		// FIXME CCircuitDef::RoleType <-> CRecruitTask::RecruitType relations
-		return EnqueueTask(/*militaryManager->IsArmyUrgent()*/isResponse ? CRecruitTask::Priority::HIGH : CRecruitTask::Priority::NORMAL,
+		return EnqueueTask(isResponse ? CRecruitTask::Priority::HIGH : CRecruitTask::Priority::NORMAL,
 						   buildDef, buildPos, CRecruitTask::RecruitType::FIREPOWER, radius);
 	}
 	return nullptr;

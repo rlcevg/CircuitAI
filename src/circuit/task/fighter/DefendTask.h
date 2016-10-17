@@ -29,6 +29,7 @@ public:
 
 protected:
 	FightType GetPromote() const { return promote; }
+	float GetCost() const { return cost; }
 
 private:
 	virtual void Merge(ISquadTask* task);

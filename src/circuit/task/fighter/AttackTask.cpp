@@ -279,7 +279,7 @@ void CAttackTask::FindTarget()
 		}
 		const AIFloat3& ePos = enemy->GetPos();
 		const float sqBEDist = ePos.SqDistance2D(basePos);
-		const float scale = sqBEDist / sqOBDist;
+		const float scale = std::min(sqBEDist / sqOBDist, 1.f);
 		if ((maxPower <= threatMap->GetThreatAt(ePos) * scale) ||
 			!terrainManager->CanMoveToPos(area, ePos) ||
 			(notAW && (ePos.y < -SQUARE_SIZE * 5)) ||
