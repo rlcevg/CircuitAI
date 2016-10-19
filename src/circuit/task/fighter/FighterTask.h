@@ -41,6 +41,8 @@ public:
 	CEnemyUnit* GetTarget() const { return target; }
 	void ClearTarget() { target = nullptr; }  // Only for ~CEnemyUnit
 
+	const std::set<CCircuitUnit*>& GetShields() const { return shields; }
+
 protected:
 	void SetTarget(CEnemyUnit* enemy);
 
@@ -51,6 +53,7 @@ protected:
 	CEnemyUnit* target;
 
 	std::set<CCircuitUnit*> cowards;
+	std::set<CCircuitUnit*> shields;
 };
 
 } // namespace circuit

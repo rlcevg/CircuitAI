@@ -340,7 +340,7 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			break;
 		}
 		case IFighterTask::FightType::ATTACK: {
-			task = new CAttackTask(this);
+			task = new CAttackTask(this, minAttackers);
 			break;
 		}
 		case IFighterTask::FightType::BOMB: {

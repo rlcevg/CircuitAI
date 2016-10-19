@@ -457,7 +457,7 @@ bool CSetupManager::HasModules(const CCircuitDef* cdef, unsigned level) const
 {
 	std::string name = cdef->GetUnitDef()->GetName();
 	for (auto& kv : morphs) {
-		if (kv.first.find(name) != std::string::npos) {
+		if (name.find(kv.first) != std::string::npos) {
 			return kv.second.modules.size() > level;
 		}
 	}
@@ -468,7 +468,7 @@ const std::vector<float>& CSetupManager::GetModules(const CCircuitDef* cdef, uns
 {
 	std::string name = cdef->GetUnitDef()->GetName();
 	for (auto& kv : morphs) {
-		if (kv.first.find(name) != std::string::npos) {
+		if (name.find(kv.first) != std::string::npos) {
 			const std::vector<std::vector<float>>& modules = kv.second.modules;
 			return modules[std::min<unsigned>(level, modules.size() - 1)];
 		}
@@ -481,7 +481,7 @@ int CSetupManager::GetMorphFrame(const CCircuitDef* cdef) const
 {
 	std::string name = cdef->GetUnitDef()->GetName();
 	for (auto& kv : morphs) {
-		if (kv.first.find(name) != std::string::npos) {
+		if (name.find(kv.first) != std::string::npos) {
 			return kv.second.frame;
 		}
 	}

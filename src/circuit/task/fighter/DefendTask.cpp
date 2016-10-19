@@ -107,6 +107,11 @@ void CDefendTask::Update()
 		if (!isExecute) {
 			return;
 		}
+	} else {
+		ISquadTask::Update();
+		if (leader == nullptr) {  // task aborted
+			return;
+		}
 	}
 
 	/*
@@ -141,6 +146,8 @@ void CDefendTask::Merge(ISquadTask* task)
 	}
 	units.insert(rookies.begin(), rookies.end());
 	cost += static_cast<CDefendTask*>(task)->GetCost();
+	const std::set<CCircuitUnit*>& sh = task->GetShields();
+	shields.insert(sh.begin(), sh.end());
 }
 
 void CDefendTask::FindTarget()

@@ -90,6 +90,8 @@ void ISquadTask::Merge(ISquadTask* task)
 	}
 	units.insert(rookies.begin(), rookies.end());
 	attackPower += task->GetAttackPower();
+	const std::set<CCircuitUnit*>& sh = task->GetShields();
+	shields.insert(sh.begin(), sh.end());
 
 	FindLeader(rookies.begin(), rookies.end());
 }

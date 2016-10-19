@@ -416,7 +416,8 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	scheduler->Init(scheduler);
 
 	std::string cfgName = InitOptions();
-	InitUnitDefs();  // Inits TerrainData
+	float decloakRadius;
+	InitUnitDefs(decloakRadius);  // Inits TerrainData
 
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
 	if (!setupManager->OpenConfig(cfgName)) {
@@ -441,11 +442,10 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	terrainManager->Init();
 
 	if (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos()) {
-		if (metalManager->HasMetalSpots()) {
-			setupManager->PickStartPos(this, CSetupManager::StartPosType::METAL_SPOT);
-		} else {
-			setupManager->PickStartPos(this, CSetupManager::StartPosType::MIDDLE);
-		}
+		const CSetupManager::StartPosType spt = metalManager->HasMetalSpots() ?
+												CSetupManager::StartPosType::METAL_SPOT :
+												CSetupManager::StartPosType::MIDDLE;
+		setupManager->PickStartPos(this, spt);
 	}
 
 	factoryManager = std::make_shared<CFactoryManager>(this);
@@ -458,7 +458,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	modules.push_back(factoryManager);
 	modules.push_back(economyManager);  // NOTE: Units use manager, but ain't assigned here
 
-	threatMap = std::make_shared<CThreatMap>(this);
+	threatMap = std::make_shared<CThreatMap>(this, decloakRadius);
 	uEnemyMark = skirmishAIId % FRAMES_PER_SEC;
 	kEnemyMark = (skirmishAIId + FRAMES_PER_SEC / 2) % FRAMES_PER_SEC;
 
@@ -1068,7 +1068,7 @@ CCircuitDef* CCircuitAI::GetCircuitDef(CCircuitDef::Id unitDefId)
 	return (it != defsById.end()) ? it->second : nullptr;
 }
 
-void CCircuitAI::InitUnitDefs()
+void CCircuitAI::InitUnitDefs(float& outDcr)
 {
 	airCategory   = game->GetCategoriesFlag("FIXEDWING GUNSHIP");
 	landCategory  = game->GetCategoriesFlag("LAND SINK TURRET SHIP SWIM FLOAT HOVER");
@@ -1080,6 +1080,7 @@ void CCircuitAI::InitUnitDefs()
 		gameAttribute->GetTerrainData().Init(this);
 	}
 	Resource* res = callback->GetResourceByName("Metal");
+	outDcr = 0.f;
 	const std::vector<UnitDef*>& unitDefs = callback->GetUnitDefs();
 	for (UnitDef* ud : unitDefs) {
 		auto options = std::move(ud->GetBuildOptions());
@@ -1092,6 +1093,11 @@ void CCircuitAI::InitUnitDefs()
 
 		defsByName[ud->GetName()] = cdef;
 		defsById[cdef->GetId()] = cdef;
+
+		const float dcr = ud->GetDecloakDistance();
+		if (outDcr < dcr) {
+			outDcr = dcr;
+		}
 	}
 	delete res;
 

@@ -21,7 +21,7 @@ class CEnemyUnit;
 
 class CThreatMap {
 public:
-	CThreatMap(CCircuitAI* circuit);
+	CThreatMap(CCircuitAI* circuit, float decloakRadius);
 	virtual ~CThreatMap();
 
 	const CCircuitAI::EnemyUnits& GetHostileUnits() const { return hostileUnits; }

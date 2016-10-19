@@ -174,7 +174,7 @@ public:
 	CCircuitDef* GetCircuitDef(const char* name);
 	CCircuitDef* GetCircuitDef(CCircuitDef::Id unitDefId);
 private:
-	void InitUnitDefs();
+	void InitUnitDefs(float& outDcr);
 	CircuitDefs defsById;  // owner
 	NamedDefs defsByName;
 // ---- UnitDefs ---- END

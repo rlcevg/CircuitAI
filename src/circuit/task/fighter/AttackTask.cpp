@@ -25,11 +25,10 @@ namespace circuit {
 
 using namespace springai;
 
-#define MIN_POWER_DIV	4
-
-CAttackTask::CAttackTask(ITaskManager* mgr)
+CAttackTask::CAttackTask(ITaskManager* mgr, float minCost)
 		: ISquadTask(mgr, FightType::ATTACK)
-		, minPower(.0f)
+		, minCost(minCost)
+		, cost(0.f)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
@@ -68,7 +67,7 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 	ISquadTask::AssignTo(unit);
 	highestRange = std::max(highestRange, unit->GetCircuitDef()->GetLosRadius());
 
-	minPower += unit->GetCircuitDef()->GetPower() / MIN_POWER_DIV;
+	cost += unit->GetCircuitDef()->GetCost();
 
 	if (unit->GetCircuitDef()->IsRoleSupport()) {
 		unit->PushBack(new CSupportAction(unit));
@@ -88,7 +87,7 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 void CAttackTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	ISquadTask::RemoveAssignee(unit);
-	if ((attackPower <= minPower) || (leader == nullptr)) {
+	if ((cost < minCost) || (leader == nullptr)) {
 		manager->AbortTask(this);
 	} else {
 		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetLosRadius());
@@ -144,6 +143,7 @@ void CAttackTask::Update()
 		return;
 	}
 
+	CCircuitAI* circuit = manager->GetCircuit();
 	bool isExecute = (updCount % 4 == 2);
 	if (!isExecute) {
 		for (CCircuitUnit* unit : units) {
@@ -153,7 +153,11 @@ void CAttackTask::Update()
 			if (wasRegroup && !pPath->empty()) {
 				ActivePath(lowestSpeed);
 			}
-//			ISquadTask::Update();
+			return;
+		}
+	} else {
+		ISquadTask::Update();
+		if (leader == nullptr) {  // task aborted
 			return;
 		}
 	}
@@ -167,7 +171,6 @@ void CAttackTask::Update()
 	 */
 	FindTarget();
 
-	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
 	state = State::ROAM;
 	if (target != nullptr) {
@@ -244,7 +247,7 @@ void CAttackTask::Merge(ISquadTask* task)
 {
 	ISquadTask::Merge(task);
 
-	minPower += task->GetAttackPower() / MIN_POWER_DIV;
+	cost += static_cast<CAttackTask*>(task)->GetCost();
 }
 
 void CAttackTask::FindTarget()
@@ -316,7 +319,7 @@ void CAttackTask::FindTarget()
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize(), minPower);
+	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize(), attackPower * 0.125f);
 	// TODO: Bottleneck check, i.e. path cost
 }
 

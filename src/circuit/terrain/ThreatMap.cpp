@@ -21,7 +21,7 @@ using namespace springai;
 
 #define THREAT_DECAY	0.05f
 
-CThreatMap::CThreatMap(CCircuitAI* circuit)
+CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 		: circuit(circuit)
 //		, currMaxThreat(.0f)  // maximum threat (normalizer)
 //		, currSumThreat(.0f)  // threat summed over all cells
@@ -34,7 +34,7 @@ CThreatMap::CThreatMap(CCircuitAI* circuit)
 	mapSize = width * height;
 
 	rangeDefault = (DEFAULT_SLACK * 4) / squareSize;
-	distCloak = (DEFAULT_SLACK * 4) / squareSize;
+	distCloak = (decloakRadius + DEFAULT_SLACK) / squareSize;
 
 	airThreat.resize(mapSize, THREAT_BASE);
 	surfThreat.resize(mapSize, THREAT_BASE);
@@ -638,7 +638,7 @@ void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	const int slack = DEFAULT_SLACK * (cdef->IsMobile() ? 4 : 2);
+	const int slack = DEFAULT_SLACK * (cdef->IsMobile() ? 8 : 4);
 	int range;
 	int maxRange;
 
@@ -748,7 +748,7 @@ void CThreatMap::UpdateVis()
 
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[3];
 	for (unsigned i = 0; i < cloakThreat.size(); ++i) {
-		dbgMap[i] = std::min<float>((cloakThreat[i] - THREAT_BASE) / 8.0f, 1.0f);
+		dbgMap[i] = std::min<float>((cloakThreat[i] - THREAT_BASE) / 16.0f, 1.0f);
 	}
 	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap);
 }

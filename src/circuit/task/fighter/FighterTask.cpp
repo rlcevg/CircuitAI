@@ -40,6 +40,9 @@ void IFighterTask::AssignTo(CCircuitUnit* unit)
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	attackPower += cdef->GetPower();
+	if (unit->GetShield() != nullptr) {
+		shields.insert(unit);
+	}
 
 	if (unit->HasDGun()) {
 		const float range = std::max(cdef->GetDGunRange() * 1.1f, cdef->GetLosRadius());
@@ -54,10 +57,23 @@ void IFighterTask::RemoveAssignee(CCircuitUnit* unit)
 
 	attackPower -= unit->GetCircuitDef()->GetPower();
 	cowards.erase(unit);
+	if (unit->GetShield() != nullptr) {
+		shields.erase(unit);
+	}
 }
 
 void IFighterTask::Update()
 {
+	CCircuitAI* circuit = manager->GetCircuit();
+	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
+	const float minShield = circuit->GetSetupManager()->GetEmptyShield();
+	decltype(units) tmpUnits = shields;
+	for (CCircuitUnit* unit : tmpUnits) {
+		if (!unit->IsShieldCharged(minShield)) {
+			CRetreatTask* task = militaryManager->EnqueueRetreat();
+			manager->AssignTask(unit, task);
+		}
+	}
 }
 
 void IFighterTask::OnUnitIdle(CCircuitUnit* unit)
