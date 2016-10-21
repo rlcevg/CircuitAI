@@ -20,8 +20,10 @@ namespace circuit {
 
 using namespace springai;
 
-CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, FightType promote, float maxCost)
+CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, float radius,
+						 FightType promote, float maxCost)
 		: ISquadTask(mgr, FightType::DEFEND)
+		, radius(radius)
 		, promote(promote)
 		, maxCost(maxCost)
 		, cost(0.f)
@@ -153,7 +155,7 @@ void CDefendTask::Merge(ISquadTask* task)
 void CDefendTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(GetPosition(), 2000.f));
+	auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(GetPosition(), radius));
 	if (enemies.empty()) {
 		SetTarget(nullptr);
 		return;

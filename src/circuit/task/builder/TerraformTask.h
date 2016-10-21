@@ -30,7 +30,6 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 
 protected:
-	bool isFirstTry;
 	CCircuitUnit::Id targetId;  // Ignore "target" as it could be destroyed
 };
 

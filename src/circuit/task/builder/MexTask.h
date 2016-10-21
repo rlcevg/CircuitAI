@@ -27,9 +27,6 @@ protected:
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);
-
-private:
-	bool isFirstTry;
 };
 
 } // namespace circuit

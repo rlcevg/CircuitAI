@@ -584,7 +584,7 @@ Json::Value* CSetupManager::ParseConfig(const char* cfgJson)
 	Json::Reader json;
 	bool isOk = json.parse(cfgJson, jsonAll, false);
 	if (!isOk) {
-		circuit->LOG("Malformed config format! (%s)", configName.c_str());
+		circuit->LOG("Malformed config format! (%s)\n%s", configName.c_str(), json.getFormattedErrorMessages().c_str());
 		return nullptr;
 	}
 

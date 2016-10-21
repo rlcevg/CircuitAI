@@ -28,7 +28,6 @@ CBMexTask::CBMexTask(ITaskManager* mgr, Priority priority,
 					 CCircuitDef* buildDef, const AIFloat3& position,
 					 float cost, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::MEX, cost, 0.f, timeout)
-		, isFirstTry(true)
 {
 }
 
@@ -82,8 +81,8 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 		int index = metalManager->FindNearestSpot(buildPos);
 		if (index >= 0) {
 			if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
-				if (!isFirstTry || metalManager->IsOpenSpot(index)) {
-					isFirstTry = false;
+				if ((State::ENGAGE == state) || metalManager->IsOpenSpot(index)) {  // !isFirstTry
+					state = State::ENGAGE;  // isFirstTry = false
 					metalManager->SetOpenSpot(index, false);
 					TRY_UNIT(circuit, unit,
 						u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);

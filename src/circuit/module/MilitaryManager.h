@@ -153,6 +153,7 @@ private:
 	float avgRaiders;
 	unsigned int maxScouts;
 	float minAttackers;
+	float defRadius;
 
 	std::vector<CCircuitDef*> defenderDefs;
 	std::vector<CCircuitDef*> landDefenders;

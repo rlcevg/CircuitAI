@@ -22,7 +22,7 @@ class IUnitTask {  // CSquad, IAction
 public:
 	enum class Priority: char {LOW = 0, NORMAL = 1, HIGH = 2, NOW = 99};
 	enum class Type: char {PLAYER, IDLE, RETREAT, BUILDER, FACTORY, FIGHTER};
-	enum class State: char {ROAM, REGROUP, ENGAGE, DISENGAGE};
+	enum class State: char {ROAM, ENGAGE, DISENGAGE, REGROUP};
 
 protected:
 	IUnitTask(ITaskManager* mgr, Priority priority, Type type, int timeout);

@@ -452,9 +452,9 @@ bool CEconomyManager::IsEnergyEmpty()
 	return isEnergyEmpty;
 }
 
-bool CEconomyManager::IsOpenSpot(int spotId) const
+bool CEconomyManager::IsAllyOpenSpot(int spotId) const
 {
-	return openSpots[spotId] && circuit->GetMetalManager()->IsOpenSpot(spotId);
+	return IsOpenSpot(spotId) && circuit->GetMetalManager()->IsOpenSpot(spotId);
 }
 
 IBuilderTask* CEconomyManager::MakeEconomyTasks(const AIFloat3& position, CCircuitUnit* unit)
@@ -501,14 +501,14 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				UnitDef* metalDef =  mexDef->GetUnitDef();
 				CTerrainManager* terrainManager = circuit->GetTerrainManager();
 				predicate = [this, &spots, map, metalDef, terrainManager, unit](int index) {
-					return (IsOpenSpot(index) &&
+					return (IsAllyOpenSpot(index) &&
 							terrainManager->CanBuildAt(unit, spots[index].position) &&
 							map->IsPossibleToBuildAt(metalDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};
 			} else {
 				CCircuitDef* mexDef = this->mexDef;
 				predicate = [this, &spots, map, mexDef, builderManager](int index) {
-					return (IsOpenSpot(index) &&
+					return (IsAllyOpenSpot(index) &&
 							builderManager->IsBuilderInArea(mexDef, spots[index].position) &&
 							map->IsPossibleToBuildAt(mexDef->GetUnitDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};

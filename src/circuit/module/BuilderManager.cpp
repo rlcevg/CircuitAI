@@ -187,7 +187,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		}
 		// Check mex position in 20 seconds
 		this->circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this, mexDef, pos, index]() {
-			if (this->circuit->GetEconomyManager()->IsOpenSpot(index) &&
+			if (this->circuit->GetEconomyManager()->IsAllyOpenSpot(index) &&
 				this->circuit->GetBuilderManager()->IsBuilderInArea(mexDef, pos) &&
 				this->circuit->GetTerrainManager()->CanBeBuiltAt(mexDef, pos))
 			{

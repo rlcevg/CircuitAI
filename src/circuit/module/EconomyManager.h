@@ -59,7 +59,8 @@ public:
 	bool IsEnergyStalling();
 	bool IsEnergyEmpty();
 
-	bool IsOpenSpot(int spotId) const;
+	bool IsAllyOpenSpot(int spotId) const;
+	bool IsOpenSpot(int spotId) const { return openSpots[spotId]; }
 	void SetOpenSpot(int spotId, bool value) { openSpots[spotId] = value; }
 
 	IBuilderTask* MakeEconomyTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);

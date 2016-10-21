@@ -21,7 +21,6 @@ using namespace springai;
 CBTerraformTask::CBTerraformTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, float cost, int timeout)
 		: IBuilderTask(mgr, priority, target->GetCircuitDef(), target->GetPos(mgr->GetCircuit()->GetLastFrame()),
 					   Type::BUILDER, BuildType::TERRAFORM, cost, 0.f, timeout)
-		, isFirstTry(true)
 		, targetId(target->GetId())
 {
 	facing = target->GetUnit()->GetBuildingFacing();
@@ -29,7 +28,6 @@ CBTerraformTask::CBTerraformTask(ITaskManager* mgr, Priority priority, CCircuitU
 
 CBTerraformTask::CBTerraformTask(ITaskManager* mgr, Priority priority, const AIFloat3& position, float cost, int timeout)
 		: IBuilderTask(mgr, priority, nullptr, position, Type::BUILDER, BuildType::TERRAFORM, cost, 0.f, timeout)
-		, isFirstTry(true)
 		, targetId(-1)
 {
 }
@@ -50,10 +48,10 @@ void CBTerraformTask::RemoveAssignee(CCircuitUnit* unit)
 void CBTerraformTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	if (!isFirstTry) {
+	if (State::ENGAGE == state) {  // !isFirstTry
 		return;
 	}
-	isFirstTry = false;
+	state = State::ENGAGE;  // isFirstTry = false
 
 	/*
 	 * Terraform blank position
