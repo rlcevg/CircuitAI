@@ -20,12 +20,11 @@ class CSetupData {
 public:
 	using BoxMap = std::map<int, CAllyTeam::SBox>;  // <start_box_id, box>
 	using AllyMap = std::vector<CAllyTeam*>;
-	using ConfigMap = std::vector<std::string>;
 
 	CSetupData();
 	virtual ~CSetupData();
 	void ParseSetupScript(CCircuitAI* circuit, const char* setupScript);
-	void Init(const AllyMap& ats, const BoxMap& bm, const ConfigMap& cs,
+	void Init(const AllyMap& ats, const BoxMap& bm,
 			  CGameSetup::StartPosType spt = CGameSetup::StartPosType::StartPos_ChooseInGame);
 
 	bool IsInitialized() const { return isInitialized; }
@@ -33,14 +32,12 @@ public:
 
 	CAllyTeam* GetAllyTeam(int allyTeamId) const { return allyTeams[allyTeamId]; }
 	const CAllyTeam::SBox& GetStartBox(int boxId) { return boxes[boxId]; }
-	const std::string& GetConfigJson(int skirmishAIId) { return configJsons[skirmishAIId]; }
 
 private:
 	bool isInitialized;
 	CGameSetup::StartPosType startPosType;
 	AllyMap allyTeams;  // owner
 	BoxMap boxes;
-	ConfigMap configJsons;
 };
 
 } // namespace circuit

@@ -23,6 +23,7 @@
 #include "Lua.h"
 #include "SkirmishAI.h"
 #include "Info.h"
+#include "OptionValues.h"
 
 #include <regex>
 
@@ -85,7 +86,10 @@ bool CSetupManager::OpenConfig(const std::string& cfgName)
 		 * Try startscript specific config
 		 */
 		configName = "startscript";
-		std::string strJson = setupData->GetConfigJson(circuit->GetSkirmishAIId());
+		OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
+		const char* value = options->GetValueByKey("JSON");
+		std::string strJson = ((value != nullptr) && strlen(value) > 0) ? value : "";
+		delete options;
 		if (!strJson.empty()) {
 			config = ParseConfig(strJson.c_str());
 

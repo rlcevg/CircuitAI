@@ -7,7 +7,6 @@
 
 #include "setup/SetupData.h"
 #include "CircuitAI.h"
-#include "util/TdfParser.h"
 #include "util/utils.h"
 
 #include "Map.h"
@@ -32,7 +31,6 @@ CSetupData::~CSetupData()
 
 void CSetupData::ParseSetupScript(CCircuitAI* circuit, const char* setupScript)
 {
-	// TODO: Replace "std::string script" by "TdfParser script" as much as possible
 	std::string script(setupScript);
 	std::map<int, int> teamIdsRemap;
 	using OrigTeamIds = std::set<int>;
@@ -153,28 +151,14 @@ void CSetupData::ParseSetupScript(CCircuitAI* circuit, const char* setupScript)
 		allyTeams.push_back(new CAllyTeam(teamIds, isZkBox ? boxes[0] : boxes[kv.first]));
 	}
 
-	// @see CGameSetup::LoadSkirmishAIs
-	CSetupData::ConfigMap configJsons;
-	TdfParser parser(circuit, setupScript, strlen(setupScript));
-	for (int a = 0; a < MAX_PLAYERS; ++a) {
-		const std::string section = "GAME\\AI" + IntToString(a, "%i");
-		if (!parser.SectionExist(section)) {
-			continue;
-		}
-
-		std::string config = parser.SGetValueDef("", section + "\\Options\\JSON");
-		configJsons.push_back(config);
-	}
-
-	Init(allyTeams, boxes, configJsons, startPosType);
+	Init(allyTeams, boxes, startPosType);
 }
 
-void CSetupData::Init(const AllyMap& ats, const BoxMap& bm, const ConfigMap& cs, CGameSetup::StartPosType spt)
+void CSetupData::Init(const AllyMap& ats, const BoxMap& bm, CGameSetup::StartPosType spt)
 {
 	allyTeams = ats;
 	boxes = bm;
 	startPosType = spt;
-	configJsons = cs;
 
 	isInitialized = true;
 }
