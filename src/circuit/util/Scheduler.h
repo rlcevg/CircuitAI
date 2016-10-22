@@ -15,6 +15,7 @@
 #include <memory>
 #include <thread>
 #include <atomic>
+#include <list>
 
 namespace circuit {
 
@@ -89,7 +90,7 @@ private:
 			BaseContainer(task), frame(frame) {}
 		int frame;
 	};
-	std::vector<OnceTask> onceTasks;
+	std::list<OnceTask> onceTasks;
 
 	struct RepeatTask: public BaseContainer {
 		RepeatTask(std::shared_ptr<CGameTask> task, int frameInterval, int lastFrame) :
@@ -97,7 +98,7 @@ private:
 		int frameInterval;
 		int lastFrame;
 	};
-	std::vector<RepeatTask> repeatTasks;
+	std::list<RepeatTask> repeatTasks;
 
 	std::vector<std::shared_ptr<CGameTask>> removeTasks;
 

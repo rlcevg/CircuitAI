@@ -849,6 +849,41 @@ void CMilitaryManager::UpdateDefenceTasks()
 	// TODO: Porc push
 }
 
+void CMilitaryManager::UpdateDefence()
+{
+	int frame = circuit->GetLastFrame();
+	decltype(buildDefence)::iterator ibd = buildDefence.begin();
+	while (ibd != buildDefence.end()) {
+		BuildVector::iterator iter = ibd->second.begin();
+		if (frame >= iter->second) {
+			CCircuitDef* buildDef = iter->first;
+			if (buildDef->IsAvailable()) {
+				circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, ibd->first,
+														  IBuilderTask::BuildType::DEFENCE, 0.f, true, 0);
+			}
+			ibd->second.pop_front();
+		}
+		if (ibd->second.empty()) {
+			ibd = buildDefence.erase(ibd);
+		} else {
+			++ibd;
+		}
+	}
+	if (buildDefence.empty()) {
+		circuit->GetScheduler()->RemoveTask(defend);
+		defend = nullptr;
+	}
+}
+
+void CMilitaryManager::MakeBaseDefence(const AIFloat3& pos)
+{
+	buildDefence.push_back(std::make_pair(pos, baseDefence));
+	if (defend == nullptr) {
+		defend = std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefence, this);
+		circuit->GetScheduler()->RunTaskEvery(defend, FRAMES_PER_SEC);
+	}
+}
+
 void CMilitaryManager::ReadConfig()
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
@@ -941,15 +976,19 @@ void CMilitaryManager::ReadConfig()
 //	amountFactor = std::max(amountFactor, 0.f);
 
 	const Json::Value& base = porc["base"];
-	baseDefence.reserve(base.size());
+//	baseDefence.reserve(base.size());
 	for (const Json::Value& pair : base) {
 		unsigned index = pair.get((unsigned)0, -1).asUInt();
 		if (index >= defenderDefs.size()) {
 			continue;
 		}
-		int frame = pair.get((unsigned)1, 0).asInt();
+		int frame = pair.get((unsigned)1, 0).asInt() * FRAMES_PER_SEC;
 		baseDefence.push_back(std::make_pair(defenderDefs[index], frame));
 	}
+	auto compare = [](const std::pair<CCircuitDef*, int>& d1, const std::pair<CCircuitDef*, int>& d2) {
+		return d1.second < d2.second;
+	};
+	std::sort(baseDefence.begin(), baseDefence.end(), compare);
 
 	const Json::Value& super = porc["superweapon"];
 	const Json::Value& items = super["unit"];

@@ -104,7 +104,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 		if (factories.empty()) {
 			this->circuit->GetSetupManager()->SetBasePos(pos);
-			BaseDefence(pos);
+			this->circuit->GetMilitaryManager()->MakeBaseDefence(pos);
 		}
 
 		auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
@@ -1032,20 +1032,6 @@ void CFactoryManager::ReadConfig()
 
 	bpRatio = root["economy"].get("buildpower", 1.f).asFloat();
 	reWeight = root["response"].get("_weight_", .5f).asFloat();
-}
-
-void CFactoryManager::BaseDefence(const AIFloat3& pos)
-{
-	CScheduler* scheduler = circuit->GetScheduler().get();
-	for (auto& kv : circuit->GetMilitaryManager()->GetBaseDefence()) {
-		CCircuitDef* buildDef = kv.first;
-		if (buildDef->IsAvailable()) {
-			scheduler->RunTaskAt(std::make_shared<CGameTask>([this, buildDef, pos]() {
-				circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, pos,
-														  IBuilderTask::BuildType::DEFENCE, 0.f, true, 0);
-			}), FRAMES_PER_SEC * kv.second);
-		}
-	}
 }
 
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)

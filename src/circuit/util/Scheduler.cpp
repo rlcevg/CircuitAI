@@ -73,7 +73,7 @@ void CScheduler::ProcessTasks(int frame)
 	lastFrame = frame;
 
 	// Process once tasks
-	std::vector<OnceTask>::iterator ionce = onceTasks.begin();
+	std::list<OnceTask>::iterator ionce = onceTasks.begin();
 	while (ionce != onceTasks.end()) {
 		if (ionce->frame <= frame) {
 			ionce->task->Run();
@@ -100,10 +100,8 @@ void CScheduler::ProcessTasks(int frame)
 	// Update task queues
 	if (!removeTasks.empty()) {
 		for (auto& task : removeTasks) {
-			auto oend = std::remove(onceTasks.begin(), onceTasks.end(), OnceTask(task, 0));
-			onceTasks.erase(oend, onceTasks.end());
-			auto rend = std::remove(repeatTasks.begin(), repeatTasks.end(), RepeatTask(task, 0, 0));
-			repeatTasks.erase(rend, repeatTasks.end());
+			onceTasks.remove({task, 0});
+			repeatTasks.remove({task, 0, 0});
 		}
 		removeTasks.clear();
 	}
@@ -126,10 +124,8 @@ void CScheduler::RemoveTask(std::shared_ptr<CGameTask>& task)
 	if (isProcessing) {
 		removeTasks.push_back(task);
 	} else {
-		auto oend = std::remove(onceTasks.begin(), onceTasks.end(), OnceTask(task, 0));
-		onceTasks.erase(oend, onceTasks.end());
-		auto rend = std::remove(repeatTasks.begin(), repeatTasks.end(), RepeatTask(task, 0, 0));
-		repeatTasks.erase(rend, repeatTasks.end());
+		onceTasks.remove({task, 0});
+		repeatTasks.remove({task, 0, 0});
 	}
 }
 

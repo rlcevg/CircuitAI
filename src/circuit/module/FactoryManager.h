@@ -77,7 +77,6 @@ public:
 
 private:
 	void ReadConfig();
-	void BaseDefence(const springai::AIFloat3& pos);
 
 	IUnitTask* CreateFactoryTask(CCircuitUnit* unit);
 	IUnitTask* CreateAssistTask(CCircuitUnit* unit);

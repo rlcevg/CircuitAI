@@ -18,6 +18,7 @@
 
 namespace circuit {
 
+class CGameTask;
 class CBDefenceTask;
 class CDefenceMatrix;
 class CRetreatTask;
@@ -88,10 +89,11 @@ public:
 	springai::AIFloat3 GetBigGunPos(CCircuitDef* bigDef) const;
 
 	void UpdateDefenceTasks();
+	void UpdateDefence();
+	void MakeBaseDefence(const springai::AIFloat3& pos);
 
 	const std::vector<CCircuitDef*>& GetLandDefenders() const { return landDefenders; }
 	const std::vector<CCircuitDef*>& GetWaterDefenders() const { return waterDefenders; }
-	const std::vector<std::pair<CCircuitDef*, int>>& GetBaseDefence() const { return baseDefence; }
 	CCircuitDef* GetBigGunDef() const { return bigGunDef; }
 	CCircuitDef* GetDefaultPorc() const { return defaultPorc; }
 
@@ -158,13 +160,17 @@ private:
 	std::vector<CCircuitDef*> defenderDefs;
 	std::vector<CCircuitDef*> landDefenders;
 	std::vector<CCircuitDef*> waterDefenders;
-	std::vector<std::pair<CCircuitDef*, int>> baseDefence;
+	using BuildVector = std::deque<std::pair<CCircuitDef*, int>>;
+	BuildVector baseDefence;
 	unsigned int preventCount;
 	float amountFactor;
 	CCircuitDef* radarDef;
 	CCircuitDef* sonarDef;
 	CCircuitDef* bigGunDef;
 	CCircuitDef* defaultPorc;
+
+	std::shared_ptr<CGameTask> defend;
+	std::vector<std::pair<springai::AIFloat3, BuildVector>> buildDefence;
 };
 
 } // namespace circuit
