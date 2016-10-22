@@ -77,6 +77,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, power(.0f)
 		, minRange(.0f)
 		, maxRange({.0f})
+		, shieldRadius(.0f)
 		, maxShield(.0f)
 		, reloadTime(0)
 		, targetCategory(0)
@@ -163,6 +164,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	const bool isShield = (sd != nullptr);
 	if (isShield) {
 		Shield* shield = sd->GetShield();
+		shieldRadius = shield->GetRadius();
 		maxShield = shield->GetPower();
 		delete shield;
 	}

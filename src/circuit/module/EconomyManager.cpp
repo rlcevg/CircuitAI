@@ -1053,7 +1053,7 @@ void CEconomyManager::Init()
 
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-	if (commander != nullptr) {
+	if (circuit->IsCommMerge() && (commander != nullptr)) {
 		const AIFloat3& pos = commander->GetPos(circuit->GetLastFrame());
 		int clusterId = metalManager->FindNearestCluster(pos);
 		int ownerId = allyTeam->GetClusterTeam(clusterId).teamId;

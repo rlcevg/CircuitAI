@@ -15,15 +15,15 @@
 #include "json/json.h"
 
 #include "OOAICallback.h"
+#include "OptionValues.h"
+#include "SkirmishAI.h"
 #include "Game.h"
 #include "Map.h"
 #include "DataDirs.h"
 #include "File.h"
 #include "Log.h"
 #include "Lua.h"
-#include "SkirmishAI.h"
 #include "Info.h"
-#include "OptionValues.h"
 
 #include <regex>
 

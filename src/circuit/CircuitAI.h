@@ -158,11 +158,13 @@ private:
 // ---- AIOptions.lua ---- BEGIN
 public:
 	Difficulty GetDifficulty() const { return difficulty; }
-	bool IsAllyAware() const { return allyAware; }
+	bool IsAllyAware() const { return isAllyAware; }
+	bool IsCommMerge() const { return isCommMerge; }
 private:
 	std::string InitOptions();
 	Difficulty difficulty;
-	bool allyAware;
+	bool isAllyAware;
+	bool isCommMerge;
 // ---- AIOptions.lua ---- END
 
 // ---- UnitDefs ---- BEGIN

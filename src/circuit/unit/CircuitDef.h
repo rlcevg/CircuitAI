@@ -158,6 +158,7 @@ public:
 	float GetPower() const { return power; }
 	float GetMinRange() const { return minRange; }
 	float GetMaxRange(RangeType type = RangeType::MAX) const { return maxRange[static_cast<RangeT>(type)]; }
+	float GetShieldRadius() const { return shieldRadius; }
 	float GetMaxShield() const { return maxShield; }
 	int GetReloadTime() const { return reloadTime; }
 	int GetCategory() const { return category; }
@@ -230,6 +231,7 @@ private:
 	float power;  // attack power = UnitDef's max threat
 	float minRange;
 	std::array<float, static_cast<RangeT>(RangeType::_SIZE_)> maxRange;
+	float shieldRadius;
 	float maxShield;
 	int reloadTime;  // frames in ticks
 	int category;

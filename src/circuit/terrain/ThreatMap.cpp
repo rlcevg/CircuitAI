@@ -41,6 +41,7 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 	amphThreat.resize(mapSize, THREAT_BASE);
 	cloakThreat.resize(mapSize, THREAT_BASE);
 	threatArray = &surfThreat[0];
+	shield.resize(mapSize, 0.f);
 
 	Map* map = circuit->GetMap();
 	int mapWidth = map->GetWidth();
@@ -181,9 +182,11 @@ bool CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 			enemy->SetRange(CEnemyUnit::RangeType::LAND, 0);
 			enemy->SetRange(CEnemyUnit::RangeType::WATER, 0);
 			enemy->SetRange(CEnemyUnit::RangeType::CLOAK, GetCloakRange(enemy));
+			enemy->SetRange(CEnemyUnit::RangeType::SHIELD, GetShieldRange(enemy));
 		} else if (peaceUnits.find(enemy->GetId()) == peaceUnits.end()) {
 			peaceUnits[enemy->GetId()] = enemy;
 			enemy->SetRange(CEnemyUnit::RangeType::CLOAK, GetCloakRange(enemy));
+			enemy->SetRange(CEnemyUnit::RangeType::SHIELD, GetShieldRange(enemy));
 		} else if (enemy->IsHidden()) {
 			enemy->ClearHidden();
 		} else {
@@ -273,6 +276,7 @@ void CThreatMap::EnemyEnterRadar(CEnemyUnit* enemy)
 		enemy->SetRange(CEnemyUnit::RangeType::LAND, rangeDefault);
 		enemy->SetRange(CEnemyUnit::RangeType::WATER, rangeDefault);
 		enemy->SetRange(CEnemyUnit::RangeType::CLOAK, distCloak);
+//		enemy->SetRange(CEnemyUnit::RangeType::SHIELD, 0);
 	}
 
 	AddEnemyUnit(enemy);
@@ -380,6 +384,10 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit* e)
 		AddEnemyAmph(e);
 	}
 	AddDecloaker(e);
+
+	if (cdef->GetShieldMount() != nullptr) {
+		AddShield(e);
+	}
 }
 
 void CThreatMap::DelEnemyUnit(const CEnemyUnit* e)
@@ -397,6 +405,10 @@ void CThreatMap::DelEnemyUnit(const CEnemyUnit* e)
 		DelEnemyAmph(e);
 	}
 	DelDecloaker(e);
+
+	if (cdef->GetShieldMount() != nullptr) {
+		DelShield(e);
+	}
 }
 
 void CThreatMap::AddEnemyUnitAll(const CEnemyUnit* e)
@@ -622,15 +634,57 @@ void CThreatMap::DelDecloaker(const CEnemyUnit* e)
 			cloakThreat[index] = std::max<float>(cloakThreat[index] - heat, THREAT_BASE);
 		}
 	}
+}
 
-//	for (int x = beginX; x < endX; ++x) {
-//		const int rrx = rangeCloakSq - SQUARE(posx - x);
-//		for (int z = beginZ; z < endZ; ++z) {
-//			if (SQUARE(posz - z) > rrx) continue;
-//			const int index = z * width + x;
-//			cloakThreat[index] = std::max<float>(cloakThreat[index] - threatCloak, THREAT_BASE);
-//		}
-//	}
+void CThreatMap::AddShield(const CEnemyUnit* e)
+{
+	const int posx = (int)e->GetPos().x / squareSize;
+	const int posz = (int)e->GetPos().z / squareSize;
+
+	const float shieldVal = e->GetShieldPower();
+	const int rangeShield = e->GetRange(CEnemyUnit::RangeType::SHIELD);
+	const int rangeShieldSq = SQUARE(rangeShield);
+
+	const int beginX = std::max(int(posx - rangeShield + 1),      0);
+	const int endX   = std::min(int(posx + rangeShield    ),  width);
+	const int beginZ = std::max(int(posz - rangeShield + 1),      0);
+	const int endZ   = std::min(int(posz + rangeShield    ), height);
+
+	for (int x = beginX; x < endX; ++x) {
+		const int rrx = rangeShieldSq - SQUARE(posx - x);
+		for (int z = beginZ; z < endZ; ++z) {
+			if (SQUARE(posz - z) > rrx) {
+				continue;
+			}
+			shield[z * width + x] += shieldVal;
+		}
+	}
+}
+
+void CThreatMap::DelShield(const CEnemyUnit* e)
+{
+	const int posx = (int)e->GetPos().x / squareSize;
+	const int posz = (int)e->GetPos().z / squareSize;
+
+	const float shieldVal = e->GetShieldPower();
+	const int rangeShield = e->GetRange(CEnemyUnit::RangeType::SHIELD);
+	const int rangeShieldSq = SQUARE(rangeShield);
+
+	const int beginX = std::max(int(posx - rangeShield + 1),      0);
+	const int endX   = std::min(int(posx + rangeShield    ),  width);
+	const int beginZ = std::max(int(posz - rangeShield + 1),      0);
+	const int endZ   = std::min(int(posz + rangeShield    ), height);
+
+	for (int x = beginX; x < endX; ++x) {
+		const int rrx = rangeShieldSq - SQUARE(posx - x);
+		for (int z = beginZ; z < endZ; ++z) {
+			if (SQUARE(posz - z) > rrx) {
+				continue;
+			}
+			const int index = z * width + x;
+			shield[index] = std::max(shield[index] - shieldVal, 0.f);
+		}
+	}
 }
 
 void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const
@@ -656,6 +710,7 @@ void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const
 
 	e->SetRange(CEnemyUnit::RangeType::MAX, maxRange);
 	e->SetRange(CEnemyUnit::RangeType::CLOAK, GetCloakRange(e));
+	e->SetRange(CEnemyUnit::RangeType::SHIELD, GetShieldRange(e));
 }
 
 int CThreatMap::GetCloakRange(const CEnemyUnit* e) const
@@ -672,6 +727,13 @@ int CThreatMap::GetCloakRange(const CEnemyUnit* e) const
 	return (int)sqrtf(SQUARE(sizeX) + SQUARE(sizeZ)) / squareSize + threatRange;
 }
 
+int CThreatMap::GetShieldRange(const CEnemyUnit* e) const
+{
+	CCircuitDef* edef = e->GetCircuitDef();
+	assert(edef != nullptr);
+	return (edef->GetShieldMount() != nullptr) ? (int)edef->GetShieldRadius() / squareSize + 1 : 0;
+}
+
 float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
 {
 	if (enemy->GetRange() > 2000 / squareSize) {
@@ -684,7 +746,9 @@ float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
 	if (health <= .0f) {
 		return .0f;
 	}
-	return enemy->GetDamage() * sqrtf(health + enemy->GetShieldPower() * 2.0f);  // / unit->GetUnit()->GetMaxHealth();
+	const int x = (int)enemy->GetPos().x / squareSize;
+	const int z = (int)enemy->GetPos().z / squareSize;
+	return enemy->GetDamage() * sqrtf(health + shield[z * width + x] * 2.0f);  // / unit->GetUnit()->GetMaxHealth();
 }
 
 bool CThreatMap::IsInLOS(const AIFloat3& pos) const

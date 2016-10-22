@@ -18,7 +18,7 @@ class IFighterTask;
 
 class CEnemyUnit {
 public:
-	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, CLOAK = 4, _SIZE_};
+	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, CLOAK = 4, SHIELD = 5, _SIZE_};
 	using RT = std::underlying_type<RangeType>::type;
 
 	CEnemyUnit(const CEnemyUnit& that) = delete;
@@ -46,7 +46,7 @@ public:
 	bool IsDisarmed();
 	float GetDPS();
 	float GetDamage();
-	float GetShieldPower();
+	float GetShieldPower() const;
 
 	void SetPos(const springai::AIFloat3& p) { pos = p; }
 	const springai::AIFloat3& GetPos() const { return pos; }

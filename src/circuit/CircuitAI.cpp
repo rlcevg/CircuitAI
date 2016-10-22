@@ -66,7 +66,8 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, kEnemyMark(0)
 		, actionIterator(0)
 		, difficulty(Difficulty::NORMAL)
-		, allyAware(true)
+		, isAllyAware(true)
+		, isCommMerge(true)
 		, isInitialized(false)
 		, isResigned(false)
 		// NOTE: assert(lastFrame != -1): CCircuitUnit initialized with -1
@@ -430,7 +431,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 		return ERROR_INIT;
 	}
 	allyTeam = setupManager->GetAllyTeam();
-	allyAware &= allyTeam->GetSize() > 1;
+	isAllyAware &= allyTeam->GetSize() > 1;
 
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
 	economyManager = std::make_shared<CEconomyManager>(this);
@@ -1045,7 +1046,12 @@ std::string CCircuitAI::InitOptions()
 
 	value = options->GetValueByKey("ally_aware");
 	if (value != nullptr) {
-		allyAware = StringToBool(value);
+		isAllyAware = StringToBool(value);
+	}
+
+	value = options->GetValueByKey("comm_merge");
+	if (value != nullptr) {
+		isCommMerge = StringToBool(value);
 	}
 
 	value = options->GetValueByKey("config");

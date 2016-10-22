@@ -73,9 +73,12 @@ private:
 	void DelEnemyAmph(const CEnemyUnit* e);
 	void AddDecloaker(const CEnemyUnit* e);
 	void DelDecloaker(const CEnemyUnit* e);
+	void AddShield(const CEnemyUnit* e);
+	void DelShield(const CEnemyUnit* e);
 
 	void SetEnemyUnitRange(CEnemyUnit* e) const;
 	int GetCloakRange(const CEnemyUnit* e) const;
+	int GetShieldRange(const CEnemyUnit* e) const;
 	float GetEnemyUnitThreat(CEnemyUnit* enemy) const;
 
 	bool IsInLOS(const springai::AIFloat3& pos) const;
@@ -99,6 +102,7 @@ private:
 	Threats surfThreat;  // surface (water and land)
 	Threats amphThreat;  // under water and surface on land
 	Threats cloakThreat;
+	Threats shield;
 	float* threatArray;
 	// TODO: shield-map - units under shield should get threat boost
 

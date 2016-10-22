@@ -90,7 +90,7 @@ float CEnemyUnit::GetDamage()
 	return dmg;
 }
 
-float CEnemyUnit::GetShieldPower()
+float CEnemyUnit::GetShieldPower() const
 {
 	if (circuitDef == nullptr) {
 		return .0f;

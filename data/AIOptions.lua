@@ -48,6 +48,14 @@ local options = {
 		section = 'performance',
 		def     = true,
 	},
+	{ -- bool
+		key     = 'comm_merge',
+		name    = 'Merge neighbour Circuits',
+		desc    = 'Merge spatially close Circuit ally commanders',
+		type    = 'bool',
+		section = 'performance',
+		def     = true,
+	},
 	{ -- string
 		key     = 'config',
 		name    = 'Config',
@@ -55,6 +63,13 @@ local options = {
 		type    = 'string',
 		def     = '',
 	},
+--	{ -- string
+--		key     = 'json',
+--		name    = 'JSON',
+--		desc    = 'Per-AI config.\nkey: json',
+--		type    = 'string',
+--		def     = '',
+--	},
 }
 
 return options
