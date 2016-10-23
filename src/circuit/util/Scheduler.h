@@ -12,9 +12,9 @@
 #include "util/GameTask.h"
 #include "util/Defines.h"
 
+#include "System/Threading/SpringThreading.h"
+
 #include <memory>
-#include <thread>
-#include <atomic>
 #include <list>
 
 namespace circuit {
@@ -120,7 +120,7 @@ private:
 
 	std::vector<std::shared_ptr<CGameTask>> releaseTasks;
 
-	static std::thread workerThread;
+	static spring::thread workerThread;
 	static std::atomic<bool> workerRunning;
 	static unsigned int counterInstance;
 

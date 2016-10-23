@@ -8,9 +8,10 @@
 #ifndef SRC_CIRCUIT_UTIL_DEBUGDRAWER_H_
 #define SRC_CIRCUIT_UTIL_DEBUGDRAWER_H_
 
+#include "System/Threading/SpringThreading.h"
+
 #include <SDL.h>
 #include <map>
-#include <mutex>
 #include <set>
 
 class SSkirmishAICallback;
@@ -62,7 +63,7 @@ private:
 	};
 	std::map<Uint32, SWindow*> windows;
 	static std::map<Uint32, SWindow> allWindows;
-	static std::mutex wndMutex;
+	static spring::mutex wndMutex;
 	static unsigned int ddCounter;
 	static std::set<Uint32> needRefresh;
 };

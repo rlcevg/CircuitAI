@@ -854,14 +854,14 @@ void CMilitaryManager::UpdateDefence()
 	int frame = circuit->GetLastFrame();
 	decltype(buildDefence)::iterator ibd = buildDefence.begin();
 	while (ibd != buildDefence.end()) {
-		BuildVector::iterator iter = ibd->second.begin();
-		if (frame >= iter->second) {
-			CCircuitDef* buildDef = iter->first;
+		const auto& defElem = ibd->second.back();
+		if (frame >= defElem.second) {
+			CCircuitDef* buildDef = defElem.first;
 			if (buildDef->IsAvailable()) {
 				circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, ibd->first,
 														  IBuilderTask::BuildType::DEFENCE, 0.f, true, 0);
 			}
-			ibd->second.pop_front();
+			ibd->second.pop_back();
 		}
 		if (ibd->second.empty()) {
 			ibd = buildDefence.erase(ibd);
@@ -877,6 +877,9 @@ void CMilitaryManager::UpdateDefence()
 
 void CMilitaryManager::MakeBaseDefence(const AIFloat3& pos)
 {
+	if (baseDefence.empty()) {
+		return;
+	}
 	buildDefence.push_back(std::make_pair(pos, baseDefence));
 	if (defend == nullptr) {
 		defend = std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefence, this);
@@ -976,7 +979,7 @@ void CMilitaryManager::ReadConfig()
 //	amountFactor = std::max(amountFactor, 0.f);
 
 	const Json::Value& base = porc["base"];
-//	baseDefence.reserve(base.size());
+	baseDefence.reserve(base.size());
 	for (const Json::Value& pair : base) {
 		unsigned index = pair.get((unsigned)0, -1).asUInt();
 		if (index >= defenderDefs.size()) {
@@ -986,7 +989,7 @@ void CMilitaryManager::ReadConfig()
 		baseDefence.push_back(std::make_pair(defenderDefs[index], frame));
 	}
 	auto compare = [](const std::pair<CCircuitDef*, int>& d1, const std::pair<CCircuitDef*, int>& d2) {
-		return d1.second < d2.second;
+		return d1.second > d2.second;
 	};
 	std::sort(baseDefence.begin(), baseDefence.end(), compare);
 

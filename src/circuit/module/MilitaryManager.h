@@ -160,7 +160,7 @@ private:
 	std::vector<CCircuitDef*> defenderDefs;
 	std::vector<CCircuitDef*> landDefenders;
 	std::vector<CCircuitDef*> waterDefenders;
-	using BuildVector = std::deque<std::pair<CCircuitDef*, int>>;
+	using BuildVector = std::vector<std::pair<CCircuitDef*, int>>;
 	BuildVector baseDefence;
 	unsigned int preventCount;
 	float amountFactor;

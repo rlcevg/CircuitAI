@@ -8,9 +8,9 @@
 #ifndef SRC_CIRCUIT_UTIL_MULTIQUEUE_H_
 #define SRC_CIRCUIT_UTIL_MULTIQUEUE_H_
 
+#include "System/Threading/SpringThreading.h"
+
 #include <deque>
-#include <mutex>
-#include <condition_variable>
 #include <functional>
 
 namespace circuit {
@@ -48,8 +48,8 @@ public:
 
 private:
 	std::deque<T> _queue;
-	std::mutex _mutex;
-	std::condition_variable _cond;
+	spring::mutex _mutex;
+	spring::condition_variable _cond;
 };
 
 } // namespace circuit

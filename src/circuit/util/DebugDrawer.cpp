@@ -21,7 +21,7 @@ namespace circuit {
 using namespace springai;
 
 std::map<Uint32, CDebugDrawer::SWindow> CDebugDrawer::allWindows;
-std::mutex CDebugDrawer::wndMutex;
+spring::mutex CDebugDrawer::wndMutex;
 unsigned int CDebugDrawer::ddCounter = 0;
 std::set<Uint32> CDebugDrawer::needRefresh;
 
@@ -249,13 +249,13 @@ void CDebugDrawer::DrawTex(Uint32 windowId, const float* texData)
 
 bool CDebugDrawer::HasWindow(Uint32 windowId)
 {
-	std::lock_guard<std::mutex> guard(wndMutex);
+	std::lock_guard<spring::mutex> guard(wndMutex);
 	return allWindows.find(windowId) != allWindows.end();
 }
 
 void CDebugDrawer::NeedRefresh(Uint32 windowId)
 {
-	std::lock_guard<std::mutex> guard(wndMutex);
+	std::lock_guard<spring::mutex> guard(wndMutex);
 	needRefresh.insert(windowId);
 }
 
