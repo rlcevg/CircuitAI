@@ -21,7 +21,7 @@ local infos = {
 	},
 	{
 		key    = 'version',
-		value  = '0.9.8', -- AI version - !This comment is used for parsing!
+		value  = '0.9.9', -- AI version - !This comment is used for parsing!
 	},
 	{
 		key    = 'name',

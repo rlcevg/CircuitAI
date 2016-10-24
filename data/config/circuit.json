@@ -652,7 +652,8 @@
 		"attribute": ["support"]
 	},
 	"corsktl": {
-		"role": ["anti_heavy", "mine"]
+		"role": ["anti_heavy", "mine"],
+		"retreat": 0.01
 	},
 	"armaak": {
 		"role": ["anti_air"]
