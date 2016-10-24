@@ -49,7 +49,7 @@ public:
 private:
 	std::deque<T> _queue;
 	spring::mutex _mutex;
-	spring::condition_variable _cond;
+	spring::condition_variable_any _cond;
 };
 
 } // namespace circuit
