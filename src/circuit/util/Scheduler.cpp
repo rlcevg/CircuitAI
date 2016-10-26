@@ -11,7 +11,7 @@
 namespace circuit {
 
 CMultiQueue<CScheduler::WorkTask> CScheduler::workTasks;
-std::thread CScheduler::workerThread;
+spring::thread CScheduler::workerThread;
 std::atomic<bool> CScheduler::workerRunning(false);
 unsigned int CScheduler::counterInstance = 0;
 
@@ -114,7 +114,11 @@ void CScheduler::RunParallelTask(std::shared_ptr<CGameTask> task, std::shared_pt
 	if (!workerRunning.load()) {
 		workerRunning = true;
 		// TODO: Find out more about std::async, std::bind, std::future.
-		workerThread = std::thread(&CScheduler::WorkerThread);
+#if (__GNUC__ < 5)
+		workerThread = spring::thread([]() { CScheduler::WorkerThread(); });
+#else
+		workerThread = spring::thread(&CScheduler::WorkerThread);
+#endif
 	}
 	workTasks.Push({self, task, onComplete});
 }
