@@ -157,9 +157,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		this->circuit->AddActionUnit(unit);
 
 		TRY_UNIT(this->circuit, unit,
-			unit->GetUnit()->SetFireState(0);
 			unit->GetUnit()->SetTrajectory(1);
 			if (unit->GetCircuitDef()->IsAttrStock()) {
+				unit->GetUnit()->SetFireState(0);
 				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
 				unit->GetUnit()->ExecuteCustomCommand(CMD_MISC_PRIORITY, {2.0f});
 			}

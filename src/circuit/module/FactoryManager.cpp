@@ -892,6 +892,11 @@ void CFactoryManager::ReadConfig()
 		}
 
 		cdef->SetRetreat(behaviour.get("retreat", cdef->GetRetreat()).asFloat());
+
+		const Json::Value& dmgMod = behaviour["dmg_mod"];
+		if (!dmgMod.isNull()) {
+			cdef->ModDamage(dmgMod.asFloat());
+		}
 	}
 
 	/*

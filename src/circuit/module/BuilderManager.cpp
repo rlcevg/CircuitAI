@@ -867,10 +867,13 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 	int frame = circuit->GetLastFrame();
 	AIFloat3 pos = unit->GetPos(frame);
 
-	task = circuit->GetEconomyManager()->MakeEconomyTasks(pos, unit);
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	task = economyManager->MakeEconomyTasks(pos, unit);
 //	if (task != nullptr) {
 //		return task;
 //	}
+	const bool isStalling = economyManager->GetAvgMetalIncome() * 1.2f < economyManager->GetMetalPull();
+	CCircuitDef* mexDef = economyManager->GetMexDef();
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
@@ -883,7 +886,9 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
-			if (!candidate->CanAssignTo(unit)) {
+			if (!candidate->CanAssignTo(unit) ||
+				(isStalling && (candidate->GetBuildDef() != nullptr) && (candidate->GetBuildDef() != mexDef)))
+			{
 				continue;
 			}
 

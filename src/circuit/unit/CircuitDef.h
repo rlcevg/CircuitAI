@@ -165,6 +165,7 @@ public:
 	int GetTargetCategory() const { return targetCategory; }
 	int GetNoChaseCategory() const { return noChaseCategory; }
 
+	void ModDamage(float mod) { dmg *= mod; power *= mod; }
 	void SetReloadTime(int time) { reloadTime = time; }
 
 	STerrainMapImmobileType::Id GetImmobileId() const { return immobileTypeId; }

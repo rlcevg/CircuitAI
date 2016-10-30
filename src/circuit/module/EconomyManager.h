@@ -22,6 +22,8 @@ namespace springai {
 
 namespace circuit {
 
+#define INCOME_SAMPLES	5
+
 class IBuilderTask;
 class CLagrangeInterPol;
 class CGameTask;

@@ -18,15 +18,6 @@
 #include <vector>
 #include <set>
 
-namespace springai {
-	class OOAICallback;
-	class Log;
-	class Game;
-	class Map;
-	class Pathing;
-	class Drawer;
-	class SkirmishAI;
-}
 struct SSkirmishAICallback;
 
 namespace circuit {
@@ -79,12 +70,19 @@ public:
 public:
 	int HandleEvent(int topic, const void* data);
 	void NotifyGameEnd();
-	void Resign() { isResigned = true; }
+	void NotifyResign();
+	void Resign(int newTeamId);
 private:
 	typedef int (CCircuitAI::*EventHandlerPtr)(int topic, const void* data);
 	int HandleGameEvent(int topic, const void* data);
 	int HandleEndEvent(int topic, const void* data);
+	int HandleResignEvent(int topic, const void* data);
 	EventHandlerPtr eventHandler;
+
+	int ownerTeamId;
+	springai::Economy* economy;
+	springai::Resource* metalRes;
+	springai::Resource* energyRes;
 // ---- AI Event handler ---- END
 
 private:

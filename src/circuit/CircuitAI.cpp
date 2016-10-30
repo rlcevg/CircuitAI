@@ -34,6 +34,7 @@
 #include "Log.h"
 #include "Pathing.h"
 #include "Drawer.h"
+#include "Economy.h"
 #include "Resource.h"
 #include "SkirmishAI.h"
 #include "WrappUnit.h"
@@ -61,6 +62,9 @@ unsigned int CCircuitAI::gaCounter = 0;
 
 CCircuitAI::CCircuitAI(OOAICallback* callback)
 		: eventHandler(&CCircuitAI::HandleGameEvent)
+		, economy(nullptr)
+		, metalRes(nullptr)
+		, energyRes(nullptr)
 		, allyTeam(nullptr)
 		, uEnemyMark(0)
 		, kEnemyMark(0)
@@ -91,7 +95,7 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, debugDrawer(nullptr)
 #endif
 {
-	teamId = skirmishAI->GetTeamId();
+	ownerTeamId = teamId = skirmishAI->GetTeamId();
 	team = std::unique_ptr<Team>(WrappTeam::GetInstance(skirmishAIId, teamId));
 	allyTeamId = game->GetMyAllyTeam();
 }
@@ -112,6 +116,20 @@ int CCircuitAI::HandleEvent(int topic, const void* data)
 void CCircuitAI::NotifyGameEnd()
 {
 	eventHandler = &CCircuitAI::HandleEndEvent;
+}
+
+void CCircuitAI::NotifyResign()
+{
+	economy = callback->GetEconomy();
+	metalRes = callback->GetResourceByName("Metal");
+	energyRes = callback->GetResourceByName("Energy");
+	eventHandler = &CCircuitAI::HandleResignEvent;
+}
+
+void CCircuitAI::Resign(int newTeamId)
+{
+	ownerTeamId = newTeamId;
+	isResigned = true;
 }
 
 int CCircuitAI::HandleGameEvent(int topic, const void* data)
@@ -348,6 +366,27 @@ int CCircuitAI::HandleEndEvent(int topic, const void* data)
 	return 0;
 }
 
+int CCircuitAI::HandleResignEvent(int topic, const void* data)
+{
+	switch (topic) {
+		case EVENT_RELEASE: {
+			PRINT_TOPIC("EVENT_RELEASE::RESIGN", topic);
+			struct SReleaseEvent* evt = (struct SReleaseEvent*)data;
+			return this->Release(evt->reason);
+		} break;
+		case EVENT_UPDATE: {
+//			PRINT_TOPIC("EVENT_UPDATE::RESIGN", topic);
+			struct SUpdateEvent* evt = (struct SUpdateEvent*)data;
+			if (evt->frame % (TEAM_SLOWUPDATE_RATE * INCOME_SAMPLES) == 0) {
+				economy->SendResource(metalRes, 1000.f, ownerTeamId);
+				economy->SendResource(energyRes, 1000.f, ownerTeamId);
+			}
+		} break;
+		default: break;
+	}
+	return 0;
+}
+
 bool CCircuitAI::IsModValid()
 {
 	const int minEngineVer = 102;
@@ -480,6 +519,10 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 int CCircuitAI::Release(int reason)
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	delete economy, delete metalRes, delete energyRes;
+	economy = nullptr;
+	metalRes = energyRes = nullptr;
+
 	if (!isInitialized) {
 		return 0;
 	}
@@ -538,7 +581,7 @@ int CCircuitAI::Update(int frame)
 	lastFrame = frame;
 	if (isResigned) {
 		Release(0);
-		NotifyGameEnd();
+		NotifyResign();
 		return 0;
 	}
 

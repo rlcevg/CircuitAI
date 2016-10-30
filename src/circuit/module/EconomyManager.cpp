@@ -33,7 +33,6 @@ namespace circuit {
 
 using namespace springai;
 
-#define INCOME_SAMPLES	5
 #define HIDDEN_ENERGY	10000.0f
 #define PYLON_RANGE		500.0f
 
@@ -1068,9 +1067,9 @@ void CEconomyManager::Init()
 			}
 			economy->SendUnits(migrants, ownerId);
 			// Double check
-			scheduler->RunTaskAfter(std::make_shared<CGameTask>([this]() {
+			scheduler->RunTaskAfter(std::make_shared<CGameTask>([this, ownerId]() {
 				if (circuit->GetTeamUnits().empty()) {
-					circuit->Resign();
+					circuit->Resign(ownerId);
 				}
 			}), FRAMES_PER_SEC * 10);
 		}

@@ -383,7 +383,10 @@
 //		"limit": 10,
 
 		// Minimum hp percent before retreat
-//		"retreat": 0.8
+//		"retreat": 0.8,
+
+		// Threat multiplier
+//		"dmg_mod": 1.0
 	},
 	"armpw": {
 		"role": ["raider"],
@@ -609,7 +612,8 @@
 	},
 	"capturecar": {
 		"role": ["raider"],
-		"retreat": 0.7
+		"retreat": 0.7,
+		"dmg_mod": 5.0
 	},
 	"corgarp": {
 		"role": ["skirmish"],
