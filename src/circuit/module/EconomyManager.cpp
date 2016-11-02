@@ -42,6 +42,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, pylonDef(nullptr)
 		, mexDef(nullptr)
 		, storeDef(nullptr)
+		, lastFacFrame(-1)
 		, indexRes(0)
 		, metalIncome(.0f)
 		, energyIncome(.0f)
@@ -73,8 +74,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	 * factory handlers
 	 */
 	auto factoryFinishedHandler = [this](CCircuitUnit* unit) {
-		int frame = this->circuit->GetLastFrame();
-		int index = this->circuit->GetMetalManager()->FindNearestCluster(unit->GetPos(frame));
+		lastFacFrame = this->circuit->GetLastFrame();
+		int index = this->circuit->GetMetalManager()->FindNearestCluster(unit->GetPos(lastFacFrame));
 		if (index >= 0) {
 			clusterInfos[index].factory = unit;
 		}
@@ -734,9 +735,10 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	const float factoryFactor = (metalIncome - assistDef->GetBuildSpeed()) * 1.2f;
 	const int nanoSize = builderManager->GetTasks(IBuilderTask::BuildType::NANO).size();
 	const float factoryPower = factoryManager->GetFactoryPower() + nanoSize * assistDef->GetBuildSpeed();
-	if (factoryPower >= factoryFactor) {
+	if ((factoryPower >= factoryFactor) && (lastFacFrame + switchTime > circuit->GetLastFrame())) {
 		return nullptr;
 	}
+	lastFacFrame = circuit->GetLastFrame();
 
 	/*
 	 * check nanos
@@ -978,6 +980,8 @@ void CEconomyManager::ReadConfig()
 	const Json::Value& econ = root["economy"];
 	ecoStep = econ.get("eps_step", 0.25f).asFloat();
 	ecoFactor = (circuit->GetAllyTeam()->GetSize() - 1.0f) * ecoStep + 1.0f;
+
+	switchTime = econ.get("switch", 900).asInt() * FRAMES_PER_SEC;
 
 	// Using cafus, armfus, armsolar as control points
 	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба

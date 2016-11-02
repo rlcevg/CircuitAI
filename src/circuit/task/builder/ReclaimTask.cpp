@@ -76,7 +76,6 @@ void CBReclaimTask::Update()
 		if (!features.empty()) {
 			CTerrainManager* terrainManager = circuit->GetTerrainManager();
 			circuit->GetThreatMap()->SetThreatType(unit);
-			AIFloat3 reclPos;
 			float minSqDist = std::numeric_limits<float>::max();
 			Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
 			for (Feature* feature : features) {
@@ -97,14 +96,14 @@ void CBReclaimTask::Update()
 				}
 				float sqDist = pos.SqDistance2D(featPos);
 				if (sqDist < minSqDist) {
-					reclPos = featPos;
+					position = featPos;
 					minSqDist = sqDist;
 				}
 			}
 			if (minSqDist < std::numeric_limits<float>::max()) {
 				const float radius = 8.0f;  // unit->GetCircuitDef()->GetBuildDistance();
 				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->ReclaimInArea(reclPos, radius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+					unit->GetUnit()->ReclaimInArea(position, radius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 				)
 			}
 			utils::free_clear(features);

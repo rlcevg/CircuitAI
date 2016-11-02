@@ -49,11 +49,9 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	if (cdef->IsAttrHoldFire()) {
-		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->SetFireState(0);
-		)
-	}
+	TRY_UNIT(circuit, unit,
+		unit->GetUnit()->SetFireState(cdef->IsAttrRetrHold() ? CCircuitDef::FireType::HOLD : CCircuitDef::FireType::OPEN);
+	)
 	if (cdef->IsAttrBoost()) {
 		int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 		TRY_UNIT(circuit, unit,
@@ -90,11 +88,9 @@ void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
 		manager->DoneTask(this);
 	}
 
-	if (unit->GetCircuitDef()->IsAttrHoldFire()) {
-		TRY_UNIT(manager->GetCircuit(), unit,
-			unit->GetUnit()->SetFireState(2);
-		)
-	}
+	TRY_UNIT(manager->GetCircuit(), unit,
+		unit->GetUnit()->SetFireState(unit->GetCircuitDef()->GetFireState());
+	)
 }
 
 void CRetreatTask::Execute(CCircuitUnit* unit)
@@ -139,7 +135,7 @@ void CRetreatTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame();
-	bool isExecute = (++updCount % 4 == 0);
+	bool isExecute = (++updCount % 2 == 0);
 	auto assignees = units;
 	for (CCircuitUnit* unit : assignees) {
 		Unit* u = unit->GetUnit();

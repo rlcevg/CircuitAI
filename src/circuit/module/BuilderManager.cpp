@@ -767,9 +767,13 @@ void CBuilderManager::Init()
 
 IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 {
+	int frame = circuit->GetLastFrame();
+	if (frame < FRAMES_PER_SEC * 300) {
+		return MakeBuilderTask(unit);
+	}
+
 	circuit->GetThreatMap()->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
-	int frame = circuit->GetLastFrame();
 	AIFloat3 pos = unit->GetPos(frame);
 
 	circuit->GetEconomyManager()->MakeEconomyTasks(pos, unit);
@@ -781,7 +785,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
-//	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
+	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
@@ -793,9 +797,9 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 			const AIFloat3& bp = candidate->GetPosition();
 			AIFloat3 buildPos = utils::is_valid(bp) ? bp : pos;
 			// FIXME: Make max distance configurable
-//			if (basePos.SqDistance2D(buildPos) > SQUARE(2000.f)) {
-//				continue;
-//			}
+			if (basePos.SqDistance2D(buildPos) > SQUARE(2000.f)) {
+				continue;
+			}
 
 			float distCost;
 			if (candidate->GetPriority() == IBuilderTask::Priority::NOW) {

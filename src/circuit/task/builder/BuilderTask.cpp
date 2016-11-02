@@ -429,7 +429,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 			CMetalManager* metalManager = circuit->GetMetalManager();
 			int index = metalManager->FindNearestCluster(buildPos);
 			if ((index >= 0) && (metalManager->IsClusterQueued(index) || metalManager->IsClusterFinished(index))) {
-				circuit->GetMilitaryManager()->MakeDefence(buildPos);
+				circuit->GetMilitaryManager()->MakeDefence(index, buildPos);
 			}
 		}
 	}

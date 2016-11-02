@@ -125,8 +125,9 @@ private:
 	float ecoStep;
 	float ecoFactor;
 	float incomeFactor;
+	int switchTime;
+	int lastFacFrame;
 
-	// TODO: Didn't see any improvements. Remove avg?
 	std::vector<float> metalIncomes;
 	std::vector<float> energyIncomes;
 	int indexRes;

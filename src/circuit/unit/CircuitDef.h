@@ -35,11 +35,11 @@ public:
 									   AS, AH, BOMBER, SUPPORT,
 									   MINE, TRANS, AIR, SUB,
 									   STATIC, HEAVY, _SIZE_};
-	enum RoleMask: unsigned int {BUILDER = 0x00001, SCOUT = 0x00002, RAIDER = 0x00004, RIOT    = 0x00008,
-								 ASSAULT = 0x00010, SKIRM = 0x00020, ARTY   = 0x00040, AA      = 0x00080,
-								 AS      = 0x00100, AH    = 0x00200, BOMBER = 0x00400, SUPPORT = 0x00800,
-								 MINE    = 0x01000, TRANS = 0x02000, AIR    = 0x04000, SUB     = 0x08000,
-								 STATIC  = 0x10000, HEAVY = 0x20000, NONE   = 0x00000};
+	enum RoleMask: unsigned int {BUILDER = 0x00000001, SCOUT = 0x00000002, RAIDER = 0x00000004, RIOT    = 0x00000008,
+								 ASSAULT = 0x00000010, SKIRM = 0x00000020, ARTY   = 0x00000040, AA      = 0x00000080,
+								 AS      = 0x00000100, AH    = 0x00000200, BOMBER = 0x00000400, SUPPORT = 0x00000800,
+								 MINE    = 0x00001000, TRANS = 0x00002000, AIR    = 0x00004000, SUB     = 0x00008000,
+								 STATIC  = 0x00010000, HEAVY = 0x00020000, NONE   = 0x00000000};
 	using RoleT = std::underlying_type<RoleType>::type;
 	using RoleM = std::underlying_type<RoleMask>::type;
 
@@ -56,18 +56,22 @@ public:
 	 * SUPER:      superweapon
 	 */
 	enum class AttrType: RoleT {MELEE = static_cast<RoleT>(RoleType::_SIZE_), SIEGE,
-								OPEN_FIRE, NO_JUMP, BOOST, COMM,
-								HOLD_FIRE, NO_STRAFE, STOCK, SUPER, _SIZE_};
-	enum AttrMask: RoleM {MELEE     = 0x0040000, SIEGE     = 0x0080000,
-						  OPEN_FIRE = 0x0100000, NO_JUMP   = 0x0200000, BOOST = 0x0400000, COMM  = 0x0800000,
-						  HOLD_FIRE = 0x1000000, NO_STRAFE = 0x2000000, STOCK = 0x4000000, SUPER = 0x8000000};
+								NO_JUMP, BOOST, COMM, NO_STRAFE,
+								STOCK, SUPER, RETR_HOLD, _SIZE_};
+	enum AttrMask: RoleM {MELEE   = 0x00040000, SIEGE = 0x00080000,
+						  NO_JUMP = 0x00100000, BOOST = 0x00200000, COMM      = 0x00400000, NO_STRAFE = 0x00800000,
+						  STOCK   = 0x01000000, SUPER = 0x02000000, RETR_HOLD = 0x04000000};
+
+	enum FireType: int {HOLD = 0, RETURN = 1, OPEN = 2, _SIZE_};
 
 	static RoleM GetMask(RoleT type) { return 1 << type; }
 
 	using RoleName = std::map<std::string, RoleType>;
 	using AttrName = std::map<std::string, AttrType>;
+	using FireName = std::map<std::string, FireType>;
 	static RoleName& GetRoleNames() { return roleNames; }
 	static AttrName& GetAttrNames() { return attrNames; }
+	static FireName& GetFireNames() { return fireNames; }
 
 	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
@@ -111,14 +115,17 @@ public:
 
 	bool IsAttrMelee()    const { return role & AttrMask::MELEE; }
 	bool IsAttrSiege()    const { return role & AttrMask::SIEGE; }
-	bool IsAttrOpenFire() const { return role & AttrMask::OPEN_FIRE; }
 	bool IsAttrNoJump()   const { return role & AttrMask::NO_JUMP; }
 	bool IsAttrBoost()    const { return role & AttrMask::BOOST; }
 	bool IsAttrComm()     const { return role & AttrMask::COMM; }
-	bool IsAttrHoldFire() const { return role & AttrMask::HOLD_FIRE; }
 	bool IsAttrNoStrafe() const { return role & AttrMask::NO_STRAFE; }
 	bool IsAttrStock()    const { return role & AttrMask::STOCK; }
 	bool IsAttrSuper()    const { return role & AttrMask::SUPER; }
+	bool IsAttrRetrHold() const { return role & AttrMask::RETR_HOLD; }
+
+	bool IsHoldFire()   const { return fireState == FireType::HOLD; }
+	bool IsReturnFire() const { return fireState == FireType::RETURN; }
+	bool IsOpenFire()   const { return fireState == FireType::OPEN; }
 
 	const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
 	float GetBuildDistance() const { return buildDistance; }
@@ -160,12 +167,14 @@ public:
 	float GetMaxRange(RangeType type = RangeType::MAX) const { return maxRange[static_cast<RangeT>(type)]; }
 	float GetShieldRadius() const { return shieldRadius; }
 	float GetMaxShield() const { return maxShield; }
+	int GetFireState() const { return fireState; }
 	int GetReloadTime() const { return reloadTime; }
 	int GetCategory() const { return category; }
 	int GetTargetCategory() const { return targetCategory; }
 	int GetNoChaseCategory() const { return noChaseCategory; }
 
 	void ModDamage(float mod) { dmg *= mod; power *= mod; }
+	void SetFireState(FireType ft) { fireState = ft; }
 	void SetReloadTime(int time) { reloadTime = time; }
 
 	STerrainMapImmobileType::Id GetImmobileId() const { return immobileTypeId; }
@@ -206,6 +215,7 @@ public:
 private:
 	static RoleName roleNames;
 	static AttrName attrNames;
+	static FireName fireNames;
 
 	Id id;
 	springai::UnitDef* def;  // owner
@@ -234,6 +244,7 @@ private:
 	std::array<float, static_cast<RangeT>(RangeType::_SIZE_)> maxRange;
 	float shieldRadius;
 	float maxShield;
+	FireType fireState;
 	int reloadTime;  // frames in ticks
 	int category;
 	int targetCategory;

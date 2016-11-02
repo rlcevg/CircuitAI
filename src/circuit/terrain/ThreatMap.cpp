@@ -692,7 +692,7 @@ void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	const int slack = DEFAULT_SLACK * (cdef->IsMobile() ? 8 : 4);
+	const int slack = DEFAULT_SLACK * (cdef->IsMobile() ? 4 : 2);
 	int range;
 	int maxRange;
 

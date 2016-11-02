@@ -69,7 +69,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		this->circuit->AddActionUnit(unit);
 
 		TRY_UNIT(this->circuit, unit,
-//			unit->GetUnit()->SetFireState(2);
 			unit->GetUnit()->SetRepeat(true);
 			unit->GetUnit()->SetIdleMode(0);
 		)
@@ -340,7 +339,12 @@ CFactoryManager::~CFactoryManager()
 
 int CFactoryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 {
-	auto search = createdHandler.find(unit->GetCircuitDef()->GetId());
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	TRY_UNIT(circuit, unit,
+		unit->GetUnit()->SetFireState(cdef->GetFireState());
+	)
+
+	auto search = createdHandler.find(cdef->GetId());
 	if (search != createdHandler.end()) {
 		search->second(unit, builder);
 	}
@@ -822,6 +826,7 @@ void CFactoryManager::ReadConfig()
 	std::map<CCircuitDef::RoleType, std::set<CCircuitDef::Id>> roleDefs;
 	CCircuitDef::RoleName& roleNames = CCircuitDef::GetRoleNames();
 	CCircuitDef::AttrName& attrNames = CCircuitDef::GetAttrNames();
+	CCircuitDef::FireName& fireNames = CCircuitDef::GetFireNames();
 	const Json::Value& behaviours = root["behaviour"];
 	for (const std::string& defName : behaviours.getMemberNames()) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());
@@ -878,6 +883,17 @@ void CFactoryManager::ReadConfig()
 			} else {
 				cdef->AddRole(it->second);
 				roleDefs[it->second].insert(cdef->GetId());
+			}
+		}
+
+		const Json::Value& fire = behaviour["fire_state"];
+		if (!fire.isNull()) {
+			const std::string& fireName = fire.asString();
+			auto itf = fireNames.find(fireName);
+			if (itf == fireNames.end()) {
+				circuit->LOG("CONFIG %s: %s has unknown fire state '%s'", cfgName.c_str(), defName.c_str(), fireName.c_str());
+			} else {
+				cdef->SetFireState(itf->second);
 			}
 		}
 

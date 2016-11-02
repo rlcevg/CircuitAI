@@ -47,14 +47,19 @@ CCircuitDef::RoleName CCircuitDef::roleNames = {
 CCircuitDef::AttrName CCircuitDef::attrNames = {
 	{"melee",     CCircuitDef::AttrType::MELEE},
 	{"siege",     CCircuitDef::AttrType::SIEGE},
-	{"open_fire", CCircuitDef::AttrType::OPEN_FIRE},
 	{"no_jump",   CCircuitDef::AttrType::NO_JUMP},
 	{"boost",     CCircuitDef::AttrType::BOOST},
 	{"comm",      CCircuitDef::AttrType::COMM},
-	{"hold_fire", CCircuitDef::AttrType::HOLD_FIRE},
 	{"no_strafe", CCircuitDef::AttrType::NO_STRAFE},
 	{"stockpile", CCircuitDef::AttrType::STOCK},
 	{"super",     CCircuitDef::AttrType::SUPER},
+	{"retr_hold", CCircuitDef::AttrType::RETR_HOLD},
+};
+
+CCircuitDef::FireName CCircuitDef::fireNames = {
+	{"hold",   CCircuitDef::FireType::HOLD},
+	{"return", CCircuitDef::FireType::RETURN},
+	{"open",   CCircuitDef::FireType::OPEN},
 };
 
 CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts, Resource* res)
@@ -102,6 +107,9 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	hasDGun         = def->CanManualFire();
 	category        = def->GetCategory();
 	noChaseCategory = (def->GetNoChaseCategory() | circuit->GetBadCategory()) & ~circuit->GetGoodCategory();
+
+	const int ft = def->GetFireState();
+	fireState = (ft < 0) ? FireType::OPEN : static_cast<FireType>(ft);
 
 	speed     = def->GetSpeed() / FRAMES_PER_SEC;  // NOTE: SetWantedMaxSpeed expects value/FRAMES_PER_SEC
 	losRadius = def->GetLosRadius();
@@ -403,7 +411,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	hasAntiLand  = (targetCategory & circuit->GetLandCategory()) && canTargetLand;
 	hasAntiWater = (targetCategory & circuit->GetWaterCategory()) && canTargetWater;
 
-	// TODO: Include projectile-speed/range
+	// TODO: Include projectile-speed/range, armor
+	//       health /= def->GetArmoredMultiple();
 	dmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
 	power = dmg * sqrtf(def->GetHealth() + maxShield * 2.0f);
 }

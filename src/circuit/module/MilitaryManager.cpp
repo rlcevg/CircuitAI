@@ -49,6 +49,7 @@ using namespace springai;
 CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit)
 		, fightIterator(0)
+		, defenceIdx(0)
 		, scoutIdx(0)
 		, armyCost(.0f)
 		, radarDef(nullptr)
@@ -159,7 +160,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		TRY_UNIT(this->circuit, unit,
 			unit->GetUnit()->SetTrajectory(1);
 			if (unit->GetCircuitDef()->IsAttrStock()) {
-				unit->GetUnit()->SetFireState(0);
 				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
 				unit->GetUnit()->ExecuteCustomCommand(CMD_MISC_PRIORITY, {2.0f});
 			}
@@ -474,17 +474,26 @@ void CMilitaryManager::FallbackTask(CCircuitUnit* unit)
 
 void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 {
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	int index = metalManager->FindNearestCluster(pos);
-	if (index < 0) {
-		return;
+	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
+	if (index >= 0) {
+		MakeDefence(index, pos);
 	}
+}
+
+void CMilitaryManager::MakeDefence(int cluster)
+{
+	MakeDefence(cluster, circuit->GetMetalManager()->GetClusters()[cluster].geoCentr);
+}
+
+void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
+{
+	CMetalManager* mm = circuit->GetMetalManager();
 	CEconomyManager* em = circuit->GetEconomyManager();
 	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
 	float maxCost = MIN_BUILD_SEC * amountFactor * metalIncome;
 	CDefenceMatrix::SDefPoint* closestPoint = nullptr;
 	float minDist = std::numeric_limits<float>::max();
-	std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
+	std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(cluster);
 	for (CDefenceMatrix::SDefPoint& defPoint : points) {
 		if (defPoint.cost < maxCost) {
 			float dist = defPoint.position.SqDistance2D(pos);
@@ -506,23 +515,23 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 	std::vector<CCircuitDef*>& defenders = isWater ? waterDefenders : landDefenders;
 
 	// Front-line porc
-	bool isPorc = metalManager->GetMaxIncome() > metalManager->GetAvgIncome() + 1.f;
+	bool isPorc = mm->GetMaxIncome() > mm->GetAvgIncome() + 1.f;
 	if (isPorc) {
-		const float income = (metalManager->GetAvgIncome() + metalManager->GetMaxIncome()) * 0.5f;
-		int spotId = metalManager->FindNearestSpot(pos);
-		isPorc = metalManager->GetSpots()[spotId].income > income;
+		const float income = (mm->GetAvgIncome() + mm->GetMaxIncome()) * 0.5f;
+		int spotId = mm->FindNearestSpot(pos);
+		isPorc = mm->GetSpots()[spotId].income > income;
 	}
 	if (!isPorc) {
 		CThreatMap* threatMap = circuit->GetThreatMap();
-		const CMetalData::Clusters& clusters = metalManager->GetClusters();
-		const CMetalData::Metals& spots = metalManager->GetSpots();
-		const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
+		const CMetalData::Clusters& clusters = mm->GetClusters();
+		const CMetalData::Metals& spots = mm->GetSpots();
+		const CMetalData::Graph& clusterGraph = mm->GetGraph();
 		CMetalData::Graph::out_edge_iterator outEdgeIt, outEdgeEnd;
-		std::tie(outEdgeIt, outEdgeEnd) = boost::out_edges(index, clusterGraph);
+		std::tie(outEdgeIt, outEdgeEnd) = boost::out_edges(cluster, clusterGraph);
 		for (; (outEdgeIt != outEdgeEnd) && !isPorc; ++outEdgeIt) {
 			const CMetalData::EdgeDesc& edgeId = *outEdgeIt;
 			int idx0 = boost::target(edgeId, clusterGraph);
-			if (metalManager->IsClusterFinished(idx0)) {
+			if (mm->IsClusterFinished(idx0)) {
 				continue;
 			}
 			// check if there is enemy neighbor
@@ -816,9 +825,6 @@ void CMilitaryManager::UpdateDefenceTasks()
 	 * Defend expansion
 	 */
 	const std::set<IFighterTask*>& tasks = GetTasks(IFighterTask::FightType::DEFEND);
-	if (tasks.empty()) {
-		return;
-	}
 	CMetalManager* mm = circuit->GetMetalManager();
 	CEconomyManager* em = circuit->GetEconomyManager();
 	CTerrainManager* tm = circuit->GetTerrainManager();
@@ -846,7 +852,25 @@ void CMilitaryManager::UpdateDefenceTasks()
 		}
 	}
 
-	// TODO: Porc push
+	/*
+	 * Porc update
+	 */
+	decltype(defenceIdx) prevIdx = defenceIdx;
+	while (defenceIdx < clusters.size()) {
+		int index = defenceIdx++;
+		if (mm->IsClusterQueued(index) || mm->IsClusterFinished(index)) {
+			MakeDefence(index);
+			return;
+		}
+	}
+	defenceIdx = 0;
+	while (defenceIdx < prevIdx) {
+		int index = defenceIdx++;
+		if (mm->IsClusterQueued(index) || mm->IsClusterFinished(index)) {
+			MakeDefence(index);
+			return;
+		}
+	}
 }
 
 void CMilitaryManager::UpdateDefence()
@@ -1058,7 +1082,7 @@ void CMilitaryManager::Init()
 	const int offset = circuit->GetSkirmishAIId() % interval;
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateIdle, this), interval, offset + 0);
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateFight, this), interval / 2, offset + 1);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefenceTasks, this), FRAMES_PER_SEC * 10, offset + 2);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefenceTasks, this), FRAMES_PER_SEC * 5, offset + 2);
 }
 
 void CMilitaryManager::Watchdog()

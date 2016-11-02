@@ -58,11 +58,12 @@ void CAntiHeavyTask::AssignTo(CCircuitUnit* unit)
 	ISquadTask::AssignTo(unit);
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	highestRange = std::max(highestRange, cdef->GetLosRadius());
+	highestRange = std::max(highestRange, cdef->GetJumpRange());
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	if (cdef->IsAbleToCloak() && !cdef->IsAttrOpenFire()) {
+	if (cdef->IsAbleToCloak() && !cdef->IsOpenFire()) {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->SetFireState(1);
+			unit->GetUnit()->SetFireState(CCircuitDef::FireType::RETURN);
 		)
 	}
 
@@ -91,9 +92,10 @@ void CAntiHeavyTask::RemoveAssignee(CCircuitUnit* unit)
 		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetLosRadius());
 	}
 
-	if (unit->GetCircuitDef()->IsAbleToCloak()) {
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	if (cdef->IsAbleToCloak()) {
 		TRY_UNIT(manager->GetCircuit(), unit,
-			unit->GetUnit()->SetFireState(2);
+			unit->GetUnit()->SetFireState(cdef->GetFireState());
 		)
 	}
 }
@@ -280,7 +282,7 @@ void CAntiHeavyTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	if (attacker != nullptr) {
 		if (unit->GetCircuitDef()->IsAbleToCloak()) {
 			TRY_UNIT(manager->GetCircuit(), unit,
-				unit->GetUnit()->SetFireState(2);
+				unit->GetUnit()->SetFireState(CCircuitDef::FireType::OPEN);
 			)
 		}
 		IUnitAction* act = static_cast<IUnitAction*>(unit->Begin());

@@ -363,18 +363,23 @@
 		// Auto-assigned roles: builder, air, static
 		"role": ["builder"]
 
-		// Attributes - optinal states: melee, siege, hold_fire, boost, stockpile, no_strafe
+		// Attributes - optinal states
 		// "melee" - always move close to target, disregard attack range
 		// "siege" - mostly use fight command instead of move
-		// "open_fire" - always fire at enemy
 		// "no_jump" - disable jump on retreat
 		// "boost" - boost speed on retreat
 		// "comm" - commander, auto-assigned
-		// "hold_fire" - hold fire on retreat
 		// "no_strafe" - disable gunship's strafe
 		// "stockpile" - load weapon before any task (NOT IMPLEMENTED), auto-assigned
 		// "super" - superweapon, auto-assigned to porcupine items
+		// "retr_hold" - hold fire on retreat
 //		"attribute": ["boost", "no_strafe"],
+
+		// Fire state (open by default)
+		// "hold" - hold fire
+		// "return" - return fire
+		// "open" - fire at will
+//		"fire_state": "open",
 
 		// Overrides reloadTime in seconds
 //		"reload": 1.0,
@@ -415,7 +420,7 @@
 	},
 	"armsnipe": {
 		"role": ["anti_heavy", "artillery"],
-		"attribute": ["open_fire"],
+		"fire_state": "open",
 		"retreat": 0.9
 	},
 	"armtick": {
@@ -678,7 +683,7 @@
 	},
 	"hoverassault": {
 		"role": ["assault"],
-		"attribute": ["hold_fire"],
+		"attribute": ["retr_hold"],
 		"retreat": 0.4
 	},
 	"hoverdepthcharge": {
@@ -751,21 +756,25 @@
 	"corshad": {
 		"role": ["bomber", "air"],
 		"attribute": ["assault"],
+		"fire_state": "hold",
 		"retreat": 0.6
 	},
 	"corhurc2": {
 		"role": ["bomber", "air"],
 		"attribute": ["riot"],
+		"fire_state": "hold",
 		"retreat": 0.6
 	},
 	"armstiletto_laser": {
 		"role": ["bomber", "air"],
 		"attribute": ["assault"],
+		"fire_state": "hold",
 		"retreat": 0.6
 	},
 	"armcybr": {
 		"role": ["bomber", "air"],
 		"attribute": ["anti_heavy"],
+		"fire_state": "hold",
 		"retreat": 0.6
 	},
 	"corawac": {
@@ -860,7 +869,7 @@
 	// statics
 	"corsilo": {
 		"role": ["static", "heavy"],
-		"attribute": ["hold_fire"],  // burst attacks
+		"fire_state": "hold",  // burst attacks
 		"reload": 30.0,
 		"limit": 1
 	},
@@ -873,7 +882,7 @@
 	},
 	"zenith": {
 		"role": ["static", "heavy"],
-		"attribute": ["hold_fire"],  // burst attacks
+		"fire_state": "hold",  // burst attacks
 		"reload": 105.0,  // 105sec / 0.7sec/met = 150 meteorsControlled
 		"limit": 1
 	},
@@ -1028,6 +1037,9 @@
 
 	// Mobile buildpower to metal income ratio
 	"buildpower": 1.25,
+
+	// New factory switch interval, in seconds
+	"switch": 900,
 
 	"terra": "terraunit",
 	"airpad": "armasp",

@@ -59,7 +59,7 @@ void CSuperTask::Update()
 	int frame = circuit->GetLastFrame();
 	CCircuitUnit* unit = *units.begin();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	if (cdef->IsAttrHoldFire()) {
+	if (cdef->IsHoldFire()) {
 		if (targetFrame + (cdef->GetReloadTime() + TARGET_DELAY) > frame) {
 			if ((State::ENGAGE == state) && (targetFrame + TARGET_DELAY <= frame)) {
 				TRY_UNIT(circuit, unit,
@@ -95,7 +95,7 @@ void CSuperTask::Update()
 		return true;
 	};
 	const std::vector<CMilitaryManager::SEnemyGroup>& groups = militaryManager->GetEnemyGroups();
-	if (cdef->IsAttrHoldFire() || (State::ROAM == state)) {
+	if (cdef->IsHoldFire() || (State::ROAM == state)) {
 		for (unsigned i = 0; i < groups.size(); ++i) {
 			const CMilitaryManager::SEnemyGroup& group = groups[i];
 			if ((cost >= group.cost) || (position.SqDistance2D(group.pos) >= maxSqRange)) {
