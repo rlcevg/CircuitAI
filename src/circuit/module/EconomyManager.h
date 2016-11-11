@@ -82,6 +82,8 @@ private:
 	void ReadConfig();
 	void Init();
 	void OpenStrategy(CCircuitDef* facDef, const springai::AIFloat3& pos);
+
+	float GetStorage(springai::Resource* res);
 	void UpdateEconomy();
 
 	Handlers2 createdHandler;

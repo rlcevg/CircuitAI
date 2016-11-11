@@ -389,7 +389,7 @@ int CCircuitAI::HandleResignEvent(int topic, const void* data)
 
 bool CCircuitAI::IsModValid()
 {
-	const int minEngineVer = 102;
+	const int minEngineVer = 103;
 	const char* engineVersion = sAICallback->Engine_Version_getMajor(skirmishAIId);
 	int ver = atoi(engineVersion);
 	if (ver < minEngineVer) {
@@ -411,7 +411,7 @@ bool CCircuitAI::IsModValid()
 		return false;
 	}
 
-	const int minModVer[] = {1, 4, 7, 0};
+	const int minModVer[] = {1, 4, 11, 1};
 	unsigned i = 0;
 	char* tmp = new char [strlen(version) + 1];
 	strcpy(tmp, version);
@@ -421,7 +421,7 @@ bool CCircuitAI::IsModValid()
 			int ver = atoi(tok);
 			if (ver < minModVer[i]) {
 				delete[] tmp;
-				LOG("Zero-K must be 1.4.7.0 or higher! (%s)", version);
+				LOG("Zero-K must be 1.4.11.1 or higher! (%s)", version);
 				return false;
 			}
 			if ((ver > minModVer[i]) || (++i >= sizeof(minModVer) / sizeof(minModVer[0]))) {

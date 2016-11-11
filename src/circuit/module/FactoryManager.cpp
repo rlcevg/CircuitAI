@@ -1057,8 +1057,8 @@ void CFactoryManager::ReadConfig()
 
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 {
-	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	if (economyManager->GetAvgMetalIncome() * 2.0f < economyManager->GetMetalPull()) {
+	CEconomyManager* em = circuit->GetEconomyManager();
+	if ((em->GetAvgMetalIncome() * 2.0f < em->GetMetalPull()) && em->IsMetalEmpty()) {
 		return EnqueueWait(FRAMES_PER_SEC * 5);
 	}
 

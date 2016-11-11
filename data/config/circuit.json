@@ -687,6 +687,7 @@
 	},
 	"corsktl": {
 		"role": ["anti_heavy", "mine"],
+		"limit": 3,
 		"retreat": 0.01
 	},
 	"armaak": {

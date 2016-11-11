@@ -33,7 +33,7 @@ namespace circuit {
 
 using namespace springai;
 
-#define HIDDEN_ENERGY	10000.0f
+#define HIDDEN_STORAGE	10000.0f
 #define PYLON_RANGE		500.0f
 
 CEconomyManager::CEconomyManager(CCircuitAI* circuit)
@@ -868,7 +868,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
 	if ((storeDef == nullptr) ||
 		!builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() ||
-		(economy->GetStorage(metalRes) > 10 * metalIncome) ||
+		(GetStorage(metalRes) > 10 * metalIncome) ||
 		(storeDef->GetCount() >= 5) ||
 		!storeDef->IsAvailable())
 	{
@@ -1121,6 +1121,11 @@ void CEconomyManager::OpenStrategy(CCircuitDef* facDef, const AIFloat3& pos)
 	}
 }
 
+float CEconomyManager::GetStorage(Resource* res)
+{
+	return economy->GetStorage(res) - HIDDEN_STORAGE;
+}
+
 void CEconomyManager::UpdateEconomy()
 {
 	if (ecoFrame + TEAM_SLOWUPDATE_RATE >= circuit->GetLastFrame()) {
@@ -1128,13 +1133,13 @@ void CEconomyManager::UpdateEconomy()
 	}
 	ecoFrame = circuit->GetLastFrame();
 
-	float curMetal = economy->GetCurrent(metalRes);
-	float storMetal = economy->GetStorage(metalRes);
+	const float curMetal = economy->GetCurrent(metalRes);
+	const float storMetal = GetStorage(metalRes);
 	isMetalEmpty = curMetal < storMetal * 0.2f;
 	isMetalFull = curMetal > storMetal * 0.8f;
 	isEnergyStalling = std::min(GetAvgMetalIncome() - GetMetalPull(), .0f)/* * 0.98f*/ > std::min(GetAvgEnergyIncome() - GetEnergyPull(), .0f);
-	float curEnergy = economy->GetCurrent(energyRes);
-	float storEnergy = economy->GetStorage(energyRes) - HIDDEN_ENERGY;
+	const float curEnergy = economy->GetCurrent(energyRes);
+	const float storEnergy = GetStorage(energyRes);
 	isEnergyEmpty = curEnergy < storEnergy * 0.1f;
 }
 
