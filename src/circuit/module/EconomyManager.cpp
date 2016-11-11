@@ -730,47 +730,51 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	/*
 	 * check buildpower
 	 */
+	const int frame = circuit->GetLastFrame();
 	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome()) * ecoFactor;
 	CCircuitDef* assistDef = factoryManager->GetAssistDef();
 	const float factoryFactor = (metalIncome - assistDef->GetBuildSpeed()) * 1.2f;
 	const int nanoSize = builderManager->GetTasks(IBuilderTask::BuildType::NANO).size();
 	const float factoryPower = factoryManager->GetFactoryPower() + nanoSize * assistDef->GetBuildSpeed();
-	if ((factoryPower >= factoryFactor) && (lastFacFrame + switchTime > circuit->GetLastFrame())) {
+	const bool isSwitchTime = (lastFacFrame + switchTime <= frame);
+	if ((factoryPower >= factoryFactor) && !isSwitchTime) {
 		return nullptr;
 	}
-	lastFacFrame = circuit->GetLastFrame();
+	lastFacFrame = frame;
 
 	/*
 	 * check nanos
 	 */
-	CCircuitUnit* factory = factoryManager->NeedUpgrade();
-	if ((factory != nullptr) && assistDef->IsAvailable()) {
-		AIFloat3 buildPos = factory->GetPos(circuit->GetLastFrame());
-		switch (factory->GetUnit()->GetBuildingFacing()) {
-			default:
-			case UNIT_FACING_SOUTH:
-				buildPos.z -= 128.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
-				break;
-			case UNIT_FACING_EAST:
-				buildPos.x -= 128.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
-				break;
-			case UNIT_FACING_NORTH:
-				buildPos.z += 128.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
-				break;
-			case UNIT_FACING_WEST:
-				buildPos.x += 128.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
-				break;
-		}
+	if (!isSwitchTime) {
+		CCircuitUnit* factory = factoryManager->NeedUpgrade();
+		if ((factory != nullptr) && assistDef->IsAvailable()) {
+			AIFloat3 buildPos = factory->GetPos(frame);
+			switch (factory->GetUnit()->GetBuildingFacing()) {
+				default:
+				case UNIT_FACING_SOUTH:
+					buildPos.z -= 128.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
+					break;
+				case UNIT_FACING_EAST:
+					buildPos.x -= 128.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
+					break;
+				case UNIT_FACING_NORTH:
+					buildPos.z += 128.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
+					break;
+				case UNIT_FACING_WEST:
+					buildPos.x += 128.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
+					break;
+			}
 
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		CCircuitDef* bdef = (unit == nullptr) ? factory->GetCircuitDef() : unit->GetCircuitDef();
-		buildPos = terrainManager->GetBuildPosition(bdef, buildPos);
+			CTerrainManager* terrainManager = circuit->GetTerrainManager();
+			CCircuitDef* bdef = (unit == nullptr) ? factory->GetCircuitDef() : unit->GetCircuitDef();
+			buildPos = terrainManager->GetBuildPosition(bdef, buildPos);
 
-		if (terrainManager->CanBeBuiltAt(assistDef, buildPos) &&
-			((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
-		{
-			return builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, assistDef, buildPos,
-											   IBuilderTask::BuildType::NANO, SQUARE_SIZE * 8, true);
+			if (terrainManager->CanBeBuiltAt(assistDef, buildPos) &&
+				((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
+			{
+				return builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, assistDef, buildPos,
+												   IBuilderTask::BuildType::NANO, SQUARE_SIZE * 8, true);
+			}
 		}
 	}
 

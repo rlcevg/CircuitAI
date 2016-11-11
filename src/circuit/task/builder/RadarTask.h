@@ -8,11 +8,11 @@
 #ifndef SRC_CIRCUIT_TASK_BUILDER_RADARTASK_H_
 #define SRC_CIRCUIT_TASK_BUILDER_RADARTASK_H_
 
-#include "task/builder/BuilderTask.h"
+#include "task/common/SensorTask.h"
 
 namespace circuit {
 
-class CBRadarTask: public IBuilderTask {
+class CBRadarTask: public ISensorTask {
 public:
 	CBRadarTask(ITaskManager* mgr, Priority priority,
 				CCircuitDef* buildDef, const springai::AIFloat3& position,

@@ -25,7 +25,9 @@ class CCircuitDef {
 public:
 	using Id = int;
 	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, _SIZE_};
+	enum class ThreatType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, CLOAK = 4, SHIELD = 5, _SIZE_};
 	using RangeT = std::underlying_type<RangeType>::type;
+	using ThreatT = std::underlying_type<ThreatType>::type;
 
 	// TODO: Rebuild response system on unit vs unit basis (opposed to role vs role).
 	// Not implemented: mine, transport
@@ -165,6 +167,7 @@ public:
 	float GetPower() const { return power; }
 	float GetMinRange() const { return minRange; }
 	float GetMaxRange(RangeType type = RangeType::MAX) const { return maxRange[static_cast<RangeT>(type)]; }
+	int GetThreatRange(ThreatType type = ThreatType::MAX) const { return threatRange[static_cast<ThreatT>(type)]; }
 	float GetShieldRadius() const { return shieldRadius; }
 	float GetMaxShield() const { return maxShield; }
 	int GetFireState() const { return fireState; }
@@ -174,6 +177,7 @@ public:
 	int GetNoChaseCategory() const { return noChaseCategory; }
 
 	void ModDamage(float mod) { dmg *= mod; power *= mod; }
+	void SetThreatRange(ThreatType type, int range) { threatRange[static_cast<ThreatT>(type)] = range; }
 	void SetFireState(FireType ft) { fireState = ft; }
 	void SetReloadTime(int time) { reloadTime = time; }
 
@@ -242,6 +246,7 @@ private:
 	float power;  // attack power = UnitDef's max threat
 	float minRange;
 	std::array<float, static_cast<RangeT>(RangeType::_SIZE_)> maxRange;
+	std::array<int, static_cast<ThreatT>(ThreatType::_SIZE_)> threatRange;
 	float shieldRadius;
 	float maxShield;
 	FireType fireState;

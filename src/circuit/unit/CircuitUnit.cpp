@@ -104,7 +104,11 @@ void CCircuitUnit::ManualFire(CEnemyUnit* target, int timeOut)
 {
 	TRY_UNIT(manager->GetCircuit(), this,
 		if (circuitDef->HasDGun()) {
-			unit->DGun(target->GetUnit(), UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY, timeOut);
+			if (target->GetUnit()->IsCloaked()) {  // los-cheat related
+				unit->DGunPosition(target->GetPos(), UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY, timeOut);
+			} else {
+				unit->DGun(target->GetUnit(), UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY, timeOut);
+			}
 		} else {
 			unit->MoveTo(target->GetPos(), UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
 			unit->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, UNIT_COMMAND_OPTION_SHIFT_KEY, timeOut);
@@ -185,8 +189,8 @@ float CCircuitUnit::GetShieldPower()
 void CCircuitUnit::Attack(CEnemyUnit* target, int timeout)
 {
 	TRY_UNIT(manager->GetCircuit(), this,
+		const AIFloat3& pos = target->GetPos();
 		if (IsJumpReady()) {
-			const AIFloat3& pos = target->GetPos();
 			unit->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
 			unit->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
 		} else if (circuitDef->IsAttrMelee()) {
@@ -195,6 +199,7 @@ void CCircuitUnit::Attack(CEnemyUnit* target, int timeout)
 		} else {
 			unit->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
 		}
+		unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);  // los-cheat related
 		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 		unit->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 	)
@@ -229,6 +234,7 @@ void CCircuitUnit::Attack(const AIFloat3& position, CEnemyUnit* target, int time
 			unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
 		}
 		unit->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+		unit->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);  // los-cheat related
 		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 		unit->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 	)

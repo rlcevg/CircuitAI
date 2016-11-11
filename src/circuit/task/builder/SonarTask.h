@@ -8,11 +8,11 @@
 #ifndef SRC_CIRCUIT_TASK_BUILDER_SONARTASK_H_
 #define SRC_CIRCUIT_TASK_BUILDER_SONARTASK_H_
 
-#include "task/builder/BuilderTask.h"
+#include "task/common/SensorTask.h"
 
 namespace circuit {
 
-class CBSonarTask: public IBuilderTask {
+class CBSonarTask: public ISensorTask {
 public:
 	CBSonarTask(ITaskManager* mgr, Priority priority,
 				CCircuitDef* buildDef, const springai::AIFloat3& position,

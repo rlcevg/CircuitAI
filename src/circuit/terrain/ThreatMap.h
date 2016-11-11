@@ -77,8 +77,8 @@ private:
 	void DelShield(const CEnemyUnit* e);
 
 	void SetEnemyUnitRange(CEnemyUnit* e) const;
-	int GetCloakRange(const CEnemyUnit* e) const;
-	int GetShieldRange(const CEnemyUnit* e) const;
+	int GetCloakRange(const CCircuitDef* edef) const;
+	int GetShieldRange(const CCircuitDef* edef) const;
 	float GetEnemyUnitThreat(CEnemyUnit* enemy) const;
 
 	bool IsInLOS(const springai::AIFloat3& pos) const;

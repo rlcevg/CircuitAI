@@ -82,6 +82,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, power(.0f)
 		, minRange(.0f)
 		, maxRange({.0f})
+		, threatRange({0})
 		, shieldRadius(.0f)
 		, maxShield(.0f)
 		, reloadTime(0)

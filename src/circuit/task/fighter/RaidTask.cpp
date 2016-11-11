@@ -287,7 +287,7 @@ void CRaidTask::FindTarget()
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
-		if (enemy->IsHidden()/* || !enemy->GetTasks().empty()*/) {
+		if (enemy->IsHidden() || (enemy->GetTasks().size() > 2)) {
 			continue;
 		}
 		const AIFloat3& ePos = enemy->GetPos();

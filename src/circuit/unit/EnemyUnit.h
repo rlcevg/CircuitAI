@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_UNIT_ENEMYUNIT_H_
 
 #include "unit/CircuitUnit.h"
+#include "unit/CircuitDef.h"
 
 #include <set>
 
@@ -18,9 +19,6 @@ class IFighterTask;
 
 class CEnemyUnit {
 public:
-	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, CLOAK = 4, SHIELD = 5, _SIZE_};
-	using RT = std::underlying_type<RangeType>::type;
-
 	CEnemyUnit(const CEnemyUnit& that) = delete;
 	CEnemyUnit& operator=(const CEnemyUnit&) = delete;
 	CEnemyUnit(springai::Unit* unit, CCircuitDef* cdef);
@@ -55,8 +53,8 @@ public:
 	float GetThreat() const { return threat; }
 	void DecayThreat(float decay) { threat *= decay; }
 
-	void SetRange(RangeType t, int r) { range[static_cast<RT>(t)] = r; }
-	int GetRange(RangeType t = RangeType::MAX) const { return range[static_cast<RT>(t)]; }
+	void SetRange(CCircuitDef::ThreatType t, int r) { range[static_cast<CCircuitDef::ThreatT>(t)] = r; }
+	int GetRange(CCircuitDef::ThreatType t = CCircuitDef::ThreatType::MAX) const { return range[static_cast<CCircuitDef::ThreatT>(t)]; }
 
 	bool operator==(const CCircuitUnit& rhs) { return id == rhs.GetId(); }
 	bool operator!=(const CCircuitUnit& rhs) { return id != rhs.GetId(); }
@@ -72,7 +70,7 @@ private:
 	springai::Weapon* dgun;
 	springai::AIFloat3 pos;
 	float threat;
-	std::array<int, static_cast<RT>(RangeType::_SIZE_)> range;
+	std::array<int, static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_)> range;
 
 	enum LosMask: char {NONE = 0x00, LOS = 0x01, RADAR = 0x02, HIDDEN = 0x04, KNOWN = 0x08};
 	using LM = std::underlying_type<LosMask>::type;

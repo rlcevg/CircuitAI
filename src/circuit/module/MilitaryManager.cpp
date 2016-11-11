@@ -956,7 +956,7 @@ void CMilitaryManager::ReadConfig()
 	minRaiders = raid.get((unsigned)0, 300.f).asFloat();
 	avgRaiders = raid.get((unsigned)1, 500.f).asFloat();
 	minAttackers = quotas.get("attack", 800.f).asFloat();
-	defRadius = quotas.get("radius", 2000.f).asFloat();
+	defRadius = quotas.get("def_rad", 2000.f).asFloat();
 
 	const Json::Value& porc = root["porcupine"];
 	const Json::Value& defs = porc["unit"];

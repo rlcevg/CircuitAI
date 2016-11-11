@@ -444,7 +444,7 @@ void CSetupManager::ReadConfig()
 
 	if (!commChoices.empty()) {
 		unsigned choice = 0;
-		float dice = (float)rand() / RAND_MAX;
+		float dice = (float)rand() / RAND_MAX * magnitude;
 		float total = .0f;
 		for (unsigned i = 0; i < weight.size(); ++i) {
 			total += weight[i];
