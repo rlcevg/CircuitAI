@@ -1139,318 +1139,318 @@
 },
 
 "commander": {
-    "prefix": "dyntrainer_",
-    "suffix": "_base",
-    "unit": {
-        "support": {
-            // Choice importance, 0 by default
-            "importance": 0.25,
+	"prefix": "dyntrainer_",
+	"suffix": "_base",
+	"unit": {
+		"support": {
+			// Choice importance, 0 by default
+			"importance": 0.25,
 
-            // Force-morph delay, in seconds
-            "morph_after": 120,
+			// Force-morph delay, in seconds
+			"morph_after": 120,
 
-            // Starting units (order matters)
-            "start": {
-                "factory": {
-                    "factorycloak": [
-                        // [<weight>, [<role>, <role>, ...]]
-                        [0.5, ["builder", "raider", "riot", "builder"]],
-                        [0.5, ["builder", "raider", "raider"]]
-                    ],
-                    "factorygunship": [
-                        [0.5, ["mine", "mine", "mine", "mine", "skirmish", "skirmish", "mine", "skirmish", "skirmish"]],
-                        [0.5, ["scout", "mine", "builder","mine", "skirmish", "skirmish", "mine", "skirmish", "skirmish"]]
-                    ],
-                    "factoryamph": [
-                        [0.5, ["builder", "scout", "riot", "raider"]],
-                        [0.5, ["builder", "raider", "raider"]]
-                    ],
-                    "factoryveh": [
-                        [0.5, ["builder", "scout", "scout", "scout", "raider", "raider", "builder"]],
-                        [0.5, ["scout",  "raider", "raider", "raider", "raider", "builder"]]
-                    ],
-                    "factoryhover": [
-                        [0.5, ["scout", "riot", "builder", "raider"]],
-                        [0.5, ["builder", "raider", "raider"]]
-                    ],
-                    "factoryplane": [
-                        [0.5, ["anti_air", "anti_air", "bomber"]],
-                        [0.5, ["riot", "riot", "riot", "riot", "anti_air", "bomber"]]
-                    ],
-                    "factorytank": [
-                        [0.5, ["skirmish", "builder", "assault", "builder", "riot"]],
-                        [0.5, ["builder", "skirmish", "builder", "riot", "builder", "skirmish", "assault"]]
-                    ],
-                    "factoryspider": [
-                        [0.5, ["scout", "scout", "scout", "riot", "scout", "builder", "scout", "riot", "scout", "builder"]],
-                        [0.5, ["scout", "scout", "scout", "scout", "scout", "scout", "builder", "riot", "scout", "builder", "support"]]
-                    ],
-                    "factoryshield": [
-                        [0.5, ["builder", "scout", "raider", "raider", "raider", "builder", "builder"]],
-                        [0.5, ["scout", "builder", "raider", "raider", "builder", "raider", "raider", "raider"]]
-                    ],
-                    "factoryjump": [
-                        [0.5, ["scout", "riot", "builder", "raider"]],
-                        [0.5, ["builder", "raider", "raider"]]
-                    ]
-                },
-                "default": ["raider", "raider", "builder"]
-            },
-            // List of dynamic module IDs
-            "upgrade": [
-                [13, 30],  // shotgun, radar
-                [34, 34],  // companion drones
-                [15, 35, 35],  // sniper, battle drones
-                [35, 35, 35],  // battle drones
-                [35, 35, 35],  // battle drones
-                [34, 34, 34],  // companion drones
-                [34, 34, 34],  // companion drones
-                [40, 40, 40],  // speed
-                [40, 40, 40],  // speed
-                [40, 40, 37],  // speed, armour
-                [37, 37, 37],  // armour
-                [37, 37, 37],  // armour
-                [37, 36, 36],  // armour, autoheal
-                [36, 36, 36],  // autoheal
-                [36, 36, 36],  // autoheal
-                [42, 42, 42],  // builder
-                [42, 42, 42],  // builder
-                [42, 42, 29],  // builder, jammer
-                [32, 27, 33]  // area cloak, disruptor ammo, lazarus
-            ]
-        },
-        "recon": {
-           // Choice importance, 0 by default
-            "importance": 0.1,
+			// Starting units (order matters)
+			"start": {
+				"factory": {
+					"factorycloak": [
+						// [<weight>, [<role>, <role>, ...]]
+						[0.5, ["builder", "raider", "riot", "builder"]],
+						[0.5, ["builder", "raider", "raider"]]
+					],
+					"factorygunship": [
+						[0.5, ["mine", "mine", "mine", "mine", "skirmish", "skirmish", "mine", "skirmish", "skirmish"]],
+						[0.5, ["scout", "mine", "builder","mine", "skirmish", "skirmish", "mine", "skirmish", "skirmish"]]
+					],
+					"factoryamph": [
+						[0.5, ["builder", "scout", "riot", "raider"]],
+						[0.5, ["builder", "raider", "raider"]]
+					],
+					"factoryveh": [
+						[0.5, ["builder", "scout", "scout", "scout", "raider", "raider", "builder"]],
+						[0.5, ["scout",  "raider", "raider", "raider", "raider", "builder"]]
+					],
+					"factoryhover": [
+						[0.5, ["scout", "riot", "builder", "raider"]],
+						[0.5, ["builder", "raider", "raider"]]
+					],
+					"factoryplane": [
+						[0.5, ["anti_air", "anti_air", "bomber"]],
+						[0.5, ["riot", "riot", "riot", "riot", "anti_air", "bomber"]]
+					],
+					"factorytank": [
+						[0.5, ["skirmish", "builder", "assault", "builder", "riot"]],
+						[0.5, ["builder", "skirmish", "builder", "riot", "builder", "skirmish", "assault"]]
+					],
+					"factoryspider": [
+						[0.5, ["scout", "scout", "scout", "riot", "scout", "builder", "scout", "riot", "scout", "builder"]],
+						[0.5, ["scout", "scout", "scout", "scout", "scout", "scout", "builder", "riot", "scout", "builder", "support"]]
+					],
+					"factoryshield": [
+						[0.5, ["builder", "scout", "raider", "raider", "raider", "builder", "builder"]],
+						[0.5, ["scout", "builder", "raider", "raider", "builder", "raider", "raider", "raider"]]
+					],
+					"factoryjump": [
+						[0.5, ["scout", "riot", "builder", "raider"]],
+						[0.5, ["builder", "raider", "raider"]]
+					]
+				},
+				"default": ["raider", "raider", "builder"]
+			},
+			// List of dynamic module IDs
+			"upgrade": [
+				[13, 30],  // shotgun, radar
+				[34, 34],  // companion drones
+				[15, 35, 35],  // sniper, battle drones
+				[35, 35, 35],  // battle drones
+				[35, 35, 35],  // battle drones
+				[34, 34, 34],  // companion drones
+				[34, 34, 34],  // companion drones
+				[40, 40, 40],  // speed
+				[40, 40, 40],  // speed
+				[40, 40, 37],  // speed, armour
+				[37, 37, 37],  // armour
+				[37, 37, 37],  // armour
+				[37, 36, 36],  // armour, autoheal
+				[36, 36, 36],  // autoheal
+				[36, 36, 36],  // autoheal
+				[42, 42, 42],  // builder
+				[42, 42, 42],  // builder
+				[42, 42, 29],  // builder, jammer
+				[32, 27, 33]  // area cloak, disruptor ammo, lazarus
+			]
+		},
+		"recon": {
+			// Choice importance, 0 by default
+			"importance": 0.1,
 
-            // Force-morph delay, in seconds
-            "morph_after": 90,
+			// Force-morph delay, in seconds
+			"morph_after": 90,
 
-            // Starting units (order matters)
-            "start": {
-                "factory": {
-                    "factorycloak": [
-                        // [<weight>, [<role>, <role>, ...]]
-                        [0.5, ["raider", "riot", "builder"]],
-                        [0.5, ["builder", "raider", "raider"]]
-                    ],
-                    "factorygunship": [
-                        [0.5, ["mine", "mine", "mine", "mine", "skirmish", "skirmish", "mine", "skirmish", "skirmish"]],
-                        [0.5, ["scout", "mine", "builder","mine", "skirmish", "skirmish", "mine", "skirmish", "skirmish"]]
-                    ],
-                    "factoryamph": [
-                        [0.5, ["scout", "riot", "raider"]],
-                        [0.5, ["builder", "raider", "raider"]]
-                    ],
-                    "factoryveh": [
-                        [0.5, ["scout", "scout", "scout", "raider", "raider", "builder"]],
-                        [0.5, ["scout",  "raider", "raider", "raider", "raider", "builder"]]
-                    ],
-                    "factoryhover": [
-                        [0.5, ["scout", "riot", "raider"]],
-                        [0.5, ["builder", "raider", "raider"]]
-                    ],
-                    "factoryplane": [
-                        [0.5, ["anti_air", "anti_air", "bomber"]],
-                        [0.5, ["riot", "riot", "riot", "riot", "anti_air", "bomber"]]
-                    ],
-                    "factorytank": [
-                        [0.5, ["skirmish", "builder", "assault", "builder", "riot"]],
-                        [0.5, ["builder", "skirmish", "riot", "builder", "skirmish", "assault"]]
-                    ],
-                    "factoryspider": [
-                        [0.5, ["scout", "scout", "scout", "riot", "scout", "builder", "scout", "riot", "scout", "builder"]],
-                        [0.5, ["scout", "scout", "scout", "scout", "scout", "scout", "builder", "riot", "scout", "builder", "support"]]
-                    ],
-                    "factoryshield": [
-                        [0.5, ["scout", "raider", "raider", "raider", "builder", "builder"]],
-                        [0.5, ["scout", "builder", "raider", "raider", "builder", "raider", "raider", "raider"]]
-                    ],
-                    "factoryjump": [
-                        [0.5, ["scout", "riot", "raider"]],
-                        [0.5, ["builder", "raider", "raider"]]
-                    ]
-                },
-                "default": ["raider", "raider", "builder"]
-            },
-            // List of dynamic module IDs
-            "upgrade": [
-                [13, 30],  // shotgun, radar
-                [34, 34],  // companion drones
-                [15, 35, 35],  // sniper, battle drones
-                [35, 35, 35],  // battle drones
-                [35, 35, 35],  // battle drones
-                [34, 34, 34],  // companion drones
-                [34, 34, 34],  // companion drones
-                [40, 40, 40],  // speed
-                [40, 40, 40],  // speed
-                [40, 40, 37],  // speed, armour
-                [37, 37, 37],  // armour
-                [37, 37, 37],  // armour
-                [37, 36, 36],  // armour, autoheal
-                [36, 36, 36],  // autoheal
-                [36, 36, 36],  // autoheal
-                [42, 42, 42],  // builder
-                [42, 42, 42],  // builder
-                [42, 42, 29],  // builder, jammer
-                [32, 27, 33]  // area cloak, disruptor ammo, lazarus
-            ]
-        },
-        "assault": {
-           // Choice importance, 0 by default
-            "importance": 0.5,
+			// Starting units (order matters)
+			"start": {
+				"factory": {
+					"factorycloak": [
+						// [<weight>, [<role>, <role>, ...]]
+						[0.5, ["raider", "riot", "builder"]],
+						[0.5, ["builder", "raider", "raider"]]
+						],
+					"factorygunship": [
+						[0.5, ["mine", "mine", "mine", "mine", "skirmish", "skirmish", "mine", "skirmish", "skirmish"]],
+						[0.5, ["scout", "mine", "builder","mine", "skirmish", "skirmish", "mine", "skirmish", "skirmish"]]
+					],
+					"factoryamph": [
+						[0.5, ["scout", "riot", "raider"]],
+						[0.5, ["builder", "raider", "raider"]]
+					],
+					"factoryveh": [
+						[0.5, ["scout", "scout", "scout", "raider", "raider", "builder"]],
+						[0.5, ["scout",  "raider", "raider", "raider", "raider", "builder"]]
+					],
+					"factoryhover": [
+						[0.5, ["scout", "riot", "raider"]],
+						[0.5, ["builder", "raider", "raider"]]
+					],
+					"factoryplane": [
+						[0.5, ["anti_air", "anti_air", "bomber"]],
+						[0.5, ["riot", "riot", "riot", "riot", "anti_air", "bomber"]]
+					],
+					"factorytank": [
+						[0.5, ["skirmish", "builder", "assault", "builder", "riot"]],
+						[0.5, ["builder", "skirmish", "riot", "builder", "skirmish", "assault"]]
+					],
+					"factoryspider": [
+						[0.5, ["scout", "scout", "scout", "riot", "scout", "builder", "scout", "riot", "scout", "builder"]],
+						[0.5, ["scout", "scout", "scout", "scout", "scout", "scout", "builder", "riot", "scout", "builder", "support"]]
+					],
+					"factoryshield": [
+						[0.5, ["scout", "raider", "raider", "raider", "builder", "builder"]],
+						[0.5, ["scout", "builder", "raider", "raider", "builder", "raider", "raider", "raider"]]
+					],
+					"factoryjump": [
+						[0.5, ["scout", "riot", "raider"]],
+						[0.5, ["builder", "raider", "raider"]]
+					]
+				},
+				"default": ["raider", "raider", "builder"]
+			},
+			// List of dynamic module IDs
+			"upgrade": [
+				[13, 30],  // shotgun, radar
+				[34, 34],  // companion drones
+				[15, 35, 35],  // sniper, battle drones
+				[35, 35, 35],  // battle drones
+				[35, 35, 35],  // battle drones
+				[34, 34, 34],  // companion drones
+				[34, 34, 34],  // companion drones
+				[40, 40, 40],  // speed
+				[40, 40, 40],  // speed
+				[40, 40, 37],  // speed, armour
+				[37, 37, 37],  // armour
+				[37, 37, 37],  // armour
+				[37, 36, 36],  // armour, autoheal
+				[36, 36, 36],  // autoheal
+				[36, 36, 36],  // autoheal
+				[42, 42, 42],  // builder
+				[42, 42, 42],  // builder
+				[42, 42, 29],  // builder, jammer
+				[32, 27, 33]  // area cloak, disruptor ammo, lazarus
+			]
+		},
+		"assault": {
+			// Choice importance, 0 by default
+			"importance": 0.5,
 
-            // Force-morph delay, in seconds
-            "morph_after": 60,
+			// Force-morph delay, in seconds
+			"morph_after": 60,
 
-            // Starting units (order matters)
-            "start": {
-                "factory": {
-                    "factorycloak": [
-                        // [<weight>, [<role>, <role>, ...]]
-                        [0.5, ["raider", "riot", "builder"]],
-                        [0.5, ["builder", "raider", "raider"]]
-                    ],
-                    "factorygunship": [
-                        [0.5, ["mine", "mine", "mine", "mine", "skirmish", "skirmish", "mine", "skirmish", "skirmish"]],
-                        [0.5, ["anti_heavy"]]
-                    ],
-                    "factoryamph": [
-                        [0.5, ["builder", "scout", "riot", "raider"]],
-                        [0.5, ["builder", "raider", "raider"]]
-                    ],
-                    "factoryveh": [
-                        [0.5, ["scout", "scout", "scout", "riot", "builder", "skirmish", "skirmish", "builder", "skirmish", "skirmish", "skirmish"]],
-                        [0.5, ["scout",  "raider", "raider", "raider", "raider", "builder", "builder"]]
-                    ],
-                    "factoryhover": [
-                        [0.5, ["scout", "riot", "raider"]],
-                        [0.5, ["builder", "raider", "raider"]]
-                    ],
-                    "factoryplane": [
-                        [0.5, ["anti_air", "anti_air", "bomber"]],
-                        [0.5, ["anti_air", "anti_air", "bomber"]]
-                    ],
-                    "factorytank": [
-                        [0.5, ["builder", "skirmish", "builder", "assault", "builder", "riot"]],
-                        [0.5, ["builder", "skirmish", "riot", "builder", "skirmish", "assault"]]
-                    ],
-                    "factoryspider": [
-                        [0.5, ["builder", "scout", "scout", "scout", "riot", "scout", "builder", "scout", "riot", "scout", "builder"]],
-                        [0.5, ["scout", "scout", "scout", "scout", "scout", "scout", "builder", "riot", "scout", "builder", "support"]]
-                    ],
-                    "factoryshield": [
-                        [0.5, ["builder", "scout", "raider", "raider", "raider", "builder", "builder"]],
-                        [0.5, ["scout", "builder", "raider", "raider", "builder", "raider", "raider", "raider"]]
-                    ],
-                    "factoryjump": [
-                        [0.5, ["scout", "riot", "raider"]],
-                        [0.5, ["builder", "raider", "raider"]]
-                    ]
-                },
-                "default": ["raider", "raider", "builder"]
-            },
-            // List of dynamic module IDs
-            "upgrade": [
-                [13, 30],  // shotgun, radar
-                [34, 34],  // companion drones
-                [15, 35, 35],  // sniper, battle drones
-                [35, 35, 35],  // battle drones
-                [35, 35, 35],  // battle drones
-                [34, 34, 34],  // companion drones
-                [34, 34, 34],  // companion drones
-                [40, 40, 40],  // speed
-                [40, 40, 40],  // speed
-                [40, 40, 37],  // speed, armour
-                [37, 37, 37],  // armour
-                [37, 37, 37],  // armour
-                [37, 36, 36],  // armour, autoheal
-                [36, 36, 36],  // autoheal
-                [36, 36, 36],  // autoheal
-                [42, 42, 42],  // builder
-                [42, 42, 42],  // builder
-                [42, 42, 29],  // builder, jammer
-                [32, 27, 33]  // area cloak, disruptor ammo, lazarus
-            ]
-        },
-        "strike": {
-           // Choice importance, 0 by default
-            "importance": 1.0,
+			// Starting units (order matters)
+			"start": {
+				"factory": {
+					"factorycloak": [
+						// [<weight>, [<role>, <role>, ...]]
+						[0.5, ["raider", "riot", "builder"]],
+						[0.5, ["builder", "raider", "raider"]]
+					],
+					"factorygunship": [
+						[0.5, ["mine", "mine", "mine", "mine", "skirmish", "skirmish", "mine", "skirmish", "skirmish"]],
+						[0.5, ["anti_heavy"]]
+					],
+					"factoryamph": [
+						[0.5, ["builder", "scout", "riot", "raider"]],
+						[0.5, ["builder", "raider", "raider"]]
+					],
+					"factoryveh": [
+						[0.5, ["scout", "scout", "scout", "riot", "builder", "skirmish", "skirmish", "builder", "skirmish", "skirmish", "skirmish"]],
+						[0.5, ["scout",  "raider", "raider", "raider", "raider", "builder", "builder"]]
+					],
+					"factoryhover": [
+						[0.5, ["scout", "riot", "raider"]],
+						[0.5, ["builder", "raider", "raider"]]
+					],
+					"factoryplane": [
+						[0.5, ["anti_air", "anti_air", "bomber"]],
+						[0.5, ["anti_air", "anti_air", "bomber"]]
+					],
+					"factorytank": [
+						[0.5, ["builder", "skirmish", "builder", "assault", "builder", "riot"]],
+						[0.5, ["builder", "skirmish", "riot", "builder", "skirmish", "assault"]]
+					],
+					"factoryspider": [
+						[0.5, ["builder", "scout", "scout", "scout", "riot", "scout", "builder", "scout", "riot", "scout", "builder"]],
+						[0.5, ["scout", "scout", "scout", "scout", "scout", "scout", "builder", "riot", "scout", "builder", "support"]]
+					],
+					"factoryshield": [
+						[0.5, ["builder", "scout", "raider", "raider", "raider", "builder", "builder"]],
+						[0.5, ["scout", "builder", "raider", "raider", "builder", "raider", "raider", "raider"]]
+					],
+					"factoryjump": [
+						[0.5, ["scout", "riot", "raider"]],
+						[0.5, ["builder", "raider", "raider"]]
+					]
+				},
+				"default": ["raider", "raider", "builder"]
+			},
+			// List of dynamic module IDs
+			"upgrade": [
+				[13, 30],  // shotgun, radar
+				[34, 34],  // companion drones
+				[15, 35, 35],  // sniper, battle drones
+				[35, 35, 35],  // battle drones
+				[35, 35, 35],  // battle drones
+				[34, 34, 34],  // companion drones
+				[34, 34, 34],  // companion drones
+				[40, 40, 40],  // speed
+				[40, 40, 40],  // speed
+				[40, 40, 37],  // speed, armour
+				[37, 37, 37],  // armour
+				[37, 37, 37],  // armour
+				[37, 36, 36],  // armour, autoheal
+				[36, 36, 36],  // autoheal
+				[36, 36, 36],  // autoheal
+				[42, 42, 42],  // builder
+				[42, 42, 42],  // builder
+				[42, 42, 29],  // builder, jammer
+				[32, 27, 33]  // area cloak, disruptor ammo, lazarus
+			]
+		},
+		"strike": {
+		   // Choice importance, 0 by default
+			"importance": 1.0,
 
-            // Force-morph delay, in seconds
-            "morph_after": 60,
+			// Force-morph delay, in seconds
+			"morph_after": 60,
 
-            // Starting units (order matters)
-            "start": {
-                "factory": {
-                    "factorycloak": [
-                        // [<weight>, [<role>, <role>, ...]]
-                        [0.5, ["raider", "riot", "builder"]],
-                        [0.5, ["builder", "raider", "raider"]]
-                    ],
-                    "factorygunship": [
-                        [0.5, ["mine", "mine", "mine", "mine", "skirmish", "skirmish", "mine", "skirmish", "skirmish"]],
-                        [0.5, ["scout", "mine", "builder","mine", "skirmish", "skirmish", "mine", "skirmish", "skirmish"]]
-                    ],
-                    "factoryamph": [
-                        [0.5, ["scout", "riot", "raider"]],
-                        [0.5, ["builder", "raider", "raider"]]
-                    ],
-                    "factoryveh": [
-                        [0.5, ["scout", "scout", "scout", "raider", "raider", "builder"]],
-                        [0.5, ["scout",  "raider", "raider", "raider", "raider", "builder"]]
-                    ],
-                    "factoryhover": [
-                        [0.5, ["scout", "riot", "raider"]],
-                        [0.5, ["builder", "raider", "raider"]]
-                    ],
-                    "factoryplane": [
-                        [0.5, ["anti_air", "anti_air", "bomber"]],
-                        [0.5, ["riot", "riot", "riot", "riot", "anti_air", "bomber"]]
-                    ],
-                    "factorytank": [
-                        [0.5, ["skirmish", "builder", "assault", "builder", "riot"]],
-                        [0.5, ["builder", "skirmish", "riot", "builder", "skirmish", "assault"]]
-                    ],
-                    "factoryspider": [
-                        [0.5, ["scout", "scout", "scout", "riot", "scout", "builder", "scout", "riot", "scout", "builder"]],
-                        [0.5, ["scout", "scout", "scout", "scout", "scout", "scout", "builder", "riot", "scout", "builder", "support"]]
-                    ],
-                    "factoryshield": [
-                        [0.5, ["scout", "raider", "raider", "raider", "builder", "builder"]],
-                        [0.5, ["scout", "builder", "raider", "raider", "builder", "raider", "raider", "raider"]]
-                    ],
-                    "factoryjump": [
-                        [0.5, ["scout", "riot", "raider"]],
-                        [0.5, ["builder", "raider", "raider"]]
-                    ]
-                },
-                "default": ["raider", "raider", "builder"]
-            },
-            // List of dynamic module IDs
-            "upgrade": [
-                [13, 30],  // shotgun, radar
-                [34, 34],  // companion drones
-                [15, 35, 35],  // sniper, battle drones
-                [35, 35, 35],  // battle drones
-                [35, 35, 35],  // battle drones
-                [34, 34, 34],  // companion drones
-                [34, 34, 34],  // companion drones
-                [40, 40, 40],  // speed
-                [40, 40, 40],  // speed
-                [40, 40, 37],  // speed, armour
-                [37, 37, 37],  // armour
-                [37, 37, 37],  // armour
-                [37, 36, 36],  // armour, autoheal
-                [36, 36, 36],  // autoheal
-                [36, 36, 36],  // autoheal
-                [42, 42, 42],  // builder
-                [42, 42, 42],  // builder
-                [42, 42, 29],  // builder, jammer
-                [32, 27, 33]  // area cloak, disruptor ammo, lazarus
-            ]
-        }
-    }
+			// Starting units (order matters)
+			"start": {
+				"factory": {
+					"factorycloak": [
+						// [<weight>, [<role>, <role>, ...]]
+						[0.5, ["raider", "riot", "builder"]],
+						[0.5, ["builder", "raider", "raider"]]
+					],
+					"factorygunship": [
+						[0.5, ["mine", "mine", "mine", "mine", "skirmish", "skirmish", "mine", "skirmish", "skirmish"]],
+						[0.5, ["scout", "mine", "builder","mine", "skirmish", "skirmish", "mine", "skirmish", "skirmish"]]
+					],
+					"factoryamph": [
+						[0.5, ["scout", "riot", "raider"]],
+						[0.5, ["builder", "raider", "raider"]]
+					],
+					"factoryveh": [
+						[0.5, ["scout", "scout", "scout", "raider", "raider", "builder"]],
+						[0.5, ["scout",  "raider", "raider", "raider", "raider", "builder"]]
+					],
+					"factoryhover": [
+						[0.5, ["scout", "riot", "raider"]],
+						[0.5, ["builder", "raider", "raider"]]
+					],
+					"factoryplane": [
+						[0.5, ["anti_air", "anti_air", "bomber"]],
+						[0.5, ["riot", "riot", "riot", "riot", "anti_air", "bomber"]]
+					],
+					"factorytank": [
+						[0.5, ["skirmish", "builder", "assault", "builder", "riot"]],
+						[0.5, ["builder", "skirmish", "riot", "builder", "skirmish", "assault"]]
+					],
+					"factoryspider": [
+						[0.5, ["scout", "scout", "scout", "riot", "scout", "builder", "scout", "riot", "scout", "builder"]],
+						[0.5, ["scout", "scout", "scout", "scout", "scout", "scout", "builder", "riot", "scout", "builder", "support"]]
+					],
+					"factoryshield": [
+						[0.5, ["scout", "raider", "raider", "raider", "builder", "builder"]],
+						[0.5, ["scout", "builder", "raider", "raider", "builder", "raider", "raider", "raider"]]
+					],
+					"factoryjump": [
+						[0.5, ["scout", "riot", "raider"]],
+						[0.5, ["builder", "raider", "raider"]]
+					]
+				},
+				"default": ["raider", "raider", "builder"]
+			},
+			// List of dynamic module IDs
+			"upgrade": [
+				[13, 30],  // shotgun, radar
+				[34, 34],  // companion drones
+				[15, 35, 35],  // sniper, battle drones
+				[35, 35, 35],  // battle drones
+				[35, 35, 35],  // battle drones
+				[34, 34, 34],  // companion drones
+				[34, 34, 34],  // companion drones
+				[40, 40, 40],  // speed
+				[40, 40, 40],  // speed
+				[40, 40, 37],  // speed, armour
+				[37, 37, 37],  // armour
+				[37, 37, 37],  // armour
+				[37, 36, 36],  // armour, autoheal
+				[36, 36, 36],  // autoheal
+				[36, 36, 36],  // autoheal
+				[42, 42, 42],  // builder
+				[42, 42, 42],  // builder
+				[42, 42, 29],  // builder, jammer
+				[32, 27, 33]  // area cloak, disruptor ammo, lazarus
+			]
+		}
+	}
 },
 
 // Actions on building finished event

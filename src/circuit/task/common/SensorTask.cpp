@@ -29,7 +29,7 @@ ISensorTask::~ISensorTask()
 void ISensorTask::Update()
 {
 	IBuilderTask::Update();
-	if (isDead) {
+	if (isDead || (target != nullptr)) {
 		return;
 	}
 

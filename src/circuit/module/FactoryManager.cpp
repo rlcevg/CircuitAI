@@ -277,20 +277,23 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		assists.erase(unit);
 	};
 
-	float maxBuildDist = .0f;
+	float maxBuildDist = SQUARE_SIZE * 2;
 	CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
 
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
 		CCircuitDef* cdef = kv.second;
-		if (!cdef->IsMobile() && cdef->GetUnitDef()->IsBuilder()) {
+		UnitDef* def = cdef->GetUnitDef();
+		if (!cdef->IsMobile() && def->IsBuilder()) {
 			CCircuitDef::Id unitDefId = kv.first;
 			if  (!cdef->GetBuildOptions().empty()) {
 				createdHandler[unitDefId] = factoryCreatedHandler;
 				finishedHandler[unitDefId] = factoryFinishedHandler;
 				idleHandler[unitDefId] = factoryIdleHandler;
 				destroyedHandler[unitDefId] = factoryDestroyedHandler;
-			} else if (maxBuildDist < cdef->GetBuildDistance()) {
+			} else if (maxBuildDist < cdef->GetBuildDistance() &&
+				(std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE < cdef->GetBuildDistance()))
+			{
 				maxBuildDist = cdef->GetBuildDistance();
 				createdHandler[unitDefId] = assistCreatedHandler;
 				finishedHandler[unitDefId] = assistFinishedHandler;
