@@ -25,8 +25,8 @@ namespace circuit {
 
 using namespace springai;
 
-CAntiHeavyTask::CAntiHeavyTask(ITaskManager* mgr)
-		: ISquadTask(mgr, FightType::AH)
+CAntiHeavyTask::CAntiHeavyTask(ITaskManager* mgr, float powerMod)
+		: ISquadTask(mgr, FightType::AH, powerMod)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
@@ -90,6 +90,7 @@ void CAntiHeavyTask::RemoveAssignee(CCircuitUnit* unit)
 		manager->AbortTask(this);
 	} else {
 		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetLosRadius());
+		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetJumpRange());
 	}
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
@@ -303,7 +304,7 @@ void CAntiHeavyTask::FindTarget()
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const bool notAA = !cdef->HasAntiAir();
 	const int canTargetCat = cdef->GetTargetCategory();
-	const float maxPower = attackPower * 2.0f;
+	const float maxPower = attackPower * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
 	const float range = std::max(highestRange, threatMap->GetSquareSize() * 2.0f);
 	const float losSqDist = SQUARE(range);

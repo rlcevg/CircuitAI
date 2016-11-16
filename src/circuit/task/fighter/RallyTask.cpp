@@ -19,7 +19,7 @@ namespace circuit {
 using namespace springai;
 
 CRallyTask::CRallyTask(ITaskManager* mgr, float maxPower)
-		: IFighterTask(mgr, FightType::RALLY)
+		: IFighterTask(mgr, FightType::RALLY, 1.f)
 		, maxPower(maxPower)
 {
 	const AIFloat3& pos = manager->GetCircuit()->GetSetupManager()->GetBasePos();

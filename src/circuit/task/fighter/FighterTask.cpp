@@ -18,11 +18,12 @@ namespace circuit {
 
 using namespace springai;
 
-IFighterTask::IFighterTask(ITaskManager* mgr, FightType type, int timeout)
+IFighterTask::IFighterTask(ITaskManager* mgr, FightType type, float powerMod, int timeout)
 		: IUnitTask(mgr, Priority::NORMAL, Type::FIGHTER, timeout)
 		, fightType(type)
 		, position(-RgtVector)
 		, attackPower(.0f)
+		, powerMod(powerMod)
 		, target(nullptr)
 {
 }

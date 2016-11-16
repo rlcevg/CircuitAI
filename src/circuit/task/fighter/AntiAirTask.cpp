@@ -24,8 +24,8 @@ namespace circuit {
 
 using namespace springai;
 
-CAntiAirTask::CAntiAirTask(ITaskManager* mgr)
-		: ISquadTask(mgr, FightType::AA)
+CAntiAirTask::CAntiAirTask(ITaskManager* mgr, float powerMod)
+		: ISquadTask(mgr, FightType::AA, powerMod)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
@@ -273,6 +273,7 @@ void CAntiAirTask::FindTarget()
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
+	const float maxPower = attackPower * powerMod;
 
 	CEnemyUnit* bestTarget = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
@@ -282,7 +283,7 @@ void CAntiAirTask::FindTarget()
 	for (auto& kv : enemies) {
 		CEnemyUnit* enemy = kv.second;
 		if (enemy->IsHidden() ||
-			(attackPower <= threatMap->GetThreatAt(enemy->GetPos()) - enemy->GetThreat()) ||
+			(maxPower <= threatMap->GetThreatAt(enemy->GetPos()) - enemy->GetThreat()) ||
 			!terrainManager->CanMoveToPos(area, enemy->GetPos()))
 		{
 			continue;

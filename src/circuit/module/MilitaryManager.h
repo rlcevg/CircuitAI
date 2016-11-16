@@ -154,11 +154,17 @@ private:
 	};
 	std::vector<SClusterInfo> clusterInfos;
 
-	float minRaiders;
-	float avgRaiders;
+	struct SRaidQuota {
+		float min;
+		float avg;
+	} raid;
 	unsigned int maxScouts;
 	float minAttackers;
 	float defRadius;
+	struct SThreatQuota {
+		float min;
+		float max;
+	} threatMod;
 
 	std::vector<CCircuitDef*> defenderDefs;
 	std::vector<CCircuitDef*> landDefenders;

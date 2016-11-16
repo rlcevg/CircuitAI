@@ -25,8 +25,8 @@ namespace circuit {
 
 using namespace springai;
 
-CAttackTask::CAttackTask(ITaskManager* mgr, float minCost)
-		: ISquadTask(mgr, FightType::ATTACK)
+CAttackTask::CAttackTask(ITaskManager* mgr, float minCost, float powerMod)
+		: ISquadTask(mgr, FightType::ATTACK, powerMod)
 		, minCost(minCost)
 		, cost(0.f)
 {
@@ -265,7 +265,7 @@ void CAttackTask::FindTarget()
 	const float speed = SQUARE(highestSpeed);
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
-	const float maxPower = attackPower * 0.8f;
+	const float maxPower = attackPower * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
 
 	CEnemyUnit* bestTarget = nullptr;

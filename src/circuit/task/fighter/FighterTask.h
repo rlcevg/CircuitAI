@@ -21,7 +21,7 @@ public:
 	using FT = std::underlying_type<FightType>::type;
 
 protected:
-	IFighterTask(ITaskManager* mgr, FightType type, int timeout = ASSIGN_TIMEOUT);
+	IFighterTask(ITaskManager* mgr, FightType type, float powerMod, int timeout = ASSIGN_TIMEOUT);
 public:
 	virtual ~IFighterTask();
 
@@ -50,6 +50,7 @@ protected:
 	springai::AIFloat3 position;  // attack/scout position
 
 	float attackPower;
+	float powerMod;
 	CEnemyUnit* target;
 
 	std::set<CCircuitUnit*> cowards;

@@ -14,7 +14,7 @@ namespace circuit {
 
 class CAttackTask: public ISquadTask {
 public:
-	CAttackTask(ITaskManager* mgr, float minCost);
+	CAttackTask(ITaskManager* mgr, float minCost, float powerMod);
 	virtual ~CAttackTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const;

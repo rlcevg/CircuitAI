@@ -332,19 +332,23 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			break;
 		}
 		case IFighterTask::FightType::SCOUT: {
-			task = new CScoutTask(this);
+			const float mod = (float)rand() / RAND_MAX * (threatMod.max - threatMod.min) + threatMod.min;
+			task = new CScoutTask(this, 0.75f / mod);
 			break;
 		}
 		case IFighterTask::FightType::RAID: {
-			task = new CRaidTask(this, avgRaiders);
+			const float mod = (float)rand() / RAND_MAX * (threatMod.max - threatMod.min) + threatMod.min;
+			task = new CRaidTask(this, raid.avg, 0.75f / mod);
 			break;
 		}
 		case IFighterTask::FightType::ATTACK: {
-			task = new CAttackTask(this, minAttackers);
+			const float mod = (float)rand() / RAND_MAX * (threatMod.max - threatMod.min) + threatMod.min;
+			task = new CAttackTask(this, minAttackers, 0.8f / mod);
 			break;
 		}
 		case IFighterTask::FightType::BOMB: {
-			task = new CBombTask(this);
+			const float mod = (float)rand() / RAND_MAX * (threatMod.max - threatMod.min) + threatMod.min;
+			task = new CBombTask(this, 1.0f / mod);
 			break;
 		}
 		case IFighterTask::FightType::ARTY: {
@@ -352,11 +356,13 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			break;
 		}
 		case IFighterTask::FightType::AA: {
-			task = new CAntiAirTask(this);
+			const float mod = (float)rand() / RAND_MAX * (threatMod.max - threatMod.min) + threatMod.min;
+			task = new CAntiAirTask(this, 1.0f / mod);
 			break;
 		}
 		case IFighterTask::FightType::AH: {
-			task = new CAntiHeavyTask(this);
+			const float mod = (float)rand() / RAND_MAX * (threatMod.max - threatMod.min) + threatMod.min;
+			task = new CAntiHeavyTask(this, 2.0f / mod);
 			break;
 		}
 		case IFighterTask::FightType::SUPPORT: {
@@ -436,7 +442,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 					if (cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
 						task = EnqueueTask(IFighterTask::FightType::SCOUT);
 					} else if (GetTasks(IFighterTask::FightType::RAID).empty()) {
-						task = EnqueueDefend(IFighterTask::FightType::RAID, minRaiders);
+						task = EnqueueDefend(IFighterTask::FightType::RAID, raid.min);
 					}
 				} break;
 				case IFighterTask::FightType::AH: {
@@ -952,11 +958,14 @@ void CMilitaryManager::ReadConfig()
 
 	const Json::Value& quotas = root["quota"];
 	maxScouts = quotas.get("scout", 3).asUInt();
-	const Json::Value& raid = quotas["raid"];
-	minRaiders = raid.get((unsigned)0, 300.f).asFloat();
-	avgRaiders = raid.get((unsigned)1, 500.f).asFloat();
+	const Json::Value& qraid = quotas["raid"];
+	raid.min = qraid.get((unsigned)0, 300.f).asFloat();
+	raid.avg = qraid.get((unsigned)1, 500.f).asFloat();
 	minAttackers = quotas.get("attack", 800.f).asFloat();
 	defRadius = quotas.get("def_rad", 2000.f).asFloat();
+	const Json::Value& qthreat = quotas["thr_mod"];
+	threatMod.min = qthreat.get((unsigned)0, 1.f).asFloat();
+	threatMod.max = qthreat.get((unsigned)1, 1.f).asFloat();
 
 	const Json::Value& porc = root["porcupine"];
 	const Json::Value& defs = porc["unit"];

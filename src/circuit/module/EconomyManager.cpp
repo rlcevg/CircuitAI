@@ -740,7 +740,6 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	if ((factoryPower >= factoryFactor) && !isSwitchTime) {
 		return nullptr;
 	}
-	lastFacFrame = frame;
 
 	/*
 	 * check nanos
@@ -846,6 +845,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	if (terrainManager->CanBeBuiltAt(facDef, buildPos) &&
 		((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 	{
+		lastFacFrame = frame;
 		return builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos,
 										   IBuilderTask::BuildType::FACTORY);
 	}

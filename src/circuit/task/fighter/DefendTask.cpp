@@ -22,7 +22,7 @@ using namespace springai;
 
 CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, float radius,
 						 FightType promote, float maxCost)
-		: ISquadTask(mgr, FightType::DEFEND)
+		: ISquadTask(mgr, FightType::DEFEND, 1.f)
 		, radius(radius)
 		, promote(promote)
 		, maxCost(maxCost)

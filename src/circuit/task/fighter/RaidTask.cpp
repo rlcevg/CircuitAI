@@ -25,8 +25,8 @@ namespace circuit {
 
 using namespace springai;
 
-CRaidTask::CRaidTask(ITaskManager* mgr, float maxCost)
-		: ISquadTask(mgr, FightType::RAID)
+CRaidTask::CRaidTask(ITaskManager* mgr, float maxCost, float powerMod)
+		: ISquadTask(mgr, FightType::RAID, powerMod)
 		, maxCost(maxCost)
 		, cost(0.f)
 {
@@ -62,12 +62,14 @@ bool CRaidTask::CanAssignTo(CCircuitUnit* unit) const
 void CRaidTask::AssignTo(CCircuitUnit* unit)
 {
 	ISquadTask::AssignTo(unit);
-	highestRange = std::max(highestRange, unit->GetCircuitDef()->GetLosRadius());
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	highestRange = std::max(highestRange, cdef->GetLosRadius());
+	highestRange = std::max(highestRange, cdef->GetJumpRange());
 	cost += unit->GetCircuitDef()->GetCost();
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
-	if (unit->GetCircuitDef()->IsAttrSiege()) {
+	if (cdef->IsAttrSiege()) {
 		travelAction = new CFightAction(unit, squareSize);
 	} else {
 		travelAction = new CMoveAction(unit, squareSize);
@@ -83,6 +85,7 @@ void CRaidTask::RemoveAssignee(CCircuitUnit* unit)
 		manager->AbortTask(this);
 	} else {
 		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetLosRadius());
+		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetJumpRange());
 		cost -= unit->GetCircuitDef()->GetCost();
 	}
 }
@@ -269,7 +272,7 @@ void CRaidTask::FindTarget()
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
 	const float speed = SQUARE(highestSpeed * 0.9f);
-	const float maxPower = attackPower * 0.75f;
+	const float maxPower = attackPower * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();

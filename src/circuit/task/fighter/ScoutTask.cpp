@@ -25,8 +25,8 @@ namespace circuit {
 
 using namespace springai;
 
-CScoutTask::CScoutTask(ITaskManager* mgr)
-		: IFighterTask(mgr, FightType::SCOUT)
+CScoutTask::CScoutTask(ITaskManager* mgr, float powerMod)
+		: IFighterTask(mgr, FightType::SCOUT, powerMod)
 {
 }
 
@@ -179,7 +179,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
 	const float speed = SQUARE(cdef->GetSpeed() * 1.1f);
-	const float maxPower = threatMap->GetUnitThreat(unit) * 0.75f;
+	const float maxPower = threatMap->GetUnitThreat(unit) * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();

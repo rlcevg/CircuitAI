@@ -18,8 +18,8 @@ namespace circuit {
 
 using namespace springai;
 
-ISquadTask::ISquadTask(ITaskManager* mgr, FightType type)
-		: IFighterTask(mgr, type)
+ISquadTask::ISquadTask(ITaskManager* mgr, FightType type, float powerMod)
+		: IFighterTask(mgr, type, powerMod)
 		, lowestRange(std::numeric_limits<float>::max())
 		, highestRange(.0f)
 		, lowestSpeed(std::numeric_limits<float>::max())

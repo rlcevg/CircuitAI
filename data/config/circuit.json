@@ -349,7 +349,8 @@
 	"scout": 1,  // max scout units out of raiders
 	"raid": [200, 480],  // [<min>, <avg>] cost of raider squad
 	"attack": 1500,  // min cost of attack group
-	"def_rad": 1100  // defence radius
+	"def_rad": 1100,  // defence radius
+	"thr_mod": [1.5, 2.0]  // [<min>, <max>] threat modifier
 },
 
 // If unit's health drops below specified percent it will retreat
@@ -626,7 +627,7 @@
 		"retreat": 0.3
 	},
 	"cormist": {
-		"role": ["assault"],
+		"role": ["support"],
 		"attribute": ["siege"],
 		"retreat": 0.25  // cannot retreat
 	},
@@ -979,6 +980,13 @@
 		"max_percent": 0.22,
 		"eps_step": 0.00
 	},
+//	"riot": {  // FIXME: Why no riots? http://zero-k.info/Battles/Detail/436000
+//		"vs":         ["raider"],
+//		"ratio":      [ 1.1],
+//		"importance": [ 1.0],
+//		"max_percent": 0.20,
+//		"eps_step": 0.1
+//	},
 	"scout": {
 		"vs":         ["builder", "artillery", "anti_air", "scout", "raider", "heavy", "anti_heavy"],
 		"ratio":      [ 0.50,      0.01,        0.25,       1.0,     1.0,      0.25,    0.01],
@@ -1119,8 +1127,8 @@
 	"prevent": 1,  // number of preventive defences
 	"amount": {  // income bound factor
 		"offset": [-0.2, 0.2],
-		// Amount factor: 8x8 ~ 2.2, 24x24 ~ 2.0
-		"factor": [2.2, 2.0],
+		// Amount factor: 8x8 ~ 2.2, 24x24 ~ 1.8
+		"factor": [2.2, 1.8],
 		"map": [8, 24]
 	},
 
@@ -1516,7 +1524,7 @@
 	"mex": {
 		"cormex": {
 //			"terra": true,
-//			"energy": "mex",
+			"energy": "mex",
 			"porc": true
 		}
 	}

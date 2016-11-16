@@ -23,8 +23,8 @@ namespace circuit {
 
 using namespace springai;
 
-CBombTask::CBombTask(ITaskManager* mgr)
-		: IFighterTask(mgr, FightType::BOMB)
+CBombTask::CBombTask(ITaskManager* mgr, float powerMod)
+		: IFighterTask(mgr, FightType::BOMB, powerMod)
 {
 }
 
@@ -190,7 +190,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, co
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const bool notAW = !cdef->HasAntiWater();
 	const float scale = (cdef->GetMinRange() > 400.0f) ? 8.0f : 1.0f;
-	const float maxPower = threatMap->GetUnitThreat(unit) * scale;
+	const float maxPower = threatMap->GetUnitThreat(unit) * scale * powerMod;
 //	const float maxAltitude = cdef->GetAltitude();
 	const float speed = cdef->GetSpeed() / 1.75f;
 	const int canTargetCat = cdef->GetTargetCategory();
