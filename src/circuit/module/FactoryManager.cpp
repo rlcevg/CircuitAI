@@ -153,8 +153,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 					// queue new factory with builder
 					CCircuitDef* facDef = GetFactoryToBuild(-RgtVector, true);
 					if (facDef != nullptr) {
-						builderManager->EnqueueTask(IBuilderTask::Priority::NOW, facDef, -RgtVector,
-													IBuilderTask::BuildType::FACTORY);
+						builderManager->EnqueueFactory(IBuilderTask::Priority::NOW, facDef, -RgtVector);
 					}
 				}
 			}

@@ -332,22 +332,22 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			break;
 		}
 		case IFighterTask::FightType::SCOUT: {
-			const float mod = (float)rand() / RAND_MAX * (threatMod.max - threatMod.min) + threatMod.min;
+			const float mod = (float)rand() / RAND_MAX * threatMod.len + threatMod.min;
 			task = new CScoutTask(this, 0.75f / mod);
 			break;
 		}
 		case IFighterTask::FightType::RAID: {
-			const float mod = (float)rand() / RAND_MAX * (threatMod.max - threatMod.min) + threatMod.min;
+			const float mod = (float)rand() / RAND_MAX * threatMod.len + threatMod.min;
 			task = new CRaidTask(this, raid.avg, 0.75f / mod);
 			break;
 		}
 		case IFighterTask::FightType::ATTACK: {
-			const float mod = (float)rand() / RAND_MAX * (threatMod.max - threatMod.min) + threatMod.min;
+			const float mod = (float)rand() / RAND_MAX * threatMod.len + threatMod.min;
 			task = new CAttackTask(this, minAttackers, 0.8f / mod);
 			break;
 		}
 		case IFighterTask::FightType::BOMB: {
-			const float mod = (float)rand() / RAND_MAX * (threatMod.max - threatMod.min) + threatMod.min;
+			const float mod = (float)rand() / RAND_MAX * threatMod.len + threatMod.min;
 			task = new CBombTask(this, 1.0f / mod);
 			break;
 		}
@@ -356,12 +356,12 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 			break;
 		}
 		case IFighterTask::FightType::AA: {
-			const float mod = (float)rand() / RAND_MAX * (threatMod.max - threatMod.min) + threatMod.min;
+			const float mod = (float)rand() / RAND_MAX * threatMod.len + threatMod.min;
 			task = new CAntiAirTask(this, 1.0f / mod);
 			break;
 		}
 		case IFighterTask::FightType::AH: {
-			const float mod = (float)rand() / RAND_MAX * (threatMod.max - threatMod.min) + threatMod.min;
+			const float mod = (float)rand() / RAND_MAX * threatMod.len + threatMod.min;
 			task = new CAntiHeavyTask(this, 2.0f / mod);
 			break;
 		}
@@ -965,7 +965,7 @@ void CMilitaryManager::ReadConfig()
 	defRadius = quotas.get("def_rad", 2000.f).asFloat();
 	const Json::Value& qthreat = quotas["thr_mod"];
 	threatMod.min = qthreat.get((unsigned)0, 1.f).asFloat();
-	threatMod.max = qthreat.get((unsigned)1, 1.f).asFloat();
+	threatMod.len = qthreat.get((unsigned)1, 1.f).asFloat() - threatMod.min;
 
 	const Json::Value& porc = root["porcupine"];
 	const Json::Value& defs = porc["unit"];

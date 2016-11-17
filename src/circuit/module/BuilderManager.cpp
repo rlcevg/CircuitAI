@@ -377,6 +377,24 @@ IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 	return AddTask(priority, buildDef, position, type, cost, shake, isActive, timeout);
 }
 
+IBuilderTask* CBuilderManager::EnqueueFactory(IBuilderTask::Priority priority,
+											  CCircuitDef* buildDef,
+											  const AIFloat3& position,
+											  float shake,
+											  bool isPlop,
+											  bool isActive,
+											  int timeout)
+{
+	const float cost = isPlop ? 1.f : buildDef->GetCost();
+	IBuilderTask* task = new CBFactoryTask(this, priority, buildDef, position, cost, shake, isPlop, timeout);
+	if (isActive) {
+		buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::FACTORY)].insert(task);
+		buildTasksCount++;
+		buildUpdates.push_back(task);
+	}
+	return task;
+}
+
 IBuilderTask* CBuilderManager::EnqueuePylon(IBuilderTask::Priority priority,
 											CCircuitDef* buildDef,
 											const AIFloat3& position,
@@ -498,10 +516,6 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 {
 	IBuilderTask* task;
 	switch (type) {
-		case IBuilderTask::BuildType::FACTORY: {
-			task = new CBFactoryTask(this, priority, buildDef, position, cost, shake, timeout);
-			break;
-		}
 		case IBuilderTask::BuildType::NANO: {
 			task = new CBNanoTask(this, priority, buildDef, position, cost, shake, timeout);
 			break;

@@ -67,6 +67,13 @@ public:
 							  float shake = SQUARE_SIZE * 32,
 							  bool isActive = true,
 							  int timeout = ASSIGN_TIMEOUT);
+	IBuilderTask* EnqueueFactory(IBuilderTask::Priority priority,
+								 CCircuitDef* buildDef,
+								 const springai::AIFloat3& position,
+								 float shake = SQUARE_SIZE * 32,
+								 bool isPlop = false,
+								 bool isActive = true,
+								 int timeout = ASSIGN_TIMEOUT);
 	IBuilderTask* EnqueuePylon(IBuilderTask::Priority priority,
 							   CCircuitDef* buildDef,
 							   const springai::AIFloat3& position,

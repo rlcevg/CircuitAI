@@ -65,20 +65,21 @@ bool CAttackTask::CanAssignTo(CCircuitUnit* unit) const
 void CAttackTask::AssignTo(CCircuitUnit* unit)
 {
 	ISquadTask::AssignTo(unit);
-	highestRange = std::max(highestRange, unit->GetCircuitDef()->GetLosRadius());
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	highestRange = std::max(highestRange, cdef->GetLosRadius());
 
-	cost += unit->GetCircuitDef()->GetCost();
+	cost += cdef->GetCost();
 
-	if (unit->GetCircuitDef()->IsRoleSupport()) {
+	if (cdef->IsRoleSupport()) {
 		unit->PushBack(new CSupportAction(unit));
 	}
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
-	if (unit->GetCircuitDef()->IsAttrMelee()) {
-		travelAction = new CMoveAction(unit, squareSize);
-	} else {
+	if (cdef->IsAttrSiege()) {
 		travelAction = new CFightAction(unit, squareSize);
+	} else/* if (cdef->IsAttrMelee())*/ {
+		travelAction = new CMoveAction(unit, squareSize);
 	}
 	unit->PushBack(travelAction);
 	travelAction->SetActive(false);

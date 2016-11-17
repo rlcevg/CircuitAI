@@ -136,8 +136,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 					CTerrainManager* terrainManager = this->circuit->GetTerrainManager();
 					buildPos = terrainManager->GetBuildPosition(facDef, pos);
 					CBuilderManager* builderManager = this->circuit->GetBuilderManager();
-					IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::NOW, facDef, buildPos,
-																	 IBuilderTask::BuildType::FACTORY, 1.f, SQUARE_SIZE * 32, true, 0);
+					IBuilderTask* task = builderManager->EnqueueFactory(IBuilderTask::Priority::NOW, facDef, buildPos,
+																		SQUARE_SIZE * 32, true, true, 0);
 					static_cast<ITaskManager*>(builderManager)->AssignTask(unit, task);
 
 					if (builderManager->GetWorkerCount() < 3) {
@@ -723,7 +723,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 		{
 			return builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, airpadDef, buildPos,
-											   IBuilderTask::BuildType::FACTORY);
+											   IBuilderTask::BuildType::NANO);
 		}
 	}
 
@@ -846,8 +846,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 	{
 		lastFacFrame = frame;
-		return builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, facDef, buildPos,
-										   IBuilderTask::BuildType::FACTORY);
+		return builderManager->EnqueueFactory(IBuilderTask::Priority::HIGH, facDef, buildPos);
 	}
 
 	return nullptr;

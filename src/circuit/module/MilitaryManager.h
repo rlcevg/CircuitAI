@@ -163,7 +163,7 @@ private:
 	float defRadius;
 	struct SThreatQuota {
 		float min;
-		float max;
+		float len;
 	} threatMod;
 
 	std::vector<CCircuitDef*> defenderDefs;

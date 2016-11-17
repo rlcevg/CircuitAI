@@ -16,14 +16,17 @@ class CBFactoryTask: public IBuilderTask {
 public:
 	CBFactoryTask(ITaskManager* mgr, Priority priority,
 				  CCircuitDef* buildDef, const springai::AIFloat3& position,
-				  float cost, float shake, int timeout);
+				  float cost, float shake, bool isPlop, int timeout);
 	virtual ~CBFactoryTask();
 
+	virtual void Update();
 protected:
 	virtual void Cancel();
 
 private:
 	virtual void FindBuildSite(CCircuitUnit* builder, const springai::AIFloat3& pos, float searchRadius) override;
+
+	bool isPlop;
 };
 
 } // namespace circuit
