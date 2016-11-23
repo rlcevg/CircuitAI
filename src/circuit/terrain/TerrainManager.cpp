@@ -1076,6 +1076,15 @@ AIFloat3 CTerrainManager::GetBuildPosition(CCircuitDef* cdef, const AIFloat3& po
 	}
 }
 
+AIFloat3 CTerrainManager::GetMovePosition(STerrainMapArea* sourceArea, const AIFloat3& position)
+{
+	AIFloat3 pos = position;
+	CorrectPosition(pos);
+	int iS = GetSectorIndex(pos);
+
+	return (sourceArea == nullptr) ? pos : GetClosestSector(sourceArea, iS)->S->position;
+}
+
 std::vector<STerrainMapAreaSector>& CTerrainManager::GetSectorList(STerrainMapArea* sourceArea)
 {
 	if ((sourceArea == nullptr) ||( sourceArea->mobileType == nullptr)) {  // It flies or it's immobile

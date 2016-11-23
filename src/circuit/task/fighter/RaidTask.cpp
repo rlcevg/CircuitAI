@@ -208,29 +208,30 @@ void CRaidTask::Update()
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& pos = leader->GetPos(frame);
 	const AIFloat3& threatPos = static_cast<ITravelAction*>(leader->End())->IsActive() ? position : pos;
-	if (attackPower * 0.75f <= threatMap->GetThreatAt(leader, threatPos)) {
+	if (attackPower * powerMod <= threatMap->GetThreatAt(leader, threatPos)) {
 		position = circuit->GetMilitaryManager()->GetScoutPosition(leader);
 	}
 
-	if (utils::is_valid(position) && terrainManager->CanMoveToPos(leader->GetArea(), position)) {
-		AIFloat3 startPos = pos;
-		AIFloat3 endPos = position;
-//		pPath->clear();
+	if (!utils::is_valid(position)) {
+		float x = rand() % (terrainManager->GetTerrainWidth() + 1);
+		float z = rand() % (terrainManager->GetTerrainHeight() + 1);
+		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
+		position = terrainManager->GetMovePosition(leader->GetArea(), position);
+	}
+	AIFloat3 startPos = pos;
+	AIFloat3 endPos = position;
+//	pPath->clear();
 
-		CPathFinder* pathfinder = circuit->GetPathfinder();
-		pathfinder->SetMapData(leader, threatMap, frame);
-		pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	pathfinder->SetMapData(leader, threatMap, frame);
+	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 
-		if (pPath->size() > 2) {
-//			position = path.back();
-			ActivePath();
-			return;
-		}
+	if (pPath->size() > 2) {
+//		position = path.back();
+		ActivePath();
+		return;
 	}
 
-	float x = rand() % (terrainManager->GetTerrainWidth() + 1);
-	float z = rand() % (terrainManager->GetTerrainHeight() + 1);
-	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	for (CCircuitUnit* unit : units) {
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
@@ -363,7 +364,7 @@ void CRaidTask::FindTarget()
 
 	AIFloat3 startPos = pos;
 	circuit->GetPathfinder()->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	circuit->GetPathfinder()->FindBestPath(*pPath, startPos, range * 0.5f, enemyPositions);
+	circuit->GetPathfinder()->FindBestPath(*pPath, startPos, threatMap->GetSquareSize()/*range * 0.5f*/, enemyPositions);
 	enemyPositions.clear();
 }
 

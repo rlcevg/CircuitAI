@@ -348,7 +348,7 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 		}
 		case IFighterTask::FightType::BOMB: {
 			const float mod = (float)rand() / RAND_MAX * threatMod.len + threatMod.min;
-			task = new CBombTask(this, 1.0f / mod);
+			task = new CBombTask(this, 2.0f / mod);
 			break;
 		}
 		case IFighterTask::FightType::ARTY: {
@@ -429,11 +429,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 	IFighterTask* task = nullptr;
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsRoleSupport()) {
-		if (cdef->IsAttacker() && GetTasks(IFighterTask::FightType::ATTACK).empty()) {
-			task = EnqueueDefend(IFighterTask::FightType::ATTACK, minAttackers);
-		} else {
-			task = EnqueueTask(IFighterTask::FightType::SUPPORT);
-		}
+		task = EnqueueTask(IFighterTask::FightType::SUPPORT);
 	} else {
 		auto it = types.find(cdef->GetMainRole());
 		if (it != types.end()) {
@@ -528,6 +524,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 		isPorc = mm->GetSpots()[spotId].income > income;
 	}
 	if (!isPorc) {
+		unsigned threatCount = 0;
 		CThreatMap* threatMap = circuit->GetThreatMap();
 		const CMetalData::Clusters& clusters = mm->GetClusters();
 		const CMetalData::Metals& spots = mm->GetSpots();
@@ -543,9 +540,13 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 			// check if there is enemy neighbor
 			for (int idx : clusters[idx0].idxSpots) {
 				if (threatMap->GetAllThreatAt(spots[idx].position) > THREAT_MIN * 2) {
-					isPorc = true;
+					threatCount++;
 					break;
 				}
+			}
+			if (threatCount >= 2) {  // if 2 nearby clusters are a threat
+				isPorc = true;
+				break;
 			}
 		}
 	}
@@ -663,20 +664,28 @@ bool CMilitaryManager::HasDefence(int cluster)
 AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 {
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	STerrainMapArea* area = unit->GetArea();
 	CMetalManager* metalManager = circuit->GetMetalManager();
+	STerrainMapArea* area = unit->GetArea();
+	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
+	const float minSqRange = SQUARE(unit->GetCircuitDef()->GetLosRadius());
 	const CMetalData::Metals& spots = metalManager->GetSpots();
 	decltype(scoutIdx) prevIdx = scoutIdx;
 	while (scoutIdx < scoutPath.size()) {
 		int index = scoutPath[scoutIdx++];
-		if (!metalManager->IsMexInFinished(index) && terrainManager->CanMoveToPos(area, spots[index].position)) {
+		if (!metalManager->IsMexInFinished(index) &&
+			terrainManager->CanMoveToPos(area, spots[index].position) &&
+			(pos.SqDistance2D(spots[index].position) > minSqRange))
+		{
 			return spots[index].position;
 		}
 	}
 	scoutIdx = 0;
 	while (scoutIdx < prevIdx) {
 		int index = scoutPath[scoutIdx++];
-		if (!metalManager->IsMexInFinished(index) && terrainManager->CanMoveToPos(area, spots[index].position)) {
+		if (!metalManager->IsMexInFinished(index) &&
+			terrainManager->CanMoveToPos(area, spots[index].position) &&
+			(pos.SqDistance2D(spots[index].position) > minSqRange))
+		{
 			return spots[index].position;
 		}
 	}

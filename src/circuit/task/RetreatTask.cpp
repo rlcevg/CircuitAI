@@ -67,8 +67,8 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	ITravelAction* travelAction;
 	if (cdef->IsAbleToJump() && !cdef->IsAttrNoJump()) {
 		travelAction = new CJumpAction(unit, squareSize);
-	} else if (cdef->IsAttrSiege()) {
-		travelAction = new CFightAction(unit, squareSize);
+//	} else if (cdef->IsAttrSiege()) {
+//		travelAction = new CFightAction(unit, squareSize);
 	} else {
 		travelAction = new CMoveAction(unit, squareSize);
 	}

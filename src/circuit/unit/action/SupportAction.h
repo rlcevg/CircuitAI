@@ -21,7 +21,7 @@ public:
 
 private:
 	unsigned int updCount;
-
+	bool isLowUpdate;
 };
 
 } // namespace circuit

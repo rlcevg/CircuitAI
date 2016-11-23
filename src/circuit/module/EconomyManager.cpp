@@ -722,8 +722,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		if (terrainManager->CanBeBuiltAt(airpadDef, buildPos) &&
 			((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 		{
-			return builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, airpadDef, buildPos,
-											   IBuilderTask::BuildType::NANO);
+			return builderManager->EnqueueFactory(IBuilderTask::Priority::NORMAL, airpadDef, buildPos);
 		}
 	}
 

@@ -67,7 +67,7 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 		int maxRange;
 
 		realRange = cdef->GetMaxRange(CCircuitDef::RangeType::AIR);
-		range = (cdef->HasAntiAir() && (realRange <= allowedRange)) ? ((int)realRange + slack) / squareSize : 0;
+		range = cdef->HasAntiAir() ? ((int)realRange + slack) / squareSize : 0;
 		cdef->SetThreatRange(CCircuitDef::ThreatType::AIR, range);
 		maxRange = range;
 

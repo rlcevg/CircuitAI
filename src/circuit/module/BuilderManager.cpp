@@ -890,8 +890,8 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 //	if (task != nullptr) {
 //		return task;
 //	}
-	const bool isStalling = economyManager->GetAvgMetalIncome() * 1.2f < economyManager->GetMetalPull();
-	CCircuitDef* mexDef = economyManager->GetMexDef();
+//	const bool isStalling = economyManager->GetAvgMetalIncome() * 1.2f < economyManager->GetMetalPull();
+//	CCircuitDef* mexDef = economyManager->GetMexDef();
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
@@ -904,8 +904,8 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
-			if (!candidate->CanAssignTo(unit) ||
-				(isStalling && (candidate->GetBuildDef() != nullptr) && (candidate->GetBuildDef() != mexDef)))
+			if (!candidate->CanAssignTo(unit)/* ||
+				(isStalling && (candidate->GetBuildDef() != nullptr) && (candidate->GetBuildDef() != mexDef))*/)
 			{
 				continue;
 			}
@@ -985,9 +985,9 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 		return task;
 	}
 	task = em->UpdateReclaimTasks(position, unit, false);
-	if (task != nullptr) {
-		return task;
-	}
+//	if (task != nullptr) {
+//		return task;
+//	}
 
 	// FIXME: Eco rules. It should never get here
 	CCircuitDef* buildDef/* = nullptr*/;

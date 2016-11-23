@@ -54,9 +54,10 @@ void ISquadTask::AssignTo(CCircuitUnit* unit)
 		if (unit->GetCircuitDef()->IsRoleSupport()) {
 			return;
 		}
-		if (leader->GetArea() == nullptr) {
-			leader = unit;
-		} else if ((unit->GetArea() != nullptr) && (unit->GetArea()->percentOfMap < leader->GetArea()->percentOfMap)) {
+		if ((leader->GetArea() == nullptr) ||
+			leader->GetCircuitDef()->IsRoleSupport() ||
+			((unit->GetArea() != nullptr) && (unit->GetArea()->percentOfMap < leader->GetArea()->percentOfMap)))
+		{
 			leader = unit;
 		}
 	}
@@ -126,7 +127,10 @@ void ISquadTask::FindLeader(decltype(units)::iterator itBegin, decltype(units)::
 		if (ass->GetCircuitDef()->IsRoleSupport() || (ass->GetArea() == nullptr)) {
 			continue;
 		}
-		if ((leader->GetArea() == nullptr) || (ass->GetArea()->percentOfMap < leader->GetArea()->percentOfMap)) {
+		if ((leader->GetArea() == nullptr) ||
+			leader->GetCircuitDef()->IsRoleSupport() ||
+			(ass->GetArea()->percentOfMap < leader->GetArea()->percentOfMap))
+		{
 			leader = ass;
 		}
 	}

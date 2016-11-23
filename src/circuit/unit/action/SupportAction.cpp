@@ -21,6 +21,8 @@ CSupportAction::CSupportAction(CCircuitUnit* owner)
 		, updCount(0)
 {
 	isBlocking = true;
+	CCircuitDef* cdef = owner->GetCircuitDef();
+	isLowUpdate = cdef->IsAttrMelee() || (cdef->GetReloadTime() >= FRAMES_PER_SEC * 5);
 }
 
 CSupportAction::~CSupportAction()
@@ -35,8 +37,7 @@ void CSupportAction::Update(CCircuitAI* circuit)
 	}
 
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
-	const bool isGuard = unit->GetCircuitDef()->IsAttrMelee();
-	if (isGuard && (updCount % 8 != 1)) {
+	if (isLowUpdate && (updCount % 8 != 1)) {
 		return;
 	}
 
@@ -44,7 +45,7 @@ void CSupportAction::Update(CCircuitAI* circuit)
 	int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = leader->GetPos(frame);
 	TRY_UNIT(circuit, unit,
-		if (isGuard) {
+		if (unit->GetCircuitDef()->IsAttrMelee()) {
 			unit->GetUnit()->Guard(leader->GetUnit());
 		} else {
 			unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);

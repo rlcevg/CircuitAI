@@ -125,37 +125,34 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& threatPos = travelAction->IsActive() ? position : pos;
 	// NOTE: Use max(unit_threat, THREAT_MIN) for no-weapon scouts
-	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < std::max(threatMap->GetUnitThreat(unit), THREAT_MIN) * 0.75f);
+	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < std::max(threatMap->GetUnitThreat(unit), THREAT_MIN) * powerMod);
 	if (!proceed) {
 		position = circuit->GetMilitaryManager()->GetScoutPosition(unit);
 	}
 
-	if (utils::is_valid(position) && terrainManager->CanMoveToPos(unit->GetArea(), position)) {
-		AIFloat3 startPos = pos;
-		AIFloat3 endPos = position;
-//		pPath->clear();
-
-		CPathFinder* pathfinder = circuit->GetPathfinder();
-		pathfinder->SetMapData(unit, threatMap, frame);
-		pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
-
-		proceed = pPath->size() > 2;
-		if (proceed) {
-//			position = path.back();
-			travelAction->SetPath(pPath);
-			travelAction->SetActive(true);
-			return;
-		}
+	if (!utils::is_valid(position) && !proceed) {
+		float x = rand() % (terrainManager->GetTerrainWidth() + 1);
+		float z = rand() % (terrainManager->GetTerrainHeight() + 1);
+		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
+		position = terrainManager->GetMovePosition(unit->GetArea(), position);
 	}
+	AIFloat3 startPos = pos;
+	AIFloat3 endPos = position;
+//	pPath->clear();
 
-	if (proceed) {
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	pathfinder->SetMapData(unit, threatMap, frame);
+	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
+
+	if (pPath->size() > 2) {
+//		position = path.back();
+		travelAction->SetPath(pPath);
+		travelAction->SetActive(true);
 		return;
 	}
-	float x = rand() % (terrainManager->GetTerrainWidth() + 1);
-	float z = rand() % (terrainManager->GetTerrainHeight() + 1);
-	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
+
 	TRY_UNIT(circuit, unit,
-		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		unit->GetUnit()->MoveTo(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 	)
 	travelAction->SetActive(false);
 }
