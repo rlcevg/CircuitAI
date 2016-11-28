@@ -200,11 +200,24 @@ void CAttackTask::Update()
 		if ((frame > FRAMES_PER_SEC * 300) && (commander != nullptr) &&
 			circuit->GetTerrainManager()->CanMoveToPos(leader->GetArea(), commander->GetPos(frame)))
 		{
-			for (CCircuitUnit* unit : units) {
-				unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
+			position = commander->GetPos(frame);
+			AIFloat3 startPos = leader->GetPos(frame);
+			AIFloat3 endPos = position;
+			pPath->clear();
 
-				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-				travelAction->SetActive(false);
+			CPathFinder* pathfinder = circuit->GetPathfinder();
+			pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
+			pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
+
+			if ((pPath->size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(500.f))) {
+				ActivePath();
+			} else {
+				for (CCircuitUnit* unit : units) {
+					unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
+
+					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+					travelAction->SetActive(false);
+				}
 			}
 			return;
 		}

@@ -51,7 +51,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		, fightIterator(0)
 		, defenceIdx(0)
 		, scoutIdx(0)
-		, armyCost(.0f)
+		, armyCost(0.f)
+		, enemyCost(0.f)
 		, radarDef(nullptr)
 		, sonarDef(nullptr)
 {
@@ -382,7 +383,15 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 
 IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType promote, float cost)
 {
-	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), defRadius, promote, cost);
+	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), defRadius, promote, promote, cost);
+	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
+	fightUpdates.push_back(task);
+	return task;
+}
+
+IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote, float cost)
+{
+	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), defRadius, check, promote, cost);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
 	fightUpdates.push_back(task);
 	return task;
@@ -429,7 +438,13 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 	IFighterTask* task = nullptr;
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsRoleSupport()) {
-		task = EnqueueTask(IFighterTask::FightType::SUPPORT);
+		if (/*cdef->IsAttacker() && */GetTasks(IFighterTask::FightType::ATTACK).empty()) {
+			task = EnqueueDefend(IFighterTask::FightType::ATTACK,
+								 IFighterTask::FightType::SUPPORT,
+								 std::numeric_limits<float>::max());
+		} else {
+			task = EnqueueTask(IFighterTask::FightType::SUPPORT);
+		}
 	} else {
 		auto it = types.find(cdef->GetMainRole());
 		if (it != types.end()) {
@@ -452,8 +467,10 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 				task = EnqueueTask(it->second);
 			}
 		} else {
-			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty() && !cdef->IsRoleHeavy();
-			task = isDefend ? EnqueueDefend(IFighterTask::FightType::ATTACK, minAttackers) : EnqueueTask(IFighterTask::FightType::ATTACK);
+			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty();
+			const float cost = std::max(minAttackers, enemyCost / circuit->GetEconomyManager()->GetEcoFactor());
+			task = isDefend ? EnqueueDefend(IFighterTask::FightType::ATTACK, cost)
+							: EnqueueTask(IFighterTask::FightType::ATTACK);
 		}
 	}
 
@@ -557,7 +574,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 
 	for (unsigned i = 0; i < num; ++i) {
 		CCircuitDef* defDef = defenders[i];
-		if (!defDef->IsAvailable()) {
+		if (!defDef->IsAvailable() || (defDef->IsRoleAA() && (GetEnemyCost(CCircuitDef::RoleType::AIR) < 1.f))) {
 			continue;
 		}
 		float defCost = defDef->GetCost();
@@ -780,7 +797,12 @@ void CMilitaryManager::AddEnemyCost(const CEnemyUnit* e)
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	enemyCosts[cdef->GetEnemyRole()] += e->GetCost();
+	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
+		if (cdef->IsEnemyRoleAny(CCircuitDef::GetMask(i))) {
+			enemyCosts[i] += e->GetCost();
+		}
+	}
+	enemyCost += e->GetCost();
 }
 
 void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
@@ -788,8 +810,13 @@ void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	float& metal = enemyCosts[cdef->GetEnemyRole()];
-	metal = std::max(metal - e->GetCost(), 0.f);
+	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
+		if (cdef->IsEnemyRoleAny(CCircuitDef::GetMask(i))) {
+			float& metal = enemyCosts[i];
+			metal = std::max(metal - e->GetCost(), 0.f);
+		}
+	}
+	enemyCost = std::max(enemyCost - e->GetCost(), 0.f);
 }
 
 float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const

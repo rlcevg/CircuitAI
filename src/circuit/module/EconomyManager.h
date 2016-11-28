@@ -60,6 +60,7 @@ public:
 	bool IsMetalFull();
 	bool IsEnergyStalling();
 	bool IsEnergyEmpty();
+	bool IsExcessed() const { return metalProduced > metalUsed; }
 
 	bool IsAllyOpenSpot(int spotId) const;
 	bool IsOpenSpot(int spotId) const { return openSpots[spotId]; }
@@ -126,7 +127,7 @@ private:
 
 	float ecoStep;
 	float ecoFactor;
-	float incomeFactor;
+	float energyFactor;
 	int switchTime;
 	int lastFacFrame;
 
@@ -135,6 +136,9 @@ private:
 	int indexRes;
 	float metalIncome;
 	float energyIncome;
+	float metalProduced;
+	float metalUsed;
+	float metalMod;
 
 	int ecoFrame;
 	bool isMetalEmpty;

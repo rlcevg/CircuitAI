@@ -307,7 +307,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		// Auto-assign roles
 		auto setRoles = [cdef](CCircuitDef::RoleType type) {
 			cdef->SetMainRole(type);
-			cdef->SetEnemyRole(type);
+			cdef->AddEnemyRole(type);
 			cdef->AddRole(type);
 		};
 		if (cdef->IsAbleToFly()) {
@@ -319,7 +319,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		}
 		auto customParams = std::move(cdef->GetUnitDef()->GetCustomParams());
 		if (customParams.find("level") != customParams.end()) {
-			cdef->SetEnemyRole(CCircuitDef::RoleType::HEAVY);
+			cdef->AddEnemyRole(CCircuitDef::RoleType::HEAVY);
 			cdef->AddRole(CCircuitDef::RoleType::HEAVY);
 		}
 	}
@@ -692,7 +692,8 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	CEconomyManager* em = circuit->GetEconomyManager();
 	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
 	const bool isWaterMap = circuit->GetTerrainManager()->IsWaterMap();
-	const SFactoryDef::Tiers& tiers = isWaterMap ? facDef.waterTiers : facDef.landTiers;
+	const bool isAir = militaryManager->GetEnemyCost(CCircuitDef::RoleType::AIR) > 1.f;
+	const SFactoryDef::Tiers& tiers = isAir ? facDef.airTiers : isWaterMap ? facDef.waterTiers : facDef.landTiers;
 	auto facIt = tiers.begin();
 	if ((metalIncome >= facDef.incomes[facIt->first]) && !(facDef.isRequireEnergy && em->IsEnergyEmpty())) {
 		while (facIt != tiers.end()) {
@@ -855,19 +856,20 @@ void CFactoryManager::ReadConfig()
 		cdef->AddRole(it->second);
 		roleDefs[it->second].insert(cdef->GetId());
 
-		const Json::Value& enemyRole = role[1];
-		if (enemyRole.isNull()) {
-			cdef->SetEnemyRole(it->second);
-		} else {
-			const std::string& enemyName = enemyRole.asString();
-			it = roleNames.find(enemyName);
-			if (it == roleNames.end()) {
-				circuit->LOG("CONFIG %s: %s has unknown enemy role '%s'", cfgName.c_str(), defName.c_str(), enemyName.c_str());
-				continue;
+//		if (role.size() < 2) {
+			cdef->AddEnemyRole(it->second);
+//		} else {
+			for (unsigned i = 1; i < role.size(); ++i) {
+				const std::string& enemyName = role[i].asString();
+				it = roleNames.find(enemyName);
+				if (it == roleNames.end()) {
+					circuit->LOG("CONFIG %s: %s has unknown enemy role '%s'", cfgName.c_str(), defName.c_str(), enemyName.c_str());
+					continue;
+				}
+				cdef->AddEnemyRole(it->second);
+				cdef->AddRole(it->second);
 			}
-			cdef->SetEnemyRole(it->second);
-			cdef->AddRole(it->second);
-		}
+//		}
 
 		// Read optional roles and attributes
 		const Json::Value& attributes = behaviour["attribute"];
@@ -1028,9 +1030,11 @@ void CFactoryManager::ReadConfig()
 		unsigned i = 0;
 		for (; i < tierSize; ++i) {
 			facDef.incomes.push_back(tiers[i].asFloat());
+			fillProbs(i, "air", facDef.airTiers);
 			fillProbs(i, "land", facDef.landTiers);
 			fillProbs(i, "water", facDef.waterTiers);
 		}
+		fillProbs(i, "air", facDef.airTiers);
 		fillProbs(i, "land", facDef.landTiers);
 		fillProbs(i, "water", facDef.waterTiers);
 
@@ -1038,11 +1042,16 @@ void CFactoryManager::ReadConfig()
 			facDef.incomes.push_back(std::numeric_limits<float>::max());
 		}
 		if (facDef.landTiers.empty()) {
-			if (!facDef.waterTiers.empty()) {
+			if (!facDef.airTiers.empty()) {
+				facDef.landTiers = facDef.airTiers;
+			} else if (!facDef.waterTiers.empty()) {
 				facDef.landTiers = facDef.waterTiers;
 			} else {
 				facDef.landTiers[0];  // create empty tier
 			}
+		}
+		if (facDef.airTiers.empty()) {
+			facDef.airTiers = facDef.landTiers;
 		}
 		if (facDef.waterTiers.empty()) {
 			facDef.waterTiers = facDef.landTiers;
@@ -1060,7 +1069,9 @@ void CFactoryManager::ReadConfig()
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 {
 	CEconomyManager* em = circuit->GetEconomyManager();
-	if ((em->GetAvgMetalIncome() * 2.0f < em->GetMetalPull()) && em->IsMetalEmpty()) {
+	if (((em->GetAvgMetalIncome() * 2.0f < em->GetMetalPull()) && em->IsMetalEmpty()) ||
+		!em->IsExcessed())
+	{
 		return EnqueueWait(FRAMES_PER_SEC * 5);
 	}
 
@@ -1114,7 +1125,7 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 		}
 	}
 	utils::free_clear(units);
-	if (!isMetalEmpty && (buildTarget != nullptr)) {
+	if (/*!isMetalEmpty && */(buildTarget != nullptr)) {
 		// Construction task
 		IBuilderTask::Priority priority = isBuildMobile ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
 		return EnqueueRepair(priority, buildTarget);

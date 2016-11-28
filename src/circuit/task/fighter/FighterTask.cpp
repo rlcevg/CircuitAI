@@ -7,6 +7,7 @@
 
 #include "task/fighter/FighterTask.h"
 #include "task/RetreatTask.h"
+#include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/ThreatMap.h"
@@ -99,9 +100,15 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	if (unit->GetShield() != nullptr) {
 		const float minShield = circuit->GetSetupManager()->GetEmptyShield();
 		if ((healthPerc > cdef->GetRetreat()) && unit->IsShieldCharged(minShield)) {
+			if (cdef->IsRoleHeavy() && (healthPerc < 0.9f)) {
+				circuit->GetBuilderManager()->EnqueueRepair(IBuilderTask::Priority::NOW, unit);
+			}
 			return;
 		}
 	} else if ((healthPerc > cdef->GetRetreat()) && !unit->IsDisarmed(frame)) {
+		if (cdef->IsRoleHeavy() && (healthPerc < 0.9f)) {
+			circuit->GetBuilderManager()->EnqueueRepair(IBuilderTask::Priority::NOW, unit);
+		}
 		return;
 	} else if (healthPerc < 0.2f) {  // stuck units workaround: they don't shoot and don't see distant threat
 		CRetreatTask* task = manager->GetCircuit()->GetMilitaryManager()->EnqueueRetreat();

@@ -46,6 +46,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, indexRes(0)
 		, metalIncome(.0f)
 		, energyIncome(.0f)
+		, metalProduced(.0f)
+		, metalUsed(.0f)
 		, ecoFrame(-1)
 		, isMetalEmpty(false)
 		, isMetalFull(false)
@@ -149,8 +151,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			if (!isStart) {
 				return;
 			}
-			int morphFrame = this->circuit->GetSetupManager()->GetMorphFrame(unit->GetCircuitDef());
-			if (morphFrame >= 0) {
+			int morphSec = this->circuit->GetSetupManager()->GetMorphFrame(unit->GetCircuitDef());
+			if (morphSec >= 0) {
 				this->circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>([this, unitId]() {
 					// Force commander level 0 to morph
 					CCircuitUnit* unit = this->circuit->GetTeamUnit(unitId);
@@ -161,7 +163,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 							unit->Upgrade();  // Morph();
 						}
 					}
-				}), FRAMES_PER_SEC * morphFrame);
+				}), FRAMES_PER_SEC * morphSec);
 			}
 		}), FRAMES_PER_SEC);
 	};
@@ -399,6 +401,9 @@ void CEconomyManager::UpdateResourceIncome()
 		energyIncome += energyIncomes[i];
 	}
 	energyIncome /= INCOME_SAMPLES;
+
+	metalProduced += metalIncome * metalMod;
+	metalUsed += /*std::min(economy->GetCurrent(metalRes) + metalIncome, */economy->GetPull(metalRes)/*)*/;
 }
 
 float CEconomyManager::GetMetalPull()
@@ -616,7 +621,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	// Select proper energy UnitDef to build
 	CCircuitDef* bestDef = nullptr;
 	float cost/* = 1.f*/;
-	metalIncome = std::min(metalIncome, energyIncome) * incomeFactor;
+	metalIncome = std::min(metalIncome, energyIncome) * energyFactor;
 	const float buildPower = std::min(builderManager->GetBuildPower(), metalIncome);
 	const int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
 	const float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.25f : ecoFactor);
@@ -958,7 +963,7 @@ void CEconomyManager::UpdateMorph()
 
 	const float energyIncome = GetAvgEnergyIncome();
 	const float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
-	if ((metalIncome < 10) || !IsMetalFull() || (GetMetalPull() * 0.8f > metalIncome)) {
+	if ((metalIncome < 10) || !IsExcessed() || !IsMetalFull() || (GetMetalPull() * 0.8f > metalIncome)) {
 		return;
 	}
 
@@ -982,13 +987,13 @@ void CEconomyManager::ReadConfig()
 	const Json::Value& econ = root["economy"];
 	ecoStep = econ.get("eps_step", 0.25f).asFloat();
 	ecoFactor = (circuit->GetAllyTeam()->GetSize() - 1.0f) * ecoStep + 1.0f;
-
+	metalMod = (1.f - econ.get("excess", -1.f).asFloat());
 	switchTime = econ.get("switch", 900).asInt() * FRAMES_PER_SEC;
 
 	// Using cafus, armfus, armsolar as control points
 	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
 	const Json::Value& energy = econ["energy"];
-	incomeFactor = energy.get("income_factor", 1.0f).asFloat();
+	energyFactor = energy.get("factor", 1.0f).asFloat();
 
 	std::array<std::pair<std::string, int>, 3> landEngies;
 	const Json::Value& land = energy["land"];

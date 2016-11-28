@@ -59,10 +59,10 @@ public:
 	 */
 	enum class AttrType: RoleT {MELEE = static_cast<RoleT>(RoleType::_SIZE_), SIEGE,
 								NO_JUMP, BOOST, COMM, NO_STRAFE,
-								STOCK, SUPER, RETR_HOLD, _SIZE_};
+								STOCK, SUPER, RET_HOLD, RET_FIGHT, _SIZE_};
 	enum AttrMask: RoleM {MELEE   = 0x00040000, SIEGE = 0x00080000,
-						  NO_JUMP = 0x00100000, BOOST = 0x00200000, COMM      = 0x00400000, NO_STRAFE = 0x00800000,
-						  STOCK   = 0x01000000, SUPER = 0x02000000, RETR_HOLD = 0x04000000};
+						  NO_JUMP = 0x00100000, BOOST = 0x00200000, COMM     = 0x00400000, NO_STRAFE = 0x00800000,
+						  STOCK   = 0x01000000, SUPER = 0x02000000, RET_HOLD = 0x04000000, RET_FIGHT = 0x08000000};
 
 	enum FireType: int {HOLD = 0, RETURN = 1, OPEN = 2, _SIZE_};
 
@@ -87,11 +87,11 @@ public:
 
 	void SetMainRole(RoleType type) { mainRole = type; }
 	RoleT GetMainRole() const { return static_cast<RoleT>(mainRole); }
-	void SetEnemyRole(RoleType type) { enemyRole = type; }
-	RoleT GetEnemyRole() const { return static_cast<RoleT>(enemyRole); }
+	void AddEnemyRole(RoleType type) { enemyRole |= GetMask(static_cast<RoleT>(type)); }
+	bool IsEnemyRoleAny(RoleM value) const { return (enemyRole & value) != 0; }
 
-	void AddAttribute(AttrType value) { role |= GetMask(static_cast<RoleT>(value)); }
-	void AddRole(RoleType value) { role |= GetMask(static_cast<RoleT>(value)); }
+	void AddAttribute(AttrType type) { role |= GetMask(static_cast<RoleT>(type)); }
+	void AddRole(RoleType type) { role |= GetMask(static_cast<RoleT>(type)); }
 	bool IsRoleAny(RoleM value)     const { return (role & value) != 0; }
 	bool IsRoleEqual(RoleM value)   const { return role == value; }
 	bool IsRoleContain(RoleM value) const { return (role & value) == value; }
@@ -123,7 +123,8 @@ public:
 	bool IsAttrNoStrafe() const { return role & AttrMask::NO_STRAFE; }
 	bool IsAttrStock()    const { return role & AttrMask::STOCK; }
 	bool IsAttrSuper()    const { return role & AttrMask::SUPER; }
-	bool IsAttrRetrHold() const { return role & AttrMask::RETR_HOLD; }
+	bool IsAttrRetHold()  const { return role & AttrMask::RET_HOLD; }
+	bool IsAttrRetFight() const { return role & AttrMask::RET_FIGHT; }
 
 	bool IsHoldFire()   const { return fireState == FireType::HOLD; }
 	bool IsReturnFire() const { return fireState == FireType::RETURN; }
@@ -224,7 +225,7 @@ private:
 	Id id;
 	springai::UnitDef* def;  // owner
 	RoleType mainRole;
-	RoleType enemyRole;
+	RoleM enemyRole;
 	RoleM role;
 	std::unordered_set<Id> buildOptions;
 	float buildDistance;

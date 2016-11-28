@@ -132,6 +132,7 @@ private:
 
 		std::vector<CCircuitDef*> roleDefs;  // cheapest role def
 		std::vector<CCircuitDef*> buildDefs;
+		Tiers airTiers;
 		Tiers landTiers;
 		Tiers waterTiers;
 		CCircuitDef* landDef;

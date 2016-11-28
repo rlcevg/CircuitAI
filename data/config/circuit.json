@@ -214,7 +214,7 @@
 		"income_tier": [10, 20, 30, 40, 50, 60],
 		//             crane,   swift,     hawk,      raven,     phoenix,    thunderbird,         wyvern,    vulture
 		"unit":      ["armca", "fighter", "corvamp", "corshad", "corhurc2", "armstiletto_laser", "armcybr", "corawac"],
-		"land": {
+		"air": {
 			// 0-10m Early Game
 			"tier0": [ 0.00,    0.50,      0.30,      0.07,      0.08,       0.00,                0.00,      0.05],
 			// 11-20m Expansion
@@ -229,6 +229,22 @@
 			"tier5": [ 0.00,    0.12,      0.23,      0.15,      0.00,       0.01,                0.44,      0.05],
 			// 61-inf Late
 			"tier6": [ 0.00,    0.05,      0.13,      0.00,      0.00,       0.01,                0.76,      0.05]
+		},
+		"land": {
+			// 0-10m Early Game
+			"tier0": [ 0.00,    0.50,      0.00,      0.37,      0.08,       0.00,                0.00,      0.05],
+			// 11-20m Expansion
+			"tier1": [ 0.00,    0.50,      0.00,      0.42,      0.02,       0.01,                0.00,      0.05],
+			// 21-30m Fronts
+			"tier2": [ 0.00,    0.22,      0.00,      0.65,      0.02,       0.01,                0.05,      0.05],
+			// 31-40m Mid onwards
+			"tier3": [ 0.00,    0.22,      0.00,      0.50,      0.02,       0.01,                0.20,      0.05],
+			// 41-50m Mid
+			"tier4": [ 0.00,    0.12,      0.00,      0.50,      0.00,       0.01,                0.32,      0.05],
+			// 51-60m Late Mid
+			"tier5": [ 0.00,    0.12,      0.00,      0.38,      0.00,       0.01,                0.44,      0.05],
+			// 61-inf Late
+			"tier6": [ 0.00,    0.05,      0.00,      0.00,      0.00,       0.01,                0.89,      0.05]
 		},
 
 		"caretaker": 3
@@ -350,20 +366,20 @@
 	"raid": [200, 480],  // [<min>, <avg>] cost of raider squad
 	"attack": 1500,  // min cost of attack group
 	"def_rad": 1100,  // defence radius
-	"thr_mod": [1.5, 2.0]  // [<min>, <max>] threat modifier
+	"thr_mod": [1.0, 1.5]  // [<min>, <max>] threat modifier
 },
 
 // If unit's health drops below specified percent it will retreat
 "retreat": {
 	"builder": 0.8,  // default value for all builders
 	"fighter": 0.55,  // default value for all not-builder units
-	"shield": [0.4, 0.9]  // [<empty>, <full>] shield power
+	"shield": [0.4, 0.8]  // [<empty>, <full>] shield power
 },
 
 "behaviour": {
 	// factorycloak
 	"armrectr": {
-		// "role": [<main>, <enemy>]
+		// "role": [<main>, <enemy>, <enemy>, ...]
 		// <main> is the role to make desicions of when to build it and what task to assign
 		// <enemy> is to decide how to counter enemy unit, if missing then equals to <main>
 		// Roles: builder, scout, raider, riot, assault, skirmish, artillery, anti_air, anti_sub, anti_heavy, bomber, support, mine, transport, air, sub, static, heavy
@@ -379,7 +395,8 @@
 		// "no_strafe" - disable gunship's strafe
 		// "stockpile" - load weapon before any task (NOT IMPLEMENTED), auto-assigned
 		// "super" - superweapon, auto-assigned to porcupine items
-		// "retr_hold" - hold fire on retreat
+		// "ret_hold" - hold fire on retreat
+		// "ret_fight" - fight on retreat
 //		"attribute": ["boost", "no_strafe"],
 
 		// Fire state (open by default)
@@ -423,7 +440,8 @@
 	},
 	"armham": {
 		"role": ["artillery"],
-		"retreat": 0.99
+		"retreat": 0.99,
+		"dmg_mod": 0.1
 	},
 	"armsnipe": {
 		"role": ["anti_heavy"],
@@ -553,7 +571,7 @@
 	},
 	"armcrabe": {
 		"role": ["assault", "heavy"],
-		"attribute": ["siege"],
+		"attribute": ["siege", "ret_fight"],
 		"retreat": 0.65
 	},
 	"armspy": {
@@ -592,12 +610,12 @@
 		"retreat": 0.9
 	},
 	"shieldfelon": {
-		"role": ["support", "heavy"],
-		"attribute": ["riot"],
+		"role": ["assault", "heavy"],
 		"retreat": 0.9  // FIXME: 1.5?
 	},
 	"shieldarty": {
 		"role": ["anti_heavy", "skirmish"],
+		"attribute": ["support"],
 		"retreat": 0.9
 	},
 	"corroach": {
@@ -628,7 +646,7 @@
 	},
 	"cormist": {
 		"role": ["support"],
-		"attribute": ["siege"],
+		"attribute": ["siege", "ret_fight"],
 		"retreat": 0.25  // cannot retreat
 	},
 	"corlevlr": {
@@ -650,7 +668,8 @@
 	},
 	"armmerl": {
 		"role": ["artillery", "heavy"],
-		"retreat": 0.99
+		"retreat": 0.99,
+		"dmg_mod": 0.1
 	},
 	"vehaa": {
 		"role": ["anti_air"],
@@ -684,7 +703,8 @@
 	"firewalker": {
 		"role": ["artillery", "heavy"],
 		"attribute": ["support"],
-		"retreat": 0.99
+		"retreat": 0.99,
+		"dmg_mod": 0.1
 	},
 	"corsktl": {
 		"role": ["anti_heavy", "mine"],
@@ -712,7 +732,7 @@
 	},
 	"hoverassault": {
 		"role": ["assault"],
-		"attribute": ["retr_hold"],
+		"attribute": ["ret_hold"],
 		"retreat": 0.4
 	},
 	"hoverdepthcharge": {
@@ -833,21 +853,25 @@
 	},
 	"correap": {
 		"role": ["assault", "heavy"],
+		"attribute": ["melee"],
 		"retreat": 0.55
 	},
 	"corgol": {
 		"role": ["assault", "heavy"],
+		"attribute": ["melee"],
 		"retreat": 0.6
 	},
 	"cormart": {
 		"role": ["artillery", "heavy"],
 		"limit": 2,
-		"retreat": 0.99
+		"retreat": 0.99,
+		"dmg_mod": 0.1
 	},
 	"trem": {
 		"role": ["artillery", "heavy"],
 		"limit": 1,
-		"retreat": 0.99
+		"retreat": 0.99,
+		"dmg_mod": 0.1
 	},
 	"corsent": {
 		"role": ["anti_air"],
@@ -938,12 +962,13 @@
 		"role": ["static", "heavy"]
 	},
 	"corhlt": {
-		"role": ["static", "heavy"]
+		"role": ["static", "heavy"],
+		"dmg_mod": 2.0
 	},
 	"cafus": {
 		"role": ["static", "heavy"]
 	},
-	"corrazor": {  // FIXME: not sure why it should react to static AA?
+	"corrazor": {
 		"role": ["static", "anti_air"]
 	},
 	"screamer": {
@@ -971,7 +996,7 @@
 // Probability of UnitDef for AA role depends on income tier: (tierN[UnitDef]+_weight_)*enemy_air_metal/aa_metal*importance
 // armjeth probability for tier 1: (0.00+0.01)*enemy_air_metal*66.0
 "response": {
-	"_weight_": 0.25,  // base weight of response probability
+	"_weight_": 0.10,  // base weight of response probability
 
 	"raider": {
 		"vs":         ["builder", "anti_air", "scout", "raider", "skirmish", "anti_heavy"],
@@ -1073,7 +1098,7 @@
 	//
 	// Metal income condition for energy structure is: income > sqrt(structure_cost*0.4).
 	// Energy buildings are sorted by structure_cost/energy_make (asc).
-	// Config in example with income_factor=0.8 leads to next build choice:
+	// Config in example with factor=0.8 leads to next build choice:
 	//   1) nothing if singu_limit >= 1;
 	//   2) else if singu_limit < 1 and income > 50 then singu;
 	//   (ignored) else if geo_limit < 0 and income > 17.68 then geo;
@@ -1096,7 +1121,7 @@
 			"armfus": [4],
 			"armwin": [20]
 		},
-		"income_factor": 0.72,
+		"factor": 0.72,  // income factor for energy
 
 		"pylon": ["armestor", "armsolar", "armwin"]
 	},
@@ -1107,9 +1132,11 @@
 
 	// Mobile buildpower to metal income ratio
 	"buildpower": 1.15,
+	// Metal excess to income ratio, -1 to disable
+	"excess": -1.0,
 
 	// New factory switch interval, in seconds
-	"switch": 900,
+	"switch": 600,
 
 	"terra": "terraunit",
 	"airpad": "armasp",
@@ -1492,20 +1519,20 @@
 			// Build chain of units
 			"hub": [
 				[  // chain1
-					{"unit": "corrl", "category": "defence", "offset": [-80, -80]},
-					{"unit": "corrl", "category": "defence", "offset": {"left": 80}},
+					{"unit": "corllt", "category": "defence", "offset": [-80, -80]},
+					{"unit": "armartic", "category": "defence", "offset": {"left": 80}},
 					{"unit": "corrl", "category": "defence", "offset": [-70, 70]},
-					{"unit": "corrl", "category": "defence", "offset": [-60, 60]},
-					{"unit": "corrl", "category": "defence", "offset": {"front": 40}}
+					{"unit": "corrl", "category": "defence", "offset": [-80, 80]},
+					{"unit": "screamer", "category": "defence", "offset": {"front": 120}, "condition": "air"},
+					{"unit": "corflak", "category": "defence", "offset": {"front": 120}, "condition": "no_air"},
+					{"unit": "corjamt", "category": "defence", "offset": {"front": 10}}
 				],
 				[  // chain2
-					{"unit": "corrl", "category": "defence", "offset": [-80, -80]},
-					{"unit": "corrl", "category": "defence", "offset": {"left": 80}},
-					{"unit": "corrl", "category": "defence", "offset": [-70, 70]},
-					{"unit": "corrl", "category": "defence", "offset": [-60, 60]},
-//					{"unit": "screamer", "category": "defence", "offset": {"front": 40}, "condition": "air"},
-//					{"unit": "corflak", "category": "defence", "offset": {"front": 40}, "condition": "no_air"},
-					{"unit": "corrl", "category": "defence", "offset": {"front": 40}}
+					{"unit": "corllt", "category": "defence", "offset": [80, 80]},
+					{"unit": "armartic", "category": "defence", "offset": {"right": 80}},
+					{"unit": "corrl", "category": "defence", "offset": [70, -70]},
+					{"unit": "corrl", "category": "defence", "offset": [80, -80]},
+					{"unit": "armamd", "category": "defence", "offset": {"front": 0}, "condition": "maybe"}
 				]
 			]
 		},

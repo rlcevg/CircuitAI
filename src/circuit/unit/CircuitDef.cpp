@@ -53,7 +53,8 @@ CCircuitDef::AttrName CCircuitDef::attrNames = {
 	{"no_strafe", CCircuitDef::AttrType::NO_STRAFE},
 	{"stockpile", CCircuitDef::AttrType::STOCK},
 	{"super",     CCircuitDef::AttrType::SUPER},
-	{"retr_hold", CCircuitDef::AttrType::RETR_HOLD},
+	{"ret_hold",  CCircuitDef::AttrType::RET_HOLD},
+	{"ret_fight", CCircuitDef::AttrType::RET_FIGHT},
 };
 
 CCircuitDef::FireName CCircuitDef::fireNames = {
@@ -65,7 +66,7 @@ CCircuitDef::FireName CCircuitDef::fireNames = {
 CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts, Resource* res)
 		: def(def)
 		, mainRole(RoleType::SCOUT)
-		, enemyRole(RoleType::SCOUT)
+		, enemyRole(RoleMask::NONE)
 		, role(RoleMask::NONE)
 		, buildOptions(buildOpts)
 		, count(0)
@@ -246,6 +247,11 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		it = customParams.find("timeslow_onlyslow");
 		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 			scale = 0.5f;
+		} else {
+			it = customParams.find("timeslow_damagefactor");
+			if (it != customParams.end()) {
+				scale = utils::string_to_float(it->second);
+			}
 		}
 
 		it = customParams.find("is_capture");

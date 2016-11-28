@@ -790,7 +790,9 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 	const IBuilderTask* task = nullptr;
 	AIFloat3 pos = unit->GetPos(frame);
 
-	circuit->GetEconomyManager()->MakeEconomyTasks(pos, unit);
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	economyManager->MakeEconomyTasks(pos, unit);
+	const bool isNotReady = !economyManager->IsExcessed();
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
@@ -803,7 +805,9 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
-			if (!candidate->CanAssignTo(unit)) {
+			if (!candidate->CanAssignTo(unit) ||
+				(isNotReady && (candidate->GetBuildDef() != nullptr) && (candidate->GetPriority() != IBuilderTask::Priority::NOW)))
+			{
 				continue;
 			}
 
@@ -890,8 +894,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 //	if (task != nullptr) {
 //		return task;
 //	}
-//	const bool isStalling = economyManager->GetAvgMetalIncome() * 1.2f < economyManager->GetMetalPull();
-//	CCircuitDef* mexDef = economyManager->GetMexDef();
+	const bool isNotReady = !economyManager->IsExcessed();
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
@@ -904,8 +907,8 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
-			if (!candidate->CanAssignTo(unit)/* ||
-				(isStalling && (candidate->GetBuildDef() != nullptr) && (candidate->GetBuildDef() != mexDef))*/)
+			if (!candidate->CanAssignTo(unit) ||
+				(isNotReady && (candidate->GetBuildDef() != nullptr) && (candidate->GetPriority() != IBuilderTask::Priority::NOW)))
 			{
 				continue;
 			}

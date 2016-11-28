@@ -8,6 +8,7 @@
 #include "task/fighter/DefendTask.h"
 #include "task/TaskManager.h"
 #include "module/MilitaryManager.h"
+#include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
@@ -21,9 +22,10 @@ namespace circuit {
 using namespace springai;
 
 CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, float radius,
-						 FightType promote, float maxCost)
+						 FightType check, FightType promote, float maxCost)
 		: ISquadTask(mgr, FightType::DEFEND, 1.f)
 		, radius(radius)
+		, check(check)
 		, promote(promote)
 		, maxCost(maxCost)
 		, cost(0.f)
@@ -79,8 +81,9 @@ void CDefendTask::Update()
 	 * Merge tasks if possible
 	 */
 	if (updCount % 32 == 1) {
-		if (cost >= maxCost) {
-			IFighterTask* task = static_cast<CMilitaryManager*>(manager)->EnqueueTask(promote);
+		CMilitaryManager* militaryManager = static_cast<CMilitaryManager*>(manager);
+		if ((cost >= maxCost) || !militaryManager->GetTasks(check).empty()) {
+			IFighterTask* task = militaryManager->EnqueueTask(promote);
 			decltype(units) tmpUnits = units;
 			for (CCircuitUnit* unit : tmpUnits) {
 				manager->AssignTask(unit, task);
@@ -157,8 +160,11 @@ void CDefendTask::FindTarget()
 	CCircuitAI* circuit = manager->GetCircuit();
 	auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(GetPosition(), radius));
 	if (enemies.empty()) {
-		SetTarget(nullptr);
-		return;
+		enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(circuit->GetSetupManager()->GetBasePos(), radius));
+		if (enemies.empty()) {
+			SetTarget(nullptr);
+			return;
+		}
 	}
 
 	CEnemyUnit* bestTarget = nullptr;
