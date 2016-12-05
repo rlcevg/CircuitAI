@@ -22,13 +22,13 @@ namespace circuit {
 using namespace springai;
 
 CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, float radius,
-						 FightType check, FightType promote, float maxCost)
+						 FightType check, FightType promote, float maxPower)
 		: ISquadTask(mgr, FightType::DEFEND, 1.f)
 		, radius(radius)
 		, check(check)
 		, promote(promote)
-		, maxCost(maxCost)
-		, cost(0.f)
+		, maxPower(maxPower)
+		, power(0.f)
 {
 	this->position = position;
 }
@@ -40,13 +40,13 @@ CDefendTask::~CDefendTask()
 
 bool CDefendTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return (cost < maxCost) && (static_cast<CDefendTask*>(unit->GetTask())->GetPromote() == promote);
+	return (power < maxPower) && (static_cast<CDefendTask*>(unit->GetTask())->GetPromote() == promote);
 }
 
 void CDefendTask::AssignTo(CCircuitUnit* unit)
 {
 	ISquadTask::AssignTo(unit);
-	cost += unit->GetCircuitDef()->GetCost();
+	power += unit->GetCircuitDef()->GetPower();
 }
 
 void CDefendTask::RemoveAssignee(CCircuitUnit* unit)
@@ -55,7 +55,7 @@ void CDefendTask::RemoveAssignee(CCircuitUnit* unit)
 	if (leader == nullptr) {
 		manager->AbortTask(this);
 	} else {
-		cost -= unit->GetCircuitDef()->GetCost();
+		power -= unit->GetCircuitDef()->GetPower();
 	}
 }
 
@@ -82,7 +82,7 @@ void CDefendTask::Update()
 	 */
 	if (updCount % 32 == 1) {
 		CMilitaryManager* militaryManager = static_cast<CMilitaryManager*>(manager);
-		if ((cost >= maxCost) || !militaryManager->GetTasks(check).empty()) {
+		if ((power >= maxPower) || !militaryManager->GetTasks(check).empty()) {
 			IFighterTask* task = militaryManager->EnqueueTask(promote);
 			decltype(units) tmpUnits = units;
 			for (CCircuitUnit* unit : tmpUnits) {
@@ -150,7 +150,9 @@ void CDefendTask::Merge(ISquadTask* task)
 		unit->SetTask(this);
 	}
 	units.insert(rookies.begin(), rookies.end());
-	cost += static_cast<CDefendTask*>(task)->GetCost();
+	CDefendTask* mergee = static_cast<CDefendTask*>(task);
+	maxPower = std::max(maxPower, mergee->GetMaxPower());
+	power += mergee->GetPower();
 	const std::set<CCircuitUnit*>& sh = task->GetShields();
 	shields.insert(sh.begin(), sh.end());
 }

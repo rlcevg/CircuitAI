@@ -52,7 +52,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		, defenceIdx(0)
 		, scoutIdx(0)
 		, armyCost(0.f)
-		, enemyCost(0.f)
+		, enemyThreat(0.f)
 		, radarDef(nullptr)
 		, sonarDef(nullptr)
 {
@@ -381,17 +381,17 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 	return task;
 }
 
-IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType promote, float cost)
+IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType promote, float power)
 {
-	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), defRadius, promote, promote, cost);
+	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), defRadius, promote, promote, power);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
 	fightUpdates.push_back(task);
 	return task;
 }
 
-IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote, float cost)
+IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote, float power)
 {
-	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), defRadius, check, promote, cost);
+	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), defRadius, check, promote, power);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
 	fightUpdates.push_back(task);
 	return task;
@@ -468,8 +468,11 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 			}
 		} else {
 			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty();
-			const float cost = std::max(minAttackers, enemyCost / circuit->GetEconomyManager()->GetEcoFactor());
-			task = isDefend ? EnqueueDefend(IFighterTask::FightType::ATTACK, cost)
+			const float power = std::max(minAttackers, enemyThreat / circuit->GetAllyTeam()->GetAliveSize());
+			// FIXME: DEBUG
+			circuit->LOG("enemy_mobile_threat: %f | power: %f", enemyThreat, power);
+			// FIXME: DEBUG
+			task = isDefend ? EnqueueDefend(IFighterTask::FightType::ATTACK, power)
 							: EnqueueTask(IFighterTask::FightType::ATTACK);
 		}
 	}
@@ -802,7 +805,9 @@ void CMilitaryManager::AddEnemyCost(const CEnemyUnit* e)
 			enemyCosts[i] += e->GetCost();
 		}
 	}
-	enemyCost += e->GetCost();
+	if (cdef->IsMobile()) {
+		enemyThreat += e->GetThreat();
+	}
 }
 
 void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
@@ -816,7 +821,9 @@ void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
 			metal = std::max(metal - e->GetCost(), 0.f);
 		}
 	}
-	enemyCost = std::max(enemyCost - e->GetCost(), 0.f);
+	if (cdef->IsMobile()) {
+		enemyThreat = std::max(enemyThreat - e->GetThreat(), 0.f);
+	}
 }
 
 float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
@@ -995,9 +1002,9 @@ void CMilitaryManager::ReadConfig()
 	const Json::Value& quotas = root["quota"];
 	maxScouts = quotas.get("scout", 3).asUInt();
 	const Json::Value& qraid = quotas["raid"];
-	raid.min = qraid.get((unsigned)0, 300.f).asFloat();
-	raid.avg = qraid.get((unsigned)1, 500.f).asFloat();
-	minAttackers = quotas.get("attack", 800.f).asFloat();
+	raid.min = qraid.get((unsigned)0, 3.f).asFloat();
+	raid.avg = qraid.get((unsigned)1, 5.f).asFloat();
+	minAttackers = quotas.get("attack", 8.f).asFloat();
 	defRadius = quotas.get("def_rad", 2000.f).asFloat();
 	const Json::Value& qthreat = quotas["thr_mod"];
 	threatMod.min = qthreat.get((unsigned)0, 1.f).asFloat();

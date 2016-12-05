@@ -48,8 +48,8 @@ public:
 	}
 
 	IFighterTask* EnqueueTask(IFighterTask::FightType type);
-	IFighterTask* EnqueueDefend(IFighterTask::FightType promote, float cost);
-	IFighterTask* EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote, float cost);
+	IFighterTask* EnqueueDefend(IFighterTask::FightType promote, float power);
+	IFighterTask* EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote, float power);
 	IFighterTask* EnqueueGuard(CCircuitUnit* vip);
 	CRetreatTask* EnqueueRetreat();
 private:
@@ -146,7 +146,7 @@ private:
 	std::set<CCircuitUnit*> army;
 	float armyCost;
 
-	float enemyCost;
+	float enemyThreat;
 	std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> enemyCosts{{0.f}};
 	std::vector<SEnemyGroup> enemyGroups;
 	springai::AIFloat3 enemyPos;
