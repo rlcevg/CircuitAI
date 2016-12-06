@@ -363,12 +363,10 @@
 
 "quota": {
 	"scout": 2,  // max scout units out of raiders
-	// FIXME: "raid" is now in threat units of measurement
-	"raid": [2.0, 4.8],  // [<min>, <avg>] power of raider squad
-	// FIXME: "attack" is now in threat units of measurement
+	"raid": [3.0, 8.0],  // [<min>, <avg>] power of raider squad
 	"attack": 10.0,  // min power of attack group
 	"def_rad": 700,  // defence radius
-	"thr_mod": [0.75, 1.25]  // [<min>, <max>] threat modifier
+	"thr_mod": [0.95, 1.25]  // [<min>, <max>] threat modifier
 },
 
 // If unit's health drops below specified percent it will retreat
@@ -580,7 +578,7 @@
 	"armsptk": {
 		"role": ["skirmish"],
 		"attribute": ["support"],
-		"limit": 3,
+		"limit": 3,  // FIXME: Because fragile and AI uses them badly, should focus on crabbes
 		"retreat": 0.9
 	},
 	"armcrabe": {
@@ -709,7 +707,7 @@
 	"jumpblackhole": {
 		"role": ["skirmish"]
 	},
-//	"slowmort": {  // FIXME: Can't just disable! What if player shares unit to AI? And how AI supposed to counter it? Use "limit": 0 if it's not supposed to be built
+//	"slowmort": {  // FIXME: Can't just disable! What if player shares unit to AI? And AI has to know how to counter it. Use "limit": 0 if it's not supposed to be built
 //		"role": ["skirmish"]
 //	},
 	"corcan": {
@@ -1019,9 +1017,11 @@
 		"dmg_mod": 3.0
 	},
 	"corllt": {
+		"role": ["static"],
 		"dmg_mod": 2.5
 	},
 	"corrl": {
+		"role": ["static"],
 		"dmg_mod": 2.5
 	},
 	"armdeva": {
@@ -1232,10 +1232,10 @@
 },
 
 "porcupine": {
-	//        0         1        2          3         4             5           6            7          8          9           10         11		  12
-	"unit": ["corllt", "corrl", "armdeva", "corhlt", "turrettorp", "corrazor", "armnanotc", "cordoom", "corjamt", "armartic", "armanni", "corbhmth", "armcir"],
+	//        0         1        2          3         4             5           6            7          8          9           10         11		  12		13
+	"unit": ["corllt", "corrl", "armdeva", "corhlt", "turrettorp", "corrazor", "armnanotc", "cordoom", "corjamt", "armartic", "armanni", "corbhmth", "armcir", "screamer"],
 	// Actual number of defences per cluster bounded by income
-	"land":  [0, 1, 1, 3, 5, 1, 6, 5, 9, 3, 9, 12, 11],
+	"land":  [0, 1, 1, 3, 5, 1, 6, 5, 9, 3, 9, 12, 11, 13],
 	"water": [4, 1, 6, 4, 4, 3, 5],
 	"prevent": 1,  // number of preventive defences
 	"amount": {  // income bound factor
@@ -1246,7 +1246,7 @@
 	},
 
 	// Base defence and time to build it, in seconds
-	"base": [[0, 10], [0, 180], [5, 580], [1, 980], [5, 1160], [1, 1380], [2, 1680], [5, 2000], [2, 2420], [7, 2800]],
+	"base": [[0, 10], [0, 180], [5, 580], [1, 980], [5, 1160], [1, 1380], [2, 1680], [5, 2000], [2, 2420], [13, 2800], [7, 3300]],
 
 	"superweapon": {
 		"unit":   ["raveparty", "corsilo", "armbrtha", "zenith"],

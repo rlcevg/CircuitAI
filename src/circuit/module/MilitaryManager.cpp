@@ -806,7 +806,7 @@ void CMilitaryManager::AddEnemyCost(const CEnemyUnit* e)
 		}
 	}
 	if (cdef->IsMobile()) {
-		enemyThreat += e->GetThreat();
+		enemyThreat += cdef->GetPower();
 	}
 }
 
@@ -822,7 +822,7 @@ void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
 		}
 	}
 	if (cdef->IsMobile()) {
-		enemyThreat = std::max(enemyThreat - e->GetThreat(), 0.f);
+		enemyThreat = std::max(enemyThreat - cdef->GetPower(), 0.f);
 	}
 }
 

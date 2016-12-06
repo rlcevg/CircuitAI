@@ -19,7 +19,6 @@ public:
 	virtual ~CDefendTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const;
-	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 
 	virtual void Execute(CCircuitUnit* unit);
@@ -31,7 +30,6 @@ public:
 protected:
 	FightType GetPromote() const { return promote; }
 	float GetMaxPower() const { return maxPower; }
-	float GetPower() const { return power; }
 
 private:
 	virtual void Merge(ISquadTask* task);
@@ -42,7 +40,6 @@ private:
 	FightType check;
 	FightType promote;
 	float maxPower;
-	float power;
 };
 
 } // namespace circuit

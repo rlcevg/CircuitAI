@@ -192,7 +192,7 @@ bool CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 	// (3) Known enemy that already was in LOS enters again
 
 	enemy->SetInLOS();
-	bool wasKnown = enemy->IsKnown();
+	const bool wasKnown = enemy->IsKnown();
 
 	if (enemy->GetDPS() < 0.1f) {
 		if (enemy->GetThreat() > .0f) {  // (2)

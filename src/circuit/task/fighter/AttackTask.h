@@ -14,7 +14,7 @@ namespace circuit {
 
 class CAttackTask: public ISquadTask {
 public:
-	CAttackTask(ITaskManager* mgr, float minCost, float powerMod);
+	CAttackTask(ITaskManager* mgr, float minPower, float powerMod);
 	virtual ~CAttackTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const;
@@ -26,15 +26,10 @@ public:
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 
-protected:
-	float GetCost() const { return cost; }
-
 private:
-	virtual void Merge(ISquadTask* task);
 	void FindTarget();
 
-	float minCost;
-	float cost;
+	float minPower;
 };
 
 } // namespace circuit

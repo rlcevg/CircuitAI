@@ -25,10 +25,9 @@ namespace circuit {
 
 using namespace springai;
 
-CAttackTask::CAttackTask(ITaskManager* mgr, float minCost, float powerMod)
+CAttackTask::CAttackTask(ITaskManager* mgr, float minPower, float powerMod)
 		: ISquadTask(mgr, FightType::ATTACK, powerMod)
-		, minCost(minCost)
-		, cost(0.f)
+		, minPower(minPower)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
@@ -68,8 +67,6 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	highestRange = std::max(highestRange, cdef->GetLosRadius());
 
-	cost += cdef->GetCost();
-
 	if (cdef->IsRoleSupport()) {
 		unit->PushBack(new CSupportAction(unit));
 	}
@@ -88,7 +85,7 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 void CAttackTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	ISquadTask::RemoveAssignee(unit);
-	if ((cost < minCost) || (leader == nullptr)) {
+	if ((attackPower < minPower) || (leader == nullptr)) {
 		manager->AbortTask(this);
 	} else {
 		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetLosRadius());
@@ -255,13 +252,6 @@ void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
 	if (units.find(unit) != units.end()) {
 		Execute(unit);  // NOTE: Not sure if it has effect
 	}
-}
-
-void CAttackTask::Merge(ISquadTask* task)
-{
-	ISquadTask::Merge(task);
-
-	cost += static_cast<CAttackTask*>(task)->GetCost();
 }
 
 void CAttackTask::FindTarget()

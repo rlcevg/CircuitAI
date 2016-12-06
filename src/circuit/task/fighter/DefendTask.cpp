@@ -28,7 +28,6 @@ CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, float radi
 		, check(check)
 		, promote(promote)
 		, maxPower(maxPower)
-		, power(0.f)
 {
 	this->position = position;
 }
@@ -40,13 +39,7 @@ CDefendTask::~CDefendTask()
 
 bool CDefendTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return (power < maxPower) && (static_cast<CDefendTask*>(unit->GetTask())->GetPromote() == promote);
-}
-
-void CDefendTask::AssignTo(CCircuitUnit* unit)
-{
-	ISquadTask::AssignTo(unit);
-	power += unit->GetCircuitDef()->GetPower();
+	return (attackPower < maxPower) && (static_cast<CDefendTask*>(unit->GetTask())->GetPromote() == promote);
 }
 
 void CDefendTask::RemoveAssignee(CCircuitUnit* unit)
@@ -54,8 +47,6 @@ void CDefendTask::RemoveAssignee(CCircuitUnit* unit)
 	ISquadTask::RemoveAssignee(unit);
 	if (leader == nullptr) {
 		manager->AbortTask(this);
-	} else {
-		power -= unit->GetCircuitDef()->GetPower();
 	}
 }
 
@@ -82,7 +73,7 @@ void CDefendTask::Update()
 	 */
 	if (updCount % 32 == 1) {
 		CMilitaryManager* militaryManager = static_cast<CMilitaryManager*>(manager);
-		if ((power >= maxPower) || !militaryManager->GetTasks(check).empty()) {
+		if ((attackPower >= maxPower) || !militaryManager->GetTasks(check).empty()) {
 			IFighterTask* task = militaryManager->EnqueueTask(promote);
 			decltype(units) tmpUnits = units;
 			for (CCircuitUnit* unit : tmpUnits) {
@@ -150,9 +141,8 @@ void CDefendTask::Merge(ISquadTask* task)
 		unit->SetTask(this);
 	}
 	units.insert(rookies.begin(), rookies.end());
-	CDefendTask* mergee = static_cast<CDefendTask*>(task);
-	maxPower = std::max(maxPower, mergee->GetMaxPower());
-	power += mergee->GetPower();
+	maxPower = std::max(maxPower, static_cast<CDefendTask*>(task)->GetMaxPower());
+	attackPower += task->GetAttackPower();
 	const std::set<CCircuitUnit*>& sh = task->GetShields();
 	shields.insert(sh.begin(), sh.end());
 }
