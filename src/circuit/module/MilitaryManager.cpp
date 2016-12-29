@@ -469,9 +469,6 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 		} else {
 			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty();
 			const float power = std::max(minAttackers, enemyThreat / circuit->GetAllyTeam()->GetAliveSize());
-			// FIXME: DEBUG
-			circuit->LOG("enemy_mobile_threat: %f | power: %f", enemyThreat, power);
-			// FIXME: DEBUG
 			task = isDefend ? EnqueueDefend(IFighterTask::FightType::ATTACK, power)
 							: EnqueueTask(IFighterTask::FightType::ATTACK);
 		}
