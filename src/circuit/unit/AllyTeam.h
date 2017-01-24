@@ -33,6 +33,7 @@ public:
 	using Units = std::map<CCircuitUnit::Id, CCircuitUnit*>;
 	using TeamIds = std::unordered_set<Id>;
 	union SBox {
+		SBox(): edge{0.f, 0.f, 0.f, 0.f} {}
 		struct {
 			float bottom;
 			float left;

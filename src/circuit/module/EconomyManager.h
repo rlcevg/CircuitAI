@@ -23,6 +23,7 @@ namespace springai {
 namespace circuit {
 
 #define INCOME_SAMPLES	5
+#define HIDDEN_STORAGE	10000.0f
 
 class IBuilderTask;
 class CLagrangeInterPol;
@@ -56,6 +57,7 @@ public:
 	float GetEcoFactor() const { return ecoFactor; }
 	float GetMetalPull();
 	float GetEnergyPull();
+	float GetEnergyUse();
 	bool IsMetalEmpty();
 	bool IsMetalFull();
 	bool IsEnergyStalling();
@@ -148,8 +150,10 @@ private:
 
 	int metalPullFrame;
 	int energyPullFrame;
+	int energyUseFrame;
 	float metalPull;
 	float energyPull;
+	float energyUse;
 
 	std::shared_ptr<CGameTask> morph;
 	std::set<CCircuitUnit*> morphees;
