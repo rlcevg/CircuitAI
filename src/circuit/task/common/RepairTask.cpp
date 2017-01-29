@@ -149,7 +149,7 @@ CCircuitUnit* IRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitUnit* target = nullptr;
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
-	float maxSpeed = unit->GetUnit()->GetMaxSpeed();
+	float maxSpeed = unit->GetCircuitDef()->GetSpeed();
 	float radius = unit->GetCircuitDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 30;
 
 	circuit->UpdateFriendlyUnits();

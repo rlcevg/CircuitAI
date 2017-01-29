@@ -70,6 +70,9 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
 
+	void Activate();
+	void Deactivate();
+
 	const springai::AIFloat3& GetTaskPos() const { return position; }
 	CCircuitDef* GetBuildDef() const { return buildDef; }
 
@@ -116,6 +119,8 @@ protected:
 
 	float savedIncome;
 	int buildFails;
+
+	decltype(units)::const_iterator unitIt;  // update iterator
 };
 
 } // namespace circuit

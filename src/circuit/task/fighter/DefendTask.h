@@ -15,7 +15,7 @@ namespace circuit {
 class CDefendTask: public ISquadTask {
 public:
 	CDefendTask(ITaskManager* mgr, const springai::AIFloat3& position, float radius,
-				FightType check, FightType promote, float maxPower);
+				FightType check, FightType promote, float maxPower, float powerMod);
 	virtual ~CDefendTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const;
@@ -25,7 +25,10 @@ public:
 	virtual void Update();
 
 	void SetPosition(const springai::AIFloat3& pos) { position = pos; }
+	void SetMaxPower(float power) { maxPower = power * powerMod; }
 	void SetWantedTarget(CEnemyUnit* enemy) { SetTarget(enemy); }
+
+	FightType GetCheck() const { return check; }
 
 protected:
 	FightType GetPromote() const { return promote; }

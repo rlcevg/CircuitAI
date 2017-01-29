@@ -351,6 +351,7 @@ void CBuilderManager::ActivateTask(IBuilderTask* task)
 		buildTasksCount++;
 	}
 	buildUpdates.push_back(task);
+	task->Activate();
 }
 
 IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
@@ -391,6 +392,8 @@ IBuilderTask* CBuilderManager::EnqueueFactory(IBuilderTask::Priority priority,
 		buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::FACTORY)].insert(task);
 		buildTasksCount++;
 		buildUpdates.push_back(task);
+	} else {
+		task->Deactivate();
 	}
 	return task;
 }
@@ -408,6 +411,8 @@ IBuilderTask* CBuilderManager::EnqueuePylon(IBuilderTask::Priority priority,
 		buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::PYLON)].insert(task);
 		buildTasksCount++;
 		buildUpdates.push_back(task);
+	} else {
+		task->Deactivate();
 	}
 	return task;
 }
@@ -485,6 +490,8 @@ IBuilderTask* CBuilderManager::EnqueueTerraform(IBuilderTask::Priority priority,
 		buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::TERRAFORM)].insert(task);
 		buildTasksCount++;
 		buildUpdates.push_back(task);
+	} else {
+		task->Deactivate();
 	}
 	return task;
 }
@@ -559,6 +566,8 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 		buildTasks[static_cast<IBuilderTask::BT>(type)].insert(task);
 		buildTasksCount++;
 		buildUpdates.push_back(task);
+	} else {
+		task->Deactivate();
 	}
 	return task;
 }
@@ -799,7 +808,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 	terrainManager->CorrectPosition(pos);
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
+	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
 	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	float metric = std::numeric_limits<float>::max();
@@ -901,7 +910,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 	terrainManager->CorrectPosition(pos);
 	pathfinder->SetMapData(unit, threatMap, frame);
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float maxSpeed = unit->GetUnit()->GetMaxSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
+	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
 	const float maxThreat = threatMap->GetUnitThreat(unit);
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
 	float metric = std::numeric_limits<float>::max();

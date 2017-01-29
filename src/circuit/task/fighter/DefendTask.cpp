@@ -22,8 +22,8 @@ namespace circuit {
 using namespace springai;
 
 CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, float radius,
-						 FightType check, FightType promote, float maxPower)
-		: ISquadTask(mgr, FightType::DEFEND, 1.f)
+						 FightType check, FightType promote, float maxPower, float powerMod)
+		: ISquadTask(mgr, FightType::DEFEND, powerMod)
 		, radius(radius)
 		, check(check)
 		, promote(promote)
@@ -79,7 +79,7 @@ void CDefendTask::Update()
 			for (CCircuitUnit* unit : tmpUnits) {
 				manager->AssignTask(unit, task);
 			}
-//			manager->DoneTask(this);  // NOTE: RemoveAssignee will abort task
+//			manager->DoneTask(this);  // NOTE: RemoveAssignee() will abort task
 			return;
 		}
 

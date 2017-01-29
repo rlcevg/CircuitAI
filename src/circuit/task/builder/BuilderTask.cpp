@@ -59,6 +59,7 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 		, facing(UNIT_COMMAND_BUILD_NO_FACING)
 		, nextTask(nullptr)
 		, buildFails(0)
+		, unitIt(units.end())
 {
 	savedIncome = manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome();
 }
@@ -84,6 +85,9 @@ void IBuilderTask::AssignTo(CCircuitUnit* unit)
 
 void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 {
+	if ((units.find(unit) == unitIt) && (unitIt != units.end())) {
+		++unitIt;
+	}
 	IUnitTask::RemoveAssignee(unit);
 
 	HideAssignee(unit);
@@ -185,7 +189,11 @@ void IBuilderTask::Update()
 //	}
 
 	// FIXME: Replace const 1000.0f with build time?
-	if ((cost > 1000.0f) && (circuit->GetEconomyManager()->GetAvgMetalIncome() < savedIncome * 0.6f)) {
+	CEconomyManager* em = circuit->GetEconomyManager();
+	if ((cost > 1000.0f) &&
+		(em->GetAvgMetalIncome() < savedIncome * 0.6f) &&
+		(em->GetAvgMetalIncome() * 2.0f < em->GetMetalPull()))
+	{
 		manager->AbortTask(this);
 		return;
 	}
@@ -194,7 +202,12 @@ void IBuilderTask::Update()
 	if (units.empty()) {
 		return;
 	}
-	CCircuitUnit* unit = *units.begin();
+	if (unitIt == units.end()) {
+		unitIt = units.begin();
+	}
+	CCircuitUnit* unit = *unitIt;
+	++unitIt;
+
 	const float sqDist = unit->GetPos(circuit->GetLastFrame()).SqDistance2D(GetPosition());
 	if (sqDist <= SQUARE(unit->GetCircuitDef()->GetBuildDistance())) {
 		return;
@@ -274,6 +287,16 @@ void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 	} else {
 		RemoveAssignee(unit);
 	}
+}
+
+void IBuilderTask::Activate()
+{
+	lastTouched = manager->GetCircuit()->GetLastFrame();
+}
+
+void IBuilderTask::Deactivate()
+{
+	lastTouched = -1;
 }
 
 void IBuilderTask::SetTarget(CCircuitUnit* unit)

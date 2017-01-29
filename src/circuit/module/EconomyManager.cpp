@@ -404,7 +404,7 @@ void CEconomyManager::UpdateResourceIncome()
 	energyIncome /= INCOME_SAMPLES;
 
 	metalProduced += metalIncome * metalMod;
-	metalUsed += /*std::min(economy->GetCurrent(metalRes) + metalIncome, */economy->GetPull(metalRes)/*)*/;
+	metalUsed += economy->GetUsage(metalRes);
 }
 
 float CEconomyManager::GetMetalPull()
@@ -562,7 +562,7 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 
 	std::vector<Feature*> features;
 	if (isNear) {
-		const float distance = unit->GetUnit()->GetMaxSpeed() * FRAMES_PER_SEC * ((GetMetalPull() * 0.8f > GetAvgMetalIncome()) ? 300 : 30);
+		const float distance = unit->GetCircuitDef()->GetSpeed() * FRAMES_PER_SEC * ((GetMetalPull() * 0.8f > GetAvgMetalIncome()) ? 300 : 30);
 		features = std::move(circuit->GetCallback()->GetFeaturesIn(position, distance));
 	} else {
 		features = std::move(circuit->GetCallback()->GetFeatures());
@@ -1062,6 +1062,8 @@ void CEconomyManager::ReadConfig()
 
 void CEconomyManager::Init()
 {
+	metalProduced = economy->GetCurrent(metalRes) * metalMod;
+
 	CAllyTeam* allyTeam = circuit->GetAllyTeam();
 	energyGrid = allyTeam->GetEnergyLink().get();
 
@@ -1150,7 +1152,7 @@ void CEconomyManager::UpdateEconomy()
 	const float storMetal = GetStorage(metalRes);
 	isMetalEmpty = curMetal < storMetal * 0.2f;
 	isMetalFull = curMetal > storMetal * 0.8f;
-	isEnergyStalling = std::min(GetAvgMetalIncome() - GetMetalPull(), .0f) * 1.02f > std::min(GetAvgEnergyIncome() - GetEnergyPull(), .0f);
+	isEnergyStalling = std::min(GetAvgMetalIncome() - GetMetalPull(), .0f)/* * 0.98f*/ > std::min(GetAvgEnergyIncome() - GetEnergyPull(), .0f);
 	const float curEnergy = economy->GetCurrent(energyRes);
 	const float storEnergy = GetStorage(energyRes);
 	isEnergyEmpty = curEnergy < storEnergy * 0.1f;
