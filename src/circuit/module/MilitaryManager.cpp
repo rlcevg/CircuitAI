@@ -100,7 +100,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		}
 		this->circuit->AddActionUnit(unit);
 
-		AddPower(unit);
+		AddArmyCost(unit);
 
 		TRY_UNIT(this->circuit, unit,
 			if (unit->GetCircuitDef()->IsAbleToFly()) {
@@ -134,7 +134,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			return;
 		}
 
-		DelPower(unit);
+		DelArmyCost(unit);
 	};
 
 	/*
@@ -827,6 +827,39 @@ void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
 	}
 }
 
+void CMilitaryManager::AddArmyCost(CCircuitUnit* unit)
+{
+	army.insert(unit);
+
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	const float cost = cdef->GetCost();
+	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_));
+	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
+		if (cdef->IsRoleAny(CCircuitDef::GetMask(i))) {
+			roleInfos[i].cost += cost;
+			roleInfos[i].units.insert(unit);
+		}
+	}
+	armyCost += cost;
+}
+
+void CMilitaryManager::DelArmyCost(CCircuitUnit* unit)
+{
+	army.erase(unit);
+
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	const float cost = cdef->GetCost();
+	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_));
+	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
+		if (cdef->IsRoleAny(CCircuitDef::GetMask(i))) {
+			float& metal = roleInfos[i].cost;
+			metal = std::max(metal - cost, .0f);
+			roleInfos[i].units.erase(unit);
+		}
+	}
+	armyCost = std::max(armyCost - cost, .0f);
+}
+
 float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
 {
 	const SRoleInfo& info = roleInfos[cdef->GetMainRole()];
@@ -1198,39 +1231,6 @@ void CMilitaryManager::UpdateFight()
 			n--;
 		}
 	}
-}
-
-void CMilitaryManager::AddPower(CCircuitUnit* unit)
-{
-	army.insert(unit);
-
-	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float cost = cdef->GetCost();
-	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_));
-	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
-		if (cdef->IsRoleAny(CCircuitDef::GetMask(i))) {
-			roleInfos[i].cost += cost;
-			roleInfos[i].units.insert(unit);
-		}
-	}
-	armyCost += cost;
-}
-
-void CMilitaryManager::DelPower(CCircuitUnit* unit)
-{
-	army.erase(unit);
-
-	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float cost = cdef->GetCost();
-	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_));
-	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
-		if (cdef->IsRoleAny(CCircuitDef::GetMask(i))) {
-			float& metal = roleInfos[i].cost;
-			metal = std::max(metal - cost, .0f);
-			roleInfos[i].units.erase(unit);
-		}
-	}
-	armyCost = std::max(armyCost - cost, .0f);
 }
 
 /*

@@ -331,11 +331,13 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 void CBuilderManager::AddBuildPower(CCircuitUnit* unit)
 {
 	buildPower += unit->GetCircuitDef()->GetBuildSpeed();
+	circuit->GetMilitaryManager()->AddArmyCost(unit);
 }
 
 void CBuilderManager::DelBuildPower(CCircuitUnit* unit)
 {
 	buildPower -= unit->GetCircuitDef()->GetBuildSpeed();
+	circuit->GetMilitaryManager()->DelArmyCost(unit);
 }
 
 const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType type) const
@@ -614,7 +616,23 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 
 IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 {
-	return unit->GetCircuitDef()->IsAttrComm() ? MakeCommTask(unit) : MakeBuilderTask(unit);
+	const CCircuitDef* cdef = unit->GetCircuitDef();
+	if (cdef->IsAttrComm()) {  // hide commander?
+		const CSetupManager::SCommInfo::SHide* hide = circuit->GetSetupManager()->GetHide(cdef);
+		if (hide != nullptr) {
+			if (circuit->GetLastFrame() < hide->frame) {
+				return MakeBuilderTask(unit);
+			}
+			CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
+			if (militaryManager->GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat) {
+				return MakeCommTask(unit);
+			}
+			const bool isHide = (hide->isAir) && (militaryManager->GetEnemyCost(CCircuitDef::RoleType::AIR) > 1.f);
+			return isHide ? MakeCommTask(unit) : MakeBuilderTask(unit);
+		}
+	}
+
+	return MakeBuilderTask(unit);
 }
 
 void CBuilderManager::AbortTask(IUnitTask* task)
@@ -790,13 +808,9 @@ void CBuilderManager::Init()
 
 IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 {
-	int frame = circuit->GetLastFrame();
-	if (frame < FRAMES_PER_SEC * 300) {
-		return MakeBuilderTask(unit);
-	}
-
 	circuit->GetThreatMap()->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
+	int frame = circuit->GetLastFrame();
 	AIFloat3 pos = unit->GetPos(frame);
 
 	CEconomyManager* economyManager = circuit->GetEconomyManager();

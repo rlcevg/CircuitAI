@@ -152,8 +152,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			if (!isStart) {
 				return;
 			}
-			int morphSec = this->circuit->GetSetupManager()->GetMorphFrame(unit->GetCircuitDef());
-			if (morphSec >= 0) {
+			int morphFrame = this->circuit->GetSetupManager()->GetMorphFrame(unit->GetCircuitDef());
+			if (morphFrame >= 0) {
 				this->circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>([this, unitId]() {
 					// Force commander level 0 to morph
 					CCircuitUnit* unit = this->circuit->GetTeamUnit(unitId);
@@ -164,7 +164,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 							unit->Upgrade();  // Morph();
 						}
 					}
-				}), FRAMES_PER_SEC * morphSec);
+				}), morphFrame);
 			}
 		}), FRAMES_PER_SEC);
 	};
@@ -882,7 +882,6 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 	if ((storeDef == nullptr) ||
 		!builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() ||
 		(GetStorage(metalRes) > 10 * metalIncome) ||
-		(storeDef->GetCount() >= 5) ||
 		!storeDef->IsAvailable())
 	{
 		return UpdatePylonTasks();

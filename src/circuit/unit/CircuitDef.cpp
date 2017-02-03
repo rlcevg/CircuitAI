@@ -361,7 +361,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		// NOTE: minRange should be fine
 		for (RangeType rt : {RangeType::AIR, RangeType::LAND, RangeType::WATER}) {
 			float& mr = maxRange[static_cast<RangeT>(rt)];
-			mr = std::min(mr, 400.0f);
+			mr = std::min(mr, 300.0f);
 		}
 	}
 

@@ -79,6 +79,7 @@ public:
 	}
 	void AddEnemyCost(const CEnemyUnit* e);
 	void DelEnemyCost(const CEnemyUnit* e);
+	float GetEnemyThreat() const { return enemyThreat; }
 	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return enemyGroups; }
 	const springai::AIFloat3& GetEnemyPos() const { return enemyPos; }
 	void UpdateEnemyGroups() { KMeansIteration(); }
@@ -86,6 +87,8 @@ public:
 	const std::set<CCircuitUnit*>& GetRoleUnits(CCircuitDef::RoleType type) const {
 		return roleInfos[static_cast<CCircuitDef::RoleT>(type)].units;
 	}
+	void AddArmyCost(CCircuitUnit* unit);
+	void DelArmyCost(CCircuitUnit* unit);
 	float GetArmyCost() const { return armyCost; }
 	float RoleProbability(const CCircuitDef* cdef) const;
 	bool IsNeedBigGun(const CCircuitDef* cdef) const;
@@ -108,8 +111,6 @@ private:
 	void UpdateIdle();
 	void UpdateFight();
 
-	void AddPower(CCircuitUnit* unit);
-	void DelPower(CCircuitUnit* unit);
 	void KMeansIteration();
 
 	Handlers2 createdHandler;

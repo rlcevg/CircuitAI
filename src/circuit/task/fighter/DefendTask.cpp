@@ -27,7 +27,7 @@ CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, float radi
 		, radius(radius)
 		, check(check)
 		, promote(promote)
-		, maxPower(maxPower)
+		, maxPower(maxPower * powerMod)
 {
 	this->position = position;
 }

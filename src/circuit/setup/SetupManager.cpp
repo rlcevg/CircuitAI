@@ -428,10 +428,12 @@ void CSetupManager::ReadConfig()
 			}
 		}
 
-		SMorph& morph = morphs[commName];
-		morph.frame = comm.get("morph_after", -1).asInt();
+		const Json::Value& mrph = comm["upgrade"];
+		SCommInfo& commInfo = commInfos[commName];
+		SCommInfo::SMorph& morph = commInfo.morph;
+		morph.frame = mrph.get("time", -1).asInt() * FRAMES_PER_SEC;
 
-		const Json::Value& upgr = comm["upgrade"];
+		const Json::Value& upgr = mrph["module"];
 		morph.modules.reserve(upgr.size());
 		for (const Json::Value& lvl : upgr) {
 			std::vector<float> mdls;
@@ -440,6 +442,12 @@ void CSetupManager::ReadConfig()
 			}
 			morph.modules.push_back(mdls);
 		}
+
+		const Json::Value& hhdd = comm["hide"];
+		SCommInfo::SHide& hide = commInfo.hide;
+		hide.frame = hhdd.get("time", -1).asInt() * FRAMES_PER_SEC;
+		hide.threat = hhdd.get("threat", 0.f).asFloat();
+		hide.isAir = hhdd.get("air", false).asBool();
 	}
 
 	if (!commChoices.empty()) {
@@ -460,9 +468,9 @@ void CSetupManager::ReadConfig()
 bool CSetupManager::HasModules(const CCircuitDef* cdef, unsigned level) const
 {
 	std::string name = cdef->GetUnitDef()->GetName();
-	for (auto& kv : morphs) {
+	for (auto& kv : commInfos) {
 		if (name.find(kv.first) != std::string::npos) {
-			return kv.second.modules.size() > level;
+			return kv.second.morph.modules.size() > level;
 		}
 	}
 	return false;
@@ -471,22 +479,22 @@ bool CSetupManager::HasModules(const CCircuitDef* cdef, unsigned level) const
 const std::vector<float>& CSetupManager::GetModules(const CCircuitDef* cdef, unsigned level) const
 {
 	std::string name = cdef->GetUnitDef()->GetName();
-	for (auto& kv : morphs) {
+	for (auto& kv : commInfos) {
 		if (name.find(kv.first) != std::string::npos) {
-			const std::vector<std::vector<float>>& modules = kv.second.modules;
+			const std::vector<std::vector<float>>& modules = kv.second.morph.modules;
 			return modules[std::min<unsigned>(level, modules.size() - 1)];
 		}
 	}
-	const std::vector<std::vector<float>>& modules = morphs.begin()->second.modules;
+	const std::vector<std::vector<float>>& modules = commInfos.begin()->second.morph.modules;
 	return modules[std::min<unsigned>(level, modules.size() - 1)];
 }
 
 int CSetupManager::GetMorphFrame(const CCircuitDef* cdef) const
 {
 	std::string name = cdef->GetUnitDef()->GetName();
-	for (auto& kv : morphs) {
+	for (auto& kv : commInfos) {
 		if (name.find(kv.first) != std::string::npos) {
-			return kv.second.frame;
+			return kv.second.morph.frame;
 		}
 	}
 	return -1;
@@ -517,6 +525,17 @@ const std::vector<CCircuitDef::RoleType>* CSetupManager::GetOpener(const CCircui
 		}
 	}
 	return &its->second.defaultStart;
+}
+
+const CSetupManager::SCommInfo::SHide* CSetupManager::GetHide(const CCircuitDef* cdef) const
+{
+	std::string name = cdef->GetUnitDef()->GetName();
+	for (auto& kv : commInfos) {
+		if (name.find(kv.first) != std::string::npos) {
+			return &kv.second.hide;
+		}
+	}
+	return nullptr;
 }
 
 void CSetupManager::Welcome() const

@@ -29,6 +29,18 @@ class CAllyTeam;
 class CSetupManager {
 public:
 	enum class StartPosType: char {METAL_SPOT = 0, MIDDLE = 1, RANDOM = 2};
+	// TODO: class CCommander;
+	struct SCommInfo {
+		struct SMorph {
+			std::vector<std::vector<float>> modules;
+			int frame;
+		} morph;
+		struct SHide {
+			int frame;
+			float threat;
+			bool isAir;
+		} hide;
+	};
 
 	CSetupManager(CCircuitAI* circuit, CSetupData* setupData);
 	virtual ~CSetupManager();
@@ -63,6 +75,7 @@ public:
 	const std::vector<float>& GetModules(const CCircuitDef* cdef, unsigned level) const;
 	int GetMorphFrame(const CCircuitDef* cdef) const;
 	const std::vector<CCircuitDef::RoleType>* GetOpener(const CCircuitDef* facDef) const;
+	const SCommInfo::SHide* GetHide(const CCircuitDef* cdef) const;
 
 	void Welcome() const;
 
@@ -85,11 +98,7 @@ private:
 	float fullShield;
 
 	CCircuitDef* commChoice;
-	struct SMorph {
-		std::vector<std::vector<float>> modules;
-		int frame;
-	};
-	std::map<std::string, SMorph> morphs;
+	std::map<std::string, SCommInfo> commInfos;
 
 	struct SOpener {
 		SOpener(float p, const std::vector<CCircuitDef::RoleType>& q) : prob(p), queue(q) {}
