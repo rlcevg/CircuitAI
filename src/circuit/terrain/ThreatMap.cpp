@@ -15,6 +15,9 @@
 #include "Mod.h"
 #include "Map.h"
 
+//#undef NDEBUG
+#include <cassert>
+
 namespace circuit {
 
 using namespace springai;
@@ -340,6 +343,8 @@ bool CThreatMap::EnemyDestroyed(CEnemyUnit* enemy)
 
 float CThreatMap::GetAllThreatAt(const AIFloat3& position) const
 {
+	assert((position.x >= 0) && (position.x < CTerrainManager::GetTerrainWidth()) &&
+		   (position.z >= 0) && (position.z < CTerrainManager::GetTerrainHeight()));
 	const int z = (int)position.z / squareSize;
 	const int x = (int)position.x / squareSize;
 	const int index = z * width + x;
@@ -364,6 +369,8 @@ void CThreatMap::SetThreatType(CCircuitUnit* unit)
 
 float CThreatMap::GetThreatAt(const AIFloat3& position) const
 {
+	assert((position.x >= 0) && (position.x < CTerrainManager::GetTerrainWidth()) &&
+		   (position.z >= 0) && (position.z < CTerrainManager::GetTerrainHeight()));
 	const int z = (int)position.z / squareSize;
 	const int x = (int)position.x / squareSize;
 	return threatArray[z * width + x] - THREAT_BASE;
@@ -372,6 +379,8 @@ float CThreatMap::GetThreatAt(const AIFloat3& position) const
 float CThreatMap::GetThreatAt(CCircuitUnit* unit, const AIFloat3& position) const
 {
 	assert(unit != nullptr);
+	assert((position.x >= 0) && (position.x < CTerrainManager::GetTerrainWidth()) &&
+		   (position.z >= 0) && (position.z < CTerrainManager::GetTerrainHeight()));
 	const int z = (int)position.z / squareSize;
 	const int x = (int)position.x / squareSize;
 	if (unit->GetCircuitDef()->IsAbleToFly()) {

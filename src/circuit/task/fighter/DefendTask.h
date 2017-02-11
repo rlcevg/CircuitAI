@@ -28,10 +28,9 @@ public:
 	void SetMaxPower(float power) { maxPower = power * powerMod; }
 	void SetWantedTarget(CEnemyUnit* enemy) { SetTarget(enemy); }
 
-	FightType GetCheck() const { return check; }
+	FightType GetPromote() const { return promote; }
 
 protected:
-	FightType GetPromote() const { return promote; }
 	float GetMaxPower() const { return maxPower; }
 
 private:

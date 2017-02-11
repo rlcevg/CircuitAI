@@ -587,8 +587,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 		if (totalCost < maxCost) {
 			closestPoint->cost += defCost;
 			bool isFirst = (parentTask == nullptr);
-//			IBuilderTask::Priority priority = isFirst ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
-			IBuilderTask::Priority priority = IBuilderTask::Priority::NOW;
+			IBuilderTask::Priority priority = isFirst ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
 			const AIFloat3& buildPos = defDef->IsAttacker() ? closestPoint->position : backPos;
 			IBuilderTask* task = builderManager->EnqueueTask(priority, defDef, buildPos,
 					IBuilderTask::BuildType::DEFENCE, defCost, SQUARE_SIZE * 32, isFirst);
@@ -934,7 +933,7 @@ void CMilitaryManager::UpdateDefenceTasks()
 			dt->SetPosition(clusters[index].geoCentr);
 		}
 
-		if (dt->GetCheck() != IFighterTask::FightType::ATTACK) {
+		if (dt->GetPromote() != IFighterTask::FightType::ATTACK) {
 			continue;
 		}
 		int groupIdx = -1;

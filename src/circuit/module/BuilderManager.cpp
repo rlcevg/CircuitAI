@@ -601,6 +601,9 @@ void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
 
 bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& position)
 {
+	if (!utils::is_valid(position)) {  // any-area task
+		return true;
+	}
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	for (auto& kv : buildAreas) {
 		for (auto& kvw : kv.second) {
