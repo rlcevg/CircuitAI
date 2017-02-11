@@ -819,7 +819,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	terrainManager->CorrectPosition(pos);
+//	CTerrainManager::CorrectPosition(pos);
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
@@ -921,7 +921,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	terrainManager->CorrectPosition(pos);
+//	CTerrainManager::CorrectPosition(pos);
 	pathfinder->SetMapData(unit, threatMap, frame);
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;

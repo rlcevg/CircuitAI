@@ -129,7 +129,7 @@ void IRepairTask::SetTarget(CCircuitUnit* unit)
 		target = circuit->GetTeamUnit(unit->GetId());
 		cost = unit->GetCircuitDef()->GetCost();
 		position = buildPos = unit->GetPos(circuit->GetLastFrame());
-		circuit->GetTerrainManager()->CorrectPosition(buildPos);  // position will contain non-corrected value
+//		CTerrainManager::CorrectPosition(buildPos);  // position will contain non-corrected value
 		targetId = unit->GetId();
 //		buildDef = unit->GetCircuitDef();
 		if (!unit->GetUnit()->IsBeingBuilt()) {

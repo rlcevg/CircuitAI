@@ -146,7 +146,7 @@ ISquadTask* ISquadTask::GetMergeTask() const
 	STerrainMapArea* area = leader->GetArea();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	terrainManager->CorrectPosition(pos);
+//	CTerrainManager::CorrectPosition(pos);
 	pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
 	const float maxSpeed = lowestSpeed / pathfinder->GetSquareSize() * THREAT_BASE;
 	const float maxDistCost = MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC);
@@ -197,7 +197,7 @@ bool ISquadTask::IsMustRegroup()
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();;
 	for (CCircuitUnit* unit : units) {
 		AIFloat3 pos = unit->GetPos(frame);
-		terrainManager->CorrectPosition(pos);
+//		CTerrainManager::CorrectPosition(pos);
 		if (terrainManager->CanMoveToPos(unit->GetArea(), pos)) {
 			validUnits.push_back(unit);
 		}

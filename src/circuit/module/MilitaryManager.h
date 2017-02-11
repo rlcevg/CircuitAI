@@ -49,7 +49,7 @@ public:
 
 	IFighterTask* EnqueueTask(IFighterTask::FightType type);
 	IFighterTask* EnqueueDefend(IFighterTask::FightType promote, float power);
-	IFighterTask* EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote, float power);
+	IFighterTask* EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote);
 	IFighterTask* EnqueueGuard(CCircuitUnit* vip);
 	CRetreatTask* EnqueueRetreat();
 private:

@@ -154,11 +154,11 @@
 			// 0-8m Opening - Dart, Riot & Slasher
 			"tier0": [ 0.00,     0.33,     0.55,       0.12,      0.00,       0.00,      0.00,         0.00,      0.00,      0.00],
 			// 9-16m Early Game - Slasher/Riot with an occasional Ravager
-			"tier1": [ 0.10,     0.22,     0.56,       0.10,      0.00,       0.02,      0.00,         0.00,      0.00,      0.00],
+			"tier1": [ 0.10,     0.22,     0.58,       0.10,      0.00,       0.00,      0.00,         0.00,      0.00,      0.00],
 			// 17-24m Expanding - Less scouting and Riot, more Ravager
-			"tier2": [ 0.10,     0.10,     0.39,       0.13,      0.03,       0.22,      0.00,         0.03,      0.00,      0.00],
+			"tier2": [ 0.10,     0.10,     0.39,       0.23,      0.05,       0.10,      0.00,         0.03,      0.00,      0.00],
 			// 25-32m Expansions meet - Begin serious Ravager production
-			"tier3": [ 0.10,     0.10,     0.33,       0.11,      0.04,       0.26,      0.02,         0.04,      0.00,      0.00],
+			"tier3": [ 0.10,     0.10,     0.33,       0.21,      0.04,       0.16,      0.02,         0.04,      0.00,      0.00],
 			// 33m -40m Solid Fronts - 	Overdrive Ravager production
 			"tier4": [ 0.12,     0.10,     0.37,       0.00,      0.05,       0.29,      0.02,         0.05,      0.00,      0.00],
 			// 41m - 56m Mid Game - Drop Slashers, more Artillery
@@ -230,7 +230,7 @@
 	},
 
 	"factorytank": {
-		"importance": [1.05, 1.8],
+		"importance": [1.04, 1.8],
 		"require_energy": false,
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72],
@@ -344,10 +344,10 @@
 "quota": {
 	"scout": 2,  // max scout units out of raiders
 	"raid": [5.0, 8.0],  // [<min>, <avg>] power of raider squad
-	"attack": 15.0,  // min power of attack group
+	"attack": 20.0,  // min power of attack group
 	"def_rad": 550,  // defence radius
 	"thr_mod": {
-		"attack": [1.0, 1.25],  // [<min>, <max>] enemy threat modifier for target selection of attack task
+		"attack": [1.25, 2.0],  // [<min>, <max>] enemy threat modifier for target selection of attack task
 		"defence": [0.65, 0.65]  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
 	}
 },
@@ -676,8 +676,9 @@
 	},
 	"corraid": {
 		"role": ["assault"],
-		"dmg_mod": 1.2,
-		"retreat": 0.6  // slow to turn around
+		"attribute": ["melee"],
+		"dmg_mod": 1.1,
+		"retreat": 0.67  // slow to turn around
 	},
 	"capturecar": {
 		"role": ["skirmish"],
@@ -816,7 +817,7 @@
 	},
 	"corhurc2": {
 		"role": ["bomber", "air"],
-		"fire_state": "hold",
+		"limit": 0,
 		"retreat": 0.6
 	},
 	"armstiletto_laser": {
@@ -827,7 +828,6 @@
 	},
 	"armcybr": {
 		"role": ["bomber", "air"],
-		"fire_state": "hold",
 		"retreat": 0.6,
 		"dmg_mod": 1.5
 	},
@@ -856,16 +856,16 @@
 		"role": ["riot"],
 		"attribute": ["support"],
 		"limit": 1,
-		"retreat": 0.8
+		"retreat": 0.7
 	},
 	"correap": {
-		"role": ["assault", "heavy", "assault"],
+		"role": ["assault", "heavy", "anti_heavy", "assault"],
 		"attribute": ["melee"],
 		"retreat": 0.65,
 		"dmg_mod": 1.14
 	},
 	"corgol": {
-		"role": ["heavy", "assault", "heavy"],
+		"role": ["heavy", "anti_heavy", "heavy"],
 		"retreat": 0.55,
 		"dmg_mod": 2.0
 	},
@@ -1103,6 +1103,13 @@
 		"max_percent": 0.25,
 		"eps_step": 0.02
 	},
+	"builder": {
+		"vs":         ["static", "artillery", "support", "assault"],
+		"ratio":      [ 0.5,	0.5,	0.50,	0.25],
+		"importance": [ 15.0,	15.0,	15.0,	25.0],
+		"max_percent": 0.20,
+		"eps_step": 0.00
+	},
 	"anti_air": {
 		"vs":         ["air"],
 		"ratio":      [ 0.67],
@@ -1126,7 +1133,7 @@
 	},
 	"heavy": {
 		"vs":         ["heavy", "static", "support"],
-		"ratio":      [ 0.6,     0.6,	1.5],
+		"ratio":      [ 0.3,     0.6,	1.5],
 		"importance": [ 50.0,    25.0,	30.0],
 		"max_percent": 0.66,
 		"eps_step": 0.01
@@ -1147,8 +1154,8 @@
 	},
 	"assault": {
 		"vs":         ["riot", "static", "assault", "anti_air", "support"],
-		"ratio":      [ 2.00,   2.50,     2.50,      2.00,		1.00],
-		"importance": [ 25.0,   25.0,     30.0,      25.0,		50.0],
+		"ratio":      [ 2.00,   3.00,     2.50,      2.00,		1.00],
+		"importance": [ 30.0,   25.0,     30.0,      25.0,		50.0],
 		"max_percent": 0.80,
 		"eps_step": 0.02
 	},
@@ -1197,7 +1204,7 @@
 			"armfus": [4],
 			"armwin": [20]
 		},
-		"factor": 0.54,  // income factor for energy
+		"factor": 0.50,  // income factor for energy
 
 		"pylon": ["armestor", "armsolar", "armwin"]
 	},
@@ -1207,7 +1214,7 @@
 	"eps_step": 0.13,
 
 	// Mobile buildpower to metal income ratio
-	"buildpower": 1.3,
+	"buildpower": 1.25,
 	// Metal excess to income ratio, -1 to disable
 	"excess": -1.0,
 
@@ -1309,9 +1316,9 @@
 			"upgrade": {
 				"time": 120,  // Force-morph delay, in seconds
 				"module": [  // List of dynamic module IDs
-					[13, 30],  // shotgun, radar
-					[34, 34],  // companion drones
-					[15, 35, 35],  // sniper, battle drones
+					[13],  // shotgun
+					[31, 42],  // Cloak, Nano
+					[15, 41, 37],  // sniper, range, armor
 					[35, 35, 35],  // battle drones
 					[35, 35, 35],  // battle drones
 					[34, 34, 34],  // companion drones
@@ -1333,8 +1340,8 @@
 
 			// Commander hides if ("time" elapsed) and ("threat" exceeds value or enemy has "air")
 			"hide": {
-				"time": 300,  // seconds
-				"threat": 20,
+				"time": 200,  // seconds
+				"threat": 10,
 				"air": true
 			}
 		},
@@ -1394,9 +1401,9 @@
 			"upgrade": {
 				"time": 90,  // Force-morph delay, in seconds
 				"module": [  // List of dynamic module IDs
-					[13, 30],  // shotgun, radar
-					[34, 34],  // companion drones
-					[15, 35, 35],  // sniper, battle drones
+					[7, 37],  // Machinegun, armor
+					[32, 36],  // Cloak, Regen
+					[19, 38, 39],  // disruptor bomb, high density, damage boost
 					[35, 35, 35],  // battle drones
 					[35, 35, 35],  // battle drones
 					[34, 34, 34],  // companion drones
@@ -1480,10 +1487,10 @@
 				"time": 60,  // Force-morph delay, in seconds
 				"module": [  // List of dynamic module IDs
 					[11],  // Riot
-					[36, 37],  // health
+					[24, 37],  // health
 					[11, 41, 41],  // Double Riot + range
 					[38, 41, 41],  // HP + range
-					[24, 41, 36],  // shield, regen, range
+					[36, 41, 36],  // shield, regen, range
 					[41, 41, 41],  // range
 					[39, 39, 39],  // dmg
 					[41, 41, 41],  // range
@@ -1501,8 +1508,8 @@
 
 			// Commander hides if ("time" elapsed) and ("threat" exceeds value or enemy has "air")
 			"hide": {
-				"time": 300,  // seconds
-				"threat": 20,
+				"time": 500,  // seconds
+				"threat": 30,
 				"air": true
 			}
 		},
@@ -1562,13 +1569,13 @@
 			"upgrade": {
 				"time": 60,  // Force-morph delay, in seconds
 				"module": [  // List of dynamic module IDs
-					[13, 30],  // shotgun, radar
-					[34, 34],  // companion drones
-					[15, 35, 35],  // sniper, battle drones
-					[35, 35, 35],  // battle drones
-					[35, 35, 35],  // battle drones
-					[34, 34, 34],  // companion drones
-					[34, 34, 34],  // companion drones
+					[4],  // beam laser
+					[31, 36],  // cloak, regen
+					[37, 40, 36],  // Dgun, speed, speed
+					[37, 40, 36],  // armor, speed, regen
+					[37, 40, 36],  // armor, speed, regen
+					[37, 40, 36],  // armor, speed, regen
+					[37, 40, 36],  // armor, speed, regen
 					[40, 40, 40],  // speed
 					[40, 40, 40],  // speed
 					[40, 40, 37],  // speed, armour
@@ -1586,7 +1593,7 @@
 
 			// Commander hides if ("time" elapsed) and ("threat" exceeds value or enemy has "air")
 			"hide": {
-				"time": 300,  // seconds
+				"time": 400,  // seconds
 				"threat": 20,
 				"air": true
 			}

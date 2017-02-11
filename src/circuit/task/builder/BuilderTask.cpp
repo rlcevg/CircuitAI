@@ -515,6 +515,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 					}
 				}
 				AIFloat3 pos = buildPos + offset;
+				CTerrainManager::CorrectPosition(pos);
 				pos = terrainManager->GetBuildPosition(bdef, pos);
 
 				if (parent == nullptr) {

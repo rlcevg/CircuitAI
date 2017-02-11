@@ -204,8 +204,8 @@ float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos
 {
 	path.clear();
 
-	terrainData->CorrectPosition(startPos);
-	terrainData->CorrectPosition(endPos);
+	CTerrainData::CorrectPosition(startPos);
+	CTerrainData::CorrectPosition(endPos);
 
 	float pathCost = 0.0f;
 
@@ -241,8 +241,8 @@ float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos
 {
 	path.clear();
 
-	terrainData->CorrectPosition(startPos);
-	terrainData->CorrectPosition(endPos);
+	CTerrainData::CorrectPosition(startPos);
+	CTerrainData::CorrectPosition(endPos);
 
 	float pathCost = 0.0f;
 
@@ -279,7 +279,7 @@ float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos
  */
 float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius)
 {
-	terrainData->CorrectPosition(endPos);
+	CTerrainData::CorrectPosition(endPos);
 
 	float pathCost = 0.0f;
 
@@ -300,7 +300,7 @@ float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloa
  */
 float CPathFinder::PathCostDirect(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius)
 {
-	terrainData->CorrectPosition(endPos);
+	CTerrainData::CorrectPosition(endPos);
 
 	float pathCost = -1.0f;
 
@@ -407,7 +407,7 @@ float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRan
 	for (unsigned int i = 0; i < possibleTargets.size(); i++) {
 		AIFloat3& f = possibleTargets[i];
 
-		terrainData->CorrectPosition(f);
+		CTerrainData::CorrectPosition(f);
 		void* node = Pos2Node(f);
 		NSMicroPather::PathNode* pn = micropather->GetNode((size_t)node);
 		if (pn->isTarget) {
@@ -432,7 +432,7 @@ float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRan
 		micropather->GetNode((size_t)node)->isTarget = 0;
 	}
 
-	terrainData->CorrectPosition(startPos);
+	CTerrainData::CorrectPosition(startPos);
 
 	if (micropather->FindBestPathToAnyGivenPoint(Pos2Node(startPos), endNodes, nodeTargets, &path, &pathCost) == CMicroPather::SOLVED) {
 		posPath.reserve(path.size());

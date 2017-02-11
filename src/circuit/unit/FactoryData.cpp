@@ -111,7 +111,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 
 	std::function<bool (CCircuitDef*)> predicate;
 	bool isPosValid = utils::is_valid(position);
-	terrainManager->CorrectPosition(position);
+//	CTerrainManager::CorrectPosition(position);
 	if (isPosValid) {
 		predicate = [position, terrainManager](CCircuitDef* cdef) {
 			return terrainManager->CanBeBuiltAt(cdef, position);

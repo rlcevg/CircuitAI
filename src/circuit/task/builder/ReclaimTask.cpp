@@ -80,7 +80,7 @@ void CBReclaimTask::Update()
 			Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
 			for (Feature* feature : features) {
 				AIFloat3 featPos = feature->GetPosition();
-				terrainManager->CorrectPosition(featPos);  // Impulsed flying feature
+				CTerrainManager::CorrectPosition(featPos);  // Impulsed flying feature
 				if (!terrainManager->CanBuildAt(unit, featPos)) {
 					continue;
 				}

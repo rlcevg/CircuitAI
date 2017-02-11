@@ -1026,7 +1026,7 @@ STerrainMapArea* CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIF
 
 	// other mobile units & their factories
 	AIFloat3 pos = position;
-	CorrectPosition(pos);
+//	CorrectPosition(pos);
 	int iS = GetSectorIndex(pos);
 
 	STerrainMapArea* area = mobileType->sector[iS].area;
@@ -1056,7 +1056,7 @@ bool CTerrainManager::CanMoveToPos(STerrainMapArea* area, const AIFloat3& destin
 AIFloat3 CTerrainManager::GetBuildPosition(CCircuitDef* cdef, const AIFloat3& position)
 {
 	AIFloat3 pos = position;
-	CorrectPosition(pos);
+//	CorrectPosition(pos);
 	int iS = GetSectorIndex(pos);
 
 	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
@@ -1079,7 +1079,7 @@ AIFloat3 CTerrainManager::GetBuildPosition(CCircuitDef* cdef, const AIFloat3& po
 AIFloat3 CTerrainManager::GetMovePosition(STerrainMapArea* sourceArea, const AIFloat3& position)
 {
 	AIFloat3 pos = position;
-	CorrectPosition(pos);
+//	CorrectPosition(pos);
 	int iS = GetSectorIndex(pos);
 
 	return (sourceArea == nullptr) ? pos : GetClosestSector(sourceArea, iS)->S->position;
@@ -1314,7 +1314,7 @@ void CTerrainManager::UpdateAreaUsers()
 		if (mobileType != nullptr) {
 			// other mobile units & their factories
 			AIFloat3 pos = unit->GetPos(frame);
-			CorrectPosition(pos);
+//			CorrectPosition(pos);
 			int iS = GetSectorIndex(pos);
 
 			area = mobileType->sector[iS].area;

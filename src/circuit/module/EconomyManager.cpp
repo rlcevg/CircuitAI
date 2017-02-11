@@ -577,7 +577,7 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 	float minSqDist = std::numeric_limits<float>::max();
 	for (Feature* feature : features) {
 		AIFloat3 featPos = feature->GetPosition();
-		terrainManager->CorrectPosition(featPos);  // Impulsed flying feature
+		CTerrainManager::CorrectPosition(featPos);  // Impulsed flying feature
 		if (!terrainManager->CanBuildAt(unit, featPos)) {
 			continue;
 		}
@@ -685,6 +685,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			AIFloat3 mapCenter(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
 			buildPos += (buildPos - mapCenter).Normalize2D() * 300.0f * (cost / energyInfos.front().cost);
 			CCircuitDef* bdef = (unit == nullptr) ? bestDef : unit->GetCircuitDef();
+			CTerrainManager::CorrectPosition(buildPos);
 			buildPos = circuit->GetTerrainManager()->GetBuildPosition(bdef, buildPos);
 		}
 	}
@@ -780,6 +781,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 
 			CTerrainManager* terrainManager = circuit->GetTerrainManager();
 			CCircuitDef* bdef = (unit == nullptr) ? factory->GetCircuitDef() : unit->GetCircuitDef();
+			CTerrainManager::CorrectPosition(buildPos);
 			buildPos = terrainManager->GetBuildPosition(bdef, buildPos);
 
 			if (terrainManager->CanBeBuiltAt(assistDef, buildPos) &&
@@ -854,6 +856,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		return nullptr;
 	}
 
+	CTerrainManager::CorrectPosition(buildPos);
 	buildPos = terrainManager->GetBuildPosition(bdef, buildPos);
 
 	if (terrainManager->CanBeBuiltAt(facDef, buildPos) &&

@@ -115,7 +115,7 @@ private:
 
 public:
 	int GetConvertStoP() const { return terrainData->convertStoP; }
-	void CorrectPosition(springai::AIFloat3& position) { terrainData->CorrectPosition(position); }
+	static void CorrectPosition(springai::AIFloat3& position) { CTerrainData::CorrectPosition(position); }
 	STerrainMapArea* GetCurrentMapArea(CCircuitDef* cdef, const springai::AIFloat3& position);
 	int GetSectorIndex(const springai::AIFloat3& position) const { return terrainData->GetSectorIndex(position); }
 	bool CanMoveToPos(STerrainMapArea* area, const springai::AIFloat3& destination);

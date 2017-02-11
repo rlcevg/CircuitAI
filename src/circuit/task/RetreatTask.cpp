@@ -215,7 +215,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		pos.x += (pos.x > centerX) ? size : -size;
 		pos.z += (pos.z > centerZ) ? size : -size;
 		AIFloat3 oldPos = pos;
-		terrainManager->CorrectPosition(pos);
+		CTerrainManager::CorrectPosition(pos);
 		if (oldPos.SqDistance2D(pos) > SQUARE_SIZE * SQUARE_SIZE) {
 			pos = unitPos;
 			pos.x += (pos.x > centerX) ? -size : size;
@@ -269,17 +269,17 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
 		range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
 	}
 
-	circuit->GetTerrainManager()->CorrectPosition(startPos);
+//	CTerrainManager::CorrectPosition(startPos);
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
 	float prevCost = pathfinder->PathCost(startPos, endPos, range);
 	if (isRepairer && repairer->GetCircuitDef()->IsMobile()) {
-		prevCost /= 4;
+		prevCost /= 2;
 	}
 
 	endPos = unit->GetPos(frame);
 	float nextCost = pathfinder->PathCost(startPos, endPos, range);
 	if (unit->GetCircuitDef()->IsMobile()) {
-		nextCost /= 4;
+		nextCost /= 2;
 	}
 
 	if (prevCost > nextCost) {

@@ -554,7 +554,7 @@ CCircuitUnit* CFactoryManager::GetRandomFactory(CCircuitDef* buildDef)
 CCircuitUnit* CFactoryManager::GetClosestFactory(AIFloat3 position)
 {
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	terrainManager->CorrectPosition(position);
+//	CTerrainManager::CorrectPosition(position);
 	int iS = terrainManager->GetSectorIndex(position);
 	CCircuitUnit* factory = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
@@ -574,34 +574,34 @@ CCircuitUnit* CFactoryManager::GetClosestFactory(AIFloat3 position)
 	return factory;
 }
 
-CCircuitDef* CFactoryManager::GetClosestDef(AIFloat3& position, CCircuitDef::RoleType role)
-{
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	terrainManager->CorrectPosition(position);
-	int iS = terrainManager->GetSectorIndex(position);
-	CCircuitDef* roleDef = nullptr;
-	float minSqDist = std::numeric_limits<float>::max();
-	int frame = circuit->GetLastFrame();
-	for (SFactory& fac : factories) {
-		STerrainMapArea* area = fac.unit->GetArea();
-		if ((area != nullptr) && (area->sector.find(iS) == area->sector.end())) {
-			continue;
-		}
-		const AIFloat3& facPos = fac.unit->GetPos(frame);
-		float sqDist = position.SqDistance2D(facPos);
-		if (minSqDist < sqDist) {
-			continue;
-		}
-		const SFactoryDef& facDef = factoryDefs.find(fac.unit->GetCircuitDef()->GetId())->second;
-		CCircuitDef* cdef = facDef.GetRoleDef(role);
-		if (cdef != nullptr) {
-			roleDef = cdef;
-			minSqDist = sqDist;
-			position = facPos;
-		}
-	}
-	return roleDef;
-}
+//CCircuitDef* CFactoryManager::GetClosestDef(AIFloat3& position, CCircuitDef::RoleType role)
+//{
+//	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+//	CTerrainManager::CorrectPosition(position);
+//	int iS = terrainManager->GetSectorIndex(position);
+//	CCircuitDef* roleDef = nullptr;
+//	float minSqDist = std::numeric_limits<float>::max();
+//	int frame = circuit->GetLastFrame();
+//	for (SFactory& fac : factories) {
+//		STerrainMapArea* area = fac.unit->GetArea();
+//		if ((area != nullptr) && (area->sector.find(iS) == area->sector.end())) {
+//			continue;
+//		}
+//		const AIFloat3& facPos = fac.unit->GetPos(frame);
+//		float sqDist = position.SqDistance2D(facPos);
+//		if (minSqDist < sqDist) {
+//			continue;
+//		}
+//		const SFactoryDef& facDef = factoryDefs.find(fac.unit->GetCircuitDef()->GetId())->second;
+//		CCircuitDef* cdef = facDef.GetRoleDef(role);
+//		if (cdef != nullptr) {
+//			roleDef = cdef;
+//			minSqDist = sqDist;
+//			position = facPos;
+//		}
+//	}
+//	return roleDef;
+//}
 
 AIFloat3 CFactoryManager::GetClosestHaven(CCircuitUnit* unit) const
 {

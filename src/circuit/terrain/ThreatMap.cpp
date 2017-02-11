@@ -104,7 +104,6 @@ void CThreatMap::Update()
 //	radarMap = std::move(circuit->GetMap()->GetRadarMap());
 	sonarMap = std::move(circuit->GetMap()->GetSonarMap());
 	losMap = std::move(circuit->GetMap()->GetLosMap());
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 //	currMaxThreat = .0f;
 
 	// account for moving units
@@ -123,7 +122,7 @@ void CThreatMap::Update()
 		}
 	}
 
-	areaData = terrainManager->GetAreaData();
+	areaData = circuit->GetTerrainManager()->GetAreaData();
 
 	for (auto& kv : hostileUnits) {
 		CEnemyUnit* e = kv.second;
@@ -133,7 +132,7 @@ void CThreatMap::Update()
 
 		if (e->IsInRadarOrLOS()) {
 			AIFloat3 pos = e->GetUnit()->GetPos();
-			terrainManager->CorrectPosition(pos);
+			CTerrainManager::CorrectPosition(pos);
 			e->SetPos(pos);
 //		} else {
 //			e->DecayThreat(0.99f);  // decay 0.99^updateNum
@@ -158,7 +157,7 @@ void CThreatMap::Update()
 		}
 		if (e->IsInRadarOrLOS()) {
 			AIFloat3 pos = e->GetUnit()->GetPos();
-			terrainManager->CorrectPosition(pos);
+			CTerrainManager::CorrectPosition(pos);
 			if (pos != e->GetPos()) {
 				DelDecloaker(e);
 				e->SetPos(pos);
@@ -216,7 +215,7 @@ bool CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 		}
 
 		AIFloat3 pos = enemy->GetUnit()->GetPos();
-		circuit->GetTerrainManager()->CorrectPosition(pos);
+		CTerrainManager::CorrectPosition(pos);
 		enemy->SetPos(pos);
 		enemy->SetKnown();
 
@@ -235,7 +234,7 @@ bool CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 	}
 
 	AIFloat3 pos = enemy->GetUnit()->GetPos();
-	circuit->GetTerrainManager()->CorrectPosition(pos);
+	CTerrainManager::CorrectPosition(pos);
 	enemy->SetPos(pos);
 	SetEnemyUnitRange(enemy);
 	enemy->SetThreat(GetEnemyUnitThreat(enemy));
@@ -271,7 +270,7 @@ void CThreatMap::EnemyEnterRadar(CEnemyUnit* enemy)
 		}
 
 		AIFloat3 pos = enemy->GetUnit()->GetPos();
-		circuit->GetTerrainManager()->CorrectPosition(pos);
+		CTerrainManager::CorrectPosition(pos);
 		enemy->SetPos(pos);
 
 		AddDecloaker(enemy);
@@ -289,7 +288,7 @@ void CThreatMap::EnemyEnterRadar(CEnemyUnit* enemy)
 	}
 
 	AIFloat3 pos = enemy->GetUnit()->GetPos();
-	circuit->GetTerrainManager()->CorrectPosition(pos);
+	CTerrainManager::CorrectPosition(pos);
 	enemy->SetPos(pos);
 	if (isNew) {  // unknown enemy enters radar for the first time
 		enemy->SetThreat(enemy->GetDamage());  // TODO: Randomize

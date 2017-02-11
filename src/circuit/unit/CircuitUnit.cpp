@@ -9,6 +9,7 @@
 #include "unit/UnitManager.h"
 #include "unit/EnemyUnit.h"
 #include "setup/SetupManager.h"
+#include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -69,6 +70,7 @@ const AIFloat3& CCircuitUnit::GetPos(int frame)
 	if (posFrame != frame) {
 		posFrame = frame;
 		position = unit->GetPos();
+		CTerrainManager::CorrectPosition(position);
 	}
 	return position;
 }

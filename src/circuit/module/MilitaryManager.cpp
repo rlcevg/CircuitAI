@@ -391,11 +391,10 @@ IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType promote, f
 	return task;
 }
 
-IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote, float power)
+IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote)
 {
-	const float mod = (float)rand() / RAND_MAX * defenceMod.len + defenceMod.min;
 	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), defRadius,
-										 check, promote, power, 1.0f / mod);
+										 check, promote, std::numeric_limits<float>::max(), 1.0f);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
 	fightUpdates.push_back(task);
 	return task;
@@ -444,8 +443,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 	if (cdef->IsRoleSupport()) {
 		if (/*cdef->IsAttacker() && */GetTasks(IFighterTask::FightType::ATTACK).empty()) {
 			task = EnqueueDefend(IFighterTask::FightType::ATTACK,
-								 IFighterTask::FightType::SUPPORT,
-								 std::numeric_limits<float>::max());
+								 IFighterTask::FightType::SUPPORT);
 		} else {
 			task = EnqueueTask(IFighterTask::FightType::SUPPORT);
 		}
@@ -589,7 +587,8 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 		if (totalCost < maxCost) {
 			closestPoint->cost += defCost;
 			bool isFirst = (parentTask == nullptr);
-			IBuilderTask::Priority priority = isFirst ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
+//			IBuilderTask::Priority priority = isFirst ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
+			IBuilderTask::Priority priority = IBuilderTask::Priority::NOW;
 			const AIFloat3& buildPos = defDef->IsAttacker() ? closestPoint->position : backPos;
 			IBuilderTask* task = builderManager->EnqueueTask(priority, defDef, buildPos,
 					IBuilderTask::BuildType::DEFENCE, defCost, SQUARE_SIZE * 32, isFirst);
@@ -638,7 +637,8 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	if ((radarDef != nullptr) && radarDef->IsAvailable() && (radarDef->GetCost() < maxCost)) {
 		checkSensor(IBuilderTask::BuildType::RADAR, radarDef, radarDef->GetUnitDef()->GetRadarRadius() / SQRT_2);
 	}
-	if (isWater && (sonarDef != nullptr) && sonarDef->IsAvailable() && (sonarDef->GetCost() < maxCost)) {  // sonar
+	// sonar
+	if (isWater && (sonarDef != nullptr) && sonarDef->IsAvailable() && (sonarDef->GetCost() < maxCost)) {
 		checkSensor(IBuilderTask::BuildType::SONAR, sonarDef, sonarDef->GetUnitDef()->GetSonarRadius());
 	}
 }
