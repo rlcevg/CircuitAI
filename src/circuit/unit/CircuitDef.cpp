@@ -478,8 +478,10 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 			isAmphibious = ((mt.minElevation < -SQUARE_SIZE * 5) || (mt.maxElevation < SQUARE_SIZE * 5)) && !IsFloater();
 		}
 	} else {
-		STerrainMapImmobileType& it = terrainData.areaData0.immobileType[immobileTypeId];
-		isAmphibious = ((it.minElevation < -SQUARE_SIZE * 5) || (it.maxElevation < SQUARE_SIZE * 5)) && !IsFloater();
+		if (immobileTypeId >= 0) {
+			STerrainMapImmobileType& it = terrainData.areaData0.immobileType[immobileTypeId];
+			isAmphibious = ((it.minElevation < -SQUARE_SIZE * 5) || (it.maxElevation < SQUARE_SIZE * 5)) && !IsFloater();
+		}
 	}
 	isLander = !IsFloater() && !IsAbleToFly() && !IsAmphibious() && !IsSubmarine();
 }
