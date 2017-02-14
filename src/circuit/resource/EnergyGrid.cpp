@@ -404,7 +404,8 @@ void CEnergyGrid::RebuildTree()
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
 
 	// Remove destroyed edges
-	auto pred = [](const CMetalData::EdgeDesc& desc) {
+	auto pred = [this](const CMetalData::EdgeDesc& desc) {
+		spanningTree.erase(desc);
 		return true;
 	};
 	for (int index : unlinkClusters) {

@@ -961,7 +961,7 @@ void CFactoryManager::ReadConfig()
 		const Json::Value& tiers = factory["income_tier"];
 		facDef.buildDefs.reserve(items.size());
 		const unsigned tierSize = tiers.size();
-		facDef.incomes.reserve(tierSize);
+		facDef.incomes.reserve(tierSize + 1);
 
 		CCircuitDef* landDef = nullptr;
 		CCircuitDef* waterDef = nullptr;
@@ -1038,9 +1038,9 @@ void CFactoryManager::ReadConfig()
 		fillProbs(i, "land", facDef.landTiers);
 		fillProbs(i, "water", facDef.waterTiers);
 
-		if (facDef.incomes.empty()) {
+//		if (facDef.incomes.empty()) {
 			facDef.incomes.push_back(std::numeric_limits<float>::max());
-		}
+//		}
 		if (facDef.landTiers.empty()) {
 			if (!facDef.airTiers.empty()) {
 				facDef.landTiers = facDef.airTiers;
