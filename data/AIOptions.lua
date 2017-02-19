@@ -70,6 +70,13 @@ local options = {
 --		type    = 'string',
 --		def     = '',
 --	},
+	{ -- string
+		key     = 'disabledunits',
+		name    = 'Disabled units',
+		desc    = 'Disable usage of specific units.\nSyntax: armwar+armpw+raveparty\nkey: disabledunits',
+		type    = 'string',
+		def     = '',
+	},
 }
 
 return options

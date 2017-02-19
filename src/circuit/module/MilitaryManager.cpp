@@ -574,7 +574,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	unsigned num = std::min<unsigned>(isPorc ? defenders.size() : preventCount, defenders.size());
 
 	AIFloat3 backDir = circuit->GetSetupManager()->GetBasePos() - closestPoint->position;
-	AIFloat3 backPos = closestPoint->position + backDir.Normalize2D() * SQUARE_SIZE * 8;
+	AIFloat3 backPos = closestPoint->position + backDir.Normalize2D() * SQUARE_SIZE * 16;
 
 	for (unsigned i = 0; i < num; ++i) {
 		CCircuitDef* defDef = defenders[i];

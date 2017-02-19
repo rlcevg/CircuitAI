@@ -66,6 +66,7 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 
 IBuilderTask::~IBuilderTask()
 {
+	delete nextTask;
 }
 
 bool IBuilderTask::CanAssignTo(CCircuitUnit* unit) const
@@ -243,13 +244,7 @@ void IBuilderTask::Cancel()
 		manager->GetCircuit()->GetTerrainManager()->DelBlocker(buildDef, buildPos, facing);
 	}
 
-	// Destroy queue
-	IBuilderTask* next = nextTask;
-	while (next != nullptr) {
-		IBuilderTask* nextNext = next->nextTask;
-		delete next;
-		next = nextNext;
-	}
+	// Destructor will take care of the nextTask queue
 }
 
 void IBuilderTask::OnUnitIdle(CCircuitUnit* unit)

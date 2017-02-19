@@ -58,13 +58,11 @@ CSetupManager::~CSetupManager()
 void CSetupManager::DisabledUnits(const char* setupScript)
 {
 	std::string script(setupScript);
-	std::regex patternDisabled("disabledunits=(.*);", std::regex::ECMAScript | std::regex::icase);
+	std::regex patternDisabled("\\[modoptions\\]\\s*\\{[^\\}]*disabledunits=(.*);[^\\}]*\\}", std::regex::ECMAScript | std::regex::icase);
 	std::string::const_iterator start = script.begin();
 	std::string::const_iterator end = script.end();
 	std::smatch section;
-	if (std::regex_search(start, end, section, patternDisabled)) {
-		// !setoptions disabledunits=raveparty+zenith+mahlaze
-		std::string opt_str = section[1];
+	auto disableUnits = [this, &section, &start, &end](const std::string& opt_str) {
 		start = opt_str.begin();
 		end = opt_str.end();
 		std::regex patternUnit("\\w+");
@@ -75,6 +73,18 @@ void CSetupManager::DisabledUnits(const char* setupScript)
 			}
 			start = section[0].second;
 		}
+	};
+
+	if (std::regex_search(start, end, section, patternDisabled)) {
+		// !setoptions disabledunits=armwar+armpw+raveparty+zenith+mahlazer
+		disableUnits(section[1]);
+	}
+
+	OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
+	const char* value = options->GetValueByKey("disabledunits");
+	delete options;
+	if (value != nullptr) {
+		disableUnits(value);
 	}
 }
 
