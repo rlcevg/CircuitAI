@@ -57,16 +57,17 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
 			nullTask->AssignTo(unit);
+			this->circuit->AddActionUnit(unit);
 		}
 	};
 	auto factoryFinishedHandler = [this](CCircuitUnit* unit) {
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
 			idleTask->AssignTo(unit);
+			this->circuit->AddActionUnit(unit);
 		} else {
 			nullTask->RemoveAssignee(unit);
 		}
-		this->circuit->AddActionUnit(unit);
 
 		TRY_UNIT(this->circuit, unit,
 			unit->GetUnit()->SetRepeat(true);
@@ -196,16 +197,17 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
 			nullTask->AssignTo(unit);
+			this->circuit->AddActionUnit(unit);
 		}
 	};
 	auto assistFinishedHandler = [this](CCircuitUnit* unit) {
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
 			idleTask->AssignTo(unit);
+			this->circuit->AddActionUnit(unit);
 		} else {
 			nullTask->RemoveAssignee(unit);
 		}
-		this->circuit->AddActionUnit(unit);
 
 		int frame = this->circuit->GetLastFrame();
 		const AIFloat3& assPos = unit->GetPos(frame);

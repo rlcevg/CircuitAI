@@ -28,8 +28,8 @@ CAntiAirTask::CAntiAirTask(ITaskManager* mgr, float powerMod)
 		: ISquadTask(mgr, FightType::AA, powerMod)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
-	float z = rand() % (circuit->GetTerrainManager()->GetTerrainHeight() + 1);
+	float x = rand() % circuit->GetTerrainManager()->GetTerrainWidth();
+	float z = rand() % circuit->GetTerrainManager()->GetTerrainHeight();
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 }
 
@@ -188,17 +188,33 @@ void CAntiAirTask::Update()
 			return;
 		}
 	} else {
-		CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-		if ((commander != nullptr) &&
-			circuit->GetTerrainManager()->CanMoveToPos(leader->GetArea(), commander->GetPos(frame)))
-		{
-			for (CCircuitUnit* unit : units) {
-				unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
+		static F3Vec ourPositions;  // NOTE: micro-opt
+		AIFloat3 startPos = leader->GetPos(frame);
+		circuit->GetMilitaryManager()->FillSafePos(startPos, leader->GetArea(), ourPositions);
 
-				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-				travelAction->SetActive(false);
-			}
+		pPath->clear();
+		CPathFinder* pathfinder = circuit->GetPathfinder();
+		pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
+		pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions);
+		ourPositions.clear();
+
+		if (!pPath->empty()) {
+			position = pPath->back();
+			ActivePath();
 			return;
+		} else {
+			CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+			if ((commander != nullptr) &&
+				circuit->GetTerrainManager()->CanMoveToPos(leader->GetArea(), commander->GetPos(frame)))
+			{
+				for (CCircuitUnit* unit : units) {
+					unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
+
+					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+					travelAction->SetActive(false);
+				}
+				return;
+			}
 		}
 	}
 	if (pPath->empty()) {  // should never happen
@@ -225,8 +241,8 @@ void CAntiAirTask::OnUnitIdle(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const float maxDist = std::max<float>(lowestRange, circuit->GetPathfinder()->GetSquareSize());
 	if (position.SqDistance2D(leader->GetPos(circuit->GetLastFrame())) < SQUARE(maxDist)) {
-		float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
-		float z = rand() % (circuit->GetTerrainManager()->GetTerrainHeight() + 1);
+		float x = rand() % circuit->GetTerrainManager()->GetTerrainWidth();
+		float z = rand() % circuit->GetTerrainManager()->GetTerrainHeight();
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	}
 
@@ -260,6 +276,16 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 		position = pPath->back();
 		ActivePath();
 		state = State::DISENGAGE;
+	} else {
+		position = circuit->GetSetupManager()->GetBasePos();
+		for (CCircuitUnit* unit : units) {
+			TRY_UNIT(circuit, unit,
+				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			)
+
+			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+			travelAction->SetActive(false);
+		}
 	}
 }
 

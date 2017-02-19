@@ -55,6 +55,7 @@ CCircuitUnit::~CCircuitUnit()
 	delete unit;
 	delete dgun;
 	delete shield;
+	delete weapon;
 }
 
 void CCircuitUnit::SetTask(IUnitTask* task)

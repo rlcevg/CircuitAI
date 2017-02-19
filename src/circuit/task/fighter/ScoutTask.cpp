@@ -131,8 +131,8 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	}
 
 	if (!utils::is_valid(position) && !proceed) {
-		float x = rand() % (terrainManager->GetTerrainWidth() + 1);
-		float z = rand() % (terrainManager->GetTerrainHeight() + 1);
+		float x = rand() % terrainManager->GetTerrainWidth();
+		float z = rand() % terrainManager->GetTerrainHeight();
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 		position = terrainManager->GetMovePosition(unit->GetArea(), position);
 	}

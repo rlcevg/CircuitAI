@@ -89,16 +89,17 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
 			nullTask->AssignTo(unit);
+			this->circuit->AddActionUnit(unit);
 		}
 	};
 	auto attackerFinishedHandler = [this](CCircuitUnit* unit) {
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
 			idleTask->AssignTo(unit);
+			this->circuit->AddActionUnit(unit);
 		} else {
 			nullTask->RemoveAssignee(unit);
 		}
-		this->circuit->AddActionUnit(unit);
 
 		AddArmyCost(unit);
 
@@ -144,6 +145,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
 			nullTask->AssignTo(unit);
+			this->circuit->AddActionUnit(unit);
 		}
 	};
 	auto superFinishedHandler = [this](CCircuitUnit* unit) {
@@ -152,11 +154,11 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			unit->SetManager(this);
 			task->AssignTo(unit);
 			task->Execute(unit);
+			this->circuit->AddActionUnit(unit);
 		} else {
 			nullTask->RemoveAssignee(unit);
 			AssignTask(unit, task);
 		}
-		this->circuit->AddActionUnit(unit);
 
 		TRY_UNIT(this->circuit, unit,
 			unit->GetUnit()->SetTrajectory(1);

@@ -31,8 +31,8 @@ CRaidTask::CRaidTask(ITaskManager* mgr, float maxPower, float powerMod)
 		, power(0.f)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
-	float z = rand() % (circuit->GetTerrainManager()->GetTerrainHeight() + 1);
+	float x = rand() % circuit->GetTerrainManager()->GetTerrainWidth();
+	float z = rand() % circuit->GetTerrainManager()->GetTerrainHeight();
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 }
 
@@ -213,8 +213,8 @@ void CRaidTask::Update()
 	}
 
 	if (!utils::is_valid(position)) {
-		float x = rand() % (terrainManager->GetTerrainWidth() + 1);
-		float z = rand() % (terrainManager->GetTerrainHeight() + 1);
+		float x = rand() % terrainManager->GetTerrainWidth();
+		float z = rand() % terrainManager->GetTerrainHeight();
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 		position = terrainManager->GetMovePosition(leader->GetArea(), position);
 	}
@@ -251,8 +251,8 @@ void CRaidTask::OnUnitIdle(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const float maxDist = std::max<float>(lowestRange, circuit->GetPathfinder()->GetSquareSize());
 	if (position.SqDistance2D(leader->GetPos(circuit->GetLastFrame())) < SQUARE(maxDist)) {
-		float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
-		float z = rand() % (circuit->GetTerrainManager()->GetTerrainHeight() + 1);
+		float x = rand() % circuit->GetTerrainManager()->GetTerrainWidth();
+		float z = rand() % circuit->GetTerrainManager()->GetTerrainHeight();
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	}
 

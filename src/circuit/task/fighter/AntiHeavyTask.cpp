@@ -29,8 +29,8 @@ CAntiHeavyTask::CAntiHeavyTask(ITaskManager* mgr, float powerMod)
 		: ISquadTask(mgr, FightType::AH, powerMod)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
-	float z = rand() % (circuit->GetTerrainManager()->GetTerrainHeight() + 1);
+	float x = rand() % circuit->GetTerrainManager()->GetTerrainWidth();
+	float z = rand() % circuit->GetTerrainManager()->GetTerrainHeight();
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 }
 
@@ -195,23 +195,19 @@ void CAntiHeavyTask::Update()
 				travelAction->SetActive(false);
 
 				power += unit->GetCircuitDef()->GetPower();
-				return unit->GetCircuitDef()->IsRoleMine() ? (target->GetThreat() < power) : false;
+				return unit->GetCircuitDef()->IsRoleMine() ? (target->GetThreat() > power) : true;
 			};
 			if (target->GetUnit()->IsCloaked()) {
 				const AIFloat3& pos = target->GetPos();
 				for (CCircuitUnit* unit : units) {
-					unit->Attack(pos, target, frame + FRAMES_PER_SEC * 60);
-
 					if (subattack(unit)) {
-						break;
+						unit->Attack(pos, target, frame + FRAMES_PER_SEC * 60);
 					}
 				}
 			} else {
 				for (CCircuitUnit* unit : units) {
-					unit->Attack(target, frame + FRAMES_PER_SEC * 60);
-
 					if (subattack(unit)) {
-						break;
+						unit->Attack(target, frame + FRAMES_PER_SEC * 60);
 					}
 				}
 			}
@@ -220,28 +216,39 @@ void CAntiHeavyTask::Update()
 			position = pPath->back();
 			ActivePath();
 			return;
-		} else {
-			CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-			if ((commander != nullptr) &&
-				circuit->GetTerrainManager()->CanMoveToPos(leader->GetArea(), commander->GetPos(frame)))
-			{
-				for (CCircuitUnit* unit : units) {
-					unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
-
-					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-					travelAction->SetActive(false);
-				}
-				return;
-			}
 		}
-	} else {
-		position = circuit->GetSetupManager()->GetBasePos();
-		AIFloat3 startPos = leader->GetPos(frame);
-		pPath->clear();
-		CPathFinder* pathfinder = circuit->GetPathfinder();
-		pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
-		pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize() * 4);
 	}
+
+	static F3Vec ourPositions;  // NOTE: micro-opt
+	AIFloat3 startPos = leader->GetPos(frame);
+	circuit->GetMilitaryManager()->FillSafePos(startPos, leader->GetArea(), ourPositions);
+
+	pPath->clear();
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
+	pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions);
+	ourPositions.clear();
+
+	if (!pPath->empty()) {
+		position = pPath->back();
+		ActivePath();
+		return;
+	} else {
+		CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+		if ((commander != nullptr) &&
+			circuit->GetTerrainManager()->CanMoveToPos(leader->GetArea(), commander->GetPos(frame)))
+		{
+			for (CCircuitUnit* unit : units) {
+				unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
+
+				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+				travelAction->SetActive(false);
+			}
+			return;
+		}
+		position = circuit->GetSetupManager()->GetBasePos();
+	}
+
 	if (pPath->empty()) {  // should never happen
 		for (CCircuitUnit* unit : units) {
 			TRY_UNIT(circuit, unit,
@@ -266,8 +273,8 @@ void CAntiHeavyTask::OnUnitIdle(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const float maxDist = std::max<float>(lowestRange, circuit->GetPathfinder()->GetSquareSize());
 	if (position.SqDistance2D(leader->GetPos(circuit->GetLastFrame())) < SQUARE(maxDist)) {
-		float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
-		float z = rand() % (circuit->GetTerrainManager()->GetTerrainHeight() + 1);
+		float x = rand() % circuit->GetTerrainManager()->GetTerrainWidth();
+		float z = rand() % circuit->GetTerrainManager()->GetTerrainHeight();
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	}
 

@@ -65,16 +65,17 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
 			nullTask->AssignTo(unit);
+			this->circuit->AddActionUnit(unit);
 		}
 	};
 	auto workerFinishedHandler = [this](CCircuitUnit* unit) {
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
 			idleTask->AssignTo(unit);
+			this->circuit->AddActionUnit(unit);
 		} else {
 			nullTask->RemoveAssignee(unit);
 		}
-		this->circuit->AddActionUnit(unit);
 
 		++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 

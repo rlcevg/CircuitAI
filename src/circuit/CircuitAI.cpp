@@ -997,7 +997,7 @@ CEnemyUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS)
 		return unit;
 	}
 
-	springai::Unit* u = WrappUnit::GetInstance(skirmishAIId, unitId);
+	Unit* u = WrappUnit::GetInstance(skirmishAIId, unitId);
 	if (u == nullptr) {
 		return nullptr;
 	}

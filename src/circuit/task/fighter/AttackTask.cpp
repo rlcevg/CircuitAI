@@ -30,8 +30,8 @@ CAttackTask::CAttackTask(ITaskManager* mgr, float minPower, float powerMod)
 		, minPower(minPower)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
-	float z = rand() % (circuit->GetTerrainManager()->GetTerrainHeight() + 1);
+	float x = rand() % circuit->GetTerrainManager()->GetTerrainWidth();
+	float z = rand() % circuit->GetTerrainManager()->GetTerrainHeight();
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 }
 
@@ -244,8 +244,8 @@ void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const float maxDist = std::max<float>(lowestRange, circuit->GetPathfinder()->GetSquareSize());
 	if (position.SqDistance2D(leader->GetPos(circuit->GetLastFrame())) < SQUARE(maxDist)) {
-		float x = rand() % (circuit->GetTerrainManager()->GetTerrainWidth() + 1);
-		float z = rand() % (circuit->GetTerrainManager()->GetTerrainHeight() + 1);
+		float x = rand() % circuit->GetTerrainManager()->GetTerrainWidth();
+		float z = rand() % circuit->GetTerrainManager()->GetTerrainHeight();
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	}
 

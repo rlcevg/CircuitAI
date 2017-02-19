@@ -772,7 +772,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode, st
 	size_t indexEnd = (size_t) endNode;
 	int y = indexEnd / mapSizeX;
 	int x = indexEnd - y * mapSizeX;
-	int* xend = new int[2 * radius + 1];
+	int xend[2 * radius + 1];
 
 	for (int a = 0; a < (2 * radius + 1); a++) {
 		float z = a - radius;
@@ -922,7 +922,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode, st
 	size_t indexEnd = (size_t) endNode;
 	int y = indexEnd / mapSizeX;
 	int x = indexEnd - y * mapSizeX;
-	int* xend = new int[2 * radius + 1];
+	int xend[2 * radius + 1];
 
 	for (int a = 0; a < (2 * radius + 1); a++) {
 		float z = a - radius;
@@ -1073,7 +1073,7 @@ int CMicroPather::FindBestCostToPointOnRadius(void* startNode, void* endNode, fl
 	size_t indexEnd = (size_t) endNode;
 	int y = indexEnd / mapSizeX;
 	int x = indexEnd - y * mapSizeX;
-	int* xend = new int[2 * radius + 1];
+	int xend[2 * radius + 1];
 
 	for (int a = 0; a < (2 * radius + 1); a++) {
 		float z = a - radius;
@@ -1221,7 +1221,7 @@ int CMicroPather::FindDirectCostToPointOnRadius(void* startNode, void* endNode, 
 	size_t indexEnd = (size_t) endNode;
 	int y = indexEnd / mapSizeX;
 	int x = indexEnd - y * mapSizeX;
-	int* xend = new int[2 * radius + 1];
+	int xend[2 * radius + 1];
 
 	for (int a = 0; a < (2 * radius + 1); a++) {
 		float z = a - radius;
