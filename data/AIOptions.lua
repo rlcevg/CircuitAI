@@ -77,6 +77,13 @@ local options = {
 		type    = 'string',
 		def     = '',
 	},
+	{ -- string
+		key     = 'version',
+		name    = 'AI version',
+		desc    = 'This value is used for parsing!',
+		type    = 'string',
+		def     = '0.9.12',
+	},
 }
 
 return options

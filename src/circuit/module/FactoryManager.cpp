@@ -1152,6 +1152,9 @@ void CFactoryManager::Watchdog()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	auto checkIdler = [this](CCircuitUnit* unit) {
+		if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
+			return;
+		}
 		auto commands = std::move(unit->GetUnit()->GetCurrentCommands());
 		if (commands.empty()) {
 			UnitIdle(unit);

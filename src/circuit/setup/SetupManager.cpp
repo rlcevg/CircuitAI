@@ -553,11 +553,14 @@ void CSetupManager::Welcome() const
 #ifdef DEBUG_LOG
 	Info* info = circuit->GetSkirmishAI()->GetInfo();
 	const char* name = info->GetValueByKey("name");
-	const char* version = info->GetValueByKey("version");
+	OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
+	const char* value = options->GetValueByKey("version");
+	const char* version = (value != nullptr) ? value : info->GetValueByKey("version");
+	delete info;
+	delete options;
 	const int id = circuit->GetSkirmishAIId();
 	std::string welcome("/say "/*"a:"*/);
 	welcome += std::string(name) + " " + std::string(version) + utils::int_to_string(id, " (%i)\nGood fun, have luck!");
-	delete info;
 	circuit->GetGame()->SendTextMessage(welcome.c_str(), 0);
 #endif
 }
@@ -566,6 +569,9 @@ void CSetupManager::FindCommander()
 {
 	std::vector<Unit*> units = circuit->GetCallback()->GetTeamUnits();
 	for (Unit* u : units) {
+		if (u == nullptr) {
+			continue;
+		}
 		UnitDef* def = u->GetDef();
 		bool valid = def->IsBuilder();
 		delete def;

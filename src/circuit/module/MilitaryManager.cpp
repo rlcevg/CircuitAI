@@ -1198,6 +1198,9 @@ void CMilitaryManager::Watchdog()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	for (CCircuitUnit* unit : army) {
+		if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
+			continue;
+		}
 		auto commands = std::move(unit->GetUnit()->GetCurrentCommands());
 		if (commands.empty()) {
 			UnitIdle(unit);

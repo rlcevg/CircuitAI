@@ -1106,6 +1106,9 @@ void CBuilderManager::Watchdog()
 	Resource* metalRes = economyManager->GetMetalRes();
 	// somehow workers get stuck
 	for (CCircuitUnit* worker : workers) {
+		if (worker->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
+			continue;
+		}
 		Unit* u = worker->GetUnit();
 		auto commands = std::move(u->GetCurrentCommands());
 		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())

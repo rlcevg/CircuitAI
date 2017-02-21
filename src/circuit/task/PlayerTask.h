@@ -17,6 +17,8 @@ public:
 	CPlayerTask(ITaskManager* mgr);
 	virtual ~CPlayerTask();
 
+	virtual void RemoveAssignee(CCircuitUnit* unit);
+
 	virtual void Execute(CCircuitUnit* unit) override;
 	virtual void Update() override;
 

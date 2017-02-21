@@ -21,6 +21,12 @@ CPlayerTask::~CPlayerTask()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
+void CPlayerTask::RemoveAssignee(CCircuitUnit* unit)
+{
+	IUnitTask::RemoveAssignee(unit);
+	delete this;
+}
+
 void CPlayerTask::Execute(CCircuitUnit* unit)
 {
 }
@@ -40,7 +46,6 @@ void CPlayerTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 void CPlayerTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	RemoveAssignee(unit);
-	delete this;
 }
 
 } // namespace circuit

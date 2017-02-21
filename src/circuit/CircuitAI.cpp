@@ -649,7 +649,9 @@ int CCircuitAI::Message(int playerId, const char* message)
 	else if ((msgLength == strlen(cmdSelfD)) && (strcmp(message, cmdSelfD) == 0)) {
 		std::vector<Unit*> units = callback->GetTeamUnits();
 		for (auto u : units) {
-			u->SelfDestruct();
+			if (u != nullptr) {
+				u->SelfDestruct();
+			}
 		}
 		utils::free_clear(units);
 	}
@@ -1070,7 +1072,13 @@ void CCircuitAI::ActionUpdate()
 			actionUnits.pop_back();
 			DeleteTeamUnit(unit);
 		} else {
-			unit->Update(this);
+			if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
+				if (unit->GetUnit()->GetRulesParamFloat("player_control", 0) < 1.f) {
+					unit->GetTask()->RemoveAssignee(unit);
+				}
+			} else {
+				unit->Update(this);
+			}
 			++actionIterator;
 			n--;
 		}
