@@ -194,7 +194,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 			}
 
 			CCircuitDef* edef = enemy->GetCircuitDef();
-			if ((edef == nullptr) || edef->IsMobile()) {
+			if ((edef == nullptr) || edef->IsMobile() || edef->IsAttrSiege()) {
 				continue;
 			}
 			int targetCat = edef->GetCategory();

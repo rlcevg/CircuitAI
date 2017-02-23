@@ -196,9 +196,9 @@ bool ISquadTask::IsMustRegroup()
 //	validUnits.reserve(units.size());
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();;
 	for (CCircuitUnit* unit : units) {
-		AIFloat3 pos = unit->GetPos(frame);
-//		CTerrainManager::CorrectPosition(pos);
-		if (terrainManager->CanMoveToPos(unit->GetArea(), pos)) {
+		if (!unit->GetCircuitDef()->IsPlane() &&
+			terrainManager->CanMoveToPos(unit->GetArea(), unit->GetPos(frame)))
+		{
 			validUnits.push_back(unit);
 		}
 	}
@@ -214,6 +214,9 @@ bool ISquadTask::IsMustRegroup()
 		// eliminate buggy units
 		const float sqMaxDist = SQUARE(std::max<float>(SQUARE_SIZE * 8 * validUnits.size(), highestRange));
 		for (CCircuitUnit* unit : units) {
+			if (unit->GetCircuitDef()->IsPlane()) {
+				continue;
+			}
 			const AIFloat3& pos = unit->GetPos(frame);
 			const float sqDist = groupPos.SqDistance2D(pos);
 			if ((sqDist > sqMaxDist) &&
@@ -235,7 +238,7 @@ bool ISquadTask::IsMustRegroup()
 	bool wasRegroup = (State::REGROUP == state);
 	state = State::ROAM;
 	const float sqMaxDist = SQUARE(std::max<float>(SQUARE_SIZE * 8 * validUnits.size(), highestRange));
-	for (CCircuitUnit* unit : units) {
+	for (CCircuitUnit* unit : validUnits) {
 		const float sqDist = groupPos.SqDistance2D(unit->GetPos(frame));
 		if (sqDist > sqMaxDist) {
 			state = State::REGROUP;

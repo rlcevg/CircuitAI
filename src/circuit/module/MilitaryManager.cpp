@@ -149,15 +149,12 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		}
 	};
 	auto superFinishedHandler = [this](CCircuitUnit* unit) {
-		IFighterTask* task = EnqueueTask(IFighterTask::FightType::SUPER);
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
-			task->AssignTo(unit);
-			task->Execute(unit);
+			idleTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
 		} else {
 			nullTask->RemoveAssignee(unit);
-			AssignTask(unit, task);
 		}
 
 		TRY_UNIT(this->circuit, unit,
@@ -234,7 +231,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		} else {
 			damagedHandler[unitDefId] = structDamagedHandler;
 			if (cdef->IsAttacker()) {
-				if (cdef->IsAttrSuper()) {
+				if (cdef->IsRoleSuper()) {
 					createdHandler[unitDefId] = superCreatedHandler;
 					finishedHandler[unitDefId] = superFinishedHandler;
 					destroyedHandler[unitDefId] = superDestroyedHandler;
@@ -439,6 +436,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::BOMBER),  IFighterTask::FightType::BOMB},
 		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::SUPPORT), IFighterTask::FightType::SUPPORT},
 		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::MINE),    IFighterTask::FightType::SCOUT},  // FIXME
+		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::SUPER),   IFighterTask::FightType::SUPER},
 	};
 	IFighterTask* task = nullptr;
 	CCircuitDef* cdef = unit->GetCircuitDef();
@@ -1151,7 +1149,9 @@ void CMilitaryManager::ReadConfig()
 			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), items[i].asCString());
 			continue;
 		}
-		si.cdef->AddAttribute(CCircuitDef::AttrType::SUPER);
+		si.cdef->SetMainRole(CCircuitDef::RoleType::SUPER);  // override mainRole
+		si.cdef->AddEnemyRole(CCircuitDef::RoleType::SUPER);
+		si.cdef->AddRole(CCircuitDef::RoleType::SUPER);
 		si.prob = probs.get(i, 1.f).asFloat();
 		magnitude += si.prob;
 		supers.push_back(si);

@@ -42,17 +42,17 @@ CCircuitDef::RoleName CCircuitDef::roleNames = {
 	{"sub",        CCircuitDef::RoleType::SUB},
 	{"static",     CCircuitDef::RoleType::STATIC},
 	{"heavy",      CCircuitDef::RoleType::HEAVY},
+	{"super",      CCircuitDef::RoleType::SUPER},
 };
 
 CCircuitDef::AttrName CCircuitDef::attrNames = {
 	{"melee",     CCircuitDef::AttrType::MELEE},
-	{"siege",     CCircuitDef::AttrType::SIEGE},
 	{"no_jump",   CCircuitDef::AttrType::NO_JUMP},
 	{"boost",     CCircuitDef::AttrType::BOOST},
 	{"comm",      CCircuitDef::AttrType::COMM},
 	{"no_strafe", CCircuitDef::AttrType::NO_STRAFE},
 	{"stockpile", CCircuitDef::AttrType::STOCK},
-	{"super",     CCircuitDef::AttrType::SUPER},
+	{"siege",     CCircuitDef::AttrType::SIEGE},
 	{"ret_hold",  CCircuitDef::AttrType::RET_HOLD},
 	{"ret_fight", CCircuitDef::AttrType::RET_FIGHT},
 };

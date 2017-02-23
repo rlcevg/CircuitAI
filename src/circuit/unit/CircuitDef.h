@@ -36,33 +36,32 @@ public:
 									   ASSAULT, SKIRM, ARTY, AA,
 									   AS, AH, BOMBER, SUPPORT,
 									   MINE, TRANS, AIR, SUB,
-									   STATIC, HEAVY, _SIZE_};
+									   STATIC, HEAVY, SUPER, _SIZE_};
 	enum RoleMask: unsigned int {BUILDER = 0x00000001, SCOUT = 0x00000002, RAIDER = 0x00000004, RIOT    = 0x00000008,
 								 ASSAULT = 0x00000010, SKIRM = 0x00000020, ARTY   = 0x00000040, AA      = 0x00000080,
 								 AS      = 0x00000100, AH    = 0x00000200, BOMBER = 0x00000400, SUPPORT = 0x00000800,
 								 MINE    = 0x00001000, TRANS = 0x00002000, AIR    = 0x00004000, SUB     = 0x00008000,
-								 STATIC  = 0x00010000, HEAVY = 0x00020000, NONE   = 0x00000000};
+								 STATIC  = 0x00010000, HEAVY = 0x00020000, SUPER  = 0x00040000, NONE    = 0x00000000};
 	using RoleT = std::underlying_type<RoleType>::type;
 	using RoleM = std::underlying_type<RoleMask>::type;
 
 	/*
 	 * MELEE:      always move close to target, disregard attack range
-	 * SIEGE:      mostly use Fight instead of Move
-	 * OPEN_FIRE:  always fire at enemy
 	 * NO_JUMP:    disable jump on retreat
 	 * BOOST:      boost speed on retreat
 	 * COMM:       commander
-	 * HOLD_FIRE:  hold fire on retreat
 	 * NO_STRAFE:  disable gunship's strafe
 	 * STOCK:      stockpile weapon before any task (Not implemented)
-	 * SUPER:      superweapon
+	 * SIEGE:      mostly use Fight instead of Move
+	 * RET_HOLD:   hold fire on retreat
+	 * RET_FIGHT:  fight on retreat
 	 */
-	enum class AttrType: RoleT {MELEE = static_cast<RoleT>(RoleType::_SIZE_), SIEGE,
+	enum class AttrType: RoleT {MELEE = static_cast<RoleT>(RoleType::_SIZE_),
 								NO_JUMP, BOOST, COMM, NO_STRAFE,
-								STOCK, SUPER, RET_HOLD, RET_FIGHT, _SIZE_};
-	enum AttrMask: RoleM {MELEE   = 0x00040000, SIEGE = 0x00080000,
+								STOCK, SIEGE, RET_HOLD, RET_FIGHT, _SIZE_};
+	enum AttrMask: RoleM {MELEE   = 0x00080000,
 						  NO_JUMP = 0x00100000, BOOST = 0x00200000, COMM     = 0x00400000, NO_STRAFE = 0x00800000,
-						  STOCK   = 0x01000000, SUPER = 0x02000000, RET_HOLD = 0x04000000, RET_FIGHT = 0x08000000};
+						  STOCK   = 0x01000000, SIEGE = 0x02000000, RET_HOLD = 0x04000000, RET_FIGHT = 0x08000000};
 
 	enum FireType: int {HOLD = 0, RETURN = 1, OPEN = 2, _SIZE_};
 
@@ -114,15 +113,15 @@ public:
 	bool IsRoleSub()      const { return role & RoleMask::SUB; }
 	bool IsRoleStatic()   const { return role & RoleMask::STATIC; }
 	bool IsRoleHeavy()    const { return role & RoleMask::HEAVY; }
+	bool IsRoleSuper()    const { return role & RoleMask::SUPER; }
 
 	bool IsAttrMelee()    const { return role & AttrMask::MELEE; }
-	bool IsAttrSiege()    const { return role & AttrMask::SIEGE; }
 	bool IsAttrNoJump()   const { return role & AttrMask::NO_JUMP; }
 	bool IsAttrBoost()    const { return role & AttrMask::BOOST; }
 	bool IsAttrComm()     const { return role & AttrMask::COMM; }
 	bool IsAttrNoStrafe() const { return role & AttrMask::NO_STRAFE; }
 	bool IsAttrStock()    const { return role & AttrMask::STOCK; }
-	bool IsAttrSuper()    const { return role & AttrMask::SUPER; }
+	bool IsAttrSiege()    const { return role & AttrMask::SIEGE; }
 	bool IsAttrRetHold()  const { return role & AttrMask::RET_HOLD; }
 	bool IsAttrRetFight() const { return role & AttrMask::RET_FIGHT; }
 

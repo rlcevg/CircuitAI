@@ -960,13 +960,13 @@ void CCircuitAI::DeleteTeamUnit(CCircuitUnit* unit)
 	delete unit;
 }
 
-void CCircuitAI::Garbage(CCircuitUnit* unit, const char* message)
+void CCircuitAI::Garbage(CCircuitUnit* unit, const char* reason)
 {
 	// NOTE: Happens because engine can send EVENT_UNIT_FINISHED after EVENT_UNIT_DESTROYED.
 	//       Engine should not send events with isDead units.
 	garbage.insert(unit);
 #ifdef DEBUG_LOG
-	LOG("AI: %i | Garbage unit: %i | message: %s", skirmishAIId, unit->GetId(), message);
+	LOG("AI: %i | Garbage unit: %i | reason: %s", skirmishAIId, unit->GetId(), reason);
 #endif
 }
 

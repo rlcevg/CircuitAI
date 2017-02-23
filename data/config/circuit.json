@@ -32,7 +32,7 @@
 			"tier0": [ 0.10,       0.80,    0.00,         0.10,      0.00,     0.00,      0.00,     0.00,       0.00,      0.00,            0.00],
 
 			// 9-16m Early Game - Map control still important but move towards Scythe raiding and Riot defense from raider balls.
-			"tier1": [ 0.15,       0.55,    0.10,         0.30,      0.00,     0.00,      0.00,     0.00,       0.00,      0.00,            0.00]
+			"tier1": [ 0.15,       0.45,    0.10,         0.30,      0.00,     0.00,      0.00,     0.00,       0.00,      0.00,            0.00]
 
 			// 17-24m Expanding - Good size terriotiry now, so less scouting and begin producing a little assault/arty on the side.
 //			"tier2": [ 0.09,       0.20,    0.04,         0.44,      0.15,     0.06,      0.00,     0.02,       0.00,      0.00,            0.00],
@@ -299,11 +299,11 @@
 //		"require_energy": false,
 //
 //		"income_tier": [40],
-//		//             mariner    skeeter,     snake,       typhoon,      hunter,     enforcer,    crusader,   serpent,   surfboard,  shredder
-//		"unit":      ["shipcon", "shipscout", "subraider", "shipraider", "shiptorp", "shipskirm", "shiparty", "subarty", "armtboat", "shipaa"],
+//		//             mariner    cutter,      hunter,           seawolf,     corsair,    mistral,     siren,         ronin,      zephyr
+//		"unit":      ["shipcon", "shipscout", "shiptorpraider", "subraider", "shipriot", "shipskirm", "shipassault", "shiparty", "shipaa"],
 //		"water": {
-//			"tier0": [ 0.00,      0.10,        0.32,        0.30,         0.17,       0.05,        0.05,       0.01,      0.00,       0.00],
-//			"tier1": [ 0.00,      0.01,        0.10,        0.10,         0.20,       0.15,        0.25,       0.19,      0.00,       0.00]
+//			"tier0": [ 0.00,      0.10,        0.17,             0.32,        0.30,       0.05,        0.01,          0.05,       0.00],
+//			"tier1": [ 0.00,      0.01,        0.20,             0.10,        0.10,       0.15,        0.19,          0.25,       0.00]
 //		},
 //
 //		"caretaker": 4
@@ -365,19 +365,18 @@
 		// "role": [<main>, <enemy>, <enemy>, ...]
 		// <main> is the role to make desicions of when to build it and what task to assign
 		// <enemy> is to decide how to counter enemy unit, if missing then equals to <main>
-		// Roles: builder, scout, raider, riot, assault, skirmish, artillery, anti_air, anti_sub, anti_heavy, bomber, support, mine, transport, air, sub, static, heavy
-		// Auto-assigned roles: builder, air, static
+		// Roles: builder, scout, raider, riot, assault, skirmish, artillery, anti_air, anti_sub, anti_heavy, bomber, support, mine, transport, air, sub, static, heavy, super
+		// Auto-assigned roles: builder, air, static, super
 		"role": ["builder"]
 
 		// Attributes - optinal states
 		// "melee" - always move close to target, disregard attack range
-		// "siege" - mostly use fight command instead of move
 		// "no_jump" - disable jump on retreat
 		// "boost" - boost speed on retreat
 		// "comm" - commander, auto-assigned
 		// "no_strafe" - disable gunship's strafe
 		// "stockpile" - load weapon before any task (NOT IMPLEMENTED), auto-assigned
-		// "super" - superweapon, auto-assigned to porcupine items
+		// "siege" - mostly use fight command instead of move
 		// "ret_hold" - hold fire on retreat
 		// "ret_fight" - fight on retreat
 //		"attribute": ["boost", "no_strafe"],
@@ -696,7 +695,7 @@
 	},
 	"vehaa": {
 		"role": ["anti_air"],
-		"attribute": ["melee"],
+//		"attribute": ["melee"],
 		"retreat": 0.75,
 		"dmg_mod": 1.2
 	},
@@ -710,7 +709,8 @@
 		"attribute": ["scout"]
 	},
 	"corpyro": {
-		"role": ["raider"]
+		"role": ["raider"],
+		"attribute": ["melee"]
 	},
 	"jumpblackhole": {
 		"role": ["support"]
@@ -726,7 +726,7 @@
 	},
 	"corsumo": {
 		"role": ["heavy", "support", "heavy"],
-		"attribute": ["no_jump"]
+		"attribute": ["melee", "no_jump"]
 	},
 	"firewalker": {
 		"role": ["artillery"],
@@ -734,13 +734,14 @@
 	},
 	"corsktl": {
 		"role": ["anti_heavy", "mine"],
+		"attribute": ["melee"],
 		"limit": 2,
 		"dmg_mod": 3.0,
 		"retreat": 0.01
 	},
 	"armaak": {
 		"role": ["anti_air"],
-		"attribute": ["melee"],
+//		"attribute": ["melee"],
 		"retreat": 0.8,
 		"dmg_mod": 1.2
 	},
@@ -784,7 +785,7 @@
 	},
 	"hoveraa": {
 		"role": ["anti_air"],
-		"attribute": ["melee"],
+//		"attribute": ["melee"],
 		"retreat": 0.8,
 		"dmg_mod": 1.2
 	},
@@ -804,7 +805,7 @@
 	},
 	"corvamp": {
 		"role": ["anti_air", "air"],
-		"attribute": ["melee", "siege"],
+		"attribute": ["siege"],
 		"dmg_mod": 2,
 		"limit": 7,
 		"retreat": 0.6
@@ -828,7 +829,7 @@
 		"retreat": 0.6
 	},
 	"armcybr": {
-		"role": ["bomber", "support", "air"],
+		"role": ["bomber", "air"],
 		"retreat": 0.6,
 		"dmg_mod": 1.5
 	},
@@ -884,9 +885,38 @@
 	},
 	"corsent": {
 		"role": ["anti_air"],
-		"attribute": ["melee"],
+//		"attribute": ["melee"],
 		"retreat": 0.8,
 		"dmg_mod": 1.2
+	},
+
+	// factoryship
+	"shipcon": {
+		"role": ["builder"]
+	},
+	"shipscout": {
+		"role": ["scout"]
+	},
+	"shiptorpraider": {
+		"role": ["raider"]
+	},
+	"subraider": {
+		"role": ["raider"]
+	},
+	"shipriot": {
+		"role": ["riot"]
+	},
+	"shipskirm": {
+		"role": ["skirmish"]
+	},
+	"shipassault": {
+		"role": ["assault"]
+	},
+	"shiparty": {
+		"role": ["artillery"]
+	},
+	"shipaa": {
+		"role": ["anti_air"]
 	},
 
 	// striderhub
@@ -1029,6 +1059,7 @@
 	},
 	"armpb": {
 		"role": ["static"],
+		"attribute": ["siege"],
 		"dmg_mod": 3.5
 	},
 	"armartic": {
@@ -1039,9 +1070,6 @@
 		"role": ["static"],
 		"limit": 5
 	},
-
-
-	//	"unit": ["corllt", "corrl", "armdeva", "corhlt", "turrettorp", "corrazor", "armnanotc", "cordoom", "corjamt", "armartic", "armanni", "corbhmth"],//
 
 	// support factories won't be built in front
 	"factoryplane": {

@@ -115,7 +115,7 @@ private:
 	void UnregisterTeamUnit(CCircuitUnit* unit);
 	void DeleteTeamUnit(CCircuitUnit* unit);
 public:
-	void Garbage(CCircuitUnit* unit, const char* message);
+	void Garbage(CCircuitUnit* unit, const char* reason);
 	CCircuitUnit* GetTeamUnit(CCircuitUnit::Id unitId) const;
 	const CAllyTeam::Units& GetTeamUnits() const { return teamUnits; }
 

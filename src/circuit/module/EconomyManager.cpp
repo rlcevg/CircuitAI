@@ -982,7 +982,9 @@ void CEconomyManager::UpdateMorph()
 	auto it = morphees.begin();
 	while (it != morphees.end()) {
 		CCircuitUnit* unit = *it;
-		if (unit->GetUnit()->GetHealth() < unit->GetUnit()->GetMaxHealth() * 0.8f) {
+		if (((unit->GetTask() != nullptr) && (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER)) ||
+			(unit->GetUnit()->GetHealth() < unit->GetUnit()->GetMaxHealth() * 0.8f))
+		{
 			++it;
 		} else {
 			unit->Upgrade();  // Morph();

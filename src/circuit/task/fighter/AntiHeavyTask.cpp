@@ -194,8 +194,12 @@ void CAntiHeavyTask::Update()
 				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
 				travelAction->SetActive(false);
 
-				power += unit->GetCircuitDef()->GetPower();
-				return unit->GetCircuitDef()->IsRoleMine() ? (target->GetThreat() > power) : true;
+				if (unit->GetCircuitDef()->IsRoleMine()) {
+					const bool isAttack = (target->GetThreat() > power);
+					power += unit->GetCircuitDef()->GetPower();
+					return isAttack;
+				}
+				return true;
 			};
 			if (target->GetUnit()->IsCloaked()) {
 				const AIFloat3& pos = target->GetPos();
@@ -219,20 +223,23 @@ void CAntiHeavyTask::Update()
 		}
 	}
 
-	static F3Vec ourPositions;  // NOTE: micro-opt
-	AIFloat3 startPos = leader->GetPos(frame);
-	circuit->GetMilitaryManager()->FillSafePos(startPos, leader->GetArea(), ourPositions);
-
 	pPath->clear();
+	AIFloat3 startPos = leader->GetPos(frame);
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
-	pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions);
-	ourPositions.clear();
+	pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
+	if (leader->GetCircuitDef()->IsRoleMine()) {
+		position = circuit->GetSetupManager()->GetBasePos();
+		pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize() * 4);
+	} else {
+		static F3Vec ourPositions;  // NOTE: micro-opt
+		circuit->GetMilitaryManager()->FillSafePos(startPos, leader->GetArea(), ourPositions);
+		pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions);
+		ourPositions.clear();
+	}
 
 	if (!pPath->empty()) {
 		position = pPath->back();
 		ActivePath();
-		return;
 	} else {
 		CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
 		if ((commander != nullptr) &&
@@ -247,9 +254,7 @@ void CAntiHeavyTask::Update()
 			return;
 		}
 		position = circuit->GetSetupManager()->GetBasePos();
-	}
 
-	if (pPath->empty()) {  // should never happen
 		for (CCircuitUnit* unit : units) {
 			TRY_UNIT(circuit, unit,
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
@@ -258,8 +263,6 @@ void CAntiHeavyTask::Update()
 			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
 			travelAction->SetActive(false);
 		}
-	} else {
-		ActivePath();
 	}
 }
 

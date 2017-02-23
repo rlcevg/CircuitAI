@@ -176,11 +176,7 @@ void CAntiAirTask::Update()
 		}
 		if (State::ENGAGE == state) {
 			for (CCircuitUnit* unit : units) {
-				const AIFloat3& pos = utils::get_radial_pos(target->GetPos(), SQUARE_SIZE * 8);
-				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-					unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
-				)
+				unit->Attack(target->GetPos(), target, frame + FRAMES_PER_SEC * 60);
 
 				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
 				travelAction->SetActive(false);
