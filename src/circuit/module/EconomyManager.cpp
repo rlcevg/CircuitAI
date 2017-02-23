@@ -643,7 +643,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		}
 
 		if (engy.cdef->GetCount() < engy.limit) {
-			int maxCount = buildPower / engy.cost * 16 + 1;
+			int maxCount = buildPower / engy.cost * 8 + 1;
 			if (taskSize < maxCount) {
 				cost = engy.cost;
 				bestDef = engy.cdef;
@@ -1000,6 +1000,7 @@ void CEconomyManager::ReadConfig()
 	ecoStep = econ.get("eps_step", 0.25f).asFloat();
 	ecoFactor = (circuit->GetAllyTeam()->GetSize() - 1.0f) * ecoStep + 1.0f;
 	metalMod = (1.f - econ.get("excess", -1.f).asFloat());
+	pullMtoS = econ.get("ms_pull", 0.8f).asFloat();
 	switchTime = econ.get("switch", 900).asInt() * FRAMES_PER_SEC;
 
 	// Using cafus, armfus, armsolar as control points

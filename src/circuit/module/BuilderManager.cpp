@@ -656,7 +656,7 @@ void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 
 	int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
-	IBuilderTask* task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 20);
+	IBuilderTask* task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 5);
 	task->AssignTo(unit);
 	task->Execute(unit);
 }
@@ -921,7 +921,11 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 //	if (task != nullptr) {
 //		return task;
 //	}
-	const bool isNotReady = !economyManager->IsExcessed();
+	const bool isStalling = economyManager->IsMetalEmpty() &&
+							(economyManager->GetAvgMetalIncome() * 1.2f < economyManager->GetMetalPull()) &&
+							(metalPull > economyManager->GetPullMtoS() * circuit->GetFactoryManager()->GetMetalPull());
+	const bool isNotReady = !economyManager->IsExcessed() || isStalling;
+	const CCircuitDef* mexDef = economyManager->GetMexDef();
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
@@ -935,7 +939,8 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
 			if (!candidate->CanAssignTo(unit) ||
-				(isNotReady && (candidate->GetBuildDef() != nullptr) && (candidate->GetPriority() != IBuilderTask::Priority::NOW)))
+				(isNotReady && (candidate->GetPriority() != IBuilderTask::Priority::NOW) &&
+					(candidate->GetBuildDef() != nullptr) && (candidate->GetBuildDef() != mexDef)))
 			{
 				continue;
 			}
@@ -945,7 +950,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 			AIFloat3 buildPos = utils::is_valid(bp) ? bp : pos;
 
 			float distCost;
-			if (candidate->GetPriority() == IBuilderTask::Priority::NOW) {
+			if (candidate->GetPriority() >= IBuilderTask::Priority::HIGH) {
 				// Disregard safety
 				if (!terrainManager->CanBuildAtUnsafe(unit, buildPos)) {  // ensure that path always exists
 					continue;

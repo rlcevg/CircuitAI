@@ -8,14 +8,15 @@
 #include "task/TaskManager.h"
 #include "task/NullTask.h"
 #include "task/IdleTask.h"
-#include "task/RetreatTask.h"
 #include "unit/CircuitUnit.h"
+#include "unit/CircuitDef.h"
 
 namespace circuit {
 
 ITaskManager::ITaskManager()
 		: nullTask(nullptr)
 		, idleTask(nullptr)
+		, metalPull(0.f)
 {
 }
 
@@ -38,6 +39,16 @@ void ITaskManager::AssignTask(CCircuitUnit* unit)
 	if (task != nullptr) {
 		task->AssignTo(unit);
 	}
+}
+
+void ITaskManager::AddMetalPull(CCircuitUnit* unit)
+{
+	metalPull += unit->GetCircuitDef()->GetBuildSpeed();
+}
+
+void ITaskManager::DelMetalPull(CCircuitUnit* unit)
+{
+	metalPull -= unit->GetCircuitDef()->GetBuildSpeed();
 }
 
 void ITaskManager::Init()

@@ -31,12 +31,18 @@ public:
 	virtual void DoneTask(IUnitTask* task) = 0;
 	virtual void FallbackTask(CCircuitUnit* unit) = 0;
 
+	void AddMetalPull(CCircuitUnit* unit);
+	void DelMetalPull(CCircuitUnit* unit);
+	float GetMetalPull() const { return metalPull; }
+
 	void Init();
 	CIdleTask* GetIdleTask() const { return idleTask; }
 
 protected:
 	CNullTask* nullTask;
 	CIdleTask* idleTask;
+
+	float metalPull;
 };
 
 } // namespace circuit

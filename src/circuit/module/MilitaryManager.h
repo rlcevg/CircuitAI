@@ -64,7 +64,7 @@ public:
 	void MakeDefence(const springai::AIFloat3& pos);
 	void MakeDefence(int cluster);
 	void MakeDefence(int cluster, const springai::AIFloat3& pos);
-	void AbortDefence(CBDefenceTask* task);
+	void AbortDefence(const CBDefenceTask* task);
 	bool HasDefence(int cluster);
 	springai::AIFloat3 GetScoutPosition(CCircuitUnit* unit);
 	void FillSafePos(const springai::AIFloat3& pos, STerrainMapArea* area, F3Vec& outPositions);

@@ -55,6 +55,7 @@ public:
 	float GetAvgMetalIncome() const { return metalIncome; }
 	float GetAvgEnergyIncome() const { return energyIncome; }
 	float GetEcoFactor() const { return ecoFactor; }
+	float GetPullMtoS() const { return pullMtoS; }
 	float GetMetalPull();
 	float GetEnergyPull();
 	float GetEnergyUse();
@@ -141,6 +142,7 @@ private:
 	float metalProduced;
 	float metalUsed;
 	float metalMod;
+	float pullMtoS;  // mobile to static metal pull ratio
 
 	int ecoFrame;
 	bool isMetalEmpty;

@@ -76,6 +76,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 		return;
 	}
 	CMetalManager* metalManager = circuit->GetMetalManager();
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	UnitDef* buildUDef = buildDef->GetUnitDef();
 	if (utils::is_valid(buildPos)) {
 		int index = metalManager->FindNearestSpot(buildPos);
@@ -89,17 +90,39 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 					)
 					return;
 				} else {
-					circuit->GetEconomyManager()->SetOpenSpot(index, true);
+					economyManager->SetOpenSpot(index, true);
 				}
 			} else {
 				metalManager->SetOpenSpot(index, true);
-				circuit->GetEconomyManager()->SetOpenSpot(index, true);
+				economyManager->SetOpenSpot(index, true);
 			}
 		}
 	}
 
-	// Fallback to Guard/Assist/Patrol
-	manager->FallbackTask(unit);
+	// NOTE: Unsafe fallback expansion (mex can be behind enemy lines)
+	const CMetalData::Metals& spots = metalManager->GetSpots();
+	Map* map = circuit->GetMap();
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	circuit->GetThreatMap()->SetThreatType(unit);
+	CMetalData::MetalPredicate predicate = [&spots, economyManager, map, buildUDef, terrainManager, unit](CMetalData::MetalNode const& v) {
+		int index = v.second;
+		return (economyManager->IsAllyOpenSpot(index) &&
+				terrainManager->CanBuildAt(unit, spots[index].position) &&
+				map->IsPossibleToBuildAt(buildUDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
+	};
+	int index = metalManager->FindNearestSpot(position, predicate);
+
+	if (index >= 0) {
+		buildPos = spots[index].position;
+		economyManager->SetOpenSpot(index, false);
+		TRY_UNIT(circuit, unit,
+			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		)
+	} else {
+//		buildPos = -RgtVector;
+		// Fallback to Guard/Assist/Patrol
+		manager->FallbackTask(unit);
+	}
 }
 
 void CBMexTask::Cancel()

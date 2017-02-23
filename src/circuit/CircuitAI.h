@@ -136,6 +136,9 @@ public:
 
 	CAllyTeam* GetAllyTeam() const { return allyTeam; }
 
+	void DisableControl(const std::string data);
+	void EnableControl(const std::string data);
+
 	void AddActionUnit(CCircuitUnit* unit) { actionUnits.push_back(unit); }
 
 private:

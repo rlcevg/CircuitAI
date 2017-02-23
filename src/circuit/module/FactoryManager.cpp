@@ -1070,10 +1070,12 @@ void CFactoryManager::ReadConfig()
 
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 {
-	CEconomyManager* em = circuit->GetEconomyManager();
-	if (((em->GetAvgMetalIncome() * 2.0f < em->GetMetalPull()) && em->IsMetalEmpty()) ||
-		!em->IsExcessed())
-	{
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	const bool isStalling = economyManager->IsMetalEmpty() &&
+							(economyManager->GetAvgMetalIncome() * 1.2f < economyManager->GetMetalPull()) &&
+							(metalPull * economyManager->GetPullMtoS() > circuit->GetBuilderManager()->GetMetalPull());
+	const bool isNotReady = !economyManager->IsExcessed() || isStalling;
+	if (isNotReady) {
 		return EnqueueWait(FRAMES_PER_SEC * 5);
 	}
 

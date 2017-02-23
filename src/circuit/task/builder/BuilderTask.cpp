@@ -8,7 +8,6 @@
 #include "task/builder/BuilderTask.h"
 #include "task/builder/BuildChain.h"
 #include "task/RetreatTask.h"
-#include "task/TaskManager.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
@@ -346,11 +345,17 @@ bool IBuilderTask::IsEqualBuildPos(CCircuitUnit* unit) const
 void IBuilderTask::HideAssignee(CCircuitUnit* unit)
 {
 	buildPower -= unit->GetCircuitDef()->GetBuildSpeed();
+	if (buildDef != nullptr) {
+		manager->DelMetalPull(unit);
+	}
 }
 
 void IBuilderTask::ShowAssignee(CCircuitUnit* unit)
 {
 	buildPower += unit->GetCircuitDef()->GetBuildSpeed();
+	if (buildDef != nullptr) {
+		manager->AddMetalPull(unit);
+	}
 }
 
 void IBuilderTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, float searchRadius)

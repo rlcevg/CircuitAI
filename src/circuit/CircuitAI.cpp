@@ -44,6 +44,8 @@
 #include "Cheats.h"
 //#include "WrappCurrentCommand.h"
 
+#include <regex>
+
 namespace circuit {
 
 using namespace springai;
@@ -910,7 +912,13 @@ int CCircuitAI::LuaMessage(const char* inData)
 {
 //	if (strncmp(inData, "METAL_SPOTS:", 12) == 0) {
 //		gameAttribute->ParseMetalSpots(inData + 12);
-//	}
+//	} else
+	if (strncmp(inData, "DISABLE_CONTROL:", 16) == 0) {
+		DisableControl(inData + 16);
+	} else
+	if (strncmp(inData, "ENABLE_CONTROL:", 15) == 0) {
+		EnableControl(inData + 15);
+	}
 	return 0;  // signaling: OK
 }
 
@@ -1056,6 +1064,37 @@ CEnemyUnit* CCircuitAI::GetEnemyUnit(CCircuitUnit::Id unitId) const
 	return (it != enemyUnits.end()) ? it->second : nullptr;
 }
 
+void CCircuitAI::DisableControl(const std::string data)
+{
+	std::smatch section;
+	std::string::const_iterator start = data.begin();
+	std::string::const_iterator end = data.end();
+	std::regex patternUnit("\\w+");
+	while (std::regex_search(start, end, section, patternUnit)) {
+		CCircuitUnit* unit = GetTeamUnit(utils::string_to_int(section[0]));
+		if ((unit != nullptr) && (unit->GetTask() != nullptr)) {
+			ITaskManager* mgr = unit->GetTask()->GetManager();
+			mgr->AssignTask(unit, new CPlayerTask(mgr));
+		}
+		start = section[0].second;
+	}
+}
+
+void CCircuitAI::EnableControl(const std::string data)
+{
+	std::smatch section;
+	std::string::const_iterator start = data.begin();
+	std::string::const_iterator end = data.end();
+	std::regex patternUnit("\\w+");
+	while (std::regex_search(start, end, section, patternUnit)) {
+		CCircuitUnit* unit = GetTeamUnit(utils::string_to_int(section[0]));
+		if ((unit != nullptr) && (unit->GetTask() != nullptr)) {
+			unit->GetTask()->RemoveAssignee(unit);
+		}
+		start = section[0].second;
+	}
+}
+
 void CCircuitAI::ActionUpdate()
 {
 	if (actionIterator >= actionUnits.size()) {
@@ -1072,11 +1111,7 @@ void CCircuitAI::ActionUpdate()
 			actionUnits.pop_back();
 			DeleteTeamUnit(unit);
 		} else {
-			if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
-				if (unit->GetUnit()->GetRulesParamFloat("player_control", 0) < 1.f) {
-					unit->GetTask()->RemoveAssignee(unit);
-				}
-			} else {
+			if (unit->GetTask()->GetType() != IUnitTask::Type::PLAYER) {
 				unit->Update(this);
 			}
 			++actionIterator;

@@ -571,6 +571,16 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 			}
 		}
 	}
+	if (!isPorc) {
+		for (IBuilderTask* t : builderManager->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
+			if ((t->GetTarget() == nullptr) && (t->GetNextTask() != nullptr) &&
+				(closestPoint->position.SqDistance2D(t->GetTaskPos()) < SQUARE(SQUARE_SIZE)))
+			{
+				builderManager->AbortTask(t);
+				break;
+			}
+		}
+	}
 	unsigned num = std::min<unsigned>(isPorc ? defenders.size() : preventCount, defenders.size());
 
 	AIFloat3 backDir = circuit->GetSetupManager()->GetBasePos() - closestPoint->position;
@@ -589,9 +599,8 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 		if (totalCost < maxCost) {
 			closestPoint->cost += defCost;
 			bool isFirst = (parentTask == nullptr);
-			IBuilderTask::Priority priority = isFirst ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
 			const AIFloat3& buildPos = defDef->IsAttacker() ? closestPoint->position : backPos;
-			IBuilderTask* task = builderManager->EnqueueTask(priority, defDef, buildPos,
+			IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, defDef, buildPos,
 					IBuilderTask::BuildType::DEFENCE, defCost, SQUARE_SIZE * 32, isFirst);
 			if (parentTask != nullptr) {
 				parentTask->SetNextTask(task);
@@ -621,9 +630,9 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 		}
 		utils::free_clear(friendlies);
 		if (!isBuilt) {
-			IBuilderTask* task = nullptr;
+			const IBuilderTask* task = nullptr;
 			const float qdist = range * range;
-			for (IBuilderTask* t : builderManager->GetTasks(type)) {
+			for (const IBuilderTask* t : builderManager->GetTasks(type)) {
 				if (backPos.SqDistance2D(t->GetTaskPos()) < qdist) {
 					task = t;
 					break;
@@ -644,7 +653,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	}
 }
 
-void CMilitaryManager::AbortDefence(CBDefenceTask* task)
+void CMilitaryManager::AbortDefence(const CBDefenceTask* task)
 {
 	float defCost = task->GetBuildDef()->GetCost();
 	CDefenceMatrix::SDefPoint* point = defence->GetDefPoint(task->GetPosition(), defCost);
@@ -665,7 +674,6 @@ void CMilitaryManager::AbortDefence(CBDefenceTask* task)
 			next = next->GetNextTask();
 		}
 	}
-
 }
 
 bool CMilitaryManager::HasDefence(int cluster)
