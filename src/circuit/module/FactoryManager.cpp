@@ -869,7 +869,7 @@ void CFactoryManager::ReadConfig()
 					continue;
 				}
 				cdef->AddEnemyRole(it->second);
-				cdef->AddRole(it->second);
+//				cdef->AddRole(it->second);
 			}
 //		}
 

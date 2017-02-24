@@ -829,7 +829,7 @@
 		"retreat": 0.6
 	},
 	"armcybr": {
-		"role": ["bomber", "air"],
+		"role": ["bomber", "air", "support"],
 		"retreat": 0.6,
 		"dmg_mod": 1.5
 	},

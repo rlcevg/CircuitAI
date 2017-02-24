@@ -556,6 +556,12 @@ int CCircuitAI::Release(int reason)
 	pathfinder = nullptr;
 	setupManager = nullptr;
 
+	for (CCircuitUnit* unit : actionUnits) {
+		if (teamUnits.find(unit->GetId()) == teamUnits.end()) {
+			delete unit;
+		}
+	}
+	actionUnits.clear();
 	for (auto& kv : teamUnits) {
 		delete kv.second;
 	}
@@ -1027,7 +1033,6 @@ CEnemyUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS)
 void CCircuitAI::UnregisterEnemyUnit(CEnemyUnit* unit)
 {
 	enemyUnits.erase(unit->GetId());
-
 	delete unit;
 }
 
