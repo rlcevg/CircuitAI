@@ -329,6 +329,9 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 	std::set_intersection(allEnergyDefs.begin(), allEnergyDefs.end(),
 						  buildDefs.begin(), buildDefs.end(),
 						  std::inserter(engyDefs, engyDefs.begin()));
+	if (engyDefs.empty()) {
+		return;
+	}
 	std::set<CCircuitDef*> diffDefs;
 	std::set_difference(engyDefs.begin(), engyDefs.end(),
 						availEnergyDefs.begin(), availEnergyDefs.end(),
@@ -362,6 +365,9 @@ void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 	std::set_intersection(allEnergyDefs.begin(), allEnergyDefs.end(),
 						  buildDefs.begin(), buildDefs.end(),
 						  std::inserter(engyDefs, engyDefs.begin()));
+	if (engyDefs.empty()) {
+		return;
+	}
 	std::set<CCircuitDef*> diffDefs;
 	std::set_difference(availEnergyDefs.begin(), availEnergyDefs.end(),
 						engyDefs.begin(), engyDefs.end(),
