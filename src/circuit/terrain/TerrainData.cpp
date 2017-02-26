@@ -183,7 +183,11 @@ void CTerrainData::Init(CCircuitAI* circuit)
 			float minWaterDepth = (moveData->GetSpeedModClass() == MoveDef::Ship) ? depth : def->GetMinWaterDepth();
 			float maxWaterDepth = def->GetMaxWaterDepth();
 			bool canHover = def->IsAbleToHover();
-			bool canFloat = def->IsFloater();  // TODO: Remove submarines from floaters? @see CCircuitDef::isSubmarine
+//			bool canFloat = def->IsFloater();  // TODO: Remove submarines from floaters? @see CCircuitDef::isSubmarine
+			// FIXME: 103+ bug
+			int speedModClass = moveData->GetSpeedModClass();
+			bool canFloat = def->IsFloater() || (speedModClass == MoveDef::Hover) || (speedModClass == MoveDef::Ship);
+			// FIXME: 103+ bug
 			STerrainMapMobileType* MT = nullptr;
 			int mtIdx = 0;
 			for (; (unsigned)mtIdx < mobileType.size(); ++mtIdx) {

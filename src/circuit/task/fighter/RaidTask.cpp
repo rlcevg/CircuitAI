@@ -251,9 +251,11 @@ void CRaidTask::OnUnitIdle(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const float maxDist = std::max<float>(lowestRange, circuit->GetPathfinder()->GetSquareSize());
 	if (position.SqDistance2D(leader->GetPos(circuit->GetLastFrame())) < SQUARE(maxDist)) {
-		float x = rand() % circuit->GetTerrainManager()->GetTerrainWidth();
-		float z = rand() % circuit->GetTerrainManager()->GetTerrainHeight();
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		float x = rand() % terrainManager->GetTerrainWidth();
+		float z = rand() % terrainManager->GetTerrainHeight();
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
+		position = terrainManager->GetMovePosition(leader->GetArea(), position);
 	}
 
 	if (units.find(unit) != units.end()) {

@@ -115,6 +115,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			if (unit->GetCircuitDef()->IsRoleArty()) {
 				unit->GetUnit()->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {0.0f});
 			}
+			if (unit->GetCircuitDef()->IsAttrStock()) {
+				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+				unit->GetUnit()->ExecuteCustomCommand(CMD_MISC_PRIORITY, {2.0f});
+			}
 		)
 	};
 	auto attackerIdleHandler = [this](CCircuitUnit* unit) {

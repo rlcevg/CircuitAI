@@ -32,15 +32,13 @@ CSupportAction::~CSupportAction()
 
 void CSupportAction::Update(CCircuitAI* circuit)
 {
-	if (updCount++ % 2 != 0) {
+	if ((updCount++ % 2 != 0) ||
+		(isLowUpdate && (updCount % 4 != 1)))
+	{
 		return;
 	}
 
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
-	if (isLowUpdate && (updCount % 8 != 1)) {
-		return;
-	}
-
 	CCircuitUnit* leader = static_cast<ISquadTask*>(unit->GetTask())->GetLeader();
 	int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = leader->GetPos(frame);

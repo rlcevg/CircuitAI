@@ -907,8 +907,8 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		int terWidth = terrainManager->GetTerrainWidth();
 		int terHeight = terrainManager->GetTerrainHeight();
-		float x = terWidth / 4 + rand() % (int)(terWidth / 2 + 1);
-		float z = terHeight / 4 + rand() % (int)(terHeight / 2 + 1);
+		float x = terWidth / 4 + rand() % (int)(terWidth / 2);
+		float z = terHeight / 4 + rand() % (int)(terHeight / 2);
 		buildPos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	}
 	return builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, storeDef, buildPos, IBuilderTask::BuildType::STORE);

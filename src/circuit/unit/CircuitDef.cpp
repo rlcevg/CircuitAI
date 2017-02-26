@@ -10,6 +10,9 @@
 #include "util/GameAttribute.h"
 #include "util/utils.h"
 
+// FIXME: 103+ bug
+#include "Sim/MoveTypes/MoveDefHandler.h"
+// FIXME: 103+ bug
 #include "WeaponMount.h"
 #include "WeaponDef.h"
 #include "Damage.h"
@@ -121,11 +124,19 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 //	altitude  = def->GetWantedHeight();
 
 	MoveData* md = def->GetMoveData();
+	// FIXME: 103+ bug
+	isFloater = def->IsFloater();
+	if (md != nullptr) {
+		int speedModClass = md->GetSpeedModClass();
+		isFloater = isFloater || (speedModClass == MoveDef::Hover) || (speedModClass == MoveDef::Ship);
+	}
+	isFloater = isFloater && !isSubmarine && !isAbleToFly;
+	// FIXME: 103+ bug
 	isSubmarine = (md == nullptr) ? false : md->IsSubMarine();
 	delete md;
 	isAbleToFly    = def->IsAbleToFly();
 	isPlane        = !def->IsHoverAttack() && isAbleToFly;
-	isFloater      = def->IsFloater() && !isSubmarine && !isAbleToFly;
+//	isFloater      = def->IsFloater() && !isSubmarine && !isAbleToFly;
 	isSonarStealth = def->IsSonarStealth();
 	isTurnLarge    = (speed / (def->GetTurnRate() + 1e-3f) > 0.003f);
 	isAbleToCloak  = def->IsAbleToCloak();

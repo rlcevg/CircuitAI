@@ -140,6 +140,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	float x = rand() % terrainManager->GetTerrainWidth();
 	float z = rand() % terrainManager->GetTerrainHeight();
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
+	position = terrainManager->GetMovePosition(unit->GetArea(), position);
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 	)

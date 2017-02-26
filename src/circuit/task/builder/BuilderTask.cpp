@@ -163,8 +163,8 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		// TODO: Select new proper BasePos, like near metal cluster.
 		int terWidth = terrainManager->GetTerrainWidth();
 		int terHeight = terrainManager->GetTerrainHeight();
-		float x = terWidth / 4 + rand() % (int)(terWidth / 2 + 1);
-		float z = terHeight / 4 + rand() % (int)(terHeight / 2 + 1);
+		float x = terWidth / 4 + rand() % (int)(terWidth / 2);
+		float z = terHeight / 4 + rand() % (int)(terHeight / 2);
 		AIFloat3 pos(x, circuit->GetMap()->GetElevationAt(x, z), z);
 		circuit->GetSetupManager()->SetBasePos(pos);
 
