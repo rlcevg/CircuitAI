@@ -110,10 +110,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
 		if (it != factoryDefs.end()) {
 			const SFactoryDef& facDef = it->second;
-			bool hasBuilder = (facDef.GetRoleDef(CCircuitDef::RoleType::BUILDER) != nullptr);
-			factories.emplace_back(unit, nanos, facDef.nanoCount, hasBuilder);
+			factories.emplace_back(unit, nanos, facDef.nanoCount, facDef.GetRoleDef(CCircuitDef::RoleType::BUILDER));
 		} else {
-			factories.emplace_back(unit, nanos, 0, false);
+			factories.emplace_back(unit, nanos, 0, nullptr);
 		}
 	};
 	auto factoryIdleHandler = [this](CCircuitUnit* unit) {
@@ -131,7 +130,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			// check if any factory with builders left
 			bool hasBuilder = false;
 			for (SFactory& fac : factories) {
-				if (fac.hasBuilder) {
+				if ((fac.builder != nullptr) && fac.builder->IsAvailable()) {
 					hasBuilder = true;
 					break;
 				}
@@ -143,11 +142,13 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 					auto it = factoryDefs.find(task->GetBuildDef()->GetId());
 					if (it != factoryDefs.end()) {
 						const SFactoryDef& facDef = it->second;
-						hasBuilder = (facDef.GetRoleDef(CCircuitDef::RoleType::BUILDER) != nullptr);
+						CCircuitDef* bdef = facDef.GetRoleDef(CCircuitDef::RoleType::BUILDER);
+						hasBuilder = ((bdef != nullptr) && bdef->IsAvailable());
 						if (hasBuilder) {
 							break;
+						} else if (task->GetTarget() == nullptr) {
+							builderManager->AbortTask(task);
 						}
-						builderManager->AbortTask(task);
 					}
 				}
 				if (!hasBuilder) {
@@ -689,7 +690,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	const SFactoryDef& facDef = it->second;
 
 	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
-	CCircuitDef* buildDef/* = nullptr*/;
+	CCircuitDef* buildDef = nullptr;
 
 	CEconomyManager* em = circuit->GetEconomyManager();
 	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
@@ -718,7 +719,8 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
 		CCircuitDef* bd = facDef.buildDefs[i];
 		if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) ||
-			(bd->GetCost() > maxCost))
+			(bd->GetCost() > maxCost) ||
+			!bd->IsAvailable())
 		{
 			continue;
 		}
@@ -731,34 +733,32 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 
 	bool isResponse = !candidates.empty();
-	if (isResponse) {
-		buildDef = candidates.front().first;
-		float dice = (float)rand() / RAND_MAX * magnitude;
-		float total = .0f;
-		for (auto& pair : candidates) {
-			total += pair.second;
-			if (dice < total) {
-				buildDef = pair.first;
-				break;
+	if (!isResponse) {
+		// When isResponse==false: candidates.empty() and magnitude==0
+		for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
+			CCircuitDef* bd = facDef.buildDefs[i];
+			if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) ||
+				!bd->IsAvailable())
+			{
+				continue;
 			}
+			candidates.push_back(std::make_pair(bd, probs[i]));
+			magnitude += probs[i];
 		}
-		candidates.clear();
-	} else {
-		// NOTE: Ignores cloakCost and maxCost
-		unsigned choice = 0;
-		float dice = (float)rand() / RAND_MAX;
-		float total = .0f;
-		for (unsigned i = 0; i < probs.size(); ++i) {
-			total += probs[i];
-			if (dice < total) {
-				choice = i;
-				break;
-			}
-		}
-		buildDef = facDef.buildDefs[choice];
 	}
 
-	if (/*(buildDef != nullptr) && */buildDef->IsAvailable()) {
+	float dice = (float)rand() / RAND_MAX * magnitude;
+	float total = .0f;
+	for (auto& pair : candidates) {
+		total += pair.second;
+		if (dice < total) {
+			buildDef = pair.first;
+			break;
+		}
+	}
+	candidates.clear();
+
+	if ((buildDef != nullptr) && buildDef->IsAvailable()) {
 		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
 		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
 		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
@@ -1076,7 +1076,7 @@ IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 							(metalPull * economyManager->GetPullMtoS() > circuit->GetBuilderManager()->GetMetalPull());
 	const bool isNotReady = !economyManager->IsExcessed() || isStalling;
 	if (isNotReady) {
-		return EnqueueWait(FRAMES_PER_SEC * 5);
+		return EnqueueWait(FRAMES_PER_SEC * 3);
 	}
 
 	IUnitTask* task = UpdateBuildPower(unit);
@@ -1089,7 +1089,7 @@ IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 		return task;
 	}
 
-	return nullTask;
+	return EnqueueWait(FRAMES_PER_SEC * 3);
 }
 
 IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
@@ -1120,6 +1120,9 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 			{
 				isBuildMobile = candUnit->GetCircuitDef()->IsMobile();
 				buildTarget = candUnit;
+				if (cdef->GetBuildTime() < maxCost) {
+					maxCost = cdef->GetBuildTime();
+				}
 			}
 		} else if ((repairTarget == nullptr) && (u->GetHealth() < u->GetMaxHealth())) {
 			repairTarget = candUnit;

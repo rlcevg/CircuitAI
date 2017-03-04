@@ -131,8 +131,9 @@ void IRepairTask::SetTarget(CCircuitUnit* unit)
 		position = buildPos = unit->GetPos(circuit->GetLastFrame());
 //		CTerrainManager::CorrectPosition(buildPos);  // position will contain non-corrected value
 		targetId = unit->GetId();
-//		buildDef = unit->GetCircuitDef();
-		if (!unit->GetUnit()->IsBeingBuilt()) {
+		if (unit->GetUnit()->IsBeingBuilt()) {
+			buildDef = unit->GetCircuitDef();
+		} else {
 			savedIncome = .0f;
 		}
 	} else {
@@ -140,7 +141,7 @@ void IRepairTask::SetTarget(CCircuitUnit* unit)
 		cost = 1000.0f;
 		position = buildPos = -RgtVector;
 		targetId = -1;
-//		buildDef = nullptr;
+		buildDef = nullptr;
 	}
 }
 

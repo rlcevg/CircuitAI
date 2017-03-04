@@ -747,7 +747,7 @@ int CThreatMap::GetShieldRange(const CCircuitDef* edef) const
 float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
 {
 	if (enemy->GetUnit()->IsBeingBuilt()) {
-		return THREAT_BASE;
+		return .0f;  // THREAT_BASE;
 	}
 	const float health = enemy->GetUnit()->GetHealth();
 	if (health <= .0f) {

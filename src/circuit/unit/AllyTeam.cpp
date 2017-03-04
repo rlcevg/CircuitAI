@@ -67,7 +67,7 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 	}
 	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>(&CMetalManager::Init, metalManager));
 
-	energyLink = std::make_shared<CEnergyGrid>(circuit);
+	energyGrid = std::make_shared<CEnergyGrid>(circuit);
 	defence = std::make_shared<CDefenceMatrix>(circuit);
 	pathfinder = std::make_shared<CPathFinder>(&circuit->GetGameAttribute()->GetTerrainData());
 	factoryData = std::make_shared<CFactoryData>(circuit);
@@ -86,7 +86,7 @@ void CAllyTeam::Release()
 	friendlyUnits.clear();
 
 	metalManager = nullptr;
-	energyLink = nullptr;
+	energyGrid = nullptr;
 	defence = nullptr;
 	pathfinder = nullptr;
 	factoryData = nullptr;

@@ -620,7 +620,7 @@ int CCircuitAI::Update(int frame)
 
 #ifdef DEBUG_VIS
 	if (frame % FRAMES_PER_SEC == 0) {
-		allyTeam->GetEnergyLink()->UpdateVis();
+		allyTeam->GetEnergyGrid()->UpdateVis();
 		debugDrawer->Refresh();
 	}
 #endif
@@ -677,11 +677,11 @@ int CCircuitAI::Message(int playerId, const char* message)
 		auto selection = std::move(callback->GetSelectedUnits());
 		if (!selection.empty()) {
 			if (selection[0]->GetAllyTeam() == allyTeamId) {
-				allyTeam->GetEnergyLink()->ToggleVis();
+				allyTeam->GetEnergyGrid()->ToggleVis();
 			}
 			utils::free_clear(selection);
-		} else if (allyTeam->GetEnergyLink()->IsVis()) {
-			allyTeam->GetEnergyLink()->ToggleVis();
+		} else if (allyTeam->GetEnergyGrid()->IsVis()) {
+			allyTeam->GetEnergyGrid()->ToggleVis();
 		}
 	}
 	else if ((msgLength == strlen(cmdPath)) && (strcmp(message, cmdPath) == 0)) {

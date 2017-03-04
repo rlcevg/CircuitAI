@@ -58,6 +58,7 @@ public:
 	virtual bool CanAssignTo(CCircuitUnit* unit) const;
 	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
+	virtual void Close(bool done);
 
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();

@@ -295,7 +295,7 @@
 	},
 
 	"factoryship": {
-		"importance": [11.15],
+		"importance": [1.15],
 		"require_energy": false,
 
 		"income_tier": [40],
@@ -1091,10 +1091,6 @@
 		"role": ["static"],
 		"attribute": ["support"]
 	},
-	"factoryjump": {
-		"role": ["static"],
-		"attribute": ["support"]
-	},
 	"factorygunship": {
 		"role": ["static"],
 		"attribute": ["support"]
@@ -1541,22 +1537,27 @@
 					[7, 37],  // Machinegun, armor
 					[31, 36],  // Cloak, Regen
 					[19, 38, 39],  // disruptor bomb, high density, damage boost
-					[35, 35, 35],  // battle drones
-					[35, 35, 35],  // battle drones
 					[34, 34, 34],  // companion drones
 					[34, 34, 34],  // companion drones
+					[34, 34, 40],  // companion drones, speed
 					[40, 40, 40],  // speed
 					[40, 40, 40],  // speed
-					[40, 40, 37],  // speed, armour
+					[40, 37, 37],  // speed, armour
 					[37, 37, 37],  // armour
-					[37, 37, 37],  // armour
-					[37, 36, 36],  // armour, autoheal
-					[36, 36, 36],  // autoheal
-					[36, 36, 36],  // autoheal
+					[37, 37, 36],  // armour, regen
+					[36, 36, 36],  // regen
+					[36, 36, 36],  // regen
 					[42, 42, 42],  // builder
 					[42, 42, 42],  // builder
-					[42, 42, 29],  // builder, jammer
-					[32, 27, 33]  // area cloak, disruptor ammo, lazarus
+					[42, 42, 30],  // builder, radar
+					[27, 29, 41],  // disruptor, jammer, distance,
+					[41, 41, 41],  // distance
+					[41, 41, 41],  // distance
+					[41, 39, 39],  // distance, damage
+					[39, 39, 39],  // damage
+					[39, 39, 38],  // damage, high density
+					[38, 38, 38],  // high density
+					[38, 38, 38]  // high density
 				]
 			},
 

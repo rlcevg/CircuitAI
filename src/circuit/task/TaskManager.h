@@ -31,8 +31,9 @@ public:
 	virtual void DoneTask(IUnitTask* task) = 0;
 	virtual void FallbackTask(CCircuitUnit* unit) = 0;
 
-	void AddMetalPull(CCircuitUnit* unit);
-	void DelMetalPull(CCircuitUnit* unit);
+	void AddMetalPull(const CCircuitUnit* unit);
+	void DelMetalPull(const CCircuitUnit* unit);
+	void DelMetalPull(float value) { metalPull -= value; }
 	float GetMetalPull() const { return metalPull; }
 
 	void Init();

@@ -93,6 +93,15 @@ void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 	HideAssignee(unit);
 }
 
+void IBuilderTask::Close(bool done)
+{
+	IUnitTask::Close(done);
+
+	if (buildDef != nullptr) {
+		manager->DelMetalPull(buildPower);
+	}
+}
+
 void IBuilderTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -191,6 +200,7 @@ void IBuilderTask::Update()
 	// FIXME: Replace const 1000.0f with build time?
 	CEconomyManager* em = circuit->GetEconomyManager();
 	if ((cost > 1000.0f) &&
+		(target == nullptr) &&
 		(em->GetAvgMetalIncome() < savedIncome * 0.6f) &&
 		(em->GetAvgMetalIncome() * 2.0f < em->GetMetalPull()))
 	{
@@ -252,7 +262,7 @@ void IBuilderTask::OnUnitIdle(CCircuitUnit* unit)
 		Execute(unit);
 	} else if (buildFails <= TASK_RETRIES) {
 		RemoveAssignee(unit);
-	} else {
+	} else if (target == nullptr) {
 		manager->AbortTask(this);
 		manager->GetCircuit()->GetTerrainManager()->AddBlocker(buildDef, buildPos, facing);  // FIXME: Remove blocker on timer? Or when air con appears
 	}
@@ -275,11 +285,10 @@ void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 
 void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
+	RemoveAssignee(unit);
 	// NOTE: AbortTask usually do not call RemoveAssignee for each unit
 	if (((target == nullptr) || units.empty()) && !unit->IsMorphing()) {
 		manager->AbortTask(this);
-	} else {
-		RemoveAssignee(unit);
 	}
 }
 

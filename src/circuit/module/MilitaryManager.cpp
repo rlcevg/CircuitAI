@@ -112,9 +112,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 					unit->GetUnit()->SetIdleMode(1);
 				}
 			}
-			if (unit->GetCircuitDef()->IsRoleArty()) {
+//			if (unit->GetCircuitDef()->IsRoleArty()) {
 				unit->GetUnit()->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {0.0f});
-			}
+//			}
 			if (unit->GetCircuitDef()->IsAttrStock()) {
 				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
 				unit->GetUnit()->ExecuteCustomCommand(CMD_MISC_PRIORITY, {2.0f});
@@ -179,18 +179,24 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	 * Defend buildings handler
 	 */
 	auto structDamagedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
-		const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
+		const std::set<IFighterTask*>& tasks = GetTasks(IFighterTask::FightType::DEFEND);
+		if (tasks.empty()) {
+			return;
+		}
+		int frame = this->circuit->GetLastFrame();
+		const AIFloat3& pos = unit->GetPos(frame);
 		CTerrainManager* terrainManager = this->circuit->GetTerrainManager();
 		CDefendTask* defendTask = nullptr;
 		float minSqDist = std::numeric_limits<float>::max();
-		const std::set<IFighterTask*>& tasks = GetTasks(IFighterTask::FightType::DEFEND);
 		for (IFighterTask* task : tasks) {
 			CDefendTask* dt = static_cast<CDefendTask*>(task);
-			if (dt->GetTarget() != nullptr) {
+			const float sqDist = pos.SqDistance2D(dt->GetPosition());
+			if ((minSqDist <= sqDist) || !terrainManager->CanMoveToPos(dt->GetLeader()->GetArea(), pos)) {
 				continue;
 			}
-			const float sqDist = pos.SqDistance2D(dt->GetPosition());
-			if ((minSqDist < sqDist) && (terrainManager->CanMoveToPos(dt->GetLeader()->GetArea(), pos))) {
+			if ((dt->GetTarget() == nullptr) ||
+				(dt->GetTarget()->GetPos().SqDistance2D(dt->GetLeader()->GetPos(frame)) > sqDist))
+			{
 				minSqDist = sqDist;
 				defendTask = dt;
 			}

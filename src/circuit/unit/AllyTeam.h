@@ -68,7 +68,7 @@ public:
 	const Units& GetFriendlyUnits() const { return friendlyUnits; }
 
 	std::shared_ptr<CMetalManager>& GetMetalManager() { return metalManager; }
-	std::shared_ptr<CEnergyGrid>& GetEnergyLink() { return energyLink; }
+	std::shared_ptr<CEnergyGrid>& GetEnergyGrid() { return energyGrid; }
 	std::shared_ptr<CDefenceMatrix>& GetDefenceMatrix() { return defence; }
 	std::shared_ptr<CPathFinder>& GetPathfinder() { return pathfinder; }
 	std::shared_ptr<CFactoryData>& GetFactoryData() { return factoryData; }
@@ -88,7 +88,7 @@ private:
 	std::map<int, SClusterTeam> occupants;  // Cluster owner on start. clusterId: SClusterTeam
 
 	std::shared_ptr<CMetalManager> metalManager;
-	std::shared_ptr<CEnergyGrid> energyLink;
+	std::shared_ptr<CEnergyGrid> energyGrid;
 	std::shared_ptr<CDefenceMatrix> defence;
 	std::shared_ptr<CPathFinder> pathfinder;
 	std::shared_ptr<CFactoryData> factoryData;

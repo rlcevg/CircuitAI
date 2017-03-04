@@ -6,6 +6,7 @@
  */
 
 #include "unit/FactoryData.h"
+#include "module/FactoryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
@@ -104,6 +105,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 {
 	std::vector<SFactory> availFacs;
 	std::map<CCircuitDef::Id, float> percents;
+	CFactoryManager* factoryManager = circuit->GetFactoryManager();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	SAreaData* areaData = terrainManager->GetAreaData();
 	const std::vector<STerrainMapImmobileType>& immobileType = areaData->immobileType;
@@ -131,7 +133,13 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 		{
 			continue;
 		}
-		const float importance = isStart ? sfac.startImp : sfac.switchImp;
+		float importance;
+		if (isStart) {
+			CCircuitDef* bdef = factoryManager->GetRoleDef(cdef, CCircuitDef::RoleType::BUILDER);
+			importance = sfac.startImp * (((bdef != nullptr) && bdef->IsAvailable()) ? 1.f : .1f);
+		} else {
+			importance = sfac.switchImp;
+		}
 		if (importance <= .0f) {
 			continue;
 		}

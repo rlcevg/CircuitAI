@@ -104,16 +104,16 @@ private:
 
 	CFactoryData* factoryData;
 	struct SFactory {
-		SFactory(CCircuitUnit* u, const std::set<CCircuitUnit*>& n, unsigned int w, bool h)
+		SFactory(CCircuitUnit* u, const std::set<CCircuitUnit*>& n, unsigned int w, CCircuitDef* b)
 			: unit(u)
 			, nanos(n)
 			, weight(w)
-			, hasBuilder(h)
+			, builder(b)
 		{}
 		CCircuitUnit* unit;
 		std::set<CCircuitUnit*> nanos;
 		unsigned int weight;
-		bool hasBuilder;
+		CCircuitDef* builder;
 	};
 	std::vector<SFactory> factories;  // facory 1:n nano
 

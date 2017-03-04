@@ -41,12 +41,12 @@ void ITaskManager::AssignTask(CCircuitUnit* unit)
 	}
 }
 
-void ITaskManager::AddMetalPull(CCircuitUnit* unit)
+void ITaskManager::AddMetalPull(const CCircuitUnit* unit)
 {
 	metalPull += unit->GetCircuitDef()->GetBuildSpeed();
 }
 
-void ITaskManager::DelMetalPull(CCircuitUnit* unit)
+void ITaskManager::DelMetalPull(const CCircuitUnit* unit)
 {
 	metalPull -= unit->GetCircuitDef()->GetBuildSpeed();
 }

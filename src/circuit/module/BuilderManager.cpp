@@ -80,7 +80,6 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 
 		AddBuildPower(unit);
-		workers.insert(unit);
 
 		AddBuildList(unit);
 	};
@@ -106,7 +105,6 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		--buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 
 		DelBuildPower(unit);
-		workers.erase(unit);
 
 		RemoveBuildList(unit);
 	};
@@ -333,12 +331,16 @@ void CBuilderManager::AddBuildPower(CCircuitUnit* unit)
 {
 	buildPower += unit->GetCircuitDef()->GetBuildSpeed();
 	circuit->GetMilitaryManager()->AddArmyCost(unit);
+
+	workers.insert(unit);
 }
 
 void CBuilderManager::DelBuildPower(CCircuitUnit* unit)
 {
 	buildPower -= unit->GetCircuitDef()->GetBuildSpeed();
 	circuit->GetMilitaryManager()->DelArmyCost(unit);
+
+	workers.erase(unit);
 }
 
 const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType type) const
@@ -624,7 +626,7 @@ IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 	if (cdef->IsAttrComm()) {  // hide commander?
 		const CSetupManager::SCommInfo::SHide* hide = circuit->GetSetupManager()->GetHide(cdef);
 		if (hide != nullptr) {
-			if (circuit->GetLastFrame() < hide->frame) {
+			if ((circuit->GetLastFrame() < hide->frame) || (GetWorkerCount() <= 2)) {
 				return MakeBuilderTask(unit);
 			}
 			CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
@@ -925,7 +927,6 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 							(economyManager->GetAvgMetalIncome() * 1.2f < economyManager->GetMetalPull()) &&
 							(metalPull > economyManager->GetPullMtoS() * circuit->GetFactoryManager()->GetMetalPull());
 	const bool isNotReady = !economyManager->IsExcessed() || isStalling;
-	const CCircuitDef* mexDef = economyManager->GetMexDef();
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
@@ -940,7 +941,9 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 		for (const IBuilderTask* candidate : tasks) {
 			if (!candidate->CanAssignTo(unit) ||
 				(isNotReady && (candidate->GetPriority() != IBuilderTask::Priority::NOW) &&
-					(candidate->GetBuildDef() != nullptr) && (candidate->GetBuildDef() != mexDef)))
+					(candidate->GetBuildDef() != nullptr) &&
+					(candidate->GetBuildType() != IBuilderTask::BuildType::MEX) &&
+					(candidate->GetBuildType() != IBuilderTask::BuildType::PYLON)))
 			{
 				continue;
 			}
