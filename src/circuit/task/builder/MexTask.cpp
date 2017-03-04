@@ -103,12 +103,14 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	const CMetalData::Metals& spots = metalManager->GetSpots();
 	Map* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CCircuitDef* mexDef = buildDef;
 	circuit->GetThreatMap()->SetThreatType(unit);
-	CMetalData::MetalPredicate predicate = [&spots, economyManager, map, buildUDef, terrainManager, unit](CMetalData::MetalNode const& v) {
+	CMetalData::MetalPredicate predicate = [&spots, economyManager, map, mexDef, terrainManager, unit](CMetalData::MetalNode const& v) {
 		int index = v.second;
 		return (economyManager->IsAllyOpenSpot(index) &&
+				terrainManager->CanBeBuiltAt(mexDef, spots[index].position) &&  // hostile environment
 				terrainManager->CanBuildAt(unit, spots[index].position) &&
-				map->IsPossibleToBuildAt(buildUDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
+				map->IsPossibleToBuildAt(mexDef->GetUnitDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 	};
 	int index = metalManager->FindNearestSpot(position, predicate);
 

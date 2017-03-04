@@ -8,7 +8,6 @@
 #ifndef SRC_CIRCUIT_STATIC_SETUPMANAGER_H_
 #define SRC_CIRCUIT_STATIC_SETUPMANAGER_H_
 
-#include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
 #include "json/json-forwards.h"
 
@@ -25,6 +24,8 @@ namespace setup {
 class CCircuitAI;
 class CSetupData;
 class CAllyTeam;
+class CGameTask;
+class CCircuitUnit;
 
 class CSetupManager {
 public:
@@ -41,6 +42,7 @@ public:
 			bool isAir;
 		} hide;
 	};
+	using StartFunc = std::function<void (const springai::AIFloat3& pos)>;
 
 	CSetupManager(CCircuitAI* circuit, CSetupData* setupData);
 	virtual ~CSetupManager();
@@ -59,11 +61,12 @@ public:
 	const springai::AIFloat3& GetStartPos() const { return startPos; }
 	void SetBasePos(const springai::AIFloat3& pos) { basePos = pos; }
 	const springai::AIFloat3& GetBasePos() const { return basePos; }
+	void ExecOnFindStart(StartFunc& func) { startFuncs.push_back(func); }
 
 	bool PickCommander();
 	CCircuitDef* GetCommChoice() const { return commChoice; }
-	void SetCommander(CCircuitUnit* unit) { commanderId = unit->GetId(); }
-	CCircuitUnit* GetCommander() const;
+	void SetCommander(CCircuitUnit* unit) { commander = unit; }
+	CCircuitUnit* GetCommander() const { return commander; }
 
 	CAllyTeam* GetAllyTeam() const;
 
@@ -80,7 +83,7 @@ public:
 	void Welcome() const;
 
 private:
-	void FindCommander();
+	void FindStart();
 	bool LocatePath(std::string& filename);
 	const char* ReadConfig(const std::string& filename);
 	Json::Value* ParseConfig(const char* cfgJson);
@@ -90,9 +93,11 @@ private:
 	Json::Value* config;  // owner;
 	std::string configName;
 
-	CCircuitUnit::Id commanderId;
+	CCircuitUnit* commander;
 	springai::AIFloat3 startPos;
 	springai::AIFloat3 basePos;
+	std::shared_ptr<CGameTask> findStart;
+	std::vector<StartFunc> startFuncs;
 
 	float emptyShield;
 	float fullShield;

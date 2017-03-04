@@ -188,7 +188,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		this->circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this, mexDef, pos, index]() {
 			if (this->circuit->GetEconomyManager()->IsAllyOpenSpot(index) &&
 				this->circuit->GetBuilderManager()->IsBuilderInArea(mexDef, pos) &&
-				this->circuit->GetTerrainManager()->CanBeBuiltAt(mexDef, pos))
+				this->circuit->GetTerrainManager()->CanBeBuiltAt(mexDef, pos))  // hostile environment
 			{
 				EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
 				this->circuit->GetEconomyManager()->SetOpenSpot(index, false);

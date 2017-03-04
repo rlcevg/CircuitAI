@@ -482,6 +482,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
 	economyManager = std::make_shared<CEconomyManager>(this);
+	threatMap = std::make_shared<CThreatMap>(this, decloakRadius);
 
 	allyTeam->Init(this);
 	metalManager = allyTeam->GetMetalManager();
@@ -506,7 +507,6 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	modules.push_back(factoryManager);
 	modules.push_back(economyManager);  // NOTE: Units use manager, but ain't assigned here
 
-	threatMap = std::make_shared<CThreatMap>(this, decloakRadius);
 	uEnemyMark = skirmishAIId % FRAMES_PER_SEC;
 	kEnemyMark = (skirmishAIId + FRAMES_PER_SEC / 2) % FRAMES_PER_SEC;
 
@@ -520,7 +520,9 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	setupManager->CloseConfig();
 	setupManager->Welcome();
 
+	Update(0);  // Init modules: allows to manipulate units on gadget:Initialize
 	isInitialized = true;
+
 	return 0;  // signaling: OK
 }
 
@@ -719,6 +721,14 @@ int CCircuitAI::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 
 int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 {
+	TRY_UNIT(this, unit,
+		unit->GetUnit()->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {0.0f});
+		if (unit->GetCircuitDef()->GetUnitDef()->IsAbleToCloak()) {
+			unit->GetUnit()->ExecuteCustomCommand(CMD_WANT_CLOAK, {1.0f});  // personal
+			unit->GetUnit()->ExecuteCustomCommand(CMD_CLOAK_SHIELD, {1.0f});  // area
+			unit->GetUnit()->Cloak(true);
+		}
+	)
 	for (auto& module : modules) {
 		module->UnitFinished(unit);
 	}
@@ -795,6 +805,12 @@ int CCircuitAI::UnitGiven(CCircuitUnit::Id unitId, int oldTeamId, int newTeamId)
 
 	TRY_UNIT(this, unit,
 		unit->GetUnit()->Stop();
+		unit->GetUnit()->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {0.0f});
+		if (unit->GetCircuitDef()->GetUnitDef()->IsAbleToCloak()) {
+			unit->GetUnit()->ExecuteCustomCommand(CMD_WANT_CLOAK, {1.0f});  // personal
+			unit->GetUnit()->ExecuteCustomCommand(CMD_CLOAK_SHIELD, {1.0f});  // area
+			unit->GetUnit()->Cloak(true);
+		}
 	)
 	for (auto& module : modules) {
 		module->UnitGiven(unit, oldTeamId, newTeamId);

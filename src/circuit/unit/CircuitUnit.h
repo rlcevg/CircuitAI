@@ -25,6 +25,7 @@ namespace circuit {
 #define CMD_SETHAVEN				CMD_RETREAT_ZONE
 #define CMD_ORBIT					13923
 #define CMD_ORBIT_DRAW				13924
+#define CMD_CLOAK_SHIELD			31101
 #define CMD_MORPH_UPGRADE_INTERNAL	31207
 #define CMD_UPGRADE_STOP			31208
 #define CMD_MORPH					31210
@@ -36,6 +37,7 @@ namespace circuit {
 #define CMD_UNIT_SET_TARGET			34923
 #define CMD_UNIT_CANCEL_TARGET		34924
 #define CMD_ONECLICK_WEAPON			35000
+#define CMD_WANT_CLOAK				37382
 #define CMD_DONT_FIRE_AT_RADAR		38372
 #define CMD_JUMP					38521
 #define CMD_AIR_STRAFE				39381

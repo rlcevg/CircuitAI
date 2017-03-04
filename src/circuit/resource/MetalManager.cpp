@@ -7,6 +7,7 @@
 
 #include "resource/MetalManager.h"
 #include "module/EconomyManager.h"
+#include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
 #include "util/math/RagMatrix.h"
@@ -137,14 +138,17 @@ void CMetalManager::ParseMetalSpots()
 			inc = 1;
 			spots.reserve(spotsPos.size());
 		}
-		UnitDef* mexDef = circuit->GetEconomyManager()->GetMexDef()->GetUnitDef();
-		const int xsize = mexDef->GetXSize();
-		const int zsize = mexDef->GetZSize();
+		CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		const int xsize = mexDef->GetUnitDef()->GetXSize();
+		const int zsize = mexDef->GetUnitDef()->GetZSize();
 		for (unsigned i = 0; i < spotsPos.size(); i += inc) {
 			const AIFloat3& pos = spotsPos[i];
 			const unsigned x1 = int(pos.x) / SQUARE_SIZE - (xsize / 2), x2 = x1 + xsize;
 			const unsigned z1 = int(pos.z) / SQUARE_SIZE - (zsize / 2), z2 = z1 + zsize;
-			if ((x1 < x2) && (x2 < width) && (z1 < z2) && (z2 < height)) {
+			if ((x1 < x2) && (x2 < width) && (z1 < z2) && (z2 < height) &&
+				terrainManager->CanBeBuiltAt(mexDef, pos))
+			{
 				spots.push_back({pos.y, pos});
 			}
 		}

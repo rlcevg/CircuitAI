@@ -170,6 +170,12 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	};
 	auto comDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		RemoveMorphee(unit);
+
+		CSetupManager* setupManager = this->circuit->GetSetupManager();
+		CCircuitUnit* commander = setupManager->GetCommander();
+		if (commander == unit) {
+			setupManager->SetCommander(nullptr);
+		}
 	};
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
@@ -515,21 +521,23 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 		unsigned maxCount = builderManager->GetBuildPower() / cost * 8 + 2;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < maxCount) {
 			CMetalManager* metalManager = circuit->GetMetalManager();
+			CTerrainManager* terrainManager = circuit->GetTerrainManager();
 			const CMetalData::Metals& spots = metalManager->GetSpots();
 			Map* map = circuit->GetMap();
 			CMetalManager::MexPredicate predicate;
 			if (unit != nullptr) {
-				UnitDef* metalDef =  mexDef->GetUnitDef();
-				CTerrainManager* terrainManager = circuit->GetTerrainManager();
-				predicate = [this, &spots, map, metalDef, terrainManager, unit](int index) {
+				CCircuitDef* mexDef = this->mexDef;
+				predicate = [this, &spots, map, mexDef, terrainManager, unit](int index) {
 					return (IsAllyOpenSpot(index) &&
+							terrainManager->CanBeBuiltAt(mexDef, spots[index].position) &&  // hostile environment
 							terrainManager->CanBuildAt(unit, spots[index].position) &&
-							map->IsPossibleToBuildAt(metalDef, spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
+							map->IsPossibleToBuildAt(mexDef->GetUnitDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};
 			} else {
 				CCircuitDef* mexDef = this->mexDef;
-				predicate = [this, &spots, map, mexDef, builderManager](int index) {
+				predicate = [this, &spots, map, mexDef, terrainManager, builderManager](int index) {
 					return (IsAllyOpenSpot(index) &&
+							terrainManager->CanBeBuiltAt(mexDef, spots[index].position) &&  // hostile environment
 							builderManager->IsBuilderInArea(mexDef, spots[index].position) &&
 							map->IsPossibleToBuildAt(mexDef->GetUnitDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};

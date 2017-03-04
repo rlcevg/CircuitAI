@@ -35,7 +35,7 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 		: circuit(circuit)
 		, setupData(setupData)
 		, config(nullptr)
-		, commanderId(-1)
+		, commander(nullptr)
 		, startPos(-RgtVector)
 		, basePos(-RgtVector)
 		, emptyShield(0.f)
@@ -46,7 +46,9 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 		setupData->ParseSetupScript(circuit, setupScript);
 	}
 	DisabledUnits(setupScript);
-	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>(&CSetupManager::FindCommander, this));
+
+	findStart = std::make_shared<CGameTask>(&CSetupManager::FindStart, this);
+	circuit->GetScheduler()->RunTaskEvery(findStart, 1);
 }
 
 CSetupManager::~CSetupManager()
@@ -356,11 +358,6 @@ bool CSetupManager::PickCommander()
 	return true;
 }
 
-CCircuitUnit* CSetupManager::GetCommander() const
-{
-	return circuit->GetTeamUnit(commanderId);
-}
-
 CAllyTeam* CSetupManager::GetAllyTeam() const
 {
 	return setupData->GetAllyTeam(circuit->GetAllyTeamId());
@@ -565,25 +562,42 @@ void CSetupManager::Welcome() const
 #endif
 }
 
-void CSetupManager::FindCommander()
+void CSetupManager::FindStart()
 {
-	std::vector<Unit*> units = circuit->GetCallback()->GetTeamUnits();
-	for (Unit* u : units) {
-		if (u == nullptr) {
-			continue;
+	if (utils::is_valid(startPos)) {
+		circuit->GetScheduler()->RemoveTask(findStart);
+		findStart = nullptr;
+
+		for (StartFunc& func : startFuncs) {
+			func(startPos);
 		}
-		UnitDef* def = u->GetDef();
-		bool valid = def->IsBuilder();
-		delete def;
-		if (valid) {
-			commanderId = u->GetUnitId();
-//			if (!utils::is_valid(startPos)) {
-				SetStartPos(u->GetPos());
-//			}
-			break;
+		return;
+	}
+
+	if (circuit->GetTeamUnits().empty()) {
+		return;
+	}
+
+	int frame = circuit->GetLastFrame();
+	AIFloat3 midPos = ZeroVector;
+	for (auto& kv : circuit->GetTeamUnits()) {
+		CCircuitUnit* unit = kv.second;
+		midPos += unit->GetPos(frame);
+	}
+	midPos /= circuit->GetTeamUnits().size();
+
+	float minSqDist = std::numeric_limits<float>::max();
+	AIFloat3 bestPos;
+	for (auto& kv : circuit->GetTeamUnits()) {
+		CCircuitUnit* unit = kv.second;
+		const AIFloat3& pos = unit->GetPos(frame);
+		float sqDist = pos.SqDistance2D(midPos);
+		if (minSqDist > sqDist) {
+			minSqDist = sqDist;
+			bestPos = pos;
 		}
 	}
-	utils::free_clear(units);
+	SetStartPos(bestPos);
 }
 
 bool CSetupManager::LocatePath(std::string& filename)

@@ -112,9 +112,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 					unit->GetUnit()->SetIdleMode(1);
 				}
 			}
-//			if (unit->GetCircuitDef()->IsRoleArty()) {
-				unit->GetUnit()->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {0.0f});
-//			}
 			if (unit->GetCircuitDef()->IsAttrStock()) {
 				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
 				unit->GetUnit()->ExecuteCustomCommand(CMD_MISC_PRIORITY, {2.0f});
@@ -593,6 +590,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 
 	AIFloat3 backDir = circuit->GetSetupManager()->GetBasePos() - closestPoint->position;
 	AIFloat3 backPos = closestPoint->position + backDir.Normalize2D() * SQUARE_SIZE * 16;
+	CTerrainManager::CorrectPosition(backPos);
 
 	for (unsigned i = 0; i < num; ++i) {
 		CCircuitDef* defDef = defenders[i];
@@ -1190,26 +1188,29 @@ void CMilitaryManager::Init()
 {
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	const CMetalData::Metals& spots = metalManager->GetSpots();
-	const CMetalData::Clusters& clusters = metalManager->GetClusters();
+
+	clusterInfos.resize(metalManager->GetClusters().size(), {nullptr});
 
 	scoutPath.reserve(spots.size());
 	for (unsigned i = 0; i < spots.size(); ++i) {
 		scoutPath.push_back(i);
 	}
-	const AIFloat3& pos = circuit->GetSetupManager()->GetStartPos();
-	auto compare = [&pos, &spots](int a, int b) {
-		return pos.SqDistance2D(spots[a].position) > pos.SqDistance2D(spots[b].position);
+
+	CSetupManager::StartFunc subinit = [this, &spots](const AIFloat3& pos) {
+		auto compare = [&pos, &spots](int a, int b) {
+			return pos.SqDistance2D(spots[a].position) > pos.SqDistance2D(spots[b].position);
+		};
+		std::sort(scoutPath.begin(), scoutPath.end(), compare);
+
+		CScheduler* scheduler = circuit->GetScheduler().get();
+		const int interval = 4;
+		const int offset = circuit->GetSkirmishAIId() % interval;
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateIdle, this), interval, offset + 0);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateFight, this), interval / 2, offset + 1);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefenceTasks, this), FRAMES_PER_SEC * 5, offset + 2);
 	};
-	std::sort(scoutPath.begin(), scoutPath.end(), compare);
 
-	clusterInfos.resize(clusters.size(), {nullptr});
-
-	CScheduler* scheduler = circuit->GetScheduler().get();
-	const int interval = 4;
-	const int offset = circuit->GetSkirmishAIId() % interval;
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateIdle, this), interval, offset + 0);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateFight, this), interval / 2, offset + 1);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefenceTasks, this), FRAMES_PER_SEC * 5, offset + 2);
+	circuit->GetSetupManager()->ExecOnFindStart(subinit);
 }
 
 void CMilitaryManager::Watchdog()

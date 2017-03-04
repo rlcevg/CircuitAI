@@ -1451,23 +1451,32 @@
 				"module": [  // List of dynamic module IDs
 					[13],  // shotgun
 					[31, 42],  // Cloak, Nano
-					[15, 41, 37],  // sniper, range, armor
+					[15, 41, 37],  // sniper, range, health
+					[34, 34, 34],  // companion drones
 					[35, 35, 35],  // battle drones
 					[35, 35, 35],  // battle drones
+					[35, 35, 34],  // battle drones, companion drones
 					[34, 34, 34],  // companion drones
-					[34, 34, 34],  // companion drones
+					[34, 40, 40],  // companion drones, speed
 					[40, 40, 40],  // speed
 					[40, 40, 40],  // speed
-					[40, 40, 37],  // speed, armour
-					[37, 37, 37],  // armour
-					[37, 37, 37],  // armour
-					[37, 36, 36],  // armour, autoheal
-					[36, 36, 36],  // autoheal
-					[36, 36, 36],  // autoheal
-					[42, 42, 42],  // builder
-					[42, 42, 42],  // builder
-					[42, 42, 29],  // builder, jammer
-					[32, 27, 33]  // area cloak, disruptor ammo, lazarus
+					[37, 37, 37],  // health
+					[37, 37, 37],  // health
+					[37, 36, 36],  // health, regen
+					[36, 36, 36],  // regen
+					[36, 36, 36],  // regen
+					[42, 42, 42],  // nano
+					[42, 42, 42],  // nano
+					[42, 27, 29],  // nano, disruptor ammo, jammer
+					[32, 33, 30],  // area cloak, lazarus, radar
+					[41, 41, 41],  // range
+					[41, 41, 41],  // range
+					[41, 38, 38],  // range, high density
+					[38, 38, 38],  // high density
+					[38, 38, 38],  // high density
+					[39, 39, 39],  // damage
+					[39, 39, 39],  // damage
+					[39, 39]  // damage
 				]
 			},
 
@@ -1534,7 +1543,7 @@
 			"upgrade": {
 				"time": 90,  // Force-morph delay, in seconds
 				"module": [  // List of dynamic module IDs
-					[7, 37],  // Machinegun, armor
+					[7, 37],  // Machinegun, health
 					[31, 36],  // Cloak, Regen
 					[19, 38, 39],  // disruptor bomb, high density, damage boost
 					[34, 34, 34],  // companion drones
@@ -1542,18 +1551,18 @@
 					[34, 34, 40],  // companion drones, speed
 					[40, 40, 40],  // speed
 					[40, 40, 40],  // speed
-					[40, 37, 37],  // speed, armour
-					[37, 37, 37],  // armour
-					[37, 37, 36],  // armour, regen
+					[40, 37, 37],  // speed, health
+					[37, 37, 37],  // health
+					[37, 37, 36],  // health, regen
 					[36, 36, 36],  // regen
 					[36, 36, 36],  // regen
 					[42, 42, 42],  // builder
 					[42, 42, 42],  // builder
 					[42, 42, 30],  // builder, radar
-					[27, 29, 41],  // disruptor, jammer, distance,
-					[41, 41, 41],  // distance
-					[41, 41, 41],  // distance
-					[41, 39, 39],  // distance, damage
+					[27, 29, 41],  // disruptor ammo, jammer, range,
+					[41, 41, 41],  // range
+					[41, 41, 41],  // range
+					[41, 39, 39],  // range, damage
 					[39, 39, 39],  // damage
 					[39, 39, 38],  // damage, high density
 					[38, 38, 38],  // high density
@@ -1625,22 +1634,30 @@
 				"time": 60,  // Force-morph delay, in seconds
 				"module": [  // List of dynamic module IDs
 					[11],  // Riot
-					[24, 37],  // health
-					[11, 41, 41],  // Double Riot + range
-					[38, 41, 41],  // HP + range
-					[36, 41, 36],  // shield, regen, range
+					[24, 37],  // shield, health
+					[11, 41, 41],  // Double Riot, range
+					[38, 41, 41],  // high density, range
+					[36, 41, 36],  // regen, range, regen
 					[41, 41, 41],  // range
-					[39, 39, 39],  // dmg
-					[41, 41, 41],  // range
-					[39, 39, 39],  // dmg
-					[41, 41, 41],  // range
-					[39, 39, 39],  // dmg
-					[41, 41, 41],  // range
-					[39, 39, 39],  // dmg
-					[41, 41, 41],  // range
-					[39, 39, 39],  // dmg
-					[41, 41, 41],  // range
-					[39, 39, 39]  // dmg
+					[39, 39, 39],  // damage
+					[39, 39, 39],  // damage
+					[39, 39, 25],  // damage, area shield
+					[26, 29, 30],  // napalm, jammer, radar
+					[34, 34, 34],  // companion drones
+					[34, 34, 34],  // companion drones
+					[34, 34, 40],  // companion drones, speed
+					[40, 40, 40],  // speed
+					[40, 40, 40],  // speed
+					[40, 36, 36],  // speed, regen
+					[36, 36, 36],  // regen
+					[36, 42, 42],  // regen, nano
+					[42, 42, 42],  // nano
+					[42, 42, 42],  // nano
+					[37, 37, 37],  // health
+					[37, 37, 37],  // health
+					[37, 38, 38],  // health, high density
+					[38, 38, 38],  // high density
+					[38, 38]  // high density
 				]
 			},
 
@@ -1709,23 +1726,29 @@
 				"module": [  // List of dynamic module IDs
 					[4],  // beam laser
 					[31, 36],  // cloak, regen
-					[37, 40, 36],  // Dgun, speed, speed
-					[37, 40, 36],  // armor, speed, regen
-					[37, 40, 36],  // armor, speed, regen
-					[37, 40, 36],  // armor, speed, regen
-					[37, 40, 36],  // armor, speed, regen
+					[8, 40, 36],  // lightning, speed, regen
+					[37, 40, 36],  // health, speed, regen
+					[37, 40, 36],  // health, speed, regen
+					[37, 40, 36],  // health, speed, regen
+					[37, 40, 36],  // health, speed, regen
 					[40, 40, 40],  // speed
-					[40, 40, 40],  // speed
-					[40, 40, 37],  // speed, armour
-					[37, 37, 37],  // armour
-					[37, 37, 37],  // armour
-					[37, 36, 36],  // armour, autoheal
-					[36, 36, 36],  // autoheal
-					[36, 36, 36],  // autoheal
-					[42, 42, 42],  // builder
-					[42, 42, 42],  // builder
-					[42, 42, 29],  // builder, jammer
-					[32, 27, 33]  // area cloak, disruptor ammo, lazarus
+					[28, 29, 30],  // flux, jammer, radar
+					[36, 36, 37],  // regen, health
+					[37, 37, 37],  // health
+					[32, 41, 41],  // area cloak, range
+					[41, 41, 41],  // range
+					[41, 41, 41],  // range
+					[34, 34, 34],  // companion drones
+					[34, 34, 34],  // companion drones
+					[34, 34, 42],  // companion drones, nano
+					[42, 42, 42],  // nano
+					[42, 42, 42],  // nano
+					[42, 39, 39],  // nano, damage
+					[39, 39, 39],  // damage
+					[39, 39, 39],  // damage
+					[38, 38, 38],  // high density
+					[38, 38, 38],  // high density
+					[38, 38]  // high density
 				]
 			},
 
@@ -1738,6 +1761,7 @@
 		}
 	}
 },
+
 // Actions on building finished event
 "build_chain": {
 	// WARNING: Avoid recursion
@@ -1862,6 +1886,7 @@
 		}
 	}
 },
+
 "building": {
 	"class_land": {
 		"fac_land": {
