@@ -84,7 +84,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		}
 	};
 	auto factoryDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
-		if (unit->GetUnit()->IsBeingBuilt()) {
+		if (unit->GetTask()->GetType() == IUnitTask::Type::NIL) {
 			return;
 		}
 		for (auto& info : clusterInfos) {
@@ -157,7 +157,9 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				this->circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>([this, unitId]() {
 					// Force commander level 0 to morph
 					CCircuitUnit* unit = this->circuit->GetTeamUnit(unitId);
-					if (unit != nullptr) {
+					if ((unit != nullptr) && (unit->GetTask() != nullptr) &&
+						(unit->GetTask()->GetType() == IUnitTask::Type::PLAYER))
+					{
 						const std::map<std::string, std::string>& customParams = unit->GetCircuitDef()->GetUnitDef()->GetCustomParams();
 						auto it = customParams.find("level");
 						if ((it != customParams.end()) && (utils::string_to_int(it->second) <= 1)) {
@@ -644,7 +646,8 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 
 	// Select proper energy UnitDef to build
 	CCircuitDef* bestDef = nullptr;
-	CCircuitDef* stallDef = nullptr;
+	CCircuitDef* hopeDef = nullptr;
+	bool isLastHope = isEnergyStalling;
 	metalIncome = std::min(metalIncome, energyIncome) * energyFactor;
 	const float buildPower = std::min(builderManager->GetBuildPower(), metalIncome);
 	const int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
@@ -656,10 +659,9 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			continue;
 		}
 
-		int maxCount = buildPower / engy.cost * 8 + 1;
-		if (taskSize < maxCount) {
-			stallDef = engy.cdef;
-			if (engy.cdef->GetCount() < engy.limit) {
+		if (engy.cdef->GetCount() < engy.limit) {
+			isLastHope = false;
+			if (taskSize < (int)(buildPower / engy.cost * 8 + 1)) {
 				bestDef = engy.cdef;
 				// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
 				//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
@@ -668,20 +670,20 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 				if (engy.cost * 16.0f < maxBuildTime * SQUARE(buildPower)) {
 					break;
 				}
+			} else if (engy.cost * 16.0f < maxBuildTime * SQUARE(buildPower)) {
+				bestDef = nullptr;
+				break;
 			}
-		} else {
-			if ((engy.cdef->GetCount() < engy.limit) &&
-				(engy.cost * 16.0f < maxBuildTime * SQUARE(buildPower)))
-			{
-				bestDef = stallDef = nullptr;
-				break;  // free some task-space for better energy
-			}
+		} else if (!isEnergyStalling) {
+			bestDef = nullptr;
+			break;
+		} else if (hopeDef == nullptr) {
+			hopeDef = engy.cdef;
+			isLastHope = isLastHope && (taskSize < (int)(buildPower / hopeDef->GetCost() * 8 + 1));
 		}
 	}
-	if (isEnergyStalling) {
-		if (bestDef == nullptr) {
-			bestDef = stallDef;
-		}
+	if (isLastHope) {
+		bestDef = hopeDef;
 	}
 
 	if (bestDef == nullptr) {

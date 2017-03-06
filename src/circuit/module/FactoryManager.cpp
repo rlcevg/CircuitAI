@@ -11,7 +11,7 @@
 #include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
-#include "task/NullTask.h"
+#include "task/NilTask.h"
 #include "task/IdleTask.h"
 #include "task/static/RepairTask.h"
 #include "task/static/ReclaimTask.h"
@@ -56,7 +56,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 	auto factoryCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
-			nullTask->AssignTo(unit);
+			nilTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
 		}
 	};
@@ -66,7 +66,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			idleTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
 		} else {
-			nullTask->RemoveAssignee(unit);
+			nilTask->RemoveAssignee(unit);
 		}
 
 		TRY_UNIT(this->circuit, unit,
@@ -161,7 +161,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			}
 		};
 
-		if (unit->GetUnit()->IsBeingBuilt()) {  // alternative: task == nullTask
+		if (unit->GetTask()->GetType() == IUnitTask::Type::NIL) {
 			checkBuilderFactory();
 			return;
 		}
@@ -197,7 +197,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 	auto assistCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
-			nullTask->AssignTo(unit);
+			nilTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
 		}
 	};
@@ -207,7 +207,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			idleTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
 		} else {
-			nullTask->RemoveAssignee(unit);
+			nilTask->RemoveAssignee(unit);
 		}
 
 		int frame = this->circuit->GetLastFrame();
@@ -251,7 +251,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
-		if (unit->GetUnit()->IsBeingBuilt()) {  // alternative: task == nullTask
+		if (unit->GetTask()->GetType() == IUnitTask::Type::NIL) {
 			return;
 		}
 		const AIFloat3& assPos = unit->GetPos(this->circuit->GetLastFrame());

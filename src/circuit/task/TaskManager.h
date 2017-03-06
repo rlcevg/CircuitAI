@@ -13,7 +13,7 @@ namespace circuit {
 class IUnitTask;
 class CCircuitAI;
 class CCircuitUnit;
-class CNullTask;
+class CNilTask;
 class CIdleTask;
 
 class ITaskManager {
@@ -40,7 +40,7 @@ public:
 	CIdleTask* GetIdleTask() const { return idleTask; }
 
 protected:
-	CNullTask* nullTask;
+	CNilTask* nilTask;
 	CIdleTask* idleTask;
 
 	float metalPull;

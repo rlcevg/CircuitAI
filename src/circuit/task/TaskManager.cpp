@@ -6,7 +6,7 @@
  */
 
 #include "task/TaskManager.h"
-#include "task/NullTask.h"
+#include "task/NilTask.h"
 #include "task/IdleTask.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
@@ -14,7 +14,7 @@
 namespace circuit {
 
 ITaskManager::ITaskManager()
-		: nullTask(nullptr)
+		: nilTask(nullptr)
 		, idleTask(nullptr)
 		, metalPull(0.f)
 {
@@ -22,7 +22,7 @@ ITaskManager::ITaskManager()
 
 ITaskManager::~ITaskManager()
 {
-	delete nullTask;
+	delete nilTask;
 	delete idleTask;
 }
 
@@ -53,7 +53,7 @@ void ITaskManager::DelMetalPull(const CCircuitUnit* unit)
 
 void ITaskManager::Init()
 {
-	nullTask = new CNullTask(this);
+	nilTask = new CNilTask(this);
 	idleTask = new CIdleTask(this);
 }
 

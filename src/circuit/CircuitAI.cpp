@@ -912,7 +912,10 @@ int CCircuitAI::EnemyDestroyed(CEnemyUnit* enemy)
 int CCircuitAI::PlayerCommand(std::vector<CCircuitUnit*>& units)
 {
 	for (CCircuitUnit* unit : units) {
-		if ((unit != nullptr) && (unit->GetTask() != nullptr)) {
+		if ((unit != nullptr) && (unit->GetTask() != nullptr) &&
+			(unit->GetTask()->GetType() != IUnitTask::Type::NIL) &&  // ignore orders to nanoframes
+			(unit->GetTask()->GetType() != IUnitTask::Type::PLAYER))
+		{
 			ITaskManager* mgr = unit->GetTask()->GetManager();
 			mgr->AssignTask(unit, new CPlayerTask(mgr));
 		}

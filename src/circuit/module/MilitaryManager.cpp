@@ -11,7 +11,7 @@
 #include "resource/MetalManager.h"
 #include "setup/SetupManager.h"
 #include "setup/DefenceMatrix.h"
-#include "task/NullTask.h"
+#include "task/NilTask.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
 #include "task/builder/DefenceTask.h"
@@ -88,7 +88,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	auto attackerCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
-			nullTask->AssignTo(unit);
+			nilTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
 		}
 	};
@@ -98,7 +98,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			idleTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
 		} else {
-			nullTask->RemoveAssignee(unit);
+			nilTask->RemoveAssignee(unit);
 		}
 
 		AddArmyCost(unit);
@@ -132,7 +132,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
-		if (unit->GetUnit()->IsBeingBuilt()) {  // alternative: task == nullTask
+		if (unit->GetTask()->GetType() == IUnitTask::Type::NIL) {
 			return;
 		}
 
@@ -145,7 +145,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	auto superCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
-			nullTask->AssignTo(unit);
+			nilTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
 		}
 	};
@@ -155,7 +155,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			idleTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
 		} else {
-			nullTask->RemoveAssignee(unit);
+			nilTask->RemoveAssignee(unit);
 		}
 
 		TRY_UNIT(this->circuit, unit,

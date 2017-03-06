@@ -14,7 +14,7 @@
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
-#include "task/NullTask.h"
+#include "task/NilTask.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
 #include "task/builder/FactoryTask.h"
@@ -64,7 +64,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	auto workerCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
-			nullTask->AssignTo(unit);
+			nilTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
 		}
 	};
@@ -74,7 +74,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			idleTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
 		} else {
-			nullTask->RemoveAssignee(unit);
+			nilTask->RemoveAssignee(unit);
 		}
 
 		++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
@@ -99,7 +99,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
-		if (unit->GetUnit()->IsBeingBuilt()) {  // alternative: task == nullTask
+		if (unit->GetTask()->GetType() == IUnitTask::Type::NIL) {
 			return;
 		}
 		--buildAreas[unit->GetArea()][unit->GetCircuitDef()];

@@ -1,21 +1,21 @@
 /*
- * NullTask.h
+ * NilTask.h
  *
  *  Created on: May 29, 2015
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_TASK_NULLTASK_H_
-#define SRC_CIRCUIT_TASK_NULLTASK_H_
+#ifndef SRC_CIRCUIT_TASK_NILTASK_H_
+#define SRC_CIRCUIT_TASK_NILTASK_H_
 
 #include "task/UnitTask.h"
 
 namespace circuit {
 
-class CNullTask: public IUnitTask {
+class CNilTask: public IUnitTask {
 public:
-	CNullTask(ITaskManager* mgr);
-	virtual ~CNullTask();
+	CNilTask(ITaskManager* mgr);
+	virtual ~CNilTask();
 
 	virtual void AssignTo(CCircuitUnit* unit);
 
@@ -29,4 +29,4 @@ public:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_TASK_NULLTASK_H_
+#endif // SRC_CIRCUIT_TASK_NILTASK_H_
