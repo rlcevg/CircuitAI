@@ -501,6 +501,8 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	builderManager = std::make_shared<CBuilderManager>(this);
 	militaryManager = std::make_shared<CMilitaryManager>(this);
 
+//	InitKnownDefs(setupManager->GetCommChoice());
+
 	// TODO: Remove EconomyManager from module (move abilities to BuilderManager).
 	modules.push_back(militaryManager);
 	modules.push_back(builderManager);
@@ -510,15 +512,15 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	uEnemyMark = skirmishAIId % FRAMES_PER_SEC;
 	kEnemyMark = (skirmishAIId + FRAMES_PER_SEC / 2) % FRAMES_PER_SEC;
 
+	setupManager->CloseConfig();
+	setupManager->Welcome();
+
 	if (difficulty == Difficulty::HARD) {
 		Cheats* cheats = callback->GetCheats();
 		cheats->SetEnabled(true);
 		cheats->SetEventsEnabled(true);
 		delete cheats;
 	}
-
-	setupManager->CloseConfig();
-	setupManager->Welcome();
 
 	Update(0);  // Init modules: allows to manipulate units on gadget:Initialize
 	isInitialized = true;
@@ -1242,6 +1244,31 @@ void CCircuitAI::InitUnitDefs(float& outDcr)
 //	}
 	// FIXME: DEBUG
 }
+
+//void CCircuitAI::InitKnownDefs(const CCircuitDef* commDef)
+//{
+//	std::set<CCircuitDef::Id> visited;
+//	std::queue<CCircuitDef::Id> queue;
+//
+//	queue.push(commDef->GetId());
+//
+//	while (!queue.empty()) {
+//		CCircuitDef* cdef = GetCircuitDef(queue.front());
+//		queue.pop();
+//
+//		visited.insert(cdef->GetId());
+//		for (CCircuitDef::Id child : cdef->GetBuildOptions()) {
+//			if (visited.find(child) == visited.end()) {
+//				queue.push(child);
+//			}
+//		}
+//	}
+//
+//	knownDefs.reserve(visited.size());
+//	for (CCircuitDef::Id id : visited) {
+//		knownDefs.push_back(GetCircuitDef(id));
+//	}
+//}
 
 //// debug
 //void CCircuitAI::DrawClusters()

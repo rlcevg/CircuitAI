@@ -183,11 +183,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 			float minWaterDepth = (moveData->GetSpeedModClass() == MoveDef::Ship) ? depth : def->GetMinWaterDepth();
 			float maxWaterDepth = def->GetMaxWaterDepth();
 			bool canHover = def->IsAbleToHover();
-//			bool canFloat = def->IsFloater();  // TODO: Remove submarines from floaters? @see CCircuitDef::isSubmarine
-			// FIXME: 103+ bug
-			int speedModClass = moveData->GetSpeedModClass();
-			bool canFloat = def->IsFloater() || (speedModClass == MoveDef::Hover) || (speedModClass == MoveDef::Ship);
-			// FIXME: 103+ bug
+			bool canFloat = def->IsFloater();  // TODO: Remove submarines from floaters? @see CCircuitDef::isSubmarine
 			STerrainMapMobileType* MT = nullptr;
 			int mtIdx = 0;
 			for (; (unsigned)mtIdx < mobileType.size(); ++mtIdx) {
@@ -902,10 +898,15 @@ void CTerrainData::UpdateAreas()
 void CTerrainData::ScheduleUsersUpdate()
 {
 	aiToUpdate = 0;
-	for (auto circuit : gameAttribute->GetCircuits()) {
+	const int interval = gameAttribute->GetCircuits().size();
+	for (CCircuitAI* circuit : gameAttribute->GetCircuits()) {
 		if (circuit->IsInitialized()) {
-			circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(&CTerrainManager::UpdateAreaUsers, circuit->GetTerrainManager()), ++aiToUpdate);
-			circuit->GetPathfinder()->SetUpdated(false);
+			// Chain update: CTerrainManager -> CBuilderManager -> CPathFinder
+			auto task = std::make_shared<CGameTask>(&CTerrainManager::UpdateAreaUsers,
+													circuit->GetTerrainManager(),
+													interval);
+			circuit->GetScheduler()->RunTaskAfter(task, ++aiToUpdate);
+			circuit->GetPathfinder()->SetUpdated(false);  // one pathfinder for few allies
 		}
 	}
 	// Check if there are any ai to update

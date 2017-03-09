@@ -180,7 +180,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		}
 	};
 
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	float maxAreaDivCost = .0f;
 	float maxStoreDivCost = .0f;
 	CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
@@ -232,11 +231,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			auto it = customParams.find("income_energy");
 			if ((it != customParams.end()) && (utils::string_to_float(it->second) > 1)) {
 				finishedHandler[kv.first] = energyFinishedHandler;
-				if (!cdef->IsAvailable() || (terrainManager->IsWaterMap() &&
-					(terrainManager->GetImmobileTypeById(cdef->GetImmobileId())->minElevation >= .0f)))
-				{
-					continue;
-				}
 				allEnergyDefs.insert(cdef);
 			}
 
@@ -645,6 +639,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	const bool isEnergyStalling = IsEnergyStalling();
 
 	// Select proper energy UnitDef to build
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CCircuitDef* bestDef = nullptr;
 	CCircuitDef* hopeDef = nullptr;
 	bool isLastHope = isEnergyStalling;
@@ -655,7 +650,10 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 
 	for (const SEnergyInfo& engy : energyInfos) {  // sorted by high-tech first
 		// TODO: Add geothermal powerplant support
-		if (!engy.cdef->IsAvailable() || engy.cdef->GetUnitDef()->IsNeedGeo()) {
+		if (!engy.cdef->IsAvailable() ||
+			!terrainManager->CanBeBuiltAt(engy.cdef, position) ||
+			engy.cdef->GetUnitDef()->IsNeedGeo())
+		{
 			continue;
 		}
 
@@ -715,7 +713,6 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		}
 	}
 
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	if (utils::is_valid(buildPos) && terrainManager->CanBeBuiltAt(bestDef, buildPos) &&
 		((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
 	{

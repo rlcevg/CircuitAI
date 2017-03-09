@@ -10,9 +10,6 @@
 #include "util/GameAttribute.h"
 #include "util/utils.h"
 
-// FIXME: 103+ bug
-#include "Sim/MoveTypes/MoveDefHandler.h"
-// FIXME: 103+ bug
 #include "WeaponMount.h"
 #include "WeaponDef.h"
 #include "Damage.h"
@@ -108,7 +105,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	buildSpeed    = def->GetBuildSpeed();
 	maxThisUnit   = def->GetMaxThisUnit();
 
-	maxRange[static_cast<RangeT>(RangeType::MAX)] = def->GetMaxWeaponRange();
+//	maxRange[static_cast<RangeT>(RangeType::MAX)] = def->GetMaxWeaponRange();
 	hasDGun         = def->CanManualFire();
 	category        = def->GetCategory();
 	noChaseCategory = (def->GetNoChaseCategory() | circuit->GetBadCategory()) & ~circuit->GetGoodCategory();
@@ -124,19 +121,11 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 //	altitude  = def->GetWantedHeight();
 
 	MoveData* md = def->GetMoveData();
-	// FIXME: 103+ bug
-	isFloater = def->IsFloater();
-	if (md != nullptr) {
-		int speedModClass = md->GetSpeedModClass();
-		isFloater = isFloater || (speedModClass == MoveDef::Hover) || (speedModClass == MoveDef::Ship);
-	}
-	isFloater = isFloater && !isSubmarine && !isAbleToFly;
-	// FIXME: 103+ bug
 	isSubmarine = (md == nullptr) ? false : md->IsSubMarine();
 	delete md;
 	isAbleToFly    = def->IsAbleToFly();
 	isPlane        = !def->IsHoverAttack() && isAbleToFly;
-//	isFloater      = def->IsFloater() && !isSubmarine && !isAbleToFly;
+	isFloater      = def->IsFloater() && !isSubmarine && !isAbleToFly;
 	isSonarStealth = def->IsSonarStealth();
 	isTurnLarge    = (speed / (def->GetTurnRate() + 1e-3f) > 0.003f);
 	isAbleToCloak  = def->IsAbleToCloak();
@@ -327,17 +316,21 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		canTargetWater |= isWaterWeapon;
 
 		minRange = std::min(minRange, range);
+		float& maxR = maxRange[static_cast<RangeT>(RangeType::MAX)];
 		if ((weaponCat & circuit->GetAirCategory()) && isAirWeapon) {
 			float& mr = maxRange[static_cast<RangeT>(RangeType::AIR)];
 			mr = std::max(mr, range);
+			maxR = std::max(maxR, mr);
 		}
 		if ((weaponCat & circuit->GetLandCategory()) && isLandWeapon) {
 			float& mr = maxRange[static_cast<RangeT>(RangeType::LAND)];
 			mr = std::max(mr, (isAbleToFly && (wt == "Cannon")) ? range * 1.25f : range);
+			maxR = std::max(maxR, mr);
 		}
 		if ((weaponCat & circuit->GetWaterCategory()) && isWaterWeapon) {
 			float& mr = maxRange[static_cast<RangeT>(RangeType::WATER)];
 			mr = std::max(mr, range);
+			maxR = std::max(maxR, mr);
 		}
 
 		if (wd->IsManualFire() && (reloadTime < bestDGunReload)) {

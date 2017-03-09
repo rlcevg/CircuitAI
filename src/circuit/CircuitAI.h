@@ -176,10 +176,13 @@ public:
 	const CircuitDefs& GetCircuitDefs() const { return defsById; }
 	CCircuitDef* GetCircuitDef(const char* name);
 	CCircuitDef* GetCircuitDef(CCircuitDef::Id unitDefId);
+//	const std::vector<CCircuitDef*>& GetKnownDefs() const { return knownDefs; }
 private:
 	void InitUnitDefs(float& outDcr);
+//	void InitKnownDefs(const CCircuitDef* commDef);
 	CircuitDefs defsById;  // owner
 	NamedDefs defsByName;
+//	std::vector<CCircuitDef*> knownDefs;
 // ---- UnitDefs ---- END
 
 public:

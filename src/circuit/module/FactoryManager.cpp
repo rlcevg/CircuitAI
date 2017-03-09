@@ -692,13 +692,13 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
 	CCircuitDef* buildDef = nullptr;
 
-	CEconomyManager* em = circuit->GetEconomyManager();
-	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	const float metalIncome = std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome()) * economyManager->GetEcoFactor();
 	const bool isWaterMap = circuit->GetTerrainManager()->IsWaterMap();
 	const bool isAir = militaryManager->GetEnemyCost(CCircuitDef::RoleType::AIR) > 1.f;
 	const SFactoryDef::Tiers& tiers = isAir ? facDef.airTiers : isWaterMap ? facDef.waterTiers : facDef.landTiers;
 	auto facIt = tiers.begin();
-	if ((metalIncome >= facDef.incomes[facIt->first]) && !(facDef.isRequireEnergy && em->IsEnergyEmpty())) {
+	if ((metalIncome >= facDef.incomes[facIt->first]) && !(facDef.isRequireEnergy && economyManager->IsEnergyEmpty())) {
 		while (facIt != tiers.end()) {
 			if (metalIncome < facDef.incomes[facIt->first]) {
 				break;
@@ -711,19 +711,24 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 	const std::vector<float>& probs = facIt->second;
 
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	static std::vector<std::pair<CCircuitDef*, float>> candidates;  // NOTE: micro-opt
 //	candidates.reserve(facDef.buildDefs.size());
-	const float energyNet = em->GetAvgEnergyIncome() - em->GetEnergyUse();
+	const float energyNet = economyManager->GetAvgEnergyIncome() - economyManager->GetEnergyUse();
 	const float maxCost = militaryManager->GetArmyCost();
+	const float range = unit->GetCircuitDef()->GetBuildDistance();
+	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	float magnitude = 0.f;
 	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
 		CCircuitDef* bd = facDef.buildDefs[i];
 		if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) ||
 			(bd->GetCost() > maxCost) ||
-			!bd->IsAvailable())
+			!bd->IsAvailable() ||
+			!terrainManager->CanBeBuiltAt(bd, pos, range))
 		{
 			continue;
 		}
+
 		// (probs[i] + response_weight) hints preferable buildDef within same role
 		float prob = militaryManager->RoleProbability(bd) * (probs[i] + reWeight);
 		if (prob > 0.f) {
@@ -759,12 +764,11 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	candidates.clear();
 
 	if ((buildDef != nullptr) && buildDef->IsAvailable()) {
-		const AIFloat3& buildPos = unit->GetPos(circuit->GetLastFrame());
 		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
 		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
 		// FIXME CCircuitDef::RoleType <-> CRecruitTask::RecruitType relations
 		return EnqueueTask(isResponse ? CRecruitTask::Priority::HIGH : CRecruitTask::Priority::NORMAL,
-						   buildDef, buildPos, CRecruitTask::RecruitType::FIREPOWER, radius);
+						   buildDef, pos, CRecruitTask::RecruitType::FIREPOWER, radius);
 	}
 	return nullptr;
 }
@@ -1098,13 +1102,13 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 	bool isMetalEmpty = economyManager->IsMetalEmpty();
 	CCircuitUnit* repairTarget = nullptr;
 	CCircuitUnit* buildTarget = nullptr;
-	bool isBuildMobile = true;
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	float radius = unit->GetCircuitDef()->GetBuildDistance();
 
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	CCircuitDef* terraDef = builderManager->GetTerraDef();
-	float maxCost = MAX_BUILD_SEC * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor();
+	const float maxCost = MAX_BUILD_SEC * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor();
+	float curCost = std::numeric_limits<float>::max();
 	circuit->UpdateFriendlyUnits();
 	// NOTE: OOAICallback::GetFriendlyUnitsIn depends on unit's radius
 	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius * 0.9f));
@@ -1115,14 +1119,16 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 		}
 		if (u->IsBeingBuilt()) {
 			CCircuitDef* cdef = candUnit->GetCircuitDef();
+			if (cdef->GetBuildTime() >= curCost) {
+				continue;
+			}
 			if (IsHighPriority(candUnit) ||
-				(isBuildMobile && ((!isMetalEmpty && cdef->IsAssistable()) || (*cdef == *terraDef) || (cdef->GetBuildTime() < maxCost))))
+				(!isMetalEmpty && cdef->IsAssistable()) ||
+				(*cdef == *terraDef) ||
+				(cdef->GetBuildTime() < maxCost))
 			{
-				isBuildMobile = candUnit->GetCircuitDef()->IsMobile();
+				curCost = cdef->GetBuildTime();
 				buildTarget = candUnit;
-				if (cdef->GetBuildTime() < maxCost) {
-					maxCost = cdef->GetBuildTime();
-				}
 			}
 		} else if ((repairTarget == nullptr) && (u->GetHealth() < u->GetMaxHealth())) {
 			repairTarget = candUnit;
@@ -1134,7 +1140,9 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 	utils::free_clear(units);
 	if (/*!isMetalEmpty && */(buildTarget != nullptr)) {
 		// Construction task
-		IBuilderTask::Priority priority = isBuildMobile ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
+		IBuilderTask::Priority priority = buildTarget->GetCircuitDef()->IsMobile() ?
+										  IBuilderTask::Priority::HIGH :
+										  IBuilderTask::Priority::NORMAL;
 		return EnqueueRepair(priority, buildTarget);
 	}
 	if (repairTarget != nullptr) {

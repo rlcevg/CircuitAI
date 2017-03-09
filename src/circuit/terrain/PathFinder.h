@@ -36,6 +36,7 @@ public:
 	void Node2XY(void* node, int* x, int* y);
 	springai::AIFloat3 Node2Pos(void* node);
 	void* Pos2Node(springai::AIFloat3 pos);
+	void Pos2XY(springai::AIFloat3 pos, int* x, int* y);
 
 	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
 
@@ -55,7 +56,7 @@ private:
 	NSMicroPather::CMicroPather* micropather;
 	bool* airMoveArray;
 	std::vector<bool*> moveArrays;
-	std::vector<int> blockArray;
+	static std::vector<int> blockArray;
 	bool isUpdated;
 
 	int squareSize;

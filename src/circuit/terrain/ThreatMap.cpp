@@ -32,8 +32,8 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 {
 	areaData = circuit->GetTerrainManager()->GetAreaData();
 	squareSize = circuit->GetTerrainManager()->GetConvertStoP();
-	width = circuit->GetTerrainManager()->GetTerrainWidth() / squareSize;
-	height = circuit->GetTerrainManager()->GetTerrainHeight() / squareSize;
+	width = circuit->GetTerrainManager()->GetSectorXSize() + 2;  // +2 for pathfinder edges
+	height = circuit->GetTerrainManager()->GetSectorZSize() + 2;  // +2 for pathfinder edges
 	mapSize = width * height;
 
 	rangeDefault = (DEFAULT_SLACK * 4) / squareSize;
@@ -345,8 +345,8 @@ float CThreatMap::GetAllThreatAt(const AIFloat3& position) const
 {
 	assert((position.x >= 0) && (position.x < CTerrainManager::GetTerrainWidth()) &&
 		   (position.z >= 0) && (position.z < CTerrainManager::GetTerrainHeight()));
-	const int z = (int)position.z / squareSize;
-	const int x = (int)position.x / squareSize;
+	int x, z;
+	PosToXZ(position, x, z);
 	const int index = z * width + x;
 //	float air = airThreat[index] - THREAT_BASE;
 	float land = surfThreat[index] - THREAT_BASE;
@@ -371,8 +371,8 @@ float CThreatMap::GetThreatAt(const AIFloat3& position) const
 {
 	assert((position.x >= 0) && (position.x < CTerrainManager::GetTerrainWidth()) &&
 		   (position.z >= 0) && (position.z < CTerrainManager::GetTerrainHeight()));
-	const int z = (int)position.z / squareSize;
-	const int x = (int)position.x / squareSize;
+	int x, z;
+	PosToXZ(position, x, z);
 	return threatArray[z * width + x] - THREAT_BASE;
 }
 
@@ -381,8 +381,8 @@ float CThreatMap::GetThreatAt(CCircuitUnit* unit, const AIFloat3& position) cons
 	assert(unit != nullptr);
 	assert((position.x >= 0) && (position.x < CTerrainManager::GetTerrainWidth()) &&
 		   (position.z >= 0) && (position.z < CTerrainManager::GetTerrainHeight()));
-	const int z = (int)position.z / squareSize;
-	const int x = (int)position.x / squareSize;
+	int x, z;
+	PosToXZ(position, x, z);
 	if (unit->GetCircuitDef()->IsAbleToFly()) {
 		return airThreat[z * width + x] - THREAT_BASE;
 	}
@@ -397,6 +397,12 @@ float CThreatMap::GetUnitThreat(CCircuitUnit* unit) const
 {
 	float health = unit->GetUnit()->GetHealth() + unit->GetShieldPower() * 2.0f;
 	return unit->GetDamage() * sqrtf(std::max(health, 0.f));  // / unit->GetUnit()->GetMaxHealth();
+}
+
+inline void CThreatMap::PosToXZ(const AIFloat3& pos, int& x, int& z) const
+{
+	x = (int)pos.x / squareSize + 1;
+	z = (int)pos.z / squareSize + 1;
 }
 
 void CThreatMap::AddEnemyUnit(const CEnemyUnit* e)
@@ -457,17 +463,17 @@ void CThreatMap::DelEnemyUnitAll(const CEnemyUnit* e)
 
 void CThreatMap::AddEnemyAir(const CEnemyUnit* e)
 {
-	const int posx = (int)e->GetPos().x / squareSize;
-	const int posz = (int)e->GetPos().z / squareSize;
+	int posx, posz;
+	PosToXZ(e->GetPos(), posx, posz);
 
 	const float threat = e->GetThreat()/* - THREAT_DECAY*/;
 	const int range = e->GetRange(CCircuitDef::ThreatType::AIR);
 	const int rangeSq = SQUARE(range);
 
-	const int beginX = std::max(int(posx - range + 1),      0);
-	const int endX   = std::min(int(posx + range    ),  width);
-	const int beginZ = std::max(int(posz - range + 1),      0);
-	const int endZ   = std::min(int(posz + range    ), height);
+	const int beginX = std::max(int(posx - range + 1),          1);
+	const int endX   = std::min(int(posx + range    ),  width - 1);
+	const int beginZ = std::max(int(posz - range + 1),          1);
+	const int endZ   = std::min(int(posz + range    ), height - 1);
 
 	for (int x = beginX; x < endX; ++x) {
 		const int dxSq = SQUARE(posx - x);
@@ -491,18 +497,18 @@ void CThreatMap::AddEnemyAir(const CEnemyUnit* e)
 
 void CThreatMap::DelEnemyAir(const CEnemyUnit* e)
 {
-	const int posx = (int)e->GetPos().x / squareSize;
-	const int posz = (int)e->GetPos().z / squareSize;
+	int posx, posz;
+	PosToXZ(e->GetPos(), posx, posz);
 
 	const float threat = e->GetThreat()/* + THREAT_DECAY*/;
 	const int range = e->GetRange(CCircuitDef::ThreatType::AIR);
 	const int rangeSq = SQUARE(range);
 
 	// Threat circles are large and often have appendix, decrease it by 1 for micro-optimization
-	const int beginX = std::max(int(posx - range + 1),      0);
-	const int endX   = std::min(int(posx + range    ),  width);
-	const int beginZ = std::max(int(posz - range + 1),      0);
-	const int endZ   = std::min(int(posz + range    ), height);
+	const int beginX = std::max(int(posx - range + 1),          1);
+	const int endX   = std::min(int(posx + range    ),  width - 1);
+	const int beginZ = std::max(int(posz - range + 1),          1);
+	const int endZ   = std::min(int(posz + range    ), height - 1);
 
 	for (int x = beginX; x < endX; ++x) {
 		const int dxSq = SQUARE(posx - x);
@@ -530,8 +536,9 @@ void CThreatMap::DelEnemyAir(const CEnemyUnit* e)
 
 void CThreatMap::AddEnemyAmph(const CEnemyUnit* e)
 {
-	const int posx = (int)e->GetPos().x / squareSize;
-	const int posz = (int)e->GetPos().z / squareSize;
+	int posx, posz;
+	PosToXZ(e->GetPos(), posx, posz);
+	const int widthSec = width - 2;
 
 	const float threat = e->GetThreat()/* - THREAT_DECAY*/;
 	const int rangeLand = e->GetRange(CCircuitDef::ThreatType::LAND);
@@ -541,10 +548,10 @@ void CThreatMap::AddEnemyAmph(const CEnemyUnit* e)
 	const int range = std::max(rangeLand, rangeWater);
 	const std::vector<STerrainMapSector>& sector = areaData->sector;
 
-	const int beginX = std::max(int(posx - range + 1),      0);
-	const int endX   = std::min(int(posx + range    ),  width);
-	const int beginZ = std::max(int(posz - range + 1),      0);
-	const int endZ   = std::min(int(posz + range    ), height);
+	const int beginX = std::max(int(posx - range + 1),          1);
+	const int endX   = std::min(int(posx + range    ),  width - 1);
+	const int beginZ = std::max(int(posz - range + 1),          1);
+	const int endZ   = std::min(int(posz + range    ), height - 1);
 
 	for (int x = beginX; x < endX; ++x) {
 		const int dxSq = SQUARE(posx - x);
@@ -553,9 +560,10 @@ void CThreatMap::AddEnemyAmph(const CEnemyUnit* e)
 
 			const int sum = dxSq + dzSq;
 			const int index = z * width + x;
+			const int idxSec = (z - 1) * widthSec + (x - 1);
 			const float heat = threat * (1.5f - 1.0f * sqrtf(sum) / range);
-			bool isWaterThreat = (sum <= rangeWaterSq) && sector[index].isWater;
-			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[index].position.y >= -SQUARE_SIZE * 5)))
+			bool isWaterThreat = (sum <= rangeWaterSq) && sector[idxSec].isWater;
+			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[idxSec].position.y >= -SQUARE_SIZE * 5)))
 			{
 				amphThreat[index] += heat;
 			}
@@ -568,8 +576,9 @@ void CThreatMap::AddEnemyAmph(const CEnemyUnit* e)
 
 void CThreatMap::DelEnemyAmph(const CEnemyUnit* e)
 {
-	const int posx = (int)e->GetPos().x / squareSize;
-	const int posz = (int)e->GetPos().z / squareSize;
+	int posx, posz;
+	PosToXZ(e->GetPos(), posx, posz);
+	const int widthSec = width - 2;
 
 	const float threat = e->GetThreat()/* + THREAT_DECAY*/;
 	const int rangeLand = e->GetRange(CCircuitDef::ThreatType::LAND);
@@ -579,10 +588,10 @@ void CThreatMap::DelEnemyAmph(const CEnemyUnit* e)
 	const int range = std::max(rangeLand, rangeWater);
 	const std::vector<STerrainMapSector>& sector = areaData->sector;
 
-	const int beginX = std::max(int(posx - range + 1),      0);
-	const int endX   = std::min(int(posx + range    ),  width);
-	const int beginZ = std::max(int(posz - range + 1),      0);
-	const int endZ   = std::min(int(posz + range    ), height);
+	const int beginX = std::max(int(posx - range + 1),          1);
+	const int endX   = std::min(int(posx + range    ),  width - 1);
+	const int beginZ = std::max(int(posz - range + 1),          1);
+	const int endZ   = std::min(int(posz + range    ), height - 1);
 
 	for (int x = beginX; x < endX; ++x) {
 		const int dxSq = SQUARE(posx - x);
@@ -591,9 +600,10 @@ void CThreatMap::DelEnemyAmph(const CEnemyUnit* e)
 
 			const int sum = dxSq + dzSq;
 			const int index = z * width + x;
+			const int idxSec = (z - 1) * widthSec + (x - 1);
 			const float heat = threat * (1.5f - 1.0f * sqrtf(sum) / range);
-			bool isWaterThreat = (sum <= rangeWaterSq) && sector[index].isWater;
-			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[index].position.y >= -SQUARE_SIZE * 5)))
+			bool isWaterThreat = (sum <= rangeWaterSq) && sector[idxSec].isWater;
+			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[idxSec].position.y >= -SQUARE_SIZE * 5)))
 			{
 				amphThreat[index] = std::max<float>(amphThreat[index] - heat, THREAT_BASE);
 			}
@@ -606,18 +616,18 @@ void CThreatMap::DelEnemyAmph(const CEnemyUnit* e)
 
 void CThreatMap::AddDecloaker(const CEnemyUnit* e)
 {
-	const int posx = (int)e->GetPos().x / squareSize;
-	const int posz = (int)e->GetPos().z / squareSize;
+	int posx, posz;
+	PosToXZ(e->GetPos(), posx, posz);
 
 	const float threatCloak = 16 * THREAT_BASE;
 	const int rangeCloak = e->GetRange(CCircuitDef::ThreatType::CLOAK);
 	const int rangeCloakSq = SQUARE(rangeCloak);
 
 	// For small decloak ranges full range shouldn't hit performance
-	const int beginX = std::max(int(posx - rangeCloak + 1),      0);
-	const int endX   = std::min(int(posx + rangeCloak    ),  width);
-	const int beginZ = std::max(int(posz - rangeCloak + 1),      0);
-	const int endZ   = std::min(int(posz + rangeCloak    ), height);
+	const int beginX = std::max(int(posx - rangeCloak + 1),          1);
+	const int endX   = std::min(int(posx + rangeCloak    ),  width - 1);
+	const int beginZ = std::max(int(posz - rangeCloak + 1),          1);
+	const int endZ   = std::min(int(posz + rangeCloak    ), height - 1);
 
 	for (int x = beginX; x < endX; ++x) {
 		const int dxSq = SQUARE(posx - x);
@@ -637,18 +647,18 @@ void CThreatMap::AddDecloaker(const CEnemyUnit* e)
 
 void CThreatMap::DelDecloaker(const CEnemyUnit* e)
 {
-	const int posx = (int)e->GetPos().x / squareSize;
-	const int posz = (int)e->GetPos().z / squareSize;
+	int posx, posz;
+	PosToXZ(e->GetPos(), posx, posz);
 
 	const float threatCloak = 16 * THREAT_BASE;
 	const int rangeCloak = e->GetRange(CCircuitDef::ThreatType::CLOAK);
 	const int rangeCloakSq = SQUARE(rangeCloak);
 
 	// For small decloak ranges full range shouldn't hit performance
-	const int beginX = std::max(int(posx - rangeCloak + 1),      0);
-	const int endX   = std::min(int(posx + rangeCloak    ),  width);
-	const int beginZ = std::max(int(posz - rangeCloak + 1),      0);
-	const int endZ   = std::min(int(posz + rangeCloak    ), height);
+	const int beginX = std::max(int(posx - rangeCloak + 1),          1);
+	const int endX   = std::min(int(posx + rangeCloak    ),  width - 1);
+	const int beginZ = std::max(int(posz - rangeCloak + 1),          1);
+	const int endZ   = std::min(int(posz + rangeCloak    ), height - 1);
 
 	for (int x = beginX; x < endX; ++x) {
 		const int dxSq = SQUARE(posx - x);
@@ -668,17 +678,17 @@ void CThreatMap::DelDecloaker(const CEnemyUnit* e)
 
 void CThreatMap::AddShield(const CEnemyUnit* e)
 {
-	const int posx = (int)e->GetPos().x / squareSize;
-	const int posz = (int)e->GetPos().z / squareSize;
+	int posx, posz;
+	PosToXZ(e->GetPos(), posx, posz);
 
 	const float shieldVal = e->GetShieldPower();
 	const int rangeShield = e->GetRange(CCircuitDef::ThreatType::SHIELD);
 	const int rangeShieldSq = SQUARE(rangeShield);
 
-	const int beginX = std::max(int(posx - rangeShield + 1),      0);
-	const int endX   = std::min(int(posx + rangeShield    ),  width);
-	const int beginZ = std::max(int(posz - rangeShield + 1),      0);
-	const int endZ   = std::min(int(posz + rangeShield    ), height);
+	const int beginX = std::max(int(posx - rangeShield + 1),          1);
+	const int endX   = std::min(int(posx + rangeShield    ),  width - 1);
+	const int beginZ = std::max(int(posz - rangeShield + 1),          1);
+	const int endZ   = std::min(int(posz + rangeShield    ), height - 1);
 
 	for (int x = beginX; x < endX; ++x) {
 		const int rrx = rangeShieldSq - SQUARE(posx - x);
@@ -693,17 +703,17 @@ void CThreatMap::AddShield(const CEnemyUnit* e)
 
 void CThreatMap::DelShield(const CEnemyUnit* e)
 {
-	const int posx = (int)e->GetPos().x / squareSize;
-	const int posz = (int)e->GetPos().z / squareSize;
+	int posx, posz;
+	PosToXZ(e->GetPos(), posx, posz);
 
 	const float shieldVal = e->GetShieldPower();
 	const int rangeShield = e->GetRange(CCircuitDef::ThreatType::SHIELD);
 	const int rangeShieldSq = SQUARE(rangeShield);
 
-	const int beginX = std::max(int(posx - rangeShield + 1),      0);
-	const int endX   = std::min(int(posx + rangeShield    ),  width);
-	const int beginZ = std::max(int(posz - rangeShield + 1),      0);
-	const int endZ   = std::min(int(posz + rangeShield    ), height);
+	const int beginX = std::max(int(posx - rangeShield + 1),          1);
+	const int endX   = std::min(int(posx + rangeShield    ),  width - 1);
+	const int beginZ = std::max(int(posz - rangeShield + 1),          1);
+	const int endZ   = std::min(int(posz + rangeShield    ), height - 1);
 
 	for (int x = beginX; x < endX; ++x) {
 		const int rrx = rangeShieldSq - SQUARE(posx - x);
@@ -753,8 +763,8 @@ float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
 	if (health <= .0f) {
 		return .0f;
 	}
-	const int x = (int)enemy->GetPos().x / squareSize;
-	const int z = (int)enemy->GetPos().z / squareSize;
+	int x, z;
+	PosToXZ(enemy->GetPos(), x, z);
 	return enemy->GetDamage() * sqrtf(health + shield[z * width + x] * 2.0f);  // / unit->GetUnit()->GetMaxHealth();
 }
 

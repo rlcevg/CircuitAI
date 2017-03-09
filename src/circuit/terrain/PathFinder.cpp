@@ -25,6 +25,8 @@ namespace circuit {
 using namespace springai;
 using namespace NSMicroPather;
 
+std::vector<int> CPathFinder::blockArray;
+
 CPathFinder::CPathFinder(CTerrainData* terrainData)
 		: terrainData(terrainData)
 		, airMoveArray(nullptr)
@@ -39,21 +41,29 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 #endif
 {
 	squareSize   = terrainData->convertStoP;
-	pathMapXSize = terrainData->terrainWidth / squareSize;
-	pathMapYSize = terrainData->terrainHeight / squareSize;
+	pathMapXSize = terrainData->sectorXSize + 2;  // +2 for passable edges
+	pathMapYSize = terrainData->sectorZSize + 2;  // +2 for passable edges
 	micropather  = new CMicroPather(this, pathMapXSize, pathMapYSize);
 
 	const std::vector<STerrainMapMobileType>& moveTypes = terrainData->pAreaData.load()->mobileType;
 	moveArrays.reserve(moveTypes.size());
 
-	int totalcells = pathMapXSize * pathMapYSize;
+	const int totalcells = pathMapXSize * pathMapYSize;
 	for (const STerrainMapMobileType& mt : moveTypes) {
 		bool* moveArray = new bool[totalcells];
 		moveArrays.push_back(moveArray);
 
-		for (int i = 0; i < totalcells; ++i) {
-			// NOTE: Not all passable sectors have area
-			moveArray[i] = (mt.sector[i].area != nullptr);
+//		for (int i = 0; i < totalcells; ++i) {
+//			// NOTE: Not all passable sectors have area
+//			moveArray[i] = (mt.sector[i].area != nullptr);
+//		}
+		int k = 0;
+		for (int z = 1; z < pathMapYSize - 1; ++z) {
+			for (int x = 1; x < pathMapXSize - 1; ++x) {
+				// NOTE: Not all passable sectors have area
+				moveArray[z * pathMapXSize + x] = (mt.sector[k].area != nullptr);
+				++k;
+			}
 		}
 
 		// make sure that the edges are no-go
@@ -87,7 +97,7 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 		airMoveArray[k] = false;
 	}
 
-	blockArray.resize(totalcells, 0);
+	blockArray.resize(terrainData->sectorXSize * terrainData->sectorZSize, 0);
 }
 
 CPathFinder::~CPathFinder()
@@ -115,21 +125,24 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 			if (blockMap.IsStruct(x, z, SBlockingMap::StructMask::ALL)) {
 				const int moveX = x / granularity;
 				const int moveY = z / granularity;
-				++blockArray[moveY * pathMapXSize + moveX];
+				++blockArray[moveY * terrainData->sectorXSize + moveX];
 			}
 		}
 	}
 
 	const std::vector<STerrainMapMobileType>& moveTypes = terrainData->GetNextAreaData()->mobileType;
-	const int totalcells = pathMapXSize * pathMapYSize;
-	const int blockThreshold = granularity * granularity / 4;
+	const int blockThreshold = granularity * granularity / 5;
 	for (unsigned j = 0; j < moveTypes.size(); ++j) {
 		const STerrainMapMobileType& mt = moveTypes[j];
 		bool* moveArray = moveArrays[j];
 
-		for (int i = 0; i < totalcells; ++i) {
-			// NOTE: Not all passable sectors have area
-			moveArray[i] = (mt.sector[i].area != nullptr) && (blockArray[i] < blockThreshold);
+		int k = 0;
+		for (int z = 1; z < pathMapYSize - 1; ++z) {
+			for (int x = 1; x < pathMapXSize - 1; ++x) {
+				// NOTE: Not all passable sectors have area
+				moveArray[z * pathMapXSize + x] = (mt.sector[k].area != nullptr) && (blockArray[k] < blockThreshold);
+				++k;
+			}
 		}
 
 		// make sure that the edges are no-go
@@ -185,15 +198,21 @@ AIFloat3 CPathFinder::Node2Pos(void* node)
 	const size_t index = (size_t)node;
 
 	float3 pos;
-	pos.z = (index / pathMapXSize) * squareSize + squareSize / 2;
-	pos.x = (index - ((index / pathMapXSize) * pathMapXSize)) * squareSize + squareSize / 2;
+	pos.z = (index / pathMapXSize - 1) * squareSize + squareSize / 2;
+	pos.x = (index - ((index / pathMapXSize) * pathMapXSize) - 1) * squareSize + squareSize / 2;
 
 	return pos;
 }
 
 void* CPathFinder::Pos2Node(AIFloat3 pos)
 {
-	return (void*) static_cast<intptr_t>(int(pos.z / squareSize) * pathMapXSize + int((pos.x / squareSize)));
+	return (void*) static_cast<intptr_t>(int(pos.z / squareSize + 1) * pathMapXSize + int((pos.x / squareSize + 1)));
+}
+
+void CPathFinder::Pos2XY(AIFloat3 pos, int* x, int* y)
+{
+	*x = int(pos.x / squareSize) + 1;
+	*y = int(pos.z / squareSize) + 1;
 }
 
 /*
@@ -209,10 +228,10 @@ float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos
 
 	float pathCost = 0.0f;
 
-	const int ex = int(endPos.x / squareSize);
-	const int ey = int(endPos.z / squareSize);
-	const int sy = int(startPos.z / squareSize);
-	const int sx = int(startPos.x / squareSize);
+	int ex, ey;
+	Pos2XY(endPos, &ex, &ey);
+	int sx, sy;
+	Pos2XY(startPos, &sx, &sy);
 
 	radius /= squareSize;
 
@@ -246,10 +265,10 @@ float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos
 
 	float pathCost = 0.0f;
 
-	const int ex = int(endPos.x / squareSize);
-	const int ey = int(endPos.z / squareSize);
-	const int sy = int(startPos.z / squareSize);
-	const int sx = int(startPos.x / squareSize);
+	int ex, ey;
+	Pos2XY(endPos, &ex, &ey);
+	int sx, sy;
+	Pos2XY(startPos, &sx, &sy);
 
 	radius /= squareSize;
 
@@ -283,10 +302,10 @@ float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloa
 
 	float pathCost = 0.0f;
 
-	const int ex = int(endPos.x / squareSize);
-	const int ey = int(endPos.z / squareSize);
-	const int sy = int(startPos.z / squareSize);
-	const int sx = int(startPos.x / squareSize);
+	int ex, ey;
+	Pos2XY(endPos, &ex, &ey);
+	int sx, sy;
+	Pos2XY(startPos, &sx, &sy);
 
 	radius /= squareSize;
 
@@ -304,10 +323,10 @@ float CPathFinder::PathCostDirect(const springai::AIFloat3& startPos, springai::
 
 	float pathCost = -1.0f;
 
-	const int ex = int(endPos.x / squareSize);
-	const int ey = int(endPos.z / squareSize);
-	const int sy = int(startPos.z / squareSize);
-	const int sx = int(startPos.x / squareSize);
+	int ex, ey;
+	Pos2XY(endPos, &ex, &ey);
+	int sx, sy;
+	Pos2XY(startPos, &sx, &sy);
 
 	radius /= squareSize;
 
@@ -438,8 +457,8 @@ float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRan
 		posPath.reserve(path.size());
 
 		Map* map = terrainData->GetMap();
-		for (unsigned i = 0; i < path.size(); i++) {
-			float3 mypos = Node2Pos(path[i]);
+		for (void* node : path) {
+			float3 mypos = Node2Pos(node);
 			mypos.y = map->GetElevationAt(mypos.x, mypos.z);
 			posPath.push_back(mypos);
 		}
@@ -498,36 +517,35 @@ void CPathFinder::ToggleVis(CCircuitAI* circuit)
 	isVis = !isVis;
 	this->circuit = circuit;
 
-//	auto node2pos = [this](void* node) {
+//	Map* map = circuit->GetMap();
+//	auto node2pos = [this, map](void* node) {
 //		const size_t index = (size_t)node;
-//		float3 pos;
-//		pos.z = (index / pathMapXSize) * squareSize;
-//		pos.x = (index - ((index / pathMapXSize) * pathMapXSize)) * squareSize;
+//		AIFloat3 pos;
+//		pos.z = (index / pathMapXSize - 1) * squareSize;
+//		pos.x = (index - ((index / pathMapXSize) * pathMapXSize) - 1) * squareSize;
+//		pos.y = map->GetElevationAt(pos.x, pos.z) + SQUARE_SIZE;
 //		return pos;
 //	};
 //	Drawer* draw = circuit->GetDrawer();
 //	if (isVis) {
-//		for (int x = 0; x < pathMapXSize; ++x) {
-//			for (int z = 1; z < pathMapYSize; ++z) {
+//		Figure* fig = circuit->GetDrawer()->GetFigure();
+//		int figId = fig->DrawLine(ZeroVector, ZeroVector, 16.0f, false, FRAMES_PER_SEC * 5, 0);
+//		for (int x = 1; x < pathMapXSize - 1; ++x) {
+//			for (int z = 2; z < pathMapYSize - 1; ++z) {
 //				AIFloat3 p0 = node2pos(XY2Node(x, z - 1));
 //				AIFloat3 p1 = node2pos(XY2Node(x, z));
-//				draw->AddLine(p0, p1);
+//				fig->DrawLine(p0, p1, 16.0f, false, FRAMES_PER_SEC * 200, figId);
 //			}
 //		}
-//		for (int z = 0; z < pathMapYSize; ++z) {
-//			for (int x = 1; x < pathMapXSize; ++x) {
+//		for (int z = 1; z < pathMapYSize - 1; ++z) {
+//			for (int x = 2; x < pathMapXSize - 1; ++x) {
 //				AIFloat3 p0 = node2pos(XY2Node(x - 1, z));
 //				AIFloat3 p1 = node2pos(XY2Node(x, z));
-//				draw->AddLine(p0, p1);
+//				fig->DrawLine(p0, p1, 16.0f, false, FRAMES_PER_SEC * 200, figId);
 //			}
 //		}
-//	} else {
-//		for (int z = 0; z < pathMapYSize; ++z) {
-//			for (int x = 0; x < pathMapXSize; ++x) {
-//				AIFloat3 p = node2pos(XY2Node(x, z));
-//				draw->DeletePointsAndLines(p);
-//			}
-//		}
+//		fig->SetColor(figId, AIColor(1.0, 0., 0.), 255);
+//		delete fig;
 //	}
 }
 #endif

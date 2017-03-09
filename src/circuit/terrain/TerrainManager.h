@@ -115,6 +115,8 @@ private:
 
 public:
 	int GetConvertStoP() const { return terrainData->convertStoP; }
+	int GetSectorXSize() const { return terrainData->sectorXSize; }
+	int GetSectorZSize() const { return terrainData->sectorZSize; }
 	static void CorrectPosition(springai::AIFloat3& position) { CTerrainData::CorrectPosition(position); }
 	STerrainMapArea* GetCurrentMapArea(CCircuitDef* cdef, const springai::AIFloat3& position);
 	int GetSectorIndex(const springai::AIFloat3& position) const { return terrainData->GetSectorIndex(position); }
@@ -156,7 +158,7 @@ public:
 	}
 
 	// position must be valid
-	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position, const float& range = .0);  // NOTE: returns false if the area was too small to be recorded
+	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position, const float range = .0);  // NOTE: returns false if the area was too small to be recorded
 	bool CanBuildAtUnsafe(CCircuitUnit* unit, const springai::AIFloat3& destination);
 	bool CanBuildAt(CCircuitUnit* unit, const springai::AIFloat3& destination);
 	bool CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const springai::AIFloat3& destination);
@@ -168,12 +170,11 @@ public:
 	}
 
 	SAreaData* GetAreaData() const { return areaData; }
-	void UpdateAreaUsers();
+	void UpdateAreaUsers(int interval);
 	void DidUpdateAreaUsers() { terrainData->DidUpdateAreaUsers(); }
 private:
 	SAreaData* areaData;
 	CTerrainData* terrainData;
-
 
 #ifdef DEBUG_VIS
 private:

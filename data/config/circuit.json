@@ -792,6 +792,7 @@
 	},
 	"armmanni": {
 		"role": ["anti_heavy", "heavy"],
+		"attribute": ["support"],
 		"dmg_mod": 1.5,
 		"retreat": 0.99
 	},

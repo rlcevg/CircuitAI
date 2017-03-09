@@ -63,6 +63,8 @@ private:
 	CCircuitAI* circuit;
 	SAreaData* areaData;
 
+	inline void PosToXZ(const springai::AIFloat3& pos, int& x, int& z) const;
+
 	void AddEnemyUnit(const CEnemyUnit* e);
 	void DelEnemyUnit(const CEnemyUnit* e);
 	void AddEnemyUnitAll(const CEnemyUnit* e);

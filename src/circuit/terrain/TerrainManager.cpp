@@ -303,6 +303,20 @@ void CTerrainManager::Init()
 			}
 		}
 	}
+
+	// Mark edges of the map
+	for (int i = 2; i < blockingMap.columns - 2; ++i) {
+		for (int j = 0; j < 8; ++j) {
+			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::MEX, notIgnoreMask);
+			blockingMap.MarkBlocker(i, blockingMap.rows - j - 1, SBlockingMap::StructType::MEX, notIgnoreMask);
+		}
+	}
+	for (int j = 2; j < blockingMap.rows - 2; ++j) {
+		for (int i = 0; i < 8; ++i) {
+			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::MEX, notIgnoreMask);
+			blockingMap.MarkBlocker(blockingMap.columns - i - 1, j, SBlockingMap::StructType::MEX, notIgnoreMask);
+		}
+	}
 }
 
 void CTerrainManager::AddBlocker(CCircuitDef* cdef, const AIFloat3& pos, int facing)
@@ -1226,7 +1240,7 @@ STerrainMapSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* destin
 	return closestS;
 }
 
-bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, const float& range)
+bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, const float range)
 {
 	if (circuit->GetThreatMap()->GetAllThreatAt(position) > THREAT_MIN) {
 		return false;
@@ -1302,7 +1316,7 @@ bool CTerrainManager::CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* build
 	return GetClosestSector(area, iS)->S->position.distance2D(destination) < builderDef->GetBuildDistance();
 }
 
-void CTerrainManager::UpdateAreaUsers()
+void CTerrainManager::UpdateAreaUsers(int interval)
 {
 	areaData = terrainData->GetNextAreaData();
 	int frame = circuit->GetLastFrame();
@@ -1325,11 +1339,16 @@ void CTerrainManager::UpdateAreaUsers()
 		}
 		unit->SetArea(area);
 	}
-	// TODO: Use boost signals to invoke UpdateAreaUsers event?
-	circuit->GetBuilderManager()->UpdateAreaUsers();
-	circuit->GetPathfinder()->UpdateAreaUsers(this);
 
-	DidUpdateAreaUsers();
+	circuit->GetBuilderManager()->UpdateAreaUsers();
+
+	// stagger area update
+	auto updatePath = [this]() {
+		circuit->GetPathfinder()->UpdateAreaUsers(this);
+
+		DidUpdateAreaUsers();
+	};
+	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(updatePath), interval);
 }
 
 #ifdef DEBUG_VIS

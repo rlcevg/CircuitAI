@@ -137,16 +137,30 @@ void CSuperTask::Update()
 
 	const AIFloat3& grPos = groups[groupIdx].pos;
 	CEnemyUnit* bestTarget = nullptr;
-	float minSqDist = std::numeric_limits<float>::max();
-	for (const CCircuitUnit::Id eId : groups[groupIdx].units) {
-		CEnemyUnit* enemy = circuit->GetEnemyUnit(eId);
-		if (enemy == nullptr) {
-			continue;
+	if (cdef->IsAttrStock()) {
+		float minSqDist = std::numeric_limits<float>::max();
+		for (const CCircuitUnit::Id eId : groups[groupIdx].units) {
+			CEnemyUnit* enemy = circuit->GetEnemyUnit(eId);
+			if (enemy == nullptr) {
+				continue;
+			}
+			const float sqDist = grPos.SqDistance2D(enemy->GetPos());
+			if ((minSqDist > sqDist) && (position.SqDistance2D(enemy->GetPos()) < maxSqRange)) {
+				minSqDist = sqDist;
+				bestTarget = enemy;
+			}
 		}
-		const float sqDist = grPos.SqDistance2D(enemy->GetPos());
-		if ((minSqDist > sqDist) && (position.SqDistance2D(enemy->GetPos()) < maxSqRange)) {
-			minSqDist = sqDist;
-			bestTarget = enemy;
+	} else {
+		float maxCost = 0.f;
+		for (const CCircuitUnit::Id eId : groups[groupIdx].units) {
+			CEnemyUnit* enemy = circuit->GetEnemyUnit(eId);
+			if (enemy == nullptr) {
+				continue;
+			}
+			if ((maxCost < enemy->GetCost()) && (position.SqDistance2D(enemy->GetPos()) < maxSqRange)) {
+				maxCost = enemy->GetCost();
+				bestTarget = enemy;
+			}
 		}
 	}
 	SetTarget(bestTarget);
