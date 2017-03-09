@@ -80,6 +80,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 
 		AddBuildPower(unit);
+		workers.insert(unit);
 
 		AddBuildList(unit);
 	};
@@ -105,6 +106,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		--buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 
 		DelBuildPower(unit);
+		workers.erase(unit);
 
 		RemoveBuildList(unit);
 	};
@@ -331,16 +333,12 @@ void CBuilderManager::AddBuildPower(CCircuitUnit* unit)
 {
 	buildPower += unit->GetCircuitDef()->GetBuildSpeed();
 	circuit->GetMilitaryManager()->AddArmyCost(unit);
-
-	workers.insert(unit);
 }
 
 void CBuilderManager::DelBuildPower(CCircuitUnit* unit)
 {
 	buildPower -= unit->GetCircuitDef()->GetBuildSpeed();
 	circuit->GetMilitaryManager()->DelArmyCost(unit);
-
-	workers.erase(unit);
 }
 
 const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType type) const

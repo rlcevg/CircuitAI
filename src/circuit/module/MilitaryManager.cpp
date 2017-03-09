@@ -101,6 +101,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			nilTask->RemoveAssignee(unit);
 		}
 
+		army.insert(unit);
 		AddArmyCost(unit);
 
 		TRY_UNIT(this->circuit, unit,
@@ -137,6 +138,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		}
 
 		DelArmyCost(unit);
+		army.erase(unit);
 	};
 
 	/*
@@ -844,7 +846,9 @@ void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
 
 void CMilitaryManager::AddArmyCost(CCircuitUnit* unit)
 {
-	army.insert(unit);
+	if (unit->GetCircuitDef()->IsAttrComm()) {
+		return;
+	}
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float cost = cdef->GetCost();
@@ -860,7 +864,9 @@ void CMilitaryManager::AddArmyCost(CCircuitUnit* unit)
 
 void CMilitaryManager::DelArmyCost(CCircuitUnit* unit)
 {
-	army.erase(unit);
+	if (unit->GetCircuitDef()->IsAttrComm()) {
+		return;
+	}
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float cost = cdef->GetCost();

@@ -320,8 +320,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		} else if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
 			setRoles(CCircuitDef::RoleType::BUILDER);
 		}
-		auto customParams = std::move(cdef->GetUnitDef()->GetCustomParams());
-		if (customParams.find("level") != customParams.end()) {
+		if (cdef->IsAttrComm()) {
 			cdef->AddEnemyRole(CCircuitDef::RoleType::HEAVY);
 			cdef->AddRole(CCircuitDef::RoleType::HEAVY);
 		}
@@ -1119,15 +1118,17 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 		}
 		if (u->IsBeingBuilt()) {
 			CCircuitDef* cdef = candUnit->GetCircuitDef();
-			if (cdef->GetBuildTime() >= curCost) {
+			const float maxHealth = u->GetMaxHealth();
+			const float buildTime = cdef->GetBuildTime() * (maxHealth - u->GetHealth()) / maxHealth;
+			if (buildTime >= curCost) {
 				continue;
 			}
 			if (IsHighPriority(candUnit) ||
 				(!isMetalEmpty && cdef->IsAssistable()) ||
 				(*cdef == *terraDef) ||
-				(cdef->GetBuildTime() < maxCost))
+				(buildTime < maxCost))
 			{
-				curCost = cdef->GetBuildTime();
+				curCost = buildTime;
 				buildTarget = candUnit;
 			}
 		} else if ((repairTarget == nullptr) && (u->GetHealth() < u->GetMaxHealth())) {

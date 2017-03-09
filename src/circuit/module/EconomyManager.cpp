@@ -1094,49 +1094,50 @@ void CEconomyManager::Init()
 {
 	metalProduced = economy->GetCurrent(metalRes) * metalMod;
 
-	CAllyTeam* allyTeam = circuit->GetAllyTeam();
-	energyGrid = allyTeam->GetEnergyGrid().get();
+	energyGrid = circuit->GetAllyTeam()->GetEnergyGrid().get();
 
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	size_t clSize = metalManager->GetClusters().size();
+	size_t clSize = circuit->GetMetalManager()->GetClusters().size();
 	clusterInfos.resize(clSize, {nullptr, -FRAMES_PER_SEC});
-	size_t spSize = metalManager->GetSpots().size();
+	size_t spSize = circuit->GetMetalManager()->GetSpots().size();
 	openSpots.resize(spSize, true);
 
-	CScheduler* scheduler = circuit->GetScheduler().get();
-	CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-	if (circuit->IsCommMerge() && (commander != nullptr)) {
-		const AIFloat3& pos = commander->GetPos(circuit->GetLastFrame());
-		int clusterId = metalManager->FindNearestCluster(pos);
-		int ownerId = allyTeam->GetClusterTeam(clusterId).teamId;
-		if (ownerId < 0) {
-			ownerId = circuit->GetTeamId();
-			allyTeam->OccupyCluster(clusterId, ownerId);
-		} else if (ownerId != circuit->GetTeamId()) {
-			// Resign
-			std::vector<Unit*> migrants;
-			for (auto& kv : circuit->GetTeamUnits()) {
-				migrants.push_back(kv.second->GetUnit());
-			}
-			economy->SendUnits(migrants, ownerId);
-			// Double check
-			scheduler->RunTaskAfter(std::make_shared<CGameTask>([this, ownerId]() {
-				if (circuit->GetTeamUnits().empty()) {
-					circuit->Resign(ownerId);
+	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
+		CScheduler* scheduler = circuit->GetScheduler().get();
+		CAllyTeam* allyTeam = circuit->GetAllyTeam();
+		if (circuit->IsCommMerge()) {
+			int clusterId = circuit->GetMetalManager()->FindNearestCluster(pos);
+			int ownerId = allyTeam->GetClusterTeam(clusterId).teamId;
+			if (ownerId < 0) {
+				ownerId = circuit->GetTeamId();
+				allyTeam->OccupyCluster(clusterId, ownerId);
+			} else if (ownerId != circuit->GetTeamId()) {
+				// Resign
+				std::vector<Unit*> migrants;
+				for (auto& kv : circuit->GetTeamUnits()) {
+					migrants.push_back(kv.second->GetUnit());
 				}
-			}), FRAMES_PER_SEC * 10);
+				economy->SendUnits(migrants, ownerId);
+				// Double check
+				scheduler->RunTaskAfter(std::make_shared<CGameTask>([this, ownerId]() {
+					if (circuit->GetTeamUnits().empty()) {
+						circuit->Resign(ownerId);
+					}
+				}), FRAMES_PER_SEC * 10);
+			}
 		}
-	}
 
-	scheduler->RunTaskAfter(std::make_shared<CGameTask>([this]() {
-		ecoFactor = (circuit->GetAllyTeam()->GetAliveSize() - 1.0f) * ecoStep + 1.0f;
-	}), FRAMES_PER_SEC * 11);
+		scheduler->RunTaskAfter(std::make_shared<CGameTask>([this]() {
+			ecoFactor = (circuit->GetAllyTeam()->GetAliveSize() - 1.0f) * ecoStep + 1.0f;
+		}), FRAMES_PER_SEC * 11);
 
-	const int interval = allyTeam->GetSize() * FRAMES_PER_SEC;
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks), this),
-							interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this),
-							interval, circuit->GetSkirmishAIId() + 1 + interval / 2);
+		const int interval = allyTeam->GetSize() * FRAMES_PER_SEC;
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks), this),
+								interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this),
+								interval, circuit->GetSkirmishAIId() + 1 + interval / 2);
+	};
+
+	circuit->GetSetupManager()->ExecOnFindStart(subinit);
 }
 
 void CEconomyManager::OpenStrategy(CCircuitDef* facDef, const AIFloat3& pos)
