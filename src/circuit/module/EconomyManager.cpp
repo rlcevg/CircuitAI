@@ -158,7 +158,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 					// Force commander level 0 to morph
 					CCircuitUnit* unit = this->circuit->GetTeamUnit(unitId);
 					if ((unit != nullptr) && (unit->GetTask() != nullptr) &&
-						(unit->GetTask()->GetType() == IUnitTask::Type::PLAYER))
+						(unit->GetTask()->GetType() != IUnitTask::Type::PLAYER))
 					{
 						const std::map<std::string, std::string>& customParams = unit->GetCircuitDef()->GetUnitDef()->GetCustomParams();
 						auto it = customParams.find("level");
@@ -237,9 +237,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		} else {
 
 			// commander
-			auto it = customParams.find("level");
-			if ((it != customParams.end()) && (utils::string_to_int(it->second) <= 6)) {  // TODO: Identify max level
-				// NOTE: last level is needed only to set proper commander
+			if (cdef->IsAttrComm()) {
 				finishedHandler[cdef->GetId()] = comFinishedHandler;
 				destroyedHandler[cdef->GetId()] = comDestroyedHandler;
 			}
@@ -980,7 +978,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 
 void CEconomyManager::AddMorphee(CCircuitUnit* unit)
 {
-	if (!unit->IsUpgradable()) {
+	if (!unit->IsUpgradable() || (unit->GetTask() == nullptr)) {
 		return;
 	}
 	morphees.insert(unit);
@@ -1007,7 +1005,7 @@ void CEconomyManager::UpdateMorph()
 	auto it = morphees.begin();
 	while (it != morphees.end()) {
 		CCircuitUnit* unit = *it;
-		if (((unit->GetTask() != nullptr) && (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER)) ||
+		if ((unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) ||
 			(unit->GetUnit()->GetHealth() < unit->GetUnit()->GetMaxHealth() * 0.8f))
 		{
 			++it;

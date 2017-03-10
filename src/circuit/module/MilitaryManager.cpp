@@ -846,10 +846,6 @@ void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
 
 void CMilitaryManager::AddArmyCost(CCircuitUnit* unit)
 {
-	if (unit->GetCircuitDef()->IsAttrComm()) {
-		return;
-	}
-
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float cost = cdef->GetCost();
 	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_));
@@ -864,10 +860,6 @@ void CMilitaryManager::AddArmyCost(CCircuitUnit* unit)
 
 void CMilitaryManager::DelArmyCost(CCircuitUnit* unit)
 {
-	if (unit->GetCircuitDef()->IsAttrComm()) {
-		return;
-	}
-
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float cost = cdef->GetCost();
 	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_));

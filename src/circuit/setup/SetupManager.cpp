@@ -313,7 +313,6 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 	}
 
 	AIFloat3 pos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
-	SetStartPos(pos);
 	circuit->GetGame()->SendStartPosition(false, pos);
 }
 

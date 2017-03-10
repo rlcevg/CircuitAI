@@ -305,14 +305,14 @@ void CTerrainManager::Init()
 	}
 
 	// Mark edges of the map
-	for (int i = 2; i < blockingMap.columns - 2; ++i) {
-		for (int j = 0; j < 8; ++j) {
+	for (int i = 8; i < blockingMap.columns - 8; ++i) {
+		for (int j = 0; j < 7; ++j) {
 			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::MEX, notIgnoreMask);
 			blockingMap.MarkBlocker(i, blockingMap.rows - j - 1, SBlockingMap::StructType::MEX, notIgnoreMask);
 		}
 	}
-	for (int j = 2; j < blockingMap.rows - 2; ++j) {
-		for (int i = 0; i < 8; ++i) {
+	for (int i = 0; i < 7; ++i) {
+		for (int j = 8; j < blockingMap.rows - 8; ++j) {
 			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::MEX, notIgnoreMask);
 			blockingMap.MarkBlocker(blockingMap.columns - i - 1, j, SBlockingMap::StructType::MEX, notIgnoreMask);
 		}

@@ -317,12 +317,12 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			setRoles(CCircuitDef::RoleType::AIR);
 		} else if (!cdef->IsMobile() && cdef->IsAttacker() && cdef->HasAntiLand()) {
 			setRoles(CCircuitDef::RoleType::STATIC);
-		} else if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
+		} else if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty() && !cdef->IsAttrComm()) {
 			setRoles(CCircuitDef::RoleType::BUILDER);
 		}
 		if (cdef->IsAttrComm()) {
+			cdef->SetMainRole(CCircuitDef::RoleType::BUILDER);
 			cdef->AddEnemyRole(CCircuitDef::RoleType::HEAVY);
-			cdef->AddRole(CCircuitDef::RoleType::HEAVY);
 		}
 	}
 
