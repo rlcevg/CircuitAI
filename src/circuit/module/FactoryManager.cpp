@@ -321,8 +321,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			setRoles(CCircuitDef::RoleType::BUILDER);
 		}
 		if (cdef->IsAttrComm()) {
+			// NOTE: Omit AddRole to exclude commanders from response
 			cdef->SetMainRole(CCircuitDef::RoleType::BUILDER);
-			cdef->AddEnemyRole(CCircuitDef::RoleType::HEAVY);
+			cdef->AddEnemyRole(CCircuitDef::RoleType::HEAVY);  // TODO: Change from HEAVY to COMM role
 		}
 	}
 
@@ -534,25 +535,6 @@ CCircuitUnit* CFactoryManager::NeedUpgrade()
 	return nullptr;
 }
 
-CCircuitUnit* CFactoryManager::GetRandomFactory(CCircuitDef* buildDef)
-{
-	static std::vector<CCircuitUnit*> facs;  // NOTE: micro-opt
-//	facs.reserve(factories.size());
-	for (SFactory& fac : factories) {
-		if (fac.unit->GetCircuitDef()->CanBuild(buildDef)) {
-			facs.push_back(fac.unit);
-		}
-	}
-	if (facs.empty()) {
-		return nullptr;
-	}
-	auto it = facs.begin();
-	std::advance(it, rand() % facs.size());
-	CCircuitUnit* result = *it;
-	facs.clear();
-	return result;
-}
-
 CCircuitUnit* CFactoryManager::GetClosestFactory(AIFloat3 position)
 {
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
@@ -661,18 +643,13 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 		return nullptr;
 	}
 	CCircuitDef* buildDef = it->second.GetRoleDef(CCircuitDef::RoleType::BUILDER);
-	if ((buildDef == nullptr) || !buildDef->IsAvailable()) {
-		return nullptr;
-	}
 
-	CCircuitUnit* factory = GetRandomFactory(buildDef);
-	if (factory != nullptr) {
-		const AIFloat3& buildPos = factory->GetPos(circuit->GetLastFrame());
+	if ((buildDef != nullptr) && buildDef->IsAvailable()) {
+		const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
-		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, buildPos, CRecruitTask::RecruitType::BUILDPOWER, radius);
+		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, pos, CRecruitTask::RecruitType::BUILDPOWER, radius);
 	}
-
 	return nullptr;
 }
 

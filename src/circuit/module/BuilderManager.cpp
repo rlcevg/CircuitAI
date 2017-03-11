@@ -332,13 +332,13 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 void CBuilderManager::AddBuildPower(CCircuitUnit* unit)
 {
 	buildPower += unit->GetCircuitDef()->GetBuildSpeed();
-	circuit->GetMilitaryManager()->AddArmyCost(unit);
+	circuit->GetMilitaryManager()->AddResponse(unit);
 }
 
 void CBuilderManager::DelBuildPower(CCircuitUnit* unit)
 {
 	buildPower -= unit->GetCircuitDef()->GetBuildSpeed();
-	circuit->GetMilitaryManager()->DelArmyCost(unit);
+	circuit->GetMilitaryManager()->DelResponse(unit);
 }
 
 const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType type) const

@@ -844,9 +844,9 @@ void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
 	}
 }
 
-void CMilitaryManager::AddArmyCost(CCircuitUnit* unit)
+void CMilitaryManager::AddResponse(CCircuitUnit* unit)
 {
-	CCircuitDef* cdef = unit->GetCircuitDef();
+	const CCircuitDef* cdef = unit->GetCircuitDef();
 	const float cost = cdef->GetCost();
 	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_));
 	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
@@ -855,12 +855,11 @@ void CMilitaryManager::AddArmyCost(CCircuitUnit* unit)
 			roleInfos[i].units.insert(unit);
 		}
 	}
-	armyCost += cost;
 }
 
-void CMilitaryManager::DelArmyCost(CCircuitUnit* unit)
+void CMilitaryManager::DelResponse(CCircuitUnit* unit)
 {
-	CCircuitDef* cdef = unit->GetCircuitDef();
+	const CCircuitDef* cdef = unit->GetCircuitDef();
 	const float cost = cdef->GetCost();
 	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_));
 	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
@@ -870,7 +869,6 @@ void CMilitaryManager::DelArmyCost(CCircuitUnit* unit)
 			roleInfos[i].units.erase(unit);
 		}
 	}
-	armyCost = std::max(armyCost - cost, .0f);
 }
 
 float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
@@ -1252,6 +1250,18 @@ void CMilitaryManager::UpdateFight()
 			n--;
 		}
 	}
+}
+
+void CMilitaryManager::AddArmyCost(CCircuitUnit* unit)
+{
+	AddResponse(unit);
+	armyCost += unit->GetCircuitDef()->GetCost();
+}
+
+void CMilitaryManager::DelArmyCost(CCircuitUnit* unit)
+{
+	DelResponse(unit);
+	armyCost = std::max(armyCost - unit->GetCircuitDef()->GetCost(), .0f);
 }
 
 /*

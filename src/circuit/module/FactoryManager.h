@@ -55,7 +55,6 @@ public:
 	bool CanEnqueueTask() const { return factoryTasks.size() < factories.size() * 2; }
 	const std::vector<CRecruitTask*>& GetTasks() const { return factoryTasks; }
 	CCircuitUnit* NeedUpgrade();
-	CCircuitUnit* GetRandomFactory(CCircuitDef* buildDef);
 	CCircuitUnit* GetClosestFactory(springai::AIFloat3 position);
 //	CCircuitDef* GetClosestDef(springai::AIFloat3& position, CCircuitDef::RoleType role);
 

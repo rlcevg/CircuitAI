@@ -87,8 +87,8 @@ public:
 	const std::set<CCircuitUnit*>& GetRoleUnits(CCircuitDef::RoleType type) const {
 		return roleInfos[static_cast<CCircuitDef::RoleT>(type)].units;
 	}
-	void AddArmyCost(CCircuitUnit* unit);
-	void DelArmyCost(CCircuitUnit* unit);
+	void AddResponse(CCircuitUnit* unit);
+	void DelResponse(CCircuitUnit* unit);
 	float GetArmyCost() const { return armyCost; }
 	float RoleProbability(const CCircuitDef* cdef) const;
 	bool IsNeedBigGun(const CCircuitDef* cdef) const;
@@ -110,6 +110,9 @@ private:
 	void Watchdog();
 	void UpdateIdle();
 	void UpdateFight();
+
+	void AddArmyCost(CCircuitUnit* unit);
+	void DelArmyCost(CCircuitUnit* unit);
 
 	void KMeansIteration();
 
