@@ -93,15 +93,6 @@ void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 	HideAssignee(unit);
 }
 
-void IBuilderTask::Close(bool done)
-{
-	IUnitTask::Close(done);
-
-	if (buildDef != nullptr) {
-		manager->DelMetalPull(buildPower);
-	}
-}
-
 void IBuilderTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -230,6 +221,15 @@ void IBuilderTask::Update()
 	}
 }
 
+void IBuilderTask::Close(bool done)
+{
+	IUnitTask::Close(done);
+
+	if (buildDef != nullptr) {
+		manager->DelMetalPull(buildPower);
+	}
+}
+
 void IBuilderTask::Finish()
 {
 	CBuilderManager* builderManager = manager->GetCircuit()->GetBuilderManager();
@@ -353,7 +353,7 @@ bool IBuilderTask::IsEqualBuildPos(CCircuitUnit* unit) const
 
 void IBuilderTask::HideAssignee(CCircuitUnit* unit)
 {
-	buildPower -= unit->GetCircuitDef()->GetBuildSpeed();
+	buildPower -= unit->GetBuildSpeed();
 	if (buildDef != nullptr) {
 		manager->DelMetalPull(unit);
 	}
@@ -361,7 +361,7 @@ void IBuilderTask::HideAssignee(CCircuitUnit* unit)
 
 void IBuilderTask::ShowAssignee(CCircuitUnit* unit)
 {
-	buildPower += unit->GetCircuitDef()->GetBuildSpeed();
+	buildPower += unit->GetBuildSpeed();
 	if (buildDef != nullptr) {
 		manager->AddMetalPull(unit);
 	}

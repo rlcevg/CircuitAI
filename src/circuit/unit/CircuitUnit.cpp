@@ -156,28 +156,16 @@ bool CCircuitUnit::IsJumpReady()
 	return circuitDef->IsAbleToJump() && !(unit->GetRulesParamFloat("jumpReload", 1) < 1.f);
 }
 
-float CCircuitUnit::GetDPS()
-{
-	float dps = circuitDef->GetDPS();
-	if (dps < 0.1f) {
-		return 0.f;
-	}
-	if (unit->IsParalyzed() || IsDisarmed(manager->GetCircuit()->GetLastFrame())) {
-		return 1.0f;
-	}
-	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;
-	return dps;
-}
-
 float CCircuitUnit::GetDamage()
 {
-	float dmg = circuitDef->GetDamage();
+	float dmg = circuitDef->GetPwrDamage();
 	if (dmg < 1e-3f) {
 		return 0.f;
 	}
 	if (unit->IsParalyzed() || IsDisarmed(manager->GetCircuit()->GetLastFrame())) {
 		return 0.01f;
 	}
+	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;
 	return dmg;
 }
 
@@ -187,6 +175,11 @@ float CCircuitUnit::GetShieldPower()
 		return shield->GetShieldPower();
 	}
 	return 0.f;
+}
+
+float CCircuitUnit::GetBuildSpeed()
+{
+	return circuitDef->GetBuildSpeed() * unit->GetRulesParamFloat("buildpower_mult", 1.f);
 }
 
 void CCircuitUnit::Attack(CEnemyUnit* target, int timeout)

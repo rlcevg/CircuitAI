@@ -96,9 +96,9 @@ public:
 	bool IsDGunReady(int frame);
 	bool IsShieldCharged(float percent);
 	bool IsJumpReady();
-	float GetDPS();
 	float GetDamage();
 	float GetShieldPower();
+	float GetBuildSpeed();
 
 	void Attack(CEnemyUnit* target, int timeout);
 	void Attack(const springai::AIFloat3& position, int timeout);

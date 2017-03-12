@@ -95,11 +95,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	auto attackerFinishedHandler = [this](CCircuitUnit* unit) {
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
-			idleTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
-		} else {
-			nilTask->RemoveAssignee(unit);
 		}
+		idleTask->AssignTo(unit);
 
 		army.insert(unit);
 		AddArmyCost(unit);
@@ -133,7 +131,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
-		if (unit->GetTask()->GetType() == IUnitTask::Type::NIL) {
+		if (task->GetType() == IUnitTask::Type::NIL) {
 			return;
 		}
 
@@ -154,11 +152,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	auto superFinishedHandler = [this](CCircuitUnit* unit) {
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
-			idleTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
-		} else {
-			nilTask->RemoveAssignee(unit);
 		}
+		idleTask->AssignTo(unit);
 
 		TRY_UNIT(this->circuit, unit,
 			unit->GetUnit()->SetTrajectory(1);
@@ -824,7 +820,7 @@ void CMilitaryManager::AddEnemyCost(const CEnemyUnit* e)
 		}
 	}
 	if (cdef->IsMobile()) {
-		enemyThreat += cdef->GetPower();
+		enemyThreat += cdef->GetThreat();
 	}
 }
 
@@ -840,7 +836,7 @@ void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
 		}
 	}
 	if (cdef->IsMobile()) {
-		enemyThreat = std::max(enemyThreat - cdef->GetPower(), 0.f);
+		enemyThreat = std::max(enemyThreat - cdef->GetThreat(), 0.f);
 	}
 }
 

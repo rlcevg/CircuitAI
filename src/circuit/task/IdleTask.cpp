@@ -38,12 +38,6 @@ void CIdleTask::RemoveAssignee(CCircuitUnit* unit)
 	unit->Clear();
 }
 
-void CIdleTask::Close(bool done)
-{
-	units.clear();
-	updateUnits.clear();
-}
-
 void CIdleTask::Execute(CCircuitUnit* unit)
 {
 }
@@ -68,6 +62,12 @@ void CIdleTask::Update()
 			break;
 		}
 	}
+}
+
+void CIdleTask::Close(bool done)
+{
+	units.clear();
+	updateUnits.clear();
 }
 
 void CIdleTask::OnUnitIdle(CCircuitUnit* unit)

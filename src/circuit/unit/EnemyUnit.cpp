@@ -59,20 +59,12 @@ bool CEnemyUnit::IsDisarmed()
 	return unit->GetRulesParamFloat("disarmed", 0) > .0f;
 }
 
-float CEnemyUnit::GetDPS()
+bool CEnemyUnit::IsAttacker()
 {
 	if (circuitDef == nullptr) {  // unknown enemy is a threat
-		return 16.0f;
+		return true;
 	}
-	float dps = circuitDef->GetDPS();
-	if (dps < 0.1f) {
-		return .0f;
-	}
-	if (unit->IsParalyzed() || unit->IsBeingBuilt() || IsDisarmed()) {
-		return 1.0f;
-	}
-	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;
-	return dps;
+	return circuitDef->IsAttacker();
 }
 
 float CEnemyUnit::GetDamage()
@@ -80,13 +72,14 @@ float CEnemyUnit::GetDamage()
 	if (circuitDef == nullptr) {  // unknown enemy is a threat
 		return 0.1f;
 	}
-	float dmg = circuitDef->GetDamage();
+	float dmg = circuitDef->GetThrDamage();
 	if (dmg < 1e-3f) {
 		return .0f;
 	}
 	if (unit->IsParalyzed() || unit->IsBeingBuilt() || IsDisarmed()) {
 		return 1e-3f;
 	}
+	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;
 	return dmg;
 }
 

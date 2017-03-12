@@ -205,14 +205,14 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 
 			const float sqDist = pos.SqDistance2D(enemy->GetPos());
 			if (sqDist < minSqDist) {
-				if (edef->IsRoleBuilder()) {
+				if (edef->IsEnemyRoleAny(CCircuitDef::RoleMask::BUILDER)) {
 					bestTarget = enemy;
 					minSqDist = sqDist;
 					maxThreat = std::numeric_limits<float>::max();
-				} else if (edef->GetPower() > maxThreat) {
+				} else if (edef->GetThreat() > maxThreat) {
 					bestTarget = enemy;
 					minSqDist = sqDist;
-					maxThreat = edef->GetPower();
+					maxThreat = edef->GetThreat();
 				} else if (bestTarget == nullptr) {
 					if ((targetCat & noChaseCat) == 0) {
 						mediumTarget = enemy;

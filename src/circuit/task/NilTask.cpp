@@ -24,7 +24,10 @@ CNilTask::~CNilTask()
 void CNilTask::AssignTo(CCircuitUnit* unit)
 {
 	unit->SetTask(this);
-	units.insert(unit);
+}
+
+void CNilTask::RemoveAssignee(CCircuitUnit* unit)
+{
 }
 
 void CNilTask::Execute(CCircuitUnit* unit)
@@ -32,6 +35,10 @@ void CNilTask::Execute(CCircuitUnit* unit)
 }
 
 void CNilTask::Update()
+{
+}
+
+void CNilTask::Close(bool done)
 {
 }
 
@@ -45,7 +52,6 @@ void CNilTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 
 void CNilTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
-	RemoveAssignee(unit);
 }
 
 } // namespace circuit

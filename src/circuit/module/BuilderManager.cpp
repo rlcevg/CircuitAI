@@ -71,11 +71,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	auto workerFinishedHandler = [this](CCircuitUnit* unit) {
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
-			idleTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
-		} else {
-			nilTask->RemoveAssignee(unit);
 		}
+		idleTask->AssignTo(unit);
 
 		++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 
@@ -100,7 +98,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
-		if (unit->GetTask()->GetType() == IUnitTask::Type::NIL) {
+		if (task->GetType() == IUnitTask::Type::NIL) {
 			return;
 		}
 		--buildAreas[unit->GetArea()][unit->GetCircuitDef()];
@@ -331,13 +329,13 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 
 void CBuilderManager::AddBuildPower(CCircuitUnit* unit)
 {
-	buildPower += unit->GetCircuitDef()->GetBuildSpeed();
+	buildPower += unit->GetBuildSpeed();
 	circuit->GetMilitaryManager()->AddResponse(unit);
 }
 
 void CBuilderManager::DelBuildPower(CCircuitUnit* unit)
 {
-	buildPower -= unit->GetCircuitDef()->GetBuildSpeed();
+	buildPower -= unit->GetBuildSpeed();
 	circuit->GetMilitaryManager()->DelResponse(unit);
 }
 

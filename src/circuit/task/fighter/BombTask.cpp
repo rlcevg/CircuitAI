@@ -220,7 +220,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, co
 
 		int targetCat;
 //		float altitude;
-		float defPower;
+		float defThreat;
 		bool isBuilder;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
@@ -232,12 +232,12 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, co
 				continue;
 			}
 //			altitude = edef->GetAltitude();
-			defPower = edef->GetPower();
-			isBuilder = edef->IsRoleBuilder();
+			defThreat = edef->GetThreat();
+			isBuilder = edef->IsEnemyRoleAny(CCircuitDef::RoleMask::BUILDER);
 		} else {
 			targetCat = UNKNOWN_CATEGORY;
 //			altitude = 0.f;
-			defPower = enemy->GetThreat();
+			defThreat = enemy->GetThreat();
 			isBuilder = false;
 		}
 
@@ -245,7 +245,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, co
 		for (IFighterTask* task : enemy->GetTasks()) {
 			sumPower += task->GetAttackPower();
 		}
-		if (sumPower > defPower) {
+		if (sumPower > defThreat) {
 			continue;
 		}
 
@@ -254,9 +254,9 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, co
 			if (isBuilder) {
 				bestTarget = enemy;
 				maxThreat = std::numeric_limits<float>::max();
-			} else if (maxThreat <= defPower) {
+			} else if (maxThreat <= defThreat) {
 				bestTarget = enemy;
-				maxThreat = defPower;
+				maxThreat = defThreat;
 			} else if (bestTarget == nullptr) {
 				if ((targetCat & noChaseCat) == 0) {
 					mediumTarget = enemy;

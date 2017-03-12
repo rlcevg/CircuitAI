@@ -71,16 +71,18 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, buildOptions(buildOpts)
 		, count(0)
 		, buildCounts(0)
+		, isAttacker(false)
 		, hasDGunAA(false)
 //		, dgunReload(-1)
 		, dgunRange(.0f)
 		, dgunMount(nullptr)
 		, shieldMount(nullptr)
 		, weaponMount(nullptr)
-		, dps(.0f)
-		, dmg(.0f)
+		, pwrDmg(.0f)
+		, thrDmg(.0f)
 		, aoe(.0f)
 		, power(.0f)
+		, threat(.0f)
 		, minRange(.0f)
 		, maxRange({.0f})
 		, threatRange({0})
@@ -215,6 +217,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	float bestDGunReload = std::numeric_limits<float>::max();
 	float bestDGunRange = .0f;
 	float bestWpRange = std::numeric_limits<float>::max();
+	float dps = .0f;  // TODO: split dps like ranges on air, land, water
+	float dmg = .0f;
 	WeaponMount* bestDGunMnt = nullptr;
 	WeaponMount* bestWpMnt = nullptr;
 	bool canTargetAir = false;
@@ -422,10 +426,11 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	hasAntiLand  = (targetCategory & circuit->GetLandCategory()) && canTargetLand;
 	hasAntiWater = (targetCategory & circuit->GetWaterCategory()) && canTargetWater;
 
+	isAttacker = dps > .1f;
 	// TODO: Include projectile-speed/range, armor
 	//       health /= def->GetArmoredMultiple();
-	dmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
-	power = dmg * sqrtf(def->GetHealth() + maxShield * 2.0f);
+	thrDmg = pwrDmg = dmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
+	threat = power = dmg * sqrtf(def->GetHealth() + maxShield * 2.0f);
 }
 
 CCircuitDef::~CCircuitDef()

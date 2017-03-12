@@ -221,6 +221,12 @@ void CAntiHeavyTask::Update()
 			ActivePath();
 			return;
 		}
+		if (!leader->GetCircuitDef()->IsRoleMine() &&
+			(circuit->GetMilitaryManager()->GetEnemyCost(CCircuitDef::RoleType::HEAVY) < 1.f))
+		{
+			manager->AbortTask(this);
+			return;
+		}
 	}
 
 	pPath->clear();
@@ -339,7 +345,7 @@ void CAntiHeavyTask::FindTarget()
 		}
 
 		CCircuitDef* edef = enemy->GetCircuitDef();
-		if ((edef == nullptr) || !edef->IsRoleHeavy() ||
+		if ((edef == nullptr) || !edef->IsEnemyRoleAny(CCircuitDef::RoleMask::HEAVY) ||
 			((edef->GetCategory() & canTargetCat) == 0) ||
 			(edef->IsAbleToFly() && notAA) ||
 			(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > weaponRange))

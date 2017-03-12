@@ -42,7 +42,7 @@ public:
 
 	springai::Weapon* GetDGun() const { return dgun; }
 	bool IsDisarmed();
-	float GetDPS();
+	bool IsAttacker();
 	float GetDamage();
 	float GetShieldPower() const;
 

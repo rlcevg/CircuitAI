@@ -196,7 +196,7 @@ bool CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 	enemy->SetInLOS();
 	const bool wasKnown = enemy->IsKnown();
 
-	if (enemy->GetDPS() < 0.1f) {
+	if (!enemy->IsAttacker()) {
 		if (enemy->GetThreat() > .0f) {  // (2)
 			// threat prediction failed when enemy was unknown
 			if (enemy->IsHidden()) {
@@ -265,7 +265,7 @@ void CThreatMap::EnemyEnterRadar(CEnemyUnit* enemy)
 		return;
 	}
 
-	if (enemy->GetDPS() < 0.1f) {  // (2)
+	if (!enemy->IsAttacker()) {  // (2)
 		if (enemy->IsHidden()) {
 			enemy->ClearHidden();
 		} else {

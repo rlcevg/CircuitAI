@@ -63,18 +63,16 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 	auto factoryFinishedHandler = [this](CCircuitUnit* unit) {
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
-			idleTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
-		} else {
-			nilTask->RemoveAssignee(unit);
 		}
+		idleTask->AssignTo(unit);
 
 		TRY_UNIT(this->circuit, unit,
-			unit->GetUnit()->SetRepeat(true);
+			unit->GetUnit()->SetRepeat(false);
 			unit->GetUnit()->SetIdleMode(0);
 		)
 
-		factoryPower += unit->GetCircuitDef()->GetBuildSpeed();
+		factoryPower += unit->GetBuildSpeed();
 
 		// check nanos around
 		std::set<CCircuitUnit*> nanos;
@@ -94,7 +92,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 				std::set<CCircuitUnit*>& facs = assists[ass];
 				if (facs.empty()) {
-					factoryPower += ass->GetCircuitDef()->GetBuildSpeed();
+					factoryPower += ass->GetBuildSpeed();
 				}
 				facs.insert(unit);
 			}
@@ -161,11 +159,11 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			}
 		};
 
-		if (unit->GetTask()->GetType() == IUnitTask::Type::NIL) {
+		if (task->GetType() == IUnitTask::Type::NIL) {
 			checkBuilderFactory();
 			return;
 		}
-		factoryPower -= unit->GetCircuitDef()->GetBuildSpeed();
+		factoryPower -= unit->GetBuildSpeed();
 		for (auto it = factories.begin(); it != factories.end(); ++it) {
 			if (it->unit != unit) {
 				continue;
@@ -174,7 +172,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 				std::set<CCircuitUnit*>& facs = assists[ass];
 				facs.erase(unit);
 				if (facs.empty()) {
-					factoryPower -= ass->GetCircuitDef()->GetBuildSpeed();
+					factoryPower -= ass->GetBuildSpeed();
 				}
 			}
 //			factories.erase(it);  // NOTE: micro-opt
@@ -204,11 +202,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 	auto assistFinishedHandler = [this](CCircuitUnit* unit) {
 		if (unit->GetTask() == nullptr) {
 			unit->SetManager(this);
-			idleTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
-		} else {
-			nilTask->RemoveAssignee(unit);
 		}
+		idleTask->AssignTo(unit);
 
 		int frame = this->circuit->GetLastFrame();
 		const AIFloat3& assPos = unit->GetPos(frame);
@@ -228,7 +224,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			facs.insert(fac.unit);
 		}
 		if (!facs.empty()) {
-			factoryPower += unit->GetCircuitDef()->GetBuildSpeed();
+			factoryPower += unit->GetBuildSpeed();
 
 			bool isInHaven = false;
 			for (const AIFloat3& hav : havens) {
@@ -251,7 +247,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
-		if (unit->GetTask()->GetType() == IUnitTask::Type::NIL) {
+		if (task->GetType() == IUnitTask::Type::NIL) {
 			return;
 		}
 		const AIFloat3& assPos = unit->GetPos(this->circuit->GetLastFrame());
@@ -274,7 +270,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			}
 		}
 		if (!assists[unit].empty()) {
-			factoryPower -= unit->GetCircuitDef()->GetBuildSpeed();
+			factoryPower -= unit->GetBuildSpeed();
 		}
 		assists.erase(unit);
 	};
@@ -895,9 +891,13 @@ void CFactoryManager::ReadConfig()
 
 		cdef->SetRetreat(behaviour.get("retreat", cdef->GetRetreat()).asFloat());
 
-		const Json::Value& dmgMod = behaviour["dmg_mod"];
-		if (!dmgMod.isNull()) {
-			cdef->ModDamage(dmgMod.asFloat());
+		const Json::Value& pwrMod = behaviour["pwr_mod"];
+		if (!pwrMod.isNull()) {
+			cdef->ModPower(pwrMod.asFloat());
+		}
+		const Json::Value& thrMod = behaviour["thr_mod"];
+		if (!thrMod.isNull()) {
+			cdef->ModThreat(thrMod.asFloat());
 		}
 	}
 

@@ -161,10 +161,11 @@ public:
 	springai::WeaponMount* GetDGunMount() const { return dgunMount; }
 	springai::WeaponMount* GetShieldMount() const { return shieldMount; }
 	springai::WeaponMount* GetWeaponMount() const { return weaponMount; }
-	float GetDPS() const { return dps; }
-	float GetDamage() const { return dmg; }
+	float GetPwrDamage() const { return pwrDmg; }  // ally
+	float GetThrDamage() const { return thrDmg; }  // enemy
 	float GetAoe() const { return aoe; }
 	float GetPower() const { return power; }
+	float GetThreat() const { return threat; }
 	float GetMinRange() const { return minRange; }
 	float GetMaxRange(RangeType type = RangeType::MAX) const { return maxRange[static_cast<RangeT>(type)]; }
 	int GetThreatRange(ThreatType type = ThreatType::MAX) const { return threatRange[static_cast<ThreatT>(type)]; }
@@ -176,7 +177,8 @@ public:
 	int GetTargetCategory() const { return targetCategory; }
 	int GetNoChaseCategory() const { return noChaseCategory; }
 
-	void ModDamage(float mod) { dmg *= mod; power *= mod; }
+	void ModPower(float mod) { pwrDmg *= mod; power *= mod; }
+	void ModThreat(float mod) { thrDmg *= mod; threat *= mod; }
 	void SetThreatRange(ThreatType type, int range) { threatRange[static_cast<ThreatT>(type)] = range; }
 	void SetFireState(FireType ft) { fireState = ft; }
 	void SetReloadTime(int time) { reloadTime = time; }
@@ -184,7 +186,7 @@ public:
 	STerrainMapImmobileType::Id GetImmobileId() const { return immobileTypeId; }
 	STerrainMapMobileType::Id GetMobileId() const { return mobileTypeId; }
 
-	bool IsAttacker()   const { return dps > .1f; }
+	bool IsAttacker()   const { return isAttacker; }
 	bool HasAntiAir()   const { return hasAntiAir; }
 	bool HasAntiLand()  const { return hasAntiLand; }
 	bool HasAntiWater() const { return hasAntiWater; }
@@ -233,6 +235,7 @@ private:
 	int buildCounts;  // number of builder defs able to build this def;
 	int maxThisUnit;
 
+	bool isAttacker;
 	bool hasDGun;
 	bool hasDGunAA;
 //	int dgunReload;  // frames in ticks
@@ -240,10 +243,11 @@ private:
 	springai::WeaponMount* dgunMount;
 	springai::WeaponMount* shieldMount;
 	springai::WeaponMount* weaponMount;
-	float dps;  // TODO: split dps like ranges on air, land, water
-	float dmg;
+	float pwrDmg;  // ally damage
+	float thrDmg;  // enemy damage
 	float aoe;  // radius
-	float power;  // attack power = UnitDef's max threat
+	float power;  // ally max threat
+	float threat;  // enemy max threat
 	float minRange;
 	std::array<float, static_cast<RangeT>(RangeType::_SIZE_)> maxRange;
 	std::array<int, static_cast<ThreatT>(ThreatType::_SIZE_)> threatRange;

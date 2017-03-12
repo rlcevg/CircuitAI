@@ -1228,21 +1228,6 @@ void CCircuitAI::InitUnitDefs(float& outDcr)
 	for (auto& kv : GetCircuitDefs()) {
 		kv.second->Init(this);
 	}
-
-	// FIXME: DEBUG
-//	std::vector<CCircuitDef*> defs;
-//	for (auto& kv : GetCircuitDefs()) {
-//		if (kv.second->IsMobile()) {
-//			defs.push_back(kv.second);
-//		}
-//	}
-//	std::sort(defs.begin(), defs.end(), [](CCircuitDef* a, CCircuitDef* b) {
-//		return a->GetUnitDef()->GetLosRadius() * sqrtf(a->GetSpeed()) / a->GetCost() > b->GetUnitDef()->GetLosRadius() * sqrtf(b->GetSpeed()) / b->GetCost();
-//	});
-//	for (auto d : defs) {
-//		LOG("%s\t| %s\t| speed: %f\t| cost: %f\t| dps: %f\t| power: %f", d->GetUnitDef()->GetName(), d->GetUnitDef()->GetHumanName(), d->GetSpeed(), d->GetCost(), d->GetDPS(), d->GetPower());
-//	}
-	// FIXME: DEBUG
 }
 
 //void CCircuitAI::InitKnownDefs(const CCircuitDef* commDef)

@@ -18,9 +18,11 @@ public:
 	virtual ~CNilTask();
 
 	virtual void AssignTo(CCircuitUnit* unit);
+	virtual void RemoveAssignee(CCircuitUnit* unit);
 
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update();
+	virtual void Close(bool done);
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);

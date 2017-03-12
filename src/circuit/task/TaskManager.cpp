@@ -9,7 +9,6 @@
 #include "task/NilTask.h"
 #include "task/IdleTask.h"
 #include "unit/CircuitUnit.h"
-#include "unit/CircuitDef.h"
 
 namespace circuit {
 
@@ -41,14 +40,14 @@ void ITaskManager::AssignTask(CCircuitUnit* unit)
 	}
 }
 
-void ITaskManager::AddMetalPull(const CCircuitUnit* unit)
+void ITaskManager::AddMetalPull(CCircuitUnit* unit)
 {
-	metalPull += unit->GetCircuitDef()->GetBuildSpeed();
+	metalPull += unit->GetBuildSpeed();
 }
 
-void ITaskManager::DelMetalPull(const CCircuitUnit* unit)
+void ITaskManager::DelMetalPull(CCircuitUnit* unit)
 {
-	metalPull -= unit->GetCircuitDef()->GetBuildSpeed();
+	metalPull -= unit->GetBuildSpeed();
 }
 
 void ITaskManager::Init()

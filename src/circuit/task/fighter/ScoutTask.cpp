@@ -207,7 +207,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 		}
 
 		int targetCat;
-		float defPower;
+		float defThreat;
 		bool isBuilder;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
@@ -218,11 +218,11 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 			{
 				continue;
 			}
-			defPower = edef->GetPower();
-			isBuilder = edef->IsRoleBuilder();
+			defThreat = edef->GetThreat();
+			isBuilder = edef->IsEnemyRoleAny(CCircuitDef::RoleMask::BUILDER);
 		} else {
 			targetCat = UNKNOWN_CATEGORY;
-			defPower = enemy->GetThreat();
+			defThreat = enemy->GetThreat();
 			isBuilder = false;
 		}
 
@@ -238,10 +238,10 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 							bestTarget = enemy;
 							minSqDist = sqDist;
 							maxThreat = std::numeric_limits<float>::max();
-						} else if (maxThreat <= defPower) {
+						} else if (maxThreat <= defThreat) {
 							bestTarget = enemy;
 							minSqDist = sqDist;
-							maxThreat = defPower;
+							maxThreat = defThreat;
 						}
 						minPower = power;
 					} else if (bestTarget == nullptr) {
