@@ -1090,8 +1090,6 @@ void CEconomyManager::ReadConfig()
 
 void CEconomyManager::Init()
 {
-	metalProduced = economy->GetCurrent(metalRes) * metalMod;
-
 	energyGrid = circuit->GetAllyTeam()->GetEnergyGrid().get();
 
 	size_t clSize = circuit->GetMetalManager()->GetClusters().size();
@@ -1100,6 +1098,8 @@ void CEconomyManager::Init()
 	openSpots.resize(spSize, true);
 
 	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
+		metalProduced = economy->GetCurrent(metalRes) * metalMod;
+
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		CAllyTeam* allyTeam = circuit->GetAllyTeam();
 		if (circuit->IsCommMerge()) {

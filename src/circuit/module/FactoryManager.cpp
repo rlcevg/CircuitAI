@@ -45,10 +45,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::Watchdog, this),
 							FRAMES_PER_SEC * 60,
 							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 11);
-	const int interval = 4;
-	const int offset = circuit->GetSkirmishAIId() % interval;
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateIdle, this), interval, offset + 0);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateFactory, this), interval, offset + 2);
+	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CFactoryManager::Init, this));
 
 	/*
 	 * factory handlers
@@ -1046,6 +1043,19 @@ void CFactoryManager::ReadConfig()
 
 	bpRatio = root["economy"].get("buildpower", 1.f).asFloat();
 	reWeight = root["response"].get("_weight_", .5f).asFloat();
+}
+
+void CFactoryManager::Init()
+{
+	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
+		CScheduler* scheduler = circuit->GetScheduler().get();
+		const int interval = 4;
+		const int offset = circuit->GetSkirmishAIId() % interval;
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateIdle, this), interval, offset + 0);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateFactory, this), interval, offset + 2);
+	};
+
+	circuit->GetSetupManager()->ExecOnFindStart(subinit);
 }
 
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)

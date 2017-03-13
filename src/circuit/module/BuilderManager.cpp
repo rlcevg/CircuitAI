@@ -56,7 +56,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Watchdog, this),
 							FRAMES_PER_SEC * 60,
 							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 10);
-	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CBuilderManager::Init, this), FRAMES_PER_SEC * 2);
+	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CBuilderManager::Init, this));
 
 	/*
 	 * worker handlers
@@ -801,11 +801,15 @@ void CBuilderManager::ReadConfig()
 
 void CBuilderManager::Init()
 {
-	CScheduler* scheduler = circuit->GetScheduler().get();
-	const int interval = 8;
-	const int offset = circuit->GetSkirmishAIId() % interval;
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 1);
+	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
+		CScheduler* scheduler = circuit->GetScheduler().get();
+		const int interval = 8;
+		const int offset = circuit->GetSkirmishAIId() % interval;
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 1);
+	};
+
+	circuit->GetSetupManager()->ExecOnFindStart(subinit);
 }
 
 IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)

@@ -76,6 +76,7 @@ public:
 
 private:
 	void ReadConfig();
+	void Init();
 
 	IUnitTask* CreateFactoryTask(CCircuitUnit* unit);
 	IUnitTask* CreateAssistTask(CCircuitUnit* unit);
