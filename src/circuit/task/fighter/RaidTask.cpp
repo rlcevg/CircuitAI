@@ -318,8 +318,8 @@ void CRaidTask::FindTarget()
 			{
 				continue;
 			}
-			defThreat = edef->GetThreat();
-			isBuilder = edef->IsEnemyRoleAny(CCircuitDef::RoleMask::BUILDER);
+			defThreat = edef->GetPower();
+			isBuilder = edef->IsEnemyRoleAny(CCircuitDef::RoleMask::BUILDER | CCircuitDef::RoleMask::COMM);
 		} else {
 			targetCat = UNKNOWN_CATEGORY;
 			defThreat = enemy->GetThreat();

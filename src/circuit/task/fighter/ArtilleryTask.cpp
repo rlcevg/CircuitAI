@@ -209,10 +209,10 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 					bestTarget = enemy;
 					minSqDist = sqDist;
 					maxThreat = std::numeric_limits<float>::max();
-				} else if (edef->GetThreat() > maxThreat) {
+				} else if (edef->GetPower() > maxThreat) {
 					bestTarget = enemy;
 					minSqDist = sqDist;
-					maxThreat = edef->GetThreat();
+					maxThreat = edef->GetPower();
 				} else if (bestTarget == nullptr) {
 					if ((targetCat & noChaseCat) == 0) {
 						mediumTarget = enemy;

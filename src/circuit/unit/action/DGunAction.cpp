@@ -77,7 +77,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 			continue;
 		}
 
-		const float defThreat = edef->GetThreat();
+		const float defThreat = edef->GetPower();
 		if (maxThreat < defThreat) {
 			maxThreat = defThreat;
 			bestTarget = enemy;

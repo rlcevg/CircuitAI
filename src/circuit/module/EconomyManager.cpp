@@ -237,7 +237,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		} else {
 
 			// commander
-			if (cdef->IsAttrComm()) {
+			if (cdef->IsRoleComm()) {
 				finishedHandler[cdef->GetId()] = comFinishedHandler;
 				destroyedHandler[cdef->GetId()] = comDestroyedHandler;
 			}

@@ -43,13 +43,13 @@ CCircuitDef::RoleName CCircuitDef::roleNames = {
 	{"static",     CCircuitDef::RoleType::STATIC},
 	{"heavy",      CCircuitDef::RoleType::HEAVY},
 	{"super",      CCircuitDef::RoleType::SUPER},
+	{"commander",  CCircuitDef::RoleType::COMM},
 };
 
 CCircuitDef::AttrName CCircuitDef::attrNames = {
 	{"melee",     CCircuitDef::AttrType::MELEE},
-	{"no_jump",   CCircuitDef::AttrType::NO_JUMP},
 	{"boost",     CCircuitDef::AttrType::BOOST},
-	{"comm",      CCircuitDef::AttrType::COMM},
+	{"no_jump",   CCircuitDef::AttrType::NO_JUMP},
 	{"no_strafe", CCircuitDef::AttrType::NO_STRAFE},
 	{"stockpile", CCircuitDef::AttrType::STOCK},
 	{"siege",     CCircuitDef::AttrType::SIEGE},
@@ -153,7 +153,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	bool isDynamic = false;
 	if (customParams.find("level") != customParams.end()) {
 		isDynamic = customParams.find("dynamic_comm") != customParams.end();
-		AddAttribute(AttrType::COMM);
+		AddRole(RoleType::COMM);
 	}
 
 	it = customParams.find("midposoffset");

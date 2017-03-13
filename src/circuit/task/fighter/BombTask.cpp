@@ -232,8 +232,8 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, co
 				continue;
 			}
 //			altitude = edef->GetAltitude();
-			defThreat = edef->GetThreat();
-			isBuilder = edef->IsEnemyRoleAny(CCircuitDef::RoleMask::BUILDER);
+			defThreat = edef->GetPower();
+			isBuilder = edef->IsEnemyRoleAny(CCircuitDef::RoleMask::BUILDER | CCircuitDef::RoleMask::COMM);
 		} else {
 			targetCat = UNKNOWN_CATEGORY;
 //			altitude = 0.f;

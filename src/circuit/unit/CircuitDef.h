@@ -31,37 +31,35 @@ public:
 
 	// TODO: Rebuild response system on unit vs unit basis (opposed to role vs role).
 	// Not implemented: mine, transport
-	// No special task: air, sub, static, heavy
+	// No special task: air, sub, static, heavy, comm
 	enum class RoleType: unsigned int {BUILDER = 0, SCOUT, RAIDER, RIOT,
 									   ASSAULT, SKIRM, ARTY, AA,
 									   AS, AH, BOMBER, SUPPORT,
 									   MINE, TRANS, AIR, SUB,
-									   STATIC, HEAVY, SUPER, _SIZE_};
-	enum RoleMask: unsigned int {BUILDER = 0x00000001, SCOUT = 0x00000002, RAIDER = 0x00000004, RIOT    = 0x00000008,
+									   STATIC, HEAVY, SUPER, COMM, _SIZE_};
+	enum RoleMask: unsigned int {NONE    = 0x00000000,
+								 BUILDER = 0x00000001, SCOUT = 0x00000002, RAIDER = 0x00000004, RIOT    = 0x00000008,
 								 ASSAULT = 0x00000010, SKIRM = 0x00000020, ARTY   = 0x00000040, AA      = 0x00000080,
 								 AS      = 0x00000100, AH    = 0x00000200, BOMBER = 0x00000400, SUPPORT = 0x00000800,
 								 MINE    = 0x00001000, TRANS = 0x00002000, AIR    = 0x00004000, SUB     = 0x00008000,
-								 STATIC  = 0x00010000, HEAVY = 0x00020000, SUPER  = 0x00040000, NONE    = 0x00000000};
+								 STATIC  = 0x00010000, HEAVY = 0x00020000, SUPER  = 0x00040000, COMM    = 0x00080000};
 	using RoleT = std::underlying_type<RoleType>::type;
 	using RoleM = std::underlying_type<RoleMask>::type;
 
 	/*
-	 * MELEE:      always move close to target, disregard attack range
-	 * NO_JUMP:    disable jump on retreat
-	 * BOOST:      boost speed on retreat
-	 * COMM:       commander
-	 * NO_STRAFE:  disable gunship's strafe
-	 * STOCK:      stockpile weapon before any task (Not implemented)
-	 * SIEGE:      mostly use Fight instead of Move
-	 * RET_HOLD:   hold fire on retreat
-	 * RET_FIGHT:  fight on retreat
+	 * MELEE:     always move close to target, disregard attack range
+	 * BOOST:     boost speed on retreat
+	 * NO_JUMP:   disable jump on retreat
+	 * NO_STRAFE: isable gunship's strafe
+	 * STOCK:     stockpile weapon before any task (Not implemented)
+	 * SIEGE:     mobile units use Fight instead of Move; arty ignores siege buildings
+	 * RET_HOLD:  hold fire on retreat
+	 * RET_FIGHT: fight on retreat
 	 */
-	enum class AttrType: RoleT {MELEE = static_cast<RoleT>(RoleType::_SIZE_),
-								NO_JUMP, BOOST, COMM, NO_STRAFE,
+	enum class AttrType: RoleT {MELEE = static_cast<RoleT>(RoleType::_SIZE_), BOOST, NO_JUMP, NO_STRAFE,
 								STOCK, SIEGE, RET_HOLD, RET_FIGHT, _SIZE_};
-	enum AttrMask: RoleM {MELEE   = 0x00080000,
-						  NO_JUMP = 0x00100000, BOOST = 0x00200000, COMM     = 0x00400000, NO_STRAFE = 0x00800000,
-						  STOCK   = 0x01000000, SIEGE = 0x02000000, RET_HOLD = 0x04000000, RET_FIGHT = 0x08000000};
+	enum AttrMask: RoleM {MELEE = 0x00100000, BOOST = 0x00200000, NO_JUMP  = 0x00400000, NO_STRAFE = 0x00800000,
+						  STOCK = 0x01000000, SIEGE = 0x02000000, RET_HOLD = 0x04000000, RET_FIGHT = 0x08000000};
 
 	enum FireType: int {HOLD = 0, RETURN = 1, OPEN = 2, _SIZE_};
 
@@ -114,11 +112,11 @@ public:
 	bool IsRoleStatic()   const { return role & RoleMask::STATIC; }
 	bool IsRoleHeavy()    const { return role & RoleMask::HEAVY; }
 	bool IsRoleSuper()    const { return role & RoleMask::SUPER; }
+	bool IsRoleComm()     const { return role & RoleMask::COMM; }
 
 	bool IsAttrMelee()    const { return role & AttrMask::MELEE; }
-	bool IsAttrNoJump()   const { return role & AttrMask::NO_JUMP; }
 	bool IsAttrBoost()    const { return role & AttrMask::BOOST; }
-	bool IsAttrComm()     const { return role & AttrMask::COMM; }
+	bool IsAttrNoJump()   const { return role & AttrMask::NO_JUMP; }
 	bool IsAttrNoStrafe() const { return role & AttrMask::NO_STRAFE; }
 	bool IsAttrStock()    const { return role & AttrMask::STOCK; }
 	bool IsAttrSiege()    const { return role & AttrMask::SIEGE; }

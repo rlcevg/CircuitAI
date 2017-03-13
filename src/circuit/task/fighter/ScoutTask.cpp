@@ -218,7 +218,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 			{
 				continue;
 			}
-			defThreat = edef->GetThreat();
+			defThreat = edef->GetPower();
 			isBuilder = edef->IsEnemyRoleAny(CCircuitDef::RoleMask::BUILDER);
 		} else {
 			targetCat = UNKNOWN_CATEGORY;

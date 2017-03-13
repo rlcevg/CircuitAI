@@ -619,7 +619,7 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 {
 	const CCircuitDef* cdef = unit->GetCircuitDef();
-	if (cdef->IsAttrComm()) {  // hide commander?
+	if (cdef->IsRoleComm()) {  // hide commander?
 		const CSetupManager::SCommInfo::SHide* hide = circuit->GetSetupManager()->GetHide(cdef);
 		if (hide != nullptr) {
 			if ((circuit->GetLastFrame() < hide->frame) || (GetWorkerCount() <= 2)) {

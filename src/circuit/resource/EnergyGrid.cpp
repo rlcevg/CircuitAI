@@ -90,7 +90,7 @@ CEnergyGrid::CEnergyGrid(CCircuitAI* circuit)
 		const std::map<std::string, std::string>& customParams = kv.second->GetUnitDef()->GetCustomParams();
 		auto it = customParams.find("pylonrange");
 		if (it != customParams.end()) {
-			pylonRanges[kv.first] = utils::string_to_float(it->second);
+			pylonRanges[kv.first] = utils::string_to_float(it->second) - 1.f;
 		}
 	}
 
