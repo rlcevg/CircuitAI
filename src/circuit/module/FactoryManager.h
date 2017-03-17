@@ -78,6 +78,8 @@ private:
 	void ReadConfig();
 	void Init();
 
+	void EnableFactory(CCircuitUnit* unit);
+	void DisableFactory(CCircuitUnit* unit);
 	IUnitTask* CreateFactoryTask(CCircuitUnit* unit);
 	IUnitTask* CreateAssistTask(CCircuitUnit* unit);
 
@@ -116,6 +118,7 @@ private:
 		CCircuitDef* builder;
 	};
 	std::vector<SFactory> factories;  // facory 1:n nano
+	std::set<CCircuitUnit*> validAir;
 
 	struct SFactoryDef {
 		using Tiers = std::map<unsigned, std::vector<float>>;

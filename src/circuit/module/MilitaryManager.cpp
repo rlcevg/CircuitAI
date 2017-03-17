@@ -816,7 +816,9 @@ void CMilitaryManager::AddEnemyCost(const CEnemyUnit* e)
 
 	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
 		if (cdef->IsEnemyRoleAny(CCircuitDef::GetMask(i))) {
-			enemyCosts[i] += e->GetCost();
+			SEnemyInfo& info = enemyInfos[i];
+			info.cost   += e->GetCost();
+			info.threat += cdef->GetThreat();
 		}
 	}
 	if (cdef->IsMobile()) {
@@ -831,8 +833,9 @@ void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
 
 	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
 		if (cdef->IsEnemyRoleAny(CCircuitDef::GetMask(i))) {
-			float& metal = enemyCosts[i];
-			metal = std::max(metal - e->GetCost(), 0.f);
+			SEnemyInfo& info = enemyInfos[i];
+			info.cost   = std::max(info.cost   - e->GetCost(),      0.f);
+			info.threat = std::max(info.threat - cdef->GetThreat(), 0.f);
 		}
 	}
 	if (cdef->IsMobile()) {
@@ -1072,6 +1075,7 @@ void CMilitaryManager::ReadConfig()
 	const Json::Value& qthrDef = qthrMod["defence"];
 	defenceMod.min = qthrDef.get((unsigned)0, 1.f).asFloat();
 	defenceMod.len = qthrDef.get((unsigned)1, 1.f).asFloat() - defenceMod.min;
+	maxAAThreat = quotas.get("aa_thr", 42.f).asFloat();
 
 	const Json::Value& porc = root["porcupine"];
 	const Json::Value& defs = porc["unit"];

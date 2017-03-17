@@ -366,11 +366,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	if (isDynamic) {  // FIXME: Dynamo com workaround
 		dps /= mounts.size();
 		dmg /= mounts.size();
-		// NOTE: minRange should be fine
-		for (RangeType rt : {RangeType::AIR, RangeType::LAND, RangeType::WATER}) {
-			float& mr = maxRange[static_cast<RangeT>(rt)];
-			mr = std::min(mr, 300.0f);
-		}
 	}
 
 	if (minReloadTime < std::numeric_limits<float>::max()) {

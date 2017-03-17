@@ -75,7 +75,10 @@ public:
 	IFighterTask* GetDefendTask(int cluster) const { return clusterInfos[cluster].defence; }
 
 	float GetEnemyCost(CCircuitDef::RoleType type) const {
-		return enemyCosts[static_cast<CCircuitDef::RoleT>(type)];
+		return enemyInfos[static_cast<CCircuitDef::RoleT>(type)].cost;
+	}
+	float GetEnemyThreat(CCircuitDef::RoleType type) const {
+		return enemyInfos[static_cast<CCircuitDef::RoleT>(type)].threat;
 	}
 	void AddEnemyCost(const CEnemyUnit* e);
 	void DelEnemyCost(const CEnemyUnit* e);
@@ -83,6 +86,7 @@ public:
 	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return enemyGroups; }
 	const springai::AIFloat3& GetEnemyPos() const { return enemyPos; }
 	void UpdateEnemyGroups() { KMeansIteration(); }
+	bool IsAirValid() const { return GetEnemyThreat(CCircuitDef::RoleType::AA) <= maxAAThreat; }
 
 	const std::set<CCircuitUnit*>& GetRoleUnits(CCircuitDef::RoleType type) const {
 		return roleInfos[static_cast<CCircuitDef::RoleT>(type)].units;
@@ -151,7 +155,11 @@ private:
 	float armyCost;
 
 	float enemyThreat;
-	std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> enemyCosts{{0.f}};
+	struct SEnemyInfo {
+		float cost;
+		float threat;
+	};
+	std::array<SEnemyInfo, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> enemyInfos{{0.f, 0.f}};
 	std::vector<SEnemyGroup> enemyGroups;
 	springai::AIFloat3 enemyPos;
 
@@ -171,6 +179,7 @@ private:
 		float min;
 		float len;
 	} attackMod, defenceMod;
+	float maxAAThreat;
 
 	std::vector<CCircuitDef*> defenderDefs;
 	std::vector<CCircuitDef*> landDefenders;

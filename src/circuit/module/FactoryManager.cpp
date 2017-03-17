@@ -69,46 +69,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			unit->GetUnit()->SetIdleMode(0);
 		)
 
-		factoryPower += unit->GetBuildSpeed();
-
-		// check nanos around
-		std::set<CCircuitUnit*> nanos;
-		float radius = assistDef->GetBuildDistance();
-		const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
-		auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
-		int nanoId = assistDef->GetId();
-		int teamId = this->circuit->GetTeamId();
-		for (Unit* nano : units) {
-			if (nano == nullptr) {
-				continue;
-			}
-			UnitDef* ndef = nano->GetDef();
-			if (ndef->GetUnitDefId() == nanoId && (nano->GetTeam() == teamId) && !nano->IsBeingBuilt()) {
-				CCircuitUnit* ass = this->circuit->GetTeamUnit(nano->GetUnitId());
-				nanos.insert(ass);
-
-				std::set<CCircuitUnit*>& facs = assists[ass];
-				if (facs.empty()) {
-					factoryPower += ass->GetBuildSpeed();
-				}
-				facs.insert(unit);
-			}
-			delete ndef;
-		}
-		utils::free_clear(units);
-
-		if (factories.empty()) {
-			this->circuit->GetSetupManager()->SetBasePos(pos);
-			this->circuit->GetMilitaryManager()->MakeBaseDefence(pos);
-		}
-
-		auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
-		if (it != factoryDefs.end()) {
-			const SFactoryDef& facDef = it->second;
-			factories.emplace_back(unit, nanos, facDef.nanoCount, facDef.GetRoleDef(CCircuitDef::RoleType::BUILDER));
-		} else {
-			factories.emplace_back(unit, nanos, 0, nullptr);
-		}
+		EnableFactory(unit);
 	};
 	auto factoryIdleHandler = [this](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
@@ -120,70 +81,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 		// NOTE: Do not del if factory rotation wanted
 //		DelFactory(unit->GetCircuitDef());
-		auto checkBuilderFactory = [this]() {
-			CBuilderManager* builderManager = this->circuit->GetBuilderManager();
-			// check if any factory with builders left
-			bool hasBuilder = false;
-			for (SFactory& fac : factories) {
-				if ((fac.builder != nullptr) && fac.builder->IsAvailable()) {
-					hasBuilder = true;
-					break;
-				}
-			}
-			if (!hasBuilder) {
-				// check queued factories
-				std::set<IBuilderTask*> tasks = builderManager->GetTasks(IBuilderTask::BuildType::FACTORY);
-				for (IBuilderTask* task : tasks) {
-					auto it = factoryDefs.find(task->GetBuildDef()->GetId());
-					if (it != factoryDefs.end()) {
-						const SFactoryDef& facDef = it->second;
-						CCircuitDef* bdef = facDef.GetRoleDef(CCircuitDef::RoleType::BUILDER);
-						hasBuilder = ((bdef != nullptr) && bdef->IsAvailable());
-						if (hasBuilder) {
-							break;
-						} else if (task->GetTarget() == nullptr) {
-							builderManager->AbortTask(task);
-						}
-					}
-				}
-				if (!hasBuilder) {
-					// queue new factory with builder
-					CCircuitDef* facDef = GetFactoryToBuild(-RgtVector, true);
-					if (facDef != nullptr) {
-						builderManager->EnqueueFactory(IBuilderTask::Priority::NOW, facDef, -RgtVector);
-					}
-				}
-			}
-		};
-
-		if (task->GetType() == IUnitTask::Type::NIL) {
-			checkBuilderFactory();
-			return;
-		}
-		factoryPower -= unit->GetBuildSpeed();
-		for (auto it = factories.begin(); it != factories.end(); ++it) {
-			if (it->unit != unit) {
-				continue;
-			}
-			for (CCircuitUnit* ass : it->nanos) {
-				std::set<CCircuitUnit*>& facs = assists[ass];
-				facs.erase(unit);
-				if (facs.empty()) {
-					factoryPower -= ass->GetBuildSpeed();
-				}
-			}
-//			factories.erase(it);  // NOTE: micro-opt
-			*it = factories.back();
-			factories.pop_back();
-			break;
-		}
-
-		if (!factories.empty()) {
-			const AIFloat3& pos = factories.front().unit->GetPos(this->circuit->GetLastFrame());
-			this->circuit->GetSetupManager()->SetBasePos(pos);
-		}
-
-		checkBuilderFactory();
+		DisableFactory(unit);
 	};
 
 	/*
@@ -1058,6 +956,126 @@ void CFactoryManager::Init()
 	circuit->GetSetupManager()->ExecOnFindStart(subinit);
 }
 
+void CFactoryManager::EnableFactory(CCircuitUnit* unit)
+{
+	factoryPower += unit->GetBuildSpeed();
+
+	// check nanos around
+	std::set<CCircuitUnit*> nanos;
+	float radius = assistDef->GetBuildDistance();
+	const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
+	auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
+	int nanoId = assistDef->GetId();
+	int teamId = this->circuit->GetTeamId();
+	for (Unit* nano : units) {
+		if (nano == nullptr) {
+			continue;
+		}
+		UnitDef* ndef = nano->GetDef();
+		if (ndef->GetUnitDefId() == nanoId && (nano->GetTeam() == teamId) && !nano->IsBeingBuilt()) {
+			CCircuitUnit* ass = this->circuit->GetTeamUnit(nano->GetUnitId());
+			nanos.insert(ass);
+
+			std::set<CCircuitUnit*>& facs = assists[ass];
+			if (facs.empty()) {
+				factoryPower += ass->GetBuildSpeed();
+			}
+			facs.insert(unit);
+		}
+		delete ndef;
+	}
+	utils::free_clear(units);
+
+	if (factories.empty()) {
+		this->circuit->GetSetupManager()->SetBasePos(pos);
+		this->circuit->GetMilitaryManager()->MakeBaseDefence(pos);
+	}
+
+	auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
+	if (it != factoryDefs.end()) {
+		const SFactoryDef& facDef = it->second;
+		factories.emplace_back(unit, nanos, facDef.nanoCount, facDef.GetRoleDef(CCircuitDef::RoleType::BUILDER));
+	} else {
+		factories.emplace_back(unit, nanos, 0, nullptr);
+	}
+
+	if (unit->GetCircuitDef()->GetMobileId() < 0) {
+		validAir.insert(unit);
+	}
+}
+
+void CFactoryManager::DisableFactory(CCircuitUnit* unit)
+{
+	auto checkBuilderFactory = [this]() {
+		CBuilderManager* builderManager = this->circuit->GetBuilderManager();
+		// check if any factory with builders left
+		bool hasBuilder = false;
+		for (SFactory& fac : factories) {
+			if ((fac.builder != nullptr) && fac.builder->IsAvailable()) {
+				hasBuilder = true;
+				break;
+			}
+		}
+		if (!hasBuilder) {
+			// check queued factories
+			std::set<IBuilderTask*> tasks = builderManager->GetTasks(IBuilderTask::BuildType::FACTORY);
+			for (IBuilderTask* task : tasks) {
+				auto it = factoryDefs.find(task->GetBuildDef()->GetId());
+				if (it != factoryDefs.end()) {
+					const SFactoryDef& facDef = it->second;
+					CCircuitDef* bdef = facDef.GetRoleDef(CCircuitDef::RoleType::BUILDER);
+					hasBuilder = ((bdef != nullptr) && bdef->IsAvailable());
+					if (hasBuilder) {
+						break;
+					} else if (task->GetTarget() == nullptr) {
+						builderManager->AbortTask(task);
+					}
+				}
+			}
+			if (!hasBuilder) {
+				// queue new factory with builder
+				CCircuitDef* facDef = GetFactoryToBuild(-RgtVector, true);
+				if (facDef != nullptr) {
+					builderManager->EnqueueFactory(IBuilderTask::Priority::NOW, facDef, -RgtVector);
+				}
+			}
+		}
+	};
+
+	if (unit->GetTask()->GetType() == IUnitTask::Type::NIL) {
+		checkBuilderFactory();
+		return;
+	}
+	factoryPower -= unit->GetBuildSpeed();
+	for (auto it = factories.begin(); it != factories.end(); ++it) {
+		if (it->unit != unit) {
+			continue;
+		}
+		for (CCircuitUnit* ass : it->nanos) {
+			std::set<CCircuitUnit*>& facs = assists[ass];
+			facs.erase(unit);
+			if (facs.empty()) {
+				factoryPower -= ass->GetBuildSpeed();
+			}
+		}
+//			factories.erase(it);  // NOTE: micro-opt
+		*it = factories.back();
+		factories.pop_back();
+		break;
+	}
+
+	if (!factories.empty()) {
+		const AIFloat3& pos = factories.front().unit->GetPos(this->circuit->GetLastFrame());
+		this->circuit->GetSetupManager()->SetBasePos(pos);
+	}
+
+	if (unit->GetCircuitDef()->GetMobileId() < 0) {
+		validAir.erase(unit);
+	}
+
+	checkBuilderFactory();
+}
+
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 {
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
@@ -1067,6 +1085,19 @@ IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 	const bool isNotReady = !economyManager->IsExcessed() || isStalling;
 	if (isNotReady) {
 		return EnqueueWait(FRAMES_PER_SEC * 3);
+	}
+
+	if (unit->GetCircuitDef()->GetMobileId() < 0) {
+		if (circuit->GetMilitaryManager()->IsAirValid()) {
+			if (validAir.find(unit) == validAir.end()) {
+				EnableFactory(unit);
+			}
+		} else {
+			if (validAir.find(unit) != validAir.end()) {
+				DisableFactory(unit);
+			}
+			return EnqueueWait(FRAMES_PER_SEC * 10);
+		}
 	}
 
 	IUnitTask* task = UpdateBuildPower(unit);

@@ -7,6 +7,7 @@
 
 #include "unit/FactoryData.h"
 #include "module/FactoryManager.h"
+#include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
@@ -110,6 +111,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 	SAreaData* areaData = terrainManager->GetAreaData();
 	const std::vector<STerrainMapImmobileType>& immobileType = areaData->immobileType;
 	const std::vector<STerrainMapMobileType>& mobileType = areaData->mobileType;
+	const bool isAirValid = circuit->GetMilitaryManager()->IsAirValid();
 
 	std::function<bool (CCircuitDef*)> predicate;
 	bool isPosValid = utils::is_valid(position);
@@ -145,7 +147,9 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 		}
 
 		STerrainMapMobileType::Id mtId = cdef->GetMobileId();
-		if ((mtId < 0) || mobileType[mtId].typeUsable) {
+		if (((mtId < 0) && isAirValid) ||
+			mobileType[mtId].typeUsable)
+		{
 			availFacs.push_back(sfac);
 			const float offset = (float)rand() / RAND_MAX * lenOffset + minOffset;
 			const float speedPercent = sfac.mapSpeedPerc;
