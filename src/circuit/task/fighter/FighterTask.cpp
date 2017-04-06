@@ -42,12 +42,12 @@ void IFighterTask::AssignTo(CCircuitUnit* unit)
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	attackPower += cdef->GetPower();
-	if (unit->GetShield() != nullptr) {
+	if (unit->HasShield()) {
 		shields.insert(unit);
 	}
 
 	if (unit->HasDGun()) {
-		const float range = std::max(cdef->GetDGunRange() * 1.1f, cdef->GetLosRadius());
+		const float range = std::max(unit->GetDGunRange() * 1.1f, cdef->GetLosRadius());
 		CDGunAction* act = new CDGunAction(unit, range);
 		unit->PushBack(act);
 	}
@@ -59,7 +59,7 @@ void IFighterTask::RemoveAssignee(CCircuitUnit* unit)
 
 	attackPower -= unit->GetCircuitDef()->GetPower();
 	cowards.erase(unit);
-	if (unit->GetShield() != nullptr) {
+	if (unit->HasShield()) {
 		shields.erase(unit);
 	}
 }
@@ -97,7 +97,7 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	Unit* u = unit->GetUnit();
 	const float healthPerc = u->GetHealth() / u->GetMaxHealth();
-	if (unit->GetShield() != nullptr) {
+	if (unit->HasShield()) {
 		const float minShield = circuit->GetSetupManager()->GetEmptyShield();
 		if ((healthPerc > cdef->GetRetreat()) && unit->IsShieldCharged(minShield)) {
 			if (cdef->IsRoleHeavy() && (healthPerc < 0.9f)) {

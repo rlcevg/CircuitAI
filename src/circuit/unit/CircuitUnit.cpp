@@ -13,8 +13,10 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+#include "Lua/LuaConfig.h"
 #include "AISCommands.h"
 #include "Weapon.h"
+#include "WrappWeaponMount.h"
 
 namespace circuit {
 
@@ -41,12 +43,59 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* cdef)
 		, isMorphing(false)
 {
 	WeaponMount* wpMnt;
-	wpMnt = circuitDef->GetDGunMount();
-	dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
-	wpMnt = circuitDef->GetShieldMount();
-	shield = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
-	wpMnt = circuitDef->GetWeaponMount();
+	if (cdef->IsRoleComm()) {
+		dgun = nullptr;
+		for (int num = 1; num < 3; ++num) {
+			std::string str = utils::int_to_string(num, "comm_weapon_manual_%i");
+			if (unit->GetRulesParamFloat(str.c_str(), -1) <= 0.f) {
+				continue;
+			}
+			str = utils::int_to_string(num, "comm_weapon_num_%i");
+			int mntId = int(unit->GetRulesParamFloat(str.c_str(), -1)) - LUA_WEAPON_BASE_INDEX;
+			if (mntId < 0) {
+				continue;
+			}
+			wpMnt = WrappWeaponMount::GetInstance(unit->GetSkirmishAIId(), cdef->GetId(), mntId);
+			if (wpMnt == nullptr) {
+				continue;
+			}
+			dgun = unit->GetWeapon(wpMnt);
+			delete wpMnt;
+			break;
+		}
+	} else {
+		wpMnt = cdef->GetDGunMount();
+		dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
+	}
+	wpMnt = cdef->GetWeaponMount();
 	weapon = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
+	wpMnt = cdef->GetShieldMount();
+	shield = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
+}
+
+CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
+		: id(unitId)
+		, unit(unit)
+		, circuitDef(cdef)
+		, task(nullptr)
+		, taskFrame(-1)
+		, manager(nullptr)
+		, area(nullptr)
+		, posFrame(-1)
+//		, damagedFrame(-1)
+		, moveFails(0)
+		, failFrame(-1)
+		, isForceExecute(false)
+		, isDead(false)
+		, dgun(nullptr)
+		, weapon(nullptr)
+		, shield(nullptr)
+		, isDisarmed(false)
+		, disarmFrame(-1)
+		, isWeaponReady(true)
+		, ammoFrame(-1)
+		, isMorphing(false)
+{
 }
 
 CCircuitUnit::~CCircuitUnit()
@@ -54,8 +103,8 @@ CCircuitUnit::~CCircuitUnit()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete unit;
 	delete dgun;
-	delete shield;
 	delete weapon;
+	delete shield;
 }
 
 void CCircuitUnit::SetTask(IUnitTask* task)
@@ -90,17 +139,6 @@ bool CCircuitUnit::IsForceExecute()
 	bool result = isForceExecute;
 	isForceExecute = false;
 	return result;
-}
-
-bool CCircuitUnit::HasDGun()
-{
-	if (circuitDef->GetDGunMount() == nullptr) {
-		return false;
-	}
-	// NOTE: Don't want to cache it: only dynamic commanders have this.
-	//       Disabled in CCircuitDef
-//	return unit->GetRulesParamFloat("comm_weapon_manual_1", 1) > 0.f;
-	return true;
 }
 
 void CCircuitUnit::ManualFire(CEnemyUnit* target, int timeOut)
@@ -180,6 +218,11 @@ float CCircuitUnit::GetShieldPower()
 float CCircuitUnit::GetBuildSpeed()
 {
 	return circuitDef->GetBuildSpeed() * unit->GetRulesParamFloat("buildpower_mult", 1.f);
+}
+
+float CCircuitUnit::GetDGunRange()
+{
+	return dgun->GetRange() * unit->GetRulesParamFloat("comm_range_mult", 1.f);
 }
 
 void CCircuitUnit::Attack(CEnemyUnit* target, int timeout)

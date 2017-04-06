@@ -154,8 +154,6 @@ public:
 
 	bool HasDGun() const { return hasDGun; }
 	bool HasDGunAA() const { return hasDGunAA; }
-//	int GetDGunReload() const { return dgunReload; }
-	float GetDGunRange() const { return dgunRange; }
 	springai::WeaponMount* GetDGunMount() const { return dgunMount; }
 	springai::WeaponMount* GetShieldMount() const { return shieldMount; }
 	springai::WeaponMount* GetWeaponMount() const { return weaponMount; }
@@ -236,8 +234,6 @@ private:
 	bool isAttacker;
 	bool hasDGun;
 	bool hasDGunAA;
-//	int dgunReload;  // frames in ticks
-	float dgunRange;
 	springai::WeaponMount* dgunMount;
 	springai::WeaponMount* shieldMount;
 	springai::WeaponMount* weaponMount;

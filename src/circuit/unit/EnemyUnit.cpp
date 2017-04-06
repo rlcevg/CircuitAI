@@ -10,8 +10,6 @@
 #include "task/fighter/FighterTask.h"
 #include "util/utils.h"
 
-#include "Weapon.h"
-
 namespace circuit {
 
 using namespace springai;
@@ -20,7 +18,6 @@ CEnemyUnit::CEnemyUnit(Unit* unit, CCircuitDef* cdef)
 		: id(unit->GetUnitId())
 		, unit(unit)
 		, lastSeen(-1)
-		, dgun(nullptr)
 		, pos(ZeroVector)
 		, threat(.0f)
 		, range({0})
@@ -37,19 +34,14 @@ CEnemyUnit::~CEnemyUnit()
 	}
 
 	delete unit;
-	delete dgun;
 }
 
 void CEnemyUnit::SetCircuitDef(CCircuitDef* cdef)
 {
 	circuitDef = cdef;
-	delete dgun;
 	if (cdef == nullptr) {
-		dgun = nullptr;
 		cost = 0.f;
 	} else {
-		WeaponMount* wpMnt = circuitDef->GetDGunMount();
-		dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
 		cost = cdef->GetCost();
 	}
 }

@@ -73,8 +73,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, buildCounts(0)
 		, isAttacker(false)
 		, hasDGunAA(false)
-//		, dgunReload(-1)
-		, dgunRange(.0f)
 		, dgunMount(nullptr)
 		, shieldMount(nullptr)
 		, weaponMount(nullptr)
@@ -215,7 +213,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	minRange = std::numeric_limits<float>::max();
 	float minReloadTime = std::numeric_limits<float>::max();
 	float bestDGunReload = std::numeric_limits<float>::max();
-	float bestDGunRange = .0f;
 	float bestWpRange = std::numeric_limits<float>::max();
 	float dps = .0f;  // TODO: split dps like ranges on air, land, water
 	float dmg = .0f;
@@ -341,7 +338,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			// NOTE: Disable commander's dgun, because no usage atm
 			if (customParams.find("manualfire") == customParams.end()) {
 				bestDGunReload = reloadTime;
-				bestDGunRange = range;
 				delete bestDGunMnt;
 				bestDGunMnt = mount;
 				hasDGunAA |= (weaponCat & circuit->GetAirCategory()) && isAirWeapon;
@@ -372,8 +368,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
  		reloadTime = minReloadTime * FRAMES_PER_SEC;
 	}
 	if (bestDGunReload < std::numeric_limits<float>::max()) {
-//		dgunReload = math::ceil(bestReload * FRAMES_PER_SEC)/* + FRAMES_PER_SEC*/;
-		dgunRange = bestDGunRange;
 		dgunMount = bestDGunMnt;
 	}
 	if (bestWpRange < std::numeric_limits<float>::max()) {

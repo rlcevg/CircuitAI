@@ -347,7 +347,8 @@
 	"thr_mod": {
 		"attack": [0.95, 1.4],  // [<min>, <max>] enemy threat modifier for target selection of attack task
 		"defence": [0.70, 0.70]  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
-	}
+	},
+	"aa_thr": 42.0  // anti-air threat threshold: air factories will stop production when AA threat exceeds
 },
 
 // If unit's health drops below specified percent it will retreat
@@ -1452,8 +1453,8 @@
 	"base": [[0, 20], [0, 120], [2, 450], [5, 660], [1, 980], [5, 1160], [1, 1380], [2, 1680], [5, 2000], [2, 2420], [13, 2800], [7, 3300]],
 
 	"superweapon": {
-		"unit":   ["raveparty", "corsilo", "armbrtha", "zenith", "screamer"],
-		"weight": [ 0.6,         0.2,       0.4,        0.1,      0.1],
+		"unit":   ["raveparty", "corsilo", "armbrtha", "zenith"],
+		"weight": [ 0.4,         0.2,       0.3,        0.1    ],
 
 		"condition": [40, 400]  // [<Minimum income>, <maximum seconds to build>]
 	},
@@ -1616,7 +1617,7 @@
 			"upgrade": {
 				"time": 100,  // Force-morph delay, in seconds
 				"module": [  // List of dynamic module IDs
-					[7],  // Machinegun
+					[7, 37],  // Machinegun, health
 					[31, 36],  // Cloak, Regen
 					[19, 38, 39],  // disruptor bomb, high density, damage boost
 					[34, 34, 34],  // companion drones

@@ -40,7 +40,6 @@ public:
 	void SetCost(float value) { cost = value; }
 	float GetCost() const { return cost; }
 
-	springai::Weapon* GetDGun() const { return dgun; }
 	bool IsDisarmed();
 	bool IsAttacker();
 	float GetDamage();
@@ -67,7 +66,6 @@ private:
 	int lastSeen;
 
 	float cost;
-	springai::Weapon* dgun;
 	springai::AIFloat3 pos;
 	float threat;
 	std::array<int, static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_)> range;

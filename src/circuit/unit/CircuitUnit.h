@@ -56,6 +56,7 @@ public:
 	CCircuitUnit(const CCircuitUnit& that) = delete;
 	CCircuitUnit& operator=(const CCircuitUnit&) = delete;
 	CCircuitUnit(springai::Unit* unit, CCircuitDef* cdef);
+	CCircuitUnit(Id unitId, springai::Unit* unit, CCircuitDef* cdef);  // ally units
 	virtual ~CCircuitUnit();
 
 	Id GetId() const { return id; }
@@ -86,10 +87,9 @@ public:
 //	void SetDamagedFrame(int frame) { damagedFrame = frame; }
 //	int GetDamagedFrame() const { return damagedFrame; }
 
-	bool HasDGun();
-	springai::Weapon* GetWeapon() const { return weapon; }
-	springai::Weapon* GetDGun() const { return dgun; }
-	springai::Weapon* GetShield() const { return shield; }
+	bool HasDGun() const { return dgun != nullptr; }
+	bool HasWeapon() const { return weapon != nullptr; }
+	bool HasShield() const { return shield != nullptr; }
 	void ManualFire(CEnemyUnit* target, int timeOut);
 	bool IsDisarmed(int frame);
 	bool IsWeaponReady(int frame);
@@ -99,6 +99,7 @@ public:
 	float GetDamage();
 	float GetShieldPower();
 	float GetBuildSpeed();
+	float GetDGunRange();
 
 	void Attack(CEnemyUnit* target, int timeout);
 	void Attack(const springai::AIFloat3& position, int timeout);
@@ -119,7 +120,8 @@ public:
 private:
 	Id id;
 	springai::Unit* unit;  // owner
-	CCircuitDef* circuitDef;  // TODO: Replace with CCircuitDef::Id?
+	CCircuitDef* circuitDef;
+
 	IUnitTask* task;
 	// NOTE: taskFrame assigned on task change and OnUnitIdle to workaround idle spam.
 	//       Proper fix: do not issue any commands OnUnitIdle, delay them until next frame?
@@ -136,8 +138,8 @@ private:
 	bool isForceExecute;  // TODO: Replace by CExecuteAction?
 	bool isDead;
 
-	springai::Weapon* weapon;  // main weapon
 	springai::Weapon* dgun;
+	springai::Weapon* weapon;  // main weapon
 	springai::Weapon* shield;
 
 	bool isDisarmed;

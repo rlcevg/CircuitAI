@@ -16,7 +16,7 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
-#include "unit/action/UnitAction.h"
+#include "unit/action/DGunAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -80,6 +80,11 @@ void IBuilderTask::AssignTo(CCircuitUnit* unit)
 	ShowAssignee(unit);
 	if (!utils::is_valid(position)) {
 		position = unit->GetPos(manager->GetCircuit()->GetLastFrame());
+	}
+
+	if (unit->HasDGun()) {
+		CDGunAction* act = new CDGunAction(unit, unit->GetDGunRange());
+		unit->PushBack(act);
 	}
 }
 

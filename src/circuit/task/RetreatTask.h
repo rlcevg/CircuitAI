@@ -38,9 +38,6 @@ public:
 
 private:
 	CCircuitUnit* repairer;
-
-	// NOTE: unit considered idle after boost and find_pad
-	bool isIgnoreIdle;
 };
 
 } // namespace circuit

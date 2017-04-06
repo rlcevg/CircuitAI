@@ -731,8 +731,29 @@ void CMilitaryManager::FillSafePos(const AIFloat3& pos, STerrainMapArea* area, F
 {
 	outPositions.push_back(circuit->GetSetupManager()->GetBasePos());
 
-	CDefenceMatrix* defMat = defence;
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	int frame = circuit->GetLastFrame();
+
+	const std::set<IFighterTask*>& atkTasks = GetTasks(IFighterTask::FightType::ATTACK);
+	for (IFighterTask* task : atkTasks) {
+		const AIFloat3& ourPos = static_cast<ISquadTask*>(task)->GetLeaderPos(frame);
+		if (terrainManager->CanMoveToPos(area, ourPos)) {
+			outPositions.push_back(ourPos);
+		}
+	}
+	const std::set<IFighterTask*>& defTasks = GetTasks(IFighterTask::FightType::DEFEND);
+	for (IFighterTask* task : defTasks) {
+		const AIFloat3& ourPos = static_cast<ISquadTask*>(task)->GetLeaderPos(frame);
+		if (terrainManager->CanMoveToPos(area, ourPos)) {
+			outPositions.push_back(ourPos);
+		}
+	}
+
+	if (!outPositions.empty()) {
+		return;
+	}
+
+	CDefenceMatrix* defMat = defence;
 	CMetalData::MetalPredicate predicate = [defMat, terrainManager, area](const CMetalData::MetalNode& v) {
 		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(v.second);
 		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
@@ -748,15 +769,6 @@ void CMilitaryManager::FillSafePos(const AIFloat3& pos, STerrainMapArea* area, F
 		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
 		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
 			outPositions.push_back(defPoint.position);
-		}
-	}
-
-	int frame = circuit->GetLastFrame();
-	const std::set<IFighterTask*>& tasks = GetTasks(IFighterTask::FightType::ATTACK);
-	for (IFighterTask* task : tasks) {
-		const AIFloat3& ourPos = static_cast<ISquadTask*>(task)->GetLeaderPos(frame);
-		if (terrainManager->CanMoveToPos(area, ourPos)) {
-			outPositions.push_back(ourPos);
 		}
 	}
 }

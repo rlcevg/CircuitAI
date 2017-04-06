@@ -111,7 +111,7 @@ void CAllyTeam::UpdateFriendlyUnits(CCircuitAI* circuit)
 		}
 		int unitId = u->GetUnitId();
 		UnitDef* unitDef = u->GetDef();
-		CCircuitUnit* unit = new CCircuitUnit(u, circuit->GetCircuitDef(unitDef->GetUnitDefId()));
+		CCircuitUnit* unit = new CCircuitUnit(unitId, u, circuit->GetCircuitDef(unitDef->GetUnitDefId()));
 		delete unitDef;
 		friendlyUnits[unitId] = unit;
 	}

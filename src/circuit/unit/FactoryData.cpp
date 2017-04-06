@@ -148,7 +148,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 
 		STerrainMapMobileType::Id mtId = cdef->GetMobileId();
 		if (((mtId < 0) && isAirValid) ||
-			mobileType[mtId].typeUsable)
+			((mtId >= 0) && mobileType[mtId].typeUsable))
 		{
 			availFacs.push_back(sfac);
 			const float offset = (float)rand() / RAND_MAX * lenOffset + minOffset;

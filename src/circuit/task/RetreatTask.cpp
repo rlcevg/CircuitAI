@@ -29,7 +29,6 @@ using namespace springai;
 CRetreatTask::CRetreatTask(ITaskManager* mgr, int timeout)
 		: IUnitTask(mgr, Priority::NORMAL, Type::RETREAT, timeout)
 		, repairer(nullptr)
-		, isIgnoreIdle(false)
 {
 }
 
@@ -42,13 +41,13 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 {
 	IUnitTask::AssignTo(unit);
 
-	CCircuitDef* cdef = unit->GetCircuitDef();
 	if (unit->HasDGun()) {
-		CDGunAction* act = new CDGunAction(unit, cdef->GetDGunRange() * 0.8f);
+		CDGunAction* act = new CDGunAction(unit, unit->GetDGunRange() * 0.8f);
 		unit->PushBack(act);
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
+	CCircuitDef* cdef = unit->GetCircuitDef();
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->SetFireState(cdef->IsAttrRetHold() ? CCircuitDef::FireType::HOLD : CCircuitDef::FireType::OPEN);
 	)
@@ -141,7 +140,7 @@ void CRetreatTask::Update()
 		Unit* u = unit->GetUnit();
 		const float healthPerc = u->GetHealth() / u->GetMaxHealth();
 		bool isRepaired;
-		if (unit->GetShield() != nullptr) {
+		if (unit->HasShield()) {
 			isRepaired = (healthPerc > 0.98f) && unit->IsShieldCharged(circuit->GetSetupManager()->GetFullShield());
 		} else {
 			isRepaired = healthPerc > 0.98f;
@@ -175,8 +174,9 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsPlane()) {
-		if (isIgnoreIdle) {
-			isIgnoreIdle = false;
+		// NOTE: unit considered idle after boost and find_pad
+		if (State::REGROUP == state) {
+			state = State::ROAM;
 			return;
 		}
 		IUnitAction* act = static_cast<IUnitAction*>(unit->End());
@@ -187,7 +187,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 		)
-		isIgnoreIdle = true;
+		state = State::REGROUP;
 		return;
 	}
 
@@ -234,12 +234,30 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		if (act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT | IUnitAction::Mask::JUMP)) {
 			static_cast<ITravelAction*>(act)->SetFinished(true);
 		}
+		state = State::REGROUP;
 	}
 }
 
 void CRetreatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
-	//TODO: Rebuild retreat path?
+	if (State::REGROUP != state) {
+		return;
+	}
+	state = State::ROAM;
+
+	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
+	ITravelAction* travelAction;
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	if (cdef->IsAbleToJump() && !cdef->IsAttrNoJump()) {
+		travelAction = new CJumpAction(unit, squareSize);
+	} else if (cdef->IsAttrRetFight()) {
+		travelAction = new CFightAction(unit, squareSize);
+	} else {
+		travelAction = new CMoveAction(unit, squareSize);
+	}
+	unit->PushBack(travelAction);
+
+	Execute(unit);
 }
 
 void CRetreatTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)

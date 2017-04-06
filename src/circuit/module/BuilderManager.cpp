@@ -843,10 +843,6 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 			// Check time-distance to target
 			const AIFloat3& bp = candidate->GetPosition();
 			AIFloat3 buildPos = utils::is_valid(bp) ? bp : pos;
-			// FIXME: Make max distance configurable
-			if (basePos.SqDistance2D(buildPos) > SQUARE(2000.f)) {
-				continue;
-			}
 
 			float distCost;
 			if (candidate->GetPriority() == IBuilderTask::Priority::NOW) {
@@ -859,7 +855,9 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 
 			} else {
 
-				if (!terrainManager->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
+				if ((basePos.SqDistance2D(buildPos) > SQUARE(2000.f)) ||  // FIXME: Make max distance configurable
+					!terrainManager->CanBuildAt(unit, buildPos))  // ensure that path always exists
+				{
 					continue;
 				}
 
