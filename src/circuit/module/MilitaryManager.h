@@ -159,7 +159,7 @@ private:
 		float cost;
 		float threat;
 	};
-	std::array<SEnemyInfo, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> enemyInfos{{0.f, 0.f}};
+	std::array<SEnemyInfo, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> enemyInfos{{{0.f}, {0.f}}};
 	std::vector<SEnemyGroup> enemyGroups;
 	springai::AIFloat3 enemyPos;
 
