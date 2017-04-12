@@ -1301,11 +1301,8 @@ bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination
 	return CanBuildAtUnsafe(unit, destination);
 }
 
-bool CTerrainManager::CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const AIFloat3& destination)
+bool CTerrainManager::CanMobileBuildAtUnsafe(STerrainMapArea* area, CCircuitDef* builderDef, const AIFloat3& destination)
 {
-	if (circuit->GetThreatMap()->GetAllThreatAt(destination) > THREAT_MIN) {
-		return false;
-	}
 	if (area == nullptr) {  // A flying unit
 		return true;
 	}
@@ -1314,6 +1311,14 @@ bool CTerrainManager::CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* build
 		return true;
 	}
 	return GetClosestSector(area, iS)->S->position.distance2D(destination) < builderDef->GetBuildDistance();
+}
+
+bool CTerrainManager::CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const AIFloat3& destination)
+{
+	if (circuit->GetThreatMap()->GetAllThreatAt(destination) > THREAT_MIN) {
+		return false;
+	}
+	return CanMobileBuildAtUnsafe(area, builderDef, destination);
 }
 
 void CTerrainManager::UpdateAreaUsers(int interval)

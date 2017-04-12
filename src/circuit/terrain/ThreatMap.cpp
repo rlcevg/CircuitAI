@@ -62,11 +62,10 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 	losResConv = SQUARE_SIZE << losMipLevel;
 
 	constexpr float allowedRange = 2000.f;
-	constexpr float slackMult = 2.f;
 	for (auto& kv : circuit->GetCircuitDefs()) {
 		CCircuitDef* cdef = kv.second;
 		const float slack = cdef->IsMobile() ?
-							(slackMult * cdef->GetSpeed() * DEFAULT_SLACK) :
+							(std::min(2.f * cdef->GetSpeed(), 5.f) * DEFAULT_SLACK) :
 							std::max(cdef->GetAoe(), DEFAULT_SLACK * 3.f);
 		float realRange;
 		int range;

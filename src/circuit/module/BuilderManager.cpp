@@ -607,7 +607,7 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 	for (auto& kv : buildAreas) {
 		for (auto& kvw : kv.second) {
 			if ((kvw.second > 0) && kvw.first->CanBuild(buildDef) &&
-				terrainManager->CanMobileBuildAt(kv.first, kvw.first, position))
+				terrainManager->CanMobileBuildAtUnsafe(kv.first, kvw.first, position))
 			{
 				return true;
 			}
