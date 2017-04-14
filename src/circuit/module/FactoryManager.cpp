@@ -250,7 +250,7 @@ int CFactoryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 	}
 
 	IUnitTask* task = builder->GetTask();
-	if (task->GetType() != IUnitTask::Type::FACTORY) {
+	if ((task == nullptr) || task->GetType() != IUnitTask::Type::FACTORY) {
 		return 0; //signaling: OK
 	}
 

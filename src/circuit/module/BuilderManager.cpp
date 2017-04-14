@@ -237,7 +237,7 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 	}
 
 	IUnitTask* task = builder->GetTask();
-	if (task->GetType() != IUnitTask::Type::BUILDER) {
+	if ((task == nullptr) || task->GetType() != IUnitTask::Type::BUILDER) {
 		return 0; //signaling: OK
 	}
 
