@@ -317,11 +317,13 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		}
 		case EVENT_LOAD: {
 			PRINT_TOPIC("EVENT_LOAD", topic);
+			struct SLoadEvent* evt = (struct SLoadEvent*)data;
 			ret = 0;
 			break;
 		}
 		case EVENT_SAVE: {
 			PRINT_TOPIC("EVENT_SAVE", topic);
+			struct SSaveEvent* evt = (struct SSaveEvent*)data;
 			ret = 0;
 			break;
 		}

@@ -366,8 +366,12 @@ void CRaidTask::FindTarget()
 
 	AIFloat3 startPos = pos;
 	circuit->GetPathfinder()->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	circuit->GetPathfinder()->FindBestPath(*pPath, startPos, threatMap->GetSquareSize()/*range * 0.5f*/, enemyPositions);
+	const float cost = circuit->GetPathfinder()->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions);
 	enemyPositions.clear();
+
+	if (cost > pPath->size() * THREAT_BASE * 1.01f) {
+		pPath->clear();
+	}
 }
 
 } // namespace circuit

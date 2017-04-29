@@ -1330,13 +1330,6 @@
 		"max_percent": 0.40,
 		"eps_step": 0.03
 	},
-	"builder": {
-		"vs":         ["support", "static", "anti_heavy", "builder"],
-		"ratio":      [ 1.0,       1.0,      1.0,          1.0],
-		"importance": [ 50.0,      70.0,     70.0,         50.0],
-		"max_percent": 0.15,
-		"eps_step": 0.03
-	},
 	"anti_sub": {
 		"vs":         ["sub"],
 		"ratio":      [ 1.0],
@@ -1449,7 +1442,7 @@
 	// Actual number of defences per cluster bounded by income
 	"land":  [0, 1, 1, 2, 3, 5, 2, 6, 2, 3, 12, 11, 13],
 	"water": [4, 1, 6, 4, 4, 3, 5],
-	"prevent": 2,  // number of preventive defences
+	"prevent": 1,  // number of preventive defences
 	"amount": {  // income bound factor
 		"offset": [-0.2, 0.2],
 		// Amount factor: 8x8 ~ 1.15, 24x24 ~ 1.0

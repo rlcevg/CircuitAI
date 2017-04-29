@@ -117,8 +117,9 @@ bool CSetupManager::OpenConfig(const std::string& cfgName)
 		SkirmishAI* skirmishAI = circuit->GetSkirmishAI();
 		Info* info = skirmishAI->GetInfo();
 		const char* version = info->GetValueByKey("version");
+		const char* name = info->GetValueByKey("shortName");
 		delete info;
-		std::string filename = std::string("LuaRules/Configs/CircuitAI/") + version + "/";
+		std::string filename = std::string("LuaRules/Configs/") + name + "/" + version + "/";
 		configName = utils::MakeFileSystemCompatible(map->GetName()) + ".json";
 		filename += configName;
 
@@ -136,7 +137,7 @@ bool CSetupManager::OpenConfig(const std::string& cfgName)
 		 * Try default game specific config
 		 */
 		cfgDefault = "circuit";
-		filename = std::string("LuaRules/Configs/CircuitAI/") + version + "/Default/";
+		filename = std::string("LuaRules/Configs/") + name + "/" + version + "/Default/";
 		configName = cfgDefault + ".json";
 		filename += configName;
 

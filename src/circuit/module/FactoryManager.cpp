@@ -610,7 +610,8 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
 			CCircuitDef* bd = facDef.buildDefs[i];
 			if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) ||
-				!bd->IsAvailable())
+				!bd->IsAvailable() ||
+				!terrainManager->CanBeBuiltAt(bd, pos, range))
 			{
 				continue;
 			}
@@ -619,13 +620,19 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		}
 	}
 
-	float dice = (float)rand() / RAND_MAX * magnitude;
-	float total = .0f;
-	for (auto& pair : candidates) {
-		total += pair.second;
-		if (dice < total) {
-			buildDef = pair.first;
-			break;
+	if (magnitude == 0.f) {  // workaround for disabled units
+		if (!candidates.empty()) {
+			buildDef = candidates[rand() % candidates.size()].first;
+		}
+	} else {
+		float dice = (float)rand() / RAND_MAX * magnitude;
+		float total = .0f;
+		for (auto& pair : candidates) {
+			total += pair.second;
+			if (dice < total) {
+				buildDef = pair.first;
+				break;
+			}
 		}
 	}
 	candidates.clear();
