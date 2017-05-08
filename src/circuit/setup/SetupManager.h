@@ -85,8 +85,10 @@ public:
 private:
 	void FindStart();
 	bool LocatePath(std::string& filename);
+	bool LoadConfig(const std::string& cfgName);
 	const char* ReadConfig(const std::string& filename);
 	Json::Value* ParseConfig(const char* cfgJson);
+	void OverrideConfig();
 
 	CCircuitAI* circuit;
 	CSetupData* setupData;

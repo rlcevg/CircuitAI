@@ -45,6 +45,9 @@
 //#include "WrappCurrentCommand.h"
 
 #include <regex>
+// FIXME: DEBUG
+#include <fstream>
+// FIXME: DEBUG
 
 namespace circuit {
 
@@ -318,12 +321,25 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		case EVENT_LOAD: {
 			PRINT_TOPIC("EVENT_LOAD", topic);
 			struct SLoadEvent* evt = (struct SLoadEvent*)data;
+			// FIXME: DEBUG
+			std::ifstream tmpFileStream;
+			tmpFileStream.open(evt->file, std::ios::binary);
+			LOG("LOAD %s:", evt->file);
+			std::cout << tmpFileStream.rdbuf() << std::endl;
+			tmpFileStream.close();
+			// FIXME: DEBUG
 			ret = 0;
 			break;
 		}
 		case EVENT_SAVE: {
 			PRINT_TOPIC("EVENT_SAVE", topic);
 			struct SSaveEvent* evt = (struct SSaveEvent*)data;
+			// FIXME: DEBUG
+			std::ofstream tmpFileStream;
+			tmpFileStream.open(evt->file, std::ios::binary);
+			tmpFileStream << "Halo World!!!\n";
+			tmpFileStream.close();
+			// FIXME: DEBUG
 			ret = 0;
 			break;
 		}
@@ -1174,7 +1190,7 @@ std::string CCircuitAI::InitOptions()
 		isCommMerge = StringToBool(value);
 	}
 
-	value = options->GetValueByKey("config");
+	value = options->GetValueByKey("config_file");
 	std::string cfgName = ((value != nullptr) && strlen(value) > 0) ? value : "";
 
 	delete options;

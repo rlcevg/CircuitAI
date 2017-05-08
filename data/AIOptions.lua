@@ -56,9 +56,17 @@ local options = {
 		section = 'performance',
 		def     = true,
 	},
+
 	{ -- string
-		key     = 'config',
-		name    = 'Config',
+		key     = 'disabledunits',
+		name    = 'Disabled units',
+		desc    = 'Disable usage of specific units.\nSyntax: armwar+armpw+raveparty\nkey: disabledunits',
+		type    = 'string',
+		def     = '',
+	},
+	{ -- string
+		key     = 'config_file',
+		name    = 'Config file',
 		desc    = 'Play with arbitrary config of your choice.\nkey: config',
 		type    = 'string',
 		def     = '',
@@ -70,13 +78,30 @@ local options = {
 --		type    = 'string',
 --		def     = '',
 --	},
-	{ -- string
-		key     = 'disabledunits',
-		name    = 'Disabled units',
-		desc    = 'Disable usage of specific units.\nSyntax: armwar+armpw+raveparty\nkey: disabledunits',
-		type    = 'string',
-		def     = '',
-	},
+
+--	{ -- section
+--		key    = 'config',
+--		name   = 'Config parts',
+--		desc   = 'Overrides config elements.',
+--		type   = 'section',
+--	},
+--	{ -- string
+--		key     = 'factory',
+--		name    = 'Factory config',
+--		desc    = 'Overrides factory part of config.',
+--		type    = 'string',
+--		section = 'config',
+--		def     = '',
+--	},
+--	{ -- string
+--		key     = 'behaviour',
+--		name    = 'Behaviour config',
+--		desc    = 'Overrides behaviour part of config.',
+--		type    = 'string',
+--		section = 'config',
+--		def     = '',
+--	},
+
 	{ -- string
 		key     = 'version',
 		name    = 'AI version',

@@ -92,89 +92,11 @@ void CSetupManager::DisabledUnits(const char* setupScript)
 
 bool CSetupManager::OpenConfig(const std::string& cfgName)
 {
-	std::string cfgDefault;
-	if (cfgName.empty()) {
-		/*
-		 * Try startscript specific config
-		 */
-		configName = "startscript";
-		OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
-		const char* value = options->GetValueByKey("JSON");
-		std::string strJson = ((value != nullptr) && strlen(value) > 0) ? value : "";
-		delete options;
-		if (!strJson.empty()) {
-			config = ParseConfig(strJson.c_str());
-
-			if (config != nullptr) {
-				return true;
-			}
-		}
-
-		/*
-		 * Try game specific config
-		 */
-		Map* map = circuit->GetMap();
-		SkirmishAI* skirmishAI = circuit->GetSkirmishAI();
-		Info* info = skirmishAI->GetInfo();
-		const char* version = info->GetValueByKey("version");
-		const char* name = info->GetValueByKey("shortName");
-		delete info;
-		std::string filename = std::string("LuaRules/Configs/") + name + "/" + version + "/";
-		configName = utils::MakeFileSystemCompatible(map->GetName()) + ".json";
-		filename += configName;
-
-		const char* cfgJson = ReadConfig(filename);
-		if (cfgJson != nullptr) {
-			config = ParseConfig(cfgJson);
-			delete[] cfgJson;
-
-			if (config != nullptr) {
-				return true;
-			}
-		}
-
-		/*
-		 * Try default game specific config
-		 */
-		cfgDefault = "circuit";
-		filename = std::string("LuaRules/Configs/") + name + "/" + version + "/Default/";
-		configName = cfgDefault + ".json";
-		filename += configName;
-
-		cfgJson = ReadConfig(filename);
-		if (cfgJson != nullptr) {
-			config = ParseConfig(cfgJson);
-			delete[] cfgJson;
-
-			if (config != nullptr) {
-				return true;
-			}
-		}
-
-	} else {
-		cfgDefault = cfgName;
+	bool isOk = LoadConfig(cfgName);
+	if (isOk) {
+		OverrideConfig();
 	}
-
-	/*
-	 * Locate default config
-	 */
-	std::string filename("config" SLASH);
-	configName = (cfgDefault.find(".json") == std::string::npos) ? (cfgDefault + ".json") : cfgDefault;
-	filename += configName;
-	if (!LocatePath(filename)){
-		circuit->LOG("Config file is missing! (%s)", configName.c_str());
-		return false;
-	}
-
-	const char* cfgJson = ReadConfig(filename);
-	if (cfgJson == nullptr) {
-		return false;
-	}
-
-	config = ParseConfig(cfgJson);
-	delete[] cfgJson;
-
-	return (config != nullptr);
+	return isOk;
 }
 
 void CSetupManager::CloseConfig()
@@ -614,6 +536,93 @@ bool CSetupManager::LocatePath(std::string& filename)
 	return located;
 }
 
+bool CSetupManager::LoadConfig(const std::string& cfgName)
+{
+	std::string cfgDefault;
+	if (cfgName.empty()) {
+		/*
+		 * Try startscript specific config
+		 */
+		configName = "startscript";
+		OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
+		const char* value = options->GetValueByKey("JSON");
+		std::string strJson = ((value != nullptr) && strlen(value) > 0) ? value : "";
+		delete options;
+		if (!strJson.empty()) {
+			config = ParseConfig(strJson.c_str());
+
+			if (config != nullptr) {
+				return true;
+			}
+		}
+
+		/*
+		 * Try game specific config
+		 */
+		Map* map = circuit->GetMap();
+		SkirmishAI* skirmishAI = circuit->GetSkirmishAI();
+		Info* info = skirmishAI->GetInfo();
+		const char* version = info->GetValueByKey("version");
+		const char* name = info->GetValueByKey("shortName");
+		delete info;
+		std::string filename = std::string("LuaRules/Configs/") + name + "/" + version + "/";
+		configName = utils::MakeFileSystemCompatible(map->GetName()) + ".json";
+		filename += configName;
+
+		const char* cfgJson = ReadConfig(filename);
+		if (cfgJson != nullptr) {
+			config = ParseConfig(cfgJson);
+			delete[] cfgJson;
+
+			if (config != nullptr) {
+				return true;
+			}
+		}
+
+		/*
+		 * Try default game specific config
+		 */
+		cfgDefault = "circuit";
+		filename = std::string("LuaRules/Configs/") + name + "/" + version + "/Default/";
+		configName = cfgDefault + ".json";
+		filename += configName;
+
+		cfgJson = ReadConfig(filename);
+		if (cfgJson != nullptr) {
+			config = ParseConfig(cfgJson);
+			delete[] cfgJson;
+
+			if (config != nullptr) {
+				return true;
+			}
+		}
+
+	} else {
+		cfgDefault = cfgName;
+	}
+
+	/*
+	 * Locate default config
+	 */
+	std::string filename("config" SLASH);
+	configName = (cfgDefault.find(".json") == std::string::npos) ? (cfgDefault + ".json") : cfgDefault;
+	filename += configName;
+	if (!LocatePath(filename)){
+		circuit->LOG("Config file is missing! (%s)", configName.c_str());
+		return false;
+	}
+
+	const char* cfgJson = ReadConfig(filename);
+	if (cfgJson == nullptr) {
+		return false;
+	}
+
+	config = ParseConfig(cfgJson);
+	delete[] cfgJson;
+
+	return (config != nullptr);
+}
+
 const char* CSetupManager::ReadConfig(const std::string& filename)
 {
 	File* file = circuit->GetCallback()->GetFile();
@@ -633,10 +642,9 @@ const char* CSetupManager::ReadConfig(const std::string& filename)
 
 Json::Value* CSetupManager::ParseConfig(const char* cfgJson)
 {
-	Json::Value jsonAll;
 	Json::Reader json;
-	bool isOk = json.parse(cfgJson, jsonAll, false);
-	if (!isOk) {
+	Json::Value jsonAll;
+	if (!json.parse(cfgJson, jsonAll, false)) {
 		circuit->LOG("Malformed config format! (%s)\n%s", configName.c_str(), json.getFormattedErrorMessages().c_str());
 		return nullptr;
 	}
@@ -657,6 +665,25 @@ Json::Value* CSetupManager::ParseConfig(const char* cfgJson)
 	Json::Value* cfg = new Json::Value;
 	*cfg = jsonDiff;
 	return cfg;
+}
+
+void CSetupManager::OverrideConfig()
+{
+	Json::Reader json;
+	Json::Value jsonSection;
+	OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
+
+	const char* value = options->GetValueByKey("factory");
+	if ((value != nullptr) && json.parse(value, jsonSection, false)) {
+		(*config)["factory"] = jsonSection;
+	}
+
+	value = options->GetValueByKey("behaviour");
+	if ((value != nullptr) && json.parse(value, jsonSection, false)) {
+		(*config)["behaviour"] = jsonSection;
+	}
+
+	delete options;
 }
 
 } // namespace circuit
