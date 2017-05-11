@@ -124,6 +124,7 @@ namespace NSMicroPather {
 			void Init(unsigned _frame, float _costFromStart, PathNode* _parent) {
 				costFromStart = _costFromStart;
 				totalCost = _costFromStart;
+				checkIdx = 0;
 				parent = _parent;
 				frame = _frame;
 
@@ -142,6 +143,7 @@ namespace NSMicroPather {
 
 			inline void Reuse(unsigned _frame) {
 				costFromStart = (FLT_BIG / 2.0f);
+				checkIdx = 0;
 				parent = 0;
 				frame = _frame;
 
@@ -152,6 +154,7 @@ namespace NSMicroPather {
 			int myIndex;
 			float costFromStart;	// exact
 			float totalCost;		// could be a function, but save some math.
+			unsigned checkIdx;		// index of current predicate
 			PathNode* parent;		// the parent is used to reconstruct the path
 
 			// Binary tree, where the 'state' is what is being compared.

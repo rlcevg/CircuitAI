@@ -275,7 +275,6 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 	AIFloat3 startPos = pos;
 	range = std::max(range - threatMap->GetSquareSize(), (float)threatMap->GetSquareSize());
 	pathfinder->FindBestPath(path, startPos, range, enemyPositions);
-	// TODO: Check that path is safe, no threat
 	enemyPositions.clear();
 
 	// Check if safe path exists

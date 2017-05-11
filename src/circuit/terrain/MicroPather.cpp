@@ -50,6 +50,8 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <array>
+#include <functional>
 //#undef NDEBUG
 #include <cassert>
 
@@ -632,6 +634,11 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*
 		tempEndNode->isEndNode = 1;
 	}
 
+	static std::array<std::function<bool (float diff)>, 2> peakCheck = {
+		[](float diff) { return diff > 0; },
+		[](float diff) { return diff < 0; }
+	};
+
 	while (!open.Empty()) {
 		PathNode* node = open.Pop();
 
@@ -663,6 +670,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*
 			#endif
 
 			const float nodeCostFromStart = node->costFromStart;
+			const float nodeCostStart = costArray[indexStart];
 
 			for (int i = 0; i < 8; ++i) {
 				const int indexEnd = offsets[i] + indexStart;
@@ -689,10 +697,18 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*
 				assert(canMoveArray[yend * mapSizeX + xend]);
 				#endif
 
+				const float nodeCost = costArray[indexEnd];
+				unsigned checkIdx = node->checkIdx;
+				if (peakCheck[checkIdx](nodeCost - nodeCostStart)) {
+					if (++checkIdx >= peakCheck.size()) {
+						continue;
+					}
+				}
+
 				float newCost = nodeCostFromStart;
 
 				// sqrt(2) ~= 1.4142f
-				newCost += (i > 3) ? costArray[indexEnd] * SQRT_2 : costArray[indexEnd];
+				newCost += (i > 3) ? nodeCost * SQRT_2 : nodeCost;
 
 				if (directNode->costFromStart <= newCost) {
 					// do nothing, this path is not better than existing one
@@ -703,6 +719,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*
 				directNode->parent = node;
 				directNode->costFromStart = newCost;
 				directNode->totalCost = newCost + LeastCostEstimateLocal(indexEnd);
+				directNode->checkIdx = checkIdx;
 
 				#ifdef USE_ASSERTIONS
 				assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
