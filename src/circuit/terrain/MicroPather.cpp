@@ -697,22 +697,22 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*
 				assert(canMoveArray[yend * mapSizeX + xend]);
 				#endif
 
-				const float nodeCost = costArray[indexEnd];
-				unsigned checkIdx = node->checkIdx;
-				if (peakCheck[checkIdx](nodeCost - nodeCostStart)) {
-					if (++checkIdx >= peakCheck.size()) {
-						continue;
-					}
-				}
-
 				float newCost = nodeCostFromStart;
 
+				const float nodeCost = costArray[indexEnd];
 				// sqrt(2) ~= 1.4142f
 				newCost += (i > 3) ? nodeCost * SQRT_2 : nodeCost;
 
 				if (directNode->costFromStart <= newCost) {
 					// do nothing, this path is not better than existing one
 					continue;
+				}
+
+				unsigned checkIdx = node->checkIdx;
+				if (peakCheck[checkIdx](nodeCost - nodeCostStart)) {
+					if (++checkIdx >= peakCheck.size()) {
+						continue;
+					}
 				}
 
 				// it's better, update its data

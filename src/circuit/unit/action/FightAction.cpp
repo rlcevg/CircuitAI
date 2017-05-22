@@ -43,12 +43,15 @@ void CFightAction::Update(CCircuitAI* circuit)
 	int step = pathIterator;
 
 	TRY_UNIT(circuit, unit,
-		unit->GetUnit()->Fight((*pPath)[step], UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		const AIFloat3& pos = (*pPath)[step];
+		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		unit->GetUnit()->SetWantedMaxSpeed(stepSpeed);
 
+		constexpr short options = UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY;
 		for (int i = 2; (step < pathMaxIndex) && (i < 4); ++i) {
 			step = std::min(step + increment, pathMaxIndex);
-			unit->GetUnit()->Fight((*pPath)[step], UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60 * i);
+			const AIFloat3& pos = (*pPath)[step];
+			unit->GetUnit()->Fight(pos, options, frame + FRAMES_PER_SEC * 60 * i);
 		}
 	)
 }

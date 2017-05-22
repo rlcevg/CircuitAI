@@ -547,6 +547,9 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost, .0f);
 				task->SetBuildPos(pos);
 				SetOpenSpot(index, false);
+				// FIXME: DEBUG
+				circuit->LOG("mexed : %i", this->circuit->GetSkirmishAIId());
+				// FIXME: DEBUG
 				return task;
 			}
 		}
@@ -1033,34 +1036,21 @@ void CEconomyManager::ReadConfig()
 	const Json::Value& energy = econ["energy"];
 	energyFactor = energy.get("factor", 1.0f).asFloat();
 
-	std::array<std::pair<std::string, int>, 3> landEngies;
-	const Json::Value& land = energy["land"];
-	unsigned li = 0;
-	for (const std::string& engy : land.getMemberNames()) {
-		const int min = land[engy][0].asInt();
-		const int max = land[engy].get(1, min).asInt();
+	constexpr unsigned MAX_CTRL_POINTS = 3;
+	std::vector<std::pair<std::string, int>> engies;
+	std::string type = circuit->GetTerrainManager()->IsWaterMap() ? "water" : "land";
+	const Json::Value& surf = energy[type];
+	unsigned si = 0;
+	for (const std::string& engy : surf.getMemberNames()) {
+		const int min = surf[engy][0].asInt();
+		const int max = surf[engy].get(1, min).asInt();
 		const int limit = min + rand() % (max - min + 1);
-		landEngies[li++] = std::make_pair(engy, limit);
-		if (li >= 3) {
+		engies.push_back(std::make_pair(engy, limit));
+		if (++si >= MAX_CTRL_POINTS) {
 			break;
 		}
 	}
 
-	std::array<std::pair<std::string, int>, 3> waterEngies;
-	const Json::Value& water = energy["water"];
-	unsigned wi = 0;
-	for (const std::string& engy : water.getMemberNames()) {
-		const int min = water[engy][0].asInt();
-		const int max = water[engy].get(1, min).asInt();
-		const int limit = min + rand() % (max - min + 1);
-		waterEngies[wi++] = std::make_pair(engy, limit);
-		if (wi >= 3) {
-			break;
-		}
-	}
-
-	const bool isWaterMap = circuit->GetTerrainManager()->IsWaterMap();
-	std::array<std::pair<std::string, int>, 3>& engies = isWaterMap ? waterEngies : landEngies;
 	CLagrangeInterPol::Vector x(engies.size()), y(engies.size());
 	for (unsigned i = 0; i < engies.size(); ++i) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(engies[i].first.c_str());
@@ -1086,6 +1076,9 @@ void CEconomyManager::ReadConfig()
 
 	// NOTE: Must have
 	defaultDef = circuit->GetCircuitDef(econ["default"].asCString());
+	if (defaultDef == nullptr) {
+		throw CException("economy.default");
+	}
 }
 
 void CEconomyManager::Init()

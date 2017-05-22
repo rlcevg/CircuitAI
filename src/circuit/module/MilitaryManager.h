@@ -110,7 +110,10 @@ public:
 private:
 	void ReadConfig();
 	void Init();
+public:
+	void Release();
 
+private:
 	void Watchdog();
 	void UpdateIdle();
 	void UpdateFight();

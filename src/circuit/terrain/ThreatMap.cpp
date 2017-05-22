@@ -8,8 +8,10 @@
 
 #include "terrain/ThreatMap.h"
 #include "terrain/TerrainManager.h"
+#include "setup/SetupManager.h"
 #include "unit/EnemyUnit.h"
 #include "util/utils.h"
+#include "json/json.h"
 
 #include "OOAICallback.h"
 #include "Mod.h"
@@ -61,11 +63,13 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 	losWidth = mapWidth >> losMipLevel;
 	losResConv = SQUARE_SIZE << losMipLevel;
 
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const float slackMod = root["quota"].get("slack_mod", 2.f).asFloat();
 	constexpr float allowedRange = 2000.f;
 	for (auto& kv : circuit->GetCircuitDefs()) {
 		CCircuitDef* cdef = kv.second;
 		const float slack = cdef->IsMobile() ?
-							(std::min(2.f * cdef->GetSpeed(), 5.f) * DEFAULT_SLACK) :
+							std::min(slackMod * cdef->GetSpeed(), 5.f) * DEFAULT_SLACK :
 							std::max(cdef->GetAoe(), DEFAULT_SLACK * 3.f);
 		float realRange;
 		int range;

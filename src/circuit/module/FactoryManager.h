@@ -77,7 +77,10 @@ public:
 private:
 	void ReadConfig();
 	void Init();
+public:
+	void Release();
 
+private:
 	void EnableFactory(CCircuitUnit* unit);
 	void DisableFactory(CCircuitUnit* unit);
 	IUnitTask* CreateFactoryTask(CCircuitUnit* unit);

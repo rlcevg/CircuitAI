@@ -134,6 +134,10 @@ public:
 private:
 	void ReadConfig();
 	void Init();
+public:
+	void Release();
+
+private:
 	IBuilderTask* MakeCommTask(CCircuitUnit* unit);
 	IBuilderTask* MakeBuilderTask(CCircuitUnit* unit);
 	IBuilderTask* CreateBuilderTask(const springai::AIFloat3& position, CCircuitUnit* unit);

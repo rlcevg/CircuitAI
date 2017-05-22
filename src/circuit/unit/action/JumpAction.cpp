@@ -49,15 +49,29 @@ void CJumpAction::Update(CCircuitAI* circuit)
 			for (; (step < pathMaxIndex) && ((*pPath)[step].SqDistance2D(startPos) < sqRange); ++step);
 			const AIFloat3& jumpPos = (*pPath)[std::max(0, step - 1)];
 
-			unit->GetUnit()->ExecuteCustomCommand(CMD_JUMP, {jumpPos.x, jumpPos.y, jumpPos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->ExecuteCustomCommand(CMD_JUMP,
+												  {jumpPos.x, jumpPos.y, jumpPos.z},
+												  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY,
+												  frame + FRAMES_PER_SEC * 60);
 		} else {
-			unit->GetUnit()->MoveTo((*pPath)[step], UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			const AIFloat3& pos = (*pPath)[step];
+//			unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->ExecuteCustomCommand(CMD_RAW_MOVE,
+												  {pos.x, pos.y, pos.z},
+												  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY,
+												  frame + FRAMES_PER_SEC * 60);
 		}
 		unit->GetUnit()->SetWantedMaxSpeed(stepSpeed);
 
+		constexpr short options = UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY;
 		for (int i = 2; (step < pathMaxIndex) && (i < 4); ++i) {
 			step = std::min(step + increment, pathMaxIndex);
-			unit->GetUnit()->MoveTo((*pPath)[step], UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60 * i);
+			const AIFloat3& pos = (*pPath)[step];
+//			unit->GetUnit()->MoveTo(pos, options, frame + FRAMES_PER_SEC * 60 * i);
+			unit->GetUnit()->ExecuteCustomCommand(CMD_RAW_MOVE,
+												  {pos.x, pos.y, pos.z},
+												  options,
+												  frame + FRAMES_PER_SEC * 60);
 		}
 	)
 }

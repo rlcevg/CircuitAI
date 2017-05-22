@@ -192,6 +192,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			{
 				EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
 				this->circuit->GetEconomyManager()->SetOpenSpot(index, false);
+				// FIXME: DEBUG
+				this->circuit->LOG("mexed : %i", this->circuit->GetSkirmishAIId());
+				// FIXME: DEBUG
 			}
 		}), FRAMES_PER_SEC * 20);
 	};
@@ -812,6 +815,15 @@ void CBuilderManager::Init()
 	circuit->GetSetupManager()->ExecOnFindStart(subinit);
 }
 
+void CBuilderManager::Release()
+{
+	// NOTE: Release expected to be called on CCircuit::Release.
+	//       It doesn't stop scheduled GameTasks for that reason.
+	for (IUnitTask* task : buildUpdates) {
+		AbortTask(task);
+	}
+}
+
 IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 {
 	circuit->GetThreatMap()->SetThreatType(unit);
@@ -939,9 +951,9 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 		for (const IBuilderTask* candidate : tasks) {
 			if (!candidate->CanAssignTo(unit) ||
 				(isNotReady && (candidate->GetPriority() != IBuilderTask::Priority::NOW) &&
-					(candidate->GetBuildDef() != nullptr) &&
+					(candidate->GetBuildDef() != nullptr)/* &&
 					(candidate->GetBuildType() != IBuilderTask::BuildType::MEX) &&
-					(candidate->GetBuildType() != IBuilderTask::BuildType::PYLON)))
+					(candidate->GetBuildType() != IBuilderTask::BuildType::PYLON)*/))
 			{
 				continue;
 			}

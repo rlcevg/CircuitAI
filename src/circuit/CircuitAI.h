@@ -58,6 +58,15 @@ class CEnemyUnit;
 class CDebugDrawer;
 #endif
 
+class CException: public std::exception {
+public:
+	CException(const char* r) : std::exception(), reason(r) {}
+	virtual const char* what() const throw() {
+		return reason;
+	}
+	const char* reason;
+};
+
 class CCircuitAI {
 public:
 	enum class Difficulty: char {EASY, NORMAL, HARD};
@@ -71,18 +80,23 @@ public:
 	int HandleEvent(int topic, const void* data);
 	void NotifyGameEnd();
 	void NotifyResign();
+	void NotifyShutdown();
 	void Resign(int newTeamId);
 private:
 	typedef int (CCircuitAI::*EventHandlerPtr)(int topic, const void* data);
 	int HandleGameEvent(int topic, const void* data);
 	int HandleEndEvent(int topic, const void* data);
 	int HandleResignEvent(int topic, const void* data);
+	int HandleShutdownEvent(int topic, const void* data);
 	EventHandlerPtr eventHandler;
 
 	int ownerTeamId;
 	springai::Economy* economy;
 	springai::Resource* metalRes;
 	springai::Resource* energyRes;
+
+	bool IsCorrupted() const { return !corrupts.empty(); }
+	std::deque<std::string> corrupts;
 // ---- AI Event handler ---- END
 
 private:

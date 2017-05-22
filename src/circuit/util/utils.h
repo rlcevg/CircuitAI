@@ -96,11 +96,11 @@ static inline std::string int_to_string(int i, const std::string &format = "%i")
 	return std::string(buf);
 }
 
-static inline int string_to_int(const std::string &str)
+static inline int string_to_int(const std::string &str, int base = 10)
 {
 	try {
 		std::size_t lastChar;
-		int result = std::stoi(str, &lastChar, 10);
+		int result = std::stoi(str, &lastChar, base);
 		if (lastChar != str.size()) {
 			return 0;
 		}

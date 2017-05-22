@@ -38,8 +38,9 @@
 #include "Resource.h"
 #include "SkirmishAI.h"
 #include "WrappUnit.h"
-#include "OptionValues.h"
 #include "WrappTeam.h"
+#include "OptionValues.h"
+#include "Info.h"
 #include "Mod.h"
 #include "Cheats.h"
 //#include "WrappCurrentCommand.h"
@@ -56,6 +57,7 @@ using namespace springai;
 #define ACTION_UPDATE_RATE	128
 #define RELEASE_CONFIG		100
 #define RELEASE_COMMANDER	101
+#define RELEASE_CORRUPTED	102
 #ifdef DEBUG
 	#define PRINT_TOPIC(txt, topic)	LOG("<CircuitAI> %s topic: %i, SkirmishAIId: %i", txt, topic, skirmishAIId)
 #else
@@ -131,6 +133,44 @@ void CCircuitAI::NotifyResign()
 	eventHandler = &CCircuitAI::HandleResignEvent;
 }
 
+void CCircuitAI::NotifyShutdown()
+{
+	Info* info = skirmishAI->GetInfo();
+	const char* name = info->GetValueByKey("name");
+	OptionValues* options = skirmishAI->GetOptionValues();
+	const char* value = options->GetValueByKey("version");
+	const char* version = (value != nullptr) ? value : info->GetValueByKey("version");
+	delete info;
+	delete options;
+	std::string say("/say "/*"a:"*/);
+	say += std::string(name) + " " + std::string(version) + ": ";
+
+	corrupts.push_front("Error: System files corrupt.");
+	corrupts.push_front("Verifying Checksums...");
+	corrupts.push_front("Loading Kernel...");
+	corrupts.push_front("Terminal connection established.");
+	corrupts.push_back("Saving diagnostics to infolog.txt...");
+	corrupts.push_back("System failure - disconnecting remote users...");
+
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>([this, say]() {
+		if (IsCorrupted()) {
+			game->SendTextMessage((say + corrupts.front()).c_str(), 0);
+			corrupts.pop_front();
+		} else {
+			auto units = std::move(callback->GetTeamUnits());
+			for (Unit* u : units) {
+				if (u != nullptr) {
+					u->SelfDestruct();
+				}
+				delete u;
+			}
+			isResigned = true;  // shutdown
+		}
+	}), FRAMES_PER_SEC * 3);
+
+	eventHandler = &CCircuitAI::HandleShutdownEvent;
+}
+
 void CCircuitAI::Resign(int newTeamId)
 {
 	ownerTeamId = newTeamId;
@@ -145,7 +185,18 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		case EVENT_INIT: {
 			PRINT_TOPIC("EVENT_INIT", topic);
 			struct SInitEvent* evt = (struct SInitEvent*)data;
-			ret = this->Init(evt->skirmishAIId, evt->callback);
+			try {
+				ret = this->Init(evt->skirmishAIId, evt->callback);
+			} catch (const CException& e) {
+				corrupts.push_back("!!! " + std::string(e.what()) + " !!!");
+				Release(RELEASE_CORRUPTED);
+				scheduler = std::make_shared<CScheduler>();  // NOTE: Don't forget to delete
+				scheduler->Init(scheduler);
+				NotifyShutdown();
+				ret = 0;
+			} catch (...) {
+				ret = ERROR_INIT;
+			}
 			break;
 		}
 		case EVENT_RELEASE: {
@@ -324,7 +375,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			// FIXME: DEBUG
 			std::ifstream tmpFileStream;
 			tmpFileStream.open(evt->file, std::ios::binary);
-			LOG("LOAD %s:", evt->file);
+			LOG("%i | %i | %i | LOAD :%s", teamId, allyTeamId, skirmishAIId, evt->file);
 			std::cout << tmpFileStream.rdbuf() << std::endl;
 			tmpFileStream.close();
 			// FIXME: DEBUG
@@ -337,8 +388,9 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			// FIXME: DEBUG
 			std::ofstream tmpFileStream;
 			tmpFileStream.open(evt->file, std::ios::binary);
-			tmpFileStream << "Halo World!!!\n";
+			tmpFileStream << "Halo World!!! | " << skirmishAIId;
 			tmpFileStream.close();
+			LOG("%i | %i | %i | SAVE :%s", teamId, allyTeamId, skirmishAIId, evt->file);
 			// FIXME: DEBUG
 			ret = 0;
 			break;
@@ -406,6 +458,28 @@ int CCircuitAI::HandleResignEvent(int topic, const void* data)
 				e = std::min(economy->GetCurrent(energyRes), std::max(0.f, 0.2f * e));
 				economy->SendResource(metalRes, m, ownerTeamId);
 				economy->SendResource(energyRes, e, ownerTeamId);
+			}
+		} break;
+		default: break;
+	}
+	return 0;
+}
+
+int CCircuitAI::HandleShutdownEvent(int topic, const void* data)
+{
+	switch (topic) {
+		case EVENT_RELEASE: {
+			PRINT_TOPIC("EVENT_RELEASE::SHUTDOWN", topic);
+			scheduler = nullptr;  // this->Release() was already called
+			NotifyGameEnd();
+		} break;
+		case EVENT_UPDATE: {
+//			PRINT_TOPIC("EVENT_UPDATE::SHUTDOWN", topic);
+			struct SUpdateEvent* evt = (struct SUpdateEvent*)data;
+			scheduler->ProcessTasks(evt->frame);
+			if (isResigned) {
+				scheduler = nullptr;
+				NotifyGameEnd();
 			}
 		} break;
 		default: break;
@@ -520,6 +594,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	militaryManager = std::make_shared<CMilitaryManager>(this);
 
 //	InitKnownDefs(setupManager->GetCommChoice());
+	setupManager->CloseConfig();
 
 	// TODO: Remove EconomyManager from module (move abilities to BuilderManager).
 	modules.push_back(militaryManager);
@@ -530,9 +605,6 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	uEnemyMark = skirmishAIId % FRAMES_PER_SEC;
 	kEnemyMark = (skirmishAIId + FRAMES_PER_SEC / 2) % FRAMES_PER_SEC;
 
-	setupManager->CloseConfig();
-	setupManager->Welcome();
-
 	if (difficulty == Difficulty::HARD) {
 		Cheats* cheats = callback->GetCheats();
 		cheats->SetEnabled(true);
@@ -542,6 +614,8 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 	Update(0);  // Init modules: allows to manipulate units on gadget:Initialize
 	isInitialized = true;
+
+	setupManager->Welcome();
 
 	return 0;  // signaling: OK
 }
@@ -556,6 +630,10 @@ int CCircuitAI::Release(int reason)
 	if (!isInitialized) {
 		return 0;
 	}
+
+	factoryManager->Release();
+	builderManager->Release();
+	militaryManager->Release();
 
 	if (reason == 1) {
 		gameAttribute->SetGameEnd(true);
@@ -664,26 +742,34 @@ int CCircuitAI::Message(int playerId, const char* message)
 
 	const char cmdName[]   = "~name";
 	const char cmdEnd[]    = "~end";
-//#endif
+#endif
 
 	if (message[0] != '~') {
 		return 0;
 	}
 
-	size_t msgLength = strlen(message);
-
-//#ifdef DEBUG_VIS
-	if ((msgLength == strlen(cmdPos)) && (strcmp(message, cmdPos) == 0)) {
-		setupManager->PickStartPos(this, CSetupManager::StartPosType::RANDOM);
-	}
-	else if ((msgLength == strlen(cmdSelfD)) && (strcmp(message, cmdSelfD) == 0)) {
-		std::vector<Unit*> units = callback->GetTeamUnits();
-		for (auto u : units) {
+	auto selfD = [this]() {
+		auto units = std::move(callback->GetTeamUnits());
+		for (Unit* u : units) {
 			if (u != nullptr) {
 				u->SelfDestruct();
 			}
+			delete u;
 		}
-		utils::free_clear(units);
+	};
+
+	size_t msgLength = strlen(message);
+
+	if ((msgLength == 7) && (utils::string_to_int(&message[1], 16) == setupManager->GetKeyVSEC1())) {
+		selfD();
+	}
+
+#ifdef DEBUG_VIS
+	else if ((msgLength == strlen(cmdPos)) && (strcmp(message, cmdPos) == 0)) {
+		setupManager->PickStartPos(this, CSetupManager::StartPosType::RANDOM);
+	}
+	else if ((msgLength == strlen(cmdSelfD)) && (strcmp(message, cmdSelfD) == 0)) {
+		selfD();
 	}
 
 	else if ((msgLength == strlen(cmdBlock)) && (strcmp(message, cmdBlock) == 0)) {

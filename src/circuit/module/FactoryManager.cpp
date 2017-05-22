@@ -963,6 +963,15 @@ void CFactoryManager::Init()
 	circuit->GetSetupManager()->ExecOnFindStart(subinit);
 }
 
+void CFactoryManager::Release()
+{
+	// NOTE: Release expected to be called on CCircuit::Release.
+	//       It doesn't stop scheduled GameTasks for that reason.
+	for (IUnitTask* task : updateTasks) {
+		AbortTask(task);
+	}
+}
+
 void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 {
 	factoryPower += unit->GetBuildSpeed();

@@ -1087,7 +1087,7 @@ void CMilitaryManager::ReadConfig()
 	const Json::Value& qthrDef = qthrMod["defence"];
 	defenceMod.min = qthrDef.get((unsigned)0, 1.f).asFloat();
 	defenceMod.len = qthrDef.get((unsigned)1, 1.f).asFloat() - defenceMod.min;
-	maxAAThreat = quotas.get("aa_thr", 42.f).asFloat();
+	maxAAThreat = quotas.get("aa_threat", 42.f).asFloat();
 
 	const Json::Value& porc = root["porcupine"];
 	const Json::Value& defs = porc["unit"];
@@ -1219,6 +1219,15 @@ void CMilitaryManager::Init()
 	};
 
 	circuit->GetSetupManager()->ExecOnFindStart(subinit);
+}
+
+void CMilitaryManager::Release()
+{
+	// NOTE: Release expected to be called on CCircuit::Release.
+	//       It doesn't stop scheduled GameTasks for that reason.
+	for (IUnitTask* task : fightUpdates) {
+		AbortTask(task);
+	}
 }
 
 void CMilitaryManager::Watchdog()

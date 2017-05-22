@@ -26,6 +26,7 @@ namespace circuit {
 #define CMD_ORBIT					13923
 #define CMD_ORBIT_DRAW				13924
 #define CMD_CLOAK_SHIELD			31101
+#define CMD_RAW_MOVE				31109
 #define CMD_MORPH_UPGRADE_INTERNAL	31207
 #define CMD_UPGRADE_STOP			31208
 #define CMD_MORPH					31210

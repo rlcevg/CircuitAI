@@ -81,6 +81,7 @@ public:
 	const SCommInfo::SHide* GetHide(const CCircuitDef* cdef) const;
 
 	void Welcome() const;
+	int GetKeyVSEC1() const { return vsecKey; }
 
 private:
 	void FindStart();
@@ -89,6 +90,8 @@ private:
 	const char* ReadConfig(const std::string& filename);
 	Json::Value* ParseConfig(const char* cfgJson);
 	void OverrideConfig();
+
+	int GenerateVSEC1() const;
 
 	CCircuitAI* circuit;
 	CSetupData* setupData;
@@ -117,6 +120,8 @@ private:
 		std::vector<CCircuitDef::RoleType> defaultStart;
 	};
 	std::map<CCircuitDef::Id, SStart> start;  // comm: start
+
+	mutable int vsecKey;
 };
 
 } // namespace circuit
