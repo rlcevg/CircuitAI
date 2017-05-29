@@ -13,9 +13,9 @@
 #include "terrain/TerrainManager.h"
 #include "task/NilTask.h"
 #include "task/IdleTask.h"
+#include "task/static/WaitTask.h"
 #include "task/static/RepairTask.h"
 #include "task/static/ReclaimTask.h"
-#include "task/static/WaitTask.h"
 #include "unit/FactoryData.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
@@ -327,7 +327,7 @@ CRecruitTask* CFactoryManager::EnqueueTask(CRecruitTask::Priority priority,
 
 IUnitTask* CFactoryManager::EnqueueWait(int timeout)
 {
-	CWaitTask* task = new CWaitTask(this, timeout);
+	CSWaitTask* task = new CSWaitTask(this, timeout);
 	updateTasks.push_back(task);
 	return task;
 }
@@ -969,7 +969,9 @@ void CFactoryManager::Release()
 	//       It doesn't stop scheduled GameTasks for that reason.
 	for (IUnitTask* task : updateTasks) {
 		AbortTask(task);
+		delete task;
 	}
+	updateTasks.clear();
 }
 
 void CFactoryManager::EnableFactory(CCircuitUnit* unit)

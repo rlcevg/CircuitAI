@@ -1,60 +1,27 @@
 /*
  * WaitTask.cpp
  *
- *  Created on: Jul 24, 2016
+ *  Created on: May 29, 2017
  *      Author: rlcevg
  */
 
 #include "task/static/WaitTask.h"
-#include "task/TaskManager.h"
-#include "CircuitAI.h"
 #include "util/utils.h"
 
 namespace circuit {
 
-CWaitTask::CWaitTask(ITaskManager* mgr, int timeout)
-		: IUnitTask(mgr, Priority::NORMAL, Type::IDLE, timeout)
+CSWaitTask::CSWaitTask(ITaskManager* mgr, int timeout)
+		: IWaitTask(mgr, timeout)
 {
 }
 
-CWaitTask::~CWaitTask()
+CSWaitTask::~CSWaitTask()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CWaitTask::AssignTo(CCircuitUnit* unit)
+void CSWaitTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
-	IUnitTask::AssignTo(unit);
-
-	lastTouched = manager->GetCircuit()->GetLastFrame();
-}
-
-void CWaitTask::RemoveAssignee(CCircuitUnit* unit)
-{
-	IUnitTask::RemoveAssignee(unit);
-
-	manager->AbortTask(this);
-}
-
-void CWaitTask::Execute(CCircuitUnit* unit)
-{
-}
-
-void CWaitTask::Update()
-{
-}
-
-void CWaitTask::OnUnitIdle(CCircuitUnit* unit)
-{
-}
-
-void CWaitTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
-{
-}
-
-void CWaitTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
-{
-	RemoveAssignee(unit);
 }
 
 } // namespace circuit

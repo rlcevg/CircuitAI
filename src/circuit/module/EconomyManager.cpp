@@ -547,9 +547,6 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost, .0f);
 				task->SetBuildPos(pos);
 				SetOpenSpot(index, false);
-				// FIXME: DEBUG
-				circuit->LOG("mexed : %i", this->circuit->GetSkirmishAIId());
-				// FIXME: DEBUG
 				return task;
 			}
 		}
@@ -1029,7 +1026,10 @@ void CEconomyManager::ReadConfig()
 	ecoFactor = (circuit->GetAllyTeam()->GetSize() - 1.0f) * ecoStep + 1.0f;
 	metalMod = (1.f - econ.get("excess", -1.f).asFloat());
 	pullMtoS = econ.get("ms_pull", 0.8f).asFloat();
+	maxMex = econ.get("max_mex", 2.f).asFloat();
 	switchTime = econ.get("switch", 900).asInt() * FRAMES_PER_SEC;
+	const float bd = econ.get("build_delay", -1.f).asFloat();
+	buildDelay = (bd > 0.f) ? bd * FRAMES_PER_SEC : 0;
 
 	// Using cafus, armfus, armsolar as control points
 	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
@@ -1108,21 +1108,17 @@ void CEconomyManager::Init()
 					migrants.push_back(kv.second->GetUnit());
 				}
 				economy->SendUnits(migrants, ownerId);
-				// Double check
-				scheduler->RunTaskAfter(std::make_shared<CGameTask>([this, ownerId]() {
-					if (circuit->GetTeamUnits().empty()) {
-						circuit->Resign(ownerId);
-					}
-				}), FRAMES_PER_SEC * 10);
+				circuit->Resign(ownerId);
 			}
 		}
 
 		scheduler->RunTaskAfter(std::make_shared<CGameTask>([this]() {
 			ecoFactor = (circuit->GetAllyTeam()->GetAliveSize() - 1.0f) * ecoStep + 1.0f;
-		}), FRAMES_PER_SEC * 11);
+		}), FRAMES_PER_SEC * 10);
 
 		const int interval = allyTeam->GetSize() * FRAMES_PER_SEC;
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks), this),
+		auto update = static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(update, this),
 								interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this),
 								interval, circuit->GetSkirmishAIId() + 1 + interval / 2);

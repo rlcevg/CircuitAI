@@ -21,7 +21,7 @@ class ITaskManager;
 class IUnitTask {  // CSquad, IAction
 public:
 	enum class Priority: char {LOW = 0, NORMAL = 1, HIGH = 2, NOW = 99};
-	enum class Type: char {NIL, PLAYER, IDLE, RETREAT, BUILDER, FACTORY, FIGHTER};
+	enum class Type: char {NIL, PLAYER, IDLE, WAIT, RETREAT, BUILDER, FACTORY, FIGHTER};
 	enum class State: char {ROAM, ENGAGE, DISENGAGE, REGROUP};
 
 protected:

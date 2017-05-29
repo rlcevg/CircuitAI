@@ -1227,7 +1227,9 @@ void CMilitaryManager::Release()
 	//       It doesn't stop scheduled GameTasks for that reason.
 	for (IUnitTask* task : fightUpdates) {
 		AbortTask(task);
+		delete task;
 	}
+	fightUpdates.clear();
 }
 
 void CMilitaryManager::Watchdog()

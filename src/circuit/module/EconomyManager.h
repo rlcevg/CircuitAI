@@ -64,6 +64,7 @@ public:
 	bool IsEnergyStalling();
 	bool IsEnergyEmpty();
 	bool IsExcessed() const { return metalProduced > metalUsed; }
+	int GetBuildDelay() const { return buildDelay; }
 
 	bool IsAllyOpenSpot(int spotId) const;
 	bool IsOpenSpot(int spotId) const { return openSpots[spotId]; }
@@ -143,6 +144,8 @@ private:
 	float metalUsed;
 	float metalMod;
 	float pullMtoS;  // mobile to static metal pull ratio
+	float maxMex;
+	int buildDelay;
 
 	int ecoFrame;
 	bool isMetalEmpty;

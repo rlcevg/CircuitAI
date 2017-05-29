@@ -17,6 +17,7 @@
 #include "task/NilTask.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
+#include "task/builder/WaitTask.h"
 #include "task/builder/FactoryTask.h"
 #include "task/builder/NanoTask.h"
 #include "task/builder/StoreTask.h"
@@ -192,9 +193,6 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			{
 				EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
 				this->circuit->GetEconomyManager()->SetOpenSpot(index, false);
-				// FIXME: DEBUG
-				this->circuit->LOG("mexed : %i", this->circuit->GetSkirmishAIId());
-				// FIXME: DEBUG
 			}
 		}), FRAMES_PER_SEC * 20);
 	};
@@ -505,6 +503,13 @@ IBuilderTask* CBuilderManager::EnqueueGuard(IBuilderTask::Priority priority,
 											int timeout)
 {
 	IBuilderTask* task = new CBGuardTask(this, priority, target, timeout);
+	buildUpdates.push_back(task);
+	return task;
+}
+
+IUnitTask* CBuilderManager::EnqueueWait(int timeout)
+{
+	CBWaitTask* task = new CBWaitTask(this, timeout);
 	buildUpdates.push_back(task);
 	return task;
 }
@@ -821,7 +826,9 @@ void CBuilderManager::Release()
 	//       It doesn't stop scheduled GameTasks for that reason.
 	for (IUnitTask* task : buildUpdates) {
 		AbortTask(task);
+		delete task;
 	}
+	buildUpdates.clear();
 }
 
 IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)

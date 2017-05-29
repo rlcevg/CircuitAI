@@ -30,7 +30,6 @@ private:
 	void FindTarget();
 
 	float maxPower;
-	float power;
 };
 
 } // namespace circuit

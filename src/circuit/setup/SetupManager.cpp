@@ -543,7 +543,15 @@ bool CSetupManager::LocatePath(std::string& filename)
 
 bool CSetupManager::LoadConfig(const std::string& cfgName)
 {
+	Info* info = circuit->GetSkirmishAI()->GetInfo();
+	const char* version = info->GetValueByKey("version");
+	const char* name = info->GetValueByKey("shortName");
+	delete info;
+
+	std::string filename;
 	std::string cfgDefault;
+	const char* cfgJson;
+
 	if (cfgName.empty()) {
 		/*
 		 * Try startscript specific config
@@ -565,16 +573,11 @@ bool CSetupManager::LoadConfig(const std::string& cfgName)
 		 * Try game specific config
 		 */
 		Map* map = circuit->GetMap();
-		SkirmishAI* skirmishAI = circuit->GetSkirmishAI();
-		Info* info = skirmishAI->GetInfo();
-		const char* version = info->GetValueByKey("version");
-		const char* name = info->GetValueByKey("shortName");
-		delete info;
-		std::string filename = std::string("LuaRules/Configs/") + name + "/" + version + "/";
+		filename = std::string("LuaRules/Configs/") + name + "/" + version + "/";
 		configName = utils::MakeFileSystemCompatible(map->GetName()) + ".json";
 		filename += configName;
 
-		const char* cfgJson = ReadConfig(filename);
+		cfgJson = ReadConfig(filename);
 		if (cfgJson != nullptr) {
 			config = ParseConfig(cfgJson);
 			delete[] cfgJson;
@@ -609,16 +612,29 @@ bool CSetupManager::LoadConfig(const std::string& cfgName)
 	/*
 	 * Locate default config
 	 */
-	std::string filename("config" SLASH);
+	filename = "config" SLASH;
 	configName = (cfgDefault.find(".json") == std::string::npos) ? (cfgDefault + ".json") : cfgDefault;
 	filename += configName;
-	if (!LocatePath(filename)){
+	if (LocatePath(filename)) {
+		cfgJson = ReadConfig(filename);
+		if (cfgJson != nullptr) {
+			config = ParseConfig(cfgJson);
+			delete[] cfgJson;
+
+			if (config != nullptr) {
+				return true;
+			}
+		}
+	} else {
 		circuit->LOG("Config file is missing! (%s)", configName.c_str());
-		return false;
 	}
 
-	const char* cfgJson = ReadConfig(filename);
-	if (cfgJson == nullptr) {
+	/*
+	 * Locate develop config: to run ./spring from source dir
+	 */
+	filename = std::string("AI/Skirmish/") + name + "/data/config/" + configName;
+	cfgJson = ReadConfig(filename);
+	if (cfgJson == nullptr){
 		return false;
 	}
 
@@ -633,7 +649,7 @@ const char* CSetupManager::ReadConfig(const std::string& filename)
 	File* file = circuit->GetCallback()->GetFile();
 	int fileSize = file->GetSize(filename.c_str());
 	if (fileSize <= 0) {
-		circuit->LOG("Missing config file! (%s)", filename.c_str());
+		circuit->LOG("No config file! (%s)", filename.c_str());
 		delete file;
 		return nullptr;
 	}

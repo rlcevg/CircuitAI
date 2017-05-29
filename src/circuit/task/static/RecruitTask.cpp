@@ -119,6 +119,16 @@ void CRecruitTask::Update()
 void CRecruitTask::Finish()
 {
 	Cancel();
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int buildDelay = circuit->GetEconomyManager()->GetBuildDelay();
+	if (buildDelay > 0) {
+		IUnitTask* task = circuit->GetFactoryManager()->EnqueueWait(buildDelay);
+		decltype(units) tmpUnits = units;
+		for (CCircuitUnit* unit : tmpUnits) {
+			manager->AssignTask(unit, task);
+		}
+	}
 }
 
 void CRecruitTask::Cancel()

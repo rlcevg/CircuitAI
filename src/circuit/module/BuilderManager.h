@@ -106,6 +106,7 @@ public:
 	IBuilderTask* EnqueueGuard(IBuilderTask::Priority priority,
 							   CCircuitUnit* target,
 							   int timeout = ASSIGN_TIMEOUT);
+	IUnitTask* EnqueueWait(int timeout);
 	CRetreatTask* EnqueueRetreat();
 
 private:
@@ -167,9 +168,7 @@ private:
 	std::set<CCircuitUnit*> workers;
 
 	CCircuitDef* terraDef;
-
 	std::unordered_map<IBuilderTask::BT, std::unordered_map<CCircuitDef*, SBuildChain*>> buildChains;  // owner
-
 	struct SSuper {
 		float minIncome;  // metal per second
 		float maxTime;  // seconds

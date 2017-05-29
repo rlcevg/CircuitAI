@@ -237,11 +237,21 @@ void IBuilderTask::Close(bool done)
 
 void IBuilderTask::Finish()
 {
-	CBuilderManager* builderManager = manager->GetCircuit()->GetBuilderManager();
+	CCircuitAI* circuit = manager->GetCircuit();
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	if (buildDef != nullptr) {
 		SBuildChain* chain = builderManager->GetBuildChain(buildType, buildDef);
 		if (chain != nullptr) {
 			ExecuteChain(chain);
+		}
+
+		const int buildDelay = circuit->GetEconomyManager()->GetBuildDelay();
+		if (buildDelay > 0) {
+			IUnitTask* task = builderManager->EnqueueWait(buildDelay);
+			decltype(units) tmpUnits = units;
+			for (CCircuitUnit* unit : tmpUnits) {
+				manager->AssignTask(unit, task);
+			}
 		}
 	}
 

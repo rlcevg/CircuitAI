@@ -28,7 +28,6 @@ using namespace springai;
 CRaidTask::CRaidTask(ITaskManager* mgr, float maxPower, float powerMod)
 		: ISquadTask(mgr, FightType::RAID, powerMod)
 		, maxPower(maxPower)
-		, power(0.f)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	float x = rand() % circuit->GetTerrainManager()->GetTerrainWidth();
@@ -49,7 +48,7 @@ bool CRaidTask::CanAssignTo(CCircuitUnit* unit) const
 		return false;
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
-	if (power > maxPower) {
+	if (attackPower > maxPower) {
 		return false;
 	}
 	int frame = circuit->GetLastFrame();
@@ -65,7 +64,6 @@ void CRaidTask::AssignTo(CCircuitUnit* unit)
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	highestRange = std::max(highestRange, cdef->GetLosRadius());
 	highestRange = std::max(highestRange, cdef->GetJumpRange());
-	power += unit->GetCircuitDef()->GetPower();
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
@@ -86,7 +84,6 @@ void CRaidTask::RemoveAssignee(CCircuitUnit* unit)
 	} else {
 		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetLosRadius());
 		highestRange = std::max(highestRange, leader->GetCircuitDef()->GetJumpRange());
-		power -= unit->GetCircuitDef()->GetPower();
 	}
 }
 

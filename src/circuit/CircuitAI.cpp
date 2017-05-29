@@ -635,7 +635,7 @@ int CCircuitAI::Release(int reason)
 	builderManager->Release();
 	militaryManager->Release();
 
-	if (reason == 1) {
+	if (reason == 1) {  // @see SReleaseEvent
 		gameAttribute->SetGameEnd(true);
 	}
 	if (terrainManager != nullptr) {
