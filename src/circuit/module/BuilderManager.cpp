@@ -956,11 +956,10 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
-			if (!candidate->CanAssignTo(unit) ||
-				(isNotReady && (candidate->GetPriority() != IBuilderTask::Priority::NOW) &&
-					(candidate->GetBuildDef() != nullptr)/* &&
-					(candidate->GetBuildType() != IBuilderTask::BuildType::MEX) &&
-					(candidate->GetBuildType() != IBuilderTask::BuildType::PYLON)*/))
+			if (!candidate->CanAssignTo(unit) || (isNotReady &&
+												  (candidate->GetPriority() != IBuilderTask::Priority::NOW) &&
+												  (candidate->GetBuildDef() != nullptr) &&
+												  !economyManager->IsIgnorePull(candidate)))
 			{
 				continue;
 			}

@@ -230,7 +230,7 @@ void IBuilderTask::Close(bool done)
 {
 	IUnitTask::Close(done);
 
-	if (buildDef != nullptr) {
+	if ((buildDef != nullptr) && !manager->GetCircuit()->GetEconomyManager()->IsIgnorePull(this)) {
 		manager->DelMetalPull(buildPower);
 	}
 }
@@ -369,7 +369,7 @@ bool IBuilderTask::IsEqualBuildPos(CCircuitUnit* unit) const
 void IBuilderTask::HideAssignee(CCircuitUnit* unit)
 {
 	buildPower -= unit->GetBuildSpeed();
-	if (buildDef != nullptr) {
+	if ((buildDef != nullptr) && !manager->GetCircuit()->GetEconomyManager()->IsIgnorePull(this)) {
 		manager->DelMetalPull(unit);
 	}
 }
@@ -377,7 +377,7 @@ void IBuilderTask::HideAssignee(CCircuitUnit* unit)
 void IBuilderTask::ShowAssignee(CCircuitUnit* unit)
 {
 	buildPower += unit->GetBuildSpeed();
-	if (buildDef != nullptr) {
+	if ((buildDef != nullptr) && !manager->GetCircuit()->GetEconomyManager()->IsIgnorePull(this)) {
 		manager->AddMetalPull(unit);
 	}
 }

@@ -78,9 +78,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			point->cost -= defCost;
 		}
 	};
-	for (const CCircuitDef* cdef : defenderDefs) {
-		destroyedHandler[cdef->GetId()] = defenceDestroyedHandler;
-	}
 
 	/*
 	 * Attacker handlers
@@ -202,7 +199,12 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		}
 	};
 
+	// NOTE: IsRole used below
 	ReadConfig();
+
+	for (const CCircuitDef* cdef : defenderDefs) {
+		destroyedHandler[cdef->GetId()] = defenceDestroyedHandler;
+	}
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const float fighterRet = root["retreat"].get("fighter", 0.5f).asFloat();

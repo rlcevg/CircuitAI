@@ -594,7 +594,6 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	militaryManager = std::make_shared<CMilitaryManager>(this);
 
 //	InitKnownDefs(setupManager->GetCommChoice());
-	setupManager->CloseConfig();
 
 	// TODO: Remove EconomyManager from module (move abilities to BuilderManager).
 	modules.push_back(militaryManager);
@@ -613,9 +612,10 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	}
 
 	Update(0);  // Init modules: allows to manipulate units on gadget:Initialize
-	isInitialized = true;
-
 	setupManager->Welcome();
+
+	setupManager->CloseConfig();
+	isInitialized = true;
 
 	return 0;  // signaling: OK
 }

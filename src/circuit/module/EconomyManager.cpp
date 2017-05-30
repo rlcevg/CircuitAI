@@ -478,6 +478,21 @@ bool CEconomyManager::IsAllyOpenSpot(int spotId) const
 	return IsOpenSpot(spotId) && circuit->GetMetalManager()->IsOpenSpot(spotId);
 }
 
+void CEconomyManager::SetOpenSpot(int spotId, bool value)
+{
+	if (openSpots[spotId] == value) {
+		return;
+	}
+	openSpots[spotId] = value;
+	value ? --mexCount : ++mexCount;
+}
+
+bool CEconomyManager::IsIgnorePull(const IBuilderTask* task) const
+{
+	return (mexMax < 0) && ((task->GetBuildType() == IBuilderTask::BuildType::MEX) ||
+							(task->GetBuildType() == IBuilderTask::BuildType::PYLON));
+}
+
 IBuilderTask* CEconomyManager::MakeEconomyTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
@@ -1026,10 +1041,9 @@ void CEconomyManager::ReadConfig()
 	ecoFactor = (circuit->GetAllyTeam()->GetSize() - 1.0f) * ecoStep + 1.0f;
 	metalMod = (1.f - econ.get("excess", -1.f).asFloat());
 	pullMtoS = econ.get("ms_pull", 0.8f).asFloat();
-	maxMex = econ.get("max_mex", 2.f).asFloat();
 	switchTime = econ.get("switch", 900).asInt() * FRAMES_PER_SEC;
 	const float bd = econ.get("build_delay", -1.f).asFloat();
-	buildDelay = (bd > 0.f) ? bd * FRAMES_PER_SEC : 0;
+	buildDelay = (bd > 0.f) ? (bd * FRAMES_PER_SEC) : 0;
 
 	// Using cafus, armfus, armsolar as control points
 	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
@@ -1085,10 +1099,15 @@ void CEconomyManager::Init()
 {
 	energyGrid = circuit->GetAllyTeam()->GetEnergyGrid().get();
 
-	size_t clSize = circuit->GetMetalManager()->GetClusters().size();
+	const size_t clSize = circuit->GetMetalManager()->GetClusters().size();
 	clusterInfos.resize(clSize, {nullptr, -FRAMES_PER_SEC});
-	size_t spSize = circuit->GetMetalManager()->GetSpots().size();
+	const size_t spSize = circuit->GetMetalManager()->GetSpots().size();
 	openSpots.resize(spSize, true);
+
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const float mm = root["economy"].get("mex_max", 2.f).asFloat();
+	mexMax = (mm < 1.f) ? (mm * spSize) : -1;
+	mexCount = (mm < 1.f) ? 0 : (-spSize - 1);
 
 	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
 		metalProduced = economy->GetCurrent(metalRes) * metalMod;

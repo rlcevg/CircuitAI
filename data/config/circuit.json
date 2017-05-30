@@ -16,7 +16,7 @@
 		// On start: priority ~= map_percent * importance0 + random(-20..+20)
 		// During game: priority ~= map_percent * importance1 + random(-20..+20)
 		// importanceN = 1.0 by default if not set
-		"importance": [0.91, 0.2],
+		"importance": [0.86, 0.2],
 
 		// 'require_energy' adds energy requirement for tierN (N>0): fallback to lowest tier on low energy
 		"require_energy": true,
@@ -32,10 +32,10 @@
 			"tier0": [ 0.10,       0.84,        0.06,             0.00,         0.00,        0.00,           0.00,        0.00,         0.00,        0.00,          0.00],
 
 			// 9-16m Early Game - Map control still important but move towards Scythe raiding and Riot defense from raider balls.
-			"tier1": [ 0.10,       0.39,        0.07,             0.36,         0.08,        0.00,           0.00,        0.00,         0.00,        0.00,          0.00],
+			"tier1": [ 0.12,       0.37,        0.07,             0.36,         0.08,        0.00,           0.00,        0.00,         0.00,        0.00,          0.00],
 
 			// 17-24m Expanding - Good size terriotiry now, so less scouting and begin producing a little assault/arty on the side.
-			"tier2": [ 0.10,       0.28,        0.10,             0.31,         0.08,        0.08,           0.00,        0.00,         0.00,        0.05,          0.00]
+			"tier2": [ 0.15,       0.23,        0.10,             0.31,         0.08,        0.08,           0.00,        0.00,         0.00,        0.05,          0.00]
 
 			// 25-32m Expansions meet - Economy can afford to begin producing in bulk so unit compositions alter.
 	//		"tier3": [ 0.10,       0.40,        0.05,             0.30,         0.00,        0.10,           0.00,        0.00,         0.00,        0.05,          0.00],
@@ -66,7 +66,7 @@
 	},
 
 	"factorygunship": {
-		"importance": [1.17, 2.0],
+		"importance": [0.95, 2.0],
 		"require_energy": false,
 
 		"income_tier": [7, 16, 24, 32, 40, 56, 72],
@@ -170,7 +170,7 @@
 	},
 
 	"factoryveh": {
-		"importance": [1.00, 0.2],
+		"importance": [1.05, 0.2],
 		"require_energy": false,
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72],
@@ -273,7 +273,7 @@
 	},
 
 	"factorytank": {
-		"importance": [0.95, 1.5],
+		"importance": [0.83, 1.5],
 		"require_energy": false,
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72],
@@ -317,19 +317,17 @@
 	},
 
 	"factoryshield": {
-		"importance": [0.7, 0.6],
+		"importance": [0.85, 0.6],
 		"require_energy": false,
 
-		"income_tier": [10, 20, 30, 40, 50, 60],
+		"income_tier": [16, 32, 60, 90],
 		//             convict,     dirtbag,       bandit,       rogue,         thug,            outlaw,       felon,         racketeer,    roach,        aspis,          vandal
 		"unit":      ["shieldcon", "shieldscout", "shieldraid", "shieldskirm", "shieldassault", "shieldriot", "shieldfelon", "shieldarty", "shieldbomb", "shieldshield", "shieldaa"],
 		"land": {
-			"tier0": [ 0.00,        0.10,          0.80,         0.00,          0.00,            0.10,         0.00,          0.00,         0.00,         0.00,           0.00],
-			"tier1": [ 0.10,        0.10,          0.80,         0.00,          0.00,            0.00,         0.00,          0.00,         0.00,         0.00,           0.00],
-			"tier2": [ 0.10,        0.10,          0.60,         0.00,          0.15,            0.05,         0.00,          0.00,         0.00,         0.00,           0.00],
-			"tier3": [ 0.10,        0.10,          0.46,         0.00,          0.20,            0.06,         0.03,          0.00,         0.00,         0.05,           0.00],
-			"tier4": [ 0.10,        0.10,          0.50,         0.00,          0.16,            0.00,         0.04,          0.00,         0.00,         0.10,           0.00],
-			"tier5": [ 0.10,        0.10,          0.50,         0.00,          0.11,            0.00,         0.04,          0.05,         0.00,         0.10,           0.00]
+			"tier0": [ 0.05,        0.00,          0.82,         0.13,          0.00,            0.00,         0.00,          0.00,         0.00,         0.00,           0.00],
+			"tier1": [ 0.10,        0.00,          0.33,         0.37,          0.05,            0.08,         0.04,          0.02,         0.00,         0.01,           0.00],
+			"tier2": [ 0.12,        0.00,          0.14,         0.32,          0.27,            0.06,         0.05,          0.02,         0.00,         0.02,           0.00],
+			"tier3": [ 0.15,        0.00,          0.00,         0.22,          0.33,            0.04,         0.08,          0.09,         0.00,         0.09,           0.00]
 		},
 
 		"caretaker": 10
@@ -389,10 +387,10 @@
 	"def_rad": 475,  // defence radius
 	"thr_mod": {
 		"attack": [1.00, 1.10],  // [<min>, <max>] enemy threat modifier for target selection of attack task
-		"defence": [0.75, 0.75]  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
+		"defence": [0.80, 0.80]  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
 	},
 	"aa_threat": 42.0,  // anti-air threat threshold, air factories will stop production when AA threat exceeds
-	"slack_mod": 2
+	"slack_mod": 3
 },
 
 // If unit's health drops below specified percent it will retreat
@@ -680,16 +678,17 @@
 		"retreat": 1.3
 	},
 	"shieldscout": {
-		"role": ["scout"],
-		"limit": 20,
-		"retreat": 0.1
+		"role": ["anti_heavy"],
+		"attribute": ["support", "melee"],
+		"limit": 8,
+		"retreat": 0.0
 	},
 	"shieldraid": {
 		"role": ["raider"],
 		"attribute": ["scout"],
 		"retreat": 0.35,
-		"pwr_mod": 2.2,
-		"thr_mod": 2.1
+		"pwr_mod": 1.7,
+		"thr_mod": 1.68
 	},
 	"shieldskirm": {
 		"role": ["skirmish"],
@@ -697,7 +696,8 @@
 	},
 	"shieldassault": {
 		"role": ["assault"],
-		"retreat": 1.2,
+		"attribute": ["support"],
+		"retreat": 0.85,
 		"pwr_mod": 1.2,
 		"thr_mod": 1.2
 	},
@@ -710,15 +710,12 @@
 	},
 	"shieldfelon": {
 		"role": ["assault",	"support", "heavy"],
-		"attribute": ["support"],
-		"limit": 4,
 		"retreat": 0.9,
 		"pwr_mod": 1.5,
-		"thr_mod": 1.5
+		"thr_mod": 2.5
 	},
 	"shieldarty": {
-		"role": ["anti_heavy", "skirmish"],
-		"attribute": ["support"],
+		"role": ["anti_heavy"],
 		"retreat": 0.8,
 		"pwr_mod": 1.5,
 		"thr_mod": 1.5
@@ -1072,6 +1069,7 @@
 	},
 	"striderscorpion": {
 		"role": ["anti_heavy", "heavy"],
+		"limit": 1,
 		"fire_state": "return",
 		"retreat": 0.6,
 		"pwr_mod": 0.8,
@@ -1099,6 +1097,7 @@
 	},
 	"striderbantha": {
 		"role": ["heavy", "support", "heavy"],
+		"attribute": ["melee"],
 		"retreat": 0.6,
 		"pwr_mod": 0.5,
 		"thr_mod": 0.5
@@ -1420,9 +1419,9 @@
 	},
 	"builder": {
 		"vs":         ["assault", "static", "heavy", "builder"],
-		"ratio":      [ 1.5,       1.5,      1.5,     1.5],
+		"ratio":      [ 1.5,       1.6,      1.6,     1.6],
 		"importance": [ 300.0,     300.0,    300.0,   300.0],
-		"max_percent": 0.15,
+		"max_percent": 0.17,
 		"eps_step": 0.00
 	},
 	"anti_sub": {
@@ -1461,10 +1460,10 @@
 		"eps_step": 0.025
 	},
 	"support": {
-		"vs":         ["builder", "static", "heavy"],
-		"ratio":      [ 0.50,      0.20,     0.20],
-		"importance": [ 140.0,     140.0,    140.0],
-		"max_percent": 0.075,
+		"vs":         ["support", "static", "heavy"],
+		"ratio":      [ 0.75,      0.45,     0.75],
+		"importance": [ 170.0,     170.0,    170.0],
+		"max_percent": 0.13,
 		"eps_step": 0.00
 	}
 },
@@ -1505,29 +1504,29 @@
 			"energyfusion": [4],
 			"energywind": [20]
 		},
-		"factor": 0.53,  // income factor for energy
+		"factor": 0.55,  // income factor for energy
 
 		"pylon": ["energypylon", "energysolar", "energywind"]
 	},
 
 	// Scales metal income
 	// ecoFactor = teamSize*eps_step+(1-eps_step)
-	"eps_step": 0.21,
+	"eps_step": 0.23,
 
 	// Mobile buildpower to metal income ratio
 	"buildpower": 1.3,
 	// Metal excess to income ratio, -1 to disable
 	"excess": -1.0,
 	// Mobile to static metal pull ratio
-	"ms_pull": 0.64,
+	"ms_pull": 0.65,
 	// Max percent of mexes circuit team allowed to take.
-	// If its <1.0 then expansion obeys ms_pull rule.
-	"max_mex": 2.0,  // 200%
+	// If its <1.0 then expansion obeys ms_pull rule, if >=1.0 then ms_pull doesn't affect expansion (mex, pylon).
+	"mex_max": 2.0,  // 200%
 	// Construction order delay in seconds, -1 to disable
 	"build_delay": -1.0,
 
 	// New factory switch interval, in seconds
-	"switch": 540,
+	"switch": 600,
 
 	"terra": "terraunit",
 	"airpad": "staticrearm",
@@ -1551,13 +1550,13 @@
 	},
 
 	// Base defence and time to build it, in seconds
-	"base": [[0, 20], [0, 120], [1, 300], [0, 360], [1, 400], [0, 500], [2, 600], [5, 660], [2, 800], [5, 860],[1, 980], [5, 1160], [1, 1380], [2, 1680], [13, 1800], [7, 2400]],
+	"base": [[0, 20], [0, 120], [0, 360], [1, 400], [0, 500], [5, 660], [5, 860],[1, 980], [5, 1160], [1, 1380], [2, 1680], [13, 1800], [7, 2400]],
 
 	"superweapon": {
 		"unit":   ["raveparty", "staticnuke", "staticheavyarty", "zenith"],
 		"weight": [ 0.3,         0.2,          0.4,               0.1],
 
-		"condition": [30, 500]  // [<Minimum income>, <maximum seconds to build>]
+		"condition": [35, 500]  // [<Minimum income>, <maximum seconds to build>]
 	},
 
 	// Fallback defence

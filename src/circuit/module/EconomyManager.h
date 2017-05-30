@@ -67,8 +67,9 @@ public:
 	int GetBuildDelay() const { return buildDelay; }
 
 	bool IsAllyOpenSpot(int spotId) const;
-	bool IsOpenSpot(int spotId) const { return openSpots[spotId]; }
-	void SetOpenSpot(int spotId, bool value) { openSpots[spotId] = value; }
+	bool IsOpenSpot(int spotId) const { return openSpots[spotId] && (mexCount < mexMax); }
+	void SetOpenSpot(int spotId, bool value);
+	bool IsIgnorePull(const IBuilderTask* task) const;
 
 	IBuilderTask* MakeEconomyTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
@@ -103,6 +104,7 @@ private:
 	// NOTE: MetalManager::SetOpenSpot used by whole allyTeam. Therefore
 	//       local spot's state descriptor needed for better expansion
 	std::vector<bool> openSpots;  // AI-local metal info
+	int mexCount;
 
 	struct SClusterInfo {
 		CCircuitUnit* factory;
@@ -144,7 +146,7 @@ private:
 	float metalUsed;
 	float metalMod;
 	float pullMtoS;  // mobile to static metal pull ratio
-	float maxMex;
+	int mexMax;
 	int buildDelay;
 
 	int ecoFrame;
