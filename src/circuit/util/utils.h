@@ -10,7 +10,7 @@
 
 #include "util/Defines.h"
 
-#include "System/Util.h"
+#include "System/StringUtil.h"
 #include "System/Threading/SpringThreading.h"
 #include <chrono>
 
@@ -88,7 +88,7 @@ static inline std::string string_format(const std::string fmt_str, ...)
 	return std::string(formatted.get());
 }
 
-// FIXME: Use rts/System/Util.h IntToString?
+// FIXME: Use rts/System/StringUtil.h IntToString?
 static inline std::string int_to_string(int i, const std::string &format = "%i")
 {
 	char buf[64];

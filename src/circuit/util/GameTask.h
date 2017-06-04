@@ -10,6 +10,7 @@
 #define SRC_CIRCUIT_UTIL_GAMETASK_H_
 
 #include <memory>
+#include <functional>
 
 namespace circuit {
 
@@ -17,7 +18,7 @@ class CGameTask {
 public:
 	template<typename _Callable, typename... _Args>
 		explicit CGameTask(_Callable&& __f, _Args&&... __args) {
-			__b = _M_make_routine(std::__bind_simple(std::forward<_Callable>(__f), std::forward<_Args>(__args)...));
+			__b = _M_make_routine(std::bind(std::forward<_Callable>(__f), std::forward<_Args>(__args)...));
 		}
 	virtual ~CGameTask();
 

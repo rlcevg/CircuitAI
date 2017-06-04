@@ -24,7 +24,6 @@
 #include "resource/EnergyGrid.h"
 #endif
 
-#include "System/Util.h"
 #include "AISEvents.h"
 #include "AISCommands.h"
 #include "SSkirmishAICallback.h"	// "direct" C API
@@ -48,6 +47,7 @@
 #include <regex>
 // FIXME: DEBUG
 #include <fstream>
+#include <iostream>
 // FIXME: DEBUG
 
 namespace circuit {

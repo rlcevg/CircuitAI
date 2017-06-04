@@ -13,6 +13,8 @@
 
 #include "AIFloat3.h"
 
+#include <functional>
+
 namespace circuit {
 
 namespace setup {

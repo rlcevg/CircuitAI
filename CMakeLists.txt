@@ -2,7 +2,7 @@
 #
 
 set(mySourceDirRel         "src/") # Common values are "" or "src"
-set(additionalSources      ${CMAKE_SOURCE_DIR}/rts/System/Util.cpp)
+set(additionalSources      ${CMAKE_SOURCE_DIR}/rts/System/StringUtil.cpp)
 set(additionalSources      ${additionalSources} ${CMAKE_SOURCE_DIR}/rts/System/Misc/SpringTime.cpp)
 if (WIN32)  # spring::condition_variable_any requirement
 	set(additionalSources  ${additionalSources} ${CMAKE_SOURCE_DIR}/rts/System/Platform/Win/CriticalSection.cpp)
