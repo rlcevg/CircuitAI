@@ -45,10 +45,7 @@
 //#include "WrappCurrentCommand.h"
 
 #include <regex>
-// FIXME: DEBUG
 #include <fstream>
-#include <iostream>
-// FIXME: DEBUG
 
 namespace circuit {
 
@@ -372,27 +369,19 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		case EVENT_LOAD: {
 			PRINT_TOPIC("EVENT_LOAD", topic);
 			struct SLoadEvent* evt = (struct SLoadEvent*)data;
-			// FIXME: DEBUG
-			std::ifstream tmpFileStream;
-			tmpFileStream.open(evt->file, std::ios::binary);
-			LOG("%i | %i | %i | LOAD :%s", teamId, allyTeamId, skirmishAIId, evt->file);
-			std::cout << tmpFileStream.rdbuf() << std::endl;
-			tmpFileStream.close();
-			// FIXME: DEBUG
-			ret = 0;
+			std::ifstream loadFileStream;
+			loadFileStream.open(evt->file, std::ios::binary);
+			ret = loadFileStream.is_open() ? this->Load(loadFileStream) : ERROR_LOAD;
+			loadFileStream.close();
 			break;
 		}
 		case EVENT_SAVE: {
 			PRINT_TOPIC("EVENT_SAVE", topic);
 			struct SSaveEvent* evt = (struct SSaveEvent*)data;
-			// FIXME: DEBUG
-			std::ofstream tmpFileStream;
-			tmpFileStream.open(evt->file, std::ios::binary);
-			tmpFileStream << "Halo World!!! | " << skirmishAIId;
-			tmpFileStream.close();
-			LOG("%i | %i | %i | SAVE :%s", teamId, allyTeamId, skirmishAIId, evt->file);
-			// FIXME: DEBUG
-			ret = 0;
+			std::ofstream saveFileStream;
+			saveFileStream.open(evt->file, std::ios::binary);
+			ret = saveFileStream.is_open() ? this->Save(saveFileStream) : ERROR_SAVE;
+			saveFileStream.close();
 			break;
 		}
 		case EVENT_ENEMY_CREATED: {
@@ -1038,6 +1027,24 @@ int CCircuitAI::PlayerCommand(std::vector<CCircuitUnit*>& units)
 //
 //	return 0;  // signaling: OK
 //}
+
+int CCircuitAI::Load(std::istream& is)
+{
+	for (auto& module : modules) {
+		is >> *module;
+	}
+
+	return 0;  // signaling: OK
+}
+
+int CCircuitAI::Save(std::ostream& os)
+{
+	for (auto& module : modules) {
+		os << *module;
+	}
+
+	return 0;  // signaling: OK
+}
 
 int CCircuitAI::LuaMessage(const char* inData)
 {

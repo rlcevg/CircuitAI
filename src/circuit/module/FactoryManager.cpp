@@ -969,7 +969,7 @@ void CFactoryManager::Release()
 	//       It doesn't stop scheduled GameTasks for that reason.
 	for (IUnitTask* task : updateTasks) {
 		AbortTask(task);
-		delete task;
+		// NOTE: Do not delete task as other AbortTask may ask for it
 	}
 	updateTasks.clear();
 }

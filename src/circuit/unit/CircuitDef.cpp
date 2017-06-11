@@ -484,31 +484,4 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 	isLander = !IsFloater() && !IsAbleToFly() && !IsAmphibious() && !IsSubmarine();
 }
 
-CCircuitDef& CCircuitDef::operator++()
-{
-	++count;
-	return *this;
-}
-
-// FIXME: ~CCircuitDef should fail with delete
-//CCircuitDef CCircuitDef::operator++(int)
-//{
-//	CCircuitDef temp = *this;
-//	count++;
-//	return temp;
-//}
-
-CCircuitDef& CCircuitDef::operator--()
-{
-	--count;
-	return *this;
-}
-
-//CCircuitDef CCircuitDef::operator--(int)
-//{
-//	CCircuitDef temp = *this;
-//	count--;
-//	return temp;
-//}
-
 } // namespace circuit

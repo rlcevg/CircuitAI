@@ -106,6 +106,9 @@ protected:
 
 	void ExecuteChain(SBuildChain* chain);
 
+	virtual void Load(std::istream& is);
+	virtual void Save(std::ostream& os) const;
+
 	springai::AIFloat3 position;
 	float shake;  // Alter/randomize position by offset
 	CCircuitDef* buildDef;

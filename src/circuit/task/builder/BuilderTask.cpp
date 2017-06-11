@@ -406,12 +406,12 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 	assert(chain != nullptr);
 	CCircuitAI* circuit = manager->GetCircuit();
 
-	if (chain->isEnergy) {
+	if (chain->energy > 0.f) {
 		float energyMake;
 		CCircuitDef* energyDef = circuit->GetEconomyManager()->GetLowEnergy(buildPos, energyMake);
 		if (energyDef != nullptr) {
-			bool isValid = true;
-			if (chain->isMex) {
+			bool isValid = (circuit->GetEconomyManager()->GetAvgEnergyIncome() < chain->energy);
+			if (isValid && chain->isMexEngy) {
 				int index = circuit->GetMetalManager()->FindNearestSpot(buildPos);
 				isValid = (index >= 0) && (circuit->GetMetalManager()->GetSpots()[index].income > energyMake * 0.8f);
 			}
@@ -551,6 +551,30 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 			}
 		}
 	}
+}
+
+#define SERIALIZE(stream, func)	\
+	utils::binary_##func(stream, position);		\
+	utils::binary_##func(stream, shake);		\
+	utils::binary_##func(stream, bdefId);		\
+	utils::binary_##func(stream, buildType);
+
+void IBuilderTask::Load(std::istream& is)
+{
+	CCircuitDef::Id bdefId;
+
+	IUnitTask::Load(is);
+	SERIALIZE(is, read)
+
+	buildDef = manager->GetCircuit()->GetCircuitDef(bdefId);
+}
+
+void IBuilderTask::Save(std::ostream& os) const
+{
+	CCircuitDef::Id bdefId = (buildDef != nullptr) ? buildDef->GetId() : -1;
+
+	IUnitTask::Save(os);
+	SERIALIZE(os, write)
 }
 
 } // namespace circuit

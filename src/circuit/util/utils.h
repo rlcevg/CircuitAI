@@ -241,6 +241,16 @@ template<class T> static inline constexpr T clamp(const T v, const T vmin, const
 	return std::min(vmax, std::max(vmin, v));
 }
 
+template<typename T> static inline std::ostream& binary_write(std::ostream& stream, const T& value)
+{
+    return stream.write(reinterpret_cast<const char*>(&value), sizeof(T));
+}
+
+template<typename T> static inline std::istream& binary_read(std::istream& stream, T& value)
+{
+    return stream.read(reinterpret_cast<char*>(&value), sizeof(T));
+}
+
 } // namespace utils
 
 #endif // SRC_CIRCUIT_UTIL_UTILS_H_

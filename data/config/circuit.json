@@ -324,10 +324,10 @@
 		//             convict,     dirtbag,       bandit,       rogue,         thug,            outlaw,       felon,         racketeer,    roach,        aspis,          vandal
 		"unit":      ["shieldcon", "shieldscout", "shieldraid", "shieldskirm", "shieldassault", "shieldriot", "shieldfelon", "shieldarty", "shieldbomb", "shieldshield", "shieldaa"],
 		"land": {
-			"tier0": [ 0.05,        0.00,          0.82,         0.13,          0.00,            0.00,         0.00,          0.00,         0.00,         0.00,           0.00],
-			"tier1": [ 0.10,        0.00,          0.33,         0.37,          0.05,            0.08,         0.04,          0.02,         0.00,         0.01,           0.00],
-			"tier2": [ 0.12,        0.00,          0.14,         0.32,          0.27,            0.06,         0.05,          0.02,         0.00,         0.02,           0.00],
-			"tier3": [ 0.15,        0.00,          0.00,         0.22,          0.33,            0.04,         0.08,          0.09,         0.00,         0.09,           0.00]
+			"tier0": [ 0.05,        0.05,          0.80,         0.10,          0.00,            0.00,         0.00,          0.00,         0.00,         0.00,           0.00],
+			"tier1": [ 0.10,        0.02,          0.33,         0.35,          0.05,            0.08,         0.04,          0.02,         0.00,         0.01,           0.00],
+			"tier2": [ 0.12,        0.01,          0.14,         0.30,          0.27,            0.06,         0.05,          0.02,         0.00,         0.03,           0.00],
+			"tier3": [ 0.15,        0.02,          0.00,         0.20,          0.33,            0.04,         0.08,          0.09,         0.00,         0.09,           0.00]
 		},
 
 		"caretaker": 10
@@ -382,12 +382,12 @@
 
 "quota": {
 	"scout": 1,  // max scout units out of raiders
-	"raid": [6.0, 12.0],  // [<min>, <avg>] power of raider squad
+	"raid": [6.0, 18.0],  // [<min>, <avg>] power of raider squad
 	"attack": 6.0,  // min power of attack group
 	"def_rad": 475,  // defence radius
 	"thr_mod": {
 		"attack": [1.00, 1.10],  // [<min>, <max>] enemy threat modifier for target selection of attack task
-		"defence": [0.80, 0.80]  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
+		"defence": [0.87, 0.87]  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
 	},
 	"aa_threat": 42.0,  // anti-air threat threshold, air factories will stop production when AA threat exceeds
 	"slack_mod": 3
@@ -397,7 +397,7 @@
 "retreat": {
 	"builder": 0.75,  // default value for all builders
 	"fighter": 0.45,  // default value for all not-builder units
-	"shield": [0.66, 0.8]  // [<empty>, <full>] shield power
+	"shield": [0.25, 0.5]  // [<empty>, <full>] shield power
 },
 
 "behaviour": {
@@ -656,7 +656,7 @@
 		"attribute": ["siege", "ret_fight", "support"],
 		"retreat": 0.6,
 		"pwr_mod": 1.0,
-		"thr_mod": 1.5
+		"thr_mod": 1.0
 	},
 	"spiderantiheavy": {
 		"role": ["anti_heavy", "mine"],
@@ -680,7 +680,7 @@
 	"shieldscout": {
 		"role": ["anti_heavy"],
 		"attribute": ["support", "melee"],
-		"limit": 8,
+		"limit": 12,
 		"retreat": 0.0
 	},
 	"shieldraid": {
@@ -692,6 +692,7 @@
 	},
 	"shieldskirm": {
 		"role": ["skirmish"],
+		"limit": 15,
 		"retreat": 0.4
 	},
 	"shieldassault": {
@@ -726,7 +727,7 @@
 	"shieldshield": {
 		"role": ["support"],
 		"attribute": ["support"],
-		"retreat": 1.1
+		"retreat": 0.66
 	},
 	"shieldaa": {
 		"role": ["anti_air"],
@@ -811,7 +812,7 @@
 	},
 	"jumpraid": {
 		"role": ["raider"],
-		"attribute": ["scout", "melee", "siege"],  // jump on attack
+		"attribute": ["scout", "siege"],  // jump on attack
 		"retreat": 0.6,
 		"pwr_mod": 1.6,
 		"limit": 4,
@@ -976,33 +977,33 @@
 		"retreat": 0.7
 	},
 	"tankraid": {
-		"role": ["riot"],
-		"attribute": ["scout"],
-		"limit": 3,
-		"retreat": 0.9
+		"role": ["scout"],
+		"thr_mod": 1.0,
+		"pwr_mod": 2.50,
+		"retreat": 0.95
 	},
 	"tankheavyraid": {
 		"role": ["raider"],
-		"limit": 2,
+		"limit": 0,
 		"thr_mod": 1.0,
 		"pwr_mod": 0.85,
 		"retreat": 0.85
 	},
 	"tankriot": {
-		"role": ["skirmish"],
+		"role": ["riot"],
 		"attribute": ["support"],
 		"limit": 1,
 		"retreat": 0.7
 	},
 	"tankassault": {
-		"role": ["assault", "mine", "heavy"],
+		"role": ["assault", "heavy"],
 		"attribute": ["melee"],
 		"retreat": 0.6,
-		"pwr_mod": 0.75,
-		"thr_mod": 0.6
+		"pwr_mod": 0.8,
+		"thr_mod": 0.7
 	},
 	"tankheavyassault": {
-		"role": ["heavy", "mine", "heavy"],
+		"role": ["heavy", "anti_heavy"],
 		"pwr_mod": 0.8,
 		"thr_mod": 0.65,
 		"retreat": 0.55
@@ -1090,22 +1091,22 @@
 	},
 	"striderfunnelweb": {
 		"role": ["heavy", "support", "air"],
-		"attribute": ["support"],
-		"retreat": 0.75,
+		"attribute": ["support", "siege"],
+		"retreat": 1.4,
 		"pwr_mod": 15.0,
 		"thr_mod": 15.0
 	},
 	"striderbantha": {
 		"role": ["heavy", "support", "heavy"],
 		"attribute": ["melee"],
-		"retreat": 0.6,
+		"retreat": 0.66,
 		"pwr_mod": 0.5,
 		"thr_mod": 0.5
 	},
 	"striderdetriment": {
 		"role": ["heavy", "support", "heavy"],
 		"attribute": ["melee"],
-		"retreat": 0.01,  // no retreat, demolish enemy base
+		"retreat": 0.00,  // no retreat, demolish enemy base
 		"pwr_mod": 0.34,
 		"thr_mod": 0.34
 	},
@@ -1145,9 +1146,10 @@
 		"thr_mod": 0.01
 	},
 	"staticheavyarty": {
-		"role": ["anti_heavy", "static", "heavy"],
+		"role": ["artillery", "static", "heavy"],
 		"limit": 5,
-		"thr_mod": 0.01
+		"thr_mod": 0.01,
+		"pwr_mod": 10.00
 	},
 	"turretheavy": {
 		"role": ["static", "support", "static"],
@@ -1158,7 +1160,7 @@
 		"thr_mod": 0.75
 	},
 	"staticarty": {
-		"role": ["static", "support", "static"],
+		"role": ["static", "support", "artillery"],
 		"thr_mod": 1.0
 	},
 	"staticantinuke": {
@@ -1166,7 +1168,7 @@
 	},
 	"turretheavylaser": {
 		"role": ["static", "heavy"],
-		"thr_mod": 1.73
+		"thr_mod": 1.85
 	},
 	"energysingu": {
 		"role": ["static", "heavy"]
@@ -1335,6 +1337,10 @@
 		"thr_mod": 0.05
 
 	},
+	"chickenlandqueen": {
+		"role": ["raider"],
+		"thr_mod": 0.05
+	},
 	"chickenspire": {
 		"role": ["static"]
 	},
@@ -1354,10 +1360,6 @@
 		"role": ["raider"],
 		"thr_mod": 0.05
 	},
-	"chickenq": {
-		"role": ["raider"],
-		"thr_mod": 0.05
-	},
 	"chickenr": {
 		"role": ["raider"],
 		"thr_mod": 0.05
@@ -1368,7 +1370,7 @@
 },
 
 // Build special units when enemy_metal*ratio > response_metal*eps; eps=teamSize*eps_step+(1-eps_step)
-// AA condition for 3v3: (enemy_air_metal*1.00 > (aa_metal+aa_cost)*1.00) and (aa_metal+aa_cost < army_metal*0.40)
+// AA condition for 3v3: (enemy_air_metal*0.90 > (aa_metal+aa_cost)*1.00) and (aa_metal+aa_cost < army_metal*0.40)
 //
 // Probability of UnitDef for AA role depends on income tier: (tierN[UnitDef]+_weight_)*enemy_air_metal/aa_metal*importance
 // armjeth probability for tier 1: (0.00+0.01)*enemy_air_metal*400.0
@@ -1387,14 +1389,14 @@
 		"ratio":      [ 0.5,       0.33,       1.50,    1.50,     0.33,         1.0,    0.5,        0.20],
 		"importance": [ 200.0,     35.0,       30.0,    200.0,    70.0,         200.0,  200.0,      300.00],
 		"max_percent": 0.80,
-		"eps_step": 0.05
+		"eps_step": 0.03
 	},
 	"riot": {
 		"vs":         ["raider"],
 		"ratio":      [ 1.25],
 		"importance": [ 180.0],
 		"max_percent": 0.35,
-		"eps_step": 0.01
+		"eps_step": 0.00
 	},
 	"scout": {
 		"vs":         ["mine", "artillery", "anti_air", "scout", "raider", "heavy", "anti_heavy"],
@@ -1412,7 +1414,7 @@
 	},
 	"anti_air": {
 		"vs":         ["air"],
-		"ratio":      [ 1.00 ],
+		"ratio":      [ 0.90 ],
 		"importance": [ 400.0],
 		"max_percent": 0.40,
 		"eps_step": 0.00
@@ -1442,7 +1444,7 @@
 		"vs":         ["heavy", "static", "support", "skirmish"],
 		"ratio":      [ 0.75,    0.65,     1.0,       1.25],
 		"importance": [ 150.0,   60.0,     40.0,      50.0],
-		"max_percent": 0.50,
+		"max_percent": 0.66,
 		"eps_step": 0.00
 	},
 	"bomber": {
@@ -1460,9 +1462,9 @@
 		"eps_step": 0.025
 	},
 	"support": {
-		"vs":         ["support", "static", "heavy"],
-		"ratio":      [ 0.75,      0.45,     0.75],
-		"importance": [ 170.0,     170.0,    170.0],
+		"vs":         ["support", "static", "heavy", "artillery"],
+		"ratio":      [ 0.75,      0.45,     0.75,    0.75],
+		"importance": [ 170.0,     170.0,    170.0,   170.0],
 		"max_percent": 0.13,
 		"eps_step": 0.00
 	}
@@ -1518,10 +1520,10 @@
 	// Metal excess to income ratio, -1 to disable
 	"excess": -1.0,
 	// Mobile to static metal pull ratio
-	"ms_pull": 0.65,
+	"ms_pull": 0.62,
 	// Max percent of mexes circuit team allowed to take.
 	// If its <1.0 then expansion obeys ms_pull rule, if >=1.0 then ms_pull doesn't affect expansion (mex, pylon).
-	"mex_max": 2.0,  // 200%
+	"mex_max": 1.0,  // 200%
 	// Construction order delay in seconds, -1 to disable
 	"build_delay": -1.0,
 
@@ -1543,9 +1545,9 @@
 	"water": [4, 1, 6, 4, 4, 3, 5],
 	"prevent": 1,  // number of preventive defences
 	"amount": {  // income bound factor
-		"offset": [-0.20, 0.20],
-		// Amount factor: 8x8 ~ 1.1, 20x20 ~ 1.0
-		"factor": [1.20, 1.00],
+		"offset": [-0.30, 0.20],
+		// Amount factor: 8x8 ~ 1.15, 20x20 ~ 1.00
+		"factor": [1.15, 1.00],
 		"map": [8, 20]
 	},
 
@@ -1694,9 +1696,9 @@
 						[0.5, ["anti_air", "builder", "anti_air", "builder"]]
 					],
 					"factorytank": [
-						[0.25, ["riot", "builder", "assault", "builder", "assault", "builder", "builder", "assault"]],
-						[0.5, ["raider", "builder", "raider", "builder", "raider", "raider", "raider", "builder", "heavy"]],
-						[0.25, ["builder", "riot", "builder", "riot", "assault", "builder", "assault"]]
+						[0.5, ["scout", "builder", "assault", "builder", "assault", "builder", "builder", "assault"]],
+						[0.25, ["scout", "builder", "raider", "builder", "assault", "scout", "builder", "heavy"]],
+						[0.25, ["builder", "scout", "builder", "riot", "assault", "builder", "assault"]]
 					],
 					"factoryspider": [
 						[0.5, ["scout", "scout", "scout", "scout", "scout", "scout", "riot", "scout", "builder", "scout", "riot", "scout", "builder"]],
@@ -1949,7 +1951,7 @@
 		// <UnitDef>: {<elements>}
 		"energysingu": {
 			// Available elements:
-			// "energy": mex or <boolean>
+			// "energy": [max energy income, mex or <boolean>]
 			// "pylon": <boolean>
 			// "porc": <boolean>
 			// "terra": <boolean>
@@ -2007,7 +2009,7 @@
 	"mex": {
 		"staticmex": {
 //			"terra": true,
-//			"energy": "mex",
+			"energy": [20.0, "mex"],
 			"porc": true
 		}
 	},

@@ -180,6 +180,9 @@ private:
 	std::unordered_set<STerrainMapMobileType::Id> workerMobileTypes;
 	std::unordered_set<CCircuitDef*> workerDefs;
 	std::map<STerrainMapArea*, std::map<CCircuitDef*, int>> buildAreas;  // area <=> worker types
+
+	virtual void Load(std::istream& is);
+	virtual void Save(std::ostream& os) const;
 };
 
 } // namespace circuit

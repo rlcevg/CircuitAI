@@ -58,7 +58,12 @@ public:
 	void Dead() { isDead = true; }
 	bool IsDead() const { return isDead; }
 
+	friend std::ostream& operator<<(std::ostream& os, const IUnitTask& data);
+	friend std::istream& operator>>(std::istream& is, IUnitTask& data);
 protected:
+	virtual void Load(std::istream& is);
+	virtual void Save(std::ostream& os) const;
+
 	ITaskManager* manager;
 	std::set<CCircuitUnit*> units;
 	Priority priority;
@@ -71,6 +76,18 @@ protected:
 	unsigned int updCount;
 	bool isDead;
 };
+
+inline std::ostream& operator<<(std::ostream& os, const IUnitTask& data)
+{
+	data.Save(os);
+	return os;
+}
+
+inline std::istream& operator>>(std::istream& is, IUnitTask& data)
+{
+	data.Load(is);
+	return is;
+}
 
 } // namespace circuit
 

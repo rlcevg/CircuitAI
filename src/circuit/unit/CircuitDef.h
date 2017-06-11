@@ -285,6 +285,33 @@ private:
 	springai::AIFloat3 midPosOffset;
 };
 
+inline CCircuitDef& CCircuitDef::operator++()
+{
+	++count;
+	return *this;
+}
+
+// FIXME: ~CCircuitDef should fail with delete
+//inline CCircuitDef CCircuitDef::operator++(int)
+//{
+//	CCircuitDef temp = *this;
+//	count++;
+//	return temp;
+//}
+
+inline CCircuitDef& CCircuitDef::operator--()
+{
+	--count;
+	return *this;
+}
+
+//inline CCircuitDef CCircuitDef::operator--(int)
+//{
+//	CCircuitDef temp = *this;
+//	count--;
+//	return temp;
+//}
+
 } // namespace circuit
 
 #endif // SRC_CIRCUIT_UNIT_CIRCUITDEF_H_

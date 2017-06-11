@@ -40,6 +40,8 @@ namespace circuit {
 #define ERROR_ENEMY_LEAVE_RADAR	(ERROR_UNKNOWN + EVENT_ENEMY_LEAVE_RADAR)
 #define ERROR_ENEMY_DAMAGED		(ERROR_UNKNOWN + EVENT_ENEMY_DAMAGED)
 #define ERROR_ENEMY_DESTROYED	(ERROR_UNKNOWN + EVENT_ENEMY_DESTROYED)
+#define ERROR_LOAD				(ERROR_UNKNOWN + EVENT_LOAD)
+#define ERROR_SAVE				(ERROR_UNKNOWN + EVENT_SAVE)
 #define LOG(fmt, ...)	GetLog()->DoLog(utils::string_format(std::string(fmt), ##__VA_ARGS__).c_str())
 
 class CGameAttribute;
@@ -121,6 +123,8 @@ private:
 	int EnemyDestroyed(CEnemyUnit* enemy);
 	int PlayerCommand(std::vector<CCircuitUnit*>& units);
 //	int CommandFinished(CCircuitUnit* unit, int commandTopicId, springai::Command* cmd);
+	int Load(std::istream& is);
+	int Save(std::ostream& os);
 	int LuaMessage(const char* inData);
 
 // ---- Units ---- BEGIN

@@ -719,8 +719,8 @@ void CBuilderManager::ReadConfig()
 			bc.isTerra = buildQueue.get("terra", false).asBool();
 
 			const Json::Value& engy = buildQueue["energy"];
-			bc.isMex = engy.isString();
-			bc.isEnergy = bc.isMex ? true : engy.asBool();
+			bc.energy = engy.get(unsigned(0), -1.f).asFloat();
+			bc.isMexEngy = engy[1].isString();
 
 			const Json::Value& hub = buildQueue["hub"];
 			bc.hub.reserve(hub.size());
@@ -826,7 +826,7 @@ void CBuilderManager::Release()
 	//       It doesn't stop scheduled GameTasks for that reason.
 	for (IUnitTask* task : buildUpdates) {
 		AbortTask(task);
-		delete task;
+		// NOTE: Do not delete task as other AbortTask may ask for it
 	}
 	buildUpdates.clear();
 }
@@ -1234,6 +1234,48 @@ void CBuilderManager::UpdateAreaUsers()
 	for (IBuilderTask* task : removeTasks) {
 		AbortTask(task);
 	}
+}
+
+void CBuilderManager::Load(std::istream& is)
+{
+//	std::streamsize y;
+//	int yo, yoyo;
+//	is >> y;
+//	is.seekg(is.tellg() + std::streampos(sizeof('\n')));
+//	is.read(reinterpret_cast<char*>(&yo), sizeof(yo));
+//	is.read(reinterpret_cast<char*>(&yoyo), sizeof(yoyo));
+//	circuit->LOG("LOAD ID: %i | %i | %i", y, yo, yoyo);
+
+	/*
+	 * Restore data
+	 */
+	for (IUnitTask* task : buildUpdates) {
+		if (task->GetType() != IUnitTask::Type::BUILDER) {
+			continue;
+		}
+		IBuilderTask* bt = static_cast<IBuilderTask*>(task);
+		if (bt->GetBuildType() < IBuilderTask::BuildType::_SIZE_) {
+			buildTasks[static_cast<IBuilderTask::BT>(bt->GetBuildType())].insert(bt);
+			buildTasksCount++;
+		}
+	}
+}
+
+void CBuilderManager::Save(std::ostream& os) const
+{
+//	std::stringstream tmp;
+//	int i = circuit->GetSkirmishAIId();
+//	tmp.write(reinterpret_cast<const char*>(&i), sizeof(i));
+//	i = 42;
+//	tmp.write(reinterpret_cast<const char*>(&i), sizeof(i));
+//	os << std::streamsize(1024) << '\n' << tmp.rdbuf();
+
+	int size = buildUpdates.size();
+	os.write(reinterpret_cast<const char*>(&size), sizeof(size));
+	for (IUnitTask* task : buildUpdates) {
+		os << task;
+	}
+	os.write(reinterpret_cast<const char*>(&buildIterator), sizeof(buildIterator));
 }
 
 } // namespace circuit

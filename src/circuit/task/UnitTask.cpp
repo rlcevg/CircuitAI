@@ -92,4 +92,23 @@ void IUnitTask::OnUnitMoveFailed(CCircuitUnit* unit)
 	)
 }
 
+#define SERIALIZE(stream, func)	\
+	utils::binary_##func(stream, priority);		\
+	utils::binary_##func(stream, type);			\
+	utils::binary_##func(stream, state);		\
+	utils::binary_##func(stream, lastTouched);	\
+	utils::binary_##func(stream, timeout);		\
+	utils::binary_##func(stream, updCount);		\
+	utils::binary_##func(stream, isDead);
+
+void IUnitTask::Load(std::istream& is)
+{
+	SERIALIZE(is, read)
+}
+
+void IUnitTask::Save(std::ostream& os) const
+{
+	SERIALIZE(os, write)
+}
+
 } // namespace circuit
