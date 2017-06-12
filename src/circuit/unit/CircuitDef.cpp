@@ -374,6 +374,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		weaponMount = bestWpMnt;
 	}
 
+	isAttacker = dps > .1f;
 	if (IsMobile() && !IsAttacker()) {  // mobile bomb?
 		WeaponDef* wd = def->GetDeathExplosion();
 		aoe = wd->GetAreaOfEffect();
@@ -394,6 +395,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			}
 			dmg += ldmg;
 			dps = ldmg * wd->GetSalvoSize();
+			isAttacker = dps > .1f;
 			// range
 			minRange = aoe;
 			for (RangeT rt = 0; rt < static_cast<RangeT>(RangeType::_SIZE_); ++rt) {
@@ -415,7 +417,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	hasAntiLand  = (targetCategory & circuit->GetLandCategory()) && canTargetLand;
 	hasAntiWater = (targetCategory & circuit->GetWaterCategory()) && canTargetWater;
 
-	isAttacker = dps > .1f;
 	// TODO: Include projectile-speed/range, armor
 	//       health /= def->GetArmoredMultiple();
 	thrDmg = pwrDmg = dmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
