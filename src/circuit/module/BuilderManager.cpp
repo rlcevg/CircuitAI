@@ -1249,16 +1249,16 @@ void CBuilderManager::Load(std::istream& is)
 	/*
 	 * Restore data
 	 */
-	for (IUnitTask* task : buildUpdates) {
-		if (task->GetType() != IUnitTask::Type::BUILDER) {
-			continue;
-		}
-		IBuilderTask* bt = static_cast<IBuilderTask*>(task);
-		if (bt->GetBuildType() < IBuilderTask::BuildType::_SIZE_) {
-			buildTasks[static_cast<IBuilderTask::BT>(bt->GetBuildType())].insert(bt);
-			buildTasksCount++;
-		}
-	}
+//	for (IUnitTask* task : buildUpdates) {
+//		if (task->GetType() != IUnitTask::Type::BUILDER) {
+//			continue;
+//		}
+//		IBuilderTask* bt = static_cast<IBuilderTask*>(task);
+//		if (bt->GetBuildType() < IBuilderTask::BuildType::_SIZE_) {
+//			buildTasks[static_cast<IBuilderTask::BT>(bt->GetBuildType())].insert(bt);
+//			buildTasksCount++;
+//		}
+//	}
 }
 
 void CBuilderManager::Save(std::ostream& os) const
@@ -1270,12 +1270,15 @@ void CBuilderManager::Save(std::ostream& os) const
 //	tmp.write(reinterpret_cast<const char*>(&i), sizeof(i));
 //	os << std::streamsize(1024) << '\n' << tmp.rdbuf();
 
-	int size = buildUpdates.size();
-	os.write(reinterpret_cast<const char*>(&size), sizeof(size));
-	for (IUnitTask* task : buildUpdates) {
-		os << task;
-	}
-	os.write(reinterpret_cast<const char*>(&buildIterator), sizeof(buildIterator));
+	/*
+	 * Save tasks
+	 */
+//	int size = buildUpdates.size();
+//	os.write(reinterpret_cast<const char*>(&size), sizeof(size));
+//	for (IUnitTask* task : buildUpdates) {
+//		os << *task;
+//	}
+//	os.write(reinterpret_cast<const char*>(&buildIterator), sizeof(buildIterator));
 }
 
 } // namespace circuit
