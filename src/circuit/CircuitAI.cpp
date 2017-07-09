@@ -731,7 +731,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 
 	const char cmdName[]   = "~name";
 	const char cmdEnd[]    = "~end";
-#endif
+//#endif
 
 	if (message[0] != '~') {
 		return 0;
@@ -749,12 +749,8 @@ int CCircuitAI::Message(int playerId, const char* message)
 
 	size_t msgLength = strlen(message);
 
-	if ((msgLength == 7) && (utils::string_to_int(&message[1], 16) == setupManager->GetKeyVSEC1())) {
-		selfD();
-	}
-
-#ifdef DEBUG_VIS
-	else if ((msgLength == strlen(cmdPos)) && (strcmp(message, cmdPos) == 0)) {
+//#ifdef DEBUG_VIS
+	if ((msgLength == strlen(cmdPos)) && (strcmp(message, cmdPos) == 0)) {
 		setupManager->PickStartPos(this, CSetupManager::StartPosType::RANDOM);
 	}
 	else if ((msgLength == strlen(cmdSelfD)) && (strcmp(message, cmdSelfD) == 0)) {

@@ -32,10 +32,10 @@
 			"tier0": [ 0.10,       0.84,        0.06,             0.00,         0.00,        0.00,           0.00,        0.00,         0.00,        0.00,          0.00],
 
 			// 9-16m Early Game - Map control still important but move towards Scythe raiding and Riot defense from raider balls.
-			"tier1": [ 0.12,       0.37,        0.07,             0.36,         0.08,        0.00,           0.00,        0.00,         0.00,        0.00,          0.00],
+			"tier1": [ 0.10,       0.48,        0.06,             0.30,         0.06,        0.00,           0.00,        0.00,         0.00,        0.00,          0.00],
 
 			// 17-24m Expanding - Good size terriotiry now, so less scouting and begin producing a little assault/arty on the side.
-			"tier2": [ 0.15,       0.23,        0.10,             0.31,         0.08,        0.08,           0.00,        0.00,         0.00,        0.05,          0.00]
+			"tier2": [ 0.10,       0.28,        0.10,             0.31,         0.08,        0.08,           0.00,        0.00,         0.00,        0.05,          0.00]
 
 			// 25-32m Expansions meet - Economy can afford to begin producing in bulk so unit compositions alter.
 	//		"tier3": [ 0.10,       0.40,        0.05,             0.30,         0.00,        0.10,           0.00,        0.00,         0.00,        0.05,          0.00],
@@ -66,7 +66,7 @@
 	},
 
 	"factorygunship": {
-		"importance": [0.95, 2.0],
+		"importance": [0.95, 1.6],
 		"require_energy": false,
 
 		"income_tier": [7, 16, 24, 32, 40, 56, 72],
@@ -111,13 +111,13 @@
 			// 25-32m Expansions meet - Time to start producing Bouy
 			"tier3": [ 0.10,      0.21,       0.02,          0.42,          0.12,       0.13,          0.00,       0.00],
 			// 33m -40m Solid Fronts - Time to start producing even more Bouy
-			"tier4": [ 0.11,      0.26,       0.02,          0.42,          0.04,       0.15,          0.00,       0.00],
+			"tier4": [ 0.10,      0.27,       0.02,          0.42,          0.04,       0.15,          0.00,       0.00],
 			// 41m - 56m Mid Game - Switch to Grizzly
-			"tier5": [ 0.14,      0.20,       0.02,          0.45,          0.02,       0.17,          0.00,       0.00],
+			"tier5": [ 0.10,      0.24,       0.02,          0.45,          0.02,       0.17,          0.00,       0.00],
 			// 57m - 72m Late Game -  MORE Grizzly
-			"tier6": [ 0.15,      0.15,       0.02,          0.48,          0.02,       0.18,          0.00,       0.00],
+			"tier6": [ 0.10,      0.20,       0.02,          0.48,          0.02,       0.18,          0.00,       0.00],
 			// 72m - inf+ Late late Game - SPAM GRIZZLY
-			"tier7": [ 0.15,      0.13,       0.02,          0.46,          0.02,       0.22,          0.00,       0.00]
+			"tier7": [ 0.10,      0.18,       0.02,          0.46,          0.02,       0.22,          0.00,       0.00]
 		},
 		"air": {
 			// 0-8m Opening - Ducks and Archers
@@ -129,13 +129,13 @@
 			// 25-32m Expansions meet - Time to start producing Bouy
 			"tier3": [ 0.10,      0.16,       0.02,          0.42,          0.12,       0.13,          0.00,       0.05],
 			// 33m -40m Solid Fronts - Time to start producing even more Bouy
-			"tier4": [ 0.11,      0.21,       0.02,          0.42,          0.04,       0.15,          0.00,       0.05],
+			"tier4": [ 0.10,      0.22,       0.02,          0.42,          0.04,       0.15,          0.00,       0.05],
 			// 41m - 56m Mid Game - Switch to Grizzly
-			"tier5": [ 0.14,      0.15,       0.02,          0.45,          0.02,       0.17,          0.00,       0.05],
+			"tier5": [ 0.10,      0.19,       0.02,          0.45,          0.02,       0.17,          0.00,       0.05],
 			// 57m - 72m Late Game -  MORE Grizzly
-			"tier6": [ 0.15,      0.15,       0.02,          0.43,          0.02,       0.18,          0.00,       0.05],
+			"tier6": [ 0.10,      0.20,       0.02,          0.43,          0.02,       0.18,          0.00,       0.05],
 			// 72m - inf+ Late late Game - SPAM GRIZZLY
-			"tier7": [ 0.15,      0.13,       0.02,          0.41,          0.02,       0.22,          0.00,       0.05]
+			"tier7": [ 0.10,      0.18,       0.02,          0.41,          0.02,       0.22,          0.00,       0.05]
 		},
 		"caretaker": 10
 	},
@@ -182,17 +182,17 @@
 			// 9-16m Early Game - Slasher/Riot with an occasional Ravager
 			"tier1": [ 0.10,     0.22,       0.58,      0.10,         0.00,      0.00,         0.00,         0.00,      0.00,           0.00],
 			// 17-24m Expanding - Less scouting and Riot, more Ravager
-			"tier2": [ 0.10,     0.10,       0.39,      0.23,         0.05,      0.10,         0.00,         0.03,      0.00,           0.00],
+			"tier2": [ 0.10,     0.10,       0.47,      0.13,         0.05,      0.12,         0.00,         0.03,      0.00,           0.00],
 			// 25-32m Expansions meet - Begin serious Ravager production
-			"tier3": [ 0.10,     0.10,       0.33,      0.21,         0.04,      0.16,         0.02,         0.04,      0.00,           0.00],
+			"tier3": [ 0.10,     0.10,       0.38,      0.16,         0.04,      0.16,         0.02,         0.04,      0.00,           0.00],
 			// 33m -40m Solid Fronts - 	Overdrive Ravager production
-			"tier4": [ 0.12,     0.10,       0.32,      0.10,         0.06,      0.23,         0.02,         0.05,      0.00,           0.00],
+			"tier4": [ 0.10,     0.10,       0.36,      0.10,         0.04,      0.23,         0.02,         0.05,      0.00,           0.00],
 			// 41m - 56m Mid Game - Drop Slashers, more Artillery
-			"tier5": [ 0.14,     0.11,       0.23,      0.07,         0.06,      0.29,         0.01,         0.05,      0.04,           0.00],
+			"tier5": [ 0.10,     0.11,       0.27,      0.07,         0.06,      0.29,         0.01,         0.05,      0.04,           0.00],
 			// 57m - 72m Late Game -  More artillery and Ravager
-			"tier6": [ 0.16,     0.17,       0.03,      0.05,         0.06,      0.38,         0.02,         0.06,      0.07,           0.00],
+			"tier6": [ 0.10,     0.17,       0.19,      0.05,         0.06,      0.28,         0.02,         0.06,      0.07,           0.00],
 			// 72m - inf+ Late late Game - Maximum Artillery
-			"tier7": [ 0.17,     0.10,       0.05,      0.02,         0.06,      0.48,         0.05,         0.00,      0.07,           0.00]
+			"tier7": [ 0.10,     0.10,       0.22,      0.02,         0.06,      0.38,         0.05,         0.00,      0.07,           0.00]
 		},
 		"air": {
 			// 0-8m Opening - Dart, Riot & Slasher
@@ -204,13 +204,13 @@
 			// 25-32m Expansions meet - Begin serious Ravager production
 			"tier3": [ 0.10,     0.10,       0.28,      0.21,         0.04,      0.16,         0.02,         0.04,      0.00,           0.05],
 			// 33m -40m Solid Fronts - 	Overdrive Ravager production
-			"tier4": [ 0.12,     0.10,       0.27,      0.10,         0.06,      0.23,         0.02,         0.05,      0.00,           0.05],
+			"tier4": [ 0.10,     0.10,       0.29,      0.10,         0.06,      0.23,         0.02,         0.05,      0.00,           0.05],
 			// 41m - 56m Mid Game - Drop Slashers, more Artillery
-			"tier5": [ 0.14,     0.11,       0.18,      0.07,         0.06,      0.29,         0.01,         0.05,      0.04,           0.05],
+			"tier5": [ 0.10,     0.11,       0.22,      0.07,         0.06,      0.29,         0.01,         0.05,      0.04,           0.05],
 			// 57m - 72m Late Game -  More artillery and Ravager
-			"tier6": [ 0.16,     0.12,       0.03,      0.05,         0.06,      0.38,         0.02,         0.06,      0.07,           0.05],
+			"tier6": [ 0.10,     0.12,       0.09,      0.05,         0.06,      0.38,         0.02,         0.06,      0.07,           0.05],
 			// 72m - inf+ Late late Game - Maximum Artillery
-			"tier7": [ 0.17,     0.10,       0.05,      0.02,         0.06,      0.43,         0.05,         0.00,      0.07,           0.05]
+			"tier7": [ 0.10,     0.10,       0.12,      0.02,         0.06,      0.43,         0.05,         0.00,      0.07,           0.05]
 		},
 		"caretaker": 10
 	},
@@ -251,7 +251,7 @@
 	},
 
 	"factoryplane": {
-		"importance": [0.9, 1.6],
+		"importance": [0.9, 1.4],
 		"require_energy": false,
 
 		"income_tier": [30, 60],
@@ -273,7 +273,7 @@
 	},
 
 	"factorytank": {
-		"importance": [0.83, 1.5],
+		"importance": [0.9, 1.5],
 		"require_energy": false,
 
 		"income_tier": [8, 16, 24, 32, 40, 56, 72],
@@ -325,9 +325,9 @@
 		"unit":      ["shieldcon", "shieldscout", "shieldraid", "shieldskirm", "shieldassault", "shieldriot", "shieldfelon", "shieldarty", "shieldbomb", "shieldshield", "shieldaa"],
 		"land": {
 			"tier0": [ 0.05,        0.05,          0.80,         0.10,          0.00,            0.00,         0.00,          0.00,         0.00,         0.00,           0.00],
-			"tier1": [ 0.10,        0.02,          0.33,         0.35,          0.05,            0.08,         0.04,          0.02,         0.00,         0.01,           0.00],
-			"tier2": [ 0.12,        0.01,          0.14,         0.30,          0.27,            0.06,         0.05,          0.02,         0.00,         0.03,           0.00],
-			"tier3": [ 0.15,        0.02,          0.00,         0.20,          0.33,            0.04,         0.08,          0.09,         0.00,         0.09,           0.00]
+			"tier1": [ 0.10,        0.01,          0.32,         0.35,          0.05,            0.08,         0.04,          0.02,         0.00,         0.03,           0.00],
+			"tier2": [ 0.10,        0.03,          0.13,         0.29,          0.26,            0.06,         0.05,          0.02,         0.00,         0.06,           0.00],
+			"tier3": [ 0.10,        0.07,          0.00,         0.19,          0.31,            0.04,         0.08,          0.09,         0.00,         0.12,           0.00]
 		},
 
 		"caretaker": 10
@@ -349,7 +349,7 @@
 	},
 
 	"striderhub": {
-		"importance": [0, 1.4],
+		"importance": [0, 1.35],
 		"require_energy": false,
 
 		"income_tier": [60, 80, 100],
@@ -382,14 +382,14 @@
 
 "quota": {
 	"scout": 1,  // max scout units out of raiders
-	"raid": [6.0, 18.0],  // [<min>, <avg>] power of raider squad
+	"raid": [6.0, 20.0],  // [<min>, <avg>] power of raider squad
 	"attack": 6.0,  // min power of attack group
 	"def_rad": 475,  // defence radius
 	"thr_mod": {
 		"attack": [1.00, 1.10],  // [<min>, <max>] enemy threat modifier for target selection of attack task
-		"defence": [0.87, 0.87]  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
+		"defence": [0.85, 0.9]  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
 	},
-	"aa_threat": 42.0,  // anti-air threat threshold, air factories will stop production when AA threat exceeds
+	"aa_threat": 80.0,  // anti-air threat threshold, air factories will stop production when AA threat exceeds
 	"slack_mod": 3
 },
 
@@ -397,7 +397,7 @@
 "retreat": {
 	"builder": 0.75,  // default value for all builders
 	"fighter": 0.45,  // default value for all not-builder units
-	"shield": [0.25, 0.5]  // [<empty>, <full>] shield power
+	"shield": [0.25, 0.4]  // [<empty>, <full>] shield power
 },
 
 "behaviour": {
@@ -458,22 +458,22 @@
 	},
 	"cloakskirm": {
 		"role": ["assault", "skirmish"],
-		"pwr_mod": 1.25,
-		"limit": 20,
+		"pwr_mod": 1.00,
+		"limit": 16,
 		"retreat": 0.25  // mostly disposable
 	},
 	"cloakriot": {
 		"role": ["riot"],
 		"attribute": ["support"],
 		"retreat": 0.65,
-		"pwr_mod": 2.1,
+		"pwr_mod": 1.8,
 		"thr_mod": 2.0
 	},
 	"cloakassault": {
 		"role": ["skirmish", "riot", "heavy"],
 		"attribute": ["support"],
 		"retreat": 0.55,  // assaults need to assault
-		"pwr_mod": 1.3,
+		"pwr_mod": 1.1,
 		"thr_mod": 1.29
 	},
 	"cloakarty": {
@@ -493,6 +493,7 @@
 	},
 	"cloakjammer": {
 		"role": ["support"],
+		"retreat": 0.9,
 		"limit": 1
 	},
 	"cloakaa": {
@@ -519,7 +520,7 @@
 		"role": ["anti_heavy", "air"],
 		"thr_mod": 0.1,
 		"pwr_mod": 0.1,
-		"limit": 3,
+		"limit": 5,
 		"retreat": 0.9
 	},
 	"gunshipskirm": {
@@ -530,8 +531,8 @@
 	},
 	"gunshipraid": {
 		"role": ["scout", "air"],
-		"limit": 1,
-		"retreat": 0.8,
+		"limit": 3,
+		"retreat": 0.9,
 		"pwr_mod": 3,
 		"thr_mod": 1
 	},
@@ -674,13 +675,12 @@
 
 	// factoryshield
 	"shieldcon": {
-		"role": ["builder", "static", "builder"],
+		"role": ["builder", "static"],
 		"retreat": 1.3
 	},
 	"shieldscout": {
 		"role": ["anti_heavy"],
 		"attribute": ["support", "melee"],
-		"limit": 12,
 		"retreat": 0.0
 	},
 	"shieldraid": {
@@ -696,9 +696,9 @@
 		"retreat": 0.4
 	},
 	"shieldassault": {
-		"role": ["assault"],
+		"role": ["assault", "support"],
 		"attribute": ["support"],
-		"retreat": 0.85,
+		"retreat": 0.5,
 		"pwr_mod": 1.2,
 		"thr_mod": 1.2
 	},
@@ -710,13 +710,13 @@
 		"thr_mod": 1.7
 	},
 	"shieldfelon": {
-		"role": ["assault",	"support", "heavy"],
-		"retreat": 0.9,
+		"role": ["heavy", "support"],
+		"retreat": 0.55,
 		"pwr_mod": 1.5,
 		"thr_mod": 2.5
 	},
 	"shieldarty": {
-		"role": ["anti_heavy"],
+		"role": ["anti_heavy", "support"],
 		"retreat": 0.8,
 		"pwr_mod": 1.5,
 		"thr_mod": 1.5
@@ -725,7 +725,7 @@
 		"role": ["mine"]
 	},
 	"shieldshield": {
-		"role": ["support"],
+		"role": ["super", "heavy"],
 		"attribute": ["support"],
 		"retreat": 0.66
 	},
@@ -923,9 +923,8 @@
 		"retreat": 0.99
 	},
 	"planefighter": {
-		"role": ["scout", "air"],
+		"role": ["anti_air", "air"],
 		"attribute": ["boost"],
-		"limit": 1,
 		"pwr_mod": 2.0,
 		"thr_mod": 1.5,
 		"retreat": 0.8
@@ -940,10 +939,10 @@
 	},
 	"bomberprec": {
 		"role": ["bomber", "air"],
-		"fire_state": "hold",
+		"attribute": ["siege"],
 		"limit": 3,
 		"retreat": 0.9,
-		"pwr_mod": 1.25,
+		"pwr_mod": 0.1,
 		"thr_mod": 0.1
 	},
 	"bomberriot": {
@@ -952,14 +951,15 @@
 		"retreat": 0.6
 	},
 	"bomberdisarm": {
-		"role": ["anti_heavy", "air"],
-		"limit": 0,
+		"role": ["support", "air"],
+		"limit": 2,
 		"retreat": 0.99,
-		"thr_mod": 0.1
+		"pwr_mod": 0.01,
+		"thr_mod": 0.01
 	},
 	"bomberheavy": {
 		"role": ["bomber", "air"],
-		"limit": 3,
+		"limit": 4,
 		"retreat": 0.99,
 		"pwr_mod": 0.5,
 		"thr_mod": 0.1
@@ -1017,7 +1017,7 @@
 		"thr_mod": 0.1
 	},
 	"tankheavyarty": {
-		"role": ["support", "super"],
+		"role": ["support"],
 		"attribute": ["siege"],
 		"limit": 1,
 		"retreat": 0.99,
@@ -1064,7 +1064,6 @@
 	// striderhub
 	"striderantiheavy": {
 		"role": ["anti_heavy", "heavy"],
-		"fire_state": "return",
 		"attribute": ["melee"],
 		"retreat": 0.7
 	},
@@ -1106,7 +1105,7 @@
 	"striderdetriment": {
 		"role": ["heavy", "support", "heavy"],
 		"attribute": ["melee"],
-		"retreat": 0.00,  // no retreat, demolish enemy base
+		"retreat": 0.50,  // deffo retreat, running into nab annihlator farm and sploding is silly :)
 		"pwr_mod": 0.34,
 		"thr_mod": 0.34
 	},
@@ -1146,7 +1145,7 @@
 		"thr_mod": 0.01
 	},
 	"staticheavyarty": {
-		"role": ["artillery", "static", "heavy"],
+		"role": ["artillery", "support", "heavy"],
 		"limit": 5,
 		"thr_mod": 0.01,
 		"pwr_mod": 10.00
@@ -1335,7 +1334,6 @@
 	"chickenflyerqueen": {
 		"role": ["air"],
 		"thr_mod": 0.05
-
 	},
 	"chickenlandqueen": {
 		"role": ["raider"],
@@ -1406,9 +1404,9 @@
 		"eps_step": 0.00
 	},
 	"artillery": {
-		"vs":         ["static", "artillery", "support", "anti_heavy"],
-		"ratio":      [ 0.75,     1.25,        1.50,      0.5],
-		"importance": [ 175.0,    45.0,        45.0,      90.0],
+		"vs":         ["static", "artillery", "support", "anti_heavy", "super"],
+		"ratio":      [ 0.75,     1.25,        1.50,      0.5,          2.0],
+		"importance": [ 175.0,    45.0,        45.0,      90.0,         90.0],
 		"max_percent": 0.3,
 		"eps_step": 0.00
 	},
@@ -1416,15 +1414,8 @@
 		"vs":         ["air"],
 		"ratio":      [ 0.90 ],
 		"importance": [ 400.0],
-		"max_percent": 0.40,
-		"eps_step": 0.00
-	},
-	"builder": {
-		"vs":         ["assault", "static", "heavy", "builder"],
-		"ratio":      [ 1.5,       1.6,      1.6,     1.6],
-		"importance": [ 300.0,     300.0,    300.0,   300.0],
-		"max_percent": 0.17,
-		"eps_step": 0.00
+		"max_percent": 0.66,
+		"eps_step": 0.01
 	},
 	"anti_sub": {
 		"vs":         ["sub"],
@@ -1434,23 +1425,23 @@
 		"eps_step": 0.0
 	},
 	"anti_heavy": {
-		"vs":         ["heavy", "artillery", "support", "anti_heavy", "commander"],
-		"ratio":      [ 0.66,    1.0,         1.2,       1.0,          0.45],
-		"importance": [ 150.0,   80.0,        50.0,      80.0,         80.0],
+		"vs":         ["heavy", "artillery", "support", "anti_heavy", "commander", "super"],
+		"ratio":      [ 0.66,    1.0,         1.00,       1.0,          0.45,       2.00],
+		"importance": [ 150.0,   80.0,        100.0,      80.0,         80.0,       150.0],
 		"max_percent": 0.50,
 		"eps_step": 0.00
 	},
 	"heavy": {
-		"vs":         ["heavy", "static", "support", "skirmish"],
-		"ratio":      [ 0.75,    0.65,     1.0,       1.25],
-		"importance": [ 150.0,   60.0,     40.0,      50.0],
+		"vs":         ["heavy", "static", "support", "skirmish", "super"],
+		"ratio":      [ 0.75,    0.65,     1.0,       1.25,       1.50],
+		"importance": [ 150.0,   60.0,     65.0,      50.0,       100.0],
 		"max_percent": 0.66,
 		"eps_step": 0.00
 	},
 	"bomber": {
-		"vs":         ["heavy", "anti_heavy", "artillery"],
-		"ratio":      [ 0.75,    0.50,         0.50],
-		"importance": [ 30.0,    60.0,         60.0],
+		"vs":         ["heavy", "anti_heavy", "artillery", "super"],
+		"ratio":      [ 0.75,    0.50,         0.50,		2.0],
+		"importance": [ 30.0,    60.0,         60.0,		90.0],
 		"max_percent": 0.20,
 		"eps_step": 0.00
 	},
@@ -1459,17 +1450,30 @@
 		"ratio":      [ 1.25,      1.25,   1.25],
 		"importance": [ 50.0,      90.0,   75.0],
 		"max_percent": 0.35,
-		"eps_step": 0.025
+		"eps_step": 0.02
+	},
+	"super": {
+		"vs":         ["heavy", "static", "support", "skirmish", "artillery", "super"],
+		"ratio":      [ 0.65,    0.50,     0.66,       0.66,		1.00,		1.50],
+		"importance": [ 150.0,   90.0,     150.0,      90.0,		250.0,		100.0],
+		"max_percent": 0.23,
+		"eps_step": 0.00
 	},
 	"support": {
-		"vs":         ["support", "static", "heavy", "artillery"],
-		"ratio":      [ 0.75,      0.45,     0.75,    0.75],
-		"importance": [ 170.0,     170.0,    170.0,   170.0],
-		"max_percent": 0.13,
+		"vs":         ["static", "support", "skirmish", "artillery", "super"],
+		"ratio":      [0.50,     1.00,       0.66,		1.00,		1.00],
+		"importance": [90.0,     100.0,      60.0,		60.0,		100.0],
+		"max_percent": 0.10,
+		"eps_step": 0.00
+	},
+	"builder": {
+		"vs":         ["static", "builder"],
+		"ratio":      [ 1.5,       3.0],
+		"importance": [ 300.0,      3000.0],
+		"max_percent": 0.125,
 		"eps_step": 0.00
 	}
 },
-
 "economy": {
 	// Limits of energy structures partly defined by parabola in space (structure_cost/energyMake, unit_limit).
 	// Parabola defined by 3 control points.
@@ -1497,8 +1501,8 @@
 		"land": {
 			// "<energy_def>": [<lower limit>, <upper limit>]
 			// limit = random(<lower limit>..<upper limit>)
-			"energysingu": [1, 2],
-			"energyfusion": [2, 4],
+			"energysingu": [1, 3],
+			"energyfusion": [3, 6],
 			"energysolar": [20, 20]
 		},
 		"water": {
@@ -1506,29 +1510,29 @@
 			"energyfusion": [4],
 			"energywind": [20]
 		},
-		"factor": 0.55,  // income factor for energy
+		"factor": 0.625,  // income factor for energy
 
 		"pylon": ["energypylon", "energysolar", "energywind"]
 	},
 
 	// Scales metal income
 	// ecoFactor = teamSize*eps_step+(1-eps_step)
-	"eps_step": 0.23,
+	"eps_step": 0.25,
 
 	// Mobile buildpower to metal income ratio
-	"buildpower": 1.3,
+	"buildpower": 1.075,
 	// Metal excess to income ratio, -1 to disable
 	"excess": -1.0,
 	// Mobile to static metal pull ratio
-	"ms_pull": 0.62,
+	"ms_pull": 0.58,
 	// Max percent of mexes circuit team allowed to take.
 	// If its <1.0 then expansion obeys ms_pull rule, if >=1.0 then ms_pull doesn't affect expansion (mex, pylon).
-	"mex_max": 1.0,  // 200%
+	"mex_max": 1.0,  // 100%
 	// Construction order delay in seconds, -1 to disable
 	"build_delay": -1.0,
 
 	// New factory switch interval, in seconds
-	"switch": 600,
+	"switch": 780,
 
 	"terra": "terraunit",
 	"airpad": "staticrearm",
@@ -1545,9 +1549,9 @@
 	"water": [4, 1, 6, 4, 4, 3, 5],
 	"prevent": 1,  // number of preventive defences
 	"amount": {  // income bound factor
-		"offset": [-0.30, 0.20],
-		// Amount factor: 8x8 ~ 1.15, 20x20 ~ 1.00
-		"factor": [1.15, 1.00],
+		"offset": [-0.40, 0.20],
+		// Amount factor: 8x8 ~ 1.15, 20x20 ~ 0.95
+		"factor": [1.15, 0.95],
 		"map": [8, 20]
 	},
 
@@ -1558,7 +1562,7 @@
 		"unit":   ["raveparty", "staticnuke", "staticheavyarty", "zenith"],
 		"weight": [ 0.3,         0.2,          0.4,               0.1],
 
-		"condition": [35, 500]  // [<Minimum income>, <maximum seconds to build>]
+		"condition": [35, 600]  // [<Minimum income>, <maximum seconds to build>]
 	},
 
 	// Fallback defence
@@ -1951,7 +1955,7 @@
 		// <UnitDef>: {<elements>}
 		"energysingu": {
 			// Available elements:
-			// "energy": [max energy income, mex or <boolean>]
+			// "energy": [max energy income, <"mex"|true|false>]
 			// "pylon": <boolean>
 			// "porc": <boolean>
 			// "terra": <boolean>
@@ -2009,7 +2013,7 @@
 	"mex": {
 		"staticmex": {
 //			"terra": true,
-			"energy": [20.0, "mex"],
+			"energy": [50, true],
 			"porc": true
 		}
 	},
@@ -2027,20 +2031,52 @@
 		"raveparty": {
 			"hub": [[
 					{"unit": "staticradar", "category": "radar", "offset": {"back": 40}},
-					{"unit": "turretaafar", "category": "defence", "offset": {"left": 120}, "condition": "air"},
-					{"unit": "turretlaser", "category": "defence", "offset": [-80, 80]},
+					{"unit": "turretaafar", "category": "defence", "offset": {"left": -220}, "condition": "air"},
+					{"unit": "turretlaser", "category": "defence", "offset": [-80, 180]},
 					{"unit": "turretmissile", "category": "defence", "offset": [80, 80]},
-					{"unit": "turretriot", "category": "defence", "offset": [80, -80]},
+					{"unit": "turretaafar", "category": "defence", "offset": {"front": -120}, "condition": "air"},
+					{"unit": "turretriot", "category": "defence", "offset": [180, -80]},
+					{"unit": "turretheavy", "category": "defence", "offset": [-80, -80]},
+					{"unit": "turretmissile", "category": "defence", "offset": [-70, 170]},
+					{"unit": "turretmissile", "category": "defence", "offset": [80, 80]},
+					{"unit": "turretlaser", "category": "defence", "offset": [-80, 180]},
+					{"unit": "turretriot", "category": "defence", "offset": [180, -80]},
+					{"unit": "turretlaser", "category": "defence", "offset": [-80, -80]},
+					{"unit": "turretaafar", "category": "defence", "offset": {"front": 220}, "condition": "air"},
+					{"unit": "turretheavy", "category": "defence", "offset": [180, -80]},
+					{"unit": "turretmissile", "category": "defence", "offset": [-70, 170]},
+					{"unit": "turretmissile", "category": "defence", "offset": [80, 80]},
+					{"unit": "turretlaser", "category": "defence", "offset": [-80, 180]},
+					{"unit": "turretmissile", "category": "defence", "offset": [-70, 70]},
+					{"unit": "turretriot", "category": "defence", "offset": [180, -80]},
+					{"unit": "turretaafar", "category": "defence", "offset": {"front": -230}, "condition": "air"},
+					{"unit": "turretmissile", "category": "defence", "offset": [180, 80]},
 					{"unit": "turretmissile", "category": "defence", "offset": [-80, -80]}
 				]]
 		},
 		"mahlazer": {
 			"hub": [[
 					{"unit": "staticradar", "category": "radar", "offset": {"back": 40}},
-					{"unit": "turretaafar", "category": "defence", "offset": {"left": 120}, "condition": "air"},
-					{"unit": "turretlaser", "category": "defence", "offset": [-80, 80]},
+					{"unit": "turretaafar", "category": "defence", "offset": {"left": -220}, "condition": "air"},
+					{"unit": "turretlaser", "category": "defence", "offset": [-80, 180]},
 					{"unit": "turretmissile", "category": "defence", "offset": [80, 80]},
-					{"unit": "turretriot", "category": "defence", "offset": [80, -80]},
+					{"unit": "turretaafar", "category": "defence", "offset": {"front": -120}, "condition": "air"},
+					{"unit": "turretriot", "category": "defence", "offset": [180, -80]},
+					{"unit": "turretlaser", "category": "defence", "offset": [-80, -80]},
+					{"unit": "turretheavy", "category": "defence", "offset": [-70, 170]},
+					{"unit": "turretmissile", "category": "defence", "offset": [80, 80]},
+					{"unit": "turretlaser", "category": "defence", "offset": [-80, 180]},
+					{"unit": "turretriot", "category": "defence", "offset": [180, -80]},
+					{"unit": "turretlaser", "category": "defence", "offset": [-80, -80]},
+					{"unit": "turretaafar", "category": "defence", "offset": {"front": 220}, "condition": "air"},
+					{"unit": "turretriot", "category": "defence", "offset": [180, -80]},
+					{"unit": "turretmissile", "category": "defence", "offset": [-70, 170]},
+					{"unit": "turretmissile", "category": "defence", "offset": [80, 80]},
+					{"unit": "turretlaser", "category": "defence", "offset": [-80, 180]},
+					{"unit": "turretmissile", "category": "defence", "offset": [-70, 70]},
+					{"unit": "turretriot", "category": "defence", "offset": [180, -80]},
+					{"unit": "turretheavy", "category": "defence", "offset": {"front": -230}, "condition": "air"},
+					{"unit": "turretmissile", "category": "defence", "offset": [180, 80]},
 					{"unit": "turretmissile", "category": "defence", "offset": [-80, -80]}
 				]]
 		},

@@ -60,14 +60,13 @@ CSetupManager::~CSetupManager()
 void CSetupManager::DisabledUnits(const char* setupScript)
 {
 	std::string script(setupScript);
-	std::regex patternDisabled("\\[modoptions\\]\\s*\\{[^\\}]*disabledunits=(.*);[^\\}]*\\}", std::regex::ECMAScript | std::regex::icase);
-	std::string::const_iterator start = script.begin();
-	std::string::const_iterator end = script.end();
-	std::smatch section;
-	auto disableUnits = [this, &section, &start, &end](const std::string& opt_str) {
-		start = opt_str.begin();
-		end = opt_str.end();
+	std::regex patternModoptions("\\[modoptions\\]\\s*\\{([\\s\\S]+?(?=\\}\\s*(\\[|$)))", std::regex::ECMAScript | std::regex::icase);
+	std::regex patternDisabled("disabledunits=(.*);", std::regex::ECMAScript | std::regex::icase);
+	auto disableUnits = [this](const std::string& opt_str) {
+		std::string::const_iterator start = opt_str.begin();
+		std::string::const_iterator end = opt_str.end();
 		std::regex patternUnit("\\w+");
+		std::smatch section;
 		while (std::regex_search(start, end, section, patternUnit)) {
 			CCircuitDef* cdef = circuit->GetCircuitDef(std::string(section[0]).c_str());
 			if (cdef != nullptr) {
@@ -77,9 +76,14 @@ void CSetupManager::DisabledUnits(const char* setupScript)
 		}
 	};
 
-	if (std::regex_search(start, end, section, patternDisabled)) {
-		// !setoptions disabledunits=armwar+armpw+raveparty+zenith+mahlazer
-		disableUnits(section[1]);
+	std::smatch modoptions;
+	if (std::regex_search(script, modoptions, patternModoptions)) {
+		std::string modoptionsBody = modoptions[1];
+		std::smatch disabledunits;
+		if (std::regex_search(modoptionsBody, disabledunits, patternDisabled)) {
+			// !setoptions disabledunits=armwar+armpw+raveparty+zenith+mahlazer
+			disableUnits(disabledunits[1]);
+		}
 	}
 
 	OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
@@ -479,12 +483,10 @@ void CSetupManager::Welcome() const
 	delete options;
 
 	const int id = circuit->GetSkirmishAIId();
-	const int vsec = GenerateVSEC1();
 	std::string welcome("/say "/*"a:"*/);
 
 	welcome += std::string(name) + " " + std::string(version) +
-			utils::int_to_string(id, " (%i)  Good fun, have luck!\n") +
-			utils::int_to_string(vsec, "VSEC v1.0 :ARMED: 0x%04X");
+			utils::int_to_string(id, " (%i)  Good fun, have luck!");
 	circuit->GetGame()->SendTextMessage(welcome.c_str(), 0);
 #endif
 }
@@ -705,41 +707,6 @@ void CSetupManager::OverrideConfig()
 	}
 
 	delete options;
-}
-
-int CSetupManager::GenerateVSEC1() const
-{
-	/*
-	 * Lights out: https://www.jaapsch.net/puzzles/lights.htm#descmini
-	 */
-	static std::vector<int> puzzles = {
-		0x0505, 0xF99F, 0x4422, 0x7777,
-		0x353B, 0x82EF, 0x7BEF, 0xD7EF,
-		0x7755, 0xB33B, 0xB5AD, 0x7733,
-		0x36A4, 0x6C46, 0xC670, 0x8D89,
-
-		0x9669, 0x6996, 0x00FF, 0x6C2B,
-		0x91BE, 0xB0BE, 0x8285, 0x9BD2,
-		0xD211, 0x242D, 0x6116, 0x4A52,
-		0x0412, 0x25A5, 0xFFFE, 0x8012
-	};
-	int vsec = puzzles[rand() % puzzles.size()];
-
-	static std::vector<int> movemx = {
-		0x101B, 0x2027, 0x404E, 0x808D,
-		0x01B1, 0x0272, 0x04E4, 0x08D8,
-		0x1B10, 0x2720, 0x4E40, 0x8D80,
-		0xB101, 0x7202, 0xE404, 0xD808
-	};
-	int x = 0;
-	for (unsigned k = 0; k < 4 * 4; ++k) {
-		if (vsec & (1 << k)) {
-			x ^= movemx[k];
-		}
-	}
-	vsecKey = x;
-
-	return vsec;
 }
 
 } // namespace circuit
