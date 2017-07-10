@@ -1128,6 +1128,7 @@ void CEconomyManager::Init()
 				}
 				economy->SendUnits(migrants, ownerId);
 				circuit->Resign(ownerId);
+				return;
 			}
 		}
 

@@ -55,6 +55,7 @@ using namespace springai;
 #define RELEASE_CONFIG		100
 #define RELEASE_COMMANDER	101
 #define RELEASE_CORRUPTED	102
+#define RELEASE_RESIGN		103
 #ifdef DEBUG
 	#define PRINT_TOPIC(txt, topic)	LOG("<CircuitAI> %s topic: %i, SkirmishAIId: %i", txt, topic, skirmishAIId)
 #else
@@ -620,9 +621,11 @@ int CCircuitAI::Release(int reason)
 		return 0;
 	}
 
-	factoryManager->Release();
-	builderManager->Release();
-	militaryManager->Release();
+	if (reason == RELEASE_RESIGN) {
+		factoryManager->Release();
+		builderManager->Release();
+		militaryManager->Release();
+	}
 
 	if (reason == 1) {  // @see SReleaseEvent
 		gameAttribute->SetGameEnd(true);
@@ -683,7 +686,7 @@ int CCircuitAI::Update(int frame)
 {
 	lastFrame = frame;
 	if (isResigned) {
-		Release(0);
+		Release(RELEASE_RESIGN);
 		NotifyResign();
 		return 0;
 	}
