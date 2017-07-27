@@ -815,6 +815,9 @@ int CCircuitAI::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 
 int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 {
+	if (unit->GetUnit()->IsBeingBuilt()) {
+		return 0;  // created by gadget
+	}
 	TRY_UNIT(this, unit,
 		unit->GetUnit()->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {0.0f});
 		if (unit->GetCircuitDef()->GetUnitDef()->IsAbleToCloak()) {

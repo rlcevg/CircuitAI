@@ -325,7 +325,7 @@ bool CMetalManager::IsMexInFinished(int index) const
 
 int CMetalManager::GetMexToBuild(const AIFloat3& pos, MexPredicate& predicate)
 {
-	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
+	int index = FindNearestCluster(pos);
 	if (index < 0) {
 		return -1;
 	}

@@ -992,17 +992,21 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 		UnitDef* ndef = nano->GetDef();
 		if (ndef->GetUnitDefId() == nanoId && (nano->GetTeam() == teamId) && !nano->IsBeingBuilt()) {
 			CCircuitUnit* ass = this->circuit->GetTeamUnit(nano->GetUnitId());
-			nanos.insert(ass);
+			// NOTE: OOAICallback::GetFriendlyUnits may return yet unregistered units created in GamePreload
+			if (ass != nullptr) {
+				nanos.insert(ass);
 
-			std::set<CCircuitUnit*>& facs = assists[ass];
-			if (facs.empty()) {
-				factoryPower += ass->GetBuildSpeed();
+				std::set<CCircuitUnit*>& facs = assists[ass];
+				if (facs.empty()) {
+					factoryPower += ass->GetBuildSpeed();
+				}
+				facs.insert(unit);
 			}
-			facs.insert(unit);
 		}
 		delete ndef;
+		delete nano;
 	}
-	utils::free_clear(units);
+//	utils::free_clear(units);
 
 	if (factories.empty()) {
 		this->circuit->GetSetupManager()->SetBasePos(pos);
