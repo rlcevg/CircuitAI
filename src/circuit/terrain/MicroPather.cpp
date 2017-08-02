@@ -634,6 +634,169 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*
 		tempEndNode->isEndNode = 1;
 	}
 
+	while (!open.Empty()) {
+		PathNode* node = open.Pop();
+
+		if (node->isEndNode) {
+			void* theEndNode = (void*) ((((size_t) node) - ((size_t) pathNodeMem)) / sizeof(PathNode));
+
+			GoalReached(node, startNode, theEndNode, path);
+			*cost = node->costFromStart;
+			isRunning = false;
+
+			// unmark the endNodes
+			for (unsigned i = 0; i < endNodes.size(); i++) {
+				PathNode* tempEndNode = &pathNodeMem[(size_t) endNodes[i]];
+				tempEndNode->isEndNode = 0;
+			}
+
+			return SOLVED;
+		} else {
+			// we have not reached the goal, add the neighbors (emulate GetNodeNeighbors)
+			const int indexStart = (((size_t) node) - ((size_t) pathNodeMem)) / sizeof(PathNode);
+
+			#ifdef USE_ASSERTIONS
+			const int ystart = indexStart / mapSizeX;
+			const int xstart = indexStart - ystart * mapSizeX;
+
+			// no node can be at the edge!
+			assert((xstart > 0) && (xstart < mapSizeX - 1));
+			assert((ystart > 0) && (ystart < mapSizeY - 1));
+			#endif
+
+			const float nodeCostFromStart = node->costFromStart;
+
+			for (int i = 0; i < 8; ++i) {
+				const int indexEnd = offsets[i] + indexStart;
+
+				if (!canMoveArray[indexEnd]) {
+					continue;
+				}
+
+				PathNode* directNode = &pathNodeMem[indexEnd];
+
+				if (directNode->frame != frame) {
+					directNode->Reuse(frame);
+				}
+
+				#ifdef USE_ASSERTIONS
+				const int yend = indexEnd / mapSizeX;
+				const int xend = indexEnd - yend * mapSizeX;
+
+				// no node can be at the edge!
+				assert((xend > 0) && (xend < mapSizeX - 1));
+				assert((yend > 0) && (yend < mapSizeY - 1));
+
+				// we can move to that spot
+				assert(canMoveArray[yend * mapSizeX + xend]);
+				#endif
+
+				float newCost = nodeCostFromStart;
+
+				const float nodeCost = costArray[indexEnd];
+				// sqrt(2) ~= 1.4142f
+				newCost += (i > 3) ? nodeCost * SQRT_2 : nodeCost;
+
+				if (directNode->costFromStart <= newCost) {
+					// do nothing, this path is not better than existing one
+					continue;
+				}
+
+				// it's better, update its data
+				directNode->parent = node;
+				directNode->costFromStart = newCost;
+				directNode->totalCost = newCost + LeastCostEstimateLocal(indexEnd);
+
+				#ifdef USE_ASSERTIONS
+				assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
+				#endif
+
+				if (directNode->inOpen) {
+					open.Update(directNode);
+				} else {
+					directNode->inClosed = 0;
+					open.Push(directNode);
+				}
+			}
+		}
+
+		node->inClosed = 1;
+	}
+
+	// unmark the endNodes
+	for (unsigned i = 0; i < endNodes.size(); i++) {
+		PathNode* tempEndNode = &pathNodeMem[(size_t)endNodes[i]];
+		tempEndNode->isEndNode = 0;
+	}
+
+	isRunning = false;
+	return NO_SOLUTION;
+}
+
+int CMicroPather::FindBestPathToAnyGivenPointSafe(void* startNode, std::vector<void*>& endNodes, std::vector<void*>& targets, std::vector<void*>* path, float* cost)
+{
+	assert(!isRunning);
+	isRunning = true;
+	*cost = 0.0f;
+
+	if (endNodes.size() <= 0) {
+		// just fail fast
+		isRunning = false;
+		return NO_SOLUTION;
+	}
+
+	{
+		// select best goal node
+		void* endNode = endNodes[0];
+		const int yStart = (size_t)startNode / mapSizeX;
+		const int xStart = (size_t)startNode - yStart * mapSizeX;
+
+		float leastCost = std::numeric_limits<float>::max();
+		for (void*& target : targets) {
+			FixNode(&target);
+			const int y = (size_t)target / mapSizeX;
+			const int x = (size_t)target - y * mapSizeX;
+			const float cost = DiagonalDistance(xStart, yStart, x, y);
+
+			if (leastCost > cost) {
+				leastCost = cost;
+				endNode = target;
+			}
+		}
+		FixStartEndNode(&startNode, &endNode);
+
+		if (!canMoveArray[(size_t)startNode]) {
+			// L("Pather: trying to move from a blocked start pos");
+		}
+	}
+
+	++frame;
+
+	if (frame > 65534) {
+		// L("frame > 65534, pather reset needed");
+		Reset();
+	}
+
+	// Make the priority queue
+	OpenQueueBH open(heapArrayMem);
+
+	{
+		const float estToGoal = LeastCostEstimateLocal((size_t)startNode);
+
+		PathNode* tempStartNode = &pathNodeMem[(size_t) startNode];
+		tempStartNode->Reuse(frame);
+		tempStartNode->costFromStart = 0;
+		tempStartNode->totalCost = estToGoal;
+		open.Push(tempStartNode);
+	}
+
+	// mark the endNodes
+	for (unsigned i = 0; i < endNodes.size(); i++) {
+		FixNode(&endNodes[i]);
+		PathNode* tempEndNode = &pathNodeMem[(size_t) endNodes[i]];
+		tempEndNode->isEndNode = 1;
+	}
+
 	static std::array<std::function<bool (float diff)>, 2> peakCheck = {
 		[](float diff) { return diff > 0; },
 		[](float diff) { return diff < 0; }

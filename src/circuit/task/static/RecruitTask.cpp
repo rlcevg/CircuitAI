@@ -123,7 +123,7 @@ void CRecruitTask::Finish()
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int buildDelay = circuit->GetEconomyManager()->GetBuildDelay();
 	if (buildDelay > 0) {
-		IUnitTask* task = circuit->GetFactoryManager()->EnqueueWait(buildDelay);
+		IUnitTask* task = circuit->GetFactoryManager()->EnqueueWait(false, buildDelay);
 		decltype(units) tmpUnits = units;
 		for (CCircuitUnit* unit : tmpUnits) {
 			manager->AssignTask(unit, task);

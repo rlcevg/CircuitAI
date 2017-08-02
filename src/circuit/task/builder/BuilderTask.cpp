@@ -141,7 +141,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 			}
 			if ((*alu->GetCircuitDef() == *buildDef) && au->IsBeingBuilt()) {
 				const AIFloat3& pos = alu->GetPos(frame);
-				if (terrainManager->CanBuildAt(unit, pos)) {
+				if (terrainManager->CanBuildAtSafe(unit, pos)) {
 					TRY_UNIT(circuit, unit,
 						u->Build(buildUDef, pos, au->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 					)
@@ -396,7 +396,7 @@ void IBuilderTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, flo
 	}
 
 	CTerrainManager::TerrainPredicate predicate = [terrainManager, builder](const AIFloat3& p) {
-		return terrainManager->CanBuildAt(builder, p);
+		return terrainManager->CanBuildAtSafe(builder, p);
 	};
 	buildPos = terrainManager->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
 }

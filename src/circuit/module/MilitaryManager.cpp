@@ -736,23 +736,18 @@ void CMilitaryManager::FillSafePos(const AIFloat3& pos, STerrainMapArea* area, F
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	int frame = circuit->GetLastFrame();
 
-	const std::set<IFighterTask*>& atkTasks = GetTasks(IFighterTask::FightType::ATTACK);
-	for (IFighterTask* task : atkTasks) {
-		const AIFloat3& ourPos = static_cast<ISquadTask*>(task)->GetLeaderPos(frame);
-		if (terrainManager->CanMoveToPos(area, ourPos)) {
-			outPositions.push_back(ourPos);
+	const std::array<IFighterTask::FightType, 2> types = {IFighterTask::FightType::ATTACK, IFighterTask::FightType::DEFEND};
+	for (IFighterTask::FightType type : types) {
+		const std::set<IFighterTask*>& atkTasks = GetTasks(type);
+		for (IFighterTask* task : atkTasks) {
+			const AIFloat3& ourPos = static_cast<ISquadTask*>(task)->GetLeaderPos(frame);
+			if (terrainManager->CanMoveToPos(area, ourPos)) {
+				outPositions.push_back(ourPos);
+			}
 		}
-	}
-	const std::set<IFighterTask*>& defTasks = GetTasks(IFighterTask::FightType::DEFEND);
-	for (IFighterTask* task : defTasks) {
-		const AIFloat3& ourPos = static_cast<ISquadTask*>(task)->GetLeaderPos(frame);
-		if (terrainManager->CanMoveToPos(area, ourPos)) {
-			outPositions.push_back(ourPos);
+		if (!outPositions.empty()) {
+			return;
 		}
-	}
-
-	if (!outPositions.empty()) {
-		return;
 	}
 
 	CDefenceMatrix* defMat = defence;

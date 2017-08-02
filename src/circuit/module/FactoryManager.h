@@ -34,7 +34,7 @@ public:
 							  const springai::AIFloat3& position,
 							  CRecruitTask::RecruitType type,
 							  float radius);
-	IUnitTask* EnqueueWait(int timeout);
+	IUnitTask* EnqueueWait(bool stop, int timeout);
 	IBuilderTask* EnqueueReclaim(IBuilderTask::Priority priority,
 								 const springai::AIFloat3& position,
 								 float radius,

@@ -312,7 +312,7 @@ CCircuitDef* CEconomyManager::GetLowEnergy(const AIFloat3& pos, float& outMake) 
 	auto it = energyInfos.rbegin();
 	while (it != energyInfos.rend()) {
 		CCircuitDef* candy = it->cdef;
-		if (candy->IsAvailable() && terrainManager->CanBeBuiltAt(candy, pos)) {
+		if (candy->IsAvailable() && terrainManager->CanBeBuiltAtSafe(candy, pos)) {
 			result = candy;
 			outMake = it->make;
 			break;
@@ -538,15 +538,15 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				CCircuitDef* mexDef = this->mexDef;
 				predicate = [this, &spots, map, mexDef, terrainManager, unit](int index) {
 					return (IsAllyOpenSpot(index) &&
-							terrainManager->CanBeBuiltAt(mexDef, spots[index].position) &&  // hostile environment
-							terrainManager->CanBuildAt(unit, spots[index].position) &&
+							terrainManager->CanBeBuiltAtSafe(mexDef, spots[index].position) &&  // hostile environment
+							terrainManager->CanBuildAtSafe(unit, spots[index].position) &&
 							map->IsPossibleToBuildAt(mexDef->GetUnitDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};
 			} else {
 				CCircuitDef* mexDef = this->mexDef;
 				predicate = [this, &spots, map, mexDef, terrainManager, builderManager](int index) {
 					return (IsAllyOpenSpot(index) &&
-							terrainManager->CanBeBuiltAt(mexDef, spots[index].position) &&  // hostile environment
+							terrainManager->CanBeBuiltAtSafe(mexDef, spots[index].position) &&  // hostile environment
 							builderManager->IsBuilderInArea(mexDef, spots[index].position) &&
 							map->IsPossibleToBuildAt(mexDef->GetUnitDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};
@@ -601,7 +601,7 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 	for (Feature* feature : features) {
 		AIFloat3 featPos = feature->GetPosition();
 		CTerrainManager::CorrectPosition(featPos);  // Impulsed flying feature
-		if (!terrainManager->CanBuildAt(unit, featPos)) {
+		if (!terrainManager->CanBuildAtSafe(unit, featPos)) {
 			continue;
 		}
 		FeatureDef* featDef = feature->GetDef();
@@ -664,7 +664,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	for (const SEnergyInfo& engy : energyInfos) {  // sorted by high-tech first
 		// TODO: Add geothermal powerplant support
 		if (!engy.cdef->IsAvailable() ||
-			!terrainManager->CanBeBuiltAt(engy.cdef, position) ||
+			!terrainManager->CanBeBuiltAtSafe(engy.cdef, position) ||
 			engy.cdef->GetUnitDef()->IsNeedGeo())
 		{
 			continue;
@@ -726,8 +726,8 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		}
 	}
 
-	if (utils::is_valid(buildPos) && terrainManager->CanBeBuiltAt(bestDef, buildPos) &&
-		((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
+	if (utils::is_valid(buildPos) && terrainManager->CanBeBuiltAtSafe(bestDef, buildPos) &&
+		((unit == nullptr) || terrainManager->CanBuildAtSafe(unit, buildPos)))
 	{
 		IBuilderTask::Priority priority = isEnergyStalling ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
 		return builderManager->EnqueueTask(priority, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, SQUARE_SIZE * 16.0f, true);
@@ -770,8 +770,8 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		buildPos = terrainManager->GetBuildPosition(bdef, buildPos);
 
-		if (terrainManager->CanBeBuiltAt(airpadDef, buildPos) &&
-			((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
+		if (terrainManager->CanBeBuiltAtSafe(airpadDef, buildPos) &&
+			((unit == nullptr) || terrainManager->CanBuildAtSafe(unit, buildPos)))
 		{
 			return builderManager->EnqueueFactory(IBuilderTask::Priority::NORMAL, airpadDef, buildPos);
 		}
@@ -819,8 +819,8 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			CTerrainManager::CorrectPosition(buildPos);
 			buildPos = terrainManager->GetBuildPosition(bdef, buildPos);
 
-			if (terrainManager->CanBeBuiltAt(assistDef, buildPos) &&
-				((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
+			if (terrainManager->CanBeBuiltAtSafe(assistDef, buildPos) &&
+				((unit == nullptr) || terrainManager->CanBuildAtSafe(unit, buildPos)))
 			{
 				return builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, assistDef, buildPos,
 												   IBuilderTask::BuildType::NANO, SQUARE_SIZE * 8, true);
@@ -894,8 +894,8 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	CTerrainManager::CorrectPosition(buildPos);
 	buildPos = terrainManager->GetBuildPosition(bdef, buildPos);
 
-	if (terrainManager->CanBeBuiltAt(facDef, buildPos) &&
-		((unit == nullptr) || terrainManager->CanBuildAt(unit, buildPos)))
+	if (terrainManager->CanBeBuiltAtSafe(facDef, buildPos) &&
+		((unit == nullptr) || terrainManager->CanBuildAtSafe(unit, buildPos)))
 	{
 		lastFacFrame = frame;
 		IBuilderTask::Priority priority = (builderManager->GetWorkerCount() <= 2) ?

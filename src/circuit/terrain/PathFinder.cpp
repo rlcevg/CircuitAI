@@ -335,7 +335,7 @@ float CPathFinder::PathCostDirect(const springai::AIFloat3& startPos, springai::
 	return pathCost;
 }
 
-float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRange, F3Vec& possibleTargets)
+float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRange, F3Vec& possibleTargets, bool safe)
 {
 	float pathCost = 0.0f;
 
@@ -453,7 +453,9 @@ float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRan
 
 	CTerrainData::CorrectPosition(startPos);
 
-	if (micropather->FindBestPathToAnyGivenPoint(Pos2Node(startPos), endNodes, nodeTargets, &path, &pathCost) == CMicroPather::SOLVED) {
+	int result = safe ? micropather->FindBestPathToAnyGivenPointSafe(Pos2Node(startPos), endNodes, nodeTargets, &path, &pathCost) :
+						micropather->FindBestPathToAnyGivenPoint(Pos2Node(startPos), endNodes, nodeTargets, &path, &pathCost);
+	if (result == CMicroPather::SOLVED) {
 		posPath.reserve(path.size());
 
 		Map* map = terrainData->GetMap();

@@ -189,7 +189,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		this->circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this, mexDef, pos, index]() {
 			if (this->circuit->GetEconomyManager()->IsAllyOpenSpot(index) &&
 				this->circuit->GetBuilderManager()->IsBuilderInArea(mexDef, pos) &&
-				this->circuit->GetTerrainManager()->CanBeBuiltAt(mexDef, pos))  // hostile environment
+				this->circuit->GetTerrainManager()->CanBeBuiltAtSafe(mexDef, pos))  // hostile environment
 			{
 				EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
 				this->circuit->GetEconomyManager()->SetOpenSpot(index, false);
@@ -615,7 +615,7 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 	for (auto& kv : buildAreas) {
 		for (auto& kvw : kv.second) {
 			if ((kvw.second > 0) && kvw.first->CanBuild(buildDef) &&
-				terrainManager->CanMobileBuildAtUnsafe(kv.first, kvw.first, position))
+				terrainManager->CanMobileBuildAt(kv.first, kvw.first, position))
 			{
 				return true;
 			}
@@ -866,7 +866,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 			float distCost;
 			if (candidate->GetPriority() == IBuilderTask::Priority::NOW) {
 				// Disregard safety
-				if (!terrainManager->CanBuildAtUnsafe(unit, buildPos)) {  // ensure that path always exists
+				if (!terrainManager->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
 					continue;
 				}
 
@@ -875,7 +875,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 			} else {
 
 				if ((basePos.SqDistance2D(buildPos) > SQUARE(2000.f)) ||  // FIXME: Make max distance configurable
-					!terrainManager->CanBuildAt(unit, buildPos))  // ensure that path always exists
+					!terrainManager->CanBuildAtSafe(unit, buildPos))  // ensure that path always exists
 				{
 					continue;
 				}
@@ -971,7 +971,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 			float distCost;
 			if (candidate->GetPriority() >= IBuilderTask::Priority::HIGH) {
 				// Disregard safety
-				if (!terrainManager->CanBuildAtUnsafe(unit, buildPos)) {  // ensure that path always exists
+				if (!terrainManager->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
 					continue;
 				}
 
@@ -982,7 +982,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 				CCircuitDef* buildDef = candidate->GetBuildDef();
 				const float buildThreat = (buildDef != nullptr) ? buildDef->GetPower() : 0.f;
 				if ((threatMap->GetThreatAt(buildPos) > maxThreat + buildThreat) ||
-					!terrainManager->CanBuildAtUnsafe(unit, buildPos))  // ensure that path always exists
+					!terrainManager->CanBuildAt(unit, buildPos))  // ensure that path always exists
 				{
 					continue;
 				}

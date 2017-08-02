@@ -17,7 +17,7 @@ namespace circuit {
 using namespace springai;
 
 CBWaitTask::CBWaitTask(ITaskManager* mgr, int timeout)
-		: IWaitTask(mgr, timeout)
+		: IWaitTask(mgr, false, timeout)
 {
 }
 

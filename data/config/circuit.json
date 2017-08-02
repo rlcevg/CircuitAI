@@ -62,6 +62,7 @@
 			// 17-24m Expanding - Good size terriotiry now, so less scouting and begin producing a little assault/arty on the side.
 			"tier2": [ 0.10,       0.20,        0.10,             0.33,         0.00,        0.12,           0.00,        0.00,         0.00,        0.05,          0.10]
 		},
+
 		"caretaker": 10
 	},
 
@@ -137,6 +138,7 @@
 			// 72m - inf+ Late late Game - SPAM GRIZZLY
 			"tier7": [ 0.10,      0.18,       0.02,          0.41,          0.02,       0.22,          0.00,       0.05]
 		},
+
 		"caretaker": 10
 	},
 
@@ -212,6 +214,7 @@
 			// 72m - inf+ Late late Game - Maximum Artillery
 			"tier7": [ 0.10,     0.10,       0.12,      0.02,         0.06,      0.43,         0.05,         0.00,      0.07,           0.05]
 		},
+
 		"caretaker": 10
 	},
 
@@ -345,7 +348,7 @@
 			"tier1": [ 0.05,      0.10,        0.20,             0.10,        0.05,       0.10,        0.25,          0.15,       0.00]
 		},
 
-		"caretaker": 2
+		"caretaker": 10
 	},
 
 	"striderhub": {

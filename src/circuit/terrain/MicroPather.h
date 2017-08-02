@@ -258,6 +258,8 @@ namespace NSMicroPather {
 			void SetMapData(bool* canMoveArray, float* costArray);
 			int FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*>& endNodes, std::vector<void*>& targets,
 											std::vector<void*>* path, float* cost);
+			int FindBestPathToAnyGivenPointSafe(void* startNode, std::vector<void*>& endNodes, std::vector<void*>& targets,
+											std::vector<void*>* path, float* cost);
 			int FindBestPathToPointOnRadius(void* startNode, void* endNode, std::vector<void*>* path, float* cost, int radius);
 			int FindBestPathToPointOnRadius(void* startNode, void* endNode, std::vector<void*>* path, float* cost, int radius, float threat);
 			int FindBestCostToPointOnRadius(void* startNode, void* endNode, float* cost, int radius);

@@ -18,6 +18,8 @@ public:
 	virtual ~CSRepairTask();
 
 	virtual void Update();
+protected:
+	virtual void Finish() override final;
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);

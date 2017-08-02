@@ -14,7 +14,7 @@ namespace circuit {
 
 class IWaitTask: public IUnitTask {
 public:
-	IWaitTask(ITaskManager* mgr, int timeout);
+	IWaitTask(ITaskManager* mgr, bool stop, int timeout);
 	virtual ~IWaitTask();
 
 	virtual void AssignTo(CCircuitUnit* unit);
@@ -25,6 +25,9 @@ public:
 
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
+
+protected:
+	bool isStop;
 };
 
 } // namespace circuit

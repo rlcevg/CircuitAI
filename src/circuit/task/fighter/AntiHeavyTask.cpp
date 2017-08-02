@@ -239,7 +239,7 @@ void CAntiHeavyTask::Update()
 	} else {
 		static F3Vec ourPositions;  // NOTE: micro-opt
 		circuit->GetMilitaryManager()->FillSafePos(startPos, leader->GetArea(), ourPositions);
-		pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions);
+		pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
 		ourPositions.clear();
 	}
 

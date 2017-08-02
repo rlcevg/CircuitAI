@@ -23,7 +23,7 @@ public:
 	virtual void Execute(CCircuitUnit* unit);
 	virtual void Update() = 0;
 protected:
-	virtual void Finish() override final;
+	virtual void Finish() override;
 	virtual void Cancel() override final;
 
 public:

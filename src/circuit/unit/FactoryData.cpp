@@ -118,7 +118,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 //	CTerrainManager::CorrectPosition(position);
 	if (isPosValid) {
 		predicate = [position, terrainManager](CCircuitDef* cdef) {
-			return terrainManager->CanBeBuiltAt(cdef, position);
+			return terrainManager->CanBeBuiltAtSafe(cdef, position);
 		};
 	} else {
 		predicate = [](CCircuitDef* cdef) {

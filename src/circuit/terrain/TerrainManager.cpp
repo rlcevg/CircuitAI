@@ -404,7 +404,7 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 
 		probePos.x = (s1.x + s2.x) * SQUARE_SIZE;
 		probePos.z = (s1.y + s2.y) * SQUARE_SIZE;
-		if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
+		if (CanBeBuiltAtSafe(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
 			probePos.y = map->GetElevationAt(probePos.x, probePos.z);
 			if (predicate(probePos)) {
 				return probePos;
@@ -635,7 +635,7 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(CCircuitDef* cdef, const AIFloat3& po
 
 			probePos.x = (s1.x + s2.x) * SQUARE_SIZE;
 			probePos.z = (s1.y + s2.y) * SQUARE_SIZE;
-			if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
+			if (CanBeBuiltAtSafe(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {
 				probePos.y = map->GetElevationAt(probePos.x, probePos.z);
 				if (predicate(probePos)) {
 					return probePos;
@@ -715,31 +715,31 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 	AIFloat3 probePos(ZeroVector);
 	Map* map = circuit->GetMap();
 
-#define DO_TEST(testName)																			\
-	for (int so = 0; so < endr * endr * 4; so++) {													\
-		int2 s1(structCorner.x + ofs[so].dx, structCorner.y + ofs[so].dy);							\
-		int2 s2(          s1.x + xssize,               s1.y + zssize);								\
-		if (!blockingMap.IsInBounds(s1, s2)) {														\
-			continue;																				\
-		}																							\
-																									\
-		int2 m1(maskCorner.x + ofs[so].dx, maskCorner.y + ofs[so].dy);								\
-		int2 m2(        m1.x + xmsize,             m1.y + zmsize);									\
-		int2 om = m1;																				\
-		blockingMap.Bound(m1, m2);																	\
-		om = m1 - om;																				\
-		if (!testName(m1, m2, om)) {																\
-			continue;																				\
-		}																							\
-																									\
-		probePos.x = (s1.x + s2.x) * SQUARE_SIZE;													\
-		probePos.z = (s1.y + s2.y) * SQUARE_SIZE;													\
-		if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {	\
-			probePos.y = map->GetElevationAt(probePos.x, probePos.z);								\
-			if (predicate(probePos)) {																\
-				return probePos;																	\
-			}																						\
-		}																							\
+#define DO_TEST(testName)																				\
+	for (int so = 0; so < endr * endr * 4; so++) {														\
+		int2 s1(structCorner.x + ofs[so].dx, structCorner.y + ofs[so].dy);								\
+		int2 s2(          s1.x + xssize,               s1.y + zssize);									\
+		if (!blockingMap.IsInBounds(s1, s2)) {															\
+			continue;																					\
+		}																								\
+																										\
+		int2 m1(maskCorner.x + ofs[so].dx, maskCorner.y + ofs[so].dy);									\
+		int2 m2(        m1.x + xmsize,             m1.y + zmsize);										\
+		int2 om = m1;																					\
+		blockingMap.Bound(m1, m2);																		\
+		om = m1 - om;																					\
+		if (!testName(m1, m2, om)) {																	\
+			continue;																					\
+		}																								\
+																										\
+		probePos.x = (s1.x + s2.x) * SQUARE_SIZE;														\
+		probePos.z = (s1.y + s2.y) * SQUARE_SIZE;														\
+		if (CanBeBuiltAtSafe(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {	\
+			probePos.y = map->GetElevationAt(probePos.x, probePos.z);									\
+			if (predicate(probePos)) {																	\
+				return probePos;																		\
+			}																							\
+		}																								\
 	}
 
 	switch (facing) {
@@ -864,7 +864,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 																												\
 			probePos.x = (s1.x + s2.x) * SQUARE_SIZE;															\
 			probePos.z = (s1.y + s2.y) * SQUARE_SIZE;															\
-			if (CanBeBuiltAt(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {			\
+			if (CanBeBuiltAtSafe(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {		\
 				probePos.y = map->GetElevationAt(probePos.x, probePos.z);										\
 				if (predicate(probePos)) {																		\
 					return probePos;																			\
@@ -1242,9 +1242,6 @@ STerrainMapSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* destin
 
 bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, const float range)
 {
-	if (circuit->GetThreatMap()->GetAllThreatAt(position) > THREAT_MIN) {
-		return false;
-	}
 	int iS = GetSectorIndex(position);
 	STerrainMapSector* sector;
 	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
@@ -1277,7 +1274,15 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 	return sector->position.distance2D(GetSector(iS).position) < range;
 }
 
-bool CTerrainManager::CanBuildAtUnsafe(CCircuitUnit* unit, const AIFloat3& destination)
+bool CTerrainManager::CanBeBuiltAtSafe(CCircuitDef* cdef, const AIFloat3& position, const float range)
+{
+	if (circuit->GetThreatMap()->GetAllThreatAt(position) > THREAT_MIN) {
+		return false;
+	}
+	return CanBeBuiltAt(cdef, position, range);
+}
+
+bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination)
 {
 	if (unit->GetCircuitDef()->GetImmobileId() != -1) {  // A hub or factory
 		return unit->GetPos(circuit->GetLastFrame()).distance2D(destination) < unit->GetCircuitDef()->GetBuildDistance();
@@ -1293,15 +1298,15 @@ bool CTerrainManager::CanBuildAtUnsafe(CCircuitUnit* unit, const AIFloat3& desti
 	return GetClosestSector(area, iS)->S->position.distance2D(destination) < unit->GetCircuitDef()->GetBuildDistance();
 }
 
-bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination)
+bool CTerrainManager::CanBuildAtSafe(CCircuitUnit* unit, const AIFloat3& destination)
 {
 	if (circuit->GetThreatMap()->GetThreatAt(destination) > THREAT_MIN) {
 		return false;
 	}
-	return CanBuildAtUnsafe(unit, destination);
+	return CanBuildAt(unit, destination);
 }
 
-bool CTerrainManager::CanMobileBuildAtUnsafe(STerrainMapArea* area, CCircuitDef* builderDef, const AIFloat3& destination)
+bool CTerrainManager::CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const AIFloat3& destination)
 {
 	if (area == nullptr) {  // A flying unit
 		return true;
@@ -1313,12 +1318,12 @@ bool CTerrainManager::CanMobileBuildAtUnsafe(STerrainMapArea* area, CCircuitDef*
 	return GetClosestSector(area, iS)->S->position.distance2D(destination) < builderDef->GetBuildDistance();
 }
 
-bool CTerrainManager::CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const AIFloat3& destination)
+bool CTerrainManager::CanMobileBuildAtSafe(STerrainMapArea* area, CCircuitDef* builderDef, const AIFloat3& destination)
 {
 	if (circuit->GetThreatMap()->GetAllThreatAt(destination) > THREAT_MIN) {
 		return false;
 	}
-	return CanMobileBuildAtUnsafe(area, builderDef, destination);
+	return CanMobileBuildAt(area, builderDef, destination);
 }
 
 void CTerrainManager::UpdateAreaUsers(int interval)

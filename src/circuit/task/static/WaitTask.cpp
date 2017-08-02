@@ -10,8 +10,8 @@
 
 namespace circuit {
 
-CSWaitTask::CSWaitTask(ITaskManager* mgr, int timeout)
-		: IWaitTask(mgr, timeout)
+CSWaitTask::CSWaitTask(ITaskManager* mgr, bool stop, int timeout)
+		: IWaitTask(mgr, isStop, timeout)
 {
 }
 

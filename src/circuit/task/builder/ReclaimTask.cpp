@@ -81,7 +81,7 @@ void CBReclaimTask::Update()
 			for (Feature* feature : features) {
 				AIFloat3 featPos = feature->GetPosition();
 				CTerrainManager::CorrectPosition(featPos);  // Impulsed flying feature
-				if (!terrainManager->CanBuildAt(unit, featPos)) {
+				if (!terrainManager->CanBuildAtSafe(unit, featPos)) {
 					continue;
 				}
 				FeatureDef* featDef = feature->GetDef();

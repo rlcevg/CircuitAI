@@ -14,7 +14,7 @@ namespace circuit {
 
 class CSWaitTask: public IWaitTask {
 public:
-	CSWaitTask(ITaskManager* mgr, int timeout);
+	CSWaitTask(ITaskManager* mgr, bool stop, int timeout);
 	virtual ~CSWaitTask();
 
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);

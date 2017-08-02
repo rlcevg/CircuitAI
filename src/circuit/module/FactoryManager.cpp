@@ -325,9 +325,9 @@ CRecruitTask* CFactoryManager::EnqueueTask(CRecruitTask::Priority priority,
 	return task;
 }
 
-IUnitTask* CFactoryManager::EnqueueWait(int timeout)
+IUnitTask* CFactoryManager::EnqueueWait(bool stop, int timeout)
 {
-	CSWaitTask* task = new CSWaitTask(this, timeout);
+	CSWaitTask* task = new CSWaitTask(this, stop, timeout);
 	updateTasks.push_back(task);
 	return task;
 }
@@ -538,6 +538,9 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 	if ((buildDef != nullptr) && buildDef->IsAvailable()) {
 		const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		if (!terrainManager->CanBeBuiltAt(buildDef, pos, unit->GetCircuitDef()->GetBuildDistance())) {
+			return nullptr;
+		}
 		float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
 		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, pos, CRecruitTask::RecruitType::BUILDPOWER, radius);
 	}
@@ -611,7 +614,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			CCircuitDef* bd = facDef.buildDefs[i];
 			if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) ||
 				!bd->IsAvailable() ||
-				!terrainManager->CanBeBuiltAt(bd, pos, range))
+				!terrainManager->CanBeBuiltAtSafe(bd, pos, range))
 			{
 				continue;
 			}
@@ -1106,7 +1109,7 @@ IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 							(metalPull * economyManager->GetPullMtoS() > circuit->GetBuilderManager()->GetMetalPull());
 	const bool isNotReady = !economyManager->IsExcessed() || isStalling;
 	if (isNotReady) {
-		return EnqueueWait(FRAMES_PER_SEC * 3);
+		return EnqueueWait(false, FRAMES_PER_SEC * 3);
 	}
 
 	if (unit->GetCircuitDef()->GetMobileId() < 0) {
@@ -1118,7 +1121,7 @@ IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 			if (validAir.find(unit) != validAir.end()) {
 				DisableFactory(unit);
 			}
-			return EnqueueWait(FRAMES_PER_SEC * 10);
+			return EnqueueWait(false, FRAMES_PER_SEC * 10);
 		}
 	}
 
@@ -1132,7 +1135,7 @@ IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 		return task;
 	}
 
-	return EnqueueWait(FRAMES_PER_SEC * 3);
+	return EnqueueWait(false, FRAMES_PER_SEC * 3);
 }
 
 IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
@@ -1199,7 +1202,7 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 		}
 	}
 
-	return EnqueueWait(FRAMES_PER_SEC * 3);
+	return EnqueueWait(false, FRAMES_PER_SEC * 3);
 }
 
 void CFactoryManager::Watchdog()
