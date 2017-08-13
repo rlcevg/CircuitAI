@@ -388,9 +388,10 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		case EVENT_ENEMY_CREATED: {
 			PRINT_TOPIC("EVENT_ENEMY_CREATED", topic);
 			// @see Cheats::SetEventsEnabled
+			// FIXME: Can't query enemy data with globalLOS
 			struct SEnemyCreatedEvent* evt = (struct SEnemyCreatedEvent*)data;
 			CEnemyUnit* unit = RegisterEnemyUnit(evt->enemy, true);
-			ret = (unit != nullptr) ? this->EnemyEnterLOS(unit) : ERROR_ENEMY_ENTER_LOS;
+			ret = (unit != nullptr) ? this->EnemyEnterLOS(unit) : EVENT_ENEMY_CREATED;
 			break;
 		}
 		case EVENT_ENEMY_FINISHED: {
@@ -525,6 +526,22 @@ bool CCircuitAI::IsModValid()
 	return true;
 }
 
+void CCircuitAI::CheatPreload()
+{
+	auto enemies = std::move(callback->GetEnemyUnits());
+	for (Unit* e : enemies) {
+		if (e == nullptr) {
+			continue;
+		}
+		CEnemyUnit* enemy = RegisterEnemyUnit(e);
+		if (enemy != nullptr) {
+			this->EnemyEnterLOS(enemy);
+		} else {
+			delete e;
+		}
+	}
+}
+
 int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICallback)
 {
 	this->skirmishAIId = skirmishAIId;
@@ -599,6 +616,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 		cheats->SetEnabled(true);
 		cheats->SetEventsEnabled(true);
 		delete cheats;
+		scheduler->RunTaskAt(std::make_shared<CGameTask>(&CCircuitAI::CheatPreload, this), skirmishAIId + 1);
 	}
 
 	Update(0);  // Init modules: allows to manipulate units on gadget:Initialize
@@ -1137,6 +1155,9 @@ CEnemyUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS)
 	if (unit != nullptr) {
 		if (isInLOS/* && (unit->GetCircuitDef() == nullptr)*/) {
 			UnitDef* unitDef = unit->GetUnit()->GetDef();
+			if (unitDef == nullptr) {  // doesn't work with globalLOS
+				return nullptr;
+			}
 			CCircuitDef::Id unitDefId = unitDef->GetUnitDefId();
 			delete unitDef;
 			if ((unit->GetCircuitDef() == nullptr) || unit->GetCircuitDef()->GetId() != unitDefId) {
@@ -1154,6 +1175,10 @@ CEnemyUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS)
 	CCircuitDef* cdef = nullptr;
 	if (isInLOS) {
 		UnitDef* unitDef = u->GetDef();
+		if (unitDef == nullptr) {  // doesn't work with globalLOS
+			delete u;
+			return nullptr;
+		}
 		cdef = defsById[unitDef->GetUnitDefId()];
 		delete unitDef;
 	}
@@ -1161,6 +1186,27 @@ CEnemyUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS)
 
 	enemyUnits[unit->GetId()] = unit;
 
+	return unit;
+}
+
+CEnemyUnit* CCircuitAI::RegisterEnemyUnit(Unit* e)
+{
+	CEnemyUnit* unit = GetEnemyUnit(e->GetUnitId());
+	UnitDef* unitDef = e->GetDef();
+	CCircuitDef::Id unitDefId = unitDef->GetUnitDefId();
+	delete unitDef;
+
+	if (unit != nullptr) {
+		if ((unit->GetCircuitDef() == nullptr) || unit->GetCircuitDef()->GetId() != unitDefId) {
+			unit->SetCircuitDef(defsById[unitDefId]);
+			unit->SetCost(unit->GetUnit()->GetRulesParamFloat("comm_cost", unit->GetCost()));
+		}
+		return nullptr;
+	}
+
+	CCircuitDef* cdef = defsById[unitDefId];
+	unit = new CEnemyUnit(e, cdef);
+	enemyUnits[unit->GetId()] = unit;
 	return unit;
 }
 

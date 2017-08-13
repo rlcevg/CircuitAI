@@ -739,9 +739,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	if (!builderManager->CanEnqueueTask() ||
-		!builderManager->GetTasks(IBuilderTask::BuildType::FACTORY).empty())
-	{
+	if (!builderManager->CanEnqueueTask(64)) {
 		return nullptr;
 	}
 
@@ -751,7 +749,8 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	CFactoryManager* factoryManager = circuit->GetFactoryManager();
 	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
 	CCircuitDef* airpadDef = factoryManager->GetAirpadDef();
-	const unsigned airpadFactor = SQUARE(airpadDef->GetCount() * 4);
+	const std::set<IBuilderTask*> &factoryTasks = builderManager->GetTasks(IBuilderTask::BuildType::FACTORY);
+	const unsigned airpadFactor = SQUARE((airpadDef->GetCount() + factoryTasks.size()) * 4);
 	if (airpadDef->IsAvailable() &&
 		(militaryManager->GetRoleUnits(CCircuitDef::RoleType::BOMBER).size() > airpadFactor))
 	{
@@ -822,7 +821,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			if (terrainManager->CanBeBuiltAtSafe(assistDef, buildPos) &&
 				((unit == nullptr) || terrainManager->CanBuildAtSafe(unit, buildPos)))
 			{
-				return builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, assistDef, buildPos,
+				return builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, assistDef, buildPos,
 												   IBuilderTask::BuildType::NANO, SQUARE_SIZE * 8, true);
 			}
 		}
@@ -831,6 +830,10 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	/*
 	 * check factories
 	 */
+	if (!factoryTasks.empty()) {
+		return nullptr;
+	}
+
 	const AIFloat3& enemyPos = militaryManager->GetEnemyPos();
 	AIFloat3 pos(circuit->GetSetupManager()->GetBasePos());
 	CMetalManager* metalManager = circuit->GetMetalManager();

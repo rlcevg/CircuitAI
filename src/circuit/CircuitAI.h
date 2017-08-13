@@ -42,6 +42,7 @@ namespace circuit {
 #define ERROR_ENEMY_DESTROYED	(ERROR_UNKNOWN + EVENT_ENEMY_DESTROYED)
 #define ERROR_LOAD				(ERROR_UNKNOWN + EVENT_LOAD)
 #define ERROR_SAVE				(ERROR_UNKNOWN + EVENT_SAVE)
+#define ERROR_ENEMY_CREATED		(ERROR_UNKNOWN + EVENT_ENEMY_CREATED)
 #define LOG(fmt, ...)	GetLog()->DoLog(utils::string_format(std::string(fmt), ##__VA_ARGS__).c_str())
 
 class CGameAttribute;
@@ -103,6 +104,7 @@ private:
 
 private:
 	bool IsModValid();
+	void CheatPreload();
 	int Init(int skirmishAIId, const struct SSkirmishAICallback* sAICallback);
 	int Release(int reason);
 	int Update(int frame);
@@ -145,6 +147,7 @@ public:
 	using EnemyUnits = std::map<CCircuitUnit::Id, CEnemyUnit*>;
 private:
 	CEnemyUnit* RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS = false);
+	CEnemyUnit* RegisterEnemyUnit(springai::Unit* e);
 	void UnregisterEnemyUnit(CEnemyUnit* unit);
 	void UpdateEnemyUnits();
 public:

@@ -48,7 +48,7 @@ public:
 	void AddBuildPower(CCircuitUnit* unit);
 	void DelBuildPower(CCircuitUnit* unit);
 	float GetBuildPower() const { return buildPower; }
-	bool CanEnqueueTask() const { return buildTasksCount < workers.size() * 8; }
+	bool CanEnqueueTask(const unsigned mod = 8) const { return buildTasksCount < workers.size() * mod; }
 	const std::set<IBuilderTask*>& GetTasks(IBuilderTask::BuildType type) const;
 	void ActivateTask(IBuilderTask* task);
 
