@@ -1031,11 +1031,11 @@ void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 	}
 }
 
-STerrainMapArea* CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIFloat3& position)
+std::pair<STerrainMapArea*, bool> CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIFloat3& position)
 {
 	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
 	if (mobileType == nullptr) {  // flying units & buildings
-		return nullptr;
+		return std::make_pair(nullptr, true);
 	}
 
 	// other mobile units & their factories
@@ -1047,9 +1047,12 @@ STerrainMapArea* CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIF
 	if (area == nullptr) {
 		// Case: 1) unit spawned/pushed/transported outside of valid area
 		//       2) factory terraformed height around and became non-valid area
-		area = GetAlternativeSector(nullptr, iS, mobileType)->area;
+		STerrainMapAreaSector* sector = GetAlternativeSector(nullptr, iS, mobileType);
+		if (sector != nullptr) {
+			area = sector->area;
+		}
 	}
-	return area;
+	return std::make_pair(area, area != nullptr);
 }
 
 bool CTerrainManager::CanMoveToPos(STerrainMapArea* area, const AIFloat3& destination)
@@ -1344,7 +1347,12 @@ void CTerrainManager::UpdateAreaUsers(int interval)
 			area = mobileType->sector[iS].area;
 			if (area == nullptr) {  // unit outside of valid area
 				// TODO: Rescue operation
-				area = GetAlternativeSector(nullptr, iS, mobileType)->area;
+				STerrainMapAreaSector* sector = GetAlternativeSector(nullptr, iS, mobileType);
+				if (sector != nullptr) {
+					area = sector->area;
+				} else {
+					circuit->Garbage(unit, "useless");
+				}
 			}
 		}
 		unit->SetArea(area);

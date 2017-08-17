@@ -118,7 +118,7 @@ public:
 	int GetSectorXSize() const { return terrainData->sectorXSize; }
 	int GetSectorZSize() const { return terrainData->sectorZSize; }
 	static void CorrectPosition(springai::AIFloat3& position) { CTerrainData::CorrectPosition(position); }
-	STerrainMapArea* GetCurrentMapArea(CCircuitDef* cdef, const springai::AIFloat3& position);
+	std::pair<STerrainMapArea*, bool> GetCurrentMapArea(CCircuitDef* cdef, const springai::AIFloat3& position);
 	int GetSectorIndex(const springai::AIFloat3& position) const { return terrainData->GetSectorIndex(position); }
 	bool CanMoveToPos(STerrainMapArea* area, const springai::AIFloat3& destination);
 	springai::AIFloat3 GetBuildPosition(CCircuitDef* cdef, const springai::AIFloat3& position);

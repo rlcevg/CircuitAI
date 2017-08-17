@@ -283,8 +283,12 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		case EVENT_ENEMY_ENTER_LOS: {
 			PRINT_TOPIC("EVENT_ENEMY_ENTER_LOS", topic);
 			struct SEnemyEnterLOSEvent* evt = (struct SEnemyEnterLOSEvent*)data;
-			CEnemyUnit* unit = RegisterEnemyUnit(evt->enemy, true);
-			ret = (unit != nullptr) ? this->EnemyEnterLOS(unit) : ERROR_ENEMY_ENTER_LOS;
+			CEnemyUnit* unit;
+			bool isReal;
+			std::tie(unit, isReal) = RegisterEnemyUnit(evt->enemy, true);
+			if (isReal) {
+				ret = (unit != nullptr) ? this->EnemyEnterLOS(unit) : ERROR_ENEMY_ENTER_LOS;
+			}
 			break;
 		}
 		case EVENT_ENEMY_LEAVE_LOS: {
@@ -301,8 +305,12 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		case EVENT_ENEMY_ENTER_RADAR: {
 			PRINT_TOPIC("EVENT_ENEMY_ENTER_RADAR", topic);
 			struct SEnemyEnterRadarEvent* evt = (struct SEnemyEnterRadarEvent*)data;
-			CEnemyUnit* unit = RegisterEnemyUnit(evt->enemy, false);
-			ret = (unit != nullptr) ? this->EnemyEnterRadar(unit) : ERROR_ENEMY_ENTER_RADAR;
+			CEnemyUnit* unit;
+			bool isReal;
+			std::tie(unit, isReal) = RegisterEnemyUnit(evt->enemy, false);
+			if (isReal) {
+				ret = (unit != nullptr) ? this->EnemyEnterRadar(unit) : ERROR_ENEMY_ENTER_RADAR;
+			}
 			break;
 		}
 		case EVENT_ENEMY_LEAVE_RADAR: {
@@ -390,8 +398,12 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			// @see Cheats::SetEventsEnabled
 			// FIXME: Can't query enemy data with globalLOS
 			struct SEnemyCreatedEvent* evt = (struct SEnemyCreatedEvent*)data;
-			CEnemyUnit* unit = RegisterEnemyUnit(evt->enemy, true);
-			ret = (unit != nullptr) ? this->EnemyEnterLOS(unit) : EVENT_ENEMY_CREATED;
+			CEnemyUnit* unit;
+			bool isReal;
+			std::tie(unit, isReal) = RegisterEnemyUnit(evt->enemy, true);
+			if (isReal) {
+				ret = (unit != nullptr) ? this->EnemyEnterLOS(unit) : EVENT_ENEMY_CREATED;
+			}
 			break;
 		}
 		case EVENT_ENEMY_FINISHED: {
@@ -1096,10 +1108,18 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(CCircuitUnit::Id unitId)
 	unit = new CCircuitUnit(u, cdef);
 	delete unitDef;
 
-	unit->SetArea(terrainManager->GetCurrentMapArea(cdef, unit->GetPos(lastFrame)));
+	STerrainMapArea* area;
+	bool isValid;
+	std::tie(area, isValid) = terrainManager->GetCurrentMapArea(cdef, unit->GetPos(lastFrame));
+	unit->SetArea(area);
 
 	teamUnits[unitId] = unit;
 	cdef->Inc();
+
+	if (!isValid) {
+		Garbage(unit, "useless");
+		return nullptr;
+	}
 
 	return unit;
 }
@@ -1149,14 +1169,14 @@ CCircuitUnit* CCircuitAI::GetFriendlyUnit(Unit* u) const
 	return nullptr;
 }
 
-CEnemyUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS)
+std::pair<CEnemyUnit*, bool> CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS)
 {
 	CEnemyUnit* unit = GetEnemyUnit(unitId);
 	if (unit != nullptr) {
 		if (isInLOS/* && (unit->GetCircuitDef() == nullptr)*/) {
 			UnitDef* unitDef = unit->GetUnit()->GetDef();
 			if (unitDef == nullptr) {  // doesn't work with globalLOS
-				return nullptr;
+				return std::make_pair(nullptr, false);
 			}
 			CCircuitDef::Id unitDefId = unitDef->GetUnitDefId();
 			delete unitDef;
@@ -1165,19 +1185,23 @@ CEnemyUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS)
 				unit->SetCost(unit->GetUnit()->GetRulesParamFloat("comm_cost", unit->GetCost()));
 			}
 		}
-		return unit;
+		return std::make_pair(unit, true);
 	}
 
 	Unit* u = WrappUnit::GetInstance(skirmishAIId, unitId);
 	if (u == nullptr) {
-		return nullptr;
+		return std::make_pair(nullptr, true);
+	}
+	if (u->IsNeutral() || u->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f) {
+		delete u;
+		return std::make_pair(nullptr, false);
 	}
 	CCircuitDef* cdef = nullptr;
 	if (isInLOS) {
 		UnitDef* unitDef = u->GetDef();
 		if (unitDef == nullptr) {  // doesn't work with globalLOS
 			delete u;
-			return nullptr;
+			return std::make_pair(nullptr, false);
 		}
 		cdef = defsById[unitDef->GetUnitDefId()];
 		delete unitDef;
@@ -1186,11 +1210,15 @@ CEnemyUnit* CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS)
 
 	enemyUnits[unit->GetId()] = unit;
 
-	return unit;
+	return std::make_pair(unit, true);
 }
 
 CEnemyUnit* CCircuitAI::RegisterEnemyUnit(Unit* e)
 {
+	if (e->IsNeutral() || e->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f) {
+		return nullptr;
+	}
+
 	CEnemyUnit* unit = GetEnemyUnit(e->GetUnitId());
 	UnitDef* unitDef = e->GetDef();
 	CCircuitDef::Id unitDefId = unitDef->GetUnitDefId();

@@ -146,7 +146,7 @@ public:
 
 	using EnemyUnits = std::map<CCircuitUnit::Id, CEnemyUnit*>;
 private:
-	CEnemyUnit* RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS = false);
+	std::pair<CEnemyUnit*, bool> RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS = false);
 	CEnemyUnit* RegisterEnemyUnit(springai::Unit* e);
 	void UnregisterEnemyUnit(CEnemyUnit* unit);
 	void UpdateEnemyUnits();
