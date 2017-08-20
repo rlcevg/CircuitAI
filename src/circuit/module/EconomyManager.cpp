@@ -490,7 +490,8 @@ void CEconomyManager::SetOpenSpot(int spotId, bool value)
 bool CEconomyManager::IsIgnorePull(const IBuilderTask* task) const
 {
 	return (mexMax < 0) && ((task->GetBuildType() == IBuilderTask::BuildType::MEX) ||
-							(task->GetBuildType() == IBuilderTask::BuildType::PYLON));
+							(task->GetBuildType() == IBuilderTask::BuildType::PYLON) ||
+							(task->GetBuildType() == IBuilderTask::BuildType::ENERGY));
 }
 
 IBuilderTask* CEconomyManager::MakeEconomyTasks(const AIFloat3& position, CCircuitUnit* unit)
@@ -517,7 +518,7 @@ IBuilderTask* CEconomyManager::MakeEconomyTasks(const AIFloat3& position, CCircu
 IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	if (!builderManager->CanEnqueueTask()) {
+	if (!builderManager->CanEnqueueTask(16)) {
 		return nullptr;
 	}
 
@@ -642,7 +643,7 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	if (!builderManager->CanEnqueueTask()) {
+	if (!builderManager->CanEnqueueTask(32)) {
 		return nullptr;
 	}
 
@@ -1118,7 +1119,8 @@ void CEconomyManager::Init()
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		CAllyTeam* allyTeam = circuit->GetAllyTeam();
 		if (circuit->IsCommMerge()) {
-			int clusterId = circuit->GetMetalManager()->FindNearestCluster(pos);
+			const int spotId = circuit->GetMetalManager()->FindNearestSpot(pos);
+			const int clusterId = (spotId < 0) ? -1 : circuit->GetMetalManager()->GetCluster(spotId);
 			int ownerId = allyTeam->GetClusterTeam(clusterId).teamId;
 			if (ownerId < 0) {
 				ownerId = circuit->GetTeamId();

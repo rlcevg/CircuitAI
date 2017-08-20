@@ -688,6 +688,7 @@ int CCircuitAI::Release(int reason)
 		delete kv.second;
 	}
 	teamUnits.clear();
+	garbage.clear();
 	for (auto& kv : enemyUnits) {
 		delete kv.second;
 	}
@@ -1192,7 +1193,7 @@ std::pair<CEnemyUnit*, bool> CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unit
 	if (u == nullptr) {
 		return std::make_pair(nullptr, true);
 	}
-	if (u->IsNeutral() || u->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f) {
+	if (/*u->IsNeutral() || */u->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f) {
 		delete u;
 		return std::make_pair(nullptr, false);
 	}
@@ -1215,7 +1216,7 @@ std::pair<CEnemyUnit*, bool> CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unit
 
 CEnemyUnit* CCircuitAI::RegisterEnemyUnit(Unit* e)
 {
-	if (e->IsNeutral() || e->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f) {
+	if (/*e->IsNeutral() || */e->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f) {
 		return nullptr;
 	}
 

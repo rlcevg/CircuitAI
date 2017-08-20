@@ -97,6 +97,8 @@ public:
 	float GetMaxIncome() const { return metalData->GetMaxIncome(); }
 
 private:
+	void DelegateAuthority();
+
 	CCircuitAI* circuit;
 	CMetalData* metalData;
 

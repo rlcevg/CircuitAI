@@ -10,6 +10,8 @@
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
+#include "util/GameAttribute.h"
+#include "util/Scheduler.h"
 #include "util/math/RagMatrix.h"
 #include "util/utils.h"
 #include "json/json.h"
@@ -83,6 +85,8 @@ CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData)
 		ParseMetalSpots();
 	}
 	metalInfos.resize(metalData->GetSpots().size(), {true, -1});
+
+	circuit->GetScheduler()->RunOnRelease(std::make_shared<CGameTask>(&CMetalManager::DelegateAuthority, this));
 }
 
 CMetalManager::~CMetalManager()
@@ -353,6 +357,17 @@ int CMetalManager::GetMexToBuild(const AIFloat3& pos, MexPredicate& predicate)
 
 	indices.clear();
 	return result;
+}
+
+void CMetalManager::DelegateAuthority()
+{
+	for (CCircuitAI* candidate : circuit->GetGameAttribute()->GetCircuits()) {
+		if (candidate->IsInitialized() && (candidate != circuit)) {
+			circuit = candidate;
+			circuit->GetScheduler()->RunOnRelease(std::make_shared<CGameTask>(&CMetalManager::DelegateAuthority, this));
+			break;
+		}
+	}
 }
 
 } // namespace circuit

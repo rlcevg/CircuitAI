@@ -10,9 +10,9 @@
 #include "terrain/PathFinder.h"
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
+#include "util/Scheduler.h"
 #include "util/math/HierarchCluster.h"
 #include "util/math/RagMatrix.h"
-#include "util/Scheduler.h"
 #include "util/utils.h"
 
 #include "Sim/MoveTypes/MoveDefHandler.h"
@@ -603,7 +603,7 @@ void CTerrainData::CorrectPosition(AIFloat3& position)
 
 void CTerrainData::DelegateAuthority(CCircuitAI* curOwner)
 {
-	for (auto circuit : gameAttribute->GetCircuits()) {
+	for (CCircuitAI* circuit : gameAttribute->GetCircuits()) {
 		if (circuit->IsInitialized() && (circuit != curOwner)) {
 			map = circuit->GetMap();
 			scheduler = circuit->GetScheduler();
