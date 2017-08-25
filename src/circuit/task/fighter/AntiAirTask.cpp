@@ -191,7 +191,7 @@ void CAntiAirTask::Update()
 		pPath->clear();
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
-		pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions);
+		pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
 		ourPositions.clear();
 
 		if (!pPath->empty()) {

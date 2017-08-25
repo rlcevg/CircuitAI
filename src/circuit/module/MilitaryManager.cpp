@@ -557,7 +557,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 		const CMetalData::Graph& clusterGraph = mm->GetGraph();
 		CMetalData::Graph::out_edge_iterator outEdgeIt, outEdgeEnd;
 		std::tie(outEdgeIt, outEdgeEnd) = boost::out_edges(cluster, clusterGraph);
-		for (; (outEdgeIt != outEdgeEnd) && !isPorc; ++outEdgeIt) {
+		for (; (outEdgeIt != outEdgeEnd); ++outEdgeIt) {
 			const CMetalData::EdgeDesc& edgeId = *outEdgeIt;
 			int idx0 = boost::target(edgeId, clusterGraph);
 			if (mm->IsClusterFinished(idx0)) {
@@ -727,6 +727,98 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 	}
 //	++scoutIdx %= scoutPath.size();
 	return -RgtVector;
+}
+
+void CMilitaryManager::FindBestPos(F3Vec& posPath, AIFloat3& startPos, STerrainMapArea* area)
+{
+//	static F3Vec ourPositions;  // NOTE: micro-opt
+//
+//	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+//	CPathFinder* pathfinder = circuit->GetPathfinder();
+//	int frame = circuit->GetLastFrame();
+//
+//	/*
+//	 * Check mobile groups
+//	 */
+//	const std::array<IFighterTask::FightType, 2> types = {IFighterTask::FightType::ATTACK, IFighterTask::FightType::DEFEND};
+//	for (IFighterTask::FightType type : types) {
+//		const std::set<IFighterTask*>& atkTasks = GetTasks(type);
+//		for (IFighterTask* task : atkTasks) {
+//			const AIFloat3& ourPos = static_cast<ISquadTask*>(task)->GetLeaderPos(frame);
+//			if (terrainManager->CanMoveToPos(area, ourPos)) {
+//				ourPositions.push_back(ourPos);
+//			}
+//		}
+//		if (!ourPositions.empty()) {
+//			pathfinder->FindBestPath(posPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
+//			if (!posPath.empty()) {
+//				ourPositions.clear();
+//				return;
+//			}
+//		}
+//	}
+//
+//	/*
+//	 * Check static cluster defences
+//	 */
+//	unsigned threatCount = 0;
+//	unsigned clusterCount = 0;
+//	CThreatMap* threatMap = circuit->GetThreatMap();
+//	CMetalManager* mm = circuit->GetMetalManager();
+//	const CMetalData::Clusters& clusters = mm->GetClusters();
+//	const CMetalData::Metals& spots = mm->GetSpots();
+//	const CMetalData::Graph& clusterGraph = mm->GetGraph();
+//	CMetalData::Graph::out_edge_iterator outEdgeIt, outEdgeEnd;
+//	std::tie(outEdgeIt, outEdgeEnd) = boost::out_edges(cluster, clusterGraph);
+//	for (; (outEdgeIt != outEdgeEnd); ++outEdgeIt) {
+//		const CMetalData::EdgeDesc& edgeId = *outEdgeIt;
+//		int idx0 = boost::target(edgeId, clusterGraph);
+//		if (mm->IsClusterFinished(idx0)) {
+//			continue;
+//		}
+//		// check if there is enemy neighbor
+//		for (int idx : clusters[idx0].idxSpots) {
+//			if (threatMap->GetAllThreatAt(spots[idx].position) > THREAT_MIN * 2) {
+//				threatCount++;
+//				break;
+//			}
+//		}
+//		if (threatCount >= 2) {  // if 2 nearby clusters are a threat
+//			threatCount = 0;
+//			if (++clusterCount >= 3) {
+//				break;
+//			}
+//		}
+//	}
+//
+//	CDefenceMatrix* defMat = defence;
+//	CMetalData::MetalPredicate predicate = [defMat, terrainManager, area](const CMetalData::MetalNode& v) {
+//		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(v.second);
+//		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
+//			if ((defPoint.cost > 100.0f) && terrainManager->CanMoveToPos(area, defPoint.position)) {
+//				return true;
+//			}
+//		}
+//		return false;
+//	};
+//	CMetalManager* metalManager = circuit->GetMetalManager();
+//	int index = metalManager->FindNearestCluster(startPos, predicate);
+//	if (index >= 0) {
+//		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
+//		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
+//			ourPositions.push_back(defPoint.position);
+//		}
+//	}
+//
+//	/*
+//	 * Use base
+//	 */
+//	ourPositions.push_back(circuit->GetSetupManager()->GetBasePos());
+//
+////	FillSafePos(startPos, area, ourPositions);
+////	pathfinder->FindBestPath(posPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
+//
+//	ourPositions.clear();
 }
 
 void CMilitaryManager::FillSafePos(const AIFloat3& pos, STerrainMapArea* area, F3Vec& outPositions)

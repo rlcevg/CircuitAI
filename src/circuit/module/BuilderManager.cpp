@@ -959,7 +959,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 			if (!candidate->CanAssignTo(unit) || (isNotReady &&
 												  (candidate->GetPriority() != IBuilderTask::Priority::NOW) &&
 												  (candidate->GetBuildDef() != nullptr) &&
-												  !economyManager->IsIgnorePull(candidate)))
+												  !economyManager->IsIgnoreStallingPull(candidate)))
 			{
 				continue;
 			}

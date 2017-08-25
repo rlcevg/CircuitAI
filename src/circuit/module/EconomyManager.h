@@ -70,6 +70,7 @@ public:
 	bool IsOpenSpot(int spotId) const { return openSpots[spotId] && (mexCount < mexMax); }
 	void SetOpenSpot(int spotId, bool value);
 	bool IsIgnorePull(const IBuilderTask* task) const;
+	bool IsIgnoreStallingPull(const IBuilderTask* task) const;
 
 	IBuilderTask* MakeEconomyTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);

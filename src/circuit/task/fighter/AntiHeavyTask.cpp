@@ -241,6 +241,8 @@ void CAntiHeavyTask::Update()
 		circuit->GetMilitaryManager()->FillSafePos(startPos, leader->GetArea(), ourPositions);
 		pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
 		ourPositions.clear();
+
+//		circuit->GetMilitaryManager()->FindBestPos(*pPath, startPos, leader->GetArea(), false);
 	}
 
 	if (!pPath->empty()) {

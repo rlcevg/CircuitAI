@@ -490,8 +490,23 @@ void CEconomyManager::SetOpenSpot(int spotId, bool value)
 bool CEconomyManager::IsIgnorePull(const IBuilderTask* task) const
 {
 	return (mexMax < 0) && ((task->GetBuildType() == IBuilderTask::BuildType::MEX) ||
-							(task->GetBuildType() == IBuilderTask::BuildType::PYLON) ||
-							(task->GetBuildType() == IBuilderTask::BuildType::ENERGY));
+							(task->GetBuildType() == IBuilderTask::BuildType::PYLON));
+}
+
+bool CEconomyManager::IsIgnoreStallingPull(const IBuilderTask* task) const
+{
+	if (mexMax >= 0) {
+		return false;
+	}
+	if ((task->GetBuildType() == IBuilderTask::BuildType::MEX) ||
+		(task->GetBuildType() == IBuilderTask::BuildType::PYLON))
+	{
+		return true;
+	}
+	if ((task->GetBuildType() == IBuilderTask::BuildType::ENERGY) && circuit->GetEconomyManager()->IsEnergyStalling()) {
+		return true;
+	}
+	return false;
 }
 
 IBuilderTask* CEconomyManager::MakeEconomyTasks(const AIFloat3& position, CCircuitUnit* unit)

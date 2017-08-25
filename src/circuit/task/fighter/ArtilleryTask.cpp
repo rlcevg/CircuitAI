@@ -273,7 +273,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 	}
 
 	AIFloat3 startPos = pos;
-	range = std::max(range - threatMap->GetSquareSize(), (float)threatMap->GetSquareSize());
+	range = std::max(range/* - threatMap->GetSquareSize()*/, (float)threatMap->GetSquareSize());
 	pathfinder->FindBestPath(path, startPos, range, enemyPositions);
 	enemyPositions.clear();
 

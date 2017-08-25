@@ -1351,7 +1351,7 @@ void CTerrainManager::UpdateAreaUsers(int interval)
 				if (sector != nullptr) {
 					area = sector->area;
 				} else {
-					circuit->Garbage(unit, "useless");
+					circuit->Garbage(unit, "helpless");
 				}
 			}
 		}
