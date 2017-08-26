@@ -237,12 +237,7 @@ void CAntiHeavyTask::Update()
 		position = circuit->GetSetupManager()->GetBasePos();
 		pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize() * 4);
 	} else {
-		static F3Vec ourPositions;  // NOTE: micro-opt
-		circuit->GetMilitaryManager()->FillSafePos(startPos, leader->GetArea(), ourPositions);
-		pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
-		ourPositions.clear();
-
-//		circuit->GetMilitaryManager()->FindBestPos(*pPath, startPos, leader->GetArea(), false);
+		circuit->GetMilitaryManager()->FindBestPos(*pPath, startPos, leader->GetArea());
 	}
 
 	if (!pPath->empty()) {
@@ -376,7 +371,7 @@ void CAntiHeavyTask::FindTarget()
 
 	AIFloat3 startPos = pos;
 	circuit->GetPathfinder()->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	circuit->GetPathfinder()->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions);
+	circuit->GetPathfinder()->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions, false);
 	enemyPositions.clear();
 }
 

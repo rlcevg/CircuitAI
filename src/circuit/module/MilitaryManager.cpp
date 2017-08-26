@@ -731,36 +731,37 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 
 void CMilitaryManager::FindBestPos(F3Vec& posPath, AIFloat3& startPos, STerrainMapArea* area)
 {
-//	static F3Vec ourPositions;  // NOTE: micro-opt
-//
-//	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-//	CPathFinder* pathfinder = circuit->GetPathfinder();
-//	int frame = circuit->GetLastFrame();
-//
-//	/*
-//	 * Check mobile groups
-//	 */
-//	const std::array<IFighterTask::FightType, 2> types = {IFighterTask::FightType::ATTACK, IFighterTask::FightType::DEFEND};
-//	for (IFighterTask::FightType type : types) {
-//		const std::set<IFighterTask*>& atkTasks = GetTasks(type);
-//		for (IFighterTask* task : atkTasks) {
-//			const AIFloat3& ourPos = static_cast<ISquadTask*>(task)->GetLeaderPos(frame);
-//			if (terrainManager->CanMoveToPos(area, ourPos)) {
-//				ourPositions.push_back(ourPos);
-//			}
-//		}
-//		if (!ourPositions.empty()) {
-//			pathfinder->FindBestPath(posPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
-//			if (!posPath.empty()) {
-//				ourPositions.clear();
-//				return;
-//			}
-//		}
-//	}
-//
-//	/*
-//	 * Check static cluster defences
-//	 */
+	static F3Vec ourPositions;  // NOTE: micro-opt
+
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	int frame = circuit->GetLastFrame();
+
+	/*
+	 * Check mobile groups
+	 */
+	const std::array<IFighterTask::FightType, 2> types = {IFighterTask::FightType::ATTACK, IFighterTask::FightType::DEFEND};
+	for (IFighterTask::FightType type : types) {
+		const std::set<IFighterTask*>& atkTasks = GetTasks(type);
+		for (IFighterTask* task : atkTasks) {
+			const AIFloat3& ourPos = static_cast<ISquadTask*>(task)->GetLeaderPos(frame);
+			if (terrainManager->CanMoveToPos(area, ourPos)) {
+				ourPositions.push_back(ourPos);
+			}
+		}
+
+		if (!ourPositions.empty()) {
+			pathfinder->FindBestPath(posPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
+			ourPositions.clear();
+			if (!posPath.empty()) {
+				return;
+			}
+		}
+	}
+
+	/*
+	 * Check static cluster defences
+	 */
 //	unsigned threatCount = 0;
 //	unsigned clusterCount = 0;
 //	CThreatMap* threatMap = circuit->GetThreatMap();
@@ -790,41 +791,42 @@ void CMilitaryManager::FindBestPos(F3Vec& posPath, AIFloat3& startPos, STerrainM
 //			}
 //		}
 //	}
-//
-//	CDefenceMatrix* defMat = defence;
-//	CMetalData::MetalPredicate predicate = [defMat, terrainManager, area](const CMetalData::MetalNode& v) {
-//		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(v.second);
-//		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
-//			if ((defPoint.cost > 100.0f) && terrainManager->CanMoveToPos(area, defPoint.position)) {
-//				return true;
-//			}
-//		}
-//		return false;
-//	};
-//	CMetalManager* metalManager = circuit->GetMetalManager();
-//	int index = metalManager->FindNearestCluster(startPos, predicate);
-//	if (index >= 0) {
-//		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
-//		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
-//			ourPositions.push_back(defPoint.position);
-//		}
-//	}
-//
-//	/*
-//	 * Use base
-//	 */
-//	ourPositions.push_back(circuit->GetSetupManager()->GetBasePos());
-//
-////	FillSafePos(startPos, area, ourPositions);
-////	pathfinder->FindBestPath(posPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
-//
-//	ourPositions.clear();
+
+	CDefenceMatrix* defMat = defence;
+	CMetalData::MetalPredicate predicate = [defMat, terrainManager, area](const CMetalData::MetalNode& v) {
+		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(v.second);
+		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
+			if ((defPoint.cost > 100.0f) && terrainManager->CanMoveToPos(area, defPoint.position)) {
+				return true;
+			}
+		}
+		return false;
+	};
+	CMetalManager* metalManager = circuit->GetMetalManager();
+	int index = metalManager->FindNearestCluster(startPos, predicate);
+	if (index >= 0) {
+		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
+		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
+			ourPositions.push_back(defPoint.position);
+		}
+
+		pathfinder->FindBestPath(posPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
+		ourPositions.clear();
+		if (!posPath.empty()) {
+			return;
+		}
+	}
+
+	/*
+	 * Use base
+	 */
+	ourPositions.push_back(circuit->GetSetupManager()->GetBasePos());
+	pathfinder->FindBestPath(posPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
+	ourPositions.clear();
 }
 
 void CMilitaryManager::FillSafePos(const AIFloat3& pos, STerrainMapArea* area, F3Vec& outPositions)
 {
-	outPositions.push_back(circuit->GetSetupManager()->GetBasePos());
-
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	int frame = circuit->GetLastFrame();
 
@@ -859,6 +861,10 @@ void CMilitaryManager::FillSafePos(const AIFloat3& pos, STerrainMapArea* area, F
 		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
 			outPositions.push_back(defPoint.position);
 		}
+	}
+
+	if (outPositions.empty()) {
+		outPositions.push_back(circuit->GetSetupManager()->GetBasePos());
 	}
 }
 

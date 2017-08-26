@@ -1114,13 +1114,12 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(CCircuitUnit::Id unitId)
 	std::tie(area, isValid) = terrainManager->GetCurrentMapArea(cdef, unit->GetPos(lastFrame));
 	unit->SetArea(area);
 
+	teamUnits[unitId] = unit;
 	cdef->Inc();
+
 	if (!isValid) {
 		Garbage(unit, "useless");
-		return nullptr;
 	}
-	teamUnits[unitId] = unit;
-
 	return unit;
 }
 
