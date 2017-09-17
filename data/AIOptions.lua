@@ -101,14 +101,6 @@ local options = {
 --		section = 'config',
 --		def     = '',
 --	},
-
-	{ -- string
-		key     = 'version',
-		name    = 'AI version',
-		desc    = 'This value is used for parsing!',
-		type    = 'string',
-		def     = '0.9.21',
-	},
 }
 
 return options

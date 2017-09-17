@@ -476,11 +476,11 @@ void CSetupManager::Welcome() const
 #ifdef DEBUG_LOG
 	Info* info = circuit->GetSkirmishAI()->GetInfo();
 	const char* name = info->GetValueByKey("name");
-	OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
-	const char* value = options->GetValueByKey("version");
-	const char* version = (value != nullptr) ? value : info->GetValueByKey("version");
+//	OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
+//	const char* value = options->GetValueByKey("version");
+//	const char* version = (value != nullptr) ? value : info->GetValueByKey("version");
 	delete info;
-	delete options;
+//	delete options;
 
 	const int id = circuit->GetSkirmishAIId();
 	std::string welcome("/say "/*"a:"*/);
@@ -546,7 +546,7 @@ bool CSetupManager::LocatePath(std::string& filename)
 bool CSetupManager::LoadConfig(const std::string& cfgName)
 {
 	Info* info = circuit->GetSkirmishAI()->GetInfo();
-	const char* version = info->GetValueByKey("version");
+//	const char* version = info->GetValueByKey("version");
 	const char* name = info->GetValueByKey("shortName");
 	delete info;
 

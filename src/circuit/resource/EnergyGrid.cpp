@@ -12,6 +12,7 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
+#include "util/GameAttribute.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 #include "json/json.h"
@@ -95,6 +96,7 @@ CEnergyGrid::CEnergyGrid(CCircuitAI* circuit)
 	}
 
 	ReadConfig();
+	circuit->GetScheduler()->RunOnRelease(std::make_shared<CGameTask>(&CEnergyGrid::DelegateAuthority, this));
 }
 
 CEnergyGrid::~CEnergyGrid()
@@ -455,6 +457,16 @@ void CEnergyGrid::RebuildTree()
 	boost::kruskal_minimum_spanning_tree(ownedClusters, std::inserter(spanningTree, spanningTree.end()), boost::weight_map(w_map));
 }
 
+void CEnergyGrid::DelegateAuthority()
+{
+	for (CCircuitAI* candidate : circuit->GetGameAttribute()->GetCircuits()) {
+		if (candidate->IsInitialized() && (candidate != circuit) && (candidate->GetAllyTeamId() == circuit->GetAllyTeamId())) {
+			circuit = candidate;
+			circuit->GetScheduler()->RunOnRelease(std::make_shared<CGameTask>(&CEnergyGrid::DelegateAuthority, this));
+			break;
+		}
+	}
+}
 
 #ifdef DEBUG_VIS
 void CEnergyGrid::UpdateVis()

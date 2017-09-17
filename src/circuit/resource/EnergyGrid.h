@@ -63,6 +63,7 @@ private:
 
 	void MarkClusters();
 	void RebuildTree();
+	void DelegateAuthority();
 
 #ifdef DEBUG_VIS
 private:

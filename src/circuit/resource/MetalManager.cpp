@@ -23,6 +23,9 @@
 
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <boost/graph/filtered_graph.hpp>
+// FIXME: DEBUG
+#include <chrono>
+// FIXME: DEBUG
 
 namespace circuit {
 
@@ -182,29 +185,55 @@ void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	metalData->SetClusterizing(true);
 
-	// prepare parameters
-	MoveData* moveData = commDef->GetUnitDef()->GetMoveData();
-	int pathType = moveData->GetPathType();
-	delete moveData;
 	const float maxDistance = circuit->GetEconomyManager()->GetPylonRange() * 2;
-	Pathing* pathing = circuit->GetPathing();
-
 	const CMetalData::Metals& spots = metalData->GetSpots();
 	int nrows = spots.size();
 
 	std::shared_ptr<CRagMatrix> pdistmatrix = std::make_shared<CRagMatrix>(nrows);
 	CRagMatrix& distmatrix = *pdistmatrix;
-	for (int i = 1; i < nrows; i++) {
-		for (int j = 0; j < i; j++) {
-			float pathLength = pathing->GetApproximateLength(spots[i].position, spots[j].position, pathType, 0.0f);
-			float geomLength = spots[i].position.distance2D(spots[j].position);
-			distmatrix(i, j) = (geomLength * 1.4f < pathLength) ? pathLength : geomLength;
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	using std::chrono::milliseconds;
+	clock::time_point tDistanceMatrix = clock::now();
+	unsigned iii = 0;
+	// FIXME: DEBUG
+	if (nrows <= 300) {
+		MoveData* moveData = commDef->GetUnitDef()->GetMoveData();
+		int pathType = moveData->GetPathType();
+		delete moveData;
+		Pathing* pathing = circuit->GetPathing();
+		for (int i = 1; i < nrows; i++) {
+			for (int j = 0; j < i; j++) {
+				float geomLength = spots[i].position.distance2D(spots[j].position);
+				if (geomLength > 4 * maxDistance) {
+					distmatrix(i, j) = geomLength;
+				} else {
+					float pathLength = pathing->GetApproximateLength(spots[i].position, spots[j].position, pathType, 0.0f);
+					iii++;
+					distmatrix(i, j) = (geomLength * 1.4f < pathLength) ? pathLength : geomLength;
+				}
+			}
+		}
+	} else {
+		for (int i = 1; i < nrows; i++) {
+			for (int j = 0; j < i; j++) {
+				distmatrix(i, j) = spots[i].position.distance2D(spots[j].position);
+			}
 		}
 	}
+	// FIXME: DEBUG
+	circuit->LOG("%i | Create DistanceMatrix: %i ms | %i path calls", circuit->GetSkirmishAIId(), std::chrono::duration_cast<milliseconds>(clock::now() - tDistanceMatrix).count(), iii);
+	// FIXME: DEBUG
 
 	// NOTE: Parallel clusterization was here,
 	//       but bugs appeared: no communication with spring/lua
+	// FIXME: DEBUG
+	clock::time_point tClusterize = clock::now();
+	// FIXME: DEBUG
 	metalData->Clusterize(maxDistance, pdistmatrix);
+	// FIXME: DEBUG
+	circuit->LOG("%i | Clusterize: %i ms", circuit->GetSkirmishAIId(), std::chrono::duration_cast<milliseconds>(clock::now() - tClusterize).count());
+	// FIXME: DEBUG
 }
 
 void CMetalManager::Init()
@@ -362,7 +391,7 @@ int CMetalManager::GetMexToBuild(const AIFloat3& pos, MexPredicate& predicate)
 void CMetalManager::DelegateAuthority()
 {
 	for (CCircuitAI* candidate : circuit->GetGameAttribute()->GetCircuits()) {
-		if (candidate->IsInitialized() && (candidate != circuit)) {
+		if (candidate->IsInitialized() && (candidate != circuit) && (candidate->GetAllyTeamId() == circuit->GetAllyTeamId())) {
 			circuit = candidate;
 			circuit->GetScheduler()->RunOnRelease(std::make_shared<CGameTask>(&CMetalManager::DelegateAuthority, this));
 			break;
