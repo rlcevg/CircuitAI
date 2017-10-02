@@ -46,9 +46,6 @@
 
 #include <regex>
 #include <fstream>
-// FIXME: DEBUG
-#include <chrono>
-// FIXME: DEBUG
 
 namespace circuit {
 
@@ -559,23 +556,12 @@ void CCircuitAI::CheatPreload()
 
 int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICallback)
 {
-	// FIXME: DEBUG
-	using clock = std::chrono::high_resolution_clock;
-	using std::chrono::milliseconds;
-	clock::time_point t0 = clock::now();
-	// FIXME: DEBUG
 	this->skirmishAIId = skirmishAIId;
 	// NOTE: Due to chewed API only SSkirmishAICallback have access to Engine
 	this->sAICallback = sAICallback;
-	// FIXME: DEBUG
-	clock::time_point tModCheck = clock::now();
-	// FIXME: DEBUG
 	if (!IsModValid()) {
 		return ERROR_INIT;
 	}
-	// FIXME: DEBUG
-	LOG("%i | IsModValid: %i ms", skirmishAIId, std::chrono::duration_cast<milliseconds>(clock::now() - tModCheck).count());
-	// FIXME: DEBUG
 
 #ifdef DEBUG_VIS
 	debugDrawer = std::unique_ptr<CDebugDrawer>(new CDebugDrawer(this, sAICallback));
@@ -584,29 +570,14 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	}
 #endif
 
-	// FIXME: DEBUG
-	clock::time_point tScheduler = clock::now();
-	// FIXME: DEBUG
 	CreateGameAttribute();
 	scheduler = std::make_shared<CScheduler>();
 	scheduler->Init(scheduler);
-	// FIXME: DEBUG
-	LOG("%i | GameAttribute & Scheduler: %i ms", skirmishAIId, std::chrono::duration_cast<milliseconds>(clock::now() - tScheduler).count());
-	// FIXME: DEBUG
 
-	// FIXME: DEBUG
-	clock::time_point tOptions = clock::now();
-	// FIXME: DEBUG
 	std::string cfgName = InitOptions();
 	float decloakRadius;
 	InitUnitDefs(decloakRadius);  // Inits TerrainData
-	// FIXME: DEBUG
-	LOG("%i | InitOptions & InitUnitDefs: %i ms", skirmishAIId, std::chrono::duration_cast<milliseconds>(clock::now() - tOptions).count());
-	// FIXME: DEBUG
 
-	// FIXME: DEBUG
-	clock::time_point tSetup = clock::now();
-	// FIXME: DEBUG
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
 	if (!setupManager->OpenConfig(cfgName)) {
 		Release(RELEASE_CONFIG);
@@ -619,84 +590,27 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	}
 	allyTeam = setupManager->GetAllyTeam();
 	isAllyAware &= allyTeam->GetSize() > 1;
-	// FIXME: DEBUG
-	LOG("%i | SetupManager: %i ms", skirmishAIId, std::chrono::duration_cast<milliseconds>(clock::now() - tSetup).count());
-	// FIXME: DEBUG
 
-	// FIXME: DEBUG
-	clock::time_point tCreateTerrain = clock::now();
-	// FIXME: DEBUG
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
-	// FIXME: DEBUG
-	LOG("%i | Create TerrainManager: %i ms", skirmishAIId, std::chrono::duration_cast<milliseconds>(clock::now() - tCreateTerrain).count());
-	// FIXME: DEBUG
-	// FIXME: DEBUG
-	clock::time_point tCreateEconomy = clock::now();
-	// FIXME: DEBUG
 	economyManager = std::make_shared<CEconomyManager>(this);
-	// FIXME: DEBUG
-	LOG("%i | Create EconomyManager: %i ms", skirmishAIId, std::chrono::duration_cast<milliseconds>(clock::now() - tCreateEconomy).count());
-	// FIXME: DEBUG
-	// FIXME: DEBUG
-	clock::time_point tThreat = clock::now();
-	// FIXME: DEBUG
 	threatMap = std::make_shared<CThreatMap>(this, decloakRadius);
-	// FIXME: DEBUG
-	LOG("%i | Create ThreatMap: %i ms", skirmishAIId, std::chrono::duration_cast<milliseconds>(clock::now() - tThreat).count());
-	// FIXME: DEBUG
 
-	// FIXME: DEBUG
-	clock::time_point tAllyTeam = clock::now();
-	// FIXME: DEBUG
 	allyTeam->Init(this);
 	metalManager = allyTeam->GetMetalManager();
 	pathfinder = allyTeam->GetPathfinder();
-	// FIXME: DEBUG
-	LOG("%i | Init AllyTeam: %i ms", skirmishAIId, std::chrono::duration_cast<milliseconds>(clock::now() - tAllyTeam).count());
-	// FIXME: DEBUG
 
-	// FIXME: DEBUG
-	clock::time_point tInitTerrain = clock::now();
-	// FIXME: DEBUG
 	terrainManager->Init();
-	// FIXME: DEBUG
-	LOG("%i | Init TerrainManager: %i ms", skirmishAIId, std::chrono::duration_cast<milliseconds>(clock::now() - tInitTerrain).count());
-	// FIXME: DEBUG
 
-	// FIXME: DEBUG
-	clock::time_point tStartPos = clock::now();
-	// FIXME: DEBUG
 	if (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos()) {
 		const CSetupManager::StartPosType spt = metalManager->HasMetalSpots() ?
 												CSetupManager::StartPosType::METAL_SPOT :
 												CSetupManager::StartPosType::MIDDLE;
 		setupManager->PickStartPos(this, spt);
 	}
-	// FIXME: DEBUG
-	LOG("%i | PickStartPos: %i ms", skirmishAIId, std::chrono::duration_cast<milliseconds>(clock::now() - tStartPos).count());
-	// FIXME: DEBUG
 
-	// FIXME: DEBUG
-	clock::time_point tFactory = clock::now();
-	// FIXME: DEBUG
 	factoryManager = std::make_shared<CFactoryManager>(this);
-	// FIXME: DEBUG
-	LOG("%i | Create FactoryManager: %i ms", skirmishAIId, std::chrono::duration_cast<milliseconds>(clock::now() - tFactory).count());
-	// FIXME: DEBUG
-	// FIXME: DEBUG
-	clock::time_point tBuilder = clock::now();
-	// FIXME: DEBUG
 	builderManager = std::make_shared<CBuilderManager>(this);
-	// FIXME: DEBUG
-	LOG("%i | Create BuilderManager: %i ms", skirmishAIId, std::chrono::duration_cast<milliseconds>(clock::now() - tBuilder).count());
-	// FIXME: DEBUG
-	// FIXME: DEBUG
-	clock::time_point tMilitary = clock::now();
-	// FIXME: DEBUG
 	militaryManager = std::make_shared<CMilitaryManager>(this);
-	// FIXME: DEBUG
-	LOG("%i | Create MilitaryManager: %i ms", skirmishAIId, std::chrono::duration_cast<milliseconds>(clock::now() - tMilitary).count());
-	// FIXME: DEBUG
 
 //	InitKnownDefs(setupManager->GetCommChoice());
 
@@ -717,23 +631,12 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 		scheduler->RunTaskAt(std::make_shared<CGameTask>(&CCircuitAI::CheatPreload, this), skirmishAIId + 1);
 	}
 
-	// FIXME: DEBUG
-	clock::time_point tUpdate = clock::now();
-	// FIXME: DEBUG
 	Update(0);  // Init modules: allows to manipulate units on gadget:Initialize
-	// FIXME: DEBUG
-	LOG("%i | Init modules: %i ms", skirmishAIId, std::chrono::duration_cast<milliseconds>(clock::now() - tUpdate).count());
-	// FIXME: DEBUG
 	setupManager->Welcome();
 
 	setupManager->CloseConfig();
 	isInitialized = true;
 
-	// FIXME: DEBUG
-	clock::time_point t1 = clock::now();
-	size_t time = std::chrono::duration_cast<milliseconds>(t1 - t0).count();
-	LOG("%i | Total init time: %i ms", skirmishAIId, time);
-	// FIXME: DEBUG
 	return 0;  // signaling: OK
 }
 

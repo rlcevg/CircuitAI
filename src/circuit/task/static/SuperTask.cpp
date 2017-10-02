@@ -56,7 +56,7 @@ void CSuperTask::Execute(CCircuitUnit* unit)
 void CSuperTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	CCircuitUnit* unit = *units.begin();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsHoldFire()) {

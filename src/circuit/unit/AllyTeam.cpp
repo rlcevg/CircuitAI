@@ -71,6 +71,8 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 	defence = std::make_shared<CDefenceMatrix>(circuit);
 	pathfinder = std::make_shared<CPathFinder>(&circuit->GetGameAttribute()->GetTerrainData());
 	factoryData = std::make_shared<CFactoryData>(circuit);
+
+	circuit->GetScheduler()->RunOnRelease(std::make_shared<CGameTask>(&CAllyTeam::DelegateAuthority, this, circuit));
 }
 
 void CAllyTeam::Release()
@@ -141,6 +143,18 @@ CAllyTeam::SClusterTeam CAllyTeam::GetClusterTeam(int clusterId)
 		return it->second;
 	}
 	return SClusterTeam(-1);
+}
+
+void CAllyTeam::DelegateAuthority(CCircuitAI* curOwner)
+{
+	for (CCircuitAI* circuit : curOwner->GetGameAttribute()->GetCircuits()) {
+		if (circuit->IsInitialized() && (circuit != curOwner) && (circuit->GetAllyTeamId() == curOwner->GetAllyTeamId())) {
+			metalManager->SetAuthority(circuit);
+			energyGrid->SetAuthority(circuit);
+			circuit->GetScheduler()->RunOnRelease(std::make_shared<CGameTask>(&CAllyTeam::DelegateAuthority, this, circuit));
+			break;
+		}
+	}
 }
 
 } // namespace circuit

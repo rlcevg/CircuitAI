@@ -93,7 +93,7 @@ void IFighterTask::OnUnitIdle(CCircuitUnit* unit)
 void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	Unit* u = unit->GetUnit();
 	const float healthPerc = u->GetHealth() / u->GetMaxHealth();

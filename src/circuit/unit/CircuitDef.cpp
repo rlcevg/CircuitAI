@@ -71,6 +71,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, buildOptions(buildOpts)
 		, count(0)
 		, buildCounts(0)
+		, sinceFrame(-1)
 		, isAttacker(false)
 		, hasDGunAA(false)
 		, dgunMount(nullptr)

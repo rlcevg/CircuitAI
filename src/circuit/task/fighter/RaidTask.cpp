@@ -51,7 +51,7 @@ bool CRaidTask::CanAssignTo(CCircuitUnit* unit) const
 	if (attackPower > maxPower) {
 		return false;
 	}
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	if (leader->GetPos(frame).SqDistance2D(unit->GetPos(frame)) > SQUARE(1000.f)) {
 		return false;
 	}
@@ -140,7 +140,7 @@ void CRaidTask::Update()
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	bool isExecute = (updCount % 2 == 0) && (frame >= lastTouched + FRAMES_PER_SEC);
 	if (!isExecute) {
 		for (CCircuitUnit* unit : units) {

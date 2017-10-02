@@ -106,7 +106,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
 	)
 
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		int facing = target->GetUnit()->GetBuildingFacing();
 		TRY_UNIT(circuit, unit,
@@ -426,11 +426,11 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 		bool foundPylon = false;
 		CEconomyManager* economyManager = circuit->GetEconomyManager();
 		CCircuitDef* pylonDef = economyManager->GetPylonDef();
-		if (pylonDef->IsAvailable()) {
+		if (pylonDef->IsAvailable(circuit->GetLastFrame())) {
 			float ourRange = economyManager->GetEnergyGrid()->GetPylonRange(buildDef->GetId());
 			float pylonRange = economyManager->GetPylonRange();
 			float radius = pylonRange + ourRange;
-			int frame = circuit->GetLastFrame();
+			const int frame = circuit->GetLastFrame();
 			circuit->UpdateFriendlyUnits();
 			auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(buildPos, radius));
 			for (Unit* u : units) {
@@ -500,7 +500,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 			IBuilderTask* parent = nullptr;
 
 			for (const SBuildInfo& bi : queue) {
-				if (!bi.cdef->IsAvailable()) {
+				if (!bi.cdef->IsAvailable(circuit->GetLastFrame())) {
 					continue;
 				}
 				bool isValid = true;

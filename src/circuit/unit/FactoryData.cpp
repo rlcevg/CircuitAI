@@ -126,10 +126,11 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 		};
 	}
 
+	const int frame = circuit->GetLastFrame();
 	for (const auto& kv : allFactories) {
 		const SFactory& sfac = kv.second;
 		CCircuitDef* cdef = circuit->GetCircuitDef(sfac.id);
-		if (!cdef->IsAvailable() ||
+		if (!cdef->IsAvailable(frame) ||
 			!immobileType[cdef->GetImmobileId()].typeUsable ||
 			!predicate(cdef))
 		{
@@ -138,7 +139,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 		float importance;
 		if (isStart) {
 			CCircuitDef* bdef = factoryManager->GetRoleDef(cdef, CCircuitDef::RoleType::BUILDER);
-			importance = sfac.startImp * (((bdef != nullptr) && bdef->IsAvailable()) ? 1.f : .1f);
+			importance = sfac.startImp * (((bdef != nullptr) && bdef->IsAvailable(frame)) ? 1.f : .1f);
 		} else {
 			importance = sfac.switchImp;
 		}

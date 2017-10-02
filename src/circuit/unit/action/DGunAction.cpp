@@ -36,7 +36,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	}
 	isBlocking = false;
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	// NOTE: Paralyzer doesn't increase ReloadFrame beyond currentFrame, but disarmer does.
 	//       Also checking disarm is more expensive (because of UnitRulesParam).
 	if (!unit->IsDGunReady(frame) || unit->GetUnit()->IsParalyzed() /*|| unit->IsDisarmed(frame)*/) {

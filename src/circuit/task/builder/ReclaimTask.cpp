@@ -56,7 +56,7 @@ void CBReclaimTask::Update()
 		 */
 		// FIXME: Works only with 1 task per worker
 		CCircuitUnit* unit = *units.begin();
-		int frame = circuit->GetLastFrame();
+		const int frame = circuit->GetLastFrame();
 		const AIFloat3& pos = unit->GetPos(frame);
 		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(pos, 300.0f));
 		if (!enemies.empty()) {

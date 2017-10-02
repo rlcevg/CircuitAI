@@ -67,7 +67,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
 	)
 
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		int facing = target->GetUnit()->GetBuildingFacing();
 		TRY_UNIT(circuit, unit,
@@ -144,7 +144,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 	 */
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitDef* def = circuit->GetMilitaryManager()->GetDefaultPorc();
-	if ((def == nullptr) || !def->IsAvailable()) {
+	if ((def == nullptr) || !def->IsAvailable(circuit->GetLastFrame())) {
 		IBuilderTask::OnUnitIdle(unit);
 		return;
 	}

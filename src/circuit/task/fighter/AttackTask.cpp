@@ -169,7 +169,7 @@ void CAttackTask::Update()
 	 */
 	FindTarget();
 
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	state = State::ROAM;
 	if (target != nullptr) {
 		const float sqRange = SQUARE(highestRange);

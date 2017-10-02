@@ -35,6 +35,7 @@ public:
 
 	void ClusterizeMetal(CCircuitDef* commDef);
 	void Init();
+	void SetAuthority(CCircuitAI* authority) { circuit = authority; }
 
 public:
 	const CMetalData::Metals& GetSpots() const { return metalData->GetSpots(); }
@@ -97,8 +98,6 @@ public:
 	float GetMaxIncome() const { return metalData->GetMaxIncome(); }
 
 private:
-	void DelegateAuthority();
-
 	CCircuitAI* circuit;
 	CMetalData* metalData;
 

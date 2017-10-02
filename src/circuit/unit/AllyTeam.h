@@ -77,6 +77,8 @@ public:
 	SClusterTeam GetClusterTeam(int clusterId);
 
 private:
+	void DelegateAuthority(CCircuitAI* curOwner);
+
 	TeamIds teamIds;
 	SBox startBox;
 

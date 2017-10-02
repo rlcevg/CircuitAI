@@ -35,6 +35,7 @@ public:
 
 	float GetPylonRange(CCircuitDef::Id defId);
 
+	void SetAuthority(CCircuitAI* authority) { circuit = authority; }
 private:
 	void ReadConfig();
 	void Init();
@@ -63,7 +64,6 @@ private:
 
 	void MarkClusters();
 	void RebuildTree();
-	void DelegateAuthority();
 
 #ifdef DEBUG_VIS
 private:

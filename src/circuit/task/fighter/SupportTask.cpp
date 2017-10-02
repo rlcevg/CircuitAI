@@ -74,7 +74,7 @@ void CSupportTask::Update()
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	static F3Vec ourPositions;  // NOTE: micro-opt
 //	ourPositions.reserve(tasks.size());

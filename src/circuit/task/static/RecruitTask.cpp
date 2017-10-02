@@ -49,7 +49,7 @@ void CRecruitTask::Execute(CCircuitUnit* unit)
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
 	)
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 
 	const float buildDistance = unit->GetCircuitDef()->GetBuildDistance();
 	if (buildDistance > 200.0f) {

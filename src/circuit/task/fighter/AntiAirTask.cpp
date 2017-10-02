@@ -90,7 +90,7 @@ void CAntiAirTask::Update()
 	 * Check safety
 	 */
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 
 	if (State::DISENGAGE == state) {
 		if (updCount % 32 == 1) {
@@ -259,7 +259,7 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 		return;
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	static F3Vec ourPositions;  // NOTE: micro-opt
 	AIFloat3 startPos = leader->GetPos(frame);
 	circuit->GetMilitaryManager()->FillSafePos(startPos, leader->GetArea(), ourPositions);

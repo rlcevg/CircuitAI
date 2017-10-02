@@ -507,7 +507,7 @@ void CSetupManager::FindStart()
 		return;
 	}
 
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	AIFloat3 midPos = ZeroVector;
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
@@ -546,7 +546,7 @@ bool CSetupManager::LocatePath(std::string& filename)
 bool CSetupManager::LoadConfig(const std::string& cfgName)
 {
 	Info* info = circuit->GetSkirmishAI()->GetInfo();
-//	const char* version = info->GetValueByKey("version");
+	const char* version = info->GetValueByKey("version");
 	const char* name = info->GetValueByKey("shortName");
 	delete info;
 

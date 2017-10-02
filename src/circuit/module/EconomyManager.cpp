@@ -309,10 +309,11 @@ CCircuitDef* CEconomyManager::GetLowEnergy(const AIFloat3& pos, float& outMake) 
 {
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CCircuitDef* result = nullptr;
+	const int frame = circuit->GetLastFrame();
 	auto it = energyInfos.rbegin();
 	while (it != energyInfos.rend()) {
 		CCircuitDef* candy = it->cdef;
-		if (candy->IsAvailable() && terrainManager->CanBeBuiltAtSafe(candy, pos)) {
+		if (candy->IsAvailable(frame) && terrainManager->CanBeBuiltAtSafe(candy, pos)) {
 			result = candy;
 			outMake = it->make;
 			break;
@@ -541,7 +542,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 
 	// check uncolonized mexes
 	bool isEnergyStalling = IsEnergyStalling();
-	if (!isEnergyStalling && mexDef->IsAvailable()) {
+	if (!isEnergyStalling && mexDef->IsAvailable(circuit->GetLastFrame())) {
 		float cost = mexDef->GetCost();
 		unsigned maxCount = builderManager->GetBuildPower() / cost * 8 + 2;
 		if (builderManager->GetTasks(IBuilderTask::BuildType::MEX).size() < maxCount) {
@@ -677,9 +678,10 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	const int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
 	const float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.25f : ecoFactor);
 
+	const int frame = circuit->GetLastFrame();
 	for (const SEnergyInfo& engy : energyInfos) {  // sorted by high-tech first
 		// TODO: Add geothermal powerplant support
-		if (!engy.cdef->IsAvailable() ||
+		if (!engy.cdef->IsAvailable(frame) ||
 			!terrainManager->CanBeBuiltAtSafe(engy.cdef, position) ||
 			engy.cdef->GetUnitDef()->IsNeedGeo())
 		{
@@ -767,7 +769,8 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	CCircuitDef* airpadDef = factoryManager->GetAirpadDef();
 	const std::set<IBuilderTask*> &factoryTasks = builderManager->GetTasks(IBuilderTask::BuildType::FACTORY);
 	const unsigned airpadFactor = SQUARE((airpadDef->GetCount() + factoryTasks.size()) * 4);
-	if (airpadDef->IsAvailable() &&
+	const int frame = circuit->GetLastFrame();
+	if (airpadDef->IsAvailable(frame) &&
 		(militaryManager->GetRoleUnits(CCircuitDef::RoleType::BOMBER).size() > airpadFactor))
 	{
 		CCircuitDef* bdef;
@@ -795,7 +798,6 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	/*
 	 * check buildpower
 	 */
-	const int frame = circuit->GetLastFrame();
 	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome()) * ecoFactor;
 	CCircuitDef* assistDef = factoryManager->GetAssistDef();
 	const float factoryFactor = (metalIncome - assistDef->GetBuildSpeed()) * 1.2f;
@@ -811,7 +813,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	 */
 	if (!isSwitchTime) {
 		CCircuitUnit* factory = factoryManager->NeedUpgrade();
-		if ((factory != nullptr) && assistDef->IsAvailable()) {
+		if ((factory != nullptr) && assistDef->IsAvailable(frame)) {
 			AIFloat3 buildPos = factory->GetPos(frame);
 			switch (factory->GetUnit()->GetBuildingFacing()) {
 				default:
@@ -942,7 +944,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 	if ((storeDef == nullptr) ||
 		!builderManager->GetTasks(IBuilderTask::BuildType::STORE).empty() ||
 		(GetStorage(metalRes) > 10 * metalIncome) ||
-		!storeDef->IsAvailable())
+		!storeDef->IsAvailable(circuit->GetLastFrame()))
 	{
 		return UpdatePylonTasks();
 	}
@@ -974,7 +976,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 
 	const float energyIncome = GetAvgEnergyIncome();
 	const float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
-	if ((metalIncome < 10) || (energyIncome < 80) || !pylonDef->IsAvailable()) {
+	if ((metalIncome < 10) || (energyIncome < 80) || !pylonDef->IsAvailable(circuit->GetLastFrame())) {
 		return nullptr;
 	}
 
@@ -1178,7 +1180,7 @@ void CEconomyManager::OpenStrategy(CCircuitDef* facDef, const AIFloat3& pos)
 	}
 	for (CCircuitDef::RoleType type : *opener) {
 		CCircuitDef* buildDef = factoryManager->GetRoleDef(facDef, type);
-		if ((buildDef == nullptr) || !buildDef->IsAvailable()) {
+		if ((buildDef == nullptr) || !buildDef->IsAvailable(circuit->GetLastFrame())) {
 			continue;
 		}
 		CRecruitTask::Priority priotiry;

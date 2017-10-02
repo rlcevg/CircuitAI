@@ -40,7 +40,7 @@ void CSupportAction::Update(CCircuitAI* circuit)
 
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	CCircuitUnit* leader = static_cast<ISquadTask*>(unit->GetTask())->GetLeader();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = leader->GetPos(frame);
 	TRY_UNIT(circuit, unit,
 		if (unit->GetCircuitDef()->IsAttrMelee()) {

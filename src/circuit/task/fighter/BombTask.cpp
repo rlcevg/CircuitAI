@@ -85,7 +85,7 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	ITravelAction* travelAction = static_cast<ITravelAction*>(act);
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	if (!unit->IsWeaponReady(frame)) {  // reload empty unit
 		if (updCount % 32 == 0) {
 			TRY_UNIT(circuit, unit,

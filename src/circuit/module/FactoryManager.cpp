@@ -416,11 +416,24 @@ void CFactoryManager::FallbackTask(CCircuitUnit* unit)
 
 CCircuitUnit* CFactoryManager::NeedUpgrade()
 {
+	const int frame = circuit->GetLastFrame();
 	unsigned facSize = factories.size();
-	for (auto it = factories.rbegin(); it != factories.rend(); ++it) {
-		SFactory& fac = *it;
-		if (fac.nanos.size() < facSize * fac.weight) {
-			return fac.unit;
+	for (auto itF = factories.rbegin(); itF != factories.rend(); ++itF) {
+		SFactory& fac = *itF;
+
+		auto itD = factoryDefs.find(fac.unit->GetCircuitDef()->GetId());
+		if (itD != factoryDefs.end()) {
+			const SFactoryDef& facDef = itD->second;
+
+			for (CCircuitDef* cdef : facDef.buildDefs) {
+				if (cdef->IsAvailable(frame)) {
+					if (fac.nanos.size() < facSize * fac.weight) {
+						return fac.unit;
+					} else {
+						break;
+					}
+				}
+			}
 		}
 	}
 	return nullptr;
@@ -433,7 +446,7 @@ CCircuitUnit* CFactoryManager::GetClosestFactory(AIFloat3 position)
 	int iS = terrainManager->GetSectorIndex(position);
 	CCircuitUnit* factory = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	for (SFactory& fac : factories) {
 		STerrainMapArea* area = fac.unit->GetArea();
 		if ((area != nullptr) && (area->sector.find(iS) == area->sector.end())) {
@@ -456,7 +469,7 @@ CCircuitUnit* CFactoryManager::GetClosestFactory(AIFloat3 position)
 //	int iS = terrainManager->GetSectorIndex(position);
 //	CCircuitDef* roleDef = nullptr;
 //	float minSqDist = std::numeric_limits<float>::max();
-//	int frame = circuit->GetLastFrame();
+//	const int frame = circuit->GetLastFrame();
 //	for (SFactory& fac : factories) {
 //		STerrainMapArea* area = fac.unit->GetArea();
 //		if ((area != nullptr) && (area->sector.find(iS) == area->sector.end())) {
@@ -535,7 +548,7 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 	}
 	CCircuitDef* buildDef = it->second.GetRoleDef(CCircuitDef::RoleType::BUILDER);
 
-	if ((buildDef != nullptr) && buildDef->IsAvailable()) {
+	if ((buildDef != nullptr) && buildDef->IsAvailable(circuit->GetLastFrame())) {
 		const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
 		if (!terrainManager->CanBeBuiltAt(buildDef, pos, unit->GetCircuitDef()->GetBuildDistance())) {
@@ -584,16 +597,17 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	static std::vector<std::pair<CCircuitDef*, float>> candidates;  // NOTE: micro-opt
 //	candidates.reserve(facDef.buildDefs.size());
+	const int frame = circuit->GetLastFrame();
 	const float energyNet = economyManager->GetAvgEnergyIncome() - economyManager->GetEnergyUse();
 	const float maxCost = militaryManager->GetArmyCost();
 	const float range = unit->GetCircuitDef()->GetBuildDistance();
-	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
+	const AIFloat3& pos = unit->GetPos(frame);
 	float magnitude = 0.f;
 	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
 		CCircuitDef* bd = facDef.buildDefs[i];
 		if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) ||
 			(bd->GetCost() > maxCost) ||
-			!bd->IsAvailable() ||
+			!bd->IsAvailable(frame) ||
 			!terrainManager->CanBeBuiltAt(bd, pos, range))
 		{
 			continue;
@@ -613,7 +627,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
 			CCircuitDef* bd = facDef.buildDefs[i];
 			if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) ||
-				!bd->IsAvailable() ||
+				!bd->IsAvailable(frame) ||
 				!terrainManager->CanBeBuiltAtSafe(bd, pos, range))
 			{
 				continue;
@@ -640,7 +654,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 	candidates.clear();
 
-	if ((buildDef != nullptr) && buildDef->IsAvailable()) {
+	if ((buildDef != nullptr) && buildDef->IsAvailable(frame)) {
 		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
 		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
 		// FIXME CCircuitDef::RoleType <-> CRecruitTask::RecruitType relations
@@ -792,6 +806,11 @@ void CFactoryManager::ReadConfig()
 		const Json::Value& limit = behaviour["limit"];
 		if (!limit.isNull()) {
 			cdef->SetMaxThisUnit(std::min(limit.asInt(), cdef->GetMaxThisUnit()));
+		}
+
+		const Json::Value& since = behaviour["since"];
+		if (!since.isNull()) {
+			cdef->SetSinceFrame(since.asInt() * FRAMES_PER_SEC);
 		}
 
 		cdef->SetRetreat(behaviour.get("retreat", cdef->GetRetreat()).asFloat());
@@ -1031,12 +1050,12 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 
 void CFactoryManager::DisableFactory(CCircuitUnit* unit)
 {
-	auto checkBuilderFactory = [this]() {
+	auto checkBuilderFactory = [this](const int frame) {
 		CBuilderManager* builderManager = this->circuit->GetBuilderManager();
 		// check if any factory with builders left
 		bool hasBuilder = false;
 		for (SFactory& fac : factories) {
-			if ((fac.builder != nullptr) && fac.builder->IsAvailable()) {
+			if ((fac.builder != nullptr) && fac.builder->IsAvailable(frame)) {
 				hasBuilder = true;
 				break;
 			}
@@ -1049,7 +1068,7 @@ void CFactoryManager::DisableFactory(CCircuitUnit* unit)
 				if (it != factoryDefs.end()) {
 					const SFactoryDef& facDef = it->second;
 					CCircuitDef* bdef = facDef.GetRoleDef(CCircuitDef::RoleType::BUILDER);
-					hasBuilder = ((bdef != nullptr) && bdef->IsAvailable());
+					hasBuilder = ((bdef != nullptr) && bdef->IsAvailable(frame));
 					if (hasBuilder) {
 						break;
 					} else if (task->GetTarget() == nullptr) {
@@ -1068,7 +1087,7 @@ void CFactoryManager::DisableFactory(CCircuitUnit* unit)
 	};
 
 	if (unit->GetTask()->GetType() == IUnitTask::Type::NIL) {
-		checkBuilderFactory();
+		checkBuilderFactory(circuit->GetLastFrame());
 		return;
 	}
 	factoryPower -= unit->GetBuildSpeed();
@@ -1090,15 +1109,15 @@ void CFactoryManager::DisableFactory(CCircuitUnit* unit)
 	}
 
 	if (!factories.empty()) {
-		const AIFloat3& pos = factories.front().unit->GetPos(this->circuit->GetLastFrame());
-		this->circuit->GetSetupManager()->SetBasePos(pos);
+		const AIFloat3& pos = factories.front().unit->GetPos(circuit->GetLastFrame());
+		circuit->GetSetupManager()->SetBasePos(pos);
 	}
 
 	if (unit->GetCircuitDef()->GetMobileId() < 0) {
 		validAir.erase(unit);
 	}
 
-	checkBuilderFactory();
+	checkBuilderFactory(circuit->GetLastFrame());
 }
 
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)

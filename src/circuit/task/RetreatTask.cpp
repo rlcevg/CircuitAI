@@ -101,7 +101,7 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 	ITravelAction* travelAction = static_cast<ITravelAction*>(act);
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	AIFloat3 startPos = unit->GetPos(frame);
 	AIFloat3 endPos;
@@ -133,7 +133,7 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 void CRetreatTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	bool isExecute = (++updCount % 2 == 0);
 	auto assignees = units;
 	for (CCircuitUnit* unit : assignees) {
@@ -170,7 +170,7 @@ void CRetreatTask::Cancel()
 void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsPlane()) {
@@ -268,7 +268,7 @@ void CRetreatTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	AIFloat3 startPos = (*units.begin())->GetPos(frame);
 	AIFloat3 endPos;

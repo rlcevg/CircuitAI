@@ -33,7 +33,7 @@ CFightAction::~CFightAction()
 void CFightAction::Update(CCircuitAI* circuit)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 
 	float stepSpeed;
 	int pathMaxIndex = CalcSpeedStep(frame, stepSpeed);

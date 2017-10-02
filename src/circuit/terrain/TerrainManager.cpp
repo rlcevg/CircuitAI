@@ -1332,7 +1332,7 @@ bool CTerrainManager::CanMobileBuildAtSafe(STerrainMapArea* area, CCircuitDef* b
 void CTerrainManager::UpdateAreaUsers(int interval)
 {
 	areaData = terrainData->GetNextAreaData();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
 

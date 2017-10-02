@@ -10,8 +10,6 @@
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
-#include "util/GameAttribute.h"
-#include "util/Scheduler.h"
 #include "util/math/RagMatrix.h"
 #include "util/utils.h"
 #include "json/json.h"
@@ -23,9 +21,6 @@
 
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <boost/graph/filtered_graph.hpp>
-// FIXME: DEBUG
-#include <chrono>
-// FIXME: DEBUG
 
 namespace circuit {
 
@@ -88,8 +83,6 @@ CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData)
 		ParseMetalSpots();
 	}
 	metalInfos.resize(metalData->GetSpots().size(), {true, -1});
-
-	circuit->GetScheduler()->RunOnRelease(std::make_shared<CGameTask>(&CMetalManager::DelegateAuthority, this));
 }
 
 CMetalManager::~CMetalManager()
@@ -191,12 +184,6 @@ void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
 
 	std::shared_ptr<CRagMatrix> pdistmatrix = std::make_shared<CRagMatrix>(nrows);
 	CRagMatrix& distmatrix = *pdistmatrix;
-	// FIXME: DEBUG
-	using clock = std::chrono::high_resolution_clock;
-	using std::chrono::milliseconds;
-	clock::time_point tDistanceMatrix = clock::now();
-	unsigned iii = 0;
-	// FIXME: DEBUG
 	if (nrows <= 300) {
 		MoveData* moveData = commDef->GetUnitDef()->GetMoveData();
 		int pathType = moveData->GetPathType();
@@ -209,7 +196,6 @@ void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
 					distmatrix(i, j) = geomLength;
 				} else {
 					float pathLength = pathing->GetApproximateLength(spots[i].position, spots[j].position, pathType, 0.0f);
-					iii++;
 					distmatrix(i, j) = (geomLength * 1.4f < pathLength) ? pathLength : geomLength;
 				}
 			}
@@ -221,19 +207,10 @@ void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
 			}
 		}
 	}
-	// FIXME: DEBUG
-	circuit->LOG("%i | Create DistanceMatrix: %i ms | %i path calls", circuit->GetSkirmishAIId(), std::chrono::duration_cast<milliseconds>(clock::now() - tDistanceMatrix).count(), iii);
-	// FIXME: DEBUG
 
 	// NOTE: Parallel clusterization was here,
 	//       but bugs appeared: no communication with spring/lua
-	// FIXME: DEBUG
-	clock::time_point tClusterize = clock::now();
-	// FIXME: DEBUG
 	metalData->Clusterize(maxDistance, pdistmatrix);
-	// FIXME: DEBUG
-	circuit->LOG("%i | Clusterize: %i ms", circuit->GetSkirmishAIId(), std::chrono::duration_cast<milliseconds>(clock::now() - tClusterize).count());
-	// FIXME: DEBUG
 }
 
 void CMetalManager::Init()
@@ -386,17 +363,6 @@ int CMetalManager::GetMexToBuild(const AIFloat3& pos, MexPredicate& predicate)
 
 	indices.clear();
 	return result;
-}
-
-void CMetalManager::DelegateAuthority()
-{
-	for (CCircuitAI* candidate : circuit->GetGameAttribute()->GetCircuits()) {
-		if (candidate->IsInitialized() && (candidate != circuit) && (candidate->GetAllyTeamId() == circuit->GetAllyTeamId())) {
-			circuit = candidate;
-			circuit->GetScheduler()->RunOnRelease(std::make_shared<CGameTask>(&CMetalManager::DelegateAuthority, this));
-			break;
-		}
-	}
 }
 
 } // namespace circuit

@@ -146,7 +146,8 @@ public:
 
 	void SetMaxThisUnit(int value) { maxThisUnit = value; }
 	int GetMaxThisUnit() const { return maxThisUnit; }
-	bool IsAvailable() const { return maxThisUnit > count; }
+	void SetSinceFrame(int frame) { sinceFrame = frame; }
+	bool IsAvailable(int frame) const { return (maxThisUnit > count) && (frame >= sinceFrame); }
 
 	void IncBuild() { ++buildCounts; }
 	void DecBuild() { --buildCounts; }
@@ -230,6 +231,7 @@ private:
 	int count;
 	int buildCounts;  // number of builder defs able to build this def;
 	int maxThisUnit;
+	int sinceFrame;
 
 	bool isAttacker;
 	bool hasDGun;

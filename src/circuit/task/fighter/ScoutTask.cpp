@@ -71,7 +71,7 @@ void CScoutTask::Execute(CCircuitUnit* unit)
 void CScoutTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 
 	if ((++updCount % 2 == 0) && (frame >= lastTouched + FRAMES_PER_SEC)) {
 		lastTouched = frame;
@@ -96,7 +96,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	ITravelAction* travelAction = static_cast<ITravelAction*>(act);
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
 	std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()

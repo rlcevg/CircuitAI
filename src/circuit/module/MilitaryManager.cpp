@@ -592,9 +592,10 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	AIFloat3 backPos = closestPoint->position + backDir.Normalize2D() * SQUARE_SIZE * 16;
 	CTerrainManager::CorrectPosition(backPos);
 
+	const int frame = circuit->GetLastFrame();
 	for (unsigned i = 0; i < num; ++i) {
 		CCircuitDef* defDef = defenders[i];
-		if (!defDef->IsAvailable() || (defDef->IsRoleAA() && (GetEnemyCost(CCircuitDef::RoleType::AIR) < 1.f))) {
+		if (!defDef->IsAvailable(frame) || (defDef->IsRoleAA() && (GetEnemyCost(CCircuitDef::RoleType::AIR) < 1.f))) {
 			continue;
 		}
 		float defCost = defDef->GetCost();
@@ -650,11 +651,11 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 		}
 	};
 	// radar
-	if ((radarDef != nullptr) && radarDef->IsAvailable() && (radarDef->GetCost() < maxCost)) {
+	if ((radarDef != nullptr) && radarDef->IsAvailable(frame) && (radarDef->GetCost() < maxCost)) {
 		checkSensor(IBuilderTask::BuildType::RADAR, radarDef, radarDef->GetUnitDef()->GetRadarRadius() / SQRT_2);
 	}
 	// sonar
-	if (isWater && (sonarDef != nullptr) && sonarDef->IsAvailable() && (sonarDef->GetCost() < maxCost)) {
+	if (isWater && (sonarDef != nullptr) && sonarDef->IsAvailable(frame) && (sonarDef->GetCost() < maxCost)) {
 		checkSensor(IBuilderTask::BuildType::SONAR, sonarDef, sonarDef->GetUnitDef()->GetSonarRadius());
 	}
 }
@@ -735,7 +736,7 @@ void CMilitaryManager::FindBestPos(F3Vec& posPath, AIFloat3& startPos, STerrainM
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 
 	/*
 	 * Check mobile groups
@@ -828,7 +829,7 @@ void CMilitaryManager::FindBestPos(F3Vec& posPath, AIFloat3& startPos, STerrainM
 void CMilitaryManager::FillSafePos(const AIFloat3& pos, STerrainMapArea* area, F3Vec& outPositions)
 {
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 
 	const std::array<IFighterTask::FightType, 2> types = {IFighterTask::FightType::ATTACK, IFighterTask::FightType::DEFEND};
 	for (IFighterTask::FightType type : types) {
@@ -1093,13 +1094,13 @@ void CMilitaryManager::UpdateDefenceTasks()
 
 void CMilitaryManager::UpdateDefence()
 {
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	decltype(buildDefence)::iterator ibd = buildDefence.begin();
 	while (ibd != buildDefence.end()) {
 		const auto& defElem = ibd->second.back();
 		if (frame >= defElem.second) {
 			CCircuitDef* buildDef = defElem.first;
-			if (buildDef->IsAvailable()) {
+			if (buildDef->IsAvailable(frame)) {
 				circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, ibd->first,
 														  IBuilderTask::BuildType::DEFENCE, 0.f, true, 0);
 			}

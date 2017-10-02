@@ -91,7 +91,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	ITravelAction* travelAction = static_cast<ITravelAction*>(act);
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
 	std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
 	CEnemyUnit* bestTarget = FindTarget(unit, pos, *pPath);

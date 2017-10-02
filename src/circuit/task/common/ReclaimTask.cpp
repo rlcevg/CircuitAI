@@ -68,7 +68,7 @@ void IReclaimTask::Execute(CCircuitUnit* unit)
 		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
 	)
 
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		TRY_UNIT(circuit, unit,
 			u->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);

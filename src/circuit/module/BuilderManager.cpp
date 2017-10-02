@@ -660,7 +660,7 @@ void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 {
 	DequeueTask(static_cast<IBuilderTask*>(unit->GetTask()));
 
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
 	IBuilderTask* task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 5);
 	task->AssignTo(unit);
@@ -835,7 +835,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 {
 	circuit->GetThreatMap()->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	AIFloat3 pos = unit->GetPos(frame);
 
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
@@ -918,7 +918,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 			task = EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, FRAMES_PER_SEC * 60);
 		} else {
 			CCircuitDef* buildDef = circuit->GetMilitaryManager()->GetDefaultPorc();
-			if ((buildDef != nullptr) && buildDef->IsAvailable()) {
+			if ((buildDef != nullptr) && buildDef->IsAvailable(frame)) {
 				task = EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, pos, IBuilderTask::BuildType::DEFENCE);
 			}
 		}
@@ -932,7 +932,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	threatMap->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	AIFloat3 pos = unit->GetPos(frame);
 
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
@@ -1052,7 +1052,7 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 		if (buildDef == nullptr) {  // position can be in danger
 			buildDef = em->GetDefaultDef();
 		}
-		if ((buildDef->GetCount() < 10) && buildDef->IsAvailable()) {
+		if ((buildDef->GetCount() < 10) && buildDef->IsAvailable(circuit->GetLastFrame())) {
 			return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
 		}
 	} else {
@@ -1061,7 +1061,7 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 		if ((buildDef != nullptr) && (buildDef->GetCost() < super.maxTime * metalIncome)) {
 			const std::set<IBuilderTask*>& tasks = GetTasks(IBuilderTask::BuildType::BIG_GUN);
 			if (tasks.empty()) {
-				if (buildDef->IsAvailable() && militaryManager->IsNeedBigGun(buildDef)) {
+				if (buildDef->IsAvailable(circuit->GetLastFrame()) && militaryManager->IsNeedBigGun(buildDef)) {
 					AIFloat3 pos = militaryManager->GetBigGunPos(buildDef);
 					return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, pos,
 									   IBuilderTask::BuildType::BIG_GUN);

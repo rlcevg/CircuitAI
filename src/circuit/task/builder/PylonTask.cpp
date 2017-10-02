@@ -45,7 +45,7 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
 	)
 
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		int facing = target->GetUnit()->GetBuildingFacing();
 		TRY_UNIT(circuit, unit,

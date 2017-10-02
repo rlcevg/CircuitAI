@@ -140,7 +140,7 @@ ISquadTask* ISquadTask::GetMergeTask() const
 {
 	const ISquadTask* task = nullptr;
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 
 	AIFloat3 pos = leader->GetPos(frame);
 	STerrainMapArea* area = leader->GetArea();
@@ -191,7 +191,7 @@ bool ISquadTask::IsMustRegroup()
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	int frame = circuit->GetLastFrame();
+	const int frame = circuit->GetLastFrame();
 	static std::vector<CCircuitUnit*> validUnits;  // NOTE: micro-opt
 //	validUnits.reserve(units.size());
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();;
