@@ -45,7 +45,7 @@ bool CAntiAirTask::CanAssignTo(CCircuitUnit* unit) const
 	{
 		return false;
 	}
-	int frame = manager->GetCircuit()->GetLastFrame();
+	const int frame = manager->GetCircuit()->GetLastFrame();
 	if (leader->GetPos(frame).SqDistance2D(unit->GetPos(frame)) > SQUARE(1000.f)) {
 		return false;
 	}

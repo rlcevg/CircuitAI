@@ -43,7 +43,7 @@ CAttackTask::~CAttackTask()
 bool CAttackTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	assert(leader != nullptr);
-	int frame = manager->GetCircuit()->GetLastFrame();
+	const int frame = manager->GetCircuit()->GetLastFrame();
 	if (leader->GetPos(frame).SqDistance2D(unit->GetPos(frame)) > SQUARE(1000.f)) {
 		return false;
 	}

@@ -48,7 +48,7 @@ void CSuperTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CSuperTask::Execute(CCircuitUnit* unit)
 {
-	int frame = manager->GetCircuit()->GetLastFrame();
+	const int frame = manager->GetCircuit()->GetLastFrame();
 	targetFrame = frame - TARGET_DELAY;
 	position = unit->GetPos(frame);
 }
