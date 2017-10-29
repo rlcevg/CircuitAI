@@ -473,7 +473,6 @@ const CSetupManager::SCommInfo::SHide* CSetupManager::GetHide(const CCircuitDef*
 
 void CSetupManager::Welcome() const
 {
-#ifdef DEBUG_LOG
 	Info* info = circuit->GetSkirmishAI()->GetInfo();
 	const char* name = info->GetValueByKey("name");
 //	OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
@@ -483,11 +482,15 @@ void CSetupManager::Welcome() const
 //	delete options;
 
 	const int id = circuit->GetSkirmishAIId();
+#ifdef DEBUG_LOG
 	std::string welcome("/say "/*"a:"*/);
-
 	welcome += std::string(name) + " " + std::string(version) +
 			utils::int_to_string(id, " (%i)  Good fun, have luck!");
 	circuit->GetGame()->SendTextMessage(welcome.c_str(), 0);
+#else
+	std::string welcome = std::string(name) + " " + std::string(version) +
+			utils::int_to_string(id, " (%i) Initialized!");
+	circuit->LOG("%s", welcome.c_str());
 #endif
 }
 
