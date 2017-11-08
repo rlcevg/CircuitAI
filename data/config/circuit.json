@@ -391,7 +391,9 @@
 	"def_rad": 475,  // defence radius
 	"thr_mod": {
 		"attack": [1.05, 1.10],  // [<min>, <max>] enemy threat modifier for target selection of attack task
-		"defence": [1.00, 1.00]  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
+		"defence": [1.00, 1.00],  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
+		"mobile": 1.0,  // initial modifier for power of attack group based on mobile enemy threat
+		"static": 0.0  // initial modifier for power of attack group based on static enemy threat
 	},
 	"aa_threat": 80.0,  // anti-air threat threshold, air factories will stop production when AA threat exceeds
 	"slack_mod": 3

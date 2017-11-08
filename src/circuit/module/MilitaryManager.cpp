@@ -929,9 +929,7 @@ void CMilitaryManager::AddEnemyCost(const CEnemyUnit* e)
 			info.threat += cdef->GetThreat();
 		}
 	}
-	if (cdef->IsMobile()) {
-		enemyThreat += cdef->GetThreat();
-	}
+	enemyThreat += cdef->GetThreat() * (cdef->IsMobile() ? initThrMod.inMobile : initThrMod.inStatic);
 }
 
 void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
@@ -946,9 +944,7 @@ void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
 			info.threat = std::max(info.threat - cdef->GetThreat(), 0.f);
 		}
 	}
-	if (cdef->IsMobile()) {
-		enemyThreat = std::max(enemyThreat - cdef->GetThreat(), 0.f);
-	}
+	enemyThreat = std::max(enemyThreat - cdef->GetThreat() * (cdef->IsMobile() ? initThrMod.inMobile : initThrMod.inStatic), 0.f);
 }
 
 void CMilitaryManager::AddResponse(CCircuitUnit* unit)
@@ -1183,6 +1179,8 @@ void CMilitaryManager::ReadConfig()
 	const Json::Value& qthrDef = qthrMod["defence"];
 	defenceMod.min = qthrDef.get((unsigned)0, 1.f).asFloat();
 	defenceMod.len = qthrDef.get((unsigned)1, 1.f).asFloat() - defenceMod.min;
+	initThrMod.inMobile = qthrMod.get("mobile", 1.f).asFloat();
+	initThrMod.inStatic = qthrMod.get("static", 0.f).asFloat();
 	maxAAThreat = quotas.get("aa_threat", 42.f).asFloat();
 
 	const Json::Value& porc = root["porcupine"];

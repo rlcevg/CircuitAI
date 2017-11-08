@@ -159,6 +159,10 @@ private:
 	float armyCost;
 
 	float enemyThreat;
+	struct SInitThreatMod {
+		float inMobile;
+		float inStatic;
+	} initThrMod;
 	struct SEnemyInfo {
 		float cost;
 		float threat;
