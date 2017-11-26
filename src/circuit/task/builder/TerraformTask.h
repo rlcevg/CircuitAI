@@ -30,7 +30,7 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 
 protected:
-	CCircuitUnit::Id targetId;  // Ignore "target" as it could be destroyed
+	ICoreUnit::Id targetId;  // Ignore "target" as it could be destroyed
 };
 
 } // namespace circuit

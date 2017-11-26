@@ -34,7 +34,7 @@ CEnergyLink::~CEnergyLink()
 	delete v1;
 }
 
-void CEnergyLink::AddPylon(CCircuitUnit::Id unitId, const AIFloat3& pos, float range)
+void CEnergyLink::AddPylon(ICoreUnit::Id unitId, const AIFloat3& pos, float range)
 {
 	if (pylons.find(unitId) != pylons.end()) {
 		return;
@@ -62,7 +62,7 @@ void CEnergyLink::AddPylon(CCircuitUnit::Id unitId, const AIFloat3& pos, float r
 	}
 }
 
-bool CEnergyLink::RemovePylon(CCircuitUnit::Id unitId)
+bool CEnergyLink::RemovePylon(ICoreUnit::Id unitId)
 {
 	auto it = pylons.find(unitId);
 	if (it == pylons.end()) {

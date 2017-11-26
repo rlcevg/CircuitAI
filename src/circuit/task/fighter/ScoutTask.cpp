@@ -231,7 +231,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 			if (enemy->IsInRadarOrLOS()) {
 //				AIFloat3 dir = enemy->GetUnit()->GetPos() - pos;
 //				float rayRange = dir.LengthNormalize();
-//				CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, u, 0);
+//				CUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, u, 0);
 //				if (hitUID == enemy->GetId()) {
 					if (((targetCat & noChaseCat) == 0) && !enemy->GetUnit()->IsBeingBuilt()) {
 						if (isBuilder) {

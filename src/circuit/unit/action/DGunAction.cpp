@@ -6,6 +6,7 @@
  */
 
 #include "unit/action/DGunAction.h"
+#include "unit/CircuitUnit.h"
 #include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -72,7 +73,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 		// NOTE: TraceRay check is mostly to ensure shot won't go into terrain.
 		//       Doesn't properly work with standoff weapons.
 		//       C API also returns rayLen.
-		CCircuitUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, unit->GetUnit(), 0);
+		ICoreUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, unit->GetUnit(), 0);
 		if (hitUID != enemy->GetId()) {
 			continue;
 		}

@@ -17,7 +17,7 @@ namespace circuit {
 
 using namespace springai;
 
-CBRepairTask::CBRepairTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, int timeout)
+CBRepairTask::CBRepairTask(ITaskManager* mgr, Priority priority, CAllyUnit* target, int timeout)
 		: IRepairTask(mgr, priority, Type::BUILDER, target, timeout)
 {
 }

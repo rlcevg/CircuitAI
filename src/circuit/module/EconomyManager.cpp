@@ -122,7 +122,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		AddMorphee(unit);
 		this->circuit->GetSetupManager()->SetCommander(unit);
 
-		CCircuitUnit::Id unitId = unit->GetId();
+		ICoreUnit::Id unitId = unit->GetId();
 		this->circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this, unitId]() {
 			CCircuitUnit* unit = this->circuit->GetTeamUnit(unitId);
 			if (unit == nullptr) {

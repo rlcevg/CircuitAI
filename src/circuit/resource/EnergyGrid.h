@@ -42,7 +42,7 @@ private:
 	CCircuitAI* circuit;
 
 	int markFrame;
-	std::deque<CCircuitUnit::Id> markedPylons;  // sorted by insertion
+	std::deque<ICoreUnit::Id> markedPylons;  // sorted by insertion
 	std::unordered_map<CCircuitDef::Id, float> pylonRanges;
 	std::map<float, CCircuitDef::Id> rangePylons;
 
@@ -51,9 +51,9 @@ private:
 	std::vector<CEnergyLink> links;  // Graph's exterior property
 	link_iterator_t linkIt;  // Alternative: links[clusterGraph[*linkEdgeIt].index]
 
-	void MarkAllyPylons(const std::vector<CCircuitUnit*>& pylons);
-	void AddPylon(CCircuitUnit::Id unitId, CCircuitDef::Id defId, const springai::AIFloat3& pos);
-	void RemovePylon(CCircuitUnit::Id unitId);
+	void MarkAllyPylons(const std::vector<CAllyUnit*>& pylons);
+	void AddPylon(ICoreUnit::Id unitId, CCircuitDef::Id defId, const springai::AIFloat3& pos);
+	void RemovePylon(ICoreUnit::Id unitId);
 	void CheckGrid();
 
 	std::vector<int> linkClusters;

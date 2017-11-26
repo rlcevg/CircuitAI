@@ -8,6 +8,7 @@
 #include "task/builder/EnergyTask.h"
 #include "task/TaskManager.h"
 #include "module/EconomyManager.h"
+#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 

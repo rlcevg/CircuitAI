@@ -6,7 +6,6 @@
  */
 
 #include "unit/EnemyUnit.h"
-#include "unit/CircuitDef.h"
 #include "task/fighter/FighterTask.h"
 #include "util/utils.h"
 
@@ -14,16 +13,15 @@ namespace circuit {
 
 using namespace springai;
 
-CEnemyUnit::CEnemyUnit(Unit* unit, CCircuitDef* cdef)
-		: id(unit->GetUnitId())
-		, unit(unit)
+CEnemyUnit::CEnemyUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
+		: ICoreUnit(unitId, unit, cdef)
 		, lastSeen(-1)
 		, pos(ZeroVector)
 		, threat(.0f)
 		, range({0})
 		, losStatus(LosMask::NONE)
 {
-	SetCircuitDef(cdef);
+	cost = (cdef == nullptr) ? 0.f : cdef->GetCost();
 }
 
 CEnemyUnit::~CEnemyUnit()
@@ -32,18 +30,12 @@ CEnemyUnit::~CEnemyUnit()
 	for (IFighterTask* task : tasks) {
 		task->ClearTarget();
 	}
-
-	delete unit;
 }
 
 void CEnemyUnit::SetCircuitDef(CCircuitDef* cdef)
 {
 	circuitDef = cdef;
-	if (cdef == nullptr) {
-		cost = 0.f;
-	} else {
-		cost = cdef->GetCost();
-	}
+	cost = (cdef == nullptr) ? 0.f : cdef->GetCost();
 }
 
 bool CEnemyUnit::IsDisarmed()

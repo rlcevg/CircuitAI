@@ -39,11 +39,11 @@ void CSReclaimTask::Update()
 	} else if ((++updCount % 4 == 0) && !units.empty()) {
 		// Check for damaged units
 		CBuilderManager* builderManager = circuit->GetBuilderManager();
-		CCircuitUnit* repairTarget = nullptr;
+		CAllyUnit* repairTarget = nullptr;
 		circuit->UpdateFriendlyUnits();
 		auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f));
 		for (Unit* u : us) {
-			CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
+			CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
 			if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {
 				continue;
 			}

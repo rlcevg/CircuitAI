@@ -15,7 +15,7 @@ namespace circuit {
 
 class IRepairTask: public IBuilderTask {
 public:
-	IRepairTask(ITaskManager* mgr, Priority priority, Type type, CCircuitUnit* target, int timeout = 0);
+	IRepairTask(ITaskManager* mgr, Priority priority, Type type, CAllyUnit* target, int timeout = 0);
 	virtual ~IRepairTask();
 
 	virtual void RemoveAssignee(CCircuitUnit* unit);
@@ -30,12 +30,12 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) = 0;
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) = 0;
 
-	virtual void SetTarget(CCircuitUnit* unit);
-	CCircuitUnit::Id GetTargetId() const { return targetId; }
+	virtual void SetTarget(CAllyUnit* unit);
+	ICoreUnit::Id GetTargetId() const { return targetId; }
 
 protected:
-	CCircuitUnit* FindUnitToAssist(CCircuitUnit* unit);
-	CCircuitUnit::Id targetId;  // Ignore "target" variable because ally units are vivid
+	CAllyUnit* FindUnitToAssist(CCircuitUnit* unit);
+	ICoreUnit::Id targetId;  // Ignore "target" variable because ally units are vivid
 };
 
 } // namespace circuit

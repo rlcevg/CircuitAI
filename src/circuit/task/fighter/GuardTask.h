@@ -25,7 +25,7 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 
 private:
-	CCircuitUnit::Id vipId;
+	ICoreUnit::Id vipId;
 	float maxPower;
 };
 

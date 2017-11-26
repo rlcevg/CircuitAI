@@ -130,7 +130,7 @@ public:
 
 	SBuildChain* GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef);
 
-	bool IsReclaimed(CCircuitUnit* unit) const { return reclaimedUnits.find(unit) != reclaimedUnits.end(); }
+	bool IsReclaimed(CAllyUnit* unit) const { return reclaimedUnits.find(unit) != reclaimedUnits.end(); }
 
 private:
 	void ReadConfig();
@@ -156,9 +156,9 @@ private:
 	EHandlers damagedHandler;
 	EHandlers destroyedHandler;
 
-	std::map<CCircuitUnit*, IBuilderTask*> unfinishedUnits;
-	std::map<CCircuitUnit::Id, CBRepairTask*> repairedUnits;
-	std::map<CCircuitUnit*, CBReclaimTask*> reclaimedUnits;
+	std::map<CAllyUnit*, IBuilderTask*> unfinishedUnits;
+	std::map<ICoreUnit::Id, CBRepairTask*> repairedUnits;
+	std::map<CAllyUnit*, CBReclaimTask*> reclaimedUnits;
 	std::vector<std::set<IBuilderTask*>> buildTasks;  // UnitDef based tasks
 	unsigned int buildTasksCount;
 	float buildPower;

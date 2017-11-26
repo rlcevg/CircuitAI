@@ -15,8 +15,9 @@
 #include <memory>
 #include <unordered_map>
 #include <map>
-#include <vector>
 #include <set>
+#include <vector>
+#include <deque>
 
 struct SSkirmishAICallback;
 
@@ -56,6 +57,7 @@ class CEconomyManager;
 class CMilitaryManager;
 class CScheduler;
 class IModule;
+class CCircuitUnit;
 class CEnemyUnit;
 #ifdef DEBUG_VIS
 class CDebugDrawer;
@@ -117,8 +119,8 @@ private:
 	int UnitMoveFailed(CCircuitUnit* unit);
 	int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker/*, int weaponId*/);
 	int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
-	int UnitGiven(CCircuitUnit::Id unitId, int oldTeamId, int newTeamId);
-	int UnitCaptured(CCircuitUnit::Id unitId, int oldTeamId, int newTeamId);
+	int UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId);
+	int UnitCaptured(ICoreUnit::Id unitId, int oldTeamId, int newTeamId);
 	int EnemyEnterLOS(CEnemyUnit* enemy);
 	int EnemyLeaveLOS(CEnemyUnit* enemy);
 	int EnemyEnterRadar(CEnemyUnit* enemy);
@@ -132,29 +134,31 @@ private:
 	int LuaMessage(const char* inData);
 
 // ---- Units ---- BEGIN
+public:
+	using Units = std::map<ICoreUnit::Id, CCircuitUnit*>;
 private:
-	CCircuitUnit* RegisterTeamUnit(CCircuitUnit::Id unitId);
+	CCircuitUnit* RegisterTeamUnit(ICoreUnit::Id unitId);
 	void UnregisterTeamUnit(CCircuitUnit* unit);
 	void DeleteTeamUnit(CCircuitUnit* unit);
 public:
 	void Garbage(CCircuitUnit* unit, const char* reason);
-	CCircuitUnit* GetTeamUnit(CCircuitUnit::Id unitId) const;
-	const CAllyTeam::Units& GetTeamUnits() const { return teamUnits; }
+	CCircuitUnit* GetTeamUnit(ICoreUnit::Id unitId) const;
+	const Units& GetTeamUnits() const { return teamUnits; }
 
 	void UpdateFriendlyUnits() { allyTeam->UpdateFriendlyUnits(this); }
-	CCircuitUnit* GetFriendlyUnit(springai::Unit* u) const;
-	CCircuitUnit* GetFriendlyUnit(CCircuitUnit::Id unitId) const { return allyTeam->GetFriendlyUnit(unitId); }
+	CAllyUnit* GetFriendlyUnit(springai::Unit* u) const;
+	CAllyUnit* GetFriendlyUnit(ICoreUnit::Id unitId) const { return allyTeam->GetFriendlyUnit(unitId); }
 	const CAllyTeam::Units& GetFriendlyUnits() const { return allyTeam->GetFriendlyUnits(); }
 
-	using EnemyUnits = std::map<CCircuitUnit::Id, CEnemyUnit*>;
+	using EnemyUnits = std::map<ICoreUnit::Id, CEnemyUnit*>;
 private:
-	std::pair<CEnemyUnit*, bool> RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS = false);
+	std::pair<CEnemyUnit*, bool> RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS = false);
 	CEnemyUnit* RegisterEnemyUnit(springai::Unit* e);
 	void UnregisterEnemyUnit(CEnemyUnit* unit);
 	void UpdateEnemyUnits();
 public:
 	CEnemyUnit* GetEnemyUnit(springai::Unit* u) const { return GetEnemyUnit(u->GetUnitId()); }
-	CEnemyUnit* GetEnemyUnit(CCircuitUnit::Id unitId) const;
+	CEnemyUnit* GetEnemyUnit(ICoreUnit::Id unitId) const;
 	const EnemyUnits& GetEnemyUnits() const { return enemyUnits; }
 
 	CAllyTeam* GetAllyTeam() const { return allyTeam; }
@@ -167,7 +171,7 @@ public:
 private:
 	void ActionUpdate();
 
-	CAllyTeam::Units teamUnits;  // owner
+	Units teamUnits;  // owner
 	EnemyUnits enemyUnits;  // owner
 	CAllyTeam* allyTeam;
 	int uEnemyMark;

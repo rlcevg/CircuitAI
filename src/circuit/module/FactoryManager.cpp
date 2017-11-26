@@ -343,7 +343,7 @@ IBuilderTask* CFactoryManager::EnqueueReclaim(IBuilderTask::Priority priority,
 }
 
 IBuilderTask* CFactoryManager::EnqueueRepair(IBuilderTask::Priority priority,
-											 CCircuitUnit* target)
+											 CAllyUnit* target)
 {
 	auto it = repairedUnits.find(target->GetId());
 	if (it != repairedUnits.end()) {
@@ -664,7 +664,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	return nullptr;
 }
 
-bool CFactoryManager::IsHighPriority(CCircuitUnit* unit) const
+bool CFactoryManager::IsHighPriority(CAllyUnit* unit) const
 {
 	auto it = unfinishedUnits.find(unit);
 	if (it == unfinishedUnits.end()) {
@@ -1161,8 +1161,8 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 {
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	bool isMetalEmpty = economyManager->IsMetalEmpty();
-	CCircuitUnit* repairTarget = nullptr;
-	CCircuitUnit* buildTarget = nullptr;
+	CAllyUnit* repairTarget = nullptr;
+	CAllyUnit* buildTarget = nullptr;
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	float radius = unit->GetCircuitDef()->GetBuildDistance();
 
@@ -1174,7 +1174,7 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 	// NOTE: OOAICallback::GetFriendlyUnitsIn depends on unit's radius
 	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius * 0.9f));
 	for (Unit* u : units) {
-		CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
+		CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
 		if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {
 			continue;
 		}

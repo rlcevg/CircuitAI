@@ -139,7 +139,7 @@ void CSuperTask::Update()
 	CEnemyUnit* bestTarget = nullptr;
 	if (cdef->IsAttrStock()) {
 		float minSqDist = std::numeric_limits<float>::max();
-		for (const CCircuitUnit::Id eId : groups[groupIdx].units) {
+		for (const ICoreUnit::Id eId : groups[groupIdx].units) {
 			CEnemyUnit* enemy = circuit->GetEnemyUnit(eId);
 			if (enemy == nullptr) {
 				continue;
@@ -152,7 +152,7 @@ void CSuperTask::Update()
 		}
 	} else {
 		float maxCost = 0.f;
-		for (const CCircuitUnit::Id eId : groups[groupIdx].units) {
+		for (const ICoreUnit::Id eId : groups[groupIdx].units) {
 			CEnemyUnit* enemy = circuit->GetEnemyUnit(eId);
 			if (enemy == nullptr) {
 				continue;

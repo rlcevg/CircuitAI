@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_UNIT_ENEMYUNIT_H_
 #define SRC_CIRCUIT_UNIT_ENEMYUNIT_H_
 
-#include "unit/CircuitUnit.h"
+#include "unit/CoreUnit.h"
 #include "unit/CircuitDef.h"
 
 #include <set>
@@ -17,18 +17,14 @@ namespace circuit {
 
 class IFighterTask;
 
-class CEnemyUnit {
+class CEnemyUnit: public ICoreUnit {
 public:
 	CEnemyUnit(const CEnemyUnit& that) = delete;
 	CEnemyUnit& operator=(const CEnemyUnit&) = delete;
-	CEnemyUnit(springai::Unit* unit, CCircuitDef* cdef);
+	CEnemyUnit(Id unitId, springai::Unit* unit, CCircuitDef* cdef);
 	virtual ~CEnemyUnit();
 
-	CCircuitUnit::Id GetId() const { return id; }
-	springai::Unit* GetUnit() const { return unit; }
-
 	void SetCircuitDef(CCircuitDef* cdef);
-	CCircuitDef* GetCircuitDef() const { return circuitDef; }
 
 	void BindTask(IFighterTask* task) { tasks.insert(task); }
 	void UnbindTask(IFighterTask* task) { tasks.erase(task); }
@@ -55,13 +51,7 @@ public:
 	void SetRange(CCircuitDef::ThreatType t, int r) { range[static_cast<CCircuitDef::ThreatT>(t)] = r; }
 	int GetRange(CCircuitDef::ThreatType t = CCircuitDef::ThreatType::MAX) const { return range[static_cast<CCircuitDef::ThreatT>(t)]; }
 
-	bool operator==(const CCircuitUnit& rhs) { return id == rhs.GetId(); }
-	bool operator!=(const CCircuitUnit& rhs) { return id != rhs.GetId(); }
-
 private:
-	CCircuitUnit::Id id;
-	springai::Unit* unit;  // owner
-	CCircuitDef* circuitDef;
 	std::set<IFighterTask*> tasks;
 	int lastSeen;
 

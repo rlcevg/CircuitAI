@@ -6,6 +6,7 @@
  */
 
 #include "unit/action/SupportAction.h"
+#include "unit/CircuitUnit.h"
 #include "task/fighter/SquadTask.h"
 #include "CircuitAI.h"
 #include "util/utils.h"

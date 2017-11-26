@@ -7,6 +7,7 @@
 
 #include "task/common/WaitTask.h"
 #include "task/TaskManager.h"
+#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 
 #include "Command.h"

@@ -112,12 +112,12 @@ void CEnergyGrid::Update()
 	circuit->UpdateFriendlyUnits();
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
-	std::vector<CCircuitUnit*> tmpMexes;
-	static std::vector<CCircuitUnit*> tmpPylons;  // NOTE: micro-opt
+	static std::vector<CAllyUnit*> tmpMexes;  // NOTE: micro-opt
+	static std::vector<CAllyUnit*> tmpPylons;  // NOTE: micro-opt
 //	tmpMexes.reserve(friendlies.size());
 //	tmpPylons.reserve(friendlies.size());
 	for (auto& kv : friendlies) {
-		CCircuitUnit* unit = kv.second;
+		CAllyUnit* unit = kv.second;
 		if (*unit->GetCircuitDef() == *mexDef) {
 			tmpMexes.push_back(unit);
 		} else if (pylonRanges.find(unit->GetCircuitDef()->GetId()) != pylonRanges.end()) {
@@ -267,7 +267,7 @@ void CEnergyGrid::Init()
 	ownedClusters = CMetalData::Graph(boost::num_vertices(clusterGraph));
 }
 
-void CEnergyGrid::MarkAllyPylons(const std::vector<CCircuitUnit*>& pylons)
+void CEnergyGrid::MarkAllyPylons(const std::vector<CAllyUnit*>& pylons)
 {
 	decltype(markedPylons) prevUnits = std::move(markedPylons);
 	markedPylons.clear();
@@ -276,11 +276,11 @@ void CEnergyGrid::MarkAllyPylons(const std::vector<CCircuitUnit*>& pylons)
 	auto first2  = prevUnits.begin();
 	auto last2   = prevUnits.end();
 	auto d_first = std::back_inserter(markedPylons);
-	auto addPylon = [&d_first, this](CCircuitUnit* unit) {
+	auto addPylon = [&d_first, this](CAllyUnit* unit) {
 		*d_first++ = unit->GetId();
 		AddPylon(unit->GetId(), unit->GetCircuitDef()->GetId(), unit->GetPos(this->circuit->GetLastFrame()));
 	};
-	auto delPylon = [this](const CCircuitUnit::Id unitId) {
+	auto delPylon = [this](const ICoreUnit::Id unitId) {
 		RemovePylon(unitId);
 	};
 
@@ -312,7 +312,7 @@ void CEnergyGrid::MarkAllyPylons(const std::vector<CCircuitUnit*>& pylons)
 	}
 }
 
-void CEnergyGrid::AddPylon(CCircuitUnit::Id unitId, CCircuitDef::Id defId, const AIFloat3& pos)
+void CEnergyGrid::AddPylon(ICoreUnit::Id unitId, CCircuitDef::Id defId, const AIFloat3& pos)
 {
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
@@ -340,7 +340,7 @@ void CEnergyGrid::AddPylon(CCircuitUnit::Id unitId, CCircuitDef::Id defId, const
 	}
 }
 
-void CEnergyGrid::RemovePylon(CCircuitUnit::Id unitId)
+void CEnergyGrid::RemovePylon(ICoreUnit::Id unitId)
 {
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();

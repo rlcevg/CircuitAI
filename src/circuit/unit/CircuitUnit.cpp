@@ -9,7 +9,6 @@
 #include "unit/UnitManager.h"
 #include "unit/EnemyUnit.h"
 #include "setup/SetupManager.h"
-#include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -22,15 +21,11 @@ namespace circuit {
 
 using namespace springai;
 
-CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* cdef)
-		: id(unit->GetUnitId())
-		, unit(unit)
-		, circuitDef(cdef)
-		, task(nullptr)
+CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
+		: CAllyUnit(unitId, unit, cdef)
 		, taskFrame(-1)
 		, manager(nullptr)
 		, area(nullptr)
-		, posFrame(-1)
 //		, damagedFrame(-1)
 		, moveFails(0)
 		, failFrame(-1)
@@ -73,35 +68,9 @@ CCircuitUnit::CCircuitUnit(Unit* unit, CCircuitDef* cdef)
 	shield = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
 }
 
-CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
-		: id(unitId)
-		, unit(unit)
-		, circuitDef(cdef)
-		, task(nullptr)
-		, taskFrame(-1)
-		, manager(nullptr)
-		, area(nullptr)
-		, posFrame(-1)
-//		, damagedFrame(-1)
-		, moveFails(0)
-		, failFrame(-1)
-		, isForceExecute(false)
-		, isDead(false)
-		, dgun(nullptr)
-		, weapon(nullptr)
-		, shield(nullptr)
-		, isDisarmed(false)
-		, disarmFrame(-1)
-		, isWeaponReady(true)
-		, ammoFrame(-1)
-		, isMorphing(false)
-{
-}
-
 CCircuitUnit::~CCircuitUnit()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	delete unit;
 	delete dgun;
 	delete weapon;
 	delete shield;
@@ -111,18 +80,6 @@ void CCircuitUnit::SetTask(IUnitTask* task)
 {
 	this->task = task;
 	SetTaskFrame(manager->GetCircuit()->GetLastFrame());
-}
-
-const AIFloat3& CCircuitUnit::GetPos(int frame)
-{
-	// NOTE: Ally units don't have manager, hence
-	//       manager->GetCircuit()->GetLastFrame() will crash
-	if (posFrame != frame) {
-		posFrame = frame;
-		position = unit->GetPos();
-		CTerrainManager::CorrectPosition(position);
-	}
-	return position;
 }
 
 bool CCircuitUnit::IsMoveFailed(int frame)

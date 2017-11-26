@@ -135,7 +135,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		circuit->UpdateFriendlyUnits();
 		auto friendlies = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, cost));
 		for (Unit* au : friendlies) {
-			CCircuitUnit* alu = circuit->GetFriendlyUnit(au);
+			CAllyUnit* alu = circuit->GetFriendlyUnit(au);
 			if (alu == nullptr) {
 				continue;
 			}
@@ -434,7 +434,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 			circuit->UpdateFriendlyUnits();
 			auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(buildPos, radius));
 			for (Unit* u : units) {
-				CCircuitUnit* p = circuit->GetFriendlyUnit(u);
+				CAllyUnit* p = circuit->GetFriendlyUnit(u);
 				if (p == nullptr) {
 					continue;
 				}

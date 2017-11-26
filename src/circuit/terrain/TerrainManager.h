@@ -9,7 +9,7 @@
 #define SRC_CIRCUIT_TERRAIN_TERRAINMANAGER_H_
 
 #include "terrain/BlockingMap.h"
-#include "unit/CircuitUnit.h"
+#include "unit/CoreUnit.h"
 #include "unit/CircuitDef.h"
 
 #include "AIFloat3.h"
@@ -22,6 +22,7 @@ namespace circuit {
 
 class CCircuitAI;
 class IBlockMask;
+class CCircuitUnit;
 struct STerrainMapArea;
 struct STerrainMapMobileType;
 struct STerrainMapImmobileType;
@@ -68,7 +69,7 @@ public:
 private:
 	int markFrame;
 	struct SStructure {
-		CCircuitUnit::Id unitId;
+		ICoreUnit::Id unitId;
 		CCircuitDef* cdef;
 		springai::AIFloat3 pos;
 		int facing;

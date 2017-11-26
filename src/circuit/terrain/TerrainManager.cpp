@@ -455,7 +455,7 @@ void CTerrainManager::MarkAllyBuildings()
 	auto first2  = prevUnits.begin();
 	auto last2   = prevUnits.end();
 	auto d_first = std::back_inserter(markedAllies);
-	auto addStructure = [&d_first, mexDef, this](CCircuitUnit* unit) {
+	auto addStructure = [&d_first, mexDef, this](CAllyUnit* unit) {
 		SStructure building;
 		building.unitId = unit->GetId();
 		building.cdef = unit->GetCircuitDef();
@@ -474,7 +474,7 @@ void CTerrainManager::MarkAllyBuildings()
 
 	// @see std::set_symmetric_difference + std::set_intersection
 	while (first1 != last1) {
-		CCircuitUnit* unit = first1->second;
+		CAllyUnit* unit = first1->second;
 		if (unit->GetCircuitDef()->IsMobile() || (unit->GetUnit()->GetTeam() == teamId)) {
 			++first1;
 			continue;
@@ -482,7 +482,7 @@ void CTerrainManager::MarkAllyBuildings()
 		if (first2 == last2) {
 			addStructure(unit);  // everything else in first1..last1 is new units
 			while (++first1 != last1) {
-				CCircuitUnit* unit = first1->second;
+				CAllyUnit* unit = first1->second;
 				if (unit->GetCircuitDef()->IsMobile() || (unit->GetUnit()->GetTeam() == teamId)) {
 					continue;
 				}

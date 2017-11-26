@@ -257,10 +257,10 @@ void CMetalManager::MarkAllyMexes()
 	circuit->UpdateFriendlyUnits();
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
-	std::vector<CCircuitUnit*> tmpMexes;
+	static std::vector<CAllyUnit*> tmpMexes;  // NOTE: micro-opt
 //	tmpMexes.reserve(friendlies.size());
 	for (auto& kv : friendlies) {
-		CCircuitUnit* unit = kv.second;
+		CAllyUnit* unit = kv.second;
 		if (*unit->GetCircuitDef() == *mexDef) {
 			tmpMexes.push_back(unit);
 		}
@@ -271,7 +271,7 @@ void CMetalManager::MarkAllyMexes()
 	tmpMexes.clear();
 }
 
-void CMetalManager::MarkAllyMexes(const std::vector<CCircuitUnit*>& mexes)
+void CMetalManager::MarkAllyMexes(const std::vector<CAllyUnit*>& mexes)
 {
 	if (markFrame /*+ FRAMES_PER_SEC*/ >= circuit->GetLastFrame()) {
 		return;
@@ -285,7 +285,7 @@ void CMetalManager::MarkAllyMexes(const std::vector<CCircuitUnit*>& mexes)
 	auto first2  = prevUnits.begin();
 	auto last2   = prevUnits.end();
 	auto d_first = std::back_inserter(markedMexes);
-	auto addMex = [&d_first, this](CCircuitUnit* unit) {
+	auto addMex = [&d_first, this](CAllyUnit* unit) {
 		SMex mex;
 		mex.index = FindNearestSpot(unit->GetPos(this->circuit->GetLastFrame()));
 		if (mex.index != -1) {

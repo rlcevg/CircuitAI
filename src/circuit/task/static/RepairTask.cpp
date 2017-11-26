@@ -21,7 +21,7 @@ namespace circuit {
 
 using namespace springai;
 
-CSRepairTask::CSRepairTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, int timeout)
+CSRepairTask::CSRepairTask(ITaskManager* mgr, Priority priority, CAllyUnit* target, int timeout)
 		: IRepairTask(mgr, priority, Type::FACTORY, target, timeout)
 {
 }
@@ -38,7 +38,7 @@ void CSRepairTask::Update()
 	if (economyManager->GetAvgMetalIncome() < savedIncome * 0.6f) {
 		manager->AbortTask(this);
 	} else if ((++updCount % 4 == 0) && !units.empty()) {
-		CCircuitUnit* repTarget = circuit->GetFriendlyUnit(targetId);
+		CAllyUnit* repTarget = circuit->GetFriendlyUnit(targetId);
 		if (repTarget == nullptr) {
 			manager->AbortTask(this);
 			return;
@@ -53,7 +53,7 @@ void CSRepairTask::Update()
 				float radius = (*units.begin())->GetCircuitDef()->GetBuildDistance();
 				auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f));
 				for (Unit* u : us) {
-					CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
+					CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
 					if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {
 						continue;
 					}
@@ -81,7 +81,7 @@ void CSRepairTask::Update()
 			float radius = (*units.begin())->GetCircuitDef()->GetBuildDistance();
 			auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f));
 			for (Unit* u : us) {
-				CCircuitUnit* candUnit = circuit->GetFriendlyUnit(u);
+				CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
 				if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {
 					continue;
 				}

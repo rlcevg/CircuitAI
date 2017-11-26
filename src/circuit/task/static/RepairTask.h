@@ -14,7 +14,7 @@ namespace circuit {
 
 class CSRepairTask: public IRepairTask {
 public:
-	CSRepairTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, int timeout = 0);
+	CSRepairTask(ITaskManager* mgr, Priority priority, CAllyUnit* target, int timeout = 0);
 	virtual ~CSRepairTask();
 
 	virtual void Update();

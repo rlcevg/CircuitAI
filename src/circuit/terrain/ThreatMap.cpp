@@ -9,6 +9,7 @@
 #include "terrain/ThreatMap.h"
 #include "terrain/TerrainManager.h"
 #include "setup/SetupManager.h"
+#include "unit/CircuitUnit.h"
 #include "unit/EnemyUnit.h"
 #include "util/utils.h"
 #include "json/json.h"

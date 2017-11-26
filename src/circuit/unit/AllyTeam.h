@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_SETUP_ALLYTEAM_H_
 #define SRC_CIRCUIT_SETUP_ALLYTEAM_H_
 
-#include "unit/CircuitUnit.h"
+#include "unit/AllyUnit.h"
 
 #include <memory>
 #include <map>
@@ -30,7 +30,7 @@ class CFactoryData;
 class CAllyTeam {
 public:
 	using Id = int;
-	using Units = std::map<CCircuitUnit::Id, CCircuitUnit*>;
+	using Units = std::map<ICoreUnit::Id, CAllyUnit*>;
 	using TeamIds = std::unordered_set<Id>;
 	union SBox {
 		SBox(): edge{0.f, 0.f, 0.f, 0.f} {}
@@ -64,7 +64,7 @@ public:
 	void Release();
 
 	void UpdateFriendlyUnits(CCircuitAI* circuit);
-	CCircuitUnit* GetFriendlyUnit(CCircuitUnit::Id unitId) const;
+	CAllyUnit* GetFriendlyUnit(ICoreUnit::Id unitId) const;
 	const Units& GetFriendlyUnits() const { return friendlyUnits; }
 
 	std::shared_ptr<CMetalManager>& GetMetalManager() { return metalManager; }

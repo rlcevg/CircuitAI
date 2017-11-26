@@ -40,7 +40,7 @@ public:
 								 float radius,
 								 int timeout = 0);
 	IBuilderTask* EnqueueRepair(IBuilderTask::Priority priority,
-								CCircuitUnit* target);
+								CAllyUnit* target);
 private:
 	void DequeueTask(IUnitTask* task, bool done = false);
 
@@ -65,7 +65,7 @@ public:
 
 	CRecruitTask* UpdateBuildPower(CCircuitUnit* unit);
 	CRecruitTask* UpdateFirePower(CCircuitUnit* unit);
-	bool IsHighPriority(CCircuitUnit* unit) const;
+	bool IsHighPriority(CAllyUnit* unit) const;
 
 	CCircuitDef* GetFactoryToBuild(springai::AIFloat3 position = -RgtVector, bool isStart = false);
 	void AddFactory(CCircuitDef* cdef);
@@ -95,7 +95,7 @@ private:
 	Handlers1 idleHandler;
 	EHandlers destroyedHandler;
 
-	std::map<CCircuitUnit*, IBuilderTask*> unfinishedUnits;
+	std::map<CAllyUnit*, IBuilderTask*> unfinishedUnits;
 	std::vector<CRecruitTask*> factoryTasks;  // order matters
 	std::vector<IUnitTask*> updateTasks;  // owner
 	unsigned int updateIterator;
@@ -105,7 +105,7 @@ private:
 	CCircuitDef* assistDef;
 	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> assists;  // nano 1:n factory
 	std::vector<springai::AIFloat3> havens;  // position behind factory
-	std::map<CCircuitUnit::Id, IBuilderTask*> repairedUnits;
+	std::map<ICoreUnit::Id, IBuilderTask*> repairedUnits;
 
 	CFactoryData* factoryData;
 	struct SFactory {

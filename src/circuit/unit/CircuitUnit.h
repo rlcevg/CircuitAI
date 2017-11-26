@@ -8,9 +8,8 @@
 #ifndef SRC_CIRCUIT_UNIT_CIRCUITUNIT_H_
 #define SRC_CIRCUIT_UNIT_CIRCUITUNIT_H_
 
+#include "unit/AllyUnit.h"
 #include "util/ActionList.h"
-
-#include "Unit.h"
 
 namespace springai {
 	class Weapon;
@@ -46,26 +45,17 @@ namespace circuit {
 
 class CCircuitDef;
 class CEnemyUnit;
-class IUnitTask;
 class IUnitManager;
 struct STerrainMapArea;
 
-class CCircuitUnit: public CActionList {
+class CCircuitUnit: public CAllyUnit, public CActionList {
 public:
-	using Id = int;
-
 	CCircuitUnit(const CCircuitUnit& that) = delete;
 	CCircuitUnit& operator=(const CCircuitUnit&) = delete;
-	CCircuitUnit(springai::Unit* unit, CCircuitDef* cdef);
-	CCircuitUnit(Id unitId, springai::Unit* unit, CCircuitDef* cdef);  // ally units
+	CCircuitUnit(Id unitId, springai::Unit* unit, CCircuitDef* cdef);
 	virtual ~CCircuitUnit();
 
-	Id GetId() const { return id; }
-	springai::Unit* GetUnit() const { return unit; }
-	CCircuitDef* GetCircuitDef() const { return circuitDef; }
-
 	void SetTask(IUnitTask* task);
-	IUnitTask* GetTask() const { return task; }
 	void SetTaskFrame(int frame) { taskFrame = frame; }
 	int GetTaskFrame() const { return taskFrame; }
 
@@ -74,8 +64,6 @@ public:
 
 	void SetArea(STerrainMapArea* area) { this->area = area; }
 	STerrainMapArea* GetArea() const { return area; }
-
-	const springai::AIFloat3& GetPos(int frame);
 
 	bool IsMoveFailed(int frame);
 
@@ -115,23 +103,12 @@ public:
 	void StopUpgrade();
 	bool IsMorphing() const { return isMorphing; }
 
-	bool operator==(const CCircuitUnit& rhs) { return id == rhs.id; }
-	bool operator!=(const CCircuitUnit& rhs) { return id != rhs.id; }
-
 private:
-	Id id;
-	springai::Unit* unit;  // owner
-	CCircuitDef* circuitDef;
-
-	IUnitTask* task;
 	// NOTE: taskFrame assigned on task change and OnUnitIdle to workaround idle spam.
 	//       Proper fix: do not issue any commands OnUnitIdle, delay them until next frame?
 	int taskFrame;
 	IUnitManager* manager;
 	STerrainMapArea* area;  // = nullptr if a unit flies
-
-	int posFrame;
-	springai::AIFloat3 position;
 
 //	int damagedFrame;
 	int moveFails;

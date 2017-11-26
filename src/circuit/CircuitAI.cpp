@@ -16,6 +16,7 @@
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
 #include "task/PlayerTask.h"
+#include "unit/CircuitUnit.h"
 #include "unit/EnemyUnit.h"
 #include "util/GameAttribute.h"
 #include "util/Scheduler.h"
@@ -913,7 +914,7 @@ int CCircuitAI::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::UnitGiven(CCircuitUnit::Id unitId, int oldTeamId, int newTeamId)
+int CCircuitAI::UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId)
 {
 	CEnemyUnit* enemy = GetEnemyUnit(unitId);
 	if (enemy != nullptr) {
@@ -947,7 +948,7 @@ int CCircuitAI::UnitGiven(CCircuitUnit::Id unitId, int oldTeamId, int newTeamId)
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::UnitCaptured(CCircuitUnit::Id unitId, int oldTeamId, int newTeamId)
+int CCircuitAI::UnitCaptured(ICoreUnit::Id unitId, int oldTeamId, int newTeamId)
 {
 	// it might not have been captured from us! Could have been captured from another team
 	if (teamId != oldTeamId) {
@@ -1093,7 +1094,7 @@ int CCircuitAI::LuaMessage(const char* inData)
 	return 0;  // signaling: OK
 }
 
-CCircuitUnit* CCircuitAI::RegisterTeamUnit(CCircuitUnit::Id unitId)
+CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId)
 {
 	CCircuitUnit* unit = GetTeamUnit(unitId);
 	if (unit != nullptr) {
@@ -1106,7 +1107,7 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(CCircuitUnit::Id unitId)
 	}
 	UnitDef* unitDef = u->GetDef();
 	CCircuitDef* cdef = GetCircuitDef(unitDef->GetUnitDefId());
-	unit = new CCircuitUnit(u, cdef);
+	unit = new CCircuitUnit(unitId, u, cdef);
 	delete unitDef;
 
 	STerrainMapArea* area;
@@ -1147,13 +1148,13 @@ void CCircuitAI::Garbage(CCircuitUnit* unit, const char* reason)
 #endif
 }
 
-CCircuitUnit* CCircuitAI::GetTeamUnit(CCircuitUnit::Id unitId) const
+CCircuitUnit* CCircuitAI::GetTeamUnit(ICoreUnit::Id unitId) const
 {
 	auto it = teamUnits.find(unitId);
 	return (it != teamUnits.end()) ? it->second : nullptr;
 }
 
-CCircuitUnit* CCircuitAI::GetFriendlyUnit(Unit* u) const
+CAllyUnit* CCircuitAI::GetFriendlyUnit(Unit* u) const
 {
 	if (u == nullptr) {
 		return nullptr;
@@ -1168,7 +1169,7 @@ CCircuitUnit* CCircuitAI::GetFriendlyUnit(Unit* u) const
 	return nullptr;
 }
 
-std::pair<CEnemyUnit*, bool> CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unitId, bool isInLOS)
+std::pair<CEnemyUnit*, bool> CCircuitAI::RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS)
 {
 	CEnemyUnit* unit = GetEnemyUnit(unitId);
 	if (unit != nullptr) {
@@ -1205,7 +1206,7 @@ std::pair<CEnemyUnit*, bool> CCircuitAI::RegisterEnemyUnit(CCircuitUnit::Id unit
 		cdef = defsById[unitDef->GetUnitDefId()];
 		delete unitDef;
 	}
-	unit = new CEnemyUnit(u, cdef);
+	unit = new CEnemyUnit(unitId, u, cdef);
 
 	enemyUnits[unit->GetId()] = unit;
 
@@ -1218,7 +1219,8 @@ CEnemyUnit* CCircuitAI::RegisterEnemyUnit(Unit* e)
 		return nullptr;
 	}
 
-	CEnemyUnit* unit = GetEnemyUnit(e->GetUnitId());
+	const ICoreUnit::Id unitId = e->GetUnitId();
+	CEnemyUnit* unit = GetEnemyUnit(unitId);
 	UnitDef* unitDef = e->GetDef();
 	CCircuitDef::Id unitDefId = unitDef->GetUnitDefId();
 	delete unitDef;
@@ -1232,7 +1234,7 @@ CEnemyUnit* CCircuitAI::RegisterEnemyUnit(Unit* e)
 	}
 
 	CCircuitDef* cdef = defsById[unitDefId];
-	unit = new CEnemyUnit(e, cdef);
+	unit = new CEnemyUnit(unitId, e, cdef);
 	enemyUnits[unit->GetId()] = unit;
 	return unit;
 }
@@ -1270,7 +1272,7 @@ void CCircuitAI::UpdateEnemyUnits()
 	threatMap->Update();
 }
 
-CEnemyUnit* CCircuitAI::GetEnemyUnit(CCircuitUnit::Id unitId) const
+CEnemyUnit* CCircuitAI::GetEnemyUnit(ICoreUnit::Id unitId) const
 {
 	auto it = enemyUnits.find(unitId);
 	return (it != enemyUnits.end()) ? it->second : nullptr;

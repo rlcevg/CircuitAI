@@ -16,7 +16,7 @@ class CEconomyManager;
 
 class CBRepairTask: public IRepairTask {
 public:
-	CBRepairTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, int timeout = 0);
+	CBRepairTask(ITaskManager* mgr, Priority priority, CAllyUnit* target, int timeout = 0);
 	virtual ~CBRepairTask();
 
 	virtual void Update();

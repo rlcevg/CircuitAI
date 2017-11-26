@@ -20,7 +20,7 @@ namespace circuit {
 
 using namespace springai;
 
-IRepairTask::IRepairTask(ITaskManager* mgr, Priority priority, Type type, CCircuitUnit* target, int timeout)
+IRepairTask::IRepairTask(ITaskManager* mgr, Priority priority, Type type, CAllyUnit* target, int timeout)
 		: IBuilderTask(mgr, priority, nullptr, -RgtVector, type, BuildType::REPAIR, 1000.0f, 0.f, timeout)
 {
 	SetTarget(target);
@@ -36,7 +36,7 @@ void IRepairTask::RemoveAssignee(CCircuitUnit* unit)
 
 	// Inform repair-target task/unit
 	CCircuitAI* circuit = manager->GetCircuit();
-	CCircuitUnit* repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
+	CAllyUnit* repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
 	if (repTarget == nullptr) {
 		return;
 	}
@@ -57,7 +57,7 @@ void IRepairTask::RemoveAssignee(CCircuitUnit* unit)
 void IRepairTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CCircuitUnit* repTarget;
+	CAllyUnit* repTarget;
 	if (targetId == -1) {
 		repTarget = FindUnitToAssist(unit);
 		if (repTarget == nullptr) {
@@ -89,7 +89,7 @@ void IRepairTask::Execute(CCircuitUnit* unit)
 void IRepairTask::Finish()
 {
 //	CCircuitAI* circuit = manager->GetCircuit();
-//	CCircuitUnit* target = circuit->GetFriendlyUnit(targetId);
+//	CAllyUnit* target = circuit->GetFriendlyUnit(targetId);
 //	// FIXME: Replace const 1000.0f with build time?
 //	if (target != nullptr) {
 //		CCircuitDef* cdef = target->GetCircuitDef();
@@ -104,7 +104,7 @@ void IRepairTask::Finish()
 void IRepairTask::Cancel()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CCircuitUnit* repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
+	CAllyUnit* repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
 	if (repTarget == nullptr) {
 		return;
 	}
@@ -122,7 +122,7 @@ void IRepairTask::Cancel()
 	}
 }
 
-void IRepairTask::SetTarget(CCircuitUnit* unit)
+void IRepairTask::SetTarget(CAllyUnit* unit)
 {
 	if (unit != nullptr) {
 		CCircuitAI* circuit = manager->GetCircuit();
@@ -145,10 +145,10 @@ void IRepairTask::SetTarget(CCircuitUnit* unit)
 	}
 }
 
-CCircuitUnit* IRepairTask::FindUnitToAssist(CCircuitUnit* unit)
+CAllyUnit* IRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CCircuitUnit* target = nullptr;
+	CAllyUnit* target = nullptr;
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	float maxSpeed = unit->GetCircuitDef()->GetSpeed();
 	float radius = unit->GetCircuitDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 30;

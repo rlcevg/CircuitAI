@@ -28,7 +28,7 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit);
 
 private:
-	CCircuitUnit::Id vipId;
+	ICoreUnit::Id vipId;
 };
 
 } // namespace circuit

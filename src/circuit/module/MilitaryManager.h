@@ -27,7 +27,7 @@ class CMilitaryManager: public IUnitModule {
 public:
 	struct SEnemyGroup {
 		SEnemyGroup(const springai::AIFloat3& p) : pos(p), cost(0.f), threat(0.f) {}
-		std::vector<CCircuitUnit::Id> units;
+		std::vector<ICoreUnit::Id> units;
 		springai::AIFloat3 pos;
 		std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> roleCosts{{0.f}};
 		float cost;

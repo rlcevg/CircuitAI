@@ -113,14 +113,14 @@ void CAllyTeam::UpdateFriendlyUnits(CCircuitAI* circuit)
 		}
 		int unitId = u->GetUnitId();
 		UnitDef* unitDef = u->GetDef();
-		CCircuitUnit* unit = new CCircuitUnit(unitId, u, circuit->GetCircuitDef(unitDef->GetUnitDefId()));
+		CAllyUnit* unit = new CAllyUnit(unitId, u, circuit->GetCircuitDef(unitDef->GetUnitDefId()));
 		delete unitDef;
 		friendlyUnits[unitId] = unit;
 	}
 	lastUpdate = circuit->GetLastFrame();
 }
 
-CCircuitUnit* CAllyTeam::GetFriendlyUnit(CCircuitUnit::Id unitId) const
+CAllyUnit* CAllyTeam::GetFriendlyUnit(ICoreUnit::Id unitId) const
 {
 	decltype(friendlyUnits)::const_iterator it = friendlyUnits.find(unitId);
 	return (it != friendlyUnits.end()) ? it->second : nullptr;

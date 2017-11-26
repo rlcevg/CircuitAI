@@ -34,8 +34,8 @@ public:
 	CEnergyLink(int idx0, const springai::AIFloat3& P0, int idx1, const springai::AIFloat3& P1);
 	virtual ~CEnergyLink();
 
-	void AddPylon(CCircuitUnit::Id unitId, const springai::AIFloat3& pos, float range);
-	bool RemovePylon(CCircuitUnit::Id unitId);
+	void AddPylon(ICoreUnit::Id unitId, const springai::AIFloat3& pos, float range);
+	bool RemovePylon(ICoreUnit::Id unitId);
 	void CheckConnection();
 	SPylon* GetConnectionHead(SVertex* v0, const springai::AIFloat3& P1);
 
@@ -51,7 +51,7 @@ public:
 private:
 	SVertex *v0, *v1;
 
-	std::map<CCircuitUnit::Id, SPylon*> pylons;  // owner
+	std::map<ICoreUnit::Id, SPylon*> pylons;  // owner
 	bool isBeingBuilt;
 	bool isFinished;
 	bool isValid;
