@@ -634,7 +634,7 @@ IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 				return MakeBuilderTask(unit);
 			}
 			CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
-			if (militaryManager->GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat) {
+			if (militaryManager->GetMobileThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat) {
 				return MakeCommTask(unit);
 			}
 			const bool isHide = (hide->isAir) && (militaryManager->GetEnemyCost(CCircuitDef::RoleType::AIR) > 1.f);

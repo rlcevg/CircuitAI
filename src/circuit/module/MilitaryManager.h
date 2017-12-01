@@ -31,7 +31,7 @@ public:
 		springai::AIFloat3 pos;
 		std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> roleCosts{{0.f}};
 		float cost;
-		float threat;
+		float threat;  // thr_mod applied
 	};
 
 	CMilitaryManager(CCircuitAI* circuit);
@@ -83,7 +83,9 @@ public:
 	}
 	void AddEnemyCost(const CEnemyUnit* e);
 	void DelEnemyCost(const CEnemyUnit* e);
-	float GetEnemyThreat() const { return enemyThreat; }
+	float GetMobileThreat() const { return mobileThreat; }
+	float GetStaticThreat() const { return staticThreat; }
+	float GetEnemyThreat() const { return mobileThreat + staticThreat; }
 	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return enemyGroups; }
 	const springai::AIFloat3& GetEnemyPos() const { return enemyPos; }
 	void UpdateEnemyGroups() { KMeansIteration(); }
@@ -158,7 +160,8 @@ private:
 	std::set<CCircuitUnit*> army;
 	float armyCost;
 
-	float enemyThreat;
+	float mobileThreat;  // thr_mod.mobile applied
+	float staticThreat;  // thr_mod.static applied
 	struct SInitThreatMod {
 		float inMobile;
 		float inStatic;

@@ -52,7 +52,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		, defenceIdx(0)
 		, scoutIdx(0)
 		, armyCost(0.f)
-		, enemyThreat(0.f)
+		, mobileThreat(0.f)
+		, staticThreat(0.f)
 		, radarDef(nullptr)
 		, sonarDef(nullptr)
 {
@@ -477,7 +478,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 			}
 		} else {
 			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty();
-			const float power = std::max(minAttackers, enemyThreat / circuit->GetAllyTeam()->GetAliveSize());
+			const float power = std::max(minAttackers, GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize());
 			task = isDefend ? EnqueueDefend(IFighterTask::FightType::ATTACK, power)
 							: EnqueueTask(IFighterTask::FightType::ATTACK);
 		}
@@ -929,7 +930,11 @@ void CMilitaryManager::AddEnemyCost(const CEnemyUnit* e)
 			info.threat += cdef->GetThreat();
 		}
 	}
-	enemyThreat += cdef->GetThreat() * (cdef->IsMobile() ? initThrMod.inMobile : initThrMod.inStatic);
+	if (cdef->IsMobile()) {
+		mobileThreat += cdef->GetThreat() * initThrMod.inMobile;
+	} else {
+		staticThreat += cdef->GetThreat() * initThrMod.inStatic;
+	}
 }
 
 void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
@@ -944,7 +949,11 @@ void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
 			info.threat = std::max(info.threat - cdef->GetThreat(), 0.f);
 		}
 	}
-	enemyThreat = std::max(enemyThreat - cdef->GetThreat() * (cdef->IsMobile() ? initThrMod.inMobile : initThrMod.inStatic), 0.f);
+	if (cdef->IsMobile()) {
+		mobileThreat = std::max(mobileThreat - cdef->GetThreat() * initThrMod.inMobile, 0.f);
+	} else {
+		staticThreat = std::max(staticThreat - cdef->GetThreat() * initThrMod.inStatic, 0.f);
+	}
 }
 
 void CMilitaryManager::AddResponse(CCircuitUnit* unit)
@@ -1461,14 +1470,16 @@ void CMilitaryManager::KMeansIteration()
 
 			eg.units.push_back(kv.first);
 
-			CCircuitDef* cdef = enemy->GetCircuitDef();
+			const CCircuitDef* cdef = enemy->GetCircuitDef();
 			if (cdef != nullptr) {
 				eg.roleCosts[cdef->GetMainRole()] += cdef->GetCost();
 				if (!cdef->IsMobile() || enemy->IsInRadarOrLOS()) {
 					eg.cost += cdef->GetCost();
 				}
+				eg.threat += enemy->GetThreat() * (cdef->IsMobile() ? initThrMod.inMobile : initThrMod.inStatic);
+			} else {
+				eg.threat += enemy->GetThreat();
 			}
-			eg.threat += enemy->GetThreat();
 		}
 	}
 

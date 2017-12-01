@@ -23,7 +23,6 @@ public:
 		, unit(unit)
 		, circuitDef(cdef)
 	{}
-	virtual ~ICoreUnit() { delete unit; }
 
 	Id GetId() const { return id; }
 	springai::Unit* GetUnit() const { return unit; }
@@ -33,6 +32,8 @@ public:
 	bool operator!=(const ICoreUnit& rhs) { return id != rhs.GetId(); }
 
 protected:
+	~ICoreUnit() { delete unit; }
+
 	Id id;
 	springai::Unit* unit;  // owner
 	CCircuitDef* circuitDef;
