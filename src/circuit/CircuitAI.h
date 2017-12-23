@@ -63,7 +63,7 @@ class CEnemyUnit;
 class CDebugDrawer;
 #endif
 
-constexpr char version[]{"0.9.23"};
+constexpr char version[]{"0.9.23.b"};
 
 class CException: public std::exception {
 public:
@@ -224,6 +224,7 @@ public:
 	springai::Log*          GetLog()        const { return log.get(); }
 	springai::Game*         GetGame()       const { return game.get(); }
 	springai::Map*          GetMap()        const { return map.get(); }
+	springai::Lua*          GetLua()        const { return lua.get(); }
 	springai::Pathing*      GetPathing()    const { return pathing.get(); }
 	springai::Drawer*       GetDrawer()     const { return drawer.get(); }
 	springai::SkirmishAI*   GetSkirmishAI() const { return skirmishAI.get(); }
@@ -259,6 +260,7 @@ private:
 	std::unique_ptr<springai::Log>        log;
 	std::unique_ptr<springai::Game>       game;
 	std::unique_ptr<springai::Map>        map;
+	std::unique_ptr<springai::Lua>        lua;
 	std::unique_ptr<springai::Pathing>    pathing;
 	std::unique_ptr<springai::Drawer>     drawer;
 	std::unique_ptr<springai::SkirmishAI> skirmishAI;

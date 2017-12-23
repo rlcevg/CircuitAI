@@ -141,7 +141,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
 			CTerrainManager* terrainManager = circuit->GetTerrainManager();
 			STerrainMapMobileType* mobileType = terrainManager->GetMobileTypeById(commChoice->GetMobileId());
-			Lua* lua = circuit->GetCallback()->GetLua();
+			Lua* lua = circuit->GetLua();
 
 			std::map<int, CMetalData::MetalIndices> validPoints;
 			for (unsigned idx = 0; idx < clusters.size(); ++idx) {
@@ -162,7 +162,6 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 				}
 			}
 
-			delete lua;
 			if (!validPoints.empty()) {
 				struct SCluster {
 					unsigned count;
@@ -254,7 +253,7 @@ bool CSetupManager::PickCommander()
 			CCircuitDef* cdef = kv.second;
 
 			std::string lvl1 = cdef->GetUnitDef()->GetName();
-			if ((lvl1.find("dyntrainer_") != 0) || (lvl1.find("_base") != lvl1.size() - 5)) {
+			if ((lvl1.find(commPrefix) != 0) || (lvl1.find(commSuffix) != lvl1.size() - 5)) {
 				continue;
 			}
 
@@ -277,9 +276,7 @@ bool CSetupManager::PickCommander()
 
 	std::string cmd("ai_commander:");
 	cmd += ((commChoice == nullptr) ? comms[rand() % comms.size()] : commChoice)->GetUnitDef()->GetName();
-	Lua* lua = circuit->GetCallback()->GetLua();
-	lua->CallRules(cmd.c_str(), cmd.size());
-	delete lua;
+	circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 
 	return true;
 }
@@ -298,9 +295,9 @@ void CSetupManager::ReadConfig()
 	fullShield = shield.get((unsigned)1, 0.6f).asFloat();
 
 	const Json::Value& comm = root["commander"];
-	const std::string& prefix = comm["prefix"].asString();
-	const std::string& suffix = comm["suffix"].asString();
 	const Json::Value& items = comm["unit"];
+	commPrefix = comm["prefix"].asString();
+	commSuffix = comm["suffix"].asString();
 	std::vector<CCircuitDef*> commChoices;
 	commChoices.reserve(items.size());
 	float magnitude = 0.f;
@@ -309,7 +306,7 @@ void CSetupManager::ReadConfig()
 	CCircuitDef::RoleName& roleNames = CCircuitDef::GetRoleNames();
 
 	for (const std::string& commName : items.getMemberNames()) {
-		CCircuitDef* cdef = circuit->GetCircuitDef((prefix + commName + suffix).c_str());
+		CCircuitDef* cdef = circuit->GetCircuitDef((commPrefix + commName + commSuffix).c_str());
 		if (cdef == nullptr) {
 			circuit->LOG("CONFIG %s: has unknown commander '%s'", cfgName.c_str(), commName.c_str());
 			continue;

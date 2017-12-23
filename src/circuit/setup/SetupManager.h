@@ -106,6 +106,8 @@ private:
 	float emptyShield;
 	float fullShield;
 
+	std::string commPrefix;
+	std::string commSuffix;
 	CCircuitDef* commChoice;
 	std::map<std::string, SCommInfo> commInfos;
 

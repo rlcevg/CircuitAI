@@ -147,7 +147,8 @@ public:
 	void SetMaxThisUnit(int value) { maxThisUnit = value; }
 	int GetMaxThisUnit() const { return maxThisUnit; }
 	void SetSinceFrame(int frame) { sinceFrame = frame; }
-	bool IsAvailable(int frame) const { return (maxThisUnit > count) && (frame >= sinceFrame); }
+	bool IsAvailable() const { return maxThisUnit > count; }
+	bool IsAvailable(int frame) const { return IsAvailable() && (frame >= sinceFrame); }
 
 	void IncBuild() { ++buildCounts; }
 	void DecBuild() { --buildCounts; }

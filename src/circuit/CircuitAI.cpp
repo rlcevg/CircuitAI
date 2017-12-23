@@ -29,9 +29,10 @@
 #include "AISCommands.h"
 #include "SSkirmishAICallback.h"	// "direct" C API
 #include "OOAICallback.h"			// C++ wrapper
+#include "Log.h"
 #include "Game.h"
 #include "Map.h"
-#include "Log.h"
+#include "Lua.h"
 #include "Pathing.h"
 #include "Drawer.h"
 #include "Economy.h"
@@ -89,6 +90,7 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, log(std::unique_ptr<Log>(callback->GetLog()))
 		, game(std::unique_ptr<Game>(callback->GetGame()))
 		, map(std::unique_ptr<Map>(callback->GetMap()))
+		, lua(std::unique_ptr<Lua>(callback->GetLua()))
 		, pathing(std::unique_ptr<Pathing>(callback->GetPathing()))
 		, drawer(std::unique_ptr<Drawer>(map->GetDrawer()))
 		, skirmishAI(std::unique_ptr<SkirmishAI>(callback->GetSkirmishAI()))

@@ -381,7 +381,8 @@
 	"offset": [-20, 20],
 	// Speed factor: 8x8 ~ 0%, 24x24 ~ 40%
 	"speed": [0, 40],
-	"map": [8, 24]
+	"map": [8, 24],
+	"no_air": 2
 },
 
 "quota": {
@@ -393,7 +394,8 @@
 		"attack": [1.05, 1.10],  // [<min>, <max>] enemy threat modifier for target selection of attack task
 		"defence": [1.00, 1.00],  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
 		"mobile": 1.0,  // initial modifier for power of attack group based on mobile enemy threat
-		"static": 0.0  // initial modifier for power of attack group based on static enemy threat
+		"static": 0.0,  // initial modifier for power of attack group based on static enemy threat
+		"comm": 1.0
 	},
 	"aa_threat": 80.0,  // anti-air threat threshold, air factories will stop production when AA threat exceeds
 	"slack_mod": 3

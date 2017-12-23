@@ -23,7 +23,7 @@ namespace circuit {
 using namespace springai;
 
 CFactoryData::CFactoryData(CCircuitAI *circuit)
-		: isFirstChoice(true)
+		: choiceNum(0)
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const Json::Value& factories = root["factory"];
@@ -95,6 +95,8 @@ CFactoryData::CFactoryData(CCircuitAI *circuit)
 		float avgSpeed = kv.second.mapSpeedPerc;
 		kv.second.mapSpeedPerc = speedFactor * (mapSize * avgSpeed - minMapSp) + minSpPerc;
 	}
+
+	noAirNum = select.get("no_air", 2).asUInt();
 }
 
 CFactoryData::~CFactoryData()
@@ -139,7 +141,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 		float importance;
 		if (isStart) {
 			CCircuitDef* bdef = factoryManager->GetRoleDef(cdef, CCircuitDef::RoleType::BUILDER);
-			importance = sfac.startImp * (((bdef != nullptr) && bdef->IsAvailable(frame)) ? 1.f : .1f);
+			importance = sfac.startImp * (((bdef != nullptr) && bdef->IsAvailable()) ? 1.f : .1f);
 		} else {
 			importance = sfac.switchImp;
 		}
@@ -174,7 +176,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 	std::sort(availFacs.begin(), availFacs.end(), cmp);
 
 	// Don't start with air
-	if ((isFirstChoice || (isPosValid && terrainManager->IsWaterSector(position))) &&
+	if (((choiceNum++ < noAirNum) || (isPosValid && terrainManager->IsWaterSector(position))) &&
 		(circuit->GetCircuitDef(availFacs.front().id)->GetMobileId() < 0))
 	{
 		for (SFactory& fac : availFacs) {
@@ -184,7 +186,6 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 			}
 		}
 	}
-	isFirstChoice = false;
 
 	return circuit->GetCircuitDef(availFacs.front().id);
 }

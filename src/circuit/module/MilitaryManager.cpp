@@ -209,6 +209,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const float fighterRet = root["retreat"].get("fighter", 0.5f).asFloat();
+	const float commMod = root["quota"]["thr_mod"].get("comm", 1.f).asFloat();
 	float maxRadarDivCost = 0.f;
 	float maxSonarDivCost = 0.f;
 	CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
@@ -217,6 +218,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	for (auto& kv : allDefs) {
 		CCircuitDef::Id unitDefId = kv.first;
 		CCircuitDef* cdef = kv.second;
+		if (cdef->IsRoleComm()) {
+			cdef->ModThreat(commMod);
+		}
 		if (cdef->GetUnitDef()->IsBuilder()) {
 			damagedHandler[unitDefId] = structDamagedHandler;
 			continue;

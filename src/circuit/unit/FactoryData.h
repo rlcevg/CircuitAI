@@ -26,7 +26,8 @@ public:
 	void DelFactory(CCircuitDef* cdef);
 
 private:
-	bool isFirstChoice;
+	unsigned int choiceNum;
+	unsigned int noAirNum;
 	struct SFactory {
 		CCircuitDef::Id id;
 		float startImp;  // importance[0]
