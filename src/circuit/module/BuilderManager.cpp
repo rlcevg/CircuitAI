@@ -1126,7 +1126,7 @@ void CBuilderManager::RemoveBuildList(CCircuitUnit* unit)
 void CBuilderManager::Watchdog()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	utils::SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	Resource* metalRes = economyManager->GetMetalRes();
 	// somehow workers get stuck
@@ -1172,13 +1172,13 @@ void CBuilderManager::Watchdog()
 
 void CBuilderManager::UpdateIdle()
 {
-	utils::SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	idleTask->Update();
 }
 
 void CBuilderManager::UpdateBuild()
 {
-	utils::SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	if (buildIterator >= buildUpdates.size()) {
 		buildIterator = 0;
 	}

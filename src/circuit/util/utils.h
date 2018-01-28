@@ -271,7 +271,7 @@ template<typename T> static inline std::istream& binary_read(std::istream& strea
 		clock::time_point t0;
 		int thr;
 	};
-	#define SCOPED_TIME(x, y) CScopedTime st(x, y, 10);
+	#define SCOPED_TIME(x, y) utils::CScopedTime st(x, y, 10)
 #else
 	#define SCOPED_TIME(x, y)
 #endif

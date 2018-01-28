@@ -619,7 +619,7 @@ void CTerrainData::DelegateAuthority(CCircuitAI* curOwner)
 
 void CTerrainData::CheckHeightMap()
 {
-	utils::SCOPED_TIME(*gameAttribute->GetCircuits().begin(), __PRETTY_FUNCTION__);
+	SCOPED_TIME(*gameAttribute->GetCircuits().begin(), __PRETTY_FUNCTION__);
 	if (isUpdating) {
 		return;
 	}

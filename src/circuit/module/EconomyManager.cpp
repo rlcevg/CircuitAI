@@ -391,7 +391,7 @@ void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 
 void CEconomyManager::UpdateResourceIncome()
 {
-	utils::SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	float oddEnergyIncome = circuit->GetTeam()->GetRulesParamFloat("OD_energyIncome", 0.f);
 	float oddEnergyChange = circuit->GetTeam()->GetRulesParamFloat("OD_energyChange", 0.f);
 
@@ -931,13 +931,13 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 
 IBuilderTask* CEconomyManager::UpdateFactoryTasks()
 {
-	utils::SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	return UpdateFactoryTasks(circuit->GetSetupManager()->GetBasePos());
 }
 
 IBuilderTask* CEconomyManager::UpdateStorageTasks()
 {
-	utils::SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	if (!builderManager->CanEnqueueTask()) {
 		return nullptr;
@@ -1029,7 +1029,7 @@ void CEconomyManager::AddMorphee(CCircuitUnit* unit)
 
 void CEconomyManager::UpdateMorph()
 {
-	utils::SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	if (morphees.empty()) {
 		circuit->GetScheduler()->RemoveTask(morph);
 		morph = nullptr;
