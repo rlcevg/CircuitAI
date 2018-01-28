@@ -25,6 +25,8 @@
 #endif
 
 #ifdef DEBUG_LOG
+#include "CircuitAI.h"
+
 #include "Map.h"  // to get Drawer
 #include "Drawer.h"
 #include "Log.h"
@@ -250,6 +252,29 @@ template<typename T> static inline std::istream& binary_read(std::istream& strea
 {
     return stream.read(reinterpret_cast<char*>(&value), sizeof(T));
 }
+
+#ifdef DEBUG_LOG
+	class CScopedTime {
+	public:
+		using clock = std::chrono::high_resolution_clock;
+		using milliseconds = std::chrono::milliseconds;
+		CScopedTime(circuit::CCircuitAI* ai, const std::string& msg, int t)
+			: ai(ai), text(msg), t0(clock::now()), thr(t)
+		{}
+		~CScopedTime() {
+			int count = std::chrono::duration_cast<milliseconds>(clock::now() - t0).count();
+			if (count >= thr) ai->LOG("%i | %i ms | %s", ai->GetSkirmishAIId(), count, text.c_str());
+		}
+	private:
+		circuit::CCircuitAI* ai;
+		std::string text;
+		clock::time_point t0;
+		int thr;
+	};
+	#define SCOPED_TIME(x, y) CScopedTime st(x, y, 10);
+#else
+	#define SCOPED_TIME(x, y)
+#endif
 
 } // namespace utils
 

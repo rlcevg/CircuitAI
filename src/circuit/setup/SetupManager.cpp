@@ -493,6 +493,7 @@ void CSetupManager::Welcome() const
 
 void CSetupManager::FindStart()
 {
+	utils::SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	if (utils::is_valid(startPos)) {
 		circuit->GetScheduler()->RemoveTask(findStart);
 		findStart = nullptr;

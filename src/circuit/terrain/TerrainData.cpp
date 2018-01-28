@@ -153,9 +153,11 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	boundX = terrainWidth + BOUND_EXT;
 	boundZ = terrainHeight + BOUND_EXT;
 	convertStoP = DEFAULT_SLACK;  // = 2^x, should not be less than 16 (2*SUQARE_SIZE)
-	if ((mapWidth / 64) * (mapHeight / 64) < 8 * 8) {
+	constexpr int SMALL_MAP = 8;
+	constexpr int LARGE_MAP = 16;
+	if ((mapWidth / 64) * (mapHeight / 64) < SMALL_MAP * SMALL_MAP) {
 		convertStoP /= 2; // Smaller Sectors, more detailed analysis
-	} else if ((mapWidth / 64) * (mapHeight / 64) > 20 * 20) {
+	} else if ((mapWidth / 64) * (mapHeight / 64) > LARGE_MAP * LARGE_MAP) {
 		convertStoP *= 2; // Larger Sectors, less detailed analysis
 	}
 	sectorXSize = (SQUARE_SIZE * mapWidth) / convertStoP;
@@ -617,6 +619,7 @@ void CTerrainData::DelegateAuthority(CCircuitAI* curOwner)
 
 void CTerrainData::CheckHeightMap()
 {
+	utils::SCOPED_TIME(*gameAttribute->GetCircuits().begin(), __PRETTY_FUNCTION__);
 	if (isUpdating) {
 		return;
 	}

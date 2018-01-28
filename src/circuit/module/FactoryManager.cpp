@@ -1227,6 +1227,7 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 void CFactoryManager::Watchdog()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	utils::SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	auto checkIdler = [this](CCircuitUnit* unit) {
 		if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
 			return;
@@ -1249,11 +1250,13 @@ void CFactoryManager::Watchdog()
 
 void CFactoryManager::UpdateIdle()
 {
+	utils::SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	idleTask->Update();
 }
 
 void CFactoryManager::UpdateFactory()
 {
+	utils::SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	if (updateIterator >= updateTasks.size()) {
 		updateIterator = 0;
 	}

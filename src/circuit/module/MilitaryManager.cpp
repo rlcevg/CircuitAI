@@ -1031,6 +1031,7 @@ AIFloat3 CMilitaryManager::GetBigGunPos(CCircuitDef* bigDef) const
 
 void CMilitaryManager::UpdateDefenceTasks()
 {
+	utils::SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	/*
 	 * Defend expansion
 	 */
@@ -1103,6 +1104,7 @@ void CMilitaryManager::UpdateDefenceTasks()
 
 void CMilitaryManager::UpdateDefence()
 {
+	utils::SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	const int frame = circuit->GetLastFrame();
 	decltype(buildDefence)::iterator ibd = buildDefence.begin();
 	while (ibd != buildDefence.end()) {
@@ -1342,6 +1344,7 @@ void CMilitaryManager::Release()
 void CMilitaryManager::Watchdog()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+	utils::SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	for (CCircuitUnit* unit : army) {
 		if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
 			continue;
@@ -1356,11 +1359,13 @@ void CMilitaryManager::Watchdog()
 
 void CMilitaryManager::UpdateIdle()
 {
+	utils::SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	idleTask->Update();
 }
 
 void CMilitaryManager::UpdateFight()
 {
+	utils::SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	if (fightIterator >= fightUpdates.size()) {
 		fightIterator = 0;
 	}
