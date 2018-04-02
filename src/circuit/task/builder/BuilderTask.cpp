@@ -285,8 +285,12 @@ void IBuilderTask::OnUnitIdle(CCircuitUnit* unit)
 
 void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 {
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	CCircuitDef* cdef = unit->GetCircuitDef();
 	Unit* u = unit->GetUnit();
-	if (u->GetHealth() >= u->GetMaxHealth() * unit->GetCircuitDef()->GetRetreat()) {
+	const float healthPerc = u->GetHealth() / u->GetMaxHealth() - u->GetCaptureProgress() * 2.f;
+	if ((healthPerc > cdef->GetRetreat()) && !unit->IsDisarmed(frame)) {
 		return;
 	}
 
