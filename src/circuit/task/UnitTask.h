@@ -12,6 +12,10 @@
 
 #include <set>
 
+namespace springai {
+	class Unit;
+}
+
 namespace circuit {
 
 class CCircuitUnit;
@@ -63,6 +67,8 @@ public:
 protected:
 	virtual void Load(std::istream& is);
 	virtual void Save(std::ostream& os) const;
+
+	float GetHealthPercent(springai::Unit* u) const;
 
 	ITaskManager* manager;
 	std::set<CCircuitUnit*> units;

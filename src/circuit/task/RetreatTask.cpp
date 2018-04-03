@@ -137,8 +137,7 @@ void CRetreatTask::Update()
 	bool isExecute = (++updCount % 2 == 0);
 	auto assignees = units;
 	for (CCircuitUnit* unit : assignees) {
-		Unit* u = unit->GetUnit();
-		const float healthPerc = u->GetHealth() / u->GetMaxHealth() - u->GetCaptureProgress() * 2.f;
+		const float healthPerc = GetHealthPercent(unit->GetUnit());
 		bool isRepaired;
 		if (unit->HasShield()) {
 			isRepaired = (healthPerc > 0.98f) && unit->IsShieldCharged(circuit->GetSetupManager()->GetFullShield());

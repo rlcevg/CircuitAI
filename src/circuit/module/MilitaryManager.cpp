@@ -56,6 +56,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		, staticThreat(0.f)
 		, radarDef(nullptr)
 		, sonarDef(nullptr)
+		, bigGunDef(nullptr)
 {
 	CScheduler* scheduler = circuit->GetScheduler().get();
 	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::Watchdog, this),
@@ -1029,6 +1030,35 @@ AIFloat3 CMilitaryManager::GetBigGunPos(CCircuitDef* bigDef) const
 	return pos;
 }
 
+void CMilitaryManager::DiceBigGun()
+{
+	if (superInfos.empty()) {
+		return;
+	}
+
+	float magnitude = 0.f;
+	for (SSuperInfo& info : superInfos) {
+		if (info.cdef->IsAvailable()) {
+			magnitude += info.weight;
+		}
+	}
+	if (magnitude == 0.f) {
+		magnitude = 1.f;
+	}
+
+	unsigned choice = 0;
+	float dice = (float)rand() / RAND_MAX * magnitude;
+	float total = .0f;
+	for (unsigned i = 0; i < superInfos.size(); ++i) {
+		total += superInfos[i].weight;
+		if (dice < total) {
+			choice = i;
+			break;
+		}
+	}
+	bigGunDef = superInfos[choice].cdef;
+}
+
 void CMilitaryManager::UpdateDefenceTasks()
 {
 	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
@@ -1260,13 +1290,7 @@ void CMilitaryManager::ReadConfig()
 	const Json::Value& super = porc["superweapon"];
 	const Json::Value& items = super["unit"];
 	const Json::Value& probs = super["weight"];
-	struct SSuperInfo {
-		CCircuitDef* cdef;
-		float prob;
-	};
-	std::vector<SSuperInfo> supers;
-	supers.reserve(items.size());
-	float magnitude = 0.f;
+	superInfos.reserve(items.size());
 	for (unsigned i = 0; i < items.size(); ++i) {
 		SSuperInfo si;
 		si.cdef = circuit->GetCircuitDef(items[i].asCString());
@@ -1277,23 +1301,10 @@ void CMilitaryManager::ReadConfig()
 		si.cdef->SetMainRole(CCircuitDef::RoleType::SUPER);  // override mainRole
 		si.cdef->AddEnemyRole(CCircuitDef::RoleType::SUPER);
 		si.cdef->AddRole(CCircuitDef::RoleType::SUPER);
-		si.prob = probs.get(i, 1.f).asFloat();
-		magnitude += si.prob;
-		supers.push_back(si);
+		si.weight = probs.get(i, 1.f).asFloat();
+		superInfos.push_back(si);
 	}
-	if (!supers.empty()) {
-		unsigned choice = 0;
-		float dice = (float)rand() / RAND_MAX * magnitude;
-		float total = .0f;
-		for (unsigned i = 0; i < supers.size(); ++i) {
-			total += supers[i].prob;
-			if (dice < total) {
-				choice = i;
-				break;
-			}
-		}
-		bigGunDef = supers[choice].cdef;
-	}
+	DiceBigGun();
 
 	defaultPorc = circuit->GetCircuitDef(porc.get("default", "").asCString());
 	if (defaultPorc == nullptr) {

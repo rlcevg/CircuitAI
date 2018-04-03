@@ -52,8 +52,7 @@ void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	Unit* u = unit->GetUnit();
-	const float healthPerc = u->GetHealth() / u->GetMaxHealth() - u->GetCaptureProgress() * 2.f;
+	const float healthPerc = GetHealthPercent(unit->GetUnit());
 	if ((healthPerc > cdef->GetRetreat()) && !unit->IsDisarmed(frame)) {
 		return;
 	}

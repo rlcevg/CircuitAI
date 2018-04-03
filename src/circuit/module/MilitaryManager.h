@@ -100,6 +100,7 @@ public:
 	float RoleProbability(const CCircuitDef* cdef) const;
 	bool IsNeedBigGun(const CCircuitDef* cdef) const;
 	springai::AIFloat3 GetBigGunPos(CCircuitDef* bigDef) const;
+	void DiceBigGun();
 
 	void UpdateDefenceTasks();
 	void UpdateDefence();
@@ -203,6 +204,12 @@ private:
 	CCircuitDef* sonarDef;
 	CCircuitDef* bigGunDef;
 	CCircuitDef* defaultPorc;
+
+	struct SSuperInfo {
+		CCircuitDef* cdef;
+		float weight;
+	};
+	std::vector<SSuperInfo> superInfos;
 
 	std::shared_ptr<CGameTask> defend;
 	std::vector<std::pair<springai::AIFloat3, BuildVector>> buildDefence;

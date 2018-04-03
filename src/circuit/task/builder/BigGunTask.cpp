@@ -6,6 +6,8 @@
  */
 
 #include "task/builder/BigGunTask.h"
+#include "module/MilitaryManager.h"
+#include "CircuitAI.h"
 #include "util/utils.h"
 
 namespace circuit {
@@ -22,6 +24,12 @@ CBBigGunTask::CBBigGunTask(ITaskManager* mgr, Priority priority,
 CBBigGunTask::~CBBigGunTask()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+}
+
+void CBBigGunTask::Finish()
+{
+	manager->GetCircuit()->GetMilitaryManager()->DiceBigGun();
+	IBuilderTask::Finish();
 }
 
 } // namespace circuit
