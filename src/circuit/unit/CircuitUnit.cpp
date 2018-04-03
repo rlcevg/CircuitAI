@@ -182,6 +182,11 @@ float CCircuitUnit::GetDGunRange()
 	return dgun->GetRange() * unit->GetRulesParamFloat("comm_range_mult", 1.f);
 }
 
+float CCircuitUnit::GetHealthPercent()
+{
+	return unit->GetHealth() / unit->GetMaxHealth() - unit->GetCaptureProgress() * 16.f;
+}
+
 void CCircuitUnit::Attack(CEnemyUnit* target, int timeout)
 {
 	TRY_UNIT(manager->GetCircuit(), this,

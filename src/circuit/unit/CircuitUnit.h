@@ -89,6 +89,7 @@ public:
 	float GetShieldPower();
 	float GetBuildSpeed();
 	float GetDGunRange();
+	float GetHealthPercent();
 
 	void Attack(CEnemyUnit* target, int timeout);
 	void Attack(const springai::AIFloat3& position, int timeout);

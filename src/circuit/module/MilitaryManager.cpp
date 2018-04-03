@@ -1036,9 +1036,12 @@ void CMilitaryManager::DiceBigGun()
 		return;
 	}
 
+	std::vector<SSuperInfo> candidates;
+	candidates.reserve(superInfos.size());
 	float magnitude = 0.f;
 	for (SSuperInfo& info : superInfos) {
 		if (info.cdef->IsAvailable()) {
+			candidates.push_back(info);
 			magnitude += info.weight;
 		}
 	}
@@ -1049,14 +1052,14 @@ void CMilitaryManager::DiceBigGun()
 	unsigned choice = 0;
 	float dice = (float)rand() / RAND_MAX * magnitude;
 	float total = .0f;
-	for (unsigned i = 0; i < superInfos.size(); ++i) {
-		total += superInfos[i].weight;
+	for (unsigned i = 0; i < candidates.size(); ++i) {
+		total += candidates[i].weight;
 		if (dice < total) {
 			choice = i;
 			break;
 		}
 	}
-	bigGunDef = superInfos[choice].cdef;
+	bigGunDef = candidates[choice].cdef;
 }
 
 void CMilitaryManager::UpdateDefenceTasks()

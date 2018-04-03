@@ -288,7 +288,7 @@ void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float healthPerc = GetHealthPercent(unit->GetUnit());
+	const float healthPerc = unit->GetHealthPercent();
 	if ((healthPerc > cdef->GetRetreat()) && !unit->IsDisarmed(frame)) {
 		return;
 	}

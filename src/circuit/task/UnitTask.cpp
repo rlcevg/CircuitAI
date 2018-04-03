@@ -111,9 +111,4 @@ void IUnitTask::Save(std::ostream& os) const
 	SERIALIZE(os, write)
 }
 
-float IUnitTask::GetHealthPercent(Unit* u) const
-{
-	return u->GetHealth() / u->GetMaxHealth() - u->GetCaptureProgress() * 16.f;
-}
-
 } // namespace circuit
