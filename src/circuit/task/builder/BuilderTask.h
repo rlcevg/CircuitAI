@@ -102,6 +102,7 @@ public:
 protected:
 	void HideAssignee(CCircuitUnit* unit);
 	void ShowAssignee(CCircuitUnit* unit);
+	virtual CAllyUnit* FindSameAlly(CCircuitUnit* builder, const std::vector<springai::Unit*>& friendlies);
 	virtual void FindBuildSite(CCircuitUnit* builder, const springai::AIFloat3& pos, float searchRadius);
 
 	void ExecuteChain(SBuildChain* chain);

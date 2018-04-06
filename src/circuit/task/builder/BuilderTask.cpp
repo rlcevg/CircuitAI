@@ -134,23 +134,17 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	if (circuit->IsAllyAware() && (cost > 999.0f)) {
 		circuit->UpdateFriendlyUnits();
 		auto friendlies = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, cost));
-		for (Unit* au : friendlies) {
-			CAllyUnit* alu = circuit->GetFriendlyUnit(au);
-			if (alu == nullptr) {
-				continue;
-			}
-			if ((*alu->GetCircuitDef() == *buildDef) && au->IsBeingBuilt()) {
-				const AIFloat3& pos = alu->GetPos(frame);
-				if (terrainManager->CanBuildAtSafe(unit, pos)) {
-					TRY_UNIT(circuit, unit,
-						u->Build(buildUDef, pos, au->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
-					)
-					utils::free_clear(friendlies);
-					return;
-				}
-			}
-		}
+		CAllyUnit* alu = FindSameAlly(unit, friendlies);
 		utils::free_clear(friendlies);
+		if (alu != nullptr) {
+			UnitDef* buildUDef = alu->GetCircuitDef()->GetUnitDef();
+			const AIFloat3& pos = alu->GetPos(frame);
+			Unit* au = alu->GetUnit();
+			TRY_UNIT(circuit, unit,
+				u->Build(buildUDef, pos, au->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			)
+			return;
+		}
 	}
 
 	// Alter/randomize position
@@ -383,6 +377,27 @@ void IBuilderTask::ShowAssignee(CCircuitUnit* unit)
 	if ((buildDef != nullptr) && !manager->GetCircuit()->GetEconomyManager()->IsIgnorePull(this)) {
 		manager->AddMetalPull(unit);
 	}
+}
+
+CAllyUnit* IBuilderTask::FindSameAlly(CCircuitUnit* builder, const std::vector<Unit*>& friendlies)
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	const int frame = circuit->GetLastFrame();
+
+	for (Unit* au : friendlies) {
+		CAllyUnit* alu = circuit->GetFriendlyUnit(au);
+		if (alu == nullptr) {
+			continue;
+		}
+		if ((*alu->GetCircuitDef() == *buildDef) && au->IsBeingBuilt()) {
+			const AIFloat3& pos = alu->GetPos(frame);
+			if (terrainManager->CanBuildAtSafe(builder, pos)) {
+				return alu;
+			}
+		}
+	}
+	return nullptr;
 }
 
 void IBuilderTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, float searchRadius)

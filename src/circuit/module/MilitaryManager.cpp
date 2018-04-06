@@ -658,7 +658,8 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	};
 	// radar
 	if ((radarDef != nullptr) && radarDef->IsAvailable(frame) && (radarDef->GetCost() < maxCost)) {
-		checkSensor(IBuilderTask::BuildType::RADAR, radarDef, radarDef->GetUnitDef()->GetRadarRadius() / SQRT_2);
+		const float range = radarDef->GetUnitDef()->GetRadarRadius() / (/*isPorc ? 4.f : */SQRT_2);
+		checkSensor(IBuilderTask::BuildType::RADAR, radarDef, range);
 	}
 	// sonar
 	if (isWater && (sonarDef != nullptr) && sonarDef->IsAvailable(frame) && (sonarDef->GetCost() < maxCost)) {

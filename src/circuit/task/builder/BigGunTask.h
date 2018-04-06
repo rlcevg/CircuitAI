@@ -21,6 +21,8 @@ public:
 
 protected:
 	virtual void Finish();
+
+	virtual CAllyUnit* FindSameAlly(CCircuitUnit* builder, const std::vector<springai::Unit*>& friendlies);
 };
 
 } // namespace circuit
