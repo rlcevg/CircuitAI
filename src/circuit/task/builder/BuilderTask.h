@@ -16,6 +16,7 @@
 namespace circuit {
 
 class CCircuitDef;
+class CAllyUnit;
 
 struct SBuildChain;
 
