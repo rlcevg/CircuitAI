@@ -537,7 +537,7 @@ bool CCircuitAI::IsModValid()
 		return false;
 	}
 
-	const int minModVer[] = {1, 5, 10, 3};
+	const int minModVer[] = {1, 6, 4, 0};
 	unsigned i = 0;
 	char* tmp = new char [strlen(version) + 1];
 	strcpy(tmp, version);
@@ -547,7 +547,7 @@ bool CCircuitAI::IsModValid()
 			int ver = atoi(tok);
 			if (ver < minModVer[i]) {
 				delete[] tmp;
-				LOG("Zero-K must be 1.5.10.3 or higher! (%s)", version);
+				LOG("Zero-K must be 1.6.4.0 or higher! (%s)", version);
 				return false;
 			}
 			if ((ver > minModVer[i]) || (++i >= sizeof(minModVer) / sizeof(minModVer[0]))) {

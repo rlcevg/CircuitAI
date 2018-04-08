@@ -52,6 +52,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		, defenceIdx(0)
 		, scoutIdx(0)
 		, armyCost(0.f)
+		, enemyMobileCost(0.f)
 		, mobileThreat(0.f)
 		, staticThreat(0.f)
 		, radarDef(nullptr)
@@ -658,7 +659,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	};
 	// radar
 	if ((radarDef != nullptr) && radarDef->IsAvailable(frame) && (radarDef->GetCost() < maxCost)) {
-		const float range = radarDef->GetUnitDef()->GetRadarRadius() / (/*isPorc ? 4.f : */SQRT_2);
+		const float range = radarDef->GetUnitDef()->GetRadarRadius() / (isPorc ? 4.f : SQRT_2);
 		checkSensor(IBuilderTask::BuildType::RADAR, radarDef, range);
 	}
 	// sonar
@@ -938,6 +939,7 @@ void CMilitaryManager::AddEnemyCost(const CEnemyUnit* e)
 	}
 	if (cdef->IsMobile()) {
 		mobileThreat += cdef->GetThreat() * initThrMod.inMobile;
+		enemyMobileCost += e->GetCost();
 	} else {
 		staticThreat += cdef->GetThreat() * initThrMod.inStatic;
 	}
@@ -957,6 +959,7 @@ void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
 	}
 	if (cdef->IsMobile()) {
 		mobileThreat = std::max(mobileThreat - cdef->GetThreat() * initThrMod.inMobile, 0.f);
+		enemyMobileCost = std::max(enemyMobileCost - e->GetCost(), 0.f);
 	} else {
 		staticThreat = std::max(staticThreat - cdef->GetThreat() * initThrMod.inStatic, 0.f);
 	}
@@ -1046,16 +1049,16 @@ void CMilitaryManager::DiceBigGun()
 			magnitude += info.weight;
 		}
 	}
-	if (magnitude == 0.f) {
-		magnitude = 1.f;
+	if ((magnitude == 0.f) || candidates.empty()) {
+		bigGunDef = superInfos[0].cdef;
+		return;
 	}
 
 	unsigned choice = 0;
 	float dice = (float)rand() / RAND_MAX * magnitude;
-	float total = .0f;
 	for (unsigned i = 0; i < candidates.size(); ++i) {
-		total += candidates[i].weight;
-		if (dice < total) {
+		dice -= candidates[i].weight;
+		if (dice < 0.f) {
 			choice = i;
 			break;
 		}

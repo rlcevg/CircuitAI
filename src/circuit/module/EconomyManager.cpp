@@ -41,6 +41,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, pylonDef(nullptr)
 		, mexDef(nullptr)
 		, storeDef(nullptr)
+		, mexCount(0)
 		, lastFacFrame(-1)
 		, indexRes(0)
 		, metalIncome(.0f)
@@ -491,13 +492,16 @@ void CEconomyManager::SetOpenSpot(int spotId, bool value)
 
 bool CEconomyManager::IsIgnorePull(const IBuilderTask* task) const
 {
-	return (mexMax < 0) && ((task->GetBuildType() == IBuilderTask::BuildType::MEX) ||
-							(task->GetBuildType() == IBuilderTask::BuildType::PYLON));
+	if (mexMax != std::numeric_limits<typeof(mexMax)>::max()) {
+		return false;
+	}
+	return ((task->GetBuildType() == IBuilderTask::BuildType::MEX) ||
+			(task->GetBuildType() == IBuilderTask::BuildType::PYLON));
 }
 
 bool CEconomyManager::IsIgnoreStallingPull(const IBuilderTask* task) const
 {
-	if (mexMax >= 0) {
+	if (mexMax != std::numeric_limits<typeof(mexMax)>::max()) {
 		return false;
 	}
 	if ((task->GetBuildType() == IBuilderTask::BuildType::MEX) ||
@@ -505,10 +509,8 @@ bool CEconomyManager::IsIgnoreStallingPull(const IBuilderTask* task) const
 	{
 		return true;
 	}
-	if ((task->GetBuildType() == IBuilderTask::BuildType::ENERGY) && circuit->GetEconomyManager()->IsEnergyStalling()) {
-		return true;
-	}
-	return false;
+	return ((task->GetBuildType() == IBuilderTask::BuildType::ENERGY) &&
+			circuit->GetEconomyManager()->IsEnergyStalling());
 }
 
 IBuilderTask* CEconomyManager::MakeEconomyTasks(const AIFloat3& position, CCircuitUnit* unit)
@@ -1065,16 +1067,21 @@ void CEconomyManager::ReadConfig()
 	ecoStep = econ.get("eps_step", 0.25f).asFloat();
 	ecoFactor = (circuit->GetAllyTeam()->GetSize() - 1.0f) * ecoStep + 1.0f;
 	metalMod = (1.f - econ.get("excess", -1.f).asFloat());
-	pullMtoS = econ.get("ms_pull", 0.8f).asFloat();
 	switchTime = econ.get("switch", 900).asInt() * FRAMES_PER_SEC;
 	const float bd = econ.get("build_delay", -1.f).asFloat();
 	buildDelay = (bd > 0.f) ? (bd * FRAMES_PER_SEC) : 0;
 
+	const Json::Value& energy = econ["energy"];
+	const Json::Value& factor = energy["factor"];
+	efInfo.startFactor = factor[0].get((unsigned)0, 0.5f).asFloat();
+	efInfo.startFrame = factor[0].get((unsigned)1, 300 ).asInt() * FRAMES_PER_SEC;
+	const float efEndFactor = factor[1].get((unsigned)0, 2.0f).asFloat();
+	efInfo.endFrame = factor[1].get((unsigned)1, 3600).asInt() * FRAMES_PER_SEC;
+	efInfo.fraction = (efEndFactor - efInfo.startFactor) / (efInfo.endFrame - efInfo.startFrame);
+	energyFactor = efInfo.startFactor;
+
 	// Using cafus, armfus, armsolar as control points
 	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
-	const Json::Value& energy = econ["energy"];
-	energyFactor = energy.get("factor", 1.0f).asFloat();
-
 	constexpr unsigned MAX_CTRL_POINTS = 3;
 	std::vector<std::pair<std::string, int>> engies;
 	std::string type = circuit->GetTerrainManager()->IsWaterMap() ? "water" : "land";
@@ -1129,10 +1136,17 @@ void CEconomyManager::Init()
 	const size_t spSize = circuit->GetMetalManager()->GetSpots().size();
 	openSpots.resize(spSize, true);
 
-	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const float mm = root["economy"].get("mex_max", 2.f).asFloat();
-	mexMax = (mm < 1.f) ? (mm * spSize) : -1;
-	mexCount = (mm < 1.f) ? 0 : (-spSize - 1);
+	const Json::Value& econ = circuit->GetSetupManager()->GetConfig()["economy"];
+	const float mm = econ.get("mex_max", 2.f).asFloat();
+	mexMax = (mm < 1.f) ? (mm * spSize) : std::numeric_limits<typeof(mexMax)>::max();
+
+	const Json::Value& pull = econ["ms_pull"];
+	mspInfo.startPull = pull[0].get((unsigned)0, 1.0f).asFloat();
+	mspInfo.minMex = pull[0].get((unsigned)1, 0.0f).asFloat() * spSize;
+	mspInfo.endPull = pull[1].get((unsigned)0, 0.25f).asFloat();
+	mspInfo.maxMex = pull[1].get((unsigned)1, 0.75f).asFloat() * spSize;
+	mspInfo.fraction = (mspInfo.endPull - mspInfo.startPull) / (mspInfo.maxMex - mspInfo.minMex);
+	pullMtoS = mspInfo.startPull;
 
 	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
 		metalProduced = economy->GetCurrent(metalRes) * metalMod;
@@ -1220,6 +1234,19 @@ void CEconomyManager::UpdateEconomy()
 	const float curEnergy = economy->GetCurrent(energyRes);
 	const float storEnergy = GetStorage(energyRes);
 	isEnergyEmpty = curEnergy < storEnergy * 0.1f;
+
+	if ((efInfo.startFrame < ecoFrame) && (ecoFrame < efInfo.endFrame)) {
+		energyFactor = efInfo.fraction * (ecoFrame - efInfo.startFrame) + efInfo.startFactor;
+	}
+
+	if (mexCount <= mspInfo.minMex) {
+		pullMtoS = mspInfo.startPull;
+	} else if (mexCount >= mspInfo.maxMex) {
+		pullMtoS = mspInfo.endPull;
+	} else {
+		pullMtoS = mspInfo.fraction * (mexCount - mspInfo.minMex) + mspInfo.startPull;
+	}
+	pullMtoS *= circuit->GetMilitaryManager()->ClampMobileCostRatio();
 }
 
 } // namespace circuit

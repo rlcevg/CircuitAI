@@ -383,10 +383,9 @@ void CSetupManager::ReadConfig()
 	if (!commChoices.empty()) {
 		unsigned choice = 0;
 		float dice = (float)rand() / RAND_MAX * magnitude;
-		float total = .0f;
 		for (unsigned i = 0; i < weight.size(); ++i) {
-			total += weight[i];
-			if (dice < total) {
+			dice -= weight[i];
+			if (dice < 0.f) {
 				choice = i;
 				break;
 			}
@@ -447,10 +446,9 @@ const std::vector<CCircuitDef::RoleType>* CSetupManager::GetOpener(const CCircui
 		magnitude += opener.prob;
 	}
 	float dice = (float)rand() / RAND_MAX * magnitude;
-	float total = .0f;
 	for (const SOpener& opener : ito->second) {
-		total += opener.prob;
-		if (dice < total) {
+		dice -= opener.prob;
+		if (dice < 0.f) {
 			return &opener.queue;
 		}
 	}

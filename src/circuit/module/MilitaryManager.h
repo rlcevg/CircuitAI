@@ -101,6 +101,9 @@ public:
 	bool IsNeedBigGun(const CCircuitDef* cdef) const;
 	springai::AIFloat3 GetBigGunPos(CCircuitDef* bigDef) const;
 	void DiceBigGun();
+	float ClampMobileCostRatio() const {
+		return (enemyMobileCost > armyCost) ? (armyCost / enemyMobileCost) : 1.f;
+	}
 
 	void UpdateDefenceTasks();
 	void UpdateDefence();
@@ -161,6 +164,7 @@ private:
 	std::set<CCircuitUnit*> army;
 	float armyCost;
 
+	float enemyMobileCost;
 	float mobileThreat;  // thr_mod.mobile applied
 	float staticThreat;  // thr_mod.static applied
 	struct SInitThreatMod {

@@ -102,11 +102,6 @@ private:
 	springai::Economy* economy;
 	CEnergyGrid* energyGrid;
 
-	// NOTE: MetalManager::SetOpenSpot used by whole allyTeam. Therefore
-	//       local spot's state descriptor needed for better expansion
-	std::vector<bool> openSpots;  // AI-local metal info
-	int mexCount;
-
 	struct SClusterInfo {
 		CCircuitUnit* factory;
 		int metalFrame;
@@ -118,6 +113,11 @@ private:
 	CCircuitDef* mexDef;
 	CCircuitDef* storeDef;
 	CCircuitDef* defaultDef;
+
+	// NOTE: MetalManager::SetOpenSpot used by whole allyTeam. Therefore
+	//       local spot's state descriptor needed for better expansion
+	std::vector<bool> openSpots;  // AI-local metal info
+	int mexCount;
 
 	std::set<CCircuitDef*> allEnergyDefs;
 	std::set<CCircuitDef*> availEnergyDefs;
@@ -134,9 +134,16 @@ private:
 
 	float ecoStep;
 	float ecoFactor;
-	float energyFactor;
 	int switchTime;
 	int lastFacFrame;
+
+	struct SEnergyFactorInfo {
+		float startFactor;
+		int startFrame;
+		int endFrame;
+		float fraction;
+	} efInfo;
+	float energyFactor;
 
 	std::vector<float> metalIncomes;
 	std::vector<float> energyIncomes;
@@ -146,9 +153,17 @@ private:
 	float metalProduced;
 	float metalUsed;
 	float metalMod;
-	float pullMtoS;  // mobile to static metal pull ratio
 	int mexMax;
 	int buildDelay;
+
+	struct SPullMtoS {
+		float startPull;
+		float endPull;
+		int minMex;
+		int maxMex;
+		float fraction;
+	} mspInfo;
+	float pullMtoS;  // mobile to static metal pull ratio
 
 	int ecoFrame;
 	bool isMetalEmpty;

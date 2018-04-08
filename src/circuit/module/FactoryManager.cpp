@@ -643,10 +643,9 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		}
 	} else {
 		float dice = (float)rand() / RAND_MAX * magnitude;
-		float total = .0f;
 		for (auto& pair : candidates) {
-			total += pair.second;
-			if (dice < total) {
+			dice -= pair.second;
+			if (dice < 0.f) {
 				buildDef = pair.first;
 				break;
 			}
