@@ -87,14 +87,14 @@ public:
 	int HandleEvent(int topic, const void* data);
 	void NotifyGameEnd();
 	void NotifyResign();
-	void NotifyShutdown();
+//	void NotifyShutdown();
 	void Resign(int newTeamId);
 private:
 	typedef int (CCircuitAI::*EventHandlerPtr)(int topic, const void* data);
 	int HandleGameEvent(int topic, const void* data);
 	int HandleEndEvent(int topic, const void* data);
 	int HandleResignEvent(int topic, const void* data);
-	int HandleShutdownEvent(int topic, const void* data);
+//	int HandleShutdownEvent(int topic, const void* data);
 	EventHandlerPtr eventHandler;
 
 	int ownerTeamId;
@@ -102,12 +102,12 @@ private:
 	springai::Resource* metalRes;
 	springai::Resource* energyRes;
 
-	bool IsCorrupted() const { return !corrupts.empty(); }
-	std::deque<std::string> corrupts;
+//	bool IsCorrupted() const { return !corrupts.empty(); }
+//	std::deque<std::string> corrupts;
 // ---- AI Event handler ---- END
 
 private:
-	bool IsModValid();
+//	bool IsModValid();
 	void CheatPreload();
 	int Init(int skirmishAIId, const struct SSkirmishAICallback* sAICallback);
 	int Release(int reason);

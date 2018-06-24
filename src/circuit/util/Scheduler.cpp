@@ -113,12 +113,7 @@ void CScheduler::RunParallelTask(std::shared_ptr<CGameTask> task, std::shared_pt
 {
 	if (!workerRunning.load()) {
 		workerRunning = true;
-		// TODO: Find out more about std::async, std::bind, std::future.
-#if (__GNUC__ < 5)
-		workerThread = spring::thread([]() { CScheduler::WorkerThread(); });
-#else
 		workerThread = spring::thread(&CScheduler::WorkerThread);
-#endif
 	}
 	workTasks.Push({self, task, onComplete});
 }

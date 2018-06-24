@@ -5,8 +5,9 @@ Vagrant.configure(2) do |config|
   # For a complete reference, please see the online documentation at
   # https://docs.vagrantup.com.
 
-  config.vm.box = "ubuntu/trusty64"
+  config.vm.box = "ubuntu/xenial64"
   config.vm.network "public_network"
+  config.vm.synced_folder ".", "/vagrant"
 
   config.vm.provider "virtualbox" do |v|
     v.memory = 2048
@@ -15,19 +16,12 @@ Vagrant.configure(2) do |config|
   end
 
   config.vm.provision "shell", name: "install", inline: <<-SHELL
-    add-apt-repository -y ppa:ubuntu-toolchain-r/test
     apt-get update
 
-    apt-get install -y build-essential cmake git
+    apt-get install -y build-essential cmake git gcc-5 g++-5
     apt-get install -y libglew-dev libsdl2-dev libdevil-dev libopenal-dev \
-      libogg-dev libvorbis-dev libfreetype6-dev p7zip-full libxcursor-dev \
-      libboost-thread-dev libboost-regex-dev libboost-system-dev \
-      libboost-program-options-dev libboost-signals-dev \
-      libboost-chrono-dev libboost-filesystem-dev libunwind8-dev \
-      libcurl4-openssl-dev
-
-    apt-get install -y gcc-4.9 g++-4.9
-    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.9
+      libogg-dev libvorbis-dev libfreetype6-dev p7zip-full libboost-dev \
+      libunwind8-dev libcurl4-openssl-dev
   SHELL
 
   $script = <<-SCRIPT
@@ -39,10 +33,12 @@ Vagrant.configure(2) do |config|
       cp /vagrant/CMakeLists.txt spring/AI/Skirmish/CircuitAI/
       cp /vagrant/VERSION spring/AI/Skirmish/CircuitAI/
 
-      cd spring && git checkout tags/103.0
+      cd spring && git checkout maintenance
       git submodule init && git submodule update
-      cmake -DAI_TYPES=NATIVE . && make CircuitAI -j2 > ~/CircuitAI.log 2>&1
-      cp AI/Skirmish/CircuitAI/libSkirmishAI.so /vagrant/
+      cmake -DAI_TYPES=NATIVE .
+      make CircuitAI -j2 > ~/CircuitAI.log 2>&1
+      strip AI/Skirmish/CircuitAI/data/libSkirmishAI.so
+      cp AI/Skirmish/CircuitAI/data/libSkirmishAI.so /vagrant/
     fi
   SCRIPT
   config.vm.provision "shell", name: "startup", inline: $script, privileged: false

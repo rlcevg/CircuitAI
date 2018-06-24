@@ -15,15 +15,13 @@ set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils)
 
 
 #set(additionalCompileFlags "-Isrc/lib/ -Isrc/circuit/ -O1 -DDEBUG -DDEBUG_VIS -DDEBUG_LOG -Wall -Wextra -D_GLIBCXX_USE_CXX11_ABI=0")
-# Spring 100.0 was compiled with old ABI
 if ("${CMAKE_SYSTEM}" MATCHES "ARCH")
-	set(additionalCompileFlags "-DDEBUG_VIS -Wall -D_GLIBCXX_USE_CXX11_ABI=1")
-#	set(additionalCompileFlags "-DDEBUG_LOG -Wall -D_GLIBCXX_USE_CXX11_ABI=1 -fsanitize=address -fno-omit-frame-pointer -fno-common -O1")
+	set(additionalCompileFlags "-DDEBUG_VIS -Wall")
+#	set(additionalCompileFlags "-DDEBUG_LOG -Wall -fsanitize=address -fno-omit-frame-pointer -fno-common -O1")
 else ()
-	set(additionalCompileFlags "-Wall -D_GLIBCXX_USE_CXX11_ABI=0")
+	set(additionalCompileFlags "-Wall")
 endif ()
 
-set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
 #set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -lasan")
 
 

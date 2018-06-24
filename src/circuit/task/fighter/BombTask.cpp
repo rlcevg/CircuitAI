@@ -16,6 +16,7 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+#include "OOAICallback.h"
 #include "AISCommands.h"
 #include "Map.h"
 
@@ -200,6 +201,20 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, co
 	const float sqRange = (lastTarget != nullptr) ? pos.SqDistance2D(lastTarget->GetPos()) + 1.f : SQUARE(2000.0f);
 	float maxThreat = .0f;
 
+	OOAICallback* callback = circuit->GetCallback();
+	float aoe = std::min(cdef->GetAoe() + SQUARE_SIZE, DEFAULT_SLACK * 2.f);
+	std::function<bool (const AIFloat3& pos)> noAllies = [callback, aoe](const AIFloat3& pos) {
+		return true;
+	};
+	if (aoe > SQUARE_SIZE * 2) {
+		noAllies = [callback, aoe](const AIFloat3& pos) {
+			auto friendlies = std::move(callback->GetFriendlyUnitsIn(pos, aoe));
+			bool result = friendlies.empty();
+			utils::free_clear(friendlies);
+			return result;
+		};
+	}
+
 	CEnemyUnit* bestTarget = nullptr;
 	CEnemyUnit* mediumTarget = nullptr;
 	CEnemyUnit* worstTarget = nullptr;
@@ -252,12 +267,16 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, co
 		float sqDist = pos.SqDistance2D(enemy->GetPos());
 		if ((sqDist < sqRange) && enemy->IsInRadarOrLOS()/* && (altitude < maxAltitude)*/) {
 			if (isBuilder) {
-				bestTarget = enemy;
-				maxThreat = std::numeric_limits<float>::max();
+				if (noAllies(enemy->GetPos())) {
+					bestTarget = enemy;
+					maxThreat = std::numeric_limits<float>::max();
+				}
 			} else if (maxThreat <= defThreat) {
-				bestTarget = enemy;
-				maxThreat = defThreat;
-			} else if (bestTarget == nullptr) {
+				if (noAllies(enemy->GetPos())) {
+					bestTarget = enemy;
+					maxThreat = defThreat;
+				}
+			} else if ((bestTarget == nullptr) && noAllies(enemy->GetPos())) {
 				if ((targetCat & noChaseCat) == 0) {
 					mediumTarget = enemy;
 				} else if (mediumTarget == nullptr) {

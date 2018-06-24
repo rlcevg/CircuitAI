@@ -41,8 +41,8 @@
 #include "WrappUnit.h"
 #include "WrappTeam.h"
 #include "OptionValues.h"
-#include "Info.h"
-#include "Mod.h"
+//#include "Info.h"
+//#include "Mod.h"
 #include "Cheats.h"
 //#include "WrappCurrentCommand.h"
 
@@ -134,43 +134,43 @@ void CCircuitAI::NotifyResign()
 	eventHandler = &CCircuitAI::HandleResignEvent;
 }
 
-void CCircuitAI::NotifyShutdown()
-{
-	Info* info = skirmishAI->GetInfo();
-	const char* name = info->GetValueByKey("name");
-//	OptionValues* options = skirmishAI->GetOptionValues();
-//	const char* value = options->GetValueByKey("version");
-//	const char* version = (value != nullptr) ? value : info->GetValueByKey("version");
-	delete info;
-//	delete options;
-	std::string say("/say "/*"a:"*/);
-	say += std::string(name) + " " + std::string(version) + ": ";
-
-	corrupts.push_front("Error: System files corrupt.");
-	corrupts.push_front("Verifying Checksums...");
-	corrupts.push_front("Loading Kernel...");
-	corrupts.push_front("Terminal connection established.");
-	corrupts.push_back("Saving diagnostics to infolog.txt...");
-	corrupts.push_back("System failure - disconnecting remote users...");
-
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>([this, say]() {
-		if (IsCorrupted()) {
-			game->SendTextMessage((say + corrupts.front()).c_str(), 0);
-			corrupts.pop_front();
-		} else {
-			auto units = std::move(callback->GetTeamUnits());
-			for (Unit* u : units) {
-				if (u != nullptr) {
-					u->SelfDestruct();
-				}
-				delete u;
-			}
-			isResigned = true;  // shutdown
-		}
-	}), FRAMES_PER_SEC * 3);
-
-	eventHandler = &CCircuitAI::HandleShutdownEvent;
-}
+//void CCircuitAI::NotifyShutdown()
+//{
+//	Info* info = skirmishAI->GetInfo();
+//	const char* name = info->GetValueByKey("name");
+////	OptionValues* options = skirmishAI->GetOptionValues();
+////	const char* value = options->GetValueByKey("version");
+////	const char* version = (value != nullptr) ? value : info->GetValueByKey("version");
+//	delete info;
+////	delete options;
+//	std::string say("/say "/*"a:"*/);
+//	say += std::string(name) + " " + std::string(version) + ": ";
+//
+//	corrupts.push_front("Error: System files corrupt.");
+//	corrupts.push_front("Verifying Checksums...");
+//	corrupts.push_front("Loading Kernel...");
+//	corrupts.push_front("Terminal connection established.");
+//	corrupts.push_back("Saving diagnostics to infolog.txt...");
+//	corrupts.push_back("System failure - disconnecting remote users...");
+//
+//	scheduler->RunTaskEvery(std::make_shared<CGameTask>([this, say]() {
+//		if (IsCorrupted()) {
+//			game->SendTextMessage((say + corrupts.front()).c_str(), 0);
+//			corrupts.pop_front();
+//		} else {
+//			auto units = std::move(callback->GetTeamUnits());
+//			for (Unit* u : units) {
+//				if (u != nullptr) {
+//					u->SelfDestruct();
+//				}
+//				delete u;
+//			}
+//			isResigned = true;  // shutdown
+//		}
+//	}), FRAMES_PER_SEC * 3);
+//
+//	eventHandler = &CCircuitAI::HandleShutdownEvent;
+//}
 
 void CCircuitAI::Resign(int newTeamId)
 {
@@ -190,11 +190,13 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			try {
 				ret = this->Init(evt->skirmishAIId, evt->callback);
 			} catch (const CException& e) {
-				corrupts.push_back("!!! " + std::string(e.what()) + " !!!");
+//				corrupts.push_back("!!! " + std::string(e.what()) + " !!!");
 				Release(RELEASE_CORRUPTED);
-				scheduler = std::make_shared<CScheduler>();  // NOTE: Don't forget to delete
-				scheduler->Init(scheduler);
-				NotifyShutdown();
+//				scheduler = std::make_shared<CScheduler>();  // NOTE: Don't forget to delete
+//				scheduler->Init(scheduler);
+//				NotifyShutdown();
+				LOG("Exception: %s", e.what());
+				NotifyGameEnd();
 				ret = 0;
 			} catch (...) {
 				ret = ERROR_INIT;
@@ -491,75 +493,75 @@ int CCircuitAI::HandleResignEvent(int topic, const void* data)
 	return 0;
 }
 
-int CCircuitAI::HandleShutdownEvent(int topic, const void* data)
-{
-	switch (topic) {
-		case EVENT_RELEASE: {
-			PRINT_TOPIC("EVENT_RELEASE::SHUTDOWN", topic);
-			scheduler = nullptr;  // this->Release() was already called
-			NotifyGameEnd();
-		} break;
-		case EVENT_UPDATE: {
-//			PRINT_TOPIC("EVENT_UPDATE::SHUTDOWN", topic);
-			struct SUpdateEvent* evt = (struct SUpdateEvent*)data;
-			scheduler->ProcessTasks(evt->frame);
-			if (isResigned) {
-				scheduler = nullptr;
-				NotifyGameEnd();
-			}
-		} break;
-		default: break;
-	}
-	return 0;
-}
+//int CCircuitAI::HandleShutdownEvent(int topic, const void* data)
+//{
+//	switch (topic) {
+//		case EVENT_RELEASE: {
+//			PRINT_TOPIC("EVENT_RELEASE::SHUTDOWN", topic);
+//			scheduler = nullptr;  // this->Release() was already called
+//			NotifyGameEnd();
+//		} break;
+//		case EVENT_UPDATE: {
+////			PRINT_TOPIC("EVENT_UPDATE::SHUTDOWN", topic);
+//			struct SUpdateEvent* evt = (struct SUpdateEvent*)data;
+//			scheduler->ProcessTasks(evt->frame);
+//			if (isResigned) {
+//				scheduler = nullptr;
+//				NotifyGameEnd();
+//			}
+//		} break;
+//		default: break;
+//	}
+//	return 0;
+//}
 
-bool CCircuitAI::IsModValid()
-{
-	const int minEngineVer = 104;
-	const char* engineVersion = sAICallback->Engine_Version_getMajor(skirmishAIId);
-	int ver = atoi(engineVersion);
-	if (ver < minEngineVer) {
-		LOG("Engine must be %i or higher! (Current: %s)", minEngineVer, engineVersion);
-		return false;
-	}
-
-	Mod* mod = callback->GetMod();
-	const char* name = mod->GetHumanName();
-	const char* version = mod->GetVersion();
-	delete mod;
-	if ((name == nullptr) || (version == nullptr)) {
-		LOG("Can't get name or version of the game. Aborting!");  // NOTE: Sign of messed up spring/AI installation
-		return false;
-	}
-
-	if ((strstr(name, "Zero-K") == nullptr)) {
-		LOG("Only Zero-K game is supported! (%s)", name);
-		return false;
-	}
-
-	const int minModVer[] = {1, 6, 4, 0};
-	unsigned i = 0;
-	char* tmp = new char [strlen(version) + 1];
-	strcpy(tmp, version);
-	const char* tok = strtok(tmp, "v.");
-	if (strcmp(tmp, tok) != 0) {  // allow non-standart $VERSION
-		while (tok != nullptr) {
-			int ver = atoi(tok);
-			if (ver < minModVer[i]) {
-				delete[] tmp;
-				LOG("Zero-K must be 1.6.4.0 or higher! (%s)", version);
-				return false;
-			}
-			if ((ver > minModVer[i]) || (++i >= sizeof(minModVer) / sizeof(minModVer[0]))) {
-				break;
-			}
-			tok = strtok(nullptr, ".");
-		}
-	}
-	delete[] tmp;
-
-	return true;
-}
+//bool CCircuitAI::IsModValid()
+//{
+//	const int minEngineVer = 104;
+//	const char* engineVersion = sAICallback->Engine_Version_getMajor(skirmishAIId);
+//	int ver = atoi(engineVersion);
+//	if (ver < minEngineVer) {
+//		LOG("Engine must be %i or higher! (Current: %s)", minEngineVer, engineVersion);
+//		return false;
+//	}
+//
+//	Mod* mod = callback->GetMod();
+//	const char* name = mod->GetHumanName();
+//	const char* version = mod->GetVersion();
+//	delete mod;
+//	if ((name == nullptr) || (version == nullptr)) {
+//		LOG("Can't get name or version of the game. Aborting!");  // NOTE: Sign of messed up spring/AI installation
+//		return false;
+//	}
+//
+//	if ((strstr(name, "Zero-K") == nullptr)) {
+//		LOG("Only Zero-K game is supported! (%s)", name);
+//		return false;
+//	}
+//
+//	const int minModVer[] = {1, 6, 4, 0};
+//	unsigned i = 0;
+//	char* tmp = new char [strlen(version) + 1];
+//	strcpy(tmp, version);
+//	const char* tok = strtok(tmp, "v.");
+//	if (strcmp(tmp, tok) != 0) {  // allow non-standart $VERSION
+//		while (tok != nullptr) {
+//			int ver = atoi(tok);
+//			if (ver < minModVer[i]) {
+//				delete[] tmp;
+//				LOG("Zero-K must be 1.6.4.0 or higher! (%s)", version);
+//				return false;
+//			}
+//			if ((ver > minModVer[i]) || (++i >= sizeof(minModVer) / sizeof(minModVer[0]))) {
+//				break;
+//			}
+//			tok = strtok(nullptr, ".");
+//		}
+//	}
+//	delete[] tmp;
+//
+//	return true;
+//}
 
 void CCircuitAI::CheatPreload()
 {
@@ -582,9 +584,9 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	this->skirmishAIId = skirmishAIId;
 	// NOTE: Due to chewed API only SSkirmishAICallback have access to Engine
 	this->sAICallback = sAICallback;
-	if (!IsModValid()) {
-		return ERROR_INIT;
-	}
+//	if (!IsModValid()) {
+//		return ERROR_INIT;
+//	}
 
 #ifdef DEBUG_VIS
 	debugDrawer = std::unique_ptr<CDebugDrawer>(new CDebugDrawer(this, sAICallback));
