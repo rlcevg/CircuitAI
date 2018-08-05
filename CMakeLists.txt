@@ -16,10 +16,10 @@ set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils)
 
 #set(additionalCompileFlags "-Isrc/lib/ -Isrc/circuit/ -O1 -DDEBUG -DDEBUG_VIS -DDEBUG_LOG -Wall -Wextra -D_GLIBCXX_USE_CXX11_ABI=0")
 if ("${CMAKE_SYSTEM}" MATCHES "ARCH")
-	set(additionalCompileFlags "-DDEBUG_VIS -Wall")
+	set(additionalCompileFlags "-DDEBUG_VIS -Wall -Wno-unused-local-typedef")
 #	set(additionalCompileFlags "-DDEBUG_LOG -Wall -fsanitize=address -fno-omit-frame-pointer -fno-common -O1")
 else ()
-	set(additionalCompileFlags "-Wall")
+	set(additionalCompileFlags "-Wall -Wno-unused-local-typedef")
 endif ()
 
 #set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -lasan")
