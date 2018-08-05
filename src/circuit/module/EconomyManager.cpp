@@ -492,7 +492,7 @@ void CEconomyManager::SetOpenSpot(int spotId, bool value)
 
 bool CEconomyManager::IsIgnorePull(const IBuilderTask* task) const
 {
-	if (mexMax != std::numeric_limits<typeof(mexMax)>::max()) {
+	if (mexMax != std::numeric_limits<decltype(mexMax)>::max()) {
 		return false;
 	}
 	return ((task->GetBuildType() == IBuilderTask::BuildType::MEX) ||
@@ -501,7 +501,7 @@ bool CEconomyManager::IsIgnorePull(const IBuilderTask* task) const
 
 bool CEconomyManager::IsIgnoreStallingPull(const IBuilderTask* task) const
 {
-	if (mexMax != std::numeric_limits<typeof(mexMax)>::max()) {
+	if (mexMax != std::numeric_limits<decltype(mexMax)>::max()) {
 		return false;
 	}
 	if ((task->GetBuildType() == IBuilderTask::BuildType::MEX) ||
@@ -1138,7 +1138,7 @@ void CEconomyManager::Init()
 
 	const Json::Value& econ = circuit->GetSetupManager()->GetConfig()["economy"];
 	const float mm = econ.get("mex_max", 2.f).asFloat();
-	mexMax = (mm < 1.f) ? (mm * spSize) : std::numeric_limits<typeof(mexMax)>::max();
+	mexMax = (mm < 1.f) ? (mm * spSize) : std::numeric_limits<decltype(mexMax)>::max();
 
 	const Json::Value& pull = econ["ms_pull"];
 	mspInfo.startPull = pull[0].get((unsigned)0, 1.0f).asFloat();
