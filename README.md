@@ -3,21 +3,17 @@ Circuit AI
 Spring RTS local native AI for Zero-K.
 
 ### Requirements
-* gcc 4.9+ (`<regex>` support)*
-* spring 102.0
-* boost 1.54+
+* gcc 5.4+
+* spring 104.0-dev
 * SDL2 (optional)
-
-*gcc 4.9.3 recommended, [gcc 5+](https://gcc.gnu.org/gcc-5/changes.html) had issues as official spring sits on 4.8
 
 ### Compiling
 Build process of native AI described in the [wiki](https://springrts.com/wiki/AI:Development:Lang:Cpp) of Spring RTS engine.
 Required steps on linux:
 ```
 $ git clone https://github.com/spring/spring.git
-$ cd spring && git checkout tags/102.0
+$ cd spring && git checkout maintenance
 $ git clone https://github.com/rlcevg/CircuitAI.git AI/Skirmish/CircuitAI
-$ cd AI/Skirmish/CircuitAI && git checkout v<AI version> && cd ../../..
 $ cmake . && make CircuitAI
 ```
 
