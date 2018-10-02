@@ -32,7 +32,7 @@ if    (BUILD_Cpp_AIWRAPPER)
 		${CMAKE_CURRENT_SOURCE_DIR}/src/lib/
 		${CMAKE_CURRENT_SOURCE_DIR}/src/circuit/
 	)
-	ConfigureNativeSkirmishAI(mySourceDirRel additionalSources additionalCompileFlags additionalLibraries)
+	configure_native_skirmish_ai(mySourceDirRel additionalSources additionalCompileFlags additionalLibraries)
 else  (BUILD_Cpp_AIWRAPPER)
 	message ("warning: (New) C++ Circuit AI will not be built! (missing Cpp Wrapper)")
 endif (BUILD_Cpp_AIWRAPPER)
