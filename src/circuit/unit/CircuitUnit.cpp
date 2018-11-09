@@ -203,7 +203,7 @@ void CCircuitUnit::Attack(CEnemyUnit* target, int timeout)
 			unit->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
 		}
 		unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);  // los-cheat related
-		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+//		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 		unit->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 	)
 }
@@ -222,7 +222,7 @@ void CCircuitUnit::Attack(const AIFloat3& position, int timeout)
 		} else {
 			unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
 		}
-		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+//		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 	)
 }
 
@@ -242,7 +242,7 @@ void CCircuitUnit::Attack(const AIFloat3& position, CEnemyUnit* target, int time
 		}
 		unit->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
 		unit->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);  // los-cheat related
-		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+//		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 		unit->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 	)
 }
@@ -261,7 +261,7 @@ void CCircuitUnit::Gather(const AIFloat3& groupPos, int timeout)
 	const AIFloat3& pos = utils::get_radial_pos(groupPos, SQUARE_SIZE * 8);
 	TRY_UNIT(manager->GetCircuit(), this,
 		unit->MoveTo(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
-		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+//		unit->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 		unit->PatrolTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
 	)
 }

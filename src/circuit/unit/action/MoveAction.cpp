@@ -50,7 +50,7 @@ void CMoveAction::Update(CCircuitAI* circuit)
 											  {pos.x, pos.y, pos.z},
 											  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY,
 											  frame + FRAMES_PER_SEC * 60);
-		unit->GetUnit()->SetWantedMaxSpeed(stepSpeed);
+//		unit->GetUnit()->SetWantedMaxSpeed(stepSpeed);
 
 		constexpr short options = UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY;
 		for (int i = 2; (step < pathMaxIndex) && (i < 4); ++i) {

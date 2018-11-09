@@ -224,7 +224,7 @@ void CAttackTask::Update()
 		for (CCircuitUnit* unit : units) {
 			TRY_UNIT(circuit, unit,
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-				unit->GetUnit()->SetWantedMaxSpeed(lowestSpeed);
+//				unit->GetUnit()->SetWantedMaxSpeed(lowestSpeed);
 			)
 
 			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
