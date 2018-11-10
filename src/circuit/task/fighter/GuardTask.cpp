@@ -38,7 +38,7 @@ void CFGuardTask::Execute(CCircuitUnit* unit)
 	if (vip != nullptr) {
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->Guard(vip->GetUnit());
-			unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+//			unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 		)
 	} else {
 		manager->AbortTask(this);

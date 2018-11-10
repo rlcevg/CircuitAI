@@ -60,7 +60,7 @@ void CDefendTask::Execute(CCircuitUnit* unit)
 
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
-		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+//		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 	)
 }
 
@@ -128,7 +128,7 @@ void CDefendTask::Update()
 			AIFloat3 pos = utils::get_radial_pos(position, SQUARE_SIZE * 32);
 			TRY_UNIT(circuit, unit,
 				unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
-				unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+//				unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
 			)
 		}
 	}
