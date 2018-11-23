@@ -60,8 +60,6 @@ CSetupManager::~CSetupManager()
 void CSetupManager::DisabledUnits(const char* setupScript)
 {
 	std::string script(setupScript);
-	std::regex patternModoptions("\\[modoptions\\]\\s*\\{([\\s\\S]+?(?=\\}\\s*(\\[|$)))", std::regex::ECMAScript | std::regex::icase);
-	std::regex patternDisabled("disabledunits=(.*);", std::regex::ECMAScript | std::regex::icase);
 	auto disableUnits = [this](const std::string& opt_str) {
 		std::string::const_iterator start = opt_str.begin();
 		std::string::const_iterator end = opt_str.end();
@@ -76,10 +74,29 @@ void CSetupManager::DisabledUnits(const char* setupScript)
 		}
 	};
 
-	std::smatch modoptions;
-	if (std::regex_search(script, modoptions, patternModoptions)) {
-		std::string modoptionsBody = modoptions[1];
+	std::string modoptionsTag("[modoptions]");
+	auto itBegin = std::search(
+			script.begin(), script.end(),
+			modoptionsTag.begin(), modoptionsTag.end(),
+			[](char ch1, char ch2) { return std::tolower(ch1) == ch2; }
+	);
+	if (itBegin != script.end()) {
+		std::advance(itBegin, modoptionsTag.length());
+		auto itEnd = itBegin;
+		int openBr = 0;
+		for (; itEnd != script.end(); ++itEnd) {
+			if (*itEnd == '{') {
+				++openBr;
+			} else if (*itEnd == '}') {
+				if (--openBr == 0) {
+					break;
+				}
+			}
+		}
+
+		std::string modoptionsBody(itBegin, itEnd);
 		std::smatch disabledunits;
+		std::regex patternDisabled("disabledunits=(.*);", std::regex::ECMAScript | std::regex::icase);
 		if (std::regex_search(modoptionsBody, disabledunits, patternDisabled)) {
 			// !setoptions disabledunits=armwar+armpw+raveparty+zenith+mahlazer
 			disableUnits(disabledunits[1]);
