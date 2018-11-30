@@ -75,29 +75,18 @@ void CSetupManager::DisabledUnits(const char* setupScript)
 	};
 
 	std::string modoptionsTag("[modoptions]");
-	auto itBegin = std::search(
+	std::string::const_iterator bodyBegin = std::search(
 			script.begin(), script.end(),
 			modoptionsTag.begin(), modoptionsTag.end(),
 			[](char ch1, char ch2) { return std::tolower(ch1) == ch2; }
 	);
-	if (itBegin != script.end()) {
-		std::advance(itBegin, modoptionsTag.length());
-		auto itEnd = itBegin;
-		int openBr = 0;
-		for (; itEnd != script.end(); ++itEnd) {
-			if (*itEnd == '{') {
-				++openBr;
-			} else if (*itEnd == '}') {
-				if (--openBr == 0) {
-					break;
-				}
-			}
-		}
+	if (bodyBegin != script.end()) {
+		std::advance(bodyBegin, modoptionsTag.length());
+		std::string::const_iterator bodyEnd = utils::EndInBraces(bodyBegin, script.end());
 
-		std::string modoptionsBody(itBegin, itEnd);
 		std::smatch disabledunits;
 		std::regex patternDisabled("disabledunits=(.*);", std::regex::ECMAScript | std::regex::icase);
-		if (std::regex_search(modoptionsBody, disabledunits, patternDisabled)) {
+		if (std::regex_search(bodyBegin, bodyEnd, disabledunits, patternDisabled)) {
 			// !setoptions disabledunits=armwar+armpw+raveparty+zenith+mahlazer
 			disableUnits(disabledunits[1]);
 		}
