@@ -69,17 +69,18 @@ void CSetupData::ParseSetupScript(CCircuitAI* circuit, const char* setupScript)
 		}
 	} else {
 		// engine way
-		std::regex patternAlly("\\[allyteam(\\d+)\\]\\s*\\{([^\\}]*)\\}", std::regex::ECMAScript | std::regex::icase);
+		std::regex patternAlly("\\[allyteam(\\d+)\\]", std::regex::ECMAScript | std::regex::icase);
 		std::regex patternRect("startrect\\w+=(\\d+(\\.\\d+)?);", std::regex::ECMAScript | std::regex::icase);
 		while (std::regex_search(start, end, section, patternAlly)) {
+			start = section[0].second;
 			int allyTeamId = utils::string_to_int(section[1]);
 
-			std::string allyBody = section[2];
-			std::sregex_token_iterator iter(allyBody.begin(), allyBody.end(), patternRect, 1);
-			std::sregex_token_iterator end;
+			std::string::const_iterator bodyEnd = utils::EndInBraces(start, end);
+			std::sregex_token_iterator tokenIt(start, bodyEnd, patternRect, 1);
+			std::sregex_token_iterator tokenEnd;
 			CAllyTeam::SBox startbox;
-			for (int i = 0; iter != end && i < 4; ++iter, i++) {
-				startbox.edge[i] = utils::string_to_float(*iter);
+			for (int i = 0; tokenIt != tokenEnd && i < 4; ++tokenIt, i++) {
+				startbox.edge[i] = utils::string_to_float(*tokenIt);
 			}
 
 			startbox.bottom *= height;
@@ -88,7 +89,7 @@ void CSetupData::ParseSetupScript(CCircuitAI* circuit, const char* setupScript)
 			startbox.top    *= height;
 			boxes[allyTeamId] = startbox;
 
-			start = section[0].second;
+			start = bodyEnd;
 		}
 	}
 
@@ -113,22 +114,23 @@ void CSetupData::ParseSetupScript(CCircuitAI* circuit, const char* setupScript)
 	}
 
 	// Detect team alliances
-	std::regex patternTeam("\\[team(\\d+)\\]\\s*\\{([^\\}]*)\\}", std::regex::ECMAScript | std::regex::icase);
+	std::regex patternTeam("\\[team(\\d+)\\]", std::regex::ECMAScript | std::regex::icase);
 	std::regex patternAllyId("allyteam=(\\d+);", std::regex::ECMAScript | std::regex::icase);
 	start = script.begin();
 	end = script.end();
 	while (std::regex_search(start, end, section, patternTeam)) {
+		start = section[0].second;
 		int teamId = utils::string_to_int(section[1]);
 		teamIdsRemap[teamId] = teamId;
 
-		std::string teamBody = section[2];
+		std::string::const_iterator bodyEnd = utils::EndInBraces(start, end);
 		std::smatch matchAllyId;
-		if (std::regex_search(teamBody, matchAllyId, patternAllyId)) {
+		if (std::regex_search(start, bodyEnd, matchAllyId, patternAllyId)) {
 			int allyTeamId = utils::string_to_int(matchAllyId[1]);
 			allies[allyTeamId].insert(teamId);
 		}
 
-		start = section[0].second;
+		start = bodyEnd;
 	}
 	// Make team remapper
 	int i = 0;

@@ -581,6 +581,7 @@ void CCircuitAI::CheatPreload()
 
 int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICallback)
 {
+	LOG(version);
 	this->skirmishAIId = skirmishAIId;
 	// NOTE: Due to chewed API only SSkirmishAICallback have access to Engine
 	this->sAICallback = sAICallback;

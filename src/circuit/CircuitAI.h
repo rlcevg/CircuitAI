@@ -63,7 +63,7 @@ class CEnemyUnit;
 class CDebugDrawer;
 #endif
 
-constexpr char version[]{"1.0.1"};
+constexpr char version[]{"1.0.2"};
 
 class CException: public std::exception {
 public:

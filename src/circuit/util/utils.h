@@ -189,6 +189,22 @@ static inline std::string MakeFileSystemCompatible(const std::string& str)
 	return cleaned;
 }
 
+static inline std::string::const_iterator EndInBraces(const std::string::const_iterator begin, const std::string::const_iterator end)
+{
+	std::string::const_iterator brEnd = begin;
+	int openBr = 0;
+	for (; brEnd != end; ++brEnd) {
+		if (*brEnd == '{') {
+			++openBr;
+		} else if (*brEnd == '}') {
+			if (--openBr == 0) {
+				break;
+			}
+		}
+	}
+	return brEnd;
+}
+
 ///*
 // *  Check if projected point onto line lies between 2 end-points
 // */
