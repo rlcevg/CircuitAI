@@ -15,30 +15,13 @@ local options = {
 		desc   = 'These settings may be relevant for both CPU usage and AI difficulty.',
 		type   = 'section',
 	},
-	{ -- list
-		key     = 'difficulty',
-		name    = 'Difficulty',
-		desc    = 'How tough the AI should be.\nkey: difficulty',
-		type    = 'list',
+	{ -- bool
+		key     = 'cheating',
+		name    = 'LOS cheating',
+		desc    = 'Enable LOS cheating',
+		type    = 'bool',
 		section = 'performance',
-		def     = 'normal',
-		items   = {
-			{
-				key  = 'easy',
-				name = 'Easy',
-				desc = 'Easy AI.',
-			},
-			{
-				key  = 'normal',
-				name = 'Normal',
-				desc = 'Casual AI.',
-			},
-			{
-				key  = 'hard',
-				name = 'Hard',
-				desc = 'Los-cheating AI.',
-			},
-		},
+		def     = false,
 	},
 	{ -- bool
 		key     = 'ally_aware',

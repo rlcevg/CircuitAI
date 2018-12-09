@@ -677,21 +677,8 @@ Json::Value* CSetupManager::ParseConfig(const char* cfgJson)
 		return nullptr;
 	}
 
-	const char* diffs[] = {setup::easy, setup::normal, setup::hard};
-	const char* diffName = diffs[static_cast<size_t>(circuit->GetDifficulty())];
-	Json::Value& jsonDiff = jsonAll[diffName];
-	if (jsonDiff.isNull()) {
-		circuit->LOG("Malformed difficulty! (%s : %s)", configName.c_str(), diffName);
-		const std::string& diffDefault = jsonAll.get("default", "normal").asString();
-		jsonDiff = jsonAll[diffDefault];
-		if (jsonDiff.isNull()) {
-			circuit->LOG("Malformed difficulty! (%s : %s)", configName.c_str(), diffDefault.c_str());
-			return nullptr;
-		}
-	}
-
 	Json::Value* cfg = new Json::Value;
-	*cfg = jsonDiff;
+	*cfg = jsonAll;
 	return cfg;
 }
 

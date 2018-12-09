@@ -17,12 +17,6 @@
 
 namespace circuit {
 
-namespace setup {
-	constexpr char easy[]{"easy"};
-	constexpr char normal[]{"normal"};
-	constexpr char hard[]{"hard"};
-}
-
 class CCircuitAI;
 class CSetupData;
 class CAllyTeam;

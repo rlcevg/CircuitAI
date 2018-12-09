@@ -1,13 +1,5 @@
 // Mono-space font required
 {
-// --- EASY config ---
-"easy": {  // Null AI
-"economy": {"energy": {"land": {"energysingu": [1], "energyfusion": [2], "energysolar": [3]}, "water": {"energysingu": [1], "energyfusion": [2], "energywind": [3]}}, "default": "turretmissile"}
-},
-// --- EASY config ---
-
-// --- NORMAL config ---
-"normal": {
 // Define factories
 "factory": {
 	"factorycloak": {
@@ -1420,7 +1412,7 @@
 // AA condition for 3v3: (enemy_air_metal*0.80 > (aa_metal+aa_cost)*1.14) and (aa_metal+aa_cost < army_metal*0.66)
 //
 // Probability of UnitDef for AA role depends on income tier: (tierN[UnitDef]+_weight_)*enemy_air_metal/aa_metal*importance
-// armjeth probability for tier 1: (0.00+0.01)*enemy_air_metal*600.0
+// armjeth probability for tier 1: (0.00+0.10)*enemy_air_metal*600.0
 "response": {
 	"_weight_": 0.10,  // base weight of response probability
 
@@ -2294,13 +2286,4 @@
 		"strider": ["striderantiheavy", "striderscorpion", "striderdante", "striderarty", "striderfunnelweb", "striderbantha", "striderdetriment", "subtacmissile", "shipcarrier", "shipheavyarty"]
 	}
 }
-},
-// --- NORMAL config ---
-
-// --- HARD config COMMENTED ---
-// "hard": {},
-// --- HARD config COMMENTED ---
-
-// Fallback config
-"default": "normal"
 }

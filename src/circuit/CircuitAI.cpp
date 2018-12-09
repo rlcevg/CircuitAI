@@ -76,7 +76,7 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, uEnemyMark(0)
 		, kEnemyMark(0)
 		, actionIterator(0)
-		, difficulty(Difficulty::NORMAL)
+		, isCheating(false)
 		, isAllyAware(true)
 		, isCommMerge(true)
 		, isInitialized(false)
@@ -312,7 +312,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		case EVENT_ENEMY_LEAVE_LOS: {
 			PRINT_TOPIC("EVENT_ENEMY_LEAVE_LOS", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_LEAVE_LOS");
-			if (difficulty == Difficulty::HARD) {
+			if (isCheating) {
 				ret = 0;
 			} else {
 				struct SEnemyLeaveLOSEvent* evt = (struct SEnemyLeaveLOSEvent*)data;
@@ -336,7 +336,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 		case EVENT_ENEMY_LEAVE_RADAR: {
 			PRINT_TOPIC("EVENT_ENEMY_LEAVE_RADAR", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_LEAVE_RADAR");
-			if (difficulty == Difficulty::HARD) {
+			if (isCheating) {
 				ret = 0;
 			} else {
 				struct SEnemyLeaveRadarEvent* evt = (struct SEnemyLeaveRadarEvent*)data;
@@ -649,7 +649,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	uEnemyMark = skirmishAIId % FRAMES_PER_SEC;
 	kEnemyMark = (skirmishAIId + FRAMES_PER_SEC / 2) % FRAMES_PER_SEC;
 
-	if (difficulty == Difficulty::HARD) {
+	if (isCheating) {
 		Cheats* cheats = callback->GetCheats();
 		cheats->SetEnabled(true);
 		cheats->SetEventsEnabled(true);
@@ -1364,15 +1364,9 @@ std::string CCircuitAI::InitOptions()
 	OptionValues* options = skirmishAI->GetOptionValues();
 	const char* value;
 
-	value = options->GetValueByKey("difficulty");
+	value = options->GetValueByKey("cheating");
 	if (value != nullptr) {
-		if (strncmp(value, setup::easy, sizeof(setup::easy)) == 0) {
-			difficulty = Difficulty::EASY;
-		} else if (strncmp(value, setup::normal, sizeof(setup::normal)) == 0) {
-			difficulty = Difficulty::NORMAL;
-		} else if (strncmp(value, setup::hard, sizeof(setup::hard)) == 0) {
-			difficulty = Difficulty::HARD;
-		}
+		isCheating = StringToBool(value);
 	}
 
 	value = options->GetValueByKey("ally_aware");
