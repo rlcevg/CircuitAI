@@ -605,7 +605,7 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 
 	std::vector<Feature*> features;
 	if (isNear) {
-		const float distance = unit->GetCircuitDef()->GetSpeed() * FRAMES_PER_SEC * ((GetMetalPull() * 0.8f > GetAvgMetalIncome()) ? 300 : 30);
+		const float distance = unit->GetCircuitDef()->GetSpeed() * ((GetMetalPull() * 0.8f > GetAvgMetalIncome()) ? 300 : 30);
 		features = std::move(circuit->GetCallback()->GetFeaturesIn(position, distance));
 	} else {
 		features = std::move(circuit->GetCallback()->GetFeatures());

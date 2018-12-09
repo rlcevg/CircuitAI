@@ -17,11 +17,11 @@ namespace circuit {
 
 class ITravelAction: public IUnitAction {
 public:
-	ITravelAction(CCircuitUnit* owner, Type type, int squareSize, float speed = MAX_UNIT_SPEED);
-	ITravelAction(CCircuitUnit* owner, Type type, const std::shared_ptr<F3Vec>& pPath, int squareSize, float speed = MAX_UNIT_SPEED);
+	ITravelAction(CCircuitUnit* owner, Type type, int squareSize, float speed = NO_SPEED_LIMIT);
+	ITravelAction(CCircuitUnit* owner, Type type, const std::shared_ptr<F3Vec>& pPath, int squareSize, float speed = NO_SPEED_LIMIT);
 	virtual ~ITravelAction();
 
-	void SetPath(const std::shared_ptr<F3Vec>& pPath, float speed = MAX_UNIT_SPEED);
+	void SetPath(const std::shared_ptr<F3Vec>& pPath, float speed = NO_SPEED_LIMIT);
 
 protected:
 	int CalcSpeedStep(int frame, float& stepSpeed);
