@@ -50,9 +50,9 @@ local options = {
 	{ -- string
 		key     = 'config_file',
 		name    = 'Config file',
-		desc    = 'Play with arbitrary config of your choice.\nkey: config',
+		desc    = 'Play with arbitrary config of your choice.\nkey: config_file',
 		type    = 'string',
-		def     = '',
+		def     = 'behaviour+block_map+build_chain+commander+economy+factory+response',
 	},
 --	{ -- string
 --		key     = 'json',

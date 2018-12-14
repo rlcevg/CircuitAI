@@ -180,7 +180,7 @@ static inline std::string MakeFileSystemCompatible(const std::string& str)
 {
 	std::string cleaned = str;
 
-	for (std::string::size_type i=0; i < cleaned.size(); i++) {
+	for (std::string::size_type i = 0; i < cleaned.size(); i++) {
 		if (!IsFSGoodChar(cleaned[i])) {
 			cleaned[i] = '_';
 		}

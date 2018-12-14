@@ -100,9 +100,9 @@ void CSetupManager::DisabledUnits(const char* setupScript)
 	}
 }
 
-bool CSetupManager::OpenConfig(const std::string& cfgName)
+bool CSetupManager::OpenConfig(const std::string& cfgOption)
 {
-	bool isOk = LoadConfig(cfgName);
+	bool isOk = LoadConfig(cfgOption);
 	if (isOk) {
 		OverrideConfig();
 	}
@@ -548,138 +548,128 @@ bool CSetupManager::LocatePath(std::string& filename)
 	return located;
 }
 
-bool CSetupManager::LoadConfig(const std::string& cfgName)
+bool CSetupManager::LoadConfig(const std::string& cfgOption)
 {
 	Info* info = circuit->GetSkirmishAI()->GetInfo();
 	const char* version = info->GetValueByKey("version");
 	const char* name = info->GetValueByKey("shortName");
 	delete info;
 
-	std::string filename;
-	std::string cfgDefault;
-	const char* cfgJson;
+	std::string dirname;
 
-	if (cfgName.empty()) {
-		/*
-		 * Try startscript specific config
-		 */
-		configName = "startscript";
-		OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
-		const char* value = options->GetValueByKey("JSON");
-		std::string strJson = ((value != nullptr) && strlen(value) > 0) ? value : "";
-		delete options;
-		if (!strJson.empty()) {
-			config = ParseConfig(strJson.c_str());
-
-			if (config != nullptr) {
-				return true;
-			}
+	/*
+	 * Try startscript specific config
+	 */
+	configName = "startscript";
+	OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
+	const char* value = options->GetValueByKey("JSON");
+	std::string cfgStr = ((value != nullptr) && strlen(value) > 0) ? value : "";
+	delete options;
+	if (!cfgStr.empty()) {
+		config = ParseConfig(cfgStr.c_str(), configName);
+		if (config != nullptr) {
+			return true;
 		}
+	}
 
-		/*
-		 * Try game specific config
-		 */
-		Map* map = circuit->GetMap();
-		filename = std::string("LuaRules/Configs/") + name + "/" + version + "/";
-		configName = utils::MakeFileSystemCompatible(map->GetName()) + ".json";
-		filename += configName;
+	/*
+	 * Try map specific config
+	 */
+	Map* map = circuit->GetMap();
+	dirname = std::string("LuaRules/Configs/") + name + "/" + version + "/";
+	configName = utils::MakeFileSystemCompatible(map->GetName()) + ".json";
 
-		cfgJson = ReadConfig(filename);
-		if (cfgJson != nullptr) {
-			config = ParseConfig(cfgJson);
-			delete[] cfgJson;
+	config = ReadConfig(dirname, {configName});
+	if (config != nullptr) {
+		return true;
+	}
 
-			if (config != nullptr) {
-				return true;
-			}
-		}
-
-		/*
-		 * Try default game specific config
-		 */
-		cfgDefault = "circuit";
-		filename = std::string("LuaRules/Configs/") + name + "/" + version + "/Default/";
-		configName = cfgDefault + ".json";
-		filename += configName;
-
-		cfgJson = ReadConfig(filename);
-		if (cfgJson != nullptr) {
-			config = ParseConfig(cfgJson);
-			delete[] cfgJson;
-
-			if (config != nullptr) {
-				return true;
-			}
-		}
-
-	} else {
-		cfgDefault = cfgName;
+	/*
+	 * Prepare config parts
+	 */
+	std::vector<std::string> cfgNames;
+	std::string::const_iterator start = cfgOption.begin();
+	std::string::const_iterator end = cfgOption.end();
+	std::regex patternCfg("\\w+");
+	std::smatch section;
+	while (std::regex_search(start, end, section, patternCfg)) {
+		cfgNames.push_back(std::string(section[0]) + ".json");
+		start = section[0].second;
 	}
 
 	/*
 	 * Locate default config
 	 */
-	filename = "config" SLASH;
-	configName = (cfgDefault.find(".json") == std::string::npos) ? (cfgDefault + ".json") : cfgDefault;
-	filename += configName;
-	if (LocatePath(filename)) {
-		cfgJson = ReadConfig(filename);
-		if (cfgJson != nullptr) {
-			config = ParseConfig(cfgJson);
-			delete[] cfgJson;
-
-			if (config != nullptr) {
-				return true;
-			}
+	configName = "config";
+	dirname = configName + SLASH;
+	if (LocatePath(dirname)) {
+		config = ReadConfig(dirname, cfgNames);
+		if (config != nullptr) {
+			return true;
 		}
 	} else {
-		circuit->LOG("Config file is missing! (%s)", configName.c_str());
+		circuit->LOG("Default config is missing! (%s)", configName.c_str());
 	}
 
 	/*
 	 * Locate develop config: to run ./spring from source dir
 	 */
-	filename = std::string("AI/Skirmish/") + name + "/data/config/" + configName;
-	cfgJson = ReadConfig(filename);
-	if (cfgJson == nullptr){
-		return false;
-	}
-
-	config = ParseConfig(cfgJson);
-	delete[] cfgJson;
-
+	dirname = std::string("AI/Skirmish/") + name + "/data/" + configName + "/";
+	config = ReadConfig(dirname, cfgNames);
 	return (config != nullptr);
 }
 
-const char* CSetupManager::ReadConfig(const std::string& filename)
+Json::Value* CSetupManager::ReadConfig(const std::string& dirname, const std::vector<std::string>& cfgNames)
 {
+	Json::Value* cfg = nullptr;
 	File* file = circuit->GetCallback()->GetFile();
-	int fileSize = file->GetSize(filename.c_str());
-	if (fileSize <= 0) {
-		circuit->LOG("No config file! (%s)", filename.c_str());
-		delete file;
-		return nullptr;
+
+	for (const std::string& name : cfgNames) {
+		std::string filename = dirname + name;
+		int fileSize = file->GetSize(filename.c_str());
+		if (fileSize <= 0) {
+			circuit->LOG("No config file! (%s)", filename.c_str());
+			continue;
+		}
+		char* cfgStr = new char [fileSize + 1];
+		file->GetContent(filename.c_str(), cfgStr, fileSize);
+		cfgStr[fileSize] = 0;
+		cfg = ParseConfig(cfgStr, name, cfg);
+		delete[] cfgStr;
 	}
 
-	char* cfgJson = new char [fileSize + 1];
-	file->GetContent(filename.c_str(), cfgJson, fileSize);
-	cfgJson[fileSize] = 0;
 	delete file;
-	return cfgJson;
+	return cfg;
 }
 
-Json::Value* CSetupManager::ParseConfig(const char* cfgJson)
+Json::Value* CSetupManager::ParseConfig(const char* cfgStr, const std::string& cfgName, Json::Value* cfg)
 {
 	Json::Reader json;
-	Json::Value jsonAll;
-	if (!json.parse(cfgJson, jsonAll, false)) {
-		circuit->LOG("Malformed config format! (%s)\n%s", configName.c_str(), json.getFormattedErrorMessages().c_str());
+	Json::Value jsonPart;
+	if (!json.parse(cfgStr, jsonPart, false)) {
+		circuit->LOG("Malformed config format! (%s)\n%s", cfgName.c_str(), json.getFormattedErrorMessages().c_str());
 		return nullptr;
 	}
 
-	Json::Value* cfg = new Json::Value;
-	*cfg = jsonAll;
+	if (cfg == nullptr) {
+		cfg = new Json::Value;
+		*cfg = jsonPart;
+	} else {
+		UpdateJson(*cfg, jsonPart);
+	}
 	return cfg;
+}
+
+void CSetupManager::UpdateJson(Json::Value& a, Json::Value& b) {
+	if (!a.isObject() || !b.isObject()) return;
+
+	for (const auto& key : b.getMemberNames()) {
+		if (a[key].isObject()) {
+			UpdateJson(a[key], b[key]);
+		} else {
+			a[key] = b[key];
+		}
+	}
 }
 
 void CSetupManager::OverrideConfig()

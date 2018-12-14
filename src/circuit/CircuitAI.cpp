@@ -600,12 +600,12 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	scheduler = std::make_shared<CScheduler>();
 	scheduler->Init(scheduler);
 
-	std::string cfgName = InitOptions();
+	std::string cfgOption = InitOptions();
 	float decloakRadius;
 	InitUnitDefs(decloakRadius);  // Inits TerrainData
 
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
-	if (!setupManager->OpenConfig(cfgName)) {
+	if (!setupManager->OpenConfig(cfgOption)) {
 		Release(RELEASE_CONFIG);
 		return ERROR_INIT;
 	}
@@ -1380,10 +1380,10 @@ std::string CCircuitAI::InitOptions()
 	}
 
 	value = options->GetValueByKey("config_file");
-	std::string cfgName = ((value != nullptr) && strlen(value) > 0) ? value : "";
+	std::string cfgOption = ((value != nullptr) && strlen(value) > 0) ? value : "";
 
 	delete options;
-	return cfgName;
+	return cfgOption;
 }
 
 CCircuitDef* CCircuitAI::GetCircuitDef(const char* name)

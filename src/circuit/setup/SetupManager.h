@@ -44,7 +44,7 @@ public:
 	virtual ~CSetupManager();
 	void DisabledUnits(const char* setupScript);
 
-	bool OpenConfig(const std::string& cfgName);
+	bool OpenConfig(const std::string& cfgOption);
 	void CloseConfig();
 	const Json::Value& GetConfig() const { return *config; }
 	const std::string& GetConfigName() const { return configName; }
@@ -81,9 +81,10 @@ public:
 private:
 	void FindStart();
 	bool LocatePath(std::string& filename);
-	bool LoadConfig(const std::string& cfgName);
-	const char* ReadConfig(const std::string& filename);
-	Json::Value* ParseConfig(const char* cfgJson);
+	bool LoadConfig(const std::string& cfgOption);
+	Json::Value* ReadConfig(const std::string& dirName, const std::vector<std::string>& cfgNames);
+	Json::Value* ParseConfig(const char* cfgStr, const std::string& cfgName, Json::Value* cfg = nullptr);
+	void UpdateJson(Json::Value& a, Json::Value& b);
 	void OverrideConfig();
 
 	CCircuitAI* circuit;
