@@ -49,8 +49,8 @@ local options = {
 	},
 	{ -- string
 		key     = 'config_file',
-		name    = 'Config file',
-		desc    = 'Play with arbitrary config of your choice.\nkey: config_file',
+		name    = 'Config file parts',
+		desc    = 'Load only specific config files, e.g. behaviour.json, economy.json, factory.json.\nSyntax: behaviour+economy+factory\nkey: config_file',
 		type    = 'string',
 		def     = 'behaviour+block_map+build_chain+commander+economy+factory+response',
 	},
@@ -63,7 +63,7 @@ local options = {
 --	},
 
 --	{ -- section
---		key    = 'config',
+--		key    = 'config_override',
 --		name   = 'Config parts',
 --		desc   = 'Overrides config elements.',
 --		type   = 'section',
@@ -73,7 +73,7 @@ local options = {
 --		name    = 'Factory config',
 --		desc    = 'Overrides factory part of config.',
 --		type    = 'string',
---		section = 'config',
+--		section = 'config_override',
 --		def     = '',
 --	},
 --	{ -- string
@@ -81,7 +81,7 @@ local options = {
 --		name    = 'Behaviour config',
 --		desc    = 'Overrides behaviour part of config.',
 --		type    = 'string',
---		section = 'config',
+--		section = 'config_override',
 --		def     = '',
 --	},
 }

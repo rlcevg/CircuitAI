@@ -157,12 +157,13 @@ private:
 	int buildDelay;
 
 	struct SPullMtoS {
-		float startPull;
-		float endPull;
-		int minMex;
-		int maxMex;
+		float pull;
+		int mex;
 		float fraction;
-	} mspInfo;
+		inline bool operator< (const SPullMtoS& rhs) { return mex < rhs.mex; }
+		inline bool operator() (const SPullMtoS& lhs, const int rhs) { return lhs.mex < rhs; }
+	};
+	std::vector<SPullMtoS> mspInfos;
 	float pullMtoS;  // mobile to static metal pull ratio
 
 	int ecoFrame;

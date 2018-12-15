@@ -661,12 +661,18 @@ Json::Value* CSetupManager::ParseConfig(const char* cfgStr, const std::string& c
 }
 
 void CSetupManager::UpdateJson(Json::Value& a, Json::Value& b) {
-	if (!a.isObject() || !b.isObject()) return;
+	if (!a.isObject() || !b.isObject()) {
+		return;
+	}
 
 	for (const auto& key : b.getMemberNames()) {
 		if (a[key].isObject()) {
 			UpdateJson(a[key], b[key]);
 		} else {
+			if (!a[key].isNull()) {
+				// TODO: Make path for key
+				circuit->LOG("Config override: %s", key.c_str());
+			}
 			a[key] = b[key];
 		}
 	}
