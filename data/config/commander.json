@@ -37,8 +37,8 @@
 						[0.5, ["anti_air", "builder", "anti_air", "builder"]]
 					],
 					"factorytank": [
-						[0.5, ["builder", "riot", "assault", "builder", "assault", "builder", "riot"]],
-						[0.5, ["builder", "riot", "builder", "raider", "raider", "builder", "raider", "raider"]]
+						[0.5, ["builder", "scout", "scout", "builder", "raider", "raider",  "raider"]],
+						[0.5, ["builder", "scout", "scout", "builder", "riot"]]
 					],
 					"factoryspider": [
 						[0.5, ["scout", "builder", "scout", "scout", "scout", "scout", "scout", "riot", "scout", "builder", "scout", "riot", "scout", "builder"]],
@@ -131,9 +131,8 @@
 						[0.5, ["anti_air", "builder", "anti_air", "builder"]]
 					],
 					"factorytank": [
-						[0.5, ["scout", "builder", "assault", "builder", "assault", "builder", "builder", "assault"]],
-						[0.25, ["scout", "builder", "raider", "builder", "assault", "scout", "builder", "heavy"]],
-						[0.25, ["builder", "scout", "builder", "riot", "assault", "builder", "assault"]]
+						[0.5, ["builder", "scout", "scout", "builder", "raider", "raider",  "raider"]],
+						[0.5, ["builder", "scout", "scout", "builder", "assault"]]
 					],
 					"factoryspider": [
 						[0.5, ["scout", "scout", "scout", "scout", "scout", "scout", "riot", "scout", "builder", "scout", "riot", "scout", "builder"]],

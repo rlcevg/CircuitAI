@@ -1,5 +1,15 @@
 // Mono-space font required
 {
+// Factory selection parameters
+"select": {
+	"air_map": 80,
+	"offset": [-20, 20],
+	// Speed factor: 8x8 ~ 0%, 24x24 ~ 40%
+	"speed": [0, 40],
+	"map": [8, 24],
+	"no_air": 2
+},
+
 // Define factories
 "factory": {
 	"factorycloak": {
@@ -8,26 +18,26 @@
 		// On start: priority ~= map_percent * importance0 + random(-20..+20)
 		// During game: priority ~= map_percent * importance1 + random(-20..+20)
 		// importanceN = 1.0 by default if not set
-		"importance": [0.75, 0.2],
+		"importance": [0.85, 0.2],
 
 		// 'require_energy' adds energy requirement for tierN (N>0): fallback to lowest tier on low energy
 		"require_energy": true,
 
 		// If income*ecoFactor < income_tier[N] then 'tierN' probability will be used
-		"income_tier": [20, 30, 60],
+		"income_tier": [20, 30, 40],
 
 		//             conjurer,   glaive,      scythe,           rocko,        warrior,     zeus,           hammer,      sniper,       tick,        eraser,        gremlin
 		"unit":      ["cloakcon", "cloakraid", "cloakheavyraid", "cloakskirm", "cloakriot", "cloakassault", "cloakarty", "cloaksnipe", "cloakbomb", "cloakjammer", "cloakaa"],
 
 		"land": {
 			// 0-8m Opening - Glaives & Warriors most important for scouting, map control and defence.
-			"tier0": [ 0.10,       0.87,        0.01,             0.00,         0.02,        0.00,           0.00,        0.00,         0.00,        0.00,          0.00],
+			"tier0": [ 0.10,       0.84,        0.03,             0.00,         0.03,        0.00,           0.00,        0.00,         0.00,        0.00,          0.00],
 
 			// 9-16m Early Game - Map control still important but move towards Scythe raiding and Riot defense from raider balls.
-			"tier1": [ 0.10,       0.44,        0.06,             0.28,         0.09,        0.02,           0.00,        0.01,         0.00,        0.00,          0.00],
+			"tier1": [ 0.10,       0.43,        0.06,             0.28,         0.10,        0.00,           0.00,        0.03,         0.00,        0.00,          0.00],
 
 			// 17-24m Expanding - Good size terriotiry now, so less scouting and begin producing a little assault/arty on the side.
-			"tier2": [ 0.10,       0.18,        0.14,             0.20,         0.13,        0.10,           0.00,        0.04,         0.00,        0.11,          0.00]
+			"tier2": [ 0.10,       0.16,        0.30,             0.20,         0.03,        0.00,           0.00,        0.10,         0.00,        0.11,          0.00]
 
 			// 25-32m Expansions meet - Economy can afford to begin producing in bulk so unit compositions alter.
 	//		"tier3": [ 0.10,       0.40,        0.05,             0.30,         0.00,        0.10,           0.00,        0.00,         0.00,        0.05,          0.00],
@@ -58,7 +68,7 @@
 	},
 
 	"factorygunship": {
-		"importance": [1.2, 1.6],
+		"importance": [1.2, 1.7],
 		"require_energy": false,
 
 		"income_tier": [16, 24, 32, 40, 56, 72, 85],
@@ -87,7 +97,7 @@
 	},
 
 	"factoryamph": {
-		"importance": [0.82, 1.0],
+		"importance": [0.85, 1.0],
 		"require_energy": false,
 
 		"income_tier": [16, 24, 32, 40, 56, 72, 100],
@@ -133,7 +143,7 @@
 	},
 
 	"factoryspider": {
-		"importance": [0.70, 0.7],
+		"importance": [0.60, 0.7],
 		"require_energy": false,
 
 		"income_tier": [16, 24, 32, 40, 56, 72, 100],
@@ -162,7 +172,7 @@
 	},
 
 	"factoryveh": {
-		"importance": [1.06, 0.2],
+		"importance": [1.05, 0.2],
 		"require_energy": false,
 
 		"income_tier": [16, 24, 32, 40, 56, 72, 100],
@@ -172,19 +182,19 @@
 			// 0-8m Opening - Dart, Riot & Slasher
 			"tier0": [ 0.00,     0.33,       0.55,      0.12,         0.00,      0.00,         0.00,         0.00,      0.00,           0.00],
 			// 9-16m Early Game - Slasher/Riot with an occasional Ravager
-			"tier1": [ 0.10,     0.22,       0.58,      0.10,         0.00,      0.00,         0.00,         0.00,      0.00,           0.00],
+			"tier1": [ 0.10,     0.22,       0.56,      0.10,         0.00,      0.00,         0.00,         0.00,      0.02,           0.00],
 			// 17-24m Expanding - Less scouting and Riot, more Ravager
-			"tier2": [ 0.10,     0.10,       0.47,      0.13,         0.05,      0.12,         0.00,         0.03,      0.00,           0.00],
+			"tier2": [ 0.10,     0.10,       0.45,      0.13,         0.05,      0.09,         0.02,         0.03,      0.03,           0.00],
 			// 25-32m Expansions meet - Begin serious Ravager production
-			"tier3": [ 0.10,     0.10,       0.38,      0.16,         0.04,      0.16,         0.02,         0.04,      0.00,           0.00],
+			"tier3": [ 0.10,     0.20,       0.25,      0.05,         0.04,      0.22,         0.07,         0.04,      0.03,           0.00],
 			// 33m -40m Solid Fronts - 	Overdrive Ravager production
-			"tier4": [ 0.10,     0.10,       0.36,      0.10,         0.04,      0.23,         0.02,         0.05,      0.00,           0.00],
+			"tier4": [ 0.10,     0.20,       0.25,      0.10,         0.04,      0.22,         0.02,         0.04,      0.03,           0.00],
 			// 41m - 56m Mid Game - Drop Slashers, more Artillery
-			"tier5": [ 0.10,     0.11,       0.27,      0.07,         0.06,      0.29,         0.01,         0.05,      0.04,           0.00],
+			"tier5": [ 0.10,     0.21,       0.17,      0.07,         0.06,      0.29,         0.01,         0.05,      0.04,           0.00],
 			// 57m - 72m Late Game -  More artillery and Ravager
-			"tier6": [ 0.10,     0.17,       0.19,      0.05,         0.06,      0.28,         0.02,         0.06,      0.07,           0.00],
+			"tier6": [ 0.10,     0.27,       0.09,      0.05,         0.06,      0.28,         0.02,         0.06,      0.07,           0.00],
 			// 72m - inf+ Late late Game - Maximum Artillery
-			"tier7": [ 0.10,     0.10,       0.22,      0.02,         0.06,      0.38,         0.05,         0.00,      0.07,           0.00]
+			"tier7": [ 0.10,     0.30,       0.02,      0.02,         0.06,      0.38,         0.05,         0.00,      0.07,           0.00]
 		},
 		"air": {
 			// 0-8m Opening - Dart, Riot & Slasher
@@ -243,7 +253,7 @@
 	},
 
 	"factoryplane": {
-		"importance": [1.2, 1.4],
+		"importance": [1.2, 2.1],
 		"require_energy": false,
 
 		"income_tier": [30, 60],
@@ -253,7 +263,7 @@
 			// 0-10m Early Game
 			"tier0": [ 0.00,       0.00,           0.25,                0.65,         0.00,         0.00,           0.05,          0.05],
 			// 11-20m Expansion
-			"tier1": [ 0.00,       0.00,           0.11,                0.00,         0.02,         0.01,           0.24,          0.62]
+			"tier1": [ 0.00,       0.00,           0.11,                0.40,         0.02,         0.01,           0.24,          0.22]
 		},
 		"land": {
 			// 0-10m Early Game
@@ -265,7 +275,7 @@
 	},
 
 	"factorytank": {
-		"importance": [0.92, 1.5],
+		"importance": [0.85, 1.5],
 		"require_energy": false,
 
 		"income_tier": [16, 24, 32, 40, 56, 72, 100],
@@ -275,9 +285,9 @@
 			// 0-8m Opening - Koda and Banisher
 			"tier0": [ 0.10,      0.60,       0.10,            0.20,       0.00,          0.00,               0.00,       0.00,            0.00],
 			// 9-16m Early Game - Mostly Banisher
-			"tier1": [ 0.10,      0.45,       0.20,            0.03,       0.22,          0.00,               0.00,       0.00,            0.00],
+			"tier1": [ 0.10,      0.35,       0.50,            0.03,       0.02,          0.00,               0.00,       0.00,            0.00],
 			// 17-24m Expanding - Begin mixing in Reapers!
-			"tier2": [ 0.40,      0.23,       0.07,            0.06,       0.24,          0.00,               0.00,       0.00,            0.00],
+			"tier2": [ 0.30,      0.23,       0.37,            0.06,       0.04,          0.00,               0.00,       0.00,            0.00],
 			// 25-32m Expansions meet - More Reapers!
 			"tier3": [ 0.46,      0.25,       0.03,            0.04,       0.22,          0.00,               0.00,       0.00,            0.00],
 			// 33m -40m Solid Fronts - 	MAXIMUM REAPERS
@@ -294,7 +304,7 @@
 	},
 
 	"factoryjump": {
-		"importance": [0.75, 1.1],
+		"importance": [0.66, 1.1],
 		"require_energy": false,
 
 		"income_tier": [20, 40, 60, 80],
