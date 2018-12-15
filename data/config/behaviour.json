@@ -617,8 +617,8 @@
 		"thr_mod": 1.25
 	},
 	"bomberprec": {
-		"role": ["anti_heavy", "bomber", "air"],
-		"attribute": ["siege", "bomber"],
+		"role": ["bomber", "air"],  // FIXME: should act as anti_heavy?
+		"attribute": ["siege", "anti_heavy"],
 		"limit": 10,
 		"retreat": 0.9,
 		"pwr_mod": 0.13,
@@ -633,7 +633,7 @@
 	},
 	"bomberdisarm": {
 		"role": ["bomber", "air"],
-		"attribute": ["siege", "bomber"],
+		"attribute": ["siege"],
 		"limit": 2,
 		"since": 1200,
 		"retreat": 0.95,
@@ -641,8 +641,8 @@
 		"thr_mod": 0.01
 	},
 	"bomberheavy": {
-		"role": ["anti_heavy", "bomber", "air"],
-		"attribute": ["bomber"],
+		"role": ["bomber", "air"],  // FIXME: should act as anti_heavy?
+		"attribute": ["anti_heavy"],
 		"limit": 4,
 		"since": 420,
 		"retreat": 0.95,
