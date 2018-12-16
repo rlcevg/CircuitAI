@@ -269,7 +269,7 @@ void CAttackTask::FindTarget()
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
-	const float speed = SQUARE(highestSpeed);
+	const float speed = SQUARE(highestSpeed / FRAMES_PER_SEC);
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float maxPower = attackPower * powerMod;
