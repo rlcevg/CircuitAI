@@ -14,8 +14,8 @@ namespace circuit {
 
 class CMoveAction: public ITravelAction {
 public:
-	CMoveAction(CCircuitUnit* owner, int squareSize, float speed = MAX_UNIT_SPEED);
-	CMoveAction(CCircuitUnit* owner, const std::shared_ptr<F3Vec>& pPath, int squareSize, float speed = MAX_UNIT_SPEED);
+	CMoveAction(CCircuitUnit* owner, int squareSize, float speed = NO_SPEED_LIMIT);
+	CMoveAction(CCircuitUnit* owner, const std::shared_ptr<F3Vec>& pPath, int squareSize, float speed = NO_SPEED_LIMIT);
 	virtual ~CMoveAction();
 
 	virtual void Update(CCircuitAI* circuit);

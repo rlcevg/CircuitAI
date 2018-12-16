@@ -65,7 +65,7 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 	losResConv = SQUARE_SIZE << losMipLevel;
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const float slackMod = root["quota"].get("slack_mod", 2.f).asFloat();
+	const float slackMod = root["quota"].get("slack_mod", 2.f).asFloat() / FRAMES_PER_SEC;
 	constexpr float allowedRange = 2000.f;
 	for (auto& kv : circuit->GetCircuitDefs()) {
 		CCircuitDef* cdef = kv.second;

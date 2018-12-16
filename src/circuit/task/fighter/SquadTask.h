@@ -34,7 +34,7 @@ private:
 protected:
 	ISquadTask* GetMergeTask() const;
 	bool IsMustRegroup();
-	void ActivePath(float speed = MAX_UNIT_SPEED);
+	void ActivePath(float speed = NO_SPEED_LIMIT);
 
 	float lowestRange;
 	float highestRange;

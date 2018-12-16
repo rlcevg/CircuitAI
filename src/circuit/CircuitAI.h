@@ -63,7 +63,7 @@ class CEnemyUnit;
 class CDebugDrawer;
 #endif
 
-constexpr char version[]{"1.0.2"};
+constexpr char version[]{"1.0.3"};
 
 class CException: public std::exception {
 public:
@@ -75,9 +75,6 @@ public:
 };
 
 class CCircuitAI {
-public:
-	enum class Difficulty: char {EASY, NORMAL, HARD};
-
 public:
 	CCircuitAI(springai::OOAICallback* callback);
 	virtual ~CCircuitAI();
@@ -185,12 +182,12 @@ private:
 
 // ---- AIOptions.lua ---- BEGIN
 public:
-	Difficulty GetDifficulty() const { return difficulty; }
+	bool IsCheating() const { return isCheating; }
 	bool IsAllyAware() const { return isAllyAware; }
 	bool IsCommMerge() const { return isCommMerge; }
 private:
 	std::string InitOptions();
-	Difficulty difficulty;
+	bool isCheating;
 	bool isAllyAware;
 	bool isCommMerge;
 // ---- AIOptions.lua ---- END

@@ -898,9 +898,9 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 				const float maxHealth = tu->GetMaxHealth();
 				const float health = tu->GetHealth() - maxHealth * 0.005f;
 				const float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
-				valid = ((maxHealth - health) * 0.6f) * (maxSpeed * FRAMES_PER_SEC) > healthSpeed * distCost;
+				valid = ((maxHealth - health) * 0.6f) * maxSpeed > healthSpeed * distCost;
 			} else {
-				valid = (distCost * weight < metric) && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC));
+				valid = (distCost * weight < metric) && (distCost < MAX_TRAVEL_SEC * maxSpeed);
 			}
 
 			if (valid) {
@@ -1008,10 +1008,10 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 					const float maxHealth = tu->GetMaxHealth();
 					const float health = tu->GetHealth() - maxHealth * 0.005f;
 					const float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
-					valid = (((maxHealth - health) * 0.6f) * (maxSpeed * FRAMES_PER_SEC) > healthSpeed * distCost);
+					valid = (((maxHealth - health) * 0.6f) * maxSpeed > healthSpeed * distCost);
 				}
 			} else {
-				valid = (distCost * weight < metric)/* && (distCost < MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC))*/;
+				valid = (distCost * weight < metric)/* && (distCost < MAX_TRAVEL_SEC * maxSpeed)*/;
 			}
 
 			if (valid) {

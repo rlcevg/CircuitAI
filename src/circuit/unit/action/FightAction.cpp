@@ -46,7 +46,7 @@ void CFightAction::Update(CCircuitAI* circuit)
 	TRY_UNIT(circuit, unit,
 		const AIFloat3& pos = (*pPath)[step];
 		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-//		unit->GetUnit()->SetWantedMaxSpeed(stepSpeed);
+		unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {stepSpeed});
 
 		constexpr short options = UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY;
 		for (int i = 2; (step < pathMaxIndex) && (i < 4); ++i) {

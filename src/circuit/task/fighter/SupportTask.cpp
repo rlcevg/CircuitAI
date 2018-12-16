@@ -55,7 +55,7 @@ void CSupportTask::Execute(CCircuitUnit* unit)
 
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
-//		unit->GetUnit()->SetWantedMaxSpeed(MAX_UNIT_SPEED);
+		unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {NO_SPEED_LIMIT});
 	)
 	state = State::DISENGAGE;  // Wait
 }

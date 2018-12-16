@@ -149,7 +149,7 @@ ISquadTask* ISquadTask::GetMergeTask() const
 //	CTerrainManager::CorrectPosition(pos);
 	pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
 	const float maxSpeed = lowestSpeed / pathfinder->GetSquareSize() * THREAT_BASE;
-	const float maxDistCost = MAX_TRAVEL_SEC * (maxSpeed * FRAMES_PER_SEC);
+	const float maxDistCost = MAX_TRAVEL_SEC * maxSpeed;
 	const int distance = pathfinder->GetSquareSize();
 	float metric = std::numeric_limits<float>::max();
 

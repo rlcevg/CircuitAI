@@ -224,7 +224,7 @@ void CAttackTask::Update()
 		for (CCircuitUnit* unit : units) {
 			TRY_UNIT(circuit, unit,
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-//				unit->GetUnit()->SetWantedMaxSpeed(lowestSpeed);
+				unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {lowestSpeed});
 			)
 
 			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
@@ -269,7 +269,7 @@ void CAttackTask::FindTarget()
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
-	const float speed = SQUARE(highestSpeed);
+	const float speed = SQUARE(highestSpeed / FRAMES_PER_SEC);
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float maxPower = attackPower * powerMod;

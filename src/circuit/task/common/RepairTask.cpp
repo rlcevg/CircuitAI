@@ -151,12 +151,13 @@ CAllyUnit* IRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 	CAllyUnit* target = nullptr;
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	float maxSpeed = unit->GetCircuitDef()->GetSpeed();
-	float radius = unit->GetCircuitDef()->GetBuildDistance() + maxSpeed * FRAMES_PER_SEC * 30;
+	float radius = unit->GetCircuitDef()->GetBuildDistance() + maxSpeed * 30;
+	maxSpeed = SQUARE(maxSpeed * 1.5f / FRAMES_PER_SEC);
 
 	circuit->UpdateFriendlyUnits();
 	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
 	for (Unit* u : units) {
-		if ((u != nullptr) && u->GetHealth() < u->GetMaxHealth() && u->GetVel().Length() <= maxSpeed * 1.5f) {
+		if ((u != nullptr) && (u->GetHealth() < u->GetMaxHealth()) && (u->GetVel().SqLength2D() <= maxSpeed)) {
 			target = circuit->GetFriendlyUnit(u);
 			if (target != nullptr) {
 				break;

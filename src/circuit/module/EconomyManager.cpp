@@ -605,7 +605,7 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 
 	std::vector<Feature*> features;
 	if (isNear) {
-		const float distance = unit->GetCircuitDef()->GetSpeed() * FRAMES_PER_SEC * ((GetMetalPull() * 0.8f > GetAvgMetalIncome()) ? 300 : 30);
+		const float distance = unit->GetCircuitDef()->GetSpeed() * ((GetMetalPull() * 0.8f > GetAvgMetalIncome()) ? 300 : 30);
 		features = std::move(circuit->GetCallback()->GetFeaturesIn(position, distance));
 	} else {
 		features = std::move(circuit->GetCallback()->GetFeatures());
@@ -1141,12 +1141,23 @@ void CEconomyManager::Init()
 	mexMax = (mm < 1.f) ? (mm * spSize) : std::numeric_limits<decltype(mexMax)>::max();
 
 	const Json::Value& pull = econ["ms_pull"];
-	mspInfo.startPull = pull[0].get((unsigned)0, 1.0f).asFloat();
-	mspInfo.minMex = pull[0].get((unsigned)1, 0.0f).asFloat() * spSize;
-	mspInfo.endPull = pull[1].get((unsigned)0, 0.25f).asFloat();
-	mspInfo.maxMex = pull[1].get((unsigned)1, 0.75f).asFloat() * spSize;
-	mspInfo.fraction = (mspInfo.endPull - mspInfo.startPull) / (mspInfo.maxMex - mspInfo.minMex);
-	pullMtoS = mspInfo.startPull;
+	mspInfos.resize(pull.size());
+	mspInfos.push_back(SPullMtoS {
+		.pull = pull[0].get((unsigned)0, 1.0f).asFloat(),
+		.mex = pull[0].get((unsigned)1, 0.0f).asFloat() * spSize,
+		.fraction = 0.f
+	});
+	for (unsigned i = 1; i < pull.size(); ++i) {
+		SPullMtoS mspInfoEnd;
+		mspInfoEnd.pull = pull[i].get((unsigned)0, 0.25f).asFloat();
+		mspInfoEnd.mex = pull[i].get((unsigned)1, 0.75f).asFloat() * spSize;
+		mspInfoEnd.fraction = 0.f;
+		mspInfos.push_back(mspInfoEnd);
+		SPullMtoS& mspInfoBegin = mspInfos[i - 1];
+		mspInfoBegin.fraction = (mspInfoEnd.pull - mspInfoBegin.pull) / (mspInfoEnd.mex - mspInfoBegin.mex);
+	}
+	std::sort(mspInfos.begin(), mspInfos.end());
+	pullMtoS = mspInfos.front().pull;
 
 	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
 		metalProduced = economy->GetCurrent(metalRes) * metalMod;
@@ -1239,12 +1250,14 @@ void CEconomyManager::UpdateEconomy()
 		energyFactor = efInfo.fraction * (ecoFrame - efInfo.startFrame) + efInfo.startFactor;
 	}
 
-	if (mexCount <= mspInfo.minMex) {
-		pullMtoS = mspInfo.startPull;
-	} else if (mexCount >= mspInfo.maxMex) {
-		pullMtoS = mspInfo.endPull;
+	if (mexCount <= mspInfos.front().mex) {
+		pullMtoS = mspInfos.front().pull;
+	} else if (mexCount >= mspInfos.back().mex) {
+		pullMtoS = mspInfos.back().pull;
 	} else {
-		pullMtoS = mspInfo.fraction * (mexCount - mspInfo.minMex) + mspInfo.startPull;
+		auto it = std::lower_bound(mspInfos.cbegin(), mspInfos.cend(), mexCount, SPullMtoS());
+		SPullMtoS& mspInfo = mspInfos[std::distance(mspInfos.cbegin(), it)];
+		pullMtoS = mspInfo.fraction * (mexCount - mspInfo.mex) + mspInfo.pull;
 	}
 	pullMtoS *= circuit->GetMilitaryManager()->ClampMobileCostRatio();
 }

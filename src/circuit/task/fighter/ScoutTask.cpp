@@ -175,7 +175,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
-	const float speed = SQUARE(cdef->GetSpeed() * 1.1f);
+	const float speed = SQUARE(cdef->GetSpeed() * 0.9f / FRAMES_PER_SEC);
 	const float maxPower = threatMap->GetUnitThreat(unit) * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();

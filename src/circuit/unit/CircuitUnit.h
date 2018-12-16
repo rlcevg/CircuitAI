@@ -40,6 +40,7 @@ namespace circuit {
 #define CMD_WANT_CLOAK				37382
 #define CMD_DONT_FIRE_AT_RADAR		38372
 #define CMD_JUMP					38521
+#define CMD_WANTED_SPEED			38825
 #define CMD_AIR_STRAFE				39381
 #define CMD_TERRAFORM_INTERNAL		39801
 

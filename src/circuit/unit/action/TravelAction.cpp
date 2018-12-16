@@ -25,7 +25,7 @@ ITravelAction::ITravelAction(CCircuitUnit* owner, Type type, int squareSize, flo
 	int size = std::max(cdef->GetUnitDef()->GetXSize(), cdef->GetUnitDef()->GetZSize());
 	int incMod = std::max(size / 4, 1);
 	if (cdef->IsPlane()) {
-		incMod *= 5;
+		incMod *= 8;
 	} else if (cdef->IsAbleToFly()) {
 		incMod *= 3;
 	} else if (cdef->IsTurnLarge()) {
