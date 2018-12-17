@@ -20,9 +20,9 @@ public:
 	virtual ~CBBigGunTask();
 
 protected:
-	virtual void Finish();
+	virtual void Finish() override;
 
-	virtual CAllyUnit* FindSameAlly(CCircuitUnit* builder, const std::vector<springai::Unit*>& friendlies);
+	virtual CAllyUnit* FindSameAlly(CCircuitUnit* builder, const std::vector<springai::Unit*>& friendlies) override;
 };
 
 } // namespace circuit

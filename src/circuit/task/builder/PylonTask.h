@@ -23,10 +23,10 @@ public:
 
 	CEnergyLink* GetLink() { return link; }
 
-	virtual void Execute(CCircuitUnit* unit);
+	virtual void Execute(CCircuitUnit* unit) override;
 protected:
-	virtual void Finish();
-	virtual void Cancel();
+	virtual void Finish() override;
+	virtual void Cancel() override;
 
 private:
 	CEnergyLink* link;

@@ -56,10 +56,10 @@ private:
 	void DequeueTask(IFighterTask* task, bool done = false);
 
 public:
-	virtual IUnitTask* MakeTask(CCircuitUnit* unit);
-	virtual void AbortTask(IUnitTask* task);
-	virtual void DoneTask(IUnitTask* task);
-	virtual void FallbackTask(CCircuitUnit* unit);
+	virtual IUnitTask* MakeTask(CCircuitUnit* unit) override;
+	virtual void AbortTask(IUnitTask* task) override;
+	virtual void DoneTask(IUnitTask* task) override;
+	virtual void FallbackTask(CCircuitUnit* unit) override;
 
 	void MakeDefence(const springai::AIFloat3& pos);
 	void MakeDefence(int cluster);

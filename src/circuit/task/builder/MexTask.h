@@ -19,14 +19,14 @@ public:
 			  float cost, int timeout);
 	virtual ~CBMexTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit) const;
+	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
 
-	virtual void Execute(CCircuitUnit* unit);
+	virtual void Execute(CCircuitUnit* unit) override;
 protected:
-	virtual void Cancel();
+	virtual void Cancel() override;
 
 public:
-	virtual void OnUnitIdle(CCircuitUnit* unit);
+	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 };
 
 } // namespace circuit

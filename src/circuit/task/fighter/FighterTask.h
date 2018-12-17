@@ -25,14 +25,14 @@ protected:
 public:
 	virtual ~IFighterTask();
 
-	virtual void AssignTo(CCircuitUnit* unit);
-	virtual void RemoveAssignee(CCircuitUnit* unit);
+	virtual void AssignTo(CCircuitUnit* unit) override;
+	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Update();
+	virtual void Update() override;
 
-	virtual void OnUnitIdle(CCircuitUnit* unit);
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
-	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
+	virtual void OnUnitIdle(CCircuitUnit* unit) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 
 	FightType GetFightType() const { return fightType; }
 	const springai::AIFloat3& GetPosition() const { return position; }

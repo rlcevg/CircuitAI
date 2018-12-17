@@ -18,11 +18,11 @@ public:
 				FightType check, FightType promote, float maxPower, float powerMod);
 	virtual ~CDefendTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit) const;
-	virtual void RemoveAssignee(CCircuitUnit* unit);
+	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
+	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit);
-	virtual void Update();
+	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Update() override;
 
 	void SetPosition(const springai::AIFloat3& pos) { position = pos; }
 	void SetMaxPower(float power) { maxPower = power * powerMod; }
@@ -34,7 +34,7 @@ protected:
 	float GetMaxPower() const { return maxPower; }
 
 private:
-	virtual void Merge(ISquadTask* task);
+	virtual void Merge(ISquadTask* task) override;
 	void FindTarget();
 
 	float radius;

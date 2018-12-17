@@ -17,14 +17,14 @@ public:
 	IWaitTask(ITaskManager* mgr, bool stop, int timeout);
 	virtual ~IWaitTask();
 
-	virtual void AssignTo(CCircuitUnit* unit);
-	virtual void RemoveAssignee(CCircuitUnit* unit);
+	virtual void AssignTo(CCircuitUnit* unit) override;
+	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit);
-	virtual void Update();
+	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Update() override;
 
-	virtual void OnUnitIdle(CCircuitUnit* unit);
-	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
+	virtual void OnUnitIdle(CCircuitUnit* unit) override;
+	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 
 protected:
 	bool isStop;

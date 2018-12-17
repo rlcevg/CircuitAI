@@ -19,9 +19,9 @@ public:
 				  float cost, int timeout, float radius = .0f);
 	virtual ~CSReclaimTask();
 
-	virtual void Update();
+	virtual void Update() override;
 
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 };
 
 } // namespace circuit

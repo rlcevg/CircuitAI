@@ -56,21 +56,21 @@ protected:
 public:
 	virtual ~IBuilderTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit) const;
-	virtual void AssignTo(CCircuitUnit* unit);
-	virtual void RemoveAssignee(CCircuitUnit* unit);
+	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
+	virtual void AssignTo(CCircuitUnit* unit) override;
+	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit);
-	virtual void Update();
-	virtual void Close(bool done);
+	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Update() override;
+	virtual void Close(bool done) override;
 protected:
-	virtual void Finish();
-	virtual void Cancel();
+	virtual void Finish() override;
+	virtual void Cancel() override;
 
 public:
-	virtual void OnUnitIdle(CCircuitUnit* unit);
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
-	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
+	virtual void OnUnitIdle(CCircuitUnit* unit) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 
 	void Activate();
 	void Deactivate();
@@ -108,8 +108,8 @@ protected:
 
 	void ExecuteChain(SBuildChain* chain);
 
-	virtual void Load(std::istream& is);
-	virtual void Save(std::ostream& os) const;
+	virtual void Load(std::istream& is) override;
+	virtual void Save(std::ostream& os) const override;
 
 	springai::AIFloat3 position;
 	float shake;  // Alter/randomize position by offset

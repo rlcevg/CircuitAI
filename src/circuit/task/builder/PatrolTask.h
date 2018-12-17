@@ -19,14 +19,14 @@ public:
 				 float cost, int timeout);
 	virtual ~CBPatrolTask();
 
-	virtual void AssignTo(CCircuitUnit* unit);
-	virtual void RemoveAssignee(CCircuitUnit* unit);  // FIXME: Remove when proper task assignment implemented
+	virtual void AssignTo(CCircuitUnit* unit) override;
+	virtual void RemoveAssignee(CCircuitUnit* unit) override;  // FIXME: Remove when proper task assignment implemented
 
-	virtual void Execute(CCircuitUnit* unit);
-	virtual void Update();
+	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Update() override;
 protected:
-	virtual void Finish();
-	virtual void Cancel();
+	virtual void Finish() override;
+	virtual void Cancel() override;
 };
 
 } // namespace circuit

@@ -19,7 +19,7 @@ public:
 				float cost, float shake, int timeout);
 	virtual ~ISensorTask();
 
-	virtual void Update();
+	virtual void Update() override;
 };
 
 } // namespace circuit

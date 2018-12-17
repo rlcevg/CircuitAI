@@ -18,17 +18,17 @@ public:
 	IRepairTask(ITaskManager* mgr, Priority priority, Type type, CAllyUnit* target, int timeout = 0);
 	virtual ~IRepairTask();
 
-	virtual void RemoveAssignee(CCircuitUnit* unit);
+	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit);
-	virtual void Update() = 0;
+	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Update() override = 0;
 protected:
 	virtual void Finish() override;
 	virtual void Cancel() override final;
 
 public:
-	virtual void OnUnitIdle(CCircuitUnit* unit) = 0;
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) = 0;
+	virtual void OnUnitIdle(CCircuitUnit* unit) override = 0;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override = 0;
 
 	virtual void SetTarget(CAllyUnit* unit);
 	ICoreUnit::Id GetTargetId() const { return targetId; }
