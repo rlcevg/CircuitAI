@@ -17,7 +17,7 @@ public:
 	CIdleAction(CCircuitUnit* owner);
 	virtual ~CIdleAction();
 
-	virtual void Update(CCircuitAI* circuit);
+	virtual void Update(CCircuitAI* circuit) override;
 };
 
 } // namespace circuit

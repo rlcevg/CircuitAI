@@ -17,10 +17,10 @@ public:
 	CSupportTask(ITaskManager* mgr);
 	virtual ~CSupportTask();
 
-	virtual void RemoveAssignee(CCircuitUnit* unit);
+	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit);
-	virtual void Update();
+	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Update() override;
 
 private:
 	unsigned int updCount;

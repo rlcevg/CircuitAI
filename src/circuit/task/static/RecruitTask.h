@@ -24,18 +24,18 @@ public:
 				 RecruitType type, float radius);
 	virtual ~CRecruitTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit) const;
+	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
 
-	virtual void Execute(CCircuitUnit* unit);
-	virtual void Update();
+	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Update() override;
 protected:
-	virtual void Finish();
-	virtual void Cancel();
+	virtual void Finish() override;
+	virtual void Cancel() override;
 
 public:
-	virtual void OnUnitIdle(CCircuitUnit* unit);
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
-	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
+	virtual void OnUnitIdle(CCircuitUnit* unit) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 
 	RecruitType GetRecruitType() const { return recruitType; }
 

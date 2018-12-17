@@ -20,8 +20,8 @@ protected:
 public:
 	virtual ~ISquadTask();
 
-	virtual void AssignTo(CCircuitUnit* unit);
-	virtual void RemoveAssignee(CCircuitUnit* unit);
+	virtual void AssignTo(CCircuitUnit* unit) override;
+	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
 	virtual void Merge(ISquadTask* task);
 

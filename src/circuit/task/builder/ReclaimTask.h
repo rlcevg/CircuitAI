@@ -22,7 +22,7 @@ public:
 				  int timeout);
 	virtual ~CBReclaimTask();
 
-	virtual void Update();
+	virtual void Update() override;
 };
 
 } // namespace circuit

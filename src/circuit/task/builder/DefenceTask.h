@@ -20,8 +20,8 @@ public:
 	virtual ~CBDefenceTask();
 
 protected:
-	virtual void Finish();
-	virtual void Cancel();
+	virtual void Finish() override;
+	virtual void Cancel() override;
 };
 
 } // namespace circuit

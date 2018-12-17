@@ -17,12 +17,12 @@ public:
 	CSRepairTask(ITaskManager* mgr, Priority priority, CAllyUnit* target, int timeout = 0);
 	virtual ~CSRepairTask();
 
-	virtual void Update();
+	virtual void Update() override;
 protected:
 	virtual void Finish() override final;
 
-	virtual void OnUnitIdle(CCircuitUnit* unit);
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
+	virtual void OnUnitIdle(CCircuitUnit* unit) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 };
 
 } // namespace circuit

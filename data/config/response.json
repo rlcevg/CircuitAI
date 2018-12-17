@@ -1,12 +1,12 @@
 // Mono-space font required
 {
 // Build special units when enemy_metal*ratio > response_metal*eps; eps=teamSize*eps_step+(1-eps_step)
-// AA condition for 3v3: (enemy_air_metal*0.67 > (aa_metal+aa_cost)*1.14) and (aa_metal+aa_cost < army_metal*0.5)
+// AA condition for 3v3: (enemy_air_metal*0.67 > (aa_metal+aa_cost)*1.12) and (aa_metal+aa_cost < army_metal*0.5)
 //
 // Probability of UnitDef for AA role depends on income tier: (tierN[UnitDef]+_weight_)*enemy_air_metal/aa_metal*importance
-// armjeth probability for tier 1: (0.00+0.10)*enemy_air_metal*600.0
+// armjeth probability for tier 1: (0.00+10.00)*enemy_air_metal*600.0
 "response": {
-	"_weight_": 10.0,  // base weight of response probability
+	"_weight_": 10.0,  // base weight of response probability, default=0.5
 
 	"assault": {
 		"vs":         ["riot", "static", "assault", "support", "heavy", "anti_heavy", "transport"],

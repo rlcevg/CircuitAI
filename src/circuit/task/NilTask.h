@@ -17,16 +17,16 @@ public:
 	CNilTask(ITaskManager* mgr);
 	virtual ~CNilTask();
 
-	virtual void AssignTo(CCircuitUnit* unit);
-	virtual void RemoveAssignee(CCircuitUnit* unit);
+	virtual void AssignTo(CCircuitUnit* unit) override;
+	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit);
-	virtual void Update();
-	virtual void Close(bool done);
+	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Update() override;
+	virtual void Close(bool done) override;
 
-	virtual void OnUnitIdle(CCircuitUnit* unit);
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker);
-	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
+	virtual void OnUnitIdle(CCircuitUnit* unit) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 };
 
 } // namespace circuit

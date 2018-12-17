@@ -123,10 +123,10 @@ private:
 public:
 	bool IsBuilderInArea(CCircuitDef* buildDef, const springai::AIFloat3& position);  // Check if build-area has proper builder
 
-	virtual IUnitTask* MakeTask(CCircuitUnit* unit);
-	virtual void AbortTask(IUnitTask* task);
-	virtual void DoneTask(IUnitTask* task);
-	virtual void FallbackTask(CCircuitUnit* unit);
+	virtual IUnitTask* MakeTask(CCircuitUnit* unit) override;
+	virtual void AbortTask(IUnitTask* task) override;
+	virtual void DoneTask(IUnitTask* task) override;
+	virtual void FallbackTask(CCircuitUnit* unit) override;
 
 	SBuildChain* GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef);
 
@@ -181,8 +181,8 @@ private:
 	std::unordered_set<CCircuitDef*> workerDefs;
 	std::map<STerrainMapArea*, std::map<CCircuitDef*, int>> buildAreas;  // area <=> worker types
 
-	virtual void Load(std::istream& is);
-	virtual void Save(std::ostream& os) const;
+	virtual void Load(std::istream& is) override;
+	virtual void Save(std::ostream& os) const override;
 };
 
 } // namespace circuit

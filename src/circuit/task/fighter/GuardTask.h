@@ -18,11 +18,11 @@ public:
 	CFGuardTask(ITaskManager* mgr, CCircuitUnit* vip, float maxPower);
 	virtual ~CFGuardTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit) const;
+	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
 
-	virtual void Execute(CCircuitUnit* unit);
+	virtual void Execute(CCircuitUnit* unit) override;
 
-	virtual void OnUnitIdle(CCircuitUnit* unit);
+	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 
 private:
 	ICoreUnit::Id vipId;

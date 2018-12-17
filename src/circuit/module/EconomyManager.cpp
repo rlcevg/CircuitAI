@@ -1144,7 +1144,7 @@ void CEconomyManager::Init()
 	mspInfos.resize(pull.size());
 	mspInfos.push_back(SPullMtoS {
 		.pull = pull[0].get((unsigned)0, 1.0f).asFloat(),
-		.mex = pull[0].get((unsigned)1, 0.0f).asFloat() * spSize,
+		.mex = (int)(pull[0].get((unsigned)1, 0.0f).asFloat() * spSize),
 		.fraction = 0.f
 	});
 	for (unsigned i = 1; i < pull.size(); ++i) {

@@ -18,7 +18,7 @@ public:
 	CFightAction(CCircuitUnit* owner, const std::shared_ptr<F3Vec>& pPath, int squareSize, float speed = NO_SPEED_LIMIT);
 	virtual ~CFightAction();
 
-	virtual void Update(CCircuitAI* circuit);
+	virtual void Update(CCircuitAI* circuit) override;
 };
 
 } // namespace circuit

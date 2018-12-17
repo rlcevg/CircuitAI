@@ -17,9 +17,9 @@ public:
 	CWaitAction(CCircuitUnit* owner);
 	virtual ~CWaitAction();
 
-	virtual void Update(CCircuitAI* circuit);
-	virtual void OnStart();
-	virtual void OnEnd();
+	virtual void Update(CCircuitAI* circuit) override;
+	virtual void OnStart() override;
+	virtual void OnEnd() override;
 };
 
 } // namespace circuit

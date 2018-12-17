@@ -17,11 +17,11 @@ public:
 	CSuperTask(ITaskManager* mgr);
 	virtual ~CSuperTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit) const;
-	virtual void RemoveAssignee(CCircuitUnit* unit);
+	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
+	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit);
-	virtual void Update();
+	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Update() override;
 
 private:
 	int targetFrame;

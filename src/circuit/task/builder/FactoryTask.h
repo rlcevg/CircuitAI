@@ -19,9 +19,9 @@ public:
 				  float cost, float shake, bool isPlop, int timeout);
 	virtual ~CBFactoryTask();
 
-	virtual void Update();
+	virtual void Update() override;
 protected:
-	virtual void Cancel();
+	virtual void Cancel() override;
 
 private:
 	virtual void FindBuildSite(CCircuitUnit* builder, const springai::AIFloat3& pos, float searchRadius) override;

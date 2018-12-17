@@ -19,7 +19,7 @@ public:
 				 float cost, float shake, int timeout);
 	virtual ~CBEnergyTask();
 
-	virtual void Update();
+	virtual void Update() override;
 
 protected:
 	bool isStalling;

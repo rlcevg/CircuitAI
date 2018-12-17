@@ -23,18 +23,18 @@ public:
 				 int timeout);
 	virtual ~IReclaimTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit) const;
-	virtual void AssignTo(CCircuitUnit* unit);
-	virtual void RemoveAssignee(CCircuitUnit* unit);  // FIXME: Remove when proper task assignment implemented
+	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
+	virtual void AssignTo(CCircuitUnit* unit) override;
+	virtual void RemoveAssignee(CCircuitUnit* unit) override;  // FIXME: Remove when proper task assignment implemented
 
-	virtual void Execute(CCircuitUnit* unit);
-	virtual void Update() = 0;
+	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Update() override = 0;
 protected:
-	virtual void Finish();
-	virtual void Cancel();
+	virtual void Finish() override;
+	virtual void Cancel() override;
 
 public:
-	virtual void OnUnitIdle(CCircuitUnit* unit);
+	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 
 protected:
 	float radius;

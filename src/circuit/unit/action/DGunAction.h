@@ -17,7 +17,7 @@ public:
 	CDGunAction(CCircuitUnit* owner, float range);
 	virtual ~CDGunAction();
 
-	virtual void Update(CCircuitAI* circuit);
+	virtual void Update(CCircuitAI* circuit) override;
 
 private:
 	float range;

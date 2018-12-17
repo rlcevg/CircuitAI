@@ -17,14 +17,14 @@ public:
 	CAttackTask(ITaskManager* mgr, float minPower, float powerMod);
 	virtual ~CAttackTask();
 
-	virtual bool CanAssignTo(CCircuitUnit* unit) const;
-	virtual void AssignTo(CCircuitUnit* unit);
-	virtual void RemoveAssignee(CCircuitUnit* unit);
+	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
+	virtual void AssignTo(CCircuitUnit* unit) override;
+	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit);
-	virtual void Update();
+	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Update() override;
 
-	virtual void OnUnitIdle(CCircuitUnit* unit);
+	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 
 private:
 	void FindTarget();

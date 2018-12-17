@@ -17,7 +17,7 @@ public:
 	CSupportAction(CCircuitUnit* owner);
 	virtual ~CSupportAction();
 
-	virtual void Update(CCircuitAI* circuit);
+	virtual void Update(CCircuitAI* circuit) override;
 
 private:
 	unsigned int updCount;
