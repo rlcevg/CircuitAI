@@ -265,7 +265,7 @@ private:
 
 	static std::unique_ptr<CGameAttribute> gameAttribute;
 	static unsigned int gaCounter;
-	void CreateGameAttribute();
+	void CreateGameAttribute(unsigned int seed);
 	void DestroyGameAttribute();
 	std::shared_ptr<CScheduler> scheduler;
 	std::shared_ptr<CSetupManager> setupManager;

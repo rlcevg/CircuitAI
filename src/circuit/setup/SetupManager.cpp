@@ -185,7 +185,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 				}
 				std::random_shuffle(validClusters.begin(), validClusters.end());
 
-				auto cmp = [&clusters](const std::pair<int, SCluster>& a, const std::pair<int, SCluster>& b) {
+				auto cmp = [](const std::pair<int, SCluster>& a, const std::pair<int, SCluster>& b) {
 					if (a.second.count < b.second.count) {
 						return true;
 					} else if (a.second.count > b.second.count) {

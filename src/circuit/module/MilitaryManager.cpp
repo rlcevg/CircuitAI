@@ -123,7 +123,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			unit->GetTask()->OnUnitIdle(unit);
 		}
 	};
-	auto attackerDamagedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto attackerDamagedHandler = [](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		unit->GetTask()->OnUnitDamaged(unit, attacker);
 	};
 	auto attackerDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
@@ -164,7 +164,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			}
 		)
 	};
-	auto superDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto superDestroyedHandler = [](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		IUnitTask* task = unit->GetTask();
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask

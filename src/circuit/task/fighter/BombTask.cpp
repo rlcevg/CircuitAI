@@ -203,7 +203,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, co
 
 	OOAICallback* callback = circuit->GetCallback();
 	float aoe = std::min(cdef->GetAoe() + SQUARE_SIZE, DEFAULT_SLACK * 2.f);
-	std::function<bool (const AIFloat3& pos)> noAllies = [callback, aoe](const AIFloat3& pos) {
+	std::function<bool (const AIFloat3& pos)> noAllies = [](const AIFloat3& pos) {
 		return true;
 	};
 	if (aoe > SQUARE_SIZE * 2) {

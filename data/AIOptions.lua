@@ -39,6 +39,13 @@ local options = {
 		section = 'performance',
 		def     = true,
 	},
+-- 	{ -- number (int->uint)
+-- 		key     = 'random_seed',
+-- 		name    = 'Random seed',
+-- 		desc    = 'Seed for random number generator (int)',
+-- 		type    = 'number',
+-- 		def     = 1337
+-- 	},
 
 	{ -- string
 		key     = 'disabledunits',

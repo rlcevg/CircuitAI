@@ -71,7 +71,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 		EnableFactory(unit);
 	};
-	auto factoryIdleHandler = [this](CCircuitUnit* unit) {
+	auto factoryIdleHandler = [](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
 	};
 	auto factoryDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
@@ -134,7 +134,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			}
 		}
 	};
-	auto assistIdleHandler = [this](CCircuitUnit* unit) {
+	auto assistIdleHandler = [](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
 	};
 	auto assistDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {

@@ -22,7 +22,7 @@ class CGameAttribute {
 public:
 	using Circuits = std::unordered_set<CCircuitAI*>;
 
-	CGameAttribute();
+	CGameAttribute(unsigned int seed);
 	virtual ~CGameAttribute();
 
 	void SetGameEnd(bool value);
