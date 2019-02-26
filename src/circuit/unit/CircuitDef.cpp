@@ -119,6 +119,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	cost      = def->GetCost(res);
 	cloakCost = std::max(def->GetCloakCost(), def->GetCloakCostMoving());
 	buildTime = def->GetBuildTime();
+	topOffset = def->GetHeight() / 2 - def->GetWaterline();
 //	altitude  = def->GetWantedHeight();
 
 	MoveData* md = def->GetMoveData();

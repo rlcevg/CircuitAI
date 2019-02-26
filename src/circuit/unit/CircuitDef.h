@@ -208,6 +208,7 @@ public:
 	float GetCloakCost() const { return cloakCost; }
 	float GetStockCost() const { return stockCost; }
 	float GetBuildTime() const { return buildTime; }
+	float GetTopOffset() const { return topOffset; }
 //	float GetAltitude()  const { return altitude; }
 	float GetJumpRange() const { return jumpRange; }
 
@@ -281,6 +282,7 @@ private:
 	float cloakCost;
 	float stockCost;
 	float buildTime;
+	float topOffset;  // top point offset in water
 //	float altitude;
 	float jumpRange;
 	float retreat;

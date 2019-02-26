@@ -296,7 +296,6 @@ void CRaidTask::FindTarget()
 		const float power = threatMap->GetThreatAt(ePos);
 		if ((maxPower <= power) ||
 			!terrainManager->CanMoveToPos(area, ePos) ||
-			(notAW && (ePos.y < -SQUARE_SIZE * 5)) ||
 			(enemy->GetUnit()->GetVel().SqLength2D() >= speed))
 		{
 			continue;
@@ -309,14 +308,22 @@ void CRaidTask::FindTarget()
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
 			if (((targetCat & canTargetCat) == 0) ||
-				(edef->IsAbleToFly() && notAA) ||
-				(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > weaponRange))
+				(edef->IsAbleToFly() && notAA))
+			{
+				continue;
+			}
+			float elevation = map->GetElevationAt(ePos.x, ePos.z);
+			if ((elevation < 0 && notAW && ePos.y < -edef->GetTopOffset()) ||
+				(ePos.y - elevation > weaponRange))
 			{
 				continue;
 			}
 			defThreat = edef->GetPower();
 			isBuilder = edef->IsEnemyRoleAny(CCircuitDef::RoleMask::BUILDER | CCircuitDef::RoleMask::COMM);
 		} else {
+			if (notAW && (ePos.y < -SQUARE_SIZE * 5)) {
+				continue;
+			}
 			targetCat = UNKNOWN_CATEGORY;
 			defThreat = enemy->GetThreat();
 			isBuilder = false;

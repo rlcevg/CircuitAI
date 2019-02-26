@@ -292,7 +292,6 @@ void CAttackTask::FindTarget()
 		const float scale = std::min(sqBEDist / sqOBDist, 1.f);
 		if ((maxPower <= threatMap->GetThreatAt(ePos) * scale) ||
 			!terrainManager->CanMoveToPos(area, ePos) ||
-			(notAW && (ePos.y < -SQUARE_SIZE * 5)) ||
 			(enemy->GetUnit()->GetVel().SqLength2D() > speed))
 		{
 			continue;
@@ -301,10 +300,19 @@ void CAttackTask::FindTarget()
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			if (((edef->GetCategory() & canTargetCat) == 0) || ((edef->GetCategory() & noChaseCat) != 0) ||
-				(edef->IsAbleToFly() && notAA) ||
-				(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > weaponRange) ||
+				(edef->IsAbleToFly() && notAA))
+			{
+				continue;
+			}
+			float elevation = map->GetElevationAt(ePos.x, ePos.z);
+			if ((elevation < 0 && notAW && ePos.y < -edef->GetTopOffset()) ||
+				(ePos.y - elevation > weaponRange) ||
 				enemy->GetUnit()->IsBeingBuilt())
 			{
+				continue;
+			}
+		} else {
+			if (notAW && (ePos.y < -SQUARE_SIZE * 5)) {
 				continue;
 			}
 		}
