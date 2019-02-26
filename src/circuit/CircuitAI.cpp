@@ -1106,9 +1106,6 @@ int CCircuitAI::Save(std::ostream& os)
 
 int CCircuitAI::LuaMessage(const char* inData)
 {
-//	if (strncmp(inData, "METAL_SPOTS:", 12) == 0) {
-//		gameAttribute->ParseMetalSpots(inData + 12);
-//	} else
 	if (strncmp(inData, "DISABLE_CONTROL:", 16) == 0) {
 		DisableControl(inData + 16);
 	} else
