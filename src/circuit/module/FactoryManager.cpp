@@ -955,11 +955,11 @@ void CFactoryManager::ReadConfig()
 				facDef.landTiers[0];  // create empty tier
 			}
 		}
-		if (facDef.airTiers.empty()) {
-			facDef.airTiers = facDef.landTiers;
-		}
 		if (facDef.waterTiers.empty()) {
 			facDef.waterTiers = facDef.landTiers;
+		}
+		if (facDef.airTiers.empty()) {
+			facDef.airTiers = terrainManager->IsWaterMap() ? facDef.waterTiers : facDef.landTiers;
 		}
 
 		facDef.nanoCount = factory.get("caretaker", 1).asUInt();

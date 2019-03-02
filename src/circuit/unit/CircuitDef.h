@@ -208,13 +208,14 @@ public:
 	float GetCloakCost() const { return cloakCost; }
 	float GetStockCost() const { return stockCost; }
 	float GetBuildTime() const { return buildTime; }
-	float GetTopOffset() const { return topOffset; }
 //	float GetAltitude()  const { return altitude; }
 	float GetJumpRange() const { return jumpRange; }
 
 	void SetRetreat(float value) { retreat = value; }
 	float GetRetreat()   const { return retreat; }
 
+	float GetHeight()    const { return height; }
+	float GetTopOffset() const { return topOffset; }
 	const springai::AIFloat3& GetMidPosOffset() const { return midPosOffset; }
 
 private:
@@ -282,11 +283,12 @@ private:
 	float cloakCost;
 	float stockCost;
 	float buildTime;
-	float topOffset;  // top point offset in water
 //	float altitude;
 	float jumpRange;
 	float retreat;
 
+	float height;
+	float topOffset;  // top point offset in water
 	springai::AIFloat3 midPosOffset;
 };
 

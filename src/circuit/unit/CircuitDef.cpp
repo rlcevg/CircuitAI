@@ -119,8 +119,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	cost      = def->GetCost(res);
 	cloakCost = std::max(def->GetCloakCost(), def->GetCloakCostMoving());
 	buildTime = def->GetBuildTime();
-	topOffset = def->GetHeight() / 2 - def->GetWaterline();
 //	altitude  = def->GetWantedHeight();
+
+	height    = def->GetHeight();
+	topOffset = height / 2 - def->GetWaterline();
 
 	MoveData* md = def->GetMoveData();
 	isSubmarine = (md == nullptr) ? false : md->IsSubMarine();
