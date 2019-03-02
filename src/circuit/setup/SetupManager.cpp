@@ -185,7 +185,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 				}
 				std::random_shuffle(validClusters.begin(), validClusters.end());
 
-				auto cmp = [&clusters](const std::pair<int, SCluster>& a, const std::pair<int, SCluster>& b) {
+				auto cmp = [](const std::pair<int, SCluster>& a, const std::pair<int, SCluster>& b) {
 					if (a.second.count < b.second.count) {
 						return true;
 					} else if (a.second.count > b.second.count) {
@@ -566,7 +566,7 @@ bool CSetupManager::LoadConfig(const std::string& cfgOption)
 	std::string cfgStr = ((value != nullptr) && strlen(value) > 0) ? value : "";
 	delete options;
 	if (!cfgStr.empty()) {
-		config = ParseConfig(cfgStr.c_str(), configName);
+		config = ParseConfig(cfgStr, configName);
 		if (config != nullptr) {
 			return true;
 		}
@@ -631,31 +631,35 @@ Json::Value* CSetupManager::ReadConfig(const std::string& dirname, const std::ve
 			circuit->LOG("No config file! (%s)", filename.c_str());
 			continue;
 		}
-		char* cfgStr = new char [fileSize + 1];
-		file->GetContent(filename.c_str(), cfgStr, fileSize);
-		cfgStr[fileSize] = 0;
+		char* value = new char [fileSize + 1];
+		file->GetContent(filename.c_str(), value, fileSize);
+		value[fileSize] = 0;
+		std::string cfgStr(value);
+		delete[] value;
 		cfg = ParseConfig(cfgStr, name, cfg);
-		delete[] cfgStr;
 	}
 
 	delete file;
 	return cfg;
 }
 
-Json::Value* CSetupManager::ParseConfig(const char* cfgStr, const std::string& cfgName, Json::Value* cfg)
+Json::Value* CSetupManager::ParseConfig(const std::string& cfgStr, const std::string& cfgName, Json::Value* cfg)
 {
-	Json::Reader json;
-	Json::Value jsonPart;
-	if (!json.parse(cfgStr, jsonPart, false)) {
-		circuit->LOG("Malformed config format! (%s)\n%s", cfgName.c_str(), json.getFormattedErrorMessages().c_str());
+	Json::CharReader* reader = Json::CharReaderBuilder().newCharReader();
+	JSONCPP_STRING errs;
+	Json::Value json;
+	bool ok = reader->parse(cfgStr.c_str(), cfgStr.c_str() + cfgStr.size(), &json, &errs);
+	delete reader;
+	if (!ok) {
+		circuit->LOG("Malformed config format! (%s)\n%s", cfgName.c_str(), errs.c_str());
 		return nullptr;
 	}
 
 	if (cfg == nullptr) {
 		cfg = new Json::Value;
-		*cfg = jsonPart;
+		*cfg = json;
 	} else {
-		UpdateJson(*cfg, jsonPart);
+		UpdateJson(*cfg, json);
 	}
 	return cfg;
 }
@@ -680,20 +684,21 @@ void CSetupManager::UpdateJson(Json::Value& a, Json::Value& b) {
 
 void CSetupManager::OverrideConfig()
 {
-	Json::Reader json;
-	Json::Value jsonSection;
+	Json::CharReader* reader = Json::CharReaderBuilder().newCharReader();
+	Json::Value json;
 	OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
 
 	const char* value = options->GetValueByKey("factory");
-	if ((value != nullptr) && json.parse(value, jsonSection, false)) {
-		(*config)["factory"] = jsonSection;
+	if ((value != nullptr) && reader->parse(value, value + strlen(value), &json, nullptr)) {
+		(*config)["factory"] = json;
 	}
 
 	value = options->GetValueByKey("behaviour");
-	if ((value != nullptr) && json.parse(value, jsonSection, false)) {
-		(*config)["behaviour"] = jsonSection;
+	if ((value != nullptr) && reader->parse(value, value + strlen(value), &json, nullptr)) {
+		(*config)["behaviour"] = json;
 	}
 
+	delete reader;
 	delete options;
 }
 

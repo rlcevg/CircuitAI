@@ -121,6 +121,9 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	buildTime = def->GetBuildTime();
 //	altitude  = def->GetWantedHeight();
 
+	height    = def->GetHeight();
+	topOffset = height / 2 - def->GetWaterline();
+
 	MoveData* md = def->GetMoveData();
 	isSubmarine = (md == nullptr) ? false : md->IsSubMarine();
 	delete md;

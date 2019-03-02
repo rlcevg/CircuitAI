@@ -13,10 +13,10 @@ namespace circuit {
 
 using namespace springai;
 
-CGameAttribute::CGameAttribute()
+CGameAttribute::CGameAttribute(unsigned int seed)
 		: isGameEnd(false)
 {
-	srand(time(nullptr));
+	srand(seed);
 }
 
 CGameAttribute::~CGameAttribute()

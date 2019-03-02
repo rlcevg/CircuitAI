@@ -91,7 +91,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			unit->GetTask()->OnUnitIdle(unit);
 		}
 	};
-	auto workerDamagedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto workerDamagedHandler = [](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		unit->GetTask()->OnUnitDamaged(unit, attacker);
 	};
 	auto workerDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {

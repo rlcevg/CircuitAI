@@ -71,7 +71,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 		EnableFactory(unit);
 	};
-	auto factoryIdleHandler = [this](CCircuitUnit* unit) {
+	auto factoryIdleHandler = [](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
 	};
 	auto factoryDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
@@ -134,7 +134,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			}
 		}
 	};
-	auto assistIdleHandler = [this](CCircuitUnit* unit) {
+	auto assistIdleHandler = [](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
 	};
 	auto assistDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
@@ -955,11 +955,11 @@ void CFactoryManager::ReadConfig()
 				facDef.landTiers[0];  // create empty tier
 			}
 		}
-		if (facDef.airTiers.empty()) {
-			facDef.airTiers = facDef.landTiers;
-		}
 		if (facDef.waterTiers.empty()) {
 			facDef.waterTiers = facDef.landTiers;
+		}
+		if (facDef.airTiers.empty()) {
+			facDef.airTiers = terrainManager->IsWaterMap() ? facDef.waterTiers : facDef.landTiers;
 		}
 
 		facDef.nanoCount = factory.get("caretaker", 1).asUInt();

@@ -63,7 +63,7 @@ class CEnemyUnit;
 class CDebugDrawer;
 #endif
 
-constexpr char version[]{"1.0.3"};
+constexpr char version[]{"1.0.4"};
 
 class CException: public std::exception {
 public:
@@ -265,7 +265,7 @@ private:
 
 	static std::unique_ptr<CGameAttribute> gameAttribute;
 	static unsigned int gaCounter;
-	void CreateGameAttribute();
+	void CreateGameAttribute(unsigned int seed);
 	void DestroyGameAttribute();
 	std::shared_ptr<CScheduler> scheduler;
 	std::shared_ptr<CSetupManager> setupManager;

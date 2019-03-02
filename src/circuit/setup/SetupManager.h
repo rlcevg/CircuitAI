@@ -83,7 +83,7 @@ private:
 	bool LocatePath(std::string& filename);
 	bool LoadConfig(const std::string& cfgOption);
 	Json::Value* ReadConfig(const std::string& dirName, const std::vector<std::string>& cfgNames);
-	Json::Value* ParseConfig(const char* cfgStr, const std::string& cfgName, Json::Value* cfg = nullptr);
+	Json::Value* ParseConfig(const std::string& cfgStr, const std::string& cfgName, Json::Value* cfg = nullptr);
 	void UpdateJson(Json::Value& a, Json::Value& b);
 	void OverrideConfig();
 

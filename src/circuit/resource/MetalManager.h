@@ -26,7 +26,6 @@ public:
 	CMetalManager(CCircuitAI* circuit, CMetalData* metalData);
 	virtual ~CMetalManager();
 
-	void ParseMetalSpots(const char* metalJson);
 	void ParseMetalSpots();
 
 	bool HasMetalSpots() const { return (metalData->IsInitialized() && !metalData->IsEmpty()); }

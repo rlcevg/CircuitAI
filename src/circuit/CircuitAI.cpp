@@ -596,11 +596,10 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	}
 #endif
 
-	CreateGameAttribute();
 	scheduler = std::make_shared<CScheduler>();
 	scheduler->Init(scheduler);
 
-	std::string cfgOption = InitOptions();
+	std::string cfgOption = InitOptions();  // Inits GameAttribute
 	float decloakRadius;
 	InitUnitDefs(decloakRadius);  // Inits TerrainData
 
@@ -1107,9 +1106,6 @@ int CCircuitAI::Save(std::ostream& os)
 
 int CCircuitAI::LuaMessage(const char* inData)
 {
-//	if (strncmp(inData, "METAL_SPOTS:", 12) == 0) {
-//		gameAttribute->ParseMetalSpots(inData + 12);
-//	} else
 	if (strncmp(inData, "DISABLE_CONTROL:", 16) == 0) {
 		DisableControl(inData + 16);
 	} else
@@ -1382,6 +1378,10 @@ std::string CCircuitAI::InitOptions()
 	value = options->GetValueByKey("config_file");
 	std::string cfgOption = ((value != nullptr) && strlen(value) > 0) ? value : "";
 
+	value = options->GetValueByKey("random_seed");
+	unsigned int seed = (value != nullptr) ? StringToInt(value) : time(nullptr);
+	CreateGameAttribute(seed);
+
 	delete options;
 	return cfgOption;
 }
@@ -1469,10 +1469,10 @@ void CCircuitAI::InitUnitDefs(float& outDcr)
 //	gameAttribute->GetMetalManager().DrawCentroids(GetDrawer());
 //}
 
-void CCircuitAI::CreateGameAttribute()
+void CCircuitAI::CreateGameAttribute(unsigned int seed)
 {
 	if (gameAttribute == nullptr) {
-		gameAttribute = std::unique_ptr<CGameAttribute>(new CGameAttribute());
+		gameAttribute = std::unique_ptr<CGameAttribute>(new CGameAttribute(seed));
 	}
 	gaCounter++;
 	gameAttribute->RegisterAI(this);

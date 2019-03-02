@@ -214,6 +214,8 @@ public:
 	void SetRetreat(float value) { retreat = value; }
 	float GetRetreat()   const { return retreat; }
 
+	float GetHeight()    const { return height; }
+	float GetTopOffset() const { return topOffset; }
 	const springai::AIFloat3& GetMidPosOffset() const { return midPosOffset; }
 
 private:
@@ -285,6 +287,8 @@ private:
 	float jumpRange;
 	float retreat;
 
+	float height;
+	float topOffset;  // top point offset in water
 	springai::AIFloat3 midPosOffset;
 };
 

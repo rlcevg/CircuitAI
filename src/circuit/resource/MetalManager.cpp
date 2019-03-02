@@ -12,7 +12,6 @@
 #include "CircuitAI.h"
 #include "util/math/RagMatrix.h"
 #include "util/utils.h"
-#include "json/json.h"
 
 #include "Game.h"
 #include "MoveData.h"
@@ -88,29 +87,6 @@ CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData)
 CMetalManager::~CMetalManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-}
-
-void CMetalManager::ParseMetalSpots(const char* metalJson)
-{
-	Json::Value root;
-	Json::Reader json;
-
-	if (!json.parse(metalJson, root, false)) {
-		return;
-	}
-
-	std::vector<CMetalData::SMetal> spots;
-	spots.reserve(root.size());
-	for (const Json::Value& object : root) {
-		CMetalData::SMetal spot;
-		spot.income = object["metal"].asFloat();
-		spot.position = AIFloat3(object["x"].asFloat(),
-								 object["y"].asFloat(),
-								 object["z"].asFloat());
-		spots.push_back(spot);
-	}
-
-	metalData->Init(spots);
 }
 
 void CMetalManager::ParseMetalSpots()
