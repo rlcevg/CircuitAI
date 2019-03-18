@@ -34,6 +34,9 @@ CJumpAction::~CJumpAction()
 void CJumpAction::Update(CCircuitAI* circuit)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
+	if (unit->IsJumping()) {
+		return;
+	}
 	const int frame = circuit->GetLastFrame();
 
 	float stepSpeed;

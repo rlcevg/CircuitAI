@@ -43,6 +43,8 @@ public:
 
 	void SetPos(const springai::AIFloat3& p) { pos = p; }
 	const springai::AIFloat3& GetPos() const { return pos; }
+	void SetNewPos(const springai::AIFloat3& p);
+	const springai::AIFloat3& GetNewPos() const { return newPos; }
 
 	void SetThreat(float t) { threat = t; }
 	float GetThreat() const { return threat; }
@@ -57,6 +59,7 @@ private:
 
 	float cost;
 	springai::AIFloat3 pos;
+	springai::AIFloat3 newPos;
 	float threat;
 	std::array<int, static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_)> range;
 

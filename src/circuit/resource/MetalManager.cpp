@@ -97,10 +97,11 @@ void CMetalManager::ParseMetalSpots()
 	int mexCount = game->GetRulesParamFloat("mex_count", -1);
 	if (mexCount <= 0) {
 		// FIXME: Replace metal-map workaround by own grid-spot generator
+		Map* map = circuit->GetMap();
 		Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
-		auto spotsPos = std::move(circuit->GetMap()->GetResourceMapSpotsPositions(metalRes));
-		const unsigned width = circuit->GetMap()->GetWidth();
-		const unsigned height = circuit->GetMap()->GetHeight();
+		auto spotsPos = std::move(map->GetResourceMapSpotsPositions(metalRes));
+		const unsigned width = map->GetWidth();
+		const unsigned height = map->GetHeight();
 		const float mapSize = (width / 64) * (height / 64);
 		const float offset = (float)rand() / RAND_MAX * 50.f - 25.f;
 		//  8x8  ~  80 spots +-25
@@ -123,9 +124,10 @@ void CMetalManager::ParseMetalSpots()
 			const unsigned x1 = int(pos.x) / SQUARE_SIZE - (xsize / 2), x2 = x1 + xsize;
 			const unsigned z1 = int(pos.z) / SQUARE_SIZE - (zsize / 2), z2 = z1 + zsize;
 			if ((x1 < x2) && (x2 < width) && (z1 < z2) && (z2 < height) &&
-				terrainManager->CanBeBuiltAtSafe(mexDef, pos))
+				terrainManager->CanBeBuiltAt(mexDef, pos))
 			{
-				spots.push_back({pos.y, pos});
+				const float y = map->GetElevationAt(pos.x, pos.z);
+				spots.push_back({pos.y, AIFloat3(pos.x, y, pos.z)});
 			}
 		}
 

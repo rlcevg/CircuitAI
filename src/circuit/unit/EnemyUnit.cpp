@@ -75,4 +75,9 @@ float CEnemyUnit::GetShieldPower() const
 	return circuitDef->GetMaxShield();
 }
 
+void CEnemyUnit::SetNewPos(const AIFloat3& p) {
+	newPos = p;
+	CTerrainData::CorrectPosition(newPos);
+}
+
 } // namespace circuit

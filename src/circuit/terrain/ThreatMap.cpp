@@ -141,9 +141,7 @@ void CThreatMap::Update()
 		}
 
 		if (e->IsInRadarOrLOS()) {
-			AIFloat3 pos = e->GetUnit()->GetPos();
-			CTerrainManager::CorrectPosition(pos);
-			e->SetPos(pos);
+			e->SetPos(e->GetNewPos());
 //		} else {
 //			e->DecayThreat(0.99f);  // decay 0.99^updateNum
 		}
@@ -166,11 +164,9 @@ void CThreatMap::Update()
 			continue;
 		}
 		if (e->IsInRadarOrLOS()) {
-			AIFloat3 pos = e->GetUnit()->GetPos();
-			CTerrainManager::CorrectPosition(pos);
-			if (pos != e->GetPos()) {
+			if (e->GetNewPos() != e->GetPos()) {
 				DelDecloaker(e);
-				e->SetPos(pos);
+				e->SetPos(e->GetNewPos());
 				AddDecloaker(e);
 			}
 		}
@@ -224,9 +220,8 @@ bool CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 			DelDecloaker(enemy);
 		}
 
-		AIFloat3 pos = enemy->GetUnit()->GetPos();
-		CTerrainManager::CorrectPosition(pos);
-		enemy->SetPos(pos);
+		enemy->SetNewPos(enemy->GetUnit()->GetPos());
+		enemy->SetPos(enemy->GetNewPos());
 		enemy->SetKnown();
 
 		AddDecloaker(enemy);
@@ -243,9 +238,8 @@ bool CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
 		DelEnemyUnitAll(enemy);
 	}
 
-	AIFloat3 pos = enemy->GetUnit()->GetPos();
-	CTerrainManager::CorrectPosition(pos);
-	enemy->SetPos(pos);
+	enemy->SetNewPos(enemy->GetUnit()->GetPos());
+	enemy->SetPos(enemy->GetNewPos());
 	SetEnemyUnitRange(enemy);
 	enemy->SetThreat(GetEnemyUnitThreat(enemy));
 	enemy->SetKnown();
@@ -279,9 +273,8 @@ void CThreatMap::EnemyEnterRadar(CEnemyUnit* enemy)
 			DelDecloaker(enemy);
 		}
 
-		AIFloat3 pos = enemy->GetUnit()->GetPos();
-		CTerrainManager::CorrectPosition(pos);
-		enemy->SetPos(pos);
+		enemy->SetNewPos(enemy->GetUnit()->GetPos());
+		enemy->SetPos(enemy->GetNewPos());
 
 		AddDecloaker(enemy);
 		return;
@@ -297,9 +290,8 @@ void CThreatMap::EnemyEnterRadar(CEnemyUnit* enemy)
 		DelEnemyUnit(enemy);
 	}
 
-	AIFloat3 pos = enemy->GetUnit()->GetPos();
-	CTerrainManager::CorrectPosition(pos);
-	enemy->SetPos(pos);
+	enemy->SetNewPos(enemy->GetUnit()->GetPos());
+	enemy->SetPos(enemy->GetNewPos());
 	if (isNew) {  // unknown enemy enters radar for the first time
 		enemy->SetThreat(enemy->GetDamage());  // TODO: Randomize
 		enemy->SetRange(CCircuitDef::ThreatType::MAX, rangeDefault);

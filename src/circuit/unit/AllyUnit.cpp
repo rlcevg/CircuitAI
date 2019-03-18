@@ -6,7 +6,6 @@
  */
 
 #include "unit/AllyUnit.h"
-#include "terrain/TerrainManager.h"
 #include "util/utils.h"
 
 namespace circuit {
@@ -30,7 +29,7 @@ const AIFloat3& CAllyUnit::GetPos(int frame)
 	if (posFrame != frame) {
 		posFrame = frame;
 		position = unit->GetPos();
-		CTerrainManager::CorrectPosition(position);
+		CTerrainData::CorrectPosition(position);
 	}
 	return position;
 }

@@ -151,6 +151,11 @@ bool CCircuitUnit::IsJumpReady()
 	return circuitDef->IsAbleToJump() && !(unit->GetRulesParamFloat("jumpReload", 1) < 1.f);
 }
 
+bool CCircuitUnit::IsJumping()
+{
+	return unit->GetRulesParamFloat("is_jumping", 0) > 0.f;
+}
+
 float CCircuitUnit::GetDamage()
 {
 	float dmg = circuitDef->GetPwrDamage();

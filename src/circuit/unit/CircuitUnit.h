@@ -86,6 +86,7 @@ public:
 	bool IsDGunReady(int frame);
 	bool IsShieldCharged(float percent);
 	bool IsJumpReady();
+	bool IsJumping();
 	float GetDamage();
 	float GetShieldPower();
 	float GetBuildSpeed();
