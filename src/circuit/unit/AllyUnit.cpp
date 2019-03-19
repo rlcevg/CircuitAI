@@ -7,6 +7,7 @@
 
 #include "unit/AllyUnit.h"
 #include "util/utils.h"
+#include "terrain/TerrainData.h"
 
 namespace circuit {
 
