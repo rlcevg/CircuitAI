@@ -99,6 +99,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, stockCost(.0f)
 		, jumpRange(.0f)
 		, retreat(-1.f)
+		, height(-1.f)
+		, topOffset(-1.f)
 {
 	id = def->GetUnitDefId();
 
@@ -120,9 +122,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	cloakCost = std::max(def->GetCloakCost(), def->GetCloakCostMoving());
 	buildTime = def->GetBuildTime();
 //	altitude  = def->GetWantedHeight();
-
-	height    = def->GetHeight();
-	topOffset = height / 2 - def->GetWaterline();
 
 	MoveData* md = def->GetMoveData();
 	isSubmarine = (md == nullptr) ? false : md->IsSubMarine();
@@ -487,6 +486,14 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 		}
 	}
 	isLander = !IsFloater() && !IsAbleToFly() && !IsAmphibious() && !IsSubmarine();
+}
+
+bool CCircuitDef::IsYTargetable(float elevation, float posY) {
+	if (height < 0.f) {
+		height    = def->GetHeight();  // Forces loading of the unit model
+		topOffset = height / 2 - def->GetWaterline();
+	}
+	return (elevation > -height || posY > -topOffset);
 }
 
 } // namespace circuit

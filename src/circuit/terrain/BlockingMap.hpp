@@ -11,7 +11,7 @@
 
 #include "terrain/BlockingMap.h"
 
-#define MAX_BLOCK_VAL		32000
+#define MAX_BLOCK_VAL		0x1000
 #define BLOCK_THRESHOLD		(GRID_RATIO_LOW * GRID_RATIO_LOW * 3 / 4)
 
 namespace circuit {

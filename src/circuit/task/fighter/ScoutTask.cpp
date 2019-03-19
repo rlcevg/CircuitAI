@@ -217,7 +217,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 				continue;
 			}
 			float elevation = map->GetElevationAt(ePos.x, ePos.z);
-			if ((elevation < -edef->GetHeight() && notAW && ePos.y < -edef->GetTopOffset()) ||
+			if ((notAW && !edef->IsYTargetable(elevation, ePos.y)) ||
 				(ePos.y - elevation > weaponRange))
 			{
 				continue;

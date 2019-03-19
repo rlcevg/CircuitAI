@@ -19,11 +19,15 @@
 namespace circuit {
 
 struct SBlockingMap {
-	enum class StructType: int {FACTORY = 0, MEX, ENGY_LOW, ENGY_MID, ENGY_HIGH, PYLON, DEF_LOW, DEF_MID, DEF_HIGH, SPECIAL, NANO, UNKNOWN, _SIZE_};
-	enum class StructMask: int {  FACTORY = 0x0001,     MEX = 0x0002, ENGY_LOW = 0x0004, ENGY_MID = 0x0008,
-								ENGY_HIGH = 0x0010,   PYLON = 0x0020,  DEF_LOW = 0x0040,  DEF_MID = 0x0080,
-								 DEF_HIGH = 0x0100, SPECIAL = 0x0200,     NANO = 0x0400,  UNKNOWN = 0x0800,
-									 NONE = 0x0000,     ALL = 0xFFFF};
+	enum class StructType: unsigned short {
+		FACTORY = 0, MEX, ENGY_LOW, ENGY_MID, ENGY_HIGH, PYLON, DEF_LOW, DEF_MID, DEF_HIGH, SPECIAL, NANO, UNKNOWN, _SIZE_
+	};
+	enum class StructMask: unsigned short {
+		  FACTORY = 0x0001,     MEX = 0x0002, ENGY_LOW = 0x0004, ENGY_MID = 0x0008,
+		ENGY_HIGH = 0x0010,   PYLON = 0x0020,  DEF_LOW = 0x0040,  DEF_MID = 0x0080,
+		 DEF_HIGH = 0x0100, SPECIAL = 0x0200,     NANO = 0x0400,  UNKNOWN = 0x0800,
+			 NONE = 0x0000,     ALL = 0xFFFF
+	};
 	using ST = std::underlying_type<StructType>::type;
 	using SM = std::underlying_type<StructMask>::type;
 	using StructTypes = std::map<std::string, StructType>;
@@ -54,7 +58,7 @@ struct SBlockingMap {
 		SM blockerMask;
 		SM notIgnoreMask;  // = ~ignoreMask
 		StructMask structMask;
-		unsigned int blockerCounts[static_cast<ST>(StructType::_SIZE_)];
+		unsigned short blockerCounts[static_cast<ST>(StructType::_SIZE_)];
 	};
 	std::vector<SBlockCell> grid;  // granularity Map::GetWidth / 2,  Map::GetHeight / 2
 	int columns;
@@ -62,7 +66,7 @@ struct SBlockingMap {
 
 	struct SBlockCellLow {
 		SM blockerMask;
-		unsigned int blockerCounts[static_cast<ST>(StructType::_SIZE_)];
+		unsigned short blockerCounts[static_cast<ST>(StructType::_SIZE_)];
 	};
 	// TODO: Replace with QuadTree
 	std::vector<SBlockCellLow> gridLow;  // granularity Map::GetWidth / 16, Map::GetHeight / 16

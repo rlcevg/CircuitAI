@@ -214,8 +214,7 @@ public:
 	void SetRetreat(float value) { retreat = value; }
 	float GetRetreat()   const { return retreat; }
 
-	float GetHeight()    const { return height; }
-	float GetTopOffset() const { return topOffset; }
+	bool IsYTargetable(float elevation, float posY);
 	const springai::AIFloat3& GetMidPosOffset() const { return midPosOffset; }
 
 private:

@@ -38,7 +38,7 @@
 		},
 		// income factor for energy, time is in seconds
 		// [[<start_factor>, <start_time>], [<end_factor>, <end_time>]]
-		"factor": [[0.55, 60], [64.0, 600]],
+		"factor": [[0.55, 60], [8.0, 3600]],
 
 		"pylon": ["energypylon", "energysolar", "energywind"]
 	},
