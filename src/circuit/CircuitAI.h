@@ -134,6 +134,7 @@ private:
 public:
 	using Units = std::map<ICoreUnit::Id, CCircuitUnit*>;
 private:
+	CCircuitUnit* GetOrRegTeamUnit(ICoreUnit::Id unitId);
 	CCircuitUnit* RegisterTeamUnit(ICoreUnit::Id unitId);
 	void UnregisterTeamUnit(CCircuitUnit* unit);
 	void DeleteTeamUnit(CCircuitUnit* unit);

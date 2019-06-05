@@ -229,7 +229,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			SCOPED_TIME(this, "EVENT_UNIT_CREATED");
 			struct SUnitCreatedEvent* evt = (struct SUnitCreatedEvent*)data;
 			CCircuitUnit* builder = GetTeamUnit(evt->builder);
-			CCircuitUnit* unit = RegisterTeamUnit(evt->unit);
+			CCircuitUnit* unit = GetOrRegTeamUnit(evt->unit);
 			ret = (unit != nullptr) ? this->UnitCreated(unit, builder) : ERROR_UNIT_CREATED;
 			break;
 		}
@@ -240,7 +240,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			// Lua might call SetUnitHealth within eventHandler.UnitCreated(this, builder);
 			// and trigger UnitFinished before eoh->UnitCreated(*this, builder);
 			// @see rts/Sim/Units/Unit.cpp CUnit::PostInit
-			CCircuitUnit* unit = RegisterTeamUnit(evt->unit);
+			CCircuitUnit* unit = GetOrRegTeamUnit(evt->unit);
 			ret = (unit != nullptr) ? this->UnitFinished(unit) : ERROR_UNIT_FINISHED;
 			break;
 		}
@@ -951,7 +951,7 @@ int CCircuitAI::UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId)
 		return 0;  // signaling: OK
 	}
 
-	CCircuitUnit* unit = RegisterTeamUnit(unitId);
+	CCircuitUnit* unit = GetOrRegTeamUnit(unitId);
 	if (unit == nullptr) {
 		return ERROR_UNIT_GIVEN;
 	}
@@ -1088,6 +1088,24 @@ int CCircuitAI::PlayerCommand(std::vector<CCircuitUnit*>& units)
 
 int CCircuitAI::Load(std::istream& is)
 {
+	auto units = std::move(callback->GetTeamUnits());
+	for (Unit* u : units) {
+		if (u == nullptr) {
+			continue;
+		}
+		ICoreUnit::Id unitId = u->GetUnitId();
+		CCircuitUnit* unit = GetTeamUnit(unitId);
+		if (unit != nullptr) {
+			continue;
+		}
+		unit = RegisterTeamUnit(unitId);
+		if (unit == nullptr) {
+			continue;
+		}
+		u->IsBeingBuilt() ? UnitCreated(unit, nullptr) : UnitFinished(unit);
+	}
+	utils::free_clear(units);
+
 	for (auto& module : modules) {
 		is >> *module;
 	}
@@ -1115,20 +1133,25 @@ int CCircuitAI::LuaMessage(const char* inData)
 	return 0;  // signaling: OK
 }
 
-CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId)
+CCircuitUnit* CCircuitAI::GetOrRegTeamUnit(ICoreUnit::Id unitId)
 {
 	CCircuitUnit* unit = GetTeamUnit(unitId);
 	if (unit != nullptr) {
 		return unit;
 	}
 
+	return RegisterTeamUnit(unitId);
+}
+
+CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId)
+{
 	Unit* u = WrappUnit::GetInstance(skirmishAIId, unitId);
 	if (u == nullptr) {
 		return nullptr;
 	}
 	UnitDef* unitDef = u->GetDef();
 	CCircuitDef* cdef = GetCircuitDef(unitDef->GetUnitDefId());
-	unit = new CCircuitUnit(unitId, u, cdef);
+	CCircuitUnit* unit = new CCircuitUnit(unitId, u, cdef);
 	delete unitDef;
 
 	STerrainMapArea* area;
