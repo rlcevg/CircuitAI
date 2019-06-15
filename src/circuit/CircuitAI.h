@@ -136,6 +136,7 @@ public:
 private:
 	CCircuitUnit* GetOrRegTeamUnit(ICoreUnit::Id unitId);
 	CCircuitUnit* RegisterTeamUnit(ICoreUnit::Id unitId);
+	CCircuitUnit* RegisterTeamUnit(ICoreUnit::Id unitId, springai::Unit* u);
 	void UnregisterTeamUnit(CCircuitUnit* unit);
 	void DeleteTeamUnit(CCircuitUnit* unit);
 public:
@@ -161,6 +162,7 @@ public:
 
 	CAllyTeam* GetAllyTeam() const { return allyTeam; }
 
+	void DisableControl(CCircuitUnit* unit);
 	void DisableControl(const std::string data);
 	void EnableControl(const std::string data);
 

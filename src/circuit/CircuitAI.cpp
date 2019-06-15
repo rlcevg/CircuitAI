@@ -1096,15 +1096,15 @@ int CCircuitAI::Load(std::istream& is)
 		ICoreUnit::Id unitId = u->GetUnitId();
 		CCircuitUnit* unit = GetTeamUnit(unitId);
 		if (unit != nullptr) {
+			delete u;
 			continue;
 		}
-		unit = RegisterTeamUnit(unitId);
-		if (unit == nullptr) {
-			continue;
-		}
+		unit = RegisterTeamUnit(unitId, u);
 		u->IsBeingBuilt() ? UnitCreated(unit, nullptr) : UnitFinished(unit);
+		if (u->GetRulesParamFloat("disableAiControl", 0) > 0.f) {
+			DisableControl(unit);
+		}
 	}
-	utils::free_clear(units);
 
 	for (auto& module : modules) {
 		is >> *module;
@@ -1149,6 +1149,12 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId)
 	if (u == nullptr) {
 		return nullptr;
 	}
+
+	return RegisterTeamUnit(unitId, u);
+}
+
+CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId, Unit* u)
+{
 	UnitDef* unitDef = u->GetDef();
 	CCircuitDef* cdef = GetCircuitDef(unitDef->GetUnitDefId());
 	CCircuitUnit* unit = new CCircuitUnit(unitId, u, cdef);
@@ -1326,6 +1332,14 @@ CEnemyUnit* CCircuitAI::GetEnemyUnit(ICoreUnit::Id unitId) const
 	return (it != enemyUnits.end()) ? it->second : nullptr;
 }
 
+void CCircuitAI::DisableControl(CCircuitUnit* unit)
+{
+	if (unit->GetTask() != nullptr) {
+		ITaskManager* mgr = unit->GetTask()->GetManager();
+		mgr->AssignTask(unit, new CPlayerTask(mgr));
+	}
+}
+
 void CCircuitAI::DisableControl(const std::string data)
 {
 	std::smatch section;
@@ -1334,9 +1348,8 @@ void CCircuitAI::DisableControl(const std::string data)
 	std::regex patternUnit("\\w+");
 	while (std::regex_search(start, end, section, patternUnit)) {
 		CCircuitUnit* unit = GetTeamUnit(utils::string_to_int(section[0]));
-		if ((unit != nullptr) && (unit->GetTask() != nullptr)) {
-			ITaskManager* mgr = unit->GetTask()->GetManager();
-			mgr->AssignTask(unit, new CPlayerTask(mgr));
+		if (unit != nullptr) {
+			DisableControl(unit);
 		}
 		start = section[0].second;
 	}
