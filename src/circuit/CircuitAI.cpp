@@ -1101,7 +1101,10 @@ int CCircuitAI::Load(std::istream& is)
 		}
 		unit = RegisterTeamUnit(unitId, u);
 		u->IsBeingBuilt() ? UnitCreated(unit, nullptr) : UnitFinished(unit);
-		if (u->GetRulesParamFloat("disableAiControl", 0) > 0.f) {
+	}
+	for (auto& kv : teamUnits) {
+		CCircuitUnit* unit = kv.second;
+		if (unit->GetUnit()->GetRulesParamFloat("disableAiControl", 0) > 0.f) {
 			DisableControl(unit);
 		}
 	}

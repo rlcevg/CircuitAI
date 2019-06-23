@@ -1049,6 +1049,16 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 
 void CFactoryManager::DisableFactory(CCircuitUnit* unit)
 {
+	std::vector<CRecruitTask*> garbageTasks;
+	for (CRecruitTask* task : factoryTasks) {
+		if (task->GetAssignees().empty()) {
+			garbageTasks.push_back(task);
+		}
+	}
+	for (CRecruitTask* task : garbageTasks) {
+		AbortTask(task);
+	}
+
 	auto checkBuilderFactory = [this](const int frame) {
 		CBuilderManager* builderManager = this->circuit->GetBuilderManager();
 		// check if any factory with builders left

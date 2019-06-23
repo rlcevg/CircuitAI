@@ -40,7 +40,7 @@ local infos = {
 	},
 	{
 		key    = 'loadSupported',
-		value  = 'no',
+		value  = 'yes',
 		desc   = 'whether this AI supports loading or not',
 	},
 	{
