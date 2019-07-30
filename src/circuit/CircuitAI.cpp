@@ -134,44 +134,6 @@ void CCircuitAI::NotifyResign()
 	eventHandler = &CCircuitAI::HandleResignEvent;
 }
 
-//void CCircuitAI::NotifyShutdown()
-//{
-//	Info* info = skirmishAI->GetInfo();
-//	const char* name = info->GetValueByKey("name");
-////	OptionValues* options = skirmishAI->GetOptionValues();
-////	const char* value = options->GetValueByKey("version");
-////	const char* version = (value != nullptr) ? value : info->GetValueByKey("version");
-//	delete info;
-////	delete options;
-//	std::string say("/say "/*"a:"*/);
-//	say += std::string(name) + " " + std::string(version) + ": ";
-//
-//	corrupts.push_front("Error: System files corrupt.");
-//	corrupts.push_front("Verifying Checksums...");
-//	corrupts.push_front("Loading Kernel...");
-//	corrupts.push_front("Terminal connection established.");
-//	corrupts.push_back("Saving diagnostics to infolog.txt...");
-//	corrupts.push_back("System failure - disconnecting remote users...");
-//
-//	scheduler->RunTaskEvery(std::make_shared<CGameTask>([this, say]() {
-//		if (IsCorrupted()) {
-//			game->SendTextMessage((say + corrupts.front()).c_str(), 0);
-//			corrupts.pop_front();
-//		} else {
-//			auto units = std::move(callback->GetTeamUnits());
-//			for (Unit* u : units) {
-//				if (u != nullptr) {
-//					u->SelfDestruct();
-//				}
-//				delete u;
-//			}
-//			isResigned = true;  // shutdown
-//		}
-//	}), FRAMES_PER_SEC * 3);
-//
-//	eventHandler = &CCircuitAI::HandleShutdownEvent;
-//}
-
 void CCircuitAI::Resign(int newTeamId)
 {
 	ownerTeamId = newTeamId;
@@ -190,11 +152,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			try {
 				ret = this->Init(evt->skirmishAIId, evt->callback);
 			} catch (const CException& e) {
-//				corrupts.push_back("!!! " + std::string(e.what()) + " !!!");
 				Release(RELEASE_CORRUPTED);
-//				scheduler = std::make_shared<CScheduler>();  // NOTE: Don't forget to delete
-//				scheduler->Init(scheduler);
-//				NotifyShutdown();
 				LOG("Exception: %s", e.what());
 				NotifyGameEnd();
 				ret = 0;
@@ -304,9 +262,9 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			CEnemyUnit* unit;
 			bool isReal;
 			std::tie(unit, isReal) = RegisterEnemyUnit(evt->enemy, true);
-			if (isReal) {
-				ret = (unit != nullptr) ? this->EnemyEnterLOS(unit) : ERROR_ENEMY_ENTER_LOS;
-			}
+			ret = isReal
+					? (unit != nullptr) ? this->EnemyEnterLOS(unit) : ERROR_ENEMY_ENTER_LOS
+					: 0;
 			break;
 		}
 		case EVENT_ENEMY_LEAVE_LOS: {
@@ -328,9 +286,9 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			CEnemyUnit* unit;
 			bool isReal;
 			std::tie(unit, isReal) = RegisterEnemyUnit(evt->enemy, false);
-			if (isReal) {
-				ret = (unit != nullptr) ? this->EnemyEnterRadar(unit) : ERROR_ENEMY_ENTER_RADAR;
-			}
+			ret = isReal
+					? (unit != nullptr) ? this->EnemyEnterRadar(unit) : ERROR_ENEMY_ENTER_RADAR
+					: 0;
 			break;
 		}
 		case EVENT_ENEMY_LEAVE_RADAR: {
@@ -425,9 +383,9 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			CEnemyUnit* unit;
 			bool isReal;
 			std::tie(unit, isReal) = RegisterEnemyUnit(evt->enemy, true);
-			if (isReal) {
-				ret = (unit != nullptr) ? this->EnemyEnterLOS(unit) : EVENT_ENEMY_CREATED;
-			}
+			ret = isReal
+					? (unit != nullptr) ? this->EnemyEnterLOS(unit) : EVENT_ENEMY_CREATED
+					: 0;
 			break;
 		}
 		case EVENT_ENEMY_FINISHED: {
@@ -492,28 +450,6 @@ int CCircuitAI::HandleResignEvent(int topic, const void* data)
 	}
 	return 0;
 }
-
-//int CCircuitAI::HandleShutdownEvent(int topic, const void* data)
-//{
-//	switch (topic) {
-//		case EVENT_RELEASE: {
-//			PRINT_TOPIC("EVENT_RELEASE::SHUTDOWN", topic);
-//			scheduler = nullptr;  // this->Release() was already called
-//			NotifyGameEnd();
-//		} break;
-//		case EVENT_UPDATE: {
-////			PRINT_TOPIC("EVENT_UPDATE::SHUTDOWN", topic);
-//			struct SUpdateEvent* evt = (struct SUpdateEvent*)data;
-//			scheduler->ProcessTasks(evt->frame);
-//			if (isResigned) {
-//				scheduler = nullptr;
-//				NotifyGameEnd();
-//			}
-//		} break;
-//		default: break;
-//	}
-//	return 0;
-//}
 
 //bool CCircuitAI::IsModValid()
 //{
