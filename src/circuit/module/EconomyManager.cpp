@@ -1075,9 +1075,9 @@ void CEconomyManager::ReadConfig()
 	const Json::Value& factor = energy["factor"];
 	efInfo.startFactor = factor[0].get((unsigned)0, 0.5f).asFloat();
 	efInfo.startFrame = factor[0].get((unsigned)1, 300 ).asInt() * FRAMES_PER_SEC;
-	const float efEndFactor = factor[1].get((unsigned)0, 2.0f).asFloat();
+	efInfo.endFactor = factor[1].get((unsigned)0, 2.0f).asFloat();
 	efInfo.endFrame = factor[1].get((unsigned)1, 3600).asInt() * FRAMES_PER_SEC;
-	efInfo.fraction = (efEndFactor - efInfo.startFactor) / (efInfo.endFrame - efInfo.startFrame);
+	efInfo.fraction = (efInfo.endFactor - efInfo.startFactor) / (efInfo.endFrame - efInfo.startFrame);
 	energyFactor = efInfo.startFactor;
 
 	// Using cafus, armfus, armsolar as control points
@@ -1104,7 +1104,9 @@ void CEconomyManager::ReadConfig()
 			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), engies[i].first.c_str());
 			continue;
 		}
-		float make = utils::string_to_float(cdef->GetUnitDef()->GetCustomParams().find("income_energy")->second);
+		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
+		auto it = customParams.find("income_energy");
+		float make = (it != customParams.end()) ? utils::string_to_float(it->second) : 1.f;
 		x[i] = cdef->GetCost() / make;
 		y[i] = engies[i].second + 0.5;  // +0.5 to be sure precision errors will not decrease integer part
 	}
@@ -1246,7 +1248,11 @@ void CEconomyManager::UpdateEconomy()
 	const float storEnergy = GetStorage(energyRes);
 	isEnergyEmpty = curEnergy < storEnergy * 0.1f;
 
-	if ((efInfo.startFrame < ecoFrame) && (ecoFrame < efInfo.endFrame)) {
+	if (ecoFrame <= efInfo.startFrame) {
+		energyFactor = efInfo.startFactor;
+	} else if (ecoFrame >= efInfo.endFrame) {
+		energyFactor = efInfo.endFactor;
+	} else {
 		energyFactor = efInfo.fraction * (ecoFrame - efInfo.startFrame) + efInfo.startFactor;
 	}
 
