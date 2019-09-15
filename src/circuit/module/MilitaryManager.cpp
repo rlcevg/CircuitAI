@@ -517,7 +517,7 @@ void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 
 void CMilitaryManager::MakeDefence(int cluster)
 {
-	MakeDefence(cluster, circuit->GetMetalManager()->GetClusters()[cluster].geoCentr);
+	MakeDefence(cluster, circuit->GetMetalManager()->GetClusters()[cluster].position);
 }
 
 void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
@@ -802,8 +802,8 @@ void CMilitaryManager::FindBestPos(F3Vec& posPath, AIFloat3& startPos, STerrainM
 //	}
 
 	CDefenceMatrix* defMat = defence;
-	CMetalData::MetalPredicate predicate = [defMat, terrainManager, area](const CMetalData::MetalNode& v) {
-		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(v.second);
+	CMetalData::PointPredicate predicate = [defMat, terrainManager, area](const int index) {
+		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(index);
 		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
 			if ((defPoint.cost > 100.0f) && terrainManager->CanMoveToPos(area, defPoint.position)) {
 				return true;
@@ -854,8 +854,8 @@ void CMilitaryManager::FillSafePos(const AIFloat3& pos, STerrainMapArea* area, F
 	}
 
 	CDefenceMatrix* defMat = defence;
-	CMetalData::MetalPredicate predicate = [defMat, terrainManager, area](const CMetalData::MetalNode& v) {
-		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(v.second);
+	CMetalData::PointPredicate predicate = [defMat, terrainManager, area](const int index) {
+		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(index);
 		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
 			if ((defPoint.cost > 100.0f) && terrainManager->CanMoveToPos(area, defPoint.position)) {
 				return true;
@@ -1025,7 +1025,7 @@ AIFloat3 CMilitaryManager::GetBigGunPos(CCircuitDef* bigDef) const
 		unsigned size = 1;
 		for (unsigned i = 0; i < clusters.size(); ++i) {
 			if (metalManager->IsClusterFinished(i)) {
-				pos += clusters[i].geoCentr;
+				pos += clusters[i].position;
 				++size;
 			}
 		}
@@ -1084,8 +1084,8 @@ void CMilitaryManager::UpdateDefenceTasks()
 			continue;
 		}
 		STerrainMapArea* area = dt->GetLeader()->GetArea();
-		CMetalData::MetalPredicate predicate = [em, tm, area, &spots, &clusters](const CMetalData::MetalNode& v) {
-			const CMetalData::MetalIndices& idcs = clusters[v.second].idxSpots;
+		CMetalData::PointPredicate predicate = [em, tm, area, &spots, &clusters](const int index) {
+			const CMetalData::MetalIndices& idcs = clusters[index].idxSpots;
 			for (int idx : idcs) {
 				if (!em->IsOpenSpot(idx) && tm->CanMoveToPos(area, spots[idx].position)) {
 					return true;
@@ -1096,7 +1096,7 @@ void CMilitaryManager::UpdateDefenceTasks()
 		AIFloat3 center(tm->GetTerrainWidth() / 2, 0, tm->GetTerrainHeight() / 2);
 		int index = mm->FindNearestCluster(center, predicate);
 		if (index >= 0) {
-			dt->SetPosition(clusters[index].geoCentr);
+			dt->SetPosition(clusters[index].position);
 		}
 
 		if (dt->GetPromote() != IFighterTask::FightType::ATTACK) {

@@ -10,8 +10,7 @@
 
 #include "AIFloat3.h"
 
-#include <boost/geometry.hpp>
-#include <boost/geometry/index/rtree.hpp>
+#include "kdtree/nanoflann.hpp"
 #include <boost/polygon/voronoi.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <vector>
@@ -19,20 +18,12 @@
 #include <memory>
 #include <set>
 
-namespace bg = boost::geometry;
-namespace bgi = boost::geometry::index;
-
 namespace circuit {
 
 class CRagMatrix;
 
 class CMetalData {
 private:
-	// NOTE: Pointtree is also a very pretty candidate for range searches.
-	// Because map coordinates are big enough we can use only integer part.
-	// @see https://github.com/Warzone2100/warzone2100/blob/master/src/pointtree.cpp
-	using point = bg::model::point<float, 2, bg::cs::cartesian>;
-	using box = bg::model::box<point>;
 	using vor_point = boost::polygon::point_data<int>;
 	using vor_diagram = boost::polygon::voronoi_diagram<double>;
 
@@ -54,12 +45,32 @@ public:
 		springai::AIFloat3 position;
 	};
 	using Metals = std::vector<SMetal>;
-	using MetalNode = std::pair<point, int>;  // spots indexer
-	using MetalPredicate = std::function<bool (MetalNode const& v)>;
+	template <class Derived>
+	struct SPointAdaptor {
+		const Derived& pts;
+		SPointAdaptor(const Derived& v) : pts(v) {}
+		/*
+		 * KDTree adapter interface
+		 */
+		// Must return the number of data points
+		inline size_t kdtree_get_point_count() const { return pts.size(); }
+		// Returns the dim'th component of the idx'th point in the class:
+			// Since this is inlined and the "dim" argument is typically an immediate value, the
+			//  "if/else's" are actually solved at compile time.
+		inline float kdtree_get_pt(const size_t idx, const size_t dim) const {
+			return (dim == 0) ? pts[idx].position.x : pts[idx].position.z;
+		}
+		// Optional bounding-box computation: return false to default to a standard bbox computation loop.
+			//   Return true if the BBOX was already computed by the class and returned in "bb" so it can be avoided to redo it again.
+			//   Look at bb.size() to find out the expected dimensionality (e.g. 2 or 3 for point clouds)
+		template <class BBOX>
+		bool kdtree_get_bbox(BBOX& /* bb */) const { return false; }
+	};
+	using PointPredicate = nanoflann::KNNCondResultSet<float, int>::Predicate;
 	using MetalIndices = std::vector<int>;
 	struct SCluster {
 		MetalIndices idxSpots;
-		springai::AIFloat3 geoCentr;
+		springai::AIFloat3 position;  // geoCentr
 		springai::AIFloat3 weightCentr;
 		float income;
 	};
@@ -82,16 +93,10 @@ public:
 
 	const Metals& GetSpots() const { return spots; }
 	const int FindNearestSpot(const springai::AIFloat3& pos) const;
-	const int FindNearestSpot(const springai::AIFloat3& pos, MetalPredicate& predicate) const;
-	const MetalIndices FindNearestSpots(const springai::AIFloat3& pos, int num) const;
-	const MetalIndices FindNearestSpots(const springai::AIFloat3& pos, int num, MetalPredicate& predicate) const;
-	const MetalIndices FindWithinDistanceSpots(const springai::AIFloat3& pos, float maxDistance) const;
-	const MetalIndices FindWithinRangeSpots(const springai::AIFloat3& posFrom, const springai::AIFloat3& posTo) const;
+	const int FindNearestSpot(const springai::AIFloat3& pos, PointPredicate& predicate) const;
 
 	const int FindNearestCluster(const springai::AIFloat3& pos) const;
-	const int FindNearestCluster(const springai::AIFloat3& pos, MetalPredicate& predicate) const;
-	const MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num) const;
-	const MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num, MetalPredicate& predicate) const;
+	const int FindNearestCluster(const springai::AIFloat3& pos, PointPredicate& predicate) const;
 
 	const CMetalData::Clusters& GetClusters() const { return clusters; }
 	const CMetalData::Graph& GetGraph() const { return clusterGraph; }
@@ -111,15 +116,22 @@ public:
 private:
 	bool isInitialized;
 	Metals spots;
-	// TODO: Find out more about bgi::rtree, bgi::linear, bgi::quadratic, bgi::rstar, packing algorithm?
-	using MetalTree = bgi::rtree<MetalNode, bgi::rstar<16, 4>>;
+	SPointAdaptor<Metals> spotsAdaptor;
+	using MetalTree = nanoflann::KDTreeSingleIndexAdaptor<
+			nanoflann::L2_Simple_Adaptor<float, SPointAdaptor<Metals> >,
+			SPointAdaptor<Metals>,
+			2 /* dim */, int>;
 	MetalTree metalTree;
 	float minIncome;
 	float avgIncome;
 	float maxIncome;
 
 	Clusters clusters;
-	using ClusterTree = bgi::rtree<MetalNode, bgi::quadratic<16>>;
+	SPointAdaptor<Clusters> clustersAdaptor;
+	using ClusterTree = nanoflann::KDTreeSingleIndexAdaptor<
+			nanoflann::L2_Simple_Adaptor<float, SPointAdaptor<Clusters> >,
+			SPointAdaptor<Clusters>,
+			2 /* dim */, int>;
 	ClusterTree clusterTree;
 
 	vor_diagram clustVoronoi;  // TODO: Do not save?

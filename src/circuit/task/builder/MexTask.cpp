@@ -105,8 +105,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CCircuitDef* mexDef = buildDef;
 	circuit->GetThreatMap()->SetThreatType(unit);
-	CMetalData::MetalPredicate predicate = [&spots, economyManager, map, mexDef, terrainManager, unit](CMetalData::MetalNode const& v) {
-		int index = v.second;
+	CMetalData::PointPredicate predicate = [&spots, economyManager, map, mexDef, terrainManager, unit](const int index) {
 		return (economyManager->IsAllyOpenSpot(index) &&
 				terrainManager->CanBeBuiltAtSafe(mexDef, spots[index].position) &&  // hostile environment
 				terrainManager->CanBuildAtSafe(unit, spots[index].position) &&

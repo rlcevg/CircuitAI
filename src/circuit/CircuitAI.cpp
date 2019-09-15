@@ -726,6 +726,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 
 	const char cmdName[]   = "~name";
 	const char cmdEnd[]    = "~end";
+	const char cmdKnn[]    = "~knn";
 //#endif
 
 	if (message[0] != '~') {
@@ -791,6 +792,15 @@ int CCircuitAI::Message(int playerId, const char* message)
 		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
 		LOG("%f, %f, %f, %i", endPos.x, endPos.y, endPos.z, pathfinder->GetDbgType());
 	}
+
+	// FIXME: DEBUG
+	else if ((strncmp(message, cmdKnn, 4) == 0)) {
+		const AIFloat3& dbgPos = map->GetMousePos();
+		int index = metalManager->FindNearestCluster(dbgPos);
+		drawer->AddPoint(metalManager->GetClusters()[index].position, "knn");
+		LOG("%f, %f, %f", dbgPos.x, dbgPos.y, dbgPos.z);
+	}
+	// FIXME: DEBUG
 #endif
 
 	return 0;  // signaling: OK

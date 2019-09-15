@@ -260,7 +260,7 @@ void CEnergyGrid::Init()
 		const CMetalData::EdgeDesc& edgeId = *edgeIt;
 		int idx0 = boost::source(edgeId, clusterGraph);
 		int idx1 = boost::target(edgeId, clusterGraph);
-		links.emplace_back(idx0, clusters[idx0].geoCentr, idx1, clusters[idx1].geoCentr);
+		links.emplace_back(idx0, clusters[idx0].position, idx1, clusters[idx1].position);
 	}
 	linkIt = boost::make_iterator_property_map(&links[0], boost::get(&CMetalData::SEdge::index, clusterGraph));
 
@@ -326,9 +326,9 @@ void CEnergyGrid::AddPylon(ICoreUnit::Id unitId, CCircuitDef::Id defId, const AI
 	for (; edgeIt != edgeEnd; ++edgeIt) {
 		const CMetalData::EdgeDesc& edgeId = *edgeIt;
 		int idxSource = boost::source(edgeId, clusterGraph);
-		const AIFloat3& P0 = clusters[idxSource].geoCentr;
+		const AIFloat3& P0 = clusters[idxSource].position;
 		int idxTarget = boost::target(edgeId, clusterGraph);
-		const AIFloat3& P1 = clusters[idxTarget].geoCentr;
+		const AIFloat3& P1 = clusters[idxTarget].position;
 
 		if ((P0.SqDistance2D(pos) < sqRange) || (P1.SqDistance2D(pos) < sqRange) ||
 			(((P0 + P1) * 0.5f).SqDistance2D(pos) < P0.SqDistance2D(P1) * 0.25f))
@@ -510,8 +510,8 @@ void CEnergyGrid::UpdateVis()
 	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
 	const CMetalData::Graph& clusterGraph = circuit->GetMetalManager()->GetGraph();
 	for (const CMetalData::EdgeDesc& edge : spanningTree) {
-		const AIFloat3& posFrom = clusters[boost::source(edge, clusterGraph)].geoCentr;
-		const AIFloat3& posTo = clusters[boost::target(edge, clusterGraph)].geoCentr;
+		const AIFloat3& posFrom = clusters[boost::source(edge, clusterGraph)].position;
+		const AIFloat3& posTo = clusters[boost::target(edge, clusterGraph)].position;
 		AIFloat3 pos0 = posFrom;
 		const AIFloat3 dir = (posTo - pos0) / 10;
 		pos0.y = map->GetElevationAt(pos0.x, pos0.z) + 19.0f;

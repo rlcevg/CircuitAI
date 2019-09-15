@@ -13,15 +13,17 @@
 namespace circuit {
 
 using namespace springai;
-
-// NOTE: micro-opt
-static std::vector<CMetalData::MetalNode> result_n;
+using namespace nanoflann;
 
 CMetalData::CMetalData()
 		: isInitialized(false)
+		, spotsAdaptor(spots)
+		, metalTree(2 /*dim*/, spotsAdaptor, KDTreeSingleIndexAdaptorParams(8 /*max leaf*/))
 		, minIncome(std::numeric_limits<float>::max())
 		, avgIncome(0.f)
 		, maxIncome(0.f)
+		, clustersAdaptor(clusters)
+		, clusterTree(2 /*dim*/, clustersAdaptor, KDTreeSingleIndexAdaptorParams(2 /*max leaf*/))
 		, isClusterizing(false)
 {
 }
@@ -33,15 +35,8 @@ CMetalData::~CMetalData()
 
 void CMetalData::Init(const Metals& spots)
 {
-	if (isInitialized) {
-		metalTree.clear();
-	}
-
 	this->spots = spots;
-	int i = 0;
 	for (auto& spot : spots) {
-		point p(spot.position.x, spot.position.z);
-		metalTree.insert(std::make_pair(p, i++));
 		minIncome = std::min(minIncome, spot.income);
 		maxIncome = std::max(maxIncome, spot.income);
 		avgIncome += spot.income;
@@ -49,153 +44,62 @@ void CMetalData::Init(const Metals& spots)
 	if (!spots.empty()) {
 		avgIncome /= spots.size();
 	}
+	metalTree.buildIndex();
 	isInitialized = true;
 }
 
 const int CMetalData::FindNearestSpot(const AIFloat3& pos) const
 {
-//	std::vector<MetalNode> result_n;
-	metalTree.query(bgi::nearest(point(pos.x, pos.z), 1), std::back_inserter(result_n));
+	float query_pt[2] = {pos.x, pos.z};
+	int ret_index;
+	float out_dist_sqr;
 
-	if (!result_n.empty()) {
-		int result = result_n.front().second;
-		result_n.clear();
-		return result;
+	if (metalTree.knnSearch(&query_pt[0], 1, &ret_index, &out_dist_sqr) > 0) {
+		return ret_index;
 	}
 	return -1;
 }
 
-const int CMetalData::FindNearestSpot(const AIFloat3& pos, MetalPredicate& predicate) const
+const int CMetalData::FindNearestSpot(const AIFloat3& pos, PointPredicate& predicate) const
 {
-//	std::vector<MetalNode> result_n;
-	metalTree.query(bgi::nearest(point(pos.x, pos.z), 1) && bgi::satisfies(predicate), std::back_inserter(result_n));
+	float query_pt[2] = {pos.x, pos.z};
+	int ret_index;
+	float out_dist_sqr;
 
-	if (!result_n.empty()) {
-		int result = result_n.front().second;
-		result_n.clear();
-		return result;
+	KNNCondResultSet<float, int> resultSet(1, predicate);
+	resultSet.init(&ret_index, &out_dist_sqr);
+
+	if (metalTree.findNeighbors(resultSet, &query_pt[0], SearchParams())) {
+		return ret_index;
 	}
 	return -1;
-}
-
-const CMetalData::MetalIndices CMetalData::FindNearestSpots(const AIFloat3& pos, int num) const
-{
-//	std::vector<MetalNode> result_n;
-//	result_n.reserve(num);
-	metalTree.query(bgi::nearest(point(pos.x, pos.z), num), std::back_inserter(result_n));
-
-	MetalIndices result;
-	result.reserve(result_n.size());
-	for (auto& node : result_n) {
-		result.push_back(node.second);
-	}
-	result_n.clear();
-	return result;
-}
-
-const CMetalData::MetalIndices CMetalData::FindNearestSpots(const AIFloat3& pos, int num, MetalPredicate& predicate) const
-{
-//	std::vector<MetalNode> result_n;
-//	result_n.reserve(num);
-	metalTree.query(bgi::nearest(point(pos.x, pos.z), num) && bgi::satisfies(predicate), std::back_inserter(result_n));
-
-	MetalIndices result;
-	result.reserve(result_n.size());
-	for (auto& node : result_n) {
-		result.push_back(node.second);
-	}
-	result_n.clear();
-	return result;
-}
-
-const CMetalData::MetalIndices CMetalData::FindWithinDistanceSpots(const AIFloat3& pos, float maxDistance) const
-{
-//	std::vector<MetalNode> result_n;
-	point sought = point(pos.x, pos.z);
-	box enc_box(point(pos.x - maxDistance, pos.z - maxDistance), point(pos.x + maxDistance, pos.z + maxDistance));
-	auto predicate = [&maxDistance, &sought](MetalNode const& v) {
-		return bg::distance(v.first, sought) < maxDistance;
-	};
-	metalTree.query(bgi::within(enc_box) && bgi::satisfies(predicate), std::back_inserter(result_n));
-
-	MetalIndices result;
-	result.reserve(result_n.size());
-	for (auto& node : result_n) {
-		result.push_back(node.second);
-	}
-	result_n.clear();
-	return result;
-}
-
-const CMetalData::MetalIndices CMetalData::FindWithinRangeSpots(const AIFloat3& posFrom, const AIFloat3& posTo) const
-{
-	box query_box(point(posFrom.x, posFrom.z), point(posTo.x, posTo.z));
-//	std::vector<MetalNode> result_n;
-	metalTree.query(bgi::within(query_box), std::back_inserter(result_n));
-
-	MetalIndices result;
-	result.reserve(result_n.size());
-	for (auto& node : result_n) {
-		result.push_back(node.second);
-	}
-	result_n.clear();
-	return result;
 }
 
 const int CMetalData::FindNearestCluster(const AIFloat3& pos) const
 {
-//	std::vector<MetalNode> result_n;
-	clusterTree.query(bgi::nearest(point(pos.x, pos.z), 1), std::back_inserter(result_n));
+	float query_pt[2] = {pos.x, pos.z};
+	int ret_index;
+	float out_dist_sqr;
 
-	if (!result_n.empty()) {
-		int result = result_n.front().second;
-		result_n.clear();
-		return result;
+	if (clusterTree.knnSearch(&query_pt[0], 1, &ret_index, &out_dist_sqr) > 0) {
+		return ret_index;
 	}
 	return -1;
 }
 
-const int CMetalData::FindNearestCluster(const AIFloat3& pos, MetalPredicate& predicate) const
+const int CMetalData::FindNearestCluster(const AIFloat3& pos, PointPredicate& predicate) const
 {
-//	std::vector<MetalNode> result_n;
-	clusterTree.query(bgi::nearest(point(pos.x, pos.z), 1) && bgi::satisfies(predicate), std::back_inserter(result_n));
+	float query_pt[2] = {pos.x, pos.z};
+	int ret_index;
+	float out_dist_sqr;
 
-	if (!result_n.empty()) {
-		int result = result_n.front().second;
-		result_n.clear();
-		return result;
+	KNNCondResultSet<float, int> resultSet(1, predicate);
+	resultSet.init(&ret_index, &out_dist_sqr);
+
+	if (clusterTree.findNeighbors(resultSet, &query_pt[0], SearchParams())) {
+		return ret_index;
 	}
 	return -1;
-}
-
-const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& pos, int num) const
-{
-//	std::vector<MetalNode> result_n;
-//	result_n.reserve(num);
-	clusterTree.query(bgi::nearest(point(pos.x, pos.z), num), std::back_inserter(result_n));
-
-	MetalIndices result;
-	result.reserve(result_n.size());
-	for (auto& node : result_n) {
-		result.push_back(node.second);
-	}
-	result_n.clear();
-	return result;
-}
-
-const CMetalData::MetalIndices CMetalData::FindNearestClusters(const AIFloat3& pos, int num, MetalPredicate& predicate) const
-{
-//	std::vector<MetalNode> result_n;
-//	result_n.reserve(num);
-	clusterTree.query(bgi::nearest(point(pos.x, pos.z), num) && bgi::satisfies(predicate), std::back_inserter(result_n));
-
-	MetalIndices result;
-	result.reserve(result_n.size());
-	for (auto& node : result_n) {
-		result.push_back(node.second);
-	}
-	result_n.clear();
-	return result;
 }
 
 void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distMatrix)
@@ -209,7 +113,6 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 	// Fill cluster structures, calculate centers
 	int nclusters = iclusters.size();
 	clusters.resize(nclusters);
-	clusterTree.clear();
 	CEncloseCircle enclose;
 	for (int i = 0; i < nclusters; ++i) {
 		SCluster& c = clusters[i];
@@ -229,10 +132,10 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 		c.weightCentr = centr;
 
 		enclose.MakeCircle(points);
-		c.geoCentr = enclose.GetCenter();
-		c.geoCentr.y = centr.y;
-		clusterTree.insert(std::make_pair(point(c.geoCentr.x, c.geoCentr.z), i));
+		c.position = enclose.GetCenter();
+		c.position.y = centr.y;
 	}
+	clusterTree.buildIndex();
 
 	// NOTE: C++ poly2tri (https://code.google.com/p/poly2tri/) is a nice candidate for triangulation,
 	//       but boost has voronoi_diagram. Also for boost "The library allows users to implement their own
@@ -241,7 +144,7 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 	std::vector<vor_point> vorPoints;
 	vorPoints.reserve(nclusters);
 	for (SCluster& c : clusters) {
-		vorPoints.push_back(vor_point(c.geoCentr.x, c.geoCentr.z));
+		vorPoints.push_back(vor_point(c.position.x, c.position.z));
 	}
 	clustVoronoi.clear();
 	boost::polygon::construct_voronoi(vorPoints.begin(), vorPoints.end(), &clustVoronoi);
@@ -273,9 +176,9 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 		for (std::size_t C : verts[A]) {
 			std::set<std::size_t>& vs = verts[C];
 			if (vs.find(B) != vs.end()) {
-				float AB = clusters[A].geoCentr.distance(clusters[B].geoCentr);
-				float BC = clusters[B].geoCentr.distance(clusters[C].geoCentr);
-				float CA = clusters[C].geoCentr.distance(clusters[A].geoCentr);
+				float AB = clusters[A].position.distance(clusters[B].position);
+				float BC = clusters[B].position.distance(clusters[C].position);
+				float CA = clusters[C].position.distance(clusters[A].position);
 				if (AB > (BC + CA) * 0.9f) {
 					return true;
 				}
@@ -297,8 +200,8 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 			const CMetalData::SCluster& clB = clusters[B];
 			SEdge& edge = g[edgeId];
 			edge.index = edgeIndex++;
-			edge.weight = clA.geoCentr.distance(clB.geoCentr) / (clA.income + clB.income) * (clA.idxSpots.size() + clB.idxSpots.size());
-			edge.center = (clA.geoCentr + clB.geoCentr) * 0.5f;
+			edge.weight = clA.position.distance(clB.position) / (clA.income + clB.income) * (clA.idxSpots.size() + clB.idxSpots.size());
+			edge.center = (clA.position + clB.position) * 0.5f;
 		}
 	}
 	clusterGraph = g;

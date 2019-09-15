@@ -471,7 +471,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 				CMetalManager* metalManager = circuit->GetMetalManager();
 				int index = metalManager->FindNearestCluster(pos);
 				if (index >= 0) {
-					const AIFloat3& clPos = metalManager->GetClusters()[index].geoCentr;
+					const AIFloat3& clPos = metalManager->GetClusters()[index].position;
 					AIFloat3 dir = clPos - pos;
 					float dist = ourRange /*+ pylonRange*/ + pylonRange * 1.8f;
 					if (dir.SqLength2D() < dist * dist) {

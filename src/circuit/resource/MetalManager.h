@@ -41,33 +41,15 @@ public:
 	const int FindNearestSpot(const springai::AIFloat3& pos) const {
 		return metalData->FindNearestSpot(pos);
 	}
-	const int FindNearestSpot(const springai::AIFloat3& pos, CMetalData::MetalPredicate& predicate) const {
+	const int FindNearestSpot(const springai::AIFloat3& pos, CMetalData::PointPredicate& predicate) const {
 		return metalData->FindNearestSpot(pos, predicate);
-	}
-	const CMetalData::MetalIndices FindNearestSpots(const springai::AIFloat3& pos, int num) const {
-		return metalData->FindNearestSpots(pos, num);
-	}
-	const CMetalData::MetalIndices FindNearestSpots(const springai::AIFloat3& pos, int num, CMetalData::MetalPredicate& predicate) const {
-		return metalData->FindNearestSpots(pos, num, predicate);
-	}
-	const CMetalData::MetalIndices FindWithinDistanceSpots(const springai::AIFloat3& pos, float maxDistance) const {
-		return metalData->FindWithinDistanceSpots(pos, maxDistance);
-	}
-	const CMetalData::MetalIndices FindWithinRangeSpots(const springai::AIFloat3& posFrom, const springai::AIFloat3& posTo) const {
-		return metalData->FindWithinRangeSpots(posFrom, posTo);
 	}
 
 	const int FindNearestCluster(const springai::AIFloat3& pos) const {
 		return metalData->FindNearestCluster(pos);
 	}
-	const int FindNearestCluster(const springai::AIFloat3& pos, CMetalData::MetalPredicate& predicate) const {
+	const int FindNearestCluster(const springai::AIFloat3& pos, CMetalData::PointPredicate& predicate) const {
 		return metalData->FindNearestCluster(pos, predicate);
-	}
-	const CMetalData::MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num) const {
-		return metalData->FindNearestClusters(pos, num);
-	}
-	const CMetalData::MetalIndices FindNearestClusters(const springai::AIFloat3& pos, int num, CMetalData::MetalPredicate& predicate) const {
-		return metalData->FindNearestClusters(pos, num, predicate);
 	}
 
 	const CMetalData::Clusters& GetClusters() const { return metalData->GetClusters(); }

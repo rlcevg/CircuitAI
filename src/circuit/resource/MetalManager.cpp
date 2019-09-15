@@ -66,7 +66,7 @@ struct mex_tree {
 		, pclusters(&cs)
 	{}
 	bool operator()(const CMetalData::VertexDesc u) const {
-		return threatMap->GetThreatAt((*pclusters)[u].geoCentr) <= THREAT_MIN;
+		return threatMap->GetThreatAt((*pclusters)[u].position) <= THREAT_MIN;
 	}
 	CThreatMap* threatMap;
 	const CMetalData::Clusters* pclusters;

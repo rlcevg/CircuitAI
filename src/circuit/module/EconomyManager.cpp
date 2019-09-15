@@ -736,7 +736,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		int index = metalManager->FindNearestCluster(startPos);
 		if (index >= 0) {
 			const CMetalData::Clusters& clusters = metalManager->GetClusters();
-			buildPos = clusters[index].geoCentr;
+			buildPos = clusters[index].position;
 
 			// TODO: Calc enemy vector and move position into opposite direction
 			AIFloat3 mapCenter(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
@@ -865,21 +865,21 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		if (!metalManager->IsClusterFinished(i)) {
 			continue;
 		}
-		const float sqDist = center.SqDistance2D(clusters[i].geoCentr);
+		const float sqDist = center.SqDistance2D(clusters[i].position);
 		if (minSqDist > sqDist) {
 			minSqDist = sqDist;
-			pos = clusters[i].geoCentr;
+			pos = clusters[i].position;
 		}
 	}
 
-	CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
-		return clusterInfos[v.second].factory == nullptr;
+	CMetalData::PointPredicate predicate = [this](const int index) {
+		return clusterInfos[index].factory == nullptr;
 	};
 	int index = metalManager->FindNearestCluster(pos, predicate);
 	if (index < 0) {
 		return nullptr;
 	}
-	AIFloat3 buildPos = clusters[index].geoCentr;
+	AIFloat3 buildPos = clusters[index].position;
 
 	const bool isStart = (factoryManager->GetFactoryCount() == 0);
 	CCircuitDef* facDef = factoryManager->GetFactoryToBuild(buildPos, isStart);
