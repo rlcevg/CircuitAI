@@ -11,7 +11,6 @@
 #include "AIFloat3.h"
 
 #include "kdtree/nanoflann.hpp"
-#include <boost/polygon/voronoi.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <vector>
 #include <atomic>
@@ -23,10 +22,6 @@ namespace circuit {
 class CRagMatrix;
 
 class CMetalData {
-private:
-	using vor_point = boost::polygon::point_data<int>;
-	using vor_diagram = boost::polygon::voronoi_diagram<double>;
-
 public:
 	struct SEdge {
 		SEdge() : index(-1), weight(.0f) {}
@@ -134,7 +129,6 @@ private:
 			2 /* dim */, int>;
 	ClusterTree clusterTree;
 
-	vor_diagram clustVoronoi;  // TODO: Do not save?
 	Graph clusterGraph;
 
 	std::atomic<bool> isClusterizing;

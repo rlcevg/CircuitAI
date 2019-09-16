@@ -9,6 +9,7 @@
 #include "util/math/HierarchCluster.h"
 #include "util/math/EncloseCircle.h"
 #include "util/utils.h"
+#include "triangulate/delaunator.hpp"
 
 namespace circuit {
 
@@ -66,10 +67,7 @@ const int CMetalData::FindNearestSpot(const AIFloat3& pos, PointPredicate& predi
 	int ret_index;
 	float out_dist_sqr;
 
-	KNNCondResultSet<float, int> resultSet(1, predicate);
-	resultSet.init(&ret_index, &out_dist_sqr);
-
-	if (metalTree.findNeighbors(resultSet, &query_pt[0], SearchParams())) {
+	if (metalTree.knnSearch(&query_pt[0], 1, &ret_index, &out_dist_sqr, predicate) > 0) {
 		return ret_index;
 	}
 	return -1;
@@ -93,10 +91,7 @@ const int CMetalData::FindNearestCluster(const AIFloat3& pos, PointPredicate& pr
 	int ret_index;
 	float out_dist_sqr;
 
-	KNNCondResultSet<float, int> resultSet(1, predicate);
-	resultSet.init(&ret_index, &out_dist_sqr);
-
-	if (clusterTree.findNeighbors(resultSet, &query_pt[0], SearchParams())) {
+	if (clusterTree.knnSearch(&query_pt[0], 1, &ret_index, &out_dist_sqr, predicate) > 0) {
 		return ret_index;
 	}
 	return -1;
@@ -137,41 +132,36 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 	}
 	clusterTree.buildIndex();
 
-	// NOTE: C++ poly2tri (https://code.google.com/p/poly2tri/) is a nice candidate for triangulation,
-	//       but boost has voronoi_diagram. Also for boost "The library allows users to implement their own
-	//       Voronoi diagram / Delaunay triangulation construction routines based on the Voronoi builder API".
-	// Build Voronoi diagram out of clusters
-	std::vector<vor_point> vorPoints;
-	vorPoints.reserve(nclusters);
+	// Clusters triangulation
+	std::vector<double> coords;
+	coords.reserve(nclusters * 2);  // 2D
 	for (SCluster& c : clusters) {
-		vorPoints.push_back(vor_point(c.position.x, c.position.z));
+		coords.push_back(c.position.x);
+		coords.push_back(c.position.z);
 	}
-	clustVoronoi.clear();
-	boost::polygon::construct_voronoi(vorPoints.begin(), vorPoints.end(), &clustVoronoi);
-
-	// Convert voronoi_diagram to "Delaunay" in BGL (Boost Graph Library)
+	delaunator::Delaunator d(coords);
 	std::map<std::size_t, std::set<std::size_t>> verts;
-	Graph g(nclusters);
-	unsigned edgeCount = 0;  // counts each edge twice
-	std::vector<std::pair<std::size_t, std::size_t>> edges;
-	edges.reserve(clustVoronoi.edges().size() / 2);
-	for (auto& edge : clustVoronoi.edges()) {
-		std::size_t idx0 = edge.cell()->source_index();
-		std::size_t idx1 = edge.twin()->cell()->source_index();
-
-		auto it = verts.find(idx0);
+	auto adjacent = [&verts](std::size_t A, std::size_t B, std::size_t C) {
+		auto it = verts.find(A);
 		if (it != verts.end()) {
-			it->second.insert(idx1);
+			it->second.insert(B);
+			it->second.insert(C);
 		} else {
 			std::set<std::size_t> v;
-			v.insert(idx1);
-			verts[idx0] = v;
+			v.insert(B);
+			v.insert(C);
+			verts[A] = v;
 		}
-
-		if ((edgeCount++ % 2 == 0)/* && edge.is_finite()*/) {  // FIXME: No docs says that odd edge is a twin of even
-			edges.push_back(std::make_pair(idx0, idx1));
-		}
+	};
+	for (std::size_t i = 0; i < d.triangles.size(); i += 3) {
+		std::size_t A = d.triangles[i + 0];
+		std::size_t B = d.triangles[i + 1];
+		std::size_t C = d.triangles[i + 2];
+		adjacent(A, B, C);
+		adjacent(B, C, A);
+		adjacent(C, A, B);
 	}
+	Graph g(nclusters);
 	auto badEdge = [&verts, this](std::size_t A, std::size_t B) {
 		for (std::size_t C : verts[A]) {
 			std::set<std::size_t>& vs = verts[C];
@@ -187,10 +177,9 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 		return false;
 	};
 	int edgeIndex = 0;
-	for (std::pair<std::size_t, std::size_t>& e : edges) {
-		std::size_t A = e.first, B = e.second;
+	auto addEdge = [this, &badEdge, &edgeIndex, &g](std::size_t A, std::size_t B) {
 		if (badEdge(A, B)) {
-			continue;
+			return;
 		}
 		EdgeDesc edgeId;
 		bool ok;
@@ -203,6 +192,15 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 			edge.weight = clA.position.distance(clB.position) / (clA.income + clB.income) * (clA.idxSpots.size() + clB.idxSpots.size());
 			edge.center = (clA.position + clB.position) * 0.5f;
 		}
+	};
+	// TODO: Unique edges only
+	for (std::size_t i = 0; i < d.triangles.size(); i += 3) {
+		std::size_t A = d.triangles[i + 0];
+		std::size_t B = d.triangles[i + 1];
+		std::size_t C = d.triangles[i + 2];
+		addEdge(A, B);
+		addEdge(B, C);
+		addEdge(C, A);
 	}
 	clusterGraph = g;
 

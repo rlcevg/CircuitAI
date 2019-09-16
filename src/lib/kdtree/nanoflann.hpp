@@ -1271,9 +1271,18 @@ public:
    * only if the number of elements in the tree is less than `num_closest`.
    */
   size_t knnSearch(const ElementType *query_point, const size_t num_closest,
-                   IndexType *out_indices, DistanceType *out_distances_sq,
-                   const int /* nChecks_IGNORED */ = 10) const {
+                   IndexType *out_indices, DistanceType *out_distances_sq) const {
     nanoflann::KNNResultSet<DistanceType, IndexType> resultSet(num_closest);
+    resultSet.init(out_indices, out_distances_sq);
+    this->findNeighbors(resultSet, query_point, nanoflann::SearchParams());
+    return resultSet.size();
+  }
+
+  template <class Condition>
+  size_t knnSearch(const ElementType *query_point, const size_t num_closest,
+                   IndexType *out_indices, DistanceType *out_distances_sq,
+                   Condition& predicate) const {
+    nanoflann::KNNCondResultSet<DistanceType, IndexType> resultSet(num_closest, predicate);
     resultSet.init(out_indices, out_distances_sq);
     this->findNeighbors(resultSet, query_point, nanoflann::SearchParams());
     return resultSet.size();
