@@ -25,6 +25,8 @@ CMetalData::CMetalData()
 		, maxIncome(0.f)
 		, clustersAdaptor(clusters)
 		, clusterTree(2 /*dim*/, clustersAdaptor, KDTreeSingleIndexAdaptorParams(2 /*max leaf*/))
+		, weights(newClusterGraph)
+		, edgeData(newClusterGraph)
 		, isClusterizing(false)
 {
 }
@@ -106,7 +108,9 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 	const CHierarchCluster::Clusters& iclusters = clust.Clusterize(*distMatrix, maxDistance);
 
 	// Fill cluster structures, calculate centers
-	int nclusters = iclusters.size();
+	const int nclusters = iclusters.size();
+	newClusterGraph.clear();
+	newClusterGraph.reserveNode(nclusters);
 	clusters.resize(nclusters);
 	CEncloseCircle enclose;
 	for (int i = 0; i < nclusters; ++i) {
@@ -129,6 +133,8 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 		enclose.MakeCircle(points);
 		c.position = enclose.GetCenter();
 		c.position.y = centr.y;
+
+		newClusterGraph.addNode();
 	}
 	clusterTree.buildIndex();
 
@@ -140,47 +146,50 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 		coords.push_back(c.position.z);
 	}
 	delaunator::Delaunator d(coords);
-	std::map<std::size_t, std::set<std::size_t>> verts;
-	auto adjacent = [&verts](std::size_t A, std::size_t B, std::size_t C) {
-		auto it = verts.find(A);
-		if (it != verts.end()) {
-			it->second.insert(B);
-			it->second.insert(C);
-		} else {
-			std::set<std::size_t> v;
-			v.insert(B);
-			v.insert(C);
-			verts[A] = v;
+	using DEdge = std::pair<std::size_t, std::size_t>;
+	std::map<DEdge, std::set<std::size_t>> edges;
+	auto adjacent = [&edges](std::size_t A, std::size_t B, std::size_t C) {
+		if (A > B) {  // undirected edges (i < j)
+			std::swap(A, B);
 		}
+		edges[std::make_pair(A, B)].insert(C);
 	};
 	for (std::size_t i = 0; i < d.triangles.size(); i += 3) {
-		std::size_t A = d.triangles[i + 0];
-		std::size_t B = d.triangles[i + 1];
-		std::size_t C = d.triangles[i + 2];
+		const std::size_t A = d.triangles[i + 0];
+		const std::size_t B = d.triangles[i + 1];
+		const std::size_t C = d.triangles[i + 2];
 		adjacent(A, B, C);
 		adjacent(B, C, A);
 		adjacent(C, A, B);
 	}
 	Graph g(nclusters);
-	auto badEdge = [&verts, this](std::size_t A, std::size_t B) {
-		for (std::size_t C : verts[A]) {
-			std::set<std::size_t>& vs = verts[C];
-			if (vs.find(B) != vs.end()) {
-				float AB = clusters[A].position.distance(clusters[B].position);
-				float BC = clusters[B].position.distance(clusters[C].position);
-				float CA = clusters[C].position.distance(clusters[A].position);
-				if (AB > (BC + CA) * 0.9f) {
-					return true;
-				}
+	auto badEdge = [&edges, this](const DEdge e, const std::set<std::size_t>& vs) {
+		float AB = clusters[e.first].position.distance(clusters[e.second].position);
+		for (std::size_t C : vs) {
+			float AC = clusters[e.first].position.distance(clusters[C].position);
+			float BC = clusters[e.second].position.distance(clusters[C].position);
+			if (AB > (BC + AC) * 0.9f) {
+				return true;
 			}
 		}
 		return false;
 	};
 	int edgeIndex = 0;
-	auto addEdge = [this, &badEdge, &edgeIndex, &g](std::size_t A, std::size_t B) {
-		if (badEdge(A, B)) {
-			return;
+	for (auto kv : edges) {
+		const DEdge& e = kv.first;
+		const std::set<std::size_t>& vs = kv.second;
+		if (badEdge(e, vs)) {
+			continue;
 		}
+		const std::size_t A = e.first;
+		const std::size_t B = e.second;
+		NewGraph::Edge edge = newClusterGraph.addEdge(NewGraph::nodeFromId(A), NewGraph::nodeFromId(B));
+
+		const CMetalData::SCluster& clA = clusters[A];
+		const CMetalData::SCluster& clB = clusters[B];
+		weights[edge] = clA.position.distance(clB.position) / (clA.income + clB.income) * (clA.idxSpots.size() + clB.idxSpots.size());
+		edgeData[edge].center = (clA.position + clB.position) * 0.5f;
+
 		EdgeDesc edgeId;
 		bool ok;
 		std::tie(edgeId, ok) = boost::add_edge(A, B, g);
@@ -192,15 +201,6 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 			edge.weight = clA.position.distance(clB.position) / (clA.income + clB.income) * (clA.idxSpots.size() + clB.idxSpots.size());
 			edge.center = (clA.position + clB.position) * 0.5f;
 		}
-	};
-	// TODO: Unique edges only
-	for (std::size_t i = 0; i < d.triangles.size(); i += 3) {
-		std::size_t A = d.triangles[i + 0];
-		std::size_t B = d.triangles[i + 1];
-		std::size_t C = d.triangles[i + 2];
-		addEdge(A, B);
-		addEdge(B, C);
-		addEdge(C, A);
 	}
 	clusterGraph = g;
 

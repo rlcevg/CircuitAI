@@ -11,6 +11,8 @@
 #include "AIFloat3.h"
 
 #include "kdtree/nanoflann.hpp"
+#include "lemon/concepts/graph.h"
+#include "lemon/smart_graph.h"
 #include <boost/graph/adjacency_list.hpp>
 #include <vector>
 #include <atomic>
@@ -34,6 +36,9 @@ public:
 										boost::no_property, SEdge>;
 	using VertexDesc = boost::graph_traits<Graph>::vertex_descriptor;
 	using EdgeDesc = boost::graph_traits<Graph>::edge_descriptor;
+	using NewGraph = lemon::SmartGraph;
+	using WeightMap = NewGraph::EdgeMap<float>;
+	using EdgeDataMap = NewGraph::EdgeMap<SEdge>;
 
 	struct SMetal {
 		float income;
@@ -130,6 +135,11 @@ private:
 	ClusterTree clusterTree;
 
 	Graph clusterGraph;
+public:
+	NewGraph newClusterGraph;
+	WeightMap weights;
+	EdgeDataMap edgeData;
+private:
 
 	std::atomic<bool> isClusterizing;
 };

@@ -1,5 +1,5 @@
 /*
- * ResourceManager.cpp
+ * MetalManager.cpp
  *
  *  Created on: Dec 9, 2014
  *      Author: rlcevg
@@ -18,58 +18,53 @@
 #include "Pathing.h"
 #include "Map.h"
 
-#include <boost/graph/dijkstra_shortest_paths.hpp>
-#include <boost/graph/filtered_graph.hpp>
+#include "lemon/dijkstra.h"
+#include "lemon/adaptors.h"
 
 namespace circuit {
 
 using namespace springai;
 
-class CExitDSP: public std::exception {
+class MexMap : public lemon::MapBase<CMetalData::NewGraph::Node, bool> {
 public:
-	CExitDSP() : std::exception() {}
-	virtual const char* what() const throw() {
-		return "DSP goal has been reached";
+	MexMap(CThreatMap* tm, const CMetalData::Clusters& cs)
+		: threatMap(tm)
+		, clusters(cs)
+	{}
+	Value operator[](Key k) const {
+		return (*this)[CMetalData::NewGraph::id(k)];
 	}
+	Value operator[](int u) const {
+		return threatMap->GetThreatAt(clusters[u].position) <= THREAT_MIN;
+	}
+private:
+	CThreatMap* threatMap;
+	const CMetalData::Clusters& clusters;
 };
 
-class detect_cluster: public boost::dijkstra_visitor<> {
+class DetectCluster : public lemon::MapBase<CMetalData::NewGraph::Node, bool> {
 public:
-	detect_cluster(CMetalManager* mgr, CMetalManager::MexPredicate& pred, std::vector<int>& outIdxs)
+	DetectCluster(CMetalManager* mgr, CMetalManager::MexPredicate& pred, std::vector<int>& outIdxs)
 		: manager(mgr)
 		, predicate(pred)
-		, pindices(&outIdxs)
+		, indices(outIdxs)
 	{}
-    template <class Vertex, class Graph>
-	void examine_vertex(const Vertex u, const Graph& g) {
+	bool operator[](Key k) const {
+		const int u = CMetalData::NewGraph::id(k);
 		if (manager->IsClusterQueued(u) || manager->IsClusterFinished(u)) {
-			return;
+			return false;
 		}
 		for (int index : manager->GetClusters()[u].idxSpots) {
 			if (predicate(index)) {
-				pindices->push_back(index);
+				indices.push_back(index);
 			}
 		}
-		if (!pindices->empty()) {
-			throw CExitDSP();
-		}
+		return !indices.empty();
 	}
+private:
 	CMetalManager* manager;
 	CMetalManager::MexPredicate predicate;
-	std::vector<int>* pindices;
-};
-
-struct mex_tree {
-	mex_tree() : threatMap(nullptr), pclusters(nullptr) {}
-	mex_tree(CThreatMap* tm, const CMetalData::Clusters& cs)
-		: threatMap(tm)
-		, pclusters(&cs)
-	{}
-	bool operator()(const CMetalData::VertexDesc u) const {
-		return threatMap->GetThreatAt((*pclusters)[u].position) <= THREAT_MIN;
-	}
-	CThreatMap* threatMap;
-	const CMetalData::Clusters* pclusters;
+	std::vector<int>& indices;
 };
 
 CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData)
@@ -296,7 +291,7 @@ void CMetalManager::MarkAllyMexes(const std::vector<CAllyUnit*>& mexes)
 				*d_first++ = *first2;  // old unit
 				++first1;  // advance mexes
 			}
-            ++first2;  // advance prevUnits
+			++first2;  // advance prevUnits
 		}
 	}
 	while (first2 != last2) {  // everything else in first2..last2 is dead units
@@ -313,22 +308,26 @@ bool CMetalManager::IsMexInFinished(int index) const
 
 int CMetalManager::GetMexToBuild(const AIFloat3& pos, MexPredicate& predicate)
 {
+	MexMap filter(circuit->GetThreatMap(), GetClusters());
 	int index = FindNearestCluster(pos);
-	if (index < 0) {
+	if (index < 0 || !filter[index]) {
 		return -1;
 	}
 	MarkAllyMexes();
 
-	mex_tree filter(circuit->GetThreatMap(), GetClusters());
-	const CMetalData::Graph& graph = GetGraph();
-	boost::filtered_graph<CMetalData::Graph, boost::keep_all, mex_tree> fg(graph, boost::keep_all(), filter);
-	auto w_map = boost::get(&CMetalData::SEdge::weight, fg);
+	// FIXME: DEBUG
 	static std::vector<int> indices;  // NOTE: micro-opt
-	detect_cluster vis(this, predicate, indices);
 	int result = -1;
-	try {
-		boost::dijkstra_shortest_paths(fg, boost::vertex(index, graph), boost::weight_map(w_map).visitor(vis));
-	} catch (const CExitDSP& e) {
+
+	auto fg = lemon::filterNodes(metalData->newClusterGraph, filter);
+	lemon::Dijkstra<typeof(fg), CMetalData::WeightMap> shortPath(fg, metalData->weights);
+
+	shortPath.init();
+	shortPath.addSource(CMetalData::NewGraph::nodeFromId(index));
+	DetectCluster vis(this, predicate, indices);
+	CMetalData::NewGraph::Node target = shortPath.start(vis);
+
+	if (target != lemon::INVALID) {
 		float sqMinDist = std::numeric_limits<float>::max();
 		for (int index : indices) {
 			float sqDist = GetSpots()[index].position.SqDistance2D(pos);
@@ -338,6 +337,7 @@ int CMetalManager::GetMexToBuild(const AIFloat3& pos, MexPredicate& predicate)
 			}
 		}
 	}
+	// FIXME: DEBUG
 
 	indices.clear();
 	return result;

@@ -1,12 +1,12 @@
 /*
- * ResourceManager.h
+ * MetalManager.h
  *
  *  Created on: Dec 9, 2014
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_RESOURCEMANAGER_H_
-#define SRC_CIRCUIT_RESOURCEMANAGER_H_
+#ifndef SRC_CIRCUIT_METALMANAGER_H_
+#define SRC_CIRCUIT_METALMANAGER_H_
 
 #include "resource/MetalData.h"
 #include "unit/CircuitUnit.h"
@@ -103,4 +103,4 @@ private:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_RESOURCEMANAGER_H_
+#endif // SRC_CIRCUIT_METALMANAGER_H_
