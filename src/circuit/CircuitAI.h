@@ -62,7 +62,13 @@ class CEnemyUnit;
 class CDebugDrawer;
 #endif
 
-constexpr char version[]{"1.0.6"};
+/*
+ * Эти парни не созданы чувствовать!
+ * Ледяная душа не боится жути!
+ * Только под ногами их крутятся:
+ * По оси земля, по полу полу-люди!
+ */
+constexpr char version[]{"1.0.7"};
 
 class CException: public std::exception {
 public:

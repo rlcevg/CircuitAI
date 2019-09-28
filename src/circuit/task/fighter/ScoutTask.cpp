@@ -138,7 +138,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	}
 	AIFloat3 startPos = pos;
 	AIFloat3 endPos = position;
-//	pPath->clear();
+//	pPath->clear();  // cleared by predecessor logic
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(unit, threatMap, frame);
