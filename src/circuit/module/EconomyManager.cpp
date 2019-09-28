@@ -553,7 +553,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			CTerrainManager* terrainManager = circuit->GetTerrainManager();
 			const CMetalData::Metals& spots = metalManager->GetSpots();
 			Map* map = circuit->GetMap();
-			CMetalManager::MexPredicate predicate;
+			CMetalData::PointPredicate predicate;
 			if (unit != nullptr) {
 				CCircuitDef* mexDef = this->mexDef;
 				predicate = [this, &spots, map, mexDef, terrainManager, unit](int index) {

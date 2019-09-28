@@ -562,11 +562,10 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 		const CMetalData::Clusters& clusters = mm->GetClusters();
 		const CMetalData::Metals& spots = mm->GetSpots();
 		const CMetalData::Graph& clusterGraph = mm->GetGraph();
-		CMetalData::Graph::out_edge_iterator outEdgeIt, outEdgeEnd;
-		std::tie(outEdgeIt, outEdgeEnd) = boost::out_edges(cluster, clusterGraph);
-		for (; (outEdgeIt != outEdgeEnd); ++outEdgeIt) {
-			const CMetalData::EdgeDesc& edgeId = *outEdgeIt;
-			int idx0 = boost::target(edgeId, clusterGraph);
+		CMetalData::Graph::Node node = clusterGraph.nodeFromId(cluster);
+		CMetalData::Graph::IncEdgeIt edgeIt(clusterGraph, node);
+		for (; edgeIt != lemon::INVALID; ++edgeIt) {
+			int idx0 = clusterGraph.id(clusterGraph.oppositeNode(node, edgeIt));
 			if (mm->IsClusterFinished(idx0)) {
 				continue;
 			}

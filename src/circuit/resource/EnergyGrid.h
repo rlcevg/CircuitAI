@@ -12,6 +12,8 @@
 #include "resource/MetalData.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
+#include "lemon/adaptors.h"
+#include "lemon/bfs.h"
 
 #include <set>
 #include <map>
@@ -23,9 +25,6 @@ class CCircuitAI;
 
 class CEnergyGrid {
 public:
-	typedef boost::property_map<CMetalData::Graph, int CMetalData::SEdge::*>::const_type EdgeIndexMap;
-	using link_iterator_t = boost::iterator_property_map<CEnergyLink*, EdgeIndexMap, CEnergyLink, CEnergyLink&>;
-
 	CEnergyGrid(CCircuitAI* circuit);
 	virtual ~CEnergyGrid();
 
@@ -47,9 +46,8 @@ private:
 	std::map<float, CCircuitDef::Id> rangePylons;
 
 	std::vector<bool> linkedClusters;
-	std::set<CMetalData::EdgeDesc> linkPylons, unlinkPylons;
+	std::set<int> linkPylons, unlinkPylons;
 	std::vector<CEnergyLink> links;  // Graph's exterior property
-	link_iterator_t linkIt;  // Alternative: links[clusterGraph[*linkEdgeIt].index]
 
 	void MarkAllyPylons(const std::vector<CAllyUnit*>& pylons);
 	void AddPylon(ICoreUnit::Id unitId, CCircuitDef::Id defId, const springai::AIFloat3& pos);
@@ -58,9 +56,24 @@ private:
 
 	std::vector<int> linkClusters;
 	std::vector<int> unlinkClusters;
-	std::set<CMetalData::EdgeDesc> spanningTree;
-	CMetalData::Graph ownedClusters;
 	bool isForceRebuild;
+
+	class SpanningLink;
+	class DetectLink;
+	using OwnedFilter = CMetalData::Graph::NodeMap<bool>;
+	using OwnedGraph = lemon::FilterNodes<const CMetalData::Graph, OwnedFilter>;
+	using SpanningTree = std::set<CMetalData::Graph::Edge>;
+	using SpanningGraph = lemon::FilterEdges<const CMetalData::Graph, SpanningLink>;
+	using SpanningBFS = lemon::Bfs<SpanningGraph>;
+
+	SpanningTree spanningTree;
+	OwnedFilter* ownedFilter;
+	OwnedGraph* ownedClusters;
+	CMetalData::WeightMap* edgeCosts;
+
+	SpanningLink* spanningFilter;
+	SpanningGraph* spanningGraph;
+	SpanningBFS* spanningBfs;  // breadth-first search
 
 	void MarkClusters();
 	void RebuildTree();

@@ -15,6 +15,7 @@
 #include "util/Scheduler.h"
 #include "util/utils.h"
 #include "json/json.h"
+#include "lemon/kruskal.h"
 
 #include "AISCommands.h"
 #include "Log.h"
@@ -22,57 +23,47 @@
 #include "Figure.h"
 #endif
 
-#include <boost/graph/kruskal_min_spanning_tree.hpp>
-#include <boost/graph/breadth_first_search.hpp>
-#include <boost/graph/filtered_graph.hpp>
-#include <algorithm>
-#include <exception>
-
 namespace circuit {
 
 using namespace springai;
 
-class CExitBFS: public std::exception {
+class CEnergyGrid::SpanningLink : public lemon::MapBase<CEnergyGrid::OwnedGraph::Edge, bool> {
 public:
-	CExitBFS(CEnergyLink* link) : std::exception(), link(link) {}
-	virtual const char* what() const throw() {
-		return "BFS goal has been reached";
-	}
-	CEnergyLink* link;
-};
-
-class detect_link: public boost::bfs_visitor<> {
-public:
-	detect_link(const CEnergyGrid::link_iterator_t& it) : linkIt(it) {}
-    template <class Edge, class Graph>
-	void tree_edge(const Edge& e, const Graph& g) {
-		CEnergyLink& link = boost::get(linkIt, e);
-		if (!link.IsFinished() && link.IsValid()) {
-			throw CExitBFS(&link);
-		}
-	}
-    CEnergyGrid::link_iterator_t linkIt;
-};
-
-struct spanning_tree {
-	spanning_tree() {}
-	spanning_tree(const std::set<CMetalData::EdgeDesc>& edges, const CEnergyGrid::link_iterator_t& it)
-		: spanningTree(edges)
-		, linkIt(it)
+	SpanningLink(const CEnergyGrid::SpanningTree& st, const std::vector<CEnergyLink>& links)
+		: spanningTree(st)
+		, links(links)
 	{}
-	template <typename Edge>
-	bool operator()(const Edge& e) const {
+	Value operator[](Key k) const {
 		// NOTE: check for link.IsBeingBuilt solves vertex's pylon duplicates, but slows down grid construction
-		return (spanningTree.find(e) != spanningTree.end()) && !boost::get(linkIt, e).IsBeingBuilt();
+		return (spanningTree.find(k) != spanningTree.end())
+				&& !links[CMetalData::Graph::id(k)].IsBeingBuilt();
 	}
-	std::set<CMetalData::EdgeDesc> spanningTree;
-    CEnergyGrid::link_iterator_t linkIt;
+private:
+	const CEnergyGrid::SpanningTree& spanningTree;
+	const std::vector<CEnergyLink>& links;
+};
+
+class CEnergyGrid::DetectLink : public lemon::MapBase<CEnergyGrid::OwnedGraph::Edge, bool> {
+public:
+	DetectLink(const std::vector<CEnergyLink>& links) : links(links) {}
+	bool operator[](Key k) const {
+		const CEnergyLink& link = links[CMetalData::Graph::id(k)];
+		return !link.IsFinished() && link.IsValid();
+	}
+private:
+	const std::vector<CEnergyLink>& links;
 };
 
 CEnergyGrid::CEnergyGrid(CCircuitAI* circuit)
 		: circuit(circuit)
 		, markFrame(-1)
 		, isForceRebuild(false)
+		, ownedFilter(nullptr)
+		, ownedClusters(nullptr)
+		, edgeCosts(nullptr)
+		, spanningFilter(nullptr)
+		, spanningGraph(nullptr)
+		, spanningBfs(nullptr)
 #ifdef DEBUG_VIS
 		, figureGridId(-1)
 		, figureInvalidId(-1)
@@ -100,6 +91,14 @@ CEnergyGrid::CEnergyGrid(CCircuitAI* circuit)
 CEnergyGrid::~CEnergyGrid()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+
+	delete ownedFilter;
+	delete ownedClusters;
+	delete edgeCosts;
+
+	delete spanningFilter;
+	delete spanningGraph;
+	delete spanningBfs;
 }
 
 void CEnergyGrid::Update()
@@ -147,18 +146,14 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 		return nullptr;
 	}
 
-	spanning_tree filter(spanningTree, linkIt);
-	boost::filtered_graph<CMetalData::Graph, spanning_tree> fg(ownedClusters, filter);
-	detect_link vis(linkIt);
-	CEnergyLink* link = nullptr;
-	try {
-		boost::breadth_first_search(fg, boost::vertex(index, ownedClusters), boost::visitor(vis));
-	} catch (const CExitBFS& e) {
-		link = e.link;
-	}
-	if (link == nullptr) {
+	DetectLink goal(links);
+	spanningBfs->init();
+	spanningBfs->addSource(spanningGraph->nodeFromId(index));
+	CMetalData::Graph::Edge target = spanningBfs->startEdge(goal);
+	if (target == lemon::INVALID) {
 		return nullptr;
 	}
+	CEnergyLink* link = &links[spanningGraph->id(target)];
 
 	/*
 	 * Find best build def and position
@@ -251,20 +246,23 @@ void CEnergyGrid::Init()
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
 
+	ownedFilter = new OwnedFilter(clusterGraph, false);
+	ownedClusters = new OwnedGraph(clusterGraph, *ownedFilter);
+	edgeCosts = new CMetalData::WeightMap(clusterGraph);
+
+	spanningFilter = new SpanningLink(spanningTree, links);
+	spanningGraph = new SpanningGraph(metalManager->GetGraph(), *spanningFilter);
+	spanningBfs = new SpanningBFS(*spanningGraph);
+
 	linkedClusters.resize(clusters.size(), false);
 
-	links.reserve(boost::num_edges(clusterGraph));
-	CMetalData::Graph::edge_iterator edgeIt, edgeEnd;
-	std::tie(edgeIt, edgeEnd) = boost::edges(clusterGraph);
-	for (; edgeIt != edgeEnd; ++edgeIt) {
-		const CMetalData::EdgeDesc& edgeId = *edgeIt;
-		int idx0 = boost::source(edgeId, clusterGraph);
-		int idx1 = boost::target(edgeId, clusterGraph);
+	links.reserve(clusterGraph.edgeNum());
+	for (int i = 0; i < clusterGraph.edgeNum(); ++i) {
+		CMetalData::Graph::Edge edge = clusterGraph.edgeFromId(i);
+		int idx0 = clusterGraph.id(clusterGraph.u(edge));
+		int idx1 = clusterGraph.id(clusterGraph.v(edge));
 		links.emplace_back(idx0, clusters[idx0].position, idx1, clusters[idx1].position);
 	}
-	linkIt = boost::make_iterator_property_map(&links[0], boost::get(&CMetalData::SEdge::index, clusterGraph));
-
-	ownedClusters = CMetalData::Graph(boost::num_vertices(clusterGraph));
 }
 
 void CEnergyGrid::MarkAllyPylons(const std::vector<CAllyUnit*>& pylons)
@@ -304,7 +302,7 @@ void CEnergyGrid::MarkAllyPylons(const std::vector<CAllyUnit*>& pylons)
 				*d_first++ = *first2;  // old unit
 				++first1;  // advance pylons
 			}
-            ++first2;  // advance prevUnits
+			++first2;  // advance prevUnits
 		}
 	}
 	while (first2 != last2) {  // everything else in first2..last2 is dead units
@@ -320,22 +318,21 @@ void CEnergyGrid::AddPylon(ICoreUnit::Id unitId, CCircuitDef::Id defId, const AI
 
 	// Find edges to which building belongs to
 	float range = pylonRanges[defId];
-	float sqRange = range * range;
-	CMetalData::Graph::edge_iterator edgeIt, edgeEnd;
-	std::tie(edgeIt, edgeEnd) = boost::edges(clusterGraph);  // or boost::tie
-	for (; edgeIt != edgeEnd; ++edgeIt) {
-		const CMetalData::EdgeDesc& edgeId = *edgeIt;
-		int idxSource = boost::source(edgeId, clusterGraph);
+	float sqRange = SQUARE(range);
+	CMetalData::Graph::EdgeIt edgeIt(clusterGraph);
+	for (; edgeIt != lemon::INVALID; ++edgeIt) {
+		int idxSource = clusterGraph.id(clusterGraph.u(edgeIt));
+		int idxTarget = clusterGraph.id(clusterGraph.v(edgeIt));
 		const AIFloat3& P0 = clusters[idxSource].position;
-		int idxTarget = boost::target(edgeId, clusterGraph);
 		const AIFloat3& P1 = clusters[idxTarget].position;
 
 		if ((P0.SqDistance2D(pos) < sqRange) || (P1.SqDistance2D(pos) < sqRange) ||
 			(((P0 + P1) * 0.5f).SqDistance2D(pos) < P0.SqDistance2D(P1) * 0.25f))
 		{
-			CEnergyLink& link = boost::get(linkIt, edgeId);
+			int edgeIdx = clusterGraph.id(edgeIt);
+			CEnergyLink& link = links[edgeIdx];
 			link.AddPylon(unitId, pos, range);
-			linkPylons.insert(edgeId);
+			linkPylons.insert(edgeIdx);
 		}
 	}
 }
@@ -346,13 +343,12 @@ void CEnergyGrid::RemovePylon(ICoreUnit::Id unitId)
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
 
 	// Find edges to which building belongs to
-	CMetalData::Graph::edge_iterator edgeIt, edgeEnd;
-	std::tie(edgeIt, edgeEnd) = boost::edges(clusterGraph);  // or boost::tie
-	for (; edgeIt != edgeEnd; ++edgeIt) {
-		const CMetalData::EdgeDesc& edgeId = *edgeIt;
-		CEnergyLink& link = boost::get(linkIt, edgeId);
+	CMetalData::Graph::EdgeIt edgeIt(clusterGraph);
+	for (; edgeIt != lemon::INVALID; ++edgeIt) {
+		int edgeIdx = clusterGraph.id(edgeIt);
+		CEnergyLink& link = links[edgeIdx];
 		if (link.RemovePylon(unitId)) {
-			unlinkPylons.insert(edgeId);
+			unlinkPylons.insert(edgeIdx);
 		}
 	}
 }
@@ -363,8 +359,8 @@ void CEnergyGrid::CheckGrid()
 		return;
 	}
 
-	for (const CMetalData::EdgeDesc& edgeId : linkPylons) {
-		CEnergyLink& link = boost::get(linkIt, edgeId);
+	for (const int edgeIdx : linkPylons) {
+		CEnergyLink& link = links[edgeIdx];
 		if (link.IsFinished() || !link.IsValid()) {
 			continue;
 		}
@@ -372,8 +368,8 @@ void CEnergyGrid::CheckGrid()
 	}
 	linkPylons.clear();
 
-	for (const CMetalData::EdgeDesc& edgeId : unlinkPylons) {
-		CEnergyLink& link = boost::get(linkIt, edgeId);
+	for (const int edgeIdx : unlinkPylons) {
+		CEnergyLink& link = links[edgeIdx];
 		if (!link.IsFinished() || !link.IsValid()) {
 			continue;
 		}
@@ -405,55 +401,55 @@ void CEnergyGrid::RebuildTree()
 	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
 
 	// Remove destroyed edges
-	auto pred = [this](const CMetalData::EdgeDesc& desc) {
-		spanningTree.erase(desc);
-		return true;
-	};
 	for (int index : unlinkClusters) {
-		boost::remove_out_edge_if(index, pred, ownedClusters);
+		OwnedGraph::Node node = ownedClusters->nodeFromId(index);
+		ownedClusters->disable(node);
+		OwnedGraph::IncEdgeIt edgeIt(*ownedClusters, node);
+		for (; edgeIt != lemon::INVALID; ++edgeIt) {
+			spanningTree.erase(edgeIt);
+		}
 	}
 	unlinkClusters.clear();
 
 	// Add new edges to Kruskal graph
 	for (int index : linkClusters) {
-		CMetalData::Graph::out_edge_iterator outEdgeIt, outEdgeEnd;
-		std::tie(outEdgeIt, outEdgeEnd) = boost::out_edges(index, clusterGraph);  // or boost::tie
-		for (; outEdgeIt != outEdgeEnd; ++outEdgeIt) {
-			const CMetalData::EdgeDesc& edgeId = *outEdgeIt;
-			int idx0 = boost::target(edgeId, clusterGraph);
+		CMetalData::Graph::Node node = clusterGraph.nodeFromId(index);
+		ownedClusters->enable(node);
+		CMetalData::Graph::IncEdgeIt edgeIt(clusterGraph, node);
+		for (; edgeIt != lemon::INVALID; ++edgeIt) {
+			int idx0 = clusterGraph.id(clusterGraph.oppositeNode(node, edgeIt));
 			if (linkedClusters[idx0]) {
-				boost::add_edge(idx0, index, clusterGraph[edgeId], ownedClusters);
-
-				CEnergyLink& link = boost::get(linkIt, edgeId);
+				CEnergyLink& link = links[clusterGraph.id(edgeIt)];
 				link.SetStartVertex(idx0);
 			}
 		}
 	}
 	linkClusters.clear();
 
+	const CMetalData::WeightMap& weights = metalManager->GetWeights();
+	const CMetalData::CenterMap& centers = metalManager->GetCenters();
 	float width = circuit->GetTerrainManager()->GetTerrainWidth();
 	float height = circuit->GetTerrainManager()->GetTerrainHeight();
 	float baseWeight = width * width + height * height;
 	float invBaseWeight = 1.0f / baseWeight;  // FIXME: only valid for 1 of the ally team
 	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
-	for (const CMetalData::EdgeDesc& edgeId : spanningTree) {
-		CEnergyLink& link = boost::get(linkIt, edgeId);
+
+	for (const CMetalData::Graph::Edge edge : spanningTree) {
+		CEnergyLink& link = links[clusterGraph.id(edge)];
 		if (link.IsFinished() || link.IsBeingBuilt()) {
 			// Mark used edges as const
-			ownedClusters[edgeId].weight = clusterGraph[edgeId].weight * invBaseWeight;
+			(*edgeCosts)[edge] = weights[edge] * invBaseWeight;
 		} else if (!link.IsValid()) {
-			ownedClusters[edgeId].weight = clusterGraph[edgeId].weight * baseWeight;
+			(*edgeCosts)[edge] = weights[edge] * baseWeight;
 		} else {
 			// Adjust weight by distance to base
-			const CMetalData::SEdge& edge = clusterGraph[edgeId];
-			ownedClusters[edgeId].weight = edge.weight * basePos.SqDistance2D(edge.center) * invBaseWeight;
+			(*edgeCosts)[edge] = weights[edge] * basePos.SqDistance2D(centers[edge]) * invBaseWeight;
 		}
 	}
 
 	// Build Kruskal's minimum spanning tree
 	spanningTree.clear();
-	boost::property_map<CMetalData::Graph, float CMetalData::SEdge::*>::type w_map = boost::get(&CMetalData::SEdge::weight, ownedClusters);
-	boost::kruskal_minimum_spanning_tree(ownedClusters, std::inserter(spanningTree, spanningTree.end()), boost::weight_map(w_map));
+	lemon::kruskal(*ownedClusters, *edgeCosts, std::inserter(spanningTree, spanningTree.end()));
 }
 
 #ifdef DEBUG_VIS
@@ -509,9 +505,9 @@ void CEnergyGrid::UpdateVis()
 	figureKruskalId = fig->DrawLine(ZeroVector, ZeroVector, 0.0f, false, FRAMES_PER_SEC * 300, 0);
 	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
 	const CMetalData::Graph& clusterGraph = circuit->GetMetalManager()->GetGraph();
-	for (const CMetalData::EdgeDesc& edge : spanningTree) {
-		const AIFloat3& posFrom = clusters[boost::source(edge, clusterGraph)].position;
-		const AIFloat3& posTo = clusters[boost::target(edge, clusterGraph)].position;
+	for (const CMetalData::Graph::Edge edge : spanningTree) {
+		const AIFloat3& posFrom = clusters[clusterGraph.id(clusterGraph.u(edge))].position;
+		const AIFloat3& posTo = clusters[clusterGraph.id(clusterGraph.v(edge))].position;
 		AIFloat3 pos0 = posFrom;
 		const AIFloat3 dir = (posTo - pos0) / 10;
 		pos0.y = map->GetElevationAt(pos0.x, pos0.z) + 19.0f;

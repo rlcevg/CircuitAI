@@ -18,21 +18,18 @@
 #include "Pathing.h"
 #include "Map.h"
 
-#include "lemon/dijkstra.h"
-#include "lemon/adaptors.h"
-
 namespace circuit {
 
 using namespace springai;
 
-class MexMap : public lemon::MapBase<CMetalData::NewGraph::Node, bool> {
+class CMetalManager::SafeCluster : public lemon::MapBase<ClusterGraph::Node, bool> {
 public:
-	MexMap(CThreatMap* tm, const CMetalData::Clusters& cs)
+	SafeCluster(CThreatMap* tm, const CMetalData::Clusters& cs)
 		: threatMap(tm)
 		, clusters(cs)
 	{}
 	Value operator[](Key k) const {
-		return (*this)[CMetalData::NewGraph::id(k)];
+		return (*this)[CMetalData::Graph::id(k)];
 	}
 	Value operator[](int u) const {
 		return threatMap->GetThreatAt(clusters[u].position) <= THREAT_MIN;
@@ -42,15 +39,15 @@ private:
 	const CMetalData::Clusters& clusters;
 };
 
-class DetectCluster : public lemon::MapBase<CMetalData::NewGraph::Node, bool> {
+class CMetalManager::DetectCluster : public lemon::MapBase<ClusterGraph::Node, bool> {
 public:
-	DetectCluster(CMetalManager* mgr, CMetalManager::MexPredicate& pred, std::vector<int>& outIdxs)
+	DetectCluster(CMetalManager* mgr, CMetalData::PointPredicate& pred, std::vector<int>& outIdxs)
 		: manager(mgr)
 		, predicate(pred)
 		, indices(outIdxs)
 	{}
 	bool operator[](Key k) const {
-		const int u = CMetalData::NewGraph::id(k);
+		const int u = CMetalData::Graph::id(k);
 		if (manager->IsClusterQueued(u) || manager->IsClusterFinished(u)) {
 			return false;
 		}
@@ -63,7 +60,7 @@ public:
 	}
 private:
 	CMetalManager* manager;
-	CMetalManager::MexPredicate predicate;
+	CMetalData::PointPredicate predicate;
 	std::vector<int>& indices;
 };
 
@@ -71,6 +68,9 @@ CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData)
 		: circuit(circuit)
 		, metalData(metalData)
 		, markFrame(-1)
+		, threatFilter(nullptr)
+		, filteredGraph(nullptr)
+		, shortPath(nullptr)
 {
 	if (!metalData->IsInitialized()) {
 		// TODO: Add metal zone and no-metal-spots maps support
@@ -82,6 +82,10 @@ CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData)
 CMetalManager::~CMetalManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+
+	delete threatFilter;
+	delete filteredGraph;
+	delete shortPath;
 }
 
 void CMetalManager::ParseMetalSpots()
@@ -194,6 +198,10 @@ void CMetalManager::Init()
 			metalInfos[idx].clusterId = i;
 		}
 	}
+
+	threatFilter = new SafeCluster(circuit->GetThreatMap(), GetClusters());
+	filteredGraph = new ClusterGraph(GetGraph(), *threatFilter);
+	shortPath = new ShortPath(*filteredGraph, GetWeights());
 }
 
 void CMetalManager::SetOpenSpot(int index, bool value)
@@ -306,26 +314,21 @@ bool CMetalManager::IsMexInFinished(int index) const
 	return clusterInfos[idx].finishedCount >= GetClusters()[idx].idxSpots.size();
 }
 
-int CMetalManager::GetMexToBuild(const AIFloat3& pos, MexPredicate& predicate)
+int CMetalManager::GetMexToBuild(const AIFloat3& pos, CMetalData::PointPredicate& predicate)
 {
-	MexMap filter(circuit->GetThreatMap(), GetClusters());
 	int index = FindNearestCluster(pos);
-	if (index < 0 || !filter[index]) {
+	if (index < 0 || !(*threatFilter)[index]) {
 		return -1;
 	}
 	MarkAllyMexes();
 
-	// FIXME: DEBUG
 	static std::vector<int> indices;  // NOTE: micro-opt
 	int result = -1;
 
-	auto fg = lemon::filterNodes(metalData->newClusterGraph, filter);
-	lemon::Dijkstra<typeof(fg), CMetalData::WeightMap> shortPath(fg, metalData->weights);
-
-	shortPath.init();
-	shortPath.addSource(CMetalData::NewGraph::nodeFromId(index));
-	DetectCluster vis(this, predicate, indices);
-	CMetalData::NewGraph::Node target = shortPath.start(vis);
+	DetectCluster goal(this, predicate, indices);
+	shortPath->init();
+	shortPath->addSource(filteredGraph->nodeFromId(index));
+	CMetalData::Graph::Node target = shortPath->start(goal);
 
 	if (target != lemon::INVALID) {
 		float sqMinDist = std::numeric_limits<float>::max();
@@ -337,7 +340,6 @@ int CMetalManager::GetMexToBuild(const AIFloat3& pos, MexPredicate& predicate)
 			}
 		}
 	}
-	// FIXME: DEBUG
 
 	indices.clear();
 	return result;

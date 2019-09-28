@@ -793,14 +793,12 @@ int CCircuitAI::Message(int playerId, const char* message)
 		LOG("%f, %f, %f, %i", endPos.x, endPos.y, endPos.z, pathfinder->GetDbgType());
 	}
 
-	// FIXME: DEBUG
 	else if ((strncmp(message, cmdKnn, 4) == 0)) {
 		const AIFloat3& dbgPos = map->GetMousePos();
 		int index = metalManager->FindNearestCluster(dbgPos);
 		drawer->AddPoint(metalManager->GetClusters()[index].position, "knn");
 		LOG("%f, %f, %f", dbgPos.x, dbgPos.y, dbgPos.z);
 	}
-	// FIXME: DEBUG
 #endif
 
 	return 0;  // signaling: OK

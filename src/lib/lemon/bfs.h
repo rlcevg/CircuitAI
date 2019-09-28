@@ -161,6 +161,7 @@ namespace lemon {
     typedef typename Digraph::NodeIt NodeIt;
     typedef typename Digraph::Arc Arc;
     typedef typename Digraph::OutArcIt OutArcIt;
+    typedef typename Digraph::Edge Edge;
 
     //Pointer to the underlying digraph.
     const Digraph *G;
@@ -555,6 +556,30 @@ namespace lemon {
       return n;
     }
 
+    template<class EM>
+    Node processNextNode(const EM& em, Edge& redge)
+    {
+      if(_queue_tail==_queue_next_dist) {
+        _curr_dist++;
+        _queue_next_dist=_queue_head;
+      }
+      Node n=_queue[_queue_tail++];
+      _processed->set(n,true);
+      Node m;
+      for(OutArcIt e(*G,n);e!=INVALID;++e)
+        if(!(*_reached)[m=G->target(e)]) {
+          _queue[_queue_head++]=m;
+          _reached->set(m,true);
+          _pred->set(m,e);
+          _dist->set(m,_curr_dist);
+          if (em[(Edge)e] && redge == INVALID) {
+            redge = e;
+            break;
+          }
+        }
+      return n;
+    }
+
     ///The next node to be processed.
 
     ///Returns the next node to be processed or \c INVALID if the queue
@@ -661,6 +686,16 @@ namespace lemon {
         processNextNode(nm, rnode);
       }
       return rnode;
+    }
+
+    template<class EdgeBoolMap>
+    Edge startEdge(const EdgeBoolMap &em)
+    {
+      Edge redge = INVALID;
+      while ( !emptyQueue() && redge == INVALID ) {
+        processNextNode(em, redge);
+      }
+      return redge;
     }
 
     ///Runs the algorithm from the given source node.

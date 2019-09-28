@@ -11,9 +11,8 @@
 #include "AIFloat3.h"
 
 #include "kdtree/nanoflann.hpp"
-#include "lemon/concepts/graph.h"
 #include "lemon/smart_graph.h"
-#include <boost/graph/adjacency_list.hpp>
+
 #include <vector>
 #include <atomic>
 #include <memory>
@@ -25,20 +24,9 @@ class CRagMatrix;
 
 class CMetalData {
 public:
-	struct SEdge {
-		SEdge() : index(-1), weight(.0f) {}
-		SEdge(int i, float w) : index(i), weight(w) {}
-		int index;
-		float weight;
-		springai::AIFloat3 center;
-	};
-	using Graph = boost::adjacency_list<boost::hash_setS, boost::vecS, boost::undirectedS,
-										boost::no_property, SEdge>;
-	using VertexDesc = boost::graph_traits<Graph>::vertex_descriptor;
-	using EdgeDesc = boost::graph_traits<Graph>::edge_descriptor;
-	using NewGraph = lemon::SmartGraph;
-	using WeightMap = NewGraph::EdgeMap<float>;
-	using EdgeDataMap = NewGraph::EdgeMap<SEdge>;
+	using Graph = lemon::SmartGraph;
+	using WeightMap = Graph::EdgeMap<float>;
+	using CenterMap = Graph::EdgeMap<springai::AIFloat3>;
 
 	struct SMetal {
 		float income;
@@ -100,6 +88,8 @@ public:
 
 	const CMetalData::Clusters& GetClusters() const { return clusters; }
 	const CMetalData::Graph& GetGraph() const { return clusterGraph; }
+	const CMetalData::WeightMap& GetWeights() const { return weights; }
+	const CMetalData::CenterMap& GetCenters() const { return centers; }
 
 	/*
 	 * Hierarchical clusterization. Not reusable. Metric: complete link. Thread-unsafe
@@ -135,11 +125,8 @@ private:
 	ClusterTree clusterTree;
 
 	Graph clusterGraph;
-public:
-	NewGraph newClusterGraph;
 	WeightMap weights;
-	EdgeDataMap edgeData;
-private:
+	CenterMap centers;
 
 	std::atomic<bool> isClusterizing;
 };
