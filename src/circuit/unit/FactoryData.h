@@ -21,7 +21,8 @@ public:
 	CFactoryData(CCircuitAI *circuit);
 	virtual ~CFactoryData();
 
-	CCircuitDef* GetFactoryToBuild(CCircuitAI* circuit, springai::AIFloat3 position = -RgtVector, bool isStart = false);
+	CCircuitDef* GetFactoryToBuild(CCircuitAI* circuit, springai::AIFloat3 position = -RgtVector,
+								   bool isStart = false, bool isReset = false);
 	void AddFactory(CCircuitDef* cdef);
 	void DelFactory(CCircuitDef* cdef);
 

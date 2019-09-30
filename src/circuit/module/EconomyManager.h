@@ -139,6 +139,7 @@ private:
 
 	struct SEnergyFactorInfo {
 		float startFactor;
+		float endFactor;
 		int startFrame;
 		int endFrame;
 		float fraction;

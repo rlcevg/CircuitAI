@@ -672,11 +672,11 @@ bool CFactoryManager::IsHighPriority(CAllyUnit* unit) const
 	return IBuilderTask::Priority::HIGH == it->second->GetPriority();
 }
 
-CCircuitDef* CFactoryManager::GetFactoryToBuild(AIFloat3 position, bool isStart)
+CCircuitDef* CFactoryManager::GetFactoryToBuild(AIFloat3 position, bool isStart, bool isReset)
 {
-	CCircuitDef* facDef = factoryData->GetFactoryToBuild(circuit, position, isStart);
+	CCircuitDef* facDef = factoryData->GetFactoryToBuild(circuit, position, isStart, isReset);
 	if ((facDef == nullptr) && utils::is_valid(position)) {
-		facDef = factoryData->GetFactoryToBuild(circuit, -RgtVector, isStart);
+		facDef = factoryData->GetFactoryToBuild(circuit, -RgtVector, isStart, isReset);
 	}
 	return facDef;
 }
@@ -895,11 +895,11 @@ void CFactoryManager::ReadConfig()
 			if (area == nullptr) {
 				continue;
 			}
-			if ((area->mobileType->maxElevation > -SQUARE_SIZE * 5) && (landSize > area->percentOfMap)) {
+			if ((area->mobileType->maxElevation > 0.f) && (landSize > area->percentOfMap)) {
 				landSize = area->percentOfMap;
 				landDef = udef;
 			}
-			if (((area->mobileType->minElevation < SQUARE_SIZE * 5) || udef->IsFloater()) && (waterSize > area->percentOfMap)) {
+			if (((area->mobileType->minElevation < 0.f) || udef->IsFloater()) && (waterSize > area->percentOfMap)) {
 				waterSize = area->percentOfMap;
 				waterDef = udef;
 			}
@@ -1087,7 +1087,7 @@ void CFactoryManager::DisableFactory(CCircuitUnit* unit)
 			}
 			if (!hasBuilder) {
 				// queue new factory with builder
-				CCircuitDef* facDef = GetFactoryToBuild(-RgtVector, true);
+				CCircuitDef* facDef = GetFactoryToBuild(-RgtVector, true, true);
 				if (facDef != nullptr) {
 					builderManager->EnqueueFactory(IBuilderTask::Priority::NOW, facDef, -RgtVector);
 				}

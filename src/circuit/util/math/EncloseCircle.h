@@ -48,7 +48,7 @@ private:
 	};
 
 	struct SCircle {
-		#define EPSILON (1e-12)
+		constexpr static float EPSILON = (1e-12);
 		SPoint c;   // Center
 		float r;  // Radius
 

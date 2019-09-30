@@ -38,22 +38,22 @@
 		},
 		// income factor for energy, time is in seconds
 		// [[<start_factor>, <start_time>], [<end_factor>, <end_time>]]
-		"factor": [[0.55, 60], [8.0, 3600]],
+		"factor": [[0.55, 60], [8.0, 3600]],  // [[2.55, 360], [64.0, 600]], - ?? FIXME: energy tasks bounded by workers
 
 		"pylon": ["energypylon", "energysolar", "energywind"]
 	},
 
 	// Scales metal income
 	// ecoFactor = teamSize*eps_step+(1-eps_step)
-	"eps_step": 0.2,
+	"eps_step": 0.01,
 
 	// Mobile buildpower to metal income ratio
-	"buildpower": 1.2,
+	"buildpower": 1.25,
 	// Metal excess to income ratio, -1 to disable
 	"excess": -1.0,
 	// Mobile constructor to static constructor metal pull ratio
 	// [[<value>, <start_mex_percent>], [<value>, <end_mex_percent>]]
-	"ms_pull": [[0.75, 0.0], [0.45, 0.10], [0.50, 0.25], [0.56, 0.45], [0.6, 0.50], [0.64, 0.55], [0.7, 0.6], [0.8, 0.66], [0.9, 0.75], [0.99, 0.90]],
+	"ms_pull": [[0.57, 0.0], [0.66, 0.34]],
 	// Max percent of mexes circuit team allowed to take.
 	// If its <1.0 then expansion obeys ms_pull rule, if >=1.0 then ms_pull doesn't affect expansion (mex, pylon, energy).
 	"mex_max": 2.0,  // 200%

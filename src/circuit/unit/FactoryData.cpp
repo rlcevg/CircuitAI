@@ -104,7 +104,8 @@ CFactoryData::~CFactoryData()
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 position, bool isStart)
+CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 position,
+											 bool isStart, bool isReset)
 {
 	std::vector<SFactory> availFacs;
 	std::map<CCircuitDef::Id, float> percents;
@@ -174,6 +175,10 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 		return percents[a.id] > percents[b.id];
 	};
 	std::sort(availFacs.begin(), availFacs.end(), cmp);
+
+	if (isReset) {
+		choiceNum = 0;
+	}
 
 	// Don't start with air
 	if (((choiceNum++ < noAirNum) || (isPosValid && terrainManager->IsWaterSector(position))) &&

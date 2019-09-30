@@ -17,7 +17,6 @@
 #include <map>
 #include <set>
 #include <vector>
-#include <deque>
 
 struct SSkirmishAICallback;
 
@@ -63,7 +62,13 @@ class CEnemyUnit;
 class CDebugDrawer;
 #endif
 
-constexpr char version[]{"1.0.6"};
+/*
+ * Эти парни не созданы чувствовать!
+ * Ледяная душа не боится жути!
+ * Только под ногами их крутятся:
+ * По оси земля, по полу полу-люди!
+ */
+constexpr char version[]{"1.0.7"};
 
 class CException: public std::exception {
 public:
@@ -84,23 +89,18 @@ public:
 	int HandleEvent(int topic, const void* data);
 	void NotifyGameEnd();
 	void NotifyResign();
-//	void NotifyShutdown();
 	void Resign(int newTeamId);
 private:
 	typedef int (CCircuitAI::*EventHandlerPtr)(int topic, const void* data);
 	int HandleGameEvent(int topic, const void* data);
 	int HandleEndEvent(int topic, const void* data);
 	int HandleResignEvent(int topic, const void* data);
-//	int HandleShutdownEvent(int topic, const void* data);
 	EventHandlerPtr eventHandler;
 
 	int ownerTeamId;
 	springai::Economy* economy;
 	springai::Resource* metalRes;
 	springai::Resource* energyRes;
-
-//	bool IsCorrupted() const { return !corrupts.empty(); }
-//	std::deque<std::string> corrupts;
 // ---- AI Event handler ---- END
 
 private:

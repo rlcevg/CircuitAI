@@ -553,7 +553,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			CTerrainManager* terrainManager = circuit->GetTerrainManager();
 			const CMetalData::Metals& spots = metalManager->GetSpots();
 			Map* map = circuit->GetMap();
-			CMetalManager::MexPredicate predicate;
+			CMetalData::PointPredicate predicate;
 			if (unit != nullptr) {
 				CCircuitDef* mexDef = this->mexDef;
 				predicate = [this, &spots, map, mexDef, terrainManager, unit](int index) {
@@ -736,7 +736,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		int index = metalManager->FindNearestCluster(startPos);
 		if (index >= 0) {
 			const CMetalData::Clusters& clusters = metalManager->GetClusters();
-			buildPos = clusters[index].geoCentr;
+			buildPos = clusters[index].position;
 
 			// TODO: Calc enemy vector and move position into opposite direction
 			AIFloat3 mapCenter(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
@@ -865,21 +865,21 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		if (!metalManager->IsClusterFinished(i)) {
 			continue;
 		}
-		const float sqDist = center.SqDistance2D(clusters[i].geoCentr);
+		const float sqDist = center.SqDistance2D(clusters[i].position);
 		if (minSqDist > sqDist) {
 			minSqDist = sqDist;
-			pos = clusters[i].geoCentr;
+			pos = clusters[i].position;
 		}
 	}
 
-	CMetalData::MetalPredicate predicate = [this](const CMetalData::MetalNode& v) {
-		return clusterInfos[v.second].factory == nullptr;
+	CMetalData::PointPredicate predicate = [this](const int index) {
+		return clusterInfos[index].factory == nullptr;
 	};
 	int index = metalManager->FindNearestCluster(pos, predicate);
 	if (index < 0) {
 		return nullptr;
 	}
-	AIFloat3 buildPos = clusters[index].geoCentr;
+	AIFloat3 buildPos = clusters[index].position;
 
 	const bool isStart = (factoryManager->GetFactoryCount() == 0);
 	CCircuitDef* facDef = factoryManager->GetFactoryToBuild(buildPos, isStart);
@@ -1075,9 +1075,9 @@ void CEconomyManager::ReadConfig()
 	const Json::Value& factor = energy["factor"];
 	efInfo.startFactor = factor[0].get((unsigned)0, 0.5f).asFloat();
 	efInfo.startFrame = factor[0].get((unsigned)1, 300 ).asInt() * FRAMES_PER_SEC;
-	const float efEndFactor = factor[1].get((unsigned)0, 2.0f).asFloat();
+	efInfo.endFactor = factor[1].get((unsigned)0, 2.0f).asFloat();
 	efInfo.endFrame = factor[1].get((unsigned)1, 3600).asInt() * FRAMES_PER_SEC;
-	efInfo.fraction = (efEndFactor - efInfo.startFactor) / (efInfo.endFrame - efInfo.startFrame);
+	efInfo.fraction = (efInfo.endFactor - efInfo.startFactor) / (efInfo.endFrame - efInfo.startFrame);
 	energyFactor = efInfo.startFactor;
 
 	// Using cafus, armfus, armsolar as control points
@@ -1104,7 +1104,9 @@ void CEconomyManager::ReadConfig()
 			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), engies[i].first.c_str());
 			continue;
 		}
-		float make = utils::string_to_float(cdef->GetUnitDef()->GetCustomParams().find("income_energy")->second);
+		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
+		auto it = customParams.find("income_energy");
+		float make = (it != customParams.end()) ? utils::string_to_float(it->second) : 1.f;
 		x[i] = cdef->GetCost() / make;
 		y[i] = engies[i].second + 0.5;  // +0.5 to be sure precision errors will not decrease integer part
 	}
@@ -1246,7 +1248,11 @@ void CEconomyManager::UpdateEconomy()
 	const float storEnergy = GetStorage(energyRes);
 	isEnergyEmpty = curEnergy < storEnergy * 0.1f;
 
-	if ((efInfo.startFrame < ecoFrame) && (ecoFrame < efInfo.endFrame)) {
+	if (ecoFrame <= efInfo.startFrame) {
+		energyFactor = efInfo.startFactor;
+	} else if (ecoFrame >= efInfo.endFrame) {
+		energyFactor = efInfo.endFactor;
+	} else {
 		energyFactor = efInfo.fraction * (ecoFrame - efInfo.startFrame) + efInfo.startFactor;
 	}
 

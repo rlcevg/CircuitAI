@@ -180,7 +180,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 					c.count = allyTeam->GetClusterTeam(kv.first).count;
 					const CMetalData::SCluster& cl = clusters[kv.first];
 					const float income = cl.income + (float)rand() / RAND_MAX - 0.5f;
-					c.distDivIncome = center.distance(cl.geoCentr) / income;
+					c.distDivIncome = center.distance(cl.position) / income;
 					validClusters.push_back(std::make_pair(kv.first, c));
 				}
 				std::random_shuffle(validClusters.begin(), validClusters.end());
