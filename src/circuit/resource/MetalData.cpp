@@ -11,6 +11,8 @@
 #include "util/utils.h"
 #include "triangulate/delaunator.hpp"
 
+#include <map>
+
 namespace circuit {
 
 using namespace springai;
