@@ -692,7 +692,7 @@ int CCircuitAI::Update(int frame)
 
 	if (!enemyUnits.empty()) {
 		int mark = frame % FRAMES_PER_SEC;
-		if (mark ==  uEnemyMark) {
+		if (mark == uEnemyMark) {
 			UpdateEnemyUnits();
 		} else if (mark == kEnemyMark) {
 			militaryManager->UpdateEnemyGroups();
@@ -1249,7 +1249,7 @@ void CCircuitAI::UpdateEnemyUnits()
 		CEnemyUnit* enemy = it->second;
 
 		int frame = enemy->GetLastSeen();
-		if ((frame != -1) && (lastFrame - frame >= FRAMES_PER_SEC * 600)) {
+		if ((frame != -1) && (lastFrame - frame >= FRAMES_PER_SEC * 60 * 20)) {
 			EnemyDestroyed(enemy);
 			it = enemyUnits.erase(it);  // UnregisterEnemyUnit(enemy)
 			delete enemy;

@@ -15,4 +15,4 @@ Fork with fixes https://github.com/soerendd/delaunator-cpp
 
 ### lemon
 * Graph library <br />
-Header-only fork https://github.com/seqan/lemon
+Header-only fork (no threading) https://github.com/seqan/lemon

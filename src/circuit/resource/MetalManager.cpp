@@ -29,7 +29,7 @@ public:
 		, clusters(cs)
 	{}
 	Value operator[](Key k) const {
-		return (*this)[CMetalData::Graph::id(k)];
+		return (*this)[CMetalData::ClusterGraph::id(k)];
 	}
 	Value operator[](int u) const {
 		return threatMap->GetThreatAt(clusters[u].position) <= THREAT_MIN;
@@ -47,7 +47,7 @@ public:
 		, indices(outIdxs)
 	{}
 	bool operator[](Key k) const {
-		const int u = CMetalData::Graph::id(k);
+		const int u = CMetalData::ClusterGraph::id(k);
 		if (manager->IsClusterQueued(u) || manager->IsClusterFinished(u)) {
 			return false;
 		}
@@ -200,8 +200,8 @@ void CMetalManager::Init()
 	}
 
 	threatFilter = new SafeCluster(circuit->GetThreatMap(), GetClusters());
-	filteredGraph = new ClusterGraph(GetGraph(), *threatFilter);
-	shortPath = new ShortPath(*filteredGraph, GetWeights());
+	filteredGraph = new ClusterGraph(GetClusterGraph(), *threatFilter);
+	shortPath = new ShortPath(*filteredGraph, GetClusterEdgeWeights());
 }
 
 void CMetalManager::SetOpenSpot(int index, bool value)
@@ -328,7 +328,7 @@ int CMetalManager::GetMexToBuild(const AIFloat3& pos, CMetalData::PointPredicate
 	DetectCluster goal(this, predicate, indices);
 	shortPath->init();
 	shortPath->addSource(filteredGraph->nodeFromId(index));
-	CMetalData::Graph::Node target = shortPath->start(goal);
+	CMetalData::ClusterGraph::Node target = shortPath->start(goal);
 
 	if (target != lemon::INVALID) {
 		float sqMinDist = std::numeric_limits<float>::max();

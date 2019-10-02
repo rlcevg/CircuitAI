@@ -60,16 +60,16 @@ private:
 
 	class SpanningLink;
 	class DetectLink;
-	using OwnedFilter = CMetalData::Graph::NodeMap<bool>;
-	using OwnedGraph = lemon::FilterNodes<const CMetalData::Graph, OwnedFilter>;
-	using SpanningTree = std::set<CMetalData::Graph::Edge>;
-	using SpanningGraph = lemon::FilterEdges<const CMetalData::Graph, SpanningLink>;
+	using OwnedFilter = CMetalData::ClusterGraph::NodeMap<bool>;
+	using OwnedGraph = lemon::FilterNodes<const CMetalData::ClusterGraph, OwnedFilter>;
+	using SpanningTree = std::set<CMetalData::ClusterGraph::Edge>;
+	using SpanningGraph = lemon::FilterEdges<const CMetalData::ClusterGraph, SpanningLink>;
 	using SpanningBFS = lemon::Bfs<SpanningGraph>;
 
 	SpanningTree spanningTree;
 	OwnedFilter* ownedFilter;
 	OwnedGraph* ownedClusters;
-	CMetalData::WeightMap* edgeCosts;
+	CMetalData::ClusterWeightMap* edgeCosts;
 
 	SpanningLink* spanningFilter;
 	SpanningGraph* spanningGraph;

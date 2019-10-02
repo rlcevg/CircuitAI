@@ -36,7 +36,7 @@ public:
 	Value operator[](Key k) const {
 		// NOTE: check for link.IsBeingBuilt solves vertex's pylon duplicates, but slows down grid construction
 		return (spanningTree.find(k) != spanningTree.end())
-				&& !links[CMetalData::Graph::id(k)].IsBeingBuilt();
+				&& !links[CMetalData::ClusterGraph::id(k)].IsBeingBuilt();
 	}
 private:
 	const CEnergyGrid::SpanningTree& spanningTree;
@@ -47,7 +47,7 @@ class CEnergyGrid::DetectLink : public lemon::MapBase<CEnergyGrid::OwnedGraph::E
 public:
 	DetectLink(const std::vector<CEnergyLink>& links) : links(links) {}
 	bool operator[](Key k) const {
-		const CEnergyLink& link = links[CMetalData::Graph::id(k)];
+		const CEnergyLink& link = links[CMetalData::ClusterGraph::id(k)];
 		return !link.IsFinished() && link.IsValid();
 	}
 private:
@@ -149,7 +149,7 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 	DetectLink goal(links);
 	spanningBfs->init();
 	spanningBfs->addSource(spanningGraph->nodeFromId(index));
-	CMetalData::Graph::Edge target = spanningBfs->startEdge(goal);
+	CMetalData::ClusterGraph::Edge target = spanningBfs->startEdge(goal);
 	if (target == lemon::INVALID) {
 		return nullptr;
 	}
@@ -244,21 +244,21 @@ void CEnergyGrid::Init()
 {
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
-	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
+	const CMetalData::ClusterGraph& clusterGraph = metalManager->GetClusterGraph();
 
 	ownedFilter = new OwnedFilter(clusterGraph, false);
 	ownedClusters = new OwnedGraph(clusterGraph, *ownedFilter);
-	edgeCosts = new CMetalData::WeightMap(clusterGraph);
+	edgeCosts = new CMetalData::ClusterWeightMap(clusterGraph);
 
 	spanningFilter = new SpanningLink(spanningTree, links);
-	spanningGraph = new SpanningGraph(metalManager->GetGraph(), *spanningFilter);
+	spanningGraph = new SpanningGraph(metalManager->GetClusterGraph(), *spanningFilter);
 	spanningBfs = new SpanningBFS(*spanningGraph);
 
 	linkedClusters.resize(clusters.size(), false);
 
 	links.reserve(clusterGraph.edgeNum());
 	for (int i = 0; i < clusterGraph.edgeNum(); ++i) {
-		CMetalData::Graph::Edge edge = clusterGraph.edgeFromId(i);
+		CMetalData::ClusterGraph::Edge edge = clusterGraph.edgeFromId(i);
 		int idx0 = clusterGraph.id(clusterGraph.u(edge));
 		int idx1 = clusterGraph.id(clusterGraph.v(edge));
 		links.emplace_back(idx0, clusters[idx0].position, idx1, clusters[idx1].position);
@@ -314,12 +314,12 @@ void CEnergyGrid::AddPylon(ICoreUnit::Id unitId, CCircuitDef::Id defId, const AI
 {
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
-	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
+	const CMetalData::ClusterGraph& clusterGraph = metalManager->GetClusterGraph();
 
 	// Find edges to which building belongs to
 	float range = pylonRanges[defId];
 	float sqRange = SQUARE(range);
-	CMetalData::Graph::EdgeIt edgeIt(clusterGraph);
+	CMetalData::ClusterGraph::EdgeIt edgeIt(clusterGraph);
 	for (; edgeIt != lemon::INVALID; ++edgeIt) {
 		int idxSource = clusterGraph.id(clusterGraph.u(edgeIt));
 		int idxTarget = clusterGraph.id(clusterGraph.v(edgeIt));
@@ -340,10 +340,10 @@ void CEnergyGrid::AddPylon(ICoreUnit::Id unitId, CCircuitDef::Id defId, const AI
 void CEnergyGrid::RemovePylon(ICoreUnit::Id unitId)
 {
 	CMetalManager* metalManager = circuit->GetMetalManager();
-	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
+	const CMetalData::ClusterGraph& clusterGraph = metalManager->GetClusterGraph();
 
 	// Find edges to which building belongs to
-	CMetalData::Graph::EdgeIt edgeIt(clusterGraph);
+	CMetalData::ClusterGraph::EdgeIt edgeIt(clusterGraph);
 	for (; edgeIt != lemon::INVALID; ++edgeIt) {
 		int edgeIdx = clusterGraph.id(edgeIt);
 		CEnergyLink& link = links[edgeIdx];
@@ -398,7 +398,7 @@ void CEnergyGrid::RebuildTree()
 	}
 	isForceRebuild = false;
 	CMetalManager* metalManager = circuit->GetMetalManager();
-	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
+	const CMetalData::ClusterGraph& clusterGraph = metalManager->GetClusterGraph();
 
 	// Remove destroyed edges
 	for (int index : unlinkClusters) {
@@ -413,9 +413,9 @@ void CEnergyGrid::RebuildTree()
 
 	// Add new edges to Kruskal graph
 	for (int index : linkClusters) {
-		CMetalData::Graph::Node node = clusterGraph.nodeFromId(index);
+		CMetalData::ClusterGraph::Node node = clusterGraph.nodeFromId(index);
 		ownedClusters->enable(node);
-		CMetalData::Graph::IncEdgeIt edgeIt(clusterGraph, node);
+		CMetalData::ClusterGraph::IncEdgeIt edgeIt(clusterGraph, node);
 		for (; edgeIt != lemon::INVALID; ++edgeIt) {
 			int idx0 = clusterGraph.id(clusterGraph.oppositeNode(node, edgeIt));
 			if (linkedClusters[idx0]) {
@@ -426,15 +426,13 @@ void CEnergyGrid::RebuildTree()
 	}
 	linkClusters.clear();
 
-	const CMetalData::WeightMap& weights = metalManager->GetWeights();
-	const CMetalData::CenterMap& centers = metalManager->GetCenters();
+	const CMetalData::ClusterWeightMap& weights = metalManager->GetClusterEdgeWeights();
 	float width = circuit->GetTerrainManager()->GetTerrainWidth();
 	float height = circuit->GetTerrainManager()->GetTerrainHeight();
 	float baseWeight = width * width + height * height;
 	float invBaseWeight = 1.0f / baseWeight;  // FIXME: only valid for 1 of the ally team
-	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 
-	for (const CMetalData::Graph::Edge edge : spanningTree) {
+	for (const CMetalData::ClusterGraph::Edge edge : spanningTree) {
 		CEnergyLink& link = links[clusterGraph.id(edge)];
 		if (link.IsFinished() || link.IsBeingBuilt()) {
 			// Mark used edges as const
@@ -442,8 +440,7 @@ void CEnergyGrid::RebuildTree()
 		} else if (!link.IsValid()) {
 			(*edgeCosts)[edge] = weights[edge] * baseWeight;
 		} else {
-			// Adjust weight by distance to base
-			(*edgeCosts)[edge] = weights[edge] * basePos.SqDistance2D(centers[edge]) * invBaseWeight;
+			(*edgeCosts)[edge] = weights[edge];
 		}
 	}
 
@@ -504,8 +501,8 @@ void CEnergyGrid::UpdateVis()
 	fig->Remove(figureKruskalId);
 	figureKruskalId = fig->DrawLine(ZeroVector, ZeroVector, 0.0f, false, FRAMES_PER_SEC * 300, 0);
 	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
-	const CMetalData::Graph& clusterGraph = circuit->GetMetalManager()->GetGraph();
-	for (const CMetalData::Graph::Edge edge : spanningTree) {
+	const CMetalData::ClusterGraph& clusterGraph = circuit->GetMetalManager()->GetClusterGraph();
+	for (const CMetalData::ClusterGraph::Edge edge : spanningTree) {
 		const AIFloat3& posFrom = clusters[clusterGraph.id(clusterGraph.u(edge))].position;
 		const AIFloat3& posTo = clusters[clusterGraph.id(clusterGraph.v(edge))].position;
 		AIFloat3 pos0 = posFrom;

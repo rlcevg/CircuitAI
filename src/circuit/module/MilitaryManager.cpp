@@ -561,9 +561,9 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 		CThreatMap* threatMap = circuit->GetThreatMap();
 		const CMetalData::Clusters& clusters = mm->GetClusters();
 		const CMetalData::Metals& spots = mm->GetSpots();
-		const CMetalData::Graph& clusterGraph = mm->GetGraph();
-		CMetalData::Graph::Node node = clusterGraph.nodeFromId(cluster);
-		CMetalData::Graph::IncEdgeIt edgeIt(clusterGraph, node);
+		const CMetalData::ClusterGraph& clusterGraph = mm->GetClusterGraph();
+		CMetalData::ClusterGraph::Node node = clusterGraph.nodeFromId(cluster);
+		CMetalData::ClusterGraph::IncEdgeIt edgeIt(clusterGraph, node);
 		for (; edgeIt != lemon::INVALID; ++edgeIt) {
 			int idx0 = clusterGraph.id(clusterGraph.oppositeNode(node, edgeIt));
 			if (mm->IsClusterFinished(idx0)) {
