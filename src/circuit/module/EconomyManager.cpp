@@ -981,7 +981,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 
 	const float energyIncome = GetAvgEnergyIncome();
 	const float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
-	if ((metalIncome < 10) || (energyIncome < 80) || !pylonDef->IsAvailable(circuit->GetLastFrame())) {
+	if ((metalIncome < 10) || (energyIncome < 20) || !pylonDef->IsAvailable(circuit->GetLastFrame())) {
 		return nullptr;
 	}
 
@@ -1001,7 +1001,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 	}
 
 	if (utils::is_valid(buildPos) && builderManager->IsBuilderInArea(buildDef, buildPos)) {
-		return builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, buildDef, buildPos, link, cost);
+		return builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, buildDef, buildPos, link, buildDef->GetCost());
 	} else {
 		link->SetValid(false);
 		energyGrid->SetForceRebuild(true);

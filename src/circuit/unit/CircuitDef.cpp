@@ -368,7 +368,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	}
 
 	if (minReloadTime < std::numeric_limits<float>::max()) {
- 		reloadTime = minReloadTime * FRAMES_PER_SEC;
+		reloadTime = minReloadTime * FRAMES_PER_SEC;
 	}
 	if (bestDGunReload < std::numeric_limits<float>::max()) {
 		dgunMount = bestDGunMnt;

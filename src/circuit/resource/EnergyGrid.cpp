@@ -117,8 +117,12 @@ void CEnergyGrid::Update()
 //	tmpPylons.reserve(friendlies.size());
 	for (auto& kv : friendlies) {
 		CAllyUnit* unit = kv.second;
+		if (unit->GetUnit()->IsBeingBuilt()) {
+			continue;
+		}
 		if (*unit->GetCircuitDef() == *mexDef) {
 			tmpMexes.push_back(unit);
+			tmpPylons.push_back(unit);
 		} else if (pylonRanges.find(unit->GetCircuitDef()->GetId()) != pylonRanges.end()) {
 			tmpPylons.push_back(unit);
 		}
@@ -159,23 +163,23 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 	 * Find best build def and position
 	 */
 	outDef = nullptr;
-	const float searchRadius = circuit->GetEconomyManager()->GetPylonRange() * 0.5f;
+	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	const float searchRadius = economyManager->GetPylonRange() * 0.5f;
 
-	CEnergyLink::SVertex* v0 = link->GetV0();
-	CEnergyLink::SVertex* v1 = link->GetV1();
-	CEnergyLink::SPylon* pylon0 = link->GetConnectionHead(v0, v1->pos);
+	CEnergyLink::SPylon* pylon0 = link->GetSourceHead();
 	if (pylon0 == nullptr) {
-		outDef = circuit->GetEconomyManager()->GetPylonDef();  // IsAvailable check should be done before entering GetLinkToBuild
-		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, v0->pos, searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
+		outDef = economyManager->GetPylonDef();  // IsAvailable check should be done before entering GetLinkToBuild
+		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, link->GetSourcePos(), searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
 		return link;
 	}
-	CEnergyLink::SPylon* pylon1 = link->GetConnectionHead(v1, pylon0->pos);
+	CEnergyLink::SPylon* pylon1 = link->GetTargetHead();
 	if (pylon1 == nullptr) {
-		outDef = circuit->GetEconomyManager()->GetPylonDef();  // IsAvailable check should be done before entering GetLinkToBuild
-		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, v1->pos, searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
+		outDef = economyManager->GetPylonDef();  // IsAvailable check should be done before entering GetLinkToBuild
+		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, link->GetTargetPos(), searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
 		return link;
 	}
 
+	const float metalIncome = economyManager->GetAvgMetalIncome();
 	const int frame = circuit->GetLastFrame();
 	decltype(rangePylons) candDefs = rangePylons;
 	while (!candDefs.empty()) {
@@ -192,7 +196,7 @@ CEnergyLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 		}
 
 		outDef = circuit->GetCircuitDef(defId);
-		if ((outDef == nullptr) || !outDef->IsAvailable(frame)) {
+		if ((outDef == nullptr) || !outDef->IsAvailable(frame) || (metalIncome < outDef->GetCost() * 0.2f)) {
 			outPos = -RgtVector;
 			candDefs.erase(range);
 			continue;
@@ -255,6 +259,7 @@ void CEnergyGrid::Init()
 	spanningBfs = new SpanningBFS(*spanningGraph);
 
 	linkedClusters.resize(clusters.size(), false);
+	const CMetalData::ClusterWeightMap& weights = metalManager->GetClusterEdgeWeights();
 
 	links.reserve(clusterGraph.edgeNum());
 	for (int i = 0; i < clusterGraph.edgeNum(); ++i) {
@@ -262,6 +267,7 @@ void CEnergyGrid::Init()
 		int idx0 = clusterGraph.id(clusterGraph.u(edge));
 		int idx1 = clusterGraph.id(clusterGraph.v(edge));
 		links.emplace_back(idx0, clusters[idx0].position, idx1, clusters[idx1].position);
+		(*edgeCosts)[edge] = weights[edge];
 	}
 }
 
@@ -339,16 +345,9 @@ void CEnergyGrid::AddPylon(ICoreUnit::Id unitId, CCircuitDef::Id defId, const AI
 
 void CEnergyGrid::RemovePylon(ICoreUnit::Id unitId)
 {
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	const CMetalData::ClusterGraph& clusterGraph = metalManager->GetClusterGraph();
-
-	// Find edges to which building belongs to
-	CMetalData::ClusterGraph::EdgeIt edgeIt(clusterGraph);
-	for (; edgeIt != lemon::INVALID; ++edgeIt) {
-		int edgeIdx = clusterGraph.id(edgeIt);
-		CEnergyLink& link = links[edgeIdx];
-		if (link.RemovePylon(unitId)) {
-			unlinkPylons.insert(edgeIdx);
+	for (int i = 0; i < (int)links.size(); ++i) {
+		if (links[i].RemovePylon(unitId)) {
+			unlinkPylons.insert(i);
 		}
 	}
 }
@@ -404,10 +403,6 @@ void CEnergyGrid::RebuildTree()
 	for (int index : unlinkClusters) {
 		OwnedGraph::Node node = ownedClusters->nodeFromId(index);
 		ownedClusters->disable(node);
-		OwnedGraph::IncEdgeIt edgeIt(*ownedClusters, node);
-		for (; edgeIt != lemon::INVALID; ++edgeIt) {
-			spanningTree.erase(edgeIt);
-		}
 	}
 	unlinkClusters.clear();
 
@@ -420,27 +415,22 @@ void CEnergyGrid::RebuildTree()
 			int idx0 = clusterGraph.id(clusterGraph.oppositeNode(node, edgeIt));
 			if (linkedClusters[idx0]) {
 				CEnergyLink& link = links[clusterGraph.id(edgeIt)];
-				link.SetStartVertex(idx0);
+				link.SetSource(idx0);
 			}
 		}
 	}
 	linkClusters.clear();
 
 	const CMetalData::ClusterWeightMap& weights = metalManager->GetClusterEdgeWeights();
-	float width = circuit->GetTerrainManager()->GetTerrainWidth();
-	float height = circuit->GetTerrainManager()->GetTerrainHeight();
-	float baseWeight = width * width + height * height;
-	float invBaseWeight = 1.0f / baseWeight;  // FIXME: only valid for 1 of the ally team
-
 	for (const CMetalData::ClusterGraph::Edge edge : spanningTree) {
 		CEnergyLink& link = links[clusterGraph.id(edge)];
 		if (link.IsFinished() || link.IsBeingBuilt()) {
 			// Mark used edges as const
-			(*edgeCosts)[edge] = weights[edge] * invBaseWeight;
+			(*edgeCosts)[edge] = weights[edge] * MIN_COSTMOD;
 		} else if (!link.IsValid()) {
-			(*edgeCosts)[edge] = weights[edge] * baseWeight;
+			(*edgeCosts)[edge] = weights[edge] / MIN_COSTMOD;
 		} else {
-			(*edgeCosts)[edge] = weights[edge];
+			(*edgeCosts)[edge] = weights[edge] * link.GetCostMod();
 		}
 	}
 
@@ -482,8 +472,8 @@ void CEnergyGrid::UpdateVis()
 			figureId = figureGridId;
 			height = 18.0f;
 		}
-		AIFloat3 pos0 = link.GetV0()->pos;
-		const AIFloat3 dir = (link.GetV1()->pos - pos0) / 10;
+		AIFloat3 pos0 = link.GetSourcePos();
+		const AIFloat3 dir = (link.GetTargetPos() - pos0) / 10;
 		pos0.y = map->GetElevationAt(pos0.x, pos0.z) + height;
 		for (int i = 0; i < 10; ++i) {
 			AIFloat3 pos1 = pos0 + dir;
