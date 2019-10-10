@@ -21,7 +21,6 @@ CBSonarTask::CBSonarTask(ITaskManager* mgr, Priority priority,
 
 CBSonarTask::~CBSonarTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 } // namespace circuit

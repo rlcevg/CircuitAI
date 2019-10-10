@@ -34,7 +34,6 @@ CRetreatTask::CRetreatTask(ITaskManager* mgr, int timeout)
 
 CRetreatTask::~CRetreatTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CRetreatTask::AssignTo(CCircuitUnit* unit)

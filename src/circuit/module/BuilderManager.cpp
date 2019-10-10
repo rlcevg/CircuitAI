@@ -211,7 +211,6 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 CBuilderManager::~CBuilderManager()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	utils::free_clear(buildUpdates);
 	for (auto& kv1 : buildChains) {
 		for (auto& kv2 : kv1.second) {
@@ -403,7 +402,7 @@ IBuilderTask* CBuilderManager::EnqueueFactory(IBuilderTask::Priority priority,
 IBuilderTask* CBuilderManager::EnqueuePylon(IBuilderTask::Priority priority,
 											CCircuitDef* buildDef,
 											const AIFloat3& position,
-											CEnergyLink* link,
+											IGridLink* link,
 											float cost,
 											bool isActive,
 											int timeout)
@@ -1125,7 +1124,6 @@ void CBuilderManager::RemoveBuildList(CCircuitUnit* unit)
 
 void CBuilderManager::Watchdog()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	Resource* metalRes = economyManager->GetMetalRes();

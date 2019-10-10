@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_RESOURCE_ENERGYGRID_H_
 
 #include "resource/EnergyLink.h"
+#include "resource/EnergyNode.h"
 #include "resource/MetalData.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
@@ -30,28 +31,33 @@ public:
 
 	void Update();
 	void SetForceRebuild(bool value) { isForceRebuild = value; }
-	CEnergyLink* GetLinkToBuild(CCircuitDef*& outDef, springai::AIFloat3& outPos);
+	IGridLink* GetLinkToBuild(CCircuitDef*& outDef, springai::AIFloat3& outPos);
 
 	float GetPylonRange(CCircuitDef::Id defId);
 
 	void SetAuthority(CCircuitAI* authority) { circuit = authority; }
 private:
+	CEnergyNode* FindNodeDef(CCircuitDef*& outDef, springai::AIFloat3& outPos, CEnergyNode* node);
+	CEnergyLink* FindLinkDef(CCircuitDef*& outDef, springai::AIFloat3& outPos, CEnergyLink* link);
+
 	void ReadConfig();
 	void Init();
 	CCircuitAI* circuit;
 
 	int markFrame;
-	std::deque<ICoreUnit::Id> markedPylons;  // sorted by insertion
+	std::deque<std::pair<ICoreUnit::Id, CEnergyNode*>> markedPylons;  // sorted by insertion
 	std::unordered_map<CCircuitDef::Id, float> pylonRanges;
 	std::map<float, CCircuitDef::Id> rangePylons;
 
 	std::vector<bool> linkedClusters;
 	std::set<int> linkPylons, unlinkPylons;
+	std::set<int> linkNodes, unlinkNodes;
 	std::vector<CEnergyLink> links;  // Graph's exterior property
+	std::vector<CEnergyNode*> nodes;  // Graph's exterior property
 
 	void MarkAllyPylons(const std::vector<CAllyUnit*>& pylons);
-	void AddPylon(ICoreUnit::Id unitId, CCircuitDef::Id defId, const springai::AIFloat3& pos);
-	void RemovePylon(ICoreUnit::Id unitId);
+	CEnergyNode* AddPylon(ICoreUnit::Id unitId, CCircuitDef::Id defId, const springai::AIFloat3& pos);
+	void RemovePylon(const std::pair<ICoreUnit::Id, CEnergyNode*>& pylonId);
 	void CheckGrid();
 
 	std::vector<int> linkClusters;
@@ -60,6 +66,7 @@ private:
 
 	class SpanningLink;
 	class DetectLink;
+	class DetectNode;
 	using OwnedFilter = CMetalData::ClusterGraph::NodeMap<bool>;
 	using OwnedGraph = lemon::FilterNodes<const CMetalData::ClusterGraph, OwnedFilter>;
 	using SpanningTree = std::set<CMetalData::ClusterGraph::Edge>;
@@ -69,7 +76,7 @@ private:
 	SpanningTree spanningTree;
 	OwnedFilter* ownedFilter;
 	OwnedGraph* ownedClusters;
-	CMetalData::ClusterWeightMap* edgeCosts;
+	CMetalData::ClusterCostMap* edgeCosts;
 
 	SpanningLink* spanningFilter;
 	SpanningGraph* spanningGraph;

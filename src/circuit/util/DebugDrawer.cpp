@@ -35,7 +35,6 @@ CDebugDrawer::CDebugDrawer(CCircuitAI* circuit, const struct SSkirmishAICallback
 
 CDebugDrawer::~CDebugDrawer()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete debug;
 	if (isInitialized) {
 		Release();

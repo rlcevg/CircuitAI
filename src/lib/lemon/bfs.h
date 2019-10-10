@@ -556,8 +556,11 @@ namespace lemon {
       return n;
     }
 
-    template<class EM>
-    Node processNextNode(const EM& em, Edge& redge)
+    /*
+     * Hand-made addition
+     */
+    template<class NM, class EM>
+    Node processNextNode(const NM& nm, const EM& em, Node& rnode, Edge& redge)
     {
       if(_queue_tail==_queue_next_dist) {
         _curr_dist++;
@@ -572,7 +575,11 @@ namespace lemon {
           _reached->set(m,true);
           _pred->set(m,e);
           _dist->set(m,_curr_dist);
-          if (em[(Edge)e] && redge == INVALID) {
+          if (nm[m]) {
+            rnode = m;
+            break;
+          }
+          if (em[(Edge)e]) {
             redge = e;
             break;
           }
@@ -688,14 +695,22 @@ namespace lemon {
       return rnode;
     }
 
-    template<class EdgeBoolMap>
-    Edge startEdge(const EdgeBoolMap &em)
+    /*
+     * Hand-made addition
+     */
+    template<class NodeBoolMap, class EdgeBoolMap>
+    std::pair<Node, Edge> start(const NodeBoolMap &nm, const EdgeBoolMap &em)
     {
+      Node rnode = INVALID;
       Edge redge = INVALID;
-      while ( !emptyQueue() && redge == INVALID ) {
-        processNextNode(em, redge);
+      if (nm[nextNode()]) {
+        rnode = nextNode();
+      } else {
+        while ( !emptyQueue() && rnode == INVALID && redge == INVALID ) {
+          processNextNode(nm, em, rnode, redge);
+        }
       }
-      return redge;
+      return std::make_pair(rnode, redge);
     }
 
     ///Runs the algorithm from the given source node.

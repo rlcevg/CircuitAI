@@ -28,7 +28,6 @@ CMoveAction::CMoveAction(CCircuitUnit* owner, const std::shared_ptr<F3Vec>& pPat
 
 CMoveAction::~CMoveAction()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CMoveAction::Update(CCircuitAI* circuit)

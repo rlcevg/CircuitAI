@@ -25,7 +25,6 @@ CSetupData::CSetupData() :
 
 CSetupData::~CSetupData()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	utils::free_clear(allyTeams);
 }
 

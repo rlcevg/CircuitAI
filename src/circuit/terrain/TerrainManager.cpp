@@ -63,7 +63,6 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 
 CTerrainManager::~CTerrainManager()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	for (auto& kv : blockInfos) {
 		delete kv.second;
 	}

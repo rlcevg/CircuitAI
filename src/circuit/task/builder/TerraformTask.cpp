@@ -34,7 +34,6 @@ CBTerraformTask::CBTerraformTask(ITaskManager* mgr, Priority priority, const AIF
 
 CBTerraformTask::~CBTerraformTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CBTerraformTask::RemoveAssignee(CCircuitUnit* unit)

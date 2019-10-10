@@ -23,7 +23,6 @@ CFGuardTask::CFGuardTask(ITaskManager* mgr, CCircuitUnit* vip, float maxPower)
 
 CFGuardTask::~CFGuardTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool CFGuardTask::CanAssignTo(CCircuitUnit* unit) const

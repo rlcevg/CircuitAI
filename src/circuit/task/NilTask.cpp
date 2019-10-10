@@ -18,7 +18,6 @@ CNilTask::CNilTask(ITaskManager* mgr)
 
 CNilTask::~CNilTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CNilTask::AssignTo(CCircuitUnit* unit)

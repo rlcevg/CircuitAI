@@ -70,7 +70,6 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 
 CCircuitUnit::~CCircuitUnit()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete dgun;
 	delete weapon;
 	delete shield;

@@ -18,7 +18,6 @@ CPlayerTask::CPlayerTask(ITaskManager* mgr)
 
 CPlayerTask::~CPlayerTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CPlayerTask::RemoveAssignee(CCircuitUnit* unit)

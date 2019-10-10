@@ -81,8 +81,6 @@ CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData)
 
 CMetalManager::~CMetalManager()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-
 	delete threatFilter;
 	delete filteredGraph;
 	delete shortPath;
@@ -152,10 +150,9 @@ void CMetalManager::ParseMetalSpots()
 
 void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	metalData->SetClusterizing(true);
 
-	const float maxDistance = circuit->GetEconomyManager()->GetPylonRange() * 2;
+	const float maxDistance = circuit->GetEconomyManager()->GetPylonRange() * 1.9f;
 	const CMetalData::Metals& spots = metalData->GetSpots();
 	int nrows = spots.size();
 
@@ -201,7 +198,7 @@ void CMetalManager::Init()
 
 	threatFilter = new SafeCluster(circuit->GetThreatMap(), GetClusters());
 	filteredGraph = new ClusterGraph(GetClusterGraph(), *threatFilter);
-	shortPath = new ShortPath(*filteredGraph, GetClusterEdgeWeights());
+	shortPath = new ShortPath(*filteredGraph, GetClusterEdgeCosts());
 }
 
 void CMetalManager::SetOpenSpot(int index, bool value)

@@ -36,7 +36,6 @@ CAntiHeavyTask::CAntiHeavyTask(ITaskManager* mgr, float powerMod)
 
 CAntiHeavyTask::~CAntiHeavyTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool CAntiHeavyTask::CanAssignTo(CCircuitUnit* unit) const

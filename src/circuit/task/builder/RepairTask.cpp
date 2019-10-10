@@ -24,7 +24,6 @@ CBRepairTask::CBRepairTask(ITaskManager* mgr, Priority priority, CAllyUnit* targ
 
 CBRepairTask::~CBRepairTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CBRepairTask::Update()

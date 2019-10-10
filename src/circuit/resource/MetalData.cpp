@@ -25,17 +25,15 @@ CMetalData::CMetalData()
 		, minIncome(std::numeric_limits<float>::max())
 		, avgIncome(0.f)
 		, maxIncome(0.f)
-		, mexEdgeWeights(mexGraph)
 		, clustersAdaptor(clusters)
 		, clusterTree(2 /*dim*/, clustersAdaptor, KDTreeSingleIndexAdaptorParams(2 /*max leaf*/))
-		, clusterEdgeWeights(clusterGraph)
+		, clusterEdgeCosts(clusterGraph)
 		, isClusterizing(false)
 {
 }
 
 CMetalData::~CMetalData()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CMetalData::Init(const Metals& spots)
@@ -45,13 +43,9 @@ void CMetalData::Init(const Metals& spots)
 		minIncome = std::min(minIncome, spot.income);
 		maxIncome = std::max(maxIncome, spot.income);
 		avgIncome += spot.income;
-
-		mexGraph.addNode();
 	}
 	if (!spots.empty()) {
 		avgIncome /= spots.size();
-
-		BuildMexGraph();
 	}
 	metalTree.buildIndex();
 
@@ -108,8 +102,6 @@ const int CMetalData::FindNearestCluster(const AIFloat3& pos, PointPredicate& pr
 
 void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distMatrix)
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-
 	// Clusterize metal spots by distance to each other
 	CHierarchCluster clust;
 	const CHierarchCluster::Clusters& iclusters = clust.Clusterize(*distMatrix, maxDistance);
@@ -150,58 +142,6 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 	isClusterizing = false;
 }
 
-void CMetalData::BuildMexGraph()
-{
-	auto addEdge = [this](std::size_t A, std::size_t B) -> void {
-		MexGraph::Edge edge = mexGraph.addEdge(mexGraph.nodeFromId(A), mexGraph.nodeFromId(B));
-		const SMetal& mA = spots[A];
-		const SMetal& mB = spots[B];
-		mexEdgeWeights[edge] = mA.position.distance(mB.position) / (mA.income + mB.income);
-	};
-	if (spots.size() < 2) {
-		// do nothing
-	} else if (spots.size() < 3) {
-		addEdge(0, 1);
-	} else {
-		// Mex triangulation
-		std::vector<double> coords;
-		coords.reserve(spots.size() * 2);  // 2D
-		for (const SMetal& m : spots) {
-			coords.push_back(m.position.x);
-			coords.push_back(m.position.z);
-		}
-		TriangulateGraph(coords, [this](std::size_t A, std::size_t B) -> float {
-			return spots[A].position.distance(spots[B].position);
-		}, addEdge);
-	}
-}
-
-void CMetalData::BuildClusterGraph()
-{
-	auto addEdge = [this](std::size_t A, std::size_t B) -> void {
-		ClusterGraph::Edge edge = clusterGraph.addEdge(clusterGraph.nodeFromId(A), clusterGraph.nodeFromId(B));
-		const SCluster& clA = clusters[A];
-		const SCluster& clB = clusters[B];
-		clusterEdgeWeights[edge] = clA.position.distance(clB.position) / (clA.income + clB.income) * (clA.idxSpots.size() + clB.idxSpots.size());
-	};
-	if (clusters.size() < 2) {
-		// do nothing
-	} else if (clusters.size() < 3) {
-		addEdge(0, 1);
-	} else {
-		// Clusters triangulation
-		std::vector<double> coords;
-		coords.reserve(clusters.size() * 2);  // 2D
-		for (SCluster& c : clusters) {
-			coords.push_back(c.position.x);
-			coords.push_back(c.position.z);
-		}
-		TriangulateGraph(coords, [this](std::size_t A, std::size_t B) -> float {
-			return clusters[A].position.distance(clusters[B].position);
-		}, addEdge);
-	}
-}
-
 void CMetalData::TriangulateGraph(const std::vector<double>& coords,
 		std::function<float (std::size_t A, std::size_t B)> distance,
 		std::function<void (std::size_t A, std::size_t B)> addEdge)
@@ -223,7 +163,7 @@ void CMetalData::TriangulateGraph(const std::vector<double>& coords,
 		adjacent(B, C, A);
 		adjacent(C, A, B);
 	}
-	auto badEdge = [&edges, distance, this](const DEdge e, const std::set<std::size_t>& vs) {
+	auto badEdge = [&edges, distance](const DEdge e, const std::set<std::size_t>& vs) {
 		float AB = distance(e.first, e.second);
 		for (std::size_t C : vs) {
 			float AC = distance(e.first, C);
@@ -241,6 +181,32 @@ void CMetalData::TriangulateGraph(const std::vector<double>& coords,
 			continue;
 		}
 		addEdge(e.first, e.second);
+	}
+}
+
+void CMetalData::BuildClusterGraph()
+{
+	auto addEdge = [this](std::size_t A, std::size_t B) -> void {
+		ClusterGraph::Edge edge = clusterGraph.addEdge(clusterGraph.nodeFromId(A), clusterGraph.nodeFromId(B));
+		const SCluster& clA = clusters[A];
+		const SCluster& clB = clusters[B];
+		clusterEdgeCosts[edge] = clA.position.distance(clB.position) / (clA.income + clB.income) * (clA.idxSpots.size() + clB.idxSpots.size());
+	};
+	if (clusters.size() < 2) {
+		// do nothing
+	} else if (clusters.size() < 3) {
+		addEdge(0, 1);
+	} else {
+		// Clusters triangulation
+		std::vector<double> coords;
+		coords.reserve(clusters.size() * 2);  // 2D
+		for (SCluster& c : clusters) {
+			coords.push_back(c.position.x);
+			coords.push_back(c.position.z);
+		}
+		TriangulateGraph(coords, [this](std::size_t A, std::size_t B) -> float {
+			return clusters[A].position.distance(clusters[B].position);
+		}, addEdge);
 	}
 }
 

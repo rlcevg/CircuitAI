@@ -28,7 +28,6 @@ CSRepairTask::CSRepairTask(ITaskManager* mgr, Priority priority, CAllyUnit* targ
 
 CSRepairTask::~CSRepairTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CSRepairTask::Update()

@@ -428,7 +428,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 CCircuitDef::~CCircuitDef()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete def;
 	delete dgunMount;
 	delete shieldMount;

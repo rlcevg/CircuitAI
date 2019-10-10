@@ -28,7 +28,6 @@ CJumpAction::CJumpAction(CCircuitUnit* owner, const std::shared_ptr<F3Vec>& pPat
 
 CJumpAction::~CJumpAction()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CJumpAction::Update(CCircuitAI* circuit)

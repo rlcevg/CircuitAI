@@ -14,7 +14,6 @@ std::shared_ptr<CGameTask> CGameTask::emptyTask = std::make_shared<CGameTask>([]
 
 CGameTask::~CGameTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CGameTask::Run()

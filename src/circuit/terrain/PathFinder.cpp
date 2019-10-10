@@ -103,7 +103,6 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 
 CPathFinder::~CPathFinder()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	for (bool* ma : moveArrays) {
 		delete[] ma;
 	}

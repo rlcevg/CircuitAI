@@ -27,7 +27,6 @@ CDGunAction::CDGunAction(CCircuitUnit* owner, float range)
 
 CDGunAction::~CDGunAction()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CDGunAction::Update(CCircuitAI* circuit)

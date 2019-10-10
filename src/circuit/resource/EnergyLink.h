@@ -8,7 +8,8 @@
 #ifndef SRC_CIRCUIT_RESOURCE_ENERGYLINK_H_
 #define SRC_CIRCUIT_RESOURCE_ENERGYLINK_H_
 
-#include "unit/CircuitUnit.h"
+#include "resource/GridLink.h"
+#include "unit/CoreUnit.h"
 
 #include <map>
 #include <set>
@@ -17,7 +18,7 @@ namespace circuit {
 
 #define MIN_COSTMOD	0.01f
 
-class CEnergyLink {
+class CEnergyLink: public IGridLink {
 public:
 	struct SPylon {
 		SPylon() : pos(-RgtVector), range(0.f) {}
@@ -33,14 +34,9 @@ public:
 	void AddPylon(ICoreUnit::Id unitId, const springai::AIFloat3& pos, float range);
 	bool RemovePylon(ICoreUnit::Id unitId);
 	void CheckConnection();
-	SPylon* GetSourceHead() const { return source->head; }
-	SPylon* GetTargetHead() const { return target->head; }
+	const SPylon* GetSourceHead() const { return source->head; }
+	const SPylon* GetTargetHead() const { return target->head; }
 
-	void SetBeingBuilt(bool value) { isBeingBuilt = value; }
-	bool IsBeingBuilt() const { return isBeingBuilt; }
-	bool IsFinished() const { return isFinished; }
-	void SetValid(bool value) { isValid = value; }
-	bool IsValid() const { return isValid; }
 	float GetCostMod() const { return costMod; }
 	void SetSource(int index);
 	const springai::AIFloat3& GetSourcePos() const { return source->pylon.pos; }
@@ -49,7 +45,7 @@ public:
 private:
 	struct SVertex {
 		SVertex(int index, const springai::AIFloat3& pos)
-			: index(index), pylon(pos, 0.f), head(nullptr)
+			: index(index), pylon(pos, 0.f), head(&pylon)
 		{}
 		const springai::AIFloat3& GetPos() const { return pylon.pos; }
 		int index;
@@ -59,9 +55,6 @@ private:
 	SVertex *source, *target;  // owner
 
 	std::map<ICoreUnit::Id, SPylon*> pylons;  // owner
-	bool isBeingBuilt;
-	bool isFinished;
-	bool isValid;
 	float invDistance;
 	float costMod;
 };

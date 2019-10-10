@@ -8,9 +8,10 @@
 #include "task/builder/PylonTask.h"
 #include "task/TaskManager.h"
 #include "module/EconomyManager.h"
-#include "resource/EnergyLink.h"
+#include "resource/GridLink.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
+#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -23,7 +24,7 @@ using namespace springai;
 
 CBPylonTask::CBPylonTask(ITaskManager* mgr, Priority priority,
 						 CCircuitDef* buildDef, const AIFloat3& position,
-						 CEnergyLink* link, float cost, int timeout)
+						 IGridLink* link, float cost, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::PYLON, cost, 0.f, timeout)
 		, link(link)
 {
@@ -34,7 +35,6 @@ CBPylonTask::CBPylonTask(ITaskManager* mgr, Priority priority,
 
 CBPylonTask::~CBPylonTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CBPylonTask::Execute(CCircuitUnit* unit)

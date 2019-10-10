@@ -26,7 +26,6 @@ CBEnergyTask::CBEnergyTask(ITaskManager* mgr, Priority priority,
 
 CBEnergyTask::~CBEnergyTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CBEnergyTask::Update()

@@ -21,7 +21,6 @@ CBStoreTask::CBStoreTask(ITaskManager* mgr, Priority priority,
 
 CBStoreTask::~CBStoreTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 } // namespace circuit

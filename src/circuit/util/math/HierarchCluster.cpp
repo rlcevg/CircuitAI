@@ -19,7 +19,6 @@ CHierarchCluster::CHierarchCluster()
 
 CHierarchCluster::~CHierarchCluster()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 const CHierarchCluster::Clusters& CHierarchCluster::Clusterize(CRagMatrix& distmatrix, float maxDistance)

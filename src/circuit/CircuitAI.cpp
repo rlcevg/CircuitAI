@@ -110,7 +110,6 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 
 CCircuitAI::~CCircuitAI()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	if (isInitialized) {
 		Release(0);
 	}
@@ -603,7 +602,6 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 int CCircuitAI::Release(int reason)
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete economy, delete metalRes, delete energyRes;
 	economy = nullptr;
 	metalRes = energyRes = nullptr;

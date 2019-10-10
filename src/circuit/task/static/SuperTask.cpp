@@ -31,7 +31,6 @@ CSuperTask::CSuperTask(ITaskManager* mgr)
 
 CSuperTask::~CSuperTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool CSuperTask::CanAssignTo(CCircuitUnit* unit) const

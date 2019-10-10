@@ -38,8 +38,6 @@ public:
 
 public:
 	const CMetalData::Metals& GetSpots() const { return metalData->GetSpots(); }
-	const CMetalData::MexGraph& GetMexGraph() const { return metalData->GetMexGraph(); }
-	const CMetalData::MexWeightMap& GetMexEdgeWeights() const { return metalData->GetMexEdgeWeights(); }
 
 	const int FindNearestSpot(const springai::AIFloat3& pos) const {
 		return metalData->FindNearestSpot(pos);
@@ -57,7 +55,7 @@ public:
 
 	const CMetalData::Clusters& GetClusters() const { return metalData->GetClusters(); }
 	const CMetalData::ClusterGraph& GetClusterGraph() const { return metalData->GetClusterGraph(); }
-	const CMetalData::ClusterWeightMap& GetClusterEdgeWeights() const { return metalData->GetClusterEdgeWeights(); }
+	const CMetalData::ClusterCostMap& GetClusterEdgeCosts() const { return metalData->GetClusterEdgeCosts(); }
 
 public:
 	void SetOpenSpot(int index, bool value);
@@ -106,7 +104,7 @@ private:
 	class SafeCluster;
 	class DetectCluster;
 	using ClusterGraph = lemon::FilterNodes<const CMetalData::ClusterGraph, SafeCluster>;
-	using ShortPath = lemon::Dijkstra<ClusterGraph, CMetalData::ClusterWeightMap>;
+	using ShortPath = lemon::Dijkstra<ClusterGraph, CMetalData::ClusterCostMap>;
 
 	SafeCluster* threatFilter;
 	ClusterGraph* filteredGraph;

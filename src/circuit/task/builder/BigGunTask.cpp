@@ -24,7 +24,6 @@ CBBigGunTask::CBBigGunTask(ITaskManager* mgr, Priority priority,
 
 CBBigGunTask::~CBBigGunTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CBBigGunTask::Finish()

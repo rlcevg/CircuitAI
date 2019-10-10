@@ -30,7 +30,6 @@ CDefenceMatrix::CDefenceMatrix(CCircuitAI* circuit)
 
 CDefenceMatrix::~CDefenceMatrix()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 CDefenceMatrix::SDefPoint* CDefenceMatrix::GetDefPoint(const AIFloat3& pos, float defCost)

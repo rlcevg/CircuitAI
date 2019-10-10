@@ -21,7 +21,6 @@ CGameAttribute::CGameAttribute(unsigned int seed)
 
 CGameAttribute::~CGameAttribute()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CGameAttribute::SetGameEnd(bool value)

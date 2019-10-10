@@ -39,7 +39,6 @@ CBFactoryTask::CBFactoryTask(ITaskManager* mgr, Priority priority,
 
 CBFactoryTask::~CBFactoryTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CBFactoryTask::Update()

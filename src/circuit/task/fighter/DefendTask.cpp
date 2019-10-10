@@ -34,7 +34,6 @@ CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, float radi
 
 CDefendTask::~CDefendTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool CDefendTask::CanAssignTo(CCircuitUnit* unit) const

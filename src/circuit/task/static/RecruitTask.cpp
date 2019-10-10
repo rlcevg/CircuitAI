@@ -34,7 +34,6 @@ CRecruitTask::CRecruitTask(ITaskManager* mgr, Priority priority,
 
 CRecruitTask::~CRecruitTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool CRecruitTask::CanAssignTo(CCircuitUnit* unit) const

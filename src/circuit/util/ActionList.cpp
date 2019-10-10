@@ -24,7 +24,6 @@ CActionList::CActionList()
 
 CActionList::~CActionList()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	Clear();
 }
 

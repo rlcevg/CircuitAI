@@ -28,7 +28,6 @@ CBDefenceTask::CBDefenceTask(ITaskManager* mgr, Priority priority,
 
 CBDefenceTask::~CBDefenceTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CBDefenceTask::Finish()

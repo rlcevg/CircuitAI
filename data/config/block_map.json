@@ -43,10 +43,10 @@
 		},
 		"wind": {
 			"type": ["circle", "engy_low"],
-			// Integer radius of a blocker or desciption string.
+			// Integer radius of a blocker or description string.
 			// Available string values: explosion, expl_ally
 //			"radius": "explosion",  // default: "explosion"
-			"ignore": ["mex", "engy_mid", "engy_high", "pylon", "nano"]
+			"not_ignore": ["engy_low"]
 		},
 		"fusion": {
 			"type": ["circle", "engy_mid"],
@@ -72,7 +72,7 @@
 		"def_low": {
 			"type": ["circle", "def_low"],
 			"radius": 10,  // 160 / (SQUARE_SIZE * 2)
-			"ignore": ["engy_mid", "engy_high", "pylon", "nano"]
+			"ignore": ["engy_mid", "engy_high", "engy_low", "pylon", "nano"]
 		},
 		"caretaker": {
 			"type": ["rectangle", "nano"],
@@ -93,6 +93,10 @@
 		"strider": {
 			"type": ["rectangle", "special"],
 			"yard": [4, 4],
+			"ignore": ["all"]
+		},
+		"small": {
+			"type": ["rectangle", "unknown"],
 			"ignore": ["all"]
 		},
 		"_default_": {
@@ -126,7 +130,8 @@
 		"superweapon": ["raveparty", "staticnuke", "zenith", "turretaaheavy", "staticheavyarty", "staticantinuke", "staticheavyradar"],
 //		"protector": ["staticantinuke"],
 //		"terraform": ["terraunit"],
-		"strider": ["striderantiheavy", "striderscorpion", "striderdante", "striderarty", "striderfunnelweb", "striderbantha", "striderdetriment", "subtacmissile", "shipcarrier", "shipheavyarty"]
+		"strider": ["striderantiheavy", "striderscorpion", "striderdante", "striderarty", "striderfunnelweb", "striderbantha", "striderdetriment", "subtacmissile", "shipcarrier", "shipheavyarty"],
+		"small": ["staticradar"]
 	}
 }
 }

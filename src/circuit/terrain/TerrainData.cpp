@@ -63,8 +63,6 @@ CTerrainData::CTerrainData()
 
 CTerrainData::~CTerrainData()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-
 #ifdef DEBUG_VIS
 	if (debugDrawer != nullptr) {
 		for (const std::pair<Uint32, float*>& win : sdlWindows) {

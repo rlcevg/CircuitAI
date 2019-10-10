@@ -19,7 +19,6 @@ CKMeansCluster::CKMeansCluster(const springai::AIFloat3& initPos)
 
 CKMeansCluster::~CKMeansCluster()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 /*

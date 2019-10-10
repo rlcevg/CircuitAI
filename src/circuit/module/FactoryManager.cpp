@@ -229,7 +229,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 CFactoryManager::~CFactoryManager()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	utils::free_clear(updateTasks);
 }
 
@@ -1235,7 +1234,6 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 
 void CFactoryManager::Watchdog()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	auto checkIdler = [this](CCircuitUnit* unit) {
 		if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {

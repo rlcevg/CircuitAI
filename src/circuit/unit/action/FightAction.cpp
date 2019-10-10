@@ -28,7 +28,6 @@ CFightAction::CFightAction(CCircuitUnit* owner, const std::shared_ptr<F3Vec>& pP
 
 CFightAction::~CFightAction()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CFightAction::Update(CCircuitAI* circuit)

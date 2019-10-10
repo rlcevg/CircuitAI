@@ -43,7 +43,6 @@ CAllyTeam::CAllyTeam(const TeamIds& tids, const SBox& sb)
 
 CAllyTeam::~CAllyTeam()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	if (initCount > 0) {
 		initCount = 1;
 		Release();

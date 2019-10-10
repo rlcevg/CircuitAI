@@ -38,7 +38,6 @@ CAttackTask::CAttackTask(ITaskManager* mgr, float minPower, float powerMod)
 
 CAttackTask::~CAttackTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool CAttackTask::CanAssignTo(CCircuitUnit* unit) const

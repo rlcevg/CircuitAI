@@ -12,7 +12,6 @@
 
 #include "kdtree/nanoflann.hpp"
 #include "lemon/smart_graph.h"
-#include "lemon/list_graph.h"
 
 #include <vector>
 #include <atomic>
@@ -26,9 +25,7 @@ class CRagMatrix;
 class CMetalData {
 public:
 	using ClusterGraph = lemon::SmartGraph;
-	using ClusterWeightMap = ClusterGraph::EdgeMap<float>;
-	using MexGraph = lemon::ListGraph;
-	using MexWeightMap = MexGraph::EdgeMap<float>;
+	using ClusterCostMap = ClusterGraph::EdgeMap<float>;
 
 	struct SMetal {
 		float income;
@@ -82,8 +79,6 @@ public:
 	float GetMaxIncome() const { return maxIncome; }
 
 	const Metals& GetSpots() const { return spots; }
-	const MexGraph& GetMexGraph() const { return mexGraph; }
-	const MexWeightMap& GetMexEdgeWeights() const { return mexEdgeWeights; }
 
 	const int FindNearestSpot(const springai::AIFloat3& pos) const;
 	const int FindNearestSpot(const springai::AIFloat3& pos, PointPredicate& predicate) const;
@@ -93,7 +88,7 @@ public:
 
 	const Clusters& GetClusters() const { return clusters; }
 	const ClusterGraph& GetClusterGraph() const { return clusterGraph; }
-	const ClusterWeightMap& GetClusterEdgeWeights() const { return clusterEdgeWeights; }
+	const ClusterCostMap& GetClusterEdgeCosts() const { return clusterEdgeCosts; }
 
 	/*
 	 * Hierarchical clusterization. Not reusable. Metric: complete link. Thread-unsafe
@@ -107,12 +102,11 @@ public:
 
 	const SMetal& operator[](int idx) const { return spots[idx]; }
 
-private:
-	void BuildMexGraph();
-	void BuildClusterGraph();
-	void TriangulateGraph(const std::vector<double>& coords,
+	static void TriangulateGraph(const std::vector<double>& coords,
 			std::function<float (std::size_t A, std::size_t B)> distance,
 			std::function<void (std::size_t A, std::size_t B)> addEdge);
+private:
+	void BuildClusterGraph();
 
 	bool isInitialized;
 	Metals spots;
@@ -126,9 +120,6 @@ private:
 	float avgIncome;
 	float maxIncome;
 
-	MexGraph mexGraph;
-	MexWeightMap mexEdgeWeights;
-
 	Clusters clusters;
 	SPointAdaptor<Clusters> clustersAdaptor;
 	using ClusterTree = nanoflann::KDTreeSingleIndexAdaptor<
@@ -138,7 +129,7 @@ private:
 	ClusterTree clusterTree;
 
 	ClusterGraph clusterGraph;
-	ClusterWeightMap clusterEdgeWeights;
+	ClusterCostMap clusterEdgeCosts;
 
 	std::atomic<bool> isClusterizing;
 };

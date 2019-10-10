@@ -30,7 +30,6 @@ CSupportTask::CSupportTask(ITaskManager* mgr)
 
 CSupportTask::~CSupportTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CSupportTask::RemoveAssignee(CCircuitUnit* unit)

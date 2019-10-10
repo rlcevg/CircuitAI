@@ -35,7 +35,6 @@ CAntiAirTask::CAntiAirTask(ITaskManager* mgr, float powerMod)
 
 CAntiAirTask::~CAntiAirTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool CAntiAirTask::CanAssignTo(CCircuitUnit* unit) const

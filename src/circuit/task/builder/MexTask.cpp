@@ -33,7 +33,6 @@ CBMexTask::CBMexTask(ITaskManager* mgr, Priority priority,
 
 CBMexTask::~CBMexTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const

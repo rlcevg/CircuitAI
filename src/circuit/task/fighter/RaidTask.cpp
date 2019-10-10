@@ -37,7 +37,6 @@ CRaidTask::CRaidTask(ITaskManager* mgr, float maxPower, float powerMod)
 
 CRaidTask::~CRaidTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool CRaidTask::CanAssignTo(CCircuitUnit* unit) const

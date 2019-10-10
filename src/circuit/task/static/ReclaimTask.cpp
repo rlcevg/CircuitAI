@@ -28,7 +28,6 @@ CSReclaimTask::CSReclaimTask(ITaskManager* mgr, Priority priority,
 
 CSReclaimTask::~CSReclaimTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CSReclaimTask::Update()

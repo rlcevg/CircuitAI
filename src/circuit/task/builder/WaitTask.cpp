@@ -23,7 +23,6 @@ CBWaitTask::CBWaitTask(ITaskManager* mgr, int timeout)
 
 CBWaitTask::~CBWaitTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CBWaitTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)

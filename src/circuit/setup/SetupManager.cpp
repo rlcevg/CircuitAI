@@ -53,7 +53,6 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 
 CSetupManager::~CSetupManager()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete config;
 }
 

@@ -34,7 +34,6 @@ CBlockRectangle::CBlockRectangle(const int2& offset, const int2& bsize, const in
 
 CBlockRectangle::~CBlockRectangle()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 } // namespace circuit

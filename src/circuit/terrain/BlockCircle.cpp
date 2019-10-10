@@ -36,7 +36,6 @@ CBlockCircle::CBlockCircle(const int2& offset, int radius, const int2& ssize, SB
 
 CBlockCircle::~CBlockCircle()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 } // namespace circuit

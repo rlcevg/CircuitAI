@@ -28,7 +28,6 @@ CSupportAction::CSupportAction(CCircuitUnit* owner)
 
 CSupportAction::~CSupportAction()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CSupportAction::Update(CCircuitAI* circuit)

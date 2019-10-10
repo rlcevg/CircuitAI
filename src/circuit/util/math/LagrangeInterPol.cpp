@@ -31,7 +31,6 @@ CLagrangeInterPol::CLagrangeInterPol(const Vector& X, const Vector& Y)
 
 CLagrangeInterPol::~CLagrangeInterPol()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 float CLagrangeInterPol::GetValueAt(float x)

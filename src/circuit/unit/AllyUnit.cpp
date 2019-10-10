@@ -22,7 +22,6 @@ CAllyUnit::CAllyUnit(Id unitId, springai::Unit* unit, CCircuitDef* cdef)
 
 CAllyUnit::~CAllyUnit()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 const AIFloat3& CAllyUnit::GetPos(int frame)

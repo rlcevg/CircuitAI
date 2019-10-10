@@ -19,7 +19,6 @@ CGaussSolver::CGaussSolver()
 
 CGaussSolver::~CGaussSolver()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 const CGaussSolver::Vector& CGaussSolver::Solve(Matrix& A, Vector& B)

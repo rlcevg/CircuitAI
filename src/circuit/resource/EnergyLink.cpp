@@ -15,11 +15,9 @@ namespace circuit {
 using namespace springai;
 
 CEnergyLink::CEnergyLink(int idx0, const AIFloat3& P0, int idx1, const AIFloat3& P1)
-		: source(new SVertex(idx0, P0))
+		: IGridLink()
+		, source(new SVertex(idx0, P0))
 		, target(new SVertex(idx1, P1))
-		, isBeingBuilt(false)
-		, isFinished(false)
-		, isValid(true)
 		, invDistance(1.f / P0.distance2D(P1))
 		, costMod(1.f)
 {
@@ -27,7 +25,6 @@ CEnergyLink::CEnergyLink(int idx0, const AIFloat3& P0, int idx1, const AIFloat3&
 
 CEnergyLink::~CEnergyLink()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	for (auto& kv : pylons) {
 		delete kv.second;
 	}
@@ -96,6 +93,7 @@ void CEnergyLink::CheckConnection()
 	}
 	AIFloat3 P1 = target->pylon.pos;
 
+	// depth-first search
 	while (!queue.empty()) {
 		SPylon* q = queue.front();
 		queue.pop();
@@ -119,10 +117,10 @@ void CEnergyLink::CheckConnection()
 		}
 	}
 
-	source->head = sourceHead;
 	if (sourceHead == nullptr) {
 		sourceHead = &source->pylon;
 	}
+	source->head = sourceHead;
 
 	minDist = std::numeric_limits<float>::max();
 	visited.clear();
@@ -149,10 +147,10 @@ void CEnergyLink::CheckConnection()
 		}
 	}
 
-	target->head = targetHead;
 	if (targetHead == nullptr) {
 		targetHead = &target->pylon;
 	}
+	target->head = targetHead;
 
 	const float dist = sourceHead->pos.distance2D(targetHead->pos) - sourceHead->range - targetHead->range;
 	costMod = std::max(dist * invDistance, MIN_COSTMOD);

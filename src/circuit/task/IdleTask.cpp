@@ -21,7 +21,6 @@ CIdleTask::CIdleTask(ITaskManager* mgr)
 
 CIdleTask::~CIdleTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CIdleTask::AssignTo(CCircuitUnit* unit)

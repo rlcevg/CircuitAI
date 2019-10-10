@@ -101,7 +101,6 @@ CFactoryData::CFactoryData(CCircuitAI *circuit)
 
 CFactoryData::~CFactoryData()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 position,

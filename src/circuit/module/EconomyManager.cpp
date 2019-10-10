@@ -258,7 +258,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 
 CEconomyManager::~CEconomyManager()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete metalRes;
 	delete energyRes;
 	delete economy;
@@ -995,7 +994,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 
 	CCircuitDef* buildDef;
 	AIFloat3 buildPos;
-	CEnergyLink* link = energyGrid->GetLinkToBuild(buildDef, buildPos);
+	IGridLink* link = energyGrid->GetLinkToBuild(buildDef, buildPos);
 	if ((link == nullptr) || (buildDef == nullptr)) {
 		return nullptr;
 	}

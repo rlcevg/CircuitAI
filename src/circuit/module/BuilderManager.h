@@ -24,7 +24,7 @@ namespace springai {
 
 namespace circuit {
 
-class CEnergyLink;
+class IGridLink;
 class CRetreatTask;
 class CBRepairTask;
 class CBReclaimTask;
@@ -77,7 +77,7 @@ public:
 	IBuilderTask* EnqueuePylon(IBuilderTask::Priority priority,
 							   CCircuitDef* buildDef,
 							   const springai::AIFloat3& position,
-							   CEnergyLink* link,
+							   IGridLink* link,
 							   float cost,
 							   bool isActive = true,
 							   int timeout = ASSIGN_TIMEOUT);

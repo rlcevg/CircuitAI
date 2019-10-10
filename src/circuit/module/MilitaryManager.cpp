@@ -280,7 +280,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 CMilitaryManager::~CMilitaryManager()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	utils::free_clear(fightUpdates);
 }
 
@@ -1360,7 +1359,6 @@ void CMilitaryManager::Release()
 
 void CMilitaryManager::Watchdog()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	for (CCircuitUnit* unit : army) {
 		if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {

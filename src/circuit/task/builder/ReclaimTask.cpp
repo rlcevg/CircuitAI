@@ -38,7 +38,6 @@ CBReclaimTask::CBReclaimTask(ITaskManager* mgr, Priority priority,
 
 CBReclaimTask::~CBReclaimTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CBReclaimTask::Update()

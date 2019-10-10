@@ -21,7 +21,6 @@ CBRadarTask::CBRadarTask(ITaskManager* mgr, Priority priority,
 
 CBRadarTask::~CBRadarTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 } // namespace circuit

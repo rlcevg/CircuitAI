@@ -21,7 +21,6 @@ CBBunkerTask::CBBunkerTask(ITaskManager* mgr, Priority priority,
 
 CBBunkerTask::~CBBunkerTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 } // namespace circuit

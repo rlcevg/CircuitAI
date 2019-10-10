@@ -24,7 +24,6 @@ CScheduler::CScheduler()
 
 CScheduler::~CScheduler()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	counterInstance--;
 	Release();
 }
@@ -49,9 +48,7 @@ void CScheduler::Release()
 		// At this point workTasks is empty. Push empty task in case worker stuck at Pop().
 		workTasks.Push({self, nullptr, nullptr});
 		if (workerThread.joinable()) {
-			PRINT_DEBUG("Entering join: %s\n", __PRETTY_FUNCTION__);
 			workerThread.join();
-			PRINT_DEBUG("Leaving join: %s\n", __PRETTY_FUNCTION__);
 		}
 	}
 }
@@ -143,7 +140,6 @@ void CScheduler::WorkerThread()
 		}
 		container = workTasks.Pop();
 	}
-	PRINT_DEBUG("Exiting: %s\n", __PRETTY_FUNCTION__);
 }
 
 } // namespace circuit

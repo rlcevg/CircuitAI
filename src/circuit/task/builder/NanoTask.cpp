@@ -29,7 +29,6 @@ CBNanoTask::CBNanoTask(ITaskManager* mgr, Priority priority,
 
 CBNanoTask::~CBNanoTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CBNanoTask::Execute(CCircuitUnit* unit)

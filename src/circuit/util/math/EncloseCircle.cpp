@@ -22,7 +22,6 @@ CEncloseCircle::CEncloseCircle()
 
 CEncloseCircle::~CEncloseCircle()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 /*

@@ -27,7 +27,6 @@ CBPatrolTask::CBPatrolTask(ITaskManager* mgr, Priority priority,
 
 CBPatrolTask::~CBPatrolTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CBPatrolTask::AssignTo(CCircuitUnit* unit)

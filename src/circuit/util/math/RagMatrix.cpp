@@ -31,7 +31,6 @@ CRagMatrix::CRagMatrix(const CRagMatrix& matrix) :
 
 CRagMatrix::~CRagMatrix()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete[] data;
 }
 

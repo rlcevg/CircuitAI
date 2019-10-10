@@ -99,8 +99,6 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 
 CThreatMap::~CThreatMap()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-
 #ifdef DEBUG_VIS
 	for (const std::pair<Uint32, float*>& win : sdlWindows) {
 		circuit->GetDebugDrawer()->DelSDLWindow(win.first);
