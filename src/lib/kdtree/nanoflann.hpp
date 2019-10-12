@@ -289,6 +289,8 @@ public:
                                  IndexDist_Sorter());
     return *it;
   }
+
+  inline bool condition(const IndexType index) const { return true; }
 };
 
 /** @} */
@@ -1278,6 +1280,9 @@ public:
     return resultSet.size();
   }
 
+  /*
+   * Hand-made addition
+   */
   template <class Condition>
   size_t knnSearch(const ElementType *query_point, const size_t num_closest,
                    IndexType *out_indices, DistanceType *out_distances_sq,

@@ -719,13 +719,15 @@ int CCircuitAI::Message(int playerId, const char* message)
 	const char cmdBlock[]  = "~block\0";
 	const char cmdThreat[] = "~threat\0";
 	const char cmdArea[]   = "~area\0";
-	const char cmdGrid[]   = "~grid\0";
 	const char cmdPath[]   = "~path\0";
+	const char cmdKnn[]    = "~knn";
+
+	const char cmdGrid[]   = "~grid\0";
+	const char cmdNode[]   = "~node";
+	const char cmdLink[]   = "~link";
 
 	const char cmdName[]   = "~name";
 	const char cmdEnd[]    = "~end";
-	const char cmdKnn[]    = "~knn";
-//#endif
 
 	if (message[0] != '~') {
 		return 0;
@@ -743,7 +745,6 @@ int CCircuitAI::Message(int playerId, const char* message)
 
 	size_t msgLength = strlen(message);
 
-//#ifdef DEBUG_VIS
 	if ((msgLength == strlen(cmdPos)) && (strcmp(message, cmdPos) == 0)) {
 		setupManager->PickStartPos(this, CSetupManager::StartPosType::RANDOM);
 	}
@@ -760,6 +761,15 @@ int CCircuitAI::Message(int playerId, const char* message)
 	else if ((msgLength == strlen(cmdArea)) && (strcmp(message, cmdArea) == 0)) {
 		gameAttribute->GetTerrainData().ToggleVis(lastFrame);
 	}
+	else if ((msgLength == strlen(cmdPath)) && (strcmp(message, cmdPath) == 0)) {
+		pathfinder->ToggleVis(this);
+	}
+	else if ((strncmp(message, cmdKnn, 4) == 0)) {
+		const AIFloat3& dbgPos = map->GetMousePos();
+		int index = metalManager->FindNearestCluster(dbgPos);
+		drawer->AddPoint(metalManager->GetClusters()[index].position, "knn");
+	}
+
 	else if ((msgLength == strlen(cmdGrid)) && (strcmp(message, cmdGrid) == 0)) {
 		auto selection = std::move(callback->GetSelectedUnits());
 		if (!selection.empty()) {
@@ -771,8 +781,13 @@ int CCircuitAI::Message(int playerId, const char* message)
 			allyTeam->GetEnergyGrid()->ToggleVis();
 		}
 	}
-	else if ((msgLength == strlen(cmdPath)) && (strcmp(message, cmdPath) == 0)) {
-		pathfinder->ToggleVis(this);
+	else if ((strncmp(message, cmdNode, 5) == 0)) {
+		const AIFloat3& dbgPos = map->GetMousePos();
+		economyManager->GetEnergyGrid()->DrawNodePylons(dbgPos);
+	}
+	else if ((strncmp(message, cmdLink, 5) == 0)) {
+		const AIFloat3& dbgPos = map->GetMousePos();
+		economyManager->GetEnergyGrid()->DrawLinkPylons(dbgPos);
 	}
 
 	else if ((strncmp(message, cmdName, 5) == 0)) {
@@ -789,13 +804,6 @@ int CCircuitAI::Message(int playerId, const char* message)
 		pathfinder->SetMapData(GetThreatMap());
 		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
 		LOG("%f, %f, %f, %i", endPos.x, endPos.y, endPos.z, pathfinder->GetDbgType());
-	}
-
-	else if ((strncmp(message, cmdKnn, 4) == 0)) {
-		const AIFloat3& dbgPos = map->GetMousePos();
-		int index = metalManager->FindNearestCluster(dbgPos);
-		drawer->AddPoint(metalManager->GetClusters()[index].position, "knn");
-		LOG("%f, %f, %f", dbgPos.x, dbgPos.y, dbgPos.z);
 	}
 #endif
 

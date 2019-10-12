@@ -76,6 +76,18 @@ const int CMetalData::FindNearestSpot(const AIFloat3& pos, PointPredicate& predi
 	return -1;
 }
 
+void CMetalData::FindSpotsInRadius(const AIFloat3& pos, const float radius,
+		CMetalData::IndicesDists& outIndices) const
+{
+	MetalIndices result;
+
+	float query_pt[2] = {pos.x, pos.z};
+	nanoflann::SearchParams searchParams;
+	searchParams.sorted = false;
+
+	metalTree.radiusSearch(&query_pt[0], radius, outIndices, searchParams);
+}
+
 const int CMetalData::FindNearestCluster(const AIFloat3& pos) const
 {
 	float query_pt[2] = {pos.x, pos.z};

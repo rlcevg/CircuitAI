@@ -45,32 +45,34 @@ private:
 	CCircuitAI* circuit;
 
 	int markFrame;
-	std::deque<std::pair<ICoreUnit::Id, CEnergyNode*>> markedPylons;  // sorted by insertion
+	std::deque<std::pair<ICoreUnit::Id, std::vector<CEnergyNode*>>> markedPylons;  // sorted by insertion
 	std::unordered_map<CCircuitDef::Id, float> pylonRanges;
 	std::map<float, CCircuitDef::Id> rangePylons;
 
 	std::vector<bool> linkedClusters;
 	std::set<int> linkPylons, unlinkPylons;
-	std::set<int> linkNodes, unlinkNodes;
+	std::set<CEnergyNode*> linkNodes, unlinkNodes;
 	std::vector<CEnergyLink> links;  // Graph's exterior property
 	std::vector<CEnergyNode*> nodes;  // Graph's exterior property
 
 	void MarkAllyPylons(const std::vector<CAllyUnit*>& pylons);
-	CEnergyNode* AddPylon(ICoreUnit::Id unitId, CCircuitDef::Id defId, const springai::AIFloat3& pos);
-	void RemovePylon(const std::pair<ICoreUnit::Id, CEnergyNode*>& pylonId);
+	void AddPylon(const ICoreUnit::Id unitId, const CCircuitDef::Id defId, const springai::AIFloat3& pos,
+			std::vector<CEnergyNode*>& outNodes);
+	void RemovePylon(const std::pair<ICoreUnit::Id, std::vector<CEnergyNode*>>& pylonId);
 	void CheckGrid();
 
 	std::vector<int> linkClusters;
 	std::vector<int> unlinkClusters;
 	bool isForceRebuild;
 
+	class SpanningNode;
 	class SpanningLink;
-	class DetectLink;
 	class DetectNode;
+	class DetectLink;
 	using OwnedFilter = CMetalData::ClusterGraph::NodeMap<bool>;
 	using OwnedGraph = lemon::FilterNodes<const CMetalData::ClusterGraph, OwnedFilter>;
 	using SpanningTree = std::set<CMetalData::ClusterGraph::Edge>;
-	using SpanningGraph = lemon::FilterEdges<const CMetalData::ClusterGraph, SpanningLink>;
+	using SpanningGraph = lemon::SubGraph<const CMetalData::ClusterGraph, SpanningNode, SpanningLink>;
 	using SpanningBFS = lemon::Bfs<SpanningGraph>;
 
 	SpanningTree spanningTree;
@@ -78,7 +80,8 @@ private:
 	OwnedGraph* ownedClusters;
 	CMetalData::ClusterCostMap* edgeCosts;
 
-	SpanningLink* spanningFilter;
+	SpanningNode* nodeFilter;
+	SpanningLink* linkFilter;
 	SpanningGraph* spanningGraph;
 	SpanningBFS* spanningBfs;  // breadth-first search
 
@@ -98,6 +101,8 @@ public:
 	bool IsVis() const { return isVis; }
 	void UpdateVis();
 	void ToggleVis();
+	void DrawNodePylons(const springai::AIFloat3& pos);
+	void DrawLinkPylons(const springai::AIFloat3& pos);
 #endif
 };
 

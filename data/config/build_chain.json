@@ -60,7 +60,7 @@
 			// <condition>: air, no_air, maybe
 
 			// Build pylon in direction of nearby mex cluster
-			"pylon": true,
+//			"pylon": true,
 
 			// Build chain of units
 			"hub": [
@@ -88,7 +88,7 @@
 			]
 		},
 		"energyfusion": {
-			"pylon": true,
+//			"pylon": true,
 			"hub": [[
 					{"unit": "turretlaser", "category": "defence", "offset": [80, -80]},
 					{"unit": "staticstorage", "category": "defence", "offset": [-10, -10]},

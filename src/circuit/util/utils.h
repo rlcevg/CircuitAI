@@ -205,30 +205,17 @@ static inline std::string::const_iterator EndInBraces(const std::string::const_i
 	return brEnd;
 }
 
-///*
-// *  Check if projected point onto line lies between 2 end-points
-// */
-//auto isInBounds = [&P0, &P](const AIFloat3& P1) {
-//	float dx = P1.x - P0.x;
-//	float dz = P1.z - P0.z;
-//	float mult = ((P.x - P0.x) * dx + (P.z - P0.z) * dz) / (dx * dx + dz * dz);
-//
-//	float projX = P0.x + dx * mult;
-//	float projZ = P0.z + dz * mult;
-//	return ((std::min(P0.x, P1.x) <= projX) && (projX <= std::max(P0.x, P1.x)) &&
-//			(std::min(P0.z, P1.z) <= projZ) && (projZ <= std::max(P0.z, P1.z)));
-//};
-
-///*
-// *  Distance from line to point, squared
-// */
-//auto sqDistPointToLine = [&P0, &P](const AIFloat3& P1) {
-//	float A = P0.z - P1.z;
-//	float B = P1.x - P0.x;
-//	float C = P0.x * P1.z - P1.x * P0.z;
-//	float denominator = A * P.x + B * P.z + C;
-//	float numerator = A * A + B * B;
-//	return denominator * denominator / numerator;
+//auto isInBoundsAndSqDistToLineLessThan = [](const AIFloat3& P0, const AIFloat3& P1, const AIFloat3& P, const float sqDist) {
+//	const float dx = P1.x - P0.x;
+//	const float dz = P1.z - P0.z;
+//	const float innerProduct = (P.x - P0.x) * dx + (P.z - P0.z) * dz;
+//	const float numerator = dx * dx + dz * dz;
+//	if (0 <= innerProduct && innerProduct <= numerator) {  // isInSegment
+//		float C = P1.x * P0.z - P1.z * P0.x;
+//		float denominator = dz * P.x - dx * P.z + C;
+//		return denominator * denominator / numerator <= sqDist;  // compare square distances
+//	}
+//	return false;
 //};
 
 static inline bool is_equal_pos(const springai::AIFloat3& posA, const springai::AIFloat3& posB, const float slack = SQUARE_SIZE * 2)

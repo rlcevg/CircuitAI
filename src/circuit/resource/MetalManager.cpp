@@ -46,7 +46,7 @@ public:
 		, predicate(pred)
 		, indices(outIdxs)
 	{}
-	bool operator[](Key k) const {
+	Value operator[](Key k) const {
 		const int u = CMetalData::ClusterGraph::id(k);
 		if (manager->IsClusterQueued(u) || manager->IsClusterFinished(u)) {
 			return false;

@@ -31,29 +31,32 @@ private:
 	const CEnergyNode::SpotNodeMap& nodes;
 };
 
-CEnergyNode::CEnergyNode(const CMetalData::SCluster& cluster, const CMetalData::Metals& spots)
+CEnergyNode::CEnergyNode(int index, const CMetalData::SCluster& cluster, const CMetalData::Metals& spots)
 		: IGridLink()
 		, spotNodes(spotGraph)
 		, spotEdgeCosts(spotGraph)
+		, info(index, cluster.idxSpots.size(), cluster.position)
 {
-	SpotGraph tmpGraph;
-	SpotNodeMap tmpNodeMap(tmpGraph);
+	SpotGraph initGraph;
+	SpotNodeMap initNodeMap(initGraph);
 	for (const int i : cluster.idxSpots) {
-		tmpNodeMap[tmpGraph.addNode()].pos = spots[i].position;
+		initNodeMap[initGraph.addNode()].pos = spots[i].position;
 	}
 
-	SpotCostMap tmpEdgeCosts(tmpGraph);
-	BuildMexGraph(tmpGraph, tmpEdgeCosts, cluster, spots);
+	SpotCostMap tmpEdgeCosts(initGraph);
+	BuildMexGraph(initGraph, tmpEdgeCosts, cluster, spots);
 
-	SpotGraph::EdgeMap<bool> spanningTree(tmpGraph);
-	lemon::kruskal(tmpGraph, tmpEdgeCosts, spanningTree);
+	SpotGraph::EdgeMap<bool> spanningTree(initGraph);
+	lemon::kruskal(initGraph, tmpEdgeCosts, spanningTree);
 
 	// Sort initial mexes in the order of bfs traversing minimal spanning tree
-	ExamineNode vis(spotGraph, spotNodes, tmpNodeMap);
-	auto spanningGraph = lemon::filterEdges(tmpGraph, spanningTree);
+	ExamineNode vis(spotGraph, spotNodes, initNodeMap);
+	SpotGraph::NodeIt node(initGraph);
+	vis[node];
+	auto spanningGraph = lemon::filterEdges(initGraph, spanningTree);
 	lemon::Bfs<typeof(spanningGraph)> bfs(spanningGraph);
 	bfs.init();
-	bfs.addSource(SpotGraph::NodeIt(tmpGraph));
+	bfs.addSource(node);
 	bfs.start(vis);
 }
 
@@ -61,10 +64,10 @@ CEnergyNode::~CEnergyNode()
 {
 }
 
-void CEnergyNode::AddPylon(ICoreUnit::Id unitId, const springai::AIFloat3& pos, float range)
+bool CEnergyNode::AddPylon(ICoreUnit::Id unitId, const springai::AIFloat3& pos, float range)
 {
 	if (pylons.find(unitId) != pylons.end()) {
-		return;
+		return false;
 	}
 
 	SpotGraph::Node node0 = spotGraph.addNode();
@@ -79,7 +82,12 @@ void CEnergyNode::AddPylon(ICoreUnit::Id unitId, const springai::AIFloat3& pos, 
 		}
 	}
 
+	if (info.pos.SqDistance2D(pos) < SQUARE(range)) {
+		info.neighbors.insert(unitId);
+	}
+
 	pylons[unitId] = node0;
+	return true;
 }
 
 bool CEnergyNode::RemovePylon(ICoreUnit::Id unitId)
@@ -89,6 +97,8 @@ bool CEnergyNode::RemovePylon(ICoreUnit::Id unitId)
 		return false;
 	}
 	spotGraph.erase(it->second);
+
+	info.neighbors.erase(unitId);
 
 	return it != pylons.erase(it);
 }
@@ -101,7 +111,7 @@ void CEnergyNode::CheckConnection()
 	bfs.addSource(t);
 	bfs.start();
 	for (++t; t != lemon::INVALID; ++t) {
-		if(!bfs.reached(t)) {
+		if (!bfs.reached(t)) {
 			break;
 		}
 	}
@@ -110,13 +120,23 @@ void CEnergyNode::CheckConnection()
 		return;
 	}
 
-	// target found, now find source to connect
 	target = t;
-	SpotGraph::Node s = lemon::INVALID;
-	const AIFloat3& P1 = spotNodes[t].pos;
+	source = lemon::INVALID;
+
+	isFinished = false;
+}
+
+const CEnergyNode::SPylon& CEnergyNode::GetSourceHead()
+{
+	if (source != lemon::INVALID) {
+		return spotNodes[source];
+	}
+	SpotGraph::Node s = SpotGraph::NodeIt(spotGraph);
+	const AIFloat3& P1 = spotNodes[target].pos;
 	float minDist = std::numeric_limits<float>::max();
+	lemon::Bfs<SpotGraph> bfs(spotGraph);
 	bfs.init();
-	bfs.addSource(SpotGraph::NodeIt(spotGraph));
+	bfs.addSource(s);
 	while (!bfs.emptyQueue()) {
 		SpotGraph::Node node = bfs.nextNode();
 		const SPylon& q = spotNodes[node];
@@ -128,8 +148,12 @@ void CEnergyNode::CheckConnection()
 		bfs.processNextNode();
 	}
 	source = s;
+	return spotNodes[source];
+}
 
-	isFinished = false;
+bool CEnergyNode::IsPylonable() const
+{
+	return info.neighbors.empty() && info.size > 2;
 }
 
 void CEnergyNode::BuildMexGraph(SpotGraph& graph, SpotCostMap& edgeCosts,

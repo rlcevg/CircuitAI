@@ -980,7 +980,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 
 	const float energyIncome = GetAvgEnergyIncome();
 	const float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
-	if ((metalIncome < 10) || (energyIncome < 20) || !pylonDef->IsAvailable(circuit->GetLastFrame())) {
+	if (metalIncome < 10) {
 		return nullptr;
 	}
 
@@ -990,6 +990,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 		return nullptr;
 	}
 
+	energyGrid->SetAuthority(circuit);
 	energyGrid->Update();
 
 	CCircuitDef* buildDef;

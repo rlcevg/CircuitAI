@@ -55,6 +55,7 @@ public:
 	};
 	using PointPredicate = nanoflann::KNNCondResultSet<float, int>::Predicate;
 	using MetalIndices = std::vector<int>;
+	using IndicesDists = std::vector<std::pair<int, float>>;
 	struct SCluster {
 		MetalIndices idxSpots;
 		springai::AIFloat3 position;  // geoCentr
@@ -82,6 +83,8 @@ public:
 
 	const int FindNearestSpot(const springai::AIFloat3& pos) const;
 	const int FindNearestSpot(const springai::AIFloat3& pos, PointPredicate& predicate) const;
+	void FindSpotsInRadius(const springai::AIFloat3& pos, const float radius,
+			CMetalData::IndicesDists& outIndices) const;
 
 	const int FindNearestCluster(const springai::AIFloat3& pos) const;
 	const int FindNearestCluster(const springai::AIFloat3& pos, PointPredicate& predicate) const;

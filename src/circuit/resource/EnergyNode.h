@@ -26,15 +26,21 @@ public:
 	using SpotGraph = lemon::ListGraph;
 	using SpotNodeMap = SpotGraph::NodeMap<SPylon>;
 	using SpotCostMap = SpotGraph::EdgeMap<float>;
+	using Pylons = std::map<ICoreUnit::Id, SpotGraph::Node>;
 
-	CEnergyNode(const CMetalData::SCluster& cluster, const CMetalData::Metals& spots);
+	CEnergyNode(int index, const CMetalData::SCluster& cluster, const CMetalData::Metals& spots);
 	virtual ~CEnergyNode();
 
-	void AddPylon(ICoreUnit::Id unitId, const springai::AIFloat3& pos, float range);
+	bool AddPylon(ICoreUnit::Id unitId, const springai::AIFloat3& pos, float range);
 	bool RemovePylon(ICoreUnit::Id unitId);
 	void CheckConnection();
-	const SPylon& GetSourceHead() const { return spotNodes[source]; }
+	const SPylon& GetSourceHead();
 	const SPylon& GetTargetHead() const { return spotNodes[target]; }
+
+	bool IsPylonable() const;
+	const springai::AIFloat3& GetCenterPos() const { return info.pos; }
+
+	const Pylons& GetPylons() const { return pylons; }
 
 private:
 	void BuildMexGraph(SpotGraph& graph, SpotCostMap& edgeCosts,
@@ -44,9 +50,19 @@ private:
 	SpotNodeMap spotNodes;
 	SpotCostMap spotEdgeCosts;
 
-	std::map<ICoreUnit::Id, SpotGraph::Node> pylons;
-
 	SpotGraph::Node source, target;
+	Pylons pylons;
+
+	struct SVertex {
+		SVertex(int index, int size, const springai::AIFloat3& pos)
+			: index(index), size(size), pos(pos)
+		{}
+		int index;
+		int size;
+		springai::AIFloat3 pos;
+		std::set<ICoreUnit::Id> neighbors;
+	};
+	SVertex info;
 };
 
 } // namespace circuit

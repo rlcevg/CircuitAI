@@ -27,6 +27,7 @@ public:
 		float range;
 		std::set<SPylon*> neighbors;
 	};
+	using Pylons = std::map<ICoreUnit::Id, SPylon*>;
 
 	CEnergyLink(int idx0, const springai::AIFloat3& P0, int idx1, const springai::AIFloat3& P1);
 	virtual ~CEnergyLink();
@@ -42,19 +43,20 @@ public:
 	const springai::AIFloat3& GetSourcePos() const { return source->pylon.pos; }
 	const springai::AIFloat3& GetTargetPos() const { return target->pylon.pos; }
 
+	const Pylons& GetPylons() const { return pylons; }
+
 private:
 	struct SVertex {
 		SVertex(int index, const springai::AIFloat3& pos)
 			: index(index), pylon(pos, 0.f), head(&pylon)
 		{}
-		const springai::AIFloat3& GetPos() const { return pylon.pos; }
 		int index;
 		SPylon pylon;
 		SPylon* head;
 	};
 	SVertex *source, *target;  // owner
 
-	std::map<ICoreUnit::Id, SPylon*> pylons;  // owner
+	Pylons pylons;  // owner
 	float invDistance;
 	float costMod;
 };
