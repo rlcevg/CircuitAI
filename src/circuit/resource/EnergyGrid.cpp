@@ -27,25 +27,26 @@ namespace circuit {
 
 using namespace springai;
 
-class CEnergyGrid::SpanningNode : public lemon::MapBase<CEnergyGrid::OwnedGraph::Node, bool> {
+class CEnergyGrid::SpanningNode : public lemon::MapBase<CEnergyGrid::SpanningGraph::Node, bool> {
 public:
-	SpanningNode(const std::vector<CEnergyNode*>& nodes) : nodes(nodes) {}
+	SpanningNode(const std::vector<bool>& lc, const std::vector<CEnergyNode*>& nodes)
+		: linkedClusters(lc), nodes(nodes)
+	{}
 	Value operator[](Key k) const {
 		return (*this)[CMetalData::ClusterGraph::id(k)];
 	}
 	Value operator[](int u) const {
-		const CEnergyNode* node = nodes[u];
-		return !node->IsBeingBuilt();
+		return linkedClusters[u] && !nodes[u]->IsBeingBuilt();
 	}
 private:
+	const std::vector<bool>& linkedClusters;
 	const std::vector<CEnergyNode*>& nodes;
 };
 
-class CEnergyGrid::SpanningLink : public lemon::MapBase<CEnergyGrid::OwnedGraph::Edge, bool> {
+class CEnergyGrid::SpanningLink : public lemon::MapBase<CEnergyGrid::SpanningGraph::Edge, bool> {
 public:
 	SpanningLink(const CEnergyGrid::SpanningTree& st, const std::vector<CEnergyLink>& links)
-		: spanningTree(st)
-		, links(links)
+		: spanningTree(st), links(links)
 	{}
 	Value operator[](Key k) const {
 		return spanningTree.find(k) != spanningTree.end();
@@ -55,21 +56,40 @@ private:
 	const std::vector<CEnergyLink>& links;
 };
 
-class CEnergyGrid::DetectNode : public lemon::MapBase<CEnergyGrid::OwnedGraph::Node, bool> {
+class CEnergyGrid::DetectNode : public lemon::MapBase<CEnergyGrid::SpanningGraph::Node, bool> {
 public:
-	DetectNode(const std::vector<CEnergyNode*>& nodes) : nodes(nodes) {}
+	DetectNode(const CEnergyGrid::SpanningGraph& graph,
+			const std::vector<CEnergyNode*>& nodes,
+			const std::vector<CEnergyLink>& links, CCircuitAI* c)
+		: graph(graph), nodes(nodes), links(links)
+	{}
 	Value operator[](Key k) const {
-		return (*this)[CMetalData::ClusterGraph::id(k)];
-	}
-	Value operator[](int u) const {
-		const CEnergyNode* node = nodes[u];
-		return !node->IsFinished() && !node->IsBeingBuilt() && node->IsValid();
+		const CEnergyNode* node = nodes[CMetalData::ClusterGraph::id(k)];
+		if (node->IsBeingBuilt() || !node->IsValid()) {
+			return false;
+		}
+		if (!node->IsMexed()) {
+			return true;
+		}
+		if (node->IsFinished()) {
+			return false;
+		}
+		CEnergyGrid::SpanningGraph::IncEdgeIt edgeIt(graph, k);
+		for (; edgeIt != lemon::INVALID; ++ edgeIt) {
+			const CEnergyLink& link = links[CMetalData::ClusterGraph::id(edgeIt)];
+			if (!link.IsFinished() && link.IsValid()) {
+				return false;
+			}
+		}
+		return true;
 	}
 private:
+	const CEnergyGrid::SpanningGraph& graph;
 	const std::vector<CEnergyNode*>& nodes;
+	const std::vector<CEnergyLink>& links;
 };
 
-class CEnergyGrid::DetectLink : public lemon::MapBase<CEnergyGrid::OwnedGraph::Edge, bool> {
+class CEnergyGrid::DetectLink : public lemon::MapBase<CEnergyGrid::SpanningGraph::Edge, bool> {
 public:
 	DetectLink(const std::vector<CEnergyLink>& links) : links(links) {}
 	Value operator[](Key k) const {
@@ -177,15 +197,25 @@ IGridLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 		return nullptr;
 	}
 
-	DetectNode goalNode(nodes);
+	DetectNode goalNode(*spanningGraph, nodes, links, circuit);
 	DetectLink goalLink(links);
 	spanningBfs->init();
 	spanningBfs->addSource(spanningGraph->nodeFromId(index));
+	// NOTE: usually 'start' doesn't examine source node, except this specific version
 	auto target = spanningBfs->start(goalNode, goalLink);
 	if (target.first != lemon::INVALID) {
 		CEnergyNode* node = nodes[spanningGraph->id(target.first)];
 //		return FindNodeDef(outDef, outPos, node);
 		// FIXME: DEBUG
+		if (node->IsBeingBuilt() || !node->IsValid()) {
+			circuit->GetDrawer()->AddPoint(node->GetCenterPos(), "built");
+		} else if (!node->IsMexed()) {
+			circuit->GetDrawer()->AddPoint(node->GetCenterPos(), "not mexed");
+		} else if (node->IsFinished()) {
+			circuit->GetDrawer()->AddPoint(node->GetCenterPos(), "finished");
+		} else {
+			circuit->GetDrawer()->AddPoint(node->GetCenterPos(), "no links building");
+		}
 		FindNodeDef(outDef, outPos, node);
 		if (outDef != nullptr)
 			circuit->GetDrawer()->AddPoint(outPos, (std::string("n: ") + outDef->GetUnitDef()->GetName()).c_str());
@@ -202,7 +232,9 @@ IGridLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 		return link;
 		// FIXME: DEBUG
 	}
-	circuit->GetDrawer()->AddPoint(pos, "no grid");
+	// FIXME: DEBUG
+//	circuit->GetDrawer()->AddPoint(pos, "no grid");
+	// FIXME: DEBUG
 	return nullptr;
 }
 
@@ -293,7 +325,7 @@ CEnergyLink* CEnergyGrid::FindLinkDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 		for (; it != candDefs.rend(); ++it) {
 			defId = it->second;
 			range = it->first;
-			const float dist = pylon0->range + pylon1->range + range * 1.5f;
+			const float dist = pylon0->range + pylon1->range + range * 1.25f;
 			if (pylon0->pos.SqDistance2D(pylon1->pos) > SQUARE(dist)) {
 				break;
 			}
@@ -355,7 +387,7 @@ void CEnergyGrid::Init()
 	ownedClusters = new OwnedGraph(clusterGraph, *ownedFilter);
 	edgeCosts = new CMetalData::ClusterCostMap(clusterGraph);
 
-	nodeFilter = new SpanningNode(nodes);
+	nodeFilter = new SpanningNode(linkedClusters, nodes);
 	linkFilter = new SpanningLink(spanningTree, links);
 	spanningGraph = new SpanningGraph(clusterGraph, *nodeFilter, *linkFilter);
 	spanningBfs = new SpanningBFS(*spanningGraph);

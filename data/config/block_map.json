@@ -46,6 +46,7 @@
 			// Integer radius of a blocker or description string.
 			// Available string values: explosion, expl_ally
 //			"radius": "explosion",  // default: "explosion"
+			"radius": 3,  // default: "explosion"
 			"not_ignore": ["engy_low"]
 		},
 		"fusion": {

@@ -21,7 +21,7 @@ using namespace nanoflann;
 CMetalData::CMetalData()
 		: isInitialized(false)
 		, spotsAdaptor(spots)
-		, metalTree(2 /*dim*/, spotsAdaptor, KDTreeSingleIndexAdaptorParams(8 /*max leaf*/))
+		, metalTree(2 /*dim*/, spotsAdaptor, KDTreeSingleIndexAdaptorParams(4 /*max leaf*/))
 		, minIncome(std::numeric_limits<float>::max())
 		, avgIncome(0.f)
 		, maxIncome(0.f)

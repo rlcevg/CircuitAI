@@ -15,13 +15,13 @@ namespace circuit {
 
 using namespace springai;
 
-class ExamineNode : public lemon::MapBase<CEnergyNode::SpotGraph::Node, bool> {
+class BuildNode : public lemon::MapBase<CEnergyNode::SpotGraph::Node, bool> {
 public:
-	ExamineNode(CEnergyNode::SpotGraph& graph, CEnergyNode::SpotNodeMap& spotNodes,
+	BuildNode(CEnergyNode::SpotGraph& graph, CEnergyNode::SpotNodeMap& spotNodes,
 		const CEnergyNode::SpotNodeMap& nodes)
 		: graph(graph), spotNodes(spotNodes), nodes(nodes)
 	{}
-	bool operator[](Key k) const {
+	Value operator[](Key k) const {
 		spotNodes[graph.addNode()] = nodes[k];
 		return false;
 	}
@@ -31,11 +31,28 @@ private:
 	const CEnergyNode::SpotNodeMap& nodes;
 };
 
+class ExamineNode : public lemon::MapBase<CEnergyNode::SpotGraph::Node, bool> {
+public:
+	ExamineNode(const std::set<CEnergyNode::SpotGraph::Node>& mexes, int& connected)
+		: mexes(mexes), connected(connected)
+	{}
+	Value operator[](Key k) const {
+		if (mexes.find(k) != mexes.end()) {
+			++connected;
+		}
+		return false;
+	}
+private:
+	const std::set<CEnergyNode::SpotGraph::Node>& mexes;
+	int& connected;
+};
+
 CEnergyNode::CEnergyNode(int index, const CMetalData::SCluster& cluster, const CMetalData::Metals& spots)
 		: IGridLink()
 		, spotNodes(spotGraph)
 		, spotEdgeCosts(spotGraph)
-		, info(index, cluster.idxSpots.size(), cluster.position)
+		, isMexed(false)
+		, info(index, cluster.position)
 {
 	SpotGraph initGraph;
 	SpotNodeMap initNodeMap(initGraph);
@@ -50,14 +67,18 @@ CEnergyNode::CEnergyNode(int index, const CMetalData::SCluster& cluster, const C
 	lemon::kruskal(initGraph, tmpEdgeCosts, spanningTree);
 
 	// Sort initial mexes in the order of bfs traversing minimal spanning tree
-	ExamineNode vis(spotGraph, spotNodes, initNodeMap);
+	BuildNode vis(spotGraph, spotNodes, initNodeMap);
 	SpotGraph::NodeIt node(initGraph);
-	vis[node];
 	auto spanningGraph = lemon::filterEdges(initGraph, spanningTree);
 	lemon::Bfs<typeof(spanningGraph)> bfs(spanningGraph);
 	bfs.init();
 	bfs.addSource(node);
-	bfs.start(vis);
+	vis[node];
+	bfs.start(vis);  // FIXME: won't work as nodes are probably stored in some std::set container
+
+	for (SpotGraph::NodeIt nodeIt(spotGraph); nodeIt != lemon::INVALID; ++nodeIt) {
+		info.mexes.insert(nodeIt);
+	}
 }
 
 CEnergyNode::~CEnergyNode()
@@ -105,24 +126,29 @@ bool CEnergyNode::RemovePylon(ICoreUnit::Id unitId)
 
 void CEnergyNode::CheckConnection()
 {
-	SpotGraph::NodeIt t(spotGraph);
+	SpotGraph::Node s = *info.mexes.begin();
+	int mexConnected = 0;
+	ExamineNode countMex(info.mexes, mexConnected);
 	lemon::Bfs<SpotGraph> bfs(spotGraph);
 	bfs.init();
-	bfs.addSource(t);
-	bfs.start();
-	for (++t; t != lemon::INVALID; ++t) {
+	bfs.addSource(s);
+	countMex[s];
+	bfs.start(countMex);
+	SpotGraph::NodeIt t(spotGraph);
+	for (; t != lemon::INVALID; ++t) {
 		if (!bfs.reached(t)) {
 			break;
 		}
 	}
 	if (t == lemon::INVALID) {
-		isFinished = true;
+		isMexed = isFinished = true;
 		return;
 	}
 
 	target = t;
 	source = lemon::INVALID;
 
+	isMexed = mexConnected >= (int)info.mexes.size();
 	isFinished = false;
 }
 
@@ -131,9 +157,9 @@ const CEnergyNode::SPylon& CEnergyNode::GetSourceHead()
 	if (source != lemon::INVALID) {
 		return spotNodes[source];
 	}
-	SpotGraph::Node s = SpotGraph::NodeIt(spotGraph);
+	SpotGraph::Node s = *info.mexes.begin();
 	const AIFloat3& P1 = spotNodes[target].pos;
-	float minDist = std::numeric_limits<float>::max();
+	float minDist = P1.distance2D(spotNodes[s].pos) - spotNodes[s].range;
 	lemon::Bfs<SpotGraph> bfs(spotGraph);
 	bfs.init();
 	bfs.addSource(s);
@@ -149,11 +175,6 @@ const CEnergyNode::SPylon& CEnergyNode::GetSourceHead()
 	}
 	source = s;
 	return spotNodes[source];
-}
-
-bool CEnergyNode::IsPylonable() const
-{
-	return info.neighbors.empty() && info.size > 2;
 }
 
 void CEnergyNode::BuildMexGraph(SpotGraph& graph, SpotCostMap& edgeCosts,
