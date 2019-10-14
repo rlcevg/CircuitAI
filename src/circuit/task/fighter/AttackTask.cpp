@@ -92,7 +92,7 @@ void CAttackTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void CAttackTask::Execute(CCircuitUnit* unit)
+void CAttackTask::Start(CCircuitUnit* unit)
 {
 	if ((State::REGROUP == state) || (State::ENGAGE == state)) {
 		return;
@@ -252,7 +252,7 @@ void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 
 	if (units.find(unit) != units.end()) {
-		Execute(unit);  // NOTE: Not sure if it has effect
+		Start(unit);  // NOTE: Not sure if it has effect
 	}
 }
 

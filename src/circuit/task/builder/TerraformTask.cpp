@@ -44,7 +44,7 @@ void CBTerraformTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void CBTerraformTask::Execute(CCircuitUnit* unit)
+void CBTerraformTask::Start(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	if (State::ENGAGE == state) {  // !isFirstTry

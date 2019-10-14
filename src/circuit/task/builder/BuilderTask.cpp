@@ -112,7 +112,7 @@ void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 	HideAssignee(unit);
 }
 
-void IBuilderTask::Execute(CCircuitUnit* unit)
+void IBuilderTask::Start(CCircuitUnit* unit)
 {
 	Update(unit);
 }
@@ -127,9 +127,9 @@ void IBuilderTask::Update()
 	Update(unit);
 }
 
-void IBuilderTask::Close(bool done)
+void IBuilderTask::Stop(bool done)
 {
-	IUnitTask::Close(done);
+	IUnitTask::Stop(done);
 
 	if ((buildDef != nullptr) && !manager->GetCircuit()->GetEconomyManager()->IsIgnorePull(this)) {
 		manager->DelMetalPull(buildPower);
@@ -172,7 +172,7 @@ void IBuilderTask::Cancel()
 	// Destructor will take care of the nextTask queue
 }
 
-void IBuilderTask::Build(CCircuitUnit* unit)
+void IBuilderTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	Unit* u = unit->GetUnit();
@@ -249,7 +249,7 @@ void IBuilderTask::Build(CCircuitUnit* unit)
 void IBuilderTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	if (++buildFails <= 2) {  // Workaround due to engine's ability randomly disregard orders
-		Execute(unit);
+		Start(unit);
 	} else if (buildFails <= TASK_RETRIES) {
 		RemoveAssignee(unit);
 	} else if (target == nullptr) {
@@ -361,7 +361,10 @@ void IBuilderTask::Update(CCircuitUnit* unit)
 {
 	if (Reevaluate(unit)) {
 		if (!UpdatePath(unit)) {
-			Build(unit);
+//			if (State::ROAM == unit->GetTaskState()) {
+//				unit->SetTaskState(State::ENGAGE);
+				Execute(unit);
+//			}
 		}
 	}
 }

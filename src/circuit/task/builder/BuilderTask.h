@@ -60,14 +60,14 @@ public:
 	virtual void AssignTo(CCircuitUnit* unit) override;
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Start(CCircuitUnit* unit) override;
 	virtual void Update() override;
-	virtual void Close(bool done) override;
+	virtual void Stop(bool done) override;
 protected:
 	virtual void Finish() override;
 	virtual void Cancel() override;
 
-	virtual void Build(CCircuitUnit* unit);
+	virtual void Execute(CCircuitUnit* unit);
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;

@@ -602,7 +602,7 @@ void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
 		}
 	}
 	task->Dead();
-	task->Close(done);
+	task->Stop(done);
 }
 
 bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& position)
@@ -663,7 +663,7 @@ void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 	const AIFloat3& pos = unit->GetPos(frame);
 	IBuilderTask* task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 5);
 	task->AssignTo(unit);
-	task->Execute(unit);
+	task->Start(unit);
 }
 
 SBuildChain* CBuilderManager::GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef)
@@ -813,7 +813,7 @@ void CBuilderManager::Init()
 		const int interval = 8;
 		const int offset = circuit->GetSkirmishAIId() % interval;
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 1);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), 1/*interval*/, offset + 1);
 	};
 
 	circuit->GetSetupManager()->ExecOnFindStart(subinit);

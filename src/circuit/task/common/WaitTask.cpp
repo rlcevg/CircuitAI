@@ -42,7 +42,7 @@ void IWaitTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void IWaitTask::Execute(CCircuitUnit* unit)
+void IWaitTask::Start(CCircuitUnit* unit)
 {
 	if (!isStop) {
 		return;

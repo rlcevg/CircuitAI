@@ -21,7 +21,7 @@ public:
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Start(CCircuitUnit* unit) override;
 	virtual void Update() override;
 
 	void SetPosition(const springai::AIFloat3& pos) { position = pos; }

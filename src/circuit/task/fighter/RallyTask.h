@@ -19,7 +19,7 @@ public:
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
 
-	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Start(CCircuitUnit* unit) override;
 
 private:
 	float maxPower;

@@ -85,7 +85,7 @@ void CRaidTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void CRaidTask::Execute(CCircuitUnit* unit)
+void CRaidTask::Start(CCircuitUnit* unit)
 {
 	if ((State::REGROUP == state) || (State::ENGAGE == state)) {
 		return;
@@ -254,7 +254,7 @@ void CRaidTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 
 	if (units.find(unit) != units.end()) {
-		Execute(unit);  // NOTE: Not sure if it has effect
+		Start(unit);  // NOTE: Not sure if it has effect
 	}
 }
 

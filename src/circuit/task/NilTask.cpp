@@ -29,7 +29,7 @@ void CNilTask::RemoveAssignee(CCircuitUnit* unit)
 {
 }
 
-void CNilTask::Execute(CCircuitUnit* unit)
+void CNilTask::Start(CCircuitUnit* unit)
 {
 }
 
@@ -37,7 +37,7 @@ void CNilTask::Update()
 {
 }
 
-void CNilTask::Close(bool done)
+void CNilTask::Stop(bool done)
 {
 }
 

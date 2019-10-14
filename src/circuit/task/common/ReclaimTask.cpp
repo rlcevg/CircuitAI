@@ -68,7 +68,7 @@ void IReclaimTask::Cancel()
 {
 }
 
-void IReclaimTask::Build(CCircuitUnit* unit)
+void IReclaimTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	Unit* u = unit->GetUnit();

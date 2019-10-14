@@ -43,7 +43,7 @@ void CBPatrolTask::RemoveAssignee(CCircuitUnit* unit)
 	manager->AbortTask(this);
 }
 
-void CBPatrolTask::Execute(CCircuitUnit* unit)
+void CBPatrolTask::Start(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	Unit* u = unit->GetUnit();

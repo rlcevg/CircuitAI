@@ -30,7 +30,7 @@ bool CFGuardTask::CanAssignTo(CCircuitUnit* unit) const
 	return (attackPower < maxPower) && unit->GetCircuitDef()->IsRoleRiot();
 }
 
-void CFGuardTask::Execute(CCircuitUnit* unit)
+void CFGuardTask::Start(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitUnit* vip = circuit->GetTeamUnit(vipId);

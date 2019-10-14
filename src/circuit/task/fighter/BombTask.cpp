@@ -56,7 +56,7 @@ void CBombTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void CBombTask::Execute(CCircuitUnit* unit)
+void CBombTask::Start(CCircuitUnit* unit)
 {
 	Execute(unit, false);
 }

@@ -21,7 +21,7 @@ public:
 	virtual ~CBNanoTask();
 
 protected:
-	virtual void Build(CCircuitUnit* unit) override;
+	virtual void Execute(CCircuitUnit* unit) override;
 };
 
 } // namespace circuit

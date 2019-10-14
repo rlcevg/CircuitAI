@@ -90,7 +90,7 @@ void IRepairTask::Cancel()
 	}
 }
 
-void IRepairTask::Build(CCircuitUnit* unit)
+void IRepairTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CAllyUnit* repTarget;

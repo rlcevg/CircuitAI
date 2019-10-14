@@ -62,7 +62,7 @@ void CScoutTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void CScoutTask::Execute(CCircuitUnit* unit)
+void CScoutTask::Start(CCircuitUnit* unit)
 {
 	Execute(unit, false);
 }

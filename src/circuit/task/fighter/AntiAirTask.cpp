@@ -69,7 +69,7 @@ void CAntiAirTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void CAntiAirTask::Execute(CCircuitUnit* unit)
+void CAntiAirTask::Start(CCircuitUnit* unit)
 {
 	if ((State::REGROUP == state) || (State::ENGAGE == state)) {
 		return;
@@ -244,7 +244,7 @@ void CAntiAirTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 
 	if (units.find(unit) != units.end()) {
-		Execute(unit);  // NOTE: Not sure if it has effect
+		Start(unit);  // NOTE: Not sure if it has effect
 	}
 }
 

@@ -433,7 +433,7 @@ void CMilitaryManager::DequeueTask(IFighterTask* task, bool done)
 		fightTasks[static_cast<IFighterTask::FT>(task->GetFightType())].erase(task);
 	}
 	task->Dead();
-	task->Close(done);
+	task->Stop(done);
 }
 
 IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
@@ -1339,7 +1339,7 @@ void CMilitaryManager::Init()
 		const int interval = 4;
 		const int offset = circuit->GetSkirmishAIId() % interval;
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateIdle, this), interval, offset + 0);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateFight, this), interval / 2, offset + 1);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateFight, this), 1/*interval / 2*/, offset + 1);
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefenceTasks, this), FRAMES_PER_SEC * 5, offset + 2);
 	};
 

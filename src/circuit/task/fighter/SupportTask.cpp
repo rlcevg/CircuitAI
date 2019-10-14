@@ -40,7 +40,7 @@ void CSupportTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void CSupportTask::Execute(CCircuitUnit* unit)
+void CSupportTask::Start(CCircuitUnit* unit)
 {
 	if (State::DISENGAGE == state) {
 		return;
@@ -68,7 +68,7 @@ void CSupportTask::Update()
 	CCircuitUnit* unit = *units.begin();
 	const std::set<IFighterTask*>& tasks = static_cast<CMilitaryManager*>(manager)->GetTasks(IFighterTask::FightType::ATTACK);
 	if (tasks.empty()) {
-		Execute(unit);
+		Start(unit);
 		return;
 	}
 
@@ -97,7 +97,7 @@ void CSupportTask::Update()
 		}
 	}
 	if (ourPositions.empty()) {
-		Execute(unit);
+		Start(unit);
 		return;
 	}
 
@@ -108,7 +108,7 @@ void CSupportTask::Update()
 	pathfinder->FindBestPath(path, startPos, pathfinder->GetSquareSize(), ourPositions, false);
 	ourPositions.clear();
 	if (path.empty()) {
-		Execute(unit);
+		Start(unit);
 		return;
 	}
 

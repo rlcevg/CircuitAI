@@ -29,7 +29,7 @@ void ITaskManager::AssignTask(CCircuitUnit* unit, IUnitTask* task)
 {
 	unit->GetTask()->RemoveAssignee(unit);
 	task->AssignTo(unit);
-	task->Execute(unit);
+	task->Start(unit);
 }
 
 void ITaskManager::AssignTask(CCircuitUnit* unit)

@@ -68,7 +68,7 @@ void CBMexTask::Cancel()
 	}
 }
 
-void CBMexTask::Build(CCircuitUnit* unit)
+void CBMexTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	Unit* u = unit->GetUnit();

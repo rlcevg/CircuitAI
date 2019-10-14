@@ -56,7 +56,7 @@ void CBPylonTask::Cancel()
 	IBuilderTask::Cancel();
 }
 
-void CBPylonTask::Build(CCircuitUnit* unit)
+void CBPylonTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	Unit* u = unit->GetUnit();

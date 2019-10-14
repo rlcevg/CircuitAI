@@ -372,7 +372,7 @@ void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 		}
 	}  // WAIT
 	task->Dead();
-	task->Close(done);
+	task->Stop(done);
 }
 
 IUnitTask* CFactoryManager::MakeTask(CCircuitUnit* unit)

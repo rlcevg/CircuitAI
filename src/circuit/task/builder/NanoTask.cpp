@@ -31,7 +31,7 @@ CBNanoTask::~CBNanoTask()
 {
 }
 
-void CBNanoTask::Build(CCircuitUnit* unit)
+void CBNanoTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	Unit* u = unit->GetUnit();

@@ -91,7 +91,7 @@ void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
 	)
 }
 
-void CRetreatTask::Execute(CCircuitUnit* unit)
+void CRetreatTask::Start(CCircuitUnit* unit)
 {
 	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
 	if (!act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT | IUnitAction::Mask::JUMP)) {
@@ -147,7 +147,7 @@ void CRetreatTask::Update()
 		if (isRepaired && !unit->IsDisarmed(frame)) {
 			RemoveAssignee(unit);
 		} else if (unit->IsForceExecute() || isExecute) {
-			Execute(unit);
+			Start(unit);
 		}
 	}
 }
@@ -255,7 +255,7 @@ void CRetreatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	}
 	unit->PushBack(travelAction);
 
-	Execute(unit);
+	Start(unit);
 }
 
 void CRetreatTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)

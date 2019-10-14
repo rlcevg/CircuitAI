@@ -25,7 +25,7 @@ protected:
 	virtual void Finish() override;
 	virtual void Cancel() override final;
 
-	virtual void Build(CCircuitUnit* unit) override;
+	virtual void Execute(CCircuitUnit* unit) override;
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override = 0;

@@ -58,7 +58,7 @@ void IUnitTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void IUnitTask::Close(bool done)
+void IUnitTask::Stop(bool done)
 {
 	if (done) {
 		Finish();

@@ -27,7 +27,7 @@ protected:
 	virtual void Finish() override;
 	virtual void Cancel() override;
 
-	virtual void Build(CCircuitUnit* unit) override;
+	virtual void Execute(CCircuitUnit* unit) override;
 
 private:
 	IGridLink* link;

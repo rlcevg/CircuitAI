@@ -49,7 +49,7 @@ bool CRallyTask::CanAssignTo(CCircuitUnit* unit) const
 	return false;
 }
 
-void CRallyTask::Execute(CCircuitUnit* unit)
+void CRallyTask::Start(CCircuitUnit* unit)
 {
 	if (attackPower < maxPower) {
 		CCircuitAI* circuit = manager->GetCircuit();

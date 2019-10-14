@@ -49,7 +49,7 @@ void CDefendTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void CDefendTask::Execute(CCircuitUnit* unit)
+void CDefendTask::Start(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();

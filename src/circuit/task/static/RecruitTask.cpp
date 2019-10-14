@@ -42,7 +42,7 @@ bool CRecruitTask::CanAssignTo(CCircuitUnit* unit) const
 		   (position.SqDistance2D(unit->GetPos(manager->GetCircuit()->GetLastFrame())) <= sqradius);
 }
 
-void CRecruitTask::Execute(CCircuitUnit* unit)
+void CRecruitTask::Start(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	TRY_UNIT(circuit, unit,
@@ -153,7 +153,7 @@ void CRecruitTask::Cancel()
 
 void CRecruitTask::OnUnitIdle(CCircuitUnit* unit)
 {
-	Execute(unit);
+	Start(unit);
 }
 
 void CRecruitTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)

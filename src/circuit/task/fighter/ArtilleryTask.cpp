@@ -61,7 +61,7 @@ void CArtilleryTask::RemoveAssignee(CCircuitUnit* unit)
 	unit->GetUnit()->SetMoveState(1);
 }
 
-void CArtilleryTask::Execute(CCircuitUnit* unit)
+void CArtilleryTask::Start(CCircuitUnit* unit)
 {
 	Execute(unit, false);
 }

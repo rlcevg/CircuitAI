@@ -26,7 +26,7 @@ void CPlayerTask::RemoveAssignee(CCircuitUnit* unit)
 	delete this;
 }
 
-void CPlayerTask::Execute(CCircuitUnit* unit)
+void CPlayerTask::Start(CCircuitUnit* unit)
 {
 }
 

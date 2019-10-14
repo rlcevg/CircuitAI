@@ -38,7 +38,7 @@ void CIdleTask::RemoveAssignee(CCircuitUnit* unit)
 	unit->Clear();
 }
 
-void CIdleTask::Execute(CCircuitUnit* unit)
+void CIdleTask::Start(CCircuitUnit* unit)
 {
 }
 
@@ -56,7 +56,7 @@ void CIdleTask::Update()
 		it = updateUnits.erase(it);
 
 		manager->AssignTask(ass);  // should RemoveAssignee() on AssignTo()
-		ass->GetTask()->Execute(ass);
+		ass->GetTask()->Start(ass);
 
 		if (++i >= updateSlice) {
 			break;
@@ -64,7 +64,7 @@ void CIdleTask::Update()
 	}
 }
 
-void CIdleTask::Close(bool done)
+void CIdleTask::Stop(bool done)
 {
 	units.clear();
 	updateUnits.clear();

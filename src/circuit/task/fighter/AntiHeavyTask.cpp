@@ -100,7 +100,7 @@ void CAntiHeavyTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void CAntiHeavyTask::Execute(CCircuitUnit* unit)
+void CAntiHeavyTask::Start(CCircuitUnit* unit)
 {
 	if ((State::REGROUP == state) || (State::ENGAGE == state)) {
 		return;
@@ -286,7 +286,7 @@ void CAntiHeavyTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 
 	if (units.find(unit) != units.end()) {
-		Execute(unit);  // NOTE: Not sure if it has effect
+		Start(unit);  // NOTE: Not sure if it has effect
 	}
 }
 
