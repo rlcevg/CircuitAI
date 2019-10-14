@@ -40,6 +40,7 @@ CBReclaimTask::~CBReclaimTask()
 {
 }
 
+// TODO: Override Reevaluate?
 void CBReclaimTask::Update()
 {
 	if (!isMetal) {
@@ -57,7 +58,7 @@ void CBReclaimTask::Update()
 		CCircuitUnit* unit = *units.begin();
 		const int frame = circuit->GetLastFrame();
 		const AIFloat3& pos = unit->GetPos(frame);
-		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(pos, 300.0f));
+		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(pos, 500.0f));
 		if (!enemies.empty()) {
 			for (Unit* enemy : enemies) {
 				if ((enemy != nullptr) && enemy->IsBeingBuilt()) {

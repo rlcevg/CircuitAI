@@ -620,7 +620,7 @@ int CCircuitAI::Release(int reason)
 		gameAttribute->SetGameEnd(true);
 	}
 	if (terrainManager != nullptr) {
-		terrainManager->DidUpdateAreaUsers();
+		terrainManager->OnAreaUsersUpdated();
 	}
 
 	scheduler->ProcessRelease();

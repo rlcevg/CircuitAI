@@ -20,11 +20,12 @@ public:
 
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit) override;
 	virtual void Update() override = 0;
 protected:
 	virtual void Finish() override;
 	virtual void Cancel() override final;
+
+	virtual void Build(CCircuitUnit* unit) override;
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override = 0;
@@ -33,7 +34,6 @@ public:
 	virtual void SetTarget(CAllyUnit* unit);
 	ICoreUnit::Id GetTargetId() const { return targetId; }
 
-protected:
 	CAllyUnit* FindUnitToAssist(CCircuitUnit* unit);
 	ICoreUnit::Id targetId;  // Ignore "target" variable because ally units are vivid
 };

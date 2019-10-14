@@ -912,10 +912,10 @@ void CTerrainData::ScheduleUsersUpdate()
 	}
 	// Check if there are any ai to update
 	++aiToUpdate;
-	DidUpdateAreaUsers();
+	OnAreaUsersUpdated();
 }
 
-void CTerrainData::DidUpdateAreaUsers()
+void CTerrainData::OnAreaUsersUpdated()
 {
 	if (--aiToUpdate != 0) {
 		return;

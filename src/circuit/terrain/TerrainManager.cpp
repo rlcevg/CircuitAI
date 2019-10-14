@@ -1363,7 +1363,7 @@ void CTerrainManager::UpdateAreaUsers(int interval)
 	auto updatePath = [this]() {
 		circuit->GetPathfinder()->UpdateAreaUsers(this);
 
-		DidUpdateAreaUsers();
+		OnAreaUsersUpdated();
 	};
 	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(updatePath), interval);
 }

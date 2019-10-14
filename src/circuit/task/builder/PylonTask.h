@@ -23,10 +23,11 @@ public:
 
 	IGridLink* GetLink() { return link; }
 
-	virtual void Execute(CCircuitUnit* unit) override;
 protected:
 	virtual void Finish() override;
 	virtual void Cancel() override;
+
+	virtual void Build(CCircuitUnit* unit) override;
 
 private:
 	IGridLink* link;

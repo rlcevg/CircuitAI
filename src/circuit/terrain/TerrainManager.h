@@ -174,7 +174,7 @@ public:
 
 	SAreaData* GetAreaData() const { return areaData; }
 	void UpdateAreaUsers(int interval);
-	void DidUpdateAreaUsers() { terrainData->DidUpdateAreaUsers(); }
+	void OnAreaUsersUpdated() { terrainData->OnAreaUsersUpdated(); }
 private:
 	SAreaData* areaData;
 	CTerrainData* terrainData;

@@ -213,7 +213,7 @@ private:
 	void UpdateAreas();
 	void ScheduleUsersUpdate();
 public:
-	void DidUpdateAreaUsers();
+	void OnAreaUsersUpdated();
 	SAreaData* GetNextAreaData() {
 		return (pAreaData.load() == &areaData0) ? &areaData1 : &areaData0;
 	}

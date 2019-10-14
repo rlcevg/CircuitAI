@@ -58,7 +58,17 @@ bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 	return (defend != nullptr) && !defend->GetAssignees().empty();
 }
 
-void CBMexTask::Execute(CCircuitUnit* unit)
+void CBMexTask::Cancel()
+{
+	if ((target == nullptr) && utils::is_valid(buildPos)) {
+		CCircuitAI* circuit = manager->GetCircuit();
+		int index = circuit->GetMetalManager()->FindNearestSpot(buildPos);
+		circuit->GetMetalManager()->SetOpenSpot(index, true);
+		circuit->GetEconomyManager()->SetOpenSpot(index, true);
+	}
+}
+
+void CBMexTask::Build(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	Unit* u = unit->GetUnit();
@@ -122,16 +132,6 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 //		buildPos = -RgtVector;
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);
-	}
-}
-
-void CBMexTask::Cancel()
-{
-	if ((target == nullptr) && utils::is_valid(buildPos)) {
-		CCircuitAI* circuit = manager->GetCircuit();
-		int index = circuit->GetMetalManager()->FindNearestSpot(buildPos);
-		circuit->GetMetalManager()->SetOpenSpot(index, true);
-		circuit->GetEconomyManager()->SetOpenSpot(index, true);
 	}
 }
 

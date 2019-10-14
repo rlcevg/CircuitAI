@@ -67,6 +67,8 @@ protected:
 	virtual void Finish() override;
 	virtual void Cancel() override;
 
+	virtual void Build(CCircuitUnit* unit);
+
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
@@ -101,6 +103,10 @@ public:
 	float ClampPriority() const { return std::min(static_cast<float>(priority), 2.0f); }
 
 protected:
+	CCircuitUnit* GetNextAssignee();
+	void Update(CCircuitUnit* unit);
+	bool Reevaluate(CCircuitUnit* unit);
+	bool UpdatePath(CCircuitUnit* unit);
 	void HideAssignee(CCircuitUnit* unit);
 	void ShowAssignee(CCircuitUnit* unit);
 	virtual CAllyUnit* FindSameAlly(CCircuitUnit* builder, const std::vector<springai::Unit*>& friendlies);

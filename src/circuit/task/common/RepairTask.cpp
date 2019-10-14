@@ -54,38 +54,6 @@ void IRepairTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void IRepairTask::Execute(CCircuitUnit* unit)
-{
-	CCircuitAI* circuit = manager->GetCircuit();
-	CAllyUnit* repTarget;
-	if (targetId == -1) {
-		repTarget = FindUnitToAssist(unit);
-		if (repTarget == nullptr) {
-			manager->FallbackTask(unit);
-			return;
-		}
-		cost = repTarget->GetCircuitDef()->GetCost();
-		targetId = repTarget->GetId();
-	} else {
-		repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
-	}
-
-	if ((repTarget != nullptr) && (repTarget->GetUnit()->GetHealth() < repTarget->GetUnit()->GetMaxHealth())) {
-		Unit* u = unit->GetUnit();
-		TRY_UNIT(circuit, unit,
-			u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
-			u->Repair(repTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
-		)
-
-		IUnitTask* task = repTarget->GetTask();
-		if ((task != nullptr) && (task->GetType() == IUnitTask::Type::RETREAT)) {
-			static_cast<CRetreatTask*>(task)->CheckRepairer(unit);
-		}
-	} else {
-		manager->AbortTask(this);
-	}
-}
-
 void IRepairTask::Finish()
 {
 //	CCircuitAI* circuit = manager->GetCircuit();
@@ -119,6 +87,38 @@ void IRepairTask::Cancel()
 			retTask->SetRepairer(nullptr);
 			break;
 		}
+	}
+}
+
+void IRepairTask::Build(CCircuitUnit* unit)
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	CAllyUnit* repTarget;
+	if (targetId == -1) {
+		repTarget = FindUnitToAssist(unit);
+		if (repTarget == nullptr) {
+			manager->FallbackTask(unit);
+			return;
+		}
+		cost = repTarget->GetCircuitDef()->GetCost();
+		targetId = repTarget->GetId();
+	} else {
+		repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
+	}
+
+	if ((repTarget != nullptr) && (repTarget->GetUnit()->GetHealth() < repTarget->GetUnit()->GetMaxHealth())) {
+		Unit* u = unit->GetUnit();
+		TRY_UNIT(circuit, unit,
+			u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+			u->Repair(repTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+		)
+
+		IUnitTask* task = repTarget->GetTask();
+		if ((task != nullptr) && (task->GetType() == IUnitTask::Type::RETREAT)) {
+			static_cast<CRetreatTask*>(task)->CheckRepairer(unit);
+		}
+	} else {
+		manager->AbortTask(this);
 	}
 }
 

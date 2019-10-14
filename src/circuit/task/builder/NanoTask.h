@@ -20,7 +20,8 @@ public:
 			   float cost, float shake, int timeout);
 	virtual ~CBNanoTask();
 
-	virtual void Execute(CCircuitUnit* unit) override;
+protected:
+	virtual void Build(CCircuitUnit* unit) override;
 };
 
 } // namespace circuit

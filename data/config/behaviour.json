@@ -70,7 +70,7 @@
 	},
 	"cloakraid": {
 		"role": ["raider"],
-		"attribute": ["scout", "siege"],
+		"attribute": ["scout"],
 		"retreat": 0.1,
 		"pwr_mod": 0.8,
 		"thr_mod": 0.65
@@ -344,7 +344,7 @@
 	},
 	"shieldraid": {
 		"role": ["raider"],
-		"attribute": ["scout", "ret_fight"],
+		"attribute": ["scout"],
 		"retreat": 0.25,
 		"pwr_mod": 1.3,
 		"thr_mod": 1.1

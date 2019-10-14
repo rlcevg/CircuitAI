@@ -142,6 +142,7 @@ void CEnergyNode::CheckConnection()
 	}
 	if (t == lemon::INVALID) {
 		isMexed = isFinished = true;
+		target = source = s;
 		return;
 	}
 

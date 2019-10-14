@@ -60,7 +60,15 @@ void IReclaimTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void IReclaimTask::Execute(CCircuitUnit* unit)
+void IReclaimTask::Finish()
+{
+}
+
+void IReclaimTask::Cancel()
+{
+}
+
+void IReclaimTask::Build(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	Unit* u = unit->GetUnit();
@@ -91,14 +99,6 @@ void IReclaimTask::Execute(CCircuitUnit* unit)
 	TRY_UNIT(circuit, unit,
 		u->ReclaimInArea(pos, reclRadius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 	)
-}
-
-void IReclaimTask::Finish()
-{
-}
-
-void IReclaimTask::Cancel()
-{
 }
 
 void IReclaimTask::OnUnitIdle(CCircuitUnit* unit)

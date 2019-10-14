@@ -26,6 +26,7 @@ CBRepairTask::~CBRepairTask()
 {
 }
 
+// TODO: Override Reevaluate?
 void CBRepairTask::Update()
 {
 	// FIXME: Replace const 1000.0f with build time?

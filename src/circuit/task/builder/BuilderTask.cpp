@@ -16,7 +16,10 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
+#include "terrain/PathFinder.h"
 #include "unit/action/DGunAction.h"
+#include "unit/action/FightAction.h"
+#include "unit/action/MoveAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -77,15 +80,26 @@ void IBuilderTask::AssignTo(CCircuitUnit* unit)
 {
 	IUnitTask::AssignTo(unit);
 
+	CCircuitAI* circuit = manager->GetCircuit();
 	ShowAssignee(unit);
 	if (!utils::is_valid(position)) {
-		position = unit->GetPos(manager->GetCircuit()->GetLastFrame());
+		position = unit->GetPos(circuit->GetLastFrame());
 	}
 
 	if (unit->HasDGun()) {
 		CDGunAction* act = new CDGunAction(unit, unit->GetDGunRange());
 		unit->PushBack(act);
 	}
+
+	int squareSize = circuit->GetPathfinder()->GetSquareSize();
+	ITravelAction* travelAction;
+	if (unit->GetCircuitDef()->IsAttrSiege()) {
+		travelAction = new CFightAction(unit, squareSize);
+	} else {
+		travelAction = new CMoveAction(unit, squareSize);
+	}
+	unit->PushBack(travelAction);
+	travelAction->SetActive(false);
 }
 
 void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
@@ -99,6 +113,66 @@ void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 }
 
 void IBuilderTask::Execute(CCircuitUnit* unit)
+{
+	Update(unit);
+}
+
+void IBuilderTask::Update()
+{
+	CCircuitUnit* unit = GetNextAssignee();
+	if (unit == nullptr) {
+		return;
+	}
+
+	Update(unit);
+}
+
+void IBuilderTask::Close(bool done)
+{
+	IUnitTask::Close(done);
+
+	if ((buildDef != nullptr) && !manager->GetCircuit()->GetEconomyManager()->IsIgnorePull(this)) {
+		manager->DelMetalPull(buildPower);
+	}
+}
+
+void IBuilderTask::Finish()
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	if (buildDef != nullptr) {
+		SBuildChain* chain = builderManager->GetBuildChain(buildType, buildDef);
+		if (chain != nullptr) {
+			ExecuteChain(chain);
+		}
+
+		const int buildDelay = circuit->GetEconomyManager()->GetBuildDelay();
+		if (buildDelay > 0) {
+			IUnitTask* task = builderManager->EnqueueWait(buildDelay);
+			decltype(units) tmpUnits = units;
+			for (CCircuitUnit* unit : tmpUnits) {
+				manager->AssignTask(unit, task);
+			}
+		}
+	}
+
+	// Advance queue
+	if (nextTask != nullptr) {
+		builderManager->ActivateTask(nextTask);
+		nextTask = nullptr;
+	}
+}
+
+void IBuilderTask::Cancel()
+{
+	if ((target == nullptr) && utils::is_valid(buildPos)) {
+		manager->GetCircuit()->GetTerrainManager()->DelBlocker(buildDef, buildPos, facing);
+	}
+
+	// Destructor will take care of the nextTask queue
+}
+
+void IBuilderTask::Build(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	Unit* u = unit->GetUnit();
@@ -170,99 +244,6 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);
 	}
-}
-
-void IBuilderTask::Update()
-{
-	CCircuitAI* circuit = manager->GetCircuit();
-//	for (auto unit : units) {
-//		IUnitAction* action = static_cast<IUnitAction*>(unit->Begin());
-//		if (action->GetType() == IUnitAction::Type::PRE_BUILD) {
-//			Unit* u = unit->GetUnit();
-//			const AIFloat3& vel = u->GetVel();
-//			Resource* metal = circuit->GetEconomyManager()->GetMetalRes();
-//			if ((vel == ZeroVector) && (u->GetResourceUse(metal) <= 0)) {
-//				// TODO: Something is on build site, get standing units in radius and push them.
-//			}
-//		}
-//	}
-
-	// FIXME: Replace const 1000.0f with build time?
-	CEconomyManager* em = circuit->GetEconomyManager();
-	if ((cost > 1000.0f) &&
-		(target == nullptr) &&
-		(em->GetAvgMetalIncome() < savedIncome * 0.6f) &&
-		(em->GetAvgMetalIncome() * 2.0f < em->GetMetalPull()))
-	{
-		manager->AbortTask(this);
-		return;
-	}
-
-	// Reassign task if required
-	if (units.empty()) {
-		return;
-	}
-	if (unitIt == units.end()) {
-		unitIt = units.begin();
-	}
-	CCircuitUnit* unit = *unitIt;
-	++unitIt;
-
-	const float sqDist = unit->GetPos(circuit->GetLastFrame()).SqDistance2D(GetPosition());
-	if (sqDist <= SQUARE(unit->GetCircuitDef()->GetBuildDistance())) {
-		return;
-	}
-	HideAssignee(unit);
-	IBuilderTask* task = static_cast<IBuilderTask*>(manager->MakeTask(unit));
-	ShowAssignee(unit);
-	if ((task != nullptr) && (task->GetBuildType() != buildType)) {
-		manager->AssignTask(unit, task);
-	}
-}
-
-void IBuilderTask::Close(bool done)
-{
-	IUnitTask::Close(done);
-
-	if ((buildDef != nullptr) && !manager->GetCircuit()->GetEconomyManager()->IsIgnorePull(this)) {
-		manager->DelMetalPull(buildPower);
-	}
-}
-
-void IBuilderTask::Finish()
-{
-	CCircuitAI* circuit = manager->GetCircuit();
-	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	if (buildDef != nullptr) {
-		SBuildChain* chain = builderManager->GetBuildChain(buildType, buildDef);
-		if (chain != nullptr) {
-			ExecuteChain(chain);
-		}
-
-		const int buildDelay = circuit->GetEconomyManager()->GetBuildDelay();
-		if (buildDelay > 0) {
-			IUnitTask* task = builderManager->EnqueueWait(buildDelay);
-			decltype(units) tmpUnits = units;
-			for (CCircuitUnit* unit : tmpUnits) {
-				manager->AssignTask(unit, task);
-			}
-		}
-	}
-
-	// Advance queue
-	if (nextTask != nullptr) {
-		builderManager->ActivateTask(nextTask);
-		nextTask = nullptr;
-	}
-}
-
-void IBuilderTask::Cancel()
-{
-	if ((target == nullptr) && utils::is_valid(buildPos)) {
-		manager->GetCircuit()->GetTerrainManager()->DelBlocker(buildDef, buildPos, facing);
-	}
-
-	// Destructor will take care of the nextTask queue
 }
 
 void IBuilderTask::OnUnitIdle(CCircuitUnit* unit)
@@ -361,6 +342,111 @@ bool IBuilderTask::IsEqualBuildPos(CCircuitUnit* unit) const
 	// NOTE: Unit's position is affected by collisionVolumeOffsets, and there is no way to retrieve it.
 	//       Hence absurdly large error slack, @see factoryship.lua
 	return utils::is_equal_pos(pos, buildPos, SQUARE_SIZE * 2);
+}
+
+CCircuitUnit* IBuilderTask::GetNextAssignee()
+{
+	if (units.empty()) {
+		return nullptr;
+	}
+	if (unitIt == units.end()) {
+		unitIt = units.begin();
+	}
+	CCircuitUnit* unit = *unitIt;
+	++unitIt;
+	return unit;
+}
+
+void IBuilderTask::Update(CCircuitUnit* unit)
+{
+	if (Reevaluate(unit)) {
+		if (!UpdatePath(unit)) {
+			Build(unit);
+		}
+	}
+}
+
+bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+//	for (auto unit : units) {
+//		IUnitAction* action = static_cast<IUnitAction*>(unit->Begin());
+//		if (action->GetType() == IUnitAction::Type::PRE_BUILD) {
+//			Unit* u = unit->GetUnit();
+//			const AIFloat3& vel = u->GetVel();
+//			Resource* metal = circuit->GetEconomyManager()->GetMetalRes();
+//			if ((vel == ZeroVector) && (u->GetResourceUse(metal) <= 0)) {
+//				// TODO: Something is on build site, get standing units in radius and push them.
+//			}
+//		}
+//	}
+
+	// FIXME: Replace const 1000.0f with build time?
+	CEconomyManager* em = circuit->GetEconomyManager();
+	if ((cost > 1000.0f) &&
+		(target == nullptr) &&
+		(em->GetAvgMetalIncome() < savedIncome * 0.6f) &&
+		(em->GetAvgMetalIncome() * 2.0f < em->GetMetalPull()))
+	{
+		manager->AbortTask(this);
+		return false;
+	}
+
+	// Reassign task if required
+	const float sqDist = unit->GetPos(circuit->GetLastFrame()).SqDistance2D(GetPosition());
+	if (sqDist <= SQUARE(unit->GetCircuitDef()->GetBuildDistance())) {
+		return true;
+	}
+	HideAssignee(unit);
+	IBuilderTask* task = static_cast<IBuilderTask*>(manager->MakeTask(unit));
+	ShowAssignee(unit);
+	if ((task != nullptr) && (task->GetBuildType() != buildType)) {
+		manager->AssignTask(unit, task);
+		return false;
+	}
+	return true;
+}
+
+bool IBuilderTask::UpdatePath(CCircuitUnit* unit)
+{
+//	++updCount;
+
+	CCircuitAI* circuit = manager->GetCircuit();
+//	bool isExecute = (updCount % 4 == 2);
+//	if (!isExecute) {
+//		for (CCircuitUnit* unit : units) {
+//			isExecute |= unit->IsForceExecute();
+//		}
+//		if (!isExecute) {
+//			return;
+//		}
+//	} else {
+//		// TODO: Check shield charge / retreat
+//	}
+
+	const int frame = circuit->GetLastFrame();
+	AIFloat3 endPos = GetPosition();
+	if (circuit->GetTerrainManager()->CanBuildAtSafe(unit, endPos)) {
+		AIFloat3 startPos = unit->GetPos(frame);
+		std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
+
+		CPathFinder* pathfinder = circuit->GetPathfinder();
+		pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
+		pathfinder->MakePath(*pPath, startPos, endPos, unit->GetCircuitDef()->GetBuildDistance());
+
+		if ((pPath->size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(unit->GetCircuitDef()->GetBuildDistance()))) {
+			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+			travelAction->SetPath(pPath);
+			travelAction->SetActive(true);
+		} else {
+			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
+			travelAction->SetActive(false);
+			return false;
+		}
+	} else {
+		// TODO: AbortTask or remove unit
+	}
+	return true;
 }
 
 void IBuilderTask::HideAssignee(CCircuitUnit* unit)

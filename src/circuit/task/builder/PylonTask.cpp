@@ -37,7 +37,26 @@ CBPylonTask::~CBPylonTask()
 {
 }
 
-void CBPylonTask::Execute(CCircuitUnit* unit)
+void CBPylonTask::Finish()
+{
+	if (link != nullptr) {
+		link->SetBeingBuilt(false);
+	}
+	manager->GetCircuit()->GetEconomyManager()->UpdatePylonTasks();
+
+	IBuilderTask::Finish();
+}
+
+void CBPylonTask::Cancel()
+{
+	if (link != nullptr) {
+		link->SetBeingBuilt(false);
+	}
+
+	IBuilderTask::Cancel();
+}
+
+void CBPylonTask::Build(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	Unit* u = unit->GetUnit();
@@ -79,25 +98,6 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);
 	}
-}
-
-void CBPylonTask::Finish()
-{
-	if (link != nullptr) {
-		link->SetBeingBuilt(false);
-	}
-	manager->GetCircuit()->GetEconomyManager()->UpdatePylonTasks();
-
-	IBuilderTask::Finish();
-}
-
-void CBPylonTask::Cancel()
-{
-	if (link != nullptr) {
-		link->SetBeingBuilt(false);
-	}
-
-	IBuilderTask::Cancel();
 }
 
 } // namespace circuit

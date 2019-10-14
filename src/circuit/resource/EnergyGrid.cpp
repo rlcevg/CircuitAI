@@ -205,36 +205,12 @@ IGridLink* CEnergyGrid::GetLinkToBuild(CCircuitDef*& outDef, AIFloat3& outPos)
 	auto target = spanningBfs->start(goalNode, goalLink);
 	if (target.first != lemon::INVALID) {
 		CEnergyNode* node = nodes[spanningGraph->id(target.first)];
-//		return FindNodeDef(outDef, outPos, node);
-		// FIXME: DEBUG
-		if (node->IsBeingBuilt() || !node->IsValid()) {
-			circuit->GetDrawer()->AddPoint(node->GetCenterPos(), "built");
-		} else if (!node->IsMexed()) {
-			circuit->GetDrawer()->AddPoint(node->GetCenterPos(), "not mexed");
-		} else if (node->IsFinished()) {
-			circuit->GetDrawer()->AddPoint(node->GetCenterPos(), "finished");
-		} else {
-			circuit->GetDrawer()->AddPoint(node->GetCenterPos(), "no links building");
-		}
-		FindNodeDef(outDef, outPos, node);
-		if (outDef != nullptr)
-			circuit->GetDrawer()->AddPoint(outPos, (std::string("n: ") + outDef->GetUnitDef()->GetName()).c_str());
-		return node;
-		// FIXME: DEBUG
+		return FindNodeDef(outDef, outPos, node);
 	}
 	if (target.second != lemon::INVALID) {
 		CEnergyLink* link = &links[spanningGraph->id(target.second)];
-//		return FindLinkDef(outDef, outPos, link);
-		// FIXME: DEBUG
-		FindLinkDef(outDef, outPos, link);
-		if (outDef != nullptr)
-			circuit->GetDrawer()->AddPoint(outPos, (std::string("l: ") + outDef->GetUnitDef()->GetName()).c_str());
-		return link;
-		// FIXME: DEBUG
+		return FindLinkDef(outDef, outPos, link);
 	}
-	// FIXME: DEBUG
-//	circuit->GetDrawer()->AddPoint(pos, "no grid");
-	// FIXME: DEBUG
 	return nullptr;
 }
 

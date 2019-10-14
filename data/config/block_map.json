@@ -46,7 +46,7 @@
 			// Integer radius of a blocker or description string.
 			// Available string values: explosion, expl_ally
 //			"radius": "explosion",  // default: "explosion"
-			"radius": 3,  // default: "explosion"
+			"radius": 4,  // default: "explosion"
 			"not_ignore": ["engy_low"]
 		},
 		"fusion": {
@@ -109,8 +109,7 @@
 	// Water overrides land. Map considered as water if amount of land < 40%
 	"class_water" : {
 		"wind": {
-			"type": ["circle", "engy_low"],
-			"radius": 1,  // default: "explosion"
+			"type": ["rectangle", "engy_low"],
 			"ignore": ["mex", "engy_mid", "engy_high", "pylon", "nano"]
 		}
 	},

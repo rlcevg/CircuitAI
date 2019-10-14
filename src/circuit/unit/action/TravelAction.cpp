@@ -64,7 +64,7 @@ int ITravelAction::CalcSpeedStep(int frame, float& stepSpeed)
 	float sqDistToStep = pos.SqDistance2D((*pPath)[pathIterator]);
 	int step = std::min(pathIterator + increment, pathMaxIndex);
 	float sqNextDistToStep = pos.SqDistance2D((*pPath)[step]);
-	while ((sqNextDistToStep < sqDistToStep) && (pathIterator <  pathMaxIndex)) {
+	while ((sqNextDistToStep < sqDistToStep) && (pathIterator < pathMaxIndex)) {
 		pathIterator = step;
 		sqDistToStep = sqNextDistToStep;
 		step = std::min(pathIterator + increment, pathMaxIndex);
