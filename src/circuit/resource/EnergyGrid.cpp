@@ -229,7 +229,7 @@ CEnergyNode* CEnergyGrid::FindNodeDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 	const float metalIncome = economyManager->GetAvgMetalIncome();
 
 	const CCircuitDef* pylonDef = economyManager->GetPylonDef();
-	if (node->IsPylonable() && pylonDef->IsAvailable(frame) && (metalIncome > pylonDef->GetCost() * 0.1f)) {
+	if (node->IsPylonable() && pylonDef->IsAvailable(frame) && (metalIncome > pylonDef->GetCost() * 0.15f)) {
 		outDef = const_cast<CCircuitDef*>(pylonDef);
 		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, node->GetCenterPos(), searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
 		return node;
@@ -254,7 +254,7 @@ CEnergyNode* CEnergyGrid::FindNodeDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 
 		outDef = circuit->GetCircuitDef(defId);
 		if ((outDef == nullptr) || !outDef->IsAvailable(frame)
-			|| ((metalIncome < outDef->GetCost() * 0.1f) && (outDef->GetCost() > 100.f)))
+			|| ((metalIncome < outDef->GetCost() * 0.15f) && (outDef->GetCost() > 100.f)))
 		{
 			outPos = -RgtVector;
 			candDefs.erase(range);
@@ -501,7 +501,7 @@ void CEnergyGrid::RemovePylon(const std::pair<ICoreUnit::Id, std::vector<CEnergy
 
 	for (CEnergyNode* node : pylonId.second) {
 		if (node->RemovePylon(pylonId.first)) {
-			unlinkNodes.insert(node);
+			linkNodes.insert(node);
 		}
 	}
 }
@@ -509,7 +509,7 @@ void CEnergyGrid::RemovePylon(const std::pair<ICoreUnit::Id, std::vector<CEnergy
 void CEnergyGrid::CheckGrid()
 {
 	if (linkPylons.empty() && unlinkPylons.empty()
-		&& linkNodes.empty() && unlinkNodes.empty())
+		&& linkNodes.empty())
 	{
 		return;
 	}
@@ -536,11 +536,6 @@ void CEnergyGrid::CheckGrid()
 		node->CheckConnection();
 	}
 	linkNodes.clear();
-
-	for (CEnergyNode* node : unlinkNodes) {
-		node->CheckConnection();
-	}
-	unlinkNodes.clear();
 }
 
 void CEnergyGrid::MarkClusters()

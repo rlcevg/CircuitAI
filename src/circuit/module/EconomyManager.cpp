@@ -1001,7 +1001,8 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 	}
 
 	if (utils::is_valid(buildPos) && builderManager->IsBuilderInArea(buildDef, buildPos)) {
-		return builderManager->EnqueuePylon(IBuilderTask::Priority::HIGH, buildDef, buildPos, link, buildDef->GetCost());
+		IBuilderTask::Priority priority = metalIncome < 20 ? IBuilderTask::Priority::NORMAL : IBuilderTask::Priority::HIGH;
+		return builderManager->EnqueuePylon(priority, buildDef, buildPos, link, buildDef->GetCost());
 	} else {
 		link->SetValid(false);
 		energyGrid->SetForceRebuild(true);

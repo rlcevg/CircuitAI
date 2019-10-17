@@ -12,6 +12,7 @@
 #include "terrain/TerrainManager.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
+#include "unit/action/DGunAction.h"
 #include "util/utils.h"
 #include "CircuitAI.h"
 
@@ -42,47 +43,24 @@ bool CRecruitTask::CanAssignTo(CCircuitUnit* unit) const
 		   (position.SqDistance2D(unit->GetPos(manager->GetCircuit()->GetLastFrame())) <= sqradius);
 }
 
+void CRecruitTask::AssignTo(CCircuitUnit* unit)
+{
+	IUnitTask::AssignTo(unit);
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	ShowAssignee(unit);
+	if (!utils::is_valid(position)) {
+		position = unit->GetPos(circuit->GetLastFrame());
+	}
+
+	if (unit->HasDGun()) {
+		unit->PushDGunAct(new CDGunAction(unit, unit->GetDGunRange()));
+	}
+}
+
 void CRecruitTask::Start(CCircuitUnit* unit)
 {
-	CCircuitAI* circuit = manager->GetCircuit();
-	TRY_UNIT(circuit, unit,
-		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
-	)
-	const int frame = circuit->GetLastFrame();
-
-	const float buildDistance = unit->GetCircuitDef()->GetBuildDistance();
-	if (buildDistance > 200.0f) {
-		// striderhub
-		AIFloat3 pos = unit->GetPos(frame);
-		const float size = DEFAULT_SLACK / 2;
-		switch (unit->GetUnit()->GetBuildingFacing()) {
-			default:
-			case UNIT_FACING_SOUTH: {  // z++
-				pos.z += size;
-			} break;
-			case UNIT_FACING_EAST: {  // x++
-				pos.x += size;
-			} break;
-			case UNIT_FACING_NORTH: {  // z--
-				pos.z -= size;
-			} break;
-			case UNIT_FACING_WEST: {  // x--
-				pos.x -= size;
-			} break;
-		}
-		buildPos = circuit->GetTerrainManager()->FindBuildSite(buildDef, pos, buildDistance, UNIT_COMMAND_BUILD_NO_FACING);
-	} else {
-		// factory
-		buildPos = unit->GetPos(frame);
-	}
-
-	if (utils::is_valid(buildPos)) {
-		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Build(buildDef->GetUnitDef(), buildPos, UNIT_COMMAND_BUILD_NO_FACING, 0, frame + FRAMES_PER_SEC * 10);
-		)
-	} else {
-		manager->AbortTask(this);
-	}
+	Execute(unit);
 }
 
 void CRecruitTask::Update()
@@ -148,6 +126,49 @@ void CRecruitTask::Cancel()
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->ExecuteCustomCommand(CMD_REMOVE, params, UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
 		)
+	}
+}
+
+void CRecruitTask::Execute(CCircuitUnit* unit)
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	TRY_UNIT(circuit, unit,
+		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+	)
+	const int frame = circuit->GetLastFrame();
+
+	const float buildDistance = unit->GetCircuitDef()->GetBuildDistance();
+	if (buildDistance > 200.0f) {
+		// striderhub
+		AIFloat3 pos = unit->GetPos(frame);
+		const float size = DEFAULT_SLACK / 2;
+		switch (unit->GetUnit()->GetBuildingFacing()) {
+			default:
+			case UNIT_FACING_SOUTH: {  // z++
+				pos.z += size;
+			} break;
+			case UNIT_FACING_EAST: {  // x++
+				pos.x += size;
+			} break;
+			case UNIT_FACING_NORTH: {  // z--
+				pos.z -= size;
+			} break;
+			case UNIT_FACING_WEST: {  // x--
+				pos.x -= size;
+			} break;
+		}
+		buildPos = circuit->GetTerrainManager()->FindBuildSite(buildDef, pos, buildDistance, UNIT_COMMAND_BUILD_NO_FACING);
+	} else {
+		// factory
+		buildPos = unit->GetPos(frame);
+	}
+
+	if (utils::is_valid(buildPos)) {
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->Build(buildDef->GetUnitDef(), buildPos, UNIT_COMMAND_BUILD_NO_FACING, 0, frame + FRAMES_PER_SEC * 10);
+		)
+	} else {
+		manager->AbortTask(this);
 	}
 }
 

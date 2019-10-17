@@ -8,6 +8,8 @@
 #include "unit/CircuitUnit.h"
 #include "unit/UnitManager.h"
 #include "unit/EnemyUnit.h"
+#include "unit/action/DGunAction.h"
+#include "unit/action/TravelAction.h"
 #include "setup/SetupManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -26,6 +28,8 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 		, taskFrame(-1)
 		, manager(nullptr)
 		, area(nullptr)
+		, dgunAct(nullptr)
+		, travelAct(nullptr)
 //		, damagedFrame(-1)
 		, moveFails(0)
 		, failFrame(-1)
@@ -79,6 +83,25 @@ void CCircuitUnit::SetTask(IUnitTask* task)
 {
 	this->task = task;
 	SetTaskFrame(manager->GetCircuit()->GetLastFrame());
+}
+
+void CCircuitUnit::ClearAct()
+{
+	CActionList::Clear();
+	dgunAct = nullptr;
+	travelAct = nullptr;
+}
+
+void CCircuitUnit::PushDGunAct(CDGunAction* action)
+{
+	PushBack(action);
+	dgunAct = action;
+}
+
+void CCircuitUnit::PushTravelAct(ITravelAction* action)
+{
+	PushBack(action);
+	travelAct = action;
 }
 
 bool CCircuitUnit::IsMoveFailed(int frame)

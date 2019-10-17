@@ -70,7 +70,7 @@ void CRaidTask::AssignTo(CCircuitUnit* unit)
 	} else {
 		travelAction = new CMoveAction(unit, squareSize);
 	}
-	unit->PushBack(travelAction);
+	unit->PushTravelAct(travelAction);
 	travelAction->SetActive(false);
 }
 
@@ -91,9 +91,8 @@ void CRaidTask::Start(CCircuitUnit* unit)
 		return;
 	}
 	if (!pPath->empty()) {
-		ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-		travelAction->SetPath(pPath);
-		travelAction->SetActive(true);
+		unit->GetTravelAct()->SetPath(pPath);
+		unit->GetTravelAct()->SetActive(true);
 	}
 }
 
@@ -130,8 +129,7 @@ void CRaidTask::Update()
 					unit->GetUnit()->PatrolTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame);
 				)
 
-				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-				travelAction->SetActive(false);
+				unit->GetTravelAct()->SetActive(false);
 			}
 		}
 		return;
@@ -170,8 +168,7 @@ void CRaidTask::Update()
 						unit->GetUnit()->ExecuteCustomCommand(CMD_ATTACK_GROUND, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 					)
 
-					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-					travelAction->SetActive(false);
+					unit->GetTravelAct()->SetActive(false);
 				}
 			} else {
 				for (CCircuitUnit* unit : units) {
@@ -180,16 +177,14 @@ void CRaidTask::Update()
 						unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 					)
 
-					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-					travelAction->SetActive(false);
+					unit->GetTravelAct()->SetActive(false);
 				}
 			}
 		} else {
 			for (CCircuitUnit* unit : units) {
 				unit->Attack(target->GetPos(), target, frame + FRAMES_PER_SEC * 60);
 
-				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-				travelAction->SetActive(false);
+				unit->GetTravelAct()->SetActive(false);
 			}
 		}
 		return;
@@ -202,7 +197,7 @@ void CRaidTask::Update()
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& pos = leader->GetPos(frame);
-	const AIFloat3& threatPos = static_cast<ITravelAction*>(leader->End())->IsActive() ? position : pos;
+	const AIFloat3& threatPos = leader->GetTravelAct()->IsActive() ? position : pos;
 	if (attackPower * powerMod <= threatMap->GetThreatAt(leader, threatPos)) {
 		position = circuit->GetMilitaryManager()->GetScoutPosition(leader);
 	}
@@ -231,8 +226,7 @@ void CRaidTask::Update()
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
-		ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-		travelAction->SetActive(false);
+		unit->GetTravelAct()->SetActive(false);
 	}
 }
 

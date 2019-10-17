@@ -36,15 +36,14 @@ void CActionList::Update(CCircuitAI* circuit)
 			action->Update(circuit);
 		}
 
-		if (action->IsBlocking()) {
-			blocker = action;
-			return;
-		}
-
-		if (action->IsFinished()) {
+		if (action->IsActive() && action->IsFinished()) {
 			action->OnEnd();
-			itAction = Remove(itAction);
+//			itAction = Remove(itAction);
 		} else {
+			if (action->IsBlocking()) {
+				blocker = action;
+				return;
+			}
 			++itAction;
 		}
 	}

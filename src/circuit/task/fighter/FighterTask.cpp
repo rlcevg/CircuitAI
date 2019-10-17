@@ -48,8 +48,7 @@ void IFighterTask::AssignTo(CCircuitUnit* unit)
 
 	if (unit->HasDGun()) {
 		const float range = std::max(unit->GetDGunRange() * 1.1f, cdef->GetLosRadius());
-		CDGunAction* act = new CDGunAction(unit, range);
-		unit->PushBack(act);
+		unit->PushDGunAct(new CDGunAction(unit, range));
 	}
 }
 

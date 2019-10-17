@@ -32,14 +32,14 @@ public:
 	void InsertAfter(IAction* action);
 	void InsertAfter(std::deque<IAction*>::iterator it, IAction* action);
 
-	IAction* Begin() const { return IsEmpty() ? &idleAction : actions.front(); }
-	IAction* End() const { return IsEmpty() ? &idleAction : actions.back(); }
 	IAction* Blocker() const { return blocker; }
 
 	bool IsEmpty() const { return actions.empty(); }
 	void Clear();
 
 protected:
+	IAction* Begin() const { return IsEmpty() ? &idleAction : actions.front(); }
+	IAction* End() const { return IsEmpty() ? &idleAction : actions.back(); }
 	std::deque<IAction*>::iterator Remove(std::deque<IAction*>::iterator it);
 
 	int startFrame;

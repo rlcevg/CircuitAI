@@ -10,6 +10,7 @@
 #include "task/TaskManager.h"
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
+#include "unit/action/TravelAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -26,13 +27,22 @@ CBRepairTask::~CBRepairTask()
 {
 }
 
-// TODO: Override Reevaluate?
+void CBRepairTask::Start(CCircuitUnit* unit)
+{
+	IRepairTask::Start(unit);
+	if (targetId != -1) {
+		Update(unit);
+	}
+}
+
 void CBRepairTask::Update()
 {
-	// FIXME: Replace const 1000.0f with build time?
-	if ((cost > 1000.0f) && (manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome() < savedIncome * 0.6f)) {
-		manager->AbortTask(this);
+	CCircuitUnit* unit = GetNextAssignee();
+	if (unit == nullptr) {
+		return;
 	}
+
+	Update(unit);
 }
 
 void CBRepairTask::OnUnitIdle(CCircuitUnit* unit)
@@ -59,6 +69,32 @@ void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 
 	CRetreatTask* task = manager->GetCircuit()->GetBuilderManager()->EnqueueRetreat();
 	manager->AssignTask(unit, task);
+}
+
+void CBRepairTask::Update(CCircuitUnit* unit)
+{
+	if (Reevaluate() && !unit->GetTravelAct()->IsFinished() && !UpdatePath(unit)) {
+		Execute(unit);
+	}
+}
+
+bool CBRepairTask::Reevaluate()
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	// FIXME: Replace const 1000.0f with build time?
+	if ((cost > 1000.0f) && (circuit->GetEconomyManager()->GetAvgMetalIncome() < savedIncome * 0.6f)) {
+		manager->AbortTask(this);
+		return false;
+	}
+
+	CAllyUnit* repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
+	if ((repTarget != nullptr) && (repTarget->GetUnit()->GetHealth() < repTarget->GetUnit()->GetMaxHealth())) {
+		SetBuildPos(repTarget->GetPos(circuit->GetLastFrame()));
+	} else {
+		manager->AbortTask(this);
+		return false;
+	}
+	return true;
 }
 
 } // namespace circuit

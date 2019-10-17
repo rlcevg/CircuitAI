@@ -21,6 +21,8 @@ public:
 	ITravelAction(CCircuitUnit* owner, Type type, const std::shared_ptr<F3Vec>& pPath, int squareSize, float speed = NO_SPEED_LIMIT);
 	virtual ~ITravelAction();
 
+	virtual void OnEnd() override;
+
 	void SetPath(const std::shared_ptr<F3Vec>& pPath, float speed = NO_SPEED_LIMIT);
 
 protected:

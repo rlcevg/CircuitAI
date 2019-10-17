@@ -21,17 +21,14 @@ CWaitAction::~CWaitAction()
 
 void CWaitAction::Update(CCircuitAI* circuit)
 {
-
 }
 
 void CWaitAction::OnStart()
 {
-
 }
 
 void CWaitAction::OnEnd()
 {
-
 }
 
 } // namespace circuit

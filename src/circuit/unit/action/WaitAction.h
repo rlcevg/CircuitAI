@@ -12,6 +12,7 @@
 
 namespace circuit {
 
+// FIXME: Unused
 class CWaitAction: public IUnitAction {
 public:
 	CWaitAction(CCircuitUnit* owner);

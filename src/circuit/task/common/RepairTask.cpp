@@ -54,6 +54,19 @@ void IRepairTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
+void IRepairTask::Start(CCircuitUnit* unit)
+{
+	if (targetId == -1) {
+		CAllyUnit* repTarget = FindUnitToAssist(unit);
+		if (repTarget == nullptr) {
+			manager->FallbackTask(unit);
+			return;
+		}
+		cost = repTarget->GetCircuitDef()->GetCost();
+		targetId = repTarget->GetId();
+	}
+}
+
 void IRepairTask::Finish()
 {
 //	CCircuitAI* circuit = manager->GetCircuit();
@@ -93,18 +106,7 @@ void IRepairTask::Cancel()
 void IRepairTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CAllyUnit* repTarget;
-	if (targetId == -1) {
-		repTarget = FindUnitToAssist(unit);
-		if (repTarget == nullptr) {
-			manager->FallbackTask(unit);
-			return;
-		}
-		cost = repTarget->GetCircuitDef()->GetCost();
-		targetId = repTarget->GetId();
-	} else {
-		repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
-	}
+	CAllyUnit* repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
 
 	if ((repTarget != nullptr) && (repTarget->GetUnit()->GetHealth() < repTarget->GetUnit()->GetMaxHealth())) {
 		Unit* u = unit->GetUnit();

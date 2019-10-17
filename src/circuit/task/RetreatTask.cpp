@@ -41,8 +41,7 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	IUnitTask::AssignTo(unit);
 
 	if (unit->HasDGun()) {
-		CDGunAction* act = new CDGunAction(unit, unit->GetDGunRange() * 0.8f);
-		unit->PushBack(act);
+		unit->PushDGunAct(new CDGunAction(unit, unit->GetDGunRange() * 0.8f));
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -70,7 +69,7 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	} else {
 		travelAction = new CMoveAction(unit, squareSize);
 	}
-	unit->PushBack(travelAction);
+	unit->PushTravelAct(travelAction);
 
 	// Mobile repair
 	if (!cdef->IsPlane()) {
@@ -93,11 +92,9 @@ void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CRetreatTask::Start(CCircuitUnit* unit)
 {
-	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-	if (!act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT | IUnitAction::Mask::JUMP)) {
+	if ((unit->GetTravelAct() == nullptr) || unit->GetTravelAct()->IsFinished()) {
 		return;
 	}
-	ITravelAction* travelAction = static_cast<ITravelAction*>(act);
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
@@ -126,7 +123,7 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 	if (pPath->empty()) {
 		pPath->push_back(endPos);
 	}
-	travelAction->SetPath(pPath);
+	unit->GetTravelAct()->SetPath(pPath);
 }
 
 void CRetreatTask::Update()
@@ -177,9 +174,8 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 			state = State::ROAM;
 			return;
 		}
-		IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-		if (act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT | IUnitAction::Mask::JUMP)) {
-			static_cast<ITravelAction*>(act)->SetFinished(true);
+		if (unit->GetTravelAct() != nullptr) {
+			unit->GetTravelAct()->SetFinished(true);
 		}
 
 		TRY_UNIT(circuit, unit,
@@ -228,9 +224,8 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 			unit->GetUnit()->PatrolTo(pos);
 		)
 
-		IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-		if (act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT | IUnitAction::Mask::JUMP)) {
-			static_cast<ITravelAction*>(act)->SetFinished(true);
+		if (unit->GetTravelAct() != nullptr) {
+			unit->GetTravelAct()->SetFinished(true);
 		}
 		state = State::REGROUP;
 	}
@@ -253,7 +248,7 @@ void CRetreatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	} else {
 		travelAction = new CMoveAction(unit, squareSize);
 	}
-	unit->PushBack(travelAction);
+	unit->PushTravelAct(travelAction);
 
 	Start(unit);
 }

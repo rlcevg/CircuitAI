@@ -25,12 +25,15 @@ public:
 	virtual ~CRecruitTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
+	virtual void AssignTo(CCircuitUnit* unit) override;
 
 	virtual void Start(CCircuitUnit* unit) override;
 	virtual void Update() override;
 protected:
 	virtual void Finish() override;
 	virtual void Cancel() override;
+
+	virtual void Execute(CCircuitUnit* unit) override;
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;

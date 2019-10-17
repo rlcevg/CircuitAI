@@ -74,6 +74,8 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
 
+	virtual void OnTravelEnd(CCircuitUnit* unit) override;
+
 	void Activate();
 	void Deactivate();
 

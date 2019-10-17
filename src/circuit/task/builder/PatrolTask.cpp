@@ -9,6 +9,7 @@
 #include "task/TaskManager.h"
 #include "terrain/TerrainManager.h"
 #include "unit/CircuitUnit.h"
+#include "unit/action/DGunAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -31,7 +32,17 @@ CBPatrolTask::~CBPatrolTask()
 
 void CBPatrolTask::AssignTo(CCircuitUnit* unit)
 {
-	IBuilderTask::AssignTo(unit);
+	IUnitTask::AssignTo(unit);
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	ShowAssignee(unit);
+	if (!utils::is_valid(position)) {
+		position = unit->GetPos(circuit->GetLastFrame());
+	}
+
+	if (unit->HasDGun()) {
+		unit->PushDGunAct(new CDGunAction(unit, unit->GetDGunRange()));
+	}
 
 	lastTouched = manager->GetCircuit()->GetLastFrame();
 }
@@ -45,18 +56,7 @@ void CBPatrolTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CBPatrolTask::Start(CCircuitUnit* unit)
 {
-	CCircuitAI* circuit = manager->GetCircuit();
-	Unit* u = unit->GetUnit();
-	TRY_UNIT(circuit, unit,
-		u->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
-
-		const float size = SQUARE_SIZE * 100;
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		AIFloat3 pos = position;
-		pos.x += (pos.x > terrainManager->GetTerrainWidth() / 2) ? -size : size;
-		pos.z += (pos.z > terrainManager->GetTerrainHeight() / 2) ? -size : size;
-		u->PatrolTo(pos);
-	)
+	Execute(unit);
 }
 
 void CBPatrolTask::Update()
@@ -69,6 +69,22 @@ void CBPatrolTask::Finish()
 
 void CBPatrolTask::Cancel()
 {
+}
+
+void CBPatrolTask::Execute(CCircuitUnit* unit)
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	Unit* u = unit->GetUnit();
+	TRY_UNIT(circuit, unit,
+		u->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
+
+		const float size = SQUARE_SIZE * 100;
+		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		AIFloat3 pos = position;
+		pos.x += (pos.x > terrainManager->GetTerrainWidth() / 2) ? -size : size;
+		pos.z += (pos.z > terrainManager->GetTerrainHeight() / 2) ? -size : size;
+		u->PatrolTo(pos);
+	)
 }
 
 } // namespace circuit

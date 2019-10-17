@@ -51,7 +51,7 @@ private:
 
 	std::vector<bool> linkedClusters;
 	std::set<int> linkPylons, unlinkPylons;
-	std::set<CEnergyNode*> linkNodes, unlinkNodes;
+	std::set<CEnergyNode*> linkNodes;
 	std::vector<CEnergyLink> links;  // Graph's exterior property
 	std::vector<CEnergyNode*> nodes;  // Graph's exterior property
 

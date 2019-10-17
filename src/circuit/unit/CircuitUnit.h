@@ -47,6 +47,8 @@ namespace circuit {
 class CCircuitDef;
 class CEnemyUnit;
 class IUnitManager;
+class CDGunAction;
+class ITravelAction;
 struct STerrainMapArea;
 
 class CCircuitUnit: public CAllyUnit, public CActionList {
@@ -65,6 +67,12 @@ public:
 
 	void SetArea(STerrainMapArea* area) { this->area = area; }
 	STerrainMapArea* GetArea() const { return area; }
+
+	void ClearAct();
+	void PushDGunAct(CDGunAction* action);
+	CDGunAction* GetDGunAct() const { return dgunAct; }
+	void PushTravelAct(ITravelAction* action);
+	ITravelAction* GetTravelAct() const { return travelAct; }
 
 	bool IsMoveFailed(int frame);
 
@@ -112,6 +120,9 @@ private:
 	int taskFrame;
 	IUnitManager* manager;
 	STerrainMapArea* area;  // = nullptr if a unit flies
+
+	CDGunAction* dgunAct;
+	ITravelAction* travelAct;
 
 //	int damagedFrame;
 	int moveFails;

@@ -79,6 +79,8 @@ CEnergyNode::CEnergyNode(int index, const CMetalData::SCluster& cluster, const C
 	for (SpotGraph::NodeIt nodeIt(spotGraph); nodeIt != lemon::INVALID; ++nodeIt) {
 		info.mexes.insert(nodeIt);
 	}
+	target = *info.mexes.begin();
+	source = lemon::INVALID;
 }
 
 CEnergyNode::~CEnergyNode()

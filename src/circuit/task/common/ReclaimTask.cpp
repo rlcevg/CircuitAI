@@ -8,6 +8,7 @@
 #include "task/common/ReclaimTask.h"
 #include "task/TaskManager.h"
 #include "terrain/TerrainManager.h"
+#include "unit/action/DGunAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -47,9 +48,24 @@ bool IReclaimTask::CanAssignTo(CCircuitUnit* unit) const
 
 void IReclaimTask::AssignTo(CCircuitUnit* unit)
 {
-	IBuilderTask::AssignTo(unit);
+	IUnitTask::AssignTo(unit);
 
-	lastTouched = manager->GetCircuit()->GetLastFrame();
+	CCircuitAI* circuit = manager->GetCircuit();
+	ShowAssignee(unit);
+	if (!utils::is_valid(position)) {
+		position = unit->GetPos(circuit->GetLastFrame());
+	}
+
+	if (unit->HasDGun()) {
+		unit->PushDGunAct(new CDGunAction(unit, unit->GetDGunRange()));
+	}
+
+	lastTouched = circuit->GetLastFrame();
+}
+
+void IReclaimTask::Start(CCircuitUnit* unit)
+{
+	Execute(unit);
 }
 
 void IReclaimTask::RemoveAssignee(CCircuitUnit* unit)

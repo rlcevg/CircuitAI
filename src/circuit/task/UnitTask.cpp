@@ -92,6 +92,10 @@ void IUnitTask::OnUnitMoveFailed(CCircuitUnit* unit)
 	)
 }
 
+void IUnitTask::OnTravelEnd(CCircuitUnit* unit)
+{
+}
+
 #define SERIALIZE(stream, func)	\
 	utils::binary_##func(stream, priority);		\
 	utils::binary_##func(stream, type);			\

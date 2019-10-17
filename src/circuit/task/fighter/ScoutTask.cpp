@@ -50,7 +50,7 @@ void CScoutTask::AssignTo(CCircuitUnit* unit)
 	} else {
 		travelAction = new CMoveAction(unit, squareSize);
 	}
-	unit->PushBack(travelAction);
+	unit->PushTravelAct(travelAction);
 	travelAction->SetActive(false);
 }
 
@@ -88,12 +88,6 @@ void CScoutTask::Update()
 
 void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
-	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-	if (!act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT | IUnitAction::Mask::JUMP)) {
-		return;
-	}
-	ITravelAction* travelAction = static_cast<ITravelAction*>(act);
-
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
@@ -111,18 +105,18 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		} else {
 			unit->Attack(target, frame + FRAMES_PER_SEC * 60);
 		}
-		travelAction->SetActive(false);
+		unit->GetTravelAct()->SetActive(false);
 		return;
 	} else if (!pPath->empty()) {
 		position = pPath->back();
-		travelAction->SetPath(pPath);
-		travelAction->SetActive(true);
+		unit->GetTravelAct()->SetPath(pPath);
+		unit->GetTravelAct()->SetActive(true);
 		return;
 	}
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	const AIFloat3& threatPos = travelAction->IsActive() ? position : pos;
+	const AIFloat3& threatPos = unit->GetTravelAct()->IsActive() ? position : pos;
 	// NOTE: Use max(unit_threat, THREAT_MIN) for no-weapon scouts
 	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < std::max(threatMap->GetUnitThreat(unit), THREAT_MIN) * powerMod);
 	if (!proceed) {
@@ -145,15 +139,15 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	if (pPath->size() > 2) {
 //		position = path.back();
-		travelAction->SetPath(pPath);
-		travelAction->SetActive(true);
+		unit->GetTravelAct()->SetPath(pPath);
+		unit->GetTravelAct()->SetActive(true);
 		return;
 	}
 
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->MoveTo(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 	)
-	travelAction->SetActive(false);
+	unit->GetTravelAct()->SetActive(false);
 }
 
 void CScoutTask::OnUnitIdle(CCircuitUnit* unit)

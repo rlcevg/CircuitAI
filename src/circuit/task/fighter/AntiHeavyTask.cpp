@@ -12,6 +12,7 @@
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
+#include "unit/action/DGunAction.h"
 #include "unit/action/MoveAction.h"
 #include "unit/action/FightAction.h"
 #include "unit/EnemyUnit.h"
@@ -66,9 +67,8 @@ void CAntiHeavyTask::AssignTo(CCircuitUnit* unit)
 		)
 	}
 
-	IUnitAction* act = static_cast<IUnitAction*>(unit->Begin());
-	if (act->IsEqual(IUnitAction::Mask::DGUN)) {
-		act->SetActive(false);
+	if (unit->GetDGunAct() != nullptr) {
+		unit->GetDGunAct()->SetActive(false);
 	}
 
 	int squareSize = circuit->GetPathfinder()->GetSquareSize();
@@ -78,7 +78,7 @@ void CAntiHeavyTask::AssignTo(CCircuitUnit* unit)
 	} else {
 		travelAction = new CMoveAction(unit, squareSize);
 	}
-	unit->PushBack(travelAction);
+	unit->PushTravelAct(travelAction);
 	travelAction->SetActive(false);
 }
 
@@ -106,9 +106,8 @@ void CAntiHeavyTask::Start(CCircuitUnit* unit)
 		return;
 	}
 	if (!pPath->empty()) {
-		ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-		travelAction->SetPath(pPath);
-		travelAction->SetActive(true);
+		unit->GetTravelAct()->SetPath(pPath);
+		unit->GetTravelAct()->SetActive(true);
 	}
 }
 
@@ -147,8 +146,7 @@ void CAntiHeavyTask::Update()
 					unit->GetUnit()->Fight(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 				)
 
-				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-				travelAction->SetActive(false);
+				unit->GetTravelAct()->SetActive(false);
 			}
 		}
 		return;
@@ -186,12 +184,10 @@ void CAntiHeavyTask::Update()
 			float power = 0.f;
 			CEnemyUnit* target = this->target;
 			auto subattack = [&power, target](CCircuitUnit* unit) {
-				IUnitAction* act = static_cast<IUnitAction*>(unit->Begin());
-				if (act->IsEqual(IUnitAction::Mask::DGUN)) {
-					act->SetActive(true);
+				if (unit->GetDGunAct() != nullptr) {
+					unit->GetDGunAct()->SetActive(true);
 				}
-				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-				travelAction->SetActive(false);
+				unit->GetTravelAct()->SetActive(false);
 
 				if (unit->GetCircuitDef()->IsRoleMine()) {
 					const bool isAttack = (target->GetThreat() > power);
@@ -250,8 +246,7 @@ void CAntiHeavyTask::Update()
 			for (CCircuitUnit* unit : units) {
 				unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
 
-				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-				travelAction->SetActive(false);
+				unit->GetTravelAct()->SetActive(false);
 			}
 			return;
 		}
@@ -262,8 +257,7 @@ void CAntiHeavyTask::Update()
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
 
-			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-			travelAction->SetActive(false);
+			unit->GetTravelAct()->SetActive(false);
 		}
 	}
 }
@@ -300,9 +294,8 @@ void CAntiHeavyTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 				unit->GetUnit()->SetFireState(CCircuitDef::FireType::OPEN);
 			)
 		}
-		IUnitAction* act = static_cast<IUnitAction*>(unit->Begin());
-		if (act->IsEqual(IUnitAction::Mask::DGUN)) {
-			act->SetActive(true);
+		if (unit->GetDGunAct() != nullptr) {
+			unit->GetDGunAct()->SetActive(true);
 		}
 	}
 }

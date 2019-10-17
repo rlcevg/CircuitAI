@@ -35,7 +35,7 @@ void CIdleTask::RemoveAssignee(CCircuitUnit* unit)
 		updateUnits.erase(unit);
 	}
 
-	unit->Clear();
+	unit->ClearAct();
 }
 
 void CIdleTask::Start(CCircuitUnit* unit)

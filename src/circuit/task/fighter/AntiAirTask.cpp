@@ -57,7 +57,7 @@ void CAntiAirTask::AssignTo(CCircuitUnit* unit)
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
 	CMoveAction* travelAction = new CMoveAction(unit, squareSize);
-	unit->PushBack(travelAction);
+	unit->PushTravelAct(travelAction);
 	travelAction->SetActive(false);
 }
 
@@ -75,9 +75,8 @@ void CAntiAirTask::Start(CCircuitUnit* unit)
 		return;
 	}
 	if (!pPath->empty()) {
-		ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-		travelAction->SetPath(pPath);
-		travelAction->SetActive(true);
+		unit->GetTravelAct()->SetPath(pPath);
+		unit->GetTravelAct()->SetActive(true);
 	}
 }
 
@@ -139,8 +138,7 @@ void CAntiAirTask::Update()
 					unit->GetUnit()->Fight(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 				)
 
-				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-				travelAction->SetActive(false);
+				unit->GetTravelAct()->SetActive(false);
 			}
 		}
 		return;
@@ -177,8 +175,7 @@ void CAntiAirTask::Update()
 			for (CCircuitUnit* unit : units) {
 				unit->Attack(target->GetPos(), target, frame + FRAMES_PER_SEC * 60);
 
-				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-				travelAction->SetActive(false);
+				unit->GetTravelAct()->SetActive(false);
 			}
 			return;
 		}
@@ -205,8 +202,7 @@ void CAntiAirTask::Update()
 				for (CCircuitUnit* unit : units) {
 					unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
 
-					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-					travelAction->SetActive(false);
+					unit->GetTravelAct()->SetActive(false);
 				}
 				return;
 			}
@@ -218,8 +214,7 @@ void CAntiAirTask::Update()
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
 
-			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-			travelAction->SetActive(false);
+			unit->GetTravelAct()->SetActive(false);
 		}
 	} else {
 		ActivePath();
@@ -280,8 +275,7 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
 
-			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-			travelAction->SetActive(false);
+			unit->GetTravelAct()->SetActive(false);
 		}
 	}
 }

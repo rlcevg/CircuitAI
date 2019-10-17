@@ -87,10 +87,10 @@ void IBuilderTask::AssignTo(CCircuitUnit* unit)
 	}
 
 	if (unit->HasDGun()) {
-		CDGunAction* act = new CDGunAction(unit, unit->GetDGunRange());
-		unit->PushBack(act);
+		unit->PushDGunAct(new CDGunAction(unit, unit->GetDGunRange()));
 	}
 
+	// NOTE: only for unit->GetCircuitDef()->IsMobile()
 	int squareSize = circuit->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
 	if (unit->GetCircuitDef()->IsAttrSiege()) {
@@ -98,7 +98,7 @@ void IBuilderTask::AssignTo(CCircuitUnit* unit)
 	} else {
 		travelAction = new CMoveAction(unit, squareSize);
 	}
-	unit->PushBack(travelAction);
+	unit->PushTravelAct(travelAction);
 	travelAction->SetActive(false);
 }
 
@@ -182,9 +182,8 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 
 	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
-		int facing = target->GetUnit()->GetBuildingFacing();
 		TRY_UNIT(circuit, unit,
-			u->Build(target->GetCircuitDef()->GetUnitDef(), buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			u->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 		)
 		return;
 	}
@@ -211,11 +210,8 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		CAllyUnit* alu = FindSameAlly(unit, friendlies);
 		utils::free_clear(friendlies);
 		if (alu != nullptr) {
-			UnitDef* buildUDef = alu->GetCircuitDef()->GetUnitDef();
-			const AIFloat3& pos = alu->GetPos(frame);
-			Unit* au = alu->GetUnit();
 			TRY_UNIT(circuit, unit,
-				u->Build(buildUDef, pos, au->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+				u->Repair(alu->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
 			)
 			return;
 		}
@@ -249,7 +245,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 void IBuilderTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	if (++buildFails <= 2) {  // Workaround due to engine's ability randomly disregard orders
-		Start(unit);
+		Execute(unit);
 	} else if (buildFails <= TASK_RETRIES) {
 		RemoveAssignee(unit);
 	} else if (target == nullptr) {
@@ -283,6 +279,11 @@ void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 	if (((target == nullptr) || units.empty()) && !unit->IsMorphing()) {
 		manager->AbortTask(this);
 	}
+}
+
+void IBuilderTask::OnTravelEnd(CCircuitUnit* unit)
+{
+	Execute(unit);
 }
 
 void IBuilderTask::Activate()
@@ -359,13 +360,8 @@ CCircuitUnit* IBuilderTask::GetNextAssignee()
 
 void IBuilderTask::Update(CCircuitUnit* unit)
 {
-	if (Reevaluate(unit)) {
-		if (!UpdatePath(unit)) {
-//			if (State::ROAM == unit->GetTaskState()) {
-//				unit->SetTaskState(State::ENGAGE);
-				Execute(unit);
-//			}
-		}
+	if (Reevaluate(unit) && !unit->GetTravelAct()->IsFinished() && !UpdatePath(unit)) {
+		Execute(unit);  // FIXME: no need with OnTravelEnd?
 	}
 }
 
@@ -438,16 +434,15 @@ bool IBuilderTask::UpdatePath(CCircuitUnit* unit)
 		pathfinder->MakePath(*pPath, startPos, endPos, unit->GetCircuitDef()->GetBuildDistance());
 
 		if ((pPath->size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(unit->GetCircuitDef()->GetBuildDistance()))) {
-			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-			travelAction->SetPath(pPath);
-			travelAction->SetActive(true);
+			unit->GetTravelAct()->SetPath(pPath);
+			unit->GetTravelAct()->SetActive(true);
 		} else {
-			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-			travelAction->SetActive(false);
+			unit->GetTravelAct()->SetFinished(true);
+			unit->GetTravelAct()->SetActive(false);
 			return false;
 		}
 	} else {
-		// TODO: AbortTask or remove unit
+		manager->AbortTask(this);
 	}
 	return true;
 }

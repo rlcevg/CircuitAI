@@ -51,6 +51,8 @@ public:
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) = 0;
 	void OnUnitMoveFailed(CCircuitUnit* unit);
 
+	virtual void OnTravelEnd(CCircuitUnit* unit);
+
 	const std::set<CCircuitUnit*>& GetAssignees() const { return units; }
 	Priority GetPriority() const { return priority; }
 	Type GetType() const { return type; }

@@ -8,6 +8,7 @@
 #include "unit/action/TravelAction.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
+#include "task/UnitTask.h"
 #include "util/utils.h"
 
 namespace circuit {
@@ -20,6 +21,7 @@ ITravelAction::ITravelAction(CCircuitUnit* owner, Type type, int squareSize, flo
 		, pathIterator(0)
 		, isForce(true)
 {
+	isBlocking = true;
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	int size = std::max(cdef->GetUnitDef()->GetXSize(), cdef->GetUnitDef()->GetZSize());
@@ -46,12 +48,20 @@ ITravelAction::~ITravelAction()
 {
 }
 
+void ITravelAction::OnEnd()
+{
+	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
+	unit->GetTask()->OnTravelEnd(unit);
+	isActive = false;
+}
+
 void ITravelAction::SetPath(const std::shared_ptr<F3Vec>& pPath, float speed)
 {
 	pathIterator = 0;
 	this->pPath = pPath;
 	this->speed = speed;
 	isForce = true;
+	isFinished = false;
 }
 
 int ITravelAction::CalcSpeedStep(int frame, float& stepSpeed)
@@ -77,6 +87,8 @@ int ITravelAction::CalcSpeedStep(int frame, float& stepSpeed)
 		stepSpeed = speed;
 	}
 	pathIterator = step;
+
+	isFinished = (pathIterator == pathMaxIndex);
 
 	isForce = false;
 	return pathMaxIndex;

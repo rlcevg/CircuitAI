@@ -409,7 +409,7 @@
 		"role": ["scout"],
 		"attribute": ["scout"],
 		"thr_mod": 0.6,
-		"pwr_mod": 2.5,
+		"pwr_mod": 1.5,
 		"retreat": 0.01
 	},
 	"vehraid": {

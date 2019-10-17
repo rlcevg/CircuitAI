@@ -78,7 +78,7 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 	} else/* if (cdef->IsAttrMelee())*/ {
 		travelAction = new CMoveAction(unit, squareSize);
 	}
-	unit->PushBack(travelAction);
+	unit->PushTravelAct(travelAction);
 	travelAction->SetActive(false);
 }
 
@@ -98,9 +98,8 @@ void CAttackTask::Start(CCircuitUnit* unit)
 		return;
 	}
 	if (!pPath->empty()) {
-		ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-		travelAction->SetPath(pPath, lowestSpeed);
-		travelAction->SetActive(true);
+		unit->GetTravelAct()->SetPath(pPath, lowestSpeed);
+		unit->GetTravelAct()->SetActive(true);
 	}
 }
 
@@ -134,8 +133,7 @@ void CAttackTask::Update()
 			for (CCircuitUnit* unit : units) {
 				unit->Gather(groupPos, frame);
 
-				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-				travelAction->SetActive(false);
+				unit->GetTravelAct()->SetActive(false);
 			}
 		}
 		return;
@@ -187,8 +185,7 @@ void CAttackTask::Update()
 
 				unit->Attack(target->GetPos(), target, frame + FRAMES_PER_SEC * 60);
 
-				ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-				travelAction->SetActive(false);
+				unit->GetTravelAct()->SetActive(false);
 			}
 			return;
 		}
@@ -212,8 +209,7 @@ void CAttackTask::Update()
 				for (CCircuitUnit* unit : units) {
 					unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
 
-					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-					travelAction->SetActive(false);
+					unit->GetTravelAct()->SetActive(false);
 				}
 			}
 			return;
@@ -226,8 +222,7 @@ void CAttackTask::Update()
 				unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {lowestSpeed});
 			)
 
-			ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-			travelAction->SetActive(false);
+			unit->GetTravelAct()->SetActive(false);
 		}
 	} else {
 		ActivePath(lowestSpeed);

@@ -10,6 +10,7 @@
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
 #include "module/FactoryManager.h"
+#include "unit/action/DGunAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -28,6 +29,29 @@ CSRepairTask::CSRepairTask(ITaskManager* mgr, Priority priority, CAllyUnit* targ
 
 CSRepairTask::~CSRepairTask()
 {
+}
+
+void CSRepairTask::AssignTo(CCircuitUnit* unit)
+{
+	IUnitTask::AssignTo(unit);
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	ShowAssignee(unit);
+	if (!utils::is_valid(position)) {
+		position = unit->GetPos(circuit->GetLastFrame());
+	}
+
+	if (unit->HasDGun()) {
+		unit->PushDGunAct(new CDGunAction(unit, unit->GetDGunRange()));
+	}
+}
+
+void CSRepairTask::Start(CCircuitUnit* unit)
+{
+	IRepairTask::Start(unit);
+	if (targetId != -1) {
+		Execute(unit);
+	}
 }
 
 void CSRepairTask::Update()
