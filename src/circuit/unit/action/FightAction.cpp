@@ -21,7 +21,8 @@ CFightAction::CFightAction(CCircuitUnit* owner, int squareSize, float speed)
 {
 }
 
-CFightAction::CFightAction(CCircuitUnit* owner, const std::shared_ptr<F3Vec>& pPath, int squareSize, float speed)
+CFightAction::CFightAction(CCircuitUnit* owner, const std::shared_ptr<PathInfo>& pPath,
+		int squareSize, float speed)
 		: ITravelAction(owner, Type::FIGHT, pPath, squareSize, speed)
 {
 }
@@ -43,14 +44,14 @@ void CFightAction::Update(CCircuitAI* circuit)
 	int step = pathIterator;
 
 	TRY_UNIT(circuit, unit,
-		const AIFloat3& pos = (*pPath)[step];
+		const AIFloat3& pos = pPath->posPath[step];
 		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {stepSpeed});
 
 		constexpr short options = UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY;
 		for (int i = 2; (step < pathMaxIndex) && (i < 4); ++i) {
 			step = std::min(step + increment, pathMaxIndex);
-			const AIFloat3& pos = (*pPath)[step];
+			const AIFloat3& pos = pPath->posPath[step];
 			unit->GetUnit()->Fight(pos, options, frame + FRAMES_PER_SEC * 60 * i);
 		}
 	)

@@ -86,7 +86,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
-	std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
+	std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
 	CEnemyUnit* bestTarget = FindTarget(unit, pos, *pPath);
 
 	if (bestTarget != nullptr) {
@@ -96,7 +96,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		)
 		unit->GetTravelAct()->SetActive(false);
 		return;
-	} else if (!pPath->empty()) {
+	} else if (!pPath->posPath.empty()) {
 		unit->GetTravelAct()->SetPath(pPath);
 		unit->GetTravelAct()->SetActive(true);
 		return;
@@ -113,13 +113,12 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	if (utils::is_valid(position) && terrainManager->CanMoveToPos(unit->GetArea(), position)) {
 		AIFloat3 startPos = pos;
 		AIFloat3 endPos = position;
-//		pPath->clear();
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(unit, threatMap, frame);
-		pathfinder->MakePath(*pPath, nullptr, startPos, endPos, pathfinder->GetSquareSize());
+		pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 
-		proceed = pPath->size() > 2;
+		proceed = pPath->path.size() > 2;
 		if (proceed) {
 			unit->GetTravelAct()->SetPath(pPath);
 			unit->GetTravelAct()->SetActive(true);
@@ -148,13 +147,13 @@ void CArtilleryTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
+CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, PathInfo& path)
 {
-	auto fallback = [this](CCircuitAI* circuit, const AIFloat3& pos, F3Vec& path, CPathFinder* pathfinder) {
+	auto fallback = [this](CCircuitAI* circuit, const AIFloat3& pos, PathInfo& path, CPathFinder* pathfinder) {
 		position = circuit->GetSetupManager()->GetBasePos();
 		AIFloat3 startPos = pos;
 		AIFloat3 endPos = position;
-		pathfinder->MakePath(path, nullptr, startPos, endPos, pathfinder->GetSquareSize());
+		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
 	};
 
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -260,25 +259,25 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 		}
 	}
 
-	path.clear();
+	path.Clear();
 	if (enemyPositions.empty()) {
 		return nullptr;
 	}
 
 	AIFloat3 startPos = pos;
 	range = std::max(range/* - threatMap->GetSquareSize()*/, (float)threatMap->GetSquareSize());
-	pathfinder->FindBestPath(path, nullptr, startPos, range, enemyPositions);
+	pathfinder->FindBestPath(path, startPos, range, enemyPositions);
 	enemyPositions.clear();
 
 	// Check if safe path exists
-	if (path.empty()) {
+	if (path.posPath.empty()) {
 		fallback(circuit, pos, path, pathfinder);
 		return nullptr;
 	}
-	if (threatMap->GetThreatAt(path.back()) > THREAT_MIN) {
+	if (threatMap->GetThreatAt(path.posPath.back()) > THREAT_MIN) {
 		fallback(circuit, pos, path, pathfinder);
 	} else {
-		position = path.back();
+		position = path.posPath.back();
 	}
 
 	return nullptr;

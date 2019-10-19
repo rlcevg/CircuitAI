@@ -48,6 +48,16 @@ template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 #define DEFAULT_SLACK	(SQUARE_SIZE * THREAT_RES)
 
 typedef std::vector<springai::AIFloat3> F3Vec;
+typedef std::vector<void*> VoidVec;
+
+struct PathInfo {
+	PathInfo(bool last = false) : start(0), isLast(last) {}
+	void Clear() { posPath.clear(); path.clear(); }
+	F3Vec posPath;
+	VoidVec path;
+	size_t start;
+	bool isLast;
+};
 
 struct cmp_str {
 	bool operator()(char const* a, char const* b) {

@@ -808,12 +808,12 @@ int CCircuitAI::Message(int playerId, const char* message)
 		LOG("%f, %f, %f, %i", dbgPos.x, dbgPos.y, dbgPos.z, pathfinder->GetDbgDef());
 	}
 	else if ((strncmp(message, cmdEnd, 4) == 0)) {
-		F3Vec path;
+		PathInfo path;
 		pathfinder->SetDbgType(atoi((const char*)&message[5]));
 		AIFloat3 startPos = pathfinder->GetDbgPos();
 		AIFloat3 endPos = map->GetMousePos();
 		pathfinder->SetMapData(GetThreatMap());
-		pathfinder->MakePath(path, nullptr, startPos, endPos, pathfinder->GetSquareSize());
+		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
 		LOG("%f, %f, %f, %i", endPos.x, endPos.y, endPos.z, pathfinder->GetDbgType());
 	}
 #endif

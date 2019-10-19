@@ -105,7 +105,7 @@ void CAntiHeavyTask::Start(CCircuitUnit* unit)
 	if ((State::REGROUP == state) || (State::ENGAGE == state)) {
 		return;
 	}
-	if (!pPath->empty()) {
+	if (!pPath->posPath.empty()) {
 		unit->GetTravelAct()->SetPath(pPath);
 		unit->GetTravelAct()->SetActive(true);
 	}
@@ -160,7 +160,7 @@ void CAntiHeavyTask::Update()
 			isExecute |= unit->IsForceExecute();
 		}
 		if (!isExecute) {
-			if (wasRegroup && !pPath->empty()) {
+			if (wasRegroup && !pPath->posPath.empty()) {
 				ActivePath();
 			}
 			return;
@@ -211,8 +211,8 @@ void CAntiHeavyTask::Update()
 				}
 			}
 			return;
-		} else if (!pPath->empty()) {
-			position = pPath->back();
+		} else if (!pPath->posPath.empty()) {
+			position = pPath->posPath.back();
 			ActivePath();
 			return;
 		}
@@ -224,19 +224,20 @@ void CAntiHeavyTask::Update()
 		}
 	}
 
-	pPath->clear();
 	AIFloat3 startPos = leader->GetPos(frame);
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
+	pathfinder->PreferPath(pPath->path);
 	if (leader->GetCircuitDef()->IsRoleMine()) {
 		position = circuit->GetSetupManager()->GetBasePos();
-		pathfinder->MakePath(*pPath, &lastPath, startPos, position, pathfinder->GetSquareSize() * 4);
+		pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize() * 4);
 	} else {
 		circuit->GetMilitaryManager()->FindBestPos(*pPath, startPos, leader->GetArea());
 	}
+	pathfinder->UnpreferPath();
 
-	if (!pPath->empty()) {
-		position = pPath->back();
+	if (!pPath->posPath.empty()) {
+		position = pPath->posPath.back();
 		ActivePath();
 	} else {
 		CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
@@ -351,7 +352,7 @@ void CAntiHeavyTask::FindTarget()
 		}
 	}
 
-	pPath->clear();
+	pPath->Clear();
 	SetTarget(bestTarget);
 	if (bestTarget != nullptr) {
 		enemyPositions.clear();
@@ -362,8 +363,11 @@ void CAntiHeavyTask::FindTarget()
 	}
 
 	AIFloat3 startPos = pos;
-	circuit->GetPathfinder()->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	circuit->GetPathfinder()->FindBestPath(*pPath, &lastPath, startPos, threatMap->GetSquareSize(), enemyPositions, false);
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
+	pathfinder->PreferPath(pPath->path);
+	pathfinder->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions, false);
+	pathfinder->UnpreferPath();
 	enemyPositions.clear();
 }
 

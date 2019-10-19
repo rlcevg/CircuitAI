@@ -27,7 +27,7 @@ ISquadTask::ISquadTask(ITaskManager* mgr, FightType type, float powerMod)
 		, leader(nullptr)
 		, groupPos(-RgtVector)
 		, prevGroupPos(-RgtVector)
-		, pPath(std::make_shared<F3Vec>())
+		, pPath(std::make_shared<PathInfo>())
 		, groupFrame(0)
 {
 }

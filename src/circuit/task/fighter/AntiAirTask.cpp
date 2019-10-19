@@ -74,7 +74,7 @@ void CAntiAirTask::Start(CCircuitUnit* unit)
 	if ((State::REGROUP == state) || (State::ENGAGE == state)) {
 		return;
 	}
-	if (!pPath->empty()) {
+	if (!pPath->posPath.empty()) {
 		unit->GetTravelAct()->SetPath(pPath);
 		unit->GetTravelAct()->SetActive(true);
 	}
@@ -97,11 +97,12 @@ void CAntiAirTask::Update()
 				state = State::ROAM;
 			} else {
 				AIFloat3 startPos = leader->GetPos(frame);
-				pPath->clear();
 				CPathFinder* pathfinder = circuit->GetPathfinder();
 				pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
-				pathfinder->MakePath(*pPath, &lastPath, startPos, position, pathfinder->GetSquareSize());
-				if (!pPath->empty()) {
+				pathfinder->PreferPath(pPath->path);
+				pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize());
+				pathfinder->UnpreferPath();
+				if (!pPath->posPath.empty()) {
 					ActivePath();
 					return;
 				}
@@ -150,7 +151,7 @@ void CAntiAirTask::Update()
 			isExecute |= unit->IsForceExecute();
 		}
 		if (!isExecute) {
-			if (wasRegroup && !pPath->empty()) {
+			if (wasRegroup && !pPath->posPath.empty()) {
 				ActivePath();
 			}
 			return;
@@ -184,14 +185,15 @@ void CAntiAirTask::Update()
 		AIFloat3 startPos = leader->GetPos(frame);
 		circuit->GetMilitaryManager()->FillSafePos(startPos, leader->GetArea(), ourPositions);
 
-		pPath->clear();
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
-		pathfinder->FindBestPath(*pPath, &lastPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
+		pathfinder->PreferPath(pPath->path);
+		pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
+		pathfinder->UnpreferPath();
 		ourPositions.clear();
 
-		if (!pPath->empty()) {
-			position = pPath->back();
+		if (!pPath->posPath.empty()) {
+			position = pPath->posPath.back();
 			ActivePath();
 			return;
 		} else {
@@ -208,7 +210,7 @@ void CAntiAirTask::Update()
 			}
 		}
 	}
-	if (pPath->empty()) {  // should never happen
+	if (pPath->posPath.empty()) {  // should never happen
 		for (CCircuitUnit* unit : units) {
 			TRY_UNIT(circuit, unit,
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
@@ -258,14 +260,15 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	AIFloat3 startPos = leader->GetPos(frame);
 	circuit->GetMilitaryManager()->FillSafePos(startPos, leader->GetArea(), ourPositions);
 
-	pPath->clear();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
-	pathfinder->FindBestPath(*pPath, &lastPath, startPos, pathfinder->GetSquareSize(), ourPositions);
+	pathfinder->PreferPath(pPath->path);
+	pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions);
+	pathfinder->UnpreferPath();
 	ourPositions.clear();
 
-	if (!pPath->empty()) {
-		position = pPath->back();
+	if (!pPath->posPath.empty()) {
+		position = pPath->posPath.back();
 		ActivePath();
 		state = State::DISENGAGE;
 	} else {
@@ -326,11 +329,12 @@ void CAntiAirTask::FindTarget()
 	}
 	AIFloat3 startPos = pos;
 	AIFloat3 endPos = position;
-	pPath->clear();
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	pathfinder->MakePath(*pPath, &lastPath, startPos, endPos, pathfinder->GetSquareSize());
+	pathfinder->PreferPath(pPath->path);
+	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
+	pathfinder->UnpreferPath();
 }
 
 } // namespace circuit

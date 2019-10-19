@@ -114,14 +114,14 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 		}
 		range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
 	}
-	std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
+	std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
 
 	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit) * 0.125f;
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	pathfinder->MakePath(*pPath, nullptr, startPos, endPos, range, minThreat);
+	pathfinder->MakePath(*pPath, startPos, endPos, range, minThreat);
 
-	if (pPath->empty()) {
-		pPath->push_back(endPos);
+	if (pPath->posPath.empty()) {
+		pPath->posPath.push_back(endPos);
 	}
 	unit->GetTravelAct()->SetPath(pPath);
 }

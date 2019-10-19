@@ -91,7 +91,7 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	}
 
 	const AIFloat3& pos = unit->GetPos(frame);
-	std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
+	std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
 	CEnemyUnit* lastTarget = target;
 	SetTarget(nullptr);
 	SetTarget(FindTarget(unit, lastTarget, pos, *pPath));
@@ -108,8 +108,8 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		)
 		unit->GetTravelAct()->SetActive(false);
 		return;
-	} else if (!pPath->empty()) {
-		position = pPath->back();
+	} else if (!pPath->posPath.empty()) {
+		position = pPath->posPath.back();
 		unit->GetTravelAct()->SetPath(pPath);
 		unit->GetTravelAct()->SetActive(true);
 		return;
@@ -126,13 +126,12 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	if (utils::is_valid(position) && terrainManager->CanMoveToPos(unit->GetArea(), position)) {
 		AIFloat3 startPos = pos;
 		AIFloat3 endPos = position;
-//		pPath->clear();
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(unit, threatMap, frame);
-		pathfinder->MakePath(*pPath, nullptr, startPos, endPos, pathfinder->GetSquareSize());
+		pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 
-		proceed = pPath->size() > 2;
+		proceed = pPath->path.size() > 2;
 		if (proceed) {
 //			position = path.back();
 			unit->GetTravelAct()->SetPath(pPath);
@@ -174,7 +173,7 @@ void CBombTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	}
 }
 
-CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, const AIFloat3& pos, F3Vec& path)
+CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, const AIFloat3& pos, PathInfo& path)
 {
 	// TODO: 1) Bombers should constantly harass undefended targets and not suicide.
 	//       2) Fat target getting close to base should gain priority and be attacked by group if high AA threat.
@@ -286,7 +285,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, co
 		bestTarget = (mediumTarget != nullptr) ? mediumTarget : worstTarget;
 	}
 
-	path.clear();
+	path.Clear();
 	if (bestTarget != nullptr) {
 		enemyPositions.clear();
 		return bestTarget;
@@ -298,7 +297,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, co
 	AIFloat3 startPos = pos;
 	const float range = std::max<float>(cdef->GetLosRadius(), threatMap->GetSquareSize());
 	circuit->GetPathfinder()->SetMapData(unit, threatMap, circuit->GetLastFrame());
-	circuit->GetPathfinder()->FindBestPath(path, nullptr, startPos, range, enemyPositions);
+	circuit->GetPathfinder()->FindBestPath(path, startPos, range, enemyPositions);
 	enemyPositions.clear();
 
 	return nullptr;

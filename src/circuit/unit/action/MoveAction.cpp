@@ -21,7 +21,8 @@ CMoveAction::CMoveAction(CCircuitUnit* owner, int squareSize, float speed)
 {
 }
 
-CMoveAction::CMoveAction(CCircuitUnit* owner, const std::shared_ptr<F3Vec>& pPath, int squareSize, float speed)
+CMoveAction::CMoveAction(CCircuitUnit* owner, const std::shared_ptr<PathInfo>& pPath,
+		int squareSize, float speed)
 		: ITravelAction(owner, Type::MOVE, pPath, squareSize, speed)
 {
 }
@@ -43,7 +44,7 @@ void CMoveAction::Update(CCircuitAI* circuit)
 	int step = pathIterator;
 
 	TRY_UNIT(circuit, unit,
-		const AIFloat3& pos = (*pPath)[step];
+		const AIFloat3& pos = pPath->posPath[step];
 //		unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		unit->GetUnit()->ExecuteCustomCommand(CMD_RAW_MOVE,
 											  {pos.x, pos.y, pos.z},
@@ -54,7 +55,7 @@ void CMoveAction::Update(CCircuitAI* circuit)
 		constexpr short options = UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY;
 		for (int i = 2; (step < pathMaxIndex) && (i < 4); ++i) {
 			step = std::min(step + increment, pathMaxIndex);
-			const AIFloat3& pos = (*pPath)[step];
+			const AIFloat3& pos = pPath->posPath[step];
 //			unit->GetUnit()->MoveTo(pos, options, frame + FRAMES_PER_SEC * 60 * i);
 			unit->GetUnit()->ExecuteCustomCommand(CMD_RAW_MOVE,
 												  {pos.x, pos.y, pos.z},

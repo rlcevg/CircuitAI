@@ -90,7 +90,7 @@ void CRaidTask::Start(CCircuitUnit* unit)
 	if ((State::REGROUP == state) || (State::ENGAGE == state)) {
 		return;
 	}
-	if (!pPath->empty()) {
+	if (!pPath->posPath.empty()) {
 		unit->GetTravelAct()->SetPath(pPath);
 		unit->GetTravelAct()->SetActive(true);
 	}
@@ -143,7 +143,7 @@ void CRaidTask::Update()
 			isExecute |= unit->IsForceExecute();
 		}
 		if (!isExecute) {
-			if (wasRegroup && !pPath->empty()) {
+			if (wasRegroup && !pPath->posPath.empty()) {
 				ActivePath();
 			}
 			return;
@@ -188,8 +188,8 @@ void CRaidTask::Update()
 			}
 		}
 		return;
-	} else if (!pPath->empty()) {
-		position = pPath->back();
+	} else if (!pPath->posPath.empty()) {
+		position = pPath->posPath.back();
 		ActivePath();
 		return;
 	}
@@ -210,13 +210,14 @@ void CRaidTask::Update()
 	}
 	AIFloat3 startPos = pos;
 	AIFloat3 endPos = position;
-//	pPath->clear();  // cleared by predecessor logic
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, frame);
-	pathfinder->MakePath(*pPath, &lastPath, startPos, endPos, pathfinder->GetSquareSize());
+	pathfinder->PreferPath(pPath->path);
+	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
+	pathfinder->UnpreferPath();
 
-	if (pPath->size() > 2) {
+	if (pPath->path.size() > 2) {
 //		position = path.back();
 		ActivePath();
 		return;
@@ -350,7 +351,7 @@ void CRaidTask::FindTarget()
 		bestTarget = worstTarget;
 	}
 
-	pPath->clear();
+	pPath->Clear();
 	if (bestTarget != nullptr) {
 		SetTarget(bestTarget);
 		enemyPositions.clear();
@@ -361,8 +362,11 @@ void CRaidTask::FindTarget()
 	}
 
 	AIFloat3 startPos = pos;
-	circuit->GetPathfinder()->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	circuit->GetPathfinder()->FindBestPath(*pPath, &lastPath, startPos, threatMap->GetSquareSize(), enemyPositions);
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
+	pathfinder->PreferPath(pPath->path);
+	pathfinder->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions);
+	pathfinder->UnpreferPath();
 	enemyPositions.clear();
 }
 

@@ -736,7 +736,7 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 	return -RgtVector;
 }
 
-void CMilitaryManager::FindBestPos(F3Vec& posPath, AIFloat3& startPos, STerrainMapArea* area)
+void CMilitaryManager::FindBestPos(PathInfo& pPath, AIFloat3& startPos, STerrainMapArea* area)
 {
 	static F3Vec ourPositions;  // NOTE: micro-opt
 
@@ -758,9 +758,9 @@ void CMilitaryManager::FindBestPos(F3Vec& posPath, AIFloat3& startPos, STerrainM
 		}
 
 		if (!ourPositions.empty()) {
-			pathfinder->FindBestPath(posPath, nullptr, startPos, pathfinder->GetSquareSize(), ourPositions, false);
+			pathfinder->FindBestPath(pPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
 			ourPositions.clear();
-			if (!posPath.empty()) {
+			if (!pPath.posPath.empty()) {
 				return;
 			}
 		}
@@ -817,9 +817,9 @@ void CMilitaryManager::FindBestPos(F3Vec& posPath, AIFloat3& startPos, STerrainM
 			ourPositions.push_back(defPoint.position);
 		}
 
-		pathfinder->FindBestPath(posPath, nullptr, startPos, pathfinder->GetSquareSize(), ourPositions, false);
+		pathfinder->FindBestPath(pPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
 		ourPositions.clear();
-		if (!posPath.empty()) {
+		if (!pPath.posPath.empty()) {
 			return;
 		}
 	}
@@ -828,7 +828,7 @@ void CMilitaryManager::FindBestPos(F3Vec& posPath, AIFloat3& startPos, STerrainM
 	 * Use base
 	 */
 	ourPositions.push_back(circuit->GetSetupManager()->GetBasePos());
-	pathfinder->FindBestPath(posPath, nullptr, startPos, pathfinder->GetSquareSize(), ourPositions, false);
+	pathfinder->FindBestPath(pPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
 	ourPositions.clear();
 }
 

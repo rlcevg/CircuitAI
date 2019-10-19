@@ -39,23 +39,23 @@ public:
 	void Pos2XY(springai::AIFloat3 pos, int* x, int* y);
 
 	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
-	size_t RefinePath();
+	void PreferPath(VoidVec& path);
+	void UnpreferPath();
 
 	unsigned Checksum() const { return micropather->Checksum(); }
-	float MakePath(F3Vec& posPath, std::vector<void*>* lastPath,
-			springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
-	float MakePath(F3Vec& posPath, std::vector<void*>* lastPath,
-			springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius, float threat);
+	float MakePath(PathInfo& iPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
+	float MakePath(PathInfo& iPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius, float threat);
 	float PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
 	float PathCostDirect(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
-	float FindBestPath(F3Vec& posPath, std::vector<void*>* lastPath,
-			springai::AIFloat3& startPos, float myMaxRange, F3Vec& possibleTargets, bool safe = true);
-	float FindBestPathToRadius(F3Vec& posPath, std::vector<void*>* lastPath,
-			springai::AIFloat3& startPos, float radiusAroundTarget, const springai::AIFloat3& target);
+	float FindBestPath(PathInfo& iPath, springai::AIFloat3& startPos, float myMaxRange, F3Vec& possibleTargets, bool safe = true);
+	float FindBestPathToRadius(PathInfo& iPath, springai::AIFloat3& startPos, float radiusAroundTarget, const springai::AIFloat3& target);
 
 	int GetSquareSize() const { return squareSize; }
 
 private:
+	size_t RefinePath(VoidVec& path);
+	void FillPathInfo(PathInfo& iPath);
+
 	CTerrainData* terrainData;
 
 	NSMicroPather::CMicroPather* micropather;
@@ -68,7 +68,7 @@ private:
 	int pathMapXSize;
 	int pathMapYSize;
 
-	std::vector<void*> path;
+	std::vector<std::pair<void*, float>> savedCost;
 
 #ifdef DEBUG_VIS
 private:
@@ -86,7 +86,7 @@ public:
 	void SetDbgType(int type) { dbgType = type; }
 	int GetDbgType() const { return dbgType; }
 	void SetMapData(CThreatMap* threatMap);
-	void UpdateVis(const F3Vec& path);
+	void UpdateVis(const VoidVec& path);
 	void ToggleVis(CCircuitAI* circuit);
 #endif
 };

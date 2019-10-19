@@ -281,7 +281,7 @@ PathNode* CMicroPather::AllocatePathNode()
 	return result;
 }
 
-void CMicroPather::GoalReached(PathNode* node, void* start, void* end, std::vector<void*>* path)
+void CMicroPather::GoalReached(PathNode* node, void* start, void* end, VoidVec* path)
 {
 	path->clear();
 
@@ -442,7 +442,7 @@ void CMicroPather::FixNode(void** Node)
 	*Node = (void*) static_cast<intptr_t>(y * mapSizeX + x);
 }
 
-int CMicroPather::Solve(void* startNode, void* endNode, std::vector<void*>* path, float* cost)
+int CMicroPather::Solve(void* startNode, void* endNode, VoidVec* path, float* cost)
 {
 	assert(!isRunning);
 	isRunning = true;
@@ -570,7 +570,7 @@ int CMicroPather::Solve(void* startNode, void* endNode, std::vector<void*>* path
 	return NO_SOLUTION;
 }
 
-int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*>& endNodes, std::vector<void*>& targets, std::vector<void*>* path, float* cost)
+int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes, VoidVec& targets, VoidVec* path, float* cost)
 {
 	assert(!isRunning);
 	isRunning = true;
@@ -733,7 +733,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*
 	return NO_SOLUTION;
 }
 
-int CMicroPather::FindBestPathToAnyGivenPointSafe(void* startNode, std::vector<void*>& endNodes, std::vector<void*>& targets, std::vector<void*>* path, float* cost)
+int CMicroPather::FindBestPathToAnyGivenPointSafe(void* startNode, VoidVec& endNodes, VoidVec& targets, VoidVec* path, float* cost)
 {
 	assert(!isRunning);
 	isRunning = true;
@@ -910,7 +910,7 @@ int CMicroPather::FindBestPathToAnyGivenPointSafe(void* startNode, std::vector<v
 	return NO_SOLUTION;
 }
 
-int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode, std::vector<void*>* path, float* cost, int radius)
+int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode, VoidVec* path, float* cost, int radius)
 {
 	assert(!isRunning);
 	isRunning = true;
@@ -1060,7 +1060,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode, st
 	return NO_SOLUTION;
 }
 
-int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode, std::vector<void*>* path, float* cost, int radius, float threat)
+int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode, VoidVec* path, float* cost, int radius, float threat)
 {
 	assert(!isRunning);
 	isRunning = true;

@@ -427,13 +427,13 @@ bool IBuilderTask::UpdatePath(CCircuitUnit* unit)
 	AIFloat3 endPos = GetPosition();
 	if (circuit->GetTerrainManager()->CanBuildAtSafe(unit, endPos)) {
 		AIFloat3 startPos = unit->GetPos(frame);
-		std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
+		std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-		pathfinder->MakePath(*pPath, nullptr, startPos, endPos, unit->GetCircuitDef()->GetBuildDistance());
+		pathfinder->MakePath(*pPath, startPos, endPos, unit->GetCircuitDef()->GetBuildDistance());
 
-		if ((pPath->size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(unit->GetCircuitDef()->GetBuildDistance()))) {
+		if ((pPath->path.size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(unit->GetCircuitDef()->GetBuildDistance()))) {
 			unit->GetTravelAct()->SetPath(pPath);
 			unit->GetTravelAct()->SetActive(true);
 		} else {

@@ -97,7 +97,7 @@ void CAttackTask::Start(CCircuitUnit* unit)
 	if ((State::REGROUP == state) || (State::ENGAGE == state)) {
 		return;
 	}
-	if (!pPath->empty()) {
+	if (!pPath->posPath.empty()) {
 		unit->GetTravelAct()->SetPath(pPath, lowestSpeed);
 		unit->GetTravelAct()->SetActive(true);
 	}
@@ -146,7 +146,7 @@ void CAttackTask::Update()
 			isExecute |= unit->IsForceExecute();
 		}
 		if (!isExecute) {
-			if (wasRegroup && !pPath->empty()) {
+			if (wasRegroup && !pPath->posPath.empty()) {
 				ActivePath(lowestSpeed);
 			}
 			return;
@@ -197,13 +197,12 @@ void CAttackTask::Update()
 			position = commander->GetPos(frame);
 			AIFloat3 startPos = leader->GetPos(frame);
 			AIFloat3 endPos = position;
-			pPath->clear();
 
 			CPathFinder* pathfinder = circuit->GetPathfinder();
 			pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
-			pathfinder->MakePath(*pPath, &lastPath, startPos, endPos, pathfinder->GetSquareSize());
+			pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 
-			if ((pPath->size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(500.f))) {
+			if ((pPath->path.size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(500.f))) {
 				ActivePath();
 			} else {
 				for (CCircuitUnit* unit : units) {
@@ -215,7 +214,7 @@ void CAttackTask::Update()
 			return;
 		}
 	}
-	if (pPath->empty()) {  // should never happen
+	if (pPath->posPath.empty()) {  // should never happen
 		for (CCircuitUnit* unit : units) {
 			TRY_UNIT(circuit, unit,
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
@@ -324,11 +323,12 @@ void CAttackTask::FindTarget()
 	}
 	AIFloat3 startPos = pos;
 	AIFloat3 endPos = position;
-	pPath->clear();
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	pathfinder->MakePath(*pPath, &lastPath, startPos, endPos, pathfinder->GetSquareSize(), attackPower * 0.125f);
+	pathfinder->PreferPath(pPath->path);
+	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize(), attackPower * 0.125f);
+	pathfinder->UnpreferPath();
 	// TODO: Bottleneck check, i.e. path cost
 }
 

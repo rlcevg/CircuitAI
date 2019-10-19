@@ -91,7 +91,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
-	std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
+	std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
 	SetTarget(FindTarget(unit, pos, *pPath));
 
@@ -107,8 +107,8 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		}
 		unit->GetTravelAct()->SetActive(false);
 		return;
-	} else if (!pPath->empty()) {
-		position = pPath->back();
+	} else if (!pPath->posPath.empty()) {
+		position = pPath->posPath.back();
 		unit->GetTravelAct()->SetPath(pPath);
 		unit->GetTravelAct()->SetActive(true);
 		return;
@@ -131,13 +131,12 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	}
 	AIFloat3 startPos = pos;
 	AIFloat3 endPos = position;
-//	pPath->clear();  // cleared by predecessor logic
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(unit, threatMap, frame);
-	pathfinder->MakePath(*pPath, nullptr, startPos, endPos, pathfinder->GetSquareSize());
+	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 
-	if (pPath->size() > 2) {
+	if (pPath->path.size() > 2) {
 //		position = path.back();
 		unit->GetTravelAct()->SetPath(pPath);
 		unit->GetTravelAct()->SetActive(true);
@@ -158,7 +157,7 @@ void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Vec& path)
+CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, PathInfo& path)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	Map* map = circuit->GetMap();
@@ -259,7 +258,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 		bestTarget = worstTarget;
 	}
 
-	path.clear();
+	path.Clear();
 	if (bestTarget != nullptr) {
 		enemyPositions.clear();
 		return bestTarget;
@@ -269,8 +268,9 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, F3Ve
 	}
 
 	AIFloat3 startPos = pos;
-	circuit->GetPathfinder()->SetMapData(unit, threatMap, circuit->GetLastFrame());
-	circuit->GetPathfinder()->FindBestPath(path, nullptr, startPos, range * 0.5f, enemyPositions);
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	pathfinder->SetMapData(unit, threatMap, circuit->GetLastFrame());
+	pathfinder->FindBestPath(path, startPos, range * 0.5f, enemyPositions);
 	enemyPositions.clear();
 
 	return nullptr;

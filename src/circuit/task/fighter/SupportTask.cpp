@@ -101,18 +101,18 @@ void CSupportTask::Update()
 		return;
 	}
 
-	F3Vec path;
+	PathInfo path(true);
 	AIFloat3 startPos = unit->GetPos(frame);
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	pathfinder->FindBestPath(path, nullptr, startPos, pathfinder->GetSquareSize(), ourPositions, false);
+	pathfinder->FindBestPath(path, startPos, pathfinder->GetSquareSize(), ourPositions, false);
 	ourPositions.clear();
-	if (path.empty()) {
+	if (path.posPath.empty()) {
 		Start(unit);
 		return;
 	}
 
-	const AIFloat3& endPos = path.back();
+	const AIFloat3& endPos = path.posPath.back();
 	if (startPos.SqDistance2D(endPos) < SQUARE(1000.f)) {
 		IFighterTask* task = *tasks.begin();
 		float minSqDist = std::numeric_limits<float>::max();

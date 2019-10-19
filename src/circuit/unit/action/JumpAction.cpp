@@ -21,7 +21,8 @@ CJumpAction::CJumpAction(CCircuitUnit* owner, int squareSize, float speed)
 {
 }
 
-CJumpAction::CJumpAction(CCircuitUnit* owner, const std::shared_ptr<F3Vec>& pPath, int squareSize, float speed)
+CJumpAction::CJumpAction(CCircuitUnit* owner, const std::shared_ptr<PathInfo>& pPath,
+		int squareSize, float speed)
 		: ITravelAction(owner, Type::JUMP, pPath, squareSize, speed)
 {
 }
@@ -49,15 +50,15 @@ void CJumpAction::Update(CCircuitAI* circuit)
 		if (unit->IsJumpReady()) {
 			AIFloat3 startPos = unit->GetPos(frame);
 			const float sqRange = SQUARE(unit->GetCircuitDef()->GetJumpRange());
-			for (; (step < pathMaxIndex) && ((*pPath)[step].SqDistance2D(startPos) < sqRange); ++step);
-			const AIFloat3& jumpPos = (*pPath)[std::max(0, step - 1)];
+			for (; (step < pathMaxIndex) && (pPath->posPath[step].SqDistance2D(startPos) < sqRange); ++step);
+			const AIFloat3& jumpPos = pPath->posPath[std::max(0, step - 1)];
 
 			unit->GetUnit()->ExecuteCustomCommand(CMD_JUMP,
 												  {jumpPos.x, jumpPos.y, jumpPos.z},
 												  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY,
 												  frame + FRAMES_PER_SEC * 60);
 		} else {
-			const AIFloat3& pos = (*pPath)[step];
+			const AIFloat3& pos = pPath->posPath[step];
 //			unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			unit->GetUnit()->ExecuteCustomCommand(CMD_RAW_MOVE,
 												  {pos.x, pos.y, pos.z},
@@ -69,7 +70,7 @@ void CJumpAction::Update(CCircuitAI* circuit)
 		constexpr short options = UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY;
 		for (int i = 2; (step < pathMaxIndex) && (i < 4); ++i) {
 			step = std::min(step + increment, pathMaxIndex);
-			const AIFloat3& pos = (*pPath)[step];
+			const AIFloat3& pos = pPath->posPath[step];
 //			unit->GetUnit()->MoveTo(pos, options, frame + FRAMES_PER_SEC * 60 * i);
 			unit->GetUnit()->ExecuteCustomCommand(CMD_RAW_MOVE,
 												  {pos.x, pos.y, pos.z},

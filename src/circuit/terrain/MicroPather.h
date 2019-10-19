@@ -58,6 +58,8 @@
 #ifndef GRINNINGLIZARD_MICROPATHER_INCLUDED
 #define GRINNINGLIZARD_MICROPATHER_INCLUDED
 
+#include "util/Defines.h"
+
 #include <vector>
 #include <cfloat>
 
@@ -200,7 +202,7 @@ namespace NSMicroPather {
 		private:
 			PathNode();
 			~PathNode();
-		};
+	};
 
 
 	// create a MicroPather object to solve for a best path
@@ -235,7 +237,7 @@ namespace NSMicroPather {
 			 * @param totalCost	Output, the cost of the path, if found.
 			 * @return				Success or failure, expressed as SOLVED, NO_SOLUTION, or START_END_SAME.
 			 */
-			int Solve(void* startState, void* endState, std::vector<void*>* path, float* totalCost);
+			int Solve(void* startState, void* endState, VoidVec* path, float* totalCost);
 
 			// Should not be called unless there is danger for frame overflow (16bit atm)
 			void Reset();
@@ -256,17 +258,17 @@ namespace NSMicroPather {
 			int xEndNode, yEndNode;
 			bool isRunning;
 			void SetMapData(bool* canMoveArray, float* costArray);
-			int FindBestPathToAnyGivenPoint(void* startNode, std::vector<void*>& endNodes, std::vector<void*>& targets,
-											std::vector<void*>* path, float* cost);
-			int FindBestPathToAnyGivenPointSafe(void* startNode, std::vector<void*>& endNodes, std::vector<void*>& targets,
-											std::vector<void*>* path, float* cost);
-			int FindBestPathToPointOnRadius(void* startNode, void* endNode, std::vector<void*>* path, float* cost, int radius);
-			int FindBestPathToPointOnRadius(void* startNode, void* endNode, std::vector<void*>* path, float* cost, int radius, float threat);
+			int FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes, VoidVec& targets,
+					VoidVec* path, float* cost);
+			int FindBestPathToAnyGivenPointSafe(void* startNode, VoidVec& endNodes, VoidVec& targets,
+					VoidVec* path, float* cost);
+			int FindBestPathToPointOnRadius(void* startNode, void* endNode, VoidVec* path, float* cost, int radius);
+			int FindBestPathToPointOnRadius(void* startNode, void* endNode, VoidVec* path, float* cost, int radius, float threat);
 			int FindBestCostToPointOnRadius(void* startNode, void* endNode, float* cost, int radius);
 			int FindDirectCostToPointOnRadius(void* startNode, void* endNode, float* cost, int radius);
 
 		private:
-			void GoalReached(PathNode* node, void* start, void* end, std::vector<void*> *path);
+			void GoalReached(PathNode* node, void* start, void* end, VoidVec *path);
 			float CheckSafety(PathNode* node);
 			float LeastCostEstimateLocal(int nodeStartIndex);
 			static inline float DiagonalDistance(int xStart, int yStart, int xEnd, int yEnd);
