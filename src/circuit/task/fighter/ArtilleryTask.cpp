@@ -117,7 +117,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(unit, threatMap, frame);
-		pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
+		pathfinder->MakePath(*pPath, nullptr, startPos, endPos, pathfinder->GetSquareSize());
 
 		proceed = pPath->size() > 2;
 		if (proceed) {
@@ -154,7 +154,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 		position = circuit->GetSetupManager()->GetBasePos();
 		AIFloat3 startPos = pos;
 		AIFloat3 endPos = position;
-		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
+		pathfinder->MakePath(path, nullptr, startPos, endPos, pathfinder->GetSquareSize());
 	};
 
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -267,7 +267,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 
 	AIFloat3 startPos = pos;
 	range = std::max(range/* - threatMap->GetSquareSize()*/, (float)threatMap->GetSquareSize());
-	pathfinder->FindBestPath(path, startPos, range, enemyPositions);
+	pathfinder->FindBestPath(path, nullptr, startPos, range, enemyPositions);
 	enemyPositions.clear();
 
 	// Check if safe path exists

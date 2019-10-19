@@ -45,6 +45,7 @@ protected:
 	springai::AIFloat3 groupPos;
 	springai::AIFloat3 prevGroupPos;
 	std::shared_ptr<F3Vec> pPath;
+	std::vector<void*> lastPath;
 
 	int groupFrame;
 };

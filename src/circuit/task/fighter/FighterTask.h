@@ -55,6 +55,11 @@ protected:
 
 	std::set<CCircuitUnit*> cowards;
 	std::set<CCircuitUnit*> shields;
+
+#ifdef DEBUG_VIS
+public:
+	virtual void Log() override;
+#endif
 };
 
 } // namespace circuit

@@ -21,7 +21,6 @@ ITravelAction::ITravelAction(CCircuitUnit* owner, Type type, int squareSize, flo
 		, pathIterator(0)
 		, isForce(true)
 {
-	isBlocking = true;
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	int size = std::max(cdef->GetUnitDef()->GetXSize(), cdef->GetUnitDef()->GetZSize());
@@ -34,7 +33,7 @@ ITravelAction::ITravelAction(CCircuitUnit* owner, Type type, int squareSize, flo
 		incMod *= 2;
 	}
 	increment = incMod * DEFAULT_SLACK / squareSize + 1;
-	minSqDist = squareSize * increment / 2;
+	minSqDist = squareSize * increment;  // / 2;
 	minSqDist *= minSqDist;
 }
 
@@ -86,9 +85,11 @@ int ITravelAction::CalcSpeedStep(int frame, float& stepSpeed)
 	} else {
 		stepSpeed = speed;
 	}
-	pathIterator = step;
 
-	isFinished = (pathIterator == pathMaxIndex);
+	if ((int)sqDistToStep <= minSqDist) {
+		pathIterator = step;
+		isFinished = (pathIterator == pathMaxIndex);
+	}
 
 	isForce = false;
 	return pathMaxIndex;

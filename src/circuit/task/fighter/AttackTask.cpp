@@ -201,7 +201,7 @@ void CAttackTask::Update()
 
 			CPathFinder* pathfinder = circuit->GetPathfinder();
 			pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
-			pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
+			pathfinder->MakePath(*pPath, &lastPath, startPos, endPos, pathfinder->GetSquareSize());
 
 			if ((pPath->size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(500.f))) {
 				ActivePath();
@@ -328,7 +328,7 @@ void CAttackTask::FindTarget()
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize(), attackPower * 0.125f);
+	pathfinder->MakePath(*pPath, &lastPath, startPos, endPos, pathfinder->GetSquareSize(), attackPower * 0.125f);
 	// TODO: Bottleneck check, i.e. path cost
 }
 

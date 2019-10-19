@@ -141,6 +141,11 @@ private:
 	int ammoFrame;
 
 	bool isMorphing;
+
+#ifdef DEBUG_VIS
+public:
+	void Log();
+#endif
 };
 
 } // namespace circuit

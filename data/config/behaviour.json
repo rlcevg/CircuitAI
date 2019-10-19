@@ -344,7 +344,7 @@
 	},
 	"shieldraid": {
 		"role": ["raider"],
-		"attribute": ["scout"],
+		"attribute": ["scout", "ret_fight"],
 		"retreat": 0.25,
 		"pwr_mod": 1.3,
 		"thr_mod": 1.1
@@ -409,7 +409,7 @@
 		"role": ["scout"],
 		"attribute": ["scout"],
 		"thr_mod": 0.6,
-		"pwr_mod": 1.5,
+		"pwr_mod": 0.5,
 		"retreat": 0.01
 	},
 	"vehraid": {

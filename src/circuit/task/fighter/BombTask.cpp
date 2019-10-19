@@ -130,7 +130,7 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(unit, threatMap, frame);
-		pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
+		pathfinder->MakePath(*pPath, nullptr, startPos, endPos, pathfinder->GetSquareSize());
 
 		proceed = pPath->size() > 2;
 		if (proceed) {
@@ -298,7 +298,7 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, co
 	AIFloat3 startPos = pos;
 	const float range = std::max<float>(cdef->GetLosRadius(), threatMap->GetSquareSize());
 	circuit->GetPathfinder()->SetMapData(unit, threatMap, circuit->GetLastFrame());
-	circuit->GetPathfinder()->FindBestPath(path, startPos, range, enemyPositions);
+	circuit->GetPathfinder()->FindBestPath(path, nullptr, startPos, range, enemyPositions);
 	enemyPositions.clear();
 
 	return nullptr;

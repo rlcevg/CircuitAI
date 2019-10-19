@@ -105,7 +105,7 @@ void CSupportTask::Update()
 	AIFloat3 startPos = unit->GetPos(frame);
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	pathfinder->FindBestPath(path, startPos, pathfinder->GetSquareSize(), ourPositions, false);
+	pathfinder->FindBestPath(path, nullptr, startPos, pathfinder->GetSquareSize(), ourPositions, false);
 	ourPositions.clear();
 	if (path.empty()) {
 		Start(unit);

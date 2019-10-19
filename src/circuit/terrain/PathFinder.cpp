@@ -161,26 +161,6 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 	micropather->Reset();
 }
 
-void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame)
-{
-	CCircuitDef* cdef = unit->GetCircuitDef();
-	STerrainMapMobileType::Id mobileTypeId = cdef->GetMobileId();
-	bool* moveArray = (mobileTypeId < 0) ? airMoveArray : moveArrays[mobileTypeId];
-	float* costArray;
-	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
-		costArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
-	} else if (unit->GetUnit()->IsCloaked()) {
-		costArray = threatMap->GetCloakThreatArray();
-	} else if (cdef->IsAbleToFly()) {
-		costArray = threatMap->GetAirThreatArray();
-	} else if (cdef->IsAmphibious()) {
-		costArray = threatMap->GetAmphThreatArray();
-	} else {
-		costArray = threatMap->GetSurfThreatArray();
-	}
-	micropather->SetMapData(moveArray, costArray);
-}
-
 void* CPathFinder::XY2Node(int x, int y)
 {
 	return (void*) static_cast<intptr_t>(y * pathMapXSize + x);
@@ -215,11 +195,87 @@ void CPathFinder::Pos2XY(AIFloat3 pos, int* x, int* y)
 	*y = int(pos.z / squareSize) + 1;
 }
 
+void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame)
+{
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	STerrainMapMobileType::Id mobileTypeId = cdef->GetMobileId();
+	bool* moveArray = (mobileTypeId < 0) ? airMoveArray : moveArrays[mobileTypeId];
+	float* costArray;
+	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
+		costArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
+	} else if (unit->GetUnit()->IsCloaked()) {
+		costArray = threatMap->GetCloakThreatArray();
+	} else if (cdef->IsAbleToFly()) {
+		costArray = threatMap->GetAirThreatArray();
+	} else if (cdef->IsAmphibious()) {
+		costArray = threatMap->GetAmphThreatArray();
+	} else {
+		costArray = threatMap->GetSurfThreatArray();
+	}
+	micropather->SetMapData(moveArray, costArray);
+}
+
+size_t CPathFinder::RefinePath()
+{
+	if (micropather->costArray[(size_t)path[0]] > THREAT_BASE) {
+		return 0;
+	}
+
+	int x0, y0;
+	Node2XY(path[0], &x0, &y0);
+
+	// All octant line draw
+	auto IsStraightLine = [this, x0, y0](void* node) {
+		// TODO: Remove node<->(x,y) conversions;
+		//       Use Bresenham's 1-octant line algorithm
+		int x1, y1;
+		Node2XY(node, &x1, &y1);
+
+		int dx =  abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+		int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+		int err = dx + dy;  // error value e_xy
+		for (int x = x0, y = y0;;) {
+			int e2 = 2 * err;
+			if (e2 >= dy) {  // e_xy + e_x > 0
+				if (x == x1) break;
+				err += dy; x += sx;
+			}
+			if (e2 <= dx) {  // e_xy + e_y < 0
+				if (y == y1) break;
+				err += dx; y += sy;
+			}
+
+			size_t index = (size_t)XY2Node(x, y);
+			if (!micropather->canMoveArray[index]
+				|| (micropather->costArray[index] > THREAT_BASE))
+			{
+				return false;
+			}
+		}
+		return true;
+	};
+
+	int l = 1;
+	int r = path.size() - 4;  // NOTE: start and end always present
+
+	while (l <= r) {
+		int m = (l + r) / 2;  // floor
+		if (IsStraightLine(path[m])) {
+			l = m + 1;  // ignore left half
+		} else {
+			r = m - 1;  // ignore right half
+		}
+	}
+
+	return l - 1;
+}
+
 /*
  * radius is in full res.
  * returns the path cost.
  */
-float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos, int radius)
+float CPathFinder::MakePath(F3Vec& posPath, std::vector<void*>* lastPath,
+		AIFloat3& startPos, AIFloat3& endPos, int radius)
 {
 	path.clear();
 
@@ -235,18 +291,35 @@ float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos
 
 	radius /= squareSize;
 
+	std::vector<std::pair<void*, float>> originCost;
+	if (lastPath != nullptr) {
+		originCost.reserve(lastPath->size());
+		for (void* node : *lastPath) {
+			originCost.push_back(std::make_pair(node, micropather->costArray[(size_t)node]));
+			micropather->costArray[(size_t)node] -= THREAT_BASE / 2;
+		}
+	}
+
 	if (micropather->FindBestPathToPointOnRadius(XY2Node(sx, sy), XY2Node(ex, ey), &path, &pathCost, radius) == CMicroPather::SOLVED) {
-		posPath.reserve(path.size());
+		size_t start = RefinePath();
+		posPath.reserve(path.size() - start);
 
 		// TODO: Consider performing transformations in place where move_along_path executed.
 		//       Current task implementations recalc path every ~2 seconds,
 		//       therefore only first few positions actually used.
 		Map* map = terrainData->GetMap();
-		for (void* node : path) {
-			float3 mypos = Node2Pos(node);
+		for (size_t i = start; i < path.size(); ++i) {
+			float3 mypos = Node2Pos(path[i]);
 			mypos.y = map->GetElevationAt(mypos.x, mypos.z);
 			posPath.push_back(mypos);
 		}
+		if (lastPath != nullptr) {
+			*lastPath = path;
+		}
+	}
+
+	for (auto& pair : originCost) {
+		micropather->costArray[(size_t)pair.first] = pair.second;
 	}
 
 #ifdef DEBUG_VIS
@@ -256,7 +329,8 @@ float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos
 	return pathCost;
 }
 
-float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos, int radius, float threat)
+float CPathFinder::MakePath(F3Vec& posPath, std::vector<void*>* lastPath,
+		AIFloat3& startPos, AIFloat3& endPos, int radius, float threat)
 {
 	path.clear();
 
@@ -272,18 +346,35 @@ float CPathFinder::MakePath(F3Vec& posPath, AIFloat3& startPos, AIFloat3& endPos
 
 	radius /= squareSize;
 
+	std::vector<std::pair<void*, float>> originCost;
+	if (lastPath != nullptr) {
+		originCost.reserve(lastPath->size());
+		for (void* node : *lastPath) {
+			originCost.push_back(std::make_pair(node, micropather->costArray[(size_t)node]));
+			micropather->costArray[(size_t)node] -= THREAT_BASE / 2;
+		}
+	}
+
 	if (micropather->FindBestPathToPointOnRadius(XY2Node(sx, sy), XY2Node(ex, ey), &path, &pathCost, radius, threat) == CMicroPather::SOLVED) {
-		posPath.reserve(path.size());
+		size_t start = RefinePath();
+		posPath.reserve(path.size() - start);
 
 		// TODO: Consider performing transformations in place where move_along_path executed.
 		//       Current task implementations recalc path every ~2 seconds,
 		//       therefore only first few positions actually used.
 		Map* map = terrainData->GetMap();
-		for (void* node : path) {
-			float3 mypos = Node2Pos(node);
+		for (size_t i = start; i < path.size(); ++i) {
+			float3 mypos = Node2Pos(path[i]);
 			mypos.y = map->GetElevationAt(mypos.x, mypos.z);
 			posPath.push_back(mypos);
 		}
+		if (lastPath != nullptr) {
+			*lastPath = path;
+		}
+	}
+
+	for (auto& pair : originCost) {
+		micropather->costArray[(size_t)pair.first] = pair.second;
 	}
 
 #ifdef DEBUG_VIS
@@ -335,7 +426,8 @@ float CPathFinder::PathCostDirect(const springai::AIFloat3& startPos, springai::
 	return pathCost;
 }
 
-float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRange, F3Vec& possibleTargets, bool safe)
+float CPathFinder::FindBestPath(F3Vec& posPath, std::vector<void*>* lastPath,
+		AIFloat3& startPos, float maxRange, F3Vec& possibleTargets, bool safe)
 {
 	float pathCost = 0.0f;
 
@@ -453,17 +545,34 @@ float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRan
 
 	CTerrainData::CorrectPosition(startPos);
 
+	std::vector<std::pair<void*, float>> originCost;
+	if (lastPath != nullptr) {
+		originCost.reserve(lastPath->size());
+		for (void* node : *lastPath) {
+			originCost.push_back(std::make_pair(node, micropather->costArray[(size_t)node]));
+			micropather->costArray[(size_t)node] -= THREAT_BASE / 2;
+		}
+	}
+
 	int result = safe ? micropather->FindBestPathToAnyGivenPointSafe(Pos2Node(startPos), endNodes, nodeTargets, &path, &pathCost) :
 						micropather->FindBestPathToAnyGivenPoint(Pos2Node(startPos), endNodes, nodeTargets, &path, &pathCost);
 	if (result == CMicroPather::SOLVED) {
-		posPath.reserve(path.size());
+		size_t start = RefinePath();
+		posPath.reserve(path.size() - start);
 
 		Map* map = terrainData->GetMap();
-		for (void* node : path) {
-			float3 mypos = Node2Pos(node);
+		for (size_t i = start; i < path.size(); ++i) {
+			float3 mypos = Node2Pos(path[i]);
 			mypos.y = map->GetElevationAt(mypos.x, mypos.z);
 			posPath.push_back(mypos);
 		}
+		if (lastPath != nullptr) {
+			*lastPath = path;
+		}
+	}
+
+	for (auto& pair : originCost) {
+		micropather->costArray[(size_t)pair.first] = pair.second;
 	}
 
 #ifdef DEBUG_VIS
@@ -475,11 +584,12 @@ float CPathFinder::FindBestPath(F3Vec& posPath, AIFloat3& startPos, float maxRan
 	return pathCost;
 }
 
-float CPathFinder::FindBestPathToRadius(F3Vec& posPath, AIFloat3& startPos, float radiusAroundTarget, const AIFloat3& target)
+float CPathFinder::FindBestPathToRadius(F3Vec& posPath, std::vector<void*>* lastPath,
+		AIFloat3& startPos, float radiusAroundTarget, const AIFloat3& target)
 {
 	F3Vec posTargets;
 	posTargets.push_back(target);
-	return FindBestPath(posPath, startPos, radiusAroundTarget, posTargets);
+	return FindBestPath(posPath, lastPath, startPos, radiusAroundTarget, posTargets);
 }
 
 #ifdef DEBUG_VIS

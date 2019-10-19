@@ -214,7 +214,7 @@ void CRaidTask::Update()
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, frame);
-	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
+	pathfinder->MakePath(*pPath, &lastPath, startPos, endPos, pathfinder->GetSquareSize());
 
 	if (pPath->size() > 2) {
 //		position = path.back();
@@ -362,7 +362,7 @@ void CRaidTask::FindTarget()
 
 	AIFloat3 startPos = pos;
 	circuit->GetPathfinder()->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	circuit->GetPathfinder()->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions);
+	circuit->GetPathfinder()->FindBestPath(*pPath, &lastPath, startPos, threatMap->GetSquareSize(), enemyPositions);
 	enemyPositions.clear();
 }
 

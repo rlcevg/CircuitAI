@@ -39,14 +39,19 @@ public:
 	void Pos2XY(springai::AIFloat3 pos, int* x, int* y);
 
 	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
+	size_t RefinePath();
 
 	unsigned Checksum() const { return micropather->Checksum(); }
-	float MakePath(F3Vec& posPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
-	float MakePath(F3Vec& posPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius, float threat);
+	float MakePath(F3Vec& posPath, std::vector<void*>* lastPath,
+			springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
+	float MakePath(F3Vec& posPath, std::vector<void*>* lastPath,
+			springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius, float threat);
 	float PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
 	float PathCostDirect(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
-	float FindBestPath(F3Vec& posPath, springai::AIFloat3& startPos, float myMaxRange, F3Vec& possibleTargets, bool safe = true);
-	float FindBestPathToRadius(F3Vec& posPath, springai::AIFloat3& startPos, float radiusAroundTarget, const springai::AIFloat3& target);
+	float FindBestPath(F3Vec& posPath, std::vector<void*>* lastPath,
+			springai::AIFloat3& startPos, float myMaxRange, F3Vec& possibleTargets, bool safe = true);
+	float FindBestPathToRadius(F3Vec& posPath, std::vector<void*>* lastPath,
+			springai::AIFloat3& startPos, float radiusAroundTarget, const springai::AIFloat3& target);
 
 	int GetSquareSize() const { return squareSize; }
 

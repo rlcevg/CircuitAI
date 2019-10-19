@@ -81,6 +81,11 @@ protected:
 
 	unsigned int updCount;
 	bool isDead;
+
+#ifdef DEBUG_VIS
+public:
+	virtual void Log();
+#endif
 };
 
 inline std::ostream& operator<<(std::ostream& os, const IUnitTask& data)

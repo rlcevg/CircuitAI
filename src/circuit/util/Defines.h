@@ -41,7 +41,7 @@ template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 #define MAX_TRAVEL_SEC	60
 #define ASSIGN_TIMEOUT	(FRAMES_PER_SEC * 300)
 
-#define THREAT_BASE		1.0f
+#define THREAT_BASE		2.0f
 #define THREAT_MOD		(1.0f / 256.0f)
 #define THREAT_MIN		1.0f
 #define THREAT_RES		8

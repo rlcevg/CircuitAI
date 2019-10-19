@@ -721,6 +721,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 	const char cmdArea[]   = "~area\0";
 	const char cmdPath[]   = "~path\0";
 	const char cmdKnn[]    = "~knn";
+	const char cmdLog[]    = "~log";
 
 	const char cmdGrid[]   = "~grid\0";
 	const char cmdNode[]   = "~node";
@@ -769,6 +770,16 @@ int CCircuitAI::Message(int playerId, const char* message)
 		int index = metalManager->FindNearestCluster(dbgPos);
 		drawer->AddPoint(metalManager->GetClusters()[index].position, "knn");
 	}
+	else if ((strncmp(message, cmdLog, 4) == 0)) {
+		auto selection = std::move(callback->GetSelectedUnits());
+		for (Unit* u : selection) {
+			CCircuitUnit* unit = GetTeamUnit(u->GetUnitId());
+			if (unit != nullptr) {
+				unit->Log();
+			}
+		}
+		utils::free_clear(selection);
+	}
 
 	else if ((msgLength == strlen(cmdGrid)) && (strcmp(message, cmdGrid) == 0)) {
 		auto selection = std::move(callback->GetSelectedUnits());
@@ -802,7 +813,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 		AIFloat3 startPos = pathfinder->GetDbgPos();
 		AIFloat3 endPos = map->GetMousePos();
 		pathfinder->SetMapData(GetThreatMap());
-		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
+		pathfinder->MakePath(path, nullptr, startPos, endPos, pathfinder->GetSquareSize());
 		LOG("%f, %f, %f, %i", endPos.x, endPos.y, endPos.z, pathfinder->GetDbgType());
 	}
 #endif

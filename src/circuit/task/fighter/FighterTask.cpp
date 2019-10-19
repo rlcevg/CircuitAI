@@ -148,4 +148,18 @@ void IFighterTask::SetTarget(CEnemyUnit* enemy)
 	target = enemy;
 }
 
+#ifdef DEBUG_VIS
+void IFighterTask::Log()
+{
+	IUnitTask::Log();
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->GetDrawer()->AddPoint(position, "position");
+	circuit->LOG("attackPower: %f | powerMod: %f", attackPower, powerMod);
+	if (target != nullptr) {
+		circuit->GetDrawer()->AddPoint(target->GetPos(), "target");
+	}
+}
+#endif
+
 } // namespace circuit

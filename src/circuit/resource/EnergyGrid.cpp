@@ -727,7 +727,6 @@ void CEnergyGrid::DrawLinkPylons(const AIFloat3& pos)
 		circuit->GetDrawer()->AddPoint(p, utils::int_to_string(index, "l: %i").c_str());
 	}
 }
-
 #endif
 
 } // namespace circuit

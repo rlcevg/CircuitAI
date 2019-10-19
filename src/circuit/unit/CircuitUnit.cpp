@@ -13,6 +13,9 @@
 #include "setup/SetupManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
+#ifdef DEBUG_VIS
+#include "task/UnitTask.h"
+#endif
 
 #include "Lua/LuaConfig.h"
 #include "AISCommands.h"
@@ -373,5 +376,14 @@ void CCircuitUnit::StopUpgrade()
 		unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, {1.0f});
 	)
 }
+
+#ifdef DEBUG_VIS
+void CCircuitUnit::Log()
+{
+	if (task != nullptr) {
+		task->Log();
+	}
+}
+#endif
 
 } // namespace circuit

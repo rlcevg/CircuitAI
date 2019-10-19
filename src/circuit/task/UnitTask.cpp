@@ -115,4 +115,12 @@ void IUnitTask::Save(std::ostream& os) const
 	SERIALIZE(os, write)
 }
 
+#ifdef DEBUG_VIS
+void IUnitTask::Log()
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->LOG("state: %i", state);
+}
+#endif
+
 } // namespace circuit
