@@ -363,7 +363,9 @@ void CRaidTask::FindTarget()
 
 	AIFloat3 startPos = pos;
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
+	// FIXME: DEBUG
+//	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
+	pathfinder->SetMapData(leader, circuit->GetInflMap(), circuit->GetLastFrame());
 	pathfinder->PreferPath(pPath->path);
 	pathfinder->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions);
 	pathfinder->UnpreferPath();

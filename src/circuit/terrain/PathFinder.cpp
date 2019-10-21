@@ -15,6 +15,9 @@
 #ifdef DEBUG_VIS
 #include "CircuitAI.h"
 #endif
+// FIXME: DEBUG
+#include "terrain/InfluenceMap.h"
+// FIXME: DEBUG
 
 #include "Map.h"
 #ifdef DEBUG_VIS
@@ -213,6 +216,14 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 		costArray = threatMap->GetSurfThreatArray();
 	}
 	micropather->SetMapData(moveArray, costArray);
+}
+
+void CPathFinder::SetMapData(CCircuitUnit* unit, CInfluenceMap* inflMap, int frame)
+{
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	STerrainMapMobileType::Id mobileTypeId = cdef->GetMobileId();
+	bool* moveArray = (mobileTypeId < 0) ? airMoveArray : moveArrays[mobileTypeId];
+	micropather->SetMapData(moveArray, inflMap->GetInfluenceCostArray());
 }
 
 void CPathFinder::PreferPath(VoidVec& path)

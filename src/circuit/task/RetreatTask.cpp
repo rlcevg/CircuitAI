@@ -281,7 +281,9 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
 	}
 
 //	CTerrainManager::CorrectPosition(startPos);
-	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
+	// FIXME: DEBUG
+//	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
+	pathfinder->SetMapData(unit, circuit->GetInflMap(), frame);
 	float prevCost = pathfinder->PathCost(startPos, endPos, range);
 	if (isRepairer && repairer->GetCircuitDef()->IsMobile()) {
 		prevCost /= 2;

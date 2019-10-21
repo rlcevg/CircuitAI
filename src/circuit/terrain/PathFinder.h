@@ -22,6 +22,9 @@ class CThreatMap;
 class CCircuitAI;
 class CCircuitDef;
 #endif
+// FIXME: DEBUG
+class CInfluenceMap;
+// FIXME: DEBUG
 
 class CPathFinder: public NSMicroPather::Graph {
 public:
@@ -39,6 +42,7 @@ public:
 	void Pos2XY(springai::AIFloat3 pos, int* x, int* y);
 
 	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
+	void SetMapData(CCircuitUnit* unit, CInfluenceMap* inflMap, int frame);
 	void PreferPath(VoidVec& path);
 	void UnpreferPath();
 

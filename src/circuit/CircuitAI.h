@@ -48,6 +48,7 @@ namespace circuit {
 class CGameAttribute;
 class CSetupManager;
 class CThreatMap;
+class CInfluenceMap;
 class CPathFinder;
 class CTerrainManager;
 class CBuilderManager;
@@ -169,7 +170,7 @@ public:
 	void AddActionUnit(CCircuitUnit* unit) { actionUnits.push_back(unit); }
 
 private:
-	void ActionUpdate();
+	void UpdateActions();
 
 	Units teamUnits;  // owner
 	EnemyUnits enemyUnits;  // owner
@@ -232,6 +233,7 @@ public:
 	CSetupManager*    GetSetupManager()    const { return setupManager.get(); }
 	CMetalManager*    GetMetalManager()    const { return metalManager.get(); }
 	CThreatMap*       GetThreatMap()       const { return threatMap.get(); }
+	CInfluenceMap*    GetInflMap()         const { return inflMap.get(); }
 	CPathFinder*      GetPathfinder()      const { return pathfinder.get(); }
 	CTerrainManager*  GetTerrainManager()  const { return terrainManager.get(); }
 	CBuilderManager*  GetBuilderManager()  const { return builderManager.get(); }
@@ -274,6 +276,7 @@ private:
 	std::shared_ptr<CSetupManager> setupManager;
 	std::shared_ptr<CMetalManager> metalManager;
 	std::shared_ptr<CThreatMap> threatMap;
+	std::shared_ptr<CInfluenceMap> inflMap;
 	std::shared_ptr<CPathFinder> pathfinder;
 	std::shared_ptr<CTerrainManager> terrainManager;
 	std::shared_ptr<CBuilderManager> builderManager;

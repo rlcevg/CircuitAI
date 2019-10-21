@@ -325,7 +325,9 @@ void CAttackTask::FindTarget()
 	AIFloat3 endPos = position;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
+	// FIXME: DEBUG
+//	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
+	pathfinder->SetMapData(leader, circuit->GetInflMap(), circuit->GetLastFrame());
 	pathfinder->PreferPath(pPath->path);
 	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize(), attackPower * 0.125f);
 	pathfinder->UnpreferPath();

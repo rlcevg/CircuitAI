@@ -26,6 +26,7 @@ namespace circuit {
 using namespace springai;
 
 #define THREAT_DECAY	0.05f
+#define THREAT_CLOAK	(16 * THREAT_BASE)
 
 CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 		: circuit(circuit)
@@ -616,7 +617,7 @@ void CThreatMap::AddDecloaker(const CEnemyUnit* e)
 	int posx, posz;
 	PosToXZ(e->GetPos(), posx, posz);
 
-	const float threatCloak = 16 * THREAT_BASE;
+	const float threatCloak = THREAT_CLOAK;
 	const int rangeCloak = e->GetRange(CCircuitDef::ThreatType::CLOAK);
 	const int rangeCloakSq = SQUARE(rangeCloak);
 
@@ -647,7 +648,7 @@ void CThreatMap::DelDecloaker(const CEnemyUnit* e)
 	int posx, posz;
 	PosToXZ(e->GetPos(), posx, posz);
 
-	const float threatCloak = 16 * THREAT_BASE;
+	const float threatCloak = THREAT_CLOAK;
 	const int rangeCloak = e->GetRange(CCircuitDef::ThreatType::CLOAK);
 	const int rangeCloakSq = SQUARE(rangeCloak);
 
@@ -834,7 +835,7 @@ void CThreatMap::UpdateVis()
 
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[3];
 	for (unsigned i = 0; i < cloakThreat.size(); ++i) {
-		dbgMap[i] = std::min<float>((cloakThreat[i] - THREAT_BASE) / 16.0f, 1.0f);
+		dbgMap[i] = std::min<float>((cloakThreat[i] - THREAT_BASE) / THREAT_CLOAK, 1.0f);
 	}
 	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap);
 }

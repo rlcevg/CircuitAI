@@ -14,6 +14,7 @@
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
+#include "terrain/InfluenceMap.h"
 #include "terrain/PathFinder.h"
 #include "task/PlayerTask.h"
 #include "unit/CircuitUnit.h"
@@ -554,6 +555,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
 	economyManager = std::make_shared<CEconomyManager>(this);
 	threatMap = std::make_shared<CThreatMap>(this, decloakRadius);
+	inflMap = std::make_shared<CInfluenceMap>(this);
 
 	allyTeam->Init(this);
 	metalManager = allyTeam->GetMetalManager();
@@ -626,6 +628,7 @@ int CCircuitAI::Release(int reason)
 	scheduler->ProcessRelease();
 	scheduler = nullptr;
 
+	inflMap = nullptr;
 	threatMap = nullptr;
 	modules.clear();
 	militaryManager = nullptr;
@@ -698,7 +701,7 @@ int CCircuitAI::Update(int frame)
 	}
 
 	scheduler->ProcessTasks(frame);
-	ActionUpdate();
+	UpdateActions();
 
 #ifdef DEBUG_VIS
 	if (frame % FRAMES_PER_SEC == 0) {
@@ -717,9 +720,10 @@ int CCircuitAI::Message(int playerId, const char* message)
 	const char cmdSelfD[]  = "~Згинь, нечистая сила!\0";
 
 	const char cmdBlock[]  = "~block\0";
-	const char cmdThreat[] = "~threat\0";
 	const char cmdArea[]   = "~area\0";
 	const char cmdPath[]   = "~path\0";
+	const char cmdThreat[] = "~threat\0";
+	const char cmdInfl[]   = "~infl";
 	const char cmdKnn[]    = "~knn";
 	const char cmdLog[]    = "~log";
 
@@ -756,21 +760,24 @@ int CCircuitAI::Message(int playerId, const char* message)
 	else if ((msgLength == strlen(cmdBlock)) && (strcmp(message, cmdBlock) == 0)) {
 		terrainManager->ToggleVis();
 	}
-	else if ((msgLength == strlen(cmdThreat)) && (strcmp(message, cmdThreat) == 0)) {
-		threatMap->ToggleVis();
-	}
 	else if ((msgLength == strlen(cmdArea)) && (strcmp(message, cmdArea) == 0)) {
 		gameAttribute->GetTerrainData().ToggleVis(lastFrame);
 	}
 	else if ((msgLength == strlen(cmdPath)) && (strcmp(message, cmdPath) == 0)) {
 		pathfinder->ToggleVis(this);
 	}
-	else if ((strncmp(message, cmdKnn, 4) == 0)) {
+	else if ((msgLength == strlen(cmdThreat)) && (strcmp(message, cmdThreat) == 0)) {
+		threatMap->ToggleVis();
+	}
+	else if (strncmp(message, cmdInfl, 5) == 0) {
+		inflMap->ToggleVis();
+	}
+	else if (strncmp(message, cmdKnn, 4) == 0) {
 		const AIFloat3& dbgPos = map->GetMousePos();
 		int index = metalManager->FindNearestCluster(dbgPos);
 		drawer->AddPoint(metalManager->GetClusters()[index].position, "knn");
 	}
-	else if ((strncmp(message, cmdLog, 4) == 0)) {
+	else if (strncmp(message, cmdLog, 4) == 0) {
 		auto selection = std::move(callback->GetSelectedUnits());
 		for (Unit* u : selection) {
 			CCircuitUnit* unit = GetTeamUnit(u->GetUnitId());
@@ -792,22 +799,22 @@ int CCircuitAI::Message(int playerId, const char* message)
 			allyTeam->GetEnergyGrid()->ToggleVis();
 		}
 	}
-	else if ((strncmp(message, cmdNode, 5) == 0)) {
+	else if (strncmp(message, cmdNode, 5) == 0) {
 		const AIFloat3& dbgPos = map->GetMousePos();
 		economyManager->GetEnergyGrid()->DrawNodePylons(dbgPos);
 	}
-	else if ((strncmp(message, cmdLink, 5) == 0)) {
+	else if (strncmp(message, cmdLink, 5) == 0) {
 		const AIFloat3& dbgPos = map->GetMousePos();
 		economyManager->GetEnergyGrid()->DrawLinkPylons(dbgPos);
 	}
 
-	else if ((strncmp(message, cmdName, 5) == 0)) {
+	else if (strncmp(message, cmdName, 5) == 0) {
 		pathfinder->SetDbgDef(GetCircuitDef(message[6]));
 		pathfinder->SetDbgPos(map->GetMousePos());
 		const AIFloat3& dbgPos = pathfinder->GetDbgPos();
 		LOG("%f, %f, %f, %i", dbgPos.x, dbgPos.y, dbgPos.z, pathfinder->GetDbgDef());
 	}
-	else if ((strncmp(message, cmdEnd, 4) == 0)) {
+	else if (strncmp(message, cmdEnd, 4) == 0) {
 		PathInfo path;
 		pathfinder->SetDbgType(atoi((const char*)&message[5]));
 		AIFloat3 startPos = pathfinder->GetDbgPos();
@@ -1288,6 +1295,7 @@ void CCircuitAI::UpdateEnemyUnits()
 	}
 
 	threatMap->Update();
+	inflMap->Update();
 }
 
 CEnemyUnit* CCircuitAI::GetEnemyUnit(ICoreUnit::Id unitId) const
@@ -1334,7 +1342,7 @@ void CCircuitAI::EnableControl(const std::string data)
 	}
 }
 
-void CCircuitAI::ActionUpdate()
+void CCircuitAI::UpdateActions()
 {
 	if (actionIterator >= actionUnits.size()) {
 		actionIterator = 0;
