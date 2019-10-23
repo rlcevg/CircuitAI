@@ -74,7 +74,7 @@ CEnergyNode::CEnergyNode(int index, const CMetalData::SCluster& cluster, const C
 	bfs.init();
 	bfs.addSource(node);
 	vis[node];
-	bfs.start(vis);  // FIXME: won't work as nodes are probably stored in some std::set container
+	bfs.start(vis);  // FIXME: sorting won't work as nodes are probably stored in some std::set container
 
 	for (SpotGraph::NodeIt nodeIt(spotGraph); nodeIt != lemon::INVALID; ++nodeIt) {
 		info.mexes.insert(nodeIt);

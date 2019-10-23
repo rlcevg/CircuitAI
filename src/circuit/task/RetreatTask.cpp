@@ -118,7 +118,11 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 
 	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit) * 0.125f;
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
+	if (unit->GetTravelAct()->GetPath() != nullptr) {
+		pathfinder->PreferPath(unit->GetTravelAct()->GetPath()->path);
+	}
 	pathfinder->MakePath(*pPath, startPos, endPos, range, minThreat);
+	pathfinder->UnpreferPath();
 
 	if (pPath->posPath.empty()) {
 		pPath->posPath.push_back(endPos);
@@ -281,9 +285,7 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
 	}
 
 //	CTerrainManager::CorrectPosition(startPos);
-	// FIXME: DEBUG
-//	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	pathfinder->SetMapData(unit, circuit->GetInflMap(), frame);
+	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
 	float prevCost = pathfinder->PathCost(startPos, endPos, range);
 	if (isRepairer && repairer->GetCircuitDef()->IsMobile()) {
 		prevCost /= 2;

@@ -25,6 +25,7 @@ public:
 	virtual void OnEnd() override;
 
 	void SetPath(const std::shared_ptr<PathInfo>& pPath, float speed = NO_SPEED_LIMIT);
+	const std::shared_ptr<PathInfo>& GetPath() const { return pPath; }
 
 protected:
 	int CalcSpeedStep(int frame, float& stepSpeed);

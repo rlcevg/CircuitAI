@@ -20,12 +20,13 @@ namespace circuit {
 
 struct SBlockingMap {
 	enum class StructType: unsigned short {
-		FACTORY = 0, MEX, ENGY_LOW, ENGY_MID, ENGY_HIGH, PYLON, DEF_LOW, DEF_MID, DEF_HIGH, SPECIAL, NANO, UNKNOWN, _SIZE_
+		FACTORY = 0, MEX, ENGY_LOW, ENGY_MID, ENGY_HIGH, PYLON, DEF_LOW, DEF_MID, DEF_HIGH, SPECIAL, NANO, TERRA, UNKNOWN, _SIZE_
 	};
 	enum class StructMask: unsigned short {
 		  FACTORY = 0x0001,     MEX = 0x0002, ENGY_LOW = 0x0004, ENGY_MID = 0x0008,
 		ENGY_HIGH = 0x0010,   PYLON = 0x0020,  DEF_LOW = 0x0040,  DEF_MID = 0x0080,
-		 DEF_HIGH = 0x0100, SPECIAL = 0x0200,     NANO = 0x0400,  UNKNOWN = 0x0800,
+		 DEF_HIGH = 0x0100, SPECIAL = 0x0200,     NANO = 0x0400,    TERRA = 0x0800,
+		  UNKNOWN = 0x1000,
 			 NONE = 0x0000,     ALL = 0xFFFF
 	};
 	using ST = std::underlying_type<StructType>::type;
@@ -37,6 +38,7 @@ struct SBlockingMap {
 	static inline StructMasks& GetStructMasks() { return structMasks; }
 
 	inline bool IsStruct(int x, int z, StructMask structMask) const;
+	inline bool IsStruct(int x, int z, SM structMask) const;
 	inline bool IsBlocked(int x, int z, SM notIgnoreMask) const;
 	inline bool IsBlockedLow(int xLow, int zLow, SM notIgnoreMask) const;
 	inline void MarkBlocker(int x, int z, StructType structType, SM notIgnoreMask);

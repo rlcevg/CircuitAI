@@ -21,6 +21,11 @@ inline bool SBlockingMap::IsStruct(int x, int z, StructMask structMask) const
 	return (grid[z * columns + x].notIgnoreMask & static_cast<SM>(structMask));
 }
 
+inline bool SBlockingMap::IsStruct(int x, int z, SM structMask) const
+{
+	return (grid[z * columns + x].notIgnoreMask & structMask);
+}
+
 inline bool SBlockingMap::IsBlocked(int x, int z, SM notIgnoreMask) const
 {
 	const SBlockCell& cell = grid[z * columns + x];

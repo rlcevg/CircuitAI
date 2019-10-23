@@ -174,7 +174,7 @@ void CRaidTask::Update()
 				for (CCircuitUnit* unit : units) {
 					TRY_UNIT(circuit, unit,
 						unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-						unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
+//						unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 					)
 
 					unit->GetTravelAct()->SetActive(false);
@@ -363,9 +363,7 @@ void CRaidTask::FindTarget()
 
 	AIFloat3 startPos = pos;
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	// FIXME: DEBUG
-//	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	pathfinder->SetMapData(leader, circuit->GetInflMap(), circuit->GetLastFrame());
+	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
 	pathfinder->PreferPath(pPath->path);
 	pathfinder->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions);
 	pathfinder->UnpreferPath();

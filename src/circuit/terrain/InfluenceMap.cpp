@@ -7,12 +7,13 @@
 
 #include "terrain/InfluenceMap.h"
 #include "terrain/TerrainManager.h"
+#include "terrain/ThreatMap.h"
 #include "module/EconomyManager.h"
-#include "unit/CircuitUnit.h"
 #include "unit/EnemyUnit.h"
+#include "CircuitAI.h"
 #include "util/utils.h"
 // FIXME: DEBUG
-#include "terrain/ThreatMap.h"
+#include "terrain/PathFinder.h"
 // FIXME: DEBUG
 
 #include "OOAICallback.h"
@@ -26,8 +27,7 @@ using namespace springai;
 
 CInfluenceMap::CInfluenceMap(CCircuitAI* circuit)
 		: circuit(circuit)
-		, inflCostMax(0.f)
-		, vulnMaxInfl(0.f)
+		, vulnMax(0.f)
 {
 	squareSize = circuit->GetTerrainManager()->GetConvertStoP() * 4;
 	width = circuit->GetTerrainManager()->GetSectorXSize() / 4;
@@ -37,7 +37,6 @@ CInfluenceMap::CInfluenceMap(CCircuitAI* circuit)
 	enemyInfl.resize(mapSize, INFL_BASE);
 	allyInfl.resize(mapSize, INFL_BASE);
 	influence.resize(mapSize, INFL_BASE);
-	influenceCost.resize((width * 4 + 2) * (height * 4 + 2), THREAT_BASE);
 	tension.resize(mapSize, INFL_BASE);
 	vulnerability.resize(mapSize, INFL_BASE);
 	featureInfl.resize(mapSize, INFL_BASE);
@@ -56,48 +55,29 @@ CInfluenceMap::~CInfluenceMap()
 void CInfluenceMap::Update()
 {
 	Clear();
-	const CCircuitAI::EnemyUnits& hostiles = circuit->GetThreatMap()->GetHostileUnits();
-	for (auto& kv : hostiles) {
+	const CCircuitAI::EnemyUnits& hostileUnits = circuit->GetThreatMap()->GetHostileUnits();
+	for (auto& kv : hostileUnits) {
 		CEnemyUnit* e = kv.second;
 		AddUnit(e);
 	}
-	const CCircuitAI::Units& units = circuit->GetTeamUnits();
+	const CAllyTeam::Units& units = circuit->GetFriendlyUnits();
 	for (auto& kv : units) {
-		CCircuitUnit* u = kv.second;
+		CAllyUnit* u = kv.second;
 		if (u->GetCircuitDef()->IsAttacker()) {
 			AddUnit(u);
 		}
 	}
-	float maxInfl = 0.f;
 	for (size_t i = 0; i < influence.size(); ++i) {
 		influence[i] = allyInfl[i] - enemyInfl[i];
-		int y = (i / width);
-		int x = i - (y * width);
-		for (int ii = 0; ii < 4; ++ii) {
-			for (int jj = 0; jj < 4; ++jj) {
-				size_t ind = (y * 4 + jj + 1) * (width * 4 + 2) + x * 4 + ii + 1;
-				influenceCost[ind] = -influence[i];
-			}
-		}
-		if (maxInfl < influence[i]) {
-			maxInfl = influence[i];
-		}
-	}
-	inflCostMax = 0.f;
-	for (size_t i = 0; i < influenceCost.size(); ++i) {
-		influenceCost[i] += maxInfl + THREAT_BASE;
-		if (inflCostMax < influenceCost[i]) {
-			inflCostMax = influenceCost[i];
-		}
 	}
 	for (size_t i = 0; i < tension.size(); ++i) {
 		tension[i] = allyInfl[i] + enemyInfl[i];
 	}
-	vulnMaxInfl = 0.f;
+	vulnMax = 0.f;
 	for (size_t i = 0; i < vulnerability.size(); ++i) {
 		vulnerability[i] = tension[i] - abs(influence[i]);
-		if (vulnMaxInfl < vulnerability[i]) {
-			vulnMaxInfl = vulnerability[i];
+		if (vulnMax < vulnerability[i]) {
+			vulnMax = vulnerability[i];
 		}
 	}
 	Cheats* cheats = circuit->GetCallback()->GetCheats();
@@ -118,14 +98,40 @@ void CInfluenceMap::Update()
 #endif
 }
 
-void CInfluenceMap::AddUnit(CCircuitUnit* u)
+float CInfluenceMap::GetEnemyInflAt(const AIFloat3& position) const
+{
+	int x, z;
+	PosToXZ(position, x, z);
+	return enemyInfl[z * width + x] - INFL_BASE;
+}
+
+float CInfluenceMap::GetInfluenceAt(const AIFloat3& position) const
+{
+	int x, z;
+	PosToXZ(position, x, z);
+	return influence[z * width + x] - INFL_BASE;
+}
+
+void CInfluenceMap::Clear()
+{
+	std::fill(enemyInfl.begin(), enemyInfl.end(), INFL_BASE);
+	std::fill(allyInfl.begin(), allyInfl.end(), INFL_BASE);
+	std::fill(influence.begin(), influence.end(), INFL_BASE);
+	std::fill(tension.begin(), tension.end(), INFL_BASE);
+	std::fill(vulnerability.begin(), vulnerability.end(), INFL_BASE);
+	std::fill(featureInfl.begin(), featureInfl.end(), INFL_BASE);
+}
+
+void CInfluenceMap::AddUnit(CAllyUnit* u)
 {
 	int posx, posz;
 	PosToXZ(u->GetPos(circuit->GetLastFrame()), posx, posz);
 
 	const float val = u->GetCircuitDef()->GetPower();
 	// FIXME: GetInfluenceRange: for statics it's just range; mobile should account for speed
-	const int range = u->GetCircuitDef()->GetThreatRange(CCircuitDef::ThreatType::LAND);
+	const int range = u->GetCircuitDef()->IsMobile()
+			? u->GetCircuitDef()->GetThreatRange(CCircuitDef::ThreatType::LAND) / 2
+			: u->GetCircuitDef()->GetThreatRange(CCircuitDef::ThreatType::LAND) / 4;
 	const int rangeSq = SQUARE(range);
 
 	const int beginX = std::max(int(posx - range + 1),       0);
@@ -149,46 +155,6 @@ void CInfluenceMap::AddUnit(CCircuitUnit* u)
 	}
 }
 
-//void CInfluenceMap::DelUnit(CCircuitUnit* u)
-//{
-//	int posx, posz;
-//	PosToXZ(e->GetPos(), posx, posz);
-//	const int widthSec = width - 2;
-//
-//	const float threat = e->GetThreat()/* + THREAT_DECAY*/;
-//	const int rangeLand = e->GetRange(CCircuitDef::ThreatType::LAND);
-//	const int rangeLandSq = SQUARE(rangeLand);
-//	const int rangeWater = e->GetRange(CCircuitDef::ThreatType::WATER);
-//	const int rangeWaterSq = SQUARE(rangeWater);
-//	const int range = std::max(rangeLand, rangeWater);
-//	const std::vector<STerrainMapSector>& sector = areaData->sector;
-//
-//	const int beginX = std::max(int(posx - range + 1),          1);
-//	const int endX   = std::min(int(posx + range    ),  width - 1);
-//	const int beginZ = std::max(int(posz - range + 1),          1);
-//	const int endZ   = std::min(int(posz + range    ), height - 1);
-//
-//	for (int x = beginX; x < endX; ++x) {
-//		const int dxSq = SQUARE(posx - x);
-//		for (int z = beginZ; z < endZ; ++z) {
-//			const int dzSq = SQUARE(posz - z);
-//
-//			const int sum = dxSq + dzSq;
-//			const int index = z * width + x;
-//			const int idxSec = (z - 1) * widthSec + (x - 1);
-//			const float heat = threat * (1.5f - 1.0f * sqrtf(sum) / range);
-//			bool isWaterThreat = (sum <= rangeWaterSq) && sector[idxSec].isWater;
-//			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[idxSec].position.y >= -SQUARE_SIZE * 5)))
-//			{
-//				amphThreat[index] = std::max<float>(amphThreat[index] - heat, THREAT_BASE);
-//			}
-//			if (isWaterThreat || (sum <= rangeLandSq)) {
-//				surfThreat[index] = std::max<float>(surfThreat[index] - heat, THREAT_BASE);
-//			}
-//		}
-//	}
-//}
-
 void CInfluenceMap::AddUnit(CEnemyUnit* e)
 {
 	int posx, posz;
@@ -196,7 +162,11 @@ void CInfluenceMap::AddUnit(CEnemyUnit* e)
 
 	const float val = e->GetThreat();
 	// FIXME: GetInfluenceRange: for statics it's just range; mobile should account for speed
-	const int range = e->GetRange(CCircuitDef::ThreatType::LAND);
+	const int range = (e->GetCircuitDef() == nullptr)
+			? e->GetRange(CCircuitDef::ThreatType::LAND)
+			: e->GetCircuitDef()->IsMobile()
+					? e->GetRange(CCircuitDef::ThreatType::LAND) / 2
+					: e->GetRange(CCircuitDef::ThreatType::LAND) / 4;
 	const int rangeSq = SQUARE(range);
 
 	const int beginX = std::max(int(posx - range + 1),       0);
@@ -220,36 +190,6 @@ void CInfluenceMap::AddUnit(CEnemyUnit* e)
 	}
 }
 
-//void CInfluenceMap::DelUnit(CEnemyUnit* e)
-//{
-//	int posx, posz;
-//	PosToXZ(e->GetPos(), posx, posz);
-//
-//	const float val = e->GetThreat();
-//	const int range = e->GetRange(CCircuitDef::ThreatType::LAND);
-//	const int rangeSq = SQUARE(range);
-//
-//	const int beginX = std::max(int(posx - range + 1),       0);
-//	const int endX   = std::min(int(posx + range    ),  width);
-//	const int beginZ = std::max(int(posz - range + 1),       0);
-//	const int endZ   = std::min(int(posz + range    ), height);
-//
-//	for (int x = beginX; x < endX; ++x) {
-//		const int dxSq = SQUARE(posx - x);
-//		for (int z = beginZ; z < endZ; ++z) {
-//			const int dzSq = SQUARE(posz - z);
-//			const int lenSq = dxSq + dzSq;
-//			if (lenSq > rangeSq) {
-//				continue;
-//			}
-//
-//			const int index = z * width + x;
-//			const float infl = val * sqrtf(lenSq) / range;
-//			enemyInfl[index] = std::max<float>(enemyInfl[index] - infl, INFL_BASE);
-//		}
-//	}
-//}
-
 void CInfluenceMap::AddFeature(Feature* f)
 {
 	int posx, posz;
@@ -262,7 +202,7 @@ void CInfluenceMap::AddFeature(Feature* f)
 	}
 	const float val = featDef->GetContainedResource(circuit->GetEconomyManager()->GetMetalRes()) * f->GetReclaimLeft();
 	delete featDef;
-	const int range = 4;
+	const int range = 2;
 	const int rangeSq = SQUARE(range);
 
 	const int beginX = std::max(int(posx - range + 1),       0);
@@ -294,14 +234,14 @@ inline void CInfluenceMap::PosToXZ(const AIFloat3& pos, int& x, int& z) const
 
 #ifdef DEBUG_VIS
 #define ENEMY(x, i, v) {	\
-	x[i * 3 + 0] = .9f * v;  /*R*/	\
-	x[i * 3 + 1] = .4f * v;  /*G*/	\
-	x[i * 3 + 2] = .1f * v;  /*B*/	\
+	x[i * 3 + 0] = .95f * v;  /*R*/	\
+	x[i * 3 + 1] = .40f * v;  /*G*/	\
+	x[i * 3 + 2] = .10f * v;  /*B*/	\
 }
 #define ALLY(x, i, v) {	\
-	x[i * 3 + 0] = .1f * v;  /*R*/	\
-	x[i * 3 + 1] = .4f * v;  /*G*/	\
-	x[i * 3 + 2] = .9f * v;  /*B*/	\
+	x[i * 3 + 0] = .10f * v;  /*R*/	\
+	x[i * 3 + 1] = .40f * v;  /*G*/	\
+	x[i * 3 + 2] = .95f * v;  /*B*/	\
 }
 
 void CInfluenceMap::UpdateVis()
@@ -314,19 +254,19 @@ void CInfluenceMap::UpdateVis()
 	float* dbgMap;
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[0];
 	for (unsigned i = 0; i < enemyInfl.size(); ++i) {
-		dbgMap[i] = std::min<float>((enemyInfl[i] - INFL_BASE) / 40.0f, 1.0f);
+		dbgMap[i] = std::min<float>((enemyInfl[i] - INFL_BASE) / 200.0f, 1.0f);
 	}
-	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {255, 100, 0, 0});
+	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {255, 50, 10, 0});
 
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[1];
 	for (unsigned i = 0; i < allyInfl.size(); ++i) {
-		dbgMap[i] = std::min<float>((allyInfl[i] - INFL_BASE) / 40.0f, 1.0f);
+		dbgMap[i] = std::min<float>((allyInfl[i] - INFL_BASE) / 200.0f, 1.0f);
 	}
-	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {0, 100, 255, 0});
+	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {10, 50, 255, 0});
 
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[2];
 	for (unsigned i = 0; i < influence.size(); ++i) {
-		float value = utils::clamp(influence[i] / 40.0f, -1.f, 1.f);
+		float value = utils::clamp(influence[i] / 200.0f, -1.f, 1.f);
 		if (value < 0) ENEMY(dbgMap, i, -value)
 		else ALLY(dbgMap, i, value)
 	}
@@ -334,13 +274,13 @@ void CInfluenceMap::UpdateVis()
 
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[3];
 	for (unsigned i = 0; i < tension.size(); ++i) {
-		dbgMap[i] = std::min<float>(tension[i] / 40.0f, 1.0f);
+		dbgMap[i] = std::min<float>(tension[i] / 200.0f, 1.0f);
 	}
-	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {255, 100, 0, 0});
+	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {255, 50, 10, 0});
 
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[4];
 	for (unsigned i = 0; i < vulnerability.size(); ++i) {
-		float value = utils::clamp((vulnerability[i] - vulnMaxInfl / 2) / (vulnMaxInfl / 2), -1.f, 1.f);
+		float value = utils::clamp((vulnerability[i] - vulnMax / 2) / (vulnMax / 2), -1.f, 1.f);
 		if (value < 0) ALLY(dbgMap, i, -value)
 		else ENEMY(dbgMap, i, value)
 	}
@@ -350,13 +290,14 @@ void CInfluenceMap::UpdateVis()
 	for (unsigned i = 0; i < featureInfl.size(); ++i) {
 		dbgMap[i] = std::min<float>((featureInfl[i] - INFL_BASE) / 500.f, 1.0f);
 	}
-	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {0, 100, 255, 0});
+	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {10, 50, 255, 0});
 
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[6];
-	for (unsigned i = 0; i < influenceCost.size(); ++i) {
-		dbgMap[i] = std::min<float>((influenceCost[i] - THREAT_BASE) / inflCostMax, 1.0f);
+	for (unsigned i = 0; i < circuit->GetPathfinder()->costs.size(); ++i) {
+		float value = circuit->GetPathfinder()->costs[i];
+		dbgMap[i] = (value < 0) ? 0 : std::min<float>(value / 200.0f, 1.0f);
 	}
-	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {220, 200, 50, 0});
+	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap);
 }
 
 void CInfluenceMap::ToggleVis()
@@ -396,9 +337,9 @@ void CInfluenceMap::ToggleVis()
 		win.first = circuit->GetDebugDrawer()->AddSDLWindow(width, height, label.c_str());
 		sdlWindows.push_back(win);
 
-		win.second = new float [influenceCost.size()];
-		label = utils::int_to_string(circuit->GetSkirmishAIId(), "Circuit AI [%i] :: Influence Cost Map");
-		win.first = circuit->GetDebugDrawer()->AddSDLWindow(width * 4 + 2, height * 4 + 2, label.c_str());
+		win.second = new float [circuit->GetPathfinder()->costs.size()];
+		label = utils::int_to_string(circuit->GetSkirmishAIId(), "Circuit AI [%i] :: PathFinder");
+		win.first = circuit->GetDebugDrawer()->AddSDLWindow(circuit->GetPathfinder()->pathMapXSize, circuit->GetPathfinder()->pathMapYSize, label.c_str());
 		sdlWindows.push_back(win);
 
 		UpdateVis();

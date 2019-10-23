@@ -263,10 +263,10 @@ namespace NSMicroPather {
 			int FindBestPathToPointOnRadius(void* startNode, void* endNode, VoidVec* path, float* cost, int radius, float threat);
 			int FindBestCostToPointOnRadius(void* startNode, void* endNode, float* cost, int radius);
 			int FindDirectCostToPointOnRadius(void* startNode, void* endNode, float* cost, int radius);
+			void MakeCostMap(void* startNode, std::vector<float>& costs);
 
 		private:
 			void GoalReached(PathNode* node, void* start, void* end, VoidVec *path);
-			float CheckSafety(PathNode* node);
 			float LeastCostEstimateLocal(int nodeStartIndex);
 			static inline float DiagonalDistance(int xStart, int yStart, int xEnd, int yEnd);
 			void FixStartEndNode(void** startNode, void** endNode);

@@ -5,7 +5,7 @@
 		"fac_land": {
 			// "type": [<blocker_shape>, <structure_type>]
 			// Available blocker_shape: rectangle, circle.
-			// Available structure_type: factory, mex, engy_low, engy_mid, engy_high, pylon, def_low, def_mid, def_high, special, nano, unknown
+			// Available structure_type: factory, mex, engy_low, engy_mid, engy_high, pylon, def_low, def_mid, def_high, special, nano, terra, unknown
 			"type": ["rectangle", "factory"],
 
 			// Unit of measurement: 1 size/yard/radius = SQUARE_SIZE * 2 = 16 elmos, integer.

@@ -8,11 +8,21 @@
 #ifndef SRC_CIRCUIT_TERRAIN_INFLUENCEMAP_H_
 #define SRC_CIRCUIT_TERRAIN_INFLUENCEMAP_H_
 
-#include "CircuitAI.h"
-
 #include <vector>
+#ifdef DEBUG_VIS
+#include <stdint.h>
+#endif
+
+namespace springai {
+	class AIFloat3;
+	class Feature;
+}
 
 namespace circuit {
+
+class CCircuitAI;
+class CAllyUnit;
+class CEnemyUnit;
 
 class CInfluenceMap {
 public:
@@ -21,27 +31,17 @@ public:
 
 	void Update();
 
-	void Clear() {
-		std::fill(enemyInfl.begin(), enemyInfl.end(), INFL_BASE);
-		std::fill(allyInfl.begin(), allyInfl.end(), INFL_BASE);
-		std::fill(influence.begin(), influence.end(), INFL_BASE);
-		std::fill(influenceCost.begin(), influenceCost.end(), THREAT_BASE);
-		std::fill(tension.begin(), tension.end(), INFL_BASE);
-		std::fill(vulnerability.begin(), vulnerability.end(), INFL_BASE);
-		std::fill(featureInfl.begin(), featureInfl.end(), INFL_BASE);
-	}
-	void AddUnit(CCircuitUnit* u);
-//	void DelUnit(CCircuitUnit* u);
-	void AddUnit(CEnemyUnit* e);
-//	void DelUnit(CEnemyUnit* e);
-	void AddFeature(springai::Feature* f);
-
-	float* GetInfluenceCostArray() { return influenceCost.data(); }
+	float GetEnemyInflAt(const springai::AIFloat3& position) const;
+	float GetInfluenceAt(const springai::AIFloat3& position) const;
 
 private:
 	using Influences = std::vector<float>;
 	CCircuitAI* circuit;
 
+	void Clear();
+	void AddUnit(CAllyUnit* u);
+	void AddUnit(CEnemyUnit* e);
+	void AddFeature(springai::Feature* f);
 	inline void PosToXZ(const springai::AIFloat3& pos, int& x, int& z) const;
 
 	int squareSize;
@@ -49,15 +49,11 @@ private:
 	int height;
 	int mapSize;
 
-	float inflCostMax;
-	float vulnMaxInfl;
+	float vulnMax;
 
-	//	CCircuitAI::EnemyUnits hostileUnits;
-//	CCircuitAI::EnemyUnits peaceUnits;
 	Influences enemyInfl;
 	Influences allyInfl;
 	Influences influence;
-	Influences influenceCost;
 	Influences tension;
 	Influences vulnerability;
 	Influences featureInfl;

@@ -12,6 +12,7 @@
 #include "resource/MetalManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
+#include "terrain/InfluenceMap.h"
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
 #include "task/NilTask.h"
@@ -832,6 +833,10 @@ void CBuilderManager::Release()
 
 IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 {
+	// FIXME: DEBUG
+	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	// FIXME: DEBUG
+
 	circuit->GetThreatMap()->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
 	const int frame = circuit->GetLastFrame();
@@ -842,9 +847,11 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 	const bool isNotReady = !economyManager->IsExcessed();
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 //	CTerrainManager::CorrectPosition(pos);
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
+	pathfinder->MakeCostMap(pos);
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
@@ -869,18 +876,23 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 					continue;
 				}
 
-				distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
+				distCost = pathfinder->GetCostAt(buildPos, buildDistance);
+				if (distCost < 0.f) {  // path blocked by buildings
+					distCost = pos.SqDistance2D(buildPos);
+				}
 
 			} else {
 
 				if ((basePos.SqDistance2D(buildPos) > SQUARE(2000.f)) ||  // FIXME: Make max distance configurable
-					!terrainManager->CanBuildAtSafe(unit, buildPos))  // ensure that path always exists
+					!terrainManager->CanBuildAtSafe(unit, buildPos) ||  // ensure that path always exists
+					(inflMap->GetInfluenceAt(buildPos) < INFL_BASE))  // safety check
 				{
 					continue;
 				}
 
-				distCost = pathfinder->PathCostDirect(pos, buildPos, buildDistance);
-				if (distCost < 0.0f) {
+				distCost = pathfinder->GetCostAt(buildPos, buildDistance);
+				if (distCost < 0.f) {  // path blocked by buildings
+					distCost = pos.SqDistance2D(buildPos);
 					continue;
 				}
 			}
@@ -928,6 +940,10 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 
 IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 {
+	// FIXME: DEBUG
+	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	// FIXME: DEBUG
+
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	threatMap->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
@@ -945,9 +961,11 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 	const bool isNotReady = !economyManager->IsExcessed() || isStalling;
 
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 //	CTerrainManager::CorrectPosition(pos);
 	pathfinder->SetMapData(unit, threatMap, frame);
+	pathfinder->MakeCostMap(pos);
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
 	const float maxThreat = threatMap->GetUnitThreat(unit);
@@ -974,21 +992,29 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 					continue;
 				}
 
-				distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
+				distCost = pathfinder->GetCostAt(buildPos, buildDistance);
+				if (distCost < 0.f) {  // path blocked by buildings
+					distCost = pos.SqDistance2D(buildPos);
+				}
 
 			} else {
 
 				CCircuitDef* buildDef = candidate->GetBuildDef();
 				const float buildThreat = (buildDef != nullptr) ? buildDef->GetPower() : 0.f;
 				if ((threatMap->GetThreatAt(buildPos) > maxThreat + buildThreat) ||
-					!terrainManager->CanBuildAt(unit, buildPos))  // ensure that path always exists
+					!terrainManager->CanBuildAt(unit, buildPos) ||  // ensure that path always exists
+					(inflMap->GetInfluenceAt(buildPos) < INFL_BASE))
 				{
 					continue;
 				}
 
-				// FIXME: Lags on large maps
-				distCost = pathfinder->PathCostDirect(pos, buildPos, buildDistance);
-				if (distCost < 0.0f) {
+				distCost = pathfinder->GetCostAt(buildPos, buildDistance);
+				if (distCost < 0.f) {  // path blocked by buildings
+					distCost = pos.SqDistance2D(buildPos);
+					// FIXME: DEBUG
+					circuit->GetDrawer()->AddLine(pos, buildPos);
+					circuit->GetDrawer()->AddPoint(pos, "lost");
+					// FIXME: DEBUG
 					continue;
 				}
 			}

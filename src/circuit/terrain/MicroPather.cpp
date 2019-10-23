@@ -110,7 +110,7 @@ public:
 				heapArray[i] = temp;
 
 				temp->myIndex = i;
-				heapArray[i >> 1]->myIndex =  i >> 1;
+				heapArray[i >> 1]->myIndex = i >> 1;
 				i >>= 1;
 			}
 		}
@@ -323,30 +323,6 @@ void CMicroPather::GoalReached(PathNode* node, void* start, void* end, VoidVec* 
 	printf("Path: ");
 	printf("Cost = %.1f Checksum %d\n", node->costFromStart, checksum);
 	#endif
-}
-
-float CMicroPather::CheckSafety(PathNode* node)
-{
-	PathNode* it = node;
-	float prevCost = THREAT_BASE;
-
-	while (it->parent) {
-		size_t index = (((size_t) it) - ((size_t) pathNodeMem)) / sizeof(PathNode);
-		const float cost = costArray[index];
-		if (cost < prevCost) {
-			return -1.0f;
-		}
-		prevCost = cost;
-		it = it->parent;
-	}
-
-	size_t index = (((size_t) it) - ((size_t) pathNodeMem)) / sizeof(PathNode);
-	const float cost = costArray[(size_t)index];
-	if (cost < prevCost) {
-		return -1.0f;
-	}
-
-	return node->costFromStart;
 }
 
 float CMicroPather::LeastCostEstimateLocal(int nodeStartIndex)
@@ -1191,144 +1167,102 @@ int CMicroPather::FindBestCostToPointOnRadius(void* startNode, void* endNode, fl
 	return NO_SOLUTION;
 }
 
-int CMicroPather::FindDirectCostToPointOnRadius(void* startNode, void* endNode, float* cost, int radius)
+void CMicroPather::MakeCostMap(void* startNode, std::vector<float>& costs)
 {
 	assert(!isRunning);
 	isRunning = true;
-	*cost = -1.0f;
-
-	if (radius <= 0) {
-		// just fail fast
-		isRunning = false;
-		return NO_SOLUTION;
-	}
 
 	{
-		FixStartEndNode(&startNode, &endNode);
+		FixNode(&startNode);
 
-		if (!canMoveArray[(size_t)startNode]) {
+		if (!canMoveArray[(size_t) startNode]) {
 			// L("Pather: trying to move from a blocked start pos");
 		}
 	}
 
 	++frame;
+
 	if (frame > 65534) {
 		// L("frame > 65534, pather reset needed");
 		Reset();
 	}
 
-	// make the priority queue
+	// Make the priority queue
 	OpenQueueBH open(heapArrayMem);
 
 	{
 		PathNode* tempStartNode = &pathNodeMem[(size_t) startNode];
-		float estToGoal = LeastCostEstimateLocal( (size_t) startNode);
 		tempStartNode->Reuse(frame);
 		tempStartNode->costFromStart = 0;
-		tempStartNode->totalCost = estToGoal;
+		tempStartNode->totalCost = 0;
 		open.Push(tempStartNode);
 	}
-
-	// make the radius
-	size_t indexEnd = (size_t) endNode;
-	int y = indexEnd / mapSizeX;
-	int x = indexEnd - y * mapSizeX;
-	int xend[2 * radius + 1];
-
-	for (int a = 0; a < (2 * radius + 1); a++) {
-		float z = a - radius;
-		float floatsqrradius = radius * radius;
-		xend[a] = int(sqrtf(floatsqrradius - z * z));
-
-		// L("xend[a]: " << xend[a]);
-		// L("xStart: " << xStart << ", xEnd: " << xEnd);
-	}
-
-	// L("yEndNode: " << yEndNode << ", xEndNode: " << xEndNode);
 
 	while (!open.Empty()) {
 		PathNode* node = open.Pop();
 
+		// we have not reached the goal, add the neighbors (emulate GetNodeNeighbors)
 		int indexStart = (((size_t) node) - ((size_t) pathNodeMem)) / sizeof(PathNode);
-		int ystart = indexStart / mapSizeX;
-		int xstart = indexStart - ystart * mapSizeX;
-		// L("counter: " << counter << ", ystart: " << ystart << ", xstart: " << xstart);
 
-		// do a box test (slow/test, note that a <= x <= b is the same as x - a <= b - a)
-		if ((y - radius <= ystart && ystart <= y + radius) && (x - radius <= xstart && xstart <= x + radius)) {
-			// we are in range (x and y direction), find the relative pos from endNode
-			int relativeY = ystart - (yEndNode - radius);
-			int relativeX = abs(xstart - xEndNode);
-			// L("relativeY: " << relativeY << ", relativeX: " << relativeX);
+		#ifdef USE_ASSERTIONS
+		const int ystart = indexStart / mapSizeX;
+		const int xstart = indexStart - ystart * mapSizeX;
 
-			if (relativeX <= xend[relativeY]) {
-				// L("Its a hit: " << counter);
+		// no node can be at the edge!
+		assert((xstart != 0) && (xstart != mapSizeX - 1));
+		assert((ystart != 0) && (ystart != mapSizeY - 1));
+		#endif
 
-				*cost = CheckSafety(node);
-				isRunning = false;
-				return SOLVED;
+		float nodeCostFromStart = node->costFromStart;
+		costs[indexStart] = nodeCostFromStart;
+
+		for (int i = 0; i < 8; ++i) {
+			int indexEnd = offsets[i] + indexStart;
+
+			if (!canMoveArray[indexEnd]) {
+				continue;
 			}
-		}
 
-		{
-			// we have not reached the goal, add the neighbors.
+			PathNode* directNode = &pathNodeMem[indexEnd];
+
+			if (directNode->frame != frame) {
+				directNode->Reuse(frame);
+			}
+
 			#ifdef USE_ASSERTIONS
+			const int yend = indexEnd / mapSizeX;
+			const int xend = indexEnd - yend * mapSizeX;
+
+			// we can move to that spot
+			assert(canMoveArray[yend * mapSizeX + xend]);
+
 			// no node can be at the edge!
-			assert(xstart > 0 && (xstart != mapSizeX - 1));
-			assert(ystart > 0 && (ystart != mapSizeY - 1));
+			assert((xend != 0) && (xend != mapSizeX - 1));
+			assert((yend != 0) && (yend != mapSizeY - 1));
 			#endif
 
-			const float nodeCostFromStart = node->costFromStart;
+			float newCost = nodeCostFromStart;
 
-			for (int i = 0; i < 8; ++i) {
-				int indexEnd = offsets[i] + indexStart;
+			newCost += (i > 3) ? costArray[indexEnd] * SQRT_2 : costArray[indexEnd];
 
-				if (!canMoveArray[indexEnd]) {
-					continue;
-				}
+			if (directNode->costFromStart <= newCost) {
+				// do nothing, this path is not better than existing one
+				continue;
+			}
 
-				PathNode* directNode = &pathNodeMem[indexEnd];
+			// it's better, update its data
+			directNode->parent = node;
+			directNode->costFromStart = newCost;
+			directNode->totalCost = newCost;
+			#ifdef USE_ASSERTIONS
+			assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
+			#endif
 
-				if (directNode->frame != frame) {
-					directNode->Reuse(frame);
-				}
-
-				#ifdef USE_ASSERTIONS
-				int yend = indexEnd / mapSizeX;
-				int xend = indexEnd - yend * mapSizeX;
-
-				// we can move to that spot
-				assert(canMoveArray[yend * mapSizeX + xend]);
-
-				// no node can be at the edge!
-				assert((xend != 0) && (xend != mapSizeX - 1));
-				assert((yend != 0) && (yend != mapSizeY - 1));
-				#endif
-
-				float newCost = nodeCostFromStart;
-
-				newCost += (i > 3) ? THREAT_BASE * SQRT_2 : THREAT_BASE;
-
-				if (directNode->costFromStart <= newCost) {
-					// do nothing, this path is not better than existing one
-					continue;
-				}
-
-				// it's better, update its data
-				directNode->parent = node;
-				directNode->costFromStart = newCost;
-				directNode->totalCost = newCost + LeastCostEstimateLocal(indexEnd);
-
-				#ifdef USE_ASSERTIONS
-				assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
-				#endif
-
-				if (directNode->inOpen) {
-					open.Update(directNode);
-				} else {
-					directNode->inClosed = 0;
-					open.Push(directNode);
-				}
+			if (directNode->inOpen) {
+				open.Update(directNode);
+			} else {
+				directNode->inClosed = 0;
+				open.Push(directNode);
 			}
 		}
 
@@ -1336,5 +1270,4 @@ int CMicroPather::FindDirectCostToPointOnRadius(void* startNode, void* endNode, 
 	}
 
 	isRunning = false;
-	return NO_SOLUTION;
 }

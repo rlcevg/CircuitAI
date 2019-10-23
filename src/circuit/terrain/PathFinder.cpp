@@ -15,9 +15,6 @@
 #ifdef DEBUG_VIS
 #include "CircuitAI.h"
 #endif
-// FIXME: DEBUG
-#include "terrain/InfluenceMap.h"
-// FIXME: DEBUG
 
 #include "Map.h"
 #ifdef DEBUG_VIS
@@ -102,6 +99,8 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 	}
 
 	blockArray.resize(terrainData->sectorXSize * terrainData->sectorZSize, 0);
+
+	costs.resize(totalcells, -1.f);
 }
 
 CPathFinder::~CPathFinder()
@@ -125,7 +124,7 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 	const SBlockingMap& blockMap = terrainManager->GetBlockingMap();
 	for (int x = 0; x < blockMap.columns; ++x) {
 		for (int z = 0; z < blockMap.rows; ++z) {
-			if (blockMap.IsStruct(x, z, SBlockingMap::StructMask::ALL)) {
+			if (blockMap.IsStruct(x, z, ~STRUCT_BIT(TERRA))) {
 				const int moveX = x / granularity;
 				const int moveY = z / granularity;
 				++blockArray[moveY * terrainData->sectorXSize + moveX];
@@ -134,7 +133,7 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 	}
 
 	const std::vector<STerrainMapMobileType>& moveTypes = terrainData->GetNextAreaData()->mobileType;
-	const int blockThreshold = granularity * granularity / 5;
+	const int blockThreshold = granularity * granularity / 4;  // 25% - blocked tile
 	for (unsigned j = 0; j < moveTypes.size(); ++j) {
 		const STerrainMapMobileType& mt = moveTypes[j];
 		bool* moveArray = moveArrays[j];
@@ -164,7 +163,7 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 	micropather->Reset();
 }
 
-void* CPathFinder::XY2Node(int x, int y)
+void* CPathFinder::XY2Node(int x, int y) const
 {
 	return (void*) static_cast<intptr_t>(y * pathMapXSize + x);
 }
@@ -187,12 +186,12 @@ AIFloat3 CPathFinder::Node2Pos(void* node)
 	return pos;
 }
 
-void* CPathFinder::Pos2Node(AIFloat3 pos)
+void* CPathFinder::Pos2Node(AIFloat3 pos) const
 {
 	return (void*) static_cast<intptr_t>(int(pos.z / squareSize + 1) * pathMapXSize + int((pos.x / squareSize + 1)));
 }
 
-void CPathFinder::Pos2XY(AIFloat3 pos, int* x, int* y)
+void CPathFinder::Pos2XY(AIFloat3 pos, int* x, int* y) const
 {
 	*x = int(pos.x / squareSize) + 1;
 	*y = int(pos.z / squareSize) + 1;
@@ -218,15 +217,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 	micropather->SetMapData(moveArray, costArray);
 }
 
-void CPathFinder::SetMapData(CCircuitUnit* unit, CInfluenceMap* inflMap, int frame)
-{
-	CCircuitDef* cdef = unit->GetCircuitDef();
-	STerrainMapMobileType::Id mobileTypeId = cdef->GetMobileId();
-	bool* moveArray = (mobileTypeId < 0) ? airMoveArray : moveArrays[mobileTypeId];
-	micropather->SetMapData(moveArray, inflMap->GetInfluenceCostArray());
-}
-
-void CPathFinder::PreferPath(VoidVec& path)
+void CPathFinder::PreferPath(const VoidVec& path)
 {
 	assert(savedCost.empty());
 	savedCost.reserve(path.size());
@@ -305,21 +296,6 @@ float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloa
 	radius /= squareSize;
 
 	micropather->FindBestCostToPointOnRadius(Pos2Node(startPos), Pos2Node(endPos), &pathCost, radius);
-
-	return pathCost;
-}
-
-/*
- * WARNING: startPos must be correct
- */
-float CPathFinder::PathCostDirect(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius)
-{
-	CTerrainData::CorrectPosition(endPos);
-
-	float pathCost = -1.0f;
-	radius /= squareSize;
-
-	micropather->FindDirectCostToPointOnRadius(Pos2Node(startPos), Pos2Node(endPos), &pathCost, radius);
 
 	return pathCost;
 }
@@ -464,6 +440,66 @@ float CPathFinder::FindBestPathToRadius(PathInfo& posPath, AIFloat3& startPos, f
 	return FindBestPath(posPath, startPos, radiusAroundTarget, posTargets);
 }
 
+/*
+ * WARNING: startPos must be correct
+ */
+void CPathFinder::MakeCostMap(const AIFloat3& startPos)
+{
+	std::fill(costs.begin(), costs.end(), -1.f);
+	micropather->MakeCostMap(Pos2Node(startPos), costs);
+}
+
+/*
+ * WARNING: endPos must be correct
+ */
+float CPathFinder::GetCostAt(const AIFloat3& endPos, int radius) const
+{
+	float pathCost = -1.f;
+	radius /= squareSize;
+
+	int xm, ym;
+	Pos2XY(endPos, &xm, &ym);
+
+	const bool isInBox = (radius <= xm && xm <= pathMapXSize - 1 - radius)
+			&& (radius <= ym && ym <= pathMapYSize - 1 - radius);
+	auto minCost = isInBox ?
+	std::function<float (float, int, int)>([this](float cost, int x, int y) -> float {
+		const float costR = costs[(size_t)XY2Node(x, y)];
+		if (cost < 0.f) {
+			return costR;
+		}
+		return (costR < 0.f) ? cost : std::min(cost, costR);
+	}) :
+	std::function<float (float, int, int)>([this](float cost, int x, int y) -> float {
+		if ((x < 1) || (x > pathMapXSize - 2)) {
+			return cost;
+		}
+		if ((y < 1) || (y > pathMapYSize - 2)) {
+			return cost;
+		}
+		const float costR = costs[(size_t)XY2Node(x, y)];
+		if (cost < 0.f) {
+			return costR;
+		}
+		return (costR < 0.f) ? cost : std::min(cost, costR);
+	});
+
+	// Circle draw
+	int x = -radius, y = 0, err = 2 - 2 * radius;  // bottom left to top right
+	do {
+		pathCost = minCost(pathCost, xm - x, ym + y);  //   I. Quadrant +x +y
+		pathCost = minCost(pathCost, xm - y, ym - x);  //  II. Quadrant -x +y
+		pathCost = minCost(pathCost, xm + x, ym - y);  // III. Quadrant -x -y
+		pathCost = minCost(pathCost, xm + y, ym + x);  //  IV. Quadrant +x -y
+		radius = err;
+		if (radius <= y) err += ++y * 2 + 1;  // e_xy + e_y < 0
+		if (radius > x || err > y)  // e_xy + e_x > 0 or no 2nd y-step
+			err += ++x * 2 + 1;  // -> x-step now
+	} while (x < 0);
+
+	return pathCost;
+}
+
 size_t CPathFinder::RefinePath(VoidVec& path)
 {
 	if (micropather->costArray[(size_t)path[0]] > THREAT_BASE) {
@@ -505,7 +541,7 @@ size_t CPathFinder::RefinePath(VoidVec& path)
 	};
 
 	int l = 1;
-	int r = path.size() - 1;  // NOTE: start and end always present
+	int r = path.size() - 1;  // NOTE: start and end always present in path
 
 	while (l <= r) {
 		int m = (l + r) / 2;  // floor

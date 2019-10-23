@@ -22,9 +22,6 @@ class CThreatMap;
 class CCircuitAI;
 class CCircuitDef;
 #endif
-// FIXME: DEBUG
-class CInfluenceMap;
-// FIXME: DEBUG
 
 class CPathFinder: public NSMicroPather::Graph {
 public:
@@ -35,24 +32,25 @@ public:
 	void SetUpdated(bool value) { isUpdated = value; }
 	bool IsUpdated() const { return isUpdated; }
 
-	void* XY2Node(int x, int y);
+	void* XY2Node(int x, int y) const;
 	void Node2XY(void* node, int* x, int* y);
 	springai::AIFloat3 Node2Pos(void* node);
-	void* Pos2Node(springai::AIFloat3 pos);
-	void Pos2XY(springai::AIFloat3 pos, int* x, int* y);
+	void* Pos2Node(springai::AIFloat3 pos) const;
+	void Pos2XY(springai::AIFloat3 pos, int* x, int* y) const;
 
 	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
-	void SetMapData(CCircuitUnit* unit, CInfluenceMap* inflMap, int frame);
-	void PreferPath(VoidVec& path);
+	void PreferPath(const VoidVec& path);
 	void UnpreferPath();
 
 	unsigned Checksum() const { return micropather->Checksum(); }
 	float MakePath(PathInfo& iPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
 	float MakePath(PathInfo& iPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius, float threat);
 	float PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
-	float PathCostDirect(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
 	float FindBestPath(PathInfo& iPath, springai::AIFloat3& startPos, float myMaxRange, F3Vec& possibleTargets, bool safe = true);
 	float FindBestPathToRadius(PathInfo& iPath, springai::AIFloat3& startPos, float radiusAroundTarget, const springai::AIFloat3& target);
+
+	void MakeCostMap(const springai::AIFloat3& startPos);
+	float GetCostAt(const springai::AIFloat3& endPos, int radius) const;
 
 	int GetSquareSize() const { return squareSize; }
 
@@ -69,10 +67,13 @@ private:
 	bool isUpdated;
 
 	int squareSize;
+public:  // FIXME: DEBUG
 	int pathMapXSize;
 	int pathMapYSize;
 
 	std::vector<std::pair<void*, float>> savedCost;
+public:  // FIXME: DEBUG
+	std::vector<float> costs;
 
 #ifdef DEBUG_VIS
 private:

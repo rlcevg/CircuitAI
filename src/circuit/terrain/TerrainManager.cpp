@@ -304,16 +304,17 @@ void CTerrainManager::Init()
 	}
 
 	// Mark edges of the map
+	notIgnoreMask = STRUCT_BIT(TERRA);
 	for (int i = 8; i < blockingMap.columns - 8; ++i) {
 		for (int j = 0; j < 7; ++j) {
-			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::MEX, notIgnoreMask);
-			blockingMap.MarkBlocker(i, blockingMap.rows - j - 1, SBlockingMap::StructType::MEX, notIgnoreMask);
+			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
+			blockingMap.MarkBlocker(i, blockingMap.rows - j - 1, SBlockingMap::StructType::TERRA, notIgnoreMask);
 		}
 	}
 	for (int i = 0; i < 7; ++i) {
 		for (int j = 8; j < blockingMap.rows - 8; ++j) {
-			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::MEX, notIgnoreMask);
-			blockingMap.MarkBlocker(blockingMap.columns - i - 1, j, SBlockingMap::StructType::MEX, notIgnoreMask);
+			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
+			blockingMap.MarkBlocker(blockingMap.columns - i - 1, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
 		}
 	}
 }
