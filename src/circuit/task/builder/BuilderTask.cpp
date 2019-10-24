@@ -183,7 +183,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		TRY_UNIT(circuit, unit,
-			u->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			u->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
 		return;
 	}
@@ -192,7 +192,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	if (utils::is_valid(buildPos)) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
 			TRY_UNIT(circuit, unit,
-				u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+				u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 			)
 			return;
 		} else {
@@ -211,7 +211,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		utils::free_clear(friendlies);
 		if (alu != nullptr) {
 			TRY_UNIT(circuit, unit,
-				u->Repair(alu->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+				u->Repair(alu->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
 			return;
 		}
@@ -226,7 +226,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	if (utils::is_valid(buildPos)) {
 		terrainManager->AddBlocker(buildDef, buildPos, facing);
 		TRY_UNIT(circuit, unit,
-			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 		)
 	} else {
 		// TODO: Select new proper BasePos, like near metal cluster.
@@ -304,14 +304,14 @@ void IBuilderTask::SetTarget(CCircuitUnit* unit)
 
 void IBuilderTask::UpdateTarget(CCircuitUnit* unit)
 {
-	// NOTE: Can't use SetTarget because unit->GetPos() may be different from buildPos
-	target = unit;
+	// NOTE: unit->GetPos() may differ from buildPos
+	SetTarget(unit);
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 	for (CCircuitUnit* ass : units) {
 		TRY_UNIT(circuit, ass,
-			ass->GetUnit()->Build(buildDef->GetUnitDef(), buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame);
+			ass->GetUnit()->Repair(unit->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 		)
 	}
 }
@@ -393,7 +393,7 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 
 	// Reassign task if required
 	const float sqDist = unit->GetPos(circuit->GetLastFrame()).SqDistance2D(GetPosition());
-	if (sqDist <= SQUARE(unit->GetCircuitDef()->GetBuildDistance())) {
+	if (sqDist <= SQUARE(unit->GetCircuitDef()->GetBuildDistance() + circuit->GetPathfinder()->GetSquareSize())) {
 		return true;
 	}
 	HideAssignee(unit);
@@ -678,5 +678,15 @@ void IBuilderTask::Save(std::ostream& os) const
 	IUnitTask::Save(os);
 	SERIALIZE(os, write)
 }
+
+#ifdef DEBUG_VIS
+void IBuilderTask::Log()
+{
+	IUnitTask::Log();
+	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->LOG("buildType: %i", buildType);
+	circuit->GetDrawer()->AddPoint(GetPosition(), (buildDef != nullptr) ? buildDef->GetUnitDef()->GetName() : "task");
+}
+#endif
 
 } // namespace circuit

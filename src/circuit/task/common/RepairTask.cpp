@@ -30,6 +30,11 @@ IRepairTask::~IRepairTask()
 {
 }
 
+bool IRepairTask::CanAssignTo(CCircuitUnit* unit) const
+{
+	return unit->GetCircuitDef()->IsAbleToRepair() && (target != nullptr) && (cost > buildPower * MIN_BUILD_SEC);
+}
+
 void IRepairTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IBuilderTask::RemoveAssignee(unit);
@@ -112,7 +117,7 @@ void IRepairTask::Execute(CCircuitUnit* unit)
 		Unit* u = unit->GetUnit();
 		TRY_UNIT(circuit, unit,
 			u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
-			u->Repair(repTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+			u->Repair(repTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 		)
 
 		IUnitTask* task = repTarget->GetTask();

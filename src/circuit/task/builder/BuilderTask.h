@@ -135,6 +135,10 @@ protected:
 	int buildFails;
 
 	decltype(units)::const_iterator unitIt;  // update iterator
+
+#ifdef DEBUG_VIS
+	virtual void Log() override;
+#endif
 };
 
 } // namespace circuit

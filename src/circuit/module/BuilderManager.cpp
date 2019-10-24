@@ -248,12 +248,14 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		//       Real example: unit starts building, but hlt kills structure right away. UnitDestroyed invoked and new task assigned to unit.
 		//       But for some engine-bugged reason unit is not idle and retries same building. UnitCreated invoked for new task with wrong target.
 		//       Next workaround unfortunately doesn't mark bugged building on blocking map.
-		// TODO: Create additional task to build/reclaim lost unit
 		if ((taskB->GetTarget() == nullptr) && (taskB->GetBuildDef() != nullptr) &&
 			(*taskB->GetBuildDef() == *unit->GetCircuitDef()) && taskB->IsEqualBuildPos(unit))
 		{
 			taskB->UpdateTarget(unit);
 			unfinishedUnits[unit] = taskB;
+		} else {
+			// reclaim lost unit
+			AssignTask(builder, EnqueueReclaim(IBuilderTask::Priority::HIGH, unit));
 		}
 	} else {
 		DoneTask(taskB);
@@ -1003,7 +1005,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 				const float buildThreat = (buildDef != nullptr) ? buildDef->GetPower() : 0.f;
 				if ((threatMap->GetThreatAt(buildPos) > maxThreat + buildThreat) ||
 					!terrainManager->CanBuildAt(unit, buildPos) ||  // ensure that path always exists
-					(inflMap->GetInfluenceAt(buildPos) < INFL_BASE))
+					(inflMap->GetInfluenceAt(buildPos) < INFL_BASE))  // safety check
 				{
 					continue;
 				}
@@ -1011,10 +1013,6 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 				distCost = pathfinder->GetCostAt(buildPos, buildDistance);
 				if (distCost < 0.f) {  // path blocked by buildings
 					distCost = pos.SqDistance2D(buildPos);
-					// FIXME: DEBUG
-					circuit->GetDrawer()->AddLine(pos, buildPos);
-					circuit->GetDrawer()->AddPoint(pos, "lost");
-					// FIXME: DEBUG
 					continue;
 				}
 			}
@@ -1162,6 +1160,11 @@ void CBuilderManager::Watchdog()
 		auto commands = std::move(u->GetCurrentCommands());
 		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())
 		if (commands.empty() && (u->GetResourceUse(metalRes) == .0f) && (u->GetVel() == ZeroVector)) {
+			// FIXME: DEBUG
+			worker->Log();
+			circuit->GetDrawer()->AddPoint(worker->GetPos(circuit->GetLastFrame()), "i");
+//			circuit->GetGame()->SetPause(true, "gg");
+			// FIXME: DEBUG
 			worker->GetTask()->OnUnitMoveFailed(worker);
 		}
 		utils::free_clear(commands);

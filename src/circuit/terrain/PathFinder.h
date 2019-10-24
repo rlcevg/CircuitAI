@@ -67,12 +67,10 @@ private:
 	bool isUpdated;
 
 	int squareSize;
-public:  // FIXME: DEBUG
 	int pathMapXSize;
 	int pathMapYSize;
 
 	std::vector<std::pair<void*, float>> savedCost;
-public:  // FIXME: DEBUG
 	std::vector<float> costs;
 
 #ifdef DEBUG_VIS

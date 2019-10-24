@@ -18,6 +18,7 @@ public:
 	IRepairTask(ITaskManager* mgr, Priority priority, Type type, CAllyUnit* target, int timeout = 0);
 	virtual ~IRepairTask();
 
+	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
 	virtual void Start(CCircuitUnit* unit) override;

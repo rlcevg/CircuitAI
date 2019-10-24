@@ -12,9 +12,6 @@
 #include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
-// FIXME: DEBUG
-#include "terrain/PathFinder.h"
-// FIXME: DEBUG
 
 #include "OOAICallback.h"
 #include "Cheats.h"
@@ -80,8 +77,8 @@ void CInfluenceMap::Update()
 			vulnMax = vulnerability[i];
 		}
 	}
-	Cheats* cheats = circuit->GetCallback()->GetCheats();
-	cheats->SetEnabled(true);
+//	Cheats* cheats = circuit->GetCallback()->GetCheats();
+//	cheats->SetEnabled(true);
 	auto features = std::move(circuit->GetCallback()->GetFeatures());
 	for (Feature* f : features) {
 		if (f == nullptr) {
@@ -90,8 +87,8 @@ void CInfluenceMap::Update()
 		AddFeature(f);
 		delete f;
 	}
-	cheats->SetEnabled(false);
-	delete cheats;
+//	cheats->SetEnabled(false);
+//	delete cheats;
 
 #ifdef DEBUG_VIS
 	UpdateVis();
@@ -291,13 +288,6 @@ void CInfluenceMap::UpdateVis()
 		dbgMap[i] = std::min<float>((featureInfl[i] - INFL_BASE) / 500.f, 1.0f);
 	}
 	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {10, 50, 255, 0});
-
-	std::tie(sdlWindowId, dbgMap) = sdlWindows[6];
-	for (unsigned i = 0; i < circuit->GetPathfinder()->costs.size(); ++i) {
-		float value = circuit->GetPathfinder()->costs[i];
-		dbgMap[i] = (value < 0) ? 0 : std::min<float>(value / 200.0f, 1.0f);
-	}
-	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap);
 }
 
 void CInfluenceMap::ToggleVis()
@@ -335,11 +325,6 @@ void CInfluenceMap::ToggleVis()
 		win.second = new float [featureInfl.size()];
 		label = utils::int_to_string(circuit->GetSkirmishAIId(), "Circuit AI [%i] :: Feature Influence Map");
 		win.first = circuit->GetDebugDrawer()->AddSDLWindow(width, height, label.c_str());
-		sdlWindows.push_back(win);
-
-		win.second = new float [circuit->GetPathfinder()->costs.size()];
-		label = utils::int_to_string(circuit->GetSkirmishAIId(), "Circuit AI [%i] :: PathFinder");
-		win.first = circuit->GetDebugDrawer()->AddSDLWindow(circuit->GetPathfinder()->pathMapXSize, circuit->GetPathfinder()->pathMapYSize, label.c_str());
 		sdlWindows.push_back(win);
 
 		UpdateVis();

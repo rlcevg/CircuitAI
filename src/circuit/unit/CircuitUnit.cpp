@@ -15,6 +15,7 @@
 #include "util/utils.h"
 #ifdef DEBUG_VIS
 #include "task/UnitTask.h"
+#include "Command.h"
 #endif
 
 #include "Lua/LuaConfig.h"
@@ -280,8 +281,8 @@ void CCircuitUnit::Attack(const AIFloat3& position, CEnemyUnit* target, int time
 void CCircuitUnit::Guard(CCircuitUnit* target, int timeout)
 {
 	TRY_UNIT(manager->GetCircuit(), this,
-		unit->ExecuteCustomCommand(CMD_ORBIT, {(float)target->GetId(), 300.0f}, UNIT_COMMAND_OPTION_INTERNAL_ORDER, timeout);
-//		unit->Guard(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, timeout);
+		unit->ExecuteCustomCommand(CMD_ORBIT, {(float)target->GetId(), 300.0f}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+//		unit->Guard(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
 //		unit->ExecuteCustomCommand(CMD_WANTED_SPEED, {NO_SPEED_LIMIT});
 	)
 }
@@ -383,6 +384,12 @@ void CCircuitUnit::Log()
 	if (task != nullptr) {
 		task->Log();
 	}
+	CCircuitAI* circuit = manager->GetCircuit();
+	auto commands = std::move(unit->GetCurrentCommands());
+	for (const springai::Command* c : commands) {
+		circuit->LOG("command: %i", c->GetCommandId());
+	}
+	utils::free_clear(commands);
 }
 #endif
 

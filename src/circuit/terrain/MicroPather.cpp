@@ -285,6 +285,11 @@ void CMicroPather::GoalReached(PathNode* node, void* start, void* end, VoidVec* 
 {
 	path->clear();
 
+	if (start == end) {
+		path->push_back(start);
+		return;
+	}
+
 	// we have reached the goal, how long is the path?
 	// (used to allocate the vector which is returned)
 	int count = 1;

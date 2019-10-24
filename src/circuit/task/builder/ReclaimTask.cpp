@@ -63,7 +63,7 @@ void CBReclaimTask::Update()
 			for (Unit* enemy : enemies) {
 				if ((enemy != nullptr) && enemy->IsBeingBuilt()) {
 					TRY_UNIT(circuit, unit,
-						unit->GetUnit()->ReclaimUnit(enemy, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+						unit->GetUnit()->ReclaimUnit(enemy, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 					)
 					utils::free_clear(enemies);
 					return;
@@ -103,7 +103,7 @@ void CBReclaimTask::Update()
 			if (minSqDist < std::numeric_limits<float>::max()) {
 				const float radius = 8.0f;  // unit->GetCircuitDef()->GetBuildDistance();
 				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->ReclaimInArea(position, radius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+					unit->GetUnit()->ReclaimInArea(position, radius, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 				)
 			}
 			utils::free_clear(features);

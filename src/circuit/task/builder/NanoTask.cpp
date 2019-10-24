@@ -41,9 +41,8 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 
 	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
-		int facing = target->GetUnit()->GetBuildingFacing();
 		TRY_UNIT(circuit, unit,
-			u->Build(target->GetCircuitDef()->GetUnitDef(), target->GetPos(frame), facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			u->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
 		return;
 	}
@@ -52,7 +51,7 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 	if (utils::is_valid(buildPos)) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
 			TRY_UNIT(circuit, unit,
-				u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+				u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 			)
 			return;
 		} else {
@@ -70,7 +69,7 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 	if (utils::is_valid(buildPos)) {
 		terrainManager->AddBlocker(buildDef, buildPos, facing);
 		TRY_UNIT(circuit, unit,
-			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 		)
 	} else {
 		// Fallback to Guard/Assist/Patrol

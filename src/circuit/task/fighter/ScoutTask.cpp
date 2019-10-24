@@ -134,7 +134,11 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(unit, threatMap, frame);
+	if (unit->GetTravelAct()->GetPath() != nullptr) {
+		pathfinder->PreferPath(unit->GetTravelAct()->GetPath()->path);
+	}
 	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
+	pathfinder->UnpreferPath();
 
 	if (pPath->path.size() > 2) {
 //		position = path.back();
@@ -270,7 +274,11 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, Path
 	AIFloat3 startPos = pos;
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(unit, threatMap, circuit->GetLastFrame());
+	if (unit->GetTravelAct()->GetPath() != nullptr) {
+		pathfinder->PreferPath(unit->GetTravelAct()->GetPath()->path);
+	}
 	pathfinder->FindBestPath(path, startPos, range * 0.5f, enemyPositions);
+	pathfinder->UnpreferPath();
 	enemyPositions.clear();
 
 	return nullptr;

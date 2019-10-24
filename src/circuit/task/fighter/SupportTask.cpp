@@ -53,7 +53,7 @@ void CSupportTask::Start(CCircuitUnit* unit)
 	pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
 
 	TRY_UNIT(circuit, unit,
-		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 		unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {NO_SPEED_LIMIT});
 	)
 	state = State::DISENGAGE;  // Wait
@@ -127,7 +127,7 @@ void CSupportTask::Update()
 //		manager->DoneTask(this);  // NOTE: RemoveAssignee will abort task
 	} else {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Fight(endPos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->Fight(endPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
 		state = State::ROAM;  // Not wait
 	}

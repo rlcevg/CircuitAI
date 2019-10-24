@@ -53,9 +53,9 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 		int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 		TRY_UNIT(circuit, unit,
 			if (cdef->IsPlane()) {
-				unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame);
+				unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, 0, frame);
 			}
-			unit->GetUnit()->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame);
+			unit->GetUnit()->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, UNIT_COMMAND_OPTION_ALT_KEY, frame);
 		)
 		return;
 	}
@@ -183,7 +183,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		}
 
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, 0, frame + FRAMES_PER_SEC * 60);
 		)
 		state = State::REGROUP;
 		return;

@@ -83,7 +83,7 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	if (!unit->IsWeaponReady(frame)) {  // reload empty unit
 		if (updCount % 32 == 0) {
 			TRY_UNIT(circuit, unit,
-				unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+				unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, 0, frame + FRAMES_PER_SEC * 60);
 			)
 		}
 		SetTarget(nullptr);

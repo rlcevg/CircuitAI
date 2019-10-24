@@ -189,18 +189,20 @@ public:
 	bool HasAntiLand()  const { return hasAntiLand; }
 	bool HasAntiWater() const { return hasAntiWater; }
 
-	bool IsMobile()       const { return speed > .1f; }
-	bool IsAbleToFly()    const { return isAbleToFly; }
-	bool IsPlane()        const { return isPlane; }
-	bool IsFloater()      const { return isFloater; }
-	bool IsSubmarine()    const { return isSubmarine; }
-	bool IsAmphibious()   const { return isAmphibious; }
-	bool IsLander()       const { return isLander; }
-	bool IsSonarStealth() const { return isSonarStealth; }
-	bool IsTurnLarge()    const { return isTurnLarge; }
-	bool IsAbleToCloak()  const { return isAbleToCloak; }
-	bool IsAbleToJump()   const { return isAbleToJump; }
-	bool IsAssistable()   const { return buildTime < 1e6f; }
+	bool IsMobile()        const { return speed > .1f; }
+	bool IsAbleToFly()     const { return isAbleToFly; }
+	bool IsPlane()         const { return isPlane; }
+	bool IsFloater()       const { return isFloater; }
+	bool IsSubmarine()     const { return isSubmarine; }
+	bool IsAmphibious()    const { return isAmphibious; }
+	bool IsLander()        const { return isLander; }
+	bool IsSonarStealth()  const { return isSonarStealth; }
+	bool IsTurnLarge()     const { return isTurnLarge; }
+	bool IsAbleToCloak()   const { return isAbleToCloak; }
+	bool IsAbleToJump()    const { return isAbleToJump; }
+	bool IsAbleToRepair()  const { return isAbleToRepair; }
+	bool IsAbleToReclaim() const { return isAbleToReclaim; }
+	bool IsAssistable()    const { return buildTime < 1e6f; }
 
 	float GetSpeed()     const { return speed; }
 	float GetLosRadius() const { return losRadius; }
@@ -275,6 +277,8 @@ private:
 	bool isAbleToFly;
 	bool isAbleToCloak;
 	bool isAbleToJump;
+	bool isAbleToRepair;
+	bool isAbleToReclaim;
 
 	float speed;
 	float losRadius;

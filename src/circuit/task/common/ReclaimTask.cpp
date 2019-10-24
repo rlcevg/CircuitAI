@@ -43,7 +43,7 @@ IReclaimTask::~IReclaimTask()
 
 bool IReclaimTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return cost > buildPower * MAX_BUILD_SEC;
+	return unit->GetCircuitDef()->IsAbleToReclaim() && (cost > buildPower * MAX_BUILD_SEC);
 }
 
 void IReclaimTask::AssignTo(CCircuitUnit* unit)
@@ -95,7 +95,7 @@ void IReclaimTask::Execute(CCircuitUnit* unit)
 	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		TRY_UNIT(circuit, unit,
-			u->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			u->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
 		return;
 	}
@@ -113,7 +113,7 @@ void IReclaimTask::Execute(CCircuitUnit* unit)
 		reclRadius = radius;
 	}
 	TRY_UNIT(circuit, unit,
-		u->ReclaimInArea(pos, reclRadius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+		u->ReclaimInArea(pos, reclRadius, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 	)
 }
 

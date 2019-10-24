@@ -54,7 +54,7 @@ namespace circuit {
 
 using namespace springai;
 
-#define ACTION_UPDATE_RATE	128
+#define ACTION_UPDATE_RATE	256
 #define RELEASE_CONFIG		100
 #define RELEASE_COMMANDER	101
 #define RELEASE_CORRUPTED	102

@@ -119,7 +119,7 @@ void IUnitTask::Save(std::ostream& os) const
 void IUnitTask::Log()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	circuit->LOG("state: %i", state);
+	circuit->LOG("type: %i | state: %i", type, state);
 }
 #endif
 
