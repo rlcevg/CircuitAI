@@ -13,7 +13,7 @@
 		"comm": 0.6
 	},
 	"aa_threat": 80.0,  // anti-air threat threshold, air factories will stop production when AA threat exceeds
-	"slack_mod": 3  // slack multiplier for threat map
+	"slack_mod": 1  // slack multiplier for threat map
 },
 
 // If unit's health drops below specified percent it will retreat

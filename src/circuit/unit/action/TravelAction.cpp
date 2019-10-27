@@ -23,7 +23,7 @@ ITravelAction::ITravelAction(CCircuitUnit* owner, Type type, int squareSize, flo
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	int size = std::max(cdef->GetUnitDef()->GetXSize(), cdef->GetUnitDef()->GetZSize());
+	int size = std::max(cdef->GetDef()->GetXSize(), cdef->GetDef()->GetZSize());
 	int incMod = std::max(size / 4, 1);
 	if (cdef->IsPlane()) {
 		incMod *= 8;

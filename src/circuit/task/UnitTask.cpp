@@ -88,7 +88,7 @@ void IUnitTask::OnUnitMoveFailed(CCircuitUnit* unit)
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = utils::get_radial_pos(unit->GetPos(frame), SQUARE_SIZE * 32);
 	TRY_UNIT(circuit, unit,
-		unit->GetUnit()->MoveTo(pos, 0, frame + FRAMES_PER_SEC);
+		unit->GetUnit()->MoveTo(pos, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC);
 	)
 }
 

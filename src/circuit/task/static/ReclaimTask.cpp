@@ -10,6 +10,7 @@
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
 #include "module/FactoryManager.h"
+#include "unit/action/DGunAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -28,6 +29,28 @@ CSReclaimTask::CSReclaimTask(ITaskManager* mgr, Priority priority,
 
 CSReclaimTask::~CSReclaimTask()
 {
+}
+
+void CSReclaimTask::AssignTo(CCircuitUnit* unit)
+{
+	IUnitTask::AssignTo(unit);
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	ShowAssignee(unit);
+	if (!utils::is_valid(position)) {
+		position = unit->GetPos(circuit->GetLastFrame());
+	}
+
+	if (unit->HasDGun()) {
+		unit->PushDGunAct(new CDGunAction(unit, unit->GetDGunRange()));
+	}
+
+	lastTouched = circuit->GetLastFrame();
+}
+
+void CSReclaimTask::Start(CCircuitUnit* unit)
+{
+	Execute(unit);
 }
 
 void CSReclaimTask::Update()

@@ -9,6 +9,7 @@
 #include "task/TaskManager.h"
 #include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
+#include "terrain/InfluenceMap.h"
 #include "terrain/PathFinder.h"
 #include "unit/action/TravelAction.h"
 #include "CircuitAI.h"
@@ -142,6 +143,10 @@ ISquadTask* ISquadTask::GetMergeTask() const
 	const int frame = circuit->GetLastFrame();
 
 	AIFloat3 pos = leader->GetPos(frame);
+	if (circuit->GetInflMap()->GetInfluenceAt(pos) < INFL_BASE) {
+		return nullptr;
+	}
+
 	STerrainMapArea* area = leader->GetArea();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
@@ -191,6 +196,11 @@ bool ISquadTask::IsMustRegroup()
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
+	if (circuit->GetInflMap()->GetInfluenceAt(leader->GetPos(frame)) < INFL_BASE) {
+		state = State::ROAM;
+		return false;
+	}
+
 	static std::vector<CCircuitUnit*> validUnits;  // NOTE: micro-opt
 //	validUnits.reserve(units.size());
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();;

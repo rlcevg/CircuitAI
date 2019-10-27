@@ -10,6 +10,7 @@
 #include "module/EconomyManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
+#include "unit/action/TravelAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -40,16 +41,40 @@ CBReclaimTask::~CBReclaimTask()
 {
 }
 
-// TODO: Override Reevaluate?
+void CBReclaimTask::AssignTo(CCircuitUnit* unit)
+{
+	IBuilderTask::AssignTo(unit);
+
+	lastTouched = manager->GetCircuit()->GetLastFrame();
+}
+
 void CBReclaimTask::Update()
 {
-	if (!isMetal) {
+	CCircuitUnit* unit = GetNextAssignee();
+	if (unit == nullptr) {
 		return;
+	}
+
+	Update(unit);
+}
+
+void CBReclaimTask::Update(CCircuitUnit* unit)
+{
+	if (Reevaluate() && !unit->GetTravelAct()->IsFinished() && !UpdatePath(unit)) {
+		Execute(unit);
+	}
+}
+
+bool CBReclaimTask::Reevaluate()
+{
+	if (!isMetal) {
+		return true;
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	if (circuit->GetEconomyManager()->IsMetalFull()) {
 		manager->AbortTask(this);
+		return false;
 	} else if (!units.empty()) {
 		/*
 		 * Update reclaim position
@@ -63,10 +88,10 @@ void CBReclaimTask::Update()
 			for (Unit* enemy : enemies) {
 				if ((enemy != nullptr) && enemy->IsBeingBuilt()) {
 					TRY_UNIT(circuit, unit,
-						unit->GetUnit()->ReclaimUnit(enemy, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+						unit->GetUnit()->ReclaimUnit(enemy, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 					)
 					utils::free_clear(enemies);
-					return;
+					return false;
 				}
 			}
 			utils::free_clear(enemies);
@@ -100,15 +125,11 @@ void CBReclaimTask::Update()
 					minSqDist = sqDist;
 				}
 			}
-			if (minSqDist < std::numeric_limits<float>::max()) {
-				const float radius = 8.0f;  // unit->GetCircuitDef()->GetBuildDistance();
-				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->ReclaimInArea(position, radius, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-				)
-			}
 			utils::free_clear(features);
 		}
 	}
+
+	return true;
 }
 
 } // namespace circuit

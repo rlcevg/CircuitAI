@@ -22,7 +22,13 @@ public:
 				  int timeout);
 	virtual ~CBReclaimTask();
 
+	virtual void AssignTo(CCircuitUnit* unit) override;
+
 	virtual void Update() override;
+
+private:
+	void Update(CCircuitUnit* unit);
+	bool Reevaluate();
 };
 
 } // namespace circuit

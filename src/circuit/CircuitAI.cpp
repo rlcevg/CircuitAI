@@ -536,6 +536,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	scheduler->Init(scheduler);
 
 	std::string cfgOption = InitOptions();  // Inits GameAttribute
+	InitWeaponDefs();
 	float decloakRadius;
 	InitUnitDefs(decloakRadius);  // Inits TerrainData
 
@@ -582,8 +583,8 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	modules.push_back(factoryManager);
 	modules.push_back(economyManager);  // NOTE: Units use manager, but ain't assigned here
 
-	uEnemyMark = skirmishAIId % FRAMES_PER_SEC;
-	kEnemyMark = (skirmishAIId + FRAMES_PER_SEC / 2) % FRAMES_PER_SEC;
+	uEnemyMark = skirmishAIId % THREAT_UPDATE_RATE;
+	kEnemyMark = (skirmishAIId + THREAT_UPDATE_RATE / 2) % THREAT_UPDATE_RATE;
 
 	if (isCheating) {
 		Cheats* cheats = callback->GetCheats();
@@ -663,6 +664,7 @@ int CCircuitAI::Release(int reason)
 	}
 	defsById.clear();
 	defsByName.clear();
+	utils::free_clear(weaponDefs);
 
 	DestroyGameAttribute();
 
@@ -692,7 +694,7 @@ int CCircuitAI::Update(int frame)
 	}
 
 	if (!enemyUnits.empty()) {
-		int mark = frame % FRAMES_PER_SEC;
+		int mark = frame % THREAT_UPDATE_RATE;
 		if (mark == uEnemyMark) {
 			UpdateEnemyUnits();
 		} else if (mark == kEnemyMark) {
@@ -716,23 +718,27 @@ int CCircuitAI::Update(int frame)
 int CCircuitAI::Message(int playerId, const char* message)
 {
 #ifdef DEBUG_VIS
-	const char cmdPos[]    = "~стройсь\0";
+	const char cmdPos[]     = "~стройсь\0";
 	const char cmdSelfD[]  = "~Згинь, нечистая сила!\0";
 
-	const char cmdBlock[]  = "~block\0";
-	const char cmdArea[]   = "~area\0";
-	const char cmdPath[]   = "~path\0";
-	const char cmdThreat[] = "~threat\0";
-	const char cmdInfl[]   = "~infl";
-	const char cmdKnn[]    = "~knn";
-	const char cmdLog[]    = "~log";
+	const char cmdBlock[]   = "~block";
+	const char cmdArea[]    = "~area";
+	const char cmdPath[]    = "~path";
+	const char cmdInfl[]    = "~infl";
+	const char cmdKnn[]     = "~knn";
+	const char cmdLog[]     = "~log";
 
-	const char cmdGrid[]   = "~grid\0";
-	const char cmdNode[]   = "~node";
-	const char cmdLink[]   = "~link";
+	const char cmdSThreat[] = "~sthreat";
+	const char cmdWThreat[] = "~wthreat";
+	const char cmdWTmax[]   = "~wtmax";
+	const char cmdTVal[]    = "~tval";
 
-	const char cmdName[]   = "~name";
-	const char cmdEnd[]    = "~end";
+	const char cmdGrid[]    = "~grid";
+	const char cmdNode[]    = "~node";
+	const char cmdLink[]    = "~link";
+
+	const char cmdName[]    = "~name";
+	const char cmdEnd[]     = "~end";
 
 	if (message[0] != '~') {
 		return 0;
@@ -757,23 +763,20 @@ int CCircuitAI::Message(int playerId, const char* message)
 		selfD();
 	}
 
-	else if ((msgLength == strlen(cmdBlock)) && (strcmp(message, cmdBlock) == 0)) {
+	else if (strncmp(message, cmdBlock, 6) == 0) {
 		terrainManager->ToggleVis();
 	}
-	else if ((msgLength == strlen(cmdArea)) && (strcmp(message, cmdArea) == 0)) {
+	else if (strncmp(message, cmdArea, 5) == 0) {
 		gameAttribute->GetTerrainData().ToggleVis(lastFrame);
 	}
-	else if ((msgLength == strlen(cmdPath)) && (strcmp(message, cmdPath) == 0)) {
+	else if (strncmp(message, cmdPath, 5) == 0) {
 		pathfinder->ToggleVis(this);
-	}
-	else if ((msgLength == strlen(cmdThreat)) && (strcmp(message, cmdThreat) == 0)) {
-		threatMap->ToggleVis();
 	}
 	else if (strncmp(message, cmdInfl, 5) == 0) {
 		inflMap->ToggleVis();
 	}
 	else if (strncmp(message, cmdKnn, 4) == 0) {
-		const AIFloat3& dbgPos = map->GetMousePos();
+		const AIFloat3 dbgPos = map->GetMousePos();
 		int index = metalManager->FindNearestCluster(dbgPos);
 		drawer->AddPoint(metalManager->GetClusters()[index].position, "knn");
 	}
@@ -788,7 +791,26 @@ int CCircuitAI::Message(int playerId, const char* message)
 		utils::free_clear(selection);
 	}
 
-	else if ((msgLength == strlen(cmdGrid)) && (strcmp(message, cmdGrid) == 0)) {
+	else if (strncmp(message, cmdSThreat, 8) == 0) {
+		threatMap->ToggleSDLVis();
+	}
+	else if (strncmp(message, cmdWThreat, 8) == 0) {
+		if (teamId == atoi((const char*)&message[9])) {
+			threatMap->ToggleWidgetVis();
+		}
+	}
+	else if (strncmp(message, cmdWTmax, 6) == 0) {
+		threatMap->SetMaxThreat(atof((const char*)&message[7]));
+	}
+	else if (strncmp(message, cmdTVal, 5) == 0) {
+		if (teamId == atoi((const char*)&message[6])) {
+			const AIFloat3 dbgPos = map->GetMousePos();
+			threatMap->DrawThreatAround(dbgPos);
+			LOG("%f, %f, %f", dbgPos.x, dbgPos.y, dbgPos.z);
+		}
+	}
+
+	else if (strncmp(message, cmdGrid, 5) == 0) {
 		auto selection = std::move(callback->GetSelectedUnits());
 		if (!selection.empty()) {
 			if (selection[0]->GetAllyTeam() == allyTeamId) {
@@ -800,11 +822,11 @@ int CCircuitAI::Message(int playerId, const char* message)
 		}
 	}
 	else if (strncmp(message, cmdNode, 5) == 0) {
-		const AIFloat3& dbgPos = map->GetMousePos();
+		const AIFloat3 dbgPos = map->GetMousePos();
 		economyManager->GetEnergyGrid()->DrawNodePylons(dbgPos);
 	}
 	else if (strncmp(message, cmdLink, 5) == 0) {
-		const AIFloat3& dbgPos = map->GetMousePos();
+		const AIFloat3 dbgPos = map->GetMousePos();
 		economyManager->GetEnergyGrid()->DrawLinkPylons(dbgPos);
 	}
 
@@ -844,7 +866,7 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 	}
 	TRY_UNIT(this, unit,
 		unit->GetUnit()->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {0.0f});
-		if (unit->GetCircuitDef()->GetUnitDef()->IsAbleToCloak()) {
+		if (unit->GetCircuitDef()->GetDef()->IsAbleToCloak()) {
 			unit->GetUnit()->ExecuteCustomCommand(CMD_WANT_CLOAK, {1.0f});  // personal
 			unit->GetUnit()->ExecuteCustomCommand(CMD_CLOAK_SHIELD, {1.0f});  // area
 			unit->GetUnit()->Cloak(true);
@@ -927,7 +949,7 @@ int CCircuitAI::UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId)
 	TRY_UNIT(this, unit,
 		unit->GetUnit()->Stop();
 		unit->GetUnit()->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {0.0f});
-		if (unit->GetCircuitDef()->GetUnitDef()->IsAbleToCloak()) {
+		if (unit->GetCircuitDef()->GetDef()->IsAbleToCloak()) {
 			unit->GetUnit()->ExecuteCustomCommand(CMD_WANT_CLOAK, {1.0f});  // personal
 			unit->GetUnit()->ExecuteCustomCommand(CMD_CLOAK_SHIELD, {1.0f});  // area
 			unit->GetUnit()->Cloak(true);
@@ -1424,7 +1446,7 @@ void CCircuitAI::InitUnitDefs(float& outDcr)
 	}
 	Resource* res = callback->GetResourceByName("Metal");
 	outDcr = 0.f;
-	const std::vector<UnitDef*>& unitDefs = callback->GetUnitDefs();
+	auto unitDefs = std::move(callback->GetUnitDefs());
 	for (UnitDef* ud : unitDefs) {
 		auto options = std::move(ud->GetBuildOptions());
 		std::unordered_set<CCircuitDef::Id> opts;
@@ -1480,6 +1502,20 @@ void CCircuitAI::InitUnitDefs(float& outDcr)
 //	gameAttribute->GetMetalData().DrawConvexHulls(GetDrawer());
 //	gameAttribute->GetMetalManager().DrawCentroids(GetDrawer());
 //}
+
+CWeaponDef* CCircuitAI::GetWeaponDef(CWeaponDef::Id weaponDefId) const
+{
+	return (size_t)weaponDefId < weaponDefs.size() ? weaponDefs[weaponDefId] : nullptr;
+}
+
+void CCircuitAI::InitWeaponDefs()
+{
+	auto weapDefs = std::move(callback->GetWeaponDefs());
+	weaponDefs.reserve(weapDefs.size());
+	for (WeaponDef* wd : weapDefs) {
+		weaponDefs.push_back(new CWeaponDef(wd));
+	}
+}
 
 void CCircuitAI::CreateGameAttribute(unsigned int seed)
 {

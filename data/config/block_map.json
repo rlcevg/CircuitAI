@@ -98,7 +98,7 @@
 		},
 		"small": {
 			"type": ["rectangle", "unknown"],
-			"ignore": ["all"]
+			"not_ignore": ["factory", "def_low"]
 		},
 		"_default_": {
 			"type": ["rectangle", "unknown"],

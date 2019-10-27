@@ -46,28 +46,6 @@ bool IReclaimTask::CanAssignTo(CCircuitUnit* unit) const
 	return unit->GetCircuitDef()->IsAbleToReclaim() && (cost > buildPower * MAX_BUILD_SEC);
 }
 
-void IReclaimTask::AssignTo(CCircuitUnit* unit)
-{
-	IUnitTask::AssignTo(unit);
-
-	CCircuitAI* circuit = manager->GetCircuit();
-	ShowAssignee(unit);
-	if (!utils::is_valid(position)) {
-		position = unit->GetPos(circuit->GetLastFrame());
-	}
-
-	if (unit->HasDGun()) {
-		unit->PushDGunAct(new CDGunAction(unit, unit->GetDGunRange()));
-	}
-
-	lastTouched = circuit->GetLastFrame();
-}
-
-void IReclaimTask::Start(CCircuitUnit* unit)
-{
-	Execute(unit);
-}
-
 void IReclaimTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IBuilderTask::RemoveAssignee(unit);
@@ -95,7 +73,7 @@ void IReclaimTask::Execute(CCircuitUnit* unit)
 	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		TRY_UNIT(circuit, unit,
-			u->ReclaimUnit(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			u->ReclaimUnit(target->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 		)
 		return;
 	}
@@ -113,7 +91,7 @@ void IReclaimTask::Execute(CCircuitUnit* unit)
 		reclRadius = radius;
 	}
 	TRY_UNIT(circuit, unit,
-		u->ReclaimInArea(pos, reclRadius, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		u->ReclaimInArea(pos, reclRadius, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 	)
 }
 

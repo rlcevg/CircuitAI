@@ -257,12 +257,12 @@ bool CSetupManager::PickCommander()
 		for (auto& kv : defs) {
 			CCircuitDef* cdef = kv.second;
 
-			std::string lvl1 = cdef->GetUnitDef()->GetName();
+			std::string lvl1 = cdef->GetDef()->GetName();
 			if ((lvl1.find(commPrefix) != 0) || (lvl1.find(commSuffix) != lvl1.size() - 5)) {
 				continue;
 			}
 
-			const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
+			const std::map<std::string, std::string>& customParams = cdef->GetDef()->GetCustomParams();
 			auto it = customParams.find("level");
 			if ((it == customParams.end()) || (utils::string_to_int(it->second) != 1)) {
 				continue;
@@ -280,7 +280,7 @@ bool CSetupManager::PickCommander()
 	}
 
 	std::string cmd("ai_commander:");
-	cmd += ((commChoice == nullptr) ? comms[rand() % comms.size()] : commChoice)->GetUnitDef()->GetName();
+	cmd += ((commChoice == nullptr) ? comms[rand() % comms.size()] : commChoice)->GetDef()->GetName();
 	circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 
 	return true;
@@ -401,7 +401,7 @@ void CSetupManager::ReadConfig()
 
 bool CSetupManager::HasModules(const CCircuitDef* cdef, unsigned level) const
 {
-	std::string name = cdef->GetUnitDef()->GetName();
+	std::string name = cdef->GetDef()->GetName();
 	for (auto& kv : commInfos) {
 		if (name.find(kv.first) != std::string::npos) {
 			return kv.second.morph.modules.size() > level;
@@ -412,7 +412,7 @@ bool CSetupManager::HasModules(const CCircuitDef* cdef, unsigned level) const
 
 const std::vector<float>& CSetupManager::GetModules(const CCircuitDef* cdef, unsigned level) const
 {
-	std::string name = cdef->GetUnitDef()->GetName();
+	std::string name = cdef->GetDef()->GetName();
 	for (auto& kv : commInfos) {
 		if (name.find(kv.first) != std::string::npos) {
 			const std::vector<std::vector<float>>& modules = kv.second.morph.modules;
@@ -425,7 +425,7 @@ const std::vector<float>& CSetupManager::GetModules(const CCircuitDef* cdef, uns
 
 int CSetupManager::GetMorphFrame(const CCircuitDef* cdef) const
 {
-	std::string name = cdef->GetUnitDef()->GetName();
+	std::string name = cdef->GetDef()->GetName();
 	for (auto& kv : commInfos) {
 		if (name.find(kv.first) != std::string::npos) {
 			return kv.second.morph.frame;
@@ -462,7 +462,7 @@ const std::vector<CCircuitDef::RoleType>* CSetupManager::GetOpener(const CCircui
 
 const CSetupManager::SCommInfo::SHide* CSetupManager::GetHide(const CCircuitDef* cdef) const
 {
-	std::string name = cdef->GetUnitDef()->GetName();
+	std::string name = cdef->GetDef()->GetName();
 	for (auto& kv : commInfos) {
 		if (name.find(kv.first) != std::string::npos) {
 			return &kv.second.hide;

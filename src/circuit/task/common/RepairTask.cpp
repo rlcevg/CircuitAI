@@ -117,7 +117,7 @@ void IRepairTask::Execute(CCircuitUnit* unit)
 		Unit* u = unit->GetUnit();
 		TRY_UNIT(circuit, unit,
 			u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
-			u->Repair(repTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+			u->Repair(repTarget->GetUnit(), UNIT_CMD_OPTION, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 		)
 
 		IUnitTask* task = repTarget->GetTask();

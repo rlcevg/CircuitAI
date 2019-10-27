@@ -125,7 +125,7 @@ CEnergyGrid::CEnergyGrid(CCircuitAI* circuit)
 
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
-		const std::map<std::string, std::string>& customParams = kv.second->GetUnitDef()->GetCustomParams();
+		const std::map<std::string, std::string>& customParams = kv.second->GetDef()->GetCustomParams();
 		auto it = customParams.find("pylonrange");
 		if (it != customParams.end()) {
 			pylonRanges[kv.first] = utils::string_to_float(it->second) - 1.f;
@@ -223,13 +223,17 @@ float CEnergyGrid::GetPylonRange(CCircuitDef::Id defId)
 CEnergyNode* CEnergyGrid::FindNodeDef(CCircuitDef*& outDef, AIFloat3& outPos, CEnergyNode* node)
 {
 	outDef = nullptr;
+	outPos = -RgtVector;
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	const float searchRadius = economyManager->GetPylonRange() * 0.5f;
 	const int frame = circuit->GetLastFrame();
 	const float metalIncome = economyManager->GetAvgMetalIncome();
 
 	const CCircuitDef* pylonDef = economyManager->GetPylonDef();
-	if (node->IsPylonable() && pylonDef->IsAvailable(frame) && (metalIncome > pylonDef->GetCost() * 0.15f)) {
+	if (node->IsPylonable(economyManager->GetPylonRange())
+		&& pylonDef->IsAvailable(frame)
+		&& (metalIncome > pylonDef->GetCost() * 0.15f))
+	{
 		outDef = const_cast<CCircuitDef*>(pylonDef);
 		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, node->GetCenterPos(), searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
 		return node;
@@ -246,7 +250,7 @@ CEnergyNode* CEnergyGrid::FindNodeDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 		for (; it != candDefs.rend(); ++it) {
 			defId = it->second;
 			range = it->first;
-			const float dist = pylon0.range + pylon1.range + range * 1.25f;
+			const float dist = pylon0.range + pylon1.range + range * 1.2f;
 			if (pylon0.pos.SqDistance2D(pylon1.pos) > SQUARE(dist)) {
 				break;
 			}
@@ -254,9 +258,8 @@ CEnergyNode* CEnergyGrid::FindNodeDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 
 		outDef = circuit->GetCircuitDef(defId);
 		if ((outDef == nullptr) || !outDef->IsAvailable(frame)
-			|| ((metalIncome < outDef->GetCost() * 0.15f) && (outDef->GetCost() > 100.f)))
+			|| ((metalIncome < outDef->GetCost() * 0.1f) && (outDef->GetCost() > 100.f)))
 		{
-			outPos = -RgtVector;
 			candDefs.erase(range);
 			continue;
 		}
@@ -271,9 +274,10 @@ CEnergyNode* CEnergyGrid::FindNodeDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 		}
 
 		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, sweetPos, searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
-		if (utils::is_valid(outPos)) {
+		if (utils::is_valid(outPos) && circuit->GetBuilderManager()->IsBuilderInArea(outDef, outPos)) {
 			break;
 		} else {
+			outPos = -RgtVector;
 //			candDefs.erase(std::next(it).base());  // http://stackoverflow.com/questions/1830158/how-to-call-erase-with-a-reverse-iterator
 			candDefs.erase(range);
 		}
@@ -285,8 +289,11 @@ CEnergyNode* CEnergyGrid::FindNodeDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 CEnergyLink* CEnergyGrid::FindLinkDef(CCircuitDef*& outDef, AIFloat3& outPos, CEnergyLink* link)
 {
 	outDef = nullptr;
+	outPos = -RgtVector;
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CBuilderManager* builderManager = circuit->GetBuilderManager();
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	const float searchRadius = economyManager->GetPylonRange() * 0.25f;
+	const float searchRadius = economyManager->GetPylonRange() * 0.5f;
 
 	const CEnergyLink::SPylon* pylon0 = link->GetSourceHead();
 	const CEnergyLink::SPylon* pylon1 = link->GetTargetHead();
@@ -301,7 +308,7 @@ CEnergyLink* CEnergyGrid::FindLinkDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 		for (; it != candDefs.rend(); ++it) {
 			defId = it->second;
 			range = it->first;
-			const float dist = pylon0->range + pylon1->range + range * 1.25f;
+			const float dist = pylon0->range + pylon1->range + range * 1.2f;
 			if (pylon0->pos.SqDistance2D(pylon1->pos) > SQUARE(dist)) {
 				break;
 			}
@@ -309,9 +316,8 @@ CEnergyLink* CEnergyGrid::FindLinkDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 
 		outDef = circuit->GetCircuitDef(defId);
 		if ((outDef == nullptr) || !outDef->IsAvailable(frame)
-			|| ((metalIncome < outDef->GetCost() * 0.2f) && (outDef->GetCost() > 100.f)))
+			|| ((metalIncome < outDef->GetCost() * 0.1f) && (outDef->GetCost() > 100.f)))
 		{
-			outPos = -RgtVector;
 			candDefs.erase(range);
 			continue;
 		}
@@ -324,11 +330,17 @@ CEnergyLink* CEnergyGrid::FindLinkDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 		} else {
 			sweetPos = pylon0->pos + dir.Normalize2D() * (pylon0->range + range) * 0.95f;
 		}
+		// TODO: replace line placement by pathfinder
+		if (!circuit->GetMap()->IsPossibleToBuildAt(outDef->GetDef(), sweetPos, 0)) {
+			candDefs.erase(range);
+			continue;
+		}
 
-		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, sweetPos, searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
-		if (utils::is_valid(outPos)) {
+		outPos = terrainManager->FindBuildSite(outDef, sweetPos, searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
+		if (utils::is_valid(outPos) && builderManager->IsBuilderInArea(outDef, outPos)) {
 			break;
 		} else {
+			outPos = -RgtVector;
 //			candDefs.erase(std::next(it).base());  // http://stackoverflow.com/questions/1830158/how-to-call-erase-with-a-reverse-iterator
 			candDefs.erase(range);
 		}

@@ -19,6 +19,9 @@ public:
 				  float cost, int timeout, float radius = .0f);
 	virtual ~CSReclaimTask();
 
+	virtual void AssignTo(CCircuitUnit* unit) override;
+
+	virtual void Start(CCircuitUnit* unit) override;
 	virtual void Update() override;
 
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;

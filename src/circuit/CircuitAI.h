@@ -10,6 +10,7 @@
 
 #include "unit/AllyTeam.h"
 #include "unit/CircuitDef.h"
+#include "unit/CircuitWDef.h"
 #include "util/Defines.h"
 
 #include <memory>
@@ -212,6 +213,16 @@ private:
 	NamedDefs defsByName;
 //	std::vector<CCircuitDef*> knownDefs;
 // ---- UnitDefs ---- END
+
+// ---- WeaponDefs ---- BEGIN
+public:
+	using WeaponDefs = std::vector<CWeaponDef*>;
+
+	CWeaponDef* GetWeaponDef(CWeaponDef::Id weaponDefId) const;
+private:
+	void InitWeaponDefs();
+	WeaponDefs weaponDefs;  // owner
+// ---- WeaponDefs ---- END
 
 public:
 	bool IsInitialized() const { return isInitialized; }

@@ -114,8 +114,8 @@ void CMetalManager::ParseMetalSpots()
 		}
 		CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		const int xsize = mexDef->GetUnitDef()->GetXSize();
-		const int zsize = mexDef->GetUnitDef()->GetZSize();
+		const int xsize = mexDef->GetDef()->GetXSize();
+		const int zsize = mexDef->GetDef()->GetZSize();
 		for (unsigned i = 0; i < spotsPos.size(); i += inc) {
 			const AIFloat3& pos = spotsPos[i];
 			const unsigned x1 = int(pos.x) / SQUARE_SIZE - (xsize / 2), x2 = x1 + xsize;
@@ -159,7 +159,7 @@ void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
 	std::shared_ptr<CRagMatrix> pdistmatrix = std::make_shared<CRagMatrix>(nrows);
 	CRagMatrix& distmatrix = *pdistmatrix;
 	if (nrows <= 300) {
-		MoveData* moveData = commDef->GetUnitDef()->GetMoveData();
+		MoveData* moveData = commDef->GetDef()->GetMoveData();
 		int pathType = moveData->GetPathType();
 		delete moveData;
 		Pathing* pathing = circuit->GetPathing();

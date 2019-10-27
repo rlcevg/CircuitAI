@@ -144,6 +144,7 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 		enclose.MakeCircle(points);
 		c.position = enclose.GetCenter();
 		c.position.y = centr.y;
+		c.radius = enclose.GetRadius();
 
 		clusterGraph.addNode();
 	}

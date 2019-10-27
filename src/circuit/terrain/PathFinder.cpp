@@ -223,7 +223,7 @@ void CPathFinder::PreferPath(const VoidVec& path)
 	savedCost.reserve(path.size());
 	for (void* node : path) {
 		savedCost.push_back(std::make_pair(node, micropather->costArray[(size_t)node]));
-		micropather->costArray[(size_t)node] -= THREAT_BASE / 2;
+		micropather->costArray[(size_t)node] -= THREAT_BASE / 4;
 	}
 }
 
@@ -502,7 +502,7 @@ float CPathFinder::GetCostAt(const AIFloat3& endPos, int radius) const
 
 size_t CPathFinder::RefinePath(VoidVec& path)
 {
-	if (micropather->costArray[(size_t)path[0]] > THREAT_BASE) {
+	if (micropather->costArray[(size_t)path[0]] > THREAT_BASE + 1e-3f) {
 		return 0;
 	}
 
@@ -532,7 +532,7 @@ size_t CPathFinder::RefinePath(VoidVec& path)
 
 			size_t index = (size_t)XY2Node(x, y);
 			if (!micropather->canMoveArray[index]
-				|| (micropather->costArray[index] > THREAT_BASE))
+				|| (micropather->costArray[index] > THREAT_BASE + 1e-3f))
 			{
 				return false;
 			}

@@ -99,7 +99,7 @@ void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, fl
 				posOffset.x -= size;
 			} break;
 		}
-		return map->IsPossibleToBuildAt(buildDef->GetUnitDef(), posOffset, facing);
+		return map->IsPossibleToBuildAt(buildDef->GetDef(), posOffset, facing);
 	};
 
 	if (checkFacing()) {

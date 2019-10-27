@@ -223,11 +223,11 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		if (cdef->IsRoleComm()) {
 			cdef->ModThreat(commMod);
 		}
-		if (cdef->GetUnitDef()->IsBuilder()) {
+		if (cdef->GetDef()->IsBuilder()) {
 			damagedHandler[unitDefId] = structDamagedHandler;
 			continue;
 		}
-		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
+		const std::map<std::string, std::string>& customParams = cdef->GetDef()->GetCustomParams();
 		auto it = customParams.find("is_drone");
 		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 			continue;
@@ -254,13 +254,13 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 				}
 			}
 			if (commDef->CanBuild(cdef)) {
-				float range = cdef->GetUnitDef()->GetRadarRadius();
+				float range = cdef->GetDef()->GetRadarRadius();
 				float areaDivCost = M_PI * SQUARE(range) / cdef->GetCost();
 				if (maxRadarDivCost < areaDivCost) {
 					maxRadarDivCost = areaDivCost;
 					radarDef = cdef;
 				}
-				range = cdef->GetUnitDef()->GetSonarRadius();
+				range = cdef->GetDef()->GetSonarRadius();
 				areaDivCost = M_PI * SQUARE(range) / cdef->GetCost();
 				if (maxSonarDivCost < areaDivCost) {
 					maxSonarDivCost = areaDivCost;
@@ -657,12 +657,12 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	};
 	// radar
 	if ((radarDef != nullptr) && radarDef->IsAvailable(frame) && (radarDef->GetCost() < maxCost)) {
-		const float range = radarDef->GetUnitDef()->GetRadarRadius() / (isPorc ? 4.f : SQRT_2);
+		const float range = radarDef->GetDef()->GetRadarRadius() / (isPorc ? 4.f : SQRT_2);
 		checkSensor(IBuilderTask::BuildType::RADAR, radarDef, range);
 	}
 	// sonar
 	if (isWater && (sonarDef != nullptr) && sonarDef->IsAvailable(frame) && (sonarDef->GetCost() < maxCost)) {
-		checkSensor(IBuilderTask::BuildType::SONAR, sonarDef, sonarDef->GetUnitDef()->GetSonarRadius());
+		checkSensor(IBuilderTask::BuildType::SONAR, sonarDef, sonarDef->GetDef()->GetSonarRadius());
 	}
 }
 

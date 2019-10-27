@@ -38,7 +38,7 @@ public:
 	const SPylon& GetTargetHead() const { return spotNodes[target]; }
 
 	bool IsMexed() const { return isMexed; }
-	bool IsPylonable() const { return info.neighbors.empty() && info.mexes.size() > 2; }
+	bool IsPylonable(float radius) const;
 	const springai::AIFloat3& GetCenterPos() const { return info.pos; }
 
 	const Pylons& GetPylons() const { return pylons; }
@@ -56,15 +56,15 @@ private:
 	bool isMexed;
 
 	struct SInfo {
-		SInfo(int index, const springai::AIFloat3& pos)
-			: index(index), pos(pos)
+		SInfo(int index, const springai::AIFloat3& pos, float radius)
+			: index(index), pos(pos), radius(radius)
 		{}
 		int index;
 		std::set<SpotGraph::Node> mexes;  // TODO: property in SpotNodeMap?
 		springai::AIFloat3 pos;
 		std::set<ICoreUnit::Id> neighbors;
-	};
-	SInfo info;
+		float radius;
+	} info;
 };
 
 } // namespace circuit

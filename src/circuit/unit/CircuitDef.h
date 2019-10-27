@@ -80,7 +80,7 @@ public:
 	void Init(CCircuitAI* circuit);
 
 	Id GetId() const { return id; }
-	springai::UnitDef* GetUnitDef() const { return def; }
+	springai::UnitDef* GetDef() const { return def; }
 
 	void SetMainRole(RoleType type) { mainRole = type; }
 	RoleT GetMainRole() const { return static_cast<RoleT>(mainRole); }

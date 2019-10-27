@@ -18,7 +18,6 @@
 #include "Command.h"
 #endif
 
-#include "Lua/LuaConfig.h"
 #include "AISCommands.h"
 #include "Weapon.h"
 #include "WrappWeaponMount.h"
@@ -54,7 +53,7 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 				continue;
 			}
 			str = utils::int_to_string(num, "comm_weapon_num_%i");
-			int mntId = int(unit->GetRulesParamFloat(str.c_str(), -1)) - LUA_WEAPON_BASE_INDEX;
+			int mntId = CWeaponDef::WeaponIdFromLua(int(unit->GetRulesParamFloat(str.c_str(), -1)));
 			if (mntId < 0) {
 				continue;
 			}

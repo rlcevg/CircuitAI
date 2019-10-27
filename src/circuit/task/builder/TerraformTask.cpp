@@ -109,7 +109,7 @@ void CBTerraformTask::Start(CCircuitUnit* unit)
 
 	Unit* u = unit->GetUnit();
 
-	UnitDef* unitDef = buildDef->GetUnitDef();
+	UnitDef* unitDef = buildDef->GetDef();
 	const float offsetX = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 1 * SQUARE_SIZE + 1;
 	const float offsetZ = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 1 * SQUARE_SIZE + 1;
 	std::vector<float> params;

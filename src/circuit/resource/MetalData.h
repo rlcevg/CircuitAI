@@ -61,6 +61,7 @@ public:
 		springai::AIFloat3 position;  // geoCentr
 		springai::AIFloat3 weightCentr;
 		float income;
+		float radius;
 	};
 	using Clusters = std::vector<SCluster>;
 

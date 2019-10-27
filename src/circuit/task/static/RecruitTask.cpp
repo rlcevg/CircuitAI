@@ -13,8 +13,8 @@
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
 #include "unit/action/DGunAction.h"
-#include "util/utils.h"
 #include "CircuitAI.h"
+#include "util/utils.h"
 
 #include "Command.h"
 #include "AISCommands.h"
@@ -165,7 +165,7 @@ void CRecruitTask::Execute(CCircuitUnit* unit)
 
 	if (utils::is_valid(buildPos)) {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Build(buildDef->GetUnitDef(), buildPos, UNIT_COMMAND_BUILD_NO_FACING, 0, frame + FRAMES_PER_SEC * 10);
+			unit->GetUnit()->Build(buildDef->GetDef(), buildPos, UNIT_COMMAND_BUILD_NO_FACING, 0, frame + FRAMES_PER_SEC * 10);
 		)
 	} else {
 		manager->AbortTask(this);

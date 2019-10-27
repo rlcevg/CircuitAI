@@ -145,7 +145,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		CCircuitDef::Id unitDefId = kv.first;
 		CCircuitDef* cdef = kv.second;
 		if (cdef->IsMobile()) {
-			if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
+			if (cdef->GetDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
 				createdHandler[unitDefId]   = workerCreatedHandler;
 				finishedHandler[unitDefId]  = workerFinishedHandler;
 				idleHandler[unitDefId]      = workerIdleHandler;
@@ -747,7 +747,7 @@ void CBuilderManager::ReadConfig()
 					}
 					bi.buildType = it->second;
 
-					UnitDef* unitDef = cdef->GetUnitDef();
+					UnitDef* unitDef = cdef->GetDef();
 					bi.offset = ZeroVector;
 					bi.direction = SBuildInfo::Direction::NONE;
 					const Json::Value& off = part["offset"];
@@ -835,10 +835,6 @@ void CBuilderManager::Release()
 
 IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 {
-	// FIXME: DEBUG
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
-	// FIXME: DEBUG
-
 	circuit->GetThreatMap()->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
 	const int frame = circuit->GetLastFrame();
@@ -942,10 +938,6 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 
 IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 {
-	// FIXME: DEBUG
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
-	// FIXME: DEBUG
-
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	threatMap->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
@@ -1160,11 +1152,6 @@ void CBuilderManager::Watchdog()
 		auto commands = std::move(u->GetCurrentCommands());
 		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())
 		if (commands.empty() && (u->GetResourceUse(metalRes) == .0f) && (u->GetVel() == ZeroVector)) {
-			// FIXME: DEBUG
-			worker->Log();
-			circuit->GetDrawer()->AddPoint(worker->GetPos(circuit->GetLastFrame()), "i");
-//			circuit->GetGame()->SetPause(true, "gg");
-			// FIXME: DEBUG
 			worker->GetTask()->OnUnitMoveFailed(worker);
 		}
 		utils::free_clear(commands);

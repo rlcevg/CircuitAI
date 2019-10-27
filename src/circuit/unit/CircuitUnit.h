@@ -19,6 +19,8 @@ namespace circuit {
 
 #define TRY_UNIT(c, u, x)	try { x } catch (const std::exception& e) { c->Garbage(u, e.what()); }
 
+#define UNIT_CMD_OPTION				0
+
 #define CMD_ATTACK_GROUND			20
 #define CMD_RETREAT_ZONE			10001
 #define CMD_SETHAVEN				CMD_RETREAT_ZONE

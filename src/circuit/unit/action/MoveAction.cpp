@@ -60,7 +60,7 @@ void CMoveAction::Update(CCircuitAI* circuit)
 			unit->GetUnit()->ExecuteCustomCommand(CMD_RAW_MOVE,
 												  {pos.x, pos.y, pos.z},
 												  options,
-												  frame + FRAMES_PER_SEC * 60);
+												  frame + FRAMES_PER_SEC * 60 * i);
 		}
 	)
 }

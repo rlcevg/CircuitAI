@@ -116,12 +116,12 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 	}
 	std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
 
-	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit) * 0.125f;
+//	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit) * 0.125f;
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
 	if (unit->GetTravelAct()->GetPath() != nullptr) {
 		pathfinder->PreferPath(unit->GetTravelAct()->GetPath()->path);
 	}
-	pathfinder->MakePath(*pPath, startPos, endPos, range, minThreat);
+	pathfinder->MakePath(*pPath, startPos, endPos, range/*, minThreat*/);
 	pathfinder->UnpreferPath();
 
 	if (pPath->posPath.empty()) {

@@ -324,10 +324,11 @@ void CAttackTask::FindTarget()
 	AIFloat3 startPos = pos;
 	AIFloat3 endPos = position;
 
+	const float range = std::max(highestRange - threatMap->GetSquareSize() * 2.f, threatMap->GetSquareSize() * 2.f);
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
 	pathfinder->PreferPath(pPath->path);
-	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize(), attackPower * 0.125f);
+	pathfinder->MakePath(*pPath, startPos, endPos, range/*, attackPower * 0.125f*/);
 	pathfinder->UnpreferPath();
 	// TODO: Bottleneck check, i.e. path cost
 }

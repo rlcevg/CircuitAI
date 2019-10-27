@@ -259,7 +259,7 @@ void CTerrainManager::ReadConfig()
 				continue;
 			}
 
-			blockInfos[cdef->GetId()] = createBlockInfo(blockDesc, cdef->GetUnitDef());
+			blockInfos[cdef->GetId()] = createBlockInfo(blockDesc, cdef->GetDef());
 		}
 	}
 
@@ -270,7 +270,7 @@ void CTerrainManager::ReadConfig()
 		for (auto& kv : defs) {
 			CCircuitDef* cdef = kv.second;
 			if (!cdef->IsMobile() && (blockInfos.find(kv.first) == blockInfos.end())) {
-				blockInfos[cdef->GetId()] = createBlockInfo(blockDesc, cdef->GetUnitDef());
+				blockInfos[cdef->GetId()] = createBlockInfo(blockDesc, cdef->GetDef());
 			}
 		}
 	}
@@ -286,8 +286,8 @@ void CTerrainManager::Init()
 		xsize = it->second->GetXSize();
 		zsize = it->second->GetZSize();
 	} else {
-		xsize = mexDef->GetUnitDef()->GetXSize() / 2;
-		zsize = mexDef->GetUnitDef()->GetZSize() / 2;
+		xsize = mexDef->GetDef()->GetXSize() / 2;
+		zsize = mexDef->GetDef()->GetZSize() / 2;
 	}
 	int notIgnoreMask = STRUCT_BIT(FACTORY);
 	for (auto& spot : spots) {
@@ -370,7 +370,7 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 	/*
 	 * Default FindBuildSite
 	 */
-	UnitDef* unitDef = cdef->GetUnitDef();
+	UnitDef* unitDef = cdef->GetDef();
 	const int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
@@ -587,7 +587,7 @@ const CTerrainManager::SearchOffsetsLow& CTerrainManager::GetSearchOffsetTableLo
 
 AIFloat3 CTerrainManager::FindBuildSiteLow(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing, TerrainPredicate& predicate)
 {
-	UnitDef* unitDef = cdef->GetUnitDef();
+	UnitDef* unitDef = cdef->GetDef();
 	const int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
@@ -655,7 +655,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 		return FindBuildSiteByMaskLow(cdef, pos, searchRadius, facing, mask, predicate);
 	}
 
-	UnitDef* unitDef = cdef->GetUnitDef();
+	UnitDef* unitDef = cdef->GetDef();
 	int xssize, zssize;
 	switch (facing) {
 		default:
@@ -771,7 +771,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 
 AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask, TerrainPredicate& predicate)
 {
-	UnitDef* unitDef = cdef->GetUnitDef();
+	UnitDef* unitDef = cdef->GetDef();
 	int xmsize, zmsize, xssize, zssize;
 	switch (facing) {
 		default:
@@ -902,7 +902,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 
 void CTerrainManager::MarkBlockerByMask(const SStructure& building, bool block, IBlockMask* mask)
 {
-	UnitDef* unitDef = building.cdef->GetUnitDef();
+	UnitDef* unitDef = building.cdef->GetDef();
 	int facing = building.facing;
 	const AIFloat3& pos = building.pos;
 
@@ -1000,7 +1000,7 @@ void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 	int facing = building.facing;
 	const AIFloat3& pos = building.pos;
 
-	UnitDef* unitDef = cdef->GetUnitDef();
+	UnitDef* unitDef = cdef->GetDef();
 	const int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 

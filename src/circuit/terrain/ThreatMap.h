@@ -64,6 +64,7 @@ private:
 	SAreaData* areaData;
 
 	inline void PosToXZ(const springai::AIFloat3& pos, int& x, int& z) const;
+	inline springai::AIFloat3 XZToPos(int x, int z) const;
 
 	void AddEnemyUnit(const CEnemyUnit* e);
 	void DelEnemyUnit(const CEnemyUnit* e);
@@ -97,6 +98,7 @@ private:
 
 	int rangeDefault;
 	int distCloak;
+	float slackMod;
 
 	CCircuitAI::EnemyUnits hostileUnits;
 	CCircuitAI::EnemyUnits peaceUnits;
@@ -106,7 +108,6 @@ private:
 	Threats cloakThreat;
 	Threats shield;
 	float* threatArray;
-	// TODO: shield-map - units under shield should get threat boost
 
 //	std::vector<int> radarMap;
 	std::vector<int> sonarMap;
@@ -119,9 +120,14 @@ private:
 #ifdef DEBUG_VIS
 private:
 	std::vector<std::pair<uint32_t, float*>> sdlWindows;
+	bool isWidgetDrawing = false;
+	float maxThreat = 1.f;
 	void UpdateVis();
 public:
-	void ToggleVis();
+	void ToggleSDLVis();
+	void ToggleWidgetVis();
+	void DrawThreatAround(const springai::AIFloat3& pos);
+	void SetMaxThreat(float mt) { maxThreat = mt; }
 #endif
 };
 

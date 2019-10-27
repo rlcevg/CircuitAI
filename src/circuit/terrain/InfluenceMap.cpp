@@ -14,7 +14,7 @@
 #include "util/utils.h"
 
 #include "OOAICallback.h"
-#include "Cheats.h"
+//#include "Cheats.h"
 #include "Feature.h"
 #include "FeatureDef.h"
 

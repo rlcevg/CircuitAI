@@ -141,7 +141,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 					buildPos = terrainManager->GetBuildPosition(facDef, pos);
 					CBuilderManager* builderManager = this->circuit->GetBuilderManager();
 					IBuilderTask* task = builderManager->EnqueueFactory(IBuilderTask::Priority::NOW, facDef, buildPos,
-																		SQUARE_SIZE * 32, true, true, 0);
+																		SQUARE_SIZE, true, true, 0);
 					static_cast<ITaskManager*>(builderManager)->AssignTask(unit, task);
 
 					if (builderManager->GetWorkerCount() <= 2) {
@@ -161,7 +161,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 					if ((unit != nullptr) && (unit->GetTask() != nullptr) &&
 						(unit->GetTask()->GetType() != IUnitTask::Type::PLAYER))
 					{
-						const std::map<std::string, std::string>& customParams = unit->GetCircuitDef()->GetUnitDef()->GetCustomParams();
+						const std::map<std::string, std::string>& customParams = unit->GetCircuitDef()->GetDef()->GetCustomParams();
 						auto it = customParams.find("level");
 						if ((it != customParams.end()) && (utils::string_to_int(it->second) <= 1)) {
 							unit->Upgrade();  // Morph();
@@ -188,7 +188,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
 		CCircuitDef* cdef = kv.second;
-		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
+		const std::map<std::string, std::string>& customParams = cdef->GetDef()->GetCustomParams();
 
 		if (!cdef->IsMobile()) {
 			if (commDef->CanBuild(cdef)) {
@@ -205,7 +205,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				}
 
 				// storage
-				float storeDivCost = cdef->GetUnitDef()->GetStorage(metalRes) / cdef->GetCost();
+				float storeDivCost = cdef->GetDef()->GetStorage(metalRes) / cdef->GetCost();
 				if (maxStoreDivCost < storeDivCost) {
 					maxStoreDivCost = storeDivCost;
 					storeDef = cdef;  // armmstor
@@ -222,7 +222,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			}
 
 			// factory
-			if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
+			if (cdef->GetDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
 				finishedHandler[cdef->GetId()] = factoryFinishedHandler;
 				destroyedHandler[cdef->GetId()] = factoryDestroyedHandler;
 			}
@@ -346,7 +346,7 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 		SEnergyInfo engy;
 		engy.cdef = cdef;
 		engy.cost = cdef->GetCost();
-		engy.make = utils::string_to_float(cdef->GetUnitDef()->GetCustomParams().find("income_energy")->second);
+		engy.make = utils::string_to_float(cdef->GetDef()->GetCustomParams().find("income_energy")->second);
 		engy.costDivMake = engy.cost / engy.make;
 		engy.limit = engyPol->GetValueAt(engy.costDivMake);
 		energyInfos.push_back(engy);
@@ -559,7 +559,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 					return (IsAllyOpenSpot(index) &&
 							terrainManager->CanBeBuiltAtSafe(mexDef, spots[index].position) &&  // hostile environment
 							terrainManager->CanBuildAtSafe(unit, spots[index].position) &&
-							map->IsPossibleToBuildAt(mexDef->GetUnitDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
+							map->IsPossibleToBuildAt(mexDef->GetDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};
 			} else {
 				CCircuitDef* mexDef = this->mexDef;
@@ -567,7 +567,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 					return (IsAllyOpenSpot(index) &&
 							terrainManager->CanBeBuiltAtSafe(mexDef, spots[index].position) &&  // hostile environment
 							builderManager->IsBuilderInArea(mexDef, spots[index].position) &&
-							map->IsPossibleToBuildAt(mexDef->GetUnitDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
+							map->IsPossibleToBuildAt(mexDef->GetDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};
 			}
 			int index = metalManager->GetMexToBuild(position, predicate);
@@ -685,7 +685,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		// TODO: Add geothermal powerplant support
 		if (!engy.cdef->IsAvailable(frame) ||
 			!terrainManager->CanBeBuiltAtSafe(engy.cdef, position) ||
-			engy.cdef->GetUnitDef()->IsNeedGeo())
+			engy.cdef->GetDef()->IsNeedGeo())
 		{
 			continue;
 		}
@@ -1000,7 +1000,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 		return nullptr;
 	}
 
-	if (utils::is_valid(buildPos) && builderManager->IsBuilderInArea(buildDef, buildPos)) {
+	if (utils::is_valid(buildPos)) {
 		IBuilderTask::Priority priority = metalIncome < 30 ? IBuilderTask::Priority::NORMAL : IBuilderTask::Priority::HIGH;
 		return builderManager->EnqueuePylon(priority, buildDef, buildPos, link, buildDef->GetCost());
 	} else {
@@ -1105,7 +1105,7 @@ void CEconomyManager::ReadConfig()
 			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), engies[i].first.c_str());
 			continue;
 		}
-		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
+		const std::map<std::string, std::string>& customParams = cdef->GetDef()->GetCustomParams();
 		auto it = customParams.find("income_energy");
 		float make = (it != customParams.end()) ? utils::string_to_float(it->second) : 1.f;
 		x[i] = cdef->GetCost() / make;

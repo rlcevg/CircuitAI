@@ -52,7 +52,7 @@ CEnergyNode::CEnergyNode(int index, const CMetalData::SCluster& cluster, const C
 		, spotNodes(spotGraph)
 		, spotEdgeCosts(spotGraph)
 		, isMexed(false)
-		, info(index, cluster.position)
+		, info(index, cluster.position, cluster.radius)
 {
 	SpotGraph initGraph;
 	SpotNodeMap initNodeMap(initGraph);
@@ -178,6 +178,11 @@ const CEnergyNode::SPylon& CEnergyNode::GetSourceHead()
 	}
 	source = s;
 	return spotNodes[source];
+}
+
+bool CEnergyNode::IsPylonable(float radius) const
+{
+	return info.neighbors.empty() && (info.mexes.size() > 2) && (info.radius > radius * 0.6f);
 }
 
 void CEnergyNode::BuildMexGraph(SpotGraph& graph, SpotCostMap& edgeCosts,

@@ -79,13 +79,13 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		TRY_UNIT(circuit, unit,
-			u->Repair(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			u->Repair(target->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 		)
 		return;
 	}
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	UnitDef* buildUDef = buildDef->GetUnitDef();
+	UnitDef* buildUDef = buildDef->GetDef();
 	if (utils::is_valid(buildPos)) {
 		int index = metalManager->FindNearestSpot(buildPos);
 		if (index >= 0) {
@@ -117,7 +117,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 		return (economyManager->IsAllyOpenSpot(index) &&
 				terrainManager->CanBeBuiltAtSafe(mexDef, spots[index].position) &&  // hostile environment
 				terrainManager->CanBuildAtSafe(unit, spots[index].position) &&
-				map->IsPossibleToBuildAt(mexDef->GetUnitDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
+				map->IsPossibleToBuildAt(mexDef->GetDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 	};
 	int index = metalManager->FindNearestSpot(position, predicate);
 

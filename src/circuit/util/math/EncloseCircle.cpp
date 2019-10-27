@@ -64,16 +64,6 @@ void CEncloseCircle::MakeCircle(const std::vector<AIFloat3>& points)
 	radius = circle.r;
 }
 
-const AIFloat3& CEncloseCircle::GetCenter() const
-{
-	return center;
-}
-
-float CEncloseCircle::GetRadius() const
-{
-	return radius;
-}
-
 // One boundary point known
 CEncloseCircle::SCircle CEncloseCircle::MakeCircleOnePoint(const std::vector<SPoint>::iterator& ptsBegin,
 										   const std::vector<SPoint>::iterator& ptsEnd, const SPoint& p)
@@ -93,7 +83,6 @@ CEncloseCircle::SCircle CEncloseCircle::MakeCircleOnePoint(const std::vector<SPo
 	}
 	return c;
 }
-
 
 // Two boundary points known
 CEncloseCircle::SCircle CEncloseCircle::MakeCircleTwoPoints(const std::vector<SPoint>::iterator& ptsBegin,

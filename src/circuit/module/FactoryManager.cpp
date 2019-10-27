@@ -176,7 +176,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
 		CCircuitDef* cdef = kv.second;
-		UnitDef* def = cdef->GetUnitDef();
+		UnitDef* def = cdef->GetDef();
 		if (!cdef->IsMobile() && def->IsBuilder()) {
 			CCircuitDef::Id unitDefId = kv.first;
 			if  (!cdef->GetBuildOptions().empty()) {
@@ -208,7 +208,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			setRoles(CCircuitDef::RoleType::AIR);
 		} else if (!cdef->IsMobile() && cdef->IsAttacker() && cdef->HasAntiLand()) {
 			setRoles(CCircuitDef::RoleType::STATIC);
-		} else if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty() && !cdef->IsRoleComm()) {
+		} else if (cdef->GetDef()->IsBuilder() && !cdef->GetBuildOptions().empty() && !cdef->IsRoleComm()) {
 			setRoles(CCircuitDef::RoleType::BUILDER);
 		}
 		if (cdef->IsRoleComm()) {
@@ -653,7 +653,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	candidates.clear();
 
 	if ((buildDef != nullptr) && buildDef->IsAvailable(frame)) {
-		UnitDef* def = unit->GetCircuitDef()->GetUnitDef();
+		UnitDef* def = unit->GetCircuitDef()->GetDef();
 		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
 		// FIXME CCircuitDef::RoleType <-> CRecruitTask::RecruitType relations
 		return EnqueueTask(isResponse ? CRecruitTask::Priority::HIGH : CRecruitTask::Priority::NORMAL,

@@ -3,7 +3,6 @@
  *
  *  Created on: Aug 25, 2015
  *      Author: rlcevg
- *      Original implementation: https://github.com/spring/KAIK/blob/master/ThreatMap.cpp
  */
 
 #include "terrain/ThreatMap.h"
@@ -17,6 +16,9 @@
 #include "OOAICallback.h"
 #include "Mod.h"
 #include "Map.h"
+#ifdef DEBUG_VIS
+#include "Lua.h"
+#endif
 
 //#undef NDEBUG
 #include <cassert>
@@ -66,29 +68,29 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 	losResConv = SQUARE_SIZE << losMipLevel;
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const float slackMod = root["quota"].get("slack_mod", 2.f).asFloat() / FRAMES_PER_SEC;
+	slackMod = root["quota"].get("slack_mod", 2.f).asFloat();
 	constexpr float allowedRange = 2000.f;
 	for (auto& kv : circuit->GetCircuitDefs()) {
 		CCircuitDef* cdef = kv.second;
-		const float slack = cdef->IsMobile() ?
-							std::min(slackMod * cdef->GetSpeed(), 5.f) * DEFAULT_SLACK :  // clamp slack
-							std::max(cdef->GetAoe(), DEFAULT_SLACK * 3.f);
+		const float slack = squareSize - 1 + DEFAULT_SLACK * slackMod + (cdef->IsMobile() ?
+							cdef->GetSpeed() / FRAMES_PER_SEC * THREAT_UPDATE_RATE :
+							std::max(cdef->GetAoe(), 0.f));
 		float realRange;
 		int range;
 		int maxRange;
 
 		realRange = cdef->GetMaxRange(CCircuitDef::RangeType::AIR);
-		range = cdef->HasAntiAir() ? int(realRange + slack) / squareSize : 0;
+		range = cdef->HasAntiAir() ? int(realRange + slack) / squareSize + 1 : 0;
 		cdef->SetThreatRange(CCircuitDef::ThreatType::AIR, range);
 		maxRange = range;
 
 		realRange = cdef->GetMaxRange(CCircuitDef::RangeType::LAND);
-		range = (cdef->HasAntiLand() && (realRange <= allowedRange)) ? int(realRange + slack) / squareSize : 0;
+		range = (cdef->HasAntiLand() && (realRange <= allowedRange)) ? int(realRange + slack) / squareSize + 1 : 0;
 		cdef->SetThreatRange(CCircuitDef::ThreatType::LAND, range);
 		maxRange = std::max(maxRange, range);
 
 		realRange = cdef->GetMaxRange(CCircuitDef::RangeType::WATER);
-		range = (cdef->HasAntiWater() && (realRange <= allowedRange)) ? int(realRange + slack) / squareSize : 0;
+		range = (cdef->HasAntiWater() && (realRange <= allowedRange)) ? int(realRange + slack) / squareSize + 1 : 0;
 		cdef->SetThreatRange(CCircuitDef::ThreatType::WATER, range);
 		maxRange = std::max(maxRange, range);
 
@@ -403,6 +405,14 @@ inline void CThreatMap::PosToXZ(const AIFloat3& pos, int& x, int& z) const
 	z = (int)pos.z / squareSize + 1;
 }
 
+inline AIFloat3 CThreatMap::XZToPos(int x, int z) const
+{
+	AIFloat3 pos;
+	pos.z = (z - 1) * squareSize + squareSize / 2;
+	pos.x = (x - 1) * squareSize + squareSize / 2;
+	return pos;
+}
+
 void CThreatMap::AddEnemyUnit(const CEnemyUnit* e)
 {
 	CCircuitDef* cdef = e->GetCircuitDef();
@@ -483,7 +493,7 @@ void CThreatMap::AddEnemyAir(const CEnemyUnit* e)
 			}
 
 			const int index = z * width + x;
-			const float heat = threat * (1.5f - 1.0f * sqrtf(sum) / range);
+			const float heat = threat * (2.0f - 1.8f * sqrtf(sum) / range);
 			airThreat[index] += heat;
 
 //			currSumThreat += heat;
@@ -522,7 +532,7 @@ void CThreatMap::DelEnemyAir(const CEnemyUnit* e)
 			// (which may arise due to floating-point drift)
 			// nor with zero-cost nodes (see MP::SetMapData,
 			// threat is not used as an additive overlay)
-			const float heat = threat * (1.5f - 1.0f * sqrtf(sum) / range);
+			const float heat = threat * (2.0f - 1.8f * sqrtf(sum) / range);
 			airThreat[index] = std::max<float>(airThreat[index] - heat, THREAT_BASE);
 
 //			currSumThreat -= heat;
@@ -559,7 +569,7 @@ void CThreatMap::AddEnemyAmph(const CEnemyUnit* e)
 			const int sum = dxSq + dzSq;
 			const int index = z * width + x;
 			const int idxSec = (z - 1) * widthSec + (x - 1);
-			const float heat = threat * (1.5f - 1.0f * sqrtf(sum) / range);
+			const float heat = threat * (2.0f - 1.8f * sqrtf(sum) / range);
 			bool isWaterThreat = (sum <= rangeWaterSq) && sector[idxSec].isWater;
 			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[idxSec].position.y >= -SQUARE_SIZE * 5)))
 			{
@@ -599,7 +609,7 @@ void CThreatMap::DelEnemyAmph(const CEnemyUnit* e)
 			const int sum = dxSq + dzSq;
 			const int index = z * width + x;
 			const int idxSec = (z - 1) * widthSec + (x - 1);
-			const float heat = threat * (1.5f - 1.0f * sqrtf(sum) / range);
+			const float heat = threat * (2.0f - 1.8f * sqrtf(sum) / range);
 			bool isWaterThreat = (sum <= rangeWaterSq) && sector[idxSec].isWater;
 			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[idxSec].position.y >= -SQUARE_SIZE * 5)))
 			{
@@ -637,7 +647,7 @@ void CThreatMap::AddDecloaker(const CEnemyUnit* e)
 			}
 
 			const int index = z * width + x;
-			const float heat = threatCloak * (1.0f - 0.5f * sqrtf(sum) / rangeCloak);
+			const float heat = threatCloak * (1.0f - 0.75f * sqrtf(sum) / rangeCloak);
 			cloakThreat[index] += heat;
 		}
 	}
@@ -668,7 +678,7 @@ void CThreatMap::DelDecloaker(const CEnemyUnit* e)
 			}
 
 			const int index = z * width + x;
-			const float heat = threatCloak * (1.0f - 0.5f * sqrtf(sum) / rangeCloak);
+			const float heat = threatCloak * (1.0f - 0.75f * sqrtf(sum) / rangeCloak);
 			cloakThreat[index] = std::max<float>(cloakThreat[index] - heat, THREAT_BASE);
 		}
 	}
@@ -730,24 +740,51 @@ void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const
 	const CCircuitDef* edef = e->GetCircuitDef();
 	assert(edef != nullptr);
 
-	const float mult = e->GetUnit()->GetRulesParamFloat("comm_range_mult", -1);
-	if (mult > 0) {
+	// FIXME: DEBUG
+	if (edef->IsRoleComm()) {
+		// TODO: by weapons 1,2 descriptions set proper land/air/water ranges/threats
+		float maxRange = -1.f;
+		for (int num = 1; num < 3; ++num) {
+			std::string str = utils::int_to_string(num, "comm_weapon_id_%i");
+			int weaponDefId = int(e->GetUnit()->GetRulesParamFloat(str.c_str(), -1));
+			if (weaponDefId < 0) {
+				continue;
+			}
+
+			const float range = circuit->GetWeaponDef(weaponDefId)->GetRange();
+			if (maxRange < range) {
+				maxRange = range;
+			}
+		}
+		const float slack = squareSize - 1 + DEFAULT_SLACK * slackMod + edef->GetSpeed() / FRAMES_PER_SEC * THREAT_UPDATE_RATE;
+		const float mult = e->GetUnit()->GetRulesParamFloat("comm_range_mult", 1.f);
+		const float range = int(maxRange * mult + slack) / squareSize + 1;
 		for (CCircuitDef::ThreatT tt = 0; tt < static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_); ++tt) {
 			CCircuitDef::ThreatType type = static_cast<CCircuitDef::ThreatType>(tt);
-			e->SetRange(type, edef->GetThreatRange(type) * mult);
+			e->SetRange(type, range);
 		}
 	} else {
-		for (CCircuitDef::ThreatT tt = 0; tt < static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_); ++tt) {
-			CCircuitDef::ThreatType type = static_cast<CCircuitDef::ThreatType>(tt);
-			e->SetRange(type, edef->GetThreatRange(type));
+	// FIXME: DEBUG
+
+		const float mult = e->GetUnit()->GetRulesParamFloat("comm_range_mult", -1);
+		if (mult > 0) {
+			for (CCircuitDef::ThreatT tt = 0; tt < static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_); ++tt) {
+				CCircuitDef::ThreatType type = static_cast<CCircuitDef::ThreatType>(tt);
+				e->SetRange(type, edef->GetThreatRange(type) * mult);
+			}
+		} else {
+			for (CCircuitDef::ThreatT tt = 0; tt < static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_); ++tt) {
+				CCircuitDef::ThreatType type = static_cast<CCircuitDef::ThreatType>(tt);
+				e->SetRange(type, edef->GetThreatRange(type));
+			}
 		}
 	}
 }
 
 int CThreatMap::GetCloakRange(const CCircuitDef* edef) const
 {
-	const int sizeX = edef->GetUnitDef()->GetXSize() * (SQUARE_SIZE / 2);
-	const int sizeZ = edef->GetUnitDef()->GetZSize() * (SQUARE_SIZE / 2);
+	const int sizeX = edef->GetDef()->GetXSize() * (SQUARE_SIZE / 2);
+	const int sizeZ = edef->GetDef()->GetZSize() * (SQUARE_SIZE / 2);
 	int threatRange = distCloak;
 	if (edef->IsMobile()) {
 		threatRange += (DEFAULT_SLACK * 2) / squareSize;
@@ -809,6 +846,16 @@ bool CThreatMap::IsInLOS(const AIFloat3& pos) const
 #ifdef DEBUG_VIS
 void CThreatMap::UpdateVis()
 {
+	if (isWidgetDrawing) {
+		std::ostringstream cmd;
+		cmd << "ai_threat:";
+		for (float val : surfThreat) {
+			cmd << (val - THREAT_BASE) / maxThreat << " ";
+		}
+		std::string s = cmd.str();
+		circuit->GetLua()->CallRules(s.c_str(), s.size());
+	}
+
 	if (sdlWindows.empty()/* || (currMaxThreat < .1f)*/) {
 		return;
 	}
@@ -840,7 +887,7 @@ void CThreatMap::UpdateVis()
 	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap);
 }
 
-void CThreatMap::ToggleVis()
+void CThreatMap::ToggleSDLVis()
 {
 	if (sdlWindows.empty()) {
 		// ~threat
@@ -874,6 +921,37 @@ void CThreatMap::ToggleVis()
 			delete[] win.second;
 		}
 		sdlWindows.clear();
+	}
+}
+
+void CThreatMap::ToggleWidgetVis()
+{
+	isWidgetDrawing = !isWidgetDrawing;
+
+	std::string cmd = utils::int_to_string(squareSize, "ai_draw:%i");
+	circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
+
+	if (isWidgetDrawing) {
+		UpdateVis();
+	}
+}
+
+void CThreatMap::DrawThreatAround(const AIFloat3& pos)
+{
+	int posx, posz;
+	PosToXZ(pos, posx, posz);
+
+	const int range = 3;
+
+	const int beginX = std::max(int(posx - range + 1),          1);
+	const int endX   = std::min(int(posx + range    ),  width - 1);
+	const int beginZ = std::max(int(posz - range + 1),          1);
+	const int endZ   = std::min(int(posz + range    ), height - 1);
+
+	for (int x = beginX; x < endX; ++x) {
+		for (int z = beginZ; z < endZ; ++z) {
+			circuit->GetDrawer()->AddPoint(XZToPos(x, z), utils::float_to_string(surfThreat[z * width + x]).c_str());
+		}
 	}
 }
 #endif
