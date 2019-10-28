@@ -89,7 +89,7 @@ bool CBRepairTask::Reevaluate()
 
 	CAllyUnit* repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
 	if ((repTarget != nullptr) && (repTarget->GetUnit()->GetHealth() < repTarget->GetUnit()->GetMaxHealth())) {
-		SetBuildPos(repTarget->GetPos(circuit->GetLastFrame()));
+		buildPos = repTarget->GetPos(circuit->GetLastFrame());
 	} else {
 		manager->AbortTask(this);
 		return false;

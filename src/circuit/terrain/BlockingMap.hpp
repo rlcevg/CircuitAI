@@ -16,14 +16,9 @@
 
 namespace circuit {
 
-inline bool SBlockingMap::IsStruct(int x, int z, StructMask structMask) const
+inline bool SBlockingMap::IsStructed(int x, int z, StructMask structMask) const
 {
 	return (grid[z * columns + x].notIgnoreMask & static_cast<SM>(structMask));
-}
-
-inline bool SBlockingMap::IsStruct(int x, int z, SM structMask) const
-{
-	return (grid[z * columns + x].notIgnoreMask & structMask);
 }
 
 inline bool SBlockingMap::IsBlocked(int x, int z, SM notIgnoreMask) const
@@ -37,13 +32,18 @@ inline bool SBlockingMap::IsBlockedLow(int xLow, int zLow, SM notIgnoreMask) con
 	return (gridLow[zLow * columnsLow + xLow].blockerMask & notIgnoreMask);
 }
 
+inline bool SBlockingMap::IsStruct(int x, int z) const
+{
+	return static_cast<SM>(grid[z * columns + x].structMask);
+}
+
 inline void SBlockingMap::MarkBlocker(int x, int z, StructType structType, SM notIgnoreMask)
 {
 	SBlockCell& cell = grid[z * columns + x];
 	cell.blockerCounts[static_cast<ST>(structType)] = MAX_BLOCK_VAL;
 	cell.notIgnoreMask = notIgnoreMask;
-	cell.structMask = GetStructMask(structType);
-	const SM structMask = static_cast<SM>(cell.structMask);
+//	cell.structMask = GetStructMask(structType);
+	const SM structMask = static_cast<SM>(GetStructMask(structType));
 	cell.blockerMask |= structMask;
 
 	SBlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];

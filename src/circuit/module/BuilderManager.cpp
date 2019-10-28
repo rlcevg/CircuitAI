@@ -171,12 +171,14 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	}
 
 	/*
-	 * cormex handlers; forbid from removing blocker
+	 * staticmex handlers;
 	 */
 	CCircuitDef::Id unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
 	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
 		const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
 		CCircuitDef* mexDef = unit->GetCircuitDef();
+		const int facing = unit->GetUnit()->GetBuildingFacing();
+		this->circuit->GetTerrainManager()->DelBlocker(mexDef, pos, facing);
 		int index = this->circuit->GetMetalManager()->FindNearestSpot(pos);
 		if (index < 0) {
 			return;

@@ -65,6 +65,7 @@ void CBMexTask::Cancel()
 		int index = circuit->GetMetalManager()->FindNearestSpot(buildPos);
 		circuit->GetMetalManager()->SetOpenSpot(index, true);
 		circuit->GetEconomyManager()->SetOpenSpot(index, true);
+		SetBuildPos(-RgtVector);
 	}
 }
 
@@ -122,7 +123,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	int index = metalManager->FindNearestSpot(position, predicate);
 
 	if (index >= 0) {
-		buildPos = spots[index].position;
+		SetBuildPos(spots[index].position);
 		economyManager->SetOpenSpot(index, false);
 		TRY_UNIT(circuit, unit,
 			u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);

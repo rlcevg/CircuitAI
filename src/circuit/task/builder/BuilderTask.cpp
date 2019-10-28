@@ -166,7 +166,7 @@ void IBuilderTask::Finish()
 void IBuilderTask::Cancel()
 {
 	if ((target == nullptr) && utils::is_valid(buildPos)) {
-		manager->GetCircuit()->GetTerrainManager()->DelBlocker(buildDef, buildPos, facing);
+		SetBuildPos(-RgtVector);
 	}
 
 	// Destructor will take care of the nextTask queue
@@ -195,13 +195,14 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 				u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 			)
 			return;
-		} else {
-			terrainManager->DelBlocker(buildDef, buildPos, facing);
-			// FIXME: If enemy blocked position then reset will have no effect
-//			terrainManager->ResetBuildFrame();
+//		} else {
+//			SetBuildPos(-RgtVector);
+//			// FIXME: If enemy blocked position then reset will have no effect
+////			terrainManager->ResetBuildFrame();
 		}
 	}
 
+	// FIXME: Move to Reevaluate
 	circuit->GetThreatMap()->SetThreatType(unit);
 	// FIXME: Replace const 999.0f with build time?
 	if (circuit->IsAllyAware() && (cost > 999.0f)) {
@@ -224,7 +225,6 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	FindBuildSite(unit, pos, searchRadius);
 
 	if (utils::is_valid(buildPos)) {
-		terrainManager->AddBlocker(buildDef, buildPos, facing);
 		TRY_UNIT(circuit, unit,
 			u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 		)
@@ -296,10 +296,36 @@ void IBuilderTask::Deactivate()
 	lastTouched = -1;
 }
 
+void IBuilderTask::SetBuildPos(const AIFloat3& pos)
+{
+	CTerrainManager* terrainManager = manager->GetCircuit()->GetTerrainManager();
+	if (utils::is_valid(buildPos)) {
+		terrainManager->DelBlocker(buildDef, buildPos, facing);
+	}
+	buildPos = pos;
+	if (utils::is_valid(buildPos)) {
+		terrainManager->AddBlocker(buildDef, buildPos, facing);
+	}
+}
+
 void IBuilderTask::SetTarget(CCircuitUnit* unit)
 {
+	CCircuitAI* circuit = manager->GetCircuit();
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	if (utils::is_valid(buildPos)) {
+		terrainManager->DelBlocker(buildDef, buildPos, facing);
+	}
 	target = unit;
-	SetBuildPos((unit != nullptr) ? unit->GetPos(manager->GetCircuit()->GetLastFrame()) : AIFloat3(-RgtVector));
+	if (unit != nullptr) {
+		buildDef = unit->GetCircuitDef();
+		buildPos = unit->GetPos(circuit->GetLastFrame());
+		facing = unit->GetUnit()->GetBuildingFacing();
+	} else {
+		buildPos = -RgtVector;
+	}
+	if (utils::is_valid(buildPos)) {
+		terrainManager->AddBlocker(buildDef, buildPos, facing);
+	}
 }
 
 void IBuilderTask::UpdateTarget(CCircuitUnit* unit)
@@ -500,7 +526,7 @@ void IBuilderTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, flo
 	CTerrainManager::TerrainPredicate predicate = [terrainManager, builder](const AIFloat3& p) {
 		return terrainManager->CanBuildAtSafe(builder, p);
 	};
-	buildPos = terrainManager->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
+	SetBuildPos(terrainManager->FindBuildSite(buildDef, pos, searchRadius, facing, predicate));
 }
 
 void IBuilderTask::ExecuteChain(SBuildChain* chain)

@@ -133,7 +133,7 @@ void IRepairTask::SetTarget(CAllyUnit* unit)
 {
 	if (unit != nullptr) {
 		CCircuitAI* circuit = manager->GetCircuit();
-		target = circuit->GetTeamUnit(unit->GetId());
+		target = circuit->GetTeamUnit(unit->GetId());  // can be nullptr, using targetId
 		cost = unit->GetCircuitDef()->GetCost();
 		position = buildPos = unit->GetPos(circuit->GetLastFrame());
 //		CTerrainManager::CorrectPosition(buildPos);  // position will contain non-corrected value

@@ -50,15 +50,15 @@ end
 function gadget:DrawWorldPreUnit()
 	if SYNCED and SYNCED.threatData.isDrawing and #SYNCED.threatData.map > 0 then
 		local threatMap = SYNCED.threatData.map
-		local width = SYNCED.threatData.width + 2
-		local height = SYNCED.threatData.height + 2
+		local width = SYNCED.threatData.width
+		local height = SYNCED.threatData.height
 		local size = SYNCED.threatData.size
 --		Spring.Echo(threatMap[0 * width + 1])
 --		Spring.Echo(threatMap[(height - 1) * width + width])
 		for x = 1, width do
-			px = (x - 2) * size
+			px = (x - 1) * size
 			for z = 0, height - 1 do
-				pz = (z - 1) * size
+				pz = z * size
 				gl.Color(threatMap[z * width + x], 0.0, 0.0, 0.6)
 --				gl.Color(1.0, 0.0, 0.0, threatMap[z * width + x])
 				gl.DrawGroundQuad(px, pz, px + size, pz + size)

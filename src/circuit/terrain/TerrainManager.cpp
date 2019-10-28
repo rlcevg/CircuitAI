@@ -289,7 +289,7 @@ void CTerrainManager::Init()
 		xsize = mexDef->GetDef()->GetXSize() / 2;
 		zsize = mexDef->GetDef()->GetZSize() / 2;
 	}
-	int notIgnoreMask = STRUCT_BIT(FACTORY);
+	int notIgnoreMask = ~STRUCT_BIT(MEX);  // all except mex
 	for (auto& spot : spots) {
 		const int x1 = int(spot.position.x / (SQUARE_SIZE << 1)) - (xsize >> 1), x2 = x1 + xsize;
 		const int z1 = int(spot.position.z / (SQUARE_SIZE << 1)) - (zsize >> 1), z2 = z1 + zsize;
@@ -298,13 +298,13 @@ void CTerrainManager::Init()
 		blockingMap.Bound(m1, m2);
 		for (int z = m1.y; z < m2.y; z++) {
 			for (int x = m1.x; x < m2.x; x++) {
-				blockingMap.MarkBlocker(x, z, SBlockingMap::StructType::MEX, notIgnoreMask);
+				blockingMap.MarkBlocker(x, z, SBlockingMap::StructType::TERRA, notIgnoreMask);
 			}
 		}
 	}
 
 	// Mark edges of the map
-	notIgnoreMask = STRUCT_BIT(TERRA);
+	notIgnoreMask = ~(STRUCT_BIT(MEX) | STRUCT_BIT(FACTORY));  // all except mex and factory
 	for (int i = 8; i < blockingMap.columns - 8; ++i) {
 		for (int j = 0; j < 7; ++j) {
 			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
@@ -501,7 +501,7 @@ void CTerrainManager::MarkAllyBuildings()
 				*d_first++ = *first2;  // old unit
 				++first1;  // advance friendlies
 			}
-            ++first2;  // advance prevUnits
+			++first2;  // advance prevUnits
 		}
 	}
 	while (first2 != last2) {  // everything else in first2..last2 is dead units
@@ -680,8 +680,8 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 		for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {												\
 			for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {											\
 				switch (mask->facingType(xm, zm)) {															\
-					case IBlockMask::BlockType::BLOCKED: {													\
-						if (blockingMap.IsStruct(x, z, structMask)) {										\
+					case IBlockMask::BlockType::BLOCK: {													\
+						if (blockingMap.IsStructed(x, z, structMask)) {										\
 							return false;																	\
 						}																					\
 						break;																				\
@@ -798,8 +798,8 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 		for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {												\
 			for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {											\
 				switch (mask->facingType(xm, zm)) {															\
-					case IBlockMask::BlockType::BLOCKED: {													\
-						if (blockingMap.IsStruct(x, z, structMask)) {										\
+					case IBlockMask::BlockType::BLOCK: {													\
+						if (blockingMap.IsStructed(x, z, structMask)) {										\
 							return false;																	\
 						}																					\
 						break;																				\
@@ -931,7 +931,7 @@ void CTerrainManager::MarkBlockerByMask(const SStructure& building, bool block, 
 	for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {				\
 		for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {			\
 			switch (mask->typeName(xm, zm)) {							\
-				case IBlockMask::BlockType::BLOCKED: {					\
+				case IBlockMask::BlockType::BLOCK: {					\
 					blockingMap.blockerOp(x, z, structType);			\
 					break;												\
 				}														\

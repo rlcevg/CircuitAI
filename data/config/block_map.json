@@ -68,7 +68,7 @@
 		},
 		"mex": {
 			"type": ["rectangle", "mex"],
-			"not_ignore": ["factory", "pylon"]
+			"ignore": ["all"]
 		},
 		"def_low": {
 			"type": ["circle", "def_low"],

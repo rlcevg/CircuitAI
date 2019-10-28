@@ -9,7 +9,6 @@
 #include "task/TaskManager.h"
 #include "module/EconomyManager.h"
 #include "resource/GridLink.h"
-#include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
@@ -71,7 +70,6 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 		)
 		return;
 	}
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	UnitDef* buildUDef = buildDef->GetDef();
 	if (utils::is_valid(buildPos)) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
@@ -79,8 +77,8 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 				u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 			)
 			return;
-		} else {
-			terrainManager->DelBlocker(buildDef, buildPos, facing);
+//		} else {
+//			SetBuildPos(-RgtVector);
 		}
 	}
 
@@ -89,7 +87,6 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 	FindBuildSite(unit, position, searchRadius);
 
 	if (utils::is_valid(buildPos)) {
-		terrainManager->AddBlocker(buildDef, buildPos, facing);
 		TRY_UNIT(circuit, unit,
 			u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 		)

@@ -37,6 +37,8 @@ protected:
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 
+	virtual void SetTarget(CCircuitUnit* unit) override;
+
 protected:
 	float radius;
 	bool isMetal;

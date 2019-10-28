@@ -8,7 +8,6 @@
 #include "task/builder/NanoTask.h"
 #include "task/TaskManager.h"
 #include "resource/MetalManager.h"
-#include "terrain/TerrainManager.h"
 #include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -46,7 +45,6 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 		)
 		return;
 	}
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	UnitDef* buildUDef = buildDef->GetDef();
 	if (utils::is_valid(buildPos)) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
@@ -54,8 +52,8 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 				u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 			)
 			return;
-		} else {
-			terrainManager->DelBlocker(buildDef, buildPos, facing);
+//		} else {
+//			SetBuildPos(-RgtVector);
 		}
 	}
 
@@ -67,7 +65,6 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 	FindBuildSite(unit, pos, searchRadius);
 
 	if (utils::is_valid(buildPos)) {
-		terrainManager->AddBlocker(buildDef, buildPos, facing);
 		TRY_UNIT(circuit, unit,
 			u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 		)

@@ -37,10 +37,10 @@ struct SBlockingMap {
 	static inline StructTypes& GetStructTypes() { return structTypes; }
 	static inline StructMasks& GetStructMasks() { return structMasks; }
 
-	inline bool IsStruct(int x, int z, StructMask structMask) const;
-	inline bool IsStruct(int x, int z, SM structMask) const;
-	inline bool IsBlocked(int x, int z, SM notIgnoreMask) const;
+	inline bool IsStructed(int x, int z, StructMask structMask) const;  // IsStructed for block
+	inline bool IsBlocked(int x, int z, SM notIgnoreMask) const;  // IsBlocked for struct
 	inline bool IsBlockedLow(int xLow, int zLow, SM notIgnoreMask) const;
+	inline bool IsStruct(int x, int z) const;  // Is blocked by any struct
 	inline void MarkBlocker(int x, int z, StructType structType, SM notIgnoreMask);
 	inline void AddBlocker(int x, int z, StructType structType);
 	inline void DelBlocker(int x, int z, StructType structType);

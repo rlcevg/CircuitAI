@@ -849,8 +849,10 @@ void CThreatMap::UpdateVis()
 	if (isWidgetDrawing) {
 		std::ostringstream cmd;
 		cmd << "ai_threat:";
-		for (float val : surfThreat) {
-			cmd << (val - THREAT_BASE) / maxThreat << " ";
+		for (int z = 1; z < height - 1; ++z ) {
+			for (int x = 1; x < width - 1; ++x) {
+				cmd << (surfThreat[z * width + x] - THREAT_BASE) / maxThreat << " ";
+			}
 		}
 		std::string s = cmd.str();
 		circuit->GetLua()->CallRules(s.c_str(), s.size());

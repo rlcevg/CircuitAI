@@ -7,6 +7,7 @@
 
 #include "task/fighter/SquadTask.h"
 #include "task/TaskManager.h"
+#include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/InfluenceMap.h"
@@ -236,6 +237,7 @@ bool ISquadTask::IsMustRegroup()
 					unit->GetUnit()->SetMoveState(2);
 				)
 				circuit->Garbage(unit, "stuck");
+				circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, unit);
 			}
 		}
 
@@ -262,6 +264,7 @@ bool ISquadTask::IsMustRegroup()
 				leader->GetUnit()->SetMoveState(2);
 			)
 			circuit->Garbage(leader, "stuck");
+			circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, leader);
 		}
 		prevGroupPos = groupPos;
 	}

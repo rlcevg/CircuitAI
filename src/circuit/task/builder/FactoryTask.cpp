@@ -76,13 +76,13 @@ void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, fl
 	};
 	Map* map = circuit->GetMap();
 	auto checkFacing = [this, map, terrainManager, &predicate, &pos, searchRadius]() {
-		buildPos = terrainManager->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
-		if (!utils::is_valid(buildPos)) {
+		AIFloat3 bp = terrainManager->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
+		if (!utils::is_valid(bp)) {
 			return false;
 		}
 
 		// decides if a factory should face the opposite direction due to bad terrain
-		AIFloat3 posOffset = buildPos;
+		AIFloat3 posOffset = bp;
 		const float size = DEFAULT_SLACK;
 		switch (facing) {
 			default:
@@ -99,7 +99,11 @@ void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, fl
 				posOffset.x -= size;
 			} break;
 		}
-		return map->IsPossibleToBuildAt(buildDef->GetDef(), posOffset, facing);
+		if (map->IsPossibleToBuildAt(buildDef->GetDef(), posOffset, facing)) {
+			SetBuildPos(bp);
+			return true;
+		}
+		return false;
 	};
 
 	if (checkFacing()) {

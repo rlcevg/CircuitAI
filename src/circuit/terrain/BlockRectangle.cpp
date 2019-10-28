@@ -24,7 +24,7 @@ CBlockRectangle::CBlockRectangle(const int2& offset, const int2& bsize, const in
 			if ((x >= s1.x) && (x < s2.x) && (z >= s1.y) && (z < s2.y)) {
 				mask[z * xsize + x] = BlockType::STRUCT;
 			} else if ((x >= b1.x) && (x < b2.x) && (z >= b1.y) && (z < b2.y)) {
-				mask[z * xsize + x] = BlockType::BLOCKED;
+				mask[z * xsize + x] = BlockType::BLOCK;
 			} else {
 				mask[z * xsize + x] = BlockType::OPEN;
 			}

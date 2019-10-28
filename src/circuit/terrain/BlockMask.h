@@ -18,7 +18,7 @@ namespace circuit {
 
 class IBlockMask {
 public:
-	enum class BlockType: char {OPEN = 0, BLOCKED, STRUCT};
+	enum class BlockType: char {OPEN = 0, BLOCK, STRUCT};
 
 	virtual ~IBlockMask();
 

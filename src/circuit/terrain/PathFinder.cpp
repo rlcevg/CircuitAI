@@ -26,6 +26,8 @@ namespace circuit {
 using namespace springai;
 using namespace NSMicroPather;
 
+#define THREAT_EPSILON		1e-3f
+
 std::vector<int> CPathFinder::blockArray;
 
 CPathFinder::CPathFinder(CTerrainData* terrainData)
@@ -124,7 +126,7 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 	const SBlockingMap& blockMap = terrainManager->GetBlockingMap();
 	for (int x = 0; x < blockMap.columns; ++x) {
 		for (int z = 0; z < blockMap.rows; ++z) {
-			if (blockMap.IsStruct(x, z, ~STRUCT_BIT(TERRA))) {
+			if (blockMap.IsStruct(x, z)) {
 				const int moveX = x / granularity;
 				const int moveY = z / granularity;
 				++blockArray[moveY * terrainData->sectorXSize + moveX];
@@ -502,7 +504,7 @@ float CPathFinder::GetCostAt(const AIFloat3& endPos, int radius) const
 
 size_t CPathFinder::RefinePath(VoidVec& path)
 {
-	if (micropather->costArray[(size_t)path[0]] > THREAT_BASE + 1e-3f) {
+	if (micropather->costArray[(size_t)path[0]] > THREAT_BASE + THREAT_EPSILON) {
 		return 0;
 	}
 
@@ -532,7 +534,7 @@ size_t CPathFinder::RefinePath(VoidVec& path)
 
 			size_t index = (size_t)XY2Node(x, y);
 			if (!micropather->canMoveArray[index]
-				|| (micropather->costArray[index] > THREAT_BASE + 1e-3f))
+				|| (micropather->costArray[index] > THREAT_BASE + THREAT_EPSILON))
 			{
 				return false;
 			}

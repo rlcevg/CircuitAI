@@ -100,4 +100,10 @@ void IReclaimTask::OnUnitIdle(CCircuitUnit* unit)
 	manager->AbortTask(this);
 }
 
+void IReclaimTask::SetTarget(CCircuitUnit* unit)
+{
+	target = unit;
+	buildPos = (unit != nullptr) ? unit->GetPos(manager->GetCircuit()->GetLastFrame()) : AIFloat3(-RgtVector);
+}
+
 } // namespace circuit
