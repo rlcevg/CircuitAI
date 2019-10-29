@@ -846,12 +846,12 @@ bool CThreatMap::IsInLOS(const AIFloat3& pos) const
 #ifdef DEBUG_VIS
 void CThreatMap::UpdateVis()
 {
-	if (isWidgetDrawing) {
+	if (isWidgetDrawing || isWidgetPrinting) {
 		std::ostringstream cmd;
-		cmd << "ai_threat:";
+		cmd << "ai_thr_data:";
 		for (int z = 1; z < height - 1; ++z ) {
 			for (int x = 1; x < width - 1; ++x) {
-				cmd << (surfThreat[z * width + x] - THREAT_BASE) / maxThreat << " ";
+				cmd << surfThreat[z * width + x] << " ";
 			}
 		}
 		std::string s = cmd.str();
@@ -926,35 +926,38 @@ void CThreatMap::ToggleSDLVis()
 	}
 }
 
-void CThreatMap::ToggleWidgetVis()
+void CThreatMap::ToggleWidgetDraw()
 {
-	isWidgetDrawing = !isWidgetDrawing;
+	std::string cmd("ai_thr_draw:");
+	std::string result = circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 
-	std::string cmd = utils::int_to_string(squareSize, "ai_draw:%i");
-	circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
-
+	isWidgetDrawing = (result == "1");
 	if (isWidgetDrawing) {
+		cmd = utils::int_to_string(squareSize, "ai_thr_size:%i");
+		circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
+
 		UpdateVis();
 	}
 }
 
-void CThreatMap::DrawThreatAround(const AIFloat3& pos)
+void CThreatMap::ToggleWidgetPrint()
 {
-	int posx, posz;
-	PosToXZ(pos, posx, posz);
+	std::string cmd("ai_thr_print:");
+	std::string result = circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 
-	const int range = 3;
+	isWidgetPrinting = (result == "1");
+	if (isWidgetPrinting) {
+		cmd = utils::int_to_string(squareSize, "ai_thr_size:%i");
+		circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 
-	const int beginX = std::max(int(posx - range + 1),          1);
-	const int endX   = std::min(int(posx + range    ),  width - 1);
-	const int beginZ = std::max(int(posz - range + 1),          1);
-	const int endZ   = std::min(int(posz + range    ), height - 1);
-
-	for (int x = beginX; x < endX; ++x) {
-		for (int z = beginZ; z < endZ; ++z) {
-			circuit->GetDrawer()->AddPoint(XZToPos(x, z), utils::float_to_string(surfThreat[z * width + x]).c_str());
-		}
+		UpdateVis();
 	}
+}
+
+void CThreatMap::SetMaxThreat(float maxThreat)
+{
+	std::string cmd = utils::float_to_string(maxThreat, "ai_thr_div:%f");
+	circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 }
 #endif
 

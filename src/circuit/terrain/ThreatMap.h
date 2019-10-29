@@ -121,13 +121,13 @@ private:
 private:
 	std::vector<std::pair<uint32_t, float*>> sdlWindows;
 	bool isWidgetDrawing = false;
-	float maxThreat = 1.f;
+	bool isWidgetPrinting = false;
 	void UpdateVis();
 public:
 	void ToggleSDLVis();
-	void ToggleWidgetVis();
-	void DrawThreatAround(const springai::AIFloat3& pos);
-	void SetMaxThreat(float mt) { maxThreat = mt; }
+	void ToggleWidgetDraw();
+	void ToggleWidgetPrint();
+	void SetMaxThreat(float maxThreat);
 #endif
 };
 

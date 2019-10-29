@@ -719,7 +719,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 {
 #ifdef DEBUG_VIS
 	const char cmdPos[]     = "~стройсь\0";
-	const char cmdSelfD[]  = "~Згинь, нечистая сила!\0";
+	const char cmdSelfD[]   = "~Згинь, нечистая сила!\0";
 
 	const char cmdBlock[]   = "~block";
 	const char cmdArea[]    = "~area";
@@ -729,9 +729,9 @@ int CCircuitAI::Message(int playerId, const char* message)
 	const char cmdLog[]     = "~log";
 
 	const char cmdSThreat[] = "~sthreat";
-	const char cmdWThreat[] = "~wthreat";
-	const char cmdWTmax[]   = "~wtmax";
-	const char cmdTVal[]    = "~tval";
+	const char cmdWTDraw[]  = "~wtdraw";
+	const char cmdWTDiv[]   = "~wtdiv";
+	const char cmdWTPrint[] = "~wtprint";
 
 	const char cmdGrid[]    = "~grid";
 	const char cmdNode[]    = "~node";
@@ -794,19 +794,17 @@ int CCircuitAI::Message(int playerId, const char* message)
 	else if (strncmp(message, cmdSThreat, 8) == 0) {
 		threatMap->ToggleSDLVis();
 	}
-	else if (strncmp(message, cmdWThreat, 8) == 0) {
-		if (teamId == atoi((const char*)&message[9])) {
-			threatMap->ToggleWidgetVis();
+	else if (strncmp(message, cmdWTDraw, 7) == 0) {
+		if (teamId == atoi((const char*)&message[8])) {
+			threatMap->ToggleWidgetDraw();
 		}
 	}
-	else if (strncmp(message, cmdWTmax, 6) == 0) {
+	else if (strncmp(message, cmdWTDiv, 6) == 0) {
 		threatMap->SetMaxThreat(atof((const char*)&message[7]));
 	}
-	else if (strncmp(message, cmdTVal, 5) == 0) {
-		if (teamId == atoi((const char*)&message[6])) {
-			const AIFloat3 dbgPos = map->GetMousePos();
-			threatMap->DrawThreatAround(dbgPos);
-			LOG("%f, %f, %f", dbgPos.x, dbgPos.y, dbgPos.z);
+	else if (strncmp(message, cmdWTPrint, 8) == 0) {
+		if (teamId == atoi((const char*)&message[9])) {
+			threatMap->ToggleWidgetPrint();
 		}
 	}
 
