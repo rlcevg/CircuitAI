@@ -724,14 +724,18 @@ int CCircuitAI::Message(int playerId, const char* message)
 	const char cmdBlock[]   = "~block";
 	const char cmdArea[]    = "~area";
 	const char cmdPath[]    = "~path";
-	const char cmdInfl[]    = "~infl";
 	const char cmdKnn[]     = "~knn";
 	const char cmdLog[]     = "~log";
 
-	const char cmdSThreat[] = "~sthreat";
+	const char cmdThreat[]  = "~threat";
 	const char cmdWTDraw[]  = "~wtdraw";
 	const char cmdWTDiv[]   = "~wtdiv";
 	const char cmdWTPrint[] = "~wtprint";
+
+	const char cmdInfl[]    = "~infl";
+	const char cmdWIDraw[]  = "~widraw";
+	const char cmdWIDiv[]   = "~widiv";
+	const char cmdWIPrint[] = "~wiprint";
 
 	const char cmdGrid[]    = "~grid";
 	const char cmdNode[]    = "~node";
@@ -772,9 +776,6 @@ int CCircuitAI::Message(int playerId, const char* message)
 	else if (strncmp(message, cmdPath, 5) == 0) {
 		pathfinder->ToggleVis(this);
 	}
-	else if (strncmp(message, cmdInfl, 5) == 0) {
-		inflMap->ToggleVis();
-	}
 	else if (strncmp(message, cmdKnn, 4) == 0) {
 		const AIFloat3 dbgPos = map->GetMousePos();
 		int index = metalManager->FindNearestCluster(dbgPos);
@@ -791,7 +792,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 		utils::free_clear(selection);
 	}
 
-	else if (strncmp(message, cmdSThreat, 8) == 0) {
+	else if (strncmp(message, cmdThreat, 7) == 0) {
 		threatMap->ToggleSDLVis();
 	}
 	else if (strncmp(message, cmdWTDraw, 7) == 0) {
@@ -805,6 +806,23 @@ int CCircuitAI::Message(int playerId, const char* message)
 	else if (strncmp(message, cmdWTPrint, 8) == 0) {
 		if (teamId == atoi((const char*)&message[9])) {
 			threatMap->ToggleWidgetPrint();
+		}
+	}
+
+	else if (strncmp(message, cmdInfl, 5) == 0) {
+		inflMap->ToggleSDLVis();
+	}
+	else if (strncmp(message, cmdWIDraw, 7) == 0) {
+		if (teamId == atoi((const char*)&message[8])) {
+			inflMap->ToggleWidgetDraw();
+		}
+	}
+	else if (strncmp(message, cmdWIDiv, 6) == 0) {
+		inflMap->SetMaxThreat(atof((const char*)&message[7]));
+	}
+	else if (strncmp(message, cmdWIPrint, 8) == 0) {
+		if (teamId == atoi((const char*)&message[9])) {
+			inflMap->ToggleWidgetPrint();
 		}
 	}
 

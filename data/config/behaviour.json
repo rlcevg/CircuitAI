@@ -620,6 +620,7 @@
 	"bomberprec": {
 		"role": ["bomber", "air"],  // FIXME: should act as anti_heavy?
 		"attribute": ["siege", "anti_heavy"],
+		"fire_state": "return",
 		"limit": 10,
 		"retreat": 0.7,
 		"pwr_mod": 0.13,
@@ -644,6 +645,7 @@
 	"bomberheavy": {
 		"role": ["bomber", "air"],  // FIXME: should act as anti_heavy?
 		"attribute": ["anti_heavy"],
+		"fire_state": "return",
 		"limit": 4,
 		"since": 420,
 		"retreat": 0.95,

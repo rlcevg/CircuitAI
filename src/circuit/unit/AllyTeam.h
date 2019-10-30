@@ -26,6 +26,7 @@ class CEnergyGrid;
 class CDefenceMatrix;
 class CPathFinder;
 class CFactoryData;
+struct STerrainMapArea;
 
 class CAllyTeam {
 public:
@@ -45,11 +46,16 @@ public:
 		bool ContainsPoint(const springai::AIFloat3& point) const;
 	};
 	struct SClusterTeam {
-		SClusterTeam(int tid) : teamId(tid), count(0) {}
-		SClusterTeam(int tid, unsigned cnt) : teamId(tid), count(cnt) {}
+		SClusterTeam(int tid, unsigned cnt = 0) : teamId(tid), count(cnt) {}
 		int teamId;  // cluster leader
 		unsigned count;  // number of commanders
 	};
+	// FIXME: DEBUG
+//	struct SAreaTeam {
+//		SAreaTeam(int tid) : teamId(tid) {}
+//		int teamId;  // area leader
+//	};
+	// FIXME: DEBUG
 
 public:
 	CAllyTeam(const TeamIds& tids, const SBox& sb);
@@ -75,6 +81,10 @@ public:
 
 	void OccupyCluster(int clusterId, int teamId);
 	SClusterTeam GetClusterTeam(int clusterId);
+	// FIXME: DEBUG
+//	void OccupyArea(STerrainMapArea* area, int teamId);
+//	SAreaTeam GetAreaTeam(STerrainMapArea* area);
+	// FIXME: DEBUG
 
 private:
 	void DelegateAuthority(CCircuitAI* curOwner);
@@ -88,6 +98,9 @@ private:
 	Units friendlyUnits;  // owner
 
 	std::map<int, SClusterTeam> occupants;  // Cluster owner on start. clusterId: SClusterTeam
+	// FIXME: DEBUG
+//	std::map<STerrainMapArea*, SAreaTeam> habitants;  // Area habitants on start.
+	// FIXME: DEBUG
 
 	std::shared_ptr<CMetalManager> metalManager;
 	std::shared_ptr<CEnergyGrid> energyGrid;

@@ -14,6 +14,7 @@ local threatData = {
 	height = 0,
 	size = 0,  -- tile size
 	div = 1.0,
+	base = 1.0,
 	isDraw = false,
 	isPrint = false
 }
@@ -23,8 +24,6 @@ local spGetGroundHeight  = Spring.GetGroundHeight
 
 local mapWidth  = Game.mapSizeX
 local mapHeight = Game.mapSizeZ
-
-local THREAT_BASE = 1.0
 
 function gadget:Initialize()
 	Spring.Echo("Initialize AI DBG")
@@ -47,8 +46,15 @@ function gadget:RecvSkirmishAIMessage(teamID, dataStr)
 		end
 		threatData.map = threatMap
 	elseif dataStr:sub(1, #commandSize) == commandSize then
-		-- "ai_thr_size:<square_size>"
-		threatData.size = tonumber(dataStr:sub(#commandSize + 1))
+		-- "ai_thr_size:<square_size> <threat_base>"
+		local sb = dataStr:sub(commandSize:len() + 1)
+		local slash = sb:find(" ", 1, true)
+		if not slash then return end
+		local ss = tonumber(sb:sub(1, slash - 1))
+		local tb = tonumber(sb:sub(slash + 1))
+		if not ss or not tb then return end
+		threatData.base = tb
+		threatData.size = ss
 		threatData.width = mapWidth / threatData.size
 		threatData.height = mapHeight / threatData.size
 	elseif dataStr:sub(1, #commandDiv) == commandDiv then
@@ -72,6 +78,7 @@ function gadget:DrawWorldPreUnit()
 		local height = SYNCED.threatData.height
 		local size = SYNCED.threatData.size
 		local div = SYNCED.threatData.div
+		local base = SYNCED.threatData.base
 --		Spring.Echo(threatMap[0 * width + 1])
 --		Spring.Echo(threatMap[(height - 1) * width + width])
 
@@ -79,12 +86,16 @@ function gadget:DrawWorldPreUnit()
 			for x = 1, width do
 				px = (x - 1) * size
 				for z = 0, height - 1 do
-					value = threatMap[z * width + x] - THREAT_BASE
+					value = threatMap[z * width + x] - base
 					if value > 0 then
 						pz = z * size
 						value = value / div
 						gl.Color(value, 0.0, 0.0, 0.6)
---						gl.Color(1.0, 0.0, 0.0, value)
+						gl.DrawGroundQuad(px, pz, px + size, pz + size)
+					elseif value < 0 then
+						pz = z * size
+						value = -value / div
+						gl.Color(0.0, 0.0, value, 0.6)
 						gl.DrawGroundQuad(px, pz, px + size, pz + size)
 					end
 				end
@@ -93,14 +104,14 @@ function gadget:DrawWorldPreUnit()
 
 		if SYNCED.threatData.isPrint then
 			local halfSize = size / 2;
-			local cx, cy, cz = Spring.GetCameraDirection()
-			local dir = ((math.atan2(cx, cz) / math.pi) + 1) * 180
+--			local cx, cy, cz = Spring.GetCameraDirection()
+--			local dir = ((math.atan2(cx, cz) / math.pi) + 1) * 180
 
 			for x = 1, width do
 				px = (x - 1) * size + halfSize
 				for z = 0, height - 1 do
 					value = threatMap[z * width + x]
-					if value > THREAT_BASE then
+					if value ~= base then
 						pz = z * size + halfSize
 						local py = spGetGroundHeight(px, pz)
 						if py < 0 then py = 0 end
@@ -109,7 +120,7 @@ function gadget:DrawWorldPreUnit()
 
 						gl.Translate(px, py, pz)
 						gl.Rotate(-90, 1, 0, 0)
-						gl.Rotate(dir, 0, 0, 1)
+--						gl.Rotate(dir, 0, 0, 1)
 						gl.Text(("%.2f"):format(value), 0.0, 0.0, 14, "cno")
 
 						gl.PopMatrix()

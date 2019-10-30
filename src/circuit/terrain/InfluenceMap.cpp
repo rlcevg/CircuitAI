@@ -17,6 +17,9 @@
 //#include "Cheats.h"
 #include "Feature.h"
 #include "FeatureDef.h"
+#ifdef DEBUG_VIS
+#include "Lua.h"
+#endif
 
 namespace circuit {
 
@@ -127,8 +130,8 @@ void CInfluenceMap::AddUnit(CAllyUnit* u)
 	const float val = u->GetCircuitDef()->GetPower();
 	// FIXME: GetInfluenceRange: for statics it's just range; mobile should account for speed
 	const int range = u->GetCircuitDef()->IsMobile()
-			? u->GetCircuitDef()->GetThreatRange(CCircuitDef::ThreatType::LAND) / 2
-			: u->GetCircuitDef()->GetThreatRange(CCircuitDef::ThreatType::LAND) / 4;
+			? u->GetCircuitDef()->GetThreatRange(CCircuitDef::ThreatType::LAND)
+			: u->GetCircuitDef()->GetThreatRange(CCircuitDef::ThreatType::LAND) / 2;
 	const int rangeSq = SQUARE(range);
 
 	const int beginX = std::max(int(posx - range + 1),       0);
@@ -162,8 +165,8 @@ void CInfluenceMap::AddUnit(CEnemyUnit* e)
 	const int range = (e->GetCircuitDef() == nullptr)
 			? e->GetRange(CCircuitDef::ThreatType::LAND)
 			: e->GetCircuitDef()->IsMobile()
-					? e->GetRange(CCircuitDef::ThreatType::LAND) / 2
-					: e->GetRange(CCircuitDef::ThreatType::LAND) / 4;
+					? e->GetRange(CCircuitDef::ThreatType::LAND)
+					: e->GetRange(CCircuitDef::ThreatType::LAND) / 2;
 	const int rangeSq = SQUARE(range);
 
 	const int beginX = std::max(int(posx - range + 1),       0);
@@ -231,18 +234,28 @@ inline void CInfluenceMap::PosToXZ(const AIFloat3& pos, int& x, int& z) const
 
 #ifdef DEBUG_VIS
 #define ENEMY(x, i, v) {	\
-	x[i * 3 + 0] = .95f * v;  /*R*/	\
-	x[i * 3 + 1] = .40f * v;  /*G*/	\
-	x[i * 3 + 2] = .10f * v;  /*B*/	\
-}
-#define ALLY(x, i, v) {	\
 	x[i * 3 + 0] = .10f * v;  /*R*/	\
 	x[i * 3 + 1] = .40f * v;  /*G*/	\
 	x[i * 3 + 2] = .95f * v;  /*B*/	\
 }
+#define ALLY(x, i, v) {	\
+	x[i * 3 + 0] = .95f * v;  /*R*/	\
+	x[i * 3 + 1] = .40f * v;  /*G*/	\
+	x[i * 3 + 2] = .10f * v;  /*B*/	\
+}
 
 void CInfluenceMap::UpdateVis()
 {
+	if (isWidgetDrawing || isWidgetPrinting) {
+		std::ostringstream cmd;
+		cmd << "ai_thr_data:";
+		for (float val : influence) {
+			cmd << val << " ";
+		}
+		std::string s = cmd.str();
+		circuit->GetLua()->CallRules(s.c_str(), s.size());
+	}
+
 	if (sdlWindows.empty()) {
 		return;
 	}
@@ -253,13 +266,13 @@ void CInfluenceMap::UpdateVis()
 	for (unsigned i = 0; i < enemyInfl.size(); ++i) {
 		dbgMap[i] = std::min<float>((enemyInfl[i] - INFL_BASE) / 200.0f, 1.0f);
 	}
-	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {255, 50, 10, 0});
+	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {10, 50, 255, 0});
 
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[1];
 	for (unsigned i = 0; i < allyInfl.size(); ++i) {
 		dbgMap[i] = std::min<float>((allyInfl[i] - INFL_BASE) / 200.0f, 1.0f);
 	}
-	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {10, 50, 255, 0});
+	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {255, 50, 10, 0});
 
 	std::tie(sdlWindowId, dbgMap) = sdlWindows[2];
 	for (unsigned i = 0; i < influence.size(); ++i) {
@@ -290,7 +303,7 @@ void CInfluenceMap::UpdateVis()
 	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {10, 50, 255, 0});
 }
 
-void CInfluenceMap::ToggleVis()
+void CInfluenceMap::ToggleSDLVis()
 {
 	if (sdlWindows.empty()) {
 		// ~infl
@@ -335,6 +348,42 @@ void CInfluenceMap::ToggleVis()
 		}
 		sdlWindows.clear();
 	}
+}
+
+void CInfluenceMap::ToggleWidgetDraw()
+{
+	std::string cmd("ai_thr_draw:");
+	std::string result = circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
+
+	isWidgetDrawing = (result == "1");
+	if (isWidgetDrawing) {
+		cmd = utils::int_to_string(squareSize, "ai_thr_size:%i");
+		cmd += utils::float_to_string(INFL_BASE, " %f");
+		circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
+
+		UpdateVis();
+	}
+}
+
+void CInfluenceMap::ToggleWidgetPrint()
+{
+	std::string cmd("ai_thr_print:");
+	std::string result = circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
+
+	isWidgetPrinting = (result == "1");
+	if (isWidgetPrinting) {
+		cmd = utils::int_to_string(squareSize, "ai_thr_size:%i");
+		cmd += utils::float_to_string(INFL_BASE, " %f");
+		circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
+
+		UpdateVis();
+	}
+}
+
+void CInfluenceMap::SetMaxThreat(float maxThreat)
+{
+	std::string cmd = utils::float_to_string(maxThreat, "ai_thr_div:%f");
+	circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 }
 #endif
 

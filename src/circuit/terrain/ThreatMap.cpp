@@ -934,6 +934,7 @@ void CThreatMap::ToggleWidgetDraw()
 	isWidgetDrawing = (result == "1");
 	if (isWidgetDrawing) {
 		cmd = utils::int_to_string(squareSize, "ai_thr_size:%i");
+		cmd += utils::float_to_string(THREAT_BASE, " %f");
 		circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 
 		UpdateVis();
@@ -948,6 +949,7 @@ void CThreatMap::ToggleWidgetPrint()
 	isWidgetPrinting = (result == "1");
 	if (isWidgetPrinting) {
 		cmd = utils::int_to_string(squareSize, "ai_thr_size:%i");
+		cmd += utils::float_to_string(THREAT_BASE, " %f");
 		circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 
 		UpdateVis();

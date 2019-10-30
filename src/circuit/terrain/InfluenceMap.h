@@ -61,9 +61,14 @@ private:
 #ifdef DEBUG_VIS
 private:
 	std::vector<std::pair<uint32_t, float*>> sdlWindows;
+	bool isWidgetDrawing = false;
+	bool isWidgetPrinting = false;
 	void UpdateVis();
 public:
-	void ToggleVis();
+	void ToggleSDLVis();
+	void ToggleWidgetDraw();
+	void ToggleWidgetPrint();
+	void SetMaxThreat(float maxThreat);
 #endif
 };
 

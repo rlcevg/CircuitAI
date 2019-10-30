@@ -1184,6 +1184,26 @@ void CEconomyManager::Init()
 				circuit->Resign(ownerId);
 				return;
 			}
+			// FIXME: DEBUG
+//			CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+//			if (commander == nullptr) {
+//				commander = circuit->GetTeamUnits().begin()->second;
+//			}
+//			int ownerId = allyTeam->GetAreaTeam(commander->GetArea()).teamId;
+//			if (ownerId < 0) {
+//				ownerId = circuit->GetTeamId();
+//				allyTeam->OccupyArea(commander->GetArea(), ownerId);
+//			} else if (ownerId != circuit->GetTeamId()) {
+//				// Resign
+//				std::vector<Unit*> migrants;
+//				for (auto& kv : circuit->GetTeamUnits()) {
+//					migrants.push_back(kv.second->GetUnit());
+//				}
+//				economy->SendUnits(migrants, ownerId);
+//				circuit->Resign(ownerId);
+//				return;
+//			}
+			// FIXME: DEBUG
 		}
 
 		scheduler->RunTaskAfter(std::make_shared<CGameTask>([this]() {
