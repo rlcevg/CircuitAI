@@ -129,7 +129,7 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(unit, threatMap, frame);
-		pathfinder->MakePath(*pPath, startPos, endPos, unit->GetCircuitDef()->GetSlope(), pathfinder->GetSquareSize());
+		pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 
 		proceed = pPath->path.size() > 2;
 		if (proceed) {

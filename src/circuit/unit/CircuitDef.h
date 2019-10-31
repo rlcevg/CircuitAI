@@ -205,7 +205,6 @@ public:
 	bool IsAssistable()    const { return buildTime < 1e6f; }
 
 	float GetSpeed()     const { return speed; }
-	float GetSlope()     const { return slope; }
 	float GetLosRadius() const { return losRadius; }
 	float GetCost()      const { return cost; }
 	float GetCloakCost() const { return cloakCost; }
@@ -282,7 +281,6 @@ private:
 	bool isAbleToReclaim;
 
 	float speed;
-	float slope;
 	float losRadius;
 	float cost;
 	float cloakCost;

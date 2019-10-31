@@ -528,7 +528,7 @@ void CEnergyGrid::CheckGrid()
 
 	for (const int edgeIdx : linkPylons) {
 		CEnergyLink& link = links[edgeIdx];
-		if (link.IsFinished() || !link.IsValid()) {
+		if (link.IsFinished()) {
 			continue;
 		}
 		link.CheckConnection();
@@ -536,11 +536,7 @@ void CEnergyGrid::CheckGrid()
 	linkPylons.clear();
 
 	for (const int edgeIdx : unlinkPylons) {
-		CEnergyLink& link = links[edgeIdx];
-		if (!link.IsFinished() || !link.IsValid()) {
-			continue;
-		}
-		link.CheckConnection();
+		links[edgeIdx].CheckConnection();  // calculates source, target
 	}
 	unlinkPylons.clear();
 

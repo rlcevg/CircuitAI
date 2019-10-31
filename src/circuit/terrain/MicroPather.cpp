@@ -231,11 +231,15 @@ CMicroPather::~CMicroPather()
 	free(heapArrayMem);
 }
 
-// make sure that costArray doesn't contain values below 1.0 (for speed), and below 0.0 (for eternal loop)
-void CMicroPather::SetMapData(bool* canMoveArray, float* costArray)
+/*
+ * Old: make sure that costArray doesn't contain values below 1.0 (for speed), and below 0.0 (for eternal loop)
+ * New: make sure that costFun doesn't return values below 0.0
+ */
+void CMicroPather::SetMapData(const bool* canMoveArray, const float* threatArray, const CostFunc costFun)
 {
 	this->canMoveArray = canMoveArray;
-	this->threatArray = costArray;
+	this->threatArray = threatArray;
+	this->costFun = costFun;
 }
 
 void CMicroPather::Reset()
@@ -563,8 +567,8 @@ int CMicroPather::Solve(void* startNode, void* endNode, VoidVec* path, float* co
 }
 */
 
-int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes, VoidVec& targets,
-		const CostFunc costFun, IndexVec* path, float* cost)
+int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes,
+		VoidVec& targets, float maxThreat, IndexVec* path, float* cost)
 {
 	assert(!isRunning);
 	isRunning = true;
@@ -667,6 +671,10 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 
 				PathNode* directNode = &pathNodeMem[indexEnd];
 
+				if (threatArray[directNode->index2] > maxThreat) {
+					continue;
+				}
+
 				if (directNode->frame != frame) {
 					directNode->Reuse(frame);
 				}
@@ -724,18 +732,8 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 	return NO_SOLUTION;
 }
 
-int CMicroPather::FindBestPathToAnyGivenPointSafe(void* startNode, VoidVec& endNodes, VoidVec& targets,
-		const CostFunc costFun, IndexVec* path, float* cost)
-{
-	// TODO: Тут должна быть проверка существует ли безопасный путь к одной из целей:
-	//       1) вероятно начинаем из клетки с большим threat
-	//       2) путь может быть длиннее но безопаснее, т.е. стоимость перемещения близка к 0
-	//       3) в качестве функции эвристики проверять накоплен ли летальный threat и если да, то клетка пути отвергается
-	return FindBestPathToAnyGivenPoint(startNode, endNodes, targets, costFun, path, cost);
-}
-
 int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
-		const CostFunc costFun, int radius, IndexVec* path, float* cost)
+		int radius, float maxThreat, IndexVec* path, float* cost)
 {
 	assert(!isRunning);
 	isRunning = true;
@@ -835,6 +833,10 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 
 				PathNode* directNode = &pathNodeMem[indexEnd];
 
+				if (threatArray[directNode->index2] > maxThreat) {
+					continue;
+				}
+
 				if (directNode->frame != frame) {
 					directNode->Reuse(frame);
 				}
@@ -887,7 +889,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 }
 
 int CMicroPather::FindBestCostToPointOnRadius(void* startNode, void* endNode,
-		const CostFunc costFun, int radius, float* cost)
+		int radius, float maxThreat, float* cost)
 {
 	assert(!isRunning);
 	isRunning = true;
@@ -985,6 +987,10 @@ int CMicroPather::FindBestCostToPointOnRadius(void* startNode, void* endNode,
 
 				PathNode* directNode = &pathNodeMem[indexEnd];
 
+				if (threatArray[directNode->index2] > maxThreat) {
+					continue;
+				}
+
 				if (directNode->frame != frame) {
 					directNode->Reuse(frame);
 				}
@@ -1036,7 +1042,7 @@ int CMicroPather::FindBestCostToPointOnRadius(void* startNode, void* endNode,
 	return NO_SOLUTION;
 }
 
-void CMicroPather::MakeCostMap(void* startNode, const CostFunc costFun, std::vector<float>& costMap)
+void CMicroPather::MakeCostMap(void* startNode, std::vector<float>& costMap)
 {
 	assert(!isRunning);
 	isRunning = true;
@@ -1083,7 +1089,7 @@ void CMicroPather::MakeCostMap(void* startNode, const CostFunc costFun, std::vec
 		#endif
 
 		float nodeCostFromStart = node->costFromStart;
-		costMap[indexStart] = nodeCostFromStart;
+		costMap[node->index2] = nodeCostFromStart;
 
 		for (int i = 0; i < 8; ++i) {
 			const int indexEnd = offsets[i] + indexStart;

@@ -63,6 +63,7 @@
 #include <vector>
 #include <cfloat>
 #include <functional>
+#include <limits>
 
 #ifdef _DEBUG
 	#ifndef DEBUG
@@ -116,7 +117,7 @@ namespace NSMicroPather {
 		//	virtual void PrintData(string s) = 0;
 		};
 
-	using CostFunc = std::function<float (int)>;
+	using CostFunc = std::function<float (int index)>;  // without +2 edges
 
 	class PathNode {
 		// trashy trick to get rid of compiler warning because this class has a private constructor and destructor
@@ -250,23 +251,22 @@ namespace NSMicroPather {
 
 			// Tournesol's stuff
 			unsigned int* lockUpCount;
-			bool* canMoveArray;
-			float* threatArray;
+			const bool* canMoveArray;
+			const float* threatArray;
+			CostFunc costFun;
 			int mapSizeX;
 			int mapSizeY;
 			int offsets[8];
 			int xEndNode, yEndNode;
 			bool isRunning;
-			void SetMapData(bool* canMoveArray, float* costArray);
-			int FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes, VoidVec& targets,
-					const CostFunc costFun, IndexVec* path, float* cost);
-			int FindBestPathToAnyGivenPointSafe(void* startNode, VoidVec& endNodes, VoidVec& targets,
-					const CostFunc costFun, IndexVec* path, float* cost);
-			int FindBestPathToPointOnRadius(void* startNode, void* endNode, const CostFunc costFun,
-					int radius, IndexVec* path, float* cost);
-			int FindBestCostToPointOnRadius(void* startNode, void* endNode, const CostFunc costFun,
-					int radius, float* cost);
-			void MakeCostMap(void* startNode, const CostFunc costFun, std::vector<float>& costMap);
+			void SetMapData(const bool* canMoveArray, const float* threatArray, const CostFunc costFun);
+			int FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes, VoidVec& targets, float maxThreat,
+					IndexVec* path, float* cost);
+			int FindBestPathToPointOnRadius(void* startNode, void* endNode, int radius, float maxThreat,
+					IndexVec* path, float* cost);
+			int FindBestCostToPointOnRadius(void* startNode, void* endNode, int radius, float maxThreat,
+					float* cost);
+			void MakeCostMap(void* startNode, std::vector<float>& costMap);
 
 			PathNode* GetNode(void* node) const { return &pathNodeMem[(size_t)node]; }
 			int CanMoveNode2Index(void* node) const {

@@ -100,7 +100,7 @@ void CAntiAirTask::Update()
 				CPathFinder* pathfinder = circuit->GetPathfinder();
 				pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
 				pathfinder->PreferPath(pPath->path);
-				pathfinder->MakePath(*pPath, startPos, position, leader->GetCircuitDef()->GetSlope(), pathfinder->GetSquareSize());
+				pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize());
 				pathfinder->UnpreferPath();
 				if (!pPath->posPath.empty()) {
 					ActivePath();
@@ -333,7 +333,7 @@ void CAntiAirTask::FindTarget()
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
 	pathfinder->PreferPath(pPath->path);
-	pathfinder->MakePath(*pPath, startPos, endPos, cdef->GetSlope(), pathfinder->GetSquareSize());
+	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 	pathfinder->UnpreferPath();
 }
 

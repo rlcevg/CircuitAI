@@ -231,7 +231,7 @@ void CAntiHeavyTask::Update()
 	pathfinder->PreferPath(pPath->path);
 	if (leaderDef->IsRoleMine()) {
 		position = circuit->GetSetupManager()->GetBasePos();
-		pathfinder->MakePath(*pPath, startPos, position, leaderDef->GetSlope(), pathfinder->GetSquareSize() * 4);
+		pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize() * 4);
 	} else {
 		circuit->GetMilitaryManager()->FindBestPos(*pPath, startPos, leader->GetArea());
 	}

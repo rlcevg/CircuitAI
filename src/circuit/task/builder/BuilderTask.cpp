@@ -458,7 +458,7 @@ bool IBuilderTask::UpdatePath(CCircuitUnit* unit)
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-		pathfinder->MakePath(*pPath, startPos, endPos, cdef->GetSlope(), cdef->GetBuildDistance());
+		pathfinder->MakePath(*pPath, startPos, endPos, cdef->GetBuildDistance());
 
 		if ((pPath->path.size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(cdef->GetBuildDistance()))) {
 			unit->GetTravelAct()->SetPath(pPath);

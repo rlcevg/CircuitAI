@@ -858,7 +858,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 		AIFloat3 startPos = pathfinder->GetDbgPos();
 		AIFloat3 endPos = map->GetMousePos();
 		pathfinder->SetMapData(GetThreatMap());
-		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetDbgDef()->GetSlope(), pathfinder->GetSquareSize());
+		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
 		LOG("%f, %f, %f, %i", endPos.x, endPos.y, endPos.z, pathfinder->GetDbgType());
 	}
 #endif

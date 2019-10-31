@@ -90,6 +90,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	std::vector<STerrainMapAreaSector>& sectorAirType = areaData.sectorAirType;
 	std::vector<STerrainMapSector>& sector = areaData.sector;
 	float& minElevation = areaData.minElevation;
+	float& maxElevation = areaData.maxElevation;
 	float& percentLand = areaData.percentLand;
 
 	/*
@@ -261,7 +262,8 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	const int slopeMapXSize = sectorXSize * convertStoSM;
 	const int heightMapXSize = sectorXSize * convertStoHM;
 
-	minElevation = 0;
+	minElevation = std::numeric_limits<float>::max();
+	maxElevation = std::numeric_limits<float>::min();
 	percentLand = 0.0;
 
 	for (int z = 0; z < sectorZSize; z++) {
@@ -305,6 +307,9 @@ void CTerrainData::Init(CCircuitAI* circuit)
 						}
 					} else if (sector[i].maxElevation < standardHeightMap[iH]) {
 						sector[i].maxElevation = standardHeightMap[iH];
+						if (maxElevation < standardHeightMap[iH]) {
+							maxElevation = standardHeightMap[iH];
+						}
 					}
 				}
 			}
@@ -336,6 +341,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 		circuit->LOG("  Water is harmful: %s", waterIsHarmful ? "true" : "false");
 	}
 	circuit->LOG("  Minimum Elevation: %.2f", minElevation);
+	circuit->LOG("  Maximum Elevation: %.2f", maxElevation);
 
 	for (auto& it : immobileType) {
 		std::string itText = "  Immobile-Type: Min/Max Elevation=(";
@@ -518,7 +524,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 		}
 	}
 
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::CheckHeightMap, this), FRAMES_PER_SEC * 20);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::CheckHeightMap, this), FRAMES_PER_SEC * 10);
 	scheduler->RunOnRelease(std::make_shared<CGameTask>(&CTerrainData::DelegateAuthority, this, circuit));
 
 #ifdef DEBUG_VIS
@@ -639,6 +645,7 @@ void CTerrainData::UpdateAreas()
 	std::vector<STerrainMapImmobileType>& immobileType = areaData.immobileType;
 	std::vector<STerrainMapSector>& sector = areaData.sector;
 	float& minElevation = areaData.minElevation;
+	float& maxElevation = areaData.maxElevation;
 	float& percentLand = areaData.percentLand;
 
 	/*
@@ -672,6 +679,7 @@ void CTerrainData::UpdateAreas()
 		++itit;
 	}
 	minElevation = prevAreaData.minElevation;
+	maxElevation = prevAreaData.maxElevation;
 	percentLand = prevAreaData.percentLand;
 
 	/*
@@ -740,6 +748,9 @@ void CTerrainData::UpdateAreas()
 						}
 					} else if (sector[i].maxElevation < standardHeightMap[iH]) {
 						sector[i].maxElevation = standardHeightMap[iH];
+						if (maxElevation < standardHeightMap[iH]) {
+							maxElevation = standardHeightMap[iH];
+						}
 					}
 				}
 			}

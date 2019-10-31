@@ -44,7 +44,7 @@ template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 
 #define COST_BASE		1.0f
 #define THREAT_BASE		0.f
-#define THREAT_MOD		(1.0f / 64.0f)
+#define THREAT_MOD		(1.0f / 128.0f)
 #define THREAT_MIN		1.0f
 #define THREAT_RES		8
 #define THREAT_UPDATE_RATE	(FRAMES_PER_SEC / 2)

@@ -121,7 +121,7 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 	if (unit->GetTravelAct()->GetPath() != nullptr) {
 		pathfinder->PreferPath(unit->GetTravelAct()->GetPath()->path);
 	}
-	pathfinder->MakePath(*pPath, startPos, endPos, unit->GetCircuitDef()->GetSlope(), range/*, minThreat*/);
+	pathfinder->MakePath(*pPath, startPos, endPos, range/*, minThreat*/);
 	pathfinder->UnpreferPath();
 
 	if (pPath->posPath.empty()) {

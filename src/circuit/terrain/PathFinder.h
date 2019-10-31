@@ -18,6 +18,7 @@ class CTerrainData;
 class CTerrainManager;
 class CCircuitUnit;
 class CThreatMap;
+struct SAreaData;
 #ifdef DEBUG_VIS
 class CCircuitAI;
 class CCircuitDef;
@@ -48,10 +49,14 @@ public:
 	void UnpreferPath();
 
 	unsigned Checksum() const { return micropather->Checksum(); }
-	float MakePath(PathInfo& iPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, float slope, int radius);
-	float PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
-	float FindBestPath(PathInfo& iPath, springai::AIFloat3& startPos, float myMaxRange, F3Vec& possibleTargets, bool safe = true);
-	float FindBestPathToRadius(PathInfo& iPath, springai::AIFloat3& startPos, float radiusAroundTarget, const springai::AIFloat3& target);
+	float MakePath(PathInfo& iPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius,
+			float maxThreat = std::numeric_limits<float>::max());
+	float PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius,
+			float maxThreat = std::numeric_limits<float>::max());
+	float FindBestPath(PathInfo& iPath, springai::AIFloat3& startPos, float maxRange, F3Vec& possibleTargets,
+			float maxThreat = std::numeric_limits<float>::max());
+	float FindBestPathToRadius(PathInfo& iPath, springai::AIFloat3& startPos, float radius, const springai::AIFloat3& target,
+			float maxThreat = std::numeric_limits<float>::max());
 
 	void MakeCostMap(const springai::AIFloat3& startPos);
 	float GetCostAt(const springai::AIFloat3& endPos, int radius) const;
@@ -59,16 +64,17 @@ public:
 	int GetSquareSize() const { return squareSize; }
 
 private:
-	size_t RefinePath(IndexVec& path, NSMicroPather::CostFunc costFun);
-	void FillPathInfo(PathInfo& iPath, NSMicroPather::CostFunc costFun);
+	size_t RefinePath(IndexVec& path);
+	void FillPathInfo(PathInfo& iPath);
 
 	CTerrainData* terrainData;
+	SAreaData* areaData;
 
 	NSMicroPather::CMicroPather* micropather;
-	float* slopeArray;
 	bool* airMoveArray;
 	std::vector<bool*> moveArrays;
 	static std::vector<int> blockArray;
+	float* threatArray;
 	bool isUpdated;
 
 	int squareSize;

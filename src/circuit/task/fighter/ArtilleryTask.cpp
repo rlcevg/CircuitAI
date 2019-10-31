@@ -116,7 +116,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(unit, threatMap, frame);
-		pathfinder->MakePath(*pPath, startPos, endPos, unit->GetCircuitDef()->GetSlope(), pathfinder->GetSquareSize());
+		pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 
 		proceed = pPath->path.size() > 2;
 		if (proceed) {
@@ -149,11 +149,11 @@ void CArtilleryTask::OnUnitIdle(CCircuitUnit* unit)
 
 CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, PathInfo& path)
 {
-	auto fallback = [this](CCircuitAI* circuit, const AIFloat3& pos, PathInfo& path, float slope, CPathFinder* pathfinder) {
+	auto fallback = [this](CCircuitAI* circuit, const AIFloat3& pos, PathInfo& path, CPathFinder* pathfinder) {
 		position = circuit->GetSetupManager()->GetBasePos();
 		AIFloat3 startPos = pos;
 		AIFloat3 endPos = position;
-		pathfinder->MakePath(path, startPos, endPos, slope, pathfinder->GetSquareSize());
+		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
 	};
 
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -271,11 +271,11 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 
 	// Check if safe path exists
 	if (path.posPath.empty()) {
-		fallback(circuit, pos, path, cdef->GetSlope(), pathfinder);
+		fallback(circuit, pos, path, pathfinder);
 		return nullptr;
 	}
 	if (threatMap->GetThreatAt(path.posPath.back()) > THREAT_MIN) {
-		fallback(circuit, pos, path, cdef->GetSlope(), pathfinder);
+		fallback(circuit, pos, path, pathfinder);
 	} else {
 		position = path.posPath.back();
 	}

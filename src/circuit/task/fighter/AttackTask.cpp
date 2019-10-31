@@ -200,7 +200,7 @@ void CAttackTask::Update()
 
 			CPathFinder* pathfinder = circuit->GetPathfinder();
 			pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
-			pathfinder->MakePath(*pPath, startPos, endPos, leader->GetCircuitDef()->GetSlope(), pathfinder->GetSquareSize());
+			pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 
 			if ((pPath->path.size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(500.f))) {
 				ActivePath();
@@ -329,7 +329,7 @@ void CAttackTask::FindTarget()
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
 	pathfinder->PreferPath(pPath->path);
-	pathfinder->MakePath(*pPath, startPos, endPos, cdef->GetSlope(), range/*, attackPower * 0.125f*/);
+	pathfinder->MakePath(*pPath, startPos, endPos, range, attackPower * 0.5f);
 	pathfinder->UnpreferPath();
 }
 // FIXME: DEBUG

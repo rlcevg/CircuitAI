@@ -26,13 +26,15 @@ namespace circuit {
 using namespace springai;
 using namespace NSMicroPather;
 
-#define THREAT_EPSILON		1e-3f
+#define COST_EPSILON		5e-2f
+#define SPIDER_SLOPE		0.99f
 
 std::vector<int> CPathFinder::blockArray;
 
 CPathFinder::CPathFinder(CTerrainData* terrainData)
 		: terrainData(terrainData)
 		, airMoveArray(nullptr)
+		, threatArray(nullptr)
 		, isUpdated(true)
 #ifdef DEBUG_VIS
 		, isVis(false)
@@ -50,7 +52,7 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 	moveMapYSize = pathMapYSize + 2;  // +2 for passable edges
 	micropather  = new CMicroPather(this, moveMapXSize, moveMapYSize);
 
-	const SAreaData* areaData = terrainData->pAreaData.load();
+	areaData = terrainData->pAreaData.load();
 	const std::vector<STerrainMapMobileType>& moveTypes = areaData->mobileType;
 	moveArrays.reserve(moveTypes.size());
 
@@ -99,15 +101,9 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 		airMoveArray[k] = false;
 	}
 
-	const std::vector<STerrainMapSector>& sectors = areaData->sector;
-	slopeArray = new float[sectors.size()];
-	for (unsigned int k = 0; k < sectors.size(); ++k) {
-		slopeArray[k] = sectors[k].maxSlope;
-	}
-
 	blockArray.resize(terrainData->sectorXSize * terrainData->sectorZSize, 0);
 
-	costMap.resize(totalcells, -1.f);
+	costMap.resize(terrainData->sectorXSize * terrainData->sectorZSize, -1.f);
 }
 
 CPathFinder::~CPathFinder()
@@ -116,7 +112,6 @@ CPathFinder::~CPathFinder()
 		delete[] ma;
 	}
 	delete[] airMoveArray;
-	delete[] slopeArray;
 	delete micropather;
 }
 
@@ -126,12 +121,6 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 		return;
 	}
 	isUpdated = true;
-
-	const SAreaData* areaData = terrainData->GetNextAreaData();
-	const std::vector<STerrainMapSector>& sectors = areaData->sector;
-	for (unsigned int k = 0; k < sectors.size(); ++k) {
-		slopeArray[k] = sectors[k].maxSlope;
-	}
 
 	std::fill(blockArray.begin(), blockArray.end(), 0);
 	const int granularity = squareSize / (SQUARE_SIZE * 2);
@@ -146,6 +135,7 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 		}
 	}
 
+	areaData = terrainData->GetNextAreaData();
 	const std::vector<STerrainMapMobileType>& moveTypes = areaData->mobileType;
 	const int blockThreshold = granularity * granularity / 4;  // 25% - blocked tile
 	for (unsigned j = 0; j < moveTypes.size(); ++j) {
@@ -236,20 +226,62 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 {
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	STerrainMapMobileType::Id mobileTypeId = cdef->GetMobileId();
-	bool* moveArray = (mobileTypeId < 0) ? airMoveArray : moveArrays[mobileTypeId];
-	float* costArray;
-	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
-		costArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
-	} else if (unit->GetUnit()->IsCloaked()) {
-		costArray = threatMap->GetCloakThreatArray();
-	} else if (cdef->IsAbleToFly()) {
-		costArray = threatMap->GetAirThreatArray();
-	} else if (cdef->IsAmphibious()) {
-		costArray = threatMap->GetAmphThreatArray();
+
+	const std::vector<STerrainMapSector>& sectors = areaData->sector;
+	bool* moveArray;
+	float maxSlope;
+	if (mobileTypeId < 0) {
+		moveArray = airMoveArray;
+		maxSlope = 1.f;
 	} else {
-		costArray = threatMap->GetSurfThreatArray();
+		moveArray = moveArrays[mobileTypeId];
+		maxSlope = areaData->mobileType[mobileTypeId].maxSlope;
 	}
-	micropather->SetMapData(moveArray, costArray);
+
+	float* threatArray;
+	CostFunc costFun;
+	// FIXME: DEBUG
+	const float minElev = areaData->minElevation;
+	const float elevLen = areaData->maxElevation - areaData->minElevation;
+	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
+		threatArray = this->threatArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
+		costFun = [threatArray, &sectors, maxSlope, minElev, elevLen](int index) {
+			return 20.f - 20.f * (sectors[index].maxElevation - minElev) / elevLen +
+					(sectors[index].isWater ? 5.f : 0.f) + sectors[index].maxSlope / maxSlope + threatArray[index];
+		};
+	} else if (unit->GetUnit()->IsCloaked()) {
+		threatArray = this->threatArray = threatMap->GetCloakThreatArray();
+		costFun = [threatArray, &sectors, maxSlope](int index) {
+			return sectors[index].maxSlope / maxSlope + threatArray[index];
+		};
+	} else if (cdef->IsAbleToFly()) {
+		threatArray = this->threatArray = threatMap->GetAirThreatArray();
+		costFun = [threatArray](int index) {
+			return threatArray[index];
+		};
+	} else if (cdef->IsAmphibious()) {
+		threatArray = this->threatArray = threatMap->GetAmphThreatArray();
+		if (maxSlope > SPIDER_SLOPE) {
+			costFun = [threatArray, &sectors, minElev, elevLen](int index) {
+				return 40.f - 40.f * (sectors[index].maxElevation - minElev) / elevLen +
+						(sectors[index].isWater ? 5.f : 0.f) + (1.f - sectors[index].maxSlope) + threatArray[index];
+			};
+		} else {
+			costFun = [threatArray, &sectors, maxSlope, minElev, elevLen](int index) {
+				return 20.f - 20.f * (sectors[index].maxElevation - minElev) / elevLen +
+						(sectors[index].isWater ? 5.f : 0.f) + sectors[index].maxSlope / maxSlope + threatArray[index];
+			};
+		}
+	} else {
+		threatArray = this->threatArray = threatMap->GetSurfThreatArray();
+		costFun = [threatArray, &sectors, maxSlope, minElev, elevLen](int index) {
+			return 20.f - 20.f * (sectors[index].maxElevation - minElev) / elevLen +
+					(sectors[index].isWater ? 0.f : sectors[index].maxSlope / maxSlope) + threatArray[index];
+		};
+	}
+	// FIXME: DEBUG
+
+	micropather->SetMapData(moveArray, threatArray, costFun);
 }
 
 void CPathFinder::PreferPath(const IndexVec& path)
@@ -257,15 +289,15 @@ void CPathFinder::PreferPath(const IndexVec& path)
 	assert(savedCost.empty());
 	savedCost.reserve(path.size());
 	for (int node : path) {
-		savedCost.push_back(std::make_pair(node, micropather->threatArray[node]));
-		micropather->threatArray[node] -= COST_BASE / 4;
+		savedCost.push_back(std::make_pair(node, threatArray[node]));
+		threatArray[node] -= COST_BASE / 4;
 	}
 }
 
 void CPathFinder::UnpreferPath()
 {
 	for (const auto& pair : savedCost) {
-		micropather->threatArray[pair.first] = pair.second;
+		threatArray[pair.first] = pair.second;
 	}
 	savedCost.clear();
 }
@@ -274,7 +306,7 @@ void CPathFinder::UnpreferPath()
  * radius is in full res.
  * returns the path cost.
  */
-float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPos, float slope, int radius)
+float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPos, int radius, float maxThreat)
 {
 	iPath.Clear();
 
@@ -284,16 +316,10 @@ float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPo
 	float pathCost = 0.0f;
 	radius /= squareSize;
 
-	float* threatArray = micropather->threatArray;
-	float* slopeArray = this->slopeArray;
-	CostFunc costFun = [threatArray, slopeArray, slope](int index) -> float {
-		return slopeArray[index] / slope + threatArray[index];
-	};
-
 	if (micropather->FindBestPathToPointOnRadius(Pos2MoveNode(startPos), Pos2MoveNode(endPos),
-			costFun, radius, &iPath.path, &pathCost) == CMicroPather::SOLVED)
+			radius, maxThreat, &iPath.path, &pathCost) == CMicroPather::SOLVED)
 	{
-		FillPathInfo(iPath, costFun);
+		FillPathInfo(iPath);
 	}
 
 #ifdef DEBUG_VIS
@@ -306,24 +332,19 @@ float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPo
 /*
  * WARNING: startPos must be correct
  */
-float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius)
+float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius, float maxThreat)
 {
 	CTerrainData::CorrectPosition(endPos);
 
 	float pathCost = 0.0f;
 	radius /= squareSize;
 
-	float* threatArray = micropather->threatArray;
-	CostFunc costFun = [threatArray](int index) -> float {
-		return threatArray[index];
-	};
-
-	micropather->FindBestCostToPointOnRadius(Pos2MoveNode(startPos), Pos2MoveNode(endPos), costFun, radius, &pathCost);
+	micropather->FindBestCostToPointOnRadius(Pos2MoveNode(startPos), Pos2MoveNode(endPos), radius, maxThreat, &pathCost);
 
 	return pathCost;
 }
 
-float CPathFinder::FindBestPath(PathInfo& iPath, AIFloat3& startPos, float maxRange, F3Vec& possibleTargets, bool safe)
+float CPathFinder::FindBestPath(PathInfo& iPath, AIFloat3& startPos, float maxRange, F3Vec& possibleTargets, float maxThreat)
 {
 	float pathCost = 0.0f;
 
@@ -441,15 +462,10 @@ float CPathFinder::FindBestPath(PathInfo& iPath, AIFloat3& startPos, float maxRa
 
 	CTerrainData::CorrectPosition(startPos);
 
-	float* threatArray = micropather->threatArray;
-	CostFunc costFun = [threatArray](int index) -> float {
-		return threatArray[index];
-	};
-
-	int result = safe ? micropather->FindBestPathToAnyGivenPointSafe(Pos2MoveNode(startPos), endNodes, nodeTargets, costFun, &iPath.path, &pathCost) :
-						micropather->FindBestPathToAnyGivenPoint(Pos2MoveNode(startPos), endNodes, nodeTargets, costFun, &iPath.path, &pathCost);
-	if (result == CMicroPather::SOLVED) {
-		FillPathInfo(iPath, costFun);
+	if (micropather->FindBestPathToAnyGivenPoint(Pos2MoveNode(startPos), endNodes, nodeTargets,
+			maxThreat, &iPath.path, &pathCost) == CMicroPather::SOLVED)
+	{
+		FillPathInfo(iPath);
 	}
 
 #ifdef DEBUG_VIS
@@ -461,11 +477,11 @@ float CPathFinder::FindBestPath(PathInfo& iPath, AIFloat3& startPos, float maxRa
 	return pathCost;
 }
 
-float CPathFinder::FindBestPathToRadius(PathInfo& posPath, AIFloat3& startPos, float radiusAroundTarget, const AIFloat3& target)
+float CPathFinder::FindBestPathToRadius(PathInfo& posPath, AIFloat3& startPos, float radius, const AIFloat3& target, float maxThreat)
 {
 	F3Vec posTargets;
 	posTargets.push_back(target);
-	return FindBestPath(posPath, startPos, radiusAroundTarget, posTargets);
+	return FindBestPath(posPath, startPos, radius, posTargets, maxThreat);
 }
 
 /*
@@ -474,13 +490,7 @@ float CPathFinder::FindBestPathToRadius(PathInfo& posPath, AIFloat3& startPos, f
 void CPathFinder::MakeCostMap(const AIFloat3& startPos)
 {
 	std::fill(costMap.begin(), costMap.end(), -1.f);
-
-	float* threatArray = micropather->threatArray;
-	CostFunc costFun = [threatArray](int index) -> float {
-		return threatArray[index];
-	};
-
-	micropather->MakeCostMap(Pos2MoveNode(startPos), costFun, costMap);
+	micropather->MakeCostMap(Pos2MoveNode(startPos), costMap);
 }
 
 /*
@@ -534,9 +544,10 @@ float CPathFinder::GetCostAt(const AIFloat3& endPos, int radius) const
 	return pathCost;
 }
 
-size_t CPathFinder::RefinePath(IndexVec& path, CostFunc costFun)
+size_t CPathFinder::RefinePath(IndexVec& path)
 {
-	if (costFun(path[0]) > THREAT_EPSILON) {
+	const CostFunc costFun = micropather->costFun;
+	if (costFun(path[0]) > COST_EPSILON) {
 		return 0;
 	}
 
@@ -565,7 +576,7 @@ size_t CPathFinder::RefinePath(IndexVec& path, CostFunc costFun)
 			}
 
 			int idx = micropather->CanMoveNode2Index(MoveXY2MoveNode(x, y));
-			if ((idx < 0) || (costFun(idx) > THREAT_EPSILON)) {
+			if ((idx < 0) || (costFun(idx) > COST_EPSILON)) {
 				return false;
 			}
 		}
@@ -587,7 +598,7 @@ size_t CPathFinder::RefinePath(IndexVec& path, CostFunc costFun)
 	return l - 1;
 }
 
-void CPathFinder::FillPathInfo(PathInfo& iPath, CostFunc costFun)
+void CPathFinder::FillPathInfo(PathInfo& iPath)
 {
 	Map* map = terrainData->GetMap();
 	if (iPath.isLast) {
@@ -595,7 +606,7 @@ void CPathFinder::FillPathInfo(PathInfo& iPath, CostFunc costFun)
 		pos.y = map->GetElevationAt(pos.x, pos.z);
 		iPath.posPath.push_back(pos);
 	} else {
-		iPath.start = RefinePath(iPath.path, costFun);
+		iPath.start = RefinePath(iPath.path);
 		iPath.posPath.reserve(iPath.path.size() - iPath.start);
 
 		// NOTE: only first few positions actually used due to frequent recalc.
@@ -614,9 +625,22 @@ void CPathFinder::SetMapData(CThreatMap* threatMap)
 		return;
 	}
 	STerrainMapMobileType::Id mobileTypeId = dbgDef->GetMobileId();
-	bool* moveArray = (mobileTypeId < 0) ? airMoveArray : moveArrays[mobileTypeId];
-	float* costArray[] = {threatMap->GetAirThreatArray(), threatMap->GetSurfThreatArray(), threatMap->GetAmphThreatArray(), threatMap->GetCloakThreatArray()};
-	micropather->SetMapData(moveArray, costArray[dbgType]);
+	const float maxSlope = (mobileTypeId < 0) ? 1.f : areaData->mobileType[mobileTypeId].maxSlope;
+	const bool* moveArray = (mobileTypeId < 0) ? airMoveArray : moveArrays[mobileTypeId];
+	const float* costArray[] = {
+			threatMap->GetAirThreatArray(),
+			threatMap->GetSurfThreatArray(),
+			threatMap->GetAmphThreatArray(),
+			threatMap->GetCloakThreatArray()
+	};
+
+	const float* threatArray = costArray[dbgType];
+	const std::vector<STerrainMapSector>& sectors = areaData->sector;
+	const CostFunc costFun = [threatArray, &sectors, maxSlope](int index) {
+		return sectors[index].maxSlope / maxSlope + threatArray[index];
+	};
+
+	micropather->SetMapData(moveArray, threatArray, costFun);
 }
 
 void CPathFinder::UpdateVis(const IndexVec& path)

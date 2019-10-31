@@ -214,7 +214,7 @@ void CRaidTask::Update()
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, frame);
 	pathfinder->PreferPath(pPath->path);
-	pathfinder->MakePath(*pPath, startPos, endPos, leader->GetCircuitDef()->GetSlope(), pathfinder->GetSquareSize());
+	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
 	pathfinder->UnpreferPath();
 
 	if (pPath->path.size() > 2) {
@@ -365,13 +365,9 @@ void CRaidTask::FindTarget()
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
 	pathfinder->PreferPath(pPath->path);
-	pathfinder->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions);
+	pathfinder->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions, attackPower * 0.125f);
 	pathfinder->UnpreferPath();
 	enemyPositions.clear();
-
-//	if (cost > pPath->path.size() * THREAT_BASE + attackPower * 0.125f) {
-//		pPath->Clear();
-//	}
 }
 
 } // namespace circuit

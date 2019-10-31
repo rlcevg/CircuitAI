@@ -150,6 +150,7 @@ struct STerrainMapImmobileType {
 struct SAreaData {
 	SAreaData() :
 		minElevation(.0f),
+		maxElevation(.0f),
 		percentLand(.0f)
 	{};
 
@@ -158,8 +159,9 @@ struct SAreaData {
 	std::vector<STerrainMapAreaSector> sectorAirType;   // used for flying units, GetSectorIndex gives an index
 	std::vector<STerrainMapSector> sector;  // global sector data, GetSectorIndex gives an index
 
-	float minElevation;   // 0 or less (used by cRAIUnitDefHandler, builder start selecter)
-	float percentLand;    // 0 to 100 (used by cRAIUnitDefHandler)
+	float minElevation;  // minimum elevation
+	float maxElevation;  // maximum elevation
+	float percentLand;  // 0 to 100
 };
 
 #define BOUND_EXT	3e3f

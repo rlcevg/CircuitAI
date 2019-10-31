@@ -67,6 +67,10 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 	losWidth = mapWidth >> losMipLevel;
 	losResConv = SQUARE_SIZE << losMipLevel;
 
+	// FIXME: DEBUG
+	float minThreat = 10000.f;
+	float maxThreat = 0.f;
+	// FIXME: DEBUG
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	slackMod = root["quota"].get("slack_mod", 2.f).asFloat();
 	constexpr float allowedRange = 2000.f;
@@ -97,7 +101,19 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 		cdef->SetThreatRange(CCircuitDef::ThreatType::MAX, maxRange);
 		cdef->SetThreatRange(CCircuitDef::ThreatType::CLOAK, GetCloakRange(cdef));
 		cdef->SetThreatRange(CCircuitDef::ThreatType::SHIELD, GetShieldRange(cdef));
+		// FIXME: DEBUG
+		circuit->LOG("%s | %f", cdef->GetDef()->GetName(), cdef->GetThreat());
+		if (cdef->GetThreat() > 0.f && minThreat > cdef->GetThreat()) {
+			minThreat = cdef->GetThreat();
+		}
+		if (maxThreat < cdef->GetThreat()) {
+			maxThreat = cdef->GetThreat();
+		}
+		// FIXME: DEBUG
 	}
+	// FIXME: DEBUG
+	circuit->LOG("minThreat: %f | %f", minThreat, maxThreat);
+	// FIXME: DEBUG
 }
 
 CThreatMap::~CThreatMap()
@@ -566,6 +582,10 @@ void CThreatMap::AddEnemyAmph(const CEnemyUnit* e)
 		for (int z = beginZ; z < endZ; ++z) {
 			const int dzSq = SQUARE(posz - z);
 
+			// TODO: Separate draw rules for artillery, superweapons, instant-hit weapons
+			// Arty: center have no/little threat
+			// Super: same as arty, or totally ignore its threat
+			// Laser: no gradient
 			const int sum = dxSq + dzSq;
 			const int index = z * width + x;
 			const int idxSec = (z - 1) * widthSec + (x - 1);
@@ -740,7 +760,7 @@ void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const
 	const CCircuitDef* edef = e->GetCircuitDef();
 	assert(edef != nullptr);
 
-	// FIXME: DEBUG
+	// FIXME: DEBUG  comm's threat value is not based on proper weapons
 	if (edef->IsRoleComm()) {
 		// TODO: by weapons 1,2 descriptions set proper land/air/water ranges/threats
 		float maxRange = -1.f;
@@ -849,10 +869,8 @@ void CThreatMap::UpdateVis()
 	if (isWidgetDrawing || isWidgetPrinting) {
 		std::ostringstream cmd;
 		cmd << "ai_thr_data:";
-		for (int z = 1; z < height - 1; ++z ) {
-			for (int x = 1; x < width - 1; ++x) {
-				cmd << surfThreat[z * width + x] << " ";
-			}
+		for (float val : surfThreat) {
+			cmd << val << " ";
 		}
 		std::string s = cmd.str();
 		circuit->GetLua()->CallRules(s.c_str(), s.size());
