@@ -159,7 +159,7 @@ void CAttackTask::Update()
 	}
 
 	/*
-	 * TODO: Check safety
+	 * TODO: Check safety / influence map
 	 */
 
 	/*
@@ -200,7 +200,7 @@ void CAttackTask::Update()
 
 			CPathFinder* pathfinder = circuit->GetPathfinder();
 			pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
-			pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
+			pathfinder->MakePath(*pPath, startPos, endPos, leader->GetCircuitDef()->GetSlope(), pathfinder->GetSquareSize());
 
 			if ((pPath->path.size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(500.f))) {
 				ActivePath();
@@ -250,6 +250,7 @@ void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
+// FIXME: DEBUG
 void CAttackTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -328,9 +329,9 @@ void CAttackTask::FindTarget()
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
 	pathfinder->PreferPath(pPath->path);
-	pathfinder->MakePath(*pPath, startPos, endPos, range/*, attackPower * 0.125f*/);
+	pathfinder->MakePath(*pPath, startPos, endPos, cdef->GetSlope(), range/*, attackPower * 0.125f*/);
 	pathfinder->UnpreferPath();
-	// TODO: Bottleneck check, i.e. path cost
 }
+// FIXME: DEBUG
 
 } // namespace circuit

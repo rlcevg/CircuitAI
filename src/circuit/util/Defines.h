@@ -19,6 +19,7 @@
 #endif
 
 template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
+// sqrt(2) ~= 1.4142f
 #define SQRT_2				1.4142f
 #define FRAMES_PER_SEC		GAME_SPEED
 #define WATCHDOG_COUNT		3
@@ -41,7 +42,8 @@ template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 #define MAX_TRAVEL_SEC	60
 #define ASSIGN_TIMEOUT	(FRAMES_PER_SEC * 300)
 
-#define THREAT_BASE		1.0f
+#define COST_BASE		1.0f
+#define THREAT_BASE		0.f
 #define THREAT_MOD		(1.0f / 64.0f)
 #define THREAT_MIN		1.0f
 #define THREAT_RES		8
@@ -51,12 +53,13 @@ template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 
 typedef std::vector<springai::AIFloat3> F3Vec;
 typedef std::vector<void*> VoidVec;
+typedef std::vector<int> IndexVec;
 
 struct PathInfo {
 	PathInfo(bool last = false) : start(0), isLast(last) {}
 	void Clear() { posPath.clear(); path.clear(); }
 	F3Vec posPath;
-	VoidVec path;
+	IndexVec path;
 	size_t start;
 	bool isLast;
 };

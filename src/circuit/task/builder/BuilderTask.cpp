@@ -453,13 +453,14 @@ bool IBuilderTask::UpdatePath(CCircuitUnit* unit)
 	AIFloat3 endPos = GetPosition();
 	if (circuit->GetTerrainManager()->CanBuildAtSafe(unit, endPos)) {
 		AIFloat3 startPos = unit->GetPos(frame);
+		CCircuitDef* cdef = unit->GetCircuitDef();
 		std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
 
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-		pathfinder->MakePath(*pPath, startPos, endPos, unit->GetCircuitDef()->GetBuildDistance());
+		pathfinder->MakePath(*pPath, startPos, endPos, cdef->GetSlope(), cdef->GetBuildDistance());
 
-		if ((pPath->path.size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(unit->GetCircuitDef()->GetBuildDistance()))) {
+		if ((pPath->path.size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(cdef->GetBuildDistance()))) {
 			unit->GetTravelAct()->SetPath(pPath);
 			unit->GetTravelAct()->SetActive(true);
 		} else {

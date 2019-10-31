@@ -124,7 +124,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 //	altitude  = def->GetWantedHeight();
 
 	MoveData* md = def->GetMoveData();
-	isSubmarine = (md == nullptr) ? false : md->IsSubMarine();
+	slope        = (md == nullptr) ? 1.f : md->GetMaxSlope();
+	isSubmarine  = (md == nullptr) ? false : md->IsSubMarine();
 	delete md;
 	isAbleToFly     = def->IsAbleToFly();
 	isPlane         = !def->IsHoverAttack() && isAbleToFly;

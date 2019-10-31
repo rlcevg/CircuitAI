@@ -171,8 +171,9 @@ void CAntiHeavyTask::Update()
 	/*
 	 * Update target
 	 */
-	if (leader->GetCircuitDef()->IsRoleMine() ||
-		(leader->GetCircuitDef()->GetReloadTime() < FRAMES_PER_SEC * 5) ||
+	const CCircuitDef* leaderDef = leader->GetCircuitDef();
+	if (leaderDef->IsRoleMine() ||
+		(leaderDef->GetReloadTime() < FRAMES_PER_SEC * 5) ||
 		leader->IsWeaponReady(frame))
 	{
 		FindTarget();
@@ -216,7 +217,7 @@ void CAntiHeavyTask::Update()
 			ActivePath();
 			return;
 		}
-		if (!leader->GetCircuitDef()->IsRoleMine() &&
+		if (!leaderDef->IsRoleMine() &&
 			(circuit->GetMilitaryManager()->GetEnemyCost(CCircuitDef::RoleType::HEAVY) < 1.f))
 		{
 			manager->AbortTask(this);
@@ -228,9 +229,9 @@ void CAntiHeavyTask::Update()
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
 	pathfinder->PreferPath(pPath->path);
-	if (leader->GetCircuitDef()->IsRoleMine()) {
+	if (leaderDef->IsRoleMine()) {
 		position = circuit->GetSetupManager()->GetBasePos();
-		pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize() * 4);
+		pathfinder->MakePath(*pPath, startPos, position, leaderDef->GetSlope(), pathfinder->GetSquareSize() * 4);
 	} else {
 		circuit->GetMilitaryManager()->FindBestPos(*pPath, startPos, leader->GetArea());
 	}

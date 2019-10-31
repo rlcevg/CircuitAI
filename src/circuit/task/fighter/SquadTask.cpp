@@ -153,7 +153,7 @@ ISquadTask* ISquadTask::GetMergeTask() const
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 //	CTerrainManager::CorrectPosition(pos);
 	pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
-	const float maxSpeed = lowestSpeed / pathfinder->GetSquareSize() * THREAT_BASE;
+	const float maxSpeed = lowestSpeed / pathfinder->GetSquareSize() * COST_BASE;
 	const float maxDistCost = MAX_TRAVEL_SEC * maxSpeed;
 	const int distance = pathfinder->GetSquareSize();
 	float metric = std::numeric_limits<float>::max();
@@ -178,7 +178,7 @@ ISquadTask* ISquadTask::GetMergeTask() const
 			continue;
 		}
 
-		distCost = std::max(pathfinder->PathCost(pos, taskPos, distance), THREAT_BASE);
+		distCost = std::max(pathfinder->PathCost(pos, taskPos, distance), COST_BASE);
 
 		if ((distCost < metric) && (distCost < maxDistCost)) {
 			task = candy;

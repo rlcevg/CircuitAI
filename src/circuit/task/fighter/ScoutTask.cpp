@@ -137,7 +137,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	if (unit->GetTravelAct()->GetPath() != nullptr) {
 		pathfinder->PreferPath(unit->GetTravelAct()->GetPath()->path);
 	}
-	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
+	pathfinder->MakePath(*pPath, startPos, endPos, unit->GetCircuitDef()->GetSlope(), pathfinder->GetSquareSize());
 	pathfinder->UnpreferPath();
 
 	if (pPath->path.size() > 2) {

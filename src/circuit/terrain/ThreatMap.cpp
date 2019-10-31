@@ -28,7 +28,7 @@ namespace circuit {
 using namespace springai;
 
 #define THREAT_DECAY	0.05f
-#define THREAT_CLOAK	(16 * THREAT_BASE)
+#define THREAT_CLOAK	(16 * COST_BASE)
 
 CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 		: circuit(circuit)
@@ -38,8 +38,8 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 {
 	areaData = circuit->GetTerrainManager()->GetAreaData();
 	squareSize = circuit->GetTerrainManager()->GetConvertStoP();
-	width = circuit->GetTerrainManager()->GetSectorXSize() + 2;  // +2 for pathfinder edges
-	height = circuit->GetTerrainManager()->GetSectorZSize() + 2;  // +2 for pathfinder edges
+	width = circuit->GetTerrainManager()->GetSectorXSize();
+	height = circuit->GetTerrainManager()->GetSectorZSize();
 	mapSize = width * height;
 
 	rangeDefault = (DEFAULT_SLACK * 4) / squareSize;
@@ -401,15 +401,15 @@ float CThreatMap::GetUnitThreat(CCircuitUnit* unit) const
 
 inline void CThreatMap::PosToXZ(const AIFloat3& pos, int& x, int& z) const
 {
-	x = (int)pos.x / squareSize + 1;
-	z = (int)pos.z / squareSize + 1;
+	x = (int)pos.x / squareSize;
+	z = (int)pos.z / squareSize;
 }
 
 inline AIFloat3 CThreatMap::XZToPos(int x, int z) const
 {
 	AIFloat3 pos;
-	pos.z = (z - 1) * squareSize + squareSize / 2;
-	pos.x = (x - 1) * squareSize + squareSize / 2;
+	pos.z = z * squareSize + squareSize / 2;
+	pos.x = x * squareSize + squareSize / 2;
 	return pos;
 }
 
@@ -493,7 +493,7 @@ void CThreatMap::AddEnemyAir(const CEnemyUnit* e)
 			}
 
 			const int index = z * width + x;
-			const float heat = threat * (2.0f - 1.8f * sqrtf(sum) / range);
+			const float heat = threat * (2.0f - 1.0f * sqrtf(sum) / range);
 			airThreat[index] += heat;
 
 //			currSumThreat += heat;
@@ -532,7 +532,7 @@ void CThreatMap::DelEnemyAir(const CEnemyUnit* e)
 			// (which may arise due to floating-point drift)
 			// nor with zero-cost nodes (see MP::SetMapData,
 			// threat is not used as an additive overlay)
-			const float heat = threat * (2.0f - 1.8f * sqrtf(sum) / range);
+			const float heat = threat * (2.0f - 1.0f * sqrtf(sum) / range);
 			airThreat[index] = std::max<float>(airThreat[index] - heat, THREAT_BASE);
 
 //			currSumThreat -= heat;
@@ -569,7 +569,7 @@ void CThreatMap::AddEnemyAmph(const CEnemyUnit* e)
 			const int sum = dxSq + dzSq;
 			const int index = z * width + x;
 			const int idxSec = (z - 1) * widthSec + (x - 1);
-			const float heat = threat * (2.0f - 1.8f * sqrtf(sum) / range);
+			const float heat = threat * (2.0f - 1.0f * sqrtf(sum) / range);
 			bool isWaterThreat = (sum <= rangeWaterSq) && sector[idxSec].isWater;
 			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[idxSec].position.y >= -SQUARE_SIZE * 5)))
 			{
@@ -609,7 +609,7 @@ void CThreatMap::DelEnemyAmph(const CEnemyUnit* e)
 			const int sum = dxSq + dzSq;
 			const int index = z * width + x;
 			const int idxSec = (z - 1) * widthSec + (x - 1);
-			const float heat = threat * (2.0f - 1.8f * sqrtf(sum) / range);
+			const float heat = threat * (2.0f - 1.0f * sqrtf(sum) / range);
 			bool isWaterThreat = (sum <= rangeWaterSq) && sector[idxSec].isWater;
 			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[idxSec].position.y >= -SQUARE_SIZE * 5)))
 			{

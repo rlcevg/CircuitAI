@@ -44,41 +44,40 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 #endif
 {
 	squareSize   = terrainData->convertStoP;
-	pathMapXSize = terrainData->sectorXSize + 2;  // +2 for passable edges
-	pathMapYSize = terrainData->sectorZSize + 2;  // +2 for passable edges
-	micropather  = new CMicroPather(this, pathMapXSize, pathMapYSize);
+	pathMapXSize = terrainData->sectorXSize;
+	pathMapYSize = terrainData->sectorZSize;
+	moveMapXSize = pathMapXSize + 2;  // +2 for passable edges
+	moveMapYSize = pathMapYSize + 2;  // +2 for passable edges
+	micropather  = new CMicroPather(this, moveMapXSize, moveMapYSize);
 
-	const std::vector<STerrainMapMobileType>& moveTypes = terrainData->pAreaData.load()->mobileType;
+	const SAreaData* areaData = terrainData->pAreaData.load();
+	const std::vector<STerrainMapMobileType>& moveTypes = areaData->mobileType;
 	moveArrays.reserve(moveTypes.size());
 
-	const int totalcells = pathMapXSize * pathMapYSize;
+	const int totalcells = moveMapXSize * moveMapYSize;
 	for (const STerrainMapMobileType& mt : moveTypes) {
 		bool* moveArray = new bool[totalcells];
 		moveArrays.push_back(moveArray);
 
-//		for (int i = 0; i < totalcells; ++i) {
-//			// NOTE: Not all passable sectors have area
-//			moveArray[i] = (mt.sector[i].area != nullptr);
-//		}
 		int k = 0;
-		for (int z = 1; z < pathMapYSize - 1; ++z) {
-			for (int x = 1; x < pathMapXSize - 1; ++x) {
+		for (int z = 1; z < moveMapYSize - 1; ++z) {
+			for (int x = 1; x < moveMapXSize - 1; ++x) {
 				// NOTE: Not all passable sectors have area
-				moveArray[z * pathMapXSize + x] = (mt.sector[k].area != nullptr);
+				moveArray[z * moveMapXSize + x] = (mt.sector[k].area != nullptr);
 				++k;
 			}
 		}
 
 		// make sure that the edges are no-go
-		for (int i = 0; i < pathMapXSize; ++i) {
+		for (int i = 0; i < moveMapXSize; ++i) {
 			moveArray[i] = false;
-			int k = pathMapXSize * (pathMapYSize - 1) + i;
+			int k = moveMapXSize * (moveMapYSize - 1) + i;
 			moveArray[k] = false;
 		}
-		for (int i = 0; i < pathMapYSize; ++i) {
-			int k = i * pathMapXSize;
+		for (int i = 0; i < moveMapYSize; ++i) {
+			int k = i * moveMapXSize;
 			moveArray[k] = false;
-			k = i * pathMapXSize + pathMapXSize - 1;
+			k = i * moveMapXSize + moveMapXSize - 1;
 			moveArray[k] = false;
 		}
 	}
@@ -88,21 +87,27 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 		airMoveArray[i] = true;
 	}
 	// make sure that the edges are no-go
-	for (int i = 0; i < pathMapXSize; ++i) {
+	for (int i = 0; i < moveMapXSize; ++i) {
 		airMoveArray[i] = false;
-		int k = pathMapXSize * (pathMapYSize - 1) + i;
+		int k = moveMapXSize * (moveMapYSize - 1) + i;
 		airMoveArray[k] = false;
 	}
-	for (int i = 0; i < pathMapYSize; ++i) {
-		int k = i * pathMapXSize;
+	for (int i = 0; i < moveMapYSize; ++i) {
+		int k = i * moveMapXSize;
 		airMoveArray[k] = false;
-		k = i * pathMapXSize + pathMapXSize - 1;
+		k = i * moveMapXSize + moveMapXSize - 1;
 		airMoveArray[k] = false;
+	}
+
+	const std::vector<STerrainMapSector>& sectors = areaData->sector;
+	slopeArray = new float[sectors.size()];
+	for (unsigned int k = 0; k < sectors.size(); ++k) {
+		slopeArray[k] = sectors[k].maxSlope;
 	}
 
 	blockArray.resize(terrainData->sectorXSize * terrainData->sectorZSize, 0);
 
-	costs.resize(totalcells, -1.f);
+	costMap.resize(totalcells, -1.f);
 }
 
 CPathFinder::~CPathFinder()
@@ -111,6 +116,7 @@ CPathFinder::~CPathFinder()
 		delete[] ma;
 	}
 	delete[] airMoveArray;
+	delete[] slopeArray;
 	delete micropather;
 }
 
@@ -120,6 +126,12 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 		return;
 	}
 	isUpdated = true;
+
+	const SAreaData* areaData = terrainData->GetNextAreaData();
+	const std::vector<STerrainMapSector>& sectors = areaData->sector;
+	for (unsigned int k = 0; k < sectors.size(); ++k) {
+		slopeArray[k] = sectors[k].maxSlope;
+	}
 
 	std::fill(blockArray.begin(), blockArray.end(), 0);
 	const int granularity = squareSize / (SQUARE_SIZE * 2);
@@ -134,69 +146,90 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 		}
 	}
 
-	const std::vector<STerrainMapMobileType>& moveTypes = terrainData->GetNextAreaData()->mobileType;
+	const std::vector<STerrainMapMobileType>& moveTypes = areaData->mobileType;
 	const int blockThreshold = granularity * granularity / 4;  // 25% - blocked tile
 	for (unsigned j = 0; j < moveTypes.size(); ++j) {
 		const STerrainMapMobileType& mt = moveTypes[j];
 		bool* moveArray = moveArrays[j];
 
 		int k = 0;
-		for (int z = 1; z < pathMapYSize - 1; ++z) {
-			for (int x = 1; x < pathMapXSize - 1; ++x) {
+		for (int z = 1; z < moveMapYSize - 1; ++z) {
+			for (int x = 1; x < moveMapXSize - 1; ++x) {
 				// NOTE: Not all passable sectors have area
-				moveArray[z * pathMapXSize + x] = (mt.sector[k].area != nullptr) && (blockArray[k] < blockThreshold);
+				moveArray[z * moveMapXSize + x] = (mt.sector[k].area != nullptr) && (blockArray[k] < blockThreshold);
 				++k;
 			}
 		}
-
-		// make sure that the edges are no-go
-		for (int i = 0; i < pathMapXSize; ++i) {
-			moveArray[i] = false;
-			int k = pathMapXSize * (pathMapYSize - 1) + i;
-			moveArray[k] = false;
-		}
-		for (int i = 0; i < pathMapYSize; ++i) {
-			int k = i * pathMapXSize;
-			moveArray[k] = false;
-			k = i * pathMapXSize + pathMapXSize - 1;
-			moveArray[k] = false;
-		}
 	}
-	micropather->Reset();
+//	micropather->Reset();
 }
 
-void* CPathFinder::XY2Node(int x, int y) const
+void* CPathFinder::MoveXY2MoveNode(int x, int y) const
 {
-	return (void*) static_cast<intptr_t>(y * pathMapXSize + x);
+	return (void*) static_cast<intptr_t>(y * moveMapXSize + x);
 }
 
-void CPathFinder::Node2XY(void* node, int* x, int* y)
+void CPathFinder::MoveNode2MoveXY(void* node, int* x, int* y) const
 {
 	size_t index = (size_t)node;
-	*y = index / pathMapXSize;
-	*x = index - (*y * pathMapXSize);
+	*y = index / moveMapXSize;
+	*x = index - (*y * moveMapXSize);
 }
 
-AIFloat3 CPathFinder::Node2Pos(void* node)
+AIFloat3 CPathFinder::MoveNode2Pos(void* node) const
 {
 	const size_t index = (size_t)node;
 
 	float3 pos;
-	pos.z = (index / pathMapXSize - 1) * squareSize + squareSize / 2;
-	pos.x = (index - ((index / pathMapXSize) * pathMapXSize) - 1) * squareSize + squareSize / 2;
+	size_t z = index / moveMapXSize;
+	pos.z = (z - 1) * squareSize + squareSize / 2;
+	pos.x = (index - (z * moveMapXSize) - 1) * squareSize + squareSize / 2;
 
 	return pos;
 }
 
-void* CPathFinder::Pos2Node(AIFloat3 pos) const
+void* CPathFinder::Pos2MoveNode(AIFloat3 pos) const
 {
-	return (void*) static_cast<intptr_t>(int(pos.z / squareSize + 1) * pathMapXSize + int((pos.x / squareSize + 1)));
+	return (void*) static_cast<intptr_t>(int(pos.z / squareSize + 1) * moveMapXSize + int((pos.x / squareSize + 1)));
 }
 
-void CPathFinder::Pos2XY(AIFloat3 pos, int* x, int* y) const
+void CPathFinder::Pos2MoveXY(AIFloat3 pos, int* x, int* y) const
 {
 	*x = int(pos.x / squareSize) + 1;
 	*y = int(pos.z / squareSize) + 1;
+}
+
+void CPathFinder::Pos2PathXY(AIFloat3 pos, int* x, int* y) const
+{
+	*x = int(pos.x / squareSize);
+	*y = int(pos.z / squareSize);
+}
+
+int CPathFinder::PathXY2PathIndex(int x, int y) const
+{
+	return y * pathMapXSize + x;
+}
+
+void CPathFinder::PathIndex2PathXY(int index, int* x, int* y) const
+{
+	*y = index / pathMapXSize;
+	*x = index - (*y * pathMapXSize);
+}
+
+void CPathFinder::PathIndex2MoveXY(int index, int* x, int* y) const
+{
+	*y = index / pathMapXSize + 1;
+	*x = index - (*y * pathMapXSize) + 1;
+}
+
+AIFloat3 CPathFinder::PathIndex2Pos(int index) const
+{
+	float3 pos;
+	int z = index / pathMapXSize;
+	pos.z = z * squareSize + squareSize / 2;
+	pos.x = (index - (z * pathMapXSize)) * squareSize + squareSize / 2;
+
+	return pos;
 }
 
 void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame)
@@ -219,20 +252,20 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 	micropather->SetMapData(moveArray, costArray);
 }
 
-void CPathFinder::PreferPath(const VoidVec& path)
+void CPathFinder::PreferPath(const IndexVec& path)
 {
 	assert(savedCost.empty());
 	savedCost.reserve(path.size());
-	for (void* node : path) {
-		savedCost.push_back(std::make_pair(node, micropather->costArray[(size_t)node]));
-		micropather->costArray[(size_t)node] -= THREAT_BASE / 4;
+	for (int node : path) {
+		savedCost.push_back(std::make_pair(node, micropather->threatArray[node]));
+		micropather->threatArray[node] -= COST_BASE / 4;
 	}
 }
 
 void CPathFinder::UnpreferPath()
 {
 	for (const auto& pair : savedCost) {
-		micropather->costArray[(size_t)pair.first] = pair.second;
+		micropather->threatArray[pair.first] = pair.second;
 	}
 	savedCost.clear();
 }
@@ -241,7 +274,7 @@ void CPathFinder::UnpreferPath()
  * radius is in full res.
  * returns the path cost.
  */
-float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPos, int radius)
+float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPos, float slope, int radius)
 {
 	iPath.Clear();
 
@@ -251,33 +284,16 @@ float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPo
 	float pathCost = 0.0f;
 	radius /= squareSize;
 
-	if (micropather->FindBestPathToPointOnRadius(Pos2Node(startPos), Pos2Node(endPos),
-			&iPath.path, &pathCost, radius) == CMicroPather::SOLVED)
+	float* threatArray = micropather->threatArray;
+	float* slopeArray = this->slopeArray;
+	CostFunc costFun = [threatArray, slopeArray, slope](int index) -> float {
+		return slopeArray[index] / slope + threatArray[index];
+	};
+
+	if (micropather->FindBestPathToPointOnRadius(Pos2MoveNode(startPos), Pos2MoveNode(endPos),
+			costFun, radius, &iPath.path, &pathCost) == CMicroPather::SOLVED)
 	{
-		FillPathInfo(iPath);
-	}
-
-#ifdef DEBUG_VIS
-	UpdateVis(iPath.path);
-#endif
-
-	return pathCost;
-}
-
-float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPos, int radius, float threat)
-{
-	iPath.Clear();
-
-	CTerrainData::CorrectPosition(startPos);
-	CTerrainData::CorrectPosition(endPos);
-
-	float pathCost = 0.0f;
-	radius /= squareSize;
-
-	if (micropather->FindBestPathToPointOnRadius(Pos2Node(startPos), Pos2Node(endPos),
-			&iPath.path, &pathCost, radius, threat) == CMicroPather::SOLVED)
-	{
-		FillPathInfo(iPath);
+		FillPathInfo(iPath, costFun);
 	}
 
 #ifdef DEBUG_VIS
@@ -297,7 +313,12 @@ float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloa
 	float pathCost = 0.0f;
 	radius /= squareSize;
 
-	micropather->FindBestCostToPointOnRadius(Pos2Node(startPos), Pos2Node(endPos), &pathCost, radius);
+	float* threatArray = micropather->threatArray;
+	CostFunc costFun = [threatArray](int index) -> float {
+		return threatArray[index];
+	};
+
+	micropather->FindBestCostToPointOnRadius(Pos2MoveNode(startPos), Pos2MoveNode(endPos), costFun, radius, &pathCost);
 
 	return pathCost;
 }
@@ -394,8 +415,8 @@ float CPathFinder::FindBestPath(PathInfo& iPath, AIFloat3& startPos, float maxRa
 		AIFloat3& f = possibleTargets[i];
 
 		CTerrainData::CorrectPosition(f);
-		void* node = Pos2Node(f);
-		NSMicroPather::PathNode* pn = micropather->GetNode((size_t)node);
+		void* node = Pos2MoveNode(f);
+		NSMicroPather::PathNode* pn = micropather->GetNode(node);
 		if (pn->isTarget) {
 			continue;
 		}
@@ -403,27 +424,32 @@ float CPathFinder::FindBestPath(PathInfo& iPath, AIFloat3& startPos, float maxRa
 		nodeTargets.push_back(node);
 
 		int x, y;
-		Node2XY(node, &x, &y);
+		MoveNode2MoveXY(node, &x, &y);
 
 		for (unsigned int j = 0; j < offsetSize; j++) {
 			const int sx = x + offsets[j].first;
 			const int sy = y + offsets[j].second;
 
-			if (sx >= 0 && sx < pathMapXSize && sy >= 0 && sy < pathMapYSize) {
-				endNodes.push_back(XY2Node(sx, sy));
+			if (sx >= 0 && sx < moveMapXSize && sy >= 0 && sy < moveMapYSize) {
+				endNodes.push_back(MoveXY2MoveNode(sx, sy));
 			}
 		}
 	}
 	for (void* node : nodeTargets) {
-		micropather->GetNode((size_t)node)->isTarget = 0;
+		micropather->GetNode(node)->isTarget = 0;
 	}
 
 	CTerrainData::CorrectPosition(startPos);
 
-	int result = safe ? micropather->FindBestPathToAnyGivenPointSafe(Pos2Node(startPos), endNodes, nodeTargets, &iPath.path, &pathCost) :
-						micropather->FindBestPathToAnyGivenPoint(Pos2Node(startPos), endNodes, nodeTargets, &iPath.path, &pathCost);
+	float* threatArray = micropather->threatArray;
+	CostFunc costFun = [threatArray](int index) -> float {
+		return threatArray[index];
+	};
+
+	int result = safe ? micropather->FindBestPathToAnyGivenPointSafe(Pos2MoveNode(startPos), endNodes, nodeTargets, costFun, &iPath.path, &pathCost) :
+						micropather->FindBestPathToAnyGivenPoint(Pos2MoveNode(startPos), endNodes, nodeTargets, costFun, &iPath.path, &pathCost);
 	if (result == CMicroPather::SOLVED) {
-		FillPathInfo(iPath);
+		FillPathInfo(iPath, costFun);
 	}
 
 #ifdef DEBUG_VIS
@@ -447,8 +473,14 @@ float CPathFinder::FindBestPathToRadius(PathInfo& posPath, AIFloat3& startPos, f
  */
 void CPathFinder::MakeCostMap(const AIFloat3& startPos)
 {
-	std::fill(costs.begin(), costs.end(), -1.f);
-	micropather->MakeCostMap(Pos2Node(startPos), costs);
+	std::fill(costMap.begin(), costMap.end(), -1.f);
+
+	float* threatArray = micropather->threatArray;
+	CostFunc costFun = [threatArray](int index) -> float {
+		return threatArray[index];
+	};
+
+	micropather->MakeCostMap(Pos2MoveNode(startPos), costFun, costMap);
 }
 
 /*
@@ -460,26 +492,26 @@ float CPathFinder::GetCostAt(const AIFloat3& endPos, int radius) const
 	radius /= squareSize;
 
 	int xm, ym;
-	Pos2XY(endPos, &xm, &ym);
+	Pos2PathXY(endPos, &xm, &ym);
 
 	const bool isInBox = (radius <= xm && xm <= pathMapXSize - 1 - radius)
 			&& (radius <= ym && ym <= pathMapYSize - 1 - radius);
 	auto minCost = isInBox ?
 	std::function<float (float, int, int)>([this](float cost, int x, int y) -> float {
-		const float costR = costs[(size_t)XY2Node(x, y)];
+		const float costR = costMap[PathXY2PathIndex(x, y)];
 		if (cost < 0.f) {
 			return costR;
 		}
 		return (costR < 0.f) ? cost : std::min(cost, costR);
 	}) :
 	std::function<float (float, int, int)>([this](float cost, int x, int y) -> float {
-		if ((x < 1) || (x > pathMapXSize - 2)) {
+		if ((x < 0) || (x > pathMapXSize - 1)) {
 			return cost;
 		}
-		if ((y < 1) || (y > pathMapYSize - 2)) {
+		if ((y < 0) || (y > pathMapYSize - 1)) {
 			return cost;
 		}
-		const float costR = costs[(size_t)XY2Node(x, y)];
+		const float costR = costMap[PathXY2PathIndex(x, y)];
 		if (cost < 0.f) {
 			return costR;
 		}
@@ -502,21 +534,21 @@ float CPathFinder::GetCostAt(const AIFloat3& endPos, int radius) const
 	return pathCost;
 }
 
-size_t CPathFinder::RefinePath(VoidVec& path)
+size_t CPathFinder::RefinePath(IndexVec& path, CostFunc costFun)
 {
-	if (micropather->costArray[(size_t)path[0]] > THREAT_BASE + THREAT_EPSILON) {
+	if (costFun(path[0]) > THREAT_EPSILON) {
 		return 0;
 	}
 
 	int x0, y0;
-	Node2XY(path[0], &x0, &y0);
+	PathIndex2MoveXY(path[0], &x0, &y0);
 
 	// All octant line draw
-	auto IsStraightLine = [this, x0, y0](void* node) {
+	auto IsStraightLine = [this, x0, y0, costFun](int index) {
 		// TODO: Remove node<->(x,y) conversions;
 		//       Use Bresenham's 1-octant line algorithm
 		int x1, y1;
-		Node2XY(node, &x1, &y1);
+		PathIndex2MoveXY(index, &x1, &y1);
 
 		int dx =  abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
 		int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
@@ -532,10 +564,8 @@ size_t CPathFinder::RefinePath(VoidVec& path)
 				err += dx; y += sy;
 			}
 
-			size_t index = (size_t)XY2Node(x, y);
-			if (!micropather->canMoveArray[index]
-				|| (micropather->costArray[index] > THREAT_BASE + THREAT_EPSILON))
-			{
+			int idx = micropather->CanMoveNode2Index(MoveXY2MoveNode(x, y));
+			if ((idx < 0) || (costFun(idx) > THREAT_EPSILON)) {
 				return false;
 			}
 		}
@@ -557,20 +587,20 @@ size_t CPathFinder::RefinePath(VoidVec& path)
 	return l - 1;
 }
 
-void CPathFinder::FillPathInfo(PathInfo& iPath)
+void CPathFinder::FillPathInfo(PathInfo& iPath, CostFunc costFun)
 {
 	Map* map = terrainData->GetMap();
 	if (iPath.isLast) {
-		float3 pos = Node2Pos(iPath.path.back());
+		float3 pos = PathIndex2Pos(iPath.path.back());
 		pos.y = map->GetElevationAt(pos.x, pos.z);
 		iPath.posPath.push_back(pos);
 	} else {
-		iPath.start = RefinePath(iPath.path);
+		iPath.start = RefinePath(iPath.path, costFun);
 		iPath.posPath.reserve(iPath.path.size() - iPath.start);
 
 		// NOTE: only first few positions actually used due to frequent recalc.
 		for (size_t i = iPath.start; i < iPath.path.size(); ++i) {
-			float3 pos = Node2Pos(iPath.path[i]);
+			float3 pos = PathIndex2Pos(iPath.path[i]);
 			pos.y = map->GetElevationAt(pos.x, pos.z);
 			iPath.posPath.push_back(pos);
 		}
@@ -589,7 +619,7 @@ void CPathFinder::SetMapData(CThreatMap* threatMap)
 	micropather->SetMapData(moveArray, costArray[dbgType]);
 }
 
-void CPathFinder::UpdateVis(const VoidVec& path)
+void CPathFinder::UpdateVis(const IndexVec& path)
 {
 	if (!isVis) {
 		return;
@@ -599,9 +629,9 @@ void CPathFinder::UpdateVis(const VoidVec& path)
 	Figure* fig = circuit->GetDrawer()->GetFigure();
 	int figId = fig->DrawLine(ZeroVector, ZeroVector, 16.0f, true, FRAMES_PER_SEC * 5, 0);
 	for (unsigned i = 1; i < path.size(); ++i) {
-		AIFloat3 s = Node2Pos(path[i - 1]);
+		AIFloat3 s = PathIndex2Pos(path[i - 1]);
 		s.y = map->GetElevationAt(s.x, s.z);
-		AIFloat3 e = Node2Pos(path[i]);
+		AIFloat3 e = PathIndex2Pos(path[i]);
 		e.y = map->GetElevationAt(e.x, e.z);
 		fig->DrawLine(s, e, 16.0f, true, FRAMES_PER_SEC * 20, figId);
 	}

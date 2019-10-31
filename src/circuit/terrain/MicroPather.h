@@ -62,6 +62,7 @@
 
 #include <vector>
 #include <cfloat>
+#include <functional>
 
 #ifdef _DEBUG
 	#ifndef DEBUG
@@ -115,7 +116,7 @@ namespace NSMicroPather {
 		//	virtual void PrintData(string s) = 0;
 		};
 
-
+	using CostFunc = std::function<float (int)>;
 
 	class PathNode {
 		// trashy trick to get rid of compiler warning because this class has a private constructor and destructor
@@ -123,7 +124,10 @@ namespace NSMicroPather {
 		friend class none;
 
 		public:
-			void Init(unsigned _frame, float _costFromStart, PathNode* _parent) {
+			void Init(int _x, int _y, int _index2, unsigned _frame, float _costFromStart, PathNode* _parent) {
+				x = _x;
+				y = _y;
+				index2 = _index2;
 				costFromStart = _costFromStart;
 				totalCost = _costFromStart;
 				parent = _parent;
@@ -152,6 +156,7 @@ namespace NSMicroPather {
 			}
 
 			int myIndex;
+			int x, y, index2;
 			float costFromStart;	// exact
 			float totalCost;		// could be a function, but save some math.
 			PathNode* parent;		// the parent is used to reconstruct the path
@@ -223,8 +228,6 @@ namespace NSMicroPather {
 			CMicroPather(Graph* graph, int sizeX, int sizeY);
 			~CMicroPather();
 
-			PathNode* GetNode(int indexNode) const { return &pathNodeMem[indexNode]; }
-
 			/*
 			 * Solve for the path from start to end.
 			 *
@@ -234,7 +237,7 @@ namespace NSMicroPather {
 			 * @param totalCost	Output, the cost of the path, if found.
 			 * @return				Success or failure, expressed as SOLVED, NO_SOLUTION, or START_END_SAME.
 			 */
-			int Solve(void* startState, void* endState, VoidVec* path, float* totalCost);
+//			int Solve(void* startState, void* endState, VoidVec* path, float* totalCost);
 
 			// Should not be called unless there is danger for frame overflow (16bit atm)
 			void Reset();
@@ -248,7 +251,7 @@ namespace NSMicroPather {
 			// Tournesol's stuff
 			unsigned int* lockUpCount;
 			bool* canMoveArray;
-			float* costArray;
+			float* threatArray;
 			int mapSizeX;
 			int mapSizeY;
 			int offsets[8];
@@ -256,18 +259,24 @@ namespace NSMicroPather {
 			bool isRunning;
 			void SetMapData(bool* canMoveArray, float* costArray);
 			int FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes, VoidVec& targets,
-					VoidVec* path, float* cost);
+					const CostFunc costFun, IndexVec* path, float* cost);
 			int FindBestPathToAnyGivenPointSafe(void* startNode, VoidVec& endNodes, VoidVec& targets,
-					VoidVec* path, float* cost);
-			int FindBestPathToPointOnRadius(void* startNode, void* endNode, VoidVec* path, float* cost, int radius);
-			int FindBestPathToPointOnRadius(void* startNode, void* endNode, VoidVec* path, float* cost, int radius, float threat);
-			int FindBestCostToPointOnRadius(void* startNode, void* endNode, float* cost, int radius);
-			int FindDirectCostToPointOnRadius(void* startNode, void* endNode, float* cost, int radius);
-			void MakeCostMap(void* startNode, std::vector<float>& costs);
+					const CostFunc costFun, IndexVec* path, float* cost);
+			int FindBestPathToPointOnRadius(void* startNode, void* endNode, const CostFunc costFun,
+					int radius, IndexVec* path, float* cost);
+			int FindBestCostToPointOnRadius(void* startNode, void* endNode, const CostFunc costFun,
+					int radius, float* cost);
+			void MakeCostMap(void* startNode, const CostFunc costFun, std::vector<float>& costMap);
+
+			PathNode* GetNode(void* node) const { return &pathNodeMem[(size_t)node]; }
+			int CanMoveNode2Index(void* node) const {
+				return canMoveArray[(size_t)node] ? pathNodeMem[(size_t)node].index2 : -1;
+			}
 
 		private:
-			void GoalReached(PathNode* node, void* start, void* end, VoidVec *path);
-			float LeastCostEstimateLocal(int nodeStartIndex);
+			void GoalReached(PathNode* node, void* start, void* end, IndexVec *path);
+			inline float LeastCostEstimateLocal(int nodeStartIndex);
+			inline float LeastCostEstimateLocal(int xStart, int yStart);
 			static inline float DiagonalDistance(int xStart, int yStart, int xEnd, int yEnd);
 			void FixStartEndNode(void** startNode, void** endNode);
 			void FixNode(void** Node);

@@ -32,19 +32,23 @@ public:
 	void SetUpdated(bool value) { isUpdated = value; }
 	bool IsUpdated() const { return isUpdated; }
 
-	void* XY2Node(int x, int y) const;
-	void Node2XY(void* node, int* x, int* y);
-	springai::AIFloat3 Node2Pos(void* node);
-	void* Pos2Node(springai::AIFloat3 pos) const;
-	void Pos2XY(springai::AIFloat3 pos, int* x, int* y) const;
+	void* MoveXY2MoveNode(int x, int y) const;
+	void MoveNode2MoveXY(void* node, int* x, int* y) const;
+	springai::AIFloat3 MoveNode2Pos(void* node) const;
+	void* Pos2MoveNode(springai::AIFloat3 pos) const;
+	void Pos2MoveXY(springai::AIFloat3 pos, int* x, int* y) const;
+	void Pos2PathXY(springai::AIFloat3 pos, int* x, int* y) const;
+	int PathXY2PathIndex(int x, int y) const;
+	void PathIndex2PathXY(int index, int* x, int* y) const;
+	void PathIndex2MoveXY(int index, int* x, int* y) const;
+	springai::AIFloat3 PathIndex2Pos(int index) const;
 
 	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
-	void PreferPath(const VoidVec& path);
+	void PreferPath(const IndexVec& path);
 	void UnpreferPath();
 
 	unsigned Checksum() const { return micropather->Checksum(); }
-	float MakePath(PathInfo& iPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
-	float MakePath(PathInfo& iPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius, float threat);
+	float MakePath(PathInfo& iPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, float slope, int radius);
 	float PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius);
 	float FindBestPath(PathInfo& iPath, springai::AIFloat3& startPos, float myMaxRange, F3Vec& possibleTargets, bool safe = true);
 	float FindBestPathToRadius(PathInfo& iPath, springai::AIFloat3& startPos, float radiusAroundTarget, const springai::AIFloat3& target);
@@ -55,23 +59,26 @@ public:
 	int GetSquareSize() const { return squareSize; }
 
 private:
-	size_t RefinePath(VoidVec& path);
-	void FillPathInfo(PathInfo& iPath);
+	size_t RefinePath(IndexVec& path, NSMicroPather::CostFunc costFun);
+	void FillPathInfo(PathInfo& iPath, NSMicroPather::CostFunc costFun);
 
 	CTerrainData* terrainData;
 
 	NSMicroPather::CMicroPather* micropather;
+	float* slopeArray;
 	bool* airMoveArray;
 	std::vector<bool*> moveArrays;
 	static std::vector<int> blockArray;
 	bool isUpdated;
 
 	int squareSize;
+	int moveMapXSize;
+	int moveMapYSize;
 	int pathMapXSize;
 	int pathMapYSize;
 
-	std::vector<std::pair<void*, float>> savedCost;
-	std::vector<float> costs;
+	std::vector<std::pair<int, float>> savedCost;  // <index, cost>
+	std::vector<float> costMap;  // +2 with edges
 
 #ifdef DEBUG_VIS
 private:
@@ -89,7 +96,7 @@ public:
 	void SetDbgType(int type) { dbgType = type; }
 	int GetDbgType() const { return dbgType; }
 	void SetMapData(CThreatMap* threatMap);
-	void UpdateVis(const VoidVec& path);
+	void UpdateVis(const IndexVec& path);
 	void ToggleVis(CCircuitAI* circuit);
 #endif
 };

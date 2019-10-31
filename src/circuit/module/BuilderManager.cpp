@@ -853,7 +853,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
 	pathfinder->MakeCostMap(pos);
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
+	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
 	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	float metric = std::numeric_limits<float>::max();
@@ -897,7 +897,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 				}
 			}
 
-			distCost = std::max(distCost, THREAT_BASE);
+			distCost = std::max(distCost, COST_BASE);
 
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
 			weight = 1.0f / SQUARE(weight);
@@ -963,7 +963,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 	pathfinder->SetMapData(unit, threatMap, frame);
 	pathfinder->MakeCostMap(pos);
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
+	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
 	const float maxThreat = threatMap->GetUnitThreat(unit);
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
 	float metric = std::numeric_limits<float>::max();
@@ -1011,7 +1011,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 				}
 			}
 
-			distCost = std::max(distCost, THREAT_BASE);
+			distCost = std::max(distCost, COST_BASE);
 
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
 			weight = 1.0f / SQUARE(weight);
