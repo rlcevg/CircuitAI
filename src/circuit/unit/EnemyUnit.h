@@ -13,6 +13,10 @@
 
 #include <set>
 
+namespace springai {
+	class Weapon;
+}
+
 namespace circuit {
 
 class IFighterTask;
@@ -33,13 +37,20 @@ public:
 	void SetLastSeen(int frame) { lastSeen = frame; }
 	int GetLastSeen() const { return lastSeen; }
 
+	float GetShield() const;
+	void UpdateInLosData();
+
+	float GetHealth() const { return health; }
+	bool IsBeingBuilt() const { return isBeingBuilt; }
+	bool IsParalyzed() const { return isParalyzed; }
+	bool IsDisarmed() const { return isDisarmed; }
+
 	void SetCost(float value) { cost = value; }
 	float GetCost() const { return cost; }
 
-	bool IsDisarmed();
-	bool IsAttacker();
-	float GetDamage();
-	float GetShieldPower() const;
+	bool IsAttacker() const;
+	float GetDamage() const;
+	float GetShieldPower() const { return shieldPower; }
 
 	void SetPos(const springai::AIFloat3& p) { pos = p; }
 	const springai::AIFloat3& GetPos() const { return pos; }
@@ -54,8 +65,17 @@ public:
 	int GetRange(CCircuitDef::ThreatType t = CCircuitDef::ThreatType::MAX) const { return range[static_cast<CCircuitDef::ThreatT>(t)]; }
 
 private:
+	void Init();
+
 	std::set<IFighterTask*> tasks;
 	int lastSeen;
+
+	springai::Weapon* shield;
+	float shieldPower;
+	float health;
+	bool isBeingBuilt;
+	bool isParalyzed;
+	bool isDisarmed;
 
 	float cost;
 	springai::AIFloat3 pos;

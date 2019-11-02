@@ -88,6 +88,7 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, skirmishAIId(callback != NULL ? callback->GetSkirmishAIId() : -1)
 		, sAICallback(nullptr)
 		, callback(callback)
+		, cheats(std::unique_ptr<Cheats>(callback->GetCheats()))
 		, log(std::unique_ptr<Log>(callback->GetLog()))
 		, game(std::unique_ptr<Game>(callback->GetGame()))
 		, map(std::unique_ptr<Map>(callback->GetMap()))
@@ -587,10 +588,8 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	kEnemyMark = (skirmishAIId + THREAT_UPDATE_RATE / 2) % THREAT_UPDATE_RATE;
 
 	if (isCheating) {
-		Cheats* cheats = callback->GetCheats();
 		cheats->SetEnabled(true);
 		cheats->SetEventsEnabled(true);
-		delete cheats;
 		scheduler->RunTaskAt(std::make_shared<CGameTask>(&CCircuitAI::CheatPreload, this), skirmishAIId + 1);
 	}
 
@@ -1306,6 +1305,12 @@ void CCircuitAI::UnregisterEnemyUnit(CEnemyUnit* unit)
 
 void CCircuitAI::UpdateEnemyUnits()
 {
+	if (!isCheating) {
+		// AI knows what units are in los, hence reduce the amount of useless
+		// engine InLos checks for each single param of the enemy unit
+		cheats->SetEnabled(true);
+	}
+
 	auto it = enemyUnits.begin();
 	while (it != enemyUnits.end()) {
 		CEnemyUnit* enemy = it->second;
@@ -1320,16 +1325,23 @@ void CCircuitAI::UpdateEnemyUnits()
 
 		if (enemy->IsInRadarOrLOS()) {
 			const AIFloat3& pos = enemy->GetUnit()->GetPos();
-			if (CTerrainData::IsNotInBounds(pos)) {  // FIXME: Unit id validation. No EnemyDestroyed sometimes apparently
+			if (CTerrainData::IsNotInBounds(pos)) {  // NOTE: Unit id validation. No EnemyDestroyed sometimes apparently
 				EnemyDestroyed(enemy);
 				it = enemyUnits.erase(it);  // UnregisterEnemyUnit(enemy)
 				delete enemy;
 				continue;
 			}
 			enemy->SetNewPos(pos);
+			if (enemy->IsInLOS()) {
+				enemy->UpdateInLosData();  // heavy on engine calls
+			}
 		}
 
 		++it;
+	}
+
+	if (!isCheating) {
+		cheats->SetEnabled(false);
 	}
 
 	threatMap->Update();

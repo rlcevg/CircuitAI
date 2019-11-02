@@ -16,6 +16,8 @@
 
 namespace circuit {
 
+#define THREAT_UPDATE_RATE	(FRAMES_PER_SEC / 2)
+
 class CCircuitUnit;
 class CEnemyUnit;
 

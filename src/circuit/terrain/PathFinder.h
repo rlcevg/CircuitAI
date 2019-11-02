@@ -74,7 +74,6 @@ private:
 	bool* airMoveArray;
 	std::vector<bool*> moveArrays;
 	static std::vector<int> blockArray;
-	float* threatArray;
 	bool isUpdated;
 
 	int squareSize;
@@ -83,7 +82,7 @@ private:
 	int pathMapXSize;
 	int pathMapYSize;
 
-	std::vector<std::pair<int, float>> savedCost;  // <index, cost>
+	std::vector<int> preferPath;  // <index>
 	std::vector<float> costMap;  // +2 with edges
 
 #ifdef DEBUG_VIS

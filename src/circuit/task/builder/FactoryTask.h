@@ -19,6 +19,7 @@ public:
 				  float cost, float shake, bool isPlop, int timeout);
 	virtual ~CBFactoryTask();
 
+	virtual void Start(CCircuitUnit* unit) override;
 	virtual void Update() override;
 protected:
 	virtual void Cancel() override;

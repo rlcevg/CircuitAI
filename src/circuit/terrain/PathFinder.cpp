@@ -26,7 +26,8 @@ namespace circuit {
 using namespace springai;
 using namespace NSMicroPather;
 
-#define COST_EPSILON		5e-2f
+#define THREAT_EPSILON		1e-2f
+#define MOVE_EPSILON		1e-1f
 #define SPIDER_SLOPE		0.99f
 
 std::vector<int> CPathFinder::blockArray;
@@ -34,7 +35,6 @@ std::vector<int> CPathFinder::blockArray;
 CPathFinder::CPathFinder(CTerrainData* terrainData)
 		: terrainData(terrainData)
 		, airMoveArray(nullptr)
-		, threatArray(nullptr)
 		, isUpdated(true)
 #ifdef DEBUG_VIS
 		, isVis(false)
@@ -50,7 +50,7 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 	pathMapYSize = terrainData->sectorZSize;
 	moveMapXSize = pathMapXSize + 2;  // +2 for passable edges
 	moveMapYSize = pathMapYSize + 2;  // +2 for passable edges
-	micropather  = new CMicroPather(this, moveMapXSize, moveMapYSize);
+	micropather  = new CMicroPather(this, pathMapXSize, pathMapYSize);
 
 	areaData = terrainData->pAreaData.load();
 	const std::vector<STerrainMapMobileType>& moveTypes = areaData->mobileType;
@@ -235,71 +235,90 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 		maxSlope = 1.f;
 	} else {
 		moveArray = moveArrays[mobileTypeId];
-		maxSlope = areaData->mobileType[mobileTypeId].maxSlope;
+		maxSlope = std::max(areaData->mobileType[mobileTypeId].maxSlope, 1e-3f);
 	}
 
 	float* threatArray;
-	CostFunc costFun;
+	CostFunc moveFun;
+	CostFunc threatFun;
 	// FIXME: DEBUG
 	const float minElev = areaData->minElevation;
-	const float elevLen = areaData->maxElevation - areaData->minElevation;
+	float elevLen = std::max(areaData->maxElevation - areaData->minElevation, 1e-3f);
 	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
-		threatArray = this->threatArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
-		costFun = [threatArray, &sectors, maxSlope, minElev, elevLen](int index) {
-			return 20.f - 20.f * (sectors[index].maxElevation - minElev) / elevLen +
-					(sectors[index].isWater ? 5.f : 0.f) + sectors[index].maxSlope / maxSlope + threatArray[index];
+		threatArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
+		moveFun = [&sectors, maxSlope, minElev, elevLen](int index) {
+			return 2.f - 2.f * (sectors[index].maxElevation - minElev) / elevLen +
+					(sectors[index].isWater ? 5.f : 0.f) + sectors[index].maxSlope / maxSlope;
+		};
+		threatFun = [threatArray](int index) {
+			return 10.f * threatArray[index];
 		};
 	} else if (unit->GetUnit()->IsCloaked()) {
-		threatArray = this->threatArray = threatMap->GetCloakThreatArray();
-		costFun = [threatArray, &sectors, maxSlope](int index) {
-			return sectors[index].maxSlope / maxSlope + threatArray[index];
+		threatArray = threatMap->GetCloakThreatArray();
+		moveFun = [&sectors, maxSlope](int index) {
+			return sectors[index].maxSlope / maxSlope;
 		};
-	} else if (cdef->IsAbleToFly()) {
-		threatArray = this->threatArray = threatMap->GetAirThreatArray();
-		costFun = [threatArray](int index) {
+		threatFun = [threatArray](int index) {
 			return threatArray[index];
 		};
+	} else if (cdef->IsAbleToFly()) {
+		threatArray = threatMap->GetAirThreatArray();
+		moveFun = [](int index) {
+			return 0.f;
+		};
+		threatFun = [threatArray](int index) {
+			return 10.f * threatArray[index];
+		};
 	} else if (cdef->IsAmphibious()) {
-		threatArray = this->threatArray = threatMap->GetAmphThreatArray();
+		threatArray = threatMap->GetAmphThreatArray();
 		if (maxSlope > SPIDER_SLOPE) {
-			costFun = [threatArray, &sectors, minElev, elevLen](int index) {
-				return 40.f - 40.f * (sectors[index].maxElevation - minElev) / elevLen +
-						(sectors[index].isWater ? 5.f : 0.f) + (1.f - sectors[index].maxSlope) + threatArray[index];
+			moveFun = [&sectors, minElev, elevLen](int index) {
+				return 4.f - 4.f * (sectors[index].maxElevation - minElev) / elevLen +
+						(sectors[index].isWater ? 5.f : 0.f) + (1.f - sectors[index].maxSlope);
+			};
+			threatFun = [threatArray](int index) {
+				return 10.f * threatArray[index];
 			};
 		} else {
-			costFun = [threatArray, &sectors, maxSlope, minElev, elevLen](int index) {
-				return 20.f - 20.f * (sectors[index].maxElevation - minElev) / elevLen +
-						(sectors[index].isWater ? 5.f : 0.f) + sectors[index].maxSlope / maxSlope + threatArray[index];
+			moveFun = [&sectors, maxSlope, minElev, elevLen](int index) {
+				return 2.f - 2.f * (sectors[index].maxElevation - minElev) / elevLen +
+						(sectors[index].isWater ? 5.f : 0.f) + sectors[index].maxSlope / maxSlope;
+			};
+			threatFun = [threatArray](int index) {
+				return 10.f * threatArray[index];
 			};
 		}
 	} else {
-		threatArray = this->threatArray = threatMap->GetSurfThreatArray();
-		costFun = [threatArray, &sectors, maxSlope, minElev, elevLen](int index) {
-			return 20.f - 20.f * (sectors[index].maxElevation - minElev) / elevLen +
-					(sectors[index].isWater ? 0.f : sectors[index].maxSlope / maxSlope) + threatArray[index];
+		threatArray = threatMap->GetSurfThreatArray();
+		moveFun = [&sectors, maxSlope, minElev, elevLen](int index) {
+			return 2.f - 2.f * (sectors[index].maxElevation - minElev) / elevLen +
+					(sectors[index].isWater ? 0.f : sectors[index].maxSlope / maxSlope);
+		};
+		threatFun = [threatArray](int index) {
+			return 10.f * threatArray[index];
 		};
 	}
 	// FIXME: DEBUG
 
-	micropather->SetMapData(moveArray, threatArray, costFun);
+	micropather->SetMapData(moveArray, threatArray, moveFun, threatFun);
 }
 
 void CPathFinder::PreferPath(const IndexVec& path)
 {
-	assert(savedCost.empty());
-	savedCost.reserve(path.size());
+	assert(preferPath.empty());
+	preferPath.reserve(path.size());
 	for (int node : path) {
-		savedCost.push_back(std::make_pair(node, threatArray[node]));
-		threatArray[node] -= COST_BASE / 4;
+		preferPath.push_back(node);
+		micropather->preferArray[node] = -COST_BASE / 4;
 	}
 }
 
 void CPathFinder::UnpreferPath()
 {
-	for (const auto& pair : savedCost) {
-		threatArray[pair.first] = pair.second;
+	for (int index : preferPath) {
+		micropather->preferArray[index] = 0.f;
 	}
-	savedCost.clear();
+	preferPath.clear();
 }
 
 /*
@@ -515,10 +534,7 @@ float CPathFinder::GetCostAt(const AIFloat3& endPos, int radius) const
 		return (costR < 0.f) ? cost : std::min(cost, costR);
 	}) :
 	std::function<float (float, int, int)>([this](float cost, int x, int y) -> float {
-		if ((x < 0) || (x > pathMapXSize - 1)) {
-			return cost;
-		}
-		if ((y < 0) || (y > pathMapYSize - 1)) {
+		if ((x < 0) || (x > pathMapXSize - 1) || (y < 0) || (y > pathMapYSize - 1)) {
 			return cost;
 		}
 		const float costR = costMap[PathXY2PathIndex(x, y)];
@@ -529,6 +545,7 @@ float CPathFinder::GetCostAt(const AIFloat3& endPos, int radius) const
 	});
 
 	// Circle draw
+	// TODO: Mid-point algo?
 	int x = -radius, y = 0, err = 2 - 2 * radius;  // bottom left to top right
 	do {
 		pathCost = minCost(pathCost, xm - x, ym + y);  //   I. Quadrant +x +y
@@ -546,16 +563,18 @@ float CPathFinder::GetCostAt(const AIFloat3& endPos, int radius) const
 
 size_t CPathFinder::RefinePath(IndexVec& path)
 {
-	const CostFunc costFun = micropather->costFun;
-	if (costFun(path[0]) > COST_EPSILON) {
+	if (micropather->threatArray[path[0]] > THREAT_EPSILON) {
 		return 0;
 	}
 
 	int x0, y0;
 	PathIndex2MoveXY(path[0], &x0, &y0);
 
+	const CostFunc moveFun = micropather->moveFun;
+	const float moveCost = moveFun(path[0]) + MOVE_EPSILON;
+
 	// All octant line draw
-	auto IsStraightLine = [this, x0, y0, costFun](int index) {
+	auto IsStraightLine = [this, x0, y0, moveCost, moveFun](int index) {
 		// TODO: Remove node<->(x,y) conversions;
 		//       Use Bresenham's 1-octant line algorithm
 		int x1, y1;
@@ -576,7 +595,7 @@ size_t CPathFinder::RefinePath(IndexVec& path)
 			}
 
 			int idx = micropather->CanMoveNode2Index(MoveXY2MoveNode(x, y));
-			if ((idx < 0) || (costFun(idx) > COST_EPSILON)) {
+			if ((idx < 0) || (micropather->threatArray[idx] > THREAT_EPSILON) || (moveFun(idx) > moveCost)) {
 				return false;
 			}
 		}
@@ -624,6 +643,7 @@ void CPathFinder::SetMapData(CThreatMap* threatMap)
 	if ((dbgDef == nullptr) || (dbgType < 0) || (dbgType > 3)) {
 		return;
 	}
+
 	STerrainMapMobileType::Id mobileTypeId = dbgDef->GetMobileId();
 	const float maxSlope = (mobileTypeId < 0) ? 1.f : areaData->mobileType[mobileTypeId].maxSlope;
 	const bool* moveArray = (mobileTypeId < 0) ? airMoveArray : moveArrays[mobileTypeId];
@@ -636,11 +656,14 @@ void CPathFinder::SetMapData(CThreatMap* threatMap)
 
 	const float* threatArray = costArray[dbgType];
 	const std::vector<STerrainMapSector>& sectors = areaData->sector;
-	const CostFunc costFun = [threatArray, &sectors, maxSlope](int index) {
-		return sectors[index].maxSlope / maxSlope + threatArray[index];
+	const CostFunc moveFun = [&sectors, maxSlope](int index) {
+		return sectors[index].maxSlope / maxSlope;
+	};
+	const CostFunc threatFun = [threatArray](int index) {
+		return threatArray[index];
 	};
 
-	micropather->SetMapData(moveArray, threatArray, costFun);
+	micropather->SetMapData(moveArray, threatArray, moveFun, threatFun);
 }
 
 void CPathFinder::UpdateVis(const IndexVec& path)
@@ -672,37 +695,6 @@ void CPathFinder::ToggleVis(CCircuitAI* circuit)
 
 	isVis = !isVis;
 	this->circuit = circuit;
-
-//	Map* map = circuit->GetMap();
-//	auto node2pos = [this, map](void* node) {
-//		const size_t index = (size_t)node;
-//		AIFloat3 pos;
-//		pos.z = (index / pathMapXSize - 1) * squareSize;
-//		pos.x = (index - ((index / pathMapXSize) * pathMapXSize) - 1) * squareSize;
-//		pos.y = map->GetElevationAt(pos.x, pos.z) + SQUARE_SIZE;
-//		return pos;
-//	};
-//	Drawer* draw = circuit->GetDrawer();
-//	if (isVis) {
-//		Figure* fig = circuit->GetDrawer()->GetFigure();
-//		int figId = fig->DrawLine(ZeroVector, ZeroVector, 16.0f, false, FRAMES_PER_SEC * 5, 0);
-//		for (int x = 1; x < pathMapXSize - 1; ++x) {
-//			for (int z = 2; z < pathMapYSize - 1; ++z) {
-//				AIFloat3 p0 = node2pos(XY2Node(x, z - 1));
-//				AIFloat3 p1 = node2pos(XY2Node(x, z));
-//				fig->DrawLine(p0, p1, 16.0f, false, FRAMES_PER_SEC * 200, figId);
-//			}
-//		}
-//		for (int z = 1; z < pathMapYSize - 1; ++z) {
-//			for (int x = 2; x < pathMapXSize - 1; ++x) {
-//				AIFloat3 p0 = node2pos(XY2Node(x - 1, z));
-//				AIFloat3 p1 = node2pos(XY2Node(x, z));
-//				fig->DrawLine(p0, p1, 16.0f, false, FRAMES_PER_SEC * 200, figId);
-//			}
-//		}
-//		fig->SetColor(figId, AIColor(1.0, 0., 0.), 255);
-//		delete fig;
-//	}
 }
 #endif
 

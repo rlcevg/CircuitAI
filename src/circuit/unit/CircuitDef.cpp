@@ -23,6 +23,8 @@ namespace circuit {
 
 using namespace springai;
 
+#define THREAT_MOD		(1.0f / 128.0f)
+
 CCircuitDef::RoleName CCircuitDef::roleNames = {
 	{"builder",    CCircuitDef::RoleType::BUILDER},
 	{"scout",      CCircuitDef::RoleType::SCOUT},

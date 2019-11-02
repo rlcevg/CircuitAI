@@ -41,6 +41,15 @@ CBFactoryTask::~CBFactoryTask()
 {
 }
 
+void CBFactoryTask::Start(CCircuitUnit* unit)
+{
+	if (isPlop) {
+		Execute(unit);
+	} else {
+		IBuilderTask::Start(unit);
+	}
+}
+
 void CBFactoryTask::Update()
 {
 	if (!isPlop) {

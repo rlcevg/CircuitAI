@@ -20,6 +20,8 @@ namespace springai {
 
 namespace circuit {
 
+#define INFL_BASE		0.f
+
 class CCircuitAI;
 class CAllyUnit;
 class CEnemyUnit;

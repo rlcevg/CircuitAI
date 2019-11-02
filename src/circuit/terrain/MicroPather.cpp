@@ -180,10 +180,10 @@ private:
 
 
 CMicroPather::CMicroPather(Graph* _graph, int sizeX, int sizeY)
-		: mapSizeX(sizeX)
-		, mapSizeY(sizeY)
+		: mapSizeX(sizeX + 2)  // +2 for edges
+		, mapSizeY(sizeY + 2)  // +2 for edges
 		, isRunning(false)
-		, ALLOCATE(sizeX * sizeY)
+		, ALLOCATE(mapSizeX * mapSizeY)
 		, BLOCKSIZE(ALLOCATE - 1)
 		, graph(_graph)
 		, pathNodeMem(0)
@@ -209,6 +209,8 @@ CMicroPather::CMicroPather(Graph* _graph, int sizeX, int sizeY)
 		assert(!(mapSizeY * mapSizeX  > (int)ALLOCATE));
 	}
 
+	preferArray.resize(sizeX * sizeY, 0.f);
+
 	// Tournesol: make a fixed offset array
 	// ***
 	// *X*
@@ -233,13 +235,15 @@ CMicroPather::~CMicroPather()
 
 /*
  * Old: make sure that costArray doesn't contain values below 1.0 (for speed), and below 0.0 (for eternal loop)
- * New: make sure that costFun doesn't return values below 0.0
+ * New: make sure that moveFun and threatFun doesn't return values below 0.0
  */
-void CMicroPather::SetMapData(const bool* canMoveArray, const float* threatArray, const CostFunc costFun)
+void CMicroPather::SetMapData(const bool* canMoveArray, const float* threatArray,
+		const CostFunc moveFun, const CostFunc threatFun)
 {
 	this->canMoveArray = canMoveArray;
-	this->threatArray = threatArray;
-	this->costFun = costFun;
+	this->threatArray  = threatArray;
+	this->moveFun      = moveFun;
+	this->threatFun    = threatFun;
 }
 
 void CMicroPather::Reset()
@@ -671,7 +675,8 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 
 				PathNode* directNode = &pathNodeMem[indexEnd];
 
-				if (threatArray[directNode->index2] > maxThreat) {
+				const int index2 = directNode->index2;
+				if (threatArray[index2] > maxThreat) {
 					continue;
 				}
 
@@ -692,8 +697,12 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 				#endif
 
 				float newCost = nodeCostFromStart;
+				const float nodeCost = COST_BASE + preferArray[index2] + moveFun(index2) + threatFun(index2);
 
-				const float nodeCost = COST_BASE + costFun(directNode->index2);
+				#ifdef USE_ASSERTIONS
+				assert(nodeCost > 0.f);  // > 1.f for speed
+				#endif
+
 				newCost += (i > 3) ? nodeCost * SQRT_2 : nodeCost;
 
 				if (directNode->costFromStart <= newCost) {
@@ -704,7 +713,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 				// it's better, update its data
 				directNode->parent = node;
 				directNode->costFromStart = newCost;
-				directNode->totalCost = newCost + LeastCostEstimateLocal(directNode->x, directNode->y);
+				directNode->totalCost = newCost + LeastCostEstimateLocal(directNode->x2, directNode->y2);
 
 				#ifdef USE_ASSERTIONS
 				assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
@@ -833,7 +842,8 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 
 				PathNode* directNode = &pathNodeMem[indexEnd];
 
-				if (threatArray[directNode->index2] > maxThreat) {
+				const int index2 = directNode->index2;
+				if (threatArray[index2] > maxThreat) {
 					continue;
 				}
 
@@ -842,8 +852,8 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 				}
 
 				#ifdef USE_ASSERTIONS
-				int yend = indexEnd / mapSizeX;
-				int xend = indexEnd - yend * mapSizeX;
+				const int yend = indexEnd / mapSizeX;
+				const int xend = indexEnd - yend * mapSizeX;
 
 				// we can move to that spot
 				assert(canMoveArray[yend * mapSizeX + xend]);
@@ -854,8 +864,12 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 				#endif
 
 				float newCost = nodeCostFromStart;
+				const float nodeCost = COST_BASE + preferArray[index2] + moveFun(index2) + threatFun(index2);
 
-				const float nodeCost = COST_BASE + costFun(directNode->index2);
+				#ifdef USE_ASSERTIONS
+				assert(nodeCost > 0.f);  // > 1.f for speed
+				#endif
+
 				newCost += (i > 3) ? nodeCost * SQRT_2 : nodeCost;
 
 				if (directNode->costFromStart <= newCost) {
@@ -866,7 +880,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 				// it's better, update its data
 				directNode->parent = node;
 				directNode->costFromStart = newCost;
-				directNode->totalCost = newCost + LeastCostEstimateLocal(directNode->x, directNode->y);
+				directNode->totalCost = newCost + LeastCostEstimateLocal(directNode->x2, directNode->y2);
 
 				#ifdef USE_ASSERTIONS
 				assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
@@ -987,7 +1001,8 @@ int CMicroPather::FindBestCostToPointOnRadius(void* startNode, void* endNode,
 
 				PathNode* directNode = &pathNodeMem[indexEnd];
 
-				if (threatArray[directNode->index2] > maxThreat) {
+				const int index2 = directNode->index2;
+				if (threatArray[index2] > maxThreat) {
 					continue;
 				}
 
@@ -996,8 +1011,8 @@ int CMicroPather::FindBestCostToPointOnRadius(void* startNode, void* endNode,
 				}
 
 				#ifdef USE_ASSERTIONS
-				int yend = indexEnd / mapSizeX;
-				int xend = indexEnd - yend * mapSizeX;
+				const int yend = indexEnd / mapSizeX;
+				const int xend = indexEnd - yend * mapSizeX;
 
 				// we can move to that spot
 				assert(canMoveArray[yend * mapSizeX + xend]);
@@ -1008,8 +1023,12 @@ int CMicroPather::FindBestCostToPointOnRadius(void* startNode, void* endNode,
 				#endif
 
 				float newCost = nodeCostFromStart;
+				const float nodeCost = COST_BASE + preferArray[index2] + moveFun(index2) + threatFun(index2);
 
-				const float nodeCost = COST_BASE + costFun(directNode->index2);
+				#ifdef USE_ASSERTIONS
+				assert(nodeCost > 0.f);  // > 1.f for speed
+				#endif
+
 				newCost += (i > 3) ? nodeCost * SQRT_2 : nodeCost;
 
 				if (directNode->costFromStart <= newCost) {
@@ -1020,7 +1039,7 @@ int CMicroPather::FindBestCostToPointOnRadius(void* startNode, void* endNode,
 				// it's better, update its data
 				directNode->parent = node;
 				directNode->costFromStart = newCost;
-				directNode->totalCost = newCost + LeastCostEstimateLocal(directNode->x, directNode->y);
+				directNode->totalCost = newCost + LeastCostEstimateLocal(directNode->x2, directNode->y2);
 
 				#ifdef USE_ASSERTIONS
 				assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
@@ -1117,8 +1136,13 @@ void CMicroPather::MakeCostMap(void* startNode, std::vector<float>& costMap)
 			#endif
 
 			float newCost = nodeCostFromStart;
+			const int index2 = directNode->index2;
+			const float nodeCost = COST_BASE + moveFun(index2) + threatFun(index2);
 
-			const float nodeCost = COST_BASE + costFun(directNode->index2);
+			#ifdef USE_ASSERTIONS
+			assert(nodeCost > 0.f);  // > 1.f for speed
+			#endif
+
 			newCost += (i > 3) ? nodeCost * SQRT_2 : nodeCost;
 
 			if (directNode->costFromStart <= newCost) {

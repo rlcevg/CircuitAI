@@ -233,6 +233,7 @@ public:
 	int GetTeamId()       const { return teamId; }
 	int GetAllyTeamId()   const { return allyTeamId; }
 	springai::OOAICallback* GetCallback()   const { return callback; }
+	springai::Cheats*       GetCheats()     const { return cheats.get(); }
 	springai::Log*          GetLog()        const { return log.get(); }
 	springai::Game*         GetGame()       const { return game.get(); }
 	springai::Map*          GetMap()        const { return map.get(); }
@@ -270,6 +271,7 @@ private:
 	int allyTeamId;
 	const struct SSkirmishAICallback* sAICallback;
 	springai::OOAICallback*               callback;
+	std::unique_ptr<springai::Cheats>     cheats;
 	std::unique_ptr<springai::Log>        log;
 	std::unique_ptr<springai::Game>       game;
 	std::unique_ptr<springai::Map>        map;

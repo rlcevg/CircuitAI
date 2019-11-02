@@ -72,6 +72,7 @@
 #endif
 
 #define FLT_BIG (FLT_MAX / 2.0)
+#define COST_BASE		1.0f
 
 /*
  * USE_LIST and USE_BINARY_HASH change the some of details the pather algorithms. They
@@ -126,8 +127,8 @@ namespace NSMicroPather {
 
 		public:
 			void Init(int _x, int _y, int _index2, unsigned _frame, float _costFromStart, PathNode* _parent) {
-				x = _x;
-				y = _y;
+				x2 = _x;
+				y2 = _y;
 				index2 = _index2;
 				costFromStart = _costFromStart;
 				totalCost = _costFromStart;
@@ -157,7 +158,7 @@ namespace NSMicroPather {
 			}
 
 			int myIndex;
-			int x, y, index2;
+			int x2, y2, index2;
 			float costFromStart;	// exact
 			float totalCost;		// could be a function, but save some math.
 			PathNode* parent;		// the parent is used to reconstruct the path
@@ -253,13 +254,16 @@ namespace NSMicroPather {
 			unsigned int* lockUpCount;
 			const bool* canMoveArray;
 			const float* threatArray;
-			CostFunc costFun;
+			std::vector<float> preferArray;
+			CostFunc moveFun;
+			CostFunc threatFun;
 			int mapSizeX;
 			int mapSizeY;
 			int offsets[8];
 			int xEndNode, yEndNode;
 			bool isRunning;
-			void SetMapData(const bool* canMoveArray, const float* threatArray, const CostFunc costFun);
+			void SetMapData(const bool* canMoveArray, const float* threatArray,
+					const CostFunc moveFun, const CostFunc threatFun);
 			int FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes, VoidVec& targets, float maxThreat,
 					IndexVec* path, float* cost);
 			int FindBestPathToPointOnRadius(void* startNode, void* endNode, int radius, float maxThreat,
