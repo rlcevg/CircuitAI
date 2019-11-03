@@ -19,6 +19,8 @@
 #ifndef SRC_CIRCUIT_TERRAIN_TERRAINDATA_H_
 #define SRC_CIRCUIT_TERRAIN_TERRAINDATA_H_
 
+#include "util/Defines.h"
+
 #include "AIFloat3.h"
 
 #include <map>
@@ -162,6 +164,8 @@ struct SAreaData {
 	float minElevation;  // minimum elevation
 	float maxElevation;  // maximum elevation
 	float percentLand;  // 0 to 100
+
+	FloatVec heightMap;
 };
 
 #define BOUND_EXT	3e3f
@@ -211,7 +215,7 @@ private:
 
 // ---- Threaded areas updater ---- BEGIN
 private:
-	void CheckHeightMap();
+	void EnqueueUpdate();
 	void UpdateAreas();
 	void ScheduleUsersUpdate();
 public:
@@ -224,10 +228,7 @@ private:
 	static springai::Map* map;
 	std::shared_ptr<CScheduler> scheduler;
 	CGameAttribute* gameAttribute;
-	std::vector<float> heightMap0;
-	std::vector<float> heightMap1;
-	std::atomic<std::vector<float>*> pHeightMap;
-	std::vector<float> slopeMap;
+	FloatVec slopeMap;
 	bool isUpdating;
 	int aiToUpdate;
 // ---- Threaded areas updater ---- END

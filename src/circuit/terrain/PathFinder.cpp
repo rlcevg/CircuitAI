@@ -125,8 +125,8 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 	std::fill(blockArray.begin(), blockArray.end(), 0);
 	const int granularity = squareSize / (SQUARE_SIZE * 2);
 	const SBlockingMap& blockMap = terrainManager->GetBlockingMap();
-	for (int x = 0; x < blockMap.columns; ++x) {
-		for (int z = 0; z < blockMap.rows; ++z) {
+	for (int z = 0; z < blockMap.rows; ++z) {
+		for (int x = 0; x < blockMap.columns; ++x) {
 			if (blockMap.IsStruct(x, z)) {
 				const int moveX = x / granularity;
 				const int moveY = z / granularity;

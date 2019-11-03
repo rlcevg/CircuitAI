@@ -55,10 +55,12 @@ CInfluenceMap::~CInfluenceMap()
 void CInfluenceMap::Update()
 {
 	Clear();
-	const CCircuitAI::EnemyUnits& hostileUnits = circuit->GetThreatMap()->GetHostileUnits();
-	for (auto& kv : hostileUnits) {
+	const CCircuitAI::EnemyUnits& enemyUnits = circuit->GetEnemyUnits();
+	for (auto& kv : enemyUnits) {
 		CEnemyUnit* e = kv.second;
-		AddUnit(e);
+		if (e->IsAttacker()) {
+			AddUnit(e);
+		}
 	}
 	const CAllyTeam::Units& units = circuit->GetFriendlyUnits();
 	for (auto& kv : units) {
@@ -80,7 +82,7 @@ void CInfluenceMap::Update()
 			vulnMax = vulnerability[i];
 		}
 	}
-//	Cheats* cheats = circuit->GetCallback()->GetCheats();
+//	Cheats* cheats = circuit->GetCheats();
 //	cheats->SetEnabled(true);
 	auto features = std::move(circuit->GetCallback()->GetFeatures());
 	for (Feature* f : features) {
@@ -91,7 +93,6 @@ void CInfluenceMap::Update()
 		delete f;
 	}
 //	cheats->SetEnabled(false);
-//	delete cheats;
 
 #ifdef DEBUG_VIS
 	UpdateVis();

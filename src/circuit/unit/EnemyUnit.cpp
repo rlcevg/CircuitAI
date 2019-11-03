@@ -19,9 +19,16 @@ using namespace springai;
 CEnemyUnit::CEnemyUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 		: ICoreUnit(unitId, unit, cdef)
 		, lastSeen(-1)
-		, pos(ZeroVector)
-		, threat(.0f)
-		, range({0})
+		, data({cdef,        // cdef
+			0.f,             // shieldPower
+			0.f,             // health
+			false,           // isBeingBuilt
+			false,           // isParalyzed
+			false,           // isDisarmed
+			ZeroVector,      // pos
+			ZeroVector,      // vel
+			0.f,             // threat
+			{0}})            // range
 		, losStatus(LosMask::NONE)
 {
 	Init();
@@ -50,18 +57,26 @@ void CEnemyUnit::Init()
 void CEnemyUnit::SetCircuitDef(CCircuitDef* cdef)
 {
 	circuitDef = cdef;
+	data.cdef = cdef;
 	Init();
+}
+
+void CEnemyUnit::UpdateInRadarData(const AIFloat3& p)
+{
+	data.pos = p;
+	CTerrainData::CorrectPosition(data.pos);
+	data.vel = unit->GetVel();
 }
 
 void CEnemyUnit::UpdateInLosData()
 {
 	if (shield != nullptr) {
-		shieldPower = shield->GetShieldPower();
+		data.shieldPower = shield->GetShieldPower();
 	}
-	health = unit->GetHealth();
-	isParalyzed = unit->IsParalyzed();
-	isBeingBuilt = unit->IsBeingBuilt();
-	isDisarmed = unit->GetRulesParamFloat("disarmed", 0) > .0f;
+	data.health = unit->GetHealth();
+	data.isParalyzed = unit->IsParalyzed();
+	data.isBeingBuilt = unit->IsBeingBuilt();
+	data.isDisarmed = unit->GetRulesParamFloat("disarmed", 0) > .0f;
 }
 
 bool CEnemyUnit::IsAttacker() const
@@ -81,16 +96,11 @@ float CEnemyUnit::GetDamage() const
 	if (dmg < 1e-3f) {
 		return .0f;
 	}
-	if (isBeingBuilt || isParalyzed || isDisarmed) {
+	if (data.isBeingBuilt || data.isParalyzed || data.isDisarmed) {
 		return 1e-3f;
 	}
 	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;
 	return dmg;
-}
-
-void CEnemyUnit::SetNewPos(const AIFloat3& p) {
-	newPos = p;
-	CTerrainData::CorrectPosition(newPos);
 }
 
 } // namespace circuit

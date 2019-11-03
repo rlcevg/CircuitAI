@@ -32,6 +32,7 @@ namespace circuit {
 
 using namespace springai;
 
+#define AREA_UPDATE_RATE	(FRAMES_PER_SEC * 10)
 // FIXME: Make Engine consts available to AI. @see rts/Sim/MoveTypes/MoveDefHandler.cpp
 #define MAX_ALLOWED_WATER_DAMAGE_GMM	1e3f
 #define MAX_ALLOWED_WATER_DAMAGE_HMM	1e4f
@@ -50,7 +51,6 @@ CTerrainData::CTerrainData()
 		, sectorXSize(0)
 		, sectorZSize(0)
 		, gameAttribute(nullptr)
-		, pHeightMap(&heightMap0)
 		, isUpdating(false)
 		, aiToUpdate(0)
 //		, isClusterizing(false)
@@ -255,8 +255,8 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	 *  Setting sector & determining sectors for immobileType
 	 */
 	sector.resize(sectorXSize * sectorZSize);
-	const std::vector<float>& standardSlopeMap = circuit->GetMap()->GetSlopeMap();
-	const std::vector<float>& standardHeightMap = *pHeightMap.load() = circuit->GetMap()->GetHeightMap();
+	const FloatVec& standardSlopeMap = circuit->GetMap()->GetSlopeMap();
+	const FloatVec& standardHeightMap = areaData.heightMap = circuit->GetMap()->GetHeightMap();
 	const int convertStoSM = convertStoP / 16;  // * for conversion, / for reverse conversion
 	const int convertStoHM = convertStoP / 8;  // * for conversion, / for reverse conversion
 	const int slopeMapXSize = sectorXSize * convertStoSM;
@@ -524,7 +524,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 		}
 	}
 
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::CheckHeightMap, this), FRAMES_PER_SEC * 10);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::EnqueueUpdate, this), AREA_UPDATE_RATE);
 	scheduler->RunOnRelease(std::make_shared<CGameTask>(&CTerrainData::DelegateAuthority, this, circuit));
 
 #ifdef DEBUG_VIS
@@ -613,23 +613,22 @@ void CTerrainData::DelegateAuthority(CCircuitAI* curOwner)
 		if (circuit->IsInitialized() && (circuit != curOwner)) {
 			map = circuit->GetMap();
 			scheduler = circuit->GetScheduler();
-			scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::CheckHeightMap, this), FRAMES_PER_SEC * 20);
-			scheduler->RunTaskAfter(std::make_shared<CGameTask>(&CTerrainData::CheckHeightMap, this), FRAMES_PER_SEC);
+			scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::EnqueueUpdate, this), AREA_UPDATE_RATE);
+			scheduler->RunTaskAfter(std::make_shared<CGameTask>(&CTerrainData::EnqueueUpdate, this), FRAMES_PER_SEC);
 			scheduler->RunOnRelease(std::make_shared<CGameTask>(&CTerrainData::DelegateAuthority, this, circuit));
 			break;
 		}
 	}
 }
 
-void CTerrainData::CheckHeightMap()
+void CTerrainData::EnqueueUpdate()
 {
 	SCOPED_TIME(*gameAttribute->GetCircuits().begin(), __PRETTY_FUNCTION__);
 	if (isUpdating) {
 		return;
 	}
 	isUpdating = true;
-	std::vector<float>& heightMap = (pHeightMap.load() == &heightMap0) ? heightMap1 : heightMap0;
-	heightMap = std::move(map->GetHeightMap());
+	GetNextAreaData()->heightMap = std::move(map->GetHeightMap());
 	slopeMap = std::move(map->GetSlopeMap());
 	scheduler->RunParallelTask(std::make_shared<CGameTask>(&CTerrainData::UpdateAreas, this),
 							   std::make_shared<CGameTask>(&CTerrainData::ScheduleUsersUpdate, this));
@@ -640,7 +639,7 @@ void CTerrainData::UpdateAreas()
 	/*
 	 *  Assign areaData references
 	 */
-	SAreaData& areaData = (pAreaData.load() == &areaData0) ? areaData1 : areaData0;
+	SAreaData& areaData = *GetNextAreaData();
 	std::vector<STerrainMapMobileType>& mobileType = areaData.mobileType;
 	std::vector<STerrainMapImmobileType>& immobileType = areaData.immobileType;
 	std::vector<STerrainMapSector>& sector = areaData.sector;
@@ -685,9 +684,9 @@ void CTerrainData::UpdateAreas()
 	/*
 	 *  Updating sector & determining sectors for immobileType
 	 */
-	const std::vector<float>& standardSlopeMap = slopeMap;
-	const std::vector<float>& standardHeightMap = (pHeightMap.load() == &heightMap0) ? heightMap1 : heightMap0;
-	const std::vector<float>& prevHeightMap = *pHeightMap.load();
+	const FloatVec& standardSlopeMap = slopeMap;
+	const FloatVec& standardHeightMap = areaData.heightMap;
+	const FloatVec& prevHeightMap = prevAreaData.heightMap;
 	const int convertStoSM = convertStoP / 16;  // * for conversion, / for reverse conversion
 	const int convertStoHM = convertStoP / 8;  // * for conversion, / for reverse conversion
 	const int slopeMapXSize = sectorXSize * convertStoSM;
@@ -933,7 +932,6 @@ void CTerrainData::OnAreaUsersUpdated()
 	}
 
 	pAreaData = GetNextAreaData();
-	pHeightMap = (pHeightMap.load() == &heightMap0) ? &heightMap1 : &heightMap0;
 	isUpdating = false;
 
 #ifdef DEBUG_VIS

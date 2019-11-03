@@ -47,7 +47,9 @@ template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 
 typedef std::vector<springai::AIFloat3> F3Vec;
 typedef std::vector<void*> VoidVec;
+typedef std::vector<float> FloatVec;
 typedef std::vector<int> IndexVec;
+typedef std::vector<int> IntVec;
 
 struct PathInfo {
 	PathInfo(bool last = false) : start(0), isLast(last) {}

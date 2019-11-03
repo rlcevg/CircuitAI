@@ -9,6 +9,7 @@
 #ifndef SRC_CIRCUIT_TERRAIN_THREATMAP_H_
 #define SRC_CIRCUIT_TERRAIN_THREATMAP_H_
 
+#include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 
 #include <map>
@@ -16,7 +17,7 @@
 
 namespace circuit {
 
-#define THREAT_UPDATE_RATE	(FRAMES_PER_SEC / 2)
+#define THREAT_UPDATE_RATE	(FRAMES_PER_SEC / 4)
 
 class CCircuitUnit;
 class CEnemyUnit;
@@ -26,16 +27,12 @@ public:
 	CThreatMap(CCircuitAI* circuit, float decloakRadius);
 	virtual ~CThreatMap();
 
-	const CCircuitAI::EnemyUnits& GetHostileUnits() const { return hostileUnits; }
-	const CCircuitAI::EnemyUnits& GetPeaceUnits() const { return peaceUnits; }
-
-	void Update();
+	void EnqueueUpdate();
 
 	bool EnemyEnterLOS(CEnemyUnit* enemy);
 	void EnemyLeaveLOS(CEnemyUnit* enemy);
 	void EnemyEnterRadar(CEnemyUnit* enemy);
 	void EnemyLeaveRadar(CEnemyUnit* enemy);
-	void EnemyDamaged(CEnemyUnit* enemy);
 	bool EnemyDestroyed(CEnemyUnit* enemy);
 
 //	float GetAverageThreat() const { return currAvgThreat + 1.0f; }
@@ -45,10 +42,10 @@ public:
 	float GetThreatAt(const springai::AIFloat3& position) const;
 	float GetThreatAt(CCircuitUnit* unit, const springai::AIFloat3& position) const;
 
-	float* GetAirThreatArray() { return &airThreat[0]; }
-	float* GetSurfThreatArray() { return &surfThreat[0]; }
-	float* GetAmphThreatArray() { return &amphThreat[0]; }
-	float* GetCloakThreatArray() { return &cloakThreat[0]; }
+	float* GetAirThreatArray() { return airThreat; }
+	float* GetSurfThreatArray() { return surfThreat; }
+	float* GetAmphThreatArray() { return amphThreat; }
+	float* GetCloakThreatArray() { return cloakThreat; }
 	int GetThreatMapWidth() const { return width; }
 	int GetThreatMapHeight() const { return height; }
 
@@ -61,25 +58,27 @@ private:
 	 * http://stackoverflow.com/questions/872544/precision-of-floating-point
 	 * Single precision: for accuracy of +/-0.5 (or 2^-1) the maximum size that the number can be is 2^23.
 	 */
-	using Threats = std::vector<float>;
+	struct SThreatData {
+		FloatVec airThreat;  // air layer
+		FloatVec surfThreat;  // surface (water and land)
+		FloatVec amphThreat;  // under water and surface on land
+		FloatVec cloakThreat;  // decloakers
+		FloatVec shield;  // total shield power that covers tile
+	};
+
 	CCircuitAI* circuit;
 	SAreaData* areaData;
 
 	inline void PosToXZ(const springai::AIFloat3& pos, int& x, int& z) const;
 	inline springai::AIFloat3 XZToPos(int x, int z) const;
 
-	void AddEnemyUnit(const CEnemyUnit* e);
-	void DelEnemyUnit(const CEnemyUnit* e);
-	void AddEnemyUnitAll(const CEnemyUnit* e);
-	void DelEnemyUnitAll(const CEnemyUnit* e);
-	void AddEnemyAir(const CEnemyUnit* e);  // Enemy AntiAir
-	void DelEnemyAir(const CEnemyUnit* e);
-	void AddEnemyAmph(const CEnemyUnit* e);  // Enemy AntiAmph
-	void DelEnemyAmph(const CEnemyUnit* e);
-	void AddDecloaker(const CEnemyUnit* e);
-	void DelDecloaker(const CEnemyUnit* e);
-	void AddShield(const CEnemyUnit* e);
-	void DelShield(const CEnemyUnit* e);
+	void Prepare(SThreatData& threatData);
+	void AddEnemyUnit(const CEnemyUnit::SData& e);
+	void AddEnemyUnitAll(const CEnemyUnit::SData& e);
+	void AddEnemyAir(const CEnemyUnit::SData& e);  // Enemy AntiAir
+	void AddEnemyAmph(const CEnemyUnit::SData& e);  // Enemy AntiAmph
+	void AddDecloaker(const CEnemyUnit::SData& e);
+	void AddShield(const CEnemyUnit::SData& e);
 
 	void SetEnemyUnitRange(CEnemyUnit* e) const;
 	int GetCloakRange(const CCircuitDef* edef) const;
@@ -89,9 +88,11 @@ private:
 	bool IsInLOS(const springai::AIFloat3& pos) const;
 //	bool IsInRadar(const springai::AIFloat3& pos) const;
 
-//	float currAvgThreat;
-//	float currMaxThreat;
-//	float currSumThreat;
+	void Update();
+	void Apply();
+	SThreatData* GetNextThreatData() {
+		return (pThreatData.load() == &threatData0) ? &threatData1 : &threatData0;
+	}
 
 	int squareSize;
 	int width;
@@ -104,16 +105,28 @@ private:
 
 	CCircuitAI::EnemyUnits hostileUnits;
 	CCircuitAI::EnemyUnits peaceUnits;
-	Threats airThreat;  // air layer
-	Threats surfThreat;  // surface (water and land)
-	Threats amphThreat;  // under water and surface on land
-	Threats cloakThreat;
-	Threats shield;
-	float* threatArray;
 
-//	std::vector<int> radarMap;
-	std::vector<int> sonarMap;
-	std::vector<int> losMap;
+	std::vector<CEnemyUnit::SData> hostileDatas;
+	std::vector<CEnemyUnit::SData> peaceDatas;
+	SThreatData threatData0, threatData1;  // Double-buffer for threading
+	std::atomic<SThreatData*> pThreatData;
+//	IntVec radarMap;
+	IntVec sonarMap;
+	IntVec losMap;
+	float* drawAirThreat;
+	float* drawSurfThreat;
+	float* drawAmphThreat;
+	float* drawCloakThreat;
+	float* drawShieldArray;
+	bool isUpdating;
+
+	float* airThreat;
+	float* surfThreat;
+	float* amphThreat;
+	float* cloakThreat;
+	float* shieldArray;
+	float* threatArray;  // current threat array for multiple GetThreatAt() calls
+
 	int radarWidth;
 	int radarResConv;
 	int losWidth;

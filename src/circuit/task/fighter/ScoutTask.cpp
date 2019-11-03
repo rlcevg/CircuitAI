@@ -236,7 +236,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, Path
 //				float rayRange = dir.LengthNormalize();
 //				CUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, u, 0);
 //				if (hitUID == enemy->GetId()) {
-					if (((targetCat & noChaseCat) == 0) && !enemy->GetUnit()->IsBeingBuilt()) {
+					if (((targetCat & noChaseCat) == 0) && !enemy->IsBeingBuilt()) {
 						if (isBuilder) {
 							bestTarget = enemy;
 							minSqDist = sqDist;

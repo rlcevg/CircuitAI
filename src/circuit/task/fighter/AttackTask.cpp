@@ -301,7 +301,7 @@ void CAttackTask::FindTarget()
 			float elevation = map->GetElevationAt(ePos.x, ePos.z);
 			if ((notAW && !edef->IsYTargetable(elevation, ePos.y)) ||
 				(ePos.y - elevation > weaponRange) ||
-				enemy->GetUnit()->IsBeingBuilt())
+				enemy->IsBeingBuilt())
 			{
 				continue;
 			}

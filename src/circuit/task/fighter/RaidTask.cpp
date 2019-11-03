@@ -326,7 +326,7 @@ void CRaidTask::FindTarget()
 		float sqDist = pos.SqDistance2D(ePos);
 		if ((minPower > power) && (minSqDist > sqDist)) {
 			if (enemy->IsInRadarOrLOS()) {
-				if (((targetCat & noChaseCat) == 0) && !enemy->GetUnit()->IsBeingBuilt()) {
+				if (((targetCat & noChaseCat) == 0) && !enemy->IsBeingBuilt()) {
 					if (isBuilder) {
 						bestTarget = enemy;
 						minSqDist = sqDist;

@@ -1053,7 +1053,8 @@ int CCircuitAI::EnemyLeaveRadar(CEnemyUnit* enemy)
 
 int CCircuitAI::EnemyDamaged(CEnemyUnit* enemy)
 {
-	threatMap->EnemyDamaged(enemy);
+	// FIXME: Whole threat map updates in a fraction of a second, is this call really needed?
+//	threatMap->EnemyDamaged(enemy);
 
 	return 0;  // signaling: OK
 }
@@ -1331,7 +1332,7 @@ void CCircuitAI::UpdateEnemyUnits()
 				delete enemy;
 				continue;
 			}
-			enemy->SetNewPos(pos);
+			enemy->UpdateInRadarData(pos);
 			if (enemy->IsInLOS()) {
 				enemy->UpdateInLosData();  // heavy on engine calls
 			}
@@ -1344,7 +1345,7 @@ void CCircuitAI::UpdateEnemyUnits()
 		cheats->SetEnabled(false);
 	}
 
-	threatMap->Update();
+	threatMap->EnqueueUpdate();
 	inflMap->Update();
 }
 
