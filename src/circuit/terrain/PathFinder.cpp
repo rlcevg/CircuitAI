@@ -248,7 +248,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 		threatArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
 		moveFun = [&sectors, maxSlope, minElev, elevLen](int index) {
 			return 2.f - 2.f * (sectors[index].maxElevation - minElev) / elevLen +
-					(sectors[index].isWater ? 5.f : 0.f) + sectors[index].maxSlope / maxSlope;
+					(sectors[index].isWater ? 5.f : 0.f) + 4.f * sectors[index].maxSlope / maxSlope;
 		};
 		threatFun = [threatArray](int index) {
 			return 10.f * threatArray[index];
@@ -274,7 +274,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 		if (maxSlope > SPIDER_SLOPE) {
 			moveFun = [&sectors, minElev, elevLen](int index) {
 				return 4.f - 4.f * (sectors[index].maxElevation - minElev) / elevLen +
-						(sectors[index].isWater ? 5.f : 0.f) + (1.f - sectors[index].maxSlope);
+						(sectors[index].isWater ? 5.f : 0.f) + 4.f * (1.f - sectors[index].maxSlope);
 			};
 			threatFun = [threatArray](int index) {
 				return 10.f * threatArray[index];
@@ -282,7 +282,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 		} else {
 			moveFun = [&sectors, maxSlope, minElev, elevLen](int index) {
 				return 2.f - 2.f * (sectors[index].maxElevation - minElev) / elevLen +
-						(sectors[index].isWater ? 5.f : 0.f) + sectors[index].maxSlope / maxSlope;
+						(sectors[index].isWater ? 5.f : 0.f) + 4.f * sectors[index].maxSlope / maxSlope;
 			};
 			threatFun = [threatArray](int index) {
 				return 10.f * threatArray[index];
@@ -292,7 +292,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 		threatArray = threatMap->GetSurfThreatArray();
 		moveFun = [&sectors, maxSlope, minElev, elevLen](int index) {
 			return 2.f - 2.f * (sectors[index].maxElevation - minElev) / elevLen +
-					(sectors[index].isWater ? 0.f : sectors[index].maxSlope / maxSlope);
+					(sectors[index].isWater ? 0.f : 4.f * sectors[index].maxSlope / maxSlope);
 		};
 		threatFun = [threatArray](int index) {
 			return 10.f * threatArray[index];

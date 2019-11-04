@@ -296,8 +296,8 @@ void CTerrainManager::Init()
 		int2 m1(x1, z1);
 		int2 m2(x2, z2);
 		blockingMap.Bound(m1, m2);
-		for (int z = m1.y; z < m2.y; z++) {
-			for (int x = m1.x; x < m2.x; x++) {
+		for (int z = m1.y; z < m2.y; ++z) {
+			for (int x = m1.x; x < m2.x; ++x) {
 				blockingMap.MarkBlocker(x, z, SBlockingMap::StructType::TERRA, notIgnoreMask);
 			}
 		}
@@ -305,14 +305,14 @@ void CTerrainManager::Init()
 
 	// Mark edges of the map
 	notIgnoreMask = ~(STRUCT_BIT(MEX) | STRUCT_BIT(FACTORY));  // all except mex and factory
-	for (int i = 8; i < blockingMap.columns - 8; ++i) {
-		for (int j = 0; j < 7; ++j) {
+	for (int j = 0; j < 7; ++j) {
+		for (int i = 8; i < blockingMap.columns - 8; ++i) {
 			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
 			blockingMap.MarkBlocker(i, blockingMap.rows - j - 1, SBlockingMap::StructType::TERRA, notIgnoreMask);
 		}
 	}
-	for (int i = 0; i < 7; ++i) {
-		for (int j = 8; j < blockingMap.rows - 8; ++j) {
+	for (int j = 8; j < blockingMap.rows - 8; ++j) {
+		for (int i = 0; i < 7; ++i) {
 			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
 			blockingMap.MarkBlocker(blockingMap.columns - i - 1, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
 		}
@@ -376,8 +376,8 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 
 	auto isOpenSite = [this](const int2& s1, const int2& s2) {
 		const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::ALL);
-		for (int x = s1.x; x < s2.x; x++) {
-			for (int z = s1.y; z < s2.y; z++) {
+		for (int z = s1.y; z < s2.y; ++z) {
+			for (int x = s1.x; x < s2.x; ++x) {
 				if (blockingMap.IsBlocked(x, z, notIgnore)) {
 					return false;
 				}
@@ -593,8 +593,8 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(CCircuitDef* cdef, const AIFloat3& po
 
 	auto isOpenSite = [this](const int2& s1, const int2& s2) {
 		const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::ALL);
-		for (int x = s1.x; x < s2.x; x++) {
-			for (int z = s1.y; z < s2.y; z++) {
+		for (int z = s1.y; z < s2.y; z++) {
+			for (int x = s1.x; x < s2.x; x++) {
 				if (blockingMap.IsBlocked(x, z, notIgnore)) {
 					return false;
 				}
@@ -677,8 +677,8 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 
 #define DECLARE_TEST(testName, facingType)																	\
 	auto testName = [this, mask, notIgnore, structMask](const int2& m1, const int2& m2, const int2& om) {	\
-		for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {												\
-			for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {											\
+		for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {												\
+			for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {											\
 				switch (mask->facingType(xm, zm)) {															\
 					case IBlockMask::BlockType::BLOCK: {													\
 						if (blockingMap.IsStructed(x, z, structMask)) {										\
@@ -795,8 +795,8 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 
 #define DECLARE_TEST_LOW(testName, facingType)																\
 	auto testName = [this, mask, notIgnore, structMask](const int2& m1, const int2& m2, const int2& om) {	\
-		for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {												\
-			for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {											\
+		for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {												\
+			for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {											\
 				switch (mask->facingType(xm, zm)) {															\
 					case IBlockMask::BlockType::BLOCK: {													\
 						if (blockingMap.IsStructed(x, z, structMask)) {										\
@@ -928,8 +928,8 @@ void CTerrainManager::MarkBlockerByMask(const SStructure& building, bool block, 
 	}
 
 #define DECLARE_MARKER(typeName, blockerOp, structOp)					\
-	for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {				\
-		for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {			\
+	for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {				\
+		for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {			\
 			switch (mask->typeName(xm, zm)) {							\
 				case IBlockMask::BlockType::BLOCK: {					\
 					blockingMap.blockerOp(x, z, structType);			\
@@ -1015,16 +1015,16 @@ void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 	const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::ALL);
 
 	if (block) {
-		for (int z = m1.y; z < m2.y; z++) {
-			for (int x = m1.x; x < m2.x; x++) {
+		for (int x = m1.x; x < m2.x; ++x) {
+			for (int z = m1.y; z < m2.y; ++z) {
 				blockingMap.AddStruct(x, z, structType, notIgnore);
 			}
 		}
 	} else {
 		// NOTE: This can mess up things if unit is inside factory :/
 		// SOLUTION: Do not mark movable units
-		for (int z = m1.y; z < m2.y; z++) {
-			for (int x = m1.x; x < m2.x; x++) {
+		for (int x = m1.x; x < m2.x; ++x) {
+			for (int z = m1.y; z < m2.y; ++z) {
 				blockingMap.DelStruct(x, z, structType, notIgnore);
 			}
 		}

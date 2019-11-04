@@ -140,10 +140,10 @@ void CInfluenceMap::AddUnit(CAllyUnit* u)
 	const int beginZ = std::max(int(posz - range + 1),       0);
 	const int endZ   = std::min(int(posz + range    ), height);
 
-	for (int x = beginX; x < endX; ++x) {
-		const int dxSq = SQUARE(posx - x);
-		for (int z = beginZ; z < endZ; ++z) {
-			const int dzSq = SQUARE(posz - z);
+	for (int z = beginZ; z < endZ; ++z) {
+		const int dzSq = SQUARE(posz - z);
+		for (int x = beginX; x < endX; ++x) {
+			const int dxSq = SQUARE(posx - x);
 			const int lenSq = dxSq + dzSq;
 			if (lenSq > rangeSq) {
 				continue;
@@ -175,10 +175,10 @@ void CInfluenceMap::AddUnit(CEnemyUnit* e)
 	const int beginZ = std::max(int(posz - range + 1),       0);
 	const int endZ   = std::min(int(posz + range    ), height);
 
-	for (int x = beginX; x < endX; ++x) {
-		const int dxSq = SQUARE(posx - x);
-		for (int z = beginZ; z < endZ; ++z) {
-			const int dzSq = SQUARE(posz - z);
+	for (int z = beginZ; z < endZ; ++z) {
+		const int dzSq = SQUARE(posz - z);
+		for (int x = beginX; x < endX; ++x) {
+			const int dxSq = SQUARE(posx - x);
 			const int lenSq = dxSq + dzSq;
 			if (lenSq > rangeSq) {
 				continue;
@@ -211,10 +211,10 @@ void CInfluenceMap::AddFeature(Feature* f)
 	const int beginZ = std::max(int(posz - range + 1),       0);
 	const int endZ   = std::min(int(posz + range    ), height);
 
-	for (int x = beginX; x < endX; ++x) {
-		const int dxSq = SQUARE(posx - x);
-		for (int z = beginZ; z < endZ; ++z) {
-			const int dzSq = SQUARE(posz - z);
+	for (int z = beginZ; z < endZ; ++z) {
+		const int dzSq = SQUARE(posz - z);
+		for (int x = beginX; x < endX; ++x) {
+			const int dxSq = SQUARE(posx - x);
 			const int lenSq = dxSq + dzSq;
 			if (lenSq > rangeSq) {
 				continue;

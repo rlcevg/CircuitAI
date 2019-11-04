@@ -54,7 +54,7 @@ namespace circuit {
 
 using namespace springai;
 
-#define ACTION_UPDATE_RATE	256
+#define ACTION_UPDATE_RATE	64
 #define RELEASE_CONFIG		100
 #define RELEASE_COMMANDER	101
 #define RELEASE_CORRUPTED	102
@@ -76,6 +76,7 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, allyTeam(nullptr)
 		, uEnemyMark(0)
 		, kEnemyMark(0)
+		, enemyIterator(0)
 		, actionIterator(0)
 		, isCheating(false)
 		, isAllyAware(true)
@@ -655,6 +656,7 @@ int CCircuitAI::Release(int reason)
 		delete kv.second;
 	}
 	enemyUnits.clear();
+	enemyUpdates.clear();
 	if (allyTeam != nullptr) {
 		allyTeam->Release();
 	}
@@ -695,9 +697,12 @@ int CCircuitAI::Update(int frame)
 	if (!enemyUnits.empty()) {
 		int mark = frame % THREAT_UPDATE_RATE;
 		if (mark == uEnemyMark) {
-			UpdateEnemyUnits();
+			threatMap->EnqueueUpdate();
+			inflMap->Update();
 		} else if (mark == kEnemyMark) {
 			militaryManager->UpdateEnemyGroups();
+		} else {
+			UpdateEnemyUnits();
 		}
 	}
 
@@ -1268,6 +1273,7 @@ std::pair<CEnemyUnit*, bool> CCircuitAI::RegisterEnemyUnit(ICoreUnit::Id unitId,
 	unit = new CEnemyUnit(unitId, u, cdef);
 
 	enemyUnits[unit->GetId()] = unit;
+	enemyUpdates.push_back(unit);
 
 	return std::make_pair(unit, true);
 }
@@ -1294,14 +1300,25 @@ CEnemyUnit* CCircuitAI::RegisterEnemyUnit(Unit* e)
 
 	CCircuitDef* cdef = defsById[unitDefId];
 	unit = new CEnemyUnit(unitId, e, cdef);
+
 	enemyUnits[unit->GetId()] = unit;
+	enemyUpdates.push_back(unit);
+
 	return unit;
 }
 
-void CCircuitAI::UnregisterEnemyUnit(CEnemyUnit* unit)
+void CCircuitAI::UnregisterEnemyUnit(CEnemyUnit* enemy)
 {
-	enemyUnits.erase(unit->GetId());
-	delete unit;
+	enemy->Dead();
+	enemyUnits.erase(enemy->GetId());
+}
+
+void CCircuitAI::DeleteEnemyUnit(CEnemyUnit* enemy)
+{
+	enemyUpdates[enemyIterator] = enemyUpdates.back();
+	enemyUpdates.pop_back();
+
+	delete enemy;
 }
 
 void CCircuitAI::UpdateEnemyUnits()
@@ -1312,15 +1329,26 @@ void CCircuitAI::UpdateEnemyUnits()
 		cheats->SetEnabled(true);
 	}
 
-	auto it = enemyUnits.begin();
-	while (it != enemyUnits.end()) {
-		CEnemyUnit* enemy = it->second;
+	if (enemyIterator >= enemyUpdates.size()) {
+		enemyIterator = 0;
+	}
+
+	// stagger the Update's
+	// -2 is for threat-draw frame and k-means frame
+	unsigned int n = (enemyUpdates.size() / (THREAT_UPDATE_RATE - 2)) + 1;
+
+	while ((enemyIterator < enemyUpdates.size()) && (n != 0)) {
+		CEnemyUnit* enemy = enemyUpdates[enemyIterator];
+		if (enemy->IsDead()) {
+			DeleteEnemyUnit(enemy);
+			continue;
+		}
 
 		int frame = enemy->GetLastSeen();
 		if ((frame != -1) && (lastFrame - frame >= FRAMES_PER_SEC * 60 * 20)) {
 			EnemyDestroyed(enemy);
-			it = enemyUnits.erase(it);  // UnregisterEnemyUnit(enemy)
-			delete enemy;
+			UnregisterEnemyUnit(enemy);
+			DeleteEnemyUnit(enemy);
 			continue;
 		}
 
@@ -1328,8 +1356,8 @@ void CCircuitAI::UpdateEnemyUnits()
 			const AIFloat3& pos = enemy->GetUnit()->GetPos();
 			if (CTerrainData::IsNotInBounds(pos)) {  // NOTE: Unit id validation. No EnemyDestroyed sometimes apparently
 				EnemyDestroyed(enemy);
-				it = enemyUnits.erase(it);  // UnregisterEnemyUnit(enemy)
-				delete enemy;
+				UnregisterEnemyUnit(enemy);
+				DeleteEnemyUnit(enemy);
 				continue;
 			}
 			enemy->UpdateInRadarData(pos);
@@ -1338,15 +1366,13 @@ void CCircuitAI::UpdateEnemyUnits()
 			}
 		}
 
-		++it;
+		++enemyIterator;
+		--n;
 	}
 
 	if (!isCheating) {
 		cheats->SetEnabled(false);
 	}
-
-	threatMap->EnqueueUpdate();
-	inflMap->Update();
 }
 
 CEnemyUnit* CCircuitAI::GetEnemyUnit(ICoreUnit::Id unitId) const
@@ -1411,9 +1437,9 @@ void CCircuitAI::UpdateActions()
 		} else {
 			if (unit->GetTask()->GetType() != IUnitTask::Type::PLAYER) {
 				unit->Update(this);
+				--n;
 			}
 			++actionIterator;
-			n--;
 		}
 	}
 }

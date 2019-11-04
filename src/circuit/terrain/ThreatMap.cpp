@@ -437,10 +437,10 @@ void CThreatMap::AddEnemyAir(const CEnemyUnit::SData& e)
 	const int beginZ = std::max(int(posz - range + 1),      0);
 	const int endZ   = std::min(int(posz + range    ), height);
 
-	for (int x = beginX; x < endX; ++x) {
-		const int dxSq = SQUARE(posx - x);
-		for (int z = beginZ; z < endZ; ++z) {
-			const int dzSq = SQUARE(posz - z);
+	for (int z = beginZ; z < endZ; ++z) {
+		const int dzSq = SQUARE(posz - z);
+		for (int x = beginX; x < endX; ++x) {
+			const int dxSq = SQUARE(posx - x);
 			const int sum = dxSq + dzSq;
 			if (sum > rangeSq) {
 				continue;
@@ -475,10 +475,10 @@ void CThreatMap::AddEnemyAmph(const CEnemyUnit::SData& e)
 	const int beginZ = std::max(int(posz - range + 1),      0);
 	const int endZ   = std::min(int(posz + range    ), height);
 
-	for (int x = beginX; x < endX; ++x) {
-		const int dxSq = SQUARE(posx - x);
-		for (int z = beginZ; z < endZ; ++z) {
-			const int dzSq = SQUARE(posz - z);
+	for (int z = beginZ; z < endZ; ++z) {
+		const int dzSq = SQUARE(posz - z);
+		for (int x = beginX; x < endX; ++x) {
+			const int dxSq = SQUARE(posx - x);
 
 			// TODO: 1) Draw as LOS. 2) Separate draw rules for artillery, superweapons, instant-hit weapons
 			// Arty: center have no/little threat
@@ -515,10 +515,10 @@ void CThreatMap::AddDecloaker(const CEnemyUnit::SData& e)
 	const int beginZ = std::max(int(posz - rangeCloak + 1),      0);
 	const int endZ   = std::min(int(posz + rangeCloak    ), height);
 
-	for (int x = beginX; x < endX; ++x) {
-		const int dxSq = SQUARE(posx - x);
-		for (int z = beginZ; z < endZ; ++z) {
-			const int dzSq = SQUARE(posz - z);
+	for (int z = beginZ; z < endZ; ++z) {
+		const int dzSq = SQUARE(posz - z);
+		for (int x = beginX; x < endX; ++x) {
+			const int dxSq = SQUARE(posx - x);
 			const int sum = dxSq + dzSq;
 			if (sum > rangeCloakSq) {
 				continue;
@@ -545,10 +545,10 @@ void CThreatMap::AddShield(const CEnemyUnit::SData& e)
 	const int beginZ = std::max(int(posz - rangeShield + 1),      0);
 	const int endZ   = std::min(int(posz + rangeShield    ), height);
 
-	for (int x = beginX; x < endX; ++x) {
-		const int rrx = rangeShieldSq - SQUARE(posx - x);
-		for (int z = beginZ; z < endZ; ++z) {
-			if (SQUARE(posz - z) > rrx) {
+	for (int z = beginZ; z < endZ; ++z) {
+		const int rrz = rangeShieldSq - SQUARE(posz - z);
+		for (int x = beginX; x < endX; ++x) {
+			if (SQUARE(posx - x) > rrz) {
 				continue;
 			}
 			drawShieldArray[z * width + x] += shieldVal;

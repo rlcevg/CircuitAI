@@ -155,7 +155,8 @@ public:
 private:
 	std::pair<CEnemyUnit*, bool> RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS = false);
 	CEnemyUnit* RegisterEnemyUnit(springai::Unit* e);
-	void UnregisterEnemyUnit(CEnemyUnit* unit);
+	void UnregisterEnemyUnit(CEnemyUnit* enemy);
+	void DeleteEnemyUnit(CEnemyUnit* enemy);
 	void UpdateEnemyUnits();
 public:
 	CEnemyUnit* GetEnemyUnit(springai::Unit* u) const { return GetEnemyUnit(u->GetUnitId()); }
@@ -178,6 +179,9 @@ private:
 	CAllyTeam* allyTeam;
 	int uEnemyMark;
 	int kEnemyMark;
+
+	std::vector<CEnemyUnit*> enemyUpdates;
+	unsigned int enemyIterator;
 
 	std::vector<CCircuitUnit*> actionUnits;
 	unsigned int actionIterator;

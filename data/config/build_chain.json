@@ -21,7 +21,7 @@
 	},
 
 	// Base defence and time to build it, in seconds
-	"base": [[0, 20], [1, 60], [9, 300], [0, 360], [1, 400], [0, 500], [16, 600], [5, 660], [1, 990], [5, 1160], [1, 1380], [2, 1680], [13, 1800], [15, 1850]],
+	"base": [[0, 20], [1, 60], [9, 300], [5, 660], [13, 1800], [15, 1850]],
 
 	"superweapon": {
 		"unit":   ["raveparty", "staticnuke", "staticheavyarty", "zenith", "staticantinuke"],  // FIXME: last isn't superweapon

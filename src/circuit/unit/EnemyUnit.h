@@ -23,7 +23,8 @@ class IFighterTask;
 
 class CEnemyUnit: public ICoreUnit {
 private:
-	enum LosMask: char {NONE = 0x00, LOS = 0x01, RADAR = 0x02, HIDDEN = 0x04, KNOWN = 0x08};
+	enum LosMask: char {NONE = 0x00, LOS = 0x01, RADAR = 0x02, HIDDEN = 0x04, KNOWN = 0x08,
+									DEAD = 0x10};
 	using LM = std::underlying_type<LosMask>::type;
 	using RangeArray = std::array<int, static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_)>;
 
@@ -104,6 +105,7 @@ public:
 	void SetInRadar()   { losStatus |= LosMask::RADAR; }
 	void SetHidden()    { losStatus |= LosMask::HIDDEN; }
 	void SetKnown()     { losStatus |= LosMask::KNOWN; }
+	void Dead()         { losStatus |= LosMask::DEAD; }
 	void ClearInLOS()   { losStatus &= ~LosMask::LOS; }
 	void ClearInRadar() { losStatus &= ~LosMask::RADAR; }
 	void ClearHidden()  { losStatus &= ~LosMask::HIDDEN; }
@@ -114,6 +116,7 @@ public:
 	bool NotInRadarAndLOS() const { return (losStatus & (LosMask::RADAR | LosMask::LOS)) == 0; }
 	bool IsHidden()         const { return losStatus & LosMask::HIDDEN; }
 	bool IsKnown()          const { return losStatus & LosMask::KNOWN; }
+	bool IsDead()           const { return losStatus & LosMask::DEAD; }
 
 	const SData& GetData() const { return data; }
 };
