@@ -47,7 +47,7 @@
 			// Available string values: explosion, expl_ally
 //			"radius": "explosion",  // default: "explosion"
 			"radius": 4,  // default: "explosion"
-			"not_ignore": ["engy_low"]
+			"not_ignore": ["factory", "engy_low"]
 		},
 		"fusion": {
 			"type": ["circle", "engy_mid"],

@@ -233,7 +233,7 @@ void CAntiHeavyTask::Update()
 		position = circuit->GetSetupManager()->GetBasePos();
 		pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize() * 4);
 	} else {
-		circuit->GetMilitaryManager()->FindBestPos(*pPath, startPos, leader->GetArea());
+		circuit->GetMilitaryManager()->FindAHSafePos(*pPath, startPos, leader->GetArea(), DEFAULT_SLACK * 4);
 	}
 	pathfinder->UnpreferPath();
 
@@ -367,7 +367,7 @@ void CAntiHeavyTask::FindTarget()
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
 	pathfinder->PreferPath(pPath->path);
-	pathfinder->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions, false);
+	pathfinder->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions);
 	pathfinder->UnpreferPath();
 	enemyPositions.clear();
 }

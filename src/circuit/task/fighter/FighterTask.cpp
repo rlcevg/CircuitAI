@@ -10,8 +10,10 @@
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
+#include "terrain/InfluenceMap.h"
 #include "terrain/ThreatMap.h"
 #include "unit/action/DGunAction.h"
+#include "unit/action/TravelAction.h"
 #include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 
@@ -26,6 +28,8 @@ IFighterTask::IFighterTask(ITaskManager* mgr, FightType type, float powerMod, in
 		, attackPower(.0f)
 		, powerMod(powerMod)
 		, target(nullptr)
+		, prevTile(-1)
+		, targetTile(-1)
 {
 }
 
@@ -144,8 +148,27 @@ void IFighterTask::SetTarget(CEnemyUnit* enemy)
 	}
 	if (enemy != nullptr) {
 		enemy->BindTask(this);
+		prevTile = -1;
+		targetTile = manager->GetCircuit()->GetInflMap()->Pos2Index(enemy->GetPos());
 	}
 	target = enemy;
+}
+
+void IFighterTask::Attack(const int frame)
+{
+	for (CCircuitUnit* unit : units) {
+		if (unit->Blocker() != nullptr) {
+			continue;  // Do not interrupt current action
+		}
+
+		if ((unit->GetTarget() != target) || (prevTile != targetTile)) {
+			unit->Attack(target->GetPos(), target, frame + FRAMES_PER_SEC * 60);
+
+			unit->GetTravelAct()->SetActive(false);
+		}
+	}
+	prevTile = targetTile;
+	targetTile = manager->GetCircuit()->GetInflMap()->Pos2Index(target->GetPos());
 }
 
 #ifdef DEBUG_VIS

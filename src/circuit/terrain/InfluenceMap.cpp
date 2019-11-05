@@ -113,6 +113,11 @@ float CInfluenceMap::GetInfluenceAt(const AIFloat3& position) const
 	return influence[z * width + x] - INFL_BASE;
 }
 
+int CInfluenceMap::Pos2Index(const AIFloat3& pos) const
+{
+	return int(pos.z / squareSize) * width + int(pos.x / squareSize);
+}
+
 void CInfluenceMap::Clear()
 {
 	std::fill(enemyInfl.begin(), enemyInfl.end(), INFL_BASE);

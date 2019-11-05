@@ -105,7 +105,7 @@ public:
 	void SetInRadar()   { losStatus |= LosMask::RADAR; }
 	void SetHidden()    { losStatus |= LosMask::HIDDEN; }
 	void SetKnown()     { losStatus |= LosMask::KNOWN; }
-	void Dead()         { losStatus |= LosMask::DEAD; }
+	void Dead()         { losStatus |= LosMask::DEAD | LosMask::HIDDEN; }
 	void ClearInLOS()   { losStatus &= ~LosMask::LOS; }
 	void ClearInRadar() { losStatus &= ~LosMask::RADAR; }
 	void ClearHidden()  { losStatus &= ~LosMask::HIDDEN; }

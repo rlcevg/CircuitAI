@@ -103,9 +103,9 @@ public:
 	float GetDGunRange();
 	float GetHealthPercent();
 
-	void Attack(CEnemyUnit* target, int timeout);
+	void Attack(CEnemyUnit* enemy, int timeout);
 	void Attack(const springai::AIFloat3& position, int timeout);
-	void Attack(const springai::AIFloat3& position, CEnemyUnit* target, int timeout);
+	void Attack(const springai::AIFloat3& position, CEnemyUnit* enemy, int timeout);
 	void Guard(CCircuitUnit* target, int timeout);
 	void Gather(const springai::AIFloat3& groupPos, int timeout);
 
@@ -115,6 +115,9 @@ public:
 	void Upgrade();
 	void StopUpgrade();
 	bool IsMorphing() const { return isMorphing; }
+
+	void ClearTarget() { target = nullptr; }
+	CEnemyUnit* GetTarget() const { return target; }
 
 private:
 	// NOTE: taskFrame assigned on task change and OnUnitIdle to workaround idle spam.
@@ -143,6 +146,8 @@ private:
 	int ammoFrame;
 
 	bool isMorphing;
+
+	CEnemyUnit* target;
 
 #ifdef DEBUG_VIS
 public:

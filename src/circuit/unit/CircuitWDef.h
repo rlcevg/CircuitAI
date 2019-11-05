@@ -26,11 +26,13 @@ public:
 	springai::WeaponDef* GetDef() const { return def; }
 
 	float GetRange() const { return range; }
+	float GetAoe() const { return aoe; }
 
 private:
 	springai::WeaponDef* def;  // owner
 
 	float range;
+	float aoe;
 };
 
 } // namespace circuit

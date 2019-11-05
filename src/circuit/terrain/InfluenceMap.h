@@ -36,6 +36,8 @@ public:
 	float GetEnemyInflAt(const springai::AIFloat3& position) const;
 	float GetInfluenceAt(const springai::AIFloat3& position) const;
 
+	int Pos2Index(const springai::AIFloat3& pos) const;
+
 private:
 	using Influences = std::vector<float>;
 	CCircuitAI* circuit;

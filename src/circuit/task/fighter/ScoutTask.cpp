@@ -196,7 +196,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, Path
 		const float power = threatMap->GetThreatAt(ePos);
 		if ((maxPower <= power) ||
 			!terrainManager->CanMoveToPos(area, ePos) ||
-			(enemy->GetUnit()->GetVel().SqLength2D() >= speed))
+			(enemy->GetVel().SqLength2D() >= speed))
 		{
 			continue;
 		}
@@ -232,7 +232,7 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, Path
 		float sqDist = pos.SqDistance2D(ePos);
 		if ((minPower > power) && (minSqDist > sqDist)) {
 			if (enemy->IsInRadarOrLOS()) {
-//				AIFloat3 dir = enemy->GetUnit()->GetPos() - pos;
+//				AIFloat3 dir = enemy->GetPos() - pos;
 //				float rayRange = dir.LengthNormalize();
 //				CUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, u, 0);
 //				if (hitUID == enemy->GetId()) {

@@ -7,14 +7,15 @@
 
 #include "task/fighter/AttackTask.h"
 #include "task/TaskManager.h"
-#include "setup/SetupManager.h"
+#include "module/MilitaryManager.h"
+//#include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
+#include "terrain/InfluenceMap.h"
 #include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
 #include "unit/action/FightAction.h"
 #include "unit/action/MoveAction.h"
 #include "unit/action/SupportAction.h"
-#include "unit/CircuitUnit.h"
 #include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
@@ -158,16 +159,13 @@ void CAttackTask::Update()
 		}
 	}
 
-	/*
-	 * TODO: Check safety / influence map
-	 */
-
-	/*
-	 * Update target
-	 */
-	FindTarget();
-
 	const int frame = circuit->GetLastFrame();
+	if (circuit->GetInflMap()->GetInfluenceAt(leader->GetPos(frame)) < INFL_BASE) {
+		SetTarget(nullptr);
+	} else {
+		FindTarget();
+	}
+
 	state = State::ROAM;
 	if (target != nullptr) {
 		const float sqRange = SQUARE(highestRange);
@@ -178,38 +176,20 @@ void CAttackTask::Update()
 			}
 		}
 		if (State::ENGAGE == state) {
-			for (CCircuitUnit* unit : units) {
-				if (unit->Blocker() != nullptr) {
-					continue;  // Do not interrupt current action
-				}
-
-				unit->Attack(target->GetPos(), target, frame + FRAMES_PER_SEC * 60);
-
-				unit->GetTravelAct()->SetActive(false);
-			}
+			Attack(frame);
 			return;
 		}
 	} else {
-		CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-		if ((frame > FRAMES_PER_SEC * 300) && (commander != nullptr) &&
-			circuit->GetTerrainManager()->CanMoveToPos(leader->GetArea(), commander->GetPos(frame)))
-		{
-			position = commander->GetPos(frame);
-			AIFloat3 startPos = leader->GetPos(frame);
-			AIFloat3 endPos = position;
+		AIFloat3 startPos = leader->GetPos(frame);
+		CPathFinder* pathfinder = circuit->GetPathfinder();
+		pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
+		pathfinder->PreferPath(pPath->path);
+		circuit->GetMilitaryManager()->FindFrontPos(*pPath, startPos, leader->GetArea(), DEFAULT_SLACK * 4);
+		pathfinder->UnpreferPath();
 
-			CPathFinder* pathfinder = circuit->GetPathfinder();
-			pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
-			pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
-
-			if ((pPath->path.size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(500.f))) {
+		if (!pPath->path.empty()) {
+			if (pPath->path.size() > 2) {
 				ActivePath();
-			} else {
-				for (CCircuitUnit* unit : units) {
-					unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
-
-					unit->GetTravelAct()->SetActive(false);
-				}
 			}
 			return;
 		}
@@ -250,30 +230,34 @@ void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-// FIXME: DEBUG
 void CAttackTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	Map* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
+//	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
 	const float speed = SQUARE(highestSpeed / FRAMES_PER_SEC);
-	const int canTargetCat = cdef->GetTargetCategory();
-	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float maxPower = attackPower * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
+	const int canTargetCat = cdef->GetTargetCategory();
+	const int noChaseCat = cdef->GetNoChaseCategory();
 
 	CEnemyUnit* bestTarget = nullptr;
-	const float sqOBDist = pos.SqDistance2D(basePos);
+	// TODO: Custom heuristic function
+//	const float sqOBDist = pos.SqDistance2D(basePos);  // Own to Base distance
+//	const float sqBEDist = ePos.SqDistance2D(basePos);  // Base to Enemy distance
+//	const float scale = std::min(sqBEDist / sqOBDist, 1.f);
+//	const float sqOEDist = pos.SqDistance2D(ePos) * scale;  // Own to Enemy distance
 	float minSqDist = std::numeric_limits<float>::max();
 
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
+	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(leader);
 	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
 	for (auto& kv : enemies) {
@@ -282,11 +266,9 @@ void CAttackTask::FindTarget()
 			continue;
 		}
 		const AIFloat3& ePos = enemy->GetPos();
-		const float sqBEDist = ePos.SqDistance2D(basePos);
-		const float scale = std::min(sqBEDist / sqOBDist, 1.f);
-		if ((maxPower <= threatMap->GetThreatAt(ePos) * scale) ||
+		if ((maxPower <= threatMap->GetThreatAt(ePos)/* * scale*/) ||
 			!terrainManager->CanMoveToPos(area, ePos) ||
-			(enemy->GetUnit()->GetVel().SqLength2D() > speed))
+			(enemy->GetVel().SqLength2D() >= speed))
 		{
 			continue;
 		}
@@ -311,27 +293,31 @@ void CAttackTask::FindTarget()
 			}
 		}
 
-		const float sqOEDist = pos.SqDistance2D(ePos) * scale;
-		if (minSqDist > sqOEDist) {
-			minSqDist = sqOEDist;
+		float sqDist = pos.SqDistance2D(ePos);  // * scale;
+		if (minSqDist > sqDist) {
+			minSqDist = sqDist;
 			bestTarget = enemy;
 		}
+		enemyPositions.push_back(ePos);
 	}
 
 	if (bestTarget != nullptr) {
 		SetTarget(bestTarget);
 		position = target->GetPos();
 	}
+	if (enemyPositions.empty()) {
+		pPath->Clear();
+		return;
+	}
 	AIFloat3 startPos = pos;
-	AIFloat3 endPos = position;
 
 	const float range = std::max(highestRange - threatMap->GetSquareSize() * 2.f, threatMap->GetSquareSize() * 2.f);
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
 	pathfinder->PreferPath(pPath->path);
-	pathfinder->MakePath(*pPath, startPos, endPos, range, attackPower * 0.5f);
+	pathfinder->FindBestPath(*pPath, startPos, range, enemyPositions, attackPower * 0.25f);
 	pathfinder->UnpreferPath();
+	enemyPositions.clear();
 }
-// FIXME: DEBUG
 
 } // namespace circuit

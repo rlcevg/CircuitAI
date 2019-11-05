@@ -188,7 +188,7 @@ void CAntiAirTask::Update()
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
 		pathfinder->PreferPath(pPath->path);
-		pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
+		pathfinder->FindBestPath(*pPath, startPos, DEFAULT_SLACK * 4, ourPositions, false);
 		pathfinder->UnpreferPath();
 		ourPositions.clear();
 
@@ -263,7 +263,7 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
 	pathfinder->PreferPath(pPath->path);
-	pathfinder->FindBestPath(*pPath, startPos, pathfinder->GetSquareSize(), ourPositions);
+	pathfinder->FindBestPath(*pPath, startPos, DEFAULT_SLACK * 4, ourPositions);
 	pathfinder->UnpreferPath();
 	ourPositions.clear();
 

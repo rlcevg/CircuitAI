@@ -736,7 +736,48 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 	return -RgtVector;
 }
 
-void CMilitaryManager::FindBestPos(PathInfo& pPath, AIFloat3& startPos, STerrainMapArea* area)
+void CMilitaryManager::FindFrontPos(PathInfo& pPath, AIFloat3& startPos, STerrainMapArea* area, float range)
+{
+	static F3Vec ourPositions;  // NOTE: micro-opt
+
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+
+	CDefenceMatrix* defMat = defence;
+	CMetalData::PointPredicate predicate = [defMat, terrainManager, area](const int index) {
+		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(index);
+		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
+			if ((defPoint.cost > 10.0f) && terrainManager->CanMoveToPos(area, defPoint.position)) {
+				return true;
+			}
+		}
+		return false;
+	};
+	CMetalManager* metalManager = circuit->GetMetalManager();
+	AIFloat3 centerPos(terrainManager->GetTerrainWidth() / 2, 0, terrainManager->GetTerrainHeight() / 2);
+	int index = metalManager->FindNearestCluster(centerPos, predicate);
+	if (index >= 0) {
+		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
+		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
+			ourPositions.push_back(defPoint.position);
+		}
+
+		pathfinder->FindBestPath(pPath, startPos, range, ourPositions);
+		ourPositions.clear();
+		if (!pPath.posPath.empty()) {
+			return;
+		}
+	}
+
+	/*
+	 * Use base
+	 */
+	ourPositions.push_back(circuit->GetSetupManager()->GetBasePos());
+	pathfinder->FindBestPath(pPath, startPos, range, ourPositions);
+	ourPositions.clear();
+}
+
+void CMilitaryManager::FindAHSafePos(PathInfo& pPath, AIFloat3& startPos, STerrainMapArea* area, float range)
 {
 	static F3Vec ourPositions;  // NOTE: micro-opt
 
@@ -758,46 +799,13 @@ void CMilitaryManager::FindBestPos(PathInfo& pPath, AIFloat3& startPos, STerrain
 		}
 
 		if (!ourPositions.empty()) {
-			pathfinder->FindBestPath(pPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
+			pathfinder->FindBestPath(pPath, startPos, range, ourPositions);
 			ourPositions.clear();
 			if (!pPath.posPath.empty()) {
 				return;
 			}
 		}
 	}
-
-	/*
-	 * Check static cluster defences
-	 */
-//	unsigned threatCount = 0;
-//	unsigned clusterCount = 0;
-//	CThreatMap* threatMap = circuit->GetThreatMap();
-//	CMetalManager* mm = circuit->GetMetalManager();
-//	const CMetalData::Clusters& clusters = mm->GetClusters();
-//	const CMetalData::Metals& spots = mm->GetSpots();
-//	const CMetalData::Graph& clusterGraph = mm->GetGraph();
-//	CMetalData::Graph::out_edge_iterator outEdgeIt, outEdgeEnd;
-//	std::tie(outEdgeIt, outEdgeEnd) = boost::out_edges(cluster, clusterGraph);
-//	for (; (outEdgeIt != outEdgeEnd); ++outEdgeIt) {
-//		const CMetalData::EdgeDesc& edgeId = *outEdgeIt;
-//		int idx0 = boost::target(edgeId, clusterGraph);
-//		if (mm->IsClusterFinished(idx0)) {
-//			continue;
-//		}
-//		// check if there is enemy neighbor
-//		for (int idx : clusters[idx0].idxSpots) {
-//			if (threatMap->GetAllThreatAt(spots[idx].position) > THREAT_MIN * 2) {
-//				threatCount++;
-//				break;
-//			}
-//		}
-//		if (threatCount >= 2) {  // if 2 nearby clusters are a threat
-//			threatCount = 0;
-//			if (++clusterCount >= 3) {
-//				break;
-//			}
-//		}
-//	}
 
 	CDefenceMatrix* defMat = defence;
 	CMetalData::PointPredicate predicate = [defMat, terrainManager, area](const int index) {
@@ -817,7 +825,7 @@ void CMilitaryManager::FindBestPos(PathInfo& pPath, AIFloat3& startPos, STerrain
 			ourPositions.push_back(defPoint.position);
 		}
 
-		pathfinder->FindBestPath(pPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
+		pathfinder->FindBestPath(pPath, startPos, range, ourPositions);
 		ourPositions.clear();
 		if (!pPath.posPath.empty()) {
 			return;
@@ -828,7 +836,7 @@ void CMilitaryManager::FindBestPos(PathInfo& pPath, AIFloat3& startPos, STerrain
 	 * Use base
 	 */
 	ourPositions.push_back(circuit->GetSetupManager()->GetBasePos());
-	pathfinder->FindBestPath(pPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
+	pathfinder->FindBestPath(pPath, startPos, range, ourPositions);
 	ourPositions.clear();
 }
 
@@ -1070,51 +1078,51 @@ void CMilitaryManager::UpdateDefenceTasks()
 	/*
 	 * Defend expansion
 	 */
-	const std::set<IFighterTask*>& tasks = GetTasks(IFighterTask::FightType::DEFEND);
+//	const std::set<IFighterTask*>& tasks = GetTasks(IFighterTask::FightType::DEFEND);
 	CMetalManager* mm = circuit->GetMetalManager();
-	CEconomyManager* em = circuit->GetEconomyManager();
-	CTerrainManager* tm = circuit->GetTerrainManager();
-	const CMetalData::Metals& spots = mm->GetSpots();
+//	CEconomyManager* em = circuit->GetEconomyManager();
+//	CTerrainManager* tm = circuit->GetTerrainManager();
+//	const CMetalData::Metals& spots = mm->GetSpots();
 	const CMetalData::Clusters& clusters = mm->GetClusters();
-	for (IFighterTask* task : tasks) {
-		CDefendTask* dt = static_cast<CDefendTask*>(task);
-		if (dt->GetTarget() != nullptr) {
-			continue;
-		}
-		STerrainMapArea* area = dt->GetLeader()->GetArea();
-		CMetalData::PointPredicate predicate = [em, tm, area, &spots, &clusters](const int index) {
-			const CMetalData::MetalIndices& idcs = clusters[index].idxSpots;
-			for (int idx : idcs) {
-				if (!em->IsOpenSpot(idx) && tm->CanMoveToPos(area, spots[idx].position)) {
-					return true;
-				}
-			}
-			return false;
-		};
-		AIFloat3 center(tm->GetTerrainWidth() / 2, 0, tm->GetTerrainHeight() / 2);
-		int index = mm->FindNearestCluster(center, predicate);
-		if (index >= 0) {
-			dt->SetPosition(clusters[index].position);
-		}
-
-		if (dt->GetPromote() != IFighterTask::FightType::ATTACK) {
-			continue;
-		}
-		int groupIdx = -1;
-		float minSqDist = std::numeric_limits<float>::max();
-		const AIFloat3& position = dt->GetPosition();
-		for (unsigned i = 0; i < enemyGroups.size(); ++i) {
-			const CMilitaryManager::SEnemyGroup& group = enemyGroups[i];
-			const float sqDist = position.SqDistance2D(group.pos);
-			if (sqDist < minSqDist) {
-				minSqDist = sqDist;
-				groupIdx = i;
-			}
-		}
-		if (groupIdx >= 0) {
-			dt->SetMaxPower(std::max(minAttackers, enemyGroups[groupIdx].threat));
-		}
-	}
+//	for (IFighterTask* task : tasks) {
+//		CDefendTask* dt = static_cast<CDefendTask*>(task);
+//		if (dt->GetTarget() != nullptr) {
+//			continue;
+//		}
+//		STerrainMapArea* area = dt->GetLeader()->GetArea();
+//		CMetalData::PointPredicate predicate = [em, tm, area, &spots, &clusters](const int index) {
+//			const CMetalData::MetalIndices& idcs = clusters[index].idxSpots;
+//			for (int idx : idcs) {
+//				if (!em->IsOpenSpot(idx) && tm->CanMoveToPos(area, spots[idx].position)) {
+//					return true;
+//				}
+//			}
+//			return false;
+//		};
+//		AIFloat3 center(tm->GetTerrainWidth() / 2, 0, tm->GetTerrainHeight() / 2);
+//		int index = mm->FindNearestCluster(center, predicate);
+//		if (index >= 0) {
+//			dt->SetPosition(clusters[index].position);
+//		}
+//
+//		if (dt->GetPromote() != IFighterTask::FightType::ATTACK) {
+//			continue;
+//		}
+//		int groupIdx = -1;
+//		float minSqDist = std::numeric_limits<float>::max();
+//		const AIFloat3& position = dt->GetPosition();
+//		for (unsigned i = 0; i < enemyGroups.size(); ++i) {
+//			const CMilitaryManager::SEnemyGroup& group = enemyGroups[i];
+//			const float sqDist = position.SqDistance2D(group.pos);
+//			if (sqDist < minSqDist) {
+//				minSqDist = sqDist;
+//				groupIdx = i;
+//			}
+//		}
+//		if (groupIdx >= 0) {
+//			dt->SetMaxPower(std::max(minAttackers, enemyGroups[groupIdx].threat));
+//		}
+//	}
 
 	/*
 	 * Porc update

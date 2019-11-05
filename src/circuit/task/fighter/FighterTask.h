@@ -45,6 +45,7 @@ public:
 
 protected:
 	void SetTarget(CEnemyUnit* enemy);
+	void Attack(const int frame);
 
 	FightType fightType;
 	springai::AIFloat3 position;  // attack/scout position
@@ -52,6 +53,8 @@ protected:
 	float attackPower;
 	float powerMod;
 	CEnemyUnit* target;
+	int prevTile;
+	int targetTile;
 
 	std::set<CCircuitUnit*> cowards;
 	std::set<CCircuitUnit*> shields;

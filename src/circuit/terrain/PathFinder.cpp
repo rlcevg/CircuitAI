@@ -544,19 +544,17 @@ float CPathFinder::GetCostAt(const AIFloat3& endPos, int radius) const
 		return (costR < 0.f) ? cost : std::min(cost, costR);
 	});
 
-	// Circle draw
-	// TODO: Mid-point algo?
-	int x = -radius, y = 0, err = 2 - 2 * radius;  // bottom left to top right
-	do {
-		pathCost = minCost(pathCost, xm - x, ym + y);  //   I. Quadrant +x +y
-		pathCost = minCost(pathCost, xm - y, ym - x);  //  II. Quadrant -x +y
-		pathCost = minCost(pathCost, xm + x, ym - y);  // III. Quadrant -x -y
-		pathCost = minCost(pathCost, xm + y, ym + x);  //  IV. Quadrant +x -y
-		radius = err;
-		if (radius <= y) err += ++y * 2 + 1;  // e_xy + e_y < 0
-		if (radius > x || err > y)  // e_xy + e_x > 0 or no 2nd y-step
-			err += ++x * 2 + 1;  // -> x-step now
-	} while (x < 0);
+	// test 8 points
+	pathCost = minCost(pathCost, xm - radius, ym);
+	pathCost = minCost(pathCost, xm + radius, ym);
+	pathCost = minCost(pathCost, xm, ym - radius);
+	pathCost = minCost(pathCost, xm, ym + radius);
+
+	const int r2 = radius * ISQRT_2 + 1;
+	pathCost = minCost(pathCost, xm - r2, ym - r2);
+	pathCost = minCost(pathCost, xm + r2, ym - r2);
+	pathCost = minCost(pathCost, xm - r2, ym + r2);
+	pathCost = minCost(pathCost, xm + r2, ym + r2);
 
 	return pathCost;
 }

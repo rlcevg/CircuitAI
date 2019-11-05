@@ -67,7 +67,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 			continue;
 		}
 
-		AIFloat3 dir = enemy->GetUnit()->GetPos() - pos;
+		AIFloat3 dir = enemy->GetPos() - pos;
 		float rayRange = dir.LengthNormalize();
 		// NOTE: TraceRay check is mostly to ensure shot won't go into terrain.
 		//       Doesn't properly work with standoff weapons.
@@ -86,6 +86,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 
 	if (bestTarget != nullptr) {
 		unit->ManualFire(bestTarget, frame + FRAMES_PER_SEC * 5);
+		unit->ClearTarget();
 		isBlocking = true;
 	}
 }

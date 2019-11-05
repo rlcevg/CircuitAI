@@ -41,7 +41,7 @@ void CBDefenceTask::Update()
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	bool isUnderEnemy = (circuit->GetInflMap()->GetInfluenceAt(buildPos) < INFL_BASE);
+	bool isUnderEnemy = (circuit->GetInflMap()->GetEnemyInflAt(buildPos) > INFL_BASE);
 	if (isUrgent == isUnderEnemy) {
 		return;
 	}

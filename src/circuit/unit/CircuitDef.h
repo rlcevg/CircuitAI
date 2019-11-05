@@ -25,7 +25,8 @@ class CCircuitDef {
 public:
 	using Id = int;
 	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, _SIZE_};
-	enum class ThreatType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, CLOAK = 4, SHIELD = 5, _SIZE_};
+	enum class ThreatType: char {MAX = 0, AIR = 1,     LAND = 2,     WATER = 3, CLOAK = 4, SHIELD = 5,
+									  VEL_AIR = 6, VEL_LAND = 7, VEL_WATER = 8, _SIZE_};
 	using RangeT = std::underlying_type<RangeType>::type;
 	using ThreatT = std::underlying_type<ThreatType>::type;
 
@@ -188,6 +189,7 @@ public:
 	bool HasAntiAir()   const { return hasAntiAir; }
 	bool HasAntiLand()  const { return hasAntiLand; }
 	bool HasAntiWater() const { return hasAntiWater; }
+	bool IsAlwaysHit()  const { return isAlwaysHit; }
 
 	bool IsMobile()        const { return speed > .1f; }
 	bool IsAbleToFly()     const { return isAbleToFly; }
@@ -265,6 +267,7 @@ private:
 	bool hasAntiAir;  // air layer
 	bool hasAntiLand;  // surface (water and land)
 	bool hasAntiWater;  // under water
+	bool isAlwaysHit;  // FIXME: calc per weapon
 
 	// TODO: Use bit field?
 	bool isPlane;  // no hover attack

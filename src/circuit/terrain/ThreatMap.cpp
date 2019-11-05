@@ -30,6 +30,7 @@ using namespace springai;
 #define THREAT_BASE		0.f
 #define THREAT_DECAY	1e-2f
 #define THREAT_CLOAK	16.0f
+#define VEL_EPSILON		1e-2f
 
 CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 		: circuit(circuit)
@@ -84,17 +85,14 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 	losResConv = SQUARE_SIZE << losMipLevel;
 
 	// FIXME: DEBUG
-	float minThreat = 10000.f;
-	float maxThreat = 0.f;
-	// FIXME: DEBUG
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	slackMod = root["quota"].get("slack_mod", 2.f).asFloat();
 	constexpr float allowedRange = 2000.f;
 	for (auto& kv : circuit->GetCircuitDefs()) {
 		CCircuitDef* cdef = kv.second;
+		const float velSlack = DEFAULT_SLACK * slackMod + (cdef->IsMobile() ? cdef->GetSpeed() / FRAMES_PER_SEC * THREAT_UPDATE_RATE : 0.f);
 		// TODO: slack should also depend on own unit's path update rate
-		const float slack = squareSize - 1 + DEFAULT_SLACK * slackMod + cdef->GetAoe() +
-				(cdef->IsMobile() ? cdef->GetSpeed() / FRAMES_PER_SEC * THREAT_UPDATE_RATE : 0.f);
+		const float slack = squareSize - 1 + cdef->GetAoe();
 		float realRange;
 		int range;
 		int maxRange;
@@ -102,33 +100,28 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 		realRange = cdef->GetMaxRange(CCircuitDef::RangeType::AIR);
 		range = cdef->HasAntiAir() ? int(realRange + slack) / squareSize + 1 : 0;
 		cdef->SetThreatRange(CCircuitDef::ThreatType::AIR, range);
+		range = cdef->HasAntiAir() ? int(realRange + slack + velSlack) / squareSize + 1 : 0;
+		cdef->SetThreatRange(CCircuitDef::ThreatType::VEL_AIR, range);
 		maxRange = range;
 
 		realRange = cdef->GetMaxRange(CCircuitDef::RangeType::LAND);
 		range = (cdef->HasAntiLand() && (realRange <= allowedRange)) ? int(realRange + slack) / squareSize + 1 : 0;
 		cdef->SetThreatRange(CCircuitDef::ThreatType::LAND, range);
+		range = (cdef->HasAntiLand() && (realRange <= allowedRange)) ? int(realRange + slack + velSlack) / squareSize + 1 : 0;
+		cdef->SetThreatRange(CCircuitDef::ThreatType::VEL_LAND, range);
 		maxRange = std::max(maxRange, range);
 
 		realRange = cdef->GetMaxRange(CCircuitDef::RangeType::WATER);
 		range = (cdef->HasAntiWater() && (realRange <= allowedRange)) ? int(realRange + slack) / squareSize + 1 : 0;
 		cdef->SetThreatRange(CCircuitDef::ThreatType::WATER, range);
+		range = (cdef->HasAntiWater() && (realRange <= allowedRange)) ? int(realRange + slack + velSlack) / squareSize + 1 : 0;
+		cdef->SetThreatRange(CCircuitDef::ThreatType::VEL_WATER, range);
 		maxRange = std::max(maxRange, range);
 
 		cdef->SetThreatRange(CCircuitDef::ThreatType::MAX, maxRange);
 		cdef->SetThreatRange(CCircuitDef::ThreatType::CLOAK, GetCloakRange(cdef));
 		cdef->SetThreatRange(CCircuitDef::ThreatType::SHIELD, GetShieldRange(cdef));
-		// FIXME: DEBUG
-		circuit->LOG("%s | %f", cdef->GetDef()->GetName(), cdef->GetThreat());
-		if (cdef->GetThreat() > 0.f && minThreat > cdef->GetThreat()) {
-			minThreat = cdef->GetThreat();
-		}
-		if (maxThreat < cdef->GetThreat()) {
-			maxThreat = cdef->GetThreat();
-		}
-		// FIXME: DEBUG
 	}
-	// FIXME: DEBUG
-	circuit->LOG("minThreat: %f | %f", minThreat, maxThreat);
 	// FIXME: DEBUG
 }
 
@@ -324,12 +317,12 @@ void CThreatMap::SetThreatType(CCircuitUnit* unit)
 {
 	assert(unit != nullptr);
 	if (unit->GetCircuitDef()->IsAbleToFly()) {
-		threatArray = &airThreat[0];
+		threatArray = airThreat;
 //	} else if (unit->GetPos(circuit->GetLastFrame()).y < -SQUARE_SIZE * 5) {
 	} else if (unit->GetCircuitDef()->IsAmphibious()) {
-		threatArray = &amphThreat[0];
+		threatArray = amphThreat;
 	} else {
-		threatArray = &surfThreat[0];
+		threatArray = surfThreat;
 	}
 }
 
@@ -406,7 +399,7 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit::SData& e)
 		AddEnemyAir(e);
 	}
 	if (cdef->HasAntiLand() || cdef->HasAntiWater()) {
-		AddEnemyAmph(e);
+		cdef->IsAlwaysHit() ? AddEnemyAmphConst(e) : AddEnemyAmphGradient(e);
 	}
 	AddDecloaker(e);
 
@@ -418,7 +411,7 @@ void CThreatMap::AddEnemyUnit(const CEnemyUnit::SData& e)
 void CThreatMap::AddEnemyUnitAll(const CEnemyUnit::SData& e)
 {
 	AddEnemyAir(e);
-	AddEnemyAmph(e);
+	AddEnemyAmphGradient(e);
 	AddDecloaker(e);
 }
 
@@ -428,7 +421,8 @@ void CThreatMap::AddEnemyAir(const CEnemyUnit::SData& e)
 	PosToXZ(e.pos, posx, posz);
 
 	const float threat = e.threat/* - THREAT_DECAY*/;
-	const int range = CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::AIR);
+	const int range = CEnemyUnit::GetRange(e.range, (e.vel.SqLength2D() < VEL_EPSILON) ?
+			CCircuitDef::ThreatType::AIR : CCircuitDef::ThreatType::VEL_AIR);
 	const int rangeSq = SQUARE(range);
 
 	// Threat circles are large and often have appendix, decrease it by 1 for micro-optimization
@@ -457,15 +451,57 @@ void CThreatMap::AddEnemyAir(const CEnemyUnit::SData& e)
 	}
 }
 
-void CThreatMap::AddEnemyAmph(const CEnemyUnit::SData& e)
+void CThreatMap::AddEnemyAmphConst(const CEnemyUnit::SData& e)
 {
 	int posx, posz;
 	PosToXZ(e.pos, posx, posz);
 
 	const float threat = e.threat/* - THREAT_DECAY*/;
-	const int rangeLand = CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::LAND);
+	const int rangeLand = CEnemyUnit::GetRange(e.range, (e.vel.SqLength2D() < VEL_EPSILON) ?
+			CCircuitDef::ThreatType::LAND : CCircuitDef::ThreatType::VEL_LAND);
 	const int rangeLandSq = SQUARE(rangeLand);
-	const int rangeWater = CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::WATER);
+	const int rangeWater = CEnemyUnit::GetRange(e.range, (e.vel.SqLength2D() < VEL_EPSILON) ?
+			CCircuitDef::ThreatType::WATER : CCircuitDef::ThreatType::VEL_WATER);
+	const int rangeWaterSq = SQUARE(rangeWater);
+	const int range = std::max(rangeLand, rangeWater);
+	const std::vector<STerrainMapSector>& sector = areaData->sector;
+
+	const int beginX = std::max(int(posx - range + 1),      0);
+	const int endX   = std::min(int(posx + range    ),  width);
+	const int beginZ = std::max(int(posz - range + 1),      0);
+	const int endZ   = std::min(int(posz + range    ), height);
+
+	for (int z = beginZ; z < endZ; ++z) {
+		const int dzSq = SQUARE(posz - z);
+		for (int x = beginX; x < endX; ++x) {
+			const int dxSq = SQUARE(posx - x);
+
+			const int sum = dxSq + dzSq;
+			const int index = z * width + x;
+			bool isWaterThreat = (sum <= rangeWaterSq) && sector[index].isWater;
+			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[index].position.y >= -SQUARE_SIZE * 5)))
+			{
+				drawAmphThreat[index] += threat;
+			}
+			if (isWaterThreat || (sum <= rangeLandSq))
+			{
+				drawSurfThreat[index] += threat;
+			}
+		}
+	}
+}
+
+void CThreatMap::AddEnemyAmphGradient(const CEnemyUnit::SData& e)
+{
+	int posx, posz;
+	PosToXZ(e.pos, posx, posz);
+
+	const float threat = e.threat/* - THREAT_DECAY*/;
+	const int rangeLand = CEnemyUnit::GetRange(e.range, (e.vel.SqLength2D() < VEL_EPSILON) ?
+			CCircuitDef::ThreatType::LAND : CCircuitDef::ThreatType::VEL_LAND);
+	const int rangeLandSq = SQUARE(rangeLand);
+	const int rangeWater = CEnemyUnit::GetRange(e.range, (e.vel.SqLength2D() < VEL_EPSILON) ?
+			CCircuitDef::ThreatType::WATER : CCircuitDef::ThreatType::VEL_WATER);
 	const int rangeWaterSq = SQUARE(rangeWater);
 	const int range = std::max(rangeLand, rangeWater);
 	const std::vector<STerrainMapSector>& sector = areaData->sector;
@@ -564,7 +600,8 @@ void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const
 	// FIXME: DEBUG  comm's threat value is not based on proper weapons
 	if (edef->IsRoleComm()) {
 		// TODO: by weapons 1,2 descriptions set proper land/air/water ranges/threats
-		float maxRange = -1.f;
+		float maxRange = 0.f;
+		float maxAoe = 0.f;
 		for (int num = 1; num < 3; ++num) {
 			std::string str = utils::int_to_string(num, "comm_weapon_id_%i");
 			int weaponDefId = int(e->GetUnit()->GetRulesParamFloat(str.c_str(), -1));
@@ -572,18 +609,27 @@ void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const
 				continue;
 			}
 
-			const float range = circuit->GetWeaponDef(weaponDefId)->GetRange();
+			CWeaponDef* weaponDef = circuit->GetWeaponDef(weaponDefId);
+			const float range = weaponDef->GetRange();
 			if (maxRange < range) {
 				maxRange = range;
+				maxAoe = weaponDef->GetAoe();
 			}
 		}
-		const float slack = squareSize - 1 + DEFAULT_SLACK * slackMod + edef->GetSpeed() / FRAMES_PER_SEC * THREAT_UPDATE_RATE;
+		const float velSlack = DEFAULT_SLACK * slackMod + edef->GetSpeed() / FRAMES_PER_SEC * THREAT_UPDATE_RATE;
+		const float slack = squareSize - 1 +  maxAoe;
 		const float mult = e->GetUnit()->GetRulesParamFloat("comm_range_mult", 1.f);
 		const float range = int(maxRange * mult + slack) / squareSize + 1;
-		for (CCircuitDef::ThreatT tt = 0; tt < static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_); ++tt) {
-			CCircuitDef::ThreatType type = static_cast<CCircuitDef::ThreatType>(tt);
-			e->SetRange(type, range);
-		}
+		const float velRange = int(maxRange * mult + slack + velSlack) / squareSize + 1;
+		e->SetRange(CCircuitDef::ThreatType::MAX, range);
+		e->SetRange(CCircuitDef::ThreatType::AIR, range);
+		e->SetRange(CCircuitDef::ThreatType::LAND, range);
+		e->SetRange(CCircuitDef::ThreatType::WATER, range);
+		e->SetRange(CCircuitDef::ThreatType::VEL_AIR, velRange);
+		e->SetRange(CCircuitDef::ThreatType::VEL_LAND, velRange);
+		e->SetRange(CCircuitDef::ThreatType::VEL_WATER, velRange);
+		e->SetRange(CCircuitDef::ThreatType::CLOAK, edef->GetThreatRange(CCircuitDef::ThreatType::CLOAK));
+		e->SetRange(CCircuitDef::ThreatType::SHIELD, edef->GetThreatRange(CCircuitDef::ThreatType::SHIELD));
 	} else {
 	// FIXME: DEBUG
 

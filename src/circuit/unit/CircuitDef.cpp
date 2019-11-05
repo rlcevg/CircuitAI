@@ -96,6 +96,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, hasAntiAir(false)
 		, hasAntiLand(false)
 		, hasAntiWater(false)
+		, isAlwaysHit(false)
 		, isAmphibious(false)
 		, isLander(false)
 		, stockCost(.0f)
@@ -307,15 +308,14 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		aoe = std::max(aoe, wd->GetAreaOfEffect());
 
 		std::string wt(wd->GetType());  // @see https://springrts.com/wiki/Gamedev:WeaponDefs
-		bool isAirWeapon = false;
 		const float projectileSpeed = wd->GetProjectileSpeed();
 		float range = wd->GetRange();
 
-		isAirWeapon = ((wt == "Cannon") || (wt == "DGun") || (wt == "EmgCannon") || (wt == "Flame") ||
+		isAlwaysHit |= ((wt == "Cannon") || (wt == "DGun") || (wt == "EmgCannon") || (wt == "Flame") ||
 				(wt == "LaserCannon") || (wt == "AircraftBomb")) && (projectileSpeed * FRAMES_PER_SEC >= .75f * range);  // Cannons with fast projectiles
-		isAirWeapon |= (wt == "BeamLaser") || (wt == "LightningCannon") || (wt == "Rifle") ||  // Instant-hit
+		isAlwaysHit |= (wt == "BeamLaser") || (wt == "LightningCannon") || (wt == "Rifle") ||  // Instant-hit
 				(((wt == "MissileLauncher") || (wt == "StarburstLauncher") || ((wt == "TorpedoLauncher") && wd->IsSubMissile())) && wd->IsTracks());  // Missiles
-		isAirWeapon &= (range > 150.f);
+		const bool isAirWeapon = isAlwaysHit && (range > 150.f);
 		canTargetAir |= isAirWeapon;
 
 		bool isLandWeapon = ((wt != "TorpedoLauncher") || wd->IsSubMissile());

@@ -17,6 +17,7 @@ CWeaponDef::CWeaponDef(WeaponDef* def)
 		: def(def)
 {
 	range = def->GetRange();
+	aoe = def->GetAreaOfEffect();
 }
 
 CWeaponDef::~CWeaponDef()

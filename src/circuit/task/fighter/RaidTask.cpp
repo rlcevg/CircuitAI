@@ -181,11 +181,7 @@ void CRaidTask::Update()
 				}
 			}
 		} else {
-			for (CCircuitUnit* unit : units) {
-				unit->Attack(target->GetPos(), target, frame + FRAMES_PER_SEC * 60);
-
-				unit->GetTravelAct()->SetActive(false);
-			}
+			Attack(frame);
 		}
 		return;
 	} else if (!pPath->posPath.empty()) {
@@ -290,7 +286,7 @@ void CRaidTask::FindTarget()
 		const float power = threatMap->GetThreatAt(ePos);
 		if ((maxPower <= power) ||
 			!terrainManager->CanMoveToPos(area, ePos) ||
-			(enemy->GetUnit()->GetVel().SqLength2D() >= speed))
+			(enemy->GetVel().SqLength2D() >= speed))
 		{
 			continue;
 		}
@@ -351,13 +347,14 @@ void CRaidTask::FindTarget()
 		bestTarget = worstTarget;
 	}
 
-	pPath->Clear();
 	if (bestTarget != nullptr) {
 		SetTarget(bestTarget);
 		enemyPositions.clear();
+		pPath->Clear();
 		return;
 	}
 	if (enemyPositions.empty()) {
+		pPath->Clear();
 		return;
 	}
 
@@ -365,7 +362,7 @@ void CRaidTask::FindTarget()
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
 	pathfinder->PreferPath(pPath->path);
-	pathfinder->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions, attackPower * 0.125f);
+	pathfinder->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions, attackPower * 0.01f);
 	pathfinder->UnpreferPath();
 	enemyPositions.clear();
 }
