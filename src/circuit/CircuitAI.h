@@ -236,6 +236,7 @@ public:
 	int GetSkirmishAIId() const { return skirmishAIId; }
 	int GetTeamId()       const { return teamId; }
 	int GetAllyTeamId()   const { return allyTeamId; }
+	const struct SSkirmishAICallback* GetSkirmishAICallback() const { return sAICallback; }
 	springai::OOAICallback* GetCallback()   const { return callback; }
 	springai::Cheats*       GetCheats()     const { return cheats.get(); }
 	springai::Log*          GetLog()        const { return log.get(); }

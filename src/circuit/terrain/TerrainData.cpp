@@ -16,6 +16,7 @@
 #include "util/utils.h"
 
 #include "Sim/MoveTypes/MoveDefHandler.h"
+#include "SSkirmishAICallback.h"	// "direct" C API
 #include "OOAICallback.h"
 #include "Log.h"
 #include "Map.h"
@@ -50,6 +51,7 @@ CTerrainData::CTerrainData()
 		, waterIsAVoid(false)
 		, sectorXSize(0)
 		, sectorZSize(0)
+		, sAICallback(nullptr)
 		, gameAttribute(nullptr)
 		, isUpdating(false)
 		, aiToUpdate(0)
@@ -79,6 +81,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	map = circuit->GetMap();
 	scheduler = circuit->GetScheduler();
 	gameAttribute = circuit->GetGameAttribute();
+	sAICallback = circuit->GetSkirmishAICallback();
 	circuit->LOG("Loading the Terrain-Map ...");
 
 	/*
@@ -255,8 +258,10 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	 *  Setting sector & determining sectors for immobileType
 	 */
 	sector.resize(sectorXSize * sectorZSize);
-	const FloatVec& standardSlopeMap = circuit->GetMap()->GetSlopeMap();
-	const FloatVec& standardHeightMap = areaData.heightMap = circuit->GetMap()->GetHeightMap();
+	GetSlopeMap(slopeMap);
+	const FloatVec& standardSlopeMap = slopeMap;
+	GetHeightMap(areaData.heightMap);
+	const FloatVec& standardHeightMap = areaData.heightMap;
 	const int convertStoSM = convertStoP / 16;  // * for conversion, / for reverse conversion
 	const int convertStoHM = convertStoP / 8;  // * for conversion, / for reverse conversion
 	const int slopeMapXSize = sectorXSize * convertStoSM;
@@ -613,6 +618,7 @@ void CTerrainData::DelegateAuthority(CCircuitAI* curOwner)
 		if (circuit->IsInitialized() && (circuit != curOwner)) {
 			map = circuit->GetMap();
 			scheduler = circuit->GetScheduler();
+			sAICallback = circuit->GetSkirmishAICallback();
 			scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::EnqueueUpdate, this), AREA_UPDATE_RATE);
 			scheduler->RunTaskAfter(std::make_shared<CGameTask>(&CTerrainData::EnqueueUpdate, this), FRAMES_PER_SEC);
 			scheduler->RunOnRelease(std::make_shared<CGameTask>(&CTerrainData::DelegateAuthority, this, circuit));
@@ -628,8 +634,10 @@ void CTerrainData::EnqueueUpdate()
 		return;
 	}
 	isUpdating = true;
-	GetNextAreaData()->heightMap = std::move(map->GetHeightMap());
-	slopeMap = std::move(map->GetSlopeMap());
+
+	GetHeightMap(GetNextAreaData()->heightMap);
+	GetSlopeMap(slopeMap);
+
 	scheduler->RunParallelTask(std::make_shared<CGameTask>(&CTerrainData::UpdateAreas, this),
 							   std::make_shared<CGameTask>(&CTerrainData::ScheduleUsersUpdate, this));
 }
@@ -937,6 +945,22 @@ void CTerrainData::OnAreaUsersUpdated()
 #ifdef DEBUG_VIS
 	UpdateVis();
 #endif
+}
+
+void CTerrainData::GetHeightMap(FloatVec& heightMap)
+{
+	// NOTE: GetNextAreaData()->heightMap = std::move(map->GetHeightMap());
+	int size = sAICallback->Map_getHeightMap(map->GetSkirmishAIId(), nullptr, -1);
+	heightMap.resize(size);
+	sAICallback->Map_getHeightMap(map->GetSkirmishAIId(), heightMap.data(), size);
+}
+
+void CTerrainData::GetSlopeMap(FloatVec& slopeMap)
+{
+	// NOTE: slopeMap = std::move(map->GetSlopeMap());
+	int size = sAICallback->Map_getSlopeMap(map->GetSkirmishAIId(), nullptr, -1);
+	slopeMap.resize(size);
+	sAICallback->Map_getSlopeMap(map->GetSkirmishAIId(), slopeMap.data(), size);
 }
 
 //void CTerrainData::DrawConvexHulls(Drawer* drawer)

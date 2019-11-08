@@ -28,6 +28,8 @@
 #include <atomic>
 #include <memory>
 
+struct SSkirmishAICallback;
+
 namespace springai {
 	class MoveData;
 	class Map;
@@ -225,8 +227,12 @@ public:
 	}
 
 private:
+	void GetHeightMap(FloatVec& heightMap);
+	void GetSlopeMap(FloatVec& slopeMap);
+
 	static springai::Map* map;
 	std::shared_ptr<CScheduler> scheduler;
+	const struct SSkirmishAICallback* sAICallback;
 	CGameAttribute* gameAttribute;
 	FloatVec slopeMap;
 	bool isUpdating;

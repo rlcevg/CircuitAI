@@ -13,6 +13,7 @@
 #include "util/utils.h"
 #include "json/json.h"
 
+#include "SSkirmishAICallback.h"	// "direct" C API
 #include "OOAICallback.h"
 #include "Mod.h"
 #include "Map.h"
@@ -78,9 +79,9 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 
 //	radarMap = std::move(map->GetRadarMap());
 	radarWidth = mapWidth >> radarMipLevel;
-	sonarMap = std::move(map->GetSonarMap());
+	GetSonarMap(sonarMap);
 	radarResConv = SQUARE_SIZE << radarMipLevel;
-	losMap = std::move(map->GetLosMap());
+	GetLosMap(losMap);
 	losWidth = mapWidth >> losMipLevel;
 	losResConv = SQUARE_SIZE << losMipLevel;
 
@@ -143,8 +144,8 @@ void CThreatMap::EnqueueUpdate()
 	isUpdating = true;
 
 //	radarMap = std::move(circuit->GetMap()->GetRadarMap());
-	sonarMap = std::move(circuit->GetMap()->GetSonarMap());
-	losMap   = std::move(circuit->GetMap()->GetLosMap());
+	GetSonarMap(sonarMap);
+	GetLosMap(losMap);
 
 	areaData = circuit->GetTerrainManager()->GetAreaData();
 
@@ -726,6 +727,24 @@ void CThreatMap::Apply()
 #ifdef DEBUG_VIS
 	UpdateVis();
 #endif
+}
+
+void CThreatMap::GetSonarMap(IntVec& sonarMap)
+{
+	// NOTE: sonarMap = std::move(circuit->GetMap()->GetSonarMap());
+	const SSkirmishAICallback* sAICallback = circuit->GetSkirmishAICallback();
+	int size = sAICallback->Map_getSonarMap(circuit->GetSkirmishAIId(), nullptr, -1);
+	sonarMap.resize(size);
+	sAICallback->Map_getSonarMap(circuit->GetSkirmishAIId(), sonarMap.data(), size);
+}
+
+void CThreatMap::GetLosMap(IntVec& losMap)
+{
+	// NOTE: losMap = std::move(circuit->GetMap()->GetLosMap());
+	const SSkirmishAICallback* sAICallback = circuit->GetSkirmishAICallback();
+	int size = sAICallback->Map_getLosMap(circuit->GetSkirmishAIId(), nullptr, -1);
+	losMap.resize(size);
+	sAICallback->Map_getLosMap(circuit->GetSkirmishAIId(), losMap.data(), size);
 }
 
 #ifdef DEBUG_VIS

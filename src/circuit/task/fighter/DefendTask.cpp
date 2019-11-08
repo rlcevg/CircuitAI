@@ -217,7 +217,6 @@ void CDefendTask::FindTarget()
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
-	const float speed = SQUARE(highestSpeed / FRAMES_PER_SEC);
 	const float maxPower = attackPower * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
@@ -237,8 +236,7 @@ void CDefendTask::FindTarget()
 		}
 		const AIFloat3& ePos = enemy->GetPos();
 		if ((maxPower <= threatMap->GetThreatAt(ePos)) || (inflMap->GetInfluenceAt(ePos) < INFL_BASE) ||
-			!terrainManager->CanMoveToPos(area, ePos) ||
-			(enemy->GetVel().SqLength2D() >= speed))
+			!terrainManager->CanMoveToPos(area, ePos))
 		{
 			continue;
 		}
