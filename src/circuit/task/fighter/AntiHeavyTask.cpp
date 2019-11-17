@@ -19,8 +19,9 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+#include "spring/SpringMap.h"
+
 #include "AISCommands.h"
-#include "Map.h"
 
 namespace circuit {
 
@@ -305,7 +306,7 @@ void CAntiHeavyTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 void CAntiHeavyTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());

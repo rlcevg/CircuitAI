@@ -19,9 +19,10 @@
 #include "util/utils.h"
 #include "json/json.h"
 
+#include "spring/SpringMap.h"
+
 #include "AISCommands.h"
 #include "OOAICallback.h"
-#include "Map.h"
 #include "Resource.h"
 #include "Economy.h"
 #include "Feature.h"
@@ -551,7 +552,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			CMetalManager* metalManager = circuit->GetMetalManager();
 			CTerrainManager* terrainManager = circuit->GetTerrainManager();
 			const CMetalData::Metals& spots = metalManager->GetSpots();
-			Map* map = circuit->GetMap();
+			CMap* map = circuit->GetMap();
 			CMetalData::PointPredicate predicate;
 			if (unit != nullptr) {
 				CCircuitDef* mexDef = this->mexDef;

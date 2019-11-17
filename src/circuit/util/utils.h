@@ -27,7 +27,7 @@
 #ifdef DEBUG_LOG
 #include "CircuitAI.h"
 
-#include "Map.h"  // to get Drawer
+#include "spring/SpringMap.h"  // to get Drawer
 #include "Drawer.h"
 #include "Log.h"
 #include "Game.h"  // to pause

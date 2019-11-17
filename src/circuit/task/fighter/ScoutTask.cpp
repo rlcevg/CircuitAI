@@ -17,9 +17,10 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+#include "spring/SpringMap.h"
+
 #include "AISCommands.h"
-#include "Map.h"
-//#include "Drawer.h"
+//#include "Drawer.h"  // TraceRay
 
 namespace circuit {
 
@@ -164,7 +165,7 @@ void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
 CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, PathInfo& path)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	STerrainMapArea* area = unit->GetArea();

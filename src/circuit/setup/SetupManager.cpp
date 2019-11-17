@@ -14,11 +14,12 @@
 #include "util/utils.h"
 #include "json/json.h"
 
+#include "spring/SpringMap.h"
+
 #include "OOAICallback.h"
 #include "OptionValues.h"
 #include "SkirmishAI.h"
 #include "Game.h"
-#include "Map.h"
 #include "DataDirs.h"
 #include "File.h"
 #include "Log.h"
@@ -574,7 +575,7 @@ bool CSetupManager::LoadConfig(const std::string& cfgOption)
 	/*
 	 * Try map specific config
 	 */
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 	dirname = std::string("LuaRules/Configs/") + name + "/" + version + "/";
 	configName = utils::MakeFileSystemCompatible(map->GetName()) + ".json";
 

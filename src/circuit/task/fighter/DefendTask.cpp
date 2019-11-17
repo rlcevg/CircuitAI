@@ -19,6 +19,8 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+#include "spring/SpringMap.h"
+
 #include "OOAICallback.h"
 #include "AISCommands.h"
 
@@ -208,7 +210,7 @@ void CDefendTask::Merge(ISquadTask* task)
 void CDefendTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CInfluenceMap* inflMap = circuit->GetInflMap();

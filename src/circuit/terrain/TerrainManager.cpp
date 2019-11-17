@@ -19,7 +19,8 @@
 #include "util/utils.h"
 #include "json/json.h"
 
-#include "Map.h"
+#include "spring/SpringMap.h"
+
 #include "OOAICallback.h"
 #include "WeaponDef.h"
 #include "Pathing.h"
@@ -46,7 +47,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 
 	ResetBuildFrame();
 
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 	int mapWidth = map->GetWidth();
 	int mapHeight = map->GetHeight();
 	blockingMap.columns = mapWidth / 2;  // build-step = 2 little green squares
@@ -393,7 +394,7 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 	const int cornerZ1 = int(pos.z / (SQUARE_SIZE * 2)) - (zsize / 2);
 
 	AIFloat3 probePos(ZeroVector);
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 
 	for (int so = 0; so < endr * endr * 4; so++) {
 		int2 s1(cornerX1 + ofs[so].dx, cornerZ1 + ofs[so].dy);
@@ -616,7 +617,7 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(CCircuitDef* cdef, const AIFloat3& po
 	const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::ALL);
 
 	AIFloat3 probePos(ZeroVector);
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 
 	for (int soLow = 0; soLow < endrLow * endrLow * 4; soLow++) {
 		int xlow = centerX + ofsLow[soLow].dx;
@@ -713,7 +714,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 	SBlockingMap::StructMask structMask = SBlockingMap::GetStructMask(mask->GetStructType());
 
 	AIFloat3 probePos(ZeroVector);
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 
 #define DO_TEST(testName)																				\
 	for (int so = 0; so < endr * endr * 4; so++) {														\
@@ -836,7 +837,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 	SBlockingMap::StructMask structMask = SBlockingMap::GetStructMask(mask->GetStructType());
 
 	AIFloat3 probePos(ZeroVector);
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 
 #define DO_TEST_LOW(testName)																					\
 	for (int soLow = 0; soLow < endrLow * endrLow * 4; soLow++) {												\

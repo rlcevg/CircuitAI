@@ -95,9 +95,6 @@ private:
 		return (pThreatData.load() == &threatData0) ? &threatData1 : &threatData0;
 	}
 
-	void GetSonarMap(IntVec& sonarMap);
-	void GetLosMap(IntVec& losMap);
-
 	int squareSize;
 	int width;
 	int height;

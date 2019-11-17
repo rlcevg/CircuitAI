@@ -17,8 +17,9 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+#include "spring/SpringMap.h"
+
 #include "AISCommands.h"
-#include "Map.h"
 
 namespace circuit {
 

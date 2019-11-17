@@ -26,13 +26,14 @@
 #include "resource/EnergyGrid.h"
 #endif
 
+#include "spring/SpringEngine.h"
+#include "spring/SpringMap.h"
+
 #include "AISEvents.h"
 #include "AISCommands.h"
-#include "SSkirmishAICallback.h"	// "direct" C API
 #include "OOAICallback.h"			// C++ wrapper
 #include "Log.h"
 #include "Game.h"
-#include "Map.h"
 #include "Lua.h"
 #include "Pathing.h"
 #include "Drawer.h"
@@ -87,15 +88,15 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		//       and lastFrame check will misbehave until first update event.
 		, lastFrame(0)
 		, skirmishAIId(callback != NULL ? callback->GetSkirmishAIId() : -1)
-		, sAICallback(nullptr)
 		, callback(callback)
+		, engine(nullptr)
 		, cheats(std::unique_ptr<Cheats>(callback->GetCheats()))
 		, log(std::unique_ptr<Log>(callback->GetLog()))
 		, game(std::unique_ptr<Game>(callback->GetGame()))
-		, map(std::unique_ptr<Map>(callback->GetMap()))
+		, map(nullptr)
 		, lua(std::unique_ptr<Lua>(callback->GetLua()))
 		, pathing(std::unique_ptr<Pathing>(callback->GetPathing()))
-		, drawer(std::unique_ptr<Drawer>(map->GetDrawer()))
+		, drawer(nullptr)
 		, skirmishAI(std::unique_ptr<SkirmishAI>(callback->GetSkirmishAI()))
 		, airCategory(0)
 		, landCategory(0)
@@ -456,7 +457,7 @@ int CCircuitAI::HandleResignEvent(int topic, const void* data)
 //bool CCircuitAI::IsModValid()
 //{
 //	const int minEngineVer = 104;
-//	const char* engineVersion = sAICallback->Engine_Version_getMajor(skirmishAIId);
+//	const char* engineVersion = engine->GetVersionMajor();
 //	int ver = atoi(engineVersion);
 //	if (ver < minEngineVer) {
 //		LOG("Engine must be %i or higher! (Current: %s)", minEngineVer, engineVersion);
@@ -521,8 +522,9 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 {
 	LOG(version);
 	this->skirmishAIId = skirmishAIId;
-	// NOTE: Due to chewed API only SSkirmishAICallback have access to Engine
-	this->sAICallback = sAICallback;
+	engine = std::unique_ptr<CEngine>(new CEngine(sAICallback, skirmishAIId));
+	map = std::unique_ptr<CMap>(new CMap(sAICallback, callback->GetMap()));
+	drawer = std::unique_ptr<Drawer>(map->GetDrawer());
 //	if (!IsModValid()) {
 //		return ERROR_INIT;
 //	}

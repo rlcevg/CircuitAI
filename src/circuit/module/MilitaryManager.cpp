@@ -36,11 +36,12 @@
 #include "util/utils.h"
 #include "json/json.h"
 
+#include "spring/SpringMap.h"
+
 #include "OOAICallback.h"
 #include "AISCommands.h"
 #include "Command.h"
 #include "Log.h"
-#include "Map.h"
 
 namespace circuit {
 

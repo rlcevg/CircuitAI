@@ -16,7 +16,8 @@
 #include "CircuitAI.h"
 #endif
 
-#include "Map.h"
+#include "spring/SpringMap.h"
+
 #ifdef DEBUG_VIS
 #include "Figure.h"
 #endif
@@ -617,7 +618,7 @@ size_t CPathFinder::RefinePath(IndexVec& path)
 
 void CPathFinder::FillPathInfo(PathInfo& iPath)
 {
-	Map* map = terrainData->GetMap();
+	CMap* map = terrainData->GetMap();
 	if (iPath.isLast) {
 		float3 pos = PathIndex2Pos(iPath.path.back());
 		pos.y = map->GetElevationAt(pos.x, pos.z);
@@ -670,7 +671,7 @@ void CPathFinder::UpdateVis(const IndexVec& path)
 		return;
 	}
 
-	Map* map = terrainData->GetMap();
+	CMap* map = terrainData->GetMap();
 	Figure* fig = circuit->GetDrawer()->GetFigure();
 	int figId = fig->DrawLine(ZeroVector, ZeroVector, 16.0f, true, FRAMES_PER_SEC * 5, 0);
 	for (unsigned i = 1; i < path.size(); ++i) {

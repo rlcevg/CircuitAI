@@ -20,8 +20,9 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+#include "spring/SpringMap.h"
+
 #include "AISCommands.h"
-#include "Map.h"
 
 namespace circuit {
 
@@ -233,7 +234,7 @@ void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
 void CAttackTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 //	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();

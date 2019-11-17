@@ -60,6 +60,8 @@ class CScheduler;
 class IModule;
 class CCircuitUnit;
 class CEnemyUnit;
+class CEngine;
+class CMap;
 #ifdef DEBUG_VIS
 class CDebugDrawer;
 #endif
@@ -236,12 +238,12 @@ public:
 	int GetSkirmishAIId() const { return skirmishAIId; }
 	int GetTeamId()       const { return teamId; }
 	int GetAllyTeamId()   const { return allyTeamId; }
-	const struct SSkirmishAICallback* GetSkirmishAICallback() const { return sAICallback; }
 	springai::OOAICallback* GetCallback()   const { return callback; }
+	CEngine*                GetEngine()     const { return engine.get(); }
 	springai::Cheats*       GetCheats()     const { return cheats.get(); }
 	springai::Log*          GetLog()        const { return log.get(); }
 	springai::Game*         GetGame()       const { return game.get(); }
-	springai::Map*          GetMap()        const { return map.get(); }
+	CMap*                   GetMap()        const { return map.get(); }
 	springai::Lua*          GetLua()        const { return lua.get(); }
 	springai::Pathing*      GetPathing()    const { return pathing.get(); }
 	springai::Drawer*       GetDrawer()     const { return drawer.get(); }
@@ -274,12 +276,12 @@ private:
 	int skirmishAIId;
 	int teamId;
 	int allyTeamId;
-	const struct SSkirmishAICallback* sAICallback;
 	springai::OOAICallback*               callback;
+	std::unique_ptr<CEngine>              engine;
 	std::unique_ptr<springai::Cheats>     cheats;
 	std::unique_ptr<springai::Log>        log;
 	std::unique_ptr<springai::Game>       game;
-	std::unique_ptr<springai::Map>        map;
+	std::unique_ptr<CMap>                 map;
 	std::unique_ptr<springai::Lua>        lua;
 	std::unique_ptr<springai::Pathing>    pathing;
 	std::unique_ptr<springai::Drawer>     drawer;

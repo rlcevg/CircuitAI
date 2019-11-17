@@ -17,6 +17,8 @@
 #include "json/json.h"
 #include "lemon/kruskal.h"
 
+#include "spring/SpringMap.h"
+
 #include "AISCommands.h"
 #include "Log.h"
 #ifdef DEBUG_VIS
@@ -615,7 +617,7 @@ void CEnergyGrid::UpdateVis()
 		return;
 	}
 
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 	Figure* fig = circuit->GetDrawer()->GetFigure();
 
 	fig->Remove(figureFinishedId);

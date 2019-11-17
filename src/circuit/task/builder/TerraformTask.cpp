@@ -12,7 +12,7 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
-#include "Map.h"
+#include "spring/SpringMap.h"
 
 namespace circuit {
 

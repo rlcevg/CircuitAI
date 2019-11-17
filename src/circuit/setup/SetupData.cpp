@@ -9,7 +9,7 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
-#include "Map.h"
+#include "spring/SpringMap.h"
 
 #include <regex>
 
@@ -37,7 +37,7 @@ void CSetupData::ParseSetupScript(CCircuitAI* circuit, const char* setupScript)
 	CSetupData::BoxMap boxes;
 
 	// Detect start boxes
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 	float width = map->GetWidth() * SQUARE_SIZE;
 	float height = map->GetHeight() * SQUARE_SIZE;
 

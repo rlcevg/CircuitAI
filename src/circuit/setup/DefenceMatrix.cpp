@@ -16,7 +16,7 @@
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
-#include "Map.h"
+#include "spring/SpringMap.h"
 
 namespace circuit {
 
@@ -66,7 +66,7 @@ void CDefenceMatrix::Init(CCircuitAI* circuit)
 	const std::vector<CCircuitDef*>& defenders = isWaterMap ? militaryManager->GetWaterDefenders() : militaryManager->GetLandDefenders();
 	CCircuitDef* rangeDef = defenders.empty() ? militaryManager->GetDefaultPorc() : defenders.front();
 
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 	float maxDistance = rangeDef->GetMaxRange() * 0.75f * 2;
 	CHierarchCluster clust;
 	CEncloseCircle enclose;

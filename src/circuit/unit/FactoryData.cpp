@@ -14,7 +14,7 @@
 #include "util/utils.h"
 #include "json/json.h"
 
-#include "Map.h"
+#include "spring/SpringMap.h"
 
 #include <algorithm>
 

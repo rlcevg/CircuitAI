@@ -13,10 +13,10 @@
 #include "util/utils.h"
 #include "json/json.h"
 
-#include "SSkirmishAICallback.h"	// "direct" C API
+#include "spring/SpringMap.h"
+
 #include "OOAICallback.h"
 #include "Mod.h"
-#include "Map.h"
 #ifdef DEBUG_VIS
 #include "Lua.h"
 #endif
@@ -70,7 +70,7 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 	drawCloakThreat = threatData1.cloakThreat.data();
 	drawShieldArray = threatData1.shield.data();
 
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 	int mapWidth = map->GetWidth();
 	Mod* mod = circuit->GetCallback()->GetMod();
 	int losMipLevel = mod->GetLosMipLevel();
@@ -79,9 +79,9 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 
 //	radarMap = std::move(map->GetRadarMap());
 	radarWidth = mapWidth >> radarMipLevel;
-	GetSonarMap(sonarMap);
+	map->GetSonarMap(sonarMap);
 	radarResConv = SQUARE_SIZE << radarMipLevel;
-	GetLosMap(losMap);
+	map->GetLosMap(losMap);
 	losWidth = mapWidth >> losMipLevel;
 	losResConv = SQUARE_SIZE << losMipLevel;
 
@@ -144,8 +144,8 @@ void CThreatMap::EnqueueUpdate()
 	isUpdating = true;
 
 //	radarMap = std::move(circuit->GetMap()->GetRadarMap());
-	GetSonarMap(sonarMap);
-	GetLosMap(losMap);
+	circuit->GetMap()->GetSonarMap(sonarMap);
+	circuit->GetMap()->GetLosMap(losMap);
 
 	areaData = circuit->GetTerrainManager()->GetAreaData();
 
@@ -727,24 +727,6 @@ void CThreatMap::Apply()
 #ifdef DEBUG_VIS
 	UpdateVis();
 #endif
-}
-
-void CThreatMap::GetSonarMap(IntVec& sonarMap)
-{
-	// NOTE: sonarMap = std::move(circuit->GetMap()->GetSonarMap());
-	const SSkirmishAICallback* sAICallback = circuit->GetSkirmishAICallback();
-	int size = sAICallback->Map_getSonarMap(circuit->GetSkirmishAIId(), nullptr, -1);
-	sonarMap.resize(size);
-	sAICallback->Map_getSonarMap(circuit->GetSkirmishAIId(), sonarMap.data(), size);
-}
-
-void CThreatMap::GetLosMap(IntVec& losMap)
-{
-	// NOTE: losMap = std::move(circuit->GetMap()->GetLosMap());
-	const SSkirmishAICallback* sAICallback = circuit->GetSkirmishAICallback();
-	int size = sAICallback->Map_getLosMap(circuit->GetSkirmishAIId(), nullptr, -1);
-	losMap.resize(size);
-	sAICallback->Map_getLosMap(circuit->GetSkirmishAIId(), losMap.data(), size);
 }
 
 #ifdef DEBUG_VIS

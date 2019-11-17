@@ -40,6 +40,7 @@ namespace circuit {
 class CCircuitAI;
 class CScheduler;
 class CGameAttribute;
+class CMap;
 #ifdef DEBUG_VIS
 class CDebugDrawer;
 #endif
@@ -178,7 +179,7 @@ public:
 	virtual ~CTerrainData();
 	void Init(CCircuitAI* circuit);
 
-	static springai::Map* GetMap() { return map; }
+	static CMap* GetMap() { return map; }
 	static void CorrectPosition(springai::AIFloat3& position);
 	static int terrainWidth;
 	static int terrainHeight;
@@ -227,12 +228,8 @@ public:
 	}
 
 private:
-	void GetHeightMap(FloatVec& heightMap);
-	void GetSlopeMap(FloatVec& slopeMap);
-
-	static springai::Map* map;
+	static CMap* map;
 	std::shared_ptr<CScheduler> scheduler;
-	const struct SSkirmishAICallback* sAICallback;
 	CGameAttribute* gameAttribute;
 	FloatVec slopeMap;
 	bool isUpdating;

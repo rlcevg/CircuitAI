@@ -13,10 +13,11 @@
 #include "util/math/RagMatrix.h"
 #include "util/utils.h"
 
+#include "spring/SpringMap.h"
+
 #include "Game.h"
 #include "MoveData.h"
 #include "Pathing.h"
-#include "Map.h"
 
 namespace circuit {
 
@@ -94,9 +95,10 @@ void CMetalManager::ParseMetalSpots()
 	int mexCount = game->GetRulesParamFloat("mex_count", -1);
 	if (mexCount <= 0) {
 		// FIXME: Replace metal-map workaround by own grid-spot generator
-		Map* map = circuit->GetMap();
+		CMap* map = circuit->GetMap();
 		Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
-		auto spotsPos = std::move(map->GetResourceMapSpotsPositions(metalRes));
+		std::vector<AIFloat3> spotsPos;
+		map->GetResourceMapSpotsPositions(metalRes, spotsPos);
 		const unsigned width = map->GetWidth();
 		const unsigned height = map->GetHeight();
 		const float mapSize = (width / 64) * (height / 64);

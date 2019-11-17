@@ -16,9 +16,10 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+#include "spring/SpringMap.h"
+
 #include "AISCommands.h"
 #include "OOAICallback.h"
-#include "Map.h"
 
 namespace circuit {
 
@@ -110,7 +111,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 
 	// NOTE: Unsafe fallback expansion (mex can be behind enemy lines)
 	const CMetalData::Metals& spots = metalManager->GetSpots();
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CCircuitDef* mexDef = buildDef;
 	circuit->GetThreatMap()->SetThreatType(unit);

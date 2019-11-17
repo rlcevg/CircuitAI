@@ -14,8 +14,9 @@
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
+#include "spring/SpringMap.h"
+
 #include "AISCommands.h"
-#include "Map.h"
 
 namespace circuit {
 
@@ -83,7 +84,7 @@ void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, fl
 	CTerrainManager::TerrainPredicate predicate = [terrainManager, builder](const AIFloat3& p) {
 		return terrainManager->CanBuildAtSafe(builder, p);
 	};
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 	auto checkFacing = [this, map, terrainManager, &predicate, &pos, searchRadius]() {
 		AIFloat3 bp = terrainManager->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
 		if (!utils::is_valid(bp)) {
