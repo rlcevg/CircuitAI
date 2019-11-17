@@ -86,10 +86,10 @@ public:
 	const int FindNearestCluster(const springai::AIFloat3& pos) const;
 	const int FindNearestCluster(const springai::AIFloat3& pos, PointPredicate& predicate) const;
 
-	const CMetalData::Clusters& GetClusters() const { return clusters; }
-	const CMetalData::Graph& GetGraph() const { return clusterGraph; }
-	const CMetalData::WeightMap& GetWeights() const { return weights; }
-	const CMetalData::CenterMap& GetCenters() const { return centers; }
+	const Clusters& GetClusters() const { return clusters; }
+	const Graph& GetGraph() const { return clusterGraph; }
+	const WeightMap& GetWeights() const { return weights; }
+	const CenterMap& GetCenters() const { return centers; }
 
 	/*
 	 * Hierarchical clusterization. Not reusable. Metric: complete link. Thread-unsafe
@@ -103,7 +103,12 @@ public:
 
 	const SMetal& operator[](int idx) const { return spots[idx]; }
 
+	static void TriangulateGraph(const std::vector<double>& coords,
+			std::function<float (std::size_t A, std::size_t B)> distance,
+			std::function<void (std::size_t A, std::size_t B)> addEdge);
 private:
+	void BuildClusterGraph();
+
 	bool isInitialized;
 	Metals spots;
 	SPointAdaptor<Metals> spotsAdaptor;
