@@ -971,11 +971,11 @@ int CCircuitAI::UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId)
 	TRY_UNIT(this, unit,
 		unit->GetUnit()->Stop();
 		unit->GetUnit()->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {0.0f});
-		if (unit->GetCircuitDef()->GetDef()->IsAbleToCloak()) {
-			unit->GetUnit()->ExecuteCustomCommand(CMD_WANT_CLOAK, {1.0f});  // personal
-			unit->GetUnit()->ExecuteCustomCommand(CMD_CLOAK_SHIELD, {1.0f});  // area
-			unit->GetUnit()->Cloak(true);
-		}
+//		if (unit->GetCircuitDef()->GetDef()->IsAbleToCloak()) {
+//			unit->GetUnit()->ExecuteCustomCommand(CMD_WANT_CLOAK, {1.0f});  // personal
+//			unit->GetUnit()->ExecuteCustomCommand(CMD_CLOAK_SHIELD, {1.0f});  // area
+//			unit->GetUnit()->Cloak(true);
+//		}
 	)
 	for (auto& module : modules) {
 		module->UnitGiven(unit, oldTeamId, newTeamId);
