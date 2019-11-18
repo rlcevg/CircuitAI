@@ -178,7 +178,7 @@ void CRaidTask::Update()
 				for (CCircuitUnit* unit : units) {
 					TRY_UNIT(circuit, unit,
 						unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-						unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
+//						unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 					)
 
 					ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());

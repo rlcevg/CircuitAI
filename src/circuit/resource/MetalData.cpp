@@ -50,6 +50,7 @@ void CMetalData::Init(const Metals& spots)
 		avgIncome /= spots.size();
 	}
 	metalTree.buildIndex();
+
 	isInitialized = true;
 }
 
@@ -140,13 +141,15 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 	}
 	clusterTree.buildIndex();
 
-	// Clusters triangulation
-	std::vector<double> coords;
-	coords.reserve(nclusters * 2);  // 2D
-	for (SCluster& c : clusters) {
-		coords.push_back(c.position.x);
-		coords.push_back(c.position.z);
-	}
+	BuildClusterGraph();
+
+	isClusterizing = false;
+}
+
+void CMetalData::TriangulateGraph(const std::vector<double>& coords,
+		std::function<float (std::size_t A, std::size_t B)> distance,
+		std::function<void (std::size_t A, std::size_t B)> addEdge)
+{
 	delaunator::Delaunator d(coords);
 	using DEdge = std::pair<std::size_t, std::size_t>;
 	std::map<DEdge, std::set<std::size_t>> edges;
@@ -164,11 +167,11 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 		adjacent(B, C, A);
 		adjacent(C, A, B);
 	}
-	auto badEdge = [&edges, this](const DEdge e, const std::set<std::size_t>& vs) {
-		float AB = clusters[e.first].position.distance(clusters[e.second].position);
+	auto badEdge = [&edges, distance](const DEdge e, const std::set<std::size_t>& vs) {
+		float AB = distance(e.first, e.second);
 		for (std::size_t C : vs) {
-			float AC = clusters[e.first].position.distance(clusters[C].position);
-			float BC = clusters[e.second].position.distance(clusters[C].position);
+			float AC = distance(e.first, C);
+			float BC = distance(e.second, C);
 			if (AB > (BC + AC) * 0.9f) {
 				return true;
 			}
@@ -181,17 +184,35 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 		if (badEdge(e, vs)) {
 			continue;
 		}
-		const std::size_t A = e.first;
-		const std::size_t B = e.second;
-		Graph::Edge edge = clusterGraph.addEdge(clusterGraph.nodeFromId(A), clusterGraph.nodeFromId(B));
+		addEdge(e.first, e.second);
+	}
+}
 
-		const CMetalData::SCluster& clA = clusters[A];
-		const CMetalData::SCluster& clB = clusters[B];
+void CMetalData::BuildClusterGraph()
+{
+	auto addEdge = [this](std::size_t A, std::size_t B) -> void {
+		Graph::Edge edge = clusterGraph.addEdge(clusterGraph.nodeFromId(A), clusterGraph.nodeFromId(B));
+		const SCluster& clA = clusters[A];
+		const SCluster& clB = clusters[B];
 		weights[edge] = clA.position.distance(clB.position) / (clA.income + clB.income) * (clA.idxSpots.size() + clB.idxSpots.size());
 		centers[edge] = (clA.position + clB.position) * 0.5f;
+	};
+	if (clusters.size() < 2) {
+		// do nothing
+	} else if (clusters.size() < 3) {
+		addEdge(0, 1);
+	} else {
+		// Clusters triangulation
+		std::vector<double> coords;
+		coords.reserve(clusters.size() * 2);  // 2D
+		for (SCluster& c : clusters) {
+			coords.push_back(c.position.x);
+			coords.push_back(c.position.z);
+		}
+		TriangulateGraph(coords, [this](std::size_t A, std::size_t B) -> float {
+			return clusters[A].position.distance(clusters[B].position);
+		}, addEdge);
 	}
-
-	isClusterizing = false;
 }
 
 //void CMetalData::DrawConvexHulls(Drawer* drawer)

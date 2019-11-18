@@ -209,7 +209,7 @@ void CCircuitUnit::Attack(CEnemyUnit* target, int timeout)
 		}
 		unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);  // los-cheat related
 		unit->ExecuteCustomCommand(CMD_WANTED_SPEED, {NO_SPEED_LIMIT});
-		unit->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
+//		unit->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 	)
 }
 
@@ -248,7 +248,7 @@ void CCircuitUnit::Attack(const AIFloat3& position, CEnemyUnit* target, int time
 		unit->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
 		unit->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);  // los-cheat related
 		unit->ExecuteCustomCommand(CMD_WANTED_SPEED, {NO_SPEED_LIMIT});
-		unit->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
+//		unit->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 	)
 }
 
