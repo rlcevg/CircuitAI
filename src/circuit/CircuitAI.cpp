@@ -820,11 +820,11 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 	}
 	TRY_UNIT(this, unit,
 		unit->GetUnit()->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {0.0f});
-		if (unit->GetCircuitDef()->GetUnitDef()->IsAbleToCloak()) {
-			unit->GetUnit()->ExecuteCustomCommand(CMD_WANT_CLOAK, {1.0f});  // personal
-			unit->GetUnit()->ExecuteCustomCommand(CMD_CLOAK_SHIELD, {1.0f});  // area
-			unit->GetUnit()->Cloak(true);
-		}
+//		if (unit->GetCircuitDef()->GetUnitDef()->IsAbleToCloak()) {
+//			unit->GetUnit()->ExecuteCustomCommand(CMD_WANT_CLOAK, {1.0f});  // personal
+//			unit->GetUnit()->ExecuteCustomCommand(CMD_CLOAK_SHIELD, {1.0f});  // area
+//			unit->GetUnit()->Cloak(true);
+//		}
 	)
 	for (auto& module : modules) {
 		module->UnitFinished(unit);
