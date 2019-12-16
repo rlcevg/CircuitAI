@@ -377,7 +377,11 @@ void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 	if (diffDefs.empty()) {
 		return;
 	}
-	availEnergyDefs.erase(diffDefs.begin(), diffDefs.end());
+	engyDefs.clear();
+	std::set_difference(availEnergyDefs.begin(), availEnergyDefs.end(),
+						diffDefs.begin(), diffDefs.end(),
+						std::inserter(engyDefs, engyDefs.begin()));
+	std::swap(availEnergyDefs, engyDefs);
 
 	auto it = energyInfos.begin();
 	while (it != energyInfos.end()) {
