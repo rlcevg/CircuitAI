@@ -46,6 +46,15 @@ void CBGuardTask::RemoveAssignee(CCircuitUnit* unit)
 	static_cast<CBuilderManager*>(manager)->AddBuildPower(unit);
 }
 
+void CBGuardTask::Stop(bool done)
+{
+	for (CCircuitUnit* unit : units) {
+		static_cast<CBuilderManager*>(manager)->AddBuildPower(unit);
+	}
+
+	IBuilderTask::Stop(done);
+}
+
 void CBGuardTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
