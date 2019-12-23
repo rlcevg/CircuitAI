@@ -7,9 +7,9 @@
 
 #include "task/builder/PylonTask.h"
 #include "task/TaskManager.h"
+#include "map/ThreatMap.h"
 #include "module/EconomyManager.h"
 #include "resource/GridLink.h"
-#include "terrain/ThreatMap.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"

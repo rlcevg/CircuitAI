@@ -7,6 +7,7 @@
 
 #include "unit/AllyTeam.h"
 #include "unit/FactoryData.h"
+#include "map/MapManager.h"
 #include "resource/MetalManager.h"
 #include "resource/EnergyGrid.h"
 #include "setup/DefenceMatrix.h"
@@ -49,7 +50,7 @@ CAllyTeam::~CAllyTeam()
 	}
 }
 
-void CAllyTeam::Init(CCircuitAI* circuit)
+void CAllyTeam::Init(CCircuitAI* circuit, float decloakRadius)
 {
 	if (initCount++ > 0) {
 		return;
@@ -59,6 +60,8 @@ void CAllyTeam::Init(CCircuitAI* circuit)
 	if (boxId >= 0) {
 		startBox = circuit->GetGameAttribute()->GetSetupData().GetStartBox(boxId);
 	}
+
+	mapManager = std::make_shared<CMapManager>(circuit, decloakRadius);
 
 	metalManager = std::make_shared<CMetalManager>(circuit, &circuit->GetGameAttribute()->GetMetalData());
 	if (metalManager->HasMetalSpots() && !metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
@@ -86,6 +89,7 @@ void CAllyTeam::Release()
 	}
 	friendlyUnits.clear();
 
+	mapManager = nullptr;
 	metalManager = nullptr;
 	energyGrid = nullptr;
 	defence = nullptr;
@@ -167,6 +171,7 @@ void CAllyTeam::DelegateAuthority(CCircuitAI* curOwner)
 {
 	for (CCircuitAI* circuit : curOwner->GetGameAttribute()->GetCircuits()) {
 		if (circuit->IsInitialized() && (circuit != curOwner) && (circuit->GetAllyTeamId() == curOwner->GetAllyTeamId())) {
+			mapManager->SetAuthority(circuit);
 			metalManager->SetAuthority(circuit);
 			energyGrid->SetAuthority(circuit);
 			circuit->GetScheduler()->RunOnRelease(std::make_shared<CGameTask>(&CAllyTeam::DelegateAuthority, this, circuit));

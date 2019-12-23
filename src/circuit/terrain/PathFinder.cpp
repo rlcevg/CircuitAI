@@ -9,7 +9,7 @@
 #include "terrain/PathFinder.h"
 #include "terrain/TerrainData.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/ThreatMap.h"
+#include "map/ThreatMap.h"
 #include "unit/CircuitUnit.h"
 #include "util/utils.h"
 #ifdef DEBUG_VIS

@@ -30,7 +30,6 @@ private:
 
 public:
 	struct SData {
-		CCircuitDef* cdef;  // FIXME: duplicate
 		float shieldPower;
 		float health;
 		bool isBeingBuilt;
@@ -41,6 +40,10 @@ public:
 		springai::AIFloat3 vel;
 		float threat;
 		RangeArray range;
+	};
+	struct SEnemyData {
+		CCircuitDef* cdef;
+		SData data;
 	};
 
 	CEnemyUnit(const CEnemyUnit& that) = delete;
@@ -118,7 +121,7 @@ public:
 	bool IsKnown()          const { return losStatus & LosMask::KNOWN; }
 	bool IsDead()           const { return losStatus & LosMask::DEAD; }
 
-	const SData& GetData() const { return data; }
+	const SEnemyData GetData() const { return {circuitDef, data}; }
 };
 
 } // namespace circuit

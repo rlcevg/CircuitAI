@@ -7,9 +7,9 @@
 
 #include "task/builder/ReclaimTask.h"
 #include "task/TaskManager.h"
+#include "map/ThreatMap.h"
 #include "module/EconomyManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/ThreatMap.h"
 #include "unit/action/TravelAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"

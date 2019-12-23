@@ -7,12 +7,12 @@
 
 #include "task/RetreatTask.h"
 #include "task/TaskManager.h"
+#include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/PathFinder.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/ThreatMap.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/MoveAction.h"
 #include "unit/action/FightAction.h"

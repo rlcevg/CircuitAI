@@ -7,9 +7,9 @@
 
 #include "task/builder/DefenceTask.h"
 #include "task/TaskManager.h"
+#include "map/InfluenceMap.h"
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
-#include "terrain/InfluenceMap.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 

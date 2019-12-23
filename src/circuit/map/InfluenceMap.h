@@ -22,16 +22,17 @@ namespace circuit {
 
 #define INFL_BASE		0.f
 
-class CCircuitAI;
+class CMapManager;
 class CAllyUnit;
 class CEnemyUnit;
 
 class CInfluenceMap {
 public:
-	CInfluenceMap(CCircuitAI* circuit);
+	CInfluenceMap(CMapManager* manager);
 	virtual ~CInfluenceMap();
 
-	void Update();
+	void EnqueueUpdate();
+	bool IsUpdating() const { return isUpdating; }
 
 	float GetEnemyInflAt(const springai::AIFloat3& position) const;
 	float GetInfluenceAt(const springai::AIFloat3& position) const;
@@ -40,13 +41,16 @@ public:
 
 private:
 	using Influences = std::vector<float>;
-	CCircuitAI* circuit;
+	CMapManager* manager;
 
 	void Clear();
 	void AddUnit(CAllyUnit* u);
 	void AddUnit(CEnemyUnit* e);
 	void AddFeature(springai::Feature* f);
 	inline void PosToXZ(const springai::AIFloat3& pos, int& x, int& z) const;
+
+	void Update();
+	void Apply();
 
 	int squareSize;
 	int width;
@@ -61,6 +65,7 @@ private:
 	Influences tension;
 	Influences vulnerability;
 	Influences featureInfl;
+	bool isUpdating;
 
 #ifdef DEBUG_VIS
 private:

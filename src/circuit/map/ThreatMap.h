@@ -10,7 +10,6 @@
 #define SRC_CIRCUIT_TERRAIN_THREATMAP_H_
 
 #include "unit/EnemyUnit.h"
-#include "CircuitAI.h"
 
 #include <map>
 #include <vector>
@@ -19,23 +18,20 @@ namespace circuit {
 
 #define THREAT_UPDATE_RATE	(FRAMES_PER_SEC / 4)
 
+class CMapManager;
 class CCircuitUnit;
-class CEnemyUnit;
 
 class CThreatMap {
 public:
-	CThreatMap(CCircuitAI* circuit, float decloakRadius);
+	CThreatMap(CMapManager* manager, float decloakRadius);
 	virtual ~CThreatMap();
 
 	void EnqueueUpdate();
+	bool IsUpdating() const { return isUpdating; }
 
-	bool EnemyEnterLOS(CEnemyUnit* enemy);
-	void EnemyLeaveLOS(CEnemyUnit* enemy);
-	void EnemyEnterRadar(CEnemyUnit* enemy);
-	void EnemyLeaveRadar(CEnemyUnit* enemy);
-	bool EnemyDestroyed(CEnemyUnit* enemy);
-
-//	float GetAverageThreat() const { return currAvgThreat + 1.0f; }
+	void SetEnemyUnitRange(CEnemyUnit* e) const;
+	void SetEnemyUnitThreat(CEnemyUnit* e) const { e->SetThreat(GetEnemyUnitThreat(e)); }
+	void NewEnemy(CEnemyUnit* e) const;
 
 	float GetAllThreatAt(const springai::AIFloat3& position) const;
 	void SetThreatType(CCircuitUnit* unit);
@@ -66,14 +62,14 @@ private:
 		FloatVec shield;  // total shield power that covers tile
 	};
 
-	CCircuitAI* circuit;
+	CMapManager* manager;
 	SAreaData* areaData;
 
 	inline void PosToXZ(const springai::AIFloat3& pos, int& x, int& z) const;
 	inline springai::AIFloat3 XZToPos(int x, int z) const;
 
 	void Prepare(SThreatData& threatData);
-	void AddEnemyUnit(const CEnemyUnit::SData& e);
+	void AddEnemyUnit(const CEnemyUnit::SEnemyData& e);
 	void AddEnemyUnitAll(const CEnemyUnit::SData& e);
 	void AddEnemyAir(const CEnemyUnit::SData& e);  // Enemy AntiAir
 	void AddEnemyAmphConst(const CEnemyUnit::SData& e);  // Enemy AntiAmph
@@ -81,13 +77,9 @@ private:
 	void AddDecloaker(const CEnemyUnit::SData& e);
 	void AddShield(const CEnemyUnit::SData& e);
 
-	void SetEnemyUnitRange(CEnemyUnit* e) const;
 	int GetCloakRange(const CCircuitDef* edef) const;
 	int GetShieldRange(const CCircuitDef* edef) const;
-	float GetEnemyUnitThreat(CEnemyUnit* enemy) const;
-
-	bool IsInLOS(const springai::AIFloat3& pos) const;
-//	bool IsInRadar(const springai::AIFloat3& pos) const;
+	float GetEnemyUnitThreat(const CEnemyUnit* e) const;
 
 	void Update();
 	void Apply();
@@ -104,16 +96,8 @@ private:
 	int distCloak;
 	float slackMod;
 
-	CCircuitAI::EnemyUnits hostileUnits;
-	CCircuitAI::EnemyUnits peaceUnits;
-
-	std::vector<CEnemyUnit::SData> hostileDatas;
-	std::vector<CEnemyUnit::SData> peaceDatas;
 	SThreatData threatData0, threatData1;  // Double-buffer for threading
 	std::atomic<SThreatData*> pThreatData;
-//	IntVec radarMap;
-	IntVec sonarMap;
-	IntVec losMap;
 	float* drawAirThreat;
 	float* drawSurfThreat;
 	float* drawAmphThreat;
@@ -127,11 +111,6 @@ private:
 	float* cloakThreat;
 	float* shieldArray;
 	float* threatArray;  // current threat array for multiple GetThreatAt() calls
-
-	int radarWidth;
-	int radarResConv;
-	int losWidth;
-	int losResConv;
 
 #ifdef DEBUG_VIS
 private:

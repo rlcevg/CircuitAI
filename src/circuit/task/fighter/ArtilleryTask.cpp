@@ -7,10 +7,10 @@
 
 #include "task/fighter/ArtilleryTask.h"
 #include "task/TaskManager.h"
+#include "map/ThreatMap.h"
 #include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
 #include "unit/EnemyUnit.h"
 #include "unit/action/MoveAction.h"

@@ -19,7 +19,7 @@ using namespace springai;
 CEnemyUnit::CEnemyUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 		: ICoreUnit(unitId, unit, cdef)
 		, lastSeen(-1)
-		, data({cdef,        // cdef
+		, data({
 			0.f,             // shieldPower
 			0.f,             // health
 			false,           // isBeingBuilt
@@ -57,7 +57,6 @@ void CEnemyUnit::Init()
 void CEnemyUnit::SetCircuitDef(CCircuitDef* cdef)
 {
 	circuitDef = cdef;
-	data.cdef = cdef;
 	Init();
 }
 

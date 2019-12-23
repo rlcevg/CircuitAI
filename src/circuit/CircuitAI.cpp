@@ -7,14 +7,13 @@
 
 #include "CircuitAI.h"
 #include "setup/SetupManager.h"
+#include "map/MapManager.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
 #include "module/EconomyManager.h"
 #include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/ThreatMap.h"
-#include "terrain/InfluenceMap.h"
 #include "terrain/PathFinder.h"
 #include "task/PlayerTask.h"
 #include "unit/CircuitUnit.h"
@@ -23,8 +22,10 @@
 #include "util/Scheduler.h"
 #include "util/utils.h"
 #ifdef DEBUG_VIS
+#include "map/InfluenceMap.h"
+#include "map/ThreatMap.h"
 #include "resource/EnergyGrid.h"
-#endif
+#endif  // DEBUG_VIS
 
 #include "spring/SpringEngine.h"
 #include "spring/SpringMap.h"
@@ -559,10 +560,9 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
 	economyManager = std::make_shared<CEconomyManager>(this);
-	threatMap = std::make_shared<CThreatMap>(this, decloakRadius);
-	inflMap = std::make_shared<CInfluenceMap>(this);
 
-	allyTeam->Init(this);
+	allyTeam->Init(this, decloakRadius);
+	mapManager = allyTeam->GetMapManager();
 	metalManager = allyTeam->GetMetalManager();
 	pathfinder = allyTeam->GetPathfinder();
 
@@ -631,8 +631,7 @@ int CCircuitAI::Release(int reason)
 	scheduler->ProcessRelease();
 	scheduler = nullptr;
 
-	inflMap = nullptr;
-	threatMap = nullptr;
+	mapManager = nullptr;
 	modules.clear();
 	militaryManager = nullptr;
 	economyManager = nullptr;
@@ -699,8 +698,7 @@ int CCircuitAI::Update(int frame)
 	if (!enemyUnits.empty()) {
 		int mark = frame % THREAT_UPDATE_RATE;
 		if (mark == uEnemyMark) {
-			threatMap->EnqueueUpdate();
-			inflMap->Update();
+			mapManager->EnqueueUpdate();
 		} else if (mark == kEnemyMark) {
 			militaryManager->UpdateEnemyGroups();
 		} else {
@@ -799,36 +797,36 @@ int CCircuitAI::Message(int playerId, const char* message)
 	}
 
 	else if (strncmp(message, cmdThreat, 7) == 0) {
-		threatMap->ToggleSDLVis();
+		mapManager->GetThreatMap()->ToggleSDLVis();
 	}
 	else if (strncmp(message, cmdWTDraw, 7) == 0) {
 		if (teamId == atoi((const char*)&message[8])) {
-			threatMap->ToggleWidgetDraw();
+			mapManager->GetThreatMap()->ToggleWidgetDraw();
 		}
 	}
 	else if (strncmp(message, cmdWTDiv, 6) == 0) {
-		threatMap->SetMaxThreat(atof((const char*)&message[7]));
+		mapManager->GetThreatMap()->SetMaxThreat(atof((const char*)&message[7]));
 	}
 	else if (strncmp(message, cmdWTPrint, 8) == 0) {
 		if (teamId == atoi((const char*)&message[9])) {
-			threatMap->ToggleWidgetPrint();
+			mapManager->GetThreatMap()->ToggleWidgetPrint();
 		}
 	}
 
 	else if (strncmp(message, cmdInfl, 5) == 0) {
-		inflMap->ToggleSDLVis();
+		mapManager->GetInflMap()->ToggleSDLVis();
 	}
 	else if (strncmp(message, cmdWIDraw, 7) == 0) {
 		if (teamId == atoi((const char*)&message[8])) {
-			inflMap->ToggleWidgetDraw();
+			mapManager->GetInflMap()->ToggleWidgetDraw();
 		}
 	}
 	else if (strncmp(message, cmdWIDiv, 6) == 0) {
-		inflMap->SetMaxThreat(atof((const char*)&message[7]));
+		mapManager->GetInflMap()->SetMaxThreat(atof((const char*)&message[7]));
 	}
 	else if (strncmp(message, cmdWIPrint, 8) == 0) {
 		if (teamId == atoi((const char*)&message[9])) {
-			inflMap->ToggleWidgetPrint();
+			mapManager->GetInflMap()->ToggleWidgetPrint();
 		}
 	}
 
@@ -1009,7 +1007,7 @@ int CCircuitAI::EnemyEnterLOS(CEnemyUnit* enemy)
 {
 	bool isKnownBefore = enemy->IsKnown() && (enemy->IsInRadar() || !enemy->GetCircuitDef()->IsMobile());
 
-	if (threatMap->EnemyEnterLOS(enemy)) {
+	if (mapManager->EnemyEnterLOS(enemy)) {
 		militaryManager->AddEnemyCost(enemy);
 	}
 
@@ -1037,14 +1035,14 @@ int CCircuitAI::EnemyEnterLOS(CEnemyUnit* enemy)
 
 int CCircuitAI::EnemyLeaveLOS(CEnemyUnit* enemy)
 {
-	threatMap->EnemyLeaveLOS(enemy);
+	mapManager->EnemyLeaveLOS(enemy);
 
 	return 0;  // signaling: OK
 }
 
 int CCircuitAI::EnemyEnterRadar(CEnemyUnit* enemy)
 {
-	threatMap->EnemyEnterRadar(enemy);
+	mapManager->EnemyEnterRadar(enemy);
 	enemy->SetLastSeen(-1);
 
 	return 0;  // signaling: OK
@@ -1052,7 +1050,7 @@ int CCircuitAI::EnemyEnterRadar(CEnemyUnit* enemy)
 
 int CCircuitAI::EnemyLeaveRadar(CEnemyUnit* enemy)
 {
-	threatMap->EnemyLeaveRadar(enemy);
+	mapManager->EnemyLeaveRadar(enemy);
 	enemy->SetLastSeen(lastFrame);
 
 	return 0;  // signaling: OK
@@ -1068,7 +1066,7 @@ int CCircuitAI::EnemyDamaged(CEnemyUnit* enemy)
 
 int CCircuitAI::EnemyDestroyed(CEnemyUnit* enemy)
 {
-	if (threatMap->EnemyDestroyed(enemy)) {
+	if (mapManager->EnemyDestroyed(enemy)) {
 		militaryManager->DelEnemyCost(enemy);
 	}
 
@@ -1572,6 +1570,16 @@ void CCircuitAI::InitWeaponDefs()
 	for (WeaponDef* wd : weapDefs) {
 		weaponDefs.push_back(new CWeaponDef(wd));
 	}
+}
+
+CThreatMap* CCircuitAI::GetThreatMap() const
+{
+	return mapManager->GetThreatMap();
+}
+
+CInfluenceMap* CCircuitAI::GetInflMap() const
+{
+	return mapManager->GetInflMap();
 }
 
 void CCircuitAI::CreateGameAttribute(unsigned int seed)

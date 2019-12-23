@@ -6,9 +6,9 @@
  */
 
 #include "resource/MetalManager.h"
+#include "map/ThreatMap.h"
 #include "module/EconomyManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
 #include "util/math/RagMatrix.h"
 #include "util/utils.h"

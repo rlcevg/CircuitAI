@@ -8,8 +8,8 @@
 #include "terrain/TerrainManager.h"
 #include "terrain/BlockRectangle.h"
 #include "terrain/BlockCircle.h"
-#include "terrain/ThreatMap.h"
 #include "terrain/PathFinder.h"
+#include "map/ThreatMap.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"  // Only for UpdateAreaUsers
 #include "resource/MetalManager.h"

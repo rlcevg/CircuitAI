@@ -5,7 +5,8 @@
  *      Author: rlcevg
  */
 
-#include "terrain/ThreatMap.h"
+#include "map/ThreatMap.h"
+#include "map/MapManager.h"
 #include "terrain/TerrainManager.h"
 #include "setup/SetupManager.h"
 #include "unit/CircuitUnit.h"
@@ -13,10 +14,6 @@
 #include "util/utils.h"
 #include "json/json.h"
 
-#include "spring/SpringMap.h"
-
-#include "OOAICallback.h"
-#include "Mod.h"
 #ifdef DEBUG_VIS
 #include "Lua.h"
 #endif
@@ -33,11 +30,12 @@ using namespace springai;
 #define THREAT_CLOAK	16.0f
 #define VEL_EPSILON		1e-2f
 
-CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
-		: circuit(circuit)
+CThreatMap::CThreatMap(CMapManager* manager, float decloakRadius)
+		: manager(manager)
 		, pThreatData(&threatData0)
 		, isUpdating(false)
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	areaData = circuit->GetTerrainManager()->GetAreaData();
 	squareSize = circuit->GetTerrainManager()->GetConvertStoP();
 	width = circuit->GetTerrainManager()->GetSectorXSize();
@@ -69,21 +67,6 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 	drawAmphThreat = threatData1.amphThreat.data();
 	drawCloakThreat = threatData1.cloakThreat.data();
 	drawShieldArray = threatData1.shield.data();
-
-	CMap* map = circuit->GetMap();
-	int mapWidth = map->GetWidth();
-	Mod* mod = circuit->GetCallback()->GetMod();
-	int losMipLevel = mod->GetLosMipLevel();
-	int radarMipLevel = mod->GetRadarMipLevel();
-	delete mod;
-
-//	radarMap = std::move(map->GetRadarMap());
-	radarWidth = mapWidth >> radarMipLevel;
-	map->GetSonarMap(sonarMap);
-	radarResConv = SQUARE_SIZE << radarMipLevel;
-	map->GetLosMap(losMap);
-	losWidth = mapWidth >> losMipLevel;
-	losResConv = SQUARE_SIZE << losMipLevel;
 
 	// FIXME: DEBUG
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
@@ -129,6 +112,7 @@ CThreatMap::CThreatMap(CCircuitAI* circuit, float decloakRadius)
 CThreatMap::~CThreatMap()
 {
 #ifdef DEBUG_VIS
+	CCircuitAI* circuit = manager->GetCircuit();
 	for (const std::pair<Uint32, float*>& win : sdlWindows) {
 		circuit->GetDebugDrawer()->DelSDLWindow(win.first);
 		delete[] win.second;
@@ -138,167 +122,76 @@ CThreatMap::~CThreatMap()
 
 void CThreatMap::EnqueueUpdate()
 {
-	if (isUpdating) {
-		return;
-	}
+//	if (isUpdating) {
+//		return;
+//	}
 	isUpdating = true;
 
-//	radarMap = std::move(circuit->GetMap()->GetRadarMap());
-	circuit->GetMap()->GetSonarMap(sonarMap);
-	circuit->GetMap()->GetLosMap(losMap);
-
+	CCircuitAI* circuit = manager->GetCircuit();
 	areaData = circuit->GetTerrainManager()->GetAreaData();
-
-	hostileDatas.reserve(hostileUnits.size());
-	for (auto& kv : hostileUnits) {
-		CEnemyUnit* e = kv.second;
-		if (e->IsHidden()) {
-			continue;
-		}
-
-		if (e->NotInRadarAndLOS() && IsInLOS(e->GetPos())) {
-			e->SetHidden();
-			continue;
-		}
-
-		if (e->IsInLOS()) {
-			e->SetThreat(GetEnemyUnitThreat(e));
-		}
-
-		hostileDatas.push_back(e->GetData());
-	}
-
-	peaceDatas.reserve(peaceUnits.size());
-	for (auto& kv : peaceUnits) {
-		CEnemyUnit* e = kv.second;
-		if (e->IsHidden()) {
-			continue;
-		}
-
-		if (e->NotInRadarAndLOS() && IsInLOS(e->GetPos())) {
-			e->SetHidden();
-			continue;
-		}
-
-		peaceDatas.push_back(e->GetData());
-	}
 
 	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CThreatMap::Update, this),
 											 std::make_shared<CGameTask>(&CThreatMap::Apply, this));
 }
 
-bool CThreatMap::EnemyEnterLOS(CEnemyUnit* enemy)
+void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const
 {
-	// Possible cases:
-	// (1) Unknown enemy that has been detected for the first time
-	// (2) Unknown enemy that was only in radar enters LOS
-	// (3) Known enemy that already was in LOS enters again
+	const CCircuitDef* edef = e->GetCircuitDef();
+	assert(edef != nullptr);
 
-	enemy->SetInLOS();
-	const bool wasKnown = enemy->IsKnown();
-
-	if (!enemy->IsAttacker()) {
-		if (enemy->GetThreat() > .0f) {  // (2)
-			// threat prediction failed when enemy was unknown
-			if (enemy->IsHidden()) {
-				enemy->ClearHidden();
+	// FIXME: DEBUG  comm's threat value is not based on proper weapons
+	if (edef->IsRoleComm()) {
+		CCircuitAI* circuit = manager->GetCircuit();
+		// TODO: by weapons 1,2 descriptions set proper land/air/water ranges/threats
+		float maxRange = 0.f;
+		float maxAoe = 0.f;
+		for (int num = 1; num < 3; ++num) {
+			std::string str = utils::int_to_string(num, "comm_weapon_id_%i");
+			int weaponDefId = int(e->GetUnit()->GetRulesParamFloat(str.c_str(), -1));
+			if (weaponDefId < 0) {
+				continue;
 			}
-			hostileUnits.erase(enemy->GetId());
-			peaceUnits[enemy->GetId()] = enemy;
-			enemy->SetThreat(.0f);
-			SetEnemyUnitRange(enemy);
-		} else if (peaceUnits.find(enemy->GetId()) == peaceUnits.end()) {
-			peaceUnits[enemy->GetId()] = enemy;
-			SetEnemyUnitRange(enemy);
-		} else if (enemy->IsHidden()) {
-			enemy->ClearHidden();
+
+			CWeaponDef* weaponDef = circuit->GetWeaponDef(weaponDefId);
+			const float range = weaponDef->GetRange();
+			if (maxRange < range) {
+				maxRange = range;
+				maxAoe = weaponDef->GetAoe();
+			}
 		}
+		const float velSlack = DEFAULT_SLACK * slackMod + edef->GetSpeed() / FRAMES_PER_SEC * THREAT_UPDATE_RATE;
+		const float slack = squareSize - 1 +  maxAoe;
+		const float mult = e->GetUnit()->GetRulesParamFloat("comm_range_mult", 1.f);
+		const float range = int(maxRange * mult + slack) / squareSize + 1;
+		const float velRange = int(maxRange * mult + slack + velSlack) / squareSize + 1;
+		e->SetRange(CCircuitDef::ThreatType::MAX, range);
+		e->SetRange(CCircuitDef::ThreatType::AIR, range);
+		e->SetRange(CCircuitDef::ThreatType::LAND, range);
+		e->SetRange(CCircuitDef::ThreatType::WATER, range);
+		e->SetRange(CCircuitDef::ThreatType::VEL_AIR, velRange);
+		e->SetRange(CCircuitDef::ThreatType::VEL_LAND, velRange);
+		e->SetRange(CCircuitDef::ThreatType::VEL_WATER, velRange);
+		e->SetRange(CCircuitDef::ThreatType::CLOAK, edef->GetThreatRange(CCircuitDef::ThreatType::CLOAK));
+		e->SetRange(CCircuitDef::ThreatType::SHIELD, edef->GetThreatRange(CCircuitDef::ThreatType::SHIELD));
+	} else {
+	// FIXME: DEBUG
 
-		enemy->UpdateInRadarData(enemy->GetUnit()->GetPos());
-		enemy->UpdateInLosData();
-		enemy->SetKnown();
-
-		return !wasKnown;
-	}
-
-	if (hostileUnits.find(enemy->GetId()) == hostileUnits.end()) {
-		hostileUnits[enemy->GetId()] = enemy;
-	} else if (enemy->IsHidden()) {
-		enemy->ClearHidden();
-	}
-
-	enemy->UpdateInRadarData(enemy->GetUnit()->GetPos());
-	enemy->UpdateInLosData();
-	SetEnemyUnitRange(enemy);
-	enemy->SetThreat(GetEnemyUnitThreat(enemy));
-	enemy->SetKnown();
-
-	return !wasKnown;
-}
-
-void CThreatMap::EnemyLeaveLOS(CEnemyUnit* enemy)
-{
-	enemy->ClearInLOS();
-}
-
-void CThreatMap::EnemyEnterRadar(CEnemyUnit* enemy)
-{
-	// Possible cases:
-	// (1) Unknown enemy wanders at radars
-	// (2) Known enemy that once was in los wandering at radar
-	// (3) EnemyEnterRadar invoked right after EnemyEnterLOS in area with no radar
-
-	enemy->SetInRadar();
-
-	if (enemy->IsInLOS()) {  // (3)
-		return;
-	}
-
-	if (!enemy->IsAttacker()) {  // (2)
-		if (enemy->IsHidden()) {
-			enemy->ClearHidden();
+		for (CCircuitDef::ThreatT tt = 0; tt < static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_); ++tt) {
+			CCircuitDef::ThreatType type = static_cast<CCircuitDef::ThreatType>(tt);
+			e->SetRange(type, edef->GetThreatRange(type));
 		}
-
-		enemy->UpdateInRadarData(enemy->GetUnit()->GetPos());
-
-		return;
-	}
-
-	bool isNew = false;
-	auto it = hostileUnits.find(enemy->GetId());
-	if (it == hostileUnits.end()) {  // (1)
-		std::tie(it, isNew) = hostileUnits.emplace(enemy->GetId(), enemy);
-	} else if (enemy->IsHidden()) {
-		enemy->ClearHidden();
-	}
-
-	enemy->UpdateInRadarData(enemy->GetUnit()->GetPos());
-	if (isNew) {  // unknown enemy enters radar for the first time
-		enemy->SetThreat(enemy->GetDamage());  // TODO: Randomize
-		enemy->SetRange(CCircuitDef::ThreatType::MAX, rangeDefault);
-		enemy->SetRange(CCircuitDef::ThreatType::AIR, rangeDefault);
-		enemy->SetRange(CCircuitDef::ThreatType::LAND, rangeDefault);
-		enemy->SetRange(CCircuitDef::ThreatType::WATER, rangeDefault);
-		enemy->SetRange(CCircuitDef::ThreatType::CLOAK, distCloak);
-//		enemy->SetRange(CCircuitDef::ThreatType::SHIELD, 0);
 	}
 }
 
-void CThreatMap::EnemyLeaveRadar(CEnemyUnit* enemy)
+void CThreatMap::NewEnemy(CEnemyUnit* e) const
 {
-	enemy->ClearInRadar();
-}
-
-bool CThreatMap::EnemyDestroyed(CEnemyUnit* enemy)
-{
-	auto it = hostileUnits.find(enemy->GetId());
-	if (it == hostileUnits.end()) {
-		peaceUnits.erase(enemy->GetId());
-		return enemy->IsKnown();
-	}
-
-	hostileUnits.erase(it);
-	return enemy->IsKnown();
+	e->SetThreat(e->GetDamage());  // TODO: Randomize
+	e->SetRange(CCircuitDef::ThreatType::MAX, rangeDefault);
+	e->SetRange(CCircuitDef::ThreatType::AIR, rangeDefault);
+	e->SetRange(CCircuitDef::ThreatType::LAND, rangeDefault);
+	e->SetRange(CCircuitDef::ThreatType::WATER, rangeDefault);
+	e->SetRange(CCircuitDef::ThreatType::CLOAK, distCloak);
+//	e->SetRange(CCircuitDef::ThreatType::SHIELD, 0);
 }
 
 float CThreatMap::GetAllThreatAt(const AIFloat3& position) const
@@ -388,24 +281,24 @@ void CThreatMap::Prepare(SThreatData& threatData)
 	std::fill(threatData.shield.begin(), threatData.shield.end(), 0.f);
 }
 
-void CThreatMap::AddEnemyUnit(const CEnemyUnit::SData& e)
+void CThreatMap::AddEnemyUnit(const CEnemyUnit::SEnemyData& e)
 {
 	CCircuitDef* cdef = e.cdef;
 	if (cdef == nullptr) {
-		AddEnemyUnitAll(e);
+		AddEnemyUnitAll(e.data);
 		return;
 	}
 
 	if (cdef->HasAntiAir()) {
-		AddEnemyAir(e);
+		AddEnemyAir(e.data);
 	}
 	if (cdef->HasAntiLand() || cdef->HasAntiWater()) {
-		cdef->IsAlwaysHit() ? AddEnemyAmphConst(e) : AddEnemyAmphGradient(e);
+		cdef->IsAlwaysHit() ? AddEnemyAmphConst(e.data) : AddEnemyAmphGradient(e.data);
 	}
-	AddDecloaker(e);
+	AddDecloaker(e.data);
 
 	if (cdef->GetShieldMount() != nullptr) {
-		AddShield(e);
+		AddShield(e.data);
 	}
 }
 
@@ -593,54 +486,6 @@ void CThreatMap::AddShield(const CEnemyUnit::SData& e)
 	}
 }
 
-void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const
-{
-	const CCircuitDef* edef = e->GetCircuitDef();
-	assert(edef != nullptr);
-
-	// FIXME: DEBUG  comm's threat value is not based on proper weapons
-	if (edef->IsRoleComm()) {
-		// TODO: by weapons 1,2 descriptions set proper land/air/water ranges/threats
-		float maxRange = 0.f;
-		float maxAoe = 0.f;
-		for (int num = 1; num < 3; ++num) {
-			std::string str = utils::int_to_string(num, "comm_weapon_id_%i");
-			int weaponDefId = int(e->GetUnit()->GetRulesParamFloat(str.c_str(), -1));
-			if (weaponDefId < 0) {
-				continue;
-			}
-
-			CWeaponDef* weaponDef = circuit->GetWeaponDef(weaponDefId);
-			const float range = weaponDef->GetRange();
-			if (maxRange < range) {
-				maxRange = range;
-				maxAoe = weaponDef->GetAoe();
-			}
-		}
-		const float velSlack = DEFAULT_SLACK * slackMod + edef->GetSpeed() / FRAMES_PER_SEC * THREAT_UPDATE_RATE;
-		const float slack = squareSize - 1 +  maxAoe;
-		const float mult = e->GetUnit()->GetRulesParamFloat("comm_range_mult", 1.f);
-		const float range = int(maxRange * mult + slack) / squareSize + 1;
-		const float velRange = int(maxRange * mult + slack + velSlack) / squareSize + 1;
-		e->SetRange(CCircuitDef::ThreatType::MAX, range);
-		e->SetRange(CCircuitDef::ThreatType::AIR, range);
-		e->SetRange(CCircuitDef::ThreatType::LAND, range);
-		e->SetRange(CCircuitDef::ThreatType::WATER, range);
-		e->SetRange(CCircuitDef::ThreatType::VEL_AIR, velRange);
-		e->SetRange(CCircuitDef::ThreatType::VEL_LAND, velRange);
-		e->SetRange(CCircuitDef::ThreatType::VEL_WATER, velRange);
-		e->SetRange(CCircuitDef::ThreatType::CLOAK, edef->GetThreatRange(CCircuitDef::ThreatType::CLOAK));
-		e->SetRange(CCircuitDef::ThreatType::SHIELD, edef->GetThreatRange(CCircuitDef::ThreatType::SHIELD));
-	} else {
-	// FIXME: DEBUG
-
-		for (CCircuitDef::ThreatT tt = 0; tt < static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_); ++tt) {
-			CCircuitDef::ThreatType type = static_cast<CCircuitDef::ThreatType>(tt);
-			e->SetRange(type, edef->GetThreatRange(type));
-		}
-	}
-}
-
 int CThreatMap::GetCloakRange(const CCircuitDef* edef) const
 {
 	const int sizeX = edef->GetDef()->GetXSize() * (SQUARE_SIZE / 2);
@@ -657,66 +502,31 @@ int CThreatMap::GetShieldRange(const CCircuitDef* edef) const
 	return (edef->GetShieldMount() != nullptr) ? (int)edef->GetShieldRadius() / squareSize + 1 : 0;
 }
 
-float CThreatMap::GetEnemyUnitThreat(CEnemyUnit* enemy) const
+float CThreatMap::GetEnemyUnitThreat(const CEnemyUnit* e) const
 {
-	if (enemy->IsBeingBuilt()) {
+	if (e->IsBeingBuilt()) {
 		return .0f;  // THREAT_BASE;
 	}
-	const float health = enemy->GetHealth();
+	const float health = e->GetHealth();
 	if (health <= .0f) {
 		return .0f;
 	}
 	int x, z;
-	PosToXZ(enemy->GetPos(), x, z);
-	return enemy->GetDamage() * sqrtf(health + shieldArray[z * width + x] * 2.0f);  // / unit->GetUnit()->GetMaxHealth();
+	PosToXZ(e->GetPos(), x, z);
+	return e->GetDamage() * sqrtf(health + shieldArray[z * width + x] * 2.0f);  // / unit->GetUnit()->GetMaxHealth();
 }
-
-bool CThreatMap::IsInLOS(const AIFloat3& pos) const
-{
-	// res = 1 << Mod->GetLosMipLevel();
-	// the value for the full resolution position (x, z) is at index ((z * width + x) / res)
-	// the last value, bottom right, is at index (width/res * height/res - 1)
-
-	// FIXME: @see rts/Sim/Objects/SolidObject.cpp CSolidObject::UpdatePhysicalState
-	//        for proper "underwater" implementation
-	if (pos.y < -SQUARE_SIZE * 5) {  // Mod->GetRequireSonarUnderWater() = true
-		const int x = (int)pos.x / radarResConv;
-		const int z = (int)pos.z / radarResConv;
-		if (sonarMap[z * radarWidth + x] <= 0) {
-			return false;
-		}
-	}
-	// convert from world coordinates to losmap coordinates
-	const int x = (int)pos.x / losResConv;
-	const int z = (int)pos.z / losResConv;
-	return losMap[z * losWidth + x] > 0;
-}
-
-//bool CThreatMap::IsInRadar(const AIFloat3& pos) const
-//{
-//	// the value for the full resolution position (x, z) is at index ((z * width + x) / res)
-//	// the last value, bottom right, is at index (width/res * height/res - 1)
-//
-//	// convert from world coordinates to radarmap coordinates
-//	const int x = (int)pos.x / radarResConv;
-//	const int z = (int)pos.z / radarResConv;
-//	return ((pos.y < -SQUARE_SIZE * 5) ? sonarMap : radarMap)[z * radarWidth + x] > 0;
-//}
 
 void CThreatMap::Update()
 {
 	Prepare(*GetNextThreatData());
 
-	for (const CEnemyUnit::SData& e : hostileDatas) {
+	for (const CEnemyUnit::SEnemyData& e : manager->GetHostileDatas()) {
 		AddEnemyUnit(e);
 	}
 
-	for (const CEnemyUnit::SData& e : peaceDatas) {
-		AddDecloaker(e);
+	for (const CEnemyUnit::SEnemyData& e : manager->GetPeaceDatas()) {
+		AddDecloaker(e.data);
 	}
-
-	hostileDatas.clear();
-	peaceDatas.clear();
 }
 
 void CThreatMap::Apply()
@@ -732,6 +542,7 @@ void CThreatMap::Apply()
 #ifdef DEBUG_VIS
 void CThreatMap::UpdateVis()
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	if (isWidgetDrawing || isWidgetPrinting) {
 		std::ostringstream cmd;
 		cmd << "ai_thr_data:";
@@ -775,6 +586,7 @@ void CThreatMap::UpdateVis()
 
 void CThreatMap::ToggleSDLVis()
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	if (sdlWindows.empty()) {
 		// ~threat
 		std::pair<Uint32, float*> win;
@@ -812,6 +624,7 @@ void CThreatMap::ToggleSDLVis()
 
 void CThreatMap::ToggleWidgetDraw()
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	std::string cmd("ai_thr_draw:");
 	std::string result = circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 
@@ -827,6 +640,7 @@ void CThreatMap::ToggleWidgetDraw()
 
 void CThreatMap::ToggleWidgetPrint()
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	std::string cmd("ai_thr_print:");
 	std::string result = circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 
@@ -842,6 +656,7 @@ void CThreatMap::ToggleWidgetPrint()
 
 void CThreatMap::SetMaxThreat(float maxThreat)
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	std::string cmd = utils::float_to_string(maxThreat, "ai_thr_div:%f");
 	circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 }

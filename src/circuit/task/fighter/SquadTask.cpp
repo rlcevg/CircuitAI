@@ -7,10 +7,10 @@
 
 #include "task/fighter/SquadTask.h"
 #include "task/TaskManager.h"
+#include "map/InfluenceMap.h"
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/InfluenceMap.h"
 #include "terrain/PathFinder.h"
 #include "unit/action/TravelAction.h"
 #include "CircuitAI.h"

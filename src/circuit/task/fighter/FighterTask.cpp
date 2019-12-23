@@ -7,11 +7,11 @@
 
 #include "task/fighter/FighterTask.h"
 #include "task/RetreatTask.h"
+#include "map/InfluenceMap.h"
+#include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
-#include "terrain/InfluenceMap.h"
-#include "terrain/ThreatMap.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/TravelAction.h"
 #include "unit/EnemyUnit.h"

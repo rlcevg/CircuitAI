@@ -7,8 +7,8 @@
 
 #include "task/builder/NanoTask.h"
 #include "task/TaskManager.h"
+#include "map/ThreatMap.h"
 #include "resource/MetalManager.h"
-#include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 

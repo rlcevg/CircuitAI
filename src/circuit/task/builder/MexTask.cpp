@@ -7,12 +7,12 @@
 
 #include "task/builder/MexTask.h"
 #include "task/TaskManager.h"
+#include "map/ThreatMap.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 

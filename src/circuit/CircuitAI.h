@@ -48,6 +48,7 @@ namespace circuit {
 
 class CGameAttribute;
 class CSetupManager;
+class CMapManager;
 class CThreatMap;
 class CInfluenceMap;
 class CPathFinder;
@@ -251,8 +252,8 @@ public:
 	springai::Team*         GetTeam()       const { return team.get(); }
 	CSetupManager*    GetSetupManager()    const { return setupManager.get(); }
 	CMetalManager*    GetMetalManager()    const { return metalManager.get(); }
-	CThreatMap*       GetThreatMap()       const { return threatMap.get(); }
-	CInfluenceMap*    GetInflMap()         const { return inflMap.get(); }
+	CThreatMap*       GetThreatMap()       const;
+	CInfluenceMap*    GetInflMap()         const;
 	CPathFinder*      GetPathfinder()      const { return pathfinder.get(); }
 	CTerrainManager*  GetTerrainManager()  const { return terrainManager.get(); }
 	CBuilderManager*  GetBuilderManager()  const { return builderManager.get(); }
@@ -295,8 +296,7 @@ private:
 	std::shared_ptr<CScheduler> scheduler;
 	std::shared_ptr<CSetupManager> setupManager;
 	std::shared_ptr<CMetalManager> metalManager;
-	std::shared_ptr<CThreatMap> threatMap;
-	std::shared_ptr<CInfluenceMap> inflMap;
+	std::shared_ptr<CMapManager> mapManager;
 	std::shared_ptr<CPathFinder> pathfinder;
 	std::shared_ptr<CTerrainManager> terrainManager;
 	std::shared_ptr<CBuilderManager> builderManager;

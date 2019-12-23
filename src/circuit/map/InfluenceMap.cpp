@@ -5,12 +5,12 @@
  *      Author: rlcevg
  */
 
-#include "terrain/InfluenceMap.h"
+#include "map/InfluenceMap.h"
+#include "map/MapManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/ThreatMap.h"
 #include "module/EconomyManager.h"
 #include "unit/EnemyUnit.h"
-#include "CircuitAI.h"
+#include "util/Scheduler.h"
 #include "util/utils.h"
 
 #include "OOAICallback.h"
@@ -25,10 +25,12 @@ namespace circuit {
 
 using namespace springai;
 
-CInfluenceMap::CInfluenceMap(CCircuitAI* circuit)
-		: circuit(circuit)
+CInfluenceMap::CInfluenceMap(CMapManager* manager)
+		: manager(manager)
 		, vulnMax(0.f)
+		, isUpdating(false)
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	squareSize = circuit->GetTerrainManager()->GetConvertStoP() * 4;
 	width = circuit->GetTerrainManager()->GetSectorXSize() / 4;
 	height = circuit->GetTerrainManager()->GetSectorZSize() / 4;
@@ -45,6 +47,7 @@ CInfluenceMap::CInfluenceMap(CCircuitAI* circuit)
 CInfluenceMap::~CInfluenceMap()
 {
 #ifdef DEBUG_VIS
+	CCircuitAI* circuit = manager->GetCircuit();
 	for (const std::pair<Uint32, float*>& win : sdlWindows) {
 		circuit->GetDebugDrawer()->DelSDLWindow(win.first);
 		delete[] win.second;
@@ -52,9 +55,23 @@ CInfluenceMap::~CInfluenceMap()
 #endif
 }
 
+void CInfluenceMap::EnqueueUpdate()
+{
+//	if (isUpdating) {
+//		return;
+//	}
+//	isUpdating = true;
+//
+//	CCircuitAI* circuit = manager->GetCircuit();
+//	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CInfluenceMap::Update, this),
+//											 std::make_shared<CGameTask>(&CInfluenceMap::Apply, this));
+	Update();
+}
+
 void CInfluenceMap::Update()
 {
 	Clear();
+	CCircuitAI* circuit = manager->GetCircuit();
 	const CCircuitAI::EnemyUnits& enemyUnits = circuit->GetEnemyUnits();
 	for (auto& kv : enemyUnits) {
 		CEnemyUnit* e = kv.second;
@@ -99,6 +116,10 @@ void CInfluenceMap::Update()
 #endif
 }
 
+void CInfluenceMap::Apply()
+{
+}
+
 float CInfluenceMap::GetEnemyInflAt(const AIFloat3& position) const
 {
 	int x, z;
@@ -130,6 +151,7 @@ void CInfluenceMap::Clear()
 
 void CInfluenceMap::AddUnit(CAllyUnit* u)
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	int posx, posz;
 	PosToXZ(u->GetPos(circuit->GetLastFrame()), posx, posz);
 
@@ -198,6 +220,7 @@ void CInfluenceMap::AddUnit(CEnemyUnit* e)
 
 void CInfluenceMap::AddFeature(Feature* f)
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	int posx, posz;
 	PosToXZ(f->GetPosition(), posx, posz);
 
@@ -252,6 +275,7 @@ inline void CInfluenceMap::PosToXZ(const AIFloat3& pos, int& x, int& z) const
 
 void CInfluenceMap::UpdateVis()
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	if (isWidgetDrawing || isWidgetPrinting) {
 		std::ostringstream cmd;
 		cmd << "ai_thr_data:";
@@ -311,6 +335,7 @@ void CInfluenceMap::UpdateVis()
 
 void CInfluenceMap::ToggleSDLVis()
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	if (sdlWindows.empty()) {
 		// ~infl
 		std::pair<Uint32, float*> win;
@@ -358,6 +383,7 @@ void CInfluenceMap::ToggleSDLVis()
 
 void CInfluenceMap::ToggleWidgetDraw()
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	std::string cmd("ai_thr_draw:");
 	std::string result = circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 
@@ -373,6 +399,7 @@ void CInfluenceMap::ToggleWidgetDraw()
 
 void CInfluenceMap::ToggleWidgetPrint()
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	std::string cmd("ai_thr_print:");
 	std::string result = circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 
@@ -388,6 +415,7 @@ void CInfluenceMap::ToggleWidgetPrint()
 
 void CInfluenceMap::SetMaxThreat(float maxThreat)
 {
+	CCircuitAI* circuit = manager->GetCircuit();
 	std::string cmd = utils::float_to_string(maxThreat, "ai_thr_div:%f");
 	circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 }

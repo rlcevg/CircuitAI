@@ -21,6 +21,7 @@ namespace springai {
 namespace circuit {
 
 class CCircuitAI;
+class CMapManager;
 class CMetalManager;
 class CEnergyGrid;
 class CDefenceMatrix;
@@ -66,13 +67,14 @@ public:
 	const TeamIds& GetTeamIds() const { return teamIds; }
 	const SBox& GetStartBox() const { return startBox; }
 
-	void Init(CCircuitAI* circuit);
+	void Init(CCircuitAI* circuit, float decloakRadius);
 	void Release();
 
 	void UpdateFriendlyUnits(CCircuitAI* circuit);
 	CAllyUnit* GetFriendlyUnit(ICoreUnit::Id unitId) const;
 	const Units& GetFriendlyUnits() const { return friendlyUnits; }
 
+	std::shared_ptr<CMapManager>& GetMapManager() { return mapManager; }
 	std::shared_ptr<CMetalManager>& GetMetalManager() { return metalManager; }
 	std::shared_ptr<CEnergyGrid>& GetEnergyGrid() { return energyGrid; }
 	std::shared_ptr<CDefenceMatrix>& GetDefenceMatrix() { return defence; }
@@ -102,6 +104,7 @@ private:
 //	std::map<STerrainMapArea*, SAreaTeam> habitants;  // Area habitants on start.
 	// FIXME: DEBUG
 
+	std::shared_ptr<CMapManager> mapManager;
 	std::shared_ptr<CMetalManager> metalManager;
 	std::shared_ptr<CEnergyGrid> energyGrid;
 	std::shared_ptr<CDefenceMatrix> defence;
