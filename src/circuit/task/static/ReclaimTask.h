@@ -24,7 +24,7 @@ public:
 	virtual void Start(CCircuitUnit* unit) override;
 	virtual void Update() override;
 
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 };
 
 } // namespace circuit

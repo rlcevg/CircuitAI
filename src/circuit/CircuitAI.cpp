@@ -78,7 +78,6 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, allyTeam(nullptr)
 		, uEnemyMark(0)
 		, kEnemyMark(0)
-		, enemyIterator(0)
 		, actionIterator(0)
 		, isCheating(false)
 		, isAllyAware(true)
@@ -226,7 +225,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_UNIT_DAMAGED", topic);
 			SCOPED_TIME(this, "EVENT_UNIT_DAMAGED");
 			struct SUnitDamagedEvent* evt = (struct SUnitDamagedEvent*)data;
-			CEnemyUnit* attacker = GetEnemyUnit(evt->attacker);
+			CEnemyInfo* attacker = GetEnemyInfo(evt->attacker);
 			CCircuitUnit* unit = GetTeamUnit(evt->unit);
 			ret = (unit != nullptr) ? this->UnitDamaged(unit, attacker/*, evt->weaponDefId*/) : ERROR_UNIT_DAMAGED;
 			break;
@@ -235,7 +234,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_UNIT_DESTROYED", topic);
 			SCOPED_TIME(this, "EVENT_UNIT_DESTROYED");
 			struct SUnitDestroyedEvent* evt = (struct SUnitDestroyedEvent*)data;
-			CEnemyUnit* attacker = GetEnemyUnit(evt->attacker);
+			CEnemyInfo* attacker = GetEnemyInfo(evt->attacker);
 			CCircuitUnit* unit = GetTeamUnit(evt->unit);
 			if (unit != nullptr) {
 				ret = this->UnitDestroyed(unit, attacker);
@@ -263,9 +262,9 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_ENEMY_ENTER_LOS", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_ENTER_LOS");
 			struct SEnemyEnterLOSEvent* evt = (struct SEnemyEnterLOSEvent*)data;
-			CEnemyUnit* unit;
+			CEnemyInfo* unit;
 			bool isReal;
-			std::tie(unit, isReal) = RegisterEnemyUnit(evt->enemy, true);
+			std::tie(unit, isReal) = RegisterEnemyInfo(evt->enemy, true);
 			ret = isReal
 					? (unit != nullptr) ? this->EnemyEnterLOS(unit) : ERROR_ENEMY_ENTER_LOS
 					: 0;
@@ -278,7 +277,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 				ret = 0;
 			} else {
 				struct SEnemyLeaveLOSEvent* evt = (struct SEnemyLeaveLOSEvent*)data;
-				CEnemyUnit* enemy = GetEnemyUnit(evt->enemy);
+				CEnemyInfo* enemy = GetEnemyInfo(evt->enemy);
 				ret = (enemy != nullptr) ? this->EnemyLeaveLOS(enemy) : ERROR_ENEMY_LEAVE_LOS;
 			}
 			break;
@@ -287,9 +286,9 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_ENEMY_ENTER_RADAR", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_ENTER_RADAR");
 			struct SEnemyEnterRadarEvent* evt = (struct SEnemyEnterRadarEvent*)data;
-			CEnemyUnit* unit;
+			CEnemyInfo* unit;
 			bool isReal;
-			std::tie(unit, isReal) = RegisterEnemyUnit(evt->enemy, false);
+			std::tie(unit, isReal) = RegisterEnemyInfo(evt->enemy, false);
 			ret = isReal
 					? (unit != nullptr) ? this->EnemyEnterRadar(unit) : ERROR_ENEMY_ENTER_RADAR
 					: 0;
@@ -302,7 +301,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 				ret = 0;
 			} else {
 				struct SEnemyLeaveRadarEvent* evt = (struct SEnemyLeaveRadarEvent*)data;
-				CEnemyUnit* enemy = GetEnemyUnit(evt->enemy);
+				CEnemyInfo* enemy = GetEnemyInfo(evt->enemy);
 				ret = (enemy != nullptr) ? this->EnemyLeaveRadar(enemy) : ERROR_ENEMY_LEAVE_RADAR;
 			}
 			break;
@@ -311,7 +310,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_ENEMY_DAMAGED", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_DAMAGED");
 			struct SEnemyDamagedEvent* evt = (struct SEnemyDamagedEvent*)data;
-			CEnemyUnit* enemy = GetEnemyUnit(evt->enemy);
+			CEnemyInfo* enemy = GetEnemyInfo(evt->enemy);
 			ret = (enemy != nullptr) ? this->EnemyDamaged(enemy) : ERROR_ENEMY_DAMAGED;
 			break;
 		}
@@ -319,10 +318,10 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_ENEMY_DESTROYED", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_DESTROYED");
 			struct SEnemyDestroyedEvent* evt = (struct SEnemyDestroyedEvent*)data;
-			CEnemyUnit* enemy = GetEnemyUnit(evt->enemy);
+			CEnemyInfo* enemy = GetEnemyInfo(evt->enemy);
 			if (enemy != nullptr) {
 				ret = this->EnemyDestroyed(enemy);
-				UnregisterEnemyUnit(enemy);
+				UnregisterEnemyInfo(enemy);
 			} else {
 				ret = ERROR_ENEMY_DESTROYED;
 			}
@@ -384,9 +383,9 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			// FIXME: Can't query enemy data with globalLOS
 			SCOPED_TIME(this, "EVENT_ENEMY_CREATED");
 			struct SEnemyCreatedEvent* evt = (struct SEnemyCreatedEvent*)data;
-			CEnemyUnit* unit;
+			CEnemyInfo* unit;
 			bool isReal;
-			std::tie(unit, isReal) = RegisterEnemyUnit(evt->enemy, true);
+			std::tie(unit, isReal) = RegisterEnemyInfo(evt->enemy, true);
 			ret = isReal
 					? (unit != nullptr) ? this->EnemyEnterLOS(unit) : EVENT_ENEMY_CREATED
 					: 0;
@@ -510,7 +509,7 @@ void CCircuitAI::CheatPreload()
 		if (e == nullptr) {
 			continue;
 		}
-		CEnemyUnit* enemy = RegisterEnemyUnit(e);
+		CEnemyInfo* enemy = RegisterEnemyInfo(e);
 		if (enemy != nullptr) {
 			this->EnemyEnterLOS(enemy);
 		} else {
@@ -563,6 +562,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 	allyTeam->Init(this, decloakRadius);
 	mapManager = allyTeam->GetMapManager();
+	enemyManager = allyTeam->GetEnemyManager();
 	metalManager = allyTeam->GetMetalManager();
 	pathfinder = allyTeam->GetPathfinder();
 
@@ -631,7 +631,6 @@ int CCircuitAI::Release(int reason)
 	scheduler->ProcessRelease();
 	scheduler = nullptr;
 
-	mapManager = nullptr;
 	modules.clear();
 	militaryManager = nullptr;
 	economyManager = nullptr;
@@ -641,6 +640,8 @@ int CCircuitAI::Release(int reason)
 	metalManager = nullptr;
 	pathfinder = nullptr;
 	setupManager = nullptr;
+	enemyManager = nullptr;
+	mapManager = nullptr;
 
 	for (CCircuitUnit* unit : actionUnits) {
 		if (teamUnits.find(unit->GetId()) == teamUnits.end()) {
@@ -653,11 +654,10 @@ int CCircuitAI::Release(int reason)
 	}
 	teamUnits.clear();
 	garbage.clear();
-	for (auto& kv : enemyUnits) {
+	for (auto& kv : enemyInfos) {
 		delete kv.second;
 	}
-	enemyUnits.clear();
-	enemyUpdates.clear();
+	enemyInfos.clear();
 	if (allyTeam != nullptr) {
 		allyTeam->Release();
 	}
@@ -695,14 +695,26 @@ int CCircuitAI::Update(int frame)
 		garbage.erase(unit);  // NOTE: UnregisterTeamUnit may erase unit
 	}
 
-	if (!enemyUnits.empty()) {
+	if (!enemyManager->GetGarbage().empty()) {
+		for (const ICoreUnit::Id eId : enemyManager->GetGarbage()) {
+			CEnemyInfo* enemy = GetEnemyInfo(eId);
+			if (enemy != nullptr) {  // EnemyDestroyed right after UpdateEnemyDatas but before this Update
+				EnemyDestroyed(enemy);
+				UnregisterEnemyInfo(enemy);
+			}
+		}
+	}
+
+	if (!enemyInfos.empty()) {
 		int mark = frame % THREAT_UPDATE_RATE;
 		if (mark == uEnemyMark) {
 			mapManager->EnqueueUpdate();
 		} else if (mark == kEnemyMark) {
 			militaryManager->UpdateEnemyGroups();
 		} else {
-			UpdateEnemyUnits();
+			if (this == enemyManager->GetCircuit()) {
+				enemyManager->UpdateEnemyDatas();
+			}
 		}
 	}
 
@@ -924,7 +936,7 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker/*, int weaponId*/)
+int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker/*, int weaponId*/)
 {
 	// FIXME: Doesn't work well with multi-shots (duck)
 //	if (lastFrame <= unit->GetDamagedFrame() + FRAMES_PER_SEC / 5) {
@@ -939,7 +951,7 @@ int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker/*, int weap
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+int CCircuitAI::UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	for (auto& module : modules) {
 		module->UnitDestroyed(unit, attacker);
@@ -950,10 +962,10 @@ int CCircuitAI::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 
 int CCircuitAI::UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId)
 {
-	CEnemyUnit* enemy = GetEnemyUnit(unitId);
+	CEnemyInfo* enemy = GetEnemyInfo(unitId);
 	if (enemy != nullptr) {
 		EnemyDestroyed(enemy);
-		UnregisterEnemyUnit(enemy);
+		UnregisterEnemyInfo(enemy);
 	}
 
 	// it might not have been given to us! Could have been given to another team
@@ -1003,15 +1015,15 @@ int CCircuitAI::UnitCaptured(ICoreUnit::Id unitId, int oldTeamId, int newTeamId)
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::EnemyEnterLOS(CEnemyUnit* enemy)
+int CCircuitAI::EnemyEnterLOS(CEnemyInfo* enemy)
 {
-	bool isKnownBefore = enemy->IsKnown() && (enemy->IsInRadar() || !enemy->GetCircuitDef()->IsMobile());
+	bool isSuddenThreat = mapManager->IsSuddenThreat(enemy->GetData());
 
-	if (mapManager->EnemyEnterLOS(enemy)) {
+	if (mapManager->EnemyEnterLOS(enemy->GetData(), this)) {
 		militaryManager->AddEnemyCost(enemy);
 	}
 
-	if (isKnownBefore) {
+	if (!isSuddenThreat) {
 		return 0;  // signaling: OK
 	}
 	// Force unit's reaction
@@ -1033,40 +1045,36 @@ int CCircuitAI::EnemyEnterLOS(CEnemyUnit* enemy)
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::EnemyLeaveLOS(CEnemyUnit* enemy)
+int CCircuitAI::EnemyLeaveLOS(CEnemyInfo* enemy)
 {
-	mapManager->EnemyLeaveLOS(enemy);
+	mapManager->EnemyLeaveLOS(enemy->GetData(), this);
 
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::EnemyEnterRadar(CEnemyUnit* enemy)
+int CCircuitAI::EnemyEnterRadar(CEnemyInfo* enemy)
 {
-	mapManager->EnemyEnterRadar(enemy);
-	enemy->SetLastSeen(-1);
+	mapManager->EnemyEnterRadar(enemy->GetData(), this);
 
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::EnemyLeaveRadar(CEnemyUnit* enemy)
+int CCircuitAI::EnemyLeaveRadar(CEnemyInfo* enemy)
 {
-	mapManager->EnemyLeaveRadar(enemy);
-	enemy->SetLastSeen(lastFrame);
+	mapManager->EnemyLeaveRadar(enemy->GetData(), this);
 
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::EnemyDamaged(CEnemyUnit* enemy)
+int CCircuitAI::EnemyDamaged(CEnemyInfo* enemy)
 {
-	// FIXME: Whole threat map updates in a fraction of a second, is this call really needed?
-//	threatMap->EnemyDamaged(enemy);
-
+	// NOTE: Whole threat map updates in a fraction of a second, through polling
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::EnemyDestroyed(CEnemyUnit* enemy)
+int CCircuitAI::EnemyDestroyed(CEnemyInfo* enemy)
 {
-	if (mapManager->EnemyDestroyed(enemy)) {
+	if (mapManager->EnemyDestroyed(enemy->GetData(), this)) {
 		militaryManager->DelEnemyCost(enemy);
 	}
 
@@ -1233,152 +1241,53 @@ CAllyUnit* CCircuitAI::GetFriendlyUnit(Unit* u) const
 	return nullptr;
 }
 
-std::pair<CEnemyUnit*, bool> CCircuitAI::RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS)
+std::pair<CEnemyInfo*, bool> CCircuitAI::RegisterEnemyInfo(ICoreUnit::Id unitId, bool isInLOS)
 {
-	CEnemyUnit* unit = GetEnemyUnit(unitId);
+	CEnemyInfo* unit = GetEnemyInfo(unitId);
 	if (unit != nullptr) {
-		if (isInLOS/* && (unit->GetCircuitDef() == nullptr)*/) {
-			UnitDef* unitDef = unit->GetUnit()->GetDef();
-			if (unitDef == nullptr) {  // doesn't work with globalLOS
-				return std::make_pair(nullptr, false);
-			}
-			CCircuitDef::Id unitDefId = unitDef->GetUnitDefId();
-			delete unitDef;
-			if ((unit->GetCircuitDef() == nullptr) || unit->GetCircuitDef()->GetId() != unitDefId) {
-				unit->SetCircuitDef(defsById[unitDefId]);
-				unit->SetCost(unit->GetUnit()->GetRulesParamFloat("comm_cost", unit->GetCost()));
-			}
+		if (isInLOS && !enemyManager->UnitInLOS(unit->GetData(), this)) {
+			return std::make_pair(nullptr, false);
 		}
 		return std::make_pair(unit, true);
 	}
 
-	Unit* u = WrappUnit::GetInstance(skirmishAIId, unitId);
-	if (u == nullptr) {
-		return std::make_pair(nullptr, true);
+	CEnemyUnit* data;
+	bool isReal;
+	std::tie(data, isReal) = enemyManager->RegisterEnemyUnit(unitId, isInLOS, this);
+	if (data == nullptr) {
+		return std::make_pair(nullptr, isReal);
 	}
-	if (/*u->IsNeutral() || */u->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f) {
-		delete u;
-		return std::make_pair(nullptr, false);
-	}
-	CCircuitDef* cdef = nullptr;
-	if (isInLOS) {
-		UnitDef* unitDef = u->GetDef();
-		if (unitDef == nullptr) {  // doesn't work with globalLOS
-			delete u;
-			return std::make_pair(nullptr, false);
-		}
-		cdef = defsById[unitDef->GetUnitDefId()];
-		delete unitDef;
-	}
-	unit = new CEnemyUnit(unitId, u, cdef);
 
-	enemyUnits[unit->GetId()] = unit;
-	enemyUpdates.push_back(unit);
+	unit = new CEnemyInfo(data);
+	enemyInfos[unit->GetId()] = unit;
 
 	return std::make_pair(unit, true);
 }
 
-CEnemyUnit* CCircuitAI::RegisterEnemyUnit(Unit* e)
+CEnemyInfo* CCircuitAI::RegisterEnemyInfo(Unit* e)
 {
-	if (/*e->IsNeutral() || */e->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f) {
+	CEnemyUnit* data = enemyManager->RegisterEnemyUnit(e, this);
+	if (data == nullptr) {
 		return nullptr;
 	}
 
-	const ICoreUnit::Id unitId = e->GetUnitId();
-	CEnemyUnit* unit = GetEnemyUnit(unitId);
-	UnitDef* unitDef = e->GetDef();
-	CCircuitDef::Id unitDefId = unitDef->GetUnitDefId();
-	delete unitDef;
-
-	if (unit != nullptr) {
-		if ((unit->GetCircuitDef() == nullptr) || unit->GetCircuitDef()->GetId() != unitDefId) {
-			unit->SetCircuitDef(defsById[unitDefId]);
-			unit->SetCost(unit->GetUnit()->GetRulesParamFloat("comm_cost", unit->GetCost()));
-		}
-		return nullptr;
-	}
-
-	CCircuitDef* cdef = defsById[unitDefId];
-	unit = new CEnemyUnit(unitId, e, cdef);
-
-	enemyUnits[unit->GetId()] = unit;
-	enemyUpdates.push_back(unit);
+	CEnemyInfo* unit = new CEnemyInfo(data);
+	enemyInfos[unit->GetId()] = unit;
 
 	return unit;
 }
 
-void CCircuitAI::UnregisterEnemyUnit(CEnemyUnit* enemy)
+void CCircuitAI::UnregisterEnemyInfo(CEnemyInfo* enemy)
 {
-	enemy->Dead();
-	enemyUnits.erase(enemy->GetId());
-}
-
-void CCircuitAI::DeleteEnemyUnit(CEnemyUnit* enemy)
-{
-	enemyUpdates[enemyIterator] = enemyUpdates.back();
-	enemyUpdates.pop_back();
-
+	enemyManager->UnregisterEnemyUnit(enemy->GetData(), this);
+	enemyInfos.erase(enemy->GetId());
 	delete enemy;
 }
 
-void CCircuitAI::UpdateEnemyUnits()
+CEnemyInfo* CCircuitAI::GetEnemyInfo(ICoreUnit::Id unitId) const
 {
-	if (!isCheating) {
-		// AI knows what units are in los, hence reduce the amount of useless
-		// engine InLos checks for each single param of the enemy unit
-		cheats->SetEnabled(true);
-	}
-
-	if (enemyIterator >= enemyUpdates.size()) {
-		enemyIterator = 0;
-	}
-
-	// stagger the Update's
-	// -2 is for threat-draw frame and k-means frame
-	unsigned int n = (enemyUpdates.size() / (THREAT_UPDATE_RATE - 2)) + 1;
-
-	while ((enemyIterator < enemyUpdates.size()) && (n != 0)) {
-		CEnemyUnit* enemy = enemyUpdates[enemyIterator];
-		if (enemy->IsDead()) {
-			DeleteEnemyUnit(enemy);
-			continue;
-		}
-
-		int frame = enemy->GetLastSeen();
-		if ((frame != -1) && (lastFrame - frame >= FRAMES_PER_SEC * 60 * 20)) {
-			EnemyDestroyed(enemy);
-			UnregisterEnemyUnit(enemy);
-			DeleteEnemyUnit(enemy);
-			continue;
-		}
-
-		if (enemy->IsInRadarOrLOS()) {
-			const AIFloat3& pos = enemy->GetUnit()->GetPos();
-			if (CTerrainData::IsNotInBounds(pos)) {  // NOTE: Unit id validation. No EnemyDestroyed sometimes apparently
-				EnemyDestroyed(enemy);
-				UnregisterEnemyUnit(enemy);
-				DeleteEnemyUnit(enemy);
-				continue;
-			}
-			enemy->UpdateInRadarData(pos);
-			if (enemy->IsInLOS()) {
-				enemy->UpdateInLosData();  // heavy on engine calls
-			}
-		}
-
-		++enemyIterator;
-		--n;
-	}
-
-	if (!isCheating) {
-		cheats->SetEnabled(false);
-	}
-}
-
-CEnemyUnit* CCircuitAI::GetEnemyUnit(ICoreUnit::Id unitId) const
-{
-	auto it = enemyUnits.find(unitId);
-	return (it != enemyUnits.end()) ? it->second : nullptr;
+	auto it = enemyInfos.find(unitId);
+	return (it != enemyInfos.end()) ? it->second : nullptr;
 }
 
 void CCircuitAI::DisableControl(CCircuitUnit* unit)

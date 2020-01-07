@@ -92,10 +92,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			unit->GetTask()->OnUnitIdle(unit);
 		}
 	};
-	auto workerDamagedHandler = [](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto workerDamagedHandler = [](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		unit->GetTask()->OnUnitDamaged(unit, attacker);
 	};
-	auto workerDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto workerDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		IUnitTask* task = unit->GetTask();
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
@@ -114,10 +114,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	/*
 	 * building handlers
 	 */
-	auto buildingDamagedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto buildingDamagedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
 	};
-	auto buildingDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto buildingDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		int frame = this->circuit->GetLastFrame();
 		int facing = unit->GetUnit()->GetBuildingFacing();
 		this->circuit->GetTerrainManager()->DelBlocker(unit->GetCircuitDef(), unit->GetPos(frame), facing);
@@ -174,7 +174,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	 * staticmex handlers;
 	 */
 	CCircuitDef::Id unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
-	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
 		CCircuitDef* mexDef = unit->GetCircuitDef();
 		const int facing = unit->GetUnit()->GetBuildingFacing();
@@ -299,7 +299,7 @@ int CBuilderManager::UnitIdle(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
-int CBuilderManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+int CBuilderManager::UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	auto search = damagedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != damagedHandler.end()) {
@@ -309,7 +309,7 @@ int CBuilderManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	return 0; //signaling: OK
 }
 
-int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	auto iter = unfinishedUnits.find(unit);
 	if (iter != unfinishedUnits.end()) {

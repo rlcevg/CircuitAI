@@ -162,7 +162,7 @@ void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, PathInfo& path)
+CEnemyInfo* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, PathInfo& path)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CMap* map = circuit->GetMap();
@@ -183,13 +183,13 @@ CEnemyUnit* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, Path
 	float maxThreat = 0.f;
 	float minPower = maxPower;
 
-	CEnemyUnit* bestTarget = nullptr;
-	CEnemyUnit* worstTarget = nullptr;
+	CEnemyInfo* bestTarget = nullptr;
+	CEnemyInfo* worstTarget = nullptr;
 	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(unit);
-	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
+	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	for (auto& kv : enemies) {
-		CEnemyUnit* enemy = kv.second;
+		CEnemyInfo* enemy = kv.second;
 		if (enemy->IsHidden() || (enemy->GetTasks().size() > 2)) {
 			continue;
 		}

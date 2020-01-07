@@ -445,7 +445,7 @@ void CTerrainManager::MarkAllyBuildings()
 	markFrame = circuit->GetLastFrame();
 
 	circuit->UpdateFriendlyUnits();
-	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
+	const CAllyTeam::AllyUnits& friendlies = circuit->GetFriendlyUnits();
 	int teamId = circuit->GetTeamId();
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 

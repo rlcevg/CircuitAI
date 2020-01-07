@@ -69,13 +69,13 @@ private:
 	inline springai::AIFloat3 XZToPos(int x, int z) const;
 
 	void Prepare(SThreatData& threatData);
-	void AddEnemyUnit(const CEnemyUnit::SEnemyData& e);
-	void AddEnemyUnitAll(const CEnemyUnit::SData& e);
-	void AddEnemyAir(const CEnemyUnit::SData& e);  // Enemy AntiAir
-	void AddEnemyAmphConst(const CEnemyUnit::SData& e);  // Enemy AntiAmph
-	void AddEnemyAmphGradient(const CEnemyUnit::SData& e);  // Enemy AntiAmph
-	void AddDecloaker(const CEnemyUnit::SData& e);
-	void AddShield(const CEnemyUnit::SData& e);
+	void AddEnemyUnit(const SEnemyData& e);
+	void AddEnemyUnitAll(const SEnemyData& e);
+	void AddEnemyAir(const SEnemyData& e);  // Enemy AntiAir
+	void AddEnemyAmphConst(const SEnemyData& e);  // Enemy AntiAmph
+	void AddEnemyAmphGradient(const SEnemyData& e);  // Enemy AntiAmph
+	void AddDecloaker(const SEnemyData& e);
+	void AddShield(const SEnemyData& e);
 
 	int GetCloakRange(const CCircuitDef* edef) const;
 	int GetShieldRange(const CCircuitDef* edef) const;

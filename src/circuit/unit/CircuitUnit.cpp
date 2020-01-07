@@ -124,7 +124,7 @@ bool CCircuitUnit::IsForceExecute()
 	return result;
 }
 
-void CCircuitUnit::ManualFire(CEnemyUnit* target, int timeOut)
+void CCircuitUnit::ManualFire(CEnemyInfo* target, int timeOut)
 {
 	TRY_UNIT(manager->GetCircuit(), this,
 		if (circuitDef->HasDGun()) {
@@ -218,7 +218,7 @@ float CCircuitUnit::GetHealthPercent()
 	return unit->GetHealth() / unit->GetMaxHealth() - unit->GetCaptureProgress() * 16.f;
 }
 
-void CCircuitUnit::Attack(CEnemyUnit* enemy, int timeout)
+void CCircuitUnit::Attack(CEnemyInfo* enemy, int timeout)
 {
 	target = enemy;
 	TRY_UNIT(manager->GetCircuit(), this,
@@ -258,7 +258,7 @@ void CCircuitUnit::Attack(const AIFloat3& position, int timeout)
 	)
 }
 
-void CCircuitUnit::Attack(const AIFloat3& position, CEnemyUnit* enemy, int timeout)
+void CCircuitUnit::Attack(const AIFloat3& position, CEnemyInfo* enemy, int timeout)
 {
 	target = enemy;
 	const AIFloat3& pos = utils::get_radial_pos(position, SQUARE_SIZE * 4);

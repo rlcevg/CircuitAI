@@ -8,6 +8,7 @@
 #include "map/MapManager.h"
 #include "map/ThreatMap.h"
 #include "map/InfluenceMap.h"
+#include "CircuitAI.h"
 
 #include "spring/SpringMap.h"
 
@@ -96,15 +97,25 @@ void CMapManager::EnqueueUpdate()
 	inflMap->EnqueueUpdate();
 }
 
-bool CMapManager::EnemyEnterLOS(CEnemyUnit* enemy)
+bool CMapManager::IsSuddenThreat(CEnemyUnit* enemy) const
 {
+	return !enemy->IsKnown(circuit->GetLastFrame())
+			|| (!enemy->IsInRadar() && enemy->GetCircuitDef()->IsMobile());
+}
+
+bool CMapManager::EnemyEnterLOS(CEnemyUnit* enemy, CCircuitAI* ai)
+{
+	const bool wasKnown = enemy->IsKnown(ai->GetLastFrame());
+	if (circuit != ai) {
+		return !wasKnown;
+	}
+
 	// Possible cases:
 	// (1) Unknown enemy that has been detected for the first time
 	// (2) Unknown enemy that was only in radar enters LOS
 	// (3) Known enemy that already was in LOS enters again
 
 	enemy->SetInLOS();
-	const bool wasKnown = enemy->IsKnown();
 
 	if (!enemy->IsAttacker()) {
 		if (enemy->GetThreat() > .0f) {  // (2)
@@ -125,7 +136,7 @@ bool CMapManager::EnemyEnterLOS(CEnemyUnit* enemy)
 
 		enemy->UpdateInRadarData(enemy->GetUnit()->GetPos());
 		enemy->UpdateInLosData();
-		enemy->SetKnown();
+		enemy->SetKnown(circuit->GetLastFrame());
 
 		return !wasKnown;
 	}
@@ -140,18 +151,27 @@ bool CMapManager::EnemyEnterLOS(CEnemyUnit* enemy)
 	enemy->UpdateInLosData();
 	threatMap->SetEnemyUnitRange(enemy);
 	threatMap->SetEnemyUnitThreat(enemy);
-	enemy->SetKnown();
+	enemy->SetKnown(circuit->GetLastFrame());
 
 	return !wasKnown;
 }
 
-void CMapManager::EnemyLeaveLOS(CEnemyUnit* enemy)
+void CMapManager::EnemyLeaveLOS(CEnemyUnit* enemy, CCircuitAI* ai)
 {
+	if (circuit != ai) {
+		return;
+	}
+
 	enemy->ClearInLOS();
 }
 
-void CMapManager::EnemyEnterRadar(CEnemyUnit* enemy)
+void CMapManager::EnemyEnterRadar(CEnemyUnit* enemy, CCircuitAI* ai)
 {
+	if (circuit != ai) {
+		return;
+	}
+	enemy->SetLastSeen(-1);
+
 	// Possible cases:
 	// (1) Unknown enemy wanders at radars
 	// (2) Known enemy that once was in los wandering at radar
@@ -187,21 +207,31 @@ void CMapManager::EnemyEnterRadar(CEnemyUnit* enemy)
 	}
 }
 
-void CMapManager::EnemyLeaveRadar(CEnemyUnit* enemy)
+void CMapManager::EnemyLeaveRadar(CEnemyUnit* enemy, CCircuitAI* ai)
 {
+	if (circuit != ai) {
+		return;
+	}
+	enemy->SetLastSeen(circuit->GetLastFrame());
+
 	enemy->ClearInRadar();
 }
 
-bool CMapManager::EnemyDestroyed(CEnemyUnit* enemy)
+bool CMapManager::EnemyDestroyed(CEnemyUnit* enemy, CCircuitAI* ai)
 {
+	const bool isKnown = enemy->IsKnown(ai->GetLastFrame());
+	if (circuit != ai) {
+		return isKnown;
+	}
+
 	auto it = hostileUnits.find(enemy->GetId());
 	if (it == hostileUnits.end()) {
 		peaceUnits.erase(enemy->GetId());
-		return enemy->IsKnown();
+		return isKnown;
 	}
 
 	hostileUnits.erase(it);
-	return enemy->IsKnown();
+	return isKnown;
 }
 
 bool CMapManager::IsInLOS(const AIFloat3& pos) const

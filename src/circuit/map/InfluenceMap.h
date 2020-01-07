@@ -8,6 +8,8 @@
 #ifndef SRC_CIRCUIT_TERRAIN_INFLUENCEMAP_H_
 #define SRC_CIRCUIT_TERRAIN_INFLUENCEMAP_H_
 
+#include "unit/EnemyUnit.h"
+
 #include <vector>
 #ifdef DEBUG_VIS
 #include <stdint.h>
@@ -24,7 +26,6 @@ namespace circuit {
 
 class CMapManager;
 class CAllyUnit;
-class CEnemyUnit;
 
 class CInfluenceMap {
 public:
@@ -40,17 +41,29 @@ public:
 	int Pos2Index(const springai::AIFloat3& pos) const;
 
 private:
-	using Influences = std::vector<float>;
+	struct SInfluenceData {
+		FloatVec enemyInfl;
+		FloatVec allyInfl;
+		FloatVec influence;
+		FloatVec tension;
+		FloatVec vulnerability;
+		FloatVec featureInfl;
+	};
+
 	CMapManager* manager;
 
 	void Clear();
+	void Prepare(SInfluenceData& inflData);
 	void AddUnit(CAllyUnit* u);
-	void AddUnit(CEnemyUnit* e);
+	void AddUnit(const SEnemyData& e);
 	void AddFeature(springai::Feature* f);
 	inline void PosToXZ(const springai::AIFloat3& pos, int& x, int& z) const;
 
 	void Update();
 	void Apply();
+	SInfluenceData* GetNextInflData() {
+		return (pInflData.load() == &inflData0) ? &inflData1 : &inflData0;
+	}
 
 	int squareSize;
 	int width;
@@ -59,13 +72,22 @@ private:
 
 	float vulnMax;
 
-	Influences enemyInfl;
-	Influences allyInfl;
-	Influences influence;
-	Influences tension;
-	Influences vulnerability;
-	Influences featureInfl;
+	SInfluenceData inflData0, inflData1;  // Double-buffer for threading
+	std::atomic<SInfluenceData*> pInflData;
+	float* drawEnemyInfl;
+	float* drawAllyInfl;
+	float* drawInfluence;
+	float* drawTension;
+	float* drawVulnerability;
+	float* drawFeatureInfl;
 	bool isUpdating;
+
+	float* enemyInfl;
+	float* allyInfl;
+	float* influence;
+	float* tension;
+	float* vulnerability;
+	float* featureInfl;
 
 #ifdef DEBUG_VIS
 private:

@@ -27,7 +27,7 @@ public:
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
 	virtual int UnitFinished(CCircuitUnit* unit) override;
 	virtual int UnitIdle(CCircuitUnit* unit) override;
-	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 	CRecruitTask* EnqueueTask(CRecruitTask::Priority priority,
 							  CCircuitDef* buildDef,

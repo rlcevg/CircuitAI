@@ -146,7 +146,7 @@ void CSRepairTask::OnUnitIdle(CCircuitUnit* unit)
 	manager->DoneTask(this);
 }
 
-void CSRepairTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CSRepairTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	// TODO: Terraform attacker into dust
 }

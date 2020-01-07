@@ -71,8 +71,8 @@ protected:
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
-	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
+	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 	virtual void OnTravelEnd(CCircuitUnit* unit) override;
 

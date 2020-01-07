@@ -93,7 +93,7 @@ void IFighterTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
@@ -136,12 +136,12 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	cowards.insert(unit);
 }
 
-void IFighterTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+void IFighterTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	RemoveAssignee(unit);
 }
 
-void IFighterTask::SetTarget(CEnemyUnit* enemy)
+void IFighterTask::SetTarget(CEnemyInfo* enemy)
 {
 	if (target != nullptr) {
 		target->UnbindTask(this);

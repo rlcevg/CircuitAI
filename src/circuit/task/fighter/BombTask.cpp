@@ -93,7 +93,7 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	const AIFloat3& pos = unit->GetPos(frame);
 	std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
-	CEnemyUnit* lastTarget = target;
+	CEnemyInfo* lastTarget = target;
 	SetTarget(nullptr);
 	SetTarget(FindTarget(unit, lastTarget, pos, *pPath));
 
@@ -161,7 +161,7 @@ void CBombTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-void CBombTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CBombTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	// Do not retreat if bomber is close to target
 	if (target == nullptr) {
@@ -174,7 +174,7 @@ void CBombTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	}
 }
 
-CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, const AIFloat3& pos, PathInfo& path)
+CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, const AIFloat3& pos, PathInfo& path)
 {
 	// TODO: 1) Bombers should constantly harass undefended targets and not suicide.
 	//       2) Fat target getting close to base should gain priority and be attacked by group if high AA threat.
@@ -208,14 +208,14 @@ CEnemyUnit* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, co
 		};
 	}
 
-	CEnemyUnit* bestTarget = nullptr;
-	CEnemyUnit* mediumTarget = nullptr;
-	CEnemyUnit* worstTarget = nullptr;
+	CEnemyInfo* bestTarget = nullptr;
+	CEnemyInfo* mediumTarget = nullptr;
+	CEnemyInfo* worstTarget = nullptr;
 	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(unit);
-	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
+	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	for (auto& kv : enemies) {
-		CEnemyUnit* enemy = kv.second;
+		CEnemyInfo* enemy = kv.second;
 		if (enemy->IsHidden()) {
 			continue;
 		}

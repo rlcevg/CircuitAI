@@ -34,12 +34,12 @@ int IModule::UnitIdle(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
-int IModule::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+int IModule::UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	return 0; //signaling: OK
 }
 
-int IModule::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+int IModule::UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	return 0; //signaling: OK
 }

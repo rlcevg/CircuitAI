@@ -62,6 +62,7 @@ void CAllyTeam::Init(CCircuitAI* circuit, float decloakRadius)
 	}
 
 	mapManager = std::make_shared<CMapManager>(circuit, decloakRadius);
+	enemyManager = std::make_shared<CEnemyManager>(circuit);
 
 	metalManager = std::make_shared<CMetalManager>(circuit, &circuit->GetGameAttribute()->GetMetalData());
 	if (metalManager->HasMetalSpots() && !metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {

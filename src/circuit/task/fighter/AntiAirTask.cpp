@@ -246,7 +246,7 @@ void CAntiAirTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	ISquadTask::OnUnitDamaged(unit, attacker);
 
@@ -296,13 +296,13 @@ void CAntiAirTask::FindTarget()
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float maxPower = attackPower * powerMod;
 
-	CEnemyUnit* bestTarget = nullptr;
+	CEnemyInfo* bestTarget = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
 
 	threatMap->SetThreatType(leader);
-	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
+	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	for (auto& kv : enemies) {
-		CEnemyUnit* enemy = kv.second;
+		CEnemyInfo* enemy = kv.second;
 		if (enemy->IsHidden() ||
 			(maxPower <= threatMap->GetThreatAt(enemy->GetPos()) - enemy->GetThreat()) ||
 			!terrainManager->CanMoveToPos(area, enemy->GetPos()))

@@ -236,7 +236,7 @@ void CMetalManager::MarkAllyMexes()
 
 	circuit->UpdateFriendlyUnits();
 	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
-	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
+	const CAllyTeam::AllyUnits& friendlies = circuit->GetFriendlyUnits();
 	static std::vector<CAllyUnit*> tmpMexes;  // NOTE: micro-opt
 //	tmpMexes.reserve(friendlies.size());
 	for (auto& kv : friendlies) {

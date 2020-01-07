@@ -249,7 +249,7 @@ void CAttackTask::FindTarget()
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 
-	CEnemyUnit* bestTarget = nullptr;
+	CEnemyInfo* bestTarget = nullptr;
 	// TODO: Custom heuristic function
 //	const float sqOBDist = pos.SqDistance2D(basePos);  // Own to Base distance
 //	const float sqBEDist = ePos.SqDistance2D(basePos);  // Base to Enemy distance
@@ -260,9 +260,9 @@ void CAttackTask::FindTarget()
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
 	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(leader);
-	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
+	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	for (auto& kv : enemies) {
-		CEnemyUnit* enemy = kv.second;
+		CEnemyInfo* enemy = kv.second;
 		if (enemy->IsHidden() || (enemy->GetTasks().size() > 2)) {
 			continue;
 		}

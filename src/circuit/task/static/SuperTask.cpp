@@ -136,11 +136,11 @@ void CSuperTask::Update()
 	}
 
 	const AIFloat3& grPos = groups[groupIdx].pos;
-	CEnemyUnit* bestTarget = nullptr;
+	CEnemyInfo* bestTarget = nullptr;
 	if (cdef->IsAttrStock()) {
 		float minSqDist = std::numeric_limits<float>::max();
 		for (const ICoreUnit::Id eId : groups[groupIdx].units) {
-			CEnemyUnit* enemy = circuit->GetEnemyUnit(eId);
+			CEnemyInfo* enemy = circuit->GetEnemyInfo(eId);
 			if (enemy == nullptr) {
 				continue;
 			}
@@ -153,7 +153,7 @@ void CSuperTask::Update()
 	} else {
 		float maxCost = 0.f;
 		for (const ICoreUnit::Id eId : groups[groupIdx].units) {
-			CEnemyUnit* enemy = circuit->GetEnemyUnit(eId);
+			CEnemyInfo* enemy = circuit->GetEnemyInfo(eId);
 			if (enemy == nullptr) {
 				continue;
 			}

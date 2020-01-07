@@ -69,12 +69,17 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			unit->GetUnit()->SetIdleMode(0);
 		)
 
+		int frame = this->circuit->GetLastFrame();
+		if (factories.empty() && (this->circuit->GetBuilderManager()->GetWorkerCount() <= 2)) {
+			this->circuit->GetEconomyManager()->OpenStrategy(unit->GetCircuitDef(), unit->GetPos(frame));
+		}
+
 		EnableFactory(unit);
 	};
 	auto factoryIdleHandler = [](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
 	};
-	auto factoryDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto factoryDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		IUnitTask* task = unit->GetTask();
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
@@ -137,7 +142,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 	auto assistIdleHandler = [](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
 	};
-	auto assistDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto assistDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		IUnitTask* task = unit->GetTask();
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
@@ -293,7 +298,7 @@ int CFactoryManager::UnitIdle(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
-int CFactoryManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+int CFactoryManager::UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	auto iter = unfinishedUnits.find(unit);
 	if (iter != unfinishedUnits.end()) {

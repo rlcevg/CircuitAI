@@ -25,11 +25,11 @@ public:
 	virtual void Update() override;
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 private:
 	void Execute(CCircuitUnit* unit, bool isUpdating);
-	CEnemyUnit* FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, const springai::AIFloat3& pos, PathInfo& path);
+	CEnemyInfo* FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, const springai::AIFloat3& pos, PathInfo& path);
 };
 
 } // namespace circuit

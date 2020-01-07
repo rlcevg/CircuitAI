@@ -789,8 +789,8 @@
 		"thr_mod": 0.01
 	},
 	"striderbantha": {
-		"role": ["heavy", "support", "heavy"],
-		"attribute": ["melee", "support"],
+		"role": ["heavy", "heavy"],
+		"attribute": ["melee"],
 		"retreat": 0.6,
 		"pwr_mod": 0.5,
 		"thr_mod": 0.5

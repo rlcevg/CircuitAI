@@ -12,21 +12,17 @@
 
 namespace circuit {
 
-class CCircuitDef;
-
 class ICoreUnit {
 public:
 	using Id = int;
 
-	ICoreUnit(Id unitId, springai::Unit* unit, CCircuitDef* cdef)
+	ICoreUnit(Id unitId, springai::Unit* unit)
 		: id(unitId)
 		, unit(unit)
-		, circuitDef(cdef)
 	{}
 
 	Id GetId() const { return id; }
 	springai::Unit* GetUnit() const { return unit; }
-	CCircuitDef* GetCircuitDef() const { return circuitDef; }
 
 	bool operator==(const ICoreUnit& rhs) { return id == rhs.GetId(); }
 	bool operator!=(const ICoreUnit& rhs) { return id != rhs.GetId(); }
@@ -36,7 +32,6 @@ protected:
 
 	Id id;
 	springai::Unit* unit;  // owner
-	CCircuitDef* circuitDef;
 };
 
 } // namespace circuit

@@ -38,11 +38,11 @@ void CPlayerTask::OnUnitIdle(CCircuitUnit* unit)
 {
 }
 
-void CPlayerTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CPlayerTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 }
 
-void CPlayerTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CPlayerTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	RemoveAssignee(unit);
 }

@@ -224,15 +224,15 @@ void CDefendTask::FindTarget()
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 
-	CEnemyUnit* bestTarget = nullptr;
+	CEnemyInfo* bestTarget = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
 
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
 	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(leader);
-	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
+	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	for (auto& kv : enemies) {
-		CEnemyUnit* enemy = kv.second;
+		CEnemyInfo* enemy = kv.second;
 		if (enemy->IsHidden() || (enemy->GetTasks().size() > 2)) {
 			continue;
 		}

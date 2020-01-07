@@ -50,14 +50,14 @@ void CDGunAction::Update(CCircuitAI* circuit)
 
 	int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
 	bool notDGunAA = !unit->GetCircuitDef()->HasDGunAA();
-	CEnemyUnit* bestTarget = nullptr;
+	CEnemyInfo* bestTarget = nullptr;
 	float maxThreat = 0.f;
 
 	for (Unit* e : enemies) {
 		if (e == nullptr) {
 			continue;
 		}
-		CEnemyUnit* enemy = circuit->GetEnemyUnit(e);
+		CEnemyInfo* enemy = circuit->GetEnemyInfo(e);
 		delete e;  // replaces utils::free_clear(enemies);
 		if ((enemy == nullptr) || enemy->NotInRadarAndLOS() || (enemy->GetThreat() < THREAT_MIN)) {
 			continue;

@@ -87,7 +87,7 @@ void CSReclaimTask::Update()
 	}
 }
 
-void CSReclaimTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CSReclaimTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	// TODO: Terraform attacker into dust
 }

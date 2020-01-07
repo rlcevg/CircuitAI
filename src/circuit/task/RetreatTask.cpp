@@ -235,7 +235,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-void CRetreatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CRetreatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	if (State::REGROUP != state) {
 		return;
@@ -257,7 +257,7 @@ void CRetreatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	Start(unit);
 }
 
-void CRetreatTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CRetreatTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	RemoveAssignee(unit);
 }

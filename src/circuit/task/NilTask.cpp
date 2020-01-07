@@ -45,11 +45,11 @@ void CNilTask::OnUnitIdle(CCircuitUnit* unit)
 {
 }
 
-void CNilTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CNilTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 }
 
-void CNilTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CNilTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 }
 

@@ -60,7 +60,7 @@ class CMilitaryManager;
 class CScheduler;
 class IModule;
 class CCircuitUnit;
-class CEnemyUnit;
+class CEnemyInfo;
 class CEngine;
 class CMap;
 #ifdef DEBUG_VIS
@@ -119,16 +119,16 @@ private:
 	int UnitFinished(CCircuitUnit* unit);
 	int UnitIdle(CCircuitUnit* unit);
 	int UnitMoveFailed(CCircuitUnit* unit);
-	int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker/*, int weaponId*/);
-	int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
+	int UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker/*, int weaponId*/);
+	int UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker);
 	int UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId);
 	int UnitCaptured(ICoreUnit::Id unitId, int oldTeamId, int newTeamId);
-	int EnemyEnterLOS(CEnemyUnit* enemy);
-	int EnemyLeaveLOS(CEnemyUnit* enemy);
-	int EnemyEnterRadar(CEnemyUnit* enemy);
-	int EnemyLeaveRadar(CEnemyUnit* enemy);
-	int EnemyDamaged(CEnemyUnit* enemy);
-	int EnemyDestroyed(CEnemyUnit* enemy);
+	int EnemyEnterLOS(CEnemyInfo* enemy);
+	int EnemyLeaveLOS(CEnemyInfo* enemy);
+	int EnemyEnterRadar(CEnemyInfo* enemy);
+	int EnemyLeaveRadar(CEnemyInfo* enemy);
+	int EnemyDamaged(CEnemyInfo* enemy);
+	int EnemyDestroyed(CEnemyInfo* enemy);
 	int PlayerCommand(std::vector<CCircuitUnit*>& units);
 //	int CommandFinished(CCircuitUnit* unit, int commandTopicId, springai::Command* cmd);
 	int Load(std::istream& is);
@@ -152,19 +152,17 @@ public:
 	void UpdateFriendlyUnits() { allyTeam->UpdateFriendlyUnits(this); }
 	CAllyUnit* GetFriendlyUnit(springai::Unit* u) const;
 	CAllyUnit* GetFriendlyUnit(ICoreUnit::Id unitId) const { return allyTeam->GetFriendlyUnit(unitId); }
-	const CAllyTeam::Units& GetFriendlyUnits() const { return allyTeam->GetFriendlyUnits(); }
+	const CAllyTeam::AllyUnits& GetFriendlyUnits() const { return allyTeam->GetFriendlyUnits(); }
 
-	using EnemyUnits = std::map<ICoreUnit::Id, CEnemyUnit*>;
+	using EnemyInfos = std::map<ICoreUnit::Id, CEnemyInfo*>;
 private:
-	std::pair<CEnemyUnit*, bool> RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS = false);
-	CEnemyUnit* RegisterEnemyUnit(springai::Unit* e);
-	void UnregisterEnemyUnit(CEnemyUnit* enemy);
-	void DeleteEnemyUnit(CEnemyUnit* enemy);
-	void UpdateEnemyUnits();
+	std::pair<CEnemyInfo*, bool> RegisterEnemyInfo(ICoreUnit::Id unitId, bool isInLOS = false);
+	CEnemyInfo* RegisterEnemyInfo(springai::Unit* e);
+	void UnregisterEnemyInfo(CEnemyInfo* enemy);
 public:
-	CEnemyUnit* GetEnemyUnit(springai::Unit* u) const { return GetEnemyUnit(u->GetUnitId()); }
-	CEnemyUnit* GetEnemyUnit(ICoreUnit::Id unitId) const;
-	const EnemyUnits& GetEnemyUnits() const { return enemyUnits; }
+	CEnemyInfo* GetEnemyInfo(springai::Unit* u) const { return GetEnemyInfo(u->GetUnitId()); }
+	CEnemyInfo* GetEnemyInfo(ICoreUnit::Id unitId) const;
+	const EnemyInfos& GetEnemyInfos() const { return enemyInfos; }
 
 	CAllyTeam* GetAllyTeam() const { return allyTeam; }
 
@@ -178,13 +176,10 @@ private:
 	void UpdateActions();
 
 	Units teamUnits;  // owner
-	EnemyUnits enemyUnits;  // owner
+	EnemyInfos enemyInfos;  // owner
 	CAllyTeam* allyTeam;
 	int uEnemyMark;
 	int kEnemyMark;
-
-	std::vector<CEnemyUnit*> enemyUpdates;
-	unsigned int enemyIterator;
 
 	std::vector<CCircuitUnit*> actionUnits;
 	unsigned int actionIterator;
@@ -296,6 +291,7 @@ private:
 	std::shared_ptr<CScheduler> scheduler;
 	std::shared_ptr<CSetupManager> setupManager;
 	std::shared_ptr<CMetalManager> metalManager;
+	std::shared_ptr<CEnemyManager> enemyManager;
 	std::shared_ptr<CMapManager> mapManager;
 	std::shared_ptr<CPathFinder> pathfinder;
 	std::shared_ptr<CTerrainManager> terrainManager;

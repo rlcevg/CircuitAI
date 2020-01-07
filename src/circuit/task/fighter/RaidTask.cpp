@@ -273,13 +273,13 @@ void CRaidTask::FindTarget()
 	float minPower = maxPower;
 
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
-	CEnemyUnit* bestTarget = nullptr;
-	CEnemyUnit* worstTarget = nullptr;
+	CEnemyInfo* bestTarget = nullptr;
+	CEnemyInfo* worstTarget = nullptr;
 	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(leader);
-	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
+	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	for (auto& kv : enemies) {
-		CEnemyUnit* enemy = kv.second;
+		CEnemyInfo* enemy = kv.second;
 		if (enemy->IsHidden() || (enemy->GetTasks().size() > 2)) {
 			continue;
 		}

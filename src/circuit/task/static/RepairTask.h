@@ -25,7 +25,7 @@ protected:
 	virtual void Finish() override final;
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 };
 
 } // namespace circuit

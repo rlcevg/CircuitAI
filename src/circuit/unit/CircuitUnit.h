@@ -47,7 +47,7 @@ namespace circuit {
 #define CMD_TERRAFORM_INTERNAL		39801
 
 class CCircuitDef;
-class CEnemyUnit;
+class CEnemyInfo;
 class IUnitManager;
 class CDGunAction;
 class ITravelAction;
@@ -90,7 +90,7 @@ public:
 	bool HasDGun() const { return dgun != nullptr; }
 	bool HasWeapon() const { return weapon != nullptr; }
 	bool HasShield() const { return shield != nullptr; }
-	void ManualFire(CEnemyUnit* target, int timeOut);
+	void ManualFire(CEnemyInfo* target, int timeOut);
 	bool IsDisarmed(int frame);
 	bool IsWeaponReady(int frame);
 	bool IsDGunReady(int frame);
@@ -103,9 +103,9 @@ public:
 	float GetDGunRange();
 	float GetHealthPercent();
 
-	void Attack(CEnemyUnit* enemy, int timeout);
+	void Attack(CEnemyInfo* enemy, int timeout);
 	void Attack(const springai::AIFloat3& position, int timeout);
-	void Attack(const springai::AIFloat3& position, CEnemyUnit* enemy, int timeout);
+	void Attack(const springai::AIFloat3& position, CEnemyInfo* enemy, int timeout);
 	void Guard(CCircuitUnit* target, int timeout);
 	void Gather(const springai::AIFloat3& groupPos, int timeout);
 
@@ -117,7 +117,7 @@ public:
 	bool IsMorphing() const { return isMorphing; }
 
 	void ClearTarget() { target = nullptr; }
-	CEnemyUnit* GetTarget() const { return target; }
+	CEnemyInfo* GetTarget() const { return target; }
 
 private:
 	// NOTE: taskFrame assigned on task change and OnUnitIdle to workaround idle spam.
@@ -147,7 +147,7 @@ private:
 
 	bool isMorphing;
 
-	CEnemyUnit* target;
+	CEnemyInfo* target;
 
 #ifdef DEBUG_VIS
 public:

@@ -255,7 +255,7 @@ void IBuilderTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
@@ -273,7 +273,7 @@ void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	manager->AssignTask(unit, task);
 }
 
-void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	RemoveAssignee(unit);
 	// NOTE: AbortTask usually do not call RemoveAssignee for each unit

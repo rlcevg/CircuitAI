@@ -88,7 +88,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
 	std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
-	CEnemyUnit* bestTarget = FindTarget(unit, pos, *pPath);
+	CEnemyInfo* bestTarget = FindTarget(unit, pos, *pPath);
 
 	if (bestTarget != nullptr) {
 		TRY_UNIT(circuit, unit,
@@ -148,7 +148,7 @@ void CArtilleryTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, PathInfo& path)
+CEnemyInfo* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, PathInfo& path)
 {
 	auto fallback = [this](CCircuitAI* circuit, const AIFloat3& pos, PathInfo& path, CPathFinder* pathfinder) {
 		position = circuit->GetSetupManager()->GetBasePos();
@@ -172,15 +172,15 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 	pathfinder->SetMapData(unit, threatMap, circuit->GetLastFrame());
 	bool isPosSafe = (threatMap->GetThreatAt(pos) <= THREAT_MIN);
 
-	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
+	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	if (isPosSafe) {
 		// Трубка 15, прицел 120, бац, бац …и мимо!
 		float maxThreat = .0f;
-		CEnemyUnit* bestTarget = nullptr;
-		CEnemyUnit* mediumTarget = nullptr;
-		CEnemyUnit* worstTarget = nullptr;
+		CEnemyInfo* bestTarget = nullptr;
+		CEnemyInfo* mediumTarget = nullptr;
+		CEnemyInfo* worstTarget = nullptr;
 		for (auto& kv : enemies) {
-			CEnemyUnit* enemy = kv.second;
+			CEnemyInfo* enemy = kv.second;
 			if (!enemy->IsInRadarOrLOS() ||
 				(notAW && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
 			{
@@ -233,7 +233,7 @@ CEnemyUnit* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, 
 	} else {
 		// Avoid closest units and choose safe position
 		for (auto& kv : enemies) {
-			CEnemyUnit* enemy = kv.second;
+			CEnemyInfo* enemy = kv.second;
 			if (!enemy->IsInRadarOrLOS() ||
 				(notAW && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
 			{

@@ -8,13 +8,14 @@
 #ifndef SRC_CIRCUIT_MAP_MAPMANAGER_H_
 #define SRC_CIRCUIT_MAP_MAPMANAGER_H_
 
+#include "unit/EnemyManager.h"
 #include "unit/EnemyUnit.h"
-#include "CircuitAI.h"
-
-class CThreatMap;
-class CInfluenceMap;
 
 namespace circuit {
+
+class CCircuitAI;
+class CThreatMap;
+class CInfluenceMap;
 
 class CMapManager {
 public:
@@ -29,14 +30,16 @@ public:
 
 	void EnqueueUpdate();
 
-	const std::vector<CEnemyUnit::SEnemyData>& GetHostileDatas() const { return hostileDatas; }
-	const std::vector<CEnemyUnit::SEnemyData>& GetPeaceDatas() const { return peaceDatas; }
+	const std::vector<SEnemyData>& GetHostileDatas() const { return hostileDatas; }
+	const std::vector<SEnemyData>& GetPeaceDatas() const { return peaceDatas; }
 
-	bool EnemyEnterLOS(CEnemyUnit* enemy);
-	void EnemyLeaveLOS(CEnemyUnit* enemy);
-	void EnemyEnterRadar(CEnemyUnit* enemy);
-	void EnemyLeaveRadar(CEnemyUnit* enemy);
-	bool EnemyDestroyed(CEnemyUnit* enemy);
+	bool IsSuddenThreat(CEnemyUnit* enemy) const;
+
+	bool EnemyEnterLOS(CEnemyUnit* enemy, CCircuitAI* ai);
+	void EnemyLeaveLOS(CEnemyUnit* enemy, CCircuitAI* ai);
+	void EnemyEnterRadar(CEnemyUnit* enemy, CCircuitAI* ai);
+	void EnemyLeaveRadar(CEnemyUnit* enemy, CCircuitAI* ai);
+	bool EnemyDestroyed(CEnemyUnit* enemy, CCircuitAI* ai);
 
 private:
 	bool IsInLOS(const springai::AIFloat3& pos) const;
@@ -47,11 +50,11 @@ private:
 	CThreatMap* threatMap;
 	CInfluenceMap* inflMap;
 
-	CCircuitAI::EnemyUnits hostileUnits;
-	CCircuitAI::EnemyUnits peaceUnits;
+	CEnemyManager::EnemyUnits hostileUnits;
+	CEnemyManager::EnemyUnits peaceUnits;
 
-	std::vector<CEnemyUnit::SEnemyData> hostileDatas;
-	std::vector<CEnemyUnit::SEnemyData> peaceDatas;
+	std::vector<SEnemyData> hostileDatas;
+	std::vector<SEnemyData> peaceDatas;
 
 //	IntVec radarMap;
 	IntVec sonarMap;

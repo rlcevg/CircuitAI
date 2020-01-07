@@ -281,35 +281,35 @@ void CThreatMap::Prepare(SThreatData& threatData)
 	std::fill(threatData.shield.begin(), threatData.shield.end(), 0.f);
 }
 
-void CThreatMap::AddEnemyUnit(const CEnemyUnit::SEnemyData& e)
+void CThreatMap::AddEnemyUnit(const SEnemyData& e)
 {
 	CCircuitDef* cdef = e.cdef;
 	if (cdef == nullptr) {
-		AddEnemyUnitAll(e.data);
+		AddEnemyUnitAll(e);
 		return;
 	}
 
 	if (cdef->HasAntiAir()) {
-		AddEnemyAir(e.data);
+		AddEnemyAir(e);
 	}
 	if (cdef->HasAntiLand() || cdef->HasAntiWater()) {
-		cdef->IsAlwaysHit() ? AddEnemyAmphConst(e.data) : AddEnemyAmphGradient(e.data);
+		cdef->IsAlwaysHit() ? AddEnemyAmphConst(e) : AddEnemyAmphGradient(e);
 	}
-	AddDecloaker(e.data);
+	AddDecloaker(e);
 
 	if (cdef->GetShieldMount() != nullptr) {
-		AddShield(e.data);
+		AddShield(e);
 	}
 }
 
-void CThreatMap::AddEnemyUnitAll(const CEnemyUnit::SData& e)
+void CThreatMap::AddEnemyUnitAll(const SEnemyData& e)
 {
 	AddEnemyAir(e);
 	AddEnemyAmphGradient(e);
 	AddDecloaker(e);
 }
 
-void CThreatMap::AddEnemyAir(const CEnemyUnit::SData& e)
+void CThreatMap::AddEnemyAir(const SEnemyData& e)
 {
 	int posx, posz;
 	PosToXZ(e.pos, posx, posz);
@@ -345,7 +345,7 @@ void CThreatMap::AddEnemyAir(const CEnemyUnit::SData& e)
 	}
 }
 
-void CThreatMap::AddEnemyAmphConst(const CEnemyUnit::SData& e)
+void CThreatMap::AddEnemyAmphConst(const SEnemyData& e)
 {
 	int posx, posz;
 	PosToXZ(e.pos, posx, posz);
@@ -385,7 +385,7 @@ void CThreatMap::AddEnemyAmphConst(const CEnemyUnit::SData& e)
 	}
 }
 
-void CThreatMap::AddEnemyAmphGradient(const CEnemyUnit::SData& e)
+void CThreatMap::AddEnemyAmphGradient(const SEnemyData& e)
 {
 	int posx, posz;
 	PosToXZ(e.pos, posx, posz);
@@ -430,7 +430,7 @@ void CThreatMap::AddEnemyAmphGradient(const CEnemyUnit::SData& e)
 	}
 }
 
-void CThreatMap::AddDecloaker(const CEnemyUnit::SData& e)
+void CThreatMap::AddDecloaker(const SEnemyData& e)
 {
 	int posx, posz;
 	PosToXZ(e.pos, posx, posz);
@@ -461,7 +461,7 @@ void CThreatMap::AddDecloaker(const CEnemyUnit::SData& e)
 	}
 }
 
-void CThreatMap::AddShield(const CEnemyUnit::SData& e)
+void CThreatMap::AddShield(const SEnemyData& e)
 {
 	int posx, posz;
 	PosToXZ(e.pos, posx, posz);
@@ -520,12 +520,12 @@ void CThreatMap::Update()
 {
 	Prepare(*GetNextThreatData());
 
-	for (const CEnemyUnit::SEnemyData& e : manager->GetHostileDatas()) {
+	for (const SEnemyData& e : manager->GetHostileDatas()) {
 		AddEnemyUnit(e);
 	}
 
-	for (const CEnemyUnit::SEnemyData& e : manager->GetPeaceDatas()) {
-		AddDecloaker(e.data);
+	for (const SEnemyData& e : manager->GetPeaceDatas()) {
+		AddDecloaker(e);
 	}
 }
 

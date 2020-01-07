@@ -14,7 +14,8 @@ namespace circuit {
 using namespace springai;
 
 CAllyUnit::CAllyUnit(Id unitId, springai::Unit* unit, CCircuitDef* cdef)
-		: ICoreUnit(unitId, unit, cdef)
+		: ICoreUnit(unitId, unit)
+		, circuitDef(cdef)
 		, task(nullptr)
 		, posFrame(-1)
 {

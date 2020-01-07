@@ -85,7 +85,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			clusterInfos[index].factory = unit;
 		}
 	};
-	auto factoryDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto factoryDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		if (unit->GetTask()->GetType() == IUnitTask::Type::NIL) {
 			return;
 		}
@@ -144,10 +144,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 					IBuilderTask* task = builderManager->EnqueueFactory(IBuilderTask::Priority::NOW, facDef, buildPos,
 																		SQUARE_SIZE, true, true, 0);
 					static_cast<ITaskManager*>(builderManager)->AssignTask(unit, task);
-
-					if (builderManager->GetWorkerCount() <= 2) {
-						OpenStrategy(facDef, buildPos);
-					}
 				}
 			}
 
@@ -172,7 +168,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			}
 		}), FRAMES_PER_SEC);
 	};
-	auto comDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto comDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		RemoveMorphee(unit);
 
 		CSetupManager* setupManager = this->circuit->GetSetupManager();
@@ -285,7 +281,7 @@ int CEconomyManager::UnitFinished(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
-int CEconomyManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+int CEconomyManager::UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	// NOTE: If more actions should be done then consider moving into damagedHandler
 	if (unit->IsMorphing() && (unit->GetUnit()->GetHealth() < unit->GetUnit()->GetMaxHealth() * 0.5f)) {
@@ -296,7 +292,7 @@ int CEconomyManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	return 0; //signaling: OK
 }
 
-int CEconomyManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+int CEconomyManager::UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != destroyedHandler.end()) {
@@ -860,32 +856,37 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	}
 
 	const AIFloat3& enemyPos = militaryManager->GetEnemyPos();
-	AIFloat3 pos(circuit->GetSetupManager()->GetBasePos());
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	AIFloat3 center = (pos + enemyPos) * 0.5f;
-	float minSqDist = std::numeric_limits<float>::max();
-	const CMetalData::Clusters& clusters = metalManager->GetClusters();
-	for (unsigned i = 0; i < clusters.size(); ++i) {
-		if (!metalManager->IsClusterFinished(i)) {
-			continue;
-		}
-		const float sqDist = center.SqDistance2D(clusters[i].position);
-		if (minSqDist > sqDist) {
-			minSqDist = sqDist;
-			pos = clusters[i].position;
-		}
-	}
-
-	CMetalData::PointPredicate predicate = [this](const int index) {
-		return clusterInfos[index].factory == nullptr;
-	};
-	int index = metalManager->FindNearestCluster(pos, predicate);
-	if (index < 0) {
-		return nullptr;
-	}
-	AIFloat3 buildPos = clusters[index].position;
-
 	const bool isStart = (factoryManager->GetFactoryCount() == 0);
+	AIFloat3 buildPos;
+	if (isStart) {
+		buildPos = circuit->GetSetupManager()->GetBasePos();
+	} else {
+		AIFloat3 pos(circuit->GetSetupManager()->GetBasePos());
+		CMetalManager* metalManager = circuit->GetMetalManager();
+		AIFloat3 center = (pos + enemyPos) * 0.5f;
+		float minSqDist = std::numeric_limits<float>::max();
+		const CMetalData::Clusters& clusters = metalManager->GetClusters();
+		for (unsigned i = 0; i < clusters.size(); ++i) {
+			if (!metalManager->IsClusterFinished(i)) {
+				continue;
+			}
+			const float sqDist = center.SqDistance2D(clusters[i].position);
+			if (minSqDist > sqDist) {
+				minSqDist = sqDist;
+				pos = clusters[i].position;
+			}
+		}
+
+		CMetalData::PointPredicate predicate = [this](const int index) {
+			return clusterInfos[index].factory == nullptr;
+		};
+		int index = metalManager->FindNearestCluster(pos, predicate);
+		if (index < 0) {
+			return nullptr;
+		}
+		buildPos = clusters[index].position;
+	}
+
 	CCircuitDef* facDef = factoryManager->GetFactoryToBuild(buildPos, isStart);
 	if (facDef == nullptr) {
 		return nullptr;
@@ -1065,6 +1066,33 @@ void CEconomyManager::UpdateMorph()
 	}
 }
 
+void CEconomyManager::OpenStrategy(CCircuitDef* facDef, const AIFloat3& pos)
+{
+	CFactoryManager* factoryManager = circuit->GetFactoryManager();
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
+	const std::vector<CCircuitDef::RoleType>* opener = circuit->GetSetupManager()->GetOpener(facDef);
+	if (opener == nullptr) {
+		return;
+	}
+	for (CCircuitDef::RoleType type : *opener) {
+		CCircuitDef* buildDef = factoryManager->GetRoleDef(facDef, type);
+		if ((buildDef == nullptr) || !buildDef->IsAvailable(circuit->GetLastFrame())) {
+			continue;
+		}
+		CRecruitTask::Priority priotiry;
+		CRecruitTask::RecruitType recruit;
+		if (type == CCircuitDef::RoleType::BUILDER) {
+			priotiry = CRecruitTask::Priority::NORMAL;
+			recruit  = CRecruitTask::RecruitType::BUILDPOWER;
+		} else {
+			priotiry = CRecruitTask::Priority::HIGH;
+			recruit  = CRecruitTask::RecruitType::FIREPOWER;
+		}
+		factoryManager->EnqueueTask(priotiry, buildDef, pos, recruit, radius);
+	}
+}
+
 void CEconomyManager::ReadConfig()
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
@@ -1224,33 +1252,6 @@ void CEconomyManager::Init()
 	};
 
 	circuit->GetSetupManager()->ExecOnFindStart(subinit);
-}
-
-void CEconomyManager::OpenStrategy(CCircuitDef* facDef, const AIFloat3& pos)
-{
-	CFactoryManager* factoryManager = circuit->GetFactoryManager();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
-	const std::vector<CCircuitDef::RoleType>* opener = circuit->GetSetupManager()->GetOpener(facDef);
-	if (opener == nullptr) {
-		return;
-	}
-	for (CCircuitDef::RoleType type : *opener) {
-		CCircuitDef* buildDef = factoryManager->GetRoleDef(facDef, type);
-		if ((buildDef == nullptr) || !buildDef->IsAvailable(circuit->GetLastFrame())) {
-			continue;
-		}
-		CRecruitTask::Priority priotiry;
-		CRecruitTask::RecruitType recruit;
-		if (type == CCircuitDef::RoleType::BUILDER) {
-			priotiry = CRecruitTask::Priority::NORMAL;
-			recruit  = CRecruitTask::RecruitType::BUILDPOWER;
-		} else {
-			priotiry = CRecruitTask::Priority::HIGH;
-			recruit  = CRecruitTask::RecruitType::FIREPOWER;
-		}
-		factoryManager->EnqueueTask(priotiry, buildDef, pos, recruit, radius);
-	}
 }
 
 float CEconomyManager::GetStorage(Resource* res)

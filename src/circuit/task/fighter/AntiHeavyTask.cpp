@@ -184,7 +184,7 @@ void CAntiHeavyTask::Update()
 			state = State::ENGAGE;
 			position = target->GetPos();
 			float power = 0.f;
-			CEnemyUnit* target = this->target;
+			CEnemyInfo* target = this->target;
 			auto subattack = [&power, target](CCircuitUnit* unit) {
 				if (unit->GetDGunAct() != nullptr) {
 					unit->GetDGunAct()->SetActive(true);
@@ -287,7 +287,7 @@ void CAntiHeavyTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-void CAntiHeavyTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CAntiHeavyTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	ISquadTask::OnUnitDamaged(unit, attacker);
 
@@ -320,12 +320,12 @@ void CAntiHeavyTask::FindTarget()
 	const float losSqDist = SQUARE(range);
 	float minSqDist = losSqDist;
 
-	CEnemyUnit* bestTarget = nullptr;
+	CEnemyInfo* bestTarget = nullptr;
 	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(leader);
-	const CCircuitAI::EnemyUnits& enemies = circuit->GetEnemyUnits();
+	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	for (auto& kv : enemies) {
-		CEnemyUnit* enemy = kv.second;
+		CEnemyInfo* enemy = kv.second;
 		if (enemy->IsHidden()) {
 			continue;
 		}

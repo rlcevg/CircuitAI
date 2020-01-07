@@ -24,7 +24,7 @@ public:
 	virtual void Update() override;
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
-	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 protected:
 	bool isStop;

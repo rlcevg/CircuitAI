@@ -12,6 +12,7 @@
 
 namespace circuit {
 
+class CCircuitDef;
 class IUnitTask;
 
 class CAllyUnit: public ICoreUnit {
@@ -21,10 +22,12 @@ public:
 	CAllyUnit(Id unitId, springai::Unit* unit, CCircuitDef* cdef);
 	virtual ~CAllyUnit();
 
+	CCircuitDef* GetCircuitDef() const { return circuitDef; }
 	IUnitTask* GetTask() const { return task; }
 	const springai::AIFloat3& GetPos(int frame);
 
 protected:
+	CCircuitDef* circuitDef;
 	IUnitTask* task;  // nullptr - ally or no handler (unable to control).
 
 	int posFrame;

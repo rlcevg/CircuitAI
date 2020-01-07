@@ -40,8 +40,8 @@ public:
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
 	virtual int UnitFinished(CCircuitUnit* unit) override;
 	virtual int UnitIdle(CCircuitUnit* unit) override;
-	virtual int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
-	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual int UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
+	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 	const std::set<IFighterTask*>& GetTasks(IFighterTask::FightType type) const {
 		return fightTasks[static_cast<IFighterTask::FT>(type)];
@@ -82,8 +82,8 @@ public:
 	float GetEnemyThreat(CCircuitDef::RoleType type) const {
 		return enemyInfos[static_cast<CCircuitDef::RoleT>(type)].threat;
 	}
-	void AddEnemyCost(const CEnemyUnit* e);
-	void DelEnemyCost(const CEnemyUnit* e);
+	void AddEnemyCost(const CEnemyInfo* e);
+	void DelEnemyCost(const CEnemyInfo* e);
 	float GetMobileThreat() const { return mobileThreat; }
 	float GetStaticThreat() const { return staticThreat; }
 	float GetEnemyThreat() const { return mobileThreat + staticThreat; }

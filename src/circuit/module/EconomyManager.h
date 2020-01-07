@@ -37,8 +37,8 @@ public:
 
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
 	virtual int UnitFinished(CCircuitUnit* unit) override;
-	virtual int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
-	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual int UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
+	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 	springai::Resource* GetMetalRes() const { return metalRes; }
 	springai::Resource* GetEnergyRes() const { return energyRes; }
@@ -85,10 +85,11 @@ public:
 	void RemoveMorphee(CCircuitUnit* unit) { morphees.erase(unit); }
 	void UpdateMorph();
 
+	void OpenStrategy(CCircuitDef* facDef, const springai::AIFloat3& pos);
+
 private:
 	void ReadConfig();
 	void Init();
-	void OpenStrategy(CCircuitDef* facDef, const springai::AIFloat3& pos);
 
 	float GetStorage(springai::Resource* res);
 	void UpdateEconomy();

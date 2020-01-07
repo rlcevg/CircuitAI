@@ -17,7 +17,7 @@ public:
 	CBWaitTask(ITaskManager* mgr, int timeout);
 	virtual ~CBWaitTask();
 
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 };
 
 } // namespace circuit

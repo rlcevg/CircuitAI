@@ -17,9 +17,10 @@ namespace circuit {
 using namespace springai;
 
 CEnemyUnit::CEnemyUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
-		: ICoreUnit(unitId, unit, cdef)
+		: ICoreUnit(unitId, unit)
+		, knownFrame(-1)
 		, lastSeen(-1)
-		, data({
+		, data({cdef,
 			0.f,             // shieldPower
 			0.f,             // health
 			false,           // isBeingBuilt
@@ -36,28 +37,49 @@ CEnemyUnit::CEnemyUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 
 CEnemyUnit::~CEnemyUnit()
 {
-	for (IFighterTask* task : tasks) {
-		task->ClearTarget();
-	}
 	delete shield;
-}
-
-void CEnemyUnit::Init()
-{
-	if (circuitDef == nullptr) {
-		cost = 0.f;
-		shield = nullptr;
-	} else {
-		cost = circuitDef->GetCost();
-		WeaponMount* wpMnt = circuitDef->GetShieldMount();
-		shield = (wpMnt == nullptr) ? nullptr : WrappWeapon::GetInstance(unit->GetSkirmishAIId(), id, wpMnt->GetWeaponMountId());
-	}
 }
 
 void CEnemyUnit::SetCircuitDef(CCircuitDef* cdef)
 {
-	circuitDef = cdef;
+	data.cdef = cdef;
 	Init();
+}
+
+void CEnemyUnit::Init()
+{
+	if (data.cdef == nullptr) {
+		cost = 0.f;
+		shield = nullptr;
+	} else {
+		cost = data.cdef->GetCost();
+		WeaponMount* wpMnt = data.cdef->GetShieldMount();
+		shield = (wpMnt == nullptr) ? nullptr : WrappWeapon::GetInstance(unit->GetSkirmishAIId(), id, wpMnt->GetWeaponMountId());
+	}
+}
+
+bool CEnemyUnit::IsAttacker() const
+{
+	if (data.cdef == nullptr) {  // unknown enemy is a threat
+		return true;
+	}
+	return data.cdef->IsAttacker();
+}
+
+float CEnemyUnit::GetDamage() const
+{
+	if (data.cdef == nullptr) {  // unknown enemy is a threat
+		return 0.1f;
+	}
+	float dmg = data.cdef->GetThrDamage();
+	if (dmg < 1e-3f) {
+		return .0f;
+	}
+	if (data.isBeingBuilt || data.isParalyzed || data.isDisarmed) {
+		return 1e-3f;
+	}
+	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;
+	return dmg;
 }
 
 void CEnemyUnit::UpdateInRadarData(const AIFloat3& p)
@@ -78,28 +100,16 @@ void CEnemyUnit::UpdateInLosData()
 	data.isDisarmed = unit->GetRulesParamFloat("disarmed", 0) > .0f;
 }
 
-bool CEnemyUnit::IsAttacker() const
+CEnemyInfo::CEnemyInfo(CEnemyUnit* data)
+		: data(data)
 {
-	if (circuitDef == nullptr) {  // unknown enemy is a threat
-		return true;
-	}
-	return circuitDef->IsAttacker();
 }
 
-float CEnemyUnit::GetDamage() const
+CEnemyInfo::~CEnemyInfo()
 {
-	if (circuitDef == nullptr) {  // unknown enemy is a threat
-		return 0.1f;
+	for (IFighterTask* task : tasks) {
+		task->ClearTarget();
 	}
-	float dmg = circuitDef->GetThrDamage();
-	if (dmg < 1e-3f) {
-		return .0f;
-	}
-	if (data.isBeingBuilt || data.isParalyzed || data.isDisarmed) {
-		return 1e-3f;
-	}
-	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;
-	return dmg;
 }
 
 } // namespace circuit

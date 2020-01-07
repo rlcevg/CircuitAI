@@ -74,7 +74,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
 		)
 	};
-	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		int frame = this->circuit->GetLastFrame();
 		float defCost = unit->GetCircuitDef()->GetCost();
 		CDefenceMatrix::SDefPoint* point = defence->GetDefPoint(unit->GetPos(frame), defCost);
@@ -124,10 +124,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			unit->GetTask()->OnUnitIdle(unit);
 		}
 	};
-	auto attackerDamagedHandler = [](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto attackerDamagedHandler = [](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		unit->GetTask()->OnUnitDamaged(unit, attacker);
 	};
-	auto attackerDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto attackerDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		IUnitTask* task = unit->GetTask();
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
@@ -165,7 +165,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			}
 		)
 	};
-	auto superDestroyedHandler = [](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto superDestroyedHandler = [](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		IUnitTask* task = unit->GetTask();
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
@@ -174,7 +174,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	/*
 	 * Defend buildings handler
 	 */
-	auto structDamagedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto structDamagedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		const std::set<IFighterTask*>& tasks = GetTasks(IFighterTask::FightType::DEFEND);
 		if (tasks.empty()) {
 			return;
@@ -314,7 +314,7 @@ int CMilitaryManager::UnitIdle(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
-int CMilitaryManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+int CMilitaryManager::UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	auto search = damagedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != damagedHandler.end()) {
@@ -324,7 +324,7 @@ int CMilitaryManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	return 0; //signaling: OK
 }
 
-int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != destroyedHandler.end()) {
@@ -932,7 +932,7 @@ IFighterTask* CMilitaryManager::DelDefendTask(int cluster)
 //	return task;
 }
 
-void CMilitaryManager::AddEnemyCost(const CEnemyUnit* e)
+void CMilitaryManager::AddEnemyCost(const CEnemyInfo* e)
 {
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
@@ -952,7 +952,7 @@ void CMilitaryManager::AddEnemyCost(const CEnemyUnit* e)
 	}
 }
 
-void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
+void CMilitaryManager::DelEnemyCost(const CEnemyInfo* e)
 {
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
@@ -1429,7 +1429,7 @@ void CMilitaryManager::DelArmyCost(CCircuitUnit* unit)
  */
 void CMilitaryManager::KMeansIteration()
 {
-	const CCircuitAI::EnemyUnits& units = circuit->GetEnemyUnits();
+	const CCircuitAI::EnemyInfos& units = circuit->GetEnemyInfos();
 	// calculate a new K. change the formula to adjust max K, needs to be 1 minimum.
 	constexpr int KMEANS_BASE_MAX_K = 32;
 	int newK = std::min(KMEANS_BASE_MAX_K, 1 + (int)sqrtf(units.size()));
@@ -1448,8 +1448,8 @@ void CMilitaryManager::KMeansIteration()
 	{
 		int i = 0;
 		for (const auto& kv : units) {
-			CEnemyUnit* enemy = kv.second;
-			if (enemy->IsHidden()) {
+			CEnemyInfo* enemy = kv.second;
+			if (enemy->GetData()->IsHidden()) {
 				continue;
 			}
 			AIFloat3 unitPos = enemy->GetPos();
@@ -1490,8 +1490,8 @@ void CMilitaryManager::KMeansIteration()
 	{
 		int i = 0;
 		for (const auto& kv : units) {
-			CEnemyUnit* enemy = kv.second;
-			if (enemy->IsHidden()) {
+			CEnemyInfo* enemy = kv.second;
+			if (enemy->GetData()->IsHidden()) {
 				continue;
 			}
 			int meanIndex = unitsClosestMeanID[i++];
@@ -1506,7 +1506,7 @@ void CMilitaryManager::KMeansIteration()
 			const CCircuitDef* cdef = enemy->GetCircuitDef();
 			if (cdef != nullptr) {
 				eg.roleCosts[cdef->GetMainRole()] += cdef->GetCost();
-				if (!cdef->IsMobile() || enemy->IsInRadarOrLOS()) {
+				if (!cdef->IsMobile() || enemy->GetData()->IsInRadarOrLOS()) {
 					eg.cost += cdef->GetCost();
 				}
 				eg.threat += enemy->GetThreat() * (cdef->IsMobile() ? initThrMod.inMobile : initThrMod.inStatic);

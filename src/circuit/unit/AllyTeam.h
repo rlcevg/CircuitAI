@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_SETUP_ALLYTEAM_H_
 #define SRC_CIRCUIT_SETUP_ALLYTEAM_H_
 
-#include "unit/AllyUnit.h"
+#include "unit/EnemyManager.h"
 
 #include <memory>
 #include <map>
@@ -21,6 +21,7 @@ namespace springai {
 namespace circuit {
 
 class CCircuitAI;
+class CAllyUnit;
 class CMapManager;
 class CMetalManager;
 class CEnergyGrid;
@@ -32,7 +33,7 @@ struct STerrainMapArea;
 class CAllyTeam {
 public:
 	using Id = int;
-	using Units = std::map<ICoreUnit::Id, CAllyUnit*>;
+	using AllyUnits = std::map<ICoreUnit::Id, CAllyUnit*>;
 	using TeamIds = std::unordered_set<Id>;
 	union SBox {
 		SBox(): edge{0.f, 0.f, 0.f, 0.f} {}
@@ -57,6 +58,7 @@ public:
 //		int teamId;  // area leader
 //	};
 	// FIXME: DEBUG
+	using EnemyUnits = CEnemyManager::EnemyUnits;
 
 public:
 	CAllyTeam(const TeamIds& tids, const SBox& sb);
@@ -72,8 +74,11 @@ public:
 
 	void UpdateFriendlyUnits(CCircuitAI* circuit);
 	CAllyUnit* GetFriendlyUnit(ICoreUnit::Id unitId) const;
-	const Units& GetFriendlyUnits() const { return friendlyUnits; }
+	const AllyUnits& GetFriendlyUnits() const { return friendlyUnits; }
 
+//	const EnemyUnits& GetEnemyUnits() const { return enemyManager->GetEnemyUnits(); }
+
+	std::shared_ptr<CEnemyManager>& GetEnemyManager() { return enemyManager; }
 	std::shared_ptr<CMapManager>& GetMapManager() { return mapManager; }
 	std::shared_ptr<CMetalManager>& GetMetalManager() { return metalManager; }
 	std::shared_ptr<CEnergyGrid>& GetEnergyGrid() { return energyGrid; }
@@ -97,7 +102,7 @@ private:
 	int initCount;
 	int resignSize;
 	int lastUpdate;
-	Units friendlyUnits;  // owner
+	AllyUnits friendlyUnits;  // owner
 
 	std::map<int, SClusterTeam> occupants;  // Cluster owner on start. clusterId: SClusterTeam
 	// FIXME: DEBUG
@@ -110,6 +115,8 @@ private:
 	std::shared_ptr<CDefenceMatrix> defence;
 	std::shared_ptr<CPathFinder> pathfinder;
 	std::shared_ptr<CFactoryData> factoryData;
+
+	std::shared_ptr<CEnemyManager> enemyManager;
 };
 
 } // namespace circuit

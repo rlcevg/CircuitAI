@@ -70,7 +70,7 @@ void IWaitTask::OnUnitIdle(CCircuitUnit* unit)
 {
 }
 
-void IWaitTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+void IWaitTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	RemoveAssignee(unit);
 }

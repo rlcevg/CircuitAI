@@ -25,7 +25,7 @@ CBWaitTask::~CBWaitTask()
 {
 }
 
-void CBWaitTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CBWaitTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();

@@ -31,7 +31,7 @@ protected:
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override = 0;
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override = 0;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override = 0;
 
 	virtual void SetTarget(CAllyUnit* unit);
 	ICoreUnit::Id GetTargetId() const { return targetId; }

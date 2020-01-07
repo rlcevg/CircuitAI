@@ -57,7 +57,7 @@ void CBRepairTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();

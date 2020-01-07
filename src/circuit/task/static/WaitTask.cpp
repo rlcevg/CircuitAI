@@ -19,7 +19,7 @@ CSWaitTask::~CSWaitTask()
 {
 }
 
-void CSWaitTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CSWaitTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 }
 
