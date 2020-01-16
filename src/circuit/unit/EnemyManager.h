@@ -23,31 +23,21 @@ public:
 	virtual ~CEnemyManager();
 
 	void SetAuthority(CCircuitAI* authority) { circuit = authority; }
-	// FIXME: DEBUG
-	CCircuitAI* GetCircuit() const { return circuit; }
-	// FIXME: DEBUG
 
 	CEnemyUnit* GetEnemyUnit(ICoreUnit::Id unitId) const;
 
 	const std::vector<ICoreUnit::Id>& GetGarbage() const { return enemyGarbage; }
 
-	bool UnitInLOS(CEnemyUnit* data, CCircuitAI* ai);
-	std::pair<CEnemyUnit*, bool> RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS, CCircuitAI* ai);
-	CEnemyUnit* RegisterEnemyUnit(springai::Unit* e, CCircuitAI* ai);
+	void UpdateEnemyDatas();
 
-	void UnregisterEnemyUnit(CEnemyUnit* data, CCircuitAI* ai);
-private:
+	bool UnitInLOS(CEnemyUnit* data);
+	std::pair<CEnemyUnit*, bool> RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS);
+	CEnemyUnit* RegisterEnemyUnit(springai::Unit* e);
+
 	void UnregisterEnemyUnit(CEnemyUnit* data);
+private:
 	void DeleteEnemyUnit(CEnemyUnit* data);
 	void GarbageEnemy(CEnemyUnit* enemy);
-
-	// FIXME: DEBUG
-public:
-	// FIXME: DEBUG
-	void UpdateEnemyDatas();
-	// FIXME: DEBUG
-private:
-	// FIXME: DEBUG
 
 	CCircuitAI* circuit;
 

@@ -79,12 +79,11 @@ void CInfluenceMap::EnqueueUpdate()
 //	if (isUpdating) {
 //		return;
 //	}
-//	isUpdating = true;
-//
-//	CCircuitAI* circuit = manager->GetCircuit();
-//	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CInfluenceMap::Update, this),
-//											 std::make_shared<CGameTask>(&CInfluenceMap::Apply, this));
-	Update();
+	isUpdating = true;
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CInfluenceMap::Update, this),
+											 std::make_shared<CGameTask>(&CInfluenceMap::Apply, this));
 }
 
 void CInfluenceMap::Update()

@@ -34,7 +34,8 @@ bool CAllyTeam::SBox::ContainsPoint(const AIFloat3& point) const
 }
 
 CAllyTeam::CAllyTeam(const TeamIds& tids, const SBox& sb)
-		: teamIds(tids)
+		: circuit(nullptr)
+		, teamIds(tids)
 		, startBox(sb)
 		, initCount(0)
 		, resignSize(0)
@@ -55,6 +56,8 @@ void CAllyTeam::Init(CCircuitAI* circuit, float decloakRadius)
 	if (initCount++ > 0) {
 		return;
 	}
+
+	this->circuit = circuit;
 
 	int boxId = circuit->GetTeam()->GetRulesParamFloat("start_box_id", -1);
 	if (boxId >= 0) {
@@ -130,6 +133,107 @@ CAllyUnit* CAllyTeam::GetFriendlyUnit(ICoreUnit::Id unitId) const
 	return (it != friendlyUnits.end()) ? it->second : nullptr;
 }
 
+bool CAllyTeam::EnemyInLOS(CEnemyUnit* data, CCircuitAI* ai)
+{
+	if (circuit != ai) {
+		return true;
+	}
+
+	return enemyManager->UnitInLOS(data);
+}
+
+std::pair<CEnemyUnit*, bool> CAllyTeam::RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS, CCircuitAI* ai)
+{
+	if (circuit != ai) {
+		return std::make_pair(enemyManager->GetEnemyUnit(unitId), true);
+	}
+
+	return enemyManager->RegisterEnemyUnit(unitId, isInLOS);
+}
+
+CEnemyUnit* CAllyTeam::RegisterEnemyUnit(Unit* e, CCircuitAI* ai)
+{
+	if (circuit != ai) {
+		return enemyManager->GetEnemyUnit(e->GetUnitId());
+	}
+
+	return enemyManager->RegisterEnemyUnit(e);
+}
+
+void CAllyTeam::UnregisterEnemyUnit(CEnemyUnit* data, CCircuitAI* ai)
+{
+	if (circuit != ai) {
+		return;
+	}
+
+	enemyManager->UnregisterEnemyUnit(data);
+}
+
+bool CAllyTeam::EnemyEnterLOS(CEnemyUnit* enemy, CCircuitAI* ai)
+{
+	if (circuit != ai) {
+		return !enemy->IsKnown(ai->GetLastFrame());
+	}
+
+	return mapManager->EnemyEnterLOS(enemy);
+}
+
+void CAllyTeam::EnemyLeaveLOS(CEnemyUnit* enemy, CCircuitAI* ai)
+{
+	if (circuit != ai) {
+		return;
+	}
+
+	mapManager->EnemyLeaveLOS(enemy);
+}
+
+void CAllyTeam::EnemyEnterRadar(CEnemyUnit* enemy, CCircuitAI* ai)
+{
+	if (circuit != ai) {
+		return;
+	}
+
+	mapManager->EnemyEnterRadar(enemy);
+}
+
+void CAllyTeam::EnemyLeaveRadar(CEnemyUnit* enemy, CCircuitAI* ai)
+{
+	if (circuit != ai) {
+		return;
+	}
+
+	mapManager->EnemyLeaveRadar(enemy);
+}
+
+bool CAllyTeam::EnemyDestroyed(CEnemyUnit* enemy, CCircuitAI* ai)
+{
+	if (circuit != ai) {
+		return enemy->IsKnown(ai->GetLastFrame());
+	}
+
+	return mapManager->EnemyDestroyed(enemy);
+}
+
+void CAllyTeam::Update(CCircuitAI* ai)
+{
+	if (circuit != ai) {
+		return;
+	}
+
+//	if (!enemyInfos.empty()) {
+//		int mark = frame % THREAT_UPDATE_RATE;
+//		if (mark == uEnemyMark) {
+//			mapManager->EnqueueUpdate();
+//		} else if (mark == kEnemyMark) {
+//			militaryManager->UpdateEnemyGroups();
+//		} else {
+//			enemyManager->UpdateEnemyDatas();
+//		}
+//	}
+
+	enemyManager->UpdateEnemyDatas();
+}
+
 void CAllyTeam::OccupyCluster(int clusterId, int teamId)
 {
 	auto it = occupants.find(clusterId);
@@ -172,6 +276,7 @@ void CAllyTeam::DelegateAuthority(CCircuitAI* curOwner)
 {
 	for (CCircuitAI* circuit : curOwner->GetGameAttribute()->GetCircuits()) {
 		if (circuit->IsInitialized() && (circuit != curOwner) && (circuit->GetAllyTeamId() == curOwner->GetAllyTeamId())) {
+			this->circuit = circuit;
 			mapManager->SetAuthority(circuit);
 			metalManager->SetAuthority(circuit);
 			energyGrid->SetAuthority(circuit);

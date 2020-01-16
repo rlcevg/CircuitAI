@@ -35,11 +35,11 @@ public:
 
 	bool IsSuddenThreat(CEnemyUnit* enemy) const;
 
-	bool EnemyEnterLOS(CEnemyUnit* enemy, CCircuitAI* ai);
-	void EnemyLeaveLOS(CEnemyUnit* enemy, CCircuitAI* ai);
-	void EnemyEnterRadar(CEnemyUnit* enemy, CCircuitAI* ai);
-	void EnemyLeaveRadar(CEnemyUnit* enemy, CCircuitAI* ai);
-	bool EnemyDestroyed(CEnemyUnit* enemy, CCircuitAI* ai);
+	bool EnemyEnterLOS(CEnemyUnit* enemy);
+	void EnemyLeaveLOS(CEnemyUnit* enemy);
+	void EnemyEnterRadar(CEnemyUnit* enemy);
+	void EnemyLeaveRadar(CEnemyUnit* enemy);
+	bool EnemyDestroyed(CEnemyUnit* enemy);
 
 private:
 	bool IsInLOS(const springai::AIFloat3& pos) const;

@@ -7,11 +7,8 @@
 
 #include "unit/EnemyManager.h"
 #include "unit/EnemyUnit.h"
-#include "CircuitAI.h"
-#include "util/Scheduler.h"
-// FIXME: DEBUG
 #include "map/ThreatMap.h"
-// FIXME: DEBUG
+#include "CircuitAI.h"
 
 #include "WrappUnit.h"
 #include "Cheats.h"
@@ -24,8 +21,6 @@ CEnemyManager::CEnemyManager(CCircuitAI* circuit)
 		: circuit(circuit)
 		, enemyIterator(0)
 {
-	CScheduler* scheduler = circuit->GetScheduler().get();
-//	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMapManager::EnqueueUpdate, this), THREAT_UPDATE_RATE, circuit->GetSkirmishAIId());
 }
 
 CEnemyManager::~CEnemyManager()
@@ -41,13 +36,8 @@ CEnemyUnit* CEnemyManager::GetEnemyUnit(ICoreUnit::Id unitId) const
 	return (it != enemyUnits.end()) ? it->second : nullptr;
 }
 
-std::pair<CEnemyUnit*, bool> CEnemyManager::RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS, CCircuitAI* ai)
+std::pair<CEnemyUnit*, bool> CEnemyManager::RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS)
 {
-	CEnemyUnit* data = GetEnemyUnit(unitId);
-	if (circuit != ai) {
-		return std::make_pair(data, true);
-	}
-
 	Unit* u = WrappUnit::GetInstance(circuit->GetSkirmishAIId(), unitId);
 	if (u == nullptr) {
 		return std::make_pair(nullptr, true);
@@ -66,7 +56,7 @@ std::pair<CEnemyUnit*, bool> CEnemyManager::RegisterEnemyUnit(ICoreUnit::Id unit
 		cdef = circuit->GetCircuitDef(unitDef->GetUnitDefId());
 		delete unitDef;
 	}
-	data = new CEnemyUnit(unitId, u, cdef);
+	CEnemyUnit* data = new CEnemyUnit(unitId, u, cdef);
 
 	enemyUnits[data->GetId()] = data;
 	enemyUpdates.push_back(data);
@@ -74,12 +64,8 @@ std::pair<CEnemyUnit*, bool> CEnemyManager::RegisterEnemyUnit(ICoreUnit::Id unit
 	return std::make_pair(data, true);
 }
 
-CEnemyUnit* CEnemyManager::RegisterEnemyUnit(Unit* e, CCircuitAI* ai)
+CEnemyUnit* CEnemyManager::RegisterEnemyUnit(Unit* e)
 {
-	if (circuit != ai) {
-		return GetEnemyUnit(e->GetUnitId());
-	}
-
 	if (/*e->IsNeutral() || */e->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f) {
 		return nullptr;
 	}
@@ -105,55 +91,6 @@ CEnemyUnit* CEnemyManager::RegisterEnemyUnit(Unit* e, CCircuitAI* ai)
 	enemyUpdates.push_back(data);
 
 	return data;
-}
-
-bool CEnemyManager::UnitInLOS(CEnemyUnit* data, CCircuitAI* ai)
-{
-	if (circuit != ai) {
-		return true;
-	}
-
-	UnitDef* unitDef = data->GetUnit()->GetDef();
-	if (unitDef == nullptr) {  // doesn't work with globalLOS
-		return false;
-	}
-	CCircuitDef::Id unitDefId = unitDef->GetUnitDefId();
-	delete unitDef;
-	if ((data->GetCircuitDef() == nullptr) || data->GetCircuitDef()->GetId() != unitDefId) {
-		data->SetCircuitDef(circuit->GetCircuitDef(unitDefId));
-		data->SetCost(data->GetUnit()->GetRulesParamFloat("comm_cost", data->GetCost()));
-	}
-	return true;
-}
-
-void CEnemyManager::UnregisterEnemyUnit(CEnemyUnit* data, CCircuitAI* ai)
-{
-	if (circuit != ai) {
-		return;
-	}
-
-	UnregisterEnemyUnit(data);
-}
-
-void CEnemyManager::UnregisterEnemyUnit(CEnemyUnit* data)
-{
-	enemyUnits.erase(data->GetId());
-	data->Dead();
-}
-
-void CEnemyManager::DeleteEnemyUnit(CEnemyUnit* data)
-{
-	enemyUpdates[enemyIterator] = enemyUpdates.back();
-	enemyUpdates.pop_back();
-
-	delete data;
-}
-
-void CEnemyManager::GarbageEnemy(CEnemyUnit* enemy)
-{
-	enemyGarbage.push_back(enemy->GetId());
-	UnregisterEnemyUnit(enemy);
-	++enemyIterator;
 }
 
 void CEnemyManager::UpdateEnemyDatas()
@@ -206,6 +143,42 @@ void CEnemyManager::UpdateEnemyDatas()
 	if (!circuit->IsCheating()) {
 		circuit->GetCheats()->SetEnabled(false);
 	}
+}
+
+bool CEnemyManager::UnitInLOS(CEnemyUnit* data)
+{
+	UnitDef* unitDef = data->GetUnit()->GetDef();
+	if (unitDef == nullptr) {  // doesn't work with globalLOS
+		return false;
+	}
+	CCircuitDef::Id unitDefId = unitDef->GetUnitDefId();
+	delete unitDef;
+	if ((data->GetCircuitDef() == nullptr) || data->GetCircuitDef()->GetId() != unitDefId) {
+		data->SetCircuitDef(circuit->GetCircuitDef(unitDefId));
+		data->SetCost(data->GetUnit()->GetRulesParamFloat("comm_cost", data->GetCost()));
+	}
+	return true;
+}
+
+void CEnemyManager::UnregisterEnemyUnit(CEnemyUnit* data)
+{
+	enemyUnits.erase(data->GetId());
+	data->Dead();
+}
+
+void CEnemyManager::DeleteEnemyUnit(CEnemyUnit* data)
+{
+	enemyUpdates[enemyIterator] = enemyUpdates.back();
+	enemyUpdates.pop_back();
+
+	delete data;
+}
+
+void CEnemyManager::GarbageEnemy(CEnemyUnit* enemy)
+{
+	enemyGarbage.push_back(enemy->GetId());
+	UnregisterEnemyUnit(enemy);
+	++enemyIterator;
 }
 
 } // namespace circuit

@@ -103,18 +103,14 @@ bool CMapManager::IsSuddenThreat(CEnemyUnit* enemy) const
 			|| (!enemy->IsInRadar() && enemy->GetCircuitDef()->IsMobile());
 }
 
-bool CMapManager::EnemyEnterLOS(CEnemyUnit* enemy, CCircuitAI* ai)
+bool CMapManager::EnemyEnterLOS(CEnemyUnit* enemy)
 {
-	const bool wasKnown = enemy->IsKnown(ai->GetLastFrame());
-	if (circuit != ai) {
-		return !wasKnown;
-	}
-
 	// Possible cases:
 	// (1) Unknown enemy that has been detected for the first time
 	// (2) Unknown enemy that was only in radar enters LOS
 	// (3) Known enemy that already was in LOS enters again
 
+	const bool wasKnown = enemy->IsKnown(circuit->GetLastFrame());
 	enemy->SetInLOS();
 
 	if (!enemy->IsAttacker()) {
@@ -156,27 +152,19 @@ bool CMapManager::EnemyEnterLOS(CEnemyUnit* enemy, CCircuitAI* ai)
 	return !wasKnown;
 }
 
-void CMapManager::EnemyLeaveLOS(CEnemyUnit* enemy, CCircuitAI* ai)
+void CMapManager::EnemyLeaveLOS(CEnemyUnit* enemy)
 {
-	if (circuit != ai) {
-		return;
-	}
-
 	enemy->ClearInLOS();
 }
 
-void CMapManager::EnemyEnterRadar(CEnemyUnit* enemy, CCircuitAI* ai)
+void CMapManager::EnemyEnterRadar(CEnemyUnit* enemy)
 {
-	if (circuit != ai) {
-		return;
-	}
-	enemy->SetLastSeen(-1);
-
 	// Possible cases:
 	// (1) Unknown enemy wanders at radars
 	// (2) Known enemy that once was in los wandering at radar
 	// (3) EnemyEnterRadar invoked right after EnemyEnterLOS in area with no radar
 
+	enemy->SetLastSeen(-1);
 	enemy->SetInRadar();
 
 	if (enemy->IsInLOS()) {  // (3)
@@ -207,22 +195,15 @@ void CMapManager::EnemyEnterRadar(CEnemyUnit* enemy, CCircuitAI* ai)
 	}
 }
 
-void CMapManager::EnemyLeaveRadar(CEnemyUnit* enemy, CCircuitAI* ai)
+void CMapManager::EnemyLeaveRadar(CEnemyUnit* enemy)
 {
-	if (circuit != ai) {
-		return;
-	}
 	enemy->SetLastSeen(circuit->GetLastFrame());
-
 	enemy->ClearInRadar();
 }
 
-bool CMapManager::EnemyDestroyed(CEnemyUnit* enemy, CCircuitAI* ai)
+bool CMapManager::EnemyDestroyed(CEnemyUnit* enemy)
 {
-	const bool isKnown = enemy->IsKnown(ai->GetLastFrame());
-	if (circuit != ai) {
-		return isKnown;
-	}
+	const bool isKnown = enemy->IsKnown(circuit->GetLastFrame());
 
 	auto it = hostileUnits.find(enemy->GetId());
 	if (it == hostileUnits.end()) {

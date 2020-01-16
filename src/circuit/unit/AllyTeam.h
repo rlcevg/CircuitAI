@@ -16,6 +16,7 @@
 
 namespace springai {
 	class AIFloat3;
+	class Unit;
 }
 
 namespace circuit {
@@ -58,7 +59,6 @@ public:
 //		int teamId;  // area leader
 //	};
 	// FIXME: DEBUG
-	using EnemyUnits = CEnemyManager::EnemyUnits;
 
 public:
 	CAllyTeam(const TeamIds& tids, const SBox& sb);
@@ -76,9 +76,20 @@ public:
 	CAllyUnit* GetFriendlyUnit(ICoreUnit::Id unitId) const;
 	const AllyUnits& GetFriendlyUnits() const { return friendlyUnits; }
 
-//	const EnemyUnits& GetEnemyUnits() const { return enemyManager->GetEnemyUnits(); }
+	const std::vector<ICoreUnit::Id>& GetEnemyGarbage() const { return enemyManager->GetGarbage(); }
+	bool EnemyInLOS(CEnemyUnit* data, CCircuitAI* ai);
+	std::pair<CEnemyUnit*, bool> RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS, CCircuitAI* ai);
+	CEnemyUnit* RegisterEnemyUnit(springai::Unit* e, CCircuitAI* ai);
+	void UnregisterEnemyUnit(CEnemyUnit* data, CCircuitAI* ai);
 
-	std::shared_ptr<CEnemyManager>& GetEnemyManager() { return enemyManager; }
+	bool EnemyEnterLOS(CEnemyUnit* enemy, CCircuitAI* ai);
+	void EnemyLeaveLOS(CEnemyUnit* enemy, CCircuitAI* ai);
+	void EnemyEnterRadar(CEnemyUnit* enemy, CCircuitAI* ai);
+	void EnemyLeaveRadar(CEnemyUnit* enemy, CCircuitAI* ai);
+	bool EnemyDestroyed(CEnemyUnit* enemy, CCircuitAI* ai);
+
+	void Update(CCircuitAI* ai);
+
 	std::shared_ptr<CMapManager>& GetMapManager() { return mapManager; }
 	std::shared_ptr<CMetalManager>& GetMetalManager() { return metalManager; }
 	std::shared_ptr<CEnergyGrid>& GetEnergyGrid() { return energyGrid; }
@@ -96,6 +107,7 @@ public:
 private:
 	void DelegateAuthority(CCircuitAI* curOwner);
 
+	CCircuitAI* circuit;  // authority
 	TeamIds teamIds;
 	SBox startBox;
 
@@ -117,6 +129,11 @@ private:
 	std::shared_ptr<CFactoryData> factoryData;
 
 	std::shared_ptr<CEnemyManager> enemyManager;
+
+#ifdef DEBUG_VIS
+public:
+	std::shared_ptr<CEnemyManager>& GetEnemyManager() { return enemyManager; }
+#endif
 };
 
 } // namespace circuit

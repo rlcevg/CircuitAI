@@ -562,7 +562,6 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 	allyTeam->Init(this, decloakRadius);
 	mapManager = allyTeam->GetMapManager();
-	enemyManager = allyTeam->GetEnemyManager();
 	metalManager = allyTeam->GetMetalManager();
 	pathfinder = allyTeam->GetPathfinder();
 
@@ -640,7 +639,6 @@ int CCircuitAI::Release(int reason)
 	metalManager = nullptr;
 	pathfinder = nullptr;
 	setupManager = nullptr;
-	enemyManager = nullptr;
 	mapManager = nullptr;
 
 	for (CCircuitUnit* unit : actionUnits) {
@@ -695,8 +693,8 @@ int CCircuitAI::Update(int frame)
 		garbage.erase(unit);  // NOTE: UnregisterTeamUnit may erase unit
 	}
 
-	if (!enemyManager->GetGarbage().empty()) {
-		for (const ICoreUnit::Id eId : enemyManager->GetGarbage()) {
+	if (!allyTeam->GetEnemyGarbage().empty()) {
+		for (const ICoreUnit::Id eId : allyTeam->GetEnemyGarbage()) {
 			CEnemyInfo* enemy = GetEnemyInfo(eId);
 			if (enemy != nullptr) {  // EnemyDestroyed right after UpdateEnemyDatas but before this Update
 				EnemyDestroyed(enemy);
@@ -712,9 +710,10 @@ int CCircuitAI::Update(int frame)
 		} else if (mark == kEnemyMark) {
 			militaryManager->UpdateEnemyGroups();
 		} else {
-			if (this == enemyManager->GetCircuit()) {
-				enemyManager->UpdateEnemyDatas();
-			}
+			allyTeam->Update(this);
+//			if (this == enemyManager->GetCircuit()) {
+//				enemyManager->UpdateEnemyDatas();
+//			}
 		}
 	}
 
@@ -1019,7 +1018,7 @@ int CCircuitAI::EnemyEnterLOS(CEnemyInfo* enemy)
 {
 	bool isSuddenThreat = mapManager->IsSuddenThreat(enemy->GetData());
 
-	if (mapManager->EnemyEnterLOS(enemy->GetData(), this)) {
+	if (allyTeam->EnemyEnterLOS(enemy->GetData(), this)) {
 		militaryManager->AddEnemyCost(enemy);
 	}
 
@@ -1047,21 +1046,21 @@ int CCircuitAI::EnemyEnterLOS(CEnemyInfo* enemy)
 
 int CCircuitAI::EnemyLeaveLOS(CEnemyInfo* enemy)
 {
-	mapManager->EnemyLeaveLOS(enemy->GetData(), this);
+	allyTeam->EnemyLeaveLOS(enemy->GetData(), this);
 
 	return 0;  // signaling: OK
 }
 
 int CCircuitAI::EnemyEnterRadar(CEnemyInfo* enemy)
 {
-	mapManager->EnemyEnterRadar(enemy->GetData(), this);
+	allyTeam->EnemyEnterRadar(enemy->GetData(), this);
 
 	return 0;  // signaling: OK
 }
 
 int CCircuitAI::EnemyLeaveRadar(CEnemyInfo* enemy)
 {
-	mapManager->EnemyLeaveRadar(enemy->GetData(), this);
+	allyTeam->EnemyLeaveRadar(enemy->GetData(), this);
 
 	return 0;  // signaling: OK
 }
@@ -1074,7 +1073,7 @@ int CCircuitAI::EnemyDamaged(CEnemyInfo* enemy)
 
 int CCircuitAI::EnemyDestroyed(CEnemyInfo* enemy)
 {
-	if (mapManager->EnemyDestroyed(enemy->GetData(), this)) {
+	if (allyTeam->EnemyDestroyed(enemy->GetData(), this)) {
 		militaryManager->DelEnemyCost(enemy);
 	}
 
@@ -1245,7 +1244,7 @@ std::pair<CEnemyInfo*, bool> CCircuitAI::RegisterEnemyInfo(ICoreUnit::Id unitId,
 {
 	CEnemyInfo* unit = GetEnemyInfo(unitId);
 	if (unit != nullptr) {
-		if (isInLOS && !enemyManager->UnitInLOS(unit->GetData(), this)) {
+		if (isInLOS && !allyTeam->EnemyInLOS(unit->GetData(), this)) {
 			return std::make_pair(nullptr, false);
 		}
 		return std::make_pair(unit, true);
@@ -1253,7 +1252,7 @@ std::pair<CEnemyInfo*, bool> CCircuitAI::RegisterEnemyInfo(ICoreUnit::Id unitId,
 
 	CEnemyUnit* data;
 	bool isReal;
-	std::tie(data, isReal) = enemyManager->RegisterEnemyUnit(unitId, isInLOS, this);
+	std::tie(data, isReal) = allyTeam->RegisterEnemyUnit(unitId, isInLOS, this);
 	if (data == nullptr) {
 		return std::make_pair(nullptr, isReal);
 	}
@@ -1266,7 +1265,7 @@ std::pair<CEnemyInfo*, bool> CCircuitAI::RegisterEnemyInfo(ICoreUnit::Id unitId,
 
 CEnemyInfo* CCircuitAI::RegisterEnemyInfo(Unit* e)
 {
-	CEnemyUnit* data = enemyManager->RegisterEnemyUnit(e, this);
+	CEnemyUnit* data = allyTeam->RegisterEnemyUnit(e, this);
 	if (data == nullptr) {
 		return nullptr;
 	}
@@ -1279,7 +1278,7 @@ CEnemyInfo* CCircuitAI::RegisterEnemyInfo(Unit* e)
 
 void CCircuitAI::UnregisterEnemyInfo(CEnemyInfo* enemy)
 {
-	enemyManager->UnregisterEnemyUnit(enemy->GetData(), this);
+	allyTeam->UnregisterEnemyUnit(enemy->GetData(), this);
 	enemyInfos.erase(enemy->GetId());
 	delete enemy;
 }
