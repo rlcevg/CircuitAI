@@ -9,6 +9,7 @@
 #include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
+#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 

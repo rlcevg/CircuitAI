@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_STATIC_SETUPDATA_H_
 #define SRC_CIRCUIT_STATIC_SETUPDATA_H_
 
-#include "unit/AllyTeam.h"
+#include "unit/ally/AllyTeam.h"
 
 #include "Game/GameSetup.h"
 

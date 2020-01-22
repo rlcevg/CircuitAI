@@ -5,9 +5,10 @@
  *      Author: rlcevg
  */
 
-#include "unit/AllyTeam.h"
+#include "unit/ally/AllyTeam.h"
 #include "unit/FactoryData.h"
 #include "map/MapManager.h"
+#include "map/ThreatMap.h"
 #include "resource/MetalManager.h"
 #include "resource/EnergyGrid.h"
 #include "setup/DefenceMatrix.h"
@@ -40,6 +41,8 @@ CAllyTeam::CAllyTeam(const TeamIds& tids, const SBox& sb)
 		, initCount(0)
 		, resignSize(0)
 		, lastUpdate(-1)
+		, uEnemyMark(0)
+		, kEnemyMark(0)
 {
 }
 
@@ -66,6 +69,9 @@ void CAllyTeam::Init(CCircuitAI* circuit, float decloakRadius)
 
 	mapManager = std::make_shared<CMapManager>(circuit, decloakRadius);
 	enemyManager = std::make_shared<CEnemyManager>(circuit);
+
+	uEnemyMark = circuit->GetSkirmishAIId() % THREAT_UPDATE_RATE;
+	kEnemyMark = (circuit->GetSkirmishAIId() + THREAT_UPDATE_RATE / 2) % THREAT_UPDATE_RATE;
 
 	metalManager = std::make_shared<CMetalManager>(circuit, &circuit->GetGameAttribute()->GetMetalData());
 	if (metalManager->HasMetalSpots() && !metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
@@ -169,13 +175,15 @@ void CAllyTeam::UnregisterEnemyUnit(CEnemyUnit* data, CCircuitAI* ai)
 	enemyManager->UnregisterEnemyUnit(data);
 }
 
-bool CAllyTeam::EnemyEnterLOS(CEnemyUnit* enemy, CCircuitAI* ai)
+void CAllyTeam::EnemyEnterLOS(CEnemyUnit* enemy, CCircuitAI* ai)
 {
 	if (circuit != ai) {
-		return !enemy->IsKnown(ai->GetLastFrame());
+		return;
 	}
 
-	return mapManager->EnemyEnterLOS(enemy);
+	if (mapManager->EnemyEnterLOS(enemy)) {
+		enemyManager->AddEnemyCost(enemy);
+	}
 }
 
 void CAllyTeam::EnemyLeaveLOS(CEnemyUnit* enemy, CCircuitAI* ai)
@@ -205,13 +213,15 @@ void CAllyTeam::EnemyLeaveRadar(CEnemyUnit* enemy, CCircuitAI* ai)
 	mapManager->EnemyLeaveRadar(enemy);
 }
 
-bool CAllyTeam::EnemyDestroyed(CEnemyUnit* enemy, CCircuitAI* ai)
+void CAllyTeam::EnemyDestroyed(CEnemyUnit* enemy, CCircuitAI* ai)
 {
 	if (circuit != ai) {
-		return enemy->IsKnown(ai->GetLastFrame());
+		return;
 	}
 
-	return mapManager->EnemyDestroyed(enemy);
+	if (mapManager->EnemyDestroyed(enemy)) {
+		enemyManager->DelEnemyCost(enemy);
+	}
 }
 
 void CAllyTeam::Update(CCircuitAI* ai)
@@ -221,17 +231,15 @@ void CAllyTeam::Update(CCircuitAI* ai)
 	}
 
 //	if (!enemyInfos.empty()) {
-//		int mark = frame % THREAT_UPDATE_RATE;
-//		if (mark == uEnemyMark) {
-//			mapManager->EnqueueUpdate();
-//		} else if (mark == kEnemyMark) {
-//			militaryManager->UpdateEnemyGroups();
-//		} else {
-//			enemyManager->UpdateEnemyDatas();
-//		}
+		int mark = circuit->GetLastFrame() % THREAT_UPDATE_RATE;
+		if (mark == uEnemyMark) {
+			mapManager->EnqueueUpdate();
+		} else if (mark == kEnemyMark) {
+			enemyManager->UpdateEnemyGroups();
+		} else {
+			enemyManager->UpdateEnemyDatas();
+		}
 //	}
-
-	enemyManager->UpdateEnemyDatas();
 }
 
 void CAllyTeam::OccupyCluster(int clusterId, int teamId)

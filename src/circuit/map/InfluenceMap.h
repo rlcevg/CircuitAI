@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_TERRAIN_INFLUENCEMAP_H_
 #define SRC_CIRCUIT_TERRAIN_INFLUENCEMAP_H_
 
-#include "unit/EnemyUnit.h"
+#include "unit/enemy/EnemyUnit.h"
 
 #include <vector>
 #ifdef DEBUG_VIS
@@ -36,6 +36,7 @@ public:
 	bool IsUpdating() const { return isUpdating; }
 
 	float GetEnemyInflAt(const springai::AIFloat3& position) const;
+	float GetAllyInflAt(const springai::AIFloat3& position) const;
 	float GetInfluenceAt(const springai::AIFloat3& position) const;
 
 	int Pos2Index(const springai::AIFloat3& pos) const;

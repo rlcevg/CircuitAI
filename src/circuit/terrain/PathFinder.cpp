@@ -209,8 +209,9 @@ void CPathFinder::PathIndex2PathXY(int index, int* x, int* y) const
 
 void CPathFinder::PathIndex2MoveXY(int index, int* x, int* y) const
 {
-	*y = index / pathMapXSize + 1;
-	*x = index - (*y * pathMapXSize) + 1;
+	int ty = index / pathMapXSize;
+	*y = ty + 1;
+	*x = index - (ty * pathMapXSize) + 1;
 }
 
 AIFloat3 CPathFinder::PathIndex2Pos(int index) const

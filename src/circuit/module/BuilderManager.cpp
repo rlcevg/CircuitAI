@@ -637,11 +637,11 @@ IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 			if ((circuit->GetLastFrame() < hide->frame) || (GetWorkerCount() <= 2)) {
 				return MakeBuilderTask(unit);
 			}
-			CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
-			if (militaryManager->GetMobileThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat) {
+			CEnemyManager* enemyManager = circuit->GetEnemyManager();
+			if (enemyManager->GetMobileThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat) {
 				return MakeCommTask(unit);
 			}
-			const bool isHide = (hide->isAir) && (militaryManager->GetEnemyCost(CCircuitDef::RoleType::AIR) > 1.f);
+			const bool isHide = (hide->isAir) && (enemyManager->GetEnemyCost(CCircuitDef::RoleType::AIR) > 1.f);
 			return isHide ? MakeCommTask(unit) : MakeBuilderTask(unit);
 		}
 	}
@@ -928,10 +928,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 		if (vip != nullptr) {
 			task = EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, FRAMES_PER_SEC * 60);
 		} else {
-			CCircuitDef* buildDef = circuit->GetMilitaryManager()->GetDefaultPorc();
-			if ((buildDef != nullptr) && buildDef->IsAvailable(frame)) {
-				task = EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, pos, IBuilderTask::BuildType::DEFENCE);
-			}
+			task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 5);
 		}
 	}
 

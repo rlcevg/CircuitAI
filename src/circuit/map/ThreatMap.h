@@ -9,7 +9,7 @@
 #ifndef SRC_CIRCUIT_TERRAIN_THREATMAP_H_
 #define SRC_CIRCUIT_TERRAIN_THREATMAP_H_
 
-#include "unit/EnemyUnit.h"
+#include "unit/enemy/EnemyUnit.h"
 
 #include <map>
 #include <vector>

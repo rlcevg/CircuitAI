@@ -9,7 +9,7 @@
 #include "map/MapManager.h"
 #include "terrain/TerrainManager.h"
 #include "module/EconomyManager.h"
-#include "unit/AllyUnit.h"
+#include "unit/ally/AllyUnit.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
@@ -143,6 +143,13 @@ float CInfluenceMap::GetEnemyInflAt(const AIFloat3& position) const
 	int x, z;
 	PosToXZ(position, x, z);
 	return enemyInfl[z * width + x] - INFL_BASE;
+}
+
+float CInfluenceMap::GetAllyInflAt(const springai::AIFloat3& position) const
+{
+	int x, z;
+	PosToXZ(position, x, z);
+	return allyInfl[z * width + x] - INFL_BASE;
 }
 
 float CInfluenceMap::GetInfluenceAt(const AIFloat3& position) const

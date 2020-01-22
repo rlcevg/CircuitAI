@@ -30,7 +30,7 @@
 #include "task/static/SuperTask.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/PathFinder.h"
-#include "unit/EnemyUnit.h"
+#include "unit/enemy/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -53,9 +53,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		, defenceIdx(0)
 		, scoutIdx(0)
 		, armyCost(0.f)
-		, enemyMobileCost(0.f)
-		, mobileThreat(0.f)
-		, staticThreat(0.f)
 		, radarDef(nullptr)
 		, sonarDef(nullptr)
 		, bigGunDef(nullptr)
@@ -274,9 +271,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	defence = circuit->GetAllyTeam()->GetDefenceMatrix().get();
 
 	fightTasks.resize(static_cast<IFighterTask::FT>(IFighterTask::FightType::_SIZE_));
-
-	enemyPos = AIFloat3(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
-	enemyGroups.push_back(SEnemyGroup(enemyPos));
 }
 
 CMilitaryManager::~CMilitaryManager()
@@ -455,7 +449,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 	IFighterTask* task = nullptr;
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsRoleSupport()) {
-		if (/*cdef->IsAttacker() && */GetTasks(IFighterTask::FightType::ATTACK).empty()) {
+		if (/*cdef->IsAttacker() && */GetTasks(IFighterTask::FightType::ATTACK).empty() && GetTasks(IFighterTask::FightType::DEFEND).empty()) {
 			task = EnqueueDefend(IFighterTask::FightType::ATTACK,
 								 IFighterTask::FightType::SUPPORT);
 		} else {
@@ -473,7 +467,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 					}
 				} break;
 				case IFighterTask::FightType::AH: {
-					if (!cdef->IsRoleMine() && (GetEnemyCost(CCircuitDef::RoleType::HEAVY) < 1.f)) {
+					if (!cdef->IsRoleMine() && (circuit->GetEnemyManager()->GetEnemyCost(CCircuitDef::RoleType::HEAVY) < 1.f)) {
 						task = EnqueueTask(IFighterTask::FightType::ATTACK);
 					}
 				} break;
@@ -484,7 +478,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 			}
 		} else {
 			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty();
-			const float power = std::max(minAttackers, GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize());
+			const float power = std::max(minAttackers, circuit->GetEnemyManager()->GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize());
 			task = isDefend ? EnqueueDefend(IFighterTask::FightType::ATTACK, power)
 							: EnqueueTask(IFighterTask::FightType::ATTACK);
 		}
@@ -598,10 +592,11 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	AIFloat3 backPos = closestPoint->position + backDir.Normalize2D() * SQUARE_SIZE * 16;
 	CTerrainManager::CorrectPosition(backPos);
 
+	CEnemyManager* enemyManager = circuit->GetEnemyManager();
 	const int frame = circuit->GetLastFrame();
 	for (unsigned i = 0; i < num; ++i) {
 		CCircuitDef* defDef = defenders[i];
-		if (!defDef->IsAvailable(frame) || (defDef->IsRoleAA() && (GetEnemyCost(CCircuitDef::RoleType::AIR) < 1.f))) {
+		if (!defDef->IsAvailable(frame) || (defDef->IsRoleAA() && (enemyManager->GetEnemyCost(CCircuitDef::RoleType::AIR) < 1.f))) {
 			continue;
 		}
 		float defCost = defDef->GetCost();
@@ -932,46 +927,6 @@ IFighterTask* CMilitaryManager::DelDefendTask(int cluster)
 //	return task;
 }
 
-void CMilitaryManager::AddEnemyCost(const CEnemyInfo* e)
-{
-	CCircuitDef* cdef = e->GetCircuitDef();
-	assert(cdef != nullptr);
-
-	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
-		if (cdef->IsEnemyRoleAny(CCircuitDef::GetMask(i))) {
-			SEnemyInfo& info = enemyInfos[i];
-			info.cost   += e->GetCost();
-			info.threat += cdef->GetThreat();
-		}
-	}
-	if (cdef->IsMobile()) {
-		mobileThreat += cdef->GetThreat() * initThrMod.inMobile;
-		enemyMobileCost += e->GetCost();
-	} else {
-		staticThreat += cdef->GetThreat() * initThrMod.inStatic;
-	}
-}
-
-void CMilitaryManager::DelEnemyCost(const CEnemyInfo* e)
-{
-	CCircuitDef* cdef = e->GetCircuitDef();
-	assert(cdef != nullptr);
-
-	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
-		if (cdef->IsEnemyRoleAny(CCircuitDef::GetMask(i))) {
-			SEnemyInfo& info = enemyInfos[i];
-			info.cost   = std::max(info.cost   - e->GetCost(),      0.f);
-			info.threat = std::max(info.threat - cdef->GetThreat(), 0.f);
-		}
-	}
-	if (cdef->IsMobile()) {
-		mobileThreat = std::max(mobileThreat - cdef->GetThreat() * initThrMod.inMobile, 0.f);
-		enemyMobileCost = std::max(enemyMobileCost - e->GetCost(), 0.f);
-	} else {
-		staticThreat = std::max(staticThreat - cdef->GetThreat() * initThrMod.inStatic, 0.f);
-	}
-}
-
 void CMilitaryManager::AddResponse(CCircuitUnit* unit)
 {
 	const CCircuitDef* cdef = unit->GetCircuitDef();
@@ -1001,10 +956,11 @@ void CMilitaryManager::DelResponse(CCircuitUnit* unit)
 
 float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
 {
+	CEnemyManager* enemyManager = circuit->GetEnemyManager();
 	const SRoleInfo& info = roleInfos[cdef->GetMainRole()];
 	float maxProb = 0.f;
 	for (const SRoleInfo::SVsInfo& vs : info.vs) {
-		const float enemyMetal = GetEnemyCost(vs.role);
+		const float enemyMetal = enemyManager->GetEnemyCost(vs.role);
 		const float nextMetal = info.cost + cdef->GetCost();
 		const float prob = enemyMetal / (info.cost + 1.f) * vs.importance;
 		if ((prob > maxProb) &&
@@ -1071,6 +1027,12 @@ void CMilitaryManager::DiceBigGun()
 		}
 	}
 	bigGunDef = candidates[choice].cdef;
+}
+
+float CMilitaryManager::ClampMobileCostRatio() const
+{
+	const float enemyMobileCost = circuit->GetEnemyManager()->GetEnemyMobileCost();
+	return (enemyMobileCost > armyCost) ? (armyCost / enemyMobileCost) : 1.f;
 }
 
 void CMilitaryManager::UpdateDefenceTasks()
@@ -1238,9 +1200,6 @@ void CMilitaryManager::ReadConfig()
 	const Json::Value& qthrDef = qthrMod["defence"];
 	defenceMod.min = qthrDef.get((unsigned)0, 1.f).asFloat();
 	defenceMod.len = qthrDef.get((unsigned)1, 1.f).asFloat() - defenceMod.min;
-	initThrMod.inMobile = qthrMod.get("mobile", 1.f).asFloat();
-	initThrMod.inStatic = qthrMod.get("static", 0.f).asFloat();
-	maxAAThreat = quotas.get("aa_threat", 42.f).asFloat();
 
 	const Json::Value& porc = root["porcupine"];
 	const Json::Value& defs = porc["unit"];
@@ -1421,116 +1380,6 @@ void CMilitaryManager::DelArmyCost(CCircuitUnit* unit)
 {
 	DelResponse(unit);
 	armyCost = std::max(armyCost - unit->GetCircuitDef()->GetCost(), .0f);
-}
-
-/*
- * 2d only, ignores y component.
- * @see KAIK/AttackHandler::KMeansIteration for general reference
- */
-void CMilitaryManager::KMeansIteration()
-{
-	const CCircuitAI::EnemyInfos& units = circuit->GetEnemyInfos();
-	// calculate a new K. change the formula to adjust max K, needs to be 1 minimum.
-	constexpr int KMEANS_BASE_MAX_K = 32;
-	int newK = std::min(KMEANS_BASE_MAX_K, 1 + (int)sqrtf(units.size()));
-
-	// change the number of means according to newK
-	assert(newK > 0/* && enemyGoups.size() > 0*/);
-	// add a new means, just use one of the positions
-	AIFloat3 newMeansPosition = units.begin()->second->GetPos();
-//	newMeansPosition.y = circuit->GetMap()->GetElevationAt(newMeansPosition.x, newMeansPosition.z) + K_MEANS_ELEVATION;
-	enemyGroups.resize(newK, SEnemyGroup(newMeansPosition));
-
-	// check all positions and assign them to means, complexity n*k for one iteration
-	std::vector<int> unitsClosestMeanID(units.size(), -1);
-	std::vector<int> numUnitsAssignedToMean(newK, 0);
-
-	{
-		int i = 0;
-		for (const auto& kv : units) {
-			CEnemyInfo* enemy = kv.second;
-			if (enemy->GetData()->IsHidden()) {
-				continue;
-			}
-			AIFloat3 unitPos = enemy->GetPos();
-			float closestDistance = std::numeric_limits<float>::max();
-			int closestIndex = -1;
-
-			for (int m = 0; m < newK; m++) {
-				const AIFloat3& mean = enemyGroups[m].pos;
-				float distance = unitPos.SqDistance2D(mean);
-
-				if (distance < closestDistance) {
-					closestDistance = distance;
-					closestIndex = m;
-				}
-			}
-
-			// position i is closest to the mean at closestIndex
-			unitsClosestMeanID[i++] = closestIndex;
-			numUnitsAssignedToMean[closestIndex]++;
-		}
-	}
-
-	// change the means according to which positions are assigned to them
-	// use meanAverage for indexes with 0 pos'es assigned
-	// make a new means list
-//	std::vector<AIFloat3> newMeans(newK, ZeroVector);
-	std::vector<SEnemyGroup>& newMeans = enemyGroups;
-	for (unsigned i = 0; i < newMeans.size(); i++) {
-		SEnemyGroup& eg = newMeans[i];
-		eg.units.clear();
-		eg.units.reserve(numUnitsAssignedToMean[i]);
-		eg.pos = ZeroVector;
-		std::fill(eg.roleCosts.begin(), eg.roleCosts.end(), 0.f);
-		eg.cost = 0.f;
-		eg.threat = 0.f;
-	}
-
-	{
-		int i = 0;
-		for (const auto& kv : units) {
-			CEnemyInfo* enemy = kv.second;
-			if (enemy->GetData()->IsHidden()) {
-				continue;
-			}
-			int meanIndex = unitsClosestMeanID[i++];
-			SEnemyGroup& eg = newMeans[meanIndex];
-
-			// don't divide by 0
-			float num = std::max(1, numUnitsAssignedToMean[meanIndex]);
-			eg.pos += enemy->GetPos() / num;
-
-			eg.units.push_back(kv.first);
-
-			const CCircuitDef* cdef = enemy->GetCircuitDef();
-			if (cdef != nullptr) {
-				eg.roleCosts[cdef->GetMainRole()] += cdef->GetCost();
-				if (!cdef->IsMobile() || enemy->GetData()->IsInRadarOrLOS()) {
-					eg.cost += cdef->GetCost();
-				}
-				eg.threat += enemy->GetThreat() * (cdef->IsMobile() ? initThrMod.inMobile : initThrMod.inStatic);
-			} else {
-				eg.threat += enemy->GetThreat();
-			}
-		}
-	}
-
-	// do a check and see if there are any empty means and set the height
-	enemyPos = ZeroVector;
-	for (int i = 0; i < newK; i++) {
-		// if a newmean is unchanged, set it to the new means pos instead of (0, 0, 0)
-		if (newMeans[i].pos == ZeroVector) {
-			newMeans[i] = newMeansPosition;
-		} else {
-			// get the proper elevation for the y-coord
-//			newMeans[i].pos.y = circuit->GetMap()->GetElevationAt(newMeans[i].pos.x, newMeans[i].pos.z) + K_MEANS_ELEVATION;
-		}
-		enemyPos += newMeans[i].pos;
-	}
-	enemyPos /= newK;
-
-//	return newMeans;
 }
 
 } // namespace circuit

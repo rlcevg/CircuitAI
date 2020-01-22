@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_UNIT_ENEMYUNIT_H_
-#define SRC_CIRCUIT_UNIT_ENEMYUNIT_H_
+#ifndef SRC_CIRCUIT_UNIT_ENEMY_ENEMYUNIT_H_
+#define SRC_CIRCUIT_UNIT_ENEMY_ENEMYUNIT_H_
 
 #include "unit/CoreUnit.h"
 #include "unit/CircuitDef.h"
@@ -175,4 +175,4 @@ private:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_UNIT_ENEMYUNIT_H_
+#endif // SRC_CIRCUIT_UNIT_ENEMY_ENEMYUNIT_H_

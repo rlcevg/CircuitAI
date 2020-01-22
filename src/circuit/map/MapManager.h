@@ -8,8 +8,8 @@
 #ifndef SRC_CIRCUIT_MAP_MAPMANAGER_H_
 #define SRC_CIRCUIT_MAP_MAPMANAGER_H_
 
-#include "unit/EnemyManager.h"
-#include "unit/EnemyUnit.h"
+#include "unit/enemy/EnemyManager.h"
+#include "unit/enemy/EnemyUnit.h"
 
 namespace circuit {
 

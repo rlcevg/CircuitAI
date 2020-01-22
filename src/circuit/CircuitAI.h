@@ -8,9 +8,9 @@
 #ifndef SRC_CIRCUIT_CIRCUIT_H_
 #define SRC_CIRCUIT_CIRCUIT_H_
 
-#include "unit/AllyTeam.h"
 #include "unit/CircuitDef.h"
 #include "unit/CircuitWDef.h"
+#include "unit/ally/AllyTeam.h"
 #include "util/Defines.h"
 
 #include <memory>
@@ -48,6 +48,7 @@ namespace circuit {
 
 class CGameAttribute;
 class CSetupManager;
+class CEnemyManager;
 class CMapManager;
 class CThreatMap;
 class CInfluenceMap;
@@ -178,8 +179,6 @@ private:
 	Units teamUnits;  // owner
 	EnemyInfos enemyInfos;  // owner
 	CAllyTeam* allyTeam;
-	int uEnemyMark;
-	int kEnemyMark;
 
 	std::vector<CCircuitUnit*> actionUnits;
 	unsigned int actionIterator;
@@ -246,6 +245,7 @@ public:
 	springai::SkirmishAI*   GetSkirmishAI() const { return skirmishAI.get(); }
 	springai::Team*         GetTeam()       const { return team.get(); }
 	CSetupManager*    GetSetupManager()    const { return setupManager.get(); }
+	CEnemyManager*    GetEnemyManager()    const { return enemyManager.get(); }
 	CMetalManager*    GetMetalManager()    const { return metalManager.get(); }
 	CThreatMap*       GetThreatMap()       const;
 	CInfluenceMap*    GetInflMap()         const;
@@ -290,6 +290,7 @@ private:
 	void DestroyGameAttribute();
 	std::shared_ptr<CScheduler> scheduler;
 	std::shared_ptr<CSetupManager> setupManager;
+	std::shared_ptr<CEnemyManager> enemyManager;
 	std::shared_ptr<CMetalManager> metalManager;
 	std::shared_ptr<CMapManager> mapManager;
 	std::shared_ptr<CPathFinder> pathfinder;

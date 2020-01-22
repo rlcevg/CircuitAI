@@ -5,7 +5,7 @@
  *      Author: rlcevg
  */
 
-#include "unit/AllyUnit.h"
+#include "unit/ally/AllyUnit.h"
 #include "util/utils.h"
 #include "terrain/TerrainData.h"
 

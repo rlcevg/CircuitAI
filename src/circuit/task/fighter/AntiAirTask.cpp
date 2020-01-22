@@ -13,7 +13,8 @@
 #include "terrain/TerrainManager.h"
 #include "terrain/PathFinder.h"
 #include "unit/action/MoveAction.h"
-#include "unit/EnemyUnit.h"
+#include "unit/enemy/EnemyUnit.h"
+#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 

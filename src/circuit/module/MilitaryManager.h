@@ -10,7 +10,6 @@
 
 #include "module/UnitModule.h"
 #include "task/fighter/FighterTask.h"
-#include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
 
 #include <vector>
@@ -25,15 +24,6 @@ class CRetreatTask;
 
 class CMilitaryManager: public IUnitModule {
 public:
-	struct SEnemyGroup {
-		SEnemyGroup(const springai::AIFloat3& p) : pos(p), cost(0.f), threat(0.f) {}
-		std::vector<ICoreUnit::Id> units;
-		springai::AIFloat3 pos;
-		std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> roleCosts{{0.f}};
-		float cost;
-		float threat;  // thr_mod applied
-	};
-
 	CMilitaryManager(CCircuitAI* circuit);
 	virtual ~CMilitaryManager();
 
@@ -76,22 +66,6 @@ public:
 	IFighterTask* DelDefendTask(int cluster);
 	IFighterTask* GetDefendTask(int cluster) const { return clusterInfos[cluster].defence; }
 
-	float GetEnemyCost(CCircuitDef::RoleType type) const {
-		return enemyInfos[static_cast<CCircuitDef::RoleT>(type)].cost;
-	}
-	float GetEnemyThreat(CCircuitDef::RoleType type) const {
-		return enemyInfos[static_cast<CCircuitDef::RoleT>(type)].threat;
-	}
-	void AddEnemyCost(const CEnemyInfo* e);
-	void DelEnemyCost(const CEnemyInfo* e);
-	float GetMobileThreat() const { return mobileThreat; }
-	float GetStaticThreat() const { return staticThreat; }
-	float GetEnemyThreat() const { return mobileThreat + staticThreat; }
-	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return enemyGroups; }
-	const springai::AIFloat3& GetEnemyPos() const { return enemyPos; }
-	void UpdateEnemyGroups() { KMeansIteration(); }
-	bool IsAirValid() const { return GetEnemyThreat(CCircuitDef::RoleType::AA) <= maxAAThreat; }
-
 	const std::set<CCircuitUnit*>& GetRoleUnits(CCircuitDef::RoleType type) const {
 		return roleInfos[static_cast<CCircuitDef::RoleT>(type)].units;
 	}
@@ -102,10 +76,7 @@ public:
 	bool IsNeedBigGun(const CCircuitDef* cdef) const;
 	springai::AIFloat3 GetBigGunPos(CCircuitDef* bigDef) const;
 	void DiceBigGun();
-	float ClampMobileCostRatio() const {
-		return (enemyMobileCost > armyCost) ? (armyCost / enemyMobileCost) : 1.f;
-	}
-
+	float ClampMobileCostRatio() const;
 	void UpdateDefenceTasks();
 	void UpdateDefence();
 	void MakeBaseDefence(const springai::AIFloat3& pos);
@@ -128,8 +99,6 @@ private:
 
 	void AddArmyCost(CCircuitUnit* unit);
 	void DelArmyCost(CCircuitUnit* unit);
-
-	void KMeansIteration();
 
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
@@ -165,21 +134,6 @@ private:
 	std::set<CCircuitUnit*> army;
 	float armyCost;
 
-	float enemyMobileCost;
-	float mobileThreat;  // thr_mod.mobile applied
-	float staticThreat;  // thr_mod.static applied
-	struct SInitThreatMod {
-		float inMobile;
-		float inStatic;
-	} initThrMod;
-	struct SEnemyInfo {
-		float cost;
-		float threat;
-	};
-	std::array<SEnemyInfo, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> enemyInfos{{{0.f}, {0.f}}};
-	std::vector<SEnemyGroup> enemyGroups;
-	springai::AIFloat3 enemyPos;
-
 	struct SClusterInfo {
 		IFighterTask* defence;
 	};
@@ -196,7 +150,6 @@ private:
 		float min;
 		float len;
 	} attackMod, defenceMod;
-	float maxAAThreat;
 
 	std::vector<CCircuitDef*> defenderDefs;
 	std::vector<CCircuitDef*> landDefenders;

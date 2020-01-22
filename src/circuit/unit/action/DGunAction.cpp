@@ -6,8 +6,8 @@
  */
 
 #include "unit/action/DGunAction.h"
+#include "unit/enemy/EnemyUnit.h"
 #include "unit/CircuitUnit.h"
-#include "unit/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 

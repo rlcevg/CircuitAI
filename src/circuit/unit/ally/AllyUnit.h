@@ -5,8 +5,8 @@
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_UNIT_ALLYUNIT_H_
-#define SRC_CIRCUIT_UNIT_ALLYUNIT_H_
+#ifndef SRC_CIRCUIT_UNIT_ALLY_ALLYUNIT_H_
+#define SRC_CIRCUIT_UNIT_ALLY_ALLYUNIT_H_
 
 #include "unit/CoreUnit.h"
 
@@ -36,4 +36,4 @@ protected:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_UNIT_ALLYUNIT_H_
+#endif // SRC_CIRCUIT_UNIT_ALLY_ALLYUNIT_H_

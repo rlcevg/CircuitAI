@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_SETUP_ALLYTEAM_H_
 #define SRC_CIRCUIT_SETUP_ALLYTEAM_H_
 
-#include "unit/EnemyManager.h"
+#include "unit/enemy/EnemyManager.h"
 
 #include <memory>
 #include <map>
@@ -82,15 +82,16 @@ public:
 	CEnemyUnit* RegisterEnemyUnit(springai::Unit* e, CCircuitAI* ai);
 	void UnregisterEnemyUnit(CEnemyUnit* data, CCircuitAI* ai);
 
-	bool EnemyEnterLOS(CEnemyUnit* enemy, CCircuitAI* ai);
+	void EnemyEnterLOS(CEnemyUnit* enemy, CCircuitAI* ai);
 	void EnemyLeaveLOS(CEnemyUnit* enemy, CCircuitAI* ai);
 	void EnemyEnterRadar(CEnemyUnit* enemy, CCircuitAI* ai);
 	void EnemyLeaveRadar(CEnemyUnit* enemy, CCircuitAI* ai);
-	bool EnemyDestroyed(CEnemyUnit* enemy, CCircuitAI* ai);
+	void EnemyDestroyed(CEnemyUnit* enemy, CCircuitAI* ai);
 
 	void Update(CCircuitAI* ai);
 
 	std::shared_ptr<CMapManager>& GetMapManager() { return mapManager; }
+	std::shared_ptr<CEnemyManager>& GetEnemyManager() { return enemyManager; }
 	std::shared_ptr<CMetalManager>& GetMetalManager() { return metalManager; }
 	std::shared_ptr<CEnergyGrid>& GetEnergyGrid() { return energyGrid; }
 	std::shared_ptr<CDefenceMatrix>& GetDefenceMatrix() { return defence; }
@@ -130,10 +131,8 @@ private:
 
 	std::shared_ptr<CEnemyManager> enemyManager;
 
-#ifdef DEBUG_VIS
-public:
-	std::shared_ptr<CEnemyManager>& GetEnemyManager() { return enemyManager; }
-#endif
+	int uEnemyMark;
+	int kEnemyMark;
 };
 
 } // namespace circuit

@@ -14,7 +14,7 @@
 #include "setup/SetupManager.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/TravelAction.h"
-#include "unit/EnemyUnit.h"
+#include "unit/enemy/EnemyUnit.h"
 #include "CircuitAI.h"
 
 namespace circuit {
@@ -178,7 +178,7 @@ void IFighterTask::Log()
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	circuit->GetDrawer()->AddPoint(position, "position");
-	circuit->LOG("attackPower: %f | powerMod: %f", attackPower, powerMod);
+	circuit->LOG("fightType: %i | attackPower: %f | powerMod: %f", fightType, attackPower, powerMod);
 	if (target != nullptr) {
 		circuit->GetDrawer()->AddPoint(target->GetPos(), "target");
 	}

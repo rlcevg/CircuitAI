@@ -855,7 +855,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		return nullptr;
 	}
 
-	const AIFloat3& enemyPos = militaryManager->GetEnemyPos();
+	const AIFloat3& enemyPos = circuit->GetEnemyManager()->GetEnemyPos();
 	const bool isStart = (factoryManager->GetFactoryCount() == 0);
 	AIFloat3 buildPos;
 	if (isStart) {

@@ -7,9 +7,9 @@
 
 #include "unit/CircuitUnit.h"
 #include "unit/UnitManager.h"
-#include "unit/EnemyUnit.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/TravelAction.h"
+#include "unit/enemy/EnemyUnit.h"
 #include "setup/SetupManager.h"
 #include "CircuitAI.h"
 #include "util/utils.h"

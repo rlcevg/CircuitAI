@@ -7,7 +7,6 @@
 
 #include "unit/FactoryData.h"
 #include "module/FactoryManager.h"
-#include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
@@ -113,7 +112,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 	SAreaData* areaData = terrainManager->GetAreaData();
 	const std::vector<STerrainMapImmobileType>& immobileType = areaData->immobileType;
 	const std::vector<STerrainMapMobileType>& mobileType = areaData->mobileType;
-	const bool isAirValid = circuit->GetMilitaryManager()->IsAirValid();
+	const bool isAirValid = circuit->GetEnemyManager()->IsAirValid();
 
 	std::function<bool (CCircuitDef*)> predicate;
 	bool isPosValid = utils::is_valid(position);

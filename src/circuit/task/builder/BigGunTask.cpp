@@ -8,6 +8,7 @@
 #include "task/builder/BigGunTask.h"
 #include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
+#include "unit/ally/AllyUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 

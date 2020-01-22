@@ -11,6 +11,7 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/PathFinder.h"
+#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -66,7 +67,9 @@ void CSupportTask::Update()
 	}
 
 	CCircuitUnit* unit = *units.begin();
-	const std::set<IFighterTask*>& tasks = static_cast<CMilitaryManager*>(manager)->GetTasks(IFighterTask::FightType::ATTACK);
+	const std::set<IFighterTask*>& tasksA = static_cast<CMilitaryManager*>(manager)->GetTasks(IFighterTask::FightType::ATTACK);
+	const std::set<IFighterTask*>& tasksD = static_cast<CMilitaryManager*>(manager)->GetTasks(IFighterTask::FightType::DEFEND);
+	const std::set<IFighterTask*>& tasks = tasksA.empty() ? tasksD : tasksA;
 	if (tasks.empty()) {
 		Start(unit);
 		return;

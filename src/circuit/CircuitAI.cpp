@@ -17,7 +17,7 @@
 #include "terrain/PathFinder.h"
 #include "task/PlayerTask.h"
 #include "unit/CircuitUnit.h"
-#include "unit/EnemyUnit.h"
+#include "unit/enemy/EnemyUnit.h"
 #include "util/GameAttribute.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
@@ -76,8 +76,6 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, metalRes(nullptr)
 		, energyRes(nullptr)
 		, allyTeam(nullptr)
-		, uEnemyMark(0)
-		, kEnemyMark(0)
 		, actionIterator(0)
 		, isCheating(false)
 		, isAllyAware(true)
@@ -562,6 +560,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 	allyTeam->Init(this, decloakRadius);
 	mapManager = allyTeam->GetMapManager();
+	enemyManager = allyTeam->GetEnemyManager();
 	metalManager = allyTeam->GetMetalManager();
 	pathfinder = allyTeam->GetPathfinder();
 
@@ -585,9 +584,6 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	modules.push_back(builderManager);
 	modules.push_back(factoryManager);
 	modules.push_back(economyManager);  // NOTE: Units use manager, but ain't assigned here
-
-	uEnemyMark = skirmishAIId % THREAT_UPDATE_RATE;
-	kEnemyMark = (skirmishAIId + THREAT_UPDATE_RATE / 2) % THREAT_UPDATE_RATE;
 
 	if (isCheating) {
 		cheats->SetEnabled(true);
@@ -639,6 +635,7 @@ int CCircuitAI::Release(int reason)
 	metalManager = nullptr;
 	pathfinder = nullptr;
 	setupManager = nullptr;
+	enemyManager = nullptr;
 	mapManager = nullptr;
 
 	for (CCircuitUnit* unit : actionUnits) {
@@ -704,17 +701,7 @@ int CCircuitAI::Update(int frame)
 	}
 
 	if (!enemyInfos.empty()) {
-		int mark = frame % THREAT_UPDATE_RATE;
-		if (mark == uEnemyMark) {
-			mapManager->EnqueueUpdate();
-		} else if (mark == kEnemyMark) {
-			militaryManager->UpdateEnemyGroups();
-		} else {
-			allyTeam->Update(this);
-//			if (this == enemyManager->GetCircuit()) {
-//				enemyManager->UpdateEnemyDatas();
-//			}
-		}
+		allyTeam->Update(this);
 	}
 
 	scheduler->ProcessTasks(frame);
@@ -1018,9 +1005,7 @@ int CCircuitAI::EnemyEnterLOS(CEnemyInfo* enemy)
 {
 	bool isSuddenThreat = mapManager->IsSuddenThreat(enemy->GetData());
 
-	if (allyTeam->EnemyEnterLOS(enemy->GetData(), this)) {
-		militaryManager->AddEnemyCost(enemy);
-	}
+	allyTeam->EnemyEnterLOS(enemy->GetData(), this);
 
 	if (!isSuddenThreat) {
 		return 0;  // signaling: OK
@@ -1073,9 +1058,7 @@ int CCircuitAI::EnemyDamaged(CEnemyInfo* enemy)
 
 int CCircuitAI::EnemyDestroyed(CEnemyInfo* enemy)
 {
-	if (allyTeam->EnemyDestroyed(enemy->GetData(), this)) {
-		militaryManager->DelEnemyCost(enemy);
-	}
+	allyTeam->EnemyDestroyed(enemy->GetData(), this);
 
 	return 0;  // signaling: OK
 }

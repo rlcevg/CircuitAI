@@ -576,13 +576,12 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 	const SFactoryDef& facDef = it->second;
 
-	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
 	CCircuitDef* buildDef = nullptr;
 
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	const float metalIncome = std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome()) * economyManager->GetEcoFactor();
 	const bool isWaterMap = circuit->GetTerrainManager()->IsWaterMap();
-	const bool isAir = militaryManager->GetEnemyCost(CCircuitDef::RoleType::AIR) > 1.f;
+	const bool isAir = circuit->GetEnemyManager()->GetEnemyCost(CCircuitDef::RoleType::AIR) > 1.f;
 	const SFactoryDef::Tiers& tiers = isAir ? facDef.airTiers : isWaterMap ? facDef.waterTiers : facDef.landTiers;
 	auto facIt = tiers.begin();
 	if ((metalIncome >= facDef.incomes[facIt->first]) && !(facDef.isRequireEnergy && economyManager->IsEnergyEmpty())) {
@@ -598,6 +597,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	}
 	const std::vector<float>& probs = facIt->second;
 
+	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	static std::vector<std::pair<CCircuitDef*, float>> candidates;  // NOTE: micro-opt
 //	candidates.reserve(facDef.buildDefs.size());
@@ -1145,7 +1145,7 @@ IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 	}
 
 	if (unit->GetCircuitDef()->GetMobileId() < 0) {
-		if (circuit->GetMilitaryManager()->IsAirValid()) {
+		if (circuit->GetEnemyManager()->IsAirValid()) {
 			if (validAir.find(unit) == validAir.end()) {
 				EnableFactory(unit);
 			}

@@ -624,7 +624,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 		CCircuitDef* bdef = units.empty() ? circuit->GetSetupManager()->GetCommChoice() : (*this->units.begin())->GetCircuitDef();
 		CBuilderManager* builderManager = circuit->GetBuilderManager();
 		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
+		CEnemyManager* enemyManager = circuit->GetEnemyManager();
 
 		for (auto& queue : chain->hub) {
 			IBuilderTask* parent = nullptr;
@@ -636,10 +636,10 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 				bool isValid = true;
 				switch (bi.condition) {
 					case SBuildInfo::Condition::AIR: {
-						isValid = bi.cdef->GetCost() < militaryManager->GetEnemyCost(CCircuitDef::RoleType::AIR);
+						isValid = bi.cdef->GetCost() < enemyManager->GetEnemyCost(CCircuitDef::RoleType::AIR);
 					} break;
 					case SBuildInfo::Condition::NO_AIR: {
-						isValid = bi.cdef->GetCost() > militaryManager->GetEnemyCost(CCircuitDef::RoleType::AIR);
+						isValid = bi.cdef->GetCost() > enemyManager->GetEnemyCost(CCircuitDef::RoleType::AIR);
 					} break;
 					case SBuildInfo::Condition::MAYBE: {
 						isValid = rand() < RAND_MAX / 2;

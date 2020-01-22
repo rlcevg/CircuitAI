@@ -8,8 +8,10 @@
 #include "task/static/SuperTask.h"
 #include "task/fighter/SquadTask.h"
 #include "task/TaskManager.h"
+#include "map/InfluenceMap.h"
 #include "module/MilitaryManager.h"
-#include "unit/EnemyUnit.h"
+#include "unit/enemy/EnemyUnit.h"
+#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -73,6 +75,7 @@ void CSuperTask::Update()
 		return;
 	}
 
+	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
 	const float maxSqRange = SQUARE(cdef->GetMaxRange());
 	const float sqAoe = SQUARE(cdef->GetAoe() * 1.25f);
@@ -83,7 +86,7 @@ void CSuperTask::Update()
 		&militaryManager->GetTasks(IFighterTask::FightType::AH),
 		&militaryManager->GetTasks(IFighterTask::FightType::AA),
 	};
-	auto isAvoid = [&avoidTasks, frame, sqAoe](const AIFloat3& pos) {
+	auto isAllySafe = [&avoidTasks, frame, sqAoe, inflMap](const AIFloat3& pos) {
 		for (const std::set<IFighterTask*>* tasks : avoidTasks) {
 			for (const IFighterTask* task : *tasks) {
 				const AIFloat3& leaderPos = static_cast<const ISquadTask*>(task)->GetLeaderPos(frame);
@@ -92,16 +95,16 @@ void CSuperTask::Update()
 				}
 			}
 		}
-		return true;
+		return inflMap->GetInfluenceAt(pos) <= INFL_BASE;
 	};
-	const std::vector<CMilitaryManager::SEnemyGroup>& groups = militaryManager->GetEnemyGroups();
+	const std::vector<CEnemyManager::SEnemyGroup>& groups = circuit->GetEnemyManager()->GetEnemyGroups();
 	if (cdef->IsHoldFire() || (State::ROAM == state)) {
 		for (unsigned i = 0; i < groups.size(); ++i) {
-			const CMilitaryManager::SEnemyGroup& group = groups[i];
+			const CEnemyManager::SEnemyGroup& group = groups[i];
 			if ((cost >= group.cost) || (position.SqDistance2D(group.pos) >= maxSqRange)) {
 				continue;
 			}
-			if (isAvoid(group.pos)) {
+			if (isAllySafe(group.pos)) {
 				cost = group.cost;
 				groupIdx = i;
 			}
@@ -110,7 +113,7 @@ void CSuperTask::Update()
 		// TODO: Use WeaponDef::GetTurnRate() for turn-delay weight
 		const AIFloat3& targetVec = (targetPos - position).Normalize2D();
 		for (unsigned i = 0; i < groups.size(); ++i) {
-			const CMilitaryManager::SEnemyGroup& group = groups[i];
+			const CEnemyManager::SEnemyGroup& group = groups[i];
 			if (position.SqDistance2D(group.pos) >= maxSqRange) {
 				continue;
 			}
@@ -119,7 +122,7 @@ void CSuperTask::Update()
 			if (cost >= group.cost * angleMod) {
 				continue;
 			}
-			if (isAvoid(group.pos)) {
+			if (isAllySafe(group.pos)) {
 				cost = group.cost;
 				groupIdx = i;
 			}

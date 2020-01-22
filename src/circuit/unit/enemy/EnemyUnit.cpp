@@ -5,7 +5,7 @@
  *      Author: rlcevg
  */
 
-#include "unit/EnemyUnit.h"
+#include "unit/enemy/EnemyUnit.h"
 #include "task/fighter/FighterTask.h"
 #include "util/utils.h"
 

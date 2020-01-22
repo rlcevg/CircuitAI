@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_UNIT_CIRCUITUNIT_H_
 #define SRC_CIRCUIT_UNIT_CIRCUITUNIT_H_
 
-#include "unit/AllyUnit.h"
+#include "unit/ally/AllyUnit.h"
 #include "util/ActionList.h"
 
 namespace springai {
