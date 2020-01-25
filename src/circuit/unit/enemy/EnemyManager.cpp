@@ -16,6 +16,8 @@
 #include "WrappUnit.h"
 #include "Cheats.h"
 
+#include <limits>
+
 namespace circuit {
 
 using namespace springai;

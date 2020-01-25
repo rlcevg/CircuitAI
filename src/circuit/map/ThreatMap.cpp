@@ -10,6 +10,7 @@
 #include "terrain/TerrainManager.h"
 #include "setup/SetupManager.h"
 #include "unit/CircuitUnit.h"
+#include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 #include "json/json.h"

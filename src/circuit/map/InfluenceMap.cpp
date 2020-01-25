@@ -10,6 +10,7 @@
 #include "terrain/TerrainManager.h"
 #include "module/EconomyManager.h"
 #include "unit/ally/AllyUnit.h"
+#include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
