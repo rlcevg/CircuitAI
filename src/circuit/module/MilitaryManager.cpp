@@ -750,8 +750,8 @@ void CMilitaryManager::FindFrontPos(PathInfo& pPath, AIFloat3& startPos, STerrai
 		return false;
 	};
 	CMetalManager* metalManager = circuit->GetMetalManager();
-	AIFloat3 centerPos(terrainManager->GetTerrainWidth() / 2, 0, terrainManager->GetTerrainHeight() / 2);
-	int index = metalManager->FindNearestCluster(centerPos, predicate);
+	CSetupManager* setupManager = circuit->GetSetupManager();
+	int index = metalManager->FindNearestCluster(setupManager->GetLanePos(), predicate);
 	if (index >= 0) {
 		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
 		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
@@ -768,7 +768,7 @@ void CMilitaryManager::FindFrontPos(PathInfo& pPath, AIFloat3& startPos, STerrai
 	/*
 	 * Use base
 	 */
-	ourPositions.push_back(circuit->GetSetupManager()->GetBasePos());
+	ourPositions.push_back(setupManager->GetBasePos());
 	pathfinder->FindBestPath(pPath, startPos, range, ourPositions);
 	ourPositions.clear();
 }
@@ -1037,7 +1037,6 @@ float CMilitaryManager::ClampMobileCostRatio() const
 
 void CMilitaryManager::UpdateDefenceTasks()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	/*
 	 * Defend expansion
 	 */

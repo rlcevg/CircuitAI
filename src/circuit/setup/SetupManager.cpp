@@ -10,6 +10,7 @@
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
+#include "util/GameAttribute.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
 #include "json/json.h"
@@ -39,6 +40,7 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 		, commander(nullptr)
 		, startPos(-RgtVector)
 		, basePos(-RgtVector)
+		, lanePos(-RgtVector)
 		, emptyShield(0.f)
 		, commChoice(nullptr)
 {
@@ -245,6 +247,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 	}
 
 	AIFloat3 pos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
+	SetBasePos(pos);
 	circuit->GetGame()->SendStartPosition(false, pos);
 }
 
@@ -497,7 +500,6 @@ void CSetupManager::Welcome() const
 
 void CSetupManager::FindStart()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	if (utils::is_valid(startPos)) {
 		circuit->GetScheduler()->RemoveTask(findStart);
 		findStart = nullptr;
@@ -505,6 +507,8 @@ void CSetupManager::FindStart()
 		for (StartFunc& func : startFuncs) {
 			func(startPos);
 		}
+
+		circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(&CSetupManager::CalcLanePos, this), FRAMES_PER_SEC);
 		return;
 	}
 
@@ -512,6 +516,11 @@ void CSetupManager::FindStart()
 		return;
 	}
 
+	CalcStartPos();
+}
+
+void CSetupManager::CalcStartPos()
+{
 	const int frame = circuit->GetLastFrame();
 	AIFloat3 midPos = ZeroVector;
 	for (auto& kv : circuit->GetTeamUnits()) {
@@ -532,6 +541,74 @@ void CSetupManager::FindStart()
 		}
 	}
 	SetStartPos(bestPos);
+}
+
+void CSetupManager::CalcLanePos()
+{
+	std::vector<std::pair<int, AIFloat3>> points;
+	AIFloat3 midPos = ZeroVector;
+	for (CCircuitAI* ai : circuit->GetGameAttribute()->GetCircuits()) {
+		if (ai->IsInitialized() && (ai->GetAllyTeamId() == circuit->GetAllyTeamId())) {
+			const AIFloat3& pos = ai->GetSetupManager()->GetBasePos();
+			points.push_back(std::make_pair(ai->GetSkirmishAIId(), pos));
+			midPos += pos;
+		}
+	}
+	midPos /= points.size();
+
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	float width = terrainManager->GetTerrainWidth();
+	float height = terrainManager->GetTerrainHeight();
+	AIFloat3 p1(width - width / 3, 0, height / 3);
+	AIFloat3 p2(width / 3, 0, height / 3);
+	AIFloat3 p3(width / 3, 0, height - height / 3);
+	AIFloat3 p4(width - width / 3, 0, height - height / 3);
+	AIFloat3 centerPos(width / 2, 0, height / 2);
+	AIFloat3 step, offset;
+	if ((midPos.x > p1.x && midPos.z < p1.z) || (midPos.x < p3.x && midPos.z > p3.z)) {  // I, III
+		step = AIFloat3(width / (points.size() + 1), 0, height / (points.size() + 1));
+		offset = AIFloat3(0, 0, 0);
+	} else if ((midPos.x < p2.x && midPos.z < p2.z) || (midPos.x > p4.x && midPos.z > p4.z)) {  // II, IV
+		step = AIFloat3(width / (points.size() + 1), 0, -height / (points.size() + 1));
+		offset = AIFloat3(0, 0, height);
+	} else if (abs(centerPos.x - midPos.x) / abs(centerPos.z - midPos.z) < width / height) {  // x-aligned
+		step = AIFloat3(width / (points.size() + 1), 0, 0);
+		offset = AIFloat3(0, 0, height / 2);
+	} else {  // z-aligned
+		step = AIFloat3(0, 0, height / (points.size() + 1));
+		offset = AIFloat3(width / 2, 0, 0);
+	}
+
+	auto sqLenOfProjPointOnLine = [](const AIFloat3& p/*, const AIFloat3& v1*/, const AIFloat3& v2) {
+		// simplified, v1 = ZeroPoint
+		float e1x = v2.x/* - v1.x*/, e1z = v2.z/* - v1.z*/;  // v2-ZeroPoint
+		float e2x = p.x/* - v1.x*/, e2z = p.z/* - v1.z*/;  // p-ZeroPoint
+		float valDp = e1x * e2x + e1z * e2z;  // dotProduct(e1, e2)
+		float sqLen = e1x * e1x + e1z * e1z;
+		float resX = /*v1.x + */(valDp * e1x) / sqLen;
+		float resZ = /*v1.z + */(valDp * e1z) / sqLen;
+		return resX * resX + resZ * resZ;
+	};
+	std::vector<std::pair<int, float>> sortedPoints;
+	for (const std::pair<int, AIFloat3>& pos : points) {
+		sortedPoints.push_back(std::make_pair(pos.first, sqLenOfProjPointOnLine(pos.second, step)));
+	}
+	auto compare = [](const std::pair<int, float>& p1, const std::pair<int, float>& p2) {
+		return p1.second < p2.second;
+	};
+	std::sort(sortedPoints.begin(), sortedPoints.end(), compare);
+	int i = 0;
+	while (i < (int)sortedPoints.size() && circuit->GetSkirmishAIId() != sortedPoints[i].first) {
+		i++;
+	}
+	AIFloat3 bestPos = step * (i + 1) + offset;
+
+	SetLanePos(bestPos);
+	// FIXME: DEBUG
+	circuit->GetDrawer()->AddPoint(basePos, utils::int_to_string(circuit->GetSkirmishAIId()).c_str());
+	circuit->GetDrawer()->AddPoint(lanePos, utils::int_to_string(circuit->GetSkirmishAIId()).c_str());
+	circuit->GetDrawer()->AddLine(basePos, lanePos);
+	// FIXME: DEBUG
 }
 
 bool CSetupManager::LocatePath(std::string& filename)

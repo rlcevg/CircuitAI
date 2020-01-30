@@ -253,7 +253,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 					(sectors[index].isWater ? 5.f : 0.f) + 4.f * sectors[index].maxSlope / maxSlope;
 		};
 		threatFun = [threatArray](int index) {
-			return 10.f * threatArray[index];
+			return 4.f * threatArray[index];
 		};
 	} else if (unit->GetUnit()->IsCloaked()) {
 		threatArray = threatMap->GetCloakThreatArray();
@@ -269,7 +269,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 			return 0.f;
 		};
 		threatFun = [threatArray](int index) {
-			return 10.f * threatArray[index];
+			return 4.f * threatArray[index];
 		};
 	} else if (cdef->IsAmphibious()) {
 		threatArray = threatMap->GetAmphThreatArray();
@@ -279,7 +279,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 						(sectors[index].isWater ? 5.f : 0.f) + 4.f * (1.f - sectors[index].maxSlope);
 			};
 			threatFun = [threatArray](int index) {
-				return 10.f * threatArray[index];
+				return 4.f * threatArray[index];
 			};
 		} else {
 			moveFun = [&sectors, maxSlope, minElev, elevLen](int index) {
@@ -287,7 +287,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 						(sectors[index].isWater ? 5.f : 0.f) + 4.f * sectors[index].maxSlope / maxSlope;
 			};
 			threatFun = [threatArray](int index) {
-				return 10.f * threatArray[index];
+				return 4.f * threatArray[index];
 			};
 		}
 	} else {
@@ -297,7 +297,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 					(sectors[index].isWater ? 0.f : 4.f * sectors[index].maxSlope / maxSlope);
 		};
 		threatFun = [threatArray](int index) {
-			return 10.f * threatArray[index];
+			return 4.f * threatArray[index];
 		};
 	}
 	// FIXME: DEBUG

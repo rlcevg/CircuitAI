@@ -57,6 +57,8 @@ public:
 	const springai::AIFloat3& GetStartPos() const { return startPos; }
 	void SetBasePos(const springai::AIFloat3& pos) { basePos = pos; }
 	const springai::AIFloat3& GetBasePos() const { return basePos; }
+	void SetLanePos(const springai::AIFloat3& pos) { lanePos = pos; }
+	const springai::AIFloat3& GetLanePos() const { return lanePos; }
 	void ExecOnFindStart(StartFunc& func) { startFuncs.push_back(func); }
 
 	bool PickCommander();
@@ -80,6 +82,8 @@ public:
 
 private:
 	void FindStart();
+	void CalcStartPos();
+	void CalcLanePos();
 	bool LocatePath(std::string& filename);
 	bool LoadConfig(const std::string& cfgOption);
 	Json::Value* ReadConfig(const std::string& dirName, const std::vector<std::string>& cfgNames);
@@ -95,6 +99,7 @@ private:
 	CCircuitUnit* commander;
 	springai::AIFloat3 startPos;
 	springai::AIFloat3 basePos;
+	springai::AIFloat3 lanePos;
 	std::shared_ptr<CGameTask> findStart;
 	std::vector<StartFunc> startFuncs;
 
