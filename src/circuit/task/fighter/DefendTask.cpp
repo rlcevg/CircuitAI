@@ -238,7 +238,7 @@ void CDefendTask::FindTarget()
 			continue;
 		}
 		const AIFloat3& ePos = enemy->GetPos();
-		if ((maxPower <= threatMap->GetThreatAt(ePos)) || (inflMap->GetInfluenceAt(ePos) < INFL_BASE) ||
+		if ((maxPower <= threatMap->GetThreatAt(ePos)) || (inflMap->GetAllyStaticInflAt(ePos) < 0.01f/*INFL_BASE*/) ||
 			!terrainManager->CanMoveToPos(area, ePos))
 		{
 			continue;

@@ -39,12 +39,14 @@ CInfluenceMap::CInfluenceMap(CMapManager* manager)
 
 	inflData0.enemyInfl.resize(mapSize, INFL_BASE);
 	inflData0.allyInfl.resize(mapSize, INFL_BASE);
+	inflData0.allyStaticInfl.resize(mapSize, INFL_BASE);
 	inflData0.influence.resize(mapSize, INFL_BASE);
 	inflData0.tension.resize(mapSize, INFL_BASE);
 	inflData0.vulnerability.resize(mapSize, INFL_BASE);
 	inflData0.featureInfl.resize(mapSize, INFL_BASE);
 	enemyInfl = inflData0.enemyInfl.data();
 	allyInfl = inflData0.allyInfl.data();
+	allyStaticInfl = inflData0.allyStaticInfl.data();
 	influence = inflData0.influence.data();
 	tension = inflData0.tension.data();
 	vulnerability = inflData0.vulnerability.data();
@@ -52,12 +54,14 @@ CInfluenceMap::CInfluenceMap(CMapManager* manager)
 
 	inflData1.enemyInfl.resize(mapSize, INFL_BASE);
 	inflData1.allyInfl.resize(mapSize, INFL_BASE);
+	inflData1.allyStaticInfl.resize(mapSize, INFL_BASE);
 	inflData1.influence.resize(mapSize, INFL_BASE);
 	inflData1.tension.resize(mapSize, INFL_BASE);
 	inflData1.vulnerability.resize(mapSize, INFL_BASE);
 	inflData1.featureInfl.resize(mapSize, INFL_BASE);
 	drawEnemyInfl = inflData1.enemyInfl.data();
 	drawAllyInfl = inflData1.allyInfl.data();
+	drawAllyStaticInfl = inflData1.allyStaticInfl.data();
 	drawInfluence = inflData1.influence.data();
 	drawTension = inflData1.tension.data();
 	drawVulnerability = inflData1.vulnerability.data();
@@ -85,6 +89,17 @@ void CInfluenceMap::EnqueueUpdate()
 	CCircuitAI* circuit = manager->GetCircuit();
 	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CInfluenceMap::Update, this),
 											 std::make_shared<CGameTask>(&CInfluenceMap::Apply, this));
+}
+
+void CInfluenceMap::Prepare(SInfluenceData& inflData)
+{
+	std::fill(inflData.enemyInfl.begin(), inflData.enemyInfl.end(), INFL_BASE);
+	std::fill(inflData.allyInfl.begin(), inflData.allyInfl.end(), INFL_BASE);
+	std::fill(inflData.allyStaticInfl.begin(), inflData.allyStaticInfl.end(), INFL_BASE);
+	std::fill(inflData.influence.begin(), inflData.influence.end(), INFL_BASE);
+	std::fill(inflData.tension.begin(), inflData.tension.end(), INFL_BASE);
+	std::fill(inflData.vulnerability.begin(), inflData.vulnerability.end(), INFL_BASE);
+	std::fill(inflData.featureInfl.begin(), inflData.featureInfl.end(), INFL_BASE);
 }
 
 void CInfluenceMap::Update()
@@ -131,12 +146,24 @@ void CInfluenceMap::Apply()
 	}
 //	cheats->SetEnabled(false);
 
-	pInflData = GetNextInflData();
+	SwapBuffers();
 	isUpdating = false;
 
 #ifdef DEBUG_VIS
 	UpdateVis();
 #endif
+}
+
+void CInfluenceMap::SwapBuffers()
+{
+	pInflData = GetNextInflData();
+	std::swap(enemyInfl, drawEnemyInfl);
+	std::swap(allyInfl, drawAllyInfl);
+	std::swap(allyStaticInfl, drawAllyStaticInfl);
+	std::swap(influence, drawInfluence);
+	std::swap(tension, drawTension);
+	std::swap(vulnerability, drawVulnerability);
+	std::swap(featureInfl, drawFeatureInfl);
 }
 
 float CInfluenceMap::GetEnemyInflAt(const AIFloat3& position) const
@@ -153,6 +180,13 @@ float CInfluenceMap::GetAllyInflAt(const springai::AIFloat3& position) const
 	return allyInfl[z * width + x] - INFL_BASE;
 }
 
+float CInfluenceMap::GetAllyStaticInflAt(const AIFloat3& position) const
+{
+	int x, z;
+	PosToXZ(position, x, z);
+	return allyStaticInfl[z * width + x] - INFL_BASE;
+}
+
 float CInfluenceMap::GetInfluenceAt(const AIFloat3& position) const
 {
 	int x, z;
@@ -163,23 +197,6 @@ float CInfluenceMap::GetInfluenceAt(const AIFloat3& position) const
 int CInfluenceMap::Pos2Index(const AIFloat3& pos) const
 {
 	return int(pos.z / squareSize) * width + int(pos.x / squareSize);
-}
-
-void CInfluenceMap::Prepare(SInfluenceData& inflData)
-{
-	drawEnemyInfl = inflData.enemyInfl.data();
-	drawAllyInfl = inflData.allyInfl.data();
-	drawInfluence = inflData.influence.data();
-	drawTension = inflData.tension.data();
-	drawVulnerability = inflData.vulnerability.data();
-	drawFeatureInfl = inflData.featureInfl.data();
-
-	std::fill(inflData.enemyInfl.begin(), inflData.enemyInfl.end(), INFL_BASE);
-	std::fill(inflData.allyInfl.begin(), inflData.allyInfl.end(), INFL_BASE);
-	std::fill(inflData.influence.begin(), inflData.influence.end(), INFL_BASE);
-	std::fill(inflData.tension.begin(), inflData.tension.end(), INFL_BASE);
-	std::fill(inflData.vulnerability.begin(), inflData.vulnerability.end(), INFL_BASE);
-	std::fill(inflData.featureInfl.begin(), inflData.featureInfl.end(), INFL_BASE);
 }
 
 void CInfluenceMap::AddUnit(CAllyUnit* u)
@@ -200,18 +217,36 @@ void CInfluenceMap::AddUnit(CAllyUnit* u)
 	const int beginZ = std::max(int(posz - range + 1),       0);
 	const int endZ   = std::min(int(posz + range    ), height);
 
-	for (int z = beginZ; z < endZ; ++z) {
-		const int dzSq = SQUARE(posz - z);
-		for (int x = beginX; x < endX; ++x) {
-			const int dxSq = SQUARE(posx - x);
-			const int lenSq = dxSq + dzSq;
-			if (lenSq > rangeSq) {
-				continue;
-			}
+	if (u->GetCircuitDef()->IsMobile()) {
+		for (int z = beginZ; z < endZ; ++z) {
+			const int dzSq = SQUARE(posz - z);
+			for (int x = beginX; x < endX; ++x) {
+				const int dxSq = SQUARE(posx - x);
+				const int lenSq = dxSq + dzSq;
+				if (lenSq > rangeSq) {
+					continue;
+				}
 
-			const int index = z * width + x;
-			const float infl = val * (1.0f - 1.0f * sqrtf(lenSq) / range);
-			drawAllyInfl[index] += infl;
+				const int index = z * width + x;
+				const float infl = val * (1.0f - 1.0f * sqrtf(lenSq) / range);
+				drawAllyInfl[index] += infl;
+			}
+		}
+	} else {
+		for (int z = beginZ; z < endZ; ++z) {
+			const int dzSq = SQUARE(posz - z);
+			for (int x = beginX; x < endX; ++x) {
+				const int dxSq = SQUARE(posx - x);
+				const int lenSq = dxSq + dzSq;
+				if (lenSq > rangeSq) {
+					continue;
+				}
+
+				const int index = z * width + x;
+				const float infl = val * (1.0f - 1.0f * sqrtf(lenSq) / range);
+				drawAllyInfl[index] += infl;
+				drawAllyStaticInfl[index] += infl;
+			}
 		}
 	}
 }

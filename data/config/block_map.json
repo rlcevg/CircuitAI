@@ -46,7 +46,7 @@
 			// Integer radius of a blocker or description string.
 			// Available string values: explosion, expl_ally
 //			"radius": "explosion",  // default: "explosion"
-			"radius": 4,  // default: "explosion"
+			"radius": 4,
 			"not_ignore": ["factory", "engy_low"]
 		},
 		"fusion": {
@@ -79,6 +79,10 @@
 			"type": ["rectangle", "nano"],
 			"ignore": ["mex", "def_low", "engy_mid", "pylon", "engy_high"]
 		},
+		"small": {
+			"type": ["rectangle", "unknown"],
+			"not_ignore": ["factory", "def_low"]
+		},
 		"superweapon": {
 			"type": ["circle", "special"],
 			"ignore": ["mex", "def_low", "pylon", "engy_high"]
@@ -96,10 +100,6 @@
 			"yard": [4, 4],
 			"ignore": ["all"]
 		},
-		"small": {
-			"type": ["rectangle", "unknown"],
-			"not_ignore": ["factory", "def_low"]
-		},
 		"_default_": {
 			"type": ["rectangle", "unknown"],
 			"yard": [4, 4],
@@ -109,7 +109,8 @@
 	// Water overrides land. Map considered as water if amount of land < 40%
 	"class_water" : {
 		"wind": {
-			"type": ["rectangle", "engy_low"],
+			"type": ["circle", "engy_low"],
+			"radius": 1,  // default: "explosion"
 			"ignore": ["mex", "engy_mid", "engy_high", "pylon", "nano"]
 		}
 	},

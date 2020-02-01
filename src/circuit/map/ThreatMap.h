@@ -68,7 +68,6 @@ private:
 	inline void PosToXZ(const springai::AIFloat3& pos, int& x, int& z) const;
 	inline springai::AIFloat3 XZToPos(int x, int z) const;
 
-	void Prepare(SThreatData& threatData);
 	void AddEnemyUnit(const SEnemyData& e);
 	void AddEnemyUnitAll(const SEnemyData& e);
 	void AddEnemyAir(const SEnemyData& e);  // Enemy AntiAir
@@ -81,8 +80,10 @@ private:
 	int GetShieldRange(const CCircuitDef* edef) const;
 	float GetEnemyUnitThreat(const CEnemyUnit* e) const;
 
+	void Prepare(SThreatData& threatData);
 	void Update();
 	void Apply();
+	void SwapBuffers();
 	SThreatData* GetNextThreatData() {
 		return (pThreatData.load() == &threatData0) ? &threatData1 : &threatData0;
 	}

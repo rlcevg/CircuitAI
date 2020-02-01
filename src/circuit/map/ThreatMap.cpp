@@ -267,21 +267,6 @@ inline AIFloat3 CThreatMap::XZToPos(int x, int z) const
 	return pos;
 }
 
-void CThreatMap::Prepare(SThreatData& threatData)
-{
-	drawAirThreat = threatData.airThreat.data();
-	drawSurfThreat = threatData.surfThreat.data();
-	drawAmphThreat = threatData.amphThreat.data();
-	drawCloakThreat = threatData.cloakThreat.data();
-	drawShieldArray = threatData.shield.data();
-
-	std::fill(threatData.airThreat.begin(), threatData.airThreat.end(), THREAT_BASE);
-	std::fill(threatData.surfThreat.begin(), threatData.surfThreat.end(), THREAT_BASE);
-	std::fill(threatData.amphThreat.begin(), threatData.amphThreat.end(), THREAT_BASE);
-	std::fill(threatData.cloakThreat.begin(), threatData.cloakThreat.end(), THREAT_BASE);
-	std::fill(threatData.shield.begin(), threatData.shield.end(), 0.f);
-}
-
 void CThreatMap::AddEnemyUnit(const SEnemyData& e)
 {
 	CCircuitDef* cdef = e.cdef;
@@ -517,6 +502,15 @@ float CThreatMap::GetEnemyUnitThreat(const CEnemyUnit* e) const
 	return e->GetDamage() * sqrtf(health + shieldArray[z * width + x] * 2.0f);  // / unit->GetUnit()->GetMaxHealth();
 }
 
+void CThreatMap::Prepare(SThreatData& threatData)
+{
+	std::fill(threatData.airThreat.begin(), threatData.airThreat.end(), THREAT_BASE);
+	std::fill(threatData.surfThreat.begin(), threatData.surfThreat.end(), THREAT_BASE);
+	std::fill(threatData.amphThreat.begin(), threatData.amphThreat.end(), THREAT_BASE);
+	std::fill(threatData.cloakThreat.begin(), threatData.cloakThreat.end(), THREAT_BASE);
+	std::fill(threatData.shield.begin(), threatData.shield.end(), 0.f);
+}
+
 void CThreatMap::Update()
 {
 	Prepare(*GetNextThreatData());
@@ -532,12 +526,22 @@ void CThreatMap::Update()
 
 void CThreatMap::Apply()
 {
-	pThreatData = GetNextThreatData();
+	SwapBuffers();
 	isUpdating = false;
 
 #ifdef DEBUG_VIS
 	UpdateVis();
 #endif
+}
+
+void CThreatMap::SwapBuffers()
+{
+	pThreatData = GetNextThreatData();
+	std::swap(airThreat, drawAirThreat);
+	std::swap(surfThreat, drawSurfThreat);
+	std::swap(amphThreat, drawAmphThreat);
+	std::swap(cloakThreat, drawCloakThreat);
+	std::swap(shieldArray, drawShieldArray);
 }
 
 #ifdef DEBUG_VIS
