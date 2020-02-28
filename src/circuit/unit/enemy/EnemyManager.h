@@ -64,6 +64,7 @@ public:
 
 	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return enemyGroups; }
 	const springai::AIFloat3& GetEnemyPos() const { return enemyPos; }
+	float GetMaxGroupThreat() const { return enemyGroups[maxThreatGroupIdx].threat; }
 	void UpdateEnemyGroups() { KMeansIteration(); }
 
 	float GetEnemyMobileCost() const { return enemyMobileCost; }
@@ -83,6 +84,7 @@ private:
 
 	std::vector<SEnemyGroup> enemyGroups;
 	springai::AIFloat3 enemyPos;
+	int maxThreatGroupIdx;
 
 	float enemyMobileCost;
 	float mobileThreat;  // thr_mod.mobile applied

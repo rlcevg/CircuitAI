@@ -36,7 +36,7 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 //		, damagedFrame(-1)
 		, moveFails(0)
 		, failFrame(-1)
-		, isForceExecute(false)
+		, execFrame(-1)
 		, isDead(false)
 		, isDisarmed(false)
 		, disarmFrame(-1)
@@ -117,11 +117,15 @@ bool CCircuitUnit::IsMoveFailed(int frame)
 	return ++moveFails > TASK_RETRIES * 2;
 }
 
-bool CCircuitUnit::IsForceExecute()
+bool CCircuitUnit::IsForceExecute(int frame)
 {
-	bool result = isForceExecute;
-	isForceExecute = false;
-	return result;
+	if (execFrame > 0) {
+		if (execFrame <= frame) {
+			execFrame = -1;
+			return true;
+		}
+	}
+	return false;
 }
 
 void CCircuitUnit::ManualFire(CEnemyInfo* target, int timeOut)
@@ -260,24 +264,30 @@ void CCircuitUnit::Attack(const AIFloat3& position, int timeout)
 
 void CCircuitUnit::Attack(const AIFloat3& position, CEnemyInfo* enemy, int timeout)
 {
-	target = enemy;
 	const AIFloat3& pos = utils::get_radial_pos(position, SQUARE_SIZE * 4);
 	TRY_UNIT(manager->GetCircuit(), this,
 		if (circuitDef->IsAttrMelee()) {
 			if (IsJumpReady()) {
 				unit->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
-				unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+//				unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
 			} else {
 				unit->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
 			}
 		} else {
-			unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+//			unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
 		}
 		unit->Attack(enemy->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
 		unit->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);  // los-cheat related
 		unit->ExecuteCustomCommand(CMD_WANTED_SPEED, {NO_SPEED_LIMIT});
 //		unit->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 	)
+}
+
+void CCircuitUnit::Attack(const AIFloat3& position, CEnemyInfo* enemy, int tile, int timeout)
+{
+	target = enemy;
+	targetTile = tile;
+	Attack(position, enemy, timeout);
 }
 
 void CCircuitUnit::Guard(CCircuitUnit* target, int timeout)

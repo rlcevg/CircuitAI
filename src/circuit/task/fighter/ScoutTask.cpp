@@ -81,7 +81,7 @@ void CScoutTask::Update()
 		}
 	} else {
 		for (CCircuitUnit* unit : units) {
-			if (unit->IsForceExecute()) {
+			if (unit->IsForceExecute(frame)) {
 				Execute(unit, true);
 			}
 		}

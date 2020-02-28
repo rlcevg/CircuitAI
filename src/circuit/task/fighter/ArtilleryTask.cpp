@@ -70,13 +70,16 @@ void CArtilleryTask::Start(CCircuitUnit* unit)
 
 void CArtilleryTask::Update()
 {
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+
 	if (++updCount % 4 == 0) {
 		for (CCircuitUnit* unit : units) {
 			Execute(unit, true);
 		}
 	} else {
 		for (CCircuitUnit* unit : units) {
-			if (unit->IsForceExecute()) {
+			if (unit->IsForceExecute(frame)) {
 				Execute(unit, true);
 			}
 		}

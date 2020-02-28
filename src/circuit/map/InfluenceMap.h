@@ -37,7 +37,7 @@ public:
 
 	float GetEnemyInflAt(const springai::AIFloat3& position) const;
 	float GetAllyInflAt(const springai::AIFloat3& position) const;
-	float GetAllyStaticInflAt(const springai::AIFloat3& position) const;
+	float GetAllyDefendInflAt(const springai::AIFloat3& position) const;
 	float GetInfluenceAt(const springai::AIFloat3& position) const;
 
 	int Pos2Index(const springai::AIFloat3& pos) const;
@@ -46,7 +46,7 @@ private:
 	struct SInfluenceData {
 		FloatVec enemyInfl;
 		FloatVec allyInfl;
-		FloatVec allyStaticInfl;
+		FloatVec allyDefendInfl;
 		FloatVec influence;
 		FloatVec tension;
 		FloatVec vulnerability;
@@ -55,8 +55,10 @@ private:
 
 	CMapManager* manager;
 
-	void AddUnit(CAllyUnit* u);
-	void AddUnit(const SEnemyData& e);
+	void AddMobileArmed(CAllyUnit* u);
+	void AddStaticArmed(CAllyUnit* u);
+	void AddUnarmed(CAllyUnit* u);
+	void AddEnemy(const SEnemyData& e);
 	void AddFeature(springai::Feature* f);
 	inline void PosToXZ(const springai::AIFloat3& pos, int& x, int& z) const;
 
@@ -79,7 +81,7 @@ private:
 	std::atomic<SInfluenceData*> pInflData;
 	float* drawEnemyInfl;
 	float* drawAllyInfl;
-	float* drawAllyStaticInfl;
+	float* drawAllyDefendInfl;
 	float* drawInfluence;
 	float* drawTension;
 	float* drawVulnerability;
@@ -88,7 +90,7 @@ private:
 
 	float* enemyInfl;
 	float* allyInfl;
-	float* allyStaticInfl;
+	float* allyDefendInfl;
 	float* influence;
 	float* tension;
 	float* vulnerability;

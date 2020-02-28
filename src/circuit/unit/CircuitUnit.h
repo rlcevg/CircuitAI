@@ -78,8 +78,8 @@ public:
 
 	bool IsMoveFailed(int frame);
 
-	void ForceExecute() { isForceExecute = true; }
-	bool IsForceExecute();
+	void ForceExecute(int frame) { execFrame = frame; }
+	bool IsForceExecute(int frame);
 
 	void Dead() { isDead = true; }
 	bool IsDead() const { return isDead; }
@@ -106,6 +106,7 @@ public:
 	void Attack(CEnemyInfo* enemy, int timeout);
 	void Attack(const springai::AIFloat3& position, int timeout);
 	void Attack(const springai::AIFloat3& position, CEnemyInfo* enemy, int timeout);
+	void Attack(const springai::AIFloat3& position, CEnemyInfo* enemy, int tile, int timeout);
 	void Guard(CCircuitUnit* target, int timeout);
 	void Gather(const springai::AIFloat3& groupPos, int timeout);
 
@@ -118,6 +119,7 @@ public:
 
 	void ClearTarget() { target = nullptr; }
 	CEnemyInfo* GetTarget() const { return target; }
+	int GetTargetTile() const { return targetTile; }
 
 private:
 	// NOTE: taskFrame assigned on task change and OnUnitIdle to workaround idle spam.
@@ -132,7 +134,7 @@ private:
 //	int damagedFrame;
 	int moveFails;
 	int failFrame;
-	bool isForceExecute;  // TODO: Replace by CExecuteAction?
+	bool execFrame;  // TODO: Replace by CExecuteAction?
 	bool isDead;
 
 	springai::Weapon* dgun;
@@ -148,6 +150,7 @@ private:
 	bool isMorphing;
 
 	CEnemyInfo* target;
+	int targetTile;
 
 #ifdef DEBUG_VIS
 public:

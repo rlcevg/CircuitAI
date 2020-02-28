@@ -25,15 +25,15 @@ CKMeansCluster::~CKMeansCluster()
  * 2d only, ignores y component.
  * @see KAIK/AttackHandler::KMeansIteration for general reference
  */
-void CKMeansCluster::Iteration(const std::vector<AIFloat3>& unitPositions, int newK)
+void CKMeansCluster::Iteration(const std::vector<AIFloat3>& positions, int newK)
 {
 	assert(newK > 0/* && means.size() > 0*/);
-	int numUnits = unitPositions.size();
+	int numUnits = positions.size();
 	// change the number of means according to newK
 	int oldK = means.size();
 	means.resize(newK);
 	// add a new means, just use one of the positions
-	AIFloat3 newMeansPosition = unitPositions[0];
+	AIFloat3 newMeansPosition = positions[0];
 //	newMeansPosition.y = ai->cb->GetElevation(newMeansPosition.x, newMeansPosition.z) + K_MEANS_ELEVATION;
 
 	for (int i = oldK; i < newK; i++) {
@@ -45,7 +45,7 @@ void CKMeansCluster::Iteration(const std::vector<AIFloat3>& unitPositions, int n
 	std::vector<int> numUnitsAssignedToMean(newK, 0);
 
 	for (int i = 0; i < numUnits; i++) {
-		AIFloat3 unitPos = unitPositions[i];
+		AIFloat3 unitPos = positions[i];
 		float closestDistance = std::numeric_limits<float>::max();
 		int closestIndex = -1;
 
@@ -76,7 +76,7 @@ void CKMeansCluster::Iteration(const std::vector<AIFloat3>& unitPositions, int n
 		int meanIndex = unitsClosestMeanID[i];
 		 // don't divide by 0
 		float num = std::max(1, numUnitsAssignedToMean[meanIndex]);
-		newMeans[meanIndex] += unitPositions[i] / num;
+		newMeans[meanIndex] += positions[i] / num;
 	}
 
 	// do a check and see if there are any empty means and set the height

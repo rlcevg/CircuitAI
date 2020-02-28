@@ -123,10 +123,12 @@ void CDefendTask::Update()
 	/*
 	 * No regroup
 	 */
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
 	bool isExecute = (updCount % 16 == 2);
 	if (!isExecute) {
 		for (CCircuitUnit* unit : units) {
-			isExecute |= unit->IsForceExecute();
+			isExecute |= unit->IsForceExecute(frame);
 		}
 		if (!isExecute) {
 			return;
@@ -143,10 +145,8 @@ void CDefendTask::Update()
 	 */
 	FindTarget();
 
-	CCircuitAI* circuit = manager->GetCircuit();
-	const int frame = circuit->GetLastFrame();
 	state = State::ROAM;
-	if (target != nullptr) {
+	if ((target != nullptr) || !pPath->path.empty()) {
 		const float sqRange = SQUARE(highestRange);
 		for (CCircuitUnit* unit : units) {
 			if (position.SqDistance2D(unit->GetPos(frame)) < sqRange) {
@@ -238,23 +238,23 @@ void CDefendTask::FindTarget()
 			continue;
 		}
 		const AIFloat3& ePos = enemy->GetPos();
-		if ((maxPower <= threatMap->GetThreatAt(ePos)) || (inflMap->GetAllyStaticInflAt(ePos) < 0.01f/*INFL_BASE*/) ||
-			!terrainManager->CanMoveToPos(area, ePos))
+		if ((maxPower <= threatMap->GetThreatAt(ePos)) || (inflMap->GetAllyDefendInflAt(ePos) < 0.01f/*INFL_BASE*/)
+			|| !terrainManager->CanMoveToPos(area, ePos))
 		{
 			continue;
 		}
 
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
-			if (((edef->GetCategory() & canTargetCat) == 0) || ((edef->GetCategory() & noChaseCat) != 0) ||
-				(edef->IsAbleToFly() && notAA))
+			if (((edef->GetCategory() & canTargetCat) == 0) || ((edef->GetCategory() & noChaseCat) != 0)
+				|| (edef->IsAbleToFly() && notAA))
 			{
 				continue;
 			}
 			float elevation = map->GetElevationAt(ePos.x, ePos.z);
-			if ((notAW && !edef->IsYTargetable(elevation, ePos.y)) ||
-				(ePos.y - elevation > weaponRange) ||
-				enemy->IsBeingBuilt())
+			if ((notAW && !edef->IsYTargetable(elevation, ePos.y))
+				|| (ePos.y - elevation > weaponRange)
+				/*|| enemy->IsBeingBuilt()*/)
 			{
 				continue;
 			}
@@ -282,11 +282,11 @@ void CDefendTask::FindTarget()
 	}
 	AIFloat3 startPos = pos;
 
-	const float range = std::max(highestRange - threatMap->GetSquareSize() * 2.f, threatMap->GetSquareSize() * 2.f);
+	const float pathRange = std::max(highestRange - threatMap->GetSquareSize() * 2.f, threatMap->GetSquareSize() * 2.f);
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
 	pathfinder->PreferPath(pPath->path);
-	pathfinder->FindBestPath(*pPath, startPos, range, enemyPositions);
+	pathfinder->FindBestPath(*pPath, startPos, pathRange, enemyPositions);
 	pathfinder->UnpreferPath();
 	enemyPositions.clear();
 }

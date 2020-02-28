@@ -53,8 +53,6 @@ protected:
 	float attackPower;
 	float powerMod;
 	CEnemyInfo* target;
-	int prevTile;
-	int targetTile;
 
 	std::set<CCircuitUnit*> cowards;
 	std::set<CCircuitUnit*> shields;

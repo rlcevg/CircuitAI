@@ -142,7 +142,7 @@ void CRaidTask::Update()
 	bool isExecute = (updCount % 2 == 0) && (frame >= lastTouched + FRAMES_PER_SEC);
 	if (!isExecute) {
 		for (CCircuitUnit* unit : units) {
-			isExecute |= unit->IsForceExecute();
+			isExecute |= unit->IsForceExecute(frame);
 		}
 		if (!isExecute) {
 			if (wasRegroup && !pPath->posPath.empty()) {
@@ -197,7 +197,7 @@ void CRaidTask::Update()
 	const AIFloat3& pos = leader->GetPos(frame);
 	const AIFloat3& threatPos = leader->GetTravelAct()->IsActive() ? position : pos;
 	if (attackPower * powerMod <= threatMap->GetThreatAt(leader, threatPos)) {
-		position = circuit->GetMilitaryManager()->GetScoutPosition(leader);
+		position = circuit->GetMilitaryManager()->GetRaidPosition(leader);
 	}
 
 	if (!utils::is_valid(position)) {
@@ -361,10 +361,11 @@ void CRaidTask::FindTarget()
 	}
 
 	AIFloat3 startPos = pos;
+	const float pathRange = std::max(std::min(weaponRange, cdef->GetLosRadius()), (float)threatMap->GetSquareSize());
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
 	pathfinder->PreferPath(pPath->path);
-	pathfinder->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions, attackPower * 0.01f);
+	pathfinder->FindBestPath(*pPath, startPos, pathRange, enemyPositions, attackPower * 0.5f);
 	pathfinder->UnpreferPath();
 	enemyPositions.clear();
 }

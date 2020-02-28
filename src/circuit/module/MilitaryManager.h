@@ -39,7 +39,7 @@ public:
 
 	IFighterTask* EnqueueTask(IFighterTask::FightType type);
 	IFighterTask* EnqueueDefend(IFighterTask::FightType promote, float power);
-	IFighterTask* EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote);
+	IFighterTask* EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote, float power);
 	IFighterTask* EnqueueGuard(CCircuitUnit* vip);
 	CRetreatTask* EnqueueRetreat();
 private:
@@ -57,6 +57,7 @@ public:
 	void AbortDefence(const CBDefenceTask* task);
 	bool HasDefence(int cluster);
 	springai::AIFloat3 GetScoutPosition(CCircuitUnit* unit);
+	springai::AIFloat3 GetRaidPosition(CCircuitUnit* unit);
 	void FindFrontPos(PathInfo& pPath, springai::AIFloat3& startPos, STerrainMapArea* area, float range);
 	void FindAHSafePos(PathInfo& pPath, springai::AIFloat3& startPos, STerrainMapArea* area, float range);
 	void FillSafePos(const springai::AIFloat3& pos, STerrainMapArea* area, F3Vec& outPositions);

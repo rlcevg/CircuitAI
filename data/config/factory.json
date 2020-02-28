@@ -172,7 +172,7 @@
 	},
 
 	"factoryveh": {
-		"importance": [1.05, 0.2],
+		"importance": [0.05, 0.2],
 		"require_energy": false,
 
 		"income_tier": [16, 24, 32, 40, 56, 72, 100],

@@ -70,9 +70,9 @@ private:
 
 	void AddEnemyUnit(const SEnemyData& e);
 	void AddEnemyUnitAll(const SEnemyData& e);
-	void AddEnemyAir(const SEnemyData& e);  // Enemy AntiAir
-	void AddEnemyAmphConst(const SEnemyData& e);  // Enemy AntiAmph
-	void AddEnemyAmphGradient(const SEnemyData& e);  // Enemy AntiAmph
+	void AddEnemyAir(const SEnemyData& e, const int slack = 0);  // Enemy AntiAir
+//	void AddEnemyAmphConst(const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
+	void AddEnemyAmphGradient(const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
 	void AddDecloaker(const SEnemyData& e);
 	void AddShield(const SEnemyData& e);
 
@@ -95,7 +95,12 @@ private:
 
 	int rangeDefault;
 	int distCloak;
-	float slackMod;
+	struct {
+		float allMod;
+		float staticMod;
+		float speedMod;
+		int speedModMax;
+	} slackMod;
 
 	SThreatData threatData0, threatData1;  // Double-buffer for threading
 	std::atomic<SThreatData*> pThreatData;

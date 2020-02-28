@@ -28,8 +28,6 @@ IFighterTask::IFighterTask(ITaskManager* mgr, FightType type, float powerMod, in
 		, attackPower(.0f)
 		, powerMod(powerMod)
 		, target(nullptr)
-		, prevTile(-1)
-		, targetTile(-1)
 {
 }
 
@@ -148,27 +146,24 @@ void IFighterTask::SetTarget(CEnemyInfo* enemy)
 	}
 	if (enemy != nullptr) {
 		enemy->BindTask(this);
-		prevTile = -1;
-		targetTile = manager->GetCircuit()->GetInflMap()->Pos2Index(enemy->GetPos());
 	}
 	target = enemy;
 }
 
 void IFighterTask::Attack(const int frame)
 {
+	int targetTile = manager->GetCircuit()->GetInflMap()->Pos2Index(target->GetPos());
 	for (CCircuitUnit* unit : units) {
 		if (unit->Blocker() != nullptr) {
 			continue;  // Do not interrupt current action
 		}
 
-		if ((unit->GetTarget() != target) || (prevTile != targetTile)) {
-			unit->Attack(target->GetPos(), target, frame + FRAMES_PER_SEC * 60);
+		if ((unit->GetTarget() != target) || (unit->GetTargetTile() != targetTile)) {
+			unit->Attack(target->GetPos(), target, targetTile, frame + FRAMES_PER_SEC * 60);
 
 			unit->GetTravelAct()->SetActive(false);
 		}
 	}
-	prevTile = targetTile;
-	targetTile = manager->GetCircuit()->GetInflMap()->Pos2Index(target->GetPos());
 }
 
 #ifdef DEBUG_VIS

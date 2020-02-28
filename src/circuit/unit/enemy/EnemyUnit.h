@@ -36,7 +36,7 @@ struct SEnemyData {
 	bool isDisarmed;
 
 	springai::AIFloat3 pos;
-	springai::AIFloat3 vel;
+	springai::AIFloat3 vel;  // elmos per frame
 	float threat;
 	RangeArray range;
 };
@@ -85,10 +85,10 @@ public:
 	void SetRange(CCircuitDef::ThreatType t, int r) {
 		data.range[static_cast<CCircuitDef::ThreatT>(t)] = r;
 	}
-	int GetRange(CCircuitDef::ThreatType t = CCircuitDef::ThreatType::MAX) const {
+	int GetRange(CCircuitDef::ThreatType t) const {
 		return GetRange(data.range, t);
 	}
-	static int GetRange(const SEnemyData::RangeArray& range, CCircuitDef::ThreatType t = CCircuitDef::ThreatType::MAX) {
+	static int GetRange(const SEnemyData::RangeArray& range, CCircuitDef::ThreatType t) {
 		return range[static_cast<CCircuitDef::ThreatT>(t)];
 	}
 

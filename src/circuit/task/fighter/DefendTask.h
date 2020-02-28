@@ -27,7 +27,7 @@ public:
 
 	void SetPosition(const springai::AIFloat3& pos) { position = pos; }
 	void SetMaxPower(float power) { maxPower = power * powerMod; }
-	void SetWantedTarget(CEnemyInfo* enemy) { SetTarget(enemy); }
+//	void SetWantedTarget(CEnemyInfo* enemy) { SetTarget(enemy); }
 
 	FightType GetPromote() const { return promote; }
 

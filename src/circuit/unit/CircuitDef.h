@@ -24,9 +24,8 @@ namespace circuit {
 class CCircuitDef {
 public:
 	using Id = int;
-	enum class RangeType: char {MAX = 0, AIR = 1, LAND = 2, WATER = 3, _SIZE_};
-	enum class ThreatType: char {MAX = 0, AIR = 1,     LAND = 2,     WATER = 3, CLOAK = 4, SHIELD = 5,
-									  VEL_AIR = 6, VEL_LAND = 7, VEL_WATER = 8, _SIZE_};
+	enum class RangeType: char {AIR = 0, LAND = 1, WATER = 2, _SIZE_};
+	enum class ThreatType: char {AIR = 0, LAND = 1, WATER = 2, CLOAK = 3, SHIELD = 4, _SIZE_};
 	using RangeT = std::underlying_type<RangeType>::type;
 	using ThreatT = std::underlying_type<ThreatType>::type;
 
@@ -166,8 +165,9 @@ public:
 	float GetPower() const { return power; }
 	float GetThreat() const { return threat; }
 	float GetMinRange() const { return minRange; }
-	float GetMaxRange(RangeType type = RangeType::MAX) const { return maxRange[static_cast<RangeT>(type)]; }
-	int GetThreatRange(ThreatType type = ThreatType::MAX) const { return threatRange[static_cast<ThreatT>(type)]; }
+	float GetMaxRange(RangeType type) const { return maxRange[static_cast<RangeT>(type)]; }
+	float GetMaxRange() const { return maxRange[static_cast<RangeT>(maxRangeType)]; }
+	int GetThreatRange(ThreatType type) const { return threatRange[static_cast<ThreatT>(type)]; }
 	float GetShieldRadius() const { return shieldRadius; }
 	float GetMaxShield() const { return maxShield; }
 	int GetFireState() const { return fireState; }
@@ -251,6 +251,7 @@ private:
 	float power;  // ally max threat
 	float threat;  // enemy max threat
 	float minRange;
+	RangeType maxRangeType;
 	std::array<float, static_cast<RangeT>(RangeType::_SIZE_)> maxRange;
 	std::array<int, static_cast<ThreatT>(ThreatType::_SIZE_)> threatRange;
 	float shieldRadius;

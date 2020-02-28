@@ -147,7 +147,7 @@ void CRetreatTask::Update()
 
 		if (isRepaired && !unit->IsDisarmed(frame)) {
 			RemoveAssignee(unit);
-		} else if (unit->IsForceExecute() || isExecute) {
+		} else if (unit->IsForceExecute(frame) || isExecute) {
 			Start(unit);
 		}
 	}

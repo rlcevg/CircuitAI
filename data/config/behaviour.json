@@ -2,18 +2,22 @@
 {
 "quota": {
 	"scout": 1,  // max scout units out of raiders
-	"raid": [4.0, 20.0],  // [<min>, <avg>] power of raider squad
-	"attack": 9.0,  // min power of attack group
+	"raid": [16.0, 20.0],  // [<min>, <avg>] power of raider squad
+	"attack": 20.0,  // min power of attack group
 	"def_rad": 50,  // defence radius
 	"thr_mod": {
-		"attack": [0.55, 0.575],  // [<min>, <max>] enemy threat modifier for target selection of attack task
+		"attack": [0.9, 0.95],  // [<min>, <max>] enemy threat modifier for target selection of attack task
 		"defence": [1.10, 1.15],  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
 		"mobile": 1.25,  // initial modifier for power of attack group based on mobile enemy threat
-		"static": 6,  // initial modifier for power of attack group based on static enemy threat
+		"static": 2.0,  // initial modifier for power of attack group based on static enemy threat
 		"comm": 0.6
 	},
 	"aa_threat": 80.0,  // anti-air threat threshold, air factories will stop production when AA threat exceeds
-	"slack_mod": 1.5  // slack multiplier for threat map
+	"slack_mod": {
+		"all": 1.0,  // threat map 64-elmos slack multiplier for all units
+		"static": 1.0,  // additional 64-elmo-cells for static units
+		"speed": [0.75, 4]  // [<64elmo_cells_speed_mod>, <max_64elmo_cells>]
+	}
 },
 
 // If unit's health drops below specified percent it will retreat
@@ -410,7 +414,7 @@
 		"role": ["scout"],
 		"attribute": ["scout"],
 		"thr_mod": 0.6,
-		"pwr_mod": 2.5,
+		"pwr_mod": 0.5,
 		"retreat": 0.01
 	},
 	"vehraid": {

@@ -85,6 +85,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, power(.0f)
 		, threat(.0f)
 		, minRange(.0f)
+		, maxRangeType(RangeType::AIR)
 		, maxRange({.0f})
 		, threatRange({0})
 		, shieldRadius(.0f)
@@ -312,7 +313,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		float range = wd->GetRange();
 
 		isAlwaysHit |= ((wt == "Cannon") || (wt == "DGun") || (wt == "EmgCannon") || (wt == "Flame") ||
-				(wt == "LaserCannon") || (wt == "AircraftBomb")) && (projectileSpeed * FRAMES_PER_SEC >= .75f * range);  // Cannons with fast projectiles
+				(wt == "LaserCannon") || (wt == "AircraftBomb")) && (projectileSpeed * FRAMES_PER_SEC >= .8f * range);  // Cannons with fast projectiles
 		isAlwaysHit |= (wt == "BeamLaser") || (wt == "LightningCannon") || (wt == "Rifle") ||  // Instant-hit
 				(((wt == "MissileLauncher") || (wt == "StarburstLauncher") || ((wt == "TorpedoLauncher") && wd->IsSubMissile())) && wd->IsTracks());  // Missiles
 		const bool isAirWeapon = isAlwaysHit && (range > 150.f);
@@ -324,21 +325,26 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		canTargetWater |= isWaterWeapon;
 
 		minRange = std::min(minRange, range);
-		float& maxR = maxRange[static_cast<RangeT>(RangeType::MAX)];
 		if ((weaponCat & circuit->GetAirCategory()) && isAirWeapon) {
 			float& mr = maxRange[static_cast<RangeT>(RangeType::AIR)];
 			mr = std::max(mr, range);
-			maxR = std::max(maxR, mr);
+			if (mr > maxRange[static_cast<RangeT>(maxRangeType)]) {
+				maxRangeType = RangeType::AIR;
+			}
 		}
 		if ((weaponCat & circuit->GetLandCategory()) && isLandWeapon) {
 			float& mr = maxRange[static_cast<RangeT>(RangeType::LAND)];
-			mr = std::max(mr, (isAbleToFly && (wt == "Cannon")) ? range * 1.25f : range);
-			maxR = std::max(maxR, mr);
+			mr = std::max(mr, (isAbleToFly && (wt == "Cannon")) ? range * 1.25f : range);  // 1.25 - gunship height hax
+			if (mr > maxRange[static_cast<RangeT>(maxRangeType)]) {
+				maxRangeType = RangeType::LAND;
+			}
 		}
 		if ((weaponCat & circuit->GetWaterCategory()) && isWaterWeapon) {
 			float& mr = maxRange[static_cast<RangeT>(RangeType::WATER)];
 			mr = std::max(mr, range);
-			maxR = std::max(maxR, mr);
+			if (mr > maxRange[static_cast<RangeT>(maxRangeType)]) {
+				maxRangeType = RangeType::WATER;
+			}
 		}
 
 		if (wd->IsManualFire() && (reloadTime < bestDGunReload)) {

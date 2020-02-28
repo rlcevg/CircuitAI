@@ -25,6 +25,7 @@ using namespace springai;
 CEnemyManager::CEnemyManager(CCircuitAI* circuit)
 		: circuit(circuit)
 		, enemyIterator(0)
+		, maxThreatGroupIdx(0)
 		, enemyMobileCost(0.f)
 		, mobileThreat(0.f)
 		, staticThreat(0.f)
@@ -339,6 +340,7 @@ void CEnemyManager::KMeansIteration()
 
 	// do a check and see if there are any empty means and set the height
 	enemyPos = ZeroVector;
+	maxThreatGroupIdx = 0;
 	for (int i = 0; i < newK; i++) {
 		// if a newmean is unchanged, set it to the new means pos instead of (0, 0, 0)
 		if (newMeans[i].pos == ZeroVector) {
@@ -348,6 +350,9 @@ void CEnemyManager::KMeansIteration()
 //			newMeans[i].pos.y = circuit->GetMap()->GetElevationAt(newMeans[i].pos.x, newMeans[i].pos.z) + K_MEANS_ELEVATION;
 		}
 		enemyPos += newMeans[i].pos;
+		if (newMeans[maxThreatGroupIdx].threat < newMeans[i].threat) {
+			maxThreatGroupIdx = i;
+		}
 	}
 	enemyPos /= newK;
 
