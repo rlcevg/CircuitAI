@@ -14,7 +14,8 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
-#include "OOAICallback.h"
+#include "spring/SpringCallback.h"
+
 #include "AISCommands.h"
 #include "Feature.h"
 
@@ -74,7 +75,7 @@ void CSRepairTask::Update()
 				CBuilderManager* builderManager = circuit->GetBuilderManager();
 				circuit->UpdateFriendlyUnits();
 				float radius = (*units.begin())->GetCircuitDef()->GetBuildDistance();
-				auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f));
+				auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 				for (Unit* u : us) {
 					CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
 					if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {
@@ -88,9 +89,7 @@ void CSRepairTask::Update()
 				utils::free_clear(us);
 				if (task == nullptr) {
 					// Reclaim task
-					auto features = std::move(circuit->GetCallback()->GetFeaturesIn(position, radius));
-					if (!features.empty()) {
-						utils::free_clear(features);
+					if (circuit->GetCallback()->IsFeaturesIn(position, radius)) {
 						task = factoryManager->EnqueueReclaim(IBuilderTask::Priority::NORMAL, position, radius);
 					}
 				}
@@ -102,7 +101,7 @@ void CSRepairTask::Update()
 			float maxCost = MAX_BUILD_SEC * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor();
 			circuit->UpdateFriendlyUnits();
 			float radius = (*units.begin())->GetCircuitDef()->GetBuildDistance();
-			auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f));
+			auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 			for (Unit* u : us) {
 				CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
 				if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {

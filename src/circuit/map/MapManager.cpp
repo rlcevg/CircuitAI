@@ -10,9 +10,9 @@
 #include "map/InfluenceMap.h"
 #include "CircuitAI.h"
 
+#include "spring/SpringCallback.h"
 #include "spring/SpringMap.h"
 
-#include "OOAICallback.h"
 #include "Mod.h"
 
 namespace circuit {

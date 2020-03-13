@@ -113,7 +113,7 @@ void CRecruitTask::Cancel()
 	CCircuitAI* circuit = manager->GetCircuit();
 	for (CCircuitUnit* unit : units) {
 		// Clear build-queue
-		auto commands = std::move(unit->GetUnit()->GetCurrentCommands());
+		auto commands = unit->GetUnit()->GetCurrentCommands();
 		std::vector<float> params;
 		params.reserve(commands.size());
 		for (springai::Command* cmd : commands) {

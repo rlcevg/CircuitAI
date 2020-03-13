@@ -22,8 +22,9 @@
 #include "util/utils.h"
 #include "json/json.h"
 
+#include "spring/SpringCallback.h"
+
 #include "AIFloat3.h"
-#include "OOAICallback.h"
 #include "AISCommands.h"
 #include "Command.h"
 #include "Feature.h"
@@ -1007,7 +1008,7 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 	std::set<CCircuitUnit*> nanos;
 	float radius = assistDef->GetBuildDistance();
 	const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
-	auto units = std::move(this->circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
+	auto units = this->circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
 	int nanoId = assistDef->GetId();
 	int teamId = this->circuit->GetTeamId();
 	for (Unit* nano : units) {
@@ -1185,7 +1186,7 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 	float curCost = std::numeric_limits<float>::max();
 	circuit->UpdateFriendlyUnits();
 	// NOTE: OOAICallback::GetFriendlyUnitsIn depends on unit's radius
-	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius * 0.9f));
+	auto units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius * 0.9f);
 	for (Unit* u : units) {
 		CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
 		if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {
@@ -1227,9 +1228,7 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 	}
 	if (isMetalEmpty) {
 		// Reclaim task
-		auto features = std::move(circuit->GetCallback()->GetFeaturesIn(pos, radius));
-		if (!features.empty()) {
-			utils::free_clear(features);
+		if (circuit->GetCallback()->IsFeaturesIn(pos, radius)) {
 			return EnqueueReclaim(IBuilderTask::Priority::NORMAL, pos, radius);
 		}
 	}
@@ -1244,7 +1243,7 @@ void CFactoryManager::Watchdog()
 		if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
 			return;
 		}
-		auto commands = std::move(unit->GetUnit()->GetCurrentCommands());
+		auto commands = unit->GetUnit()->GetCurrentCommands();
 		if (commands.empty()) {
 			UnitIdle(unit);
 		}

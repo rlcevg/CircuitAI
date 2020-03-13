@@ -47,7 +47,7 @@ void IWaitTask::Start(CCircuitUnit* unit)
 	if (!isStop) {
 		return;
 	}
-	auto commands = std::move(unit->GetUnit()->GetCurrentCommands());
+	auto commands = unit->GetUnit()->GetCurrentCommands();
 	if (commands.empty()) {
 		return;
 	}

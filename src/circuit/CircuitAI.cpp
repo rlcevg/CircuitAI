@@ -27,12 +27,12 @@
 #include "resource/EnergyGrid.h"
 #endif  // DEBUG_VIS
 
+#include "spring/SpringCallback.h"
 #include "spring/SpringEngine.h"
 #include "spring/SpringMap.h"
 
 #include "AISEvents.h"
 #include "AISCommands.h"
-#include "OOAICallback.h"			// C++ wrapper
 #include "Log.h"
 #include "Game.h"
 #include "Lua.h"
@@ -70,7 +70,7 @@ using namespace springai;
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;
 
-CCircuitAI::CCircuitAI(OOAICallback* callback)
+CCircuitAI::CCircuitAI(OOAICallback* clb)
 		: eventHandler(&CCircuitAI::HandleGameEvent)
 		, economy(nullptr)
 		, metalRes(nullptr)
@@ -85,17 +85,17 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		// NOTE: assert(lastFrame != -1): CCircuitUnit initialized with -1
 		//       and lastFrame check will misbehave until first update event.
 		, lastFrame(0)
-		, skirmishAIId(callback != NULL ? callback->GetSkirmishAIId() : -1)
-		, callback(callback)
+		, skirmishAIId(clb != nullptr ? clb->GetSkirmishAIId() : -1)
+		, callback(std::unique_ptr<COOAICallback>(new COOAICallback(clb)))
 		, engine(nullptr)
-		, cheats(std::unique_ptr<Cheats>(callback->GetCheats()))
-		, log(std::unique_ptr<Log>(callback->GetLog()))
-		, game(std::unique_ptr<Game>(callback->GetGame()))
+		, cheats(std::unique_ptr<Cheats>(clb->GetCheats()))
+		, log(std::unique_ptr<Log>(clb->GetLog()))
+		, game(std::unique_ptr<Game>(clb->GetGame()))
 		, map(nullptr)
-		, lua(std::unique_ptr<Lua>(callback->GetLua()))
-		, pathing(std::unique_ptr<Pathing>(callback->GetPathing()))
+		, lua(std::unique_ptr<Lua>(clb->GetLua()))
+		, pathing(std::unique_ptr<Pathing>(clb->GetPathing()))
 		, drawer(nullptr)
-		, skirmishAI(std::unique_ptr<SkirmishAI>(callback->GetSkirmishAI()))
+		, skirmishAI(std::unique_ptr<SkirmishAI>(clb->GetSkirmishAI()))
 		, airCategory(0)
 		, landCategory(0)
 		, waterCategory(0)
@@ -502,7 +502,7 @@ int CCircuitAI::HandleResignEvent(int topic, const void* data)
 
 void CCircuitAI::CheatPreload()
 {
-	auto enemies = std::move(callback->GetEnemyUnits());
+	auto enemies = callback->GetEnemyUnits();
 	for (Unit* e : enemies) {
 		if (e == nullptr) {
 			continue;
@@ -520,6 +520,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 {
 	LOG(version);
 	this->skirmishAIId = skirmishAIId;
+	callback->Init(sAICallback);
 	engine = std::unique_ptr<CEngine>(new CEngine(sAICallback, skirmishAIId));
 	map = std::unique_ptr<CMap>(new CMap(sAICallback, callback->GetMap()));
 	drawer = std::unique_ptr<Drawer>(map->GetDrawer());
@@ -751,7 +752,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 	}
 
 	auto selfD = [this]() {
-		auto units = std::move(callback->GetTeamUnits());
+		auto units = callback->GetTeamUnits();
 		for (Unit* u : units) {
 			if (u != nullptr) {
 				u->SelfDestruct();
@@ -784,7 +785,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 		drawer->AddPoint(metalManager->GetClusters()[index].position, "knn");
 	}
 	else if (strncmp(message, cmdLog, 4) == 0) {
-		auto selection = std::move(callback->GetSelectedUnits());
+		auto selection = callback->GetSelectedUnits();
 		for (Unit* u : selection) {
 			CCircuitUnit* unit = GetTeamUnit(u->GetUnitId());
 			if (unit != nullptr) {
@@ -829,7 +830,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 	}
 
 	else if (strncmp(message, cmdGrid, 5) == 0) {
-		auto selection = std::move(callback->GetSelectedUnits());
+		auto selection = callback->GetSelectedUnits();
 		if (!selection.empty()) {
 			if (selection[0]->GetAllyTeam() == allyTeamId) {
 				allyTeam->GetEnergyGrid()->ToggleVis();
@@ -1011,7 +1012,7 @@ int CCircuitAI::EnemyEnterLOS(CEnemyInfo* enemy)
 		return 0;  // signaling: OK
 	}
 	// Force unit's reaction
-	auto friendlies = std::move(callback->GetFriendlyUnitsIn(enemy->GetPos(), 500.0f));
+	auto friendlies = callback->GetFriendlyUnitsIn(enemy->GetPos(), 500.0f);
 	if (friendlies.empty()) {
 		return 0;  // signaling: OK
 	}
@@ -1089,7 +1090,7 @@ int CCircuitAI::PlayerCommand(std::vector<CCircuitUnit*>& units)
 
 int CCircuitAI::Load(std::istream& is)
 {
-	auto units = std::move(callback->GetTeamUnits());
+	auto units = callback->GetTeamUnits();
 	for (Unit* u : units) {
 		if (u == nullptr) {
 			continue;
@@ -1392,9 +1393,9 @@ void CCircuitAI::InitUnitDefs(float& outDcr)
 	}
 	Resource* res = callback->GetResourceByName("Metal");
 	outDcr = 0.f;
-	auto unitDefs = std::move(callback->GetUnitDefs());
+	auto unitDefs = callback->GetUnitDefs();
 	for (UnitDef* ud : unitDefs) {
-		auto options = std::move(ud->GetBuildOptions());
+		auto options = ud->GetBuildOptions();
 		std::unordered_set<CCircuitDef::Id> opts;
 		for (UnitDef* buildDef : options) {
 			opts.insert(buildDef->GetUnitDefId());
@@ -1456,7 +1457,7 @@ CWeaponDef* CCircuitAI::GetWeaponDef(CWeaponDef::Id weaponDefId) const
 
 void CCircuitAI::InitWeaponDefs()
 {
-	auto weapDefs = std::move(callback->GetWeaponDefs());
+	auto weapDefs = callback->GetWeaponDefs();
 	weaponDefs.reserve(weapDefs.size());
 	for (WeaponDef* wd : weapDefs) {
 		weaponDefs.push_back(new CWeaponDef(wd));

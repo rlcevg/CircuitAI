@@ -11,7 +11,8 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
-#include "OOAICallback.h"
+#include "spring/SpringCallback.h"
+
 #include "Drawer.h"
 
 namespace circuit {
@@ -43,7 +44,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 		return;
 	}
 	const AIFloat3& pos = unit->GetPos(frame);
-	auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(pos, range));
+	auto enemies = circuit->GetCallback()->GetEnemyUnitsIn(pos, range);
 	if (enemies.empty()) {
 		return;
 	}

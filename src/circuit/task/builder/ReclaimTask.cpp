@@ -14,7 +14,8 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
-#include "OOAICallback.h"
+#include "spring/SpringCallback.h"
+
 #include "AISCommands.h"
 #include "Feature.h"
 #include "FeatureDef.h"
@@ -83,7 +84,7 @@ bool CBReclaimTask::Reevaluate()
 		CCircuitUnit* unit = *units.begin();
 		const int frame = circuit->GetLastFrame();
 		const AIFloat3& pos = unit->GetPos(frame);
-		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(pos, 500.0f));
+		auto enemies = circuit->GetCallback()->GetEnemyUnitsIn(pos, 500.0f);
 		if (!enemies.empty()) {
 			for (Unit* enemy : enemies) {
 				if ((enemy != nullptr) && enemy->IsBeingBuilt()) {
@@ -97,7 +98,7 @@ bool CBReclaimTask::Reevaluate()
 			utils::free_clear(enemies);
 		}
 
-		auto features = std::move(circuit->GetCallback()->GetFeaturesIn(pos, 500.0f));
+		auto features = circuit->GetCallback()->GetFeaturesIn(pos, 500.0f);
 		if (!features.empty()) {
 			CTerrainManager* terrainManager = circuit->GetTerrainManager();
 			circuit->GetThreatMap()->SetThreatType(unit);

@@ -14,7 +14,8 @@
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
-#include "OOAICallback.h"
+#include "spring/SpringCallback.h"
+
 //#include "Cheats.h"
 #include "Feature.h"
 #include "FeatureDef.h"
@@ -142,7 +143,7 @@ void CInfluenceMap::Apply()
 	}
 //	Cheats* cheats = circuit->GetCheats();
 //	cheats->SetEnabled(true);
-	auto features = std::move(circuit->GetCallback()->GetFeatures());
+	auto features = circuit->GetCallback()->GetFeatures();
 	for (Feature* f : features) {
 		if (f == nullptr) {
 			continue;

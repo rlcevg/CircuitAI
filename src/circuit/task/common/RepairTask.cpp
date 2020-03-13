@@ -13,7 +13,8 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
-#include "OOAICallback.h"
+#include "spring/SpringCallback.h"
+
 #include "AISCommands.h"
 
 namespace circuit {
@@ -162,7 +163,7 @@ CAllyUnit* IRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 	maxSpeed = SQUARE(maxSpeed * 1.5f / FRAMES_PER_SEC);
 
 	circuit->UpdateFriendlyUnits();
-	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
+	auto units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
 	for (Unit* u : units) {
 		if ((u != nullptr) && (u->GetHealth() < u->GetMaxHealth()) && (u->GetVel().SqLength2D() <= maxSpeed)) {
 			target = circuit->GetFriendlyUnit(u);

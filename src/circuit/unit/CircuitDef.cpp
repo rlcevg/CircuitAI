@@ -191,7 +191,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 	if (!def->IsAbleToAttack()) {
 		if (isShield) {
-			auto mounts = std::move(def->GetWeaponMounts());
+			auto mounts = def->GetWeaponMounts();
 			for (WeaponMount* mount : mounts) {
 				WeaponDef* wd = mount->GetWeaponDef();
 				if ((shieldMount == nullptr) && wd->IsShield()) {
@@ -230,7 +230,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	bool canTargetAir = false;
 	bool canTargetLand = false;
 	bool canTargetWater = false;
-	auto mounts = std::move(def->GetWeaponMounts());
+	auto mounts = def->GetWeaponMounts();
 	for (WeaponMount* mount : mounts) {
 		WeaponDef* wd = mount->GetWeaponDef();
 		const std::map<std::string, std::string>& customParams = wd->GetCustomParams();

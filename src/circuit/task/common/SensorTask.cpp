@@ -9,7 +9,7 @@
 #include "task/TaskManager.h"
 #include "CircuitAI.h"
 
-#include "OOAICallback.h"
+#include "spring/SpringCallback.h"
 
 namespace circuit {
 
@@ -35,7 +35,7 @@ void ISensorTask::Update()
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	bool isBuilt = false;
-	auto friendlies = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(GetPosition(), 500.f));
+	auto friendlies = circuit->GetCallback()->GetFriendlyUnitsIn(GetPosition(), 500.f);
 	for (Unit* au : friendlies) {
 		if (au == nullptr) {
 			continue;

@@ -14,7 +14,7 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
-#include "OOAICallback.h"
+#include "spring/SpringCallback.h"
 
 namespace circuit {
 
@@ -63,7 +63,7 @@ void CSReclaimTask::Update()
 		CBuilderManager* builderManager = circuit->GetBuilderManager();
 		CAllyUnit* repairTarget = nullptr;
 		circuit->UpdateFriendlyUnits();
-		auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f));
+		auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 		for (Unit* u : us) {
 			CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
 			if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {

@@ -13,7 +13,8 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
-#include "OOAICallback.h"
+#include "spring/SpringCallback.h"
+
 #include "Feature.h"
 
 namespace circuit {
@@ -63,10 +64,8 @@ void CBDefenceTask::Finish()
 	CCircuitAI* circuit = manager->GetCircuit();
 	// Reclaim turret blockers
 	const float radius = 128.0f;  // buildDef->GetMaxRange() * 0.5f;
-	auto features = std::move(circuit->GetCallback()->GetFeaturesIn(buildPos, radius));
-	if (!features.empty()) {
+	if (circuit->GetCallback()->IsFeaturesIn(buildPos, radius)) {
 		circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, buildPos, .0f, FRAMES_PER_SEC * 60, radius, false);
-		utils::free_clear(features);
 	}
 
 	IBuilderTask::Finish();

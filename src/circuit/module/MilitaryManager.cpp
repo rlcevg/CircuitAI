@@ -36,9 +36,9 @@
 #include "util/utils.h"
 #include "json/json.h"
 
+#include "spring/SpringCallback.h"
 #include "spring/SpringMap.h"
 
-#include "OOAICallback.h"
 #include "AISCommands.h"
 #include "Command.h"
 #include "Log.h"
@@ -623,7 +623,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	// Build sensors
 	auto checkSensor = [this, &backPos, builderManager](IBuilderTask::BuildType type, CCircuitDef* cdef, float range) {
 		bool isBuilt = false;
-		auto friendlies = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(backPos, range));
+		auto friendlies = circuit->GetCallback()->GetFriendlyUnitsIn(backPos, range);
 		for (Unit* au : friendlies) {
 			if (au == nullptr) {
 				continue;
@@ -1339,7 +1339,7 @@ void CMilitaryManager::Watchdog()
 		if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
 			continue;
 		}
-		auto commands = std::move(unit->GetUnit()->GetCurrentCommands());
+		auto commands = unit->GetUnit()->GetCurrentCommands();
 		if (commands.empty()) {
 			UnitIdle(unit);
 		}

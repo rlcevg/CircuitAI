@@ -282,7 +282,8 @@ void CDefendTask::FindTarget()
 	}
 	AIFloat3 startPos = pos;
 
-	const float pathRange = std::max(highestRange - threatMap->GetSquareSize() * 2.f, threatMap->GetSquareSize() * 2.f);
+	const float eps = threatMap->GetSquareSize() * 2.f;
+	const float pathRange = std::max(highestRange - eps, eps);
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
 	pathfinder->PreferPath(pPath->path);

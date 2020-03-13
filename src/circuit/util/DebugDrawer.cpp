@@ -11,9 +11,10 @@
 #include "util/utils.h"
 #include "CircuitAI.h"
 
+#include "spring/SpringCallback.h"
+
 #include "SSkirmishAICallback.h"
 #include "AISCommands.h"
-#include "OOAICallback.h"
 #include "Debug.h"
 
 namespace circuit {

@@ -1148,7 +1148,7 @@ void CBuilderManager::Watchdog()
 			continue;
 		}
 		Unit* u = worker->GetUnit();
-		auto commands = std::move(u->GetCurrentCommands());
+		auto commands = u->GetCurrentCommands();
 		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())
 		if (commands.empty() && (u->GetResourceUse(metalRes) == .0f) && (u->GetVel() == ZeroVector)) {
 			worker->GetTask()->OnUnitMoveFailed(worker);

@@ -15,10 +15,10 @@
 #include "util/math/RagMatrix.h"
 #include "util/utils.h"
 
+#include "spring/SpringCallback.h"
 #include "spring/SpringMap.h"
 
 #include "Sim/MoveTypes/MoveDefHandler.h"
-#include "OOAICallback.h"
 #include "Log.h"
 #include "MoveData.h"
 //#include "File.h"
@@ -171,7 +171,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	/*
 	 *  MoveType Detection and TerrainMapMobileType Initialization
 	 */
-	auto defs = std::move(circuit->GetCallback()->GetUnitDefs());
+	auto defs = circuit->GetCallback()->GetUnitDefs();
 	for (auto def : defs) {
 		if (def->IsAbleToFly()) {
 

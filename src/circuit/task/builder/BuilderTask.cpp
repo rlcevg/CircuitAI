@@ -23,9 +23,9 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+#include "spring/SpringCallback.h"
 #include "spring/SpringMap.h"
 
-#include "OOAICallback.h"
 #include "AISCommands.h"
 
 namespace circuit {
@@ -208,7 +208,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	// FIXME: Replace const 999.0f with build time?
 	if (circuit->IsAllyAware() && (cost > 999.0f)) {
 		circuit->UpdateFriendlyUnits();
-		auto friendlies = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, cost));
+		auto friendlies = circuit->GetCallback()->GetFriendlyUnitsIn(position, cost);
 		CAllyUnit* alu = FindSameAlly(unit, friendlies);
 		utils::free_clear(friendlies);
 		if (alu != nullptr) {
@@ -562,7 +562,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 			float radius = pylonRange + ourRange;
 			const int frame = circuit->GetLastFrame();
 			circuit->UpdateFriendlyUnits();
-			auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(buildPos, radius));
+			auto units = circuit->GetCallback()->GetFriendlyUnitsIn(buildPos, radius);
 			for (Unit* u : units) {
 				CAllyUnit* p = circuit->GetFriendlyUnit(u);
 				if (p == nullptr) {

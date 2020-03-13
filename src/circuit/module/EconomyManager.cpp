@@ -19,10 +19,10 @@
 #include "util/utils.h"
 #include "json/json.h"
 
+#include "spring/SpringCallback.h"
 #include "spring/SpringMap.h"
 
 #include "AISCommands.h"
-#include "OOAICallback.h"
 #include "Resource.h"
 #include "Economy.h"
 #include "Feature.h"

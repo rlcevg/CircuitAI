@@ -16,10 +16,10 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+#include "spring/SpringCallback.h"
 #include "spring/SpringMap.h"
 
 #include "AISCommands.h"
-#include "OOAICallback.h"
 
 namespace circuit {
 
@@ -154,7 +154,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 	if (buildPos.SqDistance2D(pos) < SQUARE(testRange)) {
 		int mexDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
 		// TODO: Use internal CCircuitAI::GetEnemyUnits?
-		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(buildPos, SQUARE_SIZE));
+		auto enemies = circuit->GetCallback()->GetEnemyUnitsIn(buildPos, SQUARE_SIZE);
 		bool blocked = false;
 		for (Unit* enemy : enemies) {
 			if (enemy == nullptr) {

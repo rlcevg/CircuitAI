@@ -17,9 +17,9 @@
 #include "CircuitAI.h"
 #include "util/utils.h"
 
+#include "spring/SpringCallback.h"
 #include "spring/SpringMap.h"
 
-#include "OOAICallback.h"
 #include "AISCommands.h"
 
 namespace circuit {
@@ -198,17 +198,14 @@ CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, co
 	const float sqRange = (lastTarget != nullptr) ? pos.SqDistance2D(lastTarget->GetPos()) + 1.f : SQUARE(2000.0f);
 	float maxThreat = .0f;
 
-	OOAICallback* callback = circuit->GetCallback();
+	COOAICallback* callback = circuit->GetCallback();
 	float aoe = std::min(cdef->GetAoe() + SQUARE_SIZE, DEFAULT_SLACK * 2.f);
 	std::function<bool (const AIFloat3& pos)> noAllies = [](const AIFloat3& pos) {
 		return true;
 	};
 	if (aoe > SQUARE_SIZE * 2) {
 		noAllies = [callback, aoe](const AIFloat3& pos) {
-			auto friendlies = std::move(callback->GetFriendlyUnitsIn(pos, aoe));
-			bool result = friendlies.empty();
-			utils::free_clear(friendlies);
-			return result;
+			return !callback->IsFriendlyUnitsIn(pos, aoe);
 		};
 	}
 

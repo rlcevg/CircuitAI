@@ -7,13 +7,16 @@
 
 #include "spring/SpringCallback.h"
 
-#include "Unit.h"
+#include "SSkirmishAICallback.h"	// "direct" C API
+//#include "WrappUnit.h"
 
 namespace circuit {
 
 using namespace springai;
 
-COOAICallback::COOAICallback()
+COOAICallback::COOAICallback(OOAICallback* clb)
+		: sAICallback(nullptr)
+		, callback(clb)
 {
 }
 
@@ -21,8 +24,13 @@ COOAICallback::~COOAICallback()
 {
 }
 
-void COOAICallback::GetFriendlyUnits(std::vector<Unit*>& units) const
+void COOAICallback::Init(const struct SSkirmishAICallback* clb)
 {
+	sAICallback = clb;
+}
+
+//void COOAICallback::GetFriendlyUnits(std::vector<Unit*>& units) const
+//{
 //	int unitIds_sizeMax;
 //	int unitIds_raw_size;
 //	int* unitIds;
@@ -45,6 +53,28 @@ void COOAICallback::GetFriendlyUnits(std::vector<Unit*>& units) const
 //	delete[] unitIds;
 //
 //	return unitIds_list;
+//}
+
+bool COOAICallback::IsFriendlyUnitsIn(const AIFloat3& pos, float radius) const
+{
+	float pos_posF3[3];
+	pos.LoadInto(pos_posF3);
+	int size = sAICallback->getFriendlyUnitsIn(callback->GetSkirmishAIId(), pos_posF3, radius, nullptr, -1);
+	return size > 0;
+}
+
+bool COOAICallback::IsFeatures() const
+{
+	int size = sAICallback->getFeatures(callback->GetSkirmishAIId(), nullptr, -1);
+	return size > 0;
+}
+
+bool COOAICallback::IsFeaturesIn(const AIFloat3& pos, float radius) const
+{
+	float pos_posF3[3];
+	pos.LoadInto(pos_posF3);
+	int size = sAICallback->getFeaturesIn(callback->GetSkirmishAIId(), pos_posF3, radius, nullptr, -1);
+	return size > 0;
 }
 
 } // namespace circuit

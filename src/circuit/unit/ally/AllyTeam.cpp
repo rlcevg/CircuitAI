@@ -20,8 +20,9 @@
 #include "util/Scheduler.h"
 #include "util/utils.h"
 
+#include "spring/SpringCallback.h"
+
 #include "AIFloat3.h"
-#include "OOAICallback.h"
 #include "Team.h"
 
 namespace circuit {
