@@ -209,8 +209,6 @@ CMicroPather::CMicroPather(Graph* _graph, int sizeX, int sizeY)
 		assert(!(mapSizeY * mapSizeX  > (int)ALLOCATE));
 	}
 
-	preferArray.resize(sizeX * sizeY, 0.f);
-
 	// Tournesol: make a fixed offset array
 	// ***
 	// *X*
@@ -238,12 +236,11 @@ CMicroPather::~CMicroPather()
  * New: make sure that moveFun and threatFun doesn't return values below 0.0
  */
 void CMicroPather::SetMapData(const bool* canMoveArray, const float* threatArray,
-		const CostFunc moveFun, const CostFunc threatFun)
+		const CostFunc moveThreatFun)
 {
-	this->canMoveArray = canMoveArray;
-	this->threatArray  = threatArray;
-	this->moveFun      = moveFun;
-	this->threatFun    = threatFun;
+	this->canMoveArray  = canMoveArray;
+	this->threatArray   = threatArray;
+	this->moveThreatFun = moveThreatFun;
 }
 
 void CMicroPather::Reset()
@@ -697,7 +694,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 				#endif
 
 				float newCost = nodeCostFromStart;
-				const float nodeCost = COST_BASE + preferArray[index2] + moveFun(index2) + threatFun(index2);
+				const float nodeCost = COST_BASE + moveThreatFun(index2);
 
 				#ifdef USE_ASSERTIONS
 				assert(nodeCost > 0.f);  // > 1.f for speed
@@ -864,7 +861,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 				#endif
 
 				float newCost = nodeCostFromStart;
-				const float nodeCost = COST_BASE + preferArray[index2] + moveFun(index2) + threatFun(index2);
+				const float nodeCost = COST_BASE + moveThreatFun(index2);
 
 				#ifdef USE_ASSERTIONS
 				assert(nodeCost > 0.f);  // > 1.f for speed
@@ -1023,7 +1020,7 @@ int CMicroPather::FindBestCostToPointOnRadius(void* startNode, void* endNode,
 				#endif
 
 				float newCost = nodeCostFromStart;
-				const float nodeCost = COST_BASE + preferArray[index2] + moveFun(index2) + threatFun(index2);
+				const float nodeCost = COST_BASE + moveThreatFun(index2);
 
 				#ifdef USE_ASSERTIONS
 				assert(nodeCost > 0.f);  // > 1.f for speed
@@ -1137,7 +1134,7 @@ void CMicroPather::MakeCostMap(void* startNode, std::vector<float>& costMap)
 
 			float newCost = nodeCostFromStart;
 			const int index2 = directNode->index2;
-			const float nodeCost = COST_BASE + moveFun(index2) + threatFun(index2);
+			const float nodeCost = COST_BASE + moveThreatFun(index2);
 
 			#ifdef USE_ASSERTIONS
 			assert(nodeCost > 0.f);  // > 1.f for speed

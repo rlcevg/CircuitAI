@@ -254,16 +254,14 @@ namespace NSMicroPather {
 			unsigned int* lockUpCount;
 			const bool* canMoveArray;
 			const float* threatArray;
-			std::vector<float> preferArray;
-			CostFunc moveFun;
-			CostFunc threatFun;
+			CostFunc moveThreatFun;
 			int mapSizeX;
 			int mapSizeY;
 			int offsets[8];
 			int xEndNode, yEndNode;
 			bool isRunning;
 			void SetMapData(const bool* canMoveArray, const float* threatArray,
-					const CostFunc moveFun, const CostFunc threatFun);
+					const CostFunc moveThreatFun);
 			int FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes, VoidVec& targets, float maxThreat,
 					IndexVec* path, float* cost);
 			int FindBestPathToPointOnRadius(void* startNode, void* endNode, int radius, float maxThreat,

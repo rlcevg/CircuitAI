@@ -242,7 +242,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 
 	float* threatArray;
 	CostFunc moveFun;
-	CostFunc threatFun;
+	CostFunc moveThreatFun;
 	// FIXME: DEBUG
 	const float minElev = areaData->minElevation;
 	float elevLen = std::max(areaData->maxElevation - areaData->minElevation, 1e-3f);
@@ -252,24 +252,24 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 			return 2.f - 2.f * (sectors[index].maxElevation - minElev) / elevLen +
 					(sectors[index].isWater ? 5.f : 0.f) + 4.f * sectors[index].maxSlope / maxSlope;
 		};
-		threatFun = [threatArray](int index) {
-			return 2.f * threatArray[index];
+		moveThreatFun = [moveFun, threatArray](int index) {
+			return moveFun(index) + 2.f * threatArray[index];
 		};
 	} else if (unit->GetUnit()->IsCloaked()) {
 		threatArray = threatMap->GetCloakThreatArray();
 		moveFun = [&sectors, maxSlope](int index) {
 			return sectors[index].maxSlope / maxSlope;
 		};
-		threatFun = [threatArray](int index) {
-			return threatArray[index];
+		moveThreatFun = [moveFun, threatArray](int index) {
+			return moveFun(index) + threatArray[index];
 		};
 	} else if (cdef->IsAbleToFly()) {
 		threatArray = threatMap->GetAirThreatArray();
 		moveFun = [](int index) {
 			return 0.f;
 		};
-		threatFun = [threatArray](int index) {
-			return 2.f * threatArray[index];
+		moveThreatFun = [moveFun, threatArray](int index) {
+			return moveFun(index) + 2.f * threatArray[index];
 		};
 	} else if (cdef->IsAmphibious()) {
 		threatArray = threatMap->GetAmphThreatArray();
@@ -278,16 +278,16 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 				return 4.f - 4.f * (sectors[index].maxElevation - minElev) / elevLen +
 						(sectors[index].isWater ? 5.f : 0.f) + 4.f * (1.f - sectors[index].maxSlope);
 			};
-			threatFun = [threatArray](int index) {
-				return 2.f * threatArray[index];
+			moveThreatFun = [moveFun, threatArray](int index) {
+				return moveFun(index) + 2.f * threatArray[index];
 			};
 		} else {
 			moveFun = [&sectors, maxSlope, minElev, elevLen](int index) {
 				return 2.f - 2.f * (sectors[index].maxElevation - minElev) / elevLen +
 						(sectors[index].isWater ? 5.f : 0.f) + 4.f * sectors[index].maxSlope / maxSlope;
 			};
-			threatFun = [threatArray](int index) {
-				return 2.f * threatArray[index];
+			moveThreatFun = [moveFun, threatArray](int index) {
+				return moveFun(index) + 2.f * threatArray[index];
 			};
 		}
 	} else {
@@ -296,31 +296,14 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 			return 2.f - 2.f * (sectors[index].maxElevation - minElev) / elevLen +
 					(sectors[index].isWater ? 0.f : 4.f * sectors[index].maxSlope / maxSlope);
 		};
-		threatFun = [threatArray](int index) {
-			return 2.f * threatArray[index];
+		moveThreatFun = [moveFun, threatArray](int index) {
+			return moveFun(index) + 2.f * threatArray[index];
 		};
 	}
 	// FIXME: DEBUG
 
-	micropather->SetMapData(moveArray, threatArray, moveFun, threatFun);
-}
-
-void CPathFinder::PreferPath(const IndexVec& path)
-{
-	assert(preferPath.empty());
-	preferPath.reserve(path.size());
-	for (int node : path) {
-		preferPath.push_back(node);
-		micropather->preferArray[node] = -COST_BASE / 4;
-	}
-}
-
-void CPathFinder::UnpreferPath()
-{
-	for (int index : preferPath) {
-		micropather->preferArray[index] = 0.f;
-	}
-	preferPath.clear();
+	this->moveFun = moveFun;
+	micropather->SetMapData(moveArray, threatArray, moveThreatFun);
 }
 
 /*
@@ -570,11 +553,10 @@ size_t CPathFinder::RefinePath(IndexVec& path)
 	int x0, y0;
 	PathIndex2MoveXY(path[0], &x0, &y0);
 
-	const CostFunc moveFun = micropather->moveFun;
 	const float moveCost = moveFun(path[0]) + MOVE_EPSILON;
 
 	// All octant line draw
-	auto IsStraightLine = [this, x0, y0, moveCost, moveFun](int index) {
+	auto IsStraightLine = [this, x0, y0, moveCost](int index) {
 		// TODO: Remove node<->(x,y) conversions;
 		//       Use Bresenham's 1-octant line algorithm
 		int x1, y1;
@@ -659,11 +641,12 @@ void CPathFinder::SetMapData(CThreatMap* threatMap)
 	const CostFunc moveFun = [&sectors, maxSlope](int index) {
 		return sectors[index].maxSlope / maxSlope;
 	};
-	const CostFunc threatFun = [threatArray](int index) {
-		return threatArray[index];
+	const CostFunc moveThreatFun = [moveFun, threatArray](int index) {
+		return moveFun(index) + threatArray[index];
 	};
 
-	micropather->SetMapData(moveArray, threatArray, moveFun, threatFun);
+	this->moveFun = moveFun;
+	micropather->SetMapData(moveArray, threatArray, moveThreatFun);
 }
 
 void CPathFinder::UpdateVis(const IndexVec& path)

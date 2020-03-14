@@ -45,8 +45,6 @@ public:
 	springai::AIFloat3 PathIndex2Pos(int index) const;
 
 	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
-	void PreferPath(const IndexVec& path);
-	void UnpreferPath();
 
 	unsigned Checksum() const { return micropather->Checksum(); }
 	float MakePath(PathInfo& iPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius,
@@ -71,6 +69,7 @@ private:
 	SAreaData* areaData;
 
 	NSMicroPather::CMicroPather* micropather;
+	NSMicroPather::CostFunc moveFun;
 	bool* airMoveArray;
 	std::vector<bool*> moveArrays;
 	static std::vector<int> blockArray;
@@ -82,7 +81,6 @@ private:
 	int pathMapXSize;
 	int pathMapYSize;
 
-	std::vector<int> preferPath;  // <index>
 	std::vector<float> costMap;  // +2 with edges
 
 #ifdef DEBUG_VIS

@@ -230,14 +230,12 @@ void CAntiHeavyTask::Update()
 	AIFloat3 startPos = leader->GetPos(frame);
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
-	pathfinder->PreferPath(pPath->path);
 	if (leaderDef->IsRoleMine()) {
 		position = circuit->GetSetupManager()->GetBasePos();
 		pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize() * 4);
 	} else {
 		circuit->GetMilitaryManager()->FindAHSafePos(*pPath, startPos, leader->GetArea(), DEFAULT_SLACK * 4);
 	}
-	pathfinder->UnpreferPath();
 
 	if (!pPath->posPath.empty()) {
 		position = pPath->posPath.back();
@@ -368,9 +366,7 @@ void CAntiHeavyTask::FindTarget()
 	AIFloat3 startPos = pos;
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	pathfinder->PreferPath(pPath->path);
 	pathfinder->FindBestPath(*pPath, startPos, threatMap->GetSquareSize(), enemyPositions);
-	pathfinder->UnpreferPath();
 	enemyPositions.clear();
 }
 

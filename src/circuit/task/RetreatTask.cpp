@@ -118,11 +118,7 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 
 //	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit) * 0.125f;
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	if (unit->GetTravelAct()->GetPath() != nullptr) {
-		pathfinder->PreferPath(unit->GetTravelAct()->GetPath()->path);
-	}
 	pathfinder->MakePath(*pPath, startPos, endPos, range/*, minThreat*/);
-	pathfinder->UnpreferPath();
 
 	if (pPath->posPath.empty()) {
 		pPath->posPath.push_back(endPos);

@@ -211,9 +211,7 @@ void CRaidTask::Update()
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, frame);
-	pathfinder->PreferPath(pPath->path);
 	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
-	pathfinder->UnpreferPath();
 
 	if (pPath->path.size() > 2) {
 //		position = path.back();
@@ -364,9 +362,7 @@ void CRaidTask::FindTarget()
 	const float pathRange = std::max(std::min(weaponRange, cdef->GetLosRadius()), (float)threatMap->GetSquareSize());
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	pathfinder->PreferPath(pPath->path);
 	pathfinder->FindBestPath(*pPath, startPos, pathRange, enemyPositions, attackPower * 0.5f);
-	pathfinder->UnpreferPath();
 	enemyPositions.clear();
 }
 

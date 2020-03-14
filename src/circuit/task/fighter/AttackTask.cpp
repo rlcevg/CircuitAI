@@ -185,9 +185,7 @@ void CAttackTask::Update()
 		AIFloat3 startPos = leader->GetPos(frame);
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
-		pathfinder->PreferPath(pPath->path);
 		circuit->GetMilitaryManager()->FindFrontPos(*pPath, startPos, leader->GetArea(), DEFAULT_SLACK * 4);
-		pathfinder->UnpreferPath();
 
 		if (!pPath->path.empty()) {
 			if (pPath->path.size() > 2) {
@@ -317,9 +315,7 @@ void CAttackTask::FindTarget()
 	const float pathRange = std::max(highestRange - eps, eps);
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	pathfinder->PreferPath(pPath->path);
 	pathfinder->FindBestPath(*pPath, startPos, pathRange, enemyPositions, attackPower * 0.25f);
-	pathfinder->UnpreferPath();
 	enemyPositions.clear();
 }
 
