@@ -9,7 +9,6 @@
 #define SRC_CIRCUIT_MAP_MAPMANAGER_H_
 
 #include "unit/enemy/EnemyManager.h"
-#include "unit/enemy/EnemyUnit.h"
 
 namespace circuit {
 
@@ -28,10 +27,14 @@ public:
 	CThreatMap* GetThreatMap() const { return threatMap; }
 	CInfluenceMap* GetInflMap() const { return inflMap; }
 
-	void EnqueueUpdate();
+	const CEnemyManager::EnemyUnits& GetHostileUnits() const { return hostileUnits; }
+	const CEnemyManager::EnemyUnits& GetPeaceUnits() const { return peaceUnits; }
 
-	const std::vector<SEnemyData>& GetHostileDatas() const { return hostileDatas; }
-	const std::vector<SEnemyData>& GetPeaceDatas() const { return peaceDatas; }
+	void PrepareUpdate();
+	void EnqueueUpdate();
+	bool IsUpdating() const;
+	bool HostileInLOS(CEnemyUnit* enemy);
+	bool PeaceInLOS(CEnemyUnit* enemy);
 
 	bool IsSuddenThreat(CEnemyUnit* enemy) const;
 
@@ -52,9 +55,6 @@ private:
 
 	CEnemyManager::EnemyUnits hostileUnits;
 	CEnemyManager::EnemyUnits peaceUnits;
-
-	std::vector<SEnemyData> hostileDatas;
-	std::vector<SEnemyData> peaceDatas;
 
 //	IntVec radarMap;
 	IntVec sonarMap;

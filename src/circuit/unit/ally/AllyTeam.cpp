@@ -43,7 +43,6 @@ CAllyTeam::CAllyTeam(const TeamIds& tids, const SBox& sb)
 		, resignSize(0)
 		, lastUpdate(-1)
 		, uEnemyMark(0)
-		, kEnemyMark(0)
 {
 }
 
@@ -72,7 +71,6 @@ void CAllyTeam::Init(CCircuitAI* circuit, float decloakRadius)
 	enemyManager = std::make_shared<CEnemyManager>(circuit);
 
 	uEnemyMark = circuit->GetSkirmishAIId() % THREAT_UPDATE_RATE;
-	kEnemyMark = (circuit->GetSkirmishAIId() + THREAT_UPDATE_RATE / 2) % THREAT_UPDATE_RATE;
 
 	metalManager = std::make_shared<CMetalManager>(circuit, &circuit->GetGameAttribute()->GetMetalData());
 	if (metalManager->HasMetalSpots() && !metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
@@ -232,15 +230,25 @@ void CAllyTeam::Update(CCircuitAI* ai)
 	}
 
 //	if (!enemyInfos.empty()) {
-		int mark = circuit->GetLastFrame() % THREAT_UPDATE_RATE;
-		if (mark == uEnemyMark) {
-			mapManager->EnqueueUpdate();
-		} else if (mark == kEnemyMark) {
-			enemyManager->UpdateEnemyGroups();
+		if (circuit->GetLastFrame() % THREAT_UPDATE_RATE == uEnemyMark) {
+			EnqueueUpdate();
 		} else {
 			enemyManager->UpdateEnemyDatas();
 		}
 //	}
+}
+
+void CAllyTeam::EnqueueUpdate()
+{
+	if (enemyManager->IsUpdating() || mapManager->IsUpdating()) {
+		return;
+	}
+
+	mapManager->PrepareUpdate();
+	enemyManager->PrepareUpdate();
+
+	mapManager->EnqueueUpdate();
+	enemyManager->EnqueueUpdate();
 }
 
 void CAllyTeam::OccupyCluster(int clusterId, int teamId)

@@ -7,10 +7,12 @@
 
 #include "unit/enemy/EnemyManager.h"
 #include "unit/enemy/EnemyUnit.h"
+#include "map/MapManager.h"
 #include "map/ThreatMap.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
+#include "util/Scheduler.h"
 #include "json/json.h"
 
 #include "WrappUnit.h"
@@ -25,13 +27,17 @@ using namespace springai;
 CEnemyManager::CEnemyManager(CCircuitAI* circuit)
 		: circuit(circuit)
 		, enemyIterator(0)
+		, pGroupData(&groupData0)
 		, maxThreatGroupIdx(0)
+		, isUpdating(false)
 		, enemyMobileCost(0.f)
 		, mobileThreat(0.f)
 		, staticThreat(0.f)
 {
 	enemyPos = AIFloat3(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
-	enemyGroups.push_back(SEnemyGroup(enemyPos));
+
+	enemyGroups = &groupData0.enemyGroups;
+	enemyGroups->push_back(SEnemyGroup(enemyPos));
 
 	ReadConfig();
 }
@@ -120,8 +126,8 @@ void CEnemyManager::UpdateEnemyDatas()
 	enemyGarbage.clear();
 
 	// stagger the Update's
-	// -2 is for threat-draw frame and k-means frame
-	unsigned int n = (enemyUpdates.size() / (THREAT_UPDATE_RATE - 2)) + 1;
+	// -1 is for threat-draw and k-means frame
+	unsigned int n = (enemyUpdates.size() / (THREAT_UPDATE_RATE - 1)) + 1;
 
 	const int maxFrame = circuit->GetLastFrame() - FRAMES_PER_SEC * 60 * 20;
 	while ((enemyIterator < enemyUpdates.size()) && (n != 0)) {
@@ -156,6 +162,46 @@ void CEnemyManager::UpdateEnemyDatas()
 	if (!circuit->IsCheating()) {
 		circuit->GetCheats()->SetEnabled(false);
 	}
+}
+
+void CEnemyManager::PrepareUpdate()
+{
+	CMapManager* mapManager = circuit->GetMapManager();
+
+	hostileDatas.clear();
+	hostileDatas.reserve(mapManager->GetHostileUnits().size());
+	for (auto& kv : mapManager->GetHostileUnits()) {
+		CEnemyUnit* e = kv.second;
+
+		if (!mapManager->HostileInLOS(e)) {
+			continue;
+		}
+
+		hostileDatas.push_back(e->GetData());
+	}
+
+	peaceDatas.clear();
+	peaceDatas.reserve(mapManager->GetPeaceUnits().size());
+	for (auto& kv : mapManager->GetPeaceUnits()) {
+		CEnemyUnit* e = kv.second;
+
+		if (!mapManager->PeaceInLOS(e)) {
+			continue;
+		}
+
+		peaceDatas.push_back(e->GetData());
+	}
+}
+
+void CEnemyManager::EnqueueUpdate()
+{
+//	if (isUpdating) {
+//		return;
+//	}
+	isUpdating = true;
+
+	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CEnemyManager::Update, this),
+											 std::make_shared<CGameTask>(&CEnemyManager::Apply, this));
 }
 
 bool CEnemyManager::UnitInLOS(CEnemyUnit* data)
@@ -251,46 +297,47 @@ void CEnemyManager::ReadConfig()
  */
 void CEnemyManager::KMeansIteration()
 {
-	const CCircuitAI::EnemyInfos& units = circuit->GetEnemyInfos();
+	SGroupData& groupData = *GetNextGroupData();
+
 	// calculate a new K. change the formula to adjust max K, needs to be 1 minimum.
 	constexpr int KMEANS_BASE_MAX_K = 32;
-	int newK = std::min(KMEANS_BASE_MAX_K, 1 + (int)sqrtf(units.size()));
+	const auto enemySize = hostileDatas.size() + peaceDatas.size();
+	int newK = std::min(KMEANS_BASE_MAX_K, 1 + (int)sqrtf(enemySize));
 
 	// change the number of means according to newK
 	assert(newK > 0/* && enemyGoups.size() > 0*/);
 	// add a new means, just use one of the positions
-	AIFloat3 newMeansPosition = units.begin()->second->GetPos();
+	AIFloat3 newMeansPosition = hostileDatas.empty()
+			? (peaceDatas.empty() ? enemyPos : peaceDatas.begin()->pos)
+			: hostileDatas.begin()->pos;
 //	newMeansPosition.y = circuit->GetMap()->GetElevationAt(newMeansPosition.x, newMeansPosition.z) + K_MEANS_ELEVATION;
-	enemyGroups.resize(newK, SEnemyGroup(newMeansPosition));
+	groupData.enemyGroups.resize(newK, SEnemyGroup(newMeansPosition));
 
 	// check all positions and assign them to means, complexity n*k for one iteration
-	std::vector<int> unitsClosestMeanID(units.size(), -1);
+	std::vector<int> unitsClosestMeanID(enemySize, -1);
 	std::vector<int> numUnitsAssignedToMean(newK, 0);
 
 	{
 		int i = 0;
-		for (const auto& kv : units) {
-			CEnemyInfo* enemy = kv.second;
-			if (enemy->GetData()->IsHidden()) {
-				continue;
-			}
-			AIFloat3 unitPos = enemy->GetPos();
-			float closestDistance = std::numeric_limits<float>::max();
-			int closestIndex = -1;
+		for (const std::vector<SEnemyData>& datas : {hostileDatas, peaceDatas}) {
+			for (const SEnemyData& enemy : datas) {
+				float closestDistance = std::numeric_limits<float>::max();
+				int closestIndex = -1;
 
-			for (int m = 0; m < newK; m++) {
-				const AIFloat3& mean = enemyGroups[m].pos;
-				float distance = unitPos.SqDistance2D(mean);
+				for (int m = 0; m < newK; m++) {
+					const AIFloat3& mean = groupData.enemyGroups[m].pos;
+					float distance = enemy.pos.SqDistance2D(mean);
 
-				if (distance < closestDistance) {
-					closestDistance = distance;
-					closestIndex = m;
+					if (distance < closestDistance) {
+						closestDistance = distance;
+						closestIndex = m;
+					}
 				}
-			}
 
-			// position i is closest to the mean at closestIndex
-			unitsClosestMeanID[i++] = closestIndex;
-			numUnitsAssignedToMean[closestIndex]++;
+				// position i is closest to the mean at closestIndex
+				unitsClosestMeanID[i++] = closestIndex;
+				numUnitsAssignedToMean[closestIndex]++;
+			}
 		}
 	}
 
@@ -298,7 +345,7 @@ void CEnemyManager::KMeansIteration()
 	// use meanAverage for indexes with 0 pos'es assigned
 	// make a new means list
 //	std::vector<AIFloat3> newMeans(newK, ZeroVector);
-	std::vector<SEnemyGroup>& newMeans = enemyGroups;
+	std::vector<SEnemyGroup>& newMeans = groupData.enemyGroups;
 	for (unsigned i = 0; i < newMeans.size(); i++) {
 		SEnemyGroup& eg = newMeans[i];
 		eg.units.clear();
@@ -311,36 +358,33 @@ void CEnemyManager::KMeansIteration()
 
 	{
 		int i = 0;
-		for (const auto& kv : units) {
-			CEnemyInfo* enemy = kv.second;
-			if (enemy->GetData()->IsHidden()) {
-				continue;
-			}
-			int meanIndex = unitsClosestMeanID[i++];
-			SEnemyGroup& eg = newMeans[meanIndex];
+		for (const std::vector<SEnemyData>& datas : {hostileDatas, peaceDatas}) {
+			for (const SEnemyData& enemy : datas) {
+				int meanIndex = unitsClosestMeanID[i++];
+				SEnemyGroup& eg = newMeans[meanIndex];
 
-			// don't divide by 0
-			float num = std::max(1, numUnitsAssignedToMean[meanIndex]);
-			eg.pos += enemy->GetPos() / num;
+				// don't divide by 0
+				float num = std::max(1, numUnitsAssignedToMean[meanIndex]);
+				eg.pos += enemy.pos / num;
 
-			eg.units.push_back(kv.first);
+				eg.units.push_back(enemy.id);
 
-			const CCircuitDef* cdef = enemy->GetCircuitDef();
-			if (cdef != nullptr) {
-				eg.roleCosts[cdef->GetMainRole()] += cdef->GetCost();
-				if (!cdef->IsMobile() || enemy->GetData()->IsInRadarOrLOS()) {
-					eg.cost += cdef->GetCost();
+				if (enemy.cdef != nullptr) {
+					eg.roleCosts[enemy.cdef->GetMainRole()] += enemy.cost;
+					if (!enemy.cdef->IsMobile() || enemy.IsInRadarOrLOS()) {
+						eg.cost += enemy.cost;
+					}
+					eg.threat += enemy.threat * (enemy.cdef->IsMobile() ? initThrMod.inMobile : initThrMod.inStatic);
+				} else {
+					eg.threat += enemy.threat;
 				}
-				eg.threat += enemy->GetThreat() * (cdef->IsMobile() ? initThrMod.inMobile : initThrMod.inStatic);
-			} else {
-				eg.threat += enemy->GetThreat();
 			}
 		}
 	}
 
 	// do a check and see if there are any empty means and set the height
-	enemyPos = ZeroVector;
-	maxThreatGroupIdx = 0;
+	groupData.enemyPos = ZeroVector;
+	groupData.maxThreatGroupIdx = 0;
 	for (int i = 0; i < newK; i++) {
 		// if a newmean is unchanged, set it to the new means pos instead of (0, 0, 0)
 		if (newMeans[i].pos == ZeroVector) {
@@ -349,14 +393,41 @@ void CEnemyManager::KMeansIteration()
 			// get the proper elevation for the y-coord
 //			newMeans[i].pos.y = circuit->GetMap()->GetElevationAt(newMeans[i].pos.x, newMeans[i].pos.z) + K_MEANS_ELEVATION;
 		}
-		enemyPos += newMeans[i].pos;
-		if (newMeans[maxThreatGroupIdx].threat < newMeans[i].threat) {
-			maxThreatGroupIdx = i;
+		groupData.enemyPos += newMeans[i].pos;
+		if (newMeans[groupData.maxThreatGroupIdx].threat < newMeans[i].threat) {
+			groupData.maxThreatGroupIdx = i;
 		}
 	}
-	enemyPos /= newK;
+	groupData.enemyPos /= newK;
 
 //	return newMeans;
+}
+
+void CEnemyManager::Prepare(SGroupData& groupData)
+{
+	groupData.enemyGroups = pGroupData.load()->enemyGroups;
+}
+
+void CEnemyManager::Update()
+{
+	Prepare(*GetNextGroupData());
+
+	KMeansIteration();
+}
+
+void CEnemyManager::Apply()
+{
+	SwapBuffers();
+	isUpdating = false;
+}
+
+void CEnemyManager::SwapBuffers()
+{
+	pGroupData = GetNextGroupData();
+	SGroupData* groupData = pGroupData.load();
+	enemyGroups = &groupData->enemyGroups;
+	enemyPos = groupData->enemyPos;
+	maxThreatGroupIdx = groupData->maxThreatGroupIdx;
 }
 
 } // namespace circuit

@@ -89,6 +89,7 @@ public:
 	void EnemyDestroyed(CEnemyUnit* enemy, CCircuitAI* ai);
 
 	void Update(CCircuitAI* ai);
+	void EnqueueUpdate();
 
 	std::shared_ptr<CMapManager>& GetMapManager() { return mapManager; }
 	std::shared_ptr<CEnemyManager>& GetEnemyManager() { return enemyManager; }
@@ -132,7 +133,6 @@ private:
 	std::shared_ptr<CEnemyManager> enemyManager;
 
 	int uEnemyMark;
-	int kEnemyMark;
 };
 
 } // namespace circuit

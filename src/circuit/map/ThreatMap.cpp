@@ -502,11 +502,13 @@ void CThreatMap::Update()
 {
 	Prepare(*GetNextThreatData());
 
-	for (const SEnemyData& e : manager->GetHostileDatas()) {
+	CEnemyManager* enemyManager = manager->GetCircuit()->GetEnemyManager();
+
+	for (const SEnemyData& e : enemyManager->GetHostileDatas()) {
 		AddEnemyUnit(e);
 	}
 
-	for (const SEnemyData& e : manager->GetPeaceDatas()) {
+	for (const SEnemyData& e : enemyManager->GetPeaceDatas()) {
 		AddDecloaker(e);
 	}
 }

@@ -10,11 +10,11 @@
 
 #include "unit/CoreUnit.h"
 #include "unit/CircuitDef.h"
+#include "unit/enemy/EnemyUnit.h"
 
 namespace circuit {
 
 class CCircuitAI;
-class CEnemyUnit;
 
 class CEnemyManager {
 public:
@@ -37,7 +37,14 @@ public:
 
 	const std::vector<ICoreUnit::Id>& GetGarbage() const { return enemyGarbage; }
 
+	const std::vector<SEnemyData>& GetHostileDatas() const { return hostileDatas; }
+	const std::vector<SEnemyData>& GetPeaceDatas() const { return peaceDatas; }
+
 	void UpdateEnemyDatas();
+
+	void PrepareUpdate();
+	void EnqueueUpdate();
+	bool IsUpdating() const { return isUpdating; }
 
 	bool UnitInLOS(CEnemyUnit* data);
 	std::pair<CEnemyUnit*, bool> RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS);
@@ -62,16 +69,29 @@ public:
 	float GetEnemyThreat() const { return mobileThreat + staticThreat; }
 	bool IsAirValid() const { return GetEnemyThreat(CCircuitDef::RoleType::AA) <= maxAAThreat; }
 
-	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return enemyGroups; }
+	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return *enemyGroups; }
 	const springai::AIFloat3& GetEnemyPos() const { return enemyPos; }
-	float GetMaxGroupThreat() const { return enemyGroups[maxThreatGroupIdx].threat; }
-	void UpdateEnemyGroups() { KMeansIteration(); }
+	float GetMaxGroupThreat() const { return (*enemyGroups)[maxThreatGroupIdx].threat; }
 
 	float GetEnemyMobileCost() const { return enemyMobileCost; }
 
 private:
 	void ReadConfig();
 	void KMeansIteration();
+
+	struct SGroupData {
+		std::vector<SEnemyGroup> enemyGroups;
+		springai::AIFloat3 enemyPos;
+		int maxThreatGroupIdx;
+	};
+
+	void Prepare(SGroupData& groupData);
+	void Update();
+	void Apply();
+	void SwapBuffers();
+	SGroupData* GetNextGroupData() {
+		return (pGroupData.load() == &groupData0) ? &groupData1 : &groupData0;
+	}
 
 	CCircuitAI* circuit;
 
@@ -82,9 +102,15 @@ private:
 
 	std::vector<ICoreUnit::Id> enemyGarbage;
 
-	std::vector<SEnemyGroup> enemyGroups;
+	std::vector<SEnemyData> hostileDatas;  // immutable during threaded processing
+	std::vector<SEnemyData> peaceDatas;  // immutable during threaded processing
+
+	SGroupData groupData0, groupData1;  // Double-buffer for threading
+	std::atomic<SGroupData*> pGroupData;
+	std::vector<SEnemyGroup>* enemyGroups;
 	springai::AIFloat3 enemyPos;
 	int maxThreatGroupIdx;
+	bool isUpdating;
 
 	float enemyMobileCost;
 	float mobileThreat;  // thr_mod.mobile applied

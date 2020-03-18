@@ -27,6 +27,9 @@ class IFighterTask;
 struct SEnemyData {
 	using RangeArray = std::array<int, static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_)>;
 
+	enum LosMask: char {NONE = 0x00, LOS = 0x01, RADAR = 0x02, HIDDEN = 0x04, DEAD = 0x08};
+	using LM = std::underlying_type<LosMask>::type;
+
 	CCircuitDef* cdef;
 
 	float shieldPower;
@@ -39,16 +42,31 @@ struct SEnemyData {
 	springai::AIFloat3 vel;  // elmos per frame
 	float threat;
 	RangeArray range;
+
+	ICoreUnit::Id id;  // FIXME: duplicate
+	float cost;
+	LM losStatus;
+
+	void SetInLOS()     { losStatus |= LosMask::LOS; }
+	void SetInRadar()   { losStatus |= LosMask::RADAR; }
+	void SetHidden()    { losStatus |= LosMask::HIDDEN; }
+	void Dead()         { losStatus |= LosMask::DEAD | LosMask::HIDDEN; }
+	void ClearInLOS()   { losStatus &= ~LosMask::LOS; }
+	void ClearInRadar() { losStatus &= ~LosMask::RADAR; }
+	void ClearHidden()  { losStatus &= ~LosMask::HIDDEN; }
+
+	bool IsInLOS()          const { return losStatus & LosMask::LOS; }
+	bool IsInRadar()        const { return losStatus & LosMask::RADAR; }
+	bool IsInRadarOrLOS()   const { return losStatus & (LosMask::RADAR | LosMask::LOS); }
+	bool NotInRadarAndLOS() const { return (losStatus & (LosMask::RADAR | LosMask::LOS)) == 0; }
+	bool IsHidden()         const { return losStatus & LosMask::HIDDEN; }
+	bool IsDead()           const { return losStatus & LosMask::DEAD; }
 };
 
 /*
  * Per AllyTeam enemy information
  */
 class CEnemyUnit: public ICoreUnit {
-private:
-	enum LosMask: char {NONE = 0x00, LOS = 0x01, RADAR = 0x02, HIDDEN = 0x04, DEAD = 0x08};
-	using LM = std::underlying_type<LosMask>::type;
-
 public:
 	CEnemyUnit(const CEnemyUnit& that) = delete;
 	CEnemyUnit& operator=(const CEnemyUnit&) = delete;
@@ -64,8 +82,8 @@ public:
 	void SetLastSeen(int frame) { lastSeen = frame; }
 	int GetLastSeen() const { return lastSeen; }
 
-	void SetCost(float value) { cost = value; }
-	float GetCost() const { return cost; }
+	void SetCost(float value) { data.cost = value; }
+	float GetCost() const { return data.cost; }
 
 	float GetHealth() const { return data.health; }
 	bool IsBeingBuilt() const { return data.isBeingBuilt; }
@@ -102,26 +120,24 @@ private:
 	int lastSeen;
 
 	springai::Weapon* shield;
-	float cost;
 
 	SEnemyData data;
 
-	LM losStatus;
 public:
-	void SetInLOS()     { losStatus |= LosMask::LOS; }
-	void SetInRadar()   { losStatus |= LosMask::RADAR; }
-	void SetHidden()    { losStatus |= LosMask::HIDDEN; }
-	void Dead()         { losStatus |= LosMask::DEAD | LosMask::HIDDEN; }
-	void ClearInLOS()   { losStatus &= ~LosMask::LOS; }
-	void ClearInRadar() { losStatus &= ~LosMask::RADAR; }
-	void ClearHidden()  { losStatus &= ~LosMask::HIDDEN; }
+	void SetInLOS()     { data.SetInLOS(); }
+	void SetInRadar()   { data.SetInRadar(); }
+	void SetHidden()    { data.SetHidden(); }
+	void Dead()         { data.Dead(); }
+	void ClearInLOS()   { data.ClearInLOS(); }
+	void ClearInRadar() { data.ClearInRadar(); }
+	void ClearHidden()  { data.ClearHidden(); }
 
-	bool IsInLOS()          const { return losStatus & LosMask::LOS; }
-	bool IsInRadar()        const { return losStatus & LosMask::RADAR; }
-	bool IsInRadarOrLOS()   const { return losStatus & (LosMask::RADAR | LosMask::LOS); }
-	bool NotInRadarAndLOS() const { return (losStatus & (LosMask::RADAR | LosMask::LOS)) == 0; }
-	bool IsHidden()         const { return losStatus & LosMask::HIDDEN; }
-	bool IsDead()           const { return losStatus & LosMask::DEAD; }
+	bool IsInLOS()          const { return data.IsInLOS(); }
+	bool IsInRadar()        const { return data.IsInRadar(); }
+	bool IsInRadarOrLOS()   const { return data.IsInRadarOrLOS(); }
+	bool NotInRadarAndLOS() const { return data.NotInRadarAndLOS(); }
+	bool IsHidden()         const { return data.IsHidden(); }
+	bool IsDead()           const { return data.IsDead(); }
 
 	const SEnemyData GetData() const { return data; }
 };

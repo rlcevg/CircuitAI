@@ -248,6 +248,7 @@ public:
 	CSetupManager*    GetSetupManager()    const { return setupManager.get(); }
 	CEnemyManager*    GetEnemyManager()    const { return enemyManager.get(); }
 	CMetalManager*    GetMetalManager()    const { return metalManager.get(); }
+	CMapManager*      GetMapManager()      const { return mapManager.get(); }
 	CThreatMap*       GetThreatMap()       const;
 	CInfluenceMap*    GetInflMap()         const;
 	CPathFinder*      GetPathfinder()      const { return pathfinder.get(); }

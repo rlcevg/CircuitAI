@@ -47,54 +47,54 @@ CMapManager::~CMapManager()
 	delete inflMap;
 }
 
-void CMapManager::EnqueueUpdate()
+void CMapManager::PrepareUpdate()
 {
-	if (threatMap->IsUpdating() || inflMap->IsUpdating()) {
-		return;
-	}
-
 //	radarMap = std::move(circuit->GetMap()->GetRadarMap());
 	circuit->GetMap()->GetSonarMap(sonarMap);
 	circuit->GetMap()->GetLosMap(losMap);
+}
 
-	hostileDatas.clear();
-	hostileDatas.reserve(hostileUnits.size());
-	for (auto& kv : hostileUnits) {
-		CEnemyUnit* e = kv.second;
-		if (e->IsHidden()) {
-			continue;
-		}
-
-		if (e->NotInRadarAndLOS() && IsInLOS(e->GetPos())) {
-			e->SetHidden();
-			continue;
-		}
-
-		if (e->IsInLOS()) {
-			threatMap->SetEnemyUnitThreat(e);
-		}
-
-		hostileDatas.push_back(e->GetData());
-	}
-
-	peaceDatas.clear();
-	peaceDatas.reserve(peaceUnits.size());
-	for (auto& kv : peaceUnits) {
-		CEnemyUnit* e = kv.second;
-		if (e->IsHidden()) {
-			continue;
-		}
-
-		if (e->NotInRadarAndLOS() && IsInLOS(e->GetPos())) {
-			e->SetHidden();
-			continue;
-		}
-
-		peaceDatas.push_back(e->GetData());
-	}
-
+void CMapManager::EnqueueUpdate()
+{
 	threatMap->EnqueueUpdate();
 	inflMap->EnqueueUpdate();
+}
+
+bool CMapManager::IsUpdating() const
+{
+	return threatMap->IsUpdating() || inflMap->IsUpdating();
+}
+
+bool CMapManager::HostileInLOS(CEnemyUnit* enemy)
+{
+	if (enemy->IsHidden()) {
+		return false;
+	}
+
+	if (enemy->NotInRadarAndLOS() && IsInLOS(enemy->GetPos())) {
+		enemy->SetHidden();
+		return false;
+	}
+
+	if (enemy->IsInLOS()) {
+		threatMap->SetEnemyUnitThreat(enemy);
+	}
+
+	return true;
+}
+
+bool CMapManager::PeaceInLOS(CEnemyUnit* enemy)
+{
+	if (enemy->IsHidden()) {
+		return false;
+	}
+
+	if (enemy->NotInRadarAndLOS() && IsInLOS(enemy->GetPos())) {
+		enemy->SetHidden();
+		return false;
+	}
+
+	return true;
 }
 
 bool CMapManager::IsSuddenThreat(CEnemyUnit* enemy) const

@@ -29,8 +29,10 @@ CEnemyUnit::CEnemyUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 			ZeroVector,      // pos
 			ZeroVector,      // vel
 			0.f,             // threat
-			{0}})            // range
-		, losStatus(LosMask::NONE)
+			{0},             // range
+			unitId,          // id
+			0.f,             // cost
+			SEnemyData::LosMask::NONE})  // losStatus
 {
 	Init();
 }
@@ -49,10 +51,10 @@ void CEnemyUnit::SetCircuitDef(CCircuitDef* cdef)
 void CEnemyUnit::Init()
 {
 	if (data.cdef == nullptr) {
-		cost = 0.f;
+		data.cost = 0.f;
 		shield = nullptr;
 	} else {
-		cost = data.cdef->GetCost();
+		data.cost = data.cdef->GetCost();
 		WeaponMount* wpMnt = data.cdef->GetShieldMount();
 		shield = (wpMnt == nullptr) ? nullptr : WrappWeapon::GetInstance(unit->GetSkirmishAIId(), id, wpMnt->GetWeaponMountId());
 	}
