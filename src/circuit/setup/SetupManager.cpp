@@ -605,9 +605,11 @@ void CSetupManager::CalcLanePos()
 
 	SetLanePos(bestPos);
 	// FIXME: DEBUG
+#ifdef DEBUG_VIS
 	circuit->GetDrawer()->AddPoint(basePos, utils::int_to_string(circuit->GetSkirmishAIId()).c_str());
 	circuit->GetDrawer()->AddPoint(lanePos, utils::int_to_string(circuit->GetSkirmishAIId()).c_str());
 	circuit->GetDrawer()->AddLine(basePos, lanePos);
+#endif  // DEBUG_VIS
 	// FIXME: DEBUG
 }
 

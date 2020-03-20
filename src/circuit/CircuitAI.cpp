@@ -8,6 +8,7 @@
 #include "CircuitAI.h"
 #include "setup/SetupManager.h"
 #include "map/MapManager.h"
+#include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
 #include "module/EconomyManager.h"
