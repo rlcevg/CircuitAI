@@ -28,6 +28,7 @@ CEnemyManager::CEnemyManager(CCircuitAI* circuit)
 		: circuit(circuit)
 		, enemyIterator(0)
 		, pGroupData(&groupData0)
+		, enemyGroups(groupData0.enemyGroups)
 		, maxThreatGroupIdx(0)
 		, isUpdating(false)
 		, enemyMobileCost(0.f)
@@ -35,9 +36,7 @@ CEnemyManager::CEnemyManager(CCircuitAI* circuit)
 		, staticThreat(0.f)
 {
 	enemyPos = AIFloat3(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
-
-	enemyGroups = &groupData0.enemyGroups;
-	enemyGroups->push_back(SEnemyGroup(enemyPos));
+	enemyGroups.push_back(SEnemyGroup(enemyPos));
 
 	ReadConfig();
 }
@@ -424,10 +423,10 @@ void CEnemyManager::Apply()
 void CEnemyManager::SwapBuffers()
 {
 	pGroupData = GetNextGroupData();
-	SGroupData* groupData = pGroupData.load();
-	enemyGroups = &groupData->enemyGroups;
-	enemyPos = groupData->enemyPos;
-	maxThreatGroupIdx = groupData->maxThreatGroupIdx;
+	SGroupData& groupData = *pGroupData.load();
+	enemyGroups.swap(groupData.enemyGroups);
+	enemyPos = groupData.enemyPos;
+	maxThreatGroupIdx = groupData.maxThreatGroupIdx;
 }
 
 } // namespace circuit

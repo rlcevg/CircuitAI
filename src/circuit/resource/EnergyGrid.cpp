@@ -260,7 +260,7 @@ CEnergyNode* CEnergyGrid::FindNodeDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 
 		outDef = circuit->GetCircuitDef(defId);
 		if ((outDef == nullptr) || !outDef->IsAvailable(frame)
-			|| ((metalIncome < outDef->GetCost() * 0.1f) && (outDef->GetCost() > 100.f)))
+			|| ((metalIncome < outDef->GetCost() * 0.2f) && (outDef->GetCost() > 100.f)))
 		{
 			candDefs.erase(range);
 			continue;
@@ -318,7 +318,7 @@ CEnergyLink* CEnergyGrid::FindLinkDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 
 		outDef = circuit->GetCircuitDef(defId);
 		if ((outDef == nullptr) || !outDef->IsAvailable(frame)
-			|| ((metalIncome < outDef->GetCost() * 0.1f) && (outDef->GetCost() > 100.f)))
+			|| ((metalIncome < outDef->GetCost() * 0.2f) && (outDef->GetCost() > 100.f)))
 		{
 			candDefs.erase(range);
 			continue;

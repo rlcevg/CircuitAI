@@ -986,7 +986,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 
 	const float energyIncome = GetAvgEnergyIncome();
 	const float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
-	if (metalIncome < 20) {
+	if (metalIncome < 30) {
 		return nullptr;
 	}
 
@@ -1007,7 +1007,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 	}
 
 	if (utils::is_valid(buildPos)) {
-		IBuilderTask::Priority priority = metalIncome < 30 ? IBuilderTask::Priority::NORMAL : IBuilderTask::Priority::HIGH;
+		IBuilderTask::Priority priority = metalIncome < 40 ? IBuilderTask::Priority::NORMAL : IBuilderTask::Priority::HIGH;
 		return builderManager->EnqueuePylon(priority, buildDef, buildPos, link, buildDef->GetCost());
 	} else {
 		link->SetValid(false);

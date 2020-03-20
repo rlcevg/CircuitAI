@@ -101,6 +101,14 @@ void CInfluenceMap::Prepare(SInfluenceData& inflData)
 	std::fill(inflData.tension.begin(), inflData.tension.end(), INFL_BASE);
 	std::fill(inflData.vulnerability.begin(), inflData.vulnerability.end(), INFL_BASE);
 	std::fill(inflData.featureInfl.begin(), inflData.featureInfl.end(), INFL_BASE);
+
+	drawEnemyInfl = inflData.enemyInfl.data();
+	drawAllyInfl = inflData.allyInfl.data();
+	drawAllyDefendInfl = inflData.allyDefendInfl.data();
+	drawInfluence = inflData.influence.data();
+	drawTension = inflData.tension.data();
+	drawVulnerability = inflData.vulnerability.data();
+	drawFeatureInfl = inflData.featureInfl.data();
 }
 
 void CInfluenceMap::Update()
@@ -117,6 +125,7 @@ void CInfluenceMap::Update()
 void CInfluenceMap::Apply()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->UpdateFriendlyUnits();  // FIXME: update or ignore units with -RgtVector position
 	const CAllyTeam::AllyUnits& units = circuit->GetFriendlyUnits();
 	for (auto& kv : units) {
 		CAllyUnit* u = kv.second;
@@ -166,13 +175,14 @@ void CInfluenceMap::Apply()
 void CInfluenceMap::SwapBuffers()
 {
 	pInflData = GetNextInflData();
-	std::swap(enemyInfl, drawEnemyInfl);
-	std::swap(allyInfl, drawAllyInfl);
-	std::swap(allyDefendInfl, drawAllyDefendInfl);
-	std::swap(influence, drawInfluence);
-	std::swap(tension, drawTension);
-	std::swap(vulnerability, drawVulnerability);
-	std::swap(featureInfl, drawFeatureInfl);
+	SInfluenceData& inflData = *pInflData.load();
+	enemyInfl = inflData.enemyInfl.data();
+	allyInfl = inflData.allyInfl.data();
+	allyDefendInfl = inflData.allyDefendInfl.data();
+	influence = inflData.influence.data();
+	tension = inflData.tension.data();
+	vulnerability = inflData.vulnerability.data();
+	featureInfl = inflData.featureInfl.data();
 }
 
 float CInfluenceMap::GetEnemyInflAt(const AIFloat3& position) const
@@ -281,7 +291,7 @@ void CInfluenceMap::AddUnarmed(CAllyUnit* u)
 
 	const float val = u->GetCircuitDef()->GetCost();
 	// FIXME: GetInfluenceRange: for statics it's just range; mobile should account for speed
-	const int range = DEFAULT_SLACK * 4 / squareSize;
+	const int range = DEFAULT_SLACK * 4 * 5 / squareSize;
 	const int rangeSq = SQUARE(range);
 
 	const int beginX = std::max(int(posx - range + 1),       0);

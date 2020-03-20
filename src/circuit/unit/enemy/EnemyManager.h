@@ -69,9 +69,9 @@ public:
 	float GetEnemyThreat() const { return mobileThreat + staticThreat; }
 	bool IsAirValid() const { return GetEnemyThreat(CCircuitDef::RoleType::AA) <= maxAAThreat; }
 
-	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return *enemyGroups; }
+	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return enemyGroups; }
 	const springai::AIFloat3& GetEnemyPos() const { return enemyPos; }
-	float GetMaxGroupThreat() const { return (*enemyGroups)[maxThreatGroupIdx].threat; }
+	float GetMaxGroupThreat() const { return enemyGroups[maxThreatGroupIdx].threat; }
 
 	float GetEnemyMobileCost() const { return enemyMobileCost; }
 
@@ -107,7 +107,7 @@ private:
 
 	SGroupData groupData0, groupData1;  // Double-buffer for threading
 	std::atomic<SGroupData*> pGroupData;
-	std::vector<SEnemyGroup>* enemyGroups;
+	std::vector<SEnemyGroup>& enemyGroups;
 	springai::AIFloat3 enemyPos;
 	int maxThreatGroupIdx;
 	bool isUpdating;

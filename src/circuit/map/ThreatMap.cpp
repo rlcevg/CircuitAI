@@ -496,6 +496,12 @@ void CThreatMap::Prepare(SThreatData& threatData)
 	std::fill(threatData.amphThreat.begin(), threatData.amphThreat.end(), THREAT_BASE);
 	std::fill(threatData.cloakThreat.begin(), threatData.cloakThreat.end(), THREAT_BASE);
 	std::fill(threatData.shield.begin(), threatData.shield.end(), 0.f);
+
+	drawAirThreat = threatData.airThreat.data();
+	drawSurfThreat = threatData.surfThreat.data();
+	drawAmphThreat = threatData.amphThreat.data();
+	drawCloakThreat = threatData.cloakThreat.data();
+	drawShieldArray = threatData.shield.data();
 }
 
 void CThreatMap::Update()
@@ -526,11 +532,13 @@ void CThreatMap::Apply()
 void CThreatMap::SwapBuffers()
 {
 	pThreatData = GetNextThreatData();
-	std::swap(airThreat, drawAirThreat);
-	std::swap(surfThreat, drawSurfThreat);
-	std::swap(amphThreat, drawAmphThreat);
-	std::swap(cloakThreat, drawCloakThreat);
-	std::swap(shieldArray, drawShieldArray);
+	SThreatData& threatData = *pThreatData.load();
+	airThreat = threatData.airThreat.data();
+	surfThreat = threatData.surfThreat.data();
+	amphThreat = threatData.amphThreat.data();
+	cloakThreat = threatData.cloakThreat.data();
+	shieldArray = threatData.shield.data();
+	threatArray = surfThreat;
 }
 
 #ifdef DEBUG_VIS
