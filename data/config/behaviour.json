@@ -2,14 +2,14 @@
 {
 "quota": {
 	"scout": 1,  // max scout units out of raiders
-	"raid": [16.0, 20.0],  // [<min>, <avg>] power of raider squad
+	"raid": [8.0, 16.0],  // [<min>, <avg>] power of raider squad
 	"attack": 20.0,  // min power of attack group
 	"def_rad": 50,  // defence radius
 	"thr_mod": {
 		"attack": [0.9, 0.95],  // [<min>, <max>] enemy threat modifier for target selection of attack task
 		"defence": [1.10, 1.15],  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
 		"mobile": 1.25,  // initial modifier for power of attack group based on mobile enemy threat
-		"static": 2.0,  // initial modifier for power of attack group based on static enemy threat
+		"static": 1.2,  // initial modifier for power of attack group based on static enemy threat
 		"comm": 0.6
 	},
 	"aa_threat": 80.0,  // anti-air threat threshold, air factories will stop production when AA threat exceeds

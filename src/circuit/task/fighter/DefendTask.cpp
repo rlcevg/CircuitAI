@@ -155,15 +155,7 @@ void CDefendTask::Update()
 			}
 		}
 		if (State::ENGAGE == state) {
-			for (CCircuitUnit* unit : units) {
-				if (unit->Blocker() != nullptr) {
-					continue;  // Do not interrupt current action
-				}
-
-				unit->Attack(target->GetPos(), target, frame + FRAMES_PER_SEC * 60);
-
-				unit->GetTravelAct()->SetActive(false);
-			}
+			Attack(frame);
 			return;
 		}
 	} else {
