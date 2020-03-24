@@ -1134,7 +1134,7 @@ void CMicroPather::MakeCostMap(void* startNode, std::vector<float>& costMap)
 
 			float newCost = nodeCostFromStart;
 			const int index2 = directNode->index2;
-			const float nodeCost = COST_BASE + moveThreatFun(index2);
+			const float nodeCost = COST_BASE + threatArray[index2];
 
 			#ifdef USE_ASSERTIONS
 			assert(nodeCost > 0.f);  // > 1.f for speed

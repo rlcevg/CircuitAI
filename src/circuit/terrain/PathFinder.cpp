@@ -243,14 +243,11 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 	float* threatArray;
 	CostFunc moveFun;
 	CostFunc moveThreatFun;
-	// FIXME: DEBUG
-	const float minElev = areaData->minElevation;
-	float elevLen = std::max(areaData->maxElevation - areaData->minElevation, 1e-3f);
+	// FIXME: DEBUG; Re-organize and pre-calculate moveFun for each move-type
 	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
 		threatArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
-		moveFun = [&sectors, maxSlope, minElev, elevLen](int index) {
-			return 2.f - 2.f * (sectors[index].maxElevation - minElev) / elevLen +
-					(sectors[index].isWater ? 5.f : 0.f) + 4.f * sectors[index].maxSlope / maxSlope;
+		moveFun = [&sectors, maxSlope](int index) {
+			return (sectors[index].isWater ? 5.f : 0.f) + 4.f * sectors[index].maxSlope / maxSlope;
 		};
 		moveThreatFun = [moveFun, threatArray](int index) {
 			return moveFun(index) + 2.f * threatArray[index];
@@ -274,17 +271,18 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 	} else if (cdef->IsAmphibious()) {
 		threatArray = threatMap->GetAmphThreatArray();
 		if (maxSlope > SPIDER_SLOPE) {
+			const float minElev = areaData->minElevation;
+			float elevLen = std::max(areaData->maxElevation - areaData->minElevation, 1e-3f);
 			moveFun = [&sectors, minElev, elevLen](int index) {
-				return 4.f - 4.f * (sectors[index].maxElevation - minElev) / elevLen +
-						(sectors[index].isWater ? 5.f : 0.f) + 4.f * (1.f - sectors[index].maxSlope);
+				return 4.f * (1.f - (sectors[index].maxElevation - minElev) / elevLen) +
+						(sectors[index].isWater ? 5.f : 0.f);
 			};
 			moveThreatFun = [moveFun, threatArray](int index) {
 				return moveFun(index) + 2.f * threatArray[index];
 			};
 		} else {
-			moveFun = [&sectors, maxSlope, minElev, elevLen](int index) {
-				return 2.f - 2.f * (sectors[index].maxElevation - minElev) / elevLen +
-						(sectors[index].isWater ? 5.f : 0.f) + 4.f * sectors[index].maxSlope / maxSlope;
+			moveFun = [&sectors, maxSlope](int index) {
+				return (sectors[index].isWater ? 5.f : 0.f) + 4.f * sectors[index].maxSlope / maxSlope;
 			};
 			moveThreatFun = [moveFun, threatArray](int index) {
 				return moveFun(index) + 2.f * threatArray[index];
@@ -292,9 +290,8 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 		}
 	} else {
 		threatArray = threatMap->GetSurfThreatArray();
-		moveFun = [&sectors, maxSlope, minElev, elevLen](int index) {
-			return 2.f - 2.f * (sectors[index].maxElevation - minElev) / elevLen +
-					(sectors[index].isWater ? 0.f : 4.f * sectors[index].maxSlope / maxSlope);
+		moveFun = [&sectors, maxSlope](int index) {
+			return (sectors[index].isWater ? 0.f : (4.f * sectors[index].maxSlope / maxSlope));
 		};
 		moveThreatFun = [moveFun, threatArray](int index) {
 			return moveFun(index) + 2.f * threatArray[index];
@@ -312,6 +309,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
  */
 float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPos, int radius, float maxThreat)
 {
+	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	iPath.Clear();
 
 	CTerrainData::CorrectPosition(startPos);
@@ -338,6 +336,7 @@ float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPo
  */
 float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius, float maxThreat)
 {
+	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	CTerrainData::CorrectPosition(endPos);
 
 	float pathCost = 0.0f;
@@ -350,6 +349,7 @@ float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloa
 
 float CPathFinder::FindBestPath(PathInfo& iPath, AIFloat3& startPos, float maxRange, F3Vec& possibleTargets, float maxThreat)
 {
+	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	float pathCost = 0.0f;
 
 	// <maxRange> must always be >= squareSize, otherwise
@@ -493,6 +493,7 @@ float CPathFinder::FindBestPathToRadius(PathInfo& posPath, AIFloat3& startPos, f
  */
 void CPathFinder::MakeCostMap(const AIFloat3& startPos)
 {
+	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	std::fill(costMap.begin(), costMap.end(), -1.f);
 	micropather->MakeCostMap(Pos2MoveNode(startPos), costMap);
 }
@@ -671,12 +672,12 @@ void CPathFinder::UpdateVis(const IndexVec& path)
 
 void CPathFinder::ToggleVis(CCircuitAI* circuit)
 {
-	if (toggleFrame >= circuit->GetLastFrame()) {
-		return;
-	}
-	toggleFrame = circuit->GetLastFrame();
-
-	isVis = !isVis;
+//	if (toggleFrame >= circuit->GetLastFrame()) {
+//		return;
+//	}
+//	toggleFrame = circuit->GetLastFrame();
+//
+//	isVis = !isVis;
 	this->circuit = circuit;
 }
 #endif

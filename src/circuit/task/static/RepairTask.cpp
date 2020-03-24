@@ -62,11 +62,15 @@ void CSRepairTask::Update()
 	if (economyManager->GetAvgMetalIncome() < savedIncome * 0.6f) {
 		manager->AbortTask(this);
 	} else if ((++updCount % 4 == 0) && !units.empty()) {
+		const float radius = (*units.begin())->GetCircuitDef()->GetBuildDistance();
 		CAllyUnit* repTarget = circuit->GetFriendlyUnit(targetId);
-		if (repTarget == nullptr) {
+		if ((repTarget == nullptr)
+			|| (position.SqDistance2D(repTarget->GetPos(circuit->GetLastFrame())) > SQUARE(radius * 0.9f)))
+		{
 			manager->AbortTask(this);
 			return;
 		}
+
 		IBuilderTask* task = nullptr;
 		if (repTarget->GetUnit()->IsBeingBuilt()) {
 			CFactoryManager* factoryManager = circuit->GetFactoryManager();
@@ -74,7 +78,6 @@ void CSRepairTask::Update()
 				// Check for damaged units
 				CBuilderManager* builderManager = circuit->GetBuilderManager();
 				circuit->UpdateFriendlyUnits();
-				float radius = (*units.begin())->GetCircuitDef()->GetBuildDistance();
 				auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 				for (Unit* u : us) {
 					CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
@@ -98,9 +101,8 @@ void CSRepairTask::Update()
 			// Check for units under construction
 			CFactoryManager* factoryManager = circuit->GetFactoryManager();
 			CBuilderManager* builderManager = circuit->GetBuilderManager();
-			float maxCost = MAX_BUILD_SEC * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor();
+			const float maxCost = MAX_BUILD_SEC * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor();
 			circuit->UpdateFriendlyUnits();
-			float radius = (*units.begin())->GetCircuitDef()->GetBuildDistance();
 			auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 			for (Unit* u : us) {
 				CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
@@ -116,6 +118,7 @@ void CSRepairTask::Update()
 			}
 			utils::free_clear(us);
 		}
+
 		if (task != nullptr) {
 			decltype(units) tmpUnits = units;
 			for (CCircuitUnit* unit : tmpUnits) {

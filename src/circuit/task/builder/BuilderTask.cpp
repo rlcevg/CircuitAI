@@ -9,6 +9,7 @@
 #include "task/builder/BuildChain.h"
 #include "task/RetreatTask.h"
 #include "map/ThreatMap.h"
+#include "map/InfluenceMap.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
@@ -419,8 +420,11 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 	}
 
 	// Reassign task if required
-	const float sqDist = unit->GetPos(circuit->GetLastFrame()).SqDistance2D(GetPosition());
-	if (sqDist <= SQUARE(unit->GetCircuitDef()->GetBuildDistance() + circuit->GetPathfinder()->GetSquareSize())) {
+	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
+	const float sqDist = pos.SqDistance2D(GetPosition());
+	if (sqDist <= SQUARE(unit->GetCircuitDef()->GetBuildDistance() + circuit->GetPathfinder()->GetSquareSize())
+		&& (circuit->GetInflMap()->GetInfluenceAt(pos) > INFL_BASE))
+	{
 		return true;
 	}
 	HideAssignee(unit);
