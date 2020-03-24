@@ -1007,17 +1007,19 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 	// check nanos around
 	std::set<CCircuitUnit*> nanos;
 	float radius = assistDef->GetBuildDistance();
-	const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
-	auto units = this->circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
-	int nanoId = assistDef->GetId();
-	int teamId = this->circuit->GetTeamId();
+	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
+	COOAICallback* clb = circuit->GetCallback();
+	auto units = clb->GetFriendlyUnitsIn(pos, radius);
+	CCircuitDef::Id nanoId = assistDef->GetId();
+	int teamId = circuit->GetTeamId();
 	for (Unit* nano : units) {
 		if (nano == nullptr) {
 			continue;
 		}
-		UnitDef* ndef = nano->GetDef();
-		if (ndef->GetUnitDefId() == nanoId && (nano->GetTeam() == teamId) && !nano->IsBeingBuilt()) {
-			CCircuitUnit* ass = this->circuit->GetTeamUnit(nano->GetUnitId());
+		int unitId = nano->GetUnitId();
+		CCircuitDef::Id ndefId = clb->GetUnitDefId(unitId);
+		if ((ndefId == nanoId) && (nano->GetTeam() == teamId) && !nano->IsBeingBuilt()) {
+			CCircuitUnit* ass = circuit->GetTeamUnit(unitId);
 			// NOTE: OOAICallback::GetFriendlyUnits may return yet unregistered units created in GamePreload
 			if (ass != nullptr) {
 				nanos.insert(ass);
@@ -1029,14 +1031,13 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 				facs.insert(unit);
 			}
 		}
-		delete ndef;
 		delete nano;
 	}
 //	utils::free_clear(units);
 
 	if (factories.empty()) {
-		this->circuit->GetSetupManager()->SetBasePos(pos);
-		this->circuit->GetMilitaryManager()->MakeBaseDefence(pos);
+		circuit->GetSetupManager()->SetBasePos(pos);
+		circuit->GetMilitaryManager()->MakeBaseDefence(pos);
 	}
 
 	auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());

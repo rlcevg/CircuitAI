@@ -1013,19 +1013,18 @@ int CCircuitAI::EnemyEnterLOS(CEnemyInfo* enemy)
 		return 0;  // signaling: OK
 	}
 	// Force unit's reaction
-	auto friendlies = callback->GetFriendlyUnitsIn(enemy->GetPos(), 500.0f);
+	auto friendlies = callback->GetFriendlyUnitIdsIn(enemy->GetPos(), 500.0f);
 	if (friendlies.empty()) {
 		return 0;  // signaling: OK
 	}
-	for (Unit* f : friendlies) {
-		if (f == nullptr) {
+	for (int fId : friendlies) {
+		if (fId == -1) {
 			continue;
 		}
-		CCircuitUnit* unit = GetTeamUnit(f->GetUnitId());
+		CCircuitUnit* unit = GetTeamUnit(fId);
 		if ((unit != nullptr) && (unit->GetTask() != nullptr)) {
 			unit->ForceExecute(lastFrame + THREAT_UPDATE_RATE);
 		}
-		delete f;
 	}
 
 	return 0;  // signaling: OK
@@ -1161,10 +1160,8 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId)
 
 CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId, Unit* u)
 {
-	UnitDef* unitDef = u->GetDef();
-	CCircuitDef* cdef = GetCircuitDef(unitDef->GetUnitDefId());
+	CCircuitDef* cdef = GetCircuitDef(GetCallback()->GetUnitDefId(unitId));
 	CCircuitUnit* unit = new CCircuitUnit(unitId, u, cdef);
-	delete unitDef;
 
 	STerrainMapArea* area;
 	bool isValid;

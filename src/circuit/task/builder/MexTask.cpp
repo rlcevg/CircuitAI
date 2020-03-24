@@ -152,23 +152,21 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 	const float testRange = range + 200.0f;  // 200 elmos
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	if (buildPos.SqDistance2D(pos) < SQUARE(testRange)) {
-		int mexDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
+		CCircuitDef::Id mexDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
+		COOAICallback* clb = circuit->GetCallback();
 		// TODO: Use internal CCircuitAI::GetEnemyUnits?
-		auto enemies = circuit->GetCallback()->GetEnemyUnitsIn(buildPos, SQUARE_SIZE);
+		auto enemies = clb->GetEnemyUnitIdsIn(buildPos, SQUARE_SIZE);
 		bool blocked = false;
-		for (Unit* enemy : enemies) {
-			if (enemy == nullptr) {
+		for (int enemyId : enemies) {
+			if (enemyId == -1) {
 				continue;
 			}
-			UnitDef* def = enemy->GetDef();
-			int enemyDefId = def->GetUnitDefId();
-			delete def;
+			CCircuitDef::Id enemyDefId = clb->GetUnitDefId(enemyId);
 			if (enemyDefId == mexDefId) {
 				blocked = true;
 				break;
 			}
 		}
-		utils::free_clear(enemies);
 		if (blocked) {
 			CBuilderManager* builderManager = circuit->GetBuilderManager();
 			IBuilderTask* task = nullptr;

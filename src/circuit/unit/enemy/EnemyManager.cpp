@@ -15,6 +15,8 @@
 #include "util/Scheduler.h"
 #include "json/json.h"
 
+#include "spring/SpringCallback.h"
+
 #include "WrappUnit.h"
 #include "Cheats.h"
 
@@ -66,13 +68,12 @@ std::pair<CEnemyUnit*, bool> CEnemyManager::RegisterEnemyUnit(ICoreUnit::Id unit
 	}
 	CCircuitDef* cdef = nullptr;
 	if (isInLOS) {
-		UnitDef* unitDef = u->GetDef();
-		if (unitDef == nullptr) {  // doesn't work with globalLOS
+		CCircuitDef::Id unitDefId = circuit->GetCallback()->GetUnitDefId(unitId);
+		if (unitDefId == -1) {  // doesn't work with globalLOS
 			delete u;
 			return std::make_pair(nullptr, false);
 		}
-		cdef = circuit->GetCircuitDef(unitDef->GetUnitDefId());
-		delete unitDef;
+		cdef = circuit->GetCircuitDef(unitDefId);
 	}
 	CEnemyUnit* data = new CEnemyUnit(unitId, u, cdef);
 
@@ -90,9 +91,7 @@ CEnemyUnit* CEnemyManager::RegisterEnemyUnit(Unit* e)
 
 	const ICoreUnit::Id unitId = e->GetUnitId();
 	CEnemyUnit* data = GetEnemyUnit(unitId);
-	UnitDef* unitDef = e->GetDef();
-	CCircuitDef::Id unitDefId = unitDef->GetUnitDefId();
-	delete unitDef;
+	CCircuitDef::Id unitDefId = circuit->GetCallback()->GetUnitDefId(unitId);
 
 	if (data != nullptr) {
 		if ((data->GetCircuitDef() == nullptr) || data->GetCircuitDef()->GetId() != unitDefId) {
@@ -205,12 +204,10 @@ void CEnemyManager::EnqueueUpdate()
 
 bool CEnemyManager::UnitInLOS(CEnemyUnit* data)
 {
-	UnitDef* unitDef = data->GetUnit()->GetDef();
-	if (unitDef == nullptr) {  // doesn't work with globalLOS
+	CCircuitDef::Id unitDefId = circuit->GetCallback()->GetUnitDefId(data->GetId());
+	if (unitDefId == -1) {  // doesn't work with globalLOS
 		return false;
 	}
-	CCircuitDef::Id unitDefId = unitDef->GetUnitDefId();
-	delete unitDef;
 	if ((data->GetCircuitDef() == nullptr) || data->GetCircuitDef()->GetId() != unitDefId) {
 		data->SetCircuitDef(circuit->GetCircuitDef(unitDefId));
 		data->SetCost(data->GetUnit()->GetRulesParamFloat("comm_cost", data->GetCost()));

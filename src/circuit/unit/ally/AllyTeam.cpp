@@ -119,17 +119,15 @@ void CAllyTeam::UpdateFriendlyUnits(CCircuitAI* circuit)
 		delete kv.second;
 	}
 	friendlyUnits.clear();
-	const std::vector<Unit*>& units = circuit->GetCallback()->GetFriendlyUnits();
+	COOAICallback* clb = circuit->GetCallback();
+	const std::vector<Unit*>& units = clb->GetFriendlyUnits();
 	for (Unit* u : units) {
-		// FIXME: Why engine returns vector with some nullptrs?
-		// TODO: Check every GetEnemy/FriendlyUnits for nullptr
-		if (u == nullptr) {
+		if (u == nullptr) {  // engine returns vector with nullptrs
 			continue;
 		}
 		int unitId = u->GetUnitId();
-		UnitDef* unitDef = u->GetDef();
-		CAllyUnit* unit = new CAllyUnit(unitId, u, circuit->GetCircuitDef(unitDef->GetUnitDefId()));
-		delete unitDef;
+		CCircuitDef::Id unitDefId = clb->GetUnitDefId(unitId);
+		CAllyUnit* unit = new CAllyUnit(unitId, u, circuit->GetCircuitDef(unitDefId));
 		friendlyUnits[unitId] = unit;
 	}
 	lastUpdate = circuit->GetLastFrame();

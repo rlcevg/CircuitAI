@@ -36,17 +36,14 @@ public:
 
 	std::vector<springai::Unit*> GetTeamUnits() const { return callback->GetTeamUnits(); }
 
-//	void GetFriendlyUnits(std::vector<springai::Unit*>& units) const;
-	std::vector<springai::Unit*> GetFriendlyUnits() const { return callback->GetFriendlyUnits(); }
-	std::vector<springai::Unit*> GetFriendlyUnitsIn(const springai::AIFloat3& pos, float radius) const {
-		return callback->GetFriendlyUnitsIn(pos, radius);
-	}
+	std::vector<springai::Unit*> GetFriendlyUnits();
+	std::vector<springai::Unit*> GetFriendlyUnitsIn(const springai::AIFloat3& pos, float radius);
 	bool IsFriendlyUnitsIn(const springai::AIFloat3& pos, float radius) const;
+	std::vector<int> GetFriendlyUnitIdsIn(const springai::AIFloat3& pos, float radius);
 
-	std::vector<springai::Unit*> GetEnemyUnits() const { return callback->GetEnemyUnits(); }
-	std::vector<springai::Unit*> GetEnemyUnitsIn(const springai::AIFloat3& pos, float radius) const {
-		return callback->GetEnemyUnitsIn(pos, radius);
-	}
+	std::vector<springai::Unit*> GetEnemyUnits();
+	std::vector<springai::Unit*> GetEnemyUnitsIn(const springai::AIFloat3& pos, float radius);
+	std::vector<int> GetEnemyUnitIdsIn(const springai::AIFloat3& pos, float radius);
 
 	std::vector<springai::Unit*> GetSelectedUnits() const { return callback->GetSelectedUnits(); }
 
@@ -60,9 +57,15 @@ public:
 	bool IsFeatures() const;
 	bool IsFeaturesIn(const springai::AIFloat3& pos, float radius) const;
 
+	int GetUnitDefId(int unitId) const;
+
 private:
 	const struct SSkirmishAICallback* sAICallback;
 	springai::OOAICallback* callback;
+	int skirmishAIId;
+
+	std::vector<int> unitIds;
+	std::vector<springai::Unit*> units;
 };
 
 } // namespace circuit

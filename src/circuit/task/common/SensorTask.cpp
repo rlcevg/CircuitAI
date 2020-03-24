@@ -35,20 +35,18 @@ void ISensorTask::Update()
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	bool isBuilt = false;
-	auto friendlies = circuit->GetCallback()->GetFriendlyUnitsIn(GetPosition(), 500.f);
-	for (Unit* au : friendlies) {
-		if (au == nullptr) {
+	COOAICallback* clb = circuit->GetCallback();
+	auto friendlies = clb->GetFriendlyUnitIdsIn(GetPosition(), 500.f);
+	for (int auId : friendlies) {
+		if (auId == -1) {
 			continue;
 		}
-		UnitDef* udef = au->GetDef();
-		CCircuitDef::Id defId = udef->GetUnitDefId();
-		delete udef;
+		CCircuitDef::Id defId = clb->GetUnitDefId(auId);
 		if (defId == buildDef->GetId()) {
 			isBuilt = true;
 			break;
 		}
 	}
-	utils::free_clear(friendlies);
 	if (isBuilt) {
 		manager->AbortTask(this);
 	}

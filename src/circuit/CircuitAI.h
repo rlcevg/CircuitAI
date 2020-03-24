@@ -75,7 +75,7 @@ class CDebugDrawer;
  * Только под ногами их крутятся:
  * По оси земля, по полу полу-люди!
  */
-constexpr char version[]{"1.0.8"};
+constexpr char version[]{"1.1.0"};
 
 class CException: public std::exception {
 public:

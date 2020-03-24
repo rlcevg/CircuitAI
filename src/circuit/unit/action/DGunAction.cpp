@@ -44,7 +44,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 		return;
 	}
 	const AIFloat3& pos = unit->GetPos(frame);
-	auto enemies = circuit->GetCallback()->GetEnemyUnitsIn(pos, range);
+	auto enemies = circuit->GetCallback()->GetEnemyUnitIdsIn(pos, range);
 	if (enemies.empty()) {
 		return;
 	}
@@ -54,12 +54,11 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	CEnemyInfo* bestTarget = nullptr;
 	float maxThreat = 0.f;
 
-	for (Unit* e : enemies) {
-		if (e == nullptr) {
+	for (int eId : enemies) {
+		if (eId == -1) {
 			continue;
 		}
-		CEnemyInfo* enemy = circuit->GetEnemyInfo(e);
-		delete e;  // replaces utils::free_clear(enemies);
+		CEnemyInfo* enemy = circuit->GetEnemyInfo(eId);
 		if ((enemy == nullptr) || enemy->NotInRadarAndLOS() || (enemy->GetThreat() < THREAT_MIN)) {
 			continue;
 		}

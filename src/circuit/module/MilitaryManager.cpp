@@ -623,23 +623,21 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	// Build sensors
 	auto checkSensor = [this, &backPos, builderManager](IBuilderTask::BuildType type, CCircuitDef* cdef, float range) {
 		bool isBuilt = false;
-		auto friendlies = circuit->GetCallback()->GetFriendlyUnitsIn(backPos, range);
-		for (Unit* au : friendlies) {
-			if (au == nullptr) {
+		COOAICallback* clb = circuit->GetCallback();
+		auto friendlies = clb->GetFriendlyUnitIdsIn(backPos, range);
+		for (int auId : friendlies) {
+			if (auId == -1) {
 				continue;
 			}
-			UnitDef* udef = au->GetDef();
-			CCircuitDef::Id defId = udef->GetUnitDefId();
-			delete udef;
+			CCircuitDef::Id defId = clb->GetUnitDefId(auId);
 			if (defId == cdef->GetId()) {
 				isBuilt = true;
 				break;
 			}
 		}
-		utils::free_clear(friendlies);
 		if (!isBuilt) {
 			const IBuilderTask* task = nullptr;
-			const float qdist = range * range;
+			const float qdist = SQUARE(range);
 			for (const IBuilderTask* t : builderManager->GetTasks(type)) {
 				if (backPos.SqDistance2D(t->GetTaskPos()) < qdist) {
 					task = t;
