@@ -68,7 +68,7 @@ std::pair<CEnemyUnit*, bool> CEnemyManager::RegisterEnemyUnit(ICoreUnit::Id unit
 	}
 	CCircuitDef* cdef = nullptr;
 	if (isInLOS) {
-		CCircuitDef::Id unitDefId = circuit->GetCallback()->GetUnitDefId(unitId);
+		CCircuitDef::Id unitDefId = circuit->GetCallback()->Unit_GetDefId(unitId);
 		if (unitDefId == -1) {  // doesn't work with globalLOS
 			delete u;
 			return std::make_pair(nullptr, false);
@@ -91,7 +91,7 @@ CEnemyUnit* CEnemyManager::RegisterEnemyUnit(Unit* e)
 
 	const ICoreUnit::Id unitId = e->GetUnitId();
 	CEnemyUnit* data = GetEnemyUnit(unitId);
-	CCircuitDef::Id unitDefId = circuit->GetCallback()->GetUnitDefId(unitId);
+	CCircuitDef::Id unitDefId = circuit->GetCallback()->Unit_GetDefId(unitId);
 
 	if (data != nullptr) {
 		if ((data->GetCircuitDef() == nullptr) || data->GetCircuitDef()->GetId() != unitDefId) {
@@ -204,7 +204,7 @@ void CEnemyManager::EnqueueUpdate()
 
 bool CEnemyManager::UnitInLOS(CEnemyUnit* data)
 {
-	CCircuitDef::Id unitDefId = circuit->GetCallback()->GetUnitDefId(data->GetId());
+	CCircuitDef::Id unitDefId = circuit->GetCallback()->Unit_GetDefId(data->GetId());
 	if (unitDefId == -1) {  // doesn't work with globalLOS
 		return false;
 	}

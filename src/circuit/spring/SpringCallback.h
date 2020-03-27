@@ -57,7 +57,7 @@ public:
 	bool IsFeatures() const;
 	bool IsFeaturesIn(const springai::AIFloat3& pos, float radius) const;
 
-	int GetUnitDefId(int unitId) const;
+	int Unit_GetDefId(int unitId) const;
 
 private:
 	const struct SSkirmishAICallback* sAICallback;

@@ -46,7 +46,7 @@
 			// Integer radius of a blocker or description string.
 			// Available string values: explosion, expl_ally
 //			"radius": "explosion",  // default: "explosion"
-			"radius": 4,
+			"radius": 3,
 			"not_ignore": ["factory", "engy_low"]
 		},
 		"fusion": {
@@ -126,7 +126,7 @@
 		"pylon": ["energypylon"],
 		"store": ["staticstorage"],
 		"mex": ["staticmex"],
-		"def_low": ["turretmissile", "turretlaser"],
+		"def_low": ["turretmissile", "turretlaser", "staticarty"],
 		"caretaker": ["staticcon", "staticrearm"],
 		"superweapon": ["raveparty", "staticnuke", "zenith", "turretaaheavy", "staticheavyarty", "staticantinuke", "staticheavyradar"],
 //		"protector": ["staticantinuke"],

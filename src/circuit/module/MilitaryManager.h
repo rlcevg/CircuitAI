@@ -146,7 +146,6 @@ private:
 	} raid;
 	unsigned int maxScouts;
 	float minAttackers;
-	float defRadius;
 	struct SThreatQuota {
 		float min;
 		float len;

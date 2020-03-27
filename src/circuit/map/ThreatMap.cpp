@@ -7,8 +7,8 @@
 
 #include "map/ThreatMap.h"
 #include "map/MapManager.h"
-#include "terrain/TerrainManager.h"
 #include "setup/SetupManager.h"
+#include "terrain/TerrainManager.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"

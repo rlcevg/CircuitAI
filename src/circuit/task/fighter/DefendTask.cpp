@@ -29,10 +29,9 @@ namespace circuit {
 
 using namespace springai;
 
-CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position, float radius,
+CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position,
 						 FightType check, FightType promote, float maxPower, float powerMod)
 		: ISquadTask(mgr, FightType::DEFEND, powerMod)
-		, radius(radius)
 		, check(check)
 		, promote(promote)
 		, maxPower(maxPower * powerMod)
@@ -228,7 +227,8 @@ void CDefendTask::FindTarget()
 			continue;
 		}
 		const AIFloat3& ePos = enemy->GetPos();
-		if ((maxPower <= threatMap->GetThreatAt(ePos)) || (inflMap->GetAllyDefendInflAt(ePos) < 0.01f/*INFL_BASE*/)
+		if ((maxPower <= threatMap->GetThreatAt(ePos))
+			|| (inflMap->GetAllyDefendInflAt(ePos) < 0.01f/*INFL_BASE*/)
 			|| !terrainManager->CanMoveToPos(area, ePos))
 		{
 			continue;
@@ -236,7 +236,8 @@ void CDefendTask::FindTarget()
 
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
-			if (((edef->GetCategory() & canTargetCat) == 0) || ((edef->GetCategory() & noChaseCat) != 0)
+			if (((edef->GetCategory() & canTargetCat) == 0)
+				|| ((edef->GetCategory() & noChaseCat) != 0)
 				|| (edef->IsAbleToFly() && notAA))
 			{
 				continue;

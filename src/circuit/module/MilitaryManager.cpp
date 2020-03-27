@@ -391,7 +391,7 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType promote, float power)
 {
 	const float mod = (float)rand() / RAND_MAX * defenceMod.len + defenceMod.min;
-	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), defRadius,
+	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(),
 										 promote, promote, power, 1.0f / mod);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
 	fightUpdates.push_back(task);
@@ -400,7 +400,7 @@ IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType promote, f
 
 IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote, float power)
 {
-	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), defRadius,
+	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(),
 										 check, promote, power, 1.0f);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
 	fightUpdates.push_back(task);
@@ -629,7 +629,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 			if (auId == -1) {
 				continue;
 			}
-			CCircuitDef::Id defId = clb->GetUnitDefId(auId);
+			CCircuitDef::Id defId = clb->Unit_GetDefId(auId);
 			if (defId == cdef->GetId()) {
 				isBuilt = true;
 				break;
@@ -1197,7 +1197,6 @@ void CMilitaryManager::ReadConfig()
 	raid.min = qraid.get((unsigned)0, 3.f).asFloat();
 	raid.avg = qraid.get((unsigned)1, 5.f).asFloat();
 	minAttackers = quotas.get("attack", 8.f).asFloat();
-	defRadius = quotas.get("def_rad", 2000.f).asFloat();
 	const Json::Value& qthrMod = quotas["thr_mod"];
 	const Json::Value& qthrAtk = qthrMod["attack"];
 	attackMod.min = qthrAtk.get((unsigned)0, 1.f).asFloat();

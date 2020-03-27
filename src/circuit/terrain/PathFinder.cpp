@@ -247,7 +247,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
 		threatArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
 		moveFun = [&sectors, maxSlope](int index) {
-			return (sectors[index].isWater ? 5.f : 0.f) + 4.f * sectors[index].maxSlope / maxSlope;
+			return (sectors[index].isWater ? 4.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
 		};
 		moveThreatFun = [moveFun, threatArray](int index) {
 			return moveFun(index) + 2.f * threatArray[index];
@@ -274,15 +274,15 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 			const float minElev = areaData->minElevation;
 			float elevLen = std::max(areaData->maxElevation - areaData->minElevation, 1e-3f);
 			moveFun = [&sectors, minElev, elevLen](int index) {
-				return 4.f * (1.f - (sectors[index].maxElevation - minElev) / elevLen) +
-						(sectors[index].isWater ? 5.f : 0.f);
+				return 2.f * (1.f - (sectors[index].maxElevation - minElev) / elevLen) +
+						(sectors[index].isWater ? 4.f : 0.f);
 			};
 			moveThreatFun = [moveFun, threatArray](int index) {
 				return moveFun(index) + 2.f * threatArray[index];
 			};
 		} else {
 			moveFun = [&sectors, maxSlope](int index) {
-				return (sectors[index].isWater ? 5.f : 0.f) + 4.f * sectors[index].maxSlope / maxSlope;
+				return (sectors[index].isWater ? 4.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
 			};
 			moveThreatFun = [moveFun, threatArray](int index) {
 				return moveFun(index) + 2.f * threatArray[index];
@@ -291,7 +291,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 	} else {
 		threatArray = threatMap->GetSurfThreatArray();
 		moveFun = [&sectors, maxSlope](int index) {
-			return (sectors[index].isWater ? 0.f : (4.f * sectors[index].maxSlope / maxSlope));
+			return (sectors[index].isWater ? 0.f : (2.f * sectors[index].maxSlope / maxSlope));
 		};
 		moveThreatFun = [moveFun, threatArray](int index) {
 			return moveFun(index) + 2.f * threatArray[index];

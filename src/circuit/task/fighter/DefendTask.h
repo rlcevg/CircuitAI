@@ -14,7 +14,7 @@ namespace circuit {
 
 class CDefendTask: public ISquadTask {
 public:
-	CDefendTask(ITaskManager* mgr, const springai::AIFloat3& position, float radius,
+	CDefendTask(ITaskManager* mgr, const springai::AIFloat3& position,
 				FightType check, FightType promote, float maxPower, float powerMod);
 	virtual ~CDefendTask();
 
@@ -37,8 +37,6 @@ protected:
 private:
 	virtual void Merge(ISquadTask* task) override;
 	void FindTarget();
-
-	float radius;
 
 	FightType check;
 	FightType promote;

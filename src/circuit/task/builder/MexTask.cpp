@@ -161,7 +161,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 			if (enemyId == -1) {
 				continue;
 			}
-			CCircuitDef::Id enemyDefId = clb->GetUnitDefId(enemyId);
+			CCircuitDef::Id enemyDefId = clb->Unit_GetDefId(enemyId);
 			if (enemyDefId == mexDefId) {
 				blocked = true;
 				break;

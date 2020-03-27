@@ -1017,7 +1017,7 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 			continue;
 		}
 		int unitId = nano->GetUnitId();
-		CCircuitDef::Id ndefId = clb->GetUnitDefId(unitId);
+		CCircuitDef::Id ndefId = clb->Unit_GetDefId(unitId);
 		if ((ndefId == nanoId) && (nano->GetTeam() == teamId) && !nano->IsBeingBuilt()) {
 			CCircuitUnit* ass = circuit->GetTeamUnit(unitId);
 			// NOTE: OOAICallback::GetFriendlyUnits may return yet unregistered units created in GamePreload

@@ -10,7 +10,7 @@
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "module/MilitaryManager.h"
-//#include "setup/SetupManager.h"
+#include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/PathFinder.h"
 #include "unit/action/FightAction.h"
@@ -236,7 +236,7 @@ void CAttackTask::FindTarget()
 	CMap* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-//	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
+	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
@@ -249,15 +249,11 @@ void CAttackTask::FindTarget()
 	const int noChaseCat = cdef->GetNoChaseCategory();
 
 	CEnemyInfo* bestTarget = nullptr;
-	// TODO: Custom heuristic function
-//	const float sqOBDist = pos.SqDistance2D(basePos);  // Own to Base distance
-//	const float sqBEDist = ePos.SqDistance2D(basePos);  // Base to Enemy distance
-//	const float scale = std::min(sqBEDist / sqOBDist, 1.f);
-//	const float sqOEDist = pos.SqDistance2D(ePos) * scale;  // Own to Enemy distance
+	const float sqOBDist = pos.SqDistance2D(basePos);  // Own to Base distance
 	float minSqDist = std::numeric_limits<float>::max();
 
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
-	static F3Vec enemyPositions;  // NOTE: micro-opt
+//	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(leader);
 	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	for (auto& kv : enemies) {
@@ -266,7 +262,9 @@ void CAttackTask::FindTarget()
 			continue;
 		}
 		const AIFloat3& ePos = enemy->GetPos();
-		if ((maxPower <= threatMap->GetThreatAt(ePos)/* * scale*/)
+		const float sqBEDist = ePos.SqDistance2D(basePos);  // Base to Enemy distance
+		const float scale = std::min(sqBEDist / sqOBDist, 1.f);
+		if ((maxPower <= threatMap->GetThreatAt(ePos) * scale)
 			|| !terrainManager->CanMoveToPos(area, ePos)
 			|| (enemy->GetVel().SqLength2D() >= speed))
 		{
@@ -275,7 +273,8 @@ void CAttackTask::FindTarget()
 
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
-			if (((edef->GetCategory() & canTargetCat) == 0) || ((edef->GetCategory() & noChaseCat) != 0)
+			if (((edef->GetCategory() & canTargetCat) == 0)
+				|| ((edef->GetCategory() & noChaseCat) != 0)
 				|| (edef->IsAbleToFly() && notAA))
 			{
 				continue;
@@ -293,30 +292,32 @@ void CAttackTask::FindTarget()
 			}
 		}
 
-		float sqDist = pos.SqDistance2D(ePos);  // * scale;
-		if (minSqDist > sqDist) {
-			minSqDist = sqDist;
+		const float sqOEDist = pos.SqDistance2D(ePos) * scale;  // Own to Enemy distance
+		if (minSqDist > sqOEDist) {
+			minSqDist = sqOEDist;
 			bestTarget = enemy;
 		}
-		enemyPositions.push_back(ePos);
+//		enemyPositions.push_back(ePos);
 	}
 
 	if (bestTarget != nullptr) {
 		SetTarget(bestTarget);
 		position = target->GetPos();
 	}
-	if (enemyPositions.empty()) {
-		pPath->Clear();
-		return;
-	}
+//	if (enemyPositions.empty()) {
+//		pPath->Clear();
+//		return;
+//	}
 	AIFloat3 startPos = pos;
+	AIFloat3 endPos = position;
 
 	const float eps = threatMap->GetSquareSize() * 2.f;
 	const float pathRange = std::max(highestRange - eps, eps);
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	pathfinder->FindBestPath(*pPath, startPos, pathRange, enemyPositions, attackPower * 0.25f);
-	enemyPositions.clear();
+	pathfinder->MakePath(*pPath, startPos, endPos, pathRange, attackPower);
+//	pathfinder->FindBestPath(*pPath, startPos, pathRange, enemyPositions, attackPower);
+//	enemyPositions.clear();
 }
 
 } // namespace circuit

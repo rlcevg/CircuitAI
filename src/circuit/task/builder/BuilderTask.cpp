@@ -423,7 +423,7 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	const float sqDist = pos.SqDistance2D(GetPosition());
 	if (sqDist <= SQUARE(unit->GetCircuitDef()->GetBuildDistance() + circuit->GetPathfinder()->GetSquareSize())
-		&& (circuit->GetInflMap()->GetInfluenceAt(pos) > INFL_BASE))
+		&& (circuit->GetInflMap()->GetInfluenceAt(pos) >= INFL_BASE))
 	{
 		return true;
 	}

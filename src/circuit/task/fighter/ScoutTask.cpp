@@ -252,9 +252,9 @@ CEnemyInfo* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, Path
 			}
 			continue;
 		}
-//		if (sqDist < SQUARE(2000.f)) {  // maxSqDist
+		if (sqDist < SQUARE(1000.f)) {  // maxSqDist
 			enemyPositions.push_back(ePos);
-//		}
+		}
 	}
 	if (bestTarget == nullptr) {
 		bestTarget = worstTarget;

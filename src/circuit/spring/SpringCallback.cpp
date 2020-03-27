@@ -132,7 +132,7 @@ bool COOAICallback::IsFeaturesIn(const AIFloat3& pos, float radius) const
 	return size > 0;
 }
 
-int COOAICallback::GetUnitDefId(int unitId) const
+int COOAICallback::Unit_GetDefId(int unitId) const
 {
 	return sAICallback->Unit_getDef(skirmishAIId, unitId);
 }

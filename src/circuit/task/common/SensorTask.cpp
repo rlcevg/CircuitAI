@@ -41,7 +41,7 @@ void ISensorTask::Update()
 		if (auId == -1) {
 			continue;
 		}
-		CCircuitDef::Id defId = clb->GetUnitDefId(auId);
+		CCircuitDef::Id defId = clb->Unit_GetDefId(auId);
 		if (defId == buildDef->GetId()) {
 			isBuilt = true;
 			break;

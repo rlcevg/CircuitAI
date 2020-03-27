@@ -7,12 +7,14 @@
 
 #include "map/InfluenceMap.h"
 #include "map/MapManager.h"
-#include "terrain/TerrainManager.h"
 #include "module/EconomyManager.h"
+#include "setup/SetupManager.h"
+#include "terrain/TerrainManager.h"
 #include "unit/ally/AllyUnit.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "util/utils.h"
+#include "json/json.h"
 
 #include "spring/SpringCallback.h"
 
@@ -67,6 +69,9 @@ CInfluenceMap::CInfluenceMap(CMapManager* manager)
 	drawTension = inflData1.tension.data();
 	drawVulnerability = inflData1.vulnerability.data();
 	drawFeatureInfl = inflData1.featureInfl.data();
+
+	const Json::Value& quota = circuit->GetSetupManager()->GetConfig()["quota"];
+	defRadius = quota.get("def_rad", 5.f).asFloat();
 }
 
 CInfluenceMap::~CInfluenceMap()
@@ -291,7 +296,7 @@ void CInfluenceMap::AddUnarmed(CAllyUnit* u)
 
 	const float val = u->GetCircuitDef()->GetCost();
 	// FIXME: GetInfluenceRange: for statics it's just range; mobile should account for speed
-	const int range = DEFAULT_SLACK * 4 * 5 / squareSize;
+	const int range = DEFAULT_SLACK * 4 * defRadius / squareSize;
 	const int rangeSq = SQUARE(range);
 
 	const int beginX = std::max(int(posx - range + 1),       0);

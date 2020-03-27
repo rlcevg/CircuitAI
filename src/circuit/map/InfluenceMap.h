@@ -96,6 +96,8 @@ private:
 	float* vulnerability;
 	float* featureInfl;
 
+	float defRadius;
+
 #ifdef DEBUG_VIS
 private:
 	std::vector<std::pair<uint32_t, float*>> sdlWindows;
