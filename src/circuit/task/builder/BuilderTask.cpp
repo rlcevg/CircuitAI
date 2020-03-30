@@ -108,9 +108,8 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 
 	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
-		int facing = target->GetUnit()->GetBuildingFacing();
 		TRY_UNIT(circuit, unit,
-			u->Build(target->GetCircuitDef()->GetUnitDef(), buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			u->Repair(target->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 		)
 		return;
 	}
@@ -119,7 +118,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	if (utils::is_valid(buildPos)) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
 			TRY_UNIT(circuit, unit,
-				u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+				u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 			)
 			return;
 		} else {
@@ -137,11 +136,8 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		CAllyUnit* alu = FindSameAlly(unit, friendlies);
 		utils::free_clear(friendlies);
 		if (alu != nullptr) {
-			UnitDef* buildUDef = alu->GetCircuitDef()->GetUnitDef();
-			const AIFloat3& pos = alu->GetPos(frame);
-			Unit* au = alu->GetUnit();
 			TRY_UNIT(circuit, unit,
-				u->Build(buildUDef, pos, au->GetBuildingFacing(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+				u->Repair(alu->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 			)
 			return;
 		}
@@ -156,7 +152,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	if (utils::is_valid(buildPos)) {
 		terrainManager->AddBlocker(buildDef, buildPos, facing);
 		TRY_UNIT(circuit, unit,
-			u->Build(buildUDef, buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 		)
 	} else {
 		// TODO: Select new proper BasePos, like near metal cluster.
@@ -329,7 +325,7 @@ void IBuilderTask::UpdateTarget(CCircuitUnit* unit)
 	int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 	for (CCircuitUnit* ass : units) {
 		TRY_UNIT(circuit, ass,
-			ass->GetUnit()->Build(buildDef->GetUnitDef(), buildPos, facing, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame);
+			ass->GetUnit()->Repair(unit->GetUnit(), UNIT_CMD_OPTION, frame);
 		)
 	}
 }
