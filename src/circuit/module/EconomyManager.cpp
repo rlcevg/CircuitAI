@@ -70,9 +70,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	// TODO: Use A* ai planning... or sth... STRIPS https://ru.wikipedia.org/wiki/STRIPS
 	//       https://ru.wikipedia.org/wiki/Марковский_процесс_принятия_решений
 
-	CScheduler* scheduler = circuit->GetScheduler().get();
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateResourceIncome, this), TEAM_SLOWUPDATE_RATE);
-	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CEconomyManager::Init, this));
+	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CEconomyManager::Init, this));
 
 	/*
 	 * factory handlers
@@ -263,6 +261,149 @@ CEconomyManager::~CEconomyManager()
 	delete energyRes;
 	delete economy;
 	delete engyPol;
+}
+
+void CEconomyManager::ReadConfig()
+{
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
+	const Json::Value& econ = root["economy"];
+	ecoStep = econ.get("eps_step", 0.25f).asFloat();
+	ecoFactor = (circuit->GetAllyTeam()->GetSize() - 1.0f) * ecoStep + 1.0f;
+	metalMod = (1.f - econ.get("excess", -1.f).asFloat());
+	switchTime = econ.get("switch", 900).asInt() * FRAMES_PER_SEC;
+	const float bd = econ.get("build_delay", -1.f).asFloat();
+	buildDelay = (bd > 0.f) ? (bd * FRAMES_PER_SEC) : 0;
+
+	const Json::Value& energy = econ["energy"];
+	const Json::Value& factor = energy["factor"];
+	efInfo.startFactor = factor[0].get((unsigned)0, 0.5f).asFloat();
+	efInfo.startFrame = factor[0].get((unsigned)1, 300 ).asInt() * FRAMES_PER_SEC;
+	efInfo.endFactor = factor[1].get((unsigned)0, 2.0f).asFloat();
+	efInfo.endFrame = factor[1].get((unsigned)1, 3600).asInt() * FRAMES_PER_SEC;
+	efInfo.fraction = (efInfo.endFactor - efInfo.startFactor) / (efInfo.endFrame - efInfo.startFrame);
+	energyFactor = efInfo.startFactor;
+
+	// Using cafus, armfus, armsolar as control points
+	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
+	constexpr unsigned MAX_CTRL_POINTS = 3;
+	std::vector<std::pair<std::string, int>> engies;
+	std::string type = circuit->GetTerrainManager()->IsWaterMap() ? "water" : "land";
+	const Json::Value& surf = energy[type];
+	unsigned si = 0;
+	for (const std::string& engy : surf.getMemberNames()) {
+		const int min = surf[engy][0].asInt();
+		const int max = surf[engy].get(1, min).asInt();
+		const int limit = min + rand() % (max - min + 1);
+		engies.push_back(std::make_pair(engy, limit));
+		if (++si >= MAX_CTRL_POINTS) {
+			break;
+		}
+	}
+
+	CLagrangeInterPol::Vector x(engies.size()), y(engies.size());
+	for (unsigned i = 0; i < engies.size(); ++i) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(engies[i].first.c_str());
+		if (cdef == nullptr) {
+			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), engies[i].first.c_str());
+			continue;
+		}
+		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
+		auto it = customParams.find("income_energy");
+		float make = (it != customParams.end()) ? utils::string_to_float(it->second) : 1.f;
+		x[i] = cdef->GetCost() / make;
+		y[i] = engies[i].second + 0.5;  // +0.5 to be sure precision errors will not decrease integer part
+	}
+	engyPol = new CLagrangeInterPol(x, y);  // Alternatively use CGaussSolver to compute polynomial - faster on reuse
+
+	// NOTE: Alternative to CLagrangeInterPol
+//	CGaussSolver solver;
+//	CGaussSolver::Matrix a = {
+//		{1, x[0], x[0]*x[0]},
+//		{1, x[1], x[1]*x[1]},
+//		{1, x[2], x[2]*x[2]}
+//	};
+//	CGaussSolver::Vector r = solver.Solve(a, y);
+//	circuit->LOG("y = %f*x^0 + %f*x^1 + %f*x^2", r[0], r[1], r[2]);
+
+	// NOTE: Must have
+	defaultDef = circuit->GetCircuitDef(econ["default"].asCString());
+	if (defaultDef == nullptr) {
+		throw CException("economy.default");
+	}
+}
+
+void CEconomyManager::Init()
+{
+	energyGrid = circuit->GetAllyTeam()->GetEnergyGrid().get();
+
+	const size_t clSize = circuit->GetMetalManager()->GetClusters().size();
+	clusterInfos.resize(clSize, {nullptr, -FRAMES_PER_SEC});
+	const size_t spSize = circuit->GetMetalManager()->GetSpots().size();
+	openSpots.resize(spSize, true);
+
+	const Json::Value& econ = circuit->GetSetupManager()->GetConfig()["economy"];
+	const float mm = econ.get("mex_max", 2.f).asFloat();
+	mexMax = (mm < 1.f) ? (mm * spSize) : std::numeric_limits<decltype(mexMax)>::max();
+
+	const Json::Value& pull = econ["ms_pull"];
+	mspInfos.resize(pull.size());
+	mspInfos.push_back(SPullMtoS {
+		.pull = pull[0].get((unsigned)0, 1.0f).asFloat(),
+		.mex = (int)(pull[0].get((unsigned)1, 0.0f).asFloat() * spSize),
+		.fraction = 0.f
+	});
+	for (unsigned i = 1; i < pull.size(); ++i) {
+		SPullMtoS mspInfoEnd;
+		mspInfoEnd.pull = pull[i].get((unsigned)0, 0.25f).asFloat();
+		mspInfoEnd.mex = pull[i].get((unsigned)1, 0.75f).asFloat() * spSize;
+		mspInfoEnd.fraction = 0.f;
+		mspInfos.push_back(mspInfoEnd);
+		SPullMtoS& mspInfoBegin = mspInfos[i - 1];
+		mspInfoBegin.fraction = (mspInfoEnd.pull - mspInfoBegin.pull) / (mspInfoEnd.mex - mspInfoBegin.mex);
+	}
+	std::sort(mspInfos.begin(), mspInfos.end());
+	pullMtoS = mspInfos.front().pull;
+
+	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
+		metalProduced = economy->GetCurrent(metalRes) * metalMod;
+
+		CScheduler* scheduler = circuit->GetScheduler().get();
+		CAllyTeam* allyTeam = circuit->GetAllyTeam();
+		if (circuit->IsCommMerge() && !circuit->IsLoadSave()) {
+			const int spotId = circuit->GetMetalManager()->FindNearestSpot(pos);
+			const int clusterId = (spotId < 0) ? -1 : circuit->GetMetalManager()->GetCluster(spotId);
+			int ownerId = allyTeam->GetClusterTeam(clusterId).teamId;
+			if (ownerId < 0) {
+				ownerId = circuit->GetTeamId();
+				allyTeam->OccupyCluster(clusterId, ownerId);
+			} else if (ownerId != circuit->GetTeamId()) {
+				// Resign
+				std::vector<Unit*> migrants;
+				for (auto& kv : circuit->GetTeamUnits()) {
+					migrants.push_back(kv.second->GetUnit());
+				}
+				economy->SendUnits(migrants, ownerId);
+				circuit->Resign(ownerId);
+				return;
+			}
+		}
+
+		scheduler->RunTaskAfter(std::make_shared<CGameTask>([this]() {
+			ecoFactor = (circuit->GetAllyTeam()->GetAliveSize() - 1.0f) * ecoStep + 1.0f;
+		}), FRAMES_PER_SEC * 10);
+
+		const int interval = allyTeam->GetSize() * FRAMES_PER_SEC;
+		auto update = static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(update, this),
+								interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this),
+								interval, circuit->GetSkirmishAIId() + 1 + interval / 2);
+
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateResourceIncome, this), TEAM_SLOWUPDATE_RATE);
+	};
+
+	circuit->GetSetupManager()->ExecOnFindStart(subinit);
 }
 
 int CEconomyManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -1061,147 +1202,6 @@ void CEconomyManager::UpdateMorph()
 			break;  // one unit at a time
 		}
 	}
-}
-
-void CEconomyManager::ReadConfig()
-{
-	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
-	const Json::Value& econ = root["economy"];
-	ecoStep = econ.get("eps_step", 0.25f).asFloat();
-	ecoFactor = (circuit->GetAllyTeam()->GetSize() - 1.0f) * ecoStep + 1.0f;
-	metalMod = (1.f - econ.get("excess", -1.f).asFloat());
-	switchTime = econ.get("switch", 900).asInt() * FRAMES_PER_SEC;
-	const float bd = econ.get("build_delay", -1.f).asFloat();
-	buildDelay = (bd > 0.f) ? (bd * FRAMES_PER_SEC) : 0;
-
-	const Json::Value& energy = econ["energy"];
-	const Json::Value& factor = energy["factor"];
-	efInfo.startFactor = factor[0].get((unsigned)0, 0.5f).asFloat();
-	efInfo.startFrame = factor[0].get((unsigned)1, 300 ).asInt() * FRAMES_PER_SEC;
-	efInfo.endFactor = factor[1].get((unsigned)0, 2.0f).asFloat();
-	efInfo.endFrame = factor[1].get((unsigned)1, 3600).asInt() * FRAMES_PER_SEC;
-	efInfo.fraction = (efInfo.endFactor - efInfo.startFactor) / (efInfo.endFrame - efInfo.startFrame);
-	energyFactor = efInfo.startFactor;
-
-	// Using cafus, armfus, armsolar as control points
-	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
-	constexpr unsigned MAX_CTRL_POINTS = 3;
-	std::vector<std::pair<std::string, int>> engies;
-	std::string type = circuit->GetTerrainManager()->IsWaterMap() ? "water" : "land";
-	const Json::Value& surf = energy[type];
-	unsigned si = 0;
-	for (const std::string& engy : surf.getMemberNames()) {
-		const int min = surf[engy][0].asInt();
-		const int max = surf[engy].get(1, min).asInt();
-		const int limit = min + rand() % (max - min + 1);
-		engies.push_back(std::make_pair(engy, limit));
-		if (++si >= MAX_CTRL_POINTS) {
-			break;
-		}
-	}
-
-	CLagrangeInterPol::Vector x(engies.size()), y(engies.size());
-	for (unsigned i = 0; i < engies.size(); ++i) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(engies[i].first.c_str());
-		if (cdef == nullptr) {
-			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), engies[i].first.c_str());
-			continue;
-		}
-		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
-		auto it = customParams.find("income_energy");
-		float make = (it != customParams.end()) ? utils::string_to_float(it->second) : 1.f;
-		x[i] = cdef->GetCost() / make;
-		y[i] = engies[i].second + 0.5;  // +0.5 to be sure precision errors will not decrease integer part
-	}
-	engyPol = new CLagrangeInterPol(x, y);  // Alternatively use CGaussSolver to compute polynomial - faster on reuse
-
-	// NOTE: Alternative to CLagrangeInterPol
-//	CGaussSolver solver;
-//	CGaussSolver::Matrix a = {
-//		{1, x[0], x[0]*x[0]},
-//		{1, x[1], x[1]*x[1]},
-//		{1, x[2], x[2]*x[2]}
-//	};
-//	CGaussSolver::Vector r = solver.Solve(a, y);
-//	circuit->LOG("y = %f*x^0 + %f*x^1 + %f*x^2", r[0], r[1], r[2]);
-
-	// NOTE: Must have
-	defaultDef = circuit->GetCircuitDef(econ["default"].asCString());
-	if (defaultDef == nullptr) {
-		throw CException("economy.default");
-	}
-}
-
-void CEconomyManager::Init()
-{
-	energyGrid = circuit->GetAllyTeam()->GetEnergyGrid().get();
-
-	const size_t clSize = circuit->GetMetalManager()->GetClusters().size();
-	clusterInfos.resize(clSize, {nullptr, -FRAMES_PER_SEC});
-	const size_t spSize = circuit->GetMetalManager()->GetSpots().size();
-	openSpots.resize(spSize, true);
-
-	const Json::Value& econ = circuit->GetSetupManager()->GetConfig()["economy"];
-	const float mm = econ.get("mex_max", 2.f).asFloat();
-	mexMax = (mm < 1.f) ? (mm * spSize) : std::numeric_limits<decltype(mexMax)>::max();
-
-	const Json::Value& pull = econ["ms_pull"];
-	mspInfos.resize(pull.size());
-	mspInfos.push_back(SPullMtoS {
-		.pull = pull[0].get((unsigned)0, 1.0f).asFloat(),
-		.mex = (int)(pull[0].get((unsigned)1, 0.0f).asFloat() * spSize),
-		.fraction = 0.f
-	});
-	for (unsigned i = 1; i < pull.size(); ++i) {
-		SPullMtoS mspInfoEnd;
-		mspInfoEnd.pull = pull[i].get((unsigned)0, 0.25f).asFloat();
-		mspInfoEnd.mex = pull[i].get((unsigned)1, 0.75f).asFloat() * spSize;
-		mspInfoEnd.fraction = 0.f;
-		mspInfos.push_back(mspInfoEnd);
-		SPullMtoS& mspInfoBegin = mspInfos[i - 1];
-		mspInfoBegin.fraction = (mspInfoEnd.pull - mspInfoBegin.pull) / (mspInfoEnd.mex - mspInfoBegin.mex);
-	}
-	std::sort(mspInfos.begin(), mspInfos.end());
-	pullMtoS = mspInfos.front().pull;
-
-	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
-		metalProduced = economy->GetCurrent(metalRes) * metalMod;
-
-		CScheduler* scheduler = circuit->GetScheduler().get();
-		CAllyTeam* allyTeam = circuit->GetAllyTeam();
-		if (circuit->IsCommMerge()) {
-			const int spotId = circuit->GetMetalManager()->FindNearestSpot(pos);
-			const int clusterId = (spotId < 0) ? -1 : circuit->GetMetalManager()->GetCluster(spotId);
-			int ownerId = allyTeam->GetClusterTeam(clusterId).teamId;
-			if (ownerId < 0) {
-				ownerId = circuit->GetTeamId();
-				allyTeam->OccupyCluster(clusterId, ownerId);
-			} else if (ownerId != circuit->GetTeamId()) {
-				// Resign
-				std::vector<Unit*> migrants;
-				for (auto& kv : circuit->GetTeamUnits()) {
-					migrants.push_back(kv.second->GetUnit());
-				}
-				economy->SendUnits(migrants, ownerId);
-				circuit->Resign(ownerId);
-				return;
-			}
-		}
-
-		scheduler->RunTaskAfter(std::make_shared<CGameTask>([this]() {
-			ecoFactor = (circuit->GetAllyTeam()->GetAliveSize() - 1.0f) * ecoStep + 1.0f;
-		}), FRAMES_PER_SEC * 10);
-
-		const int interval = allyTeam->GetSize() * FRAMES_PER_SEC;
-		auto update = static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(update, this),
-								interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this),
-								interval, circuit->GetSkirmishAIId() + 1 + interval / 2);
-	};
-
-	circuit->GetSetupManager()->ExecOnFindStart(subinit);
 }
 
 void CEconomyManager::OpenStrategy(CCircuitDef* facDef, const AIFloat3& pos)

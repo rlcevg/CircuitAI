@@ -36,6 +36,12 @@ public:
 	CBuilderManager(CCircuitAI* circuit);
 	virtual ~CBuilderManager();
 
+private:
+	void ReadConfig();
+	void Init();
+public:
+	void Release();
+
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
 	virtual int UnitFinished(CCircuitUnit* unit) override;
 	virtual int UnitIdle(CCircuitUnit* unit) override;
@@ -131,12 +137,6 @@ public:
 	SBuildChain* GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef);
 
 	bool IsReclaimed(CAllyUnit* unit) const { return reclaimedUnits.find(unit) != reclaimedUnits.end(); }
-
-private:
-	void ReadConfig();
-	void Init();
-public:
-	void Release();
 
 private:
 	IBuilderTask* MakeCommTask(CCircuitUnit* unit);

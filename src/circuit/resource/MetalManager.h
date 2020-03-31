@@ -26,6 +26,10 @@ public:
 	CMetalManager(CCircuitAI* circuit, CMetalData* metalData);
 	virtual ~CMetalManager();
 
+private:
+	void Init();
+
+public:
 	void ParseMetalSpots();
 
 	bool HasMetalSpots() const { return (metalData->IsInitialized() && !metalData->IsEmpty()); }
@@ -33,7 +37,6 @@ public:
 	bool IsClusterizing() const { return metalData->IsClusterizing(); }
 
 	void ClusterizeMetal(CCircuitDef* commDef);
-	void Init();
 	void SetAuthority(CCircuitAI* authority) { circuit = authority; }
 
 public:

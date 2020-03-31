@@ -80,10 +80,11 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		, isAllyAware(true)
 		, isCommMerge(true)
 		, isInitialized(false)
+		, isLoadSave(false)
 		, isResigned(false)
 		// NOTE: assert(lastFrame != -1): CCircuitUnit initialized with -1
 		//       and lastFrame check will misbehave until first update event.
-		, lastFrame(0)
+		, lastFrame(-2)
 		, skirmishAIId(callback != NULL ? callback->GetSkirmishAIId() : -1)
 		, sAICallback(nullptr)
 		, callback(callback)
@@ -592,7 +593,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 		scheduler->RunTaskAt(std::make_shared<CGameTask>(&CCircuitAI::CheatPreload, this), skirmishAIId + 1);
 	}
 
-	Update(0);  // Init modules: allows to manipulate units on gadget:Initialize
+	scheduler->ProcessInit();  // Init modules: allows to manipulate units on gadget:Initialize
 	setupManager->Welcome();
 
 	setupManager->CloseConfig();
@@ -1032,6 +1033,8 @@ int CCircuitAI::PlayerCommand(std::vector<CCircuitUnit*>& units)
 
 int CCircuitAI::Load(std::istream& is)
 {
+	isLoadSave = true;
+
 	auto units = std::move(callback->GetTeamUnits());
 	for (Unit* u : units) {
 		if (u == nullptr) {

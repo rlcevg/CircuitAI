@@ -41,11 +41,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		, bpRatio(1.f)
 		, reWeight(.5f)
 {
-	CScheduler* scheduler = circuit->GetScheduler().get();
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::Watchdog, this),
-							FRAMES_PER_SEC * 60,
-							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 11);
-	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CFactoryManager::Init, this));
+	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CFactoryManager::Init, this));
 
 	/*
 	 * factory handlers
@@ -231,6 +227,296 @@ CFactoryManager::~CFactoryManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	utils::free_clear(updateTasks);
+}
+
+void CFactoryManager::ReadConfig()
+{
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
+
+	airpadDef = circuit->GetCircuitDef(root["economy"].get("airpad", "").asCString());
+	if (airpadDef == nullptr) {
+		airpadDef = circuit->GetEconomyManager()->GetDefaultDef();
+	}
+
+	/*
+	 * Roles, attributes and retreat
+	 */
+	std::map<CCircuitDef::RoleType, std::set<CCircuitDef::Id>> roleDefs;
+	CCircuitDef::RoleName& roleNames = CCircuitDef::GetRoleNames();
+	CCircuitDef::AttrName& attrNames = CCircuitDef::GetAttrNames();
+	CCircuitDef::FireName& fireNames = CCircuitDef::GetFireNames();
+	const Json::Value& behaviours = root["behaviour"];
+	for (const std::string& defName : behaviours.getMemberNames()) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());
+		if (cdef == nullptr) {
+			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), defName.c_str());
+			continue;
+		}
+
+		// Read roles from config
+		const Json::Value& behaviour = behaviours[defName];
+		const Json::Value& role = behaviour["role"];
+		if (role.empty()) {
+			circuit->LOG("CONFIG %s: '%s' has no role", cfgName.c_str(), defName.c_str());
+			continue;
+		}
+
+		const std::string& mainName = role[0].asString();
+		auto it = roleNames.find(mainName);
+		if (it == roleNames.end()) {
+			circuit->LOG("CONFIG %s: %s has unknown main role '%s'", cfgName.c_str(), defName.c_str(), mainName.c_str());
+			continue;
+		}
+		cdef->SetMainRole(it->second);
+		cdef->AddRole(it->second);
+		roleDefs[it->second].insert(cdef->GetId());
+
+//		if (role.size() < 2) {
+			cdef->AddEnemyRole(it->second);
+//		} else {
+			for (unsigned i = 1; i < role.size(); ++i) {
+				const std::string& enemyName = role[i].asString();
+				it = roleNames.find(enemyName);
+				if (it == roleNames.end()) {
+					circuit->LOG("CONFIG %s: %s has unknown enemy role '%s'", cfgName.c_str(), defName.c_str(), enemyName.c_str());
+					continue;
+				}
+				cdef->AddEnemyRole(it->second);
+//				cdef->AddRole(it->second);
+			}
+//		}
+
+		// Read optional roles and attributes
+		const Json::Value& attributes = behaviour["attribute"];
+		for (const Json::Value& attr : attributes) {
+			const std::string& attrName = attr.asString();
+			it = roleNames.find(attrName);
+			if (it == roleNames.end()) {
+				auto it = attrNames.find(attrName);
+				if (it == attrNames.end()) {
+					circuit->LOG("CONFIG %s: %s has unknown attribute '%s'", cfgName.c_str(), defName.c_str(), attrName.c_str());
+					continue;
+				} else {
+					cdef->AddAttribute(it->second);
+				}
+			} else {
+				cdef->AddRole(it->second);
+				roleDefs[it->second].insert(cdef->GetId());
+			}
+		}
+
+		const Json::Value& fire = behaviour["fire_state"];
+		if (!fire.isNull()) {
+			const std::string& fireName = fire.asString();
+			auto itf = fireNames.find(fireName);
+			if (itf == fireNames.end()) {
+				circuit->LOG("CONFIG %s: %s has unknown fire state '%s'", cfgName.c_str(), defName.c_str(), fireName.c_str());
+			} else {
+				cdef->SetFireState(itf->second);
+			}
+		}
+
+		const Json::Value& reload = behaviour["reload"];
+		if (!reload.isNull()) {
+			cdef->SetReloadTime(reload.asFloat() * FRAMES_PER_SEC);
+		}
+
+		const Json::Value& limit = behaviour["limit"];
+		if (!limit.isNull()) {
+			cdef->SetMaxThisUnit(std::min(limit.asInt(), cdef->GetMaxThisUnit()));
+		}
+
+		const Json::Value& since = behaviour["since"];
+		if (!since.isNull()) {
+			cdef->SetSinceFrame(since.asInt() * FRAMES_PER_SEC);
+		}
+
+		cdef->SetRetreat(behaviour.get("retreat", cdef->GetRetreat()).asFloat());
+
+		const Json::Value& pwrMod = behaviour["pwr_mod"];
+		if (!pwrMod.isNull()) {
+			cdef->ModPower(pwrMod.asFloat());
+		}
+		const Json::Value& thrMod = behaviour["thr_mod"];
+		if (!thrMod.isNull()) {
+			cdef->ModThreat(thrMod.asFloat());
+		}
+	}
+
+	/*
+	 * Factories
+	 */
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	const Json::Value& factories = root["factory"];
+	for (const std::string& fac : factories.getMemberNames()) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(fac.c_str());
+		if (cdef == nullptr) {
+			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), fac.c_str());
+			continue;
+		}
+
+		const Json::Value& factory = factories[fac];
+		SFactoryDef facDef;
+
+		// NOTE: used to create tasks on Event (like DefendTask), fix/improve
+		const std::unordered_set<CCircuitDef::Id>& options = cdef->GetBuildOptions();
+		facDef.roleDefs.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_), nullptr);
+		for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
+			float minCost = std::numeric_limits<float>::max();
+			CCircuitDef* rdef = nullptr;
+			const CCircuitDef::RoleType type = static_cast<CCircuitDef::RoleType>(i);
+			const std::set<CCircuitDef::Id>& defIds = roleDefs[type];
+			for (const CCircuitDef::Id bid : defIds) {
+				if (options.find(bid) == options.end()) {
+					continue;
+				}
+				CCircuitDef* tdef = circuit->GetCircuitDef(bid);
+				if (minCost > tdef->GetCost()) {
+					minCost = tdef->GetCost();
+					rdef = tdef;
+				}
+			}
+			facDef.roleDefs[static_cast<CCircuitDef::RoleT>(type)] = rdef;
+		}
+
+		facDef.isRequireEnergy = factory.get("require_energy", false).asBool();
+
+		const Json::Value& items = factory["unit"];
+		const Json::Value& tiers = factory["income_tier"];
+		facDef.buildDefs.reserve(items.size());
+		const unsigned tierSize = tiers.size();
+		facDef.incomes.reserve(tierSize + 1);
+
+		CCircuitDef* landDef = nullptr;
+		CCircuitDef* waterDef = nullptr;
+		float landSize = std::numeric_limits<float>::max();
+		float waterSize = std::numeric_limits<float>::max();
+
+		for (unsigned i = 0; i < items.size(); ++i) {
+			CCircuitDef* udef = circuit->GetCircuitDef(items[i].asCString());
+			if (udef == nullptr) {
+				circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), items[i].asCString());
+				continue;
+			}
+			facDef.buildDefs.push_back(udef);
+
+			// identify surface representatives
+			if (udef->GetMobileId() < 0) {
+				if (landDef == nullptr) {
+					landDef = udef;
+				}
+				if (waterDef == nullptr) {
+					waterDef = udef;
+				}
+				continue;
+			}
+			STerrainMapArea* area = terrainManager->GetMobileTypeById(udef->GetMobileId())->areaLargest;
+			if (area == nullptr) {
+				continue;
+			}
+			if ((area->mobileType->maxElevation > 0.f) && (landSize > area->percentOfMap)) {
+				landSize = area->percentOfMap;
+				landDef = udef;
+			}
+			if (((area->mobileType->minElevation < 0.f) || udef->IsFloater()) && (waterSize > area->percentOfMap)) {
+				waterSize = area->percentOfMap;
+				waterDef = udef;
+			}
+		}
+		if (facDef.buildDefs.empty()) {
+			continue;  // ignore empty factory
+		}
+		facDef.landDef = landDef;
+		facDef.waterDef = waterDef;
+
+		auto fillProbs = [this, &cfgName, &facDef, &fac, &factory](unsigned i, const char* type, SFactoryDef::Tiers& tiers) {
+			const Json::Value& tierType = factory[type];
+			if (tierType.isNull()) {
+				return false;
+			}
+			const Json::Value& tier = tierType[utils::int_to_string(i, "tier%i")];
+			if (tier.isNull()) {
+				return false;
+			}
+			std::vector<float>& probs = tiers[i];
+			probs.reserve(facDef.buildDefs.size());
+			float sum = .0f;
+			for (unsigned j = 0; j < facDef.buildDefs.size(); ++j) {
+				const float p = tier[j].asFloat();
+				sum += p;
+				probs.push_back(p);
+			}
+			if (fabs(sum - 1.0f) > 0.0001f) {
+				circuit->LOG("CONFIG %s: %s's %s_tier%i total probability = %f", cfgName.c_str(), fac.c_str(), type, i, sum);
+			}
+			return true;
+		};
+		unsigned i = 0;
+		for (; i < tierSize; ++i) {
+			facDef.incomes.push_back(tiers[i].asFloat());
+			fillProbs(i, "air", facDef.airTiers);
+			fillProbs(i, "land", facDef.landTiers);
+			fillProbs(i, "water", facDef.waterTiers);
+		}
+		fillProbs(i, "air", facDef.airTiers);
+		fillProbs(i, "land", facDef.landTiers);
+		fillProbs(i, "water", facDef.waterTiers);
+
+//		if (facDef.incomes.empty()) {
+			facDef.incomes.push_back(std::numeric_limits<float>::max());
+//		}
+		if (facDef.landTiers.empty()) {
+			if (!facDef.airTiers.empty()) {
+				facDef.landTiers = facDef.airTiers;
+			} else if (!facDef.waterTiers.empty()) {
+				facDef.landTiers = facDef.waterTiers;
+			} else {
+				facDef.landTiers[0];  // create empty tier
+			}
+		}
+		if (facDef.waterTiers.empty()) {
+			facDef.waterTiers = facDef.landTiers;
+		}
+		if (facDef.airTiers.empty()) {
+			facDef.airTiers = terrainManager->IsWaterMap() ? facDef.waterTiers : facDef.landTiers;
+		}
+
+		facDef.nanoCount = factory.get("caretaker", 1).asUInt();
+
+		factoryDefs[cdef->GetId()] = facDef;
+	}
+
+	bpRatio = root["economy"].get("buildpower", 1.f).asFloat();
+	reWeight = root["response"].get("_weight_", .5f).asFloat();
+}
+
+void CFactoryManager::Init()
+{
+	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
+		CScheduler* scheduler = circuit->GetScheduler().get();
+		const int interval = 4;
+		const int offset = circuit->GetSkirmishAIId() % interval;
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateIdle, this), interval, offset + 0);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateFactory, this), interval, offset + 2);
+
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::Watchdog, this),
+								FRAMES_PER_SEC * 60,
+								circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 11);
+	};
+
+	circuit->GetSetupManager()->ExecOnFindStart(subinit);
+}
+
+void CFactoryManager::Release()
+{
+	// NOTE: Release expected to be called on CCircuit::Release.
+	//       It doesn't stop scheduled GameTasks for that reason.
+	for (IUnitTask* task : updateTasks) {
+		AbortTask(task);
+		// NOTE: Do not delete task as other AbortTask may ask for it
+	}
+	updateTasks.clear();
 }
 
 int CFactoryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -707,292 +993,6 @@ CCircuitDef* CFactoryManager::GetWaterDef(CCircuitDef* facDef) const
 {
 	auto it = factoryDefs.find(facDef->GetId());
 	return (it != factoryDefs.end()) ? it->second.waterDef : nullptr;
-}
-
-void CFactoryManager::ReadConfig()
-{
-	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
-
-	airpadDef = circuit->GetCircuitDef(root["economy"].get("airpad", "").asCString());
-	if (airpadDef == nullptr) {
-		airpadDef = circuit->GetEconomyManager()->GetDefaultDef();
-	}
-
-	/*
-	 * Roles, attributes and retreat
-	 */
-	std::map<CCircuitDef::RoleType, std::set<CCircuitDef::Id>> roleDefs;
-	CCircuitDef::RoleName& roleNames = CCircuitDef::GetRoleNames();
-	CCircuitDef::AttrName& attrNames = CCircuitDef::GetAttrNames();
-	CCircuitDef::FireName& fireNames = CCircuitDef::GetFireNames();
-	const Json::Value& behaviours = root["behaviour"];
-	for (const std::string& defName : behaviours.getMemberNames()) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());
-		if (cdef == nullptr) {
-			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), defName.c_str());
-			continue;
-		}
-
-		// Read roles from config
-		const Json::Value& behaviour = behaviours[defName];
-		const Json::Value& role = behaviour["role"];
-		if (role.empty()) {
-			circuit->LOG("CONFIG %s: '%s' has no role", cfgName.c_str(), defName.c_str());
-			continue;
-		}
-
-		const std::string& mainName = role[0].asString();
-		auto it = roleNames.find(mainName);
-		if (it == roleNames.end()) {
-			circuit->LOG("CONFIG %s: %s has unknown main role '%s'", cfgName.c_str(), defName.c_str(), mainName.c_str());
-			continue;
-		}
-		cdef->SetMainRole(it->second);
-		cdef->AddRole(it->second);
-		roleDefs[it->second].insert(cdef->GetId());
-
-//		if (role.size() < 2) {
-			cdef->AddEnemyRole(it->second);
-//		} else {
-			for (unsigned i = 1; i < role.size(); ++i) {
-				const std::string& enemyName = role[i].asString();
-				it = roleNames.find(enemyName);
-				if (it == roleNames.end()) {
-					circuit->LOG("CONFIG %s: %s has unknown enemy role '%s'", cfgName.c_str(), defName.c_str(), enemyName.c_str());
-					continue;
-				}
-				cdef->AddEnemyRole(it->second);
-//				cdef->AddRole(it->second);
-			}
-//		}
-
-		// Read optional roles and attributes
-		const Json::Value& attributes = behaviour["attribute"];
-		for (const Json::Value& attr : attributes) {
-			const std::string& attrName = attr.asString();
-			it = roleNames.find(attrName);
-			if (it == roleNames.end()) {
-				auto it = attrNames.find(attrName);
-				if (it == attrNames.end()) {
-					circuit->LOG("CONFIG %s: %s has unknown attribute '%s'", cfgName.c_str(), defName.c_str(), attrName.c_str());
-					continue;
-				} else {
-					cdef->AddAttribute(it->second);
-				}
-			} else {
-				cdef->AddRole(it->second);
-				roleDefs[it->second].insert(cdef->GetId());
-			}
-		}
-
-		const Json::Value& fire = behaviour["fire_state"];
-		if (!fire.isNull()) {
-			const std::string& fireName = fire.asString();
-			auto itf = fireNames.find(fireName);
-			if (itf == fireNames.end()) {
-				circuit->LOG("CONFIG %s: %s has unknown fire state '%s'", cfgName.c_str(), defName.c_str(), fireName.c_str());
-			} else {
-				cdef->SetFireState(itf->second);
-			}
-		}
-
-		const Json::Value& reload = behaviour["reload"];
-		if (!reload.isNull()) {
-			cdef->SetReloadTime(reload.asFloat() * FRAMES_PER_SEC);
-		}
-
-		const Json::Value& limit = behaviour["limit"];
-		if (!limit.isNull()) {
-			cdef->SetMaxThisUnit(std::min(limit.asInt(), cdef->GetMaxThisUnit()));
-		}
-
-		const Json::Value& since = behaviour["since"];
-		if (!since.isNull()) {
-			cdef->SetSinceFrame(since.asInt() * FRAMES_PER_SEC);
-		}
-
-		cdef->SetRetreat(behaviour.get("retreat", cdef->GetRetreat()).asFloat());
-
-		const Json::Value& pwrMod = behaviour["pwr_mod"];
-		if (!pwrMod.isNull()) {
-			cdef->ModPower(pwrMod.asFloat());
-		}
-		const Json::Value& thrMod = behaviour["thr_mod"];
-		if (!thrMod.isNull()) {
-			cdef->ModThreat(thrMod.asFloat());
-		}
-	}
-
-	/*
-	 * Factories
-	 */
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	const Json::Value& factories = root["factory"];
-	for (const std::string& fac : factories.getMemberNames()) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(fac.c_str());
-		if (cdef == nullptr) {
-			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), fac.c_str());
-			continue;
-		}
-
-		const Json::Value& factory = factories[fac];
-		SFactoryDef facDef;
-
-		// NOTE: used to create tasks on Event (like DefendTask), fix/improve
-		const std::unordered_set<CCircuitDef::Id>& options = cdef->GetBuildOptions();
-		facDef.roleDefs.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_), nullptr);
-		for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
-			float minCost = std::numeric_limits<float>::max();
-			CCircuitDef* rdef = nullptr;
-			const CCircuitDef::RoleType type = static_cast<CCircuitDef::RoleType>(i);
-			const std::set<CCircuitDef::Id>& defIds = roleDefs[type];
-			for (const CCircuitDef::Id bid : defIds) {
-				if (options.find(bid) == options.end()) {
-					continue;
-				}
-				CCircuitDef* tdef = circuit->GetCircuitDef(bid);
-				if (minCost > tdef->GetCost()) {
-					minCost = tdef->GetCost();
-					rdef = tdef;
-				}
-			}
-			facDef.roleDefs[static_cast<CCircuitDef::RoleT>(type)] = rdef;
-		}
-
-		facDef.isRequireEnergy = factory.get("require_energy", false).asBool();
-
-		const Json::Value& items = factory["unit"];
-		const Json::Value& tiers = factory["income_tier"];
-		facDef.buildDefs.reserve(items.size());
-		const unsigned tierSize = tiers.size();
-		facDef.incomes.reserve(tierSize + 1);
-
-		CCircuitDef* landDef = nullptr;
-		CCircuitDef* waterDef = nullptr;
-		float landSize = std::numeric_limits<float>::max();
-		float waterSize = std::numeric_limits<float>::max();
-
-		for (unsigned i = 0; i < items.size(); ++i) {
-			CCircuitDef* udef = circuit->GetCircuitDef(items[i].asCString());
-			if (udef == nullptr) {
-				circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), items[i].asCString());
-				continue;
-			}
-			facDef.buildDefs.push_back(udef);
-
-			// identify surface representatives
-			if (udef->GetMobileId() < 0) {
-				if (landDef == nullptr) {
-					landDef = udef;
-				}
-				if (waterDef == nullptr) {
-					waterDef = udef;
-				}
-				continue;
-			}
-			STerrainMapArea* area = terrainManager->GetMobileTypeById(udef->GetMobileId())->areaLargest;
-			if (area == nullptr) {
-				continue;
-			}
-			if ((area->mobileType->maxElevation > 0.f) && (landSize > area->percentOfMap)) {
-				landSize = area->percentOfMap;
-				landDef = udef;
-			}
-			if (((area->mobileType->minElevation < 0.f) || udef->IsFloater()) && (waterSize > area->percentOfMap)) {
-				waterSize = area->percentOfMap;
-				waterDef = udef;
-			}
-		}
-		if (facDef.buildDefs.empty()) {
-			continue;  // ignore empty factory
-		}
-		facDef.landDef = landDef;
-		facDef.waterDef = waterDef;
-
-		auto fillProbs = [this, &cfgName, &facDef, &fac, &factory](unsigned i, const char* type, SFactoryDef::Tiers& tiers) {
-			const Json::Value& tierType = factory[type];
-			if (tierType.isNull()) {
-				return false;
-			}
-			const Json::Value& tier = tierType[utils::int_to_string(i, "tier%i")];
-			if (tier.isNull()) {
-				return false;
-			}
-			std::vector<float>& probs = tiers[i];
-			probs.reserve(facDef.buildDefs.size());
-			float sum = .0f;
-			for (unsigned j = 0; j < facDef.buildDefs.size(); ++j) {
-				const float p = tier[j].asFloat();
-				sum += p;
-				probs.push_back(p);
-			}
-			if (fabs(sum - 1.0f) > 0.0001f) {
-				circuit->LOG("CONFIG %s: %s's %s_tier%i total probability = %f", cfgName.c_str(), fac.c_str(), type, i, sum);
-			}
-			return true;
-		};
-		unsigned i = 0;
-		for (; i < tierSize; ++i) {
-			facDef.incomes.push_back(tiers[i].asFloat());
-			fillProbs(i, "air", facDef.airTiers);
-			fillProbs(i, "land", facDef.landTiers);
-			fillProbs(i, "water", facDef.waterTiers);
-		}
-		fillProbs(i, "air", facDef.airTiers);
-		fillProbs(i, "land", facDef.landTiers);
-		fillProbs(i, "water", facDef.waterTiers);
-
-//		if (facDef.incomes.empty()) {
-			facDef.incomes.push_back(std::numeric_limits<float>::max());
-//		}
-		if (facDef.landTiers.empty()) {
-			if (!facDef.airTiers.empty()) {
-				facDef.landTiers = facDef.airTiers;
-			} else if (!facDef.waterTiers.empty()) {
-				facDef.landTiers = facDef.waterTiers;
-			} else {
-				facDef.landTiers[0];  // create empty tier
-			}
-		}
-		if (facDef.waterTiers.empty()) {
-			facDef.waterTiers = facDef.landTiers;
-		}
-		if (facDef.airTiers.empty()) {
-			facDef.airTiers = terrainManager->IsWaterMap() ? facDef.waterTiers : facDef.landTiers;
-		}
-
-		facDef.nanoCount = factory.get("caretaker", 1).asUInt();
-
-		factoryDefs[cdef->GetId()] = facDef;
-	}
-
-	bpRatio = root["economy"].get("buildpower", 1.f).asFloat();
-	reWeight = root["response"].get("_weight_", .5f).asFloat();
-}
-
-void CFactoryManager::Init()
-{
-	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
-		CScheduler* scheduler = circuit->GetScheduler().get();
-		const int interval = 4;
-		const int offset = circuit->GetSkirmishAIId() % interval;
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateIdle, this), interval, offset + 0);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateFactory, this), interval, offset + 2);
-	};
-
-	circuit->GetSetupManager()->ExecOnFindStart(subinit);
-}
-
-void CFactoryManager::Release()
-{
-	// NOTE: Release expected to be called on CCircuit::Release.
-	//       It doesn't stop scheduled GameTasks for that reason.
-	for (IUnitTask* task : updateTasks) {
-		AbortTask(task);
-		// NOTE: Do not delete task as other AbortTask may ask for it
-	}
-	updateTasks.clear();
 }
 
 void CFactoryManager::EnableFactory(CCircuitUnit* unit)

@@ -28,6 +28,11 @@ public:
 	CEnergyGrid(CCircuitAI* circuit);
 	virtual ~CEnergyGrid();
 
+private:
+	void ReadConfig();
+	void Init();
+
+public:
 	void Update();
 	void SetForceRebuild(bool value) { isForceRebuild = value; }
 	CEnergyLink* GetLinkToBuild(CCircuitDef*& outDef, springai::AIFloat3& outPos);
@@ -35,9 +40,8 @@ public:
 	float GetPylonRange(CCircuitDef::Id defId);
 
 	void SetAuthority(CCircuitAI* authority) { circuit = authority; }
+
 private:
-	void ReadConfig();
-	void Init();
 	CCircuitAI* circuit;
 
 	int markFrame;

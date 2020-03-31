@@ -59,11 +59,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		, sonarDef(nullptr)
 		, bigGunDef(nullptr)
 {
-	CScheduler* scheduler = circuit->GetScheduler().get();
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::Watchdog, this),
-							FRAMES_PER_SEC * 60,
-							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 12);
-	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CMilitaryManager::Init, this));
+	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CMilitaryManager::Init, this));
 
 	/*
 	 * Defence handlers
@@ -282,6 +278,191 @@ CMilitaryManager::~CMilitaryManager()
 {
 	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	utils::free_clear(fightUpdates);
+}
+
+void CMilitaryManager::ReadConfig()
+{
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
+	CCircuitDef::RoleName& roleNames = CCircuitDef::GetRoleNames();
+
+	const Json::Value& responses = root["response"];
+	const float teamSize = circuit->GetAllyTeam()->GetSize();
+	roleInfos.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_), {.0f});
+	for (const auto& pair : roleNames) {
+		SRoleInfo& info = roleInfos[static_cast<CCircuitDef::RoleT>(pair.second)];
+		const Json::Value& response = responses[pair.first];
+
+		if (response.isNull()) {
+			info.maxPerc = 1.0f;
+			info.factor  = teamSize;
+			continue;
+		}
+
+		info.maxPerc = response.get("max_percent", 1.0f).asFloat();
+		const float step = response.get("eps_step", 1.0f).asFloat();
+		info.factor  = (teamSize - 1.0f) * step + 1.0f;
+
+		const Json::Value& vs = response["vs"];
+		const Json::Value& ratio = response["ratio"];
+		const Json::Value& importance = response["importance"];
+		for (unsigned i = 0; i < vs.size(); ++i) {
+			const std::string& roleName = vs[i].asString();
+			auto it = roleNames.find(roleName);
+			if (it == roleNames.end()) {
+				circuit->LOG("CONFIG %s: response %s vs unknown role '%s'", cfgName.c_str(), pair.first.c_str(), roleName.c_str());
+				continue;
+			}
+			float rat = ratio.get(i, 1.0f).asFloat();
+			float imp = importance.get(i, 1.0f).asFloat();
+			info.vs.push_back(SRoleInfo::SVsInfo(roleNames[roleName], rat, imp));
+		}
+	}
+
+	const Json::Value& quotas = root["quota"];
+	maxScouts = quotas.get("scout", 3).asUInt();
+	const Json::Value& qraid = quotas["raid"];
+	raid.min = qraid.get((unsigned)0, 3.f).asFloat();
+	raid.avg = qraid.get((unsigned)1, 5.f).asFloat();
+	minAttackers = quotas.get("attack", 8.f).asFloat();
+	defRadius = quotas.get("def_rad", 2000.f).asFloat();
+	const Json::Value& qthrMod = quotas["thr_mod"];
+	const Json::Value& qthrAtk = qthrMod["attack"];
+	attackMod.min = qthrAtk.get((unsigned)0, 1.f).asFloat();
+	attackMod.len = qthrAtk.get((unsigned)1, 1.f).asFloat() - attackMod.min;
+	const Json::Value& qthrDef = qthrMod["defence"];
+	defenceMod.min = qthrDef.get((unsigned)0, 1.f).asFloat();
+	defenceMod.len = qthrDef.get((unsigned)1, 1.f).asFloat() - defenceMod.min;
+	initThrMod.inMobile = qthrMod.get("mobile", 1.f).asFloat();
+	initThrMod.inStatic = qthrMod.get("static", 0.f).asFloat();
+	maxAAThreat = quotas.get("aa_threat", 42.f).asFloat();
+
+	const Json::Value& porc = root["porcupine"];
+	const Json::Value& defs = porc["unit"];
+	defenderDefs.reserve(defs.size());
+	for (const Json::Value& def : defs) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(def.asCString());
+		if (cdef == nullptr) {
+			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), def.asCString());
+		} else {
+			defenderDefs.push_back(cdef);
+		}
+	}
+	const Json::Value& land = porc["land"];
+	landDefenders.reserve(land.size());
+	for (const Json::Value& idx : land) {
+		unsigned index = idx.asUInt();
+		if (index < defenderDefs.size()) {
+			landDefenders.push_back(defenderDefs[index]);
+		}
+	}
+	const Json::Value& watr = porc["water"];
+	waterDefenders.reserve(watr.size());
+	for (const Json::Value& idx : watr) {
+		unsigned index = idx.asUInt();
+		if (index < defenderDefs.size()) {
+			waterDefenders.push_back(defenderDefs[index]);
+		}
+	}
+
+	preventCount = porc.get("prevent", 1).asUInt();
+	const Json::Value& amount = porc["amount"];
+	const Json::Value& amOff = amount["offset"];
+	const Json::Value& amFac = amount["factor"];
+	const Json::Value& amMap = amount["map"];
+	const float minOffset = amOff.get((unsigned)0, -0.2f).asFloat();
+	const float maxOffset = amOff.get((unsigned)1, 0.2f).asFloat();
+	const float offset = (float)rand() / RAND_MAX * (maxOffset - minOffset) + minOffset;
+	const float minFactor = amFac.get((unsigned)0, 2.0f).asFloat();
+	const float maxFactor = amFac.get((unsigned)1, 1.0f).asFloat();
+	const float minMap = amMap.get((unsigned)0, 8.0f).asFloat();
+	const float maxMap = amMap.get((unsigned)1, 24.0f).asFloat();
+	const float mapSize = (circuit->GetMap()->GetWidth() / 64) * (circuit->GetMap()->GetHeight() / 64);
+	amountFactor = (maxFactor - minFactor) / (SQUARE(maxMap) - SQUARE(minMap)) * (mapSize - SQUARE(minMap)) + minFactor + offset;
+//	amountFactor = std::max(amountFactor, 0.f);
+
+	const Json::Value& base = porc["base"];
+	baseDefence.reserve(base.size());
+	for (const Json::Value& pair : base) {
+		unsigned index = pair.get((unsigned)0, -1).asUInt();
+		if (index >= defenderDefs.size()) {
+			continue;
+		}
+		int frame = pair.get((unsigned)1, 0).asInt() * FRAMES_PER_SEC;
+		baseDefence.push_back(std::make_pair(defenderDefs[index], frame));
+	}
+	auto compare = [](const std::pair<CCircuitDef*, int>& d1, const std::pair<CCircuitDef*, int>& d2) {
+		return d1.second > d2.second;
+	};
+	std::sort(baseDefence.begin(), baseDefence.end(), compare);
+
+	const Json::Value& super = porc["superweapon"];
+	const Json::Value& items = super["unit"];
+	const Json::Value& probs = super["weight"];
+	superInfos.reserve(items.size());
+	for (unsigned i = 0; i < items.size(); ++i) {
+		SSuperInfo si;
+		si.cdef = circuit->GetCircuitDef(items[i].asCString());
+		if (si.cdef == nullptr) {
+			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), items[i].asCString());
+			continue;
+		}
+		si.cdef->SetMainRole(CCircuitDef::RoleType::SUPER);  // override mainRole
+		si.cdef->AddEnemyRole(CCircuitDef::RoleType::SUPER);
+		si.cdef->AddRole(CCircuitDef::RoleType::SUPER);
+		si.weight = probs.get(i, 1.f).asFloat();
+		superInfos.push_back(si);
+	}
+	DiceBigGun();
+
+	defaultPorc = circuit->GetCircuitDef(porc.get("default", "").asCString());
+	if (defaultPorc == nullptr) {
+		defaultPorc = circuit->GetEconomyManager()->GetDefaultDef();
+	}
+}
+
+void CMilitaryManager::Init()
+{
+	CMetalManager* metalManager = circuit->GetMetalManager();
+	const CMetalData::Metals& spots = metalManager->GetSpots();
+
+	clusterInfos.resize(metalManager->GetClusters().size(), {nullptr});
+
+	scoutPath.reserve(spots.size());
+	for (unsigned i = 0; i < spots.size(); ++i) {
+		scoutPath.push_back(i);
+	}
+
+	CSetupManager::StartFunc subinit = [this, &spots](const AIFloat3& pos) {
+		auto compare = [&pos, &spots](int a, int b) {
+			return pos.SqDistance2D(spots[a].position) > pos.SqDistance2D(spots[b].position);
+		};
+		std::sort(scoutPath.begin(), scoutPath.end(), compare);
+
+		CScheduler* scheduler = circuit->GetScheduler().get();
+		const int interval = 4;
+		const int offset = circuit->GetSkirmishAIId() % interval;
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateIdle, this), interval, offset + 0);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateFight, this), interval / 2, offset + 1);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefenceTasks, this), FRAMES_PER_SEC * 5, offset + 2);
+
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::Watchdog, this),
+								FRAMES_PER_SEC * 60,
+								circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 12);
+	};
+
+	circuit->GetSetupManager()->ExecOnFindStart(subinit);
+}
+
+void CMilitaryManager::Release()
+{
+	// NOTE: Release expected to be called on CCircuit::Release.
+	//       It doesn't stop scheduled GameTasks for that reason.
+	for (IUnitTask* task : fightUpdates) {
+		AbortTask(task);
+		// NOTE: Do not delete task as other AbortTask may ask for it
+	}
+	fightUpdates.clear();
 }
 
 int CMilitaryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -1167,7 +1348,7 @@ void CMilitaryManager::UpdateDefence()
 
 void CMilitaryManager::MakeBaseDefence(const AIFloat3& pos)
 {
-	if (baseDefence.empty()) {
+	if (baseDefence.empty() || (circuit->IsLoadSave() && (circuit->GetLastFrame() < 0))) {
 		return;
 	}
 	buildDefence.push_back(std::make_pair(pos, baseDefence));
@@ -1175,187 +1356,6 @@ void CMilitaryManager::MakeBaseDefence(const AIFloat3& pos)
 		defend = std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefence, this);
 		circuit->GetScheduler()->RunTaskEvery(defend, FRAMES_PER_SEC);
 	}
-}
-
-void CMilitaryManager::ReadConfig()
-{
-	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
-	CCircuitDef::RoleName& roleNames = CCircuitDef::GetRoleNames();
-
-	const Json::Value& responses = root["response"];
-	const float teamSize = circuit->GetAllyTeam()->GetSize();
-	roleInfos.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_), {.0f});
-	for (const auto& pair : roleNames) {
-		SRoleInfo& info = roleInfos[static_cast<CCircuitDef::RoleT>(pair.second)];
-		const Json::Value& response = responses[pair.first];
-
-		if (response.isNull()) {
-			info.maxPerc = 1.0f;
-			info.factor  = teamSize;
-			continue;
-		}
-
-		info.maxPerc = response.get("max_percent", 1.0f).asFloat();
-		const float step = response.get("eps_step", 1.0f).asFloat();
-		info.factor  = (teamSize - 1.0f) * step + 1.0f;
-
-		const Json::Value& vs = response["vs"];
-		const Json::Value& ratio = response["ratio"];
-		const Json::Value& importance = response["importance"];
-		for (unsigned i = 0; i < vs.size(); ++i) {
-			const std::string& roleName = vs[i].asString();
-			auto it = roleNames.find(roleName);
-			if (it == roleNames.end()) {
-				circuit->LOG("CONFIG %s: response %s vs unknown role '%s'", cfgName.c_str(), pair.first.c_str(), roleName.c_str());
-				continue;
-			}
-			float rat = ratio.get(i, 1.0f).asFloat();
-			float imp = importance.get(i, 1.0f).asFloat();
-			info.vs.push_back(SRoleInfo::SVsInfo(roleNames[roleName], rat, imp));
-		}
-	}
-
-	const Json::Value& quotas = root["quota"];
-	maxScouts = quotas.get("scout", 3).asUInt();
-	const Json::Value& qraid = quotas["raid"];
-	raid.min = qraid.get((unsigned)0, 3.f).asFloat();
-	raid.avg = qraid.get((unsigned)1, 5.f).asFloat();
-	minAttackers = quotas.get("attack", 8.f).asFloat();
-	defRadius = quotas.get("def_rad", 2000.f).asFloat();
-	const Json::Value& qthrMod = quotas["thr_mod"];
-	const Json::Value& qthrAtk = qthrMod["attack"];
-	attackMod.min = qthrAtk.get((unsigned)0, 1.f).asFloat();
-	attackMod.len = qthrAtk.get((unsigned)1, 1.f).asFloat() - attackMod.min;
-	const Json::Value& qthrDef = qthrMod["defence"];
-	defenceMod.min = qthrDef.get((unsigned)0, 1.f).asFloat();
-	defenceMod.len = qthrDef.get((unsigned)1, 1.f).asFloat() - defenceMod.min;
-	initThrMod.inMobile = qthrMod.get("mobile", 1.f).asFloat();
-	initThrMod.inStatic = qthrMod.get("static", 0.f).asFloat();
-	maxAAThreat = quotas.get("aa_threat", 42.f).asFloat();
-
-	const Json::Value& porc = root["porcupine"];
-	const Json::Value& defs = porc["unit"];
-	defenderDefs.reserve(defs.size());
-	for (const Json::Value& def : defs) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(def.asCString());
-		if (cdef == nullptr) {
-			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), def.asCString());
-		} else {
-			defenderDefs.push_back(cdef);
-		}
-	}
-	const Json::Value& land = porc["land"];
-	landDefenders.reserve(land.size());
-	for (const Json::Value& idx : land) {
-		unsigned index = idx.asUInt();
-		if (index < defenderDefs.size()) {
-			landDefenders.push_back(defenderDefs[index]);
-		}
-	}
-	const Json::Value& watr = porc["water"];
-	waterDefenders.reserve(watr.size());
-	for (const Json::Value& idx : watr) {
-		unsigned index = idx.asUInt();
-		if (index < defenderDefs.size()) {
-			waterDefenders.push_back(defenderDefs[index]);
-		}
-	}
-
-	preventCount = porc.get("prevent", 1).asUInt();
-	const Json::Value& amount = porc["amount"];
-	const Json::Value& amOff = amount["offset"];
-	const Json::Value& amFac = amount["factor"];
-	const Json::Value& amMap = amount["map"];
-	const float minOffset = amOff.get((unsigned)0, -0.2f).asFloat();
-	const float maxOffset = amOff.get((unsigned)1, 0.2f).asFloat();
-	const float offset = (float)rand() / RAND_MAX * (maxOffset - minOffset) + minOffset;
-	const float minFactor = amFac.get((unsigned)0, 2.0f).asFloat();
-	const float maxFactor = amFac.get((unsigned)1, 1.0f).asFloat();
-	const float minMap = amMap.get((unsigned)0, 8.0f).asFloat();
-	const float maxMap = amMap.get((unsigned)1, 24.0f).asFloat();
-	const float mapSize = (circuit->GetMap()->GetWidth() / 64) * (circuit->GetMap()->GetHeight() / 64);
-	amountFactor = (maxFactor - minFactor) / (SQUARE(maxMap) - SQUARE(minMap)) * (mapSize - SQUARE(minMap)) + minFactor + offset;
-//	amountFactor = std::max(amountFactor, 0.f);
-
-	const Json::Value& base = porc["base"];
-	baseDefence.reserve(base.size());
-	for (const Json::Value& pair : base) {
-		unsigned index = pair.get((unsigned)0, -1).asUInt();
-		if (index >= defenderDefs.size()) {
-			continue;
-		}
-		int frame = pair.get((unsigned)1, 0).asInt() * FRAMES_PER_SEC;
-		baseDefence.push_back(std::make_pair(defenderDefs[index], frame));
-	}
-	auto compare = [](const std::pair<CCircuitDef*, int>& d1, const std::pair<CCircuitDef*, int>& d2) {
-		return d1.second > d2.second;
-	};
-	std::sort(baseDefence.begin(), baseDefence.end(), compare);
-
-	const Json::Value& super = porc["superweapon"];
-	const Json::Value& items = super["unit"];
-	const Json::Value& probs = super["weight"];
-	superInfos.reserve(items.size());
-	for (unsigned i = 0; i < items.size(); ++i) {
-		SSuperInfo si;
-		si.cdef = circuit->GetCircuitDef(items[i].asCString());
-		if (si.cdef == nullptr) {
-			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), items[i].asCString());
-			continue;
-		}
-		si.cdef->SetMainRole(CCircuitDef::RoleType::SUPER);  // override mainRole
-		si.cdef->AddEnemyRole(CCircuitDef::RoleType::SUPER);
-		si.cdef->AddRole(CCircuitDef::RoleType::SUPER);
-		si.weight = probs.get(i, 1.f).asFloat();
-		superInfos.push_back(si);
-	}
-	DiceBigGun();
-
-	defaultPorc = circuit->GetCircuitDef(porc.get("default", "").asCString());
-	if (defaultPorc == nullptr) {
-		defaultPorc = circuit->GetEconomyManager()->GetDefaultDef();
-	}
-}
-
-void CMilitaryManager::Init()
-{
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	const CMetalData::Metals& spots = metalManager->GetSpots();
-
-	clusterInfos.resize(metalManager->GetClusters().size(), {nullptr});
-
-	scoutPath.reserve(spots.size());
-	for (unsigned i = 0; i < spots.size(); ++i) {
-		scoutPath.push_back(i);
-	}
-
-	CSetupManager::StartFunc subinit = [this, &spots](const AIFloat3& pos) {
-		auto compare = [&pos, &spots](int a, int b) {
-			return pos.SqDistance2D(spots[a].position) > pos.SqDistance2D(spots[b].position);
-		};
-		std::sort(scoutPath.begin(), scoutPath.end(), compare);
-
-		CScheduler* scheduler = circuit->GetScheduler().get();
-		const int interval = 4;
-		const int offset = circuit->GetSkirmishAIId() % interval;
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateIdle, this), interval, offset + 0);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateFight, this), interval / 2, offset + 1);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefenceTasks, this), FRAMES_PER_SEC * 5, offset + 2);
-	};
-
-	circuit->GetSetupManager()->ExecOnFindStart(subinit);
-}
-
-void CMilitaryManager::Release()
-{
-	// NOTE: Release expected to be called on CCircuit::Release.
-	//       It doesn't stop scheduled GameTasks for that reason.
-	for (IUnitTask* task : fightUpdates) {
-		AbortTask(task);
-		// NOTE: Do not delete task as other AbortTask may ask for it
-	}
-	fightUpdates.clear();
 }
 
 void CMilitaryManager::Watchdog()

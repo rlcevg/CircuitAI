@@ -74,7 +74,7 @@ CEnergyGrid::CEnergyGrid(CCircuitAI* circuit)
 		, toggleFrame(-1)
 #endif
 {
-	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>(&CEnergyGrid::Init, this));
+	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CEnergyGrid::Init, this));
 
 	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
 	for (auto& kv : allDefs) {
@@ -99,6 +99,46 @@ CEnergyGrid::~CEnergyGrid()
 	delete spanningFilter;
 	delete spanningGraph;
 	delete spanningBfs;
+}
+
+void CEnergyGrid::ReadConfig()
+{
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
+	const Json::Value& pylon = root["economy"]["energy"]["pylon"];
+	for (const Json::Value& pyl : pylon) {
+		CCircuitDef* cdef = circuit->GetCircuitDef(pyl.asCString());
+		if (cdef == nullptr) {
+			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), pyl.asCString());
+		} else {
+			rangePylons[pylonRanges[cdef->GetId()]] = cdef->GetId();
+		}
+	}
+}
+
+void CEnergyGrid::Init()
+{
+	CMetalManager* metalManager = circuit->GetMetalManager();
+	const CMetalData::Clusters& clusters = metalManager->GetClusters();
+	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
+
+	ownedFilter = new OwnedFilter(clusterGraph, false);
+	ownedClusters = new OwnedGraph(clusterGraph, *ownedFilter);
+	edgeCosts = new CMetalData::WeightMap(clusterGraph);
+
+	spanningFilter = new SpanningLink(spanningTree, links);
+	spanningGraph = new SpanningGraph(metalManager->GetGraph(), *spanningFilter);
+	spanningBfs = new SpanningBFS(*spanningGraph);
+
+	linkedClusters.resize(clusters.size(), false);
+
+	links.reserve(clusterGraph.edgeNum());
+	for (int i = 0; i < clusterGraph.edgeNum(); ++i) {
+		CMetalData::Graph::Edge edge = clusterGraph.edgeFromId(i);
+		int idx0 = clusterGraph.id(clusterGraph.u(edge));
+		int idx1 = clusterGraph.id(clusterGraph.v(edge));
+		links.emplace_back(idx0, clusters[idx0].position, idx1, clusters[idx1].position);
+	}
 }
 
 void CEnergyGrid::Update()
@@ -223,46 +263,6 @@ float CEnergyGrid::GetPylonRange(CCircuitDef::Id defId)
 {
 	auto it = pylonRanges.find(defId);
 	return (it != pylonRanges.end()) ? it->second : .0f;
-}
-
-void CEnergyGrid::ReadConfig()
-{
-	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
-	const Json::Value& pylon = root["economy"]["energy"]["pylon"];
-	for (const Json::Value& pyl : pylon) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(pyl.asCString());
-		if (cdef == nullptr) {
-			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), pyl.asCString());
-		} else {
-			rangePylons[pylonRanges[cdef->GetId()]] = cdef->GetId();
-		}
-	}
-}
-
-void CEnergyGrid::Init()
-{
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	const CMetalData::Clusters& clusters = metalManager->GetClusters();
-	const CMetalData::Graph& clusterGraph = metalManager->GetGraph();
-
-	ownedFilter = new OwnedFilter(clusterGraph, false);
-	ownedClusters = new OwnedGraph(clusterGraph, *ownedFilter);
-	edgeCosts = new CMetalData::WeightMap(clusterGraph);
-
-	spanningFilter = new SpanningLink(spanningTree, links);
-	spanningGraph = new SpanningGraph(metalManager->GetGraph(), *spanningFilter);
-	spanningBfs = new SpanningBFS(*spanningGraph);
-
-	linkedClusters.resize(clusters.size(), false);
-
-	links.reserve(clusterGraph.edgeNum());
-	for (int i = 0; i < clusterGraph.edgeNum(); ++i) {
-		CMetalData::Graph::Edge edge = clusterGraph.edgeFromId(i);
-		int idx0 = clusterGraph.id(clusterGraph.u(edge));
-		int idx1 = clusterGraph.id(clusterGraph.v(edge));
-		links.emplace_back(idx0, clusters[idx0].position, idx1, clusters[idx1].position);
-	}
 }
 
 void CEnergyGrid::MarkAllyPylons(const std::vector<CAllyUnit*>& pylons)

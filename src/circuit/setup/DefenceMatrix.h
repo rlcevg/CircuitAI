@@ -32,12 +32,14 @@ public:
 	CDefenceMatrix(CCircuitAI* circuit);
 	virtual ~CDefenceMatrix();
 
+private:
+	void Init(CCircuitAI* circuit);
+
+public:
 	std::vector<SDefPoint>& GetDefPoints(int index) { return clusterInfos[index].defPoints; }
 	SDefPoint* GetDefPoint(const springai::AIFloat3& pos, float cost);
 
 private:
-	void Init(CCircuitAI* circuit);
-
 	CMetalManager* metalManager;
 	std::vector<SClusterInfo> clusterInfos;
 };
