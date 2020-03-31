@@ -37,6 +37,12 @@ public:
 	CMilitaryManager(CCircuitAI* circuit);
 	virtual ~CMilitaryManager();
 
+private:
+	void ReadConfig();
+	void Init();
+public:
+	void Release();
+
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
 	virtual int UnitFinished(CCircuitUnit* unit) override;
 	virtual int UnitIdle(CCircuitUnit* unit) override;
@@ -113,12 +119,6 @@ public:
 	const std::vector<CCircuitDef*>& GetWaterDefenders() const { return waterDefenders; }
 	CCircuitDef* GetBigGunDef() const { return bigGunDef; }
 	CCircuitDef* GetDefaultPorc() const { return defaultPorc; }
-
-private:
-	void ReadConfig();
-	void Init();
-public:
-	void Release();
 
 private:
 	void Watchdog();

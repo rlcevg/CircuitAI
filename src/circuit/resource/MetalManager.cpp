@@ -11,6 +11,7 @@
 #include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
 #include "util/math/RagMatrix.h"
+#include "util/Scheduler.h"
 #include "util/utils.h"
 
 #include "Game.h"
@@ -72,6 +73,8 @@ CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData)
 		, filteredGraph(nullptr)
 		, shortPath(nullptr)
 {
+	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CMetalManager::Init, this));
+
 	if (!metalData->IsInitialized()) {
 		// TODO: Add metal zone and no-metal-spots maps support
 		ParseMetalSpots();
@@ -86,6 +89,20 @@ CMetalManager::~CMetalManager()
 	delete threatFilter;
 	delete filteredGraph;
 	delete shortPath;
+}
+
+void CMetalManager::Init()
+{
+	clusterInfos.resize(GetClusters().size(), {0});
+	for (unsigned i = 0; i < clusterInfos.size(); ++i) {
+		for (int idx : GetClusters()[i].idxSpots) {
+			metalInfos[idx].clusterId = i;
+		}
+	}
+
+	threatFilter = new SafeCluster(circuit->GetThreatMap(), GetClusters());
+	filteredGraph = new ClusterGraph(GetGraph(), *threatFilter);
+	shortPath = new ShortPath(*filteredGraph, GetWeights());
 }
 
 void CMetalManager::ParseMetalSpots()
@@ -188,20 +205,6 @@ void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
 	// NOTE: Parallel clusterization was here,
 	//       but bugs appeared: no communication with spring/lua
 	metalData->Clusterize(maxDistance, pdistmatrix);
-}
-
-void CMetalManager::Init()
-{
-	clusterInfos.resize(GetClusters().size(), {0});
-	for (unsigned i = 0; i < clusterInfos.size(); ++i) {
-		for (int idx : GetClusters()[i].idxSpots) {
-			metalInfos[idx].clusterId = i;
-		}
-	}
-
-	threatFilter = new SafeCluster(circuit->GetThreatMap(), GetClusters());
-	filteredGraph = new ClusterGraph(GetGraph(), *threatFilter);
-	shortPath = new ShortPath(*filteredGraph, GetWeights());
 }
 
 void CMetalManager::SetOpenSpot(int index, bool value)

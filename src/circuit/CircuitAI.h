@@ -214,6 +214,7 @@ private:
 
 public:
 	bool IsInitialized() const { return isInitialized; }
+	bool IsLoadSave() const { return isLoadSave; }
 	CGameAttribute* GetGameAttribute() const { return gameAttribute.get(); }
 	std::shared_ptr<CScheduler>& GetScheduler() { return scheduler; }
 	int GetLastFrame()    const { return lastFrame; }
@@ -250,6 +251,7 @@ private:
 //	void DrawClusters();
 
 	bool isInitialized;
+	bool isLoadSave;
 	bool isResigned;
 	int lastFrame;
 	int skirmishAIId;

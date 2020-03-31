@@ -25,6 +25,7 @@ public:
 	virtual ~CScheduler();
 
 	void Init(const std::shared_ptr<CScheduler>& thisPtr) { self = thisPtr; }
+	void ProcessInit();
 	void ProcessRelease();
 
 private:
@@ -64,6 +65,13 @@ public:
 	 * Remove scheduled task from queue
 	 */
 	void RemoveTask(std::shared_ptr<CGameTask>& task);
+
+	/*
+	 * Run task on init. Not affected by RemoveTask
+	 */
+	void RunOnInit(std::shared_ptr<CGameTask> task) {
+		initTasks.push_back(task);
+	}
 
 	/*
 	 * Run task on release. Not affected by RemoveTask
@@ -118,6 +126,7 @@ private:
 	};
 	CMultiQueue<FinishTask> finishTasks;
 
+	std::vector<std::shared_ptr<CGameTask>> initTasks;
 	std::vector<std::shared_ptr<CGameTask>> releaseTasks;
 
 	static spring::thread workerThread;
