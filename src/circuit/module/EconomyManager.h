@@ -35,6 +35,11 @@ public:
 	CEconomyManager(CCircuitAI* circuit);
 	virtual ~CEconomyManager();
 
+private:
+	void ReadConfig();
+	void Init();
+
+public:
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
 	virtual int UnitFinished(CCircuitUnit* unit) override;
 	virtual int UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
@@ -88,9 +93,6 @@ public:
 	void OpenStrategy(CCircuitDef* facDef, const springai::AIFloat3& pos);
 
 private:
-	void ReadConfig();
-	void Init();
-
 	float GetStorage(springai::Resource* res);
 	void UpdateEconomy();
 

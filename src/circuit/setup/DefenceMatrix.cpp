@@ -25,33 +25,11 @@ using namespace springai;
 CDefenceMatrix::CDefenceMatrix(CCircuitAI* circuit)
 		: metalManager(nullptr)
 {
-	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>(&CDefenceMatrix::Init, this, circuit));
+	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CDefenceMatrix::Init, this, circuit));
 }
 
 CDefenceMatrix::~CDefenceMatrix()
 {
-}
-
-CDefenceMatrix::SDefPoint* CDefenceMatrix::GetDefPoint(const AIFloat3& pos, float defCost)
-{
-	int index = metalManager->FindNearestCluster(pos);
-	if (index < 0) {
-		return nullptr;
-	}
-
-	DefPoints& defPoints = clusterInfos[index].defPoints;
-	unsigned idx = 0;
-	float dist = pos.distance2D(defPoints[idx].position);
-	for (unsigned i = 1; i < defPoints.size(); ++i) {
-		if (defPoints[i].cost >= defCost) {
-			float tmp = pos.distance2D(defPoints[i].position);
-			if (tmp < dist) {
-				tmp = dist;
-				idx = i;
-			}
-		}
-	}
-	return &defPoints[idx];
 }
 
 void CDefenceMatrix::Init(CCircuitAI* circuit)
@@ -98,6 +76,28 @@ void CDefenceMatrix::Init(CCircuitAI* circuit)
 			defPoints.push_back({pos, .0f});
 		}
 	}
+}
+
+CDefenceMatrix::SDefPoint* CDefenceMatrix::GetDefPoint(const AIFloat3& pos, float defCost)
+{
+	int index = metalManager->FindNearestCluster(pos);
+	if (index < 0) {
+		return nullptr;
+	}
+
+	DefPoints& defPoints = clusterInfos[index].defPoints;
+	unsigned idx = 0;
+	float dist = pos.distance2D(defPoints[idx].position);
+	for (unsigned i = 1; i < defPoints.size(); ++i) {
+		if (defPoints[i].cost >= defCost) {
+			float tmp = pos.distance2D(defPoints[i].position);
+			if (tmp < dist) {
+				tmp = dist;
+				idx = i;
+			}
+		}
+	}
+	return &defPoints[idx];
 }
 
 } // namespace circuit

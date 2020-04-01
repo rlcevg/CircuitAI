@@ -54,11 +54,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		, buildPower(.0f)
 		, buildIterator(0)
 {
-	CScheduler* scheduler = circuit->GetScheduler().get();
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Watchdog, this),
-							FRAMES_PER_SEC * 60,
-							circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 10);
-	scheduler->RunTaskAt(std::make_shared<CGameTask>(&CBuilderManager::Init, this));
+	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CBuilderManager::Init, this));
 
 	/*
 	 * worker handlers
@@ -220,6 +216,161 @@ CBuilderManager::~CBuilderManager()
 			delete kv2.second;
 		}
 	}
+}
+
+void CBuilderManager::ReadConfig()
+{
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
+
+	terraDef = circuit->GetCircuitDef(root["economy"].get("terra", "").asCString());
+	if (terraDef == nullptr) {
+		terraDef = circuit->GetEconomyManager()->GetDefaultDef();
+	}
+
+	const Json::Value& cond = root["porcupine"]["condition"];
+	super.minIncome = cond.get((unsigned)0, 50.f).asFloat();
+	super.maxTime = cond.get((unsigned)1, 300.f).asFloat();
+
+	IBuilderTask::BuildName& buildNames = IBuilderTask::GetBuildNames();
+	const Json::Value& build = root["build_chain"];
+	for (const std::string& catName : build.getMemberNames()) {
+		auto it = buildNames.find(catName);
+		if (it == buildNames.end()) {
+			circuit->LOG("CONFIG %s: has unknown category '%s'", cfgName.c_str(), catName.c_str());
+			continue;
+		}
+
+		std::unordered_map<CCircuitDef*, SBuildChain*>& defMap = buildChains[static_cast<IBuilderTask::BT>(it->second)];
+		const Json::Value& catChain = build[catName];
+		for (const std::string& defName : catChain.getMemberNames()) {
+			CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());
+			if (cdef == nullptr) {
+				circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), defName.c_str());
+				continue;
+			}
+
+			SBuildChain bc;
+			const Json::Value& buildQueue = catChain[defName];
+			bc.isPylon = buildQueue.get("pylon", false).asBool();
+			bc.isPorc = buildQueue.get("porc", false).asBool();
+			bc.isTerra = buildQueue.get("terra", false).asBool();
+
+			const Json::Value& engy = buildQueue["energy"];
+			bc.energy = engy.get(unsigned(0), -1.f).asFloat();
+			bc.isMexEngy = engy[1].isString();
+
+			const Json::Value& hub = buildQueue["hub"];
+			bc.hub.reserve(hub.size());
+			for (const Json::Value& que : hub) {
+				std::vector<SBuildInfo> queue;
+				queue.reserve(que.size());
+				for (const Json::Value& part : que) {
+					SBuildInfo bi;
+
+					const std::string& partName = part.get("unit", "").asString();
+					bi.cdef = circuit->GetCircuitDef(partName.c_str());
+					if (bi.cdef == nullptr) {
+						circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), partName.c_str());
+						continue;
+					}
+
+					const std::string& cat = part.get("category", "").asString();
+					auto it = buildNames.find(cat);
+					if (it == buildNames.end()) {
+						circuit->LOG("CONFIG %s: has unknown category '%s'", cfgName.c_str(), cat.c_str());
+						continue;
+					}
+					bi.buildType = it->second;
+
+					UnitDef* unitDef = cdef->GetDef();
+					bi.offset = ZeroVector;
+					bi.direction = SBuildInfo::Direction::NONE;
+					const Json::Value& off = part["offset"];
+					if (off.isArray()) {
+						bi.offset = AIFloat3(off.get((unsigned)0, 0.f).asFloat(), 0.f, off.get((unsigned)1, 0.f).asFloat());
+						if (bi.offset.x < -1e-3f) {
+							bi.offset.x -= unitDef->GetXSize() * SQUARE_SIZE / 2;
+						} else if (bi.offset.x > 1e-3f) {
+							bi.offset.x += unitDef->GetXSize() * SQUARE_SIZE / 2;
+						}
+						if (bi.offset.z < -1e-3f) {
+							bi.offset.z -= unitDef->GetZSize() * SQUARE_SIZE / 2;
+						} else if (bi.offset.z > 1e-3f) {
+							bi.offset.z += unitDef->GetZSize() * SQUARE_SIZE / 2;
+						}
+					} else if (off.isObject() && !off.empty()) {
+						float delta = 0.f;
+						SBuildInfo::DirName& dirNames = SBuildInfo::GetDirNames();
+						std::string dir = off.getMemberNames().front();
+						auto it = dirNames.find(dir);
+						if (it != dirNames.end()) {
+							bi.direction = it->second;
+							delta = off[dir].asFloat();
+						}
+						switch (bi.direction) {
+							case DIRECTION(LEFT): {
+								bi.offset.x = delta + unitDef->GetXSize() * SQUARE_SIZE / 2;
+							} break;
+							case DIRECTION(RIGHT): {
+								bi.offset.x = -(delta + unitDef->GetXSize() * SQUARE_SIZE / 2);
+							} break;
+							case DIRECTION(FRONT): {
+								bi.offset.z = delta + unitDef->GetZSize() * SQUARE_SIZE / 2;
+							} break;
+							case DIRECTION(BACK): {
+								bi.offset.z = -(delta + unitDef->GetZSize() * SQUARE_SIZE / 2);
+							} break;
+							default: break;
+						}
+					}
+
+					bi.condition = SBuildInfo::Condition::ALWAYS;
+					const std::string& cond = part.get("condition", "").asString();
+					if (!cond.empty()) {
+						SBuildInfo::CondName& condNames = SBuildInfo::GetCondNames();
+						auto it = condNames.find(cond);
+						if (it != condNames.end()) {
+							bi.condition = it->second;
+						}
+					}
+
+					queue.push_back(bi);
+				}
+				bc.hub.push_back(queue);
+			}
+
+			defMap[cdef] = new SBuildChain(bc);
+		}
+	}
+}
+
+void CBuilderManager::Init()
+{
+	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
+		CScheduler* scheduler = circuit->GetScheduler().get();
+		const int interval = 8;
+		const int offset = circuit->GetSkirmishAIId() % interval;
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), 1/*interval*/, offset + 1);
+
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Watchdog, this),
+								FRAMES_PER_SEC * 60,
+								circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 10);
+	};
+
+	circuit->GetSetupManager()->ExecOnFindStart(subinit);
+}
+
+void CBuilderManager::Release()
+{
+	// NOTE: Release expected to be called on CCircuit::Release.
+	//       It doesn't stop scheduled GameTasks for that reason.
+	for (IUnitTask* task : buildUpdates) {
+		AbortTask(task);
+		// NOTE: Do not delete task as other AbortTask may ask for it
+	}
+	buildUpdates.clear();
 }
 
 int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -682,157 +833,6 @@ SBuildChain* CBuilderManager::GetBuildChain(IBuilderTask::BuildType buildType, C
 		return nullptr;
 	}
 	return it2->second;
-}
-
-void CBuilderManager::ReadConfig()
-{
-	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
-
-	terraDef = circuit->GetCircuitDef(root["economy"].get("terra", "").asCString());
-	if (terraDef == nullptr) {
-		terraDef = circuit->GetEconomyManager()->GetDefaultDef();
-	}
-
-	const Json::Value& cond = root["porcupine"]["condition"];
-	super.minIncome = cond.get((unsigned)0, 50.f).asFloat();
-	super.maxTime = cond.get((unsigned)1, 300.f).asFloat();
-
-	IBuilderTask::BuildName& buildNames = IBuilderTask::GetBuildNames();
-	const Json::Value& build = root["build_chain"];
-	for (const std::string& catName : build.getMemberNames()) {
-		auto it = buildNames.find(catName);
-		if (it == buildNames.end()) {
-			circuit->LOG("CONFIG %s: has unknown category '%s'", cfgName.c_str(), catName.c_str());
-			continue;
-		}
-
-		std::unordered_map<CCircuitDef*, SBuildChain*>& defMap = buildChains[static_cast<IBuilderTask::BT>(it->second)];
-		const Json::Value& catChain = build[catName];
-		for (const std::string& defName : catChain.getMemberNames()) {
-			CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());
-			if (cdef == nullptr) {
-				circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), defName.c_str());
-				continue;
-			}
-
-			SBuildChain bc;
-			const Json::Value& buildQueue = catChain[defName];
-			bc.isPylon = buildQueue.get("pylon", false).asBool();
-			bc.isPorc = buildQueue.get("porc", false).asBool();
-			bc.isTerra = buildQueue.get("terra", false).asBool();
-
-			const Json::Value& engy = buildQueue["energy"];
-			bc.energy = engy.get(unsigned(0), -1.f).asFloat();
-			bc.isMexEngy = engy[1].isString();
-
-			const Json::Value& hub = buildQueue["hub"];
-			bc.hub.reserve(hub.size());
-			for (const Json::Value& que : hub) {
-				std::vector<SBuildInfo> queue;
-				queue.reserve(que.size());
-				for (const Json::Value& part : que) {
-					SBuildInfo bi;
-
-					const std::string& partName = part.get("unit", "").asString();
-					bi.cdef = circuit->GetCircuitDef(partName.c_str());
-					if (bi.cdef == nullptr) {
-						circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), partName.c_str());
-						continue;
-					}
-
-					const std::string& cat = part.get("category", "").asString();
-					auto it = buildNames.find(cat);
-					if (it == buildNames.end()) {
-						circuit->LOG("CONFIG %s: has unknown category '%s'", cfgName.c_str(), cat.c_str());
-						continue;
-					}
-					bi.buildType = it->second;
-
-					UnitDef* unitDef = cdef->GetDef();
-					bi.offset = ZeroVector;
-					bi.direction = SBuildInfo::Direction::NONE;
-					const Json::Value& off = part["offset"];
-					if (off.isArray()) {
-						bi.offset = AIFloat3(off.get((unsigned)0, 0.f).asFloat(), 0.f, off.get((unsigned)1, 0.f).asFloat());
-						if (bi.offset.x < -1e-3f) {
-							bi.offset.x -= unitDef->GetXSize() * SQUARE_SIZE / 2;
-						} else if (bi.offset.x > 1e-3f) {
-							bi.offset.x += unitDef->GetXSize() * SQUARE_SIZE / 2;
-						}
-						if (bi.offset.z < -1e-3f) {
-							bi.offset.z -= unitDef->GetZSize() * SQUARE_SIZE / 2;
-						} else if (bi.offset.z > 1e-3f) {
-							bi.offset.z += unitDef->GetZSize() * SQUARE_SIZE / 2;
-						}
-					} else if (off.isObject() && !off.empty()) {
-						float delta = 0.f;
-						SBuildInfo::DirName& dirNames = SBuildInfo::GetDirNames();
-						std::string dir = off.getMemberNames().front();
-						auto it = dirNames.find(dir);
-						if (it != dirNames.end()) {
-							bi.direction = it->second;
-							delta = off[dir].asFloat();
-						}
-						switch (bi.direction) {
-							case DIRECTION(LEFT): {
-								bi.offset.x = delta + unitDef->GetXSize() * SQUARE_SIZE / 2;
-							} break;
-							case DIRECTION(RIGHT): {
-								bi.offset.x = -(delta + unitDef->GetXSize() * SQUARE_SIZE / 2);
-							} break;
-							case DIRECTION(FRONT): {
-								bi.offset.z = delta + unitDef->GetZSize() * SQUARE_SIZE / 2;
-							} break;
-							case DIRECTION(BACK): {
-								bi.offset.z = -(delta + unitDef->GetZSize() * SQUARE_SIZE / 2);
-							} break;
-							default: break;
-						}
-					}
-
-					bi.condition = SBuildInfo::Condition::ALWAYS;
-					const std::string& cond = part.get("condition", "").asString();
-					if (!cond.empty()) {
-						SBuildInfo::CondName& condNames = SBuildInfo::GetCondNames();
-						auto it = condNames.find(cond);
-						if (it != condNames.end()) {
-							bi.condition = it->second;
-						}
-					}
-
-					queue.push_back(bi);
-				}
-				bc.hub.push_back(queue);
-			}
-
-			defMap[cdef] = new SBuildChain(bc);
-		}
-	}
-}
-
-void CBuilderManager::Init()
-{
-	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
-		CScheduler* scheduler = circuit->GetScheduler().get();
-		const int interval = 8;
-		const int offset = circuit->GetSkirmishAIId() % interval;
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), 1/*interval*/, offset + 1);
-	};
-
-	circuit->GetSetupManager()->ExecOnFindStart(subinit);
-}
-
-void CBuilderManager::Release()
-{
-	// NOTE: Release expected to be called on CCircuit::Release.
-	//       It doesn't stop scheduled GameTasks for that reason.
-	for (IUnitTask* task : buildUpdates) {
-		AbortTask(task);
-		// NOTE: Do not delete task as other AbortTask may ask for it
-	}
-	buildUpdates.clear();
 }
 
 IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)

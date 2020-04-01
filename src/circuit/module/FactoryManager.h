@@ -24,6 +24,12 @@ public:
 	CFactoryManager(CCircuitAI* circuit);
 	virtual ~CFactoryManager();
 
+private:
+	void ReadConfig();
+	void Init();
+public:
+	void Release();
+
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
 	virtual int UnitFinished(CCircuitUnit* unit) override;
 	virtual int UnitIdle(CCircuitUnit* unit) override;
@@ -74,12 +80,6 @@ public:
 	CCircuitDef* GetRoleDef(CCircuitDef* facDef, CCircuitDef::RoleType role) const;
 	CCircuitDef* GetLandDef(CCircuitDef* facDef) const;
 	CCircuitDef* GetWaterDef(CCircuitDef* facDef) const;
-
-private:
-	void ReadConfig();
-	void Init();
-public:
-	void Release();
 
 private:
 	void EnableFactory(CCircuitUnit* unit);

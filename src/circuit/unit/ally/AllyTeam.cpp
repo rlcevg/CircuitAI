@@ -76,7 +76,6 @@ void CAllyTeam::Init(CCircuitAI* circuit, float decloakRadius)
 	if (metalManager->HasMetalSpots() && !metalManager->HasMetalClusters() && !metalManager->IsClusterizing()) {
 		metalManager->ClusterizeMetal(circuit->GetSetupManager()->GetCommChoice());
 	}
-	circuit->GetScheduler()->RunTaskAt(std::make_shared<CGameTask>(&CMetalManager::Init, metalManager));
 
 	energyGrid = std::make_shared<CEnergyGrid>(circuit);
 	defence = std::make_shared<CDefenceMatrix>(circuit);

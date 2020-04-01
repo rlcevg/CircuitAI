@@ -28,6 +28,14 @@ CScheduler::~CScheduler()
 	Release();
 }
 
+void CScheduler::ProcessInit()
+{
+	for (auto& task : initTasks) {
+		task->Run();
+	}
+	// initTasks.clear();
+}
+
 void CScheduler::ProcessRelease()
 {
 	for (auto& task : releaseTasks) {
