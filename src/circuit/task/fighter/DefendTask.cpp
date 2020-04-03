@@ -10,6 +10,7 @@
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "module/MilitaryManager.h"
+#include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/PathFinder.h"
 #include "unit/action/FightAction.h"
@@ -209,10 +210,15 @@ void CDefendTask::FindTarget()
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
-	const float maxPower = attackPower * powerMod;
+	float maxPower = attackPower * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
+
+	const float sqOBDist = pos.SqDistance2D(circuit->GetSetupManager()->GetBasePos());
+	if (sqOBDist < SQUARE(3000.f)) {  // FIXME: Make max distance configurable
+		maxPower *= 2.0f - 1.0f / 3000.f * sqrtf(sqOBDist);  // 200% near base
+	}
 
 	CEnemyInfo* bestTarget = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
