@@ -48,7 +48,6 @@ public:
 	IFighterTask* EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote, float power);
 	IFighterTask* EnqueueGuard(CCircuitUnit* vip);
 	CRetreatTask* EnqueueRetreat();
-	IFighterTask* EnqueueDefendComm();
 private:
 	void DequeueTask(IFighterTask* task, bool done = false);
 

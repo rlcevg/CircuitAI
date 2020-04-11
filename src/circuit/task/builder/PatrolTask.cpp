@@ -44,7 +44,7 @@ void CBPatrolTask::AssignTo(CCircuitUnit* unit)
 		unit->PushDGunAct(new CDGunAction(unit, unit->GetDGunRange()));
 	}
 
-	lastTouched = manager->GetCircuit()->GetLastFrame();
+	lastTouched = circuit->GetLastFrame();
 }
 
 void CBPatrolTask::RemoveAssignee(CCircuitUnit* unit)

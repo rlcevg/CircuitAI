@@ -428,9 +428,9 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 		return true;
 	}
 	HideAssignee(unit);
-	IBuilderTask* task = static_cast<IBuilderTask*>(manager->MakeTask(unit));
+	IUnitTask* task = manager->MakeTask(unit);
 	ShowAssignee(unit);
-	if ((task != nullptr) && (task->GetBuildType() != buildType)) {
+	if ((task != nullptr) && ((task->GetType() != IUnitTask::Type::BUILDER) || (static_cast<IBuilderTask*>(task)->GetBuildType() != buildType))) {
 		manager->AssignTask(unit, task);
 		return false;
 	}

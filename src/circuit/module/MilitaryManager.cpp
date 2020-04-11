@@ -27,7 +27,6 @@
 #include "task/fighter/AntiAirTask.h"
 #include "task/fighter/AntiHeavyTask.h"
 #include "task/fighter/SupportTask.h"
-#include "task/fighter/BuilderTask.h"
 #include "task/static/SuperTask.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/PathFinder.h"
@@ -596,13 +595,6 @@ IFighterTask* CMilitaryManager::EnqueueGuard(CCircuitUnit* vip)
 CRetreatTask* CMilitaryManager::EnqueueRetreat()
 {
 	CRetreatTask* task = new CRetreatTask(this);
-	fightUpdates.push_back(task);
-	return task;
-}
-
-IFighterTask* CMilitaryManager::EnqueueDefendComm()
-{
-	IFighterTask* task = new CBuilderTask(this, 1.f);
 	fightUpdates.push_back(task);
 	return task;
 }
@@ -1342,7 +1334,7 @@ bool CMilitaryManager::IsEnemyNearBase(float maxThreat)
 	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	for (const CEnemyManager::SEnemyGroup& group : circuit->GetEnemyManager()->GetEnemyGroups()) {
 		if ((group.threat > 0.01f) && (group.threat < maxThreat)
-			&& (basePos.SqDistance2D(group.pos) < SQUARE(2000.f)))
+			&& (basePos.SqDistance2D(group.pos) < SQUARE(1000.f)))
 		{
 			return true;
 		}

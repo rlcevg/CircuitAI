@@ -129,7 +129,7 @@ protected:
 	CCircuitUnit* target;  // FIXME: Replace target with unitId
 	springai::AIFloat3 buildPos;
 	int facing;
-	IBuilderTask* nextTask;
+	IBuilderTask* nextTask;  // old list style
 
 	float savedIncome;
 	int buildFails;

@@ -28,7 +28,7 @@ class IGridLink;
 class CRetreatTask;
 class CBRepairTask;
 class CBReclaimTask;
-class CBMilitaryTask;
+class CCombatTask;
 
 struct SBuildChain;
 
@@ -115,7 +115,7 @@ public:
 							   int timeout = ASSIGN_TIMEOUT);
 	IUnitTask* EnqueueWait(int timeout);
 	CRetreatTask* EnqueueRetreat();
-	CBMilitaryTask* EnqueueMilitary();
+	CCombatTask* EnqueueCombat();
 
 private:
 	IBuilderTask* AddTask(IBuilderTask::Priority priority,

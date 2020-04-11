@@ -1,18 +1,18 @@
 /*
- * BuilderTask.cpp
+ * MilitaryTask.cpp
  *
  *  Created on: Apr 10, 2020
  *      Author: rlcevg
  */
 
-#include "task/fighter/BuilderTask.h"
+#include "task/builder/CombatTask.h"
 #include "task/TaskManager.h"
 #include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
+#include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
-#include "unit/enemy/EnemyUnit.h"
-#include "unit/CircuitUnit.h"
+#include "unit/action/DGunAction.h"
 #include "CircuitAI.h"
 #include "util/utils.h"
 
@@ -22,16 +22,16 @@ namespace circuit {
 
 using namespace springai;
 
-CBuilderTask::CBuilderTask(ITaskManager* mgr, float powerMod)
-		: IFighterTask(mgr, FightType::DEFEND, powerMod)
+CCombatTask::CCombatTask(ITaskManager* mgr)
+		: IFighterTask(mgr, FightType::DEFEND, 1.f)
 {
 }
 
-CBuilderTask::~CBuilderTask()
+CCombatTask::~CCombatTask()
 {
 }
 
-void CBuilderTask::RemoveAssignee(CCircuitUnit* unit)
+void CCombatTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IFighterTask::RemoveAssignee(unit);
 	if (units.empty()) {
@@ -39,48 +39,42 @@ void CBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void CBuilderTask::Start(CCircuitUnit* unit)
+void CCombatTask::Start(CCircuitUnit* unit)
 {
-	Execute(unit, false);
+	Execute(unit);
 }
 
-void CBuilderTask::Update()
+void CCombatTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 
-	decltype(units) tmpUnits = units;
 	if ((++updCount % 2 == 0) && (frame >= lastTouched + FRAMES_PER_SEC)) {
 		lastTouched = frame;
+		decltype(units) tmpUnits = units;
 		for (CCircuitUnit* unit : tmpUnits) {
-			Execute(unit, true);
-		}
-	} else {
-		for (CCircuitUnit* unit : tmpUnits) {
-			if (unit->IsForceExecute(frame)) {
-				Execute(unit, true);
-			}
+			Execute(unit);
 		}
 	}
 }
 
-void CBuilderTask::Execute(CCircuitUnit* unit, bool isUpdating)
+void CCombatTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
-	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
-	SetTarget(FindTarget(unit, pos));
+	target = FindTarget(unit, pos);
 
 	if (target == nullptr) {
-		CBuilderManager* builderManager = circuit->GetBuilderManager();
 		RemoveAssignee(unit);
-		unit->GetTask()->RemoveAssignee(unit);
-		builderManager->UnitFinished(unit);
 		return;
 	}
 
-	position = target->GetPos();
+	if (unit->Blocker() != nullptr) {
+		return;  // Do not interrupt current action
+	}
+
+	const AIFloat3& position = target->GetPos();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float range = std::max(unit->GetUnit()->GetMaxRange(), /*unit->IsUnderWater(frame) ? cdef->GetSonarRadius() : */cdef->GetLosRadius());
 	if (position.SqDistance2D(pos) < range) {
@@ -99,7 +93,7 @@ void CBuilderTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	}
 }
 
-CEnemyInfo* CBuilderTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
+CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CMap* map = circuit->GetMap();
@@ -114,7 +108,7 @@ CEnemyInfo* CBuilderTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
-	float minSqDist = SQUARE(2000.f);
+	float minSqDist = SQUARE(1000.f);
 
 	CEnemyInfo* bestTarget = nullptr;
 	CEnemyInfo* worstTarget = nullptr;
@@ -127,7 +121,7 @@ CEnemyInfo* CBuilderTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 		}
 		const AIFloat3& ePos = enemy->GetPos();
 
-		if (basePos.SqDistance2D(ePos) > SQUARE(2000.f)) {
+		if (basePos.SqDistance2D(ePos) > SQUARE(1000.f)) {
 			continue;
 		}
 
@@ -176,11 +170,7 @@ CEnemyInfo* CBuilderTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 		bestTarget = worstTarget;
 	}
 
-	if (bestTarget != nullptr) {
-		return bestTarget;
-	}
-
-	return nullptr;
+	return bestTarget;
 }
 
 } // namespace circuit

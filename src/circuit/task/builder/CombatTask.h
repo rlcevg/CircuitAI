@@ -1,21 +1,21 @@
 /*
- * BuilderTask.h
+ * MilitaryTask.h
  *
  *  Created on: Apr 10, 2020
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_TASK_FIGHTER_BUILDERTASK_H_
-#define SRC_CIRCUIT_TASK_FIGHTER_BUILDERTASK_H_
+#ifndef SRC_CIRCUIT_TASK_BUILDER_COMBATTASK_H_
+#define SRC_CIRCUIT_TASK_BUILDER_COMBATTASK_H_
 
 #include "task/fighter/FighterTask.h"
 
 namespace circuit {
 
-class CBuilderTask: public IFighterTask {
+class CCombatTask: public IFighterTask {
 public:
-	CBuilderTask(ITaskManager* mgr, float powerMod);
-	virtual ~CBuilderTask();
+	CCombatTask(ITaskManager* mgr);
+	virtual ~CCombatTask();
 
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
@@ -23,10 +23,10 @@ public:
 	virtual void Update() override;
 
 private:
-	void Execute(CCircuitUnit* unit, bool isUpdating);
+	void Execute(CCircuitUnit* unit);
 	CEnemyInfo* FindTarget(CCircuitUnit* unit, const springai::AIFloat3& pos);
 };
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_TASK_FIGHTER_BUILDERTASK_H_
+#endif // SRC_CIRCUIT_TASK_BUILDER_COMBATTASK_H_

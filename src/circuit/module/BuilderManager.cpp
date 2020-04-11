@@ -35,7 +35,7 @@
 #include "task/builder/ReclaimTask.h"
 #include "task/builder/PatrolTask.h"
 #include "task/builder/GuardTask.h"
-#include "task/builder/MilitaryTask.h"
+#include "task/builder/CombatTask.h"
 #include "task/builder/BuildChain.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
@@ -677,9 +677,9 @@ CRetreatTask* CBuilderManager::EnqueueRetreat()
 	return task;
 }
 
-CBMilitaryTask* CBuilderManager::EnqueueMilitary()
+CCombatTask* CBuilderManager::EnqueueCombat()
 {
-	CBMilitaryTask* task = new CBMilitaryTask(this);
+	CCombatTask* task = new CCombatTask(this);
 	buildUpdates.push_back(task);
 	return task;
 }
@@ -792,10 +792,10 @@ IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 	const CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsRoleComm()) {  // hide commander?
 		// FIXME: Any combat builder, not only commander
-		if ((unit->GetPos(circuit->GetLastFrame()).SqDistance2D(circuit->GetSetupManager()->GetBasePos()) < SQUARE(2000.f))
-			&& circuit->GetMilitaryManager()->IsEnemyNearBase(std::numeric_limits<float>::max()))
+		if ((unit->GetPos(circuit->GetLastFrame()).SqDistance2D(circuit->GetSetupManager()->GetBasePos()) < SQUARE(1000.f))
+			&& circuit->GetMilitaryManager()->IsEnemyNearBase(circuit->GetThreatMap()->GetUnitThreat(unit) * 2))
 		{
-			return EnqueueMilitary();
+			return EnqueueCombat();
 		}
 
 		const CSetupManager::SCommInfo::SHide* hide = circuit->GetSetupManager()->GetHide(cdef);
