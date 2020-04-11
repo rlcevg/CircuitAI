@@ -23,7 +23,6 @@ namespace circuit {
 
 #define CMD_ATTACK_GROUND			20
 #define CMD_RETREAT_ZONE			10001
-#define CMD_SETHAVEN				CMD_RETREAT_ZONE
 #define CMD_ORBIT					13923
 #define CMD_ORBIT_DRAW				13924
 #define CMD_CLOAK_SHIELD			31101

@@ -35,6 +35,7 @@
 #include "task/builder/ReclaimTask.h"
 #include "task/builder/PatrolTask.h"
 #include "task/builder/GuardTask.h"
+#include "task/builder/MilitaryTask.h"
 #include "task/builder/BuildChain.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
@@ -676,6 +677,13 @@ CRetreatTask* CBuilderManager::EnqueueRetreat()
 	return task;
 }
 
+CBMilitaryTask* CBuilderManager::EnqueueMilitary()
+{
+	CBMilitaryTask* task = new CBMilitaryTask(this);
+	buildUpdates.push_back(task);
+	return task;
+}
+
 IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 									   CCircuitDef* buildDef,
 									   const AIFloat3& position,
@@ -783,6 +791,13 @@ IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 {
 	const CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsRoleComm()) {  // hide commander?
+		// FIXME: Any combat builder, not only commander
+		if ((unit->GetPos(circuit->GetLastFrame()).SqDistance2D(circuit->GetSetupManager()->GetBasePos()) < SQUARE(2000.f))
+			&& circuit->GetMilitaryManager()->IsEnemyNearBase(std::numeric_limits<float>::max()))
+		{
+			return EnqueueMilitary();
+		}
+
 		const CSetupManager::SCommInfo::SHide* hide = circuit->GetSetupManager()->GetHide(cdef);
 		if (hide != nullptr) {
 			if ((circuit->GetLastFrame() < hide->frame) || (GetWorkerCount() <= 2)) {
@@ -885,7 +900,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 
 				if ((basePos.SqDistance2D(buildPos) > SQUARE(2000.f)) ||  // FIXME: Make max distance configurable
 					!terrainManager->CanBuildAtSafe(unit, buildPos) ||  // ensure that path always exists
-					(inflMap->GetInfluenceAt(buildPos) < INFL_BASE))  // safety check
+					(inflMap->GetInfluenceAt(buildPos) < -INFL_EPS))  // safety check
 				{
 					continue;
 				}
@@ -996,7 +1011,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 				const float buildThreat = (buildDef != nullptr) ? buildDef->GetPower() : 0.f;
 				if ((threatMap->GetThreatAt(buildPos) > maxThreat + buildThreat) ||
 					!terrainManager->CanBuildAt(unit, buildPos) ||  // ensure that path always exists
-					(inflMap->GetInfluenceAt(buildPos) < INFL_BASE))  // safety check
+					(inflMap->GetInfluenceAt(buildPos) < -INFL_EPS))  // safety check
 				{
 					continue;
 				}

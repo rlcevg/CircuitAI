@@ -144,7 +144,7 @@ ISquadTask* ISquadTask::GetMergeTask() const
 	const int frame = circuit->GetLastFrame();
 
 	AIFloat3 pos = leader->GetPos(frame);
-	if (circuit->GetInflMap()->GetInfluenceAt(pos) < INFL_BASE) {
+	if (circuit->GetInflMap()->GetInfluenceAt(pos) < -INFL_EPS) {
 		return nullptr;
 	}
 
@@ -197,7 +197,7 @@ bool ISquadTask::IsMustRegroup()
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
-	if (circuit->GetInflMap()->GetInfluenceAt(leader->GetPos(frame)) < INFL_BASE) {
+	if (circuit->GetInflMap()->GetInfluenceAt(leader->GetPos(frame)) < -INFL_EPS) {
 		state = State::ROAM;
 		return false;
 	}

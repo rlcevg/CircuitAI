@@ -162,7 +162,7 @@ void CAttackTask::Update()
 		}
 	}
 
-	if (circuit->GetInflMap()->GetInfluenceAt(leader->GetPos(frame)) < INFL_BASE) {
+	if (circuit->GetInflMap()->GetInfluenceAt(leader->GetPos(frame)) < -INFL_EPS) {
 		SetTarget(nullptr);
 	} else {
 		FindTarget();
@@ -242,7 +242,7 @@ void CAttackTask::FindTarget()
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
-	const float speed = SQUARE(highestSpeed / FRAMES_PER_SEC);
+	const float speed = SQUARE(highestSpeed * 0.8f / FRAMES_PER_SEC);
 	const float maxPower = attackPower * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();

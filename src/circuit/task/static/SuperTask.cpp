@@ -95,7 +95,7 @@ void CSuperTask::Update()
 				}
 			}
 		}
-		return inflMap->GetInfluenceAt(pos) <= INFL_BASE;
+		return inflMap->GetInfluenceAt(pos) < -INFL_EPS;
 	};
 	const std::vector<CEnemyManager::SEnemyGroup>& groups = circuit->GetEnemyManager()->GetEnemyGroups();
 	if (cdef->IsHoldFire() || (State::ROAM == state)) {

@@ -88,6 +88,14 @@ void CScoutTask::Update()
 	}
 }
 
+void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
+{
+	IFighterTask::OnUnitIdle(unit);
+	if (units.find(unit) != units.end()) {
+		RemoveAssignee(unit);
+	}
+}
+
 void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -151,14 +159,6 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	unit->GetTravelAct()->SetActive(false);
 }
 
-void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
-{
-	IFighterTask::OnUnitIdle(unit);
-	if (units.find(unit) != units.end()) {
-		RemoveAssignee(unit);
-	}
-}
-
 CEnemyInfo* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, PathInfo& path)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -169,7 +169,7 @@ CEnemyInfo* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, Path
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
-	const float speed = SQUARE(cdef->GetSpeed() * 0.9f / FRAMES_PER_SEC);
+	const float speed = SQUARE(cdef->GetSpeed() * 0.8f / FRAMES_PER_SEC);
 	const float maxPower = threatMap->GetUnitThreat(unit) * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
@@ -192,9 +192,9 @@ CEnemyInfo* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, Path
 		}
 		const AIFloat3& ePos = enemy->GetPos();
 		const float power = threatMap->GetThreatAt(ePos);
-		if ((maxPower <= power) ||
-			!terrainManager->CanMoveToPos(area, ePos) ||
-			(enemy->GetVel().SqLength2D() >= speed))
+		if ((maxPower <= power)
+			|| !terrainManager->CanMoveToPos(area, ePos)
+			|| (enemy->GetVel().SqLength2D() >= speed))
 		{
 			continue;
 		}
@@ -205,14 +205,14 @@ CEnemyInfo* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, Path
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
-			if (((targetCat & canTargetCat) == 0) ||
-				(edef->IsAbleToFly() && notAA))
+			if (((targetCat & canTargetCat) == 0)
+				|| (edef->IsAbleToFly() && notAA))
 			{
 				continue;
 			}
 			float elevation = map->GetElevationAt(ePos.x, ePos.z);
-			if ((notAW && !edef->IsYTargetable(elevation, ePos.y)) ||
-				(ePos.y - elevation > weaponRange))
+			if ((notAW && !edef->IsYTargetable(elevation, ePos.y))
+				|| (ePos.y - elevation > weaponRange))
 			{
 				continue;
 			}

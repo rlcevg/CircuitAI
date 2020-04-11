@@ -23,6 +23,7 @@ namespace springai {
 namespace circuit {
 
 #define INFL_BASE		0.f
+#define INFL_EPS		0.01f
 
 class CMapManager;
 class CAllyUnit;
