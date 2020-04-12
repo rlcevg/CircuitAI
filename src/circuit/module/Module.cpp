@@ -6,17 +6,25 @@
  */
 
 #include "module/Module.h"
+#include "script/Script.h"
 #include "unit/CircuitUnit.h"
 
 namespace circuit {
 
-IModule::IModule(CCircuitAI* circuit)
+IModule::IModule(CCircuitAI* circuit, IScript* script)
 		: circuit(circuit)
+		, script(script)
 {
 }
 
 IModule::~IModule()
 {
+	delete script;
+}
+
+void IModule::InitScript()
+{
+	script->Init();
 }
 
 int IModule::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)

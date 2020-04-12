@@ -12,6 +12,7 @@
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "resource/MetalManager.h"
+#include "script/BuilderScript.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/PathFinder.h"
@@ -39,7 +40,7 @@
 #include "task/builder/BuildChain.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #include "json/json.h"
 
 #include "Command.h"
@@ -50,7 +51,7 @@ namespace circuit {
 using namespace springai;
 
 CBuilderManager::CBuilderManager(CCircuitAI* circuit)
-		: IUnitModule(circuit)
+		: IUnitModule(circuit, new CBuilderScript(circuit->GetScriptManager(), this))
 		, buildTasksCount(0)
 		, buildPower(.0f)
 		, buildIterator(0)
@@ -789,6 +790,8 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 
 IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 {
+//	return static_cast<CBuilderScript*>(script)->MakeTask(unit);
+
 	const CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsRoleComm()) {  // hide commander?
 		// FIXME: Any combat builder, not only commander
@@ -807,7 +810,7 @@ IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 			if (enemyManager->GetMobileThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat) {
 				return MakeCommTask(unit);
 			}
-			const bool isHide = (hide->isAir) && (enemyManager->GetEnemyCost(CCircuitDef::RoleType::AIR) > 1.f);
+			const bool isHide = (hide->isAir) && (enemyManager->GetEnemyCost(ROLE_TYPE(AIR)) > 1.f);
 			return isHide ? MakeCommTask(unit) : MakeBuilderTask(unit);
 		}
 	}
@@ -1220,7 +1223,7 @@ void CBuilderManager::UpdateBuild()
 		if (task->IsDead()) {
 			buildUpdates[buildIterator] = buildUpdates.back();
 			buildUpdates.pop_back();
-			delete task;
+			task->Release();  // delete task;
 		} else {
 			int frame = task->GetLastTouched();
 			int timeout = task->GetTimeout();

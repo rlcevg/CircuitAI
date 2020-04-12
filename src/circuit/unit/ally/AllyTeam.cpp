@@ -18,7 +18,7 @@
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
 #include "util/Scheduler.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include "spring/SpringCallback.h"
 

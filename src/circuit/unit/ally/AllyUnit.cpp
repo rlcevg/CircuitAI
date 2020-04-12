@@ -6,7 +6,7 @@
  */
 
 #include "unit/ally/AllyUnit.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #include "terrain/TerrainData.h"
 
 namespace circuit {

@@ -8,7 +8,7 @@
 #ifdef DEBUG_VIS
 
 #include "util/DebugDrawer.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #include "CircuitAI.h"
 
 #include "spring/SpringCallback.h"

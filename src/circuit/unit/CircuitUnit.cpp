@@ -12,7 +12,7 @@
 #include "unit/enemy/EnemyUnit.h"
 #include "setup/SetupManager.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #ifdef DEBUG_VIS
 #include "task/UnitTask.h"
 #include "Command.h"
@@ -44,6 +44,7 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 		, ammoFrame(-1)
 		, isMorphing(false)
 		, target(nullptr)
+		, targetTile(-1)
 {
 	WeaponMount* wpMnt;
 	if (cdef->IsRoleComm()) {
@@ -138,7 +139,7 @@ void CCircuitUnit::ManualFire(CEnemyInfo* target, int timeOut)
 				unit->DGun(target->GetUnit(), UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY, timeOut);
 			}
 		} else {
-			unit->MoveTo(target->GetPos(), UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
+			unit->MoveTo(target->GetPos() + target->GetVel() * FRAMES_PER_SEC * 2, UNIT_COMMAND_OPTION_ALT_KEY, timeOut);
 			unit->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, UNIT_COMMAND_OPTION_SHIFT_KEY, timeOut);
 		}
 	)

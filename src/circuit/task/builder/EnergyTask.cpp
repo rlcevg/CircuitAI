@@ -10,7 +10,7 @@
 #include "module/EconomyManager.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 

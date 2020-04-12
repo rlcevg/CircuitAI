@@ -36,9 +36,11 @@
 namespace utils {
 
 #ifdef DEBUG
-	#define PRINT_DEBUG(fmt, ...)	printf("<CircuitAI DEBUG> " fmt , ##__VA_ARGS__)
+	#define PRINT_DEBUG(fmt, ...)	printf("<CircuitAI DEBUG> " fmt, ##__VA_ARGS__)
+	#define ASSERT(x)	assert(x)
 #else
 	#define PRINT_DEBUG(fmt, ...)
+	#define ASSERT(x)	if (!(x)) throw
 #endif
 
 #ifdef _WIN32
@@ -143,52 +145,6 @@ static inline void sleep(int64_t seconds)
 	spring::this_thread::sleep_for(std::chrono::seconds(seconds));
 }
 
-//template<typename T>
-//static inline void file_read(T* value, FILE* file)
-//{
-//	const size_t readCount = fread(value, sizeof(T), 1, file);
-//	if (readCount != 1) {
-//		throw std::runtime_error("failed reading from file");
-//	}
-//}
-//
-//template<typename T>
-//static inline void file_write(const T* value, FILE* file)
-//{
-//	const size_t writeCount = fwrite(value, sizeof(T), 1, file);
-//	if (writeCount != 1) {
-//		throw std::runtime_error("failed writing to file");
-//	}
-//}
-
-static inline bool IsFSGoodChar(const char c)
-{
-	if ((c >= '0') && (c <= '9')) {
-		return true;
-	} else if ((c >= 'a') && (c <= 'z')) {
-		return true;
-	} else if ((c >= 'A') && (c <= 'Z')) {
-		return true;
-	} else if ((c == '.') || (c == '_') || (c == '-')) {
-		return true;
-	}
-
-	return false;
-}
-
-static inline std::string MakeFileSystemCompatible(const std::string& str)
-{
-	std::string cleaned = str;
-
-	for (std::string::size_type i = 0; i < cleaned.size(); i++) {
-		if (!IsFSGoodChar(cleaned[i])) {
-			cleaned[i] = '_';
-		}
-	}
-
-	return cleaned;
-}
-
 static inline std::string::const_iterator EndInBraces(const std::string::const_iterator begin, const std::string::const_iterator end)
 {
 	std::string::const_iterator brEnd = begin;
@@ -248,24 +204,24 @@ template<class T> static inline constexpr T clamp(const T v, const T vmin, const
 
 template<typename T> static inline std::ostream& binary_write(std::ostream& stream, const T& value)
 {
-    return stream.write(reinterpret_cast<const char*>(&value), sizeof(T));
+	return stream.write(reinterpret_cast<const char*>(&value), sizeof(T));
 }
 
 template<typename T> static inline std::istream& binary_read(std::istream& stream, T& value)
 {
-    return stream.read(reinterpret_cast<char*>(&value), sizeof(T));
+	return stream.read(reinterpret_cast<char*>(&value), sizeof(T));
 }
 
 #ifdef DEBUG_LOG
+	template<typename units>
 	class CScopedTime {
 	public:
 		using clock = std::chrono::high_resolution_clock;
-		using milliseconds = std::chrono::milliseconds;
 		CScopedTime(circuit::CCircuitAI* ai, const std::string& msg, int t)
 			: ai(ai), text(msg), t0(clock::now()), thr(t)
 		{}
 		~CScopedTime() {
-			int count = std::chrono::duration_cast<milliseconds>(clock::now() - t0).count();
+			int count = std::chrono::duration_cast<units>(clock::now() - t0).count();
 			if (count >= thr) ai->LOG("%i | %i ms | %s", ai->GetSkirmishAIId(), count, text.c_str());
 		}
 	private:
@@ -274,7 +230,8 @@ template<typename T> static inline std::istream& binary_read(std::istream& strea
 		clock::time_point t0;
 		int thr;
 	};
-	#define SCOPED_TIME(x, y) utils::CScopedTime st(x, y, 10)
+	#define SCOPED_TIME(x, y) utils::CScopedTime<std::chrono::milliseconds> st(x, y, 10)
+	#define SCOPED_TIME_T(x, y, t) utils::CScopedTime<std::chrono::microseconds> st(x, y, t)
 #else
 	#define SCOPED_TIME(x, y)
 #endif

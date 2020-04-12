@@ -18,7 +18,7 @@
 #include "unit/enemy/EnemyUnit.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include "spring/SpringMap.h"
 
@@ -121,7 +121,7 @@ void CAntiHeavyTask::Update()
 	 * Merge tasks if possible
 	 */
 	if (updCount % 32 == 1) {
-		if (manager->GetCircuit()->GetEnemyManager()->GetEnemyCost(CCircuitDef::RoleType::HEAVY) < 1.f) {
+		if (manager->GetCircuit()->GetEnemyManager()->GetEnemyCost(ROLE_TYPE(HEAVY)) < 1.f) {
 			manager->AbortTask(this);
 			return;
 		}
@@ -220,7 +220,7 @@ void CAntiHeavyTask::Update()
 			return;
 		}
 		if (!leaderDef->IsRoleMine() &&
-			(circuit->GetEnemyManager()->GetEnemyCost(CCircuitDef::RoleType::HEAVY) < 1.f))
+			(circuit->GetEnemyManager()->GetEnemyCost(ROLE_TYPE(HEAVY)) < 1.f))
 		{
 			manager->AbortTask(this);
 			return;

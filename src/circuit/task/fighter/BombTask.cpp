@@ -15,7 +15,7 @@
 #include "unit/enemy/EnemyUnit.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include "spring/SpringCallback.h"
 #include "spring/SpringMap.h"

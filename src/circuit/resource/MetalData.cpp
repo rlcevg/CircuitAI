@@ -8,7 +8,7 @@
 #include "resource/MetalData.h"
 #include "util/math/HierarchCluster.h"
 #include "util/math/EncloseCircle.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #include "triangulate/delaunator.hpp"
 
 #include <map>

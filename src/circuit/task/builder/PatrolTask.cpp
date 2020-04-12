@@ -11,7 +11,7 @@
 #include "unit/CircuitUnit.h"
 #include "unit/action/DGunAction.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include "Map.h"
 

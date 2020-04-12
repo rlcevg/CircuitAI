@@ -7,7 +7,7 @@
 
 #include "task/NilTask.h"
 #include "unit/CircuitUnit.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 

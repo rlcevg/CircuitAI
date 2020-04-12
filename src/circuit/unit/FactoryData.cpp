@@ -10,7 +10,7 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #include "json/json.h"
 
 #include "spring/SpringMap.h"
@@ -139,8 +139,8 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 		}
 		float importance;
 		if (isStart) {
-			CCircuitDef* bdef = factoryManager->GetRoleDef(cdef, CCircuitDef::RoleType::BUILDER);
-			importance = sfac.startImp * (((bdef != nullptr) && bdef->IsAvailable()) ? 1.f : .1f);
+			CCircuitDef* bdef = factoryManager->GetRoleDef(cdef, ROLE_TYPE(BUILDER));
+			importance = sfac.startImp * (((bdef != nullptr) && bdef->IsAvailable(frame)) ? 1.f : .1f);
 		} else {
 			importance = sfac.switchImp;
 		}
@@ -193,7 +193,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 	return circuit->GetCircuitDef(availFacs.front().id);
 }
 
-void CFactoryData::AddFactory(CCircuitDef* cdef)
+void CFactoryData::AddFactory(const CCircuitDef* cdef)
 {
 	auto it = allFactories.find(cdef->GetId());
 	if (it != allFactories.end()) {
@@ -201,7 +201,7 @@ void CFactoryData::AddFactory(CCircuitDef* cdef)
 	}
 }
 
-void CFactoryData::DelFactory(CCircuitDef* cdef)
+void CFactoryData::DelFactory(const CCircuitDef* cdef)
 {
 	auto it = allFactories.find(cdef->GetId());
 	if (it != allFactories.end()) {

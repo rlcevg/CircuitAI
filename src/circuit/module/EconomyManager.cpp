@@ -9,6 +9,7 @@
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
 #include "module/MilitaryManager.h"
+#include "script/EconomyScript.h"
 #include "setup/SetupManager.h"
 #include "resource/MetalManager.h"
 #include "resource/EnergyGrid.h"
@@ -16,7 +17,7 @@
 #include "CircuitAI.h"
 #include "util/math/LagrangeInterPol.h"
 #include "util/Scheduler.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #include "json/json.h"
 
 #include "spring/SpringCallback.h"
@@ -37,7 +38,7 @@ using namespace springai;
 #define PYLON_RANGE		500.0f
 
 CEconomyManager::CEconomyManager(CCircuitAI* circuit)
-		: IModule(circuit)
+		: IModule(circuit, new CEconomyScript(circuit->GetScriptManager(), this))
 		, energyGrid(nullptr)
 		, pylonDef(nullptr)
 		, mexDef(nullptr)
@@ -935,7 +936,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	const unsigned airpadFactor = SQUARE((airpadDef->GetCount() + factoryTasks.size()) * 4);
 	const int frame = circuit->GetLastFrame();
 	if (airpadDef->IsAvailable(frame) &&
-		(militaryManager->GetRoleUnits(CCircuitDef::RoleType::BOMBER).size() > airpadFactor))
+		(militaryManager->GetRoleUnits(ROLE_TYPE(BOMBER)).size() > airpadFactor))
 	{
 		CCircuitDef* bdef;
 		AIFloat3 buildPos;
@@ -1227,23 +1228,23 @@ void CEconomyManager::UpdateMorph()
 	}
 }
 
-void CEconomyManager::OpenStrategy(CCircuitDef* facDef, const AIFloat3& pos)
+void CEconomyManager::OpenStrategy(const CCircuitDef* facDef, const AIFloat3& pos)
 {
 	CFactoryManager* factoryManager = circuit->GetFactoryManager();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	float radius = std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight()) / 4;
-	const std::vector<CCircuitDef::RoleType>* opener = circuit->GetSetupManager()->GetOpener(facDef);
+	const std::vector<CCircuitDef::RoleT>* opener = circuit->GetSetupManager()->GetOpener(facDef);
 	if (opener == nullptr) {
 		return;
 	}
-	for (CCircuitDef::RoleType type : *opener) {
+	for (CCircuitDef::RoleT type : *opener) {
 		CCircuitDef* buildDef = factoryManager->GetRoleDef(facDef, type);
 		if ((buildDef == nullptr) || !buildDef->IsAvailable(circuit->GetLastFrame())) {
 			continue;
 		}
 		CRecruitTask::Priority priotiry;
 		CRecruitTask::RecruitType recruit;
-		if (type == CCircuitDef::RoleType::BUILDER) {
+		if (type == ROLE_TYPE(BUILDER)) {
 			priotiry = CRecruitTask::Priority::NORMAL;
 			recruit  = CRecruitTask::RecruitType::BUILDPOWER;
 		} else {

@@ -6,6 +6,7 @@
  */
 
 #include "CircuitAI.h"
+#include "script/ScriptManager.h"
 #include "setup/SetupManager.h"
 #include "map/MapManager.h"
 #include "map/ThreatMap.h"
@@ -21,7 +22,7 @@
 #include "unit/enemy/EnemyUnit.h"
 #include "util/GameAttribute.h"
 #include "util/Scheduler.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #ifdef DEBUG_VIS
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
@@ -537,8 +538,10 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	}
 #endif
 
+	CreateGameAttribute();
 	scheduler = std::make_shared<CScheduler>();
 	scheduler->Init(scheduler);
+	scriptManager = std::make_shared<CScriptManager>(this);
 
 	std::string cfgOption = InitOptions();  // Inits GameAttribute
 	InitWeaponDefs();
@@ -588,6 +591,11 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	modules.push_back(factoryManager);
 	modules.push_back(economyManager);  // NOTE: Units use manager, but ain't assigned here
 
+	scriptManager->RegisterMgr();
+	for (auto& module : modules) {
+		module->InitScript();
+	}
+
 	if (isCheating) {
 		cheats->SetEnabled(true);
 		cheats->SetEventsEnabled(true);
@@ -630,6 +638,7 @@ int CCircuitAI::Release(int reason)
 	scheduler = nullptr;
 
 	modules.clear();
+	scriptManager = nullptr;
 	militaryManager = nullptr;
 	economyManager = nullptr;
 	factoryManager = nullptr;
@@ -1360,9 +1369,11 @@ std::string CCircuitAI::InitOptions()
 	value = options->GetValueByKey("config_file");
 	std::string cfgOption = ((value != nullptr) && strlen(value) > 0) ? value : "";
 
-	value = options->GetValueByKey("random_seed");
-	unsigned int seed = (value != nullptr) ? StringToInt(value) : time(nullptr);
-	CreateGameAttribute(seed);
+	if (!gameAttribute->IsInitialized()) {
+		value = options->GetValueByKey("random_seed");
+		unsigned int seed = (value != nullptr) ? StringToInt(value) : time(nullptr);
+		gameAttribute->Init(seed);
+	}
 
 	delete options;
 	return cfgOption;
@@ -1475,10 +1486,11 @@ CInfluenceMap* CCircuitAI::GetInflMap() const
 	return mapManager->GetInflMap();
 }
 
-void CCircuitAI::CreateGameAttribute(unsigned int seed)
+void CCircuitAI::CreateGameAttribute()
 {
 	if (gameAttribute == nullptr) {
-		gameAttribute = std::unique_ptr<CGameAttribute>(new CGameAttribute(seed));
+		gameAttribute = std::unique_ptr<CGameAttribute>(new CGameAttribute());
+		CCircuitDef::InitStatic(this, &gameAttribute->GetRoleMasker());
 	}
 	gaCounter++;
 	gameAttribute->RegisterAI(this);

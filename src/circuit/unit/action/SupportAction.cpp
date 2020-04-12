@@ -9,7 +9,7 @@
 #include "unit/CircuitUnit.h"
 #include "task/fighter/SquadTask.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include "AISCommands.h"
 

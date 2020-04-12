@@ -12,7 +12,8 @@
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
 #include "util/Scheduler.h"
-#include "util/utils.h"
+#include "util/FileSystem.h"
+#include "util/Utils.h"
 #include "json/json.h"
 
 #include "spring/SpringCallback.h"
@@ -337,7 +338,7 @@ void CSetupManager::ReadConfig()
 			if (it == roleNames.end()) {
 				circuit->LOG("CONFIG %s: default start has unknown role '%s'", cfgName.c_str(), role.asCString());
 			} else {
-				facStart.defaultStart.push_back(it->second);
+				facStart.defaultStart.push_back(it->second.type);
 			}
 		}
 		const Json::Value& facStrt = strt["factory"];
@@ -353,14 +354,14 @@ void CSetupManager::ReadConfig()
 			for (const Json::Value& opener : multiStrt) {
 				const float prob = opener.get((unsigned)0, 1.f).asFloat();
 				const Json::Value& roles = opener[1];
-				std::vector<CCircuitDef::RoleType> queue;
+				std::vector<CCircuitDef::RoleT> queue;
 				queue.reserve(roles.size());
 				for (const Json::Value& role : roles) {
 					auto it = roleNames.find(role.asString());
 					if (it == roleNames.end()) {
 						circuit->LOG("CONFIG %s: %s start has unknown role '%s'", cfgName.c_str(), defName.c_str(), role.asCString());
 					} else {
-						queue.push_back(it->second);
+						queue.push_back(it->second.type);
 					}
 				}
 				facOpeners.emplace_back(prob, queue);
@@ -438,7 +439,7 @@ int CSetupManager::GetMorphFrame(const CCircuitDef* cdef) const
 	return -1;
 }
 
-const std::vector<CCircuitDef::RoleType>* CSetupManager::GetOpener(const CCircuitDef* facDef) const
+const std::vector<CCircuitDef::RoleT>* CSetupManager::GetOpener(const CCircuitDef* facDef) const
 {
 	auto its = start.find(commChoice->GetId());
 	if (its == start.end()) {
@@ -614,14 +615,8 @@ void CSetupManager::CalcLanePos()
 
 bool CSetupManager::LocatePath(std::string& filename)
 {
-	static const size_t absPath_sizeMax = 2048;
-	char absPath[absPath_sizeMax];
 	DataDirs* datadirs = circuit->GetCallback()->GetDataDirs();
-	const bool dir = !filename.empty() && (*filename.rbegin() == '/' || *filename.rbegin() == '\\');
-	const bool located = datadirs->LocatePath(absPath, absPath_sizeMax, filename.c_str(), false /*writable*/, false /*create*/, dir, false /*common*/);
-	if (located) {
-		filename = absPath;
-	}
+	const bool located = utils::LocatePath(datadirs, filename);
 	delete datadirs;
 	return located;
 }
@@ -704,17 +699,12 @@ Json::Value* CSetupManager::ReadConfig(const std::string& dirname, const std::ve
 
 	for (const std::string& name : cfgNames) {
 		std::string filename = dirname + name;
-		int fileSize = file->GetSize(filename.c_str());
-		if (fileSize <= 0) {
+		auto cfgStr = utils::ReadFile(file, filename);
+		if (cfgStr.empty()) {
 			circuit->LOG("No config file! (%s)", filename.c_str());
-			continue;
+		} else {
+			cfg = ParseConfig(cfgStr, name, cfg);
 		}
-		char* value = new char [fileSize + 1];
-		file->GetContent(filename.c_str(), value, fileSize);
-		value[fileSize] = 0;
-		std::string cfgStr(value);
-		delete[] value;
-		cfg = ParseConfig(cfgStr, name, cfg);
 	}
 
 	delete file;

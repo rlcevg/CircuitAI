@@ -6,21 +6,27 @@
  */
 
 #include "util/GameAttribute.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #include "CircuitAI.h"
 
 namespace circuit {
 
 using namespace springai;
 
-CGameAttribute::CGameAttribute(unsigned int seed)
-		: isGameEnd(false)
+CGameAttribute::CGameAttribute()
+		: isInitialized(false)
+		, isGameEnd(false)
 {
-	srand(seed);
 }
 
 CGameAttribute::~CGameAttribute()
 {
+}
+
+void CGameAttribute::Init(unsigned int seed)
+{
+	srand(seed);
+	isInitialized = true;
 }
 
 void CGameAttribute::SetGameEnd(bool value)

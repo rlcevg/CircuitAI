@@ -8,7 +8,7 @@
 #include "unit/CircuitDef.h"
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include "WeaponMount.h"
 #include "WeaponDef.h"
@@ -25,29 +25,8 @@ using namespace springai;
 
 #define THREAT_MOD		(1.0f / 128.0f)
 
-CCircuitDef::RoleName CCircuitDef::roleNames = {
-	{"builder",    CCircuitDef::RoleType::BUILDER},
-	{"scout",      CCircuitDef::RoleType::SCOUT},
-	{"raider",     CCircuitDef::RoleType::RAIDER},
-	{"riot",       CCircuitDef::RoleType::RIOT},
-	{"assault",    CCircuitDef::RoleType::ASSAULT},
-	{"skirmish",   CCircuitDef::RoleType::SKIRM},
-	{"artillery",  CCircuitDef::RoleType::ARTY},
-	{"anti_air",   CCircuitDef::RoleType::AA},
-	{"anti_sub",   CCircuitDef::RoleType::AS},
-	{"anti_heavy", CCircuitDef::RoleType::AH},
-	{"bomber",     CCircuitDef::RoleType::BOMBER},
-	{"support",    CCircuitDef::RoleType::SUPPORT},
-	{"mine",       CCircuitDef::RoleType::MINE},
-	{"transport",  CCircuitDef::RoleType::TRANS},
-	{"air",        CCircuitDef::RoleType::AIR},
-	{"sub",        CCircuitDef::RoleType::SUB},
-	{"static",     CCircuitDef::RoleType::STATIC},
-	{"heavy",      CCircuitDef::RoleType::HEAVY},
-	{"super",      CCircuitDef::RoleType::SUPER},
-	{"commander",  CCircuitDef::RoleType::COMM},
-};
-
+CCircuitDef::RoleT CCircuitDef::roleSize;
+CCircuitDef::RoleName* CCircuitDef::roleNames;
 CCircuitDef::AttrName CCircuitDef::attrNames = {
 	{"melee",     CCircuitDef::AttrType::MELEE},
 	{"boost",     CCircuitDef::AttrType::BOOST},
@@ -58,16 +37,52 @@ CCircuitDef::AttrName CCircuitDef::attrNames = {
 	{"ret_hold",  CCircuitDef::AttrType::RET_HOLD},
 	{"ret_fight", CCircuitDef::AttrType::RET_FIGHT},
 };
-
 CCircuitDef::FireName CCircuitDef::fireNames = {
 	{"hold",   CCircuitDef::FireType::HOLD},
 	{"return", CCircuitDef::FireType::RETURN},
 	{"open",   CCircuitDef::FireType::OPEN},
 };
 
+void CCircuitDef::InitStatic(CCircuitAI* circuit, CMaskHandler* roleMasker)
+{
+	std::vector<std::pair<std::string, CMaskHandler::TypeMask>> roles = {
+		{"",           {ROLE_TYPE(NONE),    CCircuitDef::RoleMask::NONE}},
+		{"builder",    {ROLE_TYPE(BUILDER), CCircuitDef::RoleMask::BUILDER}},
+		{"scout",      {ROLE_TYPE(SCOUT),   CCircuitDef::RoleMask::SCOUT}},
+		{"raider",     {ROLE_TYPE(RAIDER),  CCircuitDef::RoleMask::RAIDER}},
+		{"riot",       {ROLE_TYPE(RIOT),    CCircuitDef::RoleMask::RIOT}},
+		{"assault",    {ROLE_TYPE(ASSAULT), CCircuitDef::RoleMask::ASSAULT}},
+		{"skirmish",   {ROLE_TYPE(SKIRM),   CCircuitDef::RoleMask::SKIRM}},
+		{"artillery",  {ROLE_TYPE(ARTY),    CCircuitDef::RoleMask::ARTY}},
+		{"anti_air",   {ROLE_TYPE(AA),      CCircuitDef::RoleMask::AA}},
+		{"anti_sub",   {ROLE_TYPE(AS),      CCircuitDef::RoleMask::AS}},
+		{"anti_heavy", {ROLE_TYPE(AH),      CCircuitDef::RoleMask::AH}},
+		{"bomber",     {ROLE_TYPE(BOMBER),  CCircuitDef::RoleMask::BOMBER}},
+		{"support",    {ROLE_TYPE(SUPPORT), CCircuitDef::RoleMask::SUPPORT}},
+		{"mine",       {ROLE_TYPE(MINE),    CCircuitDef::RoleMask::MINE}},
+		{"transport",  {ROLE_TYPE(TRANS),   CCircuitDef::RoleMask::TRANS}},
+		{"air",        {ROLE_TYPE(AIR),     CCircuitDef::RoleMask::AIR}},
+		{"sub",        {ROLE_TYPE(SUB),     CCircuitDef::RoleMask::SUB}},
+		{"static",     {ROLE_TYPE(STATIC),  CCircuitDef::RoleMask::STATIC}},
+		{"heavy",      {ROLE_TYPE(HEAVY),   CCircuitDef::RoleMask::HEAVY}},
+		{"super",      {ROLE_TYPE(SUPER),   CCircuitDef::RoleMask::SUPER}},
+		{"commander",  {ROLE_TYPE(COMM),    CCircuitDef::RoleMask::COMM}},
+	};
+	for (auto& kv : roles) {
+		CMaskHandler::TypeMask tm = roleMasker->GetTypeMask(kv.first);
+		if ((tm.type != kv.second.type) || (tm.mask != kv.second.mask)) {
+			circuit->LOG("RoleError: %s = (%i, 0x%08X) != (%i, 0x%08X)", kv.first.c_str(),
+						 kv.second.type, kv.second.mask, tm.type, tm.mask);
+		}
+	}
+
+	CCircuitDef::roleNames = &roleMasker->GetMasks();
+	CCircuitDef::roleSize = roleMasker->GetMasks().size();
+}
+
 CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts, Resource* res)
 		: def(def)
-		, mainRole(RoleType::SCOUT)
+		, mainRole(ROLE_TYPE(SCOUT))
 		, enemyRole(RoleMask::NONE)
 		, role(RoleMask::NONE)
 		, buildOptions(buildOpts)
@@ -160,7 +175,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	bool isDynamic = false;
 	if (customParams.find("level") != customParams.end()) {
 		isDynamic = customParams.find("dynamic_comm") != customParams.end();
-		AddRole(RoleType::COMM);
+		AddRole(ROLE_TYPE(COMM));
 	}
 
 	it = customParams.find("midposoffset");

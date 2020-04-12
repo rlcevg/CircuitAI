@@ -11,6 +11,7 @@
 #include "unit/CoreUnit.h"
 #include "unit/CircuitDef.h"
 #include "unit/enemy/EnemyUnit.h"
+#include "util/MaskHandler.h"
 
 namespace circuit {
 
@@ -23,7 +24,7 @@ public:
 		SEnemyGroup(const springai::AIFloat3& p) : pos(p), cost(0.f), threat(0.f) {}
 		std::vector<ICoreUnit::Id> units;
 		springai::AIFloat3 pos;
-		std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> roleCosts{{0.f}};
+		std::array<float, CMaskHandler::GetMaxMasks()> roleCosts{{0.f}};
 		float cost;
 		float threat;  // thr_mod applied
 	};
@@ -56,18 +57,18 @@ private:
 	void GarbageEnemy(CEnemyUnit* enemy);
 
 public:
-	float GetEnemyCost(CCircuitDef::RoleType type) const {
-		return enemyInfos[static_cast<CCircuitDef::RoleT>(type)].cost;
+	float GetEnemyCost(CCircuitDef::RoleT type) const {
+		return enemyInfos[type].cost;
 	}
-	float GetEnemyThreat(CCircuitDef::RoleType type) const {
-		return enemyInfos[static_cast<CCircuitDef::RoleT>(type)].threat;
+	float GetEnemyThreat(CCircuitDef::RoleT type) const {
+		return enemyInfos[type].threat;
 	}
 	void AddEnemyCost(const CEnemyUnit* e);
 	void DelEnemyCost(const CEnemyUnit* e);
 	float GetMobileThreat() const { return mobileThreat; }
 	float GetStaticThreat() const { return staticThreat; }
 	float GetEnemyThreat() const { return mobileThreat + staticThreat; }
-	bool IsAirValid() const { return GetEnemyThreat(CCircuitDef::RoleType::AA) <= maxAAThreat; }
+	bool IsAirValid() const { return GetEnemyThreat(ROLE_TYPE(AA)) <= maxAAThreat; }
 
 	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return enemyGroups; }
 	const springai::AIFloat3& GetEnemyPos() const { return enemyPos; }
@@ -124,7 +125,7 @@ private:
 		float cost;
 		float threat;
 	};
-	std::array<SEnemyInfo, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> enemyInfos{{{0.f}, {0.f}}};
+	std::array<SEnemyInfo, CMaskHandler::GetMaxMasks()> enemyInfos{{{0.f}, {0.f}}};
 };
 
 } // namespace circuit

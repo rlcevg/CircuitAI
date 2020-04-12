@@ -16,3 +16,8 @@ Fork with fixes https://github.com/soerendd/delaunator-cpp
 ### lemon
 * Graph library <br />
 Header-only fork (no threading) https://github.com/seqan/lemon
+
+### AngelScript
+* Statically-typed scripting language <br />
+https://www.angelcode.com/angelscript/
+Github mirror https://github.com/codecat/angelscript-mirror

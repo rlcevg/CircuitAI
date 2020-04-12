@@ -75,7 +75,7 @@ public:
 	bool HasModules(const CCircuitDef* cdef, unsigned level) const;
 	const std::vector<float>& GetModules(const CCircuitDef* cdef, unsigned level) const;
 	int GetMorphFrame(const CCircuitDef* cdef) const;
-	const std::vector<CCircuitDef::RoleType>* GetOpener(const CCircuitDef* facDef) const;
+	const std::vector<CCircuitDef::RoleT>* GetOpener(const CCircuitDef* facDef) const;
 	const SCommInfo::SHide* GetHide(const CCircuitDef* cdef) const;
 
 	void Welcome() const;
@@ -112,13 +112,13 @@ private:
 	std::map<std::string, SCommInfo> commInfos;
 
 	struct SOpener {
-		SOpener(float p, const std::vector<CCircuitDef::RoleType>& q) : prob(p), queue(q) {}
+		SOpener(float p, const std::vector<CCircuitDef::RoleT>& q) : prob(p), queue(q) {}
 		float prob;
-		std::vector<CCircuitDef::RoleType> queue;
+		std::vector<CCircuitDef::RoleT> queue;
 	};
 	struct SStart {
 		std::map<CCircuitDef::Id, std::vector<SOpener>> openers;  // fac: openers
-		std::vector<CCircuitDef::RoleType> defaultStart;
+		std::vector<CCircuitDef::RoleT> defaultStart;
 	};
 	std::map<CCircuitDef::Id, SStart> start;  // comm: start
 };

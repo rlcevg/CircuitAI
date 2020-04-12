@@ -18,12 +18,15 @@ namespace circuit {
 class CCircuitAI;
 class CCircuitUnit;
 class CEnemyInfo;
+class IScript;
 
 class IModule {
 protected:
-	IModule(CCircuitAI* circuit);
+	IModule(CCircuitAI* circuit, IScript* script);
 public:
 	virtual ~IModule();
+
+	void InitScript();
 
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
 	virtual int UnitFinished(CCircuitUnit* unit);
@@ -44,6 +47,7 @@ protected:
 	using EHandlers = std::unordered_map<CCircuitDef::Id, std::function<void (CCircuitUnit* unit, CEnemyInfo* other)>>;
 
 	CCircuitAI* circuit;
+	IScript* script;  // owner
 };
 
 inline std::ostream& operator<<(std::ostream& os, const IModule& data)

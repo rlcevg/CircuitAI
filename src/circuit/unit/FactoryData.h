@@ -23,8 +23,8 @@ public:
 
 	CCircuitDef* GetFactoryToBuild(CCircuitAI* circuit, springai::AIFloat3 position = -RgtVector,
 								   bool isStart = false, bool isReset = false);
-	void AddFactory(CCircuitDef* cdef);
-	void DelFactory(CCircuitDef* cdef);
+	void AddFactory(const CCircuitDef* cdef);
+	void DelFactory(const CCircuitDef* cdef);
 
 private:
 	unsigned int choiceNum;

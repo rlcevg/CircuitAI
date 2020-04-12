@@ -58,6 +58,7 @@ class CBuilderManager;
 class CFactoryManager;
 class CEconomyManager;
 class CMilitaryManager;
+class CScriptManager;
 class CScheduler;
 class IModule;
 class CCircuitUnit;
@@ -246,6 +247,7 @@ public:
 	springai::Drawer*     GetDrawer()     const { return drawer.get(); }
 	springai::SkirmishAI* GetSkirmishAI() const { return skirmishAI.get(); }
 	springai::Team*       GetTeam()       const { return team.get(); }
+	CScriptManager*   GetScriptManager()   const { return scriptManager.get(); }
 	CSetupManager*    GetSetupManager()    const { return setupManager.get(); }
 	CEnemyManager*    GetEnemyManager()    const { return enemyManager.get(); }
 	CMetalManager*    GetMetalManager()    const { return metalManager.get(); }
@@ -290,9 +292,10 @@ private:
 
 	static std::unique_ptr<CGameAttribute> gameAttribute;
 	static unsigned int gaCounter;
-	void CreateGameAttribute(unsigned int seed);
+	void CreateGameAttribute();
 	void DestroyGameAttribute();
 	std::shared_ptr<CScheduler> scheduler;
+	std::shared_ptr<CScriptManager> scriptManager;
 	std::shared_ptr<CSetupManager> setupManager;
 	std::shared_ptr<CEnemyManager> enemyManager;
 	std::shared_ptr<CMetalManager> metalManager;

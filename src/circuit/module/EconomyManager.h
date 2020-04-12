@@ -32,6 +32,8 @@ class CEnergyGrid;
 
 class CEconomyManager: public IModule {
 public:
+	friend class CEconomyScript;
+
 	CEconomyManager(CCircuitAI* circuit);
 	virtual ~CEconomyManager();
 
@@ -90,7 +92,7 @@ public:
 	void RemoveMorphee(CCircuitUnit* unit) { morphees.erase(unit); }
 	void UpdateMorph();
 
-	void OpenStrategy(CCircuitDef* facDef, const springai::AIFloat3& pos);
+	void OpenStrategy(const CCircuitDef* facDef, const springai::AIFloat3& pos);
 
 private:
 	float GetStorage(springai::Resource* res);

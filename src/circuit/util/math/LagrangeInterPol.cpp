@@ -6,7 +6,7 @@
  */
 
 #include "util/math/LagrangeInterPol.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include <assert.h>
 

@@ -22,7 +22,7 @@
 #include "unit/action/FightAction.h"
 #include "unit/action/MoveAction.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include "spring/SpringCallback.h"
 #include "spring/SpringMap.h"
@@ -640,10 +640,10 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 				bool isValid = true;
 				switch (bi.condition) {
 					case SBuildInfo::Condition::AIR: {
-						isValid = bi.cdef->GetCost() < enemyManager->GetEnemyCost(CCircuitDef::RoleType::AIR);
+						isValid = bi.cdef->GetCost() < enemyManager->GetEnemyCost(ROLE_TYPE(AIR));
 					} break;
 					case SBuildInfo::Condition::NO_AIR: {
-						isValid = bi.cdef->GetCost() > enemyManager->GetEnemyCost(CCircuitDef::RoleType::AIR);
+						isValid = bi.cdef->GetCost() > enemyManager->GetEnemyCost(ROLE_TYPE(AIR));
 					} break;
 					case SBuildInfo::Condition::MAYBE: {
 						isValid = rand() < RAND_MAX / 2;

@@ -6,7 +6,7 @@
  */
 
 #include "resource/EnergyNode.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #include "lemon/kruskal.h"
 #include "lemon/adaptors.h"
 #include "lemon/bfs.h"

@@ -11,7 +11,7 @@
 #include "terrain/TerrainManager.h"
 #include "map/ThreatMap.h"
 #include "unit/CircuitUnit.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #ifdef DEBUG_VIS
 #include "CircuitAI.h"
 #endif

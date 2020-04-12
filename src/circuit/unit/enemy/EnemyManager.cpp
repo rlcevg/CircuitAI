@@ -241,9 +241,9 @@ void CEnemyManager::AddEnemyCost(const CEnemyUnit* e)
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
-		if (cdef->IsEnemyRoleAny(CCircuitDef::GetMask(i))) {
-			SEnemyInfo& info = enemyInfos[i];
+	for (CCircuitDef::RoleT type = 0; type < CCircuitDef::roleSize; ++type) {
+		if (cdef->IsEnemyRoleAny(CCircuitDef::GetMask(type))) {
+			SEnemyInfo& info = enemyInfos[type];
 			info.cost   += e->GetCost();
 			info.threat += cdef->GetThreat();
 		}
@@ -261,9 +261,9 @@ void CEnemyManager::DelEnemyCost(const CEnemyUnit* e)
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
-		if (cdef->IsEnemyRoleAny(CCircuitDef::GetMask(i))) {
-			SEnemyInfo& info = enemyInfos[i];
+	for (CCircuitDef::RoleT type = 0; type < CCircuitDef::roleSize; ++type) {
+		if (cdef->IsEnemyRoleAny(CCircuitDef::GetMask(type))) {
+			SEnemyInfo& info = enemyInfos[type];
 			info.cost   = std::max(info.cost   - e->GetCost(),      0.f);
 			info.threat = std::max(info.threat - cdef->GetThreat(), 0.f);
 		}

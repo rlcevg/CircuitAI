@@ -34,6 +34,8 @@ struct SBuildChain;
 
 class CBuilderManager: public IUnitModule {
 public:
+	friend class CBuilderScript;
+
 	CBuilderManager(CCircuitAI* circuit);
 	virtual ~CBuilderManager();
 

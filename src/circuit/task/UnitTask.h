@@ -8,6 +8,8 @@
 #ifndef SRC_CIRCUIT_TASK_UNITTASK_H_
 #define SRC_CIRCUIT_TASK_UNITTASK_H_
 
+#include "script/RefCounter.h"
+
 #include "AIFloat3.h"
 
 #include <set>
@@ -22,7 +24,7 @@ class CCircuitUnit;
 class CEnemyInfo;
 class ITaskManager;
 
-class IUnitTask {  // CSquad, IAction
+class IUnitTask: public IRefCounter {  // CSquad, IAction
 public:
 	enum class Priority: char {LOW = 0, NORMAL = 1, HIGH = 2, NOW = 99};
 	enum class Type: char {NIL, PLAYER, IDLE, WAIT, RETREAT, BUILDER, FACTORY, FIGHTER};

@@ -24,6 +24,8 @@ class CRetreatTask;
 
 class CMilitaryManager: public IUnitModule {
 public:
+	friend class CMilitaryScript;
+
 	CMilitaryManager(CCircuitAI* circuit);
 	virtual ~CMilitaryManager();
 
@@ -73,8 +75,8 @@ public:
 	IFighterTask* DelDefendTask(int cluster);
 	IFighterTask* GetDefendTask(int cluster) const { return clusterInfos[cluster].defence; }
 
-	const std::set<CCircuitUnit*>& GetRoleUnits(CCircuitDef::RoleType type) const {
-		return roleInfos[static_cast<CCircuitDef::RoleT>(type)].units;
+	const std::set<CCircuitUnit*>& GetRoleUnits(CCircuitDef::RoleT type) const {
+		return roleInfos[type].units;
 	}
 	void AddResponse(CCircuitUnit* unit);
 	void DelResponse(CCircuitUnit* unit);
@@ -124,8 +126,8 @@ private:
 		float factor;
 		std::set<CCircuitUnit*> units;
 		struct SVsInfo {
-			SVsInfo(CCircuitDef::RoleType t, float r, float i) : role(t), ratio(r), importance(i) {}
-			CCircuitDef::RoleType role;
+			SVsInfo(CCircuitDef::RoleT t, float r, float i) : role(t), ratio(r), importance(i) {}
+			CCircuitDef::RoleT role;
 			float ratio;
 			float importance;
 		};

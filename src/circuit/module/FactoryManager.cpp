@@ -9,6 +9,7 @@
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
+#include "script/FactoryScript.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "task/NilTask.h"
@@ -19,7 +20,7 @@
 #include "unit/FactoryData.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #include "json/json.h"
 
 #include "spring/SpringCallback.h"
@@ -35,7 +36,7 @@ namespace circuit {
 using namespace springai;
 
 CFactoryManager::CFactoryManager(CCircuitAI* circuit)
-		: IUnitModule(circuit)
+		: IUnitModule(circuit, new CFactoryScript(circuit->GetScriptManager(), this))
 		, updateIterator(0)
 		, factoryPower(.0f)
 		, assistDef(nullptr)
@@ -201,22 +202,22 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		}
 
 		// Auto-assign roles
-		auto setRoles = [cdef](CCircuitDef::RoleType type) {
+		auto setRoles = [cdef](CCircuitDef::RoleT type) {
 			cdef->SetMainRole(type);
 			cdef->AddEnemyRole(type);
 			cdef->AddRole(type);
 		};
 		if (cdef->IsAbleToFly()) {
-			setRoles(CCircuitDef::RoleType::AIR);
+			setRoles(ROLE_TYPE(AIR));
 		} else if (!cdef->IsMobile() && cdef->IsAttacker() && cdef->HasAntiLand()) {
-			setRoles(CCircuitDef::RoleType::STATIC);
+			setRoles(ROLE_TYPE(STATIC));
 		} else if (cdef->GetDef()->IsBuilder() && !cdef->GetBuildOptions().empty() && !cdef->IsRoleComm()) {
-			setRoles(CCircuitDef::RoleType::BUILDER);
+			setRoles(ROLE_TYPE(BUILDER));
 		}
 		if (cdef->IsRoleComm()) {
 			// NOTE: Omit AddRole to exclude commanders from response
-			cdef->SetMainRole(CCircuitDef::RoleType::BUILDER);
-			cdef->AddEnemyRole(CCircuitDef::RoleType::COMM);
+			cdef->SetMainRole(ROLE_TYPE(BUILDER));
+			cdef->AddEnemyRole(ROLE_TYPE(COMM));
 		}
 	}
 
@@ -247,7 +248,7 @@ void CFactoryManager::ReadConfig()
 	/*
 	 * Roles, attributes and retreat
 	 */
-	std::map<CCircuitDef::RoleType, std::set<CCircuitDef::Id>> roleDefs;
+	std::map<CCircuitDef::RoleT, std::set<CCircuitDef::Id>> roleDefs;
 	CCircuitDef::RoleName& roleNames = CCircuitDef::GetRoleNames();
 	CCircuitDef::AttrName& attrNames = CCircuitDef::GetAttrNames();
 	CCircuitDef::FireName& fireNames = CCircuitDef::GetFireNames();
@@ -273,12 +274,12 @@ void CFactoryManager::ReadConfig()
 			circuit->LOG("CONFIG %s: %s has unknown main role '%s'", cfgName.c_str(), defName.c_str(), mainName.c_str());
 			continue;
 		}
-		cdef->SetMainRole(it->second);
-		cdef->AddRole(it->second);
-		roleDefs[it->second].insert(cdef->GetId());
+		cdef->SetMainRole(it->second.type);
+		cdef->AddRoles(it->second.mask);
+		roleDefs[it->second.type].insert(cdef->GetId());
 
 //		if (role.size() < 2) {
-			cdef->AddEnemyRole(it->second);
+			cdef->AddEnemyRoles(it->second.mask);
 //		} else {
 			for (unsigned i = 1; i < role.size(); ++i) {
 				const std::string& enemyName = role[i].asString();
@@ -287,8 +288,8 @@ void CFactoryManager::ReadConfig()
 					circuit->LOG("CONFIG %s: %s has unknown enemy role '%s'", cfgName.c_str(), defName.c_str(), enemyName.c_str());
 					continue;
 				}
-				cdef->AddEnemyRole(it->second);
-//				cdef->AddRole(it->second);
+				cdef->AddEnemyRoles(it->second.mask);
+//				cdef->AddRoles(it->second.mask);
 			}
 //		}
 
@@ -306,8 +307,8 @@ void CFactoryManager::ReadConfig()
 					cdef->AddAttribute(it->second);
 				}
 			} else {
-				cdef->AddRole(it->second);
-				roleDefs[it->second].insert(cdef->GetId());
+				cdef->AddRoles(it->second.mask);
+				roleDefs[it->second.type].insert(cdef->GetId());
 			}
 		}
 
@@ -366,11 +367,10 @@ void CFactoryManager::ReadConfig()
 
 		// NOTE: used to create tasks on Event (like DefendTask), fix/improve
 		const std::unordered_set<CCircuitDef::Id>& options = cdef->GetBuildOptions();
-		facDef.roleDefs.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_), nullptr);
-		for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
+		facDef.roleDefs.resize(CCircuitDef::roleSize, nullptr);
+		for (CCircuitDef::RoleT type = 0; type < CCircuitDef::roleSize; ++type) {
 			float minCost = std::numeric_limits<float>::max();
 			CCircuitDef* rdef = nullptr;
-			const CCircuitDef::RoleType type = static_cast<CCircuitDef::RoleType>(i);
 			const std::set<CCircuitDef::Id>& defIds = roleDefs[type];
 			for (const CCircuitDef::Id bid : defIds) {
 				if (options.find(bid) == options.end()) {
@@ -382,7 +382,7 @@ void CFactoryManager::ReadConfig()
 					rdef = tdef;
 				}
 			}
-			facDef.roleDefs[static_cast<CCircuitDef::RoleT>(type)] = rdef;
+			facDef.roleDefs[type] = rdef;
 		}
 
 		facDef.isRequireEnergy = factory.get("require_energy", false).asBool();
@@ -753,7 +753,7 @@ CCircuitUnit* CFactoryManager::GetClosestFactory(AIFloat3 position)
 	return factory;
 }
 
-//CCircuitDef* CFactoryManager::GetClosestDef(AIFloat3& position, CCircuitDef::RoleType role)
+//CCircuitDef* CFactoryManager::GetClosestDef(AIFloat3& position, CCircuitDef::RoleT role)
 //{
 //	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 //	CTerrainManager::CorrectPosition(position);
@@ -837,7 +837,7 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 	if (it == factoryDefs.end()) {
 		return nullptr;
 	}
-	CCircuitDef* buildDef = it->second.GetRoleDef(CCircuitDef::RoleType::BUILDER);
+	CCircuitDef* buildDef = it->second.GetRoleDef(ROLE_TYPE(BUILDER));
 
 	if ((buildDef != nullptr) && buildDef->IsAvailable(circuit->GetLastFrame())) {
 		const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
@@ -868,7 +868,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	CEconomyManager* economyManager = circuit->GetEconomyManager();
 	const float metalIncome = std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome()) * economyManager->GetEcoFactor();
 	const bool isWaterMap = circuit->GetTerrainManager()->IsWaterMap();
-	const bool isAir = circuit->GetEnemyManager()->GetEnemyCost(CCircuitDef::RoleType::AIR) > 1.f;
+	const bool isAir = circuit->GetEnemyManager()->GetEnemyCost(ROLE_TYPE(AIR)) > 1.f;
 	const SFactoryDef::Tiers& tiers = isAir ? facDef.airTiers : isWaterMap ? facDef.waterTiers : facDef.landTiers;
 	auto facIt = tiers.begin();
 	if ((metalIncome >= facDef.incomes[facIt->first]) && !(facDef.isRequireEnergy && economyManager->IsEnergyEmpty())) {
@@ -972,29 +972,29 @@ CCircuitDef* CFactoryManager::GetFactoryToBuild(AIFloat3 position, bool isStart,
 	return facDef;
 }
 
-void CFactoryManager::AddFactory(CCircuitDef* cdef)
+void CFactoryManager::AddFactory(const CCircuitDef* cdef)
 {
 	factoryData->AddFactory(cdef);
 }
 
-void CFactoryManager::DelFactory(CCircuitDef* cdef)
+void CFactoryManager::DelFactory(const CCircuitDef* cdef)
 {
 	factoryData->DelFactory(cdef);
 }
 
-CCircuitDef* CFactoryManager::GetRoleDef(CCircuitDef* facDef, CCircuitDef::RoleType role) const
+CCircuitDef* CFactoryManager::GetRoleDef(const CCircuitDef* facDef, CCircuitDef::RoleT role) const
 {
 	auto it = factoryDefs.find(facDef->GetId());
 	return (it != factoryDefs.end()) ? it->second.GetRoleDef(role) : nullptr;
 }
 
-CCircuitDef* CFactoryManager::GetLandDef(CCircuitDef* facDef) const
+CCircuitDef* CFactoryManager::GetLandDef(const CCircuitDef* facDef) const
 {
 	auto it = factoryDefs.find(facDef->GetId());
 	return (it != factoryDefs.end()) ? it->second.landDef : nullptr;
 }
 
-CCircuitDef* CFactoryManager::GetWaterDef(CCircuitDef* facDef) const
+CCircuitDef* CFactoryManager::GetWaterDef(const CCircuitDef* facDef) const
 {
 	auto it = factoryDefs.find(facDef->GetId());
 	return (it != factoryDefs.end()) ? it->second.waterDef : nullptr;
@@ -1043,7 +1043,7 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 	auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
 	if (it != factoryDefs.end()) {
 		const SFactoryDef& facDef = it->second;
-		factories.emplace_back(unit, nanos, facDef.nanoCount, facDef.GetRoleDef(CCircuitDef::RoleType::BUILDER));
+		factories.emplace_back(unit, nanos, facDef.nanoCount, facDef.GetRoleDef(ROLE_TYPE(BUILDER)));
 	} else {
 		factories.emplace_back(unit, nanos, 0, nullptr);
 	}
@@ -1082,7 +1082,7 @@ void CFactoryManager::DisableFactory(CCircuitUnit* unit)
 				auto it = factoryDefs.find(task->GetBuildDef()->GetId());
 				if (it != factoryDefs.end()) {
 					const SFactoryDef& facDef = it->second;
-					CCircuitDef* bdef = facDef.GetRoleDef(CCircuitDef::RoleType::BUILDER);
+					CCircuitDef* bdef = facDef.GetRoleDef(ROLE_TYPE(BUILDER));
 					hasBuilder = ((bdef != nullptr) && bdef->IsAvailable(frame));
 					if (hasBuilder) {
 						break;
@@ -1282,7 +1282,7 @@ void CFactoryManager::UpdateFactory()
 		if (task->IsDead()) {
 			updateTasks[updateIterator] = updateTasks.back();
 			updateTasks.pop_back();
-			delete task;
+			task->Release();  // delete task;
 		} else {
 			int frame = task->GetLastTouched();
 			int timeout = task->GetTimeout();

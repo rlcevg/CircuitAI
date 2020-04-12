@@ -10,6 +10,7 @@
 #include "module/EconomyManager.h"
 #include "map/ThreatMap.h"
 #include "resource/MetalManager.h"
+#include "script/MilitaryScript.h"
 #include "setup/SetupManager.h"
 #include "setup/DefenceMatrix.h"
 #include "task/NilTask.h"
@@ -33,7 +34,7 @@
 #include "unit/enemy/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #include "json/json.h"
 
 #include "spring/SpringCallback.h"
@@ -48,7 +49,7 @@ namespace circuit {
 using namespace springai;
 
 CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
-		: IUnitModule(circuit)
+		: IUnitModule(circuit, new CMilitaryScript(circuit->GetScriptManager(), this))
 		, fightIterator(0)
 		, defenceIdx(0)
 		, scoutIdx(0)
@@ -282,9 +283,9 @@ void CMilitaryManager::ReadConfig()
 
 	const Json::Value& responses = root["response"];
 	const float teamSize = circuit->GetAllyTeam()->GetSize();
-	roleInfos.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_), {.0f});
+	roleInfos.resize(CCircuitDef::roleSize, {.0f});
 	for (const auto& pair : roleNames) {
-		SRoleInfo& info = roleInfos[static_cast<CCircuitDef::RoleT>(pair.second)];
+		SRoleInfo& info = roleInfos[static_cast<CCircuitDef::RoleT>(pair.second.type)];
 		const Json::Value& response = responses[pair.first];
 
 		if (response.isNull()) {
@@ -309,7 +310,7 @@ void CMilitaryManager::ReadConfig()
 			}
 			float rat = ratio.get(i, 1.0f).asFloat();
 			float imp = importance.get(i, 1.0f).asFloat();
-			info.vs.push_back(SRoleInfo::SVsInfo(roleNames[roleName], rat, imp));
+			info.vs.push_back(SRoleInfo::SVsInfo(it->second.type, rat, imp));
 		}
 	}
 
@@ -397,9 +398,9 @@ void CMilitaryManager::ReadConfig()
 			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), items[i].asCString());
 			continue;
 		}
-		si.cdef->SetMainRole(CCircuitDef::RoleType::SUPER);  // override mainRole
-		si.cdef->AddEnemyRole(CCircuitDef::RoleType::SUPER);
-		si.cdef->AddRole(CCircuitDef::RoleType::SUPER);
+		si.cdef->SetMainRole(ROLE_TYPE(SUPER));  // override mainRole
+		si.cdef->AddEnemyRole(ROLE_TYPE(SUPER));
+		si.cdef->AddRole(ROLE_TYPE(SUPER));
 		si.weight = probs.get(i, 1.f).asFloat();
 		superInfos.push_back(si);
 	}
@@ -613,15 +614,15 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 	// FIXME: Make central task assignment system.
 	//        MilitaryManager should decide what tasks to merge.
 	static const std::map<CCircuitDef::RoleT, IFighterTask::FightType> types = {
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::SCOUT),   IFighterTask::FightType::SCOUT},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::RAIDER),  IFighterTask::FightType::RAID},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::ARTY),    IFighterTask::FightType::ARTY},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::AA),      IFighterTask::FightType::AA},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::AH),      IFighterTask::FightType::AH},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::BOMBER),  IFighterTask::FightType::BOMB},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::SUPPORT), IFighterTask::FightType::SUPPORT},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::MINE),    IFighterTask::FightType::SCOUT},  // FIXME
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::SUPER),   IFighterTask::FightType::SUPER},
+		{ROLE_TYPE(SCOUT),   IFighterTask::FightType::SCOUT},
+		{ROLE_TYPE(RAIDER),  IFighterTask::FightType::RAID},
+		{ROLE_TYPE(ARTY),    IFighterTask::FightType::ARTY},
+		{ROLE_TYPE(AA),      IFighterTask::FightType::AA},
+		{ROLE_TYPE(AH),      IFighterTask::FightType::AH},
+		{ROLE_TYPE(BOMBER),  IFighterTask::FightType::BOMB},
+		{ROLE_TYPE(SUPPORT), IFighterTask::FightType::SUPPORT},
+		{ROLE_TYPE(MINE),    IFighterTask::FightType::SCOUT},  // FIXME
+		{ROLE_TYPE(SUPER),   IFighterTask::FightType::SUPER},
 	};
 	IFighterTask* task = nullptr;
 	CCircuitDef* cdef = unit->GetCircuitDef();
@@ -644,7 +645,7 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 					}
 				} break;
 				case IFighterTask::FightType::AH: {
-					if (!cdef->IsRoleMine() && (circuit->GetEnemyManager()->GetEnemyCost(CCircuitDef::RoleType::HEAVY) < 1.f)) {
+					if (!cdef->IsRoleMine() && (circuit->GetEnemyManager()->GetEnemyCost(ROLE_TYPE(HEAVY)) < 1.f)) {
 						task = EnqueueTask(IFighterTask::FightType::ATTACK);
 					}
 				} break;
@@ -773,7 +774,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	const int frame = circuit->GetLastFrame();
 	for (unsigned i = 0; i < num; ++i) {
 		CCircuitDef* defDef = defenders[i];
-		if (!defDef->IsAvailable(frame) || (defDef->IsRoleAA() && (enemyManager->GetEnemyCost(CCircuitDef::RoleType::AIR) < 1.f))) {
+		if (!defDef->IsAvailable(frame) || (defDef->IsRoleAA() && (enemyManager->GetEnemyCost(ROLE_TYPE(AIR)) < 1.f))) {
 			continue;
 		}
 		float defCost = defDef->GetCost();
@@ -1112,11 +1113,11 @@ void CMilitaryManager::AddResponse(CCircuitUnit* unit)
 {
 	const CCircuitDef* cdef = unit->GetCircuitDef();
 	const float cost = cdef->GetCost();
-	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_));
-	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
-		if (cdef->IsRoleAny(CCircuitDef::GetMask(i))) {
-			roleInfos[i].cost += cost;
-			roleInfos[i].units.insert(unit);
+	assert(roleInfos.size() == CCircuitDef::roleSize);
+	for (CCircuitDef::RoleT type = 0; type < CCircuitDef::roleSize; ++type) {
+		if (cdef->IsRoleAny(CCircuitDef::GetMask(type))) {
+			roleInfos[type].cost += cost;
+			roleInfos[type].units.insert(unit);
 		}
 	}
 }
@@ -1125,12 +1126,12 @@ void CMilitaryManager::DelResponse(CCircuitUnit* unit)
 {
 	const CCircuitDef* cdef = unit->GetCircuitDef();
 	const float cost = cdef->GetCost();
-	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_));
-	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
-		if (cdef->IsRoleAny(CCircuitDef::GetMask(i))) {
-			float& metal = roleInfos[i].cost;
+	assert(roleInfos.size() == CCircuitDef::roleSize);
+	for (CCircuitDef::RoleT type = 0; type < CCircuitDef::roleSize; ++type) {
+		if (cdef->IsRoleAny(CCircuitDef::GetMask(type))) {
+			float& metal = roleInfos[type].cost;
 			metal = std::max(metal - cost, .0f);
-			roleInfos[i].units.erase(unit);
+			roleInfos[type].units.erase(unit);
 		}
 	}
 }
@@ -1188,7 +1189,7 @@ void CMilitaryManager::DiceBigGun()
 	candidates.reserve(superInfos.size());
 	float magnitude = 0.f;
 	for (SSuperInfo& info : superInfos) {
-		if (info.cdef->IsAvailable()) {
+		if (info.cdef->IsAvailable(circuit->GetLastFrame())) {
 			candidates.push_back(info);
 			magnitude += info.weight;
 		}
@@ -1378,7 +1379,7 @@ void CMilitaryManager::UpdateFight()
 		if (task->IsDead()) {
 			fightUpdates[fightIterator] = fightUpdates.back();
 			fightUpdates.pop_back();
-			delete task;
+			task->Release();  // delete task;
 		} else {
 			task->Update();
 			++fightIterator;

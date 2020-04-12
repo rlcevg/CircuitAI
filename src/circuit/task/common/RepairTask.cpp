@@ -11,7 +11,7 @@
 //#include "module/BuilderManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include "spring/SpringCallback.h"
 

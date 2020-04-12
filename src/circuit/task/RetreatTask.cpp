@@ -18,7 +18,7 @@
 #include "unit/action/FightAction.h"
 #include "unit/action/JumpAction.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include "AISCommands.h"
 
