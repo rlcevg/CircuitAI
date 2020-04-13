@@ -678,9 +678,9 @@ CRetreatTask* CBuilderManager::EnqueueRetreat()
 	return task;
 }
 
-CCombatTask* CBuilderManager::EnqueueCombat()
+CCombatTask* CBuilderManager::EnqueueCombat(float powerMod)
 {
-	CCombatTask* task = new CCombatTask(this);
+	CCombatTask* task = new CCombatTask(this, powerMod);
 	buildUpdates.push_back(task);
 	return task;
 }
@@ -795,18 +795,20 @@ IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 	const CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsRoleComm()) {  // hide commander?
 		// FIXME: Any combat builder, not only commander
-		if ((unit->GetPos(circuit->GetLastFrame()).SqDistance2D(circuit->GetSetupManager()->GetBasePos()) < SQUARE(1000.f))
-			&& circuit->GetMilitaryManager()->IsEnemyNearBase(circuit->GetThreatMap()->GetUnitThreat(unit) * 2))
+		CSetupManager* setupManager = circuit->GetSetupManager();
+		CEnemyManager* enemyManager = circuit->GetEnemyManager();
+		const AIFloat3 pos = unit->GetPos(circuit->GetLastFrame());
+		if ((pos.SqDistance2D(setupManager->GetBasePos()) < SQUARE(3000.f))
+			&& enemyManager->IsEnemyNear(pos, circuit->GetThreatMap()->GetUnitThreat(unit) * 1.5f))
 		{
-			return EnqueueCombat();
+			return EnqueueCombat(1.5f);
 		}
 
-		const CSetupManager::SCommInfo::SHide* hide = circuit->GetSetupManager()->GetHide(cdef);
+		const CSetupManager::SCommInfo::SHide* hide = setupManager->GetHide(cdef);
 		if (hide != nullptr) {
 			if ((circuit->GetLastFrame() < hide->frame) || (GetWorkerCount() <= 2)) {
 				return MakeBuilderTask(unit);
 			}
-			CEnemyManager* enemyManager = circuit->GetEnemyManager();
 			if (enemyManager->GetMobileThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat) {
 				return MakeCommTask(unit);
 			}

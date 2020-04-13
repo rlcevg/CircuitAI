@@ -36,7 +36,7 @@ CMaskHandler::TypeMask CMaskHandler::GetTypeMask(const std::string& name)
 	TypeMask tm(-1, 0);
 
 	// the empty mask
-	if (name.empty()) {
+	if (name.empty() || (masks.size() >= GetMaxMasks())) {
 		return tm;
 	}
 

@@ -14,13 +14,16 @@ namespace circuit {
 
 class CCombatTask: public IFighterTask {
 public:
-	CCombatTask(ITaskManager* mgr);
+	CCombatTask(ITaskManager* mgr, float powerMod);
 	virtual ~CCombatTask();
 
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
 	virtual void Start(CCircuitUnit* unit) override;
 	virtual void Update() override;
+
+	virtual void OnUnitIdle(CCircuitUnit* unit) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 private:
 	void Execute(CCircuitUnit* unit);

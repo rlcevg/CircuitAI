@@ -294,7 +294,7 @@ void CInfluenceMap::AddUnarmed(CAllyUnit* u)
 	int posx, posz;
 	PosToXZ(u->GetPos(circuit->GetLastFrame()), posx, posz);
 
-	const float val = u->GetCircuitDef()->GetCost();
+	const float val = 2.f;
 	// FIXME: GetInfluenceRange: for statics it's just range; mobile should account for speed
 	const int range = DEFAULT_SLACK * 4 * defRadius / squareSize;
 	const int rangeSq = SQUARE(range);

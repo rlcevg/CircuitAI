@@ -89,7 +89,6 @@ public:
 	void UpdateDefenceTasks();
 	void UpdateDefence();
 	void MakeBaseDefence(const springai::AIFloat3& pos);
-	bool IsEnemyNearBase(float maxThreat);
 
 	const std::vector<CCircuitDef*>& GetLandDefenders() const { return landDefenders; }
 	const std::vector<CCircuitDef*>& GetWaterDefenders() const { return waterDefenders; }

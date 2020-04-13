@@ -788,7 +788,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 		gameAttribute->GetTerrainData().ToggleVis(lastFrame);
 	}
 	else if (strncmp(message, cmdPath, 5) == 0) {
-		pathfinder->ToggleVis(this);
+		pathfinder->ToggleVis(lastFrame);
 	}
 	else if (strncmp(message, cmdKnn, 4) == 0) {
 		const AIFloat3 dbgPos = map->GetMousePos();

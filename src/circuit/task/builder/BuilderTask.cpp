@@ -270,7 +270,7 @@ void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 		manager->AbortTask(this);
 	}
 
-	CRetreatTask* task = manager->GetCircuit()->GetBuilderManager()->EnqueueRetreat();
+	CRetreatTask* task = circuit->GetBuilderManager()->EnqueueRetreat();
 	manager->AssignTask(unit, task);
 }
 

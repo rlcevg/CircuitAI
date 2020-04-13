@@ -54,7 +54,7 @@ typedef std::vector<int> IntVec;
 
 struct PathInfo {
 	PathInfo(bool last = false) : start(0), isLast(last) {}
-	void Clear() { posPath.clear(); path.clear(); }
+	void Clear() { posPath.clear(); path.clear(); }  // FIXME: stop TravelAction
 	F3Vec posPath;
 	IndexVec path;
 	size_t start;

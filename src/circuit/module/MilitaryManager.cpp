@@ -283,9 +283,9 @@ void CMilitaryManager::ReadConfig()
 
 	const Json::Value& responses = root["response"];
 	const float teamSize = circuit->GetAllyTeam()->GetSize();
-	roleInfos.resize(CCircuitDef::roleSize, {.0f});
+	roleInfos.resize(roleNames.size(), {.0f});
 	for (const auto& pair : roleNames) {
-		SRoleInfo& info = roleInfos[static_cast<CCircuitDef::RoleT>(pair.second.type)];
+		SRoleInfo& info = roleInfos[pair.second.type];
 		const Json::Value& response = responses[pair.first];
 
 		if (response.isNull()) {
@@ -1113,8 +1113,9 @@ void CMilitaryManager::AddResponse(CCircuitUnit* unit)
 {
 	const CCircuitDef* cdef = unit->GetCircuitDef();
 	const float cost = cdef->GetCost();
-	assert(roleInfos.size() == CCircuitDef::roleSize);
-	for (CCircuitDef::RoleT type = 0; type < CCircuitDef::roleSize; ++type) {
+	const CCircuitDef::RoleT roleSize = CCircuitDef::GetRoleNames().size();
+	assert(roleInfos.size() == roleSize);
+	for (CCircuitDef::RoleT type = 0; type < roleSize; ++type) {
 		if (cdef->IsRoleAny(CCircuitDef::GetMask(type))) {
 			roleInfos[type].cost += cost;
 			roleInfos[type].units.insert(unit);
@@ -1126,8 +1127,9 @@ void CMilitaryManager::DelResponse(CCircuitUnit* unit)
 {
 	const CCircuitDef* cdef = unit->GetCircuitDef();
 	const float cost = cdef->GetCost();
-	assert(roleInfos.size() == CCircuitDef::roleSize);
-	for (CCircuitDef::RoleT type = 0; type < CCircuitDef::roleSize; ++type) {
+	const CCircuitDef::RoleT roleSize = CCircuitDef::GetRoleNames().size();
+	assert(roleInfos.size() == roleSize);
+	for (CCircuitDef::RoleT type = 0; type < roleSize; ++type) {
 		if (cdef->IsRoleAny(CCircuitDef::GetMask(type))) {
 			float& metal = roleInfos[type].cost;
 			metal = std::max(metal - cost, .0f);
@@ -1328,19 +1330,6 @@ void CMilitaryManager::MakeBaseDefence(const AIFloat3& pos)
 		defend = std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefence, this);
 		circuit->GetScheduler()->RunTaskEvery(defend, FRAMES_PER_SEC);
 	}
-}
-
-bool CMilitaryManager::IsEnemyNearBase(float maxThreat)
-{
-	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
-	for (const CEnemyManager::SEnemyGroup& group : circuit->GetEnemyManager()->GetEnemyGroups()) {
-		if ((group.threat > 0.01f) && (group.threat < maxThreat)
-			&& (basePos.SqDistance2D(group.pos) < SQUARE(1000.f)))
-		{
-			return true;
-		}
-	}
-	return false;
 }
 
 void CMilitaryManager::Watchdog()

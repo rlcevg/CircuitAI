@@ -49,7 +49,6 @@ public:
 		STATIC  = 0x00010000, HEAVY = 0x00020000, SUPER  = 0x00040000, COMM    = 0x00080000};
 	using RoleT = std::underlying_type<RoleType>::type;
 	using RoleM = std::underlying_type<RoleMask>::type;
-	static RoleT roleSize;
 
 	/*
 	 * MELEE:     always move close to target, disregard attack range
@@ -61,10 +60,12 @@ public:
 	 * RET_HOLD:  hold fire on retreat
 	 * RET_FIGHT: fight on retreat
 	 */
-	enum class AttrType: RoleT {MELEE = 0, BOOST, NO_JUMP, NO_STRAFE,
-								STOCK, SIEGE, RET_HOLD, RET_FIGHT, _SIZE_};
-	enum AttrMask: RoleM {MELEE = 0x00000001, BOOST = 0x00000002, NO_JUMP  = 0x00000004, NO_STRAFE = 0x00000008,
-						  STOCK = 0x00000010, SIEGE = 0x00000020, RET_HOLD = 0x00000040, RET_FIGHT = 0x00000080};
+	enum class AttrType: RoleT {NONE = -1,
+		MELEE = 0, BOOST, NO_JUMP, NO_STRAFE,
+		STOCK, SIEGE, RET_HOLD, RET_FIGHT, _SIZE_};
+	enum AttrMask: RoleM {
+		MELEE = 0x00000001, BOOST = 0x00000002, NO_JUMP  = 0x00000004, NO_STRAFE = 0x00000008,
+		STOCK = 0x00000010, SIEGE = 0x00000020, RET_HOLD = 0x00000040, RET_FIGHT = 0x00000080};
 	using AttrT = std::underlying_type<AttrType>::type;
 	using AttrM = std::underlying_type<AttrMask>::type;
 

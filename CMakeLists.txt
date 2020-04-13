@@ -14,7 +14,20 @@ endif ()
 set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils)
 #set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils ${SDL2_LIBRARY})
 
-#if (CIRCUIT_AS_JIT)
+
+#set(additionalCompileFlags "-Isrc/lib/ -Isrc/circuit/ -O1 -DDEBUG -DDEBUG_VIS -DDEBUG_LOG -Wall -Wextra -D_GLIBCXX_USE_CXX11_ABI=0")
+string(TOLOWER "${CMAKE_SYSTEM}" sys_lower)
+if (sys_lower MATCHES "arch")
+#	set(additionalCompileFlags "-DDEBUG_VIS -Wall")
+	set(additionalCompileFlags "-DDEBUG_LOG -Wall -fsanitize=address -fno-omit-frame-pointer -fno-common -O1 -fno-strict-aliasing")
+else ()
+	set(additionalCompileFlags "-Wall")
+endif ()
+
+set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -lasan")
+
+
+if    (CIRCUIT_AS_JIT)
 	if (WIN32)
 		set(additionalSources  ${additionalSources} platform/angelscript/jit/virtual_asm_windows.cpp)
 	elseif (APPLE)
@@ -28,18 +41,8 @@ set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils)
 		set(additionalSources  ${additionalSources} platform/angelscript/jit/virtual_asm_x86.cpp)
 	endif ()
 	set(additionalSources      ${additionalSources} platform/angelscript/jit/as_jit.cpp)
-#endif ()
-
-#set(additionalCompileFlags "-Isrc/lib/ -Isrc/circuit/ -O1 -DDEBUG -DDEBUG_VIS -DDEBUG_LOG -Wall -Wextra -D_GLIBCXX_USE_CXX11_ABI=0")
-string(TOLOWER "${CMAKE_SYSTEM}" sys_lower)
-if (sys_lower MATCHES "arch")
-	set(additionalCompileFlags "-DDEBUG_VIS -Wall")
-#	set(additionalCompileFlags "-DDEBUG_LOG -Wall -fsanitize=address -fno-omit-frame-pointer -fno-common -O1 -fno-strict-aliasing")
-else ()
-	set(additionalCompileFlags "-Wall")
-endif ()
-
-#set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -lasan")
+	set(additionalCompileFlags "${additionalCompileFlags} -DCIRCUIT_AS_JIT")
+endif (CIRCUIT_AS_JIT)
 
 
 if    (BUILD_Cpp_AIWRAPPER)

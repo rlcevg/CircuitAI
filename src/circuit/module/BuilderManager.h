@@ -117,7 +117,7 @@ public:
 							   int timeout = ASSIGN_TIMEOUT);
 	IUnitTask* EnqueueWait(int timeout);
 	CRetreatTask* EnqueueRetreat();
-	CCombatTask* EnqueueCombat();
+	CCombatTask* EnqueueCombat(float powerMod);
 
 private:
 	IBuilderTask* AddTask(IBuilderTask::Priority priority,

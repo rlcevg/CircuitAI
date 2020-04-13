@@ -147,7 +147,7 @@ void CDefendTask::Update()
 
 	state = State::ROAM;
 	if ((target != nullptr) || !pPath->path.empty()) {
-		const float sqRange = SQUARE(highestRange);
+		const float sqRange = SQUARE(highestRange + 200.f);  // FIXME: 200.f ~ count slack
 		for (CCircuitUnit* unit : units) {
 			if (position.SqDistance2D(unit->GetPos(frame)) < sqRange) {
 				state = State::ENGAGE;

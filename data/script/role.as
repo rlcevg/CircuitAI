@@ -21,6 +21,19 @@ TypeMask HEAVY   = roleMasker.GetTypeMask("heavy");
 TypeMask SUPER   = roleMasker.GetTypeMask("super");
 TypeMask COMM    = roleMasker.GetTypeMask("commander");
 
+TypeMask ROLE0   = roleMasker.GetTypeMask("role0");
+TypeMask ROLE1   = roleMasker.GetTypeMask("role1");
+TypeMask ROLE2   = roleMasker.GetTypeMask("role2");
+TypeMask ROLE3   = roleMasker.GetTypeMask("role3");
+TypeMask ROLE4   = roleMasker.GetTypeMask("role4");
+TypeMask ROLE5   = roleMasker.GetTypeMask("role5");
+TypeMask ROLE6   = roleMasker.GetTypeMask("role6");
+TypeMask ROLE7   = roleMasker.GetTypeMask("role7");
+TypeMask ROLE8   = roleMasker.GetTypeMask("role8");
+TypeMask ROLE9   = roleMasker.GetTypeMask("role9");
+TypeMask ROLE10  = roleMasker.GetTypeMask("role10");
+TypeMask ROLE11  = roleMasker.GetTypeMask("role11");
+
 }
 
 namespace RT {

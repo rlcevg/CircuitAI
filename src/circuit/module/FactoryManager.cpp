@@ -367,8 +367,9 @@ void CFactoryManager::ReadConfig()
 
 		// NOTE: used to create tasks on Event (like DefendTask), fix/improve
 		const std::unordered_set<CCircuitDef::Id>& options = cdef->GetBuildOptions();
-		facDef.roleDefs.resize(CCircuitDef::roleSize, nullptr);
-		for (CCircuitDef::RoleT type = 0; type < CCircuitDef::roleSize; ++type) {
+		const CCircuitDef::RoleT roleSize = roleNames.size();
+		facDef.roleDefs.resize(roleSize, nullptr);
+		for (CCircuitDef::RoleT type = 0; type < roleSize; ++type) {
 			float minCost = std::numeric_limits<float>::max();
 			CCircuitDef* rdef = nullptr;
 			const std::set<CCircuitDef::Id>& defIds = roleDefs[type];

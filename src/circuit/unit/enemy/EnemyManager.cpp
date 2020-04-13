@@ -45,9 +45,16 @@ CEnemyManager::CEnemyManager(CCircuitAI* circuit)
 
 CEnemyManager::~CEnemyManager()
 {
+	for (CEnemyUnit* enemy : enemyUpdates) {
+		if (enemyUnits.find(enemy->GetId()) == enemyUnits.end()) {
+			delete enemy;
+		}
+	}
+//	enemyUpdates.clear();
 	for (auto& kv : enemyUnits) {
 		delete kv.second;
 	}
+//	enemyUnits.clear();
 }
 
 CEnemyUnit* CEnemyManager::GetEnemyUnit(ICoreUnit::Id unitId) const
@@ -241,7 +248,8 @@ void CEnemyManager::AddEnemyCost(const CEnemyUnit* e)
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	for (CCircuitDef::RoleT type = 0; type < CCircuitDef::roleSize; ++type) {
+	const CCircuitDef::RoleT roleSize = CCircuitDef::GetRoleNames().size();
+	for (CCircuitDef::RoleT type = 0; type < roleSize; ++type) {
 		if (cdef->IsEnemyRoleAny(CCircuitDef::GetMask(type))) {
 			SEnemyInfo& info = enemyInfos[type];
 			info.cost   += e->GetCost();
@@ -261,7 +269,8 @@ void CEnemyManager::DelEnemyCost(const CEnemyUnit* e)
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
-	for (CCircuitDef::RoleT type = 0; type < CCircuitDef::roleSize; ++type) {
+	const CCircuitDef::RoleT roleSize = CCircuitDef::GetRoleNames().size();
+	for (CCircuitDef::RoleT type = 0; type < roleSize; ++type) {
 		if (cdef->IsEnemyRoleAny(CCircuitDef::GetMask(type))) {
 			SEnemyInfo& info = enemyInfos[type];
 			info.cost   = std::max(info.cost   - e->GetCost(),      0.f);
@@ -274,6 +283,19 @@ void CEnemyManager::DelEnemyCost(const CEnemyUnit* e)
 	} else {
 		staticThreat = std::max(staticThreat - cdef->GetThreat() * initThrMod.inStatic, 0.f);
 	}
+}
+
+bool CEnemyManager::IsEnemyNear(const AIFloat3& pos, float maxThreat)
+{
+	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
+	for (const CEnemyManager::SEnemyGroup& group : enemyGroups) {
+		if ((group.threat > 0.01f) && (group.threat < maxThreat)
+			&& ((basePos.SqDistance2D(group.pos) < SQUARE(1000.f)) || (pos.SqDistance2D(group.pos) < SQUARE(1000.f))))
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 void CEnemyManager::ReadConfig()

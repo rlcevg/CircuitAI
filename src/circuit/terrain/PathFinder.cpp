@@ -11,10 +11,6 @@
 #include "terrain/TerrainManager.h"
 #include "map/ThreatMap.h"
 #include "unit/CircuitUnit.h"
-#include "util/Utils.h"
-#ifdef DEBUG_VIS
-#include "CircuitAI.h"
-#endif
 
 #include "spring/SpringMap.h"
 
@@ -40,7 +36,6 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 #ifdef DEBUG_VIS
 		, isVis(false)
 		, toggleFrame(-1)
-		, circuit(nullptr)
 		, dbgDef(nullptr)
 		, dbgPos(ZeroVector)
 		, dbgType(1)
@@ -309,7 +304,6 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
  */
 float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPos, int radius, float maxThreat)
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	iPath.Clear();
 
 	CTerrainData::CorrectPosition(startPos);
@@ -336,7 +330,6 @@ float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPo
  */
 float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius, float maxThreat)
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	CTerrainData::CorrectPosition(endPos);
 
 	float pathCost = 0.0f;
@@ -349,7 +342,6 @@ float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloa
 
 float CPathFinder::FindBestPath(PathInfo& iPath, AIFloat3& startPos, float maxRange, F3Vec& possibleTargets, float maxThreat)
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	float pathCost = 0.0f;
 
 	// <maxRange> must always be >= squareSize, otherwise
@@ -493,7 +485,6 @@ float CPathFinder::FindBestPathToRadius(PathInfo& posPath, AIFloat3& startPos, f
  */
 void CPathFinder::MakeCostMap(const AIFloat3& startPos)
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	std::fill(costMap.begin(), costMap.end(), -1.f);
 	micropather->MakeCostMap(Pos2MoveNode(startPos), costMap);
 }
@@ -670,15 +661,14 @@ void CPathFinder::UpdateVis(const IndexVec& path)
 	delete fig;
 }
 
-void CPathFinder::ToggleVis(CCircuitAI* circuit)
+void CPathFinder::ToggleVis(int frame)
 {
-//	if (toggleFrame >= circuit->GetLastFrame()) {
-//		return;
-//	}
-//	toggleFrame = circuit->GetLastFrame();
-//
-//	isVis = !isVis;
-	this->circuit = circuit;
+	if (toggleFrame >= frame) {
+		return;
+	}
+	toggleFrame = frame;
+
+	isVis = !isVis;
 }
 #endif
 

@@ -115,6 +115,7 @@ void CScriptManager::Init()
 	r = engine->SetEngineProperty(asEP_INIT_CALL_STACK_SIZE,                  10); ASSERT(r >= 0);  // Default: 10
 	r = engine->SetEngineProperty(asEP_MAX_CALL_STACK_SIZE,                    0); ASSERT(r >= 0);  // Default: 0 (no limit)
 
+#ifdef CIRCUIT_AS_JIT
 	// Create the JIT Compiler. The build flags are explained below,
 	// as well as in as_jit.h
 	//  Faster: JIT_NO_SUSPEND | JIT_SYSCALL_FPU_NORESET | JIT_SYSCALL_NO_ERRORS | JIT_ALLOC_SIMPLE | JIT_FAST_REFCOUNT
@@ -122,9 +123,10 @@ void CScriptManager::Init()
 	jit = new asCJITCompiler(JIT_FAST_REFCOUNT | JIT_SYSCALL_FPU_NORESET);
 	// Enable JIT helper instructions; without these,
 	// the JIT will not be invoked
-//	r = engine->SetEngineProperty(asEP_INCLUDE_JIT_INSTRUCTIONS, true); ASSERT(r >= 0);
-//	// Bind the JIT compiler to the engine
-//	r = engine->SetJITCompiler(jit); ASSERT(r >= 0);
+	r = engine->SetEngineProperty(asEP_INCLUDE_JIT_INSTRUCTIONS, true); ASSERT(r >= 0);
+	// Bind the JIT compiler to the engine
+	r = engine->SetJITCompiler(jit); ASSERT(r >= 0);
+#endif
 
 	// AngelScript doesn't have a built-in string type, as there is no definite standard
 	// string type for C++ applications. Every developer is free to register its own string type.
@@ -330,7 +332,6 @@ void CScriptManager::RegisterCircuitAI()
 	r = engine->RegisterObjectBehaviour("IUnitTask", asBEHAVE_RELEASE, "void f()", asMETHODPR(IRefCounter, Release, (), int), asCALL_THISCALL); ASSERT(r >= 0);
 
 	r = engine->RegisterObjectMethod("CCircuitAI", "int GetLastFrame() const", asMETHOD(CCircuitAI, GetLastFrame), asCALL_THISCALL); ASSERT(r >= 0);
-//	r = engine->RegisterObjectMethod("CCircuitAI", "CCircuitDef@ GetCircuitDef(const string& in)", asMETHODPR(CCircuitAI, GetCircuitDef, (const std::string&), CCircuitDef*), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitAI", "CCircuitDef@ GetCircuitDef(const string& in)", asFUNCTION(CCircuitAI_GetCircuitDef), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
 
 	r = engine->RegisterObjectType("TypeMask", sizeof(CMaskHandler::TypeMask), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<CMaskHandler::TypeMask>()); ASSERT(r >= 0);

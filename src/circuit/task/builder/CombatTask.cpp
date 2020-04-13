@@ -6,10 +6,9 @@
  */
 
 #include "task/builder/CombatTask.h"
-#include "task/TaskManager.h"
+#include "task/RetreatTask.h"
 #include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
-#include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "unit/action/DGunAction.h"
@@ -22,8 +21,8 @@ namespace circuit {
 
 using namespace springai;
 
-CCombatTask::CCombatTask(ITaskManager* mgr)
-		: IFighterTask(mgr, FightType::DEFEND, 1.f)
+CCombatTask::CCombatTask(ITaskManager* mgr, float powerMod)
+		: IFighterTask(mgr, FightType::DEFEND, powerMod)
 {
 }
 
@@ -56,6 +55,61 @@ void CCombatTask::Update()
 			Execute(unit);
 		}
 	}
+}
+
+void CCombatTask::OnUnitIdle(CCircuitUnit* unit)
+{
+	auto it = cowards.find(unit);
+	if (it != cowards.end()) {
+		cowards.erase(it);
+		CRetreatTask* task = manager->GetCircuit()->GetBuilderManager()->EnqueueRetreat();
+		manager->AssignTask(unit, task);
+	} else {
+		unit->SetTaskFrame(manager->GetCircuit()->GetLastFrame());
+	}
+}
+
+void CCombatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	const float healthPerc = unit->GetHealthPercent();
+	if (unit->HasShield()) {
+		const float minShield = circuit->GetSetupManager()->GetEmptyShield();
+		if ((healthPerc > cdef->GetRetreat()) && unit->IsShieldCharged(minShield)) {
+			if (cdef->IsRoleHeavy() && (healthPerc < 0.9f)) {
+				circuit->GetBuilderManager()->EnqueueRepair(IBuilderTask::Priority::NOW, unit);
+			}
+			return;
+		}
+	} else if ((healthPerc > cdef->GetRetreat()) && !unit->IsDisarmed(frame)) {
+		if (cdef->IsRoleHeavy() && (healthPerc < 0.9f)) {
+			circuit->GetBuilderManager()->EnqueueRepair(IBuilderTask::Priority::NOW, unit);
+		}
+		return;
+	} else if (healthPerc < 0.2f) {  // stuck units workaround: they don't shoot and don't see distant threat
+		CRetreatTask* task = circuit->GetBuilderManager()->EnqueueRetreat();
+		manager->AssignTask(unit, task);
+		return;
+	}
+
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	const float range = cdef->GetMaxRange();
+	if ((target == nullptr) || !target->IsInLOS()) {
+		CRetreatTask* task = circuit->GetBuilderManager()->EnqueueRetreat();
+		manager->AssignTask(unit, task);
+		return;
+	}
+	const AIFloat3& pos = unit->GetPos(frame);
+	if ((target->GetPos().SqDistance2D(pos) > SQUARE(range)) ||
+		(threatMap->GetThreatAt(unit, pos) * 2 > threatMap->GetUnitThreat(unit)))
+	{
+		CRetreatTask* task = circuit->GetBuilderManager()->EnqueueRetreat();
+		manager->AssignTask(unit, task);
+		return;
+	}
+	cowards.insert(unit);
 }
 
 void CCombatTask::Execute(CCircuitUnit* unit)
@@ -96,10 +150,14 @@ void CCombatTask::Execute(CCircuitUnit* unit)
 CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
+	if (pos.SqDistance2D(basePos) > SQUARE(3000.f)) {
+		return nullptr;
+	}
+
 	CMap* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	STerrainMapArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const bool notAW = !cdef->HasAntiWater();
@@ -116,12 +174,13 @@ CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	for (auto& kv : enemies) {
 		CEnemyInfo* enemy = kv.second;
-		if (enemy->IsHidden()) {
+		if (enemy->IsHidden() || (enemy->GetTasks().size() > 2)) {
 			continue;
 		}
 		const AIFloat3& ePos = enemy->GetPos();
 
-		if (basePos.SqDistance2D(ePos) > SQUARE(1000.f)) {
+		const float sqDist = pos.SqDistance2D(ePos);
+		if ((basePos.SqDistance2D(ePos) > SQUARE(1000.f)) && (sqDist > minSqDist)) {
 			continue;
 		}
 
@@ -154,15 +213,12 @@ CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 			targetCat = UNKNOWN_CATEGORY;
 		}
 
-		float sqDist = pos.SqDistance2D(ePos);
-		if (minSqDist > sqDist) {
-			if (enemy->IsInRadarOrLOS()) {
-				if ((targetCat & noChaseCat) == 0) {
-					bestTarget = enemy;
-					minSqDist = sqDist;
-				} else if (bestTarget == nullptr) {
-					worstTarget = enemy;
-				}
+		if (enemy->IsInRadarOrLOS()) {
+			if ((targetCat & noChaseCat) == 0) {
+				bestTarget = enemy;
+				minSqDist = sqDist;
+			} else if (bestTarget == nullptr) {
+				worstTarget = enemy;
 			}
 		}
 	}

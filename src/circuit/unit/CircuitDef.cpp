@@ -25,7 +25,6 @@ using namespace springai;
 
 #define THREAT_MOD		(1.0f / 128.0f)
 
-CCircuitDef::RoleT CCircuitDef::roleSize;
 CCircuitDef::RoleName* CCircuitDef::roleNames;
 CCircuitDef::AttrName CCircuitDef::attrNames = {
 	{"melee",     CCircuitDef::AttrType::MELEE},
@@ -77,7 +76,6 @@ void CCircuitDef::InitStatic(CCircuitAI* circuit, CMaskHandler* roleMasker)
 	}
 
 	CCircuitDef::roleNames = &roleMasker->GetMasks();
-	CCircuitDef::roleSize = roleMasker->GetMasks().size();
 }
 
 CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts, Resource* res)
@@ -85,6 +83,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, mainRole(ROLE_TYPE(SCOUT))
 		, enemyRole(RoleMask::NONE)
 		, role(RoleMask::NONE)
+		, attr(NONE)
 		, buildOptions(buildOpts)
 		, count(0)
 		, buildCounts(0)
