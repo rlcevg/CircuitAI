@@ -572,7 +572,7 @@ void CSetupManager::CalcLanePos()
 	} else if ((midPos.x < p2.x && midPos.z < p2.z) || (midPos.x > p4.x && midPos.z > p4.z)) {  // II, IV
 		step = AIFloat3(width / (points.size() + 1), 0, -height / (points.size() + 1));
 		offset = AIFloat3(0, 0, height);
-	} else if (abs(centerPos.x - midPos.x) / abs(centerPos.z - midPos.z) < width / height) {  // x-aligned
+	} else if (fabs(centerPos.x - midPos.x) * height < fabs(centerPos.z - midPos.z) * width) {  // x-aligned (dX/dZ < w/h)
 		step = AIFloat3(width / (points.size() + 1), 0, 0);
 		offset = AIFloat3(0, 0, height / 2);
 	} else {  // z-aligned

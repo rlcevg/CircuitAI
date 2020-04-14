@@ -262,7 +262,7 @@ void CRaidTask::FindTarget()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
-	const float speed = SQUARE(highestSpeed * 0.8f / FRAMES_PER_SEC);
+	float speed = SQUARE(highestSpeed * 0.8f / FRAMES_PER_SEC);
 	float maxPower = attackPower * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
@@ -277,6 +277,7 @@ void CRaidTask::FindTarget()
 	const bool isDefender = sqOBDist < SQUARE(3000.f);  // FIXME: Make max distance configurable
 	if (isDefender) {
 		maxPower *= 2.0f - 1.0f / 3000.f * sqrtf(sqOBDist);  // 200% near base
+		speed *= 2.f;
 	}
 
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
