@@ -8,6 +8,7 @@
 #include "script/MilitaryScript.h"
 #include "script/ScriptManager.h"
 #include "module/MilitaryManager.h"
+#include "CircuitAI.h"
 #include "util/Utils.h"
 #include "angelscript/include/angelscript.h"
 

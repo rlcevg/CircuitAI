@@ -11,6 +11,10 @@
 #include "terrain/TerrainManager.h"
 #include "map/ThreatMap.h"
 #include "unit/CircuitUnit.h"
+#include "util/Utils.h"
+#ifdef DEBUG_VIS
+#include "CircuitAI.h"
+#endif
 
 #include "spring/SpringMap.h"
 
@@ -36,6 +40,7 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 #ifdef DEBUG_VIS
 		, isVis(false)
 		, toggleFrame(-1)
+		, circuit(nullptr)
 		, dbgDef(nullptr)
 		, dbgPos(ZeroVector)
 		, dbgType(1)
@@ -661,14 +666,15 @@ void CPathFinder::UpdateVis(const IndexVec& path)
 	delete fig;
 }
 
-void CPathFinder::ToggleVis(int frame)
+void CPathFinder::ToggleVis(CCircuitAI* circuit)
 {
-	if (toggleFrame >= frame) {
+	if (toggleFrame >= circuit->GetLastFrame()) {
 		return;
 	}
-	toggleFrame = frame;
+	toggleFrame = circuit->GetLastFrame();
 
 	isVis = !isVis;
+	this->circuit = circuit;
 }
 #endif
 

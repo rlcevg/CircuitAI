@@ -20,6 +20,7 @@ class CCircuitUnit;
 class CThreatMap;
 struct SAreaData;
 #ifdef DEBUG_VIS
+class CCircuitAI;
 class CCircuitDef;
 #endif
 
@@ -86,6 +87,7 @@ private:
 private:
 	bool isVis;
 	int toggleFrame;
+	CCircuitAI* circuit;
 	CCircuitDef* dbgDef;
 	springai::AIFloat3 dbgPos;
 	int dbgType;
@@ -98,7 +100,7 @@ public:
 	int GetDbgType() const { return dbgType; }
 	void SetMapData(CThreatMap* threatMap);
 	void UpdateVis(const IndexVec& path);
-	void ToggleVis(int frame);
+	void ToggleVis(CCircuitAI* circuit);
 #endif
 };
 

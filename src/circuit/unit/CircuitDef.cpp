@@ -16,6 +16,7 @@
 #include "Shield.h"
 #include "MoveData.h"
 #include "Map.h"
+#include "Log.h"
 
 #include <regex>
 
