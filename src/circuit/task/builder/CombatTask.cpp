@@ -119,7 +119,8 @@ void CCombatTask::Execute(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
-	target = FindTarget(unit, pos);
+	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
+	SetTarget(FindTarget(unit, pos));
 
 	if (target == nullptr) {
 		RemoveAssignee(unit);

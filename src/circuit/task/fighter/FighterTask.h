@@ -52,6 +52,7 @@ protected:
 
 	float attackPower;
 	float powerMod;
+	// NOTE: Never assign directly, use SetTarget() to avoid access to a dead target
 	CEnemyInfo* target;
 
 	std::set<CCircuitUnit*> cowards;
