@@ -790,34 +790,7 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 
 IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 {
-//	return static_cast<CBuilderScript*>(script)->MakeTask(unit);
-
-	const CCircuitDef* cdef = unit->GetCircuitDef();
-	if (cdef->IsRoleComm()) {  // hide commander?
-		// FIXME: Any combat builder, not only commander
-		CSetupManager* setupManager = circuit->GetSetupManager();
-		CEnemyManager* enemyManager = circuit->GetEnemyManager();
-		const AIFloat3 pos = unit->GetPos(circuit->GetLastFrame());
-		if ((pos.SqDistance2D(setupManager->GetBasePos()) < SQUARE(3000.f))
-			&& enemyManager->IsEnemyNear(pos, circuit->GetThreatMap()->GetUnitThreat(unit) * 1.5f))
-		{
-			return EnqueueCombat(1.5f);
-		}
-
-		const CSetupManager::SCommInfo::SHide* hide = setupManager->GetHide(cdef);
-		if (hide != nullptr) {
-			if ((circuit->GetLastFrame() < hide->frame) || (GetWorkerCount() <= 2)) {
-				return MakeBuilderTask(unit);
-			}
-			if (enemyManager->GetMobileThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat) {
-				return MakeCommTask(unit);
-			}
-			const bool isHide = (hide->isAir) && (enemyManager->GetEnemyCost(ROLE_TYPE(AIR)) > 1.f);
-			return isHide ? MakeCommTask(unit) : MakeBuilderTask(unit);
-		}
-	}
-
-	return MakeBuilderTask(unit);
+	return static_cast<CBuilderScript*>(script)->MakeTask(unit);
 }
 
 void CBuilderManager::AbortTask(IUnitTask* task)
@@ -853,6 +826,36 @@ SBuildChain* CBuilderManager::GetBuildChain(IBuilderTask::BuildType buildType, C
 		return nullptr;
 	}
 	return it2->second;
+}
+
+IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
+{
+	const CCircuitDef* cdef = unit->GetCircuitDef();
+	if (cdef->IsRoleComm()) {  // hide commander?
+		// FIXME: Any combat builder, not only commander
+		CSetupManager* setupManager = circuit->GetSetupManager();
+		CEnemyManager* enemyManager = circuit->GetEnemyManager();
+		const AIFloat3 pos = unit->GetPos(circuit->GetLastFrame());
+		if ((pos.SqDistance2D(setupManager->GetBasePos()) < SQUARE(3000.f))
+			&& enemyManager->IsEnemyNear(pos, circuit->GetThreatMap()->GetUnitThreat(unit) * 1.5f))
+		{
+			return EnqueueCombat(1.5f);
+		}
+
+		const CSetupManager::SCommInfo::SHide* hide = setupManager->GetHide(cdef);
+		if (hide != nullptr) {
+			if ((circuit->GetLastFrame() < hide->frame) || (GetWorkerCount() <= 2)) {
+				return MakeBuilderTask(unit);
+			}
+			if (enemyManager->GetMobileThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat) {
+				return MakeCommTask(unit);
+			}
+			const bool isHide = (hide->isAir) && (enemyManager->GetEnemyCost(ROLE_TYPE(AIR)) > 1.f);
+			return isHide ? MakeCommTask(unit) : MakeBuilderTask(unit);
+		}
+	}
+
+	return MakeBuilderTask(unit);
 }
 
 IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)

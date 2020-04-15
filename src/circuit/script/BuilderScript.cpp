@@ -21,8 +21,7 @@ CBuilderScript::CBuilderScript(CScriptManager* scr, CBuilderManager* mgr)
 	int r = engine->RegisterObjectType("CBuilderManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
 	r = engine->RegisterGlobalProperty("CBuilderManager builderMgr", manager); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CBuilderManager", "uint GetWorkerCount() const", asMETHOD(CBuilderManager, GetWorkerCount), asCALL_THISCALL); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("CBuilderManager", "IUnitTask@+ MakeBuilderTask(CCircuitUnit@)", asMETHOD(CBuilderManager, MakeBuilderTask), asCALL_THISCALL); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("CBuilderManager", "IUnitTask@+ MakeCommTask(CCircuitUnit@)", asMETHOD(CBuilderManager, MakeCommTask), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("CBuilderManager", "IUnitTask@+ DefaultMakeTask(CCircuitUnit@)", asMETHOD(CBuilderManager, DefaultMakeTask), asCALL_THISCALL); ASSERT(r >= 0);
 }
 
 CBuilderScript::~CBuilderScript()
@@ -39,7 +38,7 @@ void CBuilderScript::Init()
 IUnitTask* CBuilderScript::MakeTask(CCircuitUnit* unit)
 {
 	if (info.makeTask == nullptr) {
-		return static_cast<CBuilderManager*>(manager)->MakeBuilderTask(unit);
+		return static_cast<CBuilderManager*>(manager)->DefaultMakeTask(unit);
 	}
 	asIScriptContext* ctx = script->PrepareContext(info.makeTask);
 	ctx->SetArgObject(0, unit);

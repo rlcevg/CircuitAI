@@ -143,6 +143,7 @@ public:
 	bool IsReclaimed(CAllyUnit* unit) const { return reclaimedUnits.find(unit) != reclaimedUnits.end(); }
 
 private:
+	IUnitTask* DefaultMakeTask(CCircuitUnit* unit);
 	IBuilderTask* MakeCommTask(CCircuitUnit* unit);
 	IBuilderTask* MakeBuilderTask(CCircuitUnit* unit);
 	IBuilderTask* CreateBuilderTask(const springai::AIFloat3& position, CCircuitUnit* unit);
