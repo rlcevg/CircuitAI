@@ -33,11 +33,14 @@ CMoveAction::~CMoveAction()
 
 void CMoveAction::Update(CCircuitAI* circuit)
 {
+	if (lastFrame + FRAMES_PER_SEC > circuit->GetLastFrame()) {
+		return;
+	}
+	lastFrame = circuit->GetLastFrame();
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
-	const int frame = circuit->GetLastFrame();
 
 	float stepSpeed;
-	int pathMaxIndex = CalcSpeedStep(frame, stepSpeed);
+	int pathMaxIndex = CalcSpeedStep(stepSpeed);
 	if (pathMaxIndex < 0) {
 		return;
 	}
@@ -45,22 +48,22 @@ void CMoveAction::Update(CCircuitAI* circuit)
 
 	TRY_UNIT(circuit, unit,
 		const AIFloat3& pos = pPath->posPath[step];
-//		unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+//		unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, lastFrame + FRAMES_PER_SEC * 60);
 		unit->GetUnit()->ExecuteCustomCommand(CMD_RAW_MOVE,
 											  {pos.x, pos.y, pos.z},
 											  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY,
-											  frame + FRAMES_PER_SEC * 60);
+											  lastFrame + FRAMES_PER_SEC * 60);
 		unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {stepSpeed});
 
 		constexpr short options = UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY;
 		for (int i = 2; (step < pathMaxIndex) && (i < 3); ++i) {
 			step = std::min(step + increment, pathMaxIndex);
 			const AIFloat3& pos = pPath->posPath[step];
-//			unit->GetUnit()->MoveTo(pos, options, frame + FRAMES_PER_SEC * 60 * i);
+//			unit->GetUnit()->MoveTo(pos, options, lastFrame + FRAMES_PER_SEC * 60 * i);
 			unit->GetUnit()->ExecuteCustomCommand(CMD_RAW_MOVE,
 												  {pos.x, pos.y, pos.z},
 												  options,
-												  frame + FRAMES_PER_SEC * 60 * i);
+												  lastFrame + FRAMES_PER_SEC * 60 * i);
 		}
 	)
 }

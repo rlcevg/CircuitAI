@@ -11,6 +11,10 @@
 #include <vector>
 #include <string>
 
+namespace springai {
+class AIFloat3;
+}
+
 class asIScriptEngine;
 class asIScriptModule;
 class asIScriptFunction;
@@ -53,14 +57,16 @@ private:
 
 	void MessageCallback(const asSMessageInfo *msg, void *param);
 
-	void Log(std::string &msg);
-	int Dice(const CScriptArray* array);
-	template<typename T> T Max(T l, T r) { return std::max(l, r); }
+	void Log(const std::string &msg) const;
+	void AddPoint(const springai::AIFloat3& pos, const std::string &msg) const;
+	void DelPoint(const springai::AIFloat3& pos) const;
+	int Dice(const CScriptArray* array) const;
+	template<typename T> T Max(T l, T r) const { return std::max(l, r); }
 
 	bool LocatePath(std::string& filename);
 
-	void RegisterUtils();
 	void RegisterSpringai();
+	void RegisterUtils();
 	void RegisterCircuitAI();
 public:
 	void RegisterMgr();

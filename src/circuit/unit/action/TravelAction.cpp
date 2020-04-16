@@ -20,6 +20,7 @@ ITravelAction::ITravelAction(CCircuitUnit* owner, Type type, int squareSize, flo
 		, speed(speed)
 		, pathIterator(0)
 		, isForce(true)
+		, lastFrame(-1)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	CCircuitDef* cdef = unit->GetCircuitDef();
@@ -64,10 +65,10 @@ void ITravelAction::SetPath(const std::shared_ptr<PathInfo>& pPath, float speed)
 	isFinished = false;
 }
 
-int ITravelAction::CalcSpeedStep(int frame, float& stepSpeed)
+int ITravelAction::CalcSpeedStep(float& stepSpeed)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
-	const AIFloat3& pos = unit->GetPos(frame);
+	const AIFloat3& pos = unit->GetPos(lastFrame);
 	int pathMaxIndex = pPath->posPath.size() - 1;
 
 	int lastStep = pathIterator;

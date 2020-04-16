@@ -145,7 +145,8 @@ void CCombatTask::Execute(CCircuitUnit* unit)
 		}
 	} else {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->MoveTo(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->MoveTo(position + AIFloat3(target->GetVel()).Normalize2D() * 300.f,  // lead - 300 elmos
+									UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
 	}
 }

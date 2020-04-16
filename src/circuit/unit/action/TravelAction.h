@@ -28,7 +28,7 @@ public:
 	const std::shared_ptr<PathInfo>& GetPath() const { return pPath; }
 
 protected:
-	int CalcSpeedStep(int frame, float& stepSpeed);
+	int CalcSpeedStep(float& stepSpeed);
 
 	std::shared_ptr<PathInfo> pPath;
 	float speed;
@@ -36,6 +36,7 @@ protected:
 	int increment;
 	int minSqDist;
 	bool isForce;
+	int lastFrame;
 };
 
 } // namespace circuit

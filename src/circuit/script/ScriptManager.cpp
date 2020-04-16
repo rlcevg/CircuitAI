@@ -20,6 +20,7 @@
 
 #include "DataDirs.h"
 #include "Log.h"
+#include "Drawer.h"
 
 #include "angelscript/include/angelscript.h"
 #include "angelscript/jit/as_jit.h"
@@ -139,8 +140,8 @@ void CScriptManager::Init()
 
 	engine->SetContextCallbacks(CScriptManager::ProvideContext, CScriptManager::StoreContext, this);
 
-	RegisterUtils();
 	RegisterSpringai();
+	RegisterUtils();
 	RegisterCircuitAI();
 }
 
@@ -270,12 +271,22 @@ void CScriptManager::MessageCallback(const asSMessageInfo* msg, void* param)
 	circuit->LOG("%s (%d, %d) : %s : %s", msg->section, msg->row, msg->col, type, msg->message);
 }
 
-void CScriptManager::Log(std::string &msg)
+void CScriptManager::Log(const std::string &msg) const
 {
 	circuit->LOG("%s", msg.c_str());
 }
 
-int CScriptManager::Dice(const CScriptArray* array)
+void CScriptManager::AddPoint(const AIFloat3& pos, const std::string &msg) const
+{
+	circuit->GetDrawer()->AddPoint(pos, msg.c_str());
+}
+
+void CScriptManager::DelPoint(const AIFloat3& pos) const
+{
+	circuit->GetDrawer()->DeletePointsAndLines(pos);
+}
+
+int CScriptManager::Dice(const CScriptArray* array) const
 {
 	float magnitude = 0.f;
 	for (asUINT i = 0; i < array->GetSize(); ++i) {
@@ -302,14 +313,6 @@ bool CScriptManager::LocatePath(std::string& dirname)
 	return located;
 }
 
-void CScriptManager::RegisterUtils()
-{
-	int r = engine->RegisterGlobalFunction("void aiLog(const string& in)", asMETHOD(CScriptManager, Log), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
-	r = engine->RegisterGlobalFunction("int aiDice(const array<float>@+)", asMETHOD(CScriptManager, Dice), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
-	r = engine->RegisterGlobalFunction("int aiMax(int, int)", asMETHODPR(CScriptManager, Max<int>, (int, int), int), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
-	r = engine->RegisterGlobalFunction("float aiMax(float, float)", asMETHODPR(CScriptManager, Max<float>, (float, float), float), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
-}
-
 void CScriptManager::RegisterSpringai()
 {
 	int r = engine->RegisterObjectType("AIFloat3", sizeof(AIFloat3), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<AIFloat3>()); ASSERT(r >= 0);
@@ -318,6 +321,16 @@ void CScriptManager::RegisterSpringai()
 	r = engine->RegisterObjectProperty("AIFloat3", "float x", asOFFSET(AIFloat3, x)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("AIFloat3", "float y", asOFFSET(AIFloat3, y)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("AIFloat3", "float z", asOFFSET(AIFloat3, z)); ASSERT(r >= 0);
+}
+
+void CScriptManager::RegisterUtils()
+{
+	int r = engine->RegisterGlobalFunction("void aiLog(const string& in)", asMETHOD(CScriptManager, Log), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
+	r = engine->RegisterGlobalFunction("void aiAddPoint(const AIFloat3& in, const string& in)", asMETHOD(CScriptManager, AddPoint), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
+	r = engine->RegisterGlobalFunction("void aiDelPoint(const AIFloat3& in)", asMETHOD(CScriptManager, DelPoint), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
+	r = engine->RegisterGlobalFunction("int aiDice(const array<float>@+)", asMETHOD(CScriptManager, Dice), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
+	r = engine->RegisterGlobalFunction("int aiMax(int, int)", asMETHODPR(CScriptManager, Max<int>, (int, int) const, int), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
+	r = engine->RegisterGlobalFunction("float aiMax(float, float)", asMETHODPR(CScriptManager, Max<float>, (float, float) const, float), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 }
 
 void CScriptManager::RegisterCircuitAI()
@@ -356,6 +369,7 @@ void CScriptManager::RegisterCircuitAI()
 
 	r = engine->RegisterObjectMethod("CCircuitUnit", "Id GetId() const", asMETHODPR(CCircuitUnit, GetId, () const, ICoreUnit::Id), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitUnit", "CCircuitDef@ GetCircuitDef() const", asMETHODPR(CCircuitUnit, GetCircuitDef, () const, CCircuitDef*), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("CCircuitUnit", "const AIFloat3& GetPos(int)", asMETHODPR(CCircuitUnit, GetPos, (int), const AIFloat3&), asCALL_THISCALL); ASSERT(r >= 0);
 
 	r = engine->RegisterObjectMethod("IUnitTask", "int GetRefCount()", asMETHODPR(IRefCounter, GetRefCount, (), int), asCALL_THISCALL); ASSERT(r >= 0);
 

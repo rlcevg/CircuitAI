@@ -22,5 +22,8 @@ IUnitTask@ makeTask(CCircuitUnit@ unit)
 //
 //	return builderMgr.MakeBuilderTask(unit);
 
+	const AIFloat3 pos = unit.GetPos(ai.GetLastFrame());
+	aiDelPoint(pos);
+	aiAddPoint(pos, "task");
 	return builderMgr.DefaultMakeTask(unit);
 }
