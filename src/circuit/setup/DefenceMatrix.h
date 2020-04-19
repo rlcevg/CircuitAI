@@ -41,6 +41,7 @@ public:
 	SDefPoint* GetDefPoint(const springai::AIFloat3& pos, float cost);
 
 	float GetBaseRange() const { return baseRange; }
+	float GetCommRadBegin() const { return commRadBegin; }
 	float GetCommRad(float baseDist) const {
 		return commRadFraction * baseDist + commRadBegin;
 	}
@@ -50,8 +51,8 @@ private:
 	std::vector<SClusterInfo> clusterInfos;
 
 	float baseRange;
-	float commRadFraction;
 	float commRadBegin;
+	float commRadFraction;
 };
 
 } // namespace circuit

@@ -247,7 +247,7 @@ void CCircuitUnit::Attack(CEnemyInfo* enemy, int timeout)
 
 void CCircuitUnit::Attack(const AIFloat3& position, int timeout)
 {
-	const AIFloat3& pos = utils::get_radial_pos(position, SQUARE_SIZE * 4);
+	const AIFloat3& pos = utils::get_radial_pos(position, SQUARE_SIZE * 8);
 	TRY_UNIT(manager->GetCircuit(), this,
 		if (circuitDef->IsAttrMelee()) {
 			if (IsJumpReady()) {
@@ -265,7 +265,7 @@ void CCircuitUnit::Attack(const AIFloat3& position, int timeout)
 
 void CCircuitUnit::Attack(const AIFloat3& position, CEnemyInfo* enemy, int timeout)
 {
-	const AIFloat3& pos = utils::get_radial_pos(position, SQUARE_SIZE * 4);
+	const AIFloat3& pos = utils::get_radial_pos(position, SQUARE_SIZE * 8);
 	TRY_UNIT(manager->GetCircuit(), this,
 		if (circuitDef->IsAttrMelee()) {
 			if (IsJumpReady()) {

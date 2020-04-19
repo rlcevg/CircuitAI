@@ -8,8 +8,9 @@ int fibR(int n)
 }
 
 void init() {
-	for (int i = 0; i < 10; ++i) {
-		fibR(30);
-		aiLog("AngelScript Rules! " + i);
-	}
+//	for (int i = 0; i < 10; ++i) {
+//		fibR(30);
+//		aiLog("AngelScript Rules! " + i);
+//	}
+	aiLog("AngelScript Rules!");
 }

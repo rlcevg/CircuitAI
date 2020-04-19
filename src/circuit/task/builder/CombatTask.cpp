@@ -146,7 +146,7 @@ void CCombatTask::Execute(CCircuitUnit* unit)
 			unit->Attack(target, frame + FRAMES_PER_SEC * 60);
 		}
 	} else {
-		const AIFloat3 velLead = target->GetVel() * FRAMES_PER_SEC * 5;
+		const AIFloat3 velLead = target->GetVel() * FRAMES_PER_SEC * 3;
 		const AIFloat3 lead = velLead.SqLength2D() < SQUARE(300.f)
 				? velLead
 				: AIFloat3(AIFloat3(target->GetVel()).Normalize2D() * 300.f);
@@ -177,8 +177,8 @@ CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
-	const float sqCommRad = SQUARE(militaryManager->GetCommDefRad(pos.distance2D(basePos)));
-	float minSqDist = sqCommRad;
+	const float sqCommRadBegin = SQUARE(militaryManager->GetCommDefRadBegin());
+	float minSqDist = SQUARE(militaryManager->GetCommDefRad(pos.distance2D(basePos)));
 
 	CEnemyInfo* bestTarget = nullptr;
 	CEnemyInfo* worstTarget = nullptr;
@@ -192,7 +192,7 @@ CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 
 		const AIFloat3& ePos = enemy->GetPos();
 		const float sqDist = pos.SqDistance2D(ePos);
-		if ((basePos.SqDistance2D(ePos) > sqCommRad) && (sqDist > minSqDist)) {
+		if ((basePos.SqDistance2D(ePos) > sqCommRadBegin) && (sqDist > minSqDist)) {
 			continue;
 		}
 

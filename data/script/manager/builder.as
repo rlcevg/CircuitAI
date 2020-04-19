@@ -2,7 +2,7 @@
 #include "../commander.as"
 
 
-AIFloat3 lastPos;
+//AIFloat3 lastPos;
 
 IUnitTask@ makeTask(CCircuitUnit@ unit)
 {
@@ -24,8 +24,8 @@ IUnitTask@ makeTask(CCircuitUnit@ unit)
 //
 //	return builderMgr.MakeBuilderTask(unit);
 
-	aiDelPoint(lastPos);
-	lastPos = unit.GetPos(ai.GetLastFrame());
-	aiAddPoint(lastPos, "task");
+//	aiDelPoint(lastPos);
+//	lastPos = unit.GetPos(ai.GetLastFrame());
+//	aiAddPoint(lastPos, "task");
 	return builderMgr.DefaultMakeTask(unit);
 }

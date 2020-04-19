@@ -301,10 +301,11 @@ void CRaidTask::FindTarget()
 		}
 
 		const float power = threatMap->GetThreatAt(ePos);
-		if ((maxPower <= power) ||
-			!terrainManager->CanMoveToPos(area, ePos) ||
-			(enemy->GetVel().SqLength2D() >= speed))
-		{
+		if ((maxPower <= power) || !terrainManager->CanMoveToPos(area, ePos)) {
+			continue;
+		}
+		const AIFloat3& eVel = enemy->GetVel();
+		if ((eVel.SqLength2D() >= speed) && (eVel.dot2D(pos - ePos) < 0)) {
 			continue;
 		}
 

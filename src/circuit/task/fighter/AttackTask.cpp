@@ -265,9 +265,12 @@ void CAttackTask::FindTarget()
 		const float sqBEDist = ePos.SqDistance2D(basePos);  // Base to Enemy distance
 		const float scale = std::min(sqBEDist / sqOBDist, 1.f);
 		if ((maxPower <= threatMap->GetThreatAt(ePos) * scale)
-			|| !terrainManager->CanMoveToPos(area, ePos)
-			|| (enemy->GetVel().SqLength2D() >= speed))
+			|| !terrainManager->CanMoveToPos(area, ePos))
 		{
+			continue;
+		}
+		const AIFloat3& eVel = enemy->GetVel();
+		if ((eVel.SqLength2D() >= speed) && (eVel.dot2D(pos - ePos) < 0)) {
 			continue;
 		}
 
