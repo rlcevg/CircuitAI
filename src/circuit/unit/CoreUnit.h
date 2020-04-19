@@ -19,6 +19,7 @@ public:
 	ICoreUnit(Id unitId, springai::Unit* unit)
 		: id(unitId)
 		, unit(unit)
+		, tempNum(-1)
 	{}
 
 	Id GetId() const { return id; }
@@ -32,6 +33,11 @@ protected:
 
 	Id id;
 	springai::Unit* unit;  // owner
+
+public:
+	// spatial data
+	std::vector<int> quads;  // quads the unit is part of
+	int tempNum;
 };
 
 } // namespace circuit

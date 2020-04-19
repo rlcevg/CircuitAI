@@ -25,6 +25,7 @@ public:
 	CCircuitDef* GetCircuitDef() const { return circuitDef; }
 	IUnitTask* GetTask() const { return task; }
 	const springai::AIFloat3& GetPos(int frame);
+	const springai::AIFloat3& GetLastPos() const { return position; }
 
 protected:
 	CCircuitDef* circuitDef;

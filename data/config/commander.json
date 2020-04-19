@@ -95,7 +95,8 @@
 			"hide": {
 				"time": 480,  // seconds
 				"threat": 30,
-				"air": true
+				"air": true,
+				"task_rad": 2000.0
 			}
 		},
 		"recon": {
@@ -186,7 +187,8 @@
 			"hide": {
 				"time": 600,  // seconds
 				"threat": 50,
-				"air": true
+				"air": true,
+				"task_rad": 2000.0
 			}
 		},
 		"assault": {
@@ -279,7 +281,8 @@
 			"hide": {
 				"time": 600,  // seconds
 				"threat": 70,
-				"air": true
+				"air": true,
+				"task_rad": 2000.0
 			}
 		},
 		"strike": {
@@ -371,7 +374,8 @@
 			"hide": {
 				"time": 480,  // seconds
 				"threat": 50,
-				"air": true
+				"air": true,
+				"task_rad": 2000.0
 			}
 		}
 	}

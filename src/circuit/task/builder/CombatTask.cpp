@@ -7,8 +7,10 @@
 
 #include "task/builder/CombatTask.h"
 #include "task/RetreatTask.h"
+#include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
+#include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "unit/action/DGunAction.h"
@@ -144,9 +146,12 @@ void CCombatTask::Execute(CCircuitUnit* unit)
 			unit->Attack(target, frame + FRAMES_PER_SEC * 60);
 		}
 	} else {
+		const AIFloat3 velLead = target->GetVel() * FRAMES_PER_SEC * 5;
+		const AIFloat3 lead = velLead.SqLength2D() < SQUARE(300.f)
+				? velLead
+				: AIFloat3(AIFloat3(target->GetVel()).Normalize2D() * 300.f);
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->MoveTo(position + AIFloat3(target->GetVel()).Normalize2D() * 300.f,  // lead - 300 elmos
-									UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->MoveTo(position + lead, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
 	}
 }
@@ -154,14 +159,16 @@ void CCombatTask::Execute(CCircuitUnit* unit)
 CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
 	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
-	if (pos.SqDistance2D(basePos) > SQUARE(3000.f)) {
+	if (pos.SqDistance2D(basePos) > SQUARE(militaryManager->GetBaseDefRange())) {
 		return nullptr;
 	}
 
 	CMap* map = circuit->GetMap();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
+	CInfluenceMap* inflMap = circuit->GetInflMap();
 	STerrainMapArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const bool notAW = !cdef->HasAntiWater();
@@ -170,7 +177,8 @@ CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
-	float minSqDist = SQUARE(1000.f);
+	const float sqCommRad = SQUARE(militaryManager->GetCommDefRad(pos.distance2D(basePos)));
+	float minSqDist = sqCommRad;
 
 	CEnemyInfo* bestTarget = nullptr;
 	CEnemyInfo* worstTarget = nullptr;
@@ -181,15 +189,16 @@ CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 		if (enemy->IsHidden() || (enemy->GetTasks().size() > 2)) {
 			continue;
 		}
-		const AIFloat3& ePos = enemy->GetPos();
 
+		const AIFloat3& ePos = enemy->GetPos();
 		const float sqDist = pos.SqDistance2D(ePos);
-		if ((basePos.SqDistance2D(ePos) > SQUARE(1000.f)) && (sqDist > minSqDist)) {
+		if ((basePos.SqDistance2D(ePos) > sqCommRad) && (sqDist > minSqDist)) {
 			continue;
 		}
 
 		const float power = threatMap->GetThreatAt(ePos);
 		if ((maxPower <= power)
+			|| (inflMap->GetAllyDefendInflAt(ePos) < INFL_EPS)
 			|| !terrainManager->CanMoveToPos(area, ePos))
 		{
 			continue;

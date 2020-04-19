@@ -118,6 +118,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, stockCost(.0f)
 		, jumpRange(.0f)
 		, retreat(-1.f)
+		, radius(-1.f)
 		, height(-1.f)
 		, topOffset(-1.f)
 {
@@ -510,6 +511,14 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 		}
 	}
 	isLander = !IsFloater() && !IsAbleToFly() && !IsAmphibious() && !IsSubmarine();
+}
+
+float CCircuitDef::GetRadius()
+{
+	if (radius < 0.f) {
+		radius = def->GetRadius();  // Forces loading of the unit model
+	}
+	return radius;
 }
 
 bool CCircuitDef::IsYTargetable(float elevation, float posY) {

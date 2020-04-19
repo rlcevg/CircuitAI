@@ -388,6 +388,7 @@ void CSetupManager::ReadConfig()
 		hide.frame = hhdd.get("time", -1).asInt() * FRAMES_PER_SEC;
 		hide.threat = hhdd.get("threat", 0.f).asFloat();
 		hide.isAir = hhdd.get("air", false).asBool();
+		hide.sqTaskRad = SQUARE(hhdd.get("task_rad", 2000.f).asFloat());
 	}
 
 	if (!commChoices.empty()) {

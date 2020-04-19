@@ -60,6 +60,14 @@ void CEnemyUnit::Init()
 	}
 }
 
+float CEnemyUnit::GetRadius() const
+{
+	if (data.cdef == nullptr) {
+		return 1.f;
+	}
+	return data.cdef->GetRadius();
+}
+
 bool CEnemyUnit::IsAttacker() const
 {
 	if (data.cdef == nullptr) {  // unknown enemy is a threat

@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_MODULE_MILITARYMANAGER_H_
 
 #include "module/UnitModule.h"
+#include "setup/DefenceMatrix.h"
 #include "task/fighter/FighterTask.h"
 #include "unit/CircuitDef.h"
 
@@ -19,7 +20,6 @@ namespace circuit {
 
 class CGameTask;
 class CBDefenceTask;
-class CDefenceMatrix;
 class CRetreatTask;
 
 class CMilitaryManager: public IUnitModule {
@@ -94,6 +94,9 @@ public:
 	const std::vector<CCircuitDef*>& GetWaterDefenders() const { return waterDefenders; }
 	CCircuitDef* GetBigGunDef() const { return bigGunDef; }
 	CCircuitDef* GetDefaultPorc() const { return defaultPorc; }
+
+	float GetBaseDefRange() const { return defence->GetBaseRange(); }
+	float GetCommDefRad(float baseDist) const { return defence->GetCommRad(baseDist); }
 
 private:
 	void Watchdog();

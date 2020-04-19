@@ -16,6 +16,7 @@
 namespace circuit {
 
 class CCircuitAI;
+struct STerrainMapArea;
 
 class CEnemyManager {
 public:
@@ -127,6 +128,11 @@ private:
 		float threat;
 	};
 	std::array<SEnemyInfo, CMaskHandler::GetMaxMasks()> enemyInfos{{{0.f}, {0.f}}};
+
+	std::set<STerrainMapArea*> areaInfo;
+public:
+	void ClearArea() { areaInfo.clear(); }
+	void AddArea(STerrainMapArea* area) { areaInfo.insert(area); }
 };
 
 } // namespace circuit

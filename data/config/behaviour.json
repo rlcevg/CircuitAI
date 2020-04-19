@@ -4,7 +4,6 @@
 	"scout": 1,  // max scout units out of raiders
 	"raid": [4.0, 20.0],  // [<min>, <avg>] power of raider squad
 	"attack": 9.0,  // min power of attack group
-	"def_rad": 5,  // defence radius
 	"thr_mod": {
 		"attack": [0.55, 0.575],  // [<min>, <max>] enemy threat modifier for target selection of attack task
 		"defence": [1.10, 1.15],  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
@@ -18,6 +17,12 @@
 		"static": 1.0,  // additional 64-elmo-cells for static units
 		"speed": [0.75, 4]  // [<64elmo_cells_speed_mod>, <max_64elmo_cells>]
 	}
+},
+
+"defence": {
+	"infl_rad": 5,  // influenece cell radius for defendAlly map
+	"base_rad": [1000.0, 3000.0],  // defend if enemy within clamp(map_diagonal/2, 1000, 3000) radius
+	"comm_rad": [1000.0, 300.0]  // 0 distance from base ~ 1000, base_rad ~ 300.0
 },
 
 // If unit's health drops below specified percent it will retreat
@@ -648,6 +653,7 @@
 	"bomberheavy": {
 		"role": ["bomber", "air"],  // FIXME: should act as anti_heavy?
 		"attribute": ["anti_heavy"],
+		"fire_state": "return",
 		"limit": 4,
 		"since": 420,
 		"retreat": 0.95,

@@ -36,6 +36,7 @@ public:
 			int frame;
 			float threat;
 			bool isAir;
+			float sqTaskRad;
 		} hide;
 	};
 	using StartFunc = std::function<void (const springai::AIFloat3& pos)>;

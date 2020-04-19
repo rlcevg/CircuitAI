@@ -839,6 +839,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	CCircuitDef* hopeDef = nullptr;
 	bool isLastHope = isEnergyStalling;
 	metalIncome = std::min(metalIncome, energyIncome) * energyFactor;
+	const float buildPower = std::min(builderManager->GetBuildPower(), metalIncome);
 	const int taskSize = builderManager->GetTasks(IBuilderTask::BuildType::ENERGY).size();
 	const float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.25f : ecoFactor);
 
@@ -854,7 +855,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 
 		if (engy.cdef->GetCount() < engy.limit) {
 			isLastHope = false;
-			if (taskSize < (int)(metalIncome / engy.cost * 8 + 1)) {
+			if (taskSize < (int)(buildPower / engy.cost * 8 + 1)) {
 				bestDef = engy.cdef;
 				// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
 				//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
@@ -872,7 +873,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			break;
 		} else if (hopeDef == nullptr) {
 			hopeDef = engy.cdef;
-			isLastHope = isLastHope && (taskSize < (int)(metalIncome / hopeDef->GetCost() * 8 + 1));
+			isLastHope = isLastHope && (taskSize < (int)(buildPower / hopeDef->GetCost() * 8 + 1));
 		}
 	}
 	if (isLastHope) {

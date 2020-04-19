@@ -8,6 +8,7 @@
 #include "setup/DefenceMatrix.h"
 #include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
+#include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/math/HierarchCluster.h"
@@ -15,6 +16,7 @@
 #include "util/math/EncloseCircle.h"
 #include "util/Scheduler.h"
 #include "util/Utils.h"
+#include "json/json.h"
 
 #include "spring/SpringMap.h"
 
@@ -24,12 +26,30 @@ using namespace springai;
 
 CDefenceMatrix::CDefenceMatrix(CCircuitAI* circuit)
 		: metalManager(nullptr)
+		, baseRange(0.f)
+		, commRadFraction(0.f)
+		, commRadBegin(0.f)
 {
 	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CDefenceMatrix::Init, this, circuit));
+
+	ReadConfig(circuit);
 }
 
 CDefenceMatrix::~CDefenceMatrix()
 {
+}
+
+void CDefenceMatrix::ReadConfig(CCircuitAI* circuit)
+{
+	const Json::Value& defence = circuit->GetSetupManager()->GetConfig()["defence"];
+	const Json::Value& baseRad = defence["base_rad"];
+	const float min = baseRad.get((unsigned)0, 1000.f).asFloat();
+	const float max = baseRad.get((unsigned)1, 3000.f).asFloat();
+	baseRange = utils::clamp(CTerrainManager::GetTerrainDiagonal() * 0.5f, min, max);
+	const Json::Value& commRad = defence["comm_rad"];
+	commRadBegin = commRad.get((unsigned)0, 1000.f).asFloat();
+	const float commRadEnd = commRad.get((unsigned)1, 300.f).asFloat();
+	commRadFraction = (commRadEnd - commRadBegin) / baseRange;
 }
 
 void CDefenceMatrix::Init(CCircuitAI* circuit)

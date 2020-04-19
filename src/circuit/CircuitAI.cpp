@@ -1277,6 +1277,14 @@ void CCircuitAI::UnregisterEnemyInfo(CEnemyInfo* enemy)
 	delete enemy;
 }
 
+CEnemyInfo* CCircuitAI::GetEnemyInfo(Unit* u) const
+{
+	if (u == nullptr) {
+		return nullptr;
+	}
+	return GetEnemyInfo(u->GetUnitId());
+}
+
 CEnemyInfo* CCircuitAI::GetEnemyInfo(ICoreUnit::Id unitId) const
 {
 	auto it = enemyInfos.find(unitId);

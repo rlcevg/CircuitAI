@@ -38,8 +38,6 @@ using namespace springai;
 #define MAX_ALLOWED_WATER_DAMAGE_GMM	1e3f
 #define MAX_ALLOWED_WATER_DAMAGE_HMM	1e4f
 
-int CTerrainData::terrainWidth(0);
-int CTerrainData::terrainHeight(0);
 float CTerrainData::boundX(0.f);
 float CTerrainData::boundZ(0.f);
 int CTerrainData::convertStoP(1);
@@ -148,10 +146,10 @@ void CTerrainData::Init(CCircuitAI* circuit)
 
 	int mapWidth = map->GetWidth();
 	int mapHeight = map->GetHeight();
-	terrainWidth = mapWidth * SQUARE_SIZE;
-	terrainHeight = mapHeight * SQUARE_SIZE;
-	boundX = terrainWidth + BOUND_EXT;
-	boundZ = terrainHeight + BOUND_EXT;
+	AIFloat3::maxxpos = mapWidth * SQUARE_SIZE;
+	AIFloat3::maxzpos = mapHeight * SQUARE_SIZE;
+	boundX = AIFloat3::maxxpos + BOUND_EXT;
+	boundZ = AIFloat3::maxzpos + BOUND_EXT;
 	convertStoP = DEFAULT_SLACK;  // = 2^x, should not be less than 16 (2*SUQARE_SIZE)
 	constexpr int SMALL_MAP = 8;
 	constexpr int LARGE_MAP = 16;
@@ -572,13 +570,13 @@ void CTerrainData::CorrectPosition(AIFloat3& position)
 {
 	if (position.x < 1) {
 		position.x = 1;
-	} else if (position.x > terrainWidth - 2) {
-		position.x = terrainWidth - 2;
+	} else if (position.x > AIFloat3::maxxpos - 2) {
+		position.x = AIFloat3::maxxpos - 2;
 	}
 	if (position.z < 1) {
 		position.z = 1;
-	} else if (position.z > terrainHeight - 2) {
-		position.z = terrainHeight - 2;
+	} else if (position.z > AIFloat3::maxzpos - 2) {
+		position.z = AIFloat3::maxzpos - 2;
 	}
 	// NOTE: Breaks flying and submerged units
 //	position.y = map->GetElevationAt(position.x, position.z);

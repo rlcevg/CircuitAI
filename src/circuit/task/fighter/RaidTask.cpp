@@ -274,9 +274,10 @@ void CRaidTask::FindTarget()
 	float minPower = maxPower;
 
 	const float sqOBDist = pos.SqDistance2D(circuit->GetSetupManager()->GetBasePos());
-	const bool isDefender = sqOBDist < SQUARE(3000.f);  // FIXME: Make max distance configurable
+	const float baseRange = circuit->GetMilitaryManager()->GetBaseDefRange();
+	const bool isDefender = sqOBDist < SQUARE(baseRange);
 	if (isDefender) {
-		maxPower *= 2.0f - 1.0f / 3000.f * sqrtf(sqOBDist);  // 200% near base
+		maxPower *= 2.0f - 1.0f / baseRange * sqrtf(sqOBDist);  // 200% near base
 		speed *= 2.f;
 	}
 

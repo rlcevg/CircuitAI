@@ -85,6 +85,7 @@ public:
 	void SetCost(float value) { data.cost = value; }
 	float GetCost() const { return data.cost; }
 
+	float GetRadius() const;
 	float GetHealth() const { return data.health; }
 	bool IsBeingBuilt() const { return data.isBeingBuilt; }
 	bool IsParalyzed() const { return data.isParalyzed; }

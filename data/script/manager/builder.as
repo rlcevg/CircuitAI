@@ -2,6 +2,8 @@
 #include "../commander.as"
 
 
+AIFloat3 lastPos;
+
 IUnitTask@ makeTask(CCircuitUnit@ unit)
 {
 //	const CCircuitDef@ cdef = unit.GetCircuitDef();
@@ -22,8 +24,8 @@ IUnitTask@ makeTask(CCircuitUnit@ unit)
 //
 //	return builderMgr.MakeBuilderTask(unit);
 
-	const AIFloat3 pos = unit.GetPos(ai.GetLastFrame());
-	aiDelPoint(pos);
-	aiAddPoint(pos, "task");
+	aiDelPoint(lastPos);
+	lastPos = unit.GetPos(ai.GetLastFrame());
+	aiAddPoint(lastPos, "task");
 	return builderMgr.DefaultMakeTask(unit);
 }

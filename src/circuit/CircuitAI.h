@@ -163,7 +163,7 @@ private:
 	CEnemyInfo* RegisterEnemyInfo(springai::Unit* e);
 	void UnregisterEnemyInfo(CEnemyInfo* enemy);
 public:
-	CEnemyInfo* GetEnemyInfo(springai::Unit* u) const { return GetEnemyInfo(u->GetUnitId()); }
+	CEnemyInfo* GetEnemyInfo(springai::Unit* u) const;
 	CEnemyInfo* GetEnemyInfo(ICoreUnit::Id unitId) const;
 	const EnemyInfos& GetEnemyInfos() const { return enemyInfos; }
 

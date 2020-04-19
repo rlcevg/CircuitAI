@@ -8,7 +8,9 @@
 #include "unit/enemy/EnemyManager.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "map/MapManager.h"
+#include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
+#include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
@@ -287,10 +289,13 @@ void CEnemyManager::DelEnemyCost(const CEnemyUnit* e)
 
 bool CEnemyManager::IsEnemyNear(const AIFloat3& pos, float maxThreat)
 {
+	CInfluenceMap* inflMap = circuit->GetInflMap();
 	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
+	const float sqCommRad = SQUARE(circuit->GetMilitaryManager()->GetCommDefRad(basePos.distance2D(pos)));
 	for (const CEnemyManager::SEnemyGroup& group : enemyGroups) {
 		if ((group.threat > 0.01f) && (group.threat < maxThreat)
-			&& ((basePos.SqDistance2D(group.pos) < SQUARE(1000.f)) || (pos.SqDistance2D(group.pos) < SQUARE(1000.f))))
+			&& (pos.SqDistance2D(group.pos) < sqCommRad)
+			&& (inflMap->GetAllyDefendInflAt(group.pos) > INFL_EPS))
 		{
 			return true;
 		}

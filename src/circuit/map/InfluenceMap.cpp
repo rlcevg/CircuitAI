@@ -70,8 +70,7 @@ CInfluenceMap::CInfluenceMap(CMapManager* manager)
 	drawVulnerability = inflData1.vulnerability.data();
 	drawFeatureInfl = inflData1.featureInfl.data();
 
-	const Json::Value& quota = circuit->GetSetupManager()->GetConfig()["quota"];
-	defRadius = quota.get("def_rad", 5.f).asFloat();
+	ReadConfig();
 }
 
 CInfluenceMap::~CInfluenceMap()
@@ -83,6 +82,13 @@ CInfluenceMap::~CInfluenceMap()
 		delete[] win.second;
 	}
 #endif
+}
+
+void CInfluenceMap::ReadConfig()
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	const Json::Value& defence = circuit->GetSetupManager()->GetConfig()["defence"];
+	defRadius = defence.get("infl_rad", 5.f).asFloat();
 }
 
 void CInfluenceMap::EnqueueUpdate()

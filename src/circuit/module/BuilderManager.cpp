@@ -833,32 +833,33 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 	const CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsRoleComm()) {  // hide commander?
 		// FIXME: Any combat builder, not only commander
-		CSetupManager* setupManager = circuit->GetSetupManager();
-		CEnemyManager* enemyManager = circuit->GetEnemyManager();
+		CSetupManager* setupMgr = circuit->GetSetupManager();
+		CEnemyManager* enemyMgr = circuit->GetEnemyManager();
+		CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
 		const AIFloat3 pos = unit->GetPos(circuit->GetLastFrame());
-		if ((pos.SqDistance2D(setupManager->GetBasePos()) < SQUARE(3000.f))
-			&& enemyManager->IsEnemyNear(pos, circuit->GetThreatMap()->GetUnitThreat(unit) * 1.5f))
+		if ((pos.SqDistance2D(setupMgr->GetBasePos()) < SQUARE(militaryMgr->GetBaseDefRange()))
+			&& enemyMgr->IsEnemyNear(pos, circuit->GetThreatMap()->GetUnitThreat(unit) * 1.5f))
 		{
 			return EnqueueCombat(1.5f);
 		}
 
-		const CSetupManager::SCommInfo::SHide* hide = setupManager->GetHide(cdef);
+		const CSetupManager::SCommInfo::SHide* hide = setupMgr->GetHide(cdef);
 		if (hide != nullptr) {
 			if ((circuit->GetLastFrame() < hide->frame) || (GetWorkerCount() <= 2)) {
 				return MakeBuilderTask(unit);
 			}
-			if (enemyManager->GetMobileThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat) {
-				return MakeCommTask(unit);
+			if (enemyMgr->GetMobileThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat) {
+				return MakeCommTask(unit, hide->sqTaskRad);
 			}
-			const bool isHide = (hide->isAir) && (enemyManager->GetEnemyCost(ROLE_TYPE(AIR)) > 1.f);
-			return isHide ? MakeCommTask(unit) : MakeBuilderTask(unit);
+			const bool isHide = (hide->isAir) && (enemyMgr->GetEnemyCost(ROLE_TYPE(AIR)) > 1.f);
+			return isHide ? MakeCommTask(unit, hide->sqTaskRad) : MakeBuilderTask(unit);
 		}
 	}
 
 	return MakeBuilderTask(unit);
 }
 
-IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
+IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, float sqMaxBaseRange)
 {
 	circuit->GetThreatMap()->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
@@ -882,8 +883,10 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
-			if (!candidate->CanAssignTo(unit) ||
-				(isNotReady && (candidate->GetBuildDef() != nullptr) && (candidate->GetPriority() != IBuilderTask::Priority::NOW)))
+			if (!candidate->CanAssignTo(unit)
+				|| (isNotReady
+					&& (candidate->GetBuildDef() != nullptr)
+					&& (candidate->GetPriority() != IBuilderTask::Priority::NOW)))
 			{
 				continue;
 			}
@@ -906,9 +909,9 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 
 			} else {
 
-				if ((basePos.SqDistance2D(buildPos) > SQUARE(2000.f)) ||  // FIXME: Make max distance configurable
-					!terrainManager->CanBuildAtSafe(unit, buildPos) ||  // ensure that path always exists
-					(inflMap->GetInfluenceAt(buildPos) < -INFL_EPS))  // safety check
+				if ((basePos.SqDistance2D(buildPos) > sqMaxBaseRange)
+					|| !terrainManager->CanBuildAtSafe(unit, buildPos)  // ensure that path always exists
+					|| (inflMap->GetInfluenceAt(buildPos) < -INFL_EPS))  // safety check
 				{
 					continue;
 				}
@@ -989,10 +992,11 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
-			if (!candidate->CanAssignTo(unit) || (isNotReady &&
-												  (candidate->GetPriority() != IBuilderTask::Priority::NOW) &&
-												  (candidate->GetBuildDef() != nullptr) &&
-												  !economyManager->IsIgnoreStallingPull(candidate)))
+			if (!candidate->CanAssignTo(unit)
+				|| (isNotReady
+					&& (candidate->GetPriority() != IBuilderTask::Priority::NOW)
+					&& (candidate->GetBuildDef() != nullptr)
+					&& !economyManager->IsIgnoreStallingPull(candidate)))
 			{
 				continue;
 			}
@@ -1017,9 +1021,9 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 
 				CCircuitDef* buildDef = candidate->GetBuildDef();
 				const float buildThreat = (buildDef != nullptr) ? buildDef->GetPower() : 0.f;
-				if ((threatMap->GetThreatAt(buildPos) > maxThreat + buildThreat) ||
-					!terrainManager->CanBuildAt(unit, buildPos) ||  // ensure that path always exists
-					(inflMap->GetInfluenceAt(buildPos) < -INFL_EPS))  // safety check
+				if ((threatMap->GetThreatAt(buildPos) > maxThreat + buildThreat)
+					|| !terrainManager->CanBuildAt(unit, buildPos)  // ensure that path always exists
+					|| (inflMap->GetInfluenceAt(buildPos) < -INFL_EPS))  // safety check
 				{
 					continue;
 				}

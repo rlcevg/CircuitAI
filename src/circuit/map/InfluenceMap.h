@@ -33,6 +33,10 @@ public:
 	CInfluenceMap(CMapManager* manager);
 	virtual ~CInfluenceMap();
 
+private:
+	void ReadConfig();
+
+public:
 	void EnqueueUpdate();
 	bool IsUpdating() const { return isUpdating; }
 

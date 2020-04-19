@@ -1363,6 +1363,22 @@ void CTerrainManager::UpdateAreaUsers(int interval)
 
 	// stagger area update
 	auto updatePath = [this]() {
+		// FIXME: DEBUG
+		if (!circuit->GetPathfinder()->IsUpdated()) {
+			circuit->GetEnemyManager()->ClearArea();
+			auto& groups = circuit->GetEnemyManager()->GetEnemyGroups();
+			for (const CEnemyManager::SEnemyGroup& group : groups) {
+				const std::vector<STerrainMapMobileType>& mobileTypes = GetMobileTypes();
+				for (const STerrainMapMobileType& mt : mobileTypes) {
+					int iS = GetSectorIndex(group.pos);
+					STerrainMapArea* area = mt.sector[iS].area;
+					if (area != nullptr) {
+						circuit->GetEnemyManager()->AddArea(area);
+					}
+				}
+			}
+		}
+		// FIXME: DEBUG
 		circuit->GetPathfinder()->UpdateAreaUsers(this);
 
 		OnAreaUsersUpdated();

@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_SETUP_ALLYTEAM_H_
 
 #include "unit/enemy/EnemyManager.h"
+#include "util/math/QuadField.h"
 
 #include <memory>
 #include <map>
@@ -117,6 +118,7 @@ private:
 	int resignSize;
 	int lastUpdate;
 	AllyUnits friendlyUnits;  // owner
+	CQuadField quadField;
 
 	std::map<int, SClusterTeam> occupants;  // Cluster owner on start. clusterId: SClusterTeam
 	// FIXME: DEBUG

@@ -38,7 +38,7 @@
 		},
 		// income factor for energy, time is in seconds
 		// [[<start_factor>, <start_time>], [<end_factor>, <end_time>]]
-		"factor": [[0.15, 1], [8.0, 480]],  // FIXME: energy tasks bounded by workers
+		"factor": [[0.15, 1], [2.0, 600]],
 
 		"pylon": ["energypylon", "energysolar", "energywind"]
 	},

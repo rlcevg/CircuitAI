@@ -161,7 +161,7 @@ void CBombTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	IFighterTask::OnUnitIdle(unit);
 	if (units.find(unit) != units.end()) {
-		Update();
+		Execute(unit, false);
 	}
 }
 
@@ -192,11 +192,11 @@ CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, co
 //	const float maxAltitude = cdef->GetAltitude();
 	const float speed = cdef->GetSpeed() / 1.75f;
 	const int canTargetCat = cdef->GetTargetCategory();
-	const int noChaseCat = cdef->GetNoChaseCategory();
+//	const int noChaseCat = cdef->GetNoChaseCategory();
 //	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize(),
 //								 cdef->GetLosRadius()) * 2;
 	const float sqRange = (lastTarget != nullptr) ? pos.SqDistance2D(lastTarget->GetPos()) + 1.f : SQUARE(2000.0f);
-	float maxThreat = .0f;
+	float maxCost = .0f;
 
 	COOAICallback* callback = circuit->GetCallback();
 	float aoe = std::min(cdef->GetAoe() + SQUARE_SIZE, DEFAULT_SLACK * 2.f);
@@ -210,9 +210,7 @@ CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, co
 	}
 
 	CEnemyInfo* bestTarget = nullptr;
-	CEnemyInfo* mediumTarget = nullptr;
-	CEnemyInfo* worstTarget = nullptr;
-	static F3Vec enemyPositions;  // NOTE: micro-opt
+	AIFloat3 endPos = -RgtVector;
 	threatMap->SetThreatType(unit);
 	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	for (auto& kv : enemies) {
@@ -220,17 +218,16 @@ CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, co
 		if (enemy->IsHidden()) {
 			continue;
 		}
-		float power = threatMap->GetThreatAt(enemy->GetPos()) - enemy->GetThreat();
+		const AIFloat3& ePos = enemy->GetPos();
+		float power = threatMap->GetThreatAt(ePos) - enemy->GetThreat();
 		if ((maxPower <= power) ||
-			(notAW && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
+			(notAW && (ePos.y < -SQUARE_SIZE * 5)))
 		{
 			continue;
 		}
 
 		int targetCat;
 //		float altitude;
-		float defThreat;
-		bool isBuilder;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			if (edef->GetSpeed() > speed) {
@@ -241,68 +238,182 @@ CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, co
 				continue;
 			}
 //			altitude = edef->GetAltitude();
-			defThreat = edef->GetPower();
-			isBuilder = edef->IsEnemyRoleAny(CCircuitDef::RoleMask::BUILDER | CCircuitDef::RoleMask::COMM);
 		} else {
 			targetCat = UNKNOWN_CATEGORY;
 //			altitude = 0.f;
-			defThreat = enemy->GetThreat();
-			isBuilder = false;
 		}
 
-		float sumPower = 0.f;
-		for (IFighterTask* task : enemy->GetTasks()) {
-			sumPower += task->GetAttackPower();
-		}
-		if (sumPower > defThreat) {
-			continue;
-		}
-
-		float sqDist = pos.SqDistance2D(enemy->GetPos());
-		if ((sqDist < sqRange) && enemy->IsInRadarOrLOS()/* && (altitude < maxAltitude)*/) {
-			if (isBuilder) {
-				if (noAllies(enemy->GetPos())) {
-					bestTarget = enemy;
-					maxThreat = std::numeric_limits<float>::max();
+		if (enemy->IsInRadarOrLOS() && noAllies(ePos)/* && (altitude < maxAltitude)*/) {
+			float cost = 0.f;
+			auto enemies = circuit->GetCallback()->GetEnemyUnitsIn(ePos, aoe);
+			for (Unit* e : enemies) {
+				CEnemyInfo* ei = circuit->GetEnemyInfo(e);
+				if (ei == nullptr) {
+					continue;
 				}
-			} else if (maxThreat <= defThreat) {
-				if (noAllies(enemy->GetPos())) {
+				// FIXME: Finish
+//                if (near.getHealth() > damage * (1 - near.distanceTo(e.getPos()) * falloff)) {
+//                    metalKilled += 0.33 * near.getMetalCost() * damage * (1 - near.distanceTo(e.getPos()) * falloff) / near.getDef().getHealth();
+//                } else {
+//                    metalKilled += near.getMetalCost();
+//                }
+				cost += ei->GetCost();
+				delete e;
+			}
+			if (maxCost < cost) {
+				maxCost = cost;
+				float sqDist = pos.SqDistance2D(ePos);
+				if (sqDist < sqRange) {
 					bestTarget = enemy;
-					maxThreat = defThreat;
-				}
-			} else if ((bestTarget == nullptr) && noAllies(enemy->GetPos())) {
-				if ((targetCat & noChaseCat) == 0) {
-					mediumTarget = enemy;
-				} else if (mediumTarget == nullptr) {
-					worstTarget = enemy;
+				} else {
+					endPos = ePos;
+					bestTarget = nullptr;
 				}
 			}
-			continue;
 		}
-//		if (sqDist < SQUARE(2000.f)) {  // maxSqDist
-			enemyPositions.push_back(enemy->GetPos());
-//		}
-	}
-	if (bestTarget == nullptr) {
-		bestTarget = (mediumTarget != nullptr) ? mediumTarget : worstTarget;
 	}
 
 	path.Clear();
 	if (bestTarget != nullptr) {
-		enemyPositions.clear();
 		return bestTarget;
 	}
-	if (enemyPositions.empty()) {
+	if (!utils::is_valid(endPos)) {
 		return nullptr;
 	}
 
 	AIFloat3 startPos = pos;
 	const float range = std::max<float>(cdef->GetLosRadius(), threatMap->GetSquareSize());
 	circuit->GetPathfinder()->SetMapData(unit, threatMap, circuit->GetLastFrame());
-	circuit->GetPathfinder()->FindBestPath(path, startPos, range, enemyPositions);
-	enemyPositions.clear();
+	circuit->GetPathfinder()->MakePath(path, startPos, endPos, range);
 
 	return nullptr;
 }
+
+//CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, const AIFloat3& pos, PathInfo& path)
+//{
+//	// TODO: 1) Bombers should constantly harass undefended targets and not suicide.
+//	//       2) Fat target getting close to base should gain priority and be attacked by group if high AA threat.
+//	//       3) Avoid RoleAA targets.
+//	CCircuitAI* circuit = manager->GetCircuit();
+//	CThreatMap* threatMap = circuit->GetThreatMap();
+//	CCircuitDef* cdef = unit->GetCircuitDef();
+//	const bool notAW = !cdef->HasAntiWater();
+//	const float scale = (cdef->GetMinRange() > 300.0f) ? 4.0f : 1.0f;
+//	const float maxPower = threatMap->GetUnitThreat(unit) * scale * powerMod;
+////	const float maxAltitude = cdef->GetAltitude();
+//	const float speed = cdef->GetSpeed() / 1.75f;
+//	const int canTargetCat = cdef->GetTargetCategory();
+//	const int noChaseCat = cdef->GetNoChaseCategory();
+////	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize(),
+////								 cdef->GetLosRadius()) * 2;
+//	const float sqRange = (lastTarget != nullptr) ? pos.SqDistance2D(lastTarget->GetPos()) + 1.f : SQUARE(2000.0f);
+//	float maxThreat = .0f;
+//
+//	COOAICallback* callback = circuit->GetCallback();
+//	float aoe = std::min(cdef->GetAoe() + SQUARE_SIZE, DEFAULT_SLACK * 2.f);
+//	std::function<bool (const AIFloat3& pos)> noAllies = [](const AIFloat3& pos) {
+//		return true;
+//	};
+//	if (aoe > SQUARE_SIZE * 2) {
+//		noAllies = [callback, aoe](const AIFloat3& pos) {
+//			return !callback->IsFriendlyUnitsIn(pos, aoe);
+//		};
+//	}
+//
+//	CEnemyInfo* bestTarget = nullptr;
+//	CEnemyInfo* mediumTarget = nullptr;
+//	CEnemyInfo* worstTarget = nullptr;
+//	static F3Vec enemyPositions;  // NOTE: micro-opt
+//	threatMap->SetThreatType(unit);
+//	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
+//	for (auto& kv : enemies) {
+//		CEnemyInfo* enemy = kv.second;
+//		if (enemy->IsHidden()) {
+//			continue;
+//		}
+//		float power = threatMap->GetThreatAt(enemy->GetPos()) - enemy->GetThreat();
+//		if ((maxPower <= power) ||
+//			(notAW && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
+//		{
+//			continue;
+//		}
+//
+//		int targetCat;
+////		float altitude;
+//		float defThreat;
+//		bool isBuilder;
+//		CCircuitDef* edef = enemy->GetCircuitDef();
+//		if (edef != nullptr) {
+//			if (edef->GetSpeed() > speed) {
+//				continue;
+//			}
+//			targetCat = edef->GetCategory();
+//			if ((targetCat & canTargetCat) == 0) {
+//				continue;
+//			}
+////			altitude = edef->GetAltitude();
+//			defThreat = edef->GetPower();
+//			isBuilder = edef->IsEnemyRoleAny(CCircuitDef::RoleMask::BUILDER | CCircuitDef::RoleMask::COMM);
+//		} else {
+//			targetCat = UNKNOWN_CATEGORY;
+////			altitude = 0.f;
+//			defThreat = enemy->GetThreat();
+//			isBuilder = false;
+//		}
+//
+//		float sumPower = 0.f;
+//		for (IFighterTask* task : enemy->GetTasks()) {
+//			sumPower += task->GetAttackPower();
+//		}
+//		if (sumPower > defThreat) {
+//			continue;
+//		}
+//
+//		float sqDist = pos.SqDistance2D(enemy->GetPos());
+//		if ((sqDist < sqRange) && enemy->IsInRadarOrLOS()/* && (altitude < maxAltitude)*/) {
+//			if (isBuilder) {
+//				if (noAllies(enemy->GetPos())) {
+//					bestTarget = enemy;
+//					maxThreat = std::numeric_limits<float>::max();
+//				}
+//			} else if (maxThreat <= defThreat) {
+//				if (noAllies(enemy->GetPos())) {
+//					bestTarget = enemy;
+//					maxThreat = defThreat;
+//				}
+//			} else if ((bestTarget == nullptr) && noAllies(enemy->GetPos())) {
+//				if ((targetCat & noChaseCat) == 0) {
+//					mediumTarget = enemy;
+//				} else if (mediumTarget == nullptr) {
+//					worstTarget = enemy;
+//				}
+//			}
+//			continue;
+//		}
+////		if (sqDist < SQUARE(2000.f)) {  // maxSqDist
+//			enemyPositions.push_back(enemy->GetPos());
+////		}
+//	}
+//	if (bestTarget == nullptr) {
+//		bestTarget = (mediumTarget != nullptr) ? mediumTarget : worstTarget;
+//	}
+//
+//	path.Clear();
+//	if (bestTarget != nullptr) {
+//		enemyPositions.clear();
+//		return bestTarget;
+//	}
+//	if (enemyPositions.empty()) {
+//		return nullptr;
+//	}
+//
+//	AIFloat3 startPos = pos;
+//	const float range = std::max<float>(cdef->GetLosRadius(), threatMap->GetSquareSize());
+//	circuit->GetPathfinder()->SetMapData(unit, threatMap, circuit->GetLastFrame());
+//	circuit->GetPathfinder()->FindBestPath(path, startPos, range, enemyPositions);
+//	enemyPositions.clear();
+//
+//	return nullptr;
+//}
 
 } // namespace circuit

@@ -230,6 +230,7 @@ public:
 	void SetRetreat(float value) { retreat = value; }
 	float GetRetreat()   const { return retreat; }
 
+	float GetRadius();
 	bool IsYTargetable(float elevation, float posY);
 	const springai::AIFloat3& GetMidPosOffset() const { return midPosOffset; }
 
@@ -312,6 +313,7 @@ private:
 	float jumpRange;
 	float retreat;
 
+	float radius;
 	float height;
 	float topOffset;  // top point offset in water
 	springai::AIFloat3 midPosOffset;
