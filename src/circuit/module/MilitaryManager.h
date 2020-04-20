@@ -95,6 +95,7 @@ public:
 	CCircuitDef* GetBigGunDef() const { return bigGunDef; }
 	CCircuitDef* GetDefaultPorc() const { return defaultPorc; }
 
+	void SetBaseDefRange(float range) { defence->SetBaseRange(range); }
 	float GetBaseDefRange() const { return defence->GetBaseRange(); }
 	float GetCommDefRadBegin() const { return defence->GetCommRadBegin(); }
 	float GetCommDefRad(float baseDist) const { return defence->GetCommRad(baseDist); }

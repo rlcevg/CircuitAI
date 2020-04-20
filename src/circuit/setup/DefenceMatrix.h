@@ -40,6 +40,7 @@ public:
 	std::vector<SDefPoint>& GetDefPoints(int index) { return clusterInfos[index].defPoints; }
 	SDefPoint* GetDefPoint(const springai::AIFloat3& pos, float cost);
 
+	void SetBaseRange(float range);
 	float GetBaseRange() const { return baseRange; }
 	float GetCommRadBegin() const { return commRadBegin; }
 	float GetCommRad(float baseDist) const {
@@ -50,6 +51,8 @@ private:
 	CMetalManager* metalManager;
 	std::vector<SClusterInfo> clusterInfos;
 
+	float baseRadMin;
+	float baseRadMax;
 	float baseRange;
 	float commRadBegin;
 	float commRadFraction;

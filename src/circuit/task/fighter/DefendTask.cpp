@@ -210,16 +210,14 @@ void CDefendTask::FindTarget()
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
-	float maxPower = attackPower * powerMod;
+	const float maxPower = attackPower * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 
-	const float sqOBDist = pos.SqDistance2D(circuit->GetSetupManager()->GetBasePos());
+	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	const float baseRange = circuit->GetMilitaryManager()->GetBaseDefRange();
-	if (sqOBDist < SQUARE(baseRange)) {
-		maxPower *= 2.0f - 1.0f / baseRange * sqrtf(sqOBDist);  // 200% near base
-	}
+	const float sqBaseRange = SQUARE(baseRange);
 
 	CEnemyInfo* bestTarget = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
@@ -233,11 +231,20 @@ void CDefendTask::FindTarget()
 		if (enemy->IsHidden() || (enemy->GetTasks().size() > 2)) {
 			continue;
 		}
+
 		const AIFloat3& ePos = enemy->GetPos();
-		if ((maxPower <= threatMap->GetThreatAt(ePos))
-			|| (inflMap->GetAllyDefendInflAt(ePos) < INFL_EPS)
+		if ((inflMap->GetAllyDefendInflAt(ePos) < INFL_EPS)
 			|| !terrainManager->CanMoveToPos(area, ePos))
 		{
+			continue;
+		}
+
+		const float sqEBDist = basePos.SqDistance2D(ePos);
+		float checkPower = maxPower;
+		if (sqEBDist < sqBaseRange) {
+			checkPower *= 2.0f - 1.0f / baseRange * sqrtf(sqEBDist);  // 200% near base
+		}
+		if (checkPower <= threatMap->GetThreatAt(ePos)) {
 			continue;
 		}
 

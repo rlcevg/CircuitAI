@@ -15,7 +15,9 @@
 	"factorycloak": {
 		// Adjusts the priority of factory choice (factories with map_percent < 20 are ignored)
 		// map_percent is [20..100]
-		// On start: priority ~= map_percent * importance0 + random(-20..+20)
+		// On start:
+		//   if factory has available builder in current frame: priority ~= map_percent * importance0 + random(-20..+20)
+		//   if factory's builder unavailable in current frame: priority ~= map_percent * importance0 / 10 + random(-20..+20)
 		// During game: priority ~= map_percent * importance1 + random(-20..+20)
 		// importanceN = 1.0 by default if not set
 		"importance": [0.78, 0.2],

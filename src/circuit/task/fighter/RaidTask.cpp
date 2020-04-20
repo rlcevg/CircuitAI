@@ -262,8 +262,8 @@ void CRaidTask::FindTarget()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
-	float speed = SQUARE(highestSpeed * 0.8f / FRAMES_PER_SEC);
-	float maxPower = attackPower * powerMod;
+	const float maxSpeed = SQUARE(highestSpeed * 0.8f / FRAMES_PER_SEC);
+	const float maxPower = attackPower * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
@@ -273,13 +273,10 @@ void CRaidTask::FindTarget()
 	float maxThreat = 0.f;
 	float minPower = maxPower;
 
-	const float sqOBDist = pos.SqDistance2D(circuit->GetSetupManager()->GetBasePos());
+	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	const float baseRange = circuit->GetMilitaryManager()->GetBaseDefRange();
-	const bool isDefender = sqOBDist < SQUARE(baseRange);
-	if (isDefender) {
-		maxPower *= 2.0f - 1.0f / baseRange * sqrtf(sqOBDist);  // 200% near base
-		speed *= 2.f;
-	}
+	const float sqBaseRange = SQUARE(baseRange);
+	const bool isDefender = basePos.SqDistance2D(pos) < sqBaseRange;
 
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
 	CEnemyInfo* bestTarget = nullptr;
@@ -296,16 +293,25 @@ void CRaidTask::FindTarget()
 
 		const AIFloat3& ePos = enemy->GetPos();
 		const bool isEnemyUrgent = isDefender && (inflMap->GetAllyDefendInflAt(ePos) > INFL_EPS);
-		if (!isEnemyUrgent && !urgentPositions.empty()) {
+		if ((!isEnemyUrgent && !urgentPositions.empty())
+			|| !terrainManager->CanMoveToPos(area, ePos))
+		{
 			continue;
 		}
 
+		const float sqEBDist = basePos.SqDistance2D(ePos);
+		float checkPower = maxPower;
+		float checkSpeed = maxSpeed;
+		if (sqEBDist < sqBaseRange) {
+			checkPower *= 2.0f - 1.0f / baseRange * sqrtf(sqEBDist);  // 200% near base
+			checkSpeed *= 2.f;
+		}
 		const float power = threatMap->GetThreatAt(ePos);
-		if ((maxPower <= power) || !terrainManager->CanMoveToPos(area, ePos)) {
+		if (checkPower <= power) {
 			continue;
 		}
 		const AIFloat3& eVel = enemy->GetVel();
-		if ((eVel.SqLength2D() >= speed) && (eVel.dot2D(pos - ePos) < 0)) {
+		if ((eVel.SqLength2D() >= checkSpeed) && (eVel.dot2D(pos - ePos) < 0)) {
 			continue;
 		}
 

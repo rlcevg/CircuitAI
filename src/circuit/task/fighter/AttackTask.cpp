@@ -242,7 +242,7 @@ void CAttackTask::FindTarget()
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
-	const float speed = SQUARE(highestSpeed * 0.8f / FRAMES_PER_SEC);
+	const float maxSpeed = SQUARE(highestSpeed * 0.8f / FRAMES_PER_SEC);
 	const float maxPower = attackPower * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
@@ -270,7 +270,7 @@ void CAttackTask::FindTarget()
 			continue;
 		}
 		const AIFloat3& eVel = enemy->GetVel();
-		if ((eVel.SqLength2D() >= speed) && (eVel.dot2D(pos - ePos) < 0)) {
+		if ((eVel.SqLength2D() >= maxSpeed) && (eVel.dot2D(pos - ePos) < 0)) {
 			continue;
 		}
 

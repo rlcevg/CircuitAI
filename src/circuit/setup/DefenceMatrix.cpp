@@ -26,9 +26,6 @@ using namespace springai;
 
 CDefenceMatrix::CDefenceMatrix(CCircuitAI* circuit)
 		: metalManager(nullptr)
-		, baseRange(0.f)
-		, commRadBegin(0.f)
-		, commRadFraction(0.f)
 {
 	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CDefenceMatrix::Init, this, circuit));
 
@@ -43,9 +40,9 @@ void CDefenceMatrix::ReadConfig(CCircuitAI* circuit)
 {
 	const Json::Value& defence = circuit->GetSetupManager()->GetConfig()["defence"];
 	const Json::Value& baseRad = defence["base_rad"];
-	const float min = baseRad.get((unsigned)0, 1000.f).asFloat();
-	const float max = baseRad.get((unsigned)1, 3000.f).asFloat();
-	baseRange = utils::clamp(CTerrainManager::GetTerrainDiagonal() * 0.5f, min, max);
+	baseRadMin = baseRad.get((unsigned)0, 1000.f).asFloat();
+	baseRadMax = baseRad.get((unsigned)1, 3000.f).asFloat();
+	baseRange = utils::clamp(CTerrainManager::GetTerrainDiagonal() * 0.3f, baseRadMin, baseRadMax);
 	const Json::Value& commRad = defence["comm_rad"];
 	commRadBegin = commRad.get((unsigned)0, 1000.f).asFloat();
 	const float commRadEnd = commRad.get((unsigned)1, 300.f).asFloat();
@@ -118,6 +115,11 @@ CDefenceMatrix::SDefPoint* CDefenceMatrix::GetDefPoint(const AIFloat3& pos, floa
 		}
 	}
 	return &defPoints[idx];
+}
+
+void CDefenceMatrix::SetBaseRange(float range)
+{
+	baseRange = utils::clamp(range, baseRadMin, baseRadMax);
 }
 
 } // namespace circuit

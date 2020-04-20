@@ -7,6 +7,7 @@
 
 #include "setup/SetupManager.h"
 #include "setup/SetupData.h"
+#include "module/MilitaryManager.h"  // only for CalcLanePos
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
@@ -610,8 +611,11 @@ void CSetupManager::CalcLanePos()
 #ifdef DEBUG_VIS
 	circuit->GetDrawer()->AddPoint(lanePos, utils::int_to_string(circuit->GetSkirmishAIId()).c_str());
 	circuit->GetDrawer()->AddLine((basePos + lanePos) / 2, lanePos);
+	circuit->LOG("baseRange: %f", lanePos.distance2D(basePos));
 #endif  // DEBUG_VIS
 	// FIXME: DEBUG
+
+	circuit->GetMilitaryManager()->SetBaseDefRange(lanePos.distance2D(basePos));
 }
 
 bool CSetupManager::LocatePath(std::string& filename)

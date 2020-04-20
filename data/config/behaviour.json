@@ -22,7 +22,7 @@
 "defence": {
 	"infl_rad": 5,  // influenece cell radius for defendAlly map
 	"base_rad": [1000.0, 3000.0],  // defend if enemy within clamp(map_diagonal/2, 1000, 3000) radius
-	"comm_rad": [1000.0, 300.0]  // 0 distance from base ~ 1000, base_rad ~ 300.0
+	"comm_rad": [1100.0, 500.0]  // 0 distance from base ~ 1000, base_rad ~ 300.0
 },
 
 // If unit's health drops below specified percent it will retreat

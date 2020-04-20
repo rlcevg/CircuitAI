@@ -141,9 +141,6 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 		if (isStart) {
 			CCircuitDef* bdef = factoryManager->GetRoleDef(cdef, ROLE_TYPE(BUILDER));
 			importance = sfac.startImp * (((bdef != nullptr) && bdef->IsAvailable(frame)) ? 1.f : .1f);
-			// FIXME: DEBUG
-			circuit->LOG("%s | imp = %f | frame = %i", circuit->GetCircuitDef(sfac.id)->GetDef()->GetName(), sfac.startImp, frame);
-			// FIXME: DEBUG
 		} else {
 			importance = sfac.switchImp;
 		}
@@ -160,14 +157,8 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 			const float speedPercent = sfac.mapSpeedPerc;
 			const float mapPercent = (mtId < 0) ? airMapPerc : mobileType[mtId].areaLargest->percentOfMap;
 			percents[sfac.id] = offset + importance * (mapPercent + speedPercent);
-			// FIXME: DEBUG
-			circuit->LOG("%s | percent = %f | %f + %f * (%f + %f) ", circuit->GetCircuitDef(sfac.id)->GetDef()->GetName(), percents[sfac.id], offset, importance, mapPercent, speedPercent);
-			// FIXME: DEBUG
 		}
 	}
-	// FIXME: DEBUG
-	circuit->LOG("----");
-	// FIXME: DEBUG
 
 	if (availFacs.empty()) {
 		return nullptr;
