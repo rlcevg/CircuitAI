@@ -199,13 +199,14 @@ CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, co
 	float maxCost = .0f;
 
 	COOAICallback* callback = circuit->GetCallback();
-	float aoe = std::min(cdef->GetAoe() + SQUARE_SIZE, DEFAULT_SLACK * 2.f);
+	const float trueAoe = cdef->GetAoe() + SQUARE_SIZE;
+	const float allyAoe = std::min(trueAoe, DEFAULT_SLACK * 2.f);
 	std::function<bool (const AIFloat3& pos)> noAllies = [](const AIFloat3& pos) {
 		return true;
 	};
-	if (aoe > SQUARE_SIZE * 2) {
-		noAllies = [callback, aoe](const AIFloat3& pos) {
-			return !callback->IsFriendlyUnitsIn(pos, aoe);
+	if (allyAoe > SQUARE_SIZE * 2) {
+		noAllies = [callback, allyAoe](const AIFloat3& pos) {
+			return !callback->IsFriendlyUnitsIn(pos, allyAoe);
 		};
 	}
 
@@ -245,7 +246,7 @@ CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, co
 
 		if (enemy->IsInRadarOrLOS() && noAllies(ePos)/* && (altitude < maxAltitude)*/) {
 			float cost = 0.f;
-			auto enemies = circuit->GetCallback()->GetEnemyUnitsIn(ePos, aoe);
+			auto enemies = circuit->GetCallback()->GetEnemyUnitsIn(ePos, trueAoe);
 			for (Unit* e : enemies) {
 				CEnemyInfo* ei = circuit->GetEnemyInfo(e);
 				if (ei == nullptr) {
