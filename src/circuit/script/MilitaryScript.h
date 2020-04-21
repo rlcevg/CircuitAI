@@ -15,6 +15,8 @@ class asIScriptFunction;
 namespace circuit {
 
 class CMilitaryManager;
+class IUnitTask;
+class CCircuitUnit;
 
 class CMilitaryScript: public IScript {
 public:
@@ -24,12 +26,13 @@ public:
 	void Init() override;
 
 public:
+	IUnitTask* MakeTask(CCircuitUnit* unit);
 	bool IsAirValid();
 
 private:
 	struct SScriptInfo {
-		SScriptInfo() : isAirValid(nullptr) {}
-		asIScriptFunction* isAirValid;
+		asIScriptFunction* makeTask = nullptr;
+		asIScriptFunction* isAirValid = nullptr;
 	} info;
 };
 

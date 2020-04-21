@@ -790,7 +790,7 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 
 IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 {
-	return static_cast<CBuilderScript*>(script)->MakeTask(unit);
+	return static_cast<CBuilderScript*>(script)->MakeTask(unit);  // DefaultMakeTask
 }
 
 void CBuilderManager::AbortTask(IUnitTask* task)

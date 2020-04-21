@@ -1,8 +1,8 @@
 #include "../commander.as"
 
 
-void openStrategy(const CCircuitDef@ facDef, const AIFloat3& in pos) {
-	const array<Opener::SO>@ opener = Opener::getOpener(facDef);
+void OpenStrategy(const CCircuitDef@ facDef, const AIFloat3& in pos) {
+	const array<Opener::SO>@ opener = Opener::GetOpener(facDef);
 	if (opener is null) {
 		return;
 	}

@@ -670,26 +670,7 @@ void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 
 IUnitTask* CFactoryManager::MakeTask(CCircuitUnit* unit)
 {
-	const IUnitTask* task = nullptr;
-
-	if (unit->GetCircuitDef() == assistDef) {
-		task = CreateAssistTask(unit);
-
-	} else {
-
-		for (const CRecruitTask* candy : factoryTasks) {
-			if (candy->CanAssignTo(unit)) {
-				task = candy;
-				break;
-			}
-		}
-
-		if (task == nullptr) {
-			task = CreateFactoryTask(unit);
-		}
-	}
-
-	return const_cast<IUnitTask*>(task);  // if nullptr then continue to Wait (or Idle)
+	return static_cast<CFactoryScript*>(script)->MakeTask(unit);  // DefaultMakeTask
 }
 
 void CFactoryManager::AbortTask(IUnitTask* task)
@@ -1134,6 +1115,30 @@ void CFactoryManager::DisableFactory(CCircuitUnit* unit)
 	}
 
 	checkBuilderFactory(circuit->GetLastFrame());
+}
+
+IUnitTask* CFactoryManager::DefaultMakeTask(CCircuitUnit* unit)
+{
+	const IUnitTask* task = nullptr;
+
+	if (unit->GetCircuitDef() == assistDef) {
+		task = CreateAssistTask(unit);
+
+	} else {
+
+		for (const CRecruitTask* candy : factoryTasks) {
+			if (candy->CanAssignTo(unit)) {
+				task = candy;
+				break;
+			}
+		}
+
+		if (task == nullptr) {
+			task = CreateFactoryTask(unit);
+		}
+	}
+
+	return const_cast<IUnitTask*>(task);  // if nullptr then continue to Wait (or Idle)
 }
 
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)

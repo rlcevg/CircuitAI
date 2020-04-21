@@ -219,7 +219,7 @@ void CScriptManager::ReturnContext(asIScriptContext* ctx)
 
 bool CScriptManager::Exec(asIScriptContext* ctx)
 {
-	SCOPED_TIME(circuit, ctx->GetFunction()->GetName());
+	SCOPED_TIME(circuit, std::string(ctx->GetFunction()->GetNamespace()) + "::" + ctx->GetFunction()->GetName());
 
 	int r = ctx->Execute();
 	if (r != asEXECUTION_FINISHED) {
@@ -374,7 +374,7 @@ void CScriptManager::RegisterCircuitAI()
 	r = engine->RegisterObjectMethod("IUnitTask", "int GetRefCount()", asMETHODPR(IRefCounter, GetRefCount, (), int), asCALL_THISCALL); ASSERT(r >= 0);
 
 	Load("init", "init.as");
-	asIScriptFunction* func = GetFunc(engine->GetModule("init"), "void init()");
+	asIScriptFunction* func = GetFunc(engine->GetModule("init"), "void Init()");
 	if (func != nullptr) {
 		asIScriptContext* ctx = PrepareContext(func);
 		Exec(ctx);

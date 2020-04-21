@@ -1,3 +1,6 @@
+#include "../role.as"
+
+
 namespace Factory {
 
 string factorycloak  ("factorycloak");
@@ -26,4 +29,9 @@ Id SHIELD  = ai.GetCircuitDef(factoryshield).GetId();
 Id SHIP    = ai.GetCircuitDef(factoryship).GetId();
 Id STRIDER = ai.GetCircuitDef(striderhub).GetId();
 
+IUnitTask@ MakeTask(CCircuitUnit@ unit)
+{
+	return factoryMgr.DefaultMakeTask(unit);
 }
+
+}  // namespace Factory

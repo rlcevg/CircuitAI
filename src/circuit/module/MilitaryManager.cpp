@@ -611,58 +611,7 @@ void CMilitaryManager::DequeueTask(IFighterTask* task, bool done)
 
 IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 {
-	// FIXME: Make central task assignment system.
-	//        MilitaryManager should decide what tasks to merge.
-	static const std::map<CCircuitDef::RoleT, IFighterTask::FightType> types = {
-		{ROLE_TYPE(SCOUT),   IFighterTask::FightType::SCOUT},
-		{ROLE_TYPE(RAIDER),  IFighterTask::FightType::RAID},
-		{ROLE_TYPE(ARTY),    IFighterTask::FightType::ARTY},
-		{ROLE_TYPE(AA),      IFighterTask::FightType::AA},
-		{ROLE_TYPE(AH),      IFighterTask::FightType::AH},
-		{ROLE_TYPE(BOMBER),  IFighterTask::FightType::BOMB},
-		{ROLE_TYPE(SUPPORT), IFighterTask::FightType::SUPPORT},
-		{ROLE_TYPE(MINE),    IFighterTask::FightType::SCOUT},  // FIXME
-		{ROLE_TYPE(SUPER),   IFighterTask::FightType::SUPER},
-	};
-	IFighterTask* task = nullptr;
-	CCircuitDef* cdef = unit->GetCircuitDef();
-	if (cdef->IsRoleSupport()) {
-		if (/*cdef->IsAttacker() && */GetTasks(IFighterTask::FightType::ATTACK).empty() && GetTasks(IFighterTask::FightType::DEFEND).empty()) {
-			task = EnqueueDefend(IFighterTask::FightType::ATTACK,
-								 IFighterTask::FightType::SUPPORT, minAttackers);
-		} else {
-			task = EnqueueTask(IFighterTask::FightType::SUPPORT);
-		}
-	} else {
-		auto it = types.find(cdef->GetMainRole());
-		if (it != types.end()) {
-			switch (it->second) {
-				case IFighterTask::FightType::RAID: {
-					if (cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
-						task = EnqueueTask(IFighterTask::FightType::SCOUT);
-					} else if (GetTasks(IFighterTask::FightType::RAID).empty()) {
-						task = EnqueueDefend(IFighterTask::FightType::RAID, raid.min);
-					}
-				} break;
-				case IFighterTask::FightType::AH: {
-					if (!cdef->IsRoleMine() && (circuit->GetEnemyManager()->GetEnemyCost(ROLE_TYPE(HEAVY)) < 1.f)) {
-						task = EnqueueTask(IFighterTask::FightType::ATTACK);
-					}
-				} break;
-				default: break;
-			}
-			if (task == nullptr) {
-				task = EnqueueTask(it->second);
-			}
-		} else {
-			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty();
-			const float power = std::max(minAttackers, circuit->GetEnemyManager()->GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize());
-			task = isDefend ? EnqueueDefend(IFighterTask::FightType::ATTACK, power)
-							: EnqueueTask(IFighterTask::FightType::ATTACK);
-		}
-	}
-
-	return task;
+	return static_cast<CMilitaryScript*>(script)->MakeTask(unit);  // DefaultMakeTask
 }
 
 void CMilitaryManager::AbortTask(IUnitTask* task)
@@ -1330,6 +1279,62 @@ void CMilitaryManager::MakeBaseDefence(const AIFloat3& pos)
 		defend = std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefence, this);
 		circuit->GetScheduler()->RunTaskEvery(defend, FRAMES_PER_SEC);
 	}
+}
+
+IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
+{
+	// FIXME: Make central task assignment system.
+	//        MilitaryManager should decide what tasks to merge.
+	static const std::map<CCircuitDef::RoleT, IFighterTask::FightType> types = {
+		{ROLE_TYPE(SCOUT),   IFighterTask::FightType::SCOUT},
+		{ROLE_TYPE(RAIDER),  IFighterTask::FightType::RAID},
+		{ROLE_TYPE(ARTY),    IFighterTask::FightType::ARTY},
+		{ROLE_TYPE(AA),      IFighterTask::FightType::AA},
+		{ROLE_TYPE(AH),      IFighterTask::FightType::AH},
+		{ROLE_TYPE(BOMBER),  IFighterTask::FightType::BOMB},
+		{ROLE_TYPE(SUPPORT), IFighterTask::FightType::SUPPORT},
+		{ROLE_TYPE(MINE),    IFighterTask::FightType::SCOUT},  // FIXME
+		{ROLE_TYPE(SUPER),   IFighterTask::FightType::SUPER},
+	};
+	IFighterTask* task = nullptr;
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	if (cdef->IsRoleSupport()) {
+		if (/*cdef->IsAttacker() && */GetTasks(IFighterTask::FightType::ATTACK).empty() && GetTasks(IFighterTask::FightType::DEFEND).empty()) {
+			task = EnqueueDefend(IFighterTask::FightType::ATTACK,
+								 IFighterTask::FightType::SUPPORT, minAttackers);
+		} else {
+			task = EnqueueTask(IFighterTask::FightType::SUPPORT);
+		}
+	} else {
+		auto it = types.find(cdef->GetMainRole());
+		if (it != types.end()) {
+			switch (it->second) {
+				case IFighterTask::FightType::RAID: {
+					if (cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
+						task = EnqueueTask(IFighterTask::FightType::SCOUT);
+					} else if (GetTasks(IFighterTask::FightType::RAID).empty()) {
+						task = EnqueueDefend(IFighterTask::FightType::RAID, raid.min);
+					}
+				} break;
+				case IFighterTask::FightType::AH: {
+					if (!cdef->IsRoleMine() && (circuit->GetEnemyManager()->GetEnemyCost(ROLE_TYPE(HEAVY)) < 1.f)) {
+						task = EnqueueTask(IFighterTask::FightType::ATTACK);
+					}
+				} break;
+				default: break;
+			}
+			if (task == nullptr) {
+				task = EnqueueTask(it->second);
+			}
+		} else {
+			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty();
+			const float power = std::max(minAttackers, circuit->GetEnemyManager()->GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize());
+			task = isDefend ? EnqueueDefend(IFighterTask::FightType::ATTACK, power)
+							: EnqueueTask(IFighterTask::FightType::ATTACK);
+		}
+	}
+
+	return task;
 }
 
 void CMilitaryManager::Watchdog()

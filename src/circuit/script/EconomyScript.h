@@ -33,8 +33,7 @@ public:
 
 private:
 	struct SScriptInfo {
-		SScriptInfo() : openStrategy(nullptr) {}
-		asIScriptFunction* openStrategy;
+		asIScriptFunction* openStrategy = nullptr;
 	} info;
 };
 

@@ -101,6 +101,8 @@ public:
 	float GetCommDefRad(float baseDist) const { return defence->GetCommRad(baseDist); }
 
 private:
+	IUnitTask* DefaultMakeTask(CCircuitUnit* unit);
+
 	void Watchdog();
 	void UpdateIdle();
 	void UpdateFight();

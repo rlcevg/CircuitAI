@@ -86,6 +86,7 @@ public:
 private:
 	void EnableFactory(CCircuitUnit* unit);
 	void DisableFactory(CCircuitUnit* unit);
+	IUnitTask* DefaultMakeTask(CCircuitUnit* unit);
 	IUnitTask* CreateFactoryTask(CCircuitUnit* unit);
 	IUnitTask* CreateAssistTask(CCircuitUnit* unit);
 

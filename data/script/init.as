@@ -1,15 +1,15 @@
 #include "role.as"
 
 
-int fibR(int n)
+int FibR(int n)
 {
 	if (n < 2) return n;
-	return (fibR(n-2) + fibR(n-1));
+	return (FibR(n-2) + FibR(n-1));
 }
 
-void init() {
+void Init() {
 //	for (int i = 0; i < 10; ++i) {
-//		fibR(30);
+//		FibR(30);
 //		aiLog("AngelScript Rules! " + i);
 //	}
 	aiLog("AngelScript Rules!");

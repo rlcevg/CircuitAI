@@ -30,8 +30,7 @@ public:
 
 private:
 	struct SScriptInfo {
-		SScriptInfo() : makeTask(nullptr) {}
-		asIScriptFunction* makeTask;
+		asIScriptFunction* makeTask = nullptr;
 	} info;
 };
 

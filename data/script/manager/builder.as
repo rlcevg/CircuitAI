@@ -2,9 +2,11 @@
 #include "../commander.as"
 
 
+namespace Builder {
+
 //AIFloat3 lastPos;
 
-IUnitTask@ makeTask(CCircuitUnit@ unit)
+IUnitTask@ MakeTask(CCircuitUnit@ unit)
 {
 //	const CCircuitDef@ cdef = unit.GetCircuitDef();
 //
@@ -29,3 +31,5 @@ IUnitTask@ makeTask(CCircuitUnit@ unit)
 //	aiAddPoint(lastPos, "task");
 	return builderMgr.DefaultMakeTask(unit);
 }
+
+}  // namespace Builder
