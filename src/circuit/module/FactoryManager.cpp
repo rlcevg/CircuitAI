@@ -716,7 +716,7 @@ CCircuitUnit* CFactoryManager::GetClosestFactory(AIFloat3 position)
 {
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 //	CTerrainManager::CorrectPosition(position);
-	int iS = terrainManager->GetSectorIndex(position);
+	const int iS = terrainManager->GetSectorIndex(position);
 	CCircuitUnit* factory = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
 	const int frame = circuit->GetLastFrame();
@@ -875,13 +875,29 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	const float maxCost = militaryManager->GetArmyCost();
 	const float range = unit->GetCircuitDef()->GetBuildDistance();
 	const AIFloat3& pos = unit->GetPos(frame);
+
+	CEnemyManager* enemyManager = circuit->GetEnemyManager();
+	const int iS = terrainManager->GetSectorIndex(pos);
+	auto isEnemyInArea = [iS, terrainManager, enemyManager](int frame, CCircuitDef* bd) {
+		if (frame < FRAMES_PER_SEC * 60 * 10) {
+			return true;
+		}
+		STerrainMapMobileType* mobileType = terrainManager->GetMobileType(bd->GetId());
+		if (mobileType != nullptr) {
+			STerrainMapArea* area = mobileType->sector[iS].area;
+			return enemyManager->IsEnemyInArea(area);
+		}
+		return true;
+	};
+
 	float magnitude = 0.f;
 	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
 		CCircuitDef* bd = facDef.buildDefs[i];
-		if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) ||
-			(bd->GetCost() > maxCost) ||
-			!bd->IsAvailable(frame) ||
-			!terrainManager->CanBeBuiltAt(bd, pos, range))
+		if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost()))
+			|| (bd->GetCost() > maxCost)
+			|| !bd->IsAvailable(frame)
+			|| !terrainManager->CanBeBuiltAt(bd, pos, range)
+			|| !isEnemyInArea(frame, bd))
 		{
 			continue;
 		}
@@ -899,12 +915,14 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		// When isResponse==false: candidates.empty() and magnitude==0
 		for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
 			CCircuitDef* bd = facDef.buildDefs[i];
-			if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) ||
-				!bd->IsAvailable(frame) ||
-				!terrainManager->CanBeBuiltAtSafe(bd, pos, range))
+			if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost()))
+				|| !bd->IsAvailable(frame)
+				|| !terrainManager->CanBeBuiltAtSafe(bd, pos, range)
+				|| !isEnemyInArea(frame, bd))
 			{
 				continue;
 			}
+
 			candidates.push_back(std::make_pair(bd, probs[i]));
 			magnitude += probs[i];
 		}

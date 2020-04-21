@@ -218,6 +218,8 @@ void CAllyTeam::EnemyDestroyed(CEnemyUnit* enemy, CCircuitAI* ai)
 	if (mapManager->EnemyDestroyed(enemy)) {
 		enemyManager->DelEnemyCost(enemy);
 	}
+
+	quadField.RemoveEnemyUnit(enemy);
 }
 
 void CAllyTeam::Update(CCircuitAI* ai)
@@ -230,7 +232,7 @@ void CAllyTeam::Update(CCircuitAI* ai)
 		if (circuit->GetLastFrame() % THREAT_UPDATE_RATE == uEnemyMark) {
 			EnqueueUpdate();
 		} else {
-			enemyManager->UpdateEnemyDatas();
+			enemyManager->UpdateEnemyDatas(quadField);
 		}
 //	}
 }

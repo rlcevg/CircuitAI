@@ -164,7 +164,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 						continue;
 					}
 
-					int iS = terrainManager->GetSectorIndex(spots[i].position);
+					const int iS = terrainManager->GetSectorIndex(spots[i].position);
 					STerrainMapArea* area = mobileType->sector[iS].area;
 					if ((area != nullptr) && area->areaUsable) {
 						validPoints[idx].push_back(i);
@@ -615,6 +615,7 @@ void CSetupManager::CalcLanePos()
 #endif  // DEBUG_VIS
 	// FIXME: DEBUG
 
+	// NOTE: #include "module/MilitaryManager.h"
 	circuit->GetMilitaryManager()->SetBaseDefRange(lanePos.distance2D(basePos));
 }
 

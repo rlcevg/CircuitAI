@@ -192,7 +192,7 @@ CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, co
 //	const float maxAltitude = cdef->GetAltitude();
 	const float speed = cdef->GetSpeed() / 1.75f;
 	const int canTargetCat = cdef->GetTargetCategory();
-//	const int noChaseCat = cdef->GetNoChaseCategory();
+	const int noChaseCat = cdef->GetNoChaseCategory();
 //	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize(),
 //								 cdef->GetLosRadius()) * 2;
 	const float sqRange = (lastTarget != nullptr) ? pos.SqDistance2D(lastTarget->GetPos()) + 1.f : SQUARE(2000.0f);
@@ -244,11 +244,14 @@ CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, co
 //			altitude = 0.f;
 		}
 
-		if (enemy->IsInRadarOrLOS() && noAllies(ePos)/* && (altitude < maxAltitude)*/) {
+		if (enemy->IsInRadarOrLOS() && ((targetCat & noChaseCat) == 0)
+			/*&& (altitude < maxAltitude)*/
+			&& noAllies(ePos))
+		{
 			float cost = 0.f;
-			auto enemies = circuit->GetCallback()->GetEnemyUnitsIn(ePos, trueAoe);
-			for (Unit* e : enemies) {
-				CEnemyInfo* ei = circuit->GetEnemyInfo(e);
+			auto enemies = circuit->GetCallback()->GetEnemyUnitIdsIn(ePos, trueAoe);
+			for (int enemyId : enemies) {
+				CEnemyInfo* ei = circuit->GetEnemyInfo(enemyId);
 				if (ei == nullptr) {
 					continue;
 				}
@@ -259,7 +262,6 @@ CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, co
 //                    metalKilled += near.getMetalCost();
 //                }
 				cost += ei->GetCost();
-				delete e;
 			}
 			if (maxCost < cost) {
 				maxCost = cost;

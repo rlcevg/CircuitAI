@@ -1517,4 +1517,10 @@ void CCircuitAI::DestroyGameAttribute()
 	}
 }
 
+void CCircuitAI::PrepareAreaUpdate()
+{
+	GetPathfinder()->SetAreaUpdated(false);  // one pathfinder for few allies
+	GetEnemyManager()->SetAreaUpdated(false);  // one enemy manager for few allies
+}
+
 } // namespace circuit

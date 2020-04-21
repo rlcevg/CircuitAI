@@ -315,6 +315,9 @@ private:
 	int badCategory;
 	int goodCategory;
 
+public:
+	void PrepareAreaUpdate();
+
 #ifdef DEBUG_VIS
 private:
 	std::shared_ptr<CDebugDrawer> debugDrawer;

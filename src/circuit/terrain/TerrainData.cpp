@@ -7,7 +7,6 @@
 
 #include "terrain/TerrainData.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/PathFinder.h"
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
 #include "util/Scheduler.h"
@@ -920,7 +919,7 @@ void CTerrainData::ScheduleUsersUpdate()
 													circuit->GetTerrainManager(),
 													interval);
 			circuit->GetScheduler()->RunTaskAfter(task, ++aiToUpdate);
-			circuit->GetPathfinder()->SetUpdated(false);  // one pathfinder for few allies
+			circuit->PrepareAreaUpdate();
 		}
 	}
 	// Check if there are any ai to update

@@ -16,6 +16,7 @@
 namespace circuit {
 
 class CCircuitAI;
+class CQuadField;
 struct STerrainMapArea;
 
 class CEnemyManager {
@@ -42,7 +43,7 @@ public:
 	const std::vector<SEnemyData>& GetHostileDatas() const { return hostileDatas; }
 	const std::vector<SEnemyData>& GetPeaceDatas() const { return peaceDatas; }
 
-	void UpdateEnemyDatas();
+	void UpdateEnemyDatas(CQuadField& quadField);
 
 	void PrepareUpdate();
 	void EnqueueUpdate();
@@ -75,8 +76,13 @@ public:
 	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return enemyGroups; }
 	const springai::AIFloat3& GetEnemyPos() const { return enemyPos; }
 	float GetMaxGroupThreat() const { return enemyGroups[maxThreatGroupIdx].threat; }
-
 	float GetEnemyMobileCost() const { return enemyMobileCost; }
+
+	void UpdateAreaUsers();
+	void SetAreaUpdated(bool value) { isAreaUpdated = value; }
+	bool IsEnemyInArea(STerrainMapArea* area) const {
+		return areaInfo.find(area) != areaInfo.end();
+	}
 
 private:
 	void ReadConfig();
@@ -129,10 +135,8 @@ private:
 	};
 	std::array<SEnemyInfo, CMaskHandler::GetMaxMasks()> enemyInfos{{{0.f}, {0.f}}};
 
+	bool isAreaUpdated;
 	std::set<STerrainMapArea*> areaInfo;
-public:
-	void ClearArea() { areaInfo.clear(); }
-	void AddArea(STerrainMapArea* area) { areaInfo.insert(area); }
 };
 
 } // namespace circuit

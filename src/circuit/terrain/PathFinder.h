@@ -30,8 +30,7 @@ public:
 	virtual ~CPathFinder();
 
 	void UpdateAreaUsers(CTerrainManager* terrainManager);
-	void SetUpdated(bool value) { isUpdated = value; }
-	bool IsUpdated() const { return isUpdated; }
+	void SetAreaUpdated(bool value) { isAreaUpdated = value; }
 
 	void* MoveXY2MoveNode(int x, int y) const;
 	void MoveNode2MoveXY(void* node, int* x, int* y) const;
@@ -73,7 +72,7 @@ private:
 	bool* airMoveArray;
 	std::vector<bool*> moveArrays;
 	static std::vector<int> blockArray;
-	bool isUpdated;
+	bool isAreaUpdated;
 
 	int squareSize;
 	int moveMapXSize;

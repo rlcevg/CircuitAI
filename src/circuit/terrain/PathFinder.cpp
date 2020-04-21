@@ -36,7 +36,7 @@ std::vector<int> CPathFinder::blockArray;
 CPathFinder::CPathFinder(CTerrainData* terrainData)
 		: terrainData(terrainData)
 		, airMoveArray(nullptr)
-		, isUpdated(true)
+		, isAreaUpdated(true)
 #ifdef DEBUG_VIS
 		, isVis(false)
 		, toggleFrame(-1)
@@ -118,10 +118,10 @@ CPathFinder::~CPathFinder()
 
 void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 {
-	if (isUpdated) {
+	if (isAreaUpdated) {
 		return;
 	}
-	isUpdated = true;
+	isAreaUpdated = true;
 
 	std::fill(blockArray.begin(), blockArray.end(), 0);
 	const int granularity = squareSize / (SQUARE_SIZE * 2);

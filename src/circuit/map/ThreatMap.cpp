@@ -486,7 +486,7 @@ float CThreatMap::GetEnemyUnitThreat(const CEnemyUnit* e) const
 	}
 	int x, z;
 	PosToXZ(e->GetPos(), x, z);
-	return e->GetDamage() * sqrtf(health + shieldArray[z * width + x] * 2.0f);  // / unit->GetUnit()->GetMaxHealth();
+	return e->GetDamage() * sqrtf(health + shieldArray[z * width + x] * 1.5f);  // / unit->GetUnit()->GetMaxHealth();
 }
 
 void CThreatMap::Prepare(SThreatData& threatData)

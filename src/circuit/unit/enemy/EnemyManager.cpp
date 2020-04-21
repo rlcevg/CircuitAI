@@ -38,6 +38,7 @@ CEnemyManager::CEnemyManager(CCircuitAI* circuit)
 		, enemyMobileCost(0.f)
 		, mobileThreat(0.f)
 		, staticThreat(0.f)
+		, isAreaUpdated(true)
 {
 	enemyPos = AIFloat3(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
 	enemyGroups.push_back(SEnemyGroup(enemyPos));
@@ -119,7 +120,7 @@ CEnemyUnit* CEnemyManager::RegisterEnemyUnit(Unit* e)
 	return data;
 }
 
-void CEnemyManager::UpdateEnemyDatas()
+void CEnemyManager::UpdateEnemyDatas(CQuadField& quadField)
 {
 	if (!circuit->IsCheating()) {
 		// AI knows what units are in los, hence reduce the amount of useless
@@ -160,6 +161,8 @@ void CEnemyManager::UpdateEnemyDatas()
 			if (enemy->IsInLOS()) {
 				enemy->UpdateInLosData();  // heavy on engine calls
 			}
+
+			quadField.MovedEnemyUnit(enemy);
 		}
 
 		++enemyIterator;
@@ -304,6 +307,27 @@ bool CEnemyManager::IsEnemyNear(const AIFloat3& pos, float maxThreat)
 		}
 	}
 	return false;
+}
+
+void CEnemyManager::UpdateAreaUsers()
+{
+	if (isAreaUpdated) {
+		return;
+	}
+	isAreaUpdated = true;
+
+	areaInfo.clear();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	const std::vector<STerrainMapMobileType>& mobileTypes = terrainMgr->GetMobileTypes();
+	for (const CEnemyManager::SEnemyGroup& group : enemyGroups) {
+		const int iS = terrainMgr->GetSectorIndex(group.pos);
+		for (const STerrainMapMobileType& mt : mobileTypes) {
+			STerrainMapArea* area = mt.sector[iS].area;
+			if (area != nullptr) {
+				areaInfo.insert(area);
+			}
+		}
+	}
 }
 
 void CEnemyManager::ReadConfig()
