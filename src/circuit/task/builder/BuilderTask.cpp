@@ -17,7 +17,7 @@
 #include "resource/EnergyGrid.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/PathFinder.h"
+#include "terrain/path/PathFinder.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/FightAction.h"
 #include "unit/action/MoveAction.h"

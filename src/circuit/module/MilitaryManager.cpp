@@ -30,7 +30,7 @@
 #include "task/fighter/SupportTask.h"
 #include "task/static/SuperTask.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/PathFinder.h"
+#include "terrain/path/PathFinder.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"

@@ -16,7 +16,7 @@
 #include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/PathFinder.h"
+#include "terrain/path/PathFinder.h"
 #include "task/PlayerTask.h"
 #include "unit/CircuitUnit.h"
 #include "unit/enemy/EnemyUnit.h"

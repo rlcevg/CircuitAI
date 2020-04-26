@@ -239,7 +239,7 @@ float CThreatMap::GetThreatAt(CCircuitUnit* unit, const AIFloat3& position) cons
 
 float CThreatMap::GetUnitThreat(CCircuitUnit* unit) const
 {
-	float health = unit->GetUnit()->GetHealth() + unit->GetShieldPower() * 2.0f;
+	float health = unit->GetUnit()->GetHealth() + unit->GetShieldPower() * SHIELD_MOD;
 	return unit->GetDamage() * sqrtf(std::max(health, 0.f));  // / unit->GetUnit()->GetMaxHealth();
 }
 
@@ -486,7 +486,7 @@ float CThreatMap::GetEnemyUnitThreat(const CEnemyUnit* e) const
 	}
 	int x, z;
 	PosToXZ(e->GetPos(), x, z);
-	return e->GetDamage() * sqrtf(health + shieldArray[z * width + x] * 1.5f);  // / unit->GetUnit()->GetMaxHealth();
+	return e->GetDamage() * sqrtf(health + shieldArray[z * width + x] * SHIELD_MOD);  // / unit->GetUnit()->GetMaxHealth();
 }
 
 void CThreatMap::Prepare(SThreatData& threatData)

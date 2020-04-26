@@ -11,7 +11,7 @@
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/PathFinder.h"
+#include "terrain/path/PathFinder.h"
 #include "unit/action/TravelAction.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"

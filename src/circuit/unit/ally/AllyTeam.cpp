@@ -13,7 +13,7 @@
 #include "resource/EnergyGrid.h"
 #include "setup/DefenceMatrix.h"
 #include "setup/SetupManager.h"
-#include "terrain/PathFinder.h"
+#include "terrain/path/PathFinder.h"
 #include "terrain/TerrainData.h"
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"

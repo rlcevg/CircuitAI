@@ -449,7 +449,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	// TODO: Include projectile-speed/range, armor
 	//       health /= def->GetArmoredMultiple();
 	thrDmg = pwrDmg = dmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
-	threat = power = dmg * sqrtf(def->GetHealth() + maxShield * 1.5f);
+	threat = power = dmg * sqrtf(def->GetHealth() + maxShield * SHIELD_MOD);
 }
 
 CCircuitDef::~CCircuitDef()

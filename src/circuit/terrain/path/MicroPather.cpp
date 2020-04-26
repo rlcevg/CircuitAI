@@ -43,7 +43,7 @@
  * Changed by rlcevg. Aug 25, 2015
  */
 
-#include "terrain/MicroPather.h"
+#include "terrain/path/MicroPather.h"
 #include "util/Defines.h"
 
 #include <cstdlib>  // malloc(), free()
@@ -233,10 +233,10 @@ CMicroPather::~CMicroPather()
 
 /*
  * Old: make sure that costArray doesn't contain values below 1.0 (for speed), and below 0.0 (for eternal loop)
- * New: make sure that moveFun and threatFun doesn't return values below 0.0
+ * New: make sure that moveThreatFun doesn't return values below 0.0
  */
 void CMicroPather::SetMapData(const bool* canMoveArray, const float* threatArray,
-		const CostFunc moveThreatFun)
+		CostFunc moveThreatFun)
 {
 	this->canMoveArray  = canMoveArray;
 	this->threatArray   = threatArray;

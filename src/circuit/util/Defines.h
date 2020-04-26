@@ -45,6 +45,7 @@ template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 
 #define THREAT_MIN		1.0f
 #define DEFAULT_SLACK	(SQUARE_SIZE * 8)
+#define SHIELD_MOD		1.5f
 
 typedef std::vector<springai::AIFloat3> F3Vec;
 typedef std::vector<void*> VoidVec;

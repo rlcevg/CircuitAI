@@ -15,7 +15,8 @@
 #include "script/BuilderScript.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/PathFinder.h"
+#include "terrain/path/PathFinder.h"
+#include "terrain/path/QueryCostMap.h"
 #include "task/NilTask.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
@@ -861,7 +862,8 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 
 IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, float sqMaxBaseRange)
 {
-	circuit->GetThreatMap()->SetThreatType(unit);
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	threatMap->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
 	const int frame = circuit->GetLastFrame();
 	AIFloat3 pos = unit->GetPos(frame);
@@ -874,8 +876,11 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, float sqMaxBaseR
 	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 //	CTerrainManager::CorrectPosition(pos);
-	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	pathfinder->MakeCostMap(pos);
+
+	std::shared_ptr<CQueryCostMap> query = std::static_pointer_cast<CQueryCostMap>(
+			pathfinder->CreateCostMapQuery(unit, threatMap, frame, pos));
+	pathfinder->MakeCostMap(query.get());
+
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
@@ -902,7 +907,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, float sqMaxBaseR
 					continue;
 				}
 
-				distCost = pathfinder->GetCostAt(buildPos, buildDistance);
+				distCost = query->GetCostAt(buildPos, buildDistance);
 				if (distCost < 0.f) {  // path blocked by buildings
 					distCost = pos.SqDistance2D(buildPos);
 				}
@@ -916,7 +921,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, float sqMaxBaseR
 					continue;
 				}
 
-				distCost = pathfinder->GetCostAt(buildPos, buildDistance);
+				distCost = query->GetCostAt(buildPos, buildDistance);
 				if (distCost < 0.f) {  // path blocked by buildings
 					distCost = pos.SqDistance2D(buildPos);
 					continue;
@@ -983,8 +988,11 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 //	CTerrainManager::CorrectPosition(pos);
-	pathfinder->SetMapData(unit, threatMap, frame);
-	pathfinder->MakeCostMap(pos);
+
+	std::shared_ptr<CQueryCostMap> query = std::static_pointer_cast<CQueryCostMap>(
+			pathfinder->CreateCostMapQuery(unit, threatMap, frame, pos));
+	pathfinder->MakeCostMap(query.get());
+
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
 	const float maxThreat = threatMap->GetUnitThreat(unit);
@@ -1012,7 +1020,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 					continue;
 				}
 
-				distCost = pathfinder->GetCostAt(buildPos, buildDistance);
+				distCost = query->GetCostAt(buildPos, buildDistance);
 				if (distCost < 0.f) {  // path blocked by buildings
 					distCost = pos.SqDistance2D(buildPos);
 				}
@@ -1028,7 +1036,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 					continue;
 				}
 
-				distCost = pathfinder->GetCostAt(buildPos, buildDistance);
+				distCost = query->GetCostAt(buildPos, buildDistance);
 				if (distCost < 0.f) {  // path blocked by buildings
 					distCost = pos.SqDistance2D(buildPos);
 					continue;

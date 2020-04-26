@@ -6,7 +6,12 @@
  *      Original implementation: https://github.com/spring/KAIK/blob/master/PathFinder.cpp
  */
 
-#include "terrain/PathFinder.h"
+#include "terrain/path/PathFinder.h"
+#include "terrain/path/PathQuery.h"
+#include "terrain/path/QueryPathMulti.h"
+#include "terrain/path/QueryPathInfo.h"
+#include "terrain/path/QueryPathCost.h"
+#include "terrain/path/QueryCostMap.h"
 #include "terrain/TerrainData.h"
 #include "terrain/TerrainManager.h"
 #include "map/ThreatMap.h"
@@ -35,8 +40,10 @@ std::vector<int> CPathFinder::blockArray;
 
 CPathFinder::CPathFinder(CTerrainData* terrainData)
 		: terrainData(terrainData)
+		, pMoveData(&moveData0)
 		, airMoveArray(nullptr)
 		, isAreaUpdated(true)
+		, queryId(0)
 #ifdef DEBUG_VIS
 		, isVis(false)
 		, toggleFrame(-1)
@@ -55,33 +62,37 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 
 	areaData = terrainData->pAreaData.load();
 	const std::vector<STerrainMapMobileType>& moveTypes = areaData->mobileType;
-	moveArrays.reserve(moveTypes.size());
+	moveData0.moveArrays.reserve(moveTypes.size());
+	moveData1.moveArrays.reserve(moveTypes.size());
 
 	const int totalcells = moveMapXSize * moveMapYSize;
 	for (const STerrainMapMobileType& mt : moveTypes) {
-		bool* moveArray = new bool[totalcells];
-		moveArrays.push_back(moveArray);
+		bool* moveArray0 = new bool[totalcells];
+		bool* moveArray1 = new bool[totalcells];
+		moveData0.moveArrays.push_back(moveArray0);
+		moveData1.moveArrays.push_back(moveArray1);
 
 		int k = 0;
 		for (int z = 1; z < moveMapYSize - 1; ++z) {
 			for (int x = 1; x < moveMapXSize - 1; ++x) {
+				int index = z * moveMapXSize + x;
 				// NOTE: Not all passable sectors have area
-				moveArray[z * moveMapXSize + x] = (mt.sector[k].area != nullptr);
+				moveArray1[index] = moveArray0[index] = (mt.sector[k].area != nullptr);
 				++k;
 			}
 		}
 
 		// make sure that the edges are no-go
 		for (int i = 0; i < moveMapXSize; ++i) {
-			moveArray[i] = false;
+			moveArray1[i] = moveArray0[i] = false;
 			int k = moveMapXSize * (moveMapYSize - 1) + i;
-			moveArray[k] = false;
+			moveArray1[k] = moveArray0[k] = false;
 		}
 		for (int i = 0; i < moveMapYSize; ++i) {
 			int k = i * moveMapXSize;
-			moveArray[k] = false;
+			moveArray1[k] = moveArray0[k] = false;
 			k = i * moveMapXSize + moveMapXSize - 1;
-			moveArray[k] = false;
+			moveArray1[k] = moveArray0[k] = false;
 		}
 	}
 
@@ -103,13 +114,14 @@ CPathFinder::CPathFinder(CTerrainData* terrainData)
 	}
 
 	blockArray.resize(terrainData->sectorXSize * terrainData->sectorZSize, 0);
-
-	costMap.resize(terrainData->sectorXSize * terrainData->sectorZSize, -1.f);
 }
 
 CPathFinder::~CPathFinder()
 {
-	for (bool* ma : moveArrays) {
+	for (bool* ma : moveData0.moveArrays) {
+		delete[] ma;
+	}
+	for (bool* ma : moveData1.moveArrays) {
 		delete[] ma;
 	}
 	delete[] airMoveArray;
@@ -136,6 +148,7 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 		}
 	}
 
+	std::vector<bool*>& moveArrays = GetNextMoveData()->moveArrays;
 	areaData = terrainData->GetNextAreaData();
 	const std::vector<STerrainMapMobileType>& moveTypes = areaData->mobileType;
 	const int blockThreshold = granularity * granularity / 4;  // 25% - blocked tile
@@ -146,13 +159,16 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 		int k = 0;
 		for (int z = 1; z < moveMapYSize - 1; ++z) {
 			for (int x = 1; x < moveMapXSize - 1; ++x) {
+				int index = z * moveMapXSize + x;
 				// NOTE: Not all passable sectors have area
-				moveArray[z * moveMapXSize + x] = (mt.sector[k].area != nullptr) && (blockArray[k] < blockThreshold);
+				moveArray[index] = (mt.sector[k].area != nullptr) && (blockArray[k] < blockThreshold);
 				++k;
 			}
 		}
 	}
 //	micropather->Reset();
+
+	pMoveData = GetNextMoveData();
 }
 
 void* CPathFinder::MoveXY2MoveNode(int x, int y) const
@@ -224,6 +240,73 @@ AIFloat3 CPathFinder::PathIndex2Pos(int index) const
 	return pos;
 }
 
+std::shared_ptr<IPathQuery> CPathFinder::CreatePathInfoQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
+		AIFloat3& startPos, AIFloat3& endPos, int radius, float maxThreat)
+{
+	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathInfo>(*this, MakeQueryId());
+	CQueryPathInfo* query = static_cast<CQueryPathInfo*>(pQuery.get());
+
+	FillMapData(query, unit, threatMap, frame);
+	query->InitQuery(startPos, endPos, radius, maxThreat);
+
+	queries.Push(pQuery);
+
+	return pQuery;
+}
+
+std::shared_ptr<IPathQuery> CPathFinder::CreatePathMultiQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
+		AIFloat3& startPos, float maxRange, F3Vec possibleTargets, float maxThreat)
+{
+	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathMulti>(*this, MakeQueryId());
+	CQueryPathMulti* query = static_cast<CQueryPathMulti*>(pQuery.get());
+
+	FillMapData(query, unit, threatMap, frame);
+	query->InitQuery(startPos, maxRange, possibleTargets, maxThreat);
+
+	queries.Push(pQuery);
+
+	return pQuery;
+}
+
+std::shared_ptr<IPathQuery> CPathFinder::CreatePathCostQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
+		const AIFloat3& startPos, AIFloat3& endPos, int radius, float maxThreat)
+{
+	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathCost>(*this, MakeQueryId());
+	CQueryPathCost* query = static_cast<CQueryPathCost*>(pQuery.get());
+
+	FillMapData(query, unit, threatMap, frame);
+	query->InitQuery(startPos, endPos, radius, maxThreat);
+
+	queries.Push(pQuery);
+
+	return pQuery;
+}
+
+std::shared_ptr<IPathQuery> CPathFinder::CreateCostMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
+		const AIFloat3& startPos)
+{
+	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryCostMap>(*this, MakeQueryId());
+	CQueryCostMap* query = static_cast<CQueryCostMap*>(pQuery.get());
+
+	FillMapData(query, unit, threatMap, frame);
+	query->InitQuery(startPos);
+
+	queries.Push(pQuery);
+
+	return pQuery;
+}
+
+/*
+ * WARNING: startPos must be correct
+ */
+void CPathFinder::MakeCostMap(IPathQuery* query)
+{
+	CQueryCostMap* q = static_cast<CQueryCostMap*>(query);
+	q->PrepareCostMap();
+	micropather->SetMapData(q->GetCanMoveArray(), q->GetThreatArray(), q->GetMoveThreatFun());
+	micropather->MakeCostMap(Pos2MoveNode(q->GetStartPos()), q->PrepareCostMap());
+}
+
 void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame)
 {
 	CCircuitDef* cdef = unit->GetCircuitDef();
@@ -236,7 +319,7 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 		moveArray = airMoveArray;
 		maxSlope = 1.f;
 	} else {
-		moveArray = moveArrays[mobileTypeId];
+		moveArray = pMoveData.load()->moveArrays[mobileTypeId];
 		maxSlope = std::max(areaData->mobileType[mobileTypeId].maxSlope, 1e-3f);
 	}
 
@@ -478,67 +561,82 @@ float CPathFinder::FindBestPath(PathInfo& iPath, AIFloat3& startPos, float maxRa
 	return pathCost;
 }
 
-float CPathFinder::FindBestPathToRadius(PathInfo& posPath, AIFloat3& startPos, float radius, const AIFloat3& target, float maxThreat)
+void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, int frame)
 {
-	F3Vec posTargets;
-	posTargets.push_back(target);
-	return FindBestPath(posPath, startPos, radius, posTargets, maxThreat);
-}
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	STerrainMapMobileType::Id mobileTypeId = cdef->GetMobileId();
 
-/*
- * WARNING: startPos must be correct
- */
-void CPathFinder::MakeCostMap(const AIFloat3& startPos)
-{
-	std::fill(costMap.begin(), costMap.end(), -1.f);
-	micropather->MakeCostMap(Pos2MoveNode(startPos), costMap);
-}
+	const std::vector<STerrainMapSector>& sectors = areaData->sector;
+	bool* moveArray;
+	float maxSlope;
+	if (mobileTypeId < 0) {
+		moveArray = airMoveArray;
+		maxSlope = 1.f;
+	} else {
+		moveArray = pMoveData.load()->moveArrays[mobileTypeId];
+		maxSlope = std::max(areaData->mobileType[mobileTypeId].maxSlope, 1e-3f);
+	}
 
-/*
- * WARNING: endPos must be correct
- */
-float CPathFinder::GetCostAt(const AIFloat3& endPos, int radius) const
-{
-	float pathCost = -1.f;
-	radius /= squareSize;
-
-	int xm, ym;
-	Pos2PathXY(endPos, &xm, &ym);
-
-	const bool isInBox = (radius <= xm && xm <= pathMapXSize - 1 - radius)
-			&& (radius <= ym && ym <= pathMapYSize - 1 - radius);
-	auto minCost = isInBox ?
-	std::function<float (float, int, int)>([this](float cost, int x, int y) -> float {
-		const float costR = costMap[PathXY2PathIndex(x, y)];
-		if (cost < 0.f) {
-			return costR;
+	float* threatArray;
+	CostFunc moveFun;
+	CostFunc moveThreatFun;
+	// FIXME: DEBUG; Re-organize and pre-calculate moveFun for each move-type
+	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
+		threatArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
+		moveFun = [&sectors, maxSlope](int index) {
+			return (sectors[index].isWater ? 4.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
+		};
+		moveThreatFun = [moveFun, threatArray](int index) {
+			return moveFun(index) + 2.f * threatArray[index];
+		};
+	} else if (unit->GetUnit()->IsCloaked()) {
+		threatArray = threatMap->GetCloakThreatArray();
+		moveFun = [&sectors, maxSlope](int index) {
+			return sectors[index].maxSlope / maxSlope;
+		};
+		moveThreatFun = [moveFun, threatArray](int index) {
+			return moveFun(index) + threatArray[index];
+		};
+	} else if (cdef->IsAbleToFly()) {
+		threatArray = threatMap->GetAirThreatArray();
+		moveFun = [](int index) {
+			return 0.f;
+		};
+		moveThreatFun = [moveFun, threatArray](int index) {
+			return moveFun(index) + 2.f * threatArray[index];
+		};
+	} else if (cdef->IsAmphibious()) {
+		threatArray = threatMap->GetAmphThreatArray();
+		if (maxSlope > SPIDER_SLOPE) {
+			const float minElev = areaData->minElevation;
+			float elevLen = std::max(areaData->maxElevation - areaData->minElevation, 1e-3f);
+			moveFun = [&sectors, minElev, elevLen](int index) {
+				return 2.f * (1.f - (sectors[index].maxElevation - minElev) / elevLen) +
+						(sectors[index].isWater ? 4.f : 0.f);
+			};
+			moveThreatFun = [moveFun, threatArray](int index) {
+				return moveFun(index) + 2.f * threatArray[index];
+			};
+		} else {
+			moveFun = [&sectors, maxSlope](int index) {
+				return (sectors[index].isWater ? 4.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
+			};
+			moveThreatFun = [moveFun, threatArray](int index) {
+				return moveFun(index) + 2.f * threatArray[index];
+			};
 		}
-		return (costR < 0.f) ? cost : std::min(cost, costR);
-	}) :
-	std::function<float (float, int, int)>([this](float cost, int x, int y) -> float {
-		if ((x < 0) || (x > pathMapXSize - 1) || (y < 0) || (y > pathMapYSize - 1)) {
-			return cost;
-		}
-		const float costR = costMap[PathXY2PathIndex(x, y)];
-		if (cost < 0.f) {
-			return costR;
-		}
-		return (costR < 0.f) ? cost : std::min(cost, costR);
-	});
+	} else {
+		threatArray = threatMap->GetSurfThreatArray();
+		moveFun = [&sectors, maxSlope](int index) {
+			return (sectors[index].isWater ? 0.f : (2.f * sectors[index].maxSlope / maxSlope));
+		};
+		moveThreatFun = [moveFun, threatArray](int index) {
+			return moveFun(index) + 2.f * threatArray[index];
+		};
+	}
+	// FIXME: DEBUG
 
-	// test 8 points
-	pathCost = minCost(pathCost, xm - radius, ym);
-	pathCost = minCost(pathCost, xm + radius, ym);
-	pathCost = minCost(pathCost, xm, ym - radius);
-	pathCost = minCost(pathCost, xm, ym + radius);
-
-	const int r2 = radius * ISQRT_2 + 1;
-	pathCost = minCost(pathCost, xm - r2, ym - r2);
-	pathCost = minCost(pathCost, xm + r2, ym - r2);
-	pathCost = minCost(pathCost, xm - r2, ym + r2);
-	pathCost = minCost(pathCost, xm + r2, ym + r2);
-
-	return pathCost;
+	query->Init(moveArray, threatArray, moveFun, moveThreatFun);
 }
 
 size_t CPathFinder::RefinePath(IndexVec& path)
@@ -625,7 +723,7 @@ void CPathFinder::SetMapData(CThreatMap* threatMap)
 
 	STerrainMapMobileType::Id mobileTypeId = dbgDef->GetMobileId();
 	const float maxSlope = (mobileTypeId < 0) ? 1.f : areaData->mobileType[mobileTypeId].maxSlope;
-	const bool* moveArray = (mobileTypeId < 0) ? airMoveArray : moveArrays[mobileTypeId];
+	const bool* moveArray = (mobileTypeId < 0) ? airMoveArray : pMoveData.load()->moveArrays[mobileTypeId];
 	const float* costArray[] = {
 			threatMap->GetAirThreatArray(),
 			threatMap->GetSurfThreatArray(),

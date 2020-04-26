@@ -9,11 +9,13 @@
 #ifndef SRC_CIRCUIT_TERRAIN_PATHFINDER_H_
 #define SRC_CIRCUIT_TERRAIN_PATHFINDER_H_
 
-#include "terrain/MicroPather.h"
+#include "terrain/path/MicroPather.h"
 #include "util/Defines.h"
+#include "util/MultiQueue.h"
 
 namespace circuit {
 
+class IPathQuery;
 class CTerrainData;
 class CTerrainManager;
 class CCircuitUnit;
@@ -26,8 +28,14 @@ class CCircuitDef;
 
 class CPathFinder: public NSMicroPather::Graph {
 public:
+	struct SMoveData {
+		std::vector<bool*> moveArrays;
+	};
+
 	CPathFinder(CTerrainData* terrainData);
 	virtual ~CPathFinder();
+
+	unsigned Checksum() const { return micropather->Checksum(); }
 
 	void UpdateAreaUsers(CTerrainManager* terrainManager);
 	void SetAreaUpdated(bool value) { isAreaUpdated = value; }
@@ -43,24 +51,53 @@ public:
 	void PathIndex2MoveXY(int index, int* x, int* y) const;
 	springai::AIFloat3 PathIndex2Pos(int index) const;
 
-	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
+	int MakeQueryId() { return queryId++; }
+	std::shared_ptr<IPathQuery> CreatePathInfoQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
+			springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius,
+			float maxThreat = std::numeric_limits<float>::max());
+	std::shared_ptr<IPathQuery> CreatePathMultiQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
+			springai::AIFloat3& startPos, float maxRange, F3Vec possibleTargets,
+			float maxThreat = std::numeric_limits<float>::max());
+	std::shared_ptr<IPathQuery> CreatePathCostQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
+			const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius,
+			float maxThreat = std::numeric_limits<float>::max());
+	std::shared_ptr<IPathQuery> CreateCostMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
+			const springai::AIFloat3& startPos);
 
-	unsigned Checksum() const { return micropather->Checksum(); }
+//	float MakePath(IPathQuery* query);
+//	float PathCost(IPathQuery* query);
+//	float FindBestPath(IPathQuery* query);
+	void MakeCostMap(IPathQuery* query);
+
+	// FIXME: Remove
+	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
 	float MakePath(PathInfo& iPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius,
 			float maxThreat = std::numeric_limits<float>::max());
 	float PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius,
 			float maxThreat = std::numeric_limits<float>::max());
 	float FindBestPath(PathInfo& iPath, springai::AIFloat3& startPos, float maxRange, F3Vec& possibleTargets,
 			float maxThreat = std::numeric_limits<float>::max());
-	float FindBestPathToRadius(PathInfo& iPath, springai::AIFloat3& startPos, float radius, const springai::AIFloat3& target,
-			float maxThreat = std::numeric_limits<float>::max());
-
-	void MakeCostMap(const springai::AIFloat3& startPos);
-	float GetCostAt(const springai::AIFloat3& endPos, int radius) const;
+	NSMicroPather::CostFunc moveFun;
+	// FIXME: Remove
 
 	int GetSquareSize() const { return squareSize; }
+	int GetPathMapXSize() const { return pathMapXSize; }
+	int GetPathMapYSize() const { return pathMapYSize; }
+	bool IsInPathMap(int x, int y, int radius) const {
+		return (radius <= x && x <= pathMapXSize - 1 - radius)
+			&& (radius <= y && y <= pathMapYSize - 1 - radius);
+	}
+	bool IsInPathMap(int x, int y) const {
+		return (0 <= x) && (x <= pathMapXSize - 1)
+			&& (0 <= y) && (y <= pathMapYSize - 1);
+	}
+
+	SMoveData* GetNextMoveData() {
+		return (pMoveData.load() == &moveData0) ? &moveData1 : &moveData0;
+	}
 
 private:
+	void FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, int frame);
 	size_t RefinePath(IndexVec& path);
 	void FillPathInfo(PathInfo& iPath);
 
@@ -68,19 +105,20 @@ private:
 	SAreaData* areaData;
 
 	NSMicroPather::CMicroPather* micropather;
-	NSMicroPather::CostFunc moveFun;
+	SMoveData moveData0, moveData1;
+	std::atomic<SMoveData*> pMoveData;
 	bool* airMoveArray;
-	std::vector<bool*> moveArrays;
-	static std::vector<int> blockArray;
+	static std::vector<int> blockArray;  // temporary array for moveArray construction
 	bool isAreaUpdated;
 
 	int squareSize;
-	int moveMapXSize;
-	int moveMapYSize;
+	int moveMapXSize;  // +2 for edges
+	int moveMapYSize;  // +2 for edges
 	int pathMapXSize;
 	int pathMapYSize;
 
-	std::vector<float> costMap;  // +2 with edges
+	int queryId;
+	CMultiQueue<std::shared_ptr<IPathQuery>> queries;  // owner
 
 #ifdef DEBUG_VIS
 private:

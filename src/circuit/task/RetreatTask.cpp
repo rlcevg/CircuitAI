@@ -11,7 +11,7 @@
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
 #include "setup/SetupManager.h"
-#include "terrain/PathFinder.h"
+#include "terrain/path/PathFinder.h"
 #include "terrain/TerrainManager.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/MoveAction.h"

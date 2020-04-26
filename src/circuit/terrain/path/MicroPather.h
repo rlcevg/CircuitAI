@@ -250,8 +250,6 @@ namespace NSMicroPather {
 			  */
 			unsigned Checksum() const { return checksum; }
 
-			// Tournesol's stuff
-			unsigned int* lockUpCount;
 			const bool* canMoveArray;
 			const float* threatArray;
 			CostFunc moveThreatFun;
@@ -261,7 +259,7 @@ namespace NSMicroPather {
 			int xEndNode, yEndNode;
 			bool isRunning;
 			void SetMapData(const bool* canMoveArray, const float* threatArray,
-					const CostFunc moveThreatFun);
+					CostFunc moveThreatFun);
 			int FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes, VoidVec& targets, float maxThreat,
 					IndexVec* path, float* cost);
 			int FindBestPathToPointOnRadius(void* startNode, void* endNode, int radius, float maxThreat,
