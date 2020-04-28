@@ -15,6 +15,7 @@ namespace circuit {
 class IPathQuery {
 public:
 	enum class Type: char {NONE = 0, MULTI, SINGLE, COST, MAP, _SIZE_};
+	enum class State: char {NONE = 0, PROCESS, READY, _SIZE_};
 
 protected:
 	IPathQuery(const CPathFinder& pathfinder, int id);
@@ -23,6 +24,9 @@ protected:
 public:
 	int GetId() const { return id; }
 	Type GetType() const { return type; }
+
+	void SetState(State value) { state.store(value); }
+	State GetState() const { return state.load(); }
 
 	void Init(const bool* canMoveArray, const float* threatArray,
 			  NSMicroPather::CostFunc moveThreatFun, NSMicroPather::CostFunc moveFun);
@@ -33,10 +37,11 @@ public:
 	const NSMicroPather::CostFunc GetMoveFun() const { return moveFun; }
 
 protected:
-	const CPathFinder& pathfinder;
+	const CPathFinder& pathfinder;  // NOTE: not to use in threaded function
 
 	int id;
 	Type type;
+	std::atomic<State> state;
 
 	const bool* canMoveArray;  // outdate after AREA_UPDATE_RATE
 	const float* threatArray;  // outdate after THREAT_UPDATE_RATE

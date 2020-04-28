@@ -831,36 +831,50 @@ SBuildChain* CBuilderManager::GetBuildChain(IBuilderTask::BuildType buildType, C
 
 IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 {
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	const int frame = circuit->GetLastFrame();
+	const AIFloat3& pos = unit->GetPos(frame);
+
+	std::shared_ptr<IPathQuery> q = unit->GetQueryMap();
+	if ((q == nullptr) || (q->GetState() == IPathQuery::State::READY)) {
+		unit->SetQueryMap(circuit->GetPathfinder()->CreateCostMapQuery(unit, threatMap, frame, pos));
+		if (q == nullptr) {
+			return nullptr;  // 1st run
+		}
+	} else {
+		return nullptr;  // not ready. TODO: Use previous query instead?
+	}
+	std::shared_ptr<CQueryCostMap> query = std::static_pointer_cast<CQueryCostMap>(q);
+
 	const CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsRoleComm()) {  // hide commander?
 		// FIXME: Any combat builder, not only commander
 		CSetupManager* setupMgr = circuit->GetSetupManager();
 		CEnemyManager* enemyMgr = circuit->GetEnemyManager();
 		CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
-		const AIFloat3 pos = unit->GetPos(circuit->GetLastFrame());
 		if ((pos.SqDistance2D(setupMgr->GetBasePos()) < SQUARE(militaryMgr->GetBaseDefRange()))
-			&& enemyMgr->IsEnemyNear(pos, circuit->GetThreatMap()->GetUnitThreat(unit) * 1.5f))
+			&& enemyMgr->IsEnemyNear(pos, threatMap->GetUnitThreat(unit) * 1.5f))
 		{
 			return EnqueueCombat(1.5f);
 		}
 
 		const CSetupManager::SCommInfo::SHide* hide = setupMgr->GetHide(cdef);
 		if (hide != nullptr) {
-			if ((circuit->GetLastFrame() < hide->frame) || (GetWorkerCount() <= 2)) {
-				return MakeBuilderTask(unit);
+			if ((frame < hide->frame) || (GetWorkerCount() <= 2)) {
+				return MakeBuilderTask(unit, query);
 			}
 			if (enemyMgr->GetMobileThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat) {
-				return MakeCommTask(unit, hide->sqTaskRad);
+				return MakeCommTask(unit, query, hide->sqTaskRad);
 			}
 			const bool isHide = (hide->isAir) && (enemyMgr->GetEnemyCost(ROLE_TYPE(AIR)) > 1.f);
-			return isHide ? MakeCommTask(unit, hide->sqTaskRad) : MakeBuilderTask(unit);
+			return isHide ? MakeCommTask(unit, query, hide->sqTaskRad) : MakeBuilderTask(unit, query);
 		}
 	}
 
-	return MakeBuilderTask(unit);
+	return MakeBuilderTask(unit, query);
 }
 
-IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, float sqMaxBaseRange)
+IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, std::shared_ptr<CQueryCostMap> query, float sqMaxBaseRange)
 {
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	threatMap->SetThreatType(unit);
@@ -876,10 +890,6 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, float sqMaxBaseR
 	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 //	CTerrainManager::CorrectPosition(pos);
-
-	std::shared_ptr<CQueryCostMap> query = std::static_pointer_cast<CQueryCostMap>(
-			pathfinder->CreateCostMapQuery(unit, threatMap, frame, pos));
-	pathfinder->MakeCostMap(query.get());
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
@@ -966,7 +976,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, float sqMaxBaseR
 	return const_cast<IBuilderTask*>(task);
 }
 
-IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
+IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, std::shared_ptr<CQueryCostMap> query)
 {
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	threatMap->SetThreatType(unit);
@@ -988,10 +998,6 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 //	CTerrainManager::CorrectPosition(pos);
-
-	std::shared_ptr<CQueryCostMap> query = std::static_pointer_cast<CQueryCostMap>(
-			pathfinder->CreateCostMapQuery(unit, threatMap, frame, pos));
-	pathfinder->MakeCostMap(query.get());
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;

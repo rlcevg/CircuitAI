@@ -79,7 +79,7 @@ void CAllyTeam::Init(CCircuitAI* circuit, float decloakRadius)
 
 	energyGrid = std::make_shared<CEnergyGrid>(circuit);
 	defence = std::make_shared<CDefenceMatrix>(circuit);
-	pathfinder = std::make_shared<CPathFinder>(&circuit->GetGameAttribute()->GetTerrainData());
+	pathfinder = std::make_shared<CPathFinder>(circuit->GetScheduler(), &circuit->GetGameAttribute()->GetTerrainData());
 	factoryData = std::make_shared<CFactoryData>(circuit);
 
 	circuit->GetScheduler()->RunOnRelease(std::make_shared<CGameTask>(&CAllyTeam::DelegateAuthority, this, circuit));

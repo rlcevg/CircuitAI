@@ -16,6 +16,7 @@
 #include "terrain/TerrainManager.h"
 #include "map/ThreatMap.h"
 #include "unit/CircuitUnit.h"
+#include "util/Scheduler.h"
 #include "util/Utils.h"
 #ifdef DEBUG_VIS
 #include "CircuitAI.h"
@@ -38,12 +39,13 @@ using namespace NSMicroPather;
 
 std::vector<int> CPathFinder::blockArray;
 
-CPathFinder::CPathFinder(CTerrainData* terrainData)
+CPathFinder::CPathFinder(std::shared_ptr<CScheduler> scheduler, CTerrainData* terrainData)
 		: terrainData(terrainData)
 		, pMoveData(&moveData0)
 		, airMoveArray(nullptr)
 		, isAreaUpdated(true)
 		, queryId(0)
+		, scheduler(scheduler)
 #ifdef DEBUG_VIS
 		, isVis(false)
 		, toggleFrame(-1)
@@ -240,7 +242,11 @@ AIFloat3 CPathFinder::PathIndex2Pos(int index) const
 	return pos;
 }
 
-std::shared_ptr<IPathQuery> CPathFinder::CreatePathInfoQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
+/*
+ * radius is in full res.
+ */
+std::shared_ptr<IPathQuery> CPathFinder::CreatePathInfoQuery(
+		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
 		AIFloat3& startPos, AIFloat3& endPos, int radius, float maxThreat)
 {
 	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathInfo>(*this, MakeQueryId());
@@ -249,12 +255,23 @@ std::shared_ptr<IPathQuery> CPathFinder::CreatePathInfoQuery(CCircuitUnit* unit,
 	FillMapData(query, unit, threatMap, frame);
 	query->InitQuery(startPos, endPos, radius, maxThreat);
 
-	queries.Push(pQuery);
+	pQuery->SetState(IPathQuery::State::PROCESS);
+	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
+		MakePath(pQuery.get());
+		pQuery->SetState(IPathQuery::State::READY);
+	})
+#ifdef DEBUG_VIS
+	, std::make_shared<CGameTask>([this, pQuery]() {
+		UpdateVis(static_cast<CQueryPathInfo*>(pQuery.get())->GetPathInfo().path);
+	})
+#endif
+	);
 
 	return pQuery;
 }
 
-std::shared_ptr<IPathQuery> CPathFinder::CreatePathMultiQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
+std::shared_ptr<IPathQuery> CPathFinder::CreatePathMultiQuery(
+		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
 		AIFloat3& startPos, float maxRange, F3Vec possibleTargets, float maxThreat)
 {
 	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathMulti>(*this, MakeQueryId());
@@ -263,12 +280,26 @@ std::shared_ptr<IPathQuery> CPathFinder::CreatePathMultiQuery(CCircuitUnit* unit
 	FillMapData(query, unit, threatMap, frame);
 	query->InitQuery(startPos, maxRange, possibleTargets, maxThreat);
 
-	queries.Push(pQuery);
+	pQuery->SetState(IPathQuery::State::PROCESS);
+	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
+		FindBestPath(pQuery.get());
+		pQuery->SetState(IPathQuery::State::READY);
+	})
+#ifdef DEBUG_VIS
+	, std::make_shared<CGameTask>([this, pQuery]() {
+		UpdateVis(static_cast<CQueryPathMulti*>(pQuery.get())->GetPathInfo().path);
+	})
+#endif
+	);
 
 	return pQuery;
 }
 
-std::shared_ptr<IPathQuery> CPathFinder::CreatePathCostQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
+/*
+ * WARNING: startPos must be correct
+ */
+std::shared_ptr<IPathQuery> CPathFinder::CreatePathCostQuery(
+		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
 		const AIFloat3& startPos, AIFloat3& endPos, int radius, float maxThreat)
 {
 	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathCost>(*this, MakeQueryId());
@@ -277,12 +308,20 @@ std::shared_ptr<IPathQuery> CPathFinder::CreatePathCostQuery(CCircuitUnit* unit,
 	FillMapData(query, unit, threatMap, frame);
 	query->InitQuery(startPos, endPos, radius, maxThreat);
 
-	queries.Push(pQuery);
+	pQuery->SetState(IPathQuery::State::PROCESS);
+	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
+		PathCost(pQuery.get());
+		pQuery->SetState(IPathQuery::State::READY);
+	}));
 
 	return pQuery;
 }
 
-std::shared_ptr<IPathQuery> CPathFinder::CreateCostMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
+/*
+ * WARNING: startPos must be correct
+ */
+std::shared_ptr<IPathQuery> CPathFinder::CreateCostMapQuery(
+		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
 		const AIFloat3& startPos)
 {
 	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryCostMap>(*this, MakeQueryId());
@@ -291,24 +330,85 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateCostMapQuery(CCircuitUnit* unit, 
 	FillMapData(query, unit, threatMap, frame);
 	query->InitQuery(startPos);
 
-	queries.Push(pQuery);
+	pQuery->SetState(IPathQuery::State::PROCESS);
+	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
+		MakeCostMap(pQuery.get());
+		pQuery->SetState(IPathQuery::State::READY);
+	}));
 
 	return pQuery;
 }
 
-/*
- * WARNING: startPos must be correct
- */
+void CPathFinder::MakePath(IPathQuery* query)
+{
+	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
+
+	CQueryPathInfo* q = static_cast<CQueryPathInfo*>(query);
+
+	const bool* canMoveArray = q->GetCanMoveArray();
+	const float* threatArray = q->GetThreatArray();
+	const NSMicroPather::CostFunc moveThreatFun = q->GetMoveThreatFun();
+	moveFun = q->GetMoveFun();
+
+	AIFloat3 startPos = q->GetStartPos();
+	AIFloat3 endPos = q->GetEndPos();
+	int radius = q->GetRadius();
+	float maxThreat = q->GetMaxThreat();
+
+	PathInfo& iPath = q->GetRefPathInfo();
+	float& pathCost = q->GetRefPathCost();
+
+	iPath.Clear();
+
+	CTerrainData::CorrectPosition(startPos);
+	CTerrainData::CorrectPosition(endPos);
+
+//	float pathCost = 0.0f;
+	radius /= squareSize;
+
+	micropather->SetMapData(canMoveArray, threatArray, moveThreatFun);
+	if (micropather->FindBestPathToPointOnRadius(Pos2MoveNode(startPos), Pos2MoveNode(endPos),
+			radius, maxThreat, &iPath.path, &pathCost) == CMicroPather::SOLVED)
+	{
+		FillPathInfo(iPath);
+	}
+}
+
+void CPathFinder::PathCost(IPathQuery* query)
+{
+	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
+}
+
+void CPathFinder::FindBestPath(IPathQuery* query)
+{
+	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
+}
+
 void CPathFinder::MakeCostMap(IPathQuery* query)
 {
+	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
+
 	CQueryCostMap* q = static_cast<CQueryCostMap*>(query);
-	q->PrepareCostMap();
-	micropather->SetMapData(q->GetCanMoveArray(), q->GetThreatArray(), q->GetMoveThreatFun());
-	micropather->MakeCostMap(Pos2MoveNode(q->GetStartPos()), q->PrepareCostMap());
+
+	const bool* canMoveArray = q->GetCanMoveArray();
+	const float* threatArray = q->GetThreatArray();
+	const NSMicroPather::CostFunc moveThreatFun = q->GetMoveThreatFun();
+
+	const AIFloat3& startPos = q->GetStartPos();
+	std::vector<float>& costMap = q->GetRefCostMap();
+
+	// TODO: Cache to avoid memory allocations
+	costMap.resize(pathMapXSize * pathMapYSize, -1.f);
+//	std::fill(costMap.begin(), costMap.end(), -1.f);
+
+	micropather->SetMapData(canMoveArray, threatArray, moveThreatFun);
+	micropather->MakeCostMap(Pos2MoveNode(startPos), costMap);
 }
 
 void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame)
 {
+	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
+
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	STerrainMapMobileType::Id mobileTypeId = cdef->GetMobileId();
 
@@ -392,6 +492,8 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
  */
 float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPos, int radius, float maxThreat)
 {
+	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
+
 	iPath.Clear();
 
 	CTerrainData::CorrectPosition(startPos);
@@ -418,6 +520,8 @@ float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPo
  */
 float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius, float maxThreat)
 {
+	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
+
 	CTerrainData::CorrectPosition(endPos);
 
 	float pathCost = 0.0f;
@@ -430,6 +534,8 @@ float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloa
 
 float CPathFinder::FindBestPath(PathInfo& iPath, AIFloat3& startPos, float maxRange, F3Vec& possibleTargets, float maxThreat)
 {
+	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
+
 	float pathCost = 0.0f;
 
 	// <maxRange> must always be >= squareSize, otherwise

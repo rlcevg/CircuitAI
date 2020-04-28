@@ -19,13 +19,17 @@ public:
 
 	void InitQuery(const springai::AIFloat3& startPos);
 
-	std::vector<float>& PrepareCostMap();
+	// Process Data
+	std::vector<float>& GetRefCostMap() { return costMap; }
+
+	// Input Data
 	const springai::AIFloat3& GetStartPos() const { return startPos; }
 
+	// Result
 	float GetCostAt(const springai::AIFloat3& endPos, int radius) const;
 
 private:
-	std::vector<float> costMap;  // result
+	std::vector<float> costMap;
 
 	springai::AIFloat3 startPos;
 };

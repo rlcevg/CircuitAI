@@ -11,7 +11,9 @@
 namespace circuit {
 
 CMultiQueue<CScheduler::WorkTask> CScheduler::workTasks;
+CMultiQueue<CScheduler::WorkTask> CScheduler::pathTasks;
 spring::thread CScheduler::workerThread;
+spring::thread CScheduler::patherThread;
 std::atomic<bool> CScheduler::workerRunning(false);
 unsigned int CScheduler::counterInstance = 0;
 
@@ -50,6 +52,7 @@ void CScheduler::Release()
 		return !scheduler.owner_before(item.scheduler) && !item.scheduler.owner_before(scheduler);
 	};
 	workTasks.RemoveAllIf(condition);
+	pathTasks.RemoveAllIf(condition);
 
 	if (counterInstance == 0 && workerRunning.load()) {
 		workerRunning = false;
@@ -57,6 +60,10 @@ void CScheduler::Release()
 		workTasks.Push({self, nullptr, nullptr});
 		if (workerThread.joinable()) {
 			workerThread.join();
+		}
+		pathTasks.Push({self, nullptr, nullptr});
+		if (patherThread.joinable()) {
+			patherThread.join();
 		}
 	}
 }
@@ -118,9 +125,20 @@ void CScheduler::RunParallelTask(std::shared_ptr<CGameTask> task, std::shared_pt
 {
 	if (!workerRunning.load()) {
 		workerRunning = true;
-		workerThread = spring::thread(&CScheduler::WorkerThread);
+		workerThread = spring::thread(&CScheduler::WorkerThread, &workTasks);
+		patherThread = spring::thread(&CScheduler::WorkerThread, &pathTasks);
 	}
 	workTasks.Push({self, task, onComplete});
+}
+
+void CScheduler::RunPathTask(std::shared_ptr<CGameTask> task, std::shared_ptr<CGameTask> onComplete)
+{
+	if (!workerRunning.load()) {
+		workerRunning = true;
+		workerThread = spring::thread(&CScheduler::WorkerThread, &workTasks);
+		patherThread = spring::thread(&CScheduler::WorkerThread, &pathTasks);
+	}
+	pathTasks.Push({self, task, onComplete});
 }
 
 void CScheduler::RemoveTask(std::shared_ptr<CGameTask>& task)
@@ -133,9 +151,9 @@ void CScheduler::RemoveTask(std::shared_ptr<CGameTask>& task)
 	}
 }
 
-void CScheduler::WorkerThread()
+void CScheduler::WorkerThread(CMultiQueue<CScheduler::WorkTask>* tasks)
 {
-	WorkTask container = workTasks.Pop();
+	WorkTask container = tasks->Pop();
 	while (workerRunning.load()) {
 		container.task->Run();
 		container.task = nullptr;
@@ -146,7 +164,7 @@ void CScheduler::WorkerThread()
 			}
 			container.onComplete = nullptr;
 		}
-		container = workTasks.Pop();
+		container = tasks->Pop();
 	}
 }
 

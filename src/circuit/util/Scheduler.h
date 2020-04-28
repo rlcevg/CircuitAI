@@ -59,7 +59,12 @@ public:
 	/*
 	 * Run concurrent task, finalize on success at main thread
 	 */
-	void RunParallelTask(std::shared_ptr<CGameTask> task, std::shared_ptr<CGameTask> onSuccess = nullptr);
+	void RunParallelTask(std::shared_ptr<CGameTask> task, std::shared_ptr<CGameTask> onComplete = nullptr);
+
+	/*
+	 * Run concurrent pathfinder
+	 */
+	void RunPathTask(std::shared_ptr<CGameTask> task, std::shared_ptr<CGameTask> onComplete = nullptr);
 
 	/*
 	 * Remove scheduled task from queue
@@ -117,6 +122,7 @@ private:
 		std::weak_ptr<CScheduler> scheduler;
 	};
 	static CMultiQueue<WorkTask> workTasks;
+	static CMultiQueue<WorkTask> pathTasks;
 
 	struct FinishTask: public BaseContainer {
 		FinishTask(std::shared_ptr<CGameTask> task) :
@@ -130,10 +136,11 @@ private:
 	std::vector<std::shared_ptr<CGameTask>> releaseTasks;
 
 	static spring::thread workerThread;
+	static spring::thread patherThread;
 	static std::atomic<bool> workerRunning;
 	static unsigned int counterInstance;
 
-	static void WorkerThread();
+	static void WorkerThread(CMultiQueue<CScheduler::WorkTask>* tasks);
 };
 
 } // namespace circuit

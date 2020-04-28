@@ -25,13 +25,6 @@ void CQueryCostMap::InitQuery(const AIFloat3& startPos)
 	this->startPos = startPos;
 }
 
-std::vector<float>& CQueryCostMap::PrepareCostMap()
-{
-	costMap.resize(pathfinder.GetPathMapXSize() * pathfinder.GetPathMapYSize(), -1.f);
-//	std::fill(costMap.begin(), costMap.end(), -1.f);
-	return costMap;
-}
-
 /*
  * WARNING: endPos must be correct
  */

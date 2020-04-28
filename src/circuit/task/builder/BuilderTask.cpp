@@ -18,6 +18,7 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathFinder.h"
+#include "terrain/path/QueryPathInfo.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/FightAction.h"
 #include "unit/action/MoveAction.h"
@@ -197,10 +198,6 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 				u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 			)
 			return;
-//		} else {
-//			SetBuildPos(-RgtVector);
-//			// FIXME: If enemy blocked position then reset will have no effect
-////			terrainManager->ResetBuildFrame();
 		}
 	}
 
@@ -396,17 +393,7 @@ void IBuilderTask::Update(CCircuitUnit* unit)
 bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-//	for (auto unit : units) {
-//		IUnitAction* action = static_cast<IUnitAction*>(unit->Begin());
-//		if (action->GetType() == IUnitAction::Type::PRE_BUILD) {
-//			Unit* u = unit->GetUnit();
-//			const AIFloat3& vel = u->GetVel();
-//			Resource* metal = circuit->GetEconomyManager()->GetMetalRes();
-//			if ((vel == ZeroVector) && (u->GetResourceUse(metal) <= 0)) {
-//				// TODO: Something is on build site, get standing units in radius and push them.
-//			}
-//		}
-//	}
+	// TODO: Check for open build site, push mobile units away or temporary block position.
 
 	// FIXME: Replace const 1000.0f with build time?
 	CEconomyManager* em = circuit->GetEconomyManager();
@@ -436,7 +423,10 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 	HideAssignee(unit);
 	IUnitTask* task = manager->MakeTask(unit);
 	ShowAssignee(unit);
-	if ((task != nullptr) && ((task->GetType() != IUnitTask::Type::BUILDER) || (static_cast<IBuilderTask*>(task)->GetBuildType() != buildType))) {
+	if ((task != nullptr)
+		&& ((task->GetType() != IUnitTask::Type::BUILDER)
+			|| (static_cast<IBuilderTask*>(task)->GetBuildType() != buildType)))
+	{
 		manager->AssignTask(unit, task);
 		return false;
 	}
@@ -445,42 +435,43 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 
 bool IBuilderTask::UpdatePath(CCircuitUnit* unit)
 {
-//	++updCount;
-
 	CCircuitAI* circuit = manager->GetCircuit();
-//	bool isExecute = (updCount % 4 == 2);
-//	if (!isExecute) {
-//		for (CCircuitUnit* unit : units) {
-//			isExecute |= unit->IsForceExecute();
-//		}
-//		if (!isExecute) {
-//			return;
-//		}
-//	} else {
-//		// TODO: Check shield charge / retreat
-//	}
+	// TODO: Check IsForceExecute, shield charge and retreat
 
-	const int frame = circuit->GetLastFrame();
 	AIFloat3 endPos = GetPosition();
-	if (circuit->GetTerrainManager()->CanBuildAtSafe(unit, endPos)) {
-		AIFloat3 startPos = unit->GetPos(frame);
-		CCircuitDef* cdef = unit->GetCircuitDef();
-		std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
+	if (!circuit->GetTerrainManager()->CanBuildAtSafe(unit, endPos)) {
+		manager->AbortTask(this);
+		return true;
+	}
 
-		CPathFinder* pathfinder = circuit->GetPathfinder();
-		pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-		pathfinder->MakePath(*pPath, startPos, endPos, cdef->GetBuildDistance());
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	const int frame = circuit->GetLastFrame();
+	AIFloat3 startPos = unit->GetPos(frame);
+	CCircuitDef* cdef = unit->GetCircuitDef();
 
-		if ((pPath->path.size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(cdef->GetBuildDistance()))) {
-			unit->GetTravelAct()->SetPath(pPath);
-			unit->GetTravelAct()->SetActive(true);
-		} else {
-			unit->GetTravelAct()->SetFinished(true);
-			unit->GetTravelAct()->SetActive(false);
-			return false;
+	std::shared_ptr<IPathQuery> q = unit->GetQueryPath();
+	if ((q == nullptr) || (q->GetState() == IPathQuery::State::READY)) {
+		unit->SetQueryPath(circuit->GetPathfinder()->CreatePathInfoQuery(
+				unit, threatMap, frame,
+				startPos, endPos, cdef->GetBuildDistance()));
+		if (q == nullptr) {
+			return true;  // 1st run
 		}
 	} else {
-		manager->AbortTask(this);
+		return true;  // not ready. TODO: Use previous query instead?
+	}
+	std::shared_ptr<CQueryPathInfo> query = std::static_pointer_cast<CQueryPathInfo>(q);
+
+	std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
+	*pPath = query->GetPathInfo();
+
+	if ((pPath->path.size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(cdef->GetBuildDistance()))) {
+		unit->GetTravelAct()->SetPath(pPath);
+		unit->GetTravelAct()->SetActive(true);
+	} else {
+		unit->GetTravelAct()->SetFinished(true);
+		unit->GetTravelAct()->SetActive(false);
+		return false;
 	}
 	return true;
 }

@@ -13,6 +13,7 @@ IPathQuery::IPathQuery(const CPathFinder& pathfinder, int id)
 		: pathfinder(pathfinder)
 		, id(id)
 		, type(Type::NONE)
+		, state(State::NONE)
 		, canMoveArray(nullptr)
 		, threatArray(nullptr)
 {

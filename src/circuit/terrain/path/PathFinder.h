@@ -16,6 +16,7 @@
 namespace circuit {
 
 class IPathQuery;
+class CScheduler;
 class CTerrainData;
 class CTerrainManager;
 class CCircuitUnit;
@@ -32,7 +33,7 @@ public:
 		std::vector<bool*> moveArrays;
 	};
 
-	CPathFinder(CTerrainData* terrainData);
+	CPathFinder(std::shared_ptr<CScheduler> scheduler, CTerrainData* terrainData);
 	virtual ~CPathFinder();
 
 	unsigned Checksum() const { return micropather->Checksum(); }
@@ -64,11 +65,6 @@ public:
 	std::shared_ptr<IPathQuery> CreateCostMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos);
 
-//	float MakePath(IPathQuery* query);
-//	float PathCost(IPathQuery* query);
-//	float FindBestPath(IPathQuery* query);
-	void MakeCostMap(IPathQuery* query);
-
 	// FIXME: Remove
 	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
 	float MakePath(PathInfo& iPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius,
@@ -77,7 +73,6 @@ public:
 			float maxThreat = std::numeric_limits<float>::max());
 	float FindBestPath(PathInfo& iPath, springai::AIFloat3& startPos, float maxRange, F3Vec& possibleTargets,
 			float maxThreat = std::numeric_limits<float>::max());
-	NSMicroPather::CostFunc moveFun;
 	// FIXME: Remove
 
 	int GetSquareSize() const { return squareSize; }
@@ -98,6 +93,12 @@ public:
 
 private:
 	void FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, int frame);
+
+	void MakePath(IPathQuery* query);
+	void PathCost(IPathQuery* query);
+	void FindBestPath(IPathQuery* query);
+	void MakeCostMap(IPathQuery* query);
+
 	size_t RefinePath(IndexVec& path);
 	void FillPathInfo(PathInfo& iPath);
 
@@ -118,7 +119,9 @@ private:
 	int pathMapYSize;
 
 	int queryId;
-	CMultiQueue<std::shared_ptr<IPathQuery>> queries;  // owner
+	std::shared_ptr<CScheduler> scheduler;
+	NSMicroPather::CostFunc moveFun;
+	spring::mutex microMutex;  // FIXME: Remove
 
 #ifdef DEBUG_VIS
 private:
