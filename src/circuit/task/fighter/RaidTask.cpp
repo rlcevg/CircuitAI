@@ -74,7 +74,7 @@ void CRaidTask::AssignTo(CCircuitUnit* unit)
 		travelAction = new CMoveAction(unit, squareSize);
 	}
 	unit->PushTravelAct(travelAction);
-	travelAction->SetActive(false);
+	travelAction->StateWait();
 }
 
 void CRaidTask::RemoveAssignee(CCircuitUnit* unit)
@@ -95,7 +95,7 @@ void CRaidTask::Start(CCircuitUnit* unit)
 	}
 	if (!pPath->posPath.empty()) {
 		unit->GetTravelAct()->SetPath(pPath);
-		unit->GetTravelAct()->SetActive(true);
+		unit->GetTravelAct()->StateActivate();
 	}
 }
 
@@ -132,7 +132,7 @@ void CRaidTask::Update()
 					unit->GetUnit()->PatrolTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame);
 				)
 
-				unit->GetTravelAct()->SetActive(false);
+				unit->GetTravelAct()->StateHalt();
 			}
 		}
 		return;
@@ -171,7 +171,7 @@ void CRaidTask::Update()
 						unit->GetUnit()->ExecuteCustomCommand(CMD_ATTACK_GROUND, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 					)
 
-					unit->GetTravelAct()->SetActive(false);
+					unit->GetTravelAct()->StateHalt();
 				}
 			} else {
 				for (CCircuitUnit* unit : units) {
@@ -180,7 +180,7 @@ void CRaidTask::Update()
 //						unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 					)
 
-					unit->GetTravelAct()->SetActive(false);
+					unit->GetTravelAct()->StateHalt();
 				}
 			}
 		} else {
@@ -224,7 +224,7 @@ void CRaidTask::Update()
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
-		unit->GetTravelAct()->SetActive(false);
+		unit->GetTravelAct()->StateHalt();
 	}
 }
 

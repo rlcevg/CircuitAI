@@ -107,8 +107,8 @@ public:
 protected:
 	CCircuitUnit* GetNextAssignee();
 	void Update(CCircuitUnit* unit);
-	bool Reevaluate(CCircuitUnit* unit);
-	bool UpdatePath(CCircuitUnit* unit);
+	virtual bool Reevaluate(CCircuitUnit* unit);
+	void UpdatePath(CCircuitUnit* unit);
 	void HideAssignee(CCircuitUnit* unit);
 	void ShowAssignee(CCircuitUnit* unit);
 	virtual CAllyUnit* FindSameAlly(CCircuitUnit* builder, const std::vector<springai::Unit*>& friendlies);

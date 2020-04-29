@@ -29,4 +29,9 @@ void CQueryPathMulti::InitQuery(const AIFloat3& startPos, float maxRange,
 	this->maxThreat = maxThreat;
 }
 
+void CQueryPathMulti::Prepare()
+{
+	pPath = std::make_shared<PathInfo>();
+}
+
 } // namespace circuit

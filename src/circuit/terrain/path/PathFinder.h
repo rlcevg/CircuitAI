@@ -17,6 +17,7 @@ namespace circuit {
 
 class IPathQuery;
 class CScheduler;
+class CGameTask;
 class CTerrainData;
 class CTerrainManager;
 class CCircuitUnit;
@@ -52,7 +53,6 @@ public:
 	void PathIndex2MoveXY(int index, int* x, int* y) const;
 	springai::AIFloat3 PathIndex2Pos(int index) const;
 
-	int MakeQueryId() { return queryId++; }
 	std::shared_ptr<IPathQuery> CreatePathInfoQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius,
 			float maxThreat = std::numeric_limits<float>::max());
@@ -64,6 +64,11 @@ public:
 			float maxThreat = std::numeric_limits<float>::max());
 	std::shared_ptr<IPathQuery> CreateCostMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos);
+
+	void RunPathInfo(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete = nullptr);
+	void RunPathMulti(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete = nullptr);
+	void RunPathCost(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete = nullptr);
+	void RunCostMap(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete = nullptr);
 
 	// FIXME: Remove
 	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
@@ -92,8 +97,8 @@ public:
 	}
 
 private:
+	int MakeQueryId() { return queryId++; }
 	void FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, int frame);
-
 	void MakePath(IPathQuery* query);
 	void PathCost(IPathQuery* query);
 	void FindBestPath(IPathQuery* query);

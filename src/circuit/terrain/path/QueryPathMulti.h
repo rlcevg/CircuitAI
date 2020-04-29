@@ -20,23 +20,25 @@ public:
 	void InitQuery(const springai::AIFloat3& startPos, float maxRange,
 			F3Vec targets, float maxThreat);
 
+	void Prepare();
+
 	// Input Data
 	const springai::AIFloat3& GetStartPos() const { return startPos; }
-	const float GetMaxRange() const { return maxRange; }
 	const F3Vec& GetTargets() const { return targets; }
+	const float GetMaxRange() const { return maxRange; }
 	const float GetMaxThreat() const { return maxThreat; }
 
 	// Result
-	const PathInfo& GetPathInfo() const { return iPath; }
+	std::shared_ptr<PathInfo> GetPathInfo() const { return pPath; }
 	const float GetPathCost() const { return pathCost; }
 
 private:
-	PathInfo iPath;
+	std::shared_ptr<PathInfo> pPath;
 	float pathCost = 0.f;
 
 	springai::AIFloat3 startPos;
-	float maxRange = 0.f;
 	F3Vec targets;
+	float maxRange = 0.f;
 	float maxThreat = 0.f;
 };
 

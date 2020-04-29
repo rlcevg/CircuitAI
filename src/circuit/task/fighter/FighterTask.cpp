@@ -27,6 +27,7 @@ IFighterTask::IFighterTask(ITaskManager* mgr, FightType type, float powerMod, in
 		, position(-RgtVector)
 		, attackPower(.0f)
 		, powerMod(powerMod)
+		, attackFrame(-1)
 		, target(nullptr)
 {
 }
@@ -154,13 +155,14 @@ void IFighterTask::Attack(const int frame)
 {
 	int targetTile = manager->GetCircuit()->GetInflMap()->Pos2Index(target->GetPos());
 	for (CCircuitUnit* unit : units) {
-		unit->GetTravelAct()->SetActive(false);
-		if (unit->Blocker() != nullptr) {
+		unit->GetTravelAct()->StateHalt();
+		if ((frame <= attackFrame + FRAMES_PER_SEC * 3) || (unit->Blocker() != nullptr)) {
 			continue;  // Do not interrupt current action
 		}
 
 		if ((unit->GetTarget() != target) || (unit->GetTargetTile() != targetTile)) {
 			unit->Attack(target->GetPos(), target, targetTile, frame + FRAMES_PER_SEC * 60);
+			attackFrame = frame;
 		}
 	}
 }

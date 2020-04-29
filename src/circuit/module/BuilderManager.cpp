@@ -106,6 +106,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 		DelBuildPower(unit);
 		workers.erase(unit);
+		costsQueries.erase(unit);
 
 		RemoveBuildList(unit);
 	};
@@ -835,16 +836,22 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
 
-	std::shared_ptr<IPathQuery> q = unit->GetQueryMap();
-	if ((q == nullptr) || (q->GetState() == IPathQuery::State::READY)) {
-		unit->SetQueryMap(circuit->GetPathfinder()->CreateCostMapQuery(unit, threatMap, frame, pos));
-		if (q == nullptr) {
-			return nullptr;  // 1st run
-		}
-	} else {
-		return nullptr;  // not ready. TODO: Use previous query instead?
+	const auto it = costsQueries.find(unit);
+	std::shared_ptr<IPathQuery> query = (it == costsQueries.end()) ? nullptr : it->second;
+	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {
+		return nullptr;
 	}
-	std::shared_ptr<CQueryCostMap> query = std::static_pointer_cast<CQueryCostMap>(q);
+
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	std::shared_ptr<IPathQuery> q = pathfinder->CreateCostMapQuery(unit, threatMap, frame, pos);
+	costsQueries[unit] = q;
+	pathfinder->RunCostMap(q);
+
+	if (query == nullptr) {
+		return nullptr;  // 1st run
+	}
+
+	std::shared_ptr<CQueryCostMap> pQuery = std::static_pointer_cast<CQueryCostMap>(query);
 
 	const CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsRoleComm()) {  // hide commander?
@@ -861,17 +868,17 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 		const CSetupManager::SCommInfo::SHide* hide = setupMgr->GetHide(cdef);
 		if (hide != nullptr) {
 			if ((frame < hide->frame) || (GetWorkerCount() <= 2)) {
-				return MakeBuilderTask(unit, query);
+				return MakeBuilderTask(unit, pQuery);
 			}
 			if (enemyMgr->GetMobileThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat) {
-				return MakeCommTask(unit, query, hide->sqTaskRad);
+				return MakeCommTask(unit, pQuery, hide->sqTaskRad);
 			}
 			const bool isHide = (hide->isAir) && (enemyMgr->GetEnemyCost(ROLE_TYPE(AIR)) > 1.f);
-			return isHide ? MakeCommTask(unit, query, hide->sqTaskRad) : MakeBuilderTask(unit, query);
+			return isHide ? MakeCommTask(unit, pQuery, hide->sqTaskRad) : MakeBuilderTask(unit, pQuery);
 		}
 	}
 
-	return MakeBuilderTask(unit, query);
+	return MakeBuilderTask(unit, pQuery);
 }
 
 IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, std::shared_ptr<CQueryCostMap> query, float sqMaxBaseRange)

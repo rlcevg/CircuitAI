@@ -12,12 +12,14 @@
 #include "module/FactoryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/path/PathFinder.h"
+#include "terrain/path/QueryPathInfo.h"
 #include "terrain/TerrainManager.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/MoveAction.h"
 #include "unit/action/FightAction.h"
 #include "unit/action/JumpAction.h"
 #include "CircuitAI.h"
+#include "util/GameTask.h"
 #include "util/Utils.h"
 
 #include "AISCommands.h"
@@ -96,6 +98,12 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 		return;
 	}
 
+	const auto it = pathQueries.find(unit);
+	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
+	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
+		return;
+	}
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
@@ -114,16 +122,36 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 		}
 		range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
 	}
-	std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
+
+	if (unit->GetTravelAct()->GetPath() == nullptr) {
+		std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
+		pPath->posPath.push_back(endPos);
+		unit->GetTravelAct()->SetPath(pPath);
+	}
 
 //	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit) * 0.125f;
-	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	pathfinder->MakePath(*pPath, startPos, endPos, range/*, minThreat*/);
+	query = pathfinder->CreatePathInfoQuery(
+			unit, circuit->GetThreatMap(), frame,
+			startPos, endPos, range/*, minThreat*/);
+	pathQueries[unit] = query;
 
-	if (pPath->posPath.empty()) {
-		pPath->posPath.push_back(endPos);
-	}
-	unit->GetTravelAct()->SetPath(pPath);
+	pathfinder->RunPathInfo(query, std::make_shared<CGameTask>([this, unit, query]() {
+		if (isDead || (unit->GetTask() != this)) {  // FIXME: invalid check; shared_ptr<this> required
+			return;
+		}
+		const auto it = pathQueries.find(unit);
+		if ((it == pathQueries.end()) || (it->second->GetId() != query->GetId())) {
+			return;
+		}
+
+		std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
+
+		std::shared_ptr<PathInfo> pPath = pQuery->GetPathInfo();
+		if (pPath->posPath.empty()) {
+			pPath->posPath.push_back(pQuery->GetEndPos());
+		}
+		unit->GetTravelAct()->SetPath(pPath);
+	}));
 }
 
 void CRetreatTask::Update()
@@ -134,12 +162,9 @@ void CRetreatTask::Update()
 	auto assignees = units;
 	for (CCircuitUnit* unit : assignees) {
 		const float healthPerc = unit->GetHealthPercent();
-		bool isRepaired;
-		if (unit->HasShield()) {
-			isRepaired = (healthPerc > 0.98f) && unit->IsShieldCharged(circuit->GetSetupManager()->GetFullShield());
-		} else {
-			isRepaired = healthPerc > 0.98f;
-		}
+		bool isRepaired = unit->HasShield()
+				? (healthPerc > 0.98f) && unit->IsShieldCharged(circuit->GetSetupManager()->GetFullShield())
+				: healthPerc > 0.98f;
 
 		if (isRepaired && !unit->IsDisarmed(frame)) {
 			RemoveAssignee(unit);
@@ -175,7 +200,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 			return;
 		}
 		if (unit->GetTravelAct() != nullptr) {
-			unit->GetTravelAct()->SetFinished(true);
+			unit->GetTravelAct()->StateFinish();
 		}
 
 		TRY_UNIT(circuit, unit,
@@ -225,7 +250,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		)
 
 		if (unit->GetTravelAct() != nullptr) {
-			unit->GetTravelAct()->SetFinished(true);
+			unit->GetTravelAct()->StateFinish();
 		}
 		state = State::REGROUP;
 	}

@@ -20,14 +20,12 @@ public:
 	virtual ~CBRepairTask();
 
 	virtual void Start(CCircuitUnit* unit) override;
-	virtual void Update() override;
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 private:
-	void Update(CCircuitUnit* unit);
-	bool Reevaluate();
+	virtual bool Reevaluate(CCircuitUnit* unit) override;
 };
 
 } // namespace circuit

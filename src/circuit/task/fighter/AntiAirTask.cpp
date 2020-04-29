@@ -60,7 +60,7 @@ void CAntiAirTask::AssignTo(CCircuitUnit* unit)
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
 	CMoveAction* travelAction = new CMoveAction(unit, squareSize);
 	unit->PushTravelAct(travelAction);
-	travelAction->SetActive(false);
+	travelAction->StateWait();
 }
 
 void CAntiAirTask::RemoveAssignee(CCircuitUnit* unit)
@@ -78,7 +78,7 @@ void CAntiAirTask::Start(CCircuitUnit* unit)
 	}
 	if (!pPath->posPath.empty()) {
 		unit->GetTravelAct()->SetPath(pPath);
-		unit->GetTravelAct()->SetActive(true);
+		unit->GetTravelAct()->StateActivate();
 	}
 }
 
@@ -139,7 +139,7 @@ void CAntiAirTask::Update()
 					unit->GetUnit()->Fight(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 				)
 
-				unit->GetTravelAct()->SetActive(false);
+				unit->GetTravelAct()->StateHalt();
 			}
 		}
 		return;
@@ -176,7 +176,7 @@ void CAntiAirTask::Update()
 			for (CCircuitUnit* unit : units) {
 				unit->Attack(target->GetPos(), target, frame + FRAMES_PER_SEC * 60);
 
-				unit->GetTravelAct()->SetActive(false);
+				unit->GetTravelAct()->StateHalt();
 			}
 			return;
 		}
@@ -202,7 +202,7 @@ void CAntiAirTask::Update()
 				for (CCircuitUnit* unit : units) {
 					unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
 
-					unit->GetTravelAct()->SetActive(false);
+					unit->GetTravelAct()->StateHalt();
 				}
 				return;
 			}
@@ -214,7 +214,7 @@ void CAntiAirTask::Update()
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
 
-			unit->GetTravelAct()->SetActive(false);
+			unit->GetTravelAct()->StateHalt();
 		}
 	} else {
 		ActivePath();
@@ -274,7 +274,7 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
 
-			unit->GetTravelAct()->SetActive(false);
+			unit->GetTravelAct()->StateHalt();
 		}
 	}
 }

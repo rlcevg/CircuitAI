@@ -62,7 +62,7 @@ public:
 	void RunParallelTask(std::shared_ptr<CGameTask> task, std::shared_ptr<CGameTask> onComplete = nullptr);
 
 	/*
-	 * Run concurrent pathfinder
+	 * Run concurrent pathfinder, finalize on complete at main thread
 	 */
 	void RunPathTask(std::shared_ptr<CGameTask> task, std::shared_ptr<CGameTask> onComplete = nullptr);
 

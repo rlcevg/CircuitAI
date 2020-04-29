@@ -22,7 +22,6 @@ public:
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
 	virtual void Start(CCircuitUnit* unit) override;
-	virtual void Update() override = 0;
 protected:
 	virtual void Finish() override;
 	virtual void Cancel() override final;

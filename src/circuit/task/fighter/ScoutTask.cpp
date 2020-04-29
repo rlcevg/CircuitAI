@@ -53,7 +53,7 @@ void CScoutTask::AssignTo(CCircuitUnit* unit)
 		travelAction = new CMoveAction(unit, squareSize);
 	}
 	unit->PushTravelAct(travelAction);
-	travelAction->SetActive(false);
+	travelAction->StateWait();
 }
 
 void CScoutTask::RemoveAssignee(CCircuitUnit* unit)
@@ -115,12 +115,12 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		} else {
 			unit->Attack(target, frame + FRAMES_PER_SEC * 60);
 		}
-		unit->GetTravelAct()->SetActive(false);
+		unit->GetTravelAct()->StateHalt();
 		return;
 	} else if (!pPath->posPath.empty()) {
 		position = pPath->posPath.back();
 		unit->GetTravelAct()->SetPath(pPath);
-		unit->GetTravelAct()->SetActive(true);
+		unit->GetTravelAct()->StateActivate();
 		return;
 	}
 
@@ -149,14 +149,14 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	if (pPath->path.size() > 2) {
 //		position = path.back();
 		unit->GetTravelAct()->SetPath(pPath);
-		unit->GetTravelAct()->SetActive(true);
+		unit->GetTravelAct()->StateActivate();
 		return;
 	}
 
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->MoveTo(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 	)
-	unit->GetTravelAct()->SetActive(false);
+	unit->GetTravelAct()->StateHalt();
 }
 
 CEnemyInfo* CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos, PathInfo& path)

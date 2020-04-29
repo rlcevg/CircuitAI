@@ -27,7 +27,6 @@ public:
 	virtual void AssignTo(CCircuitUnit* unit) override = 0;
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;  // FIXME: Remove when proper task assignment implemented
 
-	virtual void Update() override = 0;
 protected:
 	virtual void Finish() override;
 	virtual void Cancel() override;

@@ -11,8 +11,6 @@
 #include "unit/ally/AllyUnit.h"
 #include "util/ActionList.h"
 
-#include <memory>
-
 namespace springai {
 	class Weapon;
 }
@@ -50,7 +48,6 @@ namespace circuit {
 class CCircuitDef;
 class CEnemyInfo;
 class IUnitManager;
-class IPathQuery;
 class CDGunAction;
 class ITravelAction;
 struct STerrainMapArea;
@@ -71,13 +68,6 @@ public:
 
 	void SetArea(STerrainMapArea* area) { this->area = area; }
 	STerrainMapArea* GetArea() const { return area; }
-
-	void SetQueryPath(std::shared_ptr<IPathQuery> query) { queryPath = query; }
-	std::shared_ptr<IPathQuery> GetQueryPath() const { return queryPath; }
-	void SetQueryMap(std::shared_ptr<IPathQuery> query) { queryMap = query; }
-	std::shared_ptr<IPathQuery> GetQueryMap() const { return queryMap; }
-	void SetQueryCost(std::shared_ptr<IPathQuery> query) { queryCost = query; }
-	std::shared_ptr<IPathQuery> GetQueryCost() const { return queryCost; }
 
 	void ClearAct();
 	void PushDGunAct(CDGunAction* action);
@@ -136,10 +126,6 @@ private:
 	int taskFrame;
 	IUnitManager* manager;
 	STerrainMapArea* area;  // = nullptr if a unit flies
-
-	std::shared_ptr<IPathQuery> queryPath;
-	std::shared_ptr<IPathQuery> queryMap;
-	std::shared_ptr<IPathQuery> queryCost;
 
 	CDGunAction* dgunAct;
 	ITravelAction* travelAct;

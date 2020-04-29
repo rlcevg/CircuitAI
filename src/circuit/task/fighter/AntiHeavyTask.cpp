@@ -70,7 +70,7 @@ void CAntiHeavyTask::AssignTo(CCircuitUnit* unit)
 	}
 
 	if (unit->GetDGunAct() != nullptr) {
-		unit->GetDGunAct()->SetActive(false);
+		unit->GetDGunAct()->StateHalt();
 	}
 
 	int squareSize = circuit->GetPathfinder()->GetSquareSize();
@@ -81,7 +81,7 @@ void CAntiHeavyTask::AssignTo(CCircuitUnit* unit)
 		travelAction = new CMoveAction(unit, squareSize);
 	}
 	unit->PushTravelAct(travelAction);
-	travelAction->SetActive(false);
+	travelAction->StateWait();
 }
 
 void CAntiHeavyTask::RemoveAssignee(CCircuitUnit* unit)
@@ -109,7 +109,7 @@ void CAntiHeavyTask::Start(CCircuitUnit* unit)
 	}
 	if (!pPath->posPath.empty()) {
 		unit->GetTravelAct()->SetPath(pPath);
-		unit->GetTravelAct()->SetActive(true);
+		unit->GetTravelAct()->StateActivate();
 	}
 }
 
@@ -148,7 +148,7 @@ void CAntiHeavyTask::Update()
 					unit->GetUnit()->Fight(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 				)
 
-				unit->GetTravelAct()->SetActive(false);
+				unit->GetTravelAct()->StateHalt();
 			}
 		}
 		return;
@@ -188,9 +188,9 @@ void CAntiHeavyTask::Update()
 			CEnemyInfo* target = this->target;
 			auto subattack = [&power, target](CCircuitUnit* unit) {
 				if (unit->GetDGunAct() != nullptr) {
-					unit->GetDGunAct()->SetActive(true);
+					unit->GetDGunAct()->StateActivate();
 				}
-				unit->GetTravelAct()->SetActive(false);
+				unit->GetTravelAct()->StateHalt();
 
 				if (unit->GetCircuitDef()->IsRoleMine()) {
 					const bool isAttack = (target->GetThreat() > power);
@@ -248,7 +248,7 @@ void CAntiHeavyTask::Update()
 			for (CCircuitUnit* unit : units) {
 				unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
 
-				unit->GetTravelAct()->SetActive(false);
+				unit->GetTravelAct()->StateHalt();
 			}
 			return;
 		}
@@ -259,7 +259,7 @@ void CAntiHeavyTask::Update()
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
 
-			unit->GetTravelAct()->SetActive(false);
+			unit->GetTravelAct()->StateHalt();
 		}
 	}
 }
@@ -297,7 +297,7 @@ void CAntiHeavyTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 			)
 		}
 		if (unit->GetDGunAct() != nullptr) {
-			unit->GetDGunAct()->SetActive(true);
+			unit->GetDGunAct()->StateActivate();
 		}
 	}
 }

@@ -172,6 +172,7 @@ private:
 	unsigned int buildIterator;
 
 	std::set<CCircuitUnit*> workers;
+	std::map<CCircuitUnit*, std::shared_ptr<IPathQuery>> costsQueries;
 
 	CCircuitDef* terraDef;
 	std::unordered_map<IBuilderTask::BT, std::unordered_map<CCircuitDef*, SBuildChain*>> buildChains;  // owner

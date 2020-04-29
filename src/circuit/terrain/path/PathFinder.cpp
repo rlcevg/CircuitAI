@@ -7,7 +7,6 @@
  */
 
 #include "terrain/path/PathFinder.h"
-#include "terrain/path/PathQuery.h"
 #include "terrain/path/QueryPathMulti.h"
 #include "terrain/path/QueryPathInfo.h"
 #include "terrain/path/QueryPathCost.h"
@@ -255,18 +254,6 @@ std::shared_ptr<IPathQuery> CPathFinder::CreatePathInfoQuery(
 	FillMapData(query, unit, threatMap, frame);
 	query->InitQuery(startPos, endPos, radius, maxThreat);
 
-	pQuery->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
-		MakePath(pQuery.get());
-		pQuery->SetState(IPathQuery::State::READY);
-	})
-#ifdef DEBUG_VIS
-	, std::make_shared<CGameTask>([this, pQuery]() {
-		UpdateVis(static_cast<CQueryPathInfo*>(pQuery.get())->GetPathInfo().path);
-	})
-#endif
-	);
-
 	return pQuery;
 }
 
@@ -279,18 +266,6 @@ std::shared_ptr<IPathQuery> CPathFinder::CreatePathMultiQuery(
 
 	FillMapData(query, unit, threatMap, frame);
 	query->InitQuery(startPos, maxRange, possibleTargets, maxThreat);
-
-	pQuery->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
-		FindBestPath(pQuery.get());
-		pQuery->SetState(IPathQuery::State::READY);
-	})
-#ifdef DEBUG_VIS
-	, std::make_shared<CGameTask>([this, pQuery]() {
-		UpdateVis(static_cast<CQueryPathMulti*>(pQuery.get())->GetPathInfo().path);
-	})
-#endif
-	);
 
 	return pQuery;
 }
@@ -308,12 +283,6 @@ std::shared_ptr<IPathQuery> CPathFinder::CreatePathCostQuery(
 	FillMapData(query, unit, threatMap, frame);
 	query->InitQuery(startPos, endPos, radius, maxThreat);
 
-	pQuery->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
-		PathCost(pQuery.get());
-		pQuery->SetState(IPathQuery::State::READY);
-	}));
-
 	return pQuery;
 }
 
@@ -330,79 +299,69 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateCostMapQuery(
 	FillMapData(query, unit, threatMap, frame);
 	query->InitQuery(startPos);
 
+	return pQuery;
+}
+
+void CPathFinder::RunPathInfo(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
+{
+	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
+
+	pQuery->SetState(IPathQuery::State::PROCESS);
+	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
+		MakePath(pQuery.get());
+		pQuery->SetState(IPathQuery::State::READY);
+	})
+#ifdef DEBUG_VIS
+	, std::make_shared<CGameTask>([this, pQuery, onComplete]() {
+		UpdateVis(pQuery->GetPathInfo()->path);
+		onComplete->Run();
+	})
+#else
+	, onComplete
+#endif
+	);
+}
+
+void CPathFinder::RunPathMulti(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
+{
+	std::shared_ptr<CQueryPathMulti> pQuery = std::static_pointer_cast<CQueryPathMulti>(query);
+
+	pQuery->SetState(IPathQuery::State::PROCESS);
+	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
+		FindBestPath(pQuery.get());
+		pQuery->SetState(IPathQuery::State::READY);
+	})
+#ifdef DEBUG_VIS
+	, std::make_shared<CGameTask>([this, pQuery, onComplete]() {
+		UpdateVis(pQuery->GetPathInfo()->path);
+		onComplete->Run();
+	})
+#else
+	, onComplete
+#endif
+	);
+}
+
+void CPathFinder::RunPathCost(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
+{
+	std::shared_ptr<CQueryPathCost> pQuery = std::static_pointer_cast<CQueryPathCost>(query);
+
+	pQuery->SetState(IPathQuery::State::PROCESS);
+	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
+		PathCost(pQuery.get());
+		pQuery->SetState(IPathQuery::State::READY);
+	}), onComplete);
+}
+
+void CPathFinder::RunCostMap(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
+{
+	std::shared_ptr<CQueryCostMap> pQuery = std::static_pointer_cast<CQueryCostMap>(query);
+
 	pQuery->SetState(IPathQuery::State::PROCESS);
 	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
 		MakeCostMap(pQuery.get());
 		pQuery->SetState(IPathQuery::State::READY);
-	}));
-
-	return pQuery;
-}
-
-void CPathFinder::MakePath(IPathQuery* query)
-{
-	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
-
-	CQueryPathInfo* q = static_cast<CQueryPathInfo*>(query);
-
-	const bool* canMoveArray = q->GetCanMoveArray();
-	const float* threatArray = q->GetThreatArray();
-	const NSMicroPather::CostFunc moveThreatFun = q->GetMoveThreatFun();
-	moveFun = q->GetMoveFun();
-
-	AIFloat3 startPos = q->GetStartPos();
-	AIFloat3 endPos = q->GetEndPos();
-	int radius = q->GetRadius();
-	float maxThreat = q->GetMaxThreat();
-
-	PathInfo& iPath = q->GetRefPathInfo();
-	float& pathCost = q->GetRefPathCost();
-
-	iPath.Clear();
-
-	CTerrainData::CorrectPosition(startPos);
-	CTerrainData::CorrectPosition(endPos);
-
-//	float pathCost = 0.0f;
-	radius /= squareSize;
-
-	micropather->SetMapData(canMoveArray, threatArray, moveThreatFun);
-	if (micropather->FindBestPathToPointOnRadius(Pos2MoveNode(startPos), Pos2MoveNode(endPos),
-			radius, maxThreat, &iPath.path, &pathCost) == CMicroPather::SOLVED)
-	{
-		FillPathInfo(iPath);
-	}
-}
-
-void CPathFinder::PathCost(IPathQuery* query)
-{
-	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
-}
-
-void CPathFinder::FindBestPath(IPathQuery* query)
-{
-	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
-}
-
-void CPathFinder::MakeCostMap(IPathQuery* query)
-{
-	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
-
-	CQueryCostMap* q = static_cast<CQueryCostMap*>(query);
-
-	const bool* canMoveArray = q->GetCanMoveArray();
-	const float* threatArray = q->GetThreatArray();
-	const NSMicroPather::CostFunc moveThreatFun = q->GetMoveThreatFun();
-
-	const AIFloat3& startPos = q->GetStartPos();
-	std::vector<float>& costMap = q->GetRefCostMap();
-
-	// TODO: Cache to avoid memory allocations
-	costMap.resize(pathMapXSize * pathMapYSize, -1.f);
-//	std::fill(costMap.begin(), costMap.end(), -1.f);
-
-	micropather->SetMapData(canMoveArray, threatArray, moveThreatFun);
-	micropather->MakeCostMap(Pos2MoveNode(startPos), costMap);
+	}), onComplete);
 }
 
 void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame)
@@ -743,6 +702,67 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 	// FIXME: DEBUG
 
 	query->Init(moveArray, threatArray, moveFun, moveThreatFun);
+}
+
+void CPathFinder::MakePath(IPathQuery* query)
+{
+	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
+
+	CQueryPathInfo* q = static_cast<CQueryPathInfo*>(query);
+	q->Prepare();
+
+	const bool* canMoveArray = q->GetCanMoveArray();
+	const float* threatArray = q->GetThreatArray();
+	NSMicroPather::CostFunc moveThreatFun = q->GetMoveThreatFun();
+	moveFun = q->GetMoveFun();
+
+	AIFloat3 startPos = q->GetStartPos();
+	AIFloat3 endPos = q->GetEndPos();
+	const int radius = q->GetMaxRange() / squareSize;
+	const float maxThreat = q->GetMaxThreat();
+
+	PathInfo& iPath = q->GetRefPathInfo();
+	float& pathCost = q->GetRefPathCost();
+
+	iPath.Clear();
+
+	CTerrainData::CorrectPosition(startPos);
+	CTerrainData::CorrectPosition(endPos);
+
+	micropather->SetMapData(canMoveArray, threatArray, moveThreatFun);
+	if (micropather->FindBestPathToPointOnRadius(Pos2MoveNode(startPos), Pos2MoveNode(endPos),
+			radius, maxThreat, &iPath.path, &pathCost) == CMicroPather::SOLVED)
+	{
+		FillPathInfo(iPath);
+	}
+}
+
+void CPathFinder::PathCost(IPathQuery* query)
+{
+	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
+}
+
+void CPathFinder::FindBestPath(IPathQuery* query)
+{
+	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
+}
+
+void CPathFinder::MakeCostMap(IPathQuery* query)
+{
+	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
+
+	CQueryCostMap* q = static_cast<CQueryCostMap*>(query);
+	q->Prepare();
+
+	const bool* canMoveArray = q->GetCanMoveArray();
+	const float* threatArray = q->GetThreatArray();
+	NSMicroPather::CostFunc moveThreatFun = q->GetMoveThreatFun();
+
+	const AIFloat3& startPos = q->GetStartPos();
+	std::vector<float>& costMap = q->GetRefCostMap();
+
+	micropather->SetMapData(canMoveArray, threatArray, moveThreatFun);
+	micropather->MakeCostMap(Pos2MoveNode(startPos), costMap);
 }
 
 size_t CPathFinder::RefinePath(IndexVec& path)

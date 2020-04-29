@@ -49,24 +49,7 @@ void CBReclaimTask::AssignTo(CCircuitUnit* unit)
 	lastTouched = manager->GetCircuit()->GetLastFrame();
 }
 
-void CBReclaimTask::Update()
-{
-	CCircuitUnit* unit = GetNextAssignee();
-	if (unit == nullptr) {
-		return;
-	}
-
-	Update(unit);
-}
-
-void CBReclaimTask::Update(CCircuitUnit* unit)
-{
-	if (Reevaluate() && !unit->GetTravelAct()->IsFinished() && !UpdatePath(unit)) {
-		Execute(unit);
-	}
-}
-
-bool CBReclaimTask::Reevaluate()
+bool CBReclaimTask::Reevaluate(CCircuitUnit* unit)
 {
 	if (!isMetal) {
 		return true;
@@ -80,8 +63,6 @@ bool CBReclaimTask::Reevaluate()
 		/*
 		 * Update reclaim position
 		 */
-		// FIXME: Works only with 1 task per worker
-		CCircuitUnit* unit = *units.begin();
 		const int frame = circuit->GetLastFrame();
 		const AIFloat3& pos = unit->GetPos(frame);
 		auto enemies = circuit->GetCallback()->GetEnemyUnitsIn(pos, 500.0f);

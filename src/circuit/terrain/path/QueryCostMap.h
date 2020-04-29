@@ -19,6 +19,8 @@ public:
 
 	void InitQuery(const springai::AIFloat3& startPos);
 
+	void Prepare();
+
 	// Process Data
 	std::vector<float>& GetRefCostMap() { return costMap; }
 

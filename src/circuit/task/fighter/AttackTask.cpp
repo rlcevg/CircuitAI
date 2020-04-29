@@ -82,7 +82,7 @@ void CAttackTask::AssignTo(CCircuitUnit* unit)
 		travelAction = new CMoveAction(unit, squareSize);
 	}
 	unit->PushTravelAct(travelAction);
-	travelAction->SetActive(false);
+	travelAction->StateWait();
 }
 
 void CAttackTask::RemoveAssignee(CCircuitUnit* unit)
@@ -102,7 +102,7 @@ void CAttackTask::Start(CCircuitUnit* unit)
 	}
 	if (!pPath->posPath.empty()) {
 		unit->GetTravelAct()->SetPath(pPath, lowestSpeed);
-		unit->GetTravelAct()->SetActive(true);
+		unit->GetTravelAct()->StateActivate();
 	}
 }
 
@@ -136,7 +136,7 @@ void CAttackTask::Update()
 			for (CCircuitUnit* unit : units) {
 				unit->Gather(groupPos, frame);
 
-				unit->GetTravelAct()->SetActive(false);
+				unit->GetTravelAct()->StateHalt();
 			}
 		}
 		return;
@@ -201,7 +201,7 @@ void CAttackTask::Update()
 				unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {lowestSpeed});
 			)
 
-			unit->GetTravelAct()->SetActive(false);
+			unit->GetTravelAct()->StateHalt();
 		}
 	} else {
 		ActivePath(lowestSpeed);

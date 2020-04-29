@@ -48,6 +48,7 @@ void IUnitTask::AssignTo(CCircuitUnit* unit)
 
 void IUnitTask::RemoveAssignee(CCircuitUnit* unit)
 {
+	pathQueries.erase(unit);
 	units.erase(unit);
 	unit->Clear();
 
@@ -72,6 +73,7 @@ void IUnitTask::Stop(bool done)
 		idleTask->AssignTo(unit);
 	}
 	units.clear();
+	pathQueries.clear();
 }
 
 void IUnitTask::Finish()

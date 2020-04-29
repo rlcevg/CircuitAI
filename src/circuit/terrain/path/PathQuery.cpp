@@ -24,12 +24,12 @@ IPathQuery::~IPathQuery()
 }
 
 void IPathQuery::Init(const bool* canMoveArray, const float* threatArray,
-		NSMicroPather::CostFunc moveThreatFun, NSMicroPather::CostFunc moveFun)
+		NSMicroPather::CostFunc moveFun, NSMicroPather::CostFunc moveThreatFun)
 {
 	this->canMoveArray = canMoveArray;
 	this->threatArray = threatArray;
-	this->moveThreatFun = moveThreatFun;
 	this->moveFun = moveFun;
+	this->moveThreatFun = moveThreatFun;
 }
 
 } // namespace circuit

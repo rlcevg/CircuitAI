@@ -23,6 +23,7 @@
 #include "unit/action/FightAction.h"
 #include "unit/action/MoveAction.h"
 #include "CircuitAI.h"
+#include "util/GameTask.h"
 #include "util/Utils.h"
 
 #include "spring/SpringCallback.h"
@@ -102,7 +103,7 @@ void IBuilderTask::AssignTo(CCircuitUnit* unit)
 		travelAction = new CMoveAction(unit, squareSize);
 	}
 	unit->PushTravelAct(travelAction);
-	travelAction->SetActive(false);
+	travelAction->StateWait();
 }
 
 void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
@@ -385,8 +386,8 @@ CCircuitUnit* IBuilderTask::GetNextAssignee()
 
 void IBuilderTask::Update(CCircuitUnit* unit)
 {
-	if (Reevaluate(unit) && !unit->GetTravelAct()->IsFinished() && !UpdatePath(unit)) {
-		Execute(unit);  // FIXME: no need with OnTravelEnd?
+	if (Reevaluate(unit) && !unit->GetTravelAct()->IsFinished()) {
+		UpdatePath(unit);  // Execute(unit) within OnTravelEnd
 	}
 }
 
@@ -433,7 +434,7 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 	return true;
 }
 
-bool IBuilderTask::UpdatePath(CCircuitUnit* unit)
+void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	// TODO: Check IsForceExecute, shield charge and retreat
@@ -441,39 +442,50 @@ bool IBuilderTask::UpdatePath(CCircuitUnit* unit)
 	AIFloat3 endPos = GetPosition();
 	if (!circuit->GetTerrainManager()->CanBuildAtSafe(unit, endPos)) {
 		manager->AbortTask(this);
-		return true;
+		return;
 	}
 
-	CThreatMap* threatMap = circuit->GetThreatMap();
 	const int frame = circuit->GetLastFrame();
 	AIFloat3 startPos = unit->GetPos(frame);
 	CCircuitDef* cdef = unit->GetCircuitDef();
+	const float range = cdef->GetBuildDistance();
 
-	std::shared_ptr<IPathQuery> q = unit->GetQueryPath();
-	if ((q == nullptr) || (q->GetState() == IPathQuery::State::READY)) {
-		unit->SetQueryPath(circuit->GetPathfinder()->CreatePathInfoQuery(
-				unit, threatMap, frame,
-				startPos, endPos, cdef->GetBuildDistance()));
-		if (q == nullptr) {
-			return true;  // 1st run
+	if (startPos.SqDistance2D(endPos) < SQUARE(range)) {
+		unit->GetTravelAct()->StateFinish();
+		return;
+	}
+
+	const auto it = pathQueries.find(unit);
+	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
+	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {
+		return;
+	}
+
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	query = pathfinder->CreatePathInfoQuery(
+			unit, circuit->GetThreatMap(), frame,
+			startPos, endPos, range);
+	pathQueries[unit] = query;
+
+	pathfinder->RunPathInfo(query, std::make_shared<CGameTask>([this, unit, query]() {
+		if (isDead || (unit->GetTask() != this)) {  // FIXME: invalid check; shared_ptr<this> required
+			return;
 		}
-	} else {
-		return true;  // not ready. TODO: Use previous query instead?
-	}
-	std::shared_ptr<CQueryPathInfo> query = std::static_pointer_cast<CQueryPathInfo>(q);
+		const auto it = pathQueries.find(unit);
+		if ((it == pathQueries.end()) || (it->second->GetId() != query->GetId())) {
+			return;
+		}
 
-	std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
-	*pPath = query->GetPathInfo();
+		std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
 
-	if ((pPath->path.size() > 2) && (startPos.SqDistance2D(endPos) > SQUARE(cdef->GetBuildDistance()))) {
-		unit->GetTravelAct()->SetPath(pPath);
-		unit->GetTravelAct()->SetActive(true);
-	} else {
-		unit->GetTravelAct()->SetFinished(true);
-		unit->GetTravelAct()->SetActive(false);
-		return false;
-	}
-	return true;
+		std::shared_ptr<PathInfo> pPath = pQuery->GetPathInfo();
+		if (pPath->path.size() > 2) {
+			unit->GetTravelAct()->SetPath(pPath);
+			unit->GetTravelAct()->StateActivate();
+		} else {
+			unit->GetTravelAct()->StateFinish();
+		}
+	}));
 }
 
 void IBuilderTask::HideAssignee(CCircuitUnit* unit)

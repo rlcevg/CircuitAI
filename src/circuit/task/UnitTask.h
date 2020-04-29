@@ -13,6 +13,8 @@
 #include "AIFloat3.h"
 
 #include <set>
+#include <map>
+#include <memory>
 
 namespace springai {
 	class Unit;
@@ -23,8 +25,9 @@ namespace circuit {
 class CCircuitUnit;
 class CEnemyInfo;
 class ITaskManager;
+class IPathQuery;
 
-class IUnitTask: public IRefCounter {  // CSquad, IAction
+class IUnitTask: public IRefCounter/*, protected std::enable_shared_from_this<IUnitTask>*/ {  // CSquad, IAction
 public:
 	enum class Priority: char {LOW = 0, NORMAL = 1, HIGH = 2, NOW = 99};
 	enum class Type: char {NIL, PLAYER, IDLE, WAIT, RETREAT, BUILDER, FACTORY, FIGHTER};
@@ -77,6 +80,7 @@ protected:
 	Priority priority;
 	Type type;
 	State state;
+	std::map<CCircuitUnit*, std::shared_ptr<IPathQuery>> pathQueries;
 
 	int lastTouched;
 	int timeout;

@@ -67,7 +67,7 @@ void CDefendTask::AssignTo(CCircuitUnit* unit)
 		travelAction = new CMoveAction(unit, squareSize);
 	}
 	unit->PushTravelAct(travelAction);
-	travelAction->SetActive(false);
+	travelAction->StateWait();
 }
 
 void CDefendTask::RemoveAssignee(CCircuitUnit* unit)
@@ -178,7 +178,7 @@ void CDefendTask::Update()
 				unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {lowestSpeed});
 			)
 
-			unit->GetTravelAct()->SetActive(false);
+			unit->GetTravelAct()->StateHalt();
 		}
 	} else {
 		ActivePath(lowestSpeed);

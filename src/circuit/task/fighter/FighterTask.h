@@ -52,6 +52,7 @@ protected:
 
 	float attackPower;
 	float powerMod;
+	int attackFrame;
 	// NOTE: Never assign directly, use SetTarget() to avoid access to a dead target
 	CEnemyInfo* target;
 

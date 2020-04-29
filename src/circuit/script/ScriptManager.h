@@ -12,7 +12,7 @@
 #include <string>
 
 namespace springai {
-class AIFloat3;
+	class AIFloat3;
 }
 
 class asIScriptEngine;

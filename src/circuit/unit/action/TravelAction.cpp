@@ -51,7 +51,7 @@ ITravelAction::~ITravelAction()
 
 void ITravelAction::OnEnd()
 {
-	isActive = false;
+	IAction::OnEnd();
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	unit->GetTask()->OnTravelEnd(unit);  // may clear/delete unit actions
 }
@@ -62,7 +62,6 @@ void ITravelAction::SetPath(const std::shared_ptr<PathInfo>& pPath, float speed)
 	this->pPath = pPath;
 	this->speed = speed;
 	isForce = true;
-	isFinished = false;
 }
 
 int ITravelAction::CalcSpeedStep(float& stepSpeed)
@@ -90,7 +89,7 @@ int ITravelAction::CalcSpeedStep(float& stepSpeed)
 
 	if ((int)sqDistToStep <= minSqDist) {
 		pathIterator = step;
-		isFinished = (pathIterator == pathMaxIndex);
+		state = (pathIterator == pathMaxIndex) ? State::FINISH : state;
 	}
 
 	isForce = false;

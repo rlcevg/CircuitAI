@@ -36,7 +36,7 @@ void CActionList::Update(CCircuitAI* circuit)
 			action->Update(circuit);
 		}
 
-		if (action->IsActive() && action->IsFinished()) {
+		if (action->IsFinishing()) {
 			action->OnEnd();
 //			itAction = Remove(itAction);
 		} else {

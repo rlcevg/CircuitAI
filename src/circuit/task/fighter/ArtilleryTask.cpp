@@ -50,7 +50,7 @@ void CArtilleryTask::AssignTo(CCircuitUnit* unit)
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
 	CMoveAction* travelAction = new CMoveAction(unit, squareSize);
 	unit->PushTravelAct(travelAction);
-	travelAction->SetActive(false);
+	travelAction->StateWait();
 }
 
 void CArtilleryTask::RemoveAssignee(CCircuitUnit* unit)
@@ -99,11 +99,11 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 			unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 //			unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)bestTarget->GetId()});
 		)
-		unit->GetTravelAct()->SetActive(false);
+		unit->GetTravelAct()->StateHalt();
 		return;
 	} else if (!pPath->posPath.empty()) {
 		unit->GetTravelAct()->SetPath(pPath);
-		unit->GetTravelAct()->SetActive(true);
+		unit->GetTravelAct()->StateActivate();
 		return;
 	}
 
@@ -126,7 +126,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		proceed = pPath->path.size() > 2;
 		if (proceed) {
 			unit->GetTravelAct()->SetPath(pPath);
-			unit->GetTravelAct()->SetActive(true);
+			unit->GetTravelAct()->StateActivate();
 			return;
 		}
 	}
@@ -141,7 +141,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 	)
-	unit->GetTravelAct()->SetActive(false);
+	unit->GetTravelAct()->StateHalt();
 }
 
 void CArtilleryTask::OnUnitIdle(CCircuitUnit* unit)

@@ -33,11 +33,11 @@ public:
 
 	const bool* GetCanMoveArray() const { return canMoveArray; }
 	const float* GetThreatArray() const { return threatArray; }
-	const NSMicroPather::CostFunc GetMoveThreatFun() const { return moveThreatFun; }
-	const NSMicroPather::CostFunc GetMoveFun() const { return moveFun; }
+	NSMicroPather::CostFunc GetMoveFun() const { return moveFun; }
+	NSMicroPather::CostFunc GetMoveThreatFun() const { return moveThreatFun; }
 
 protected:
-	const CPathFinder& pathfinder;  // NOTE: not to use in threaded function
+	const CPathFinder& pathfinder;  // NOTE: double-check threaded calls
 
 	int id;
 	Type type;
@@ -45,8 +45,8 @@ protected:
 
 	const bool* canMoveArray;  // outdate after AREA_UPDATE_RATE
 	const float* threatArray;  // outdate after THREAT_UPDATE_RATE
-	NSMicroPather::CostFunc moveThreatFun;  // THREAT_UPDATE_RATE + AREA_UPDATE_RATE
 	NSMicroPather::CostFunc moveFun;  // AREA_UPDATE_RATE
+	NSMicroPather::CostFunc moveThreatFun;  // THREAT_UPDATE_RATE + AREA_UPDATE_RATE
 };
 
 } // namespace circuit

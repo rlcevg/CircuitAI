@@ -21,12 +21,17 @@ CQueryPathInfo::~CQueryPathInfo()
 }
 
 void CQueryPathInfo::InitQuery(const AIFloat3& startPos, const AIFloat3& endPos,
-		int radius, float maxThreat)
+		float maxRange, float maxThreat)
 {
 	this->startPos = startPos;
 	this->endPos = endPos;
-	this->radius = radius;
+	this->maxRange = maxRange;
 	this->maxThreat = maxThreat;
+}
+
+void CQueryPathInfo::Prepare()
+{
+	pPath = std::make_shared<PathInfo>();
 }
 
 } // namespace circuit

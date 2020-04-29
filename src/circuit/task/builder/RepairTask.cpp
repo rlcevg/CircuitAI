@@ -35,16 +35,6 @@ void CBRepairTask::Start(CCircuitUnit* unit)
 	}
 }
 
-void CBRepairTask::Update()
-{
-	CCircuitUnit* unit = GetNextAssignee();
-	if (unit == nullptr) {
-		return;
-	}
-
-	Update(unit);
-}
-
 void CBRepairTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	Unit* u = target->GetUnit();
@@ -71,14 +61,7 @@ void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 	manager->AssignTask(unit, task);
 }
 
-void CBRepairTask::Update(CCircuitUnit* unit)
-{
-	if (Reevaluate() && !unit->GetTravelAct()->IsFinished() && !UpdatePath(unit)) {
-		Execute(unit);
-	}
-}
-
-bool CBRepairTask::Reevaluate()
+bool CBRepairTask::Reevaluate(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	// FIXME: Replace const 1000.0f with build time?

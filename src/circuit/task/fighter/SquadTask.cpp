@@ -81,14 +81,14 @@ void ISquadTask::RemoveAssignee(CCircuitUnit* unit)
 void ISquadTask::Merge(ISquadTask* task)
 {
 	const std::set<CCircuitUnit*>& rookies = task->GetAssignees();
-	bool isActive = leader->GetTravelAct()->IsActive();
+	IAction::State state = leader->GetTravelAct()->GetState();
 	for (CCircuitUnit* unit : rookies) {
 		unit->SetTask(this);
 		if (unit->GetCircuitDef()->IsRoleSupport()) {
 			continue;
 		}
 		unit->GetTravelAct()->SetPath(pPath);
-		unit->GetTravelAct()->SetActive(isActive);
+		unit->GetTravelAct()->SetState(state);
 	}
 	units.insert(rookies.begin(), rookies.end());
 	attackPower += task->GetAttackPower();
@@ -277,7 +277,7 @@ void ISquadTask::ActivePath(float speed)
 {
 	for (CCircuitUnit* unit : units) {
 		unit->GetTravelAct()->SetPath(pPath, speed);
-		unit->GetTravelAct()->SetActive(true);
+		unit->GetTravelAct()->StateActivate();
 	}
 }
 
