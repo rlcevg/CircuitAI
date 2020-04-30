@@ -135,18 +135,15 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 			startPos, endPos, range/*, minThreat*/);
 	pathQueries[unit] = query;
 
-	pathfinder->RunPathInfo(query, std::make_shared<CGameTask>([this, unit, query]() {
-		if (isDead || (unit->GetTask() != this)) {  // FIXME: invalid check; shared_ptr<this> required
-			return;
-		}
-		const auto it = pathQueries.find(unit);
-		if ((it == pathQueries.end()) || (it->second->GetId() != query->GetId())) {
+	const CRefHolder thisHolder(this);
+	pathfinder->RunPathInfo(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
+		if (!this->IsQueryAlive(unit, query.get())) {
 			return;
 		}
 
 		std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
-
 		std::shared_ptr<PathInfo> pPath = pQuery->GetPathInfo();
+
 		if (pPath->posPath.empty()) {
 			pPath->posPath.push_back(pQuery->GetEndPos());
 		}

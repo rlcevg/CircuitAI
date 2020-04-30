@@ -8,6 +8,7 @@
 #include "task/UnitTask.h"
 #include "task/IdleTask.h"
 #include "task/TaskManager.h"
+#include "terrain/path/PathQuery.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
@@ -96,6 +97,18 @@ void IUnitTask::OnUnitMoveFailed(CCircuitUnit* unit)
 
 void IUnitTask::OnTravelEnd(CCircuitUnit* unit)
 {
+}
+
+bool IUnitTask::IsQueryAlive(CCircuitUnit* unit, IPathQuery* query) const
+{
+	if (isDead) {
+		return false;
+	}
+	const auto it = pathQueries.find(unit);
+	if ((it == pathQueries.end()) || (it->second->GetId() != query->GetId())) {
+		return false;
+	}
+	return true;
 }
 
 #define SERIALIZE(stream, func)	\

@@ -38,7 +38,7 @@ public:
 	using AllyUnits = std::map<ICoreUnit::Id, CAllyUnit*>;
 	using TeamIds = std::unordered_set<Id>;
 	union SBox {
-		SBox(): edge{0.f, 0.f, 0.f, 0.f} {}
+		SBox() : edge{0.f, 0.f, 0.f, 0.f} {}
 		struct {
 			float bottom;
 			float left;

@@ -29,6 +29,18 @@ private:
 	int refCount;
 };
 
+class CRefHolder {
+public:
+	CRefHolder& operator=(const CRefHolder&) = delete;
+
+	CRefHolder(const CRefHolder& that) : CRefHolder(that.ref) {}
+	CRefHolder(IRefCounter* ref) : ref(ref) { ref->AddRef(); }
+	~CRefHolder() { ref->Release(); }
+
+private:
+	IRefCounter* ref;
+};
+
 } // namespace circuit
 
 #endif // SRC_CIRCUIT_SCRIPT_REFCOUNTER_H_

@@ -27,7 +27,7 @@ class CEnemyInfo;
 class ITaskManager;
 class IPathQuery;
 
-class IUnitTask: public IRefCounter/*, protected std::enable_shared_from_this<IUnitTask>*/ {  // CSquad, IAction
+class IUnitTask: public IRefCounter {  // CSquad, IAction
 public:
 	enum class Priority: char {LOW = 0, NORMAL = 1, HIGH = 2, NOW = 99};
 	enum class Type: char {NIL, PLAYER, IDLE, WAIT, RETREAT, BUILDER, FACTORY, FIGHTER};
@@ -68,6 +68,8 @@ public:
 
 	void Dead() { isDead = true; }
 	bool IsDead() const { return isDead; }
+
+	bool IsQueryAlive(CCircuitUnit* unit, IPathQuery* query) const;
 
 	friend std::ostream& operator<<(std::ostream& os, const IUnitTask& data);
 	friend std::istream& operator>>(std::istream& is, IUnitTask& data);

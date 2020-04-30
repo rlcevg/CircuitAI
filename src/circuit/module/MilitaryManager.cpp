@@ -272,7 +272,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 CMilitaryManager::~CMilitaryManager()
 {
-	utils::free_clear(fightUpdates);
+	for (IUnitTask* task : fightUpdates) {
+		task->Release();
+	}
 }
 
 void CMilitaryManager::ReadConfig()

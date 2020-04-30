@@ -153,16 +153,20 @@ void IFighterTask::SetTarget(CEnemyInfo* enemy)
 
 void IFighterTask::Attack(const int frame)
 {
-	int targetTile = manager->GetCircuit()->GetInflMap()->Pos2Index(target->GetPos());
+	const int targetTile = manager->GetCircuit()->GetInflMap()->Pos2Index(target->GetPos());
+	const bool isRepeatAttack = (frame >= attackFrame + FRAMES_PER_SEC * 3);
+	attackFrame = isRepeatAttack ? frame : attackFrame;
 	for (CCircuitUnit* unit : units) {
 		unit->GetTravelAct()->StateHalt();
-		if ((frame <= attackFrame + FRAMES_PER_SEC * 3) || (unit->Blocker() != nullptr)) {
+		if (unit->Blocker() != nullptr) {
 			continue;  // Do not interrupt current action
 		}
 
-		if ((unit->GetTarget() != target) || (unit->GetTargetTile() != targetTile)) {
+		if (isRepeatAttack
+			|| (unit->GetTarget() != target)
+			|| (unit->GetTargetTile() != targetTile))
+		{
 			unit->Attack(target->GetPos(), target, targetTile, frame + FRAMES_PER_SEC * 60);
-			attackFrame = frame;
 		}
 	}
 }

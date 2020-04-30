@@ -308,12 +308,12 @@ void CPathFinder::RunPathInfo(std::shared_ptr<IPathQuery> query, std::shared_ptr
 
 	pQuery->SetState(IPathQuery::State::PROCESS);
 	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
-		MakePath(pQuery.get());
+		this->MakePath(pQuery.get());
 		pQuery->SetState(IPathQuery::State::READY);
 	})
 #ifdef DEBUG_VIS
 	, std::make_shared<CGameTask>([this, pQuery, onComplete]() {
-		UpdateVis(pQuery->GetPathInfo()->path);
+		this->UpdateVis(pQuery->GetPathInfo()->path);
 		onComplete->Run();
 	})
 #else
@@ -328,12 +328,12 @@ void CPathFinder::RunPathMulti(std::shared_ptr<IPathQuery> query, std::shared_pt
 
 	pQuery->SetState(IPathQuery::State::PROCESS);
 	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
-		FindBestPath(pQuery.get());
+		this->FindBestPath(pQuery.get());
 		pQuery->SetState(IPathQuery::State::READY);
 	})
 #ifdef DEBUG_VIS
 	, std::make_shared<CGameTask>([this, pQuery, onComplete]() {
-		UpdateVis(pQuery->GetPathInfo()->path);
+		this->UpdateVis(pQuery->GetPathInfo()->path);
 		onComplete->Run();
 	})
 #else
@@ -348,7 +348,7 @@ void CPathFinder::RunPathCost(std::shared_ptr<IPathQuery> query, std::shared_ptr
 
 	pQuery->SetState(IPathQuery::State::PROCESS);
 	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
-		PathCost(pQuery.get());
+		this->PathCost(pQuery.get());
 		pQuery->SetState(IPathQuery::State::READY);
 	}), onComplete);
 }
@@ -359,7 +359,7 @@ void CPathFinder::RunCostMap(std::shared_ptr<IPathQuery> query, std::shared_ptr<
 
 	pQuery->SetState(IPathQuery::State::PROCESS);
 	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
-		MakeCostMap(pQuery.get());
+		this->MakeCostMap(pQuery.get());
 		pQuery->SetState(IPathQuery::State::READY);
 	}), onComplete);
 }

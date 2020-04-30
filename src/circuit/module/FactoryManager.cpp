@@ -232,7 +232,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 CFactoryManager::~CFactoryManager()
 {
-	utils::free_clear(updateTasks);
+	for (IUnitTask* task : updateTasks) {
+		task->Release();
+	}
 }
 
 void CFactoryManager::ReadConfig()

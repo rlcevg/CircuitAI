@@ -77,7 +77,7 @@ private:
 	const CQuadField& operator=(const CQuadField&);
 
 public:
-	CQuadField(): numQuadsX(0), numQuadsZ(0), quadSizeX(0), quadSizeZ(0) {}
+	CQuadField() : numQuadsX(0), numQuadsZ(0), quadSizeX(0), quadSizeZ(0) {}
 	~CQuadField() {}
 
 	/*
@@ -218,7 +218,7 @@ private:
 };
 
 struct QuadFieldQuery {
-	QuadFieldQuery(CQuadField& qf): quadField(qf) {}
+	QuadFieldQuery(CQuadField& qf) : quadField(qf) {}
 	~QuadFieldQuery() {
 		quadField.ReleaseVector(allyUnits);
 		quadField.ReleaseVector(enemyUnits);
