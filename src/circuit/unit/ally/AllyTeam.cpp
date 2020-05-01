@@ -228,13 +228,11 @@ void CAllyTeam::Update(CCircuitAI* ai)
 		return;
 	}
 
-//	if (!enemyInfos.empty()) {
-		if (circuit->GetLastFrame() % THREAT_UPDATE_RATE == uEnemyMark) {
-			EnqueueUpdate();
-		} else {
-			enemyManager->UpdateEnemyDatas(quadField);
-		}
-//	}
+	if (circuit->GetLastFrame() % THREAT_UPDATE_RATE == uEnemyMark) {
+		EnqueueUpdate();
+	} else {
+		enemyManager->UpdateEnemyDatas(quadField);
+	}
 }
 
 void CAllyTeam::EnqueueUpdate()

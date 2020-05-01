@@ -130,7 +130,8 @@ private:
 		FinishTask(const WorkTask& workTask) :
 			BaseContainer(workTask.onComplete) {}
 	};
-	CMultiQueue<FinishTask> finishTasks;
+	CMultiQueue<FinishTask> workedTasks;  // onComplete
+	CMultiQueue<FinishTask> pathedTasks;  // onComplete
 
 	std::vector<std::shared_ptr<CGameTask>> initTasks;
 	std::vector<std::shared_ptr<CGameTask>> releaseTasks;
@@ -140,7 +141,8 @@ private:
 	static std::atomic<bool> workerRunning;
 	static unsigned int counterInstance;
 
-	static void WorkerThread(CMultiQueue<CScheduler::WorkTask>* tasks);
+	static void WorkerThread();
+	static void PatherThread();
 };
 
 } // namespace circuit

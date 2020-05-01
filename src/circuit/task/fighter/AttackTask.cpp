@@ -13,12 +13,14 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathFinder.h"
+#include "terrain/path/QueryPathInfo.h"
 #include "unit/action/FightAction.h"
 #include "unit/action/MoveAction.h"
 #include "unit/action/SupportAction.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
+#include "util/GameTask.h"
 #include "util/Utils.h"
 
 #include "spring/SpringMap.h"
@@ -162,7 +164,8 @@ void CAttackTask::Update()
 		}
 	}
 
-	if (circuit->GetInflMap()->GetInfluenceAt(leader->GetPos(frame)) < -INFL_EPS) {
+	AIFloat3 startPos = leader->GetPos(frame);
+	if (circuit->GetInflMap()->GetInfluenceAt(startPos) < -INFL_EPS) {
 		SetTarget(nullptr);
 	} else {
 		FindTarget();
@@ -171,18 +174,12 @@ void CAttackTask::Update()
 	state = State::ROAM;
 	if (target != nullptr) {
 		const float sqRange = SQUARE(highestRange + 200.f);  // FIXME: 200.f ~ count slack
-		for (CCircuitUnit* unit : units) {
-			if (position.SqDistance2D(unit->GetPos(frame)) < sqRange) {
-				state = State::ENGAGE;
-				break;
-			}
-		}
-		if (State::ENGAGE == state) {
+		if (position.SqDistance2D(startPos) < sqRange) {
+			state = State::ENGAGE;
 			Attack(frame);
 			return;
 		}
 	} else {
-		AIFloat3 startPos = leader->GetPos(frame);
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
 		circuit->GetMilitaryManager()->FindFrontPos(*pPath, startPos, leader->GetArea(), DEFAULT_SLACK * 4);
@@ -194,18 +191,49 @@ void CAttackTask::Update()
 			return;
 		}
 	}
-	if (pPath->posPath.empty()) {  // should never happen
-		for (CCircuitUnit* unit : units) {
-			TRY_UNIT(circuit, unit,
-				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-				unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {lowestSpeed});
-			)
 
-			unit->GetTravelAct()->StateHalt();
-		}
-	} else {
-		ActivePath(lowestSpeed);
+	const auto it = pathQueries.find(leader);
+	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
+	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
+		return;
 	}
+
+	AIFloat3 endPos = position;
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	const float eps = threatMap->GetSquareSize() * 2.f;
+	const float pathRange = std::max(highestRange - eps, eps);
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+
+	query = pathfinder->CreatePathInfoQuery(
+			leader, threatMap, frame,
+			startPos, endPos, pathRange, attackPower);
+	pathQueries[leader] = query;
+
+	CCircuitUnit* unit = leader;
+	const CRefHolder thisHolder(this);
+	pathfinder->RunPathInfo(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
+		if (!this->IsQueryAlive(unit, query.get())) {
+			return;
+		}
+
+		std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
+		pPath = pQuery->GetPathInfo();
+
+		if (pPath->posPath.empty()) {  // should never happen
+			CCircuitAI* circuit = manager->GetCircuit();
+			const int frame = circuit->GetLastFrame();  // is int atomic?
+			for (CCircuitUnit* unit : units) {
+				TRY_UNIT(circuit, unit,
+					unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+					unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {lowestSpeed});
+				)
+
+				unit->GetTravelAct()->StateHalt();
+			}
+		} else {
+			ActivePath(lowestSpeed);
+		}
+	}));
 }
 
 void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
@@ -253,7 +281,6 @@ void CAttackTask::FindTarget()
 	float minSqDist = std::numeric_limits<float>::max();
 
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
-//	static F3Vec enemyPositions;  // NOTE: micro-opt
 	threatMap->SetThreatType(leader);
 	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	for (auto& kv : enemies) {
@@ -300,27 +327,12 @@ void CAttackTask::FindTarget()
 			minSqDist = sqOEDist;
 			bestTarget = enemy;
 		}
-//		enemyPositions.push_back(ePos);
 	}
 
 	if (bestTarget != nullptr) {
 		SetTarget(bestTarget);
 		position = target->GetPos();
 	}
-//	if (enemyPositions.empty()) {
-//		pPath->Clear();
-//		return;
-//	}
-	AIFloat3 startPos = pos;
-	AIFloat3 endPos = position;
-
-	const float eps = threatMap->GetSquareSize() * 2.f;
-	const float pathRange = std::max(highestRange - eps, eps);
-	CPathFinder* pathfinder = circuit->GetPathfinder();
-	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	pathfinder->MakePath(*pPath, startPos, endPos, pathRange, attackPower);
-//	pathfinder->FindBestPath(*pPath, startPos, pathRange, enemyPositions, attackPower);
-//	enemyPositions.clear();
 }
 
 } // namespace circuit

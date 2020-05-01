@@ -107,7 +107,9 @@ void CScheduler::ProcessTasks(int frame)
 	CMultiQueue<FinishTask>::ProcessFunction process = [](FinishTask& item) {
 		item.task->Run();
 	};
-	finishTasks.PopAndProcess(process);
+	if (!workedTasks.PopAndProcess(process)) {  // one heavy
+		pathedTasks.PopAndProcessAll(process);  // many lite
+	}
 
 	// Update task queues
 	if (!removeTasks.empty()) {
@@ -125,8 +127,8 @@ void CScheduler::RunParallelTask(std::shared_ptr<CGameTask> task, std::shared_pt
 {
 	if (!workerRunning.load()) {
 		workerRunning = true;
-		workerThread = spring::thread(&CScheduler::WorkerThread, &workTasks);
-		patherThread = spring::thread(&CScheduler::WorkerThread, &pathTasks);
+		workerThread = spring::thread(&CScheduler::WorkerThread);
+		patherThread = spring::thread(&CScheduler::PatherThread);
 	}
 	workTasks.Push({self, task, onComplete});
 }
@@ -135,8 +137,8 @@ void CScheduler::RunPathTask(std::shared_ptr<CGameTask> task, std::shared_ptr<CG
 {
 	if (!workerRunning.load()) {
 		workerRunning = true;
-		workerThread = spring::thread(&CScheduler::WorkerThread, &workTasks);
-		patherThread = spring::thread(&CScheduler::WorkerThread, &pathTasks);
+		workerThread = spring::thread(&CScheduler::WorkerThread);
+		patherThread = spring::thread(&CScheduler::PatherThread);
 	}
 	pathTasks.Push({self, task, onComplete});
 }
@@ -151,20 +153,37 @@ void CScheduler::RemoveTask(std::shared_ptr<CGameTask>& task)
 	}
 }
 
-void CScheduler::WorkerThread(CMultiQueue<CScheduler::WorkTask>* tasks)
+void CScheduler::WorkerThread()
 {
-	WorkTask container = tasks->Pop();
+	WorkTask container = workTasks.Pop();
 	while (workerRunning.load()) {
 		container.task->Run();
 		container.task = nullptr;
 		if (container.onComplete != nullptr) {
 			std::shared_ptr<CScheduler> scheduler = container.scheduler.lock();
 			if (scheduler) {
-				scheduler->finishTasks.Push(container);
+				scheduler->workedTasks.Push(container);
 			}
 			container.onComplete = nullptr;
 		}
-		container = tasks->Pop();
+		container = workTasks.Pop();
+	}
+}
+
+void CScheduler::PatherThread()
+{
+	WorkTask container = pathTasks.Pop();
+	while (workerRunning.load()) {
+		container.task->Run();
+		container.task = nullptr;
+		if (container.onComplete != nullptr) {
+			std::shared_ptr<CScheduler> scheduler = container.scheduler.lock();
+			if (scheduler) {
+				scheduler->pathedTasks.Push(container);
+			}
+			container.onComplete = nullptr;
+		}
+		container = pathTasks.Pop();
 	}
 }
 

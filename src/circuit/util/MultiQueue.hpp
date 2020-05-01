@@ -53,11 +53,20 @@ bool CMultiQueue<T>::IsEmpty()
 	std::unique_lock<spring::mutex> mlock(_mutex);
 	bool isEmpty = _queue.empty();
 	mlock.unlock();
-    return isEmpty;
+	return isEmpty;
 }
 
 template <typename T>
-void CMultiQueue<T>::PopAndProcess(ProcessFunction process)
+size_t CMultiQueue<T>::Size()
+{
+	std::unique_lock<spring::mutex> mlock(_mutex);
+	size_t size = _queue.size();
+	mlock.unlock();
+	return size;
+}
+
+template <typename T>
+bool CMultiQueue<T>::PopAndProcess(ProcessFunction process)
 {
 	std::unique_lock<spring::mutex> mlock(_mutex);
 	if (!_queue.empty()) {
@@ -65,6 +74,21 @@ void CMultiQueue<T>::PopAndProcess(ProcessFunction process)
 		_queue.pop_front();
 		mlock.unlock();
 		process(item);
+		return true;
+	}
+	return false;
+}
+
+template <typename T>
+void CMultiQueue<T>::PopAndProcessAll(ProcessFunction process)
+{
+	std::unique_lock<spring::mutex> mlock(_mutex);
+	while (!_queue.empty()) {
+		auto item = _queue.front();
+		_queue.pop_front();
+//		mlock.unlock();
+		process(item);
+//		mlock.lock();
 	}
 }
 
