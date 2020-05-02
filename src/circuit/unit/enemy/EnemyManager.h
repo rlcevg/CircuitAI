@@ -21,7 +21,7 @@ struct STerrainMapArea;
 
 class CEnemyManager {
 public:
-	using EnemyUnits = std::map<ICoreUnit::Id, CEnemyUnit*>;
+	using EnemyUnits = std::unordered_map<ICoreUnit::Id, CEnemyUnit*>;
 	struct SEnemyGroup {
 		SEnemyGroup(const springai::AIFloat3& p) : pos(p), cost(0.f), threat(0.f) {}
 		std::vector<ICoreUnit::Id> units;
@@ -78,11 +78,9 @@ public:
 	float GetMaxGroupThreat() const { return enemyGroups[maxThreatGroupIdx].threat; }
 	float GetEnemyMobileCost() const { return enemyMobileCost; }
 
-	void UpdateAreaUsers();
+	void UpdateAreaUsers(CCircuitAI* ai);
 	void SetAreaUpdated(bool value) { isAreaUpdated = value; }
-	bool IsEnemyInArea(STerrainMapArea* area) const {
-		return areaInfo.find(area) != areaInfo.end();
-	}
+	const std::unordered_set<const STerrainMapArea*>& GetEnemyAreas() const { return enemyAreas; }
 
 private:
 	void ReadConfig();
@@ -136,7 +134,7 @@ private:
 	std::array<SEnemyInfo, CMaskHandler::GetMaxMasks()> enemyInfos{{{0.f}, {0.f}}};
 
 	bool isAreaUpdated;
-	std::set<STerrainMapArea*> areaInfo;
+	std::unordered_set<const STerrainMapArea*> enemyAreas;
 };
 
 } // namespace circuit

@@ -869,7 +869,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	const std::vector<float>& probs = facIt->second;
 
 	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	static std::vector<std::pair<CCircuitDef*, float>> candidates;  // NOTE: micro-opt
 //	candidates.reserve(facDef.buildDefs.size());
 	const int frame = circuit->GetLastFrame();
@@ -878,17 +878,15 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	const float range = unit->GetCircuitDef()->GetBuildDistance();
 	const AIFloat3& pos = unit->GetPos(frame);
 
-	CEnemyManager* enemyManager = circuit->GetEnemyManager();
-	const int iS = terrainManager->GetSectorIndex(pos);
-	auto isEnemyInArea = [iS, terrainManager, enemyManager](int frame, CCircuitDef* bd) {
-		return true;  // FIXME: doesn't produce anything
+	const int iS = terrainMgr->GetSectorIndex(pos);
+	auto isEnemyInArea = [iS, terrainMgr](int frame, CCircuitDef* bd) {
 		if (frame < FRAMES_PER_SEC * 60 * 10) {
 			return true;
 		}
-		STerrainMapMobileType* mobileType = terrainManager->GetMobileType(bd->GetId());
+		STerrainMapMobileType* mobileType = terrainMgr->GetMobileTypeById(bd->GetMobileId());
 		if (mobileType != nullptr) {
 			STerrainMapArea* area = mobileType->sector[iS].area;
-			return enemyManager->IsEnemyInArea(area);
+			return terrainMgr->IsEnemyInArea(area);
 		}
 		return true;
 	};
@@ -899,7 +897,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost()))
 			|| (bd->GetCost() > maxCost)
 			|| !bd->IsAvailable(frame)
-			|| !terrainManager->CanBeBuiltAt(bd, pos, range)
+			|| !terrainMgr->CanBeBuiltAt(bd, pos, range)
 			|| !isEnemyInArea(frame, bd))
 		{
 			continue;
@@ -920,7 +918,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			CCircuitDef* bd = facDef.buildDefs[i];
 			if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost()))
 				|| !bd->IsAvailable(frame)
-				|| !terrainManager->CanBeBuiltAtSafe(bd, pos, range)
+				|| !terrainMgr->CanBeBuiltAtSafe(bd, pos, range)
 				|| !isEnemyInArea(frame, bd))
 			{
 				continue;

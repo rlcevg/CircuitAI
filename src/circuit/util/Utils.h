@@ -231,7 +231,7 @@ template<typename T> static inline std::istream& binary_read(std::istream& strea
 		int thr;
 	};
 	#define SCOPED_TIME(x, y) utils::CScopedTime<std::chrono::milliseconds> st(x, y, 10)
-	#define SCOPED_TIME_T(x, y, t) utils::CScopedTime<std::chrono::microseconds> st(x, y, t)
+	#define SCOPED_TIME_NT(n, x, y, t) utils::CScopedTime<std::chrono::milliseconds> n(x, y, t)
 #else
 	#define SCOPED_TIME(x, y)
 #endif

@@ -102,7 +102,6 @@ void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
 void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
 

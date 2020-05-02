@@ -96,7 +96,6 @@ void CDefendTask::Start(CCircuitUnit* unit)
 
 void CDefendTask::Update()
 {
-	SCOPED_TIME(manager->GetCircuit(), __PRETTY_FUNCTION__);
 	++updCount;
 
 	/*

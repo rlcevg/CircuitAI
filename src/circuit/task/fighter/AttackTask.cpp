@@ -110,7 +110,6 @@ void CAttackTask::Start(CCircuitUnit* unit)
 
 void CAttackTask::Update()
 {
-	SCOPED_TIME(manager->GetCircuit(), __PRETTY_FUNCTION__);
 	++updCount;
 
 	/*

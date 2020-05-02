@@ -90,9 +90,6 @@ void ISquadTask::Merge(ISquadTask* task)
 		}
 		unit->GetTravelAct()->SetPath(lPath);
 		unit->GetTravelAct()->SetState(state);
-		if (pPath->posPath.empty() && state == IAction::State::ACTIVE) {
-			__asm__("int3");
-		}
 	}
 	units.insert(rookies.begin(), rookies.end());
 	attackPower += task->GetAttackPower();

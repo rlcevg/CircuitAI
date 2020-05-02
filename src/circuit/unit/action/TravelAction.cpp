@@ -66,9 +66,6 @@ void ITravelAction::SetPath(const std::shared_ptr<PathInfo>& pPath, float speed)
 
 int ITravelAction::CalcSpeedStep(float& stepSpeed)
 {
-	if (pPath->posPath.empty()) {
-		__asm__("int3");
-	}
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	const AIFloat3& pos = unit->GetPos(lastFrame);
 	int pathMaxIndex = pPath->posPath.size() - 1;

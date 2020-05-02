@@ -1332,6 +1332,8 @@ bool CTerrainManager::CanMobileBuildAtSafe(STerrainMapArea* area, CCircuitDef* b
 
 void CTerrainManager::UpdateAreaUsers(int interval)
 {
+	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+
 	areaData = terrainData->GetNextAreaData();
 	const int frame = circuit->GetLastFrame();
 	for (auto& kv : circuit->GetTeamUnits()) {
@@ -1359,17 +1361,17 @@ void CTerrainManager::UpdateAreaUsers(int interval)
 		unit->SetArea(area);
 	}
 
-	circuit->GetEnemyManager()->UpdateAreaUsers();
+	circuit->GetEnemyManager()->UpdateAreaUsers(circuit);  // AllyTeam
+	enemyAreas = circuit->GetEnemyManager()->GetEnemyAreas();
 
 	circuit->GetBuilderManager()->UpdateAreaUsers();
 
 	// stagger area update
-	auto updatePath = [this]() {
+	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this]() {
 		circuit->GetPathfinder()->UpdateAreaUsers(this);
 
 		OnAreaUsersUpdated();
-	};
-	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(updatePath), interval);
+	}), interval);
 }
 
 #ifdef DEBUG_VIS

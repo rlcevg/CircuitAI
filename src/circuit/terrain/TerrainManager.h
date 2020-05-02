@@ -182,6 +182,13 @@ private:
 	SAreaData* areaData;
 	CTerrainData* terrainData;
 
+public:
+	bool IsEnemyInArea(STerrainMapArea* area) const {
+		return enemyAreas.find(area) != enemyAreas.end();
+	}
+private:
+	std::unordered_set<const STerrainMapArea*> enemyAreas;
+
 #ifdef DEBUG_VIS
 private:
 	int dbgTextureId;

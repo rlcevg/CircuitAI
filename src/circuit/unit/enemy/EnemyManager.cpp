@@ -16,6 +16,7 @@
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
 #include "json/json.h"
+#include "util/Utils.h"
 
 #include "spring/SpringCallback.h"
 
@@ -309,22 +310,22 @@ bool CEnemyManager::IsEnemyNear(const AIFloat3& pos, float maxThreat)
 	return false;
 }
 
-void CEnemyManager::UpdateAreaUsers()
+void CEnemyManager::UpdateAreaUsers(CCircuitAI* ai)
 {
 	if (isAreaUpdated) {
 		return;
 	}
 	isAreaUpdated = true;
 
-	areaInfo.clear();
-	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	enemyAreas.clear();
+	CTerrainManager* terrainMgr = ai->GetTerrainManager();
 	const std::vector<STerrainMapMobileType>& mobileTypes = terrainMgr->GetMobileTypes();
 	for (const CEnemyManager::SEnemyGroup& group : enemyGroups) {
 		const int iS = terrainMgr->GetSectorIndex(group.pos);
 		for (const STerrainMapMobileType& mt : mobileTypes) {
-			STerrainMapArea* area = mt.sector[iS].area;
+			const STerrainMapArea* area = mt.sector[iS].area;
 			if (area != nullptr) {
-				areaInfo.insert(area);
+				enemyAreas.insert(area);
 			}
 		}
 	}

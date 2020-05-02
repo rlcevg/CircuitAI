@@ -104,7 +104,6 @@ void CRaidTask::Start(CCircuitUnit* unit)
 
 void CRaidTask::Update()
 {
-	SCOPED_TIME(manager->GetCircuit(), __PRETTY_FUNCTION__);
 	++updCount;
 
 	/*
