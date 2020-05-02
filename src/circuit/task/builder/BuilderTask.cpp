@@ -469,20 +469,23 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 
 	const CRefHolder thisHolder(this);
 	pathfinder->RunPathInfo(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
-		if (!this->IsQueryAlive(unit, query.get())) {
-			return;
-		}
-
-		std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
-		std::shared_ptr<PathInfo> pPath = pQuery->GetPathInfo();
-
-		if (pPath->path.size() > 2) {
-			unit->GetTravelAct()->SetPath(pPath);
-			unit->GetTravelAct()->StateActivate();
-		} else {
-			unit->GetTravelAct()->StateFinish();
+		if (this->IsQueryAlive(unit, query)) {
+			this->ApplyPathInfo(unit, query);
 		}
 	}));
+}
+
+void IBuilderTask::ApplyPathInfo(CCircuitUnit* unit, std::shared_ptr<IPathQuery> query)
+{
+	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
+	std::shared_ptr<PathInfo> pPath = pQuery->GetPathInfo();
+
+	if (pPath->path.size() > 2) {
+		unit->GetTravelAct()->SetPath(pPath);
+		unit->GetTravelAct()->StateActivate();
+	} else {
+		unit->GetTravelAct()->StateFinish();
+	}
 }
 
 void IBuilderTask::HideAssignee(CCircuitUnit* unit)

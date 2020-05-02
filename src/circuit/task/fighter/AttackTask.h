@@ -28,6 +28,8 @@ public:
 
 private:
 	void FindTarget();
+	void ApplyPathInfo(std::shared_ptr<IPathQuery> query);
+	void Fallback();
 
 	float minPower;
 };

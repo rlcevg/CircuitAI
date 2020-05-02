@@ -13,12 +13,14 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathFinder.h"
+#include "terrain/path/QueryPathMulti.h"
 #include "unit/action/FightAction.h"
 #include "unit/action/MoveAction.h"
 #include "unit/action/SupportAction.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
+#include "util/GameTask.h"
 #include "util/Utils.h"
 
 #include "spring/SpringMap.h"
@@ -94,6 +96,7 @@ void CDefendTask::Start(CCircuitUnit* unit)
 
 void CDefendTask::Update()
 {
+	SCOPED_TIME(manager->GetCircuit(), __PRETTY_FUNCTION__);
 	++updCount;
 
 	/*
@@ -143,23 +146,18 @@ void CDefendTask::Update()
 	/*
 	 * Update target
 	 */
-	FindTarget();
+	const bool isTargetsFound = FindTarget();
 
+	AIFloat3 startPos = leader->GetPos(frame);
 	state = State::ROAM;
-	if ((target != nullptr) || !pPath->path.empty()) {
+	if ((target != nullptr) || isTargetsFound) {
 		const float sqRange = SQUARE(highestRange + 200.f);  // FIXME: 200.f ~ count slack
-		for (CCircuitUnit* unit : units) {
-			if (position.SqDistance2D(unit->GetPos(frame)) < sqRange) {
-				state = State::ENGAGE;
-				break;
-			}
-		}
-		if (State::ENGAGE == state) {
+		if (position.SqDistance2D(startPos) < sqRange) {
+			state = State::ENGAGE;
 			Attack(frame);
 			return;
 		}
 	} else {
-		AIFloat3 startPos = leader->GetPos(frame);
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
 		circuit->GetMilitaryManager()->FindFrontPos(*pPath, startPos, leader->GetArea(), DEFAULT_SLACK * 4);
@@ -168,21 +166,35 @@ void CDefendTask::Update()
 			if (pPath->path.size() > 2) {
 				ActivePath();
 			}
-			return;
+		} else {
+			Fallback();
 		}
+		return;
 	}
-	if (pPath->posPath.empty()) {  // should never happen
-		for (CCircuitUnit* unit : units) {
-			TRY_UNIT(circuit, unit,
-				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-				unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {lowestSpeed});
-			)
 
-			unit->GetTravelAct()->StateHalt();
-		}
-	} else {
-		ActivePath(lowestSpeed);
+	const auto it = pathQueries.find(leader);
+	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
+	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
+		return;
 	}
+
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	const float eps = threatMap->GetSquareSize() * 2.f;
+	const float pathRange = std::max(highestRange - eps, eps);
+	CCircuitUnit* unit = leader;
+
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	query = pathfinder->CreatePathMultiQuery(
+			unit, threatMap, frame,
+			startPos, pathRange, enemyPositions);
+	pathQueries[unit] = query;
+
+	const CRefHolder thisHolder(this);
+	pathfinder->RunPathInfo(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
+		if (this->IsQueryAlive(unit, query)) {
+			this->ApplyPathMulti(query);
+		}
+	}));
 }
 
 void CDefendTask::Merge(ISquadTask* task)
@@ -198,7 +210,7 @@ void CDefendTask::Merge(ISquadTask* task)
 	shields.insert(sh.begin(), sh.end());
 }
 
-void CDefendTask::FindTarget()
+bool CDefendTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CMap* map = circuit->GetMap();
@@ -223,7 +235,7 @@ void CDefendTask::FindTarget()
 	float minSqDist = std::numeric_limits<float>::max();
 
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
-	static F3Vec enemyPositions;  // NOTE: micro-opt
+	enemyPositions.clear();
 	threatMap->SetThreatType(leader);
 	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	for (auto& kv : enemies) {
@@ -282,17 +294,38 @@ void CDefendTask::FindTarget()
 		position = target->GetPos();
 	}
 	if (enemyPositions.empty()) {
-		pPath->Clear();
-		return;
+		return false;
 	}
-	AIFloat3 startPos = pos;
 
-	const float eps = threatMap->GetSquareSize() * 2.f;
-	const float pathRange = std::max(highestRange - eps, eps);
-	CPathFinder* pathfinder = circuit->GetPathfinder();
-	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	pathfinder->FindBestPath(*pPath, startPos, pathRange, enemyPositions);
-	enemyPositions.clear();
+	return true;
+	// Return: target, startPos=leader->pos, enemyPositions
+}
+
+void CDefendTask::ApplyPathMulti(std::shared_ptr<IPathQuery> query)
+{
+	std::shared_ptr<CQueryPathMulti> pQuery = std::static_pointer_cast<CQueryPathMulti>(query);
+	pPath = pQuery->GetPathInfo();
+
+	if (!pPath->posPath.empty()) {
+		ActivePath(lowestSpeed);
+	} else {
+		Fallback();
+	}
+}
+
+void CDefendTask::Fallback()
+{
+	// should never happen
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	for (CCircuitUnit* unit : units) {
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {lowestSpeed});
+		)
+
+		unit->GetTravelAct()->StateWait();
+	}
 }
 
 } // namespace circuit

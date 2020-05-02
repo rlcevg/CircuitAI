@@ -110,6 +110,7 @@ void CAttackTask::Start(CCircuitUnit* unit)
 
 void CAttackTask::Update()
 {
+	SCOPED_TIME(manager->GetCircuit(), __PRETTY_FUNCTION__);
 	++updCount;
 
 	/*
@@ -138,7 +139,7 @@ void CAttackTask::Update()
 			for (CCircuitUnit* unit : units) {
 				unit->Gather(groupPos, frame);
 
-				unit->GetTravelAct()->StateHalt();
+				unit->GetTravelAct()->StateWait();
 			}
 		}
 		return;
@@ -188,8 +189,10 @@ void CAttackTask::Update()
 			if (pPath->path.size() > 2) {
 				ActivePath();
 			}
-			return;
+		} else {
+			Fallback();
 		}
+		return;
 	}
 
 	const auto it = pathQueries.find(leader);
@@ -202,36 +205,18 @@ void CAttackTask::Update()
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const float eps = threatMap->GetSquareSize() * 2.f;
 	const float pathRange = std::max(highestRange - eps, eps);
-	CPathFinder* pathfinder = circuit->GetPathfinder();
-
-	query = pathfinder->CreatePathInfoQuery(
-			leader, threatMap, frame,
-			startPos, endPos, pathRange, attackPower);
-	pathQueries[leader] = query;
-
 	CCircuitUnit* unit = leader;
+
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	query = pathfinder->CreatePathInfoQuery(
+			unit, threatMap, frame,
+			startPos, endPos, pathRange, attackPower);
+	pathQueries[unit] = query;
+
 	const CRefHolder thisHolder(this);
 	pathfinder->RunPathInfo(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
-		if (!this->IsQueryAlive(unit, query.get())) {
-			return;
-		}
-
-		std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
-		pPath = pQuery->GetPathInfo();
-
-		if (pPath->posPath.empty()) {  // should never happen
-			CCircuitAI* circuit = manager->GetCircuit();
-			const int frame = circuit->GetLastFrame();  // is int atomic?
-			for (CCircuitUnit* unit : units) {
-				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-					unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {lowestSpeed});
-				)
-
-				unit->GetTravelAct()->StateHalt();
-			}
-		} else {
-			ActivePath(lowestSpeed);
+		if (this->IsQueryAlive(unit, query)) {
+			this->ApplyPathInfo(query);
 		}
 	}));
 }
@@ -332,6 +317,34 @@ void CAttackTask::FindTarget()
 	if (bestTarget != nullptr) {
 		SetTarget(bestTarget);
 		position = target->GetPos();
+	}
+	// Return: target, startPos=leader->pos, endPos=position
+}
+
+void CAttackTask::ApplyPathInfo(std::shared_ptr<IPathQuery> query)
+{
+	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
+	pPath = pQuery->GetPathInfo();
+
+	if (!pPath->posPath.empty()) {
+		ActivePath(lowestSpeed);
+	} else {
+		Fallback();
+	}
+}
+
+void CAttackTask::Fallback()
+{
+	// should never happen
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	for (CCircuitUnit* unit : units) {
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {lowestSpeed});
+		)
+
+		unit->GetTravelAct()->StateWait();
 	}
 }
 

@@ -745,6 +745,140 @@ void CPathFinder::PathCost(IPathQuery* query)
 void CPathFinder::FindBestPath(IPathQuery* query)
 {
 	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
+
+	CQueryPathMulti* q = static_cast<CQueryPathMulti*>(query);
+	q->Prepare();
+
+	AIFloat3 startPos = q->GetStartPos();
+	F3Vec possibleTargets = q->GetTargets();
+	const float maxRange = q->GetMaxRange();
+	const float maxThreat = q->GetMaxThreat();
+
+	PathInfo& iPath = q->GetRefPathInfo();
+	float& pathCost = q->GetRefPathCost();
+
+	// <maxRange> must always be >= squareSize, otherwise
+	// <radius> will become 0 and the write to offsets[0]
+	// below is undefined
+	if (maxRange < float(squareSize)) {
+		return;
+	}
+
+	iPath.Clear();
+
+	const unsigned int radius = maxRange / squareSize;
+	unsigned int offsetSize = 0;
+
+	std::vector<std::pair<int, int> > offsets;
+	std::vector<int> xend;
+
+	// make a list with the points that will count as end nodes
+	static std::vector<void*> endNodes;  // NOTE: micro-opt
+//	endNodes.reserve(possibleTargets.size() * radius * 10);
+
+	{
+		const unsigned int DoubleRadius = radius * 2;
+		const unsigned int SquareRadius = radius * radius;
+
+		xend.resize(DoubleRadius + 1);
+		offsets.resize(DoubleRadius * 5);
+
+		for (size_t a = 0; a < DoubleRadius + 1; a++) {
+			const float z = (int) (a - radius);
+			const float floatsqrradius = SquareRadius;
+			xend[a] = int(sqrt(floatsqrradius - z * z));
+		}
+
+		offsets[0].first = 0;
+		offsets[0].second = 0;
+
+		size_t index = 1;
+		size_t index2 = 1;
+
+		for (size_t a = 1; a < radius + 1; a++) {
+			int endPosIdx = xend[a];
+			int startPosIdx = xend[a - 1];
+
+			while (startPosIdx <= endPosIdx) {
+				assert(index < offsets.size());
+				offsets[index].first = startPosIdx;
+				offsets[index].second = a;
+				startPosIdx++;
+				index++;
+			}
+
+			startPosIdx--;
+		}
+
+		index2 = index;
+
+		for (size_t a = 0; a < index2 - 2; a++) {
+			assert(index < offsets.size());
+			assert(a < offsets.size());
+			offsets[index].first = offsets[a].first;
+			offsets[index].second = DoubleRadius - (offsets[a].second);
+			index++;
+		}
+
+		index2 = index;
+
+		for (size_t a = 0; a < index2; a++) {
+			assert(index < offsets.size());
+			assert(a < offsets.size());
+			offsets[index].first = -(offsets[a].first);
+			offsets[index].second = offsets[a].second;
+			index++;
+		}
+
+		for (size_t a = 0; a < index; a++) {
+			assert(a < offsets.size());
+//			offsets[a].first = offsets[a].first; // ??
+			offsets[a].second = offsets[a].second - radius;
+		}
+
+		offsetSize = index;
+	}
+
+	static std::vector<void*> nodeTargets;  // NOTE: micro-opt
+//	nodeTargets.reserve(possibleTargets.size());
+	for (unsigned int i = 0; i < possibleTargets.size(); i++) {
+		AIFloat3& f = possibleTargets[i];
+
+		CTerrainData::CorrectPosition(f);
+		void* node = Pos2MoveNode(f);
+		NSMicroPather::PathNode* pn = micropather->GetNode(node);
+		if (pn->isTarget) {
+			continue;
+		}
+		pn->isTarget = 1;
+		nodeTargets.push_back(node);
+
+		int x, y;
+		MoveNode2MoveXY(node, &x, &y);
+
+		for (unsigned int j = 0; j < offsetSize; j++) {
+			const int sx = x + offsets[j].first;
+			const int sy = y + offsets[j].second;
+
+			if (sx >= 0 && sx < moveMapXSize && sy >= 0 && sy < moveMapYSize) {
+				endNodes.push_back(MoveXY2MoveNode(sx, sy));
+			}
+		}
+	}
+	for (void* node : nodeTargets) {
+		micropather->GetNode(node)->isTarget = 0;
+	}
+
+	CTerrainData::CorrectPosition(startPos);
+
+	if (micropather->FindBestPathToAnyGivenPoint(Pos2MoveNode(startPos), endNodes, nodeTargets,
+			maxThreat, &iPath.path, &pathCost) == CMicroPather::SOLVED)
+	{
+		FillPathInfo(iPath);
+	}
+
+	endNodes.clear();
+	nodeTargets.clear();
 }
 
 void CPathFinder::MakeCostMap(IPathQuery* query)

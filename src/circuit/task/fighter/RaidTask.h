@@ -27,7 +27,10 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 
 private:
-	void FindTarget();
+	bool FindTarget();
+	void ApplyPathMulti(std::shared_ptr<IPathQuery> query);
+	void FallbackRaid();
+	void ApplyRaidPathInfo(std::shared_ptr<IPathQuery> query);
 
 	float maxPower;
 };

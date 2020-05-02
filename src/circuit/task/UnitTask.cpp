@@ -99,7 +99,7 @@ void IUnitTask::OnTravelEnd(CCircuitUnit* unit)
 {
 }
 
-bool IUnitTask::IsQueryAlive(CCircuitUnit* unit, IPathQuery* query) const
+bool IUnitTask::IsQueryAlive(CCircuitUnit* unit, std::shared_ptr<IPathQuery> query) const
 {
 	if (isDead) {
 		return false;

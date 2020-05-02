@@ -881,6 +881,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	CEnemyManager* enemyManager = circuit->GetEnemyManager();
 	const int iS = terrainManager->GetSectorIndex(pos);
 	auto isEnemyInArea = [iS, terrainManager, enemyManager](int frame, CCircuitDef* bd) {
+		return true;  // FIXME: doesn't produce anything
 		if (frame < FRAMES_PER_SEC * 60 * 10) {
 			return true;
 		}

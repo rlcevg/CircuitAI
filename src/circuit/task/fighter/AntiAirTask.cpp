@@ -139,7 +139,7 @@ void CAntiAirTask::Update()
 					unit->GetUnit()->Fight(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 				)
 
-				unit->GetTravelAct()->StateHalt();
+				unit->GetTravelAct()->StateWait();
 			}
 		}
 		return;
@@ -176,7 +176,7 @@ void CAntiAirTask::Update()
 			for (CCircuitUnit* unit : units) {
 				unit->Attack(target->GetPos(), target, frame + FRAMES_PER_SEC * 60);
 
-				unit->GetTravelAct()->StateHalt();
+				unit->GetTravelAct()->StateWait();
 			}
 			return;
 		}
@@ -202,7 +202,7 @@ void CAntiAirTask::Update()
 				for (CCircuitUnit* unit : units) {
 					unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
 
-					unit->GetTravelAct()->StateHalt();
+					unit->GetTravelAct()->StateWait();
 				}
 				return;
 			}
@@ -214,7 +214,7 @@ void CAntiAirTask::Update()
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
 
-			unit->GetTravelAct()->StateHalt();
+			unit->GetTravelAct()->StateWait();
 		}
 	} else {
 		ActivePath();
@@ -274,7 +274,7 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
 
-			unit->GetTravelAct()->StateHalt();
+			unit->GetTravelAct()->StateWait();
 		}
 	}
 }

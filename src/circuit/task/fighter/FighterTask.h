@@ -59,6 +59,9 @@ protected:
 	std::set<CCircuitUnit*> cowards;
 	std::set<CCircuitUnit*> shields;
 
+	static F3Vec urgentPositions;  // NOTE: micro-opt
+	static F3Vec enemyPositions;  // NOTE: micro-opt
+
 #ifdef DEBUG_VIS
 public:
 	virtual void Log() override;

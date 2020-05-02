@@ -13,11 +13,14 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathFinder.h"
+#include "terrain/path/QueryPathInfo.h"
+#include "terrain/path/QueryPathMulti.h"
 #include "unit/action/MoveAction.h"
 #include "unit/action/FightAction.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
+#include "util/GameTask.h"
 #include "util/Utils.h"
 
 #include "spring/SpringMap.h"
@@ -101,6 +104,7 @@ void CRaidTask::Start(CCircuitUnit* unit)
 
 void CRaidTask::Update()
 {
+	SCOPED_TIME(manager->GetCircuit(), __PRETTY_FUNCTION__);
 	++updCount;
 
 	/*
@@ -132,7 +136,7 @@ void CRaidTask::Update()
 					unit->GetUnit()->PatrolTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame);
 				)
 
-				unit->GetTravelAct()->StateHalt();
+				unit->GetTravelAct()->StateWait();
 			}
 		}
 		return;
@@ -157,7 +161,7 @@ void CRaidTask::Update()
 	/*
 	 * Update target
 	 */
-	FindTarget();
+	const bool isTargetsFound = FindTarget();
 
 	state = State::ROAM;
 	if (target != nullptr) {
@@ -171,7 +175,7 @@ void CRaidTask::Update()
 						unit->GetUnit()->ExecuteCustomCommand(CMD_ATTACK_GROUND, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 					)
 
-					unit->GetTravelAct()->StateHalt();
+					unit->GetTravelAct()->StateWait();
 				}
 			} else {
 				for (CCircuitUnit* unit : units) {
@@ -180,52 +184,44 @@ void CRaidTask::Update()
 //						unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
 					)
 
-					unit->GetTravelAct()->StateHalt();
+					unit->GetTravelAct()->StateWait();
 				}
 			}
 		} else {
 			Attack(frame);
 		}
 		return;
-	} else if (!pPath->posPath.empty()) {
-		position = pPath->posPath.back();
-		ActivePath();
+	}
+
+	if (!isTargetsFound) {
+		FallbackRaid();
 		return;
 	}
 
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CThreatMap* threatMap = circuit->GetThreatMap();
-	const AIFloat3& pos = leader->GetPos(frame);
-	const AIFloat3& threatPos = leader->GetTravelAct()->IsActive() ? position : pos;
-	if (attackPower * powerMod <= threatMap->GetThreatAt(leader, threatPos)) {
-		position = circuit->GetMilitaryManager()->GetRaidPosition(leader);
+	const auto it = pathQueries.find(leader);
+	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
+	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
+		return;
 	}
 
-	if (!utils::is_valid(position)) {
-		float x = rand() % terrainManager->GetTerrainWidth();
-		float z = rand() % terrainManager->GetTerrainHeight();
-		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
-		position = terrainManager->GetMovePosition(leader->GetArea(), position);
-	}
-	AIFloat3 startPos = pos;
-	AIFloat3 endPos = position;
+	CCircuitDef* cdef = leader->GetCircuitDef();
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	AIFloat3 startPos = leader->GetPos(frame);
+	const float pathRange = std::max(std::min(cdef->GetMaxRange(), cdef->GetLosRadius()), (float)threatMap->GetSquareSize());
+	CCircuitUnit* unit = leader;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	pathfinder->SetMapData(leader, threatMap, frame);
-	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
+	query = pathfinder->CreatePathMultiQuery(
+			unit, threatMap, frame,
+			startPos, pathRange, !urgentPositions.empty() ? urgentPositions : enemyPositions, attackPower);
+	pathQueries[unit] = query;
 
-	if (pPath->path.size() > 2) {
-//		position = path.back();
-		ActivePath();
-		return;
-	}
-
-	for (CCircuitUnit* unit : units) {
-		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-		)
-		unit->GetTravelAct()->StateHalt();
-	}
+	const CRefHolder thisHolder(this);
+	pathfinder->RunPathMulti(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
+		if (this->IsQueryAlive(unit, query)) {
+			this->ApplyPathMulti(query);
+		}
+	}));
 }
 
 void CRaidTask::OnUnitIdle(CCircuitUnit* unit)
@@ -250,7 +246,7 @@ void CRaidTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-void CRaidTask::FindTarget()
+bool CRaidTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CMap* map = circuit->GetMap();
@@ -281,8 +277,8 @@ void CRaidTask::FindTarget()
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
 	CEnemyInfo* bestTarget = nullptr;
 	CEnemyInfo* worstTarget = nullptr;
-	static F3Vec urgentPositions;  // NOTE: micro-opt
-	static F3Vec enemyPositions;  // NOTE: micro-opt
+	urgentPositions.clear();
+	enemyPositions.clear();
 	threatMap->SetThreatType(leader);
 	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	for (auto& kv : enemies) {
@@ -376,26 +372,91 @@ void CRaidTask::FindTarget()
 
 	if (bestTarget != nullptr) {
 		SetTarget(bestTarget);
-		urgentPositions.clear();
-		enemyPositions.clear();
-		pPath->Clear();
-		return;
+		return true;
 	}
 
 	if (urgentPositions.empty() && enemyPositions.empty()) {
-		pPath->Clear();
+		return false;
+	}
+
+	return true;
+	// Return: target, startPos=leader->pos, urgentPositions and enemyPositions
+}
+
+void CRaidTask::ApplyPathMulti(std::shared_ptr<IPathQuery> query)
+{
+	std::shared_ptr<CQueryPathMulti> pQuery = std::static_pointer_cast<CQueryPathMulti>(query);
+	pPath = pQuery->GetPathInfo();
+
+	if (!pPath->posPath.empty()) {
+		position = pPath->posPath.back();
+		ActivePath();
+	} else {
+		FallbackRaid();
+	}
+}
+
+void CRaidTask::FallbackRaid()
+{
+	const auto it = pathQueries.find(leader);
+	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
+	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
 		return;
 	}
 
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	const AIFloat3& pos = leader->GetPos(frame);
+	const AIFloat3& threatPos = leader->GetTravelAct()->IsActive() ? position : pos;
+	if (attackPower * powerMod <= threatMap->GetThreatAt(leader, threatPos)) {
+		position = circuit->GetMilitaryManager()->GetRaidPosition(leader);
+	}
+
+	if (!utils::is_valid(position)) {
+		float x = rand() % terrainManager->GetTerrainWidth();
+		float z = rand() % terrainManager->GetTerrainHeight();
+		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
+		position = terrainManager->GetMovePosition(leader->GetArea(), position);
+	}
 	AIFloat3 startPos = pos;
-	const float pathRange = std::max(std::min(weaponRange, cdef->GetLosRadius()), (float)threatMap->GetSquareSize());
+	AIFloat3 endPos = position;
+	CCircuitUnit* unit = leader;
+
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	pathfinder->FindBestPath(*pPath, startPos, pathRange,
-			!urgentPositions.empty() ? urgentPositions : enemyPositions,
-			attackPower);
-	urgentPositions.clear();
-	enemyPositions.clear();
+	query = pathfinder->CreatePathInfoQuery(
+			unit, threatMap, frame,
+			startPos, endPos, pathfinder->GetSquareSize());
+	pathQueries[unit] = query;
+
+	const CRefHolder thisHolder(this);
+	pathfinder->RunPathInfo(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
+		if (this->IsQueryAlive(unit, query)) {
+			this->ApplyRaidPathInfo(query);
+		}
+	}));
+}
+
+void CRaidTask::ApplyRaidPathInfo(std::shared_ptr<IPathQuery> query)
+{
+	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
+	pPath = pQuery->GetPathInfo();
+
+	if (pPath->path.size() > 2) {
+//		position = path.back();
+		ActivePath();
+		return;
+	}
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	for (CCircuitUnit* unit : units) {
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		)
+		unit->GetTravelAct()->StateWait();
+	}
 }
 
 } // namespace circuit

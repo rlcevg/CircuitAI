@@ -70,7 +70,7 @@ void CAntiHeavyTask::AssignTo(CCircuitUnit* unit)
 	}
 
 	if (unit->GetDGunAct() != nullptr) {
-		unit->GetDGunAct()->StateHalt();
+		unit->GetDGunAct()->StateWait();
 	}
 
 	int squareSize = circuit->GetPathfinder()->GetSquareSize();
@@ -148,7 +148,7 @@ void CAntiHeavyTask::Update()
 					unit->GetUnit()->Fight(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 				)
 
-				unit->GetTravelAct()->StateHalt();
+				unit->GetTravelAct()->StateWait();
 			}
 		}
 		return;
@@ -190,7 +190,7 @@ void CAntiHeavyTask::Update()
 				if (unit->GetDGunAct() != nullptr) {
 					unit->GetDGunAct()->StateActivate();
 				}
-				unit->GetTravelAct()->StateHalt();
+				unit->GetTravelAct()->StateWait();
 
 				if (unit->GetCircuitDef()->IsRoleMine()) {
 					const bool isAttack = (target->GetThreat() > power);
@@ -248,7 +248,7 @@ void CAntiHeavyTask::Update()
 			for (CCircuitUnit* unit : units) {
 				unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
 
-				unit->GetTravelAct()->StateHalt();
+				unit->GetTravelAct()->StateWait();
 			}
 			return;
 		}
@@ -259,7 +259,7 @@ void CAntiHeavyTask::Update()
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
 
-			unit->GetTravelAct()->StateHalt();
+			unit->GetTravelAct()->StateWait();
 		}
 	}
 }

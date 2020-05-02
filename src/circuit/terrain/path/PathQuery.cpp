@@ -9,10 +9,10 @@
 
 namespace circuit {
 
-IPathQuery::IPathQuery(const CPathFinder& pathfinder, int id)
+IPathQuery::IPathQuery(const CPathFinder& pathfinder, int id, Type type)
 		: pathfinder(pathfinder)
 		, id(id)
-		, type(Type::NONE)
+		, type(type)
 		, state(State::NONE)
 		, canMoveArray(nullptr)
 		, threatArray(nullptr)

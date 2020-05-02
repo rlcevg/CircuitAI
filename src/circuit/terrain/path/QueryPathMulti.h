@@ -22,6 +22,10 @@ public:
 
 	void Prepare();
 
+	// Process Data
+	PathInfo& GetRefPathInfo() { return *pPath; }
+	float& GetRefPathCost() { return pathCost; }
+
 	// Input Data
 	const springai::AIFloat3& GetStartPos() const { return startPos; }
 	const F3Vec& GetTargets() const { return targets; }

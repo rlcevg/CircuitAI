@@ -12,7 +12,7 @@ namespace circuit {
 using namespace springai;
 
 CQueryCostMap::CQueryCostMap(const CPathFinder& pathfinder, int id)
-		: IPathQuery(pathfinder, id)
+		: IPathQuery(pathfinder, id, Type::MAP)
 {
 }
 

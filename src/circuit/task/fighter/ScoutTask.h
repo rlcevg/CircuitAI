@@ -28,7 +28,10 @@ public:
 
 private:
 	void Execute(CCircuitUnit* unit, bool isUpdating);
-	CEnemyInfo* FindTarget(CCircuitUnit* unit, const springai::AIFloat3& pos, PathInfo& path);
+	bool FindTarget(CCircuitUnit* unit, const springai::AIFloat3& pos);
+	void ApplyPathMulti(CCircuitUnit* unit, std::shared_ptr<IPathQuery> query, bool isUpdating);
+	void FallbackScout(CCircuitUnit* unit, bool isUpdating);
+	void ApplyScoutPathInfo(CCircuitUnit* unit, std::shared_ptr<IPathQuery> query);
 };
 
 } // namespace circuit

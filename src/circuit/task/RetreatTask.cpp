@@ -137,17 +137,9 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 
 	const CRefHolder thisHolder(this);
 	pathfinder->RunPathInfo(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
-		if (!this->IsQueryAlive(unit, query.get())) {
-			return;
+		if (this->IsQueryAlive(unit, query)) {
+			this->ApplyPathInfo(unit, query);
 		}
-
-		std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
-		std::shared_ptr<PathInfo> pPath = pQuery->GetPathInfo();
-
-		if (pPath->posPath.empty()) {
-			pPath->posPath.push_back(pQuery->GetEndPos());
-		}
-		unit->GetTravelAct()->SetPath(pPath);
 	}));
 }
 
@@ -318,6 +310,17 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
 	if (prevCost > nextCost) {
 		SetRepairer(unit);
 	}
+}
+
+void CRetreatTask::ApplyPathInfo(CCircuitUnit* unit, std::shared_ptr<IPathQuery> query)
+{
+	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
+	std::shared_ptr<PathInfo> pPath = pQuery->GetPathInfo();
+
+	if (pPath->posPath.empty()) {
+		pPath->posPath.push_back(pQuery->GetEndPos());
+	}
+	unit->GetTravelAct()->SetPath(pPath);
 }
 
 } // namespace circuit

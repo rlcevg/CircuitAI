@@ -18,7 +18,7 @@ public:
 	enum class State: char {NONE = 0, PROCESS, READY, _SIZE_};
 
 protected:
-	IPathQuery(const CPathFinder& pathfinder, int id);
+	IPathQuery(const CPathFinder& pathfinder, int id, Type type);
 	virtual ~IPathQuery();
 
 public:

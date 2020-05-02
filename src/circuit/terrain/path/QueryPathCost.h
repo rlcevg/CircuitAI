@@ -20,6 +20,9 @@ public:
 	void InitQuery(const springai::AIFloat3& startPos, const springai::AIFloat3& endPos,
 			int radius, float maxThreat);
 
+	// Process Data
+	float& GetRefPathCost() { return pathCost; }
+
 	// Input Data
 	const springai::AIFloat3& GetStartPos() const { return startPos; }
 	const springai::AIFloat3& GetEndPos() const { return endPos; }

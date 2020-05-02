@@ -21,6 +21,9 @@ namespace circuit {
 
 using namespace springai;
 
+F3Vec IFighterTask::urgentPositions;  // NOTE: micro-opt
+F3Vec IFighterTask::enemyPositions;  // NOTE: micro-opt
+
 IFighterTask::IFighterTask(ITaskManager* mgr, FightType type, float powerMod, int timeout)
 		: IUnitTask(mgr, Priority::NORMAL, Type::FIGHTER, timeout)
 		, fightType(type)
@@ -157,7 +160,7 @@ void IFighterTask::Attack(const int frame)
 	const bool isRepeatAttack = (frame >= attackFrame + FRAMES_PER_SEC * 3);
 	attackFrame = isRepeatAttack ? frame : attackFrame;
 	for (CCircuitUnit* unit : units) {
-		unit->GetTravelAct()->StateHalt();
+		unit->GetTravelAct()->StateWait();
 		if (unit->Blocker() != nullptr) {
 			continue;  // Do not interrupt current action
 		}

@@ -111,7 +111,7 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			}
 		)
-		unit->GetTravelAct()->StateHalt();
+		unit->GetTravelAct()->StateWait();
 		return;
 	} else if (!pPath->posPath.empty()) {
 		position = pPath->posPath.back();
@@ -154,7 +154,7 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 	)
-	unit->GetTravelAct()->StateHalt();
+	unit->GetTravelAct()->StateWait();
 }
 
 void CBombTask::OnUnitIdle(CCircuitUnit* unit)

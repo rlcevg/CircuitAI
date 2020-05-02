@@ -82,13 +82,17 @@ void ISquadTask::Merge(ISquadTask* task)
 {
 	const std::set<CCircuitUnit*>& rookies = task->GetAssignees();
 	IAction::State state = leader->GetTravelAct()->GetState();
+	const std::shared_ptr<PathInfo>& lPath = leader->GetTravelAct()->GetPath();
 	for (CCircuitUnit* unit : rookies) {
 		unit->SetTask(this);
 		if (unit->GetCircuitDef()->IsRoleSupport()) {
 			continue;
 		}
-		unit->GetTravelAct()->SetPath(pPath);
+		unit->GetTravelAct()->SetPath(lPath);
 		unit->GetTravelAct()->SetState(state);
+		if (pPath->posPath.empty() && state == IAction::State::ACTIVE) {
+			__asm__("int3");
+		}
 	}
 	units.insert(rookies.begin(), rookies.end());
 	attackPower += task->GetAttackPower();
