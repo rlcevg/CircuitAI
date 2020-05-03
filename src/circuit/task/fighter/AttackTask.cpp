@@ -164,7 +164,7 @@ void CAttackTask::Update()
 		}
 	}
 
-	AIFloat3 startPos = leader->GetPos(frame);
+	const AIFloat3& startPos = leader->GetPos(frame);
 	if (circuit->GetInflMap()->GetInfluenceAt(startPos) < -INFL_EPS) {
 		SetTarget(nullptr);
 	} else {
@@ -200,7 +200,7 @@ void CAttackTask::Update()
 		return;
 	}
 
-	AIFloat3 endPos = position;
+	const AIFloat3& endPos = position;
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const float eps = threatMap->GetSquareSize() * 2.f;
 	const float pathRange = std::max(highestRange - eps, eps);
@@ -213,7 +213,7 @@ void CAttackTask::Update()
 	pathQueries[unit] = query;
 
 	const CRefHolder thisHolder(this);
-	pathfinder->RunPathInfo(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
+	pathfinder->RunQuery(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
 		if (this->IsQueryAlive(unit, query)) {
 			this->ApplyPathInfo(query);
 		}

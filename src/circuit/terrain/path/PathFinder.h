@@ -65,10 +65,7 @@ public:
 	std::shared_ptr<IPathQuery> CreateCostMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos);
 
-	void RunPathInfo(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete = nullptr);
-	void RunPathMulti(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete = nullptr);
-	void RunPathCost(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete = nullptr);
-	void RunCostMap(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete = nullptr);
+	void RunQuery(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete = nullptr);
 
 	// FIXME: Remove
 	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
@@ -99,9 +96,15 @@ public:
 private:
 	int MakeQueryId() { return queryId++; }
 	void FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, int frame);
+
+	void RunPathInfo(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete = nullptr);
+	void RunPathMulti(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete = nullptr);
+	void RunPathCost(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete = nullptr);
+	void RunCostMap(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete = nullptr);
+
 	void MakePath(IPathQuery* query);
-	void PathCost(IPathQuery* query);
 	void FindBestPath(IPathQuery* query);
+	void PathCost(IPathQuery* query);
 	void MakeCostMap(IPathQuery* query);
 
 	size_t RefinePath(IndexVec& path);

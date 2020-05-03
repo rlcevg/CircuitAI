@@ -847,7 +847,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> q = pathfinder->CreateCostMapQuery(unit, threatMap, frame, pos);
 	costsQueries[unit] = q;
-	pathfinder->RunCostMap(q);
+	pathfinder->RunQuery(q);
 
 	if (query == nullptr) {
 		return nullptr;  // 1st run

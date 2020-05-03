@@ -205,7 +205,7 @@ void CRaidTask::Update()
 
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	AIFloat3 startPos = leader->GetPos(frame);
+	const AIFloat3& startPos = leader->GetPos(frame);
 	const float pathRange = std::max(std::min(cdef->GetMaxRange(), cdef->GetLosRadius()), (float)threatMap->GetSquareSize());
 	CCircuitUnit* unit = leader;
 
@@ -216,7 +216,7 @@ void CRaidTask::Update()
 	pathQueries[unit] = query;
 
 	const CRefHolder thisHolder(this);
-	pathfinder->RunPathMulti(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
+	pathfinder->RunQuery(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
 		if (this->IsQueryAlive(unit, query)) {
 			this->ApplyPathMulti(query);
 		}
@@ -419,8 +419,8 @@ void CRaidTask::FallbackRaid()
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 		position = terrainManager->GetMovePosition(leader->GetArea(), position);
 	}
-	AIFloat3 startPos = pos;
-	AIFloat3 endPos = position;
+	const AIFloat3& startPos = pos;
+	const AIFloat3& endPos = position;
 	CCircuitUnit* unit = leader;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
@@ -430,7 +430,7 @@ void CRaidTask::FallbackRaid()
 	pathQueries[unit] = query;
 
 	const CRefHolder thisHolder(this);
-	pathfinder->RunPathInfo(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
+	pathfinder->RunQuery(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
 		if (this->IsQueryAlive(unit, query)) {
 			this->ApplyRaidPathInfo(query);
 		}

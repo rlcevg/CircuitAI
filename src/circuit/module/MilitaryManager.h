@@ -66,8 +66,8 @@ public:
 	bool HasDefence(int cluster);
 	springai::AIFloat3 GetScoutPosition(CCircuitUnit* unit);
 	springai::AIFloat3 GetRaidPosition(CCircuitUnit* unit);
-	void FindFrontPos(PathInfo& pPath, springai::AIFloat3& startPos, STerrainMapArea* area, float range);
-	void FindAHSafePos(PathInfo& pPath, springai::AIFloat3& startPos, STerrainMapArea* area, float range);
+	void FindFrontPos(PathInfo& pPath, const springai::AIFloat3& startPos, STerrainMapArea* area, float range);
+	void FindAHSafePos(PathInfo& pPath, const springai::AIFloat3& startPos, STerrainMapArea* area, float range);
 	void FillSafePos(const springai::AIFloat3& pos, STerrainMapArea* area, F3Vec& outPositions);
 
 	IFighterTask* AddDefendTask(int cluster);

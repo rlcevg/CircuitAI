@@ -107,7 +107,7 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	AIFloat3 startPos = unit->GetPos(frame);
+	const AIFloat3& startPos = unit->GetPos(frame);
 	AIFloat3 endPos;
 	float range;
 
@@ -136,7 +136,7 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 	pathQueries[unit] = query;
 
 	const CRefHolder thisHolder(this);
-	pathfinder->RunPathInfo(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
+	pathfinder->RunQuery(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
 		if (this->IsQueryAlive(unit, query)) {
 			this->ApplyPathInfo(unit, query);
 		}

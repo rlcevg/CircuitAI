@@ -134,7 +134,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	AIFloat3 startPos = pos;
+	const AIFloat3& startPos = pos;
 	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
 								 /*unit->IsUnderWater(frame) ? cdef->GetSonarRadius() : */cdef->GetLosRadius());
 
@@ -145,7 +145,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	pathQueries[unit] = query;
 
 	const CRefHolder thisHolder(this);
-	pathfinder->RunPathMulti(query, std::make_shared<CGameTask>([this, thisHolder, unit, query, isUpdating]() {
+	pathfinder->RunQuery(query, std::make_shared<CGameTask>([this, thisHolder, unit, query, isUpdating]() {
 		if (this->IsQueryAlive(unit, query)) {
 			this->ApplyPathMulti(unit, query, isUpdating);
 		}
@@ -306,8 +306,8 @@ void CScoutTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 		position = terrainManager->GetMovePosition(unit->GetArea(), position);
 	}
-	AIFloat3 startPos = pos;
-	AIFloat3 endPos = position;
+	const AIFloat3& startPos = pos;
+	const AIFloat3& endPos = position;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	query = pathfinder->CreatePathInfoQuery(
@@ -316,7 +316,7 @@ void CScoutTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 	pathQueries[unit] = query;
 
 	const CRefHolder thisHolder(this);
-	pathfinder->RunPathInfo(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
+	pathfinder->RunQuery(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
 		if (this->IsQueryAlive(unit, query)) {
 			this->ApplyScoutPathInfo(unit, query);
 		}

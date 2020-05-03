@@ -147,7 +147,7 @@ void CDefendTask::Update()
 	 */
 	const bool isTargetsFound = FindTarget();
 
-	AIFloat3 startPos = leader->GetPos(frame);
+	const AIFloat3& startPos = leader->GetPos(frame);
 	state = State::ROAM;
 	if ((target != nullptr) || isTargetsFound) {
 		const float sqRange = SQUARE(highestRange + 200.f);  // FIXME: 200.f ~ count slack
@@ -190,7 +190,7 @@ void CDefendTask::Update()
 
 	const CRefHolder thisHolder(this);
 	std::weak_ptr<IPathQuery> weakQuery(query);
-	pathfinder->RunPathMulti(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
+	pathfinder->RunQuery(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
 		if (this->IsQueryAlive(unit, query)) {
 			this->ApplyPathMulti(query);
 		}

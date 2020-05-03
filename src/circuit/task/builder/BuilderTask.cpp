@@ -439,14 +439,14 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 	// TODO: Check IsForceExecute, shield charge and retreat
 
-	AIFloat3 endPos = GetPosition();
+	const AIFloat3& endPos = GetPosition();
 	if (!circuit->GetTerrainManager()->CanBuildAtSafe(unit, endPos)) {
 		manager->AbortTask(this);
 		return;
 	}
 
 	const int frame = circuit->GetLastFrame();
-	AIFloat3 startPos = unit->GetPos(frame);
+	const AIFloat3& startPos = unit->GetPos(frame);
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float range = cdef->GetBuildDistance();
 
@@ -468,7 +468,7 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 	pathQueries[unit] = query;
 
 	const CRefHolder thisHolder(this);
-	pathfinder->RunPathInfo(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
+	pathfinder->RunQuery(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
 		if (this->IsQueryAlive(unit, query)) {
 			this->ApplyPathInfo(unit, query);
 		}

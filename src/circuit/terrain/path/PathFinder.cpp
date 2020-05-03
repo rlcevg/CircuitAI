@@ -302,66 +302,23 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateCostMapQuery(
 	return pQuery;
 }
 
-void CPathFinder::RunPathInfo(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
+void CPathFinder::RunQuery(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
 {
-	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
-
-	pQuery->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
-		this->MakePath(pQuery.get());
-		pQuery->SetState(IPathQuery::State::READY);
-	})
-#ifdef DEBUG_VIS
-	, std::make_shared<CGameTask>([this, pQuery, onComplete]() {
-		this->UpdateVis(pQuery->GetPathInfo()->path);
-		onComplete->Run();
-	})
-#else
-	, onComplete
-#endif
-	);
-}
-
-void CPathFinder::RunPathMulti(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
-{
-	std::shared_ptr<CQueryPathMulti> pQuery = std::static_pointer_cast<CQueryPathMulti>(query);
-
-	pQuery->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
-		this->FindBestPath(pQuery.get());
-		pQuery->SetState(IPathQuery::State::READY);
-	})
-#ifdef DEBUG_VIS
-	, std::make_shared<CGameTask>([this, pQuery, onComplete]() {
-		this->UpdateVis(pQuery->GetPathInfo()->path);
-		onComplete->Run();
-	})
-#else
-	, onComplete
-#endif
-	);
-}
-
-void CPathFinder::RunPathCost(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
-{
-	std::shared_ptr<CQueryPathCost> pQuery = std::static_pointer_cast<CQueryPathCost>(query);
-
-	pQuery->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
-		this->PathCost(pQuery.get());
-		pQuery->SetState(IPathQuery::State::READY);
-	}), onComplete);
-}
-
-void CPathFinder::RunCostMap(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
-{
-	std::shared_ptr<CQueryCostMap> pQuery = std::static_pointer_cast<CQueryCostMap>(query);
-
-	pQuery->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
-		this->MakeCostMap(pQuery.get());
-		pQuery->SetState(IPathQuery::State::READY);
-	}), onComplete);
+	switch (query->GetType()) {
+		case IPathQuery::Type::SINGLE: {
+			RunPathInfo(query, onComplete);
+		} break;
+		case IPathQuery::Type::MULTI: {
+			RunPathMulti(query, onComplete);
+		} break;
+		case IPathQuery::Type::COST: {
+			RunPathCost(query, onComplete);
+		} break;
+		case IPathQuery::Type::MAP: {
+			RunCostMap(query, onComplete);
+		} break;
+		default: break;
+	}
 }
 
 void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame)
@@ -703,6 +660,68 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 	query->Init(moveArray, threatArray, moveFun, moveThreatFun);
 }
 
+void CPathFinder::RunPathInfo(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
+{
+	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
+
+	pQuery->SetState(IPathQuery::State::PROCESS);
+	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
+		this->MakePath(pQuery.get());
+		pQuery->SetState(IPathQuery::State::READY);
+	})
+#ifdef DEBUG_VIS
+	, std::make_shared<CGameTask>([this, pQuery, onComplete]() {
+		this->UpdateVis(pQuery->GetPathInfo()->path);
+		onComplete->Run();
+	})
+#else
+	, onComplete
+#endif
+	);
+}
+
+void CPathFinder::RunPathMulti(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
+{
+	std::shared_ptr<CQueryPathMulti> pQuery = std::static_pointer_cast<CQueryPathMulti>(query);
+
+	pQuery->SetState(IPathQuery::State::PROCESS);
+	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
+		this->FindBestPath(pQuery.get());
+		pQuery->SetState(IPathQuery::State::READY);
+	})
+#ifdef DEBUG_VIS
+	, std::make_shared<CGameTask>([this, pQuery, onComplete]() {
+		this->UpdateVis(pQuery->GetPathInfo()->path);
+		onComplete->Run();
+	})
+#else
+	, onComplete
+#endif
+	);
+}
+
+void CPathFinder::RunPathCost(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
+{
+	std::shared_ptr<CQueryPathCost> pQuery = std::static_pointer_cast<CQueryPathCost>(query);
+
+	pQuery->SetState(IPathQuery::State::PROCESS);
+	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
+		this->PathCost(pQuery.get());
+		pQuery->SetState(IPathQuery::State::READY);
+	}), onComplete);
+}
+
+void CPathFinder::RunCostMap(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
+{
+	std::shared_ptr<CQueryCostMap> pQuery = std::static_pointer_cast<CQueryCostMap>(query);
+
+	pQuery->SetState(IPathQuery::State::PROCESS);
+	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
+		this->MakeCostMap(pQuery.get());
+		pQuery->SetState(IPathQuery::State::READY);
+	}), onComplete);
+}
+
 void CPathFinder::MakePath(IPathQuery* query)
 {
 	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
@@ -734,11 +753,6 @@ void CPathFinder::MakePath(IPathQuery* query)
 	{
 		FillPathInfo(iPath);
 	}
-}
-
-void CPathFinder::PathCost(IPathQuery* query)
-{
-	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
 }
 
 void CPathFinder::FindBestPath(IPathQuery* query)
@@ -878,6 +892,11 @@ void CPathFinder::FindBestPath(IPathQuery* query)
 
 	endNodes.clear();
 	nodeTargets.clear();
+}
+
+void CPathFinder::PathCost(IPathQuery* query)
+{
+	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
 }
 
 void CPathFinder::MakeCostMap(IPathQuery* query)

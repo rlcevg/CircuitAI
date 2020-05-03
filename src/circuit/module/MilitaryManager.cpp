@@ -865,7 +865,7 @@ AIFloat3 CMilitaryManager::GetRaidPosition(CCircuitUnit* unit)
 	return GetScoutPosition(unit);
 }
 
-void CMilitaryManager::FindFrontPos(PathInfo& pPath, AIFloat3& startPos, STerrainMapArea* area, float range)
+void CMilitaryManager::FindFrontPos(PathInfo& pPath, const AIFloat3& startPos, STerrainMapArea* area, float range)
 {
 	static F3Vec ourPositions;  // NOTE: micro-opt
 
@@ -891,7 +891,7 @@ void CMilitaryManager::FindFrontPos(PathInfo& pPath, AIFloat3& startPos, STerrai
 			ourPositions.push_back(defPoint.position);
 		}
 
-		pathfinder->FindBestPath(pPath, startPos, range, ourPositions);
+		pathfinder->FindBestPath(pPath, const_cast<AIFloat3&>(startPos), range, ourPositions);
 		ourPositions.clear();
 		if (!pPath.posPath.empty()) {
 			return;
@@ -902,11 +902,11 @@ void CMilitaryManager::FindFrontPos(PathInfo& pPath, AIFloat3& startPos, STerrai
 	 * Use base
 	 */
 	ourPositions.push_back(setupManager->GetBasePos());
-	pathfinder->FindBestPath(pPath, startPos, range, ourPositions);
+	pathfinder->FindBestPath(pPath, const_cast<AIFloat3&>(startPos), range, ourPositions);
 	ourPositions.clear();
 }
 
-void CMilitaryManager::FindAHSafePos(PathInfo& pPath, AIFloat3& startPos, STerrainMapArea* area, float range)
+void CMilitaryManager::FindAHSafePos(PathInfo& pPath, const AIFloat3& startPos, STerrainMapArea* area, float range)
 {
 	static F3Vec ourPositions;  // NOTE: micro-opt
 
@@ -928,7 +928,7 @@ void CMilitaryManager::FindAHSafePos(PathInfo& pPath, AIFloat3& startPos, STerra
 		}
 
 		if (!ourPositions.empty()) {
-			pathfinder->FindBestPath(pPath, startPos, range, ourPositions);
+			pathfinder->FindBestPath(pPath, const_cast<AIFloat3&>(startPos), range, ourPositions);
 			ourPositions.clear();
 			if (!pPath.posPath.empty()) {
 				return;
@@ -954,7 +954,7 @@ void CMilitaryManager::FindAHSafePos(PathInfo& pPath, AIFloat3& startPos, STerra
 			ourPositions.push_back(defPoint.position);
 		}
 
-		pathfinder->FindBestPath(pPath, startPos, range, ourPositions);
+		pathfinder->FindBestPath(pPath, const_cast<AIFloat3&>(startPos), range, ourPositions);
 		ourPositions.clear();
 		if (!pPath.posPath.empty()) {
 			return;
@@ -965,7 +965,7 @@ void CMilitaryManager::FindAHSafePos(PathInfo& pPath, AIFloat3& startPos, STerra
 	 * Use base
 	 */
 	ourPositions.push_back(circuit->GetSetupManager()->GetBasePos());
-	pathfinder->FindBestPath(pPath, startPos, range, ourPositions);
+	pathfinder->FindBestPath(pPath, const_cast<AIFloat3&>(startPos), range, ourPositions);
 	ourPositions.clear();
 }
 
