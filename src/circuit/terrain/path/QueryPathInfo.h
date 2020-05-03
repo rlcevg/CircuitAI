@@ -27,8 +27,8 @@ public:
 	float& GetRefPathCost() { return pathCost; }
 
 	// Input Data
-	const springai::AIFloat3& GetStartPos() const { return startPos; }
-	const springai::AIFloat3& GetEndPos() const { return endPos; }
+	springai::AIFloat3& GetStartPos() { return startPos; }
+	springai::AIFloat3& GetEndPos() { return endPos; }
 	const float GetMaxRange() const { return maxRange; }
 	const float GetMaxThreat() const { return maxThreat; }
 

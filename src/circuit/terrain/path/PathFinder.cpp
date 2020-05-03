@@ -246,7 +246,7 @@ AIFloat3 CPathFinder::PathIndex2Pos(int index) const
  */
 std::shared_ptr<IPathQuery> CPathFinder::CreatePathInfoQuery(
 		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
-		AIFloat3& startPos, AIFloat3& endPos, int radius, float maxThreat)
+		const AIFloat3& startPos, const AIFloat3& endPos, int radius, float maxThreat)
 {
 	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathInfo>(*this, MakeQueryId());
 	CQueryPathInfo* query = static_cast<CQueryPathInfo*>(pQuery.get());
@@ -259,7 +259,7 @@ std::shared_ptr<IPathQuery> CPathFinder::CreatePathInfoQuery(
 
 std::shared_ptr<IPathQuery> CPathFinder::CreatePathMultiQuery(
 		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
-		AIFloat3& startPos, float maxRange, F3Vec possibleTargets, float maxThreat)
+		const AIFloat3& startPos, float maxRange, const F3Vec& possibleTargets, float maxThreat)
 {
 	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathMulti>(*this, MakeQueryId());
 	CQueryPathMulti* query = static_cast<CQueryPathMulti*>(pQuery.get());
@@ -275,7 +275,7 @@ std::shared_ptr<IPathQuery> CPathFinder::CreatePathMultiQuery(
  */
 std::shared_ptr<IPathQuery> CPathFinder::CreatePathCostQuery(
 		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
-		const AIFloat3& startPos, AIFloat3& endPos, int radius, float maxThreat)
+		const AIFloat3& startPos, const AIFloat3& endPos, int radius, float maxThreat)
 {
 	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathCost>(*this, MakeQueryId());
 	CQueryPathCost* query = static_cast<CQueryPathCost*>(pQuery.get());
@@ -645,7 +645,7 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 	float* threatArray;
 	CostFunc moveFun;
 	CostFunc moveThreatFun;
-	// FIXME: DEBUG; Re-organize and pre-calculate moveFun for each move-type
+	// TODO: Re-organize and pre-calculate moveFun for each move-type
 	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
 		threatArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
 		moveFun = [&sectors, maxSlope](int index) {
@@ -699,7 +699,6 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 			return moveFun(index) + 2.f * threatArray[index];
 		};
 	}
-	// FIXME: DEBUG
 
 	query->Init(moveArray, threatArray, moveFun, moveThreatFun);
 }
@@ -716,8 +715,8 @@ void CPathFinder::MakePath(IPathQuery* query)
 	NSMicroPather::CostFunc moveThreatFun = q->GetMoveThreatFun();
 	moveFun = q->GetMoveFun();
 
-	AIFloat3 startPos = q->GetStartPos();
-	AIFloat3 endPos = q->GetEndPos();
+	AIFloat3& startPos = q->GetStartPos();
+	AIFloat3& endPos = q->GetEndPos();
 	const int radius = q->GetMaxRange() / squareSize;
 	const float maxThreat = q->GetMaxThreat();
 
@@ -749,8 +748,8 @@ void CPathFinder::FindBestPath(IPathQuery* query)
 	CQueryPathMulti* q = static_cast<CQueryPathMulti*>(query);
 	q->Prepare();
 
-	AIFloat3 startPos = q->GetStartPos();
-	F3Vec possibleTargets = q->GetTargets();
+	AIFloat3& startPos = q->GetStartPos();
+	F3Vec& possibleTargets = q->GetTargets();
 	const float maxRange = q->GetMaxRange();
 	const float maxThreat = q->GetMaxThreat();
 

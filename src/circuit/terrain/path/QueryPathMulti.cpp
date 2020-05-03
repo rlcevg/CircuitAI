@@ -21,7 +21,7 @@ CQueryPathMulti::~CQueryPathMulti()
 }
 
 void CQueryPathMulti::InitQuery(const AIFloat3& startPos, float maxRange,
-		F3Vec targets, float maxThreat)
+		const F3Vec& targets, float maxThreat)
 {
 	this->startPos = startPos;
 	this->maxRange = maxRange;

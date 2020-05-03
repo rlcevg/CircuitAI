@@ -18,7 +18,7 @@ public:
 	virtual ~CQueryPathMulti();
 
 	void InitQuery(const springai::AIFloat3& startPos, float maxRange,
-			F3Vec targets, float maxThreat);
+			const F3Vec& targets, float maxThreat);
 
 	void Prepare();
 
@@ -27,8 +27,8 @@ public:
 	float& GetRefPathCost() { return pathCost; }
 
 	// Input Data
-	const springai::AIFloat3& GetStartPos() const { return startPos; }
-	const F3Vec& GetTargets() const { return targets; }
+	springai::AIFloat3& GetStartPos() { return startPos; }
+	F3Vec& GetTargets() { return targets; }
 	const float GetMaxRange() const { return maxRange; }
 	const float GetMaxThreat() const { return maxThreat; }
 

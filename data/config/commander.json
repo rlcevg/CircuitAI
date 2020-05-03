@@ -60,7 +60,7 @@
 			"upgrade": {
 				"time": 420,  // Force-morph delay, in seconds
 				"module": [  // List of dynamic module IDs
-					[13],  // shotgun
+					[13, 42],  // shotgun, nano
 					[31, 42],  // Cloak, Nano
 					[15, 41, 37],  // sniper, range, health
 					[34, 34, 34],  // companion drones
@@ -155,7 +155,7 @@
 			"upgrade": {
 				"time": 420,  // Force-morph delay, in seconds
 				"module": [  // List of dynamic module IDs
-					[7, 30],  // Machinegun
+					[7, 40],  // Machinegun, speed
 					[31, 36],  // Cloak, Regen
 					[19, 38, 39],  // disruptor bomb, high density, damage boost
 					[34, 34, 34],  // companion drones
@@ -163,23 +163,22 @@
 					[34, 34, 40],  // companion drones, speed
 					[40, 40, 40],  // speed
 					[40, 40, 40],  // speed
-					[40, 37, 37],  // speed, health
 					[37, 37, 37],  // health
 					[37, 37, 37],  // health
+					[37, 37, 36],  // health, regen
 					[36, 36, 36],  // regen
 					[36, 36, 36],  // regen
-					[36, 42, 42],  // regen, builder
 					[42, 42, 42],  // builder
 					[42, 42, 42],  // builder
-					[30, 27, 29],  // radar, disruptor ammo, jammer
+					[42, 42, 30],  // radar
+					[41, 27, 29],  // range, disruptor ammo, jammer
 					[41, 41, 41],  // range
 					[41, 41, 41],  // range
-					[41, 41, 39],  // range, damage
+					[41, 39, 39],  // range, damage
 					[39, 39, 39],  // damage
-					[39, 39, 39],  // damage
+					[39, 39, 38],  // damage, high density
 					[38, 38, 38],  // high density
-					[38, 38, 38],  // high density
-					[38]  // high density
+					[38, 38, 38]  // high density
 				]
 			},
 
@@ -249,7 +248,7 @@
 			"upgrade": {
 				"time": 420,  // Force-morph delay, in seconds
 				"module": [  // List of dynamic module IDs
-					[11, 30],  // shotgun
+					[11, 41],  // shotgun, range
 					[24, 37],  // shield, health
 					[11, 41, 41],  // Double Riot, range
 					[38, 41, 41],  // high density, range
@@ -342,7 +341,7 @@
 			"upgrade": {
 				"time": 420,  // Force-morph delay, in seconds
 				"module": [  // List of dynamic module IDs
-					[4, 30],  // beam laser
+					[4, 36],  // beam laser, regen
 					[31, 36],  // cloak, regen
 					[8, 40, 36],  // lightning, speed, regen
 					[37, 40, 36],  // health, speed, regen

@@ -62,6 +62,8 @@ void CAllyTeam::Init(CCircuitAI* circuit, float decloakRadius)
 
 	this->circuit = circuit;
 
+	quadField.Init(int2(circuit->GetMap()->GetWidth(), circuit->GetMap()->GetHeight()), CQuadField::BASE_QUAD_SIZE);
+
 	int boxId = circuit->GetTeam()->GetRulesParamFloat("start_box_id", -1);
 	if (boxId >= 0) {
 		startBox = circuit->GetGameAttribute()->GetSetupData().GetStartBox(boxId);
@@ -103,6 +105,8 @@ void CAllyTeam::Release()
 	defence = nullptr;
 	pathfinder = nullptr;
 	factoryData = nullptr;
+
+	quadField.Kill();
 }
 
 void CAllyTeam::UpdateFriendlyUnits(CCircuitAI* circuit)

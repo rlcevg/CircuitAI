@@ -189,7 +189,8 @@ void CDefendTask::Update()
 	pathQueries[unit] = query;
 
 	const CRefHolder thisHolder(this);
-	pathfinder->RunPathInfo(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
+	std::weak_ptr<IPathQuery> weakQuery(query);
+	pathfinder->RunPathMulti(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
 		if (this->IsQueryAlive(unit, query)) {
 			this->ApplyPathMulti(query);
 		}

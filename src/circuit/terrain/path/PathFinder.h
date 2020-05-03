@@ -54,13 +54,13 @@ public:
 	springai::AIFloat3 PathIndex2Pos(int index) const;
 
 	std::shared_ptr<IPathQuery> CreatePathInfoQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
-			springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius,
+			const springai::AIFloat3& startPos, const springai::AIFloat3& endPos, int radius,
 			float maxThreat = std::numeric_limits<float>::max());
 	std::shared_ptr<IPathQuery> CreatePathMultiQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
-			springai::AIFloat3& startPos, float maxRange, F3Vec possibleTargets,
+			const springai::AIFloat3& startPos, float maxRange, const F3Vec& possibleTargets,
 			float maxThreat = std::numeric_limits<float>::max());
 	std::shared_ptr<IPathQuery> CreatePathCostQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
-			const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius,
+			const springai::AIFloat3& startPos, const springai::AIFloat3& endPos, int radius,
 			float maxThreat = std::numeric_limits<float>::max());
 	std::shared_ptr<IPathQuery> CreateCostMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos);
