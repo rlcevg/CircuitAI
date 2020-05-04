@@ -10,6 +10,7 @@
 
 #include "util/MultiQueue.h"
 #include "util/GameTask.h"
+#include "util/PathTask.h"
 #include "util/Defines.h"
 
 #include "System/Threading/SpringThreading.h"
@@ -64,7 +65,7 @@ public:
 	/*
 	 * Run concurrent pathfinder, finalize on complete at main thread
 	 */
-	void RunPathTask(std::shared_ptr<CGameTask> task, std::shared_ptr<CGameTask> onComplete = nullptr);
+	void RunPathTask(std::shared_ptr<IPathQuery> query, PathFunc task, PathFunc onComplete = nullptr);
 
 	/*
 	 * Remove scheduled task from queue
@@ -91,23 +92,22 @@ private:
 	bool isProcessing;
 
 	struct BaseContainer {
-		BaseContainer(std::shared_ptr<CGameTask> task) :
-			task(task) {}
+		BaseContainer(std::shared_ptr<CGameTask> task) : task(task) {}
 		std::shared_ptr<CGameTask> task;
 		bool operator==(const BaseContainer& other) const {
 			return task == other.task;
 		}
 	};
 	struct OnceTask: public BaseContainer {
-		OnceTask(std::shared_ptr<CGameTask> task, int frame) :
-			BaseContainer(task), frame(frame) {}
+		OnceTask(std::shared_ptr<CGameTask> task, int frame)
+			: BaseContainer(task), frame(frame) {}
 		int frame;
 	};
 	std::list<OnceTask> onceTasks;
 
 	struct RepeatTask: public BaseContainer {
-		RepeatTask(std::shared_ptr<CGameTask> task, int frameInterval, int lastFrame) :
-			BaseContainer(task), frameInterval(frameInterval), lastFrame(lastFrame) {}
+		RepeatTask(std::shared_ptr<CGameTask> task, int frameInterval, int lastFrame)
+			: BaseContainer(task), frameInterval(frameInterval), lastFrame(lastFrame) {}
 		int frameInterval;
 		int lastFrame;
 	};
@@ -116,22 +116,42 @@ private:
 	std::vector<std::shared_ptr<CGameTask>> removeTasks;
 
 	struct WorkTask: public BaseContainer {
-		WorkTask(std::weak_ptr<CScheduler> scheduler, std::shared_ptr<CGameTask> task, std::shared_ptr<CGameTask> onComplete) :
-			BaseContainer(task), onComplete(onComplete), scheduler(scheduler) {}
+		WorkTask(std::weak_ptr<CScheduler> scheduler, std::shared_ptr<CGameTask> task,
+				 std::shared_ptr<CGameTask> onComplete)
+			: BaseContainer(task), onComplete(onComplete), scheduler(scheduler) {}
 		std::shared_ptr<CGameTask> onComplete;
 		std::weak_ptr<CScheduler> scheduler;
 	};
 	static CMultiQueue<WorkTask> workTasks;
-	static CMultiQueue<WorkTask> pathTasks;
 
 	struct FinishTask: public BaseContainer {
-		FinishTask(std::shared_ptr<CGameTask> task) :
-			BaseContainer(task) {}
-		FinishTask(const WorkTask& workTask) :
-			BaseContainer(workTask.onComplete) {}
+		FinishTask(std::shared_ptr<CGameTask> task)
+			: BaseContainer(task) {}
+		FinishTask(const WorkTask& workTask)
+			: BaseContainer(workTask.onComplete) {}
 	};
-	CMultiQueue<FinishTask> workedTasks;  // onComplete
-	CMultiQueue<FinishTask> pathedTasks;  // onComplete
+	CMultiQueue<FinishTask> finishTasks;  // onComplete
+
+	struct PathTask {
+		PathTask(std::weak_ptr<CScheduler> scheduler, std::shared_ptr<IPathQuery> query,
+				PathFunc task, PathFunc onComplete)
+			: scheduler(scheduler), query(query), task(task), onComplete(onComplete) {}
+		std::weak_ptr<CScheduler> scheduler;
+		std::weak_ptr<IPathQuery> query;
+		PathFunc task;
+		PathFunc onComplete;
+	};
+	static CMultiQueue<PathTask> pathTasks;
+
+	struct PathedTask {
+		PathedTask(PathFunc func)
+			: onComplete(func) {}
+		PathedTask(const PathTask& pathTask)
+			: query(pathTask.query), onComplete(pathTask.onComplete) {}
+		std::weak_ptr<IPathQuery> query;
+		PathFunc onComplete;
+	};
+	CMultiQueue<PathedTask> pathedTasks;  // onComplete
 
 	std::vector<std::shared_ptr<CGameTask>> initTasks;
 	std::vector<std::shared_ptr<CGameTask>> releaseTasks;

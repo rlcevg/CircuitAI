@@ -20,7 +20,6 @@
 #include "unit/enemy/EnemyUnit.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
-#include "util/GameTask.h"
 #include "util/Utils.h"
 
 #include "spring/SpringMap.h"
@@ -192,14 +191,14 @@ void CRaidTask::Update()
 		return;
 	}
 
-	if (!isTargetsFound) {
-		FallbackRaid();
-		return;
-	}
-
 	const auto it = pathQueries.find(leader);
 	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
 	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
+		return;
+	}
+
+	if (!isTargetsFound) {
+		FallbackRaid();
 		return;
 	}
 
@@ -207,20 +206,19 @@ void CRaidTask::Update()
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& startPos = leader->GetPos(frame);
 	const float pathRange = std::max(std::min(cdef->GetMaxRange(), cdef->GetLosRadius()), (float)threatMap->GetSquareSize());
-	CCircuitUnit* unit = leader;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	query = pathfinder->CreatePathMultiQuery(
-			unit, threatMap, frame,
+			leader, threatMap, frame,
 			startPos, pathRange, !urgentPositions.empty() ? urgentPositions : enemyPositions, attackPower);
-	pathQueries[unit] = query;
+	pathQueries[leader] = query;
 
 	const CRefHolder thisHolder(this);
-	pathfinder->RunQuery(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
-		if (this->IsQueryAlive(unit, query)) {
+	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+		if (this->IsQueryAlive(query)) {
 			this->ApplyPathMulti(query);
 		}
-	}));
+	});
 }
 
 void CRaidTask::OnUnitIdle(CCircuitUnit* unit)
@@ -397,12 +395,6 @@ void CRaidTask::ApplyPathMulti(std::shared_ptr<IPathQuery> query)
 
 void CRaidTask::FallbackRaid()
 {
-	const auto it = pathQueries.find(leader);
-	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
-	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
-		return;
-	}
-
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
@@ -421,20 +413,19 @@ void CRaidTask::FallbackRaid()
 	}
 	const AIFloat3& startPos = pos;
 	const AIFloat3& endPos = position;
-	CCircuitUnit* unit = leader;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	query = pathfinder->CreatePathInfoQuery(
-			unit, threatMap, frame,
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathInfoQuery(
+			leader, threatMap, frame,
 			startPos, endPos, pathfinder->GetSquareSize());
-	pathQueries[unit] = query;
+	pathQueries[leader] = query;
 
 	const CRefHolder thisHolder(this);
-	pathfinder->RunQuery(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
-		if (this->IsQueryAlive(unit, query)) {
+	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+		if (this->IsQueryAlive(query)) {
 			this->ApplyRaidPathInfo(query);
 		}
-	}));
+	});
 }
 
 void CRaidTask::ApplyRaidPathInfo(std::shared_ptr<IPathQuery> query)

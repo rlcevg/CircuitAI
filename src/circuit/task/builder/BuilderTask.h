@@ -109,7 +109,7 @@ protected:
 	void Update(CCircuitUnit* unit);
 	virtual bool Reevaluate(CCircuitUnit* unit);
 	void UpdatePath(CCircuitUnit* unit);
-	void ApplyPathInfo(CCircuitUnit* unit, std::shared_ptr<IPathQuery> query);
+	void ApplyPathInfo(std::shared_ptr<IPathQuery> query);
 	void HideAssignee(CCircuitUnit* unit);
 	void ShowAssignee(CCircuitUnit* unit);
 	virtual CAllyUnit* FindSameAlly(CCircuitUnit* builder, const std::vector<springai::Unit*>& friendlies);

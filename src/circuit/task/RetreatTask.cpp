@@ -19,7 +19,6 @@
 #include "unit/action/FightAction.h"
 #include "unit/action/JumpAction.h"
 #include "CircuitAI.h"
-#include "util/GameTask.h"
 #include "util/Utils.h"
 
 #include "AISCommands.h"
@@ -136,11 +135,11 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 	pathQueries[unit] = query;
 
 	const CRefHolder thisHolder(this);
-	pathfinder->RunQuery(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
-		if (this->IsQueryAlive(unit, query)) {
-			this->ApplyPathInfo(unit, query);
+	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+		if (this->IsQueryAlive(query)) {
+			this->ApplyPathInfo(query);
 		}
-	}));
+	});
 }
 
 void CRetreatTask::Update()
@@ -312,10 +311,11 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
 	}
 }
 
-void CRetreatTask::ApplyPathInfo(CCircuitUnit* unit, std::shared_ptr<IPathQuery> query)
+void CRetreatTask::ApplyPathInfo(std::shared_ptr<IPathQuery> query)
 {
 	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
 	std::shared_ptr<PathInfo> pPath = pQuery->GetPathInfo();
+	CCircuitUnit* unit = pQuery->GetUnit();
 
 	if (pPath->posPath.empty()) {
 		pPath->posPath.push_back(pQuery->GetEndPos());

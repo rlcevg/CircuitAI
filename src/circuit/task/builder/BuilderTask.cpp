@@ -23,7 +23,6 @@
 #include "unit/action/FightAction.h"
 #include "unit/action/MoveAction.h"
 #include "CircuitAI.h"
-#include "util/GameTask.h"
 #include "util/Utils.h"
 
 #include "spring/SpringCallback.h"
@@ -468,17 +467,18 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 	pathQueries[unit] = query;
 
 	const CRefHolder thisHolder(this);
-	pathfinder->RunQuery(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
-		if (this->IsQueryAlive(unit, query)) {
-			this->ApplyPathInfo(unit, query);
+	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+		if (this->IsQueryAlive(query)) {
+			this->ApplyPathInfo(query);
 		}
-	}));
+	});
 }
 
-void IBuilderTask::ApplyPathInfo(CCircuitUnit* unit, std::shared_ptr<IPathQuery> query)
+void IBuilderTask::ApplyPathInfo(std::shared_ptr<IPathQuery> query)
 {
 	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
 	std::shared_ptr<PathInfo> pPath = pQuery->GetPathInfo();
+	CCircuitUnit* unit = pQuery->GetUnit();
 
 	if (pPath->path.size() > 2) {
 		unit->GetTravelAct()->SetPath(pPath);

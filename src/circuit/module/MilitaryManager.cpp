@@ -31,6 +31,7 @@
 #include "task/static/SuperTask.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathFinder.h"
+#include "terrain/path/QueryPathMulti.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
@@ -865,45 +866,34 @@ AIFloat3 CMilitaryManager::GetRaidPosition(CCircuitUnit* unit)
 	return GetScoutPosition(unit);
 }
 
-void CMilitaryManager::FindFrontPos(PathInfo& pPath, const AIFloat3& startPos, STerrainMapArea* area, float range)
+void CMilitaryManager::FillFrontPos(CCircuitUnit* unit, F3Vec& outPositions)
 {
-	static F3Vec ourPositions;  // NOTE: micro-opt
+	outPositions.clear();
 
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CPathFinder* pathfinder = circuit->GetPathfinder();
-
+	STerrainMapArea* area = unit->GetArea();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CDefenceMatrix* defMat = defence;
-	CMetalData::PointPredicate predicate = [defMat, terrainManager, area](const int index) {
+
+	CMetalData::PointPredicate predicate = [defMat, terrainMgr, area](const int index) {
 		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(index);
 		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
-			if ((defPoint.cost > 10.0f) && terrainManager->CanMoveToPos(area, defPoint.position)) {
+			if ((defPoint.cost > 10.0f) && terrainMgr->CanMoveToPos(area, defPoint.position)) {
 				return true;
 			}
 		}
 		return false;
 	};
+
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	CSetupManager* setupManager = circuit->GetSetupManager();
 	int index = metalManager->FindNearestCluster(setupManager->GetLanePos(), predicate);
+
 	if (index >= 0) {
 		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
 		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
-			ourPositions.push_back(defPoint.position);
-		}
-
-		pathfinder->FindBestPath(pPath, const_cast<AIFloat3&>(startPos), range, ourPositions);
-		ourPositions.clear();
-		if (!pPath.posPath.empty()) {
-			return;
+			outPositions.push_back(defPoint.position);
 		}
 	}
-
-	/*
-	 * Use base
-	 */
-	ourPositions.push_back(setupManager->GetBasePos());
-	pathfinder->FindBestPath(pPath, const_cast<AIFloat3&>(startPos), range, ourPositions);
-	ourPositions.clear();
 }
 
 void CMilitaryManager::FindAHSafePos(PathInfo& pPath, const AIFloat3& startPos, STerrainMapArea* area, float range)

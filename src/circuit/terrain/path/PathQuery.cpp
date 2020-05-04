@@ -16,6 +16,7 @@ IPathQuery::IPathQuery(const CPathFinder& pathfinder, int id, Type type)
 		, state(State::NONE)
 		, canMoveArray(nullptr)
 		, threatArray(nullptr)
+		, unit(nullptr)
 {
 }
 
@@ -24,12 +25,14 @@ IPathQuery::~IPathQuery()
 }
 
 void IPathQuery::Init(const bool* canMoveArray, const float* threatArray,
-		NSMicroPather::CostFunc moveFun, NSMicroPather::CostFunc moveThreatFun)
+		NSMicroPather::CostFunc moveFun, NSMicroPather::CostFunc moveThreatFun,
+		CCircuitUnit* unit)
 {
 	this->canMoveArray = canMoveArray;
 	this->threatArray = threatArray;
 	this->moveFun = moveFun;
 	this->moveThreatFun = moveThreatFun;
+	this->unit = unit;  // optional
 }
 
 } // namespace circuit

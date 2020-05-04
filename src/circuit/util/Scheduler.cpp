@@ -11,7 +11,7 @@
 namespace circuit {
 
 CMultiQueue<CScheduler::WorkTask> CScheduler::workTasks;
-CMultiQueue<CScheduler::WorkTask> CScheduler::pathTasks;
+CMultiQueue<CScheduler::PathTask> CScheduler::pathTasks;
 spring::thread CScheduler::workerThread;
 spring::thread CScheduler::patherThread;
 std::atomic<bool> CScheduler::workerRunning(false);
@@ -48,11 +48,12 @@ void CScheduler::ProcessRelease()
 void CScheduler::Release()
 {
 	std::weak_ptr<CScheduler>& scheduler = self;
-	CMultiQueue<WorkTask>::ConditionFunction condition = [&scheduler](WorkTask& item) -> bool {
+	workTasks.RemoveAllIf([&scheduler](WorkTask& item) -> bool {
 		return !scheduler.owner_before(item.scheduler) && !item.scheduler.owner_before(scheduler);
-	};
-	workTasks.RemoveAllIf(condition);
-	pathTasks.RemoveAllIf(condition);
+	});
+	pathTasks.RemoveAllIf([&scheduler](PathTask& item) -> bool {
+		return !scheduler.owner_before(item.scheduler) && !item.scheduler.owner_before(scheduler);
+	});
 
 	if (counterInstance == 0 && workerRunning.load()) {
 		workerRunning = false;
@@ -61,7 +62,7 @@ void CScheduler::Release()
 		if (workerThread.joinable()) {
 			workerThread.join();
 		}
-		pathTasks.Push({self, nullptr, nullptr});
+		pathTasks.Push({self, nullptr, nullptr, nullptr});
 		if (patherThread.joinable()) {
 			patherThread.join();
 		}
@@ -107,8 +108,13 @@ void CScheduler::ProcessTasks(int frame)
 	CMultiQueue<FinishTask>::ProcessFunction process = [](FinishTask& item) {
 		item.task->Run();
 	};
-	if (!workedTasks.PopAndProcess(process)) {  // one heavy
-		pathedTasks.PopAndProcessAll(process);  // many lite
+	if (!finishTasks.PopAndProcess(process)) {  // one heavy
+		pathedTasks.PopAndProcessAll([](PathedTask& item) {  // many lite
+			std::shared_ptr<IPathQuery> query = item.query.lock();
+			if (query != nullptr) {
+				item.onComplete(query);
+			}
+		});
 	}
 
 	// Update task queues
@@ -133,14 +139,14 @@ void CScheduler::RunParallelTask(std::shared_ptr<CGameTask> task, std::shared_pt
 	workTasks.Push({self, task, onComplete});
 }
 
-void CScheduler::RunPathTask(std::shared_ptr<CGameTask> task, std::shared_ptr<CGameTask> onComplete)
+void CScheduler::RunPathTask(std::shared_ptr<IPathQuery> query, PathFunc task, PathFunc onComplete)
 {
 	if (!workerRunning.load()) {
 		workerRunning = true;
 		workerThread = spring::thread(&CScheduler::WorkerThread);
 		patherThread = spring::thread(&CScheduler::PatherThread);
 	}
-	pathTasks.Push({self, task, onComplete});
+	pathTasks.Push({self, query, task, onComplete});
 }
 
 void CScheduler::RemoveTask(std::shared_ptr<CGameTask>& task)
@@ -161,8 +167,8 @@ void CScheduler::WorkerThread()
 		container.task = nullptr;
 		if (container.onComplete != nullptr) {
 			std::shared_ptr<CScheduler> scheduler = container.scheduler.lock();
-			if (scheduler) {
-				scheduler->workedTasks.Push(container);
+			if (scheduler != nullptr) {
+				scheduler->finishTasks.Push(container);
 			}
 			container.onComplete = nullptr;
 		}
@@ -172,16 +178,17 @@ void CScheduler::WorkerThread()
 
 void CScheduler::PatherThread()
 {
-	WorkTask container = pathTasks.Pop();
+	PathTask container = pathTasks.Pop();
 	while (workerRunning.load()) {
-		container.task->Run();
-		container.task = nullptr;
-		if (container.onComplete != nullptr) {
-			std::shared_ptr<CScheduler> scheduler = container.scheduler.lock();
-			if (scheduler) {
-				scheduler->pathedTasks.Push(container);
+		std::shared_ptr<IPathQuery> query = container.query.lock();
+		if (query != nullptr) {
+			container.task(query);
+			if (container.onComplete != nullptr) {
+				std::shared_ptr<CScheduler> scheduler = container.scheduler.lock();
+				if (scheduler != nullptr) {
+					scheduler->pathedTasks.Push(container);
+				}
 			}
-			container.onComplete = nullptr;
 		}
 		container = pathTasks.Pop();
 	}

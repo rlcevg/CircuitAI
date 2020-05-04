@@ -99,12 +99,12 @@ void IUnitTask::OnTravelEnd(CCircuitUnit* unit)
 {
 }
 
-bool IUnitTask::IsQueryAlive(CCircuitUnit* unit, std::shared_ptr<IPathQuery> query) const
+bool IUnitTask::IsQueryAlive(std::shared_ptr<IPathQuery> query) const
 {
 	if (isDead) {
 		return false;
 	}
-	const auto it = pathQueries.find(unit);
+	const auto it = pathQueries.find(query->GetUnit());
 	if ((it == pathQueries.end()) || (it->second->GetId() != query->GetId())) {
 		return false;
 	}

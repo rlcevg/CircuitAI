@@ -302,7 +302,7 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateCostMapQuery(
 	return pQuery;
 }
 
-void CPathFinder::RunQuery(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
+void CPathFinder::RunQuery(std::shared_ptr<IPathQuery> query, PathFunc onComplete)
 {
 	switch (query->GetType()) {
 		case IPathQuery::Type::SINGLE: {
@@ -657,69 +657,69 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 		};
 	}
 
-	query->Init(moveArray, threatArray, moveFun, moveThreatFun);
+	query->Init(moveArray, threatArray, moveFun, moveThreatFun, unit);
 }
 
-void CPathFinder::RunPathInfo(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
+void CPathFinder::RunPathInfo(std::shared_ptr<IPathQuery> query, PathFunc onComplete)
 {
-	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
-
-	pQuery->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
-		this->MakePath(pQuery.get());
-		pQuery->SetState(IPathQuery::State::READY);
-	})
+	query->SetState(IPathQuery::State::PROCESS);
+	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query) {
+		this->MakePath(query.get());
+	}
+	, [this, onComplete](std::shared_ptr<IPathQuery> query) {
 #ifdef DEBUG_VIS
-	, std::make_shared<CGameTask>([this, pQuery, onComplete]() {
-		this->UpdateVis(pQuery->GetPathInfo()->path);
-		onComplete->Run();
-	})
-#else
-	, onComplete
+		this->UpdateVis(std::static_pointer_cast<CQueryPathInfo>(query)->GetPathInfo()->path);
 #endif
-	);
+		query->SetState(IPathQuery::State::READY);
+		if (onComplete != nullptr) {
+			onComplete(query);
+		}
+	});
 }
 
-void CPathFinder::RunPathMulti(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
+void CPathFinder::RunPathMulti(std::shared_ptr<IPathQuery> query, PathFunc onComplete)
 {
-	std::shared_ptr<CQueryPathMulti> pQuery = std::static_pointer_cast<CQueryPathMulti>(query);
-
-	pQuery->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
-		this->FindBestPath(pQuery.get());
-		pQuery->SetState(IPathQuery::State::READY);
-	})
+	query->SetState(IPathQuery::State::PROCESS);
+	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query) {
+		this->FindBestPath(query.get());
+	}
+	, [this, onComplete](std::shared_ptr<IPathQuery> query) {
 #ifdef DEBUG_VIS
-	, std::make_shared<CGameTask>([this, pQuery, onComplete]() {
-		this->UpdateVis(pQuery->GetPathInfo()->path);
-		onComplete->Run();
-	})
-#else
-	, onComplete
+		this->UpdateVis(std::static_pointer_cast<CQueryPathMulti>(query)->GetPathInfo()->path);
 #endif
-	);
+		query->SetState(IPathQuery::State::READY);
+		if (onComplete != nullptr) {
+			onComplete(query);
+		}
+	});
 }
 
-void CPathFinder::RunPathCost(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
+void CPathFinder::RunPathCost(std::shared_ptr<IPathQuery> query, PathFunc onComplete)
 {
-	std::shared_ptr<CQueryPathCost> pQuery = std::static_pointer_cast<CQueryPathCost>(query);
-
-	pQuery->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
-		this->PathCost(pQuery.get());
-		pQuery->SetState(IPathQuery::State::READY);
-	}), onComplete);
+	query->SetState(IPathQuery::State::PROCESS);
+	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query) {
+		this->PathCost(query.get());
+	}
+	, [onComplete](std::shared_ptr<IPathQuery> query) {
+		query->SetState(IPathQuery::State::READY);
+		if (onComplete != nullptr) {
+			onComplete(query);
+		}
+	});
 }
 
-void CPathFinder::RunCostMap(std::shared_ptr<IPathQuery> query, std::shared_ptr<CGameTask> onComplete)
+void CPathFinder::RunCostMap(std::shared_ptr<IPathQuery> query, PathFunc onComplete)
 {
-	std::shared_ptr<CQueryCostMap> pQuery = std::static_pointer_cast<CQueryCostMap>(query);
-
-	pQuery->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(std::make_shared<CGameTask>([this, pQuery]() {
-		this->MakeCostMap(pQuery.get());
-		pQuery->SetState(IPathQuery::State::READY);
-	}), onComplete);
+	query->SetState(IPathQuery::State::PROCESS);
+	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query) {
+		this->MakeCostMap(query.get());
+	}
+	, [onComplete](std::shared_ptr<IPathQuery> query) {
+		query->SetState(IPathQuery::State::READY);
+		if (onComplete != nullptr) {
+			onComplete(query);
+		}
+	});
 }
 
 void CPathFinder::MakePath(IPathQuery* query)

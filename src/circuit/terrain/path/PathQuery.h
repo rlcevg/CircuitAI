@@ -12,6 +12,8 @@
 
 namespace circuit {
 
+class CCircuitUnit;
+
 class IPathQuery {
 public:
 	enum class Type: char {NONE = 0, MULTI, SINGLE, COST, MAP, _SIZE_};
@@ -29,12 +31,15 @@ public:
 	State GetState() const { return state.load(); }
 
 	void Init(const bool* canMoveArray, const float* threatArray,
-			  NSMicroPather::CostFunc moveThreatFun, NSMicroPather::CostFunc moveFun);
+			  NSMicroPather::CostFunc moveThreatFun, NSMicroPather::CostFunc moveFun,
+			  CCircuitUnit* unit = nullptr);
 
 	const bool* GetCanMoveArray() const { return canMoveArray; }
 	const float* GetThreatArray() const { return threatArray; }
 	NSMicroPather::CostFunc GetMoveFun() const { return moveFun; }
 	NSMicroPather::CostFunc GetMoveThreatFun() const { return moveThreatFun; }
+
+	CCircuitUnit* GetUnit() const { return unit; }
 
 protected:
 	const CPathFinder& pathfinder;  // NOTE: double-check threaded calls
@@ -47,6 +52,8 @@ protected:
 	const float* threatArray;  // outdate after THREAT_UPDATE_RATE
 	NSMicroPather::CostFunc moveFun;  // AREA_UPDATE_RATE
 	NSMicroPather::CostFunc moveThreatFun;  // THREAT_UPDATE_RATE + AREA_UPDATE_RATE
+
+	CCircuitUnit* unit;  // optional, non-safe
 };
 
 } // namespace circuit

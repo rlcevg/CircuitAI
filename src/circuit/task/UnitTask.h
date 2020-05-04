@@ -70,7 +70,7 @@ public:
 	bool IsDead() const { return isDead; }
 
 protected:
-	bool IsQueryAlive(CCircuitUnit* unit, std::shared_ptr<IPathQuery> query) const;
+	bool IsQueryAlive(std::shared_ptr<IPathQuery> query) const;
 
 public:
 	friend std::ostream& operator<<(std::ostream& os, const IUnitTask& data);

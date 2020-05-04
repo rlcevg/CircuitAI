@@ -13,6 +13,7 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathFinder.h"
+#include "terrain/path/QueryPathInfo.h"
 #include "terrain/path/QueryPathMulti.h"
 #include "unit/action/FightAction.h"
 #include "unit/action/MoveAction.h"
@@ -20,7 +21,6 @@
 #include "unit/enemy/EnemyUnit.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
-#include "util/GameTask.h"
 #include "util/Utils.h"
 
 #include "spring/SpringMap.h"
@@ -156,19 +156,6 @@ void CDefendTask::Update()
 			Attack(frame);
 			return;
 		}
-	} else {
-		CPathFinder* pathfinder = circuit->GetPathfinder();
-		pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
-		circuit->GetMilitaryManager()->FindFrontPos(*pPath, startPos, leader->GetArea(), DEFAULT_SLACK * 4);
-
-		if (!pPath->path.empty()) {
-			if (pPath->path.size() > 2) {
-				ActivePath();
-			}
-		} else {
-			Fallback();
-		}
-		return;
 	}
 
 	const auto it = pathQueries.find(leader);
@@ -177,24 +164,28 @@ void CDefendTask::Update()
 		return;
 	}
 
+	if (!isTargetsFound) {
+		FallbackNoTarget();
+		return;
+	}
+
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const float eps = threatMap->GetSquareSize() * 2.f;
 	const float pathRange = std::max(highestRange - eps, eps);
-	CCircuitUnit* unit = leader;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	query = pathfinder->CreatePathMultiQuery(
-			unit, threatMap, frame,
+			leader, threatMap, frame,
 			startPos, pathRange, enemyPositions);
-	pathQueries[unit] = query;
+	pathQueries[leader] = query;
 
 	const CRefHolder thisHolder(this);
 	std::weak_ptr<IPathQuery> weakQuery(query);
-	pathfinder->RunQuery(query, std::make_shared<CGameTask>([this, thisHolder, unit, query]() {
-		if (this->IsQueryAlive(unit, query)) {
+	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+		if (this->IsQueryAlive(query)) {
 			this->ApplyPathMulti(query);
 		}
-	}));
+	});
 }
 
 void CDefendTask::Merge(ISquadTask* task)
@@ -301,6 +292,33 @@ bool CDefendTask::FindTarget()
 	// Return: target, startPos=leader->pos, enemyPositions
 }
 
+void CDefendTask::FallbackNoTarget()
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->GetMilitaryManager()->FillFrontPos(leader, urgentPositions);
+	if (urgentPositions.empty()) {
+		FallbackFrontPos();
+		return;
+	}
+
+	const int frame = circuit->GetLastFrame();
+	const AIFloat3& startPos = leader->GetPos(frame);
+	const float pathRange = DEFAULT_SLACK * 4;
+
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
+			leader, circuit->GetThreatMap(), frame,
+			startPos, pathRange, urgentPositions);
+	pathQueries[leader] = query;
+
+	const CRefHolder thisHolder(this);
+	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+		if (this->IsQueryAlive(query)) {
+			this->ApplyFrontPos(query);
+		}
+	});
+}
+
 void CDefendTask::ApplyPathMulti(std::shared_ptr<IPathQuery> query)
 {
 	std::shared_ptr<CQueryPathMulti> pQuery = std::static_pointer_cast<CQueryPathMulti>(query);
@@ -325,6 +343,58 @@ void CDefendTask::Fallback()
 		)
 
 		unit->GetTravelAct()->StateWait();
+	}
+}
+
+void CDefendTask::ApplyFrontPos(std::shared_ptr<IPathQuery> query)
+{
+	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
+	pPath = pQuery->GetPathInfo();
+
+	if (!pPath->path.empty()) {
+		if (pPath->path.size() > 2) {
+			ActivePath();
+		}
+	} else {
+		FallbackFrontPos();
+	}
+}
+
+void CDefendTask::FallbackFrontPos()
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	CSetupManager* setupManager = circuit->GetSetupManager();
+
+	const AIFloat3& startPos = leader->GetPos(frame);
+	const AIFloat3& endPos = setupManager->GetBasePos();
+	const float pathRange = DEFAULT_SLACK * 4;
+
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathInfoQuery(
+			leader, circuit->GetThreatMap(), frame,
+			startPos, endPos, pathRange);
+	pathQueries[leader] = query;
+
+	const CRefHolder thisHolder(this);
+	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+		if (this->IsQueryAlive(query)) {
+			this->ApplyBasePos(query);
+		}
+	});
+}
+
+void CDefendTask::ApplyBasePos(std::shared_ptr<IPathQuery> query)
+{
+	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
+	pPath = pQuery->GetPathInfo();
+
+	if (!pPath->path.empty()) {
+		if (pPath->path.size() > 2) {
+			ActivePath();
+		}
+	} else {
+		Fallback();
 	}
 }
 

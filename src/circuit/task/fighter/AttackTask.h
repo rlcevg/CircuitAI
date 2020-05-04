@@ -28,8 +28,12 @@ public:
 
 private:
 	void FindTarget();
+	void FallbackNoTarget();
 	void ApplyPathInfo(std::shared_ptr<IPathQuery> query);
 	void Fallback();
+	void ApplyFrontPos(std::shared_ptr<IPathQuery> query);
+	void FallbackFrontPos();
+	void ApplyBasePos(std::shared_ptr<IPathQuery> query);
 
 	float minPower;
 };

@@ -20,13 +20,13 @@ public:
 		explicit CGameTask(_Callable&& __f, _Args&&... __args) {
 			__b = _M_make_routine(std::bind(std::forward<_Callable>(__f), std::forward<_Args>(__args)...));
 		}
-	virtual ~CGameTask();
+	~CGameTask();
 
 	void Run();
 
 private:
-    struct _Impl_base;
-    typedef std::shared_ptr<_Impl_base>	__shared_base_type;
+	struct _Impl_base;
+	typedef std::shared_ptr<_Impl_base>	__shared_base_type;
 	struct _Impl_base {
 		__shared_base_type	_M_this_ptr;
 		inline virtual ~_Impl_base();
