@@ -32,8 +32,6 @@ namespace circuit {
 using namespace springai;
 using namespace NSMicroPather;
 
-#define THREAT_EPSILON		1e-2f
-#define MOVE_EPSILON		1e-1f
 #define SPIDER_SLOPE		0.99f
 
 std::vector<int> CPathFinder::blockArray;
@@ -59,7 +57,10 @@ CPathFinder::CPathFinder(std::shared_ptr<CScheduler> scheduler, CTerrainData* te
 	pathMapYSize = terrainData->sectorZSize;
 	moveMapXSize = pathMapXSize + 2;  // +2 for passable edges
 	moveMapYSize = pathMapYSize + 2;  // +2 for passable edges
-	micropather  = new CMicroPather(this, pathMapXSize, pathMapYSize);
+	micropather  = new CMicroPather(*this, pathMapXSize, pathMapYSize,
+			terrainData->GetMap()->GetWidth());
+	micropather_thread = new CMicroPather(*this, pathMapXSize, pathMapYSize,
+			terrainData->GetMap()->GetWidth());
 
 	areaData = terrainData->pAreaData.load();
 	const std::vector<STerrainMapMobileType>& moveTypes = areaData->mobileType;
@@ -127,6 +128,7 @@ CPathFinder::~CPathFinder()
 	}
 	delete[] airMoveArray;
 	delete micropather;
+	delete micropather_thread;
 }
 
 void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
@@ -170,6 +172,11 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 //	micropather->Reset();
 
 	pMoveData = GetNextMoveData();
+}
+
+const FloatVec& CPathFinder::GetHeightMap() const
+{
+	return areaData->heightMap;
 }
 
 void* CPathFinder::MoveXY2MoveNode(int x, int y) const
@@ -323,8 +330,6 @@ void CPathFinder::RunQuery(std::shared_ptr<IPathQuery> query, PathFunc onComplet
 
 void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame)
 {
-	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
-
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	STerrainMapMobileType::Id mobileTypeId = cdef->GetMobileId();
 
@@ -341,31 +346,31 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 
 	float* threatArray;
 	CostFunc moveFun;
-	CostFunc moveThreatFun;
+	CostFunc threatFun;
 	// FIXME: DEBUG; Re-organize and pre-calculate moveFun for each move-type
 	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
 		threatArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
 		moveFun = [&sectors, maxSlope](int index) {
 			return (sectors[index].isWater ? 4.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
 		};
-		moveThreatFun = [moveFun, threatArray](int index) {
-			return moveFun(index) + 2.f * threatArray[index];
+		threatFun = [threatArray](int index) {
+			return 2.f * threatArray[index];
 		};
 	} else if (unit->GetUnit()->IsCloaked()) {
 		threatArray = threatMap->GetCloakThreatArray();
 		moveFun = [&sectors, maxSlope](int index) {
 			return sectors[index].maxSlope / maxSlope;
 		};
-		moveThreatFun = [moveFun, threatArray](int index) {
-			return moveFun(index) + threatArray[index];
+		threatFun = [threatArray](int index) {
+			return threatArray[index];
 		};
 	} else if (cdef->IsAbleToFly()) {
 		threatArray = threatMap->GetAirThreatArray();
 		moveFun = [](int index) {
 			return 0.f;
 		};
-		moveThreatFun = [moveFun, threatArray](int index) {
-			return moveFun(index) + 2.f * threatArray[index];
+		threatFun = [threatArray](int index) {
+			return 2.f * threatArray[index];
 		};
 	} else if (cdef->IsAmphibious()) {
 		threatArray = threatMap->GetAmphThreatArray();
@@ -376,15 +381,15 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 				return 2.f * (1.f - (sectors[index].maxElevation - minElev) / elevLen) +
 						(sectors[index].isWater ? 4.f : 0.f);
 			};
-			moveThreatFun = [moveFun, threatArray](int index) {
-				return moveFun(index) + 2.f * threatArray[index];
+			threatFun = [threatArray](int index) {
+				return 2.f * threatArray[index];
 			};
 		} else {
 			moveFun = [&sectors, maxSlope](int index) {
 				return (sectors[index].isWater ? 4.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
 			};
-			moveThreatFun = [moveFun, threatArray](int index) {
-				return moveFun(index) + 2.f * threatArray[index];
+			threatFun = [threatArray](int index) {
+				return 2.f * threatArray[index];
 			};
 		}
 	} else {
@@ -392,14 +397,13 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
 		moveFun = [&sectors, maxSlope](int index) {
 			return (sectors[index].isWater ? 0.f : (2.f * sectors[index].maxSlope / maxSlope));
 		};
-		moveThreatFun = [moveFun, threatArray](int index) {
-			return moveFun(index) + 2.f * threatArray[index];
+		threatFun = [threatArray](int index) {
+			return 2.f * threatArray[index];
 		};
 	}
 	// FIXME: DEBUG
 
-	this->moveFun = moveFun;
-	micropather->SetMapData(moveArray, threatArray, moveThreatFun);
+	micropather->SetMapData(moveArray, threatArray, moveFun, threatFun, GetHeightMap());
 }
 
 /*
@@ -408,8 +412,6 @@ void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int fram
  */
 float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPos, int radius, float maxThreat)
 {
-	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
-
 	iPath.Clear();
 
 	CTerrainData::CorrectPosition(startPos);
@@ -421,7 +423,7 @@ float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPo
 	if (micropather->FindBestPathToPointOnRadius(Pos2MoveNode(startPos), Pos2MoveNode(endPos),
 			radius, maxThreat, &iPath.path, &pathCost) == CMicroPather::SOLVED)
 	{
-		FillPathInfo(iPath);
+		micropather->FillPathInfo(iPath);
 	}
 
 #ifdef DEBUG_VIS
@@ -436,8 +438,6 @@ float CPathFinder::MakePath(PathInfo& iPath, AIFloat3& startPos, AIFloat3& endPo
  */
 float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius, float maxThreat)
 {
-	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
-
 	CTerrainData::CorrectPosition(endPos);
 
 	float pathCost = 0.0f;
@@ -450,8 +450,6 @@ float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloa
 
 float CPathFinder::FindBestPath(PathInfo& iPath, AIFloat3& startPos, float maxRange, F3Vec& possibleTargets, float maxThreat)
 {
-	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
-
 	float pathCost = 0.0f;
 
 	// <maxRange> must always be >= squareSize, otherwise
@@ -571,7 +569,7 @@ float CPathFinder::FindBestPath(PathInfo& iPath, AIFloat3& startPos, float maxRa
 	if (micropather->FindBestPathToAnyGivenPoint(Pos2MoveNode(startPos), endNodes, nodeTargets,
 			maxThreat, &iPath.path, &pathCost) == CMicroPather::SOLVED)
 	{
-		FillPathInfo(iPath);
+		micropather->FillPathInfo(iPath);
 	}
 
 #ifdef DEBUG_VIS
@@ -601,31 +599,31 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 
 	float* threatArray;
 	CostFunc moveFun;
-	CostFunc moveThreatFun;
+	CostFunc threatFun;
 	// TODO: Re-organize and pre-calculate moveFun for each move-type
 	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
 		threatArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
 		moveFun = [&sectors, maxSlope](int index) {
 			return (sectors[index].isWater ? 4.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
 		};
-		moveThreatFun = [moveFun, threatArray](int index) {
-			return moveFun(index) + 2.f * threatArray[index];
+		threatFun = [threatArray](int index) {
+			return 2.f * threatArray[index];
 		};
 	} else if (unit->GetUnit()->IsCloaked()) {
 		threatArray = threatMap->GetCloakThreatArray();
 		moveFun = [&sectors, maxSlope](int index) {
 			return sectors[index].maxSlope / maxSlope;
 		};
-		moveThreatFun = [moveFun, threatArray](int index) {
-			return moveFun(index) + threatArray[index];
+		threatFun = [threatArray](int index) {
+			return threatArray[index];
 		};
 	} else if (cdef->IsAbleToFly()) {
 		threatArray = threatMap->GetAirThreatArray();
 		moveFun = [](int index) {
 			return 0.f;
 		};
-		moveThreatFun = [moveFun, threatArray](int index) {
-			return moveFun(index) + 2.f * threatArray[index];
+		threatFun = [threatArray](int index) {
+			return 2.f * threatArray[index];
 		};
 	} else if (cdef->IsAmphibious()) {
 		threatArray = threatMap->GetAmphThreatArray();
@@ -636,15 +634,15 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 				return 2.f * (1.f - (sectors[index].maxElevation - minElev) / elevLen) +
 						(sectors[index].isWater ? 4.f : 0.f);
 			};
-			moveThreatFun = [moveFun, threatArray](int index) {
-				return moveFun(index) + 2.f * threatArray[index];
+			threatFun = [threatArray](int index) {
+				return 2.f * threatArray[index];
 			};
 		} else {
 			moveFun = [&sectors, maxSlope](int index) {
 				return (sectors[index].isWater ? 4.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
 			};
-			moveThreatFun = [moveFun, threatArray](int index) {
-				return moveFun(index) + 2.f * threatArray[index];
+			threatFun = [threatArray](int index) {
+				return 2.f * threatArray[index];
 			};
 		}
 	} else {
@@ -652,12 +650,12 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 		moveFun = [&sectors, maxSlope](int index) {
 			return (sectors[index].isWater ? 0.f : (2.f * sectors[index].maxSlope / maxSlope));
 		};
-		moveThreatFun = [moveFun, threatArray](int index) {
-			return moveFun(index) + 2.f * threatArray[index];
+		threatFun = [threatArray](int index) {
+			return 2.f * threatArray[index];
 		};
 	}
 
-	query->Init(moveArray, threatArray, moveFun, moveThreatFun, unit);
+	query->Init(moveArray, threatArray, moveFun, threatFun, unit);
 }
 
 void CPathFinder::RunPathInfo(std::shared_ptr<IPathQuery> query, PathFunc onComplete)
@@ -724,15 +722,14 @@ void CPathFinder::RunCostMap(std::shared_ptr<IPathQuery> query, PathFunc onCompl
 
 void CPathFinder::MakePath(IPathQuery* query)
 {
-	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
-
 	CQueryPathInfo* q = static_cast<CQueryPathInfo*>(query);
 	q->Prepare();
 
 	const bool* canMoveArray = q->GetCanMoveArray();
 	const float* threatArray = q->GetThreatArray();
-	NSMicroPather::CostFunc moveThreatFun = q->GetMoveThreatFun();
-	moveFun = q->GetMoveFun();
+	NSMicroPather::CostFunc moveFun = q->GetMoveFun();
+	NSMicroPather::CostFunc threatFun = q->GetThreatFun();
+	const FloatVec& heightMap = q->GetHeightMap();
 
 	AIFloat3& startPos = q->GetStartPos();
 	AIFloat3& endPos = q->GetEndPos();
@@ -747,20 +744,24 @@ void CPathFinder::MakePath(IPathQuery* query)
 	CTerrainData::CorrectPosition(startPos);
 	CTerrainData::CorrectPosition(endPos);
 
-	micropather->SetMapData(canMoveArray, threatArray, moveThreatFun);
-	if (micropather->FindBestPathToPointOnRadius(Pos2MoveNode(startPos), Pos2MoveNode(endPos),
+	micropather_thread->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
+	if (micropather_thread->FindBestPathToPointOnRadius(Pos2MoveNode(startPos), Pos2MoveNode(endPos),
 			radius, maxThreat, &iPath.path, &pathCost) == CMicroPather::SOLVED)
 	{
-		FillPathInfo(iPath);
+		micropather_thread->FillPathInfo(iPath);
 	}
 }
 
 void CPathFinder::FindBestPath(IPathQuery* query)
 {
-	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
-
 	CQueryPathMulti* q = static_cast<CQueryPathMulti*>(query);
 	q->Prepare();
+
+	const bool* canMoveArray = q->GetCanMoveArray();
+	const float* threatArray = q->GetThreatArray();
+	NSMicroPather::CostFunc moveFun = q->GetMoveFun();
+	NSMicroPather::CostFunc threatFun = q->GetThreatFun();
+	const FloatVec& heightMap = q->GetHeightMap();
 
 	AIFloat3& startPos = q->GetStartPos();
 	F3Vec& possibleTargets = q->GetTargets();
@@ -859,7 +860,7 @@ void CPathFinder::FindBestPath(IPathQuery* query)
 
 		CTerrainData::CorrectPosition(f);
 		void* node = Pos2MoveNode(f);
-		NSMicroPather::PathNode* pn = micropather->GetNode(node);
+		NSMicroPather::PathNode* pn = micropather_thread->GetNode(node);
 		if (pn->isTarget) {
 			continue;
 		}
@@ -879,15 +880,16 @@ void CPathFinder::FindBestPath(IPathQuery* query)
 		}
 	}
 	for (void* node : nodeTargets) {
-		micropather->GetNode(node)->isTarget = 0;
+		micropather_thread->GetNode(node)->isTarget = 0;
 	}
 
 	CTerrainData::CorrectPosition(startPos);
 
-	if (micropather->FindBestPathToAnyGivenPoint(Pos2MoveNode(startPos), endNodes, nodeTargets,
+	micropather_thread->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
+	if (micropather_thread->FindBestPathToAnyGivenPoint(Pos2MoveNode(startPos), endNodes, nodeTargets,
 			maxThreat, &iPath.path, &pathCost) == CMicroPather::SOLVED)
 	{
-		FillPathInfo(iPath);
+		micropather_thread->FillPathInfo(iPath);
 	}
 
 	endNodes.clear();
@@ -896,100 +898,35 @@ void CPathFinder::FindBestPath(IPathQuery* query)
 
 void CPathFinder::PathCost(IPathQuery* query)
 {
-	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
+	CQueryPathMulti* q = static_cast<CQueryPathMulti*>(query);
+	q->Prepare();
+
+	const bool* canMoveArray = q->GetCanMoveArray();
+	const float* threatArray = q->GetThreatArray();
+	NSMicroPather::CostFunc moveFun = q->GetMoveFun();
+	NSMicroPather::CostFunc threatFun = q->GetThreatFun();
+	const FloatVec& heightMap = q->GetHeightMap();
+
+	micropather_thread->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
+	// FIXME: Finish
 }
 
 void CPathFinder::MakeCostMap(IPathQuery* query)
 {
-	std::lock_guard<spring::mutex> guard(microMutex);  // FIXME: Remove
-
 	CQueryCostMap* q = static_cast<CQueryCostMap*>(query);
 	q->Prepare();
 
 	const bool* canMoveArray = q->GetCanMoveArray();
 	const float* threatArray = q->GetThreatArray();
-	NSMicroPather::CostFunc moveThreatFun = q->GetMoveThreatFun();
+	NSMicroPather::CostFunc moveFun = q->GetMoveFun();
+	NSMicroPather::CostFunc threatFun = q->GetThreatFun();
+	const FloatVec& heightMap = q->GetHeightMap();
 
 	const AIFloat3& startPos = q->GetStartPos();
 	std::vector<float>& costMap = q->GetRefCostMap();
 
-	micropather->SetMapData(canMoveArray, threatArray, moveThreatFun);
-	micropather->MakeCostMap(Pos2MoveNode(startPos), costMap);
-}
-
-size_t CPathFinder::RefinePath(IndexVec& path)
-{
-	if (micropather->threatArray[path[0]] > THREAT_EPSILON) {
-		return 0;
-	}
-
-	int x0, y0;
-	PathIndex2MoveXY(path[0], &x0, &y0);
-
-	const float moveCost = moveFun(path[0]) + MOVE_EPSILON;
-
-	// All octant line draw
-	auto IsStraightLine = [this, x0, y0, moveCost](int index) {
-		// TODO: Remove node<->(x,y) conversions;
-		//       Use Bresenham's 1-octant line algorithm
-		int x1, y1;
-		PathIndex2MoveXY(index, &x1, &y1);
-
-		int dx =  abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
-		int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
-		int err = dx + dy;  // error value e_xy
-		for (int x = x0, y = y0;;) {
-			int e2 = 2 * err;
-			if (e2 >= dy) {  // e_xy + e_x > 0
-				if (x == x1) break;
-				err += dy; x += sx;
-			}
-			if (e2 <= dx) {  // e_xy + e_y < 0
-				if (y == y1) break;
-				err += dx; y += sy;
-			}
-
-			int idx = micropather->CanMoveNode2Index(MoveXY2MoveNode(x, y));
-			if ((idx < 0) || (micropather->threatArray[idx] > THREAT_EPSILON) || (moveFun(idx) > moveCost)) {
-				return false;
-			}
-		}
-		return true;
-	};
-
-	int l = 1;
-	int r = path.size() - 1;  // NOTE: start and end always present in path
-
-	while (l <= r) {
-		int m = (l + r) / 2;  // floor
-		if (IsStraightLine(path[m])) {
-			l = m + 1;  // ignore left half
-		} else {
-			r = m - 1;  // ignore right half
-		}
-	}
-
-	return l - 1;
-}
-
-void CPathFinder::FillPathInfo(PathInfo& iPath)
-{
-	CMap* map = terrainData->GetMap();
-	if (iPath.isLast) {
-		float3 pos = PathIndex2Pos(iPath.path.back());
-		pos.y = map->GetElevationAt(pos.x, pos.z);
-		iPath.posPath.push_back(pos);
-	} else {
-		iPath.start = RefinePath(iPath.path);
-		iPath.posPath.reserve(iPath.path.size() - iPath.start);
-
-		// NOTE: only first few positions actually used due to frequent recalc.
-		for (size_t i = iPath.start; i < iPath.path.size(); ++i) {
-			float3 pos = PathIndex2Pos(iPath.path[i]);
-			pos.y = map->GetElevationAt(pos.x, pos.z);
-			iPath.posPath.push_back(pos);
-		}
-	}
+	micropather_thread->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
+	micropather_thread->MakeCostMap(Pos2MoveNode(startPos), costMap);
 }
 
 #ifdef DEBUG_VIS
@@ -1014,12 +951,11 @@ void CPathFinder::SetMapData(CThreatMap* threatMap)
 	const CostFunc moveFun = [&sectors, maxSlope](int index) {
 		return sectors[index].maxSlope / maxSlope;
 	};
-	const CostFunc moveThreatFun = [moveFun, threatArray](int index) {
-		return moveFun(index) + threatArray[index];
+	const CostFunc threatFun = [moveFun, threatArray](int index) {
+		return threatArray[index];
 	};
 
-	this->moveFun = moveFun;
-	micropather->SetMapData(moveArray, threatArray, moveThreatFun);
+	micropather->SetMapData(moveArray, threatArray, moveFun, threatFun, GetHeightMap());
 }
 
 void CPathFinder::UpdateVis(const IndexVec& path)

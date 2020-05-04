@@ -11,6 +11,7 @@ namespace circuit {
 
 IPathQuery::IPathQuery(const CPathFinder& pathfinder, int id, Type type)
 		: pathfinder(pathfinder)
+		, heightMap(pathfinder.GetHeightMap())
 		, id(id)
 		, type(type)
 		, state(State::NONE)
@@ -25,13 +26,13 @@ IPathQuery::~IPathQuery()
 }
 
 void IPathQuery::Init(const bool* canMoveArray, const float* threatArray,
-		NSMicroPather::CostFunc moveFun, NSMicroPather::CostFunc moveThreatFun,
+		NSMicroPather::CostFunc moveFun, NSMicroPather::CostFunc threatFun,
 		CCircuitUnit* unit)
 {
 	this->canMoveArray = canMoveArray;
 	this->threatArray = threatArray;
 	this->moveFun = moveFun;
-	this->moveThreatFun = moveThreatFun;
+	this->threatFun = threatFun;
 	this->unit = unit;  // optional
 }
 

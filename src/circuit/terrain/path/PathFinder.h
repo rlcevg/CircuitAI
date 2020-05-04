@@ -13,7 +13,7 @@
 #include "util/PathTask.h"
 #include "util/Defines.h"
 
-#include "System/Threading/SpringThreading.h"  // FIXME: Remove
+#include <atomic>
 
 namespace circuit {
 
@@ -30,7 +30,7 @@ class CCircuitAI;
 class CCircuitDef;
 #endif
 
-class CPathFinder: public NSMicroPather::Graph {
+class CPathFinder {
 public:
 	struct SMoveData {
 		std::vector<bool*> moveArrays;
@@ -43,6 +43,8 @@ public:
 
 	void UpdateAreaUsers(CTerrainManager* terrainManager);
 	void SetAreaUpdated(bool value) { isAreaUpdated = value; }
+
+	const FloatVec& GetHeightMap() const;
 
 	void* MoveXY2MoveNode(int x, int y) const;
 	void MoveNode2MoveXY(void* node, int* x, int* y) const;
@@ -109,13 +111,11 @@ private:
 	void PathCost(IPathQuery* query);
 	void MakeCostMap(IPathQuery* query);
 
-	size_t RefinePath(IndexVec& path);
-	void FillPathInfo(PathInfo& iPath);
-
 	CTerrainData* terrainData;
 	SAreaData* areaData;
 
 	NSMicroPather::CMicroPather* micropather;
+	NSMicroPather::CMicroPather* micropather_thread;
 	SMoveData moveData0, moveData1;
 	std::atomic<SMoveData*> pMoveData;
 	bool* airMoveArray;
@@ -130,8 +130,6 @@ private:
 
 	int queryId;
 	std::shared_ptr<CScheduler> scheduler;
-	NSMicroPather::CostFunc moveFun;
-	spring::mutex microMutex;  // FIXME: Remove
 
 #ifdef DEBUG_VIS
 private:

@@ -40,10 +40,11 @@
  */
 
 /*
- * Changed by rlcevg. Aug 25, 2015
+ * Changed by rlcevg. Aug 25, 2020
  */
 
 #include "terrain/path/MicroPather.h"
+#include "terrain/path/PathFinder.h"
 #include "util/Defines.h"
 
 #include <cstdlib>  // malloc(), free()
@@ -57,6 +58,9 @@
 
 //#define USE_ASSERTIONS
 //#define DEBUG_PATH
+
+#define THREAT_EPSILON		1e-2f
+#define MOVE_EPSILON		1e-1f
 
 using namespace NSMicroPather;
 
@@ -179,13 +183,14 @@ private:
 };
 
 
-CMicroPather::CMicroPather(Graph* _graph, int sizeX, int sizeY)
+CMicroPather::CMicroPather(const circuit::CPathFinder& pf, int sizeX, int sizeY, int heightSizeX)
 		: mapSizeX(sizeX + 2)  // +2 for edges
 		, mapSizeY(sizeY + 2)  // +2 for edges
+		, heightMapSizeX(heightSizeX)
 		, isRunning(false)
 		, ALLOCATE(mapSizeX * mapSizeY)
 		, BLOCKSIZE(ALLOCATE - 1)
-		, graph(_graph)
+		, graph(pf)
 		, pathNodeMem(0)
 		, availMem(0)
 		, pathNodeCount(0)
@@ -236,11 +241,13 @@ CMicroPather::~CMicroPather()
  * New: make sure that moveThreatFun doesn't return values below 0.0
  */
 void CMicroPather::SetMapData(const bool* canMoveArray, const float* threatArray,
-		CostFunc moveThreatFun)
+		CostFunc moveFun, CostFunc threatFun, const FloatVec& heightMap)
 {
-	this->canMoveArray  = canMoveArray;
-	this->threatArray   = threatArray;
-	this->moveThreatFun = moveThreatFun;
+	this->canMoveArray = canMoveArray;
+	this->threatArray  = threatArray;
+	this->moveFun      = moveFun;
+	this->threatFun    = threatFun;
+	this->heightMap    = &heightMap;
 }
 
 void CMicroPather::Reset()
@@ -694,7 +701,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 				#endif
 
 				float newCost = nodeCostFromStart;
-				const float nodeCost = COST_BASE + moveThreatFun(index2);
+				const float nodeCost = COST_BASE + moveFun(index2) + threatFun(index2);
 
 				#ifdef USE_ASSERTIONS
 				assert(nodeCost > 0.f);  // > 1.f for speed
@@ -861,7 +868,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 				#endif
 
 				float newCost = nodeCostFromStart;
-				const float nodeCost = COST_BASE + moveThreatFun(index2);
+				const float nodeCost = COST_BASE + moveFun(index2) + threatFun(index2);
 
 				#ifdef USE_ASSERTIONS
 				assert(nodeCost > 0.f);  // > 1.f for speed
@@ -1020,7 +1027,7 @@ int CMicroPather::FindBestCostToPointOnRadius(void* startNode, void* endNode,
 				#endif
 
 				float newCost = nodeCostFromStart;
-				const float nodeCost = COST_BASE + moveThreatFun(index2);
+				const float nodeCost = COST_BASE + moveFun(index2) + threatFun(index2);
 
 				#ifdef USE_ASSERTIONS
 				assert(nodeCost > 0.f);  // > 1.f for speed
@@ -1167,4 +1174,78 @@ void CMicroPather::MakeCostMap(void* startNode, std::vector<float>& costMap)
 	}
 
 	isRunning = false;
+}
+
+size_t CMicroPather::RefinePath(IndexVec& path)
+{
+	if (threatArray[path[0]] > THREAT_EPSILON) {
+		return 0;
+	}
+
+	int x0, y0;
+	graph.PathIndex2MoveXY(path[0], &x0, &y0);
+
+	const float moveCost = moveFun(path[0]) + MOVE_EPSILON;
+
+	// All octant line draw
+	auto IsStraightLine = [this, x0, y0, moveCost](int index) {
+		// TODO: Remove node<->(x,y) conversions;
+		//       Use Bresenham's 1-octant line algorithm
+		int x1, y1;
+		graph.PathIndex2MoveXY(index, &x1, &y1);
+
+		int dx =  abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+		int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+		int err = dx + dy;  // error value e_xy
+		for (int x = x0, y = y0;;) {
+			int e2 = 2 * err;
+			if (e2 >= dy) {  // e_xy + e_x > 0
+				if (x == x1) break;
+				err += dy; x += sx;
+			}
+			if (e2 <= dx) {  // e_xy + e_y < 0
+				if (y == y1) break;
+				err += dx; y += sy;
+			}
+
+			int idx = CanMoveNode2Index(graph.MoveXY2MoveNode(x, y));
+			if ((idx < 0) || (threatArray[idx] > THREAT_EPSILON) || (moveFun(idx) > moveCost)) {
+				return false;
+			}
+		}
+		return true;
+	};
+
+	int l = 1;
+	int r = path.size() - 1;  // NOTE: start and end always present in path
+
+	while (l <= r) {
+		int m = (l + r) / 2;  // floor
+		if (IsStraightLine(path[m])) {
+			l = m + 1;  // ignore left half
+		} else {
+			r = m - 1;  // ignore right half
+		}
+	}
+
+	return l - 1;
+}
+
+void CMicroPather::FillPathInfo(PathInfo& iPath)
+{
+	if (iPath.isLast) {
+		float3 pos = graph.PathIndex2Pos(iPath.path.back());
+		pos.y = GetElevationAt(pos.x, pos.z);
+		iPath.posPath.push_back(pos);
+	} else {
+		iPath.start = RefinePath(iPath.path);
+		iPath.posPath.reserve(iPath.path.size() - iPath.start);
+
+		// NOTE: only first few positions actually used due to frequent recalc.
+		for (size_t i = iPath.start; i < iPath.path.size(); ++i) {
+			float3 pos = graph.PathIndex2Pos(iPath.path[i]);
+			pos.y = GetElevationAt(pos.x, pos.z);
+			iPath.posPath.push_back(pos);
+		}
+	}
 }

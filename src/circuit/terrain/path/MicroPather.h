@@ -83,41 +83,11 @@
 // #define USE_LIST
 // #define USE_BINARY_HASH
 
+namespace circuit {
+	class CPathFinder;
+}
+
 namespace NSMicroPather {
-	/*
-	 * A pure abstract class used to define a set of callbacks.
-	 * The client application inherits from
-	 * this class, and the methods will be called when MicroPather::Solve() is invoked.
-	 *
-	 * The notion of a "state" is very important. It must have the following properties:
-	 * - Unique
-	 * - Unchanging (unless MicroPather::Reset() is called)
-	 *
-	 * If the client application represents states as objects, then the state is usually
-	 * just the object cast to a void*. If the client application sees states as numerical
-	 * values, (x, y) for example, then state is an encoding of these values. MicroPather
-	 * never interprets or modifies the value of state.
-	 */
-
-	class Graph {
-		public:
-			// KLOOTNOTE: declaring a pure virtual destructor here results in
-			// Spring load-time error when AI compiled with gcc and link-time
-			// error when AI compiled with mingw32
-
-		//	virtual ~Graph() = 0;
-			virtual ~Graph() {}
-
-			/*
-			 * This function is only used in DEBUG mode - it dumps output to stdout. Since void*
-			 * aren't really human readable, normally you print out some concise info (like "(1,2)")
-			 * without an ending newline.
-			 * @note If you are using other grinning lizard utilities, you should use GLOUTPUT for output.
-			 */
-		//	virtual void PrintStateInfo(void* state) = 0;
-		//	virtual void PrintData(string s) = 0;
-		};
-
 	using CostFunc = std::function<float (int index)>;  // without +2 edges
 
 	class PathNode {
@@ -227,7 +197,7 @@ namespace NSMicroPather {
 			 * @param sizeX		Width of the map.
 			 * @param sizeY		Height of the map.
 			 */
-			CMicroPather(Graph* graph, int sizeX, int sizeY);
+			CMicroPather(const circuit::CPathFinder& pf, int sizeX, int sizeY, int heightSizeX);
 			~CMicroPather();
 
 			/*
@@ -252,14 +222,19 @@ namespace NSMicroPather {
 
 			const bool* canMoveArray;
 			const float* threatArray;
-			CostFunc moveThreatFun;
+			CostFunc moveFun;
+			CostFunc threatFun;
+			const FloatVec* heightMap;
+
 			int mapSizeX;
 			int mapSizeY;
 			int offsets[8];
 			int xEndNode, yEndNode;
+			int heightMapSizeX;  // height map width
 			bool isRunning;
+
 			void SetMapData(const bool* canMoveArray, const float* threatArray,
-					CostFunc moveThreatFun);
+					CostFunc moveFun, CostFunc threatFun, const FloatVec& heightMap);
 			int FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes, VoidVec& targets, float maxThreat,
 					IndexVec* path, float* cost);
 			int FindBestPathToPointOnRadius(void* startNode, void* endNode, int radius, float maxThreat,
@@ -268,12 +243,19 @@ namespace NSMicroPather {
 					float* cost);
 			void MakeCostMap(void* startNode, std::vector<float>& costMap);
 
+			size_t RefinePath(IndexVec& path);
+			void FillPathInfo(PathInfo& iPath);
+
 			PathNode* GetNode(void* node) const { return &pathNodeMem[(size_t)node]; }
+
+		private:
+			int GetElevationAt(float posX, float posZ) const {
+				return (*heightMap)[int(posZ) / SQUARE_SIZE * heightMapSizeX + int(posX) / SQUARE_SIZE];
+			}
 			int CanMoveNode2Index(void* node) const {
 				return canMoveArray[(size_t)node] ? pathNodeMem[(size_t)node].index2 : -1;
 			}
 
-		private:
 			void GoalReached(PathNode* node, void* start, void* end, IndexVec *path);
 			inline float LeastCostEstimateLocal(int nodeStartIndex);
 			inline float LeastCostEstimateLocal(int xStart, int yStart);
@@ -287,7 +269,7 @@ namespace NSMicroPather {
 			const unsigned ALLOCATE;		// how big a block of pathnodes to allocate at once
 			const unsigned BLOCKSIZE;		// how many useable pathnodes are in a block
 
-			Graph* graph;
+			const circuit::CPathFinder& graph;
 			PathNode* pathNodeMem;			// pointer to root of PathNode blocks
 			PathNode* pathNodeMemForFree;	// pointer to root of PathNode blocks
 			PathNode** heapArrayMem;		// pointer to root of a PathNode pointer array
