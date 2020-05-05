@@ -29,9 +29,9 @@ public:
 private:
 	void Execute(CCircuitUnit* unit, bool isUpdating);
 	bool FindTarget(CCircuitUnit* unit, const springai::AIFloat3& pos);
-	void ApplyPathMulti(std::shared_ptr<IPathQuery> query, bool isUpdating);
+	void ApplyTargetPath(std::shared_ptr<CQueryPathMulti> query, bool isUpdating);
 	void FallbackScout(CCircuitUnit* unit, bool isUpdating);
-	void ApplyScoutPathInfo(std::shared_ptr<IPathQuery> query);
+	void ApplyScoutPath(std::shared_ptr<CQueryPathSingle> query);
 };
 
 } // namespace circuit

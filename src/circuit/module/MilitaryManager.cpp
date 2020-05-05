@@ -101,7 +101,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		TRY_UNIT(this->circuit, unit,
 			if (unit->GetCircuitDef()->IsAbleToFly()) {
 				if (unit->GetCircuitDef()->IsAttrNoStrafe()) {
-					unit->GetUnit()->ExecuteCustomCommand(CMD_AIR_STRAFE, {0.0f});
+					unit->CmdAirStrafe(0);
 				}
 				if (unit->GetCircuitDef()->IsRoleMine()) {
 					unit->GetUnit()->SetIdleMode(1);
@@ -109,7 +109,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			}
 			if (unit->GetCircuitDef()->IsAttrStock()) {
 				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
-				unit->GetUnit()->ExecuteCustomCommand(CMD_MISC_PRIORITY, {2.0f});
+				unit->CmdMiscPriority(2);
 			}
 		)
 	};
@@ -156,7 +156,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			unit->GetUnit()->SetTrajectory(1);
 			if (unit->GetCircuitDef()->IsAttrStock()) {
 				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
-				unit->GetUnit()->ExecuteCustomCommand(CMD_MISC_PRIORITY, {2.0f});
+				unit->CmdMiscPriority(2);
 			}
 		)
 	};
@@ -959,10 +959,15 @@ void CMilitaryManager::FindAHSafePos(PathInfo& pPath, const AIFloat3& startPos, 
 	ourPositions.clear();
 }
 
-void CMilitaryManager::FillSafePos(const AIFloat3& pos, STerrainMapArea* area, F3Vec& outPositions)
+void CMilitaryManager::FillSafePos(CCircuitUnit* unit, F3Vec& outPositions)
 {
+	outPositions.clear();
+
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
 	const int frame = circuit->GetLastFrame();
+
+	const springai::AIFloat3& pos = unit->GetPos(frame);
+	STerrainMapArea* area = unit->GetArea();
 
 	const std::array<IFighterTask::FightType, 2> types = {IFighterTask::FightType::ATTACK, IFighterTask::FightType::DEFEND};
 	for (IFighterTask::FightType type : types) {

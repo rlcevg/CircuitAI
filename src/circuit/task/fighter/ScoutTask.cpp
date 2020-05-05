@@ -11,7 +11,7 @@
 #include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathFinder.h"
-#include "terrain/path/QueryPathInfo.h"
+#include "terrain/path/QueryPathSingle.h"
 #include "terrain/path/QueryPathMulti.h"
 #include "unit/action/MoveAction.h"
 #include "unit/action/FightAction.h"
@@ -110,8 +110,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		position = target->GetPos();
 		if (target->GetUnit()->IsCloaked()) {
 			TRY_UNIT(circuit, unit,
-				unit->GetUnit()->ExecuteCustomCommand(CMD_ATTACK_GROUND, {position.x, position.y, position.z},
-													  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+				unit->CmdAttackGround(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
 		} else {
 			unit->Attack(target, frame + FRAMES_PER_SEC * 60);
@@ -146,7 +145,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	const CRefHolder thisHolder(this);
 	pathfinder->RunQuery(query, [this, thisHolder, isUpdating](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplyPathMulti(query, isUpdating);
+			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathMulti>(query), isUpdating);
 		}
 	});
 }
@@ -265,11 +264,10 @@ bool CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 	// Return: target=bestTarget, startPos=pos, enemyPositions
 }
 
-void CScoutTask::ApplyPathMulti(std::shared_ptr<IPathQuery> query, bool isUpdating)
+void CScoutTask::ApplyTargetPath(std::shared_ptr<CQueryPathMulti> query, bool isUpdating)
 {
-	std::shared_ptr<CQueryPathMulti> pQuery = std::static_pointer_cast<CQueryPathMulti>(query);
-	std::shared_ptr<PathInfo> pPath = pQuery->GetPathInfo();
-	CCircuitUnit* unit = pQuery->GetUnit();
+	std::shared_ptr<PathInfo> pPath = query->GetPathInfo();
+	CCircuitUnit* unit = query->GetUnit();
 
 	if (!pPath->posPath.empty()) {
 		position = pPath->posPath.back();
@@ -304,7 +302,7 @@ void CScoutTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 	const AIFloat3& endPos = position;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathInfoQuery(
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
 			unit, threatMap, frame,
 			startPos, endPos, pathfinder->GetSquareSize());
 	pathQueries[unit] = query;
@@ -312,16 +310,15 @@ void CScoutTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 	const CRefHolder thisHolder(this);
 	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplyScoutPathInfo(query);
+			this->ApplyScoutPath(std::static_pointer_cast<CQueryPathSingle>(query));
 		}
 	});
 }
 
-void CScoutTask::ApplyScoutPathInfo(std::shared_ptr<IPathQuery> query)
+void CScoutTask::ApplyScoutPath(std::shared_ptr<CQueryPathSingle> query)
 {
-	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
-	std::shared_ptr<PathInfo> pPath = pQuery->GetPathInfo();
-	CCircuitUnit* unit = pQuery->GetUnit();
+	std::shared_ptr<PathInfo> pPath = query->GetPathInfo();
+	CCircuitUnit* unit = query->GetUnit();
 
 	if (pPath->path.size() > 2) {
 //		position = path.back();
@@ -333,7 +330,7 @@ void CScoutTask::ApplyScoutPathInfo(std::shared_ptr<IPathQuery> query)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	TRY_UNIT(circuit, unit,
-		unit->GetUnit()->MoveTo(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		unit->CmdMoveTo(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 	)
 	unit->GetTravelAct()->StateWait();
 }

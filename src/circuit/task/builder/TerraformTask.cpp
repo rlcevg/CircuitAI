@@ -56,8 +56,6 @@ void CBTerraformTask::Start(CCircuitUnit* unit)
 	 * Terraform blank position
 	 */
 	if (targetId == -1) {
-		Unit* u = unit->GetUnit();
-
 		if (!utils::is_valid(buildPos)) {
 			CTerrainManager* terrainManager = circuit->GetTerrainManager();
 			CTerrainManager::TerrainPredicate predicate = [terrainManager, unit](const AIFloat3& p) {
@@ -93,8 +91,8 @@ void CBTerraformTask::Start(CCircuitUnit* unit)
 		params.push_back(buildPos.z - offsetZ);  //  9: i + 9 control point z
 		params.push_back(unit->GetId());  // 10: i + 10 unitId
 		TRY_UNIT(circuit, unit,
-			u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
-			u->ExecuteCustomCommand(CMD_TERRAFORM_INTERNAL, params);
+			unit->CmdPriority(ClampPriority());
+			unit->CmdTerraform(std::move(params));
 		)
 		return;
 	}
@@ -106,8 +104,6 @@ void CBTerraformTask::Start(CCircuitUnit* unit)
 		manager->AbortTask(this);
 		return;
 	}
-
-	Unit* u = unit->GetUnit();
 
 	UnitDef* unitDef = buildDef->GetDef();
 	const float offsetX = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2 * SQUARE_SIZE + 1 * SQUARE_SIZE + 1;
@@ -132,8 +128,8 @@ void CBTerraformTask::Start(CCircuitUnit* unit)
 	params.push_back(position.z - offsetZ);  //  9: i + 9 control point z
 	params.push_back(unit->GetId());  // 10: i + 10 unitId
 	TRY_UNIT(circuit, unit,
-		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
-		u->ExecuteCustomCommand(CMD_TERRAFORM_INTERNAL, params);
+		unit->CmdPriority(ClampPriority());
+		unit->CmdTerraform(std::move(params));
 	)
 
 	// TODO: Enqueue "move out" action for nearby units

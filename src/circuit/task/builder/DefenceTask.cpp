@@ -55,7 +55,7 @@ void CBDefenceTask::Update()
 		cost = normalCost;
 	}
 	TRY_UNIT(circuit, target,
-		target->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+		target->CmdPriority(ClampPriority());
 	)
 }
 

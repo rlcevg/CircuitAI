@@ -1,26 +1,26 @@
 /*
- * QueryPathInfo.cpp
+ * QueryPathSingle.cpp
  *
  *  Created on: Apr 26, 2020
  *      Author: rlcevg
  */
 
-#include "terrain/path/QueryPathInfo.h"
+#include "terrain/path/QueryPathSingle.h"
 
 namespace circuit {
 
 using namespace springai;
 
-CQueryPathInfo::CQueryPathInfo(const CPathFinder& pathfinder, int id)
+CQueryPathSingle::CQueryPathSingle(const CPathFinder& pathfinder, int id)
 		: IPathQuery(pathfinder, id, Type::SINGLE)
 {
 }
 
-CQueryPathInfo::~CQueryPathInfo()
+CQueryPathSingle::~CQueryPathSingle()
 {
 }
 
-void CQueryPathInfo::InitQuery(const AIFloat3& startPos, const AIFloat3& endPos,
+void CQueryPathSingle::InitQuery(const AIFloat3& startPos, const AIFloat3& endPos,
 		float maxRange, float maxThreat)
 {
 	this->startPos = startPos;
@@ -29,7 +29,7 @@ void CQueryPathInfo::InitQuery(const AIFloat3& startPos, const AIFloat3& endPos,
 	this->maxThreat = maxThreat;
 }
 
-void CQueryPathInfo::Prepare()
+void CQueryPathSingle::Prepare()
 {
 	pPath = std::make_shared<PathInfo>();
 }

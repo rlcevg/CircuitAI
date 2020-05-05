@@ -26,6 +26,8 @@ class CCircuitUnit;
 class CEnemyInfo;
 class ITaskManager;
 class IPathQuery;
+class CQueryPathSingle;
+class CQueryPathMulti;
 
 class IUnitTask: public IRefCounter {  // CSquad, IAction
 public:

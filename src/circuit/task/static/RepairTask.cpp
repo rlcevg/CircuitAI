@@ -133,10 +133,9 @@ void CSRepairTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	for (CCircuitUnit* unit : units) {
-		Unit* u = unit->GetUnit();
 		TRY_UNIT(circuit, unit,
-			u->ExecuteCustomCommand(CMD_PRIORITY, {0});
-			u->PatrolTo(position, UNIT_COMMAND_OPTION_SHIFT_KEY);
+			unit->CmdPriority(0);
+			unit->GetUnit()->PatrolTo(position, UNIT_COMMAND_OPTION_SHIFT_KEY);
 		)
 	}
 

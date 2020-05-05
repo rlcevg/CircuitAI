@@ -18,7 +18,6 @@
 
 #include "Command.h"
 #include "AISCommands.h"
-#include "Sim/Units/CommandAI/Command.h"
 
 namespace circuit {
 
@@ -77,7 +76,7 @@ void CRecruitTask::Update()
 			state = State::ROAM;  // Not wait
 			for (CCircuitUnit* unit : units) {
 				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+					unit->CmdPriority(ClampPriority());
 				)
 			}
 		}
@@ -86,7 +85,7 @@ void CRecruitTask::Update()
 			state = State::DISENGAGE;  // Wait
 			for (CCircuitUnit* unit : units) {
 				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {0});
+					unit->CmdPriority(0);
 				)
 			}
 		}
@@ -124,7 +123,7 @@ void CRecruitTask::Cancel()
 			delete cmd;
 		}
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->ExecuteCustomCommand(CMD_REMOVE, params, UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+			unit->CmdRemove(std::move(params), UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
 		)
 	}
 }
@@ -133,7 +132,7 @@ void CRecruitTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	TRY_UNIT(circuit, unit,
-		unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+		unit->CmdPriority(ClampPriority());
 	)
 	const int frame = circuit->GetLastFrame();
 

@@ -37,7 +37,7 @@ public:
 	CCircuitUnit* GetRepairer() const { return repairer; }
 
 private:
-	void ApplyPathInfo(std::shared_ptr<IPathQuery> query);
+	void ApplyPath(std::shared_ptr<CQueryPathSingle> query);
 
 	CCircuitUnit* repairer;
 };

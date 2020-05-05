@@ -18,7 +18,7 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathFinder.h"
-#include "terrain/path/QueryPathInfo.h"
+#include "terrain/path/QueryPathSingle.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/FightAction.h"
 #include "unit/action/MoveAction.h"
@@ -178,15 +178,14 @@ void IBuilderTask::Cancel()
 void IBuilderTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	Unit* u = unit->GetUnit();
 	TRY_UNIT(circuit, unit,
-		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+		unit->CmdPriority(ClampPriority());
 	)
 
 	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		TRY_UNIT(circuit, unit,
-			u->Repair(target->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->Repair(target->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 		)
 		return;
 	}
@@ -195,7 +194,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	if (utils::is_valid(buildPos)) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
 			TRY_UNIT(circuit, unit,
-				u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
+				unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 			)
 			return;
 		}
@@ -211,7 +210,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		utils::free_clear(friendlies);
 		if (alu != nullptr) {
 			TRY_UNIT(circuit, unit,
-				u->Repair(alu->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+				unit->GetUnit()->Repair(alu->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 			)
 			return;
 		}
@@ -225,7 +224,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 
 	if (utils::is_valid(buildPos)) {
 		TRY_UNIT(circuit, unit,
-			u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 		)
 	} else {
 		// TODO: Select new proper BasePos, like near metal cluster.
@@ -456,12 +455,12 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 
 	const auto it = pathQueries.find(unit);
 	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
-	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {
+	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
 		return;
 	}
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	query = pathfinder->CreatePathInfoQuery(
+	query = pathfinder->CreatePathSingleQuery(
 			unit, circuit->GetThreatMap(), frame,
 			startPos, endPos, range);
 	pathQueries[unit] = query;
@@ -469,16 +468,15 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 	const CRefHolder thisHolder(this);
 	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplyPathInfo(query);
+			this->ApplyPath(std::static_pointer_cast<CQueryPathSingle>(query));
 		}
 	});
 }
 
-void IBuilderTask::ApplyPathInfo(std::shared_ptr<IPathQuery> query)
+void IBuilderTask::ApplyPath(std::shared_ptr<CQueryPathSingle> query)
 {
-	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
-	std::shared_ptr<PathInfo> pPath = pQuery->GetPathInfo();
-	CCircuitUnit* unit = pQuery->GetUnit();
+	std::shared_ptr<PathInfo> pPath = query->GetPathInfo();
+	CCircuitUnit* unit = query->GetUnit();
 
 	if (pPath->path.size() > 2) {
 		unit->GetTravelAct()->SetPath(pPath);

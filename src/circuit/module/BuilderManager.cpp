@@ -130,9 +130,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 //		CEconomyManager* economyManager = this->circuit->GetEconomyManager();
 //		if (economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor() > 32.0f) {
 //			TRY_UNIT(this->circuit, unit,
-//				unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
-////				EnqueueRepair(IBuilderTask::Priority::LOW, unit);
+//				unit->CmdPriority(2);
 //			)
+////			EnqueueRepair(IBuilderTask::Priority::LOW, unit);
 //		}
 //	};
 
@@ -840,7 +840,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 
 	const auto it = costsQueries.find(unit);
 	std::shared_ptr<IPathQuery> query = (it == costsQueries.end()) ? nullptr : it->second;
-	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {
+	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
 		return nullptr;
 	}
 

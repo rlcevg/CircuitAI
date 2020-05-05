@@ -39,7 +39,7 @@
  */
 
 /*
- * Changed by rlcevg. Aug 25, 2015
+ * Changed by rlcevg. Aug 25, 2020
  */
 
 
@@ -281,5 +281,4 @@ namespace NSMicroPather {
 	};
 }
 
-
-#endif
+#endif  // GRINNINGLIZARD_MICROPATHER_INCLUDED

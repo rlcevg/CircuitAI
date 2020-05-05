@@ -37,7 +37,7 @@ void CFGuardTask::Start(CCircuitUnit* unit)
 	if (vip != nullptr) {
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->Guard(vip->GetUnit());
-			unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {NO_SPEED_LIMIT});
+			unit->CmdWantedSpeed(NO_SPEED_LIMIT);
 		)
 	} else {
 		manager->AbortTask(this);

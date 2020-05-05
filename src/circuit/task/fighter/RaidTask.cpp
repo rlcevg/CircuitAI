@@ -13,7 +13,7 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathFinder.h"
-#include "terrain/path/QueryPathInfo.h"
+#include "terrain/path/QueryPathSingle.h"
 #include "terrain/path/QueryPathMulti.h"
 #include "unit/action/MoveAction.h"
 #include "unit/action/FightAction.h"
@@ -130,10 +130,9 @@ void CRaidTask::Update()
 			for (CCircuitUnit* unit : units) {
 				const AIFloat3& pos = utils::get_radial_pos(groupPos, SQUARE_SIZE * 8);
 				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->MoveTo(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
+					unit->CmdMoveTo(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 					unit->GetUnit()->PatrolTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame);
 				)
-
 				unit->GetTravelAct()->StateWait();
 			}
 		}
@@ -170,18 +169,16 @@ void CRaidTask::Update()
 				for (CCircuitUnit* unit : units) {
 					const AIFloat3& pos = target->GetPos();
 					TRY_UNIT(circuit, unit,
-						unit->GetUnit()->ExecuteCustomCommand(CMD_ATTACK_GROUND, {pos.x, pos.y, pos.z}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+						unit->CmdAttackGround(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 					)
-
 					unit->GetTravelAct()->StateWait();
 				}
 			} else {
 				for (CCircuitUnit* unit : units) {
 					TRY_UNIT(circuit, unit,
 						unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-//						unit->GetUnit()->ExecuteCustomCommand(CMD_UNIT_SET_TARGET, {(float)target->GetId()});
+						unit->CmdSetTarget(target);
 					)
-
 					unit->GetTravelAct()->StateWait();
 				}
 			}
@@ -216,7 +213,7 @@ void CRaidTask::Update()
 	const CRefHolder thisHolder(this);
 	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplyPathMulti(query);
+			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathMulti>(query));
 		}
 	});
 }
@@ -380,10 +377,9 @@ bool CRaidTask::FindTarget()
 	// Return: target, startPos=leader->pos, urgentPositions and enemyPositions
 }
 
-void CRaidTask::ApplyPathMulti(std::shared_ptr<IPathQuery> query)
+void CRaidTask::ApplyTargetPath(std::shared_ptr<CQueryPathMulti> query)
 {
-	std::shared_ptr<CQueryPathMulti> pQuery = std::static_pointer_cast<CQueryPathMulti>(query);
-	pPath = pQuery->GetPathInfo();
+	pPath = query->GetPathInfo();
 
 	if (!pPath->posPath.empty()) {
 		position = pPath->posPath.back();
@@ -415,7 +411,7 @@ void CRaidTask::FallbackRaid()
 	const AIFloat3& endPos = position;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathInfoQuery(
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
 			leader, threatMap, frame,
 			startPos, endPos, pathfinder->GetSquareSize());
 	pathQueries[leader] = query;
@@ -423,15 +419,14 @@ void CRaidTask::FallbackRaid()
 	const CRefHolder thisHolder(this);
 	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplyRaidPathInfo(query);
+			this->ApplyRaidPath(std::static_pointer_cast<CQueryPathSingle>(query));
 		}
 	});
 }
 
-void CRaidTask::ApplyRaidPathInfo(std::shared_ptr<IPathQuery> query)
+void CRaidTask::ApplyRaidPath(std::shared_ptr<CQueryPathSingle> query)
 {
-	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
-	pPath = pQuery->GetPathInfo();
+	pPath = query->GetPathInfo();
 
 	if (pPath->path.size() > 2) {
 //		position = path.back();

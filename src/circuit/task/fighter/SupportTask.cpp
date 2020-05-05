@@ -55,7 +55,7 @@ void CSupportTask::Start(CCircuitUnit* unit)
 
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
-		unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {NO_SPEED_LIMIT});
+		unit->CmdWantedSpeed(NO_SPEED_LIMIT);
 	)
 	state = State::DISENGAGE;  // Wait
 }

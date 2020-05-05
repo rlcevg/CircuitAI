@@ -59,15 +59,14 @@ void CBPylonTask::Cancel()
 void CBPylonTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	Unit* u = unit->GetUnit();
 	TRY_UNIT(circuit, unit,
-		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+		unit->CmdPriority(ClampPriority());
 	)
 
 	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		TRY_UNIT(circuit, unit,
-			u->Repair(target->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->Repair(target->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 		)
 		return;
 	}
@@ -75,7 +74,7 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 	if (utils::is_valid(buildPos)) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
 			TRY_UNIT(circuit, unit,
-				u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
+				unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 			)
 			return;
 //		} else {
@@ -89,7 +88,7 @@ void CBPylonTask::Execute(CCircuitUnit* unit)
 
 	if (utils::is_valid(buildPos)) {
 		TRY_UNIT(circuit, unit,
-			u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 		)
 	} else {
 		// Fallback to Guard/Assist/Patrol

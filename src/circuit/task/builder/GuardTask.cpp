@@ -61,7 +61,7 @@ void CBGuardTask::Execute(CCircuitUnit* unit)
 	CCircuitUnit* vip = circuit->GetTeamUnit(vipId);
 	if (vip != nullptr) {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+			unit->CmdPriority(ClampPriority());
 			unit->GetUnit()->Guard(vip->GetUnit());
 		)
 	} else {

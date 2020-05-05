@@ -58,7 +58,7 @@ void IWaitTask::Start(CCircuitUnit* unit)
 		delete cmd;
 	}
 	TRY_UNIT(manager->GetCircuit(), unit,
-		unit->GetUnit()->ExecuteCustomCommand(CMD_REMOVE, params, UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+		unit->CmdRemove(std::move(params), UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
 	)
 }
 

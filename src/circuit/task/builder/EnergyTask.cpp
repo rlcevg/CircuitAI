@@ -43,7 +43,7 @@ void CBEnergyTask::Update()
 	isStalling = isEnergyStalling;
 	priority = isEnergyStalling ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
 	TRY_UNIT(circuit, target,
-		target->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+		target->CmdPriority(ClampPriority());
 	)
 }
 

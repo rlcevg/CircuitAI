@@ -73,15 +73,14 @@ void CBMexTask::Cancel()
 void CBMexTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	Unit* u = unit->GetUnit();
 	TRY_UNIT(circuit, unit,
-		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+		unit->CmdPriority(ClampPriority());
 	)
 
 	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		TRY_UNIT(circuit, unit,
-			u->Repair(target->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->Repair(target->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 		)
 		return;
 	}
@@ -96,7 +95,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 					state = State::ENGAGE;  // isFirstTry = false
 					metalManager->SetOpenSpot(index, false);
 					TRY_UNIT(circuit, unit,
-						u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
+						unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 					)
 					return;
 				} else {
@@ -127,7 +126,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 		SetBuildPos(spots[index].position);
 		economyManager->SetOpenSpot(index, false);
 		TRY_UNIT(circuit, unit,
-			u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 		)
 	} else {
 //		buildPos = -RgtVector;

@@ -178,8 +178,7 @@ void CSuperTask::Update()
 			if (target->IsInRadarOrLOS() && !circuit->IsCheating()) {
 				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			} else {
-				unit->GetUnit()->ExecuteCustomCommand(CMD_ATTACK_GROUND, {targetPos.x, targetPos.y, targetPos.z},
-													  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+				unit->CmdAttackGround(targetPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			}
 		)
 		targetFrame = frame;

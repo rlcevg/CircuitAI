@@ -58,8 +58,8 @@ void CRallyTask::Start(CCircuitUnit* unit)
 		AIFloat3 pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), position, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
 
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
-			unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {NO_SPEED_LIMIT});
+			unit->CmdMoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+			unit->CmdWantedSpeed(NO_SPEED_LIMIT);
 		)
 		return;
 	}

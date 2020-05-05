@@ -107,7 +107,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		int frame = this->circuit->GetLastFrame();
 		const AIFloat3& assPos = unit->GetPos(frame);
 		TRY_UNIT(this->circuit, unit,
-			unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
+			unit->CmdPriority(0);
 		)
 
 		// check factory nano belongs to

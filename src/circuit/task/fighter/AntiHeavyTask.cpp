@@ -147,7 +147,6 @@ void CAntiHeavyTask::Update()
 				TRY_UNIT(circuit, unit,
 					unit->GetUnit()->Fight(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 				)
-
 				unit->GetTravelAct()->StateWait();
 			}
 		}
@@ -247,7 +246,6 @@ void CAntiHeavyTask::Update()
 		{
 			for (CCircuitUnit* unit : units) {
 				unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
-
 				unit->GetTravelAct()->StateWait();
 			}
 			return;
@@ -258,7 +256,6 @@ void CAntiHeavyTask::Update()
 			TRY_UNIT(circuit, unit,
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
-
 			unit->GetTravelAct()->StateWait();
 		}
 	}

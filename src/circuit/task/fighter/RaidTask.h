@@ -28,9 +28,9 @@ public:
 
 private:
 	bool FindTarget();
-	void ApplyPathMulti(std::shared_ptr<IPathQuery> query);
+	void ApplyTargetPath(std::shared_ptr<CQueryPathMulti> query);
 	void FallbackRaid();
-	void ApplyRaidPathInfo(std::shared_ptr<IPathQuery> query);
+	void ApplyRaidPath(std::shared_ptr<CQueryPathSingle> query);
 
 	float maxPower;
 };

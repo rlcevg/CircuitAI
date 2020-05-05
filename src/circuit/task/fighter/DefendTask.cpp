@@ -13,7 +13,7 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathFinder.h"
-#include "terrain/path/QueryPathInfo.h"
+#include "terrain/path/QueryPathSingle.h"
 #include "terrain/path/QueryPathMulti.h"
 #include "unit/action/FightAction.h"
 #include "unit/action/MoveAction.h"
@@ -90,7 +90,7 @@ void CDefendTask::Start(CCircuitUnit* unit)
 
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
-		unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {NO_SPEED_LIMIT});
+		unit->CmdWantedSpeed(NO_SPEED_LIMIT);
 	)
 }
 
@@ -165,7 +165,7 @@ void CDefendTask::Update()
 	}
 
 	if (!isTargetsFound) {
-		FallbackNoTarget();
+		FallbackFrontPos();
 		return;
 	}
 
@@ -183,7 +183,7 @@ void CDefendTask::Update()
 	std::weak_ptr<IPathQuery> weakQuery(query);
 	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplyPathMulti(query);
+			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathMulti>(query));
 		}
 	});
 }
@@ -292,12 +292,23 @@ bool CDefendTask::FindTarget()
 	// Return: target, startPos=leader->pos, enemyPositions
 }
 
-void CDefendTask::FallbackNoTarget()
+void CDefendTask::ApplyTargetPath(std::shared_ptr<CQueryPathMulti> query)
+{
+	pPath = query->GetPathInfo();
+
+	if (!pPath->posPath.empty()) {
+		ActivePath(lowestSpeed);
+	} else {
+		Fallback();
+	}
+}
+
+void CDefendTask::FallbackFrontPos()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	circuit->GetMilitaryManager()->FillFrontPos(leader, urgentPositions);
 	if (urgentPositions.empty()) {
-		FallbackFrontPos();
+		FallbackBasePos();
 		return;
 	}
 
@@ -314,18 +325,56 @@ void CDefendTask::FallbackNoTarget()
 	const CRefHolder thisHolder(this);
 	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplyFrontPos(query);
+			this->ApplyFrontPos(std::static_pointer_cast<CQueryPathMulti>(query));
 		}
 	});
 }
 
-void CDefendTask::ApplyPathMulti(std::shared_ptr<IPathQuery> query)
+void CDefendTask::ApplyFrontPos(std::shared_ptr<CQueryPathMulti> query)
 {
-	std::shared_ptr<CQueryPathMulti> pQuery = std::static_pointer_cast<CQueryPathMulti>(query);
-	pPath = pQuery->GetPathInfo();
+	pPath = query->GetPathInfo();
 
-	if (!pPath->posPath.empty()) {
-		ActivePath(lowestSpeed);
+	if (!pPath->path.empty()) {
+		if (pPath->path.size() > 2) {
+			ActivePath();
+		}
+	} else {
+		FallbackBasePos();
+	}
+}
+
+void CDefendTask::FallbackBasePos()
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	CSetupManager* setupManager = circuit->GetSetupManager();
+
+	const AIFloat3& startPos = leader->GetPos(frame);
+	const AIFloat3& endPos = setupManager->GetBasePos();
+	const float pathRange = DEFAULT_SLACK * 4;
+
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
+			leader, circuit->GetThreatMap(), frame,
+			startPos, endPos, pathRange);
+	pathQueries[leader] = query;
+
+	const CRefHolder thisHolder(this);
+	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+		if (this->IsQueryAlive(query)) {
+			this->ApplyBasePos(std::static_pointer_cast<CQueryPathSingle>(query));
+		}
+	});
+}
+
+void CDefendTask::ApplyBasePos(std::shared_ptr<CQueryPathSingle> query)
+{
+	pPath = query->GetPathInfo();
+
+	if (!pPath->path.empty()) {
+		if (pPath->path.size() > 2) {
+			ActivePath();
+		}
 	} else {
 		Fallback();
 	}
@@ -339,62 +388,9 @@ void CDefendTask::Fallback()
 	for (CCircuitUnit* unit : units) {
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-			unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {lowestSpeed});
+			unit->CmdWantedSpeed(lowestSpeed);
 		)
-
 		unit->GetTravelAct()->StateWait();
-	}
-}
-
-void CDefendTask::ApplyFrontPos(std::shared_ptr<IPathQuery> query)
-{
-	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
-	pPath = pQuery->GetPathInfo();
-
-	if (!pPath->path.empty()) {
-		if (pPath->path.size() > 2) {
-			ActivePath();
-		}
-	} else {
-		FallbackFrontPos();
-	}
-}
-
-void CDefendTask::FallbackFrontPos()
-{
-	CCircuitAI* circuit = manager->GetCircuit();
-	const int frame = circuit->GetLastFrame();
-	CSetupManager* setupManager = circuit->GetSetupManager();
-
-	const AIFloat3& startPos = leader->GetPos(frame);
-	const AIFloat3& endPos = setupManager->GetBasePos();
-	const float pathRange = DEFAULT_SLACK * 4;
-
-	CPathFinder* pathfinder = circuit->GetPathfinder();
-	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathInfoQuery(
-			leader, circuit->GetThreatMap(), frame,
-			startPos, endPos, pathRange);
-	pathQueries[leader] = query;
-
-	const CRefHolder thisHolder(this);
-	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyBasePos(query);
-		}
-	});
-}
-
-void CDefendTask::ApplyBasePos(std::shared_ptr<IPathQuery> query)
-{
-	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
-	pPath = pQuery->GetPathInfo();
-
-	if (!pPath->path.empty()) {
-		if (pPath->path.size() > 2) {
-			ActivePath();
-		}
-	} else {
-		Fallback();
 	}
 }
 

@@ -88,7 +88,7 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	if (!unit->IsWeaponReady(frame)) {  // reload empty unit
 		if (updCount % 32 == 0) {
 			TRY_UNIT(circuit, unit,
-				unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, 0, frame + FRAMES_PER_SEC * 60);
+				unit->CmdFindPad(frame + FRAMES_PER_SEC * 60);
 			)
 		}
 		SetTarget(nullptr);
@@ -105,8 +105,7 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		position = target->GetPos();
 		TRY_UNIT(circuit, unit,
 			if (target->GetUnit()->IsCloaked()) {
-				unit->GetUnit()->ExecuteCustomCommand(CMD_ATTACK_GROUND, {position.x, position.y, position.z},
-													  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+				unit->CmdAttackGround(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			} else if (lastTarget != target) {
 				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			}

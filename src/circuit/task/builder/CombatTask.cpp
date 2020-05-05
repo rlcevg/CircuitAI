@@ -139,8 +139,7 @@ void CCombatTask::Execute(CCircuitUnit* unit)
 	if (position.SqDistance2D(pos) < range) {
 		if (target->GetUnit()->IsCloaked()) {
 			TRY_UNIT(circuit, unit,
-				unit->GetUnit()->ExecuteCustomCommand(CMD_ATTACK_GROUND, {position.x, position.y, position.z},
-													  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+				unit->CmdAttackGround(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
 		} else {
 			unit->Attack(target, frame + FRAMES_PER_SEC * 60);
@@ -150,8 +149,9 @@ void CCombatTask::Execute(CCircuitUnit* unit)
 		const AIFloat3 lead = velLead.SqLength2D() < SQUARE(300.f)
 				? velLead
 				: AIFloat3(AIFloat3(target->GetVel()).Normalize2D() * 300.f);
+		const AIFloat3 leadPos = position + lead;
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->MoveTo(position + lead, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			unit->CmdMoveTo(leadPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
 	}
 }

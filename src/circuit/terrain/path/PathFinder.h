@@ -57,7 +57,7 @@ public:
 	void PathIndex2MoveXY(int index, int* x, int* y) const;
 	springai::AIFloat3 PathIndex2Pos(int index) const;
 
-	std::shared_ptr<IPathQuery> CreatePathInfoQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
+	std::shared_ptr<IPathQuery> CreatePathSingleQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos, const springai::AIFloat3& endPos, int radius,
 			float maxThreat = std::numeric_limits<float>::max());
 	std::shared_ptr<IPathQuery> CreatePathMultiQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
@@ -101,7 +101,7 @@ private:
 	int MakeQueryId() { return queryId++; }
 	void FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, int frame);
 
-	void RunPathInfo(std::shared_ptr<IPathQuery> query, PathFunc onComplete = nullptr);
+	void RunPathSingle(std::shared_ptr<IPathQuery> query, PathFunc onComplete = nullptr);
 	void RunPathMulti(std::shared_ptr<IPathQuery> query, PathFunc onComplete = nullptr);
 	void RunPathCost(std::shared_ptr<IPathQuery> query, PathFunc onComplete = nullptr);
 	void RunCostMap(std::shared_ptr<IPathQuery> query, PathFunc onComplete = nullptr);
@@ -139,14 +139,18 @@ private:
 	CCircuitDef* dbgDef;
 	springai::AIFloat3 dbgPos;
 	int dbgType;
+	std::shared_ptr<IPathQuery> dbgQuery;
 public:
+	std::shared_ptr<IPathQuery> CreateDbgPathQuery(CThreatMap* threatMap,
+			const springai::AIFloat3& endPos, int radius,
+			float maxThreat = std::numeric_limits<float>::max());
 	void SetDbgDef(CCircuitDef* cdef) { dbgDef = cdef; }
 	CCircuitDef* GetDbgDef() const { return dbgDef; }
 	void SetDbgPos(const springai::AIFloat3& pos) { dbgPos = pos; }
 	const springai::AIFloat3& GetDbgPos() const { return dbgPos; }
 	void SetDbgType(int type) { dbgType = type; }
 	int GetDbgType() const { return dbgType; }
-	void SetMapData(CThreatMap* threatMap);
+	void SetDbgQuery(std::shared_ptr<IPathQuery> query) { dbgQuery = query; }
 	void UpdateVis(const IndexVec& path);
 	void ToggleVis(CCircuitAI* circuit);
 #endif

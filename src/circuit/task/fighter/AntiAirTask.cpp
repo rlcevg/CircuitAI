@@ -12,6 +12,8 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathFinder.h"
+#include "terrain/path/QueryPathSingle.h"
+#include "terrain/path/QueryPathMulti.h"
 #include "unit/action/MoveAction.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "unit/CircuitUnit.h"
@@ -98,14 +100,8 @@ void CAntiAirTask::Update()
 			if (position.SqDistance2D(leader->GetPos(frame)) < SQUARE(maxDist)) {
 				state = State::ROAM;
 			} else {
-				AIFloat3 startPos = leader->GetPos(frame);
-				CPathFinder* pathfinder = circuit->GetPathfinder();
-				pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
-				pathfinder->MakePath(*pPath, startPos, position, pathfinder->GetSquareSize());
-				if (!pPath->posPath.empty()) {
-					ActivePath();
-					return;
-				}
+				ProceedDisengage();
+				return;
 			}
 		} else {
 			return;
@@ -138,7 +134,6 @@ void CAntiAirTask::Update()
 				TRY_UNIT(circuit, unit,
 					unit->GetUnit()->Fight(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 				)
-
 				unit->GetTravelAct()->StateWait();
 			}
 		}
@@ -163,62 +158,40 @@ void CAntiAirTask::Update()
 	 */
 	FindTarget();
 
+	const AIFloat3& startPos = leader->GetPos(frame);
 	state = State::ROAM;
 	if (target != nullptr) {
 		const float sqRange = SQUARE(lowestRange);
-		for (CCircuitUnit* unit : units) {
-			if (position.SqDistance2D(unit->GetPos(frame)) < sqRange) {
-				state = State::ENGAGE;
-				break;
-			}
-		}
-		if (State::ENGAGE == state) {
-			for (CCircuitUnit* unit : units) {
-				unit->Attack(target->GetPos(), target, frame + FRAMES_PER_SEC * 60);
-
-				unit->GetTravelAct()->StateWait();
-			}
+		if (position.SqDistance2D(startPos) < sqRange) {
+			state = State::ENGAGE;
+			Attack(frame);
 			return;
 		}
-	} else {
-		static F3Vec ourPositions;  // NOTE: micro-opt
-		AIFloat3 startPos = leader->GetPos(frame);
-		circuit->GetMilitaryManager()->FillSafePos(startPos, leader->GetArea(), ourPositions);
-
-		CPathFinder* pathfinder = circuit->GetPathfinder();
-		pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
-		pathfinder->FindBestPath(*pPath, startPos, DEFAULT_SLACK * 4, ourPositions, false);
-		ourPositions.clear();
-
-		if (!pPath->posPath.empty()) {
-			position = pPath->posPath.back();
-			ActivePath();
-			return;
-		} else {
-			CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-			if ((commander != nullptr) &&
-				circuit->GetTerrainManager()->CanMoveToPos(leader->GetArea(), commander->GetPos(frame)))
-			{
-				for (CCircuitUnit* unit : units) {
-					unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
-
-					unit->GetTravelAct()->StateWait();
-				}
-				return;
-			}
-		}
 	}
-	if (pPath->posPath.empty()) {  // should never happen
-		for (CCircuitUnit* unit : units) {
-			TRY_UNIT(circuit, unit,
-				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-			)
 
-			unit->GetTravelAct()->StateWait();
-		}
-	} else {
-		ActivePath();
+	const auto it = pathQueries.find(leader);
+	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
+	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
+		return;
 	}
+
+	if (target == nullptr) {
+		FallbackSafePos();
+		return;
+	}
+
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	query = pathfinder->CreatePathSingleQuery(
+			leader, circuit->GetThreatMap(), frame,
+			startPos, position, pathfinder->GetSquareSize());
+	pathQueries[leader] = query;
+
+	const CRefHolder thisHolder(this);
+	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+		if (this->IsQueryAlive(query)) {
+			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathSingle>(query));
+		}
+	});
 }
 
 void CAntiAirTask::OnUnitIdle(CCircuitUnit* unit)
@@ -256,7 +229,7 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 	const int frame = circuit->GetLastFrame();
 	static F3Vec ourPositions;  // NOTE: micro-opt
 	AIFloat3 startPos = leader->GetPos(frame);
-	circuit->GetMilitaryManager()->FillSafePos(startPos, leader->GetArea(), ourPositions);
+	circuit->GetMilitaryManager()->FillSafePos(leader, ourPositions);
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(leader, circuit->GetThreatMap(), circuit->GetLastFrame());
@@ -273,7 +246,6 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 			TRY_UNIT(circuit, unit,
 				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
-
 			unit->GetTravelAct()->StateWait();
 		}
 	}
@@ -323,12 +295,139 @@ void CAntiAirTask::FindTarget()
 	if (bestTarget != nullptr) {
 		position = target->GetPos();
 	}
-	AIFloat3 startPos = pos;
-	AIFloat3 endPos = position;
+	// Return: target, startPos=leader->pos, endPos=position
+}
+
+void CAntiAirTask::ProceedDisengage()
+{
+	const auto it = pathQueries.find(leader);
+	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
+	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
+		return;
+	}
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	const AIFloat3& startPos = leader->GetPos(frame);
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	pathfinder->SetMapData(leader, threatMap, circuit->GetLastFrame());
-	pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
+	query = pathfinder->CreatePathSingleQuery(
+			leader, circuit->GetThreatMap(), frame,
+			startPos, position, pathfinder->GetSquareSize());
+	pathQueries[leader] = query;
+
+	const CRefHolder thisHolder(this);
+	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+		if (this->IsQueryAlive(query)) {
+			this->ApplyDisengagePath(std::static_pointer_cast<CQueryPathSingle>(query));
+		}
+	});
+}
+
+void CAntiAirTask::ApplyDisengagePath(std::shared_ptr<CQueryPathSingle> query)
+{
+	pPath = query->GetPathInfo();
+
+	if (!pPath->path.empty()) {
+		if (pPath->path.size() > 2) {
+			ActivePath();
+		}
+		return;
+	}
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	for (CCircuitUnit* unit : units) {
+		TRY_UNIT(circuit, unit,
+			unit->CmdMoveTo(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		)
+		unit->GetTravelAct()->StateWait();
+	}
+	state = State::ROAM;
+}
+
+void CAntiAirTask::ApplyTargetPath(std::shared_ptr<CQueryPathSingle> query)
+{
+	pPath = query->GetPathInfo();
+
+	if (!pPath->posPath.empty()) {
+		ActivePath();
+		return;
+	}
+
+	Fallback();
+}
+
+void CAntiAirTask::FallbackSafePos()
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->GetMilitaryManager()->FillSafePos(leader, urgentPositions);
+	if (urgentPositions.empty()) {
+		FallbackCommPos();
+		return;
+	}
+
+	const int frame = circuit->GetLastFrame();
+	const AIFloat3& startPos = leader->GetPos(frame);
+	const float pathRange = DEFAULT_SLACK * 4;
+
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
+			leader, circuit->GetThreatMap(), frame,
+			startPos, pathRange, urgentPositions);
+	pathQueries[leader] = query;
+
+	const CRefHolder thisHolder(this);
+	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+		if (this->IsQueryAlive(query)) {
+			this->ApplySafePos(std::static_pointer_cast<CQueryPathMulti>(query));
+		}
+	});
+}
+
+void CAntiAirTask::ApplySafePos(std::shared_ptr<CQueryPathMulti> query)
+{
+	pPath = query->GetPathInfo();
+
+	if (!pPath->posPath.empty()) {
+		position = pPath->posPath.back();
+		ActivePath();
+		return;
+	}
+
+	FallbackCommPos();
+}
+
+void CAntiAirTask::FallbackCommPos()
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+	if ((commander != nullptr) &&
+		circuit->GetTerrainManager()->CanMoveToPos(leader->GetArea(), commander->GetPos(frame)))
+	{
+		// ApplyCommPos
+		for (CCircuitUnit* unit : units) {
+			unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
+			unit->GetTravelAct()->StateWait();
+		}
+		return;
+	}
+
+	Fallback();
+}
+
+void CAntiAirTask::Fallback()
+{
+	// should never happen
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	for (CCircuitUnit* unit : units) {
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		)
+		unit->GetTravelAct()->StateWait();
+	}
 }
 
 } // namespace circuit

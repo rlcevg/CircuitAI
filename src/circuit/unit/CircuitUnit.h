@@ -10,6 +10,7 @@
 
 #include "unit/ally/AllyUnit.h"
 #include "util/ActionList.h"
+#include "util/Defines.h"
 
 namespace springai {
 	class Weapon;
@@ -89,7 +90,7 @@ public:
 	bool HasDGun() const { return dgun != nullptr; }
 	bool HasWeapon() const { return weapon != nullptr; }
 	bool HasShield() const { return shield != nullptr; }
-	void ManualFire(CEnemyInfo* target, int timeOut);
+	void ManualFire(CEnemyInfo* target, int timeout);
 	bool IsDisarmed(int frame);
 	bool IsWeaponReady(int frame);
 	bool IsDGunReady(int frame);
@@ -101,6 +102,21 @@ public:
 	float GetBuildSpeed();
 	float GetDGunRange();
 	float GetHealthPercent();
+
+	void CmdRemove(std::vector<float>&& params, short options = 0);
+	void CmdMoveTo(const springai::AIFloat3& pos, short options = 0, int timeout = INT_MAX);
+	void CmdJumpTo(const springai::AIFloat3& pos, short options = 0, int timeout = INT_MAX);
+	void CmdAttackGround(const springai::AIFloat3& pos, short options = 0, int timeout = INT_MAX);
+	void CmdWantedSpeed(float speed = NO_SPEED_LIMIT);
+	void CmdSetTarget(CEnemyInfo* enemy);
+	void CmdCloak(bool state);
+	void CmdFireAtRadar(bool state);
+	void CmdFindPad(int timeout = INT_MAX);
+	void CmdManualFire(short options = 0, int timeout = INT_MAX);
+	void CmdPriority(float value);
+	void CmdMiscPriority(float value);
+	void CmdAirStrafe(float value);
+	void CmdTerraform(std::vector<float>&& params);
 
 	void Attack(CEnemyInfo* enemy, int timeout);
 	void Attack(const springai::AIFloat3& position, int timeout);

@@ -867,12 +867,14 @@ int CCircuitAI::Message(int playerId, const char* message)
 		LOG("%f, %f, %f, %i", dbgPos.x, dbgPos.y, dbgPos.z, pathfinder->GetDbgDef());
 	}
 	else if (strncmp(message, cmdEnd, 4) == 0) {
-		PathInfo path;
 		pathfinder->SetDbgType(atoi((const char*)&message[5]));
-		AIFloat3 startPos = pathfinder->GetDbgPos();
 		AIFloat3 endPos = map->GetMousePos();
-		pathfinder->SetMapData(GetThreatMap());
-		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
+		std::shared_ptr<IPathQuery> query = pathfinder->CreateDbgPathQuery(GetThreatMap(),
+				endPos, pathfinder->GetSquareSize());
+		if (query != nullptr) {
+			pathfinder->SetDbgQuery(query);
+			pathfinder->RunQuery(query);
+		}
 		LOG("%f, %f, %f, %i", endPos.x, endPos.y, endPos.z, pathfinder->GetDbgType());
 	}
 #endif
@@ -895,11 +897,9 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 		return 0;  // created by gadget
 	}
 	TRY_UNIT(this, unit,
-		unit->GetUnit()->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {0.0f});
+		unit->CmdFireAtRadar(true);
 //		if (unit->GetCircuitDef()->GetDef()->IsAbleToCloak()) {
-//			unit->GetUnit()->ExecuteCustomCommand(CMD_WANT_CLOAK, {1.0f});  // personal
-//			unit->GetUnit()->ExecuteCustomCommand(CMD_CLOAK_SHIELD, {1.0f});  // area
-//			unit->GetUnit()->Cloak(true);
+//			unit->CmdCloak(true);
 //		}
 	)
 	for (auto& module : modules) {
@@ -978,11 +978,9 @@ int CCircuitAI::UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId)
 
 	TRY_UNIT(this, unit,
 		unit->GetUnit()->Stop();
-		unit->GetUnit()->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {0.0f});
+		unit->CmdFireAtRadar(true);
 //		if (unit->GetCircuitDef()->GetDef()->IsAbleToCloak()) {
-//			unit->GetUnit()->ExecuteCustomCommand(CMD_WANT_CLOAK, {1.0f});  // personal
-//			unit->GetUnit()->ExecuteCustomCommand(CMD_CLOAK_SHIELD, {1.0f});  // area
-//			unit->GetUnit()->Cloak(true);
+//			unit->CmdCloak(true);
 //		}
 	)
 	for (auto& module : modules) {

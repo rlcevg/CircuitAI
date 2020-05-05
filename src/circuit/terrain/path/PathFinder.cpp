@@ -8,7 +8,7 @@
 
 #include "terrain/path/PathFinder.h"
 #include "terrain/path/QueryPathMulti.h"
-#include "terrain/path/QueryPathInfo.h"
+#include "terrain/path/QueryPathSingle.h"
 #include "terrain/path/QueryPathCost.h"
 #include "terrain/path/QueryCostMap.h"
 #include "terrain/TerrainData.h"
@@ -251,12 +251,12 @@ AIFloat3 CPathFinder::PathIndex2Pos(int index) const
 /*
  * radius is in full res.
  */
-std::shared_ptr<IPathQuery> CPathFinder::CreatePathInfoQuery(
+std::shared_ptr<IPathQuery> CPathFinder::CreatePathSingleQuery(
 		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
 		const AIFloat3& startPos, const AIFloat3& endPos, int radius, float maxThreat)
 {
-	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathInfo>(*this, MakeQueryId());
-	CQueryPathInfo* query = static_cast<CQueryPathInfo*>(pQuery.get());
+	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathSingle>(*this, MakeQueryId());
+	CQueryPathSingle* query = static_cast<CQueryPathSingle*>(pQuery.get());
 
 	FillMapData(query, unit, threatMap, frame);
 	query->InitQuery(startPos, endPos, radius, maxThreat);
@@ -313,7 +313,7 @@ void CPathFinder::RunQuery(std::shared_ptr<IPathQuery> query, PathFunc onComplet
 {
 	switch (query->GetType()) {
 		case IPathQuery::Type::SINGLE: {
-			RunPathInfo(query, onComplete);
+			RunPathSingle(query, onComplete);
 		} break;
 		case IPathQuery::Type::MULTI: {
 			RunPathMulti(query, onComplete);
@@ -658,7 +658,7 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 	query->Init(moveArray, threatArray, moveFun, threatFun, unit);
 }
 
-void CPathFinder::RunPathInfo(std::shared_ptr<IPathQuery> query, PathFunc onComplete)
+void CPathFinder::RunPathSingle(std::shared_ptr<IPathQuery> query, PathFunc onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
 	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query) {
@@ -666,7 +666,7 @@ void CPathFinder::RunPathInfo(std::shared_ptr<IPathQuery> query, PathFunc onComp
 	}
 	, [this, onComplete](std::shared_ptr<IPathQuery> query) {
 #ifdef DEBUG_VIS
-		this->UpdateVis(std::static_pointer_cast<CQueryPathInfo>(query)->GetPathInfo()->path);
+		this->UpdateVis(std::static_pointer_cast<CQueryPathSingle>(query)->GetPathInfo()->path);
 #endif
 		query->SetState(IPathQuery::State::READY);
 		if (onComplete != nullptr) {
@@ -722,7 +722,7 @@ void CPathFinder::RunCostMap(std::shared_ptr<IPathQuery> query, PathFunc onCompl
 
 void CPathFinder::MakePath(IPathQuery* query)
 {
-	CQueryPathInfo* q = static_cast<CQueryPathInfo*>(query);
+	CQueryPathSingle* q = static_cast<CQueryPathSingle*>(query);
 	q->Prepare();
 
 	const bool* canMoveArray = q->GetCanMoveArray();
@@ -930,11 +930,15 @@ void CPathFinder::MakeCostMap(IPathQuery* query)
 }
 
 #ifdef DEBUG_VIS
-void CPathFinder::SetMapData(CThreatMap* threatMap)
+std::shared_ptr<IPathQuery> CPathFinder::CreateDbgPathQuery(CThreatMap* threatMap,
+		const AIFloat3& endPos, int radius, float maxThreat)
 {
 	if ((dbgDef == nullptr) || (dbgType < 0) || (dbgType > 3)) {
-		return;
+		return nullptr;
 	}
+
+	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathSingle>(*this, MakeQueryId());
+	CQueryPathSingle* query = static_cast<CQueryPathSingle*>(pQuery.get());
 
 	STerrainMapMobileType::Id mobileTypeId = dbgDef->GetMobileId();
 	const float maxSlope = (mobileTypeId < 0) ? 1.f : areaData->mobileType[mobileTypeId].maxSlope;
@@ -951,11 +955,14 @@ void CPathFinder::SetMapData(CThreatMap* threatMap)
 	const CostFunc moveFun = [&sectors, maxSlope](int index) {
 		return sectors[index].maxSlope / maxSlope;
 	};
-	const CostFunc threatFun = [moveFun, threatArray](int index) {
+	const CostFunc threatFun = [threatArray](int index) {
 		return threatArray[index];
 	};
 
-	micropather->SetMapData(moveArray, threatArray, moveFun, threatFun, GetHeightMap());
+	query->Init(moveArray, threatArray, moveFun, threatFun);
+	query->InitQuery(dbgPos, endPos, radius, maxThreat);
+
+	return pQuery;
 }
 
 void CPathFinder::UpdateVis(const IndexVec& path)

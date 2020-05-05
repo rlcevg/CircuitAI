@@ -1,21 +1,21 @@
 /*
- * QueryPathInfo.h
+ * QueryPathSingle.h
  *
  *  Created on: Apr 26, 2020
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_TERRAIN_PATH_QUERYPATHINFO_H_
-#define SRC_CIRCUIT_TERRAIN_PATH_QUERYPATHINFO_H_
+#ifndef SRC_CIRCUIT_TERRAIN_PATH_QUERYPATHSINGLE_H_
+#define SRC_CIRCUIT_TERRAIN_PATH_QUERYPATHSINGLE_H_
 
 #include "terrain/path/PathQuery.h"
 
 namespace circuit {
 
-class CQueryPathInfo: public IPathQuery {
+class CQueryPathSingle: public IPathQuery {
 public:
-	CQueryPathInfo(const CPathFinder& pathfinder, int id);
-	virtual ~CQueryPathInfo();
+	CQueryPathSingle(const CPathFinder& pathfinder, int id);
+	virtual ~CQueryPathSingle();
 
 	void InitQuery(const springai::AIFloat3& startPos, const springai::AIFloat3& endPos,
 			float maxRange, float maxThreat);
@@ -48,4 +48,4 @@ private:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_TERRAIN_PATH_QUERYPATHINFO_H_
+#endif // SRC_CIRCUIT_TERRAIN_PATH_QUERYPATHSINGLE_H_

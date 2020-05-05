@@ -65,15 +65,14 @@ void IReclaimTask::Cancel()
 void IReclaimTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	Unit* u = unit->GetUnit();
 	TRY_UNIT(circuit, unit,
-		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+		unit->CmdPriority(ClampPriority());
 	)
 
 	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		TRY_UNIT(circuit, unit,
-			u->ReclaimUnit(target->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->ReclaimUnit(target->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 		)
 		return;
 	}
@@ -91,7 +90,7 @@ void IReclaimTask::Execute(CCircuitUnit* unit)
 		reclRadius = radius;
 	}
 	TRY_UNIT(circuit, unit,
-		u->ReclaimInArea(pos, reclRadius, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+		unit->GetUnit()->ReclaimInArea(pos, reclRadius, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 	)
 }
 

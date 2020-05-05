@@ -12,7 +12,7 @@
 #include "module/FactoryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/path/PathFinder.h"
-#include "terrain/path/QueryPathInfo.h"
+#include "terrain/path/QueryPathSingle.h"
 #include "terrain/TerrainManager.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/MoveAction.h"
@@ -54,9 +54,9 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 		int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 		TRY_UNIT(circuit, unit,
 			if (cdef->IsPlane()) {
-				unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, 0, frame);
+				unit->CmdFindPad(frame);
 			}
-			unit->GetUnit()->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, UNIT_COMMAND_OPTION_ALT_KEY, frame);
+			unit->CmdManualFire(UNIT_COMMAND_OPTION_ALT_KEY, frame);
 		)
 		return;
 	}
@@ -129,7 +129,7 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 	}
 
 //	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit) * 0.125f;
-	query = pathfinder->CreatePathInfoQuery(
+	query = pathfinder->CreatePathSingleQuery(
 			unit, circuit->GetThreatMap(), frame,
 			startPos, endPos, range/*, minThreat*/);
 	pathQueries[unit] = query;
@@ -137,7 +137,7 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 	const CRefHolder thisHolder(this);
 	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplyPathInfo(query);
+			this->ApplyPath(std::static_pointer_cast<CQueryPathSingle>(query));
 		}
 	});
 }
@@ -192,7 +192,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		}
 
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, 0, frame + FRAMES_PER_SEC * 60);
+			unit->CmdFindPad(frame + FRAMES_PER_SEC * 60);
 		)
 		state = State::REGROUP;
 		return;
@@ -209,7 +209,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 	if (unitPos.SqDistance2D(haven) > maxDist * maxDist) {
 		// TODO: push MoveAction into unit? to avoid enemy fire
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->MoveTo(haven, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 1);
+			unit->CmdMoveTo(haven, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 1);
 		)
 		// TODO: Add fail counter?
 	} else {
@@ -233,7 +233,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		};
 		pos = terrainManager->FindBuildSite(cdef, pos, maxDist, UNIT_COMMAND_BUILD_NO_FACING, predicate);
 		TRY_UNIT(circuit, unit,
-//			unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
+//			unit->CmdPriority(0);
 			unit->GetUnit()->PatrolTo(pos);
 		)
 
@@ -311,14 +311,13 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
 	}
 }
 
-void CRetreatTask::ApplyPathInfo(std::shared_ptr<IPathQuery> query)
+void CRetreatTask::ApplyPath(std::shared_ptr<CQueryPathSingle> query)
 {
-	std::shared_ptr<CQueryPathInfo> pQuery = std::static_pointer_cast<CQueryPathInfo>(query);
-	std::shared_ptr<PathInfo> pPath = pQuery->GetPathInfo();
-	CCircuitUnit* unit = pQuery->GetUnit();
+	std::shared_ptr<PathInfo> pPath = query->GetPathInfo();
+	CCircuitUnit* unit = query->GetUnit();
 
 	if (pPath->posPath.empty()) {
-		pPath->posPath.push_back(pQuery->GetEndPos());
+		pPath->posPath.push_back(query->GetEndPos());
 	}
 	unit->GetTravelAct()->SetPath(pPath);
 }
