@@ -100,7 +100,9 @@ void CAntiAirTask::Update()
 			if (position.SqDistance2D(leader->GetPos(frame)) < SQUARE(maxDist)) {
 				state = State::ROAM;
 			} else {
-				ProceedDisengage();
+				if (IsQueryReady(leader)) {
+					FallbackDisengage();
+				}
 				return;
 			}
 		} else {
@@ -169,9 +171,7 @@ void CAntiAirTask::Update()
 		}
 	}
 
-	const auto it = pathQueries.find(leader);
-	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
-	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
+	if (!IsQueryReady(leader)) {
 		return;
 	}
 
@@ -181,13 +181,13 @@ void CAntiAirTask::Update()
 	}
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	query = pathfinder->CreatePathSingleQuery(
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
 			leader, circuit->GetThreatMap(), frame,
 			startPos, position, pathfinder->GetSquareSize());
 	pathQueries[leader] = query;
 
-	const CRefHolder thisHolder(this);
-	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+//	query->HoldTask(this);
+	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathSingle>(query));
 		}
@@ -242,12 +242,7 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 		state = State::DISENGAGE;
 	} else {
 		position = circuit->GetSetupManager()->GetBasePos();
-		for (CCircuitUnit* unit : units) {
-			TRY_UNIT(circuit, unit,
-				unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-			)
-			unit->GetTravelAct()->StateWait();
-		}
+		Fallback();
 	}
 }
 
@@ -298,26 +293,20 @@ void CAntiAirTask::FindTarget()
 	// Return: target, startPos=leader->pos, endPos=position
 }
 
-void CAntiAirTask::ProceedDisengage()
+void CAntiAirTask::FallbackDisengage()
 {
-	const auto it = pathQueries.find(leader);
-	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
-	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
-		return;
-	}
-
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& startPos = leader->GetPos(frame);
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	query = pathfinder->CreatePathSingleQuery(
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
 			leader, circuit->GetThreatMap(), frame,
 			startPos, position, pathfinder->GetSquareSize());
 	pathQueries[leader] = query;
 
-	const CRefHolder thisHolder(this);
-	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+//	query->HoldTask(this);
+	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyDisengagePath(std::static_pointer_cast<CQueryPathSingle>(query));
 		}
@@ -352,10 +341,9 @@ void CAntiAirTask::ApplyTargetPath(std::shared_ptr<CQueryPathSingle> query)
 
 	if (!pPath->posPath.empty()) {
 		ActivePath();
-		return;
+	} else {
+		Fallback();
 	}
-
-	Fallback();
 }
 
 void CAntiAirTask::FallbackSafePos()
@@ -377,8 +365,8 @@ void CAntiAirTask::FallbackSafePos()
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
 
-	const CRefHolder thisHolder(this);
-	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+//	query->HoldTask(this);
+	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplySafePos(std::static_pointer_cast<CQueryPathMulti>(query));
 		}
@@ -392,10 +380,9 @@ void CAntiAirTask::ApplySafePos(std::shared_ptr<CQueryPathMulti> query)
 	if (!pPath->posPath.empty()) {
 		position = pPath->posPath.back();
 		ActivePath();
-		return;
+	} else {
+		FallbackCommPos();
 	}
-
-	FallbackCommPos();
 }
 
 void CAntiAirTask::FallbackCommPos()
@@ -419,7 +406,6 @@ void CAntiAirTask::FallbackCommPos()
 
 void CAntiAirTask::Fallback()
 {
-	// should never happen
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	for (CCircuitUnit* unit : units) {

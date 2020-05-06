@@ -33,6 +33,12 @@ IUnitTask::~IUnitTask()
 {
 }
 
+void IUnitTask::ClearRelease()
+{
+	pathQueries.clear();
+	Release();
+}
+
 bool IUnitTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	return true;
@@ -99,16 +105,20 @@ void IUnitTask::OnTravelEnd(CCircuitUnit* unit)
 {
 }
 
+bool IUnitTask::IsQueryReady(CCircuitUnit* unit) const
+{
+	const auto it = pathQueries.find(unit);
+	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
+	return (query == nullptr) || (IPathQuery::State::READY == query->GetState());
+}
+
 bool IUnitTask::IsQueryAlive(std::shared_ptr<IPathQuery> query) const
 {
 	if (isDead) {
 		return false;
 	}
 	const auto it = pathQueries.find(query->GetUnit());
-	if ((it == pathQueries.end()) || (it->second->GetId() != query->GetId())) {
-		return false;
-	}
-	return true;
+	return (it != pathQueries.end()) && (it->second->GetId() == query->GetId());
 }
 
 #define SERIALIZE(stream, func)	\
@@ -134,7 +144,7 @@ void IUnitTask::Save(std::ostream& os) const
 void IUnitTask::Log()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	circuit->LOG("type: %i | state: %i", type, state);
+	circuit->LOG("type: %i | state: %i | this: %i", type, state, this);
 }
 #endif
 

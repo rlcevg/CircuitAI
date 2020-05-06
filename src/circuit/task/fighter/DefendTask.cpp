@@ -158,13 +158,11 @@ void CDefendTask::Update()
 		}
 	}
 
-	const auto it = pathQueries.find(leader);
-	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
-	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
+	if (!IsQueryReady(leader)) {
 		return;
 	}
 
-	if (!isTargetsFound) {
+	if (!isTargetsFound) {  // enemyPositions.empty()
 		FallbackFrontPos();
 		return;
 	}
@@ -174,14 +172,13 @@ void CDefendTask::Update()
 	const float pathRange = std::max(highestRange - eps, eps);
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	query = pathfinder->CreatePathMultiQuery(
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
 			leader, threatMap, frame,
 			startPos, pathRange, enemyPositions);
 	pathQueries[leader] = query;
 
-	const CRefHolder thisHolder(this);
-	std::weak_ptr<IPathQuery> weakQuery(query);
-	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+//	query->HoldTask(this);
+	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathMulti>(query));
 		}
@@ -322,8 +319,8 @@ void CDefendTask::FallbackFrontPos()
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
 
-	const CRefHolder thisHolder(this);
-	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+//	query->HoldTask(this);
+	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyFrontPos(std::static_pointer_cast<CQueryPathMulti>(query));
 		}
@@ -359,8 +356,8 @@ void CDefendTask::FallbackBasePos()
 			startPos, endPos, pathRange);
 	pathQueries[leader] = query;
 
-	const CRefHolder thisHolder(this);
-	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+//	query->HoldTask(this);
+	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyBasePos(std::static_pointer_cast<CQueryPathSingle>(query));
 		}

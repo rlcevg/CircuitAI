@@ -97,12 +97,6 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 		return;
 	}
 
-	const auto it = pathQueries.find(unit);
-	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
-	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
-		return;
-	}
-
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
@@ -128,14 +122,18 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 		unit->GetTravelAct()->SetPath(pPath);
 	}
 
+	if (!IsQueryReady(unit)) {
+		return;
+	}
+
 //	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit) * 0.125f;
-	query = pathfinder->CreatePathSingleQuery(
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
 			unit, circuit->GetThreatMap(), frame,
 			startPos, endPos, range/*, minThreat*/);
 	pathQueries[unit] = query;
 
-	const CRefHolder thisHolder(this);
-	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+//	query->HoldTask(this);
+	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyPath(std::static_pointer_cast<CQueryPathSingle>(query));
 		}
@@ -251,17 +249,20 @@ void CRetreatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 	}
 	state = State::ROAM;
 
-	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
-	ITravelAction* travelAction;
-	CCircuitDef* cdef = unit->GetCircuitDef();
-	if (cdef->IsAbleToJump() && !cdef->IsAttrNoJump()) {
-		travelAction = new CJumpAction(unit, squareSize);
-	} else if (cdef->IsAttrRetFight()) {
-		travelAction = new CFightAction(unit, squareSize);
-	} else {
-		travelAction = new CMoveAction(unit, squareSize);
+	if (unit->GetTravelAct() == nullptr) {
+		// NOTE: IsAttrBoost units don't get travel action on AssignTo
+		int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
+		ITravelAction* travelAction;
+		CCircuitDef* cdef = unit->GetCircuitDef();
+		if (cdef->IsAbleToJump() && !cdef->IsAttrNoJump()) {
+			travelAction = new CJumpAction(unit, squareSize);
+		} else if (cdef->IsAttrRetFight()) {
+			travelAction = new CFightAction(unit, squareSize);
+		} else {
+			travelAction = new CMoveAction(unit, squareSize);
+		}
+		unit->PushTravelAct(travelAction);
 	}
-	unit->PushTravelAct(travelAction);
 
 	Start(unit);
 }

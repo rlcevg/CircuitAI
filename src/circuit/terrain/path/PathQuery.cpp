@@ -6,6 +6,7 @@
  */
 
 #include "terrain/path/PathQuery.h"
+//#include "task/UnitTask.h"
 
 namespace circuit {
 
@@ -18,11 +19,15 @@ IPathQuery::IPathQuery(const CPathFinder& pathfinder, int id, Type type)
 		, canMoveArray(nullptr)
 		, threatArray(nullptr)
 		, unit(nullptr)
+//		, taskHolder(nullptr)
 {
 }
 
 IPathQuery::~IPathQuery()
 {
+//	if (taskHolder != nullptr) {
+//		taskHolder->Release();
+//	}
 }
 
 void IPathQuery::Init(const bool* canMoveArray, const float* threatArray,
@@ -35,5 +40,11 @@ void IPathQuery::Init(const bool* canMoveArray, const float* threatArray,
 	this->threatFun = threatFun;
 	this->unit = unit;  // optional
 }
+
+//void IPathQuery::HoldTask(IUnitTask* task)
+//{
+//	taskHolder = task;
+//	taskHolder->AddRef();
+//}
 
 } // namespace circuit

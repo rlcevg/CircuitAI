@@ -28,7 +28,16 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 private:
-	void FindTarget();
+	bool FindTarget();
+	void ApplyTargetPath(std::shared_ptr<CQueryPathMulti> query);
+	void FallbackTargetEmpty();
+	void FallbackAttackSafe();
+	void ApplyAttackSafe(std::shared_ptr<CQueryPathMulti> query);
+	void FallbackStaticSafe();
+	void ApplyStaticSafe(std::shared_ptr<CQueryPathMulti> query);
+	void FallbackBasePos();
+	void ApplyBasePos(std::shared_ptr<CQueryPathSingle> query);
+	void FallbackCommPos();
 };
 
 } // namespace circuit

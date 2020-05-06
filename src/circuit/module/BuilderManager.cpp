@@ -215,7 +215,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 CBuilderManager::~CBuilderManager()
 {
 	for (IUnitTask* task : buildUpdates) {
-		task->Release();
+		task->ClearRelease();
 	}
 	for (auto& kv1 : buildChains) {
 		for (auto& kv2 : kv1.second) {

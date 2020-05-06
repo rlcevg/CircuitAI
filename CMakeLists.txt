@@ -18,13 +18,13 @@ set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils)
 #set(additionalCompileFlags "-Isrc/lib/ -Isrc/circuit/ -O1 -DDEBUG -DDEBUG_VIS -DDEBUG_LOG -Wall -Wextra -D_GLIBCXX_USE_CXX11_ABI=0")
 string(TOLOWER "${CMAKE_SYSTEM}" sys_lower)
 if (sys_lower MATCHES "arch")
-	set(additionalCompileFlags "-DDEBUG_VIS -Wall")
-#	set(additionalCompileFlags "-DDEBUG_LOG -Wall -fsanitize=address -fno-omit-frame-pointer -fno-common -O1 -fno-strict-aliasing")
+#	set(additionalCompileFlags "-DDEBUG_VIS -Wall")
+	set(additionalCompileFlags "-DDEBUG_LOG -Wall -fsanitize=address -fno-omit-frame-pointer -fno-common -O1 -fno-strict-aliasing")
 else ()
 	set(additionalCompileFlags "-Wall")
 endif ()
 
-#set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -lasan")
+set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -lasan")
 
 
 if    (CIRCUIT_AS_JIT)

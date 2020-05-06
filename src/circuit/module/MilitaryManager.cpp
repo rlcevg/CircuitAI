@@ -274,7 +274,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 CMilitaryManager::~CMilitaryManager()
 {
 	for (IUnitTask* task : fightUpdates) {
-		task->Release();
+		task->ClearRelease();
 	}
 }
 
@@ -896,35 +896,36 @@ void CMilitaryManager::FillFrontPos(CCircuitUnit* unit, F3Vec& outPositions)
 	}
 }
 
-void CMilitaryManager::FindAHSafePos(PathInfo& pPath, const AIFloat3& startPos, STerrainMapArea* area, float range)
+void CMilitaryManager::FillAttackSafePos(CCircuitUnit* unit, F3Vec& outPositions)
 {
-	static F3Vec ourPositions;  // NOTE: micro-opt
+	outPositions.clear();
 
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CPathFinder* pathfinder = circuit->GetPathfinder();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	const int frame = circuit->GetLastFrame();
 
-	/*
-	 * Check mobile groups
-	 */
+	STerrainMapArea* area = unit->GetArea();
+
 	const std::array<IFighterTask::FightType, 2> types = {IFighterTask::FightType::ATTACK, IFighterTask::FightType::DEFEND};
 	for (IFighterTask::FightType type : types) {
 		const std::set<IFighterTask*>& atkTasks = GetTasks(type);
 		for (IFighterTask* task : atkTasks) {
 			const AIFloat3& ourPos = static_cast<ISquadTask*>(task)->GetLeaderPos(frame);
-			if (terrainManager->CanMoveToPos(area, ourPos)) {
-				ourPositions.push_back(ourPos);
-			}
-		}
-
-		if (!ourPositions.empty()) {
-			pathfinder->FindBestPath(pPath, const_cast<AIFloat3&>(startPos), range, ourPositions);
-			ourPositions.clear();
-			if (!pPath.posPath.empty()) {
-				return;
+			if (terrainMgr->CanMoveToPos(area, ourPos)) {
+				outPositions.push_back(ourPos);
 			}
 		}
 	}
+}
+
+void CMilitaryManager::FillStaticSafePos(CCircuitUnit* unit, F3Vec& outPositions)
+{
+	outPositions.clear();
+
+	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	const int frame = circuit->GetLastFrame();
+
+	const AIFloat3& startPos = unit->GetPos(frame);
+	STerrainMapArea* area = unit->GetArea();
 
 	CDefenceMatrix* defMat = defence;
 	CMetalData::PointPredicate predicate = [defMat, terrainManager, area](const int index) {
@@ -936,27 +937,16 @@ void CMilitaryManager::FindAHSafePos(PathInfo& pPath, const AIFloat3& startPos, 
 		}
 		return false;
 	};
+
 	CMetalManager* metalManager = circuit->GetMetalManager();
 	int index = metalManager->FindNearestCluster(startPos, predicate);
+
 	if (index >= 0) {
 		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
 		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
-			ourPositions.push_back(defPoint.position);
-		}
-
-		pathfinder->FindBestPath(pPath, const_cast<AIFloat3&>(startPos), range, ourPositions);
-		ourPositions.clear();
-		if (!pPath.posPath.empty()) {
-			return;
+			outPositions.push_back(defPoint.position);
 		}
 	}
-
-	/*
-	 * Use base
-	 */
-	ourPositions.push_back(circuit->GetSetupManager()->GetBasePos());
-	pathfinder->FindBestPath(pPath, const_cast<AIFloat3&>(startPos), range, ourPositions);
-	ourPositions.clear();
 }
 
 void CMilitaryManager::FillSafePos(CCircuitUnit* unit, F3Vec& outPositions)

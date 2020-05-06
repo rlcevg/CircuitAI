@@ -231,7 +231,7 @@ void CCircuitUnit::CmdRemove(std::vector<float>&& params, short options)
 
 void CCircuitUnit::CmdMoveTo(const AIFloat3& pos, short options, int timeout)
 {
-//	unit->MoveTo(toPos, options, timeout);
+//	unit->MoveTo(pos, options, timeout);
 	unit->ExecuteCustomCommand(CMD_RAW_MOVE, {pos.x, pos.y, pos.z}, options, timeout);
 }
 

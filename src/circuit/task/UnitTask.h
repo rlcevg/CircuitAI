@@ -37,8 +37,9 @@ public:
 
 protected:
 	IUnitTask(ITaskManager* mgr, Priority priority, Type type, int timeout);
-public:
 	virtual ~IUnitTask();
+public:
+	void ClearRelease();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const;
 	virtual void AssignTo(CCircuitUnit* unit);
@@ -72,6 +73,7 @@ public:
 	bool IsDead() const { return isDead; }
 
 protected:
+	bool IsQueryReady(CCircuitUnit* unit) const;
 	bool IsQueryAlive(std::shared_ptr<IPathQuery> query) const;
 
 public:
@@ -86,7 +88,7 @@ protected:
 	Priority priority;
 	Type type;
 	State state;
-	std::map<CCircuitUnit*, std::shared_ptr<IPathQuery>> pathQueries;
+	std::map<CCircuitUnit*, std::shared_ptr<IPathQuery>> pathQueries;  // IPathQuery owner
 
 	int lastTouched;
 	int timeout;

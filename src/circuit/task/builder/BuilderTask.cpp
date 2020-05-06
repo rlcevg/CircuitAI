@@ -453,20 +453,18 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 		return;
 	}
 
-	const auto it = pathQueries.find(unit);
-	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
-	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
+	if (!IsQueryReady(unit)) {
 		return;
 	}
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	query = pathfinder->CreatePathSingleQuery(
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
 			unit, circuit->GetThreatMap(), frame,
 			startPos, endPos, range);
 	pathQueries[unit] = query;
 
-	const CRefHolder thisHolder(this);
-	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+//	query->HoldTask(this);
+	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyPath(std::static_pointer_cast<CQueryPathSingle>(query));
 		}

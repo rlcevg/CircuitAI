@@ -47,6 +47,11 @@ protected:
 	std::shared_ptr<PathInfo> pPath;
 
 	int groupFrame;
+
+#ifdef DEBUG_VIS
+public:
+	virtual void Log() override;
+#endif
 };
 
 } // namespace circuit

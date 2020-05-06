@@ -65,7 +65,7 @@ public:
 	/*
 	 * Run concurrent pathfinder, finalize on complete at main thread
 	 */
-	void RunPathTask(std::shared_ptr<IPathQuery> query, PathFunc task, PathFunc onComplete = nullptr);
+	void RunPathTask(std::shared_ptr<IPathQuery> query, PathFunc&& task, PathFunc&& onComplete = nullptr);
 
 	/*
 	 * Remove scheduled task from queue
@@ -134,8 +134,8 @@ private:
 
 	struct PathTask {
 		PathTask(std::weak_ptr<CScheduler> scheduler, std::shared_ptr<IPathQuery> query,
-				PathFunc task, PathFunc onComplete)
-			: scheduler(scheduler), query(query), task(task), onComplete(onComplete) {}
+				PathFunc&& task, PathFunc&& onComplete)
+			: scheduler(scheduler), query(query), task(std::move(task)), onComplete(std::move(onComplete)) {}
 		std::weak_ptr<CScheduler> scheduler;
 		std::weak_ptr<IPathQuery> query;
 		PathFunc task;
@@ -144,10 +144,10 @@ private:
 	static CMultiQueue<PathTask> pathTasks;
 
 	struct PathedTask {
-		PathedTask(PathFunc func)
-			: onComplete(func) {}
+		PathedTask(PathFunc&& func)
+			: onComplete(std::move(func)) {}
 		PathedTask(const PathTask& pathTask)
-			: query(pathTask.query), onComplete(pathTask.onComplete) {}
+			: query(pathTask.query), onComplete(std::move(pathTask.onComplete)) {}
 		std::weak_ptr<IPathQuery> query;
 		PathFunc onComplete;
 	};

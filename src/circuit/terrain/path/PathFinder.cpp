@@ -309,20 +309,20 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateCostMapQuery(
 	return pQuery;
 }
 
-void CPathFinder::RunQuery(std::shared_ptr<IPathQuery> query, PathFunc onComplete)
+void CPathFinder::RunQuery(std::shared_ptr<IPathQuery> query, PathFunc&& onComplete)
 {
 	switch (query->GetType()) {
 		case IPathQuery::Type::SINGLE: {
-			RunPathSingle(query, onComplete);
+			RunPathSingle(query, std::move(onComplete));
 		} break;
 		case IPathQuery::Type::MULTI: {
-			RunPathMulti(query, onComplete);
+			RunPathMulti(query, std::move(onComplete));
 		} break;
 		case IPathQuery::Type::COST: {
-			RunPathCost(query, onComplete);
+			RunPathCost(query, std::move(onComplete));
 		} break;
 		case IPathQuery::Type::MAP: {
-			RunCostMap(query, onComplete);
+			RunCostMap(query, std::move(onComplete));
 		} break;
 		default: break;
 	}
@@ -658,7 +658,7 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 	query->Init(moveArray, threatArray, moveFun, threatFun, unit);
 }
 
-void CPathFinder::RunPathSingle(std::shared_ptr<IPathQuery> query, PathFunc onComplete)
+void CPathFinder::RunPathSingle(std::shared_ptr<IPathQuery> query, PathFunc&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
 	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query) {
@@ -675,7 +675,7 @@ void CPathFinder::RunPathSingle(std::shared_ptr<IPathQuery> query, PathFunc onCo
 	});
 }
 
-void CPathFinder::RunPathMulti(std::shared_ptr<IPathQuery> query, PathFunc onComplete)
+void CPathFinder::RunPathMulti(std::shared_ptr<IPathQuery> query, PathFunc&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
 	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query) {
@@ -692,7 +692,7 @@ void CPathFinder::RunPathMulti(std::shared_ptr<IPathQuery> query, PathFunc onCom
 	});
 }
 
-void CPathFinder::RunPathCost(std::shared_ptr<IPathQuery> query, PathFunc onComplete)
+void CPathFinder::RunPathCost(std::shared_ptr<IPathQuery> query, PathFunc&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
 	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query) {
@@ -706,7 +706,7 @@ void CPathFinder::RunPathCost(std::shared_ptr<IPathQuery> query, PathFunc onComp
 	});
 }
 
-void CPathFinder::RunCostMap(std::shared_ptr<IPathQuery> query, PathFunc onComplete)
+void CPathFinder::RunCostMap(std::shared_ptr<IPathQuery> query, PathFunc&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
 	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query) {

@@ -69,7 +69,7 @@ public:
 	std::shared_ptr<IPathQuery> CreateCostMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos);
 
-	void RunQuery(std::shared_ptr<IPathQuery> query, PathFunc onComplete = nullptr);
+	void RunQuery(std::shared_ptr<IPathQuery> query, PathFunc&& onComplete = nullptr);
 
 	// FIXME: Remove
 	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
@@ -101,10 +101,10 @@ private:
 	int MakeQueryId() { return queryId++; }
 	void FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, int frame);
 
-	void RunPathSingle(std::shared_ptr<IPathQuery> query, PathFunc onComplete = nullptr);
-	void RunPathMulti(std::shared_ptr<IPathQuery> query, PathFunc onComplete = nullptr);
-	void RunPathCost(std::shared_ptr<IPathQuery> query, PathFunc onComplete = nullptr);
-	void RunCostMap(std::shared_ptr<IPathQuery> query, PathFunc onComplete = nullptr);
+	void RunPathSingle(std::shared_ptr<IPathQuery> query, PathFunc&& onComplete = nullptr);
+	void RunPathMulti(std::shared_ptr<IPathQuery> query, PathFunc&& onComplete = nullptr);
+	void RunPathCost(std::shared_ptr<IPathQuery> query, PathFunc&& onComplete = nullptr);
+	void RunCostMap(std::shared_ptr<IPathQuery> query, PathFunc&& onComplete = nullptr);
 
 	void MakePath(IPathQuery* query);
 	void FindBestPath(IPathQuery* query);

@@ -119,13 +119,11 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		return;
 	}
 
-	const auto it = pathQueries.find(unit);
-	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
-	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
+	if (!IsQueryReady(unit)) {
 		return;
 	}
 
-	if (!isTargetsFound) {
+	if (!isTargetsFound) {  // enemyPositions.empty()
 		FallbackScout(unit, isUpdating);
 		return;
 	}
@@ -137,13 +135,13 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 								 /*unit->IsUnderWater(frame) ? cdef->GetSonarRadius() : */cdef->GetLosRadius());
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	query = pathfinder->CreatePathMultiQuery(
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
 			unit, threatMap, frame,
 			startPos, range * 0.5f, enemyPositions, attackPower);
 	pathQueries[unit] = query;
 
-	const CRefHolder thisHolder(this);
-	pathfinder->RunQuery(query, [this, thisHolder, isUpdating](std::shared_ptr<IPathQuery> query) {
+//	query->HoldTask(this);
+	pathfinder->RunQuery(query, [this, isUpdating](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathMulti>(query), isUpdating);
 		}
@@ -307,8 +305,8 @@ void CScoutTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 			startPos, endPos, pathfinder->GetSquareSize());
 	pathQueries[unit] = query;
 
-	const CRefHolder thisHolder(this);
-	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+//	query->HoldTask(this);
+	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyScoutPath(std::static_pointer_cast<CQueryPathSingle>(query));
 		}

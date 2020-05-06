@@ -188,13 +188,11 @@ void CRaidTask::Update()
 		return;
 	}
 
-	const auto it = pathQueries.find(leader);
-	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
-	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
+	if (!IsQueryReady(leader)) {
 		return;
 	}
 
-	if (!isTargetsFound) {
+	if (!isTargetsFound) {  // urgentPositions.empty() && enemyPositions.empty()
 		FallbackRaid();
 		return;
 	}
@@ -205,13 +203,13 @@ void CRaidTask::Update()
 	const float pathRange = std::max(std::min(cdef->GetMaxRange(), cdef->GetLosRadius()), (float)threatMap->GetSquareSize());
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	query = pathfinder->CreatePathMultiQuery(
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
 			leader, threatMap, frame,
 			startPos, pathRange, !urgentPositions.empty() ? urgentPositions : enemyPositions, attackPower);
 	pathQueries[leader] = query;
 
-	const CRefHolder thisHolder(this);
-	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+//	query->HoldTask(this);
+	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathMulti>(query));
 		}
@@ -416,8 +414,8 @@ void CRaidTask::FallbackRaid()
 			startPos, endPos, pathfinder->GetSquareSize());
 	pathQueries[leader] = query;
 
-	const CRefHolder thisHolder(this);
-	pathfinder->RunQuery(query, [this, thisHolder](std::shared_ptr<IPathQuery> query) {
+//	query->HoldTask(this);
+	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyRaidPath(std::static_pointer_cast<CQueryPathSingle>(query));
 		}

@@ -29,7 +29,7 @@ public:
 
 private:
 	void FindTarget();
-	void ProceedDisengage();
+	void FallbackDisengage();
 	void ApplyDisengagePath(std::shared_ptr<CQueryPathSingle> query);
 	void ApplyTargetPath(std::shared_ptr<CQueryPathSingle> query);
 	void FallbackSafePos();

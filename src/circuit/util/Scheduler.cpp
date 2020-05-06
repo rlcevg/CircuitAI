@@ -139,14 +139,14 @@ void CScheduler::RunParallelTask(std::shared_ptr<CGameTask> task, std::shared_pt
 	workTasks.Push({self, task, onComplete});
 }
 
-void CScheduler::RunPathTask(std::shared_ptr<IPathQuery> query, PathFunc task, PathFunc onComplete)
+void CScheduler::RunPathTask(std::shared_ptr<IPathQuery> query, PathFunc&& task, PathFunc&& onComplete)
 {
 	if (!workerRunning.load()) {
 		workerRunning = true;
 		workerThread = spring::thread(&CScheduler::WorkerThread);
 		patherThread = spring::thread(&CScheduler::PatherThread);
 	}
-	pathTasks.Push({self, query, task, onComplete});
+	pathTasks.Push({self, query, std::move(task), std::move(onComplete)});
 }
 
 void CScheduler::RemoveTask(std::shared_ptr<CGameTask>& task)

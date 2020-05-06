@@ -233,7 +233,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 CFactoryManager::~CFactoryManager()
 {
 	for (IUnitTask* task : updateTasks) {
-		task->Release();
+		task->ClearRelease();
 	}
 }
 

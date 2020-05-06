@@ -282,4 +282,15 @@ void ISquadTask::ActivePath(float speed)
 	}
 }
 
+#ifdef DEBUG_VIS
+void ISquadTask::Log()
+{
+	IFighterTask::Log();
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->LOG("pPath: %i | size: %i | TravelAct: %i", pPath.get(), pPath ? pPath->posPath.size() : 0,
+			leader->GetTravelAct()->GetState());
+}
+#endif
+
 } // namespace circuit
