@@ -1307,7 +1307,7 @@ void CFactoryManager::UpdateFactory()
 		if (task->IsDead()) {
 			updateTasks[updateIterator] = updateTasks.back();
 			updateTasks.pop_back();
-			task->Release();  // delete task;
+			task->ClearRelease();  // delete task;
 		} else {
 			int frame = task->GetLastTouched();
 			int timeout = task->GetTimeout();

@@ -238,8 +238,8 @@ void CAntiHeavyTask::Update()
 			leader, circuit->GetThreatMap(), frame,
 			startPos, pathfinder->GetSquareSize(), enemyPositions);
 	pathQueries[leader] = query;
+	query->HoldTask(this);
 
-//	query->HoldTask(this);
 	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathMulti>(query));
@@ -395,8 +395,8 @@ void CAntiHeavyTask::FallbackAttackSafe()
 			leader, circuit->GetThreatMap(), frame,
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
+	query->HoldTask(this);
 
-//	query->HoldTask(this);
 	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyAttackSafe(std::static_pointer_cast<CQueryPathMulti>(query));
@@ -434,8 +434,8 @@ void CAntiHeavyTask::FallbackStaticSafe()
 			leader, circuit->GetThreatMap(), frame,
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
+	query->HoldTask(this);
 
-//	query->HoldTask(this);
 	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyStaticSafe(std::static_pointer_cast<CQueryPathMulti>(query));
@@ -471,8 +471,8 @@ void CAntiHeavyTask::FallbackBasePos()
 			leader, circuit->GetThreatMap(), frame,
 			startPos, position, pathRange);
 	pathQueries[leader] = query;
+	query->HoldTask(this);
 
-//	query->HoldTask(this);
 	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyBasePos(std::static_pointer_cast<CQueryPathSingle>(query));

@@ -185,8 +185,8 @@ void CAntiAirTask::Update()
 			leader, circuit->GetThreatMap(), frame,
 			startPos, position, pathfinder->GetSquareSize());
 	pathQueries[leader] = query;
+	query->HoldTask(this);
 
-//	query->HoldTask(this);
 	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathSingle>(query));
@@ -304,8 +304,8 @@ void CAntiAirTask::FallbackDisengage()
 			leader, circuit->GetThreatMap(), frame,
 			startPos, position, pathfinder->GetSquareSize());
 	pathQueries[leader] = query;
+	query->HoldTask(this);
 
-//	query->HoldTask(this);
 	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyDisengagePath(std::static_pointer_cast<CQueryPathSingle>(query));
@@ -364,8 +364,8 @@ void CAntiAirTask::FallbackSafePos()
 			leader, circuit->GetThreatMap(), frame,
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
+	query->HoldTask(this);
 
-//	query->HoldTask(this);
 	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplySafePos(std::static_pointer_cast<CQueryPathMulti>(query));

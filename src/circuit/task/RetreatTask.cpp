@@ -131,8 +131,8 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 			unit, circuit->GetThreatMap(), frame,
 			startPos, endPos, range/*, minThreat*/);
 	pathQueries[unit] = query;
+	query->HoldTask(this);
 
-//	query->HoldTask(this);
 	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyPath(std::static_pointer_cast<CQueryPathSingle>(query));

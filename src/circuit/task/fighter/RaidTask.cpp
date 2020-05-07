@@ -207,8 +207,8 @@ void CRaidTask::Update()
 			leader, threatMap, frame,
 			startPos, pathRange, !urgentPositions.empty() ? urgentPositions : enemyPositions, attackPower);
 	pathQueries[leader] = query;
+	query->HoldTask(this);
 
-//	query->HoldTask(this);
 	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathMulti>(query));
@@ -413,8 +413,8 @@ void CRaidTask::FallbackRaid()
 			leader, threatMap, frame,
 			startPos, endPos, pathfinder->GetSquareSize());
 	pathQueries[leader] = query;
+	query->HoldTask(this);
 
-//	query->HoldTask(this);
 	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyRaidPath(std::static_pointer_cast<CQueryPathSingle>(query));

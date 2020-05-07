@@ -8,6 +8,8 @@
 #ifndef SRC_CIRCUIT_SCRIPT_REFCOUNTER_H_
 #define SRC_CIRCUIT_SCRIPT_REFCOUNTER_H_
 
+#include <atomic>
+
 namespace circuit {
 
 /*
@@ -26,7 +28,7 @@ public:
 	int GetRefCount();
 
 private:
-	int refCount;
+	std::atomic<int> refCount;
 };
 
 } // namespace circuit

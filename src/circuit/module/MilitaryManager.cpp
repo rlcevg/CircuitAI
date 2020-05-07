@@ -1360,7 +1360,7 @@ void CMilitaryManager::UpdateFight()
 		if (task->IsDead()) {
 			fightUpdates[fightIterator] = fightUpdates.back();
 			fightUpdates.pop_back();
-			task->Release();  // delete task;
+			task->ClearRelease();  // delete task;
 		} else {
 			task->Update();
 			++fightIterator;

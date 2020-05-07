@@ -1255,7 +1255,7 @@ void CBuilderManager::UpdateBuild()
 		if (task->IsDead()) {
 			buildUpdates[buildIterator] = buildUpdates.back();
 			buildUpdates.pop_back();
-			task->Release();  // delete task;
+			task->ClearRelease();  // delete task;
 		} else {
 			int frame = task->GetLastTouched();
 			int timeout = task->GetTimeout();
