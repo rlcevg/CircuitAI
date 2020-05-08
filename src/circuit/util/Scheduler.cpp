@@ -10,10 +10,13 @@
 
 namespace circuit {
 
+#define MAX_JOB_THREADS		4
+
 CMultiQueue<CScheduler::WorkTask> CScheduler::workTasks;
 CMultiQueue<CScheduler::PathTask> CScheduler::pathTasks;
 spring::thread CScheduler::workerThread;
-spring::thread CScheduler::patherThread;
+std::vector<spring::thread> CScheduler::patherThreads;
+int CScheduler::maxPathThreads = 1;
 std::atomic<bool> CScheduler::workerRunning(false);
 unsigned int CScheduler::counterInstance = 0;
 
@@ -21,6 +24,10 @@ CScheduler::CScheduler()
 		: lastFrame(-1)
 		, isProcessing(false)
 {
+	if (counterInstance == 0) {
+		int maxThreads = spring::thread::hardware_concurrency();
+		maxPathThreads = utils::clamp(maxThreads - 2, 1, MAX_JOB_THREADS);
+	}
 	counterInstance++;
 }
 
@@ -62,10 +69,37 @@ void CScheduler::Release()
 		if (workerThread.joinable()) {
 			workerThread.join();
 		}
-		pathTasks.Push({self, nullptr, nullptr, nullptr});
-		if (patherThread.joinable()) {
-			patherThread.join();
+		workTasks.Clear();
+
+		for (unsigned int i = 0; i < patherThreads.size(); ++i) {
+			pathTasks.Push({self, nullptr, nullptr, nullptr});
 		}
+		for (std::thread& t : patherThreads) {
+			if (t.joinable()) {
+				t.join();
+			}
+		}
+		patherThreads.clear();
+		pathTasks.Clear();
+	}
+
+	finishTasks.Clear();
+	pathedTasks.Clear();
+}
+
+void CScheduler::StartThreads()
+{
+	if (workerRunning.load()) {
+		return;
+	}
+	workerRunning = true;
+
+	workerThread = spring::thread(&CScheduler::WorkerThread);
+
+	assert(patherThreads.empty());
+	for (int i = 0; i < maxPathThreads; ++i) {
+		std::thread t = spring::thread(&CScheduler::PatherThread, i);
+		patherThreads.push_back(std::move(t));
 	}
 }
 
@@ -131,21 +165,13 @@ void CScheduler::ProcessTasks(int frame)
 
 void CScheduler::RunParallelTask(std::shared_ptr<CGameTask> task, std::shared_ptr<CGameTask> onComplete)
 {
-	if (!workerRunning.load()) {
-		workerRunning = true;
-		workerThread = spring::thread(&CScheduler::WorkerThread);
-		patherThread = spring::thread(&CScheduler::PatherThread);
-	}
+	StartThreads();
 	workTasks.Push({self, task, onComplete});
 }
 
-void CScheduler::RunPathTask(std::shared_ptr<IPathQuery> query, PathFunc&& task, PathFunc&& onComplete)
+void CScheduler::RunPathTask(std::shared_ptr<IPathQuery> query, PathFunc&& task, PathedFunc&& onComplete)
 {
-	if (!workerRunning.load()) {
-		workerRunning = true;
-		workerThread = spring::thread(&CScheduler::WorkerThread);
-		patherThread = spring::thread(&CScheduler::PatherThread);
-	}
+	StartThreads();
 	pathTasks.Push({self, query, std::move(task), std::move(onComplete)});
 }
 
@@ -176,13 +202,13 @@ void CScheduler::WorkerThread()
 	}
 }
 
-void CScheduler::PatherThread()
+void CScheduler::PatherThread(int num)
 {
 	PathTask container = pathTasks.Pop();
 	while (workerRunning.load()) {
 		std::shared_ptr<IPathQuery> query = container.query.lock();
 		if (query != nullptr) {
-			container.task(query);
+			container.task(query, num);
 			if (container.onComplete != nullptr) {
 				std::shared_ptr<CScheduler> scheduler = container.scheduler.lock();
 				if (scheduler != nullptr) {

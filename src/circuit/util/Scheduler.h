@@ -31,6 +31,7 @@ public:
 
 private:
 	void Release();
+	void StartThreads();
 
 public:
 	/*
@@ -65,7 +66,7 @@ public:
 	/*
 	 * Run concurrent pathfinder, finalize on complete at main thread
 	 */
-	void RunPathTask(std::shared_ptr<IPathQuery> query, PathFunc&& task, PathFunc&& onComplete = nullptr);
+	void RunPathTask(std::shared_ptr<IPathQuery> query, PathFunc&& task, PathedFunc&& onComplete = nullptr);
 
 	/*
 	 * Remove scheduled task from queue
@@ -85,6 +86,8 @@ public:
 	void RunOnRelease(std::shared_ptr<CGameTask> task) {
 		releaseTasks.push_back(task);
 	}
+
+	int GetMaxPathThreads() const { return maxPathThreads; }
 
 private:
 	std::weak_ptr<CScheduler> self;
@@ -134,22 +137,22 @@ private:
 
 	struct PathTask {
 		PathTask(std::weak_ptr<CScheduler> scheduler, std::shared_ptr<IPathQuery> query,
-				PathFunc&& task, PathFunc&& onComplete)
+				PathFunc&& task, PathedFunc&& onComplete)
 			: scheduler(scheduler), query(query), task(std::move(task)), onComplete(std::move(onComplete)) {}
 		std::weak_ptr<CScheduler> scheduler;
 		std::weak_ptr<IPathQuery> query;
 		PathFunc task;
-		PathFunc onComplete;
+		PathedFunc onComplete;
 	};
 	static CMultiQueue<PathTask> pathTasks;
 
 	struct PathedTask {
-		PathedTask(PathFunc&& func)
+		PathedTask(PathedFunc&& func)
 			: onComplete(std::move(func)) {}
 		PathedTask(const PathTask& pathTask)
 			: query(pathTask.query), onComplete(std::move(pathTask.onComplete)) {}
 		std::weak_ptr<IPathQuery> query;
-		PathFunc onComplete;
+		PathedFunc onComplete;
 	};
 	CMultiQueue<PathedTask> pathedTasks;  // onComplete
 
@@ -157,12 +160,13 @@ private:
 	std::vector<std::shared_ptr<CGameTask>> releaseTasks;
 
 	static spring::thread workerThread;
-	static spring::thread patherThread;
+	static std::vector<spring::thread> patherThreads;
+	static int maxPathThreads;
 	static std::atomic<bool> workerRunning;
 	static unsigned int counterInstance;
 
 	static void WorkerThread();
-	static void PatherThread();
+	static void PatherThread(int num);
 };
 
 } // namespace circuit

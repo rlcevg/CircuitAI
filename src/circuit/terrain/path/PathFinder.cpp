@@ -59,8 +59,14 @@ CPathFinder::CPathFinder(std::shared_ptr<CScheduler> scheduler, CTerrainData* te
 	moveMapYSize = pathMapYSize + 2;  // +2 for passable edges
 	micropather  = new CMicroPather(*this, pathMapXSize, pathMapYSize,
 			terrainData->GetMap()->GetWidth());
-	micropather_thread = new CMicroPather(*this, pathMapXSize, pathMapYSize,
-			terrainData->GetMap()->GetWidth());
+
+	int numThreads = scheduler->GetMaxPathThreads();
+	micropathers.reserve(numThreads);
+	for (int i = 0; i < numThreads; ++i) {
+		NSMicroPather::CMicroPather* micropather = new CMicroPather(*this, pathMapXSize, pathMapYSize,
+				terrainData->GetMap()->GetWidth());
+		micropathers.push_back(micropather);
+	}
 
 	areaData = terrainData->pAreaData.load();
 	const std::vector<STerrainMapMobileType>& moveTypes = areaData->mobileType;
@@ -128,7 +134,9 @@ CPathFinder::~CPathFinder()
 	}
 	delete[] airMoveArray;
 	delete micropather;
-	delete micropather_thread;
+	for (NSMicroPather::CMicroPather* micropather : micropathers) {
+		delete micropather;
+	}
 }
 
 void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
@@ -309,7 +317,7 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateCostMapQuery(
 	return pQuery;
 }
 
-void CPathFinder::RunQuery(std::shared_ptr<IPathQuery> query, PathFunc&& onComplete)
+void CPathFinder::RunQuery(std::shared_ptr<IPathQuery> query, PathedFunc&& onComplete)
 {
 	switch (query->GetType()) {
 		case IPathQuery::Type::SINGLE: {
@@ -658,11 +666,11 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 	query->Init(moveArray, threatArray, moveFun, threatFun, unit);
 }
 
-void CPathFinder::RunPathSingle(std::shared_ptr<IPathQuery> query, PathFunc&& onComplete)
+void CPathFinder::RunPathSingle(std::shared_ptr<IPathQuery> query, PathedFunc&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query) {
-		this->MakePath(query.get());
+	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query, int threadNum) {
+		this->MakePath(query.get(), micropathers[threadNum]);
 	}
 	, [this, onComplete](std::shared_ptr<IPathQuery> query) {
 #ifdef DEBUG_VIS
@@ -675,11 +683,11 @@ void CPathFinder::RunPathSingle(std::shared_ptr<IPathQuery> query, PathFunc&& on
 	});
 }
 
-void CPathFinder::RunPathMulti(std::shared_ptr<IPathQuery> query, PathFunc&& onComplete)
+void CPathFinder::RunPathMulti(std::shared_ptr<IPathQuery> query, PathedFunc&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query) {
-		this->FindBestPath(query.get());
+	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query, int threadNum) {
+		this->FindBestPath(query.get(), micropathers[threadNum]);
 	}
 	, [this, onComplete](std::shared_ptr<IPathQuery> query) {
 #ifdef DEBUG_VIS
@@ -692,11 +700,11 @@ void CPathFinder::RunPathMulti(std::shared_ptr<IPathQuery> query, PathFunc&& onC
 	});
 }
 
-void CPathFinder::RunPathCost(std::shared_ptr<IPathQuery> query, PathFunc&& onComplete)
+void CPathFinder::RunPathCost(std::shared_ptr<IPathQuery> query, PathedFunc&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query) {
-		this->PathCost(query.get());
+	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query, int threadNum) {
+		this->PathCost(query.get(), micropathers[threadNum]);
 	}
 	, [onComplete](std::shared_ptr<IPathQuery> query) {
 		query->SetState(IPathQuery::State::READY);
@@ -706,11 +714,11 @@ void CPathFinder::RunPathCost(std::shared_ptr<IPathQuery> query, PathFunc&& onCo
 	});
 }
 
-void CPathFinder::RunCostMap(std::shared_ptr<IPathQuery> query, PathFunc&& onComplete)
+void CPathFinder::RunCostMap(std::shared_ptr<IPathQuery> query, PathedFunc&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query) {
-		this->MakeCostMap(query.get());
+	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query, int threadNum) {
+		this->MakeCostMap(query.get(), micropathers[threadNum]);
 	}
 	, [onComplete](std::shared_ptr<IPathQuery> query) {
 		query->SetState(IPathQuery::State::READY);
@@ -720,7 +728,7 @@ void CPathFinder::RunCostMap(std::shared_ptr<IPathQuery> query, PathFunc&& onCom
 	});
 }
 
-void CPathFinder::MakePath(IPathQuery* query)
+void CPathFinder::MakePath(IPathQuery* query, NSMicroPather::CMicroPather* micropather)
 {
 	CQueryPathSingle* q = static_cast<CQueryPathSingle*>(query);
 	q->Prepare();
@@ -744,15 +752,15 @@ void CPathFinder::MakePath(IPathQuery* query)
 	CTerrainData::CorrectPosition(startPos);
 	CTerrainData::CorrectPosition(endPos);
 
-	micropather_thread->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
-	if (micropather_thread->FindBestPathToPointOnRadius(Pos2MoveNode(startPos), Pos2MoveNode(endPos),
+	micropather->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
+	if (micropather->FindBestPathToPointOnRadius(Pos2MoveNode(startPos), Pos2MoveNode(endPos),
 			radius, maxThreat, &iPath.path, &pathCost) == CMicroPather::SOLVED)
 	{
-		micropather_thread->FillPathInfo(iPath);
+		micropather->FillPathInfo(iPath);
 	}
 }
 
-void CPathFinder::FindBestPath(IPathQuery* query)
+void CPathFinder::FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* micropather)
 {
 	CQueryPathMulti* q = static_cast<CQueryPathMulti*>(query);
 	q->Prepare();
@@ -860,7 +868,7 @@ void CPathFinder::FindBestPath(IPathQuery* query)
 
 		CTerrainData::CorrectPosition(f);
 		void* node = Pos2MoveNode(f);
-		NSMicroPather::PathNode* pn = micropather_thread->GetNode(node);
+		NSMicroPather::PathNode* pn = micropather->GetNode(node);
 		if (pn->isTarget) {
 			continue;
 		}
@@ -880,23 +888,23 @@ void CPathFinder::FindBestPath(IPathQuery* query)
 		}
 	}
 	for (void* node : nodeTargets) {
-		micropather_thread->GetNode(node)->isTarget = 0;
+		micropather->GetNode(node)->isTarget = 0;
 	}
 
 	CTerrainData::CorrectPosition(startPos);
 
-	micropather_thread->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
-	if (micropather_thread->FindBestPathToAnyGivenPoint(Pos2MoveNode(startPos), endNodes, nodeTargets,
+	micropather->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
+	if (micropather->FindBestPathToAnyGivenPoint(Pos2MoveNode(startPos), endNodes, nodeTargets,
 			maxThreat, &iPath.path, &pathCost) == CMicroPather::SOLVED)
 	{
-		micropather_thread->FillPathInfo(iPath);
+		micropather->FillPathInfo(iPath);
 	}
 
 	endNodes.clear();
 	nodeTargets.clear();
 }
 
-void CPathFinder::PathCost(IPathQuery* query)
+void CPathFinder::PathCost(IPathQuery* query, NSMicroPather::CMicroPather* micropather)
 {
 	CQueryPathMulti* q = static_cast<CQueryPathMulti*>(query);
 	q->Prepare();
@@ -907,11 +915,11 @@ void CPathFinder::PathCost(IPathQuery* query)
 	NSMicroPather::CostFunc threatFun = q->GetThreatFun();
 	const FloatVec& heightMap = q->GetHeightMap();
 
-	micropather_thread->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
-	// FIXME: Finish
+	micropather->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
+	// FIXME: Finish or Remove
 }
 
-void CPathFinder::MakeCostMap(IPathQuery* query)
+void CPathFinder::MakeCostMap(IPathQuery* query, NSMicroPather::CMicroPather* micropather)
 {
 	CQueryCostMap* q = static_cast<CQueryCostMap*>(query);
 	q->Prepare();
@@ -925,8 +933,8 @@ void CPathFinder::MakeCostMap(IPathQuery* query)
 	const AIFloat3& startPos = q->GetStartPos();
 	std::vector<float>& costMap = q->GetRefCostMap();
 
-	micropather_thread->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
-	micropather_thread->MakeCostMap(Pos2MoveNode(startPos), costMap);
+	micropather->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
+	micropather->MakeCostMap(Pos2MoveNode(startPos), costMap);
 }
 
 #ifdef DEBUG_VIS
