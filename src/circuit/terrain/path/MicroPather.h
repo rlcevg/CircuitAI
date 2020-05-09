@@ -230,8 +230,11 @@ namespace NSMicroPather {
 			int mapSizeY;
 			int offsets[8];
 			int xEndNode, yEndNode;
-			int heightMapSizeX;  // height map width
 			bool isRunning;
+
+			int heightMapSizeX;  // height map width
+			std::vector<void*> endNodes;  // helper vector
+			std::vector<void*> nodeTargets;  // helper vector
 
 			void SetMapData(const bool* canMoveArray, const float* threatArray,
 					CostFunc moveFun, CostFunc threatFun, const FloatVec& heightMap);

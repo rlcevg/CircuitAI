@@ -405,13 +405,11 @@ void CRaidTask::FallbackRaid()
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 		position = terrainManager->GetMovePosition(leader->GetArea(), position);
 	}
-	const AIFloat3& startPos = pos;
-	const AIFloat3& endPos = position;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
 			leader, threatMap, frame,
-			startPos, endPos, pathfinder->GetSquareSize());
+			pos, position, pathfinder->GetSquareSize());
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 

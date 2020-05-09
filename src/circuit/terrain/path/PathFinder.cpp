@@ -7,8 +7,8 @@
  */
 
 #include "terrain/path/PathFinder.h"
-#include "terrain/path/QueryPathMulti.h"
 #include "terrain/path/QueryPathSingle.h"
+#include "terrain/path/QueryPathMulti.h"
 #include "terrain/path/QueryPathCost.h"
 #include "terrain/path/QueryCostMap.h"
 #include "terrain/TerrainData.h"
@@ -476,7 +476,7 @@ float CPathFinder::FindBestPath(PathInfo& iPath, AIFloat3& startPos, float maxRa
 	std::vector<int> xend;
 
 	// make a list with the points that will count as end nodes
-	static std::vector<void*> endNodes;  // NOTE: micro-opt
+	std::vector<void*>& endNodes = micropather->endNodes;  // NOTE: micro-opt
 //	endNodes.reserve(possibleTargets.size() * radius * 10);
 
 	{
@@ -542,7 +542,7 @@ float CPathFinder::FindBestPath(PathInfo& iPath, AIFloat3& startPos, float maxRa
 		offsetSize = index;
 	}
 
-	static std::vector<void*> nodeTargets;  // NOTE: micro-opt
+	std::vector<void*>& nodeTargets = micropather->nodeTargets;  // NOTE: micro-opt
 //	nodeTargets.reserve(possibleTargets.size());
 	for (unsigned int i = 0; i < possibleTargets.size(); i++) {
 		AIFloat3& f = possibleTargets[i];
@@ -795,7 +795,7 @@ void CPathFinder::FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* m
 	std::vector<int> xend;
 
 	// make a list with the points that will count as end nodes
-	static std::vector<void*> endNodes;  // NOTE: micro-opt
+	std::vector<void*>& endNodes = micropather->endNodes;  // NOTE: micro-opt
 //	endNodes.reserve(possibleTargets.size() * radius * 10);
 
 	{
@@ -861,7 +861,7 @@ void CPathFinder::FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* m
 		offsetSize = index;
 	}
 
-	static std::vector<void*> nodeTargets;  // NOTE: micro-opt
+	std::vector<void*>& nodeTargets = micropather->nodeTargets;  // NOTE: micro-opt
 //	nodeTargets.reserve(possibleTargets.size());
 	for (unsigned int i = 0; i < possibleTargets.size(); i++) {
 		AIFloat3& f = possibleTargets[i];

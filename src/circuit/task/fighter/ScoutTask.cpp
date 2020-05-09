@@ -130,14 +130,13 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	const AIFloat3& startPos = pos;
 	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
 								 /*unit->IsUnderWater(frame) ? cdef->GetSonarRadius() : */cdef->GetLosRadius());
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
 			unit, threatMap, frame,
-			startPos, range * 0.5f, enemyPositions, attackPower);
+			pos, range * 0.5f, enemyPositions, attackPower);
 	pathQueries[unit] = query;
 	query->HoldTask(this);
 
@@ -296,13 +295,11 @@ void CScoutTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 		position = terrainManager->GetMovePosition(unit->GetArea(), position);
 	}
-	const AIFloat3& startPos = pos;
-	const AIFloat3& endPos = position;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
 			unit, threatMap, frame,
-			startPos, endPos, pathfinder->GetSquareSize());
+			pos, position, pathfinder->GetSquareSize());
 	pathQueries[unit] = query;
 	query->HoldTask(this);
 

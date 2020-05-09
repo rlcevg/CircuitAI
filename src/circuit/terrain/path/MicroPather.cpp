@@ -186,8 +186,8 @@ private:
 CMicroPather::CMicroPather(const circuit::CPathFinder& pf, int sizeX, int sizeY, int heightSizeX)
 		: mapSizeX(sizeX + 2)  // +2 for edges
 		, mapSizeY(sizeY + 2)  // +2 for edges
-		, heightMapSizeX(heightSizeX)
 		, isRunning(false)
+		, heightMapSizeX(heightSizeX)
 		, ALLOCATE(mapSizeX * mapSizeY)
 		, BLOCKSIZE(ALLOCATE - 1)
 		, graph(pf)
