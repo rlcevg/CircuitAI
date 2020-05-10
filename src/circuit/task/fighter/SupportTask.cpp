@@ -78,8 +78,8 @@ void CSupportTask::Update()
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	static F3Vec ourPositions;  // NOTE: micro-opt
-//	ourPositions.reserve(tasks.size());
+	urgentPositions.clear();
+//	urgentPositions.reserve(tasks.size());
 	for (IFighterTask* candy : tasks) {
 		ISquadTask* task = static_cast<ISquadTask*>(candy);
 		CCircuitUnit* leader = task->GetLeader();
@@ -96,10 +96,10 @@ void CSupportTask::Update()
 			(leader->GetCircuitDef()->IsLander() && unit->GetCircuitDef()->IsLander()) ||
 			(leader->GetCircuitDef()->IsFloater() && unit->GetCircuitDef()->IsFloater()))
 		{
-			ourPositions.push_back(pos);
+			urgentPositions.push_back(pos);
 		}
 	}
-	if (ourPositions.empty()) {
+	if (urgentPositions.empty()) {
 		Start(unit);
 		return;
 	}
@@ -108,8 +108,7 @@ void CSupportTask::Update()
 	AIFloat3 startPos = unit->GetPos(frame);
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	pathfinder->FindBestPath(path, startPos, pathfinder->GetSquareSize(), ourPositions, false);
-	ourPositions.clear();
+	pathfinder->FindBestPath(path, startPos, pathfinder->GetSquareSize(), urgentPositions, false);
 	if (path.posPath.empty()) {
 		Start(unit);
 		return;

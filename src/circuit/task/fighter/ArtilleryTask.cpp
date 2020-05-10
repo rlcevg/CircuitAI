@@ -359,9 +359,11 @@ void CArtilleryTask::Fallback(CCircuitUnit* unit, bool proceed)
 	if (proceed) {
 		return;
 	}
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+
 	float x = rand() % terrainMgr->GetTerrainWidth();
 	float z = rand() % terrainMgr->GetTerrainHeight();
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);

@@ -58,11 +58,11 @@ public:
 	springai::AIFloat3 PathIndex2Pos(int index) const;
 
 	std::shared_ptr<IPathQuery> CreatePathSingleQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
-			const springai::AIFloat3& startPos, const springai::AIFloat3& endPos, int radius,
-			float maxThreat = std::numeric_limits<float>::max());
+			const springai::AIFloat3& startPos, const springai::AIFloat3& endPos, float maxRange,
+			float maxThreat = std::numeric_limits<float>::max(), bool endPosOnly = false);
 	std::shared_ptr<IPathQuery> CreatePathMultiQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos, float maxRange, const F3Vec& possibleTargets,
-			float maxThreat = std::numeric_limits<float>::max());
+			float maxThreat = std::numeric_limits<float>::max(), bool endPosOnly = false);
 	std::shared_ptr<IPathQuery> CreatePathCostQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos, const springai::AIFloat3& endPos, int radius,
 			float maxThreat = std::numeric_limits<float>::max());
@@ -142,7 +142,7 @@ private:
 	std::shared_ptr<IPathQuery> dbgQuery;
 public:
 	std::shared_ptr<IPathQuery> CreateDbgPathQuery(CThreatMap* threatMap,
-			const springai::AIFloat3& endPos, int radius,
+			const springai::AIFloat3& endPos, float maxRange,
 			float maxThreat = std::numeric_limits<float>::max());
 	void SetDbgDef(CCircuitDef* cdef) { dbgDef = cdef; }
 	CCircuitDef* GetDbgDef() const { return dbgDef; }

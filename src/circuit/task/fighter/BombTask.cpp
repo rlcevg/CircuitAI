@@ -11,6 +11,7 @@
 #include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathFinder.h"
+#include "terrain/path/QueryPathSingle.h"
 #include "unit/action/MoveAction.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "unit/CircuitUnit.h"
@@ -96,10 +97,8 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	}
 
 	const AIFloat3& pos = unit->GetPos(frame);
-	std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
 	CEnemyInfo* lastTarget = target;
-	SetTarget(nullptr);
-	SetTarget(FindTarget(unit, lastTarget, pos, *pPath));
+	AIFloat3 endPos = FindTarget(unit, lastTarget, pos);
 
 	if (target != nullptr) {
 		position = target->GetPos();
@@ -112,48 +111,33 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		)
 		unit->GetTravelAct()->StateWait();
 		return;
-	} else if (!pPath->posPath.empty()) {
-		position = pPath->posPath.back();
-		unit->GetTravelAct()->SetPath(pPath);
-		unit->GetTravelAct()->StateActivate();
+	}
+
+	if (!IsQueryReady(unit)) {
 		return;
 	}
 
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	if (!utils::is_valid(endPos)) {
+		FallbackScout(unit, isUpdating);
+		return;
+	}
+
+	CCircuitDef* cdef = unit->GetCircuitDef();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	const AIFloat3& threatPos = unit->GetTravelAct()->IsActive() ? position : pos;
-	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < threatMap->GetUnitThreat(unit));
-	if (!proceed) {
-		position = circuit->GetMilitaryManager()->GetScoutPosition(unit);
-	}
+	const float range = std::max<float>(cdef->GetLosRadius(), threatMap->GetSquareSize());
 
-	if (utils::is_valid(position) && terrainManager->CanMoveToPos(unit->GetArea(), position)) {
-		AIFloat3 startPos = pos;
-		AIFloat3 endPos = position;
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
+			unit, threatMap, frame,
+			pos, endPos, range);
+	pathQueries[unit] = query;
+	query->HoldTask(this);
 
-		CPathFinder* pathfinder = circuit->GetPathfinder();
-		pathfinder->SetMapData(unit, threatMap, frame);
-		pathfinder->MakePath(*pPath, startPos, endPos, pathfinder->GetSquareSize());
-
-		proceed = pPath->path.size() > 2;
-		if (proceed) {
-//			position = path.back();
-			unit->GetTravelAct()->SetPath(pPath);
-			unit->GetTravelAct()->StateActivate();
-			return;
+	pathfinder->RunQuery(query, [this, isUpdating](std::shared_ptr<IPathQuery> query) {
+		if (this->IsQueryAlive(query)) {
+			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathSingle>(query), isUpdating);
 		}
-	}
-
-	if (proceed) {
-		return;
-	}
-	float x = rand() % terrainManager->GetTerrainWidth();
-	float z = rand() % terrainManager->GetTerrainHeight();
-	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
-	TRY_UNIT(circuit, unit,
-		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-	)
-	unit->GetTravelAct()->StateWait();
+	});
 }
 
 void CBombTask::OnUnitIdle(CCircuitUnit* unit)
@@ -177,7 +161,7 @@ void CBombTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 	}
 }
 
-CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, const AIFloat3& pos, PathInfo& path)
+AIFloat3 CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, const AIFloat3& pos)
 {
 	// TODO: 1) Bombers should constantly harass undefended targets and not suicide.
 	//       2) Fat target getting close to base should gain priority and be attacked by group if high AA threat.
@@ -209,6 +193,7 @@ CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, co
 		};
 	}
 
+	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
 	CEnemyInfo* bestTarget = nullptr;
 	AIFloat3 endPos = -RgtVector;
 	threatMap->SetThreatType(unit);
@@ -275,20 +260,13 @@ CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, co
 		}
 	}
 
-	path.Clear();
 	if (bestTarget != nullptr) {
-		return bestTarget;
-	}
-	if (!utils::is_valid(endPos)) {
-		return nullptr;
+		SetTarget(bestTarget);
+		return bestTarget->GetPos();
 	}
 
-	AIFloat3 startPos = pos;
-	const float range = std::max<float>(cdef->GetLosRadius(), threatMap->GetSquareSize());
-	circuit->GetPathfinder()->SetMapData(unit, threatMap, circuit->GetLastFrame());
-	circuit->GetPathfinder()->MakePath(path, startPos, endPos, range);
-
-	return nullptr;
+	return endPos;
+	// Return: target, startPos=pos, endPos
 }
 
 //CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, const AIFloat3& pos, PathInfo& path)
@@ -417,5 +395,85 @@ CEnemyInfo* CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, co
 //
 //	return nullptr;
 //}
+
+void CBombTask::ApplyTargetPath(std::shared_ptr<CQueryPathSingle> query, bool isUpdating)
+{
+	std::shared_ptr<PathInfo> pPath = query->GetPathInfo();
+	CCircuitUnit* unit = query->GetUnit();
+
+	if (!pPath->posPath.empty()) {
+		position = pPath->posPath.back();
+		unit->GetTravelAct()->SetPath(pPath);
+		unit->GetTravelAct()->StateActivate();
+	} else {
+		FallbackScout(unit, isUpdating);
+	}
+}
+
+void CBombTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	const int frame = circuit->GetLastFrame();
+	const AIFloat3& pos = unit->GetPos(frame);
+	const AIFloat3& threatPos = unit->GetTravelAct()->IsActive() ? position : pos;
+	const bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < THREAT_MIN);
+	if (!proceed) {
+		position = circuit->GetMilitaryManager()->GetScoutPosition(unit);
+	}
+
+	if (!utils::is_valid(position) || !circuit->GetTerrainManager()->CanMoveToPos(unit->GetArea(), position)) {
+		Fallback(unit, proceed);
+		return;
+	}
+
+	const float pathRange = DEFAULT_SLACK * 4;  // pathfinder->GetSquareSize()
+
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
+			unit, circuit->GetThreatMap(), frame,
+			pos, position, pathRange);
+	pathQueries[unit] = query;
+	query->HoldTask(this);
+
+	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
+		if (this->IsQueryAlive(query)) {
+			this->ApplyScoutPath(std::static_pointer_cast<CQueryPathSingle>(query));
+		}
+	});
+}
+
+void CBombTask::ApplyScoutPath(std::shared_ptr<CQueryPathSingle> query)
+{
+	std::shared_ptr<PathInfo> pPath = query->GetPathInfo();
+	CCircuitUnit* unit = query->GetUnit();
+
+	const bool proceed = pPath->path.size() > 2;
+	if (proceed) {
+		unit->GetTravelAct()->SetPath(pPath);
+		unit->GetTravelAct()->StateActivate();
+	} else {
+		Fallback(unit, proceed);
+	}
+}
+
+void CBombTask::Fallback(CCircuitUnit* unit, bool proceed)
+{
+	if (proceed) {
+		return;
+	}
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+
+	float x = rand() % terrainMgr->GetTerrainWidth();
+	float z = rand() % terrainMgr->GetTerrainHeight();
+	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
+	TRY_UNIT(circuit, unit,
+		unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+	)
+	unit->GetTravelAct()->StateWait();
+}
 
 } // namespace circuit

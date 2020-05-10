@@ -21,17 +21,18 @@ CQueryPathMulti::~CQueryPathMulti()
 }
 
 void CQueryPathMulti::InitQuery(const AIFloat3& startPos, float maxRange,
-		const F3Vec& targets, float maxThreat)
+		const F3Vec& targets, float maxThreat, bool endPosOnly)
 {
 	this->startPos = startPos;
 	this->maxRange = maxRange;
 	this->targets = targets;
 	this->maxThreat = maxThreat;
+	this->endPosOnly = endPosOnly;
 }
 
 void CQueryPathMulti::Prepare()
 {
-	pPath = std::make_shared<PathInfo>();
+	pPath = std::make_shared<PathInfo>(endPosOnly);
 }
 
 } // namespace circuit

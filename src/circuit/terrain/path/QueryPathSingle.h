@@ -18,7 +18,7 @@ public:
 	virtual ~CQueryPathSingle();
 
 	void InitQuery(const springai::AIFloat3& startPos, const springai::AIFloat3& endPos,
-			float maxRange, float maxThreat);
+			float maxRange, float maxThreat, bool endPosOnly);
 
 	void Prepare();
 
@@ -44,6 +44,7 @@ private:
 	springai::AIFloat3 endPos;
 	float maxRange = 0.f;
 	float maxThreat = 0.f;
+	bool endPosOnly = false;
 };
 
 } // namespace circuit

@@ -1233,7 +1233,7 @@ size_t CMicroPather::RefinePath(IndexVec& path)
 
 void CMicroPather::FillPathInfo(PathInfo& iPath)
 {
-	if (iPath.isLast) {
+	if (iPath.isEndPos) {
 		float3 pos = graph.PathIndex2Pos(iPath.path.back());
 		pos.y = GetElevationAt(pos.x, pos.z);
 		iPath.posPath.push_back(pos);

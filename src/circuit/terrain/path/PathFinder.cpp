@@ -261,26 +261,26 @@ AIFloat3 CPathFinder::PathIndex2Pos(int index) const
  */
 std::shared_ptr<IPathQuery> CPathFinder::CreatePathSingleQuery(
 		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
-		const AIFloat3& startPos, const AIFloat3& endPos, int radius, float maxThreat)
+		const AIFloat3& startPos, const AIFloat3& endPos, float maxRange, float maxThreat, bool endPosOnly)
 {
 	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathSingle>(*this, MakeQueryId());
 	CQueryPathSingle* query = static_cast<CQueryPathSingle*>(pQuery.get());
 
 	FillMapData(query, unit, threatMap, frame);
-	query->InitQuery(startPos, endPos, radius, maxThreat);
+	query->InitQuery(startPos, endPos, maxRange, maxThreat, endPosOnly);
 
 	return pQuery;
 }
 
 std::shared_ptr<IPathQuery> CPathFinder::CreatePathMultiQuery(
 		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
-		const AIFloat3& startPos, float maxRange, const F3Vec& possibleTargets, float maxThreat)
+		const AIFloat3& startPos, float maxRange, const F3Vec& possibleTargets, float maxThreat, bool endPosOnly)
 {
 	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathMulti>(*this, MakeQueryId());
 	CQueryPathMulti* query = static_cast<CQueryPathMulti*>(pQuery.get());
 
 	FillMapData(query, unit, threatMap, frame);
-	query->InitQuery(startPos, maxRange, possibleTargets, maxThreat);
+	query->InitQuery(startPos, maxRange, possibleTargets, maxThreat, endPosOnly);
 
 	return pQuery;
 }
@@ -939,7 +939,7 @@ void CPathFinder::MakeCostMap(IPathQuery* query, NSMicroPather::CMicroPather* mi
 
 #ifdef DEBUG_VIS
 std::shared_ptr<IPathQuery> CPathFinder::CreateDbgPathQuery(CThreatMap* threatMap,
-		const AIFloat3& endPos, int radius, float maxThreat)
+		const AIFloat3& endPos, float maxRange, float maxThreat)
 {
 	if ((dbgDef == nullptr) || (dbgType < 0) || (dbgType > 3)) {
 		return nullptr;
@@ -968,7 +968,7 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateDbgPathQuery(CThreatMap* threatMa
 	};
 
 	query->Init(moveArray, threatArray, moveFun, threatFun);
-	query->InitQuery(dbgPos, endPos, radius, maxThreat);
+	query->InitQuery(dbgPos, endPos, maxRange, maxThreat);
 
 	return pQuery;
 }

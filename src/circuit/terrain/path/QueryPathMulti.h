@@ -18,7 +18,7 @@ public:
 	virtual ~CQueryPathMulti();
 
 	void InitQuery(const springai::AIFloat3& startPos, float maxRange,
-			const F3Vec& targets, float maxThreat);
+			const F3Vec& targets, float maxThreat, bool endPosOnly);
 
 	void Prepare();
 
@@ -44,6 +44,7 @@ private:
 	F3Vec targets;
 	float maxRange = 0.f;
 	float maxThreat = 0.f;
+	bool endPosOnly = false;
 };
 
 } // namespace circuit

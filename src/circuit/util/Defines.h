@@ -55,12 +55,12 @@ typedef std::vector<int> IndexVec;
 typedef std::vector<int> IntVec;
 
 struct PathInfo {
-	PathInfo(bool last = false) : start(0), isLast(last) {}
+	PathInfo(bool last = false) : start(0), isEndPos(last) {}
 	void Clear() { posPath.clear(); path.clear(); }  // FIXME: stop TravelAction
 	F3Vec posPath;
 	IndexVec path;
 	size_t start;
-	bool isLast;
+	bool isEndPos;
 };
 
 struct cmp_str {
