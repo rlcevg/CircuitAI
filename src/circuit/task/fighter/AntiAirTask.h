@@ -36,6 +36,8 @@ private:
 	void ApplySafePos(std::shared_ptr<CQueryPathMulti> query);
 	void FallbackCommPos();
 	void Fallback();
+
+	void ApplyDamagedPath(std::shared_ptr<CQueryPathMulti> query);
 };
 
 } // namespace circuit

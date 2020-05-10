@@ -73,11 +73,7 @@ public:
 
 	// FIXME: Remove
 	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
-	float MakePath(PathInfo& iPath, springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius,
-			float maxThreat = std::numeric_limits<float>::max());
 	float PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius,
-			float maxThreat = std::numeric_limits<float>::max());
-	float FindBestPath(PathInfo& iPath, springai::AIFloat3& startPos, float maxRange, F3Vec& possibleTargets,
 			float maxThreat = std::numeric_limits<float>::max());
 	// FIXME: Remove
 

@@ -142,7 +142,6 @@ void CArtilleryTask::OnUnitIdle(CCircuitUnit* unit)
 CEnemyInfo* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CPathFinder* pathfinder = circuit->GetPathfinder();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const bool notAW = !cdef->HasAntiWater();
@@ -153,7 +152,6 @@ CEnemyInfo* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 
 	enemyPositions.clear();
 	threatMap->SetThreatType(unit);
-	pathfinder->SetMapData(unit, threatMap, circuit->GetLastFrame());
 	bool isPosSafe = (threatMap->GetThreatAt(pos) <= THREAT_MIN);
 
 	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();

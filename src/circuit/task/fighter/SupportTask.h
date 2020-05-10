@@ -23,6 +23,8 @@ public:
 	virtual void Update() override;
 
 private:
+	void ApplyTargetPath(std::shared_ptr<CQueryPathMulti> query);
+
 	unsigned int updCount;
 };
 

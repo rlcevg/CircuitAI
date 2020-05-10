@@ -11,6 +11,7 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathFinder.h"
+#include "terrain/path/QueryPathMulti.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
@@ -104,17 +105,49 @@ void CSupportTask::Update()
 		return;
 	}
 
-	PathInfo path(true);
-	AIFloat3 startPos = unit->GetPos(frame);
+	if (!IsQueryReady(unit)) {
+		return;
+	}
+
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	pathfinder->FindBestPath(path, startPos, pathfinder->GetSquareSize(), urgentPositions, false);
-	if (path.posPath.empty()) {
+	const AIFloat3& startPos = unit->GetPos(frame);
+	const float range = pathfinder->GetSquareSize();
+
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
+			unit, circuit->GetThreatMap(), frame,
+			startPos, range, urgentPositions, std::numeric_limits<float>::max(), true);
+	pathQueries[unit] = query;
+	query->HoldTask(this);
+
+	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
+		if (this->IsQueryAlive(query)) {
+			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathMulti>(query));
+		}
+	});
+}
+
+void CSupportTask::ApplyTargetPath(std::shared_ptr<CQueryPathMulti> query)
+{
+	std::shared_ptr<PathInfo> pPath = query->GetPathInfo();
+	CCircuitUnit* unit = query->GetUnit();
+
+	if (pPath->posPath.empty()) {
 		Start(unit);
 		return;
 	}
 
-	const AIFloat3& endPos = path.posPath.back();
+	const std::set<IFighterTask*>& tasksA = static_cast<CMilitaryManager*>(manager)->GetTasks(IFighterTask::FightType::ATTACK);
+	const std::set<IFighterTask*>& tasksD = static_cast<CMilitaryManager*>(manager)->GetTasks(IFighterTask::FightType::DEFEND);
+	const std::set<IFighterTask*>& tasks = tasksA.empty() ? tasksD : tasksA;
+	if (tasks.empty()) {
+		Start(unit);
+		return;
+	}
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	const AIFloat3& startPos = unit->GetPos(frame);
+	const AIFloat3& endPos = pPath->posPath.back();
 	if (startPos.SqDistance2D(endPos) < SQUARE(1000.f)) {
 		IFighterTask* task = *tasks.begin();
 		float minSqDist = std::numeric_limits<float>::max();
