@@ -9,7 +9,6 @@
 #include "terrain/path/PathFinder.h"
 #include "terrain/path/QueryPathSingle.h"
 #include "terrain/path/QueryPathMulti.h"
-#include "terrain/path/QueryPathCost.h"
 #include "terrain/path/QueryCostMap.h"
 #include "terrain/TerrainData.h"
 #include "terrain/TerrainManager.h"
@@ -281,22 +280,6 @@ std::shared_ptr<IPathQuery> CPathFinder::CreatePathMultiQuery(
 
 	FillMapData(query, unit, threatMap, frame);
 	query->InitQuery(startPos, maxRange, possibleTargets, maxThreat, endPosOnly);
-
-	return pQuery;
-}
-
-/*
- * WARNING: startPos must be correct
- */
-std::shared_ptr<IPathQuery> CPathFinder::CreatePathCostQuery(
-		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
-		const AIFloat3& startPos, const AIFloat3& endPos, int radius, float maxThreat)
-{
-	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathCost>(*this, MakeQueryId());
-	CQueryPathCost* query = static_cast<CQueryPathCost*>(pQuery.get());
-
-	FillMapData(query, unit, threatMap, frame);
-	query->InitQuery(startPos, endPos, radius, maxThreat);
 
 	return pQuery;
 }
@@ -808,7 +791,7 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateDbgPathQuery(CThreatMap* threatMa
 	};
 
 	query->Init(moveArray, threatArray, moveFun, threatFun);
-	query->InitQuery(dbgPos, endPos, maxRange, maxThreat);
+	query->InitQuery(dbgPos, endPos, maxRange, maxThreat, false);
 
 	return pQuery;
 }

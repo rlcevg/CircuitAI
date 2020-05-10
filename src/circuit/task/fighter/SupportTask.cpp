@@ -121,12 +121,12 @@ void CSupportTask::Update()
 
 	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathMulti>(query));
+			this->ApplyPath(std::static_pointer_cast<CQueryPathMulti>(query));
 		}
 	});
 }
 
-void CSupportTask::ApplyTargetPath(std::shared_ptr<CQueryPathMulti> query)
+void CSupportTask::ApplyPath(std::shared_ptr<CQueryPathMulti> query)
 {
 	std::shared_ptr<PathInfo> pPath = query->GetPathInfo();
 	CCircuitUnit* unit = query->GetUnit();

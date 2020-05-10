@@ -106,7 +106,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 		DelBuildPower(unit);
 		workers.erase(unit);
-		costsQueries.erase(unit);
+		costQueries.erase(unit);
 
 		RemoveBuildList(unit);
 	};
@@ -838,15 +838,15 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
 
-	const auto it = costsQueries.find(unit);
-	std::shared_ptr<IPathQuery> query = (it == costsQueries.end()) ? nullptr : it->second;
+	const auto it = costQueries.find(unit);
+	std::shared_ptr<IPathQuery> query = (it == costQueries.end()) ? nullptr : it->second;
 	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
 		return nullptr;
 	}
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> q = pathfinder->CreateCostMapQuery(unit, threatMap, frame, pos);
-	costsQueries[unit] = q;
+	costQueries[unit] = q;
 	pathfinder->RunQuery(q);
 
 	if (query == nullptr) {

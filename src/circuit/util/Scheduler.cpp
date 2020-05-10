@@ -23,17 +23,19 @@ unsigned int CScheduler::counterInstance = 0;
 CScheduler::CScheduler()
 		: lastFrame(-1)
 		, isProcessing(false)
+		, isWorkProcess(false)
+		, numPathProcess(0)
 {
 	if (counterInstance == 0) {
 		int maxThreads = spring::thread::hardware_concurrency();
 		maxPathThreads = utils::clamp(maxThreads - 2, 1, MAX_JOB_THREADS);
 	}
 	counterInstance++;
+	isRunning = true;
 }
 
 CScheduler::~CScheduler()
 {
-	counterInstance--;
 	Release();
 }
 
@@ -50,10 +52,17 @@ void CScheduler::ProcessRelease()
 	for (auto& task : releaseTasks) {
 		task->Run();
 	}
+	Release();
 }
 
 void CScheduler::Release()
 {
+	if (!isRunning) {
+		return;
+	}
+	isRunning = false;
+	counterInstance--;
+
 	std::weak_ptr<CScheduler>& scheduler = self;
 	workTasks.RemoveAllIf([&scheduler](WorkTask& item) -> bool {
 		return !scheduler.owner_before(item.scheduler) && !item.scheduler.owner_before(scheduler);
@@ -82,6 +91,8 @@ void CScheduler::Release()
 		patherThreads.clear();
 		pathTasks.Clear();
 	}
+
+	barrier.Wait([this]() { return !isWorkProcess && (numPathProcess == 0); });
 
 	finishTasks.Clear();
 	pathedTasks.Clear();
@@ -189,14 +200,18 @@ void CScheduler::WorkerThread()
 {
 	WorkTask container = workTasks.Pop();
 	while (workerRunning.load()) {
-		container.task->Run();
-		container.task = nullptr;
-		if (container.onComplete != nullptr) {
-			std::shared_ptr<CScheduler> scheduler = container.scheduler.lock();
-			if (scheduler != nullptr) {
-				scheduler->finishTasks.Push(container);
+		std::shared_ptr<CScheduler> scheduler = container.scheduler.lock();
+		if (scheduler != nullptr) {
+			scheduler->barrier.NotifyOne([scheduler]() { scheduler->isWorkProcess = true; });
+			if (scheduler->isRunning) {
+
+				container.task->Run();
+				if (container.onComplete != nullptr) {
+					scheduler->finishTasks.Push(container);
+				}
+
 			}
-			container.onComplete = nullptr;
+			scheduler->barrier.NotifyOne([scheduler]() { scheduler->isWorkProcess = false; });
 		}
 		container = workTasks.Pop();
 	}
@@ -207,15 +222,27 @@ void CScheduler::PatherThread(int num)
 	PathTask container = pathTasks.Pop();
 	while (workerRunning.load()) {
 		std::shared_ptr<IPathQuery> query = container.query.lock();
-		if (query != nullptr) {
+		if (query == nullptr) {
+			container = pathTasks.Pop();
+			continue;
+		}
+		std::shared_ptr<CScheduler> scheduler = container.scheduler.lock();
+		if (scheduler == nullptr) {
+			container = pathTasks.Pop();
+			continue;
+		}
+
+		scheduler->barrier.NotifyOne([scheduler]() { scheduler->numPathProcess++; });
+		if (scheduler->isRunning) {
+
 			container.task(query, num);
 			if (container.onComplete != nullptr) {
-				std::shared_ptr<CScheduler> scheduler = container.scheduler.lock();
-				if (scheduler != nullptr) {
-					scheduler->pathedTasks.Push(container);
-				}
+				scheduler->pathedTasks.Push(container);
 			}
+
 		}
+		scheduler->barrier.NotifyOne([scheduler]() { scheduler->numPathProcess--; });
+
 		container = pathTasks.Pop();
 	}
 }

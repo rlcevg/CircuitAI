@@ -13,6 +13,7 @@
 #include "setup/SetupManager.h"
 #include "terrain/path/PathFinder.h"
 #include "terrain/path/QueryPathSingle.h"
+#include "terrain/path/QueryCostMap.h"
 #include "terrain/TerrainManager.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/MoveAction.h"
@@ -35,6 +36,12 @@ CRetreatTask::CRetreatTask(ITaskManager* mgr, int timeout)
 
 CRetreatTask::~CRetreatTask()
 {
+}
+
+void CRetreatTask::ClearRelease()
+{
+	costQueries.clear();
+	IUnitTask::ClearRelease();
 }
 
 void CRetreatTask::AssignTo(CCircuitUnit* unit)
@@ -272,12 +279,63 @@ void CRetreatTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 	RemoveAssignee(unit);
 }
 
-void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
+void CRetreatTask::CheckRepairer(CCircuitUnit* newRep)
+{
+	CCircuitUnit* unit = *units.begin();
+
+	const auto it = costQueries.find(unit);
+	if ((it != costQueries.end()) && (it->second->GetState() != IPathQuery::State::READY)) {  // not ready
+		return;
+	}
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	const AIFloat3& startPos = unit->GetPos(frame);
+
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	std::shared_ptr<IPathQuery> query = pathfinder->CreateCostMapQuery(
+			unit, circuit->GetThreatMap(), frame, startPos);
+	costQueries[unit] = query;
+	query->HoldTask(this);
+
+	CCircuitUnit::Id newRepId = newRep->GetId();
+	pathfinder->RunQuery(query, [this, newRepId](std::shared_ptr<IPathQuery> query) {
+		CCircuitUnit* newRep = ValidateNewRepairer(query, newRepId);
+		if (newRep != nullptr) {
+			this->ApplyCostMap(std::static_pointer_cast<CQueryCostMap>(query), newRep);
+		}
+	});
+}
+
+void CRetreatTask::ApplyPath(std::shared_ptr<CQueryPathSingle> query)
+{
+	std::shared_ptr<PathInfo> pPath = query->GetPathInfo();
+	CCircuitUnit* unit = query->GetUnit();
+
+	if (pPath->posPath.empty()) {
+		pPath->posPath.push_back(query->GetEndPos());
+	}
+	unit->GetTravelAct()->SetPath(pPath);
+}
+
+CCircuitUnit* CRetreatTask::ValidateNewRepairer(std::shared_ptr<IPathQuery> query, int newRepId)
+{
+	if (isDead) {
+		return nullptr;
+	}
+	const auto it = costQueries.find(query->GetUnit());
+	if ((it == costQueries.end()) || (it->second->GetId() != query->GetId())) {
+		return nullptr;
+	}
+	return manager->GetCircuit()->GetTeamUnit(newRepId);
+}
+
+void CRetreatTask::ApplyCostMap(std::shared_ptr<CQueryCostMap> query, CCircuitUnit* newRep)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	AIFloat3 startPos = (*units.begin())->GetPos(frame);
+	CCircuitUnit* unit = query->GetUnit();
 	AIFloat3 endPos;
 	float range;
 
@@ -294,15 +352,13 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
 		range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
 	}
 
-//	CTerrainManager::CorrectPosition(startPos);
-	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	float prevCost = pathfinder->PathCost(startPos, endPos, range);
+	float prevCost = query->GetCostAt(endPos, range);
 	if (isRepairer && repairer->GetCircuitDef()->IsMobile()) {
 		prevCost /= 2;
 	}
 
 	endPos = unit->GetPos(frame);
-	float nextCost = pathfinder->PathCost(startPos, endPos, range);
+	float nextCost = query->GetCostAt(endPos, range);
 	if (unit->GetCircuitDef()->IsMobile()) {
 		nextCost /= 2;
 	}
@@ -310,17 +366,6 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
 	if (prevCost > nextCost) {
 		SetRepairer(unit);
 	}
-}
-
-void CRetreatTask::ApplyPath(std::shared_ptr<CQueryPathSingle> query)
-{
-	std::shared_ptr<PathInfo> pPath = query->GetPathInfo();
-	CCircuitUnit* unit = query->GetUnit();
-
-	if (pPath->posPath.empty()) {
-		pPath->posPath.push_back(query->GetEndPos());
-	}
-	unit->GetTravelAct()->SetPath(pPath);
 }
 
 } // namespace circuit

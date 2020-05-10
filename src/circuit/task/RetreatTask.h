@@ -13,10 +13,14 @@
 
 namespace circuit {
 
+class CQueryCostMap;
+
 class CRetreatTask: public IUnitTask {
 public:
 	CRetreatTask(ITaskManager* mgr, int timeout = ASSIGN_TIMEOUT);
 	virtual ~CRetreatTask();
+
+	virtual void ClearRelease() override;
 
 	virtual void AssignTo(CCircuitUnit* unit) override;
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
@@ -32,14 +36,17 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
-	void CheckRepairer(CCircuitUnit* unit);
+	void CheckRepairer(CCircuitUnit* newRep);
 	void SetRepairer(CCircuitUnit* unit) { repairer = unit; }
 	CCircuitUnit* GetRepairer() const { return repairer; }
 
 private:
 	void ApplyPath(std::shared_ptr<CQueryPathSingle> query);
+	CCircuitUnit* ValidateNewRepairer(std::shared_ptr<IPathQuery> query, int newRepId);
+	void ApplyCostMap(std::shared_ptr<CQueryCostMap> query, CCircuitUnit* newRep);
 
 	CCircuitUnit* repairer;
+	std::map<CCircuitUnit*, std::shared_ptr<IPathQuery>> costQueries;  // IPathQuery owner
 };
 
 } // namespace circuit

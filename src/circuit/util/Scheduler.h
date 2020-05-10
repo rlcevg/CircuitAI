@@ -20,6 +20,27 @@
 
 namespace circuit {
 
+class Barrier {
+public:
+	template<typename _Predicate>
+	void NotifyOne(_Predicate __p) {
+		{
+			std::lock_guard<spring::mutex> mlock(_mutex);
+			__p();
+		}
+		_cond.notify_one();
+	}
+	template<typename _Predicate>
+	void Wait(_Predicate __p) {
+		std::unique_lock<spring::mutex> mlock(_mutex);
+		_cond.wait(mlock, __p);
+	}
+
+private:
+	spring::mutex _mutex;
+	spring::condition_variable_any _cond;
+};
+
 class CScheduler {
 public:
 	CScheduler();
@@ -92,7 +113,12 @@ public:
 private:
 	std::weak_ptr<CScheduler> self;
 	int lastFrame;
-	bool isProcessing;
+	bool isProcessing;  // regular CGameTask
+
+	bool isWorkProcess;  // parallel CGameTask
+	int numPathProcess;  // parallel PathFunc
+	Barrier barrier;
+	std::atomic<bool> isRunning;  // parallel
 
 	struct BaseContainer {
 		BaseContainer(std::shared_ptr<CGameTask> task) : task(task) {}

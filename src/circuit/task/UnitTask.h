@@ -39,7 +39,7 @@ protected:
 	IUnitTask(ITaskManager* mgr, Priority priority, Type type, int timeout);
 	virtual ~IUnitTask();
 public:
-	void ClearRelease();
+	virtual void ClearRelease();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const;
 	virtual void AssignTo(CCircuitUnit* unit);
