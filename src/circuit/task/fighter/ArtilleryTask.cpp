@@ -124,7 +124,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	pathQueries[unit] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this, isUpdating](std::shared_ptr<IPathQuery> query) {
+	pathfinder->RunQuery(query, [this, isUpdating](const std::shared_ptr<IPathQuery>& query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathMulti>(query), isUpdating);
 		}
@@ -250,9 +250,9 @@ CEnemyInfo* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 	// Return: <target>, startPos=pos, enemyPositions
 }
 
-void CArtilleryTask::ApplyTargetPath(std::shared_ptr<CQueryPathMulti> query, bool isUpdating)
+void CArtilleryTask::ApplyTargetPath(const std::shared_ptr<CQueryPathMulti>& query, bool isUpdating)
 {
-	std::shared_ptr<PathInfo> pPath = query->GetPathInfo();
+	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
 	CCircuitUnit* unit = query->GetUnit();
 
 	if (!pPath->posPath.empty()) {
@@ -285,16 +285,16 @@ void CArtilleryTask::FallbackBasePos(CCircuitUnit* unit, bool isUpdating)
 	pathQueries[unit] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this, isUpdating](std::shared_ptr<IPathQuery> query) {
+	pathfinder->RunQuery(query, [this, isUpdating](const std::shared_ptr<IPathQuery>& query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyBasePos(std::static_pointer_cast<CQueryPathSingle>(query), isUpdating);
 		}
 	});
 }
 
-void CArtilleryTask::ApplyBasePos(std::shared_ptr<CQueryPathSingle> query, bool isUpdating)
+void CArtilleryTask::ApplyBasePos(const std::shared_ptr<CQueryPathSingle>& query, bool isUpdating)
 {
-	std::shared_ptr<PathInfo> pPath = query->GetPathInfo();
+	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
 	CCircuitUnit* unit = query->GetUnit();
 
 	if (!pPath->posPath.empty()) {
@@ -331,16 +331,16 @@ void CArtilleryTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 	pathQueries[unit] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
+	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyScoutPath(std::static_pointer_cast<CQueryPathSingle>(query));
 		}
 	});
 }
 
-void CArtilleryTask::ApplyScoutPath(std::shared_ptr<CQueryPathSingle> query)
+void CArtilleryTask::ApplyScoutPath(const std::shared_ptr<CQueryPathSingle>& query)
 {
-	std::shared_ptr<PathInfo> pPath = query->GetPathInfo();
+	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
 	CCircuitUnit* unit = query->GetUnit();
 
 	const bool proceed = pPath->path.size() > 2;

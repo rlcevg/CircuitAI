@@ -115,15 +115,13 @@ void CAttackTask::Update()
 	/*
 	 * Merge tasks if possible
 	 */
-	if (updCount % 32 == 1) {
-		ISquadTask* task = GetMergeTask();
-		if (task != nullptr) {
-			task->Merge(this);
-			units.clear();
-			// TODO: Deal with cowards?
-			manager->AbortTask(this);
-			return;
-		}
+	ISquadTask* task = GetMergeTask();
+	if (task != nullptr) {
+		task->Merge(this);
+		units.clear();
+		// TODO: Deal with cowards?
+		manager->AbortTask(this);
+		return;
 	}
 
 	/*
@@ -201,7 +199,7 @@ void CAttackTask::Update()
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
+	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathSingle>(query));
 		}
@@ -308,7 +306,7 @@ void CAttackTask::FindTarget()
 	// Return: target, startPos=leader->pos, endPos=position
 }
 
-void CAttackTask::ApplyTargetPath(std::shared_ptr<CQueryPathSingle> query)
+void CAttackTask::ApplyTargetPath(const std::shared_ptr<CQueryPathSingle>& query)
 {
 	pPath = query->GetPathInfo();
 
@@ -339,14 +337,14 @@ void CAttackTask::FallbackFrontPos()
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
+	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyFrontPos(std::static_pointer_cast<CQueryPathMulti>(query));
 		}
 	});
 }
 
-void CAttackTask::ApplyFrontPos(std::shared_ptr<CQueryPathMulti> query)
+void CAttackTask::ApplyFrontPos(const std::shared_ptr<CQueryPathMulti>& query)
 {
 	pPath = query->GetPathInfo();
 
@@ -376,14 +374,14 @@ void CAttackTask::FallbackBasePos()
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
+	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyBasePos(std::static_pointer_cast<CQueryPathSingle>(query));
 		}
 	});
 }
 
-void CAttackTask::ApplyBasePos(std::shared_ptr<CQueryPathSingle> query)
+void CAttackTask::ApplyBasePos(const std::shared_ptr<CQueryPathSingle>& query)
 {
 	pPath = query->GetPathInfo();
 

@@ -24,7 +24,6 @@ using namespace springai;
 
 CSupportTask::CSupportTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::SUPPORT, 1.f)
-		, updCount(0)
 {
 	const AIFloat3& pos = manager->GetCircuit()->GetSetupManager()->GetBasePos();
 	position = utils::get_radial_pos(pos, SQUARE_SIZE * 32);
@@ -119,16 +118,16 @@ void CSupportTask::Update()
 	pathQueries[unit] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
+	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyPath(std::static_pointer_cast<CQueryPathMulti>(query));
 		}
 	});
 }
 
-void CSupportTask::ApplyPath(std::shared_ptr<CQueryPathMulti> query)
+void CSupportTask::ApplyPath(const std::shared_ptr<CQueryPathMulti>& query)
 {
-	std::shared_ptr<PathInfo> pPath = query->GetPathInfo();
+	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
 	CCircuitUnit* unit = query->GetUnit();
 
 	if (pPath->posPath.empty()) {

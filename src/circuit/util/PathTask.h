@@ -14,8 +14,8 @@
 namespace circuit {
 
 class IPathQuery;
-using PathFunc = std::function<void (std::shared_ptr<IPathQuery> query, int threadNum)>;
-using PathedFunc = std::function<void (std::shared_ptr<IPathQuery> query)>;
+using PathFunc = std::function<void (const std::shared_ptr<IPathQuery>& query, int threadNum)>;
+using PathedFunc = std::function<void (const std::shared_ptr<IPathQuery>& query)>;
 
 } // namespace circuit
 

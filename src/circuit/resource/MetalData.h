@@ -97,7 +97,7 @@ public:
 	/*
 	 * Hierarchical clusterization. Not reusable. Metric: complete link. Thread-unsafe
 	 */
-	void Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distmatrix);
+	void Clusterize(float maxDistance, const std::shared_ptr<CRagMatrix>& distmatrix);
 
 	// debug, could be used for defence perimeter calculation
 //	void DrawConvexHulls(springai::Drawer* drawer);

@@ -30,14 +30,14 @@ public:
 private:
 	void FindTarget();
 	void FallbackDisengage();
-	void ApplyDisengagePath(std::shared_ptr<CQueryPathSingle> query);
-	void ApplyTargetPath(std::shared_ptr<CQueryPathSingle> query);
+	void ApplyDisengagePath(const std::shared_ptr<CQueryPathSingle>& query);
+	void ApplyTargetPath(const std::shared_ptr<CQueryPathSingle>& query);
 	void FallbackSafePos();
-	void ApplySafePos(std::shared_ptr<CQueryPathMulti> query);
+	void ApplySafePos(const std::shared_ptr<CQueryPathMulti>& query);
 	void FallbackCommPos();
 	void Fallback();
 
-	void ApplyDamagedPath(std::shared_ptr<CQueryPathMulti> query);
+	void ApplyDamagedPath(const std::shared_ptr<CQueryPathMulti>& query);
 };
 
 } // namespace circuit

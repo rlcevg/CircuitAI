@@ -35,7 +35,7 @@ using namespace NSMicroPather;
 
 std::vector<int> CPathFinder::blockArray;
 
-CPathFinder::CPathFinder(std::shared_ptr<CScheduler> scheduler, CTerrainData* terrainData)
+CPathFinder::CPathFinder(const std::shared_ptr<CScheduler>& scheduler, CTerrainData* terrainData)
 		: terrainData(terrainData)
 		, pMoveData(&moveData0)
 		, airMoveArray(nullptr)
@@ -56,14 +56,13 @@ CPathFinder::CPathFinder(std::shared_ptr<CScheduler> scheduler, CTerrainData* te
 	pathMapYSize = terrainData->sectorZSize;
 	moveMapXSize = pathMapXSize + 2;  // +2 for passable edges
 	moveMapYSize = pathMapYSize + 2;  // +2 for passable edges
-	micropather  = new CMicroPather(*this, pathMapXSize, pathMapYSize,
-			terrainData->GetMap()->GetWidth());
 
+	int mapWidth = terrainData->GetMap()->GetWidth();
 	int numThreads = scheduler->GetMaxPathThreads();
 	micropathers.reserve(numThreads);
 	for (int i = 0; i < numThreads; ++i) {
-		NSMicroPather::CMicroPather* micropather = new CMicroPather(*this, pathMapXSize, pathMapYSize,
-				terrainData->GetMap()->GetWidth());
+		NSMicroPather::CMicroPather* micropather = new CMicroPather(*this,
+				pathMapXSize, pathMapYSize, mapWidth);
 		micropathers.push_back(micropather);
 	}
 
@@ -132,7 +131,6 @@ CPathFinder::~CPathFinder()
 		delete[] ma;
 	}
 	delete[] airMoveArray;
-	delete micropather;
 	for (NSMicroPather::CMicroPather* micropather : micropathers) {
 		delete micropather;
 	}
@@ -300,7 +298,7 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateCostMapQuery(
 	return pQuery;
 }
 
-void CPathFinder::RunQuery(std::shared_ptr<IPathQuery> query, PathedFunc&& onComplete)
+void CPathFinder::RunQuery(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete)
 {
 	switch (query->GetType()) {
 		case IPathQuery::Type::SINGLE: {
@@ -317,99 +315,6 @@ void CPathFinder::RunQuery(std::shared_ptr<IPathQuery> query, PathedFunc&& onCom
 		} break;
 		default: break;
 	}
-}
-
-void CPathFinder::SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame)
-{
-	CCircuitDef* cdef = unit->GetCircuitDef();
-	STerrainMapMobileType::Id mobileTypeId = cdef->GetMobileId();
-
-	const std::vector<STerrainMapSector>& sectors = areaData->sector;
-	bool* moveArray;
-	float maxSlope;
-	if (mobileTypeId < 0) {
-		moveArray = airMoveArray;
-		maxSlope = 1.f;
-	} else {
-		moveArray = pMoveData.load()->moveArrays[mobileTypeId];
-		maxSlope = std::max(areaData->mobileType[mobileTypeId].maxSlope, 1e-3f);
-	}
-
-	float* threatArray;
-	CostFunc moveFun;
-	CostFunc threatFun;
-	// FIXME: DEBUG; Re-organize and pre-calculate moveFun for each move-type
-	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
-		threatArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
-		moveFun = [&sectors, maxSlope](int index) {
-			return (sectors[index].isWater ? 4.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
-		};
-		threatFun = [threatArray](int index) {
-			return 2.f * threatArray[index];
-		};
-	} else if (unit->GetUnit()->IsCloaked()) {
-		threatArray = threatMap->GetCloakThreatArray();
-		moveFun = [&sectors, maxSlope](int index) {
-			return sectors[index].maxSlope / maxSlope;
-		};
-		threatFun = [threatArray](int index) {
-			return threatArray[index];
-		};
-	} else if (cdef->IsAbleToFly()) {
-		threatArray = threatMap->GetAirThreatArray();
-		moveFun = [](int index) {
-			return 0.f;
-		};
-		threatFun = [threatArray](int index) {
-			return 2.f * threatArray[index];
-		};
-	} else if (cdef->IsAmphibious()) {
-		threatArray = threatMap->GetAmphThreatArray();
-		if (maxSlope > SPIDER_SLOPE) {
-			const float minElev = areaData->minElevation;
-			float elevLen = std::max(areaData->maxElevation - areaData->minElevation, 1e-3f);
-			moveFun = [&sectors, minElev, elevLen](int index) {
-				return 2.f * (1.f - (sectors[index].maxElevation - minElev) / elevLen) +
-						(sectors[index].isWater ? 4.f : 0.f);
-			};
-			threatFun = [threatArray](int index) {
-				return 2.f * threatArray[index];
-			};
-		} else {
-			moveFun = [&sectors, maxSlope](int index) {
-				return (sectors[index].isWater ? 4.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
-			};
-			threatFun = [threatArray](int index) {
-				return 2.f * threatArray[index];
-			};
-		}
-	} else {
-		threatArray = threatMap->GetSurfThreatArray();
-		moveFun = [&sectors, maxSlope](int index) {
-			return (sectors[index].isWater ? 0.f : (2.f * sectors[index].maxSlope / maxSlope));
-		};
-		threatFun = [threatArray](int index) {
-			return 2.f * threatArray[index];
-		};
-	}
-	// FIXME: DEBUG
-
-	micropather->SetMapData(moveArray, threatArray, moveFun, threatFun, GetHeightMap());
-}
-
-/*
- * WARNING: startPos must be correct
- */
-float CPathFinder::PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius, float maxThreat)
-{
-	CTerrainData::CorrectPosition(endPos);
-
-	float pathCost = 0.0f;
-	radius /= squareSize;
-
-	micropather->FindBestCostToPointOnRadius(Pos2MoveNode(startPos), Pos2MoveNode(endPos), radius, maxThreat, &pathCost);
-
-	return pathCost;
 }
 
 void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, int frame)
@@ -489,13 +394,13 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 	query->Init(moveArray, threatArray, moveFun, threatFun, unit);
 }
 
-void CPathFinder::RunPathSingle(std::shared_ptr<IPathQuery> query, PathedFunc&& onComplete)
+void CPathFinder::RunPathSingle(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query, int threadNum) {
+	scheduler->RunPathTask(query, [this](const std::shared_ptr<IPathQuery>& query, int threadNum) {
 		this->MakePath(query.get(), micropathers[threadNum]);
 	}
-	, [this, onComplete](std::shared_ptr<IPathQuery> query) {
+	, [this, onComplete](const std::shared_ptr<IPathQuery>& query) {
 #ifdef DEBUG_VIS
 		this->UpdateVis(std::static_pointer_cast<CQueryPathSingle>(query)->GetPathInfo()->path);
 #endif
@@ -506,13 +411,13 @@ void CPathFinder::RunPathSingle(std::shared_ptr<IPathQuery> query, PathedFunc&& 
 	});
 }
 
-void CPathFinder::RunPathMulti(std::shared_ptr<IPathQuery> query, PathedFunc&& onComplete)
+void CPathFinder::RunPathMulti(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query, int threadNum) {
+	scheduler->RunPathTask(query, [this](const std::shared_ptr<IPathQuery>& query, int threadNum) {
 		this->FindBestPath(query.get(), micropathers[threadNum]);
 	}
-	, [this, onComplete](std::shared_ptr<IPathQuery> query) {
+	, [this, onComplete](const std::shared_ptr<IPathQuery>& query) {
 #ifdef DEBUG_VIS
 		this->UpdateVis(std::static_pointer_cast<CQueryPathMulti>(query)->GetPathInfo()->path);
 #endif
@@ -523,13 +428,13 @@ void CPathFinder::RunPathMulti(std::shared_ptr<IPathQuery> query, PathedFunc&& o
 	});
 }
 
-void CPathFinder::RunPathCost(std::shared_ptr<IPathQuery> query, PathedFunc&& onComplete)
+void CPathFinder::RunPathCost(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query, int threadNum) {
+	scheduler->RunPathTask(query, [this](const std::shared_ptr<IPathQuery>& query, int threadNum) {
 		this->PathCost(query.get(), micropathers[threadNum]);
 	}
-	, [onComplete](std::shared_ptr<IPathQuery> query) {
+	, [onComplete](const std::shared_ptr<IPathQuery>& query) {
 		query->SetState(IPathQuery::State::READY);
 		if (onComplete != nullptr) {
 			onComplete(query);
@@ -537,13 +442,13 @@ void CPathFinder::RunPathCost(std::shared_ptr<IPathQuery> query, PathedFunc&& on
 	});
 }
 
-void CPathFinder::RunCostMap(std::shared_ptr<IPathQuery> query, PathedFunc&& onComplete)
+void CPathFinder::RunCostMap(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(query, [this](std::shared_ptr<IPathQuery> query, int threadNum) {
+	scheduler->RunPathTask(query, [this](const std::shared_ptr<IPathQuery>& query, int threadNum) {
 		this->MakeCostMap(query.get(), micropathers[threadNum]);
 	}
-	, [onComplete](std::shared_ptr<IPathQuery> query) {
+	, [onComplete](const std::shared_ptr<IPathQuery>& query) {
 		query->SetState(IPathQuery::State::READY);
 		if (onComplete != nullptr) {
 			onComplete(query);

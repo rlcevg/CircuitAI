@@ -883,7 +883,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 	return MakeBuilderTask(unit, pQuery);
 }
 
-IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, std::shared_ptr<CQueryCostMap> query, float sqMaxBaseRange)
+IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, const std::shared_ptr<CQueryCostMap>& query, float sqMaxBaseRange)
 {
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	threatMap->SetThreatType(unit);
@@ -985,7 +985,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, std::shared_ptr<
 	return const_cast<IBuilderTask*>(task);
 }
 
-IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, std::shared_ptr<CQueryCostMap> query)
+IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const std::shared_ptr<CQueryCostMap>& query)
 {
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	threatMap->SetThreatType(unit);

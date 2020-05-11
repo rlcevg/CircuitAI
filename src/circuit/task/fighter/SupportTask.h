@@ -23,9 +23,7 @@ public:
 	virtual void Update() override;
 
 private:
-	void ApplyPath(std::shared_ptr<CQueryPathMulti> query);
-
-	unsigned int updCount;
+	void ApplyPath(const std::shared_ptr<CQueryPathMulti>& query);
 };
 
 } // namespace circuit

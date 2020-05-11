@@ -29,14 +29,14 @@ public:
 
 private:
 	bool FindTarget();
-	void ApplyTargetPath(std::shared_ptr<CQueryPathMulti> query);
+	void ApplyTargetPath(const std::shared_ptr<CQueryPathMulti>& query);
 	void FallbackTargetEmpty();
 	void FallbackAttackSafe();
-	void ApplyAttackSafe(std::shared_ptr<CQueryPathMulti> query);
+	void ApplyAttackSafe(const std::shared_ptr<CQueryPathMulti>& query);
 	void FallbackStaticSafe();
-	void ApplyStaticSafe(std::shared_ptr<CQueryPathMulti> query);
+	void ApplyStaticSafe(const std::shared_ptr<CQueryPathMulti>& query);
 	void FallbackBasePos();
-	void ApplyBasePos(std::shared_ptr<CQueryPathSingle> query);
+	void ApplyBasePos(const std::shared_ptr<CQueryPathSingle>& query);
 	void FallbackCommPos();
 };
 

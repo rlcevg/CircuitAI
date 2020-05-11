@@ -28,8 +28,8 @@ public:
 	void GetLosMap(IntVec& losMap) const;
 
 	float GetElevationAt(float x, float z) const { return map->GetElevationAt(x, z); }
-	float GetWidth() const { return map->GetWidth(); }
-	float GetHeight() const { return map->GetHeight(); }
+	int GetWidth() const { return map->GetWidth(); }
+	int GetHeight() const { return map->GetHeight(); }
 	const char* GetName() const { return map->GetName(); }
 
 	bool IsPossibleToBuildAt(springai::UnitDef* unitDef, const springai::AIFloat3& pos, int facing) const {

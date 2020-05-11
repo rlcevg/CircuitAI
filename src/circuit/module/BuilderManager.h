@@ -145,8 +145,8 @@ public:
 
 private:
 	IUnitTask* DefaultMakeTask(CCircuitUnit* unit);
-	IBuilderTask* MakeCommTask(CCircuitUnit* unit, std::shared_ptr<CQueryCostMap> query, float sqMaxBaseRange);
-	IBuilderTask* MakeBuilderTask(CCircuitUnit* unit, std::shared_ptr<CQueryCostMap> query);
+	IBuilderTask* MakeCommTask(CCircuitUnit* unit, const std::shared_ptr<CQueryCostMap>& query, float sqMaxBaseRange);
+	IBuilderTask* MakeBuilderTask(CCircuitUnit* unit, const std::shared_ptr<CQueryCostMap>& query);
 	IBuilderTask* CreateBuilderTask(const springai::AIFloat3& position, CCircuitUnit* unit);
 
 	void AddBuildList(CCircuitUnit* unit);

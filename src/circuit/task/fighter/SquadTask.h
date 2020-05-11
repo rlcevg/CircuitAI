@@ -20,6 +20,8 @@ protected:
 public:
 	virtual ~ISquadTask();
 
+	virtual void ClearRelease() override;
+
 	virtual void AssignTo(CCircuitUnit* unit) override;
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
@@ -31,8 +33,13 @@ public:
 private:
 	void FindLeader(decltype(units)::iterator itBegin, decltype(units)::iterator itEnd);
 
+	bool IsMergeSafe() const;
+	bool IsCostQueryAlive(const std::shared_ptr<IPathQuery>& query) const;
+	void MakeCostMapQuery();
+	ISquadTask* CheckMergeTask();
+
 protected:
-	ISquadTask* GetMergeTask() const;
+	ISquadTask* GetMergeTask();
 	bool IsMustRegroup();
 	void ActivePath(float speed = NO_SPEED_LIMIT);
 
@@ -47,6 +54,9 @@ protected:
 	std::shared_ptr<PathInfo> pPath;
 
 	int groupFrame;
+
+	std::shared_ptr<IPathQuery> costQuery;  // owner
+	bool isCostMapReady;
 
 #ifdef DEBUG_VIS
 public:

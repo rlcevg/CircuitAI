@@ -99,7 +99,7 @@ void CDefendTask::Update()
 	++updCount;
 
 	/*
-	 * Merge tasks if possible
+	 * Promote task if possible
 	 */
 	if (updCount % 32 == 1) {
 		CMilitaryManager* militaryManager = static_cast<CMilitaryManager*>(manager);
@@ -112,14 +112,17 @@ void CDefendTask::Update()
 //			manager->DoneTask(this);  // NOTE: RemoveAssignee() will abort task
 			return;
 		}
+	}
 
-		ISquadTask* task = GetMergeTask();
-		if (task != nullptr) {
-			task->Merge(this);
-			units.clear();
-			manager->AbortTask(this);
-			return;
-		}
+	/*
+	 * Merge tasks if possible
+	 */
+	ISquadTask* task = GetMergeTask();
+	if (task != nullptr) {
+		task->Merge(this);
+		units.clear();
+		manager->AbortTask(this);
+		return;
 	}
 
 	/*
@@ -178,7 +181,7 @@ void CDefendTask::Update()
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
+	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathMulti>(query));
 		}
@@ -289,7 +292,7 @@ bool CDefendTask::FindTarget()
 	// Return: target, startPos=leader->pos, enemyPositions
 }
 
-void CDefendTask::ApplyTargetPath(std::shared_ptr<CQueryPathMulti> query)
+void CDefendTask::ApplyTargetPath(const std::shared_ptr<CQueryPathMulti>& query)
 {
 	pPath = query->GetPathInfo();
 
@@ -320,14 +323,14 @@ void CDefendTask::FallbackFrontPos()
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
+	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyFrontPos(std::static_pointer_cast<CQueryPathMulti>(query));
 		}
 	});
 }
 
-void CDefendTask::ApplyFrontPos(std::shared_ptr<CQueryPathMulti> query)
+void CDefendTask::ApplyFrontPos(const std::shared_ptr<CQueryPathMulti>& query)
 {
 	pPath = query->GetPathInfo();
 
@@ -357,14 +360,14 @@ void CDefendTask::FallbackBasePos()
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
+	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyBasePos(std::static_pointer_cast<CQueryPathSingle>(query));
 		}
 	});
 }
 
-void CDefendTask::ApplyBasePos(std::shared_ptr<CQueryPathSingle> query)
+void CDefendTask::ApplyBasePos(const std::shared_ptr<CQueryPathSingle>& query)
 {
 	pPath = query->GetPathInfo();
 

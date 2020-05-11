@@ -108,14 +108,12 @@ void CRaidTask::Update()
 	/*
 	 * Merge tasks if possible
 	 */
-	if (updCount % 32 == 1) {
-		ISquadTask* task = GetMergeTask();
-		if (task != nullptr) {
-			task->Merge(this);
-			units.clear();
-			manager->AbortTask(this);
-			return;
-		}
+	ISquadTask* task = GetMergeTask();
+	if (task != nullptr) {
+		task->Merge(this);
+		units.clear();
+		manager->AbortTask(this);
+		return;
 	}
 
 	/*
@@ -209,7 +207,7 @@ void CRaidTask::Update()
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
+	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathMulti>(query));
 		}
@@ -375,7 +373,7 @@ bool CRaidTask::FindTarget()
 	// Return: target, startPos=leader->pos, urgentPositions and enemyPositions
 }
 
-void CRaidTask::ApplyTargetPath(std::shared_ptr<CQueryPathMulti> query)
+void CRaidTask::ApplyTargetPath(const std::shared_ptr<CQueryPathMulti>& query)
 {
 	pPath = query->GetPathInfo();
 
@@ -413,14 +411,14 @@ void CRaidTask::FallbackRaid()
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
+	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyRaidPath(std::static_pointer_cast<CQueryPathSingle>(query));
 		}
 	});
 }
 
-void CRaidTask::ApplyRaidPath(std::shared_ptr<CQueryPathSingle> query)
+void CRaidTask::ApplyRaidPath(const std::shared_ptr<CQueryPathSingle>& query)
 {
 	pPath = query->GetPathInfo();
 

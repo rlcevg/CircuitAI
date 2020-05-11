@@ -74,7 +74,7 @@ public:
 
 protected:
 	bool IsQueryReady(CCircuitUnit* unit) const;
-	bool IsQueryAlive(std::shared_ptr<IPathQuery> query) const;
+	bool IsQueryAlive(const std::shared_ptr<IPathQuery>& query) const;
 
 public:
 	friend std::ostream& operator<<(std::ostream& os, const IUnitTask& data);

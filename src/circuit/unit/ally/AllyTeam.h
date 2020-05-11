@@ -92,13 +92,13 @@ public:
 	void Update(CCircuitAI* ai);
 	void EnqueueUpdate();
 
-	std::shared_ptr<CMapManager>& GetMapManager() { return mapManager; }
-	std::shared_ptr<CEnemyManager>& GetEnemyManager() { return enemyManager; }
-	std::shared_ptr<CMetalManager>& GetMetalManager() { return metalManager; }
-	std::shared_ptr<CEnergyGrid>& GetEnergyGrid() { return energyGrid; }
-	std::shared_ptr<CDefenceMatrix>& GetDefenceMatrix() { return defence; }
-	std::shared_ptr<CPathFinder>& GetPathfinder() { return pathfinder; }
-	std::shared_ptr<CFactoryData>& GetFactoryData() { return factoryData; }
+	const std::shared_ptr<CMapManager>&    GetMapManager()    { return mapManager; }
+	const std::shared_ptr<CEnemyManager>&  GetEnemyManager()  { return enemyManager; }
+	const std::shared_ptr<CMetalManager>&  GetMetalManager()  { return metalManager; }
+	const std::shared_ptr<CEnergyGrid>&    GetEnergyGrid()    { return energyGrid; }
+	const std::shared_ptr<CDefenceMatrix>& GetDefenceMatrix() { return defence; }
+	const std::shared_ptr<CPathFinder>&    GetPathfinder()    { return pathfinder; }
+	const std::shared_ptr<CFactoryData>&   GetFactoryData()   { return factoryData; }
 
 	void OccupyCluster(int clusterId, int teamId);
 	SClusterTeam GetClusterTeam(int clusterId);

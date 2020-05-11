@@ -52,6 +52,7 @@ void CScheduler::ProcessRelease()
 	for (auto& task : releaseTasks) {
 		task->Run();
 	}
+
 	Release();
 }
 
@@ -114,7 +115,7 @@ void CScheduler::StartThreads()
 	}
 }
 
-void CScheduler::RunTaskEvery(std::shared_ptr<CGameTask> task, int frameInterval, int frameOffset)
+void CScheduler::RunTaskEvery(const std::shared_ptr<CGameTask>& task, int frameInterval, int frameOffset)
 {
 	if (frameOffset > 0) {
 		RunTaskAfter(std::make_shared<CGameTask>([this, task, frameInterval]() {
@@ -174,19 +175,19 @@ void CScheduler::ProcessTasks(int frame)
 	isProcessing = false;
 }
 
-void CScheduler::RunParallelTask(std::shared_ptr<CGameTask> task, std::shared_ptr<CGameTask> onComplete)
+void CScheduler::RunParallelTask(const std::shared_ptr<CGameTask>& task, const std::shared_ptr<CGameTask>& onComplete)
 {
 	StartThreads();
 	workTasks.Push({self, task, onComplete});
 }
 
-void CScheduler::RunPathTask(std::shared_ptr<IPathQuery> query, PathFunc&& task, PathedFunc&& onComplete)
+void CScheduler::RunPathTask(const std::shared_ptr<IPathQuery>& query, PathFunc&& task, PathedFunc&& onComplete)
 {
 	StartThreads();
 	pathTasks.Push({self, query, std::move(task), std::move(onComplete)});
 }
 
-void CScheduler::RemoveTask(std::shared_ptr<CGameTask>& task)
+void CScheduler::RemoveTask(const std::shared_ptr<CGameTask>& task)
 {
 	if (isProcessing) {
 		removeTasks.push_back(task);
@@ -198,8 +199,9 @@ void CScheduler::RemoveTask(std::shared_ptr<CGameTask>& task)
 
 void CScheduler::WorkerThread()
 {
-	WorkTask container = workTasks.Pop();
 	while (workerRunning.load()) {
+		WorkTask container = workTasks.Pop();
+
 		std::shared_ptr<CScheduler> scheduler = container.scheduler.lock();
 		if (scheduler != nullptr) {
 			scheduler->barrier.NotifyOne([scheduler]() { scheduler->isWorkProcess = true; });
@@ -213,22 +215,20 @@ void CScheduler::WorkerThread()
 			}
 			scheduler->barrier.NotifyOne([scheduler]() { scheduler->isWorkProcess = false; });
 		}
-		container = workTasks.Pop();
 	}
 }
 
 void CScheduler::PatherThread(int num)
 {
-	PathTask container = pathTasks.Pop();
 	while (workerRunning.load()) {
+		PathTask container = pathTasks.Pop();
+
 		std::shared_ptr<IPathQuery> query = container.query.lock();
 		if (query == nullptr) {
-			container = pathTasks.Pop();
 			continue;
 		}
 		std::shared_ptr<CScheduler> scheduler = container.scheduler.lock();
 		if (scheduler == nullptr) {
-			container = pathTasks.Pop();
 			continue;
 		}
 
@@ -242,8 +242,6 @@ void CScheduler::PatherThread(int num)
 
 		}
 		scheduler->barrier.NotifyOne([scheduler]() { scheduler->numPathProcess--; });
-
-		container = pathTasks.Pop();
 	}
 }
 

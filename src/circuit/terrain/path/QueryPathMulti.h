@@ -33,7 +33,7 @@ public:
 	const float GetMaxThreat() const { return maxThreat; }
 
 	// Result
-	std::shared_ptr<PathInfo> GetPathInfo() const { return pPath; }
+	const std::shared_ptr<PathInfo>& GetPathInfo() const { return pPath; }
 	const float GetPathCost() const { return pathCost; }
 
 private:

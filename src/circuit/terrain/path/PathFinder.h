@@ -36,10 +36,8 @@ public:
 		std::vector<bool*> moveArrays;
 	};
 
-	CPathFinder(std::shared_ptr<CScheduler> scheduler, CTerrainData* terrainData);
+	CPathFinder(const std::shared_ptr<CScheduler>& scheduler, CTerrainData* terrainData);
 	virtual ~CPathFinder();
-
-	unsigned Checksum() const { return micropather->Checksum(); }
 
 	void UpdateAreaUsers(CTerrainManager* terrainManager);
 	void SetAreaUpdated(bool value) { isAreaUpdated = value; }
@@ -66,13 +64,7 @@ public:
 	std::shared_ptr<IPathQuery> CreateCostMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos);
 
-	void RunQuery(std::shared_ptr<IPathQuery> query, PathedFunc&& onComplete = nullptr);
-
-	// FIXME: Remove
-	void SetMapData(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
-	float PathCost(const springai::AIFloat3& startPos, springai::AIFloat3& endPos, int radius,
-			float maxThreat = std::numeric_limits<float>::max());
-	// FIXME: Remove
+	void RunQuery(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete = nullptr);
 
 	int GetSquareSize() const { return squareSize; }
 	int GetPathMapXSize() const { return pathMapXSize; }
@@ -94,10 +86,10 @@ private:
 	int MakeQueryId() { return queryId++; }
 	void FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, int frame);
 
-	void RunPathSingle(std::shared_ptr<IPathQuery> query, PathedFunc&& onComplete = nullptr);
-	void RunPathMulti(std::shared_ptr<IPathQuery> query, PathedFunc&& onComplete = nullptr);
-	void RunPathCost(std::shared_ptr<IPathQuery> query, PathedFunc&& onComplete = nullptr);
-	void RunCostMap(std::shared_ptr<IPathQuery> query, PathedFunc&& onComplete = nullptr);
+	void RunPathSingle(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete = nullptr);
+	void RunPathMulti(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete = nullptr);
+	void RunPathCost(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete = nullptr);
+	void RunCostMap(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete = nullptr);
 
 	void MakePath(IPathQuery* query, NSMicroPather::CMicroPather* micropather);
 	void FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* micropather);
@@ -107,7 +99,6 @@ private:
 	CTerrainData* terrainData;
 	SAreaData* areaData;
 
-	NSMicroPather::CMicroPather* micropather;  // FIXME: Remove
 	std::vector<NSMicroPather::CMicroPather*> micropathers;
 	SMoveData moveData0, moveData1;
 	std::atomic<SMoveData*> pMoveData;
@@ -143,7 +134,7 @@ public:
 	const springai::AIFloat3& GetDbgPos() const { return dbgPos; }
 	void SetDbgType(int type) { dbgType = type; }
 	int GetDbgType() const { return dbgType; }
-	void SetDbgQuery(std::shared_ptr<IPathQuery> query) { dbgQuery = query; }
+	void SetDbgQuery(const std::shared_ptr<IPathQuery>& query) { dbgQuery = query; }
 	void UpdateVis(const IndexVec& path);
 	void ToggleVis(CCircuitAI* circuit);
 #endif

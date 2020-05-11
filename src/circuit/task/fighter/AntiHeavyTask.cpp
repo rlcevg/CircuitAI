@@ -120,20 +120,24 @@ void CAntiHeavyTask::Update()
 	++updCount;
 
 	/*
-	 * Merge tasks if possible
+	 * Drop task if no enemy heavy exists
 	 */
 	if (updCount % 32 == 1) {
 		if (manager->GetCircuit()->GetEnemyManager()->GetEnemyCost(ROLE_TYPE(HEAVY)) < 1.f) {
 			manager->AbortTask(this);
 			return;
 		}
-		ISquadTask* task = GetMergeTask();
-		if (task != nullptr) {
-			task->Merge(this);
-			units.clear();
-			manager->AbortTask(this);
-			return;
-		}
+	}
+
+	/*
+	 * Merge tasks if possible
+	 */
+	ISquadTask* task = GetMergeTask();
+	if (task != nullptr) {
+		task->Merge(this);
+		units.clear();
+		manager->AbortTask(this);
+		return;
 	}
 
 	/*
@@ -240,7 +244,7 @@ void CAntiHeavyTask::Update()
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
+	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathMulti>(query));
 		}
@@ -348,7 +352,7 @@ bool CAntiHeavyTask::FindTarget()
 	// Return: target, startPos=leader->pos, enemyPositions
 }
 
-void CAntiHeavyTask::ApplyTargetPath(std::shared_ptr<CQueryPathMulti> query)
+void CAntiHeavyTask::ApplyTargetPath(const std::shared_ptr<CQueryPathMulti>& query)
 {
 	pPath = query->GetPathInfo();
 
@@ -397,14 +401,14 @@ void CAntiHeavyTask::FallbackAttackSafe()
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
+	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyAttackSafe(std::static_pointer_cast<CQueryPathMulti>(query));
 		}
 	});
 }
 
-void CAntiHeavyTask::ApplyAttackSafe(std::shared_ptr<CQueryPathMulti> query)
+void CAntiHeavyTask::ApplyAttackSafe(const std::shared_ptr<CQueryPathMulti>& query)
 {
 	pPath = query->GetPathInfo();
 
@@ -436,14 +440,14 @@ void CAntiHeavyTask::FallbackStaticSafe()
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
+	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyStaticSafe(std::static_pointer_cast<CQueryPathMulti>(query));
 		}
 	});
 }
 
-void CAntiHeavyTask::ApplyStaticSafe(std::shared_ptr<CQueryPathMulti> query)
+void CAntiHeavyTask::ApplyStaticSafe(const std::shared_ptr<CQueryPathMulti>& query)
 {
 	pPath = query->GetPathInfo();
 
@@ -473,14 +477,14 @@ void CAntiHeavyTask::FallbackBasePos()
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](std::shared_ptr<IPathQuery> query) {
+	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
 		if (this->IsQueryAlive(query)) {
 			this->ApplyBasePos(std::static_pointer_cast<CQueryPathSingle>(query));
 		}
 	});
 }
 
-void CAntiHeavyTask::ApplyBasePos(std::shared_ptr<CQueryPathSingle> query)
+void CAntiHeavyTask::ApplyBasePos(const std::shared_ptr<CQueryPathSingle>& query)
 {
 	pPath = query->GetPathInfo();
 
