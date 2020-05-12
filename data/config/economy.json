@@ -38,17 +38,17 @@
 		},
 		// income factor for energy, time is in seconds
 		// [[<start_factor>, <start_time>], [<end_factor>, <end_time>]]
-		"factor": [[0.15, 1], [18.0, 3600]],
+		"factor": [[0.15, 1], [7.0, 3600]],
 
 		"pylon": ["energypylon", "energysolar", "energywind"]
 	},
 
 	// Scales metal income
 	// ecoFactor = teamSize*eps_step+(1-eps_step)
-	"eps_step": 0.275,
+	"eps_step": 0.2,
 
 	// Mobile buildpower to metal income ratio
-	"buildpower": 1.2,
+	"buildpower": 1.25,
 	// Metal excess to income ratio, -1 to disable
 	"excess": -1.0,
 	// Mobile constructor to static constructor metal pull ratio

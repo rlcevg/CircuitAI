@@ -29,8 +29,8 @@
 						[0.9, ["scout", "builder", "scout", "riot", "raider", "raider", "raider", "raider"]]
 					],
 					"factoryhover": [
-						[0.9, ["builder", "raider", "raider", "raider", "raider", "raider", "raider", "raider", "raider", "builder"]],
-						[0.1, ["builder", "raider", "raider", "raider",  "skirmish", "builder", "skirmish", "skirmish"]]
+						[0.9, ["builder", "raider", "scout", "raider", "raider", "scout", "raider", "raider", "scout", "builder"]],
+						[0.1, ["builder", "raider", "raider", "scout",  "skirmish", "builder", "skirmish", "scout"]]
 					],
 					"factoryplane": [
 						[0.5, ["anti_air", "builder", "anti_air", "anti_air"]],
@@ -60,7 +60,7 @@
 			"upgrade": {
 				"time": 420,  // Force-morph delay, in seconds
 				"module": [  // List of dynamic module IDs
-					[13, 42],  // shotgun, nano
+					[13, 42],  // shotgun
 					[31, 42],  // Cloak, Nano
 					[15, 41, 37],  // sniper, range, health
 					[34, 34, 34],  // companion drones
@@ -93,7 +93,7 @@
 
 			// Commander hides if ("time" elapsed) and ("threat" exceeds value or enemy has "air")
 			"hide": {
-				"time": 480,  // seconds
+				"time": 360,  // seconds
 				"threat": 30,
 				"air": true,
 				"task_rad": 2000.0
@@ -124,8 +124,8 @@
 						[0.8, ["builder", "scout",  "raider", "scout", "raider", "raider", "raider", "scout", "raider", "raider"]]
 					],
 					"factoryhover": [
-						[0.5, ["builder", "raider", "raider", "raider", "raider"]],
-						[0.5, ["builder", "raider", "raider", "raider", "raider", "skirmish", "skirmish"]]
+						[0.5, ["builder", "scout", "raider", "raider", "raider"]],
+						[0.5, ["builder", "raider", "raider", "scout", "skirmish", "skirmish"]]
 					],
 					"factoryplane": [
 						[0.5, ["anti_air", "builder", "anti_air", "anti_air"]],
@@ -153,9 +153,9 @@
 
 			// Morph params
 			"upgrade": {
-				"time": 420,  // Force-morph delay, in seconds
+				"time": 240,  // Force-morph delay, in seconds
 				"module": [  // List of dynamic module IDs
-					[7, 40],  // Machinegun, speed
+					[7, 37],  // Machinegun
 					[31, 36],  // Cloak, Regen
 					[19, 38, 39],  // disruptor bomb, high density, damage boost
 					[34, 34, 34],  // companion drones
@@ -163,22 +163,23 @@
 					[34, 34, 40],  // companion drones, speed
 					[40, 40, 40],  // speed
 					[40, 40, 40],  // speed
+					[40, 37, 37],  // speed, health
 					[37, 37, 37],  // health
 					[37, 37, 37],  // health
-					[37, 37, 36],  // health, regen
 					[36, 36, 36],  // regen
 					[36, 36, 36],  // regen
+					[36, 42, 42],  // regen, builder
 					[42, 42, 42],  // builder
 					[42, 42, 42],  // builder
-					[42, 42, 30],  // radar
-					[41, 27, 29],  // range, disruptor ammo, jammer
+					[30, 27, 29],  // radar, disruptor ammo, jammer
 					[41, 41, 41],  // range
 					[41, 41, 41],  // range
-					[41, 39, 39],  // range, damage
+					[41, 41, 39],  // range, damage
 					[39, 39, 39],  // damage
-					[39, 39, 38],  // damage, high density
+					[39, 39, 39],  // damage
 					[38, 38, 38],  // high density
-					[38, 38, 38]  // high density
+					[38, 38, 38],  // high density
+					[38]  // high density
 				]
 			},
 
@@ -217,7 +218,7 @@
 					],
 					"factoryhover": [
 						[0.5, ["builder", "raider", "raider", "raider", "raider", "builder", "raider", "raider", "raider", "raider", "raider", "builder"]],
-						[0.5, ["builder", "raider", "raider", "raider", "raider", "builder", "skirmish", "builder", "skirmish", "skirmish"]]
+						[0.5, ["builder", "scout", "raider", "raider", "raider", "builder", "scout", "builder", "skirmish", "skirmish"]]
 					],
 					"factoryplane": [
 						[0.5, ["anti_air", "builder", "anti_air", "anti_air"]],
@@ -248,7 +249,7 @@
 			"upgrade": {
 				"time": 420,  // Force-morph delay, in seconds
 				"module": [  // List of dynamic module IDs
-					[11, 41],  // shotgun, range
+					[11],  // shotgun
 					[24, 37],  // shield, health
 					[11, 41, 41],  // Double Riot, range
 					[38, 41, 41],  // high density, range
@@ -278,7 +279,7 @@
 
 			// Commander hides if ("time" elapsed) and ("threat" exceeds value or enemy has "air")
 			"hide": {
-				"time": 600,  // seconds
+				"time": 140,  // seconds
 				"threat": 70,
 				"air": true,
 				"task_rad": 2000.0
@@ -309,8 +310,8 @@
 						[0.9, ["builder", "scout",  "scout",  "raider", "raider", "raider", "raider", "raider", "builder", "builder", "scout",  "raider", "raider", "raider", "raider", "raider", "builder"]]
 					],
 					"factoryhover": [
-						[0.5, ["builder", "raider", "raider", "raider", "raider", "builder", "raider", "raider", "raider", "raider", "raider", "builder"]],
-						[0.5, ["builder", "raider", "raider", "raider", "raider", "builder", "raider", "raider", "raider", "skirmish", "builder", "skirmish", "skirmish"]]
+						[0.5, ["builder", "scout", "scout", "scout", "raider", "builder", "raider", "raider", "raider", "raider", "raider", "builder"]],
+						[0.5, ["builder", "scout", "raider", "raider", "raider", "builder", "scout", "raider", "raider", "skirmish", "builder", "skirmish", "skirmish"]]
 					],
 					"factoryplane": [
 						[0.5, ["anti_air", "builder", "anti_air", "anti_air"]],
@@ -339,9 +340,9 @@
 
 			// Morph params
 			"upgrade": {
-				"time": 420,  // Force-morph delay, in seconds
+				"time": 315,  // Force-morph delay, in seconds
 				"module": [  // List of dynamic module IDs
-					[4, 36],  // beam laser, regen
+					[8, 37],  // beam laser
 					[31, 36],  // cloak, regen
 					[8, 40, 36],  // lightning, speed, regen
 					[37, 40, 36],  // health, speed, regen
