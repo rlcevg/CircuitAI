@@ -10,10 +10,11 @@
 #define SRC_CIRCUIT_TERRAIN_PATHFINDER_H_
 
 #include "terrain/path/MicroPather.h"
-#include "util/PathTask.h"
 #include "util/Defines.h"
 
 #include <atomic>
+#include <memory>
+#include <functional>
 
 namespace circuit {
 
@@ -29,6 +30,8 @@ struct SAreaData;
 class CCircuitAI;
 class CCircuitDef;
 #endif
+
+using PathCallback = std::function<void (const IPathQuery* query)>;
 
 class CPathFinder {
 public:
@@ -64,7 +67,7 @@ public:
 	std::shared_ptr<IPathQuery> CreateCostMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos);
 
-	void RunQuery(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete = nullptr);
+	void RunQuery(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
 
 	int GetSquareSize() const { return squareSize; }
 	int GetPathMapXSize() const { return pathMapXSize; }
@@ -86,14 +89,12 @@ private:
 	int MakeQueryId() { return queryId++; }
 	void FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, int frame);
 
-	void RunPathSingle(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete = nullptr);
-	void RunPathMulti(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete = nullptr);
-	void RunPathCost(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete = nullptr);
-	void RunCostMap(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete = nullptr);
+	void RunPathSingle(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
+	void RunPathMulti(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
+	void RunCostMap(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
 
 	void MakePath(IPathQuery* query, NSMicroPather::CMicroPather* micropather);
 	void FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* micropather);
-	void PathCost(IPathQuery* query, NSMicroPather::CMicroPather* micropather);
 	void MakeCostMap(IPathQuery* query, NSMicroPather::CMicroPather* micropather);
 
 	CTerrainData* terrainData;

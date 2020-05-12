@@ -140,9 +140,9 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 	pathQueries[unit] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
+	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplyPath(std::static_pointer_cast<CQueryPathSingle>(query));
+			this->ApplyPath(static_cast<const CQueryPathSingle*>(query));
 		}
 	});
 }
@@ -270,6 +270,7 @@ void CRetreatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 		}
 		unit->PushTravelAct(travelAction);
 	}
+	unit->GetTravelAct()->StateActivate();
 
 	Start(unit);
 }
@@ -297,15 +298,15 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* newRep)
 	costQuery->HoldTask(this);
 
 	CCircuitUnit::Id newRepId = newRep->GetId();
-	pathfinder->RunQuery(costQuery, [this, newRepId](const std::shared_ptr<IPathQuery>& query) {
+	pathfinder->RunQuery(costQuery, [this, newRepId](const IPathQuery* query) {
 		CCircuitUnit* newRep = this->ValidateNewRepairer(query, newRepId);
 		if (newRep != nullptr) {
-			this->ApplyCostMap(std::static_pointer_cast<CQueryCostMap>(query), newRep);
+			this->ApplyCostMap(static_cast<const CQueryCostMap*>(query), newRep);
 		}
 	});
 }
 
-void CRetreatTask::ApplyPath(const std::shared_ptr<CQueryPathSingle>& query)
+void CRetreatTask::ApplyPath(const CQueryPathSingle* query)
 {
 	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
 	CCircuitUnit* unit = query->GetUnit();
@@ -316,18 +317,26 @@ void CRetreatTask::ApplyPath(const std::shared_ptr<CQueryPathSingle>& query)
 	unit->GetTravelAct()->SetPath(pPath);
 }
 
-CCircuitUnit* CRetreatTask::ValidateNewRepairer(const std::shared_ptr<IPathQuery>& query, int newRepId) const
+CCircuitUnit* CRetreatTask::ValidateNewRepairer(const IPathQuery* query, int newRepId) const
 {
-	if (isDead) {
+	if (isDead || (costQuery == nullptr) || (costQuery->GetId() != query->GetId())) {
 		return nullptr;
 	}
-	if ((costQuery == nullptr) || (costQuery->GetId() != query->GetId())) {
+	CCircuitUnit* newRep = manager->GetCircuit()->GetTeamUnit(newRepId);
+	if (newRep == nullptr) {
 		return nullptr;
 	}
-	return manager->GetCircuit()->GetTeamUnit(newRepId);
+	if (newRep->GetTask()->GetType() != IUnitTask::Type::BUILDER) {
+		return nullptr;
+	}
+	IBuilderTask* taskB = static_cast<IBuilderTask*>(newRep->GetTask());
+	if ((taskB->GetBuildType() != IBuilderTask::BuildType::REPAIR) || (taskB->GetTarget() != query->GetUnit())) {
+		return nullptr;
+	}
+	return newRep;
 }
 
-void CRetreatTask::ApplyCostMap(const std::shared_ptr<CQueryCostMap>& query, CCircuitUnit* newRep)
+void CRetreatTask::ApplyCostMap(const CQueryCostMap* query, CCircuitUnit* newRep)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
@@ -361,7 +370,7 @@ void CRetreatTask::ApplyCostMap(const std::shared_ptr<CQueryCostMap>& query, CCi
 	}
 
 	if (prevCost > nextCost) {
-		SetRepairer(unit);
+		SetRepairer(newRep);
 	}
 }
 

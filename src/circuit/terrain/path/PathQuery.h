@@ -17,7 +17,7 @@ class IUnitTask;
 
 class IPathQuery {
 public:
-	enum class Type: char {NONE = 0, SINGLE, MULTI, COST, MAP, _SIZE_};
+	enum class Type: char {NONE = 0, SINGLE, MULTI, COST, _SIZE_};
 	enum class State: char {NONE = 0, PROCESS, READY, _SIZE_};
 
 protected:

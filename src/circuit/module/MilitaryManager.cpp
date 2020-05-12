@@ -603,10 +603,14 @@ CRetreatTask* CMilitaryManager::EnqueueRetreat()
 	return task;
 }
 
-void CMilitaryManager::DequeueTask(IFighterTask* task, bool done)
+void CMilitaryManager::DequeueTask(IUnitTask* task, bool done)
 {
-	if (task->GetType() == IUnitTask::Type::FIGHTER) {
-		fightTasks[static_cast<IFighterTask::FT>(task->GetFightType())].erase(task);
+	switch (task->GetType()) {
+		case IUnitTask::Type::FIGHTER: {
+			IFighterTask* taskF = static_cast<IFighterTask*>(task);
+			fightTasks[static_cast<IFighterTask::FT>(taskF->GetFightType())].erase(taskF);
+		} break;
+		default: break;
 	}
 	task->Dead();
 	task->Stop(done);
@@ -619,12 +623,12 @@ IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 
 void CMilitaryManager::AbortTask(IUnitTask* task)
 {
-	DequeueTask(static_cast<IFighterTask*>(task), false);
+	DequeueTask(task, false);
 }
 
 void CMilitaryManager::DoneTask(IUnitTask* task)
 {
-	DequeueTask(static_cast<IFighterTask*>(task), true);
+	DequeueTask(task, true);
 }
 
 void CMilitaryManager::FallbackTask(CCircuitUnit* unit)

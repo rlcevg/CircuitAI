@@ -175,8 +175,7 @@ void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
 	const CMetalData::Metals& spots = metalData->GetSpots();
 	int nrows = spots.size();
 
-	std::shared_ptr<CRagMatrix> pdistmatrix = std::make_shared<CRagMatrix>(nrows);
-	CRagMatrix& distmatrix = *pdistmatrix;
+	CRagMatrix distmatrix(nrows);
 	if (nrows <= 300) {
 		MoveData* moveData = commDef->GetDef()->GetMoveData();
 		int pathType = moveData->GetPathType();
@@ -201,9 +200,7 @@ void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
 		}
 	}
 
-	// NOTE: Parallel clusterization was here,
-	//       but bugs appeared: no communication with spring/lua
-	metalData->Clusterize(maxDistance, pdistmatrix);
+	metalData->Clusterize(maxDistance, distmatrix);
 }
 
 void CMetalManager::SetOpenSpot(int index, bool value)

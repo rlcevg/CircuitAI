@@ -749,26 +749,34 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 	return task;
 }
 
-void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
+void CBuilderManager::DequeueTask(IUnitTask* task, bool done)
 {
-	if ((task->GetType() == IUnitTask::Type::BUILDER) && (task->GetBuildType() < IBuilderTask::BuildType::_SIZE_)) {
-		std::set<IBuilderTask*>& tasks = buildTasks[static_cast<IBuilderTask::BT>(task->GetBuildType())];
-		auto it = tasks.find(task);
-		if (it != tasks.end()) {
-			switch (task->GetBuildType()) {
+	switch (task->GetType()) {
+		case IUnitTask::Type::BUILDER: {
+			IBuilderTask* taskB = static_cast<IBuilderTask*>(task);
+			if (taskB->GetBuildType() >= IBuilderTask::BuildType::_SIZE_) {
+				break;
+			}
+			std::set<IBuilderTask*>& tasks = buildTasks[static_cast<IBuilderTask::BT>(taskB->GetBuildType())];
+			auto it = tasks.find(taskB);
+			if (it == tasks.end()) {
+				break;
+			}
+			switch (taskB->GetBuildType()) {
 				case IBuilderTask::BuildType::REPAIR: {
-					repairedUnits.erase(static_cast<CBRepairTask*>(task)->GetTargetId());
+					repairedUnits.erase(static_cast<CBRepairTask*>(taskB)->GetTargetId());
 				} break;
 				case IBuilderTask::BuildType::RECLAIM: {
-					reclaimedUnits.erase(task->GetTarget());
+					reclaimedUnits.erase(taskB->GetTarget());
 				} break;
 				default: {
-					unfinishedUnits.erase(task->GetTarget());
+					unfinishedUnits.erase(taskB->GetTarget());
 				} break;
 			}
 			tasks.erase(it);
 			buildTasksCount--;
-		}
+		} break;
+		default: break;
 	}
 	task->Dead();
 	task->Stop(done);
@@ -800,17 +808,17 @@ IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 void CBuilderManager::AbortTask(IUnitTask* task)
 {
 	// NOTE: Don't send Stop command, save some traffic.
-	DequeueTask(static_cast<IBuilderTask*>(task), false);
+	DequeueTask(task, false);
 }
 
 void CBuilderManager::DoneTask(IUnitTask* task)
 {
-	DequeueTask(static_cast<IBuilderTask*>(task), true);
+	DequeueTask(task, true);
 }
 
 void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 {
-	DequeueTask(static_cast<IBuilderTask*>(unit->GetTask()));
+	DequeueTask(unit->GetTask());
 
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
@@ -850,7 +858,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 	pathfinder->RunQuery(q);
 
 	if (query == nullptr) {
-		return nullptr;  // 1st run
+		return EnqueueWait(FRAMES_PER_SEC);  // 1st run
 	}
 
 	std::shared_ptr<CQueryCostMap> pQuery = std::static_pointer_cast<CQueryCostMap>(query);
@@ -870,20 +878,20 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 		const CSetupManager::SCommInfo::SHide* hide = setupMgr->GetHide(cdef);
 		if (hide != nullptr) {
 			if ((frame < hide->frame) || (GetWorkerCount() <= 2)) {
-				return MakeBuilderTask(unit, pQuery);
+				return MakeBuilderTask(unit, pQuery.get());
 			}
 			if (enemyMgr->GetMobileThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat) {
-				return MakeCommTask(unit, pQuery, hide->sqTaskRad);
+				return MakeCommTask(unit, pQuery.get(), hide->sqTaskRad);
 			}
 			const bool isHide = (hide->isAir) && (enemyMgr->GetEnemyCost(ROLE_TYPE(AIR)) > 1.f);
-			return isHide ? MakeCommTask(unit, pQuery, hide->sqTaskRad) : MakeBuilderTask(unit, pQuery);
+			return isHide ? MakeCommTask(unit, pQuery.get(), hide->sqTaskRad) : MakeBuilderTask(unit, pQuery.get());
 		}
 	}
 
-	return MakeBuilderTask(unit, pQuery);
+	return MakeBuilderTask(unit, pQuery.get());
 }
 
-IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, const std::shared_ptr<CQueryCostMap>& query, float sqMaxBaseRange)
+IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, const CQueryCostMap* query, float sqMaxBaseRange)
 {
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	threatMap->SetThreatType(unit);
@@ -985,7 +993,7 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, const std::share
 	return const_cast<IBuilderTask*>(task);
 }
 
-IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const std::shared_ptr<CQueryCostMap>& query)
+IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryCostMap* query)
 {
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	threatMap->SetThreatType(unit);

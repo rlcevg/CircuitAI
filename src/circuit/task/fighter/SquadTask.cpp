@@ -153,12 +153,12 @@ bool ISquadTask::IsMergeSafe() const
 	return (circuit->GetInflMap()->GetInfluenceAt(pos) > -INFL_EPS);
 }
 
-bool ISquadTask::IsCostQueryAlive(const std::shared_ptr<IPathQuery>& query) const
+bool ISquadTask::IsCostQueryAlive(const IPathQuery* query) const
 {
 	if (isDead) {
 		return false;
 	}
-	return (costQuery != nullptr) && (costQuery->GetId() != query->GetId());
+	return (costQuery != nullptr) && (costQuery->GetId() == query->GetId());
 }
 
 void ISquadTask::MakeCostMapQuery()
@@ -176,7 +176,7 @@ void ISquadTask::MakeCostMapQuery()
 			leader, circuit->GetThreatMap(), frame, startPos);
 	costQuery->HoldTask(this);
 
-	pathfinder->RunQuery(costQuery, [this](const std::shared_ptr<IPathQuery>& query) {
+	pathfinder->RunQuery(costQuery, [this](const IPathQuery* query) {
 		if (this->IsCostQueryAlive(query)) {
 			this->isCostMapReady = true;
 		}

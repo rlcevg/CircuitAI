@@ -23,7 +23,7 @@ public:
 	virtual void Update() override;
 
 private:
-	void ApplyPath(const std::shared_ptr<CQueryPathMulti>& query);
+	void ApplyPath(const CQueryPathMulti* query);
 };
 
 } // namespace circuit

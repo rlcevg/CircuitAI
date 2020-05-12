@@ -37,11 +37,11 @@ protected:
 private:
 	virtual void Merge(ISquadTask* task) override;
 	bool FindTarget();
-	void ApplyTargetPath(const std::shared_ptr<CQueryPathMulti>& query);
+	void ApplyTargetPath(const CQueryPathMulti* query);
 	void FallbackFrontPos();
-	void ApplyFrontPos(const std::shared_ptr<CQueryPathMulti>& query);
+	void ApplyFrontPos(const CQueryPathMulti* query);
 	void FallbackBasePos();
-	void ApplyBasePos(const std::shared_ptr<CQueryPathSingle>& query);
+	void ApplyBasePos(const CQueryPathSingle* query);
 	void Fallback();
 
 	FightType check;

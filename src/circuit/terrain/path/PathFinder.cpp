@@ -298,7 +298,7 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateCostMapQuery(
 	return pQuery;
 }
 
-void CPathFinder::RunQuery(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete)
+void CPathFinder::RunQuery(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
 {
 	switch (query->GetType()) {
 		case IPathQuery::Type::SINGLE: {
@@ -308,9 +308,6 @@ void CPathFinder::RunQuery(const std::shared_ptr<IPathQuery>& query, PathedFunc&
 			RunPathMulti(query, std::move(onComplete));
 		} break;
 		case IPathQuery::Type::COST: {
-			RunPathCost(query, std::move(onComplete));
-		} break;
-		case IPathQuery::Type::MAP: {
 			RunCostMap(query, std::move(onComplete));
 		} break;
 		default: break;
@@ -394,55 +391,45 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 	query->Init(moveArray, threatArray, moveFun, threatFun, unit);
 }
 
-void CPathFinder::RunPathSingle(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete)
+void CPathFinder::RunPathSingle(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
 	scheduler->RunPathTask(query, [this](const std::shared_ptr<IPathQuery>& query, int threadNum) {
 		this->MakePath(query.get(), micropathers[threadNum]);
 	}
-	, [this, onComplete](const std::shared_ptr<IPathQuery>& query) {
 #ifdef DEBUG_VIS
+	, [this, onComplete](const std::shared_ptr<IPathQuery>& query) {
 		this->UpdateVis(std::static_pointer_cast<CQueryPathSingle>(query)->GetPathInfo()->path);
+#else
+	, [onComplete](const std::shared_ptr<IPathQuery>& query) {
 #endif
 		query->SetState(IPathQuery::State::READY);
 		if (onComplete != nullptr) {
-			onComplete(query);
+			onComplete(query.get());
 		}
 	});
 }
 
-void CPathFinder::RunPathMulti(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete)
+void CPathFinder::RunPathMulti(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
 	scheduler->RunPathTask(query, [this](const std::shared_ptr<IPathQuery>& query, int threadNum) {
 		this->FindBestPath(query.get(), micropathers[threadNum]);
 	}
-	, [this, onComplete](const std::shared_ptr<IPathQuery>& query) {
 #ifdef DEBUG_VIS
+	, [this, onComplete](const std::shared_ptr<IPathQuery>& query) {
 		this->UpdateVis(std::static_pointer_cast<CQueryPathMulti>(query)->GetPathInfo()->path);
+#else
+	, [onComplete](const std::shared_ptr<IPathQuery>& query) {
 #endif
 		query->SetState(IPathQuery::State::READY);
 		if (onComplete != nullptr) {
-			onComplete(query);
+			onComplete(query.get());
 		}
 	});
 }
 
-void CPathFinder::RunPathCost(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete)
-{
-	query->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(query, [this](const std::shared_ptr<IPathQuery>& query, int threadNum) {
-		this->PathCost(query.get(), micropathers[threadNum]);
-	}
-	, [onComplete](const std::shared_ptr<IPathQuery>& query) {
-		query->SetState(IPathQuery::State::READY);
-		if (onComplete != nullptr) {
-			onComplete(query);
-		}
-	});
-}
-
-void CPathFinder::RunCostMap(const std::shared_ptr<IPathQuery>& query, PathedFunc&& onComplete)
+void CPathFinder::RunCostMap(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
 	scheduler->RunPathTask(query, [this](const std::shared_ptr<IPathQuery>& query, int threadNum) {
@@ -451,7 +438,7 @@ void CPathFinder::RunCostMap(const std::shared_ptr<IPathQuery>& query, PathedFun
 	, [onComplete](const std::shared_ptr<IPathQuery>& query) {
 		query->SetState(IPathQuery::State::READY);
 		if (onComplete != nullptr) {
-			onComplete(query);
+			onComplete(query.get());
 		}
 	});
 }
@@ -467,13 +454,13 @@ void CPathFinder::MakePath(IPathQuery* query, NSMicroPather::CMicroPather* micro
 	NSMicroPather::CostFunc threatFun = q->GetThreatFun();
 	const FloatVec& heightMap = q->GetHeightMap();
 
-	AIFloat3& startPos = q->GetStartPos();
-	AIFloat3& endPos = q->GetEndPos();
+	AIFloat3& startPos = q->GetStartPosRef();
+	AIFloat3& endPos = q->GetEndPosRef();
 	const int radius = q->GetMaxRange() / squareSize;
 	const float maxThreat = q->GetMaxThreat();
 
-	PathInfo& iPath = q->GetRefPathInfo();
-	float& pathCost = q->GetRefPathCost();
+	PathInfo& iPath = q->GetPathInfoRef();
+	float& pathCost = q->GetPathCostRef();
 
 	iPath.Clear();
 
@@ -499,13 +486,13 @@ void CPathFinder::FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* m
 	NSMicroPather::CostFunc threatFun = q->GetThreatFun();
 	const FloatVec& heightMap = q->GetHeightMap();
 
-	AIFloat3& startPos = q->GetStartPos();
-	F3Vec& possibleTargets = q->GetTargets();
+	AIFloat3& startPos = q->GetStartPosRef();
+	F3Vec& possibleTargets = q->GetTargetsRef();
 	const float maxRange = q->GetMaxRange();
 	const float maxThreat = q->GetMaxThreat();
 
-	PathInfo& iPath = q->GetRefPathInfo();
-	float& pathCost = q->GetRefPathCost();
+	PathInfo& iPath = q->GetPathInfoRef();
+	float& pathCost = q->GetPathCostRef();
 
 	// <maxRange> must always be >= squareSize, otherwise
 	// <radius> will become 0 and the write to offsets[0]
@@ -632,21 +619,6 @@ void CPathFinder::FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* m
 	nodeTargets.clear();
 }
 
-void CPathFinder::PathCost(IPathQuery* query, NSMicroPather::CMicroPather* micropather)
-{
-	CQueryPathMulti* q = static_cast<CQueryPathMulti*>(query);
-	q->Prepare();
-
-	const bool* canMoveArray = q->GetCanMoveArray();
-	const float* threatArray = q->GetThreatArray();
-	NSMicroPather::CostFunc moveFun = q->GetMoveFun();
-	NSMicroPather::CostFunc threatFun = q->GetThreatFun();
-	const FloatVec& heightMap = q->GetHeightMap();
-
-	micropather->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
-	// FIXME: Finish or Remove
-}
-
 void CPathFinder::MakeCostMap(IPathQuery* query, NSMicroPather::CMicroPather* micropather)
 {
 	CQueryCostMap* q = static_cast<CQueryCostMap*>(query);
@@ -659,7 +631,7 @@ void CPathFinder::MakeCostMap(IPathQuery* query, NSMicroPather::CMicroPather* mi
 	const FloatVec& heightMap = q->GetHeightMap();
 
 	const AIFloat3& startPos = q->GetStartPos();
-	std::vector<float>& costMap = q->GetRefCostMap();
+	std::vector<float>& costMap = q->GetCostMapRef();
 
 	micropather->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
 	micropather->MakeCostMap(Pos2MoveNode(startPos), costMap);

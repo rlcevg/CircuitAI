@@ -112,11 +112,11 @@ const int CMetalData::FindNearestCluster(const AIFloat3& pos, PointPredicate& pr
 	return -1;
 }
 
-void CMetalData::Clusterize(float maxDistance, const std::shared_ptr<CRagMatrix>& distMatrix)
+void CMetalData::Clusterize(float maxDistance, CRagMatrix& distMatrix)
 {
 	// Clusterize metal spots by distance to each other
 	CHierarchCluster clust;
-	const CHierarchCluster::Clusters& iclusters = clust.Clusterize(*distMatrix, maxDistance);
+	const CHierarchCluster::Clusters& iclusters = clust.Clusterize(distMatrix, maxDistance);
 
 	// Fill cluster structures, calculate centers
 	const int nclusters = iclusters.size();

@@ -133,9 +133,9 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 	pathQueries[unit] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this, isUpdating](const std::shared_ptr<IPathQuery>& query) {
+	pathfinder->RunQuery(query, [this, isUpdating](const IPathQuery* query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathSingle>(query), isUpdating);
+			this->ApplyTargetPath(static_cast<const CQueryPathSingle*>(query), isUpdating);
 		}
 	});
 }
@@ -396,7 +396,7 @@ AIFloat3 CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, const
 //	return nullptr;
 //}
 
-void CBombTask::ApplyTargetPath(const std::shared_ptr<CQueryPathSingle>& query, bool isUpdating)
+void CBombTask::ApplyTargetPath(const CQueryPathSingle* query, bool isUpdating)
 {
 	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
 	CCircuitUnit* unit = query->GetUnit();
@@ -436,14 +436,14 @@ void CBombTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 	pathQueries[unit] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
+	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplyScoutPath(std::static_pointer_cast<CQueryPathSingle>(query));
+			this->ApplyScoutPath(static_cast<const CQueryPathSingle*>(query));
 		}
 	});
 }
 
-void CBombTask::ApplyScoutPath(const std::shared_ptr<CQueryPathSingle>& query)
+void CBombTask::ApplyScoutPath(const CQueryPathSingle* query)
 {
 	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
 	CCircuitUnit* unit = query->GetUnit();

@@ -66,6 +66,7 @@ void CIdleTask::Update()
 
 void CIdleTask::Stop(bool done)
 {
+	// NOTE: Should not be ever called
 	units.clear();
 	updateUnits.clear();
 }

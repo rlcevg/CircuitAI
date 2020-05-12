@@ -735,6 +735,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 	const char cmdPos[]     = "~стройсь\0";
 	const char cmdSelfD[]   = "~Згинь, нечистая сила!\0";
 
+	const char cmdBreak[]   = "~break";
 	const char cmdBlock[]   = "~block";
 	const char cmdArea[]    = "~area";
 	const char cmdPath[]    = "~path";
@@ -781,6 +782,9 @@ int CCircuitAI::Message(int playerId, const char* message)
 		selfD();
 	}
 
+	else if (strncmp(message, cmdBreak, 6) == 0) {
+		__asm__("int3");
+	}
 	else if (strncmp(message, cmdBlock, 6) == 0) {
 		terrainManager->ToggleVis();
 	}

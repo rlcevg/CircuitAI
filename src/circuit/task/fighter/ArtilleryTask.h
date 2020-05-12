@@ -29,11 +29,11 @@ public:
 private:
 	void Execute(CCircuitUnit* unit, bool isUpdating);
 	CEnemyInfo* FindTarget(CCircuitUnit* unit, const springai::AIFloat3& pos);
-	void ApplyTargetPath(const std::shared_ptr<CQueryPathMulti>& query, bool isUpdating);
+	void ApplyTargetPath(const CQueryPathMulti* query, bool isUpdating);
 	void FallbackBasePos(CCircuitUnit* unit, bool isUpdating);
-	void ApplyBasePos(const std::shared_ptr<CQueryPathSingle>& query, bool isUpdating);
+	void ApplyBasePos(const CQueryPathSingle* query, bool isUpdating);
 	void FallbackScout(CCircuitUnit* unit, bool isUpdating);
-	void ApplyScoutPath(const std::shared_ptr<CQueryPathSingle>& query);
+	void ApplyScoutPath(const CQueryPathSingle* query);
 	void Fallback(CCircuitUnit* unit, bool proceed);
 };
 

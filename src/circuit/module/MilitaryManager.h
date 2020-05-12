@@ -51,7 +51,7 @@ public:
 	IFighterTask* EnqueueGuard(CCircuitUnit* vip);
 	CRetreatTask* EnqueueRetreat();
 private:
-	void DequeueTask(IFighterTask* task, bool done = false);
+	void DequeueTask(IUnitTask* task, bool done = false);
 
 public:
 	virtual IUnitTask* MakeTask(CCircuitUnit* unit) override;

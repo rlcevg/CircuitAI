@@ -112,7 +112,7 @@ bool IUnitTask::IsQueryReady(CCircuitUnit* unit) const
 	return (query == nullptr) || (IPathQuery::State::READY == query->GetState());
 }
 
-bool IUnitTask::IsQueryAlive(const std::shared_ptr<IPathQuery>& query) const
+bool IUnitTask::IsQueryAlive(const IPathQuery* query) const
 {
 	if (isDead) {
 		return false;

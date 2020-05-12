@@ -185,9 +185,9 @@ void CAntiAirTask::Update()
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
+	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplyTargetPath(std::static_pointer_cast<CQueryPathSingle>(query));
+			this->ApplyTargetPath(static_cast<const CQueryPathSingle*>(query));
 		}
 	});
 }
@@ -241,9 +241,9 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
+	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplyDamagedPath(std::static_pointer_cast<CQueryPathMulti>(query));
+			this->ApplyDamagedPath(static_cast<const CQueryPathMulti*>(query));
 		}
 	});
 }
@@ -308,14 +308,14 @@ void CAntiAirTask::FallbackDisengage()
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
+	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplyDisengagePath(std::static_pointer_cast<CQueryPathSingle>(query));
+			this->ApplyDisengagePath(static_cast<const CQueryPathSingle*>(query));
 		}
 	});
 }
 
-void CAntiAirTask::ApplyDisengagePath(const std::shared_ptr<CQueryPathSingle>& query)
+void CAntiAirTask::ApplyDisengagePath(const CQueryPathSingle* query)
 {
 	pPath = query->GetPathInfo();
 
@@ -337,7 +337,7 @@ void CAntiAirTask::ApplyDisengagePath(const std::shared_ptr<CQueryPathSingle>& q
 	state = State::ROAM;
 }
 
-void CAntiAirTask::ApplyTargetPath(const std::shared_ptr<CQueryPathSingle>& query)
+void CAntiAirTask::ApplyTargetPath(const CQueryPathSingle* query)
 {
 	pPath = query->GetPathInfo();
 
@@ -368,14 +368,14 @@ void CAntiAirTask::FallbackSafePos()
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
+	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplySafePos(std::static_pointer_cast<CQueryPathMulti>(query));
+			this->ApplySafePos(static_cast<const CQueryPathMulti*>(query));
 		}
 	});
 }
 
-void CAntiAirTask::ApplySafePos(const std::shared_ptr<CQueryPathMulti>& query)
+void CAntiAirTask::ApplySafePos(const CQueryPathMulti* query)
 {
 	pPath = query->GetPathInfo();
 
@@ -418,7 +418,7 @@ void CAntiAirTask::Fallback()
 	}
 }
 
-void CAntiAirTask::ApplyDamagedPath(const std::shared_ptr<CQueryPathMulti>& query)
+void CAntiAirTask::ApplyDamagedPath(const CQueryPathMulti* query)
 {
 	pPath = query->GetPathInfo();
 

@@ -22,7 +22,7 @@ public:
 	void Prepare();
 
 	// Process Data
-	std::vector<float>& GetRefCostMap() { return costMap; }
+	std::vector<float>& GetCostMapRef() { return costMap; }
 
 	// Input Data
 	const springai::AIFloat3& GetStartPos() const { return startPos; }

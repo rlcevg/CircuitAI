@@ -34,7 +34,7 @@ private:
 	void FindLeader(decltype(units)::iterator itBegin, decltype(units)::iterator itEnd);
 
 	bool IsMergeSafe() const;
-	bool IsCostQueryAlive(const std::shared_ptr<IPathQuery>& query) const;
+	bool IsCostQueryAlive(const IPathQuery* query) const;
 	void MakeCostMapQuery();
 	ISquadTask* CheckMergeTask();
 

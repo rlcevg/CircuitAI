@@ -41,9 +41,9 @@ public:
 	CCircuitUnit* GetRepairer() const { return repairer; }
 
 private:
-	void ApplyPath(const std::shared_ptr<CQueryPathSingle>& query);
-	CCircuitUnit* ValidateNewRepairer(const std::shared_ptr<IPathQuery>& query, int newRepId) const;
-	void ApplyCostMap(const std::shared_ptr<CQueryCostMap>& query, CCircuitUnit* newRep);
+	void ApplyPath(const CQueryPathSingle* query);
+	CCircuitUnit* ValidateNewRepairer(const IPathQuery* query, int newRepId) const;
+	void ApplyCostMap(const CQueryCostMap* query, CCircuitUnit* newRep);
 
 	CCircuitUnit* repairer;
 	std::shared_ptr<IPathQuery> costQuery;  // owner

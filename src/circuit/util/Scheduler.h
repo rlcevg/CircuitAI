@@ -10,15 +10,17 @@
 
 #include "util/MultiQueue.h"
 #include "util/GameTask.h"
-#include "util/PathTask.h"
 #include "util/Defines.h"
 
 #include "System/Threading/SpringThreading.h"
 
+#include <functional>
 #include <memory>
 #include <list>
 
 namespace circuit {
+
+class IPathQuery;
 
 class Barrier {
 public:
@@ -55,6 +57,9 @@ private:
 	void StartThreads();
 
 public:
+	using PathFunc = std::function<void (const std::shared_ptr<IPathQuery>& query, int threadNum)>;
+	using PathedFunc = std::function<void (const std::shared_ptr<IPathQuery>& query)>;
+
 	/*
 	 * Add task at specified frame, or execute immediately at next frame
 	 */

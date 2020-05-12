@@ -129,7 +129,7 @@ private:
 						  float shake,
 						  bool isActive,
 						  int timeout);
-	void DequeueTask(IBuilderTask* task, bool done = false);
+	void DequeueTask(IUnitTask* task, bool done = false);
 
 public:
 	bool IsBuilderInArea(CCircuitDef* buildDef, const springai::AIFloat3& position);  // Check if build-area has proper builder
@@ -145,8 +145,8 @@ public:
 
 private:
 	IUnitTask* DefaultMakeTask(CCircuitUnit* unit);
-	IBuilderTask* MakeCommTask(CCircuitUnit* unit, const std::shared_ptr<CQueryCostMap>& query, float sqMaxBaseRange);
-	IBuilderTask* MakeBuilderTask(CCircuitUnit* unit, const std::shared_ptr<CQueryCostMap>& query);
+	IBuilderTask* MakeCommTask(CCircuitUnit* unit, const CQueryCostMap* query, float sqMaxBaseRange);
+	IBuilderTask* MakeBuilderTask(CCircuitUnit* unit, const CQueryCostMap* query);
 	IBuilderTask* CreateBuilderTask(const springai::AIFloat3& position, CCircuitUnit* unit);
 
 	void AddBuildList(CCircuitUnit* unit);

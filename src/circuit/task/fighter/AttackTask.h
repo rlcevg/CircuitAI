@@ -28,11 +28,11 @@ public:
 
 private:
 	void FindTarget();
-	void ApplyTargetPath(const std::shared_ptr<CQueryPathSingle>& query);
+	void ApplyTargetPath(const CQueryPathSingle* query);
 	void FallbackFrontPos();
-	void ApplyFrontPos(const std::shared_ptr<CQueryPathMulti>& query);
+	void ApplyFrontPos(const CQueryPathMulti* query);
 	void FallbackBasePos();
-	void ApplyBasePos(const std::shared_ptr<CQueryPathSingle>& query);
+	void ApplyBasePos(const CQueryPathSingle* query);
 	void Fallback();
 
 	float minPower;

@@ -23,12 +23,14 @@ public:
 	void Prepare();
 
 	// Process Data
-	PathInfo& GetRefPathInfo() { return *pPath; }
-	float& GetRefPathCost() { return pathCost; }
+	springai::AIFloat3& GetStartPosRef() { return startPos; }
+	F3Vec& GetTargetsRef() { return targets; }
+	PathInfo& GetPathInfoRef() { return *pPath; }
+	float& GetPathCostRef() { return pathCost; }
 
 	// Input Data
-	springai::AIFloat3& GetStartPos() { return startPos; }
-	F3Vec& GetTargets() { return targets; }
+	const springai::AIFloat3& GetStartPos() const { return startPos; }
+	const F3Vec& GetTargets() const { return targets; }
 	const float GetMaxRange() const { return maxRange; }
 	const float GetMaxThreat() const { return maxThreat; }
 

@@ -464,14 +464,14 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 	pathQueries[unit] = query;
 	query->HoldTask(this);
 
-	pathfinder->RunQuery(query, [this](const std::shared_ptr<IPathQuery>& query) {
+	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
 		if (this->IsQueryAlive(query)) {
-			this->ApplyPath(std::static_pointer_cast<CQueryPathSingle>(query));
+			this->ApplyPath(static_cast<const CQueryPathSingle*>(query));
 		}
 	});
 }
 
-void IBuilderTask::ApplyPath(const std::shared_ptr<CQueryPathSingle>& query)
+void IBuilderTask::ApplyPath(const CQueryPathSingle* query)
 {
 	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
 	CCircuitUnit* unit = query->GetUnit();
