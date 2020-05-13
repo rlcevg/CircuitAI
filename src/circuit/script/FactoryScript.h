@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_SCRIPT_FACTORYSCRIPT_H_
 #define SRC_CIRCUIT_SCRIPT_FACTORYSCRIPT_H_
 
-#include "script/Script.h"
+#include "script/ModuleScript.h"
 
 class asIScriptFunction;
 
@@ -18,7 +18,7 @@ class CFactoryManager;
 class IUnitTask;
 class CCircuitUnit;
 
-class CFactoryScript: public IScript {
+class CFactoryScript: public IModuleScript {
 public:
 	CFactoryScript(CScriptManager* scr, CFactoryManager* mgr);
 	virtual ~CFactoryScript();

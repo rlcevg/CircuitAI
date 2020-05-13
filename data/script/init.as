@@ -1,16 +1,17 @@
 #include "role.as"
 
 
-int FibR(int n)
+namespace Init {
+
+void Init(dictionary@ categories)
 {
-	if (n < 2) return n;
-	return (FibR(n-2) + FibR(n-1));
+	aiLog("AngelScript Rules!");
+
+	categories["air"]   = "FIXEDWING GUNSHIP";
+	categories["land"]  = "LAND SINK TURRET SHIP SWIM FLOAT HOVER";
+	categories["water"] = "SUB";
+	categories["bad"]   = "TERRAFORM STUPIDTARGET MINE";
+	categories["good"]  = "TURRET FLOAT";
 }
 
-void Init() {
-//	for (int i = 0; i < 10; ++i) {
-//		FibR(30);
-//		aiLog("AngelScript Rules! " + i);
-//	}
-	aiLog("AngelScript Rules!");
 }

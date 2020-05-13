@@ -8,14 +8,13 @@
 #include "script/MilitaryScript.h"
 #include "script/ScriptManager.h"
 #include "module/MilitaryManager.h"
-#include "CircuitAI.h"
 #include "util/Utils.h"
 #include "angelscript/include/angelscript.h"
 
 namespace circuit {
 
 CMilitaryScript::CMilitaryScript(CScriptManager* scr, CMilitaryManager* mgr)
-		: IScript(scr, mgr)
+		: IModuleScript(scr, mgr)
 {
 	asIScriptEngine* engine = script->GetEngine();
 	int r = engine->RegisterObjectType("CMilitaryManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
@@ -29,17 +28,9 @@ CMilitaryScript::~CMilitaryScript()
 
 void CMilitaryScript::Init()
 {
-	// FIXME: init CEnemyManager elsewhere
-	asIScriptEngine* engine = script->GetEngine();
-	int r = engine->RegisterObjectType("CEnemyManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
-	r = engine->RegisterGlobalProperty("CEnemyManager enemyMgr", static_cast<CMilitaryManager*>(manager)->GetCircuit()->GetEnemyManager()); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("CEnemyManager", "float GetEnemyThreat(Type) const", asMETHODPR(CEnemyManager, GetEnemyThreat, (CCircuitDef::RoleT) const, float), asCALL_THISCALL); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("CEnemyManager", "float GetMobileThreat() const", asMETHOD(CEnemyManager, GetMobileThreat), asCALL_THISCALL); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("CEnemyManager", "float GetEnemyCost(Type) const", asMETHOD(CEnemyManager, GetEnemyCost), asCALL_THISCALL); ASSERT(r >= 0);
-
 	script->Load("military", "manager/military.as");
 	asIScriptModule* mod = script->GetEngine()->GetModule("military");
-	r = mod->SetDefaultNamespace("Military"); ASSERT(r >= 0);
+	int r = mod->SetDefaultNamespace("Military"); ASSERT(r >= 0);
 	info.makeTask = script->GetFunc(mod, "IUnitTask@ MakeTask(CCircuitUnit@)");
 	info.isAirValid = script->GetFunc(mod, "bool IsAirValid()");
 }

@@ -7,6 +7,7 @@
 
 #include "CircuitAI.h"
 #include "script/ScriptManager.h"
+#include "script/InitScript.h"
 #include "setup/SetupManager.h"
 #include "map/MapManager.h"
 #include "map/ThreatMap.h"
@@ -99,6 +100,7 @@ CCircuitAI::CCircuitAI(OOAICallback* clb)
 		, pathing(std::unique_ptr<Pathing>(clb->GetPathing()))
 		, drawer(nullptr)
 		, skirmishAI(std::unique_ptr<SkirmishAI>(clb->GetSkirmishAI()))
+		, script(nullptr)
 		, airCategory(0)
 		, landCategory(0)
 		, waterCategory(0)
@@ -543,6 +545,9 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	scheduler->Init(scheduler);
 	scriptManager = std::make_shared<CScriptManager>(this);
 
+	script = new CInitScript(GetScriptManager(), this);
+	script->Init();
+
 	std::string cfgOption = InitOptions();  // Inits GameAttribute
 	InitWeaponDefs();
 	float decloakRadius;
@@ -591,7 +596,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	modules.push_back(factoryManager);
 	modules.push_back(economyManager);  // NOTE: Units use manager, but ain't assigned here
 
-	scriptManager->RegisterMgr();
+	script->RegisterMgr();
 	for (auto& module : modules) {
 		module->InitScript();
 	}
@@ -638,6 +643,7 @@ int CCircuitAI::Release(int reason)
 	scheduler = nullptr;
 
 	modules.clear();
+	delete script;
 	scriptManager = nullptr;
 	militaryManager = nullptr;
 	economyManager = nullptr;
@@ -1404,12 +1410,6 @@ CCircuitDef* CCircuitAI::GetCircuitDef(CCircuitDef::Id unitDefId)
 
 void CCircuitAI::InitUnitDefs(float& outDcr)
 {
-	airCategory   = game->GetCategoriesFlag("FIXEDWING GUNSHIP");
-	landCategory  = game->GetCategoriesFlag("LAND SINK TURRET SHIP SWIM FLOAT HOVER");
-	waterCategory = game->GetCategoriesFlag("SUB");
-	badCategory   = game->GetCategoriesFlag("TERRAFORM STUPIDTARGET MINE");
-	goodCategory  = game->GetCategoriesFlag("TURRET FLOAT");
-
 	if (!gameAttribute->GetTerrainData().IsInitialized()) {
 		gameAttribute->GetTerrainData().Init(this);
 	}

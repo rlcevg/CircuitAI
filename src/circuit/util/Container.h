@@ -7,7 +7,7 @@
 #include <cassert>
 #include <vector>
 
-namespace util {
+namespace utils {
 	template<typename T, typename TV>
 	static auto find(T& c, const TV& v) -> decltype(c.end())
 	{

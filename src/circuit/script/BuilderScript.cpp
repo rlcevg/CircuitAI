@@ -8,6 +8,7 @@
 #include "script/BuilderScript.h"
 #include "script/ScriptManager.h"
 #include "module/BuilderManager.h"
+#include "util/Utils.h"
 #include "angelscript/include/angelscript.h"
 
 namespace circuit {
@@ -15,7 +16,7 @@ namespace circuit {
 using namespace springai;
 
 CBuilderScript::CBuilderScript(CScriptManager* scr, CBuilderManager* mgr)
-		: IScript(scr, mgr)
+		: IModuleScript(scr, mgr)
 {
 	asIScriptEngine* engine = script->GetEngine();
 	int r = engine->RegisterObjectType("CBuilderManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);

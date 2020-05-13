@@ -59,6 +59,7 @@ class CFactoryManager;
 class CEconomyManager;
 class CMilitaryManager;
 class CScriptManager;
+class CInitScript;
 class CScheduler;
 class IModule;
 class CCircuitUnit;
@@ -308,6 +309,8 @@ private:
 	std::shared_ptr<CMilitaryManager> militaryManager;
 	std::vector<std::shared_ptr<IModule>> modules;
 
+	friend class CInitScript;
+	CInitScript* script;  // owner
 	// TODO: Move into GameAttribute? Or use locally
 	int airCategory;  // over surface
 	int landCategory;  // on surface

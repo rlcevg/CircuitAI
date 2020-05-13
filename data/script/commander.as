@@ -47,7 +47,8 @@ shared class SOpener {
 	array<SO> def;
 }
 
-dictionary@ GetOpenInfo() {
+dictionary@ GetOpenInfo()
+{
 	return dictionary = {
 		{Commander::support, SOpener({
 			{Factory::factorycloak, array<SQueue> = {
@@ -227,7 +228,8 @@ dictionary@ GetOpenInfo() {
 	};
 }
 
-const array<SO>@ GetOpener(const CCircuitDef@ facDef) {
+const array<SO>@ GetOpener(const CCircuitDef@ facDef)
+{
 	dictionary@ openInfo = GetOpenInfo();
 	const CCircuitDef@ commChoice = setupMgr.GetCommChoice();
 	const string commName = commChoice.GetName();
@@ -287,7 +289,8 @@ dictionary hideInfo = {
 
 map<Id, SHide@> hideUnitDef;  // cache map<UnitDef_Id, SHide>
 
-const SHide@ CacheHide(const CCircuitDef@ cdef) {
+const SHide@ CacheHide(const CCircuitDef@ cdef)
+{
 	Id cid = cdef.GetId();
 	const string name = cdef.GetName();
 	array<string>@ keys = hideInfo.getKeys();
@@ -303,7 +306,8 @@ const SHide@ CacheHide(const CCircuitDef@ cdef) {
 }
 
 
-const SHide@ GetForUnitDef(const CCircuitDef@ cdef) {
+const SHide@ GetForUnitDef(const CCircuitDef@ cdef)
+{
 	bool success;
 	SHide@ hide = hideUnitDef.find(cdef.GetId(), success);
 	return success ? hide : CacheHide(cdef);

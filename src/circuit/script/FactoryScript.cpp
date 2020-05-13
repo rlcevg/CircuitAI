@@ -8,12 +8,13 @@
 #include "script/FactoryScript.h"
 #include "script/ScriptManager.h"
 #include "module/FactoryManager.h"
+#include "util/Utils.h"
 #include "angelscript/include/angelscript.h"
 
 namespace circuit {
 
 CFactoryScript::CFactoryScript(CScriptManager* scr, CFactoryManager* mgr)
-		: IScript(scr, mgr)
+		: IModuleScript(scr, mgr)
 {
 	asIScriptEngine* engine = script->GetEngine();
 	int r = engine->RegisterObjectType("CFactoryManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);

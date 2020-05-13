@@ -9,9 +9,8 @@
 
 namespace circuit {
 
-IScript::IScript(CScriptManager* scr, IModule* mod)
+IScript::IScript(CScriptManager* scr)
 		: script(scr)
-		, manager(mod)
 {
 }
 

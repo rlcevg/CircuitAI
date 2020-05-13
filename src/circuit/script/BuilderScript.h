@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_SCRIPT_BUILDERSCRIPT_H_
 #define SRC_CIRCUIT_SCRIPT_BUILDERSCRIPT_H_
 
-#include "script/Script.h"
+#include "script/ModuleScript.h"
 
 class asIScriptFunction;
 
@@ -18,7 +18,7 @@ class CBuilderManager;
 class IUnitTask;
 class CCircuitUnit;
 
-class CBuilderScript: public IScript {
+class CBuilderScript: public IModuleScript {
 public:
 	CBuilderScript(CScriptManager* scr, CBuilderManager* mgr);
 	virtual ~CBuilderScript();

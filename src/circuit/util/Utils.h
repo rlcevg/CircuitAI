@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_UTIL_UTILS_H_
 
 #include "util/Defines.h"
+#include "util/Point.h"
 
 #include "System/StringUtil.h"
 #include "System/Threading/SpringThreading.h"
@@ -173,29 +174,6 @@ static inline std::string::const_iterator EndInBraces(const std::string::const_i
 //	}
 //	return false;
 //};
-
-static inline bool is_equal_pos(const springai::AIFloat3& posA, const springai::AIFloat3& posB, const float slack = SQUARE_SIZE * 2)
-{
-	return (math::fabs(posA.x - posB.x) <= slack) && (math::fabs(posA.z - posB.z) <= slack);
-}
-
-static inline springai::AIFloat3 get_near_pos(const springai::AIFloat3& pos, float range)
-{
-	springai::AIFloat3 offset((float)rand() / RAND_MAX - 0.5f, 0.f, (float)rand() / RAND_MAX - 0.5f);
-	return pos + offset * range;
-}
-
-static inline springai::AIFloat3 get_radial_pos(const springai::AIFloat3& pos, float radius)
-{
-	float angle = (float)rand() / RAND_MAX * 2 * M_PI;
-	springai::AIFloat3 offset(std::cos(angle), 0.f, std::sin(angle));
-	return pos + offset * radius;
-}
-
-static inline bool is_valid(const springai::AIFloat3& pos)
-{
-	return pos.x != -RgtVector.x;
-}
 
 template<class T> static inline constexpr T clamp(const T v, const T vmin, const T vmax)
 {

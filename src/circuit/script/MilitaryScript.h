@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_SCRIPT_MILITARYSCRIPT_H_
 #define SRC_CIRCUIT_SCRIPT_MILITARYSCRIPT_H_
 
-#include "script/Script.h"
+#include "script/ModuleScript.h"
 
 class asIScriptFunction;
 
@@ -18,7 +18,7 @@ class CMilitaryManager;
 class IUnitTask;
 class CCircuitUnit;
 
-class CMilitaryScript: public IScript {
+class CMilitaryScript: public IModuleScript {
 public:
 	CMilitaryScript(CScriptManager* scr, CMilitaryManager* mgr);
 	virtual ~CMilitaryScript();

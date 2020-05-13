@@ -11,18 +11,16 @@
 namespace circuit {
 
 class CScriptManager;
-class IModule;
 
 class IScript {
 public:
-	IScript(CScriptManager* scr, IModule* mod);
+	IScript(CScriptManager* scr);
 	virtual ~IScript();
 
 	virtual void Init() = 0;
 
 protected:
 	CScriptManager* script;
-	IModule* manager;
 };
 
 } // namespace circuit

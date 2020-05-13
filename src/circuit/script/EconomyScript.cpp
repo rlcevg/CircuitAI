@@ -15,7 +15,7 @@ namespace circuit {
 using namespace springai;
 
 CEconomyScript::CEconomyScript(CScriptManager* scr, CEconomyManager* mgr)
-		: IScript(scr, mgr)
+		: IModuleScript(scr, mgr)
 {
 }
 

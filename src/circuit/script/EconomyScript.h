@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_SCRIPT_ECONOMYSCRIPT_H_
 #define SRC_CIRCUIT_SCRIPT_ECONOMYSCRIPT_H_
 
-#include "script/Script.h"
+#include "script/ModuleScript.h"
 
 class asIScriptFunction;
 
@@ -21,7 +21,7 @@ namespace circuit {
 class CEconomyManager;
 class CCircuitDef;
 
-class CEconomyScript: public IScript {
+class CEconomyScript: public IModuleScript {
 public:
 	CEconomyScript(CScriptManager* scr, CEconomyManager* mgr);
 	virtual ~CEconomyScript();

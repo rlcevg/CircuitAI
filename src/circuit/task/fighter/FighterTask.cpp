@@ -16,6 +16,7 @@
 #include "unit/action/TravelAction.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "CircuitAI.h"
+#include "util/Utils.h"
 
 namespace circuit {
 

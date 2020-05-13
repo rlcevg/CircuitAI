@@ -245,10 +245,10 @@ bool CQuadField::InsertAllyUnitIf(CAllyUnit* unit, const AIFloat3& upos, const A
 		return false;
 
 	// unit might also be overlapping the cell, so test for uniqueness
-	if (!util::VectorInsertUnique(unit->quads, wposQuadIdx, true))
+	if (!utils::VectorInsertUnique(unit->quads, wposQuadIdx, true))
 		return false;
 
-	util::VectorInsertUnique(baseQuads[wposQuadIdx].allyUnits, unit, false);
+	utils::VectorInsertUnique(baseQuads[wposQuadIdx].allyUnits, unit, false);
 	return true;
 }
 
@@ -274,10 +274,10 @@ bool CQuadField::RemoveAllyUnitIf(CAllyUnit* unit, const AIFloat3& upos, const A
 		return false;
 	}
 
-	if (!util::VectorErase(unit->quads, wposQuadIdx))
+	if (!utils::VectorErase(unit->quads, wposQuadIdx))
 		return false;
 
-	util::VectorErase(baseQuads[wposQuadIdx].allyUnits, unit);
+	utils::VectorErase(baseQuads[wposQuadIdx].allyUnits, unit);
 	return true;
 }
 
@@ -293,11 +293,11 @@ void CQuadField::MovedAllyUnit(CAllyUnit* unit, const AIFloat3& upos)
 	}
 
 	for (const int qi: unit->quads) {
-		util::VectorErase(baseQuads[qi].allyUnits, unit);
+		utils::VectorErase(baseQuads[qi].allyUnits, unit);
 	}
 
 	for (const int qi: *qfQuery.quads) {
-		util::VectorInsertUnique(baseQuads[qi].allyUnits, unit, false);
+		utils::VectorInsertUnique(baseQuads[qi].allyUnits, unit, false);
 	}
 
 	unit->quads = std::move(*qfQuery.quads);
@@ -306,7 +306,7 @@ void CQuadField::MovedAllyUnit(CAllyUnit* unit, const AIFloat3& upos)
 void CQuadField::RemoveAllyUnit(CAllyUnit* unit, const AIFloat3& upos)
 {
 	for (const int qi: unit->quads) {
-		util::VectorErase(baseQuads[qi].allyUnits, unit);
+		utils::VectorErase(baseQuads[qi].allyUnits, unit);
 	}
 
 	unit->quads.clear();
@@ -334,10 +334,10 @@ bool CQuadField::InsertEnemyUnitIf(CEnemyUnit* unit, const AIFloat3& wpos)
 		return false;
 
 	// unit might also be overlapping the cell, so test for uniqueness
-	if (!util::VectorInsertUnique(unit->quads, wposQuadIdx, true))
+	if (!utils::VectorInsertUnique(unit->quads, wposQuadIdx, true))
 		return false;
 
-	util::VectorInsertUnique(baseQuads[wposQuadIdx].enemyUnits, unit, false);
+	utils::VectorInsertUnique(baseQuads[wposQuadIdx].enemyUnits, unit, false);
 	return true;
 }
 
@@ -363,10 +363,10 @@ bool CQuadField::RemoveEnemyUnitIf(CEnemyUnit* unit, const AIFloat3& wpos)
 		return false;
 	}
 
-	if (!util::VectorErase(unit->quads, wposQuadIdx))
+	if (!utils::VectorErase(unit->quads, wposQuadIdx))
 		return false;
 
-	util::VectorErase(baseQuads[wposQuadIdx].enemyUnits, unit);
+	utils::VectorErase(baseQuads[wposQuadIdx].enemyUnits, unit);
 	return true;
 }
 
@@ -382,11 +382,11 @@ void CQuadField::MovedEnemyUnit(CEnemyUnit* unit)
 	}
 
 	for (const int qi: unit->quads) {
-		util::VectorErase(baseQuads[qi].enemyUnits, unit);
+		utils::VectorErase(baseQuads[qi].enemyUnits, unit);
 	}
 
 	for (const int qi: *qfQuery.quads) {
-		util::VectorInsertUnique(baseQuads[qi].enemyUnits, unit, false);
+		utils::VectorInsertUnique(baseQuads[qi].enemyUnits, unit, false);
 	}
 
 	unit->quads = std::move(*qfQuery.quads);
@@ -395,7 +395,7 @@ void CQuadField::MovedEnemyUnit(CEnemyUnit* unit)
 void CQuadField::RemoveEnemyUnit(CEnemyUnit* unit)
 {
 	for (const int qi: unit->quads) {
-		util::VectorErase(baseQuads[qi].enemyUnits, unit);
+		utils::VectorErase(baseQuads[qi].enemyUnits, unit);
 	}
 
 	unit->quads.clear();
