@@ -262,18 +262,18 @@ void IBuilderTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 		return;
 	}
 
-	if (target == nullptr) {
-		manager->AbortTask(this);
-	}
-
 	CRetreatTask* task = circuit->GetBuilderManager()->EnqueueRetreat();
 	manager->AssignTask(unit, task);
+
+	if (target == nullptr) {
+		manager->AbortTask(this);  // Doesn't call RemoveAssignee
+	}
 }
 
 void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	RemoveAssignee(unit);
-	// NOTE: AbortTask usually do not call RemoveAssignee for each unit
+	// NOTE: AbortTask usually does not call RemoveAssignee for each unit
 	if (((target == nullptr) || units.empty()) && !unit->IsMorphing()) {
 		manager->AbortTask(this);
 	}

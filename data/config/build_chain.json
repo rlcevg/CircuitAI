@@ -109,7 +109,7 @@
 	"mex": {
 		"staticmex": {
 //			"terra": true,
-			"energy": [20, true],
+			"energy": [20, "mex"],
 			"porc": true
 		}
 	},

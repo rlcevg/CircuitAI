@@ -2,8 +2,8 @@
 {
 "quota": {
 	"scout": 1,  // max scout units out of raiders
-	"raid": [6.0, 20.0],  // [<min>, <avg>] power of raider squad
-	"attack": 6.0,  // min power of attack group
+	"raid": [7.0, 16.0],  // [<min>, <avg>] power of raider squad
+	"attack": 20.0,  // min power of attack group
 	"thr_mod": {
 		"attack": [0.45, 0.45],  // [<min>, <max>] enemy threat modifier for target selection of attack task
 		"defence": [0.80, 0.80],  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
@@ -25,8 +25,9 @@
 	"fighter": 0.45,  // default value for all not-builder units
 	"shield": [0.25, 0.275]  // [<empty>, <full>] shield power
 },
+
 "defence": {
-	"infl_rad": 9,  // influenece cell radius for defendAlly map
+	"infl_rad": 7,  // influenece cell radius for defendAlly map
 	"base_rad": [1000.0, 3000.0],  // defend if enemy within clamp(distance(lane_pos, base_pos), 1000, 3000) radius
 	"comm_rad": [1000.0, 300.0]  // 0 distance from base ~ 1000, base_rad ~ 300.0
 },
