@@ -25,8 +25,7 @@ CEconomyScript::~CEconomyScript()
 
 void CEconomyScript::Init()
 {
-	script->Load("economy", "manager/economy.as");
-	asIScriptModule* mod = script->GetEngine()->GetModule("economy");
+	asIScriptModule* mod = script->GetEngine()->GetModule("main");
 	info.openStrategy = script->GetFunc(mod, "void OpenStrategy(const CCircuitDef@, const AIFloat3& in)");
 }
 

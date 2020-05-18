@@ -31,8 +31,7 @@ CBuilderScript::~CBuilderScript()
 
 void CBuilderScript::Init()
 {
-	script->Load("builder", "manager/builder.as");
-	asIScriptModule* mod = script->GetEngine()->GetModule("builder");
+	asIScriptModule* mod = script->GetEngine()->GetModule("main");
 	int r = mod->SetDefaultNamespace("Builder"); ASSERT(r >= 0);
 	info.makeTask = script->GetFunc(mod, "IUnitTask@ MakeTask(CCircuitUnit@)");
 }

@@ -28,8 +28,7 @@ CMilitaryScript::~CMilitaryScript()
 
 void CMilitaryScript::Init()
 {
-	script->Load("military", "manager/military.as");
-	asIScriptModule* mod = script->GetEngine()->GetModule("military");
+	asIScriptModule* mod = script->GetEngine()->GetModule("main");
 	int r = mod->SetDefaultNamespace("Military"); ASSERT(r >= 0);
 	info.makeTask = script->GetFunc(mod, "IUnitTask@ MakeTask(CCircuitUnit@)");
 	info.isAirValid = script->GetFunc(mod, "bool IsAirValid()");

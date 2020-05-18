@@ -33,6 +33,8 @@ public:
 	void RegisterMgr();
 
 private:
+	void InitConfig();
+
 	void Log(const std::string& msg) const;
 	void AddPoint(const springai::AIFloat3& pos, const std::string& msg) const;
 	void DelPoint(const springai::AIFloat3& pos) const;
@@ -43,14 +45,6 @@ private:
 	struct SScriptInfo {
 		asIScriptFunction* init = nullptr;
 	} info;
-
-	struct SCategory {
-		std::string air;
-		std::string land;
-		std::string water;
-		std::string bad;
-		std::string good;
-	} cat;
 };
 
 } // namespace circuit

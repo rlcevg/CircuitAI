@@ -1,3 +1,4 @@
+#include "side.as"
 #include "role.as"
 
 

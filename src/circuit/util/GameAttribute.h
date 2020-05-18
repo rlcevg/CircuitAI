@@ -38,6 +38,7 @@ public:
 	CSetupData& GetSetupData() { return setupData; }
 	CMetalData& GetMetalData() { return metalData; }
 	CTerrainData& GetTerrainData() { return terrainData; }
+	CMaskHandler& GetSideMasker() { return sideMasker; }
 	CMaskHandler& GetRoleMasker() { return roleMasker; }
 
 private:
@@ -47,6 +48,7 @@ private:
 	CSetupData setupData;
 	CMetalData metalData;
 	CTerrainData terrainData;
+	CMaskHandler sideMasker;
 	CMaskHandler roleMasker;
 };
 

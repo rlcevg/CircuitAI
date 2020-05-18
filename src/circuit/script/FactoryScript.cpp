@@ -30,8 +30,7 @@ CFactoryScript::~CFactoryScript()
 
 void CFactoryScript::Init()
 {
-	script->Load("factory", "manager/factory.as");
-	asIScriptModule* mod = script->GetEngine()->GetModule("factory");
+	asIScriptModule* mod = script->GetEngine()->GetModule("main");
 	int r = mod->SetDefaultNamespace("Factory"); ASSERT(r >= 0);
 	info.makeTask = script->GetFunc(mod, "IUnitTask@ MakeTask(CCircuitUnit@)");
 }

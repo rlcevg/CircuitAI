@@ -15,11 +15,14 @@
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
 #include "util/MaskHandler.h"
+  #include "util/FileSystem.h"
 #include "util/Utils.h"
 
 #include "angelscript/include/angelscript.h"
 #include "angelscript/add_on/scriptarray/scriptarray.h"
 #include "angelscript/add_on/scriptdictionary/scriptdictionary.h"
+
+  #include "spring/SpringCallback.h"
 
 #include "Log.h"
 #include "Drawer.h"
@@ -105,8 +108,10 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterObjectProperty("TypeMask", "Type type", asOFFSET(CMaskHandler::TypeMask, type)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("TypeMask", "Mask mask", asOFFSET(CMaskHandler::TypeMask, mask)); ASSERT(r >= 0);
 
+	CMaskHandler* sideMasker = &circuit->GetGameAttribute()->GetSideMasker();
 	CMaskHandler* roleMasker = &circuit->GetGameAttribute()->GetRoleMasker();
 	r = engine->RegisterObjectType("CMaskHandler", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
+	r = engine->RegisterGlobalProperty("CMaskHandler aiSideMasker", sideMasker); ASSERT(r >= 0);
 	r = engine->RegisterGlobalProperty("CMaskHandler aiRoleMasker", roleMasker); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CMaskHandler", "TypeMask GetTypeMask(const string& in)", asMETHOD(CMaskHandler, GetTypeMask), asCALL_THISCALL); ASSERT(r >= 0);
 
@@ -120,6 +125,8 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterObjectMethod("CCircuitUnit", "Id GetId() const", asMETHODPR(CCircuitUnit, GetId, () const, ICoreUnit::Id), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitUnit", "CCircuitDef@ GetCircuitDef() const", asMETHODPR(CCircuitUnit, GetCircuitDef, () const, CCircuitDef*), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitUnit", "const AIFloat3& GetPos(int)", asMETHODPR(CCircuitUnit, GetPos, (int), const AIFloat3&), asCALL_THISCALL); ASSERT(r >= 0);
+
+	InitConfig();
 }
 
 CInitScript::~CInitScript()
@@ -128,7 +135,37 @@ CInitScript::~CInitScript()
 
 void CInitScript::Init()
 {
-	script->Load("init", "init.as");
+	script->Load("main", "main.as");
+}
+
+void CInitScript::RegisterMgr()
+{
+	asIScriptEngine* engine = script->GetEngine();
+
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	int r = engine->RegisterObjectType("CTerrainManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
+	r = engine->RegisterGlobalProperty("CTerrainManager aiTerrainMgr", terrainMgr); ASSERT(r >= 0);
+	r = engine->RegisterGlobalFunction("int GetTerrainWidth()", asFUNCTION(CTerrainManager::GetTerrainWidth), asCALL_CDECL); ASSERT(r >= 0);
+	r = engine->RegisterGlobalFunction("int GetTerrainHeight()", asFUNCTION(CTerrainManager::GetTerrainHeight), asCALL_CDECL); ASSERT(r >= 0);
+
+	CSetupManager* setupMgr = circuit->GetSetupManager();
+	r = engine->RegisterObjectType("CSetupManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
+	r = engine->RegisterGlobalProperty("CSetupManager aiSetupMgr", setupMgr); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("CSetupManager", "CCircuitDef@ GetCommChoice() const", asMETHOD(CSetupManager, GetCommChoice), asCALL_THISCALL); ASSERT(r >= 0);
+
+	CEnemyManager* enemyMgr = circuit->GetEnemyManager();
+	r = engine->RegisterObjectType("CEnemyManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
+	r = engine->RegisterGlobalProperty("CEnemyManager aiEnemyMgr", enemyMgr); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("CEnemyManager", "float GetEnemyThreat(Type) const", asMETHODPR(CEnemyManager, GetEnemyThreat, (CCircuitDef::RoleT) const, float), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("CEnemyManager", "float GetMobileThreat() const", asMETHOD(CEnemyManager, GetMobileThreat), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("CEnemyManager", "float GetEnemyCost(Type) const", asMETHOD(CEnemyManager, GetEnemyCost), asCALL_THISCALL); ASSERT(r >= 0);
+}
+
+void CInitScript::InitConfig()
+{
+	if (!script->Load("init", "init.as")) {
+		return;
+	}
 	asIScriptModule* mod = script->GetEngine()->GetModule("init");
 	int r = mod->SetDefaultNamespace("Init"); ASSERT(r >= 0);
 	info.init = script->GetFunc(mod, "void Init(dictionary@)");
@@ -164,29 +201,6 @@ void CInitScript::Init()
 	catDict->Release();
 
 	dict->Release();
-}
-
-void CInitScript::RegisterMgr()
-{
-	asIScriptEngine* engine = script->GetEngine();
-
-	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	int r = engine->RegisterObjectType("CTerrainManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
-	r = engine->RegisterGlobalProperty("CTerrainManager aiTerrainMgr", terrainMgr); ASSERT(r >= 0);
-	r = engine->RegisterGlobalFunction("int GetTerrainWidth()", asFUNCTION(CTerrainManager::GetTerrainWidth), asCALL_CDECL); ASSERT(r >= 0);
-	r = engine->RegisterGlobalFunction("int GetTerrainHeight()", asFUNCTION(CTerrainManager::GetTerrainHeight), asCALL_CDECL); ASSERT(r >= 0);
-
-	CSetupManager* setupMgr = circuit->GetSetupManager();
-	r = engine->RegisterObjectType("CSetupManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
-	r = engine->RegisterGlobalProperty("CSetupManager aiSetupMgr", setupMgr); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("CSetupManager", "CCircuitDef@ GetCommChoice() const", asMETHOD(CSetupManager, GetCommChoice), asCALL_THISCALL); ASSERT(r >= 0);
-
-	CEnemyManager* enemyMgr = circuit->GetEnemyManager();
-	r = engine->RegisterObjectType("CEnemyManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
-	r = engine->RegisterGlobalProperty("CEnemyManager aiEnemyMgr", enemyMgr); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("CEnemyManager", "float GetEnemyThreat(Type) const", asMETHODPR(CEnemyManager, GetEnemyThreat, (CCircuitDef::RoleT) const, float), asCALL_THISCALL); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("CEnemyManager", "float GetMobileThreat() const", asMETHOD(CEnemyManager, GetMobileThreat), asCALL_THISCALL); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("CEnemyManager", "float GetEnemyCost(Type) const", asMETHOD(CEnemyManager, GetEnemyCost), asCALL_THISCALL); ASSERT(r >= 0);
 }
 
 void CInitScript::Log(const std::string& msg) const
