@@ -132,7 +132,7 @@ private:
 	void DequeueTask(IUnitTask* task, bool done = false);
 
 public:
-	bool IsBuilderInArea(CCircuitDef* buildDef, const springai::AIFloat3& position);  // Check if build-area has proper builder
+	bool IsBuilderInArea(CCircuitDef* buildDef, const springai::AIFloat3& position) const;  // Check if build-area has proper builder
 
 	virtual IUnitTask* MakeTask(CCircuitUnit* unit) override;
 	virtual void AbortTask(IUnitTask* task) override;

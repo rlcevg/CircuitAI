@@ -139,6 +139,8 @@ protected:
 
 	decltype(units)::const_iterator unitIt;  // update iterator
 
+	std::set<CCircuitUnit*> traveled;
+
 #ifdef DEBUG_VIS
 	virtual void Log() override;
 #endif

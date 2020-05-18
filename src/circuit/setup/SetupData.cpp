@@ -152,10 +152,10 @@ void CSetupData::ParseSetupScript(CCircuitAI* circuit, const char* setupScript)
 		allyTeams.push_back(new CAllyTeam(teamIds, isZkBox ? boxes[0] : boxes[kv.first]));
 	}
 
-	Init(allyTeams, boxes, startPosType);
+	Init(std::move(allyTeams), std::move(boxes), startPosType);
 }
 
-void CSetupData::Init(const AllyMap& ats, const BoxMap& bm, CGameSetup::StartPosType spt)
+void CSetupData::Init(AllyMap&& ats, BoxMap&& bm, CGameSetup::StartPosType spt)
 {
 	allyTeams = ats;
 	boxes = bm;

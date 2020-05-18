@@ -83,10 +83,10 @@ void CDefendTask::RemoveAssignee(CCircuitUnit* unit)
 void CDefendTask::Start(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	AIFloat3 pos = utils::get_radial_pos(position, SQUARE_SIZE * 32);
 	CTerrainManager::CorrectPosition(pos);
-	pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
+	pos = terrainMgr->FindBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
 
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
@@ -102,9 +102,9 @@ void CDefendTask::Update()
 	 * Promote task if possible
 	 */
 	if (updCount % 32 == 1) {
-		CMilitaryManager* militaryManager = static_cast<CMilitaryManager*>(manager);
-		if ((attackPower >= maxPower) || !militaryManager->GetTasks(check).empty()) {
-			IFighterTask* task = militaryManager->EnqueueTask(promote);
+		CMilitaryManager* militaryMgr = static_cast<CMilitaryManager*>(manager);
+		if ((attackPower >= maxPower) || !militaryMgr->GetTasks(check).empty()) {
+			IFighterTask* task = militaryMgr->EnqueueTask(promote);
 			decltype(units) tmpUnits = units;
 			for (CCircuitUnit* unit : tmpUnits) {
 				manager->AssignTask(unit, task);
@@ -133,7 +133,7 @@ void CDefendTask::Update()
 	bool isExecute = (updCount % 16 == 2);
 	if (!isExecute) {
 		for (CCircuitUnit* unit : units) {
-			isExecute |= unit->IsForceExecute(frame);
+			isExecute |= unit->IsForceUpdate(frame);
 		}
 		if (!isExecute) {
 			return;
@@ -205,7 +205,7 @@ bool CDefendTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CMap* map = circuit->GetMap();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CInfluenceMap* inflMap = circuit->GetInflMap();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
@@ -237,7 +237,7 @@ bool CDefendTask::FindTarget()
 
 		const AIFloat3& ePos = enemy->GetPos();
 		if ((inflMap->GetAllyDefendInflAt(ePos) < INFL_EPS)
-			|| !terrainManager->CanMoveToPos(area, ePos))
+			|| !terrainMgr->CanMoveToPos(area, ePos))
 		{
 			continue;
 		}
@@ -347,10 +347,10 @@ void CDefendTask::FallbackBasePos()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
-	CSetupManager* setupManager = circuit->GetSetupManager();
+	CSetupManager* setupMgr = circuit->GetSetupManager();
 
 	const AIFloat3& startPos = leader->GetPos(frame);
-	const AIFloat3& endPos = setupManager->GetBasePos();
+	const AIFloat3& endPos = setupMgr->GetBasePos();
 	const float pathRange = DEFAULT_SLACK * 4;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();

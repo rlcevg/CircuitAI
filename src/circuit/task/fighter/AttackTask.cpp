@@ -146,7 +146,7 @@ void CAttackTask::Update()
 	bool isExecute = (updCount % 4 == 2);
 	if (!isExecute) {
 		for (CCircuitUnit* unit : units) {
-			isExecute |= unit->IsForceExecute(frame);
+			isExecute |= unit->IsForceUpdate(frame);
 		}
 		if (!isExecute) {
 			if (wasRegroup && !pPath->posPath.empty()) {
@@ -216,11 +216,11 @@ void CAttackTask::OnUnitIdle(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const float maxDist = std::max<float>(lowestRange, circuit->GetPathfinder()->GetSquareSize());
 	if (position.SqDistance2D(leader->GetPos(circuit->GetLastFrame())) < SQUARE(maxDist)) {
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		float x = rand() % terrainManager->GetTerrainWidth();
-		float z = rand() % terrainManager->GetTerrainHeight();
+		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+		float x = rand() % terrainMgr->GetTerrainWidth();
+		float z = rand() % terrainMgr->GetTerrainHeight();
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
-		position = terrainManager->GetMovePosition(leader->GetArea(), position);
+		position = terrainMgr->GetMovePosition(leader->GetArea(), position);
 	}
 
 	if (units.find(unit) != units.end()) {
@@ -232,7 +232,7 @@ void CAttackTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CMap* map = circuit->GetMap();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
@@ -262,7 +262,7 @@ void CAttackTask::FindTarget()
 		const float sqBEDist = ePos.SqDistance2D(basePos);  // Base to Enemy distance
 		const float scale = std::min(sqBEDist / sqOBDist, 1.f);
 		if ((maxPower <= threatMap->GetThreatAt(ePos) * scale)
-			|| !terrainManager->CanMoveToPos(area, ePos))
+			|| !terrainMgr->CanMoveToPos(area, ePos))
 		{
 			continue;
 		}
@@ -361,10 +361,10 @@ void CAttackTask::FallbackBasePos()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
-	CSetupManager* setupManager = circuit->GetSetupManager();
+	CSetupManager* setupMgr = circuit->GetSetupManager();
 
 	const AIFloat3& startPos = leader->GetPos(frame);
-	const AIFloat3& endPos = setupManager->GetBasePos();
+	const AIFloat3& endPos = setupMgr->GetBasePos();
 	const float pathRange = DEFAULT_SLACK * 4;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();

@@ -80,9 +80,9 @@ void IReclaimTask::Execute(CCircuitUnit* unit)
 	AIFloat3 pos;
 	float reclRadius;
 	if ((radius == .0f) || !utils::is_valid(position)) {
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		float width = terrainManager->GetTerrainWidth() / 2;
-		float height = terrainManager->GetTerrainHeight() / 2;
+		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+		float width = terrainMgr->GetTerrainWidth() / 2;
+		float height = terrainMgr->GetTerrainHeight() / 2;
 		pos = AIFloat3(width, 0, height);
 		reclRadius = sqrtf(width * width + height * height);
 	} else {

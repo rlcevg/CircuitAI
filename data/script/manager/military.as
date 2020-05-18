@@ -5,7 +5,7 @@ namespace Military {
 
 IUnitTask@ MakeTask(CCircuitUnit@ unit)
 {
-	return militaryMgr.DefaultMakeTask(unit);
+	return aiMilitaryMgr.DefaultMakeTask(unit);
 }
 
 /*
@@ -14,7 +14,7 @@ IUnitTask@ MakeTask(CCircuitUnit@ unit)
  */
 bool IsAirValid()
 {
-	return enemyMgr.GetEnemyThreat(RT::AA) <= 80.f;
+	return aiEnemyMgr.GetEnemyThreat(RT::AA) <= 80.f;
 }
 
 }  // namespace Military

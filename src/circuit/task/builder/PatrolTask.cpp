@@ -78,10 +78,10 @@ void CBPatrolTask::Execute(CCircuitUnit* unit)
 		unit->CmdPriority(0);
 
 		const float size = SQUARE_SIZE * 100;
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 		AIFloat3 pos = position;
-		pos.x += (pos.x > terrainManager->GetTerrainWidth() / 2) ? -size : size;
-		pos.z += (pos.z > terrainManager->GetTerrainHeight() / 2) ? -size : size;
+		pos.x += (pos.x > terrainMgr->GetTerrainWidth() / 2) ? -size : size;
+		pos.z += (pos.z > terrainMgr->GetTerrainHeight() / 2) ? -size : size;
 		unit->GetUnit()->PatrolTo(pos);
 	)
 }

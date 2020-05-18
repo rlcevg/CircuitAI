@@ -57,9 +57,9 @@ void CDefenceMatrix::Init(CCircuitAI* circuit)
 	clusterInfos.resize(clusters.size());
 
 	const bool isWaterMap = circuit->GetTerrainManager()->IsWaterMap();
-	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
-	const std::vector<CCircuitDef*>& defenders = isWaterMap ? militaryManager->GetWaterDefenders() : militaryManager->GetLandDefenders();
-	CCircuitDef* rangeDef = defenders.empty() ? militaryManager->GetDefaultPorc() : defenders.front();
+	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
+	const std::vector<CCircuitDef*>& defenders = isWaterMap ? militaryMgr->GetWaterDefenders() : militaryMgr->GetLandDefenders();
+	CCircuitDef* rangeDef = defenders.empty() ? militaryMgr->GetDefaultPorc() : defenders.front();
 
 	CMap* map = circuit->GetMap();
 	float maxDistance = rangeDef->GetMaxRange() * 0.75f * 2;

@@ -81,14 +81,14 @@ bool CBReclaimTask::Reevaluate(CCircuitUnit* unit)
 
 		auto features = circuit->GetCallback()->GetFeaturesIn(pos, 500.0f);
 		if (!features.empty()) {
-			CTerrainManager* terrainManager = circuit->GetTerrainManager();
+			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 			circuit->GetThreatMap()->SetThreatType(unit);
 			float minSqDist = std::numeric_limits<float>::max();
 			Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
 			for (Feature* feature : features) {
 				AIFloat3 featPos = feature->GetPosition();
 				CTerrainManager::CorrectPosition(featPos);  // Impulsed flying feature
-				if (!terrainManager->CanBuildAtSafe(unit, featPos)) {
+				if (!terrainMgr->CanBuildAtSafe(unit, featPos)) {
 					continue;
 				}
 				FeatureDef* featDef = feature->GetDef();

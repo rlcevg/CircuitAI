@@ -3,15 +3,18 @@
 
 namespace Init {
 
-void Init(dictionary@ categories)
+void Init(dictionary@ data)
 {
 	aiLog("AngelScript Rules!");
 
-	categories["air"]   = "FIXEDWING GUNSHIP";
-	categories["land"]  = "LAND SINK TURRET SHIP SWIM FLOAT HOVER";
-	categories["water"] = "SUB";
-	categories["bad"]   = "TERRAFORM STUPIDTARGET MINE";
-	categories["good"]  = "TURRET FLOAT";
+	dictionary category;
+	category["air"]   = "FIXEDWING GUNSHIP";
+	category["land"]  = "LAND SINK TURRET SHIP SWIM FLOAT HOVER";
+	category["water"] = "SUB";
+	category["bad"]   = "TERRAFORM STUPIDTARGET MINE";
+	category["good"]  = "TURRET FLOAT";
+
+	data["category"] = @category;
 }
 
 }

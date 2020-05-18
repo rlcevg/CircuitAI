@@ -238,7 +238,7 @@ void CTerrainManager::ReadConfig()
 	};
 
 	for (const std::string& clName : instance.getMemberNames()) {
-		Json::Value cls = isWaterMap ? clWater[clName] : Json::Value::null;
+		Json::Value cls = isWaterMap ? clWater[clName] : Json::Value::nullSingleton();
 		if (cls.empty()) {
 			cls = clLand[clName];
 			if (cls.empty()) {
@@ -447,7 +447,6 @@ void CTerrainManager::MarkAllyBuildings()
 	circuit->UpdateFriendlyUnits();
 	const CAllyTeam::AllyUnits& friendlies = circuit->GetFriendlyUnits();
 	int teamId = circuit->GetTeamId();
-	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 
 	decltype(markedAllies) prevUnits = std::move(markedAllies);
 	markedAllies.clear();
@@ -456,19 +455,19 @@ void CTerrainManager::MarkAllyBuildings()
 	auto first2  = prevUnits.begin();
 	auto last2   = prevUnits.end();
 	auto d_first = std::back_inserter(markedAllies);
-	auto addStructure = [&d_first, mexDef, this](CAllyUnit* unit) {
+	auto addStructure = [&d_first, this](CAllyUnit* unit) {
 		SStructure building;
 		building.unitId = unit->GetId();
 		building.cdef = unit->GetCircuitDef();
 		building.pos = unit->GetPos(this->circuit->GetLastFrame());
 		building.facing = unit->GetUnit()->GetBuildingFacing();
 		*d_first++ = building;
-		if (*building.cdef != *mexDef) {
+		if (!building.cdef->IsMex()) {
 			MarkBlocker(building, true);
 		}
 	};
-	auto delStructure = [mexDef, this](const SStructure& building) {
-		if (*building.cdef != *mexDef) {
+	auto delStructure = [this](const SStructure& building) {
+		if (!building.cdef->IsMex()) {
 			MarkBlocker(building, false);
 		}
 	};

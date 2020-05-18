@@ -36,7 +36,7 @@ void CBBigGunTask::Finish()
 CAllyUnit* CBBigGunTask::FindSameAlly(CCircuitUnit* builder, const std::vector<Unit*>& friendlies)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	const int frame = circuit->GetLastFrame();
 
 	for (Unit* au : friendlies) {
@@ -46,7 +46,7 @@ CAllyUnit* CBBigGunTask::FindSameAlly(CCircuitUnit* builder, const std::vector<U
 		}
 		if (alu->GetCircuitDef()->IsRoleSuper() && au->IsBeingBuilt()) {
 			const AIFloat3& pos = alu->GetPos(frame);
-			if (terrainManager->CanBuildAtSafe(builder, pos)) {
+			if (terrainMgr->CanBuildAtSafe(builder, pos)) {
 				return alu;
 			}
 		}

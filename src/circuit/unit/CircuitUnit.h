@@ -78,8 +78,8 @@ public:
 
 	bool IsMoveFailed(int frame);
 
-	void ForceExecute(int frame) { execFrame = frame; }
-	bool IsForceExecute(int frame);
+	void ForceUpdate(int frame) { execFrame = frame; }
+	bool IsForceUpdate(int frame);
 
 	void Dead() { isDead = true; }
 	bool IsDead() const { return isDead; }

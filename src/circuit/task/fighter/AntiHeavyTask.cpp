@@ -164,7 +164,7 @@ void CAntiHeavyTask::Update()
 	bool isExecute = (updCount % 2 == 0) && (frame >= lastTouched + FRAMES_PER_SEC);
 	if (!isExecute) {
 		for (CCircuitUnit* unit : units) {
-			isExecute |= unit->IsForceExecute(frame);
+			isExecute |= unit->IsForceUpdate(frame);
 		}
 		if (!isExecute) {
 			if (wasRegroup && !pPath->posPath.empty()) {
@@ -261,11 +261,11 @@ void CAntiHeavyTask::OnUnitIdle(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const float maxDist = std::max<float>(lowestRange, circuit->GetPathfinder()->GetSquareSize());
 	if (position.SqDistance2D(leader->GetPos(circuit->GetLastFrame())) < SQUARE(maxDist)) {
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		float x = rand() % terrainManager->GetTerrainWidth();
-		float z = rand() % terrainManager->GetTerrainHeight();
+		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+		float x = rand() % terrainMgr->GetTerrainWidth();
+		float z = rand() % terrainMgr->GetTerrainHeight();
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
-		position = terrainManager->GetMovePosition(leader->GetArea(), position);
+		position = terrainMgr->GetMovePosition(leader->GetArea(), position);
 	}
 
 	if (units.find(unit) != units.end()) {
@@ -293,7 +293,7 @@ bool CAntiHeavyTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CMap* map = circuit->GetMap();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
@@ -317,7 +317,7 @@ bool CAntiHeavyTask::FindTarget()
 		}
 		const AIFloat3& ePos = enemy->GetPos();
 		if ((maxPower <= threatMap->GetThreatAt(ePos) - enemy->GetThreat()) ||
-			!terrainManager->CanMoveToPos(area, ePos))
+			!terrainMgr->CanMoveToPos(area, ePos))
 		{
 			continue;
 		}
@@ -463,9 +463,9 @@ void CAntiHeavyTask::FallbackBasePos()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
-	CSetupManager* setupManager = circuit->GetSetupManager();
+	CSetupManager* setupMgr = circuit->GetSetupManager();
 
-	position = setupManager->GetBasePos();
+	position = setupMgr->GetBasePos();
 
 	const AIFloat3& startPos = leader->GetPos(frame);
 	const float pathRange = DEFAULT_SLACK * 4;

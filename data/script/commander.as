@@ -231,7 +231,7 @@ dictionary@ GetOpenInfo()
 const array<SO>@ GetOpener(const CCircuitDef@ facDef)
 {
 	dictionary@ openInfo = GetOpenInfo();
-	const CCircuitDef@ commChoice = setupMgr.GetCommChoice();
+	const CCircuitDef@ commChoice = aiSetupMgr.GetCommChoice();
 	const string commName = commChoice.GetName();
 
 	SOpener@ open;  // null

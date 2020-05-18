@@ -69,8 +69,8 @@ void CRecruitTask::Update()
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	bool hasMetal = economyManager->GetAvgMetalIncome() * 2.0f > economyManager->GetMetalPull();
+	CEconomyManager* economyMgr = circuit->GetEconomyManager();
+	bool hasMetal = economyMgr->GetAvgMetalIncome() * 2.0f > economyMgr->GetMetalPull();
 	if (State::DISENGAGE == state) {
 		if (hasMetal) {
 			state = State::ROAM;  // Not wait

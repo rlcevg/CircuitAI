@@ -83,7 +83,7 @@ void CScoutTask::Update()
 		}
 	} else {
 		for (CCircuitUnit* unit : units) {
-			if (unit->IsForceExecute(frame)) {
+			if (unit->IsForceUpdate(frame)) {
 				Execute(unit, true);
 			}
 		}
@@ -151,7 +151,7 @@ bool CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CMap* map = circuit->GetMap();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	STerrainMapArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
@@ -182,7 +182,7 @@ bool CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 		const AIFloat3& ePos = enemy->GetPos();
 		const float power = threatMap->GetThreatAt(ePos);
 		if ((maxPower <= power)
-			|| !terrainManager->CanMoveToPos(area, ePos)
+			|| !terrainMgr->CanMoveToPos(area, ePos)
 			|| (enemy->GetVel().SqLength2D() >= speed))
 		{
 			continue;
@@ -279,7 +279,7 @@ void CScoutTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& pos = unit->GetPos(frame);
 	const AIFloat3& threatPos = unit->GetTravelAct()->IsActive() ? position : pos;
@@ -290,10 +290,10 @@ void CScoutTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 	}
 
 	if (!utils::is_valid(position) && !proceed) {
-		float x = rand() % terrainManager->GetTerrainWidth();
-		float z = rand() % terrainManager->GetTerrainHeight();
+		float x = rand() % terrainMgr->GetTerrainWidth();
+		float z = rand() % terrainMgr->GetTerrainHeight();
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
-		position = terrainManager->GetMovePosition(unit->GetArea(), position);
+		position = terrainMgr->GetMovePosition(unit->GetArea(), position);
 	}
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();

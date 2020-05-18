@@ -261,10 +261,10 @@ bool ISquadTask::IsMustRegroup()
 
 	static std::vector<CCircuitUnit*> validUnits;  // NOTE: micro-opt
 //	validUnits.reserve(units.size());
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();;
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();;
 	for (CCircuitUnit* unit : units) {
 		if (!unit->GetCircuitDef()->IsPlane() &&
-			terrainManager->CanMoveToPos(unit->GetArea(), unit->GetPos(frame)))
+			terrainMgr->CanMoveToPos(unit->GetArea(), unit->GetPos(frame)))
 		{
 			validUnits.push_back(unit);
 		}
@@ -287,7 +287,7 @@ bool ISquadTask::IsMustRegroup()
 			const AIFloat3& pos = unit->GetPos(frame);
 			const float sqDist = groupPos.SqDistance2D(pos);
 			if ((sqDist > sqMaxDist) &&
-				((unit->GetTaskFrame() < groupFrame) || !terrainManager->CanMoveToPos(unit->GetArea(), pos)))
+				((unit->GetTaskFrame() < groupFrame) || !terrainMgr->CanMoveToPos(unit->GetArea(), pos)))
 			{
 				TRY_UNIT(circuit, unit,
 					unit->GetUnit()->Stop();

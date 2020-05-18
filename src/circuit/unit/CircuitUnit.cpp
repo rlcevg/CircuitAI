@@ -119,7 +119,7 @@ bool CCircuitUnit::IsMoveFailed(int frame)
 	return ++moveFails > TASK_RETRIES * 2;
 }
 
-bool CCircuitUnit::IsForceExecute(int frame)
+bool CCircuitUnit::IsForceUpdate(int frame)
 {
 	if (execFrame > 0) {
 		if (execFrame <= frame) {

@@ -9,12 +9,12 @@ void OpenStrategy(const CCircuitDef@ facDef, const AIFloat3& in pos)
 	}
 	float radius = aiMax(GetTerrainWidth(), GetTerrainHeight()) / 4;
 	for (uint i = 0, icount = opener.length(); i < icount; ++i) {
-		CCircuitDef@ buildDef = factoryMgr.GetRoleDef(facDef, opener[i].role);
+		CCircuitDef@ buildDef = aiFactoryMgr.GetRoleDef(facDef, opener[i].role);
 		if ((buildDef is null) || !buildDef.IsAvailable(ai.GetLastFrame())) {
 			continue;
 		}
 		for (uint j = 0, jcount = opener[i].count; j < jcount; ++j) {
-			factoryMgr.EnqueueTask(1, buildDef, pos, 1, radius);  // FIXME
+			aiFactoryMgr.EnqueueTask(1, buildDef, pos, 1, radius);  // FIXME
 		}
 	}
 // 	const std::vector<CCircuitDef::RoleType>* opener = circuit->GetSetupManager()->GetOpener(facDef);

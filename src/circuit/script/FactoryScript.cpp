@@ -18,7 +18,7 @@ CFactoryScript::CFactoryScript(CScriptManager* scr, CFactoryManager* mgr)
 {
 	asIScriptEngine* engine = script->GetEngine();
 	int r = engine->RegisterObjectType("CFactoryManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
-	r = engine->RegisterGlobalProperty("CFactoryManager factoryMgr", manager); ASSERT(r >= 0);
+	r = engine->RegisterGlobalProperty("CFactoryManager aiFactoryMgr", manager); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CFactoryManager", "IUnitTask@+ DefaultMakeTask(CCircuitUnit@)", asMETHOD(CFactoryManager, DefaultMakeTask), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CFactoryManager", "CCircuitDef@ GetRoleDef(const CCircuitDef@, Type)", asMETHOD(CFactoryManager, GetRoleDef), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CFactoryManager", "void EnqueueTask(uint8, CCircuitDef@, const AIFloat3& in, uint8, float)", asMETHOD(CFactoryManager, EnqueueTask), asCALL_THISCALL); ASSERT(r >= 0);

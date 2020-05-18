@@ -21,6 +21,7 @@
 #include "util/Utils.h"
 
 #include "spring/SpringCallback.h"
+#include "spring/SpringMap.h"
 
 #include "AIFloat3.h"
 #include "Team.h"

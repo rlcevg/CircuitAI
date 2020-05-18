@@ -60,13 +60,13 @@ void CSReclaimTask::Update()
 		manager->AbortTask(this);
 	} else if ((++updCount % 4 == 0) && !units.empty()) {
 		// Check for damaged units
-		CBuilderManager* builderManager = circuit->GetBuilderManager();
+		CBuilderManager* builderMgr = circuit->GetBuilderManager();
 		CAllyUnit* repairTarget = nullptr;
 		circuit->UpdateFriendlyUnits();
 		auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 		for (Unit* u : us) {
 			CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-			if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {
+			if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)) {
 				continue;
 			}
 			if (!u->IsBeingBuilt() && (u->GetHealth() < u->GetMaxHealth())) {

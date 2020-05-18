@@ -48,10 +48,10 @@ void CSupportTask::Start(CCircuitUnit* unit)
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	AIFloat3 pos = position;
 	CTerrainManager::CorrectPosition(pos);
-	pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
+	pos = terrainMgr->FindBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
 
 	TRY_UNIT(circuit, unit,
 		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
@@ -77,7 +77,7 @@ void CSupportTask::Update()
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	urgentPositions.clear();
 //	urgentPositions.reserve(tasks.size());
 	for (IFighterTask* candy : tasks) {
@@ -87,7 +87,7 @@ void CSupportTask::Update()
 			continue;
 		}
 		const AIFloat3& pos = leader->GetPos(frame);
-		if (!terrainManager->CanMoveToPos(unit->GetArea(), pos)) {
+		if (!terrainMgr->CanMoveToPos(unit->GetArea(), pos)) {
 			continue;
 		}
 		if ((unit->GetCircuitDef()->IsAmphibious() &&

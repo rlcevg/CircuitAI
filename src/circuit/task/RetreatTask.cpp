@@ -81,8 +81,7 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 
 	// Mobile repair
 	if (!cdef->IsPlane()) {
-		CBuilderManager* builderManager = circuit->GetBuilderManager();
-		builderManager->EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
+		circuit->GetBuilderManager()->EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
 	}
 }
 
@@ -115,12 +114,12 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 		endPos = repairer->GetPos(frame);
 		range = pathfinder->GetSquareSize();
 	} else {
-		CFactoryManager* factoryManager = circuit->GetFactoryManager();
-		endPos = factoryManager->GetClosestHaven(unit);
+		CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+		endPos = factoryMgr->GetClosestHaven(unit);
 		if (!utils::is_valid(endPos)) {
 			endPos = circuit->GetSetupManager()->GetBasePos();
 		}
-		range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
+		range = factoryMgr->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
 	}
 
 	if (unit->GetTravelAct()->GetPath() == nullptr) {
@@ -161,7 +160,7 @@ void CRetreatTask::Update()
 
 		if (isRepaired && !unit->IsDisarmed(frame)) {
 			RemoveAssignee(unit);
-		} else if (unit->IsForceExecute(frame) || isExecute) {
+		} else if (unit->IsForceUpdate(frame) || isExecute) {
 			Start(unit);
 		}
 	}
@@ -203,13 +202,13 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		return;
 	}
 
-	CFactoryManager* factoryManager = circuit->GetFactoryManager();
-	AIFloat3 haven = (repairer != nullptr) ? repairer->GetPos(frame) : factoryManager->GetClosestHaven(unit);
+	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+	AIFloat3 haven = (repairer != nullptr) ? repairer->GetPos(frame) : factoryMgr->GetClosestHaven(unit);
 	if (!utils::is_valid(haven)) {
 		haven = circuit->GetSetupManager()->GetBasePos();
 	}
 
-	const float maxDist = factoryManager->GetAssistDef()->GetBuildDistance();
+	const float maxDist = factoryMgr->GetAssistDef()->GetBuildDistance();
 	const AIFloat3& unitPos = unit->GetPos(frame);
 	if (unitPos.SqDistance2D(haven) > maxDist * maxDist) {
 		// TODO: push MoveAction into unit? to avoid enemy fire
@@ -221,9 +220,9 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		// TODO: push WaitAction into unit
 		AIFloat3 pos = unitPos;
 		const float size = SQUARE_SIZE * 16;
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		float centerX = terrainManager->GetTerrainWidth() / 2;
-		float centerZ = terrainManager->GetTerrainHeight() / 2;
+		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+		float centerX = terrainMgr->GetTerrainWidth() / 2;
+		float centerZ = terrainMgr->GetTerrainHeight() / 2;
 		pos.x += (pos.x > centerX) ? size : -size;
 		pos.z += (pos.z > centerZ) ? size : -size;
 		AIFloat3 oldPos = pos;
@@ -236,7 +235,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		CTerrainManager::TerrainPredicate predicate = [unitPos](const AIFloat3& p) {
 			return unitPos.SqDistance2D(p) > SQUARE(SQUARE_SIZE * 8);
 		};
-		pos = terrainManager->FindBuildSite(cdef, pos, maxDist, UNIT_COMMAND_BUILD_NO_FACING, predicate);
+		pos = terrainMgr->FindBuildSite(cdef, pos, maxDist, UNIT_COMMAND_BUILD_NO_FACING, predicate);
 		TRY_UNIT(circuit, unit,
 //			unit->CmdPriority(0);
 			unit->GetUnit()->PatrolTo(pos);
@@ -350,12 +349,12 @@ void CRetreatTask::ApplyCostMap(const CQueryCostMap* query, CCircuitUnit* newRep
 		endPos = repairer->GetPos(frame);
 		range = pathfinder->GetSquareSize();
 	} else {
-		CFactoryManager* factoryManager = circuit->GetFactoryManager();
-		endPos = factoryManager->GetClosestHaven(unit);
+		CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+		endPos = factoryMgr->GetClosestHaven(unit);
 		if (!utils::is_valid(endPos)) {
 			endPos = circuit->GetSetupManager()->GetBasePos();
 		}
-		range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
+		range = factoryMgr->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
 	}
 
 	float prevCost = query->GetCostAt(endPos, range);

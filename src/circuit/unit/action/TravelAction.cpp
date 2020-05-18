@@ -53,7 +53,7 @@ void ITravelAction::OnEnd()
 {
 	IAction::OnEnd();
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
-	unit->GetTask()->OnTravelEnd(unit);  // may clear/delete unit actions
+	unit->GetTask()->OnTravelEnd(unit);  // WARNING: do not clear/delete unit actions
 }
 
 void ITravelAction::SetPath(const std::shared_ptr<PathInfo>& pPath, float speed)

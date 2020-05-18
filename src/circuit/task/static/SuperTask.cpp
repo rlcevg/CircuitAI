@@ -76,15 +76,15 @@ void CSuperTask::Update()
 	}
 
 	CInfluenceMap* inflMap = circuit->GetInflMap();
-	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
+	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
 	const float maxSqRange = SQUARE(cdef->GetMaxRange());
 	const float sqAoe = SQUARE(cdef->GetAoe() * 1.25f);
 	float cost = 0.f;
 	int groupIdx = -1;
 	const std::array<const std::set<IFighterTask*>*, 3> avoidTasks = {  // NOTE: ISquadTask only
-		&militaryManager->GetTasks(IFighterTask::FightType::ATTACK),
-		&militaryManager->GetTasks(IFighterTask::FightType::AH),
-		&militaryManager->GetTasks(IFighterTask::FightType::AA),
+		&militaryMgr->GetTasks(IFighterTask::FightType::ATTACK),
+		&militaryMgr->GetTasks(IFighterTask::FightType::AH),
+		&militaryMgr->GetTasks(IFighterTask::FightType::AA),
 	};
 	auto isAllySafe = [&avoidTasks, frame, sqAoe, inflMap](const AIFloat3& pos) {
 		for (const std::set<IFighterTask*>* tasks : avoidTasks) {

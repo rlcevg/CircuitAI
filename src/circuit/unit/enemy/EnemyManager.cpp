@@ -177,14 +177,14 @@ void CEnemyManager::UpdateEnemyDatas(CQuadField& quadField)
 
 void CEnemyManager::PrepareUpdate()
 {
-	CMapManager* mapManager = circuit->GetMapManager();
+	CMapManager* mapMgr = circuit->GetMapManager();
 
 	hostileDatas.clear();
-	hostileDatas.reserve(mapManager->GetHostileUnits().size());
-	for (auto& kv : mapManager->GetHostileUnits()) {
+	hostileDatas.reserve(mapMgr->GetHostileUnits().size());
+	for (auto& kv : mapMgr->GetHostileUnits()) {
 		CEnemyUnit* e = kv.second;
 
-		if (!mapManager->HostileInLOS(e)) {
+		if (!mapMgr->HostileInLOS(e)) {
 			continue;
 		}
 
@@ -192,11 +192,11 @@ void CEnemyManager::PrepareUpdate()
 	}
 
 	peaceDatas.clear();
-	peaceDatas.reserve(mapManager->GetPeaceUnits().size());
-	for (auto& kv : mapManager->GetPeaceUnits()) {
+	peaceDatas.reserve(mapMgr->GetPeaceUnits().size());
+	for (auto& kv : mapMgr->GetPeaceUnits()) {
 		CEnemyUnit* e = kv.second;
 
-		if (!mapManager->PeaceInLOS(e)) {
+		if (!mapMgr->PeaceInLOS(e)) {
 			continue;
 		}
 

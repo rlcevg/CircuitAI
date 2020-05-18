@@ -15,6 +15,8 @@
 #include "DataDirs.h"
 #include "Log.h"
 
+//#define AS_USE_STLNAMES		1
+
 #include "angelscript/include/angelscript.h"
 #include "angelscript/jit/as_jit.h"
 #include "angelscript/add_on/scriptstdstring/scriptstdstring.h"
@@ -22,8 +24,6 @@
 #include "angelscript/add_on/scriptdictionary/scriptdictionary.h"
 #include "angelscript/add_on/scriptbuilder/scriptbuilder.h"
 #include "angelscript/add_on/aatc/aatc.hpp"
-
-#define AS_USE_STLNAMES		1
 
 namespace circuit {
 

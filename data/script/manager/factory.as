@@ -31,7 +31,7 @@ Id STRIDER = ai.GetCircuitDef(striderhub).GetId();
 
 IUnitTask@ MakeTask(CCircuitUnit@ unit)
 {
-	return factoryMgr.DefaultMakeTask(unit);
+	return aiFactoryMgr.DefaultMakeTask(unit);
 }
 
 }  // namespace Factory

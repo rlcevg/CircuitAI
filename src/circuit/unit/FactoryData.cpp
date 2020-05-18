@@ -107,9 +107,9 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 {
 	std::vector<SFactory> availFacs;
 	std::map<CCircuitDef::Id, float> percents;
-	CFactoryManager* factoryManager = circuit->GetFactoryManager();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	SAreaData* areaData = terrainManager->GetAreaData();
+	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	SAreaData* areaData = terrainMgr->GetAreaData();
 	const std::vector<STerrainMapImmobileType>& immobileType = areaData->immobileType;
 	const std::vector<STerrainMapMobileType>& mobileType = areaData->mobileType;
 	const bool isAirValid = circuit->GetEnemyManager()->IsAirValid();
@@ -118,8 +118,8 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 	bool isPosValid = utils::is_valid(position);
 //	CTerrainManager::CorrectPosition(position);
 	if (isPosValid) {
-		predicate = [position, terrainManager](CCircuitDef* cdef) {
-			return terrainManager->CanBeBuiltAtSafe(cdef, position);
+		predicate = [position, terrainMgr](CCircuitDef* cdef) {
+			return terrainMgr->CanBeBuiltAtSafe(cdef, position);
 		};
 	} else {
 		predicate = [](CCircuitDef* cdef) {
@@ -139,7 +139,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 		}
 		float importance;
 		if (isStart) {
-			CCircuitDef* bdef = factoryManager->GetRoleDef(cdef, ROLE_TYPE(BUILDER));
+			CCircuitDef* bdef = factoryMgr->GetRoleDef(cdef, ROLE_TYPE(BUILDER));
 			importance = sfac.startImp * (((bdef != nullptr) && bdef->IsAvailable(frame)) ? 1.f : .1f);
 		} else {
 			importance = sfac.switchImp;
@@ -179,7 +179,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 	}
 
 	// Don't start with air
-	if (((choiceNum++ < noAirNum) || (isPosValid && terrainManager->IsWaterSector(position))) &&
+	if (((choiceNum++ < noAirNum) || (isPosValid && terrainMgr->IsWaterSector(position))) &&
 		(circuit->GetCircuitDef(availFacs.front().id)->GetMobileId() < 0))
 	{
 		for (SFactory& fac : availFacs) {

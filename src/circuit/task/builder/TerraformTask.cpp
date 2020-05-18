@@ -57,12 +57,12 @@ void CBTerraformTask::Start(CCircuitUnit* unit)
 	 */
 	if (targetId == -1) {
 		if (!utils::is_valid(buildPos)) {
-			CTerrainManager* terrainManager = circuit->GetTerrainManager();
-			CTerrainManager::TerrainPredicate predicate = [terrainManager, unit](const AIFloat3& p) {
-				return terrainManager->CanBuildAtSafe(unit, p);
+			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+			CTerrainManager::TerrainPredicate predicate = [terrainMgr, unit](const AIFloat3& p) {
+				return terrainMgr->CanBuildAtSafe(unit, p);
 			};
 			CCircuitDef* cdef = circuit->GetBuilderManager()->GetTerraDef();
-			buildPos = terrainManager->FindBuildSite(cdef, position, 600.0f, facing, predicate);
+			buildPos = terrainMgr->FindBuildSite(cdef, position, 600.0f, facing, predicate);
 		}
 		if (!utils::is_valid(buildPos)) {
 			manager->DoneTask(this);

@@ -149,8 +149,8 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 		case StartPosType::METAL_SPOT: {
 			const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
 			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
-			CTerrainManager* terrainManager = circuit->GetTerrainManager();
-			STerrainMapMobileType* mobileType = terrainManager->GetMobileTypeById(commChoice->GetMobileId());
+			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+			STerrainMapMobileType* mobileType = terrainMgr->GetMobileTypeById(commChoice->GetMobileId());
 			Lua* lua = circuit->GetLua();
 
 			std::map<int, CMetalData::MetalIndices> validPoints;
@@ -164,7 +164,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 						continue;
 					}
 
-					const int iS = terrainManager->GetSectorIndex(spots[i].position);
+					const int iS = terrainMgr->GetSectorIndex(spots[i].position);
 					STerrainMapArea* area = mobileType->sector[iS].area;
 					if ((area != nullptr) && area->areaUsable) {
 						validPoints[idx].push_back(i);
@@ -177,7 +177,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 					unsigned count;
 					float distDivIncome;
 				};
-				const AIFloat3 center(terrainManager->GetTerrainWidth() / 2, 0, terrainManager->GetTerrainHeight() / 2);
+				const AIFloat3 center(terrainMgr->GetTerrainWidth() / 2, 0, terrainMgr->GetTerrainHeight() / 2);
 				std::vector<std::pair<int, SCluster>> validClusters;
 				for (auto& kv : validPoints) {
 					SCluster c;
@@ -211,15 +211,15 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 
 //			AIFloat3 posFrom(box.left, 0, box.top);
 //			AIFloat3 posTo(box.right, 0, box.bottom);
-//			CMetalManager* metalManager = circuit->GetMetalManager();
-//			CMetalData::MetalIndices inBoxIndices = metalManager->FindWithinRangeSpots(posFrom, posTo);
+//			CMetalManager* metalMgr = circuit->GetMetalManager();
+//			CMetalData::MetalIndices inBoxIndices = metalMgr->FindWithinRangeSpots(posFrom, posTo);
 //			if (!inBoxIndices.empty()) {
-//				const CMetalData::Metals& spots = metalManager->GetSpots();
-//				CTerrainManager* terrainManager = circuit->GetTerrainManager();
-//				STerrainMapMobileType* mobileType = terrainManager->GetMobileTypeById(commChoice->GetMobileId());
+//				const CMetalData::Metals& spots = metalMgr->GetSpots();
+//				CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+//				STerrainMapMobileType* mobileType = terrainMgr->GetMobileTypeById(commChoice->GetMobileId());
 //				std::vector<int> filteredIndices;
 //				for (auto idx : inBoxIndices) {
-//					int iS = terrainManager->GetSectorIndex(spots[idx].position);
+//					int iS = terrainMgr->GetSectorIndex(spots[idx].position);
 //					STerrainMapArea* area = mobileType->sector[iS].area;
 //					if ((area != nullptr) && area->areaUsable) {
 //						filteredIndices.push_back(idx);
@@ -559,9 +559,9 @@ void CSetupManager::CalcLanePos()
 	}
 	midPos /= points.size();
 
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	float width = terrainManager->GetTerrainWidth();
-	float height = terrainManager->GetTerrainHeight();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	float width = terrainMgr->GetTerrainWidth();
+	float height = terrainMgr->GetTerrainHeight();
 	AIFloat3 p1(width - width / 3, 0, height / 3);
 	AIFloat3 p2(width / 3, 0, height / 3);
 	AIFloat3 p3(width / 3, 0, height - height / 3);

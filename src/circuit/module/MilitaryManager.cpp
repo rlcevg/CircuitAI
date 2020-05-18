@@ -176,13 +176,13 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 //		}
 //		int frame = this->circuit->GetLastFrame();
 //		const AIFloat3& pos = unit->GetPos(frame);
-//		CTerrainManager* terrainManager = this->circuit->GetTerrainManager();
+//		CTerrainManager* terrainMgr = this->circuit->GetTerrainManager();
 //		CDefendTask* defendTask = nullptr;
 //		float minSqDist = std::numeric_limits<float>::max();
 //		for (IFighterTask* task : tasks) {
 //			CDefendTask* dt = static_cast<CDefendTask*>(task);
 //			const float sqDist = pos.SqDistance2D(dt->GetPosition());
-//			if ((minSqDist <= sqDist) || !terrainManager->CanMoveToPos(dt->GetLeader()->GetArea(), pos)) {
+//			if ((minSqDist <= sqDist) || !terrainMgr->CanMoveToPos(dt->GetLeader()->GetArea(), pos)) {
 //				continue;
 //			}
 //			if ((dt->GetTarget() == nullptr) ||
@@ -417,10 +417,10 @@ void CMilitaryManager::ReadConfig()
 
 void CMilitaryManager::Init()
 {
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	const CMetalData::Metals& spots = metalManager->GetSpots();
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	const CMetalData::Metals& spots = metalMgr->GetSpots();
 
-	clusterInfos.resize(metalManager->GetClusters().size(), {nullptr});
+	clusterInfos.resize(metalMgr->GetClusters().size(), {nullptr});
 
 	scoutPath.reserve(spots.size());
 	for (unsigned i = 0; i < spots.size(); ++i) {
@@ -515,8 +515,8 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 	switch (type) {
 		default:
 		case IFighterTask::FightType::RALLY: {
-//			CEconomyManager* economyManager = circuit->GetEconomyManager();
-//			float power = economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor() * 32.0f;
+//			CEconomyManager* economyMgr = circuit->GetEconomyManager();
+//			float power = economyMgr->GetAvgMetalIncome() * economyMgr->GetEcoFactor() * 32.0f;
 			task = new CRallyTask(this, /*power*/1);  // TODO: pass enemy's threat
 			break;
 		}
@@ -669,7 +669,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	if (closestPoint == nullptr) {
 		return;
 	}
-	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	CBuilderManager* builderMgr = circuit->GetBuilderManager();
 	float totalCost = .0f;
 	IBuilderTask* parentTask = nullptr;
 	// NOTE: circuit->GetTerrainManager()->IsWaterSector(pos) checks whole sector
@@ -711,11 +711,11 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 		}
 	}
 	if (!isPorc) {
-		for (IBuilderTask* t : builderManager->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
+		for (IBuilderTask* t : builderMgr->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
 			if ((t->GetTarget() == nullptr) && (t->GetNextTask() != nullptr) &&
 				(closestPoint->position.SqDistance2D(t->GetTaskPos()) < SQUARE(SQUARE_SIZE)))
 			{
-				builderManager->AbortTask(t);
+				builderMgr->AbortTask(t);
 				break;
 			}
 		}
@@ -726,11 +726,11 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	AIFloat3 backPos = closestPoint->position + backDir.Normalize2D() * SQUARE_SIZE * 16;
 	CTerrainManager::CorrectPosition(backPos);
 
-	CEnemyManager* enemyManager = circuit->GetEnemyManager();
+	CEnemyManager* enemyMgr = circuit->GetEnemyManager();
 	const int frame = circuit->GetLastFrame();
 	for (unsigned i = 0; i < num; ++i) {
 		CCircuitDef* defDef = defenders[i];
-		if (!defDef->IsAvailable(frame) || (defDef->IsRoleAA() && (enemyManager->GetEnemyCost(ROLE_TYPE(AIR)) < 1.f))) {
+		if (!defDef->IsAvailable(frame) || (defDef->IsRoleAA() && (enemyMgr->GetEnemyCost(ROLE_TYPE(AIR)) < 1.f))) {
 			continue;
 		}
 		float defCost = defDef->GetCost();
@@ -742,7 +742,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 			closestPoint->cost += defCost;
 			bool isFirst = (parentTask == nullptr);
 			const AIFloat3& buildPos = defDef->IsAttacker() ? closestPoint->position : backPos;
-			IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, defDef, buildPos,
+			IBuilderTask* task = builderMgr->EnqueueTask(IBuilderTask::Priority::HIGH, defDef, buildPos,
 					IBuilderTask::BuildType::DEFENCE, defCost, SQUARE_SIZE * 32, isFirst);
 			if (parentTask != nullptr) {
 				parentTask->SetNextTask(task);
@@ -755,7 +755,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	}
 
 	// Build sensors
-	auto checkSensor = [this, &backPos, builderManager](IBuilderTask::BuildType type, CCircuitDef* cdef, float range) {
+	auto checkSensor = [this, &backPos, builderMgr](IBuilderTask::BuildType type, CCircuitDef* cdef, float range) {
 		bool isBuilt = false;
 		COOAICallback* clb = circuit->GetCallback();
 		auto friendlies = clb->GetFriendlyUnitIdsIn(backPos, range);
@@ -772,14 +772,14 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 		if (!isBuilt) {
 			const IBuilderTask* task = nullptr;
 			const float qdist = SQUARE(range);
-			for (const IBuilderTask* t : builderManager->GetTasks(type)) {
+			for (const IBuilderTask* t : builderMgr->GetTasks(type)) {
 				if (backPos.SqDistance2D(t->GetTaskPos()) < qdist) {
 					task = t;
 					break;
 				}
 			}
 			if (task == nullptr) {
-				builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, backPos, type);
+				builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, backPos, type);
 			}
 		}
 	};
@@ -834,17 +834,17 @@ bool CMilitaryManager::HasDefence(int cluster)
 
 AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 {
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CMetalManager* metalManager = circuit->GetMetalManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	CMetalManager* metalMgr = circuit->GetMetalManager();
 	STerrainMapArea* area = unit->GetArea();
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	const float minSqRange = SQUARE(unit->GetCircuitDef()->GetLosRadius());
-	const CMetalData::Metals& spots = metalManager->GetSpots();
+	const CMetalData::Metals& spots = metalMgr->GetSpots();
 	decltype(scoutIdx) prevIdx = scoutIdx;
 	while (scoutIdx < scoutPath.size()) {
 		int index = scoutPath[scoutIdx++];
-		if (!metalManager->IsMexInFinished(index) &&
-			terrainManager->CanMoveToPos(area, spots[index].position) &&
+		if (!metalMgr->IsMexInFinished(index) &&
+			terrainMgr->CanMoveToPos(area, spots[index].position) &&
 			(pos.SqDistance2D(spots[index].position) > minSqRange))
 		{
 			return spots[index].position;
@@ -853,8 +853,8 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 	scoutIdx = 0;
 	while (scoutIdx < prevIdx) {
 		int index = scoutPath[scoutIdx++];
-		if (!metalManager->IsMexInFinished(index) &&
-			terrainManager->CanMoveToPos(area, spots[index].position) &&
+		if (!metalMgr->IsMexInFinished(index) &&
+			terrainMgr->CanMoveToPos(area, spots[index].position) &&
 			(pos.SqDistance2D(spots[index].position) > minSqRange))
 		{
 			return spots[index].position;
@@ -888,9 +888,9 @@ void CMilitaryManager::FillFrontPos(CCircuitUnit* unit, F3Vec& outPositions)
 		return false;
 	};
 
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	CSetupManager* setupManager = circuit->GetSetupManager();
-	int index = metalManager->FindNearestCluster(setupManager->GetLanePos(), predicate);
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	CSetupManager* setupMgr = circuit->GetSetupManager();
+	int index = metalMgr->FindNearestCluster(setupMgr->GetLanePos(), predicate);
 
 	if (index >= 0) {
 		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
@@ -925,25 +925,25 @@ void CMilitaryManager::FillStaticSafePos(CCircuitUnit* unit, F3Vec& outPositions
 {
 	outPositions.clear();
 
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	const int frame = circuit->GetLastFrame();
 
 	const AIFloat3& startPos = unit->GetPos(frame);
 	STerrainMapArea* area = unit->GetArea();
 
 	CDefenceMatrix* defMat = defence;
-	CMetalData::PointPredicate predicate = [defMat, terrainManager, area](const int index) {
+	CMetalData::PointPredicate predicate = [defMat, terrainMgr, area](const int index) {
 		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(index);
 		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
-			if ((defPoint.cost > 100.0f) && terrainManager->CanMoveToPos(area, defPoint.position)) {
+			if ((defPoint.cost > 100.0f) && terrainMgr->CanMoveToPos(area, defPoint.position)) {
 				return true;
 			}
 		}
 		return false;
 	};
 
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	int index = metalManager->FindNearestCluster(startPos, predicate);
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	int index = metalMgr->FindNearestCluster(startPos, predicate);
 
 	if (index >= 0) {
 		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
@@ -957,7 +957,7 @@ void CMilitaryManager::FillSafePos(CCircuitUnit* unit, F3Vec& outPositions)
 {
 	outPositions.clear();
 
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	const int frame = circuit->GetLastFrame();
 
 	const springai::AIFloat3& pos = unit->GetPos(frame);
@@ -968,7 +968,7 @@ void CMilitaryManager::FillSafePos(CCircuitUnit* unit, F3Vec& outPositions)
 		const std::set<IFighterTask*>& atkTasks = GetTasks(type);
 		for (IFighterTask* task : atkTasks) {
 			const AIFloat3& ourPos = static_cast<ISquadTask*>(task)->GetLeaderPos(frame);
-			if (terrainManager->CanMoveToPos(area, ourPos)) {
+			if (terrainMgr->CanMoveToPos(area, ourPos)) {
 				outPositions.push_back(ourPos);
 			}
 		}
@@ -978,17 +978,17 @@ void CMilitaryManager::FillSafePos(CCircuitUnit* unit, F3Vec& outPositions)
 	}
 
 	CDefenceMatrix* defMat = defence;
-	CMetalData::PointPredicate predicate = [defMat, terrainManager, area](const int index) {
+	CMetalData::PointPredicate predicate = [defMat, terrainMgr, area](const int index) {
 		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(index);
 		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
-			if ((defPoint.cost > 100.0f) && terrainManager->CanMoveToPos(area, defPoint.position)) {
+			if ((defPoint.cost > 100.0f) && terrainMgr->CanMoveToPos(area, defPoint.position)) {
 				return true;
 			}
 		}
 		return false;
 	};
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	int index = metalManager->FindNearestCluster(pos, predicate);
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	int index = metalMgr->FindNearestCluster(pos, predicate);
 	if (index >= 0) {
 		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
 		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
@@ -1080,11 +1080,11 @@ void CMilitaryManager::DelResponse(CCircuitUnit* unit)
 
 float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
 {
-	CEnemyManager* enemyManager = circuit->GetEnemyManager();
+	CEnemyManager* enemyMgr = circuit->GetEnemyManager();
 	const SRoleInfo& info = roleInfos[cdef->GetMainRole()];
 	float maxProb = 0.f;
 	for (const SRoleInfo::SVsInfo& vs : info.vs) {
-		const float enemyMetal = enemyManager->GetEnemyCost(vs.role);
+		const float enemyMetal = enemyMgr->GetEnemyCost(vs.role);
 		const float nextMetal = info.cost + cdef->GetCost();
 		const float prob = enemyMetal / (info.cost + 1.f) * vs.importance;
 		if ((prob > maxProb) &&
@@ -1104,14 +1104,14 @@ bool CMilitaryManager::IsNeedBigGun(const CCircuitDef* cdef) const
 
 AIFloat3 CMilitaryManager::GetBigGunPos(CCircuitDef* bigDef) const
 {
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	AIFloat3 pos = circuit->GetSetupManager()->GetBasePos();
-	if (bigDef->GetMaxRange() < std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight())) {
-		CMetalManager* metalManager = circuit->GetMetalManager();
-		const CMetalData::Clusters& clusters = metalManager->GetClusters();
+	if (bigDef->GetMaxRange() < std::max(terrainMgr->GetTerrainWidth(), terrainMgr->GetTerrainHeight())) {
+		CMetalManager* metalMgr = circuit->GetMetalManager();
+		const CMetalData::Clusters& clusters = metalMgr->GetClusters();
 		unsigned size = 1;
 		for (unsigned i = 0; i < clusters.size(); ++i) {
-			if (metalManager->IsClusterFinished(i)) {
+			if (metalMgr->IsClusterFinished(i)) {
 				pos += clusters[i].position;
 				++size;
 			}

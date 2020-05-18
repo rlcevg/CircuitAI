@@ -122,6 +122,11 @@ void IBuilderTask::Start(CCircuitUnit* unit)
 
 void IBuilderTask::Update()
 {
+	for (CCircuitUnit* unit : traveled) {
+		Execute(unit);
+	}
+	traveled.clear();
+
 	CCircuitUnit* unit = GetNextAssignee();
 	if (unit == nullptr) {
 		return;
@@ -142,16 +147,16 @@ void IBuilderTask::Stop(bool done)
 void IBuilderTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	CBuilderManager* builderMgr = circuit->GetBuilderManager();
 	if (buildDef != nullptr) {
-		SBuildChain* chain = builderManager->GetBuildChain(buildType, buildDef);
+		SBuildChain* chain = builderMgr->GetBuildChain(buildType, buildDef);
 		if (chain != nullptr) {
 			ExecuteChain(chain);
 		}
 
 		const int buildDelay = circuit->GetEconomyManager()->GetBuildDelay();
 		if (buildDelay > 0) {
-			IUnitTask* task = builderManager->EnqueueWait(buildDelay);
+			IUnitTask* task = builderMgr->EnqueueWait(buildDelay);
 			decltype(units) tmpUnits = units;
 			for (CCircuitUnit* unit : tmpUnits) {
 				manager->AssignTask(unit, task);
@@ -161,7 +166,7 @@ void IBuilderTask::Finish()
 
 	// Advance queue
 	if (nextTask != nullptr) {
-		builderManager->ActivateTask(nextTask);
+		builderMgr->ActivateTask(nextTask);
 		nextTask = nullptr;
 	}
 }
@@ -189,7 +194,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		)
 		return;
 	}
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	UnitDef* buildUDef = buildDef->GetDef();
 	if (utils::is_valid(buildPos)) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
@@ -228,8 +233,8 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		)
 	} else {
 		// TODO: Select new proper BasePos, like near metal cluster.
-		int terWidth = terrainManager->GetTerrainWidth();
-		int terHeight = terrainManager->GetTerrainHeight();
+		int terWidth = terrainMgr->GetTerrainWidth();
+		int terHeight = terrainMgr->GetTerrainHeight();
 		float x = terWidth / 4 + rand() % (int)(terWidth / 2);
 		float z = terHeight / 4 + rand() % (int)(terHeight / 2);
 		AIFloat3 pos(x, circuit->GetMap()->GetElevationAt(x, z), z);
@@ -281,7 +286,7 @@ void IBuilderTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 
 void IBuilderTask::OnTravelEnd(CCircuitUnit* unit)
 {
-	Execute(unit);
+	traveled.insert(unit);
 }
 
 void IBuilderTask::Activate()
@@ -296,22 +301,22 @@ void IBuilderTask::Deactivate()
 
 void IBuilderTask::SetBuildPos(const AIFloat3& pos)
 {
-	CTerrainManager* terrainManager = manager->GetCircuit()->GetTerrainManager();
+	CTerrainManager* terrainMgr = manager->GetCircuit()->GetTerrainManager();
 	if (utils::is_valid(buildPos)) {
-		terrainManager->DelBlocker(buildDef, buildPos, facing);
+		terrainMgr->DelBlocker(buildDef, buildPos, facing);
 	}
 	buildPos = pos;
 	if (utils::is_valid(buildPos)) {
-		terrainManager->AddBlocker(buildDef, buildPos, facing);
+		terrainMgr->AddBlocker(buildDef, buildPos, facing);
 	}
 }
 
 void IBuilderTask::SetTarget(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	if (utils::is_valid(buildPos)) {
-		terrainManager->DelBlocker(buildDef, buildPos, facing);
+		terrainMgr->DelBlocker(buildDef, buildPos, facing);
 	}
 	target = unit;
 	if (unit != nullptr) {
@@ -322,7 +327,7 @@ void IBuilderTask::SetTarget(CCircuitUnit* unit)
 		buildPos = -RgtVector;
 	}
 	if (utils::is_valid(buildPos)) {
-		terrainManager->AddBlocker(buildDef, buildPos, facing);
+		terrainMgr->AddBlocker(buildDef, buildPos, facing);
 	}
 }
 
@@ -435,7 +440,7 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	// TODO: Check IsForceExecute, shield charge and retreat
+	// TODO: Check IsForceUpdate, shield charge and retreat
 
 	const AIFloat3& endPos = GetPosition();
 	if (!circuit->GetTerrainManager()->CanBuildAtSafe(unit, endPos)) {
@@ -503,7 +508,7 @@ void IBuilderTask::ShowAssignee(CCircuitUnit* unit)
 CAllyUnit* IBuilderTask::FindSameAlly(CCircuitUnit* builder, const std::vector<Unit*>& friendlies)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	const int frame = circuit->GetLastFrame();
 
 	for (Unit* au : friendlies) {
@@ -513,7 +518,7 @@ CAllyUnit* IBuilderTask::FindSameAlly(CCircuitUnit* builder, const std::vector<U
 		}
 		if ((*alu->GetCircuitDef() == *buildDef) && au->IsBeingBuilt()) {
 			const AIFloat3& pos = alu->GetPos(frame);
-			if (terrainManager->CanBuildAtSafe(builder, pos)) {
+			if (terrainMgr->CanBuildAtSafe(builder, pos)) {
 				return alu;
 			}
 		}
@@ -523,21 +528,21 @@ CAllyUnit* IBuilderTask::FindSameAlly(CCircuitUnit* builder, const std::vector<U
 
 void IBuilderTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, float searchRadius)
 {
-	CTerrainManager* terrainManager = manager->GetCircuit()->GetTerrainManager();
+	CTerrainManager* terrainMgr = manager->GetCircuit()->GetTerrainManager();
 
 //	facing = UNIT_COMMAND_BUILD_NO_FACING;
-	float terWidth = terrainManager->GetTerrainWidth();
-	float terHeight = terrainManager->GetTerrainHeight();
+	float terWidth = terrainMgr->GetTerrainWidth();
+	float terHeight = terrainMgr->GetTerrainHeight();
 	if (math::fabs(terWidth - 2 * pos.x) > math::fabs(terHeight - 2 * pos.z)) {
 		facing = (2 * pos.x > terWidth) ? UNIT_FACING_WEST : UNIT_FACING_EAST;
 	} else {
 		facing = (2 * pos.z > terHeight) ? UNIT_FACING_NORTH : UNIT_FACING_SOUTH;
 	}
 
-	CTerrainManager::TerrainPredicate predicate = [terrainManager, builder](const AIFloat3& p) {
-		return terrainManager->CanBuildAtSafe(builder, p);
+	CTerrainManager::TerrainPredicate predicate = [terrainMgr, builder](const AIFloat3& p) {
+		return terrainMgr->CanBuildAtSafe(builder, p);
 	};
-	SetBuildPos(terrainManager->FindBuildSite(buildDef, pos, searchRadius, facing, predicate));
+	SetBuildPos(terrainMgr->FindBuildSite(buildDef, pos, searchRadius, facing, predicate));
 }
 
 void IBuilderTask::ExecuteChain(SBuildChain* chain)
@@ -563,11 +568,11 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 
 	if (chain->isPylon) {
 		bool foundPylon = false;
-		CEconomyManager* economyManager = circuit->GetEconomyManager();
-		CCircuitDef* pylonDef = economyManager->GetPylonDef();
+		CEconomyManager* economyMgr = circuit->GetEconomyManager();
+		CCircuitDef* pylonDef = economyMgr->GetPylonDef();
 		if (pylonDef->IsAvailable(circuit->GetLastFrame())) {
-			float ourRange = economyManager->GetEnergyGrid()->GetPylonRange(buildDef->GetId());
-			float pylonRange = economyManager->GetPylonRange();
+			float ourRange = economyMgr->GetEnergyGrid()->GetPylonRange(buildDef->GetId());
+			float pylonRange = economyMgr->GetPylonRange();
 			float radius = pylonRange + ourRange;
 			const int frame = circuit->GetLastFrame();
 			circuit->UpdateFriendlyUnits();
@@ -589,10 +594,10 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 			utils::free_clear(units);
 			if (!foundPylon) {
 				AIFloat3 pos = buildPos;
-				CMetalManager* metalManager = circuit->GetMetalManager();
-				int index = metalManager->FindNearestCluster(pos);
+				CMetalManager* metalMgr = circuit->GetMetalManager();
+				int index = metalMgr->FindNearestCluster(pos);
 				if (index >= 0) {
-					const AIFloat3& clPos = metalManager->GetClusters()[index].position;
+					const AIFloat3& clPos = metalMgr->GetClusters()[index].position;
 					AIFloat3 dir = clPos - pos;
 					float dist = ourRange /*+ pylonRange*/ + pylonRange * 1.8f;
 					if (dir.SqLength2D() < dist * dist) {
@@ -607,14 +612,14 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 	}
 
 	if (chain->isPorc) {
-		CEconomyManager* economyManager = circuit->GetEconomyManager();
-		const float metalIncome = std::min(economyManager->GetAvgMetalIncome(), economyManager->GetAvgEnergyIncome());
+		CEconomyManager* economyMgr = circuit->GetEconomyManager();
+		const float metalIncome = std::min(economyMgr->GetAvgMetalIncome(), economyMgr->GetAvgEnergyIncome());
 		if (metalIncome > 10) {
 			circuit->GetMilitaryManager()->MakeDefence(buildPos);
 		} else {
-			CMetalManager* metalManager = circuit->GetMetalManager();
-			int index = metalManager->FindNearestCluster(buildPos);
-			if ((index >= 0) && (metalManager->IsClusterQueued(index) || metalManager->IsClusterFinished(index))) {
+			CMetalManager* metalMgr = circuit->GetMetalManager();
+			int index = metalMgr->FindNearestCluster(buildPos);
+			if ((index >= 0) && (metalMgr->IsClusterQueued(index) || metalMgr->IsClusterFinished(index))) {
 				circuit->GetMilitaryManager()->MakeDefence(index, buildPos);
 			}
 		}
@@ -631,9 +636,9 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 		// FIXME: Using builder's def because MaxSlope is not provided by engine's interface for buildings!
 		//        and CTerrainManager::CanBuildAt returns false in many cases
 		CCircuitDef* bdef = units.empty() ? circuit->GetSetupManager()->GetCommChoice() : (*this->units.begin())->GetCircuitDef();
-		CBuilderManager* builderManager = circuit->GetBuilderManager();
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		CEnemyManager* enemyManager = circuit->GetEnemyManager();
+		CBuilderManager* builderMgr = circuit->GetBuilderManager();
+		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+		CEnemyManager* enemyMgr = circuit->GetEnemyManager();
 
 		for (auto& queue : chain->hub) {
 			IBuilderTask* parent = nullptr;
@@ -645,10 +650,10 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 				bool isValid = true;
 				switch (bi.condition) {
 					case SBuildInfo::Condition::AIR: {
-						isValid = bi.cdef->GetCost() < enemyManager->GetEnemyCost(ROLE_TYPE(AIR));
+						isValid = bi.cdef->GetCost() < enemyMgr->GetEnemyCost(ROLE_TYPE(AIR));
 					} break;
 					case SBuildInfo::Condition::NO_AIR: {
-						isValid = bi.cdef->GetCost() > enemyManager->GetEnemyCost(ROLE_TYPE(AIR));
+						isValid = bi.cdef->GetCost() > enemyMgr->GetEnemyCost(ROLE_TYPE(AIR));
 					} break;
 					case SBuildInfo::Condition::MAYBE: {
 						isValid = rand() < RAND_MAX / 2;
@@ -679,12 +684,12 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 				}
 				AIFloat3 pos = buildPos + offset;
 				CTerrainManager::CorrectPosition(pos);
-				pos = terrainManager->GetBuildPosition(bdef, pos);
+				pos = terrainMgr->GetBuildPosition(bdef, pos);
 
 				if (parent == nullptr) {
-					parent = builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, bi.cdef, pos, bi.buildType, 0.f, true, 0);
+					parent = builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, bi.cdef, pos, bi.buildType, 0.f, true, 0);
 				} else {
-					parent->SetNextTask(builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, bi.cdef, pos, bi.buildType, 0.f, false, 0));
+					parent->SetNextTask(builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, bi.cdef, pos, bi.buildType, 0.f, false, 0));
 					parent = parent->GetNextTask();
 				}
 			}

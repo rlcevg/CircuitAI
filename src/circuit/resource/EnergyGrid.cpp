@@ -131,6 +131,7 @@ CEnergyGrid::CEnergyGrid(CCircuitAI* circuit)
 		auto it = customParams.find("pylonrange");
 		if (it != customParams.end()) {
 			pylonRanges[kv.first] = utils::string_to_float(it->second) - 1.f;
+			kv.second->SetIsPylon(true);
 		}
 	}
 
@@ -168,10 +169,10 @@ void CEnergyGrid::ReadConfig()
 
 void CEnergyGrid::Init()
 {
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	const CMetalData::Metals& spots = metalManager->GetSpots();
-	const CMetalData::Clusters& clusters = metalManager->GetClusters();
-	const CMetalData::ClusterGraph& clusterGraph = metalManager->GetClusterGraph();
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	const CMetalData::Metals& spots = metalMgr->GetSpots();
+	const CMetalData::Clusters& clusters = metalMgr->GetClusters();
+	const CMetalData::ClusterGraph& clusterGraph = metalMgr->GetClusterGraph();
 
 	ownedFilter = new OwnedFilter(clusterGraph, false);
 	ownedClusters = new OwnedGraph(clusterGraph, *ownedFilter);
@@ -183,7 +184,7 @@ void CEnergyGrid::Init()
 	spanningBfs = new SpanningBFS(*spanningGraph);
 
 	linkedClusters.resize(clusters.size(), false);
-	const CMetalData::ClusterCostMap& costs = metalManager->GetClusterEdgeCosts();
+	const CMetalData::ClusterCostMap& costs = metalMgr->GetClusterEdgeCosts();
 
 	auto closestSpot = [&spots](const CMetalData::MetalIndices& indices, const AIFloat3& pos) {
 		int idxSpot = -1;
@@ -224,7 +225,6 @@ void CEnergyGrid::Update()
 	markFrame = circuit->GetLastFrame();
 
 	circuit->UpdateFriendlyUnits();
-	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 	const CAllyTeam::AllyUnits& friendlies = circuit->GetFriendlyUnits();
 	static std::vector<CAllyUnit*> tmpMexes;  // NOTE: micro-opt
 	static std::vector<CAllyUnit*> tmpPylons;  // NOTE: micro-opt
@@ -235,10 +235,10 @@ void CEnergyGrid::Update()
 		if (unit->GetUnit()->IsBeingBuilt()) {
 			continue;
 		}
-		if (*unit->GetCircuitDef() == *mexDef) {
+		if (unit->GetCircuitDef()->IsMex()) {
 			tmpMexes.push_back(unit);
 		}
-		if (pylonRanges.find(unit->GetCircuitDef()->GetId()) != pylonRanges.end()) {
+		if (unit->GetCircuitDef()->IsPylon()) {
 			tmpPylons.push_back(unit);
 		}
 	}
@@ -291,13 +291,13 @@ CEnergyNode* CEnergyGrid::FindNodeDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 {
 	outDef = nullptr;
 	outPos = -RgtVector;
-	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	const float searchRadius = economyManager->GetPylonRange() * 0.5f;
+	CEconomyManager* economyMgr = circuit->GetEconomyManager();
+	const float searchRadius = economyMgr->GetPylonRange() * 0.5f;
 	const int frame = circuit->GetLastFrame();
-	const float metalIncome = economyManager->GetAvgMetalIncome();
+	const float metalIncome = economyMgr->GetAvgMetalIncome();
 
-	const CCircuitDef* pylonDef = economyManager->GetPylonDef();
-	if (node->IsPylonable(economyManager->GetPylonRange())
+	const CCircuitDef* pylonDef = economyMgr->GetPylonDef();
+	if (node->IsPylonable(economyMgr->GetPylonRange())
 		&& pylonDef->IsAvailable(frame)
 		&& (metalIncome > pylonDef->GetCost() * 0.15f))
 	{
@@ -357,15 +357,15 @@ CEnergyLink* CEnergyGrid::FindLinkDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 {
 	outDef = nullptr;
 	outPos = -RgtVector;
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CBuilderManager* builderManager = circuit->GetBuilderManager();
-	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	const float searchRadius = economyManager->GetPylonRange() * 0.5f;
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	CBuilderManager* builderMgr = circuit->GetBuilderManager();
+	CEconomyManager* economyMgr = circuit->GetEconomyManager();
+	const float searchRadius = economyMgr->GetPylonRange() * 0.5f;
 
 	const CEnergyLink::SPylon* pylon0 = link->GetSourceHead();
 	const CEnergyLink::SPylon* pylon1 = link->GetTargetHead();
 
-	const float metalIncome = economyManager->GetAvgMetalIncome();
+	const float metalIncome = economyMgr->GetAvgMetalIncome();
 	const int frame = circuit->GetLastFrame();
 	decltype(rangePylons) candDefs = rangePylons;
 	while (!candDefs.empty()) {
@@ -403,8 +403,8 @@ CEnergyLink* CEnergyGrid::FindLinkDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 			continue;
 		}
 
-		outPos = terrainManager->FindBuildSite(outDef, sweetPos, searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
-		if (utils::is_valid(outPos) && builderManager->IsBuilderInArea(outDef, outPos)) {
+		outPos = terrainMgr->FindBuildSite(outDef, sweetPos, searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
+		if (utils::is_valid(outPos) && builderMgr->IsBuilderInArea(outDef, outPos)) {
 			break;
 		} else {
 			outPos = -RgtVector;
@@ -465,8 +465,8 @@ void CEnergyGrid::MarkAllyPylons(const std::vector<CAllyUnit*>& pylons)
 void CEnergyGrid::AddPylon(const ICoreUnit::Id unitId, const CCircuitDef::Id defId, const AIFloat3& pos,
 		std::vector<CEnergyNode*>& outNodes)
 {
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	const CMetalData::ClusterGraph& clusterGraph = metalManager->GetClusterGraph();
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	const CMetalData::ClusterGraph& clusterGraph = metalMgr->GetClusterGraph();
 
 	// Find edges to which building belongs to
 	const float range = pylonRanges[defId];
@@ -485,9 +485,9 @@ void CEnergyGrid::AddPylon(const ICoreUnit::Id unitId, const CCircuitDef::Id def
 	}
 
 	CMetalData::IndicesDists indices;
-	metalManager->FindSpotsInRadius(pos, range, indices);
+	metalMgr->FindSpotsInRadius(pos, range, indices);
 	if (indices.empty()) {
-		int index = metalManager->FindNearestCluster(pos);
+		int index = metalMgr->FindNearestCluster(pos);
 		if (index < 0) {
 			return;
 		}
@@ -496,7 +496,7 @@ void CEnergyGrid::AddPylon(const ICoreUnit::Id unitId, const CCircuitDef::Id def
 		linkNodes.insert(nodes[index]);
 	} else {
 		for (const std::pair<int, float>& p : indices) {
-			int index = metalManager->GetCluster(p.first);
+			int index = metalMgr->GetCluster(p.first);
 			if (nodes[index]->AddPylon(unitId, pos, range)) {
 				outNodes.push_back(nodes[index]);
 				linkNodes.insert(nodes[index]);
@@ -567,8 +567,8 @@ void CEnergyGrid::RebuildTree()
 		return;
 	}
 	isForceRebuild = false;
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	const CMetalData::ClusterGraph& clusterGraph = metalManager->GetClusterGraph();
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	const CMetalData::ClusterGraph& clusterGraph = metalMgr->GetClusterGraph();
 
 	// Remove destroyed edges
 	for (int index : unlinkClusters) {
@@ -592,7 +592,7 @@ void CEnergyGrid::RebuildTree()
 	}
 	linkClusters.clear();
 
-	const CMetalData::ClusterCostMap& costs = metalManager->GetClusterEdgeCosts();
+	const CMetalData::ClusterCostMap& costs = metalMgr->GetClusterEdgeCosts();
 	for (const CMetalData::ClusterGraph::Edge edge : spanningTree) {
 		CEnergyLink& link = links[clusterGraph.id(edge)];
 		if (link.IsFinished() || link.IsBeingBuilt()) {

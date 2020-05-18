@@ -73,12 +73,12 @@ void IFighterTask::RemoveAssignee(CCircuitUnit* unit)
 void IFighterTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
+	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
 	const float minShield = circuit->GetSetupManager()->GetEmptyShield();
 	decltype(units) tmpUnits = shields;
 	for (CCircuitUnit* unit : tmpUnits) {
 		if (!unit->IsShieldCharged(minShield)) {
-			CRetreatTask* task = militaryManager->EnqueueRetreat();
+			CRetreatTask* task = militaryMgr->EnqueueRetreat();
 			manager->AssignTask(unit, task);
 		}
 	}

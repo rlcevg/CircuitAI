@@ -50,12 +50,12 @@ bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 	}
 	// TODO: Naked expansion on big maps
 	CCircuitAI* circuit = manager->GetCircuit();
-	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
+	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
 	int cluster = circuit->GetMetalManager()->FindNearestCluster(GetPosition());
-	if ((cluster < 0) || militaryManager->HasDefence(cluster)) {
+	if ((cluster < 0) || militaryMgr->HasDefence(cluster)) {
 		return true;
 	}
-	IUnitTask* defend = militaryManager->GetDefendTask(cluster);
+	IUnitTask* defend = militaryMgr->GetDefendTask(cluster);
 	return (defend != nullptr) && !defend->GetAssignees().empty();
 }
 
@@ -84,47 +84,47 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 		)
 		return;
 	}
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	CEconomyManager* economyManager = circuit->GetEconomyManager();
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	CEconomyManager* economyMgr = circuit->GetEconomyManager();
 	UnitDef* buildUDef = buildDef->GetDef();
 	if (utils::is_valid(buildPos)) {
-		int index = metalManager->FindNearestSpot(buildPos);
+		int index = metalMgr->FindNearestSpot(buildPos);
 		if (index >= 0) {
 			if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
-				if ((State::ENGAGE == state) || metalManager->IsOpenSpot(index)) {  // !isFirstTry
+				if ((State::ENGAGE == state) || metalMgr->IsOpenSpot(index)) {  // !isFirstTry
 					state = State::ENGAGE;  // isFirstTry = false
-					metalManager->SetOpenSpot(index, false);
+					metalMgr->SetOpenSpot(index, false);
 					TRY_UNIT(circuit, unit,
 						unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 					)
 					return;
 				} else {
-					economyManager->SetOpenSpot(index, true);
+					economyMgr->SetOpenSpot(index, true);
 				}
 			} else {
-				metalManager->SetOpenSpot(index, true);
-				economyManager->SetOpenSpot(index, true);
+				metalMgr->SetOpenSpot(index, true);
+				economyMgr->SetOpenSpot(index, true);
 			}
 		}
 	}
 
 	// NOTE: Unsafe fallback expansion (mex can be behind enemy lines)
-	const CMetalData::Metals& spots = metalManager->GetSpots();
+	const CMetalData::Metals& spots = metalMgr->GetSpots();
 	CMap* map = circuit->GetMap();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CCircuitDef* mexDef = buildDef;
 	circuit->GetThreatMap()->SetThreatType(unit);
-	CMetalData::PointPredicate predicate = [&spots, economyManager, map, mexDef, terrainManager, unit](const int index) {
-		return (economyManager->IsAllyOpenSpot(index) &&
-				terrainManager->CanBeBuiltAtSafe(mexDef, spots[index].position) &&  // hostile environment
-				terrainManager->CanBuildAtSafe(unit, spots[index].position) &&
+	CMetalData::PointPredicate predicate = [&spots, economyMgr, map, mexDef, terrainMgr, unit](const int index) {
+		return (economyMgr->IsAllyOpenSpot(index) &&
+				terrainMgr->CanBeBuiltAtSafe(mexDef, spots[index].position) &&  // hostile environment
+				terrainMgr->CanBuildAtSafe(unit, spots[index].position) &&
 				map->IsPossibleToBuildAt(mexDef->GetDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 	};
-	int index = metalManager->FindNearestSpot(position, predicate);
+	int index = metalMgr->FindNearestSpot(position, predicate);
 
 	if (index >= 0) {
 		SetBuildPos(spots[index].position);
-		economyManager->SetOpenSpot(index, false);
+		economyMgr->SetOpenSpot(index, false);
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 		)
@@ -167,11 +167,11 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 			}
 		}
 		if (blocked) {
-			CBuilderManager* builderManager = circuit->GetBuilderManager();
+			CBuilderManager* builderMgr = circuit->GetBuilderManager();
 			IBuilderTask* task = nullptr;
 			const float qdist = SQUARE(200.0f);  // 200 elmos
 			// TODO: Push tasks into bgi::rtree
-			for (IBuilderTask* t : builderManager->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
+			for (IBuilderTask* t : builderMgr->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
 				if (pos.SqDistance2D(t->GetTaskPos()) < qdist) {
 					task = t;
 					break;
@@ -179,7 +179,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 			}
 			if (task == nullptr) {
 				AIFloat3 newPos = buildPos - (buildPos - pos).Normalize2D() * range * 0.9f;
-				task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, def, newPos, IBuilderTask::BuildType::DEFENCE);
+				task = builderMgr->EnqueueTask(IBuilderTask::Priority::HIGH, def, newPos, IBuilderTask::BuildType::DEFENCE);
 			}
 			// TODO: Before BuildTask assign MoveTask(task->GetTaskPos())
 			manager->AssignTask(unit, task);

@@ -58,8 +58,8 @@ void CSRepairTask::Start(CCircuitUnit* unit)
 void CSRepairTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	if (economyManager->GetAvgMetalIncome() < savedIncome * 0.6f) {
+	CEconomyManager* economyMgr = circuit->GetEconomyManager();
+	if (economyMgr->GetAvgMetalIncome() < savedIncome * 0.6f) {
 		manager->AbortTask(this);
 	} else if ((++updCount % 4 == 0) && !units.empty()) {
 		const float radius = (*units.begin())->GetCircuitDef()->GetBuildDistance();
@@ -73,19 +73,19 @@ void CSRepairTask::Update()
 
 		IBuilderTask* task = nullptr;
 		if (repTarget->GetUnit()->IsBeingBuilt()) {
-			CFactoryManager* factoryManager = circuit->GetFactoryManager();
-			if (economyManager->IsMetalEmpty() && !factoryManager->IsHighPriority(repTarget)) {
+			CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+			if (economyMgr->IsMetalEmpty() && !factoryMgr->IsHighPriority(repTarget)) {
 				// Check for damaged units
-				CBuilderManager* builderManager = circuit->GetBuilderManager();
+				CBuilderManager* builderMgr = circuit->GetBuilderManager();
 				circuit->UpdateFriendlyUnits();
 				auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 				for (Unit* u : us) {
 					CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-					if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {
+					if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)) {
 						continue;
 					}
 					if (!u->IsBeingBuilt() && (u->GetHealth() < u->GetMaxHealth())) {
-						task = factoryManager->EnqueueRepair(IBuilderTask::Priority::NORMAL, candUnit);
+						task = factoryMgr->EnqueueRepair(IBuilderTask::Priority::NORMAL, candUnit);
 						break;
 					}
 				}
@@ -93,26 +93,26 @@ void CSRepairTask::Update()
 				if (task == nullptr) {
 					// Reclaim task
 					if (circuit->GetCallback()->IsFeaturesIn(position, radius)) {
-						task = factoryManager->EnqueueReclaim(IBuilderTask::Priority::NORMAL, position, radius);
+						task = factoryMgr->EnqueueReclaim(IBuilderTask::Priority::NORMAL, position, radius);
 					}
 				}
 			}
-		} else if (economyManager->IsMetalFull()) {
+		} else if (economyMgr->IsMetalFull()) {
 			// Check for units under construction
-			CFactoryManager* factoryManager = circuit->GetFactoryManager();
-			CBuilderManager* builderManager = circuit->GetBuilderManager();
-			const float maxCost = MAX_BUILD_SEC * economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor();
+			CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+			CBuilderManager* builderMgr = circuit->GetBuilderManager();
+			const float maxCost = MAX_BUILD_SEC * economyMgr->GetAvgMetalIncome() * economyMgr->GetEcoFactor();
 			circuit->UpdateFriendlyUnits();
 			auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 			for (Unit* u : us) {
 				CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-				if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {
+				if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)) {
 					continue;
 				}
-				bool isHighPrio = factoryManager->IsHighPriority(candUnit);
+				bool isHighPrio = factoryMgr->IsHighPriority(candUnit);
 				if (u->IsBeingBuilt() && ((candUnit->GetCircuitDef()->GetBuildTime() < maxCost) || isHighPrio)) {
 					IBuilderTask::Priority priority = isHighPrio ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
-					task = factoryManager->EnqueueRepair(priority, candUnit);
+					task = factoryMgr->EnqueueRepair(priority, candUnit);
 					break;
 				}
 			}

@@ -13,23 +13,23 @@ IUnitTask@ MakeTask(CCircuitUnit@ unit)
 //	if (cdef.IsRoleAny(RM::COMM)) {  // hide commander?
 //		const Hide::SHide@ hide = Hide::getForUnitDef(cdef);
 //		if (hide !is null) {
-//			if ((ai.GetLastFrame() < hide.frame) || (builderMgr.GetWorkerCount() <= 2)) {
-//				return builderMgr.MakeBuilderTask(unit);
+//			if ((ai.GetLastFrame() < hide.frame) || (aiBuilderMgr.GetWorkerCount() <= 2)) {
+//				return aiBuilderMgr.MakeBuilderTask(unit);
 //			}
 //			if (enemyMgr.GetMobileThreat()/* / ai.GetAllySize()*/ >= hide.threat) {
-//				return builderMgr.MakeCommTask(unit);
+//				return aiBuilderMgr.MakeCommTask(unit);
 //			}
-//			const bool isHide = hide.isAir && (enemyMgr.GetEnemyCost(RT::AIR) > 1.f);
-//			return isHide ? builderMgr.MakeCommTask(unit) : builderMgr.MakeBuilderTask(unit);
+//			const bool isHide = hide.isAir && (aiEnemyMgr.GetEnemyCost(RT::AIR) > 1.f);
+//			return isHide ? aiBuilderMgr.MakeCommTask(unit) : aiBuilderMgr.MakeBuilderTask(unit);
 //		}
 //	}
 //
-//	return builderMgr.MakeBuilderTask(unit);
+//	return aiBuilderMgr.MakeBuilderTask(unit);
 
 //	aiDelPoint(lastPos);
 //	lastPos = unit.GetPos(ai.GetLastFrame());
 //	aiAddPoint(lastPos, "task");
-	return builderMgr.DefaultMakeTask(unit);
+	return aiBuilderMgr.DefaultMakeTask(unit);
 }
 
 }  // namespace Builder

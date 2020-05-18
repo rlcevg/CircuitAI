@@ -218,6 +218,11 @@ public:
 	bool IsAbleToReclaim() const { return isAbleToReclaim; }
 	bool IsAssistable()    const { return buildTime < 1e6f; }
 
+	void SetIsMex(bool value) { isMex = value; }
+	bool IsMex() const { return isMex;}
+	void SetIsPylon(bool value) { isPylon = value; }
+	bool IsPylon() const { return isPylon;}
+
 	float GetSpeed()     const { return speed; }
 	float GetLosRadius() const { return losRadius; }
 	float GetCost()      const { return cost; }
@@ -239,9 +244,9 @@ private:
 	static AttrName attrNames;
 	static FireName fireNames;
 
-//	friend class CScriptManager;
 	// TODO: associate script data with CCircuitDef
-	//       insted of using map<Id,data> everywhere
+	//       instead of using map<Id,data> everywhere
+//	friend class CInitScript;
 //	asIScriptObject* data;
 
 	Id id;
@@ -258,9 +263,6 @@ private:
 	int maxThisUnit;
 	int sinceFrame;
 
-	bool isAttacker;
-	bool hasDGun;
-	bool hasDGunAA;
 	springai::WeaponMount* dgunMount;
 	springai::WeaponMount* shieldMount;
 	springai::WeaponMount* weaponMount;
@@ -284,24 +286,32 @@ private:
 	STerrainMapImmobileType::Id immobileTypeId;
 	STerrainMapMobileType::Id   mobileTypeId;
 
-	bool hasAntiAir;  // air layer
-	bool hasAntiLand;  // surface (water and land)
-	bool hasAntiWater;  // under water
-	bool isAlwaysHit;  // FIXME: calc per weapon
+	// ---- Bit fields ---- BEGIN
+	bool isAttacker : 1;
+	bool hasDGun : 1;
+	bool hasDGunAA : 1;
 
-	// TODO: Use bit field?
-	bool isPlane;  // no hover attack
-	bool isFloater;
-	bool isSubmarine;
-	bool isAmphibious;
-	bool isLander;
-	bool isSonarStealth;
-	bool isTurnLarge;
-	bool isAbleToFly;
-	bool isAbleToCloak;
-	bool isAbleToJump;
-	bool isAbleToRepair;
-	bool isAbleToReclaim;
+	bool hasAntiAir : 1;  // air layer
+	bool hasAntiLand : 1;  // surface (water and land)
+	bool hasAntiWater : 1;  // under water
+	bool isAlwaysHit : 1;  // FIXME: calc per weapon
+
+	bool isPlane : 1;  // no hover attack
+	bool isFloater : 1;
+	bool isSubmarine : 1;
+	bool isAmphibious : 1;
+	bool isLander : 1;
+	bool isSonarStealth : 1;
+	bool isTurnLarge : 1;
+	bool isAbleToFly : 1;
+	bool isAbleToCloak : 1;
+	bool isAbleToJump : 1;
+	bool isAbleToRepair : 1;
+	bool isAbleToReclaim : 1;
+
+	bool isMex : 1;
+	bool isPylon : 1;
+	// ---- Bit fields ---- END
 
 	float speed;
 	float losRadius;

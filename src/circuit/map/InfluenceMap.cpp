@@ -126,9 +126,9 @@ void CInfluenceMap::Update()
 {
 	Prepare(*GetNextInflData());
 
-	CEnemyManager* enemyManager = manager->GetCircuit()->GetEnemyManager();
+	CEnemyManager* enemyMgr = manager->GetCircuit()->GetEnemyManager();
 
-	for (const SEnemyData& e : enemyManager->GetHostileDatas()) {
+	for (const SEnemyData& e : enemyMgr->GetHostileDatas()) {
 		AddEnemy(e);
 	}
 }

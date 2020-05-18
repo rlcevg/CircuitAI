@@ -132,7 +132,7 @@ void CMetalManager::ParseMetalSpots()
 			spots.reserve(spotsPos.size());
 		}
 		CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();
+		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 		const int xsize = mexDef->GetDef()->GetXSize();
 		const int zsize = mexDef->GetDef()->GetZSize();
 		for (unsigned i = 0; i < spotsPos.size(); i += inc) {
@@ -140,7 +140,7 @@ void CMetalManager::ParseMetalSpots()
 			const unsigned x1 = int(pos.x) / SQUARE_SIZE - (xsize / 2), x2 = x1 + xsize;
 			const unsigned z1 = int(pos.z) / SQUARE_SIZE - (zsize / 2), z2 = z1 + zsize;
 			if ((x1 < x2) && (x2 < width) && (z1 < z2) && (z2 < height) &&
-				terrainManager->CanBeBuiltAt(mexDef, pos))
+				terrainMgr->CanBeBuiltAt(mexDef, pos))
 			{
 				const float y = map->GetElevationAt(pos.x, pos.z);
 				spots.push_back({pos.y, AIFloat3(pos.x, y, pos.z)});
@@ -235,13 +235,12 @@ void CMetalManager::MarkAllyMexes()
 	}
 
 	circuit->UpdateFriendlyUnits();
-	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 	const CAllyTeam::AllyUnits& friendlies = circuit->GetFriendlyUnits();
 	static std::vector<CAllyUnit*> tmpMexes;  // NOTE: micro-opt
 //	tmpMexes.reserve(friendlies.size());
 	for (auto& kv : friendlies) {
 		CAllyUnit* unit = kv.second;
-		if (*unit->GetCircuitDef() == *mexDef) {
+		if (unit->GetCircuitDef()->IsMex()) {
 			tmpMexes.push_back(unit);
 		}
 	}
