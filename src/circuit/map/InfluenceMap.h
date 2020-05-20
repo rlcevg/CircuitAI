@@ -60,6 +60,8 @@ private:
 
 	CMapManager* manager;
 
+	int GetUnitRange(CAllyUnit* u) const;
+
 	void AddMobileArmed(CAllyUnit* u);
 	void AddStaticArmed(CAllyUnit* u);
 	void AddUnarmed(CAllyUnit* u);

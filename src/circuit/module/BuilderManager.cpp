@@ -846,6 +846,14 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
 
+	const CCircuitDef* cdef = unit->GetCircuitDef();
+	if ((cdef->GetPower() > THREAT_MIN)
+		&& (pos.SqDistance2D(circuit->GetSetupManager()->GetBasePos()) < SQUARE(circuit->GetMilitaryManager()->GetBaseDefRange()))
+		&& circuit->GetEnemyManager()->IsEnemyNear(pos, threatMap->GetUnitThreat(unit) * 1.5f))
+	{
+		return EnqueueCombat(1.5f);
+	}
+
 	const auto it = costQueries.find(unit);
 	std::shared_ptr<IPathQuery> query = (it == costQueries.end()) ? nullptr : it->second;
 	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
@@ -863,19 +871,9 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 
 	std::shared_ptr<CQueryCostMap> pQuery = std::static_pointer_cast<CQueryCostMap>(query);
 
-	const CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsRoleComm()) {  // hide commander?
-		// FIXME: Any combat builder, not only commander
-		CSetupManager* setupMgr = circuit->GetSetupManager();
 		CEnemyManager* enemyMgr = circuit->GetEnemyManager();
-		CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
-		if ((pos.SqDistance2D(setupMgr->GetBasePos()) < SQUARE(militaryMgr->GetBaseDefRange()))
-			&& enemyMgr->IsEnemyNear(pos, threatMap->GetUnitThreat(unit) * 1.5f))
-		{
-			return EnqueueCombat(1.5f);
-		}
-
-		const CSetupManager::SCommInfo::SHide* hide = setupMgr->GetHide(cdef);
+		const CSetupManager::SCommInfo::SHide* hide = circuit->GetSetupManager()->GetHide(cdef);
 		if (hide != nullptr) {
 			if ((frame < hide->frame) || (GetWorkerCount() <= 2)) {
 				return MakeBuilderTask(unit, pQuery.get());
@@ -927,16 +925,10 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, const CQueryCost
 			const AIFloat3& bp = candidate->GetPosition();
 			AIFloat3 buildPos = utils::is_valid(bp) ? bp : pos;
 
-			float distCost;
 			if (candidate->GetPriority() == IBuilderTask::Priority::NOW) {
 				// Disregard safety
 				if (!terrainMgr->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
 					continue;
-				}
-
-				distCost = query->GetCostAt(buildPos, buildDistance);
-				if (distCost < 0.f) {  // path blocked by buildings
-					distCost = pos.SqDistance2D(buildPos);
 				}
 
 			} else {
@@ -947,10 +939,15 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, const CQueryCost
 				{
 					continue;
 				}
+			}
 
+			float distCost;
+			const float rawDist = pos.SqDistance2D(buildPos);
+			if (rawDist < buildDistance) {
+				distCost = rawDist / pathfinder->GetSquareSize() * COST_BASE;
+			} else {
 				distCost = query->GetCostAt(buildPos, buildDistance);
 				if (distCost < 0.f) {  // path blocked by buildings
-					distCost = pos.SqDistance2D(buildPos);
 					continue;
 				}
 			}
@@ -1036,32 +1033,31 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 			const AIFloat3& bp = candidate->GetPosition();
 			AIFloat3 buildPos = utils::is_valid(bp) ? bp : pos;
 
-			float distCost;
-			if (candidate->GetPriority() >= IBuilderTask::Priority::HIGH) {
+			if (candidate->GetPriority() == IBuilderTask::Priority::NOW) {
 				// Disregard safety
 				if (!terrainMgr->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
 					continue;
-				}
-
-				distCost = query->GetCostAt(buildPos, buildDistance);
-				if (distCost < 0.f) {  // path blocked by buildings
-					distCost = pos.SqDistance2D(buildPos);
 				}
 
 			} else {
 
 				CCircuitDef* buildDef = candidate->GetBuildDef();
 				const float buildThreat = (buildDef != nullptr) ? buildDef->GetPower() : 0.f;
-				if ((threatMap->GetThreatAt(buildPos) > maxThreat + buildThreat)
-					|| !terrainMgr->CanBuildAt(unit, buildPos)  // ensure that path always exists
-					|| (inflMap->GetInfluenceAt(buildPos) < -INFL_EPS))  // safety check
+				if (!terrainMgr->CanBuildAt(unit, buildPos)  // ensure that path always exists
+					|| (((buildThreat < THREAT_MIN) && (threatMap->GetThreatAt(buildPos) > maxThreat))
+						&& (inflMap->GetInfluenceAt(buildPos) < -INFL_EPS)))  // safety check
 				{
 					continue;
 				}
+			}
 
+			float distCost;
+			const float rawDist = pos.SqDistance2D(buildPos);
+			if (rawDist < buildDistance) {
+				distCost = rawDist / pathfinder->GetSquareSize() * COST_BASE;
+			} else {
 				distCost = query->GetCostAt(buildPos, buildDistance);
 				if (distCost < 0.f) {  // path blocked by buildings
-					distCost = pos.SqDistance2D(buildPos);
 					continue;
 				}
 			}

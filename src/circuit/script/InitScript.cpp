@@ -15,14 +15,11 @@
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
 #include "util/MaskHandler.h"
-  #include "util/FileSystem.h"
 #include "util/Utils.h"
 
 #include "angelscript/include/angelscript.h"
 #include "angelscript/add_on/scriptarray/scriptarray.h"
 #include "angelscript/add_on/scriptdictionary/scriptdictionary.h"
-
-  #include "spring/SpringCallback.h"
 
 #include "Log.h"
 #include "Drawer.h"
@@ -95,6 +92,7 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterObjectBehaviour("IUnitTask", asBEHAVE_RELEASE, "void f()", asMETHODPR(IRefCounter, Release, (), int), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("IUnitTask", "int GetRefCount()", asMETHODPR(IRefCounter, GetRefCount, (), int), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("IUnitTask", "int GetType()", asMETHODPR(IUnitTask, GetType, () const, IUnitTask::Type), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("IUnitTask", "int GetBuildType()", asMETHODPR(IBuilderTask, GetBuildType, () const, IBuilderTask::BuildType), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("IUnitTask", "const AIFloat3& GetBuildPos()", asMETHODPR(IBuilderTask, GetPosition, () const, const AIFloat3&), asCALL_THISCALL); ASSERT(r >= 0);
 
 	r = engine->RegisterObjectMethod("CCircuitAI", "int GetLastFrame() const", asMETHOD(CCircuitAI, GetLastFrame), asCALL_THISCALL); ASSERT(r >= 0);

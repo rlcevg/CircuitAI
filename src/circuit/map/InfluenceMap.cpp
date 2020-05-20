@@ -229,6 +229,42 @@ int CInfluenceMap::Pos2Index(const AIFloat3& pos) const
 	return int(pos.z / squareSize) * width + int(pos.x / squareSize);
 }
 
+int CInfluenceMap::GetUnitRange(CAllyUnit* u) const
+{
+	const CCircuitDef* cdef = u->GetCircuitDef();
+
+	// FIXME: DEBUG  comm's threat value is not based on proper weapons
+	if (cdef->IsRoleComm()) {
+		CCircuitAI* circuit = manager->GetCircuit();
+		// TODO: by weapons 1,2 descriptions set proper land/air/water ranges/threats
+		float maxRange = 0.f;
+		float maxAoe = 0.f;
+		for (int num = 1; num < 3; ++num) {
+			std::string str = utils::int_to_string(num, "comm_weapon_id_%i");
+			int weaponDefId = int(u->GetUnit()->GetRulesParamFloat(str.c_str(), -1));
+			if (weaponDefId < 0) {
+				continue;
+			}
+
+			CWeaponDef* weaponDef = circuit->GetWeaponDef(weaponDefId);
+			const float range = weaponDef->GetRange();
+			if (maxRange < range) {
+				maxRange = range;
+				maxAoe = weaponDef->GetAoe();
+			}
+		}
+		const float mult = u->GetUnit()->GetRulesParamFloat("comm_range_mult", 1.f);
+		return int(maxRange * mult + maxAoe / 2) / squareSize * 4 + 1;
+	} else {
+	// FIXME: DEBUG
+
+		if (cdef->GetMaxRange() > 1000.f) {
+			return cdef->GetThreatRange(CCircuitDef::ThreatType::LAND) / 2;
+		}
+		return cdef->GetThreatRange(CCircuitDef::ThreatType::LAND);
+	}
+}
+
 void CInfluenceMap::AddMobileArmed(CAllyUnit* u)
 {
 	CCircuitAI* circuit = manager->GetCircuit();  // FIXME: not thread-safe
@@ -237,7 +273,7 @@ void CInfluenceMap::AddMobileArmed(CAllyUnit* u)
 
 	const float val = u->GetCircuitDef()->GetPower();
 	// FIXME: GetInfluenceRange: for statics it's just range; mobile should account for speed
-	const int range = u->GetCircuitDef()->GetThreatRange(CCircuitDef::ThreatType::LAND);
+	const int range = GetUnitRange(u);
 	const int rangeSq = SQUARE(range);
 
 	const int beginX = std::max(int(posx - range + 1),       0);
@@ -268,7 +304,6 @@ void CInfluenceMap::AddStaticArmed(CAllyUnit* u)
 	PosToXZ(u->GetPos(circuit->GetLastFrame()), posx, posz);
 
 	const float val = u->GetCircuitDef()->GetPower();
-	// FIXME: GetInfluenceRange: for statics it's just range; mobile should account for speed
 	const int range = u->GetCircuitDef()->GetThreatRange(CCircuitDef::ThreatType::LAND) / 2;
 	const int rangeSq = SQUARE(range);
 
@@ -301,7 +336,6 @@ void CInfluenceMap::AddUnarmed(CAllyUnit* u)
 	PosToXZ(u->GetPos(circuit->GetLastFrame()), posx, posz);
 
 	const float val = 2.f;
-	// FIXME: GetInfluenceRange: for statics it's just range; mobile should account for speed
 	const int range = DEFAULT_SLACK * 4 * defRadius / squareSize;
 	const int rangeSq = SQUARE(range);
 
@@ -424,7 +458,7 @@ void CInfluenceMap::UpdateVis()
 		std::ostringstream cmd;
 		cmd << "ai_thr_data:";
 		for (int i = 0; i < mapSize; ++i) {
-			cmd << allyDefendInfl[i] << " ";
+			cmd << influence[i] << " ";
 		}
 		std::string s = cmd.str();
 		circuit->GetLua()->CallRules(s.c_str(), s.size());

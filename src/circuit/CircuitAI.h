@@ -139,6 +139,8 @@ private:
 	int Save(std::ostream& os);
 	int LuaMessage(const char* inData);
 
+	bool InitSide();
+
 // ---- Units ---- BEGIN
 public:
 	using Units = std::map<ICoreUnit::Id, CCircuitUnit*>;
@@ -212,7 +214,6 @@ public:
 //	const std::vector<CCircuitDef*>& GetKnownDefs() const { return knownDefs; }
 private:
 	void InitUnitDefs(float& outDcr);
-//	void InitKnownDefs(const CCircuitDef* commDef);
 	CircuitDefs defsById;  // owner
 	NamedDefs defsByName;
 //	std::vector<CCircuitDef*> knownDefs;
@@ -237,6 +238,9 @@ public:
 	int GetSkirmishAIId() const { return skirmishAIId; }
 	int GetTeamId()       const { return teamId; }
 	int GetAllyTeamId()   const { return allyTeamId; }
+	SideType GetSideId()             const { return sideId; }
+	const std::string& GetSideName() const { return sideName; }
+
 	COOAICallback*        GetCallback()   const { return callback.get(); }
 	CEngine*              GetEngine()     const { return engine.get(); }
 	springai::Cheats*     GetCheats()     const { return cheats.get(); }
@@ -279,6 +283,9 @@ private:
 	int skirmishAIId;
 	int teamId;
 	int allyTeamId;
+	SideType sideId;
+	std::string sideName;
+
 	std::unique_ptr<COOAICallback>        callback;
 	std::unique_ptr<CEngine>              engine;
 	std::unique_ptr<springai::Cheats>     cheats;

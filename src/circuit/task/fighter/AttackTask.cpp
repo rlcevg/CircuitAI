@@ -170,7 +170,7 @@ void CAttackTask::Update()
 
 	state = State::ROAM;
 	if (target != nullptr) {
-		const float sqRange = SQUARE(highestRange + 200.f);  // FIXME: 200.f ~ count slack
+		const float sqRange = SQUARE(highestRange + 300.f);  // FIXME: 300.f ~ count slack
 		if (position.SqDistance2D(startPos) < sqRange) {
 			state = State::ENGAGE;
 			Attack(frame);
@@ -234,7 +234,7 @@ void CAttackTask::FindTarget()
 	CMap* map = circuit->GetMap();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
+//	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
@@ -247,7 +247,7 @@ void CAttackTask::FindTarget()
 	const int noChaseCat = cdef->GetNoChaseCategory();
 
 	CEnemyInfo* bestTarget = nullptr;
-	const float sqOBDist = pos.SqDistance2D(basePos);  // Own to Base distance
+//	const float sqOBDist = pos.SqDistance2D(basePos);  // Own to Base distance
 	float minSqDist = std::numeric_limits<float>::max();
 
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
@@ -259,9 +259,9 @@ void CAttackTask::FindTarget()
 			continue;
 		}
 		const AIFloat3& ePos = enemy->GetPos();
-		const float sqBEDist = ePos.SqDistance2D(basePos);  // Base to Enemy distance
-		const float scale = std::min(sqBEDist / sqOBDist, 1.f);
-		if ((maxPower <= threatMap->GetThreatAt(ePos) * scale)
+//		const float sqBEDist = ePos.SqDistance2D(basePos);  // Base to Enemy distance
+//		const float scale = std::min(sqBEDist / sqOBDist, 1.f);
+		if ((maxPower <= threatMap->GetThreatAt(ePos)/* * scale*/)
 			|| !terrainMgr->CanMoveToPos(area, ePos))
 		{
 			continue;
@@ -292,7 +292,7 @@ void CAttackTask::FindTarget()
 			}
 		}
 
-		const float sqOEDist = pos.SqDistance2D(ePos) * scale;  // Own to Enemy distance
+		const float sqOEDist = pos.SqDistance2D(ePos)/* * scale*/;  // Own to Enemy distance
 		if (minSqDist > sqOEDist) {
 			minSqDist = sqOEDist;
 			bestTarget = enemy;

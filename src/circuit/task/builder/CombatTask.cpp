@@ -187,7 +187,7 @@ CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 	for (auto& kv : enemies) {
 		CEnemyInfo* enemy = kv.second;
 		// TODO: check how close is another task, and its movement vector
-		if (enemy->IsHidden() || (enemy->GetTasks().size() > 0)) {
+		if (enemy->IsHidden() || (enemy->GetTasks().size() > 1)) {
 			continue;
 		}
 

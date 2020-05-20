@@ -31,6 +31,16 @@ void CMaskHandler::Release()
 	masks.clear();
 }
 
+std::string CMaskHandler::GetName(Type type) const
+{
+	for (const auto& kv : masks) {
+		if (type == kv.second.type) {
+			return kv.first;
+		}
+	}
+	return "";
+}
+
 CMaskHandler::TypeMask CMaskHandler::GetTypeMask(const std::string& name)
 {
 	TypeMask tm(-1, 0);

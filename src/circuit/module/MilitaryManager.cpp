@@ -8,6 +8,7 @@
 #include "module/MilitaryManager.h"
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
+#include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "resource/MetalManager.h"
 #include "script/MilitaryScript.h"
@@ -874,21 +875,18 @@ void CMilitaryManager::FillFrontPos(CCircuitUnit* unit, F3Vec& outPositions)
 {
 	outPositions.clear();
 
-	STerrainMapArea* area = unit->GetArea();
+	CInfluenceMap* inflMap = circuit->GetInflMap();
+	CMetalManager* metalMgr = circuit->GetMetalManager();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	CDefenceMatrix* defMat = defence;
+	STerrainMapArea* area = unit->GetArea();
+	const CMetalData::Clusters& clusters = metalMgr->GetClusters();
 
-	CMetalData::PointPredicate predicate = [defMat, terrainMgr, area](const int index) {
-		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(index);
-		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
-			if ((defPoint.cost > 10.0f) && terrainMgr->CanMoveToPos(area, defPoint.position)) {
-				return true;
-			}
-		}
-		return false;
+	CMetalData::PointPredicate predicate = [inflMap, metalMgr, terrainMgr, area, clusters](const int index) {
+		return ((inflMap->GetInfluenceAt(clusters[index].position) > -INFL_EPS)
+			&& (metalMgr->IsClusterQueued(index) || metalMgr->IsClusterFinished(index))
+			&& terrainMgr->CanMoveToPos(area, clusters[index].position));
 	};
 
-	CMetalManager* metalMgr = circuit->GetMetalManager();
 	CSetupManager* setupMgr = circuit->GetSetupManager();
 	int index = metalMgr->FindNearestCluster(setupMgr->GetLanePos(), predicate);
 

@@ -44,7 +44,7 @@
 		// <UnitDef>: {<elements>}
 		"energysingu": {
 			// Available elements:
-			// "energy": [max energy income, <"mex"|true|false>]
+			// "energy": [max energy income, <"mex"|true>]
 			// "pylon": <boolean>
 			// "porc": <boolean>
 			// "terra": <boolean>

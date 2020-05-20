@@ -153,7 +153,7 @@ void CDefendTask::Update()
 	const AIFloat3& startPos = leader->GetPos(frame);
 	state = State::ROAM;
 	if ((target != nullptr) || isTargetsFound) {
-		const float sqRange = SQUARE(highestRange + 200.f);  // FIXME: 200.f ~ count slack
+		const float sqRange = SQUARE(highestRange + 300.f);  // FIXME: 300.f ~ count slack
 		if (position.SqDistance2D(startPos) < sqRange) {
 			state = State::ENGAGE;
 			Attack(frame);
