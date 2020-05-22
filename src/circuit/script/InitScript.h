@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_SCRIPT_INITSCRIPT_H_
 
 #include "script/Script.h"
+#include "util/MaskHandler.h"
 
 #include <string>
 
@@ -35,6 +36,8 @@ public:
 private:
 	void InitConfig();
 
+	CMaskHandler::TypeMask AddRole(const std::string& name, int actAsRole);
+
 	void Log(const std::string& msg) const;
 	void AddPoint(const springai::AIFloat3& pos, const std::string& msg) const;
 	void DelPoint(const springai::AIFloat3& pos) const;
@@ -42,9 +45,6 @@ private:
 	template<typename T> T Max(T l, T r) const { return std::max(l, r); }
 
 	CCircuitAI* circuit;
-	struct SScriptInfo {
-		asIScriptFunction* init = nullptr;
-	} info;
 };
 
 } // namespace circuit

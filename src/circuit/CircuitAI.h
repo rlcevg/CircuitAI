@@ -211,12 +211,17 @@ public:
 	const CircuitDefs& GetCircuitDefs() const { return defsById; }
 	CCircuitDef* GetCircuitDef(const char* name);
 	CCircuitDef* GetCircuitDef(CCircuitDef::Id unitDefId);
-//	const std::vector<CCircuitDef*>& GetKnownDefs() const { return knownDefs; }
+	void BindRole(CCircuitDef::RoleT role, CCircuitDef::RoleT actAsRole) {
+		roleBind[role] = actAsRole;
+	}
+	CCircuitDef::RoleT GetBindedRole(CCircuitDef::RoleT role) const {
+		return roleBind[role];
+	}
 private:
 	void InitUnitDefs(float& outDcr);
 	CircuitDefs defsById;  // owner
 	NamedDefs defsByName;
-//	std::vector<CCircuitDef*> knownDefs;
+	std::array<CCircuitDef::RoleT, CMaskHandler::GetMaxMasks()> roleBind;
 // ---- UnitDefs ---- END
 
 // ---- WeaponDefs ---- BEGIN

@@ -199,6 +199,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 //		}
 //	};
 
+	for (const auto& kv : CCircuitDef::GetRoleNames()) {
+		circuit->BindRole(kv.second.type, kv.second.type);
+	}
+
 	// NOTE: IsRole used below
 	ReadConfig();
 
@@ -1295,7 +1299,7 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 			task = EnqueueTask(IFighterTask::FightType::SUPPORT);
 		}
 	} else {
-		auto it = types.find(cdef->GetMainRole());
+		auto it = types.find(circuit->GetBindedRole(cdef->GetMainRole()));
 		if (it != types.end()) {
 			switch (it->second) {
 				case IFighterTask::FightType::RAID: {

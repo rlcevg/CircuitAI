@@ -46,20 +46,21 @@ CMaskHandler::TypeMask CMaskHandler::GetTypeMask(const std::string& name)
 	TypeMask tm(-1, 0);
 
 	// the empty mask
-	if (name.empty() || (masks.size() >= GetMaxMasks())) {
+	if (name.empty()) {
 		return tm;
 	}
 
 	auto it = masks.find(name);
 	if (it == masks.end()) {
 		// this mask is yet unknown
-		if (firstUnused < CMaskHandler::GetMaxMasks()) {
-			// create the mask (bit field value)
-			tm.type = firstUnused;
-			tm.mask = GetMask(firstUnused);
+		if (firstUnused >= CMaskHandler::GetMaxMasks()) {
+			return tm;
 		}
 
-		// if (mask == 0), this will prevent further warnings for this mask
+		// create the mask (bit field value)
+		tm.type = firstUnused;
+		tm.mask = GetMask(firstUnused);
+
 		masks[name] = tm;
 		++firstUnused;
 	} else {

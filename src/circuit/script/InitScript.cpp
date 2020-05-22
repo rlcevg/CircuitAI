@@ -113,6 +113,8 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterGlobalProperty("CMaskHandler aiRoleMasker", roleMasker); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CMaskHandler", "TypeMask GetTypeMask(const string& in)", asMETHOD(CMaskHandler, GetTypeMask), asCALL_THISCALL); ASSERT(r >= 0);
 
+	r = engine->RegisterGlobalFunction("TypeMask aiAddRole(const string& in, Type)", asMETHOD(CInitScript, AddRole), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
+
 	r = engine->RegisterTypedef("Id", "int"); ASSERT(r >= 0);
 
 	r = engine->RegisterObjectMethod("CCircuitDef", "bool IsRoleAny(Mask) const", asMETHOD(CCircuitDef, IsRoleAny), asCALL_THISCALL); ASSERT(r >= 0);
@@ -166,15 +168,14 @@ void CInitScript::InitConfig()
 	}
 	asIScriptModule* mod = script->GetEngine()->GetModule("init");
 	int r = mod->SetDefaultNamespace("Init"); ASSERT(r >= 0);
-	info.init = script->GetFunc(mod, "void Init(dictionary@)");
-
-	if (info.init == nullptr) {
+	asIScriptFunction* init = script->GetFunc(mod, "void Init(dictionary@)");
+	if (init == nullptr) {
 		return;
 	}
 
 	CScriptDictionary* dict = CScriptDictionary::Create(script->GetEngine());
 
-	asIScriptContext* ctx = script->PrepareContext(info.init);
+	asIScriptContext* ctx = script->PrepareContext(init);
 	ctx->SetArgObject(0, dict);
 	script->Exec(ctx);
 	script->ReturnContext(ctx);
@@ -199,6 +200,18 @@ void CInitScript::InitConfig()
 	catDict->Release();
 
 	dict->Release();
+
+	mod->Discard();
+}
+
+CMaskHandler::TypeMask CInitScript::AddRole(const std::string& name, int actAsRole)
+{
+	CMaskHandler::TypeMask result = circuit->GetGameAttribute()->GetRoleMasker().GetTypeMask(name);
+	if (result.type < 0) {
+		return result;
+	}
+	circuit->BindRole(result.type, actAsRole);
+	return result;
 }
 
 void CInitScript::Log(const std::string& msg) const
