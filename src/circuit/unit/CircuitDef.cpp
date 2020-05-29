@@ -83,6 +83,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		: def(def)
 		, mainRole(ROLE_TYPE(SCOUT))
 		, enemyRole(RoleMask::NONE)
+		, respRole(RoleMask::NONE)
 		, role(RoleMask::NONE)
 		, attr(NONE)
 		, buildOptions(buildOpts)
@@ -207,6 +208,16 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	}
 	delete sd;
 
+	WeaponDef* stockDef = def->GetStockpileDef();
+	if (stockDef != nullptr) {
+		it = customParams.find("stockpilecost");
+		if (it != customParams.end()) {
+			stockCost = utils::string_to_float(it->second);
+		}
+		AddAttribute(AttrType::STOCK);
+		delete stockDef;
+	}
+
 	if (!def->IsAbleToAttack()) {
 		if (isShield) {
 			auto mounts = def->GetWeaponMounts();
@@ -222,16 +233,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		}
 		// NOTE: Aspis (mobile shield) has 10 damage for some reason, break
 		return;
-	}
-
-	WeaponDef* stockDef = def->GetStockpileDef();
-	if (stockDef != nullptr) {
-		it = customParams.find("stockpilecost");
-		if (it != customParams.end()) {
-			stockCost = utils::string_to_float(it->second);
-		}
-		AddAttribute(AttrType::STOCK);
-		delete stockDef;
 	}
 
 	/*
@@ -513,6 +514,12 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 		}
 	}
 	isLander = !IsFloater() && !IsAbleToFly() && !IsAmphibious() && !IsSubmarine();
+}
+
+void CCircuitDef::AddRole(RoleT type, RoleT bindType)
+{
+	respRole |= GetMask(type);
+	role |= GetMask(bindType);
 }
 
 float CCircuitDef::GetRadius()

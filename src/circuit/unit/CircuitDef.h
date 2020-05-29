@@ -99,11 +99,12 @@ public:
 	bool IsEnemyRoleAny(RoleM value) const { return (enemyRole & value) != 0; }
 
 	void AddAttribute(AttrType type) { attr |= GetMask(static_cast<AttrT>(type)); }
-	void AddRole(RoleT type) { role |= GetMask(type); }
-	void AddRoles(RoleM mask) { role |= mask; }
-	bool IsRoleAny(RoleM value)     const { return (role & value) != 0; }
-	bool IsRoleEqual(RoleM value)   const { return role == value; }
-	bool IsRoleContain(RoleM value) const { return (role & value) == value; }
+	void AddRole(RoleT type) { AddRole(type, type); }
+	void AddRole(RoleT type, RoleT bindType);
+	bool IsRespRoleAny(RoleM value)     const { return (respRole & value) != 0; }
+//	bool IsRoleAny(RoleM value)     const { return (role & value) != 0; }
+//	bool IsRoleEqual(RoleM value)   const { return role == value; }
+//	bool IsRoleContain(RoleM value) const { return (role & value) == value; }
 
 	bool IsRoleBuilder()  const { return role & RoleMask::BUILDER; }
 	bool IsRoleScout()    const { return role & RoleMask::SCOUT; }
@@ -252,8 +253,9 @@ private:
 	Id id;
 	springai::UnitDef* def;  // owner
 	RoleT mainRole;  // RoleType
-	RoleM enemyRole;
-	RoleM role;
+	RoleM enemyRole;  // RoleMask
+	RoleM respRole;  // unique for response, custom roles, no bindings
+	RoleM role;  // implemented roles, no custom roles, only binded
 	AttrM attr;
 	std::unordered_set<Id> buildOptions;
 	float buildDistance;

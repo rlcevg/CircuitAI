@@ -278,9 +278,6 @@ public:
 	int GetGoodCategory()  const { return goodCategory; }
 
 private:
-	// debug
-//	void DrawClusters();
-
 	bool isInitialized;
 	bool isLoadSave;
 	bool isResigned;

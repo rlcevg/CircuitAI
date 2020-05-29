@@ -1058,7 +1058,7 @@ void CMilitaryManager::AddResponse(CCircuitUnit* unit)
 	const CCircuitDef::RoleT roleSize = CCircuitDef::GetRoleNames().size();
 	assert(roleInfos.size() == roleSize);
 	for (CCircuitDef::RoleT type = 0; type < roleSize; ++type) {
-		if (cdef->IsRoleAny(CCircuitDef::GetMask(type))) {
+		if (cdef->IsRespRoleAny(CCircuitDef::GetMask(type))) {
 			roleInfos[type].cost += cost;
 			roleInfos[type].units.insert(unit);
 		}
@@ -1072,7 +1072,7 @@ void CMilitaryManager::DelResponse(CCircuitUnit* unit)
 	const CCircuitDef::RoleT roleSize = CCircuitDef::GetRoleNames().size();
 	assert(roleInfos.size() == roleSize);
 	for (CCircuitDef::RoleT type = 0; type < roleSize; ++type) {
-		if (cdef->IsRoleAny(CCircuitDef::GetMask(type))) {
+		if (cdef->IsRespRoleAny(CCircuitDef::GetMask(type))) {
 			float& metal = roleInfos[type].cost;
 			metal = std::max(metal - cost, .0f);
 			roleInfos[type].units.erase(unit);

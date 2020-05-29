@@ -99,15 +99,12 @@ public:
 	 */
 	void Clusterize(float maxDistance, CRagMatrix& distmatrix);
 
-	// debug, could be used for defence perimeter calculation
-//	void DrawConvexHulls(springai::Drawer* drawer);
-//	void DrawCentroids(springai::Drawer* drawer);
-//	void ClearMetalClusters(springai::Drawer* drawer);
-
 	const SMetal& operator[](int idx) const { return spots[idx]; }
 
 	static void TriangulateGraph(const std::vector<double>& coords,
 			std::function<float (std::size_t A, std::size_t B)> distance,
+			std::function<void (std::size_t A, std::size_t B)> addEdge);
+	static void MakeConvexHull(const std::vector<double>& coords,
 			std::function<void (std::size_t A, std::size_t B)> addEdge);
 private:
 	void BuildClusterGraph();

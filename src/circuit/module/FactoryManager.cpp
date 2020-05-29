@@ -277,7 +277,7 @@ void CFactoryManager::ReadConfig()
 			continue;
 		}
 		cdef->SetMainRole(it->second.type);
-		cdef->AddRoles(it->second.mask);
+		cdef->AddRole(it->second.type, circuit->GetBindedRole(it->second.type));
 		roleDefs[it->second.type].insert(cdef->GetId());
 
 //		if (role.size() < 2) {
@@ -291,7 +291,7 @@ void CFactoryManager::ReadConfig()
 					continue;
 				}
 				cdef->AddEnemyRoles(it->second.mask);
-//				cdef->AddRoles(it->second.mask);
+//				cdef->AddRole(it->second.type, circuit->GetBindedRole(it->second.type));
 			}
 //		}
 
@@ -309,7 +309,7 @@ void CFactoryManager::ReadConfig()
 					cdef->AddAttribute(it->second);
 				}
 			} else {
-				cdef->AddRoles(it->second.mask);
+				cdef->AddRole(it->second.type, circuit->GetBindedRole(it->second.type));
 				roleDefs[it->second.type].insert(cdef->GetId());
 			}
 		}

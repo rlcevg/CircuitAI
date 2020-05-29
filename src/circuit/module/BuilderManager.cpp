@@ -1120,7 +1120,7 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 		if (buildDef == nullptr) {  // position can be in danger
 			buildDef = ecoMgr->GetDefaultDef();
 		}
-		if ((buildDef->GetCount() < 10) && buildDef->IsAvailable(circuit->GetLastFrame())) {
+		if ((buildDef != nullptr) && (buildDef->GetCount() < 10) && buildDef->IsAvailable(circuit->GetLastFrame())) {
 			return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
 		}
 	} else {

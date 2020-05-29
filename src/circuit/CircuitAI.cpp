@@ -628,6 +628,7 @@ int CCircuitAI::Release(int reason)
 	metalRes = energyRes = nullptr;
 
 	delete script;
+	script = nullptr;
 	utils::free_clear(weaponDefs);
 	for (auto& kv : defsById) {
 		delete kv.second;
@@ -1458,13 +1459,6 @@ void CCircuitAI::InitUnitDefs(float& outDcr)
 		kv.second->Init(this);
 	}
 }
-
-//// debug
-//void CCircuitAI::DrawClusters()
-//{
-//	gameAttribute->GetMetalData().DrawConvexHulls(GetDrawer());
-//	gameAttribute->GetMetalManager().DrawCentroids(GetDrawer());
-//}
 
 CWeaponDef* CCircuitAI::GetWeaponDef(CWeaponDef::Id weaponDefId) const
 {
