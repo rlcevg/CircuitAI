@@ -26,6 +26,9 @@
 #include "Pathing.h"
 #include "MoveData.h"
 #include "Log.h"
+#ifdef DEBUG_VIS
+#include "Lua.h"
+#endif
 
 namespace circuit {
 
@@ -1376,13 +1379,27 @@ void CTerrainManager::UpdateAreaUsers(int interval)
 #ifdef DEBUG_VIS
 void CTerrainManager::UpdateVis()
 {
-	if (dbgTextureId >= 0) {
-		for (unsigned i = 0; i < blockingMap.gridLow.size(); ++i) {
-			dbgMap[i] = (blockingMap.gridLow[i].blockerMask > 0) ? 1.0f : 0.0f;
+	if (isWidgetDrawing) {
+		std::ostringstream cmd;
+		cmd << "ai_thr_data:";
+		for (int z = 0; z < blockingMap.rows; ++z) {
+			for (int x = 0; x < blockingMap.columns; ++x) {
+				cmd << blockingMap.IsBlocked(x, z, STRUCT_BIT(ALL)) << " ";
+			}
 		}
-		circuit->GetDebugDrawer()->UpdateOverlayTexture(dbgTextureId, dbgMap, 0, 0, blockingMap.columnsLow, blockingMap.rowsLow);
-		circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {220, 220, 0, 0});
+		std::string s = cmd.str();
+		circuit->GetLua()->CallRules(s.c_str(), s.size());
 	}
+
+	if (dbgTextureId < 0) {
+		return;
+	}
+
+	for (unsigned i = 0; i < blockingMap.gridLow.size(); ++i) {
+		dbgMap[i] = (blockingMap.gridLow[i].blockerMask > 0) ? 1.0f : 0.0f;
+	}
+	circuit->GetDebugDrawer()->UpdateOverlayTexture(dbgTextureId, dbgMap, 0, 0, blockingMap.columnsLow, blockingMap.rowsLow);
+	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {220, 220, 0, 0});
 }
 
 void CTerrainManager::ToggleVis()
@@ -1410,6 +1427,21 @@ void CTerrainManager::ToggleVis()
 		circuit->GetDebugDrawer()->DelSDLWindow(sdlWindowId);
 		dbgTextureId = sdlWindowId = -1;
 		delete[] dbgMap;
+	}
+}
+
+void CTerrainManager::ToggleWidgetDraw()
+{
+	std::string cmd("ai_thr_draw:");
+	std::string result = circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
+
+	isWidgetDrawing = (result == "1");
+	if (isWidgetDrawing) {
+		cmd = utils::int_to_string(16, "ai_thr_size:%i");
+		cmd += utils::float_to_string(0, " %f");
+		circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
+
+		UpdateVis();
 	}
 }
 #endif

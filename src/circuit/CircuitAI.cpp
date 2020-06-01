@@ -745,23 +745,26 @@ int CCircuitAI::Update(int frame)
 int CCircuitAI::Message(int playerId, const char* message)
 {
 #ifdef DEBUG_VIS
+	const char cmdBreak[]   = "~break";
+
 	const char cmdPos[]     = "~стройсь\0";
 	const char cmdSelfD[]   = "~Згинь, нечистая сила!\0";
 
-	const char cmdBreak[]   = "~break";
 	const char cmdBlock[]   = "~block";
+	const char cmdWBlock[]  = "~wbdraw";  // widget block draw
+
 	const char cmdArea[]    = "~area";
 	const char cmdPath[]    = "~path";
 	const char cmdKnn[]     = "~knn";
 	const char cmdLog[]     = "~log";
 
 	const char cmdThreat[]  = "~threat";
-	const char cmdWTDraw[]  = "~wtdraw";
+	const char cmdWTDraw[]  = "~wtdraw";  // widget threat draw
 	const char cmdWTDiv[]   = "~wtdiv";
 	const char cmdWTPrint[] = "~wtprint";
 
 	const char cmdInfl[]    = "~infl";
-	const char cmdWIDraw[]  = "~widraw";
+	const char cmdWIDraw[]  = "~widraw";  // widget influence draw
 	const char cmdWIDiv[]   = "~widiv";
 	const char cmdWIPrint[] = "~wiprint";
 
@@ -788,19 +791,26 @@ int CCircuitAI::Message(int playerId, const char* message)
 
 	size_t msgLength = strlen(message);
 
-	if ((msgLength == strlen(cmdPos)) && (strcmp(message, cmdPos) == 0)) {
+	if (strncmp(message, cmdBreak, 6) == 0) {
+		__asm__("int3");
+	}
+
+	else if ((msgLength == strlen(cmdPos)) && (strcmp(message, cmdPos) == 0)) {
 		setupManager->PickStartPos(this, CSetupManager::StartPosType::RANDOM);
 	}
 	else if ((msgLength == strlen(cmdSelfD)) && (strcmp(message, cmdSelfD) == 0)) {
 		selfD();
 	}
 
-	else if (strncmp(message, cmdBreak, 6) == 0) {
-		__asm__("int3");
-	}
 	else if (strncmp(message, cmdBlock, 6) == 0) {
 		terrainManager->ToggleVis();
 	}
+	else if (strncmp(message, cmdWBlock, 7) == 0) {
+		if (teamId == atoi((const char*)&message[8])) {
+			terrainManager->ToggleWidgetDraw();
+		}
+	}
+
 	else if (strncmp(message, cmdArea, 5) == 0) {
 		gameAttribute->GetTerrainData().ToggleVis(lastFrame);
 	}

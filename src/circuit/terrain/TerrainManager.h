@@ -194,9 +194,11 @@ private:
 	int dbgTextureId;
 	uint32_t sdlWindowId;
 	float* dbgMap;
+	bool isWidgetDrawing = false;
 	void UpdateVis();
 public:
 	void ToggleVis();
+	void ToggleWidgetDraw();
 #endif
 };
 

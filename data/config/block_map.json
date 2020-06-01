@@ -48,7 +48,7 @@
 			// Available string values: explosion, expl_ally
 //			"radius": "explosion",  // default: "explosion"
 			"radius": 3,
-			"not_ignore": ["factory", "engy_low"]
+			"not_ignore": ["factory", "engy_low", "terra"]
 		},
 		"fusion": {
 			"type": ["circle", "engy_mid"],
@@ -61,11 +61,11 @@
 		},
 		"pylon": {
 			"type": ["circle", "pylon"],
-			"not_ignore": ["factory", "pylon"]  // default: ["all"]
+			"not_ignore": ["factory", "pylon", "terra"]  // default: ["all"]
 		},
 		"store": {
 			"type": ["rectangle", "mex"],
-			"not_ignore": ["factory"]
+			"not_ignore": ["factory", "terra"]
 		},
 		"mex": {
 			"type": ["rectangle", "mex"],
@@ -73,7 +73,7 @@
 		},
 		"def_low": {
 			"type": ["circle", "def_low"],
-			"radius": 10,  // 160 / (SQUARE_SIZE * 2)
+			"radius": 8,  // 128 / (SQUARE_SIZE * 2)
 			"ignore": ["engy_mid", "engy_high", "engy_low", "pylon", "nano"]
 		},
 		"caretaker": {
@@ -82,7 +82,7 @@
 		},
 		"small": {
 			"type": ["rectangle", "unknown"],
-			"not_ignore": ["factory", "def_low"]
+			"not_ignore": ["factory", "def_low", "terra"]
 		},
 		"superweapon": {
 			"type": ["circle", "special"],

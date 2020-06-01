@@ -410,6 +410,14 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		if ((taskB->GetTarget() == nullptr) && (taskB->GetBuildDef() != nullptr) &&
 			(*taskB->GetBuildDef() == *unit->GetCircuitDef()) && taskB->IsEqualBuildPos(unit))
 		{
+			// FIXME: DEBUG
+			AIFloat3 bp = taskB->GetBuildPos();
+			circuit->GetDrawer()->AddPoint(bp, "bp");
+			circuit->LOG("bp = %f, %f", bp.x, bp.z);
+			AIFloat3 up = unit->GetPos(circuit->GetLastFrame());
+			circuit->GetDrawer()->AddPoint(up, "up");
+			circuit->LOG("up = %f, %f", up.x, up.z);
+			// FIXME: DEBUG
 			taskB->UpdateTarget(unit);
 			unfinishedUnits[unit] = taskB;
 		} else {

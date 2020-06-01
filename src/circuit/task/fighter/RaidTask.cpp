@@ -285,13 +285,13 @@ bool CRaidTask::FindTarget()
 			continue;
 		}
 
-//		const float sqEBDist = basePos.SqDistance2D(ePos);
+		const float sqEBDist = basePos.SqDistance2D(ePos);
 		float checkPower = maxPower;
 		float checkSpeed = maxSpeed;
-//		if (sqEBDist < sqBaseRange) {
-//			checkPower *= 2.0f - 1.0f / baseRange * sqrtf(sqEBDist);  // 200% near base
-//			checkSpeed *= 2.f;
-//		}
+		if (sqEBDist < sqBaseRange) {
+			checkPower *= 2.0f - 1.0f / baseRange * sqrtf(sqEBDist);  // 200% near base
+			checkSpeed *= 2.f;
+		}
 		const float power = threatMap->GetThreatAt(ePos);
 		if (checkPower <= power) {
 			continue;
