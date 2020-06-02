@@ -1440,12 +1440,19 @@ CCircuitDef* CCircuitAI::GetCircuitDef(CCircuitDef::Id unitDefId)
 
 void CCircuitAI::InitUnitDefs(float& outDcr)
 {
+	for (const auto& kv : CCircuitDef::GetRoleNames()) {
+		BindRole(kv.second.type, kv.second.type);
+	}
+
 	if (!gameAttribute->GetTerrainData().IsInitialized()) {
 		gameAttribute->GetTerrainData().Init(this);
 	}
-	Resource* res = callback->GetResourceByName("Metal");
+
+	Resource* resM = callback->GetResourceByName("Metal");
+	Resource* resE = callback->GetResourceByName("Energy");
 	outDcr = 0.f;
 	auto unitDefs = callback->GetUnitDefs();
+
 	for (UnitDef* ud : unitDefs) {
 		auto options = ud->GetBuildOptions();
 		std::unordered_set<CCircuitDef::Id> opts;
@@ -1453,7 +1460,7 @@ void CCircuitAI::InitUnitDefs(float& outDcr)
 			opts.insert(buildDef->GetUnitDefId());
 			delete buildDef;
 		}
-		CCircuitDef* cdef = new CCircuitDef(this, ud, opts, res);
+		CCircuitDef* cdef = new CCircuitDef(this, ud, opts, resM, resE);
 
 		defsByName[ud->GetName()] = cdef;
 		defsById[cdef->GetId()] = cdef;
@@ -1463,7 +1470,9 @@ void CCircuitAI::InitUnitDefs(float& outDcr)
 			outDcr = dcr;
 		}
 	}
-	delete res;
+
+	delete resM;
+	delete resE;
 
 	for (auto& kv : GetCircuitDefs()) {
 		kv.second->Init(this);

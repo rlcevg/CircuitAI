@@ -26,7 +26,6 @@ namespace circuit {
 #define HIDDEN_STORAGE	10000.0f
 
 class IBuilderTask;
-class CLagrangeInterPol;
 class CGameTask;
 class CEnergyGrid;
 
@@ -128,14 +127,15 @@ private:
 	std::set<CCircuitDef*> availEnergyDefs;
 	struct SEnergyInfo {
 		CCircuitDef* cdef;
-		float cost;
+		float costM;
+		float costE;
 		float make;
 		float costDivMake;
 		int limit;
 		bool operator==(const CCircuitDef* d) { return cdef == d; }
 	};
 	std::vector<SEnergyInfo> energyInfos;
-	CLagrangeInterPol* engyPol;
+	std::unordered_map<CCircuitDef*, int> engyLimits;
 
 	float ecoStep;
 	float ecoFactor;

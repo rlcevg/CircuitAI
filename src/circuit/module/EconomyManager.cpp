@@ -15,7 +15,6 @@
 #include "resource/EnergyGrid.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
-#include "util/math/LagrangeInterPol.h"
 #include "util/Scheduler.h"
 #include "util/Utils.h"
 #include "json/json.h"
@@ -101,7 +100,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	auto energyFinishedHandler = [this](CCircuitUnit* unit) {
 		auto it = std::find(energyInfos.begin(), energyInfos.end(), unit->GetCircuitDef());
 		if (it != energyInfos.end()) {
-			float income = it->cost / it->costDivMake;
+			float income = it->make;
 			for (int i = 0; i < INCOME_SAMPLES; ++i) {
 				energyIncomes[i] += income;
 			}
@@ -192,7 +191,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				auto it = customParams.find("pylonrange");
 				if (it != customParams.end()) {
 					const float range = utils::string_to_float(it->second);
-					float areaDivCost = M_PI * SQUARE(range) / cdef->GetCost();
+					float areaDivCost = M_PI * SQUARE(range) / cdef->GetCostM();
 					if (maxAreaDivCost < areaDivCost) {
 						maxAreaDivCost = areaDivCost;
 						pylonDef = cdef;  // armestor
@@ -201,7 +200,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				}
 
 				// storage
-				float storeDivCost = cdef->GetDef()->GetStorage(metalRes) / cdef->GetCost();
+				float storeDivCost = cdef->GetDef()->GetStorage(metalRes) / cdef->GetCostM();
 				if (maxStoreDivCost < storeDivCost) {
 					maxStoreDivCost = storeDivCost;
 					storeDef = cdef;  // armmstor
@@ -258,7 +257,6 @@ CEconomyManager::~CEconomyManager()
 	delete metalRes;
 	delete energyRes;
 	delete economy;
-	delete engyPol;
 }
 
 void CEconomyManager::ReadConfig()
@@ -269,7 +267,10 @@ void CEconomyManager::ReadConfig()
 	ecoStep = econ.get("eps_step", 0.25f).asFloat();
 	ecoFactor = (circuit->GetAllyTeam()->GetSize() - 1.0f) * ecoStep + 1.0f;
 	metalMod = (1.f - econ.get("excess", -1.f).asFloat());
-	switchTime = econ.get("switch", 900).asInt() * FRAMES_PER_SEC;
+	const Json::Value& swch = econ["switch"];
+	const int minSwitch = swch.get((unsigned)0, 800).asInt();
+	const int maxSwitch = swch.get((unsigned)1, 900).asInt();
+	switchTime = (minSwitch + rand() % (maxSwitch - minSwitch + 1)) * FRAMES_PER_SEC;
 	const float bd = econ.get("build_delay", -1.f).asFloat();
 	buildDelay = (bd > 0.f) ? (bd * FRAMES_PER_SEC) : 0;
 
@@ -282,47 +283,25 @@ void CEconomyManager::ReadConfig()
 	efInfo.fraction = (efInfo.endFactor - efInfo.startFactor) / (efInfo.endFrame - efInfo.startFrame);
 	energyFactor = efInfo.startFactor;
 
-	// Using cafus, armfus, armsolar as control points
-	// FIXME: Дабы ветка параболы заработала надо использовать [x <= 0; y < min limit) для точки перегиба
-	constexpr unsigned MAX_CTRL_POINTS = 3;
 	std::vector<std::pair<std::string, int>> engies;
 	std::string type = circuit->GetTerrainManager()->IsWaterMap() ? "water" : "land";
 	const Json::Value& surf = energy[type];
-	unsigned si = 0;
 	for (const std::string& engy : surf.getMemberNames()) {
 		const int min = surf[engy][0].asInt();
 		const int max = surf[engy].get(1, min).asInt();
 		const int limit = min + rand() % (max - min + 1);
 		engies.push_back(std::make_pair(engy, limit));
-		if (++si >= MAX_CTRL_POINTS) {
-			break;
-		}
 	}
 
-	CLagrangeInterPol::Vector x(engies.size()), y(engies.size());
 	for (unsigned i = 0; i < engies.size(); ++i) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(engies[i].first.c_str());
+		const char* name = engies[i].first.c_str();
+		CCircuitDef* cdef = circuit->GetCircuitDef(name);
 		if (cdef == nullptr) {
-			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), engies[i].first.c_str());
+			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), name);
 			continue;
 		}
-		const std::map<std::string, std::string>& customParams = cdef->GetDef()->GetCustomParams();
-		auto it = customParams.find("income_energy");
-		float make = (it != customParams.end()) ? utils::string_to_float(it->second) : 1.f;
-		x[i] = cdef->GetCost() / make;
-		y[i] = engies[i].second + 0.5;  // +0.5 to be sure precision errors will not decrease integer part
+		engyLimits[cdef] = engies[i].second;
 	}
-	engyPol = new CLagrangeInterPol(x, y);  // Alternatively use CGaussSolver to compute polynomial - faster on reuse
-
-	// NOTE: Alternative to CLagrangeInterPol
-//	CGaussSolver solver;
-//	CGaussSolver::Matrix a = {
-//		{1, x[0], x[0]*x[0]},
-//		{1, x[1], x[1]*x[1]},
-//		{1, x[2], x[2]*x[2]}
-//	};
-//	CGaussSolver::Vector r = solver.Solve(a, y);
-//	circuit->LOG("y = %f*x^0 + %f*x^1 + %f*x^2", r[0], r[1], r[2]);
 
 	// NOTE: Must have
 	defaultDef = circuit->GetCircuitDef(econ["default"].asCString());
@@ -505,10 +484,13 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 	for (auto cdef : diffDefs) {
 		SEnergyInfo engy;
 		engy.cdef = cdef;
-		engy.cost = cdef->GetCost();
+		engy.costM = cdef->GetCostM();
+		engy.costE = cdef->GetCostE();
 		engy.make = utils::string_to_float(cdef->GetDef()->GetCustomParams().find("income_energy")->second);
-		engy.costDivMake = engy.cost / engy.make;
-		engy.limit = engyPol->GetValueAt(engy.costDivMake);
+		// TODO: Instead of plain sizeX, sizeZ use AI's yardmap size
+		engy.costDivMake = (engy.costM/* + engy.costE * 0.05f*/) * cdef->GetDef()->GetXSize() * cdef->GetDef()->GetZSize() / SQUARE(engy.make);
+		auto lit = engyLimits.find(cdef);
+		engy.limit = (lit != engyLimits.end()) ? lit->second : 0;
 		energyInfos.push_back(engy);
 	}
 
@@ -517,6 +499,12 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 		return e1.costDivMake < e2.costDivMake;
 	};
 	std::sort(energyInfos.begin(), energyInfos.end(), compare);
+
+	// FIXME: DEBUG
+	for (const SEnergyInfo& ei : energyInfos) {
+		circuit->LOG("%s | costM=%f | costE=%f | make=%f | efficiency=%f | limit=%i", ei.cdef->GetDef()->GetName(), ei.costM, ei.costE, ei.make, ei.costDivMake, ei.limit);
+	}
+	// FIXME: DEBUG
 }
 
 void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
@@ -709,7 +697,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	// check uncolonized mexes
 	bool isEnergyStalling = IsEnergyStalling();
 	if (!isEnergyStalling && mexDef->IsAvailable(circuit->GetLastFrame())) {
-		float cost = mexDef->GetCost();
+		float cost = mexDef->GetCostM();
 		unsigned maxCount = builderMgr->GetBuildPower() / cost * 8 + 2;
 		if (builderMgr->GetTasks(IBuilderTask::BuildType::MEX).size() < maxCount) {
 			CMetalManager* metalMgr = circuit->GetMetalManager();
@@ -833,6 +821,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	float metalIncome = GetAvgMetalIncome();
 	const float energyIncome = GetAvgEnergyIncome();
 	const bool isEnergyStalling = IsEnergyStalling();
+	// TODO: e-stalling needs separate array of energy-defs sorted by cost
 
 	// Select proper energy UnitDef to build
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
@@ -856,16 +845,16 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 
 		if (engy.cdef->GetCount() < engy.limit) {
 			isLastHope = false;
-			if (taskSize < (int)(buildPower / engy.cost * 8 + 1)) {
+			if (taskSize < (int)(buildPower / engy.costM * 8 + 1)) {
 				bestDef = engy.cdef;
 				// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
 				//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
 				//       solar       geothermal    fusion         singu           ...
 				//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
-				if (engy.cost * 16.0f < maxBuildTime * SQUARE(metalIncome)) {
+				if (engy.costM * 16.0f < maxBuildTime * SQUARE(metalIncome)) {
 					break;
 				}
-			} else if (engy.cost * 16.0f < maxBuildTime * SQUARE(metalIncome)) {
+			} else if (engy.costM * 16.0f < maxBuildTime * SQUARE(metalIncome)) {
 				bestDef = nullptr;
 				break;
 			}
@@ -874,7 +863,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			break;
 		} else if (hopeDef == nullptr) {
 			hopeDef = engy.cdef;
-			isLastHope = isLastHope && (taskSize < (int)(buildPower / hopeDef->GetCost() * 8 + 1));
+			isLastHope = isLastHope && (taskSize < (int)(buildPower / hopeDef->GetCostM() * 8 + 1));
 		}
 	}
 	if (isLastHope) {
@@ -888,7 +877,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	// Find place to build
 	AIFloat3 buildPos = -RgtVector;
 	CMetalManager* metalMgr = circuit->GetMetalManager();
-	if (bestDef->GetCost() < 1000.0f) {
+	if (bestDef->GetCostM() < 1000.0f) {
 		int index = metalMgr->FindNearestSpot(position);
 		if (index != -1) {
 			const CMetalData::Metals& spots = metalMgr->GetSpots();
@@ -903,7 +892,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 
 			// TODO: Calc enemy vector and move position into opposite direction
 			AIFloat3 mapCenter(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
-			buildPos += (buildPos - mapCenter).Normalize2D() * 300.0f * (bestDef->GetCost() / energyInfos.front().cost);
+			buildPos += (buildPos - mapCenter).Normalize2D() * 300.0f * (bestDef->GetCostM() / energyInfos.front().costM);
 			CCircuitDef* bdef = (unit == nullptr) ? bestDef : unit->GetCircuitDef();
 			CTerrainManager::CorrectPosition(buildPos);
 			buildPos = circuit->GetTerrainManager()->GetBuildPosition(bdef, buildPos);
@@ -1153,7 +1142,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 		return nullptr;
 	}
 
-	const float cost = pylonDef->GetCost();
+	const float cost = pylonDef->GetCostM();
 	unsigned count = builderMgr->GetBuildPower() / cost * 8 + 1;
 	if (builderMgr->GetTasks(IBuilderTask::BuildType::PYLON).size() >= count) {
 		return nullptr;
@@ -1171,7 +1160,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 
 	if (utils::is_valid(buildPos)) {
 		IBuilderTask::Priority priority = metalIncome < 40 ? IBuilderTask::Priority::NORMAL : IBuilderTask::Priority::HIGH;
-		return builderMgr->EnqueuePylon(priority, buildDef, buildPos, link, buildDef->GetCost());
+		return builderMgr->EnqueuePylon(priority, buildDef, buildPos, link, buildDef->GetCostM());
 	} else {
 		link->SetValid(false);
 		energyGrid->SetForceRebuild(true);
@@ -1231,13 +1220,11 @@ void CEconomyManager::UpdateMorph()
 
 void CEconomyManager::OpenStrategy(const CCircuitDef* facDef, const AIFloat3& pos)
 {
-	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
-	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	float radius = std::max(terrainMgr->GetTerrainWidth(), terrainMgr->GetTerrainHeight()) / 4;
 	const std::vector<CCircuitDef::RoleT>* opener = circuit->GetSetupManager()->GetOpener(facDef);
 	if (opener == nullptr) {
 		return;
 	}
+	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
 	for (CCircuitDef::RoleT type : *opener) {
 		CCircuitDef* buildDef = factoryMgr->GetRoleDef(facDef, type);
 		if ((buildDef == nullptr) || !buildDef->IsAvailable(circuit->GetLastFrame())) {
@@ -1252,7 +1239,7 @@ void CEconomyManager::OpenStrategy(const CCircuitDef* facDef, const AIFloat3& po
 			priotiry = CRecruitTask::Priority::HIGH;
 			recruit  = CRecruitTask::RecruitType::FIREPOWER;
 		}
-		factoryMgr->EnqueueTask(priotiry, buildDef, pos, recruit, radius);
+		factoryMgr->EnqueueTask(priotiry, buildDef, pos, recruit, 128.f);
 	}
 }
 

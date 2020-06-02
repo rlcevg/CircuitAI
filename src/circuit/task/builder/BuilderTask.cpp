@@ -650,10 +650,10 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 				bool isValid = true;
 				switch (bi.condition) {
 					case SBuildInfo::Condition::AIR: {
-						isValid = bi.cdef->GetCost() < enemyMgr->GetEnemyCost(ROLE_TYPE(AIR));
+						isValid = bi.cdef->GetCostM() < enemyMgr->GetEnemyCost(ROLE_TYPE(AIR));
 					} break;
 					case SBuildInfo::Condition::NO_AIR: {
-						isValid = bi.cdef->GetCost() > enemyMgr->GetEnemyCost(ROLE_TYPE(AIR));
+						isValid = bi.cdef->GetCostM() > enemyMgr->GetEnemyCost(ROLE_TYPE(AIR));
 					} break;
 					case SBuildInfo::Condition::MAYBE: {
 						isValid = rand() < RAND_MAX / 2;

@@ -299,7 +299,7 @@ CEnergyNode* CEnergyGrid::FindNodeDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 	const CCircuitDef* pylonDef = economyMgr->GetPylonDef();
 	if (node->IsPylonable(economyMgr->GetPylonRange())
 		&& pylonDef->IsAvailable(frame)
-		&& (metalIncome > pylonDef->GetCost() * 0.15f))
+		&& (metalIncome > pylonDef->GetCostM() * 0.15f))
 	{
 		outDef = const_cast<CCircuitDef*>(pylonDef);
 		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, node->GetCenterPos(), searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
@@ -325,7 +325,7 @@ CEnergyNode* CEnergyGrid::FindNodeDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 
 		outDef = circuit->GetCircuitDef(defId);
 		if ((outDef == nullptr) || !outDef->IsAvailable(frame)
-			|| ((metalIncome < outDef->GetCost() * 0.2f) && (outDef->GetCost() > 100.f)))
+			|| ((metalIncome < outDef->GetCostM() * 0.2f) && (outDef->GetCostM() > 100.f)))
 		{
 			candDefs.erase(range);
 			continue;
@@ -383,7 +383,7 @@ CEnergyLink* CEnergyGrid::FindLinkDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 
 		outDef = circuit->GetCircuitDef(defId);
 		if ((outDef == nullptr) || !outDef->IsAvailable(frame)
-			|| ((metalIncome < outDef->GetCost() * 0.2f) && (outDef->GetCost() > 100.f)))
+			|| ((metalIncome < outDef->GetCostM() * 0.2f) && (outDef->GetCostM() > 100.f)))
 		{
 			candDefs.erase(range);
 			continue;

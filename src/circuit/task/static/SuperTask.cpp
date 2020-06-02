@@ -128,7 +128,7 @@ void CSuperTask::Update()
 			}
 		}
 	}
-	const float maxCost = cdef->IsAttrStock() ? cdef->GetStockCost() : cdef->GetCost() * 0.01f;
+	const float maxCost = cdef->IsAttrStock() ? cdef->GetStockCost() : cdef->GetCostM() * 0.01f;
 	if ((groupIdx < 0) || (cost < maxCost)) {
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->Stop();

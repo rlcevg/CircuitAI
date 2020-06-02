@@ -72,7 +72,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	};
 	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		int frame = this->circuit->GetLastFrame();
-		float defCost = unit->GetCircuitDef()->GetCost();
+		float defCost = unit->GetCircuitDef()->GetCostM();
 		CDefenceMatrix::SDefPoint* point = defence->GetDefPoint(unit->GetPos(frame), defCost);
 		if (point != nullptr) {
 			point->cost -= defCost;
@@ -199,10 +199,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 //		}
 //	};
 
-	for (const auto& kv : CCircuitDef::GetRoleNames()) {
-		circuit->BindRole(kv.second.type, kv.second.type);
-	}
-
 	// NOTE: IsRole used below
 	ReadConfig();
 
@@ -256,13 +252,13 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			}
 			if (commDef->CanBuild(cdef)) {
 				float range = cdef->GetDef()->GetRadarRadius();
-				float areaDivCost = M_PI * SQUARE(range) / cdef->GetCost();
+				float areaDivCost = M_PI * SQUARE(range) / cdef->GetCostM();
 				if (maxRadarDivCost < areaDivCost) {
 					maxRadarDivCost = areaDivCost;
 					radarDef = cdef;
 				}
 				range = cdef->GetDef()->GetSonarRadius();
-				areaDivCost = M_PI * SQUARE(range) / cdef->GetCost();
+				areaDivCost = M_PI * SQUARE(range) / cdef->GetCostM();
 				if (maxSonarDivCost < areaDivCost) {
 					maxSonarDivCost = areaDivCost;
 					sonarDef = cdef;
@@ -738,7 +734,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 		if (!defDef->IsAvailable(frame) || (defDef->IsRoleAA() && (enemyMgr->GetEnemyCost(ROLE_TYPE(AIR)) < 1.f))) {
 			continue;
 		}
-		float defCost = defDef->GetCost();
+		float defCost = defDef->GetCostM();
 		totalCost += defCost;
 		if (totalCost <= closestPoint->cost) {
 			continue;
@@ -789,19 +785,19 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 		}
 	};
 	// radar
-	if ((radarDef != nullptr) && radarDef->IsAvailable(frame) && (radarDef->GetCost() < maxCost)) {
+	if ((radarDef != nullptr) && radarDef->IsAvailable(frame) && (radarDef->GetCostM() < maxCost)) {
 		const float range = radarDef->GetDef()->GetRadarRadius() / (isPorc ? 4.f : SQRT_2);
 		checkSensor(IBuilderTask::BuildType::RADAR, radarDef, range);
 	}
 	// sonar
-	if (isWater && (sonarDef != nullptr) && sonarDef->IsAvailable(frame) && (sonarDef->GetCost() < maxCost)) {
+	if (isWater && (sonarDef != nullptr) && sonarDef->IsAvailable(frame) && (sonarDef->GetCostM() < maxCost)) {
 		checkSensor(IBuilderTask::BuildType::SONAR, sonarDef, sonarDef->GetDef()->GetSonarRadius());
 	}
 }
 
 void CMilitaryManager::AbortDefence(const CBDefenceTask* task)
 {
-	float defCost = task->GetBuildDef()->GetCost();
+	float defCost = task->GetBuildDef()->GetCostM();
 	CDefenceMatrix::SDefPoint* point = defence->GetDefPoint(task->GetPosition(), defCost);
 	if (point != nullptr) {
 		if ((task->GetTarget() == nullptr) && (point->cost >= defCost)) {
@@ -810,7 +806,7 @@ void CMilitaryManager::AbortDefence(const CBDefenceTask* task)
 		IBuilderTask* next = task->GetNextTask();
 		while (next != nullptr) {
 			if (next->GetBuildDef() != nullptr) {
-				defCost = next->GetBuildDef()->GetCost();
+				defCost = next->GetBuildDef()->GetCostM();
 			} else{
 				defCost = next->GetCost();
 			}
@@ -1054,7 +1050,7 @@ IFighterTask* CMilitaryManager::DelDefendTask(int cluster)
 void CMilitaryManager::AddResponse(CCircuitUnit* unit)
 {
 	const CCircuitDef* cdef = unit->GetCircuitDef();
-	const float cost = cdef->GetCost();
+	const float cost = cdef->GetCostM();
 	const CCircuitDef::RoleT roleSize = CCircuitDef::GetRoleNames().size();
 	assert(roleInfos.size() == roleSize);
 	for (CCircuitDef::RoleT type = 0; type < roleSize; ++type) {
@@ -1068,7 +1064,7 @@ void CMilitaryManager::AddResponse(CCircuitUnit* unit)
 void CMilitaryManager::DelResponse(CCircuitUnit* unit)
 {
 	const CCircuitDef* cdef = unit->GetCircuitDef();
-	const float cost = cdef->GetCost();
+	const float cost = cdef->GetCostM();
 	const CCircuitDef::RoleT roleSize = CCircuitDef::GetRoleNames().size();
 	assert(roleInfos.size() == roleSize);
 	for (CCircuitDef::RoleT type = 0; type < roleSize; ++type) {
@@ -1087,11 +1083,11 @@ float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
 	float maxProb = 0.f;
 	for (const SRoleInfo::SVsInfo& vs : info.vs) {
 		const float enemyMetal = enemyMgr->GetEnemyCost(vs.role);
-		const float nextMetal = info.cost + cdef->GetCost();
+		const float nextMetal = info.cost + cdef->GetCostM();
 		const float prob = enemyMetal / (info.cost + 1.f) * vs.importance;
 		if ((prob > maxProb) &&
 			(enemyMetal * vs.ratio >= nextMetal * info.factor) &&
-			(nextMetal <= (armyCost + cdef->GetCost()) * info.maxPerc))
+			(nextMetal <= (armyCost + cdef->GetCostM()) * info.maxPerc))
 		{
 			maxProb = prob;
 		}
@@ -1101,7 +1097,7 @@ float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
 
 bool CMilitaryManager::IsNeedBigGun(const CCircuitDef* cdef) const
 {
-	return armyCost * circuit->GetEconomyManager()->GetEcoFactor() > cdef->GetCost();
+	return armyCost * circuit->GetEconomyManager()->GetEcoFactor() > cdef->GetCostM();
 }
 
 AIFloat3 CMilitaryManager::GetBigGunPos(CCircuitDef* bigDef) const
@@ -1378,13 +1374,13 @@ void CMilitaryManager::UpdateFight()
 void CMilitaryManager::AddArmyCost(CCircuitUnit* unit)
 {
 	AddResponse(unit);
-	armyCost += unit->GetCircuitDef()->GetCost();
+	armyCost += unit->GetCircuitDef()->GetCostM();
 }
 
 void CMilitaryManager::DelArmyCost(CCircuitUnit* unit)
 {
 	DelResponse(unit);
-	armyCost = std::max(armyCost - unit->GetCircuitDef()->GetCost(), .0f);
+	armyCost = std::max(armyCost - unit->GetCircuitDef()->GetCostM(), .0f);
 }
 
 } // namespace circuit

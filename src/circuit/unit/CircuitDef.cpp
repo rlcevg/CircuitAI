@@ -79,9 +79,10 @@ void CCircuitDef::InitStatic(CCircuitAI* circuit, CMaskHandler* roleMasker)
 	CCircuitDef::roleNames = &roleMasker->GetMasks();
 }
 
-CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts, Resource* res)
+CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts,
+		Resource* resM, Resource* resE)
 		: def(def)
-		, mainRole(ROLE_TYPE(SCOUT))
+		, mainRole(ROLE_TYPE(ASSAULT))
 		, enemyRole(RoleMask::NONE)
 		, respRole(RoleMask::NONE)
 		, role(RoleMask::NONE)
@@ -141,7 +142,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 	speed     = def->GetSpeed();  // elmos per second
 	losRadius = def->GetLosRadius();
-	cost      = def->GetCost(res);
+	costM     = def->GetCost(resM);
+	costE     = def->GetCost(resE);
 	cloakCost = std::max(def->GetCloakCost(), def->GetCloakCostMoving());
 	buildTime = def->GetBuildTime();
 //	altitude  = def->GetWantedHeight();
@@ -169,7 +171,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	it = customParams.find("is_drone");
 	if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 		category |= circuit->GetBadCategory();
-		cost *= 0.1f;  // avoid threat metal
+		costM *= 0.1f;  // avoid threat metal
 	}
 
 //	if (customParams.find("boost_speed_mult") != customParams.end()) {

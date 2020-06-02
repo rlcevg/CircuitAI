@@ -37,6 +37,10 @@ public:
 	}
 
 	float GetWaterDamage() const { return map->GetWaterDamage(); }
+	float GetMinWind() const { return map->GetMinWind(); }
+	float GetMaxWind() const { return map->GetMaxWind(); }
+	float GetCurWind() const { return map->GetCurWind(); }
+	float GetTidalStrength() const { return map->GetTidalStrength(); }
 
 	springai::AIFloat3 GetMousePos() const { return map->GetMousePos(); }
 

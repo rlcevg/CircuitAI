@@ -68,7 +68,7 @@ void IRepairTask::Start(CCircuitUnit* unit)
 			manager->FallbackTask(unit);
 			return;
 		}
-		cost = repTarget->GetCircuitDef()->GetCost();
+		cost = repTarget->GetCircuitDef()->GetCostM();
 		targetId = repTarget->GetId();
 	}
 }
@@ -134,7 +134,7 @@ void IRepairTask::SetTarget(CAllyUnit* unit)
 	if (unit != nullptr) {
 		CCircuitAI* circuit = manager->GetCircuit();
 		target = circuit->GetTeamUnit(unit->GetId());  // can be nullptr, using targetId
-		cost = unit->GetCircuitDef()->GetCost();
+		cost = unit->GetCircuitDef()->GetCostM();
 		position = buildPos = unit->GetPos(circuit->GetLastFrame());
 //		CTerrainManager::CorrectPosition(buildPos);  // position will contain non-corrected value
 		targetId = unit->GetId();
