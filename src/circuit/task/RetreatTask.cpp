@@ -135,7 +135,7 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 //	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit) * 0.125f;
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
 			unit, circuit->GetThreatMap(), frame,
-			startPos, endPos, range/*, minThreat*/);
+			startPos, endPos, range/*, nullptr, minThreat*/);
 	pathQueries[unit] = query;
 	query->HoldTask(this);
 

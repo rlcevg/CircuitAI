@@ -164,10 +164,10 @@ public:
 	// position must be valid
 	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position, const float range = 1.);  // NOTE: returns false if the area was too small to be recorded
 	bool CanBeBuiltAtSafe(CCircuitDef* cdef, const springai::AIFloat3& position, const float range = 1.);
-	bool CanBuildAt(CCircuitUnit* unit, const springai::AIFloat3& destination);
-	bool CanBuildAtSafe(CCircuitUnit* unit, const springai::AIFloat3& destination);
-	bool CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const springai::AIFloat3& destination);
-	bool CanMobileBuildAtSafe(STerrainMapArea* area, CCircuitDef* builderDef, const springai::AIFloat3& destination);
+	bool CanReachAt(CCircuitUnit* unit, const springai::AIFloat3& destination, const float range);
+	bool CanReachAtSafe(CCircuitUnit* unit, const springai::AIFloat3& destination, const float range);
+	bool CanMobileReachAt(STerrainMapArea* area, const springai::AIFloat3& destination, const float range);
+	bool CanMobileReachAtSafe(STerrainMapArea* area, const springai::AIFloat3& destination, const float range);
 
 	float GetPercentLand() const { return areaData->percentLand; }
 	bool IsWaterMap() const { return areaData->percentLand < 40.0; }

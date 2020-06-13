@@ -123,7 +123,7 @@ CEnemyUnit* CEnemyManager::RegisterEnemyUnit(Unit* e)
 
 void CEnemyManager::UpdateEnemyDatas(CQuadField& quadField)
 {
-	static std::vector<CEnemyUnit*> batchUpdate;
+//	static std::vector<CEnemyUnit*> batchUpdate;
 
 	if (enemyIterator >= enemyUpdates.size()) {
 		enemyIterator = 0;
@@ -160,7 +160,8 @@ void CEnemyManager::UpdateEnemyDatas(CQuadField& quadField)
 
 			if (enemy->IsInLOS()) {
 				// NOTE: batch-reading hack
-				batchUpdate.push_back(enemy);
+//				batchUpdate.push_back(enemy);
+				enemy->UpdateInLosData();  // heavy on engine calls
 			}
 		}
 
@@ -168,20 +169,20 @@ void CEnemyManager::UpdateEnemyDatas(CQuadField& quadField)
 		--n;
 	}
 
-	if (!circuit->IsCheating()) {
-		// AI knows what units are in los, hence reduce the amount of useless
-		// engine InLos checks for each single param of the enemy unit
-		circuit->GetCheats()->SetEnabled(true);
-	}
-
-	for (CEnemyUnit* enemy : batchUpdate) {
-		enemy->UpdateInLosData();  // heavy on engine calls
-	}
-	batchUpdate.clear();
-
-	if (!circuit->IsCheating()) {
-		circuit->GetCheats()->SetEnabled(false);
-	}
+//	if (!circuit->IsCheating()) {
+//		// AI knows what units are in los, hence reduce the amount of useless
+//		// engine InLos checks for each single param of the enemy unit
+//		circuit->GetCheats()->SetEnabled(true);
+//	}
+//
+//	for (CEnemyUnit* enemy : batchUpdate) {
+//		enemy->UpdateInLosData();  // heavy on engine calls
+//	}
+//	batchUpdate.clear();
+//
+//	if (!circuit->IsCheating()) {
+//		circuit->GetCheats()->SetEnabled(false);
+//	}
 }
 
 void CEnemyManager::PrepareUpdate()

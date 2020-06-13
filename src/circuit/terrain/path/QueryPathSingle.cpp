@@ -21,11 +21,13 @@ CQueryPathSingle::~CQueryPathSingle()
 }
 
 void CQueryPathSingle::InitQuery(const AIFloat3& startPos, const AIFloat3& endPos,
-		float maxRange, float maxThreat, bool endPosOnly)
+		float maxRange, NSMicroPather::TestFunc&& hitTest,
+		float maxThreat, bool endPosOnly)
 {
 	this->startPos = startPos;
 	this->endPos = endPos;
 	this->maxRange = maxRange;
+	this->hitTest = hitTest;
 	this->maxThreat = maxThreat;
 	this->endPosOnly = endPosOnly;
 }
@@ -33,6 +35,11 @@ void CQueryPathSingle::InitQuery(const AIFloat3& startPos, const AIFloat3& endPo
 void CQueryPathSingle::Prepare()
 {
 	pPath = std::make_shared<PathInfo>(endPosOnly);
+	if (hitTest == nullptr) {
+		hitTest = [](int2 start, int2 end) {
+			return true;
+		};
+	}
 }
 
 } // namespace circuit

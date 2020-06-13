@@ -270,8 +270,7 @@ void CThreatMap::AddEnemyUnit(const SEnemyData& e)
 		AddEnemyAir(e, vsl);
 	}
 	if (cdef->HasAntiLand() || cdef->HasAntiWater()) {
-//		cdef->IsAlwaysHit() ? AddEnemyAmphConst(e, vsl) : AddEnemyAmphGradient(e, vsl);
-		AddEnemyAmphGradient(e, vsl);
+		cdef->IsAlwaysHit() ? AddEnemyAmphConst(e, vsl) : AddEnemyAmphGradient(e, vsl);
 	}
 	AddDecloaker(e);
 
@@ -312,7 +311,7 @@ void CThreatMap::AddEnemyAir(const SEnemyData& e, const int slack)
 			}
 
 			const int index = z * width + x;
-			const float heat = threat * (2.0f - 1.0f * sqrtf(sum) / range);
+			const float heat = threat * (1.0f - 0.5f * sqrtf(sum) / range);
 			// MicroPather cannot deal with negative costs
 			// (which may arise due to floating-point drift)
 			// nor with zero-cost nodes (see MP::SetMapData,
@@ -322,43 +321,43 @@ void CThreatMap::AddEnemyAir(const SEnemyData& e, const int slack)
 	}
 }
 
-//void CThreatMap::AddEnemyAmphConst(const SEnemyData& e, const int slack)
-//{
-//	int posx, posz;
-//	PosToXZ(e.pos, posx, posz);
-//
-//	const float threat = e.threat * 2/* - THREAT_DECAY*/;
-//	const int rangeLand = CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::LAND) + slack;
-//	const int rangeLandSq = SQUARE(rangeLand);
-//	const int rangeWater = CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::WATER) + slack;
-//	const int rangeWaterSq = SQUARE(rangeWater);
-//	const int range = std::max(rangeLand, rangeWater);
-//	const std::vector<STerrainMapSector>& sector = areaData->sector;
-//
-//	const int beginX = std::max(int(posx - range + 1),      0);
-//	const int endX   = std::min(int(posx + range    ),  width);
-//	const int beginZ = std::max(int(posz - range + 1),      0);
-//	const int endZ   = std::min(int(posz + range    ), height);
-//
-//	for (int z = beginZ; z < endZ; ++z) {
-//		const int dzSq = SQUARE(posz - z);
-//		for (int x = beginX; x < endX; ++x) {
-//			const int dxSq = SQUARE(posx - x);
-//
-//			const int sum = dxSq + dzSq;
-//			const int index = z * width + x;
-//			bool isWaterThreat = (sum <= rangeWaterSq) && sector[index].isWater;
-//			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[index].position.y >= -SQUARE_SIZE * 5)))
-//			{
-//				drawAmphThreat[index] += threat;
-//			}
-//			if (isWaterThreat || (sum <= rangeLandSq))
-//			{
-//				drawSurfThreat[index] += threat;
-//			}
-//		}
-//	}
-//}
+void CThreatMap::AddEnemyAmphConst(const SEnemyData& e, const int slack)
+{
+	int posx, posz;
+	PosToXZ(e.pos, posx, posz);
+
+	const float threat = e.threat/* - THREAT_DECAY*/;
+	const int rangeLand = CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::LAND) + slack;
+	const int rangeLandSq = SQUARE(rangeLand);
+	const int rangeWater = CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::WATER) + slack;
+	const int rangeWaterSq = SQUARE(rangeWater);
+	const int range = std::max(rangeLand, rangeWater);
+	const std::vector<STerrainMapSector>& sector = areaData->sector;
+
+	const int beginX = std::max(int(posx - range + 1),      0);
+	const int endX   = std::min(int(posx + range    ),  width);
+	const int beginZ = std::max(int(posz - range + 1),      0);
+	const int endZ   = std::min(int(posz + range    ), height);
+
+	for (int z = beginZ; z < endZ; ++z) {
+		const int dzSq = SQUARE(posz - z);
+		for (int x = beginX; x < endX; ++x) {
+			const int dxSq = SQUARE(posx - x);
+
+			const int sum = dxSq + dzSq;
+			const int index = z * width + x;
+			bool isWaterThreat = (sum <= rangeWaterSq) && sector[index].isWater;
+			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[index].position.y >= -SQUARE_SIZE * 5)))
+			{
+				drawAmphThreat[index] += threat;
+			}
+			if (isWaterThreat || (sum <= rangeLandSq))
+			{
+				drawSurfThreat[index] += threat;
+			}
+		}
+	}
+}
 
 void CThreatMap::AddEnemyAmphGradient(const SEnemyData& e, const int slack)
 {
@@ -389,7 +388,7 @@ void CThreatMap::AddEnemyAmphGradient(const SEnemyData& e, const int slack)
 			// Laser: no gradient
 			const int sum = dxSq + dzSq;
 			const int index = z * width + x;
-			const float heat = threat * (2.0f - 1.0f * sqrtf(sum) / range);
+			const float heat = threat * (1.0f - 0.5f * sqrtf(sum) / range);
 			bool isWaterThreat = (sum <= rangeWaterSq) && sector[index].isWater;
 			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[index].position.y >= -SQUARE_SIZE * 5)))
 			{

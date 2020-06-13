@@ -239,6 +239,7 @@ public:
 	float GetRetreat()   const { return retreat; }
 
 	float GetRadius();
+	float GetHeight();
 	bool IsYTargetable(float elevation, float posY);
 	const springai::AIFloat3& GetMidPosOffset() const { return midPosOffset; }
 

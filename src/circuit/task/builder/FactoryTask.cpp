@@ -82,7 +82,7 @@ void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, fl
 	}
 
 	CTerrainManager::TerrainPredicate predicate = [terrainMgr, builder](const AIFloat3& p) {
-		return terrainMgr->CanBuildAtSafe(builder, p);
+		return terrainMgr->CanReachAtSafe(builder, p, builder->GetCircuitDef()->GetBuildDistance());
 	};
 	CMap* map = circuit->GetMap();
 	auto checkFacing = [this, map, terrainMgr, &predicate, &pos, searchRadius]() {

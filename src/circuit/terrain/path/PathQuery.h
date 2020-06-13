@@ -32,13 +32,13 @@ public:
 	State GetState() const { return state.load(); }
 
 	void Init(const bool* canMoveArray, const float* threatArray,
-			  NSMicroPather::CostFunc moveFun, NSMicroPather::CostFunc threatFun,
+			  NSMicroPather::CostFunc&& moveFun, NSMicroPather::CostFunc&& threatFun,
 			  CCircuitUnit* unit = nullptr);
 
 	const bool* GetCanMoveArray() const { return canMoveArray; }
 	const float* GetThreatArray() const { return threatArray; }
-	NSMicroPather::CostFunc GetMoveFun() const { return moveFun; }
-	NSMicroPather::CostFunc GetThreatFun() const { return threatFun; }
+	const NSMicroPather::CostFunc& GetMoveFun() const { return moveFun; }
+	const NSMicroPather::CostFunc& GetThreatFun() const { return threatFun; }
 	const FloatVec& GetHeightMap() const { return heightMap; }
 
 	CCircuitUnit* GetUnit() const { return unit; }

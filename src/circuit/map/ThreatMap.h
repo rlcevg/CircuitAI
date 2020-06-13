@@ -71,7 +71,7 @@ private:
 	void AddEnemyUnit(const SEnemyData& e);
 	void AddEnemyUnitAll(const SEnemyData& e);
 	void AddEnemyAir(const SEnemyData& e, const int slack = 0);  // Enemy AntiAir
-//	void AddEnemyAmphConst(const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
+	void AddEnemyAmphConst(const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
 	void AddEnemyAmphGradient(const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
 	void AddDecloaker(const SEnemyData& e);
 	void AddShield(const SEnemyData& e);

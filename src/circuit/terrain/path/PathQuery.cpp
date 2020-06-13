@@ -31,7 +31,7 @@ IPathQuery::~IPathQuery()
 }
 
 void IPathQuery::Init(const bool* canMoveArray, const float* threatArray,
-		NSMicroPather::CostFunc moveFun, NSMicroPather::CostFunc threatFun,
+		NSMicroPather::CostFunc&& moveFun, NSMicroPather::CostFunc&& threatFun,
 		CCircuitUnit* unit)
 {
 	this->canMoveArray = canMoveArray;

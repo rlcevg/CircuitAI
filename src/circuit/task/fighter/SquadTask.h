@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_TASK_FIGHTER_SQUADTASK_H_
 
 #include "task/fighter/FighterTask.h"
+#include "terrain/path/MicroPather.h"
 
 #include <memory>
 
@@ -42,6 +43,7 @@ protected:
 	ISquadTask* GetMergeTask();
 	bool IsMustRegroup();
 	void ActivePath(float speed = NO_SPEED_LIMIT);
+	NSMicroPather::TestFunc GetHitTest() const;
 
 	float lowestRange;
 	float highestRange;

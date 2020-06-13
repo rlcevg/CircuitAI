@@ -532,11 +532,17 @@ float CCircuitDef::GetRadius()
 	return radius;
 }
 
-bool CCircuitDef::IsYTargetable(float elevation, float posY) {
+float CCircuitDef::GetHeight()
+{
 	if (height < 0.f) {
 		height    = def->GetHeight();  // Forces loading of the unit model
 		topOffset = height / 2 - def->GetWaterline();
 	}
+	return height;
+}
+
+bool CCircuitDef::IsYTargetable(float elevation, float posY) {
+	GetHeight();
 	return (elevation > -height || posY > -topOffset);
 }
 

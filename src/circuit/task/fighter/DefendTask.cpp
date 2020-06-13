@@ -153,8 +153,8 @@ void CDefendTask::Update()
 	const AIFloat3& startPos = leader->GetPos(frame);
 	state = State::ROAM;
 	if ((target != nullptr) || isTargetsFound) {
-		const float sqRange = SQUARE(highestRange + 300.f);  // FIXME: 300.f ~ count slack
-		if (position.SqDistance2D(startPos) < sqRange) {
+		// FIXME: 300.f ~ slack. Defenders must not jiggle near base
+		if (position.SqDistance2D(startPos) < SQUARE(highestRange + 300.f)) {
 			state = State::ENGAGE;
 			Attack(frame);
 			return;

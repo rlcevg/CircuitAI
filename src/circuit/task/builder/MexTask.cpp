@@ -115,10 +115,10 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	CCircuitDef* mexDef = buildDef;
 	circuit->GetThreatMap()->SetThreatType(unit);
 	CMetalData::PointPredicate predicate = [&spots, economyMgr, map, mexDef, terrainMgr, unit](const int index) {
-		return (economyMgr->IsAllyOpenSpot(index) &&
-				terrainMgr->CanBeBuiltAtSafe(mexDef, spots[index].position) &&  // hostile environment
-				terrainMgr->CanBuildAtSafe(unit, spots[index].position) &&
-				map->IsPossibleToBuildAt(mexDef->GetDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
+		return (economyMgr->IsAllyOpenSpot(index)
+				&& terrainMgr->CanBeBuiltAtSafe(mexDef, spots[index].position)  // hostile environment
+				&& terrainMgr->CanReachAtSafe(unit, spots[index].position, unit->GetCircuitDef()->GetBuildDistance())
+				&& map->IsPossibleToBuildAt(mexDef->GetDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 	};
 	int index = metalMgr->FindNearestSpot(position, predicate);
 

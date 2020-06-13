@@ -258,26 +258,28 @@ AIFloat3 CPathFinder::PathIndex2Pos(int index) const
  */
 std::shared_ptr<IPathQuery> CPathFinder::CreatePathSingleQuery(
 		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
-		const AIFloat3& startPos, const AIFloat3& endPos, float maxRange, float maxThreat, bool endPosOnly)
+		const AIFloat3& startPos, const AIFloat3& endPos, float maxRange,
+		NSMicroPather::TestFunc&& hitTest, float maxThreat, bool endPosOnly)
 {
 	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathSingle>(*this, MakeQueryId());
 	CQueryPathSingle* query = static_cast<CQueryPathSingle*>(pQuery.get());
 
 	FillMapData(query, unit, threatMap, frame);
-	query->InitQuery(startPos, endPos, maxRange, maxThreat, endPosOnly);
+	query->InitQuery(startPos, endPos, maxRange, std::move(hitTest), maxThreat, endPosOnly);
 
 	return pQuery;
 }
 
 std::shared_ptr<IPathQuery> CPathFinder::CreatePathMultiQuery(
 		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
-		const AIFloat3& startPos, float maxRange, const F3Vec& possibleTargets, float maxThreat, bool endPosOnly)
+		const AIFloat3& startPos, float maxRange, const F3Vec& possibleTargets,
+		NSMicroPather::TestFunc&& hitTest, float maxThreat, bool endPosOnly)
 {
 	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathMulti>(*this, MakeQueryId());
 	CQueryPathMulti* query = static_cast<CQueryPathMulti*>(pQuery.get());
 
 	FillMapData(query, unit, threatMap, frame);
-	query->InitQuery(startPos, maxRange, possibleTargets, maxThreat, endPosOnly);
+	query->InitQuery(startPos, maxRange, possibleTargets, std::move(hitTest), maxThreat, endPosOnly);
 
 	return pQuery;
 }
@@ -337,7 +339,7 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
 		threatArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
 		moveFun = [&sectors, maxSlope](int index) {
-			return (sectors[index].isWater ? 4.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
+			return (sectors[index].isWater ? 2.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
 		};
 		threatFun = [threatArray](int index) {
 			return 2.f * threatArray[index];
@@ -365,14 +367,14 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 			float elevLen = std::max(areaData->maxElevation - areaData->minElevation, 1e-3f);
 			moveFun = [&sectors, minElev, elevLen](int index) {
 				return 2.f * (1.f - (sectors[index].maxElevation - minElev) / elevLen) +
-						(sectors[index].isWater ? 4.f : 0.f);
+						(sectors[index].isWater ? 2.f : 0.f);
 			};
 			threatFun = [threatArray](int index) {
 				return 2.f * threatArray[index];
 			};
 		} else {
 			moveFun = [&sectors, maxSlope](int index) {
-				return (sectors[index].isWater ? 4.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
+				return (sectors[index].isWater ? 2.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
 			};
 			threatFun = [threatArray](int index) {
 				return 2.f * threatArray[index];
@@ -381,14 +383,14 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 	} else {
 		threatArray = threatMap->GetSurfThreatArray();
 		moveFun = [&sectors, maxSlope](int index) {
-			return (sectors[index].isWater ? 0.f : (2.f * sectors[index].maxSlope / maxSlope));
+			return sectors[index].isWater ? 0.f : (2.f * sectors[index].maxSlope / maxSlope);
 		};
 		threatFun = [threatArray](int index) {
 			return 2.f * threatArray[index];
 		};
 	}
 
-	query->Init(moveArray, threatArray, moveFun, threatFun, unit);
+	query->Init(moveArray, threatArray, std::move(moveFun), std::move(threatFun), unit);
 }
 
 void CPathFinder::RunPathSingle(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
@@ -450,13 +452,14 @@ void CPathFinder::MakePath(IPathQuery* query, NSMicroPather::CMicroPather* micro
 
 	const bool* canMoveArray = q->GetCanMoveArray();
 	const float* threatArray = q->GetThreatArray();
-	NSMicroPather::CostFunc moveFun = q->GetMoveFun();
-	NSMicroPather::CostFunc threatFun = q->GetThreatFun();
+	const NSMicroPather::CostFunc& moveFun = q->GetMoveFun();
+	const NSMicroPather::CostFunc& threatFun = q->GetThreatFun();
 	const FloatVec& heightMap = q->GetHeightMap();
 
 	AIFloat3& startPos = q->GetStartPosRef();
 	AIFloat3& endPos = q->GetEndPosRef();
 	const int radius = q->GetMaxRange() / squareSize;
+	const NSMicroPather::TestFunc& hitTest = q->GetHitTest();
 	const float maxThreat = q->GetMaxThreat();
 
 	PathInfo& iPath = q->GetPathInfoRef();
@@ -469,7 +472,7 @@ void CPathFinder::MakePath(IPathQuery* query, NSMicroPather::CMicroPather* micro
 
 	micropather->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
 	if (micropather->FindBestPathToPointOnRadius(Pos2MoveNode(startPos), Pos2MoveNode(endPos),
-			radius, maxThreat, &iPath.path, &pathCost) == CMicroPather::SOLVED)
+			radius, maxThreat, hitTest, &iPath.path, &pathCost) == CMicroPather::SOLVED)
 	{
 		micropather->FillPathInfo(iPath);
 	}
@@ -482,13 +485,14 @@ void CPathFinder::FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* m
 
 	const bool* canMoveArray = q->GetCanMoveArray();
 	const float* threatArray = q->GetThreatArray();
-	NSMicroPather::CostFunc moveFun = q->GetMoveFun();
-	NSMicroPather::CostFunc threatFun = q->GetThreatFun();
+	const NSMicroPather::CostFunc& moveFun = q->GetMoveFun();
+	const NSMicroPather::CostFunc& threatFun = q->GetThreatFun();
 	const FloatVec& heightMap = q->GetHeightMap();
 
 	AIFloat3& startPos = q->GetStartPosRef();
 	F3Vec& possibleTargets = q->GetTargetsRef();
 	const float maxRange = q->GetMaxRange();
+	const NSMicroPather::TestFunc& hitTest = q->GetHitTest();
 	const float maxThreat = q->GetMaxThreat();
 
 	PathInfo& iPath = q->GetPathInfoRef();
@@ -584,10 +588,10 @@ void CPathFinder::FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* m
 		CTerrainData::CorrectPosition(f);
 		void* node = Pos2MoveNode(f);
 		NSMicroPather::PathNode* pn = micropather->GetNode(node);
-		if (pn->isTarget) {
+		if (pn->isEndNode) {
 			continue;
 		}
-		pn->isTarget = 1;
+		pn->isEndNode = 1;  // target node, avoid duplicates
 		nodeTargets.push_back(node);
 
 		int x, y;
@@ -597,13 +601,16 @@ void CPathFinder::FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* m
 			const int sx = x + offsets[j].first;
 			const int sy = y + offsets[j].second;
 
-			if (sx >= 0 && sx < moveMapXSize && sy >= 0 && sy < moveMapYSize) {
+			if (sx >= 0 && sx < moveMapXSize && sy >= 0 && sy < moveMapYSize
+				&& hitTest(int2(sx - 1, sy - 1), int2(x - 1, y - 1)))  // path-map, not move-map
+			{
 				endNodes.push_back(MoveXY2MoveNode(sx, sy));
 			}
 		}
+		endNodes.push_back(MoveXY2MoveNode(x, y));  // in case hitTest rejected nodes on radius
 	}
 	for (void* node : nodeTargets) {
-		micropather->GetNode(node)->isTarget = 0;
+		micropather->GetNode(node)->isEndNode = 0;
 	}
 
 	CTerrainData::CorrectPosition(startPos);
@@ -660,15 +667,15 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateDbgPathQuery(CThreatMap* threatMa
 
 	const float* threatArray = costArray[dbgType];
 	const std::vector<STerrainMapSector>& sectors = areaData->sector;
-	const CostFunc moveFun = [&sectors, maxSlope](int index) {
+	CostFunc moveFun = [&sectors, maxSlope](int index) {
 		return sectors[index].maxSlope / maxSlope;
 	};
-	const CostFunc threatFun = [threatArray](int index) {
+	CostFunc threatFun = [threatArray](int index) {
 		return threatArray[index];
 	};
 
-	query->Init(moveArray, threatArray, moveFun, threatFun);
-	query->InitQuery(dbgPos, endPos, maxRange, maxThreat, false);
+	query->Init(moveArray, threatArray, std::move(moveFun), std::move(threatFun));
+	query->InitQuery(dbgPos, endPos, maxRange, nullptr, maxThreat, false);
 
 	return pQuery;
 }

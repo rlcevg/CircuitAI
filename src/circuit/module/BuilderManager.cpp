@@ -799,7 +799,7 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 	for (auto& kv : buildAreas) {
 		for (auto& kvw : kv.second) {
 			if ((kvw.second > 0) && kvw.first->CanBuild(buildDef) &&
-				terrainMgr->CanMobileBuildAt(kv.first, kvw.first, position))
+				terrainMgr->CanMobileReachAt(kv.first, position, kvw.first->GetBuildDistance()))
 			{
 				return true;
 			}
@@ -935,14 +935,14 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, const CQueryCost
 
 			if (candidate->GetPriority() == IBuilderTask::Priority::NOW) {
 				// Disregard safety
-				if (!terrainMgr->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
+				if (!terrainMgr->CanReachAt(unit, buildPos, cdef->GetBuildDistance())) {  // ensure that path always exists
 					continue;
 				}
 
 			} else {
 
 				if ((basePos.SqDistance2D(buildPos) > sqMaxBaseRange)
-					|| !terrainMgr->CanBuildAtSafe(unit, buildPos)  // ensure that path always exists
+					|| !terrainMgr->CanReachAtSafe(unit, buildPos, cdef->GetBuildDistance())  // ensure that path always exists
 					|| (inflMap->GetInfluenceAt(buildPos) < -INFL_EPS))  // safety check
 				{
 					continue;
@@ -1043,7 +1043,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 
 			if (candidate->GetPriority() == IBuilderTask::Priority::NOW) {
 				// Disregard safety
-				if (!terrainMgr->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
+				if (!terrainMgr->CanReachAt(unit, buildPos, cdef->GetBuildDistance())) {  // ensure that path always exists
 					continue;
 				}
 
@@ -1051,7 +1051,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 
 				CCircuitDef* buildDef = candidate->GetBuildDef();
 				const float buildThreat = (buildDef != nullptr) ? buildDef->GetPower() : 0.f;
-				if (!terrainMgr->CanBuildAt(unit, buildPos)  // ensure that path always exists
+				if (!terrainMgr->CanReachAt(unit, buildPos, cdef->GetBuildDistance())  // ensure that path always exists
 					|| (((buildThreat < THREAT_MIN) && (threatMap->GetThreatAt(buildPos) > maxThreat))
 						&& (inflMap->GetInfluenceAt(buildPos) < -INFL_EPS)))  // safety check
 				{

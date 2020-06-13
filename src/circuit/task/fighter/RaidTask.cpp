@@ -203,7 +203,7 @@ void CRaidTask::Update()
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
 			leader, threatMap, frame,
-			startPos, pathRange, !urgentPositions.empty() ? urgentPositions : enemyPositions, attackPower);
+			startPos, pathRange, !urgentPositions.empty() ? urgentPositions : enemyPositions, GetHitTest(), attackPower);
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
@@ -280,7 +280,7 @@ bool CRaidTask::FindTarget()
 		const AIFloat3& ePos = enemy->GetPos();
 		const bool isEnemyUrgent = isDefender && (inflMap->GetAllyDefendInflAt(ePos) > INFL_EPS);
 		if ((!isEnemyUrgent && !urgentPositions.empty())
-			|| !terrainMgr->CanMoveToPos(area, ePos))
+			|| !terrainMgr->CanMobileReachAt(area, ePos, highestRange))
 		{
 			continue;
 		}

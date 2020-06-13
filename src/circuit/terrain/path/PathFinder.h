@@ -60,10 +60,10 @@ public:
 
 	std::shared_ptr<IPathQuery> CreatePathSingleQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos, const springai::AIFloat3& endPos, float maxRange,
-			float maxThreat = std::numeric_limits<float>::max(), bool endPosOnly = false);
+			NSMicroPather::TestFunc&& hitTest = nullptr, float maxThreat = std::numeric_limits<float>::max(), bool endPosOnly = false);
 	std::shared_ptr<IPathQuery> CreatePathMultiQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos, float maxRange, const F3Vec& possibleTargets,
-			float maxThreat = std::numeric_limits<float>::max(), bool endPosOnly = false);
+			NSMicroPather::TestFunc&& hitTest = nullptr, float maxThreat = std::numeric_limits<float>::max(), bool endPosOnly = false);
 	std::shared_ptr<IPathQuery> CreateCostMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos);
 
@@ -81,11 +81,11 @@ public:
 			&& (0 <= y) && (y <= pathMapYSize - 1);
 	}
 
+private:
 	SMoveData* GetNextMoveData() {
 		return (pMoveData.load() == &moveData0) ? &moveData1 : &moveData0;
 	}
 
-private:
 	int MakeQueryId() { return queryId++; }
 	void FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, int frame);
 

@@ -338,6 +338,39 @@ void ISquadTask::ActivePath(float speed)
 	}
 }
 
+NSMicroPather::TestFunc ISquadTask::GetHitTest() const
+{
+	CTerrainManager* terrainMgr = manager->GetCircuit()->GetTerrainManager();
+	const std::vector<STerrainMapSector>& sectors = terrainMgr->GetAreaData()->sector;
+	const int sectorXSize = terrainMgr->GetSectorXSize();
+	const float aimLift = leader->GetCircuitDef()->GetHeight() / 2;  // TODO: Use aim-pos of attacker and enemy
+	return [&sectors, sectorXSize, aimLift](int2 start, int2 end) {  // losTest
+		float startHeight = sectors[start.y * sectorXSize + start.x].maxElevation + aimLift;
+		float diffHeight = sectors[end.y * sectorXSize + end.x].maxElevation + SQUARE_SIZE - startHeight;
+		// All octant line draw
+		const int dx =  abs(end.x - start.x), sx = start.x < end.x ? 1 : -1;
+		const int dy = -abs(end.y - start.y), sy = start.y < end.y ? 1 : -1;
+		int err = dx + dy;  // error value e_xy
+		for (int x = start.x, y = start.y;;) {
+			const int e2 = 2 * err;
+			if (e2 >= dy) {  // e_xy + e_x > 0
+				if (x == end.x) break;
+				err += dy; x += sx;
+			}
+			if (e2 <= dx) {  // e_xy + e_y < 0
+				if (y == end.y) break;
+				err += dx; y += sy;
+			}
+
+			const float t = fabs((dx > -dy) ? float(x - start.x) / dx : float(y - start.y) / dy);
+			if (sectors[y * sectorXSize + x].maxElevation > diffHeight * t + startHeight) {
+				return false;
+			}
+		}
+		return true;
+	};
+}
+
 #ifdef DEBUG_VIS
 void ISquadTask::Log()
 {

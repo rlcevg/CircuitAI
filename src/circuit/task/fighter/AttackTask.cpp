@@ -170,8 +170,7 @@ void CAttackTask::Update()
 
 	state = State::ROAM;
 	if (target != nullptr) {
-		const float sqRange = SQUARE(highestRange + 300.f);  // FIXME: 300.f ~ count slack
-		if (position.SqDistance2D(startPos) < sqRange) {
+		if (position.SqDistance2D(startPos) < SQUARE(highestRange)) {
 			state = State::ENGAGE;
 			Attack(frame);
 			return;
@@ -188,14 +187,13 @@ void CAttackTask::Update()
 	}
 
 	const AIFloat3& endPos = position;
-	CThreatMap* threatMap = circuit->GetThreatMap();
-	const float eps = threatMap->GetSquareSize() * 2.f;
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	const float eps = pathfinder->GetSquareSize();
 	const float pathRange = std::max(highestRange - eps, eps);
 
-	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
-			leader, threatMap, frame,
-			startPos, endPos, pathRange, attackPower);
+			leader, circuit->GetThreatMap(), frame,
+			startPos, endPos, pathRange, GetHitTest(), attackPower);
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
@@ -262,7 +260,7 @@ void CAttackTask::FindTarget()
 		const float sqBEDist = ePos.SqDistance2D(basePos);  // Base to Enemy distance
 		const float scale = std::min(sqBEDist / sqOBDist, 1.f);
 		if ((maxPower <= threatMap->GetThreatAt(ePos) * scale)
-			|| !terrainMgr->CanMoveToPos(area, ePos))
+			|| !terrainMgr->CanMobileReachAt(area, ePos, highestRange))
 		{
 			continue;
 		}

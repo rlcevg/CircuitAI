@@ -60,6 +60,8 @@
 
 #include "util/Defines.h"
 
+#include "System/type2.h"
+
 #include <vector>
 #include <cfloat>
 #include <functional>
@@ -89,6 +91,7 @@ namespace circuit {
 
 namespace NSMicroPather {
 	using CostFunc = std::function<float (int index)>;  // without +2 edges
+	using TestFunc = std::function<bool (int2 start, int2 end)>;  // without +2 edges
 
 	class PathNode {
 		// trashy trick to get rid of compiler warning because this class has a private constructor and destructor
@@ -114,7 +117,6 @@ namespace NSMicroPather {
 				#endif
 				inOpen = 0;
 				inClosed = 0;
-				isTarget = 0;
 				isEndNode = 0;
 			}
 
@@ -145,7 +147,6 @@ namespace NSMicroPather {
 
 			unsigned inOpen:1;
 			unsigned inClosed:1;
-			unsigned isTarget:1;
 			unsigned isEndNode:1;	// this must be cleared by the call that sets it
 			unsigned frame:16;		// this might be set to more that 16
 
@@ -237,13 +238,11 @@ namespace NSMicroPather {
 			std::vector<void*> nodeTargets;  // helper vector
 
 			void SetMapData(const bool* canMoveArray, const float* threatArray,
-					CostFunc moveFun, CostFunc threatFun, const FloatVec& heightMap);
+					const CostFunc& moveFun, const CostFunc& threatFun, const FloatVec& heightMap);
 			int FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes, VoidVec& targets, float maxThreat,
 					IndexVec* path, float* cost);
-			int FindBestPathToPointOnRadius(void* startNode, void* endNode, int radius, float maxThreat,
+			int FindBestPathToPointOnRadius(void* startNode, void* endNode, int radius, float maxThreat, TestFunc hitTest,
 					IndexVec* path, float* cost);
-			int FindBestCostToPointOnRadius(void* startNode, void* endNode, int radius, float maxThreat,
-					float* cost);
 			void MakeCostMap(void* startNode, std::vector<float>& costMap);
 
 			size_t RefinePath(IndexVec& path);

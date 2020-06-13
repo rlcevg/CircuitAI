@@ -2,7 +2,7 @@
 {
 "quota": {
 	"scout": 1,  // max scout units out of raiders
-	"raid": [7.0, 16.0],  // [<min>, <avg>] power of raider squad
+	"raid": [7.0, 42.0],  // [<min>, <avg>] power of raider squad
 	"attack": 20.0,  // min power of attack group
 	"thr_mod": {
 		"attack": [0.45, 0.45],  // [<min>, <max>] enemy threat modifier for target selection of attack task

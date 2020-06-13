@@ -241,7 +241,7 @@ CMicroPather::~CMicroPather()
  * New: make sure that moveThreatFun doesn't return values below 0.0
  */
 void CMicroPather::SetMapData(const bool* canMoveArray, const float* threatArray,
-		CostFunc moveFun, CostFunc threatFun, const FloatVec& heightMap)
+		const CostFunc& moveFun, const CostFunc& threatFun, const FloatVec& heightMap)
 {
 	this->canMoveArray = canMoveArray;
 	this->threatArray  = threatArray;
@@ -746,7 +746,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 }
 
 int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
-		int radius, float maxThreat, IndexVec* path, float* cost)
+		int radius, float maxThreat, TestFunc hitTest, IndexVec* path, float* cost)
 {
 	assert(!isRunning);
 	isRunning = true;
@@ -816,169 +816,12 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 			const int relativeX = abs(xstart - xEndNode);
 			// L("relativeY: " << relativeY << ", relativeX: " << relativeX);
 
-			if (relativeX <= xend[relativeY]) {
+			if (relativeX <= xend[relativeY]
+				&& hitTest(int2(xstart - 1, ystart - 1), int2(x - 1, y - 1)))  // index2
+			{
 				// L("Its a hit: " << counter);
 
 				GoalReached(node, startNode, (void*) static_cast<intptr_t>(indexStart), path);
-
-				*cost = node->costFromStart;
-				isRunning = false;
-				return SOLVED;
-			}
-		}
-
-		{
-			// we have not reached the goal, add the neighbors.
-			#ifdef USE_ASSERTIONS
-			// no node can be at the edge!
-			assert(xstart > 0 && (xstart != mapSizeX - 1));
-			assert(ystart > 0 && (ystart != mapSizeY - 1));
-			#endif
-
-			const float nodeCostFromStart = node->costFromStart;
-
-			for (int i = 0; i < 8; ++i) {
-				const int indexEnd = offsets[i] + indexStart;
-
-				if (!canMoveArray[indexEnd]) {
-					continue;
-				}
-
-				PathNode* directNode = &pathNodeMem[indexEnd];
-
-				const int index2 = directNode->index2;
-				if (threatArray[index2] > maxThreat) {
-					continue;
-				}
-
-				if (directNode->frame != frame) {
-					directNode->Reuse(frame);
-				}
-
-				#ifdef USE_ASSERTIONS
-				const int yend = indexEnd / mapSizeX;
-				const int xend = indexEnd - yend * mapSizeX;
-
-				// we can move to that spot
-				assert(canMoveArray[yend * mapSizeX + xend]);
-
-				// no node can be at the edge!
-				assert((xend != 0) && (xend != mapSizeX - 1));
-				assert((yend != 0) && (yend != mapSizeY - 1));
-				#endif
-
-				float newCost = nodeCostFromStart;
-				const float nodeCost = COST_BASE + moveFun(index2) + threatFun(index2);
-
-				#ifdef USE_ASSERTIONS
-				assert(nodeCost > 0.f);  // > 1.f for speed
-				#endif
-
-				newCost += (i > 3) ? nodeCost * SQRT_2 : nodeCost;
-
-				if (directNode->costFromStart <= newCost) {
-					// do nothing, this path is not better than existing one
-					continue;
-				}
-
-				// it's better, update its data
-				directNode->parent = node;
-				directNode->costFromStart = newCost;
-				directNode->totalCost = newCost + LeastCostEstimateLocal(directNode->x2, directNode->y2);
-
-				#ifdef USE_ASSERTIONS
-				assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
-				#endif
-
-				if (directNode->inOpen) {
-					open.Update(directNode);
-				} else {
-					directNode->inClosed = 0;
-					open.Push(directNode);
-				}
-			}
-		}
-
-		node->inClosed = 1;
-	}
-
-	isRunning = false;
-	return NO_SOLUTION;
-}
-
-int CMicroPather::FindBestCostToPointOnRadius(void* startNode, void* endNode,
-		int radius, float maxThreat, float* cost)
-{
-	assert(!isRunning);
-	isRunning = true;
-	*cost = 0.0f;
-
-	if (radius <= 0) {
-		// just fail fast
-		isRunning = false;
-		return NO_SOLUTION;
-	}
-
-	{
-		FixStartEndNode(&startNode, &endNode);
-
-		if (!canMoveArray[(size_t)startNode]) {
-			// L("Pather: trying to move from a blocked start pos");
-		}
-	}
-
-	++frame;
-	if (frame > 65534) {
-		// L("frame > 65534, pather reset needed");
-		Reset();
-	}
-
-	// make the priority queue
-	OpenQueueBH open(heapArrayMem);
-
-	{
-		PathNode* tempStartNode = &pathNodeMem[(size_t) startNode];
-		float estToGoal = LeastCostEstimateLocal( (size_t) startNode);
-		tempStartNode->Reuse(frame);
-		tempStartNode->costFromStart = 0;
-		tempStartNode->totalCost = estToGoal;
-		open.Push(tempStartNode);
-	}
-
-	// make the radius
-	size_t indexEnd = (size_t) endNode;
-	int y = indexEnd / mapSizeX;
-	int x = indexEnd - y * mapSizeX;
-	int xend[2 * radius + 1];
-
-	for (int a = 0; a < (2 * radius + 1); a++) {
-		float z = a - radius;
-		float floatsqrradius = radius * radius;
-		xend[a] = int(sqrtf(floatsqrradius - z * z));
-
-		// L("xend[a]: " << xend[a]);
-		// L("xStart: " << xStart << ", xEnd: " << xEnd);
-	}
-
-	// L("yEndNode: " << yEndNode << ", xEndNode: " << xEndNode);
-
-	while (!open.Empty()) {
-		PathNode* node = open.Pop();
-
-		const int indexStart = (((size_t) node) - ((size_t) pathNodeMem)) / sizeof(PathNode);
-		const int ystart = indexStart / mapSizeX;
-		const int xstart = indexStart - ystart * mapSizeX;
-		// L("counter: " << counter << ", ystart: " << ystart << ", xstart: " << xstart);
-
-		// do a box test (slow/test, note that a <= x <= b is the same as x - a <= b - a)
-		if ((y - radius <= ystart && ystart <= y + radius) && (x - radius <= xstart && xstart <= x + radius)) {
-			// we are in range (x and y direction), find the relative pos from endNode
-			const int relativeY = ystart - (yEndNode - radius);
-			const int relativeX = abs(xstart - xEndNode);
-			// L("relativeY: " << relativeY << ", relativeX: " << relativeX);
-
-			if (relativeX <= xend[relativeY]) {
-				// L("Its a hit: " << counter);
 
 				*cost = node->costFromStart;
 				isRunning = false;
@@ -1194,11 +1037,11 @@ size_t CMicroPather::RefinePath(IndexVec& path)
 		int x1, y1;
 		graph.PathIndex2MoveXY(index, &x1, &y1);
 
-		int dx =  abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
-		int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+		const int dx =  abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+		const int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
 		int err = dx + dy;  // error value e_xy
 		for (int x = x0, y = y0;;) {
-			int e2 = 2 * err;
+			const int e2 = 2 * err;
 			if (e2 >= dy) {  // e_xy + e_x > 0
 				if (x == x1) break;
 				err += dy; x += sx;

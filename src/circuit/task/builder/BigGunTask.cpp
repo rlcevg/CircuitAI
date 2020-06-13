@@ -8,7 +8,7 @@
 #include "task/builder/BigGunTask.h"
 #include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
-#include "unit/ally/AllyUnit.h"
+#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
@@ -46,7 +46,7 @@ CAllyUnit* CBBigGunTask::FindSameAlly(CCircuitUnit* builder, const std::vector<U
 		}
 		if (alu->GetCircuitDef()->IsRoleSuper() && au->IsBeingBuilt()) {
 			const AIFloat3& pos = alu->GetPos(frame);
-			if (terrainMgr->CanBuildAtSafe(builder, pos)) {
+			if (terrainMgr->CanReachAtSafe(builder, pos, builder->GetCircuitDef()->GetBuildDistance())) {
 				return alu;
 			}
 		}

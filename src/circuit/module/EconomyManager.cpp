@@ -140,7 +140,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 					buildPos = terrainMgr->GetBuildPosition(facDef, pos);
 					CBuilderManager* builderMgr = this->circuit->GetBuilderManager();
 					IBuilderTask* task = builderMgr->EnqueueFactory(IBuilderTask::Priority::NOW, facDef, buildPos,
-																		SQUARE_SIZE, true, true, 0);
+																	SQUARE_SIZE, true, true, 0);
 					static_cast<ITaskManager*>(builderMgr)->AssignTask(unit, task);
 				}
 			}
@@ -501,9 +501,9 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 	std::sort(energyInfos.begin(), energyInfos.end(), compare);
 
 	// FIXME: DEBUG
-	for (const SEnergyInfo& ei : energyInfos) {
-		circuit->LOG("%s | costM=%f | costE=%f | make=%f | efficiency=%f | limit=%i", ei.cdef->GetDef()->GetName(), ei.costM, ei.costE, ei.make, ei.costDivMake, ei.limit);
-	}
+//	for (const SEnergyInfo& ei : energyInfos) {
+//		circuit->LOG("%s | costM=%f | costE=%f | make=%f | efficiency=%f | limit=%i", ei.cdef->GetDef()->GetName(), ei.costM, ei.costE, ei.make, ei.costDivMake, ei.limit);
+//	}
 	// FIXME: DEBUG
 }
 
@@ -708,18 +708,18 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			if (unit != nullptr) {
 				CCircuitDef* mexDef = this->mexDef;
 				predicate = [this, &spots, map, mexDef, terrainMgr, unit](int index) {
-					return (IsAllyOpenSpot(index) &&
-							terrainMgr->CanBeBuiltAtSafe(mexDef, spots[index].position) &&  // hostile environment
-							terrainMgr->CanBuildAtSafe(unit, spots[index].position) &&
-							map->IsPossibleToBuildAt(mexDef->GetDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
+					return (IsAllyOpenSpot(index)
+							&& terrainMgr->CanBeBuiltAtSafe(mexDef, spots[index].position)  // hostile environment
+							&& terrainMgr->CanReachAtSafe(unit, spots[index].position, unit->GetCircuitDef()->GetBuildDistance())
+							&& map->IsPossibleToBuildAt(mexDef->GetDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};
 			} else {
 				CCircuitDef* mexDef = this->mexDef;
 				predicate = [this, &spots, map, mexDef, terrainMgr, builderMgr](int index) {
-					return (IsAllyOpenSpot(index) &&
-							terrainMgr->CanBeBuiltAtSafe(mexDef, spots[index].position) &&  // hostile environment
-							builderMgr->IsBuilderInArea(mexDef, spots[index].position) &&
-							map->IsPossibleToBuildAt(mexDef->GetDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
+					return (IsAllyOpenSpot(index)
+							&& terrainMgr->CanBeBuiltAtSafe(mexDef, spots[index].position)  // hostile environment
+							&& builderMgr->IsBuilderInArea(mexDef, spots[index].position)
+							&& map->IsPossibleToBuildAt(mexDef->GetDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};
 			}
 			int index = metalMgr->GetMexToBuild(position, predicate);
@@ -772,7 +772,7 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 	for (Feature* feature : features) {
 		AIFloat3 featPos = feature->GetPosition();
 		CTerrainManager::CorrectPosition(featPos);  // Impulsed flying feature
-		if (!terrainMgr->CanBuildAtSafe(unit, featPos)) {
+		if (!terrainMgr->CanReachAtSafe(unit, featPos, unit->GetCircuitDef()->GetBuildDistance())) {
 			continue;
 		}
 		FeatureDef* featDef = feature->GetDef();
@@ -802,7 +802,7 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 		}
 		if (task == nullptr) {
 			task = builderMgr->EnqueueReclaim(IBuilderTask::Priority::HIGH, pos, cost, FRAMES_PER_SEC * 300,
-												  8.0f/*unit->GetCircuitDef()->GetBuildDistance()*/);
+											  8.0f/*unit->GetCircuitDef()->GetBuildDistance()*/);
 		}
 	}
 	utils::free_clear(features);
@@ -900,7 +900,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	}
 
 	if (utils::is_valid(buildPos) && terrainMgr->CanBeBuiltAtSafe(bestDef, buildPos) &&
-		((unit == nullptr) || terrainMgr->CanBuildAtSafe(unit, buildPos)))
+		((unit == nullptr) || terrainMgr->CanReachAtSafe(unit, buildPos, unit->GetCircuitDef()->GetBuildDistance())))
 	{
 		IBuilderTask::Priority priority = isEnergyStalling ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
 		return builderMgr->EnqueueTask(priority, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, SQUARE_SIZE * 16.0f, true);
@@ -944,7 +944,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		buildPos = terrainMgr->GetBuildPosition(bdef, buildPos);
 
 		if (terrainMgr->CanBeBuiltAtSafe(airpadDef, buildPos) &&
-			((unit == nullptr) || terrainMgr->CanBuildAtSafe(unit, buildPos)))
+			((unit == nullptr) || terrainMgr->CanReachAtSafe(unit, buildPos, unit->GetCircuitDef()->GetBuildDistance())))
 		{
 			return builderMgr->EnqueueFactory(IBuilderTask::Priority::NORMAL, airpadDef, buildPos);
 		}
@@ -992,10 +992,10 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			buildPos = terrainMgr->GetBuildPosition(bdef, buildPos);
 
 			if (terrainMgr->CanBeBuiltAtSafe(assistDef, buildPos) &&
-				((unit == nullptr) || terrainMgr->CanBuildAtSafe(unit, buildPos)))
+				((unit == nullptr) || terrainMgr->CanReachAtSafe(unit, buildPos, unit->GetCircuitDef()->GetBuildDistance())))
 			{
 				return builderMgr->EnqueueTask(IBuilderTask::Priority::HIGH, assistDef, buildPos,
-												   IBuilderTask::BuildType::NANO, SQUARE_SIZE * 8, true);
+											   IBuilderTask::BuildType::NANO, SQUARE_SIZE * 8, true);
 			}
 		}
 	}
@@ -1076,7 +1076,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	buildPos = terrainMgr->GetBuildPosition(bdef, buildPos);
 
 	if (terrainMgr->CanBeBuiltAtSafe(facDef, buildPos) &&
-		((unit == nullptr) || terrainMgr->CanBuildAtSafe(unit, buildPos)))
+		((unit == nullptr) || terrainMgr->CanReachAtSafe(unit, buildPos, unit->GetCircuitDef()->GetBuildDistance())))
 	{
 		lastFacFrame = frame;
 		IBuilderTask::Priority priority = (builderMgr->GetWorkerCount() <= 2) ?

@@ -443,7 +443,7 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 	// TODO: Check IsForceUpdate, shield charge and retreat
 
 	const AIFloat3& endPos = GetPosition();
-	if (!circuit->GetTerrainManager()->CanBuildAtSafe(unit, endPos)) {
+	if (!circuit->GetTerrainManager()->CanReachAtSafe(unit, endPos, unit->GetCircuitDef()->GetBuildDistance())) {
 		manager->AbortTask(this);
 		return;
 	}
@@ -518,7 +518,7 @@ CAllyUnit* IBuilderTask::FindSameAlly(CCircuitUnit* builder, const std::vector<U
 		}
 		if ((*alu->GetCircuitDef() == *buildDef) && au->IsBeingBuilt()) {
 			const AIFloat3& pos = alu->GetPos(frame);
-			if (terrainMgr->CanBuildAtSafe(builder, pos)) {
+			if (terrainMgr->CanReachAtSafe(builder, pos, builder->GetCircuitDef()->GetBuildDistance())) {
 				return alu;
 			}
 		}
@@ -540,7 +540,7 @@ void IBuilderTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, flo
 	}
 
 	CTerrainManager::TerrainPredicate predicate = [terrainMgr, builder](const AIFloat3& p) {
-		return terrainMgr->CanBuildAtSafe(builder, p);
+		return terrainMgr->CanReachAtSafe(builder, p, builder->GetCircuitDef()->GetBuildDistance());
 	};
 	SetBuildPos(terrainMgr->FindBuildSite(buildDef, pos, searchRadius, facing, predicate));
 }
