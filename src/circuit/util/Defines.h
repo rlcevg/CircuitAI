@@ -50,7 +50,7 @@ template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 typedef std::vector<springai::AIFloat3> F3Vec;
 
 struct cmp_str {
-	bool operator()(char const* a, char const* b) {
+	bool operator()(char const* a, char const* b) const {
 		return strcmp(a, b) < 0;
 	}
 };
