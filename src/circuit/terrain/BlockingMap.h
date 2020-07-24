@@ -12,6 +12,7 @@
 
 #include <vector>
 #include <map>
+#include <string>
 
 #define GRID_RATIO_LOW		8
 #define STRUCT_BIT(bits)	static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::bits)
