@@ -45,7 +45,7 @@ public:
 	virtual ~CSetupManager();
 	void DisabledUnits(const char* setupScript);
 
-	bool OpenConfig(const std::string& cfgOption);
+	bool OpenConfig(const std::string& profile, const std::vector<std::string>& parts);
 	void CloseConfig();
 	const Json::Value& GetConfig() const { return *config; }
 	const std::string& GetConfigName() const { return configName; }
@@ -86,8 +86,8 @@ private:
 	void CalcStartPos();
 	void CalcLanePos();
 	bool LocatePath(std::string& filename);
-	bool LoadConfig(const std::string& cfgOption);
-	Json::Value* ReadConfig(const std::string& dirName, const std::vector<std::string>& cfgNames);
+	bool LoadConfig(const std::string& profile, const std::vector<std::string>& parts);
+	Json::Value* ReadConfig(const std::string& dirName, const std::string& profile, const std::vector<std::string>& parts);
 	Json::Value* ParseConfig(const std::string& cfgStr, const std::string& cfgName, Json::Value* cfg = nullptr);
 	void UpdateJson(Json::Value& a, Json::Value& b);
 	void OverrideConfig();

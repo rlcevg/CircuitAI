@@ -125,12 +125,75 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterObjectMethod("CCircuitUnit", "Id GetId() const", asMETHODPR(CCircuitUnit, GetId, () const, ICoreUnit::Id), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitUnit", "CCircuitDef@ GetCircuitDef() const", asMETHODPR(CCircuitUnit, GetCircuitDef, () const, CCircuitDef*), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitUnit", "const AIFloat3& GetPos(int)", asMETHODPR(CCircuitUnit, GetPos, (int), const AIFloat3&), asCALL_THISCALL); ASSERT(r >= 0);
-
-	InitConfig();
 }
 
 CInitScript::~CInitScript()
 {
+}
+
+void CInitScript::InitConfig(std::map<std::string, std::vector<std::string>>& outProfiles)
+{
+	if (!script->Load("init", "init.as")) {
+		return;
+	}
+	asIScriptModule* mod = script->GetEngine()->GetModule("init");
+	int r = mod->SetDefaultNamespace("Init"); ASSERT(r >= 0);
+	asIScriptFunction* init = script->GetFunc(mod, "void Init(dictionary@)");
+	if (init == nullptr) {
+		return;
+	}
+
+	CScriptDictionary* dict = CScriptDictionary::Create(script->GetEngine());
+
+	asIScriptContext* ctx = script->PrepareContext(init);
+	ctx->SetArgObject(0, dict);
+	script->Exec(ctx);
+	script->ReturnContext(ctx);
+
+	CScriptDictionary* catDict;
+	if (dict->Get("category", &catDict, dict->GetTypeId("category"))) {
+		Game* game = circuit->GetGame();
+		std::array<std::pair<std::string, int*>, 6> cats = {
+			std::make_pair("air",    &circuit->airCategory),
+			std::make_pair("land",   &circuit->landCategory),
+			std::make_pair("water",  &circuit->waterCategory),
+			std::make_pair("bad",    &circuit->badCategory),
+			std::make_pair("good",   &circuit->goodCategory),
+			std::make_pair("ignore", &circuit->ignoreCategory)
+		};
+		for (const auto& kv : cats) {
+			std::string value;
+			if (catDict->Get(kv.first, &value, catDict->GetTypeId(kv.first))) {
+				*kv.second = game->GetCategoriesFlag(value.c_str());
+			}
+		}
+
+		catDict->Release();
+	}
+
+	CScriptDictionary* profDict;
+	if (dict->Get("profile", &profDict, dict->GetTypeId("profile"))) {
+		CScriptArray* keys = profDict->GetKeys();
+		for (unsigned i = 0; i < keys->GetSize(); ++i) {
+			std::string* key = static_cast<std::string*>(keys->At(i));
+			std::vector<std::string>& profile = outProfiles[*key];
+			CScriptArray* value;
+			if (profDict->Get(*key, &value, profDict->GetTypeId(*key))) {
+				for (unsigned j = 0; j < value->GetSize(); ++j) {
+					profile.push_back(*(std::string*)value->At(j));
+				}
+
+				value->Release();
+			}
+		}
+		keys->Release();
+
+		profDict->Release();
+	}
+
+	dict->Release();
+
+	mod->Discard();
 }
 
 void CInitScript::Init()
@@ -159,49 +222,6 @@ void CInitScript::RegisterMgr()
 	r = engine->RegisterObjectMethod("CEnemyManager", "float GetEnemyThreat(Type) const", asMETHODPR(CEnemyManager, GetEnemyThreat, (CCircuitDef::RoleT) const, float), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CEnemyManager", "float GetMobileThreat() const", asMETHOD(CEnemyManager, GetMobileThreat), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CEnemyManager", "float GetEnemyCost(Type) const", asMETHOD(CEnemyManager, GetEnemyCost), asCALL_THISCALL); ASSERT(r >= 0);
-}
-
-void CInitScript::InitConfig()
-{
-	if (!script->Load("init", "init.as")) {
-		return;
-	}
-	asIScriptModule* mod = script->GetEngine()->GetModule("init");
-	int r = mod->SetDefaultNamespace("Init"); ASSERT(r >= 0);
-	asIScriptFunction* init = script->GetFunc(mod, "void Init(dictionary@)");
-	if (init == nullptr) {
-		return;
-	}
-
-	CScriptDictionary* dict = CScriptDictionary::Create(script->GetEngine());
-
-	asIScriptContext* ctx = script->PrepareContext(init);
-	ctx->SetArgObject(0, dict);
-	script->Exec(ctx);
-	script->ReturnContext(ctx);
-
-	CScriptDictionary* catDict;
-	if (dict->Get("category", &catDict, dict->GetTypeId("category"))) {
-		Game* game = circuit->GetGame();
-		std::array<std::pair<std::string, int*>, 5> cats = {
-			std::make_pair("air",   &circuit->airCategory),
-			std::make_pair("land",  &circuit->landCategory),
-			std::make_pair("water", &circuit->waterCategory),
-			std::make_pair("bad",   &circuit->badCategory),
-			std::make_pair("good",  &circuit->goodCategory)
-		};
-		for (const auto& kv : cats) {
-			std::string value;
-			if (catDict->Get(kv.first, &value, catDict->GetTypeId(kv.first))) {
-				*kv.second = game->GetCategoriesFlag(value.c_str());
-			}
-		}
-	}
-	catDict->Release();
-
-	dict->Release();
-
-	mod->Discard();
 }
 
 CMaskHandler::TypeMask CInitScript::AddRole(const std::string& name, int actAsRole)

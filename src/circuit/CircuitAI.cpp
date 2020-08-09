@@ -108,6 +108,7 @@ CCircuitAI::CCircuitAI(OOAICallback* clb)
 		, waterCategory(0)
 		, badCategory(0)
 		, goodCategory(0)
+		, ignoreCategory(0)
 #ifdef DEBUG_VIS
 		, debugDrawer(nullptr)
 #endif
@@ -548,19 +549,21 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 	scriptManager = std::make_shared<CScriptManager>(this);
 	script = new CInitScript(GetScriptManager(), this);
+	std::map<std::string, std::vector<std::string>> profiles;
+	script->InitConfig(profiles);
 
 	if (!InitSide()) {
 		Release(RELEASE_SIDE);
 		return ERROR_INIT;
 	}
 
-	std::string cfgOption = InitOptions();  // Inits GameAttribute
+	std::string profile = InitOptions();  // Inits GameAttribute
 	InitWeaponDefs();
 	float decloakRadius;
 	InitUnitDefs(decloakRadius);  // Inits TerrainData
 
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
-	if (!setupManager->OpenConfig(cfgOption)) {
+	if (!setupManager->OpenConfig(profile, profiles[profile])) {
 		Release(RELEASE_CONFIG);
 		return ERROR_INIT;
 	}
@@ -1412,17 +1415,17 @@ std::string CCircuitAI::InitOptions()
 		isCommMerge = StringToBool(value);
 	}
 
-	value = options->GetValueByKey("config_file");
-	std::string cfgOption = ((value != nullptr) && strlen(value) > 0) ? value : "";
-
 	if (!gameAttribute->IsInitialized()) {
 		value = options->GetValueByKey("random_seed");
 		unsigned int seed = (value != nullptr) ? StringToInt(value) : time(nullptr);
 		gameAttribute->Init(seed);
 	}
 
+	value = options->GetValueByKey("profile");
+	std::string profile = ((value != nullptr) && strlen(value) > 0) ? value : "";
+
 	delete options;
-	return cfgOption;
+	return profile;
 }
 
 CCircuitDef* CCircuitAI::GetCircuitDef(const char* name)

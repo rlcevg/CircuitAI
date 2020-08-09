@@ -12,6 +12,7 @@
 #include "util/MaskHandler.h"
 
 #include <string>
+#include <map>
 
 namespace springai {
 	class AIFloat3;
@@ -29,13 +30,12 @@ public:
 	CInitScript(CScriptManager* scr, CCircuitAI* circuit);
 	virtual ~CInitScript();
 
+	void InitConfig(std::map<std::string, std::vector<std::string>>& outProfiles);
 	void Init() override;
 
 	void RegisterMgr();
 
 private:
-	void InitConfig();
-
 	CMaskHandler::TypeMask AddRole(const std::string& name, int actAsRole);
 
 	void Log(const std::string& msg) const;

@@ -601,7 +601,7 @@ void CPathFinder::FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* m
 			const int sx = x + offsets[j].first;
 			const int sy = y + offsets[j].second;
 
-			if (sx >= 0 && sx < moveMapXSize && sy >= 0 && sy < moveMapYSize
+			if (sx >= 1 && sx < moveMapXSize - 1 && sy >= 1 && sy < moveMapYSize - 1
 				&& hitTest(int2(sx - 1, sy - 1), int2(x - 1, y - 1)))  // path-map, not move-map
 			{
 				endNodes.push_back(MoveXY2MoveNode(sx, sy));

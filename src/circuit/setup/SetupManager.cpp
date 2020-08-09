@@ -104,9 +104,9 @@ void CSetupManager::DisabledUnits(const char* setupScript)
 	}
 }
 
-bool CSetupManager::OpenConfig(const std::string& cfgOption)
+bool CSetupManager::OpenConfig(const std::string& profile, const std::vector<std::string>& parts)
 {
-	bool isOk = LoadConfig(cfgOption);
+	bool isOk = LoadConfig(profile, parts);
 	if (isOk) {
 		OverrideConfig();
 	}
@@ -627,7 +627,7 @@ bool CSetupManager::LocatePath(std::string& filename)
 	return located;
 }
 
-bool CSetupManager::LoadConfig(const std::string& cfgOption)
+bool CSetupManager::LoadConfig(const std::string& profile, const std::vector<std::string>& parts)
 {
 	Info* info = circuit->GetSkirmishAI()->GetInfo();
 	const char* version = info->GetValueByKey("version");
@@ -637,43 +637,15 @@ bool CSetupManager::LoadConfig(const std::string& cfgOption)
 	std::string dirname;
 
 	/*
-	 * Try startscript specific config
-	 */
-	configName = "startscript";
-	OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
-	const char* value = options->GetValueByKey("JSON");
-	std::string cfgStr = ((value != nullptr) && strlen(value) > 0) ? value : "";
-	delete options;
-	if (!cfgStr.empty()) {
-		config = ParseConfig(cfgStr, configName);
-		if (config != nullptr) {
-			return true;
-		}
-	}
-
-	/*
 	 * Try map specific config
 	 */
 	CMap* map = circuit->GetMap();
 	dirname = std::string("LuaRules/Configs/") + name + "/" + version + "/";
 	configName = utils::MakeFileSystemCompatible(map->GetName()) + ".json";
 
-	config = ReadConfig(dirname, {configName});
+	config = ReadConfig(dirname, profile, {configName});
 	if (config != nullptr) {
 		return true;
-	}
-
-	/*
-	 * Prepare config parts
-	 */
-	std::vector<std::string> cfgNames;
-	std::string::const_iterator start = cfgOption.begin();
-	std::string::const_iterator end = cfgOption.end();
-	std::regex patternCfg("\\w+");
-	std::smatch section;
-	while (std::regex_search(start, end, section, patternCfg)) {
-		cfgNames.push_back(std::string(section[0]) + ".json");
-		start = section[0].second;
 	}
 
 	/*
@@ -682,7 +654,7 @@ bool CSetupManager::LoadConfig(const std::string& cfgOption)
 	configName = "config";
 	dirname = configName + SLASH;
 	if (LocatePath(dirname)) {
-		config = ReadConfig(dirname, cfgNames);
+		config = ReadConfig(dirname, profile, parts);
 		if (config != nullptr) {
 			return true;
 		}
@@ -694,23 +666,27 @@ bool CSetupManager::LoadConfig(const std::string& cfgOption)
 	 * Locate develop config: to run ./spring from source dir
 	 */
 	dirname = std::string("AI/Skirmish/") + name + "/data/" + configName + "/";
-	config = ReadConfig(dirname, cfgNames);
+	config = ReadConfig(dirname, profile, parts);
 	return (config != nullptr);
 }
 
-Json::Value* CSetupManager::ReadConfig(const std::string& dirname, const std::vector<std::string>& cfgNames)
+Json::Value* CSetupManager::ReadConfig(const std::string& dirname, const std::string& profile, const std::vector<std::string>& parts)
 {
 	Json::Value* cfg = nullptr;
 	File* file = circuit->GetCallback()->GetFile();
 
-	for (const std::string& name : cfgNames) {
-		std::string filename = dirname + name;
+	for (const std::string& name : parts) {
+		std::string filename = dirname + profile + "/" + name + ".json";
 		auto cfgStr = utils::ReadFile(file, filename);
 		if (cfgStr.empty()) {
-			circuit->LOG("No config file! (%s)", filename.c_str());
-		} else {
-			cfg = ParseConfig(cfgStr, name, cfg);
+			filename = dirname + name + ".json";
+			cfgStr = utils::ReadFile(file, filename);
+			if (cfgStr.empty()) {
+				circuit->LOG("No config file! (%s)", filename.c_str());
+				continue;
+			}
 		}
+		cfg = ParseConfig(cfgStr, name, cfg);
 	}
 
 	delete file;
@@ -758,22 +734,17 @@ void CSetupManager::UpdateJson(Json::Value& a, Json::Value& b) {
 
 void CSetupManager::OverrideConfig()
 {
-	Json::CharReader* reader = Json::CharReaderBuilder().newCharReader();
-	Json::Value json;
+	/*
+	 * Check startscript specific config
+	 */
 	OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
-
-	const char* value = options->GetValueByKey("factory");
-	if ((value != nullptr) && reader->parse(value, value + strlen(value), &json, nullptr)) {
-		(*config)["factory"] = json;
-	}
-
-	value = options->GetValueByKey("behaviour");
-	if ((value != nullptr) && reader->parse(value, value + strlen(value), &json, nullptr)) {
-		(*config)["behaviour"] = json;
-	}
-
-	delete reader;
+	const char* value = options->GetValueByKey("JSON");
+	std::string cfgStr = ((value != nullptr) && strlen(value) > 0) ? value : "";
 	delete options;
+	if (!cfgStr.empty()) {
+		circuit->LOG("Override config %s by startscript", configName.c_str());
+		config = ParseConfig(cfgStr, "startscript", config);
+	}
 }
 
 } // namespace circuit

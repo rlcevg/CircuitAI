@@ -54,13 +54,6 @@ local options = {
 		type    = 'string',
 		def     = '',
 	},
-	{ -- string
-		key     = 'config_file',
-		name    = 'Config file parts',
-		desc    = 'Load only specific config files, e.g. behaviour.json, economy.json, factory.json.\nSyntax: behaviour+economy+factory\nkey: config_file',
-		type    = 'string',
-		def     = 'behaviour+block_map+build_chain+commander+economy+factory+response',
-	},
 --	{ -- string
 --		key     = 'json',
 --		name    = 'JSON',
@@ -69,28 +62,25 @@ local options = {
 --		def     = '',
 --	},
 
---	{ -- section
---		key    = 'config_override',
---		name   = 'Config parts',
---		desc   = 'Overrides config elements.',
---		type   = 'section',
---	},
---	{ -- string
---		key     = 'factory',
---		name    = 'Factory config',
---		desc    = 'Overrides factory part of config.',
---		type    = 'string',
---		section = 'config_override',
---		def     = '',
---	},
---	{ -- string
---		key     = 'behaviour',
---		name    = 'Behaviour config',
---		desc    = 'Overrides behaviour part of config.',
---		type    = 'string',
---		section = 'config_override',
---		def     = '',
---	},
+	{ -- list
+		key     = 'profile',
+		name    = 'Difficulty profile',
+		desc    = 'Difficulty or play-style of AI (see init.as).\nkey: profile',
+		type    = 'list',
+		def     = 'standart',
+		items   = {
+			{
+				key  = 'standart',
+				name = 'Standart',
+				desc = 'Default config.',
+			},
+			{
+				key  = 'easy',
+				name = 'Easy',
+				desc = 'Lobotomized AI.',
+			},
+		},
+	},
 }
 
 return options
