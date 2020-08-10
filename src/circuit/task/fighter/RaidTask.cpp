@@ -307,14 +307,15 @@ bool CRaidTask::FindTarget()
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
-			if (((targetCat & canTargetCat) == 0) ||
-				(edef->IsAbleToFly() && notAA))
+			if (((targetCat & canTargetCat) == 0)
+				|| ((targetCat & circuit->GetIgnoreCategory()) != 0)
+				|| (edef->IsAbleToFly() && notAA))
 			{
 				continue;
 			}
 			float elevation = map->GetElevationAt(ePos.x, ePos.z);
-			if ((notAW && !edef->IsYTargetable(elevation, ePos.y)) ||
-				(ePos.y - elevation > weaponRange))
+			if ((notAW && !edef->IsYTargetable(elevation, ePos.y))
+				|| (ePos.y - elevation > weaponRange))
 			{
 				continue;
 			}

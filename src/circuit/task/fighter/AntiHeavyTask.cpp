@@ -316,17 +316,17 @@ bool CAntiHeavyTask::FindTarget()
 			continue;
 		}
 		const AIFloat3& ePos = enemy->GetPos();
-		if ((maxPower <= threatMap->GetThreatAt(ePos) - enemy->GetThreat()) ||
-			!terrainMgr->CanMoveToPos(area, ePos))
+		if ((maxPower <= threatMap->GetThreatAt(ePos) - enemy->GetThreat())
+			|| !terrainMgr->CanMoveToPos(area, ePos))
 		{
 			continue;
 		}
 
 		CCircuitDef* edef = enemy->GetCircuitDef();
-		if ((edef == nullptr) || !edef->IsEnemyRoleAny(CCircuitDef::RoleMask::HEAVY | CCircuitDef::RoleMask::COMM) ||
-			((edef->GetCategory() & canTargetCat) == 0) ||
-			(edef->IsAbleToFly() && notAA) ||
-			(ePos.y - map->GetElevationAt(ePos.x, ePos.z) > weaponRange))
+		if ((edef == nullptr) || !edef->IsEnemyRoleAny(CCircuitDef::RoleMask::HEAVY | CCircuitDef::RoleMask::COMM)
+			|| ((edef->GetCategory() & canTargetCat) == 0)
+			|| (edef->IsAbleToFly() && notAA)
+			|| (ePos.y - map->GetElevationAt(ePos.x, ePos.z) > weaponRange))
 		{
 			continue;
 		}
