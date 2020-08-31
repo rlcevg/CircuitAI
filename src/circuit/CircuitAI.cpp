@@ -71,6 +71,14 @@ using namespace springai;
 	#define PRINT_TOPIC(txt, topic)
 #endif
 
+/*
+ * Эти парни не созданы чувствовать!
+ * Ледяная душа не боится жути!
+ * Только под ногами их крутятся:
+ * По оси земля, по полу полу-люди!
+ */
+constexpr char version[]{"1.1.0"};
+
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;
 
@@ -138,8 +146,8 @@ void CCircuitAI::NotifyGameEnd()
 void CCircuitAI::NotifyResign()
 {
 	economy = callback->GetEconomy();
-	metalRes = callback->GetResourceByName("Metal");
-	energyRes = callback->GetResourceByName("Energy");
+	metalRes = callback->GetResourceByName(RES_NAME_METAL);
+	energyRes = callback->GetResourceByName(RES_NAME_ENERGY);
 	eventHandler = &CCircuitAI::HandleResignEvent;
 }
 
@@ -1451,8 +1459,8 @@ void CCircuitAI::InitUnitDefs(float& outDcr)
 		gameAttribute->GetTerrainData().Init(this);
 	}
 
-	Resource* resM = callback->GetResourceByName("Metal");
-	Resource* resE = callback->GetResourceByName("Energy");
+	Resource* resM = callback->GetResourceByName(RES_NAME_METAL);
+	Resource* resE = callback->GetResourceByName(RES_NAME_ENERGY);
 	outDcr = 0.f;
 	auto unitDefs = callback->GetUnitDefs();
 
@@ -1489,11 +1497,13 @@ CWeaponDef* CCircuitAI::GetWeaponDef(CWeaponDef::Id weaponDefId) const
 
 void CCircuitAI::InitWeaponDefs()
 {
+	Resource* resE = callback->GetResourceByName(RES_NAME_ENERGY);
 	auto weapDefs = callback->GetWeaponDefs();
 	weaponDefs.reserve(weapDefs.size());
 	for (WeaponDef* wd : weapDefs) {
-		weaponDefs.push_back(new CWeaponDef(wd));
+		weaponDefs.push_back(new CWeaponDef(wd, resE));
 	}
+	delete resE;
 }
 
 CThreatMap* CCircuitAI::GetThreatMap() const

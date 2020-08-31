@@ -24,6 +24,8 @@ namespace circuit {
 
 #define ROLE_TYPE(x)	static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::x)
 
+class CWeaponDef;
+
 class CCircuitDef {
 public:
 	using Id = int;
@@ -170,6 +172,7 @@ public:
 
 	bool HasDGun() const { return hasDGun; }
 	bool HasDGunAA() const { return hasDGunAA; }
+	CWeaponDef* GetDGunDef() const { return dgunDef; }
 	springai::WeaponMount* GetDGunMount() const { return dgunMount; }
 	springai::WeaponMount* GetShieldMount() const { return shieldMount; }
 	springai::WeaponMount* GetWeaponMount() const { return weaponMount; }
@@ -268,6 +271,7 @@ private:
 	int maxThisUnit;
 	int sinceFrame;
 
+	CWeaponDef* dgunDef;
 	springai::WeaponMount* dgunMount;
 	springai::WeaponMount* shieldMount;
 	springai::WeaponMount* weaponMount;

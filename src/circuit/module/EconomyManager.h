@@ -25,6 +25,9 @@ namespace circuit {
 #define INCOME_SAMPLES	5
 #define HIDDEN_STORAGE	10000.0f
 
+extern const char* RES_NAME_METAL;
+extern const char* RES_NAME_ENERGY;
+
 class IBuilderTask;
 class CGameTask;
 class CEnergyGrid;
@@ -62,7 +65,9 @@ public:
 	float GetAvgEnergyIncome() const { return energyIncome; }
 	float GetEcoFactor() const { return ecoFactor; }
 	float GetPullMtoS() const { return pullMtoS; }
+	float GetMetalCur();
 	float GetMetalPull();
+	float GetEnergyCur();
 	float GetEnergyPull();
 	float GetEnergyUse();
 	bool IsMetalEmpty();
@@ -178,10 +183,14 @@ private:
 	bool isEnergyStalling;
 	bool isEnergyEmpty;
 
+	int metalCurFrame;
 	int metalPullFrame;
+	int energyCurFrame;
 	int energyPullFrame;
 	int energyUseFrame;
+	float metalCur;
 	float metalPull;
+	float energyCur;
 	float energyPull;
 	float energyUse;
 

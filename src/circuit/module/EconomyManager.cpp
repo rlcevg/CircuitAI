@@ -36,6 +36,9 @@ using namespace springai;
 
 #define PYLON_RANGE		500.0f
 
+constexpr char* RES_NAME_METAL = "Metal";
+constexpr char* RES_NAME_ENERGY = "Energy";
+
 CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		: IModule(circuit, new CEconomyScript(circuit->GetScriptManager(), this))
 		, energyGrid(nullptr)
@@ -54,15 +57,19 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, isMetalFull(false)
 		, isEnergyStalling(false)
 		, isEnergyEmpty(false)
+		, metalCurFrame(-1)
 		, metalPullFrame(-1)
+		, energyCurFrame(-1)
 		, energyPullFrame(-1)
 		, energyUseFrame(-1)
+		, metalCur(.0f)
 		, metalPull(.0f)
+		, energyCur(.0f)
 		, energyPull(.0f)
 		, energyUse(.0f)
 {
-	metalRes = circuit->GetCallback()->GetResourceByName("Metal");
-	energyRes = circuit->GetCallback()->GetResourceByName("Energy");
+	metalRes = circuit->GetCallback()->GetResourceByName(RES_NAME_METAL);
+	energyRes = circuit->GetCallback()->GetResourceByName(RES_NAME_ENERGY);
 	economy = circuit->GetCallback()->GetEconomy();
 
 	metalIncomes.resize(INCOME_SAMPLES, 4.0f);  // Init metal income
@@ -567,6 +574,15 @@ void CEconomyManager::UpdateResourceIncome()
 	metalUsed += economy->GetUsage(metalRes);
 }
 
+float CEconomyManager::GetMetalCur()
+{
+	if (metalCurFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
+		metalCurFrame = circuit->GetLastFrame();
+		metalCur = economy->GetCurrent(metalRes);
+	}
+	return metalCur;
+}
+
 float CEconomyManager::GetMetalPull()
 {
 	if (metalPullFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
@@ -574,6 +590,15 @@ float CEconomyManager::GetMetalPull()
 		metalPull = economy->GetPull(metalRes) + circuit->GetTeam()->GetRulesParamFloat("extraMetalPull", 0.f);
 	}
 	return metalPull;
+}
+
+float CEconomyManager::GetEnergyCur()
+{
+	if (energyCurFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
+		energyCurFrame = circuit->GetLastFrame();
+		energyCur = economy->GetCurrent(energyRes);
+	}
+	return energyCur;
 }
 
 float CEconomyManager::GetEnergyPull()
@@ -1255,12 +1280,12 @@ void CEconomyManager::UpdateEconomy()
 	}
 	ecoFrame = circuit->GetLastFrame();
 
-	const float curMetal = economy->GetCurrent(metalRes);
+	const float curMetal = GetMetalCur();
 	const float storMetal = GetStorage(metalRes);
 	isMetalEmpty = curMetal < storMetal * 0.2f;
 	isMetalFull = curMetal > storMetal * 0.8f;
 	isEnergyStalling = std::min(GetAvgMetalIncome() - GetMetalPull(), .0f)/* * 0.98f*/ > std::min(GetAvgEnergyIncome() - GetEnergyPull(), .0f);
-	const float curEnergy = economy->GetCurrent(energyRes);
+	const float curEnergy = GetEnergyCur();
 	const float storEnergy = GetStorage(energyRes);
 	isEnergyEmpty = curEnergy < storEnergy * 0.1f;
 

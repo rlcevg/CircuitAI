@@ -13,11 +13,12 @@ namespace circuit {
 
 using namespace springai;
 
-CWeaponDef::CWeaponDef(WeaponDef* def)
+CWeaponDef::CWeaponDef(WeaponDef* def, Resource* resE)
 		: def(def)
 {
 	range = def->GetRange();
 	aoe = def->GetAreaOfEffect();
+	costE = def->GetCost(resE);
 }
 
 CWeaponDef::~CWeaponDef()

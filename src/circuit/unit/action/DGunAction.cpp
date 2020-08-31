@@ -8,6 +8,7 @@
 #include "unit/action/DGunAction.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "unit/CircuitUnit.h"
+#include "module/EconomyManager.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
@@ -40,7 +41,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	const int frame = circuit->GetLastFrame();
 	// NOTE: Paralyzer doesn't increase ReloadFrame beyond currentFrame, but disarmer does.
 	//       Also checking disarm is more expensive (because of UnitRulesParam).
-	if (!unit->IsDGunReady(frame) || unit->GetUnit()->IsParalyzed() /*|| unit->IsDisarmed(frame)*/) {
+	if (!unit->IsDGunReady(frame, circuit->GetEconomyManager()->GetEnergyCur()) || unit->GetUnit()->IsParalyzed() /*|| unit->IsDisarmed(frame)*/) {
 		return;
 	}
 	const AIFloat3& pos = unit->GetPos(frame);

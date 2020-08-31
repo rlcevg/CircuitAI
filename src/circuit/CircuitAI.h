@@ -71,13 +71,7 @@ class CMap;
 class CDebugDrawer;
 #endif
 
-/*
- * Эти парни не созданы чувствовать!
- * Ледяная душа не боится жути!
- * Только под ногами их крутятся:
- * По оси земля, по полу полу-люди!
- */
-constexpr char version[]{"1.1.0"};
+extern const char version[];
 
 class CException: public std::exception {
 public:
