@@ -75,7 +75,10 @@
 		// Ally threat multiplier
 //		"pwr_mod": 1.0,
 		// Enemy threat multiplier
-//		"thr_mod": 1.0
+//		"thr_mod": 1.0,
+
+		// Ignore enemy
+//		"ignore": false
 	},
 	"cloakraid": {
 		"role": ["raider", "scout"],

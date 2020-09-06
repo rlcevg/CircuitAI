@@ -350,6 +350,8 @@ void CFactoryManager::ReadConfig()
 		if (!thrMod.isNull()) {
 			cdef->ModThreat(thrMod.asFloat());
 		}
+
+		cdef->SetIgnore(behaviour.get("ignore", cdef->IsIgnore()).asBool());
 	}
 
 	/*

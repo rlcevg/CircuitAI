@@ -143,7 +143,7 @@ CAllyUnit* CAllyTeam::GetFriendlyUnit(ICoreUnit::Id unitId) const
 bool CAllyTeam::EnemyInLOS(CEnemyUnit* data, CCircuitAI* ai)
 {
 	if (circuit != ai) {
-		return true;
+		return !data->IsIgnore();
 	}
 
 	return enemyManager->UnitInLOS(data);
@@ -152,7 +152,11 @@ bool CAllyTeam::EnemyInLOS(CEnemyUnit* data, CCircuitAI* ai)
 std::pair<CEnemyUnit*, bool> CAllyTeam::RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS, CCircuitAI* ai)
 {
 	if (circuit != ai) {
-		return std::make_pair(enemyManager->GetEnemyUnit(unitId), true);
+		CEnemyUnit* data = enemyManager->GetEnemyUnit(unitId);
+		if (data == nullptr) {
+			return std::make_pair(nullptr, true);
+		}
+		return data->IsIgnore() ? std::make_pair(nullptr, false) : std::make_pair(data, true);
 	}
 
 	return enemyManager->RegisterEnemyUnit(unitId, isInLOS);
@@ -161,7 +165,10 @@ std::pair<CEnemyUnit*, bool> CAllyTeam::RegisterEnemyUnit(ICoreUnit::Id unitId, 
 CEnemyUnit* CAllyTeam::RegisterEnemyUnit(Unit* e, CCircuitAI* ai)
 {
 	if (circuit != ai) {
-		return enemyManager->GetEnemyUnit(e->GetUnitId());
+		const ICoreUnit::Id unitId = e->GetUnitId();
+		delete e;
+		CEnemyUnit* data = enemyManager->GetEnemyUnit(unitId);
+		return ((data == nullptr) || data->IsIgnore()) ? nullptr : data;
 	}
 
 	return enemyManager->RegisterEnemyUnit(e);

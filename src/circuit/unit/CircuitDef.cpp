@@ -110,6 +110,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, targetCategory(0)
 		, immobileTypeId(-1)
 		, mobileTypeId(-1)
+		, isIgnore(false)
 		, isAttacker(false)
 		, hasDGunAA(false)
 		, hasAntiAir(false)
@@ -136,7 +137,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 //	maxRange[static_cast<RangeT>(RangeType::MAX)] = def->GetMaxWeaponRange();
 	hasDGun         = def->CanManualFire();
 	category        = def->GetCategory();
-	noChaseCategory = (def->GetNoChaseCategory() | circuit->GetBadCategory() | circuit->GetIgnoreCategory())
+	noChaseCategory = (def->GetNoChaseCategory() | circuit->GetBadCategory())
 					  & ~circuit->GetGoodCategory();
 
 	const int ft = def->GetFireState();
@@ -444,7 +445,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			// category
 			targetCategory = wd->GetOnlyTargetCategory();  // 0xFFFFFFFF
 			if (~targetCategory == 0) {
-				targetCategory = ~(circuit->GetBadCategory() | circuit->GetIgnoreCategory());
+				targetCategory = ~circuit->GetBadCategory();
 			}
 			category |= circuit->GetBadCategory();  // do not chase bombs
 		}

@@ -202,6 +202,9 @@ public:
 	STerrainMapImmobileType::Id GetImmobileId() const { return immobileTypeId; }
 	STerrainMapMobileType::Id GetMobileId() const { return mobileTypeId; }
 
+	void SetIgnore(bool value) { isIgnore = value; }
+	bool IsIgnore() const { return isIgnore; }
+
 	bool IsAttacker()   const { return isAttacker; }
 	bool HasAntiAir()   const { return hasAntiAir; }
 	bool HasAntiLand()  const { return hasAntiLand; }
@@ -296,6 +299,8 @@ private:
 	STerrainMapMobileType::Id   mobileTypeId;
 
 	// ---- Bit fields ---- BEGIN
+	bool isIgnore : 1;
+
 	bool isAttacker : 1;
 	bool hasDGun : 1;
 	bool hasDGunAA : 1;

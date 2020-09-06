@@ -116,7 +116,6 @@ CCircuitAI::CCircuitAI(OOAICallback* clb)
 		, waterCategory(0)
 		, badCategory(0)
 		, goodCategory(0)
-		, ignoreCategory(0)
 #ifdef DEBUG_VIS
 		, debugDrawer(nullptr)
 #endif
@@ -526,8 +525,6 @@ void CCircuitAI::CheatPreload()
 		CEnemyInfo* enemy = RegisterEnemyInfo(e);
 		if (enemy != nullptr) {
 			this->EnemyEnterLOS(enemy);
-		} else {
-			delete e;
 		}
 	}
 }

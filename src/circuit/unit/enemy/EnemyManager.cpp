@@ -71,12 +71,11 @@ std::pair<CEnemyUnit*, bool> CEnemyManager::RegisterEnemyUnit(ICoreUnit::Id unit
 {
 	Unit* u = WrappUnit::GetInstance(circuit->GetSkirmishAIId(), unitId);
 	if (u == nullptr) {
-		return std::make_pair(nullptr, true);
+		return std::make_pair(nullptr, true);  // true error
 	}
-	if (/*u->IsNeutral() || */u->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f) {
-		delete u;
-		return std::make_pair(nullptr, false);
-	}
+	// IsNeutral works in los or radar, @see rts/ExternalAI/AICallback.cpp CAICallback::IsUnitNeutral
+	bool isIgnore = u->IsNeutral() || (u->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f);
+
 	CCircuitDef* cdef = nullptr;
 	if (isInLOS) {
 		CCircuitDef::Id unitDefId = circuit->GetCallback()->Unit_GetDefId(unitId);
@@ -85,38 +84,56 @@ std::pair<CEnemyUnit*, bool> CEnemyManager::RegisterEnemyUnit(ICoreUnit::Id unit
 			return std::make_pair(nullptr, false);
 		}
 		cdef = circuit->GetCircuitDef(unitDefId);
+		isIgnore |= cdef->IsIgnore();
 	}
 	CEnemyUnit* data = new CEnemyUnit(unitId, u, cdef);
 
 	enemyUnits[data->GetId()] = data;
 	enemyUpdates.push_back(data);
 
+	if (isIgnore) {
+		data->SetIgnore();
+		return std::make_pair(nullptr, false);
+	}
+
 	return std::make_pair(data, true);
 }
 
 CEnemyUnit* CEnemyManager::RegisterEnemyUnit(Unit* e)
 {
-	if (/*e->IsNeutral() || */e->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f) {
-		return nullptr;
-	}
-
 	const ICoreUnit::Id unitId = e->GetUnitId();
 	CEnemyUnit* data = GetEnemyUnit(unitId);
 	CCircuitDef::Id unitDefId = circuit->GetCallback()->Unit_GetDefId(unitId);
+	// IsNeutral works in los or radar, @see rts/ExternalAI/AICallback.cpp CAICallback::IsUnitNeutral
+	bool isIgnore = e->IsNeutral() || (e->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f);
 
 	if (data != nullptr) {
 		if ((data->GetCircuitDef() == nullptr) || data->GetCircuitDef()->GetId() != unitDefId) {
-			data->SetCircuitDef(circuit->GetCircuitDef(unitDefId));
+			CCircuitDef* cdef = circuit->GetCircuitDef(unitDefId);
+			data->SetCircuitDef(cdef);
 			data->SetCost(data->GetUnit()->GetRulesParamFloat("comm_cost", data->GetCost()));
+			isIgnore |= cdef->IsIgnore();
 		}
+		if (isIgnore) {
+			data->SetIgnore();
+		}
+		delete e;
 		return nullptr;
 	}
 
 	CCircuitDef* cdef = circuit->GetCircuitDef(unitDefId);
+	if (cdef != nullptr) {
+		isIgnore |= cdef->IsIgnore();
+	}
 	data = new CEnemyUnit(unitId, e, cdef);
 
 	enemyUnits[data->GetId()] = data;
 	enemyUpdates.push_back(data);
+
+	if (isIgnore) {
+		data->SetIgnore();
+		return nullptr;
+	}
 
 	return data;
 }
@@ -232,8 +249,13 @@ bool CEnemyManager::UnitInLOS(CEnemyUnit* data)
 		return false;
 	}
 	if ((data->GetCircuitDef() == nullptr) || data->GetCircuitDef()->GetId() != unitDefId) {
-		data->SetCircuitDef(circuit->GetCircuitDef(unitDefId));
+		CCircuitDef* cdef = circuit->GetCircuitDef(unitDefId);
+		data->SetCircuitDef(cdef);
 		data->SetCost(data->GetUnit()->GetRulesParamFloat("comm_cost", data->GetCost()));
+		if (cdef->IsIgnore()) {
+			data->SetIgnore();
+			return false;
+		}
 	}
 	return true;
 }
@@ -241,7 +263,7 @@ bool CEnemyManager::UnitInLOS(CEnemyUnit* data)
 void CEnemyManager::UnregisterEnemyUnit(CEnemyUnit* data)
 {
 	enemyUnits.erase(data->GetId());
-	data->Dead();
+	data->SetDead();
 }
 
 void CEnemyManager::DeleteEnemyUnit(CEnemyUnit* data)

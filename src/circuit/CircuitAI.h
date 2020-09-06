@@ -270,7 +270,6 @@ public:
 	int GetWaterCategory()  const { return waterCategory; }
 	int GetBadCategory()    const { return badCategory; }
 	int GetGoodCategory()   const { return goodCategory; }
-	int GetIgnoreCategory() const { return ignoreCategory; }
 
 private:
 	bool isInitialized;
@@ -321,7 +320,6 @@ private:
 	int waterCategory;  // under surface
 	int badCategory;
 	int goodCategory;
-	int ignoreCategory;
 
 public:
 	void PrepareAreaUpdate();

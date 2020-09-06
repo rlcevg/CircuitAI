@@ -27,7 +27,9 @@ class IFighterTask;
 struct SEnemyData {
 	using RangeArray = std::array<int, static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_)>;
 
-	enum LosMask: char {NONE = 0x00, LOS = 0x01, RADAR = 0x02, HIDDEN = 0x04, DEAD = 0x08};
+	enum LosMask: char {NONE = 0x00,
+						LOS  = 0x01, RADAR = 0x02, HIDDEN = 0x04, IGNORE = 0x08,
+						DEAD = 0x10};
 	using LM = std::underlying_type<LosMask>::type;
 
 	CCircuitDef* cdef;
@@ -50,7 +52,8 @@ struct SEnemyData {
 	void SetInLOS()     { losStatus |= LosMask::LOS; }
 	void SetInRadar()   { losStatus |= LosMask::RADAR; }
 	void SetHidden()    { losStatus |= LosMask::HIDDEN; }
-	void Dead()         { losStatus |= LosMask::DEAD | LosMask::HIDDEN; }
+	void SetIgnore()    { losStatus |= LosMask::IGNORE; }
+	void SetDead()      { losStatus |= LosMask::DEAD | LosMask::HIDDEN; }
 	void ClearInLOS()   { losStatus &= ~LosMask::LOS; }
 	void ClearInRadar() { losStatus &= ~LosMask::RADAR; }
 	void ClearHidden()  { losStatus &= ~LosMask::HIDDEN; }
@@ -59,7 +62,8 @@ struct SEnemyData {
 	bool IsInRadar()        const { return losStatus & LosMask::RADAR; }
 	bool IsInRadarOrLOS()   const { return losStatus & (LosMask::RADAR | LosMask::LOS); }
 	bool NotInRadarAndLOS() const { return (losStatus & (LosMask::RADAR | LosMask::LOS)) == 0; }
-	bool IsHidden()         const { return losStatus & LosMask::HIDDEN; }
+	bool IsHidden()         const { return (losStatus & (LosMask::HIDDEN | LosMask::IGNORE)) != 0; }
+	bool IsIgnore()         const { return losStatus & LosMask::IGNORE; }
 	bool IsDead()           const { return losStatus & LosMask::DEAD; }
 };
 
@@ -128,7 +132,8 @@ public:
 	void SetInLOS()     { data.SetInLOS(); }
 	void SetInRadar()   { data.SetInRadar(); }
 	void SetHidden()    { data.SetHidden(); }
-	void Dead()         { data.Dead(); }
+	void SetIgnore()    { data.SetIgnore(); }
+	void SetDead()      { data.SetDead(); }
 	void ClearInLOS()   { data.ClearInLOS(); }
 	void ClearInRadar() { data.ClearInRadar(); }
 	void ClearHidden()  { data.ClearHidden(); }
@@ -138,6 +143,7 @@ public:
 	bool IsInRadarOrLOS()   const { return data.IsInRadarOrLOS(); }
 	bool NotInRadarAndLOS() const { return data.NotInRadarAndLOS(); }
 	bool IsHidden()         const { return data.IsHidden(); }
+	bool IsIgnore()         const { return data.IsIgnore(); }
 	bool IsDead()           const { return data.IsDead(); }
 
 	const SEnemyData GetData() const { return data; }

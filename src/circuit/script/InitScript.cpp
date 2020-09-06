@@ -153,13 +153,12 @@ void CInitScript::InitConfig(std::map<std::string, std::vector<std::string>>& ou
 	CScriptDictionary* catDict;
 	if (dict->Get("category", &catDict, dict->GetTypeId("category"))) {
 		Game* game = circuit->GetGame();
-		std::array<std::pair<std::string, int*>, 6> cats = {
-			std::make_pair("air",    &circuit->airCategory),
-			std::make_pair("land",   &circuit->landCategory),
-			std::make_pair("water",  &circuit->waterCategory),
-			std::make_pair("bad",    &circuit->badCategory),
-			std::make_pair("good",   &circuit->goodCategory),
-			std::make_pair("ignore", &circuit->ignoreCategory)
+		std::array<std::pair<std::string, int*>, 5> cats = {
+			std::make_pair("air",   &circuit->airCategory),
+			std::make_pair("land",  &circuit->landCategory),
+			std::make_pair("water", &circuit->waterCategory),
+			std::make_pair("bad",   &circuit->badCategory),
+			std::make_pair("good",  &circuit->goodCategory)
 		};
 		for (const auto& kv : cats) {
 			std::string value;

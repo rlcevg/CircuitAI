@@ -36,8 +36,8 @@ using namespace springai;
 
 #define PYLON_RANGE		500.0f
 
-constexpr char* RES_NAME_METAL = "Metal";
-constexpr char* RES_NAME_ENERGY = "Energy";
+const char* RES_NAME_METAL = "Metal";
+const char* RES_NAME_ENERGY = "Energy";
 
 CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		: IModule(circuit, new CEconomyScript(circuit->GetScriptManager(), this))

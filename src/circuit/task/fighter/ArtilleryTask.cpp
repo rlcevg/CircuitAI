@@ -174,9 +174,7 @@ CEnemyInfo* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 				continue;
 			}
 			int targetCat = edef->GetCategory();
-			if (((targetCat & canTargetCat) == 0)
-				|| ((targetCat & circuit->GetIgnoreCategory()) != 0))
-			{
+			if ((targetCat & canTargetCat) == 0) {
 				continue;
 			}
 

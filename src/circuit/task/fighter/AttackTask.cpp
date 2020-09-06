@@ -48,18 +48,30 @@ CAttackTask::~CAttackTask()
 bool CAttackTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	assert(leader != nullptr);
+
+	float speedLeader = leader->GetCircuitDef()->GetSpeed();
+	float speedUnit = unit->GetCircuitDef()->GetSpeed();
+	if (speedLeader > speedUnit) {
+		std::swap(speedLeader, speedUnit);
+	}
+	if (speedLeader * 1.5f < speedUnit) {
+		return false;
+	}
+
 	const int frame = manager->GetCircuit()->GetLastFrame();
 	if (leader->GetPos(frame).SqDistance2D(unit->GetPos(frame)) > SQUARE(1000.f)) {
 		return false;
 	}
-	if (unit->GetCircuitDef()->IsAmphibious() &&
-		(leader->GetCircuitDef()->IsAmphibious() || leader->GetCircuitDef()->IsLander() || leader->GetCircuitDef()->IsFloater()))
+	if (unit->GetCircuitDef()->IsAmphibious()
+		&& (leader->GetCircuitDef()->IsAmphibious()
+			|| leader->GetCircuitDef()->IsLander()
+			|| leader->GetCircuitDef()->IsFloater()))
 	{
 		return true;
 	}
-	if ((leader->GetCircuitDef()->IsAbleToFly() && unit->GetCircuitDef()->IsAbleToFly()) ||
-		(leader->GetCircuitDef()->IsLander() && unit->GetCircuitDef()->IsLander()) ||
-		(leader->GetCircuitDef()->IsFloater() && unit->GetCircuitDef()->IsFloater()))
+	if ((leader->GetCircuitDef()->IsAbleToFly() && unit->GetCircuitDef()->IsAbleToFly())
+		|| (leader->GetCircuitDef()->IsLander() && unit->GetCircuitDef()->IsLander())
+		|| (leader->GetCircuitDef()->IsFloater() && unit->GetCircuitDef()->IsFloater()))
 	{
 		return true;
 	}

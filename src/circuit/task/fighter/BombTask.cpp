@@ -219,9 +219,7 @@ AIFloat3 CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, const
 				continue;
 			}
 			targetCat = edef->GetCategory();
-			if (((targetCat & canTargetCat) == 0)
-				|| ((targetCat & circuit->GetIgnoreCategory()) != 0))
-			{
+			if ((targetCat & canTargetCat) == 0) {
 				continue;
 			}
 //			altitude = edef->GetAltitude();

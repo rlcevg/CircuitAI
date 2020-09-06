@@ -308,7 +308,6 @@ bool CRaidTask::FindTarget()
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
 			if (((targetCat & canTargetCat) == 0)
-				|| ((targetCat & circuit->GetIgnoreCategory()) != 0)
 				|| (edef->IsAbleToFly() && notAA))
 			{
 				continue;
