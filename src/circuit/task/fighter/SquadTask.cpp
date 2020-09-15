@@ -12,7 +12,7 @@
 #include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathFinder.h"
-#include "terrain/path/QueryCostMap.h"
+#include "terrain/path/QueryLineMap.h"
 #include "unit/action/TravelAction.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
@@ -32,18 +32,11 @@ ISquadTask::ISquadTask(ITaskManager* mgr, FightType type, float powerMod)
 		, prevGroupPos(-RgtVector)
 		, pPath(std::make_shared<PathInfo>())
 		, groupFrame(0)
-		, isCostMapReady(false)
 {
 }
 
 ISquadTask::~ISquadTask()
 {
-}
-
-void ISquadTask::ClearRelease()
-{
-	costQuery = nullptr;
-	IFighterTask::ClearRelease();
 }
 
 void ISquadTask::AssignTo(CCircuitUnit* unit)
@@ -153,36 +146,6 @@ bool ISquadTask::IsMergeSafe() const
 	return (circuit->GetInflMap()->GetInfluenceAt(pos) > -INFL_EPS);
 }
 
-bool ISquadTask::IsCostQueryAlive(const IPathQuery* query) const
-{
-	if (isDead) {
-		return false;
-	}
-	return (costQuery != nullptr) && (costQuery->GetId() == query->GetId());
-}
-
-void ISquadTask::MakeCostMapQuery()
-{
-	if ((costQuery != nullptr) && (costQuery->GetState() != IPathQuery::State::READY)) {  // not ready
-		return;
-	}
-
-	CCircuitAI* circuit = manager->GetCircuit();
-	const int frame = circuit->GetLastFrame();
-	const AIFloat3& startPos = leader->GetPos(frame);
-
-	CPathFinder* pathfinder = circuit->GetPathfinder();
-	costQuery = pathfinder->CreateCostMapQuery(
-			leader, circuit->GetThreatMap(), frame, startPos);
-	costQuery->HoldTask(this);
-
-	pathfinder->RunQuery(costQuery, [this](const IPathQuery* query) {
-		if (this->IsCostQueryAlive(query)) {
-			this->isCostMapReady = true;
-		}
-	});
-}
-
 ISquadTask* ISquadTask::CheckMergeTask()
 {
 	const ISquadTask* task = nullptr;
@@ -192,13 +155,12 @@ ISquadTask* ISquadTask::CheckMergeTask()
 	const AIFloat3& pos = leader->GetPos(frame);
 	STerrainMapArea* area = leader->GetArea();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	CPathFinder* pathfinder = circuit->GetPathfinder();
-	const float maxSpeed = lowestSpeed / pathfinder->GetSquareSize() * COST_BASE;
-	const float maxDistCost = MAX_TRAVEL_SEC * maxSpeed;
-	const int distance = pathfinder->GetSquareSize();
+	const float sqMaxDistCost = SQUARE(MAX_TRAVEL_SEC * lowestSpeed);
 	float metric = std::numeric_limits<float>::max();
 
-	std::shared_ptr<CQueryCostMap> query = std::static_pointer_cast<CQueryCostMap>(costQuery);
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	std::shared_ptr<CQueryLineMap> query = std::static_pointer_cast<CQueryLineMap>(
+			pathfinder->CreateLineMapQuery(leader, circuit->GetThreatMap(), frame));
 
 	const std::set<IFighterTask*>& tasks = static_cast<CMilitaryManager*>(manager)->GetTasks(fightType);
 	for (const IFighterTask* candidate : tasks) {
@@ -210,9 +172,6 @@ ISquadTask* ISquadTask::CheckMergeTask()
 		}
 		const ISquadTask* candy = static_cast<const ISquadTask*>(candidate);
 
-		// Check time-distance to target
-		float distCost;
-
 		const AIFloat3& tp = candy->GetLeaderPos(frame);
 		const AIFloat3& taskPos = utils::is_valid(tp) ? tp : pos;
 
@@ -220,11 +179,15 @@ ISquadTask* ISquadTask::CheckMergeTask()
 			continue;
 		}
 
-		distCost = std::max(query->GetCostAt(taskPos, distance), COST_BASE);
+		if (!query->IsSafeLine(pos, taskPos)) {  // ensure safe passage
+			continue;
+		}
 
-		if ((distCost < metric) && (distCost < maxDistCost)) {
+		// Check time-distance to target
+		float sqDistCost = pos.SqDistance2D(taskPos);
+		if ((sqDistCost < metric) && (sqDistCost < sqMaxDistCost)) {
 			task = candy;
-			metric = distCost;
+			metric = sqDistCost;
 		}
 	}
 
@@ -234,16 +197,9 @@ ISquadTask* ISquadTask::CheckMergeTask()
 ISquadTask* ISquadTask::GetMergeTask()
 {
 	if (updCount % 32 == 1) {
-		if (IsMergeSafe()) {
-			MakeCostMapQuery();
-		}
-		return nullptr;
-	} else if (isCostMapReady) {
-		isCostMapReady = false;
 		return IsMergeSafe() ? CheckMergeTask() : nullptr;
-	} else {
-		return nullptr;
 	}
+	return nullptr;
 }
 
 bool ISquadTask::IsMustRegroup()

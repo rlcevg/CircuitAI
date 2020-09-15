@@ -17,6 +17,7 @@
 namespace circuit {
 
 #define THREAT_UPDATE_RATE	(FRAMES_PER_SEC / 4)
+#define THREAT_BASE			0.f
 
 class CMapManager;
 class CCircuitUnit;

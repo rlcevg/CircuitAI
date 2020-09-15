@@ -26,7 +26,6 @@ namespace circuit {
 
 using namespace springai;
 
-#define THREAT_BASE		0.f
 #define THREAT_DECAY	1e-2f
 #define THREAT_CLOAK	16.0f
 #define VEL_EPSILON		1e-2f

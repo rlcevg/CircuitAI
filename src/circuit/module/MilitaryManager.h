@@ -124,8 +124,15 @@ private:
 	CDefenceMatrix* defence;
 	unsigned int defenceIdx;
 
-	std::vector<unsigned int> scoutPath;  // list of cluster ids
+	std::vector<unsigned int> scoutPath;  // list of spot ids
 	unsigned int scoutIdx;
+
+	struct SRaidPoint {
+		unsigned int idx;
+		int lastFrame;
+		float weight;
+	};
+	std::vector<SRaidPoint> raidPath;  // list of cluster ids
 
 	struct SRoleInfo {
 		float cost;

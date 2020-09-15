@@ -10,6 +10,7 @@
 #include "terrain/path/QueryPathSingle.h"
 #include "terrain/path/QueryPathMulti.h"
 #include "terrain/path/QueryCostMap.h"
+#include "terrain/path/QueryLineMap.h"
 #include "terrain/TerrainData.h"
 #include "terrain/TerrainManager.h"
 #include "map/ThreatMap.h"
@@ -296,6 +297,18 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateCostMapQuery(
 
 	FillMapData(query, unit, threatMap, frame);
 	query->InitQuery(startPos);
+
+	return pQuery;
+}
+
+std::shared_ptr<IPathQuery> CPathFinder::CreateLineMapQuery(
+		CCircuitUnit* unit, CThreatMap* threatMap, int frame)  // SetMapData
+{
+	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryLineMap>(*this, MakeQueryId());
+	CQueryLineMap* query = static_cast<CQueryLineMap*>(pQuery.get());
+
+	FillMapData(query, unit, threatMap, frame);
+	query->InitQuery(threatMap->GetThreatMapWidth(), threatMap->GetSquareSize());
 
 	return pQuery;
 }

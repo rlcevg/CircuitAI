@@ -420,12 +420,18 @@ void CMilitaryManager::Init()
 {
 	CMetalManager* metalMgr = circuit->GetMetalManager();
 	const CMetalData::Metals& spots = metalMgr->GetSpots();
+	const CMetalData::Clusters& clusters = metalMgr->GetClusters();
 
-	clusterInfos.resize(metalMgr->GetClusters().size(), {nullptr});
+	clusterInfos.resize(clusters.size(), {nullptr});
 
 	scoutPath.reserve(spots.size());
 	for (unsigned i = 0; i < spots.size(); ++i) {
 		scoutPath.push_back(i);
+	}
+
+	raidPath.reserve(clusters.size());
+	for (unsigned i = 0; i < clusters.size(); ++i) {
+		raidPath.push_back({i, -1, 1.f});
 	}
 
 	CSetupManager::StartFunc subinit = [this, &spots](const AIFloat3& pos) {
@@ -867,7 +873,6 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 
 AIFloat3 CMilitaryManager::GetRaidPosition(CCircuitUnit* unit)
 {
-	// TODO: Raid/Guard most probable enemy expansion position
 	return GetScoutPosition(unit);
 }
 

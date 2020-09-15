@@ -339,10 +339,10 @@ bool CRaidTask::FindTarget()
 						maxThreat = std::numeric_limits<float>::max();
 					} else if (maxThreat <= defThreat) {
 						bestTarget = enemy;
-						minSqDist = sqDist;
+//						minSqDist = sqDist;
 						maxThreat = defThreat;
 					}
-					minPower = power;
+//					minPower = power;
 				} else if (bestTarget == nullptr) {
 					worstTarget = enemy;
 				}
