@@ -101,6 +101,9 @@ public:
 	float GetCommDefRadBegin() const { return defence->GetCommRadBegin(); }
 	float GetCommDefRad(float baseDist) const { return defence->GetCommRad(baseDist); }
 
+	void MarkPointOfInterest(CEnemyInfo* enemy);
+	void UnmarkPointOfInterest(CEnemyInfo* enemy);
+
 private:
 	IUnitTask* DefaultMakeTask(CCircuitUnit* unit);
 
@@ -131,6 +134,7 @@ private:
 		unsigned int idx;
 		int lastFrame;
 		float weight;
+		std::set<CEnemyInfo*> units;
 	};
 	std::vector<SRaidPoint> raidPath;  // list of cluster ids
 

@@ -1070,6 +1070,8 @@ int CCircuitAI::EnemyEnterLOS(CEnemyInfo* enemy)
 		}
 	}
 
+	militaryManager->MarkPointOfInterest(enemy);
+
 	return 0;  // signaling: OK
 }
 
@@ -1104,10 +1106,12 @@ int CCircuitAI::EnemyDestroyed(CEnemyInfo* enemy)
 {
 	allyTeam->EnemyDestroyed(enemy->GetData(), this);
 
+	militaryManager->UnmarkPointOfInterest(enemy);
+
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::PlayerCommand(std::vector<CCircuitUnit*>& units)
+int CCircuitAI::PlayerCommand(const std::vector<CCircuitUnit*>& units)
 {
 	for (CCircuitUnit* unit : units) {
 		if ((unit != nullptr) && (unit->GetTask() != nullptr) &&

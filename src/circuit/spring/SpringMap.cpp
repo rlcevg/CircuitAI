@@ -28,33 +28,37 @@ CMap::~CMap()
 void CMap::GetHeightMap(FloatVec& heightMap) const
 {
 	// NOTE: GetNextAreaData()->heightMap = std::move(map->GetHeightMap());
-	int size = sAICallback->Map_getHeightMap(map->GetSkirmishAIId(), nullptr, -1);
-	heightMap.resize(size);
-	sAICallback->Map_getHeightMap(map->GetSkirmishAIId(), heightMap.data(), size);
+	if (heightMap.empty()) {
+		heightMap.resize(sAICallback->Map_getHeightMap(map->GetSkirmishAIId(), nullptr, -1));
+	}
+	sAICallback->Map_getHeightMap(map->GetSkirmishAIId(), heightMap.data(), heightMap.size());
 }
 
 void CMap::GetSlopeMap(FloatVec& slopeMap) const
 {
 	// NOTE: slopeMap = std::move(map->GetSlopeMap());
-	int size = sAICallback->Map_getSlopeMap(map->GetSkirmishAIId(), nullptr, -1);
-	slopeMap.resize(size);
-	sAICallback->Map_getSlopeMap(map->GetSkirmishAIId(), slopeMap.data(), size);
+	if (slopeMap.empty()) {
+		slopeMap.resize(sAICallback->Map_getSlopeMap(map->GetSkirmishAIId(), nullptr, -1));
+	}
+	sAICallback->Map_getSlopeMap(map->GetSkirmishAIId(), slopeMap.data(), slopeMap.size());
 }
 
 void CMap::GetSonarMap(IntVec& sonarMap) const
 {
 	// NOTE: sonarMap = std::move(circuit->GetMap()->GetSonarMap());
-	int size = sAICallback->Map_getSonarMap(map->GetSkirmishAIId(), nullptr, -1);
-	sonarMap.resize(size);
-	sAICallback->Map_getSonarMap(map->GetSkirmishAIId(), sonarMap.data(), size);
+	if (sonarMap.empty()) {
+		sonarMap.resize(sAICallback->Map_getSonarMap(map->GetSkirmishAIId(), nullptr, -1));
+	}
+	sAICallback->Map_getSonarMap(map->GetSkirmishAIId(), sonarMap.data(), sonarMap.size());
 }
 
 void CMap::GetLosMap(IntVec& losMap) const
 {
 	// NOTE: losMap = std::move(circuit->GetMap()->GetLosMap());
-	int size = sAICallback->Map_getLosMap(map->GetSkirmishAIId(), nullptr, -1);
-	losMap.resize(size);
-	sAICallback->Map_getLosMap(map->GetSkirmishAIId(), losMap.data(), size);
+	if (losMap.empty()) {
+		losMap.resize(sAICallback->Map_getLosMap(map->GetSkirmishAIId(), nullptr, -1));
+	}
+	sAICallback->Map_getLosMap(map->GetSkirmishAIId(), losMap.data(), losMap.size());
 }
 
 void CMap::GetResourceMapSpotsPositions(Resource* resource, F3Vec& spots) const

@@ -127,7 +127,7 @@ private:
 	int EnemyLeaveRadar(CEnemyInfo* enemy);
 	int EnemyDamaged(CEnemyInfo* enemy);
 	int EnemyDestroyed(CEnemyInfo* enemy);
-	int PlayerCommand(std::vector<CCircuitUnit*>& units);
+	int PlayerCommand(const std::vector<CCircuitUnit*>& units);
 //	int CommandFinished(CCircuitUnit* unit, int commandTopicId, springai::Command* cmd);
 	int Load(std::istream& is);
 	int Save(std::ostream& os);

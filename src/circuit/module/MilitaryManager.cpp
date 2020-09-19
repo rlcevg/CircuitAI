@@ -844,15 +844,15 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CMetalManager* metalMgr = circuit->GetMetalManager();
 	STerrainMapArea* area = unit->GetArea();
-	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
-	const float minSqRange = SQUARE(unit->GetCircuitDef()->GetLosRadius());
+//	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
+//	const float minSqRange = SQUARE(unit->GetCircuitDef()->GetLosRadius());
 	const CMetalData::Metals& spots = metalMgr->GetSpots();
 	decltype(scoutIdx) prevIdx = scoutIdx;
 	while (scoutIdx < scoutPath.size()) {
 		int index = scoutPath[scoutIdx++];
-		if (!metalMgr->IsMexInFinished(index) &&
-			terrainMgr->CanMoveToPos(area, spots[index].position) &&
-			(pos.SqDistance2D(spots[index].position) > minSqRange))
+		if (!metalMgr->IsMexInFinished(index)
+			&& terrainMgr->CanMoveToPos(area, spots[index].position)
+			/*&& (pos.SqDistance2D(spots[index].position) > minSqRange)*/)
 		{
 			return spots[index].position;
 		}
@@ -860,9 +860,9 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 	scoutIdx = 0;
 	while (scoutIdx < prevIdx) {
 		int index = scoutPath[scoutIdx++];
-		if (!metalMgr->IsMexInFinished(index) &&
-			terrainMgr->CanMoveToPos(area, spots[index].position) &&
-			(pos.SqDistance2D(spots[index].position) > minSqRange))
+		if (!metalMgr->IsMexInFinished(index)
+			&& terrainMgr->CanMoveToPos(area, spots[index].position)
+			/*&& (pos.SqDistance2D(spots[index].position) > minSqRange)*/)
 		{
 			return spots[index].position;
 		}
@@ -873,7 +873,36 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 
 AIFloat3 CMilitaryManager::GetRaidPosition(CCircuitUnit* unit)
 {
-	return GetScoutPosition(unit);
+	// FIXME: not well thought, not finished
+	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
+	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
+	STerrainMapArea* area = unit->GetArea();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	threatMap->SetThreatType(unit);  // TODO: Check if required? Upper function may already call it
+	float bestWeight = -1.f;
+	float sqBestDist = std::numeric_limits<float>::max();
+	int bestIndex = -1;
+	for (size_t index = 0; index < raidPath.size(); ++index) {
+		if (!terrainMgr->CanMoveToPos(area, clusters[index].position)) {
+			continue;
+		}
+		const SRaidPoint& rp = raidPath[index];
+		float weight = rp.weight / (threatMap->GetThreatAt(clusters[index].position) + 1.f);
+		if (bestWeight < weight) {
+			bestWeight = weight;
+			bestIndex = index;
+			sqBestDist = pos.SqDistance2D(clusters[index].position);
+		} else if (rp.weight == bestWeight) {
+			float sqDist = pos.SqDistance2D(clusters[index].position);
+			if (sqBestDist > sqDist) {
+				sqBestDist = sqDist;
+				bestWeight = weight;
+				bestIndex = index;
+			}
+		}
+	}
+	return (bestIndex != -1) ? clusters[bestIndex].position : AIFloat3(-RgtVector);
 }
 
 void CMilitaryManager::FillFrontPos(CCircuitUnit* unit, F3Vec& outPositions)
@@ -1273,6 +1302,30 @@ void CMilitaryManager::MakeBaseDefence(const AIFloat3& pos)
 		defend = std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefence, this);
 		circuit->GetScheduler()->RunTaskEvery(defend, FRAMES_PER_SEC);
 	}
+}
+
+void CMilitaryManager::MarkPointOfInterest(CEnemyInfo* enemy)
+{
+	if (enemy->GetCircuitDef() != circuit->GetEconomyManager()->GetMexDef()) {  // TODO: if one of the list
+		return;
+	}
+	int index = circuit->GetMetalManager()->FindNearestCluster(enemy->GetPos());
+	SRaidPoint& rp = raidPath[index];
+	rp.lastFrame = circuit->GetLastFrame();
+	rp.units.insert(enemy);
+	rp.weight = rp.units.size();  // TODO
+}
+
+void CMilitaryManager::UnmarkPointOfInterest(CEnemyInfo* enemy)
+{
+	if (enemy->GetCircuitDef() != circuit->GetEconomyManager()->GetMexDef()) {  // TODO: if one of the list
+		return;
+	}
+	int index = circuit->GetMetalManager()->FindNearestCluster(enemy->GetPos());
+	SRaidPoint& rp = raidPath[index];
+	rp.lastFrame = circuit->GetLastFrame();
+	rp.units.erase(enemy);
+	rp.weight = rp.units.size();  // TODO
 }
 
 IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
