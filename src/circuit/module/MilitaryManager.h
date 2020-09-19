@@ -71,10 +71,9 @@ public:
 	void FillStaticSafePos(CCircuitUnit* unit, F3Vec& outPositions);
 	void FillSafePos(CCircuitUnit* unit, F3Vec& outPositions);
 
-	IFighterTask* AddDefendTask(int cluster);
-	IFighterTask* DelDefendTask(const springai::AIFloat3& pos);
-	IFighterTask* DelDefendTask(int cluster);
-	IFighterTask* GetDefendTask(int cluster) const { return clusterInfos[cluster].defence; }
+	IFighterTask* AddGuardTask(CCircuitUnit* unit);
+	bool DelGuardTask(CCircuitUnit* unit);
+	IFighterTask* GetGuardTask(CCircuitUnit* unit) const;
 
 	const std::set<CCircuitUnit*>& GetRoleUnits(CCircuitDef::RoleT type) const {
 		return roleInfos[type].units;
@@ -156,10 +155,7 @@ private:
 	std::set<CCircuitUnit*> army;
 	float armyCost;
 
-	struct SClusterInfo {
-		IFighterTask* defence;
-	};
-	std::vector<SClusterInfo> clusterInfos;
+	std::map<CCircuitUnit*, IFighterTask*> guardTasks;
 
 	struct SRaidQuota {
 		float min;

@@ -82,6 +82,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		workers.insert(unit);
 
 		AddBuildList(unit);
+
+		if (workers.size() < 3 && !unit->GetCircuitDef()->IsAttacker()) {
+			this->circuit->GetMilitaryManager()->AddGuardTask(unit);
+		}
 	};
 	auto workerIdleHandler = [this](CCircuitUnit* unit) {
 		// FIXME: Avoid instant task reassignment, its only valid on build order fail.
@@ -109,6 +113,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		costQueries.erase(unit);
 
 		RemoveBuildList(unit);
+
+		this->circuit->GetMilitaryManager()->DelGuardTask(unit);
 	};
 
 	/*

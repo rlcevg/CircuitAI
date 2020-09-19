@@ -38,10 +38,6 @@ CBMexTask::~CBMexTask()
 
 bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	// FIXME: Resume fighter/DefendTask experiment
-	return IBuilderTask::CanAssignTo(unit);
-	// FIXME: Resume fighter/DefendTask experiment
-
 	if (!IBuilderTask::CanAssignTo(unit)) {
 		return false;
 	}
@@ -55,8 +51,8 @@ bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 	if ((cluster < 0) || militaryMgr->HasDefence(cluster)) {
 		return true;
 	}
-	IUnitTask* defend = militaryMgr->GetDefendTask(cluster);
-	return (defend != nullptr) && !defend->GetAssignees().empty();
+	IUnitTask* guard = militaryMgr->GetGuardTask(unit);
+	return (guard != nullptr) && !guard->GetAssignees().empty();
 }
 
 void CBMexTask::Cancel()

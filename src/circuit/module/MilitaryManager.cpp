@@ -422,8 +422,6 @@ void CMilitaryManager::Init()
 	const CMetalData::Metals& spots = metalMgr->GetSpots();
 	const CMetalData::Clusters& clusters = metalMgr->GetClusters();
 
-	clusterInfos.resize(clusters.size(), {nullptr});
-
 	scoutPath.reserve(spots.size());
 	for (unsigned i = 0; i < spots.size(); ++i) {
 		scoutPath.push_back(i);
@@ -826,10 +824,6 @@ void CMilitaryManager::AbortDefence(const CBDefenceTask* task)
 
 bool CMilitaryManager::HasDefence(int cluster)
 {
-	// FIXME: Resume fighter/DefendTask experiment
-	return true;
-	// FIXME: Resume fighter/DefendTask experiment
-
 	const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(cluster);
 	for (const CDefenceMatrix::SDefPoint& defPoint : points) {
 		if (defPoint.cost > .5f) {
@@ -1033,52 +1027,34 @@ void CMilitaryManager::FillSafePos(CCircuitUnit* unit, F3Vec& outPositions)
 	}
 }
 
-IFighterTask* CMilitaryManager::AddDefendTask(int cluster)
+IFighterTask* CMilitaryManager::AddGuardTask(CCircuitUnit* unit)
 {
-	// FIXME: Resume fighter/DefendTask experiment
-	return nullptr;
-	// FIXME: Resume fighter/DefendTask experiment
+	auto it = guardTasks.find(unit);
+	if (it != guardTasks.end()) {
+		return it->second;
+	}
 
-//	IFighterTask* task = clusterInfos[cluster].defence;
-//	if (task != nullptr) {
-//		return task;
-//	}
-//
-//	const AIFloat3& pos = circuit->GetMetalManager()->GetClusters()[cluster].geoCentr;
-////	task = EnqueueTask(IFighterTask::FightType::DEFEND, pos, 1);
-//	task = new CGuardTask(this, pos, 1);
-//	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
-//	clusterInfos[cluster].defence = task;
-//	return task;
+	IFighterTask* task = EnqueueGuard(unit);
+	guardTasks[unit] = task;
+	return task;
 }
 
-IFighterTask* CMilitaryManager::DelDefendTask(const AIFloat3& pos)
+bool CMilitaryManager::DelGuardTask(CCircuitUnit* unit)
 {
-	// FIXME: Resume fighter/DefendTask experiment
-	return nullptr;
-	// FIXME: Resume fighter/DefendTask experiment
+	auto it = guardTasks.find(unit);
+	if (it == guardTasks.end()) {
+		return false;
+	}
 
-//	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
-//	if (index < 0) {
-//		return nullptr;
-//	}
-//
-//	return DelDefendTask(index);
+	AbortTask(it->second);
+	guardTasks.erase(it);
+	return true;
 }
 
-IFighterTask* CMilitaryManager::DelDefendTask(int cluster)
+IFighterTask* CMilitaryManager::GetGuardTask(CCircuitUnit* unit) const
 {
-	// FIXME: Resume fighter/DefendTask experiment
-	return nullptr;
-	// FIXME: Resume fighter/DefendTask experiment
-
-//	IFighterTask* task = clusterInfos[cluster].defence;
-//	if (task == nullptr) {
-//		return nullptr;
-//	}
-//
-//	clusterInfos[cluster].defence = nullptr;
-//	return task;
+	auto it = guardTasks.find(unit);
+	return (it != guardTasks.end()) ? it->second : nullptr;
 }
 
 void CMilitaryManager::AddResponse(CCircuitUnit* unit)
@@ -1335,6 +1311,7 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 	static const std::map<CCircuitDef::RoleT, IFighterTask::FightType> types = {
 		{ROLE_TYPE(SCOUT),   IFighterTask::FightType::SCOUT},
 		{ROLE_TYPE(RAIDER),  IFighterTask::FightType::RAID},
+		{ROLE_TYPE(RIOT),    IFighterTask::FightType::DEFEND},
 		{ROLE_TYPE(ARTY),    IFighterTask::FightType::ARTY},
 		{ROLE_TYPE(AA),      IFighterTask::FightType::AA},
 		{ROLE_TYPE(AH),      IFighterTask::FightType::AH},
@@ -1359,13 +1336,37 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 				case IFighterTask::FightType::RAID: {
 					if (cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
 						task = EnqueueTask(IFighterTask::FightType::SCOUT);
-					} else if (GetTasks(IFighterTask::FightType::RAID).empty()) {
-						task = EnqueueDefend(IFighterTask::FightType::RAID, raid.min);
+					} else {
+						const std::set<IFighterTask*>& guards = GetTasks(IFighterTask::FightType::GUARD);
+						for (IFighterTask* t : guards) {
+							if (t->GetAssignees().empty()) {
+								task = t;
+								break;
+							}
+						}
+						if (task == nullptr) {
+							if (GetTasks(IFighterTask::FightType::RAID).empty()) {
+								task = EnqueueDefend(IFighterTask::FightType::RAID, raid.min);
+							}
+						}
 					}
 				} break;
 				case IFighterTask::FightType::AH: {
 					if (!cdef->IsRoleMine() && (circuit->GetEnemyManager()->GetEnemyCost(ROLE_TYPE(HEAVY)) < 1.f)) {
 						task = EnqueueTask(IFighterTask::FightType::ATTACK);
+					}
+				} break;
+				case IFighterTask::FightType::DEFEND: {
+					const std::set<IFighterTask*>& guards = GetTasks(IFighterTask::FightType::GUARD);
+					for (IFighterTask* t : guards) {
+						if (t->GetAssignees().empty()) {
+							task = t;
+							break;
+						}
+					}
+					if (task == nullptr) {
+						const float power = std::max(minAttackers, circuit->GetEnemyManager()->GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize());
+						task = EnqueueDefend(IFighterTask::FightType::ATTACK, power);
 					}
 				} break;
 				default: break;

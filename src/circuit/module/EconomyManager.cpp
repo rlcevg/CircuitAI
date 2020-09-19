@@ -749,11 +749,6 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			}
 			int index = metalMgr->GetMexToBuild(position, predicate);
 			if (index != -1) {
-				int cluster = metalMgr->GetCluster(index);
-				if (!circuit->GetMilitaryManager()->HasDefence(cluster)) {
-					circuit->GetMilitaryManager()->AddDefendTask(cluster);
-				}
-
 				const AIFloat3& pos = spots[index].position;
 				task = builderMgr->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX, cost, .0f);
 				task->SetBuildPos(pos);
