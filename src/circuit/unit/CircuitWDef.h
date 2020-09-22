@@ -16,7 +16,7 @@ class CWeaponDef {
 public:
 	using Id = int;
 
-	CWeaponDef(const CWeaponDef& that) = delete;
+//	CWeaponDef(const CWeaponDef& that) = delete;
 	CWeaponDef& operator=(const CWeaponDef&) = delete;
 	CWeaponDef(springai::WeaponDef* def, springai::Resource* resE);
 	virtual ~CWeaponDef();

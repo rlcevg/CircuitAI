@@ -84,7 +84,7 @@ public:
 
 	static void InitStatic(CCircuitAI* circuit, CMaskHandler* roleMasker);
 
-	CCircuitDef(const CCircuitDef& that) = delete;
+//	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
 	CCircuitDef(CCircuitAI* circuit, springai::UnitDef* def, std::unordered_set<Id>& buildOpts,
 			springai::Resource* resM, springai::Resource* resE);
@@ -231,6 +231,7 @@ public:
 	void SetIsPylon(bool value) { isPylon = value; }
 	bool IsPylon() const { return isPylon;}
 
+	float GetHealth()    const { return health; }
 	float GetSpeed()     const { return speed; }
 	float GetLosRadius() const { return losRadius; }
 	float GetCostM()     const { return costM; }
@@ -327,6 +328,7 @@ private:
 	bool isPylon : 1;
 	// ---- Bit fields ---- END
 
+	float health;
 	float speed;
 	float losRadius;
 	float costM;

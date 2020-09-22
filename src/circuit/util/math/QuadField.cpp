@@ -79,6 +79,7 @@ void CQuadField::Kill()
 
 	tempAllyUnits.ReleaseAll();
 	tempEnemyUnits.ReleaseAll();
+	tempEnemyFakes.ReleaseAll();
 	tempQuads.ReleaseAll();
 }
 
@@ -310,16 +311,6 @@ void CQuadField::RemoveAllyUnit(CAllyUnit* unit, const AIFloat3& upos)
 	}
 
 	unit->quads.clear();
-
-	#ifdef DEBUG_QUADFIELD
-	for (const Quad& q: baseQuads) {
-		for (auto& teamUnits: q.teamUnits) {
-			for (CUnit* u: teamUnits) {
-				assert(u != unit);
-			}
-		}
-	}
-	#endif
 }
 
 bool CQuadField::InsertEnemyUnitIf(CEnemyUnit* unit, const AIFloat3& wpos)
@@ -399,16 +390,37 @@ void CQuadField::RemoveEnemyUnit(CEnemyUnit* unit)
 	}
 
 	unit->quads.clear();
+}
 
-	#ifdef DEBUG_QUADFIELD
-	for (const Quad& q: baseQuads) {
-		for (auto& teamUnits: q.teamUnits) {
-			for (CUnit* u: teamUnits) {
-				assert(u != unit);
-			}
-		}
+void CQuadField::MovedEnemyFake(CEnemyUnit* unit)
+{
+	QuadFieldQuery qfQuery(*this);
+	GetQuads(qfQuery, unit->GetPos(), unit->GetRadius());
+
+	// compare if the quads have changed, if not stop here
+	if (qfQuery.quads->size() == unit->quads.size()) {
+		if (std::equal(qfQuery.quads->begin(), qfQuery.quads->end(), unit->quads.begin()))
+			return;
 	}
-	#endif
+
+	for (const int qi: unit->quads) {
+		utils::VectorErase(baseQuads[qi].enemyFakes, unit);
+	}
+
+	for (const int qi: *qfQuery.quads) {
+		utils::VectorInsertUnique(baseQuads[qi].enemyFakes, unit, false);
+	}
+
+	unit->quads = std::move(*qfQuery.quads);
+}
+
+void CQuadField::RemoveEnemyFake(CEnemyUnit* unit)
+{
+	for (const int qi: unit->quads) {
+		utils::VectorErase(baseQuads[qi].enemyFakes, unit);
+	}
+
+	unit->quads.clear();
 }
 
 void CQuadField::GetAllyUnits(QuadFieldQuery& qfq, const AIFloat3& pos, float radius)
@@ -561,6 +573,34 @@ void CQuadField::GetEnemyUnitsExact(QuadFieldQuery& qfq, const AIFloat3& mins, c
 				continue;
 
 			qfq.enemyUnits->push_back(unit);
+		}
+	}
+
+	return;
+}
+
+void CQuadField::GetEnemyAndFakes(QuadFieldQuery& qfq, const AIFloat3& pos, float radius)
+{
+	QuadFieldQuery qfQuery(*this);
+	GetQuads(qfQuery, pos, radius);
+	const int tempNum = GetTempNum();
+	qfq.enemyUnits = tempEnemyUnits.ReserveVector();
+	qfq.enemyFakes = tempEnemyFakes.ReserveVector();
+
+	for (const int qi: *qfQuery.quads) {
+		for (CEnemyUnit* u: baseQuads[qi].enemyUnits) {
+			if (u->tempNum == tempNum)
+				continue;
+
+			u->tempNum = tempNum;
+			qfq.enemyUnits->push_back(u);
+		}
+		for (CEnemyUnit* u: baseQuads[qi].enemyFakes) {
+			if (u->tempNum == tempNum)
+				continue;
+
+			u->tempNum = tempNum;
+			qfq.enemyFakes->push_back(u);
 		}
 	}
 

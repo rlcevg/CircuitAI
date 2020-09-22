@@ -270,11 +270,9 @@ void CTerrainManager::ReadConfig()
 	SBlockDesc blockDesc;
 	const char* defName = "_default_";
 	if (readBlockDesc(defName, clLand[defName], blockDesc)) {
-		const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
-		for (auto& kv : defs) {
-			CCircuitDef* cdef = kv.second;
-			if (!cdef->IsMobile() && (blockInfos.find(kv.first) == blockInfos.end())) {
-				blockInfos[cdef->GetId()] = createBlockInfo(blockDesc, cdef->GetDef());
+		for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+			if (!cdef.IsMobile() && (blockInfos.find(cdef.GetId()) == blockInfos.end())) {
+				blockInfos[cdef.GetId()] = createBlockInfo(blockDesc, cdef.GetDef());
 			}
 		}
 	}

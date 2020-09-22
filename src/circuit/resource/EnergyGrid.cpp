@@ -125,13 +125,12 @@ CEnergyGrid::CEnergyGrid(CCircuitAI* circuit)
 {
 	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CEnergyGrid::Init, this));
 
-	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
-	for (auto& kv : allDefs) {
-		const std::map<std::string, std::string>& customParams = kv.second->GetDef()->GetCustomParams();
+	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+		const std::map<std::string, std::string>& customParams = cdef.GetDef()->GetCustomParams();
 		auto it = customParams.find("pylonrange");
 		if (it != customParams.end()) {
-			pylonRanges[kv.first] = utils::string_to_float(it->second) - 1.f;
-			kv.second->SetIsPylon(true);
+			pylonRanges[cdef.GetId()] = utils::string_to_float(it->second) - 1.f;
+			cdef.SetIsPylon(true);
 		}
 	}
 

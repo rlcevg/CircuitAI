@@ -75,32 +75,31 @@ CThreatMap::CThreatMap(CMapManager* manager, float decloakRadius)
 	slackMod.speedMod = speedSlack.get((unsigned)0, 1.f).asFloat() * DEFAULT_SLACK / squareSize;
 	slackMod.speedModMax = speedSlack.get((unsigned)1, 2).asInt() * DEFAULT_SLACK / squareSize;
 	constexpr float allowedRange = 2000.f;
-	for (auto& kv : circuit->GetCircuitDefs()) {
-		CCircuitDef* cdef = kv.second;
-		float slack = squareSize - 1 + cdef->GetAoe() / 2 + DEFAULT_SLACK * slackMod.allMod;
-		if (cdef->IsMobile()) {
+	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+		float slack = squareSize - 1 + cdef.GetAoe() / 2 + DEFAULT_SLACK * slackMod.allMod;
+		if (cdef.IsMobile()) {
 			// TODO: slack should also depend on own unit's path update rate
-			slack += THREAT_UPDATE_RATE * cdef->GetSpeed() / FRAMES_PER_SEC;
+			slack += THREAT_UPDATE_RATE * cdef.GetSpeed() / FRAMES_PER_SEC;
 		} else {
 			slack += DEFAULT_SLACK * slackMod.staticMod;
 		}
 		float realRange;
 		int range;
 
-		realRange = cdef->GetMaxRange(CCircuitDef::RangeType::AIR);
-		range = cdef->HasAntiAir() ? int(realRange + slack) / squareSize + 1 : 0;
-		cdef->SetThreatRange(CCircuitDef::ThreatType::AIR, range);
+		realRange = cdef.GetMaxRange(CCircuitDef::RangeType::AIR);
+		range = cdef.HasAntiAir() ? int(realRange + slack) / squareSize + 1 : 0;
+		cdef.SetThreatRange(CCircuitDef::ThreatType::AIR, range);
 
-		realRange = cdef->GetMaxRange(CCircuitDef::RangeType::LAND);
-		range = (cdef->HasAntiLand() && (realRange <= allowedRange)) ? int(realRange + slack) / squareSize + 1 : 0;
-		cdef->SetThreatRange(CCircuitDef::ThreatType::LAND, range);
+		realRange = cdef.GetMaxRange(CCircuitDef::RangeType::LAND);
+		range = (cdef.HasAntiLand() && (realRange <= allowedRange)) ? int(realRange + slack) / squareSize + 1 : 0;
+		cdef.SetThreatRange(CCircuitDef::ThreatType::LAND, range);
 
-		realRange = cdef->GetMaxRange(CCircuitDef::RangeType::WATER);
-		range = (cdef->HasAntiWater() && (realRange <= allowedRange)) ? int(realRange + slack) / squareSize + 1 : 0;
-		cdef->SetThreatRange(CCircuitDef::ThreatType::WATER, range);
+		realRange = cdef.GetMaxRange(CCircuitDef::RangeType::WATER);
+		range = (cdef.HasAntiWater() && (realRange <= allowedRange)) ? int(realRange + slack) / squareSize + 1 : 0;
+		cdef.SetThreatRange(CCircuitDef::ThreatType::WATER, range);
 
-		cdef->SetThreatRange(CCircuitDef::ThreatType::CLOAK, GetCloakRange(cdef));
-		cdef->SetThreatRange(CCircuitDef::ThreatType::SHIELD, GetShieldRange(cdef));
+		cdef.SetThreatRange(CCircuitDef::ThreatType::CLOAK, GetCloakRange(&cdef));
+		cdef.SetThreatRange(CCircuitDef::ThreatType::SHIELD, GetShieldRange(&cdef));
 	}
 }
 

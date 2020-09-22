@@ -117,7 +117,7 @@ private:
 	int UnitFinished(CCircuitUnit* unit);
 	int UnitIdle(CCircuitUnit* unit);
 	int UnitMoveFailed(CCircuitUnit* unit);
-	int UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker/*, int weaponId*/);
+	int UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker, int weaponId, springai::AIFloat3 dir);
 	int UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker);
 	int UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId);
 	int UnitCaptured(ICoreUnit::Id unitId, int oldTeamId, int newTeamId);
@@ -199,12 +199,17 @@ private:
 
 // ---- UnitDefs ---- BEGIN
 public:
-	using CircuitDefs = std::unordered_map<CCircuitDef::Id, CCircuitDef*>;
+	using CircuitDefs = std::vector<CCircuitDef>;  // UnitDefId=0 is not valid, @see rts/Sim/Units/UnitDefHandler.h
 	using NamedDefs = std::map<const char*, CCircuitDef*, cmp_str>;
 
-	const CircuitDefs& GetCircuitDefs() const { return defsById; }
+	/*const */CircuitDefs& GetCircuitDefs() /*const */{ return defsById; }
 	CCircuitDef* GetCircuitDef(const char* name);
-	CCircuitDef* GetCircuitDef(CCircuitDef::Id unitDefId);
+	bool IsValidUnitDefId(CCircuitDef::Id unitDefId) const {
+		return (unitDefId > 0) && ((size_t)unitDefId < defsById.size());
+	}
+	CCircuitDef* GetCircuitDef(CCircuitDef::Id unitDefId) {
+		return /*IsValidUnitDefId(unitDefId) ? */&defsById[unitDefId - 1]/* : nullptr*/;
+	}
 	void BindRole(CCircuitDef::RoleT role, CCircuitDef::RoleT actAsRole) {
 		roleBind[role] = actAsRole;
 	}
@@ -220,12 +225,23 @@ private:
 
 // ---- WeaponDefs ---- BEGIN
 public:
-	using WeaponDefs = std::vector<CWeaponDef*>;
+	using WeaponDefs = std::vector<CWeaponDef>;
 
-	CWeaponDef* GetWeaponDef(CWeaponDef::Id weaponDefId) const;
+	bool IsValidWeaponDefId(CWeaponDef::Id weaponDefId) const {
+		return (weaponDefId >= 0) && ((size_t)weaponDefId < weaponDefs.size());
+	}
+	CWeaponDef* GetWeaponDef(CWeaponDef::Id weaponDefId) {
+		return /*IsValidWeaponDefId(weaponDefId) ? */&weaponDefs[weaponDefId]/* : nullptr*/;
+	}
+	void BindUnitToWeaponDefs(CCircuitDef::Id unitDefId, const std::set<CWeaponDef::Id>& weaponDefs, bool isMobile);
 private:
 	void InitWeaponDefs();
 	WeaponDefs weaponDefs;  // owner
+	struct SWeaponToUnitDef {
+		std::set<CCircuitDef::Id> mobileIds;
+		std::set<CCircuitDef::Id> staticIds;
+	};
+	std::vector<SWeaponToUnitDef> weaponToUnitDefs;  // weapon (id=index) to unit defs
 // ---- WeaponDefs ---- END
 
 public:

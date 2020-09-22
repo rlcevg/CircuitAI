@@ -59,83 +59,16 @@ CEnemyManager::~CEnemyManager()
 		delete kv.second;
 	}
 //	enemyUnits.clear();
+	for (CEnemyUnit* enemy : enemyFakes) {
+		delete enemy;
+	}
+//	enemyFakes.clear();
 }
 
 CEnemyUnit* CEnemyManager::GetEnemyUnit(ICoreUnit::Id unitId) const
 {
 	auto it = enemyUnits.find(unitId);
 	return (it != enemyUnits.end()) ? it->second : nullptr;
-}
-
-std::pair<CEnemyUnit*, bool> CEnemyManager::RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS)
-{
-	Unit* u = WrappUnit::GetInstance(circuit->GetSkirmishAIId(), unitId);
-	if (u == nullptr) {
-		return std::make_pair(nullptr, true);  // true error
-	}
-	// IsNeutral works in los or radar, @see rts/ExternalAI/AICallback.cpp CAICallback::IsUnitNeutral
-	bool isIgnore = u->IsNeutral() || (u->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f);
-
-	CCircuitDef* cdef = nullptr;
-	if (isInLOS) {
-		CCircuitDef::Id unitDefId = circuit->GetCallback()->Unit_GetDefId(unitId);
-		if (unitDefId == -1) {  // doesn't work with globalLOS
-			delete u;
-			return std::make_pair(nullptr, false);
-		}
-		cdef = circuit->GetCircuitDef(unitDefId);
-		isIgnore |= cdef->IsIgnore();
-	}
-	CEnemyUnit* data = new CEnemyUnit(unitId, u, cdef);
-
-	enemyUnits[data->GetId()] = data;
-	enemyUpdates.push_back(data);
-
-	if (isIgnore) {
-		data->SetIgnore();
-		return std::make_pair(nullptr, false);
-	}
-
-	return std::make_pair(data, true);
-}
-
-CEnemyUnit* CEnemyManager::RegisterEnemyUnit(Unit* e)
-{
-	const ICoreUnit::Id unitId = e->GetUnitId();
-	CEnemyUnit* data = GetEnemyUnit(unitId);
-	CCircuitDef::Id unitDefId = circuit->GetCallback()->Unit_GetDefId(unitId);
-	// IsNeutral works in los or radar, @see rts/ExternalAI/AICallback.cpp CAICallback::IsUnitNeutral
-	bool isIgnore = e->IsNeutral() || (e->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f);
-
-	if (data != nullptr) {
-		if ((data->GetCircuitDef() == nullptr) || data->GetCircuitDef()->GetId() != unitDefId) {
-			CCircuitDef* cdef = circuit->GetCircuitDef(unitDefId);
-			data->SetCircuitDef(cdef);
-			data->SetCost(data->GetUnit()->GetRulesParamFloat("comm_cost", data->GetCost()));
-			isIgnore |= cdef->IsIgnore();
-		}
-		if (isIgnore) {
-			data->SetIgnore();
-		}
-		delete e;
-		return nullptr;
-	}
-
-	CCircuitDef* cdef = circuit->GetCircuitDef(unitDefId);
-	if (cdef != nullptr) {
-		isIgnore |= cdef->IsIgnore();
-	}
-	data = new CEnemyUnit(unitId, e, cdef);
-
-	enemyUnits[data->GetId()] = data;
-	enemyUpdates.push_back(data);
-
-	if (isIgnore) {
-		data->SetIgnore();
-		return nullptr;
-	}
-
-	return data;
 }
 
 void CEnemyManager::UpdateEnemyDatas(CQuadField& quadField)
@@ -207,7 +140,7 @@ void CEnemyManager::PrepareUpdate()
 	CMapManager* mapMgr = circuit->GetMapManager();
 
 	hostileDatas.clear();
-	hostileDatas.reserve(mapMgr->GetHostileUnits().size());
+	hostileDatas.reserve(mapMgr->GetHostileUnits().size() + mapMgr->GetEnemyFakes().size());
 	for (auto& kv : mapMgr->GetHostileUnits()) {
 		CEnemyUnit* e = kv.second;
 
@@ -216,6 +149,19 @@ void CEnemyManager::PrepareUpdate()
 		}
 
 		hostileDatas.push_back(e->GetData());
+	}
+
+	std::vector<CEnemyUnit*> deadFakes;
+	int maxFrame = circuit->GetLastFrame() - FRAMES_PER_SEC * 60 * 20;
+	for (CEnemyUnit* e : mapMgr->GetEnemyFakes()) {
+		if (mapMgr->IsInLOS(e->GetPos()) || (maxFrame >= e->GetLastSeen())) {
+			deadFakes.push_back(e);
+		} else {
+			hostileDatas.push_back(e->GetData());
+		}
+	}
+	for (CEnemyUnit* e : deadFakes) {
+		circuit->GetAllyTeam()->UnregisterEnemyFake(e);
 	}
 
 	peaceDatas.clear();
@@ -258,6 +204,90 @@ bool CEnemyManager::UnitInLOS(CEnemyUnit* data)
 		}
 	}
 	return true;
+}
+
+std::pair<CEnemyUnit*, bool> CEnemyManager::RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS)
+{
+	Unit* u = WrappUnit::GetInstance(circuit->GetSkirmishAIId(), unitId);
+	if (u == nullptr) {
+		return std::make_pair(nullptr, true);  // true error
+	}
+	// IsNeutral works in los or radar, @see rts/ExternalAI/AICallback.cpp CAICallback::IsUnitNeutral
+	bool isIgnore = u->IsNeutral() || (u->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f);
+
+	CCircuitDef* cdef = nullptr;
+	if (isInLOS) {
+		CCircuitDef::Id unitDefId = circuit->GetCallback()->Unit_GetDefId(unitId);
+		if (unitDefId == -1) {  // doesn't work with globalLOS
+			delete u;
+			return std::make_pair(nullptr, false);
+		}
+		cdef = circuit->GetCircuitDef(unitDefId);
+		isIgnore |= cdef->IsIgnore();
+	}
+	CEnemyUnit* data = new CEnemyUnit(unitId, u, cdef);
+
+	enemyUnits[unitId] = data;
+	enemyUpdates.push_back(data);
+
+	if (isIgnore) {
+		data->SetIgnore();
+		return std::make_pair(nullptr, false);
+	}
+
+	return std::make_pair(data, true);
+}
+
+CEnemyUnit* CEnemyManager::RegisterEnemyUnit(Unit* e)
+{
+	const ICoreUnit::Id unitId = e->GetUnitId();
+	CEnemyUnit* data = GetEnemyUnit(unitId);
+	CCircuitDef::Id unitDefId = circuit->GetCallback()->Unit_GetDefId(unitId);
+	// IsNeutral works in los or radar, @see rts/ExternalAI/AICallback.cpp CAICallback::IsUnitNeutral
+	bool isIgnore = e->IsNeutral() || (e->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f);
+
+	if (data != nullptr) {
+		if ((data->GetCircuitDef() == nullptr) || data->GetCircuitDef()->GetId() != unitDefId) {
+			CCircuitDef* cdef = circuit->GetCircuitDef(unitDefId);
+			data->SetCircuitDef(cdef);
+			data->SetCost(data->GetUnit()->GetRulesParamFloat("comm_cost", data->GetCost()));
+			isIgnore |= cdef->IsIgnore();
+		}
+		if (isIgnore) {
+			data->SetIgnore();
+		}
+		delete e;
+		return nullptr;
+	}
+
+	CCircuitDef* cdef = circuit->GetCircuitDef(unitDefId);
+	if (cdef != nullptr) {
+		isIgnore |= cdef->IsIgnore();
+	}
+	data = new CEnemyUnit(unitId, e, cdef);
+
+	enemyUnits[unitId] = data;
+	enemyUpdates.push_back(data);
+
+	if (isIgnore) {
+		data->SetIgnore();
+		return nullptr;
+	}
+
+	return data;
+}
+
+CEnemyUnit* CEnemyManager::RegisterEnemyFake(CCircuitDef* cdef, const AIFloat3& pos)
+{
+	CEnemyUnit* data = new CEnemyUnit(cdef, pos);
+	enemyFakes.insert(data);
+	return data;
+}
+
+void CEnemyManager::UnregisterEnemyFake(CEnemyUnit* data)
+{
+	enemyFakes.erase(data);
+	delete data;
 }
 
 void CEnemyManager::UnregisterEnemyUnit(CEnemyUnit* data)
@@ -450,7 +480,9 @@ void CEnemyManager::KMeansIteration()
 				float num = std::max(1, numUnitsAssignedToMean[meanIndex]);
 				eg.pos += enemy.pos / num;
 
-				eg.units.push_back(enemy.id);
+				if (enemy.id != -1) {  // not a fake
+					eg.units.push_back(enemy.id);
+				}
 
 				if (enemy.cdef != nullptr) {
 					eg.roleCosts[enemy.cdef->GetMainRole()] += enemy.cost;

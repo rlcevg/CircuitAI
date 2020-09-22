@@ -183,6 +183,20 @@ void CAllyTeam::UnregisterEnemyUnit(CEnemyUnit* data, CCircuitAI* ai)
 	enemyManager->UnregisterEnemyUnit(data);
 }
 
+void CAllyTeam::RegisterEnemyFake(CCircuitDef* cdef, const AIFloat3& pos)
+{
+	CEnemyUnit* data = enemyManager->RegisterEnemyFake(cdef, pos);
+	mapManager->AddFakeEnemy(data);
+	quadField.MovedEnemyFake(data);
+}
+
+void CAllyTeam::UnregisterEnemyFake(CEnemyUnit* data)
+{
+	quadField.RemoveEnemyFake(data);
+	mapManager->DelFakeEnemy(data);
+	enemyManager->UnregisterEnemyFake(data);
+}
+
 void CAllyTeam::EnemyEnterLOS(CEnemyUnit* enemy, CCircuitAI* ai)
 {
 	if (circuit != ai) {
@@ -258,6 +272,25 @@ void CAllyTeam::EnqueueUpdate()
 
 	mapManager->EnqueueUpdate();
 	enemyManager->EnqueueUpdate();
+}
+
+bool CAllyTeam::IsEnemyOrFakeIn(const AIFloat3& pos, const std::set<CCircuitDef::Id>& defs, float radius)
+{
+	QuadFieldQuery qfQuery(quadField);
+	quadField.GetEnemyAndFakes(qfQuery, pos, radius);  // TODO: predicate
+	for (CEnemyUnit* e : *qfQuery.enemyUnits) {
+		CCircuitDef* edef = e->GetCircuitDef();
+		if ((edef != nullptr) && (defs.find(edef->GetId()) != defs.end())) {
+			return true;
+		}
+	}
+	for (CEnemyUnit* e : *qfQuery.enemyFakes) {
+		CCircuitDef* edef = e->GetCircuitDef();
+		if (defs.find(edef->GetId()) != defs.end()) {
+			return true;
+		}
+	}
+	return false;
 }
 
 void CAllyTeam::OccupyCluster(int clusterId, int teamId)

@@ -20,21 +20,42 @@ CEnemyUnit::CEnemyUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 		: ICoreUnit(unitId, unit)
 		, knownFrame(-1)
 		, lastSeen(-1)
-		, data({cdef,
-			0.f,             // shieldPower
-			0.f,             // health
-			false,           // isBeingBuilt
-			false,           // isParalyzed
-			false,           // isDisarmed
-			ZeroVector,      // pos
-			ZeroVector,      // vel
-			0.f,             // threat
-			{0},             // range
-			unitId,          // id
-			0.f,             // cost
-			SEnemyData::LosMask::NONE})  // losStatus
+		, data(SEnemyData(cdef,
+			0.f,         // shieldPower
+			0.f,         // health
+			false,       // isBeingBuilt
+			false,       // isParalyzed
+			false,       // isDisarmed
+			ZeroVector,  // pos
+			ZeroVector,  // vel
+			0.f,         // threat
+			{0},         // range
+			unitId,      // id
+			0.f,         // cost
+			SEnemyData::LosMask::NONE))  // losStatus
 {
 	Init();
+}
+
+CEnemyUnit::CEnemyUnit(CCircuitDef* cdef, const AIFloat3& pos)
+		: ICoreUnit(-1, nullptr)
+		, knownFrame(-1)
+		, lastSeen(-1)
+		, shield(nullptr)
+		, data(SEnemyData(cdef,
+			cdef->GetMaxShield(),  // shieldPower
+			cdef->GetHealth(),  // health
+			false,       // isBeingBuilt
+			false,       // isParalyzed
+			false,       // isDisarmed
+			pos,         // pos
+			ZeroVector,  // vel
+			0.f,         // threat
+			{0},         // range
+			-1,          // id
+			cdef->GetCostM(),  // cost
+			SEnemyData::LosMask::NONE))  // losStatus
+{
 }
 
 CEnemyUnit::~CEnemyUnit()

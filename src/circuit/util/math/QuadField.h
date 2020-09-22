@@ -130,6 +130,12 @@ public:
 	 */
 	void GetEnemyUnitsExact(QuadFieldQuery& qfq, const AIFloat3& mins, const AIFloat3& maxs);
 
+	/**
+	 * Returns all units within @c radius of @c pos,
+	 * and treats each unit as a 3D point object
+	 */
+	void GetEnemyAndFakes(QuadFieldQuery& qfq, const AIFloat3& pos, float radius);
+
 	bool InsertAllyUnitIf(CAllyUnit* unit, const AIFloat3& upos, const AIFloat3& wpos);
 	bool RemoveAllyUnitIf(CAllyUnit* unit, const AIFloat3& upos, const AIFloat3& wpos);
 
@@ -142,9 +148,13 @@ public:
 	void MovedEnemyUnit(CEnemyUnit* unit);
 	void RemoveEnemyUnit(CEnemyUnit* unit);
 
-	void ReleaseVector(std::vector<CAllyUnit*>* v ) { tempAllyUnits.ReleaseVector(v); }
-	void ReleaseVector(std::vector<CEnemyUnit*>* v) { tempEnemyUnits.ReleaseVector(v); }
-	void ReleaseVector(std::vector<int>* v        ) { tempQuads.ReleaseVector(v); }
+	void MovedEnemyFake(CEnemyUnit* unit);
+	void RemoveEnemyFake(CEnemyUnit* unit);
+
+	void ReleaseVector(std::vector<CAllyUnit*>* v) { tempAllyUnits.ReleaseVector(v); }
+	void ReleaseVectorReal(std::vector<CEnemyUnit*>* v) { tempEnemyUnits.ReleaseVector(v); }
+	void ReleaseVectorFake(std::vector<CEnemyUnit*>* v) { tempEnemyFakes.ReleaseVector(v); }
+	void ReleaseVector(std::vector<int>* v) { tempQuads.ReleaseVector(v); }
 
 	struct Quad {
 	public:
@@ -156,17 +166,20 @@ public:
 		Quad& operator = (Quad&& q) {
 			allyUnits = std::move(q.allyUnits);
 			enemyUnits = std::move(q.enemyUnits);
+			enemyFakes = std::move(q.enemyFakes);
 			return *this;
 		}
 
 		void Clear() {
 			allyUnits.clear();
 			enemyUnits.clear();
+			enemyFakes.clear();
 		}
 
 	public:
 		std::vector<CAllyUnit*> allyUnits;
 		std::vector<CEnemyUnit*> enemyUnits;
+		std::vector<CEnemyUnit*> enemyFakes;
 	};
 
 	const Quad& GetQuad(unsigned i) const {
@@ -196,6 +209,7 @@ private:
 	// preallocated vectors for Get*Exact functions
 	QueryVectorCache<CAllyUnit*> tempAllyUnits;
 	QueryVectorCache<CEnemyUnit*> tempEnemyUnits;
+	QueryVectorCache<CEnemyUnit*> tempEnemyFakes;
 	QueryVectorCache<int> tempQuads;
 
 	float2 invQuadSize;
@@ -221,13 +235,15 @@ struct QuadFieldQuery {
 	QuadFieldQuery(CQuadField& qf) : quadField(qf) {}
 	~QuadFieldQuery() {
 		quadField.ReleaseVector(allyUnits);
-		quadField.ReleaseVector(enemyUnits);
+		quadField.ReleaseVectorReal(enemyUnits);
+		quadField.ReleaseVectorFake(enemyFakes);
 		quadField.ReleaseVector(quads);
 	}
 
 	CQuadField& quadField;
 	std::vector<CAllyUnit*>* allyUnits = nullptr;
 	std::vector<CEnemyUnit*>* enemyUnits = nullptr;
+	std::vector<CEnemyUnit*>* enemyFakes = nullptr;
 	std::vector<int>* quads = nullptr;
 };
 

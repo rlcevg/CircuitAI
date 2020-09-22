@@ -143,6 +143,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	const int ft = def->GetFireState();
 	fireState = (ft < 0) ? FireType::OPEN : static_cast<FireType>(ft);
 
+	health    = def->GetHealth();
 	speed     = def->GetSpeed();  // elmos per second
 	losRadius = def->GetLosRadius();
 	costM     = def->GetCost(resM);
@@ -243,6 +244,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	/*
 	 * DPS and Weapon calculations
 	 */
+	std::set<CWeaponDef::Id> allWeaponDefs;
 	minRange = std::numeric_limits<float>::max();
 	float minReloadTime = std::numeric_limits<float>::max();
 	float bestDGunReload = std::numeric_limits<float>::max();
@@ -396,8 +398,14 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		} else {
 			delete mount;
 		}
+
+		allWeaponDefs.insert(wd->GetWeaponDefId());
+
 		delete wd;
 	}
+
+	circuit->BindUnitToWeaponDefs(GetId(), allWeaponDefs, IsMobile());
+
 	if (isDynamic) {  // FIXME: Dynamo com workaround
 		dps /= mounts.size();
 		dmg /= mounts.size();

@@ -187,30 +187,28 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	float maxStoreDivCost = .0f;
 	CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
 
-	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
-	for (auto& kv : allDefs) {
-		CCircuitDef* cdef = kv.second;
-		const std::map<std::string, std::string>& customParams = cdef->GetDef()->GetCustomParams();
+	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+		const std::map<std::string, std::string>& customParams = cdef.GetDef()->GetCustomParams();
 
-		if (!cdef->IsMobile()) {
-			if (commDef->CanBuild(cdef)) {
+		if (!cdef.IsMobile()) {
+			if (commDef->CanBuild(&cdef)) {
 				// pylon
 				auto it = customParams.find("pylonrange");
 				if (it != customParams.end()) {
 					const float range = utils::string_to_float(it->second);
-					float areaDivCost = M_PI * SQUARE(range) / cdef->GetCostM();
+					float areaDivCost = M_PI * SQUARE(range) / cdef.GetCostM();
 					if (maxAreaDivCost < areaDivCost) {
 						maxAreaDivCost = areaDivCost;
-						pylonDef = cdef;  // armestor
+						pylonDef = &cdef;  // armestor
 						pylonRange = range;
 					}
 				}
 
 				// storage
-				float storeDivCost = cdef->GetDef()->GetStorage(metalRes) / cdef->GetCostM();
+				float storeDivCost = cdef.GetDef()->GetStorage(metalRes) / cdef.GetCostM();
 				if (maxStoreDivCost < storeDivCost) {
 					maxStoreDivCost = storeDivCost;
-					storeDef = cdef;  // armmstor
+					storeDef = &cdef;  // armmstor
 				}
 
 				// mex
@@ -218,32 +216,32 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				//     float metalExtracts = unitDef->GetExtractsResource(metalRes);
 				//     float netMetal = unitDef->GetResourceMake(metalRes) - unitDef->GetUpkeep(metalRes);
 				if (((it = customParams.find("ismex")) != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
-					finishedHandler[kv.first] = mexFinishedHandler;
-					mexDef = cdef;  // cormex
-					cdef->SetIsMex(true);
+					finishedHandler[cdef.GetId()] = mexFinishedHandler;
+					mexDef = &cdef;  // cormex
+					cdef.SetIsMex(true);
 				}
 			}
 
 			// factory
-			if (cdef->GetDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
-				finishedHandler[cdef->GetId()] = factoryFinishedHandler;
-				destroyedHandler[cdef->GetId()] = factoryDestroyedHandler;
+			if (cdef.GetDef()->IsBuilder() && !cdef.GetBuildOptions().empty()) {
+				finishedHandler[cdef.GetId()] = factoryFinishedHandler;
+				destroyedHandler[cdef.GetId()] = factoryDestroyedHandler;
 			}
 
 			// energy
 			// BA: float netEnergy = unitDef->GetResourceMake(energyRes) - unitDef->GetUpkeep(energyRes);
 			auto it = customParams.find("income_energy");
 			if ((it != customParams.end()) && (utils::string_to_float(it->second) > 1)) {
-				finishedHandler[kv.first] = energyFinishedHandler;
-				allEnergyDefs.insert(cdef);
+				finishedHandler[cdef.GetId()] = energyFinishedHandler;
+				allEnergyDefs.insert(&cdef);
 			}
 
 		} else {
 
 			// commander
-			if (cdef->IsRoleComm()) {
-				finishedHandler[cdef->GetId()] = comFinishedHandler;
-				destroyedHandler[cdef->GetId()] = comDestroyedHandler;
+			if (cdef.IsRoleComm()) {
+				finishedHandler[cdef.GetId()] = comFinishedHandler;
+				destroyedHandler[cdef.GetId()] = comDestroyedHandler;
 			}
 		}
 	}

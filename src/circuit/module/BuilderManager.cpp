@@ -146,12 +146,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	const float builderRet = root["retreat"].get("builder", 0.8f).asFloat();
 
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
-	for (auto& kv : allDefs) {
-		CCircuitDef::Id unitDefId = kv.first;
-		CCircuitDef* cdef = kv.second;
-		if (cdef->IsMobile()) {
-			if (cdef->GetDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
+	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+		CCircuitDef::Id unitDefId = cdef.GetId();
+		if (cdef.IsMobile()) {
+			if (cdef.GetDef()->IsBuilder() && !cdef.GetBuildOptions().empty()) {
 				createdHandler[unitDefId]   = workerCreatedHandler;
 				finishedHandler[unitDefId]  = workerFinishedHandler;
 				idleHandler[unitDefId]      = workerIdleHandler;
@@ -162,10 +160,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 				if (mtId >= 0) {  // not air
 					workerMobileTypes.insert(mtId);
 				}
-				workerDefs.insert(cdef);
+				workerDefs.insert(&cdef);
 
-				if (cdef->GetRetreat() < 0.f) {
-					cdef->SetRetreat(builderRet);
+				if (cdef.GetRetreat() < 0.f) {
+					cdef.SetRetreat(builderRet);
 				}
 //			} else if (cdef->GetCostM() > 999.0f) {
 //				createdHandler[unitDefId] = heavyCreatedHandler;

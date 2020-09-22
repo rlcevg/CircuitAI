@@ -240,7 +240,9 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			struct SUnitDamagedEvent* evt = (struct SUnitDamagedEvent*)data;
 			CEnemyInfo* attacker = GetEnemyInfo(evt->attacker);
 			CCircuitUnit* unit = GetTeamUnit(evt->unit);
-			ret = (unit != nullptr) ? this->UnitDamaged(unit, attacker/*, evt->weaponDefId*/) : ERROR_UNIT_DAMAGED;
+			ret = (unit != nullptr)
+					? this->UnitDamaged(unit, attacker, evt->weaponDefId, AIFloat3(evt->dir_posF3))
+					: ERROR_UNIT_DAMAGED;
 			break;
 		}
 		case EVENT_UNIT_DESTROYED: {
@@ -637,10 +639,7 @@ int CCircuitAI::Release(int reason)
 
 	delete script;
 	script = nullptr;
-	utils::free_clear(weaponDefs);
-	for (auto& kv : defsById) {
-		delete kv.second;
-	}
+	weaponDefs.clear();
 	defsById.clear();
 	defsByName.clear();
 
@@ -733,9 +732,7 @@ int CCircuitAI::Update(int frame)
 		}
 	}
 
-	if (!enemyInfos.empty()) {
-		allyTeam->Update(this);
-	}
+	allyTeam->Update(this);
 
 	scheduler->ProcessTasks(frame);
 	UpdateActions();
@@ -969,13 +966,22 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker/*, int weaponId*/)
+int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker, int weaponId, AIFloat3 dir)
 {
 	// FIXME: Doesn't work well with multi-shots (duck)
 //	if (lastFrame <= unit->GetDamagedFrame() + FRAMES_PER_SEC / 5) {
 //		return 0;
 //	}
 //	unit->SetDamagedFrame(lastFrame);
+
+	if ((attacker == nullptr) && (dir != ZeroVector) && IsValidWeaponDefId(weaponId)) {
+		AIFloat3 enemyPos = dir * weaponDefs[weaponId].GetRange() + unit->GetPos(lastFrame);
+		const std::set<CCircuitDef::Id>& defIds = weaponToUnitDefs[weaponId].staticIds;
+		if (!defIds.empty() && !allyTeam->IsEnemyOrFakeIn(enemyPos, defIds, weaponDefs[weaponId].GetRange() * 0.2f)) {
+			// TODO: StaticFake and MobileFake, no int IDs, ID = UnitDef + position
+			allyTeam->RegisterEnemyFake(GetCircuitDef(*defIds.begin()), enemyPos);
+		}
+	}
 
 	for (auto& module : modules) {
 		module->UnitDamaged(unit, attacker);
@@ -1119,7 +1125,7 @@ int CCircuitAI::PlayerCommand(const std::vector<CCircuitUnit*>& units)
 			(unit->GetTask()->GetType() != IUnitTask::Type::PLAYER))
 		{
 			ITaskManager* mgr = unit->GetTask()->GetManager();
-			mgr->AssignTask(unit, new CPlayerTask(mgr));
+			mgr->AssignTask(unit, new CPlayerTask(mgr));  // FIXME: mem-leak
 		}
 	}
 
@@ -1242,7 +1248,7 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId, Unit* u)
 void CCircuitAI::UnregisterTeamUnit(CCircuitUnit* unit)
 {
 	teamUnits.erase(unit->GetId());
-	defsById[unit->GetCircuitDef()->GetId()]->Dec();
+	unit->GetCircuitDef()->Dec();
 
 	(unit->GetTask() == nullptr) ? DeleteTeamUnit(unit) : unit->Dead();
 }
@@ -1302,7 +1308,7 @@ std::pair<CEnemyInfo*, bool> CCircuitAI::RegisterEnemyInfo(ICoreUnit::Id unitId,
 	}
 
 	unit = new CEnemyInfo(data);
-	enemyInfos[unit->GetId()] = unit;
+	enemyInfos[unitId] = unit;
 
 	return std::make_pair(unit, true);
 }
@@ -1444,12 +1450,6 @@ CCircuitDef* CCircuitAI::GetCircuitDef(const char* name)
 	return (it != defsByName.end()) ? it->second : nullptr;
 }
 
-CCircuitDef* CCircuitAI::GetCircuitDef(CCircuitDef::Id unitDefId)
-{
-	auto it = defsById.find(unitDefId);
-	return (it != defsById.end()) ? it->second : nullptr;
-}
-
 void CCircuitAI::InitUnitDefs(float& outDcr)
 {
 	for (const auto& kv : CCircuitDef::GetRoleNames()) {
@@ -1463,7 +1463,9 @@ void CCircuitAI::InitUnitDefs(float& outDcr)
 	Resource* resM = callback->GetResourceByName(RES_NAME_METAL);
 	Resource* resE = callback->GetResourceByName(RES_NAME_ENERGY);
 	outDcr = 0.f;
+
 	auto unitDefs = callback->GetUnitDefs();
+	defsById.reserve(unitDefs.size());
 
 	for (UnitDef* ud : unitDefs) {
 		auto options = ud->GetBuildOptions();
@@ -1472,10 +1474,10 @@ void CCircuitAI::InitUnitDefs(float& outDcr)
 			opts.insert(buildDef->GetUnitDefId());
 			delete buildDef;
 		}
-		CCircuitDef* cdef = new CCircuitDef(this, ud, opts, resM, resE);
+		// new CCircuitDef(this, ud, opts, resM, resE);
+		defsById.emplace_back(this, ud, opts, resM, resE);
 
-		defsByName[ud->GetName()] = cdef;
-		defsById[cdef->GetId()] = cdef;
+		defsByName[ud->GetName()] = &defsById.back();
 
 		const float dcr = ud->GetDecloakDistance();
 		if (outDcr < dcr) {
@@ -1486,14 +1488,22 @@ void CCircuitAI::InitUnitDefs(float& outDcr)
 	delete resM;
 	delete resE;
 
-	for (auto& kv : GetCircuitDefs()) {
-		kv.second->Init(this);
+	for (CCircuitDef& cdef : GetCircuitDefs()) {
+		cdef.Init(this);
 	}
 }
 
-CWeaponDef* CCircuitAI::GetWeaponDef(CWeaponDef::Id weaponDefId) const
+void CCircuitAI::BindUnitToWeaponDefs(CCircuitDef::Id unitDefId, const std::set<CWeaponDef::Id>& weaponDefs, bool isMobile)
 {
-	return (size_t)weaponDefId < weaponDefs.size() ? weaponDefs[weaponDefId] : nullptr;
+	if (isMobile) {
+		for (CWeaponDef::Id weaponDefId : weaponDefs) {
+			weaponToUnitDefs[weaponDefId].mobileIds.insert(unitDefId);
+		}
+	} else {
+		for (CWeaponDef::Id weaponDefId : weaponDefs) {
+			weaponToUnitDefs[weaponDefId].staticIds.insert(unitDefId);
+		}
+	}
 }
 
 void CCircuitAI::InitWeaponDefs()
@@ -1502,9 +1512,11 @@ void CCircuitAI::InitWeaponDefs()
 	auto weapDefs = callback->GetWeaponDefs();
 	weaponDefs.reserve(weapDefs.size());
 	for (WeaponDef* wd : weapDefs) {
-		weaponDefs.push_back(new CWeaponDef(wd, resE));
+		// new CWeaponDef(wd, resE);
+		weaponDefs.emplace_back(wd, resE);
 	}
 	delete resE;
+	weaponToUnitDefs.resize(weapDefs.size());
 }
 
 CThreatMap* CCircuitAI::GetThreatMap() const

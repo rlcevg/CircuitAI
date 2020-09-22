@@ -213,55 +213,53 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	float maxSonarDivCost = 0.f;
 	CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
 
-	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
-	for (auto& kv : allDefs) {
-		CCircuitDef::Id unitDefId = kv.first;
-		CCircuitDef* cdef = kv.second;
-		if (cdef->IsRoleComm()) {
-			cdef->ModThreat(commMod);
+	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+		CCircuitDef::Id unitDefId = cdef.GetId();
+		if (cdef.IsRoleComm()) {
+			cdef.ModThreat(commMod);
 		}
-		if (cdef->GetDef()->IsBuilder()) {
+		if (cdef.GetDef()->IsBuilder()) {
 //			damagedHandler[unitDefId] = structDamagedHandler;
 			continue;
 		}
-		const std::map<std::string, std::string>& customParams = cdef->GetDef()->GetCustomParams();
+		const std::map<std::string, std::string>& customParams = cdef.GetDef()->GetCustomParams();
 		auto it = customParams.find("is_drone");
 		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 			continue;
 		}
-		if (cdef->IsMobile()) {
+		if (cdef.IsMobile()) {
 			createdHandler[unitDefId] = attackerCreatedHandler;
 			finishedHandler[unitDefId] = attackerFinishedHandler;
 			idleHandler[unitDefId] = attackerIdleHandler;
 			damagedHandler[unitDefId] = attackerDamagedHandler;
 			destroyedHandler[unitDefId] = attackerDestroyedHandler;
 
-			if (cdef->GetRetreat() < 0.f) {
-				cdef->SetRetreat(fighterRet);
+			if (cdef.GetRetreat() < 0.f) {
+				cdef.SetRetreat(fighterRet);
 			}
 		} else {
 //			damagedHandler[unitDefId] = structDamagedHandler;
-			if (cdef->IsAttacker()) {
-				if (cdef->IsRoleSuper()) {
+			if (cdef.IsAttacker()) {
+				if (cdef.IsRoleSuper()) {
 					createdHandler[unitDefId] = superCreatedHandler;
 					finishedHandler[unitDefId] = superFinishedHandler;
 					destroyedHandler[unitDefId] = superDestroyedHandler;
-				} else if (cdef->IsAttrStock()) {
+				} else if (cdef.IsAttrStock()) {
 					finishedHandler[unitDefId] = defenceFinishedHandler;
 				}
 			}
-			if (commDef->CanBuild(cdef)) {
-				float range = cdef->GetDef()->GetRadarRadius();
-				float areaDivCost = M_PI * SQUARE(range) / cdef->GetCostM();
+			if (commDef->CanBuild(&cdef)) {
+				float range = cdef.GetDef()->GetRadarRadius();
+				float areaDivCost = M_PI * SQUARE(range) / cdef.GetCostM();
 				if (maxRadarDivCost < areaDivCost) {
 					maxRadarDivCost = areaDivCost;
-					radarDef = cdef;
+					radarDef = &cdef;
 				}
-				range = cdef->GetDef()->GetSonarRadius();
-				areaDivCost = M_PI * SQUARE(range) / cdef->GetCostM();
+				range = cdef.GetDef()->GetSonarRadius();
+				areaDivCost = M_PI * SQUARE(range) / cdef.GetCostM();
 				if (maxSonarDivCost < areaDivCost) {
 					maxSonarDivCost = areaDivCost;
-					sonarDef = cdef;
+					sonarDef = &cdef;
 				}
 			}
 		}
@@ -867,36 +865,39 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 
 AIFloat3 CMilitaryManager::GetRaidPosition(CCircuitUnit* unit)
 {
-	// FIXME: not well thought, not finished
-	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
-	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
-	STerrainMapArea* area = unit->GetArea();
-	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	CThreatMap* threatMap = circuit->GetThreatMap();
-	threatMap->SetThreatType(unit);  // TODO: Check if required? Upper function may already call it
-	float bestWeight = -1.f;
-	float sqBestDist = std::numeric_limits<float>::max();
-	int bestIndex = -1;
-	for (size_t index = 0; index < raidPath.size(); ++index) {
-		if (!terrainMgr->CanMoveToPos(area, clusters[index].position)) {
-			continue;
-		}
-		const SRaidPoint& rp = raidPath[index];
-		float weight = rp.weight / (threatMap->GetThreatAt(clusters[index].position) + 1.f);
-		if (bestWeight < weight) {
-			bestWeight = weight;
-			bestIndex = index;
-			sqBestDist = pos.SqDistance2D(clusters[index].position);
-		} else if (rp.weight == bestWeight) {
-			float sqDist = pos.SqDistance2D(clusters[index].position);
-			if (sqBestDist > sqDist) {
-				sqBestDist = sqDist;
-				bestWeight = weight;
-				bestIndex = index;
-			}
-		}
-	}
-	return (bestIndex != -1) ? clusters[bestIndex].position : AIFloat3(-RgtVector);
+	// FIXME: Resume. Not well thought, not finished.
+	return GetScoutPosition(unit);
+	// FIXME: Resume. Not well thought, not finished.
+
+//	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
+//	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
+//	STerrainMapArea* area = unit->GetArea();
+//	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+//	CThreatMap* threatMap = circuit->GetThreatMap();
+//	threatMap->SetThreatType(unit);  // TODO: Check if required? Upper function may already call it
+//	float bestWeight = -1.f;
+//	float sqBestDist = std::numeric_limits<float>::max();
+//	int bestIndex = -1;
+//	for (size_t index = 0; index < raidPath.size(); ++index) {
+//		if (!terrainMgr->CanMoveToPos(area, clusters[index].position)) {
+//			continue;
+//		}
+//		const SRaidPoint& rp = raidPath[index];
+//		float weight = rp.weight / (threatMap->GetThreatAt(clusters[index].position) + 1.f);
+//		if (bestWeight < weight) {
+//			bestWeight = weight;
+//			bestIndex = index;
+//			sqBestDist = pos.SqDistance2D(clusters[index].position);
+//		} else if (rp.weight == bestWeight) {
+//			float sqDist = pos.SqDistance2D(clusters[index].position);
+//			if (sqBestDist > sqDist) {
+//				sqBestDist = sqDist;
+//				bestWeight = weight;
+//				bestIndex = index;
+//			}
+//		}
+//	}
+//	return (bestIndex != -1) ? clusters[bestIndex].position : AIFloat3(-RgtVector);
 }
 
 void CMilitaryManager::FillFrontPos(CCircuitUnit* unit, F3Vec& outPositions)

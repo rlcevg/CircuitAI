@@ -176,48 +176,46 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 	float maxBuildDist = SQUARE_SIZE * 2;
 	CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
 
-	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
-	for (auto& kv : allDefs) {
-		CCircuitDef* cdef = kv.second;
-		UnitDef* def = cdef->GetDef();
-		if (!cdef->IsMobile() && def->IsBuilder()) {
-			CCircuitDef::Id unitDefId = kv.first;
-			if  (!cdef->GetBuildOptions().empty()) {
+	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+		UnitDef* def = cdef.GetDef();
+		if (!cdef.IsMobile() && def->IsBuilder()) {
+			CCircuitDef::Id unitDefId = cdef.GetId();
+			if  (!cdef.GetBuildOptions().empty()) {
 				createdHandler[unitDefId] = factoryCreatedHandler;
 				finishedHandler[unitDefId] = factoryFinishedHandler;
 				idleHandler[unitDefId] = factoryIdleHandler;
 				destroyedHandler[unitDefId] = factoryDestroyedHandler;
-			} else if (maxBuildDist < cdef->GetBuildDistance() &&
-				(std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE < cdef->GetBuildDistance()))
+			} else if (maxBuildDist < cdef.GetBuildDistance() &&
+				(std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE < cdef.GetBuildDistance()))
 			{
-				maxBuildDist = cdef->GetBuildDistance();
+				maxBuildDist = cdef.GetBuildDistance();
 				createdHandler[unitDefId] = assistCreatedHandler;
 				finishedHandler[unitDefId] = assistFinishedHandler;
 				idleHandler[unitDefId] = assistIdleHandler;
 				destroyedHandler[unitDefId] = assistDestroyedHandler;
-				if (commDef->CanBuild(cdef)) {
-					assistDef = cdef;
+				if (commDef->CanBuild(&cdef)) {
+					assistDef = &cdef;
 				}
 			}
 		}
 
 		// Auto-assign roles
-		auto setRoles = [cdef](CCircuitDef::RoleT type) {
-			cdef->SetMainRole(type);
-			cdef->AddEnemyRole(type);
-			cdef->AddRole(type);
+		auto setRoles = [&cdef](CCircuitDef::RoleT type) {
+			cdef.SetMainRole(type);
+			cdef.AddEnemyRole(type);
+			cdef.AddRole(type);
 		};
-		if (cdef->IsAbleToFly()) {
+		if (cdef.IsAbleToFly()) {
 			setRoles(ROLE_TYPE(AIR));
-		} else if (!cdef->IsMobile() && cdef->IsAttacker() && cdef->HasAntiLand()) {
+		} else if (!cdef.IsMobile() && cdef.IsAttacker() && cdef.HasAntiLand()) {
 			setRoles(ROLE_TYPE(STATIC));
-		} else if (cdef->GetDef()->IsBuilder() && !cdef->GetBuildOptions().empty() && !cdef->IsRoleComm()) {
+		} else if (cdef.GetDef()->IsBuilder() && !cdef.GetBuildOptions().empty() && !cdef.IsRoleComm()) {
 			setRoles(ROLE_TYPE(BUILDER));
 		}
-		if (cdef->IsRoleComm()) {
+		if (cdef.IsRoleComm()) {
 			// NOTE: Omit AddRole to exclude commanders from response
-			cdef->SetMainRole(ROLE_TYPE(BUILDER));
-			cdef->AddEnemyRole(ROLE_TYPE(COMM));
+			cdef.SetMainRole(ROLE_TYPE(BUILDER));
+			cdef.AddEnemyRole(ROLE_TYPE(COMM));
 		}
 	}
 

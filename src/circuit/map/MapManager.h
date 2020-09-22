@@ -29,6 +29,7 @@ public:
 
 	const CEnemyManager::EnemyUnits& GetHostileUnits() const { return hostileUnits; }
 	const CEnemyManager::EnemyUnits& GetPeaceUnits() const { return peaceUnits; }
+	const CEnemyManager::EnemyFakes& GetEnemyFakes() const { return enemyFakes; }
 
 	void PrepareUpdate();
 	void EnqueueUpdate();
@@ -44,10 +45,13 @@ public:
 	void EnemyLeaveRadar(CEnemyUnit* enemy);
 	bool EnemyDestroyed(CEnemyUnit* enemy);
 
-private:
+	void AddFakeEnemy(CEnemyUnit* enemy);
+	void DelFakeEnemy(CEnemyUnit* enemy);
+
 	bool IsInLOS(const springai::AIFloat3& pos) const;
 //	bool IsInRadar(const springai::AIFloat3& pos) const;
 
+private:
 	CCircuitAI* circuit;
 
 	CThreatMap* threatMap;
@@ -55,6 +59,7 @@ private:
 
 	CEnemyManager::EnemyUnits hostileUnits;
 	CEnemyManager::EnemyUnits peaceUnits;
+	CEnemyManager::EnemyFakes enemyFakes;
 
 //	IntVec radarMap;
 	IntVec sonarMap;

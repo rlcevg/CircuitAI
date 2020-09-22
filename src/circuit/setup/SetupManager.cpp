@@ -259,25 +259,22 @@ bool CSetupManager::PickCommander()
 	float bestPower = .0f;
 
 	if (commChoice == nullptr) {
-		const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
-		for (auto& kv : defs) {
-			CCircuitDef* cdef = kv.second;
-
-			std::string lvl1 = cdef->GetDef()->GetName();
+		for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+			std::string lvl1 = cdef.GetDef()->GetName();
 			if ((lvl1.find(commPrefix) != 0) || (lvl1.find(commSuffix) != lvl1.size() - 5)) {
 				continue;
 			}
 
-			const std::map<std::string, std::string>& customParams = cdef->GetDef()->GetCustomParams();
+			const std::map<std::string, std::string>& customParams = cdef.GetDef()->GetCustomParams();
 			auto it = customParams.find("level");
 			if ((it == customParams.end()) || (utils::string_to_int(it->second) != 1)) {
 				continue;
 			}
-			comms.push_back(cdef);
+			comms.push_back(&cdef);
 
-			if (bestPower < cdef->GetBuildDistance()) {  // No more UnitDef->GetAutoHeal() :(
-				bestPower = cdef->GetBuildDistance();
-				commChoice = cdef;
+			if (bestPower < cdef.GetBuildDistance()) {  // No more UnitDef->GetAutoHeal() :(
+				bestPower = cdef.GetBuildDistance();
+				commChoice = &cdef;
 			}
 		}
 		if (comms.empty()) {

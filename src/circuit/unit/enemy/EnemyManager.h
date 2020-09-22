@@ -22,6 +22,7 @@ struct STerrainMapArea;
 class CEnemyManager {
 public:
 	using EnemyUnits = std::unordered_map<ICoreUnit::Id, CEnemyUnit*>;
+	using EnemyFakes = std::set<CEnemyUnit*>;
 	struct SEnemyGroup {
 		SEnemyGroup(const springai::AIFloat3& p) : pos(p), cost(0.f), threat(0.f) {}
 		std::vector<ICoreUnit::Id> units;
@@ -52,6 +53,9 @@ public:
 	bool UnitInLOS(CEnemyUnit* data);
 	std::pair<CEnemyUnit*, bool> RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS);
 	CEnemyUnit* RegisterEnemyUnit(springai::Unit* e);
+
+	CEnemyUnit* RegisterEnemyFake(CCircuitDef* cdef, const springai::AIFloat3& pos);
+	void UnregisterEnemyFake(CEnemyUnit* data);
 
 	void UnregisterEnemyUnit(CEnemyUnit* data);
 private:
@@ -103,6 +107,7 @@ private:
 	CCircuitAI* circuit;
 
 	EnemyUnits enemyUnits;  // owner
+	EnemyFakes enemyFakes;  // owner
 
 	std::vector<CEnemyUnit*> enemyUpdates;
 	unsigned int enemyIterator;
