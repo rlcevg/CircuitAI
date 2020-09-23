@@ -296,6 +296,9 @@ bool CAllyTeam::IsEnemyOrFakeIn(const AIFloat3& startPos, const AIFloat3& dir, f
 	// TODO: Is it ok to reduce ray's length by moving startPos out of LOS in dir direction?
 	const CRay ray(startPos, dir);
 	const AIFloat3 offset(SQUARE_SIZE * 8, SQUARE_SIZE * 8, SQUARE_SIZE * 8);
+	// WARNING: Do not reuse QuadFieldQuery within same scope. Otherwise cached vector may stuck in limbo.
+	//   In this particular case it looks safe because quadField.GetEnemyAndFakes reserves enemyUnits and enemyFakes,
+	//   while quadField.GetQuadsOnRay reserves quads only.
 	quadField.GetQuadsOnRay(qfQuery, startPos, dir, length - radius);
 	for (const int quadIdx: *qfQuery.quads) {
 		const CQuadField::Quad& quad = quadField.GetQuad(quadIdx);

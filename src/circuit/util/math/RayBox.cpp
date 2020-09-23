@@ -62,7 +62,7 @@ bool CAABBox::Intersection(const CRay& r) const
 		t1 = (bounds[0][i] - r.orig[i]) * r.invdir[i];
 		t2 = (bounds[1][i] - r.orig[i]) * r.invdir[i];
 
-#if 0  // No NaN handling
+#if 1  // No NaN handling
 		tmin = std::max(tmin, std::min(t1, t2));
 		tmax = std::min(tmax, std::max(t1, t2));
 #else	// With NaN handling:
