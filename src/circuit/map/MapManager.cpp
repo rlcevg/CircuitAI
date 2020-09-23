@@ -215,15 +215,14 @@ bool CMapManager::EnemyDestroyed(CEnemyUnit* enemy)
 	return isKnown;
 }
 
-void CMapManager::AddFakeEnemy(CEnemyUnit* enemy)
+void CMapManager::AddFakeEnemy(CEnemyFake* enemy)
 {
 	enemyFakes.insert(enemy);
 	threatMap->SetEnemyUnitRange(enemy);
 	threatMap->SetEnemyUnitThreat(enemy);
-	enemy->SetLastSeen(circuit->GetLastFrame());
 }
 
-void CMapManager::DelFakeEnemy(CEnemyUnit* enemy)
+void CMapManager::DelFakeEnemy(CEnemyFake* enemy)
 {
 	enemyFakes.erase(enemy);
 }

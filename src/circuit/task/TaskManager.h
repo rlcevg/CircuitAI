@@ -15,6 +15,7 @@ class CCircuitAI;
 class CCircuitUnit;
 class CNilTask;
 class CIdleTask;
+class CPlayerTask;
 
 class ITaskManager {
 protected:
@@ -39,9 +40,12 @@ public:
 	void Init();
 	CIdleTask* GetIdleTask() const { return idleTask; }
 
+	void AssignPlayerTask(CCircuitUnit* unit);
+
 protected:
 	CNilTask* nilTask;
 	CIdleTask* idleTask;
+	CPlayerTask* playerTask;
 
 	float metalPull;
 };

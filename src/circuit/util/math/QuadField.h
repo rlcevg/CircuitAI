@@ -16,6 +16,7 @@ using namespace springai;
 
 class CAllyUnit;
 class CEnemyUnit;
+class CEnemyFake;
 struct QuadFieldQuery;
 
 template<typename T>
@@ -148,12 +149,12 @@ public:
 	void MovedEnemyUnit(CEnemyUnit* unit);
 	void RemoveEnemyUnit(CEnemyUnit* unit);
 
-	void MovedEnemyFake(CEnemyUnit* unit);
-	void RemoveEnemyFake(CEnemyUnit* unit);
+	void MovedEnemyFake(CEnemyFake* unit);
+	void RemoveEnemyFake(CEnemyFake* unit);
 
 	void ReleaseVector(std::vector<CAllyUnit*>* v) { tempAllyUnits.ReleaseVector(v); }
-	void ReleaseVectorReal(std::vector<CEnemyUnit*>* v) { tempEnemyUnits.ReleaseVector(v); }
-	void ReleaseVectorFake(std::vector<CEnemyUnit*>* v) { tempEnemyFakes.ReleaseVector(v); }
+	void ReleaseVector(std::vector<CEnemyUnit*>* v) { tempEnemyUnits.ReleaseVector(v); }
+	void ReleaseVector(std::vector<CEnemyFake*>* v) { tempEnemyFakes.ReleaseVector(v); }
 	void ReleaseVector(std::vector<int>* v) { tempQuads.ReleaseVector(v); }
 
 	struct Quad {
@@ -179,7 +180,7 @@ public:
 	public:
 		std::vector<CAllyUnit*> allyUnits;
 		std::vector<CEnemyUnit*> enemyUnits;
-		std::vector<CEnemyUnit*> enemyFakes;
+		std::vector<CEnemyFake*> enemyFakes;
 	};
 
 	const Quad& GetQuad(unsigned i) const {
@@ -209,7 +210,7 @@ private:
 	// preallocated vectors for Get*Exact functions
 	QueryVectorCache<CAllyUnit*> tempAllyUnits;
 	QueryVectorCache<CEnemyUnit*> tempEnemyUnits;
-	QueryVectorCache<CEnemyUnit*> tempEnemyFakes;
+	QueryVectorCache<CEnemyFake*> tempEnemyFakes;
 	QueryVectorCache<int> tempQuads;
 
 	float2 invQuadSize;
@@ -235,15 +236,15 @@ struct QuadFieldQuery {
 	QuadFieldQuery(CQuadField& qf) : quadField(qf) {}
 	~QuadFieldQuery() {
 		quadField.ReleaseVector(allyUnits);
-		quadField.ReleaseVectorReal(enemyUnits);
-		quadField.ReleaseVectorFake(enemyFakes);
+		quadField.ReleaseVector(enemyUnits);
+		quadField.ReleaseVector(enemyFakes);
 		quadField.ReleaseVector(quads);
 	}
 
 	CQuadField& quadField;
 	std::vector<CAllyUnit*>* allyUnits = nullptr;
 	std::vector<CEnemyUnit*>* enemyUnits = nullptr;
-	std::vector<CEnemyUnit*>* enemyFakes = nullptr;
+	std::vector<CEnemyFake*>* enemyFakes = nullptr;
 	std::vector<int>* quads = nullptr;
 };
 

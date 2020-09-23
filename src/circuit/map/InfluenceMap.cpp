@@ -369,10 +369,10 @@ void CInfluenceMap::AddEnemy(const SEnemyData& e)
 	const float val = e.threat;
 	// FIXME: GetInfluenceRange: for statics it's just range; mobile should account for speed
 	const int range = (e.cdef == nullptr)
-			? CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::LAND)
+			? e.GetRange(CCircuitDef::ThreatType::LAND)
 			: e.cdef->IsMobile()
-					? CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::LAND)
-					: CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::LAND) / 2;
+					? e.GetRange(CCircuitDef::ThreatType::LAND)
+					: e.GetRange(CCircuitDef::ThreatType::LAND) / 2;
 	const int rangeSq = SQUARE(range);
 
 	const int beginX = std::max(int(posx - range + 1),       0);

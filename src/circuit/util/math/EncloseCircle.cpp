@@ -2,7 +2,7 @@
  * EncloseCircle.cpp
  *
  *  Created on: Mar 23, 2015
- *      Author: rlcevg
+ *      Editor: rlcevg
  */
 
 #include "util/math/EncloseCircle.h"
@@ -66,7 +66,7 @@ void CEncloseCircle::MakeCircle(const std::vector<AIFloat3>& points)
 
 // One boundary point known
 CEncloseCircle::SCircle CEncloseCircle::MakeCircleOnePoint(const std::vector<SPoint>::iterator& ptsBegin,
-										   const std::vector<SPoint>::iterator& ptsEnd, const SPoint& p)
+		const std::vector<SPoint>::iterator& ptsEnd, const SPoint& p)
 {
 	// ptsBegin - Inclusive, ptsEnd - Exclusive
 	SCircle c(p, 0);
@@ -86,7 +86,7 @@ CEncloseCircle::SCircle CEncloseCircle::MakeCircleOnePoint(const std::vector<SPo
 
 // Two boundary points known
 CEncloseCircle::SCircle CEncloseCircle::MakeCircleTwoPoints(const std::vector<SPoint>::iterator& ptsBegin,
-											const std::vector<SPoint>::iterator& ptsEnd, const SPoint& p, const SPoint& q)
+		const std::vector<SPoint>::iterator& ptsEnd, const SPoint& p, const SPoint& q)
 {
 	SCircle temp = MakeDiameter(p, q);
 	if (temp.contains(ptsBegin, ptsEnd)) {

@@ -20,12 +20,6 @@ CPlayerTask::~CPlayerTask()
 {
 }
 
-void CPlayerTask::RemoveAssignee(CCircuitUnit* unit)
-{
-	IUnitTask::RemoveAssignee(unit);
-	delete this;
-}
-
 void CPlayerTask::Start(CCircuitUnit* unit)
 {
 }

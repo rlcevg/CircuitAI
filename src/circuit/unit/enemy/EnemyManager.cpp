@@ -151,16 +151,16 @@ void CEnemyManager::PrepareUpdate()
 		hostileDatas.push_back(e->GetData());
 	}
 
-	std::vector<CEnemyUnit*> deadFakes;
-	int maxFrame = circuit->GetLastFrame() - FRAMES_PER_SEC * 60 * 20;
-	for (CEnemyUnit* e : mapMgr->GetEnemyFakes()) {
-		if (mapMgr->IsInLOS(e->GetPos()) || (maxFrame >= e->GetLastSeen())) {
+	const int frame = circuit->GetLastFrame();
+	std::vector<CEnemyFake*> deadFakes;
+	for (CEnemyFake* e : mapMgr->GetEnemyFakes()) {
+		if (mapMgr->IsInLOS(e->GetPos()) || (frame >= e->GetTimeout())) {
 			deadFakes.push_back(e);
 		} else {
 			hostileDatas.push_back(e->GetData());
 		}
 	}
-	for (CEnemyUnit* e : deadFakes) {
+	for (CEnemyFake* e : deadFakes) {
 		circuit->GetAllyTeam()->UnregisterEnemyFake(e);
 	}
 
@@ -277,14 +277,14 @@ CEnemyUnit* CEnemyManager::RegisterEnemyUnit(Unit* e)
 	return data;
 }
 
-CEnemyUnit* CEnemyManager::RegisterEnemyFake(CCircuitDef* cdef, const AIFloat3& pos)
+CEnemyFake* CEnemyManager::RegisterEnemyFake(CCircuitDef* cdef, const AIFloat3& pos, int timeout)
 {
-	CEnemyUnit* data = new CEnemyUnit(cdef, pos);
+	CEnemyFake* data = new CEnemyFake(cdef, pos, timeout);
 	enemyFakes.insert(data);
 	return data;
 }
 
-void CEnemyManager::UnregisterEnemyFake(CEnemyUnit* data)
+void CEnemyManager::UnregisterEnemyFake(CEnemyFake* data)
 {
 	enemyFakes.erase(data);
 	delete data;
@@ -480,7 +480,7 @@ void CEnemyManager::KMeansIteration()
 				float num = std::max(1, numUnitsAssignedToMean[meanIndex]);
 				eg.pos += enemy.pos / num;
 
-				if (enemy.id != -1) {  // not a fake
+				if (!enemy.IsFake()) {
 					eg.units.push_back(enemy.id);
 				}
 

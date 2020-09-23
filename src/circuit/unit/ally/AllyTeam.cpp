@@ -16,6 +16,7 @@
 #include "terrain/path/PathFinder.h"
 #include "terrain/TerrainData.h"
 #include "CircuitAI.h"
+#include "util/math/RayBox.h"
 #include "util/GameAttribute.h"
 #include "util/Scheduler.h"
 #include "util/Utils.h"
@@ -183,14 +184,14 @@ void CAllyTeam::UnregisterEnemyUnit(CEnemyUnit* data, CCircuitAI* ai)
 	enemyManager->UnregisterEnemyUnit(data);
 }
 
-void CAllyTeam::RegisterEnemyFake(CCircuitDef* cdef, const AIFloat3& pos)
+void CAllyTeam::RegisterEnemyFake(CCircuitDef* cdef, const AIFloat3& pos, int timeout)
 {
-	CEnemyUnit* data = enemyManager->RegisterEnemyFake(cdef, pos);
+	CEnemyFake* data = enemyManager->RegisterEnemyFake(cdef, pos, timeout);
 	mapManager->AddFakeEnemy(data);
 	quadField.MovedEnemyFake(data);
 }
 
-void CAllyTeam::UnregisterEnemyFake(CEnemyUnit* data)
+void CAllyTeam::UnregisterEnemyFake(CEnemyFake* data)
 {
 	quadField.RemoveEnemyFake(data);
 	mapManager->DelFakeEnemy(data);
@@ -274,22 +275,45 @@ void CAllyTeam::EnqueueUpdate()
 	enemyManager->EnqueueUpdate();
 }
 
-bool CAllyTeam::IsEnemyOrFakeIn(const AIFloat3& pos, const std::set<CCircuitDef::Id>& defs, float radius)
+bool CAllyTeam::IsEnemyOrFakeIn(const AIFloat3& startPos, const AIFloat3& dir, float length,
+		const AIFloat3& enemyPos, float radius, const std::set<CCircuitDef::Id>& unitDefIds)
 {
 	QuadFieldQuery qfQuery(quadField);
-	quadField.GetEnemyAndFakes(qfQuery, pos, radius);  // TODO: predicate
+	quadField.GetEnemyAndFakes(qfQuery, enemyPos, radius);  // TODO: predicate
 	for (CEnemyUnit* e : *qfQuery.enemyUnits) {
 		CCircuitDef* edef = e->GetCircuitDef();
-		if ((edef != nullptr) && (defs.find(edef->GetId()) != defs.end())) {
+		if ((edef != nullptr) && (unitDefIds.find(edef->GetId()) != unitDefIds.end())) {
 			return true;
 		}
 	}
 	for (CEnemyUnit* e : *qfQuery.enemyFakes) {
 		CCircuitDef* edef = e->GetCircuitDef();
-		if (defs.find(edef->GetId()) != defs.end()) {
+		if (unitDefIds.find(edef->GetId()) != unitDefIds.end()) {
 			return true;
 		}
 	}
+
+	// TODO: Is it ok to reduce ray's length by moving startPos out of LOS in dir direction?
+	const CRay ray(startPos, dir);
+	const AIFloat3 offset(SQUARE_SIZE * 8, SQUARE_SIZE * 8, SQUARE_SIZE * 8);
+	quadField.GetQuadsOnRay(qfQuery, startPos, dir, length - radius);
+	for (const int quadIdx: *qfQuery.quads) {
+		const CQuadField::Quad& quad = quadField.GetQuad(quadIdx);
+
+		for (CEnemyUnit* e : quad.enemyUnits) {
+			CAABBox box(e->GetPos() - offset, e->GetPos() + offset);
+			if (box.Intersection(ray)) {
+				return true;
+			}
+		}
+		for (CEnemyFake* e : quad.enemyFakes) {
+			CAABBox box(e->GetPos() - offset, e->GetPos() + offset);
+			if (box.Intersection(ray)) {
+				return true;
+			}
+		}
+	}
+
 	return false;
 }
 

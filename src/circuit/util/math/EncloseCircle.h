@@ -3,7 +3,7 @@
  *
  *  Smallest enclosing circle
  *  Created on: Mar 23, 2015
- *      Author: rlcevg
+ *      Editor: rlcevg
  *      Origin: http://www.nayuki.io/page/smallest-enclosing-circle
  */
 

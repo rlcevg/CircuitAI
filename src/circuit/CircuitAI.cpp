@@ -975,11 +975,21 @@ int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker, int weapon
 //	unit->SetDamagedFrame(lastFrame);
 
 	if ((attacker == nullptr) && (dir != ZeroVector) && IsValidWeaponDefId(weaponId)) {
-		AIFloat3 enemyPos = dir * weaponDefs[weaponId].GetRange() + unit->GetPos(lastFrame);
-		const std::set<CCircuitDef::Id>& defIds = weaponToUnitDefs[weaponId].staticIds;
-		if (!defIds.empty() && !allyTeam->IsEnemyOrFakeIn(enemyPos, defIds, weaponDefs[weaponId].GetRange() * 0.2f)) {
-			// TODO: StaticFake and MobileFake, no int IDs, ID = UnitDef + position
-			allyTeam->RegisterEnemyFake(GetCircuitDef(*defIds.begin()), enemyPos);
+		const float range = weaponDefs[weaponId].GetRange();
+		const AIFloat3& startPos = unit->GetPos(lastFrame);
+		const AIFloat3 enemyPos = startPos + dir * range;
+		const SWeaponToUnitDef& wuDef = weaponToUnitDefs[weaponId];
+		if (!wuDef.ids.empty() && !allyTeam->IsEnemyOrFakeIn(startPos, dir, range, enemyPos, range * 0.2f, wuDef.ids)) {
+			int timeout = lastFrame;
+			CCircuitDef::Id defId;
+			if (wuDef.mobileIds.empty()) {  // static
+				timeout += FRAMES_PER_SEC * 60 * 20;
+				defId = *wuDef.staticIds.begin();
+			} else {
+				timeout += FRAMES_PER_SEC * 60 * 1;
+				defId = *wuDef.mobileIds.begin();
+			}
+			allyTeam->RegisterEnemyFake(GetCircuitDef(defId), enemyPos, timeout);
 		}
 	}
 
@@ -1124,8 +1134,7 @@ int CCircuitAI::PlayerCommand(const std::vector<CCircuitUnit*>& units)
 			(unit->GetTask()->GetType() != IUnitTask::Type::NIL) &&  // ignore orders to nanoframes
 			(unit->GetTask()->GetType() != IUnitTask::Type::PLAYER))
 		{
-			ITaskManager* mgr = unit->GetTask()->GetManager();
-			mgr->AssignTask(unit, new CPlayerTask(mgr));  // FIXME: mem-leak
+			unit->GetTask()->GetManager()->AssignPlayerTask(unit);
 		}
 	}
 
@@ -1497,11 +1506,15 @@ void CCircuitAI::BindUnitToWeaponDefs(CCircuitDef::Id unitDefId, const std::set<
 {
 	if (isMobile) {
 		for (CWeaponDef::Id weaponDefId : weaponDefs) {
-			weaponToUnitDefs[weaponDefId].mobileIds.insert(unitDefId);
+			SWeaponToUnitDef& wuDef = weaponToUnitDefs[weaponDefId];
+			wuDef.mobileIds.insert(unitDefId);
+			wuDef.ids.insert(unitDefId);
 		}
 	} else {
 		for (CWeaponDef::Id weaponDefId : weaponDefs) {
-			weaponToUnitDefs[weaponDefId].staticIds.insert(unitDefId);
+			SWeaponToUnitDef& wuDef = weaponToUnitDefs[weaponDefId];
+			wuDef.staticIds.insert(unitDefId);
+			wuDef.ids.insert(unitDefId);
 		}
 	}
 }

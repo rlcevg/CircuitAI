@@ -143,4 +143,14 @@ CEnemyInfo::~CEnemyInfo()
 	}
 }
 
+CEnemyFake::CEnemyFake(CCircuitDef* cdef, const AIFloat3& pos, int timeout)
+		: CEnemyUnit(cdef, pos)
+		, timeout(timeout)
+{
+}
+
+CEnemyFake::~CEnemyFake()
+{
+}
+
 } // namespace circuit

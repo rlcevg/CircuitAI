@@ -134,7 +134,7 @@ void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const
 	assert(edef != nullptr);
 
 	// FIXME: DEBUG  comm's threat value is not based on proper weapons
-	if (edef->IsRoleComm()) {
+	if (edef->IsRoleComm() && !e->IsFake()) {
 		CCircuitAI* circuit = manager->GetCircuit();
 		// TODO: by weapons 1,2 descriptions set proper land/air/water ranges/threats
 		float maxRange = 0.f;
@@ -290,7 +290,7 @@ void CThreatMap::AddEnemyAir(const SEnemyData& e, const int slack)
 	PosToXZ(e.pos, posx, posz);
 
 	const float threat = e.threat/* - THREAT_DECAY*/;
-	const int range = CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::AIR) + slack;
+	const int range = e.GetRange(CCircuitDef::ThreatType::AIR) + slack;
 	const int rangeSq = SQUARE(range);
 
 	// Threat circles are large and often have appendix, decrease it by 1 for micro-optimization
@@ -325,9 +325,9 @@ void CThreatMap::AddEnemyAmphConst(const SEnemyData& e, const int slack)
 	PosToXZ(e.pos, posx, posz);
 
 	const float threat = e.threat/* - THREAT_DECAY*/;
-	const int rangeLand = CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::LAND) + slack;
+	const int rangeLand = e.GetRange(CCircuitDef::ThreatType::LAND) + slack;
 	const int rangeLandSq = SQUARE(rangeLand);
-	const int rangeWater = CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::WATER) + slack;
+	const int rangeWater = e.GetRange(CCircuitDef::ThreatType::WATER) + slack;
 	const int rangeWaterSq = SQUARE(rangeWater);
 	const int range = std::max(rangeLand, rangeWater);
 	const std::vector<STerrainMapSector>& sector = areaData->sector;
@@ -363,9 +363,9 @@ void CThreatMap::AddEnemyAmphGradient(const SEnemyData& e, const int slack)
 	PosToXZ(e.pos, posx, posz);
 
 	const float threat = e.threat/* - THREAT_DECAY*/;
-	const int rangeLand = CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::LAND) + slack;
+	const int rangeLand = e.GetRange(CCircuitDef::ThreatType::LAND) + slack;
 	const int rangeLandSq = SQUARE(rangeLand);
-	const int rangeWater = CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::WATER) + slack;
+	const int rangeWater = e.GetRange(CCircuitDef::ThreatType::WATER) + slack;
 	const int rangeWaterSq = SQUARE(rangeWater);
 	const int range = std::max(rangeLand, rangeWater);
 	const std::vector<STerrainMapSector>& sector = areaData->sector;
@@ -406,7 +406,7 @@ void CThreatMap::AddDecloaker(const SEnemyData& e)
 	PosToXZ(e.pos, posx, posz);
 
 	const float threatCloak = THREAT_CLOAK;
-	const int rangeCloak = CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::CLOAK);
+	const int rangeCloak = e.GetRange(CCircuitDef::ThreatType::CLOAK);
 	const int rangeCloakSq = SQUARE(rangeCloak);
 
 	// For small decloak ranges full range shouldn't hit performance
@@ -437,7 +437,7 @@ void CThreatMap::AddShield(const SEnemyData& e)
 	PosToXZ(e.pos, posx, posz);
 
 	const float shieldVal = e.shieldPower;
-	const int rangeShield = CEnemyUnit::GetRange(e.range, CCircuitDef::ThreatType::SHIELD);
+	const int rangeShield = e.GetRange(CCircuitDef::ThreatType::SHIELD);
 	const int rangeShieldSq = SQUARE(rangeShield);
 
 	const int beginX = std::max(int(posx - rangeShield + 1),      0);

@@ -238,6 +238,7 @@ private:
 	void InitWeaponDefs();
 	WeaponDefs weaponDefs;  // owner
 	struct SWeaponToUnitDef {
+		std::set<CCircuitDef::Id> ids;
 		std::set<CCircuitDef::Id> mobileIds;
 		std::set<CCircuitDef::Id> staticIds;
 	};

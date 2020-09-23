@@ -392,7 +392,7 @@ void CQuadField::RemoveEnemyUnit(CEnemyUnit* unit)
 	unit->quads.clear();
 }
 
-void CQuadField::MovedEnemyFake(CEnemyUnit* unit)
+void CQuadField::MovedEnemyFake(CEnemyFake* unit)
 {
 	QuadFieldQuery qfQuery(*this);
 	GetQuads(qfQuery, unit->GetPos(), unit->GetRadius());
@@ -414,7 +414,7 @@ void CQuadField::MovedEnemyFake(CEnemyUnit* unit)
 	unit->quads = std::move(*qfQuery.quads);
 }
 
-void CQuadField::RemoveEnemyFake(CEnemyUnit* unit)
+void CQuadField::RemoveEnemyFake(CEnemyFake* unit)
 {
 	for (const int qi: unit->quads) {
 		utils::VectorErase(baseQuads[qi].enemyFakes, unit);
@@ -595,7 +595,7 @@ void CQuadField::GetEnemyAndFakes(QuadFieldQuery& qfq, const AIFloat3& pos, floa
 			u->tempNum = tempNum;
 			qfq.enemyUnits->push_back(u);
 		}
-		for (CEnemyUnit* u: baseQuads[qi].enemyFakes) {
+		for (CEnemyFake* u: baseQuads[qi].enemyFakes) {
 			if (u->tempNum == tempNum)
 				continue;
 

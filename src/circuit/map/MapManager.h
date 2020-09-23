@@ -45,8 +45,8 @@ public:
 	void EnemyLeaveRadar(CEnemyUnit* enemy);
 	bool EnemyDestroyed(CEnemyUnit* enemy);
 
-	void AddFakeEnemy(CEnemyUnit* enemy);
-	void DelFakeEnemy(CEnemyUnit* enemy);
+	void AddFakeEnemy(CEnemyFake* enemy);
+	void DelFakeEnemy(CEnemyFake* enemy);
 
 	bool IsInLOS(const springai::AIFloat3& pos) const;
 //	bool IsInRadar(const springai::AIFloat3& pos) const;

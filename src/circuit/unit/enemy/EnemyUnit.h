@@ -55,6 +55,15 @@ struct SEnemyData {
 	float threat;
 	RangeArray range;
 
+	void SetRange(CCircuitDef::ThreatType t, int r) {
+		range[static_cast<CCircuitDef::ThreatT>(t)] = r;
+	}
+	int GetRange(CCircuitDef::ThreatType t) const {
+		return range[static_cast<CCircuitDef::ThreatT>(t)];
+	}
+
+	bool IsFake() const { return id == -1; }
+
 	ICoreUnit::Id id;  // FIXME: duplicate
 	float cost;
 	LM losStatus;
@@ -78,7 +87,7 @@ struct SEnemyData {
 };
 
 /*
- * Per AllyTeam enemy information
+ * Per AllyTeam common enemy information
  */
 class CEnemyUnit: public ICoreUnit {
 public:
@@ -116,15 +125,10 @@ public:
 	void SetThreat(float t) { data.threat = t; }
 	float GetThreat() const { return data.threat; }
 
-	void SetRange(CCircuitDef::ThreatType t, int r) {
-		data.range[static_cast<CCircuitDef::ThreatT>(t)] = r;
-	}
-	int GetRange(CCircuitDef::ThreatType t) const {
-		return GetRange(data.range, t);
-	}
-	static int GetRange(const SEnemyData::RangeArray& range, CCircuitDef::ThreatType t) {
-		return range[static_cast<CCircuitDef::ThreatT>(t)];
-	}
+	void SetRange(CCircuitDef::ThreatType t, int r) { data.SetRange(t, r); }
+	int GetRange(CCircuitDef::ThreatType t) const { return data.GetRange(t); }
+
+	bool IsFake() const { return data.IsFake(); }
 
 	void UpdateInRadarData(const springai::AIFloat3& p);
 	void UpdateInLosData();
@@ -205,6 +209,23 @@ private:
 	std::set<IFighterTask*> tasks;
 
 	CEnemyUnit* data;
+};
+
+/*
+ * Per AllyTeam fake ghost enemy
+ */
+
+class CEnemyFake: public CEnemyUnit {
+public:
+	CEnemyFake(const CEnemyInfo& that) = delete;
+	CEnemyFake& operator=(const CEnemyFake&) = delete;
+	CEnemyFake(CCircuitDef* cdef, const springai::AIFloat3& pos, int timeout);
+	virtual ~CEnemyFake();
+
+	int GetTimeout() const { return timeout; }
+
+private:
+	int timeout;
 };
 
 } // namespace circuit

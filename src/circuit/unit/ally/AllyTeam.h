@@ -83,8 +83,8 @@ public:
 	CEnemyUnit* RegisterEnemyUnit(springai::Unit* e, CCircuitAI* ai);
 	void UnregisterEnemyUnit(CEnemyUnit* data, CCircuitAI* ai);
 
-	void RegisterEnemyFake(CCircuitDef* cdef, const springai::AIFloat3& pos);
-	void UnregisterEnemyFake(CEnemyUnit* data);
+	void RegisterEnemyFake(CCircuitDef* cdef, const springai::AIFloat3& pos, int timeout);
+	void UnregisterEnemyFake(CEnemyFake* data);
 
 	void EnemyEnterLOS(CEnemyUnit* enemy, CCircuitAI* ai);
 	void EnemyLeaveLOS(CEnemyUnit* enemy, CCircuitAI* ai);
@@ -95,7 +95,8 @@ public:
 	void Update(CCircuitAI* ai);
 	void EnqueueUpdate();
 
-	bool IsEnemyOrFakeIn(const springai::AIFloat3& pos, const std::set<CCircuitDef::Id>& defs, float radius);
+	bool IsEnemyOrFakeIn(const springai::AIFloat3& startPos, const springai::AIFloat3& dir, float length,
+			const springai::AIFloat3& enemyPos, float radius, const std::set<CCircuitDef::Id>& unitDefIds);
 
 	const std::shared_ptr<CMapManager>&    GetMapManager()    { return mapManager; }
 	const std::shared_ptr<CEnemyManager>&  GetEnemyManager()  { return enemyManager; }
