@@ -52,20 +52,17 @@ CEnemyManager::~CEnemyManager()
 	for (CEnemyUnit* enemy : enemyUpdates) {
 		if (enemy->IsDead()) {  // instance is not in enemyUnits
 			delete enemy;
-			--iii;
 		}
 	}
 //	enemyUpdates.clear();
 	for (auto& kv : enemyUnits) {
 		delete kv.second;
-		--iii;
 	}
 //	enemyUnits.clear();
 	for (CEnemyFake* enemy : enemyFakes) {
 		delete enemy;
 	}
 //	enemyFakes.clear();
-	printf("~ iii = %i | enemyUnits = %i | enemyUpdates = %i\n", iii, enemyUnits.size(), enemyUpdates.size());
 }
 
 CEnemyUnit* CEnemyManager::GetEnemyUnit(ICoreUnit::Id unitId) const
@@ -121,7 +118,6 @@ void CEnemyManager::UpdateEnemyDatas(CQuadField& quadField)
 		++enemyIterator;
 		--n;
 	}
-//	circuit->LOG("Upd: iii = %i | enemyUnits = %i | enemyUpdates = %i", iii, enemyUnits.size(), enemyUpdates.size());
 
 //	if (!circuit->IsCheating()) {
 //		// AI knows what units are in los, hence reduce the amount of useless
@@ -230,19 +226,12 @@ std::pair<CEnemyUnit*, bool> CEnemyManager::RegisterEnemyUnit(ICoreUnit::Id unit
 		isIgnore |= cdef->IsIgnore();
 	}
 	CEnemyUnit* data = new CEnemyUnit(unitId, e, cdef);
-	++iii;
 
 	enemyUnits[unitId] = data;
 	enemyUpdates.push_back(data);
-//	circuit->LOG("RegId: iii = %i | enemyUnits = %i | enemyUpdates = %i", iii, enemyUnits.size(), enemyUpdates.size());
 
 	if (isIgnore) {
 		data->SetIgnore();
-		circuit->LOG("IGNORE %i | %i | %f", unitId, e->IsNeutral(), e->GetRulesParamFloat("ignoredByAI", 0.f));  // FIXME: DEBUG
-		if (cdef != nullptr) {
-			circuit->LOG("%s", cdef->GetDef()->GetName());  // FIXME: DEBUG
-		}
-		return std::make_pair(nullptr, false);
 	}
 
 	return std::make_pair(data, true);
@@ -267,7 +256,7 @@ CEnemyUnit* CEnemyManager::RegisterEnemyUnit(Unit* e)
 			data->SetIgnore();
 		}
 		delete e;
-		return nullptr;
+		return data;
 	}
 
 	CCircuitDef* cdef = circuit->GetCircuitDef(unitDefId);
@@ -275,16 +264,12 @@ CEnemyUnit* CEnemyManager::RegisterEnemyUnit(Unit* e)
 		isIgnore |= cdef->IsIgnore();
 	}
 	data = new CEnemyUnit(unitId, e, cdef);
-	++iii;
 
 	enemyUnits[unitId] = data;
 	enemyUpdates.push_back(data);
-//	circuit->LOG("RegInst: iii = %i | enemyUnits = %i | enemyUpdates = %i", iii, enemyUnits.size(), enemyUpdates.size());
 
 	if (isIgnore) {
 		data->SetIgnore();
-		circuit->LOG("IGNORE = true | %i | %f", e->IsNeutral(), e->GetRulesParamFloat("ignoredByAI", 0.f));  // FIXME: DEBUG
-		return nullptr;
 	}
 
 	return data;
@@ -315,8 +300,6 @@ void CEnemyManager::DeleteEnemyUnit(CEnemyUnit* data)
 	enemyUpdates.pop_back();
 
 	delete data;
-	--iii;
-//	circuit->LOG("Del: iii = %i | enemyUnits = %i | enemyUpdates = %i", iii, enemyUnits.size(), enemyUpdates.size());
 }
 
 void CEnemyManager::GarbageEnemy(CEnemyUnit* enemy)

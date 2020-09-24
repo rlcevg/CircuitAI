@@ -140,10 +140,6 @@ private:
 
 	bool isAreaUpdated;
 	std::unordered_set<const STerrainMapArea*> enemyAreas;
-
-	// FIXME: DEBUG
-	int iii = 0;
-	// FIXME: DEBUG
 };
 
 } // namespace circuit

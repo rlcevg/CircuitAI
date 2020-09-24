@@ -153,15 +153,10 @@ bool CAllyTeam::EnemyInLOS(CEnemyUnit* data, CCircuitAI* ai)
 std::pair<CEnemyUnit*, bool> CAllyTeam::RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS, CCircuitAI* ai)
 {
 	if (circuit != ai) {
-		CEnemyUnit* data = enemyManager->GetEnemyUnit(unitId);
-		if (data == nullptr) {
-			return std::make_pair(nullptr, true);
-		}
-		return data->IsIgnore() ? std::make_pair(nullptr, false) : std::make_pair(data, true);
+		return std::make_pair(enemyManager->GetEnemyUnit(unitId), true);
 	}
 
-	CEnemyUnit* data = enemyManager->GetEnemyUnit(unitId);
-	return (data == nullptr) ? enemyManager->RegisterEnemyUnit(unitId, isInLOS) : std::make_pair(nullptr, !data->IsIgnore());
+	return enemyManager->RegisterEnemyUnit(unitId, isInLOS);
 }
 
 CEnemyUnit* CAllyTeam::RegisterEnemyUnit(Unit* e, CCircuitAI* ai)
@@ -169,12 +164,10 @@ CEnemyUnit* CAllyTeam::RegisterEnemyUnit(Unit* e, CCircuitAI* ai)
 	if (circuit != ai) {
 		const ICoreUnit::Id unitId = e->GetUnitId();
 		delete e;
-		CEnemyUnit* data = enemyManager->GetEnemyUnit(unitId);
-		return ((data == nullptr) || data->IsIgnore()) ? nullptr : data;
+		return enemyManager->GetEnemyUnit(unitId);
 	}
 
-	CEnemyUnit* data = enemyManager->GetEnemyUnit(e->GetUnitId());
-	return (data == nullptr) ? enemyManager->RegisterEnemyUnit(e) : nullptr;
+	return enemyManager->RegisterEnemyUnit(e);
 }
 
 void CAllyTeam::UnregisterEnemyUnit(CEnemyUnit* data, CCircuitAI* ai)
