@@ -181,6 +181,7 @@ public:
 
 	static CMap* GetMap() { return map; }
 	static void CorrectPosition(springai::AIFloat3& position);
+	static springai::AIFloat3 CorrectPosition(const springai::AIFloat3& pos, const springai::AIFloat3& dir, float& len);
 
 	static inline bool IsNotInBounds(const springai::AIFloat3& pos) {
 		return (pos.x < -BOUND_EXT) || (pos.z < -BOUND_EXT) || (pos.x > boundX) || (pos.z > boundZ) || (pos == ZeroVector);

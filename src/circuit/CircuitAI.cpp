@@ -677,7 +677,7 @@ int CCircuitAI::Release(int reason)
 	mapManager = nullptr;
 
 	for (CCircuitUnit* unit : actionUnits) {
-		if (teamUnits.find(unit->GetId()) == teamUnits.end()) {
+		if (unit->IsDead()) {  // instance is not in teamUnits
 			delete unit;
 		}
 	}
@@ -722,13 +722,11 @@ int CCircuitAI::Update(int frame)
 		garbage.erase(unit);  // NOTE: UnregisterTeamUnit may erase unit
 	}
 
-	if (!allyTeam->GetEnemyGarbage().empty()) {
-		for (const ICoreUnit::Id eId : allyTeam->GetEnemyGarbage()) {
-			CEnemyInfo* enemy = GetEnemyInfo(eId);
-			if (enemy != nullptr) {  // EnemyDestroyed right after UpdateEnemyDatas but before this Update
-				EnemyDestroyed(enemy);
-				UnregisterEnemyInfo(enemy);
-			}
+	for (const ICoreUnit::Id eId : allyTeam->GetEnemyGarbage()) {
+		CEnemyInfo* enemy = GetEnemyInfo(eId);
+		if (enemy != nullptr) {  // EnemyDestroyed right after UpdateEnemyDatas but before this Update
+			EnemyDestroyed(enemy);
+			UnregisterEnemyInfo(enemy);
 		}
 	}
 
@@ -975,22 +973,7 @@ int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker, int weapon
 //	unit->SetDamagedFrame(lastFrame);
 
 	if ((attacker == nullptr) && (dir != ZeroVector) && IsValidWeaponDefId(weaponId)) {
-		const float range = weaponDefs[weaponId].GetRange();
-		const AIFloat3& startPos = unit->GetPos(lastFrame);
-		const AIFloat3 enemyPos = startPos + dir * range;
-		const SWeaponToUnitDef& wuDef = weaponToUnitDefs[weaponId];
-		if (!wuDef.ids.empty() && !allyTeam->IsEnemyOrFakeIn(startPos, dir, range, enemyPos, range * 0.2f, wuDef.ids)) {
-			int timeout = lastFrame;
-			CCircuitDef::Id defId;
-			if (wuDef.mobileIds.empty()) {  // static
-				timeout += FRAMES_PER_SEC * 60 * 20;
-				defId = *wuDef.staticIds.begin();
-			} else {
-				timeout += FRAMES_PER_SEC * 60 * 1;
-				defId = *wuDef.mobileIds.begin();
-			}
-			allyTeam->RegisterEnemyFake(GetCircuitDef(defId), enemyPos, timeout);
-		}
+		CreateFakeEnemy(weaponId, unit->GetPos(lastFrame), dir);  // currently only for threatmap
 	}
 
 	for (auto& module : modules) {
@@ -1340,6 +1323,28 @@ void CCircuitAI::UnregisterEnemyInfo(CEnemyInfo* enemy)
 	allyTeam->UnregisterEnemyUnit(enemy->GetData(), this);
 	enemyInfos.erase(enemy->GetId());
 	delete enemy;
+}
+
+void CCircuitAI::CreateFakeEnemy(int weaponId, const AIFloat3& startPos, const AIFloat3& dir)
+{
+	const SWeaponToUnitDef& wuDef = weaponToUnitDefs[weaponId];
+	if (wuDef.ids.empty()) {
+		return;
+	}
+	float range = weaponDefs[weaponId].GetRange();
+	const AIFloat3 enemyPos = CTerrainManager::CorrectPosition(startPos, dir, range);  // range adjusted
+	if (!allyTeam->IsEnemyOrFakeIn(startPos, dir, range, enemyPos, range * 0.2f, wuDef.ids)) {
+		int timeout = lastFrame;
+		CCircuitDef::Id defId;
+		if (wuDef.mobileIds.empty()) {  // static
+			timeout += FRAMES_PER_SEC * 60 * 20;
+			defId = *wuDef.staticIds.begin();
+		} else {
+			timeout += FRAMES_PER_SEC * 60 * 1;
+			defId = *wuDef.mobileIds.begin();
+		}
+		allyTeam->RegisterEnemyFake(GetCircuitDef(defId), enemyPos, timeout);
+	}
 }
 
 CEnemyInfo* CCircuitAI::GetEnemyInfo(Unit* u) const

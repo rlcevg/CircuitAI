@@ -160,7 +160,8 @@ std::pair<CEnemyUnit*, bool> CAllyTeam::RegisterEnemyUnit(ICoreUnit::Id unitId, 
 		return data->IsIgnore() ? std::make_pair(nullptr, false) : std::make_pair(data, true);
 	}
 
-	return enemyManager->RegisterEnemyUnit(unitId, isInLOS);
+	CEnemyUnit* data = enemyManager->GetEnemyUnit(unitId);
+	return (data == nullptr) ? enemyManager->RegisterEnemyUnit(unitId, isInLOS) : std::make_pair(nullptr, !data->IsIgnore());
 }
 
 CEnemyUnit* CAllyTeam::RegisterEnemyUnit(Unit* e, CCircuitAI* ai)
@@ -172,7 +173,8 @@ CEnemyUnit* CAllyTeam::RegisterEnemyUnit(Unit* e, CCircuitAI* ai)
 		return ((data == nullptr) || data->IsIgnore()) ? nullptr : data;
 	}
 
-	return enemyManager->RegisterEnemyUnit(e);
+	CEnemyUnit* data = enemyManager->GetEnemyUnit(e->GetUnitId());
+	return (data == nullptr) ? enemyManager->RegisterEnemyUnit(e) : nullptr;
 }
 
 void CAllyTeam::UnregisterEnemyUnit(CEnemyUnit* data, CCircuitAI* ai)
@@ -293,7 +295,6 @@ bool CAllyTeam::IsEnemyOrFakeIn(const AIFloat3& startPos, const AIFloat3& dir, f
 		}
 	}
 
-	// TODO: Is it ok to reduce ray's length by moving startPos out of LOS in dir direction?
 	const CRay ray(startPos, dir);
 	const AIFloat3 offset(SQUARE_SIZE * 8, SQUARE_SIZE * 8, SQUARE_SIZE * 8);
 	// WARNING: Do not reuse QuadFieldQuery within same scope. Otherwise cached vector may stuck in limbo.
@@ -304,14 +305,18 @@ bool CAllyTeam::IsEnemyOrFakeIn(const AIFloat3& startPos, const AIFloat3& dir, f
 		const CQuadField::Quad& quad = quadField.GetQuad(quadIdx);
 
 		for (CEnemyUnit* e : quad.enemyUnits) {
-			CAABBox box(e->GetPos() - offset, e->GetPos() + offset);
-			if (box.Intersection(ray)) {
+			CCircuitDef* edef = e->GetCircuitDef();
+			if ((edef != nullptr) && (unitDefIds.find(edef->GetId()) != unitDefIds.end())
+				&& CAABBox(e->GetPos() - offset, e->GetPos() + offset).Intersection(ray))
+			{
 				return true;
 			}
 		}
 		for (CEnemyFake* e : quad.enemyFakes) {
-			CAABBox box(e->GetPos() - offset, e->GetPos() + offset);
-			if (box.Intersection(ray)) {
+			CCircuitDef* edef = e->GetCircuitDef();
+			if (unitDefIds.find(edef->GetId()) != unitDefIds.end()
+				&& CAABBox(e->GetPos() - offset, e->GetPos() + offset).Intersection(ray))
+			{
 				return true;
 			}
 		}

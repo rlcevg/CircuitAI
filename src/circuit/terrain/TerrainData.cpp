@@ -581,6 +581,33 @@ void CTerrainData::CorrectPosition(AIFloat3& position)
 //	position.y = map->GetElevationAt(position.x, position.z);
 }
 
+AIFloat3 CTerrainData::CorrectPosition(const AIFloat3& pos, const AIFloat3& dir, float& len)
+{
+	constexpr float EPS = 1e-3f;
+	if ((std::fabs(dir.x) < EPS) || (std::fabs(dir.z) < EPS)) {
+		AIFloat3 newPos = pos + dir * len;
+		CorrectPosition(newPos);
+		len = pos.distance2D(newPos);
+		return newPos;
+	}
+
+	// branchless slab, @see util/math/RayBox.cpp
+	float t1 = (0 - pos.x) / dir.x;
+	float t2 = (AIFloat3::maxxpos - pos.x) / dir.x;
+
+	// pos is inside box, not interested in tmin < 0
+	float tmax = std::max(t1, t2);
+
+	t1 = (0 - pos.z) / dir.z;
+	t2 = (AIFloat3::maxzpos - pos.z) / dir.z;
+
+	tmax = std::min(tmax, std::max(t1, t2));
+
+	len = std::min(tmax * (1.f - EPS), len);
+
+	return pos + dir * len;
+}
+
 //int CTerrainData::GetFileValue(int& fileSize, char*& file, std::string entry)
 //{
 //	for(size_t i = 0; i < entry.size(); i++) {

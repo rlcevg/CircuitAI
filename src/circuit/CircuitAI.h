@@ -159,6 +159,7 @@ private:
 	std::pair<CEnemyInfo*, bool> RegisterEnemyInfo(ICoreUnit::Id unitId, bool isInLOS = false);
 	CEnemyInfo* RegisterEnemyInfo(springai::Unit* e);
 	void UnregisterEnemyInfo(CEnemyInfo* enemy);
+	void CreateFakeEnemy(int weaponId, const springai::AIFloat3& startPos, const springai::AIFloat3& dir);
 public:
 	CEnemyInfo* GetEnemyInfo(springai::Unit* u) const;
 	CEnemyInfo* GetEnemyInfo(ICoreUnit::Id unitId) const;

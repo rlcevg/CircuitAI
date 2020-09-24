@@ -81,7 +81,7 @@ struct SEnemyData {
 	bool IsInRadar()        const { return losStatus & LosMask::RADAR; }
 	bool IsInRadarOrLOS()   const { return losStatus & (LosMask::RADAR | LosMask::LOS); }
 	bool NotInRadarAndLOS() const { return (losStatus & (LosMask::RADAR | LosMask::LOS)) == 0; }
-	bool IsHidden()         const { return (losStatus & (LosMask::HIDDEN | LosMask::IGNORE)) != 0; }
+	bool IsHidden()         const { return losStatus & (LosMask::HIDDEN | LosMask::IGNORE); }
 	bool IsIgnore()         const { return losStatus & LosMask::IGNORE; }
 	bool IsDead()           const { return losStatus & LosMask::DEAD; }
 };
