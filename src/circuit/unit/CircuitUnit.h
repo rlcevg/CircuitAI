@@ -46,6 +46,11 @@ namespace circuit {
 #define CMD_AIR_STRAFE				39381
 #define CMD_TERRAFORM_INTERNAL		39801
 
+// FIXME: BA
+#define CMD_AUTOMEX		31143
+#define CMD_PASSIVE		34571
+// FIXME: BA
+
 class CCircuitDef;
 class CEnemyInfo;
 class IUnitManager;

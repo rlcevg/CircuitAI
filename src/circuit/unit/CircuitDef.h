@@ -146,6 +146,9 @@ public:
 	const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
 	float GetBuildDistance() const { return buildDistance; }
 	float GetBuildSpeed() const { return buildSpeed; }
+	// FIXME: BA
+	void SetBuildSpeed(float value) { buildSpeed = value; }
+	// FIXME: BA
 	inline bool CanBuild(Id buildDefId) const {	return buildOptions.find(buildDefId) != buildOptions.end(); }
 	inline bool CanBuild(CCircuitDef* buildDef) const { return CanBuild(buildDef->GetId()); }
 	int GetCount() const { return count; }

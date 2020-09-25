@@ -133,6 +133,7 @@ private:
 
 public:
 	bool IsBuilderInArea(CCircuitDef* buildDef, const springai::AIFloat3& position) const;  // Check if build-area has proper builder
+	bool IsBuilderExists(CCircuitDef* buildDef) const;
 
 	virtual IUnitTask* MakeTask(CCircuitUnit* unit) override;
 	virtual void AbortTask(IUnitTask* task) override;
@@ -171,6 +172,8 @@ private:
 	std::vector<IUnitTask*> buildUpdates;  // owner
 	unsigned int buildIterator;
 
+	unsigned numAutoMex;
+	std::unordered_map<int, std::set<CCircuitUnit*>> mexUpgrader;  // Mobile type Id: set of units
 	std::set<CCircuitUnit*> workers;
 	std::map<CCircuitUnit*, std::shared_ptr<IPathQuery>> costQueries;  // IPathQuery owner
 

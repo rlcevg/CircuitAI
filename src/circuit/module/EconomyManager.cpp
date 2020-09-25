@@ -15,6 +15,7 @@
 #include "resource/EnergyGrid.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
+#include "util/GameAttribute.h"
 #include "util/Scheduler.h"
 #include "util/Utils.h"
 #include "json/json.h"
@@ -43,7 +44,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		: IModule(circuit, new CEconomyScript(circuit->GetScriptManager(), this))
 		, energyGrid(nullptr)
 		, pylonDef(nullptr)
-		, mexDef(nullptr)
 		, storeDef(nullptr)
 		, mexCount(0)
 		, lastFacFrame(-1)
@@ -183,8 +183,11 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		}
 	};
 
+	ReadConfig();
+
 	float maxAreaDivCost = .0f;
 	float maxStoreDivCost = .0f;
+	const float avgWind = (circuit->GetMap()->GetMaxWind() + circuit->GetMap()->GetMinWind()) * 0.5f;
 	CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
 
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
@@ -215,11 +218,13 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				// BA: float metalConverts = unitDef->GetMakesResource(metalRes);
 				//     float metalExtracts = unitDef->GetExtractsResource(metalRes);
 				//     float netMetal = unitDef->GetResourceMake(metalRes) - unitDef->GetUpkeep(metalRes);
-				if (((it = customParams.find("ismex")) != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
-					finishedHandler[cdef.GetId()] = mexFinishedHandler;
-					mexDef = &cdef;  // cormex
-					cdef.SetIsMex(true);
-				}
+				// FIXME: BA
+//				if (((it = customParams.find("ismex")) != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
+//					finishedHandler[cdef.GetId()] = mexFinishedHandler;
+//					mexDef = &cdef;  // cormex
+//					cdef.SetIsMex(true);
+//				}
+				// FIXME: BA
 			}
 
 			// factory
@@ -231,7 +236,11 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			// energy
 			// BA: float netEnergy = unitDef->GetResourceMake(energyRes) - unitDef->GetUpkeep(energyRes);
 			auto it = customParams.find("income_energy");
-			if ((it != customParams.end()) && (utils::string_to_float(it->second) > 1)) {
+			if (((it != customParams.end()) && (utils::string_to_float(it->second) > 1))
+				|| (cdef.GetDef()->GetResourceMake(energyRes) - cdef.GetDef()->GetUpkeep(energyRes) > 1)
+				|| ((cdef.GetDef()->GetWindResourceGenerator(energyRes) > 5) && (avgWind > 5))
+				|| (cdef.GetDef()->GetTidalResourceGenerator(energyRes) * circuit->GetMap()->GetTidalStrength() > 1))
+			{
 				finishedHandler[cdef.GetId()] = energyFinishedHandler;
 				allEnergyDefs.insert(&cdef);
 			}
@@ -243,18 +252,33 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				finishedHandler[cdef.GetId()] = comFinishedHandler;
 				destroyedHandler[cdef.GetId()] = comDestroyedHandler;
 			}
+
+			for (SSideInfo& sideInfo : sideInfos) {
+					if (cdef.CanBuild(sideInfo.mexDef)) {
+						mexDefs[cdef.GetId()] = sideInfo.mexDef;
+					}
+					if (cdef.CanBuild(sideInfo.defaultDef)) {
+						defaultDefs[cdef.GetId()] = sideInfo.defaultDef;
+					}
+				}
 		}
 	}
 
-	ReadConfig();
-
-	if (mexDef == nullptr) {
-		mexDef = defaultDef;
+	// FIXME: BA
+	for (unsigned side = 0; side < sideInfos.size(); ++side) {
+		CCircuitDef*& mexDef = sideInfos[side].mexDef;
+		if (mexDef != nullptr) {
+			finishedHandler[mexDef->GetId()] = mexFinishedHandler;
+			mexDef->SetIsMex(true);
+		} else {
+			mexDef = sideInfos[side].defaultDef;
+		}
 	}
 	if (pylonDef == nullptr) {
-		pylonDef = defaultDef;
+		pylonDef = sideInfos[0].defaultDef;
 		pylonRange = PYLON_RANGE;
 	}
+	// FIXME: BA
 }
 
 CEconomyManager::~CEconomyManager()
@@ -288,30 +312,62 @@ void CEconomyManager::ReadConfig()
 	efInfo.fraction = (efInfo.endFactor - efInfo.startFactor) / (efInfo.endFrame - efInfo.startFrame);
 	energyFactor = efInfo.startFactor;
 
-	std::vector<std::pair<std::string, int>> engies;
-	std::string type = circuit->GetTerrainManager()->IsWaterMap() ? "water" : "land";
-	const Json::Value& surf = energy[type];
-	for (const std::string& engy : surf.getMemberNames()) {
-		const int min = surf[engy][0].asInt();
-		const int max = surf[engy].get(1, min).asInt();
-		const int limit = min + rand() % (max - min + 1);
-		engies.push_back(std::make_pair(engy, limit));
-	}
+	CMaskHandler& sideMasker = circuit->GetGameAttribute()->GetSideMasker();
+	engyLimits.resize(sideMasker.GetMasks().size());
+	sideInfos.resize(sideMasker.GetMasks().size());
+	const Json::Value& engySides = energy["side"];
+	const Json::Value& metal = econ["metal"];
+	const Json::Value& deflt = econ["default"];
+	for (const auto& kv : sideMasker.GetMasks()) {
+		const Json::Value& surfs = engySides[kv.first];
 
-	for (unsigned i = 0; i < engies.size(); ++i) {
-		const char* name = engies[i].first.c_str();
-		CCircuitDef* cdef = circuit->GetCircuitDef(name);
-		if (cdef == nullptr) {
-			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), name);
-			continue;
+		std::vector<std::pair<std::string, int>> engies;
+		std::string type = circuit->GetTerrainManager()->IsWaterMap() ? "water" : "land";
+		const Json::Value& surf = surfs[type];
+		for (const std::string& engy : surf.getMemberNames()) {
+			const int min = surf[engy][0].asInt();
+			const int max = surf[engy].get(1, min).asInt();
+			const int limit = min + rand() % (max - min + 1);
+			engies.push_back(std::make_pair(engy, limit));
 		}
-		engyLimits[cdef] = engies[i].second;
-	}
 
-	// NOTE: Must have
-	defaultDef = circuit->GetCircuitDef(econ["default"].asCString());
-	if (defaultDef == nullptr) {
-		throw CException("economy.default");
+		std::unordered_map<CCircuitDef*, int>& list = engyLimits[kv.second.type];
+		for (unsigned i = 0; i < engies.size(); ++i) {
+			const char* name = engies[i].first.c_str();
+			CCircuitDef* cdef = circuit->GetCircuitDef(name);
+			if (cdef == nullptr) {
+				circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), name);
+				continue;
+			}
+			list[cdef] = engies[i].second;
+		}
+
+		SSideInfo& sideInfo = sideInfos[kv.second.type];
+
+		// Metal
+		const char* name = metal[kv.first][0].asCString();
+		CCircuitDef* cdef = circuit->GetCircuitDef(name);
+		if (cdef != nullptr) {
+			sideInfo.mexDef = cdef;
+			allMexDefs.insert(cdef->GetId());
+		} else {
+			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), name);
+		}
+		name = metal[kv.first][1].asCString();
+		cdef = circuit->GetCircuitDef(name);
+		if (cdef != nullptr) {
+			sideInfo.mohoMexDef = cdef;
+			allMexDefs.insert(cdef->GetId());
+		} else {
+			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), name);
+		}
+
+		// Default
+		// NOTE: Must have
+		sideInfo.defaultDef = circuit->GetCircuitDef(deflt[kv.first].asCString());
+		if (sideInfo.defaultDef == nullptr) {
+			throw CException("economy.default");
+		}
 	}
 }
 
@@ -491,11 +547,25 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 		engy.cdef = cdef;
 		engy.costM = cdef->GetCostM();
 		engy.costE = cdef->GetCostE();
-		engy.make = utils::string_to_float(cdef->GetDef()->GetCustomParams().find("income_energy")->second);
+		auto customParams = cdef->GetDef()->GetCustomParams();
+		auto it = customParams.find("income_energy");
+		engy.make = (it != customParams.end())
+				? utils::string_to_float(it->second)
+				: cdef->GetDef()->GetResourceMake(energyRes) - cdef->GetDef()->GetUpkeep(energyRes);
+		if (engy.make < 1) {
+			engy.make = cdef->GetDef()->GetWindResourceGenerator(energyRes);
+			if (engy.make < 1) {
+				engy.make = cdef->GetDef()->GetTidalResourceGenerator(energyRes) * circuit->GetMap()->GetTidalStrength();
+			} else {
+				float avgWind = (circuit->GetMap()->GetMaxWind() + circuit->GetMap()->GetMinWind()) * 0.5f;
+				engy.make = std::min(avgWind, cdef->GetDef()->GetWindResourceGenerator(energyRes));
+			}
+		}
 		// TODO: Instead of plain sizeX, sizeZ use AI's yardmap size
 		engy.costDivMake = (engy.costM/* + engy.costE * 0.05f*/) * cdef->GetDef()->GetXSize() * cdef->GetDef()->GetZSize() / SQUARE(engy.make);
-		auto lit = engyLimits.find(cdef);
-		engy.limit = (lit != engyLimits.end()) ? lit->second : 0;
+		const std::unordered_map<CCircuitDef*, int>& list = engyLimits[circuit->GetSideId()];
+		auto lit = list.find(cdef);
+		engy.limit = (lit != list.end()) ? lit->second : 0;
 		energyInfos.push_back(engy);
 	}
 
@@ -544,6 +614,11 @@ void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 			++it;
 		}
 	}
+}
+
+const CEconomyManager::SSideInfo& CEconomyManager::GetSideInfo() const
+{
+	return sideInfos[circuit->GetSideId()];
 }
 
 void CEconomyManager::UpdateResourceIncome()
@@ -716,10 +791,11 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	}
 
 	IBuilderTask* task = nullptr;
+	CCircuitDef* mexDef = GetMexDef(unit->GetCircuitDef());
 
 	// check uncolonized mexes
 	bool isEnergyStalling = IsEnergyStalling();
-	if (!isEnergyStalling && mexDef->IsAvailable(circuit->GetLastFrame())) {
+	if ((mexDef != nullptr) && !isEnergyStalling && mexDef->IsAvailable(circuit->GetLastFrame())) {
 		float cost = mexDef->GetCostM();
 		unsigned maxCount = builderMgr->GetBuildPower() / cost * 8 + 2;
 		if (builderMgr->GetTasks(IBuilderTask::BuildType::MEX).size() < maxCount) {
@@ -729,7 +805,6 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			CMap* map = circuit->GetMap();
 			CMetalData::PointPredicate predicate;
 			if (unit != nullptr) {
-				CCircuitDef* mexDef = this->mexDef;
 				predicate = [this, &spots, map, mexDef, terrainMgr, unit](int index) {
 					return (IsAllyOpenSpot(index)
 							&& terrainMgr->CanBeBuiltAtSafe(mexDef, spots[index].position)  // hostile environment
@@ -737,7 +812,6 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 							&& map->IsPossibleToBuildAt(mexDef->GetDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
 				};
 			} else {
-				CCircuitDef* mexDef = this->mexDef;
 				predicate = [this, &spots, map, mexDef, terrainMgr, builderMgr](int index) {
 					return (IsAllyOpenSpot(index)
 							&& terrainMgr->CanBeBuiltAtSafe(mexDef, spots[index].position)  // hostile environment
@@ -863,16 +937,20 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 
 		if (engy.cdef->GetCount() < engy.limit) {
 			isLastHope = false;
-			if (taskSize < (int)(buildPower / engy.costM * 8 + 1)) {
+			if (taskSize < (int)(buildPower / engy.costM * 4 + 1)) {
 				bestDef = engy.cdef;
 				// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
 				//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
 				//       solar       geothermal    fusion         singu           ...
 				//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
-				if (engy.costM * 16.0f < maxBuildTime * SQUARE(metalIncome)) {
+				if ((engy.costM * 16.0f < maxBuildTime * SQUARE(metalIncome))
+					&& (engy.costE * 0.06f < energyIncome))
+				{
 					break;
 				}
-			} else if (engy.costM * 16.0f < maxBuildTime * SQUARE(metalIncome)) {
+			} else if ((engy.costM * 16.0f < maxBuildTime * SQUARE(metalIncome))
+				&& (engy.costE * 0.06f < energyIncome))
+			{
 				bestDef = nullptr;
 				break;
 			}
@@ -881,7 +959,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			break;
 		} else if (hopeDef == nullptr) {
 			hopeDef = engy.cdef;
-			isLastHope = isLastHope && (taskSize < (int)(buildPower / hopeDef->GetCostM() * 8 + 1));
+			isLastHope = isLastHope && (taskSize < (int)(buildPower / engy.costM * 4 + 1));
 		}
 	}
 	if (isLastHope) {
@@ -895,7 +973,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	// Find place to build
 	AIFloat3 buildPos = -RgtVector;
 	CMetalManager* metalMgr = circuit->GetMetalManager();
-	if (bestDef->GetCostM() < 1000.0f) {
+	if (bestDef->GetCostM() < 200.0f) {
 		int index = metalMgr->FindNearestSpot(position);
 		if (index != -1) {
 			const CMetalData::Metals& spots = metalMgr->GetSpots();
@@ -1149,6 +1227,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 
 IBuilderTask* CEconomyManager::UpdatePylonTasks()
 {
+	return nullptr;
 	CBuilderManager* builderMgr = circuit->GetBuilderManager();
 	if (!builderMgr->CanEnqueueTask()) {
 		return nullptr;
@@ -1281,6 +1360,7 @@ void CEconomyManager::UpdateEconomy()
 	const float curEnergy = GetEnergyCur();
 	const float storEnergy = GetStorage(energyRes);
 	isEnergyEmpty = curEnergy < storEnergy * 0.1f;
+	isEnergyStalling |= curEnergy < storEnergy * 0.7f;
 
 	if (ecoFrame <= efInfo.startFrame) {
 		energyFactor = efInfo.startFactor;

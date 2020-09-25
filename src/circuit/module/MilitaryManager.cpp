@@ -67,7 +67,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	 */
 	auto defenceFinishedHandler = [this](CCircuitUnit* unit) {
 		TRY_UNIT(this->circuit, unit,
-			unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+			for (int i = 0; i < 10; ++i) {
+				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+			}
 		)
 	};
 	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
@@ -109,7 +111,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 				}
 			}
 			if (unit->GetCircuitDef()->IsAttrStock()) {
-				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+				for (int i = 0; i < 10; ++i) {
+					unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+				}
 				unit->CmdMiscPriority(2);
 			}
 		)
@@ -156,7 +160,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		TRY_UNIT(this->circuit, unit,
 			unit->GetUnit()->SetTrajectory(1);
 			if (unit->GetCircuitDef()->IsAttrStock()) {
-				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+				for (int i = 0; i < 10; ++i) {
+					unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+				}
 				unit->CmdMiscPriority(2);
 			}
 		)
@@ -220,6 +226,19 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		}
 		if (cdef.GetDef()->IsBuilder()) {
 //			damagedHandler[unitDefId] = structDamagedHandler;
+			// FIXME: BA
+			if (cdef.GetBuildOptions().empty() && cdef.IsMobile()) {  // armrectr, cornecro
+				createdHandler[unitDefId] = attackerCreatedHandler;
+				finishedHandler[unitDefId] = attackerFinishedHandler;
+				idleHandler[unitDefId] = attackerIdleHandler;
+				damagedHandler[unitDefId] = attackerDamagedHandler;
+				destroyedHandler[unitDefId] = attackerDestroyedHandler;
+
+				if (cdef.GetRetreat() < 0.f) {
+					cdef.SetRetreat(fighterRet);
+				}
+			}
+			// FIXME: BA
 			continue;
 		}
 		const std::map<std::string, std::string>& customParams = cdef.GetDef()->GetCustomParams();
@@ -247,6 +266,12 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 				} else if (cdef.IsAttrStock()) {
 					finishedHandler[unitDefId] = defenceFinishedHandler;
 				}
+			} else {
+				// FIXME: BA
+				if (cdef.IsAttrStock()) {
+					finishedHandler[unitDefId] = defenceFinishedHandler;
+				}
+				// FIXME: BA
 			}
 			if (commDef->CanBuild(&cdef)) {
 				float range = cdef.GetDef()->GetRadarRadius();
@@ -331,7 +356,7 @@ void CMilitaryManager::ReadConfig()
 	defenceMod.len = qthrDef.get((unsigned)1, 1.f).asFloat() - defenceMod.min;
 
 	const Json::Value& porc = root["porcupine"];
-	const Json::Value& defs = porc["unit"];
+	const Json::Value& defs = porc["unit"][circuit->GetSideName()];
 	defenderDefs.reserve(defs.size());
 	for (const Json::Value& def : defs) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(def.asCString());
@@ -390,7 +415,7 @@ void CMilitaryManager::ReadConfig()
 	std::sort(baseDefence.begin(), baseDefence.end(), compare);
 
 	const Json::Value& super = porc["superweapon"];
-	const Json::Value& items = super["unit"];
+	const Json::Value& items = super["unit"][circuit->GetSideName()];
 	const Json::Value& probs = super["weight"];
 	superInfos.reserve(items.size());
 	for (unsigned i = 0; i < items.size(); ++i) {
@@ -408,9 +433,10 @@ void CMilitaryManager::ReadConfig()
 	}
 	DiceBigGun();
 
-	defaultPorc = circuit->GetCircuitDef(porc.get("default", "").asCString());
+	const std::string& defName = porc["default"].get(circuit->GetSideName(), "").asString();
+	defaultPorc = circuit->GetCircuitDef(defName.c_str());
 	if (defaultPorc == nullptr) {
-		defaultPorc = circuit->GetEconomyManager()->GetDefaultDef();
+		defaultPorc = circuit->GetEconomyManager()->GetSideInfo().defaultDef;
 	}
 }
 
@@ -1283,7 +1309,7 @@ void CMilitaryManager::MakeBaseDefence(const AIFloat3& pos)
 
 void CMilitaryManager::MarkPointOfInterest(CEnemyInfo* enemy)
 {
-	if (enemy->GetCircuitDef() != circuit->GetEconomyManager()->GetMexDef()) {  // TODO: if one of the list
+	if (enemy->GetCircuitDef() != circuit->GetEconomyManager()->GetSideInfo().mexDef) {  // TODO: if one of the list
 		return;
 	}
 	int index = circuit->GetMetalManager()->FindNearestCluster(enemy->GetPos());
@@ -1295,7 +1321,7 @@ void CMilitaryManager::MarkPointOfInterest(CEnemyInfo* enemy)
 
 void CMilitaryManager::UnmarkPointOfInterest(CEnemyInfo* enemy)
 {
-	if (enemy->GetCircuitDef() != circuit->GetEconomyManager()->GetMexDef()) {  // TODO: if one of the list
+	if (enemy->GetCircuitDef() != circuit->GetEconomyManager()->GetSideInfo().mexDef) {  // TODO: if one of the list
 		return;
 	}
 	int index = circuit->GetMetalManager()->FindNearestCluster(enemy->GetPos());

@@ -27,6 +27,8 @@ public:
 	void DelFactory(const CCircuitDef* cdef);
 
 private:
+	void ReadConfig(CCircuitAI* circuit);
+
 	unsigned int choiceNum;
 	unsigned int noAirNum;
 	struct SFactory {
@@ -40,6 +42,8 @@ private:
 	float minOffset;
 	float lenOffset;
 	std::unordered_map<CCircuitDef::Id, SFactory> allFactories;
+
+//	std::unordered_map<CCircuitDef::Id, std::unordered_set<CCircuitDef::Id>> factoryDefs;  // builder: set<factory>
 };
 
 } // namespace circuit

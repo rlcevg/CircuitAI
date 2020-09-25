@@ -281,7 +281,7 @@ void CTerrainManager::ReadConfig()
 void CTerrainManager::Init()
 {
 	const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
-	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
+	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetSideInfo().mexDef;
 	int xsize, zsize;
 	auto it = blockInfos.find(mexDef->GetId());
 	if (it != blockInfos.end()) {

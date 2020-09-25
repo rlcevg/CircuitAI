@@ -48,30 +48,30 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 		, targetTile(-1)
 {
 	WeaponMount* wpMnt;
-	if (cdef->IsRoleComm()) {
-		dgun = nullptr;
-		for (int num = 1; num < 3; ++num) {
-			std::string str = utils::int_to_string(num, "comm_weapon_manual_%i");
-			if (unit->GetRulesParamFloat(str.c_str(), -1) <= 0.f) {
-				continue;
-			}
-			str = utils::int_to_string(num, "comm_weapon_num_%i");
-			int mntId = CWeaponDef::WeaponIdFromLua(int(unit->GetRulesParamFloat(str.c_str(), -1)));
-			if (mntId < 0) {
-				continue;
-			}
-			wpMnt = WrappWeaponMount::GetInstance(unit->GetSkirmishAIId(), cdef->GetId(), mntId);
-			if (wpMnt == nullptr) {
-				continue;
-			}
-			dgun = unit->GetWeapon(wpMnt);
-			delete wpMnt;
-			break;
-		}
-	} else {
+//	if (cdef->IsRoleComm()) {
+//		dgun = nullptr;
+//		for (int num = 1; num < 3; ++num) {
+//			std::string str = utils::int_to_string(num, "comm_weapon_manual_%i");
+//			if (unit->GetRulesParamFloat(str.c_str(), -1) <= 0.f) {
+//				continue;
+//			}
+//			str = utils::int_to_string(num, "comm_weapon_num_%i");
+//			int mntId = CWeaponDef::WeaponIdFromLua(int(unit->GetRulesParamFloat(str.c_str(), -1)));
+//			if (mntId < 0) {
+//				continue;
+//			}
+//			wpMnt = WrappWeaponMount::GetInstance(unit->GetSkirmishAIId(), cdef->GetId(), mntId);
+//			if (wpMnt == nullptr) {
+//				continue;
+//			}
+//			dgun = unit->GetWeapon(wpMnt);
+//			delete wpMnt;
+//			break;
+//		}
+//	} else {
 		wpMnt = cdef->GetDGunMount();
 		dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
-	}
+//	}
 	wpMnt = cdef->GetWeaponMount();
 	weapon = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
 	wpMnt = cdef->GetShieldMount();
@@ -231,13 +231,13 @@ void CCircuitUnit::CmdRemove(std::vector<float>&& params, short options)
 
 void CCircuitUnit::CmdMoveTo(const AIFloat3& pos, short options, int timeout)
 {
-//	unit->MoveTo(pos, options, timeout);
-	unit->ExecuteCustomCommand(CMD_RAW_MOVE, {pos.x, pos.y, pos.z}, options, timeout);
+	unit->MoveTo(pos, options, timeout);
+//	unit->ExecuteCustomCommand(CMD_RAW_MOVE, {pos.x, pos.y, pos.z}, options, timeout);
 }
 
 void CCircuitUnit::CmdJumpTo(const AIFloat3& pos, short options, int timeout)
 {
-	unit->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, options, timeout);
+//	unit->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, options, timeout);
 }
 
 void CCircuitUnit::CmdAttackGround(const AIFloat3& pos, short options, int timeout)
@@ -247,7 +247,7 @@ void CCircuitUnit::CmdAttackGround(const AIFloat3& pos, short options, int timeo
 
 void CCircuitUnit::CmdWantedSpeed(float speed)
 {
-	unit->ExecuteCustomCommand(CMD_WANTED_SPEED, {speed});
+//	unit->ExecuteCustomCommand(CMD_WANTED_SPEED, {speed});
 }
 
 void CCircuitUnit::CmdSetTarget(CEnemyInfo* enemy)
@@ -257,44 +257,44 @@ void CCircuitUnit::CmdSetTarget(CEnemyInfo* enemy)
 
 void CCircuitUnit::CmdCloak(bool state)
 {
-	unit->ExecuteCustomCommand(CMD_WANT_CLOAK, {state ? 1.f : 0.f});  // personal
-	unit->ExecuteCustomCommand(CMD_CLOAK_SHIELD, {state ? 1.f : 0.f});  // area
+//	unit->ExecuteCustomCommand(CMD_WANT_CLOAK, {state ? 1.f : 0.f});  // personal
+//	unit->ExecuteCustomCommand(CMD_CLOAK_SHIELD, {state ? 1.f : 0.f});  // area
 	unit->Cloak(state);
 }
 
 void CCircuitUnit::CmdFireAtRadar(bool state)
 {
-	unit->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {state ? 0.f : 1.f});
+//	unit->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {state ? 0.f : 1.f});
 }
 
 void CCircuitUnit::CmdFindPad(int timeout)
 {
-	unit->ExecuteCustomCommand(CMD_FIND_PAD, {}, 0, timeout);
+//	unit->ExecuteCustomCommand(CMD_FIND_PAD, {}, 0, timeout);
 }
 
 void CCircuitUnit::CmdManualFire(short options, int timeout)
 {
-	unit->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, options, timeout);
+//	unit->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, options, timeout);
 }
 
 void CCircuitUnit::CmdPriority(float value)
 {
-	unit->ExecuteCustomCommand(CMD_PRIORITY, {value});
+//	unit->ExecuteCustomCommand(CMD_PRIORITY, {value});
 }
 
 void CCircuitUnit::CmdMiscPriority(float value)
 {
-	unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, {value});
+//	unit->ExecuteCustomCommand(CMD_MISC_PRIORITY, {value});
 }
 
 void CCircuitUnit::CmdAirStrafe(float value)
 {
-	unit->ExecuteCustomCommand(CMD_AIR_STRAFE, {value});
+//	unit->ExecuteCustomCommand(CMD_AIR_STRAFE, {value});
 }
 
 void CCircuitUnit::CmdTerraform(std::vector<float>&& params)
 {
-	unit->ExecuteCustomCommand(CMD_TERRAFORM_INTERNAL, params);
+//	unit->ExecuteCustomCommand(CMD_TERRAFORM_INTERNAL, params);
 }
 
 void CCircuitUnit::Attack(CEnemyInfo* enemy, int timeout)
@@ -368,8 +368,8 @@ void CCircuitUnit::Attack(const AIFloat3& position, CEnemyInfo* enemy, int tile,
 void CCircuitUnit::Guard(CCircuitUnit* target, int timeout)
 {
 	TRY_UNIT(manager->GetCircuit(), this,
-		unit->ExecuteCustomCommand(CMD_ORBIT, {(float)target->GetId(), 300.0f}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
-//		unit->Guard(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+//		unit->ExecuteCustomCommand(CMD_ORBIT, {(float)target->GetId(), 300.0f}, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+		unit->Guard(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
 //		CmdWantedSpeed(NO_SPEED_LIMIT);
 	)
 }

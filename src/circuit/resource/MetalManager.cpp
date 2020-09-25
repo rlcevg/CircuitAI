@@ -131,7 +131,7 @@ void CMetalManager::ParseMetalSpots()
 			inc = 1;
 			spots.reserve(spotsPos.size());
 		}
-		CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
+		CCircuitDef* mexDef = circuit->GetEconomyManager()->GetSideInfo().mexDef;
 		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 		const int xsize = mexDef->GetDef()->GetXSize();
 		const int zsize = mexDef->GetDef()->GetZSize();

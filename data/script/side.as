@@ -1,5 +1,6 @@
 namespace Side {
 
-TypeMask ZEROK = aiSideMasker.GetTypeMask("zerok");
+TypeMask ARMADA = aiSideMasker.GetTypeMask("armada");
+TypeMask CORTEX = aiSideMasker.GetTypeMask("cortex");
 
 }

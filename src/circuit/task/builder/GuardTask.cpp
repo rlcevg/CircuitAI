@@ -34,6 +34,11 @@ void CBGuardTask::AssignTo(CCircuitUnit* unit)
 	IBuilderTask::AssignTo(unit);
 
 	static_cast<CBuilderManager*>(manager)->DelBuildPower(unit);
+	// FIXME: BA
+	TRY_UNIT(manager->GetCircuit(), unit,
+		unit->GetUnit()->ExecuteCustomCommand(CMD_PASSIVE, {1.f});
+	)
+	// FIXME: BA
 }
 
 void CBGuardTask::RemoveAssignee(CCircuitUnit* unit)
@@ -44,6 +49,11 @@ void CBGuardTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 
 	static_cast<CBuilderManager*>(manager)->AddBuildPower(unit);
+	// FIXME: BA
+	TRY_UNIT(manager->GetCircuit(), unit,
+		unit->GetUnit()->ExecuteCustomCommand(CMD_PASSIVE, {0.f});
+	)
+	// FIXME: BA
 }
 
 void CBGuardTask::Stop(bool done)

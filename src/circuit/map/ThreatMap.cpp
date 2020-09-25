@@ -134,43 +134,43 @@ void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const
 	assert(edef != nullptr);
 
 	// FIXME: DEBUG  comm's threat value is not based on proper weapons
-	if (edef->IsRoleComm() && !e->IsFake()) {
-		CCircuitAI* circuit = manager->GetCircuit();
-		// TODO: by weapons 1,2 descriptions set proper land/air/water ranges/threats
-		float maxRange = 0.f;
-		float maxAoe = 0.f;
-		for (int num = 1; num < 3; ++num) {
-			std::string str = utils::int_to_string(num, "comm_weapon_id_%i");
-			int weaponDefId = int(e->GetUnit()->GetRulesParamFloat(str.c_str(), -1));
-			if (weaponDefId < 0) {
-				continue;
-			}
-
-			CWeaponDef* weaponDef = circuit->GetWeaponDef(weaponDefId);
-			const float range = weaponDef->GetRange();
-			if (maxRange < range) {
-				maxRange = range;
-				maxAoe = weaponDef->GetAoe();
-			}
-		}
-		const float slack = squareSize - 1 + maxAoe / 2
-				+ DEFAULT_SLACK * slackMod.allMod
-				+ THREAT_UPDATE_RATE * edef->GetSpeed() / FRAMES_PER_SEC;
-		const float mult = e->GetUnit()->GetRulesParamFloat("comm_range_mult", 1.f);
-		const float range = int(maxRange * mult + slack) / squareSize + 1;
-		e->SetRange(CCircuitDef::ThreatType::AIR, range);
-		e->SetRange(CCircuitDef::ThreatType::LAND, range);
-		e->SetRange(CCircuitDef::ThreatType::WATER, range);
-		e->SetRange(CCircuitDef::ThreatType::CLOAK, edef->GetThreatRange(CCircuitDef::ThreatType::CLOAK));
-		e->SetRange(CCircuitDef::ThreatType::SHIELD, edef->GetThreatRange(CCircuitDef::ThreatType::SHIELD));
-	} else {
+//	if (edef->IsRoleComm() && !e->IsFake()) {
+//		CCircuitAI* circuit = manager->GetCircuit();
+//		// TODO: by weapons 1,2 descriptions set proper land/air/water ranges/threats
+//		float maxRange = 0.f;
+//		float maxAoe = 0.f;
+//		for (int num = 1; num < 3; ++num) {
+//			std::string str = utils::int_to_string(num, "comm_weapon_id_%i");
+//			int weaponDefId = int(e->GetUnit()->GetRulesParamFloat(str.c_str(), -1));
+//			if (weaponDefId < 0) {
+//				continue;
+//			}
+//
+//			CWeaponDef* weaponDef = circuit->GetWeaponDef(weaponDefId);
+//			const float range = weaponDef->GetRange();
+//			if (maxRange < range) {
+//				maxRange = range;
+//				maxAoe = weaponDef->GetAoe();
+//			}
+//		}
+//		const float slack = squareSize - 1 + maxAoe / 2
+//				+ DEFAULT_SLACK * slackMod.allMod
+//				+ THREAT_UPDATE_RATE * edef->GetSpeed() / FRAMES_PER_SEC;
+//		const float mult = e->GetUnit()->GetRulesParamFloat("comm_range_mult", 1.f);
+//		const float range = int(maxRange * mult + slack) / squareSize + 1;
+//		e->SetRange(CCircuitDef::ThreatType::AIR, range);
+//		e->SetRange(CCircuitDef::ThreatType::LAND, range);
+//		e->SetRange(CCircuitDef::ThreatType::WATER, range);
+//		e->SetRange(CCircuitDef::ThreatType::CLOAK, edef->GetThreatRange(CCircuitDef::ThreatType::CLOAK));
+//		e->SetRange(CCircuitDef::ThreatType::SHIELD, edef->GetThreatRange(CCircuitDef::ThreatType::SHIELD));
+//	} else {
 	// FIXME: DEBUG
 
 		for (CCircuitDef::ThreatT tt = 0; tt < static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_); ++tt) {
 			CCircuitDef::ThreatType type = static_cast<CCircuitDef::ThreatType>(tt);
 			e->SetRange(type, edef->GetThreatRange(type));
 		}
-	}
+//	}
 }
 
 void CThreatMap::NewEnemy(CEnemyUnit* e) const

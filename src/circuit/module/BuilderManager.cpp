@@ -74,12 +74,28 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			unit->SetManager(this);
 			this->circuit->AddActionUnit(unit);
 		}
-		idleTask->AssignTo(unit);
+		// FIXME: BA
+		if ((mexUpgrader[unit->GetCircuitDef()->GetMobileId()].size() < numAutoMex)
+			&& unit->GetCircuitDef()->CanBuild(this->circuit->GetEconomyManager()->GetSideInfo().mohoMexDef))
+		{
+			IUnitTask* task = EnqueueWait(std::numeric_limits<int>::max());
+			AssignTask(unit, task);
 
-		++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
+			AddBuildPower(unit);
+			mexUpgrader[unit->GetCircuitDef()->GetMobileId()].insert(unit);
 
-		AddBuildPower(unit);
-		workers.insert(unit);
+			TRY_UNIT(this->circuit, unit,
+				unit->GetUnit()->ExecuteCustomCommand(CMD_AUTOMEX, {1.f});
+			)
+		} else {
+			idleTask->AssignTo(unit);
+
+			++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
+
+			AddBuildPower(unit);
+			workers.insert(unit);
+		}
+		// FIXME: BA
 
 		AddBuildList(unit);
 
@@ -106,11 +122,17 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		if (task->GetType() == IUnitTask::Type::NIL) {
 			return;
 		}
-		--buildAreas[unit->GetArea()][unit->GetCircuitDef()];
+		// FIXME: BA
+		if (mexUpgrader[unit->GetCircuitDef()->GetMobileId()].erase(unit) > 0) {
+			DelBuildPower(unit);
+		} else {
+			--buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 
-		DelBuildPower(unit);
-		workers.erase(unit);
-		costQueries.erase(unit);
+			DelBuildPower(unit);
+			workers.erase(unit);
+			costQueries.erase(unit);
+		}
+		// FIXME: BA
 
 		RemoveBuildList(unit);
 
@@ -177,8 +199,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	/*
 	 * staticmex handlers;
 	 */
-	CCircuitDef::Id unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
-	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
+	auto mexDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
 		CCircuitDef* mexDef = unit->GetCircuitDef();
 		const int facing = unit->GetUnit()->GetBuildingFacing();
@@ -203,6 +224,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			}
 		}), FRAMES_PER_SEC * 20);
 	};
+	for (const CEconomyManager::SSideInfo& si : circuit->GetEconomyManager()->GetSideInfos()) {
+		destroyedHandler[si.mexDef->GetId()] = mexDestroyedHandler;
+	}
 
 	ReadConfig();
 
@@ -233,10 +257,12 @@ void CBuilderManager::ReadConfig()
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
 
-	terraDef = circuit->GetCircuitDef(root["economy"].get("terra", "").asCString());
+	const Json::Value& econ = root["economy"];
+	terraDef = circuit->GetCircuitDef(econ.get("terra", "").asCString());
 	if (terraDef == nullptr) {
-		terraDef = circuit->GetEconomyManager()->GetDefaultDef();
+		terraDef = circuit->GetEconomyManager()->GetSideInfo().defaultDef;
 	}
+	numAutoMex = econ.get("auto_mex", 2).asUInt();
 
 	const Json::Value& cond = root["porcupine"]["superweapon"]["condition"];
 	super.minIncome = cond.get((unsigned)0, 50.f).asFloat();
@@ -812,6 +838,16 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 	return false;
 }
 
+bool CBuilderManager::IsBuilderExists(CCircuitDef* buildDef) const
+{
+	for (const CCircuitUnit* builder : workers) {
+		if (builder->GetCircuitDef()->CanBuild(buildDef->GetId())) {
+			return true;
+		}
+	}
+	return false;
+}
+
 IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 {
 	return static_cast<CBuilderScript*>(script)->MakeTask(unit);  // DefaultMakeTask
@@ -1130,7 +1166,7 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 		float energyMake;
 		buildDef = ecoMgr->GetLowEnergy(position, energyMake);
 		if (buildDef == nullptr) {  // position can be in danger
-			buildDef = ecoMgr->GetDefaultDef();
+			buildDef = ecoMgr->GetDefaultDef(unit->GetCircuitDef());
 		}
 		if ((buildDef != nullptr) && (buildDef->GetCount() < 10) && buildDef->IsAvailable(circuit->GetLastFrame())) {
 			return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
@@ -1237,7 +1273,9 @@ void CBuilderManager::Watchdog()
 				float maxHealth = u->GetMaxHealth();
 				float buildPercent = (maxHealth - u->GetHealth()) / maxHealth;
 				CCircuitDef* cdef = unit->GetCircuitDef();
-				if ((cdef->GetBuildTime() * buildPercent < maxCost) || (*cdef == *terraDef)) {
+				if ((cdef->GetBuildTime() * buildPercent < maxCost) || (*cdef == *terraDef)
+						|| (*cdef == *economyMgr->GetSideInfo().mohoMexDef))  // FIXME: BA
+				{
 					EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
 				} else {
 					EnqueueReclaim(IBuilderTask::Priority::NORMAL, unit);

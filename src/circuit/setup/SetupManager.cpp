@@ -306,8 +306,8 @@ void CSetupManager::ReadConfig()
 	const Json::Value& items = comm["unit"];
 	commPrefix = comm["prefix"].asString();
 	commSuffix = comm["suffix"].asString();
-	std::vector<CCircuitDef*> commChoices;
-	commChoices.reserve(items.size());
+//	std::vector<CCircuitDef*> commChoices;
+//	commChoices.reserve(items.size());
 	float magnitude = 0.f;
 	std::vector<float> weight;
 	weight.reserve(items.size());
@@ -320,7 +320,7 @@ void CSetupManager::ReadConfig()
 			continue;
 		}
 
-		commChoices.push_back(cdef);
+//		commChoices.push_back(cdef);
 
 		const Json::Value& comm = items[commName];
 		const float imp = comm.get("importance", 0.f).asFloat();
@@ -387,20 +387,24 @@ void CSetupManager::ReadConfig()
 		hide.threat = hhdd.get("threat", 0.f).asFloat();
 		hide.isAir = hhdd.get("air", false).asBool();
 		hide.sqTaskRad = SQUARE(hhdd.get("task_rad", 2000.f).asFloat());
+
+		if (circuit->GetSideName() == comm.get("side", "").asString()) {
+			commChoice = circuit->GetCircuitDef(commName.c_str());
+		}
 	}
 
-	if (!commChoices.empty()) {
-		unsigned choice = 0;
-		float dice = (float)rand() / RAND_MAX * magnitude;
-		for (unsigned i = 0; i < weight.size(); ++i) {
-			dice -= weight[i];
-			if (dice < 0.f) {
-				choice = i;
-				break;
-			}
-		}
-		commChoice = commChoices[choice];
-	}
+//	if (!commChoices.empty()) {
+//		unsigned choice = 0;
+//		float dice = (float)rand() / RAND_MAX * magnitude;
+//		for (unsigned i = 0; i < weight.size(); ++i) {
+//			dice -= weight[i];
+//			if (dice < 0.f) {
+//				choice = i;
+//				break;
+//			}
+//		}
+//		commChoice = commChoices[choice];
+//	}
 }
 
 bool CSetupManager::HasModules(const CCircuitDef* cdef, unsigned level) const

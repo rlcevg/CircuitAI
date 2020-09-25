@@ -81,7 +81,9 @@ void CSRepairTask::Update()
 				auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 				for (Unit* u : us) {
 					CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-					if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)) {
+					if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)
+						|| (*candUnit->GetCircuitDef() == *economyMgr->GetSideInfo().mexDef))  // FIXME: BA
+					{
 						continue;
 					}
 					if (!u->IsBeingBuilt() && (u->GetHealth() < u->GetMaxHealth())) {
@@ -106,7 +108,9 @@ void CSRepairTask::Update()
 			auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 			for (Unit* u : us) {
 				CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-				if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)) {
+				if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)
+					|| (*candUnit->GetCircuitDef() == *economyMgr->GetSideInfo().mexDef))  // FIXME: BA
+				{
 					continue;
 				}
 				bool isHighPrio = factoryMgr->IsHighPriority(candUnit);

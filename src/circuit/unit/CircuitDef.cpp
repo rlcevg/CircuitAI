@@ -376,15 +376,15 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 		if (wd->IsManualFire() && (reloadTime < bestDGunReload)) {
 			// NOTE: Disable commander's dgun, because no usage atm
-			if (customParams.find("manualfire") == customParams.end()) {
+//			if (customParams.find("manualfire") == customParams.end()) {
 				bestDGunReload = reloadTime;
 				bestDGunDef = circuit->GetWeaponDef(wd->GetWeaponDefId());
 				delete bestDGunMnt;
 				bestDGunMnt = mount;
 				hasDGunAA |= (weaponCat & circuit->GetAirCategory()) && isAirWeapon;
-			} else {  // FIXME: Dynamo com workaround
-				delete mount;
-			}
+//			} else {  // FIXME: Dynamo com workaround
+//				delete mount;
+//			}
 		} else if (wd->IsShield()) {
 			if (shieldMount == nullptr) {
 				shieldMount = mount;  // NOTE: Unit may have more than 1 shield

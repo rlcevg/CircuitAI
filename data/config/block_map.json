@@ -35,19 +35,18 @@
 		"fac_strider": {
 			"type": ["rectangle", "special"],
 			"offset": [0, 12],
-			"yard": [16, 16]
+			"yard": [20, 20]
 		},
 		"solar": {
-			"type": ["circle", "engy_low"],
-			"ignore": ["mex", "engy_mid", "engy_high", "def_low", "pylon", "nano"],
-			"radius": 6
+			"type": ["rectangle", "engy_low"],
+			"ignore": ["mex", "engy_mid", "engy_high", "def_low", "pylon", "nano"]
 		},
 		"wind": {
 			"type": ["circle", "engy_low"],
 			// Integer radius of a blocker or description string.
 			// Available string values: explosion, expl_ally
 //			"radius": "explosion",  // default: "explosion"
-			"radius": 3,
+			"radius": 4,  // default: "explosion"
 			"not_ignore": ["factory", "engy_low", "terra"]
 		},
 		"fusion": {
@@ -69,6 +68,7 @@
 		},
 		"mex": {
 			"type": ["rectangle", "mex"],
+			"yard": [2, 2],
 			"ignore": ["all"]
 		},
 		"def_low": {
@@ -79,10 +79,6 @@
 		"caretaker": {
 			"type": ["rectangle", "nano"],
 			"ignore": ["mex", "def_low", "engy_mid", "pylon", "engy_high"]
-		},
-		"small": {
-			"type": ["rectangle", "unknown"],
-			"not_ignore": ["factory", "def_low", "terra"]
 		},
 		"superweapon": {
 			"type": ["circle", "special"],
@@ -101,6 +97,10 @@
 			"yard": [4, 4],
 			"ignore": ["all"]
 		},
+		"small": {
+			"type": ["rectangle", "unknown"],
+			"not_ignore": ["factory", "def_low", "terra"]
+		},
 		"_default_": {
 			"type": ["rectangle", "unknown"],
 			"yard": [4, 4],
@@ -110,30 +110,21 @@
 	// Water overrides land. Map considered as water if amount of land < 40%
 	"class_water" : {
 		"wind": {
-			"type": ["circle", "engy_low"],
-			"radius": 1,  // default: "explosion"
+			"type": ["rectangle", "engy_low"],
 			"ignore": ["mex", "engy_mid", "engy_high", "pylon", "nano"]
 		}
 	},
 	"instance": {
-		"fac_land": ["factorycloak", "factoryamph", "factoryhover", "factoryjump", "factoryshield", "factoryspider", "factorytank", "factoryveh"],
-		"fac_air": ["factoryplane", "factorygunship"],
-		"fac_water": ["factoryship"],
-		"fac_strider": ["striderhub"],
-		"solar": ["energysolar"],
-		"wind": ["energywind"],
-		"fusion": ["energyfusion"],
-		"singu": ["energysingu"],
-		"pylon": ["energypylon"],
-		"store": ["staticstorage"],
-		"mex": ["staticmex"],
-		"def_low": ["turretmissile", "turretlaser", "staticarty"],
-		"caretaker": ["staticcon", "staticrearm"],
-		"superweapon": ["raveparty", "staticnuke", "zenith", "turretaaheavy", "staticheavyarty", "staticantinuke", "staticheavyradar"],
-//		"protector": ["staticantinuke"],
-//		"terraform": ["terraunit"],
-		"strider": ["striderantiheavy", "striderscorpion", "striderdante", "striderarty", "striderfunnelweb", "striderbantha", "striderdetriment", "subtacmissile", "shipcarrier", "shipheavyarty"],
-		"small": ["staticradar"]
+		"fac_land": ["armlab", "armalab", "armvp", "armavp", "armhp", "corlab", "coralab", "corvp", "coravp", "corhp"],
+		"fac_water": ["armsy", "armasy", "corsy", "corasy"],
+		"fac_strider": ["armshltx", "corgant"],
+		"solar": ["armsolar", "corsolar"],
+		"wind": ["armwin", "corwin"],
+		"store": ["armmstor", "armestor", "cormstor", "corestor"],
+		"mex": ["armmex", "cormex"],
+		"def_low": ["armllt", "armclaw", "corllt", "cormaw"],
+		"caretaker": ["armnanotc", "armasp", "cornanotc", "corasp"],
+		"small": ["armrad", "corrad"]
 	}
 }
 }

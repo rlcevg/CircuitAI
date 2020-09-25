@@ -234,35 +234,35 @@ int CInfluenceMap::GetUnitRange(CAllyUnit* u) const
 	const CCircuitDef* cdef = u->GetCircuitDef();
 
 	// FIXME: DEBUG  comm's threat value is not based on proper weapons
-	if (cdef->IsRoleComm()) {
-		CCircuitAI* circuit = manager->GetCircuit();
-		// TODO: by weapons 1,2 descriptions set proper land/air/water ranges/threats
-		float maxRange = 0.f;
-		float maxAoe = 0.f;
-		for (int num = 1; num < 3; ++num) {
-			std::string str = utils::int_to_string(num, "comm_weapon_id_%i");
-			int weaponDefId = int(u->GetUnit()->GetRulesParamFloat(str.c_str(), -1));
-			if (weaponDefId < 0) {
-				continue;
-			}
-
-			CWeaponDef* weaponDef = circuit->GetWeaponDef(weaponDefId);
-			const float range = weaponDef->GetRange();
-			if (maxRange < range) {
-				maxRange = range;
-				maxAoe = weaponDef->GetAoe();
-			}
-		}
-		const float mult = u->GetUnit()->GetRulesParamFloat("comm_range_mult", 1.f);
-		return int(maxRange * mult + maxAoe / 2) / squareSize * 4 + 1;
-	} else {
+//	if (cdef->IsRoleComm()) {
+//		CCircuitAI* circuit = manager->GetCircuit();
+//		// TODO: by weapons 1,2 descriptions set proper land/air/water ranges/threats
+//		float maxRange = 0.f;
+//		float maxAoe = 0.f;
+//		for (int num = 1; num < 3; ++num) {
+//			std::string str = utils::int_to_string(num, "comm_weapon_id_%i");
+//			int weaponDefId = int(u->GetUnit()->GetRulesParamFloat(str.c_str(), -1));
+//			if (weaponDefId < 0) {
+//				continue;
+//			}
+//
+//			CWeaponDef* weaponDef = circuit->GetWeaponDef(weaponDefId);
+//			const float range = weaponDef->GetRange();
+//			if (maxRange < range) {
+//				maxRange = range;
+//				maxAoe = weaponDef->GetAoe();
+//			}
+//		}
+//		const float mult = u->GetUnit()->GetRulesParamFloat("comm_range_mult", 1.f);
+//		return int(maxRange * mult + maxAoe / 2) / squareSize * 4 + 1;
+//	} else {
 	// FIXME: DEBUG
 
 		if (cdef->GetMaxRange() > 1000.f) {
 			return cdef->GetThreatRange(CCircuitDef::ThreatType::LAND) / 2;
 		}
 		return cdef->GetThreatRange(CCircuitDef::ThreatType::LAND);
-	}
+//	}
 }
 
 void CInfluenceMap::AddMobileArmed(CAllyUnit* u)

@@ -68,9 +68,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		)
 
 		int frame = this->circuit->GetLastFrame();
-		if (factories.empty() && (this->circuit->GetBuilderManager()->GetWorkerCount() <= 2)) {
+//		if (factories.empty() && (this->circuit->GetBuilderManager()->GetWorkerCount() <= 2)) {
 			this->circuit->GetEconomyManager()->OpenStrategy(unit->GetCircuitDef(), unit->GetPos(frame));
-		}
+//		}
 
 		EnableFactory(unit);
 	};
@@ -108,6 +108,11 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		const AIFloat3& assPos = unit->GetPos(frame);
 		TRY_UNIT(this->circuit, unit,
 			unit->CmdPriority(0);
+			// FIXME: BA
+			if (unit->GetCircuitDef()->IsRoleSupport()) {
+				unit->GetUnit()->ExecuteCustomCommand(CMD_PASSIVE, {1.f});
+			}
+			// FIXME: BA
 		)
 
 		// check factory nano belongs to
@@ -193,9 +198,11 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 				finishedHandler[unitDefId] = assistFinishedHandler;
 				idleHandler[unitDefId] = assistIdleHandler;
 				destroyedHandler[unitDefId] = assistDestroyedHandler;
-				if (commDef->CanBuild(&cdef)) {
-					assistDef = &cdef;
-				}
+				// FIXME: BA
+//				if (commDef->CanBuild(&cdef)) {
+//					assistDef = &cdef;
+//				}
+				// FIXME: BA
 			}
 		}
 
@@ -221,9 +228,14 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 	ReadConfig();
 
-	if (assistDef == nullptr) {
-		assistDef = circuit->GetEconomyManager()->GetDefaultDef();
-	}
+	// FIXME: BA
+	CCircuitDef::Id unitDefId = assistDef->GetId();
+	createdHandler[unitDefId] = assistCreatedHandler;
+	finishedHandler[unitDefId] = assistFinishedHandler;
+	idleHandler[unitDefId] = assistIdleHandler;
+	destroyedHandler[unitDefId] = assistDestroyedHandler;
+	factoryPower -= assistDef->GetBuildSpeed() - 4.f;
+	// FIXME: BA
 
 	factoryData = circuit->GetAllyTeam()->GetFactoryData().get();
 }
@@ -240,9 +252,18 @@ void CFactoryManager::ReadConfig()
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
 
-	airpadDef = circuit->GetCircuitDef(root["economy"].get("airpad", "").asCString());
+	const Json::Value& airpad = root["economy"]["airpad"];
+	const std::string& padName = airpad.get(circuit->GetSideName(), "").asString();
+	airpadDef = circuit->GetCircuitDef(padName.c_str());
 	if (airpadDef == nullptr) {
-		airpadDef = circuit->GetEconomyManager()->GetDefaultDef();
+		airpadDef = circuit->GetEconomyManager()->GetSideInfo().defaultDef;
+	}
+
+	const Json::Value& nanotc = root["economy"]["nanotc"];
+	const std::string& nanoName = nanotc.get(circuit->GetSideName(), "").asString();
+	assistDef = circuit->GetCircuitDef(nanoName.c_str());
+	if (assistDef == nullptr) {
+		assistDef = circuit->GetEconomyManager()->GetSideInfo().defaultDef;
 	}
 
 	/*
@@ -350,6 +371,11 @@ void CFactoryManager::ReadConfig()
 		}
 
 		cdef->SetIgnore(behaviour.get("ignore", cdef->IsIgnore()).asBool());
+
+		const Json::Value& buildSpeed = behaviour["build_speed"];
+		if (!buildSpeed.isNull()) {
+			cdef->SetBuildSpeed(buildSpeed.asFloat());
+		}
 	}
 
 	/*
@@ -1217,7 +1243,9 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 	auto units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius * 0.9f);
 	for (Unit* u : units) {
 		CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-		if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)) {
+		if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)
+			|| (*candUnit->GetCircuitDef() == *economyMgr->GetSideInfo().mexDef))  // FIXME: BA
+		{
 			continue;
 		}
 		if (u->IsBeingBuilt()) {

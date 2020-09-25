@@ -2,46 +2,233 @@
 {
 "quota": {
 	"scout": 1,  // max scout units out of raiders
-	"raid": [7.0, 42.0],  // [<min>, <avg>] power of raider squad
-	"attack": 20.0,  // min power of attack group
+	"raid": [3.0, 42.0],  // [<min>, <avg>] power of raider squad
+	"attack": 60.0,  // min power of attack group
 	"thr_mod": {
-		"attack": [0.45, 0.45],  // [<min>, <max>] enemy threat modifier for target selection of attack task
-		"defence": [0.80, 0.80],  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
-		"mobile": 1.075,  // initial modifier for power of attack group based on mobile enemy threat
-		"static": 4.25,  // initial modifier for power of attack group based on static enemy threat
-		"comm": 0.75
+		"attack": [0.4, 0.5],  // [<min>, <max>] enemy threat modifier for target selection of attack task
+		"defence": [0.95, 0.95],  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
+		"mobile": 1.05,  // initial modifier for power of attack group based on mobile enemy threat
+		"static": 1.2,  // initial modifier for power of attack group based on static enemy threat
+		"comm": 0.01
 	},
-	"aa_threat": 80.0,  // anti-air threat threshold, air factories will stop production when AA threat exceeds
+	"aa_threat": 250.0,  // anti-air threat threshold, air factories will stop production when AA threat exceeds
 	"slack_mod": {
 		"all": 0.5,  // threat map 64-elmos slack multiplier for all units
-		"static": 1.5,  // additional 64-elmo-cells for static units
+		"static": 1.0,  // additional 64-elmo-cells for static units
 		"speed": [0.75, 4.0]  // [<64elmo_cells_speed_mod>, <max_64elmo_cells>]
 	}
 },
 
 // If unit's health drops below specified percent it will retreat
 "retreat": {
-	"builder": 0.70,  // default value for all builders
-	"fighter": 0.45,  // default value for all not-builder units
-	"shield": [0.25, 0.275]  // [<empty>, <full>] shield power
+	"builder": 0.85,  // default value for all builders
+	"fighter": 0.55,  // default value for all not-builder units
+	"shield": [0.25, 0.55]  // [<empty>, <full>] shield power
 },
 
 "defence": {
-	"infl_rad": 7,  // influenece cell radius for defendAlly map
-	"base_rad": [1000.0, 2000.0],  // defend if enemy within clamp(distance(lane_pos, base_pos), 1000, 2000) radius
+	"infl_rad": 5,  // influenece cell radius for defendAlly map
+	"base_rad": [600.0, 1200.0],  // defend if enemy within clamp(distance(lane_pos, base_pos), 1000, 2000) radius
 	"comm_rad": [1000.0, 500.0]  // 0 distance from base ~ 1000, base_rad ~ 500.0
 },
 
-
 "behaviour": {
-	// factorycloak
-	"cloakcon": {
+	"armcom": {
+		"role": ["builder"],
+		"attribute": ["commander"],
+		"build_speed": 5.0
+	},
+	"corcom": {
+		"role": ["builder"],
+		"attribute": ["commander"],
+		"build_speed": 5.0
+	},
+
+	// ARMADA defenses
+	"armllt": {
+		"role": ["static"],
+		"thr_mod": 0.5
+	},
+	"armbeamer": {
+		"role": ["static"],
+		"pwr_mod": 1.5,
+		"thr_mod": 0.9
+	},
+	"armhlt": {
+		"role": ["static"]
+	},
+	"armguard": {
+		"role": ["static"],
+		"attribute": ["artillery"],
+		"thr_mod": 0.3
+	},
+	"armclaw": {
+		"role": ["static"]
+	},
+	"armrl": {
+		"role": ["anti_air"],
+		"attribute": ["anti_air"]
+	},
+	"armcir": {
+		"role": ["anti_air"]
+	},
+	"armpacko": {
+		"role": ["anti_air"]
+	},
+	"armflak": {
+		"role": ["anti_air"]
+	},
+	"armmercury": {
+		"role": ["anti_air"]
+	},
+	"armtl": {
+		"role": ["static"]
+	},
+	"armatl": {
+		"role": ["static"],
+		"attribute": ["heavy"]
+	},
+	"armpb": {
+		"role": ["static"]
+	},
+	"armamb": {
+		"role": ["static"],
+		"attribute": ["artillery"]
+	},
+	"armanni": {
+		"role": ["static"],
+		"attribute": ["heavy", "anti_heavy"],
+		"pwr_mod": 1.5
+	},
+
+	// CORTEX defenses
+	"corllt": {
+		"role": ["static"],
+		"thr_mod": 0.5
+	},
+	"corhllt": {
+		"role": ["static"],
+		"pwr_mod": 1.5,
+		"thr_mod": 1.1
+	},
+	"corhlt": {
+		"role": ["static"]
+	},
+	"cormaw": {
+		"role": ["static"]
+	},
+	"corpun": {
+		"role": ["static"],
+		"attribute": ["artillery"],
+		"thr_mod": 0.3
+	},
+	"corrl": {
+		"role": ["anti_air"]
+	},
+	"cormadsam": {
+		"role": ["anti_air"]
+	},
+	"corerad": {
+		"role": ["anti_air"]
+	},
+	"corflak": {
+		"role": ["anti_air"]
+	},
+	"corscreamer": {
+		"role": ["anti_air"]
+	},
+	"cortl": {
+		"role": ["static"]
+	},
+	"coratl": {
+		"role": ["static"],
+		"attribute": ["heavy"]
+	},
+	"corvipe": {
+		"role": ["static"]
+	},
+	"cortoast": {
+		"role": ["static"],
+		"attribute": ["artillery"]
+	},
+	"cordoom": {
+		"role": ["static"],
+		"attribute": ["heavy", "anti_heavy"],
+		"pwr_mod": 1.5
+	},
+
+	// Factories - that should stay near main base
+
+ 	"armalab": {
+		"role": ["static"],
+		"attribute": ["support"],
+		"limit": 1
+	},
+	"coralab": {
+		"role": ["static"],
+		"attribute": ["support"],
+		"limit": 1
+	},
+	"armavp": {
+		"role": ["static"],
+		"attribute": ["support"],
+		"limit": 1
+	},
+	"coravp": {
+		"role": ["static"],
+		"attribute": ["support"],
+		"limit": 1
+	},
+	"armaap": {
+		"role": ["static"],
+		"attribute": ["support"],
+		"limit": 1
+	},
+	"coraap": {
+		"role": ["static"],
+		"attribute": ["support"],
+		"limit": 1
+	},
+	"armshltx": {
+		"role": ["static"],
+		"attribute": ["support"],
+		"limit": 1
+	},
+	"corgant": {
+		"role": ["static"],
+		"attribute": ["support"],
+		"limit": 1
+	},
+	"armnanotc": {
+		"role": ["support"],
+		"build_speed": 12.0
+	},
+	"cornanotc": {
+		"role": ["support"],
+		"build_speed": 12.0
+	},
+	"armmakr": {
+		"role": ["static"],
+		"since": 300
+	},
+	"cormakr": {
+		"role": ["static"],
+		"since": 300
+	},
+
+
+	// bot - armlab
+	"armck": {
 		// "role": [<main>, <enemy>, <enemy>, ...]
 		// <main> is the role to make desicions of when to build it and what task to assign
 		// <enemy> is to decide how to counter enemy unit, if missing then equals to <main>
 		// Roles: builder, scout, raider, riot, assault, skirmish, artillery, anti_air, anti_sub, anti_heavy, bomber, support, mine, transport, air, sub, static, heavy, super, commander
 		// Auto-assigned roles: builder, air, static, super, commander
-		"role": ["builder", "mine"]
+		// raider: units grouped apart from others, tries to find weak spots.
+		// riot: regular attacker, but according to response.json it is built when enemy has many raiders (in plans to make riot just con's defender).
+		// assault: regular attacker, according to response.json it is built when enemy has many statics.
+		// skirmish: regular attacker, according to response.json it is built when enemy has many riots or assaults.
+		"role": ["builder"],
 
 		// Attributes - optinal states
 		// "melee" - always move close to target, disregard attack range
@@ -64,7 +251,7 @@
 //		"reload": 1.0,
 
 		// Limits number of units
-//		"limit": 10,
+		"limit": 20,
 
 		// Unit can be built only since specific time in seconds
 //		"since": 60,
@@ -77,1030 +264,701 @@
 		// Enemy threat multiplier
 //		"thr_mod": 1.0,
 
-		// Ignore enemy
-//		"ignore": false
+		// FIXME: Temporary tag to override buildSpeed
+		"build_speed": 10.0
 	},
-	"cloakraid": {
-		"role": ["raider", "scout"],
-		"attribute": ["scout"],
-		"retreat": 0.1,
-		"pwr_mod": 0.9,
-		"thr_mod": 0.75
-	},
-	"cloakheavyraid": {
-		"role": ["cloaked_raider", "raider"],
-		"attribute": ["ret_fight"],
-		"since": 180,
-		"limit": 3,
-		"pwr_mod": 1.0,
-		"thr_mod": 0.1,
-		"retreat": 0.4
-	},
-	"cloakskirm": {
-		"role": ["skirmish"],
-		"attribute": ["ret_fight"],
-		"pwr_mod": 0.85,
-		"since": 180,
-		"limit": 20,
-		"retreat": 0.35  // mostly disposable
-	},
-	"cloakriot": {
-		"role": ["riot", "anti_sub"],
-		"attribute": ["melee", "ret_fight"],
-		"since": 180,
-		"retreat": 0.55,
-		"pwr_mod": 1.4,
-		"thr_mod": 2.3
-	},
-	"cloakassault": {
-		"role": ["assault", "anti_sub"],
-		"attribute": ["melee"],
-		"retreat": 0.35,  // assaults need to assault
-		"since": 240,
-		"pwr_mod": 0.7,
-		"thr_mod": 1.1
-	},
-	"cloakarty": {
-		"role": ["artillery"],
-		"since": 550,
-		"limit": 8,
-		"retreat": 0.9,
-		"thr_mod": 0.0
-	},
-	"cloaksnipe": {
-		"role": ["snipe_target"],
-		"attribute": ["support"],
-		"pwr_mod": 3.0,
-		"since": 520,
-		"thr_mod": 0.0,
-		"retreat": 0.69
-	},
-	"cloakbomb": {
-		"role": ["mine"],
-		"retreat": 0.01
-	},
-	"cloakjammer": {
-		"role": ["assault"],
-		"since": 480,
-		"retreat": 0.5,
-		"limit": 1
-	},
-	"cloakaa": {
-		"role": ["anti_air"],
-		"attribute": ["melee", "ret_fight"],
-		"retreat": 0.7,
-		"pwr_mod": 3.0,
-		"thr_mod": 1.2
-	},
-
-	// factorygunship
-	"gunshipcon": {
-		"role": ["builder", "air"],
-		"limit": 2,
-		"since": 240,
-		"retreat": 0.99
-	},
-	"gunshipbomb": {
-		"role": ["bomber", "air"],
-		"attribute": ["melee"],
-		"limit": 1,
-		"thr_mod": 1.0,
-		"retreat": 0.01
-	},
-	"gunshipemp": {
-		"role": ["anti_heavy", "air"],
-		"thr_mod": 0.1,
-		"pwr_mod": 0.1,
-		"since": 600,
-		"limit": 6,
-		"retreat": 0.9
-	},
-	"gunshipskirm": {
-		"role": ["air", "bullshit_raider"],
-		"retreat": 0.65,
-		"pwr_mod": 0.7,
-		"limit": 8,
-		"thr_mod": 0.66
-	},
-	"gunshipraid": {
-		"role": ["scout", "air"],
-		"retreat": 0.7,
-		"limit": 1,
-		"pwr_mod": 1.25,
-		"thr_mod": 1.1
-	},
-	"gunshipheavyskirm": {
-		"role": ["assault", "air"],
-		"since": 330,
-		"attribute": ["no_strafe"],
-		"retreat": 0.65,
-		"pwr_mod": 1.00,
-		"thr_mod": 1.00
-	},
-	"gunshipassault": {
-		"role": ["anti_heavy", "air"],
-		"limit": 3,
-		"since": 330,
-		"retreat": 0.5,
-		"pwr_mod": 1.65,
-		"thr_mod": 1.00
-	},
-	"gunshipkrow": {
-		"role": ["anti_heavy", "air", "disarm_target"],
-		"attribute": ["melee"],
-		"retreat": 0.55,
-		"since": 720,
-		"pwr_mod": 0.3,
-		"thr_mod": 0.3,
-		"limit": 0
-	},
-	"gunshiptrans": {
-		"role": ["air"],
-		"limit": 0
-	},
-	"gunshipheavytrans": {
-		"role": ["air"],
-		"limit": 0,
-		"thr_mod": 0.0
-	},
-	"gunshipaa": {
-		"role": ["anti_air", "air"],
-		"limit": 6,
-		"retreat": 0.95,
-		"pwr_mod": 3.0,
-		"thr_mod": 1.2
-	},
-
-	// factoryamph
-	"amphcon": {
-		"role": ["builder", "mine"]
-	},
-	"amphraid": {
+	"armpw": {
 		"role": ["raider"],
-		"attribute": ["scout", "ret_fight"],
-		"pwr_mod": 0.7,
-		"thr_mod": 0.66,
-		"limit": 10,
-		"retreat": 0.25  // pretty disposable
-	},
-	"amphimpulse": {
-		"role": ["riot"],
-		"limit": 1,
-		"retreat": 0.36,
-		"pwr_mod": 2.25,
-		"thr_mod": 2.25
-	},
-	"amphfloater": {
-		"role": ["assault", "snipe_target", "super"],
-		"limit": 14,
-		"since": 120,
-		"retreat": 0.25, // too slow to be retreating all the time
-		"pwr_mod": 1.3,
-		"thr_mod": 1.3
-	},
-	"amphriot": {
-		"role": ["riot"],
-		"attribute": ["melee", "ret_fight"],
-		"pwr_mod": 1.5,
-		"retreat": 0.35 // too slow to be retreating all the time
-	},
-	"amphassault": {
-		"role": ["heavy", "disarm_target"],
-		"retreat": 0.66,
-		"since": 520,
-		"pwr_mod": 1.4,
-		"thr_mod": 1.0
-	},
-	"amphtele": {
-		"role": ["transport"],
-		"limit": 0
-	},
-	"amphaa": {
-		"role": ["anti_air"],
-		"attribute": ["melee", "ret_fight", "support"],
-		"retreat": 0.3,
-		"limit": 5,
-		"pwr_mod": 3.0,
-		"thr_mod": 1.5
-	},
-
-	// factoryspider
-	"spidercon": {
-		"role": ["builder", "mine"]
-	},
-	"spiderscout": {
-		"role": ["scout", "raider"],
-		"thr_mod": 0.5,
-		"limit": 20,
-		"retreat": 0.01
-	},
-	"spiderassault": {
-		"role": ["assault", "anti_sub"],
-		"attribute": ["melee", "ret_fight"],
-		"limit": 4,
-		"pwr_mod": 1.15,
-		"retreat": 0.35
-	},
-	"spideremp": {
-		"role": ["raider", "riot"],
-		"pwr_mod": 3.0,
-		"limit": 1,
-		"retreat": 0.5
-	},
-	"spiderriot": {
-		"role": ["riot"],
-		"pwr_mod": 2.0,
-		"limit": 4,
-		"attribute": ["support"],
-		"retreat": 0.35
-	},
-	"spiderskirm": {
-		"role": ["skirmish", "snipe_target", "super"],
-		"pwr_mod": 2.0,
-		"thr_mod": 1.0,
-		"since": 180,
-		"retreat": 0.4
-	},
-	"spidercrabe": {
-		"role": ["heavy", "disarm_target", "turtle"],
-		"attribute": ["siege", "ret_fight", "support"],
-		"retreat": 0.5,
-		"thr_mod": 2.5,
-		"pwr_mod": 2.5,
-		"since": 300,
-		"thr_mod": 1.0
-	},
-	"spiderantiheavy": {
-		"role": ["anti_heavy", "mine"],
-		"retreat": 0.99,
-		"pwr_mod": 2.0,
-		"thr_mod": 0.1,
-		"since": 600,
-		"limit": 1
-	},
-	"spideraa": {
-		"role": ["anti_air"],
-		"attribute": ["ret_fight"],
-		"retreat": 0.6,
-		"pwr_mod": 3.0,
-		"thr_mod": 1.2
-	},
-
-	// factoryshield
-	"shieldcon": {
-		"role": ["builder", "shieldball", "mine"],
-		"retreat": 1.3
-	},
-	"shieldscout": {
-		"role": ["transport", "raider"],
-		"limit": 20,
-		"attribute": ["siege", "melee"],
-		"pwr_mod": 0.11,
-		"thr_mod": 0.1,
-		"retreat": 0.0
-	},
-	"shieldraid": {
-		"role": ["raider"],
-		"attribute": ["scout", "ret_fight"],
-		"retreat": 0.25,
-		"pwr_mod": 1.0,
-		"thr_mod": 0.9
-	},
-	"shieldskirm": {
-		"role": ["skirmish"],
-		"limit": 15,
-		"since": 200,
-		"pwr_mod": 0.7,
-		"thr_mod": 0.66,
-		"retreat": 0.3
-	},
-	"shieldassault": {
-		"role": ["assault", "support", "shieldball"],
-		"attribute": ["melee"],
-		"limit": 20,
-		"retreat": 0.3,
-		"since": 120,
-		"pwr_mod": 0.7,
-		"thr_mod": 0.35
-	},
-	"shieldriot": {
-		"role": ["riot", "shieldball"],
-		"fire_state": "hold",
-		"since": 100,
-		"limit": 5,
-		"retreat": 0.3,
-		"pwr_mod": 1.7,
-		"thr_mod": 1.7
-	},
-	"shieldfelon": {
-		"role": ["heavy", "shieldball", "snipe_target"],
-		"since": 420,
-		"retreat": 0.35,
-		"pwr_mod": 1.1,
-		"thr_mod": 1.1
-	},
-	"shieldarty": {
-		"role": ["disarm_target"],
-		"since": 300,
-		"retreat": 0.3,
-		"pwr_mod": 1.5,
-		"thr_mod": 0.0
-	},
-	"shieldbomb": {
-		"role": ["mine"]
-	},
-	"shieldshield": {
-		"role": ["super", "heavy", "shieldball"],
-		"since": 540,
-		"attribute": ["support"],
-		"retreat": 0.36,
-		"pwr_mod": 1.0,
-		"thr_mod": 0.25
-	},
-	"shieldaa": {
-		"role": ["anti_air"],
-		"attribute": ["melee", "ret_fight"],
-		"retreat": 0.7,
-		"pwr_mod": 3.0,
-		"thr_mod": 1.2
-	},
-
-	// factoryveh
-	"vehcon": {
-		"role": ["builder", "mine"]
-	},
-	"vehscout": {
-		"role": ["scout"],
 		"attribute": ["scout"],
-		"thr_mod": 0.6,
-		"pwr_mod": 1.2,
-		"retreat": 0.01,
-		"limit": 4
+		"pwr_mod": 1.5
 	},
-	"vehraid": {
-		"role": ["raider"],
-		"attribute": ["melee", "ret_fight"],
-		"retreat": 0.3,
-		"pwr_mod": 1.1,
-		"thr_mod": 0.8
+	"armrectr": {
+		"role": ["raider", "mine"],
+		"attribute": ["siege", "mine", "scout"],
+		"pwr_mod": 2
 	},
-	"vehsupport": {
-		"role": ["artillery", "missileskirm"],
-		"attribute": ["siege", "ret_fight"],
-		"limit": 4,
-		"pwr_mod": 1.0,
-		"thr_mod": 0.4,
-		"retreat": 0.6  // cannot retreat
-	},
-	"vehriot": {
-		"role": ["riot"],
-		"retreat": 0.6,
-		"pwr_mod": 1.5,
-		"thr_mod": 1.5
-	},
-	"vehassault": {
-		"role": ["assault"],
-		"attribute": ["melee"],
-		"retreat": 0.4,  // slow to turn around
-		"since": 180,
-		"pwr_mod": 0.9,
-		"thr_mod": 0.9
-	},
-	"vehcapture": {
-		"role": ["support", "disarm_target", "snipe_target"],
-		"since": 180,
-		"pwr_mod": 1,
-		"thr_mod": 1,
-		"retreat": 0.8
-	},
-	"veharty": {
-		"role": ["transport", "super"],
-		"attribute": ["siege", "ret_fight"],
-		"limit": 15,
-		"since": 460,
-		"pwr_mod": 0.5,
-		"thr_mod": 0.0,
-		"retreat": 0.8
-	},
-	"vehheavyarty": {
-		"role": ["artillery", "heavy", "turtle"],
-		"since": 300,
-		"retreat": 0.99,
-		"pwr_mod": 1.0,
-		"thr_mod": 0.00
-	},
-	"vehaa": {
-		"role": ["anti_air"],
-		"attribute": ["melee"],
-		"retreat": 0.75,
-		"pwr_mod": 3.0,
-		"thr_mod": 1.2
-	},
-
-	// factoryjump
-	"jumpcon": {
-		"role": ["builder", "mine"]
-	},
-	"jumpscout": {
-		"role": ["riot", "raider"],
-		"limit": 15,
-		"attribute": ["melee", "siege"],
-		"retreat": 0
-	},
-	"jumpraid": {
-		"role": ["raider", "anti_sub"],
-		"attribute": ["melee"],
-		"retreat": 0.4,
-		"pwr_mod": 1.5,
-		"thr_mod": 0.9
-	},
-	"jumpblackhole": {
-		"role": ["support"],
-		"since": 300,
-		"limit": 6,
-		"retreat": 0.36
-	},
-	"jumpskirm": {
-		"role": ["skirmish", "super", "snipe_target"],
-		"retreat": 0.4
-	},
-	"jumpassault": {
-		"role": ["assault", "anti_sub", "disarm_target"],
-		"attribute": ["melee", "siege", "ret_fight"],
-		"retreat": 0.4,
-		"pwr_mod": 1.3,
-		"thr_mod": 0.5
-	},
-	"jumpsumo": {
-		"role": ["heavy", "support", "disarm_target"],
-		"limit": 0,
-		"attribute": ["melee", "no_jump"]  // jump on attack
-	},
-	"jumparty": {
-		"role": ["heavy", "turtle", "snipe_target"],
-		"attribute": ["support"],
-		"since": 600,
-		"pwr_mod": 0.1,
-		"limit": 2,
-		"thr_mod": 0.00,
-		"retreat": 0.99
-	},
-	"jumpbomb": {
-		"role": ["anti_heavy", "builder"],
-		"attribute": ["melee", "mine"],
-		"fire_state": "open",
-		"since": 720,
-		"limit": 2,
-		"retreat": 0.01,
-		"pwr_mod": 3.0,
-		"thr_mod": 0.01
-	},
-	"jumpaa": {
-		"role": ["anti_air"],
-		"attribute": ["melee"],
-		"retreat": 0.8,
-		"pwr_mod": 3.0,
-		"thr_mod": 1.2
-	},
-
-	// factoryhover
-	"hovercon": {
-		"role": ["builder", "mine"]
-	},
-	"hoverraid": {
-		"role": ["scout"],
-		"attribute": ["melee"],		
-		"pwr_mod": 0.9,
-		"thr_mod": 0.8,
-		"pwr_mod": 0.9,
-		"thr_mod": 0.9,
-		"limit": 4,
-		"retreat": 0.5
-	},
-	"hoverheavyraid": {
-		"role": ["raider", "bullshit_raider"],	
-		"retreat": 0.35,
-		"pwr_mod": 0.8,
-		"thr_mod": 0.8
-	},
-	"hoverskirm": {
-		"role": ["skirmish", "support"],
-		"retreat": 0.55,
-		"limit": 12,
-		"reload": 4.0,
-		"pwr_mod": 0.9,
-		"thr_mod": 0.6
-	},
-	"hoverassault": {
-		"role": ["assault", "raider"],
-		"attribute": ["melee", "ret_hold"],
-		"retreat": 0.4,
-		"limit": 12,
-		"pwr_mod": 0.75,
-		"thr_mod": 0.45
-	},
-	"hoverdepthcharge": {
-		"role": ["anti_sub", "riot"],
-		"attribute": ["melee"],
-		"retreat": 0.6
-	},
-	"hoverriot": {
-		"role": ["riot", "snipe_target"],
-		"retreat": 0.4,
-		"pwr_mod": 1.00,
-		"thr_mod": 1.25
-	},
-	"hoverarty": {
-		"role": ["anti_heavy", "heavy", "snipe_target"],
-		"attribute": ["siege"],
-		"retreat": 0.99,
-		"pwr_mod": 1.5,
-		"thr_mod": 0.0
-	},
-	"hoveraa": {
-		"role": ["anti_air"],
-		"attribute": ["ret_fight"],
-		"retreat": 0.7,
-		"pwr_mod": 3.0,
-		"thr_mod": 1.2
-	},
-
-	// factoryplane
-	"planecon": {
-		"role": ["builder", "air"],
-		"since": 240,
-		"limit": 2,
-		"retreat": 0.99
-	},
-	"planefighter": {
-		"role": ["scout", "air"],
-		"attribute": ["boost"],
-		"pwr_mod": 1.5,
-		"limit": 1,
-		"thr_mod": 3.0,
-		"retreat": 0.8
-	},
-	"planeheavyfighter": {
-		"role": ["anti_air"],
-		"attribute": ["melee"],
-		"limit": 8,
-		"retreat": 0.4,
-		"pwr_mod": 2.5,
-		"thr_mod": 3.0
-	},
-	"bomberprec": {
-		"role": ["bomber", "air"],  // FIXME: should act as anti_heavy?
-		"attribute": ["siege"],
-		"limit": 10,
-		"retreat": 0.8,
-		"pwr_mod": 0.10,
-		"thr_mod": 0.01
-	},
-	"bomberriot": {
-		"role": ["bomber", "air"],
-		"limit": 0,
-		"retreat": 0.6,
-		"pwr_mod": 0.01,
-		"thr_mod": 0.01
-	},
-	"bomberdisarm": {
-		"role": ["anti_heavy", "air"],
-		"attribute": ["siege", "bomber"],
-		"limit": 2,
-		"since": 1200,
-		"retreat": 0.95,
-		"pwr_mod": 100.00,
-		"thr_mod": 0.01
-	},
-	"bomberheavy": {
-		"role": ["bomber", "air"],  // FIXME: should act as anti_heavy?
-		"fire_state": "return",
-		"limit": 4,
-		"since": 420,
-		"retreat": 0.95,
-		"pwr_mod": 0.75,
-		"thr_mod": 0.1
-	},
-	"planescout": {
-		"role": ["scout", "air"],
-		"since": 360,
-		"limit": 2,
-		"retreat": 0.8
-	},
-
-	// factorytank
-	"tankcon": {
-		"role": ["builder"],
-		"pwr_mod": 0.40,
-		"thr_mod": 0.40,
-		"retreat": 0.9
-	},
-	"tankraid": {
-		"role": ["scout"],
-		"attribute": ["scout"],
-		"limit": 2,
-		"thr_mod": 0.66,
-		"pwr_mod": 0.8,
-		"retreat": 0.45
-	},
-	"tankheavyraid": {
-		"role": ["raider", "bullshit_raider"],
-		"thr_mod": 0.6,
-		"pwr_mod": 0.65,
-		"retreat": 0.65
-	},
-	"tankriot": {
-		"role": ["riot", "heavy", "snipe_target"],
-		"thr_mod": 1.25,
-		"pwr_mod": 0.75,
-		"retreat": 0.55
-	},
-	"tankassault": {
-		"role": ["assault", "heavy", "anti_sub"],
-		"attribute": ["melee"],
-		"retreat": 0.55,
-		"pwr_mod": 0.85,
-		"thr_mod": 0.7
-	},
-	"tankheavyassault": {
-		"role": ["heavy", "disarm_target", "super"],
-		"attribute": ["melee"],
-		"pwr_mod": 0.85,
-		"thr_mod": 0.7,
-		"since": 480,
-		"retreat": 0.55
-	},
-	"tankarty": {
-		"role": ["artillery", "snipe_target", "heavy"],
-		"attribute": ["support"],
-		"since": 1000,
-		"retreat": 0.99,
-		"pwr_mod": 1.0,
-		"thr_mod": 0.0
-	},
-	"tankheavyarty": {
-		"role": ["transport"],
-		"attribute": ["support"],
-		"since": 1000,
-		"limit": 1,
-		"retreat": 0.99,
-		"pwr_mod": 0.5,
-		"thr_mod": 0.0
-	},
-	"tankaa": {
-		"role": ["anti_air"],
-		"attribute": ["ret_fight"],
-		"retreat": 0.8,
-		"pwr_mod": 3.0,
-		"thr_mod": 1.2
-	},
-
-	// factoryship
-	"shipcon": {
-		"role": ["builder"]
-	},
-	"shipscout": {
-		"role": ["scout"]
-	},
-	"shiptorpraider": {
-		"role": ["raider"]
-	},
-	"subraider": {
-		"role": ["raider"]
-	},
-	"shipriot": {
-		"role": ["riot"]
-	},
-	"shipskirm": {
+	"armrock": {
 		"role": ["skirmish"]
 	},
-	"shipassault": {
+	"armham": {
 		"role": ["assault"]
 	},
-	"shiparty": {
-		"role": ["artillery"]
+	"armjeth": {
+		"role": ["anti_air"],
+		"limit": 30
 	},
-	"shipaa": {
+	"armwar": {
+		"role": ["riot"],
+		"attribute": ["skirmish"]
+	},
+	"armflea": {
+		"role": ["scout"]
+	},
+
+	// adv bot - armalab
+	"armack": {
+		"role": ["builder"],
+		"limit": 4,
+		"build_speed": 10.0
+	},
+	"armfark": {
+		"role": ["support", "mine"]
+	},
+	"armfast": {
+		"role": ["raider"]
+	},
+	"armzeus": {
+		"role": ["assault"]
+	},
+	"armfboy": {
+		"role": ["assault", "heavy"]
+	},
+	"armmav": {
+		"role": ["riot"],
+		"attribute": ["skirmish"]
+	},
+	"armfido": {
+		"role": ["artillery"],
+		"attribute": ["siege"]
+	},
+	"armvader": {
+		"role": ["raider"],
+		"attribute": ["melee"],
+		"retreat": 0,
+	},
+	"armaak": {
 		"role": ["anti_air"]
 	},
-
-	// striderhub
-	"striderantiheavy": {
-		"role": ["anti_heavy", "heavy"],
-		"limit": 1,
-		"pwr_mod": 0.5,
-		"attribute": ["melee", "ret_fight"],
-		"retreat": 0.35
-	},
-	"striderscorpion": {
-		"role": ["anti_heavy", "heavy"],
-		"limit": 1,
-		"fire_state": "return",
-		"attribute": ["ret_fight"],
-		"retreat": 0.6,
-		"pwr_mod": 0.5,
-		"since": 1800,
-		"thr_mod": 0.5
-	},
-	"striderdante": {
-		"role": ["heavy", "disarm_target", "snipe_target"],
-		"attribute": ["melee"],
-		"limit": 2,
-		"retreat": 0.45,
-		"pwr_mod": 0.8,
-		"thr_mod": 0.75
-	},
-	"striderarty": {
-		"role": ["anti_heavy", "heavy", "snipe_target"],
-		"pwr_mod": 5.0,
-		"thr_mod": 0.0,
-		"retreat": 0.9
-	},
-	"striderfunnelweb": {
-		"role": ["heavy", "turtle", "shieldball"],
+	"armmark": {
+		"role": ["assault"],
 		"attribute": ["support"],
-		"retreat": 1.4,
-		"pwr_mod": 1.0,
-		"limit": 1,
-		"since": 3000,
-		"thr_mod": 0.0
-	},
-	"striderbantha": {
-		"role": ["heavy", "support", "heavy"],
-		"attribute": ["melee"],
-		"retreat": 0.6,
-		"pwr_mod": 0.5,
-		"thr_mod": 0.5
-	},
-	"striderdetriment": {
-		"role": ["heavy", "support", "heavy"],
-		"attribute": ["melee"],
-		"retreat": 0.50,  // deffo retreat, running into nab annihlator farm and sploding is silly :)
-		"pwr_mod": 0.34,
-		"thr_mod": 0.34
-	},
-	"subtacmissile": {
-		"role": ["artillery", "heavy"],
-		"attribute": ["stockpile"]
-	},
-	"shipcarrier": {
-		"role": ["artillery", "heavy"]
-	},
-	"shipheavyarty": {
-		"role": ["artillery", "heavy"]
-	},
-
-	// statics
-	"staticnuke": {
-		"role": ["static", "heavy"],
-		"fire_state": "hold",  // burst attacks
-		"reload": 30.0,
-		"limit": 1,
-		"since": 900,
-		"thr_mod": 0.01
-	},
-	"staticmissilesilo": {
-		"role": ["static", "support", "heavy"],
-		"thr_mod": 0.01
-	},
-	"raveparty": {
-		"role": ["static", "heavy"],
-		"limit": 1,
-		"since": 1200,
-		"thr_mod": 0.01
-	},
-	"zenith": {
-		"role": ["static", "heavy"],
-		"fire_state": "hold",  // burst attacks
-		"reload": 105.0,  // 105sec / 0.7sec/met = 150 meteorsControlled
-		"limit": 1,
-		"since": 900,
-		"thr_mod": 0.01
-	},
-	"staticheavyarty": {
-		"role": ["artillery", "turtle", "heavy"],
-		"limit": 5,
-		"thr_mod": 0.0,
-		"pwr_mod": 10.00
-	},
-	"turretheavy": {
-		"role": ["static", "snipe_target", "turtle"],
-		"thr_mod": 1.00
-	},
-	"turretantiheavy": {
-		"role": ["static", "turtle", "static"],
-		"thr_mod": 0.55
-	},
-	"staticarty": {
-		"role": ["static", "snipe_target", "turtle"],
-		"thr_mod": 0.55
-	},
-	"staticantinuke": {
-		"role": ["static", "heavy", "support"],
-		"since": 720,
 		"limit": 1
 	},
-	"turretheavylaser": {
-		"role": ["static", "heavy", "snipe_target"],
-		"thr_mod": 2.0
-	},
-	"energysingu": {
-		"role": ["static", "turtle", "heavy"],
-		"since": 660
-	},
-	"energyfusion": {
-		"role": ["static", "mine", "heavy"],
-		"since": 280
-	},
-	"turretaalaser": {
-		"role": ["anti_air"],
-		"attribute": ["siege", "ret_hold"],
-		"retreat": 0.4,  // FIXME: Bunker up turret when it's on low health, doesn't work for statics atm
-		"thr_mod": 1.0
-	},
-	"turretaaheavy": {
-		"role": ["anti_air", "heavy", "turtle"],
-		"limit": 1,
-		"thr_mod": 1.0
-	},
-	"turretlaser": {
-		"role": ["static", "riot", "builder"],
-		"thr_mod": 1.5
-	},
-	"turretmissile": {
-		"role": ["missileskirm", "riot", "builder"],
-		"thr_mod": 0.34
-	},
-	"turretriot": {
-		"role": ["static", "riot", "snipe_target"],
-		"thr_mod": 1.65
-	},
-	"turretaafar": {
-		"role": ["anti_air", "heavy", "turtle"],
-
-		"thr_mod": 1.0
-	},
-	"turretaaflak": {
-		"role": ["anti_air", "turtle"],
-
-		"thr_mod": 1.0
-	},
-	"turretaaclose": {
-		"role": ["anti_air"],
-		"thr_mod": 1.0
-	},
-	"turretgauss": {
-		"role": ["static", "turtle", "transport"],
-		"attribute": ["siege", "ret_hold"],
-		"retreat": 0.4,  // FIXME: Bunker up turret when it's on low health, doesn't work for statics atm
-		"thr_mod": 1.6
-	},
-	"turretemp": {
-		"role": ["static", "heavy", "snipe_target"],
-		"thr_mod": 2.5
-	},
-
-	// support factories won't be built in front
-	"factoryplane": {
-		"role": ["static"],
-		"attribute": ["support"]
-	},
-	"factorygunship": {
-		"role": ["static"],
-		"attribute": ["support"]
-	},
-	"striderhub": {
-		"role": ["static"],
-		"since": 900,
-		"attribute": ["support"]
-	},
-
-	// Enemy Eco!! //
-	"staticmex": {
-		"role": ["mine"]
-	},
-	"energywind": {
-		"role": ["mine"]
-	},
-	"staticradar": {
-		"role": ["mine"]
-	},
-	"staticcon": {
-		"role": ["mine"]
-	},
-	"energypylon": {
-		"role": ["mine"],
-		"since": 600
-	},
-	"staticheavyradar": {
-		"role": ["mine", "turtle"],
-		"limit": 1
-	},
-	"staticstorage": {
-		"role": ["mine", "turtle"],
-		"limit": 5
-	},
-	"energysolar": {
-		"role": ["mine"]
-	},
-	"staticshield": {
-		"role": ["static", "turtle"]
-	},
-
-	// Chickens!! //
-	"dronecarry": {
-		"role": ["transport"]
-	},
-	"chicken": {
-		"role": ["raider"]
-	},
-	"chicken_blimpy": {
-		"role": ["mine"]
-	},
-	"chicken_digger": {
-		"role": ["riot"]
-	},
-	"chicken_digger_b": {
-		"role": ["riot"]
-	},
-	"chicken_dodo": {
-		"role": ["mine"]
-	},
-	"chicken_dragon": {
-		"role": ["heavy"],
-		"thr_mod": 0.4
-	},
-	"chicken_drone": {
-		"role": ["raider"]
-	},
-	"chicken_drone_starter": {
-		"role": ["raider"]
-	},
-	"chicken_leaper": {
-		"role": ["raider"]
-	},
-	"chicken_listener": {
-		"role": ["static"]
-	},
-	"chicken_listener_b": {
-		"role": ["static"]
-	},
-	"chicken_pigeon": {
-		"role": ["air"]
-	},
-	"chicken_roc": {
-		"role": ["air"]
-	},
-	"chicken_shield": {
+	"armspid": {
 		"role": ["support"]
 	},
-	"chicken_spidermonkey": {
-		"role": ["anti_air"]
+	"armsptk": {
+		"role": ["raider"],
+		"attribute": ["siege"]
 	},
-	"chicken_tiamat": {
-		"role": ["air"],
-		"thr_mod": 0.05
+	"armsnipe": {
+		"role": ["anti_heavy"]
 	},
-	"chickenblobber": {
+
+	// T3 bot - armshltx
+	"armmar": {
+		"role": ["raider", "heavy"]
+	},
+	"armraz": {
+		"role": ["skirmish", "heavy"],
+		"pwr_mod": 2.5
+	},
+	"armvang": {
+		"role": ["artillery", "heavy"],
+		"pwr_mod": 2.0
+	},
+	"armbanth": {
+		"role": ["assault", "heavy"],
+		"attribute": ["melee"],
+		"pwr_mod": 2.0
+	},
+
+
+	// vehicles - armvp
+	"armcv": {
+		"role": ["builder"],
+		"limit": 20,
+		"build_speed": 10.0
+	},
+	"armbeaver": {
+		"role": ["builder"],
+		"limit": 10,
+		"build_speed": 10.0
+	},
+	// "armmlv": {
+	// 	"role": ["support"]
+	// },
+	"armfav": {
+		"role": ["scout"]
+	},
+	"armflash": {
+		"role": ["raider"],
+		"attribute": ["scout"]
+	},
+	"armpincer": {
+		"role": ["assault"],
+		"limit": 30
+	},
+	"armstump": {
+		"role": ["assault"]
+	},
+	"armart": {
 		"role": ["artillery"]
 	},
-	"chickenbroodqueen": {
+	"armjanus": {
+		"role": ["skirmish"],
+		"attribute": ["ret_fight"]
+	},
+	"armsam": {
+		"role": ["anti_air"],
+		"attribute": ["skirmish"],
+		"thr_mod": 0.4
+	},
+
+	// adv vehicles - armavp
+	"armacv": {
+		"role": ["builder"],
+		"limit": 3,
+		"build_speed": 10.0
+	},
+	"armlatnk": {
+		"role": ["raider"]
+	},
+	"armbull": {
+		"role": ["assault"]
+	},
+	"armmanni": {
+		"role": ["anti_heavy"],
+		"attribute": ["artillery"]
+	},
+	"armmart": {
+		"role": ["artillery"]
+	},
+	"armmerl": {
+		"role": ["artillery"]
+	},
+	"armyork": {
+		"role": ["anti_air"]
+	},
+	"armseer": {
+		"role": ["assault"],
+		"attribute": ["support"],
+		"limit": 1
+	},
+
+	// aircraft - armap
+	"armca": {
+		"role": ["builder", "air"],
+		"retreat": 0.6,
+		"limit": 25,
+		"build_speed": 10.0
+	},
+	"armpeep": {
+		"role": ["scout", "air"]
+	},
+	"armfig": {
+		"role": ["anti_air", "air"]
+	},
+	"armthund": {
+		"role": ["bomber", "air"]
+	},
+	"armkam": {
+		"role": ["raider", "air"],
+		"attribute": ["siege"],
+		"retreat": 0.6
+	},
+
+	// adv aircraft - armaap
+	"armaca": {
+		"role": ["builder", "air"],
+		"retreat": 0.6,
+		"limit": 2,
+		"build_speed": 10.0
+	},
+	"armawac": {
+		"role": ["scout", "air"]
+	},
+	"armhawk": {
+		"role": ["anti_air", "air"]
+	},
+	"armpnix": {
+		"role": ["bomber", "air"]
+	},
+	"armbrawl": {
+		"role": ["raider", "air"],
+		"attribute": ["siege"],
+		"retreat": 0.5
+	},
+	"armblade": {
+		"role": ["heavy", "air"],
+		"retreat": 0.4
+	},
+	"armstil": {
+		"role": ["bomber", "air"],
+	},
+	"armliche": {
+		"role": ["bomber", "air"],
+		"attribute": ["heavy"],
+		"retreat": 0.5
+	},
+
+	// ships - armsy
+	"armcs": {
+		"role": ["builder", "air"],
+		"retreat": 0.6,
+		"limit": 6,
+		"build_speed": 10.0
+	},
+	"armpt": {
+		"role": ["scout", "anti_air", "raider"]
+	},
+	"armdecade": {
+		"role": ["scout", "raider", "skirmish"]
+	},
+	"armpship": {
+		"role": ["assault", "skirmish"]
+	},
+	"armsub": {
+		"role": ["sub"],
+		"attribute": ["anti_sub"]
+	},
+	"armroy": {
+		"role": ["artillery", "assault"],
+		"attribute": ["siege"],
+		"retreat": 0.5
+	},
+
+	// adv shipyard - armasy
+	"armacsub": {
+		"role": ["builder", "sub"],
+		"retreat": 0.3,
+		"limit": 4,
+		"build_speed": 10.0
+	},
+	"armsubk": {
+		"role": ["sub"],
+		"attribute": ["anti_sub"]
+	},
+	"armaas": {
+		"role": ["anti_air"]
+	},
+	"armcrus": {
+		"role": ["assault", "skirmish"],
+		"attribute": ["anti_sub"]
+	},
+	"armcarry": {
+		"role": ["support", "heavy"],
+		"retreat": 0.75
+	},
+	"armmship": {
+		"role": ["artillery"],
+		"attribute": ["siege"],
+		"retreat": 0.5
+	},
+	"armbats": {
 		"role": ["heavy"],
-		"thr_mod": 0.05
+		"attribute": ["assault"],
 	},
-	"chickenflyerqueen": {
-		"role": ["air"],
-		"thr_mod": 0.05
+	"armepoch": {
+		"role": ["heavy"],
+		"attribute": ["artillery"],
+		"retreat": 0.3
 	},
-	"chickenlandqueen": {
+	// ARMADA HOVERS
+
+	"armch": {
+		"role": ["builder"],
+		"limit": 10,
+		"build_speed": 10.0
+	},
+	"armsh": {
+		"role": ["scout"]
+	},
+	"armanac": {
+		"role": ["assault"]
+	},
+	"armmh": {
+		"role": ["artillery"]
+	},
+	"armah": {
+		"role": ["anti_air"],
+		"attribute": ["skirmish"],
+		"thr_mod": 0.4
+	},
+
+	// bot - corlab
+	"corck": {
+		"role": ["builder"],
+		"limit": 20,
+		"build_speed": 10.0
+	},
+	"corak": {
 		"role": ["raider"],
-		"thr_mod": 0.05
+		"attribute": ["scout"]
 	},
-	"chickenspire": {
-		"role": ["static"]
+	"cornecro": {
+		"role": ["raider", "mine"],
+		"attribute": ["siege", "mine", "scout"],
+		"pwr_mod": 2
 	},
-	"chickena": {
-		"role": ["raider"],
-		"thr_mod": 0.05
+	"corstorm": {
+		"role": ["skirmish"]
 	},
-	"chickenc": {
-		"role": ["raider"],
-		"thr_mod": 0.05
+	"corthud": {
+		"role": ["assault"]
 	},
-	"chickend": {
-		"role": ["raider"],
-		"thr_mod": 0.05
+	"corcrash": {
+		"role": ["anti_air"],
+		"limit": 30
 	},
-	"chickenf": {
-		"role": ["raider"],
-		"thr_mod": 0.05
+
+	// adv bot - coralab
+	"corack": {
+		"role": ["builder"],
+		"limit": 4,
+		"build_speed": 10.0
 	},
-	"chickenr": {
-		"role": ["raider"],
-		"thr_mod": 0.05
+	"corfast": {
+		"role": ["support", "mine"]
 	},
-	"chickenwurm": {
+	"cortermite": {
+		"role": ["raider"]
+	},
+	"corpyro": {
+		"role": ["assault"]
+	},
+	"corsumo": {
 		"role": ["heavy"]
+	},
+	"corcan": {
+		"role": ["assault"]
+	},
+	"cormort": {
+		"role": ["artillery"],
+		"attribute": ["skirmish"]
+	},
+	"corhrk": {
+		"role": ["artillery"]
+	},
+	"coraak": {
+		"role": ["anti_air"]
+	},
+	"cormando": {
+		"role": ["raider", "mine"]
+	},
+	"corsktl": {
+		"role": ["assault"],
+		"attribute": ["melee"],
+		"retreat": 0,
+	},
+	"corvoyr": {
+		"role": ["assault"],
+		"attribute": ["support"],
+		"limit": 1
+	},
+
+	// T3 bot - corgant
+	"corshiva": {
+		"role": ["riot", "heavy"]
+	},
+	"corkarg": {
+		"role": ["raider", "heavy"]
+	},
+	"corcat": {
+		"role": ["artillery", "heavy"],
+		"pwr_mod": 2.0
+	},
+	"corkrog": {
+		"role": ["assault", "heavy"],
+		"attribute": ["melee"],
+		"pwr_mod": 2.2
+	},
+	"corjugg": {
+		"role": ["heavy"],
+		"attribute": ["melee"],
+		"pwr_mod": 2.5
+	},
+
+	// vehicles - corvp
+	"corcv": {
+		"role": ["builder"],
+		"limit": 20,
+		"build_speed": 10.0
+	},
+	"cormuskrat": {
+		"role": ["builder"],
+		"limit": 10,
+		"build_speed": 10.0
+	},
+	// "cormlv": {
+	// 	"role": ["support"]
+	// },
+	"corfav": {
+		"role": ["scout"]
+	},
+	"corgator": {
+		"role": ["raider"],
+		"attribute": ["scout"]
+	},
+	"corgarp": {
+		"role": ["assault"],
+		"limit": 30
+	},
+	"corraid": {
+		"role": ["assault"]
+	},
+	"corlevlr": {
+		"role": ["riot"]
+	},
+	"corwolv": {
+		"role": ["skirmish"]
+	},
+	"cormist": {
+		"role": ["anti_air"],
+		"attribute": ["skirmish"],
+		"thr_mod": 0.4
+	},
+
+	// adv vehicles - coravp
+	"coracv": {
+		"role": ["builder"],
+		"limit": 3,
+		"build_speed": 10.0
+	},
+	"correap": {
+		"role": ["assault"]
+	},
+	"corgol": {
+		"role": ["heavy"]
+	},
+	"cormart": {
+		"role": ["artillery"]
+	},
+	"corsent": {
+		"role": ["anti_air"]
+	},
+	"corvroc": {
+		"role": ["artillery"]
+	},
+	"corban": {
+		"role": ["skirmish"]
+	},
+	"cortrem": {
+		"role": ["artillery", "heavy"]
+	},
+	"corvrad": {
+		"role": ["assault"],
+		"attribute": ["support"],
+		"limit": 1
+	},
+
+	// ships - corsy
+	"corcs": {
+		"role": ["builder", "air"],
+		"retreat": 0.6,
+		"limit": 6,
+		"build_speed": 10.0
+	},
+	"corpt": {
+		"role": ["scout", "anti_air", "raider"]
+	},
+	"coresupp": {
+		"role": ["scout", "raider", "skirmish"]
+	},
+	"corpship": {
+		"role": ["assault", "skirmish"]
+	},
+	"corsub": {
+		"role": ["sub"],
+		"attribute": ["anti_sub"]
+	},
+	"corroy": {
+		"role": ["artillery", "assault"],
+		"attribute": ["siege"],
+		"retreat": 0.5
+	},
+
+	// adv shipyard - corasy
+	"coracsub": {
+		"role": ["builder", "sub"],
+		"retreat": 0.3,
+		"limit": 4,
+		"build_speed": 10.0
+	},
+	"corshark": {
+		"role": ["sub"],
+		"attribute": ["anti_sub"]
+	},
+	"corarch": {
+		"role": ["anti_air"]
+	},
+	"corcrus": {
+		"role": ["assault", "skirmish"],
+		"attribute": ["anti_sub"]
+	},
+	"corcarry": {
+		"role": ["support", "heavy"],
+		"retreat": 0.75
+	},
+	"cormship": {
+		"role": ["artillery"],
+		"attribute": ["siege"],
+		"retreat": 0.5
+	},
+	"corbats": {
+		"role": ["heavy"],
+		"attribute": ["assault"],
+	},
+	"corblackhy": {
+		"role": ["heavy"],
+		"attribute": ["artillery"],
+		"retreat": 0.3
+	},
+// CORTEX HOVERS
+
+	"corch": {
+		"role": ["builder"],
+		"limit": 10,
+		"build_speed": 10.0
+	},
+	"corsh": {
+		"role": ["scout"]
+	},
+	"corsnap": {
+		"role": ["assault"]
+	},
+	"cormh": {
+		"role": ["artillery"]
+	},
+	"corah": {
+		"role": ["anti_air"],
+		"attribute": ["skirmish"],
+		"thr_mod": 0.4
+	},
+	"corhal": {
+		"role": ["assault"]
+	},
+
+
+	// aircraft - corap
+	"corca": {
+		"role": ["builder", "air"],
+		"retreat": 0.6,
+		"limit": 25,
+		"build_speed": 10.0
+	},
+	"corfink": {
+		"role": ["scout", "air"]
+	},
+	"corveng": {
+		"role": ["anti_air", "air"]
+	},
+	"corshad": {
+		"role": ["bomber", "air"]
+	},
+	"corbw": {
+		"role": ["assault", "air"],
+		"attribute": ["siege"],
+		"retreat": 0.3
+	},
+
+	// adv aircraft - coraap
+	"coraca": {
+		"role": ["builder", "air"],
+		"retreat": 0.6,
+		"limit": 2,
+		"build_speed": 10.0
+	},
+	"corawac": {
+		"role": ["scout", "air"]
+	},
+	"corvamp": {
+		"role": ["anti_air", "air"]
+	},
+	"corhurc": {
+		"role": ["bomber", "air"]
+	},
+	"corape": {
+		"role": ["assault", "air"],
+		"attribute": ["siege"],
+		"retreat": 0.5
+	},
+	"corcrw": {
+		"role": ["heavy", "air"],
+		"attribute": ["anti_heavy"],
+		"retreat": 0.2
+	},
+
+	// FIXME: temporary factory buildSpeed
+	"armlab": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"armalab": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"armvp": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"armavp": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"armshltx": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"armap": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"armaap": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"armsy": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"armasy": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"armhp": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"corlab": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"coralab": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"corvp": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"coravp": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"corhp": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"corgant": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"corap": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"coraap": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"corsy": {
+		"role": ["builder"],
+		"build_speed": 10.0
+	},
+	"corasy": {
+		"role": ["builder"],
+		"build_speed": 10.0
 	}
 }
 }
