@@ -52,7 +52,7 @@ bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 		return true;
 	}
 	IUnitTask* guard = militaryMgr->GetGuardTask(unit);
-	return (guard != nullptr) && !guard->GetAssignees().empty();
+	return ((guard != nullptr) && !guard->GetAssignees().empty()) || (circuit->GetLastFrame() > FRAMES_PER_SEC * 60 * 5);
 }
 
 void CBMexTask::Cancel()
