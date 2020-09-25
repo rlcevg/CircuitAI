@@ -27,6 +27,8 @@ public:
 	void DelFactory(const CCircuitDef* cdef);
 
 private:
+	void ReadConfig(CCircuitAI* circuit);
+
 	unsigned int choiceNum;
 	unsigned int noAirNum;
 	struct SFactory {
