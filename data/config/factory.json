@@ -10,6 +10,9 @@
 	"no_air": 3
 },
 
+// Utility param: warning on unit's total probability not equal to 100%
+"warn_probability": true,
+
 // Define factories
 "factory": {
 	"factorycloak": {
