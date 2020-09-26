@@ -223,6 +223,14 @@
 		"role": ["static"],
 		"since": 300
 	},
+	"armdrag": {
+		"role": ["static"],
+		"ignore": true
+	},
+	"cordrag": {
+		"role": ["static"],
+		"ignore": true
+	},
 
 
 	// bot - armlab
