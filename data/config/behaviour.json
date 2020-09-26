@@ -72,7 +72,7 @@
 	"armcir": {
 		"role": ["anti_air"]
 	},
-	"armpacko": {
+	"armferret": {
 		"role": ["anti_air"]
 	},
 	"armflak": {
@@ -162,42 +162,50 @@
  	"armalab": {
 		"role": ["static"],
 		"attribute": ["support"],
-		"limit": 1
+		"limit": 1,
+		"build_speed": 10.0
 	},
 	"coralab": {
 		"role": ["static"],
 		"attribute": ["support"],
-		"limit": 1
+		"limit": 1,
+		"build_speed": 10.0
 	},
 	"armavp": {
 		"role": ["static"],
 		"attribute": ["support"],
-		"limit": 1
+		"limit": 1,
+		"build_speed": 10.0
 	},
 	"coravp": {
 		"role": ["static"],
 		"attribute": ["support"],
-		"limit": 1
+		"limit": 1,
+		"build_speed": 10.0
 	},
 	"armaap": {
 		"role": ["static"],
 		"attribute": ["support"],
-		"limit": 1
+		"limit": 1,
+		"build_speed": 10.0
 	},
 	"coraap": {
 		"role": ["static"],
 		"attribute": ["support"],
-		"limit": 1
+		"limit": 1,
+		"build_speed": 10.0
 	},
 	"armshltx": {
 		"role": ["static"],
 		"attribute": ["support"],
-		"limit": 1
+		"limit": 1,
+		"build_speed": 10.0
 	},
 	"corgant": {
 		"role": ["static"],
 		"attribute": ["support"],
-		"limit": 1
+		"limit": 1,
+		"build_speed": 10.0
 	},
 	"armnanotc": {
 		"role": ["support"],
@@ -658,7 +666,7 @@
 		"role": ["artillery", "heavy"],
 		"pwr_mod": 2.0
 	},
-	"corkrog": {
+	"corkorg": {
 		"role": ["assault", "heavy"],
 		"attribute": ["melee"],
 		"pwr_mod": 2.2
@@ -884,27 +892,11 @@
 		"role": ["builder"],
 		"build_speed": 10.0
 	},
-	"armalab": {
-		"role": ["builder"],
-		"build_speed": 10.0
-	},
 	"armvp": {
 		"role": ["builder"],
 		"build_speed": 10.0
 	},
-	"armavp": {
-		"role": ["builder"],
-		"build_speed": 10.0
-	},
-	"armshltx": {
-		"role": ["builder"],
-		"build_speed": 10.0
-	},
 	"armap": {
-		"role": ["builder"],
-		"build_speed": 10.0
-	},
-	"armaap": {
 		"role": ["builder"],
 		"build_speed": 10.0
 	},
@@ -924,15 +916,7 @@
 		"role": ["builder"],
 		"build_speed": 10.0
 	},
-	"coralab": {
-		"role": ["builder"],
-		"build_speed": 10.0
-	},
 	"corvp": {
-		"role": ["builder"],
-		"build_speed": 10.0
-	},
-	"coravp": {
 		"role": ["builder"],
 		"build_speed": 10.0
 	},
@@ -940,15 +924,7 @@
 		"role": ["builder"],
 		"build_speed": 10.0
 	},
-	"corgant": {
-		"role": ["builder"],
-		"build_speed": 10.0
-	},
 	"corap": {
-		"role": ["builder"],
-		"build_speed": 10.0
-	},
-	"coraap": {
 		"role": ["builder"],
 		"build_speed": 10.0
 	},

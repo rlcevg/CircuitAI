@@ -381,6 +381,7 @@ void CFactoryManager::ReadConfig()
 	/*
 	 * Factories
 	 */
+	const bool warnProb = root.get("warn_probability", true).asBool();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	const Json::Value& factories = root["factory"];
 	for (const std::string& fac : factories.getMemberNames()) {
@@ -464,7 +465,7 @@ void CFactoryManager::ReadConfig()
 		facDef.landDef = landDef;
 		facDef.waterDef = waterDef;
 
-		auto fillProbs = [this, &cfgName, &facDef, &fac, &factory](unsigned i, const char* type, SFactoryDef::Tiers& tiers) {
+		auto fillProbs = [this, &cfgName, &facDef, &fac, &factory, warnProb](unsigned i, const char* type, SFactoryDef::Tiers& tiers) {
 			const Json::Value& tierType = factory[type];
 			if (tierType.isNull()) {
 				return false;
@@ -481,7 +482,7 @@ void CFactoryManager::ReadConfig()
 				sum += p;
 				probs.push_back(p);
 			}
-			if (fabs(sum - 1.0f) > 0.0001f) {
+			if (warnProb && (fabs(sum - 1.0f) > 0.0001f)) {
 				circuit->LOG("CONFIG %s: %s's %s_tier%i total probability = %f", cfgName.c_str(), fac.c_str(), type, i, sum);
 			}
 			return true;
