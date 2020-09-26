@@ -19,6 +19,7 @@ void Init(dictionary@ data)
 	dictionary profile;
 	profile["standart"] = @(array<string> = {"behaviour", "block_map", "build_chain", "commander", "economy", "factory", "response"});
 	profile["easy"] = @(array<string> = {"behaviour", "block_map", "build_chain", "commander", "economy", "factory", "response"});
+	profile["lamer"] = @(array<string> = {"behaviour", "block_map", "build_chain", "commander", "economy", "factory", "response"});
 	data["profile"] = @profile;
 }
 

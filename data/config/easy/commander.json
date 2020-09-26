@@ -28,10 +28,10 @@
 
 			// Commander hides if ("time" elapsed) and ("threat" exceeds value or enemy has "air")
 			"hide": {
-				"time": 100,  // seconds
-				"threat": 1,
+				"time": 350,  // seconds
+				"threat": 35,
 				"air": true,
-				"task_rad": 350.0
+				"task_rad": 3500.0
 			},
 
 			"side": "armada"
@@ -60,10 +60,10 @@
 
 			// Commander hides if ("time" elapsed) and ("threat" exceeds value or enemy has "air")
 			"hide": {
-				"time": 100,  // seconds
-				"threat": 1,
+				"time": 350,  // seconds
+				"threat": 35,
 				"air": true,
-				"task_rad": 350.0
+				"task_rad": 3500.0
 			},
 
 			"side": "cortex"

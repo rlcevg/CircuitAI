@@ -79,6 +79,11 @@ local options = {
 				name = 'Easy',
 				desc = 'Lobotomized AI.',
 			},
+			{
+				key  = 'lamer',
+				name = 'Lamer\'s AI',
+				desc = 'Lamer\'s default config.',
+			},
 		},
 	},
 }
