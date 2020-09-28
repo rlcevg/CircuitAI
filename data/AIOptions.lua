@@ -75,6 +75,11 @@ local options = {
 				desc = 'Default config.',
 			},
 			{
+				key  = 'previous',
+				name = 'Previous',
+				desc = 'Previous default config.',
+			},
+			{
 				key  = 'easy',
 				name = 'Easy',
 				desc = 'Lobotomized AI.',

@@ -41,7 +41,7 @@
 						[0.5, ["builder", "scout", "scout", "riot"]]
 					],
 					"factoryspider": [
-						[0.5, ["scout", "builder", "scout", "scout", "riot", "scout", "builder", "scout", "riot", "scout", "builder"]],
+						[0.5, ["scout", "builder", "scout", "scout", "scout", "scout", "scout", "riot", "scout", "builder", "scout", "riot", "scout", "builder"]],
 						[0.5, ["scout", "builder", "scout", "scout", "scout", "scout", "riot", "scout", "builder", "support"]]
 					],
 					"factoryshield": [
@@ -132,12 +132,12 @@
 						[0.5, ["anti_air", "builder", "anti_air", "builder"]]
 					],
 					"factorytank": [
-						[0.5, ["builder", "scout", "scout", "raider", "raider", "raider"]],
+						[0.5, ["builder", "scout", "scout", "raider", "raider",  "raider"]],
 						[0.5, ["builder", "scout", "scout", "builder", "assault"]]
 					],
 					"factoryspider": [
-						[0.5, ["builder", "scout", "riot", "scout", "scout", "riot", "scout", "builder"]],
-						[0.5, ["builder", "scout", "scout", "scout", "scout", "scout", "scout", "riot", "scout", "builder", "support"]]
+						[0.5, ["builder", "scout", "scout", "scout", "scout", "scout", "scout", "riot", "scout", "scout", "riot", "scout", "builder"]],
+						[0.5, ["builder", "scout", "scout", "scout", "scout", "scout", "scout", "scout", "scout", "scout", "scout", "scout", "scout", "riot", "scout", "builder", "support"]]
 					],
 					"factoryshield": [
 						[0.5, ["builder", "scout", "raider", "raider", "raider", "builder"]],
@@ -153,7 +153,7 @@
 
 			// Morph params
 			"upgrade": {
-				"time": 180,  // Force-morph delay, in seconds
+				"time": 240,  // Force-morph delay, in seconds
 				"module": [  // List of dynamic module IDs
 					[7, 37],  // Machinegun
 					[31, 36],  // Cloak, Regen

@@ -7,29 +7,29 @@
 		"turretaalaser", "staticcon", "turretheavy", "staticshield", "turretemp",
 	//       10             11               12            13                14
 		"turretantiheavy", "staticarty", "turretaafar", "turretaaheavy", "turretgauss",
-	//       15		        16                    17               18             19              20
-		"staticantinuke", "staticheavyradar", "staticheavyarty", "raveparty", "factoryshield", "striderhub"
+	//       15		        16
+		"staticantinuke", "staticheavyradar"
 	],
 	// Actual number of defences per cluster bounded by income
-	"land":  [0, 1, 0, 3, 5, 1, 6, 2, 14, 1, 9, 5, 6, 2, 3, 5, 0, 8, 9, 14, 1, 3, 6, 12, 11, 13],
+	"land":  [0, 0, 1, 3, 5, 1, 2, 14, 1, 9, 5, 6, 2, 3, 5, 0, 8, 9, 14, 1, 3, 6, 16, 12, 11, 13],
 	"water": [4, 1, 6, 4, 4, 3, 5, 9, 16],
 	"prevent": 1,  // number of preventive defences
 	"amount": {  // income bound factor
-		"offset": [-0.05, 0.05],
-		// Amount factor: 8x8 ~ 1.6, 20x20 ~ 1.59
-		"factor": [1.6, 1.59],
-		"map": [8, 20]
+		"offset": [-0.15, 0.4],
+		// Amount factor: 4x4 ~ 1.85, 20x20 ~ 1.45
+		"factor": [1.55, 1.30],
+		"map": [4, 20]
 	},
 
 
 	// Base defence and time to build it, in seconds
-	"base": [[0, 10], [0, 180], [1, 400], [6, 450], [0, 500], [5, 660], [1, 990], [5, 1160], [19, 1200], [1, 1380], [2, 1480], [17, 1500], [17, 1500], [18, 1700]],
+	"base": [[0, 10], [1, 300], [0, 310], [1, 400], [6, 450], [0, 500], [16, 600], [5, 660], [1, 990], [5, 1160], [1, 1380], [2, 1680], [13, 1800], [15, 1850]],
 
 	"superweapon": {
 		"unit":   ["raveparty", "staticnuke", "staticheavyarty", "zenith", "staticantinuke"],  // FIXME: last aren't superweapon
 		"weight": [ 0.10,         0.20,        0.20,              0.05,     0.25,    0.10],
 
-		"condition": [16, 200000]  // [<Minimum income>, <maximum seconds to build>]
+		"condition": [16, 20000]  // [<Minimum income>, <maximum seconds to build>]
 	},
 
 	// Fallback defence
@@ -72,7 +72,7 @@
 					{"unit": "turretmissile", "category": "defence", "offset": [-80, 80]},
 					{"unit": "staticshield", "category": "defence", "offset": [10, 10]},
 					{"unit": "staticshield", "category": "defence", "offset": [-10, -10]},
-					{"unit": "striderhub", "category": "defence", "offset": [-10, -10]},
+					{"unit": "staticstorage", "category": "defence", "offset": [-10, -10]},
 					{"unit": "turretaafar", "category": "defence", "offset": {"front": 120}, "condition": "air"},
 					{"unit": "turretaaflak", "category": "defence", "offset": {"front": 120}, "condition": "no_air"}
 				],
@@ -83,7 +83,7 @@
 					{"unit": "turretmissile", "category": "defence", "offset": [80, -80]},
 					{"unit": "staticshield", "category": "defence", "offset": [10, 10]},
 					{"unit": "staticshield", "category": "defence", "offset": [-10, -10]},
-					{"unit": "striderhub", "category": "defence", "offset": [-10, -10]},
+					{"unit": "staticstorage", "category": "defence", "offset": [-10, -10]},
 					{"unit": "turretaafar", "category": "defence", "offset": {"front": 120}, "condition": "air"},
 					{"unit": "turretaaflak", "category": "defence", "offset": {"front": 120}, "condition": "no_air"}
 				]
@@ -109,7 +109,7 @@
 	"mex": {
 		"staticmex": {
 //			"terra": true,
-			"energy": [20, true],
+			"energy": [20, "mex"],
 			"porc": true
 		}
 	},
@@ -162,6 +162,18 @@
 			"hub": [[
 					{"unit": "turretlaser", "category": "defence", "offset": [80, -80]},
 					{"unit": "turretmissile", "category": "defence", "offset": [-80, 80]}
+				]]
+		},
+		"staticnuke": {
+			"hub": [[
+					{"unit": "staticradar", "category": "radar", "offset": {"back": 40}},
+					{"unit": "turretaafar", "category": "defence", "offset": {"left": 120}, "condition": "air"},
+					{"unit": "turretlaser", "category": "defence", "offset": [-80, 80]},
+					{"unit": "turretmissile", "category": "defence", "offset": [80, 80]},
+					{"unit": "turretriot", "category": "defence", "offset": [80, -80]},
+					{"unit": "staticshield", "category": "defence", "offset": [10, 10]},
+					{"unit": "staticstorage", "category": "defence", "offset": [-10, -10]},
+					{"unit": "turretmissile", "category": "defence", "offset": [-80, -80]}
 				]]
 		},
 		"staticantinuke": {
