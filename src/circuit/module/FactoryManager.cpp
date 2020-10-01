@@ -1218,6 +1218,12 @@ IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 		return task;
 	}
 
+	// FIXME: DEBUG
+	if (factories.size() > 1 && factories[0].unit == unit) {
+		return EnqueueWait(false, FRAMES_PER_SEC * 10);
+	}
+	// FIXME: DEBUG
+
 	task = UpdateFirePower(unit);
 	if (task != nullptr) {
 		return task;
