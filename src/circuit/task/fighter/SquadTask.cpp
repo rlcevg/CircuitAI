@@ -250,7 +250,7 @@ bool ISquadTask::IsMustRegroup()
 					unit->GetUnit()->SetMoveState(2);
 				)
 				circuit->Garbage(unit, "stuck");
-				circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, unit);
+//				circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, unit);
 			}
 		}
 
@@ -277,7 +277,7 @@ bool ISquadTask::IsMustRegroup()
 				leader->GetUnit()->SetMoveState(2);
 			)
 			circuit->Garbage(leader, "stuck");
-			circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, leader);
+//			circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, leader);
 		}
 		prevGroupPos = groupPos;
 	}

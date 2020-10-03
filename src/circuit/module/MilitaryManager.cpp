@@ -459,6 +459,9 @@ void CMilitaryManager::Release()
 		AbortTask(task);
 		// NOTE: Do not delete task as other AbortTask may ask for it
 	}
+	for (IUnitTask* task : fightUpdates) {
+		task->ClearRelease();
+	}
 	fightUpdates.clear();
 }
 

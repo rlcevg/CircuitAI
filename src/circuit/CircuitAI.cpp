@@ -637,12 +637,6 @@ int CCircuitAI::Release(int reason)
 	economy = nullptr;
 	metalRes = energyRes = nullptr;
 
-	delete script;
-	script = nullptr;
-	weaponDefs.clear();
-	defsById.clear();
-	defsByName.clear();
-
 	if (!isInitialized) {
 		return 0;
 	}
@@ -652,6 +646,12 @@ int CCircuitAI::Release(int reason)
 		builderManager->Release();
 		militaryManager->Release();
 	}
+
+	delete script;
+	script = nullptr;
+	weaponDefs.clear();
+	defsById.clear();
+	defsByName.clear();
 
 	if (reason == 1) {  // @see SReleaseEvent
 		gameAttribute->SetGameEnd(true);
@@ -955,8 +955,7 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 			unit->GetUnit()->Stop();
 			unit->GetUnit()->SetMoveState(2);
 		)
-		UnitDestroyed(unit, nullptr);
-		UnregisterTeamUnit(unit);
+		Garbage(unit, "stuck");
 	} else if (unit->GetTask() != nullptr) {
 		unit->GetTask()->OnUnitMoveFailed(unit);
 	}

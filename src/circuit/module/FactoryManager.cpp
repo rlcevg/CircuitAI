@@ -525,6 +525,9 @@ void CFactoryManager::Release()
 		AbortTask(task);
 		// NOTE: Do not delete task as other AbortTask may ask for it
 	}
+	for (IUnitTask* task : updateTasks) {
+		task->ClearRelease();
+	}
 	updateTasks.clear();
 }
 
