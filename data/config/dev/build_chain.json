@@ -75,11 +75,10 @@
 			// Build chain of units
 			"hub": [
 				[  // chain1
-					{"unit": "armllt", "category": "defence", "offset": [-80, -80], "condition": "maybe"},
-					{"unit": "armmakr", "category": "defence", "offset": [80, 80]}
+					{"unit": "armllt", "category": "defence", "offset": {"front": 80}, "condition": "maybe"},
 				],
 				[  // chain2
-					{"unit": "armllt", "category": "defence", "offset": [80, 80], "condition": "maybe"}
+					{"unit": "armmakr", "category": "defence", "offset": [80, 80]}
 				]
 			]
 		},
@@ -137,11 +136,10 @@
 		"coradvsol": {
 			"hub": [
 				[
-					{"unit": "corllt", "category": "defence", "offset": [-80, -80], "condition": "maybe"},
-					{"unit": "cormakr", "category": "defence", "offset": [80, 80]}
+					{"unit": "corllt", "category": "defence", "offset": {"front": 80}, "condition": "maybe"},
 				],  // chain1
 				[	
-					{"unit": "corllt", "category": "defence", "offset": [80, 80], "condition": "maybe"}
+					{"unit": "cormakr", "category": "defence", "offset": [80, 80]}
 				]  // chain2
 			]
 		},

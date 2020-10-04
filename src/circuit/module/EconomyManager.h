@@ -57,17 +57,17 @@ public:
 	springai::Resource* GetMetalRes() const { return metalRes; }
 	springai::Resource* GetEnergyRes() const { return energyRes; }
 	CEnergyGrid* GetEnergyGrid() const { return energyGrid; }
-	CCircuitDef* GetMexDef(CCircuitDef* builderDef) { return mexDefs[builderDef->GetId()]; }
-	CCircuitDef* GetLowEnergy(const springai::AIFloat3& pos, float& outMake) const;
-	CCircuitDef* GetPylonDef() const { return pylonDef; }
 	float GetPylonRange() const { return pylonRange; }
+	CCircuitDef* GetLowEnergy(const springai::AIFloat3& pos, float& outMake) const;
 	void AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs);  // add available energy defs
 	void RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs);
-	CCircuitDef* GetDefaultDef(CCircuitDef* builderDef) { return defaultDefs[builderDef->GetId()]; }
 
 	const SSideInfo& GetSideInfo() const;
 	const std::vector<SSideInfo>& GetSideInfos() const { return sideInfos; }
-	const std::unordered_set<CCircuitDef::Id>& GetAllMexDefs() const { return allMexDefs; }
+
+	CCircuitDef* GetMexDef(CCircuitDef* builderDef) { return mexDefs[builderDef->GetId()]; }
+	CCircuitDef* GetDefaultDef(CCircuitDef* builderDef) { return defaultDefs[builderDef->GetId()]; }
+	CCircuitDef* GetPylonDef() const { return pylonDef; }
 
 	void UpdateResourceIncome();
 	float GetAvgMetalIncome() const { return metalIncome; }
@@ -129,7 +129,6 @@ private:
 	CCircuitDef* pylonDef;  // TODO: Move into CEnergyGrid?
 
 	std::vector<SSideInfo> sideInfos;
-	std::unordered_set<CCircuitDef::Id> allMexDefs;
 
 	std::unordered_map<CCircuitDef::Id, CCircuitDef*> mexDefs;  // builder: mex
 	CCircuitDef* storeDef;

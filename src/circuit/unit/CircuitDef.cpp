@@ -121,6 +121,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, isLander(false)
 		, isMex(false)
 		, isPylon(false)
+		, isAssist(false)
 		, stockCost(.0f)
 		, jumpRange(.0f)
 		, retreat(-1.f)
@@ -156,7 +157,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	isSubmarine  = (md == nullptr) ? false : md->IsSubMarine();
 	delete md;
 	isAbleToFly     = def->IsAbleToFly();
-	isPlane         = !def->IsHoverAttack() && isAbleToFly;
+	isPlane         = /*!def->IsHoverAttack() && */isAbleToFly;
 	isFloater       = def->IsFloater() && !isSubmarine && !isAbleToFly;
 	isSonarStealth  = def->IsSonarStealth();
 	isTurnLarge     = (speed / (def->GetTurnRate() + 1e-3f) > 0.09f);  // empirical magic number

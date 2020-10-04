@@ -254,13 +254,13 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			}
 
 			for (SSideInfo& sideInfo : sideInfos) {
-					if (cdef.CanBuild(sideInfo.mexDef)) {
-						mexDefs[cdef.GetId()] = sideInfo.mexDef;
-					}
-					if (cdef.CanBuild(sideInfo.defaultDef)) {
-						defaultDefs[cdef.GetId()] = sideInfo.defaultDef;
-					}
+				if (cdef.CanBuild(sideInfo.mexDef)) {
+					mexDefs[cdef.GetId()] = sideInfo.mexDef;
 				}
+				if (cdef.CanBuild(sideInfo.defaultDef)) {
+					defaultDefs[cdef.GetId()] = sideInfo.defaultDef;
+				}
+			}
 		}
 	}
 
@@ -349,17 +349,15 @@ void CEconomyManager::ReadConfig()
 		CCircuitDef* cdef = circuit->GetCircuitDef(name);
 		if (cdef != nullptr) {
 			sideInfo.mexDef = cdef;
-			allMexDefs.insert(cdef->GetId());
 		} else {
-			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), name);
+			circuit->LOG("CONFIG %s: has unknown mexDef '%s'", cfgName.c_str(), name);
 		}
 		name = metal[kv.first][1].asCString();
 		cdef = circuit->GetCircuitDef(name);
 		if (cdef != nullptr) {
 			sideInfo.mohoMexDef = cdef;
-			allMexDefs.insert(cdef->GetId());
 		} else {
-			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), name);
+			circuit->LOG("CONFIG %s: has unknown mohoMexDef '%s'", cfgName.c_str(), name);
 		}
 
 		// Default
@@ -416,13 +414,7 @@ void CEconomyManager::Init()
 				ownerId = circuit->GetTeamId();
 				allyTeam->OccupyCluster(clusterId, ownerId);
 			} else if (ownerId != circuit->GetTeamId()) {
-				// Resign
-				std::vector<Unit*> migrants;
-				for (auto& kv : circuit->GetTeamUnits()) {
-					migrants.push_back(kv.second->GetUnit());
-				}
-				economy->SendUnits(migrants, ownerId);
-				circuit->Resign(ownerId);
+				circuit->Resign(ownerId, economy);
 				return;
 			}
 			// FIXME: DEBUG
@@ -1015,42 +1007,46 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	/*
 	 * check air pads
 	 */
-	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
-	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
-	CCircuitDef* airpadDef = factoryMgr->GetAirpadDef();
-	const std::set<IBuilderTask*> &factoryTasks = builderMgr->GetTasks(IBuilderTask::BuildType::FACTORY);
-	const unsigned airpadFactor = SQUARE((airpadDef->GetCount() + factoryTasks.size()) * 4);
 	const int frame = circuit->GetLastFrame();
-	if (airpadDef->IsAvailable(frame) &&
-		(militaryMgr->GetRoleUnits(ROLE_TYPE(BOMBER)).size() > airpadFactor))
-	{
-		CCircuitDef* bdef;
-		AIFloat3 buildPos;
-		if (unit == nullptr) {
-			bdef = airpadDef;
-			buildPos = factoryMgr->GetClosestHaven(circuit->GetSetupManager()->GetBasePos());
-		} else {
-			bdef = unit->GetCircuitDef();
-			buildPos = factoryMgr->GetClosestHaven(unit);
-		}
-		if (!utils::is_valid(buildPos)) {
-			buildPos = circuit->GetSetupManager()->GetBasePos();
-		}
-		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-		buildPos = terrainMgr->GetBuildPosition(bdef, buildPos);
+	const std::set<IBuilderTask*> &factoryTasks = builderMgr->GetTasks(IBuilderTask::BuildType::FACTORY);
+	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+	CCircuitDef* airpadDef = (unit == nullptr) ? factoryMgr->GetSideInfo().airpadDef : factoryMgr->GetAirpadDef(unit->GetCircuitDef());
+	if ((airpadDef != nullptr) && airpadDef->IsAvailable(frame)) {
+		CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
+		const unsigned airpadFactor = SQUARE((airpadDef->GetCount() + factoryTasks.size()) * 8);
+		if (militaryMgr->GetRoleUnits(ROLE_TYPE(AIR)).size() > airpadFactor) {
+			CCircuitDef* bdef;
+			AIFloat3 buildPos;
+			if (unit == nullptr) {
+				bdef = airpadDef;
+				buildPos = factoryMgr->GetClosestHaven(circuit->GetSetupManager()->GetBasePos());
+			} else {
+				bdef = unit->GetCircuitDef();
+				buildPos = factoryMgr->GetClosestHaven(unit);
+			}
+			if (!utils::is_valid(buildPos)) {
+				buildPos = circuit->GetSetupManager()->GetBasePos();
+			}
+			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+			buildPos = terrainMgr->GetBuildPosition(bdef, buildPos);
 
-		if (terrainMgr->CanBeBuiltAtSafe(airpadDef, buildPos) &&
-			((unit == nullptr) || terrainMgr->CanReachAtSafe(unit, buildPos, unit->GetCircuitDef()->GetBuildDistance())))
-		{
-			return builderMgr->EnqueueFactory(IBuilderTask::Priority::NORMAL, airpadDef, buildPos);
+			if (terrainMgr->CanBeBuiltAtSafe(airpadDef, buildPos) &&
+				((unit == nullptr) || terrainMgr->CanReachAtSafe(unit, buildPos, unit->GetCircuitDef()->GetBuildDistance())))
+			{
+				return builderMgr->EnqueueFactory(IBuilderTask::Priority::NORMAL, airpadDef, buildPos);
+			}
 		}
 	}
 
 	/*
 	 * check buildpower
 	 */
+	CCircuitDef* assistDef = (unit == nullptr) ? factoryMgr->GetSideInfo().assistDef : factoryMgr->GetAssistDef(unit->GetCircuitDef());
+	if (assistDef == nullptr) {
+		return nullptr;
+	}
+
 	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome())/* * ecoFactor*/;
-	CCircuitDef* assistDef = factoryMgr->GetAssistDef();
 	const float factoryFactor = (metalIncome - assistDef->GetBuildSpeed()) * 1.2f;
 	const int nanoSize = builderMgr->GetTasks(IBuilderTask::BuildType::NANO).size();
 	const float factoryPower = factoryMgr->GetFactoryPower() + nanoSize * assistDef->GetBuildSpeed();

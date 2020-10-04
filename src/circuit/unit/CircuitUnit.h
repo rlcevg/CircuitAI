@@ -47,8 +47,9 @@ namespace circuit {
 #define CMD_TERRAFORM_INTERNAL		39801
 
 // FIXME: BA
-#define CMD_AUTOMEX		31143
-#define CMD_PASSIVE		34571
+#define CMD_AUTOMEX				31143
+#define CMD_PASSIVE				34571
+#define CMD_LAND_AT_AIRBASE		35430
 // FIXME: BA
 
 class CCircuitDef;

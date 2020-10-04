@@ -32,16 +32,6 @@ struct SEnemyData {
 						DEAD = 0x10};
 	using LM = std::underlying_type<LosMask>::type;
 
-	SEnemyData(CCircuitDef* cdef,
-			float shieldPower, float health, bool isBeingBuilt, bool isParalyzed, bool isDisarmed,
-			springai::AIFloat3 pos, springai::AIFloat3 vel, float threat, RangeArray range,
-			ICoreUnit::Id id, float cost, LM losStatus)
-		: cdef(cdef)
-		, shieldPower(shieldPower), health(health), isBeingBuilt(isBeingBuilt), isParalyzed(isParalyzed), isDisarmed(isDisarmed)
-		, pos(pos), vel(vel), threat(threat), range(range)
-		, id(id), cost(cost), losStatus(losStatus)
-	{}
-
 	CCircuitDef* cdef;
 
 	float shieldPower;

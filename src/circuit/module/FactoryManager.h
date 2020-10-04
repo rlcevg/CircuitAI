@@ -22,6 +22,10 @@ class CFactoryData;
 class CFactoryManager: public IUnitModule {
 public:
 	friend class CFactoryScript;
+	struct SSideInfo {
+		CCircuitDef* airpadDef;
+		CCircuitDef* assistDef;
+	};
 
 	CFactoryManager(CCircuitAI* circuit);
 	virtual ~CFactoryManager();
@@ -66,10 +70,14 @@ public:
 	CCircuitUnit* GetClosestFactory(springai::AIFloat3 position);
 //	CCircuitDef* GetClosestDef(springai::AIFloat3& position, CCircuitDef::RoleT role);
 
-	CCircuitDef* GetAirpadDef() const { return airpadDef; }
-	CCircuitDef* GetAssistDef() const { return assistDef; }
 	springai::AIFloat3 GetClosestHaven(CCircuitUnit* unit) const;
 	springai::AIFloat3 GetClosestHaven(const springai::AIFloat3& position) const;
+
+	const SSideInfo& GetSideInfo() const;
+	const std::vector<SSideInfo>& GetSideInfos() const { return sideInfos; }
+
+	CCircuitDef* GetAirpadDef(CCircuitDef* builderDef) { return airpadDefs[builderDef->GetId()]; }
+	CCircuitDef* GetAssistDef(CCircuitDef* builderDef) { return assistDefs[builderDef->GetId()]; }
 
 	CRecruitTask* UpdateBuildPower(CCircuitUnit* unit);
 	CRecruitTask* UpdateFirePower(CCircuitUnit* unit);
@@ -105,8 +113,11 @@ private:
 	unsigned int updateIterator;
 	float factoryPower;
 
-	CCircuitDef* airpadDef;
-	CCircuitDef* assistDef;
+	std::vector<SSideInfo> sideInfos;
+
+	std::unordered_map<CCircuitDef::Id, CCircuitDef*> airpadDefs;  // builder: pad
+	std::unordered_map<CCircuitDef::Id, CCircuitDef*> assistDefs;  // builder: assist
+
 	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> assists;  // nano 1:n factory
 	std::vector<springai::AIFloat3> havens;  // position behind factory
 	std::map<ICoreUnit::Id, IBuilderTask*> repairedUnits;

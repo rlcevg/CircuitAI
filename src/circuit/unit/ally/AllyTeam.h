@@ -68,6 +68,7 @@ public:
 	int GetSize() const { return teamIds.size(); }
 	int GetAliveSize() const { return GetSize() - resignSize; }
 	const TeamIds& GetTeamIds() const { return teamIds; }
+	const Id GetLeaderId() const;
 	const SBox& GetStartBox() const { return startBox; }
 
 	void Init(CCircuitAI* circuit, float decloakRadius);

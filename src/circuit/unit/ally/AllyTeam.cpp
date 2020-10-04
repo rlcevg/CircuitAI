@@ -56,6 +56,11 @@ CAllyTeam::~CAllyTeam()
 	}
 }
 
+const CAllyTeam::Id CAllyTeam::GetLeaderId() const
+{
+	return circuit->GetTeamId();
+}
+
 void CAllyTeam::Init(CCircuitAI* circuit, float decloakRadius)
 {
 	if (initCount++ > 0) {

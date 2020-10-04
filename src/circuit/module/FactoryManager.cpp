@@ -19,6 +19,7 @@
 #include "task/static/ReclaimTask.h"
 #include "unit/FactoryData.h"
 #include "CircuitAI.h"
+#include "util/GameAttribute.h"
 #include "util/Scheduler.h"
 #include "util/Utils.h"
 #include "json/json.h"
@@ -39,7 +40,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit, new CFactoryScript(circuit->GetScriptManager(), this))
 		, updateIterator(0)
 		, factoryPower(.0f)
-		, assistDef(nullptr)
 		, bpRatio(1.f)
 		, reWeight(.5f)
 {
@@ -178,8 +178,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		assists.erase(unit);
 	};
 
-	float maxBuildDist = SQUARE_SIZE * 2;
-	CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
+	ReadConfig();
 
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
 		UnitDef* def = cdef.GetDef();
@@ -190,19 +189,20 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 				finishedHandler[unitDefId] = factoryFinishedHandler;
 				idleHandler[unitDefId] = factoryIdleHandler;
 				destroyedHandler[unitDefId] = factoryDestroyedHandler;
-			} else if (maxBuildDist < cdef.GetBuildDistance() &&
-				(std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE < cdef.GetBuildDistance()))
-			{
-				maxBuildDist = cdef.GetBuildDistance();
+			} else if (std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE < cdef.GetBuildDistance()) {
 				createdHandler[unitDefId] = assistCreatedHandler;
 				finishedHandler[unitDefId] = assistFinishedHandler;
 				idleHandler[unitDefId] = assistIdleHandler;
 				destroyedHandler[unitDefId] = assistDestroyedHandler;
-				// FIXME: BA
-//				if (commDef->CanBuild(&cdef)) {
-//					assistDef = &cdef;
-//				}
-				// FIXME: BA
+			}
+
+			for (SSideInfo& sideInfo : sideInfos) {
+				if (cdef.CanBuild(sideInfo.airpadDef)) {
+					airpadDefs[cdef.GetId()] = sideInfo.airpadDef;
+				}
+				if (cdef.CanBuild(sideInfo.assistDef)) {
+					assistDefs[cdef.GetId()] = sideInfo.assistDef;
+				}
 			}
 		}
 
@@ -226,14 +226,8 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		}
 	}
 
-	ReadConfig();
-
 	// FIXME: BA
-	CCircuitDef::Id unitDefId = assistDef->GetId();
-	createdHandler[unitDefId] = assistCreatedHandler;
-	finishedHandler[unitDefId] = assistFinishedHandler;
-	idleHandler[unitDefId] = assistIdleHandler;
-	destroyedHandler[unitDefId] = assistDestroyedHandler;
+	CCircuitDef* assistDef = GetSideInfo().assistDef;
 	factoryPower -= assistDef->GetBuildSpeed() - 4.f;
 	// FIXME: BA
 
@@ -252,18 +246,30 @@ void CFactoryManager::ReadConfig()
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
 
-	const Json::Value& airpad = root["economy"]["airpad"];
-	const std::string& padName = airpad.get(circuit->GetSideName(), "").asString();
-	airpadDef = circuit->GetCircuitDef(padName.c_str());
-	if (airpadDef == nullptr) {
-		airpadDef = circuit->GetEconomyManager()->GetSideInfo().defaultDef;
-	}
+	CMaskHandler& sideMasker = circuit->GetGameAttribute()->GetSideMasker();
+	sideInfos.resize(sideMasker.GetMasks().size());
 
+	const Json::Value& airpad = root["economy"]["airpad"];
 	const Json::Value& nanotc = root["economy"]["nanotc"];
-	const std::string& nanoName = nanotc.get(circuit->GetSideName(), "").asString();
-	assistDef = circuit->GetCircuitDef(nanoName.c_str());
-	if (assistDef == nullptr) {
-		assistDef = circuit->GetEconomyManager()->GetSideInfo().defaultDef;
+	for (const auto& kv : sideMasker.GetMasks()) {
+		SSideInfo& sideInfo = sideInfos[kv.second.type];
+
+		const std::string& padName = airpad.get(kv.first, "").asString();
+		CCircuitDef* airpadDef = circuit->GetCircuitDef(padName.c_str());
+		if (airpadDef == nullptr) {
+			airpadDef = circuit->GetEconomyManager()->GetSideInfo().defaultDef;
+			circuit->LOG("CONFIG %s: has unknown airpadDef '%s'", cfgName.c_str(), padName.c_str());
+		}
+		sideInfo.airpadDef = airpadDef;
+
+		const std::string& nanoName = nanotc.get(kv.first, "").asString();
+		CCircuitDef* assistDef = circuit->GetCircuitDef(nanoName.c_str());
+		if (assistDef == nullptr) {
+			assistDef = circuit->GetEconomyManager()->GetSideInfo().defaultDef;
+			circuit->LOG("CONFIG %s: has unknown assistDef '%s'", cfgName.c_str(), nanoName.c_str());
+		}
+		sideInfo.assistDef = assistDef;
+		assistDef->SetIsAssist(true);
 	}
 
 	/*
@@ -551,6 +557,9 @@ void CFactoryManager::Release()
 		AbortTask(task);
 		// NOTE: Do not delete task as other AbortTask may ask for it
 	}
+	for (IUnitTask* task : updateTasks) {
+		task->ClearRelease();
+	}
 	updateTasks.clear();
 }
 
@@ -835,6 +844,11 @@ AIFloat3 CFactoryManager::GetClosestHaven(const AIFloat3& position) const
 	return (havIt != havens.end()) ? *havIt : AIFloat3(-RgtVector);
 }
 
+const CFactoryManager::SSideInfo& CFactoryManager::GetSideInfo() const
+{
+	return sideInfos[circuit->GetSideId()];
+}
+
 CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 {
 	if (!CanEnqueueTask()) {
@@ -1036,19 +1050,18 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 
 	// check nanos around
 	std::set<CCircuitUnit*> nanos;
-	float radius = assistDef->GetBuildDistance();
+	float radius = GetSideInfo().assistDef->GetBuildDistance();
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	COOAICallback* clb = circuit->GetCallback();
 	auto units = clb->GetFriendlyUnitsIn(pos, radius);
-	CCircuitDef::Id nanoId = assistDef->GetId();
 	int teamId = circuit->GetTeamId();
 	for (Unit* nano : units) {
 		if (nano == nullptr) {
 			continue;
 		}
 		int unitId = nano->GetUnitId();
-		CCircuitDef::Id ndefId = clb->Unit_GetDefId(unitId);
-		if ((ndefId == nanoId) && (nano->GetTeam() == teamId) && !nano->IsBeingBuilt()) {
+		CCircuitDef* nDef = circuit->GetCircuitDef(clb->Unit_GetDefId(unitId));
+		if (nDef->IsAssist() && (nano->GetTeam() == teamId) && !nano->IsBeingBuilt()) {
 			CCircuitUnit* ass = circuit->GetTeamUnit(unitId);
 			// NOTE: OOAICallback::GetFriendlyUnits may return yet unregistered units created in GamePreload
 			if (ass != nullptr) {
@@ -1074,8 +1087,14 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 	if (it != factoryDefs.end()) {
 		const SFactoryDef& facDef = it->second;
 		factories.emplace_back(unit, nanos, facDef.nanoCount, facDef.GetRoleDef(ROLE_TYPE(BUILDER)));
+		// FIXME: DEBUG
+		circuit->LOG("factories.insert0 %i", unit->GetId());
+		// FIXME: DEBUG
 	} else {
 		factories.emplace_back(unit, nanos, 0, nullptr);
+		// FIXME: DEBUG
+		circuit->LOG("factories.insert1 %i", unit->GetId());
+		// FIXME: DEBUG
 	}
 
 	if (unit->GetCircuitDef()->GetMobileId() < 0) {
@@ -1169,7 +1188,7 @@ IUnitTask* CFactoryManager::DefaultMakeTask(CCircuitUnit* unit)
 {
 	const IUnitTask* task = nullptr;
 
-	if (unit->GetCircuitDef() == assistDef) {
+	if (unit->GetCircuitDef()->IsAssist()) {
 		task = CreateAssistTask(unit);
 
 	} else {
@@ -1218,11 +1237,10 @@ IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 		return task;
 	}
 
-	// FIXME: DEBUG
+	// TODO: ensure unit is t1 factory
 	if (factories.size() > 1 && factories[0].unit == unit) {
 		return EnqueueWait(false, FRAMES_PER_SEC * 10);
 	}
-	// FIXME: DEBUG
 
 	task = UpdateFirePower(unit);
 	if (task != nullptr) {

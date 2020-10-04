@@ -150,8 +150,18 @@ void CCircuitAI::NotifyResign()
 	eventHandler = &CCircuitAI::HandleResignEvent;
 }
 
-void CCircuitAI::Resign(int newTeamId)
+void CCircuitAI::Resign(int newTeamId, Economy* economy)
 {
+	std::vector<Unit*> migrants;
+	auto allTeamUnits = callback->GetTeamUnits();
+	for (Unit* u : allTeamUnits) {
+		if (u != nullptr) {
+			migrants.push_back(u);
+		}
+	}
+	economy->SendUnits(migrants, newTeamId);
+	utils::free_clear(allTeamUnits);
+
 	ownerTeamId = newTeamId;
 	isResigned = true;
 }
@@ -456,7 +466,7 @@ int CCircuitAI::HandleResignEvent(int topic, const void* data)
 			if (evt->frame % (TEAM_SLOWUPDATE_RATE * INCOME_SAMPLES) == 0) {
 				const int mId = metalRes->GetResourceId();
 				const int eId = energyRes->GetResourceId();
-				float m =  game->GetTeamResourceStorage(ownerTeamId, mId) - HIDDEN_STORAGE - game->GetTeamResourceCurrent(ownerTeamId, mId);
+				float m = game->GetTeamResourceStorage(ownerTeamId, mId) - HIDDEN_STORAGE - game->GetTeamResourceCurrent(ownerTeamId, mId);
 				float e = game->GetTeamResourceStorage(ownerTeamId, eId) - HIDDEN_STORAGE - game->GetTeamResourceCurrent(ownerTeamId, eId);
 				m = std::min(economy->GetCurrent(metalRes), std::max(0.f, 0.8f * m));
 				e = std::min(economy->GetCurrent(energyRes), std::max(0.f, 0.2f * e));
@@ -637,12 +647,6 @@ int CCircuitAI::Release(int reason)
 	economy = nullptr;
 	metalRes = energyRes = nullptr;
 
-	delete script;
-	script = nullptr;
-	weaponDefs.clear();
-	defsById.clear();
-	defsByName.clear();
-
 	if (!isInitialized) {
 		return 0;
 	}
@@ -652,6 +656,12 @@ int CCircuitAI::Release(int reason)
 		builderManager->Release();
 		militaryManager->Release();
 	}
+
+	delete script;
+	script = nullptr;
+	weaponDefs.clear();
+	defsById.clear();
+	defsByName.clear();
 
 	if (reason == 1) {  // @see SReleaseEvent
 		gameAttribute->SetGameEnd(true);
@@ -708,6 +718,14 @@ int CCircuitAI::Release(int reason)
 
 int CCircuitAI::Update(int frame)
 {
+	// FIXME: DEBUG Experimental team resign
+	if ((frame > FRAMES_PER_SEC * 60 * 20) && (allyTeam->GetAliveSize() > 1) && (allyTeam->GetLeaderId() != teamId)) {
+		Economy* economy = callback->GetEconomy();
+		Resign(allyTeam->GetLeaderId(), economy);
+		delete economy;
+	}
+	// FIXME: DEBUG
+
 	lastFrame = frame;
 	if (isResigned) {
 		Release(RELEASE_RESIGN);
@@ -928,6 +946,7 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 	}
 	TRY_UNIT(this, unit,
 		unit->CmdFireAtRadar(true);
+		unit->GetUnit()->SetAutoRepairLevel(0);
 //		if (unit->GetCircuitDef()->GetDef()->IsAbleToCloak()) {
 //			unit->CmdCloak(true);
 //		}
@@ -955,8 +974,8 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 			unit->GetUnit()->Stop();
 			unit->GetUnit()->SetMoveState(2);
 		)
-		UnitDestroyed(unit, nullptr);
-		UnregisterTeamUnit(unit);
+		Garbage(unit, "stuck");
+//		GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, unit);
 	} else if (unit->GetTask() != nullptr) {
 		unit->GetTask()->OnUnitMoveFailed(unit);
 	}
@@ -1013,6 +1032,7 @@ int CCircuitAI::UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId)
 	TRY_UNIT(this, unit,
 		unit->GetUnit()->Stop();
 		unit->CmdFireAtRadar(true);
+		unit->GetUnit()->SetAutoRepairLevel(0);
 //		if (unit->GetCircuitDef()->GetDef()->IsAbleToCloak()) {
 //			unit->CmdCloak(true);
 //		}

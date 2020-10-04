@@ -24,7 +24,7 @@
 		//   if factory's builder unavailable in current frame: priority ~= map_percent * importance0 / 10 + random(-20..+20)
 		// During game: priority ~= map_percent * importance1 + random(-20..+20)
 		// importanceN = 1.0 by default if not set
-		"importance": [0.9, 0.2],
+		"importance": [0.9, 0.0],
 
 		// 'require_energy' adds energy requirement for tierN (N>0): fallback to lowest tier on low energy
 		"require_energy": false,
@@ -72,7 +72,7 @@
 	},
 
 	"armvp": {
-		"importance": [0.8, 0.2],
+		"importance": [0.8, 0.0],
 
 		"require_energy": false,
 
@@ -256,7 +256,7 @@
 	// CORTEX factories
 
 	"corlab": {
-		"importance": [0.9, 0.2],
+		"importance": [0.9, 0.0],
 
 		"require_energy": false,
 
@@ -302,7 +302,7 @@
 	},
 
 	"corvp": {
-		"importance": [0.8, 0.2],
+		"importance": [0.8, 0.0],
 
 		"require_energy": false,
 

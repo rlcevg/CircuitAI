@@ -86,15 +86,15 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
-	if (!unit->IsWeaponReady(frame)) {  // reload empty unit
-		if (updCount % 32 == 0) {
-			TRY_UNIT(circuit, unit,
-				unit->CmdFindPad(frame + FRAMES_PER_SEC * 60);
-			)
-		}
-		SetTarget(nullptr);
-		return;
-	}
+//	if (!unit->IsWeaponReady(frame)) {  // reload empty unit
+//		if (updCount % 32 == 0) {
+//			TRY_UNIT(circuit, unit,
+//				unit->CmdFindPad(frame + FRAMES_PER_SEC * 60);
+//			)
+//		}
+//		SetTarget(nullptr);
+//		return;
+//	}
 
 	const AIFloat3& pos = unit->GetPos(frame);
 	CEnemyInfo* lastTarget = target;

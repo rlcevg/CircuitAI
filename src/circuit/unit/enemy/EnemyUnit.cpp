@@ -20,19 +20,19 @@ CEnemyUnit::CEnemyUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 		: ICoreUnit(unitId, unit)
 		, knownFrame(-1)
 		, lastSeen(-1)
-		, data(SEnemyData(cdef,
-			0.f,         // shieldPower
-			0.f,         // health
-			false,       // isBeingBuilt
-			false,       // isParalyzed
-			false,       // isDisarmed
-			ZeroVector,  // pos
-			ZeroVector,  // vel
-			0.f,         // threat
-			{0},         // range
-			unitId,      // id
-			0.f,         // cost
-			SEnemyData::LosMask::NONE))  // losStatus
+		, data(SEnemyData {.cdef = cdef,
+			.shieldPower = 0.f,
+			.health = 0.f,
+			.isBeingBuilt = false,
+			.isParalyzed = false,
+			.isDisarmed = false,
+			.pos = ZeroVector,
+			.vel = ZeroVector,
+			.threat = 0.f,
+			.range = {0},
+			.id = unitId,
+			.cost = 0.f,
+			.losStatus = SEnemyData::LosMask::NONE})
 {
 	Init();
 }
@@ -42,19 +42,19 @@ CEnemyUnit::CEnemyUnit(CCircuitDef* cdef, const AIFloat3& pos)
 		, knownFrame(-1)
 		, lastSeen(-1)
 		, shield(nullptr)
-		, data(SEnemyData(cdef,
-			cdef->GetMaxShield(),  // shieldPower
-			cdef->GetHealth(),  // health
-			false,       // isBeingBuilt
-			false,       // isParalyzed
-			false,       // isDisarmed
-			pos,         // pos
-			ZeroVector,  // vel
-			0.f,         // threat
-			{0},         // range
-			-1,          // id
-			cdef->GetCostM(),  // cost
-			SEnemyData::LosMask::NONE))  // losStatus
+		, data(SEnemyData {.cdef = cdef,
+			.shieldPower = cdef->GetMaxShield(),
+			.health = cdef->GetHealth(),
+			.isBeingBuilt = false,
+			.isParalyzed = false,
+			.isDisarmed = false,
+			.pos = pos,
+			.vel = ZeroVector,
+			.threat = 0.f,
+			.range = {0},
+			.id = -1,
+			.cost = cdef->GetCostM(),
+			.losStatus = SEnemyData::LosMask::NONE})
 {
 }
 

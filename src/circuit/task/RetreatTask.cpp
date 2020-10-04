@@ -119,7 +119,7 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 		if (!utils::is_valid(endPos)) {
 			endPos = circuit->GetSetupManager()->GetBasePos();
 		}
-		range = factoryMgr->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
+		range = factoryMgr->GetSideInfo().assistDef->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
 	}
 
 	if (unit->GetTravelAct()->GetPath() == nullptr) {
@@ -208,7 +208,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		haven = circuit->GetSetupManager()->GetBasePos();
 	}
 
-	const float maxDist = factoryMgr->GetAssistDef()->GetBuildDistance();
+	const float maxDist = factoryMgr->GetSideInfo().assistDef->GetBuildDistance();
 	const AIFloat3& unitPos = unit->GetPos(frame);
 	if (unitPos.SqDistance2D(haven) > maxDist * maxDist) {
 		// TODO: push MoveAction into unit? to avoid enemy fire
@@ -354,7 +354,7 @@ void CRetreatTask::ApplyCostMap(const CQueryCostMap* query, CCircuitUnit* newRep
 		if (!utils::is_valid(endPos)) {
 			endPos = circuit->GetSetupManager()->GetBasePos();
 		}
-		range = factoryMgr->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
+		range = factoryMgr->GetSideInfo().assistDef->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
 	}
 
 	float prevCost = query->GetCostAt(endPos, range);

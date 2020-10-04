@@ -270,6 +270,7 @@ void CCircuitUnit::CmdFireAtRadar(bool state)
 void CCircuitUnit::CmdFindPad(int timeout)
 {
 //	unit->ExecuteCustomCommand(CMD_FIND_PAD, {}, 0, timeout);
+	unit->ExecuteCustomCommand(CMD_LAND_AT_AIRBASE, {}, 0, timeout);
 }
 
 void CCircuitUnit::CmdManualFire(short options, int timeout)

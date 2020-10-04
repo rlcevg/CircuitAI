@@ -92,7 +92,7 @@ public:
 	int HandleEvent(int topic, const void* data);
 	void NotifyGameEnd();
 	void NotifyResign();
-	void Resign(int newTeamId);
+	void Resign(int newTeamId, springai::Economy* economy);
 private:
 	typedef int (CCircuitAI::*EventHandlerPtr)(int topic, const void* data);
 	int HandleGameEvent(int topic, const void* data);
