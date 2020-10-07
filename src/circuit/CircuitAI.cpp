@@ -150,8 +150,19 @@ void CCircuitAI::NotifyResign()
 	eventHandler = &CCircuitAI::HandleResignEvent;
 }
 
-void CCircuitAI::Resign(int newTeamId)
+void CCircuitAI::Resign(int newTeamId, Economy* economy)
 {
+	std::vector<Unit*> migrants;
+	auto allTeamUnits = callback->GetTeamUnits();
+	for (Unit* u : allTeamUnits) {
+		if (u != nullptr) {
+			migrants.push_back(u);
+		}
+	}
+	economy->SendUnits(migrants, newTeamId);
+	utils::free_clear(allTeamUnits);
+	allyTeam->ForceUpdateFriendlyUnits();
+
 	ownerTeamId = newTeamId;
 	isResigned = true;
 }
@@ -456,7 +467,7 @@ int CCircuitAI::HandleResignEvent(int topic, const void* data)
 			if (evt->frame % (TEAM_SLOWUPDATE_RATE * INCOME_SAMPLES) == 0) {
 				const int mId = metalRes->GetResourceId();
 				const int eId = energyRes->GetResourceId();
-				float m =  game->GetTeamResourceStorage(ownerTeamId, mId) - HIDDEN_STORAGE - game->GetTeamResourceCurrent(ownerTeamId, mId);
+				float m = game->GetTeamResourceStorage(ownerTeamId, mId) - HIDDEN_STORAGE - game->GetTeamResourceCurrent(ownerTeamId, mId);
 				float e = game->GetTeamResourceStorage(ownerTeamId, eId) - HIDDEN_STORAGE - game->GetTeamResourceCurrent(ownerTeamId, eId);
 				m = std::min(economy->GetCurrent(metalRes), std::max(0.f, 0.8f * m));
 				e = std::min(economy->GetCurrent(energyRes), std::max(0.f, 0.2f * e));

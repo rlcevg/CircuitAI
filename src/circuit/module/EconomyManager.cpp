@@ -361,12 +361,7 @@ void CEconomyManager::Init()
 				allyTeam->OccupyCluster(clusterId, ownerId);
 			} else if (ownerId != circuit->GetTeamId()) {
 				// Resign
-				std::vector<Unit*> migrants;
-				for (auto& kv : circuit->GetTeamUnits()) {
-					migrants.push_back(kv.second->GetUnit());
-				}
-				economy->SendUnits(migrants, ownerId);
-				circuit->Resign(ownerId);
+				circuit->Resign(ownerId, economy);
 				return;
 			}
 			// FIXME: DEBUG
@@ -380,12 +375,7 @@ void CEconomyManager::Init()
 //				allyTeam->OccupyArea(commander->GetArea(), ownerId);
 //			} else if (ownerId != circuit->GetTeamId()) {
 //				// Resign
-//				std::vector<Unit*> migrants;
-//				for (auto& kv : circuit->GetTeamUnits()) {
-//					migrants.push_back(kv.second->GetUnit());
-//				}
-//				economy->SendUnits(migrants, ownerId);
-//				circuit->Resign(ownerId);
+//				circuit->Resign(ownerId, economy);
 //				return;
 //			}
 			// FIXME: DEBUG

@@ -73,7 +73,8 @@ public:
 	void Init(CCircuitAI* circuit, float decloakRadius);
 	void Release();
 
-	void UpdateFriendlyUnits(CCircuitAI* circuit);
+	void ForceUpdateFriendlyUnits();
+	void UpdateFriendlyUnits();
 	CAllyUnit* GetFriendlyUnit(ICoreUnit::Id unitId) const;
 	const AllyUnits& GetFriendlyUnits() const { return friendlyUnits; }
 
