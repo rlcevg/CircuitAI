@@ -83,6 +83,7 @@ public:
 	ITravelAction* GetTravelAct() const { return travelAct; }
 
 	bool IsMoveFailed(int frame);
+	bool IsStuck() const { return isStuck; }
 
 	void ForceUpdate(int frame) { execFrame = frame; }
 	bool IsForceUpdate(int frame);
@@ -152,23 +153,24 @@ private:
 	CDGunAction* dgunAct;
 	ITravelAction* travelAct;
 
-//	int damagedFrame;
 	int moveFails;
 	int failFrame;
-	bool execFrame;  // TODO: Replace by CExecuteAction?
-	bool isDead;
+//	int damagedFrame;
+	int execFrame;  // TODO: Replace by CExecuteAction?
+	int disarmFrame;
+	int ammoFrame;
+
+	// ---- Bit fields ---- BEGIN
+	bool isDead : 1;
+	bool isStuck : 1;
+	bool isDisarmed : 1;
+	bool isWeaponReady : 1;
+	bool isMorphing : 1;
+	// ---- Bit fields ---- END
 
 	springai::Weapon* dgun;
 	springai::Weapon* weapon;  // main weapon
 	springai::Weapon* shield;
-
-	bool isDisarmed;
-	int disarmFrame;
-
-	bool isWeaponReady;
-	int ammoFrame;
-
-	bool isMorphing;
 
 	CEnemyInfo* target;
 	int targetTile;

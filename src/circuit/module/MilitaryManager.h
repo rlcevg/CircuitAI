@@ -152,6 +152,7 @@ private:
 	};
 	std::vector<SRoleInfo> roleInfos;
 
+	std::set<CCircuitUnit*> stockpilers;
 	std::set<CCircuitUnit*> army;
 	float armyCost;
 

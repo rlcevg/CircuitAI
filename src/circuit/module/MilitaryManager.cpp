@@ -43,7 +43,6 @@
 #include "spring/SpringMap.h"
 
 #include "AISCommands.h"
-#include "Command.h"
 #include "Log.h"
 
 namespace circuit {
@@ -67,9 +66,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	 */
 	auto defenceFinishedHandler = [this](CCircuitUnit* unit) {
 		TRY_UNIT(this->circuit, unit,
-			for (int i = 0; i < 10; ++i) {
-				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
-			}
+			unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+			stockpilers.insert(unit);
 		)
 	};
 	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
@@ -79,6 +77,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		if (point != nullptr) {
 			point->cost -= defCost;
 		}
+
+		stockpilers.erase(unit);
 	};
 
 	/*
@@ -111,10 +111,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 				}
 			}
 			if (unit->GetCircuitDef()->IsAttrStock()) {
-				for (int i = 0; i < 10; ++i) {
-					unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
-				}
+				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
 				unit->CmdMiscPriority(2);
+				stockpilers.insert(unit);
 			}
 		)
 	};
@@ -138,6 +137,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 		DelArmyCost(unit);
 		army.erase(unit);
+
+		if (unit->GetCircuitDef()->IsAttrStock()) {
+			stockpilers.erase(unit);
+		}
 	};
 
 	/*
@@ -160,17 +163,20 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		TRY_UNIT(this->circuit, unit,
 			unit->GetUnit()->SetTrajectory(1);
 			if (unit->GetCircuitDef()->IsAttrStock()) {
-				for (int i = 0; i < 10; ++i) {
-					unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
-				}
+				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
 				unit->CmdMiscPriority(2);
+				stockpilers.insert(unit);
 			}
 		)
 	};
-	auto superDestroyedHandler = [](CCircuitUnit* unit, CEnemyInfo* attacker) {
+	auto superDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		IUnitTask* task = unit->GetTask();
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
+
+		if (unit->GetCircuitDef()->IsAttrStock()) {
+			stockpilers.erase(unit);
+		}
 	};
 
 	/*
@@ -1422,11 +1428,15 @@ void CMilitaryManager::Watchdog()
 		if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
 			continue;
 		}
-		auto commands = unit->GetUnit()->GetCurrentCommands();
-		if (commands.empty()) {
+		if (!circuit->GetCallback()->Unit_hasCommands(unit->GetId())) {
 			UnitIdle(unit);
 		}
-		utils::free_clear(commands);
+	}
+
+	for (CCircuitUnit* unit : stockpilers) {
+		TRY_UNIT(this->circuit, unit,
+			unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+		)
 	}
 }
 

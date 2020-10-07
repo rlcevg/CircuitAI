@@ -28,7 +28,6 @@
 
 #include "AIFloat3.h"
 #include "AISCommands.h"
-#include "Command.h"
 #include "Feature.h"
 #include "Log.h"
 
@@ -761,7 +760,9 @@ CCircuitUnit* CFactoryManager::GetClosestFactory(AIFloat3 position)
 	CCircuitUnit* factory = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
 	const int frame = circuit->GetLastFrame();
-	for (SFactory& fac : factories) {
+//	for (SFactory& fac : factories) {  // @see CFactoryManager::CreateFactoryTask
+	for (unsigned i = 1; i < factories.size(); ++i) {
+		SFactory& fac = factories[i];
 		STerrainMapArea* area = fac.unit->GetArea();
 		if ((area != nullptr) && (area->sector.find(iS) == area->sector.end())) {
 			continue;
@@ -773,6 +774,15 @@ CCircuitUnit* CFactoryManager::GetClosestFactory(AIFloat3 position)
 			factory = fac.unit;
 		}
 	}
+	// FIXME: DEBUG lazy t1 factory check
+	if ((factory == nullptr) && !factories.empty()) {
+		SFactory& fac = factories.front();
+		STerrainMapArea* area = fac.unit->GetArea();
+		if ((area == nullptr) || (area->sector.find(iS) != area->sector.end())) {
+			factory = fac.unit;
+		}
+	}
+	// FIXME: DEBUG
 	return factory;
 }
 
@@ -1318,11 +1328,9 @@ void CFactoryManager::Watchdog()
 		if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
 			return;
 		}
-		auto commands = unit->GetUnit()->GetCurrentCommands();
-		if (commands.empty()) {
+		if (!this->circuit->GetCallback()->Unit_hasCommands(unit->GetId())) {
 			UnitIdle(unit);
 		}
-		utils::free_clear(commands);
 	};
 
 	for (SFactory& fac : factories) {

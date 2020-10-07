@@ -183,6 +183,16 @@
 		"limit": 1,
 		"build_speed": 10.0
 	},
+	"armap": {
+		"role": ["builder"],
+		"attribute": ["support"],
+		"build_speed": 10.0
+	},
+	"corap": {
+		"role": ["builder"],
+		"attribute": ["support"],
+		"build_speed": 10.0
+	},
 	"armaap": {
 		"role": ["static"],
 		"attribute": ["support"],
@@ -904,10 +914,6 @@
 		"role": ["builder"],
 		"build_speed": 10.0
 	},
-	"armap": {
-		"role": ["builder"],
-		"build_speed": 10.0
-	},
 	"armsy": {
 		"role": ["builder"],
 		"build_speed": 10.0
@@ -929,10 +935,6 @@
 		"build_speed": 10.0
 	},
 	"corhp": {
-		"role": ["builder"],
-		"build_speed": 10.0
-	},
-	"corap": {
 		"role": ["builder"],
 		"build_speed": 10.0
 	},

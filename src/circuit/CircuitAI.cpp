@@ -961,6 +961,10 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 
 int CCircuitAI::UnitIdle(CCircuitUnit* unit)
 {
+	if (unit->IsStuck()) {
+		return 0;  // signaling: OK
+	}
+
 	for (auto& module : modules) {
 		module->UnitIdle(unit);
 	}
@@ -970,13 +974,17 @@ int CCircuitAI::UnitIdle(CCircuitUnit* unit)
 
 int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 {
+	if (unit->IsStuck()) {
+		return 0;  // signaling: OK
+	}
+
 	if (unit->IsMoveFailed(lastFrame)) {
 		TRY_UNIT(this, unit,
 			unit->GetUnit()->Stop();
 			unit->GetUnit()->SetMoveState(2);
 		)
-		Garbage(unit, "stuck");
-//		GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, unit);
+//		Garbage(unit, "stuck");
+		GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, unit);
 	} else if (unit->GetTask() != nullptr) {
 		unit->GetTask()->OnUnitMoveFailed(unit);
 	}

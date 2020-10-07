@@ -44,7 +44,8 @@
 #include "util/Utils.h"
 #include "json/json.h"
 
-#include "Command.h"
+#include "spring/SpringCallback.h"
+
 #include "Log.h"
 
 namespace circuit {
@@ -1253,12 +1254,12 @@ void CBuilderManager::Watchdog()
 			continue;
 		}
 		Unit* u = worker->GetUnit();
-		auto commands = u->GetCurrentCommands();
 		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())
-		if (commands.empty() && (u->GetResourceUse(metalRes) == .0f) && (u->GetVel() == ZeroVector)) {
+		if (!circuit->GetCallback()->Unit_hasCommands(worker->GetId())
+			&& (u->GetResourceUse(metalRes) == .0f) && (u->GetVel() == ZeroVector))
+		{
 			worker->GetTask()->OnUnitMoveFailed(worker);
 		}
-		utils::free_clear(commands);
 	}
 
 	// find unfinished abandoned buildings

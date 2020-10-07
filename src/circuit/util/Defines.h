@@ -24,7 +24,7 @@ template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 #define ISQRT_2				(1.f / 1.4142f)
 #define FRAMES_PER_SEC		GAME_SPEED
 #define WATCHDOG_COUNT		3
-#define TASK_RETRIES		10
+#define TASK_RETRIES		20
 #define DEBUG_MARK			0xBAD0C0DE
 #define UNKNOWN_CATEGORY	0xFFFFFFFF
 #define NO_SPEED_LIMIT		-1.0f

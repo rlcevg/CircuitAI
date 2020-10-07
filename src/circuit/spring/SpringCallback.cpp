@@ -137,4 +137,9 @@ int COOAICallback::Unit_GetDefId(int unitId) const
 	return sAICallback->Unit_getDef(skirmishAIId, unitId);
 }
 
+bool COOAICallback::Unit_hasCommands(int unitId) const
+{
+	return sAICallback->Unit_getCurrentCommands(skirmishAIId, unitId) > 0;
+}
+
 } // namespace circuit

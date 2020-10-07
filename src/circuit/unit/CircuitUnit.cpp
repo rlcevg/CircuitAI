@@ -34,15 +34,16 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 		, area(nullptr)
 		, dgunAct(nullptr)
 		, travelAct(nullptr)
-//		, damagedFrame(-1)
 		, moveFails(0)
 		, failFrame(-1)
+//		, damagedFrame(-1)
 		, execFrame(-1)
-		, isDead(false)
-		, isDisarmed(false)
 		, disarmFrame(-1)
-		, isWeaponReady(true)
 		, ammoFrame(-1)
+		, isDead(false)
+		, isStuck(false)
+		, isDisarmed(false)
+		, isWeaponReady(true)
 		, isMorphing(false)
 		, target(nullptr)
 		, targetTile(-1)
@@ -116,7 +117,8 @@ bool CCircuitUnit::IsMoveFailed(int frame)
 		moveFails = 0;
 	}
 	failFrame = frame;
-	return ++moveFails > TASK_RETRIES * 2;
+	isStuck = ++moveFails > TASK_RETRIES * 2;
+	return isStuck;
 }
 
 bool CCircuitUnit::IsForceUpdate(int frame)
