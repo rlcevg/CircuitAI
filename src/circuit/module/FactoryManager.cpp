@@ -1087,14 +1087,8 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 	if (it != factoryDefs.end()) {
 		const SFactoryDef& facDef = it->second;
 		factories.emplace_back(unit, nanos, facDef.nanoCount, facDef.GetRoleDef(ROLE_TYPE(BUILDER)));
-		// FIXME: DEBUG
-		circuit->LOG("factories.insert0 %i", unit->GetId());
-		// FIXME: DEBUG
 	} else {
 		factories.emplace_back(unit, nanos, 0, nullptr);
-		// FIXME: DEBUG
-		circuit->LOG("factories.insert1 %i", unit->GetId());
-		// FIXME: DEBUG
 	}
 
 	if (unit->GetCircuitDef()->GetMobileId() < 0) {

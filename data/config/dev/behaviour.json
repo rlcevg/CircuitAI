@@ -892,7 +892,7 @@
 	"corcrw": {
 		"role": ["heavy", "air"],
 		"attribute": ["anti_heavy"],
-		"retreat": 0.2
+		"retreat": 0.5
 	},
 
 	// FIXME: temporary factory buildSpeed

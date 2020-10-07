@@ -161,6 +161,7 @@ void CCircuitAI::Resign(int newTeamId, Economy* economy)
 	}
 	economy->SendUnits(migrants, newTeamId);
 	utils::free_clear(allTeamUnits);
+	allyTeam->ForceUpdateFriendlyUnits();
 
 	ownerTeamId = newTeamId;
 	isResigned = true;
@@ -719,7 +720,7 @@ int CCircuitAI::Release(int reason)
 int CCircuitAI::Update(int frame)
 {
 	// FIXME: DEBUG Experimental team resign
-	if ((frame > FRAMES_PER_SEC * 60 * 20) && (allyTeam->GetAliveSize() > 1) && (allyTeam->GetLeaderId() != teamId)) {
+	if ((frame > FRAMES_PER_SEC * 60 * (20 + skirmishAIId)) && (allyTeam->GetAliveSize() > 1) && (allyTeam->GetLeaderId() != teamId)) {
 		Economy* economy = callback->GetEconomy();
 		Resign(allyTeam->GetLeaderId(), economy);
 		delete economy;

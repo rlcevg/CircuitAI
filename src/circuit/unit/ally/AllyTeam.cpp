@@ -116,8 +116,19 @@ void CAllyTeam::Release()
 	quadField.Kill();
 }
 
-void CAllyTeam::UpdateFriendlyUnits(CCircuitAI* circuit)
+void CAllyTeam::ForceUpdateFriendlyUnits()
 {
+	--lastUpdate;
+	UpdateFriendlyUnits();
+}
+
+void CAllyTeam::UpdateFriendlyUnits()
+{
+	// FIXME: Works bad because of circuit->GetCircuitDef(unitDefId) inside allyTeam:
+	//   If resigned ai updated the list then all teammates will have broken links to CCircuitDef*.
+	// Options:
+	//   1) save CCircuitDef::Id instead of pointer. But u->GetCircuitDef() is too spread out to fix it now.
+	//   2) Move friendlyUnits from CAllyTeam level to CCircuitAI (and eat more memory and cpu on updates for each ai instance).
 	if (lastUpdate >= circuit->GetLastFrame()) {
 		return;
 	}

@@ -80,7 +80,7 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	unit->PushTravelAct(travelAction);
 
 	// Mobile repair
-	if (!cdef->IsPlane()) {
+	if (!cdef->IsAbleToFly()) {
 		circuit->GetBuilderManager()->EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
 	}
 }
@@ -185,7 +185,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 	const int frame = circuit->GetLastFrame();
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	if (cdef->IsPlane()) {
+	if (cdef->IsAbleToFly()) {
 		// NOTE: unit considered idle after boost and find_pad
 		if (State::REGROUP == state) {
 			state = State::ROAM;

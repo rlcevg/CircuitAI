@@ -463,12 +463,12 @@ void CTerrainManager::MarkAllyBuildings()
 		building.pos = unit->GetPos(this->circuit->GetLastFrame());
 		building.facing = unit->GetUnit()->GetBuildingFacing();
 		*d_first++ = building;
-		if (!building.cdef->IsMex()) {
+		if (!building.cdef->IsMex()) {  // mex positions are marked on start and must not change
 			MarkBlocker(building, true);
 		}
 	};
 	auto delStructure = [this](const SStructure& building) {
-		if (!building.cdef->IsMex()) {
+		if (!building.cdef->IsMex()) {  // mex positions are marked on start and must not change
 			MarkBlocker(building, false);
 		}
 	};
