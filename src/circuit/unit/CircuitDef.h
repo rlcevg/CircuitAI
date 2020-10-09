@@ -230,11 +230,11 @@ public:
 	bool IsAssistable()    const { return buildTime < 1e6f; }
 
 	void SetIsMex(bool value) { isMex = value; }
-	bool IsMex() const { return isMex;}
+	bool IsMex() const { return isMex; }
 	void SetIsPylon(bool value) { isPylon = value; }
-	bool IsPylon() const { return isPylon;}
+	bool IsPylon() const { return isPylon; }
 	void SetIsAssist(bool value) { isAssist = value; }
-	bool IsAssist() const { return isAssist;}
+	bool IsAssist() const { return isAssist; }
 
 	float GetHealth()    const { return health; }
 	float GetSpeed()     const { return speed; }

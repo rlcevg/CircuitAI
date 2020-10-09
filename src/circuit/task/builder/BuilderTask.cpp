@@ -416,13 +416,13 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 	if (sqDist <= SQUARE(unit->GetCircuitDef()->GetBuildDistance() + circuit->GetPathfinder()->GetSquareSize())
 		&& (circuit->GetInflMap()->GetInfluenceAt(pos) > -INFL_EPS))
 	{
-		if (unit->GetCircuitDef()->IsRoleComm()) {  // FIXME: or any other builder-attacker
-			if (circuit->GetInflMap()->GetEnemyInflAt(circuit->GetSetupManager()->GetBasePos()) < INFL_EPS) {
-				return true;
-			}
-		} else {
+//		if (unit->GetCircuitDef()->IsRoleComm()) {  // FIXME: or any other builder-attacker
+//			if (circuit->GetInflMap()->GetEnemyInflAt(circuit->GetSetupManager()->GetBasePos()) < INFL_EPS) {
+//				return true;
+//			}
+//		} else {
 			return true;
-		}
+//		}
 	}
 	HideAssignee(unit);
 	IUnitTask* task = manager->MakeTask(unit);

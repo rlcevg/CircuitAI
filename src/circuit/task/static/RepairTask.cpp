@@ -82,7 +82,7 @@ void CSRepairTask::Update()
 				for (Unit* u : us) {
 					CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
 					if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)
-						|| (*candUnit->GetCircuitDef() == *economyMgr->GetSideInfo().mexDef))  // FIXME: BA
+						|| candUnit->GetCircuitDef()->IsMex())  // FIXME: BA, should be IsT1Mex()
 					{
 						continue;
 					}
@@ -109,7 +109,7 @@ void CSRepairTask::Update()
 			for (Unit* u : us) {
 				CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
 				if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)
-					|| (*candUnit->GetCircuitDef() == *economyMgr->GetSideInfo().mexDef))  // FIXME: BA
+					|| candUnit->GetCircuitDef()->IsMex())  // FIXME: BA, should be IsT1Mex()
 				{
 					continue;
 				}

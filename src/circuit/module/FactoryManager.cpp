@@ -115,7 +115,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		)
 
 		// check factory nano belongs to
-		const float radius = unit->GetCircuitDef()->GetBuildDistance();
+		const float radius = unit->GetCircuitDef()->GetBuildDistance() * 0.9f;
 		const float sqRadius = SQUARE(radius);
 		std::set<CCircuitUnit*>& facs = assists[unit];
 		for (SFactory& fac : factories) {
@@ -760,9 +760,10 @@ CCircuitUnit* CFactoryManager::GetClosestFactory(AIFloat3 position)
 	CCircuitUnit* factory = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
 	const int frame = circuit->GetLastFrame();
-//	for (SFactory& fac : factories) {  // @see CFactoryManager::CreateFactoryTask
-	for (unsigned i = 1; i < factories.size(); ++i) {
-		SFactory& fac = factories[i];
+	for (SFactory& fac : factories) {
+		if (factoryData->IsT1Factory(fac.unit->GetCircuitDef())) {
+			continue;
+		}
 		STerrainMapArea* area = fac.unit->GetArea();
 		if ((area != nullptr) && (area->sector.find(iS) == area->sector.end())) {
 			continue;
@@ -775,11 +776,21 @@ CCircuitUnit* CFactoryManager::GetClosestFactory(AIFloat3 position)
 		}
 	}
 	// FIXME: DEBUG lazy t1 factory check
-	if ((factory == nullptr) && !factories.empty()) {
-		SFactory& fac = factories.front();
-		STerrainMapArea* area = fac.unit->GetArea();
-		if ((area == nullptr) || (area->sector.find(iS) != area->sector.end())) {
-			factory = fac.unit;
+	if (factory == nullptr) {
+		for (SFactory& fac : factories) {
+			if (!factoryData->IsT1Factory(fac.unit->GetCircuitDef())) {
+				continue;
+			}
+			STerrainMapArea* area = fac.unit->GetArea();
+			if ((area != nullptr) && (area->sector.find(iS) == area->sector.end())) {
+				continue;
+			}
+			const AIFloat3& facPos = fac.unit->GetPos(frame);
+			float sqDist = position.SqDistance2D(facPos);
+			if (minSqDist > sqDist) {
+				minSqDist = sqDist;
+				factory = fac.unit;
+			}
 		}
 	}
 	// FIXME: DEBUG
@@ -1242,7 +1253,7 @@ IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 	}
 
 	// TODO: ensure unit is t1 factory
-	if (factories.size() > 1 && factories[0].unit == unit) {
+	if (factories.size() > 1 && factoryData->IsT1Factory(unit->GetCircuitDef())) {
 		return EnqueueWait(false, FRAMES_PER_SEC * 10);
 	}
 
@@ -1273,7 +1284,7 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 	for (Unit* u : units) {
 		CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
 		if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)
-			|| (*candUnit->GetCircuitDef() == *economyMgr->GetSideInfo().mexDef))  // FIXME: BA
+			|| candUnit->GetCircuitDef()->IsMex())  // FIXME: BA, should be IsT1Mex()
 		{
 			continue;
 		}

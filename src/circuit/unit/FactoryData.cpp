@@ -162,6 +162,15 @@ void CFactoryData::DelFactory(const CCircuitDef* cdef)
 	}
 }
 
+bool CFactoryData::IsT1Factory(const CCircuitDef* cdef)
+{
+	auto it = allFactories.find(cdef->GetId());
+	if (it != allFactories.end()) {
+		return it->second.isT1;
+	}
+	return false;
+}
+
 void CFactoryData::ReadConfig(CCircuitAI* circuit)
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
@@ -193,6 +202,9 @@ void CFactoryData::ReadConfig(CCircuitAI* circuit)
 		} else {
 			sfac.startImp = importance.get((unsigned)0, 1.0f).asFloat();
 			sfac.switchImp = importance.get((unsigned)1, 1.0f).asFloat();
+			// FIXME: DEBUG Silly t1 detection
+			sfac.isT1 = (sfac.switchImp <= .0f);
+			// FIXME: DEBUG
 		}
 
 		const Json::Value& items = factory["unit"];

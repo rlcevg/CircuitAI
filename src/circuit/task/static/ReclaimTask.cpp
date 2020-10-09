@@ -61,14 +61,13 @@ void CSReclaimTask::Update()
 	} else if ((++updCount % 4 == 0) && !units.empty()) {
 		// Check for damaged units
 		CBuilderManager* builderMgr = circuit->GetBuilderManager();
-		CEconomyManager* economyMgr = circuit->GetEconomyManager();  // FIXME: BA
 		CAllyUnit* repairTarget = nullptr;
 		circuit->UpdateFriendlyUnits();
 		auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 		for (Unit* u : us) {
 			CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
 			if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)
-				|| (*candUnit->GetCircuitDef() == *economyMgr->GetSideInfo().mexDef))  // FIXME: BA
+				|| candUnit->GetCircuitDef()->IsMex())  // FIXME: BA, should be IsT1Mex()
 			{
 				continue;
 			}

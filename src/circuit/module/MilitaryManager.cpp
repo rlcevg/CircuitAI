@@ -1344,7 +1344,7 @@ void CMilitaryManager::MakeBaseDefence(const AIFloat3& pos)
 
 void CMilitaryManager::MarkPointOfInterest(CEnemyInfo* enemy)
 {
-	if (enemy->GetCircuitDef() != circuit->GetEconomyManager()->GetSideInfo().mexDef) {  // TODO: if one of the list
+	if ((enemy->GetCircuitDef() == nullptr) || !enemy->GetCircuitDef()->IsMex()) {  // TODO: if one of the list
 		return;
 	}
 	int index = circuit->GetMetalManager()->FindNearestCluster(enemy->GetPos());
@@ -1356,7 +1356,7 @@ void CMilitaryManager::MarkPointOfInterest(CEnemyInfo* enemy)
 
 void CMilitaryManager::UnmarkPointOfInterest(CEnemyInfo* enemy)
 {
-	if (enemy->GetCircuitDef() != circuit->GetEconomyManager()->GetSideInfo().mexDef) {  // TODO: if one of the list
+	if ((enemy->GetCircuitDef() == nullptr) || !enemy->GetCircuitDef()->IsMex()) {  // TODO: if one of the list
 		return;
 	}
 	int index = circuit->GetMetalManager()->FindNearestCluster(enemy->GetPos());

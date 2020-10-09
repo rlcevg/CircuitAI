@@ -280,6 +280,9 @@
 		// Enemy threat multiplier
 //		"thr_mod": 1.0,
 
+		// Ignore enemy
+//		"ignore": false,
+
 		// FIXME: Temporary tag to override buildSpeed
 		"build_speed": 10.0
 	},
@@ -359,6 +362,9 @@
 	},
 	"armsnipe": {
 		"role": ["anti_heavy"]
+	},
+	"armamph": {
+		"role": ["raider", "anti_air"]
 	},
 
 	// T3 bot - armshltx
@@ -661,6 +667,9 @@
 		"role": ["assault"],
 		"attribute": ["support"],
 		"limit": 1
+	},
+	"coramph": {
+		"role": ["raider", "anti_air"]
 	},
 
 	// T3 bot - corgant

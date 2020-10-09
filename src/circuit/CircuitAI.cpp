@@ -720,7 +720,7 @@ int CCircuitAI::Release(int reason)
 int CCircuitAI::Update(int frame)
 {
 	// FIXME: DEBUG Experimental team resign
-	if ((frame > FRAMES_PER_SEC * 60 * (20 + skirmishAIId)) && (allyTeam->GetAliveSize() > 1) && (allyTeam->GetLeaderId() != teamId)) {
+	if ((GetFactoryManager()->GetFactoryCount() > 1) && (allyTeam->GetLeaderId() != teamId)) {
 		Economy* economy = callback->GetEconomy();
 		Resign(allyTeam->GetLeaderId(), economy);
 		delete economy;
@@ -945,6 +945,23 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 	if (unit->GetUnit()->IsBeingBuilt()) {
 		return 0;  // created by gadget
 	}
+
+	// FIXME: DEBUG Experimental army merge
+	//        Doesn't work: "response" structure is per AI, and after SendUnits AI tries to build the same "response" unit. Limit also doesn't work
+//	if ((GetFactoryManager()->GetFactoryCount() > 1)
+//		&& (allyTeam->GetLeaderId() != teamId)
+//		&& unit->GetCircuitDef()->IsMobile()
+//		&& !unit->GetCircuitDef()->IsRoleBuilder())
+//	{
+//		Economy* economy = callback->GetEconomy();
+//		economy->SendUnits({unit->GetUnit()}, allyTeam->GetLeaderId());
+//		delete economy;
+//		UnitDestroyed(unit, nullptr);
+//		UnregisterTeamUnit(unit);
+//		return 0;
+//	}
+	// FIXME: DEBUG
+
 	TRY_UNIT(this, unit,
 		unit->CmdFireAtRadar(true);
 		unit->GetUnit()->SetAutoRepairLevel(0);

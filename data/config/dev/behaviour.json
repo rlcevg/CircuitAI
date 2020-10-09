@@ -290,6 +290,9 @@
 		// Enemy threat multiplier
 //		"thr_mod": 1.0,
 
+		// Ignore enemy
+//		"ignore": false,
+
 		// FIXME: Temporary tag to override buildSpeed
 		"build_speed": 10.0
 	},

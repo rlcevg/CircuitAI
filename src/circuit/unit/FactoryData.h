@@ -26,6 +26,8 @@ public:
 	void AddFactory(const CCircuitDef* cdef);
 	void DelFactory(const CCircuitDef* cdef);
 
+	bool IsT1Factory(const CCircuitDef* cdef);
+
 private:
 	void ReadConfig(CCircuitAI* circuit);
 
@@ -37,6 +39,7 @@ private:
 		float switchImp;  // importance[1]
 		int count;
 		float mapSpeedPerc;
+		bool isT1;  // FIXME: DEBUG Silly t1 detection
 	};
 	float airMapPerc;
 	float minOffset;
