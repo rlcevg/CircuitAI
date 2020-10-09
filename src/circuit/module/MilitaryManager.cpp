@@ -65,10 +65,12 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	 * Defence handlers
 	 */
 	auto defenceFinishedHandler = [this](CCircuitUnit* unit) {
-		TRY_UNIT(this->circuit, unit,
-			unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
-			stockpilers.insert(unit);
-		)
+		if (unit->GetCircuitDef()->IsAttrStock()) {
+			TRY_UNIT(this->circuit, unit,
+				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+				stockpilers.insert(unit);
+			)
+		}
 	};
 	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		int frame = this->circuit->GetLastFrame();
@@ -78,6 +80,18 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			point->cost -= defCost;
 		}
 
+		if (unit->GetCircuitDef()->IsAttrStock()) {
+			stockpilers.erase(unit);
+		}
+	};
+
+	auto stockFinishedHandler = [this](CCircuitUnit* unit) {
+		TRY_UNIT(this->circuit, unit,
+			unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+			stockpilers.insert(unit);
+		)
+	};
+	auto stockDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		stockpilers.erase(unit);
 	};
 
@@ -214,10 +228,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	// NOTE: IsRole used below
 	ReadConfig();
 
-	for (const CCircuitDef* cdef : defenderDefs) {
-		destroyedHandler[cdef->GetId()] = defenceDestroyedHandler;
-	}
-
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const float fighterRet = root["retreat"].get("fighter", 0.5f).asFloat();
 	const float commMod = root["quota"]["thr_mod"].get("comm", 1.f).asFloat();
@@ -270,12 +280,14 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 					finishedHandler[unitDefId] = superFinishedHandler;
 					destroyedHandler[unitDefId] = superDestroyedHandler;
 				} else if (cdef.IsAttrStock()) {
-					finishedHandler[unitDefId] = defenceFinishedHandler;
+					finishedHandler[unitDefId] = stockFinishedHandler;
+					destroyedHandler[unitDefId] = stockDestroyedHandler;
 				}
 			} else {
 				// FIXME: BA
 				if (cdef.IsAttrStock()) {
-					finishedHandler[unitDefId] = defenceFinishedHandler;
+					finishedHandler[unitDefId] = stockFinishedHandler;
+					destroyedHandler[unitDefId] = stockDestroyedHandler;
 				}
 				// FIXME: BA
 			}
@@ -294,6 +306,11 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 				}
 			}
 		}
+	}
+
+	for (const CCircuitDef* cdef : defenderDefs) {
+		finishedHandler[cdef->GetId()] = defenceFinishedHandler;
+		destroyedHandler[cdef->GetId()] = defenceDestroyedHandler;
 	}
 
 	defence = circuit->GetAllyTeam()->GetDefenceMatrix().get();
@@ -1206,6 +1223,15 @@ float CMilitaryManager::ClampMobileCostRatio() const
 void CMilitaryManager::UpdateDefenceTasks()
 {
 	/*
+	 * Stockpile
+	 */
+	for (CCircuitUnit* unit : stockpilers) {
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+		)
+	}
+
+	/*
 	 * Defend expansion
 	 */
 	const std::set<IFighterTask*>& tasks = GetTasks(IFighterTask::FightType::DEFEND);
@@ -1431,12 +1457,6 @@ void CMilitaryManager::Watchdog()
 		if (!circuit->GetCallback()->Unit_hasCommands(unit->GetId())) {
 			UnitIdle(unit);
 		}
-	}
-
-	for (CCircuitUnit* unit : stockpilers) {
-		TRY_UNIT(this->circuit, unit,
-			unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
-		)
 	}
 }
 

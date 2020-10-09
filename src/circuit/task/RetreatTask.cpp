@@ -210,7 +210,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 
 	const float maxDist = factoryMgr->GetSideInfo().assistDef->GetBuildDistance();
 	const AIFloat3& unitPos = unit->GetPos(frame);
-	if (unitPos.SqDistance2D(haven) > maxDist * maxDist) {
+	if (unitPos.SqDistance2D(haven) > SQUARE(maxDist)) {
 		// TODO: push MoveAction into unit? to avoid enemy fire
 		TRY_UNIT(circuit, unit,
 			unit->CmdMoveTo(haven, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 1);
@@ -218,28 +218,28 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		// TODO: Add fail counter?
 	} else {
 		// TODO: push WaitAction into unit
-		AIFloat3 pos = unitPos;
-		const float size = SQUARE_SIZE * 16;
-		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-		float centerX = terrainMgr->GetTerrainWidth() / 2;
-		float centerZ = terrainMgr->GetTerrainHeight() / 2;
-		pos.x += (pos.x > centerX) ? size : -size;
-		pos.z += (pos.z > centerZ) ? size : -size;
-		AIFloat3 oldPos = pos;
-		CTerrainManager::CorrectPosition(pos);
-		if (oldPos.SqDistance2D(pos) > SQUARE_SIZE * SQUARE_SIZE) {
-			pos = unitPos;
-			pos.x += (pos.x > centerX) ? -size : size;
-			pos.z += (pos.z > centerZ) ? -size : size;
-		}
-		CTerrainManager::TerrainPredicate predicate = [unitPos](const AIFloat3& p) {
-			return unitPos.SqDistance2D(p) > SQUARE(SQUARE_SIZE * 8);
-		};
-		pos = terrainMgr->FindBuildSite(cdef, pos, maxDist, UNIT_COMMAND_BUILD_NO_FACING, predicate);
-		TRY_UNIT(circuit, unit,
-//			unit->CmdPriority(0);
-			unit->GetUnit()->PatrolTo(pos);
-		)
+//		AIFloat3 pos = unitPos;
+//		const float size = SQUARE_SIZE * 16;
+//		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+//		float centerX = terrainMgr->GetTerrainWidth() / 2;
+//		float centerZ = terrainMgr->GetTerrainHeight() / 2;
+//		pos.x += (pos.x > centerX) ? size : -size;
+//		pos.z += (pos.z > centerZ) ? size : -size;
+//		AIFloat3 oldPos = pos;
+//		CTerrainManager::CorrectPosition(pos);
+//		if (oldPos.SqDistance2D(pos) > SQUARE_SIZE * SQUARE_SIZE) {
+//			pos = unitPos;
+//			pos.x += (pos.x > centerX) ? -size : size;
+//			pos.z += (pos.z > centerZ) ? -size : size;
+//		}
+//		CTerrainManager::TerrainPredicate predicate = [unitPos](const AIFloat3& p) {
+//			return unitPos.SqDistance2D(p) > SQUARE(SQUARE_SIZE * 8);
+//		};
+//		pos = terrainMgr->FindBuildSite(cdef, pos, maxDist, UNIT_COMMAND_BUILD_NO_FACING, predicate);
+//		TRY_UNIT(circuit, unit,
+////			unit->CmdPriority(0);
+//			unit->GetUnit()->PatrolTo(pos);
+//		)
 
 		if (unit->GetTravelAct() != nullptr) {
 			unit->GetTravelAct()->StateFinish();
