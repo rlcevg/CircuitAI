@@ -88,7 +88,7 @@ public:
 	void ForceUpdate(int frame) { execFrame = frame; }
 	bool IsForceUpdate(int frame);
 
-	void Dead() { isDead = true; }
+	void SetIsDead() { isDead = true; }
 	bool IsDead() const { return isDead; }
 
 //	void SetDamagedFrame(int frame) { damagedFrame = frame; }

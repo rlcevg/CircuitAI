@@ -741,7 +741,7 @@ int CCircuitAI::Update(int frame)
 		garbage.erase(unit);  // NOTE: UnregisterTeamUnit may erase unit
 	}
 
-	for (CEnemyUnit* data : allyTeam->GetDyingEnemies()) {
+	for (const CEnemyUnit* data : allyTeam->GetDyingEnemies()) {
 		CEnemyInfo* enemy = GetEnemyInfo(data->GetId());
 		if (enemy != nullptr) {  // EnemyDestroyed right after UpdateEnemyDatas but before this Update
 			EnemyDestroyed(enemy);
@@ -1287,7 +1287,7 @@ void CCircuitAI::UnregisterTeamUnit(CCircuitUnit* unit)
 	teamUnits.erase(unit->GetId());
 	unit->GetCircuitDef()->Dec();
 
-	(unit->GetTask() == nullptr) ? DeleteTeamUnit(unit) : unit->Dead();
+	(unit->GetTask() == nullptr) ? DeleteTeamUnit(unit) : unit->SetIsDead();
 }
 
 void CCircuitAI::DeleteTeamUnit(CCircuitUnit* unit)

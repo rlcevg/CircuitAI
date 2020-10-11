@@ -193,6 +193,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 				finishedHandler[unitDefId] = assistFinishedHandler;
 				idleHandler[unitDefId] = assistIdleHandler;
 				destroyedHandler[unitDefId] = assistDestroyedHandler;
+				cdef.SetIsAssist(true);
 			}
 
 			for (SSideInfo& sideInfo : sideInfos) {
@@ -268,7 +269,6 @@ void CFactoryManager::ReadConfig()
 			circuit->LOG("CONFIG %s: has unknown assistDef '%s'", cfgName.c_str(), nanoName.c_str());
 		}
 		sideInfo.assistDef = assistDef;
-		assistDef->SetIsAssist(true);
 	}
 
 	/*
