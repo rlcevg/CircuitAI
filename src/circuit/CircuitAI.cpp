@@ -346,8 +346,8 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			struct SEnemyDestroyedEvent* evt = (struct SEnemyDestroyedEvent*)data;
 			CEnemyInfo* enemy = GetEnemyInfo(evt->enemy);
 			if (enemy != nullptr) {
-				ret = this->EnemyDestroyed(enemy);
-				UnregisterEnemyInfo(enemy);
+				allyTeam->DyingEnemy(enemy->GetData(), lastFrame);
+				ret = 0;
 			} else {
 				ret = ERROR_ENEMY_DESTROYED;
 			}
@@ -741,8 +741,8 @@ int CCircuitAI::Update(int frame)
 		garbage.erase(unit);  // NOTE: UnregisterTeamUnit may erase unit
 	}
 
-	for (const ICoreUnit::Id eId : allyTeam->GetEnemyGarbage()) {
-		CEnemyInfo* enemy = GetEnemyInfo(eId);
+	for (CEnemyUnit* data : allyTeam->GetDyingEnemies()) {
+		CEnemyInfo* enemy = GetEnemyInfo(data->GetId());
 		if (enemy != nullptr) {  // EnemyDestroyed right after UpdateEnemyDatas but before this Update
 			EnemyDestroyed(enemy);
 			UnregisterEnemyInfo(enemy);
@@ -1041,8 +1041,7 @@ int CCircuitAI::UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId)
 {
 	CEnemyInfo* enemy = GetEnemyInfo(unitId);
 	if (enemy != nullptr) {
-		EnemyDestroyed(enemy);
-		UnregisterEnemyInfo(enemy);
+		allyTeam->DyingEnemy(enemy->GetData(), lastFrame);
 	}
 
 	// it might not have been given to us! Could have been given to another team

@@ -79,7 +79,8 @@ public:
 	CAllyUnit* GetFriendlyUnit(ICoreUnit::Id unitId) const;
 	const AllyUnits& GetFriendlyUnits() const { return friendlyUnits; }
 
-	const std::vector<ICoreUnit::Id>& GetEnemyGarbage() const { return enemyManager->GetGarbage(); }
+	const std::set<CEnemyUnit*>& GetDyingEnemies() const { return enemyManager->GetDyingEnemies(); }
+	void DyingEnemy(CEnemyUnit* enemy, int frame) { enemyManager->DyingEnemy(enemy, frame); }
 	bool EnemyInLOS(CEnemyUnit* data, CCircuitAI* ai);
 	std::pair<CEnemyUnit*, bool> RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS, CCircuitAI* ai);
 	CEnemyUnit* RegisterEnemyUnit(springai::Unit* e, CCircuitAI* ai);

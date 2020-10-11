@@ -27,9 +27,9 @@ class IFighterTask;
 struct SEnemyData {
 	using RangeArray = std::array<int, static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_)>;
 
-	enum LosMask: char {NONE = 0x00,
-						LOS  = 0x01, RADAR = 0x02, HIDDEN = 0x04, IGNORE = 0x08,
-						DEAD = 0x10};
+	enum LosMask: char {NONE  = 0x00,
+						LOS   = 0x01, RADAR = 0x02, HIDDEN = 0x04, IGNORE = 0x08,
+						DYING = 0x10, DEAD  = 0x20};
 	using LM = std::underlying_type<LosMask>::type;
 
 	CCircuitDef* cdef;
@@ -62,6 +62,7 @@ struct SEnemyData {
 	void SetInRadar()   { losStatus |= LosMask::RADAR; }
 	void SetHidden()    { losStatus |= LosMask::HIDDEN; }
 	void SetIgnore()    { losStatus |= LosMask::IGNORE; }
+	void SetDying()     { losStatus |= LosMask::DYING | LosMask::HIDDEN; }
 	void SetDead()      { losStatus |= LosMask::DEAD | LosMask::HIDDEN; }
 	void ClearInLOS()   { losStatus &= ~LosMask::LOS; }
 	void ClearInRadar() { losStatus &= ~LosMask::RADAR; }
@@ -73,6 +74,7 @@ struct SEnemyData {
 	bool NotInRadarAndLOS() const { return (losStatus & (LosMask::RADAR | LosMask::LOS)) == 0; }
 	bool IsHidden()         const { return losStatus & (LosMask::HIDDEN | LosMask::IGNORE); }
 	bool IsIgnore()         const { return losStatus & LosMask::IGNORE; }
+	bool IsDying()          const { return losStatus & LosMask::DYING; }
 	bool IsDead()           const { return losStatus & LosMask::DEAD; }
 };
 
@@ -138,6 +140,7 @@ public:
 	void SetInRadar()   { data.SetInRadar(); }
 	void SetHidden()    { data.SetHidden(); }
 	void SetIgnore()    { data.SetIgnore(); }
+	void SetDying()     { data.SetDying(); }
 	void SetDead()      { data.SetDead(); }
 	void ClearInLOS()   { data.ClearInLOS(); }
 	void ClearInRadar() { data.ClearInRadar(); }
@@ -149,6 +152,7 @@ public:
 	bool NotInRadarAndLOS() const { return data.NotInRadarAndLOS(); }
 	bool IsHidden()         const { return data.IsHidden(); }
 	bool IsIgnore()         const { return data.IsIgnore(); }
+	bool IsDying()          const { return data.IsDying(); }
 	bool IsDead()           const { return data.IsDead(); }
 
 	const SEnemyData GetData() const { return data; }

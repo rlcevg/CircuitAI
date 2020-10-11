@@ -32,6 +32,7 @@ using namespace springai;
 CEnemyManager::CEnemyManager(CCircuitAI* circuit)
 		: circuit(circuit)
 		, enemyIterator(0)
+		, dyingFrame(-1)
 		, pGroupData(&groupData0)
 		, enemyGroups(groupData0.enemyGroups)
 		, maxThreatGroupIdx(0)
@@ -78,7 +79,12 @@ void CEnemyManager::UpdateEnemyDatas(CQuadField& quadField)
 	if (enemyIterator >= enemyUpdates.size()) {
 		enemyIterator = 0;
 	}
-	enemyGarbage.clear();
+	if (dyingFrame < circuit->GetLastFrame() - 1) {
+		for (CEnemyUnit* enemy : enemyDying) {
+			enemy->SetDead();
+		}
+		enemyDying.clear();
+	}
 
 	// stagger the Update's
 	// -1 is for threat-draw and k-means frame
@@ -87,6 +93,11 @@ void CEnemyManager::UpdateEnemyDatas(CQuadField& quadField)
 	const int maxFrame = circuit->GetLastFrame() - FRAMES_PER_SEC * 60 * 20;
 	while ((enemyIterator < enemyUpdates.size()) && (n != 0)) {
 		CEnemyUnit* enemy = enemyUpdates[enemyIterator];
+		if (enemy->IsDying()) {
+			++enemyIterator;
+			continue;
+		}
+
 		if (enemy->IsDead()) {
 			DeleteEnemyUnit(enemy);
 			continue;
@@ -94,14 +105,16 @@ void CEnemyManager::UpdateEnemyDatas(CQuadField& quadField)
 
 		int frame = enemy->GetLastSeen();
 		if ((frame != -1) && (maxFrame >= frame)) {
-			GarbageEnemy(enemy);
+			DyingEnemy(enemy);
+			++enemyIterator;
 			continue;
 		}
 
 		if (enemy->IsInRadarOrLOS()) {
 			const AIFloat3& pos = enemy->GetUnit()->GetPos();
 			if (CTerrainData::IsNotInBounds(pos)) {  // NOTE: Unit id validation. No EnemyDestroyed sometimes apparently
-				GarbageEnemy(enemy);
+				DyingEnemy(enemy);
+				++enemyIterator;
 				continue;
 			}
 
@@ -291,7 +304,19 @@ void CEnemyManager::UnregisterEnemyFake(CEnemyFake* data)
 void CEnemyManager::UnregisterEnemyUnit(CEnemyUnit* data)
 {
 	enemyUnits.erase(data->GetId());
-	data->SetDead();
+	data->SetDying();
+}
+
+void CEnemyManager::DyingEnemy(CEnemyUnit* enemy, int frame)
+{
+	dyingFrame = frame;
+	DyingEnemy(enemy);
+}
+
+void CEnemyManager::DyingEnemy(CEnemyUnit* enemy)
+{
+	enemyDying.insert(enemy);
+	UnregisterEnemyUnit(enemy);
 }
 
 void CEnemyManager::DeleteEnemyUnit(CEnemyUnit* data)
@@ -300,13 +325,6 @@ void CEnemyManager::DeleteEnemyUnit(CEnemyUnit* data)
 	enemyUpdates.pop_back();
 
 	delete data;
-}
-
-void CEnemyManager::GarbageEnemy(CEnemyUnit* enemy)
-{
-	enemyGarbage.push_back(enemy->GetId());
-	UnregisterEnemyUnit(enemy);
-	++enemyIterator;
 }
 
 void CEnemyManager::AddEnemyCost(const CEnemyUnit* e)

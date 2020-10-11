@@ -39,7 +39,7 @@ public:
 
 	CEnemyUnit* GetEnemyUnit(ICoreUnit::Id unitId) const;
 
-	const std::vector<ICoreUnit::Id>& GetGarbage() const { return enemyGarbage; }
+	const std::set<CEnemyUnit*>& GetDyingEnemies() const { return enemyDying; }
 
 	const std::vector<SEnemyData>& GetHostileDatas() const { return hostileDatas; }
 	const std::vector<SEnemyData>& GetPeaceDatas() const { return peaceDatas; }
@@ -58,9 +58,10 @@ public:
 	void UnregisterEnemyFake(CEnemyFake* data);
 
 	void UnregisterEnemyUnit(CEnemyUnit* data);
+	void DyingEnemy(CEnemyUnit* enemy, int frame);
 private:
+	void DyingEnemy(CEnemyUnit* enemy);
 	void DeleteEnemyUnit(CEnemyUnit* data);
-	void GarbageEnemy(CEnemyUnit* enemy);
 
 public:
 	float GetEnemyCost(CCircuitDef::RoleT type) const {
@@ -112,7 +113,8 @@ private:
 	std::vector<CEnemyUnit*> enemyUpdates;
 	unsigned int enemyIterator;
 
-	std::vector<ICoreUnit::Id> enemyGarbage;
+	int dyingFrame;
+	std::set<CEnemyUnit*> enemyDying;
 
 	std::vector<SEnemyData> hostileDatas;  // immutable during threaded processing
 	std::vector<SEnemyData> peaceDatas;  // immutable during threaded processing
