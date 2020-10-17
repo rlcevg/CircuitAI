@@ -48,7 +48,7 @@ namespace circuit {
 
 // FIXME: BA
 #define CMD_AUTOMEX				31143
-#define CMD_PASSIVE				34571
+#define CMD_ACTIVE				34571
 #define CMD_LAND_AT_AIRBASE		35430
 // FIXME: BA
 

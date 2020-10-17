@@ -39,6 +39,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit, new CFactoryScript(circuit->GetScriptManager(), this))
 		, updateIterator(0)
 		, factoryPower(.0f)
+		, noT1FacCount(0)
 		, bpRatio(1.f)
 		, reWeight(.5f)
 {
@@ -82,7 +83,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
 
 		// NOTE: Do not del if factory rotation wanted
-//		DelFactory(unit->GetCircuitDef());
+		DelFactory(unit->GetCircuitDef());
 		DisableFactory(unit);
 	};
 
@@ -109,7 +110,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			unit->CmdPriority(0);
 			// FIXME: BA
 			if (unit->GetCircuitDef()->IsRoleSupport()) {
-				unit->GetUnit()->ExecuteCustomCommand(CMD_PASSIVE, {1.f});
+				unit->GetUnit()->ExecuteCustomCommand(CMD_ACTIVE, {0.f});
 			}
 			// FIXME: BA
 		)
@@ -1112,6 +1113,10 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 		factories.emplace_back(unit, nanos, 0, nullptr);
 	}
 
+	if (!factoryData->IsT1Factory(unit->GetCircuitDef())) {
+		noT1FacCount++;
+	}
+
 	if (unit->GetCircuitDef()->GetMobileId() < 0) {
 		validAir.insert(unit);
 	}
@@ -1192,6 +1197,10 @@ void CFactoryManager::DisableFactory(CCircuitUnit* unit)
 		circuit->GetSetupManager()->SetBasePos(pos);
 	}
 
+	if (!factoryData->IsT1Factory(unit->GetCircuitDef())) {
+		noT1FacCount--;
+	}
+
 	if (unit->GetCircuitDef()->GetMobileId() < 0) {
 		validAir.erase(unit);
 	}
@@ -1253,7 +1262,7 @@ IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 	}
 
 	// TODO: ensure unit is t1 factory
-	if (factories.size() > 1 && factoryData->IsT1Factory(unit->GetCircuitDef())) {
+	if ((noT1FacCount > 0) && factoryData->IsT1Factory(unit->GetCircuitDef())) {
 		return EnqueueWait(false, FRAMES_PER_SEC * 10);
 	}
 

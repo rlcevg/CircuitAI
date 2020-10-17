@@ -127,7 +127,10 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	 */
 	auto comFinishedHandler = [this](CCircuitUnit* unit) {
 		AddMorphee(unit);
-		this->circuit->GetSetupManager()->SetCommander(unit);
+		CSetupManager* setupMgr = this->circuit->GetSetupManager();
+		if (setupMgr->GetCommander() == nullptr) {
+			setupMgr->SetCommander(unit);
+		}
 
 		ICoreUnit::Id unitId = unit->GetId();
 		this->circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this, unitId]() {

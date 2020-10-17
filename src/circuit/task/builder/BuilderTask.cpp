@@ -421,8 +421,11 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 //				return true;
 //			}
 //		} else {
-			return true;
+//			return true;
 //		}
+		if (buildType != BuildType::GUARD) {
+			return true;
+		}
 	}
 	HideAssignee(unit);
 	IUnitTask* task = manager->MakeTask(unit);

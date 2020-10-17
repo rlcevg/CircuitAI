@@ -289,6 +289,18 @@ bool CSetupManager::PickCommander()
 	return true;
 }
 
+void CSetupManager::SetCommander(CCircuitUnit* unit)
+{
+	commander = unit;
+	if (unit == nullptr) {
+		return;
+	}
+	auto it = sides.find(unit->GetCircuitDef()->GetId());
+	if (it != sides.end()) {
+		circuit->SetSide(it->second);
+	}
+}
+
 CAllyTeam* CSetupManager::GetAllyTeam() const
 {
 	return setupData->GetAllyTeam(circuit->GetAllyTeamId());
@@ -388,8 +400,11 @@ void CSetupManager::ReadConfig()
 		hide.isAir = hhdd.get("air", false).asBool();
 		hide.sqTaskRad = SQUARE(hhdd.get("task_rad", 2000.f).asFloat());
 
-		if (circuit->GetSideName() == comm.get("side", "").asString()) {
-			commChoice = circuit->GetCircuitDef(commName.c_str());
+		CCircuitDef* commDef = circuit->GetCircuitDef(commName.c_str());
+		const std::string& commSide = comm.get("side", "").asString();
+		sides[commDef->GetId()] = commSide;
+		if (circuit->GetSideName() == commSide) {
+			commChoice = commDef;
 		}
 	}
 

@@ -187,6 +187,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	if (customParams.find("level") != customParams.end()) {
 		isDynamic = customParams.find("dynamic_comm") != customParams.end();
 		AddRole(ROLE_TYPE(COMM));
+	} else if (customParams.find("iscommander") != customParams.end()) {
+		AddRole(ROLE_TYPE(COMM));
 	}
 
 	it = customParams.find("midposoffset");

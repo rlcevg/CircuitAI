@@ -720,7 +720,7 @@ int CCircuitAI::Release(int reason)
 int CCircuitAI::Update(int frame)
 {
 	// FIXME: DEBUG Experimental team resign
-	if ((GetFactoryManager()->GetFactoryCount() > 1) && (allyTeam->GetLeaderId() != teamId)) {
+	if ((GetFactoryManager()->GetNoT1FacCount() > 0) && (allyTeam->GetLeaderId() != teamId)) {
 		Economy* economy = callback->GetEconomy();
 		Resign(allyTeam->GetLeaderId(), economy);
 		delete economy;
@@ -1241,6 +1241,16 @@ bool CCircuitAI::InitSide()
 	}
 	sideId = gameAttribute->GetSideMasker().GetType(sideName);
 	return true;
+}
+
+void CCircuitAI::SetSide(const std::string& name)
+{
+	const CMaskHandler::MaskName& masks = gameAttribute->GetSideMasker().GetMasks();
+	auto it = masks.find(name);
+	if (it != masks.end()) {
+		sideName = name;
+		sideId = it->second.type;
+	}
 }
 
 CCircuitUnit* CCircuitAI::GetOrRegTeamUnit(ICoreUnit::Id unitId)

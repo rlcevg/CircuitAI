@@ -63,6 +63,7 @@ public:
 	virtual void FallbackTask(CCircuitUnit* unit) override;
 
 	int GetFactoryCount() const { return factories.size(); }
+	int GetNoT1FacCount() const { return noT1FacCount; }
 	float GetFactoryPower() const { return factoryPower; }
 	bool CanEnqueueTask() const { return factoryTasks.size() < factories.size() * 2; }
 	const std::vector<CRecruitTask*>& GetTasks() const { return factoryTasks; }
@@ -137,6 +138,7 @@ private:
 	};
 	std::vector<SFactory> factories;  // facory 1:n nano
 	std::set<CCircuitUnit*> validAir;
+	int noT1FacCount;
 
 	struct SFactoryDef {
 		using Tiers = std::map<unsigned, std::vector<float>>;

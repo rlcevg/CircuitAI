@@ -64,7 +64,7 @@ public:
 
 	bool PickCommander();
 	CCircuitDef* GetCommChoice() const { return commChoice; }
-	void SetCommander(CCircuitUnit* unit) { commander = unit; }
+	void SetCommander(CCircuitUnit* unit);
 	CCircuitUnit* GetCommander() const { return commander; }
 
 	CAllyTeam* GetAllyTeam() const;
@@ -122,6 +122,7 @@ private:
 		std::vector<CCircuitDef::RoleT> defaultStart;
 	};
 	std::map<CCircuitDef::Id, SStart> start;  // comm: start
+	std::map<CCircuitDef::Id, std::string> sides;  // comm: side
 };
 
 } // namespace circuit

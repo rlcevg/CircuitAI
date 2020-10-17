@@ -134,6 +134,8 @@ private:
 	int LuaMessage(const char* inData);
 
 	bool InitSide();
+public:
+	void SetSide(const std::string& name);
 
 // ---- Units ---- BEGIN
 public:
