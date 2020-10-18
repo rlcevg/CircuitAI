@@ -932,7 +932,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 
 		if (engy.cdef->GetCount() < engy.limit) {
 			isLastHope = false;
-			if (taskSize < (int)(buildPower / engy.costM * 4 + 1)) {
+			if (taskSize < (int)(buildPower / engy.costM * 2 + 1)) {
 				bestDef = engy.cdef;
 				// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
 				//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
@@ -954,7 +954,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			break;
 		} else if (hopeDef == nullptr) {
 			hopeDef = engy.cdef;
-			isLastHope = isLastHope && (taskSize < (int)(buildPower / engy.costM * 4 + 1));
+			isLastHope = isLastHope && (taskSize < (int)(buildPower / engy.costM * 2 + 1));
 		}
 	}
 	if (isLastHope) {
@@ -1049,7 +1049,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		return nullptr;
 	}
 
-	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome())/* * ecoFactor*/;
+	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome() * 0.1f)/* * ecoFactor*/;
 	const float factoryFactor = (metalIncome - assistDef->GetBuildSpeed()) * 1.2f;
 	const int nanoSize = builderMgr->GetTasks(IBuilderTask::BuildType::NANO).size();
 	const float factoryPower = factoryMgr->GetFactoryPower() + nanoSize * assistDef->GetBuildSpeed();
@@ -1335,7 +1335,7 @@ void CEconomyManager::OpenStrategy(const CCircuitDef* facDef, const AIFloat3& po
 			priotiry = CRecruitTask::Priority::HIGH;
 			recruit  = CRecruitTask::RecruitType::FIREPOWER;
 		}
-		factoryMgr->EnqueueTask(priotiry, buildDef, pos, recruit, 128.f);
+		factoryMgr->EnqueueTask(priotiry, buildDef, pos, recruit, 64.f);
 	}
 }
 

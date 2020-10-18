@@ -720,12 +720,13 @@ int CCircuitAI::Release(int reason)
 int CCircuitAI::Update(int frame)
 {
 	// FIXME: DEBUG Experimental team resign
-	if ((GetFactoryManager()->GetNoT1FacCount() > 0) && (allyTeam->GetLeaderId() != teamId)) {
-		Economy* economy = callback->GetEconomy();
-		Resign(allyTeam->GetLeaderId(), economy);
-		delete economy;
-	}
+//	if ((GetFactoryManager()->GetNoT1FacCount() > 0) && (allyTeam->GetLeaderId() != teamId)) {
+//		Economy* economy = callback->GetEconomy();
+//		Resign(allyTeam->GetLeaderId(), economy);
+//		delete economy;
+//	}
 	// FIXME: DEBUG
+	// NOTES: The issue with merginf is common or separate limits, and separate non-shared response
 
 	lastFrame = frame;
 	if (isResigned) {

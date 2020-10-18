@@ -138,7 +138,7 @@
 			"tier1": [ 0.00,     0.25,     0.25,      0.50]
 		},
 
-		"caretaker": 2
+		"caretaker": 9
 	},
 
 	// ARMADA Aircraft
@@ -393,7 +393,7 @@
 			"tier1": [ 0.16,       0.00,      0.16,     0.57,      0.11]
 		},
 
-		"caretaker": 2
+		"caretaker": 9
 	},
 
 	// CORTEX Aircraft

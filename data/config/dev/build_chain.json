@@ -169,7 +169,7 @@
 				]
 			]
 		}
-	}
+	},
 //	"factory": {
 //		"armlab": {
 //			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 20}}]]
@@ -177,17 +177,17 @@
 //		"armvp": {
 //			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 20}}]]
 //		}
-	},
+//	},
 	"mex": {
 		"armmex": {
 //			"terra": true,
-			"energy": [20, true], //20 is meaningless in BAR - AI will force-build 1 solar near every mex till it reaches 20 energy income
+			"energy": [200, true], //AI will force-build 1 solar near every mex till it reaches 200 energy income
 			"porc": true
 		},
 		"cormex": {
-			"energy": [20, true],
+			"energy": [200, true],
 			"porc": true
-		},
+		}
 	}
 }
 }

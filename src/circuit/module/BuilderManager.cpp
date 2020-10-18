@@ -1053,7 +1053,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
 	task = economyMgr->MakeEconomyTasks(pos, unit);
 //	if (task != nullptr) {
-//		return task;
+//		return const_cast<IBuilderTask*>(task);
 //	}
 	const bool isStalling = economyMgr->IsMetalEmpty() &&
 							(economyMgr->GetAvgMetalIncome() * 1.2f < economyMgr->GetMetalPull()) &&

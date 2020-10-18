@@ -80,7 +80,7 @@ public:
 	CCircuitDef* GetAirpadDef(CCircuitDef* builderDef) { return airpadDefs[builderDef->GetId()]; }
 	CCircuitDef* GetAssistDef(CCircuitDef* builderDef) { return assistDefs[builderDef->GetId()]; }
 
-	CRecruitTask* UpdateBuildPower(CCircuitUnit* unit);
+	CRecruitTask* UpdateBuildPower(CCircuitUnit* unit, bool isActive);
 	CRecruitTask* UpdateFirePower(CCircuitUnit* unit);
 	bool IsHighPriority(CAllyUnit* unit) const;
 
@@ -141,7 +141,7 @@ private:
 	int noT1FacCount;
 
 	struct SFactoryDef {
-		using Tiers = std::map<unsigned, std::vector<float>>;
+		using Tiers = std::map<unsigned, std::vector<float>>;  // tier: probs
 
 		SFactoryDef()
 			: landDef(nullptr)
@@ -149,11 +149,7 @@ private:
 			, isRequireEnergy(false)
 			, nanoCount(0)
 		{}
-		CCircuitDef* GetRoleDef(CCircuitDef::RoleT role) const {
-			return roleDefs[role];
-		}
 
-		std::vector<CCircuitDef*> roleDefs;  // cheapest role def
 		std::vector<CCircuitDef*> buildDefs;
 		Tiers airTiers;
 		Tiers landTiers;
@@ -167,6 +163,9 @@ private:
 	std::unordered_map<CCircuitDef::Id, SFactoryDef> factoryDefs;
 	float bpRatio;
 	float reWeight;
+
+	const std::vector<float>& GetFacTierProbs(const SFactoryDef& facDef) const;
+	CCircuitDef* GetFacRoleDef(CCircuitDef::RoleT role, const SFactoryDef& facDef) const;
 };
 
 } // namespace circuit

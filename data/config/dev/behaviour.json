@@ -331,7 +331,9 @@
 		"build_speed": 10.0
 	},
 	"armfark": {
-		"role": ["support", "mine"]
+		"role": ["builder"],
+		"limit": 2,
+		"build_speed": 10.0
 	},
 	"armfast": {
 		"role": ["raider"]
@@ -441,6 +443,11 @@
 	"armacv": {
 		"role": ["builder"],
 		"limit": 3,
+		"build_speed": 10.0
+	},
+	"armconsul": {
+		"role": ["builder"],
+		"limit": 2,
 		"build_speed": 10.0
 	},
 	"armlatnk": {
@@ -641,7 +648,9 @@
 		"build_speed": 10.0
 	},
 	"corfast": {
-		"role": ["support", "mine"]
+		"role": ["builder"],
+		"limit": 2,
+		"build_speed": 10.0
 	},
 	"cortermite": {
 		"role": ["raider"]
@@ -666,7 +675,9 @@
 		"role": ["anti_air"]
 	},
 	"cormando": {
-		"role": ["raider", "mine"]
+		"role": ["builder"],
+		"limit": 2,
+		"build_speed": 10.0
 	},
 	"corsktl": {
 		"role": ["assault"],

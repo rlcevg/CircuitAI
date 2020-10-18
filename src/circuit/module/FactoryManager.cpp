@@ -110,7 +110,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			unit->CmdPriority(0);
 			// FIXME: BA
 			if (unit->GetCircuitDef()->IsRoleSupport()) {
-				unit->GetUnit()->ExecuteCustomCommand(CMD_ACTIVE, {0.f});
+				unit->GetUnit()->ExecuteCustomCommand(CMD_PASSIVE, {1.f});
 			}
 			// FIXME: BA
 		)
@@ -400,26 +400,26 @@ void CFactoryManager::ReadConfig()
 		const Json::Value& factory = factories[fac];
 		SFactoryDef facDef;
 
-		// NOTE: used to create tasks on Event (like DefendTask), fix/improve
-		const std::unordered_set<CCircuitDef::Id>& options = cdef->GetBuildOptions();
-		const CCircuitDef::RoleT roleSize = roleNames.size();
-		facDef.roleDefs.resize(roleSize, nullptr);
-		for (CCircuitDef::RoleT type = 0; type < roleSize; ++type) {
-			float minCost = std::numeric_limits<float>::max();
-			CCircuitDef* rdef = nullptr;
-			const std::set<CCircuitDef::Id>& defIds = roleDefs[type];
-			for (const CCircuitDef::Id bid : defIds) {
-				if (options.find(bid) == options.end()) {
-					continue;
-				}
-				CCircuitDef* tdef = circuit->GetCircuitDef(bid);
-				if (minCost > tdef->GetCostM()) {
-					minCost = tdef->GetCostM();
-					rdef = tdef;
-				}
-			}
-			facDef.roleDefs[type] = rdef;
-		}
+		// FIXME: used to create tasks on Event (like DefendTask)
+//		const std::unordered_set<CCircuitDef::Id>& options = cdef->GetBuildOptions();
+//		const CCircuitDef::RoleT roleSize = roleNames.size();
+//		facDef.roleDefs.resize(roleSize, nullptr);
+//		for (CCircuitDef::RoleT type = 0; type < roleSize; ++type) {
+//			float minCost = std::numeric_limits<float>::max();
+//			CCircuitDef* rdef = nullptr;
+//			const std::set<CCircuitDef::Id>& defIds = roleDefs[type];
+//			for (const CCircuitDef::Id bid : defIds) {
+//				if (options.find(bid) == options.end()) {
+//					continue;
+//				}
+//				CCircuitDef* tdef = circuit->GetCircuitDef(bid);
+//				if (minCost > tdef->GetCostM()) {
+//					minCost = tdef->GetCostM();
+//					rdef = tdef;
+//				}
+//			}
+//			facDef.roleDefs[type] = rdef;
+//		}
 
 		facDef.isRequireEnergy = factory.get("require_energy", false).asBool();
 
@@ -817,7 +817,7 @@ CCircuitUnit* CFactoryManager::GetClosestFactory(AIFloat3 position)
 //			continue;
 //		}
 //		const SFactoryDef& facDef = factoryDefs.find(fac.unit->GetCircuitDef()->GetId())->second;
-//		CCircuitDef* cdef = facDef.GetRoleDef(role);
+//		CCircuitDef* cdef = GetFacRoleDef(role, facDef);
 //		if (cdef != nullptr) {
 //			roleDef = cdef;
 //			minSqDist = sqDist;
@@ -871,7 +871,7 @@ const CFactoryManager::SSideInfo& CFactoryManager::GetSideInfo() const
 	return sideInfos[circuit->GetSideId()];
 }
 
-CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
+CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit, bool isActive)
 {
 	if (!CanEnqueueTask()) {
 		return nullptr;
@@ -879,7 +879,7 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
 	const float metalIncome = std::min(economyMgr->GetAvgMetalIncome(), economyMgr->GetAvgEnergyIncome());
-	if ((circuit->GetBuilderManager()->GetBuildPower() >= metalIncome * bpRatio) || (rand() >= RAND_MAX / 2)) {
+	if ((circuit->GetBuilderManager()->GetBuildPower() >= metalIncome * bpRatio) || (isActive && (rand() >= RAND_MAX / 2))) {
 		return nullptr;
 	}
 
@@ -887,7 +887,7 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 	if (it == factoryDefs.end()) {
 		return nullptr;
 	}
-	CCircuitDef* buildDef = it->second.GetRoleDef(ROLE_TYPE(BUILDER));
+	CCircuitDef* buildDef = GetFacRoleDef(ROLE_TYPE(BUILDER), it->second);
 
 	if ((buildDef != nullptr) && buildDef->IsAvailable(circuit->GetLastFrame())) {
 		const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
@@ -895,7 +895,7 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 		if (!terrainMgr->CanBeBuiltAt(buildDef, pos, unit->GetCircuitDef()->GetBuildDistance())) {
 			return nullptr;
 		}
-		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, pos, CRecruitTask::RecruitType::BUILDPOWER, 128.f);
+		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, pos, CRecruitTask::RecruitType::BUILDPOWER, 64.f);
 	}
 	return nullptr;
 }
@@ -914,25 +914,9 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 
 	CCircuitDef* buildDef = nullptr;
 
-	CEconomyManager* economyMgr = circuit->GetEconomyManager();
-	const float metalIncome = std::min(economyMgr->GetAvgMetalIncome(), economyMgr->GetAvgEnergyIncome()) * economyMgr->GetEcoFactor();
-	const bool isWaterMap = circuit->GetTerrainManager()->IsWaterMap();
-	const bool isAir = circuit->GetEnemyManager()->GetEnemyCost(ROLE_TYPE(AIR)) > 1.f;
-	const SFactoryDef::Tiers& tiers = isAir ? facDef.airTiers : isWaterMap ? facDef.waterTiers : facDef.landTiers;
-	auto facIt = tiers.begin();
-	if ((metalIncome >= facDef.incomes[facIt->first]) && !(facDef.isRequireEnergy && economyMgr->IsEnergyEmpty())) {
-		while (facIt != tiers.end()) {
-			if (metalIncome < facDef.incomes[facIt->first]) {
-				break;
-			}
-			++facIt;
-		}
-		if (facIt == tiers.end()) {
-			--facIt;
-		}
-	}
-	const std::vector<float>& probs = facIt->second;
+	const std::vector<float>& probs = GetFacTierProbs(facDef);
 
+	CEconomyManager* economyMgr = circuit->GetEconomyManager();
 	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	static std::vector<std::pair<CCircuitDef*, float>> candidates;  // NOTE: micro-opt
@@ -1012,7 +996,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 
 	if ((buildDef != nullptr) && buildDef->IsAvailable(frame)) {
 		UnitDef* def = unit->GetCircuitDef()->GetDef();
-		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
+		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE / 2;
 		// FIXME CCircuitDef::RoleType <-> CRecruitTask::RecruitType relations
 		return EnqueueTask(isResponse ? CRecruitTask::Priority::HIGH : CRecruitTask::Priority::NORMAL,
 						   buildDef, pos, CRecruitTask::RecruitType::FIREPOWER, radius);
@@ -1051,7 +1035,7 @@ void CFactoryManager::DelFactory(const CCircuitDef* cdef)
 CCircuitDef* CFactoryManager::GetRoleDef(const CCircuitDef* facDef, CCircuitDef::RoleT role) const
 {
 	auto it = factoryDefs.find(facDef->GetId());
-	return (it != factoryDefs.end()) ? it->second.GetRoleDef(role) : nullptr;
+	return (it != factoryDefs.end()) ? GetFacRoleDef(role, it->second) : nullptr;
 }
 
 CCircuitDef* CFactoryManager::GetLandDef(const CCircuitDef* facDef) const
@@ -1108,7 +1092,7 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 	auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
 	if (it != factoryDefs.end()) {
 		const SFactoryDef& facDef = it->second;
-		factories.emplace_back(unit, nanos, facDef.nanoCount, facDef.GetRoleDef(ROLE_TYPE(BUILDER)));
+		factories.emplace_back(unit, nanos, facDef.nanoCount, GetFacRoleDef(ROLE_TYPE(BUILDER), facDef));
 	} else {
 		factories.emplace_back(unit, nanos, 0, nullptr);
 	}
@@ -1151,7 +1135,7 @@ void CFactoryManager::DisableFactory(CCircuitUnit* unit)
 				auto it = factoryDefs.find(task->GetBuildDef()->GetId());
 				if (it != factoryDefs.end()) {
 					const SFactoryDef& facDef = it->second;
-					CCircuitDef* bdef = facDef.GetRoleDef(ROLE_TYPE(BUILDER));
+					CCircuitDef* bdef = GetFacRoleDef(ROLE_TYPE(BUILDER), facDef);
 					hasBuilder = ((bdef != nullptr) && bdef->IsAvailable(frame));
 					if (hasBuilder) {
 						break;
@@ -1256,13 +1240,14 @@ IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 		}
 	}
 
-	IUnitTask* task = UpdateBuildPower(unit);
+	const bool isActive = (noT1FacCount <= 0) || !factoryData->IsT1Factory(unit->GetCircuitDef());
+
+	IUnitTask* task = UpdateBuildPower(unit, isActive);
 	if (task != nullptr) {
 		return task;
 	}
 
-	// TODO: ensure unit is t1 factory
-	if ((noT1FacCount > 0) && factoryData->IsT1Factory(unit->GetCircuitDef())) {
+	if (!isActive) {
 		return EnqueueWait(false, FRAMES_PER_SEC * 10);
 	}
 
@@ -1397,6 +1382,67 @@ void CFactoryManager::UpdateFactory()
 			n--;
 		}
 	}
+}
+
+const std::vector<float>& CFactoryManager::GetFacTierProbs(const SFactoryDef& facDef) const
+{
+	CEconomyManager* economyMgr = circuit->GetEconomyManager();
+	const float metalIncome = std::min(economyMgr->GetAvgMetalIncome(), economyMgr->GetAvgEnergyIncome()) * economyMgr->GetEcoFactor();
+	const bool isWaterMap = circuit->GetTerrainManager()->IsWaterMap();
+	const bool isAir = circuit->GetEnemyManager()->GetEnemyCost(ROLE_TYPE(AIR)) > 1.f;
+	const SFactoryDef::Tiers& tiers = isAir ? facDef.airTiers : isWaterMap ? facDef.waterTiers : facDef.landTiers;
+	auto facIt = tiers.begin();
+	if ((metalIncome >= facDef.incomes[facIt->first]) && !(facDef.isRequireEnergy && economyMgr->IsEnergyEmpty())) {
+		while (facIt != tiers.end()) {
+			if (metalIncome < facDef.incomes[facIt->first]) {
+				break;
+			}
+			++facIt;
+		}
+		if (facIt == tiers.end()) {
+			--facIt;
+		}
+	}
+	return facIt->second;
+}
+
+CCircuitDef* CFactoryManager::GetFacRoleDef(CCircuitDef::RoleT role, const SFactoryDef& facDef) const
+{
+	const std::vector<float>& probs = GetFacTierProbs(facDef);
+
+	static std::vector<std::pair<CCircuitDef*, float>> candidates;  // NOTE: micro-opt
+//	candidates.reserve(facDef.buildDefs.size());
+
+	const int frame = circuit->GetLastFrame();
+	float magnitude = 0.f;
+	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
+		CCircuitDef* bd = facDef.buildDefs[i];
+		if ((bd->GetMainRole() != role) || !bd->IsAvailable(frame)) {
+			continue;
+		}
+
+		candidates.push_back(std::make_pair(bd, probs[i]));
+		magnitude += probs[i];
+	}
+
+	CCircuitDef* buildDef = nullptr;
+	if (magnitude == 0.f) {  // workaround for disabled units
+		if (!candidates.empty()) {
+			buildDef = candidates[rand() % candidates.size()].first;
+		}
+	} else {
+		float dice = (float)rand() / RAND_MAX * magnitude;
+		for (auto& pair : candidates) {
+			dice -= pair.second;
+			if (dice < 0.f) {
+				buildDef = pair.first;
+				break;
+			}
+		}
+	}
+	candidates.clear();
+
+	return buildDef;
 }
 
 } // namespace circuit
