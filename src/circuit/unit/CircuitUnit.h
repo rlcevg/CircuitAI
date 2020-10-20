@@ -123,6 +123,7 @@ public:
 	void CmdPriority(float value);
 	void CmdMiscPriority(float value);
 	void CmdAirStrafe(float value);
+	void CmdPassive(bool state);
 	void CmdTerraform(std::vector<float>&& params);
 
 	void Attack(CEnemyInfo* enemy, int timeout);
@@ -166,6 +167,7 @@ private:
 	bool isDisarmed : 1;
 	bool isWeaponReady : 1;
 	bool isMorphing : 1;
+	bool isPassive : 1;
 	// ---- Bit fields ---- END
 
 	springai::Weapon* dgun;

@@ -85,7 +85,8 @@ void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, fl
 		return terrainMgr->CanReachAtSafe(builder, p, builder->GetCircuitDef()->GetBuildDistance());
 	};
 	CMap* map = circuit->GetMap();
-	auto checkFacing = [this, map, terrainMgr, &predicate, &pos, searchRadius]() {
+	const float testSize = std::max(buildDef->GetDef()->GetXSize(), buildDef->GetDef()->GetZSize()) * SQUARE_SIZE;
+	auto checkFacing = [this, map, terrainMgr, testSize, &predicate, &pos, searchRadius]() {
 		AIFloat3 bp = terrainMgr->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
 		if (!utils::is_valid(bp)) {
 			return false;
@@ -93,20 +94,19 @@ void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, fl
 
 		// decides if a factory should face the opposite direction due to bad terrain
 		AIFloat3 posOffset = bp;
-		const float size = DEFAULT_SLACK;
 		switch (facing) {
 			default:
 			case UNIT_FACING_SOUTH: {  // z++
-				posOffset.z += size;
+				posOffset.z += testSize;
 			} break;
 			case UNIT_FACING_EAST: {  // x++
-				posOffset.x += size;
+				posOffset.x += testSize;
 			} break;
 			case UNIT_FACING_NORTH: {  // z--
-				posOffset.z -= size;
+				posOffset.z -= testSize;
 			} break;
 			case UNIT_FACING_WEST: {  // x--
-				posOffset.x -= size;
+				posOffset.x -= testSize;
 			} break;
 		}
 		if (map->IsPossibleToBuildAt(buildDef->GetDef(), posOffset, facing)) {

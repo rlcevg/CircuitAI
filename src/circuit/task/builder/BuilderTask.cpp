@@ -410,6 +410,10 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 		return false;
 	}
 
+	TRY_UNIT(circuit, unit,
+		unit->CmdPassive(circuit->GetEconomyManager()->IsEnergyStalling() && (buildType != BuildType::ENERGY));
+	)
+
 	// Reassign task if required
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	const float sqDist = pos.SqDistance2D(GetPosition());

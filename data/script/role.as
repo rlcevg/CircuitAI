@@ -32,7 +32,7 @@ TypeMask ROLE7   = aiAddRole("role7",           RT::ASSAULT);
 TypeMask ROLE8   = aiAddRole("role8",           RT::ASSAULT);
 TypeMask ROLE9   = aiAddRole("role9",           RT::ASSAULT);
 TypeMask ROLE10  = aiAddRole("role10",          RT::ASSAULT);
-TypeMask ROLE11  = aiAddRole("role11",          RT::ASSAULT);
+TypeMask ROLE11  = aiAddRole("builderT2",       RT::BUILDER);
 
 }
 

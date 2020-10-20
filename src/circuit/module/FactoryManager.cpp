@@ -110,7 +110,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			unit->CmdPriority(0);
 			// FIXME: BA
 			if (unit->GetCircuitDef()->IsRoleSupport()) {
-				unit->GetUnit()->ExecuteCustomCommand(CMD_PASSIVE, {1.f});
+				unit->CmdPassive(true);
 			}
 			// FIXME: BA
 		)
@@ -208,10 +208,12 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		}
 
 		// Auto-assign roles
-		auto setRoles = [&cdef](CCircuitDef::RoleT type) {
-			cdef.SetMainRole(type);
-			cdef.AddEnemyRole(type);
-			cdef.AddRole(type);
+		auto setRoles = [circuit, &cdef](CCircuitDef::RoleT type) {
+			if (circuit->GetBindedRole(cdef.GetMainRole()) != cdef.GetMainRole()) {
+				cdef.SetMainRole(type);
+				cdef.AddEnemyRole(type);
+				cdef.AddRole(type);
+			}
 		};
 		if (cdef.IsAbleToFly()) {
 			setRoles(ROLE_TYPE(AIR));

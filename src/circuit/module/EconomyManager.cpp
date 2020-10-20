@@ -537,6 +537,7 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 	}
 	availEnergyDefs.insert(diffDefs.begin(), diffDefs.end());
 
+	const std::unordered_map<CCircuitDef*, int>& list = engyLimits[circuit->GetSideId()];
 	for (auto cdef : diffDefs) {
 		SEnergyInfo engy;
 		engy.cdef = cdef;
@@ -558,7 +559,6 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 		}
 		// TODO: Instead of plain sizeX, sizeZ use AI's yardmap size
 		engy.costDivMake = (engy.costM/* + engy.costE * 0.05f*/) * cdef->GetDef()->GetXSize() * cdef->GetDef()->GetZSize() / SQUARE(engy.make);
-		const std::unordered_map<CCircuitDef*, int>& list = engyLimits[circuit->GetSideId()];
 		auto lit = list.find(cdef);
 		engy.limit = (lit != list.end()) ? lit->second : 0;
 		energyInfos.push_back(engy);
@@ -1049,12 +1049,20 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		return nullptr;
 	}
 
-	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome() * 0.1f)/* * ecoFactor*/;
-	const float factoryFactor = (metalIncome - assistDef->GetBuildSpeed()) * 1.2f;
+	const float assistSpeed = assistDef->GetBuildSpeed();
+	auto factorFunc = [assistSpeed](float resource) {
+		return (resource/* * ecoFactor*/ - assistSpeed) * 1.2f;
+	};
+	const float energyFactor = GetAvgEnergyIncome() * 0.1f;
+	const float metalFactor = GetAvgMetalIncome();
+	const float factoryFactor = factorFunc(std::min(metalFactor, energyFactor));
 	const int nanoSize = builderMgr->GetTasks(IBuilderTask::BuildType::NANO).size();
-	const float factoryPower = factoryMgr->GetFactoryPower() + nanoSize * assistDef->GetBuildSpeed();
+	const float factoryPower = factoryMgr->GetFactoryPower() + nanoSize * assistSpeed;
 	const bool isSwitchTime = (lastFacFrame + switchTime <= frame);
 	if ((factoryPower >= factoryFactor) && !isSwitchTime) {
+		if ((factorFunc(metalFactor) > factoryPower) && (factorFunc(energyFactor) < factoryPower)) {
+			isEnergyStalling = true;  // enough metal, request energy
+		}
 		return nullptr;
 	}
 
@@ -1177,7 +1185,11 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		IBuilderTask::Priority priority = (builderMgr->GetWorkerCount() <= 2) ?
 										  IBuilderTask::Priority::NOW :
 										  IBuilderTask::Priority::HIGH;
-		return builderMgr->EnqueueFactory(priority, facDef, buildPos);
+		const bool isPlop = (factoryMgr->GetFactoryCount() <= 0);
+		if (isPlop) {  // FIXME: Calculating buildPos just to kill it here
+			buildPos = -RgtVector;
+		}
+		return builderMgr->EnqueueFactory(priority, facDef, buildPos, SQUARE_SIZE, isPlop, true, 0);
 	}
 
 	return nullptr;
@@ -1355,11 +1367,10 @@ void CEconomyManager::UpdateEconomy()
 	const float storMetal = GetStorage(metalRes);
 	isMetalEmpty = curMetal < storMetal * 0.2f;
 	isMetalFull = curMetal > storMetal * 0.8f;
-	isEnergyStalling = std::min(GetAvgMetalIncome() - GetMetalPull(), .0f)/* * 0.98f*/ > std::min(GetAvgEnergyIncome() - GetEnergyPull(), .0f);
 	const float curEnergy = GetEnergyCur();
 	const float storEnergy = GetStorage(energyRes);
 	isEnergyEmpty = curEnergy < storEnergy * 0.1f;
-	isEnergyStalling |= curEnergy < storEnergy * 0.7f;
+	isEnergyStalling = /*(GetAvgEnergyIncome() < GetEnergyPull()) && */(curEnergy < storEnergy * 0.5f);
 
 	if (ecoFrame <= efInfo.startFrame) {
 		energyFactor = efInfo.startFactor;

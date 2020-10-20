@@ -41,7 +41,7 @@
 		},
 		// income factor for energy, time is in seconds
 		// [[<start_factor>, <start_time>], [<end_factor>, <end_time>]]
-		"factor": [[1.0, 1], [30.0, 4000]],
+		"factor": [[1.0, 300], [30.0, 7200]],
 		// need to know how to make AI build more energy in start-game
 
 		"pylon": []

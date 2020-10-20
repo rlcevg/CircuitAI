@@ -295,6 +295,7 @@ void CSetupManager::SetCommander(CCircuitUnit* unit)
 	if (unit == nullptr) {
 		return;
 	}
+	commChoice = commander->GetCircuitDef();
 	auto it = sides.find(unit->GetCircuitDef()->GetId());
 	if (it != sides.end()) {
 		circuit->SetSide(it->second);

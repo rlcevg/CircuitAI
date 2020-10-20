@@ -616,10 +616,10 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	militaryManager = std::make_shared<CMilitaryManager>(this);
 
 	// TODO: Remove EconomyManager from module (move abilities to BuilderManager).
+	modules.push_back(economyManager);  // NOTE: Units use manager, but ain't assigned here
 	modules.push_back(militaryManager);
 	modules.push_back(builderManager);
 	modules.push_back(factoryManager);
-	modules.push_back(economyManager);  // NOTE: Units use manager, but ain't assigned here
 
 	script->RegisterMgr();
 	script->Init();
@@ -726,7 +726,7 @@ int CCircuitAI::Update(int frame)
 //		delete economy;
 //	}
 	// FIXME: DEBUG
-	// NOTES: The issue with merginf is common or separate limits, and separate non-shared response
+	// NOTES: The issue with merging is common or separate limits, and separate non-shared response
 
 	lastFrame = frame;
 	if (isResigned) {
