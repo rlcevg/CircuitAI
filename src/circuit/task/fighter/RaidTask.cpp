@@ -126,11 +126,7 @@ void CRaidTask::Update()
 			CCircuitAI* circuit = manager->GetCircuit();
 			int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 			for (CCircuitUnit* unit : units) {
-				const AIFloat3& pos = utils::get_radial_pos(groupPos, SQUARE_SIZE * 8);
-				TRY_UNIT(circuit, unit,
-					unit->CmdMoveTo(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
-					unit->GetUnit()->PatrolTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, frame);
-				)
+				unit->Gather(groupPos, frame);
 				unit->GetTravelAct()->StateWait();
 			}
 		}

@@ -460,7 +460,10 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float range = cdef->GetBuildDistance();
 
-	if (startPos.SqDistance2D(endPos) < SQUARE(range)) {
+	if ((startPos.SqDistance2D(endPos) < SQUARE(range))
+		|| ((circuit->GetSetupManager()->GetBasePos().SqDistance2D(startPos) < SQUARE(circuit->GetMilitaryManager()->GetBaseDefRange()))
+			&& (circuit->GetSetupManager()->GetBasePos().SqDistance2D(endPos) < SQUARE(circuit->GetMilitaryManager()->GetBaseDefRange()))))
+	{
 		unit->GetTravelAct()->StateFinish();
 		return;
 	}

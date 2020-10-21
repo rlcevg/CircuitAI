@@ -954,11 +954,13 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			continue;
 		}
 
-		// (probs[i] + response_weight) hints preferable buildDef within same role
-		float prob = militaryMgr->RoleProbability(bd) * (probs[i] + reWeight);
-		if (prob > 0.f) {
-			candidates.push_back(std::make_pair(bd, prob));
-			magnitude += prob;
+		if (probs[i] > 0.f) {
+			// (probs[i] + response_weight) hints preferable buildDef within same role
+			float prob = militaryMgr->RoleProbability(bd) * (probs[i] + reWeight);
+			if (prob > 0.f) {
+				candidates.push_back(std::make_pair(bd, prob));
+				magnitude += prob;
+			}
 		}
 	}
 
@@ -975,8 +977,10 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 				continue;
 			}
 
-			candidates.push_back(std::make_pair(bd, probs[i]));
-			magnitude += probs[i];
+			if (probs[i] > 0.f) {
+				candidates.push_back(std::make_pair(bd, probs[i]));
+				magnitude += probs[i];
+			}
 		}
 	}
 
@@ -1423,8 +1427,10 @@ CCircuitDef* CFactoryManager::GetFacRoleDef(CCircuitDef::RoleT role, const SFact
 			continue;
 		}
 
-		candidates.push_back(std::make_pair(bd, probs[i]));
-		magnitude += probs[i];
+		if (probs[i] > 0.f) {
+			candidates.push_back(std::make_pair(bd, probs[i]));
+			magnitude += probs[i];
+		}
 	}
 
 	CCircuitDef* buildDef = nullptr;

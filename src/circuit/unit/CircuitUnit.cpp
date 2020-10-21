@@ -389,11 +389,11 @@ void CCircuitUnit::Guard(CCircuitUnit* target, int timeout)
 
 void CCircuitUnit::Gather(const AIFloat3& groupPos, int timeout)
 {
-	const AIFloat3& pos = utils::get_radial_pos(groupPos, SQUARE_SIZE * 8);
+//	const AIFloat3& pos = utils::get_radial_pos(groupPos, SQUARE_SIZE * 8);
 	TRY_UNIT(manager->GetCircuit(), this,
 		CmdMoveTo(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
 		CmdWantedSpeed(NO_SPEED_LIMIT);
-		unit->PatrolTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+//		unit->PatrolTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
 	)
 }
 
