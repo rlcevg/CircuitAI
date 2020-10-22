@@ -217,8 +217,15 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		)
 		// TODO: Add fail counter?
 	} else {
+		if ((circuit->GetBindedRole(cdef->GetMainRole()) == ROLE_TYPE(BUILDER))
+			&& (circuit->GetBuilderManager()->GetWorkerCount() <= 2))
+		{
+			RemoveAssignee(unit);
+			return;
+		}
+
 		// TODO: push WaitAction into unit
-		if (circuit->GetBindedRole(cdef->GetMainRole()) == ROLE_TYPE(BUILDER)) {
+		if (/*cdef->GetDef()->IsAbleToAssist() || */cdef->IsAbleToRepair()) {
 			AIFloat3 pos = unitPos;
 			const float size = SQUARE_SIZE * 16;
 			CTerrainManager* terrainMgr = circuit->GetTerrainManager();

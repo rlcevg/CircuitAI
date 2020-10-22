@@ -332,6 +332,7 @@ void CMilitaryManager::ReadConfig()
 	CCircuitDef::RoleName& roleNames = CCircuitDef::GetRoleNames();
 
 	const Json::Value& responses = root["response"];
+	const float reImpMod = responses.get("_importance_mod_", 1.f).asFloat();
 	const float teamSize = circuit->GetAllyTeam()->GetSize();
 	roleInfos.resize(roleNames.size(), {.0f});
 	for (const auto& pair : roleNames) {
@@ -359,7 +360,7 @@ void CMilitaryManager::ReadConfig()
 				continue;
 			}
 			float rat = ratio.get(i, 1.0f).asFloat();
-			float imp = importance.get(i, 1.0f).asFloat();
+			float imp = importance.get(i, 1.0f).asFloat() * reImpMod;
 			info.vs.push_back(SRoleInfo::SVsInfo(it->second.type, rat, imp));
 		}
 	}
@@ -405,7 +406,6 @@ void CMilitaryManager::ReadConfig()
 			waterDefenders.push_back(defenderDefs[index]);
 		}
 	}
-
 	preventCount = porc.get("prevent", 1).asUInt();
 	const Json::Value& amount = porc["amount"];
 	const Json::Value& amOff = amount["offset"];
