@@ -67,7 +67,7 @@
 			// <offset>:
 			//     1) [x, z] in South facing, elmos
 			//     2) {<direction>: <delta>} - left, right, front, back
-			// <condition>: air, no_air, maybe
+			// <condition>: air, no_air, energy, chance:0.0~1.0
 
 			// Build pylon in direction of nearby mex cluster
 //			"pylon": true,
@@ -75,18 +75,18 @@
 			// Build chain of units
 			"hub": [
 				[  // chain1
-					{"unit": "armllt", "category": "defence", "offset": [-80, -80], "condition": "maybe"},
-					{"unit": "armmakr", "category": "defence", "offset": [80, 80], "condition": "maybe"}
+					{"unit": "armllt", "category": "defence", "offset": [-80, -80], "condition": {"chance": 0.5}},
+					{"unit": "armmakr", "category": "defence", "offset": [80, 80], "condition": "energy"}
 				],
 				[  // chain2
-					{"unit": "armllt", "category": "defence", "offset": [80, 80], "condition": "maybe"}
+					{"unit": "armllt", "category": "defence", "offset": [80, 80], "condition": {"chance": 0.5}}
 				]
 			]
 		},
 		"armsolar": {
 			"hub": [
 				[  // chain1
-					{"unit": "armmakr", "category": "defence", "offset": [80, 80], "condition": "maybe"}
+					{"unit": "armmakr", "category": "defence", "offset": [80, 80], "condition": "energy"}
 				]
 			]
 		},
@@ -95,8 +95,8 @@
 				[  // chain1
 					{"unit": "armmmkr", "category": "defence", "offset": [120, 120]},
 					{"unit": "armmmkr", "category": "defence", "offset": [120, -120]},
-					{"unit": "armamd", "category": "defence", "offset": [-120, -120], "condition": "maybe"},
-					{"unit": "armpb", "category": "defence", "offset": [-80, -80], "condition": "maybe"},
+					{"unit": "armamd", "category": "defence", "offset": [-120, -120], "condition": {"chance": 0.5}},
+					{"unit": "armpb", "category": "defence", "offset": [-80, -80], "condition": {"chance": 0.5}},
 					{"unit": "armferret", "category": "defence", "offset": [-80, 80], "condition": "air"}
 				]
 			]
@@ -104,10 +104,10 @@
 		"armckfus": {
 			"hub": [
 				[  // chain1
-					{"unit": "armmmkr", "category": "defence", "offset": [200, 200], "condition": "maybe"},
-					{"unit": "armmmkr", "category": "defence", "offset": [200, -200], "condition": "maybe"},
-					{"unit": "armamd", "category": "defence", "offset": [120, -120], "condition": "maybe"},
-					{"unit": "armpb", "category": "defence", "offset": [-200, -200], "condition": "maybe"},
+					{"unit": "armmmkr", "category": "defence", "offset": [200, 200], "condition": "energy"},
+					{"unit": "armmmkr", "category": "defence", "offset": [200, -200], "condition": "energy"},
+					{"unit": "armamd", "category": "defence", "offset": [120, -120], "condition": {"chance": 0.5}},
+					{"unit": "armpb", "category": "defence", "offset": [-200, -200], "condition": {"chance": 0.5}},
 					{"unit": "armferret", "category": "defence", "offset": [-200, 200], "condition": "air"}
 				]
 			]
@@ -120,9 +120,9 @@
 					{"unit": "armmmkr", "category": "defence", "offset": [120, 150]},
 					{"unit": "armmmkr", "category": "defence", "offset": [150, 150]},
 					{"unit": "armmmkr", "category": "defence", "offset": [120, -120]},
-					{"unit": "armamd", "category": "defence", "offset": [-120, -120], "condition": "maybe"},
+					{"unit": "armamd", "category": "defence", "offset": [-120, -120], "condition": {"chance": 0.5}},
 					{"unit": "armanni", "category": "defence", "offset": [-180, -180]},
-					{"unit": "armpb", "category": "defence", "offset": [-80, -80], "condition": "maybe"},
+					{"unit": "armpb", "category": "defence", "offset": [-80, -80], "condition": {"chance": 0.5}},
 					{"unit": "armferret", "category": "defence", "offset": [-80, 80], "condition": "air"}
 				]
 			]
@@ -130,18 +130,18 @@
 		"corsolar": {
 			"hub": [
 				[
-					{"unit": "cormakr", "category": "defence", "offset": [80, 80], "condition": "maybe"}
+					{"unit": "cormakr", "category": "defence", "offset": [80, 80], "condition": "energy"}
 				]  // chain1
 			]
 		},
 		"coradvsol": {
 			"hub": [
 				[
-					{"unit": "corllt", "category": "defence", "offset": [-80, -80], "condition": "maybe"},
-					{"unit": "cormakr", "category": "defence", "offset": [80, 80], "condition": "maybe"}
+					{"unit": "corllt", "category": "defence", "offset": [-80, -80], "condition": {"chance": 0.5}},
+					{"unit": "cormakr", "category": "defence", "offset": [80, 80], "condition": "energy"}
 				],  // chain1
 				[	
-					{"unit": "corllt", "category": "defence", "offset": [80, 80], "condition": "maybe"}
+					{"unit": "corllt", "category": "defence", "offset": [80, 80], "condition": {"chance": 0.5}}
 				]  // chain2
 			]
 		},
@@ -150,8 +150,8 @@
 				[  // chain1
 					{"unit": "cormmkr", "category": "defence", "offset": [120, 120]},
 					{"unit": "cormmkr", "category": "defence", "offset": [120, -120]},
-					{"unit": "corfmd", "category": "defence", "offset": [-120, -120], "condition": "maybe"},
-					{"unit": "corvipe", "category": "defence", "offset": [-80, -80], "condition": "maybe"},
+					{"unit": "corfmd", "category": "defence", "offset": [-120, -120], "condition": {"chance": 0.5}},
+					{"unit": "corvipe", "category": "defence", "offset": [-80, -80], "condition": {"chance": 0.5}},
 					{"unit": "cormadsam", "category": "defence", "offset": [-80, 80], "condition": "air"}
 				]
 			]
@@ -164,9 +164,9 @@
 					{"unit": "cormmkr", "category": "defence", "offset": [150, 120]},
 					{"unit": "cormmkr", "category": "defence", "offset": [120, 150]},
 					{"unit": "cormmkr", "category": "defence", "offset": [150, 150]},
-					{"unit": "corfmd", "category": "defence", "offset": [180, -180], "condition": "maybe"},
+					{"unit": "corfmd", "category": "defence", "offset": [180, -180], "condition": {"chance": 0.5}},
 					{"unit": "cordoom", "category": "defence", "offset": [-180, 180]},
-					{"unit": "corvipe", "category": "defence", "offset": [-80, -80], "condition": "maybe"},
+					{"unit": "corvipe", "category": "defence", "offset": [-80, -80], "condition": {"chance": 0.5}},
 					{"unit": "cormadsam", "category": "defence", "offset": [-80, 80], "condition": "air"}
 				]
 			]

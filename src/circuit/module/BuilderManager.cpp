@@ -269,6 +269,7 @@ void CBuilderManager::ReadConfig()
 	super.minIncome = cond.get((unsigned)0, 50.f).asFloat();
 	super.maxTime = cond.get((unsigned)1, 300.f).asFloat();
 
+	SBuildInfo::CondName& condNames = SBuildInfo::GetCondNames();
 	IBuilderTask::BuildName& buildNames = IBuilderTask::GetBuildNames();
 	const Json::Value& build = root["build_chain"];
 	for (const std::string& catName : build.getMemberNames()) {
@@ -363,12 +364,14 @@ void CBuilderManager::ReadConfig()
 					}
 
 					bi.condition = SBuildInfo::Condition::ALWAYS;
-					const std::string& cond = part.get("condition", "").asString();
-					if (!cond.empty()) {
-						SBuildInfo::CondName& condNames = SBuildInfo::GetCondNames();
+					const Json::Value& condition = part["condition"];
+					if (!condition.isNull()) {
+						const bool isString = condition.isString();
+						const std::string& cond = isString ? condition.asString() : condition.getMemberNames()[0];
 						auto it = condNames.find(cond);
 						if (it != condNames.end()) {
 							bi.condition = it->second;
+							bi.chance = isString ? 1.f : condition.get(cond, 1.f).asFloat();
 						}
 					}
 

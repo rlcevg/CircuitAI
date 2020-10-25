@@ -20,7 +20,7 @@ namespace circuit {
 
 struct SBuildInfo {
 	enum class Direction: char {LEFT = 0, RIGHT, FRONT, BACK, NONE};
-	enum class Condition: char {AIR = 0, NO_AIR, MAYBE, ALWAYS};
+	enum class Condition: char {AIR = 0, NO_AIR, ENERGY, CHANCE, ALWAYS};
 
 	using DirName = std::map<std::string, Direction>;
 	using CondName = std::map<std::string, Condition>;
@@ -34,6 +34,7 @@ struct SBuildInfo {
 	springai::AIFloat3 offset;
 	Direction direction;
 	Condition condition;
+	float chance;
 };
 
 struct SBuildChain {

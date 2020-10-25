@@ -1145,6 +1145,12 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 	if (unit->GetCircuitDef()->GetMobileId() < 0) {
 		validAir.insert(unit);
 	}
+
+	/*
+	 * Mark path from factory to lanePos as blocked
+	 */
+	CSetupManager* setupMgr = circuit->GetSetupManager();
+	circuit->GetTerrainManager()->AddBlockerPath(unit, setupMgr->GetLanePos(), setupMgr->GetCommChoice()->GetMobileId());
 }
 
 void CFactoryManager::DisableFactory(CCircuitUnit* unit)

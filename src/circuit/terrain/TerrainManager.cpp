@@ -9,6 +9,7 @@
 #include "terrain/BlockRectangle.h"
 #include "terrain/BlockCircle.h"
 #include "terrain/path/PathFinder.h"
+//#include "terrain/path/QueryPathSingle.h"
 #include "map/ThreatMap.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"  // Only for UpdateAreaUsers
@@ -341,9 +342,48 @@ void CTerrainManager::DelBlocker(CCircuitDef* cdef, const AIFloat3& pos, int fac
 #endif
 }
 
-void CTerrainManager::ResetBuildFrame()
+void CTerrainManager::AddBlockerPath(CCircuitUnit* unit, const AIFloat3& pos, const STerrainMapMobileType::Id mobileId)
 {
-	markFrame = -FRAMES_PER_SEC;
+//	const int iS = GetSectorIndex(pos);
+//	STerrainMapMobileType* mobyleType = GetMobileType(mobileId);
+//	STerrainMapAreaSector* AS = GetAlternativeSector(unit->GetArea(), iS, mobyleType);
+//	if (AS == nullptr) {
+//		return;
+//	}
+//
+//	const int frame = circuit->GetLastFrame();
+//	const AIFloat3 startPos = unit->GetPos(frame);// + AIFloat3(0, 0, 128);
+//	const AIFloat3& endPos = AS->S->position;
+//
+//	CPathFinder* pathfinder = circuit->GetPathfinder();
+//	blockerPathQuery = pathfinder->CreatePathSingleQuery(
+//			unit, circuit->GetThreatMap(), frame,
+//			startPos, endPos, pathfinder->GetSquareSize());
+//
+//	// TODO: Store separate map for factory un-blocking.
+//	//       Merge paths as soon as they have common cell.
+//	// FIXME: granularity of 1 level path-map is too low
+//	pathfinder->RunQuery(blockerPathQuery, [this](const IPathQuery* query) {
+//		const CQueryPathSingle* q = static_cast<const CQueryPathSingle*>(query);
+//		CPathFinder* pathfinder = circuit->GetPathfinder();
+//		const int granularity = pathfinder->GetSquareSize() / (SQUARE_SIZE * 2);
+//		for (int index : q->GetPathInfo()->path) {
+//			int ix, iz;
+//			pathfinder->PathIndex2PathXY(index, &ix, &iz);
+//
+//			ix *= granularity;
+//			iz *= granularity;
+//			int2 m1(ix - granularity, iz - granularity);
+//			int2 m2(ix + granularity, iz + granularity);
+//			blockingMap.Bound(m1, m2);
+//			for (int z = m1.y; z < m2.y; ++z) {
+//				for (int x = m1.x; x < m2.x; ++x) {
+//					blockingMap.AddBlocker(x, z, SBlockingMap::StructType::TERRA);
+//				}
+//			}
+//		}
+//		blockerPathQuery = nullptr;
+//	});
 }
 
 AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing)

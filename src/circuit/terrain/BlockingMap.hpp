@@ -118,8 +118,8 @@ inline bool SBlockingMap::IsInBoundsLow(int x, int z) const
 
 inline void SBlockingMap::Bound(int2& r1, int2& r2)
 {
-	r1.x = std::max(r1.x, 0);  r2.x = std::min(r2.x, columns - 1);
-	r1.y = std::max(r1.y, 0);  r2.y = std::min(r2.y, rows - 1);
+	r1.x = std::max(r1.x, 0);  r2.x = std::min(r2.x, columns/* - 1*/);
+	r1.y = std::max(r1.y, 0);  r2.y = std::min(r2.y, rows/* - 1*/);
 }
 
 inline SBlockingMap::StructMask SBlockingMap::GetStructMask(StructType structType)

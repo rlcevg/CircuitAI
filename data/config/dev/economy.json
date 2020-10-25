@@ -44,6 +44,8 @@
 		"factor": [[1.0, 300], [30.0, 7200]],
 		// need to know how to make AI build more energy in start-game
 
+		"cost_ratio": 0.05,  // minimum energy income to cost ratio
+
 		"pylon": []
 	},
 

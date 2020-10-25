@@ -149,6 +149,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	losRadius = def->GetLosRadius();
 	costM     = def->GetCost(resM);
 	costE     = def->GetCost(resE);
+	upkeepE   = def->GetUpkeep(resE);
 	cloakCost = std::max(def->GetCloakCost(), def->GetCloakCostMoving());
 	buildTime = def->GetBuildTime();
 //	altitude  = def->GetWantedHeight();
@@ -166,7 +167,12 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	isAbleToReclaim = def->IsAbleToReclaim();
 
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
-	auto it = customParams.find("canjump");
+	auto it = customParams.find("energyconv_capacity");
+	if (it != customParams.end()) {
+		upkeepE += utils::string_to_float(it->second);
+	}
+
+	it = customParams.find("canjump");
 	isAbleToJump = (it != customParams.end()) && (utils::string_to_int(it->second) == 1);
 	if (isAbleToJump) {
 		it = customParams.find("jump_range");

@@ -167,6 +167,7 @@ private:
 		float fraction;
 	} efInfo;
 	float energyFactor;
+	float costRatio;
 
 	std::vector<float> metalIncomes;
 	std::vector<float> energyIncomes;

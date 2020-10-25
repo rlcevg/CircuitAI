@@ -20,7 +20,8 @@ SBuildInfo::DirName SBuildInfo::dirNames = {
 SBuildInfo::CondName SBuildInfo::condNames = {
 	{"air",    SBuildInfo::Condition::AIR},
 	{"no_air", SBuildInfo::Condition::NO_AIR},
-	{"maybe",  SBuildInfo::Condition::MAYBE},
+	{"energy", SBuildInfo::Condition::ENERGY},
+	{"chance", SBuildInfo::Condition::CHANCE},
 	{"always", SBuildInfo::Condition::ALWAYS},
 };
 

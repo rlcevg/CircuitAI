@@ -400,11 +400,11 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 	// TODO: Check for open build site, push mobile units away or temporary block position.
 
 	// FIXME: Replace const 1000.0f with build time?
-	CEconomyManager* em = circuit->GetEconomyManager();
+	CEconomyManager* ecoMgr = circuit->GetEconomyManager();
 	if ((cost > 1000.0f) &&
 		(target == nullptr) &&
-		(em->GetAvgMetalIncome() < savedIncome * 0.6f) &&
-		(em->GetAvgMetalIncome() * 2.0f < em->GetMetalPull()))
+		(ecoMgr->GetAvgMetalIncome() < savedIncome * 0.6f) &&
+		(ecoMgr->GetAvgMetalIncome() * 2.0f < ecoMgr->GetMetalPull()))
 	{
 		manager->AbortTask(this);
 		return false;
@@ -665,8 +665,12 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 					case SBuildInfo::Condition::NO_AIR: {
 						isValid = bi.cdef->GetCostM() > enemyMgr->GetEnemyCost(ROLE_TYPE(AIR));
 					} break;
-					case SBuildInfo::Condition::MAYBE: {
-						isValid = rand() < RAND_MAX / 2;
+					case SBuildInfo::Condition::ENERGY: {
+						CEconomyManager* ecoMgr = circuit->GetEconomyManager();
+						isValid = ecoMgr->GetAvgEnergyIncome() > ecoMgr->GetEnergyPull() + bi.cdef->GetUpkeepE();
+					} break;
+					case SBuildInfo::Condition::CHANCE: {
+						isValid = rand() < bi.chance * RAND_MAX;
 					} break;
 					case SBuildInfo::Condition::ALWAYS:
 					default: break;

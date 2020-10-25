@@ -315,6 +315,8 @@ void CEconomyManager::ReadConfig()
 	efInfo.fraction = (efInfo.endFactor - efInfo.startFactor) / (efInfo.endFrame - efInfo.startFrame);
 	energyFactor = efInfo.startFactor;
 
+	costRatio = energy.get("cost_ratio", 0.05f).asFloat();
+
 	CMaskHandler& sideMasker = circuit->GetGameAttribute()->GetSideMasker();
 	engyLimits.resize(sideMasker.GetMasks().size());
 	sideInfos.resize(sideMasker.GetMasks().size());
@@ -939,12 +941,12 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 				//       solar       geothermal    fusion         singu           ...
 				//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
 				if ((engy.costM * 16.0f < maxBuildTime * SQUARE(metalIncome))
-					&& (engy.costE * 0.06f < energyIncome))
+					&& (engy.costE * costRatio < energyIncome))
 				{
 					break;
 				}
 			} else if ((engy.costM * 16.0f < maxBuildTime * SQUARE(metalIncome))
-				&& (engy.costE * 0.06f < energyIncome))
+				&& (engy.costE * costRatio < energyIncome))
 			{
 				bestDef = nullptr;
 				break;
