@@ -8,6 +8,7 @@
 #include "task/RetreatTask.h"
 #include "task/TaskManager.h"
 #include "map/ThreatMap.h"
+#include "map/InfluenceMap.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
 #include "setup/SetupManager.h"
@@ -110,10 +111,16 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 	AIFloat3 endPos;
 	float range;
 
+	bool isNoEndPos = true;
 	if (repairer != nullptr) {
 		endPos = repairer->GetPos(frame);
-		range = pathfinder->GetSquareSize();
-	} else {
+		// TODO: Check InfluenceMap before repairer assigned
+		isNoEndPos = (circuit->GetInflMap()->GetEnemyInflAt(endPos) > INFL_EPS);
+		if (!isNoEndPos) {
+			range = pathfinder->GetSquareSize();
+		}
+	}
+	if (isNoEndPos) {
 		CFactoryManager* factoryMgr = circuit->GetFactoryManager();
 		endPos = factoryMgr->GetClosestHaven(unit);
 		if (!utils::is_valid(endPos)) {

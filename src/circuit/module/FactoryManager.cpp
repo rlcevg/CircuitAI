@@ -986,33 +986,11 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			//       current is probs2=[n1, res(n2), n3, n4, res(n5)]
 			probType = (prob > 0.f) ? "response" : "regular";
 			prob = (prob > 0.f) ? prob : probs[i];
-//			if (prob > 0.f) {
-				candidates.push_back(std::make_pair(bd, prob));
-				magnitude += prob;
-				// FIXME: DEBUG
-				circuit->LOG("%s | %s | %f", probType.c_str(), bd->GetDef()->GetName(), prob);
-				// FIXME: DEBUG
-//			}
-		}
-	}
-
-	bool isResponse = !candidates.empty();
-	if (!isResponse) {
-		// When isResponse==false: candidates.empty() and magnitude==0
-		for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
-			CCircuitDef* bd = facDef.buildDefs[i];
-			if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost()))
-				|| !bd->IsAvailable(frame)
-				|| !terrainMgr->CanBeBuiltAtSafe(bd, pos, range)
-				|| !isEnemyInArea(frame, bd))
-			{
-				continue;
-			}
-
-			if (probs[i] > 0.f) {
-				candidates.push_back(std::make_pair(bd, probs[i]));
-				magnitude += probs[i];
-			}
+			candidates.push_back(std::make_pair(bd, prob));
+			magnitude += prob;
+			// FIXME: DEBUG
+			circuit->LOG("%s | %s | %f", probType.c_str(), bd->GetDef()->GetName(), prob);
+			// FIXME: DEBUG
 		}
 	}
 
@@ -1039,8 +1017,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		// FIXME: DEBUG
 		circuit->LOG("choice = %s", buildDef->GetDef()->GetName());
 		// FIXME: DEBUG
-		return EnqueueTask(isResponse ? CRecruitTask::Priority::HIGH : CRecruitTask::Priority::NORMAL,
-						   buildDef, pos, CRecruitTask::RecruitType::FIREPOWER, radius);
+		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, pos, CRecruitTask::RecruitType::FIREPOWER, radius);
 	}
 	return nullptr;
 }
