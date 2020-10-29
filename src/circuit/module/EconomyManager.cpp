@@ -48,8 +48,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, mexCount(0)
 		, lastFacFrame(-1)
 		, indexRes(0)
-		, metalIncome(.0f)
-		, energyIncome(.0f)
 		, metalProduced(.0f)
 		, metalUsed(.0f)
 		, ecoFrame(-1)
@@ -57,15 +55,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, isMetalFull(false)
 		, isEnergyStalling(false)
 		, isEnergyEmpty(false)
-		, metalCurFrame(-1)
-		, metalPullFrame(-1)
-		, energyCurFrame(-1)
-		, energyPullFrame(-1)
-		, energyUseFrame(-1)
-		, metalCur(.0f)
-		, metalPull(.0f)
-		, energyCur(.0f)
-		, energyPull(.0f)
+		, metal(ResourceInfo {-1, .0f, .0f, .0f, .0f})
+		, energy(ResourceInfo {-1, .0f, .0f, .0f, .0f})
 		, energyUse(.0f)
 {
 	metalRes = circuit->GetCallback()->GetResourceByName(RES_NAME_METAL);
@@ -111,7 +102,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			for (int i = 0; i < INCOME_SAMPLES; ++i) {
 				energyIncomes[i] += income;
 			}
-			energyIncome += income;
+			energy.income += income;
 		}
 	};
 	auto mexFinishedHandler = [this](CCircuitUnit* unit) {
@@ -119,7 +110,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		for (int i = 0; i < INCOME_SAMPLES; ++i) {
 			metalIncomes[i] += income;
 		}
-		metalIncome += income;
+		metal.income += income;
 	};
 
 	/*
@@ -407,7 +398,7 @@ void CEconomyManager::Init()
 	pullMtoS = mspInfos.front().pull;
 
 	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
-		metalProduced = economy->GetCurrent(metalRes) * metalMod;
+		metalProduced = GetMetalCur() * metalMod;
 
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		CAllyTeam* allyTeam = circuit->GetAllyTeam();
@@ -628,53 +619,55 @@ void CEconomyManager::UpdateResourceIncome()
 	metalIncomes[indexRes] = economy->GetIncome(metalRes) + economy->GetReceived(metalRes);
 	++indexRes %= INCOME_SAMPLES;
 
-	metalIncome = .0f;
+	metal.income = .0f;
 	for (int i = 0; i < INCOME_SAMPLES; i++) {
-		metalIncome += metalIncomes[i];
+		metal.income += metalIncomes[i];
 	}
-	metalIncome /= INCOME_SAMPLES;
+	metal.income /= INCOME_SAMPLES;
 
-	energyIncome = .0f;
+	energy.income = .0f;
 	for (int i = 0; i < INCOME_SAMPLES; i++) {
-		energyIncome += energyIncomes[i];
+		energy.income += energyIncomes[i];
 	}
-	energyIncome /= INCOME_SAMPLES;
+	energy.income /= INCOME_SAMPLES;
 
-	metalProduced += metalIncome * metalMod;
+	metalProduced += metal.income * metalMod;
 	metalUsed += economy->GetUsage(metalRes);
 }
 
 float CEconomyManager::GetMetalCur()
 {
-	if (metalCurFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
-		metalCurFrame = circuit->GetLastFrame();
-		metalCur = economy->GetCurrent(metalRes);
-	}
-	return metalCur;
+	return metal.current = economy->GetCurrent(metalRes);
+}
+
+float CEconomyManager::GetMetalStore()
+{
+	return metal.storage = GetStorage(metalRes);
 }
 
 float CEconomyManager::GetMetalPull()
 {
-	if (metalPullFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
-		metalPullFrame = circuit->GetLastFrame();
-		metalPull = economy->GetPull(metalRes) + circuit->GetTeam()->GetRulesParamFloat("extraMetalPull", 0.f);
+	if (metal.pullFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
+		metal.pullFrame = circuit->GetLastFrame();
+		metal.pull = economy->GetPull(metalRes) + circuit->GetTeam()->GetRulesParamFloat("extraMetalPull", 0.f);
 	}
-	return metalPull;
+	return metal.pull;
 }
 
 float CEconomyManager::GetEnergyCur()
 {
-	if (energyCurFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
-		energyCurFrame = circuit->GetLastFrame();
-		energyCur = economy->GetCurrent(energyRes);
-	}
-	return energyCur;
+	return energy.current = economy->GetCurrent(energyRes);
+}
+
+float CEconomyManager::GetEnergyStore()
+{
+	return energy.storage = GetStorage(energyRes);
 }
 
 float CEconomyManager::GetEnergyPull()
 {
-	if (energyPullFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
-		energyPullFrame = circuit->GetLastFrame();
+	if (energy.pullFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
+		energy.pullFrame = circuit->GetLastFrame();
 		float extraEnergyPull = circuit->GetTeam()->GetRulesParamFloat("extraEnergyPull", 0.f);
 //		float oddEnergyOverdrive = circuit->GetTeam()->GetRulesParamFloat("OD_energyOverdrive", 0.f);
 //		float oddEnergyChange = circuit->GetTeam()->GetRulesParamFloat("OD_energyChange", 0.f);
@@ -684,18 +677,14 @@ float CEconomyManager::GetEnergyPull()
 //		if (numAllies < 1.f) {
 //			numAllies = 1.f;
 //		}
-		energyPull = economy->GetPull(energyRes) + extraEnergyPull/* + extraChange - teamEnergyWaste / numAllies*/;
+		energy.pull = economy->GetPull(energyRes) + extraEnergyPull/* + extraChange - teamEnergyWaste / numAllies*/;
 	}
-	return energyPull;
+	return energy.pull;
 }
 
 float CEconomyManager::GetEnergyUse()
 {
-	if (energyUseFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
-		energyUseFrame = circuit->GetLastFrame();
-		energyUse = economy->GetUsage(energyRes);
-	}
-	return energyUse;
+	return energyUse = economy->GetUsage(energyRes);
 }
 
 bool CEconomyManager::IsMetalEmpty()
@@ -1214,7 +1203,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
 	if ((storeDef == nullptr) ||
 		!builderMgr->GetTasks(IBuilderTask::BuildType::STORE).empty() ||
-		(GetStorage(metalRes) > 10 * metalIncome) ||
+		(GetMetalStore() > 10 * metalIncome) ||
 		!storeDef->IsAvailable(circuit->GetLastFrame()))
 	{
 		return UpdatePylonTasks();
@@ -1365,14 +1354,18 @@ void CEconomyManager::UpdateEconomy()
 	}
 	ecoFrame = circuit->GetLastFrame();
 
-	const float curMetal = GetMetalCur();
-	const float storMetal = GetStorage(metalRes);
-	isMetalEmpty = curMetal < storMetal * 0.2f;
-	isMetalFull = curMetal > storMetal * 0.8f;
-	const float curEnergy = GetEnergyCur();
-	const float storEnergy = GetStorage(energyRes);
-	isEnergyEmpty = curEnergy < storEnergy * 0.1f;
-	isEnergyStalling = /*(GetAvgEnergyIncome() < GetEnergyPull()) && */(curEnergy < storEnergy * 0.5f);
+	/*const float curMetal = */GetMetalCur();
+	/*const float storMetal = */GetMetalStore();
+	/*const float incMetal = */GetAvgMetalIncome();
+	/*const float pullMetal = */GetMetalPull();
+
+	/*const float curEnergy = */GetEnergyCur();
+	/*const float storEnergy = */GetEnergyStore();
+	/*const float incEnergy = */GetAvgEnergyIncome();
+	/*const float pullEnergy = */GetEnergyPull();
+
+	// Update isMetalEmpty, isMetalFull, isEnergyEmpty, isEnergyStalling
+	static_cast<CEconomyScript*>(script)->UpdateEconomy();
 
 	if (ecoFrame <= efInfo.startFrame) {
 		energyFactor = efInfo.startFactor;

@@ -48,7 +48,7 @@ namespace circuit {
 
 // FIXME: BA
 #define CMD_AUTOMEX				31143
-#define CMD_PASSIVE				34571
+#define CMD_BAR_PRIORITY		34571
 #define CMD_LAND_AT_AIRBASE		35430
 // FIXME: BA
 
@@ -123,7 +123,7 @@ public:
 	void CmdPriority(float value);
 	void CmdMiscPriority(float value);
 	void CmdAirStrafe(float value);
-	void CmdPassive(bool state);
+	void CmdBARPriority(float value);
 	void CmdTerraform(std::vector<float>&& params);
 
 	void Attack(CEnemyInfo* enemy, int timeout);
@@ -161,13 +161,14 @@ private:
 	int disarmFrame;
 	int ammoFrame;
 
+	float priority;
+
 	// ---- Bit fields ---- BEGIN
 	bool isDead : 1;
 	bool isStuck : 1;
 	bool isDisarmed : 1;
 	bool isWeaponReady : 1;
 	bool isMorphing : 1;
-	bool isPassive : 1;
 	// ---- Bit fields ---- END
 
 	springai::Weapon* dgun;

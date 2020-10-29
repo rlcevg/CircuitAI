@@ -115,7 +115,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			unit->CmdPriority(0);
 			// FIXME: BA
 			if (unit->GetCircuitDef()->IsRoleSupport()) {
-				unit->CmdPassive(true);
+				unit->CmdBARPriority(0);
 			}
 			// FIXME: BA
 		)

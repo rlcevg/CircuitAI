@@ -275,13 +275,13 @@ void CAntiAirTask::FindTarget()
 		}
 
 		CCircuitDef* edef = enemy->GetCircuitDef();
-		if (edef != nullptr) {
-			if (((edef->GetCategory() & canTargetCat) == 0)
-				|| ((edef->GetCategory() & noChaseCat) != 0))
-			{
-				continue;
-			}
+		if ((edef == nullptr)
+			|| ((edef->GetCategory() & canTargetCat) == 0)
+			|| ((edef->GetCategory() & noChaseCat) != 0))
+		{
+			continue;
 		}
+		// TODO: for edef == nullptr check elevation and speed
 
 		const float sqDist = pos.SqDistance2D(enemy->GetPos());
 		if (minSqDist > sqDist) {

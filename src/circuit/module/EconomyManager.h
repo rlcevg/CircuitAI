@@ -70,13 +70,15 @@ public:
 	CCircuitDef* GetPylonDef() const { return pylonDef; }
 
 	void UpdateResourceIncome();
-	float GetAvgMetalIncome() const { return metalIncome; }
-	float GetAvgEnergyIncome() const { return energyIncome; }
+	float GetAvgMetalIncome() const { return metal.income; }
+	float GetAvgEnergyIncome() const { return energy.income; }
 	float GetEcoFactor() const { return ecoFactor; }
 	float GetPullMtoS() const { return pullMtoS; }
 	float GetMetalCur();
+	float GetMetalStore();
 	float GetMetalPull();
 	float GetEnergyCur();
+	float GetEnergyStore();
 	float GetEnergyPull();
 	float GetEnergyUse();
 	bool IsMetalEmpty();
@@ -172,8 +174,6 @@ private:
 	std::vector<float> metalIncomes;
 	std::vector<float> energyIncomes;
 	int indexRes;
-	float metalIncome;
-	float energyIncome;
 	float metalProduced;
 	float metalUsed;
 	float metalMod;
@@ -196,15 +196,15 @@ private:
 	bool isEnergyStalling;
 	bool isEnergyEmpty;
 
-	int metalCurFrame;
 	int metalPullFrame;
-	int energyCurFrame;
 	int energyPullFrame;
-	int energyUseFrame;
-	float metalCur;
-	float metalPull;
-	float energyCur;
-	float energyPull;
+	struct ResourceInfo {
+		int pullFrame;
+		float current;
+		float storage;
+		float pull;
+		float income;
+	} metal, energy;
 	float energyUse;
 
 	std::shared_ptr<CGameTask> morph;

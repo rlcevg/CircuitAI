@@ -42,6 +42,7 @@ private:
 	void AddPoint(const springai::AIFloat3& pos, const std::string& msg) const;
 	void DelPoint(const springai::AIFloat3& pos) const;
 	int Dice(const CScriptArray* array) const;
+	template<typename T> T Min(T l, T r) const { return std::min(l, r); }
 	template<typename T> T Max(T l, T r) const { return std::max(l, r); }
 
 	CCircuitAI* circuit;

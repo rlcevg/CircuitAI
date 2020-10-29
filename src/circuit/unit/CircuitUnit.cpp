@@ -40,12 +40,12 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 		, execFrame(-1)
 		, disarmFrame(-1)
 		, ammoFrame(-1)
+		, priority(-1.f)
 		, isDead(false)
 		, isStuck(false)
 		, isDisarmed(false)
 		, isWeaponReady(true)
 		, isMorphing(false)
-		, isPassive(false)
 		, target(nullptr)
 		, targetTile(-1)
 {
@@ -296,13 +296,13 @@ void CCircuitUnit::CmdAirStrafe(float value)
 //	unit->ExecuteCustomCommand(CMD_AIR_STRAFE, {value});
 }
 
-void CCircuitUnit::CmdPassive(bool state)
+void CCircuitUnit::CmdBARPriority(float value)
 {
-	if (isPassive == state) {
+	if (priority == value) {
 		return;
 	}
-	isPassive = state;
-	unit->ExecuteCustomCommand(CMD_PASSIVE, {state ? 1.f : 0.f});
+	priority = value;
+	unit->ExecuteCustomCommand(CMD_BAR_PRIORITY, {value});
 }
 
 void CCircuitUnit::CmdTerraform(std::vector<float>&& params)

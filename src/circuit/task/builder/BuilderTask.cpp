@@ -76,7 +76,7 @@ IBuilderTask::~IBuilderTask()
 
 bool IBuilderTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return ((target != nullptr) || unit->GetCircuitDef()->CanBuild(buildDef)) && (cost > buildPower * (MIN_BUILD_SEC / 2));
+	return ((target != nullptr) || unit->GetCircuitDef()->CanBuild(buildDef)) && (cost > buildPower * MIN_BUILD_SEC);
 }
 
 void IBuilderTask::AssignTo(CCircuitUnit* unit)
@@ -411,7 +411,8 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 	}
 
 	TRY_UNIT(circuit, unit,
-		unit->CmdPassive(circuit->GetEconomyManager()->IsEnergyStalling() && (buildType != BuildType::ENERGY));
+		const bool prio = !circuit->GetEconomyManager()->IsEnergyStalling() || (buildType == BuildType::ENERGY);
+		unit->CmdBARPriority(prio ? 1.f : 0.f);
 	)
 
 	// Reassign task if required
