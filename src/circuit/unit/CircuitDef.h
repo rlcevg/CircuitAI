@@ -235,6 +235,8 @@ public:
 	bool IsPylon() const { return isPylon; }
 	void SetIsAssist(bool value) { isAssist = value; }
 	bool IsAssist() const { return isAssist; }
+	void SetIsDecoy(bool value) { isDecoy = value; }
+	bool IsDecoy() const { return isDecoy; }
 
 	float GetHealth()    const { return health; }
 	float GetSpeed()     const { return speed; }
@@ -333,6 +335,7 @@ private:
 	bool isMex : 1;
 	bool isPylon : 1;
 	bool isAssist : 1;
+	bool isDecoy : 1;
 	// ---- Bit fields ---- END
 
 	float health;

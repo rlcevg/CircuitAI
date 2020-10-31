@@ -231,7 +231,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			// BA: float netEnergy = unitDef->GetResourceMake(energyRes) - unitDef->GetUpkeep(energyRes);
 			auto it = customParams.find("income_energy");
 			if (((it != customParams.end()) && (utils::string_to_float(it->second) > 1))
-				|| (cdef.GetDef()->GetResourceMake(energyRes) - cdef.GetDef()->GetUpkeep(energyRes) > 1)
+				|| (cdef.GetDef()->GetResourceMake(energyRes) - cdef.GetUpkeepE() > 1)
 				|| ((cdef.GetDef()->GetWindResourceGenerator(energyRes) > 5) && (avgWind > 5))
 				|| (cdef.GetDef()->GetTidalResourceGenerator(energyRes) * circuit->GetMap()->GetTidalStrength() > 1))
 			{
@@ -540,7 +540,7 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 		auto it = customParams.find("income_energy");
 		engy.make = (it != customParams.end())
 				? utils::string_to_float(it->second)
-				: cdef->GetDef()->GetResourceMake(energyRes) - cdef->GetDef()->GetUpkeep(energyRes);
+				: cdef->GetDef()->GetResourceMake(energyRes) - cdef->GetUpkeepE() - cdef->GetCloakCost();
 		if (engy.make < 1) {
 			engy.make = cdef->GetDef()->GetWindResourceGenerator(energyRes);
 			if (engy.make < 1) {
@@ -984,7 +984,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	if (utils::is_valid(buildPos) && terrainMgr->CanBeBuiltAtSafe(bestDef, buildPos) &&
 		((unit == nullptr) || terrainMgr->CanReachAtSafe(unit, buildPos, unit->GetCircuitDef()->GetBuildDistance())))
 	{
-		IBuilderTask::Priority priority = isEnergyStalling ? IBuilderTask::Priority::NOW : IBuilderTask::Priority::NORMAL;
+		IBuilderTask::Priority priority = isEnergyStalling ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
 		return builderMgr->EnqueueTask(priority, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, SQUARE_SIZE * 16.0f, true);
 	}
 

@@ -199,6 +199,11 @@ void CDefendTask::Merge(ISquadTask* task)
 	attackPower += task->GetAttackPower();
 	const std::set<CCircuitUnit*>& sh = task->GetShields();
 	shields.insert(sh.begin(), sh.end());
+
+	const std::map<float, std::set<CCircuitUnit*>>& rangers = task->GetRangeUnits();
+	for (const auto& kv : rangers) {
+		rangeUnits[kv.first].insert(kv.second.begin(), kv.second.end());
+	}
 }
 
 bool CDefendTask::FindTarget()

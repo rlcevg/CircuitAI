@@ -162,6 +162,7 @@ private:
 	CEnemyInfo* RegisterEnemyInfo(springai::Unit* e);
 	void UnregisterEnemyInfo(CEnemyInfo* enemy);
 	void CreateFakeEnemy(int weaponId, const springai::AIFloat3& startPos, const springai::AIFloat3& dir);
+	void CheckDecoy(CEnemyInfo* enemy, int weaponId);
 public:
 	CEnemyInfo* GetEnemyInfo(springai::Unit* u) const;
 	CEnemyInfo* GetEnemyInfo(ICoreUnit::Id unitId) const;

@@ -51,6 +51,7 @@ public:
 	bool IsUpdating() const { return isUpdating; }
 
 	bool UnitInLOS(CEnemyUnit* data);
+	bool UnitInLOS(CEnemyUnit* data, CCircuitDef::Id unitDefId);
 	std::pair<CEnemyUnit*, bool> RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS);
 	CEnemyUnit* RegisterEnemyUnit(springai::Unit* e);
 

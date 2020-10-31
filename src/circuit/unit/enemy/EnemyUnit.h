@@ -67,6 +67,7 @@ struct SEnemyData {
 	void ClearInLOS()   { losStatus &= ~LosMask::LOS; }
 	void ClearInRadar() { losStatus &= ~LosMask::RADAR; }
 	void ClearHidden()  { losStatus &= ~LosMask::HIDDEN; }
+	void ClearIgnore()  { losStatus &= ~LosMask::IGNORE; }
 
 	bool IsInLOS()          const { return losStatus & LosMask::LOS; }
 	bool IsInRadar()        const { return losStatus & LosMask::RADAR; }
@@ -145,6 +146,7 @@ public:
 	void ClearInLOS()   { data.ClearInLOS(); }
 	void ClearInRadar() { data.ClearInRadar(); }
 	void ClearHidden()  { data.ClearHidden(); }
+	void ClearIgnore()  { data.ClearIgnore(); }
 
 	bool IsInLOS()          const { return data.IsInLOS(); }
 	bool IsInRadar()        const { return data.IsInRadar(); }

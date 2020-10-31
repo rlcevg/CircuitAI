@@ -31,7 +31,6 @@ IFighterTask::IFighterTask(ITaskManager* mgr, FightType type, float powerMod, in
 		, position(-RgtVector)
 		, attackPower(.0f)
 		, powerMod(powerMod)
-		, attackFrame(-1)
 		, target(nullptr)
 {
 }
@@ -153,26 +152,6 @@ void IFighterTask::SetTarget(CEnemyInfo* enemy)
 		enemy->BindTask(this);
 	}
 	target = enemy;
-}
-
-void IFighterTask::Attack(const int frame)
-{
-	const int targetTile = manager->GetCircuit()->GetInflMap()->Pos2Index(target->GetPos());
-	const bool isRepeatAttack = (frame >= attackFrame + FRAMES_PER_SEC * 3);
-	attackFrame = isRepeatAttack ? frame : attackFrame;
-	for (CCircuitUnit* unit : units) {
-		unit->GetTravelAct()->StateWait();
-		if (unit->Blocker() != nullptr) {
-			continue;  // Do not interrupt current action
-		}
-
-		if (isRepeatAttack
-			|| (unit->GetTarget() != target)
-			|| (unit->GetTargetTile() != targetTile))
-		{
-			unit->Attack(target->GetPos(), target, targetTile, frame + FRAMES_PER_SEC * 60);
-		}
-	}
 }
 
 #ifdef DEBUG_VIS

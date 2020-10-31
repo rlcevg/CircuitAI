@@ -260,6 +260,14 @@ void CAllyTeam::EnemyDestroyed(CEnemyUnit* enemy, CCircuitAI* ai)
 	quadField.RemoveEnemyUnit(enemy);
 }
 
+void CAllyTeam::UpdateInLOS(CEnemyUnit* data, CCircuitDef::Id unitDefId)
+{
+	enemyManager->DelEnemyCost(data);
+	enemyManager->UnitInLOS(data, unitDefId);
+	mapManager->EnemyEnterLOS(data);
+	enemyManager->AddEnemyCost(data);
+}
+
 void CAllyTeam::Update(CCircuitAI* ai)
 {
 	if (circuit != ai) {

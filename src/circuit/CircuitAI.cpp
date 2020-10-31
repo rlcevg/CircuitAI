@@ -1002,7 +1002,7 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 			unit->GetUnit()->SetMoveState(2);
 		)
 //		Garbage(unit, "stuck");
-		GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, unit);
+		GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::NORMAL, unit);
 	} else if (unit->GetTask() != nullptr) {
 		unit->GetTask()->OnUnitMoveFailed(unit);
 	}
@@ -1018,8 +1018,12 @@ int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker, int weapon
 //	}
 //	unit->SetDamagedFrame(lastFrame);
 
-	if ((attacker == nullptr) && (dir != ZeroVector) && IsValidWeaponDefId(weaponId)) {
-		CreateFakeEnemy(weaponId, unit->GetPos(lastFrame), dir);  // currently only for threatmap
+	if (IsValidWeaponDefId(weaponId)) {
+		if (attacker != nullptr) {
+			CheckDecoy(attacker, weaponId);
+		} else if ((dir != ZeroVector)) {
+			CreateFakeEnemy(weaponId, unit->GetPos(lastFrame), dir);  // currently only for threatmap
+		}
 	}
 
 	for (auto& module : modules) {
@@ -1402,6 +1406,17 @@ void CCircuitAI::CreateFakeEnemy(int weaponId, const AIFloat3& startPos, const A
 			defId = *wuDef.mobileIds.begin();
 		}
 		allyTeam->RegisterEnemyFake(GetCircuitDef(defId), enemyPos, timeout);
+	}
+}
+
+void CCircuitAI::CheckDecoy(CEnemyInfo* enemy, int weaponId)
+{
+	CCircuitDef* edef = enemy->GetCircuitDef();
+	if ((edef != nullptr) && edef->IsDecoy()) {
+		const SWeaponToUnitDef& wuDef = weaponToUnitDefs[weaponId];
+		if (!wuDef.ids.empty()) {
+			allyTeam->UpdateInLOS(enemy->GetData(), *wuDef.ids.begin());
+		}
 	}
 }
 

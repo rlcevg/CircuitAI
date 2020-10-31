@@ -208,15 +208,18 @@ bool CEnemyManager::UnitInLOS(CEnemyUnit* data)
 		return false;
 	}
 	if ((data->GetCircuitDef() == nullptr) || data->GetCircuitDef()->GetId() != unitDefId) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(unitDefId);
-		data->SetCircuitDef(cdef);
-		data->SetCost(data->GetUnit()->GetRulesParamFloat("comm_cost", data->GetCost()));
-		if (cdef->IsIgnore()) {
-			data->SetIgnore();
-			return false;
-		}
+		return UnitInLOS(data, unitDefId);
 	}
 	return true;
+}
+
+bool CEnemyManager::UnitInLOS(CEnemyUnit* data, CCircuitDef::Id unitDefId)
+{
+	CCircuitDef* cdef = circuit->GetCircuitDef(unitDefId);
+	data->SetCircuitDef(cdef);
+	data->SetCost(data->GetUnit()->GetRulesParamFloat("comm_cost", data->GetCost()));
+	cdef->IsIgnore() ? data->SetIgnore() : data->ClearIgnore();
+	return !cdef->IsIgnore();
 }
 
 std::pair<CEnemyUnit*, bool> CEnemyManager::RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS)

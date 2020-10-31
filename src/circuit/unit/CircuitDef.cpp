@@ -122,6 +122,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, isMex(false)
 		, isPylon(false)
 		, isAssist(false)
+		, isDecoy(false)
 		, stockCost(.0f)
 		, jumpRange(.0f)
 		, retreat(-1.f)
@@ -539,6 +540,12 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 		}
 	}
 	isLander = !IsFloater() && !IsAbleToFly() && !IsAmphibious() && !IsSubmarine();
+
+	UnitDef* decoyDef = def->GetDecoyDef();
+	if (decoyDef != nullptr) {
+		circuit->GetCircuitDef(decoyDef->GetUnitDefId())->SetIsDecoy(true);
+		delete decoyDef;
+	}
 }
 
 void CCircuitDef::AddRole(RoleT type, RoleT bindType)

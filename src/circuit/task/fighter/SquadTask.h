@@ -26,6 +26,8 @@ public:
 
 	virtual void Merge(ISquadTask* task);
 
+	const std::map<float, std::set<CCircuitUnit*>>& GetRangeUnits() const { return rangeUnits; }
+
 	CCircuitUnit* GetLeader() const { return leader; }
 	const springai::AIFloat3& GetLeaderPos(int frame) const;
 
@@ -40,6 +42,7 @@ protected:
 	bool IsMustRegroup();
 	void ActivePath(float speed = NO_SPEED_LIMIT);
 	NSMicroPather::TestFunc GetHitTest() const;
+	void Attack(const int frame);
 
 	float lowestRange;
 	float highestRange;
@@ -51,7 +54,10 @@ protected:
 	springai::AIFloat3 prevGroupPos;
 	std::shared_ptr<PathInfo> pPath;
 
+	std::map<float, std::set<CCircuitUnit*>> rangeUnits;
+
 	int groupFrame;
+	int attackFrame;
 
 #ifdef DEBUG_VIS
 public:

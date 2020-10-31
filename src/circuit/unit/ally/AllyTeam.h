@@ -95,6 +95,8 @@ public:
 	void EnemyLeaveRadar(CEnemyUnit* enemy, CCircuitAI* ai);
 	void EnemyDestroyed(CEnemyUnit* enemy, CCircuitAI* ai);
 
+	void UpdateInLOS(CEnemyUnit* data, CCircuitDef::Id unitDefId);
+
 	void Update(CCircuitAI* ai);
 	void EnqueueUpdate();
 

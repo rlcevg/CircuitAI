@@ -350,9 +350,8 @@ void CCircuitUnit::Attack(const AIFloat3& position, int timeout)
 	)
 }
 
-void CCircuitUnit::Attack(const AIFloat3& position, CEnemyInfo* enemy, int timeout)
+void CCircuitUnit::Attack(const AIFloat3& pos, CEnemyInfo* enemy, int timeout)
 {
-	const AIFloat3& pos = utils::get_radial_pos(position, SQUARE_SIZE * 8);
 	TRY_UNIT(manager->GetCircuit(), this,
 		if (circuitDef->IsAttrMelee()) {
 			if (IsJumpReady()) {
@@ -362,10 +361,10 @@ void CCircuitUnit::Attack(const AIFloat3& position, CEnemyInfo* enemy, int timeo
 				CmdMoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
 			}
 		} else {
-			unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+			CmdMoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
 		}
 		unit->Attack(enemy->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
-		unit->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);  // los-cheat related
+		unit->Fight(enemy->GetPos(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);  // los-cheat related
 		CmdWantedSpeed(NO_SPEED_LIMIT);
 		CmdSetTarget(target);
 	)

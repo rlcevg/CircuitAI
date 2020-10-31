@@ -45,14 +45,12 @@ public:
 
 protected:
 	void SetTarget(CEnemyInfo* enemy);
-	void Attack(const int frame);
 
 	FightType fightType;
 	springai::AIFloat3 position;  // attack/scout position
 
 	float attackPower;
 	float powerMod;
-	int attackFrame;
 	// NOTE: Never assign directly, use SetTarget() to avoid access to a dead target
 	CEnemyInfo* target;
 

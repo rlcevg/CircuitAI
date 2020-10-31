@@ -658,7 +658,7 @@ bool CSetupManager::LoadConfig(const std::string& profile, const std::vector<std
 	 */
 	CMap* map = circuit->GetMap();
 	dirname = std::string("LuaRules/Configs/") + name + "/" + version + "/";
-	configName = utils::MakeFileSystemCompatible(map->GetName()) + ".json";
+	configName = utils::MakeFileSystemCompatible(map->GetName());
 
 	config = ReadConfig(dirname, profile, {configName});
 	if (config != nullptr) {
@@ -703,6 +703,7 @@ Json::Value* CSetupManager::ReadConfig(const std::string& dirname, const std::st
 				continue;
 			}
 		}
+		circuit->LOG("Load: %s", filename.c_str());
 		cfg = ParseConfig(cfgStr, name, cfg);
 	}
 

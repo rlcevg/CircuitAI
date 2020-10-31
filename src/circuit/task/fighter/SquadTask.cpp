@@ -17,9 +17,13 @@
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
+#include <cmath>
+
 namespace circuit {
 
 using namespace springai;
+
+#define RANGE_MOD	0.8f
 
 ISquadTask::ISquadTask(ITaskManager* mgr, FightType type, float powerMod)
 		: IFighterTask(mgr, type, powerMod)
@@ -32,6 +36,7 @@ ISquadTask::ISquadTask(ITaskManager* mgr, FightType type, float powerMod)
 		, prevGroupPos(-RgtVector)
 		, pPath(std::make_shared<PathInfo>())
 		, groupFrame(0)
+		, attackFrame(-1)
 {
 }
 
@@ -42,6 +47,8 @@ ISquadTask::~ISquadTask()
 void ISquadTask::AssignTo(CCircuitUnit* unit)
 {
 	IFighterTask::AssignTo(unit);
+
+	rangeUnits[unit->GetCircuitDef()->GetMinRange() * RANGE_MOD].insert(unit);
 
 	if (leader == nullptr) {
 		lowestRange  = unit->GetCircuitDef()->GetMaxRange();
@@ -69,9 +76,18 @@ void ISquadTask::AssignTo(CCircuitUnit* unit)
 void ISquadTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IFighterTask::RemoveAssignee(unit);
+
+	const float range = unit->GetCircuitDef()->GetMinRange() * RANGE_MOD;
+	std::set<CCircuitUnit*>& setUnits = rangeUnits[range];
+	setUnits.erase(unit);
+	if (setUnits.empty()) {
+		rangeUnits.erase(range);
+	}
+
 	leader = nullptr;
 	lowestRange = lowestSpeed = std::numeric_limits<float>::max();
 	highestRange = highestSpeed = .0f;
+
 	if (units.empty()) {
 		return;
 	}
@@ -96,6 +112,11 @@ void ISquadTask::Merge(ISquadTask* task)
 	attackPower += task->GetAttackPower();
 	const std::set<CCircuitUnit*>& sh = task->GetShields();
 	shields.insert(sh.begin(), sh.end());
+
+	const std::map<float, std::set<CCircuitUnit*>>& rangers = task->GetRangeUnits();
+	for (const auto& kv : rangers) {
+		rangeUnits[kv.first].insert(kv.second.begin(), kv.second.end());
+	}
 
 	FindLeader(rookies.begin(), rookies.end());
 }
@@ -325,6 +346,46 @@ NSMicroPather::TestFunc ISquadTask::GetHitTest() const
 		}
 		return true;
 	};
+}
+
+void ISquadTask::Attack(const int frame)
+{
+	const AIFloat3& tPos = target->GetPos();
+	const int targetTile = manager->GetCircuit()->GetInflMap()->Pos2Index(tPos);
+	const bool isRepeatAttack = (frame >= attackFrame + FRAMES_PER_SEC * 3);
+	attackFrame = isRepeatAttack ? frame : attackFrame;
+
+	AIFloat3 dir = leader->GetPos(frame) - tPos;
+	const float alpha = atan2f(dir.z, dir.x);
+
+	int row = 0;
+	for (const auto& kv : rangeUnits) {
+		// NOTE: float delta = asinf(cdef->GetRadius() / kv.first);
+		//       but sin of a small angle is similar to that angle, omit asinf call
+		float delta = 3.0f * (*kv.second.begin())->GetCircuitDef()->GetRadius() / kv.first;
+		const float maxDelta = (M_PI * 0.8f) / kv.second.size();
+		if (delta > maxDelta) {
+			delta = maxDelta;
+		}
+		float beta = (row++ & 1) ? delta * 0.5f : 0.f;
+		for (CCircuitUnit* unit : kv.second) {
+			unit->GetTravelAct()->StateWait();
+			if (unit->Blocker() != nullptr) {
+				continue;  // Do not interrupt current action
+			}
+
+			if (isRepeatAttack
+				|| (unit->GetTarget() != target)
+				|| (unit->GetTargetTile() != targetTile))
+			{
+				const float angle = alpha + beta;
+				const AIFloat3 newPos(tPos.x + kv.first * cosf(angle), tPos.y, tPos.z + kv.first * sinf(angle));
+				unit->Attack(newPos, target, targetTile, frame + FRAMES_PER_SEC * 60);
+			}
+
+			beta = (beta > 0.f) ? -beta : -beta + delta;
+		}
+	}
 }
 
 #ifdef DEBUG_VIS
