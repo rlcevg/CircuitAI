@@ -13,6 +13,8 @@
 #include "unit/enemy/EnemyUnit.h"
 #include "util/MaskHandler.h"
 
+#include <limits>
+
 namespace circuit {
 
 class CCircuitAI;

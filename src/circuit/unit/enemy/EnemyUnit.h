@@ -24,6 +24,7 @@ class IFighterTask;
 /*
  * Data only structure ease of copy (double-buffer)
  */
+#undef IGNORE  // FIXME: mingw64-gcc5.4 workaround
 struct SEnemyData {
 	using RangeArray = std::array<int, static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_)>;
 
@@ -210,7 +211,6 @@ private:
 /*
  * Per AllyTeam fake ghost enemy
  */
-
 class CEnemyFake: public CEnemyUnit {
 public:
 	CEnemyFake(const CEnemyInfo& that) = delete;
