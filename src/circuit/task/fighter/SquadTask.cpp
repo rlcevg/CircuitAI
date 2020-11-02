@@ -48,20 +48,22 @@ void ISquadTask::AssignTo(CCircuitUnit* unit)
 {
 	IFighterTask::AssignTo(unit);
 
-	rangeUnits[unit->GetCircuitDef()->GetMinRange() * RANGE_MOD].insert(unit);
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	const float range = cdef->GetMinRange() * RANGE_MOD;
+	rangeUnits[range].insert(unit);
 
 	if (leader == nullptr) {
-		lowestRange  = unit->GetCircuitDef()->GetMaxRange();
-		highestRange = unit->GetCircuitDef()->GetMaxRange();
-		lowestSpeed  = unit->GetCircuitDef()->GetSpeed();
-		highestSpeed = unit->GetCircuitDef()->GetSpeed();
+		lowestRange  = cdef->GetMaxRange();
+		highestRange = cdef->GetMaxRange();
+		lowestSpeed  = cdef->GetSpeed();
+		highestSpeed = cdef->GetSpeed();
 		leader = unit;
 	} else {
-		lowestRange  = std::min(lowestRange,  unit->GetCircuitDef()->GetMaxRange());
-		highestRange = std::max(highestRange, unit->GetCircuitDef()->GetMaxRange());
-		lowestSpeed  = std::min(lowestSpeed,  unit->GetCircuitDef()->GetSpeed());
-		highestSpeed = std::max(highestSpeed, unit->GetCircuitDef()->GetSpeed());
-		if (unit->GetCircuitDef()->IsRoleSupport()) {
+		lowestRange  = std::min(lowestRange,  cdef->GetMaxRange());
+		highestRange = std::max(highestRange, cdef->GetMaxRange());
+		lowestSpeed  = std::min(lowestSpeed,  cdef->GetSpeed());
+		highestSpeed = std::max(highestSpeed, cdef->GetSpeed());
+		if (cdef->IsRoleSupport()) {
 			return;
 		}
 		if ((leader->GetArea() == nullptr) ||
@@ -77,7 +79,8 @@ void ISquadTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IFighterTask::RemoveAssignee(unit);
 
-	const float range = unit->GetCircuitDef()->GetMinRange() * RANGE_MOD;
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	const float range = cdef->GetMinRange() * RANGE_MOD;
 	std::set<CCircuitUnit*>& setUnits = rangeUnits[range];
 	setUnits.erase(unit);
 	if (setUnits.empty()) {
@@ -282,12 +285,14 @@ bool ISquadTask::IsMustRegroup()
 
 	bool wasRegroup = (State::REGROUP == state);
 	state = State::ROAM;
-	const float sqMaxDist = SQUARE(std::max<float>(SQUARE_SIZE * 8 * validUnits.size(), highestRange));
-	for (CCircuitUnit* unit : validUnits) {
-		const float sqDist = groupPos.SqDistance2D(unit->GetPos(frame));
-		if (sqDist > sqMaxDist) {
-			state = State::REGROUP;
-			break;
+	if (IsMergeSafe()) {
+		const float sqMaxDist = SQUARE(std::max<float>(SQUARE_SIZE * 8 * validUnits.size(), highestRange));
+		for (CCircuitUnit* unit : validUnits) {
+			const float sqDist = groupPos.SqDistance2D(unit->GetPos(frame));
+			if (sqDist > sqMaxDist) {
+				state = State::REGROUP;
+				break;
+			}
 		}
 	}
 
@@ -355,14 +360,16 @@ void ISquadTask::Attack(const int frame)
 	const bool isRepeatAttack = (frame >= attackFrame + FRAMES_PER_SEC * 3);
 	attackFrame = isRepeatAttack ? frame : attackFrame;
 
-	AIFloat3 dir = leader->GetPos(frame) - tPos;
+	AIFloat3 dir = (*rangeUnits.begin()->second.begin())->GetPos(frame) - tPos;
 	const float alpha = atan2f(dir.z, dir.x);
 
 	int row = 0;
 	for (const auto& kv : rangeUnits) {
+		CCircuitDef* rowDef = (*kv.second.begin())->GetCircuitDef();
+		const float range = (row == 0) ? std::min(kv.first, rowDef->GetLosRadius()) : kv.first;
 		// NOTE: float delta = asinf(cdef->GetRadius() / kv.first);
 		//       but sin of a small angle is similar to that angle, omit asinf call
-		float delta = 3.0f * (*kv.second.begin())->GetCircuitDef()->GetRadius() / kv.first;
+		float delta = 3.0f * rowDef->GetRadius() / range;
 		const float maxDelta = (M_PI * 0.8f) / kv.second.size();
 		if (delta > maxDelta) {
 			delta = maxDelta;
@@ -379,7 +386,7 @@ void ISquadTask::Attack(const int frame)
 				|| (unit->GetTargetTile() != targetTile))
 			{
 				const float angle = alpha + beta;
-				const AIFloat3 newPos(tPos.x + kv.first * cosf(angle), tPos.y, tPos.z + kv.first * sinf(angle));
+				const AIFloat3 newPos(tPos.x + range * cosf(angle), tPos.y, tPos.z + range * sinf(angle));
 				unit->Attack(newPos, target, targetTile, frame + FRAMES_PER_SEC * 60);
 			}
 

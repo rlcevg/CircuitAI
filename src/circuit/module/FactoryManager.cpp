@@ -36,6 +36,7 @@ namespace circuit {
 using namespace springai;
 
 // FIXME: DEBUG
+//#define FACTORY_CHOICE 1
 static int tier;
 static std::string unitType;
 // FIXME: DEBUG
@@ -948,7 +949,9 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	};
 
 	// FIXME: DEBUG
+#ifdef FACTORY_CHOICE
 	circuit->LOG("---- AI = %i | %s | %s | tier%i ----", circuit->GetSkirmishAIId(), unit->GetCircuitDef()->GetDef()->GetName(), unitType.c_str(), tier);
+#endif
 	std::string probType;
 	// FIXME: DEBUG
 	float magnitude = 0.f;
@@ -973,7 +976,9 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			} else if (!isEnemyInArea(frame, bd)) {
 				reason = "no enemies in related map area";
 			}
+#ifdef FACTORY_CHOICE
 			circuit->LOG("ignore %s | reason = %s", bd->GetDef()->GetName(), reason.c_str());
+#endif
 			// FIXME: DEBUG
 			continue;
 		}
@@ -989,7 +994,9 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			candidates.push_back(std::make_pair(bd, prob));
 			magnitude += prob;
 			// FIXME: DEBUG
+#ifdef FACTORY_CHOICE
 			circuit->LOG("%s | %s | %f", probType.c_str(), bd->GetDef()->GetName(), prob);
+#endif
 			// FIXME: DEBUG
 		}
 	}
@@ -1015,7 +1022,9 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE / 2;
 		// FIXME CCircuitDef::RoleType <-> CRecruitTask::RecruitType relations
 		// FIXME: DEBUG
+#ifdef FACTORY_CHOICE
 		circuit->LOG("choice = %s", buildDef->GetDef()->GetName());
+#endif
 		// FIXME: DEBUG
 		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, pos, CRecruitTask::RecruitType::FIREPOWER, radius);
 	}

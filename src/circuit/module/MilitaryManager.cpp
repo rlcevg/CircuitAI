@@ -1382,6 +1382,7 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 		{ROLE_TYPE(MINE),    IFighterTask::FightType::SCOUT},  // FIXME
 		{ROLE_TYPE(SUPER),   IFighterTask::FightType::SUPER},
 	};
+	CEnemyManager* enemyMgr = circuit->GetEnemyManager();
 	IFighterTask* task = nullptr;
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsRoleSupport()) {
@@ -1407,14 +1408,16 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 							}
 						}
 						if (task == nullptr) {
-							if (GetTasks(IFighterTask::FightType::RAID).empty()) {
+							if (GetTasks(IFighterTask::FightType::RAID).empty()
+								|| enemyMgr->IsEnemyNear(unit->GetPos(circuit->GetLastFrame())))
+							{
 								task = EnqueueDefend(IFighterTask::FightType::RAID, raid.min);
 							}
 						}
 					}
 				} break;
 				case IFighterTask::FightType::AH: {
-					if (!cdef->IsRoleMine() && (circuit->GetEnemyManager()->GetEnemyCost(ROLE_TYPE(HEAVY)) < 1.f)) {
+					if (!cdef->IsRoleMine() && (enemyMgr->GetEnemyCost(ROLE_TYPE(HEAVY)) < 1.f)) {
 						task = EnqueueTask(IFighterTask::FightType::ATTACK);
 					}
 				} break;
@@ -1427,7 +1430,7 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 						}
 					}
 					if (task == nullptr) {
-						const float power = std::max(minAttackers, circuit->GetEnemyManager()->GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize());
+						const float power = std::max(minAttackers, enemyMgr->GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize());
 						task = EnqueueDefend(IFighterTask::FightType::ATTACK, power);
 					}
 				} break;
@@ -1437,8 +1440,8 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 				task = EnqueueTask(it->second);
 			}
 		} else {
-			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty();
-			const float power = std::max(minAttackers, circuit->GetEnemyManager()->GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize());
+			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty() || enemyMgr->IsEnemyNear(unit->GetPos(circuit->GetLastFrame()));
+			const float power = std::max(minAttackers, enemyMgr->GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize());
 			task = isDefend ? EnqueueDefend(IFighterTask::FightType::ATTACK, power)
 							: EnqueueTask(IFighterTask::FightType::ATTACK);
 		}

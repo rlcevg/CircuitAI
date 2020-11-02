@@ -77,7 +77,7 @@ public:
 	float GetStaticThreat() const { return staticThreat; }
 	float GetEnemyThreat() const { return mobileThreat + staticThreat; }
 	bool IsAirValid() const { return GetEnemyThreat(ROLE_TYPE(AA)) <= maxAAThreat; }
-	bool IsEnemyNear(const springai::AIFloat3& pos, float maxThreat);
+	bool IsEnemyNear(const springai::AIFloat3& pos, float maxThreat = std::numeric_limits<float>::max());
 
 	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return enemyGroups; }
 	const springai::AIFloat3& GetEnemyPos() const { return enemyPos; }
