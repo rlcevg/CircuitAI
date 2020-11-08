@@ -36,7 +36,7 @@ namespace circuit {
 using namespace springai;
 
 // FIXME: DEBUG
-//#define FACTORY_CHOICE 1
+#define FACTORY_CHOICE 1
 static int tier;
 static std::string unitType;
 // FIXME: DEBUG

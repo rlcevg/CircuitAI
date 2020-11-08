@@ -8,6 +8,7 @@
 #include "task/common/RepairTask.h"
 #include "task/RetreatTask.h"
 #include "task/TaskManager.h"
+#include "map/InfluenceMap.h"
 //#include "module/BuilderManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
@@ -33,7 +34,9 @@ IRepairTask::~IRepairTask()
 
 bool IRepairTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return unit->GetCircuitDef()->IsAbleToRepair() && (target != nullptr) && (cost > buildPower * MIN_BUILD_SEC);
+	CCircuitAI* circuit = manager->GetCircuit();
+	return unit->GetCircuitDef()->IsAbleToRepair() && (target != nullptr) && (cost > buildPower * MIN_BUILD_SEC)
+			&& (circuit->GetInflMap()->GetInfluenceAt(unit->GetPos(circuit->GetLastFrame())) > INFL_EPS);
 }
 
 void IRepairTask::RemoveAssignee(CCircuitUnit* unit)

@@ -114,8 +114,7 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 	bool isNoEndPos = true;
 	if (repairer != nullptr) {
 		endPos = repairer->GetPos(frame);
-		// TODO: Check InfluenceMap before repairer assigned
-		isNoEndPos = (circuit->GetInflMap()->GetEnemyInflAt(endPos) > INFL_EPS);
+		isNoEndPos = (circuit->GetInflMap()->GetInfluenceAt(endPos) < INFL_EPS);
 		if (!isNoEndPos) {
 			range = pathfinder->GetSquareSize();
 		}
