@@ -69,18 +69,10 @@ void CBFactoryTask::Cancel()
 
 void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, float searchRadius)
 {
+	FindFacing(pos);
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-
-//	facing = UNIT_COMMAND_BUILD_NO_FACING;
-	float terWidth = terrainMgr->GetTerrainWidth();
-	float terHeight = terrainMgr->GetTerrainHeight();
-	if (math::fabs(terWidth - 2 * pos.x) > math::fabs(terHeight - 2 * pos.z)) {
-		facing = (2 * pos.x > terWidth) ? UNIT_FACING_WEST : UNIT_FACING_EAST;
-	} else {
-		facing = (2 * pos.z > terHeight) ? UNIT_FACING_NORTH : UNIT_FACING_SOUTH;
-	}
-
 	CTerrainManager::TerrainPredicate predicate = [terrainMgr, builder](const AIFloat3& p) {
 		return terrainMgr->CanReachAtSafe(builder, p, builder->GetCircuitDef()->GetBuildDistance());
 	};

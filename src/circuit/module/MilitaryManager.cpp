@@ -35,6 +35,7 @@
 #include "terrain/path/QueryPathMulti.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "CircuitAI.h"
+#include "util/GameAttribute.h"
 #include "util/Scheduler.h"
 #include "util/Utils.h"
 #include "json/json.h"
@@ -55,8 +56,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		, defenceIdx(0)
 		, scoutIdx(0)
 		, armyCost(0.f)
-		, radarDef(nullptr)
-		, sonarDef(nullptr)
 		, bigGunDef(nullptr)
 {
 	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CMilitaryManager::Init, this));
@@ -231,9 +230,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const float fighterRet = root["retreat"].get("fighter", 0.5f).asFloat();
 	const float commMod = root["quota"]["thr_mod"].get("comm", 1.f).asFloat();
-	float maxRadarDivCost = 0.f;
-	float maxSonarDivCost = 0.f;
-	CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
 
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
 		CCircuitDef::Id unitDefId = cdef.GetId();
@@ -291,26 +287,20 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 				}
 				// FIXME: BA
 			}
-			if (commDef->CanBuild(&cdef)) {
-				float range = cdef.GetDef()->GetRadarRadius();
-				float areaDivCost = M_PI * SQUARE(range) / cdef.GetCostM();
-				if (maxRadarDivCost < areaDivCost) {
-					maxRadarDivCost = areaDivCost;
-					radarDef = &cdef;
-				}
-				range = cdef.GetDef()->GetSonarRadius();
-				areaDivCost = M_PI * SQUARE(range) / cdef.GetCostM();
-				if (maxSonarDivCost < areaDivCost) {
-					maxSonarDivCost = areaDivCost;
-					sonarDef = &cdef;
-				}
+			if (cdef.GetDef()->GetRadarRadius() > 1.f) {
+				radarDefs.allDefs.insert(&cdef);
+			}
+			if (cdef.GetDef()->GetSonarRadius() > 1.f) {
+				sonarDefs.allDefs.insert(&cdef);
 			}
 		}
 	}
 
-	for (const CCircuitDef* cdef : defenderDefs) {
-		finishedHandler[cdef->GetId()] = defenceFinishedHandler;
-		destroyedHandler[cdef->GetId()] = defenceDestroyedHandler;
+	for (unsigned side = 0; side < sideInfos.size(); ++side) {
+		for (const CCircuitDef* cdef : sideInfos[side].defenderDefs) {
+			finishedHandler[cdef->GetId()] = defenceFinishedHandler;
+			destroyedHandler[cdef->GetId()] = defenceDestroyedHandler;
+		}
 	}
 
 	defence = circuit->GetAllyTeam()->GetDefenceMatrix().get();
@@ -380,32 +370,6 @@ void CMilitaryManager::ReadConfig()
 	defenceMod.len = qthrDef.get((unsigned)1, 1.f).asFloat() - defenceMod.min;
 
 	const Json::Value& porc = root["porcupine"];
-	const Json::Value& defs = porc["unit"][circuit->GetSideName()];
-	defenderDefs.reserve(defs.size());
-	for (const Json::Value& def : defs) {
-		CCircuitDef* cdef = circuit->GetCircuitDef(def.asCString());
-		if (cdef == nullptr) {
-			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), def.asCString());
-		} else {
-			defenderDefs.push_back(cdef);
-		}
-	}
-	const Json::Value& land = porc["land"];
-	landDefenders.reserve(land.size());
-	for (const Json::Value& idx : land) {
-		unsigned index = idx.asUInt();
-		if (index < defenderDefs.size()) {
-			landDefenders.push_back(defenderDefs[index]);
-		}
-	}
-	const Json::Value& watr = porc["water"];
-	waterDefenders.reserve(watr.size());
-	for (const Json::Value& idx : watr) {
-		unsigned index = idx.asUInt();
-		if (index < defenderDefs.size()) {
-			waterDefenders.push_back(defenderDefs[index]);
-		}
-	}
 	preventCount = porc.get("prevent", 1).asUInt();
 	const Json::Value& amount = porc["amount"];
 	const Json::Value& amOff = amount["offset"];
@@ -422,44 +386,74 @@ void CMilitaryManager::ReadConfig()
 	amountFactor = (maxFactor - minFactor) / (SQUARE(maxMap) - SQUARE(minMap)) * (mapSize - SQUARE(minMap)) + minFactor + offset;
 //	amountFactor = std::max(amountFactor, 0.f);
 
-	const Json::Value& base = porc["base"];
-	baseDefence.reserve(base.size());
-	for (const Json::Value& pair : base) {
-		unsigned index = pair.get((unsigned)0, -1).asUInt();
-		if (index >= defenderDefs.size()) {
-			continue;
+	CMaskHandler& sideMasker = circuit->GetGameAttribute()->GetSideMasker();
+	sideInfos.resize(sideMasker.GetMasks().size());
+	for (const auto& kv : sideMasker.GetMasks()) {
+		SSideInfo& sideInfo = sideInfos[kv.second.type];
+		const Json::Value& defs = porc["unit"][kv.first];
+		sideInfo.defenderDefs.reserve(defs.size());
+		for (const Json::Value& def : defs) {
+			CCircuitDef* cdef = circuit->GetCircuitDef(def.asCString());
+			if (cdef == nullptr) {
+				circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), def.asCString());
+			} else {
+				sideInfo.defenderDefs.push_back(cdef);
+			}
 		}
-		int frame = pair.get((unsigned)1, 0).asInt() * FRAMES_PER_SEC;
-		baseDefence.push_back(std::make_pair(defenderDefs[index], frame));
-	}
-	auto compare = [](const std::pair<CCircuitDef*, int>& d1, const std::pair<CCircuitDef*, int>& d2) {
-		return d1.second > d2.second;
-	};
-	std::sort(baseDefence.begin(), baseDefence.end(), compare);
-
-	const Json::Value& super = porc["superweapon"];
-	const Json::Value& items = super["unit"][circuit->GetSideName()];
-	const Json::Value& probs = super["weight"];
-	superInfos.reserve(items.size());
-	for (unsigned i = 0; i < items.size(); ++i) {
-		SSuperInfo si;
-		si.cdef = circuit->GetCircuitDef(items[i].asCString());
-		if (si.cdef == nullptr) {
-			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), items[i].asCString());
-			continue;
+		const Json::Value& land = porc["land"];
+		sideInfo.landDefenders.reserve(land.size());
+		for (const Json::Value& idx : land) {
+			unsigned index = idx.asUInt();
+			if (index < sideInfo.defenderDefs.size()) {
+				sideInfo.landDefenders.push_back(sideInfo.defenderDefs[index]);
+			}
 		}
-		si.cdef->SetMainRole(ROLE_TYPE(SUPER));  // override mainRole
-		si.cdef->AddEnemyRole(ROLE_TYPE(SUPER));
-		si.cdef->AddRole(ROLE_TYPE(SUPER));
-		si.weight = probs.get(i, 1.f).asFloat();
-		superInfos.push_back(si);
-	}
-	DiceBigGun();
+		const Json::Value& watr = porc["water"];
+		sideInfo.waterDefenders.reserve(watr.size());
+		for (const Json::Value& idx : watr) {
+			unsigned index = idx.asUInt();
+			if (index < sideInfo.defenderDefs.size()) {
+				sideInfo.waterDefenders.push_back(sideInfo.defenderDefs[index]);
+			}
+		}
 
-	const std::string& defName = porc["default"].get(circuit->GetSideName(), "").asString();
-	defaultPorc = circuit->GetCircuitDef(defName.c_str());
-	if (defaultPorc == nullptr) {
-		defaultPorc = circuit->GetEconomyManager()->GetSideInfo().defaultDef;
+		const Json::Value& base = porc["base"];
+		sideInfo.baseDefence.reserve(base.size());
+		for (const Json::Value& pair : base) {
+			unsigned index = pair.get((unsigned)0, -1).asUInt();
+			if (index >= sideInfo.defenderDefs.size()) {
+				continue;
+			}
+			int frame = pair.get((unsigned)1, 0).asInt() * FRAMES_PER_SEC;
+			sideInfo.baseDefence.emplace_back(sideInfo.defenderDefs[index], frame);
+		}
+		auto compare = [](const std::pair<CCircuitDef*, int>& d1, const std::pair<CCircuitDef*, int>& d2) {
+			return d1.second > d2.second;
+		};
+		std::sort(sideInfo.baseDefence.begin(), sideInfo.baseDefence.end(), compare);
+
+		const Json::Value& super = porc["superweapon"];
+		const Json::Value& items = super["unit"][kv.first];
+		const Json::Value& probs = super["weight"];
+		sideInfo.superInfos.reserve(items.size());
+		for (unsigned i = 0; i < items.size(); ++i) {
+			CCircuitDef* cdef = circuit->GetCircuitDef(items[i].asCString());
+			if (cdef == nullptr) {
+				circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), items[i].asCString());
+				continue;
+			}
+			cdef->SetMainRole(ROLE_TYPE(SUPER));  // override mainRole
+			cdef->AddEnemyRole(ROLE_TYPE(SUPER));
+			cdef->AddRole(ROLE_TYPE(SUPER));
+			const float weight = probs.get(i, 1.f).asFloat();
+			sideInfo.superInfos.emplace_back(cdef, weight);
+		}
+
+		const std::string& defName = porc["default"].get(circuit->GetSideName(), "").asString();
+		sideInfo.defaultPorc = circuit->GetCircuitDef(defName.c_str());
+		if (sideInfo.defaultPorc == nullptr) {
+			sideInfo.defaultPorc = circuit->GetEconomyManager()->GetSideInfos()[kv.second.type].defaultDef;
+		}
 	}
 }
 
@@ -484,6 +478,8 @@ void CMilitaryManager::Init()
 			return pos.SqDistance2D(spots[a].position) > pos.SqDistance2D(spots[b].position);
 		};
 		std::sort(scoutPath.begin(), scoutPath.end(), compare);
+
+		DiceBigGun();
 
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		const int interval = 4;
@@ -730,7 +726,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	// NOTE: circuit->GetTerrainManager()->IsWaterSector(pos) checks whole sector
 	//       but water recognized as height < 0
 	bool isWater = circuit->GetMap()->GetElevationAt(pos.x, pos.z) < -SQUARE_SIZE * 5;
-	std::vector<CCircuitDef*>& defenders = isWater ? waterDefenders : landDefenders;
+	const std::vector<CCircuitDef*>& defenders = isWater ? GetSideInfo().waterDefenders : GetSideInfo().landDefenders;
 
 	// Front-line porc
 	bool isPorc = mm->GetMaxIncome() > mm->GetAvgIncome() + 1.f;
@@ -839,13 +835,19 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 		}
 	};
 	// radar
-	if ((radarDef != nullptr) && radarDef->IsAvailable(frame) && (radarDef->GetCostM() < maxCost)) {
-		const float range = radarDef->GetDef()->GetRadarRadius() / (isPorc ? 4.f : SQRT_2);
-		checkSensor(IBuilderTask::BuildType::RADAR, radarDef, range);
+	if (!radarDefs.infos.empty()) {
+		const SSensorInfo& radarInfo = radarDefs.infos.front();
+		if (radarInfo.cdef->IsAvailable(frame) && (radarInfo.cdef->GetCostM() < maxCost)) {
+		const float range = radarInfo.radius / (isPorc ? 4.f : SQRT_2);
+		checkSensor(IBuilderTask::BuildType::RADAR, radarInfo.cdef, range);
+	}
 	}
 	// sonar
-	if (isWater && (sonarDef != nullptr) && sonarDef->IsAvailable(frame) && (sonarDef->GetCostM() < maxCost)) {
-		checkSensor(IBuilderTask::BuildType::SONAR, sonarDef, sonarDef->GetDef()->GetSonarRadius());
+	if (!sonarDefs.infos.empty()) {
+		const SSensorInfo& sonarInfo = sonarDefs.infos.front();
+		if (isWater && sonarInfo.cdef->IsAvailable(frame) && (sonarInfo.cdef->GetCostM() < maxCost)) {
+			checkSensor(IBuilderTask::BuildType::SONAR, sonarInfo.cdef, sonarInfo.radius);
+		}
 	}
 }
 
@@ -1184,34 +1186,35 @@ AIFloat3 CMilitaryManager::GetBigGunPos(CCircuitDef* bigDef) const
 
 void CMilitaryManager::DiceBigGun()
 {
+	const SuperInfos& superInfos = GetSideInfo().superInfos;
 	if (superInfos.empty()) {
 		return;
 	}
 
-	std::vector<SSuperInfo> candidates;
+	SuperInfos candidates;
 	candidates.reserve(superInfos.size());
 	float magnitude = 0.f;
-	for (SSuperInfo& info : superInfos) {
-		if (info.cdef->IsAvailable(circuit->GetLastFrame())) {
+	for (auto& info : superInfos) {
+		if (info.first->IsAvailable(circuit->GetLastFrame())) {
 			candidates.push_back(info);
-			magnitude += info.weight;
+			magnitude += info.second;
 		}
 	}
 	if ((magnitude == 0.f) || candidates.empty()) {
-		bigGunDef = superInfos[0].cdef;
+		bigGunDef = superInfos[0].first;
 		return;
 	}
 
 	unsigned choice = 0;
 	float dice = (float)rand() / RAND_MAX * magnitude;
 	for (unsigned i = 0; i < candidates.size(); ++i) {
-		dice -= candidates[i].weight;
+		dice -= candidates[i].second;
 		if (dice < 0.f) {
 			choice = i;
 			break;
 		}
 	}
-	bigGunDef = candidates[choice].cdef;
+	bigGunDef = candidates[choice].first;
 }
 
 float CMilitaryManager::ClampMobileCostRatio() const
@@ -1332,14 +1335,36 @@ void CMilitaryManager::UpdateDefence()
 
 void CMilitaryManager::MakeBaseDefence(const AIFloat3& pos)
 {
+	const BuildVector& baseDefence = GetSideInfo().baseDefence;
 	if (baseDefence.empty() || (circuit->IsLoadSave() && (circuit->GetLastFrame() < 0))) {
 		return;
 	}
-	buildDefence.push_back(std::make_pair(pos, baseDefence));
+	buildDefence.emplace_back(pos, baseDefence);
 	if (defend == nullptr) {
 		defend = std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefence, this);
 		circuit->GetScheduler()->RunTaskEvery(defend, FRAMES_PER_SEC);
 	}
+}
+
+void CMilitaryManager::AddSensorDefs(const std::set<CCircuitDef*>& buildDefs)
+{
+	AddSensorDefs(buildDefs, radarDefs, [](CCircuitDef* cdef) {
+		return cdef->GetDef()->GetRadarRadius();
+	});
+	AddSensorDefs(buildDefs, sonarDefs, [](CCircuitDef* cdef) {
+		return cdef->GetDef()->GetSonarRadius();
+	});
+}
+
+void CMilitaryManager::RemoveSensorDefs(const std::set<CCircuitDef*>& buildDefs)
+{
+	RemoveSensorDefs(buildDefs, radarDefs);
+	RemoveSensorDefs(buildDefs, sonarDefs);
+}
+
+const CMilitaryManager::SSideInfo& CMilitaryManager::GetSideInfo() const
+{
+	return sideInfos[circuit->GetSideId()];
 }
 
 void CMilitaryManager::MarkPointOfInterest(CEnemyInfo* enemy)
@@ -1503,6 +1528,82 @@ void CMilitaryManager::DelArmyCost(CCircuitUnit* unit)
 {
 	DelResponse(unit);
 	armyCost = std::max(armyCost - unit->GetCircuitDef()->GetCostM(), .0f);
+}
+
+void CMilitaryManager::AddSensorDefs(const std::set<CCircuitDef*>& buildDefs, SSensorDefs& defsInfo,
+		std::function<float (CCircuitDef*)> radiusFunc)
+{
+	std::set<CCircuitDef*> sensorDefs;
+	std::set_intersection(defsInfo.allDefs.begin(), defsInfo.allDefs.end(),
+						  buildDefs.begin(), buildDefs.end(),
+						  std::inserter(sensorDefs, sensorDefs.begin()));
+	if (sensorDefs.empty()) {
+		return;
+	}
+	std::set<CCircuitDef*> diffDefs;
+	std::set_difference(sensorDefs.begin(), sensorDefs.end(),
+						defsInfo.availDefs.begin(), defsInfo.availDefs.end(),
+						std::inserter(diffDefs, diffDefs.begin()));
+	if (diffDefs.empty()) {
+		return;
+	}
+	defsInfo.availDefs.insert(diffDefs.begin(), diffDefs.end());
+
+	for (auto cdef : diffDefs) {
+		SSensorInfo sensor;
+		sensor.cdef = cdef;
+		sensor.radius = radiusFunc(cdef);
+		sensor.score = M_PI * SQUARE(sensor.radius) / cdef->GetCostM();  // area / cost
+//		sensor.score = sensor.radius - cdef->GetCostM() * 0.1f;  // absolutely no physical meaning
+		defsInfo.infos.push_back(sensor);
+	}
+
+	// High-tech sensor first
+	auto compare = [](const SSensorInfo& s1, const SSensorInfo& s2) {
+		return s1.score > s2.score;
+	};
+	std::sort(defsInfo.infos.begin(), defsInfo.infos.end(), compare);
+
+	// FIXME: DEBUG
+//	circuit->LOG("----");
+//	for (const SSensorInfo& si : defsInfo.infos) {
+//		circuit->LOG("%s | costM=%f | costE=%f | radius=%f | efficiency=%f", si.cdef->GetDef()->GetName(),
+//				si.cdef->GetCostM(), si.cdef->GetCostE(), si.radius, si.score);
+//	}
+	// FIXME: DEBUG
+}
+
+void CMilitaryManager::RemoveSensorDefs(const std::set<CCircuitDef*>& buildDefs, SSensorDefs& defsInfo)
+{
+	std::set<CCircuitDef*> sensorDefs;
+	std::set_intersection(defsInfo.allDefs.begin(), defsInfo.allDefs.end(),
+						  buildDefs.begin(), buildDefs.end(),
+						  std::inserter(sensorDefs, sensorDefs.begin()));
+	if (sensorDefs.empty()) {
+		return;
+	}
+	std::set<CCircuitDef*> diffDefs;
+	std::set_difference(defsInfo.availDefs.begin(), defsInfo.availDefs.end(),
+						sensorDefs.begin(), sensorDefs.end(),
+						std::inserter(diffDefs, diffDefs.begin()));
+	if (diffDefs.empty()) {
+		return;
+	}
+	sensorDefs.clear();
+	std::set_difference(defsInfo.availDefs.begin(), defsInfo.availDefs.end(),
+						diffDefs.begin(), diffDefs.end(),
+						std::inserter(sensorDefs, sensorDefs.begin()));
+	std::swap(defsInfo.availDefs, sensorDefs);
+
+	auto it = defsInfo.infos.begin();
+	while (it != defsInfo.infos.end()) {
+		auto search = diffDefs.find(it->cdef);
+		if (search != diffDefs.end()) {
+			it = defsInfo.infos.erase(it);
+		} else {
+			++it;
+		}
+	}
 }
 
 } // namespace circuit

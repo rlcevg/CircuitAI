@@ -25,6 +25,18 @@ class CRetreatTask;
 class CMilitaryManager: public IUnitModule {
 public:
 	friend class CMilitaryScript;
+	using BuildVector = std::vector<std::pair<CCircuitDef*, int>>;  // cdef: frame
+	using SuperInfos = std::vector<std::pair<CCircuitDef*, float>>;  // cdef: weight
+	struct SSideInfo {
+		std::vector<CCircuitDef*> defenderDefs;
+		std::vector<CCircuitDef*> landDefenders;
+		std::vector<CCircuitDef*> waterDefenders;
+		BuildVector baseDefence;
+
+		CCircuitDef* defaultPorc;
+
+		SuperInfos superInfos;
+	};
 
 	CMilitaryManager(CCircuitAI* circuit);
 	virtual ~CMilitaryManager();
@@ -90,10 +102,16 @@ public:
 	void UpdateDefence();
 	void MakeBaseDefence(const springai::AIFloat3& pos);
 
-	const std::vector<CCircuitDef*>& GetLandDefenders() const { return landDefenders; }
-	const std::vector<CCircuitDef*>& GetWaterDefenders() const { return waterDefenders; }
+	void AddSensorDefs(const std::set<CCircuitDef*>& buildDefs);  // add available sensor defs
+	void RemoveSensorDefs(const std::set<CCircuitDef*>& buildDefs);
+
+	const SSideInfo& GetSideInfo() const;
+	const std::vector<SSideInfo>& GetSideInfos() const { return sideInfos; }
+
+	const std::vector<CCircuitDef*>& GetLandDefenders() const { return GetSideInfo().landDefenders; }
+	const std::vector<CCircuitDef*>& GetWaterDefenders() const { return GetSideInfo().waterDefenders; }
 	CCircuitDef* GetBigGunDef() const { return bigGunDef; }
-	CCircuitDef* GetDefaultPorc() const { return defaultPorc; }
+	CCircuitDef* GetDefaultPorc() const { return GetSideInfo().defaultPorc; }
 
 	void SetBaseDefRange(float range) { defence->SetBaseRange(range); }
 	float GetBaseDefRange() const { return defence->GetBaseRange(); }
@@ -169,26 +187,29 @@ private:
 		float len;
 	} attackMod, defenceMod;
 
-	std::vector<CCircuitDef*> defenderDefs;
-	std::vector<CCircuitDef*> landDefenders;
-	std::vector<CCircuitDef*> waterDefenders;
-	using BuildVector = std::vector<std::pair<CCircuitDef*, int>>;
-	BuildVector baseDefence;
 	unsigned int preventCount;
 	float amountFactor;
-	CCircuitDef* radarDef;
-	CCircuitDef* sonarDef;
 	CCircuitDef* bigGunDef;
-	CCircuitDef* defaultPorc;
 
-	struct SSuperInfo {
+	std::vector<SSideInfo> sideInfos;
+
+	struct SSensorInfo {
 		CCircuitDef* cdef;
-		float weight;
+		float radius;
+		float score;
+		bool operator==(const CCircuitDef* d) { return cdef == d; }
 	};
-	std::vector<SSuperInfo> superInfos;
+	struct SSensorDefs {
+		std::set<CCircuitDef*> allDefs;
+		std::set<CCircuitDef*> availDefs;
+		std::vector<SSensorInfo> infos;
+	} radarDefs, sonarDefs;
+
+	void AddSensorDefs(const std::set<CCircuitDef*>& buildDefs, SSensorDefs& defsInfo, std::function<float (CCircuitDef*)> radiusFunc);
+	void RemoveSensorDefs(const std::set<CCircuitDef*>& buildDefs, SSensorDefs& defsInfo);
 
 	std::shared_ptr<CGameTask> defend;
-	std::vector<std::pair<springai::AIFloat3, BuildVector>> buildDefence;
+	std::vector<std::pair<springai::AIFloat3, BuildVector>> buildDefence;  // pos: defences
 };
 
 } // namespace circuit

@@ -247,7 +247,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				destroyedHandler[cdef.GetId()] = comDestroyedHandler;
 			}
 
-			for (SSideInfo& sideInfo : sideInfos) {
+			for (const SSideInfo& sideInfo : sideInfos) {
 				if (cdef.CanBuild(sideInfo.mexDef)) {
 					mexDefs[cdef.GetId()] = sideInfo.mexDef;
 				}
@@ -259,13 +259,13 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	}
 
 	// FIXME: BA
-	for (unsigned side = 0; side < sideInfos.size(); ++side) {
-		CCircuitDef*& mexDef = sideInfos[side].mexDef;
+	for (SSideInfo& sideInfo : sideInfos) {
+		CCircuitDef*& mexDef = sideInfo.mexDef;
 		if (mexDef != nullptr) {
 			finishedHandler[mexDef->GetId()] = mexFinishedHandler;
 			mexDef->SetIsMex(true);
 		} else {
-			mexDef = sideInfos[side].defaultDef;
+			mexDef = sideInfo.defaultDef;
 		}
 	}
 	if (pylonDef == nullptr) {
@@ -309,12 +309,12 @@ void CEconomyManager::ReadConfig()
 	costRatio = energy.get("cost_ratio", 0.05f).asFloat();
 
 	CMaskHandler& sideMasker = circuit->GetGameAttribute()->GetSideMasker();
-	engyLimits.resize(sideMasker.GetMasks().size());
 	sideInfos.resize(sideMasker.GetMasks().size());
 	const Json::Value& engySides = energy["side"];
 	const Json::Value& metal = econ["metal"];
 	const Json::Value& deflt = econ["default"];
 	for (const auto& kv : sideMasker.GetMasks()) {
+		SSideInfo& sideInfo = sideInfos[kv.second.type];
 		const Json::Value& surfs = engySides[kv.first];
 
 		std::vector<std::pair<std::string, int>> engies;
@@ -327,7 +327,7 @@ void CEconomyManager::ReadConfig()
 			engies.push_back(std::make_pair(engy, limit));
 		}
 
-		std::unordered_map<CCircuitDef*, int>& list = engyLimits[kv.second.type];
+		std::unordered_map<CCircuitDef*, int>& list = sideInfo.engyLimits;
 		for (unsigned i = 0; i < engies.size(); ++i) {
 			const char* name = engies[i].first.c_str();
 			CCircuitDef* cdef = circuit->GetCircuitDef(name);
@@ -337,8 +337,6 @@ void CEconomyManager::ReadConfig()
 			}
 			list[cdef] = engies[i].second;
 		}
-
-		SSideInfo& sideInfo = sideInfos[kv.second.type];
 
 		// Metal
 		const char* name = metal[kv.first][0].asCString();
@@ -530,12 +528,10 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 	}
 	availEnergyDefs.insert(diffDefs.begin(), diffDefs.end());
 
-	const std::unordered_map<CCircuitDef*, int>& list = engyLimits[circuit->GetSideId()];
+	const std::unordered_map<CCircuitDef*, int>& list = GetSideInfo().engyLimits;
 	for (auto cdef : diffDefs) {
 		SEnergyInfo engy;
 		engy.cdef = cdef;
-		engy.costM = cdef->GetCostM();
-		engy.costE = cdef->GetCostE();
 		auto customParams = cdef->GetDef()->GetCustomParams();
 		auto it = customParams.find("income_energy");
 		engy.make = (it != customParams.end())
@@ -551,7 +547,7 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 			}
 		}
 		// TODO: Instead of plain sizeX, sizeZ use AI's yardmap size
-		engy.costDivMake = (engy.costM/* + engy.costE * 0.05f*/) * cdef->GetDef()->GetXSize() * cdef->GetDef()->GetZSize() / SQUARE(engy.make);
+		engy.score = SQUARE(engy.make) / ((cdef->GetCostM()/* + cdef->GetCostE() * 0.05f*/) * cdef->GetDef()->GetXSize() * cdef->GetDef()->GetZSize());
 		auto lit = list.find(cdef);
 		engy.limit = (lit != list.end()) ? lit->second : 0;
 		energyInfos.push_back(engy);
@@ -559,13 +555,15 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 
 	// High-tech energy first
 	auto compare = [](const SEnergyInfo& e1, const SEnergyInfo& e2) {
-		return e1.costDivMake < e2.costDivMake;
+		return e1.score > e2.score;
 	};
 	std::sort(energyInfos.begin(), energyInfos.end(), compare);
 
 	// FIXME: DEBUG
+//	circuit->LOG("----");
 //	for (const SEnergyInfo& ei : energyInfos) {
-//		circuit->LOG("%s | costM=%f | costE=%f | make=%f | efficiency=%f | limit=%i", ei.cdef->GetDef()->GetName(), ei.costM, ei.costE, ei.make, ei.costDivMake, ei.limit);
+//		circuit->LOG("%s | costM=%f | costE=%f | make=%f | efficiency=%f | limit=%i", ei.cdef->GetDef()->GetName(),
+//				ei.cdef->GetCostM(), ei.cdef->GetCostE(), ei.make, ei.score, ei.limit);
 //	}
 	// FIXME: DEBUG
 }
@@ -923,19 +921,19 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 
 		if (engy.cdef->GetCount() < engy.limit) {
 			isLastHope = false;
-			if (taskSize < (int)(buildPower / engy.costM * 2 + 1)) {
+			if (taskSize < (int)(buildPower / engy.cdef->GetCostM() * 2 + 1)) {
 				bestDef = engy.cdef;
 				// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
 				//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
 				//       solar       geothermal    fusion         singu           ...
 				//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
-				if ((engy.costM * 16.0f < maxBuildTime * SQUARE(metalIncome))
-					&& (engy.costE * costRatio < energyIncome))
+				if ((engy.cdef->GetCostM() * 16.0f < maxBuildTime * SQUARE(metalIncome))
+					&& (engy.cdef->GetCostE() * costRatio < energyIncome))
 				{
 					break;
 				}
-			} else if ((engy.costM * 16.0f < maxBuildTime * SQUARE(metalIncome))
-				&& (engy.costE * costRatio < energyIncome))
+			} else if ((engy.cdef->GetCostM() * 16.0f < maxBuildTime * SQUARE(metalIncome))
+				&& (engy.cdef->GetCostE() * costRatio < energyIncome))
 			{
 				bestDef = nullptr;
 				break;
@@ -945,7 +943,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			break;
 		} else if (hopeDef == nullptr) {
 			hopeDef = engy.cdef;
-			isLastHope = isLastHope && (taskSize < (int)(buildPower / engy.costM * 2 + 1));
+			isLastHope = isLastHope && (taskSize < (int)(buildPower / engy.cdef->GetCostM() * 2 + 1));
 		}
 	}
 	if (isLastHope) {
@@ -974,7 +972,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 
 			// TODO: Calc enemy vector and move position into opposite direction
 			AIFloat3 mapCenter(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
-			buildPos += (buildPos - mapCenter).Normalize2D() * 300.0f * (bestDef->GetCostM() / energyInfos.front().costM);
+			buildPos += (buildPos - mapCenter).Normalize2D() * 300.0f * (bestDef->GetCostM() / energyInfos.front().cdef->GetCostM());
 			CCircuitDef* bdef = (unit == nullptr) ? bestDef : unit->GetCircuitDef();
 			CTerrainManager::CorrectPosition(buildPos);
 			buildPos = circuit->GetTerrainManager()->GetBuildPosition(bdef, buildPos);

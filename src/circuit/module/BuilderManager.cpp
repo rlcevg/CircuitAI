@@ -1217,6 +1217,7 @@ void CBuilderManager::AddBuildList(CCircuitUnit* unit)
 
 	if (!buildDefs.empty()) {
 		circuit->GetEconomyManager()->AddEnergyDefs(buildDefs);
+		circuit->GetMilitaryManager()->AddSensorDefs(buildDefs);
 	}
 
 	// TODO: Same thing with factory, etc.
@@ -1241,6 +1242,7 @@ void CBuilderManager::RemoveBuildList(CCircuitUnit* unit)
 
 	if (!buildDefs.empty()) {  // throws exception on set::erase otherwise
 		circuit->GetEconomyManager()->RemoveEnergyDefs(buildDefs);
+		circuit->GetMilitaryManager()->RemoveSensorDefs(buildDefs);
 	}
 
 	// TODO: Same thing with factory, etc.

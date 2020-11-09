@@ -77,6 +77,7 @@ void CRecruitTask::Update()
 			for (CCircuitUnit* unit : units) {
 				TRY_UNIT(circuit, unit,
 					unit->CmdPriority(ClampPriority());
+					unit->CmdBARPriority(ClampPriority());
 				)
 			}
 		}
@@ -86,6 +87,7 @@ void CRecruitTask::Update()
 			for (CCircuitUnit* unit : units) {
 				TRY_UNIT(circuit, unit,
 					unit->CmdPriority(0);
+					unit->CmdBARPriority(0);
 				)
 			}
 		}
@@ -133,6 +135,7 @@ void CRecruitTask::Execute(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 	TRY_UNIT(circuit, unit,
 		unit->CmdPriority(ClampPriority());
+		unit->CmdBARPriority(ClampPriority());
 	)
 	const int frame = circuit->GetLastFrame();
 

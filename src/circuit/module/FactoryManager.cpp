@@ -927,7 +927,12 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
 	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	static std::vector<std::pair<CCircuitDef*, float>> candidates;  // NOTE: micro-opt
+	struct SCandidate {
+		CCircuitDef* cdef;
+		float weight;
+		bool isResponse;
+	};
+	static std::vector<SCandidate> candidates;  // NOTE: micro-opt
 //	candidates.reserve(facDef.buildDefs.size());
 	const int frame = circuit->GetLastFrame();
 	const float energyNet = economyMgr->GetAvgEnergyIncome() - economyMgr->GetEnergyUse();
@@ -989,9 +994,10 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			// NOTE: with probs=[n1, n2, n3, n4, n5]
 			//       previous response system provided probs2=[0, res(n2), 0, 0, res(n5)]
 			//       current is probs2=[n1, res(n2), n3, n4, res(n5)]
-			probType = (prob > 0.f) ? "response" : "regular";
-			prob = (prob > 0.f) ? prob : probs[i];
-			candidates.push_back(std::make_pair(bd, prob));
+			bool isResponse = (prob > 0.f);
+			probType = isResponse ? "response" : "regular";
+			prob = isResponse ? prob : probs[i];
+			candidates.push_back({bd, prob, isResponse});
 			magnitude += prob;
 			// FIXME: DEBUG
 #ifdef FACTORY_CHOICE
@@ -1001,16 +1007,18 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		}
 	}
 
+	bool isResponse = false;
 	if (magnitude == 0.f) {  // workaround for disabled units
 		if (!candidates.empty()) {
-			buildDef = candidates[rand() % candidates.size()].first;
+			buildDef = candidates[rand() % candidates.size()].cdef;
 		}
 	} else {
 		float dice = (float)rand() / RAND_MAX * magnitude;
-		for (auto& pair : candidates) {
-			dice -= pair.second;
+		for (const SCandidate& candy : candidates) {
+			dice -= candy.weight;
 			if (dice < 0.f) {
-				buildDef = pair.first;
+				buildDef = candy.cdef;
+				isResponse = candy.isResponse;
 				break;
 			}
 		}
@@ -1020,13 +1028,14 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	if (buildDef != nullptr) {
 		UnitDef* def = unit->GetCircuitDef()->GetDef();
 		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE / 2;
+		CRecruitTask::Priority priority = isResponse ? CRecruitTask::Priority::NORMAL : CRecruitTask::Priority::LOW;
 		// FIXME CCircuitDef::RoleType <-> CRecruitTask::RecruitType relations
 		// FIXME: DEBUG
 #ifdef FACTORY_CHOICE
 		circuit->LOG("choice = %s", buildDef->GetDef()->GetName());
 #endif
 		// FIXME: DEBUG
-		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, pos, CRecruitTask::RecruitType::FIREPOWER, radius);
+		return EnqueueTask(priority, buildDef, pos, CRecruitTask::RecruitType::FIREPOWER, radius);
 	}
 	return nullptr;
 }

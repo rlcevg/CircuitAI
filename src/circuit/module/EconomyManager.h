@@ -39,6 +39,8 @@ public:
 		CCircuitDef* mexDef;
 		CCircuitDef* mohoMexDef;
 		CCircuitDef* defaultDef;
+
+		std::unordered_map<CCircuitDef*, int> engyLimits;
 	};
 
 	CEconomyManager(CCircuitAI* circuit);
@@ -145,16 +147,12 @@ private:
 	std::set<CCircuitDef*> availEnergyDefs;
 	struct SEnergyInfo {
 		CCircuitDef* cdef;
-		float costM;
-		float costE;
 		float make;
-		float costDivMake;
+		float score;
 		int limit;
 		bool operator==(const CCircuitDef* d) { return cdef == d; }
 	};
 	std::vector<SEnergyInfo> energyInfos;
-	// FIXME: Move into SSideInfo
-	std::vector<std::unordered_map<CCircuitDef*, int>> engyLimits;  // 1 for each side
 
 	float ecoStep;
 	float ecoFactor;

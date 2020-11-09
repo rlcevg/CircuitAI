@@ -539,6 +539,17 @@ CAllyUnit* IBuilderTask::FindSameAlly(CCircuitUnit* builder, const std::vector<U
 
 void IBuilderTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, float searchRadius)
 {
+	FindFacing(pos);
+
+	CTerrainManager* terrainMgr = manager->GetCircuit()->GetTerrainManager();
+	CTerrainManager::TerrainPredicate predicate = [terrainMgr, builder](const AIFloat3& p) {
+		return terrainMgr->CanReachAtSafe(builder, p, builder->GetCircuitDef()->GetBuildDistance());
+	};
+	SetBuildPos(terrainMgr->FindBuildSite(buildDef, pos, searchRadius, facing, predicate));
+}
+
+void IBuilderTask::FindFacing(const springai::AIFloat3& pos)
+{
 	CTerrainManager* terrainMgr = manager->GetCircuit()->GetTerrainManager();
 
 //	facing = UNIT_COMMAND_BUILD_NO_FACING;
@@ -549,11 +560,6 @@ void IBuilderTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, flo
 	} else {
 		facing = (2 * pos.z > terHeight) ? UNIT_FACING_NORTH : UNIT_FACING_SOUTH;
 	}
-
-	CTerrainManager::TerrainPredicate predicate = [terrainMgr, builder](const AIFloat3& p) {
-		return terrainMgr->CanReachAtSafe(builder, p, builder->GetCircuitDef()->GetBuildDistance());
-	};
-	SetBuildPos(terrainMgr->FindBuildSite(buildDef, pos, searchRadius, facing, predicate));
 }
 
 void IBuilderTask::ExecuteChain(SBuildChain* chain)
