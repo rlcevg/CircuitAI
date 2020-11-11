@@ -81,7 +81,7 @@ void CSRepairTask::Update()
 				auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 				for (Unit* u : us) {
 					CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-					if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)
+					if ((candUnit == nullptr) || builderMgr->IsReclaimUnit(candUnit)
 						|| candUnit->GetCircuitDef()->IsMex())  // FIXME: BA, should be IsT1Mex()
 					{
 						continue;
@@ -94,7 +94,7 @@ void CSRepairTask::Update()
 				utils::free_clear(us);
 				if (task == nullptr) {
 					// Reclaim task
-					if (circuit->GetCallback()->IsFeaturesIn(position, radius)) {
+					if (circuit->GetCallback()->IsFeaturesIn(position, radius) && !builderMgr->IsResurrect(position, radius)) {
 						task = factoryMgr->EnqueueReclaim(IBuilderTask::Priority::NORMAL, position, radius);
 					}
 				}
@@ -108,7 +108,7 @@ void CSRepairTask::Update()
 			auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 			for (Unit* u : us) {
 				CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-				if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)
+				if ((candUnit == nullptr) || builderMgr->IsReclaimUnit(candUnit)
 					|| candUnit->GetCircuitDef()->IsMex())  // FIXME: BA, should be IsT1Mex()
 				{
 					continue;

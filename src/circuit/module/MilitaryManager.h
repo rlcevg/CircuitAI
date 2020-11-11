@@ -117,6 +117,8 @@ public:
 	float GetBaseDefRange() const { return defence->GetBaseRange(); }
 	float GetCommDefRadBegin() const { return defence->GetCommRadBegin(); }
 	float GetCommDefRad(float baseDist) const { return defence->GetCommRad(baseDist); }
+	unsigned int GetDefendTaskNum() const { return defence->GetDefendTaskNum(); }
+	unsigned int GetDefendersNum() const { return defence->GetDefendersNum(); }
 
 	void MarkPointOfInterest(CEnemyInfo* enemy);
 	void UnmarkPointOfInterest(CEnemyInfo* enemy);
@@ -200,11 +202,10 @@ private:
 		bool operator==(const CCircuitDef* d) { return cdef == d; }
 	};
 	struct SSensorDefs {
-		std::set<CCircuitDef*> allDefs;
-		std::set<CCircuitDef*> availDefs;
-		std::vector<SSensorInfo> infos;
+		std::set<CCircuitDef*> all;
+		std::set<CCircuitDef*> avail;
+		std::vector<SSensorInfo> infos;  // sorted high-score first
 	} radarDefs, sonarDefs;
-
 	void AddSensorDefs(const std::set<CCircuitDef*>& buildDefs, SSensorDefs& defsInfo, std::function<float (CCircuitDef*)> radiusFunc);
 	void RemoveSensorDefs(const std::set<CCircuitDef*>& buildDefs, SSensorDefs& defsInfo);
 

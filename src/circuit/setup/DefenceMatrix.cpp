@@ -47,6 +47,10 @@ void CDefenceMatrix::ReadConfig(CCircuitAI* circuit)
 	commRadBegin = commRad.get((unsigned)0, 1000.f).asFloat();
 	const float commRadEnd = commRad.get((unsigned)1, 300.f).asFloat();
 	commRadFraction = (commRadEnd - commRadBegin) / baseRange;
+
+	const Json::Value& escort = defence["escort"];
+	defendTaskNum = escort.get(unsigned(0), 2).asUInt();
+	defendersNum = escort.get(unsigned(1), 1).asUInt();
 }
 
 void CDefenceMatrix::Init(CCircuitAI* circuit)

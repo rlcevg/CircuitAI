@@ -35,7 +35,6 @@ ISquadTask::ISquadTask(ITaskManager* mgr, FightType type, float powerMod)
 		, groupPos(-RgtVector)
 		, prevGroupPos(-RgtVector)
 		, pPath(std::make_shared<PathInfo>())
-		, deltaOffset(M_PI * 0.1f)
 		, groupFrame(0)
 		, attackFrame(-1)
 {
@@ -360,25 +359,24 @@ void ISquadTask::Attack(const int frame)
 	const int targetTile = manager->GetCircuit()->GetInflMap()->Pos2Index(tPos);
 	const bool isRepeatAttack = (frame >= attackFrame + FRAMES_PER_SEC * 3);
 	attackFrame = isRepeatAttack ? frame : attackFrame;
-	if (isRepeatAttack) {
-		deltaOffset = -deltaOffset;
-	}
 
 	AIFloat3 dir = (*rangeUnits.begin()->second.begin())->GetPos(frame) - tPos;
-	const float alpha = atan2f(dir.z, dir.x) + deltaOffset;
+	const float alpha = atan2f(dir.z, dir.x);
+	// incorrect, it should check aoe in vicinity
+	const float aoe = (target->GetCircuitDef() != nullptr) ? target->GetCircuitDef()->GetAoe() : SQUARE_SIZE;
 
 	int row = 0;
 	for (const auto& kv : rangeUnits) {
 		CCircuitDef* rowDef = (*kv.second.begin())->GetCircuitDef();
 		const float range = (row == 0) ? std::min(kv.first, rowDef->GetLosRadius()) : kv.first;
-		// NOTE: float delta = asinf(cdef->GetRadius() / kv.first);
-		//       but sin of a small angle is similar to that angle, omit asinf() call
-		float delta = 3.0f * rowDef->GetRadius() / range;
 		const float maxDelta = (M_PI * 0.8f) / kv.second.size();
+		// NOTE: float delta = asinf(cdef->GetRadius() / range);
+		//       but sin of a small angle is similar to that angle, omit asinf() call
+		float delta = (2.5f * (rowDef->GetRadius() + aoe)) / range;
 		if (delta > maxDelta) {
 			delta = maxDelta;
 		}
-		float beta = -delta * ((kv.second.size() - (++row & 1)) / 2);
+		float beta = -delta * ((kv.second.size() - 1) / 2 + (++row & 1) * 0.5f);
 		for (CCircuitUnit* unit : kv.second) {
 			unit->GetTravelAct()->StateWait();
 			if (unit->Blocker() != nullptr) {

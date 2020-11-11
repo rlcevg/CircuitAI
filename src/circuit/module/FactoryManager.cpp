@@ -1319,7 +1319,7 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 	auto units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius * 0.9f);
 	for (Unit* u : units) {
 		CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-		if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)
+		if ((candUnit == nullptr) || builderMgr->IsReclaimUnit(candUnit)
 			|| candUnit->GetCircuitDef()->IsMex())  // FIXME: BA, should be IsT1Mex()
 		{
 			continue;
@@ -1360,7 +1360,7 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 	}
 	if (isMetalEmpty) {
 		// Reclaim task
-		if (circuit->GetCallback()->IsFeaturesIn(pos, radius)) {
+		if (circuit->GetCallback()->IsFeaturesIn(pos, radius) && !builderMgr->IsResurrect(pos, radius)) {
 			return EnqueueReclaim(IBuilderTask::Priority::NORMAL, pos, radius);
 		}
 	}

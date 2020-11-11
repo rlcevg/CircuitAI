@@ -29,7 +29,8 @@
 "defence": {
 	"infl_rad": 5,  // influenece cell radius for defendAlly map
 	"base_rad": [600.0, 1200.0],  // defend if enemy within clamp(distance(lane_pos, base_pos), 1000, 2000) radius
-	"comm_rad": [1000.0, 500.0]  // 0 distance from base ~ 1000, base_rad ~ 500.0
+	"comm_rad": [1000.0, 500.0],  // 0 distance from base ~ 1000, base_rad ~ 500.0
+	"escort": [0, 2]  // [<builders_count>, <defenders_count>]
 },
 
 "behaviour": {
@@ -292,9 +293,7 @@
 		"pwr_mod": 1.5
 	},
 	"armrectr": {
-		"role": ["raider", "mine"],
-		"attribute": ["siege", "mine", "scout"],
-		"pwr_mod": 2
+		"role": ["builder"]
 	},
 	"armrock": {
 		"role": ["skirmish"]
@@ -609,9 +608,7 @@
 		"attribute": ["scout"]
 	},
 	"cornecro": {
-		"role": ["raider", "mine"],
-		"attribute": ["siege", "mine", "scout"],
-		"pwr_mod": 2
+		"role": ["builder"]
 	},
 	"corstorm": {
 		"role": ["skirmish"]

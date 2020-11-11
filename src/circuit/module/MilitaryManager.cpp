@@ -238,19 +238,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		}
 		if (cdef.GetDef()->IsBuilder()) {
 //			damagedHandler[unitDefId] = structDamagedHandler;
-			// FIXME: BA
-			if (cdef.GetBuildOptions().empty() && cdef.IsMobile()) {  // armrectr, cornecro
-				createdHandler[unitDefId] = attackerCreatedHandler;
-				finishedHandler[unitDefId] = attackerFinishedHandler;
-				idleHandler[unitDefId] = attackerIdleHandler;
-				damagedHandler[unitDefId] = attackerDamagedHandler;
-				destroyedHandler[unitDefId] = attackerDestroyedHandler;
-
-				if (cdef.GetRetreat() < 0.f) {
-					cdef.SetRetreat(fighterRet);
-				}
-			}
-			// FIXME: BA
 			continue;
 		}
 		const std::map<std::string, std::string>& customParams = cdef.GetDef()->GetCustomParams();
@@ -288,10 +275,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 				// FIXME: BA
 			}
 			if (cdef.GetDef()->GetRadarRadius() > 1.f) {
-				radarDefs.allDefs.insert(&cdef);
+				radarDefs.all.insert(&cdef);
 			}
 			if (cdef.GetDef()->GetSonarRadius() > 1.f) {
-				sonarDefs.allDefs.insert(&cdef);
+				sonarDefs.all.insert(&cdef);
 			}
 		}
 	}
@@ -1427,7 +1414,7 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 					} else {
 						const std::set<IFighterTask*>& guards = GetTasks(IFighterTask::FightType::GUARD);
 						for (IFighterTask* t : guards) {
-							if (t->GetAssignees().empty()) {
+							if (t->GetAssignees().size() < GetDefendersNum()) {
 								task = t;
 								break;
 							}
@@ -1449,7 +1436,7 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 				case IFighterTask::FightType::DEFEND: {
 					const std::set<IFighterTask*>& guards = GetTasks(IFighterTask::FightType::GUARD);
 					for (IFighterTask* t : guards) {
-						if (t->GetAssignees().empty()) {
+						if (t->GetAssignees().size() < GetDefendersNum() / 2) {
 							task = t;
 							break;
 						}
@@ -1534,7 +1521,7 @@ void CMilitaryManager::AddSensorDefs(const std::set<CCircuitDef*>& buildDefs, SS
 		std::function<float (CCircuitDef*)> radiusFunc)
 {
 	std::set<CCircuitDef*> sensorDefs;
-	std::set_intersection(defsInfo.allDefs.begin(), defsInfo.allDefs.end(),
+	std::set_intersection(defsInfo.all.begin(), defsInfo.all.end(),
 						  buildDefs.begin(), buildDefs.end(),
 						  std::inserter(sensorDefs, sensorDefs.begin()));
 	if (sensorDefs.empty()) {
@@ -1542,12 +1529,12 @@ void CMilitaryManager::AddSensorDefs(const std::set<CCircuitDef*>& buildDefs, SS
 	}
 	std::set<CCircuitDef*> diffDefs;
 	std::set_difference(sensorDefs.begin(), sensorDefs.end(),
-						defsInfo.availDefs.begin(), defsInfo.availDefs.end(),
+						defsInfo.avail.begin(), defsInfo.avail.end(),
 						std::inserter(diffDefs, diffDefs.begin()));
 	if (diffDefs.empty()) {
 		return;
 	}
-	defsInfo.availDefs.insert(diffDefs.begin(), diffDefs.end());
+	defsInfo.avail.insert(diffDefs.begin(), diffDefs.end());
 
 	for (auto cdef : diffDefs) {
 		SSensorInfo sensor;
@@ -1565,7 +1552,7 @@ void CMilitaryManager::AddSensorDefs(const std::set<CCircuitDef*>& buildDefs, SS
 	std::sort(defsInfo.infos.begin(), defsInfo.infos.end(), compare);
 
 	// FIXME: DEBUG
-//	circuit->LOG("----");
+//	circuit->LOG("----Sensor----");
 //	for (const SSensorInfo& si : defsInfo.infos) {
 //		circuit->LOG("%s | costM=%f | costE=%f | radius=%f | efficiency=%f", si.cdef->GetDef()->GetName(),
 //				si.cdef->GetCostM(), si.cdef->GetCostE(), si.radius, si.score);
@@ -1576,24 +1563,24 @@ void CMilitaryManager::AddSensorDefs(const std::set<CCircuitDef*>& buildDefs, SS
 void CMilitaryManager::RemoveSensorDefs(const std::set<CCircuitDef*>& buildDefs, SSensorDefs& defsInfo)
 {
 	std::set<CCircuitDef*> sensorDefs;
-	std::set_intersection(defsInfo.allDefs.begin(), defsInfo.allDefs.end(),
+	std::set_intersection(defsInfo.all.begin(), defsInfo.all.end(),
 						  buildDefs.begin(), buildDefs.end(),
 						  std::inserter(sensorDefs, sensorDefs.begin()));
 	if (sensorDefs.empty()) {
 		return;
 	}
 	std::set<CCircuitDef*> diffDefs;
-	std::set_difference(defsInfo.availDefs.begin(), defsInfo.availDefs.end(),
+	std::set_difference(defsInfo.avail.begin(), defsInfo.avail.end(),
 						sensorDefs.begin(), sensorDefs.end(),
 						std::inserter(diffDefs, diffDefs.begin()));
 	if (diffDefs.empty()) {
 		return;
 	}
 	sensorDefs.clear();
-	std::set_difference(defsInfo.availDefs.begin(), defsInfo.availDefs.end(),
+	std::set_difference(defsInfo.avail.begin(), defsInfo.avail.end(),
 						diffDefs.begin(), diffDefs.end(),
 						std::inserter(sensorDefs, sensorDefs.begin()));
-	std::swap(defsInfo.availDefs, sensorDefs);
+	std::swap(defsInfo.avail, sensorDefs);
 
 	auto it = defsInfo.infos.begin();
 	while (it != defsInfo.infos.end()) {

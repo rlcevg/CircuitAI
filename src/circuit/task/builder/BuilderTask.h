@@ -38,6 +38,7 @@ public:
 		MEX,
 		REPAIR,
 		RECLAIM,
+		RESURRECT,
 		TERRAFORM,
 		_SIZE_,  // selectable tasks count
 		RECRUIT,  // builder actions that can't be reassigned
@@ -104,7 +105,7 @@ public:
 	void SetNextTask(IBuilderTask* task) { nextTask = task; }
 	IBuilderTask* GetNextTask() const { return nextTask; }
 
-	float ClampPriority() const { return std::min(static_cast<float>(priority), 2.0f); }
+	float ClampPriority() const { return std::min(static_cast<float>(priority), 1.0f); }  // FIXME: BA
 
 protected:
 	CCircuitUnit* GetNextAssignee();

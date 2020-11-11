@@ -46,6 +46,8 @@ public:
 	float GetCommRad(float baseDist) const {
 		return commRadFraction * baseDist + commRadBegin;
 	}
+	unsigned int GetDefendTaskNum() const { return defendTaskNum; }
+	unsigned int GetDefendersNum() const { return defendersNum; }
 
 private:
 	CMetalManager* metalManager;
@@ -56,6 +58,9 @@ private:
 	float baseRange;
 	float commRadBegin;
 	float commRadFraction;
+
+	unsigned int defendTaskNum;
+	unsigned int defendersNum;
 };
 
 } // namespace circuit

@@ -8,7 +8,6 @@
 #include "task/common/ReclaimTask.h"
 #include "task/TaskManager.h"
 #include "terrain/TerrainManager.h"
-#include "unit/action/DGunAction.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
@@ -103,6 +102,11 @@ void IReclaimTask::SetTarget(CCircuitUnit* unit)
 {
 	target = unit;
 	buildPos = (unit != nullptr) ? unit->GetPos(manager->GetCircuit()->GetLastFrame()) : AIFloat3(-RgtVector);
+}
+
+bool IReclaimTask::IsInRange(const AIFloat3& pos, float range) const
+{
+	return position.SqDistance2D(pos) <= SQUARE(radius + range);
 }
 
 } // namespace circuit

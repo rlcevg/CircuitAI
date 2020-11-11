@@ -36,6 +36,7 @@ public:
 	ICoreUnit::Id GetTargetId() const { return targetId; }
 
 	CAllyUnit* FindUnitToAssist(CCircuitUnit* unit);
+protected:
 	ICoreUnit::Id targetId;  // Ignore "target" variable because ally units are vivid
 };
 

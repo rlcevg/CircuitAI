@@ -10,6 +10,8 @@
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
+#include "spring/SpringCallback.h"
+
 namespace circuit {
 
 using namespace springai;
@@ -41,6 +43,44 @@ void CFGuardTask::Start(CCircuitUnit* unit)
 		)
 	} else {
 		manager->AbortTask(this);
+	}
+}
+
+void CFGuardTask::Update()
+{
+	++updCount;
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	CCircuitUnit* vip = circuit->GetTeamUnit(vipId);
+	if (vip == nullptr) {
+		manager->AbortTask(this);
+		return;
+	}
+
+	CEnemyInfo* target = nullptr;
+	const int frame = circuit->GetLastFrame();
+	const AIFloat3& pos = vip->GetPos(frame);
+	std::vector<ICoreUnit::Id> enemyIds = circuit->GetCallback()->GetEnemyUnitIdsIn(pos, vip->GetCircuitDef()->GetLosRadius() + 100.f);
+	for (ICoreUnit::Id enemyId : enemyIds) {
+		CEnemyInfo* ei = circuit->GetEnemyInfo(enemyId);
+		if (ei != nullptr) {
+			target = ei;
+			break;
+		}
+	}
+
+	if (target != nullptr) {
+		for (CCircuitUnit* unit : units) {
+			TRY_UNIT(circuit, unit,
+				unit->Attack(target, frame + FRAMES_PER_SEC * 60);
+			)
+		}
+	} else {
+		for (CCircuitUnit* unit : units) {
+			TRY_UNIT(circuit, unit,
+				unit->GetUnit()->Guard(vip->GetUnit());
+			)
+		}
 	}
 }
 

@@ -963,12 +963,19 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 //	}
 	// FIXME: DEBUG
 
+	// FIXME: Random Side workaround
+	if (unit->GetCircuitDef()->IsRoleComm() && (setupManager->GetCommander() == nullptr)) {
+		setupManager->SetCommander(unit);
+	}
+
 	TRY_UNIT(this, unit,
 		unit->CmdFireAtRadar(true);
 		unit->GetUnit()->SetAutoRepairLevel(0);
-//		if (unit->GetCircuitDef()->GetDef()->IsAbleToCloak()) {
-//			unit->CmdCloak(true);
-//		}
+		if (unit->GetCircuitDef()->IsAbleToCloak()
+			&& unit->GetCircuitDef()->GetCloakCost() < economyManager->GetAvgEnergyIncome() * 0.1f)
+		{
+			unit->CmdCloak(true);
+		}
 	)
 	for (auto& module : modules) {
 		module->UnitFinished(unit);
@@ -1063,9 +1070,11 @@ int CCircuitAI::UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId)
 		unit->GetUnit()->Stop();
 		unit->CmdFireAtRadar(true);
 		unit->GetUnit()->SetAutoRepairLevel(0);
-//		if (unit->GetCircuitDef()->GetDef()->IsAbleToCloak()) {
-//			unit->CmdCloak(true);
-//		}
+		if (unit->GetCircuitDef()->IsAbleToCloak()
+			&& unit->GetCircuitDef()->GetCloakCost() < economyManager->GetAvgEnergyIncome() * 0.1f)
+		{
+			unit->CmdCloak(true);
+		}
 	)
 	for (auto& module : modules) {
 		module->UnitGiven(unit, oldTeamId, newTeamId);

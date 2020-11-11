@@ -260,9 +260,9 @@ void CCircuitUnit::CmdSetTarget(CEnemyInfo* enemy)
 
 void CCircuitUnit::CmdCloak(bool state)
 {
-//	unit->ExecuteCustomCommand(CMD_WANT_CLOAK, {state ? 1.f : 0.f});  // personal
+	unit->ExecuteCustomCommand(CMD_WANT_CLOAK, {state ? 1.f : 0.f});  // personal
 //	unit->ExecuteCustomCommand(CMD_CLOAK_SHIELD, {state ? 1.f : 0.f});  // area
-	unit->Cloak(state);
+//	unit->Cloak(state);
 }
 
 void CCircuitUnit::CmdFireAtRadar(bool state)

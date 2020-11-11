@@ -31,7 +31,7 @@
 				"time": 100,  // seconds
 				"threat": 1,
 				"air": true,
-				"task_rad": 350.0
+				"task_rad": [-1, 350.0]  // [<peace_radius>, <danger_radius>]
 			},
 
 			"side": "armada"
@@ -63,7 +63,7 @@
 				"time": 100,  // seconds
 				"threat": 1,
 				"air": true,
-				"task_rad": 350.0
+				"task_rad": [-1, 350.0]  // [<peace_radius>, <danger_radius>]
 			},
 
 			"side": "cortex"

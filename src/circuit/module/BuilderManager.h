@@ -103,6 +103,11 @@ public:
 	IBuilderTask* EnqueueReclaim(IBuilderTask::Priority priority,
 								 CCircuitUnit* target,
 								 int timeout = ASSIGN_TIMEOUT);
+	IBuilderTask* EnqueueResurrect(IBuilderTask::Priority priority,
+								   const springai::AIFloat3& position,
+								   float cost,
+								   int timeout,
+								   float radius = .0f);
 	IBuilderTask* EnqueuePatrol(IBuilderTask::Priority priority,
 								const springai::AIFloat3& position,
 								float cost,
@@ -142,11 +147,20 @@ public:
 
 	SBuildChain* GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef);
 
-	bool IsReclaimed(CAllyUnit* unit) const { return reclaimedUnits.find(unit) != reclaimedUnits.end(); }
+	IBuilderTask* GetReclaimFeatureTask(const springai::AIFloat3& pos, float radius) const;
+	IBuilderTask* GetResurrectTask(const springai::AIFloat3& pos, float radius) const;
+	bool IsReclaimUnit(CAllyUnit* unit) const { return reclaimUnits.find(unit) != reclaimUnits.end(); }
+	bool IsReclaimFeature(const springai::AIFloat3& pos, float radius) const {
+		return GetReclaimFeatureTask(pos, radius) != nullptr;
+	}
+	bool IsResurrect(const springai::AIFloat3& pos, float radius) const {
+		return GetResurrectTask(pos, radius) != nullptr;
+	}
 
 private:
 	IUnitTask* DefaultMakeTask(CCircuitUnit* unit);
-	IBuilderTask* MakeCommTask(CCircuitUnit* unit, const CQueryCostMap* query, float sqMaxBaseRange);
+	IBuilderTask* MakeCommPeaceTask(CCircuitUnit* unit, const CQueryCostMap* query, float sqMaxBaseRange);
+	IBuilderTask* MakeCommDangerTask(CCircuitUnit* unit, const CQueryCostMap* query, float sqMaxBaseRange);
 	IBuilderTask* MakeBuilderTask(CCircuitUnit* unit, const CQueryCostMap* query);
 	IBuilderTask* CreateBuilderTask(const springai::AIFloat3& position, CCircuitUnit* unit);
 
@@ -164,8 +178,8 @@ private:
 	EHandlers destroyedHandler;
 
 	std::map<CAllyUnit*, IBuilderTask*> unfinishedUnits;
-	std::map<ICoreUnit::Id, CBRepairTask*> repairedUnits;
-	std::map<CAllyUnit*, CBReclaimTask*> reclaimedUnits;
+	std::map<ICoreUnit::Id, CBRepairTask*> repairUnits;
+	std::map<CAllyUnit*, CBReclaimTask*> reclaimUnits;
 	std::vector<std::set<IBuilderTask*>> buildTasks;  // UnitDef based tasks
 	unsigned int buildTasksCount;
 	float buildPower;

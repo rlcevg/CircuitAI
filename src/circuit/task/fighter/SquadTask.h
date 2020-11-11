@@ -55,7 +55,6 @@ protected:
 	std::shared_ptr<PathInfo> pPath;
 
 	std::map<float, std::set<CCircuitUnit*>> rangeUnits;
-	float deltaOffset;
 
 	int groupFrame;
 	int attackFrame;

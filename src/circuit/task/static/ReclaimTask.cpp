@@ -66,7 +66,7 @@ void CSReclaimTask::Update()
 		auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 		for (Unit* u : us) {
 			CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-			if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)
+			if ((candUnit == nullptr) || builderMgr->IsReclaimUnit(candUnit)
 				|| candUnit->GetCircuitDef()->IsMex())  // FIXME: BA, should be IsT1Mex()
 			{
 				continue;

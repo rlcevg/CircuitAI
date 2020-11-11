@@ -399,7 +399,12 @@ void CSetupManager::ReadConfig()
 		hide.frame = hhdd.get("time", -1).asInt() * FRAMES_PER_SEC;
 		hide.threat = hhdd.get("threat", 0.f).asFloat();
 		hide.isAir = hhdd.get("air", false).asBool();
-		hide.sqTaskRad = SQUARE(hhdd.get("task_rad", 2000.f).asFloat());
+		const Json::Value& taskRad = hhdd["task_rad"];
+		hide.sqPeaceTaskRad = taskRad.get((unsigned)0, 2000.f).asFloat();
+		if (hide.sqPeaceTaskRad > 0.f) {
+			hide.sqPeaceTaskRad = SQUARE(hide.sqPeaceTaskRad);
+		}
+		hide.sqDangerTaskRad = SQUARE(taskRad.get((unsigned)0, 1000.f).asFloat());
 
 		CCircuitDef* commDef = circuit->GetCircuitDef(commName.c_str());
 		const std::string& commSide = comm.get("side", "").asString();

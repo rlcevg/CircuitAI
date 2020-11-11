@@ -158,14 +158,16 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	MoveData* md = def->GetMoveData();
 	isSubmarine  = (md == nullptr) ? false : md->IsSubMarine();
 	delete md;
-	isAbleToFly     = def->IsAbleToFly();
-	isPlane         = !def->IsHoverAttack() && isAbleToFly;
-	isFloater       = def->IsFloater() && !isSubmarine && !isAbleToFly;
-	isSonarStealth  = def->IsSonarStealth();
-	isTurnLarge     = (speed / (def->GetTurnRate() + 1e-3f) > 0.09f);  // empirical magic number
-	isAbleToCloak   = def->IsAbleToCloak();
-	isAbleToRepair  = def->IsAbleToRepair();
-	isAbleToReclaim = def->IsAbleToReclaim();
+	isAbleToFly       = def->IsAbleToFly();
+	isPlane           = !def->IsHoverAttack() && isAbleToFly;
+	isFloater         = def->IsFloater() && !isSubmarine && !isAbleToFly;
+	isSonarStealth    = def->IsSonarStealth();
+	isTurnLarge       = (speed / (def->GetTurnRate() + 1e-3f) > 0.09f);  // empirical magic number
+	isAbleToCloak     = def->IsAbleToCloak();
+	isAbleToRepair    = def->IsAbleToRepair();
+	isAbleToReclaim   = def->IsAbleToReclaim();
+	isAbleToResurrect = def->IsAbleToResurrect();
+	isAbleToAssist    = def->IsAbleToAssist();
 
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto it = customParams.find("energyconv_capacity");

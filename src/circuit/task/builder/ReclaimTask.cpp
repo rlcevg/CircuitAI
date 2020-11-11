@@ -8,7 +8,10 @@
 #include "task/builder/ReclaimTask.h"
 #include "task/TaskManager.h"
 #include "map/ThreatMap.h"
+#include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
+#include "module/MilitaryManager.h"
+#include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
 #include "unit/action/TravelAction.h"
 #include "CircuitAI.h"
@@ -42,6 +45,27 @@ CBReclaimTask::~CBReclaimTask()
 {
 }
 
+bool CBReclaimTask::CanAssignTo(CCircuitUnit* unit) const
+{
+	if (!IReclaimTask::CanAssignTo(unit)) {
+		return false;
+	}
+	if (unit->GetCircuitDef()->IsAttacker()) {
+		return true;
+	}
+	CCircuitAI* circuit = manager->GetCircuit();
+	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
+	if (militaryMgr->GetDefendTaskNum() == 0) {
+		return true;
+	}
+	int cluster = circuit->GetMetalManager()->FindNearestCluster(GetPosition());
+	if ((cluster < 0) || militaryMgr->HasDefence(cluster)) {
+		return true;
+	}
+	IUnitTask* guard = militaryMgr->GetGuardTask(unit);
+	return ((guard != nullptr) && !guard->GetAssignees().empty()) || (circuit->GetLastFrame() > FRAMES_PER_SEC * 60 * 10);
+}
+
 void CBReclaimTask::AssignTo(CCircuitUnit* unit)
 {
 	IBuilderTask::AssignTo(unit);
@@ -65,20 +89,22 @@ bool CBReclaimTask::Reevaluate(CCircuitUnit* unit)
 		 */
 		const int frame = circuit->GetLastFrame();
 		const AIFloat3& pos = unit->GetPos(frame);
-		auto enemies = circuit->GetCallback()->GetEnemyUnitsIn(pos, 500.0f);
-		if (!enemies.empty()) {
-			for (Unit* enemy : enemies) {
-				if ((enemy != nullptr) && enemy->IsBeingBuilt()) {
-					TRY_UNIT(circuit, unit,
-						unit->GetUnit()->ReclaimUnit(enemy, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
-					)
-					utils::free_clear(enemies);
-					return false;
-				}
+		std::vector<ICoreUnit::Id> enemyIds = circuit->GetCallback()->GetEnemyUnitIdsIn(pos, 500.0f);
+		for (ICoreUnit::Id enemyId : enemyIds) {
+			CEnemyInfo* enemy = circuit->GetEnemyInfo(enemyId);
+			if ((enemy != nullptr)
+				&& (enemy->GetCircuitDef() != nullptr)
+				&& !enemy->GetCircuitDef()->IsAttacker()
+				/* && enemy->GetUnit()->IsBeingBuilt()*/)
+			{
+				TRY_UNIT(circuit, unit,
+					unit->GetUnit()->ReclaimUnit(enemy->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+				)
+				return false;
 			}
-			utils::free_clear(enemies);
 		}
 
+		CBuilderManager* builderMgr = circuit->GetBuilderManager();
 		auto features = circuit->GetCallback()->GetFeaturesIn(pos, 500.0f);
 		if (!features.empty()) {
 			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
@@ -102,7 +128,7 @@ bool CBReclaimTask::Reevaluate(CCircuitUnit* unit)
 					continue;
 				}
 				float sqDist = pos.SqDistance2D(featPos);
-				if (sqDist < minSqDist) {
+				if ((sqDist < minSqDist) && !builderMgr->IsResurrect(featPos, radius)) {
 					position = featPos;
 					minSqDist = sqDist;
 				}

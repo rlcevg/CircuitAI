@@ -37,6 +37,7 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 
 	virtual void SetTarget(CCircuitUnit* unit) override;
+	bool IsInRange(const springai::AIFloat3& pos, float range) const;
 
 protected:
 	float radius;

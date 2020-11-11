@@ -76,7 +76,8 @@ IBuilderTask::~IBuilderTask()
 
 bool IBuilderTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return ((target != nullptr) || unit->GetCircuitDef()->CanBuild(buildDef)) && (cost > buildPower * MIN_BUILD_SEC);
+	return (((target != nullptr) && unit->GetCircuitDef()->IsAbleToAssist()) || unit->GetCircuitDef()->CanBuild(buildDef))
+			&& (cost > buildPower * MIN_BUILD_SEC);
 }
 
 void IBuilderTask::AssignTo(CCircuitUnit* unit)
@@ -636,7 +637,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 		} else {
 			CMetalManager* metalMgr = circuit->GetMetalManager();
 			int index = metalMgr->FindNearestCluster(buildPos);
-			if ((index >= 0) && (metalMgr->IsClusterQueued(index) || metalMgr->IsClusterFinished(index))) {
+			if ((index >= 0) && (/*metalMgr->IsClusterQueued(index) || */metalMgr->IsClusterFinished(index))) {
 				circuit->GetMilitaryManager()->MakeDefence(index, buildPos);
 			}
 		}

@@ -21,6 +21,7 @@ public:
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
 
 	virtual void Start(CCircuitUnit* unit) override;
+	virtual void Update() override;
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 

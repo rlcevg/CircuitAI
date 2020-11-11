@@ -5,7 +5,7 @@
 	"raid": [3.0, 420.0],  // [<min>, <avg>] power of raider squad
 	"attack": 60.0,  // min power of attack group
 	"thr_mod": {
-		"attack": [0.8, 0.9],  // [<min>, <max>] enemy threat modifier for target selection of attack task
+		"attack": [0.5, 0.9],  // [<min>, <max>] enemy threat modifier for target selection of attack task
 		"defence": [0.95, 0.95],  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
 		"mobile": 1.05,  // initial modifier for power of attack group based on mobile enemy threat
 		"static": 1.2,  // initial modifier for power of attack group based on static enemy threat
@@ -29,7 +29,8 @@
 "defence": {
 	"infl_rad": 5,  // influenece cell radius for defendAlly map
 	"base_rad": [600.0, 1200.0],  // defend if enemy within clamp(distance(lane_pos, base_pos), 1000, 2000) radius
-	"comm_rad": [1000.0, 500.0]  // 0 distance from base ~ 1000, base_rad ~ 500.0
+	"comm_rad": [1000.0, 500.0],  // 0 distance from base ~ 1000, base_rad ~ 500.0
+	"escort": [3, 2]  // [<builders_count>, <defenders_count>]
 },
 
 "behaviour": {
@@ -302,9 +303,8 @@
 		"pwr_mod": 1.5
 	},
 	"armrectr": {
-		"role": ["raider", "mine"],
-		"attribute": ["siege", "mine", "scout"],
-		"pwr_mod": 2
+		"role": ["builder"],
+		"limit": 10
 	},
 	"armrock": {
 		"role": ["skirmish"]
@@ -625,9 +625,8 @@
 		"attribute": ["scout"]
 	},
 	"cornecro": {
-		"role": ["raider", "mine"],
-		"attribute": ["siege", "mine", "scout"],
-		"pwr_mod": 2
+		"role": ["builder"],
+		"limit": 10
 	},
 	"corstorm": {
 		"role": ["skirmish"]

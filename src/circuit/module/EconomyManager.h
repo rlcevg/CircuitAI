@@ -60,9 +60,9 @@ public:
 	springai::Resource* GetEnergyRes() const { return energyRes; }
 	CEnergyGrid* GetEnergyGrid() const { return energyGrid; }
 	float GetPylonRange() const { return pylonRange; }
-	CCircuitDef* GetLowEnergy(const springai::AIFloat3& pos, float& outMake) const;
-	void AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs);  // add available energy defs
-	void RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs);
+	CCircuitDef* GetLowEnergy(const springai::AIFloat3& pos, float& outMake, CCircuitUnit* builder = nullptr) const;
+	void AddEconomyDefs(const std::set<CCircuitDef*>& buildDefs);  // add available economy defs
+	void RemoveEconomyDefs(const std::set<CCircuitDef*>& buildDefs);
 
 	const SSideInfo& GetSideInfo() const;
 	const std::vector<SSideInfo>& GetSideInfos() const { return sideInfos; }
@@ -96,8 +96,8 @@ public:
 	bool IsIgnorePull(const IBuilderTask* task) const;
 	bool IsIgnoreStallingPull(const IBuilderTask* task) const;
 
-	IBuilderTask* MakeEconomyTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
-	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
+	IBuilderTask* MakeEconomyTasks(const springai::AIFloat3& position, CCircuitUnit* unit);
+	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit);
 	IBuilderTask* UpdateReclaimTasks(const springai::AIFloat3& position, CCircuitUnit* unit, bool isNear = true);
 	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	IBuilderTask* UpdateFactoryTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
@@ -134,17 +134,28 @@ private:
 
 	std::vector<SSideInfo> sideInfos;
 
+	struct SStoreInfo {
+		CCircuitDef* cdef;
+		float storage;
+		float score;
+		bool operator==(const CCircuitDef* d) { return cdef == d; }
+	};
+	struct SStoreDefs {
+		std::set<CCircuitDef*> all;
+		std::set<CCircuitDef*> avail;
+		std::vector<SStoreInfo> infos;  // sorted high-score first
+	} storeMDefs, storeEDefs;
+	void AddStoreDefs(const std::set<CCircuitDef*>& buildDefs, SStoreDefs& defsInfo, std::function<float (CCircuitDef*)> storeFunc);  // add available store defs
+	void RemoveStoreDefs(const std::set<CCircuitDef*>& buildDefs, SStoreDefs& defsInfo);
+
 	std::unordered_map<CCircuitDef::Id, CCircuitDef*> mexDefs;  // builder: mex
-	CCircuitDef* storeDef;
-	std::unordered_map<CCircuitDef::Id, CCircuitDef*> defaultDefs;  // builder: mex
+	std::unordered_map<CCircuitDef::Id, CCircuitDef*> defaultDefs;  // builder: default
 
 	// NOTE: MetalManager::SetOpenSpot used by whole allyTeam. Therefore
 	//       local spot's state descriptor needed for better expansion
 	std::vector<bool> openSpots;  // AI-local metal info
 	int mexCount;
 
-	std::set<CCircuitDef*> allEnergyDefs;
-	std::set<CCircuitDef*> availEnergyDefs;
 	struct SEnergyInfo {
 		CCircuitDef* cdef;
 		float make;
@@ -152,7 +163,13 @@ private:
 		int limit;
 		bool operator==(const CCircuitDef* d) { return cdef == d; }
 	};
-	std::vector<SEnergyInfo> energyInfos;
+	struct SEnergyDefs {
+		std::set<CCircuitDef*> all;
+		std::set<CCircuitDef*> avail;
+		std::vector<SEnergyInfo> infos;  // sorted high-score first
+	} energyDefs;
+	void AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs);  // add available energy defs
+	void RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs);
 
 	float ecoStep;
 	float ecoFactor;

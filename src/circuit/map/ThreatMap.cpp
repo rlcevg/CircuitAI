@@ -75,11 +75,13 @@ CThreatMap::CThreatMap(CMapManager* manager, float decloakRadius)
 	slackMod.speedMod = speedSlack.get((unsigned)0, 1.f).asFloat() * DEFAULT_SLACK / squareSize;
 	slackMod.speedModMax = speedSlack.get((unsigned)1, 2).asInt() * DEFAULT_SLACK / squareSize;
 	constexpr float allowedRange = 2000.f;
+	constexpr float allowedSpeed = 200.f;
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+		float speed = cdef.GetSpeed();
 		float slack = squareSize - 1 + cdef.GetAoe() / 2 + DEFAULT_SLACK * slackMod.allMod;
 		if (cdef.IsMobile()) {
 			// TODO: slack should also depend on own unit's path update rate
-			slack += THREAT_UPDATE_RATE * cdef.GetSpeed() / FRAMES_PER_SEC;
+			slack += THREAT_UPDATE_RATE * speed / FRAMES_PER_SEC;
 		} else {
 			slack += DEFAULT_SLACK * slackMod.staticMod;
 		}
@@ -91,11 +93,11 @@ CThreatMap::CThreatMap(CMapManager* manager, float decloakRadius)
 		cdef.SetThreatRange(CCircuitDef::ThreatType::AIR, range);
 
 		realRange = cdef.GetMaxRange(CCircuitDef::RangeType::LAND);
-		range = (cdef.HasAntiLand() && (realRange <= allowedRange)) ? int(realRange + slack) / squareSize + 1 : 0;
+		range = (cdef.HasAntiLand() && (realRange <= allowedRange) && (speed <= allowedSpeed)) ? int(realRange + slack) / squareSize + 1 : 0;
 		cdef.SetThreatRange(CCircuitDef::ThreatType::LAND, range);
 
 		realRange = cdef.GetMaxRange(CCircuitDef::RangeType::WATER);
-		range = (cdef.HasAntiWater() && (realRange <= allowedRange)) ? int(realRange + slack) / squareSize + 1 : 0;
+		range = (cdef.HasAntiWater() && (realRange <= allowedRange) && (speed <= allowedSpeed)) ? int(realRange + slack) / squareSize + 1 : 0;
 		cdef.SetThreatRange(CCircuitDef::ThreatType::WATER, range);
 
 		cdef.SetThreatRange(CCircuitDef::ThreatType::CLOAK, GetCloakRange(&cdef));

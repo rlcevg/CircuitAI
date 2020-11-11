@@ -22,6 +22,7 @@ public:
 				  int timeout);
 	virtual ~CBReclaimTask();
 
+	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
 	virtual void AssignTo(CCircuitUnit* unit) override;
 
 private:
