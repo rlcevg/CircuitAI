@@ -412,8 +412,11 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 	}
 
 	TRY_UNIT(circuit, unit,
-		const bool prio = !circuit->GetEconomyManager()->IsEnergyStalling() || (buildType == BuildType::ENERGY);
+		const bool prio = !ecoMgr->IsEnergyStalling() || (buildType == BuildType::ENERGY);
 		unit->CmdBARPriority(prio ? 1.f : 0.f);
+		if (unit->GetTravelAct()->IsFinished()) {
+			unit->CmdWait(ecoMgr->IsEnergyEmpty() && (buildType != BuildType::ENERGY));
+		}
 	)
 
 	// Reassign task if required

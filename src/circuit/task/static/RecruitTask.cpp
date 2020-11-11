@@ -70,6 +70,17 @@ void CRecruitTask::Update()
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
+
+	const bool isEnergyEmpty = economyMgr->IsEnergyEmpty();
+	for (CCircuitUnit* unit : units) {
+		TRY_UNIT(circuit, unit,
+			unit->CmdWait(isEnergyEmpty);
+		)
+	}
+	if (isEnergyEmpty) {
+		return;
+	}
+
 	bool hasMetal = economyMgr->GetAvgMetalIncome() * 2.0f > economyMgr->GetMetalPull();
 	if (State::DISENGAGE == state) {
 		if (hasMetal) {

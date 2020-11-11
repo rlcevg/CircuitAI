@@ -51,6 +51,10 @@ void IUnitTask::AssignTo(CCircuitUnit* unit)
 	manager->GetIdleTask()->RemoveAssignee(unit);
 	unit->SetTask(this);
 	units.insert(unit);
+
+	TRY_UNIT(manager->GetCircuit(), unit,
+		unit->RemoveWait();
+	)
 }
 
 void IUnitTask::RemoveAssignee(CCircuitUnit* unit)

@@ -125,6 +125,8 @@ public:
 	void CmdAirStrafe(float value);
 	void CmdBARPriority(float value);
 	void CmdTerraform(std::vector<float>&& params);
+	void CmdWait(bool state);
+	void RemoveWait();
 
 	void Attack(CEnemyInfo* enemy, int timeout);
 	void Attack(const springai::AIFloat3& position, int timeout);
@@ -169,6 +171,7 @@ private:
 	bool isDisarmed : 1;
 	bool isWeaponReady : 1;
 	bool isMorphing : 1;
+	bool isWaiting : 1;
 	// ---- Bit fields ---- END
 
 	springai::Weapon* dgun;

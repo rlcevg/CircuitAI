@@ -59,6 +59,17 @@ void CSRepairTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
+
+	const bool isEnergyEmpty = economyMgr->IsEnergyEmpty();
+	for (CCircuitUnit* unit : units) {
+		TRY_UNIT(circuit, unit,
+			unit->CmdWait(isEnergyEmpty);
+		)
+	}
+	if (isEnergyEmpty) {
+		return;
+	}
+
 	if (economyMgr->GetAvgMetalIncome() < savedIncome * 0.6f) {
 		manager->AbortTask(this);
 	} else if ((++updCount % 4 == 0) && !units.empty()) {

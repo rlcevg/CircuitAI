@@ -46,6 +46,7 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 		, isDisarmed(false)
 		, isWeaponReady(true)
 		, isMorphing(false)
+		, isWaiting(false)
 		, target(nullptr)
 		, targetTile(-1)
 {
@@ -308,6 +309,21 @@ void CCircuitUnit::CmdBARPriority(float value)
 void CCircuitUnit::CmdTerraform(std::vector<float>&& params)
 {
 //	unit->ExecuteCustomCommand(CMD_TERRAFORM_INTERNAL, params);
+}
+
+void CCircuitUnit::CmdWait(bool state)
+{
+	if (isWaiting == state) {
+		return;
+	}
+	isWaiting = state;
+	unit->Wait();
+}
+
+void CCircuitUnit::RemoveWait()
+{
+	isWaiting = false;
+	CmdRemove({CMD_WAIT}, UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
 }
 
 void CCircuitUnit::Attack(CEnemyInfo* enemy, int timeout)

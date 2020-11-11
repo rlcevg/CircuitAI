@@ -33,7 +33,9 @@ void CBGuardTask::AssignTo(CCircuitUnit* unit)
 {
 	IBuilderTask::AssignTo(unit);
 
-	static_cast<CBuilderManager*>(manager)->DelBuildPower(unit);
+	if (!unit->GetCircuitDef()->GetBuildOptions().empty()) {
+		static_cast<CBuilderManager*>(manager)->DelBuildPower(unit);
+	}
 }
 
 void CBGuardTask::RemoveAssignee(CCircuitUnit* unit)
@@ -43,13 +45,17 @@ void CBGuardTask::RemoveAssignee(CCircuitUnit* unit)
 		manager->AbortTask(this);
 	}
 
-	static_cast<CBuilderManager*>(manager)->AddBuildPower(unit);
+	if (!unit->GetCircuitDef()->GetBuildOptions().empty()) {
+		static_cast<CBuilderManager*>(manager)->AddBuildPower(unit);
+	}
 }
 
 void CBGuardTask::Stop(bool done)
 {
 	for (CCircuitUnit* unit : units) {
-		static_cast<CBuilderManager*>(manager)->AddBuildPower(unit);
+		if (!unit->GetCircuitDef()->GetBuildOptions().empty()) {
+			static_cast<CBuilderManager*>(manager)->AddBuildPower(unit);
+		}
 	}
 
 	IBuilderTask::Stop(done);
