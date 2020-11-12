@@ -47,7 +47,7 @@ bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 	// TODO: Naked expansion on big maps
 	CCircuitAI* circuit = manager->GetCircuit();
 	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
-	if (militaryMgr->GetDefendTaskNum() == 0) {
+	if ((militaryMgr->GetDefendTaskNum() == 0) || (circuit->GetLastFrame() > militaryMgr->GetDefendFrame())) {
 		return true;
 	}
 	int cluster = circuit->GetMetalManager()->FindNearestCluster(GetPosition());
@@ -55,7 +55,7 @@ bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 		return true;
 	}
 	IUnitTask* guard = militaryMgr->GetGuardTask(unit);
-	return ((guard != nullptr) && !guard->GetAssignees().empty()) || (circuit->GetLastFrame() > FRAMES_PER_SEC * 60 * 10);
+	return (guard != nullptr) && !guard->GetAssignees().empty();
 }
 
 void CBMexTask::Cancel()

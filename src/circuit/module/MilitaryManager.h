@@ -119,6 +119,7 @@ public:
 	float GetCommDefRad(float baseDist) const { return defence->GetCommRad(baseDist); }
 	unsigned int GetDefendTaskNum() const { return defence->GetDefendTaskNum(); }
 	unsigned int GetDefendersNum() const { return defence->GetDefendersNum(); }
+	int GetDefendFrame() const { return defence->GetDefendFrame(); }
 
 	void MarkPointOfInterest(CEnemyInfo* enemy);
 	void UnmarkPointOfInterest(CEnemyInfo* enemy);

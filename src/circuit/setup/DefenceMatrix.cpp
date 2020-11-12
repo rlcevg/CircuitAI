@@ -51,6 +51,7 @@ void CDefenceMatrix::ReadConfig(CCircuitAI* circuit)
 	const Json::Value& escort = defence["escort"];
 	defendTaskNum = escort.get(unsigned(0), 2).asUInt();
 	defendersNum = escort.get(unsigned(1), 1).asUInt();
+	defendFrame = escort.get(unsigned(2), 600).asInt() * FRAMES_PER_SEC;
 }
 
 void CDefenceMatrix::Init(CCircuitAI* circuit)

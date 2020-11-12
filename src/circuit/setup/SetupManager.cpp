@@ -404,7 +404,7 @@ void CSetupManager::ReadConfig()
 		if (hide.sqPeaceTaskRad > 0.f) {
 			hide.sqPeaceTaskRad = SQUARE(hide.sqPeaceTaskRad);
 		}
-		hide.sqDangerTaskRad = SQUARE(taskRad.get((unsigned)0, 1000.f).asFloat());
+		hide.sqDangerTaskRad = SQUARE(taskRad.get((unsigned)1, 1000.f).asFloat());
 
 		CCircuitDef* commDef = circuit->GetCircuitDef(commName.c_str());
 		const std::string& commSide = comm.get("side", "").asString();

@@ -48,6 +48,7 @@ public:
 	}
 	unsigned int GetDefendTaskNum() const { return defendTaskNum; }
 	unsigned int GetDefendersNum() const { return defendersNum; }
+	int GetDefendFrame() const { return defendFrame; }
 
 private:
 	CMetalManager* metalManager;
@@ -61,6 +62,7 @@ private:
 
 	unsigned int defendTaskNum;
 	unsigned int defendersNum;
+	int defendFrame;
 };
 
 } // namespace circuit
