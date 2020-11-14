@@ -23,7 +23,7 @@ namespace circuit {
 
 using namespace springai;
 
-#define RANGE_MOD	0.9f
+#define RANGE_MOD	0.8f
 
 ISquadTask::ISquadTask(ITaskManager* mgr, FightType type, float powerMod)
 		: IFighterTask(mgr, type, powerMod)
@@ -360,7 +360,9 @@ void ISquadTask::Attack(const int frame)
 	const bool isRepeatAttack = (frame >= attackFrame + FRAMES_PER_SEC * 3);
 	attackFrame = isRepeatAttack ? frame : attackFrame;
 
-	AIFloat3 dir = (*rangeUnits.begin()->second.begin())->GetPos(frame) - tPos;
+	auto it = rangeUnits.begin()->second.begin();
+	std::advance(it, rangeUnits.begin()->second.size() / 2);  // TODO: Optimize
+	AIFloat3 dir = (*it)->GetPos(frame) - tPos;
 	const float alpha = atan2f(dir.z, dir.x);
 	// incorrect, it should check aoe in vicinity
 	const float aoe = (GetTarget()->GetCircuitDef() != nullptr) ? GetTarget()->GetCircuitDef()->GetAoe() : SQUARE_SIZE;
@@ -376,7 +378,7 @@ void ISquadTask::Attack(const int frame)
 		if (delta > maxDelta) {
 			delta = maxDelta;
 		}
-		float beta = -delta * ((kv.second.size() - 1) / 2 + (++row & 1) * 0.5f);
+		float beta = -delta * ((kv.second.size() - 1) / 2 + (row++ & 1) * 0.5f);
 		for (CCircuitUnit* unit : kv.second) {
 			unit->GetTravelAct()->StateWait();
 			if (unit->Blocker() != nullptr) {

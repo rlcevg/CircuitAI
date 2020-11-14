@@ -98,7 +98,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			AddBuildPower(unit);
 			workers.insert(unit);
 
-			if ((energizer == nullptr) && (unit->GetCircuitDef()->GetCostM() > 200)) {
+			if ((energizer == nullptr) && (unit->GetCircuitDef()->GetCostM() > 200) && !unit->GetCircuitDef()->IsRoleComm()) {
 				energizer = unit;
 			}
 		}
@@ -1007,7 +1007,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 
 	std::shared_ptr<CQueryCostMap> pQuery = std::static_pointer_cast<CQueryCostMap>(query);
 
-	if (cdef->IsRoleComm()) {  // hide commander?
+	if (cdef->IsRoleComm() && (circuit->GetFactoryManager()->GetFactoryCount() > 0)) {  // hide commander?
 		CEnemyManager* enemyMgr = circuit->GetEnemyManager();
 		const CSetupManager::SCommInfo::SHide* hide = circuit->GetSetupManager()->GetHide(cdef);
 		if (hide != nullptr) {

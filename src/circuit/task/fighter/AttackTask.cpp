@@ -182,9 +182,8 @@ void CAttackTask::Update()
 
 	state = State::ROAM;
 	if (GetTarget() != nullptr) {
-		if ((circuit->GetInflMap()->GetAllyDefendInflAt(position) > INFL_EPS)
-			|| position.SqDistance2D(startPos) < SQUARE(highestRange))
-		{
+		const float slack = (circuit->GetInflMap()->GetAllyDefendInflAt(position) > INFL_EPS) ? 300.f : 100.f;
+		if (position.SqDistance2D(startPos) < SQUARE(highestRange + slack)) {
 			state = State::ENGAGE;
 			Attack(frame);
 			return;

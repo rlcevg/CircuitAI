@@ -317,7 +317,11 @@ void CCircuitUnit::CmdWait(bool state)
 		return;
 	}
 	isWaiting = state;
-	unit->Wait();
+	if (isWaiting) {
+		unit->Wait();
+	} else {
+		CmdRemove({CMD_WAIT}, UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+	}
 }
 
 void CCircuitUnit::RemoveWait()
