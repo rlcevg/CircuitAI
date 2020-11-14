@@ -191,11 +191,11 @@ void CAntiHeavyTask::Update()
 	const bool isTargetsFound = FindTarget();
 
 	state = State::ROAM;
-	if (target != nullptr) {
+	if (GetTarget() != nullptr) {
 		state = State::ENGAGE;
-		position = target->GetPos();
+		position = GetTarget()->GetPos();
 		float power = 0.f;
-		CEnemyInfo* target = this->target;
+		CEnemyInfo* target = GetTarget();
 		auto subattack = [&power, target](CCircuitUnit* unit) {
 			if (unit->GetDGunAct() != nullptr) {
 				unit->GetDGunAct()->StateActivate();

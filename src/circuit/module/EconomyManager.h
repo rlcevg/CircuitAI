@@ -104,6 +104,7 @@ public:
 	IBuilderTask* UpdateFactoryTasks();
 	IBuilderTask* UpdateStorageTasks();
 	IBuilderTask* UpdatePylonTasks();
+	void StartFactoryTask();
 
 	void AddMorphee(CCircuitUnit* unit);
 	void RemoveMorphee(CCircuitUnit* unit) { morphees.erase(unit); }
@@ -221,6 +222,8 @@ private:
 		float income;
 	} metal, energy;
 	float energyUse;
+
+	std::shared_ptr<CGameTask> startFactory;
 
 	std::shared_ptr<CGameTask> morph;
 	std::set<CCircuitUnit*> morphees;

@@ -9,6 +9,7 @@
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
+#include "resource/MetalManager.h"
 #include "script/FactoryScript.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
@@ -234,11 +235,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			cdef.AddEnemyRole(ROLE_TYPE(COMM));
 		}
 	}
-
-	// FIXME: BA
-	CCircuitDef* assistDef = GetSideInfo().assistDef;
-	factoryPower -= assistDef->GetBuildSpeed() - 4.f;
-	// FIXME: BA
 
 	factoryData = circuit->GetAllyTeam()->GetFactoryData().get();
 }
@@ -543,6 +539,16 @@ void CFactoryManager::ReadConfig()
 void CFactoryManager::Init()
 {
 	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
+		CMetalManager* metalMgr = circuit->GetMetalManager();
+		int index = metalMgr->FindNearestCluster(pos);
+		if (index>= 0) {
+			CCircuitDef* assistDef = GetSideInfo().assistDef;
+			CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
+			const float comIncome = commDef->GetDef()->GetResourceMake(circuit->GetEconomyManager()->GetMetalRes());
+			const float minIncome = std::min(assistDef->GetBuildSpeed(), (metalMgr->GetClusters()[index].income + comIncome) * 0.8f);
+			factoryPower -= assistDef->GetBuildSpeed() - minIncome;
+		}
+
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		const int interval = 4;
 		const int offset = circuit->GetSkirmishAIId() % interval;

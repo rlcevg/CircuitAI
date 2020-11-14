@@ -7,6 +7,7 @@
 
 #include "task/IdleTask.h"
 #include "task/TaskManager.h"
+#include "task/RetreatTask.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
@@ -78,7 +79,14 @@ void CIdleTask::OnUnitIdle(CCircuitUnit* unit)
 
 void CIdleTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
-	// TODO: React while idling: analyze situation and create appropriate task/action
+	const float healthPerc = unit->GetHealthPercent();
+	if (healthPerc < unit->GetCircuitDef()->GetRetreat()) {
+		CRetreatTask* task = manager->EnqueueRetreat();
+		if (task != nullptr) {
+			task->AssignTo(unit);
+			task->Start(unit);
+		}
+	}
 }
 
 void CIdleTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)

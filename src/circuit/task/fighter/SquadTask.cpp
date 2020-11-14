@@ -355,7 +355,7 @@ NSMicroPather::TestFunc ISquadTask::GetHitTest() const
 
 void ISquadTask::Attack(const int frame)
 {
-	const AIFloat3& tPos = target->GetPos();
+	const AIFloat3& tPos = GetTarget()->GetPos();
 	const int targetTile = manager->GetCircuit()->GetInflMap()->Pos2Index(tPos);
 	const bool isRepeatAttack = (frame >= attackFrame + FRAMES_PER_SEC * 3);
 	attackFrame = isRepeatAttack ? frame : attackFrame;
@@ -363,7 +363,7 @@ void ISquadTask::Attack(const int frame)
 	AIFloat3 dir = (*rangeUnits.begin()->second.begin())->GetPos(frame) - tPos;
 	const float alpha = atan2f(dir.z, dir.x);
 	// incorrect, it should check aoe in vicinity
-	const float aoe = (target->GetCircuitDef() != nullptr) ? target->GetCircuitDef()->GetAoe() : SQUARE_SIZE;
+	const float aoe = (GetTarget()->GetCircuitDef() != nullptr) ? GetTarget()->GetCircuitDef()->GetAoe() : SQUARE_SIZE;
 
 	int row = 0;
 	for (const auto& kv : rangeUnits) {
@@ -384,12 +384,12 @@ void ISquadTask::Attack(const int frame)
 			}
 
 			if (isRepeatAttack
-				|| (unit->GetTarget() != target)
+				|| (unit->GetTarget() != GetTarget())
 				|| (unit->GetTargetTile() != targetTile))
 			{
 				const float angle = alpha + beta;
 				const AIFloat3 newPos(tPos.x + range * cosf(angle), tPos.y, tPos.z + range * sinf(angle));
-				unit->Attack(newPos, target, targetTile, frame + FRAMES_PER_SEC * 60);
+				unit->Attack(newPos, GetTarget(), targetTile, frame + FRAMES_PER_SEC * 60);
 			}
 
 			beta += delta;

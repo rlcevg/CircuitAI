@@ -1007,7 +1007,8 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 						? MakeBuilderTask(unit, pQuery.get())
 						: MakeCommPeaceTask(unit, pQuery.get(), hide->sqPeaceTaskRad);
 			}
-			if ((enemyMgr->GetMobileThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat)
+//			if ((enemyMgr->GetMobileThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat)
+			if ((circuit->GetInflMap()->GetEnemyInflAt(pos) >= hide->threat)
 				|| ((hide->isAir) && (enemyMgr->GetEnemyCost(ROLE_TYPE(AIR)) > 1.f)))
 			{
 				return MakeCommDangerTask(unit, pQuery.get(), hide->sqDangerTaskRad);
@@ -1071,7 +1072,7 @@ IBuilderTask* CBuilderManager::MakeCommPeaceTask(CCircuitUnit* unit, const CQuer
 				int index = metalMgr->FindNearestCluster(buildPos);
 				const AIFloat3& testPos = (index < 0) ? buildPos : clusters[index].position;
 				if ((basePos.SqDistance2D(testPos) > sqMaxBaseRange)
-					|| !terrainMgr->CanReachAtSafe(unit, buildPos, cdef->GetBuildDistance())  // ensure that path always exists
+					|| !terrainMgr->CanReachAt(unit, buildPos, cdef->GetBuildDistance())  // ensure that path always exists
 					|| (inflMap->GetInfluenceAt(testPos) < -INFL_EPS))  // safety check
 				{
 					continue;
@@ -1173,7 +1174,7 @@ IBuilderTask* CBuilderManager::MakeCommDangerTask(CCircuitUnit* unit, const CQue
 
 				if ((basePos.SqDistance2D(buildPos) > sqMaxBaseRange)
 					|| !terrainMgr->CanReachAtSafe(unit, buildPos, cdef->GetBuildDistance())  // ensure that path always exists
-					|| (inflMap->GetInfluenceAt(buildPos) < -INFL_EPS))  // safety check
+					|| (inflMap->GetEnemyInflAt(buildPos) > INFL_EPS))  // safety check
 				{
 					continue;
 				}

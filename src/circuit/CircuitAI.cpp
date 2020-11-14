@@ -981,6 +981,10 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 		module->UnitFinished(unit);
 	}
 
+	if ((unit->GetTask() != nullptr) && (unit->GetUnit()->GetRulesParamFloat("resurrected", 0.f) != 0.f)) {
+		unit->GetTask()->GetManager()->Resurrected(unit);
+	}
+
 	return 0;  // signaling: OK
 }
 

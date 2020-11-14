@@ -106,14 +106,14 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	const bool isTargetsFound = FindTarget(unit, pos);
 
-	if (target != nullptr) {
-		position = target->GetPos();
-		if (target->GetUnit()->IsCloaked()) {
+	if (GetTarget() != nullptr) {
+		position = GetTarget()->GetPos();
+		if (GetTarget()->GetUnit()->IsCloaked()) {
 			TRY_UNIT(circuit, unit,
 				unit->CmdAttackGround(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
 		} else {
-			unit->Attack(target, frame + FRAMES_PER_SEC * 60);
+			unit->Attack(GetTarget(), frame + FRAMES_PER_SEC * 60);
 		}
 		unit->GetTravelAct()->StateWait();
 		return;

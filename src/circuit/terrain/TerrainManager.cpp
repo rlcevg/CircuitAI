@@ -1318,9 +1318,9 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 	return sector->position.distance2D(GetSector(iS).position) < range;
 }
 
-bool CTerrainManager::CanBeBuiltAtSafe(CCircuitDef* cdef, const AIFloat3& position, const float range)
+bool CTerrainManager::CanBeBuiltAtSafe(CCircuitDef* cdef, const AIFloat3& position, const float range, const float threat)
 {
-	if (circuit->GetThreatMap()->GetAllThreatAt(position) > THREAT_MIN) {
+	if (circuit->GetThreatMap()->GetAllThreatAt(position) > threat) {
 		return false;
 	}
 	return CanBeBuiltAt(cdef, position, range);
@@ -1342,9 +1342,9 @@ bool CTerrainManager::CanReachAt(CCircuitUnit* unit, const AIFloat3& destination
 	return GetClosestSector(area, iS)->S->position.distance2D(destination) < range;
 }
 
-bool CTerrainManager::CanReachAtSafe(CCircuitUnit* unit, const AIFloat3& destination, const float range)
+bool CTerrainManager::CanReachAtSafe(CCircuitUnit* unit, const AIFloat3& destination, const float range, const float threat)
 {
-	if (circuit->GetThreatMap()->GetThreatAt(destination) > THREAT_MIN) {
+	if (circuit->GetThreatMap()->GetThreatAt(destination) > threat) {
 		return false;
 	}
 	return CanReachAt(unit, destination, range);
@@ -1362,9 +1362,9 @@ bool CTerrainManager::CanMobileReachAt(STerrainMapArea* area, const AIFloat3& de
 	return GetClosestSector(area, iS)->S->position.distance2D(destination) < range;
 }
 
-bool CTerrainManager::CanMobileReachAtSafe(STerrainMapArea* area, const AIFloat3& destination, const float range)
+bool CTerrainManager::CanMobileReachAtSafe(STerrainMapArea* area, const AIFloat3& destination, const float range, const float threat)
 {
-	if (circuit->GetThreatMap()->GetAllThreatAt(destination) > THREAT_MIN) {
+	if (circuit->GetThreatMap()->GetAllThreatAt(destination) > threat) {
 		return false;
 	}
 	return CanMobileReachAt(area, destination, range);

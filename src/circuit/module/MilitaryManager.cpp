@@ -8,6 +8,7 @@
 #include "module/MilitaryManager.h"
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
+#include "module/FactoryManager.h"
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "resource/MetalManager.h"
@@ -235,6 +236,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		CCircuitDef::Id unitDefId = cdef.GetId();
 		if (cdef.IsRoleComm()) {
 			cdef.ModThreat(commMod);
+			cdef.ModPower(commMod);
 		}
 		if (cdef.GetDef()->IsBuilder()) {
 //			damagedHandler[unitDefId] = structDamagedHandler;
@@ -688,6 +690,10 @@ void CMilitaryManager::MakeDefence(int cluster)
 
 void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 {
+	if (circuit->GetFactoryManager()->GetFactoryCount() == 0) {
+		return;
+	}
+
 	CMetalManager* mm = circuit->GetMetalManager();
 	CEconomyManager* em = circuit->GetEconomyManager();
 	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();

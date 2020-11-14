@@ -97,16 +97,16 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 //	}
 
 	const AIFloat3& pos = unit->GetPos(frame);
-	CEnemyInfo* lastTarget = target;
+	CEnemyInfo* lastTarget = GetTarget();
 	AIFloat3 endPos = FindTarget(unit, lastTarget, pos);
 
-	if (target != nullptr) {
-		position = target->GetPos();
+	if (GetTarget() != nullptr) {
+		position = GetTarget()->GetPos();
 		TRY_UNIT(circuit, unit,
-			if (target->GetUnit()->IsCloaked()) {
+			if (GetTarget()->GetUnit()->IsCloaked()) {
 				unit->CmdAttackGround(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-			} else if (lastTarget != target) {
-				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			} else if (lastTarget != GetTarget()) {
+				unit->GetUnit()->Attack(GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			}
 		)
 		unit->GetTravelAct()->StateWait();
@@ -151,11 +151,11 @@ void CBombTask::OnUnitIdle(CCircuitUnit* unit)
 void CBombTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	// Do not retreat if bomber is close to target
-	if (target == nullptr) {
+	if (GetTarget() == nullptr) {
 		IFighterTask::OnUnitDamaged(unit, attacker);
 	} else {
 		const AIFloat3& pos = unit->GetPos(manager->GetCircuit()->GetLastFrame());
-		if (pos.SqDistance2D(target->GetPos()) > SQUARE(unit->GetCircuitDef()->GetLosRadius())) {
+		if (pos.SqDistance2D(GetTarget()->GetPos()) > SQUARE(unit->GetCircuitDef()->GetLosRadius())) {
 			IFighterTask::OnUnitDamaged(unit, attacker);
 		}
 	}

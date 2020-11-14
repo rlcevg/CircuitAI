@@ -454,16 +454,16 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 	// TODO: Check IsForceUpdate, shield charge and retreat
 
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	const float range = cdef->GetBuildDistance();
 	const AIFloat3& endPos = GetPosition();
-	if (!circuit->GetTerrainManager()->CanReachAtSafe(unit, endPos, unit->GetCircuitDef()->GetBuildDistance())) {
+	if (!circuit->GetTerrainManager()->CanReachAtSafe(unit, endPos, range, cdef->GetPower())) {
 		manager->AbortTask(this);
 		return;
 	}
 
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& startPos = unit->GetPos(frame);
-	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float range = cdef->GetBuildDistance();
 
 	if ((startPos.SqDistance2D(endPos) < SQUARE(range))
 		|| ((circuit->GetSetupManager()->GetBasePos().SqDistance2D(startPos) < SQUARE(circuit->GetMilitaryManager()->GetBaseDefRange()))

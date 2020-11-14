@@ -51,14 +51,15 @@ protected:
 
 	float attackPower;
 	float powerMod;
-	// NOTE: Never assign directly, use SetTarget() to avoid access to a dead target
-	CEnemyInfo* target;
 
 	std::set<CCircuitUnit*> cowards;
 	std::set<CCircuitUnit*> shields;
 
 	static F3Vec urgentPositions;  // NOTE: micro-opt
 	static F3Vec enemyPositions;  // NOTE: micro-opt
+
+private:  // NOTE: Never assign directly, use SetTarget() to avoid access to a dead target
+	CEnemyInfo* target;
 
 #ifdef DEBUG_VIS
 public:

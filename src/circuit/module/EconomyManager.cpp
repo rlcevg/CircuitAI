@@ -97,7 +97,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	auto energyFinishedHandler = [this](CCircuitUnit* unit) {
 		auto it = std::find(energyDefs.infos.begin(), energyDefs.infos.end(), unit->GetCircuitDef());
 		if (it != energyDefs.infos.end()) {
-			float income = it->make;
+			const float income = it->make;
 			for (int i = 0; i < INCOME_SAMPLES; ++i) {
 				energyIncomes[i] += income;
 			}
@@ -105,7 +105,13 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		}
 	};
 	auto mexFinishedHandler = [this](CCircuitUnit* unit) {
-		float income = unit->GetUnit()->GetRulesParamFloat("mexIncome", 0.f);
+//		const float income = unit->GetUnit()->GetRulesParamFloat("mexIncome", 0.f);
+		CMetalManager* metalMgr = this->circuit->GetMetalManager();
+		int index = metalMgr->FindNearestSpot(unit->GetPos(this->circuit->GetLastFrame()));
+		if (index < 0) {
+			return;
+		}
+		const float income = metalMgr->GetSpots()[index].income;
 		for (int i = 0; i < INCOME_SAMPLES; ++i) {
 			metalIncomes[i] += income;
 		}
@@ -437,9 +443,8 @@ void CEconomyManager::Init()
 		}), FRAMES_PER_SEC * 10);
 
 		const int interval = allyTeam->GetSize() * FRAMES_PER_SEC;
-		auto update = static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(update, this),
-								interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
+		startFactory = std::make_shared<CGameTask>(&CEconomyManager::StartFactoryTask, this);
+		scheduler->RunTaskEvery(startFactory, 3, circuit->GetSkirmishAIId() + 0 + 10 * interval);
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this),
 								interval, circuit->GetSkirmishAIId() + 1 + interval / 2);
 
@@ -1236,6 +1241,24 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 	}
 
 	return nullptr;
+}
+
+void CEconomyManager::StartFactoryTask()
+{
+	if ((circuit->GetFactoryManager()->GetFactoryCount() == 0)
+		&& (UpdateFactoryTasks() == nullptr))
+	{
+		return;
+	}
+
+	CScheduler* scheduler = circuit->GetScheduler().get();
+	scheduler->RemoveTask(startFactory);
+	startFactory = nullptr;
+
+	const int interval = circuit->GetAllyTeam()->GetSize() * FRAMES_PER_SEC;
+	auto update = static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks);
+	scheduler->RunTaskEvery(std::make_shared<CGameTask>(update, this),
+							interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
 }
 
 void CEconomyManager::AddMorphee(CCircuitUnit* unit)

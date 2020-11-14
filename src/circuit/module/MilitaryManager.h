@@ -20,7 +20,6 @@ namespace circuit {
 
 class CGameTask;
 class CBDefenceTask;
-class CRetreatTask;
 
 class CMilitaryManager: public IUnitModule {
 public:
@@ -61,7 +60,7 @@ public:
 	IFighterTask* EnqueueDefend(IFighterTask::FightType promote, float power);
 	IFighterTask* EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote, float power);
 	IFighterTask* EnqueueGuard(CCircuitUnit* vip);
-	CRetreatTask* EnqueueRetreat();
+	virtual CRetreatTask* EnqueueRetreat() override;
 private:
 	void DequeueTask(IUnitTask* task, bool done = false);
 

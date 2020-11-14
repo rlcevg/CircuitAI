@@ -26,7 +26,6 @@ namespace circuit {
 
 class IGridLink;
 class CQueryCostMap;
-class CRetreatTask;
 class CBRepairTask;
 class CBReclaimTask;
 class CCombatTask;
@@ -122,7 +121,7 @@ public:
 							   CCircuitUnit* target,
 							   int timeout = ASSIGN_TIMEOUT);
 	IUnitTask* EnqueueWait(int timeout);
-	CRetreatTask* EnqueueRetreat();
+	virtual CRetreatTask* EnqueueRetreat() override;
 	CCombatTask* EnqueueCombat(float powerMod);
 
 private:

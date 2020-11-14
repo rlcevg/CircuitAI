@@ -155,13 +155,13 @@ void CRaidTask::Update()
 	const bool isTargetsFound = FindTarget();
 
 	state = State::ROAM;
-	if (target != nullptr) {
+	if (GetTarget() != nullptr) {
 		state = State::ENGAGE;
-		position = target->GetPos();
+		position = GetTarget()->GetPos();
 		if (leader->GetCircuitDef()->IsAbleToFly()) {
-			if (target->GetUnit()->IsCloaked()) {
+			if (GetTarget()->GetUnit()->IsCloaked()) {
 				for (CCircuitUnit* unit : units) {
-					const AIFloat3& pos = target->GetPos();
+					const AIFloat3& pos = GetTarget()->GetPos();
 					TRY_UNIT(circuit, unit,
 						unit->CmdAttackGround(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 					)
@@ -170,8 +170,8 @@ void CRaidTask::Update()
 			} else {
 				for (CCircuitUnit* unit : units) {
 					TRY_UNIT(circuit, unit,
-						unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-						unit->CmdSetTarget(target);
+						unit->GetUnit()->Attack(GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+						unit->CmdSetTarget(GetTarget());
 					)
 					unit->GetTravelAct()->StateWait();
 				}

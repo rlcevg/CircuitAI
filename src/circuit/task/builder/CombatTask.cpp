@@ -100,13 +100,13 @@ void CCombatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const float range = cdef->GetMaxRange();
-	if ((target == nullptr) || !target->IsInLOS()) {
+	if ((GetTarget() == nullptr) || !GetTarget()->IsInLOS()) {
 		CRetreatTask* task = circuit->GetBuilderManager()->EnqueueRetreat();
 		manager->AssignTask(unit, task);
 		return;
 	}
 	const AIFloat3& pos = unit->GetPos(frame);
-	if ((target->GetPos().SqDistance2D(pos) > SQUARE(range)) ||
+	if ((GetTarget()->GetPos().SqDistance2D(pos) > SQUARE(range)) ||
 		(threatMap->GetThreatAt(unit, pos) * 2 > threatMap->GetUnitThreat(unit)))
 	{
 		CRetreatTask* task = circuit->GetBuilderManager()->EnqueueRetreat();
@@ -124,7 +124,7 @@ void CCombatTask::Execute(CCircuitUnit* unit)
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
 	SetTarget(FindTarget(unit, pos));
 
-	if (target == nullptr) {
+	if (GetTarget() == nullptr) {
 		RemoveAssignee(unit);
 		return;
 	}
@@ -133,22 +133,22 @@ void CCombatTask::Execute(CCircuitUnit* unit)
 		return;  // Do not interrupt current action
 	}
 
-	const AIFloat3& position = target->GetPos();
+	const AIFloat3& position = GetTarget()->GetPos();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float range = std::max(unit->GetUnit()->GetMaxRange(), /*unit->IsUnderWater(frame) ? cdef->GetSonarRadius() : */cdef->GetLosRadius());
 	if (position.SqDistance2D(pos) < range) {
-		if (target->GetUnit()->IsCloaked()) {
+		if (GetTarget()->GetUnit()->IsCloaked()) {
 			TRY_UNIT(circuit, unit,
 				unit->CmdAttackGround(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			)
 		} else {
-			unit->Attack(target, frame + FRAMES_PER_SEC * 60);
+			unit->Attack(GetTarget(), frame + FRAMES_PER_SEC * 60);
 		}
 	} else {
-		const AIFloat3 velLead = target->GetVel() * FRAMES_PER_SEC * 3;
+		const AIFloat3 velLead = GetTarget()->GetVel() * FRAMES_PER_SEC * 3;
 		const AIFloat3 lead = velLead.SqLength2D() < SQUARE(300.f)
 				? velLead
-				: AIFloat3(AIFloat3(target->GetVel()).Normalize2D() * 300.f);
+				: AIFloat3(AIFloat3(GetTarget()->GetVel()).Normalize2D() * 300.f);
 		const AIFloat3 leadPos = position + lead;
 		TRY_UNIT(circuit, unit,
 			unit->CmdMoveTo(leadPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);

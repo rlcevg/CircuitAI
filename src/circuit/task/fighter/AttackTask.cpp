@@ -181,7 +181,7 @@ void CAttackTask::Update()
 	}
 
 	state = State::ROAM;
-	if (target != nullptr) {
+	if (GetTarget() != nullptr) {
 		if (position.SqDistance2D(startPos) < SQUARE(highestRange)) {
 			state = State::ENGAGE;
 			Attack(frame);
@@ -193,7 +193,7 @@ void CAttackTask::Update()
 		return;
 	}
 
-	if (target == nullptr) {
+	if (GetTarget() == nullptr) {
 		FallbackFrontPos();
 		return;
 	}
@@ -311,7 +311,7 @@ void CAttackTask::FindTarget()
 
 	if (bestTarget != nullptr) {
 		SetTarget(bestTarget);
-		position = target->GetPos();
+		position = GetTarget()->GetPos();
 	}
 	// Return: target, startPos=leader->pos, endPos=position
 }

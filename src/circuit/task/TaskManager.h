@@ -16,6 +16,7 @@ class CCircuitUnit;
 class CNilTask;
 class CIdleTask;
 class CPlayerTask;
+class CRetreatTask;
 
 class ITaskManager {
 protected:
@@ -39,8 +40,10 @@ public:
 
 	void Init();
 	CIdleTask* GetIdleTask() const { return idleTask; }
+	virtual CRetreatTask* EnqueueRetreat() { return nullptr; }
 
 	void AssignPlayerTask(CCircuitUnit* unit);
+	void Resurrected(CCircuitUnit* unit);
 
 protected:
 	CNilTask* nilTask;

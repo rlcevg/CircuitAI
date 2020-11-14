@@ -48,7 +48,9 @@ void CFGuardTask::Start(CCircuitUnit* unit)
 
 void CFGuardTask::Update()
 {
-	++updCount;
+	if (updCount++ % 4 != 0) {
+		return;
+	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitUnit* vip = circuit->GetTeamUnit(vipId);
@@ -60,7 +62,7 @@ void CFGuardTask::Update()
 	CEnemyInfo* target = nullptr;
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = vip->GetPos(frame);
-	std::vector<ICoreUnit::Id> enemyIds = circuit->GetCallback()->GetEnemyUnitIdsIn(pos, vip->GetCircuitDef()->GetLosRadius() + 100.f);
+	std::vector<ICoreUnit::Id> enemyIds = circuit->GetCallback()->GetEnemyUnitIdsIn(pos, vip->GetCircuitDef()->GetLosRadius() + 300.f);
 	for (ICoreUnit::Id enemyId : enemyIds) {
 		CEnemyInfo* ei = circuit->GetEnemyInfo(enemyId);
 		if (ei != nullptr) {
@@ -70,12 +72,14 @@ void CFGuardTask::Update()
 	}
 
 	if (target != nullptr) {
+		state = State::ENGAGE;
 		for (CCircuitUnit* unit : units) {
 			TRY_UNIT(circuit, unit,
 				unit->Attack(target, frame + FRAMES_PER_SEC * 60);
 			)
 		}
-	} else {
+	} else if (State::ENGAGE == state) {
+		state = State::ROAM;
 		for (CCircuitUnit* unit : units) {
 			TRY_UNIT(circuit, unit,
 				unit->GetUnit()->Guard(vip->GetUnit());

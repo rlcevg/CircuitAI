@@ -160,7 +160,7 @@ void CAntiAirTask::Update()
 
 	const AIFloat3& startPos = leader->GetPos(frame);
 	state = State::ROAM;
-	if (target != nullptr) {
+	if (GetTarget() != nullptr) {
 		const float sqRange = SQUARE(lowestRange);
 		if (position.SqDistance2D(startPos) < sqRange) {
 			state = State::ENGAGE;
@@ -173,7 +173,7 @@ void CAntiAirTask::Update()
 		return;
 	}
 
-	if (target == nullptr) {
+	if (GetTarget() == nullptr) {
 		FallbackSafePos();
 		return;
 	}
@@ -292,7 +292,7 @@ void CAntiAirTask::FindTarget()
 
 	SetTarget(bestTarget);
 	if (bestTarget != nullptr) {
-		position = target->GetPos();
+		position = GetTarget()->GetPos();
 	}
 	// Return: target, startPos=leader->pos, endPos=position
 }

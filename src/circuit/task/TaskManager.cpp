@@ -9,6 +9,7 @@
 #include "task/NilTask.h"
 #include "task/IdleTask.h"
 #include "task/PlayerTask.h"
+#include "task/RetreatTask.h"
 #include "unit/CircuitUnit.h"
 
 namespace circuit {
@@ -63,6 +64,14 @@ void ITaskManager::Init()
 void ITaskManager::AssignPlayerTask(CCircuitUnit* unit)
 {
 	AssignTask(unit, playerTask);
+}
+
+void ITaskManager::Resurrected(CCircuitUnit* unit)
+{
+	CRetreatTask* task = EnqueueRetreat();
+	if (task != nullptr) {
+		AssignTask(unit, task);
+	}
 }
 
 } // namespace circuit

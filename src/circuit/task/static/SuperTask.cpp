@@ -167,16 +167,16 @@ void CSuperTask::Update()
 		}
 	}
 	SetTarget(bestTarget);
-	if (target != nullptr) {
-		targetPos = target->GetPos();
+	if (GetTarget() != nullptr) {
+		targetPos = GetTarget()->GetPos();
 
 		std::string cmd = (!cdef->IsAttrStock() || (unit->GetUnit()->GetStockpile() > 0)) ? "ai_super_fire:" : "ai_super_intention:";
 		cmd += utils::int_to_string(unit->GetId()) + "/" + utils::int_to_string(targetPos.x) + "/" + utils::int_to_string(targetPos.z);
 		circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 
 		TRY_UNIT(circuit, unit,
-			if (target->IsInRadarOrLOS() && !circuit->IsCheating()) {
-				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			if (GetTarget()->IsInRadarOrLOS() && !circuit->IsCheating()) {
+				unit->GetUnit()->Attack(GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			} else {
 				unit->CmdAttackGround(targetPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			}
