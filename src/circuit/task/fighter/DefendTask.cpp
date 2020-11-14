@@ -154,7 +154,9 @@ void CDefendTask::Update()
 	state = State::ROAM;
 	if ((GetTarget() != nullptr) || isTargetsFound) {
 		// FIXME: 300.f ~ slack. Defenders must not jiggle near base
-		if (position.SqDistance2D(startPos) < SQUARE(highestRange + 300.f)) {
+		if ((circuit->GetInflMap()->GetAllyDefendInflAt(position) > INFL_EPS)
+			|| position.SqDistance2D(startPos) < SQUARE(highestRange + 300.f))
+		{
 			state = State::ENGAGE;
 			Attack(frame);
 			return;

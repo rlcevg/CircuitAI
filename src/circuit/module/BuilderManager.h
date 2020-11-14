@@ -187,6 +187,7 @@ private:
 
 	unsigned numAutoMex;
 	std::unordered_map<int, std::set<CCircuitUnit*>> mexUpgrader;  // Mobile type Id: set of units
+	CCircuitUnit* energizer;
 	std::set<CCircuitUnit*> workers;
 	std::map<CCircuitUnit*, std::shared_ptr<IPathQuery>> costQueries;  // IPathQuery owner
 

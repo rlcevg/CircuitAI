@@ -58,6 +58,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		, buildTasksCount(0)
 		, buildPower(.0f)
 		, buildIterator(0)
+		, energizer(nullptr)
 {
 	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CBuilderManager::Init, this));
 
@@ -96,6 +97,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 			AddBuildPower(unit);
 			workers.insert(unit);
+
+			if ((energizer == nullptr) && (unit->GetCircuitDef()->GetCostM() > 200)) {
+				energizer = unit;
+			}
 		}
 		// FIXME: BA
 
@@ -136,6 +141,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			DelBuildPower(unit);
 			workers.erase(unit);
 			costQueries.erase(unit);
+
+			if (energizer == unit) {
+				energizer = nullptr;
+			}
 		}
 		// FIXME: BA
 
@@ -1019,7 +1028,9 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 		}
 	}
 
-	return MakeBuilderTask(unit, pQuery.get());
+	return (unit == energizer)
+			? MakeCommPeaceTask(unit, pQuery.get(), SQUARE(2000))
+			: MakeBuilderTask(unit, pQuery.get());
 }
 
 IBuilderTask* CBuilderManager::MakeCommPeaceTask(CCircuitUnit* unit, const CQueryCostMap* query, float sqMaxBaseRange)
