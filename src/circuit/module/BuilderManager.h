@@ -156,8 +156,11 @@ public:
 		return GetResurrectTask(pos, radius) != nullptr;
 	}
 
+	CCircuitUnit* GetEnergizer() const { return energizer; }
+
 private:
 	IUnitTask* DefaultMakeTask(CCircuitUnit* unit);
+	IBuilderTask* MakeEnergizerTask(CCircuitUnit* unit, const CQueryCostMap* query);
 	IBuilderTask* MakeCommPeaceTask(CCircuitUnit* unit, const CQueryCostMap* query, float sqMaxBaseRange);
 	IBuilderTask* MakeCommDangerTask(CCircuitUnit* unit, const CQueryCostMap* query, float sqMaxBaseRange);
 	IBuilderTask* MakeBuilderTask(CCircuitUnit* unit, const CQueryCostMap* query);

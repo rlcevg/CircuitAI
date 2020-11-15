@@ -65,6 +65,7 @@ public:
 	int GetFactoryCount() const { return factories.size(); }
 	int GetNoT1FacCount() const { return noT1FacCount; }
 	float GetFactoryPower() const { return factoryPower; }
+	float GetEnergyPower() const { return factoryPower + offsetPower; }
 	bool CanEnqueueTask() const { return factoryTasks.size() < factories.size() * 2; }
 	const std::vector<CRecruitTask*>& GetTasks() const { return factoryTasks; }
 	CCircuitUnit* NeedUpgrade();
@@ -112,7 +113,8 @@ private:
 	std::vector<CRecruitTask*> factoryTasks;  // order matters
 	std::vector<IUnitTask*> updateTasks;  // owner
 	unsigned int updateIterator;
-	float factoryPower;
+	float factoryPower;  // related to metal
+	float offsetPower;
 
 	std::vector<SSideInfo> sideInfos;
 

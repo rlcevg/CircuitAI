@@ -9,6 +9,7 @@
 #include "task/TaskManager.h"
 #include "map/InfluenceMap.h"
 #include "module/BuilderManager.h"
+#include "module/FactoryManager.h"
 #include "module/MilitaryManager.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
@@ -32,6 +33,14 @@ CBDefenceTask::CBDefenceTask(ITaskManager* mgr, Priority priority,
 
 CBDefenceTask::~CBDefenceTask()
 {
+}
+
+bool CBDefenceTask::CanAssignTo(CCircuitUnit* unit) const
+{
+	if (manager->GetCircuit()->GetFactoryManager()->GetFactoryCount() == 0) {
+		return false;
+	}
+	return IBuilderTask::CanAssignTo(unit);
 }
 
 void CBDefenceTask::Update()

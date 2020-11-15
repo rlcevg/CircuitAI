@@ -690,10 +690,6 @@ void CMilitaryManager::MakeDefence(int cluster)
 
 void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 {
-	if (circuit->GetFactoryManager()->GetFactoryCount() == 0) {
-		return;
-	}
-
 	CMetalManager* mm = circuit->GetMetalManager();
 	CEconomyManager* em = circuit->GetEconomyManager();
 	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();

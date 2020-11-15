@@ -46,6 +46,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit, new CFactoryScript(circuit->GetScriptManager(), this))
 		, updateIterator(0)
 		, factoryPower(.0f)
+		, offsetPower(.0f)
 		, noT1FacCount(0)
 		, bpRatio(1.f)
 		, reWeight(.5f)
@@ -544,9 +545,12 @@ void CFactoryManager::Init()
 		if (index>= 0) {
 			CCircuitDef* assistDef = GetSideInfo().assistDef;
 			CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
-			const float comIncome = commDef->GetDef()->GetResourceMake(circuit->GetEconomyManager()->GetMetalRes());
-			const float minIncome = std::min(assistDef->GetBuildSpeed(), (metalMgr->GetClusters()[index].income + comIncome) * 0.8f);
-			factoryPower -= assistDef->GetBuildSpeed() - minIncome;
+			const float comMIncome = commDef->GetDef()->GetResourceMake(circuit->GetEconomyManager()->GetMetalRes());
+			const float minIncome = std::min(assistDef->GetBuildSpeed(), metalMgr->GetClusters()[index].income + comMIncome);
+			offsetPower = (assistDef->GetBuildSpeed() - minIncome) * 1.25f;  // cluster income is a lie, so 1.2 -> 1.25
+			factoryPower -= offsetPower;
+			const float comEIncome = commDef->GetDef()->GetResourceMake(circuit->GetEconomyManager()->GetEnergyRes());
+			offsetPower -= (assistDef->GetBuildSpeed() - (comEIncome + 40.f) * 0.1f) * 1.25f;  // 40 ~ 2 solars; kbot should 1 solar
 		}
 
 		CScheduler* scheduler = circuit->GetScheduler().get();

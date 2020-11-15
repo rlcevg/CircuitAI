@@ -929,6 +929,12 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 				? (IsEnergyEmpty() ? IBuilderTask::Priority::NOW : IBuilderTask::Priority::HIGH)
 				: IBuilderTask::Priority::NORMAL;
 		IBuilderTask* task = builderMgr->EnqueueTask(priority, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, SQUARE_SIZE * 16.0f, true);
+		// FIXME: DEBUG
+//		if (bestDef->GetCostM() > 1000) {
+//			this->circuit->GetDrawer()->AddPoint(buildPos, bestDef->GetDef()->GetName());
+//			this->circuit->GetGame()->SetPause(true, "e");
+//		}
+		// FIXME: DEBUG
 		if ((unit == nullptr) || unit->GetCircuitDef()->CanBuild(bestDef)) {
 			return task;
 		}
@@ -986,21 +992,26 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		return nullptr;
 	}
 
-	const float assistSpeed = assistDef->GetBuildSpeed();
-	auto factorFunc = [assistSpeed](float resource) {
-		return (resource/* * ecoFactor*/ - assistSpeed) * 1.2f;
-	};
-	const float energyFactor = GetAvgEnergyIncome() * 0.1f;
-	const float metalFactor = GetAvgMetalIncome();
-	const float factoryFactor = factorFunc(std::min(metalFactor, energyFactor));
-	const int nanoSize = builderMgr->GetTasks(IBuilderTask::BuildType::NANO).size();
-	const float factoryPower = factoryMgr->GetFactoryPower() + nanoSize * assistSpeed;
 	const bool isSwitchTime = (lastFacFrame + switchTime <= frame);
-	if ((factoryPower >= factoryFactor) && !isSwitchTime) {
-		if ((factorFunc(metalFactor) > factoryPower) && (factorFunc(energyFactor) < factoryPower)) {
-			isEnergyStalling = true;  // enough metal, request energy
+	if (!isSwitchTime) {
+		// TODO: Separate clear rule for 1st factory
+		const float assistSpeed = assistDef->GetBuildSpeed();
+		auto factorFunc = [assistSpeed](float resource) {
+			return (resource/* * ecoFactor*/ - assistSpeed) * 1.2f;
+		};
+//		const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
+		const float energyFactor = factorFunc(GetAvgEnergyIncome() * 0.1f);
+		const float metalFactor = factorFunc(GetAvgMetalIncome());
+		const int nanoSize = builderMgr->GetTasks(IBuilderTask::BuildType::NANO).size();
+		const float factoryPower = factoryMgr->GetFactoryPower() + nanoSize * assistSpeed;
+		if (metalFactor < factoryPower) {
+			return nullptr;
 		}
-		return nullptr;
+		const float energyPower = factoryMgr->GetEnergyPower() + nanoSize * assistSpeed;
+		if (energyFactor < energyPower) {
+			isEnergyStalling = true;  // enough metal, request energy
+			return nullptr;
+		}
 	}
 
 	/*

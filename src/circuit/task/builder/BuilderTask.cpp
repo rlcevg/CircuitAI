@@ -432,7 +432,7 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 //		} else {
 //			return true;
 //		}
-		if (buildType != BuildType::GUARD) {
+		if ((buildType != BuildType::GUARD) && (unit != circuit->GetBuilderManager()->GetEnergizer())) {
 			return true;
 		}
 	}
@@ -633,17 +633,17 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 	}
 
 	if (chain->isPorc) {
-		CEconomyManager* economyMgr = circuit->GetEconomyManager();
-		const float metalIncome = std::min(economyMgr->GetAvgMetalIncome(), economyMgr->GetAvgEnergyIncome());
-		if (metalIncome > 10) {
+//		CEconomyManager* economyMgr = circuit->GetEconomyManager();
+//		const float metalIncome = std::min(economyMgr->GetAvgMetalIncome(), economyMgr->GetAvgEnergyIncome());
+//		if (metalIncome > 10) {
 			circuit->GetMilitaryManager()->MakeDefence(buildPos);
-		} else {
-			CMetalManager* metalMgr = circuit->GetMetalManager();
-			int index = metalMgr->FindNearestCluster(buildPos);
-			if ((index >= 0) && (/*metalMgr->IsClusterQueued(index) || */metalMgr->IsClusterFinished(index))) {
-				circuit->GetMilitaryManager()->MakeDefence(index, buildPos);
-			}
-		}
+//		} else {
+//			CMetalManager* metalMgr = circuit->GetMetalManager();
+//			int index = metalMgr->FindNearestCluster(buildPos);
+//			if ((index >= 0) && (/*metalMgr->IsClusterQueued(index) || */metalMgr->IsClusterFinished(index))) {
+//				circuit->GetMilitaryManager()->MakeDefence(index, buildPos);
+//			}
+//		}
 	}
 
 	if (chain->isTerra) {

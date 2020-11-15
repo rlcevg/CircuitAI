@@ -99,6 +99,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			workers.insert(unit);
 
 			if ((energizer == nullptr) && (unit->GetCircuitDef()->GetCostM() > 200) && !unit->GetCircuitDef()->IsRoleComm()) {
+				// FIXME: DEBUG
+//				this->circuit->GetDrawer()->AddPoint(unit->GetPos(this->circuit->GetLastFrame()), "e");
+//				this->circuit->GetGame()->SetPause(true, "e");
+				// FIXME: DEBUG
 				energizer = unit;
 			}
 		}
@@ -1029,8 +1033,115 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 	}
 
 	return (unit == energizer)
-			? MakeCommPeaceTask(unit, pQuery.get(), SQUARE(2000))
+			? MakeEnergizerTask(unit, pQuery.get())
 			: MakeBuilderTask(unit, pQuery.get());
+}
+
+IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQueryCostMap* query)
+{
+	if (GetTasks(IBuilderTask::BuildType::ENERGY).empty()) {
+		return MakeCommPeaceTask(unit, query, SQUARE(2000));
+	}
+
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	threatMap->SetThreatType(unit);
+	const IBuilderTask* task = nullptr;
+	const int frame = circuit->GetLastFrame();
+	AIFloat3 pos = unit->GetPos(frame);
+
+	CEconomyManager* economyMgr = circuit->GetEconomyManager();
+	economyMgr->MakeEconomyTasks(pos, unit);
+	const bool isNotReady = !economyMgr->IsExcessed();
+
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	const CMetalData::Clusters& clusters = metalMgr->GetClusters();
+
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	CInfluenceMap* inflMap = circuit->GetInflMap();
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+//	CTerrainManager::CorrectPosition(pos);
+
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
+	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
+	float metric = std::numeric_limits<float>::max();
+	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
+		for (const IBuilderTask* candidate : tasks) {
+			if (!candidate->CanAssignTo(unit)
+				|| (isNotReady
+					&& (candidate->GetBuildType() != IBuilderTask::BuildType::ENERGY)))
+			{
+				continue;
+			}
+
+			// Check time-distance to target
+			const AIFloat3& bp = candidate->GetPosition();
+			AIFloat3 buildPos = utils::is_valid(bp) ? bp : pos;
+
+			if (candidate->GetPriority() == IBuilderTask::Priority::NOW) {
+				// Disregard safety
+				if (!terrainMgr->CanReachAt(unit, buildPos, cdef->GetBuildDistance())) {  // ensure that path always exists
+					continue;
+				}
+
+			} else {
+
+				int index = metalMgr->FindNearestCluster(buildPos);
+				const AIFloat3& testPos = (index < 0) ? buildPos : clusters[index].position;
+				if (!terrainMgr->CanReachAt(unit, buildPos, cdef->GetBuildDistance())  // ensure that path always exists
+					|| (inflMap->GetInfluenceAt(testPos) < -INFL_EPS))  // safety check
+				{
+					continue;
+				}
+			}
+
+			float distCost;
+			const float rawDist = pos.SqDistance2D(buildPos);
+			if (rawDist < buildDistance) {
+				distCost = rawDist / pathfinder->GetSquareSize() * COST_BASE;
+			} else {
+				distCost = query->GetCostAt(buildPos, buildDistance);
+				if (distCost < 0.f) {  // path blocked by buildings
+					continue;
+				}
+			}
+
+			distCost = std::max(distCost, COST_BASE);
+
+			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
+			weight = 1.0f / SQUARE(weight);
+			bool valid = false;
+
+			CCircuitUnit* target = candidate->GetTarget();
+			if ((target != nullptr) && (distCost * weight < metric)) {
+				Unit* tu = target->GetUnit();
+				const float maxHealth = tu->GetMaxHealth();
+				const float health = tu->GetHealth() - maxHealth * 0.005f;
+				const float healthSpeed = maxHealth * candidate->GetBuildPower() / candidate->GetCost();
+				valid = ((maxHealth - health) * 0.6f) * maxSpeed > healthSpeed * distCost;
+			} else {
+				valid = (distCost * weight < metric) && (distCost < MAX_TRAVEL_SEC * maxSpeed);
+			}
+
+			if (valid) {
+				task = candidate;
+				metric = distCost * weight;
+			}
+		}
+	}
+
+	if ((task == nullptr) &&
+		((unit->GetTask()->GetType() != IUnitTask::Type::BUILDER) || (static_cast<IBuilderTask*>(unit->GetTask())->GetBuildType() != IBuilderTask::BuildType::GUARD)))
+	{
+		CCircuitUnit* vip = circuit->GetFactoryManager()->GetClosestFactory(pos);
+		if (vip != nullptr) {
+			task = EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, FRAMES_PER_SEC * 10);
+		} else {
+			task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 5);
+		}
+	}
+
+	return const_cast<IBuilderTask*>(task);
 }
 
 IBuilderTask* CBuilderManager::MakeCommPeaceTask(CCircuitUnit* unit, const CQueryCostMap* query, float sqMaxBaseRange)

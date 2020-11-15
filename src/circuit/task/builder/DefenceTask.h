@@ -19,6 +19,7 @@ public:
 				  float cost, float shake, int timeout);
 	virtual ~CBDefenceTask();
 
+	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
 	virtual void Update() override;
 
 protected:

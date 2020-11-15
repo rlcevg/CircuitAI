@@ -313,15 +313,20 @@ void CCircuitUnit::CmdTerraform(std::vector<float>&& params)
 
 void CCircuitUnit::CmdWait(bool state)
 {
-	if (isWaiting == state) {
-		return;
+	if (!state) {
+		auto commands = unit->GetCurrentCommands();
+		for (springai::Command* cmd : commands) {
+			if (cmd->GetId() == CMD_WAIT) {
+				unit->Wait();
+			}
+			delete cmd;
+		}
+	} else {
+		if (isWaiting != state) {
+			unit->Wait();
+		}
 	}
 	isWaiting = state;
-	if (isWaiting) {
-		unit->Wait();
-	} else {
-		CmdRemove({CMD_WAIT}, UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
-	}
 }
 
 void CCircuitUnit::RemoveWait()

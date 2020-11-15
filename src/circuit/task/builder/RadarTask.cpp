@@ -6,6 +6,8 @@
  */
 
 #include "task/builder/RadarTask.h"
+#include "module/FactoryManager.h"
+#include "CircuitAI.h"
 #include "util/Utils.h"
 
 namespace circuit {
@@ -21,6 +23,14 @@ CBRadarTask::CBRadarTask(ITaskManager* mgr, Priority priority,
 
 CBRadarTask::~CBRadarTask()
 {
+}
+
+bool CBRadarTask::CanAssignTo(CCircuitUnit* unit) const
+{
+	if (manager->GetCircuit()->GetFactoryManager()->GetFactoryCount() == 0) {
+		return false;
+	}
+	return IBuilderTask::CanAssignTo(unit);
 }
 
 } // namespace circuit
