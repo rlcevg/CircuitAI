@@ -929,12 +929,6 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 				? (IsEnergyEmpty() ? IBuilderTask::Priority::NOW : IBuilderTask::Priority::HIGH)
 				: IBuilderTask::Priority::NORMAL;
 		IBuilderTask* task = builderMgr->EnqueueTask(priority, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, SQUARE_SIZE * 16.0f, true);
-		// FIXME: DEBUG
-//		if (bestDef->GetCostM() > 1000) {
-//			this->circuit->GetDrawer()->AddPoint(buildPos, bestDef->GetDef()->GetName());
-//			this->circuit->GetGame()->SetPause(true, "e");
-//		}
-		// FIXME: DEBUG
 		if ((unit == nullptr) || unit->GetCircuitDef()->CanBuild(bestDef)) {
 			return task;
 		}
@@ -1256,10 +1250,24 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 
 void CEconomyManager::StartFactoryTask()
 {
-	if ((circuit->GetFactoryManager()->GetFactoryCount() == 0)
-		&& (UpdateFactoryTasks() == nullptr))
-	{
-		return;
+	if (circuit->GetFactoryManager()->GetFactoryCount() == 0) {
+		IBuilderTask* factoryTask = UpdateFactoryTasks();
+		if (factoryTask == nullptr) {
+			if (circuit->GetEconomyManager()->IsEnergyStalling()) {
+				CCircuitUnit* comm = circuit->GetSetupManager()->GetCommander();
+				if (comm != nullptr) {
+					IBuilderTask* task = UpdateEnergyTasks(comm->GetPos(circuit->GetLastFrame()), comm);
+					if (task != nullptr) {
+						circuit->GetBuilderManager()->AssignTask(comm, task);
+					}
+				}
+			}
+			return;
+		}
+		CCircuitUnit* comm = circuit->GetSetupManager()->GetCommander();
+		if (comm != nullptr) {
+			circuit->GetBuilderManager()->AssignTask(comm, factoryTask);
+		}
 	}
 
 	CScheduler* scheduler = circuit->GetScheduler().get();

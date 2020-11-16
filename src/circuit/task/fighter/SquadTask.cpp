@@ -370,15 +370,15 @@ void ISquadTask::Attack(const int frame)
 	int row = 0;
 	for (const auto& kv : rangeUnits) {
 		CCircuitDef* rowDef = (*kv.second.begin())->GetCircuitDef();
-		const float range = (row == 0) ? std::min(kv.first, rowDef->GetLosRadius()) : kv.first;
+		const float range = (row++ == 0) ? std::min(kv.first, rowDef->GetLosRadius()) : kv.first;
 		const float maxDelta = (M_PI * 0.8f) / kv.second.size();
 		// NOTE: float delta = asinf(cdef->GetRadius() / range);
 		//       but sin of a small angle is similar to that angle, omit asinf() call
-		float delta = (2.5f * (rowDef->GetRadius() + aoe)) / range;
+		float delta = (3.0f * (rowDef->GetRadius() + aoe)) / range;
 		if (delta > maxDelta) {
 			delta = maxDelta;
 		}
-		float beta = -delta * ((kv.second.size() - 1) / 2 + (row++ & 1) * 0.5f);
+		float beta = -delta * (kv.second.size() / 2);
 		for (CCircuitUnit* unit : kv.second) {
 			unit->GetTravelAct()->StateWait();
 			if (unit->Blocker() != nullptr) {

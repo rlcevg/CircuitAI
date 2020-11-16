@@ -20,6 +20,7 @@
 
 #include "AISCommands.h"
 #include "Sim/Units/CommandAI/Command.h"
+#include "Command.h"
 #include "Weapon.h"
 #include "WrappWeaponMount.h"
 

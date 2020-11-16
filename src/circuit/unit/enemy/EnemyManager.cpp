@@ -50,8 +50,12 @@ CEnemyManager::CEnemyManager(CCircuitAI* circuit)
 
 CEnemyManager::~CEnemyManager()
 {
+//	for (CEnemyUnit* enemy : enemyDying) {
+//		enemy->SetDead();
+//	}
+//	enemyDying.clear();
 	for (CEnemyUnit* enemy : enemyUpdates) {
-		if (enemy->IsDead()) {  // instance is not in enemyUnits
+		if (enemy->IsDead() || enemy->IsDying()) {  // instance is not in enemyUnits
 			delete enemy;
 		}
 	}
@@ -241,7 +245,7 @@ std::pair<CEnemyUnit*, bool> CEnemyManager::RegisterEnemyUnit(ICoreUnit::Id unit
 		cdef = circuit->GetCircuitDef(unitDefId);
 		isIgnore |= cdef->IsIgnore();
 	}
-	CEnemyUnit* data = new CEnemyUnit(unitId, e, cdef);
+	CEnemyUnit* data = new CEnemyUnit(unitId, e, cdef);  // TODO: Use std::shared_ptr
 
 	enemyUnits[unitId] = data;
 	enemyUpdates.push_back(data);

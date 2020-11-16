@@ -86,6 +86,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 			AddBuildPower(unit);
 			mexUpgrader[unit->GetCircuitDef()->GetMobileId()].insert(unit);
+			++mexUpgraderCount[unit->GetCircuitDef()];
 
 			TRY_UNIT(this->circuit, unit,
 				unit->GetUnit()->ExecuteCustomCommand(CMD_AUTOMEX, {1.f});
@@ -99,16 +100,12 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			workers.insert(unit);
 
 			if ((energizer == nullptr) && (unit->GetCircuitDef()->GetCostM() > 200) && !unit->GetCircuitDef()->IsRoleComm()) {
-				// FIXME: DEBUG
-//				this->circuit->GetDrawer()->AddPoint(unit->GetPos(this->circuit->GetLastFrame()), "e");
-//				this->circuit->GetGame()->SetPause(true, "e");
-				// FIXME: DEBUG
 				energizer = unit;
 			}
+
+			AddBuildList(unit, mexUpgraderCount[unit->GetCircuitDef()]);
 		}
 		// FIXME: BA
-
-		AddBuildList(unit);
 
 		CMilitaryManager* militaryMgr = this->circuit->GetMilitaryManager();
 		if (!unit->GetCircuitDef()->IsAttacker()
@@ -139,6 +136,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		// FIXME: BA
 		if (mexUpgrader[unit->GetCircuitDef()->GetMobileId()].erase(unit) > 0) {
 			DelBuildPower(unit);
+
+			--mexUpgraderCount[unit->GetCircuitDef()];
 		} else {
 			--buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 
@@ -149,10 +148,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			if (energizer == unit) {
 				energizer = nullptr;
 			}
+
+			RemoveBuildList(unit, mexUpgraderCount[unit->GetCircuitDef()]);
 		}
 		// FIXME: BA
-
-		RemoveBuildList(unit);
 
 		this->circuit->GetMilitaryManager()->DelGuardTask(unit);
 	};
@@ -1051,7 +1050,7 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
 	economyMgr->MakeEconomyTasks(pos, unit);
-	const bool isNotReady = !economyMgr->IsExcessed();
+	// TODO: Add excess mechanics for lower difficulties, @see MakeBuilderTask
 
 	CMetalManager* metalMgr = circuit->GetMetalManager();
 	const CMetalData::Clusters& clusters = metalMgr->GetClusters();
@@ -1068,8 +1067,7 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
 			if (!candidate->CanAssignTo(unit)
-				|| (isNotReady
-					&& (candidate->GetBuildType() != IBuilderTask::BuildType::ENERGY)))
+				|| (candidate->GetBuildType() != IBuilderTask::BuildType::ENERGY))
 			{
 				continue;
 			}
@@ -1515,10 +1513,10 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 	return EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
 }
 
-void CBuilderManager::AddBuildList(CCircuitUnit* unit)
+void CBuilderManager::AddBuildList(CCircuitUnit* unit, int hiddenDefs)
 {
 	CCircuitDef* cDef = unit->GetCircuitDef();
-	if (cDef->GetCount() > 1) {
+	if (cDef->GetCount() - hiddenDefs > 1) {
 		return;
 	}
 
@@ -1540,10 +1538,10 @@ void CBuilderManager::AddBuildList(CCircuitUnit* unit)
 	// TODO: Same thing with factory, currently factory uses IsBuilderExists
 }
 
-void CBuilderManager::RemoveBuildList(CCircuitUnit* unit)
+void CBuilderManager::RemoveBuildList(CCircuitUnit* unit, int hiddenDefs)
 {
 	CCircuitDef* cDef = unit->GetCircuitDef();
-	if (cDef->GetCount() > 1) {
+	if (cDef->GetCount() - hiddenDefs > 1) {
 		return;
 	}
 

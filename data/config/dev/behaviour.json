@@ -303,7 +303,7 @@
 		"pwr_mod": 1.5
 	},
 	"armrectr": {
-		"role": ["builder"],
+		"role": ["raider"],
 		"limit": 10
 	},
 	"armrock": {
@@ -625,7 +625,7 @@
 		"attribute": ["scout"]
 	},
 	"cornecro": {
-		"role": ["builder"],
+		"role": ["raider"],
 		"limit": 10
 	},
 	"corstorm": {

@@ -432,7 +432,9 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 //		} else {
 //			return true;
 //		}
-		if ((buildType != BuildType::GUARD) && (unit != circuit->GetBuilderManager()->GetEnergizer())) {
+		if ((buildType != BuildType::GUARD)
+			&& ((unit != circuit->GetBuilderManager()->GetEnergizer()) || (units.size() < 2)))  // TODO: check not only units.size() < 2 but units that started building
+		{
 			return true;
 		}
 	}

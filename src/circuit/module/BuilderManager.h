@@ -166,8 +166,8 @@ private:
 	IBuilderTask* MakeBuilderTask(CCircuitUnit* unit, const CQueryCostMap* query);
 	IBuilderTask* CreateBuilderTask(const springai::AIFloat3& position, CCircuitUnit* unit);
 
-	void AddBuildList(CCircuitUnit* unit);
-	void RemoveBuildList(CCircuitUnit* unit);
+	void AddBuildList(CCircuitUnit* unit, int hiddenDefs);
+	void RemoveBuildList(CCircuitUnit* unit, int hiddenDefs);
 
 	void Watchdog();
 	void UpdateIdle();
@@ -190,6 +190,7 @@ private:
 
 	unsigned numAutoMex;
 	std::unordered_map<int, std::set<CCircuitUnit*>> mexUpgrader;  // Mobile type Id: set of units
+	std::unordered_map<CCircuitDef*, int> mexUpgraderCount;
 	CCircuitUnit* energizer;
 	std::set<CCircuitUnit*> workers;
 	std::map<CCircuitUnit*, std::shared_ptr<IPathQuery>> costQueries;  // IPathQuery owner
