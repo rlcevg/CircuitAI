@@ -973,7 +973,6 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
 		CCircuitDef* bd = facDef.buildDefs[i];
 		if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost()))
-			|| (bd->GetCostM() > maxCost)
 			|| !bd->IsAvailable(frame)
 			|| !terrainMgr->CanBeBuiltAt(bd, pos, range)
 			|| !isEnemyInArea(frame, bd))
@@ -982,8 +981,6 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			std::string reason;
 			if ((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) {
 				reason = "no energy";
-			} else if (bd->GetCostM() > maxCost) {
-				reason = "unit's costM is greater then whole army cost";
 			} else if (!bd->IsAvailable(frame)) {
 				reason = "limit exceeded or frame < since";
 			} else if (!terrainMgr->CanBeBuiltAt(bd, pos, range)) {
@@ -1004,7 +1001,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			// NOTE: with probs=[n1, n2, n3, n4, n5]
 			//       previous response system provided probs2=[0, res(n2), 0, 0, res(n5)]
 			//       current is probs2=[n1, res(n2), n3, n4, res(n5)]
-			bool isResponse = (prob > 0.f);
+			bool isResponse = (prob > 0.f) && (bd->GetCostM() <= maxCost);
 			probType = isResponse ? "response" : "regular";
 			prob = isResponse ? prob : probs[i];
 			candidates.push_back({bd, prob, isResponse});

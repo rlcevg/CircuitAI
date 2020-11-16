@@ -1256,10 +1256,7 @@ void CEconomyManager::StartFactoryTask()
 			if (circuit->GetEconomyManager()->IsEnergyStalling()) {
 				CCircuitUnit* comm = circuit->GetSetupManager()->GetCommander();
 				if (comm != nullptr) {
-					IBuilderTask* task = UpdateEnergyTasks(comm->GetPos(circuit->GetLastFrame()), comm);
-					if (task != nullptr) {
-						circuit->GetBuilderManager()->AssignTask(comm, task);
-					}
+					UpdateEnergyTasks(comm->GetPos(circuit->GetLastFrame()), comm);
 				}
 			}
 			return;
