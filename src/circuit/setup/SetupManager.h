@@ -112,6 +112,7 @@ private:
 	std::string commSuffix;
 	CCircuitDef* commChoice;
 	std::map<std::string, SCommInfo> commInfos;
+	bool isSideSelected;  // FIXME: Random-Side workaround
 
 	struct SOpener {
 		SOpener(float p, const std::vector<CCircuitDef::RoleT>& q) : prob(p), queue(q) {}

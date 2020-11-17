@@ -186,45 +186,42 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 
 	float maxAreaDivCost = .0f;
 	const float avgWind = (circuit->GetMap()->GetMaxWind() + circuit->GetMap()->GetMinWind()) * 0.5f;
-	CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
 
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
 		const std::map<std::string, std::string>& customParams = cdef.GetDef()->GetCustomParams();
 
 		if (!cdef.IsMobile()) {
-			if (commDef->CanBuild(&cdef)) {
-				// pylon
-				auto it = customParams.find("pylonrange");
-				if (it != customParams.end()) {
-					const float range = utils::string_to_float(it->second);
-					float areaDivCost = M_PI * SQUARE(range) / cdef.GetCostM();
-					if (maxAreaDivCost < areaDivCost) {
-						maxAreaDivCost = areaDivCost;
-						pylonDef = &cdef;  // armestor
-						pylonRange = range;
-					}
+			// pylon
+			auto it = customParams.find("pylonrange");
+			if (it != customParams.end()) {
+				const float range = utils::string_to_float(it->second);
+				float areaDivCost = M_PI * SQUARE(range) / cdef.GetCostM();
+				if (maxAreaDivCost < areaDivCost) {
+					maxAreaDivCost = areaDivCost;
+					pylonDef = &cdef;  // armestor
+					pylonRange = range;
 				}
-
-				// storage
-				if (cdef.GetDef()->GetStorage(metalRes) > 1.f) {
-					storeMDefs.all.insert(&cdef);
-				}
-				if (cdef.GetDef()->GetStorage(energyRes) > 1.f) {
-					storeEDefs.all.insert(&cdef);
-				}
-
-				// mex
-				// BA: float metalConverts = unitDef->GetMakesResource(metalRes);
-				//     float metalExtracts = unitDef->GetExtractsResource(metalRes);
-				//     float netMetal = unitDef->GetResourceMake(metalRes) - unitDef->GetUpkeep(metalRes);
-				// FIXME: BA
-//				if (((it = customParams.find("ismex")) != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
-//					finishedHandler[cdef.GetId()] = mexFinishedHandler;
-//					mexDef = &cdef;  // cormex
-//					cdef.SetIsMex(true);
-//				}
-				// FIXME: BA
 			}
+
+			// storage
+			if (cdef.GetDef()->GetStorage(metalRes) >= 1000.f) {
+				storeMDefs.all.insert(&cdef);
+			}
+			if (cdef.GetDef()->GetStorage(energyRes) > 1000.f) {
+				storeEDefs.all.insert(&cdef);
+			}
+
+			// mex
+			// BA: float metalConverts = unitDef->GetMakesResource(metalRes);
+			//     float metalExtracts = unitDef->GetExtractsResource(metalRes);
+			//     float netMetal = unitDef->GetResourceMake(metalRes) - unitDef->GetUpkeep(metalRes);
+			// FIXME: BA
+//			if (((it = customParams.find("ismex")) != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
+//				finishedHandler[cdef.GetId()] = mexFinishedHandler;
+//				mexDef = &cdef;  // cormex
+//				cdef.SetIsMex(true);
+//			}
+			// FIXME: BA
 
 			// factory
 			if (cdef.GetDef()->IsBuilder() && !cdef.GetBuildOptions().empty()) {
@@ -234,7 +231,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 
 			// energy
 			// BA: float netEnergy = unitDef->GetResourceMake(energyRes) - unitDef->GetUpkeep(energyRes);
-			auto it = customParams.find("income_energy");
+			it = customParams.find("income_energy");
 			if (((it != customParams.end()) && (utils::string_to_float(it->second) > 1))
 				|| (cdef.GetDef()->GetResourceMake(energyRes) - cdef.GetUpkeepE() > 1)
 				|| ((cdef.GetDef()->GetWindResourceGenerator(energyRes) > 5) && (avgWind > 5))
@@ -1147,7 +1144,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 {
 	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	CBuilderManager* builderMgr = circuit->GetBuilderManager();
-	if (!builderMgr->CanEnqueueTask()) {
+	if (!builderMgr->CanEnqueueTask(32)) {
 		return nullptr;
 	}
 
@@ -1160,7 +1157,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 		storeDef = storeMDefs.infos.front().cdef;
 
 		if (!storeDef->IsAvailable(circuit->GetLastFrame())
-			|| (GetMetalStore() > 60 * GetAvgMetalIncome())
+//			|| (GetMetalStore() > 60 * GetAvgMetalIncome())
 			|| !IsMetalFull())
 		{
 			storeDef = nullptr;
@@ -1433,21 +1430,14 @@ void CEconomyManager::AddStoreDefs(const std::set<CCircuitDef*>& buildDefs, SSto
 
 void CEconomyManager::RemoveStoreDefs(const std::set<CCircuitDef*>& buildDefs, SStoreDefs& defsInfo)
 {
-	std::set<CCircuitDef*> storeDefs;
+	std::set<CCircuitDef*> diffDefs;
 	std::set_intersection(defsInfo.all.begin(), defsInfo.all.end(),
 						  buildDefs.begin(), buildDefs.end(),
-						  std::inserter(storeDefs, storeDefs.begin()));
-	if (storeDefs.empty()) {
-		return;
-	}
-	std::set<CCircuitDef*> diffDefs;
-	std::set_difference(defsInfo.avail.begin(), defsInfo.avail.end(),
-						storeDefs.begin(), storeDefs.end(),
-						std::inserter(diffDefs, diffDefs.begin()));
+						  std::inserter(diffDefs, diffDefs.begin()));
 	if (diffDefs.empty()) {
 		return;
 	}
-	storeDefs.clear();
+	std::set<CCircuitDef*> storeDefs;
 	std::set_difference(defsInfo.avail.begin(), defsInfo.avail.end(),
 						diffDefs.begin(), diffDefs.end(),
 						std::inserter(storeDefs, storeDefs.begin()));
@@ -1462,6 +1452,13 @@ void CEconomyManager::RemoveStoreDefs(const std::set<CCircuitDef*>& buildDefs, S
 			++it;
 		}
 	}
+	// FIXME: DEBUG
+//	circuit->LOG("----Remove Storage----");
+//	for (const SStoreInfo& si : defsInfo.infos) {
+//		circuit->LOG("%s | costM=%f | costE=%f | storage=%f", si.cdef->GetDef()->GetName(),
+//				si.cdef->GetCostM(), si.cdef->GetCostE(), si.storage);
+//	}
+	// FIXME: DEBUG
 }
 
 void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
@@ -1525,22 +1522,15 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 
 void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 {
-	// TODO: Cache engyDefs in CCircuitDef?
-	std::set<CCircuitDef*> engyDefs;
+	// TODO: Cache diffDefs in CCircuitDef?
+	std::set<CCircuitDef*> diffDefs;
 	std::set_intersection(energyDefs.all.begin(), energyDefs.all.end(),
 						  buildDefs.begin(), buildDefs.end(),
-						  std::inserter(engyDefs, engyDefs.begin()));
-	if (engyDefs.empty()) {
-		return;
-	}
-	std::set<CCircuitDef*> diffDefs;
-	std::set_difference(energyDefs.avail.begin(), energyDefs.avail.end(),
-						engyDefs.begin(), engyDefs.end(),
-						std::inserter(diffDefs, diffDefs.begin()));
+						  std::inserter(diffDefs, diffDefs.begin()));
 	if (diffDefs.empty()) {
 		return;
 	}
-	engyDefs.clear();
+	std::set<CCircuitDef*> engyDefs;
 	std::set_difference(energyDefs.avail.begin(), energyDefs.avail.end(),
 						diffDefs.begin(), diffDefs.end(),
 						std::inserter(engyDefs, engyDefs.begin()));
@@ -1555,6 +1545,13 @@ void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 			++it;
 		}
 	}
+	// FIXME: DEBUG
+//	circuit->LOG("----Remove Energy----");
+//	for (const SEnergyInfo& ei : energyDefs.infos) {
+//		circuit->LOG("%s | costM=%f | costE=%f | make=%f | efficiency=%f | limit=%i", ei.cdef->GetDef()->GetName(),
+//				ei.cdef->GetCostM(), ei.cdef->GetCostE(), ei.make, ei.score, ei.limit);
+//	}
+	// FIXME: DEBUG
 }
 
 } // namespace circuit

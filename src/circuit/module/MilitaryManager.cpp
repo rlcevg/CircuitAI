@@ -1448,6 +1448,9 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 						task = EnqueueDefend(IFighterTask::FightType::ATTACK, power);
 					}
 				} break;
+				case IFighterTask::FightType::SUPER: {
+					task = EnqueueTask(cdef->IsMobile() ? IFighterTask::FightType::ATTACK : it->second);
+				} break;
 				default: break;
 			}
 			if (task == nullptr) {
@@ -1564,21 +1567,14 @@ void CMilitaryManager::AddSensorDefs(const std::set<CCircuitDef*>& buildDefs, SS
 
 void CMilitaryManager::RemoveSensorDefs(const std::set<CCircuitDef*>& buildDefs, SSensorDefs& defsInfo)
 {
-	std::set<CCircuitDef*> sensorDefs;
+	std::set<CCircuitDef*> diffDefs;
 	std::set_intersection(defsInfo.all.begin(), defsInfo.all.end(),
 						  buildDefs.begin(), buildDefs.end(),
-						  std::inserter(sensorDefs, sensorDefs.begin()));
-	if (sensorDefs.empty()) {
-		return;
-	}
-	std::set<CCircuitDef*> diffDefs;
-	std::set_difference(defsInfo.avail.begin(), defsInfo.avail.end(),
-						sensorDefs.begin(), sensorDefs.end(),
-						std::inserter(diffDefs, diffDefs.begin()));
+						  std::inserter(diffDefs, diffDefs.begin()));
 	if (diffDefs.empty()) {
 		return;
 	}
-	sensorDefs.clear();
+	std::set<CCircuitDef*> sensorDefs;
 	std::set_difference(defsInfo.avail.begin(), defsInfo.avail.end(),
 						diffDefs.begin(), diffDefs.end(),
 						std::inserter(sensorDefs, sensorDefs.begin()));
@@ -1593,6 +1589,13 @@ void CMilitaryManager::RemoveSensorDefs(const std::set<CCircuitDef*>& buildDefs,
 			++it;
 		}
 	}
+	// FIXME: DEBUG
+//	circuit->LOG("----Remove Sensor----");
+//	for (const SSensorInfo& si : defsInfo.infos) {
+//		circuit->LOG("%s | costM=%f | costE=%f | radius=%f | efficiency=%f", si.cdef->GetDef()->GetName(),
+//				si.cdef->GetCostM(), si.cdef->GetCostE(), si.radius, si.score);
+//	}
+	// FIXME: DEBUG
 }
 
 } // namespace circuit

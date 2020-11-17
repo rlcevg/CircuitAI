@@ -1038,7 +1038,9 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 
 IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQueryCostMap* query)
 {
-	if (GetTasks(IBuilderTask::BuildType::ENERGY).empty()) {
+	if (GetTasks(IBuilderTask::BuildType::STORE).empty()
+		&& GetTasks(IBuilderTask::BuildType::ENERGY).empty())
+	{
 		return MakeCommPeaceTask(unit, query, SQUARE(2000));
 	}
 
@@ -1066,10 +1068,18 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
-			if (!candidate->CanAssignTo(unit)
-				|| (candidate->GetBuildType() != IBuilderTask::BuildType::ENERGY))
-			{
+			if (!candidate->CanAssignTo(unit)) {
 				continue;
+			}
+			float prioMod = 1.f;
+			switch (candidate->GetBuildType()) {
+				case IBuilderTask::BuildType::STORE: {
+					prioMod = .0001f;
+				} break;
+				case IBuilderTask::BuildType::ENERGY: {
+					prioMod = 1.f;
+				} break;
+				default: continue;
 			}
 
 			// Check time-distance to target
@@ -1107,7 +1117,7 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 			distCost = std::max(distCost, COST_BASE);
 
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
-			weight = 1.0f / SQUARE(weight);
+			weight = 1.0f / SQUARE(weight) * prioMod;
 			bool valid = false;
 
 			CCircuitUnit* target = candidate->GetTarget();

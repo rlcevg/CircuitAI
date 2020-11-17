@@ -49,7 +49,7 @@ void ISquadTask::AssignTo(CCircuitUnit* unit)
 	IFighterTask::AssignTo(unit);
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float range = cdef->GetMinRange() * RANGE_MOD;
+	const float range = cdef->GetMinRange();
 	rangeUnits[range].insert(unit);
 
 	if (leader == nullptr) {
@@ -80,7 +80,7 @@ void ISquadTask::RemoveAssignee(CCircuitUnit* unit)
 	IFighterTask::RemoveAssignee(unit);
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float range = cdef->GetMinRange() * RANGE_MOD;
+	const float range = cdef->GetMinRange();
 	std::set<CCircuitUnit*>& setUnits = rangeUnits[range];
 	setUnits.erase(unit);
 	if (setUnits.empty()) {
@@ -370,7 +370,7 @@ void ISquadTask::Attack(const int frame)
 	int row = 0;
 	for (const auto& kv : rangeUnits) {
 		CCircuitDef* rowDef = (*kv.second.begin())->GetCircuitDef();
-		const float range = (row++ == 0) ? std::min(kv.first, rowDef->GetLosRadius()) : kv.first;
+		const float range = ((row++ == 0) ? std::min(kv.first, rowDef->GetLosRadius()) : kv.first) * RANGE_MOD;
 		const float maxDelta = (M_PI * 0.8f) / kv.second.size();
 		// NOTE: float delta = asinf(cdef->GetRadius() / range);
 		//       but sin of a small angle is similar to that angle, omit asinf() call

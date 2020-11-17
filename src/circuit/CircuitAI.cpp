@@ -963,7 +963,7 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 //	}
 	// FIXME: DEBUG
 
-	// FIXME: Random Side workaround
+	// FIXME: Random-Side workaround
 	if (unit->GetCircuitDef()->IsRoleComm() && (setupManager->GetCommander() == nullptr)) {
 		setupManager->SetCommander(unit);
 	}

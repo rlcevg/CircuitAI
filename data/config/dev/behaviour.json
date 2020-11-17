@@ -242,7 +242,24 @@
 		"role": ["static"],
 		"ignore": true
 	},
-
+	"armmstor" : {
+		"role": ["static"],
+		"since": 300,
+		"limit": 5
+	},
+	"cormstor" : {
+		"role": ["static"],
+		"since": 300,
+		"limit": 5
+	},
+	"armuwadvms" : {
+		"role": ["static"],
+		"limit": 5
+	},
+	"coruwadvms" : {
+		"role": ["static"],
+		"limit": 5
+	},
 
 	// bot - armlab
 	"armck": {

@@ -45,6 +45,7 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 		, lanePos(-RgtVector)
 		, emptyShield(0.f)
 		, commChoice(nullptr)
+		, isSideSelected(false)
 {
 	const char* setupScript = circuit->GetGame()->GetSetupScript();
 	if (!setupData->IsInitialized()) {
@@ -296,9 +297,13 @@ void CSetupManager::SetCommander(CCircuitUnit* unit)
 		return;
 	}
 	commChoice = commander->GetCircuitDef();
+	if (isSideSelected) {
+		return;
+	}
 	auto it = sides.find(unit->GetCircuitDef()->GetId());
 	if (it != sides.end()) {
 		circuit->SetSide(it->second);
+		isSideSelected = true;
 	}
 }
 
