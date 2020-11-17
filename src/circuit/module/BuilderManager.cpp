@@ -1077,7 +1077,7 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 					prioMod = .0001f;
 				} break;
 				case IBuilderTask::BuildType::ENERGY: {
-					prioMod = 1.f;
+					prioMod = 1000.f;
 				} break;
 				default: continue;
 			}

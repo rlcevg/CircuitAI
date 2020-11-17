@@ -1,6 +1,6 @@
 Circuit AI
 =========
-Spring RTS local native AI for Zero-K.
+Framework for Spring RTS local native AIs.
 
 ### Requirements
 * gcc 5.4+

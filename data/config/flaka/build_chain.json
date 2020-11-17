@@ -1,0 +1,248 @@
+// Mono-space font required
+// task order
+// 1) AI updates economy tasks:
+//  a) if energy stalling then create energy task near unit's position closer to cluster or near base if unitdef is expensive;
+//  b) otherwise create mex task: if there's uncolonized mex cluster connected to our colonized clusters then create task for that mex;
+//  c) if no mex task created then create reclaim task.
+//
+// 2) Traverse all created builder tasks and select closest and safe one that con can execute, assign that task.
+// porc and factories are checked every second and gets executed in here in step#2
+//
+// 3) If (2) failed then create new task with regard to unit and its position:
+// a) check energy;
+//b) if no energy needed - check reclaim;
+//c) if no reclaim found - check superweapon;
+//d) if superweapon condition is false - try to build cheapest energy structure;
+//e) if limit of cheap energy exceeded then patrol.
+//Also when building finished next one from the hub chain is queued. So hub chains go with (2)
+//(1) only queues new task; (2) or (3) - assigns task
+//
+// to do: targeting facility ok, adv radar ok, adv jammer,
+// 
+//features:
+// eco: 2 armadv outside energy chain to prevent stalling
+// eco: e and m storage to avoid wasting ressources and fight e stalling
+// porc land: reworked (much shorter t1 list to rig up faster an effective defense) 
+
+{
+"porcupine": {
+	"unit": {
+	//              0           	1         		2        		3           	4          		5     			6				7				8				9   
+		"armada":  ["armllt",		"armtl",   		"armrl",  		"armbeamer", 	"armhlt",  		"armclaw",		"armferret",	"armcir", 		"armpb",   		"armatl",
+					"armflak",   	"armamb",  		"armanni", 		"armguard", 	"armamd", 		"armrad",		"armjamt",		"armestor", 	"armmstor", 	"armadvsol",
+					"armnanotc",	"armarad",		"armtarg",		"armuwadves",  	"armemp",		"armveil",		"armckfus"],
+	//	
+	//              0          		1          		2          		3            	4           	5          		6				7				8				9
+		"cortex":  ["corllt",		"cortl",   		"corrl",  		"corhllt",   	"corhlt",   	"cormaw",  		"cormadsam",  	"corerad",		"corvipe", 		"coratl", 
+					"corflak",   	"cortoast", 	"cordoom", 		"corpun",    	"corfmd",		"corrad",		"corjamt",		"corestor",		"cormstor",		"coradvsol", 
+					"cornanotc",	"corarad",		"cortarg",		"coruwadves",	"cortron", 		"corshroud",	"corfus"]
+	},
+	// Actual number of defences per cluster bounded by income - the order of defenses that should be build with numbers as above.
+	// limit of total resources cost for porc cluster is:  16 * amountFactor * metalIncome
+	"land":  [0, 15, 3, 5, 19 , 20, 6, 16, 3, 20, 8, 10, 8, 24, 20, 12, 8, 24, 12], //19 adv solar is test
+	"water": [1, 2, 1, 1, 2, 1, 4, 13, 9, 10, 9, 10],
+	"prevent": 1,  // number of preventive defences
+	"amount": {  // income bound factor
+		"offset": [-0.15, 0.15],
+		// Amount factor: 10x10 ~ 3.8, 20x20 ~ 3.4
+		"factor": [3.8, 3.4],
+		"map": [10, 20]
+	},
+
+	// Base defence and time to build it, in seconds
+	//"base": [[0, 90]],	
+//	"base": [[0, 180], [19, 240], [20,300], [19, 360], [2, 400], [19, 450], [17, 460], [3, 480], [3, 600], [5, 700], [17, 800], [14, 820], [6, 880], [18, 900], [8, 920], [22, 960], [22, 1000], [22, 1060], [8, 1100], [10, 1200],  [12, 1600]],
+	"base": [[19, 120], [20,180], [17, 360], [3, 480], [6, 600], [19, 660], [23,720], [14, 900], [1020, 8], [22,1200], [22, 1320]],
+	"superweapon": {
+		"unit": {
+			"armada": ["armjuno", "armmercury",  "armemp",  "armbrtha", "armvulc", "armsilo", "armgate"],
+			"cortex": ["corjuno", "corscreamer", "cortron", "corint",   "corbuzz", "corsilo", "corgate"]
+		},
+		"weight":     [	0.10,		0.20,          0.20,      0.20,       0.05,      0.15,     0.10],
+
+		"condition": [25, 480]  // [<Minimum income>, <maximum seconds to build based on total metal income>]
+	},
+
+	// Fallback defence
+	"default": {
+		"armada": "armbeamer",
+		"cortex": "corllt"
+	}
+},
+
+// Actions on building finished event
+"build_chain": {
+	// WARNING: Avoid recursion
+	// <category>: factory, nano, store, pylon, energy, defence, bunker, big_gun, radar, sonar, mex, repair
+	"energy": {
+		// <UnitDef>: {<elements>}
+		"armadvsol": {
+			// Available elements:
+			// "energy": [max energy income, <"mex"|true>]
+			// "pylon": <boolean>
+			// "porc": <boolean>
+			// "terra": <boolean>
+			// "hub": [
+			//     // chain1
+			//     [{<unit1>, <category>, <offset>, <condition>}, {<unit2>, <category>, <offset>, <condition>}, ...],
+			//     // chain2
+			//     [{...}, {...}, ...],
+			//     ...
+			// ]
+			// <unit>: UnitDef
+			// <offset>:
+			//     1) [x, z] in South facing, elmos   => +x = vorne; -x = hinten; +y = rechts; -y = hinten;
+			//     2) {<direction>: <delta>} - left, right, front, back
+			// <condition>: air, no_air, energy, chance:0.0~1.0
+
+			// Build pylon in direction of nearby mex cluster
+//			"pylon": true,
+
+			// Build chain of units
+			"hub": [
+				[  // chain1
+					{"unit": "armbeamer", "category": "defence", "offset": {"front": 80}, "condition": {"chance": 0.3}}
+				],
+				[  // chain2
+					{"unit": "armmakr", "category": "defence", "offset": [80, 80], "condition": "energy"}
+				]
+			]
+		},
+		"armsolar": {
+			"hub": [
+				[  // chain1
+					{"unit": "armmakr", "category": "defence", "offset": [80, 80], "condition": "energy"}
+				]
+			]
+		},
+		"armfus": {			//footpring = 6/5 => 48/40 elmos
+			"hub": [
+				[  // chain1
+					{"unit": "armmmkr", "category": "defence", "offset": [-60, +20]},
+//					{"unit": "armmmkr", "category": "defence", "offset": [120, 0]},
+					{"unit": "armfus", "category": "defence", "offset": [60, 0]},
+					{"unit": "armmmkr", "category": "defence", "offset": [-60, -20]},
+//					{"unit": "armamd", "category": "defence", "offset": [-120, -120], "condition": {"chance": 0.2}},
+					{"unit": "armpb", "category": "defence", "offset": [200, 0], "condition": {"chance": 0.5}},
+					{"unit": "armferret", "category": "defence", "offset": [-80, 80], "condition": "air"}
+				]
+			]
+		},
+		"armckfus": {
+			"hub": [
+				[  // chain1
+					{"unit": "armmmkr", "category": "defence", "offset": [200, 200], "condition": "energy"},
+					{"unit": "armmmkr", "category": "defence", "offset": [200, -200], "condition": "energy"},
+					{"unit": "armamd", "category": "defence", "offset": [120, -120], "condition": {"chance": 0.5}},
+					{"unit": "armpb", "category": "defence", "offset": [200, 0], "condition": {"chance": 0.5}},
+					{"unit": "armferret", "category": "defence", "offset": [-200, 200], "condition": "air"}
+				]
+			]
+		},
+		"armafus": {
+			"hub": [
+				[  // chain1
+					{"unit": "armmmkr", "category": "defence", "offset": [120, 120]},
+					{"unit": "armmmkr", "category": "defence", "offset": [150, 120]},
+					{"unit": "armmmkr", "category": "defence", "offset": [120, 150]},
+					{"unit": "armmmkr", "category": "defence", "offset": [150, 150]},
+					{"unit": "armmmkr", "category": "defence", "offset": [120, -120]},
+					{"unit": "armamd", "category": "defence", "offset": [-120, -120], "condition": {"chance": 0.5}},
+					{"unit": "armanni", "category": "defence", "offset": [-180, -180]},
+					{"unit": "armpb", "category": "defence", "offset": [-80, -80], "condition": {"chance": 0.5}},
+					{"unit": "armferret", "category": "defence", "offset": [-80, 80], "condition": "air"}
+				]
+			]
+		},
+		"corsolar": {
+			"hub": [
+				[
+					{"unit": "corllt", "category": "defense", "offset": {"front": 80}, "condition": {"chance": 0.3}},
+					{"unit": "cormakr", "category": "defence", "offset": [80, 80], "condition": "energy"}
+				]  // chain1
+			]
+		},
+		"coradvsol": {
+			"hub": [
+				[
+					{"unit": "corllt", "category": "defence", "offset": {"front": 80}, "condition": {"chance": 0.5}}
+				],  // chain1
+				[	
+					{"unit": "cormakr", "category": "defence", "offset": [80, 80], "condition": "energy"}
+				]  // chain2
+			]
+		},
+		"corfus": {
+			"hub": [
+				[  // chain1
+					{"unit": "cormmkr", "category": "defence", "offset": [120, 120]},
+					{"unit": "cormmkr", "category": "defence", "offset": [120, -120]},
+					{"unit": "corfmd", "category": "defence", "offset": [-120, -120], "condition": {"chance": 0.5}},																																																												
+					{"unit": "cormadsam", "category": "defence", "offset": [-80, 80], "condition": "air"}
+				]
+			]
+		},
+		"corafus": {
+			"hub": [
+				[  // chain1
+					{"unit": "cormmkr", "category": "defence", "offset": [120, 120]},
+					{"unit": "cormmkr", "category": "defence", "offset": [120, -120]},
+					{"unit": "cormmkr", "category": "defence", "offset": [150, 120]},
+					{"unit": "cormmkr", "category": "defence", "offset": [120, 150]},
+					{"unit": "cormmkr", "category": "defence", "offset": [150, 150]},
+					{"unit": "corfmd", "category": "defence", "offset": [180, -180], "condition": {"chance": 0.5}},
+					{"unit": "cordoom", "category": "defence", "offset": [-180, 180]},
+					{"unit": "corvipe", "category": "defence", "offset": [-80, -80], "condition": {"chance": 0.5}},
+					{"unit": "cormadsam", "category": "defence", "offset": [-80, 80], "condition": "air"}
+				]
+			]
+		}
+	},
+//	"factory": {
+//		"armlab": {
+//			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 20}}]]
+//		},
+//		"armvp": {
+//			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 20}}]]
+//		}
+//	},
+"mex": {
+        "armmex": {
+            "hub":[
+                [ //chain1
+                    {"unit": "armarad", "category": "defence", "offset": {"back": 80}, "condition": {"chance": 0.1}}
+                ]
+            ],    
+            "energy": [20, true],
+            "porc": true
+        },
+        "cormex": {
+        "hub":[
+                [ //chain1
+                    {"unit": "corarad", "category": "defence", "offset": {"back": 80}, "condition": {"chance": 0.1}}
+                ]        
+            ],    
+            "energy": [20, true],
+            "porc": true
+        }
+    },
+    "defence": {
+        "armarad": {
+            "hub": [
+                [ //chain1
+                    {"unit": "armbeamer", "category": "defence", "offset": {"front": 40}, "condition": {"chance": 1.0}},
+                    {"unit": "armpb", "category": "defence", "offset": {"front": 40}, "condition": {"chance": 1.0}}
+                ]
+            ]
+        },
+        "corarad": {
+            "hub": [
+                [ //chain1
+                    {"unit": "...1", "category": "defence", "offset": {"front": 40}, "condition": {"chance": 1.0}},
+                    {"unit": "...2", "category": "defence", "offset": {"front": 40}, "condition": {"chance": 1.0}}
+                ]
+            ]
+        }
+    }
+}
+}

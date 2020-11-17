@@ -1,0 +1,164 @@
+// Mono-space font required
+{
+"building": {
+	"class_land": {
+		"fac_land": {
+			// "type": [<blocker_shape>, <structure_type>]
+			// Available blocker_shape: rectangle, circle.
+			// Available structure_type: factory, mex, engy_low, engy_mid, engy_high, pylon, def_low, def_mid, def_high, special, nano, terra, unknown
+			"type": ["rectangle", "factory"],
+
+			// Unit of measurement: 1 size/yard/radius = SQUARE_SIZE * 2 = 16 elmos, integer.
+			// Offset in South facing
+			"offset": [0, 6],  // default: [0, 0]
+
+			// Size of a blocker without yard
+//			"size": [7, 7],  // default: size of a unit
+
+			// Spacer, blocker_size = size + yard
+			"yard": [12, 12]  // default: [0, 0]
+
+			// "ignore": [<structure_type>, <structure_type>, ...]
+			// Ignore specified structures.
+			// Additional values: none, all
+//			"ignore": ["none"]  // default: ["none"]
+		},
+		"fac_air": {
+			"type": ["rectangle", "factory"],
+			"yard": [8, 8]
+		},
+		"fac_water": {
+			"type": ["rectangle", "factory"],
+			"offset": [0, 4],
+			"yard": [10, 12]
+		},
+		"fac_strider": { //t3 factory
+			"type": ["rectangle", "special"],
+			"offset": [0, 12],
+			"yard": [20, 20],
+			"ignore":["none"]
+		},
+		"solar": {
+			"type": ["rectangle", "engy_mid"],
+			"ignore": ["mex", "engy_mid", "engy_high", "def_low", "nano"],
+			"yard": [6, 6]
+		},
+		"advsolar":{
+			"type": ["rectangle", "engy_mid"],
+			"ignore": ["mex", "engy_low"]
+		},
+		"wind": {
+			"type": ["circle", "engy_low"],
+// 			Integer radius of a blocker or description string.
+// 			Available string values: explosion, expl_ally
+//			"radius": "explosion",  // default: "explosion"
+			"radius": 6,  // default: "explosion"
+			"not_ignore": ["factory", "terra", "caretaker", "pylon"]
+		},
+		"fusion": {
+			"type": ["reactangle", "engy_high"],
+			"yard": [10, 9],
+			"ignore": ["mex", "engy_high"]
+		},
+//		"singu": {
+//			"type": ["circle", "engy_high"],
+//			"radius": "expl_ally",  // [radius ~ 1 player .. radius/2 ~ 4+ players]
+//			"ignore": ["mex", "engy_low", "def_low", "nano"]
+//		},
+		"store": {
+			"type": ["rectangle", "mex"],
+			"not_ignore": ["factory", "terra"]
+		},
+		"mex": {
+			"type": ["rectangle", "mex"],
+			"yard": [2, 2],
+			"ignore": ["all"]
+		},
+		"converter_t1": {
+			"type": ["rectangle", "pylon"],
+			"yard": [6, 6],
+			"ignore": ["pylon"]
+		},
+		"converter_t2": {
+			"type": ["rectangle", "pylon"],
+			"yard": [8, 8],
+			"ignore": ["pylon"]
+		},
+		"def_low": {
+			"type": ["circle", "def_low"],
+			"radius": 8,  // 128 / (SQUARE_SIZE * 2)
+			"ignore": ["engy_mid", "engy_high", "engy_low", "nano"]
+		},
+		"def_mid_1": {
+			"type": ["circle", "def_low"],
+			"radius": 2,
+			"not_ignore": ["all"]
+		},
+		"caretaker": {
+			"type": ["rectangle", "nano"],
+			"ignore": ["mex", "def_low", "engy_mid", "engy_high"]
+		},
+		"superweapon": {
+			"type": ["circle", "special"],
+			"ignore": ["mex", "def_low", "engy_high"]
+		},
+		"protector": {
+			"type": ["circle", "special"],
+			"ignore": ["mex", "def_low", "engy_mid", "engy_high"]
+		},
+//		"terraform": {
+//			"type": ["rectangle", "special"],
+//			"size": [7, 7]  // int2(3 + 4, 3 + 4)
+//		},
+//		"strider": {
+//			"type": ["rectangle", "special"],
+//			"yard": [4, 4],
+//			"ignore": ["all"]
+//		},
+		"small": {
+			"type": ["rectangle", "unknown"],
+			"not_ignore": ["factory", "def_low", "terra"]
+		},
+		"_default_": {
+			"type": ["rectangle", "unknown"],
+			"yard": [4, 4],
+			"ignore": ["engy_high"]
+		}
+	},
+	// Water overrides land. Map considered as water if amount of land < 40%
+	"class_water" : {
+		"wind": {
+			"type": ["rectangle", "engy_low"],
+			"ignore": ["mex", "engy_mid", "engy_high", "nano"]
+		}
+	},
+	"instance": {
+		"fac_land": ["armlab", "armalab", "armvp", "armavp", "armhp", "corlab", "coralab", "corvp", "coravp", "corhp"],
+		"fac_water": ["armsy", "armasy", "corsy", "corasy"],
+		"fac_strider": ["armshltx", "corgant"],
+		"solar": ["armsolar", "corsolar"],
+		"advsolar":["armadvsol", "coradvsol"],
+		"wind": ["armwin", "corwin"],
+		"fusion":["armfus", "armuwfus", "armckfus", "armafus", "corfus", "coruwfus", "corafus"],
+		"store": ["armmstor", "armestor", "cormstor", "corestor"],
+		"converter_t1": ["armmakr", "cormakr"],
+		"converter_t2": ["armmmkr", "cormmkr"],
+		"mex": ["armmex", "cormex"],
+		"def_low": ["armllt", "corllt", "armbeamer", "corhllt"],
+		"def_mid_1": ["armclaw", "cormaw"],
+		"caretaker": ["armnanotc", "armasp", "cornanotc", "corasp"],
+		"small": ["armrad", "corrad"]
+//pylon: converter
+//engy_low: wind
+//engy mid: fusion
+//engy_high: 
+//def_low: def_low, llt, dragonclaw
+//def_mid:
+//def_high:
+//unkown: small, default, 
+//special: supwerweapon
+//terra:
+
+	}
+}
+}

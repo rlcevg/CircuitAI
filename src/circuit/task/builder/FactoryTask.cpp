@@ -101,7 +101,9 @@ void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, fl
 				posOffset.x -= testSize;
 			} break;
 		}
-		if (map->IsPossibleToBuildAt(buildDef->GetDef(), posOffset, facing)) {
+		if (map->IsPossibleToBuildAt(buildDef->GetDef(), posOffset, facing)
+			&& map->IsPossibleToBuildAt(buildDef->GetDef(), posOffset / 2, facing))
+		{
 			SetBuildPos(bp);
 			return true;
 		}

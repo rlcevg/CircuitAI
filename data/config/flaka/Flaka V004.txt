@@ -1,0 +1,29 @@
+Barbarian AI Version: Barbarian build: 0.60
+AI Profile Version: Flaka V04
+Author: Flaka
+
+Description: Hard AI; balanced gameplay; non cheating
+
+features:
+- smooth and fast eco scaling | flaka
+- early raiding and defending builder | flaka
+- eco mainly based on storage level | barb0.57
+- energy rework based on priority | barb0.58
+- expansive builders guarded by units | barb0.60
+- simple attack formations | barb0.59
+
+included reworked basic features:
+- arm tanks
+- arm kbots
+- arm air
+- arm base building 
+- arm porcupine
+
+- core tanks
+- core kbots
+
+
+dev log:
+- included cormando and cordecom
+- altered behaviour of mobile mines
+

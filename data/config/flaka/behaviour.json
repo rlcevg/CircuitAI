@@ -1,14 +1,19 @@
 // Mono-space font required
 {
+//attack = 0.3 means enemy threat = enemy_threat*0.3
+//and attack group select only targets that have threat lower than the group's power. Power is like threat, but behaviour.json has separate modifiers for threat (enemy) and power (own).
+//with attack=0.8..1.0 AI acts more careful, if it would also fight superior enemy near own static defences then those values would be great. 
+//But there's possibility that AI will just run from enemy till it has big enough group, but it may loose its base. So if with attack=0.8..1.0 AI is not loosing base then everything is ok and i think this range is optimal.
+
 "quota": {
-	"scout": 1,  // max scout units out of raiders
-	"raid": [3.0, 42.0],  // [<min>, <avg>] power of raider squad
+	"scout": 3,  // max scout units out of raiders
+	"raid": [2.5, 42.0],  // [<min>, <avg>] power of raider squad
 	"attack": 60.0,  // min power of attack group
-	"thr_mod": {
-		"attack": [0.25, 0.3],  // [<min>, <max>] enemy threat modifier for target selection of attack task
-		"defence": [0.95, 0.95],  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
-		"mobile": 1.05,  // initial modifier for power of attack group based on mobile enemy threat
-		"static": 1.2,  // initial modifier for power of attack group based on static enemy threat
+	"thr_mod": {				//AI attacks everything with final threat (after all calculations) <= 1
+		"attack": [0.4, 0.8],  // [<min>, <max>] enemy threat multiplier for target selection of attack task |  values <1 makes enemy group seem less of an thread for ai => ai attacks stronger groups than it own | org=0.25, 0.3
+		"defence": [0.7, 0.95],  // [<min>, <max>] enemy threat modifier for group size calculation of defence task; org=0.95, 0.95 | high values = low risk; low values = high risk 
+		"mobile": 1.2,  // initial modifier for power of attack group based on mobile enemy threat; org=1.05
+		"static": 1.2,  // initial modifier for power of attack group based on static enemy threat; org= 1.2
 		"comm": 0.01
 	},
 	"aa_threat": 250.0,  // anti-air threat threshold, air factories will stop production when AA threat exceeds
@@ -26,12 +31,16 @@
 	"shield": [0.25, 0.275]  // [<empty>, <full>] shield power
 },
 
+
+
 "defence": {
-	"infl_rad": 5,  // influenece cell radius for defendAlly map
-	"base_rad": [600.0, 1200.0],  // defend if enemy within clamp(distance(lane_pos, base_pos), 1000, 2000) radius
-	"comm_rad": [1000.0, 500.0],  // 0 distance from base ~ 1000, base_rad ~ 500.0
-	"escort": [0, 0, 0]  // [<builders_count>, <defenders_count>, <constraint_seconds>]
+    "infl_rad": 5,  // influenece cell radius for defendAlly map
+    "base_rad": [600.0, 1200.0],  // defend if enemy within clamp(distance(lane_pos, base_pos), 1000, 2000) radius
+    "comm_rad": [1200.0, 700.0],  // 0 distance from base ~ 1000, base_rad ~ 500.0
+	"escort": [4, 1, 900]  // [<builders_count>, <defenders_count>, <escort rule until this time>] 
+// 				read of "escort":  [number of builders with defenders, number of defenders for each builder, timeframe were only escorted builders are able to expand (=build mex, porc)]
 },
+
 
 "behaviour": {
 	"armcom": {
@@ -210,11 +219,11 @@
 	},
 	"armnanotc": {
 		"role": ["support"],
-		"build_speed": 12.0
+		"build_speed": 11.0 //lower values => more and earlier nanos (workaround) std=12, was 10 in v002
 	},
 	"cornanotc": {
 		"role": ["support"],
-		"build_speed": 12.0
+		"build_speed": 11.0 //lower values => more and earlier nanos (workaround) std=12, was 10 in v002
 	},
 	"armmakr": {
 		"role": ["static"],
@@ -232,6 +241,28 @@
 		"role": ["static"],
 		"ignore": true
 	},
+
+	//other structures & buildings
+	"armtarg": {
+		"role": ["static"],
+		"limit": 3
+	},
+	"cortarg": {
+		"role": ["static"],
+		"limit": 3
+	},
+	"armemp":{
+		"role":	["static"]
+	},
+	"cortron":{
+		"role":	["static"]
+	},
+	"armveil":{
+		"role": ["static"]
+	},
+	"corshroud":{
+		"role":["static"]
+		},
 	"armmstor" : {
 		"role": ["static"],
 		"since": 300,
@@ -259,18 +290,19 @@
 		// Roles: builder, scout, raider, riot, assault, skirmish, artillery, anti_air, anti_sub, anti_heavy, bomber, support, mine, transport, air, sub, static, heavy, super, commander
 		// Auto-assigned roles: builder, air, static, super, commander
 		// raider: units grouped apart from others, tries to find weak spots.
-		// riot: regular attacker, but according to response.json it is built when enemy has many raiders (in plans to make riot just con's defender).
+		// riot: regular attacker, but according to response.json it is built when enemy has many raiders (1st riot is cons guardian/defender for the first 5 min)(in plans to make riot just con's defender).
 		// assault: regular attacker, according to response.json it is built when enemy has many statics.
-		// skirmish: regular attacker, according to response.json it is built when enemy has many riots or assaults.
+		// skirmish: regular attacker, according to response.json it is built when enemy has many riots or assaults. skirmish = main combat unit
 		"role": ["builder"],
 
-		// Attributes - optinal states
+		// Attributes - optional states
 		// "melee" - always move close to target, disregard attack range
 		// "no_jump" - disable jump on retreat
 		// "boost" - boost speed on retreat
 		// "no_strafe" - disable gunship's strafe
 		// "stockpile" - load weapon before any task (NOT IMPLEMENTED), auto-assigned
-		// "siege" - mostly use fight command instead of move
+		// "siege" - mostly use fight command instead of move -  moves into range of the first enemy in its path, then fires while standing still until that enemy is destroyed. rocko with fight command is able to kill a group of llt and staying outside of range
+		// "support" - joins attack group (skirmish, assault, riot) and follow leader of that group with fight-move or guard command if melee attribute added. 
 		// "ret_hold" - hold fire on retreat
 		// "ret_fight" - fight on retreat
 //		"attribute": ["boost", "no_strafe"],
@@ -310,14 +342,20 @@
 		"pwr_mod": 1.5
 	},
 	"armrectr": {
-		"role": ["raider"],
-		"attribute": ["siege"]
+		"role": ["builder"],		//["skirmish", "support"],
+		"attribute": ["support"],
+		"limit":50,
+		"pwr_mod": 2
+	
 	},
 	"armrock": {
-		"role": ["skirmish"]
+		"role": ["assault"],
+		"attribute": ["siege", "ret_fight"],
+		"retreat": 0.6,
+		"limit": 20
 	},
 	"armham": {
-		"role": ["assault"]
+		"role": ["skirmish"]
 	},
 	"armjeth": {
 		"role": ["anti_air"],
@@ -333,12 +371,14 @@
 
 	// adv bot - armalab
 	"armack": {
-		"role": ["builder"],
-		"limit": 4,
+		"role": ["builderT2"],
+		"limit": 10,
 		"build_speed": 10.0
 	},
 	"armfark": {
-		"role": ["support", "mine"]
+		"role": ["builder"], //support,mine
+		"attribute": ["support"], //without attribute
+		"build_speed": 10.0
 	},
 	"armfast": {
 		"role": ["raider"]
@@ -351,11 +391,13 @@
 	},
 	"armmav": {
 		"role": ["riot"],
-		"attribute": ["skirmish"]
+		"attribute": ["skirmish"],
+		"retreat": 0.6
 	},
 	"armfido": {
-		"role": ["artillery"],
-		"attribute": ["siege"]
+		"role": ["skirmish"],
+		"attribute": ["siege", "ret_fight"],
+		"retreat": 0.5
 	},
 	"armvader": {
 		"role": ["raider"],
@@ -368,10 +410,12 @@
 	"armmark": {
 		"role": ["assault"],
 		"attribute": ["support"],
-		"limit": 1
+		"limit": 2
 	},
 	"armspid": {
-		"role": ["support"]
+		"role": ["raider"],
+		"attribute": ["support"]
+		
 	},
 	"armsptk": {
 		"role": ["raider"],
@@ -383,6 +427,11 @@
 	"armamph": {
 		"role": ["raider", "anti_air"]
 	},
+	"armscab": {
+		"role": ["support"],
+		"limit": 1
+	},
+		
 
 	// T3 bot - armshltx
 	"armmar": {
@@ -397,7 +446,7 @@
 		"pwr_mod": 2.0
 	},
 	"armbanth": {
-		"role": ["assault", "heavy"],
+		"role": ["super"],
 		"attribute": ["melee"],
 		"pwr_mod": 2.0
 	},
@@ -406,7 +455,7 @@
 	// vehicles - armvp
 	"armcv": {
 		"role": ["builder"],
-		"limit": 10,
+		"limit": 12,
 		"build_speed": 10.0
 	},
 	"armbeaver": {
@@ -414,28 +463,29 @@
 		"limit": 10,
 		"build_speed": 10.0
 	},
-	// "armmlv": {
-	// 	"role": ["support"]
-	// },
+	 "armmlv": {
+	 	"role": ["support"],
+		"limit": 0
+	},
 	"armfav": {
 		"role": ["scout"]
 	},
 	"armflash": {
-		"role": ["raider"],
-		"attribute": ["scout"]
+		"role": ["raider"]
+		//"attribute": ["scout"]
 	},
 	"armpincer": {
 		"role": ["assault"],
 		"limit": 30
 	},
 	"armstump": {
-		"role": ["assault"]
+		"role": ["skirmish"]
 	},
 	"armart": {
 		"role": ["artillery"]
 	},
 	"armjanus": {
-		"role": ["skirmish"],
+		"role": ["assault"],
 		"attribute": ["ret_fight"]
 	},
 	"armsam": {
@@ -446,19 +496,25 @@
 
 	// adv vehicles - armavp
 	"armacv": {
-		"role": ["builder"],
-		"limit": 3,
+		"role": ["builderT2"],
+		"limit": 6,
 		"build_speed": 10.0
+	},
+	"armconsul": {
+		"role": ["builder"],
+		"attribute": ["support"],
+		"build_speed": 10.0,
+		"limit": 10
 	},
 	"armlatnk": {
 		"role": ["raider"]
 	},
 	"armbull": {
-		"role": ["assault"]
+		"role": ["skirmish"]
 	},
 	"armmanni": {
 		"role": ["anti_heavy"],
-		"attribute": ["artillery"]
+		"attribute": ["siege"]
 	},
 	"armmart": {
 		"role": ["artillery"]
@@ -472,63 +528,74 @@
 	"armseer": {
 		"role": ["assault"],
 		"attribute": ["support"],
-		"limit": 1
+		"limit": 2
 	},
+	"armjam": {
+		"role": ["anti_heavy"],
+		"attribute": ["support"],
+		"limit": 2
+		},
 
 	// aircraft - armap
 	"armca": {
 		"role": ["builder", "air"],
-		"retreat": 0.6,
-		"limit": 25,
+		"retreat": 0.7,
+		"limit": 15,
 		"build_speed": 10.0
 	},
 	"armpeep": {
 		"role": ["scout", "air"]
 	},
 	"armfig": {
-		"role": ["anti_air", "air"]
+		"role": ["anti_air", "air"],
+		"retreat": 0.5
 	},
 	"armthund": {
-		"role": ["bomber", "air"]
+		"role": ["bomber", "air"],
+		"retreat": 0.5
 	},
 	"armkam": {
 		"role": ["raider", "air"],
 		"attribute": ["siege"],
-		"retreat": 0.6
+		"retreat": 0.8
 	},
 
 	// adv aircraft - armaap
 	"armaca": {
 		"role": ["builder", "air"],
 		"retreat": 0.6,
-		"limit": 2,
+		"limit": 8,
 		"build_speed": 10.0
 	},
 	"armawac": {
-		"role": ["scout", "air"]
+		"role": ["scout", "air"],
+		"retreat": 0.8
 	},
 	"armhawk": {
-		"role": ["anti_air", "air"]
+		"role": ["anti_air", "air"],
+		"retreat": 0.5
 	},
 	"armpnix": {
-		"role": ["bomber", "air"]
+		"role": ["bomber", "air"],
+		"retreat": 0.5
 	},
 	"armbrawl": {
 		"role": ["raider", "air"],
 		"attribute": ["siege"],
-		"retreat": 0.5
+		"retreat": 0.7
 	},
 	"armblade": {
 		"role": ["heavy", "air"],
-		"retreat": 0.4
+		"retreat": 0.5
 	},
 	"armstil": {
 		"role": ["bomber", "air"],
+		"retreat": 0.7
 	},
 	"armliche": {
 		"role": ["bomber", "air"],
 		"attribute": ["heavy"],
-		"retreat": 0.5
+		"retreat": 0.7
 	},
 
 	// ships - armsy
@@ -626,8 +693,9 @@
 		"attribute": ["scout"]
 	},
 	"cornecro": {
-		"role": ["raider"],
-		"attribute": ["siege"]
+		"role": ["support"], // 1st role was "raider"
+		"attribute": ["siege", "scout"],
+		"pwr_mod": 2
 	},
 	"corstorm": {
 		"role": ["skirmish"]
@@ -642,18 +710,20 @@
 
 	// adv bot - coralab
 	"corack": {
-		"role": ["builder"],
-		"limit": 4,
+		"role": ["builderT2"],
+		"limit": 10,
 		"build_speed": 10.0
 	},
 	"corfast": {
-		"role": ["support", "mine"]
+		"role": ["support", "mine"],
+		"build_speed": 10.0
 	},
 	"cortermite": {
 		"role": ["raider"]
 	},
 	"corpyro": {
-		"role": ["assault"]
+		"role": ["raider"],
+		"attribute":["melee"]
 	},
 	"corsumo": {
 		"role": ["heavy"]
@@ -663,34 +733,60 @@
 	},
 	"cormort": {
 		"role": ["artillery"],
-		"attribute": ["skirmish"]
+//		"attribute": ["skirmish"],
+		"retreat": 0.6
 	},
 	"corhrk": {
-		"role": ["artillery"]
+		"role": ["artillery"],
+		"retreat": 0.7,
+		"limit": 10
 	},
 	"coraak": {
 		"role": ["anti_air"]
 	},
 	"cormando": {
-		"role": ["raider", "mine"]
+		"role": ["support"],
+		"limit": 2
 	},
-	"corsktl": {
-		"role": ["assault"],
+	"cordecom": {
+		"role": ["builder"],
+		"attribute": ["scout"],
+		"limit": 2
+	},
+	"corroach": {
+		"role": ["scout"],
 		"attribute": ["melee"],
 		"retreat": 0,
+		"limit": 2
+	},
+	"corsktl": {
+		"role": ["raider"],
+		"attribute": ["melee"],
+		"retreat": 0,
+		"limit": 2
 	},
 	"corvoyr": {
 		"role": ["assault"],
 		"attribute": ["support"],
-		"limit": 1
+		"retreat": 0.6,
+		"limit": 2
+	},
+	"corspec": {
+		"role": ["artillery"],
+		"attribute": ["support"],
+		"limit": 3
 	},
 	"coramph": {
-		"role": ["raider", "anti_air"]
+		"role": ["raider"]
+	},
+	"corspy": {
+		"role": ["scout"],
+		"limit": 4
 	},
 
 	// T3 bot - corgant
 	"corshiva": {
-		"role": ["riot", "heavy"]
+		"role": ["assault", "heavy"]
 	},
 	"corkarg": {
 		"role": ["raider", "heavy"]
@@ -700,12 +796,12 @@
 		"pwr_mod": 2.0
 	},
 	"corkorg": {
-		"role": ["assault", "heavy"],
+		"role": ["super"],
 		"attribute": ["melee"],
 		"pwr_mod": 2.2
 	},
 	"corjugg": {
-		"role": ["heavy"],
+		"role": ["super"],
 		"attribute": ["melee"],
 		"pwr_mod": 2.5
 	},
@@ -721,9 +817,10 @@
 		"limit": 10,
 		"build_speed": 10.0
 	},
-	// "cormlv": {
-	// 	"role": ["support"]
-	// },
+	"cormlv": {
+		"role": ["support"],
+		"limit": 0
+	},
 	"corfav": {
 		"role": ["scout"]
 	},
@@ -742,7 +839,7 @@
 		"role": ["riot"]
 	},
 	"corwolv": {
-		"role": ["skirmish"]
+		"role": ["artillery"]
 	},
 	"cormist": {
 		"role": ["anti_air"],
@@ -752,12 +849,12 @@
 
 	// adv vehicles - coravp
 	"coracv": {
-		"role": ["builder"],
-		"limit": 3,
+		"role": ["builderT2"],
+		"limit": 10,
 		"build_speed": 10.0
 	},
 	"correap": {
-		"role": ["assault"]
+		"role": ["skirmish"]
 	},
 	"corgol": {
 		"role": ["heavy"]
@@ -772,7 +869,8 @@
 		"role": ["artillery"]
 	},
 	"corban": {
-		"role": ["skirmish"]
+		"role":	["support", "assault"], //	["assault"],
+		"attribute": ["siege", "ret_fight"]
 	},
 	"cortrem": {
 		"role": ["artillery", "heavy"]
@@ -875,44 +973,50 @@
 	"corca": {
 		"role": ["builder", "air"],
 		"retreat": 0.6,
-		"limit": 25,
+		"limit": 15,
 		"build_speed": 10.0
 	},
 	"corfink": {
-		"role": ["scout", "air"]
+		"role": ["scout", "air"],
+		"retreat": 0.5
 	},
 	"corveng": {
-		"role": ["anti_air", "air"]
+		"role": ["anti_air", "air"],
+		"retreat": 0.5
 	},
 	"corshad": {
-		"role": ["bomber", "air"]
+		"role": ["bomber", "air"],
+		"retreat": 0.5
 	},
 	"corbw": {
 		"role": ["assault", "air"],
 		"attribute": ["siege"],
-		"retreat": 0.3
+		"retreat": 0.8
 	},
 
 	// adv aircraft - coraap
 	"coraca": {
 		"role": ["builder", "air"],
 		"retreat": 0.6,
-		"limit": 2,
+		"limit": 15,
 		"build_speed": 10.0
 	},
 	"corawac": {
-		"role": ["scout", "air"]
+		"role": ["scout", "air"],
+		"retreat": 0.5
 	},
 	"corvamp": {
-		"role": ["anti_air", "air"]
+		"role": ["anti_air", "air"],
+		"retreat": 0.5
 	},
 	"corhurc": {
-		"role": ["bomber", "air"]
+		"role": ["bomber", "air"],
+		"retreat": 0.5
 	},
 	"corape": {
 		"role": ["assault", "air"],
 		"attribute": ["siege"],
-		"retreat": 0.5
+		"retreat": 0.6
 	},
 	"corcrw": {
 		"role": ["heavy", "air"],

@@ -33,8 +33,8 @@ local options = {
 	},
 	{ -- bool
 		key     = 'comm_merge',
-		name    = 'Merge neighbour Circuits',
-		desc    = 'Merge spatially close Circuit ally commanders',
+		name    = 'Merge neighbour BARbarIAns',
+		desc    = 'Merge spatially close BARbarIAn ally commanders',
 		type    = 'bool',
 		section = 'performance',
 		def     = true,
@@ -83,6 +83,11 @@ local options = {
 				key  = 'dev',
 				name = 'Bleeding edge testing AI',
 				desc = 'Bleeding edge testing config.',
+			},
+			{
+				key  = 'flaka',
+				name = 'Flaka',
+				desc = 'Hard AI | balanced gameplay | non cheating',
 			},
 		},
 	},
