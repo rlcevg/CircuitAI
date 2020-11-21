@@ -221,6 +221,7 @@ public:
 		return roleBind[role];
 	}
 private:
+	void InitRoles();
 	void InitUnitDefs(float& outDcr);
 	CircuitDefs defsById;  // owner
 	NamedDefs defsByName;

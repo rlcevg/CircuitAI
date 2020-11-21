@@ -217,7 +217,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 		// Auto-assign roles
 		auto setRoles = [circuit, &cdef](CCircuitDef::RoleT type) {
-			if (circuit->GetBindedRole(cdef.GetMainRole()) != cdef.GetMainRole()) {
+			if (circuit->GetBindedRole(cdef.GetMainRole()) != type) {
 				cdef.SetMainRole(type);
 				cdef.AddEnemyRole(type);
 				cdef.AddRole(type);

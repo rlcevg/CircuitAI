@@ -565,6 +565,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	scheduler = std::make_shared<CScheduler>();
 	scheduler->Init(scheduler);
 
+	InitRoles();
 	scriptManager = std::make_shared<CScriptManager>(this);
 	script = new CInitScript(GetScriptManager(), this);
 	std::map<std::string, std::vector<std::string>> profiles;
@@ -1550,12 +1551,15 @@ CCircuitDef* CCircuitAI::GetCircuitDef(const char* name)
 	return (it != defsByName.end()) ? it->second : nullptr;
 }
 
-void CCircuitAI::InitUnitDefs(float& outDcr)
+void CCircuitAI::InitRoles()
 {
 	for (const auto& kv : CCircuitDef::GetRoleNames()) {
 		BindRole(kv.second.type, kv.second.type);
 	}
+}
 
+void CCircuitAI::InitUnitDefs(float& outDcr)
+{
 	if (!gameAttribute->GetTerrainData().IsInitialized()) {
 		gameAttribute->GetTerrainData().Init(this);
 	}

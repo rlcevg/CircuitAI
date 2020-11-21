@@ -233,14 +233,6 @@
 		"role": ["static"],
 		"since": 300
 	},
-	"armdrag": {
-		"role": ["static"],
-		"ignore": true
-	},
-	"cordrag": {
-		"role": ["static"],
-		"ignore": true
-	},
 
 	//other structures & buildings
 	"armtarg": {
@@ -1022,6 +1014,40 @@
 		"role": ["heavy", "air"],
 		"attribute": ["anti_heavy"],
 		"retreat": 0.2
+	},
+
+	// ignore
+	"armdrag": {
+		"role": ["static"],
+		"ignore": true
+	},
+	"cordrag": {
+		"role": ["static"],
+		"ignore": true
+	},
+	"armfort": {
+		"role": ["static"],
+		"ignore": true
+	},
+	"corfort": {
+		"role": ["static"],
+		"ignore": true
+	},
+	"armdrag_scav": {
+		"role": ["static"],
+		"ignore": true
+	},
+	"cordrag_scav": {
+		"role": ["static"],
+		"ignore": true
+	},
+	"armfort_scav": {
+		"role": ["static"],
+		"ignore": true
+	},
+	"corfort_scav": {
+		"role": ["static"],
+		"ignore": true
 	},
 
 	// FIXME: temporary factory buildSpeed
