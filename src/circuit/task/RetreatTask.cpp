@@ -168,6 +168,10 @@ void CRetreatTask::Update()
 			RemoveAssignee(unit);
 		} else if (unit->IsForceUpdate(frame) || isExecute) {
 			Start(unit);
+		} else if ((circuit->GetBindedRole(unit->GetCircuitDef()->GetMainRole()) == ROLE_TYPE(BUILDER))
+			&& (circuit->GetInflMap()->GetEnemyInflAt(unit->GetPos(frame)) < INFL_EPS))
+		{
+			RemoveAssignee(unit);
 		}
 	}
 }

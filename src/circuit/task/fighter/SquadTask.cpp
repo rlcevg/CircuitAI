@@ -390,7 +390,8 @@ void ISquadTask::Attack(const int frame)
 				|| (unit->GetTargetTile() != targetTile))
 			{
 				const float angle = alpha + beta;
-				const AIFloat3 newPos(tPos.x + range * cosf(angle), tPos.y, tPos.z + range * sinf(angle));
+				AIFloat3 newPos(tPos.x + range * cosf(angle), tPos.y, tPos.z + range * sinf(angle));
+				CTerrainManager::CorrectPosition(newPos);
 				unit->Attack(newPos, GetTarget(), targetTile, frame + FRAMES_PER_SEC * 60);
 			}
 

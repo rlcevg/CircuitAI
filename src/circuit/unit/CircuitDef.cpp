@@ -113,9 +113,12 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, isIgnore(false)
 		, isAttacker(false)
 		, hasDGunAA(false)
-		, hasAntiAir(false)
-		, hasAntiLand(false)
-		, hasAntiWater(false)
+		, hasSurfToAir(false)
+		, hasSurfToLand(false)
+		, hasSurfToWater(false)
+		, hasSubToAir(false)
+		, hasSubToLand(false)
+		, hasSubToWater(false)
 		, isAlwaysHit(false)
 		, isAmphibious(false)
 		, isLander(false)
@@ -266,9 +269,12 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	CWeaponDef* bestDGunDef = nullptr;
 	WeaponMount* bestDGunMnt = nullptr;
 	WeaponMount* bestWpMnt = nullptr;
-	bool canTargetAir = false;
-	bool canTargetLand = false;
-	bool canTargetWater = false;
+	bool canSurfTargetAir = false;
+	bool canSurfTargetLand = false;
+	bool canSurfTargetWater = false;
+	bool canSubTargetAir = false;
+	bool canSubTargetLand = false;
+	bool canSubTargetWater = false;
 	auto mounts = def->GetWeaponMounts();
 	for (WeaponMount* mount : mounts) {
 		WeaponDef* wd = mount->GetWeaponDef();
@@ -356,12 +362,17 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		isAlwaysHit |= (wt == "BeamLaser") || (wt == "LightningCannon") || (wt == "Rifle") ||  // Instant-hit
 				(((wt == "MissileLauncher") || (wt == "StarburstLauncher") || ((wt == "TorpedoLauncher") && wd->IsSubMissile())) && wd->IsTracks());  // Missiles
 		const bool isAirWeapon = isAlwaysHit && (range > 150.f);
-		canTargetAir |= isAirWeapon;
+		canSurfTargetAir |= isAirWeapon;
 
 		bool isLandWeapon = ((wt != "TorpedoLauncher") || wd->IsSubMissile());
-		canTargetLand |= isLandWeapon;
+		canSurfTargetLand |= isLandWeapon;
+
 		bool isWaterWeapon = wd->IsWaterWeapon();
-		canTargetWater |= isWaterWeapon;
+		canSurfTargetWater |= isWaterWeapon;
+
+		canSubTargetAir |= (isAirWeapon && isWaterWeapon);
+		canSubTargetLand |= (isLandWeapon && isWaterWeapon);
+		canSubTargetWater |= (wd->IsFireSubmersed() && isWaterWeapon);
 
 		minRange = std::min(minRange, range);
 		if ((weaponCat & circuit->GetAirCategory()) && isAirWeapon) {
@@ -473,9 +484,12 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	}
 
 	// NOTE: isTracks filters units with slow weapon (hermit, recluse, rocko)
-	hasAntiAir   = (targetCategory & circuit->GetAirCategory()) && canTargetAir;
-	hasAntiLand  = (targetCategory & circuit->GetLandCategory()) && canTargetLand;
-	hasAntiWater = (targetCategory & circuit->GetWaterCategory()) && canTargetWater;
+	hasSurfToAir   = (targetCategory & circuit->GetAirCategory()) && canSurfTargetAir;
+	hasSurfToLand  = (targetCategory & circuit->GetLandCategory()) && canSurfTargetLand;
+	hasSurfToWater = (targetCategory & circuit->GetWaterCategory()) && canSurfTargetWater;
+	hasSubToAir    = (targetCategory & circuit->GetAirCategory()) && canSubTargetAir;
+	hasSubToLand   = (targetCategory & circuit->GetLandCategory()) && canSubTargetLand;
+	hasSubToWater  = (targetCategory & circuit->GetWaterCategory()) && canSubTargetWater;
 
 	// TODO: Include projectile-speed/range, armor
 	//       health /= def->GetArmoredMultiple();
@@ -573,9 +587,9 @@ float CCircuitDef::GetHeight()
 	return height;
 }
 
-bool CCircuitDef::IsYTargetable(float elevation, float posY) {
+bool CCircuitDef::IsInWater(float elevation, float posY) {
 	GetHeight();
-	return (elevation > -height || posY > -topOffset);
+	return (elevation < -height) && (posY < -topOffset);
 }
 
 } // namespace circuit

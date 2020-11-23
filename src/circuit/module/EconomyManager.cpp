@@ -35,7 +35,7 @@ namespace circuit {
 
 using namespace springai;
 
-#define PYLON_RANGE		500.0f
+#define PYLON_RANGE		400.0f  // FIXME: BA
 
 const char* RES_NAME_METAL = "Metal";
 const char* RES_NAME_ENERGY = "Energy";
@@ -145,7 +145,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 					CTerrainManager* terrainMgr = this->circuit->GetTerrainManager();
 					buildPos = terrainMgr->GetBuildPosition(facDef, pos);
 					CBuilderManager* builderMgr = this->circuit->GetBuilderManager();
-					IBuilderTask* task = builderMgr->EnqueueFactory(IBuilderTask::Priority::NOW, facDef, buildPos,
+					IBuilderTask* task = builderMgr->EnqueueFactory(IBuilderTask::Priority::NOW, facDef, nullptr, buildPos,
 																	SQUARE_SIZE, true, true, 0);
 					static_cast<ITaskManager*>(builderMgr)->AssignTask(unit, task);
 				}
@@ -439,9 +439,10 @@ void CEconomyManager::Init()
 			ecoFactor = (circuit->GetAllyTeam()->GetAliveSize() - 1.0f) * ecoStep + 1.0f;
 		}), FRAMES_PER_SEC * 10);
 
+		const float maxTravel = 7 + rand() % (10 - 7 + 1);  // seconds
 		const int interval = allyTeam->GetSize() * FRAMES_PER_SEC;
-		startFactory = std::make_shared<CGameTask>(&CEconomyManager::StartFactoryTask, this);
-		scheduler->RunTaskEvery(startFactory, 3, circuit->GetSkirmishAIId() + 0 + 10 * interval);
+		startFactory = std::make_shared<CGameTask>(&CEconomyManager::StartFactoryTask, this, maxTravel);
+		scheduler->RunTaskEvery(startFactory, 3, circuit->GetSkirmishAIId() + 0 + interval);
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this),
 								interval, circuit->GetSkirmishAIId() + 1 + interval / 2);
 
@@ -560,6 +561,11 @@ void CEconomyManager::UpdateResourceIncome()
 
 	metalProduced += metal.income * metalMod;
 	metalUsed += economy->GetUsage(metalRes);
+}
+
+float CEconomyManager::GetPureMetalIncome() const
+{
+	return economy->GetIncome(metalRes);
 }
 
 float CEconomyManager::GetMetalCur()
@@ -970,7 +976,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			if (terrainMgr->CanBeBuiltAtSafe(airpadDef, buildPos) &&
 				((unit == nullptr) || terrainMgr->CanReachAtSafe(unit, buildPos, unit->GetCircuitDef()->GetBuildDistance())))
 			{
-				return builderMgr->EnqueueFactory(IBuilderTask::Priority::NORMAL, airpadDef, buildPos);
+				return builderMgr->EnqueueFactory(IBuilderTask::Priority::NORMAL, airpadDef, nullptr, buildPos);
 			}
 		}
 	}
@@ -1097,25 +1103,13 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 
 	// identify area to build by factory representatives
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	CCircuitDef* bdef;
-	CCircuitDef* landDef = factoryMgr->GetLandDef(facDef);
-	if (landDef != nullptr) {
-		if (landDef->GetMobileId() < 0) {
-			bdef = landDef;
-		} else {
-			STerrainMapArea* area = terrainMgr->GetMobileTypeById(landDef->GetMobileId())->areaLargest;
-			// FIXME: area->percentOfMap < 40.0 doesn't seem right as water identifier
-			bdef = ((area == nullptr) || (area->percentOfMap < 40.0)) ? factoryMgr->GetWaterDef(facDef) : landDef;
-		}
-	} else {
-		bdef = factoryMgr->GetWaterDef(facDef);
-	}
-	if (bdef == nullptr) {
+	CCircuitDef* reprDef = factoryMgr->GetRepresenter(facDef);
+	if (reprDef == nullptr) {
 		return nullptr;
 	}
 
 	CTerrainManager::CorrectPosition(buildPos);
-	buildPos = terrainMgr->GetBuildPosition(bdef, buildPos);
+	buildPos = terrainMgr->GetBuildPosition(reprDef, buildPos);
 
 	if (terrainMgr->CanBeBuiltAtSafe(facDef, buildPos) &&
 		((unit == nullptr) || terrainMgr->CanReachAtSafe(unit, buildPos, unit->GetCircuitDef()->GetBuildDistance())))
@@ -1128,7 +1122,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		if (isPlop) {  // FIXME: Calculating buildPos just to kill it here
 			buildPos = -RgtVector;
 		}
-		return builderMgr->EnqueueFactory(priority, facDef, buildPos, SQUARE_SIZE, isPlop, true, 0);
+		return builderMgr->EnqueueFactory(priority, facDef, reprDef, buildPos, SQUARE_SIZE, isPlop, true, 0);
 	}
 
 	return nullptr;
@@ -1245,20 +1239,28 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 	return nullptr;
 }
 
-void CEconomyManager::StartFactoryTask()
+void CEconomyManager::StartFactoryTask(const float seconds)
 {
-	if (circuit->GetFactoryManager()->GetFactoryCount() == 0) {
+	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+	if (factoryMgr->GetFactoryCount() == 0) {
+		CCircuitUnit* comm = circuit->GetSetupManager()->GetCommander();
+		const AIFloat3 pos = (comm != nullptr) ? comm->GetPos(circuit->GetLastFrame()) : AIFloat3(-RgtVector);
+		if (!factoryMgr->IsResetedFactoryPower() && (comm != nullptr) && (comm->GetTask()->GetType() == IUnitTask::Type::BUILDER)) {
+			IBuilderTask* taskB = static_cast<IBuilderTask*>(comm->GetTask());
+			const float maxDist = comm->GetCircuitDef()->GetBuildDistance() + comm->GetCircuitDef()->GetSpeed() * seconds;
+			if (taskB->GetPosition().SqDistance2D(pos) > SQUARE(maxDist)) {
+				factoryMgr->ResetFactoryPower();
+			}
+		}
 		IBuilderTask* factoryTask = UpdateFactoryTasks();
 		if (factoryTask == nullptr) {
 			if (circuit->GetEconomyManager()->IsEnergyStalling()) {
-				CCircuitUnit* comm = circuit->GetSetupManager()->GetCommander();
 				if (comm != nullptr) {
-					UpdateEnergyTasks(comm->GetPos(circuit->GetLastFrame()), comm);
+					UpdateEnergyTasks(pos, comm);
 				}
 			}
 			return;
 		}
-		CCircuitUnit* comm = circuit->GetSetupManager()->GetCommander();
 		if (comm != nullptr) {
 			circuit->GetBuilderManager()->AssignTask(comm, factoryTask);
 		}

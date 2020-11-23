@@ -171,8 +171,10 @@ CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 	CInfluenceMap* inflMap = circuit->GetInflMap();
 	STerrainMapArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const bool notAW = !cdef->HasAntiWater();
-	const bool notAA = !cdef->HasAntiAir();
+	const bool IsInWater = cdef->IsInWater(map->GetElevationAt(pos.x, pos.z), pos.y);
+	const bool notAA = !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir());
+	const bool notAL = !(IsInWater ? cdef->HasSubToLand() : cdef->HasSurfToLand());
+	const bool notAW = !(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater());
 	const float maxPower = threatMap->GetUnitThreat(unit) * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
@@ -215,9 +217,16 @@ CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 				continue;
 			}
 			float elevation = map->GetElevationAt(ePos.x, ePos.z);
-			if ((notAW && !edef->IsYTargetable(elevation, ePos.y))
-				|| (ePos.y - elevation > weaponRange))
-			{
+			if (edef->IsInWater(elevation, ePos.y)) {
+				if (notAW) {
+					continue;
+				}
+			} else {
+				if (notAL) {
+					continue;
+				}
+			}
+			if (ePos.y - elevation > weaponRange) {
 				continue;
 			}
 		} else {

@@ -433,7 +433,9 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 //			return true;
 //		}
 		if ((buildType != BuildType::GUARD)
-			&& ((unit != circuit->GetBuilderManager()->GetEnergizer()) || (units.size() < 2)))  // TODO: check not only units.size() < 2 but units that started building
+			&& ((units.size() < 2)  // TODO: check not only units.size() < 2 but units that started building
+				|| (unit != circuit->GetBuilderManager()->GetEnergizer1())
+				|| (unit != circuit->GetBuilderManager()->GetEnergizer2())))
 		{
 			return true;
 		}
@@ -459,7 +461,9 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float range = cdef->GetBuildDistance();
 	const AIFloat3& endPos = GetPosition();
-	if (!circuit->GetTerrainManager()->CanReachAtSafe(unit, endPos, range, cdef->GetPower())) {
+	if ((target == nullptr)
+		&& !circuit->GetTerrainManager()->CanReachAtSafe(unit, endPos, range, cdef->GetPower()))
+	{
 		manager->AbortTask(this);
 		return;
 	}

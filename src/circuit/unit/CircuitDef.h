@@ -208,11 +208,14 @@ public:
 	void SetIgnore(bool value) { isIgnore = value; }
 	bool IsIgnore() const { return isIgnore; }
 
-	bool IsAttacker()   const { return isAttacker; }
-	bool HasAntiAir()   const { return hasAntiAir; }
-	bool HasAntiLand()  const { return hasAntiLand; }
-	bool HasAntiWater() const { return hasAntiWater; }
-	bool IsAlwaysHit()  const { return isAlwaysHit; }
+	bool IsAttacker()     const { return isAttacker; }
+	bool HasSurfToAir()   const { return hasSurfToAir; }
+	bool HasSurfToLand()  const { return hasSurfToLand; }
+	bool HasSurfToWater() const { return hasSurfToWater; }
+	bool HasSubToAir()    const { return hasSubToAir; }
+	bool HasSubToLand()   const { return hasSubToLand; }
+	bool HasSubToWater()  const { return hasSubToWater; }
+	bool IsAlwaysHit()    const { return isAlwaysHit; }
 
 	bool IsMobile()          const { return speed > .1f; }
 	bool IsAbleToFly()       const { return isAbleToFly; }
@@ -257,7 +260,7 @@ public:
 
 	float GetRadius();
 	float GetHeight();
-	bool IsYTargetable(float elevation, float posY);
+	bool IsInWater(float elevation, float posY);
 	const springai::AIFloat3& GetMidPosOffset() const { return midPosOffset; }
 
 private:
@@ -316,9 +319,12 @@ private:
 	bool hasDGun : 1;
 	bool hasDGunAA : 1;
 
-	bool hasAntiAir : 1;  // air layer
-	bool hasAntiLand : 1;  // surface (water and land)
-	bool hasAntiWater : 1;  // under water
+	bool hasSurfToAir : 1;  // air layer
+	bool hasSurfToLand : 1;  // surface (water and land)
+	bool hasSurfToWater : 1;  // under water
+	bool hasSubToAir : 1;
+	bool hasSubToLand : 1;
+	bool hasSubToWater : 1;
 	bool isAlwaysHit : 1;  // FIXME: calc per weapon
 
 	bool isPlane : 1;  // no hover attack

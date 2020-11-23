@@ -118,10 +118,10 @@
 		"armfus": {			//footpring = 6/5 => 48/40 elmos
 			"hub": [
 				[  // chain1
-					{"unit": "armmmkr", "category": "defence", "offset": [-60, +20]},
+					{"unit": "armmmkr", "category": "defence", "offset": [-60, +16]},
 //					{"unit": "armmmkr", "category": "defence", "offset": [120, 0]},
-					{"unit": "armfus", "category": "defence", "offset": [60, 0]},
-					{"unit": "armmmkr", "category": "defence", "offset": [-60, -20]},
+					{"unit": "armfus", "category": "defence", "offset": [56, 0]},
+					{"unit": "armmmkr", "category": "defence", "offset": [-60, -16]},
 //					{"unit": "armamd", "category": "defence", "offset": [-120, -120], "condition": {"chance": 0.2}},
 					{"unit": "armpb", "category": "defence", "offset": [200, 0], "condition": {"chance": 0.5}},
 					{"unit": "armferret", "category": "defence", "offset": [-80, 80], "condition": "air"}
@@ -157,7 +157,7 @@
 		"corsolar": {
 			"hub": [
 				[
-					{"unit": "corllt", "category": "defense", "offset": {"front": 80}, "condition": {"chance": 0.3}},
+					{"unit": "corllt", "category": "defence", "offset": {"front": 80}, "condition": {"chance": 0.2}},
 					{"unit": "cormakr", "category": "defence", "offset": [80, 80], "condition": "energy"}
 				]  // chain1
 			]
@@ -165,7 +165,7 @@
 		"coradvsol": {
 			"hub": [
 				[
-					{"unit": "corllt", "category": "defence", "offset": {"front": 80}, "condition": {"chance": 0.5}}
+					{"unit": "corhllt", "category": "defence", "offset": {"front": 80}, "condition": {"chance": 0.3}}
 				],  // chain1
 				[	
 					{"unit": "cormakr", "category": "defence", "offset": [80, 80], "condition": "energy"}
@@ -175,8 +175,10 @@
 		"corfus": {
 			"hub": [
 				[  // chain1
-					{"unit": "cormmkr", "category": "defence", "offset": [120, 120]},
-					{"unit": "cormmkr", "category": "defence", "offset": [120, -120]},
+					{"unit": "cormmkr", "category": "defence", "offset": [0, 60]},
+					{"unit": "corfus", "category": "defence", "offset": [48, 0]},
+					{"unit": "cormmkr", "category": "defence", "offset": [0, 100]},
+					{"unit": "cormmkr", "category": "defence", "offset": [0, 140]},
 					{"unit": "corfmd", "category": "defence", "offset": [-120, -120], "condition": {"chance": 0.5}},																																																												
 					{"unit": "cormadsam", "category": "defence", "offset": [-80, 80], "condition": "air"}
 				]
@@ -238,8 +240,8 @@
         "corarad": {
             "hub": [
                 [ //chain1
-                    {"unit": "...1", "category": "defence", "offset": {"front": 40}, "condition": {"chance": 1.0}},
-                    {"unit": "...2", "category": "defence", "offset": {"front": 40}, "condition": {"chance": 1.0}}
+                    {"unit": "corhllt", "category": "defence", "offset": {"front": 40}, "condition": {"chance": 1.0}},
+                    {"unit": "corvipe", "category": "defence", "offset": {"front": 40}, "condition": {"chance": 1.0}}
                 ]
             ]
         }

@@ -156,8 +156,13 @@ struct SAreaData {
 	SAreaData() :
 		minElevation(.0f),
 		maxElevation(.0f),
-		percentLand(.0f)
+		percentLand(.0f),
+		heightMapSizeX(0)
 	{};
+
+	float GetElevationAt(float posX, float posZ) const {
+		return heightMap[int(posZ) / SQUARE_SIZE * heightMapSizeX + int(posX) / SQUARE_SIZE];
+	}
 
 	std::vector<STerrainMapMobileType> mobileType;      // Used for mobile units, not all movedatas are used
 	std::vector<STerrainMapImmobileType> immobileType;  // Used for immobile units
@@ -169,6 +174,7 @@ struct SAreaData {
 	float percentLand;  // 0 to 100
 
 	FloatVec heightMap;
+	int heightMapSizeX;  // height map width
 };
 
 #define BOUND_EXT	3e3f

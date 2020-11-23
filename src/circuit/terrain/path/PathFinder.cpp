@@ -19,11 +19,9 @@
 #include "util/Utils.h"
 #ifdef DEBUG_VIS
 #include "CircuitAI.h"
-#endif
 
 #include "spring/SpringMap.h"
 
-#ifdef DEBUG_VIS
 #include "Figure.h"
 #endif
 
@@ -58,12 +56,11 @@ CPathFinder::CPathFinder(const std::shared_ptr<CScheduler>& scheduler, CTerrainD
 	moveMapXSize = pathMapXSize + 2;  // +2 for passable edges
 	moveMapYSize = pathMapYSize + 2;  // +2 for passable edges
 
-	int mapWidth = terrainData->GetMap()->GetWidth();
 	int numThreads = scheduler->GetMaxPathThreads();
 	micropathers.reserve(numThreads);
 	for (int i = 0; i < numThreads; ++i) {
 		NSMicroPather::CMicroPather* micropather = new CMicroPather(*this,
-				pathMapXSize, pathMapYSize, mapWidth);
+				pathMapXSize, pathMapYSize);
 		micropathers.push_back(micropather);
 	}
 
@@ -180,11 +177,6 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 	pMoveData = GetNextMoveData();
 }
 
-const FloatVec& CPathFinder::GetHeightMap() const
-{
-	return areaData->heightMap;
-}
-
 void* CPathFinder::MoveXY2MoveNode(int x, int y) const
 {
 	return (void*) static_cast<intptr_t>(y * moveMapXSize + x);
@@ -274,13 +266,13 @@ std::shared_ptr<IPathQuery> CPathFinder::CreatePathSingleQuery(
 std::shared_ptr<IPathQuery> CPathFinder::CreatePathMultiQuery(
 		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
 		const AIFloat3& startPos, float maxRange, const F3Vec& possibleTargets,
-		NSMicroPather::TestFunc&& hitTest, float maxThreat, bool endPosOnly)
+		NSMicroPather::TestFunc&& hitTest, bool withGoal, float maxThreat, bool endPosOnly)
 {
 	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathMulti>(*this, MakeQueryId());
 	CQueryPathMulti* query = static_cast<CQueryPathMulti*>(pQuery.get());
 
 	FillMapData(query, unit, threatMap, frame);
-	query->InitQuery(startPos, maxRange, possibleTargets, std::move(hitTest), maxThreat, endPosOnly);
+	query->InitQuery(startPos, maxRange, possibleTargets, std::move(hitTest), withGoal, maxThreat, endPosOnly);
 
 	return pQuery;
 }
@@ -467,7 +459,7 @@ void CPathFinder::MakePath(IPathQuery* query, NSMicroPather::CMicroPather* micro
 	const float* threatArray = q->GetThreatArray();
 	const NSMicroPather::CostFunc& moveFun = q->GetMoveFun();
 	const NSMicroPather::CostFunc& threatFun = q->GetThreatFun();
-	const FloatVec& heightMap = q->GetHeightMap();
+	const SAreaData* areaData = q->GetAreaData();
 
 	AIFloat3& startPos = q->GetStartPosRef();
 	AIFloat3& endPos = q->GetEndPosRef();
@@ -483,7 +475,7 @@ void CPathFinder::MakePath(IPathQuery* query, NSMicroPather::CMicroPather* micro
 	CTerrainData::CorrectPosition(startPos);
 	CTerrainData::CorrectPosition(endPos);
 
-	micropather->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
+	micropather->SetMapData(canMoveArray, threatArray, moveFun, threatFun, areaData);
 	if (micropather->FindBestPathToPointOnRadius(Pos2MoveNode(startPos), Pos2MoveNode(endPos),
 			radius, maxThreat, hitTest, &iPath.path, &pathCost) == CMicroPather::SOLVED)
 	{
@@ -500,12 +492,13 @@ void CPathFinder::FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* m
 	const float* threatArray = q->GetThreatArray();
 	const NSMicroPather::CostFunc& moveFun = q->GetMoveFun();
 	const NSMicroPather::CostFunc& threatFun = q->GetThreatFun();
-	const FloatVec& heightMap = q->GetHeightMap();
+	const SAreaData* areaData = q->GetAreaData();
 
 	AIFloat3& startPos = q->GetStartPosRef();
 	F3Vec& possibleTargets = q->GetTargetsRef();
 	const float maxRange = q->GetMaxRange();
 	const NSMicroPather::TestFunc& hitTest = q->GetHitTest();
+	const bool isWithGoal = q->IsWithGoal();
 	const float maxThreat = q->GetMaxThreat();
 
 	PathInfo& iPath = q->GetPathInfoRef();
@@ -620,7 +613,9 @@ void CPathFinder::FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* m
 				endNodes.push_back(MoveXY2MoveNode(sx, sy));
 			}
 		}
-		endNodes.push_back(MoveXY2MoveNode(x, y));  // in case hitTest rejected nodes on radius
+		if (isWithGoal) {
+			endNodes.push_back(MoveXY2MoveNode(x, y));  // in case hitTest rejected nodes on radius
+		}
 	}
 	for (void* node : nodeTargets) {
 		micropather->GetNode(node)->isEndNode = 0;
@@ -628,7 +623,7 @@ void CPathFinder::FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* m
 
 	CTerrainData::CorrectPosition(startPos);
 
-	micropather->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
+	micropather->SetMapData(canMoveArray, threatArray, moveFun, threatFun, areaData);
 	if (micropather->FindBestPathToAnyGivenPoint(Pos2MoveNode(startPos), endNodes, nodeTargets,
 			maxThreat, &iPath.path, &pathCost) == CMicroPather::SOLVED)
 	{
@@ -648,12 +643,12 @@ void CPathFinder::MakeCostMap(IPathQuery* query, NSMicroPather::CMicroPather* mi
 	const float* threatArray = q->GetThreatArray();
 	NSMicroPather::CostFunc moveFun = q->GetMoveFun();
 	NSMicroPather::CostFunc threatFun = q->GetThreatFun();
-	const FloatVec& heightMap = q->GetHeightMap();
+	const SAreaData* areaData = q->GetAreaData();
 
 	const AIFloat3& startPos = q->GetStartPos();
 	std::vector<float>& costMap = q->GetCostMapRef();
 
-	micropather->SetMapData(canMoveArray, threatArray, moveFun, threatFun, heightMap);
+	micropather->SetMapData(canMoveArray, threatArray, moveFun, threatFun, areaData);
 	micropather->MakeCostMap(Pos2MoveNode(startPos), costMap);
 }
 

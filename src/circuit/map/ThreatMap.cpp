@@ -89,15 +89,15 @@ CThreatMap::CThreatMap(CMapManager* manager, float decloakRadius)
 		int range;
 
 		realRange = cdef.GetMaxRange(CCircuitDef::RangeType::AIR);
-		range = cdef.HasAntiAir() ? int(realRange + slack) / squareSize + 1 : 0;
+		range = cdef.HasSurfToAir() ? int(realRange + slack) / squareSize + 1 : 0;
 		cdef.SetThreatRange(CCircuitDef::ThreatType::AIR, range);
 
 		realRange = cdef.GetMaxRange(CCircuitDef::RangeType::LAND);
-		range = (cdef.HasAntiLand() && (realRange <= allowedRange) && (speed <= allowedSpeed)) ? int(realRange + slack) / squareSize + 1 : 0;
+		range = (cdef.HasSurfToLand() && (realRange <= allowedRange) && (speed <= allowedSpeed)) ? int(realRange + slack) / squareSize + 1 : 0;
 		cdef.SetThreatRange(CCircuitDef::ThreatType::LAND, range);
 
 		realRange = cdef.GetMaxRange(CCircuitDef::RangeType::WATER);
-		range = (cdef.HasAntiWater() && (realRange <= allowedRange) && (speed <= allowedSpeed)) ? int(realRange + slack) / squareSize + 1 : 0;
+		range = (cdef.HasSurfToWater() && (realRange <= allowedRange) && (speed <= allowedSpeed)) ? int(realRange + slack) / squareSize + 1 : 0;
 		cdef.SetThreatRange(CCircuitDef::ThreatType::WATER, range);
 
 		cdef.SetThreatRange(CCircuitDef::ThreatType::CLOAK, GetCloakRange(&cdef));
@@ -266,11 +266,20 @@ void CThreatMap::AddEnemyUnit(const SEnemyData& e)
 	}
 
 	const int vsl = std::min(int(e.vel.Length2D() * slackMod.speedMod), slackMod.speedModMax);
-	if (cdef->HasAntiAir()) {
-		AddEnemyAir(e, vsl);
-	}
-	if (cdef->HasAntiLand() || cdef->HasAntiWater()) {
-		cdef->IsAlwaysHit() ? AddEnemyAmphConst(e, vsl) : AddEnemyAmphGradient(e, vsl);
+	if (cdef->IsInWater(areaData->GetElevationAt(e.pos.x, e.pos.z), e.pos.y)) {
+		if (cdef->HasSubToAir()) {
+			AddEnemyAir(e, vsl);
+		}
+		if (cdef->HasSubToLand() || cdef->HasSubToWater()) {
+			cdef->IsAlwaysHit() ? AddEnemyAmphConst(e, vsl) : AddEnemyAmphGradient(e, vsl);
+		}
+	} else {
+		if (cdef->HasSurfToAir()) {
+			AddEnemyAir(e, vsl);
+		}
+		if (cdef->HasSurfToLand() || cdef->HasSurfToWater()) {
+			cdef->IsAlwaysHit() ? AddEnemyAmphConst(e, vsl) : AddEnemyAmphGradient(e, vsl);
+		}
 	}
 	AddDecloaker(e);
 
@@ -327,10 +336,12 @@ void CThreatMap::AddEnemyAmphConst(const SEnemyData& e, const int slack)
 	PosToXZ(e.pos, posx, posz);
 
 	const float threat = e.threat/* - THREAT_DECAY*/;
-	const int rangeLand = e.GetRange(CCircuitDef::ThreatType::LAND) + slack;
-	const int rangeLandSq = SQUARE(rangeLand);
-	const int rangeWater = e.GetRange(CCircuitDef::ThreatType::WATER) + slack;
-	const int rangeWaterSq = SQUARE(rangeWater);
+	int r = e.GetRange(CCircuitDef::ThreatType::LAND);
+	const int rangeLand = (r > 0) ? r + slack : 0;
+	const int rangeLandSq = (r > 0) ? SQUARE(rangeLand) : -1;
+	r = e.GetRange(CCircuitDef::ThreatType::WATER);
+	const int rangeWater = (r > 0) ? r + slack : 0;
+	const int rangeWaterSq = (r > 0) ? SQUARE(rangeWater) : -1;
 	const int range = std::max(rangeLand, rangeWater);
 	const std::vector<STerrainMapSector>& sector = areaData->sector;
 
@@ -365,10 +376,12 @@ void CThreatMap::AddEnemyAmphGradient(const SEnemyData& e, const int slack)
 	PosToXZ(e.pos, posx, posz);
 
 	const float threat = e.threat/* - THREAT_DECAY*/;
-	const int rangeLand = e.GetRange(CCircuitDef::ThreatType::LAND) + slack;
-	const int rangeLandSq = SQUARE(rangeLand);
-	const int rangeWater = e.GetRange(CCircuitDef::ThreatType::WATER) + slack;
-	const int rangeWaterSq = SQUARE(rangeWater);
+	int r = e.GetRange(CCircuitDef::ThreatType::LAND);
+	const int rangeLand = (r > 0) ? r + slack : 0;
+	const int rangeLandSq = (r > 0) ? SQUARE(rangeLand) : -1;
+	r = e.GetRange(CCircuitDef::ThreatType::WATER);
+	const int rangeWater = (r > 0) ? r + slack : 0;
+	const int rangeWaterSq = (r > 0) ? SQUARE(rangeWater) : -1;
 	const int range = std::max(rangeLand, rangeWater);
 	const std::vector<STerrainMapSector>& sector = areaData->sector;
 
@@ -476,9 +489,9 @@ int CThreatMap::GetShieldRange(const CCircuitDef* edef) const
 
 float CThreatMap::GetEnemyUnitThreat(const CEnemyUnit* e) const
 {
-	if (e->IsBeingBuilt()) {
-		return .0f;  // THREAT_BASE;
-	}
+//	if (e->IsBeingBuilt()) {
+//		return .0f;  // THREAT_BASE;
+//	}
 	const float health = e->GetHealth();
 	if (health <= .0f) {
 		return .0f;
@@ -548,7 +561,8 @@ void CThreatMap::UpdateVis()
 		std::ostringstream cmd;
 		cmd << "ai_thr_data:";
 		for (int i = 0; i < mapSize; ++i) {
-			cmd << surfThreat[i] << " ";
+//			cmd << surfThreat[i] << " ";
+			cmd << amphThreat[i] << " ";
 		}
 		std::string s = cmd.str();
 		circuit->GetLua()->CallRules(s.c_str(), s.size());

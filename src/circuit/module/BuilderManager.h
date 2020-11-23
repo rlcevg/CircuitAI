@@ -78,6 +78,7 @@ public:
 							  int timeout = ASSIGN_TIMEOUT);
 	IBuilderTask* EnqueueFactory(IBuilderTask::Priority priority,
 								 CCircuitDef* buildDef,
+								 CCircuitDef* reprDef,
 								 const springai::AIFloat3& position,
 								 float shake = SQUARE_SIZE * 32,
 								 bool isPlop = false,
@@ -156,7 +157,8 @@ public:
 		return GetResurrectTask(pos, radius) != nullptr;
 	}
 
-	CCircuitUnit* GetEnergizer() const { return energizer; }
+	CCircuitUnit* GetEnergizer1() const { return energizer1; }
+	CCircuitUnit* GetEnergizer2() const { return energizer2; }
 
 private:
 	IUnitTask* DefaultMakeTask(CCircuitUnit* unit);
@@ -191,7 +193,8 @@ private:
 	unsigned numAutoMex;
 	std::unordered_map<int, std::set<CCircuitUnit*>> mexUpgrader;  // Mobile type Id: set of units
 	std::unordered_map<CCircuitDef*, int> mexUpgraderCount;
-	CCircuitUnit* energizer;
+	CCircuitUnit* energizer1;
+	CCircuitUnit* energizer2;
 	std::set<CCircuitUnit*> workers;
 	std::map<CCircuitUnit*, std::shared_ptr<IPathQuery>> costQueries;  // IPathQuery owner
 

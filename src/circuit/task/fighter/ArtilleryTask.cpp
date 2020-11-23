@@ -144,7 +144,7 @@ CEnemyInfo* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 	CCircuitAI* circuit = manager->GetCircuit();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const bool notAW = !cdef->HasAntiWater();
+	const bool notAW = !cdef->HasSurfToWater();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	float range = cdef->GetMaxRange();

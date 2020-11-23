@@ -30,9 +30,10 @@ static int opposite[] = {
 };
 
 CBFactoryTask::CBFactoryTask(ITaskManager* mgr, Priority priority,
-							 CCircuitDef* buildDef, const AIFloat3& position,
+							 CCircuitDef* buildDef, CCircuitDef* reprDef, const AIFloat3& position,
 							 float cost, float shake, bool isPlop, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::FACTORY, cost, shake, timeout)
+		, reprDef(reprDef)
 		, isPlop(isPlop)
 {
 	manager->GetCircuit()->GetFactoryManager()->AddFactory(buildDef);
@@ -73,9 +74,18 @@ void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, fl
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	CTerrainManager::TerrainPredicate predicate = [terrainMgr, builder](const AIFloat3& p) {
-		return terrainMgr->CanReachAtSafe(builder, p, builder->GetCircuitDef()->GetBuildDistance());
-	};
+	CTerrainManager::TerrainPredicate predicate;
+	if (reprDef == nullptr) {
+		predicate = [terrainMgr, builder](const AIFloat3& p) {
+			return terrainMgr->CanReachAtSafe(builder, p, builder->GetCircuitDef()->GetBuildDistance());
+		};
+	} else {
+		CCircuitDef* reprDef = this->reprDef;
+		predicate = [terrainMgr, builder, reprDef](const AIFloat3& p) {
+			return terrainMgr->CanReachAtSafe(builder, p, builder->GetCircuitDef()->GetBuildDistance())
+					&& terrainMgr->CanBeBuiltAt(reprDef, p);
+		};
+	}
 	CMap* map = circuit->GetMap();
 	const float testSize = std::max(buildDef->GetDef()->GetXSize(), buildDef->GetDef()->GetZSize()) * SQUARE_SIZE;
 	auto checkFacing = [this, map, terrainMgr, testSize, &predicate, &pos, searchRadius]() {
@@ -101,9 +111,7 @@ void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, fl
 				posOffset.x -= testSize;
 			} break;
 		}
-		if (map->IsPossibleToBuildAt(buildDef->GetDef(), posOffset, facing)
-			&& map->IsPossibleToBuildAt(buildDef->GetDef(), posOffset / 2, facing))
-		{
+		if (map->IsPossibleToBuildAt(buildDef->GetDef(), posOffset, facing)) {
 			SetBuildPos(bp);
 			return true;
 		}

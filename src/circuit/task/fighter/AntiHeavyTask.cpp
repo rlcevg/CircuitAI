@@ -298,7 +298,7 @@ bool CAntiHeavyTask::FindTarget()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
-	const bool notAA = !cdef->HasAntiAir();
+	const bool notAA = !cdef->HasSurfToAir();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const float maxPower = attackPower * powerMod;
 	const float weaponRange = cdef->GetMaxRange();

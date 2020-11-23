@@ -169,7 +169,7 @@ AIFloat3 CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, const
 	CCircuitAI* circuit = manager->GetCircuit();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const bool notAW = !cdef->HasAntiWater();
+	const bool notAW = !cdef->HasSurfToWater();
 	const float scale = (cdef->GetMinRange() > 300.0f) ? 4.0f : 1.0f;
 	const float maxPower = threatMap->GetUnitThreat(unit) * scale * powerMod;
 //	const float maxAltitude = cdef->GetAltitude();

@@ -199,7 +199,7 @@ void CRaidTask::Update()
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
 			leader, threatMap, frame,
-			startPos, pathRange, !urgentPositions.empty() ? urgentPositions : enemyPositions, GetHitTest(), attackPower);
+			startPos, pathRange, !urgentPositions.empty() ? urgentPositions : enemyPositions, GetHitTest(), true, attackPower);
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
@@ -242,8 +242,10 @@ bool CRaidTask::FindTarget()
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
-	const bool notAW = !cdef->HasAntiWater();
-	const bool notAA = !cdef->HasAntiAir();
+	const bool IsInWater = cdef->IsInWater(map->GetElevationAt(pos.x, pos.z), pos.y);
+	const bool notAA = !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir());
+	const bool notAL = !(IsInWater ? cdef->HasSubToLand() : cdef->HasSurfToLand());
+	const bool notAW = !(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater());
 	const float maxSpeed = SQUARE(highestSpeed * 0.8f / FRAMES_PER_SEC);
 	const float maxPower = attackPower * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
@@ -309,9 +311,16 @@ bool CRaidTask::FindTarget()
 				continue;
 			}
 			float elevation = map->GetElevationAt(ePos.x, ePos.z);
-			if ((notAW && !edef->IsYTargetable(elevation, ePos.y))
-				|| (ePos.y - elevation > weaponRange))
-			{
+			if (edef->IsInWater(elevation, ePos.y)) {
+				if (notAW) {
+					continue;
+				}
+			} else {
+				if (notAL) {
+					continue;
+				}
+			}
+			if (ePos.y - elevation > weaponRange) {
 				continue;
 			}
 			defThreat = edef->GetPower();

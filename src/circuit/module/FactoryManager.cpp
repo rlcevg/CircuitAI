@@ -47,6 +47,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		, updateIterator(0)
 		, factoryPower(.0f)
 		, offsetPower(.0f)
+		, isResetedFactoryPower(false)
 		, noT1FacCount(0)
 		, bpRatio(1.f)
 		, reWeight(.5f)
@@ -225,7 +226,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		};
 		if (cdef.IsAbleToFly()) {
 			setRoles(ROLE_TYPE(AIR));
-		} else if (!cdef.IsMobile() && cdef.IsAttacker() && cdef.HasAntiLand()) {
+		} else if (!cdef.IsMobile() && cdef.IsAttacker() && cdef.HasSurfToLand()) {
 			setRoles(ROLE_TYPE(STATIC));
 		} else if (cdef.GetDef()->IsBuilder() && !cdef.GetBuildOptions().empty() && !cdef.IsRoleComm()) {
 			setRoles(ROLE_TYPE(BUILDER));
@@ -540,18 +541,10 @@ void CFactoryManager::ReadConfig()
 void CFactoryManager::Init()
 {
 	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
-		CMetalManager* metalMgr = circuit->GetMetalManager();
-		int index = metalMgr->FindNearestCluster(pos);
-		if (index>= 0) {
-			CCircuitDef* assistDef = GetSideInfo().assistDef;
-			CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
-			const float comMIncome = commDef->GetDef()->GetResourceMake(circuit->GetEconomyManager()->GetMetalRes());
-			const float minIncome = std::min(assistDef->GetBuildSpeed(), metalMgr->GetClusters()[index].income + comMIncome);
-			offsetPower = (assistDef->GetBuildSpeed() - minIncome) * 1.25f;  // cluster income is a lie, so 1.2 -> 1.25
-			factoryPower -= offsetPower;
-			const float comEIncome = commDef->GetDef()->GetResourceMake(circuit->GetEconomyManager()->GetEnergyRes());
-			offsetPower -= (assistDef->GetBuildSpeed() - (comEIncome + 40.f) * 0.1f) * 1.25f;  // 40 ~ 2 solars; kbot should 1 solar
-		}
+		CCircuitDef* assistDef = GetSideInfo().assistDef;
+		offsetPower = (assistDef->GetBuildSpeed() - 8.f) * 1.2f;  // 1.2 is UpdateFactoryTask's modifier
+		factoryPower -= offsetPower;
+		offsetPower -= (assistDef->GetBuildSpeed() - 60.f * 0.1f) * 1.2f;  // 60 ~ 2 solars + comm; kbot should 1 solar
 
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		const int interval = 4;
@@ -744,6 +737,14 @@ void CFactoryManager::DoneTask(IUnitTask* task)
 
 void CFactoryManager::FallbackTask(CCircuitUnit* unit)
 {
+}
+
+void CFactoryManager::ResetFactoryPower()
+{
+	isResetedFactoryPower = true;
+	const float offset = (8.1f - circuit->GetEconomyManager()->GetPureMetalIncome()) * 1.2f;
+	factoryPower -= offset;
+	offsetPower += offset;
 }
 
 CCircuitUnit* CFactoryManager::NeedUpgrade()
@@ -1093,6 +1094,22 @@ CCircuitDef* CFactoryManager::GetWaterDef(const CCircuitDef* facDef) const
 	return (it != factoryDefs.end()) ? it->second.waterDef : nullptr;
 }
 
+CCircuitDef* CFactoryManager::GetRepresenter(const CCircuitDef* facDef) const
+{
+	CCircuitDef* landDef = GetLandDef(facDef);
+	if (landDef != nullptr) {
+		if (landDef->GetMobileId() < 0) {
+			return landDef;
+		} else {
+			STerrainMapArea* area = circuit->GetTerrainManager()->GetMobileTypeById(landDef->GetMobileId())->areaLargest;
+			// FIXME: area->percentOfMap < 40.0 doesn't seem right as water identifier
+			return ((area == nullptr) || (area->percentOfMap < 40.0)) ? GetWaterDef(facDef) : landDef;
+		}
+	} else {
+		return GetWaterDef(facDef);
+	}
+}
+
 void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 {
 	factoryPower += unit->GetBuildSpeed();
@@ -1197,7 +1214,7 @@ void CFactoryManager::DisableFactory(CCircuitUnit* unit)
 				// queue new factory with builder
 				CCircuitDef* facDef = GetFactoryToBuild(-RgtVector, true, true);
 				if (facDef != nullptr) {
-					builderMgr->EnqueueFactory(IBuilderTask::Priority::NOW, facDef, -RgtVector);
+					builderMgr->EnqueueFactory(IBuilderTask::Priority::NOW, facDef, GetRepresenter(facDef), -RgtVector);
 				}
 			}
 		}

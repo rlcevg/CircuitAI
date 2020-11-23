@@ -183,11 +183,10 @@ private:
 };
 
 
-CMicroPather::CMicroPather(const circuit::CPathFinder& pf, int sizeX, int sizeY, int heightSizeX)
+CMicroPather::CMicroPather(const circuit::CPathFinder& pf, int sizeX, int sizeY)
 		: mapSizeX(sizeX + 2)  // +2 for edges
 		, mapSizeY(sizeY + 2)  // +2 for edges
 		, isRunning(false)
-		, heightMapSizeX(heightSizeX)
 		, ALLOCATE(mapSizeX * mapSizeY)
 		, BLOCKSIZE(ALLOCATE - 1)
 		, graph(pf)
@@ -241,13 +240,13 @@ CMicroPather::~CMicroPather()
  * New: make sure that moveThreatFun doesn't return values below 0.0
  */
 void CMicroPather::SetMapData(const bool* canMoveArray, const float* threatArray,
-		const CostFunc& moveFun, const CostFunc& threatFun, const FloatVec& heightMap)
+		const CostFunc& moveFun, const CostFunc& threatFun, const circuit::SAreaData* areaData)
 {
 	this->canMoveArray = canMoveArray;
 	this->threatArray  = threatArray;
 	this->moveFun      = moveFun;
 	this->threatFun    = threatFun;
-	this->heightMap    = &heightMap;
+	this->areaData     = areaData;
 }
 
 void CMicroPather::Reset()
@@ -1078,7 +1077,7 @@ void CMicroPather::FillPathInfo(PathInfo& iPath)
 {
 	if (iPath.isEndPos) {
 		float3 pos = graph.PathIndex2Pos(iPath.path.back());
-		pos.y = GetElevationAt(pos.x, pos.z);
+		pos.y = areaData->GetElevationAt(pos.x, pos.z);
 		iPath.posPath.push_back(pos);
 	} else {
 		iPath.start = RefinePath(iPath.path);
@@ -1087,7 +1086,7 @@ void CMicroPather::FillPathInfo(PathInfo& iPath)
 		// NOTE: only first few positions actually used due to frequent recalc.
 		for (size_t i = iPath.start; i < iPath.path.size(); ++i) {
 			float3 pos = graph.PathIndex2Pos(iPath.path[i]);
-			pos.y = GetElevationAt(pos.x, pos.z);
+			pos.y = areaData->GetElevationAt(pos.x, pos.z);
 			iPath.posPath.push_back(pos);
 		}
 	}

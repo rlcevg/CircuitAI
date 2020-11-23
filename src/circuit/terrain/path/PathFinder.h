@@ -45,7 +45,7 @@ public:
 	void UpdateAreaUsers(CTerrainManager* terrainManager);
 	void SetAreaUpdated(bool value) { isAreaUpdated = value; }
 
-	const FloatVec& GetHeightMap() const;
+	const SAreaData* GetAreaData() const { return areaData; }
 
 	void* MoveXY2MoveNode(int x, int y) const;
 	void MoveNode2MoveXY(void* node, int* x, int* y) const;
@@ -63,7 +63,7 @@ public:
 			NSMicroPather::TestFunc&& hitTest = nullptr, float maxThreat = std::numeric_limits<float>::max(), bool endPosOnly = false);
 	std::shared_ptr<IPathQuery> CreatePathMultiQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos, float maxRange, const F3Vec& possibleTargets,
-			NSMicroPather::TestFunc&& hitTest = nullptr, float maxThreat = std::numeric_limits<float>::max(), bool endPosOnly = false);
+			NSMicroPather::TestFunc&& hitTest = nullptr, bool withGoal = false, float maxThreat = std::numeric_limits<float>::max(), bool endPosOnly = false);
 	std::shared_ptr<IPathQuery> CreateCostMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos);
 	std::shared_ptr<IPathQuery> CreateLineMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame);

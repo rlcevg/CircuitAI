@@ -64,6 +64,8 @@ public:
 
 	int GetFactoryCount() const { return factories.size(); }
 	int GetNoT1FacCount() const { return noT1FacCount; }
+	void ResetFactoryPower();
+	bool IsResetedFactoryPower() const { return isResetedFactoryPower; }
 	float GetFactoryPower() const { return factoryPower; }
 	float GetEnergyPower() const { return factoryPower + offsetPower; }
 	bool CanEnqueueTask() const { return factoryTasks.size() < factories.size() * 2; }
@@ -92,6 +94,7 @@ public:
 	CCircuitDef* GetRoleDef(const CCircuitDef* facDef, CCircuitDef::RoleT role) const;
 	CCircuitDef* GetLandDef(const CCircuitDef* facDef) const;
 	CCircuitDef* GetWaterDef(const CCircuitDef* facDef) const;
+	CCircuitDef* GetRepresenter(const CCircuitDef* facDef) const;
 
 private:
 	void EnableFactory(CCircuitUnit* unit);
@@ -115,6 +118,7 @@ private:
 	unsigned int updateIterator;
 	float factoryPower;  // related to metal
 	float offsetPower;
+	bool isResetedFactoryPower;
 
 	std::vector<SSideInfo> sideInfos;
 

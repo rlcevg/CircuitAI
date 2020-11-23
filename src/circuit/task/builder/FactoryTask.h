@@ -15,7 +15,7 @@ namespace circuit {
 class CBFactoryTask: public IBuilderTask {
 public:
 	CBFactoryTask(ITaskManager* mgr, Priority priority,
-				  CCircuitDef* buildDef, const springai::AIFloat3& position,
+				  CCircuitDef* buildDef, CCircuitDef* reprDef, const springai::AIFloat3& position,
 				  float cost, float shake, bool isPlop, int timeout);
 	virtual ~CBFactoryTask();
 
@@ -27,6 +27,7 @@ protected:
 private:
 	virtual void FindBuildSite(CCircuitUnit* builder, const springai::AIFloat3& pos, float searchRadius) override;
 
+	CCircuitDef* reprDef;
 	bool isPlop;
 };
 

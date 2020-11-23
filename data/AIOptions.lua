@@ -86,8 +86,8 @@ local options = {
 			},
 			{
 				key  = 'flaka',
-				name = 'Flaka',
-				desc = 'Hard AI | balanced gameplay | non cheating',
+				name = 'Hard | Balanced',
+				desc = 'Difficulty: Hard |Playstyle: Balanced |Made by Flaka',
 			},
 		},
 	},

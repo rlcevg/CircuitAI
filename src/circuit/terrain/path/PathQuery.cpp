@@ -12,7 +12,6 @@ namespace circuit {
 
 IPathQuery::IPathQuery(const CPathFinder& pathfinder, int id, Type type)
 		: pathfinder(pathfinder)
-		, heightMap(pathfinder.GetHeightMap())
 		, id(id)
 		, type(type)
 		, state(State::NONE)

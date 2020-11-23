@@ -58,7 +58,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		, buildTasksCount(0)
 		, buildPower(.0f)
 		, buildIterator(0)
-		, energizer(nullptr)
+		, energizer1(nullptr)
+		, energizer2(nullptr)
 {
 	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CBuilderManager::Init, this));
 
@@ -77,6 +78,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			unit->SetManager(this);
 			this->circuit->AddActionUnit(unit);
 		}
+		CMilitaryManager* militaryMgr = this->circuit->GetMilitaryManager();
 		// FIXME: BA
 		if ((mexUpgrader[unit->GetCircuitDef()->GetMobileId()].size() < numAutoMex)
 			&& unit->GetCircuitDef()->CanBuild(this->circuit->GetEconomyManager()->GetSideInfo().mohoMexDef))
@@ -99,16 +101,26 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			AddBuildPower(unit);
 			workers.insert(unit);
 
-			if ((energizer == nullptr) && (unit->GetCircuitDef()->GetCostM() > 200) && !unit->GetCircuitDef()->IsRoleComm()) {
-				energizer = unit;
+			if (!unit->GetCircuitDef()->IsRoleComm()) {
+				if (unit->GetCircuitDef()->GetCostM() < 200) {
+					if ((energizer1 == nullptr)
+						&& ((unsigned)unit->GetCircuitDef()->GetCount() > militaryMgr->GetDefendTaskNum()))
+					{
+						energizer1 = unit;
+					}
+				} else {
+					if (energizer2 == nullptr) {
+						energizer2 = unit;
+					}
+				}
 			}
 
 			AddBuildList(unit, mexUpgraderCount[unit->GetCircuitDef()]);
 		}
 		// FIXME: BA
 
-		CMilitaryManager* militaryMgr = this->circuit->GetMilitaryManager();
 		if (!unit->GetCircuitDef()->IsAttacker()
+			&& !unit->GetCircuitDef()->IsAbleToFly()
 			&& (militaryMgr->GetTasks(IFighterTask::FightType::GUARD).size() < militaryMgr->GetDefendTaskNum()))
 		{
 			militaryMgr->AddGuardTask(unit);
@@ -145,8 +157,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			workers.erase(unit);
 			costQueries.erase(unit);
 
-			if (energizer == unit) {
-				energizer = nullptr;
+			if (energizer1 == unit) {
+				energizer1 = nullptr;
+			} else if (energizer2 == unit) {
+				energizer2 = nullptr;
 			}
 
 			RemoveBuildList(unit, mexUpgraderCount[unit->GetCircuitDef()]);
@@ -635,6 +649,7 @@ IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 
 IBuilderTask* CBuilderManager::EnqueueFactory(IBuilderTask::Priority priority,
 											  CCircuitDef* buildDef,
+											  CCircuitDef* reprDef,
 											  const AIFloat3& position,
 											  float shake,
 											  bool isPlop,
@@ -642,7 +657,7 @@ IBuilderTask* CBuilderManager::EnqueueFactory(IBuilderTask::Priority priority,
 											  int timeout)
 {
 	const float cost = isPlop ? 1.f : buildDef->GetCostM();
-	IBuilderTask* task = new CBFactoryTask(this, priority, buildDef, position, cost, shake, isPlop, timeout);
+	IBuilderTask* task = new CBFactoryTask(this, priority, buildDef, reprDef, position, cost, shake, isPlop, timeout);
 	if (isActive) {
 		buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::FACTORY)].insert(task);
 		buildTasksCount++;
@@ -1031,7 +1046,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 		}
 	}
 
-	return (unit == energizer)
+	return ((unit == energizer1) || unit == energizer2)
 			? MakeEnergizerTask(unit, pQuery.get())
 			: MakeBuilderTask(unit, pQuery.get());
 }
@@ -1517,7 +1532,7 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 	}
 
 	CSetupManager* setupMgr = circuit->GetSetupManager();
-	if (setupMgr->GetCommander() != nullptr) {
+	if ((setupMgr->GetCommander() != nullptr) && !unit->GetCircuitDef()->IsAbleToAssist()) {
 		return EnqueueGuard(IBuilderTask::Priority::LOW, setupMgr->GetCommander(), FRAMES_PER_SEC * 20);
 	}
 	return EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);

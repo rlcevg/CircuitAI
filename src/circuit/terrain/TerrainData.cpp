@@ -149,6 +149,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	AIFloat3::maxzpos = mapHeight * SQUARE_SIZE;
 	boundX = AIFloat3::maxxpos + BOUND_EXT;
 	boundZ = AIFloat3::maxzpos + BOUND_EXT;
+	areaData.heightMapSizeX = mapWidth;
 	convertStoP = DEFAULT_SLACK;  // = 2^x, should not be less than 16 (2*SUQARE_SIZE)
 	constexpr int SMALL_MAP = 8;
 	constexpr int LARGE_MAP = 16;
@@ -489,6 +490,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	 *  Duplicate areaData
 	 */
 	SAreaData& nextAreaData = (pAreaData.load() == &areaData0) ? areaData1 : areaData0;
+	nextAreaData.heightMapSizeX = mapWidth;
 	nextAreaData.mobileType = mobileType;
 	for (auto& mt : nextAreaData.mobileType) {
 		mt.areaLargest = nullptr;

@@ -72,6 +72,7 @@ public:
 	CCircuitDef* GetPylonDef() const { return pylonDef; }
 
 	void UpdateResourceIncome();
+	float GetPureMetalIncome() const;
 	float GetAvgMetalIncome() const { return metal.income; }
 	float GetAvgEnergyIncome() const { return energy.income; }
 	float GetEcoFactor() const { return ecoFactor; }
@@ -104,7 +105,7 @@ public:
 	IBuilderTask* UpdateFactoryTasks();
 	IBuilderTask* UpdateStorageTasks();
 	IBuilderTask* UpdatePylonTasks();
-	void StartFactoryTask();
+	void StartFactoryTask(const float seconds);
 
 	void AddMorphee(CCircuitUnit* unit);
 	void RemoveMorphee(CCircuitUnit* unit) { morphees.erase(unit); }

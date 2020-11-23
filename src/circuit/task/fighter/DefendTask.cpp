@@ -216,8 +216,10 @@ bool CDefendTask::FindTarget()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
-	const bool notAW = !cdef->HasAntiWater();
-	const bool notAA = !cdef->HasAntiAir();
+	const bool IsInWater = cdef->IsInWater(map->GetElevationAt(pos.x, pos.z), pos.y);
+	const bool notAA = !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir());
+	const bool notAL = !(IsInWater ? cdef->HasSubToLand() : cdef->HasSurfToLand());
+	const bool notAW = !(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater());
 	const float maxPower = attackPower * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
@@ -265,8 +267,16 @@ bool CDefendTask::FindTarget()
 				continue;
 			}
 			float elevation = map->GetElevationAt(ePos.x, ePos.z);
-			if ((notAW && !edef->IsYTargetable(elevation, ePos.y))
-				|| (ePos.y - elevation > weaponRange)
+			if (edef->IsInWater(elevation, ePos.y)) {
+				if (notAW) {
+					continue;
+				}
+			} else {
+				if (notAL) {
+					continue;
+				}
+			}
+			if ((ePos.y - elevation > weaponRange)
 				/*|| enemy->IsBeingBuilt()*/)
 			{
 				continue;

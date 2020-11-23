@@ -39,7 +39,7 @@ public:
 	const float* GetThreatArray() const { return threatArray; }
 	const NSMicroPather::CostFunc& GetMoveFun() const { return moveFun; }
 	const NSMicroPather::CostFunc& GetThreatFun() const { return threatFun; }
-	const FloatVec& GetHeightMap() const { return heightMap; }
+	const SAreaData* GetAreaData() const { return pathfinder.GetAreaData(); }
 
 	CCircuitUnit* GetUnit() const { return unit; }
 
@@ -47,7 +47,6 @@ public:
 
 protected:
 	const CPathFinder& pathfinder;  // NOTE: double-check threaded calls
-	const FloatVec& heightMap;
 
 	int id;
 	Type type;

@@ -45,7 +45,7 @@
 		},
 		"advsolar":{
 			"type": ["rectangle", "engy_mid"],
-			"ignore": ["mex", "engy_low"]
+			"ignore": ["mex", "engy_mid", "def_low", "nano"]
 		},
 		"wind": {
 			"type": ["circle", "engy_low"],
@@ -53,10 +53,10 @@
 // 			Available string values: explosion, expl_ally
 //			"radius": "explosion",  // default: "explosion"
 			"radius": 6,  // default: "explosion"
-			"not_ignore": ["factory", "terra", "caretaker", "pylon"]
+			"ignore": ["engy_low"]
 		},
 		"fusion": {
-			"type": ["reactangle", "engy_high"],
+			"type": ["rectangle", "engy_high"],
 			"yard": [10, 9],
 			"ignore": ["mex", "engy_high"]
 		},

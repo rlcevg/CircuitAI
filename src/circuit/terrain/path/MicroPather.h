@@ -58,7 +58,7 @@
 #ifndef GRINNINGLIZARD_MICROPATHER_INCLUDED
 #define GRINNINGLIZARD_MICROPATHER_INCLUDED
 
-#include "util/Defines.h"
+#include "terrain/TerrainData.h"
 
 #include "System/type2.h"
 
@@ -198,7 +198,7 @@ namespace NSMicroPather {
 			 * @param sizeX		Width of the map.
 			 * @param sizeY		Height of the map.
 			 */
-			CMicroPather(const circuit::CPathFinder& pf, int sizeX, int sizeY, int heightSizeX);
+			CMicroPather(const circuit::CPathFinder& pf, int sizeX, int sizeY);
 			~CMicroPather();
 
 			/*
@@ -225,7 +225,7 @@ namespace NSMicroPather {
 			const float* threatArray;
 			CostFunc moveFun;
 			CostFunc threatFun;
-			const FloatVec* heightMap;
+			const circuit::SAreaData* areaData;
 
 			int mapSizeX;
 			int mapSizeY;
@@ -233,12 +233,11 @@ namespace NSMicroPather {
 			int xEndNode, yEndNode;
 			bool isRunning;
 
-			int heightMapSizeX;  // height map width
 			std::vector<void*> endNodes;  // helper vector
 			std::vector<void*> nodeTargets;  // helper vector
 
 			void SetMapData(const bool* canMoveArray, const float* threatArray,
-					const CostFunc& moveFun, const CostFunc& threatFun, const FloatVec& heightMap);
+					const CostFunc& moveFun, const CostFunc& threatFun, const circuit::SAreaData* areaData);
 			int FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes, VoidVec& targets, float maxThreat,
 					IndexVec* path, float* cost);
 			int FindBestPathToPointOnRadius(void* startNode, void* endNode, int radius, float maxThreat, TestFunc hitTest,
@@ -251,9 +250,6 @@ namespace NSMicroPather {
 			PathNode* GetNode(void* node) const { return &pathNodeMem[(size_t)node]; }
 
 		private:
-			int GetElevationAt(float posX, float posZ) const {
-				return (*heightMap)[int(posZ) / SQUARE_SIZE * heightMapSizeX + int(posX) / SQUARE_SIZE];
-			}
 			int CanMoveNode2Index(void* node) const {
 				return canMoveArray[(size_t)node] ? pathNodeMem[(size_t)node].index2 : -1;
 			}

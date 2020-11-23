@@ -18,7 +18,7 @@ public:
 	virtual ~CQueryPathMulti();
 
 	void InitQuery(const springai::AIFloat3& startPos, float maxRange,
-			const F3Vec& targets, NSMicroPather::TestFunc&& hitTest,
+			const F3Vec& targets, NSMicroPather::TestFunc&& hitTest, bool withGoal,
 			float maxThreat, bool endPosOnly);
 
 	void Prepare();
@@ -34,6 +34,7 @@ public:
 	const F3Vec& GetTargets() const { return targets; }
 	const float GetMaxRange() const { return maxRange; }
 	const NSMicroPather::TestFunc& GetHitTest() const { return hitTest; }
+	const bool IsWithGoal() const { return isWithGoal; }
 	const float GetMaxThreat() const { return maxThreat; }
 
 	// Result
@@ -48,6 +49,7 @@ private:
 	F3Vec targets;
 	float maxRange = 0.f;
 	NSMicroPather::TestFunc hitTest;
+	bool isWithGoal = false;
 	float maxThreat = 0.f;
 	bool endPosOnly = false;
 };
