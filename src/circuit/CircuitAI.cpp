@@ -1256,7 +1256,7 @@ int CCircuitAI::LuaMessage(const char* inData)
 bool CCircuitAI::InitSide()
 {
 	sideName = game->GetTeamSide(teamId);
-	if (sideName.empty()) {
+	if (!gameAttribute->GetSideMasker().HasType(sideName)) {
 		sideName = gameAttribute->GetSideMasker().GetName(0);
 		if (sideName.empty()) {
 			return false;

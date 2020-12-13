@@ -39,6 +39,7 @@ public:
 	void Init();
 	void Release();
 
+	bool HasType(const std::string& name) const { return masks.find(name) != masks.end(); }
 	Type GetType(const std::string& name) { return GetTypeMask(name).type; }
 
 	Mask GetMask(const std::string& name) { return GetTypeMask(name).mask; }
