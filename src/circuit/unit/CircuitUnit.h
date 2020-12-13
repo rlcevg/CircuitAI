@@ -85,7 +85,7 @@ public:
 	bool IsMoveFailed(int frame);
 	bool IsStuck() const { return isStuck; }
 
-	void ForceUpdate(int frame) { execFrame = frame; }
+	void ForceUpdate(int frame);
 	bool IsForceUpdate(int frame);
 
 	void SetIsDead() { isDead = true; }
@@ -128,10 +128,9 @@ public:
 	void CmdWait(bool state);
 	void RemoveWait();
 
-	void Attack(CEnemyInfo* enemy, int timeout);
-	void Attack(const springai::AIFloat3& position, int timeout);
-	void Attack(const springai::AIFloat3& position, CEnemyInfo* enemy, int timeout);
-	void Attack(const springai::AIFloat3& position, CEnemyInfo* enemy, int tile, int timeout);
+	void Attack(CEnemyInfo* enemy, bool isGround, int timeout);
+	void Attack(const springai::AIFloat3& position, CEnemyInfo* enemy, bool isGround, int timeout);
+	void Attack(const springai::AIFloat3& position, CEnemyInfo* enemy, int tile, bool isGround, int timeout);
 	void Guard(CCircuitUnit* target, int timeout);
 	void Gather(const springai::AIFloat3& groupPos, int timeout);
 
@@ -171,7 +170,6 @@ private:
 	bool isDisarmed : 1;
 	bool isWeaponReady : 1;
 	bool isMorphing : 1;
-	bool isWaiting : 1;
 	// ---- Bit fields ---- END
 
 	springai::Weapon* dgun;

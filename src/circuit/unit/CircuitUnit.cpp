@@ -47,7 +47,6 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 		, isDisarmed(false)
 		, isWeaponReady(true)
 		, isMorphing(false)
-		, isWaiting(false)
 		, target(nullptr)
 		, targetTile(-1)
 {
@@ -122,6 +121,13 @@ bool CCircuitUnit::IsMoveFailed(int frame)
 	failFrame = frame;
 	isStuck = ++moveFails > TASK_RETRIES * 2;
 	return isStuck;
+}
+
+void CCircuitUnit::ForceUpdate(int frame)
+{
+	if (execFrame < 0) {
+		execFrame = frame;
+	}
 }
 
 bool CCircuitUnit::IsForceUpdate(int frame)
@@ -314,29 +320,29 @@ void CCircuitUnit::CmdTerraform(std::vector<float>&& params)
 
 void CCircuitUnit::CmdWait(bool state)
 {
-	if (!state) {
-		auto commands = unit->GetCurrentCommands();
-		for (springai::Command* cmd : commands) {
-			if (cmd->GetId() == CMD_WAIT) {
-				unit->Wait();
-			}
-			delete cmd;
+	bool hasWait = false;
+	auto commands = unit->GetCurrentCommands();
+	for (springai::Command* cmd : commands) {
+		hasWait |= (cmd->GetId() == CMD_WAIT);
+		delete cmd;
+	}
+	if (state) {
+		if (!hasWait) {
+			unit->Wait();
 		}
 	} else {
-		if (isWaiting != state) {
+		if (hasWait) {
 			unit->Wait();
 		}
 	}
-	isWaiting = state;
 }
 
 void CCircuitUnit::RemoveWait()
 {
-	isWaiting = false;
 	CmdRemove({CMD_WAIT}, UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
 }
 
-void CCircuitUnit::Attack(CEnemyInfo* enemy, int timeout)
+void CCircuitUnit::Attack(CEnemyInfo* enemy, bool isGround, int timeout)
 {
 	target = enemy;
 	TRY_UNIT(manager->GetCircuit(), this,
@@ -344,13 +350,25 @@ void CCircuitUnit::Attack(CEnemyInfo* enemy, int timeout)
 		if (circuitDef->IsAttrMelee()) {
 			if (IsJumpReady()) {
 				CmdJumpTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
-				unit->Attack(enemy->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+				if (isGround) {  // los-cheat related
+					CmdAttackGround(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+				} else {
+					unit->Attack(enemy->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+				}
 			} else {
 				CmdMoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
-				unit->Attack(enemy->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+				if (isGround) {  // los-cheat related
+					CmdAttackGround(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+				} else {
+					unit->Attack(enemy->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+				}
 			}
 		} else {
-			unit->Attack(enemy->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+			if (isGround) {  // los-cheat related
+				CmdAttackGround(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+			} else {
+				unit->Attack(enemy->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
+			}
 		}
 		unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);  // los-cheat related
 		CmdWantedSpeed(NO_SPEED_LIMIT);
@@ -358,25 +376,7 @@ void CCircuitUnit::Attack(CEnemyInfo* enemy, int timeout)
 	)
 }
 
-void CCircuitUnit::Attack(const AIFloat3& position, int timeout)
-{
-	const AIFloat3& pos = utils::get_radial_pos(position, SQUARE_SIZE * 8);
-	TRY_UNIT(manager->GetCircuit(), this,
-		if (circuitDef->IsAttrMelee()) {
-			if (IsJumpReady()) {
-				CmdJumpTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
-				unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
-			} else {
-				CmdMoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
-			}
-		} else {
-			unit->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
-		}
-		CmdWantedSpeed(NO_SPEED_LIMIT);
-	)
-}
-
-void CCircuitUnit::Attack(const AIFloat3& pos, CEnemyInfo* enemy, int timeout)
+void CCircuitUnit::Attack(const AIFloat3& pos, CEnemyInfo* enemy, bool isGround, int timeout)
 {
 	TRY_UNIT(manager->GetCircuit(), this,
 		if (circuitDef->IsAttrMelee()) {
@@ -389,18 +389,22 @@ void CCircuitUnit::Attack(const AIFloat3& pos, CEnemyInfo* enemy, int timeout)
 		} else {
 			CmdMoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, timeout);
 		}
-		unit->Attack(enemy->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+		if (isGround) {  // los-cheat related
+			CmdAttackGround(enemy->GetPos(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+		} else {
+			unit->Attack(enemy->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+		}
 		unit->Fight(enemy->GetPos(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);  // los-cheat related
 		CmdWantedSpeed(NO_SPEED_LIMIT);
 		CmdSetTarget(target);
 	)
 }
 
-void CCircuitUnit::Attack(const AIFloat3& position, CEnemyInfo* enemy, int tile, int timeout)
+void CCircuitUnit::Attack(const AIFloat3& position, CEnemyInfo* enemy, int tile, bool isGround, int timeout)
 {
 	target = enemy;
 	targetTile = tile;
-	Attack(position, enemy, timeout);
+	Attack(position, enemy, isGround, timeout);
 }
 
 void CCircuitUnit::Guard(CCircuitUnit* target, int timeout)

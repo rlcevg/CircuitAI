@@ -12,6 +12,7 @@
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
+#include "terrain/TerrainManager.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/TravelAction.h"
 #include "unit/enemy/EnemyUnit.h"
@@ -31,6 +32,7 @@ IFighterTask::IFighterTask(ITaskManager* mgr, FightType type, float powerMod, in
 		, position(-RgtVector)
 		, attackPower(.0f)
 		, powerMod(powerMod)
+		, attackFrame(-1)
 		, target(nullptr)
 {
 }
@@ -101,6 +103,8 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 	const int frame = circuit->GetLastFrame();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float healthPerc = unit->GetHealthPercent();
+	unit->ForceUpdate(frame + THREAT_UPDATE_RATE);
+
 	if (unit->HasShield()) {
 		const float minShield = circuit->GetSetupManager()->GetEmptyShield();
 		if ((healthPerc > cdef->GetRetreat()) && unit->IsShieldCharged(minShield)) {
@@ -152,6 +156,37 @@ void IFighterTask::SetTarget(CEnemyInfo* enemy)
 		enemy->BindTask(this);
 	}
 	target = enemy;
+}
+
+void IFighterTask::Attack(CCircuitUnit* unit, const int frame)
+{
+	unit->GetTravelAct()->StateWait();
+	if (unit->Blocker() != nullptr) {
+		return;  // Do not interrupt current action
+	}
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	const AIFloat3& tPos = GetTarget()->GetPos();
+	const int targetTile = circuit->GetInflMap()->Pos2Index(tPos);
+	const bool isRepeatAttack = (frame >= attackFrame + FRAMES_PER_SEC * 3);
+	attackFrame = isRepeatAttack ? frame : attackFrame;
+
+	if (!isRepeatAttack
+		&& (unit->GetTarget() == GetTarget())
+		&& (unit->GetTargetTile() == targetTile))
+	{
+		return;
+	}
+
+	AIFloat3 dir = unit->GetPos(frame) - tPos;
+	dir.Normalize2D();
+
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	const float range = std::min(cdef->GetMinRange(), cdef->GetLosRadius()) * RANGE_MOD;
+	AIFloat3 newPos(tPos.x + range * dir.x, tPos.y, tPos.z + range * dir.z);
+	CTerrainManager::CorrectPosition(newPos);
+	unit->Attack(newPos, GetTarget(), targetTile, GetTarget()->GetUnit()->IsCloaked(), frame + FRAMES_PER_SEC * 60);
+	unit->GetTravelAct()->StateWait();
 }
 
 #ifdef DEBUG_VIS

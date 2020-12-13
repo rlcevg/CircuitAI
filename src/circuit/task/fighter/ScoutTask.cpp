@@ -22,7 +22,6 @@
 
 #include "spring/SpringMap.h"
 
-#include "AISCommands.h"
 //#include "Drawer.h"  // TraceRay
 
 namespace circuit {
@@ -108,14 +107,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	if (GetTarget() != nullptr) {
 		position = GetTarget()->GetPos();
-		if (GetTarget()->GetUnit()->IsCloaked()) {
-			TRY_UNIT(circuit, unit,
-				unit->CmdAttackGround(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
-			)
-		} else {
-			unit->Attack(GetTarget(), frame + FRAMES_PER_SEC * 60);
-		}
-		unit->GetTravelAct()->StateWait();
+		Attack(unit, frame);
 		return;
 	}
 
@@ -334,7 +326,7 @@ void CScoutTask::ApplyScoutPath(const CQueryPathSingle* query)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	TRY_UNIT(circuit, unit,
-		unit->CmdMoveTo(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+		unit->CmdMoveTo(position, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 	)
 	unit->GetTravelAct()->StateWait();
 }

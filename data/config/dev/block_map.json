@@ -73,7 +73,7 @@
 		},
 		"def_low": {
 			"type": ["circle", "def_low"],
-			"radius": 8,  // 128 / (SQUARE_SIZE * 2)
+			"radius": 4,  // 128 / (SQUARE_SIZE * 2)
 			"ignore": ["engy_mid", "engy_high", "engy_low", "pylon", "nano"]
 		},
 		"caretaker": {

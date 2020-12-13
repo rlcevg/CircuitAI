@@ -783,7 +783,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 			bool isFirst = (parentTask == nullptr);
 			const AIFloat3& buildPos = defDef->IsAttacker() ? closestPoint->position : backPos;
 			IBuilderTask* task = builderMgr->EnqueueTask(IBuilderTask::Priority::HIGH, defDef, buildPos,
-					IBuilderTask::BuildType::DEFENCE, defCost, SQUARE_SIZE * 32, isFirst);
+					IBuilderTask::BuildType::DEFENCE, defCost, SQUARE_SIZE * 8, isFirst);
 			if (parentTask != nullptr) {
 				parentTask->SetNextTask(task);
 			}
@@ -1474,7 +1474,7 @@ void CMilitaryManager::Watchdog()
 		if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
 			continue;
 		}
-		if (!circuit->GetCallback()->Unit_hasCommands(unit->GetId())) {
+		if (!circuit->GetCallback()->Unit_HasCommands(unit->GetId())) {
 			UnitIdle(unit);
 		}
 	}

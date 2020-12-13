@@ -72,17 +72,22 @@ local options = {
 			{
 				key  = 'default',
 				name = 'Default',
-				desc = 'Default config.',
+				desc = 'Default config',
 			},
 			{
 				key  = 'easy',
 				name = 'Easy',
-				desc = 'Lobotomized AI.',
+				desc = 'Lobotomized AI',
 			},
 			{
 				key  = 'dev',
 				name = 'Bleeding edge testing AI',
-				desc = 'Bleeding edge testing config.',
+				desc = 'Bleeding edge testing config',
+			},
+			{
+				key  = 'porc',
+				name = 'Defensive AI',
+				desc = 'Builds defences, rarely attacks',
 			},
 			{
 				key  = 'flaka',

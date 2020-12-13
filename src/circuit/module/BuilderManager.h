@@ -214,6 +214,11 @@ private:
 
 	virtual void Load(std::istream& is) override;
 	virtual void Save(std::ostream& os) const override;
+
+#ifdef DEBUG_VIS
+public:
+	void Log();
+#endif
 };
 
 } // namespace circuit

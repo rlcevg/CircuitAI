@@ -1399,7 +1399,7 @@ void CFactoryManager::Watchdog()
 		if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
 			return;
 		}
-		if (!this->circuit->GetCallback()->Unit_hasCommands(unit->GetId())) {
+		if (!this->circuit->GetCallback()->Unit_HasCommands(unit->GetId())) {
 			UnitIdle(unit);
 		}
 	};

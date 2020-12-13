@@ -561,8 +561,7 @@ void CThreatMap::UpdateVis()
 		std::ostringstream cmd;
 		cmd << "ai_thr_data:";
 		for (int i = 0; i < mapSize; ++i) {
-//			cmd << surfThreat[i] << " ";
-			cmd << amphThreat[i] << " ";
+			cmd << surfThreat[i] << " ";
 		}
 		std::string s = cmd.str();
 		circuit->GetLua()->CallRules(s.c_str(), s.size());

@@ -781,6 +781,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 	const char cmdPath[]    = "~path";
 	const char cmdKnn[]     = "~knn";
 	const char cmdLog[]     = "~log";
+	const char cmdBTask[]   = "~btask";
 
 	const char cmdThreat[]  = "~threat";
 	const char cmdWTDraw[]  = "~wtdraw";  // widget threat draw
@@ -855,6 +856,9 @@ int CCircuitAI::Message(int playerId, const char* message)
 			}
 		}
 		utils::free_clear(selection);
+	}
+	else if (strncmp(message, cmdBTask, 6) == 0) {
+		builderManager->Log();
 	}
 
 	else if (strncmp(message, cmdThreat, 7) == 0) {

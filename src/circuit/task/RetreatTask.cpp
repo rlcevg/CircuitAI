@@ -50,7 +50,7 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	IUnitTask::AssignTo(unit);
 
 	if (unit->HasDGun()) {
-		unit->PushDGunAct(new CDGunAction(unit, unit->GetDGunRange() * 0.8f));
+		unit->PushDGunAct(new CDGunAction(unit, unit->GetDGunRange() * 0.9f));
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();

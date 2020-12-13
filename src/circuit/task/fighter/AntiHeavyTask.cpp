@@ -209,18 +209,10 @@ void CAntiHeavyTask::Update()
 			}
 			return true;
 		};
-		if (target->GetUnit()->IsCloaked()) {
-			const AIFloat3& pos = target->GetPos();
-			for (CCircuitUnit* unit : units) {
-				if (subattack(unit)) {
-					unit->Attack(pos, target, frame + FRAMES_PER_SEC * 60);
-				}
-			}
-		} else {
-			for (CCircuitUnit* unit : units) {
-				if (subattack(unit)) {
-					unit->Attack(target, frame + FRAMES_PER_SEC * 60);
-				}
+		const bool isGroundAttack = target->GetUnit()->IsCloaked();
+		for (CCircuitUnit* unit : units) {
+			if (subattack(unit)) {
+				unit->Attack(target, isGroundAttack, frame + FRAMES_PER_SEC * 60);
 			}
 		}
 		return;

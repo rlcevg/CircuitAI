@@ -35,7 +35,7 @@ namespace circuit {
 
 using namespace springai;
 
-#define PYLON_RANGE		400.0f  // FIXME: BA
+#define PYLON_RANGE		500.0f  // FIXME: BA
 
 const char* RES_NAME_METAL = "Metal";
 const char* RES_NAME_ENERGY = "Energy";
@@ -442,7 +442,7 @@ void CEconomyManager::Init()
 		const float maxTravel = 7 + rand() % (10 - 7 + 1);  // seconds
 		const int interval = allyTeam->GetSize() * FRAMES_PER_SEC;
 		startFactory = std::make_shared<CGameTask>(&CEconomyManager::StartFactoryTask, this, maxTravel);
-		scheduler->RunTaskEvery(startFactory, 3, circuit->GetSkirmishAIId() + 0 + interval);
+		scheduler->RunTaskEvery(startFactory, 3, circuit->GetSkirmishAIId() + 0 + 5 * FRAMES_PER_SEC);
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this),
 								interval, circuit->GetSkirmishAIId() + 1 + interval / 2);
 

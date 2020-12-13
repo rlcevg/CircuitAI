@@ -91,7 +91,8 @@ void IBuilderTask::AssignTo(CCircuitUnit* unit)
 	}
 
 	if (unit->HasDGun()) {
-		unit->PushDGunAct(new CDGunAction(unit, unit->GetDGunRange()));
+		const float range = std::max(unit->GetDGunRange(), unit->GetCircuitDef()->GetLosRadius());
+		unit->PushDGunAct(new CDGunAction(unit, range));
 	}
 
 	// NOTE: only for unit->GetCircuitDef()->IsMobile()
@@ -411,14 +412,6 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 		return false;
 	}
 
-	TRY_UNIT(circuit, unit,
-		const bool prio = !ecoMgr->IsEnergyStalling() || (buildType == BuildType::ENERGY);
-		unit->CmdBARPriority(prio ? 1.f : 0.f);
-		if (unit->GetTravelAct()->IsFinished()) {
-			unit->CmdWait(ecoMgr->IsEnergyEmpty() && (buildType != BuildType::ENERGY) && (buildType != BuildType::STORE));
-		}
-	)
-
 	// Reassign task if required
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	const float sqDist = pos.SqDistance2D(GetPosition());
@@ -437,6 +430,13 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 				|| (unit != circuit->GetBuilderManager()->GetEnergizer1())
 				|| (unit != circuit->GetBuilderManager()->GetEnergizer2())))
 		{
+			TRY_UNIT(circuit, unit,
+				const bool prio = !ecoMgr->IsEnergyStalling() || (buildType == BuildType::ENERGY);
+				unit->CmdBARPriority(prio ? 1.f : 0.f);
+				if (unit->GetTravelAct()->IsFinished()) {
+					unit->CmdWait(ecoMgr->IsEnergyEmpty() && (buildType != BuildType::ENERGY) && (buildType != BuildType::STORE));
+				}
+			)
 			return true;
 		}
 	}

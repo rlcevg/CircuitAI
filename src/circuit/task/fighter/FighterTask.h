@@ -13,6 +13,8 @@
 
 namespace circuit {
 
+#define RANGE_MOD	0.8f
+
 class CEnemyInfo;
 
 class IFighterTask: public IUnitTask {
@@ -45,6 +47,7 @@ public:
 
 protected:
 	void SetTarget(CEnemyInfo* enemy);
+	void Attack(CCircuitUnit* unit, const int frame);
 
 	FightType fightType;
 	springai::AIFloat3 position;  // attack/scout position
@@ -57,6 +60,8 @@ protected:
 
 	static F3Vec urgentPositions;  // NOTE: micro-opt
 	static F3Vec enemyPositions;  // NOTE: micro-opt
+
+	int attackFrame;
 
 private:  // NOTE: Never assign directly, use SetTarget() to avoid access to a dead target
 	CEnemyInfo* target;

@@ -41,7 +41,8 @@ void CBPatrolTask::AssignTo(CCircuitUnit* unit)
 	}
 
 	if (unit->HasDGun()) {
-		unit->PushDGunAct(new CDGunAction(unit, unit->GetDGunRange()));
+		const float range = std::max(unit->GetDGunRange(), unit->GetCircuitDef()->GetLosRadius());
+		unit->PushDGunAct(new CDGunAction(unit, range));
 	}
 
 	lastTouched = circuit->GetLastFrame();

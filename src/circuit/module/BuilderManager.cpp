@@ -1046,7 +1046,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 		}
 	}
 
-	return ((unit == energizer1) || unit == energizer2)
+	return ((unit == energizer1) || (unit == energizer2))
 			? MakeEnergizerTask(unit, pQuery.get())
 			: MakeBuilderTask(unit, pQuery.get());
 }
@@ -1600,7 +1600,7 @@ void CBuilderManager::Watchdog()
 		}
 		Unit* u = worker->GetUnit();
 		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())
-		if (!circuit->GetCallback()->Unit_hasCommands(worker->GetId())
+		if (!circuit->GetCallback()->Unit_HasCommands(worker->GetId())
 			&& (u->GetResourceUse(metalRes) == .0f) && (u->GetVel() == ZeroVector))
 		{
 			worker->GetTask()->OnUnitMoveFailed(worker);
@@ -1749,5 +1749,18 @@ void CBuilderManager::Save(std::ostream& os) const
 //	}
 //	os.write(reinterpret_cast<const char*>(&buildIterator), sizeof(buildIterator));
 }
+
+#ifdef DEBUG_VIS
+void CBuilderManager::Log()
+{
+	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
+		for (const IBuilderTask* task : tasks) {
+			std::string desc = (task->GetBuildDef() != nullptr) ? task->GetBuildDef()->GetDef()->GetName() : "?";
+			desc += utils::int_to_string(static_cast<int>(task->GetBuildType()), "|%i");
+			circuit->GetDrawer()->AddPoint(task->GetPosition(), desc.c_str());
+		}
+	}
+}
+#endif
 
 } // namespace circuit

@@ -23,8 +23,6 @@ namespace circuit {
 
 using namespace springai;
 
-#define RANGE_MOD	0.8f
-
 ISquadTask::ISquadTask(ITaskManager* mgr, FightType type, float powerMod)
 		: IFighterTask(mgr, type, powerMod)
 		, lowestRange(std::numeric_limits<float>::max())
@@ -366,6 +364,7 @@ void ISquadTask::Attack(const int frame)
 	const float alpha = atan2f(dir.z, dir.x);
 	// incorrect, it should check aoe in vicinity
 	const float aoe = (GetTarget()->GetCircuitDef() != nullptr) ? GetTarget()->GetCircuitDef()->GetAoe() : SQUARE_SIZE;
+	const bool isGroundAttack = GetTarget()->GetUnit()->IsCloaked();
 
 	int row = 0;
 	for (const auto& kv : rangeUnits) {
@@ -392,7 +391,7 @@ void ISquadTask::Attack(const int frame)
 				const float angle = alpha + beta;
 				AIFloat3 newPos(tPos.x + range * cosf(angle), tPos.y, tPos.z + range * sinf(angle));
 				CTerrainManager::CorrectPosition(newPos);
-				unit->Attack(newPos, GetTarget(), targetTile, frame + FRAMES_PER_SEC * 60);
+				unit->Attack(newPos, GetTarget(), targetTile, isGroundAttack, frame + FRAMES_PER_SEC * 60);
 			}
 
 			beta += delta;
@@ -408,6 +407,9 @@ void ISquadTask::Log()
 	CCircuitAI* circuit = manager->GetCircuit();
 	circuit->LOG("pPath: %i | size: %i | TravelAct: %i", pPath.get(), pPath ? pPath->posPath.size() : 0,
 			leader->GetTravelAct()->GetState());
+	if (leader != nullptr) {
+		circuit->GetDrawer()->AddPoint(leader->GetPos(circuit->GetLastFrame()), leader->GetCircuitDef()->GetDef()->GetName());
+	}
 }
 #endif
 

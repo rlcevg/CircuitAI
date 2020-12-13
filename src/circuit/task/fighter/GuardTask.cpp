@@ -48,7 +48,7 @@ void CFGuardTask::Start(CCircuitUnit* unit)
 
 void CFGuardTask::Update()
 {
-	if (updCount++ % 4 != 0) {
+	if (updCount++ % 2 != 0) {
 		return;
 	}
 
@@ -62,7 +62,7 @@ void CFGuardTask::Update()
 	CEnemyInfo* target = nullptr;
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = vip->GetPos(frame);
-	std::vector<ICoreUnit::Id> enemyIds = circuit->GetCallback()->GetEnemyUnitIdsIn(pos, vip->GetCircuitDef()->GetLosRadius() + 300.f);
+	std::vector<ICoreUnit::Id> enemyIds = circuit->GetCallback()->GetEnemyUnitIdsIn(pos, vip->GetCircuitDef()->GetLosRadius() + 500.f);
 	for (ICoreUnit::Id enemyId : enemyIds) {
 		CEnemyInfo* ei = circuit->GetEnemyInfo(enemyId);
 		if (ei != nullptr) {
@@ -73,10 +73,9 @@ void CFGuardTask::Update()
 
 	if (target != nullptr) {
 		state = State::ENGAGE;
+		const bool isGroundAttack = target->GetUnit()->IsCloaked();
 		for (CCircuitUnit* unit : units) {
-			TRY_UNIT(circuit, unit,
-				unit->Attack(target, frame + FRAMES_PER_SEC * 60);
-			)
+			unit->Attack(target, isGroundAttack, frame + FRAMES_PER_SEC * 60);
 		}
 	} else if (State::ENGAGE == state) {
 		state = State::ROAM;
