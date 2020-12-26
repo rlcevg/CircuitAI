@@ -166,6 +166,8 @@ public:
 	void SetMaxThisUnit(int value) { maxThisUnit = value; }
 	int GetMaxThisUnit() const { return maxThisUnit; }
 	void SetSinceFrame(int frame) { sinceFrame = frame; }
+	void SetCooldown(int interval) { cooldown = interval; }
+	void AdjustSinceFrame(int frame) { sinceFrame = frame + cooldown; }
 	bool IsAvailable() const { return maxThisUnit > count; }
 	bool IsAvailable(int frame) const { return IsAvailable() && (frame >= sinceFrame); }
 
@@ -287,6 +289,7 @@ private:
 	int buildCounts;  // number of builder defs able to build this def;
 	int maxThisUnit;
 	int sinceFrame;
+	int cooldown;
 
 	CWeaponDef* dgunDef;
 	springai::WeaponMount* dgunMount;

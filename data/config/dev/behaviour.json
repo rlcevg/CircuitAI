@@ -237,19 +237,23 @@
 	"armmstor" : {
 		"role": ["static"],
 		"since": 300,
+		"cooldown": 10,
 		"limit": 2
 	},
 	"cormstor" : {
 		"role": ["static"],
 		"since": 300,
+		"cooldown": 10,
 		"limit": 2
 	},
 	"armuwadvms" : {
 		"role": ["static"],
+		"cooldown": 10,
 		"limit": 2
 	},
 	"coruwadvms" : {
 		"role": ["static"],
+		"cooldown": 10,
 		"limit": 2
 	},
 	"armrad": {
@@ -299,6 +303,9 @@
 
 		// Unit can be built only since specific time in seconds
 //		"since": 60,
+
+		// Amount of seconds when unit is not available for construction after UnitFinished
+//		"cooldown": 1,
 
 		// Minimum hp percent before retreat
 //		"retreat": 0.8,

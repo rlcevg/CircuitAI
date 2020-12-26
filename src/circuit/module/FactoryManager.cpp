@@ -371,6 +371,11 @@ void CFactoryManager::ReadConfig()
 			cdef->SetSinceFrame(since.asInt() * FRAMES_PER_SEC);
 		}
 
+		const Json::Value& coold = behaviour["cooldown"];
+		if (!coold.isNull()) {
+			cdef->SetCooldown(coold.asInt() * FRAMES_PER_SEC);
+		}
+
 		cdef->SetRetreat(behaviour.get("retreat", cdef->GetRetreat()).asFloat());
 
 		const Json::Value& pwrMod = behaviour["pwr_mod"];

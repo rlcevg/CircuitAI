@@ -1308,6 +1308,7 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId, Unit* u)
 
 	teamUnits[unitId] = unit;
 	cdef->Inc();
+	cdef->AdjustSinceFrame(lastFrame);
 
 	// FIXME: Sometimes area where factory is placed is not suitable for its units.
 	//        There Garbage() can cause infinite start-cancel loop.

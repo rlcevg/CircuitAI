@@ -91,6 +91,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, count(0)
 		, buildCounts(0)
 		, sinceFrame(-1)
+		, cooldown(0)
 		, dgunDef(nullptr)
 		, dgunMount(nullptr)
 		, shieldMount(nullptr)

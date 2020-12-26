@@ -12,6 +12,10 @@
 
 class asIScriptFunction;
 
+namespace springai {
+	class AIFloat3;
+}
+
 namespace circuit {
 
 class CMilitaryManager;
@@ -27,11 +31,13 @@ public:
 
 public:
 	IUnitTask* MakeTask(CCircuitUnit* unit);
+	void MakeDefence(int cluster, const springai::AIFloat3& pos);
 	bool IsAirValid();
 
 private:
 	struct SScriptInfo {
 		asIScriptFunction* makeTask = nullptr;
+		asIScriptFunction* makeDefence = nullptr;
 		asIScriptFunction* isAirValid = nullptr;
 	} info;
 };

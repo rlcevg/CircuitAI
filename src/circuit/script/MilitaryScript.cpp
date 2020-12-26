@@ -13,6 +13,8 @@
 
 namespace circuit {
 
+using namespace springai;
+
 CMilitaryScript::CMilitaryScript(CScriptManager* scr, CMilitaryManager* mgr)
 		: IModuleScript(scr, mgr)
 {
@@ -20,6 +22,7 @@ CMilitaryScript::CMilitaryScript(CScriptManager* scr, CMilitaryManager* mgr)
 	int r = engine->RegisterObjectType("CMilitaryManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
 	r = engine->RegisterGlobalProperty("CMilitaryManager aiMilitaryMgr", manager); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CMilitaryManager", "IUnitTask@+ DefaultMakeTask(CCircuitUnit@)", asMETHOD(CMilitaryManager, DefaultMakeTask), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("CMilitaryManager", "void DefaultMakeDefence(int, const AIFloat3& in)", asMETHOD(CMilitaryManager, DefaultMakeDefence), asCALL_THISCALL); ASSERT(r >= 0);
 }
 
 CMilitaryScript::~CMilitaryScript()
@@ -31,6 +34,7 @@ void CMilitaryScript::Init()
 	asIScriptModule* mod = script->GetEngine()->GetModule("main");
 	int r = mod->SetDefaultNamespace("Military"); ASSERT(r >= 0);
 	info.makeTask = script->GetFunc(mod, "IUnitTask@ MakeTask(CCircuitUnit@)");
+	info.makeDefence = script->GetFunc(mod, "void MakeDefence(int, const AIFloat3& in)");
 	info.isAirValid = script->GetFunc(mod, "bool IsAirValid()");
 }
 
@@ -44,6 +48,19 @@ IUnitTask* CMilitaryScript::MakeTask(CCircuitUnit* unit)
 	IUnitTask* result = script->Exec(ctx) ? (IUnitTask*)ctx->GetReturnObject() : nullptr;
 	script->ReturnContext(ctx);
 	return result;
+}
+
+void CMilitaryScript::MakeDefence(int cluster, const AIFloat3& pos)
+{
+	if (info.makeDefence == nullptr) {
+		static_cast<CMilitaryManager*>(manager)->DefaultMakeDefence(cluster, pos);
+		return;
+	}
+	asIScriptContext* ctx = script->PrepareContext(info.makeDefence);
+	ctx->SetArgDWord(0, cluster);
+	ctx->SetArgAddress(1, &const_cast<AIFloat3&>(pos));
+	script->Exec(ctx);
+	script->ReturnContext(ctx);
 }
 
 bool CMilitaryScript::IsAirValid()

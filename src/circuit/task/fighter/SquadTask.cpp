@@ -232,7 +232,7 @@ bool ISquadTask::IsMustRegroup()
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
-	if (circuit->GetInflMap()->GetInfluenceAt(leader->GetPos(frame)) < -INFL_EPS) {
+	if (circuit->GetInflMap()->GetEnemyInflAt(leader->GetPos(frame)) > INFL_EPS) {  // IsMergeSafe() ?
 		state = State::ROAM;
 		return false;
 	}
@@ -283,14 +283,13 @@ bool ISquadTask::IsMustRegroup()
 
 	bool wasRegroup = (State::REGROUP == state);
 	state = State::ROAM;
-	if (IsMergeSafe()) {
-		const float sqMaxDist = SQUARE(std::max<float>(SQUARE_SIZE * 8 * validUnits.size(), highestRange));
-		for (CCircuitUnit* unit : validUnits) {
-			const float sqDist = groupPos.SqDistance2D(unit->GetPos(frame));
-			if (sqDist > sqMaxDist) {
-				state = State::REGROUP;
-				break;
-			}
+
+	const float sqMaxDist = SQUARE(std::max<float>(SQUARE_SIZE * 8 * validUnits.size(), highestRange));
+	for (CCircuitUnit* unit : validUnits) {
+		const float sqDist = groupPos.SqDistance2D(unit->GetPos(frame));
+		if (sqDist > sqMaxDist) {
+			state = State::REGROUP;
+			break;
 		}
 	}
 

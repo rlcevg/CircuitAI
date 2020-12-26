@@ -690,7 +690,11 @@ void CMilitaryManager::MakeDefence(int cluster)
 
 void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 {
-	CMetalManager* mm = circuit->GetMetalManager();
+	static_cast<CMilitaryScript*>(script)->MakeDefence(cluster, pos);  // DefaultMakeDefence
+}
+
+void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
+{
 	CEconomyManager* em = circuit->GetEconomyManager();
 	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
 	float maxCost = MIN_BUILD_SEC * amountFactor * metalIncome;
@@ -718,6 +722,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	const std::vector<CCircuitDef*>& defenders = isWater ? GetSideInfo().waterDefenders : GetSideInfo().landDefenders;
 
 	// Front-line porc
+	CMetalManager* mm = circuit->GetMetalManager();
 	bool isPorc = mm->GetMaxIncome() > mm->GetAvgIncome() + 1.f;
 	if (isPorc) {
 		const float income = (mm->GetAvgIncome() + mm->GetMaxIncome()) * 0.5f;
@@ -1422,11 +1427,11 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 							}
 						}
 						if (task == nullptr) {
-							if (GetTasks(IFighterTask::FightType::RAID).empty()
-								|| enemyMgr->IsEnemyNear(unit->GetPos(circuit->GetLastFrame())))
-							{
+//							if (GetTasks(IFighterTask::FightType::RAID).empty()
+//								|| enemyMgr->IsEnemyNear(unit->GetPos(circuit->GetLastFrame())))
+//							{
 								task = EnqueueDefend(IFighterTask::FightType::RAID, raid.min);
-							}
+//							}
 						}
 					}
 				} break;
@@ -1457,10 +1462,10 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 				task = EnqueueTask(it->second);
 			}
 		} else {
-			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty() || enemyMgr->IsEnemyNear(unit->GetPos(circuit->GetLastFrame()));
+//			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty() || enemyMgr->IsEnemyNear(unit->GetPos(circuit->GetLastFrame()));
 			const float power = std::max(minAttackers, enemyMgr->GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize());
-			task = isDefend ? EnqueueDefend(IFighterTask::FightType::ATTACK, power)
-							: EnqueueTask(IFighterTask::FightType::ATTACK);
+			task = /*isDefend ? */EnqueueDefend(IFighterTask::FightType::ATTACK, power)
+							/*: EnqueueTask(IFighterTask::FightType::ATTACK)*/;
 		}
 	}
 
