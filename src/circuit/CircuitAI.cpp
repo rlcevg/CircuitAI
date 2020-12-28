@@ -48,7 +48,7 @@
 #include "WrappTeam.h"
 #include "OptionValues.h"
 //#include "Info.h"
-//#include "Mod.h"
+#include "Mod.h"
 #include "Cheats.h"
 //#include "WrappCurrentCommand.h"
 
@@ -480,53 +480,26 @@ int CCircuitAI::HandleResignEvent(int topic, const void* data)
 	return 0;
 }
 
-//bool CCircuitAI::IsModValid()
-//{
-//	const int minEngineVer = 104;
-//	const char* engineVersion = engine->GetVersionMajor();
-//	int ver = atoi(engineVersion);
-//	if (ver < minEngineVer) {
-//		LOG("Engine must be %i or higher! (Current: %s)", minEngineVer, engineVersion);
-//		return false;
-//	}
-//
-//	Mod* mod = callback->GetMod();
-//	const char* name = mod->GetHumanName();
-//	const char* version = mod->GetVersion();
-//	delete mod;
-//	if ((name == nullptr) || (version == nullptr)) {
-//		LOG("Can't get name or version of the game. Aborting!");  // NOTE: Sign of messed up spring/AI installation
-//		return false;
-//	}
-//
-//	if ((strstr(name, "Zero-K") == nullptr)) {
-//		LOG("Only Zero-K game is supported! (%s)", name);
-//		return false;
-//	}
-//
-//	const int minModVer[] = {1, 6, 4, 0};
-//	unsigned i = 0;
-//	char* tmp = new char [strlen(version) + 1];
-//	strcpy(tmp, version);
-//	const char* tok = strtok(tmp, "v.");
-//	if (strcmp(tmp, tok) != 0) {  // allow non-standart $VERSION
-//		while (tok != nullptr) {
-//			int ver = atoi(tok);
-//			if (ver < minModVer[i]) {
-//				delete[] tmp;
-//				LOG("Zero-K must be 1.6.4.0 or higher! (%s)", version);
-//				return false;
-//			}
-//			if ((ver > minModVer[i]) || (++i >= sizeof(minModVer) / sizeof(minModVer[0]))) {
-//				break;
-//			}
-//			tok = strtok(nullptr, ".");
-//		}
-//	}
-//	delete[] tmp;
-//
-//	return true;
-//}
+std::string CCircuitAI::ValidateMod()
+{
+	const int minEngineVer = 104;
+	const char* engineVersion = engine->GetVersionMajor();
+	int ver = atoi(engineVersion);
+	if (ver < minEngineVer) {
+		LOG("Engine must be %i or higher! (Current: %s)", minEngineVer, engineVersion);
+		return "";
+	}
+
+	Mod* mod = callback->GetMod();
+	const char* name = mod->GetShortName();
+	delete mod;
+	if (name == nullptr) {
+		LOG("Can't get name of the game. Aborting!");  // NOTE: Sign of messed up spring/AI installation
+		return "";
+	}
+
+	return name;
+}
 
 void CCircuitAI::CheatPreload()
 {
@@ -550,9 +523,10 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	engine = std::unique_ptr<CEngine>(new CEngine(sAICallback, skirmishAIId));
 	map = std::unique_ptr<CMap>(new CMap(sAICallback, callback->GetMap()));
 	drawer = std::unique_ptr<Drawer>(map->GetDrawer());
-//	if (!IsModValid()) {
-//		return ERROR_INIT;
-//	}
+	const std::string modName = ValidateMod();
+	if (modName.empty()) {
+		return ERROR_INIT;
+	}
 
 #ifdef DEBUG_VIS
 	debugDrawer = std::unique_ptr<CDebugDrawer>(new CDebugDrawer(this, sAICallback));
@@ -565,24 +539,24 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	scheduler = std::make_shared<CScheduler>();
 	scheduler->Init(scheduler);
 
-	InitRoles();
+	InitRoles();  // core c++ implemented roles
+	const std::string profile = InitOptions();  // Inits GameAttribute
 	scriptManager = std::make_shared<CScriptManager>(this);
 	script = new CInitScript(GetScriptManager(), this);
-	std::map<std::string, std::vector<std::string>> profiles;
-	script->InitConfig(profiles);
+	std::vector<std::string> cfgParts;
+	script->InitConfig(profile, cfgParts);
 
 	if (!InitSide()) {
 		Release(RELEASE_SIDE);
 		return ERROR_INIT;
 	}
 
-	std::string profile = InitOptions();  // Inits GameAttribute
 	InitWeaponDefs();
 	float decloakRadius;
 	InitUnitDefs(decloakRadius);  // Inits TerrainData
 
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
-	if (!setupManager->OpenConfig(profile, profiles[profile])) {
+	if (!setupManager->OpenConfig(profile, cfgParts)) {
 		Release(RELEASE_CONFIG);
 		return ERROR_INIT;
 	}

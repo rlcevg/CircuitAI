@@ -181,7 +181,7 @@ void CAntiAirTask::Update()
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
 			leader, circuit->GetThreatMap(), frame,
-			startPos, position, pathfinder->GetSquareSize());
+			startPos, position, pathfinder->GetSquareSize(), GetHitTest());
 	pathQueries[leader] = query;
 	query->HoldTask(this);
 
@@ -248,6 +248,22 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 	});
 }
 
+NSMicroPather::TestFunc CAntiAirTask::GetHitTest() const
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	const std::vector<STerrainMapSector>& sectors = terrainMgr->GetAreaData()->sector;
+	const int sectorXSize = terrainMgr->GetSectorXSize();
+	CCircuitDef* cdef = leader->GetCircuitDef();
+	if (cdef->IsAbleToFly() || cdef->IsFloater()) {
+		return nullptr;
+	}
+	return [&sectors, sectorXSize, cdef](int2 start, int2 end) {  // cdef->IsAmphibious()
+		const float elevation = sectors[start.y * sectorXSize + start.x].minElevation;
+		return cdef->IsInWater(elevation, elevation) ? cdef->HasSubToAir() : cdef->HasSurfToAir();
+	};
+}
+
 void CAntiAirTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -282,6 +298,7 @@ void CAntiAirTask::FindTarget()
 			continue;
 		}
 		// TODO: for edef == nullptr check elevation and speed
+		// FIXME: List of targets with future IsInWater test of near-enemy position
 
 		const float sqDist = pos.SqDistance2D(enemy->GetPos());
 		if (minSqDist > sqDist) {

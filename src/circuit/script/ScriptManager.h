@@ -31,7 +31,7 @@ private:
 	void Init();
 	void Release();
 public:
-	bool Load(const char* modname, const char* filename);
+	bool Load(const char* modname, const std::string& filename);
 	asIScriptEngine* GetEngine() const { return engine; }
 	asIScriptFunction* GetFunc(asIScriptModule* mod, const char* decl);
 	asIScriptContext* PrepareContext(asIScriptFunction* func);

@@ -133,9 +133,11 @@ CInitScript::~CInitScript()
 {
 }
 
-void CInitScript::InitConfig(std::map<std::string, std::vector<std::string>>& outProfiles)
+void CInitScript::InitConfig(const std::string& profile,
+		std::vector<std::string>& outCfgParts)
 {
-	if (!script->Load("init", "init.as")) {
+	folderName = profile + "/";
+	if (!script->Load("init", folderName + "init.as")) {
 		return;
 	}
 	asIScriptModule* mod = script->GetEngine()->GetModule("init");
@@ -172,24 +174,13 @@ void CInitScript::InitConfig(std::map<std::string, std::vector<std::string>>& ou
 		catDict->Release();
 	}
 
-	CScriptDictionary* profDict;
-	if (dict->Get("profile", &profDict, dict->GetTypeId("profile"))) {
-		CScriptArray* keys = profDict->GetKeys();
-		for (unsigned i = 0; i < keys->GetSize(); ++i) {
-			std::string* key = static_cast<std::string*>(keys->At(i));
-			std::vector<std::string>& profile = outProfiles[*key];
-			CScriptArray* value;
-			if (profDict->Get(*key, &value, profDict->GetTypeId(*key))) {
-				for (unsigned j = 0; j < value->GetSize(); ++j) {
-					profile.push_back(*(std::string*)value->At(j));
-				}
-
-				value->Release();
-			}
+	CScriptArray* value;
+	if (dict->Get("profile", &value, dict->GetTypeId("profile"))) {
+		for (unsigned j = 0; j < value->GetSize(); ++j) {
+			outCfgParts.push_back(*(std::string*)value->At(j));
 		}
-		keys->Release();
 
-		profDict->Release();
+		value->Release();
 	}
 
 	dict->Release();
@@ -199,7 +190,7 @@ void CInitScript::InitConfig(std::map<std::string, std::vector<std::string>>& ou
 
 void CInitScript::Init()
 {
-	script->Load("main", "main.as");
+	script->Load("main", folderName + "main.as");
 }
 
 void CInitScript::RegisterMgr()

@@ -107,7 +107,7 @@ private:
 // ---- AI Event handler ---- END
 
 private:
-//	bool IsModValid();
+	std::string ValidateMod();
 	void CheatPreload();
 	int Init(int skirmishAIId, const struct SSkirmishAICallback* sAICallback);
 	int Release(int reason);

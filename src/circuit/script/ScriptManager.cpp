@@ -118,7 +118,7 @@ void CScriptManager::Release()
 	delete jit;
 }
 
-bool CScriptManager::Load(const char* modname, const char* filename)
+bool CScriptManager::Load(const char* modname, const std::string& filename)
 {
 	// The CScriptBuilder helper is an add-on that loads the file,
 	// performs a pre-processing pass if necessary, and then tells

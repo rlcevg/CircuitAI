@@ -249,6 +249,7 @@ void CAttackTask::FindTarget()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
+	// FIXME: Incorrect test as IsInWater should be for near-enemy position
 	const bool IsInWater = cdef->IsInWater(map->GetElevationAt(pos.x, pos.z), pos.y);
 	const bool notAA = !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir());
 	const bool notAL = !(IsInWater ? cdef->HasSubToLand() : cdef->HasSurfToLand());

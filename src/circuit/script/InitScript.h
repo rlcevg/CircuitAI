@@ -30,7 +30,8 @@ public:
 	CInitScript(CScriptManager* scr, CCircuitAI* circuit);
 	virtual ~CInitScript();
 
-	void InitConfig(std::map<std::string, std::vector<std::string>>& outProfiles);
+	void InitConfig(const std::string& profile,
+			std::vector<std::string>& outCfgParts);
 	void Init() override;
 
 	void RegisterMgr();
@@ -46,6 +47,7 @@ private:
 	template<typename T> T Max(T l, T r) const { return std::max(l, r); }
 
 	CCircuitAI* circuit;
+	std::string folderName;
 };
 
 } // namespace circuit

@@ -28,6 +28,7 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 private:
+	NSMicroPather::TestFunc GetHitTest() const;
 	void FindTarget();
 	void FallbackDisengage();
 	void ApplyDisengagePath(const CQueryPathSingle* query);
