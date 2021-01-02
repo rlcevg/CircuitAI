@@ -28,6 +28,8 @@ protected:
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
+
+	virtual void SetBuildPos(const springai::AIFloat3& pos) override;
 };
 
 } // namespace circuit

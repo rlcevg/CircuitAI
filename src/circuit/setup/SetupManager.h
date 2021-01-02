@@ -25,6 +25,8 @@ class CCircuitUnit;
 
 class CSetupManager {
 public:
+	friend class CInitScript;
+
 	enum class StartPosType: char {METAL_SPOT = 0, MIDDLE = 1, RANDOM = 2};
 	// TODO: class CCommander;
 	struct SCommInfo {

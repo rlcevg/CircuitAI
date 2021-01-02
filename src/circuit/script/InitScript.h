@@ -42,6 +42,7 @@ private:
 	void Log(const std::string& msg) const;
 	void AddPoint(const springai::AIFloat3& pos, const std::string& msg) const;
 	void DelPoint(const springai::AIFloat3& pos) const;
+	void Pause(bool enable, const std::string& msg) const;
 	int Dice(const CScriptArray* array) const;
 	template<typename T> T Min(T l, T r) const { return std::min(l, r); }
 	template<typename T> T Max(T l, T r) const { return std::max(l, r); }

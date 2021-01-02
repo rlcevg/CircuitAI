@@ -23,12 +23,12 @@ CEconomyScript::CEconomyScript(CScriptManager* scr, CEconomyManager* mgr)
 	r = engine->RegisterGlobalProperty("CEconomyManager aiEconomyMgr", manager); ASSERT(r >= 0);
 //	r = engine->RegisterObjectType("ResourceInfo", sizeof(CEconomyManager::ResourceInfo), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<CEconomyManager::ResourceInfo>()); ASSERT(r >= 0);
 	r = engine->RegisterObjectType("ResourceInfo", sizeof(CEconomyManager::ResourceInfo), asOBJ_REF | asOBJ_NOCOUNT); ASSERT(r >= 0);
-	r = engine->RegisterObjectProperty("ResourceInfo", "float current", asOFFSET(CEconomyManager::ResourceInfo, current)); ASSERT(r >= 0);
-	r = engine->RegisterObjectProperty("ResourceInfo", "float storage", asOFFSET(CEconomyManager::ResourceInfo, storage)); ASSERT(r >= 0);
-	r = engine->RegisterObjectProperty("ResourceInfo", "float pull", asOFFSET(CEconomyManager::ResourceInfo, pull)); ASSERT(r >= 0);
-	r = engine->RegisterObjectProperty("ResourceInfo", "float income", asOFFSET(CEconomyManager::ResourceInfo, income)); ASSERT(r >= 0);
-	r = engine->RegisterObjectProperty("CEconomyManager", "ResourceInfo metal", asOFFSET(CEconomyManager, metal)); ASSERT(r >= 0);
-	r = engine->RegisterObjectProperty("CEconomyManager", "ResourceInfo energy", asOFFSET(CEconomyManager, energy)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("ResourceInfo", "const float current", asOFFSET(CEconomyManager::ResourceInfo, current)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("ResourceInfo", "const float storage", asOFFSET(CEconomyManager::ResourceInfo, storage)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("ResourceInfo", "const float pull", asOFFSET(CEconomyManager::ResourceInfo, pull)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("ResourceInfo", "const float income", asOFFSET(CEconomyManager::ResourceInfo, income)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("CEconomyManager", "const ResourceInfo metal", asOFFSET(CEconomyManager, metal)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("CEconomyManager", "const ResourceInfo energy", asOFFSET(CEconomyManager, energy)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("CEconomyManager", "bool isMetalEmpty", asOFFSET(CEconomyManager, isMetalEmpty)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("CEconomyManager", "bool isMetalFull", asOFFSET(CEconomyManager, isMetalFull)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("CEconomyManager", "bool isEnergyStalling", asOFFSET(CEconomyManager, isEnergyStalling)); ASSERT(r >= 0);

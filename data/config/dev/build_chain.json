@@ -4,13 +4,13 @@
 	"unit": {
 	//              0          1         2          3            4         5          6         7            8        9
 		"armada": ["armllt",  "armtl",  "armrl",   "armbeamer", "armhlt", "armclaw", "armcir", "armferret", "armpb", "armatl",
-		           "armflak", "armamb", "armanni", "armguard",  "armamd"],
+		           "armflak", "armamb", "armanni", "armguard",  "armamd", "armtarg"],
 	//              0          1           2          3          4         5         6            7          8          9
 		"cortex": ["corllt",  "cortl",    "corrl",   "corhllt", "corhlt", "cormaw", "cormadsam", "corerad", "corvipe", "coratl",
-		           "corflak", "cortoast", "cordoom", "corpun",  "corfmd"]
+		           "corflak", "cortoast", "cordoom", "corpun",  "corfmd", "cortarg"]
 	},
 	// Actual number of defences per cluster bounded by income - the order of defenses that should be build with numbers as above.
-	"land":  [0, 0, 2, 3, 2, 3, 5, 6, 5, 4, 4, 7, 3, 4, 13, 8, 10, 8, 11, 10, 12],
+	"land":  [0, 2, 3, 2, 3, 5, 6, 5, 4, 4, 7, 3, 4, 13, 8, 10, 8, 11, 10, 12],
 	"water": [1, 2, 1, 1, 2, 1, 4, 13, 9, 10, 9, 10],
 	"prevent": 1,  // number of preventive defences
 	"amount": {  // income bound factor
@@ -21,7 +21,10 @@
 	},
 
 	// Base defence and time to build it, in seconds
-	"base": [[0, 120], [0, 280], [3, 420], [2, 520], [0, 680], [4, 760], [5, 860], [8, 960], [10, 1200], [11, 1400], [14, 1500], [12, 1800]],
+	"base": [
+		[0, 120], [3, 420], [2, 520], [0, 680], [4, 760], [5, 860], [8, 960], [10, 1200], [15,1220], [15, 1320],
+		[11, 1400], [14, 1500], [12, 1800]
+	],
 
 	"superweapon": {
 		"unit": {
@@ -71,7 +74,7 @@
 			// Build chain of units
 			"hub": [
 				[  // chain1
-					{"unit": "armllt", "category": "defence", "offset": {"front": 80}, "condition": {"chance": 0.5}}
+					{"unit": "armbeamer", "category": "defence", "offset": {"front": 80}, "condition": {"chance": 0.25}}
 				],
 				[  // chain2
 					{"unit": "armmakr", "category": "defence", "offset": [80, 80], "condition": "energy"}
@@ -88,10 +91,9 @@
 		"armfus": {
 			"hub": [
 				[  // chain1
-					{"unit": "armmmkr", "category": "defence", "offset": [120, 120]},
-					{"unit": "armmmkr", "category": "defence", "offset": [120, -120]},
-					{"unit": "armamd", "category": "defence", "offset": [-120, -120], "condition": {"chance": 0.5}},
-					{"unit": "armpb", "category": "defence", "offset": [-80, -80], "condition": {"chance": 0.5}},
+					{"unit": "armmmkr", "category": "defence", "offset": [-60, +16]},
+					{"unit": "armmmkr", "category": "defence", "offset": [-60, -16]},
+					{"unit": "armpb", "category": "defence", "offset": [200, 0], "condition": {"chance": 0.5}},
 					{"unit": "armferret", "category": "defence", "offset": [-80, 80], "condition": "air"}
 				]
 			]
@@ -132,7 +134,7 @@
 		"coradvsol": {
 			"hub": [
 				[
-					{"unit": "corllt", "category": "defence", "offset": {"front": 80}, "condition": {"chance": 0.5}}
+					{"unit": "corhllt", "category": "defence", "offset": {"front": 80}, "condition": {"chance": 0.25}}
 				],  // chain1
 				[	
 					{"unit": "cormakr", "category": "defence", "offset": [80, 80], "condition": "energy"}
@@ -142,10 +144,9 @@
 		"corfus": {
 			"hub": [
 				[  // chain1
-					{"unit": "cormmkr", "category": "defence", "offset": [120, 120]},
-					{"unit": "cormmkr", "category": "defence", "offset": [120, -120]},
+					{"unit": "cormmkr", "category": "defence", "offset": [0, 60]},
+					{"unit": "cormmkr", "category": "defence", "offset": [0, 100]},
 					{"unit": "corfmd", "category": "defence", "offset": [-120, -120], "condition": {"chance": 0.5}},
-					{"unit": "corvipe", "category": "defence", "offset": [-80, -80], "condition": {"chance": 0.5}},
 					{"unit": "cormadsam", "category": "defence", "offset": [-80, 80], "condition": "air"}
 				]
 			]

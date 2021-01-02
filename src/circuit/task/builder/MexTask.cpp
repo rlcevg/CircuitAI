@@ -124,7 +124,6 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	if (index >= 0) {
 		SetBuildPos(spots[index].position);
 		economyMgr->SetOpenSpot(index, false);
-		FindFacing(buildPos);
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 		)
@@ -187,6 +186,12 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 
 	IBuilderTask::OnUnitIdle(unit);
+}
+
+void CBMexTask::SetBuildPos(const AIFloat3& pos)
+{
+	FindFacing(pos);
+	IBuilderTask::SetBuildPos(pos);
 }
 
 } // namespace circuit

@@ -866,6 +866,7 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 	} else {
 		task->Deactivate();
 	}
+	TaskCreated(task);
 	return task;
 }
 
@@ -902,6 +903,7 @@ void CBuilderManager::DequeueTask(IUnitTask* task, bool done)
 	}
 	task->Dead();
 	task->Stop(done);
+	TaskDead(task, done);
 }
 
 bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& position) const
@@ -992,6 +994,16 @@ IBuilderTask* CBuilderManager::GetResurrectTask(const AIFloat3& pos, float radiu
 		}
 	}
 	return nullptr;
+}
+
+void CBuilderManager::TaskCreated(IUnitTask* task)
+{
+	static_cast<CBuilderScript*>(script)->TaskCreated(task);
+}
+
+void CBuilderManager::TaskDead(IUnitTask* task, bool done)
+{
+	static_cast<CBuilderScript*>(script)->TaskDead(task, done);
 }
 
 IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)

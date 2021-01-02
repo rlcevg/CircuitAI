@@ -9,10 +9,10 @@
 					// "<energy_def>": [<lower limit>, <upper limit>]
 					// limit = random(<lower limit>..<upper limit>)
 					"armwin": [10, 20],
-					"armsolar": [10, 14],
-					"armadvsol": [12, 16],
-					"armfus": [2, 3],
-					"armafus": [3, 4]
+					"armsolar": [5, 8],
+					"armadvsol": [8, 12],
+					"armfus": [3, 4],
+					"armafus": [4, 5]
 				},
 				"water": {
 					"armtide": [14, 25],
@@ -27,10 +27,10 @@
 					// "<energy_def>": [<lower limit>, <upper limit>]
 					// limit = random(<lower limit>..<upper limit>)
 					"corwin": [10, 20],
-					"corsolar": [10, 14],
-					"coradvsol": [12, 16],
-					"corfus": [2, 3],
-					"corafus": [3, 4]
+					"corsolar": [5, 8],
+					"coradvsol": [8, 12],
+					"corfus": [3, 4],
+					"corafus": [4, 5]
 				},
 				"water": {
 					"cortide": [14, 25],

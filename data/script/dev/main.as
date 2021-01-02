@@ -1,4 +1,4 @@
-#include "../default/manager/military.as"
-#include "../default/manager/builder.as"
-#include "../default/manager/factory.as"
-#include "../default/manager/economy.as"
+#include "manager/military.as"
+#include "manager/builder.as"
+#include "manager/factory.as"
+#include "manager/economy.as"

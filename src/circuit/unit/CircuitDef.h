@@ -28,6 +28,8 @@ class CWeaponDef;
 
 class CCircuitDef {
 public:
+	friend class CInitScript;
+
 	using Id = int;
 	enum class RangeType: char {AIR = 0, LAND = 1, WATER = 2, _SIZE_};
 	enum class ThreatType: char {AIR = 0, LAND = 1, WATER = 2, CLOAK = 3, SHIELD = 4, _SIZE_};

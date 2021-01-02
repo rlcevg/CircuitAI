@@ -23,6 +23,8 @@ struct STerrainMapArea;
 
 class CEnemyManager {
 public:
+	friend class CInitScript;
+
 	using EnemyUnits = std::unordered_map<ICoreUnit::Id, CEnemyUnit*>;
 	using EnemyFakes = std::set<CEnemyFake*>;
 	struct SEnemyGroup {

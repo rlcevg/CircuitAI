@@ -1,4 +1,4 @@
-#include "../role.as"
+#include "../../default/role.as"
 
 
 namespace Military {
@@ -10,7 +10,13 @@ IUnitTask@ MakeTask(CCircuitUnit@ unit)
 
 void MakeDefence(int cluster, const AIFloat3& in pos)
 {
-	aiMilitaryMgr.DefaultMakeDefence(cluster, pos);
+	if ((ai.lastFrame > 5 * 60 * 30)
+		|| (aiEconomyMgr.metal.income > 10.f)
+		|| (aiEnemyMgr.mobileThreat > 0.f))
+	{
+		aiMilitaryMgr.DefaultMakeDefence(cluster, pos);
+//		aiAddPoint(pos, "def");
+	}
 }
 
 /*

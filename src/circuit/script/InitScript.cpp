@@ -77,6 +77,7 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterGlobalFunction("void aiLog(const string& in)", asMETHOD(CInitScript, Log), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("void aiAddPoint(const AIFloat3& in, const string& in)", asMETHOD(CInitScript, AddPoint), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("void aiDelPoint(const AIFloat3& in)", asMETHOD(CInitScript, DelPoint), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
+	r = engine->RegisterGlobalFunction("void aiPause(bool, const string& in)", asMETHOD(CInitScript, Pause), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("int aiDice(const array<float>@+)", asMETHOD(CInitScript, Dice), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("int aiMin(int, int)", asMETHODPR(CInitScript, Min<int>, (int, int) const, int), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("float aiMin(float, float)", asMETHODPR(CInitScript, Min<float>, (float, float) const, float), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
@@ -96,8 +97,9 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterObjectMethod("IUnitTask", "int GetType()", asMETHODPR(IUnitTask, GetType, () const, IUnitTask::Type), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("IUnitTask", "int GetBuildType()", asMETHODPR(IBuilderTask, GetBuildType, () const, IBuilderTask::BuildType), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("IUnitTask", "const AIFloat3& GetBuildPos()", asMETHODPR(IBuilderTask, GetPosition, () const, const AIFloat3&), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("IUnitTask", "CCircuitDef@ GetBuildDef() const", asMETHODPR(IBuilderTask, GetBuildDef, () const, CCircuitDef*), asCALL_THISCALL); ASSERT(r >= 0);
 
-	r = engine->RegisterObjectMethod("CCircuitAI", "int GetLastFrame() const", asMETHOD(CCircuitAI, GetLastFrame), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("CCircuitAI", "const int lastFrame", asOFFSET(CCircuitAI, lastFrame)); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitAI", "CCircuitDef@ GetCircuitDef(const string& in)", asFUNCTION(CCircuitAI_GetCircuitDef), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
 
 	r = engine->RegisterObjectType("TypeMask", sizeof(CMaskHandler::TypeMask), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<CMaskHandler::TypeMask>()); ASSERT(r >= 0);
@@ -121,11 +123,11 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 
 	r = engine->RegisterObjectMethod("CCircuitDef", "bool IsRespRoleAny(Mask) const", asMETHOD(CCircuitDef, IsRespRoleAny), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitDef", "const string GetName() const", asFUNCTION(CCircuitDef_GetName), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("CCircuitDef", "Id GetId() const", asMETHOD(CCircuitDef, GetId), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("CCircuitDef", "const Id id", asOFFSET(CCircuitDef, id)); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitDef", "bool IsAvailable(int)", asMETHODPR(CCircuitDef, IsAvailable, (int) const, bool), asCALL_THISCALL); ASSERT(r >= 0);
 
-	r = engine->RegisterObjectMethod("CCircuitUnit", "Id GetId() const", asMETHODPR(CCircuitUnit, GetId, () const, ICoreUnit::Id), asCALL_THISCALL); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("CCircuitUnit", "CCircuitDef@ GetCircuitDef() const", asMETHODPR(CCircuitUnit, GetCircuitDef, () const, CCircuitDef*), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("CCircuitUnit", "const Id id", asOFFSET(CCircuitUnit, id)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("CCircuitUnit", "const CCircuitDef@ circuitDef", asOFFSET(CCircuitUnit, circuitDef)); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitUnit", "const AIFloat3& GetPos(int)", asMETHODPR(CCircuitUnit, GetPos, (int), const AIFloat3&), asCALL_THISCALL); ASSERT(r >= 0);
 }
 
@@ -206,13 +208,13 @@ void CInitScript::RegisterMgr()
 	CSetupManager* setupMgr = circuit->GetSetupManager();
 	r = engine->RegisterObjectType("CSetupManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
 	r = engine->RegisterGlobalProperty("CSetupManager aiSetupMgr", setupMgr); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("CSetupManager", "CCircuitDef@ GetCommChoice() const", asMETHOD(CSetupManager, GetCommChoice), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("CSetupManager", "const CCircuitDef@ commChoice", asOFFSET(CSetupManager, commChoice)); ASSERT(r >= 0);
 
 	CEnemyManager* enemyMgr = circuit->GetEnemyManager();
 	r = engine->RegisterObjectType("CEnemyManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
 	r = engine->RegisterGlobalProperty("CEnemyManager aiEnemyMgr", enemyMgr); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CEnemyManager", "float GetEnemyThreat(Type) const", asMETHODPR(CEnemyManager, GetEnemyThreat, (CCircuitDef::RoleT) const, float), asCALL_THISCALL); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("CEnemyManager", "float GetMobileThreat() const", asMETHOD(CEnemyManager, GetMobileThreat), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("CEnemyManager", "const float mobileThreat", asOFFSET(CEnemyManager, mobileThreat)); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CEnemyManager", "float GetEnemyCost(Type) const", asMETHOD(CEnemyManager, GetEnemyCost), asCALL_THISCALL); ASSERT(r >= 0);
 }
 
@@ -239,6 +241,11 @@ void CInitScript::AddPoint(const AIFloat3& pos, const std::string& msg) const
 void CInitScript::DelPoint(const AIFloat3& pos) const
 {
 	circuit->GetDrawer()->DeletePointsAndLines(pos);
+}
+
+void CInitScript::Pause(bool enable, const std::string& msg) const
+{
+	circuit->GetGame()->SetPause(enable, msg.c_str());
 }
 
 int CInitScript::Dice(const CScriptArray* array) const

@@ -61,6 +61,8 @@ struct STerrainMapArea;
 
 class CCircuitUnit: public CAllyUnit, public CActionList {
 public:
+	friend class CInitScript;
+
 	CCircuitUnit(const CCircuitUnit& that) = delete;
 	CCircuitUnit& operator=(const CCircuitUnit&) = delete;
 	CCircuitUnit(Id unitId, springai::Unit* unit, CCircuitDef* cdef);

@@ -89,7 +89,7 @@ public:
 	float GetBuildPower() const { return buildPower; }
 	float GetCost() const { return cost; }
 
-	void SetBuildPos(const springai::AIFloat3& pos);
+	virtual void SetBuildPos(const springai::AIFloat3& pos);
 	const springai::AIFloat3& GetBuildPos() const { return buildPos; }
 	const springai::AIFloat3& GetPosition() const { return utils::is_valid(buildPos) ? buildPos : position; }
 

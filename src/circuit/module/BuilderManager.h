@@ -160,6 +160,9 @@ public:
 	CCircuitUnit* GetEnergizer1() const { return energizer1; }
 	CCircuitUnit* GetEnergizer2() const { return energizer2; }
 
+	void TaskCreated(IUnitTask* task);
+	void TaskDead(IUnitTask* task, bool done);
+
 private:
 	IUnitTask* DefaultMakeTask(CCircuitUnit* unit);
 	IBuilderTask* MakeEnergizerTask(CCircuitUnit* unit, const CQueryCostMap* query);

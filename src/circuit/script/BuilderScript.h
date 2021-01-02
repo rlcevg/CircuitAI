@@ -27,10 +27,14 @@ public:
 
 public:
 	IUnitTask* MakeTask(CCircuitUnit* unit);
+	void TaskCreated(IUnitTask* task);
+	void TaskDead(IUnitTask* task, bool done);
 
 private:
 	struct SScriptInfo {
 		asIScriptFunction* makeTask = nullptr;
+		asIScriptFunction* taskCreated = nullptr;
+		asIScriptFunction* taskDead = nullptr;
 	} info;
 };
 
