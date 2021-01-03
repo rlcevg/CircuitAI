@@ -6,6 +6,9 @@
  */
 
 #include "script/ScriptManager.h"
+#ifdef DEBUG_VIS
+#include "script/Script.h"
+#endif
 #include "CircuitAI.h"
 #include "util/FileSystem.h"
 #include "util/Utils.h"
@@ -28,6 +31,8 @@
 namespace circuit {
 
 using namespace springai;
+
+std::string CScriptManager::mainName("main");
 
 CScriptManager::CScriptManager(CCircuitAI* circuit)
 		: circuit(circuit)
@@ -243,5 +248,15 @@ bool CScriptManager::LocatePath(std::string& dirname)
 	}
 	return located;
 }
+
+#ifdef DEBUG_VIS
+void CScriptManager::Reload()
+{
+	int r = engine->DiscardModule(mainName.c_str()); ASSERT(r >= 0);
+	for (IScript* scr : scripts) {
+		scr->Init();
+	}
+}
+#endif
 
 } // namespace circuit

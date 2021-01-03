@@ -744,6 +744,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 {
 #ifdef DEBUG_VIS
 	const char cmdBreak[]   = "~break";
+	const char cmdReload[]  = "~reload";
 
 	const char cmdPos[]     = "~стройсь\0";
 	const char cmdSelfD[]   = "~Згинь, нечистая сила!\0";
@@ -792,6 +793,10 @@ int CCircuitAI::Message(int playerId, const char* message)
 
 	if (strncmp(message, cmdBreak, 6) == 0) {
 		__asm__("int3");
+	}
+	else if (strncmp(message, cmdReload, 7) == 0) {
+		game->SetPause(true, "reload");
+		scriptManager->Reload();
 	}
 
 	else if ((msgLength == strlen(cmdPos)) && (strcmp(message, cmdPos) == 0)) {

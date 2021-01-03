@@ -192,7 +192,7 @@ void CInitScript::InitConfig(const std::string& profile,
 
 void CInitScript::Init()
 {
-	script->Load("main", folderName + "main.as");
+	script->Load(CScriptManager::mainName.c_str(), folderName + "main.as");
 }
 
 void CInitScript::RegisterMgr()

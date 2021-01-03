@@ -21,9 +21,14 @@ class asCJITCompiler;
 namespace circuit {
 
 class CCircuitAI;
+#ifdef DEBUG_VIS
+class IScript;
+#endif
 
 class CScriptManager {
 public:
+	static std::string mainName;
+
 	CScriptManager(CCircuitAI* circuit);
 	virtual ~CScriptManager();
 
@@ -53,6 +58,15 @@ private:
 	void MessageCallback(const asSMessageInfo *msg, void *param);
 
 	bool LocatePath(std::string& filename);
+
+#ifdef DEBUG_VIS
+public:
+	void AddScript(IScript* scr) { scripts.push_back(scr); }
+	void Reload();
+
+private:
+	std::vector<IScript*> scripts;
+#endif
 };
 
 } // namespace circuit
