@@ -665,6 +665,7 @@ IBuilderTask* CBuilderManager::EnqueueFactory(IBuilderTask::Priority priority,
 	} else {
 		task->Deactivate();
 	}
+	TaskCreated(task);
 	return task;
 }
 
@@ -684,6 +685,7 @@ IBuilderTask* CBuilderManager::EnqueuePylon(IBuilderTask::Priority priority,
 	} else {
 		task->Deactivate();
 	}
+	TaskCreated(task);
 	return task;
 }
 
@@ -700,6 +702,7 @@ IBuilderTask* CBuilderManager::EnqueueRepair(IBuilderTask::Priority priority,
 	buildTasksCount++;
 	buildUpdates.push_back(task);
 	repairUnits[target->GetId()] = task;
+	TaskCreated(task);
 	return task;
 }
 
@@ -714,6 +717,7 @@ IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
 	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::RECLAIM)].insert(task);
 	buildTasksCount++;
 	buildUpdates.push_back(task);
+	TaskCreated(task);
 	return task;
 }
 
@@ -730,6 +734,7 @@ IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
 	buildTasksCount++;
 	buildUpdates.push_back(task);
 	reclaimUnits[target] = task;
+	TaskCreated(task);
 	return task;
 }
 
@@ -743,6 +748,7 @@ IBuilderTask* CBuilderManager::EnqueueResurrect(IBuilderTask::Priority priority,
 	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::RESURRECT)].insert(task);
 	buildTasksCount++;
 	buildUpdates.push_back(task);
+	TaskCreated(task);
 	return task;
 }
 
@@ -753,6 +759,7 @@ IBuilderTask* CBuilderManager::EnqueuePatrol(IBuilderTask::Priority priority,
 {
 	IBuilderTask* task = new CBPatrolTask(this, priority, position, cost, timeout);
 	buildUpdates.push_back(task);
+	TaskCreated(task);
 	return task;
 }
 
@@ -776,6 +783,7 @@ IBuilderTask* CBuilderManager::EnqueueTerraform(IBuilderTask::Priority priority,
 	} else {
 		task->Deactivate();
 	}
+	TaskCreated(task);
 	return task;
 }
 
@@ -785,6 +793,7 @@ IBuilderTask* CBuilderManager::EnqueueGuard(IBuilderTask::Priority priority,
 {
 	IBuilderTask* task = new CBGuardTask(this, priority, target, timeout);
 	buildUpdates.push_back(task);
+	TaskCreated(task);
 	return task;
 }
 
@@ -792,6 +801,7 @@ IUnitTask* CBuilderManager::EnqueueWait(int timeout)
 {
 	CBWaitTask* task = new CBWaitTask(this, timeout);
 	buildUpdates.push_back(task);
+	TaskCreated(task);
 	return task;
 }
 
@@ -799,6 +809,7 @@ CRetreatTask* CBuilderManager::EnqueueRetreat()
 {
 	CRetreatTask* task = new CRetreatTask(this);
 	buildUpdates.push_back(task);
+	TaskCreated(task);
 	return task;
 }
 
@@ -806,6 +817,7 @@ CCombatTask* CBuilderManager::EnqueueCombat(float powerMod)
 {
 	CCombatTask* task = new CCombatTask(this, powerMod);
 	buildUpdates.push_back(task);
+	TaskCreated(task);
 	return task;
 }
 
@@ -902,8 +914,19 @@ void CBuilderManager::DequeueTask(IUnitTask* task, bool done)
 		default: break;
 	}
 	task->Dead();
+	TaskClosed(task, done);
 	task->Stop(done);
-	TaskDead(task, done);
+}
+
+void CBuilderManager::FallbackTask(CCircuitUnit* unit)
+{
+	DequeueTask(unit->GetTask());
+
+	const int frame = circuit->GetLastFrame();
+	const AIFloat3& pos = unit->GetPos(frame);
+	IBuilderTask* task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 5);
+	task->AssignTo(unit);
+	task->Start(unit);
 }
 
 bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& position) const
@@ -932,33 +955,6 @@ bool CBuilderManager::IsBuilderExists(CCircuitDef* buildDef) const
 		}
 	}
 	return false;
-}
-
-IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
-{
-	return static_cast<CBuilderScript*>(script)->MakeTask(unit);  // DefaultMakeTask
-}
-
-void CBuilderManager::AbortTask(IUnitTask* task)
-{
-	// NOTE: Don't send Stop command, save some traffic.
-	DequeueTask(task, false);
-}
-
-void CBuilderManager::DoneTask(IUnitTask* task)
-{
-	DequeueTask(task, true);
-}
-
-void CBuilderManager::FallbackTask(CCircuitUnit* unit)
-{
-	DequeueTask(unit->GetTask());
-
-	const int frame = circuit->GetLastFrame();
-	const AIFloat3& pos = unit->GetPos(frame);
-	IBuilderTask* task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 5);
-	task->AssignTo(unit);
-	task->Start(unit);
 }
 
 SBuildChain* CBuilderManager::GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef)
@@ -994,16 +990,6 @@ IBuilderTask* CBuilderManager::GetResurrectTask(const AIFloat3& pos, float radiu
 		}
 	}
 	return nullptr;
-}
-
-void CBuilderManager::TaskCreated(IUnitTask* task)
-{
-	static_cast<CBuilderScript*>(script)->TaskCreated(task);
-}
-
-void CBuilderManager::TaskDead(IUnitTask* task, bool done)
-{
-	static_cast<CBuilderScript*>(script)->TaskDead(task, done);
 }
 
 IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)

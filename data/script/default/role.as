@@ -21,18 +21,18 @@ TypeMask HEAVY   = aiRoleMasker.GetTypeMask("heavy");
 TypeMask SUPER   = aiRoleMasker.GetTypeMask("super");
 TypeMask COMM    = aiRoleMasker.GetTypeMask("commander");
 
-TypeMask ROLE0   = aiAddRole("cloaked_raider",  RT::ASSAULT);
-TypeMask ROLE1   = aiAddRole("snipe_target",    RT::ASSAULT);
-TypeMask ROLE2   = aiAddRole("bullshit_raider", RT::ASSAULT);
-TypeMask ROLE3   = aiAddRole("disarm_target",   RT::ASSAULT);
-TypeMask ROLE4   = aiAddRole("shieldball",      RT::ASSAULT);
-TypeMask ROLE5   = aiAddRole("missileskirm",    RT::ASSAULT);
-TypeMask ROLE6   = aiAddRole("turtle",          RT::ASSAULT);
-TypeMask ROLE7   = aiAddRole("role7",           RT::ASSAULT);
-TypeMask ROLE8   = aiAddRole("role8",           RT::ASSAULT);
-TypeMask ROLE9   = aiAddRole("role9",           RT::ASSAULT);
-TypeMask ROLE10  = aiAddRole("role10",          RT::ASSAULT);
-TypeMask ROLE11  = aiAddRole("builderT2",       RT::BUILDER);
+TypeMask ROLE0   = AiAddRole("cloaked_raider",  RT::ASSAULT);
+TypeMask ROLE1   = AiAddRole("snipe_target",    RT::ASSAULT);
+TypeMask ROLE2   = AiAddRole("bullshit_raider", RT::ASSAULT);
+TypeMask ROLE3   = AiAddRole("disarm_target",   RT::ASSAULT);
+TypeMask ROLE4   = AiAddRole("shieldball",      RT::ASSAULT);
+TypeMask ROLE5   = AiAddRole("missileskirm",    RT::ASSAULT);
+TypeMask ROLE6   = AiAddRole("turtle",          RT::ASSAULT);
+TypeMask ROLE7   = AiAddRole("role7",           RT::ASSAULT);
+TypeMask ROLE8   = AiAddRole("role8",           RT::ASSAULT);
+TypeMask ROLE9   = AiAddRole("role9",           RT::ASSAULT);
+TypeMask ROLE10  = AiAddRole("role10",          RT::ASSAULT);
+TypeMask ROLE11  = AiAddRole("builderT2",       RT::BUILDER);
 
 }
 

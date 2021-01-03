@@ -5,9 +5,9 @@
 
 namespace Init {
 
-void Init(dictionary@ data)
+void AiInit(dictionary@ data)
 {
-	aiLog("default AngelScript Rules!");
+	AiLog("default AngelScript Rules!");
 
 	data["category"] = InitCategories();
 	data["profile"] = @(array<string> = {"behaviour", "block_map", "build_chain", "commander", "economy", "factory", "response"});

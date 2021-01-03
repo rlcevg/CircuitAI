@@ -274,7 +274,6 @@ private:
 
 	// TODO: associate script data with CCircuitDef
 	//       instead of using map<Id,data> everywhere
-//	friend class CInitScript;
 //	asIScriptObject* data;
 
 	Id id;

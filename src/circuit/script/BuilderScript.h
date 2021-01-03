@@ -8,34 +8,18 @@
 #ifndef SRC_CIRCUIT_SCRIPT_BUILDERSCRIPT_H_
 #define SRC_CIRCUIT_SCRIPT_BUILDERSCRIPT_H_
 
-#include "script/ModuleScript.h"
-
-class asIScriptFunction;
+#include "script/UnitModuleScript.h"
 
 namespace circuit {
 
 class CBuilderManager;
-class IUnitTask;
-class CCircuitUnit;
 
-class CBuilderScript: public IModuleScript {
+class CBuilderScript: public IUnitModuleScript {
 public:
 	CBuilderScript(CScriptManager* scr, CBuilderManager* mgr);
 	virtual ~CBuilderScript();
 
 	void Init() override;
-
-public:
-	IUnitTask* MakeTask(CCircuitUnit* unit);
-	void TaskCreated(IUnitTask* task);
-	void TaskDead(IUnitTask* task, bool done);
-
-private:
-	struct SScriptInfo {
-		asIScriptFunction* makeTask = nullptr;
-		asIScriptFunction* taskCreated = nullptr;
-		asIScriptFunction* taskDead = nullptr;
-	} info;
 };
 
 } // namespace circuit

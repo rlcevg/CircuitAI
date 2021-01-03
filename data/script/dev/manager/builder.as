@@ -4,22 +4,22 @@
 namespace Builder {
 
 //AIFloat3 lastPos;
-// int gPauseCnt = 0;
+int gPauseCnt = 0;
 
-IUnitTask@ MakeTask(CCircuitUnit@ unit)
+IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
 {
-//	aiDelPoint(lastPos);
-//	lastPos = unit.GetPos(ai.lastFrame);
-//	aiAddPoint(lastPos, "task");
+// 	AiDelPoint(lastPos);
+// 	lastPos = unit.GetPos(ai.lastFrame);
+// 	AiAddPoint(lastPos, "task");
 
 // 	IUnitTask@ task = aiBuilderMgr.DefaultMakeTask(unit);
 // 	if ((task !is null) && (task.GetType() == 5)) {  // Type::BUILDER
 // 		switch (task.GetBuildType()) {
 // 		case 10:  // BuildType::MEX
-// 			aiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
+// 			AiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
 // 			break;
 // 		case 5:  // BuildType::DEFENCE
-// 			aiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
+// 			AiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
 // 			break;
 // 		default:
 // 			break;
@@ -29,45 +29,45 @@ IUnitTask@ MakeTask(CCircuitUnit@ unit)
 	return aiBuilderMgr.DefaultMakeTask(unit);
 }
 
-void TaskCreated(IUnitTask@ task)
+void AiTaskCreated(IUnitTask@ task)
 {
-// 	if (task.GetType() != 5) {  // Type::BUILDER
-// 		return;
-// 	}
-// 	switch (task.GetBuildType()) {
-// 	case 4: {  // BuildType::ENERGY
-// 		if (gPauseCnt == 0) {
-// 			string name = task.GetBuildDef().GetName();
-// 			if ((name == "armfus") || (name == "armafus") || (name == "corfus") || (name == "corafus")) {
-// 				aiPause(true, "energy");
-// 				aiAddPoint(task.GetBuildPos(), name);
-// 				++gPauseCnt;
-// 			}
-// 		}
-// 	} break;
-// 	case 10:  // BuildType::MEX
-// 	case 5:  // BuildType::DEFENCE
-// 		aiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
-// 		break;
-// 	default:
-// 		break;
-// 	}
+	if (task.GetType() != 5) {  // Type::BUILDER
+		return;
+	}
+	switch (task.GetBuildType()) {
+	case 4: {  // BuildType::ENERGY
+		if (gPauseCnt == 0) {
+			string name = task.GetBuildDef().GetName();
+			if ((name == "armfus") || (name == "armafus") || (name == "corfus") || (name == "corafus")) {
+				AiPause(true, "energy");
+				++gPauseCnt;
+			}
+			AiAddPoint(task.GetBuildPos(), name);
+		}
+	} break;
+	case 10:  // BuildType::MEX
+	case 5:  // BuildType::DEFENCE
+		AiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
+		break;
+	default:
+		break;
+	}
 }
 
-void TaskDead(IUnitTask@ task, bool done)
+void AiTaskClosed(IUnitTask@ task, bool done)
 {
-// 	if (task.GetType() != 5) {  // Type::BUILDER
-// 		return;
-// 	}
-// 	switch (task.GetBuildType()) {
-// 	case 10:  // BuildType::MEX
-// 	case 5:  // BuildType::DEFENCE
-// 	case 4:  // BuildType::ENERGY
-// 		aiDelPoint(task.GetBuildPos());
-// 		break;
-// 	default:
-// 		break;
-// 	}
+	if (task.GetType() != 5) {  // Type::BUILDER
+		return;
+	}
+	switch (task.GetBuildType()) {
+	case 10:  // BuildType::MEX
+	case 5:  // BuildType::DEFENCE
+	case 4:  // BuildType::ENERGY
+		AiDelPoint(task.GetBuildPos());
+		break;
+	default:
+		break;
+	}
 }
 
 }  // namespace Builder

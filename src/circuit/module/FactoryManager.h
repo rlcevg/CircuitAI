@@ -22,6 +22,7 @@ class CFactoryData;
 class CFactoryManager: public IUnitModule {
 public:
 	friend class CFactoryScript;
+
 	struct SSideInfo {
 		CCircuitDef* airpadDef;
 		CCircuitDef* assistDef;
@@ -54,12 +55,9 @@ public:
 	IBuilderTask* EnqueueRepair(IBuilderTask::Priority priority,
 								CAllyUnit* target);
 private:
-	void DequeueTask(IUnitTask* task, bool done = false);
+	virtual void DequeueTask(IUnitTask* task, bool done = false) override;
 
 public:
-	virtual IUnitTask* MakeTask(CCircuitUnit* unit) override;
-	virtual void AbortTask(IUnitTask* task) override;
-	virtual void DoneTask(IUnitTask* task) override;
 	virtual void FallbackTask(CCircuitUnit* unit) override;
 
 	int GetFactoryCount() const { return factories.size(); }
@@ -99,7 +97,7 @@ public:
 private:
 	void EnableFactory(CCircuitUnit* unit);
 	void DisableFactory(CCircuitUnit* unit);
-	IUnitTask* DefaultMakeTask(CCircuitUnit* unit);
+	virtual IUnitTask* DefaultMakeTask(CCircuitUnit* unit) override;
 	IUnitTask* CreateFactoryTask(CCircuitUnit* unit);
 	IUnitTask* CreateAssistTask(CCircuitUnit* unit);
 

@@ -24,6 +24,7 @@ class CBDefenceTask;
 class CMilitaryManager: public IUnitModule {
 public:
 	friend class CMilitaryScript;
+
 	using BuildVector = std::vector<std::pair<CCircuitDef*, int>>;  // cdef: frame
 	using SuperInfos = std::vector<std::pair<CCircuitDef*, float>>;  // cdef: weight
 	struct SSideInfo {
@@ -62,12 +63,9 @@ public:
 	IFighterTask* EnqueueGuard(CCircuitUnit* vip);
 	virtual CRetreatTask* EnqueueRetreat() override;
 private:
-	void DequeueTask(IUnitTask* task, bool done = false);
+	virtual void DequeueTask(IUnitTask* task, bool done = false) override;
 
 public:
-	virtual IUnitTask* MakeTask(CCircuitUnit* unit) override;
-	virtual void AbortTask(IUnitTask* task) override;
-	virtual void DoneTask(IUnitTask* task) override;
 	virtual void FallbackTask(CCircuitUnit* unit) override;
 
 	void MakeDefence(const springai::AIFloat3& pos);
@@ -125,7 +123,7 @@ public:
 	void UnmarkPointOfInterest(CEnemyInfo* enemy);
 
 private:
-	IUnitTask* DefaultMakeTask(CCircuitUnit* unit);
+	virtual IUnitTask* DefaultMakeTask(CCircuitUnit* unit) override;
 
 	void Watchdog();
 	void UpdateIdle();

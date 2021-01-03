@@ -8,30 +8,18 @@
 #ifndef SRC_CIRCUIT_SCRIPT_FACTORYSCRIPT_H_
 #define SRC_CIRCUIT_SCRIPT_FACTORYSCRIPT_H_
 
-#include "script/ModuleScript.h"
-
-class asIScriptFunction;
+#include "script/UnitModuleScript.h"
 
 namespace circuit {
 
 class CFactoryManager;
-class IUnitTask;
-class CCircuitUnit;
 
-class CFactoryScript: public IModuleScript {
+class CFactoryScript: public IUnitModuleScript {
 public:
 	CFactoryScript(CScriptManager* scr, CFactoryManager* mgr);
 	virtual ~CFactoryScript();
 
 	void Init() override;
-
-public:
-	IUnitTask* MakeTask(CCircuitUnit* unit);
-
-private:
-	struct SScriptInfo {
-		asIScriptFunction* makeTask = nullptr;
-	} info;
 };
 
 } // namespace circuit

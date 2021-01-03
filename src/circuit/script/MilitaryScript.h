@@ -8,9 +8,7 @@
 #ifndef SRC_CIRCUIT_SCRIPT_MILITARYSCRIPT_H_
 #define SRC_CIRCUIT_SCRIPT_MILITARYSCRIPT_H_
 
-#include "script/ModuleScript.h"
-
-class asIScriptFunction;
+#include "script/UnitModuleScript.h"
 
 namespace springai {
 	class AIFloat3;
@@ -19,10 +17,8 @@ namespace springai {
 namespace circuit {
 
 class CMilitaryManager;
-class IUnitTask;
-class CCircuitUnit;
 
-class CMilitaryScript: public IModuleScript {
+class CMilitaryScript: public IUnitModuleScript {
 public:
 	CMilitaryScript(CScriptManager* scr, CMilitaryManager* mgr);
 	virtual ~CMilitaryScript();
@@ -30,16 +26,14 @@ public:
 	void Init() override;
 
 public:
-	IUnitTask* MakeTask(CCircuitUnit* unit);
 	void MakeDefence(int cluster, const springai::AIFloat3& pos);
 	bool IsAirValid();
 
 private:
 	struct SScriptInfo {
-		asIScriptFunction* makeTask = nullptr;
 		asIScriptFunction* makeDefence = nullptr;
 		asIScriptFunction* isAirValid = nullptr;
-	} info;
+	} militaryInfo;
 };
 
 } // namespace circuit

@@ -21,6 +21,14 @@ public:
 	virtual ~IUnitModule();
 
 	virtual CCircuitAI* GetCircuit();
+
+	// callins
+	virtual IUnitTask* MakeTask(CCircuitUnit* unit) override;
+	void TaskCreated(IUnitTask* task);
+	void TaskClosed(IUnitTask* task, bool done);
+
+	// callouts
+	virtual IUnitTask* DefaultMakeTask(CCircuitUnit* unit) = 0;
 };
 
 } // namespace circuit

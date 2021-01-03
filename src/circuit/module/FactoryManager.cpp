@@ -668,6 +668,7 @@ CRecruitTask* CFactoryManager::EnqueueTask(CRecruitTask::Priority priority,
 	CRecruitTask* task = new CRecruitTask(this, priority, buildDef, position, type, radius);
 	factoryTasks.push_back(task);
 	updateTasks.push_back(task);
+	TaskCreated(task);
 	return task;
 }
 
@@ -675,6 +676,7 @@ IUnitTask* CFactoryManager::EnqueueWait(bool stop, int timeout)
 {
 	CSWaitTask* task = new CSWaitTask(this, stop, timeout);
 	updateTasks.push_back(task);
+	TaskCreated(task);
 	return task;
 }
 
@@ -685,6 +687,7 @@ IBuilderTask* CFactoryManager::EnqueueReclaim(IBuilderTask::Priority priority,
 {
 	IBuilderTask* task = new CSReclaimTask(this, priority, position, .0f, timeout, radius);
 	updateTasks.push_back(task);
+	TaskCreated(task);
 	return task;
 }
 
@@ -698,6 +701,7 @@ IBuilderTask* CFactoryManager::EnqueueRepair(IBuilderTask::Priority priority,
 	IBuilderTask* task = new CSRepairTask(this, priority, target);
 	updateTasks.push_back(task);
 	repairedUnits[target->GetId()] = task;
+	TaskCreated(task);
 	return task;
 }
 
@@ -722,22 +726,8 @@ void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 		default: break;
 	}  // WAIT
 	task->Dead();
+	TaskClosed(task, done);
 	task->Stop(done);
-}
-
-IUnitTask* CFactoryManager::MakeTask(CCircuitUnit* unit)
-{
-	return static_cast<CFactoryScript*>(script)->MakeTask(unit);  // DefaultMakeTask
-}
-
-void CFactoryManager::AbortTask(IUnitTask* task)
-{
-	DequeueTask(task, false);
-}
-
-void CFactoryManager::DoneTask(IUnitTask* task)
-{
-	DequeueTask(task, true);
 }
 
 void CFactoryManager::FallbackTask(CCircuitUnit* unit)

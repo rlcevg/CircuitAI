@@ -16,7 +16,7 @@ namespace circuit {
 using namespace springai;
 
 CBuilderScript::CBuilderScript(CScriptManager* scr, CBuilderManager* mgr)
-		: IModuleScript(scr, mgr)
+		: IUnitModuleScript(scr, mgr)
 {
 	asIScriptEngine* engine = script->GetEngine();
 	int r = engine->RegisterObjectType("CBuilderManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
@@ -33,44 +33,7 @@ void CBuilderScript::Init()
 {
 	asIScriptModule* mod = script->GetEngine()->GetModule("main");
 	int r = mod->SetDefaultNamespace("Builder"); ASSERT(r >= 0);
-	info.makeTask = script->GetFunc(mod, "IUnitTask@ MakeTask(CCircuitUnit@)");
-	info.taskCreated = script->GetFunc(mod, "void TaskCreated(IUnitTask@)");
-	info.taskDead = script->GetFunc(mod, "void TaskDead(IUnitTask@, bool)");
-}
-
-IUnitTask* CBuilderScript::MakeTask(CCircuitUnit* unit)
-{
-	if (info.makeTask == nullptr) {
-		return static_cast<CBuilderManager*>(manager)->DefaultMakeTask(unit);
-	}
-	asIScriptContext* ctx = script->PrepareContext(info.makeTask);
-	ctx->SetArgObject(0, unit);
-	IUnitTask* result = script->Exec(ctx) ? (IUnitTask*)ctx->GetReturnObject() : nullptr;
-	script->ReturnContext(ctx);
-	return result;
-}
-
-void CBuilderScript::TaskCreated(IUnitTask* task)
-{
-	if (info.taskCreated == nullptr) {
-		return;
-	}
-	asIScriptContext* ctx = script->PrepareContext(info.taskCreated);
-	ctx->SetArgObject(0, task);
-	script->Exec(ctx);
-	script->ReturnContext(ctx);
-}
-
-void CBuilderScript::TaskDead(IUnitTask* task, bool done)
-{
-	if (info.taskDead == nullptr) {
-		return;
-	}
-	asIScriptContext* ctx = script->PrepareContext(info.taskDead);
-	ctx->SetArgObject(0, task);
-	ctx->SetArgByte(1, done);
-	script->Exec(ctx);
-	script->ReturnContext(ctx);
+	InitModule(mod);
 }
 
 } // namespace circuit

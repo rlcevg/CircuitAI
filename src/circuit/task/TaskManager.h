@@ -29,9 +29,10 @@ public:
 	void AssignTask(CCircuitUnit* unit, IUnitTask* task);
 	void AssignTask(CCircuitUnit* unit);
 	virtual IUnitTask* MakeTask(CCircuitUnit*) = 0;
-	virtual void AbortTask(IUnitTask* task) = 0;
-	virtual void DoneTask(IUnitTask* task) = 0;
+	virtual void DequeueTask(IUnitTask* task, bool done = false) = 0;
 	virtual void FallbackTask(CCircuitUnit* unit) = 0;
+	void AbortTask(IUnitTask* task);
+	void DoneTask(IUnitTask* task);
 
 	void AddMetalPull(CCircuitUnit* unit);
 	void DelMetalPull(CCircuitUnit* unit);

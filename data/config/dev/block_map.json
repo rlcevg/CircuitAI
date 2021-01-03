@@ -107,6 +107,7 @@
 		},
 		"small": {
 			"type": ["rectangle", "unknown"],
+			"yard": [4, 4],
 			"not_ignore": ["factory", "def_low", "terra"]
 		},
 		"_default_": {

@@ -134,16 +134,13 @@ private:
 						  float shake,
 						  bool isActive,
 						  int timeout);
-	void DequeueTask(IUnitTask* task, bool done = false);
+	virtual void DequeueTask(IUnitTask* task, bool done = false) override;
 
 public:
+	virtual void FallbackTask(CCircuitUnit* unit) override;
+
 	bool IsBuilderInArea(CCircuitDef* buildDef, const springai::AIFloat3& position) const;  // Check if build-area has proper builder
 	bool IsBuilderExists(CCircuitDef* buildDef) const;
-
-	virtual IUnitTask* MakeTask(CCircuitUnit* unit) override;
-	virtual void AbortTask(IUnitTask* task) override;
-	virtual void DoneTask(IUnitTask* task) override;
-	virtual void FallbackTask(CCircuitUnit* unit) override;
 
 	SBuildChain* GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef);
 
@@ -160,11 +157,8 @@ public:
 	CCircuitUnit* GetEnergizer1() const { return energizer1; }
 	CCircuitUnit* GetEnergizer2() const { return energizer2; }
 
-	void TaskCreated(IUnitTask* task);
-	void TaskDead(IUnitTask* task, bool done);
-
 private:
-	IUnitTask* DefaultMakeTask(CCircuitUnit* unit);
+	virtual IUnitTask* DefaultMakeTask(CCircuitUnit* unit) override;
 	IBuilderTask* MakeEnergizerTask(CCircuitUnit* unit, const CQueryCostMap* query);
 	IBuilderTask* MakeCommPeaceTask(CCircuitUnit* unit, const CQueryCostMap* query, float sqMaxBaseRange);
 	IBuilderTask* MakeCommDangerTask(CCircuitUnit* unit, const CQueryCostMap* query, float sqMaxBaseRange);

@@ -606,6 +606,7 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 
 	fightTasks[static_cast<IFighterTask::FT>(type)].insert(task);
 	fightUpdates.push_back(task);
+	TaskCreated(task);
 	return task;
 }
 
@@ -616,6 +617,7 @@ IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType promote, f
 										 promote, promote, power, 1.0f / mod);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
 	fightUpdates.push_back(task);
+	TaskCreated(task);
 	return task;
 }
 
@@ -625,6 +627,7 @@ IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType check, IFi
 										 check, promote, power, 1.0f);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
 	fightUpdates.push_back(task);
+	TaskCreated(task);
 	return task;
 }
 
@@ -633,6 +636,7 @@ IFighterTask* CMilitaryManager::EnqueueGuard(CCircuitUnit* vip)
 	IFighterTask* task = new CFGuardTask(this, vip, 1.0f);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::GUARD)].insert(task);
 	fightUpdates.push_back(task);
+	TaskCreated(task);
 	return task;
 }
 
@@ -640,6 +644,7 @@ CRetreatTask* CMilitaryManager::EnqueueRetreat()
 {
 	CRetreatTask* task = new CRetreatTask(this);
 	fightUpdates.push_back(task);
+	TaskCreated(task);
 	return task;
 }
 
@@ -652,23 +657,7 @@ void CMilitaryManager::DequeueTask(IUnitTask* task, bool done)
 		} break;
 		default: break;
 	}
-	task->Dead();
-	task->Stop(done);
-}
-
-IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
-{
-	return static_cast<CMilitaryScript*>(script)->MakeTask(unit);  // DefaultMakeTask
-}
-
-void CMilitaryManager::AbortTask(IUnitTask* task)
-{
-	DequeueTask(task, false);
-}
-
-void CMilitaryManager::DoneTask(IUnitTask* task)
-{
-	DequeueTask(task, true);
+	TaskClosed(task, done);
 }
 
 void CMilitaryManager::FallbackTask(CCircuitUnit* unit)

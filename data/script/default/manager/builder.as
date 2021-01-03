@@ -3,7 +3,7 @@
 
 namespace Builder {
 
-IUnitTask@ MakeTask(CCircuitUnit@ unit)
+IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
 {
 	return aiBuilderMgr.DefaultMakeTask(unit);
 }

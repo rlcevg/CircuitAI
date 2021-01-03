@@ -13,7 +13,7 @@ Id ALAB = ai.GetCircuitDef(armalab).id;
 Id VP   = ai.GetCircuitDef(armvp).id;
 Id AVP  = ai.GetCircuitDef(armavp).id;
 
-IUnitTask@ MakeTask(CCircuitUnit@ unit)
+IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
 {
 	return aiFactoryMgr.DefaultMakeTask(unit);
 }

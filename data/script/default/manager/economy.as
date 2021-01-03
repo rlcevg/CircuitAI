@@ -1,4 +1,4 @@
-void OpenStrategy(const CCircuitDef@ facDef, const AIFloat3& in pos)
+void AiOpenStrategy(const CCircuitDef@ facDef, const AIFloat3& in pos)
 {
 }
 
@@ -10,7 +10,7 @@ void OpenStrategy(const CCircuitDef@ facDef, const AIFloat3& in pos)
  *   const float income;
  * }
  */
-void UpdateEconomy()
+void AiUpdateEconomy()
 {
 	const ResourceInfo@ metal = aiEconomyMgr.metal;
 	const ResourceInfo@ energy = aiEconomyMgr.energy;
