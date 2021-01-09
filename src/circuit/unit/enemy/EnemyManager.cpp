@@ -378,21 +378,23 @@ void CEnemyManager::DelEnemyCost(const CEnemyUnit* e)
 
 bool CEnemyManager::IsEnemyNear(const AIFloat3& pos, float maxThreat)
 {
-	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
-	CInfluenceMap* inflMap = circuit->GetInflMap();
-	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
-	const float sqBaseRad = SQUARE(militaryMgr->GetBaseDefRange());
-	const float sqCommRad = SQUARE(militaryMgr->GetCommDefRad(basePos.distance2D(pos)));
-	for (const CEnemyManager::SEnemyGroup& group : enemyGroups) {
-		if ((group.threat > 0.01f) && (group.threat < maxThreat)
-			&& (basePos.SqDistance2D(group.pos) < sqBaseRad)
-			&& (pos.SqDistance2D(group.pos) < sqCommRad)
-			&& (inflMap->GetAllyDefendInflAt(group.pos) > INFL_EPS))
-		{
-			return true;
-		}
-	}
-	return false;
+//	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
+//	CInfluenceMap* inflMap = circuit->GetInflMap();
+//	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
+//	const float sqBaseRad = SQUARE(militaryMgr->GetBaseDefRange());
+//	const float sqCommRad = SQUARE(militaryMgr->GetCommDefRad(basePos.distance2D(pos)));
+//	for (const CEnemyManager::SEnemyGroup& group : enemyGroups) {
+//		if ((group.threat > 0.01f) && (group.threat < maxThreat)
+//			&& (basePos.SqDistance2D(group.pos) < sqBaseRad)
+//			&& (pos.SqDistance2D(group.pos) < sqCommRad)
+//			&& (inflMap->GetAllyDefendInflAt(group.pos) > INFL_EPS))
+//		{
+//			return true;
+//		}
+//	}
+//	return false;
+	const float enemyInfl = circuit->GetInflMap()->GetEnemyInflAt(pos);
+	return (enemyInfl > INFL_EPS) && (enemyInfl < maxThreat);
 }
 
 void CEnemyManager::UpdateAreaUsers(CCircuitAI* ai)

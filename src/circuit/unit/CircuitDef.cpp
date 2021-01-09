@@ -36,6 +36,7 @@ CCircuitDef::AttrName CCircuitDef::attrNames = {
 	{"siege",     CCircuitDef::AttrType::SIEGE},
 	{"ret_hold",  CCircuitDef::AttrType::RET_HOLD},
 	{"ret_fight", CCircuitDef::AttrType::RET_FIGHT},
+	{"solo",      CCircuitDef::AttrType::SOLO},
 };
 CCircuitDef::FireName CCircuitDef::fireNames = {
 	{"hold",   CCircuitDef::FireType::HOLD},

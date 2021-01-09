@@ -6,7 +6,7 @@
 		"side": {
 			"armada": {
 				"land": {
-					// "<energy_def>": [<lower limit>, <upper limit>]
+					// "<energy_def>": [<lower limit>, <upper limit>, <m-income>, <e-income>, <efficiency>]
 					// limit = random(<lower limit>..<upper limit>)
 					"armwin": [10, 20],
 					"armsolar": [5, 8],
@@ -46,7 +46,7 @@
 		"factor": [[1.0, 300], [30.0, 7200]],
 		// need to know how to make AI build more energy in start-game
 
-		"cost_ratio": 0.05,  // minimum energy income to cost ratio
+		"cost_ratio": 0.05,  // default condition, minimum energy income to cost ratio
 
 		"pylon": []
 	},

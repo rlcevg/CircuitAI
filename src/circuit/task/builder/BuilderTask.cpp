@@ -63,6 +63,7 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 		, buildPos(-RgtVector)
 		, facing(UNIT_COMMAND_BUILD_NO_FACING)
 		, nextTask(nullptr)
+		, initiator(nullptr)
 		, buildFails(0)
 		, unitIt(units.end())
 {
@@ -76,8 +77,17 @@ IBuilderTask::~IBuilderTask()
 
 bool IBuilderTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return (((target != nullptr) && unit->GetCircuitDef()->IsAbleToAssist()) || unit->GetCircuitDef()->CanBuild(buildDef))
-			&& (cost > buildPower * MIN_BUILD_SEC);
+	// is extra buildpower required?
+	if (cost < buildPower * MIN_BUILD_SEC) {
+		return false;
+	}
+	const CCircuitDef* cdef = unit->GetCircuitDef();
+	// can unit build at all
+	if (!cdef->CanBuild(buildDef) && ((target == nullptr) || !cdef->IsAbleToAssist() || cdef->IsAttrSolo())) {
+		return false;
+	}
+	// solo/initiator check
+	return !cdef->IsAttrSolo() || (initiator == unit) || ((initiator == nullptr) && (target == nullptr));
 }
 
 void IBuilderTask::AssignTo(CCircuitUnit* unit)
@@ -88,6 +98,9 @@ void IBuilderTask::AssignTo(CCircuitUnit* unit)
 	ShowAssignee(unit);
 	if (!utils::is_valid(position)) {
 		position = unit->GetPos(circuit->GetLastFrame());
+	}
+	if (unit->GetCircuitDef()->IsAttrSolo()) {
+		initiator = unit;
 	}
 
 	if (unit->HasDGun()) {
@@ -111,6 +124,9 @@ void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	if ((units.find(unit) == unitIt) && (unitIt != units.end())) {
 		++unitIt;
+	}
+	if (initiator == unit) {
+		initiator = nullptr;
 	}
 	IUnitTask::RemoveAssignee(unit);
 
@@ -504,7 +520,6 @@ void IBuilderTask::ApplyPath(const CQueryPathSingle* query)
 
 	if (pPath->path.size() > 2) {
 		unit->GetTravelAct()->SetPath(pPath);
-		unit->GetTravelAct()->StateActivate();
 	} else {
 		unit->GetTravelAct()->StateFinish();
 	}
@@ -741,7 +756,8 @@ void IBuilderTask::Load(std::istream& is)
 	IUnitTask::Load(is);
 	SERIALIZE(is, read)
 
-	buildDef = manager->GetCircuit()->GetCircuitDef(bdefId);
+	CCircuitAI* circuit = manager->GetCircuit();
+	buildDef = circuit->GetCircuitDefSafe(bdefId);
 }
 
 void IBuilderTask::Save(std::ostream& os) const

@@ -319,17 +319,22 @@ void CEconomyManager::ReadConfig()
 		SSideInfo& sideInfo = sideInfos[kv.second.type];
 		const Json::Value& surfs = engySides[kv.first];
 
-		std::vector<std::pair<std::string, int>> engies;
+		std::vector<std::pair<std::string, SEnergyCond>> engies;
 		std::string type = circuit->GetTerrainManager()->IsWaterMap() ? "water" : "land";
 		const Json::Value& surf = surfs[type];
 		for (const std::string& engy : surf.getMemberNames()) {
-			const int min = surf[engy][0].asInt();
-			const int max = surf[engy].get(1, min).asInt();
-			const int limit = min + rand() % (max - min + 1);
-			engies.push_back(std::make_pair(engy, limit));
+			const Json::Value& surfEngy = surf[engy];
+			const int min = surfEngy[0].asInt();
+			const int max = surfEngy.get(1, min).asInt();
+			SEnergyCond cond;
+			cond.limit = min + rand() % (max - min + 1);
+			cond.metalIncome = surfEngy.get(2, -1.f).asFloat();
+			cond.energyIncome = surfEngy.get(3, -1.f).asFloat();
+			cond.score = surfEngy.get(4, -1.f).asFloat();
+			engies.push_back(std::make_pair(engy, cond));
 		}
 
-		std::unordered_map<CCircuitDef*, int>& list = sideInfo.engyLimits;
+		std::unordered_map<CCircuitDef*, SEnergyCond>& list = sideInfo.engyLimits;
 		for (unsigned i = 0; i < engies.size(); ++i) {
 			const char* name = engies[i].first.c_str();
 			CCircuitDef* cdef = circuit->GetCircuitDef(name);
@@ -853,7 +858,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	metalIncome = std::min(metalIncome, energyIncome) * energyFactor;
 	const float buildPower = std::min(builderMgr->GetBuildPower(), metalIncome);
 	const int taskSize = builderMgr->GetTasks(IBuilderTask::BuildType::ENERGY).size();
-	const float maxBuildTime = MAX_BUILD_SEC * (isEnergyStalling ? 0.25f : 1.f);
+	const float buildTimeMod = isEnergyStalling ? 0.25f : 1.f;
 
 	const int frame = circuit->GetLastFrame();
 	for (const SEnergyInfo& engy : energyDefs.infos) {  // sorted by high-tech first
@@ -865,21 +870,17 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			continue;
 		}
 
-		if (engy.cdef->GetCount() < engy.limit) {
+		if (engy.cdef->GetCount() < engy.cond.limit) {
 			isLastHope = false;
 			if (taskSize < (int)(buildPower / engy.cdef->GetCostM() * 2 + 1)) {
 				bestDef = engy.cdef;
-				// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
-				//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
-				//       solar       geothermal    fusion         singu           ...
-				//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
-				if ((engy.cdef->GetCostM() * 16.0f < maxBuildTime * SQUARE(metalIncome))
-					&& (engy.cdef->GetCostE() * costRatio < energyIncome))
+				if ((engy.cond.metalIncome < buildTimeMod * metalIncome)
+					&& (engy.cond.energyIncome < energyIncome))
 				{
 					break;
 				}
-			} else if ((engy.cdef->GetCostM() * 16.0f < maxBuildTime * SQUARE(metalIncome))
-				&& (engy.cdef->GetCostE() * costRatio < energyIncome))
+			} else if ((engy.cond.metalIncome < buildTimeMod * metalIncome)
+				&& (engy.cond.energyIncome < energyIncome))
 			{
 				bestDef = nullptr;
 				break;
@@ -1482,7 +1483,7 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 	}
 	energyDefs.avail.insert(diffDefs.begin(), diffDefs.end());
 
-	const std::unordered_map<CCircuitDef*, int>& list = GetSideInfo().engyLimits;
+	const std::unordered_map<CCircuitDef*, SEnergyCond>& list = GetSideInfo().engyLimits;
 	for (auto cdef : diffDefs) {
 		SEnergyInfo engy;
 		engy.cdef = cdef;
@@ -1500,16 +1501,31 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 				engy.make = std::min(avgWind, cdef->GetDef()->GetWindResourceGenerator(energyRes));
 			}
 		}
-		// TODO: Instead of plain sizeX, sizeZ use AI's yardmap size
-		engy.score = SQUARE(engy.make) / ((cdef->GetCostM()/* + cdef->GetCostE() * 0.05f*/) * cdef->GetDef()->GetXSize() * cdef->GetDef()->GetZSize());
+
 		auto lit = list.find(cdef);
-		engy.limit = (lit != list.end()) ? lit->second : 0;
+		if (lit != list.end()) {
+			engy.cond = lit->second;
+		}
+		if (engy.cond.score < .0f) {
+			// TODO: Instead of plain sizeX, sizeZ use AI's yardmap size
+			engy.cond.score = SQUARE(engy.make) / ((cdef->GetCostM()/* + cdef->GetCostE() * 0.05f*/) * cdef->GetDef()->GetXSize() * cdef->GetDef()->GetZSize());
+		}
+		if (engy.cond.metalIncome < 0.f) {
+			// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
+			//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
+			//       solar       geothermal    fusion         singu           ...
+			//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
+			engy.cond.metalIncome = sqrtf(engy.cdef->GetCostM() * 16.0f / MAX_BUILD_SEC);
+		}
+		if (engy.cond.energyIncome < 0.f) {
+			engy.cond.energyIncome = cdef->GetCostE() * costRatio;
+		}
 		energyDefs.infos.push_back(engy);
 	}
 
 	// High-tech energy first
 	auto compare = [](const SEnergyInfo& e1, const SEnergyInfo& e2) {
-		return e1.score > e2.score;
+		return e1.cond.score > e2.cond.score;
 	};
 	std::sort(energyDefs.infos.begin(), energyDefs.infos.end(), compare);
 

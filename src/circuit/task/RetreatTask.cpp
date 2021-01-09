@@ -104,12 +104,22 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 		return;
 	}
 
+	if (!IsQueryReady(unit)) {
+		return;
+	}
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	const AIFloat3& startPos = unit->GetPos(frame);
 	AIFloat3 endPos;
 	float range;
+
+	if (unit->GetTravelAct()->GetPath() == nullptr) {
+		std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
+		pPath->posPath.push_back(startPos);
+		unit->GetTravelAct()->SetPath(pPath);
+	}
 
 	bool isNoEndPos = true;
 	if (repairer != nullptr) {
@@ -126,16 +136,6 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 			endPos = circuit->GetSetupManager()->GetBasePos();
 		}
 		range = factoryMgr->GetSideInfo().assistDef->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
-	}
-
-	if (unit->GetTravelAct()->GetPath() == nullptr) {
-		std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
-		pPath->posPath.push_back(endPos);
-		unit->GetTravelAct()->SetPath(pPath);
-	}
-
-	if (!IsQueryReady(unit)) {
-		return;
 	}
 
 //	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit) * 0.125f;

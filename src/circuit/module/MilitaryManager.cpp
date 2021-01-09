@@ -902,39 +902,35 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 
 AIFloat3 CMilitaryManager::GetRaidPosition(CCircuitUnit* unit)
 {
-	// FIXME: Resume. Not well thought, not finished.
-	return GetScoutPosition(unit);
-	// FIXME: Resume. Not well thought, not finished.
-
-//	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
-//	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
-//	STerrainMapArea* area = unit->GetArea();
-//	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-//	CThreatMap* threatMap = circuit->GetThreatMap();
-//	threatMap->SetThreatType(unit);  // TODO: Check if required? Upper function may already call it
-//	float bestWeight = -1.f;
-//	float sqBestDist = std::numeric_limits<float>::max();
-//	int bestIndex = -1;
-//	for (size_t index = 0; index < raidPath.size(); ++index) {
-//		if (!terrainMgr->CanMoveToPos(area, clusters[index].position)) {
-//			continue;
-//		}
-//		const SRaidPoint& rp = raidPath[index];
-//		float weight = rp.weight / (threatMap->GetThreatAt(clusters[index].position) + 1.f);
-//		if (bestWeight < weight) {
-//			bestWeight = weight;
-//			bestIndex = index;
-//			sqBestDist = pos.SqDistance2D(clusters[index].position);
-//		} else if (rp.weight == bestWeight) {
-//			float sqDist = pos.SqDistance2D(clusters[index].position);
-//			if (sqBestDist > sqDist) {
-//				sqBestDist = sqDist;
-//				bestWeight = weight;
-//				bestIndex = index;
-//			}
-//		}
-//	}
-//	return (bestIndex != -1) ? clusters[bestIndex].position : AIFloat3(-RgtVector);
+	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
+	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
+	STerrainMapArea* area = unit->GetArea();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	threatMap->SetThreatType(unit);  // TODO: Check if required? Upper function may already call it
+	float bestWeight = -1.f;
+	float sqBestDist = std::numeric_limits<float>::max();
+	int bestIndex = -1;
+	for (size_t index = 0; index < raidPath.size(); ++index) {
+		if (!terrainMgr->CanMoveToPos(area, clusters[index].position)) {
+			continue;
+		}
+		const SRaidPoint& rp = raidPath[index];
+		float weight = rp.weight / (threatMap->GetThreatAt(clusters[index].position) + 1.f);
+		if (bestWeight < weight) {
+			bestWeight = weight;
+			bestIndex = index;
+			sqBestDist = pos.SqDistance2D(clusters[index].position);
+		} else if (rp.weight == bestWeight) {
+			float sqDist = pos.SqDistance2D(clusters[index].position);
+			if (sqBestDist > sqDist) {
+				sqBestDist = sqDist;
+				bestWeight = weight;
+				bestIndex = index;
+			}
+		}
+	}
+	return (bestIndex != -1) ? clusters[bestIndex].position : AIFloat3(-RgtVector);
 }
 
 void CMilitaryManager::FillFrontPos(CCircuitUnit* unit, F3Vec& outPositions)
@@ -1352,26 +1348,48 @@ const CMilitaryManager::SSideInfo& CMilitaryManager::GetSideInfo() const
 
 void CMilitaryManager::MarkPointOfInterest(CEnemyInfo* enemy)
 {
-	if ((enemy->GetCircuitDef() == nullptr) || !enemy->GetCircuitDef()->IsMex()) {  // TODO: if one of the list
+	if ((enemy->GetCircuitDef() == nullptr) || !enemy->GetCircuitDef()->IsMex()) {
 		return;
 	}
-	int index = circuit->GetMetalManager()->FindNearestCluster(enemy->GetPos());
-	SRaidPoint& rp = raidPath[index];
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	int clusterId = metalMgr->FindNearestCluster(enemy->GetPos());
+	if (clusterId < 0) {
+		return;
+	}
+	SRaidPoint& rp = raidPath[clusterId];
 	rp.lastFrame = circuit->GetLastFrame();
 	rp.units.insert(enemy);
-	rp.weight = rp.units.size();  // TODO
+	rp.weight = rp.units.size();
+
+	const CMetalData::ClusterGraph& clusterGraph = metalMgr->GetClusterGraph();
+	CMetalData::ClusterGraph::Node node = clusterGraph.nodeFromId(clusterId);
+	CMetalData::ClusterGraph::IncEdgeIt edgeIt(clusterGraph, node);
+	for (; edgeIt != lemon::INVALID; ++edgeIt) {
+		raidPath[clusterGraph.id(clusterGraph.oppositeNode(node, edgeIt))].weight += 1.f;
+	}
 }
 
 void CMilitaryManager::UnmarkPointOfInterest(CEnemyInfo* enemy)
 {
-	if ((enemy->GetCircuitDef() == nullptr) || !enemy->GetCircuitDef()->IsMex()) {  // TODO: if one of the list
+	if ((enemy->GetCircuitDef() == nullptr) || !enemy->GetCircuitDef()->IsMex()) {
 		return;
 	}
-	int index = circuit->GetMetalManager()->FindNearestCluster(enemy->GetPos());
-	SRaidPoint& rp = raidPath[index];
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	int clusterId = metalMgr->FindNearestCluster(enemy->GetPos());
+	if (clusterId < 0) {
+		return;
+	}
+	SRaidPoint& rp = raidPath[clusterId];
 	rp.lastFrame = circuit->GetLastFrame();
 	rp.units.erase(enemy);
-	rp.weight = rp.units.size();  // TODO
+	rp.weight = rp.units.size();
+
+	const CMetalData::ClusterGraph& clusterGraph = metalMgr->GetClusterGraph();
+	CMetalData::ClusterGraph::Node node = clusterGraph.nodeFromId(clusterId);
+	CMetalData::ClusterGraph::IncEdgeIt edgeIt(clusterGraph, node);
+	for (; edgeIt != lemon::INVALID; ++edgeIt) {
+		raidPath[clusterGraph.id(clusterGraph.oppositeNode(node, edgeIt))].weight -= 1.f;
+	}
 }
 
 IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)

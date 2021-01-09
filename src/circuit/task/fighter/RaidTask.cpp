@@ -97,7 +97,6 @@ void CRaidTask::Start(CCircuitUnit* unit)
 	}
 	if (!pPath->posPath.empty()) {
 		unit->GetTravelAct()->SetPath(pPath);
-		unit->GetTravelAct()->StateActivate();
 	}
 }
 
@@ -246,8 +245,9 @@ bool CRaidTask::FindTarget()
 	const bool notAA = !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir());
 	const bool notAL = !(IsInWater ? cdef->HasSubToLand() : cdef->HasSurfToLand());
 	const bool notAW = !(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater());
+	const bool hadTarget = GetTarget() != nullptr;
 	const float maxSpeed = SQUARE(highestSpeed * 0.8f / FRAMES_PER_SEC);
-	const float maxPower = attackPower * powerMod;
+	const float maxPower = attackPower * powerMod * (hadTarget ? 1.f / 0.75f : 1.f);
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();

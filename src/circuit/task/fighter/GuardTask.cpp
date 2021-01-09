@@ -48,9 +48,9 @@ void CFGuardTask::Start(CCircuitUnit* unit)
 
 void CFGuardTask::Update()
 {
-	if (updCount++ % 2 != 0) {
-		return;
-	}
+//	if (updCount++ % 2 != 0) {
+//		return;
+//	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitUnit* vip = circuit->GetTeamUnit(vipId);

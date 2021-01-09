@@ -36,12 +36,18 @@ class CEconomyManager: public IModule {
 public:
 	friend class CEconomyScript;
 
+	struct SEnergyCond {
+		float score = -1.f;
+		float metalIncome = -1.f;  // condition
+		float energyIncome = -1.f;  // condition
+		int limit = 0;
+	};
 	struct SSideInfo {
 		CCircuitDef* mexDef;
 		CCircuitDef* mohoMexDef;
 		CCircuitDef* defaultDef;
 
-		std::unordered_map<CCircuitDef*, int> engyLimits;
+		std::unordered_map<CCircuitDef*, SEnergyCond> engyLimits;
 	};
 
 	CEconomyManager(CCircuitAI* circuit);
@@ -159,11 +165,11 @@ private:
 	std::vector<bool> openSpots;  // AI-local metal info
 	int mexCount;
 
+	float costRatio;
 	struct SEnergyInfo {
 		CCircuitDef* cdef;
 		float make;
-		float score;
-		int limit;
+		SEnergyCond cond;  // condition
 		bool operator==(const CCircuitDef* d) { return cdef == d; }
 	};
 	struct SEnergyDefs {
@@ -187,7 +193,6 @@ private:
 		float fraction;
 	} efInfo;
 	float energyFactor;
-	float costRatio;
 
 	std::vector<float> metalIncomes;
 	std::vector<float> energyIncomes;

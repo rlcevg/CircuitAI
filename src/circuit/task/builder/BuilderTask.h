@@ -135,6 +135,7 @@ protected:
 	springai::AIFloat3 buildPos;
 	int facing;
 	IBuilderTask* nextTask;  // old list style
+	CCircuitUnit* initiator;
 
 	float savedIncome;
 	int buildFails;

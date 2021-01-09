@@ -212,7 +212,10 @@ public:
 		return (unitDefId > 0) && ((size_t)unitDefId < defsById.size());
 	}
 	CCircuitDef* GetCircuitDef(CCircuitDef::Id unitDefId) {
-		return /*IsValidUnitDefId(unitDefId) ? */&defsById[unitDefId - 1]/* : nullptr*/;
+		return &defsById[unitDefId - 1];
+	}
+	CCircuitDef* GetCircuitDefSafe(CCircuitDef::Id unitDefId) {
+		return IsValidUnitDefId(unitDefId) ? &defsById[unitDefId - 1] : nullptr;
 	}
 	void BindRole(CCircuitDef::RoleT role, CCircuitDef::RoleT actAsRole) {
 		roleBind[role] = actAsRole;
@@ -236,7 +239,10 @@ public:
 		return (weaponDefId >= 0) && ((size_t)weaponDefId < weaponDefs.size());
 	}
 	CWeaponDef* GetWeaponDef(CWeaponDef::Id weaponDefId) {
-		return /*IsValidWeaponDefId(weaponDefId) ? */&weaponDefs[weaponDefId]/* : nullptr*/;
+		return &weaponDefs[weaponDefId];
+	}
+	CWeaponDef* GetWeaponDefSafe(CWeaponDef::Id weaponDefId) {
+		return IsValidWeaponDefId(weaponDefId) ? &weaponDefs[weaponDefId] : nullptr;
 	}
 	void BindUnitToWeaponDefs(CCircuitDef::Id unitDefId, const std::set<CWeaponDef::Id>& weaponDefs, bool isMobile);
 private:

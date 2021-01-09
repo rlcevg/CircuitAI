@@ -5,8 +5,8 @@
 	"raid": [3.0, 420.0],  // [<min>, <avg>] power of raider squad
 	"attack": 60.0,  // min power of attack group
 	"thr_mod": {
-		"attack": [0.5, 0.9],  // [<min>, <max>] enemy threat modifier for target selection of attack task
-		"defence": [0.95, 0.95],  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
+		"attack": [1.0, 1.0],  // [<min>, <max>] enemy threat modifier for target selection of attack task
+		"defence": [1.0, 1.0],  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
 		"mobile": 1.05,  // initial modifier for power of attack group based on mobile enemy threat
 		"static": 1.2,  // initial modifier for power of attack group based on static enemy threat
 		"comm": 0.01
@@ -48,7 +48,7 @@
 	// ARMADA defenses
 	"armllt": {
 		"role": ["static"],
-		"thr_mod": 0.5
+		"thr_mod": 0.8
 	},
 	"armbeamer": {
 		"role": ["static"],
@@ -105,7 +105,7 @@
 	// CORTEX defenses
 	"corllt": {
 		"role": ["static"],
-		"thr_mod": 0.5
+		"thr_mod": 0.8
 	},
 	"corhllt": {
 		"role": ["static"],
@@ -287,6 +287,7 @@
 		// "siege" - mostly use fight command instead of move
 		// "ret_hold" - hold fire on retreat
 		// "ret_fight" - fight on retreat
+		// "solo" - single unit per build-task
 //		"attribute": ["boost", "no_strafe"],
 
 		// Fire state (open by default)
@@ -323,12 +324,12 @@
 	},
 	"armpw": {
 		"role": ["raider"],
-		"attribute": ["scout"],
-		"pwr_mod": 1.5
+		"attribute": ["scout"]
 	},
 	"armrectr": {
-		"role": ["raider"],
-		"limit": 10
+		"role": ["raider"],  // FIXME: auto re-assigned to builder
+		"limit": 10,
+		"since": 200
 	},
 	"armrock": {
 		"role": ["skirmish"]
@@ -351,7 +352,8 @@
 	// adv bot - armalab
 	"armack": {
 		"role": ["builderT2"],
-		"limit": 4,
+		"attribute": ["solo"],
+		"limit": 6,
 		"build_speed": 10.0
 	},
 	"armfark": {
@@ -465,7 +467,8 @@
 	// adv vehicles - armavp
 	"armacv": {
 		"role": ["builderT2"],
-		"limit": 3,
+		"attribute": ["solo"],
+		"limit": 5,
 		"build_speed": 10.0
 	},
 	"armconsul": {
@@ -649,8 +652,9 @@
 		"attribute": ["scout"]
 	},
 	"cornecro": {
-		"role": ["raider"],
-		"limit": 10
+		"role": ["raider"],  // FIXME: auto re-assigned to builder
+		"limit": 10,
+		"since": 200
 	},
 	"corstorm": {
 		"role": ["skirmish"]
@@ -666,7 +670,8 @@
 	// adv bot - coralab
 	"corack": {
 		"role": ["builderT2"],
-		"limit": 4,
+		"attribute": ["solo"],
+		"limit": 6,
 		"build_speed": 10.0
 	},
 	"corfast": {
@@ -780,7 +785,8 @@
 	// adv vehicles - coravp
 	"coracv": {
 		"role": ["builderT2"],
-		"limit": 3,
+		"attribute": ["solo"],
+		"limit": 5,
 		"build_speed": 10.0
 	},
 	"correap": {

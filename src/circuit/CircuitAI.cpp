@@ -206,7 +206,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_MESSAGE", topic);
 			SCOPED_TIME(this, "EVENT_MESSAGE");
 			struct SMessageEvent* evt = (struct SMessageEvent*)data;
-			ret = this->Message(evt->player, evt->message);;
+			ret = this->Message(evt->player, evt->message);
 			break;
 		}
 		case EVENT_UNIT_CREATED: {

@@ -263,7 +263,6 @@ void CArtilleryTask::ApplyTargetPath(const CQueryPathMulti* query, bool isUpdati
 		} else {
 			position = pPath->posPath.back();
 			unit->GetTravelAct()->SetPath(pPath);
-			unit->GetTravelAct()->StateActivate();
 		}
 	} else {
 		FallbackBasePos(unit, isUpdating);
@@ -301,7 +300,6 @@ void CArtilleryTask::ApplyBasePos(const CQueryPathSingle* query, bool isUpdating
 
 	if (!pPath->posPath.empty()) {
 		unit->GetTravelAct()->SetPath(pPath);
-		unit->GetTravelAct()->StateActivate();
 	} else {
 		FallbackScout(unit, isUpdating);
 	}
@@ -348,7 +346,6 @@ void CArtilleryTask::ApplyScoutPath(const CQueryPathSingle* query)
 	const bool proceed = pPath->path.size() > 2;
 	if (proceed) {
 		unit->GetTravelAct()->SetPath(pPath);
-		unit->GetTravelAct()->StateActivate();
 	} else {
 		Fallback(unit, proceed);
 	}

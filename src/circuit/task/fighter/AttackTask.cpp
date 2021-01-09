@@ -116,7 +116,6 @@ void CAttackTask::Start(CCircuitUnit* unit)
 	}
 	if (!pPath->posPath.empty()) {
 		unit->GetTravelAct()->SetPath(pPath, lowestSpeed);
-		unit->GetTravelAct()->StateActivate();
 	}
 }
 
@@ -281,7 +280,7 @@ void CAttackTask::FindTarget()
 			continue;
 		}
 		const AIFloat3& eVel = enemy->GetVel();
-		if ((eVel.SqLength2D() >= maxSpeed) && (eVel.dot2D(pos - ePos) < 0)) {
+		if ((eVel.SqLength2D() >= maxSpeed)/* && (eVel.dot2D(pos - ePos) < 0)*/) {  // speed and direction
 			continue;
 		}
 
@@ -335,7 +334,7 @@ void CAttackTask::ApplyTargetPath(const CQueryPathSingle* query)
 	if (!pPath->posPath.empty()) {
 		ActivePath(lowestSpeed);
 	} else {
-		Fallback();
+		FallbackFrontPos();
 	}
 }
 

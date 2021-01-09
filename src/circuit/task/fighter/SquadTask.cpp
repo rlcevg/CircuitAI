@@ -313,7 +313,6 @@ void ISquadTask::ActivePath(float speed)
 {
 	for (CCircuitUnit* unit : units) {
 		unit->GetTravelAct()->SetPath(pPath, speed);
-		unit->GetTravelAct()->StateActivate();
 	}
 }
 

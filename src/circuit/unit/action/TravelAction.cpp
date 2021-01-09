@@ -62,6 +62,8 @@ void ITravelAction::SetPath(const std::shared_ptr<PathInfo>& pPath, float speed)
 	this->pPath = pPath;
 	this->speed = speed;
 	isForce = true;
+	lastFrame = -1;
+	StateActivate();
 }
 
 int ITravelAction::CalcSpeedStep(float& stepSpeed)

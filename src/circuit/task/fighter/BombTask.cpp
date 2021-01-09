@@ -404,7 +404,6 @@ void CBombTask::ApplyTargetPath(const CQueryPathSingle* query, bool isUpdating)
 	if (!pPath->posPath.empty()) {
 		position = pPath->posPath.back();
 		unit->GetTravelAct()->SetPath(pPath);
-		unit->GetTravelAct()->StateActivate();
 	} else {
 		FallbackScout(unit, isUpdating);
 	}
@@ -451,7 +450,6 @@ void CBombTask::ApplyScoutPath(const CQueryPathSingle* query)
 	const bool proceed = pPath->path.size() > 2;
 	if (proceed) {
 		unit->GetTravelAct()->SetPath(pPath);
-		unit->GetTravelAct()->StateActivate();
 	} else {
 		Fallback(unit, proceed);
 	}

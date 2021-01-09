@@ -80,7 +80,6 @@ void CAntiAirTask::Start(CCircuitUnit* unit)
 	}
 	if (!pPath->posPath.empty()) {
 		unit->GetTravelAct()->SetPath(pPath);
-		unit->GetTravelAct()->StateActivate();
 	}
 }
 
