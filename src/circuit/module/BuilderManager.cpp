@@ -913,9 +913,7 @@ void CBuilderManager::DequeueTask(IUnitTask* task, bool done)
 		} break;
 		default: break;
 	}
-	task->Dead();
 	TaskClosed(task, done);
-	task->Stop(done);
 }
 
 void CBuilderManager::FallbackTask(CCircuitUnit* unit)

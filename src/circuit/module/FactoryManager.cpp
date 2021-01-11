@@ -725,9 +725,7 @@ void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 		} break;
 		default: break;
 	}  // WAIT
-	task->Dead();
 	TaskClosed(task, done);
-	task->Stop(done);
 }
 
 void CFactoryManager::FallbackTask(CCircuitUnit* unit)
