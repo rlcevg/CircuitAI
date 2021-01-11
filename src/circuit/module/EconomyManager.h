@@ -221,7 +221,7 @@ private:
 
 	int metalPullFrame;
 	int energyPullFrame;
-	struct ResourceInfo {
+	struct SResourceInfo {
 		int pullFrame;
 		float current;
 		float storage;

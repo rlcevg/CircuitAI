@@ -1,14 +1,24 @@
+namespace Side {
+
+/*
+ * Register factions
+ */
+TypeMask ARMADA = aiSideMasker.GetTypeMask("armada");
+TypeMask CORTEX = aiSideMasker.GetTypeMask("cortex");
+
+}
+
 namespace Init {
 
-dictionary@ InitCategories()
+SCategoryInfo InitCategories()
 {
-	dictionary category;
-	category["air"]   = "VTOL NOTSUB";
-	category["land"]  = "SURFACE NOTSUB";
-	category["water"] = "UNDERWATER NOTHOVER";
-	category["bad"]   = "TERRAFORM STUPIDTARGET MINE";
-	category["good"]  = "TURRET FLOAT";
-	return @category;
+	SCategoryInfo category;
+	category.air   = "VTOL NOTSUB";
+	category.land  = "SURFACE NOTSUB";
+	category.water = "UNDERWATER NOTHOVER";
+	category.bad   = "TERRAFORM STUPIDTARGET MINE";
+	category.good  = "TURRET FLOAT";
+	return category;
 }
 
 }

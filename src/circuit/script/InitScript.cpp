@@ -19,7 +19,6 @@
 
 #include "angelscript/include/angelscript.h"
 #include "angelscript/add_on/scriptarray/scriptarray.h"
-#include "angelscript/add_on/scriptdictionary/scriptdictionary.h"
 
 #include "Log.h"
 #include "Drawer.h"
@@ -29,6 +28,25 @@ namespace circuit {
 
 using namespace springai;
 
+CInitScript::SInitInfo::SInitInfo(const SInitInfo& o)
+{
+	category = o.category;
+	if (profile != nullptr) {
+		profile->Release();
+	}
+	profile = o.profile;
+	if (profile != nullptr) {
+		profile->AddRef();
+	}
+}
+
+CInitScript::SInitInfo::~SInitInfo()
+{
+	if (profile != nullptr) {
+		profile->Release();
+	}
+}
+
 static void ConstructAIFloat3(AIFloat3* mem)
 {
 	new(mem) AIFloat3();
@@ -37,6 +55,42 @@ static void ConstructAIFloat3(AIFloat3* mem)
 static void ConstructCopyAIFloat3(AIFloat3* mem, const AIFloat3& o)
 {
 	new(mem) AIFloat3(o);
+}
+
+static void ConstructSCategoryInfo(CInitScript::SInitInfo::SCategoryInfo* mem)
+{
+	new(mem) CInitScript::SInitInfo::SCategoryInfo();
+}
+
+static void ConstructCopySCategoryInfo(CInitScript::SInitInfo::SCategoryInfo* mem, const CInitScript::SInitInfo::SCategoryInfo& o)
+{
+	new(mem) CInitScript::SInitInfo::SCategoryInfo(o);
+}
+
+static void DestructSCategoryInfo(CInitScript::SInitInfo::SCategoryInfo *mem)
+{
+	mem->~SCategoryInfo();
+}
+
+static CInitScript::SInitInfo::SCategoryInfo& AssignSCategoryInfoToSCategoryInfo(CInitScript::SInitInfo::SCategoryInfo& mem, const CInitScript::SInitInfo::SCategoryInfo& o)
+{
+	mem = o;
+	return mem;
+}
+
+static void ConstructSInitInfo(CInitScript::SInitInfo* mem)
+{
+	new(mem) CInitScript::SInitInfo();
+}
+
+static void ConstructCopySInitInfo(CInitScript::SInitInfo* mem, const CInitScript::SInitInfo& o)
+{
+	new(mem) CInitScript::SInitInfo(o);
+}
+
+static void DestructSInitInfo(CInitScript::SInitInfo *mem)
+{
+	mem->~SInitInfo();
 }
 
 static void ConstructTypeMask(CMaskHandler::TypeMask* mem)
@@ -83,6 +137,23 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterGlobalFunction("float AiMin(float, float)", asMETHODPR(CInitScript, Min<float>, (float, float) const, float), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("int AiMax(int, int)", asMETHODPR(CInitScript, Max<int>, (int, int) const, int), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("float AiMax(float, float)", asMETHODPR(CInitScript, Max<float>, (float, float) const, float), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
+
+	r = engine->RegisterObjectType("SCategoryInfo", sizeof(SInitInfo::SCategoryInfo), asOBJ_VALUE | asGetTypeTraits<SInitInfo::SCategoryInfo>()); ASSERT(r >= 0);
+	r = engine->RegisterObjectBehaviour("SCategoryInfo", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructSCategoryInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
+	r = engine->RegisterObjectBehaviour("SCategoryInfo", asBEHAVE_CONSTRUCT, "void f(const SCategoryInfo& in)", asFUNCTION(ConstructCopySCategoryInfo), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
+	r = engine->RegisterObjectBehaviour("SCategoryInfo", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructSCategoryInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("SCategoryInfo", "SCategoryInfo &opAssign(const SCategoryInfo &in)", asFUNCTION(AssignSCategoryInfoToSCategoryInfo), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("SCategoryInfo", "string air", asOFFSET(SInitInfo::SCategoryInfo, air)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("SCategoryInfo", "string land", asOFFSET(SInitInfo::SCategoryInfo, land)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("SCategoryInfo", "string water", asOFFSET(SInitInfo::SCategoryInfo, water)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("SCategoryInfo", "string bad", asOFFSET(SInitInfo::SCategoryInfo, bad)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("SCategoryInfo", "string good", asOFFSET(SInitInfo::SCategoryInfo, good)); ASSERT(r >= 0);
+	r = engine->RegisterObjectType("SInitInfo", sizeof(SInitInfo), asOBJ_VALUE | asGetTypeTraits<SInitInfo>()); ASSERT(r >= 0);
+	r = engine->RegisterObjectBehaviour("SInitInfo", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructSInitInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
+	r = engine->RegisterObjectBehaviour("SInitInfo", asBEHAVE_CONSTRUCT, "void f(const SInitInfo& in)", asFUNCTION(ConstructCopySInitInfo), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
+	r = engine->RegisterObjectBehaviour("SInitInfo", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructSInitInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("SInitInfo", "SCategoryInfo category", asOFFSET(SInitInfo, category)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("SInitInfo", "array<string>@ profile", asOFFSET(SInitInfo, profile)); ASSERT(r >= 0);
 
 	// RegisterCircuitAI
 	r = engine->RegisterObjectType("CCircuitAI", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
@@ -138,54 +209,34 @@ CInitScript::~CInitScript()
 void CInitScript::InitConfig(const std::string& profile,
 		std::vector<std::string>& outCfgParts)
 {
-	folderName = profile + "/";
+	folderName = profile + SLASH;
 	if (!script->Load("init", folderName + "init.as")) {
 		return;
 	}
 	asIScriptModule* mod = script->GetEngine()->GetModule("init");
 	int r = mod->SetDefaultNamespace("Init"); ASSERT(r >= 0);
-	asIScriptFunction* init = script->GetFunc(mod, "void AiInit(dictionary@)");
+	asIScriptFunction* init = script->GetFunc(mod, "SInitInfo AiInit()");
 	if (init == nullptr) {
 		return;
 	}
 
-	CScriptDictionary* dict = CScriptDictionary::Create(script->GetEngine());
-
 	asIScriptContext* ctx = script->PrepareContext(init);
-	ctx->SetArgObject(0, dict);
-	script->Exec(ctx);
-	script->ReturnContext(ctx);
-
-	CScriptDictionary* catDict;
-	if (dict->Get("category", &catDict, dict->GetTypeId("category"))) {
+	SInitInfo* result = script->Exec(ctx) ? (SInitInfo*)ctx->GetReturnObject() : nullptr;
+	if (result != nullptr) {
 		Game* game = circuit->GetGame();
-		std::array<std::pair<std::string, int*>, 5> cats = {
-			std::make_pair("air",   &circuit->airCategory),
-			std::make_pair("land",  &circuit->landCategory),
-			std::make_pair("water", &circuit->waterCategory),
-			std::make_pair("bad",   &circuit->badCategory),
-			std::make_pair("good",  &circuit->goodCategory)
-		};
-		for (const auto& kv : cats) {
-			std::string value;
-			if (catDict->Get(kv.first, &value, catDict->GetTypeId(kv.first))) {
-				*kv.second = game->GetCategoriesFlag(value.c_str());
+		circuit->airCategory = game->GetCategoriesFlag(result->category.air.c_str());
+		circuit->landCategory = game->GetCategoriesFlag(result->category.land.c_str());
+		circuit->waterCategory = game->GetCategoriesFlag(result->category.water.c_str());
+		circuit->badCategory = game->GetCategoriesFlag(result->category.bad.c_str());
+		circuit->goodCategory = game->GetCategoriesFlag(result->category.good.c_str());
+
+		if (result->profile != nullptr) {
+			for (unsigned j = 0; j < result->profile->GetSize(); ++j) {
+				outCfgParts.push_back(*(std::string*)result->profile->At(j));
 			}
 		}
-
-		catDict->Release();
 	}
-
-	CScriptArray* value;
-	if (dict->Get("profile", &value, dict->GetTypeId("profile"))) {
-		for (unsigned j = 0; j < value->GetSize(); ++j) {
-			outCfgParts.push_back(*(std::string*)value->At(j));
-		}
-
-		value->Release();
-	}
-
-	dict->Release();
+	script->ReturnContext(ctx);
 
 	mod->Discard();
 }

@@ -54,8 +54,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, isMetalFull(false)
 		, isEnergyStalling(false)
 		, isEnergyEmpty(false)
-		, metal(ResourceInfo {-1, .0f, .0f, .0f, .0f})
-		, energy(ResourceInfo {-1, .0f, .0f, .0f, .0f})
+		, metal(SResourceInfo {-1, .0f, .0f, .0f, .0f})
+		, energy(SResourceInfo {-1, .0f, .0f, .0f, .0f})
 		, energyUse(.0f)
 {
 	metalRes = circuit->GetCallback()->GetResourceByName(RES_NAME_METAL);
@@ -1532,8 +1532,8 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 	// FIXME: DEBUG
 //	circuit->LOG("----Energy----");
 //	for (const SEnergyInfo& ei : energyDefs.infos) {
-//		circuit->LOG("%s | costM=%f | costE=%f | make=%f | efficiency=%f | limit=%i", ei.cdef->GetDef()->GetName(),
-//				ei.cdef->GetCostM(), ei.cdef->GetCostE(), ei.make, ei.score, ei.limit);
+//		circuit->LOG("%s | costM=%f | costE=%f | make=%f | efficiency=%f | limit=%i | m-income=%f | e-income=%f", ei.cdef->GetDef()->GetName(),
+//				ei.cdef->GetCostM(), ei.cdef->GetCostE(), ei.make, ei.cond.score, ei.cond.limit, ei.cond.metalIncome, ei.cond.energyIncome);
 //	}
 	// FIXME: DEBUG
 }

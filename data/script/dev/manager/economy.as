@@ -3,7 +3,7 @@ void AiOpenStrategy(const CCircuitDef@ facDef, const AIFloat3& in pos)
 }
 
 /*
- * struct ResourceInfo {
+ * struct SResourceInfo {
  *   const float current;
  *   const float storage;
  *   const float pull;
@@ -12,8 +12,8 @@ void AiOpenStrategy(const CCircuitDef@ facDef, const AIFloat3& in pos)
  */
 void AiUpdateEconomy()
 {
-	const ResourceInfo@ metal = aiEconomyMgr.metal;
-	const ResourceInfo@ energy = aiEconomyMgr.energy;
+	const SResourceInfo@ metal = aiEconomyMgr.metal;
+	const SResourceInfo@ energy = aiEconomyMgr.energy;
 	aiEconomyMgr.isMetalEmpty = metal.current < metal.storage * 0.2f;
 	aiEconomyMgr.isMetalFull = metal.current > metal.storage * 0.8f;
 	aiEconomyMgr.isEnergyEmpty = energy.current < energy.storage * 0.2f;

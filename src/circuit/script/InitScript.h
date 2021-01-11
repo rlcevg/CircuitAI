@@ -27,6 +27,22 @@ class CCircuitAI;
 
 class CInitScript: public IScript {
 public:
+	struct SInitInfo {
+		SInitInfo() {}
+		SInitInfo(const SInitInfo& o);
+		~SInitInfo();
+		struct SCategoryInfo {
+			SCategoryInfo() {}
+			~SCategoryInfo() {}
+			std::string air;
+			std::string land;
+			std::string water;
+			std::string bad;
+			std::string good;
+		} category;
+		CScriptArray* profile = nullptr;  // parts
+	};
+
 	CInitScript(CScriptManager* scr, CCircuitAI* circuit);
 	virtual ~CInitScript();
 

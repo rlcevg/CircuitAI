@@ -1,0 +1,40 @@
+#include "../../default/role.as"
+
+
+namespace Military {
+
+IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
+{
+	return aiMilitaryMgr.DefaultMakeTask(unit);
+}
+
+void AiTaskCreated(IUnitTask@ task)
+{
+}
+
+void AiTaskClosed(IUnitTask@ task, bool done)
+{
+}
+
+void AiMakeDefence(int cluster, const AIFloat3& in pos)
+{
+	if ((ai.lastFrame > 5 * 60 * 30)
+		|| (aiEconomyMgr.metal.income > 10.f)
+		|| (aiEnemyMgr.mobileThreat > 0.f))
+	{
+		aiMilitaryMgr.DefaultMakeDefence(cluster, pos);
+//		AiAddPoint(pos, "def");
+	}
+}
+
+/*
+ * anti-air threat threshold;
+ * air factories will stop production when AA threat exceeds
+ */
+// FIXME: Remove/replace, deprecated.
+bool AiIsAirValid()
+{
+	return aiEnemyMgr.GetEnemyThreat(RT::AA) <= 80.f;
+}
+
+}  // namespace Military

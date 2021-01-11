@@ -623,6 +623,9 @@ int CCircuitAI::Release(int reason)
 	economy = nullptr;
 	metalRes = energyRes = nullptr;
 
+	delete script;
+	script = nullptr;
+
 	if (!isInitialized) {
 		return 0;
 	}
@@ -633,8 +636,6 @@ int CCircuitAI::Release(int reason)
 		militaryManager->Release();
 	}
 
-	delete script;
-	script = nullptr;
 	weaponDefs.clear();
 	defsById.clear();
 	defsByName.clear();
