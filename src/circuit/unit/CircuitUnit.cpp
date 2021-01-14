@@ -15,12 +15,11 @@
 #include "util/Utils.h"
 #ifdef DEBUG_VIS
 #include "task/UnitTask.h"
-#include "Command.h"
 #endif
 
 #include "AISCommands.h"
 #include "Sim/Units/CommandAI/Command.h"
-#include "Command.h"
+#include "WrappCurrentCommand.h"
 #include "Weapon.h"
 #include "WrappWeaponMount.h"
 
@@ -50,6 +49,8 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 		, target(nullptr)
 		, targetTile(-1)
 {
+	command = springai::WrappCurrentCommand::GetInstance(unit->GetSkirmishAIId(), id, 0);
+
 	WeaponMount* wpMnt;
 //	if (cdef->IsRoleComm()) {
 //		dgun = nullptr;
@@ -83,6 +84,7 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 
 CCircuitUnit::~CCircuitUnit()
 {
+	delete command;
 	delete dgun;
 	delete weapon;
 	delete shield;
@@ -235,6 +237,10 @@ float CCircuitUnit::GetHealthPercent()
 	return unit->GetHealth() / unit->GetMaxHealth() - unit->GetCaptureProgress() * 16.f;
 }
 
+/*
+ * UNIT_COMMAND_OPTION_ALT_KEY - remove by commandId, otherwise - by tag
+ * UNIT_COMMAND_OPTION_CONTROL_KEY - remove from factory queue
+ */
 void CCircuitUnit::CmdRemove(std::vector<float>&& params, short options)
 {
 	unit->ExecuteCustomCommand(CMD_REMOVE, params, options);
@@ -320,20 +326,8 @@ void CCircuitUnit::CmdTerraform(std::vector<float>&& params)
 
 void CCircuitUnit::CmdWait(bool state)
 {
-	bool hasWait = false;
-	auto commands = unit->GetCurrentCommands();
-	for (springai::Command* cmd : commands) {
-		hasWait |= (cmd->GetId() == CMD_WAIT);
-		delete cmd;
-	}
-	if (state) {
-		if (!hasWait) {
-			unit->Wait();
-		}
-	} else {
-		if (hasWait) {
-			unit->Wait();
-		}
+	if (state != (command->GetId() == CMD_WAIT)) {
+		unit->Wait();
 	}
 }
 
@@ -505,6 +499,15 @@ void CCircuitUnit::StopUpgrade()
 		unit->ExecuteCustomCommand(CMD_UPGRADE_STOP, {});
 		CmdMiscPriority(1);
 	)
+}
+
+ICoreUnit::Id CCircuitUnit::GetUnitIdReclaim() const
+{
+	if (command->GetId() != CMD_RECLAIM) {
+		return -1;
+	}
+	auto params = command->GetParams();
+	return (params.size() == 1) ? params[0] : -1;
 }
 
 #ifdef DEBUG_VIS

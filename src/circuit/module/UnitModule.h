@@ -22,6 +22,10 @@ public:
 
 	virtual CCircuitAI* GetCircuit();
 
+protected:
+	virtual void DequeueTask(IUnitTask* task, bool done = false) override;
+
+public:
 	// callins
 	virtual IUnitTask* MakeTask(CCircuitUnit* unit) override;
 	void TaskCreated(IUnitTask* task);

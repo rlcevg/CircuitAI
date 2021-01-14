@@ -28,6 +28,13 @@ CCircuitAI* IUnitModule::GetCircuit()
 	return circuit;
 }
 
+void IUnitModule::DequeueTask(IUnitTask* task, bool done)
+{
+	task->Dead();
+	TaskClosed(task, done);
+	task->Stop(done);
+}
+
 IUnitTask* IUnitModule::MakeTask(CCircuitUnit* unit)
 {
 	return static_cast<IUnitModuleScript*>(script)->MakeTask(unit);  // DefaultMakeTask
@@ -40,9 +47,7 @@ void IUnitModule::TaskCreated(IUnitTask* task)
 
 void IUnitModule::TaskClosed(IUnitTask* task, bool done)
 {
-	task->Dead();
 	static_cast<IUnitModuleScript*>(script)->TaskClosed(task, done);
-	task->Stop(done);
 }
 
 } // namespace circuit

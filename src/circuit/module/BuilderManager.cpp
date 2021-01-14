@@ -48,6 +48,10 @@
 #include "spring/SpringCallback.h"
 
 #include "Log.h"
+// FIXME: BA auto-mexer
+#include "Sim/Units/CommandAI/Command.h"
+#include "Command.h"
+// FIXME: BA auto-mexer
 
 namespace circuit {
 
@@ -913,7 +917,7 @@ void CBuilderManager::DequeueTask(IUnitTask* task, bool done)
 		} break;
 		default: break;
 	}
-	TaskClosed(task, done);
+	IUnitModule::DequeueTask(task, done);
 }
 
 void CBuilderManager::FallbackTask(CCircuitUnit* unit)
@@ -1600,6 +1604,35 @@ void CBuilderManager::Watchdog()
 			&& (u->GetResourceUse(metalRes) == .0f) && (u->GetVel() == ZeroVector))
 		{
 			worker->GetTask()->OnUnitMoveFailed(worker);
+		}
+	}
+	for (const auto& kv : mexUpgrader) {  // FIXME: autoMexer stuck on reclaiming mobile unit
+		for (CCircuitUnit* unit : kv.second) {
+			if (unit->GetTask()->GetType() != IUnitTask::Type::WAIT) {
+				continue;
+			}
+			ICoreUnit::Id reclId = unit->GetUnitIdReclaim();
+			if (reclId == -1) {
+				continue;
+			}
+			CAllyUnit* au = circuit->GetFriendlyUnit(reclId);
+			if ((au == nullptr) || au->GetCircuitDef()->IsMobile()) {
+				auto commands = unit->GetUnit()->GetCurrentCommands();
+				std::vector<float> tags;
+				tags.reserve(commands.size());
+				for (springai::Command* cmd : commands) {
+					if (cmd->GetId() == CMD_RECLAIM) {
+						CAllyUnit* au = circuit->GetFriendlyUnit(cmd->GetParams()[0]);
+						if ((au == nullptr) || au->GetCircuitDef()->IsMobile()) {
+							tags.push_back(cmd->GetTag());
+						}
+					}
+					delete cmd;
+				}
+				TRY_UNIT(circuit, unit,
+					unit->CmdRemove(std::move(tags));
+				)
+			}
 		}
 	}
 

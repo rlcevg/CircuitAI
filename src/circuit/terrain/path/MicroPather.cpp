@@ -1059,7 +1059,7 @@ size_t CMicroPather::RefinePath(IndexVec& path)
 	};
 
 	int l = 1;
-	int r = path.size() - 1;  // NOTE: start and end always present in path
+	int r = std::min<int>(path.size() - 1, 10);  // NOTE: start and end always present in path
 
 	while (l <= r) {
 		int m = (l + r) / 2;  // floor

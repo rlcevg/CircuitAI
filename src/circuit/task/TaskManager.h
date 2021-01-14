@@ -29,7 +29,9 @@ public:
 	void AssignTask(CCircuitUnit* unit, IUnitTask* task);
 	void AssignTask(CCircuitUnit* unit);
 	virtual IUnitTask* MakeTask(CCircuitUnit*) = 0;
+protected:
 	virtual void DequeueTask(IUnitTask* task, bool done = false) = 0;
+public:
 	virtual void FallbackTask(CCircuitUnit* unit) = 0;
 	void AbortTask(IUnitTask* task);
 	void DoneTask(IUnitTask* task);

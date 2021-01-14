@@ -657,7 +657,7 @@ void CMilitaryManager::DequeueTask(IUnitTask* task, bool done)
 		} break;
 		default: break;
 	}
-	TaskClosed(task, done);
+	IUnitModule::DequeueTask(task, done);
 }
 
 void CMilitaryManager::FallbackTask(CCircuitUnit* unit)

@@ -455,6 +455,11 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 			)
 			return true;
 		}
+	} else {
+		// Remove wait if unit was pushed away from build position
+		TRY_UNIT(circuit, unit,
+			unit->CmdWait(false);
+		)
 	}
 	HideAssignee(unit);
 	IUnitTask* task = manager->MakeTask(unit);

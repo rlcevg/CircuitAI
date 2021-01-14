@@ -13,6 +13,7 @@
 #include "util/Defines.h"
 
 namespace springai {
+	class Command;
 	class Weapon;
 }
 
@@ -143,6 +144,8 @@ public:
 	void StopUpgrade();
 	bool IsMorphing() const { return isMorphing; }
 
+	Id GetUnitIdReclaim() const;
+
 	void ClearTarget() { target = nullptr; }
 	CEnemyInfo* GetTarget() const { return target; }
 	int GetTargetTile() const { return targetTile; }
@@ -174,6 +177,7 @@ private:
 	bool isMorphing : 1;
 	// ---- Bit fields ---- END
 
+	springai::Command* command;  // current top command
 	springai::Weapon* dgun;
 	springai::Weapon* weapon;  // main weapon
 	springai::Weapon* shield;
