@@ -35,7 +35,7 @@ namespace circuit {
 
 using namespace springai;
 
-#define PYLON_RANGE		500.0f  // FIXME: BA
+#define PYLON_RANGE		500.0f
 
 const char* RES_NAME_METAL = "Metal";
 const char* RES_NAME_ENERGY = "Energy";
@@ -309,6 +309,7 @@ void CEconomyManager::ReadConfig()
 	energyFactor = efInfo.startFactor;
 
 	costRatio = energy.get("cost_ratio", 0.05f).asFloat();
+	clusterRange = econ.get("cluster_range", 950.f).asFloat();
 
 	CMaskHandler& sideMasker = circuit->GetGameAttribute()->GetSideMasker();
 	sideInfos.resize(sideMasker.GetMasks().size());

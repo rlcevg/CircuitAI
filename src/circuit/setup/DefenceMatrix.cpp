@@ -6,7 +6,6 @@
  */
 
 #include "setup/DefenceMatrix.h"
-#include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
@@ -38,7 +37,8 @@ CDefenceMatrix::~CDefenceMatrix()
 
 void CDefenceMatrix::ReadConfig(CCircuitAI* circuit)
 {
-	const Json::Value& defence = circuit->GetSetupManager()->GetConfig()["defence"];
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const Json::Value& defence = root["defence"];
 	const Json::Value& baseRad = defence["base_rad"];
 	baseRadMin = baseRad.get((unsigned)0, 1000.f).asFloat();
 	baseRadMax = baseRad.get((unsigned)1, 3000.f).asFloat();
@@ -52,6 +52,8 @@ void CDefenceMatrix::ReadConfig(CCircuitAI* circuit)
 	defendTaskNum = escort.get(unsigned(0), 2).asUInt();
 	defendersNum = escort.get(unsigned(1), 1).asUInt();
 	defendFrame = escort.get(unsigned(2), 600).asInt() * FRAMES_PER_SEC;
+
+	pointRange = root["porcupine"].get("point_range", 600.f).asFloat();
 }
 
 void CDefenceMatrix::Init(CCircuitAI* circuit)
@@ -61,13 +63,8 @@ void CDefenceMatrix::Init(CCircuitAI* circuit)
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	clusterInfos.resize(clusters.size());
 
-	const bool isWaterMap = circuit->GetTerrainManager()->IsWaterMap();
-	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
-	const std::vector<CCircuitDef*>& defenders = isWaterMap ? militaryMgr->GetWaterDefenders() : militaryMgr->GetLandDefenders();
-	CCircuitDef* rangeDef = defenders.empty() ? militaryMgr->GetDefaultPorc() : defenders.front();
-
 	CMap* map = circuit->GetMap();
-	float maxDistance = rangeDef->GetMaxRange() * 0.75f * 2;
+	const float maxDistance = pointRange;
 	CHierarchCluster clust;
 	CEncloseCircle enclose;
 

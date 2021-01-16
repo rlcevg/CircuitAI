@@ -66,6 +66,7 @@ public:
 	springai::Resource* GetMetalRes() const { return metalRes; }
 	springai::Resource* GetEnergyRes() const { return energyRes; }
 	CEnergyGrid* GetEnergyGrid() const { return energyGrid; }
+	float GetClusterRange() const { return clusterRange; }
 	float GetPylonRange() const { return pylonRange; }
 	CCircuitDef* GetLowEnergy(const springai::AIFloat3& pos, float& outMake, CCircuitUnit* builder = nullptr) const;
 	void AddEconomyDefs(const std::set<CCircuitDef*>& buildDefs);  // add available economy defs
@@ -138,6 +139,7 @@ private:
 		int metalFrame;
 	};
 	std::vector<SClusterInfo> clusterInfos;
+	float clusterRange;
 	float pylonRange;
 	CCircuitDef* pylonDef;  // TODO: Move into CEnergyGrid?
 

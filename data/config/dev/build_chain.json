@@ -4,10 +4,10 @@
 	"unit": {
 	//              0          1         2          3            4         5          6         7            8        9
 		"armada": ["armllt",  "armtl",  "armrl",   "armbeamer", "armhlt", "armclaw", "armcir", "armferret", "armpb", "armatl",
-		           "armflak", "armamb", "armanni", "armguard",  "armamd", "armtarg"],
-	//              0          1           2          3          4         5         6            7          8          9
-		"cortex": ["corllt",  "cortl",    "corrl",   "corhllt", "corhlt", "cormaw", "cormadsam", "corerad", "corvipe", "coratl",
-		           "corflak", "cortoast", "cordoom", "corpun",  "corfmd", "cortarg"]
+		           "armflak", "armamb", "armanni", "armguard",  "armamd", "armtarg", "armgate"],
+	//              0          1           2          3          4         5          6            7          8          9
+		"cortex": ["corllt",  "cortl",    "corrl",   "corhllt", "corhlt", "cormaw",  "cormadsam", "corerad", "corvipe", "coratl",
+		           "corflak", "cortoast", "cordoom", "corpun",  "corfmd", "cortarg", "corgate"]
 	},
 	// Actual number of defences per cluster bounded by income - the order of defenses that should be build with numbers as above.
 	"land":  [0, 2, 3, 2, 3, 5, 6, 5, 4, 4, 7, 3, 4, 13, 8, 10, 8, 11, 10, 12],
@@ -19,6 +19,7 @@
 		"factor": [3.8, 3.4],
 		"map": [10, 20]
 	},
+	"point_range": 600.0,  // maximum distance between 2 points in hierarchical cluster within economy cluster
 
 	// Base defence and time to build it, in seconds
 	"base": [
@@ -28,10 +29,10 @@
 
 	"superweapon": {
 		"unit": {
-			"armada": ["armfus", "armmercury",  "armemp",  "armbrtha", "armvulc", "armamd", "armsilo", "armgate"],
-			"cortex": ["corfus", "corscreamer", "cortron", "corint",   "corbuzz", "corfmd", "corsilo", "corgate"]
+			"armada": ["armfus", "armmercury",  "armemp",  "armbrtha", "armvulc", "armamd", "armsilo"],
+			"cortex": ["corfus", "corscreamer", "cortron", "corint",   "corbuzz", "corfmd", "corsilo"]
 		},
-		"weight":     [ 0.15,     0.20,          0.09,      0.20,       0.01,      0.10,     0.11,      0.3],
+		"weight":     [ 0.17,     0.22,          0.11,      0.22,       0.03,      0.12,     0.13],
 
 		"condition": [30, 5000]  // [<Minimum income>, <maximum seconds to build>]
 	},

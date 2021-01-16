@@ -63,6 +63,8 @@ private:
 	unsigned int defendTaskNum;
 	unsigned int defendersNum;
 	int defendFrame;
+
+	float pointRange;
 };
 
 } // namespace circuit

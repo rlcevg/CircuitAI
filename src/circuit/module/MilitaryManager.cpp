@@ -744,6 +744,7 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 			}
 		}
 	}
+	isPorc |= circuit->GetInflMap()->GetInfluenceAt(pos) < INFL_EPS;
 	if (!isPorc) {
 		for (IBuilderTask* t : builderMgr->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
 			if ((t->GetTarget() == nullptr) && (t->GetNextTask() != nullptr) &&

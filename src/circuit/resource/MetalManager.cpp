@@ -171,7 +171,7 @@ void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
 {
 	metalData->SetClusterizing(true);
 
-	const float maxDistance = circuit->GetEconomyManager()->GetPylonRange() * 1.9f;
+	const float maxDistance = circuit->GetEconomyManager()->GetClusterRange();
 	const CMetalData::Metals& spots = metalData->GetSpots();
 	int nrows = spots.size();
 

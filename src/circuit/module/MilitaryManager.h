@@ -106,8 +106,6 @@ public:
 	const SSideInfo& GetSideInfo() const;
 	const std::vector<SSideInfo>& GetSideInfos() const { return sideInfos; }
 
-	const std::vector<CCircuitDef*>& GetLandDefenders() const { return GetSideInfo().landDefenders; }
-	const std::vector<CCircuitDef*>& GetWaterDefenders() const { return GetSideInfo().waterDefenders; }
 	CCircuitDef* GetBigGunDef() const { return bigGunDef; }
 	CCircuitDef* GetDefaultPorc() const { return GetSideInfo().defaultPorc; }
 

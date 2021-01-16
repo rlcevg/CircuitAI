@@ -51,6 +51,8 @@
 		"pylon": []
 	},
 
+	"cluster_range": 950.0,  // maximum distance between 2 points in hierarchical cluster
+
 	"metal": {
 		"armada": ["armmex", "armmoho"],  // [T1_mex, T2_mex]
 		"cortex": ["cormex", "cormoho"]  // [T1_mex, T2_mex]
