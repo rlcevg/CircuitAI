@@ -1,3 +1,4 @@
+#include "../../define.as"
 #include "../../default/role.as"
 
 
@@ -18,7 +19,7 @@ void AiTaskClosed(IUnitTask@ task, bool done)
 
 void AiMakeDefence(int cluster, const AIFloat3& in pos)
 {
-	if ((ai.lastFrame > 5 * 60 * 30)
+	if ((ai.frame > 5 * MINUTE)
 		|| (aiEconomyMgr.metal.income > 10.f)
 		|| (aiEnemyMgr.mobileThreat > 0.f))
 	{

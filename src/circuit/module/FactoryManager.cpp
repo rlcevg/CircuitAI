@@ -48,6 +48,8 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		, factoryPower(.0f)
 		, offsetPower(.0f)
 		, isResetedFactoryPower(false)
+		, isSwitchTime(false)
+		, lastSwitchFrame(-1)
 		, noT1FacCount(0)
 		, bpRatio(1.f)
 		, reWeight(.5f)
@@ -76,11 +78,12 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			unit->GetUnit()->SetIdleMode(0);
 		)
 
-		int frame = this->circuit->GetLastFrame();
+		const int frame = this->circuit->GetLastFrame();
 //		if (factories.empty() && (this->circuit->GetBuilderManager()->GetWorkerCount() <= 2)) {
 			this->circuit->GetEconomyManager()->OpenStrategy(unit->GetCircuitDef(), unit->GetPos(frame));
 //		}
 
+		lastSwitchFrame = frame;
 		EnableFactory(unit);
 	};
 	auto factoryIdleHandler = [](CCircuitUnit* unit) {
@@ -738,6 +741,20 @@ void CFactoryManager::ResetFactoryPower()
 	const float offset = (8.1f - circuit->GetEconomyManager()->GetPureMetalIncome()) * 1.2f;
 	factoryPower -= offset;
 	offsetPower += offset;
+}
+
+void CFactoryManager::ApplySwitchFrame()
+{
+	lastSwitchFrame = circuit->GetLastFrame();
+	isSwitchTime = false;
+}
+
+bool CFactoryManager::IsSwitchTime()
+{
+	if (!isSwitchTime) {
+		isSwitchTime = static_cast<CFactoryScript*>(script)->IsSwitchTime(lastSwitchFrame);
+	}
+	return isSwitchTime;
 }
 
 CCircuitUnit* CFactoryManager::NeedUpgrade()

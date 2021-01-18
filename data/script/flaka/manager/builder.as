@@ -9,7 +9,7 @@ namespace Builder {
 IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
 {
 // 	AiDelPoint(lastPos);
-// 	lastPos = unit.GetPos(ai.lastFrame);
+// 	lastPos = unit.GetPos(ai.frame);
 // 	AiAddPoint(lastPos, "task");
 
 // 	IUnitTask@ task = aiBuilderMgr.DefaultMakeTask(unit);

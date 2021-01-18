@@ -669,6 +669,7 @@ IBuilderTask* CBuilderManager::EnqueueFactory(IBuilderTask::Priority priority,
 	} else {
 		task->Deactivate();
 	}
+	circuit->GetFactoryManager()->ApplySwitchFrame();
 	TaskCreated(task);
 	return task;
 }

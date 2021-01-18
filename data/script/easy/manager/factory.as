@@ -1,5 +1,5 @@
 #include "../../define.as"
-#include "../role.as"
+#include "../../default/role.as"
 
 
 namespace Factory {
@@ -14,7 +14,7 @@ Id ALAB = ai.GetCircuitDef(armalab).id;
 Id VP   = ai.GetCircuitDef(armvp).id;
 Id AVP  = ai.GetCircuitDef(armavp).id;
 
-int switchInterval = AiRandom(550, 900) * SECOND;
+int switchInterval = AiRandom(1100, 1800) * SECOND;
 
 IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
 {

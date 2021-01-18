@@ -169,6 +169,7 @@ CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 	const bool notAA = !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir());
 	const bool notAL = !(IsInWater ? cdef->HasSubToLand() : cdef->HasSurfToLand());
 	const bool notAW = !(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater());
+	const float maxSpeed = SQUARE(cdef->GetSpeed() / FRAMES_PER_SEC);
 	const float maxPower = threatMap->GetUnitThreat(unit) * powerMod;
 	const float weaponRange = cdef->GetMaxRange();
 	const int canTargetCat = cdef->GetTargetCategory();
@@ -199,6 +200,18 @@ CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 			|| !terrainMgr->CanMoveToPos(area, ePos))
 		{
 			continue;
+		}
+
+		const AIFloat3& eVel = enemy->GetVel();
+		if (eVel.SqLength2D() >= maxSpeed) {  // speed
+			const AIFloat3 uVec = pos - ePos;
+			const float dotProduct = eVel.dot2D(uVec);
+			if (dotProduct < 0) {  // direction (angle > 90 deg)
+				continue;
+			}
+			if (dotProduct / sqrtf(eVel.SqLength2D() * uVec.SqLength2D()) < SQRT_3_2) {  // direction (angle > 30 deg)
+				continue;
+			}
 		}
 
 		int targetCat;

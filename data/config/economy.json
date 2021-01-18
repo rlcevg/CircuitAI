@@ -72,10 +72,6 @@
 	// Construction order delay in seconds, -1 to disable
 	"build_delay": -1.0,
 
-	// New factory switch interval, in seconds (each new factory resets timer, switch event is also based on eco + caretakers)
-	// switch = random(<min_interval>..<max_interval>)
-	"switch": [550, 900],
-
 	//"terra": "armsy",
 	"airpad": {
 		"armada": "armasp",

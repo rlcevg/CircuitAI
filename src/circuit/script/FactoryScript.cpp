@@ -33,6 +33,19 @@ void CFactoryScript::Init()
 	asIScriptModule* mod = script->GetEngine()->GetModule("main");
 	int r = mod->SetDefaultNamespace("Factory"); ASSERT(r >= 0);
 	InitModule(mod);
+	factoryInfo.isSwitchTime = script->GetFunc(mod, "bool AiIsSwitchTime(int)");
+}
+
+bool CFactoryScript::IsSwitchTime(int lastSwitchFrame)
+{
+	if (factoryInfo.isSwitchTime == nullptr) {
+		return false;
+	}
+	asIScriptContext* ctx = script->PrepareContext(factoryInfo.isSwitchTime);
+	ctx->SetArgDWord(0, lastSwitchFrame);
+	const bool result = script->Exec(ctx) ? ctx->GetReturnByte() : false;
+	script->ReturnContext(ctx);
+	return result;
 }
 
 } // namespace circuit

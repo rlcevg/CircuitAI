@@ -57,7 +57,7 @@ bool CMilitaryScript::IsAirValid()
 		return true;
 	}
 	asIScriptContext* ctx = script->PrepareContext(militaryInfo.isAirValid);
-	bool result = script->Exec(ctx) ? ctx->GetReturnByte() : true;
+	const bool result = script->Exec(ctx) ? ctx->GetReturnByte() : true;
 	script->ReturnContext(ctx);
 	return result;
 }

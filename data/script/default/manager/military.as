@@ -8,6 +8,14 @@ IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
 	return aiMilitaryMgr.DefaultMakeTask(unit);
 }
 
+void AiTaskCreated(IUnitTask@ task)
+{
+}
+
+void AiTaskClosed(IUnitTask@ task, bool done)
+{
+}
+
 void AiMakeDefence(int cluster, const AIFloat3& in pos)
 {
 	aiMilitaryMgr.DefaultMakeDefence(cluster, pos);

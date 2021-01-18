@@ -42,6 +42,7 @@ CEconomyScript::~CEconomyScript()
 void CEconomyScript::Init()
 {
 	asIScriptModule* mod = script->GetEngine()->GetModule("main");
+	int r = mod->SetDefaultNamespace("Economy"); ASSERT(r >= 0);
 	info.openStrategy = script->GetFunc(mod, "void AiOpenStrategy(const CCircuitDef@, const AIFloat3& in)");
 	info.updateEconomy = script->GetFunc(mod, "void AiUpdateEconomy()");
 }

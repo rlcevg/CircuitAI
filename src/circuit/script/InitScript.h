@@ -62,6 +62,7 @@ private:
 	int Dice(const CScriptArray* array) const;
 	template<typename T> T Min(T l, T r) const { return std::min(l, r); }
 	template<typename T> T Max(T l, T r) const { return std::max(l, r); }
+	int Random(int min, int max) const { return min + rand() % (max - min + 1); }
 
 	CCircuitAI* circuit;
 	std::string folderName;

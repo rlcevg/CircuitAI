@@ -7,6 +7,7 @@
 
 #include "task/builder/ReclaimTask.h"
 #include "task/TaskManager.h"
+#include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
@@ -50,15 +51,19 @@ bool CBReclaimTask::CanAssignTo(CCircuitUnit* unit) const
 	if (!IReclaimTask::CanAssignTo(unit)) {
 		return false;
 	}
+	CCircuitAI* circuit = manager->GetCircuit();
+	const AIFloat3& pos = GetPosition();
+	if (unit->GetCircuitDef()->IsAttrSolo() && (circuit->GetInflMap()->GetInfluenceAt(pos) < INFL_EPS)) {
+		return false;
+	}
 	if (unit->GetCircuitDef()->IsAttacker()) {
 		return true;
 	}
-	CCircuitAI* circuit = manager->GetCircuit();
 	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
 	if ((militaryMgr->GetDefendTaskNum() == 0) || (circuit->GetLastFrame() > militaryMgr->GetDefendFrame())) {
 		return true;
 	}
-	int cluster = circuit->GetMetalManager()->FindNearestCluster(GetPosition());
+	int cluster = circuit->GetMetalManager()->FindNearestCluster(pos);
 	if ((cluster < 0) || militaryMgr->HasDefence(cluster)) {
 		return true;
 	}

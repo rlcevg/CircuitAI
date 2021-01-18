@@ -68,6 +68,8 @@ public:
 	float GetEnergyPower() const { return factoryPower + offsetPower; }
 	bool CanEnqueueTask() const { return factoryTasks.size() < factories.size() * 2; }
 	const std::vector<CRecruitTask*>& GetTasks() const { return factoryTasks; }
+	void ApplySwitchFrame();
+	bool IsSwitchTime();
 	CCircuitUnit* NeedUpgrade();
 	CCircuitUnit* GetClosestFactory(springai::AIFloat3 position);
 //	CCircuitDef* GetClosestDef(springai::AIFloat3& position, CCircuitDef::RoleT role);
@@ -142,6 +144,8 @@ private:
 	};
 	std::vector<SFactory> factories;  // facory 1:n nano
 	std::set<CCircuitUnit*> validAir;
+	bool isSwitchTime;
+	int lastSwitchFrame;
 	int noT1FacCount;
 
 	struct SFactoryDef {

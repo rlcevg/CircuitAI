@@ -25,6 +25,7 @@
 #include "angelscript/add_on/scriptstdstring/scriptstdstring.h"
 #include "angelscript/add_on/scriptarray/scriptarray.h"
 #include "angelscript/add_on/scriptdictionary/scriptdictionary.h"
+#include "angelscript/add_on/scriptmath/scriptmath.h"
 #include "angelscript/add_on/scriptbuilder/scriptbuilder.h"
 #include "angelscript/add_on/aatc/aatc.hpp"
 
@@ -107,6 +108,7 @@ void CScriptManager::Init()
 	RegisterScriptArray(engine, true);
 //	RegisterStdStringUtils(engine);  // optional
 	RegisterScriptDictionary(engine);
+	RegisterScriptMath(engine);
 	aatc::RegisterAllContainers(engine);
 
 	engine->SetContextCallbacks(CScriptManager::ProvideContext, CScriptManager::StoreContext, this);

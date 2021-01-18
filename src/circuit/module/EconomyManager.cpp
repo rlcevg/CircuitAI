@@ -45,7 +45,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, energyGrid(nullptr)
 		, pylonDef(nullptr)
 		, mexCount(0)
-		, lastFacFrame(-1)
 		, indexRes(0)
 		, metalProduced(.0f)
 		, metalUsed(.0f)
@@ -74,8 +73,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	 * factory handlers
 	 */
 	auto factoryFinishedHandler = [this](CCircuitUnit* unit) {
-		lastFacFrame = this->circuit->GetLastFrame();
-		int index = this->circuit->GetMetalManager()->FindNearestCluster(unit->GetPos(lastFacFrame));
+		const int frame = this->circuit->GetLastFrame();
+		const int index = this->circuit->GetMetalManager()->FindNearestCluster(unit->GetPos(frame));
 		if (index >= 0) {
 			clusterInfos[index].factory = unit;
 		}
@@ -292,10 +291,6 @@ void CEconomyManager::ReadConfig()
 	ecoStep = econ.get("eps_step", 0.25f).asFloat();
 	ecoFactor = (circuit->GetAllyTeam()->GetSize() - 1.0f) * ecoStep + 1.0f;
 	metalMod = (1.f - econ.get("excess", -1.f).asFloat());
-	const Json::Value& swch = econ["switch"];
-	const int minSwitch = swch.get((unsigned)0, 800).asInt();
-	const int maxSwitch = swch.get((unsigned)1, 900).asInt();
-	switchTime = (minSwitch + rand() % (maxSwitch - minSwitch + 1)) * FRAMES_PER_SEC;
 	const float bd = econ.get("build_delay", -1.f).asFloat();
 	buildDelay = (bd > 0.f) ? (bd * FRAMES_PER_SEC) : 0;
 
@@ -991,7 +986,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		return nullptr;
 	}
 
-	const bool isSwitchTime = (lastFacFrame + switchTime <= frame);
+	const bool isSwitchTime = factoryMgr->IsSwitchTime();
 	if (!isSwitchTime) {
 		// TODO: Separate clear rule for 1st factory
 		const float assistSpeed = assistDef->GetBuildSpeed();
@@ -1097,26 +1092,25 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		buildPos = circuit->GetSetupManager()->GetBasePos();
 	}
 
+	// identify area to build by factory representatives
+	CCircuitDef* reprDef = factoryMgr->GetRepresenter(facDef);
+	if (reprDef == nullptr) {
+		return nullptr;
+	}
+
 	const float sqStartDist = enemyPos.SqDistance2D(circuit->GetSetupManager()->GetStartPos());
 	const float sqBuildDist = enemyPos.SqDistance2D(buildPos);
 	float size = (sqStartDist > sqBuildDist) ? -200.0f : 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
 	buildPos.x += (buildPos.x > enemyPos.x) ? -size : size;
 	buildPos.z += (buildPos.z > enemyPos.z) ? -size : size;
 
-	// identify area to build by factory representatives
-	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	CCircuitDef* reprDef = factoryMgr->GetRepresenter(facDef);
-	if (reprDef == nullptr) {
-		return nullptr;
-	}
-
 	CTerrainManager::CorrectPosition(buildPos);
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	buildPos = terrainMgr->GetBuildPosition(reprDef, buildPos);
 
 	if (terrainMgr->CanBeBuiltAtSafe(facDef, buildPos) &&
 		((unit == nullptr) || terrainMgr->CanReachAtSafe(unit, buildPos, unit->GetCircuitDef()->GetBuildDistance())))
 	{
-		lastFacFrame = frame;
 		IBuilderTask::Priority priority = (builderMgr->GetWorkerCount() <= 2) ?
 										  IBuilderTask::Priority::NOW :
 										  IBuilderTask::Priority::HIGH;

@@ -20,6 +20,14 @@ public:
 	virtual ~CFactoryScript();
 
 	void Init() override;
+
+public:
+	bool IsSwitchTime(int lastSwitchFrame);
+
+private:
+	struct SScriptInfo {
+		asIScriptFunction* isSwitchTime = nullptr;
+	} factoryInfo;
 };
 
 } // namespace circuit

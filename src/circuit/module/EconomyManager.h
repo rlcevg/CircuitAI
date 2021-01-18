@@ -184,8 +184,6 @@ private:
 
 	float ecoStep;
 	float ecoFactor;
-	int switchTime;
-	int lastFacFrame;
 
 	struct SEnergyFactorInfo {
 		float startFactor;
