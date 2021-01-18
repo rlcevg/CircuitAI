@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2019 Andreas Jonsson
+   Copyright (c) 2003-2021 Andreas Jonsson
 
    This software is provided 'as-is', without any express or implied
    warranty. In no event will the authors be held liable for any
@@ -2882,7 +2882,8 @@ void asCContext::ExecuteNext()
 			m_regs.stackPointer      = l_sp;
 			m_regs.stackFramePointer = l_fp;
 
-			if( !(objType->flags & asOBJ_NOCOUNT) )
+			// Update ref counter for object types that require it
+			if( !(objType->flags & (asOBJ_NOCOUNT | asOBJ_VALUE)) )
 			{
 				// Release previous object held by destination pointer
 				if( *d != 0 && beh->release )
@@ -4141,7 +4142,8 @@ void asCContext::ExecuteNext()
 			m_regs.stackPointer      = l_sp;
 			m_regs.stackFramePointer = l_fp;
 
-			if( !(objType->flags & asOBJ_NOCOUNT) )
+			// Update ref counter for object types that require it
+			if( !(objType->flags & (asOBJ_NOCOUNT | asOBJ_VALUE)) )
 			{
 				// Release previous object held by destination pointer
 				if( *d != 0 && beh->release )
@@ -4404,7 +4406,23 @@ void asCContext::ExecuteNext()
 
 				// Call the method
 				m_callingSystemFunction = m_engine->scriptFunctions[i];
-				void *ptr = m_engine->CallObjectMethodRetPtr(obj, arg, m_callingSystemFunction);
+				void *ptr = 0;
+#ifdef AS_NO_EXCEPTIONS
+				ptr = m_engine->CallObjectMethodRetPtr(obj, arg, m_callingSystemFunction);
+#else
+				// This try/catch block is to catch potential exception that may 
+				// be thrown by the registered function. 
+				try
+				{
+					ptr = m_engine->CallObjectMethodRetPtr(obj, arg, m_callingSystemFunction);
+				}
+				catch (...)
+				{
+					// Convert the exception to a script exception so the VM can 
+					// properly report the error to the application and then clean up
+					HandleAppException();
+				}
+#endif
 				m_callingSystemFunction = 0;
 				*(asPWORD*)&m_regs.valueRegister = (asPWORD)ptr;
 			}
@@ -4815,6 +4833,9 @@ void asCContext::DetermineLiveObjects(asCArray<int> &liveObjects, asUINT stackLe
 								nested--;
 						}
 					}
+					break;
+				case asOBJ_VARDECL: // A variable was declared
+					// We don't really care about the variable declarations at this moment
 					break;
 				}
 			}
