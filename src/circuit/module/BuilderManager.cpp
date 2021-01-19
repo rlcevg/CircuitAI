@@ -20,6 +20,7 @@
 #include "task/NilTask.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
+#include "task/builder/GenericTask.h"
 #include "task/builder/WaitTask.h"
 #include "task/builder/FactoryTask.h"
 #include "task/builder/NanoTask.h"
@@ -857,7 +858,6 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 			task = new CBBunkerTask(this, priority, buildDef, position, cost, shake, timeout);
 			break;
 		}
-		default:
 		case IBuilderTask::BuildType::BIG_GUN: {
 			task = new CBBigGunTask(this, priority, buildDef, position, cost, shake, timeout);
 			break;
@@ -872,6 +872,10 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 		}
 		case IBuilderTask::BuildType::MEX: {
 			task = new CBMexTask(this, priority, buildDef, position, cost, timeout);
+			break;
+		}
+		default: {
+			task = new CBGenericTask(this, type, priority, buildDef, position, cost, shake, timeout);
 			break;
 		}
 	}
