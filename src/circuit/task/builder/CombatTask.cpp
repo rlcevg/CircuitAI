@@ -209,7 +209,7 @@ CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 			if (dotProduct < 0) {  // direction (angle > 90 deg)
 				continue;
 			}
-			if (dotProduct / sqrtf(eVel.SqLength2D() * uVec.SqLength2D()) < SQRT_3_2) {  // direction (angle > 30 deg)
+			if (dotProduct < SQRT_3_2 * sqrtf(eVel.SqLength2D() * uVec.SqLength2D())) {  // direction (angle > 30 deg)
 				continue;
 			}
 		}

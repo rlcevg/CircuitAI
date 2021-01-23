@@ -1001,15 +1001,11 @@ IBuilderTask* CBuilderManager::GetResurrectTask(const AIFloat3& pos, float radiu
 
 IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 {
-	CThreatMap* threatMap = circuit->GetThreatMap();
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
 
 	const CCircuitDef* cdef = unit->GetCircuitDef();
-	if ((cdef->GetPower() > THREAT_MIN)
-		&& (pos.SqDistance2D(circuit->GetSetupManager()->GetBasePos()) < SQUARE(circuit->GetMilitaryManager()->GetBaseDefRange()))
-		&& circuit->GetEnemyManager()->IsEnemyNear(pos, threatMap->GetUnitThreat(unit) * 1.5f))
-	{
+	if ((cdef->GetPower() > THREAT_MIN) && circuit->GetMilitaryManager()->IsCombatTargetExists(unit, pos, 1.5f)) {
 		return EnqueueCombat(1.5f);
 	}
 
@@ -1020,7 +1016,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 	}
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	std::shared_ptr<IPathQuery> q = pathfinder->CreateCostMapQuery(unit, threatMap, frame, pos);
+	std::shared_ptr<IPathQuery> q = pathfinder->CreateCostMapQuery(unit, circuit->GetThreatMap(), frame, pos);
 	costQueries[unit] = q;
 	pathfinder->RunQuery(q);
 

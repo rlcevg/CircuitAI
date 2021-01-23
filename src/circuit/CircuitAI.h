@@ -293,11 +293,11 @@ public:
 	CEconomyManager*  GetEconomyManager()  const { return economyManager.get(); }
 	CMilitaryManager* GetMilitaryManager() const { return militaryManager.get(); }
 
-	int GetAirCategory()    const { return airCategory; }
-	int GetLandCategory()   const { return landCategory; }
-	int GetWaterCategory()  const { return waterCategory; }
-	int GetBadCategory()    const { return badCategory; }
-	int GetGoodCategory()   const { return goodCategory; }
+	int GetAirCategory()    const { return category.air; }
+	int GetLandCategory()   const { return category.land; }
+	int GetWaterCategory()  const { return category.water; }
+	int GetBadCategory()    const { return category.bad; }
+	int GetGoodCategory()   const { return category.good; }
 
 private:
 	bool isInitialized;
@@ -343,11 +343,13 @@ private:
 	friend class CInitScript;
 	CInitScript* script;  // owner
 	// TODO: Move into GameAttribute? Or use locally
-	int airCategory;  // over surface
-	int landCategory;  // on surface
-	int waterCategory;  // under surface
-	int badCategory;
-	int goodCategory;
+	struct SCategoryInfo {
+		int air;  // over surface
+		int land;  // on surface
+		int water;  // under surface
+		int bad;
+		int good;
+	} category;
 
 public:
 	void PrepareAreaUpdate();

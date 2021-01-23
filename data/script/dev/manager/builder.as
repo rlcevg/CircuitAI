@@ -31,10 +31,10 @@ IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
 
 void AiTaskCreated(IUnitTask@ task)
 {
-// 	if (task.GetType() != 5) {  // Type::BUILDER
-// 		return;
-// 	}
-// 	switch (task.GetBuildType()) {
+	if (task.GetType() != 5) {  // Type::BUILDER
+		return;
+	}
+	switch (task.GetBuildType()) {
 // 	case 4: {  // BuildType::ENERGY
 // 		if (gPauseCnt == 0) {
 // 			string name = task.GetBuildDef().GetName();
@@ -45,29 +45,29 @@ void AiTaskCreated(IUnitTask@ task)
 // 			AiAddPoint(task.GetBuildPos(), name);
 // 		}
 // 	} break;
-// 	case 10:  // BuildType::MEX
+	case 10:  // BuildType::MEX
 // 	case 5:  // BuildType::DEFENCE
-// 		AiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
-// 		break;
-// 	default:
-// 		break;
-// 	}
+		AiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
+		break;
+	default:
+		break;
+	}
 }
 
 void AiTaskClosed(IUnitTask@ task, bool done)
 {
-// 	if (task.GetType() != 5) {  // Type::BUILDER
-// 		return;
-// 	}
-// 	switch (task.GetBuildType()) {
-// 	case 10:  // BuildType::MEX
+	if (task.GetType() != 5) {  // Type::BUILDER
+		return;
+	}
+	switch (task.GetBuildType()) {
+	case 10:  // BuildType::MEX
 // 	case 5:  // BuildType::DEFENCE
 // 	case 4:  // BuildType::ENERGY
-// 		AiDelPoint(task.GetBuildPos());
-// 		break;
-// 	default:
-// 		break;
-// 	}
+		AiDelPoint(task.GetBuildPos());
+		break;
+	default:
+		break;
+	}
 }
 
 }  // namespace Builder

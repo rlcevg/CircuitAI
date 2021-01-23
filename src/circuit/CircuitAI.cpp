@@ -111,11 +111,7 @@ CCircuitAI::CCircuitAI(OOAICallback* clb)
 		, drawer(nullptr)
 		, skirmishAI(std::unique_ptr<SkirmishAI>(clb->GetSkirmishAI()))
 		, script(nullptr)
-		, airCategory(0)
-		, landCategory(0)
-		, waterCategory(0)
-		, badCategory(0)
-		, goodCategory(0)
+		, category({0})
 #ifdef DEBUG_VIS
 		, debugDrawer(nullptr)
 #endif

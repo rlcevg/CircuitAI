@@ -1393,6 +1393,98 @@ void CMilitaryManager::UnmarkPointOfInterest(CEnemyInfo* enemy)
 	}
 }
 
+bool CMilitaryManager::IsCombatTargetExists(CCircuitUnit* unit, const AIFloat3& pos, float powerMod)
+{
+	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
+	if (pos.SqDistance2D(basePos) > SQUARE(GetBaseDefRange())) {
+		return false;
+	}
+
+	CMap* map = circuit->GetMap();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	CInfluenceMap* inflMap = circuit->GetInflMap();
+	STerrainMapArea* area = unit->GetArea();
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	const bool IsInWater = cdef->IsInWater(map->GetElevationAt(pos.x, pos.z), pos.y);
+	const bool notAA = !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir());
+	const bool notAL = !(IsInWater ? cdef->HasSubToLand() : cdef->HasSurfToLand());
+	const bool notAW = !(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater());
+	const float maxSpeed = SQUARE(cdef->GetSpeed() / FRAMES_PER_SEC);
+	const float maxPower = threatMap->GetUnitThreat(unit) * powerMod;
+	const float weaponRange = cdef->GetMaxRange();
+	const int canTargetCat = cdef->GetTargetCategory();
+	const float sqCommRadBegin = SQUARE(GetCommDefRadBegin());
+	float minSqDist = SQUARE(GetCommDefRad(pos.distance2D(basePos)));
+
+	threatMap->SetThreatType(unit);
+	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
+	for (auto& kv : enemies) {
+		CEnemyInfo* enemy = kv.second;
+		if (enemy->IsHidden() || (enemy->GetTasks().size() > 1)) {
+			continue;
+		}
+
+		const AIFloat3& ePos = enemy->GetPos();
+		const float sqDist = pos.SqDistance2D(ePos);
+		if ((basePos.SqDistance2D(ePos) > sqCommRadBegin) && (sqDist > minSqDist)) {
+			continue;
+		}
+
+		const float power = threatMap->GetThreatAt(ePos);
+		if ((maxPower <= power)
+			|| (inflMap->GetAllyDefendInflAt(ePos) < INFL_EPS)
+			|| !terrainMgr->CanMoveToPos(area, ePos))
+		{
+			continue;
+		}
+
+		const AIFloat3& eVel = enemy->GetVel();
+		if (eVel.SqLength2D() >= maxSpeed) {  // speed
+			const AIFloat3 uVec = pos - ePos;
+			const float dotProduct = eVel.dot2D(uVec);
+			if (dotProduct < 0) {  // direction (angle > 90 deg)
+				continue;
+			}
+			if (dotProduct < SQRT_3_2 * sqrtf(eVel.SqLength2D() * uVec.SqLength2D())) {  // direction (angle > 30 deg)
+				continue;
+			}
+		}
+
+		CCircuitDef* edef = enemy->GetCircuitDef();
+		if (edef != nullptr) {
+			if (((edef->GetCategory() & canTargetCat) == 0)
+				|| (edef->IsAbleToFly() && notAA))
+			{
+				continue;
+			}
+			float elevation = map->GetElevationAt(ePos.x, ePos.z);
+			if (edef->IsInWater(elevation, ePos.y)) {
+				if (notAW) {
+					continue;
+				}
+			} else {
+				if (notAL) {
+					continue;
+				}
+			}
+			if (ePos.y - elevation > weaponRange) {
+				continue;
+			}
+		} else {
+			if (notAW && (ePos.y < -SQUARE_SIZE * 5)) {
+				continue;
+			}
+		}
+
+		if (enemy->IsInRadarOrLOS()) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 {
 	// FIXME: Make central task assignment system.

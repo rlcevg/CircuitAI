@@ -225,11 +225,11 @@ void CInitScript::InitConfig(const std::string& profile,
 	SInitInfo* result = script->Exec(ctx) ? (SInitInfo*)ctx->GetReturnObject() : nullptr;
 	if (result != nullptr) {
 		Game* game = circuit->GetGame();
-		circuit->airCategory = game->GetCategoriesFlag(result->category.air.c_str());
-		circuit->landCategory = game->GetCategoriesFlag(result->category.land.c_str());
-		circuit->waterCategory = game->GetCategoriesFlag(result->category.water.c_str());
-		circuit->badCategory = game->GetCategoriesFlag(result->category.bad.c_str());
-		circuit->goodCategory = game->GetCategoriesFlag(result->category.good.c_str());
+		circuit->category.air = game->GetCategoriesFlag(result->category.air.c_str());
+		circuit->category.land = game->GetCategoriesFlag(result->category.land.c_str());
+		circuit->category.water = game->GetCategoriesFlag(result->category.water.c_str());
+		circuit->category.bad = game->GetCategoriesFlag(result->category.bad.c_str());
+		circuit->category.good = game->GetCategoriesFlag(result->category.good.c_str());
 
 		if (result->profile != nullptr) {
 			for (unsigned j = 0; j < result->profile->GetSize(); ++j) {
