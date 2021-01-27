@@ -321,10 +321,22 @@ NSMicroPather::TestFunc ISquadTask::GetHitTest() const
 	CTerrainManager* terrainMgr = manager->GetCircuit()->GetTerrainManager();
 	const std::vector<STerrainMapSector>& sectors = terrainMgr->GetAreaData()->sector;
 	const int sectorXSize = terrainMgr->GetSectorXSize();
-	const float aimLift = leader->GetCircuitDef()->GetHeight() / 2;  // TODO: Use aim-pos of attacker and enemy
-	return [&sectors, sectorXSize, aimLift](int2 start, int2 end) {  // losTest
-		float startHeight = sectors[start.y * sectorXSize + start.x].maxElevation + aimLift;
-		float diffHeight = sectors[end.y * sectorXSize + end.x].maxElevation + SQUARE_SIZE - startHeight;
+	const int convert = terrainMgr->GetConvertStoP();
+	const float aimLift = leader->GetCircuitDef()->GetHeight() * 0.5f;  // TODO: Use aim-pos of attacker and enemy
+	const float maxHeight = leader->GetCircuitDef()->GetMaxRange() * 0.4f;
+	return [&sectors, sectorXSize, aimLift, maxHeight, convert](int2 start, int2 end) {  // losTest
+		const float startHeight = sectors[start.y * sectorXSize + start.x].maxElevation + aimLift;
+		const float diffHeight = sectors[end.y * sectorXSize + end.x].maxElevation + SQUARE_SIZE - startHeight;
+		// check vertical angle
+		const float absDiffHeight = std::fabs(diffHeight);
+		if (absDiffHeight > maxHeight) {
+			const float dirX = (end.x - start.x) * convert;
+			const float dirY = (end.y - start.y) * convert;
+			const float len = std::sqrt(SQUARE(dirX) + SQUARE(dirY) + SQUARE(absDiffHeight));
+			if (absDiffHeight > SQRT_3_2 * len) {  // cos(a) > sqrt(3)/2; a < 30 deg
+				return false;
+			}
+		}
 		// All octant line draw
 		const int dx =  abs(end.x - start.x), sx = start.x < end.x ? 1 : -1;
 		const int dy = -abs(end.y - start.y), sy = start.y < end.y ? 1 : -1;
@@ -340,7 +352,7 @@ NSMicroPather::TestFunc ISquadTask::GetHitTest() const
 				err += dx; y += sy;
 			}
 
-			const float t = fabs((dx > -dy) ? float(x - start.x) / dx : float(y - start.y) / dy);
+			const float t = std::fabs((dx > -dy) ? float(x - start.x) / dx : float(y - start.y) / dy);
 			if (sectors[y * sectorXSize + x].maxElevation > diffHeight * t + startHeight) {
 				return false;
 			}
@@ -352,17 +364,32 @@ NSMicroPather::TestFunc ISquadTask::GetHitTest() const
 void ISquadTask::Attack(const int frame)
 {
 	const AIFloat3& tPos = GetTarget()->GetPos();
-	const int targetTile = manager->GetCircuit()->GetInflMap()->Pos2Index(tPos);
 	const bool isRepeatAttack = (frame >= attackFrame + FRAMES_PER_SEC * 3);
 	attackFrame = isRepeatAttack ? frame : attackFrame;
+	const bool isGroundAttack = GetTarget()->GetUnit()->IsCloaked();
 
 	auto it = rangeUnits.begin()->second.begin();
 	std::advance(it, rangeUnits.begin()->second.size() / 2);  // TODO: Optimize
 	AIFloat3 dir = (*it)->GetPos(frame) - tPos;
-	const float alpha = atan2f(dir.z, dir.x);
+
+	if (std::fabs(dir.y) > leader->GetCircuitDef()->GetMaxRange() * 0.5f) {
+		if (isRepeatAttack) {
+			for (CCircuitUnit* unit : units) {
+				unit->GetTravelAct()->StateWait();
+				if (unit->Blocker() != nullptr) {
+					continue;  // Do not interrupt current action
+				}
+
+				unit->Attack(GetTarget(), isGroundAttack, frame + FRAMES_PER_SEC * 60);
+			}
+		}
+		return;
+	}
+
+	const int targetTile = manager->GetCircuit()->GetInflMap()->Pos2Index(tPos);
+	const float alpha = std::atan2(dir.z, dir.x);
 	// incorrect, it should check aoe in vicinity
 	const float aoe = (GetTarget()->GetCircuitDef() != nullptr) ? GetTarget()->GetCircuitDef()->GetAoe() : SQUARE_SIZE;
-	const bool isGroundAttack = GetTarget()->GetUnit()->IsCloaked();
 
 	int row = 0;
 	for (const auto& kv : rangeUnits) {

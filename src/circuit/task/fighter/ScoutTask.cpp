@@ -147,13 +147,9 @@ bool CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	STerrainMapArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const bool IsInWater = cdef->IsInWater(map->GetElevationAt(pos.x, pos.z), pos.y);
-	const bool notAA = !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir());
-	const bool notAL = !(IsInWater ? cdef->HasSubToLand() : cdef->HasSurfToLand());
-	const bool notAW = !(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater());
 	const float speed = SQUARE(cdef->GetSpeed() * 0.8f / FRAMES_PER_SEC);
 	const float maxPower = threatMap->GetUnitThreat(unit) * powerMod;
-	const float weaponRange = cdef->GetMaxRange();
+	const float weaponRange = cdef->GetMaxRange() * 0.9f;
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
@@ -185,21 +181,23 @@ bool CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 		int targetCat;
 		float defThreat;
 		bool isBuilder;
+		const float elevation = map->GetElevationAt(ePos.x, ePos.z);
+		const bool IsInWater = cdef->IsPredictInWater(elevation);
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
 			if (((targetCat & canTargetCat) == 0)
-				|| (edef->IsAbleToFly() && notAA))
+				|| (edef->IsAbleToFly() && !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir())))  // notAA
 			{
 				continue;
 			}
 			float elevation = map->GetElevationAt(ePos.x, ePos.z);
 			if (edef->IsInWater(elevation, ePos.y)) {
-				if (notAW) {
+				if (!(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater())) {  // notAW
 					continue;
 				}
 			} else {
-				if (notAL) {
+				if (!(IsInWater ? cdef->HasSubToLand() : cdef->HasSurfToLand())) {  // notAL
 					continue;
 				}
 			}
@@ -209,7 +207,7 @@ bool CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 			defThreat = edef->GetPower();
 			isBuilder = edef->IsEnemyRoleAny(CCircuitDef::RoleMask::BUILDER);
 		} else {
-			if (notAW && (ePos.y < -SQUARE_SIZE * 5)) {
+			if (!(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater()) && (ePos.y < -SQUARE_SIZE * 5)) {  // notAW
 				continue;
 			}
 			targetCat = UNKNOWN_CATEGORY;

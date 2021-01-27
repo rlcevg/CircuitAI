@@ -67,7 +67,7 @@ local options = {
 		name    = 'Difficulty profile',
 		desc    = 'Difficulty or play-style of AI (see init.as).\nkey: profile',
 		type    = 'list',
-		def     = 'dev',
+		def     = 'flaka',
 		items   = {
 			{
 				key  = 'default',

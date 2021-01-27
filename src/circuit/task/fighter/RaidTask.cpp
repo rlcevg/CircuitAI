@@ -176,6 +176,7 @@ void CRaidTask::Update()
 				}
 			}
 		} else {
+			// FIXME: check hitTest
 			Attack(frame);
 		}
 		return;
@@ -241,14 +242,10 @@ bool CRaidTask::FindTarget()
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
-	const bool IsInWater = cdef->IsInWater(map->GetElevationAt(pos.x, pos.z), pos.y);
-	const bool notAA = !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir());
-	const bool notAL = !(IsInWater ? cdef->HasSubToLand() : cdef->HasSurfToLand());
-	const bool notAW = !(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater());
 	const bool hadTarget = GetTarget() != nullptr;
 	const float maxSpeed = SQUARE(highestSpeed * 0.8f / FRAMES_PER_SEC);
 	const float maxPower = attackPower * powerMod * (hadTarget ? 1.f / 0.75f : 1.f);
-	const float weaponRange = cdef->GetMaxRange();
+	const float weaponRange = cdef->GetMaxRange() * 0.9f;
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float range = std::max(leader->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
@@ -302,21 +299,22 @@ bool CRaidTask::FindTarget()
 		int targetCat;
 		float defThreat;
 		bool isBuilder;
+		const float elevation = map->GetElevationAt(ePos.x, ePos.z);
+		const bool IsInWater = cdef->IsPredictInWater(elevation);
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
 			if (((targetCat & canTargetCat) == 0)
-				|| (edef->IsAbleToFly() && notAA))
+				|| (edef->IsAbleToFly() && !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir())))  // notAA
 			{
 				continue;
 			}
-			float elevation = map->GetElevationAt(ePos.x, ePos.z);
 			if (edef->IsInWater(elevation, ePos.y)) {
-				if (notAW) {
+				if (!(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater())) {  // notAW
 					continue;
 				}
 			} else {
-				if (notAL) {
+				if (!(IsInWater ? cdef->HasSubToLand() : cdef->HasSurfToLand())) {  // notAL
 					continue;
 				}
 			}
@@ -326,7 +324,7 @@ bool CRaidTask::FindTarget()
 			defThreat = edef->GetPower();
 			isBuilder = edef->IsEnemyRoleAny(CCircuitDef::RoleMask::BUILDER | CCircuitDef::RoleMask::COMM);
 		} else {
-			if (notAW && (ePos.y < -SQUARE_SIZE * 5)) {
+			if (!(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater()) && (ePos.y < -SQUARE_SIZE * 5)) {  // notAW
 				continue;
 			}
 			targetCat = UNKNOWN_CATEGORY;

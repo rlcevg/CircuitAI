@@ -269,6 +269,7 @@ public:
 	float GetRadius();
 	float GetHeight();
 	bool IsInWater(float elevation, float posY);
+	bool IsPredictInWater(float elevation);
 	const springai::AIFloat3& GetMidPosOffset() const { return midPosOffset; }
 
 private:

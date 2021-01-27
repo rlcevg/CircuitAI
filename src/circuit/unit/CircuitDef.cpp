@@ -594,4 +594,9 @@ bool CCircuitDef::IsInWater(float elevation, float posY) {
 	return (elevation < -height) && (posY < -topOffset);
 }
 
+bool CCircuitDef::IsPredictInWater(float elevation)
+{
+	return IsAmphibious() ? IsInWater(elevation, elevation) : false;
+}
+
 } // namespace circuit

@@ -259,7 +259,7 @@ NSMicroPather::TestFunc CAntiAirTask::GetHitTest() const
 	}
 	return [&sectors, sectorXSize, cdef](int2 start, int2 end) {  // cdef->IsAmphibious()
 		const float elevation = sectors[start.y * sectorXSize + start.x].minElevation;
-		return cdef->IsInWater(elevation, elevation) ? cdef->HasSubToAir() : cdef->HasSurfToAir();
+		return cdef->IsPredictInWater(elevation) ? cdef->HasSubToAir() : cdef->HasSurfToAir();
 	};
 }
 

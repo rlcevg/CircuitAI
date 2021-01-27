@@ -502,7 +502,7 @@ void CFactoryManager::ReadConfig()
 				sum += p;
 				probs.push_back(p);
 			}
-			if (warnProb && (fabs(sum - 1.0f) > 0.0001f)) {
+			if (warnProb && (std::fabs(sum - 1.0f) > 0.0001f)) {
 				circuit->LOG("CONFIG %s: %s's %s_tier%i total probability = %f", cfgName.c_str(), fac.c_str(), type, i, sum);
 			}
 			return true;

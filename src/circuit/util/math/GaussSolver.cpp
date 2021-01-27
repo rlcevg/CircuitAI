@@ -43,10 +43,10 @@ const CGaussSolver::Vector& CGaussSolver::Solve(Matrix& A, Vector& B)
 	for (int k = 0; k < N - 1; ++k) {
 		int h = k;
 		int p = k;
-		float max = fabs(A[h][p]);
+		float max = std::fabs(A[h][p]);
 		for (int i = k; i < N; ++i) {
 			for (int j = k; j < N; ++j) {
-				float tmp = fabs(A[i][j]);
+				float tmp = std::fabs(A[i][j]);
 				if (max < tmp) {
 					h = i;
 					p = j;

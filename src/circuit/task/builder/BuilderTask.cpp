@@ -585,7 +585,7 @@ void IBuilderTask::FindFacing(const springai::AIFloat3& pos)
 //	facing = UNIT_COMMAND_BUILD_NO_FACING;
 	float terWidth = terrainMgr->GetTerrainWidth();
 	float terHeight = terrainMgr->GetTerrainHeight();
-	if (math::fabs(terWidth - 2 * pos.x) > math::fabs(terHeight - 2 * pos.z)) {
+	if (std::fabs(terWidth - 2 * pos.x) > std::fabs(terHeight - 2 * pos.z)) {
 		facing = (2 * pos.x > terWidth) ? UNIT_FACING_WEST : UNIT_FACING_EAST;
 	} else {
 		facing = (2 * pos.z > terHeight) ? UNIT_FACING_NORTH : UNIT_FACING_SOUTH;

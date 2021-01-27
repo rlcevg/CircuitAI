@@ -216,12 +216,8 @@ bool CDefendTask::FindTarget()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
-	const bool IsInWater = cdef->IsInWater(map->GetElevationAt(pos.x, pos.z), pos.y);
-	const bool notAA = !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir());
-	const bool notAL = !(IsInWater ? cdef->HasSubToLand() : cdef->HasSurfToLand());
-	const bool notAW = !(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater());
 	const float maxPower = attackPower * powerMod;
-	const float weaponRange = cdef->GetMaxRange();
+	const float weaponRange = cdef->GetMaxRange() * 0.9f;
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 
@@ -258,21 +254,23 @@ bool CDefendTask::FindTarget()
 			continue;
 		}
 
+		const float elevation = map->GetElevationAt(ePos.x, ePos.z);
+		const bool IsInWater = cdef->IsPredictInWater(elevation);
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			if (((edef->GetCategory() & canTargetCat) == 0)
 				|| ((edef->GetCategory() & noChaseCat) != 0)
-				|| (edef->IsAbleToFly() && notAA))
+				|| (edef->IsAbleToFly() && !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir())))  // notAA
 			{
 				continue;
 			}
 			float elevation = map->GetElevationAt(ePos.x, ePos.z);
 			if (edef->IsInWater(elevation, ePos.y)) {
-				if (notAW) {
+				if (!(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater())) {  // notAW
 					continue;
 				}
 			} else {
-				if (notAL) {
+				if (!(IsInWater ? cdef->HasSubToLand() : cdef->HasSurfToLand())) {  // notAL
 					continue;
 				}
 			}
@@ -282,7 +280,7 @@ bool CDefendTask::FindTarget()
 				continue;
 			}
 		} else {
-			if (notAW && (ePos.y < -SQUARE_SIZE * 5)) {
+			if (!(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater()) && (ePos.y < -SQUARE_SIZE * 5)) {  // notAW
 				continue;
 			}
 		}

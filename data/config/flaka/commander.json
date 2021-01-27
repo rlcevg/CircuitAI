@@ -14,10 +14,10 @@
 				"factory": {
 					"armlab": [
 						// [<weight>, [<role>, <role>, ...]]
-						[0.20, ["scout", "raider", "builder", "raider", "builder", "builder", "raider", "raider", "raider", "raider", "builder", "support", "raider"]], //base push
-						[0.20, ["raider", "builder", "riot", "builder", "raider", "raider", "raider", "raider", "builder", "raider", "support"]],
-						[0.30, ["scout", "raider", "builder", "raider", "raider", "builder", "raider", "raider", "builder", "raider", "raider", "builder", "support"]], //classic start raider:builder = 2:1
-						[0.30, ["scout", "raider", "builder", "scout", "raider", "raider", "builder", "raider", "raider", "raider", "builder", "raider", "skirmish", "raider", "builder"]]  //offensive start
+						[0.20, ["scout", "raider", "builder", "raider", "builder", "builder", "raider", "raider", "raider", "raider", "builder", "raider"]], //base push
+						[0.50, ["scout", "raider", "builder"]],
+						[0.20, ["scout", "raider", "builder", "raider", "raider", "builder", "raider", "raider", "builder", "raider", "raider", "builder"]], //classic start raider:builder = 2:1
+						[0.20, ["scout", "raider", "builder", "scout", "raider", "raider", "builder", "raider", "raider", "raider", "builder", "raider", "skirmish", "raider", "builder"]]  //offensive start
 					],
 					"armvp": [
 						[0.5, ["scout", "raider", "builder", "raider", "raider", "builder", "builder", "builder", "raider", "raider", "raider", "builder", "raider", "builder"]], //builder start
@@ -27,7 +27,7 @@
 						[1.0, ["builderT2", "skirmish", "skirmish", "skirmish", "builderT2", "skirmish", "skirmish", "skirmish", "skirmish", "skirmish", "anti_air", "builderT2"]]
 					],
 					"armavp": [
-						[1.0, ["builderT2", "skirmish", "skirmish", "builderT2", "skirmish", "builderT2", "raider", "builder", "skirmish", "anti_air", "builderT2"]]
+						[1.0, ["builderT2", "skirmish", "skirmish", "builderT2", "skirmish", "builderT2", "raider", "builderT2", "skirmish", "anti_air", "builderT2"]]
 					]
 				},
 				
@@ -42,10 +42,10 @@
 
 			// Commander hides if ("time" elapsed) and ("threat" exceeds value or enemy has "air")
 			"hide": {
-				"time": 300,  // seconds
+				"time": 420,  // seconds
 				"threat": 7,
 				"air": true,
-				"task_rad": [1600.0, 900.0]  // [<peace_radius>, <danger_radius>]
+				"task_rad": [-1, 800.0]  // [<peace_radius>, <danger_radius>]
 				},
 
 			"side": "armada"
@@ -60,7 +60,8 @@
 					"corlab": [
 						// [<weight>, [<role>, <role>, ...]]
 						[0.5, ["raider", "raider", "builder", "raider", "raider", "builder", "raider", "scout", "raider", "builder", "support", "raider", "raider"]],
-						[0.5, ["builder", "raider", "raider", "raider", "builder", "raider", "raider", "raider", "builder", "raider", "raider", "raider", "builder", "raider", "raider", "support"]]	
+                        [0.5, ["builder", "raider", "raider", "raider", "builder", "raider", "raider", "raider", "builder", "raider", "raider", "raider", "builder", "raider", "raider", "support"]],
+                        [0.5, ["scout", "builder", "builder", "raider", "builder"]]	
 					],
 					"corvp": [
 						[1.0, ["scout", "raider", "builder", "scout", "raider", "raider", "builder", "raider", "raider", "builder", "raider", "raider"]]
@@ -69,7 +70,7 @@
 						[1.0, ["builderT2", "raider", "raider", "raider", "builderT2", "artillery", "artillery", "assault", "builderT2", "anti_air"]]
 					],
 					"coravp": [
-						[1.0, ["builderT2", "skirmish", "skirmish", "skirmish", "builderT2", "skirmish", "skirmish", "assault", "anti_air", "builderT2"]]
+						[1.0, ["builderT2", "skirmish", "skirmish", "skirmish", "builderT2", "skirmish", "skirmish", "assault", "builderT2", "builderT2"]]
 					]
 				},
 				"default": ["builder", "builder", "skirmish", "skirmish", "builder", "raider", "support", "raider"]
@@ -86,7 +87,7 @@
 				"time": 240,  // seconds
 				"threat": 7,
 				"air": true,
-				"task_rad": [2000.0, 1000.0]  // [<peace_radius>, <danger_radius>]
+				"task_rad": [-1, 1000.0]  // [<peace_radius>, <danger_radius>]
 				},
 
 			"side": "cortex"

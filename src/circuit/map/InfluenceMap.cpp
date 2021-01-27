@@ -158,7 +158,7 @@ void CInfluenceMap::Apply()
 	}
 	vulnMax = 0.f;
 	for (int i = 0; i < mapSize; ++i) {
-		drawVulnerability[i] = drawTension[i] - fabs(drawInfluence[i]);
+		drawVulnerability[i] = drawTension[i] - std::fabs(drawInfluence[i]);
 		if (vulnMax < drawVulnerability[i]) {
 			vulnMax = drawVulnerability[i];
 		}
