@@ -392,6 +392,14 @@ void CFactoryManager::ReadConfig()
 
 		cdef->SetIgnore(behaviour.get("ignore", cdef->IsIgnore()).asBool());
 
+		const Json::Value& mpOffset = behaviour["midposoffset"];
+		if (!mpOffset.isNull()) {
+			float x = mpOffset.get((unsigned)0, 0.f).asFloat();
+			float y = mpOffset.get((unsigned)1, 0.f).asFloat();
+			float z = mpOffset.get((unsigned)2, 0.f).asFloat();
+			cdef->SetMidPosOffset(x, y, z);
+		}
+
 		const Json::Value& buildSpeed = behaviour["build_speed"];
 		if (!buildSpeed.isNull()) {
 			cdef->SetBuildSpeed(buildSpeed.asFloat());

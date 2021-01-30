@@ -50,8 +50,8 @@ public:
 
 public:
 	void Init();
-	void AddBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing);
-	void DelBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing);
+	void AddBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing, bool isOffset = false);
+	void DelBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing, bool isOffset = false);
 	void AddBlockerPath(CCircuitUnit* unit, const springai::AIFloat3& pos, const STerrainMapMobileType::Id mobileId);
 	void ResetBuildFrame() { markFrame = -FRAMES_PER_SEC; }
 	// TODO: Use IsInBounds test and Bound operation only if mask or search offsets (endr) are out of bounds

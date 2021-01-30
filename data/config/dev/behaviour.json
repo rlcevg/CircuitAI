@@ -105,7 +105,8 @@
 	// CORTEX defenses
 	"corllt": {
 		"role": ["static"],
-		"thr_mod": 0.8
+		"thr_mod": 0.8,
+		"midposoffset": [0, 0, 2.38]
 	},
 	"corhllt": {
 		"role": ["static"],
@@ -210,6 +211,7 @@
 		"role": ["static"],
 		"attribute": ["support"],
 		"limit": 1,
+		"midposoffset": [0, 0, 21],
 		"build_speed": 10.0
 	},
 	"corgant": {
@@ -318,6 +320,10 @@
 
 		// Ignore enemy
 //		"ignore": false,
+
+		// Difference between build-order position and unit position returned by engine.
+		// It's about midPosOffset and collisionVolumeOffsets with no way to read it.
+//		"midposoffset": [1.1, 2, -3.3],  // default = [0, 0, 0]
 
 		// FIXME: Temporary tag to override buildSpeed
 		"build_speed": 10.0
@@ -1010,6 +1016,7 @@
 	},
 	"corlab": {
 		"role": ["builder"],
+		"midposoffset": [-3.239746, 0, -2],
 		"build_speed": 10.0
 	},
 	"corvp": {

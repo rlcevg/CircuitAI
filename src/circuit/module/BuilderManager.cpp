@@ -207,7 +207,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	auto buildingDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		int frame = this->circuit->GetLastFrame();
 		int facing = unit->GetUnit()->GetBuildingFacing();
-		this->circuit->GetTerrainManager()->DelBlocker(unit->GetCircuitDef(), unit->GetPos(frame), facing);
+		this->circuit->GetTerrainManager()->DelBlocker(unit->GetCircuitDef(), unit->GetPos(frame), facing, true);
 	};
 
 	/*
@@ -270,7 +270,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
 		CCircuitDef* mexDef = unit->GetCircuitDef();
 		const int facing = unit->GetUnit()->GetBuildingFacing();
-		this->circuit->GetTerrainManager()->DelBlocker(mexDef, pos, facing);
+		this->circuit->GetTerrainManager()->DelBlocker(mexDef, pos, facing, true);
 		int index = this->circuit->GetMetalManager()->FindNearestSpot(pos);
 		if (index < 0) {
 			return;
@@ -494,7 +494,7 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		if (!unit->GetCircuitDef()->IsMobile() && !terrainMgr->ResignAllyBuilding(unit)) {
 			// enemy unit captured
 			const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
-			terrainMgr->AddBlocker(unit->GetCircuitDef(), pos, unit->GetUnit()->GetBuildingFacing());
+			terrainMgr->AddBlocker(unit->GetCircuitDef(), pos, unit->GetUnit()->GetBuildingFacing(), true);
 		}
 		return 0; //signaling: OK
 	}
@@ -513,14 +513,13 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		if ((taskB->GetTarget() == nullptr) && (taskB->GetBuildDef() != nullptr) &&
 			(*taskB->GetBuildDef() == *unit->GetCircuitDef()) && taskB->IsEqualBuildPos(unit))
 		{
-			// FIXME: DEBUG
-//			AIFloat3 bp = taskB->GetBuildPos();
-//			circuit->GetDrawer()->AddPoint(bp, "bp");
-//			circuit->LOG("bp = %f, %f", bp.x, bp.z);
-//			AIFloat3 up = unit->GetPos(circuit->GetLastFrame());
-//			circuit->GetDrawer()->AddPoint(up, "up");
-//			circuit->LOG("up = %f, %f", up.x, up.z);
-			// FIXME: DEBUG
+#if 0
+			AIFloat3 bp = taskB->GetBuildPos();
+			circuit->GetDrawer()->AddPoint(bp, "bp");
+			AIFloat3 up = unit->GetPos(circuit->GetLastFrame());
+			circuit->GetDrawer()->AddPoint(up, "up");
+			circuit->LOG("%s | bp = %f, %f | up = %f, %f", unit->GetCircuitDef()->GetDef()->GetName(), bp.x, bp.z, up.x, up.z);
+#endif
 			taskB->UpdateTarget(unit);
 			unfinishedUnits[unit] = taskB;
 		} else {

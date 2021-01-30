@@ -10,13 +10,13 @@
 
 			// Unit of measurement: 1 size/yard/radius = SQUARE_SIZE * 2 = 16 elmos, integer.
 			// Offset in South facing
-			"offset": [0, 6],  // default: [0, 0]
+			"offset": [0, 8],  // default: [0, 0]
 
 			// Size of a blocker without yard
 //			"size": [7, 7],  // default: size of a unit
 
 			// Spacer, blocker_size = size + yard
-			"yard": [12, 12]  // default: [0, 0]
+			"yard": [8, 16]  // default: [0, 0]
 
 			// Integer radius of a blocker or description string.
 			// Available string values: explosion, expl_ally = [radius ~ 1 player .. radius/2 ~ 4+ players]
@@ -27,6 +27,11 @@
 			// Additional values: none, all
 //			"ignore": ["none"],  // default: ["none"]
 //			"not_ignore": ["all"]  // default: ["all"]
+		},
+		"fac_land2": {
+			"type": ["rectangle", "factory"],
+			"offset": [0, 4],
+			"yard": [-2, 42]
 		},
 		"fac_air": {
 			"type": ["rectangle", "factory"],
@@ -112,7 +117,7 @@
 		},
 		"_default_": {
 			"type": ["rectangle", "unknown"],
-			"yard": [4, 4],
+			"yard": [6, 6],
 			"ignore": ["engy_high"]
 		}
 	},
@@ -124,7 +129,8 @@
 		}
 	},
 	"instance": {
-		"fac_land": ["armlab", "armalab", "armvp", "armavp", "armhp", "corlab", "coralab", "corvp", "coravp", "corhp"],
+		"fac_land": ["armlab", "armalab", "armvp", "armavp", "armhp", "coralab", "corvp", "coravp", "corhp"],
+		"fac_land2": ["corlab"],
 		"fac_water": ["armsy", "armasy", "corsy", "corasy"],
 		"fac_strider": ["armshltx", "corgant"],
 		"solar": ["armsolar", "corsolar"],

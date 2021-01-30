@@ -210,7 +210,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		const std::string& str = it->second;
 		std::string::const_iterator start = str.begin();
 		std::string::const_iterator end = str.end();
-		std::regex pattern("(-?\\d+)");
+		std::regex pattern("([+-]?([0-9]*[.])?[0-9]+)");
 		std::smatch section;
 		int index = 0;
 		while (std::regex_search(start, end, section, pattern) && (index < 3)) {
@@ -597,6 +597,25 @@ bool CCircuitDef::IsInWater(float elevation, float posY) {
 bool CCircuitDef::IsPredictInWater(float elevation)
 {
 	return IsAmphibious() ? IsInWater(elevation, elevation) : false;
+}
+
+AIFloat3 CCircuitDef::GetMidPosOffset(int facing) const
+{
+	switch (facing) {
+		default:
+		case UNIT_FACING_SOUTH: {
+			return AIFloat3(-midPosOffset.x, 0, -midPosOffset.z);
+		} break;
+		case UNIT_FACING_EAST: {
+			return AIFloat3(-midPosOffset.z, 0, +midPosOffset.x);
+		} break;
+		case UNIT_FACING_NORTH: {
+			return AIFloat3(+midPosOffset.x, 0, +midPosOffset.z);
+		} break;
+		case UNIT_FACING_WEST: {
+			return AIFloat3(+midPosOffset.z, 0, -midPosOffset.x);
+		} break;
+	}
 }
 
 } // namespace circuit

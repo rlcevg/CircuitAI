@@ -338,9 +338,9 @@ void IBuilderTask::SetTarget(CCircuitUnit* unit)
 	}
 	target = unit;
 	if (unit != nullptr) {
-		buildDef = unit->GetCircuitDef();
-		buildPos = unit->GetPos(circuit->GetLastFrame());
 		facing = unit->GetUnit()->GetBuildingFacing();
+		buildDef = unit->GetCircuitDef();
+		buildPos = unit->GetPos(circuit->GetLastFrame()) + buildDef->GetMidPosOffset(facing);
 	} else {
 		buildPos = -RgtVector;
 	}
@@ -366,27 +366,7 @@ void IBuilderTask::UpdateTarget(CCircuitUnit* unit)
 bool IBuilderTask::IsEqualBuildPos(CCircuitUnit* unit) const
 {
 	AIFloat3 pos = unit->GetPos(manager->GetCircuit()->GetLastFrame());
-	const AIFloat3& offset = unit->GetCircuitDef()->GetMidPosOffset();
-	int facing = unit->GetUnit()->GetBuildingFacing();
-	switch (facing) {
-		default:
-		case UNIT_FACING_SOUTH: {
-			pos.x -= offset.x;
-			pos.z -= offset.z;
-		} break;
-		case UNIT_FACING_EAST: {
-			pos.x -= offset.z;
-			pos.z += offset.x;
-		} break;
-		case UNIT_FACING_NORTH: {
-			pos.x += offset.x;
-			pos.z += offset.z;
-		} break;
-		case UNIT_FACING_WEST: {
-			pos.x += offset.z;
-			pos.z -= offset.x;
-		} break;
-	}
+	pos += unit->GetCircuitDef()->GetMidPosOffset(unit->GetUnit()->GetBuildingFacing());
 	// NOTE: Unit's position is affected by collisionVolumeOffsets, and there is no way to retrieve it.
 	//       Hence absurdly large error slack, @see factoryship.lua
 	return utils::is_equal_pos(pos, buildPos, SQUARE_SIZE * 2);
