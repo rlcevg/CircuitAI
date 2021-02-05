@@ -14,10 +14,12 @@
 					"armfus": [1, 2]
 				},
 				"water": {
-					"armtide": [14, 25],
+					"armtide": [20, 40],
 					"armwin": [10, 20],
 					"armsolar": [1],
 					"armadvsol": [12, 16],
+					"armfus": [1, 2, 35, 900, 2],
+					"armafus": [1, 2, 70, 4000, 6.44],
 					"armuwfus": [1, 2]
 				}
 			},
@@ -35,6 +37,8 @@
 					"corwin": [10, 20],
 					"corsolar": [1],
 					"coradvsol": [12, 16],
+					"corfus": [1, 2, 35, 900, 2],
+					"corafus": [1, 2, 70, 4000, 6.44],
 					"coruwfus": [1, 2]
 				}
 			}
