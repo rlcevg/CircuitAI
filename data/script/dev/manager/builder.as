@@ -47,6 +47,7 @@ void AiTaskCreated(IUnitTask@ task)
 // 	} break;
 // 	case 10:  // BuildType::MEX
 // 	case 5:  // BuildType::DEFENCE
+// 	case 0:  // BuildType::FACTORY
 // 		AiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
 // 		break;
 // 	default:

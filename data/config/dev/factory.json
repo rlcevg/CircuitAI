@@ -72,7 +72,7 @@
 	},
 
 	"armvp": {
-		"importance": [0.8, 0.0],
+		"importance": [0.75, 0.0],
 
 		"require_energy": false,
 
@@ -302,7 +302,7 @@
 	},
 
 	"corvp": {
-		"importance": [0.8, 0.0],
+		"importance": [0.75, 0.0],
 
 		"require_energy": false,
 

@@ -53,6 +53,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, isMetalFull(false)
 		, isEnergyStalling(false)
 		, isEnergyEmpty(false)
+		, isEnergyRequired(false)
 		, metal(SResourceInfo {-1, .0f, .0f, .0f, .0f})
 		, energy(SResourceInfo {-1, .0f, .0f, .0f, .0f})
 		, energyUse(.0f)
@@ -443,7 +444,7 @@ void CEconomyManager::Init()
 		const float maxTravel = 7 + rand() % (10 - 7 + 1);  // seconds
 		const int interval = allyTeam->GetSize() * FRAMES_PER_SEC;
 		startFactory = std::make_shared<CGameTask>(&CEconomyManager::StartFactoryTask, this, maxTravel);
-		scheduler->RunTaskEvery(startFactory, 3, circuit->GetSkirmishAIId() + 0 + 5 * FRAMES_PER_SEC);
+		scheduler->RunTaskEvery(startFactory, 1, circuit->GetSkirmishAIId() + 0 + 5 * FRAMES_PER_SEC);
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CEconomyManager::UpdateStorageTasks, this),
 								interval, circuit->GetSkirmishAIId() + 1 + interval / 2);
 
@@ -843,18 +844,19 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	// check energy / metal ratio
 	float metalIncome = GetAvgMetalIncome();
 	const float energyIncome = GetAvgEnergyIncome();
-	const bool isEnergyStalling = IsEnergyStalling();
+	bool isEnergyStalling = IsEnergyStalling();
 	// TODO: e-stalling needs separate array of energy-defs sorted by cost
 
 	// Select proper energy UnitDef to build
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CCircuitDef* bestDef = nullptr;
 	CCircuitDef* hopeDef = nullptr;
-	bool isLastHope = isEnergyStalling;
 	metalIncome = std::min(metalIncome, energyIncome) * energyFactor;
 	const float buildPower = std::min(builderMgr->GetBuildPower(), metalIncome);
 	const int taskSize = builderMgr->GetTasks(IBuilderTask::BuildType::ENERGY).size();
 	const float buildTimeMod = isEnergyStalling ? 0.25f : 1.f;
+	isEnergyStalling |= isEnergyRequired;
+	bool isLastHope = isEnergyStalling;
 
 	const int frame = circuit->GetLastFrame();
 	for (const SEnergyInfo& engy : energyDefs.infos) {  // sorted by high-tech first
@@ -986,31 +988,31 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		return nullptr;
 	}
 
-	const bool isSwitchTime = factoryMgr->IsSwitchTime();
-	if (!isSwitchTime) {
-		// TODO: Separate clear rule for 1st factory
-		const float assistSpeed = assistDef->GetBuildSpeed();
-		auto factorFunc = [assistSpeed](float resource) {
-			return (resource/* * ecoFactor*/ - assistSpeed) * 1.2f;
-		};
-//		const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
-		const float energyFactor = factorFunc(GetAvgEnergyIncome() * 0.1f);
-		const float metalFactor = factorFunc(GetAvgMetalIncome());
-		const int nanoSize = builderMgr->GetTasks(IBuilderTask::BuildType::NANO).size();
-		const float factoryPower = factoryMgr->GetFactoryPower() + nanoSize * assistSpeed;
-		if (metalFactor < factoryPower) {
-			return nullptr;
-		}
-		const float energyPower = factoryMgr->GetEnergyPower() + nanoSize * assistSpeed;
-		if (energyFactor < energyPower) {
-			isEnergyStalling = true;  // enough metal, request energy
-			return nullptr;
-		}
+	/*
+	 * check metal and energy levels
+	 */
+	const float assistSpeed = assistDef->GetBuildSpeed();
+	auto factorFunc = [assistSpeed](float resource) {
+		return (resource/* * ecoFactor*/ - assistSpeed) * 1.2f;
+	};
+//	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
+	const float energyFactor = factorFunc(GetAvgEnergyIncome() * 0.1f);
+	const float metalFactor = factorFunc(GetAvgMetalIncome());
+	const int nanoSize = builderMgr->GetTasks(IBuilderTask::BuildType::NANO).size();
+	const float factoryPower = factoryMgr->GetFactoryPower() + nanoSize * assistSpeed;
+	if (metalFactor < factoryPower) {
+		return nullptr;
+	}
+	const float energyPower = factoryMgr->GetEnergyPower() + nanoSize * assistSpeed;
+	if (energyFactor < energyPower) {
+		isEnergyRequired = true;  // enough metal, request energy
+		return nullptr;
 	}
 
 	/*
 	 * check nanos
 	 */
+	const bool isSwitchTime = factoryMgr->IsSwitchTime();
 	if (!isSwitchTime) {
 		CCircuitUnit* factory = factoryMgr->NeedUpgrade();
 		if ((factory != nullptr) && assistDef->IsAvailable(frame)) {
@@ -1118,7 +1120,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		if (isPlop) {  // FIXME: Calculating buildPos just to kill it here
 			buildPos = -RgtVector;
 		}
-		return builderMgr->EnqueueFactory(priority, facDef, reprDef, buildPos, SQUARE_SIZE, isPlop, true, 0);
+		return builderMgr->EnqueueFactory(priority, facDef, reprDef, buildPos, SQUARE_SIZE, isPlop, true, FRAMES_PER_SEC * 120);
 	}
 
 	return nullptr;
@@ -1250,16 +1252,16 @@ void CEconomyManager::StartFactoryTask(const float seconds)
 		}
 		IBuilderTask* factoryTask = UpdateFactoryTasks();
 		if (factoryTask == nullptr) {
-			if (circuit->GetEconomyManager()->IsEnergyStalling()) {
+			if (isEnergyRequired) {
 				if (comm != nullptr) {
 					UpdateEnergyTasks(pos, comm);
 				}
 			}
 			return;
 		}
-		if (comm != nullptr) {
-			circuit->GetBuilderManager()->AssignTask(comm, factoryTask);
-		}
+//		if (comm != nullptr) {
+//			circuit->GetBuilderManager()->AssignTask(comm, factoryTask);
+//		}
 	}
 
 	CScheduler* scheduler = circuit->GetScheduler().get();

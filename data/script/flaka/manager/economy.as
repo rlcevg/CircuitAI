@@ -23,7 +23,7 @@ void AiUpdateEconomy()
 	aiEconomyMgr.isMetalFull = metal.current > metal.storage * 0.99f;
 	if (ai.frame < 3 * MINUTE) {
 		aiEconomyMgr.isEnergyEmpty = false;
-		aiEconomyMgr.isEnergyStalling = energy.current < energy.storage * 0.3f;
+		aiEconomyMgr.isEnergyStalling = (energy.income < energy.pull) && (energy.current < energy.storage * 0.3f);
 	} else {
 		aiEconomyMgr.isEnergyEmpty = energy.current < energy.storage * 0.2f;
 		aiEconomyMgr.isEnergyStalling = aiEconomyMgr.isEnergyEmpty || ((energy.income < energy.pull) && (energy.current < energy.storage * 0.6f));

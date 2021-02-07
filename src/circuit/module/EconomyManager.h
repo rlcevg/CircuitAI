@@ -96,6 +96,8 @@ public:
 	bool IsMetalFull();
 	bool IsEnergyStalling();
 	bool IsEnergyEmpty();
+	bool IsEnergyRequired() const { return isEnergyRequired; }
+	void ClearEnergyRequired() { isEnergyRequired = false; }
 	bool IsExcessed() const { return metalProduced > metalUsed; }
 	int GetBuildDelay() const { return buildDelay; }
 
@@ -218,6 +220,7 @@ private:
 	bool isMetalFull;
 	bool isEnergyStalling;
 	bool isEnergyEmpty;
+	bool isEnergyRequired;
 
 	int metalPullFrame;
 	int energyPullFrame;

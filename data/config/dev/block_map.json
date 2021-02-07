@@ -124,8 +124,8 @@
 	// Water overrides land. Map considered as water if amount of land < 40%
 	"class_water" : {
 		"wind": {
-			"type": ["rectangle", "engy_low"],
-			"ignore": ["mex", "engy_mid", "engy_high", "nano"]
+			"type": ["circle", "engy_low"],
+			"ignore": ["engy_low"]
 		}
 	},
 	"instance": {

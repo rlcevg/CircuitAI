@@ -746,9 +746,11 @@ void CFactoryManager::FallbackTask(CCircuitUnit* unit)
 void CFactoryManager::ResetFactoryPower()
 {
 	isResetedFactoryPower = true;
-	const float offset = (8.1f - circuit->GetEconomyManager()->GetPureMetalIncome()) * 1.2f;
+	// FIXME: GetPureMetalIncome() returns average or past frame value, which is lower than real income
+	const float offset = (8.f - circuit->GetEconomyManager()->GetPureMetalIncome()) * 1.2f;
 	factoryPower -= offset;
 	offsetPower += offset;
+	isSwitchTime = true;
 }
 
 void CFactoryManager::ApplySwitchFrame()

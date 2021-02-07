@@ -847,6 +847,7 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 		}
 		case IBuilderTask::BuildType::ENERGY: {
 			task = new CBEnergyTask(this, priority, buildDef, position, cost, shake, timeout);
+			circuit->GetEconomyManager()->ClearEnergyRequired();
 			break;
 		}
 		case IBuilderTask::BuildType::DEFENCE: {
@@ -1015,7 +1016,8 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 	}
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	std::shared_ptr<IPathQuery> q = pathfinder->CreateCostMapQuery(unit, circuit->GetThreatMap(), frame, pos);
+	std::shared_ptr<IPathQuery> q = pathfinder->CreateCostMapQuery(unit, circuit->GetThreatMap(), frame,
+			(cdef->IsRoleComm() || (unit == energizer1) || (unit == energizer2)) ? circuit->GetSetupManager()->GetBasePos() : pos);
 	costQueries[unit] = q;
 	pathfinder->RunQuery(q);
 
