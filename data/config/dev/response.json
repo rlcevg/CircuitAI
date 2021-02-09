@@ -20,7 +20,7 @@
 		"vs":         ["riot", "static", "assault", "commander", "heavy", "anti_heavy", "transport"],
 		"ratio":      [ 1.00,   1.00,     1.00,      0.35,        0.00,    0.00,         1.50],
 		"importance": [ 35.00,  25.00,    25.00,     25.00,       0.00,    0.00,         150.00],
-		"max_percent": 1.00,
+		"max_percent": 0.50,
 		"eps_step": 0.075
 	},
 	"raider": {

@@ -154,9 +154,6 @@ public:
 		return GetResurrectTask(pos, radius) != nullptr;
 	}
 
-	CCircuitUnit* GetEnergizer1() const { return energizer1; }
-	CCircuitUnit* GetEnergizer2() const { return energizer2; }
-
 private:
 	virtual IUnitTask* DefaultMakeTask(CCircuitUnit* unit) override;
 	IBuilderTask* MakeEnergizerTask(CCircuitUnit* unit, const CQueryCostMap* query);

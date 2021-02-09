@@ -112,10 +112,12 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 						&& ((unsigned)unit->GetCircuitDef()->GetCount() > militaryMgr->GetDefendTaskNum()))
 					{
 						energizer1 = unit;
+						unit->AddAttribute(CCircuitUnit::AttrType::BASE);
 					}
 				} else {
 					if (energizer2 == nullptr) {
 						energizer2 = unit;
+						unit->AddAttribute(CCircuitUnit::AttrType::BASE);
 					}
 				}
 			}
@@ -1017,7 +1019,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> q = pathfinder->CreateCostMapQuery(unit, circuit->GetThreatMap(), frame,
-			(cdef->IsRoleComm() || (unit == energizer1) || (unit == energizer2)) ? circuit->GetSetupManager()->GetBasePos() : pos);
+			unit->IsAttrBase() ? circuit->GetSetupManager()->GetBasePos() : pos);
 	costQueries[unit] = q;
 	pathfinder->RunQuery(q);
 
@@ -1048,7 +1050,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 		}
 	}
 
-	return ((unit == energizer1) || (unit == energizer2))
+	return unit->IsAttrBase()
 			? MakeEnergizerTask(unit, pQuery.get())
 			: MakeBuilderTask(unit, pQuery.get());
 }

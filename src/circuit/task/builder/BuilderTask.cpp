@@ -422,9 +422,7 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 //			return true;
 //		}
 		if ((buildType != BuildType::GUARD)
-			&& ((units.size() < 2)  // TODO: check not only units.size() < 2 but units that started building
-				|| (unit != circuit->GetBuilderManager()->GetEnergizer1())
-				|| (unit != circuit->GetBuilderManager()->GetEnergizer2())))
+			&& ((units.size() < 2) || unit->IsAttrBase()))  // TODO: check not only units.size() < 2 but units that started building
 		{
 			TRY_UNIT(circuit, unit,
 				const bool prio = !ecoMgr->IsEnergyStalling() || (buildType == BuildType::ENERGY);
