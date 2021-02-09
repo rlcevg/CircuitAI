@@ -20,6 +20,16 @@ public:
 	virtual ~CBuilderScript();
 
 	void Init() override;
+
+public:
+	void WorkerCreated(CCircuitUnit* unit);
+	void WorkerDestroyed(CCircuitUnit* unit);
+
+private:
+	struct SScriptInfo {
+		asIScriptFunction* workerCreated = nullptr;
+		asIScriptFunction* workerDestroyed = nullptr;
+	} info;
 };
 
 } // namespace circuit

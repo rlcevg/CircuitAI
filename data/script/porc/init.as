@@ -1,5 +1,5 @@
 #include "../common.as"
-#include "../default/role.as"
+#include "../unit.as"
 
 
 namespace Init {

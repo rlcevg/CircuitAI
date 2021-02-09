@@ -6,7 +6,7 @@ namespace Side {
 TypeMask ARMADA = aiSideMasker.GetTypeMask("armada");
 TypeMask CORTEX = aiSideMasker.GetTypeMask("cortex");
 
-}
+}  // namespace Side
 
 namespace Init {
 
@@ -21,4 +21,4 @@ SCategoryInfo InitCategories()
 	return category;
 }
 
-}
+}  // namespace Init

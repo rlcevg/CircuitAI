@@ -1,6 +1,3 @@
-#include "../role.as"
-
-
 namespace Builder {
 
 IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
@@ -13,6 +10,14 @@ void AiTaskCreated(IUnitTask@ task)
 }
 
 void AiTaskClosed(IUnitTask@ task, bool done)
+{
+}
+
+void AiWorkerCreated(CCircuitUnit@ unit)
+{
+}
+
+void AiWorkerDestroyed(CCircuitUnit@ unit)
 {
 }
 

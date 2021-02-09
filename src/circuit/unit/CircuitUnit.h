@@ -9,9 +9,9 @@
 #define SRC_CIRCUIT_UNIT_CIRCUITUNIT_H_
 
 #include "unit/ally/AllyUnit.h"
+#include "unit/CircuitDef.h"
 #include "util/ActionList.h"
 #include "util/Defines.h"
-#include "util/MaskHandler.h"
 
 namespace springai {
 	class Command;
@@ -54,7 +54,6 @@ namespace circuit {
 #define CMD_LAND_AT_AIRBASE		35430
 // FIXME: BA
 
-class CCircuitDef;
 class CEnemyInfo;
 class IUnitManager;
 class CDGunAction;
@@ -64,18 +63,6 @@ struct STerrainMapArea;
 class CCircuitUnit: public CAllyUnit, public CActionList {
 public:
 	friend class CInitScript;
-
-	/*
-	 * BASE: base builder, high priority for energy and storage tasks
-	 */
-	enum class AttrType: CMaskHandler::Type {NONE = -1,
-		BASE = 0, _SIZE_};
-	enum AttrMask: CMaskHandler::Mask {
-		BASE = 0x00000001};
-	using AttrT = std::underlying_type<AttrType>::type;
-	using AttrM = std::underlying_type<AttrMask>::type;
-
-	static AttrM GetMask(AttrT type) { return CMaskHandler::GetMask(type); }
 
 	CCircuitUnit(const CCircuitUnit& that) = delete;
 	CCircuitUnit& operator=(const CCircuitUnit&) = delete;
@@ -163,8 +150,9 @@ public:
 	CEnemyInfo* GetTarget() const { return target; }
 	int GetTargetTile() const { return targetTile; }
 
-	void AddAttribute(AttrType type) { attr |= GetMask(static_cast<AttrT>(type)); }
-	bool IsAttrBase() const { return attr & AttrMask::BASE; }
+	void AddAttribute(CCircuitDef::AttrType type) { attr |= CCircuitDef::GetMask(static_cast<CCircuitDef::AttrT>(type)); }
+	bool IsAttrAny(CCircuitDef::AttrM value) const { return (attr & value) != 0; }
+	bool IsAttrBase() const { return attr & CCircuitDef::AttrMask::BASE; }
 
 private:
 	// NOTE: taskFrame assigned on task change and OnUnitIdle to workaround idle spam.
@@ -201,7 +189,7 @@ private:
 	CEnemyInfo* target;
 	int targetTile;
 
-	AttrM attr;
+	CCircuitDef::AttrM attr;
 
 #ifdef DEBUG_VIS
 public:

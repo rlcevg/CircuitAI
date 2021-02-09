@@ -1,7 +1,10 @@
-#include "../../default/role.as"
+#include "../../unit.as"
 
 
 namespace Builder {
+
+CCircuitUnit@ energizer1 = null;
+CCircuitUnit@ energizer2 = null;
 
 //AIFloat3 lastPos;
 // int gPauseCnt = 0;
@@ -69,6 +72,35 @@ void AiTaskClosed(IUnitTask@ task, bool done)
 // 	default:
 // 		break;
 // 	}
+}
+
+void AiWorkerCreated(CCircuitUnit@ unit)
+{
+	if (unit.circuitDef.IsRoleAny(Unit::Role::COMM.mask)) {
+		return;
+	}
+	if (unit.circuitDef.costM < 200.f) {
+		if ((energizer1 is null)
+			&& (unit.circuitDef.count > aiMilitaryMgr.GetDefendTaskNum()))
+		{
+			@energizer1 = @unit;
+			unit.AddAttribute(Unit::Attr::BASE.type);
+		}
+	} else {
+		if (energizer2 is null) {
+			@energizer2 = @unit;
+			unit.AddAttribute(Unit::Attr::BASE.type);
+		}
+	}
+}
+
+void AiWorkerDestroyed(CCircuitUnit@ unit)
+{
+	if (energizer1 is unit) {
+		@energizer1 = null;
+	} else if (energizer2 is unit) {
+		@energizer2 = null;
+	}
 }
 
 }  // namespace Builder

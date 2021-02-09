@@ -1,5 +1,4 @@
 #include "../../define.as"
-#include "../role.as"
 
 
 namespace Factory {

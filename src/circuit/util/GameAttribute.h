@@ -40,6 +40,7 @@ public:
 	CTerrainData& GetTerrainData() { return terrainData; }
 	CMaskHandler& GetSideMasker() { return sideMasker; }
 	CMaskHandler& GetRoleMasker() { return roleMasker; }
+	CMaskHandler& GetAttrMasker() { return attrMasker; }
 
 private:
 	bool isInitialized;
@@ -50,6 +51,7 @@ private:
 	CTerrainData terrainData;
 	CMaskHandler sideMasker;
 	CMaskHandler roleMasker;
+	CMaskHandler attrMasker;
 };
 
 } // namespace circuit

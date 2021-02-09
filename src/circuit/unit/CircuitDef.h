@@ -23,6 +23,7 @@ namespace springai {
 namespace circuit {
 
 #define ROLE_TYPE(x)	static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::x)
+#define ATTR_TYPE(x)	static_cast<CCircuitDef::AttrT>(CCircuitDef::AttrType::x)
 
 class CWeaponDef;
 
@@ -64,15 +65,16 @@ public:
 	 * RET_HOLD:  hold fire on retreat
 	 * RET_FIGHT: fight on retreat
 	 * SOLO:      single unit per build-task
+	 * BASE:      base builder, high priority for energy and storage tasks
 	 */
 	enum class AttrType: RoleT {NONE = -1,
 		MELEE = 0, BOOST, NO_JUMP, NO_STRAFE,
 		STOCK, SIEGE, RET_HOLD, RET_FIGHT,
-		SOLO, _SIZE_};
+		SOLO, BASE, _SIZE_};
 	enum AttrMask: RoleM {
 		MELEE = 0x00000001, BOOST = 0x00000002, NO_JUMP  = 0x00000004, NO_STRAFE = 0x00000008,
 		STOCK = 0x00000010, SIEGE = 0x00000020, RET_HOLD = 0x00000040, RET_FIGHT = 0x00000080,
-		SOLO  = 0x00000100};
+		SOLO  = 0x00000100, BASE  = 0x00000200};
 	using AttrT = std::underlying_type<AttrType>::type;
 	using AttrM = std::underlying_type<AttrMask>::type;
 
@@ -81,13 +83,13 @@ public:
 	static RoleM GetMask(RoleT type) { return CMaskHandler::GetMask(type); }
 
 	using RoleName = const CMaskHandler::MaskName;
-	using AttrName = std::map<std::string, AttrType>;
+	using AttrName = const CMaskHandler::MaskName;
 	using FireName = std::map<std::string, FireType>;
 	static RoleName& GetRoleNames() { return *roleNames; }
-	static AttrName& GetAttrNames() { return attrNames; }
+	static AttrName& GetAttrNames() { return *attrNames; }
 	static FireName& GetFireNames() { return fireNames; }
 
-	static void InitStatic(CCircuitAI* circuit, CMaskHandler* roleMasker);
+	static void InitStatic(CCircuitAI* circuit, CMaskHandler* roleMasker, CMaskHandler* attrMasker);
 
 //	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
@@ -106,11 +108,11 @@ public:
 	void AddEnemyRoles(RoleM mask) { enemyRole |= mask; }
 	bool IsEnemyRoleAny(RoleM value) const { return (enemyRole & value) != 0; }
 
-	void AddAttribute(AttrType type) { attr |= GetMask(static_cast<AttrT>(type)); }
+	void AddAttribute(AttrT type) { attr |= GetMask(type); }
 	void AddRole(RoleT type) { AddRole(type, type); }
 	void AddRole(RoleT type, RoleT bindType);
-	bool IsRespRoleAny(RoleM value)     const { return (respRole & value) != 0; }
-//	bool IsRoleAny(RoleM value)     const { return (role & value) != 0; }
+	bool IsRespRoleAny(RoleM value) const { return (respRole & value) != 0; }
+	bool IsRoleAny(RoleM value)     const { return (role & value) != 0; }
 //	bool IsRoleEqual(RoleM value)   const { return role == value; }
 //	bool IsRoleContain(RoleM value) const { return (role & value) == value; }
 
@@ -276,7 +278,7 @@ public:
 
 private:
 	static RoleName* roleNames;
-	static AttrName attrNames;
+	static AttrName* attrNames;
 	static FireName fireNames;
 
 	// TODO: associate script data with CCircuitDef

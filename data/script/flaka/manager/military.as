@@ -1,5 +1,5 @@
 #include "../../define.as"
-#include "../../default/role.as"
+#include "../../unit.as"
 
 
 namespace Military {
@@ -35,7 +35,7 @@ void AiMakeDefence(int cluster, const AIFloat3& in pos)
 // FIXME: Remove/replace, deprecated.
 bool AiIsAirValid()
 {
-	return aiEnemyMgr.GetEnemyThreat(RT::AA) <= 80.f;
+	return aiEnemyMgr.GetEnemyThreat(Unit::Role::AA.type) <= 80.f;
 }
 
 }  // namespace Military

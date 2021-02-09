@@ -106,21 +106,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			AddBuildPower(unit);
 			workers.insert(unit);
 
-			if (!unit->GetCircuitDef()->IsRoleComm()) {
-				if (unit->GetCircuitDef()->GetCostM() < 200) {
-					if ((energizer1 == nullptr)
-						&& ((unsigned)unit->GetCircuitDef()->GetCount() > militaryMgr->GetDefendTaskNum()))
-					{
-						energizer1 = unit;
-						unit->AddAttribute(CCircuitUnit::AttrType::BASE);
-					}
-				} else {
-					if (energizer2 == nullptr) {
-						energizer2 = unit;
-						unit->AddAttribute(CCircuitUnit::AttrType::BASE);
-					}
-				}
-			}
+			static_cast<CBuilderScript*>(script)->WorkerCreated(unit);
 
 			AddBuildList(unit, mexUpgraderCount[unit->GetCircuitDef()]);
 		}
@@ -164,11 +150,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			workers.erase(unit);
 			costQueries.erase(unit);
 
-			if (energizer1 == unit) {
-				energizer1 = nullptr;
-			} else if (energizer2 == unit) {
-				energizer2 = nullptr;
-			}
+			static_cast<CBuilderScript*>(script)->WorkerDestroyed(unit);
 
 			RemoveBuildList(unit, mexUpgraderCount[unit->GetCircuitDef()]);
 		}
@@ -1019,7 +1001,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> q = pathfinder->CreateCostMapQuery(unit, circuit->GetThreatMap(), frame,
-			unit->IsAttrBase() ? circuit->GetSetupManager()->GetBasePos() : pos);
+			/*unit->IsAttrBase() ? circuit->GetSetupManager()->GetBasePos() : */pos);
 	costQueries[unit] = q;
 	pathfinder->RunQuery(q);
 
@@ -1057,7 +1039,8 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 
 IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQueryCostMap* query)
 {
-	if (GetTasks(IBuilderTask::BuildType::STORE).empty()
+	if (GetTasks(IBuilderTask::BuildType::FACTORY).empty()
+		&& GetTasks(IBuilderTask::BuildType::STORE).empty()
 		&& GetTasks(IBuilderTask::BuildType::ENERGY).empty())
 	{
 		return MakeCommPeaceTask(unit, query, SQUARE(2000));
@@ -1092,8 +1075,11 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 			}
 			float prioMod = 1.f;
 			switch (candidate->GetBuildType()) {
-				case IBuilderTask::BuildType::STORE: {
+				case IBuilderTask::BuildType::FACTORY: {
 					prioMod = .0001f;
+				} break;
+				case IBuilderTask::BuildType::STORE: {
+					prioMod = .0010f;
 				} break;
 				case IBuilderTask::BuildType::ENERGY: {
 					prioMod = 1000.f;

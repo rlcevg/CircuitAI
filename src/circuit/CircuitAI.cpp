@@ -1624,7 +1624,7 @@ void CCircuitAI::CreateGameAttribute()
 {
 	if (gameAttribute == nullptr) {
 		gameAttribute = std::unique_ptr<CGameAttribute>(new CGameAttribute());
-		CCircuitDef::InitStatic(this, &gameAttribute->GetRoleMasker());
+		CCircuitDef::InitStatic(this, &gameAttribute->GetRoleMasker(), &gameAttribute->GetAttrMasker());
 	}
 	gaCounter++;
 	gameAttribute->RegisterAI(this);

@@ -340,7 +340,7 @@ void CFactoryManager::ReadConfig()
 					circuit->LOG("CONFIG %s: %s has unknown attribute '%s'", cfgName.c_str(), defName.c_str(), attrName.c_str());
 					continue;
 				} else {
-					cdef->AddAttribute(it->second);
+					cdef->AddAttribute(it->second.type);
 				}
 			} else {
 				cdef->AddRole(it->second.type, circuit->GetBindedRole(it->second.type));

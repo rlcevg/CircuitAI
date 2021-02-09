@@ -27,24 +27,14 @@ using namespace springai;
 #define THREAT_MOD		(1.0f / 128.0f)
 
 CCircuitDef::RoleName* CCircuitDef::roleNames;
-CCircuitDef::AttrName CCircuitDef::attrNames = {
-	{"melee",     CCircuitDef::AttrType::MELEE},
-	{"boost",     CCircuitDef::AttrType::BOOST},
-	{"no_jump",   CCircuitDef::AttrType::NO_JUMP},
-	{"no_strafe", CCircuitDef::AttrType::NO_STRAFE},
-	{"stockpile", CCircuitDef::AttrType::STOCK},
-	{"siege",     CCircuitDef::AttrType::SIEGE},
-	{"ret_hold",  CCircuitDef::AttrType::RET_HOLD},
-	{"ret_fight", CCircuitDef::AttrType::RET_FIGHT},
-	{"solo",      CCircuitDef::AttrType::SOLO},
-};
+CCircuitDef::AttrName* CCircuitDef::attrNames;
 CCircuitDef::FireName CCircuitDef::fireNames = {
 	{"hold",   CCircuitDef::FireType::HOLD},
 	{"return", CCircuitDef::FireType::RETURN},
 	{"open",   CCircuitDef::FireType::OPEN},
 };
 
-void CCircuitDef::InitStatic(CCircuitAI* circuit, CMaskHandler* roleMasker)
+void CCircuitDef::InitStatic(CCircuitAI* circuit, CMaskHandler* roleMasker, CMaskHandler* attrMasker)
 {
 	std::vector<std::pair<std::string, CMaskHandler::TypeMask>> roles = {
 		{"",           {ROLE_TYPE(NONE),    CCircuitDef::RoleMask::NONE}},
@@ -76,8 +66,29 @@ void CCircuitDef::InitStatic(CCircuitAI* circuit, CMaskHandler* roleMasker)
 						 kv.second.type, kv.second.mask, tm.type, tm.mask);
 		}
 	}
-
 	CCircuitDef::roleNames = &roleMasker->GetMasks();
+
+	std::vector<std::pair<std::string, CMaskHandler::TypeMask>> attrs = {
+		{"",          {ATTR_TYPE(NONE),      CCircuitDef::RoleMask::NONE}},
+		{"melee",     {ATTR_TYPE(MELEE),     CCircuitDef::AttrMask::MELEE}},
+		{"boost",     {ATTR_TYPE(BOOST),     CCircuitDef::AttrMask::BOOST}},
+		{"no_jump",   {ATTR_TYPE(NO_JUMP),   CCircuitDef::AttrMask::NO_JUMP}},
+		{"no_strafe", {ATTR_TYPE(NO_STRAFE), CCircuitDef::AttrMask::NO_STRAFE}},
+		{"stockpile", {ATTR_TYPE(STOCK),     CCircuitDef::AttrMask::STOCK}},
+		{"siege",     {ATTR_TYPE(SIEGE),     CCircuitDef::AttrMask::SIEGE}},
+		{"ret_hold",  {ATTR_TYPE(RET_HOLD),  CCircuitDef::AttrMask::RET_HOLD}},
+		{"ret_fight", {ATTR_TYPE(RET_FIGHT), CCircuitDef::AttrMask::RET_FIGHT}},
+		{"solo",      {ATTR_TYPE(SOLO),      CCircuitDef::AttrMask::SOLO}},
+		{"base",      {ATTR_TYPE(BASE),      CCircuitDef::AttrMask::BASE}},
+	};
+	for (auto& kv : attrs) {
+		CMaskHandler::TypeMask tm = attrMasker->GetTypeMask(kv.first);
+		if ((tm.type != kv.second.type) || (tm.mask != kv.second.mask)) {
+			circuit->LOG("AttrError: %s = (%i, 0x%08X) != (%i, 0x%08X)", kv.first.c_str(),
+						 kv.second.type, kv.second.mask, tm.type, tm.mask);
+		}
+	}
+	CCircuitDef::attrNames = &attrMasker->GetMasks();
 }
 
 CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts,
@@ -237,7 +248,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		if (it != customParams.end()) {
 			stockCost = utils::string_to_float(it->second);
 		}
-		AddAttribute(AttrType::STOCK);
+		AddAttribute(ATTR_TYPE(STOCK));
 		delete stockDef;
 	}
 
