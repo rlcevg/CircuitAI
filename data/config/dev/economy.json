@@ -76,6 +76,9 @@
 	// Construction order delay in seconds, -1 to disable
 	"build_delay": -1.0,
 
+	// 1 constructor of each UnitDef that has no DefendTask is assigned to tasks near base
+	"base_builder": true,
+
 	//"terra": "armsy",
 	"airpad": {
 		"armada": "armasp",

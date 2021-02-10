@@ -106,9 +106,25 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			AddBuildPower(unit);
 			workers.insert(unit);
 
-			static_cast<CBuilderScript*>(script)->WorkerCreated(unit);
+			if (isBaseBuilderOn && !unit->GetCircuitDef()->IsRoleComm()) {
+				if (unit->GetCircuitDef()->GetCostM() < 200) {
+					if ((energizer1 == nullptr)
+						&& ((unsigned)unit->GetCircuitDef()->GetCount() > militaryMgr->GetDefendTaskNum()))
+					{
+						energizer1 = unit;
+						unit->AddAttribute(CCircuitDef::AttrType::BASE);
+					}
+				} else {
+					if (energizer2 == nullptr) {
+						energizer2 = unit;
+						unit->AddAttribute(CCircuitDef::AttrType::BASE);
+					}
+				}
+			}
 
 			AddBuildList(unit, mexUpgraderCount[unit->GetCircuitDef()]);
+
+			static_cast<CBuilderScript*>(script)->WorkerCreated(unit);
 		}
 		// FIXME: BA
 
@@ -150,9 +166,17 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			workers.erase(unit);
 			costQueries.erase(unit);
 
-			static_cast<CBuilderScript*>(script)->WorkerDestroyed(unit);
+			if (isBaseBuilderOn) {
+				if (energizer1 == unit) {
+					energizer1 = nullptr;
+				} else if (energizer2 == unit) {
+					energizer2 = nullptr;
+				}
+			}
 
 			RemoveBuildList(unit, mexUpgraderCount[unit->GetCircuitDef()]);
+
+			static_cast<CBuilderScript*>(script)->WorkerDestroyed(unit);
 		}
 		// FIXME: BA
 
@@ -314,6 +338,7 @@ void CBuilderManager::ReadConfig()
 		terraDef = circuit->GetEconomyManager()->GetSideInfo().defaultDef;
 	}
 	numAutoMex = econ.get("auto_mex", 2).asUInt();
+	isBaseBuilderOn = econ.get("base_builder", true).asBool();
 
 	const Json::Value& cond = root["porcupine"]["superweapon"]["condition"];
 	super.minIncome = cond.get((unsigned)0, 50.f).asFloat();
