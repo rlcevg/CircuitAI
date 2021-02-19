@@ -30,7 +30,7 @@ CFactoryScript::~CFactoryScript()
 
 void CFactoryScript::Init()
 {
-	asIScriptModule* mod = script->GetEngine()->GetModule("main");
+	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::mainName.c_str());
 	int r = mod->SetDefaultNamespace("Factory"); ASSERT(r >= 0);
 	InitModule(mod);
 	factoryInfo.isSwitchTime = script->GetFunc(mod, "bool AiIsSwitchTime(int)");

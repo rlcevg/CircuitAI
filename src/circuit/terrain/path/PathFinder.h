@@ -20,7 +20,6 @@ namespace circuit {
 
 class IPathQuery;
 class CScheduler;
-class CGameTask;
 class CTerrainData;
 class CTerrainManager;
 class CCircuitUnit;

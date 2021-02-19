@@ -39,10 +39,19 @@ void CMultiQueue<T>::Pop(T& item)
 }
 
 template <typename T>
-void CMultiQueue<T>::Push(const T& item)
+void CMultiQueue<T>::PushBack(const T& item)
 {
 	std::unique_lock<spring::mutex> mlock(_mutex);
 	_queue.push_back(item);
+	mlock.unlock();
+	_cond.notify_one();
+}
+
+template <typename T>
+void CMultiQueue<T>::PushFront(const T& item)
+{
+	std::unique_lock<spring::mutex> mlock(_mutex);
+	_queue.push_front(item);
 	mlock.unlock();
 	_cond.notify_one();
 }

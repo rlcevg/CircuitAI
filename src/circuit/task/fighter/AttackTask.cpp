@@ -212,12 +212,9 @@ void CAttackTask::Update()
 			leader, circuit->GetThreatMap(), frame,
 			startPos, endPos, pathRange, GetHitTest(), attackPower);
 	pathQueries[leader] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyTargetPath(static_cast<const CQueryPathSingle*>(query));
-		}
+		this->ApplyTargetPath(static_cast<const CQueryPathSingle*>(query));
 	});
 }
 
@@ -359,12 +356,9 @@ void CAttackTask::FallbackFrontPos()
 			leader, circuit->GetThreatMap(), frame,
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyFrontPos(static_cast<const CQueryPathMulti*>(query));
-		}
+		this->ApplyFrontPos(static_cast<const CQueryPathMulti*>(query));
 	});
 }
 
@@ -396,12 +390,9 @@ void CAttackTask::FallbackBasePos()
 			leader, circuit->GetThreatMap(), frame,
 			startPos, endPos, pathRange);
 	pathQueries[leader] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyBasePos(static_cast<const CQueryPathSingle*>(query));
-		}
+		this->ApplyBasePos(static_cast<const CQueryPathSingle*>(query));
 	});
 }
 

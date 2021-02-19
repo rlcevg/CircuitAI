@@ -9,9 +9,9 @@
 #include "task/TaskManager.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
+#include "scheduler/Scheduler.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
-#include "util/Scheduler.h"
 #include "util/Utils.h"
 
 #include "spring/SpringMap.h"

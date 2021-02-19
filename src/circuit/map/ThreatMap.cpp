@@ -7,11 +7,11 @@
 
 #include "map/ThreatMap.h"
 #include "map/MapManager.h"
+#include "scheduler/Scheduler.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
-#include "util/Scheduler.h"
 #include "util/Utils.h"
 #include "json/json.h"
 
@@ -126,8 +126,8 @@ void CThreatMap::EnqueueUpdate()
 	CCircuitAI* circuit = manager->GetCircuit();
 	areaData = circuit->GetTerrainManager()->GetAreaData();
 
-	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CThreatMap::Update, this),
-											 std::make_shared<CGameTask>(&CThreatMap::Apply, this));
+	circuit->GetScheduler()->RunPriorityJob(CScheduler::WorkJob(&CThreatMap::Update, this),
+											CScheduler::GameJob(&CThreatMap::Apply, this));
 }
 
 void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const

@@ -9,10 +9,10 @@
 #include "setup/SetupData.h"
 #include "module/MilitaryManager.h"  // only for CalcLanePos
 #include "resource/MetalManager.h"
+#include "scheduler/Scheduler.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
-#include "util/Scheduler.h"
 #include "util/FileSystem.h"
 #include "util/Utils.h"
 #include "json/json.h"
@@ -53,7 +53,7 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 	}
 	DisabledUnits(setupScript);
 
-	findStart = std::make_shared<CGameTask>(&CSetupManager::FindStart, this);
+	findStart = CScheduler::GameJob(&CSetupManager::FindStart, this);
 	circuit->GetScheduler()->RunTaskEvery(findStart, 1);
 }
 
@@ -531,14 +531,14 @@ void CSetupManager::Welcome() const
 void CSetupManager::FindStart()
 {
 	if (utils::is_valid(startPos)) {
-		circuit->GetScheduler()->RemoveTask(findStart);
+		circuit->GetScheduler()->RemoveJob(findStart);
 		findStart = nullptr;
 
 		for (StartFunc& func : startFuncs) {
 			func(startPos);
 		}
 
-		circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(&CSetupManager::CalcLanePos, this), FRAMES_PER_SEC);
+		circuit->GetScheduler()->RunTaskAfter(CScheduler::GameJob(&CSetupManager::CalcLanePos, this), FRAMES_PER_SEC);
 		return;
 	}
 

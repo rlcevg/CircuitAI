@@ -203,6 +203,8 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterObjectProperty("CCircuitDef", "const int count", asOFFSET(CCircuitDef, count)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("CCircuitDef", "const float costM", asOFFSET(CCircuitDef, costM)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("CCircuitDef", "const float costE", asOFFSET(CCircuitDef, costE)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("CCircuitDef", "const float threat", asOFFSET(CCircuitDef, threat)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("CCircuitDef", "const float power", asOFFSET(CCircuitDef, power)); ASSERT(r >= 0);
 
 	r = engine->RegisterObjectProperty("CCircuitUnit", "const Id id", asOFFSET(CCircuitUnit, id)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("CCircuitUnit", "const CCircuitDef@ circuitDef", asOFFSET(CCircuitUnit, circuitDef)); ASSERT(r >= 0);
@@ -252,7 +254,24 @@ void CInitScript::InitConfig(const std::string& profile,
 
 void CInitScript::Init()
 {
-	script->Load(CScriptManager::mainName.c_str(), folderName + "main.as");
+	if (!script->Load(CScriptManager::mainName.c_str(), folderName + CScriptManager::mainName + ".as")) {
+		return;
+	}
+
+	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::mainName.c_str());
+	int r = mod->SetDefaultNamespace("Main"); ASSERT(r >= 0);
+	asIScriptFunction* initDef = script->GetFunc(mod, "void AiInitDef(CCircuitDef@)");
+	if (initDef == nullptr) {
+		return;
+	}
+
+	asIScriptContext* ctx = script->PrepareContext(initDef);
+	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+		int r = ctx->Prepare(initDef); ASSERT(r >= 0);
+		ctx->SetArgObject(0, &cdef);
+		script->Exec(ctx);
+	}
+	script->ReturnContext(ctx);
 }
 
 void CInitScript::RegisterMgr()

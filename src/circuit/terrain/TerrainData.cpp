@@ -7,9 +7,9 @@
 
 #include "terrain/TerrainData.h"
 #include "terrain/TerrainManager.h"
+#include "scheduler/Scheduler.h"
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
-#include "util/Scheduler.h"
 #include "util/math/HierarchCluster.h"
 #include "util/math/RagMatrix.h"
 #include "util/Utils.h"
@@ -526,8 +526,8 @@ void CTerrainData::Init(CCircuitAI* circuit)
 		}
 	}
 
-	scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::EnqueueUpdate, this), AREA_UPDATE_RATE);
-	scheduler->RunOnRelease(std::make_shared<CGameTask>(&CTerrainData::DelegateAuthority, this, circuit));
+	scheduler->RunTaskEvery(CScheduler::GameJob(&CTerrainData::EnqueueUpdate, this), AREA_UPDATE_RATE);
+	scheduler->RunOnRelease(CScheduler::GameJob(&CTerrainData::DelegateAuthority, this, circuit));
 
 #ifdef DEBUG_VIS
 	debugDrawer = circuit->GetDebugDrawer();
@@ -642,9 +642,9 @@ void CTerrainData::DelegateAuthority(CCircuitAI* curOwner)
 		if (circuit->IsInitialized() && (circuit != curOwner)) {
 			map = circuit->GetMap();
 			scheduler = circuit->GetScheduler();
-			scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CTerrainData::EnqueueUpdate, this), AREA_UPDATE_RATE);
-			scheduler->RunTaskAfter(std::make_shared<CGameTask>(&CTerrainData::EnqueueUpdate, this), FRAMES_PER_SEC);
-			scheduler->RunOnRelease(std::make_shared<CGameTask>(&CTerrainData::DelegateAuthority, this, circuit));
+			scheduler->RunTaskEvery(CScheduler::GameJob(&CTerrainData::EnqueueUpdate, this), AREA_UPDATE_RATE);
+			scheduler->RunTaskAfter(CScheduler::GameJob(&CTerrainData::EnqueueUpdate, this), FRAMES_PER_SEC);
+			scheduler->RunOnRelease(CScheduler::GameJob(&CTerrainData::DelegateAuthority, this, circuit));
 			break;
 		}
 	}
@@ -661,8 +661,8 @@ void CTerrainData::EnqueueUpdate()
 	map->GetHeightMap(GetNextAreaData()->heightMap);
 	map->GetSlopeMap(slopeMap);
 
-	scheduler->RunParallelTask(std::make_shared<CGameTask>(&CTerrainData::UpdateAreas, this),
-							   std::make_shared<CGameTask>(&CTerrainData::ScheduleUsersUpdate, this));
+	scheduler->RunPriorityJob(CScheduler::WorkJob(&CTerrainData::UpdateAreas, this),
+							  CScheduler::GameJob(&CTerrainData::ScheduleUsersUpdate, this));
 }
 
 void CTerrainData::UpdateAreas()
@@ -944,9 +944,9 @@ void CTerrainData::ScheduleUsersUpdate()
 	for (CCircuitAI* circuit : gameAttribute->GetCircuits()) {
 		if (circuit->IsInitialized()) {
 			// Chain update: CTerrainManager -> CBuilderManager -> CPathFinder
-			auto task = std::make_shared<CGameTask>(&CTerrainManager::UpdateAreaUsers,
-													circuit->GetTerrainManager(),
-													interval);
+			auto task = CScheduler::GameJob(&CTerrainManager::UpdateAreaUsers,
+											circuit->GetTerrainManager(),
+											interval);
 			circuit->GetScheduler()->RunTaskAfter(task, ++aiToUpdate);
 			circuit->PrepareAreaUpdate();
 		}

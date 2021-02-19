@@ -122,12 +122,9 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 			unit, threatMap, frame,
 			pos, range, enemyPositions);
 	pathQueries[unit] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this, isUpdating](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyTargetPath(static_cast<const CQueryPathMulti*>(query), isUpdating);
-		}
+		this->ApplyTargetPath(static_cast<const CQueryPathMulti*>(query), isUpdating);
 	});
 }
 
@@ -284,12 +281,9 @@ void CArtilleryTask::FallbackBasePos(CCircuitUnit* unit, bool isUpdating)
 			unit, circuit->GetThreatMap(), frame,
 			startPos, position, pathRange);
 	pathQueries[unit] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this, isUpdating](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyBasePos(static_cast<const CQueryPathSingle*>(query), isUpdating);
-		}
+		this->ApplyBasePos(static_cast<const CQueryPathSingle*>(query), isUpdating);
 	});
 }
 
@@ -329,12 +323,9 @@ void CArtilleryTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 			unit, circuit->GetThreatMap(), frame,
 			pos, position, pathRange);
 	pathQueries[unit] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyScoutPath(static_cast<const CQueryPathSingle*>(query));
-		}
+		this->ApplyScoutPath(static_cast<const CQueryPathSingle*>(query));
 	});
 }
 

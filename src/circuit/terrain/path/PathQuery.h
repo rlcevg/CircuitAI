@@ -13,7 +13,6 @@
 namespace circuit {
 
 class CCircuitUnit;
-class IUnitTask;
 
 class IPathQuery {
 public:
@@ -43,8 +42,6 @@ public:
 
 	CCircuitUnit* GetUnit() const { return unit; }
 
-	void HoldTask(IUnitTask* task);  // avoid heap-use-after-free
-
 protected:
 	const CPathFinder& pathfinder;  // NOTE: double-check threaded calls
 
@@ -58,8 +55,6 @@ protected:
 	NSMicroPather::CostFunc threatFun;  // THREAT_UPDATE_RATE
 
 	CCircuitUnit* unit;  // optional, non-safe
-
-	IUnitTask* taskHolder;
 };
 
 } // namespace circuit

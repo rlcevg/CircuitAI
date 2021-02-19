@@ -131,12 +131,9 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 			unit, threatMap, frame,
 			pos, endPos, range);
 	pathQueries[unit] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this, isUpdating](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyTargetPath(static_cast<const CQueryPathSingle*>(query), isUpdating);
-		}
+		this->ApplyTargetPath(static_cast<const CQueryPathSingle*>(query), isUpdating);
 	});
 }
 
@@ -433,12 +430,9 @@ void CBombTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 			unit, circuit->GetThreatMap(), frame,
 			pos, position, pathRange);
 	pathQueries[unit] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyScoutPath(static_cast<const CQueryPathSingle*>(query));
-		}
+		this->ApplyScoutPath(static_cast<const CQueryPathSingle*>(query));
 	});
 }
 

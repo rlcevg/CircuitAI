@@ -20,7 +20,7 @@ namespace circuit {
 class CCircuitAI;
 class CSetupData;
 class CAllyTeam;
-class CGameTask;
+class IMainJob;
 class CCircuitUnit;
 
 class CSetupManager {
@@ -104,7 +104,7 @@ private:
 	springai::AIFloat3 startPos;
 	springai::AIFloat3 basePos;
 	springai::AIFloat3 lanePos;
-	std::shared_ptr<CGameTask> findStart;
+	std::shared_ptr<IMainJob> findStart;
 	std::vector<StartFunc> startFuncs;
 
 	float emptyShield;

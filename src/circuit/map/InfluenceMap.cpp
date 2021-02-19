@@ -8,11 +8,11 @@
 #include "map/InfluenceMap.h"
 #include "map/MapManager.h"
 #include "module/EconomyManager.h"
+#include "scheduler/Scheduler.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "unit/ally/AllyUnit.h"
 #include "CircuitAI.h"
-#include "util/Scheduler.h"
 #include "util/Utils.h"
 #include "json/json.h"
 
@@ -99,8 +99,8 @@ void CInfluenceMap::EnqueueUpdate()
 	isUpdating = true;
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CInfluenceMap::Update, this),
-											 std::make_shared<CGameTask>(&CInfluenceMap::Apply, this));
+	circuit->GetScheduler()->RunPriorityJob(CScheduler::WorkJob(&CInfluenceMap::Update, this),
+											CScheduler::GameJob(&CInfluenceMap::Apply, this));
 }
 
 void CInfluenceMap::Prepare(SInfluenceData& inflData)

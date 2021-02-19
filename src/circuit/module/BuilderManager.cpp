@@ -12,6 +12,7 @@
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "resource/MetalManager.h"
+#include "scheduler/Scheduler.h"
 #include "script/BuilderScript.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
@@ -42,7 +43,6 @@
 #include "task/builder/CombatTask.h"
 #include "task/builder/BuildChain.h"
 #include "CircuitAI.h"
-#include "util/Scheduler.h"
 #include "util/Utils.h"
 #include "json/json.h"
 
@@ -66,7 +66,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		, energizer1(nullptr)
 		, energizer2(nullptr)
 {
-	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CBuilderManager::Init, this));
+	circuit->GetScheduler()->RunOnInit(CScheduler::GameJob(&CBuilderManager::Init, this));
 
 	/*
 	 * worker handlers
@@ -289,7 +289,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			return;
 		}
 		// Check mex position in 20 seconds
-		this->circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this, mexDef, pos, index]() {
+		this->circuit->GetScheduler()->RunTaskAfter(CScheduler::GameJob([this, mexDef, pos, index]() {
 			if (this->circuit->GetEconomyManager()->IsAllyOpenSpot(index) &&
 				this->circuit->GetBuilderManager()->IsBuilderInArea(mexDef, pos) &&
 				this->circuit->GetTerrainManager()->CanBeBuiltAtSafe(mexDef, pos))  // hostile environment
@@ -466,10 +466,10 @@ void CBuilderManager::Init()
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		const int interval = 8;
 		const int offset = circuit->GetSkirmishAIId() % interval;
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), 1/*interval*/, offset + 1);
+		scheduler->RunTaskEvery(CScheduler::GameJob(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
+		scheduler->RunTaskEvery(CScheduler::GameJob(&CBuilderManager::UpdateBuild, this), 1/*interval*/, offset + 1);
 
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Watchdog, this),
+		scheduler->RunTaskEvery(CScheduler::GameJob(&CBuilderManager::Watchdog, this),
 								FRAMES_PER_SEC * 60,
 								circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 10);
 	};
@@ -1064,8 +1064,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 
 IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQueryCostMap* query)
 {
-	if (GetTasks(IBuilderTask::BuildType::FACTORY).empty()
-		&& GetTasks(IBuilderTask::BuildType::STORE).empty()
+	if (GetTasks(IBuilderTask::BuildType::STORE).empty()
 		&& GetTasks(IBuilderTask::BuildType::ENERGY).empty())
 	{
 		return MakeCommPeaceTask(unit, query, SQUARE(2000));
@@ -1100,11 +1099,8 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 			}
 			float prioMod = 1.f;
 			switch (candidate->GetBuildType()) {
-				case IBuilderTask::BuildType::FACTORY: {
-					prioMod = .0001f;
-				} break;
 				case IBuilderTask::BuildType::STORE: {
-					prioMod = .0010f;
+					prioMod = .0001f;
 				} break;
 				case IBuilderTask::BuildType::ENERGY: {
 					prioMod = 1000.f;
@@ -1610,13 +1606,15 @@ void CBuilderManager::Watchdog()
 	Resource* metalRes = economyMgr->GetMetalRes();
 	// somehow workers get stuck
 	for (CCircuitUnit* worker : workers) {
-		if (worker->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
+		if ((worker->GetTask()->GetType() == IUnitTask::Type::PLAYER)
+			|| (worker->GetTask()->GetType() == IUnitTask::Type::WAIT))
+		{
 			continue;
 		}
 		Unit* u = worker->GetUnit();
 		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())
 		if (!circuit->GetCallback()->Unit_HasCommands(worker->GetId())
-			&& (u->GetResourceUse(metalRes) == .0f) && (u->GetVel() == ZeroVector))
+			|| ((u->GetResourceUse(metalRes) < 1e-3f) && (u->GetVel().SqLength2D() < 1e-3f) && !worker->IsWaiting()))
 		{
 			worker->GetTask()->OnUnitMoveFailed(worker);
 		}

@@ -9,10 +9,10 @@
 #include "resource/MetalManager.h"
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
+#include "scheduler/Scheduler.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
-#include "util/Scheduler.h"
 #include "util/Utils.h"
 #include "json/json.h"
 #include "lemon/kruskal.h"
@@ -123,7 +123,7 @@ CEnergyGrid::CEnergyGrid(CCircuitAI* circuit)
 		, toggleFrame(-1)
 #endif
 {
-	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CEnergyGrid::Init, this));
+	circuit->GetScheduler()->RunOnInit(CScheduler::GameJob(&CEnergyGrid::Init, this));
 
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
 		const std::map<std::string, std::string>& customParams = cdef.GetDef()->GetCustomParams();

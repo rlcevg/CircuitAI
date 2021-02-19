@@ -8,10 +8,10 @@
 #include "resource/MetalManager.h"
 #include "map/ThreatMap.h"
 #include "module/EconomyManager.h"
+#include "scheduler/Scheduler.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/math/RagMatrix.h"
-#include "util/Scheduler.h"
 #include "util/Utils.h"
 
 #include "spring/SpringMap.h"
@@ -74,7 +74,7 @@ CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData)
 		, filteredGraph(nullptr)
 		, shortPath(nullptr)
 {
-	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CMetalManager::Init, this));
+	circuit->GetScheduler()->RunOnInit(CScheduler::GameJob(&CMetalManager::Init, this));
 
 	if (!metalData->IsInitialized()) {
 		// TODO: Add metal zone and no-metal-spots maps support

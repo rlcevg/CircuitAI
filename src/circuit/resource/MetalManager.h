@@ -18,7 +18,6 @@ namespace circuit {
 class CCircuitAI;
 class CMetalData;
 class CScheduler;
-class CGameTask;
 class CRagMatrix;
 
 class CMetalManager {

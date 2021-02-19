@@ -11,6 +11,7 @@
 #include "map/ThreatMap.h"
 #include "resource/MetalManager.h"
 #include "resource/EnergyGrid.h"
+#include "scheduler/Scheduler.h"
 #include "setup/DefenceMatrix.h"
 #include "setup/SetupManager.h"
 #include "terrain/path/PathFinder.h"
@@ -18,7 +19,6 @@
 #include "CircuitAI.h"
 #include "util/math/RayBox.h"
 #include "util/GameAttribute.h"
-#include "util/Scheduler.h"
 #include "util/Utils.h"
 
 #include "spring/SpringCallback.h"
@@ -91,7 +91,7 @@ void CAllyTeam::Init(CCircuitAI* circuit, float decloakRadius)
 	pathfinder = std::make_shared<CPathFinder>(circuit->GetScheduler(), &circuit->GetGameAttribute()->GetTerrainData());
 	factoryData = std::make_shared<CFactoryData>(circuit);
 
-	circuit->GetScheduler()->RunOnRelease(std::make_shared<CGameTask>(&CAllyTeam::DelegateAuthority, this, circuit));
+	circuit->GetScheduler()->RunOnRelease(CScheduler::GameJob(&CAllyTeam::DelegateAuthority, this, circuit));
 }
 
 void CAllyTeam::Release()
@@ -388,7 +388,7 @@ void CAllyTeam::DelegateAuthority(CCircuitAI* curOwner)
 			mapManager->SetAuthority(circuit);
 			metalManager->SetAuthority(circuit);
 			energyGrid->SetAuthority(circuit);
-			circuit->GetScheduler()->RunOnRelease(std::make_shared<CGameTask>(&CAllyTeam::DelegateAuthority, this, circuit));
+			circuit->GetScheduler()->RunOnRelease(CScheduler::GameJob(&CAllyTeam::DelegateAuthority, this, circuit));
 			break;
 		}
 	}

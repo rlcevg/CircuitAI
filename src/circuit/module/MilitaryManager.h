@@ -18,7 +18,7 @@
 
 namespace circuit {
 
-class CGameTask;
+class IMainJob;
 class CBDefenceTask;
 
 class CMilitaryManager: public IUnitModule {
@@ -210,7 +210,7 @@ private:
 	void AddSensorDefs(const std::set<CCircuitDef*>& buildDefs, SSensorDefs& defsInfo, std::function<float (CCircuitDef*)> radiusFunc);
 	void RemoveSensorDefs(const std::set<CCircuitDef*>& buildDefs, SSensorDefs& defsInfo);
 
-	std::shared_ptr<CGameTask> defend;
+	std::shared_ptr<IMainJob> defend;
 	std::vector<std::pair<springai::AIFloat3, BuildVector>> buildDefence;  // pos: defences
 };
 

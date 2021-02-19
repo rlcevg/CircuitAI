@@ -116,12 +116,9 @@ void CSupportTask::Update()
 			unit, circuit->GetThreatMap(), frame,
 			startPos, range, urgentPositions, nullptr, false, std::numeric_limits<float>::max(), true);
 	pathQueries[unit] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyPath(static_cast<const CQueryPathMulti*>(query));
-		}
+		this->ApplyPath(static_cast<const CQueryPathMulti*>(query));
 	});
 }
 

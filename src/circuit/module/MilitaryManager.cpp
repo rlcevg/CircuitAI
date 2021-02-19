@@ -12,6 +12,7 @@
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "resource/MetalManager.h"
+#include "scheduler/Scheduler.h"
 #include "script/MilitaryScript.h"
 #include "setup/SetupManager.h"
 #include "setup/DefenceMatrix.h"
@@ -37,7 +38,6 @@
 #include "unit/enemy/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
-#include "util/Scheduler.h"
 #include "util/Utils.h"
 #include "json/json.h"
 
@@ -59,7 +59,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		, armyCost(0.f)
 		, bigGunDef(nullptr)
 {
-	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CMilitaryManager::Init, this));
+	circuit->GetScheduler()->RunOnInit(CScheduler::GameJob(&CMilitaryManager::Init, this));
 
 	/*
 	 * Defence handlers
@@ -473,11 +473,11 @@ void CMilitaryManager::Init()
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		const int interval = 4;
 		const int offset = circuit->GetSkirmishAIId() % interval;
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateIdle, this), interval, offset + 0);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateFight, this), 1/*interval / 2*/, offset + 1);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefenceTasks, this), FRAMES_PER_SEC * 5, offset + 2);
+		scheduler->RunTaskEvery(CScheduler::GameJob(&CMilitaryManager::UpdateIdle, this), interval, offset + 0);
+		scheduler->RunTaskEvery(CScheduler::GameJob(&CMilitaryManager::UpdateFight, this), 1/*interval / 2*/, offset + 1);
+		scheduler->RunTaskEvery(CScheduler::GameJob(&CMilitaryManager::UpdateDefenceTasks, this), FRAMES_PER_SEC * 5, offset + 2);
 
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::Watchdog, this),
+		scheduler->RunTaskEvery(CScheduler::GameJob(&CMilitaryManager::Watchdog, this),
 								FRAMES_PER_SEC * 60,
 								circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 12);
 	};
@@ -1308,7 +1308,7 @@ void CMilitaryManager::UpdateDefence()
 		}
 	}
 	if (buildDefence.empty()) {
-		circuit->GetScheduler()->RemoveTask(defend);
+		circuit->GetScheduler()->RemoveJob(defend);
 		defend = nullptr;
 	}
 }
@@ -1321,7 +1321,7 @@ void CMilitaryManager::MakeBaseDefence(const AIFloat3& pos)
 	}
 	buildDefence.emplace_back(pos, baseDefence);
 	if (defend == nullptr) {
-		defend = std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefence, this);
+		defend = CScheduler::GameJob(&CMilitaryManager::UpdateDefence, this);
 		circuit->GetScheduler()->RunTaskEvery(defend, FRAMES_PER_SEC);
 	}
 }

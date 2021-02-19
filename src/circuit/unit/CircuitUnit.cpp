@@ -48,6 +48,7 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 		, isMorphing(false)
 		, target(nullptr)
 		, targetTile(-1)
+		, attr(CCircuitDef::NONE)
 {
 	command = springai::WrappCurrentCommand::GetInstance(unit->GetSkirmishAIId(), id, 0);
 
@@ -334,6 +335,11 @@ void CCircuitUnit::CmdWait(bool state)
 void CCircuitUnit::RemoveWait()
 {
 	CmdRemove({CMD_WAIT}, UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+}
+
+bool CCircuitUnit::IsWaiting() const
+{
+	return command->GetId() == CMD_WAIT;
 }
 
 void CCircuitUnit::Attack(CEnemyInfo* enemy, bool isGround, int timeout)

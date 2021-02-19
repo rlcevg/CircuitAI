@@ -31,7 +31,7 @@ CBuilderScript::~CBuilderScript()
 
 void CBuilderScript::Init()
 {
-	asIScriptModule* mod = script->GetEngine()->GetModule("main");
+	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::mainName.c_str());
 	int r = mod->SetDefaultNamespace("Builder"); ASSERT(r >= 0);
 	InitModule(mod);
 	info.workerCreated = script->GetFunc(mod, "void AiWorkerCreated(CCircuitUnit@)");

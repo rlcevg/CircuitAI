@@ -29,7 +29,7 @@ extern const char* RES_NAME_METAL;
 extern const char* RES_NAME_ENERGY;
 
 class IBuilderTask;
-class CGameTask;
+class IMainJob;
 class CEnergyGrid;
 
 class CEconomyManager: public IModule {
@@ -233,9 +233,9 @@ private:
 	} metal, energy;
 	float energyUse;
 
-	std::shared_ptr<CGameTask> startFactory;
+	std::shared_ptr<IMainJob> startFactory;
 
-	std::shared_ptr<CGameTask> morph;
+	std::shared_ptr<IMainJob> morph;
 	std::set<CCircuitUnit*> morphees;
 };
 

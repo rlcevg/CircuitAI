@@ -130,6 +130,7 @@ public:
 	void CmdTerraform(std::vector<float>&& params);
 	void CmdWait(bool state);
 	void RemoveWait();
+	bool IsWaiting() const;
 
 	void Attack(CEnemyInfo* enemy, bool isGround, int timeout);
 	void Attack(const springai::AIFloat3& position, CEnemyInfo* enemy, bool isGround, int timeout);

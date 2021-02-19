@@ -250,13 +250,15 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 			unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 		)
 	} else {
-		// TODO: Select new proper BasePos, like near metal cluster.
-		int terWidth = terrainMgr->GetTerrainWidth();
-		int terHeight = terrainMgr->GetTerrainHeight();
-		float x = terWidth / 4 + rand() % (int)(terWidth / 2);
-		float z = terHeight / 4 + rand() % (int)(terHeight / 2);
-		AIFloat3 pos(x, circuit->GetMap()->GetElevationAt(x, z), z);
-		circuit->GetSetupManager()->SetBasePos(pos);
+		if (circuit->GetSetupManager()->GetBasePos().SqDistance2D(position) < SQUARE(searchRadius)) {  // base must be full
+			// TODO: Select new proper BasePos, like near metal cluster.
+			int terWidth = terrainMgr->GetTerrainWidth();
+			int terHeight = terrainMgr->GetTerrainHeight();
+			float x = terWidth / 4 + rand() % (int)(terWidth / 2);
+			float z = terHeight / 4 + rand() % (int)(terHeight / 2);
+			AIFloat3 pos(x, circuit->GetMap()->GetElevationAt(x, z), z);
+			circuit->GetSetupManager()->SetBasePos(pos);
+		}
 
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);
@@ -487,12 +489,9 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 			unit, circuit->GetThreatMap(), frame,
 			startPos, endPos, range);
 	pathQueries[unit] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyPath(static_cast<const CQueryPathSingle*>(query));
-		}
+		this->ApplyPath(static_cast<const CQueryPathSingle*>(query));
 	});
 }
 
@@ -669,7 +668,9 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 			IBuilderTask* parent = nullptr;
 
 			for (const SBuildInfo& bi : queue) {
-				if (!bi.cdef->IsAvailable(circuit->GetLastFrame())) {
+				if (!bi.cdef->IsAvailable(circuit->GetLastFrame())
+					|| !terrainMgr->GetImmobileTypeById(bi.cdef->GetImmobileId())->typeUsable)
+				{
 					continue;
 				}
 				bool isValid = true;

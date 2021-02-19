@@ -33,7 +33,8 @@ public:
 	 * @see Pop()
 	 */
 	void Pop(T& item);
-	void Push(const T& item);
+	void PushBack(const T& item);
+	void PushFront(const T& item);
 	bool IsEmpty();
 	size_t Size();
 	/*

@@ -69,12 +69,11 @@ public:
 	int GetLastTouched() const { return lastTouched; }
 	int GetTimeout() const { return timeout; }
 
-	void Dead() { isDead = true; }
+	virtual void Dead();
 	bool IsDead() const { return isDead; }
 
 protected:
 	bool IsQueryReady(CCircuitUnit* unit) const;
-	bool IsQueryAlive(const IPathQuery* query) const;
 
 public:
 	friend std::ostream& operator<<(std::ostream& os, const IUnitTask& data);

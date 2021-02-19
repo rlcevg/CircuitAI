@@ -109,20 +109,17 @@ void IUnitTask::OnTravelEnd(CCircuitUnit* unit)
 {
 }
 
+void IUnitTask::Dead()
+{
+	isDead = true;
+	pathQueries.clear();  // free queries
+}
+
 bool IUnitTask::IsQueryReady(CCircuitUnit* unit) const
 {
 	const auto it = pathQueries.find(unit);
 	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
 	return (query == nullptr) || (IPathQuery::State::READY == query->GetState());
-}
-
-bool IUnitTask::IsQueryAlive(const IPathQuery* query) const
-{
-	if (isDead) {
-		return false;
-	}
-	const auto it = pathQueries.find(query->GetUnit());
-	return (it != pathQueries.end()) && (it->second->GetId() == query->GetId());
 }
 
 #define SERIALIZE(stream, func)	\

@@ -6,6 +6,7 @@
  */
 
 #include "CircuitAI.h"
+#include "scheduler/Scheduler.h"
 #include "script/ScriptManager.h"
 #include "script/InitScript.h"
 #include "setup/SetupManager.h"
@@ -22,7 +23,6 @@
 #include "unit/CircuitUnit.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "util/GameAttribute.h"
-#include "util/Scheduler.h"
 #include "util/Utils.h"
 #ifdef DEBUG_VIS
 #include "map/InfluenceMap.h"
@@ -601,7 +601,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	if (isCheating) {
 		cheats->SetEnabled(true);
 		cheats->SetEventsEnabled(true);
-		scheduler->RunTaskAt(std::make_shared<CGameTask>(&CCircuitAI::CheatPreload, this), skirmishAIId + 1);
+		scheduler->RunTaskAt(CScheduler::GameJob(&CCircuitAI::CheatPreload, this), skirmishAIId + 1);
 	}
 
 	scheduler->ProcessInit();  // Init modules: allows to manipulate units on gadget:Initialize

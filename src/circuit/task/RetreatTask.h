@@ -40,6 +40,8 @@ public:
 	void SetRepairer(CCircuitUnit* unit) { repairer = unit; }
 	CCircuitUnit* GetRepairer() const { return repairer; }
 
+	virtual void Dead();
+
 private:
 	void ApplyPath(const CQueryPathSingle* query);
 	CCircuitUnit* ValidateNewRepairer(const IPathQuery* query, int newRepId) const;

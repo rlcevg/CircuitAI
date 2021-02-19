@@ -179,12 +179,9 @@ void CDefendTask::Update()
 			leader, threatMap, frame,
 			startPos, pathRange, enemyPositions);
 	pathQueries[leader] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyTargetPath(static_cast<const CQueryPathMulti*>(query));
-		}
+		this->ApplyTargetPath(static_cast<const CQueryPathMulti*>(query));
 	});
 }
 
@@ -334,12 +331,9 @@ void CDefendTask::FallbackFrontPos()
 			leader, circuit->GetThreatMap(), frame,
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyFrontPos(static_cast<const CQueryPathMulti*>(query));
-		}
+		this->ApplyFrontPos(static_cast<const CQueryPathMulti*>(query));
 	});
 }
 
@@ -371,12 +365,9 @@ void CDefendTask::FallbackBasePos()
 			leader, circuit->GetThreatMap(), frame,
 			startPos, endPos, pathRange);
 	pathQueries[leader] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyBasePos(static_cast<const CQueryPathSingle*>(query));
-		}
+		this->ApplyBasePos(static_cast<const CQueryPathSingle*>(query));
 	});
 }
 

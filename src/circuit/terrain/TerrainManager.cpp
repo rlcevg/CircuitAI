@@ -14,9 +14,9 @@
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"  // Only for UpdateAreaUsers
 #include "resource/MetalManager.h"
+#include "scheduler/Scheduler.h"
 #include "setup/SetupManager.h"
 #include "CircuitAI.h"
-#include "util/Scheduler.h"
 #include "util/Utils.h"
 #include "json/json.h"
 
@@ -1417,7 +1417,7 @@ void CTerrainManager::UpdateAreaUsers(int interval)
 	circuit->GetBuilderManager()->UpdateAreaUsers();
 
 	// stagger area update
-	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this]() {
+	circuit->GetScheduler()->RunTaskAfter(CScheduler::GameJob([this]() {
 		circuit->GetPathfinder()->UpdateAreaUsers(this);
 
 		OnAreaUsersUpdated();

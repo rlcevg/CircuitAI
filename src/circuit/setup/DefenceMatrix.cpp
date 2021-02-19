@@ -7,13 +7,13 @@
 
 #include "setup/DefenceMatrix.h"
 #include "resource/MetalManager.h"
+#include "scheduler/Scheduler.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/math/HierarchCluster.h"
 #include "util/math/RagMatrix.h"
 #include "util/math/EncloseCircle.h"
-#include "util/Scheduler.h"
 #include "util/Utils.h"
 #include "json/json.h"
 
@@ -26,7 +26,7 @@ using namespace springai;
 CDefenceMatrix::CDefenceMatrix(CCircuitAI* circuit)
 		: metalManager(nullptr)
 {
-	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CDefenceMatrix::Init, this, circuit));
+	circuit->GetScheduler()->RunOnInit(CScheduler::GameJob(&CDefenceMatrix::Init, this, circuit));
 
 	ReadConfig(circuit);
 }

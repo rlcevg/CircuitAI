@@ -14,8 +14,8 @@
 #include "terrain/TerrainData.h"
 #include "terrain/TerrainManager.h"
 #include "map/ThreatMap.h"
+#include "scheduler/Scheduler.h"
 #include "unit/CircuitUnit.h"
-#include "util/Scheduler.h"
 #include "util/Utils.h"
 #ifdef DEBUG_VIS
 #include "CircuitAI.h"
@@ -401,18 +401,18 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 void CPathFinder::RunPathSingle(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(query, [this](const std::shared_ptr<IPathQuery>& query, int threadNum) {
-		this->MakePath(query.get(), micropathers[threadNum]);
+	scheduler->RunPathJob(query, [this](int threadNum, IPathQuery* query) {
+		this->MakePath(query, micropathers[threadNum]);
 	}
 #ifdef DEBUG_VIS
-	, [this, onComplete](const std::shared_ptr<IPathQuery>& query) {
-		this->UpdateVis(std::static_pointer_cast<CQueryPathSingle>(query)->GetPathInfo()->path);
+	, [this, onComplete](IPathQuery* query) {
+		this->UpdateVis(static_cast<CQueryPathSingle*>(query)->GetPathInfo()->path);
 #else
-	, [onComplete](const std::shared_ptr<IPathQuery>& query) {
+	, [onComplete](IPathQuery* query) {
 #endif
 		query->SetState(IPathQuery::State::READY);
 		if (onComplete != nullptr) {
-			onComplete(query.get());
+			onComplete(query);
 		}
 	});
 }
@@ -420,18 +420,18 @@ void CPathFinder::RunPathSingle(const std::shared_ptr<IPathQuery>& query, PathCa
 void CPathFinder::RunPathMulti(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(query, [this](const std::shared_ptr<IPathQuery>& query, int threadNum) {
-		this->FindBestPath(query.get(), micropathers[threadNum]);
+	scheduler->RunPathJob(query, [this](int threadNum, IPathQuery* query) {
+		this->FindBestPath(query, micropathers[threadNum]);
 	}
 #ifdef DEBUG_VIS
-	, [this, onComplete](const std::shared_ptr<IPathQuery>& query) {
-		this->UpdateVis(std::static_pointer_cast<CQueryPathMulti>(query)->GetPathInfo()->path);
+	, [this, onComplete](IPathQuery* query) {
+		this->UpdateVis(static_cast<CQueryPathMulti*>(query)->GetPathInfo()->path);
 #else
-	, [onComplete](const std::shared_ptr<IPathQuery>& query) {
+	, [onComplete](IPathQuery* query) {
 #endif
 		query->SetState(IPathQuery::State::READY);
 		if (onComplete != nullptr) {
-			onComplete(query.get());
+			onComplete(query);
 		}
 	});
 }
@@ -439,13 +439,13 @@ void CPathFinder::RunPathMulti(const std::shared_ptr<IPathQuery>& query, PathCal
 void CPathFinder::RunCostMap(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathTask(query, [this](const std::shared_ptr<IPathQuery>& query, int threadNum) {
-		this->MakeCostMap(query.get(), micropathers[threadNum]);
+	scheduler->RunPathJob(query, [this](int threadNum, IPathQuery* query) {
+		this->MakeCostMap(query, micropathers[threadNum]);
 	}
-	, [onComplete](const std::shared_ptr<IPathQuery>& query) {
+	, [onComplete](IPathQuery* query) {
 		query->SetState(IPathQuery::State::READY);
 		if (onComplete != nullptr) {
-			onComplete(query.get());
+			onComplete(query);
 		}
 	});
 }

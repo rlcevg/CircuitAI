@@ -101,7 +101,7 @@ private:
 		int maxThreatGroupIdx;
 	};
 
-	void Prepare(SGroupData& groupData);
+	void Prepare();
 	void Update();
 	void Apply();
 	void SwapBuffers();

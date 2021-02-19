@@ -10,6 +10,7 @@
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
+#include "scheduler/Scheduler.h"
 #include "script/FactoryScript.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
@@ -21,7 +22,6 @@
 #include "unit/FactoryData.h"
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
-#include "util/Scheduler.h"
 #include "util/Utils.h"
 #include "json/json.h"
 
@@ -54,7 +54,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		, bpRatio(1.f)
 		, reWeight(.5f)
 {
-	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CFactoryManager::Init, this));
+	circuit->GetScheduler()->RunOnInit(CScheduler::GameJob(&CFactoryManager::Init, this));
 
 	/*
 	 * factory handlers
@@ -565,10 +565,10 @@ void CFactoryManager::Init()
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		const int interval = 4;
 		const int offset = circuit->GetSkirmishAIId() % interval;
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateIdle, this), interval, offset + 0);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::UpdateFactory, this), interval, offset + 2);
+		scheduler->RunTaskEvery(CScheduler::GameJob(&CFactoryManager::UpdateIdle, this), interval, offset + 0);
+		scheduler->RunTaskEvery(CScheduler::GameJob(&CFactoryManager::UpdateFactory, this), interval, offset + 2);
 
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CFactoryManager::Watchdog, this),
+		scheduler->RunTaskEvery(CScheduler::GameJob(&CFactoryManager::Watchdog, this),
 								FRAMES_PER_SEC * 60,
 								circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 11);
 	};

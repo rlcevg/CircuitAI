@@ -11,10 +11,10 @@
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "module/MilitaryManager.h"
+#include "scheduler/Scheduler.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
-#include "util/Scheduler.h"
 #include "json/json.h"
 #include "util/Utils.h"
 
@@ -201,8 +201,8 @@ void CEnemyManager::EnqueueUpdate()
 //	}
 	isUpdating = true;
 
-	circuit->GetScheduler()->RunParallelTask(std::make_shared<CGameTask>(&CEnemyManager::Update, this),
-											 std::make_shared<CGameTask>(&CEnemyManager::Apply, this));
+	circuit->GetScheduler()->RunPriorityJob(CScheduler::WorkJob(&CEnemyManager::Update, this),
+											CScheduler::GameJob(&CEnemyManager::Apply, this));
 }
 
 bool CEnemyManager::UnitInLOS(CEnemyUnit* data)
@@ -428,7 +428,7 @@ void CEnemyManager::KMeansIteration()
 			? (peaceDatas.empty() ? enemyPos : peaceDatas.begin()->pos)
 			: hostileDatas.begin()->pos;
 //	newMeansPosition.y = circuit->GetMap()->GetElevationAt(newMeansPosition.x, newMeansPosition.z) + K_MEANS_ELEVATION;
-	groupData.enemyGroups.resize(newK, SEnemyGroup(newMeansPosition));
+	groupData1.enemyGroups.resize(newK, SEnemyGroup(newMeansPosition));
 
 	// check all positions and assign them to means, complexity n*k for one iteration
 	std::vector<int> unitsClosestMeanID(enemySize, -1);
@@ -442,7 +442,7 @@ void CEnemyManager::KMeansIteration()
 				int closestIndex = -1;
 
 				for (int m = 0; m < newK; m++) {
-					const AIFloat3& mean = groupData.enemyGroups[m].pos;
+					const AIFloat3& mean = groupData1.enemyGroups[m].pos;
 					float distance = enemy.pos.SqDistance2D(mean);
 
 					if (distance < closestDistance) {
@@ -462,7 +462,7 @@ void CEnemyManager::KMeansIteration()
 	// use meanAverage for indexes with 0 pos'es assigned
 	// make a new means list
 //	std::vector<AIFloat3> newMeans(newK, ZeroVector);
-	std::vector<SEnemyGroup>& newMeans = groupData.enemyGroups;
+	std::vector<SEnemyGroup>& newMeans = groupData1.enemyGroups;
 	for (unsigned i = 0; i < newMeans.size(); i++) {
 		SEnemyGroup& eg = newMeans[i];
 		eg.units.clear();
@@ -522,14 +522,14 @@ void CEnemyManager::KMeansIteration()
 //	return newMeans;
 }
 
-void CEnemyManager::Prepare(SGroupData& groupData)
+void CEnemyManager::Prepare()
 {
-	groupData.enemyGroups = pGroupData.load()->enemyGroups;
+	groupData1.enemyGroups = groupData0.enemyGroups;
 }
 
 void CEnemyManager::Update()
 {
-	Prepare(*GetNextGroupData());
+	Prepare();
 
 	KMeansIteration();
 }
@@ -544,7 +544,7 @@ void CEnemyManager::SwapBuffers()
 {
 	pGroupData = GetNextGroupData();
 	SGroupData& groupData = *pGroupData.load();
-	enemyGroups.swap(groupData.enemyGroups);
+	enemyGroups.swap(groupData1.enemyGroups);  // groupData0.enemyGroups.swap(groupData1.enemyGroups);
 	enemyPos = groupData.enemyPos;
 	maxThreatGroupIdx = groupData.maxThreatGroupIdx;
 }

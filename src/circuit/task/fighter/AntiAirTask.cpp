@@ -182,12 +182,9 @@ void CAntiAirTask::Update()
 			leader, circuit->GetThreatMap(), frame,
 			startPos, position, pathfinder->GetSquareSize(), GetHitTest());
 	pathQueries[leader] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyTargetPath(static_cast<const CQueryPathSingle*>(query));
-		}
+		this->ApplyTargetPath(static_cast<const CQueryPathSingle*>(query));
 	});
 }
 
@@ -238,12 +235,9 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 			leader, circuit->GetThreatMap(), frame,
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyDamagedPath(static_cast<const CQueryPathMulti*>(query));
-		}
+		this->ApplyDamagedPath(static_cast<const CQueryPathMulti*>(query));
 	});
 }
 
@@ -324,12 +318,9 @@ void CAntiAirTask::FallbackDisengage()
 			leader, circuit->GetThreatMap(), frame,
 			startPos, position, pathfinder->GetSquareSize());
 	pathQueries[leader] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplyDisengagePath(static_cast<const CQueryPathSingle*>(query));
-		}
+		this->ApplyDisengagePath(static_cast<const CQueryPathSingle*>(query));
 	});
 }
 
@@ -384,12 +375,9 @@ void CAntiAirTask::FallbackSafePos()
 			leader, circuit->GetThreatMap(), frame,
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
-	query->HoldTask(this);
 
 	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
-		if (this->IsQueryAlive(query)) {
-			this->ApplySafePos(static_cast<const CQueryPathMulti*>(query));
-		}
+		this->ApplySafePos(static_cast<const CQueryPathMulti*>(query));
 	});
 }
 
