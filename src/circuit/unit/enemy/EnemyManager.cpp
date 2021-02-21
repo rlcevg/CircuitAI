@@ -201,8 +201,7 @@ void CEnemyManager::EnqueueUpdate()
 //	}
 	isUpdating = true;
 
-	circuit->GetScheduler()->RunPriorityJob(CScheduler::WorkJob(&CEnemyManager::Update, this),
-											CScheduler::GameJob(&CEnemyManager::Apply, this));
+	circuit->GetScheduler()->RunPriorityJob(CScheduler::WorkJob(&CEnemyManager::Update, this));
 }
 
 bool CEnemyManager::UnitInLOS(CEnemyUnit* data)
@@ -527,11 +526,13 @@ void CEnemyManager::Prepare()
 	groupData1.enemyGroups = groupData0.enemyGroups;
 }
 
-void CEnemyManager::Update()
+std::shared_ptr<IMainJob> CEnemyManager::Update()
 {
 	Prepare();
 
 	KMeansIteration();
+
+	return CScheduler::GameJob(&CEnemyManager::Apply, this);
 }
 
 void CEnemyManager::Apply()

@@ -71,7 +71,7 @@ void CScheduler::Release()
 		workerRunning = false;
 		// At this point workTasks is empty. Push empty task in case worker stuck at Pop().
 		for (unsigned int i = 0; i < workThreads.size(); ++i) {
-			workTasks.PushBack({self, nullptr, nullptr});
+			workTasks.PushBack({self, nullptr});
 		}
 		for (std::thread& t : workThreads) {
 			if (t.joinable()) {
@@ -140,7 +140,6 @@ void CScheduler::ProcessTasks(int frame)
 	CMultiQueue<FinishTask>::ProcessFunction process = [](FinishTask& item) {
 		item.task->Run();
 	};
-//	finishTasks.PopAndProcess(process);  // one heavy / lite ???
 	finishTasks.PopAndProcessAll(process);  // one heavy / lite ???
 
 	// Update task queues
@@ -155,21 +154,14 @@ void CScheduler::ProcessTasks(int frame)
 	isProcessing = false;
 }
 
-void CScheduler::RunParallelJob(const std::shared_ptr<IThreadJob>& task, const std::shared_ptr<IMainJob>& onComplete)
+void CScheduler::RunParallelJob(const std::shared_ptr<IThreadJob>& task)
 {
-//	StartThreads();
-	workTasks.PushBack({self, task, onComplete});
+	workTasks.PushBack({self, task});
 }
 
-void CScheduler::RunPriorityJob(const std::shared_ptr<IThreadJob>& task, const std::shared_ptr<IMainJob>& onComplete)
+void CScheduler::RunPriorityJob(const std::shared_ptr<IThreadJob>& task)
 {
-//	StartThreads();
-	workTasks.PushFront({self, task, onComplete});
-}
-
-void CScheduler::RunPathJob(const std::shared_ptr<IPathQuery>& query, PathFunc&& task, PathedFunc&& onComplete)
-{
-	RunParallelJob(PathJob(query, task), PathedJob(query, onComplete));
+	workTasks.PushFront({self, task});
 }
 
 void CScheduler::RemoveJob(const std::shared_ptr<IMainJob>& task)
@@ -195,9 +187,9 @@ void CScheduler::WorkerThread(int num)
 		scheduler->barrier.NotifyOne([scheduler]() { scheduler->numWorkProcess++; });
 		if (scheduler->isRunning) {
 
-			container.task->Run(num);
-			if (container.onComplete != nullptr) {
-				scheduler->finishTasks.PushBack(container);
+			std::shared_ptr<IMainJob> onComplete = container.task->Run(num);
+			if (onComplete != nullptr) {
+				scheduler->finishTasks.PushBack(onComplete);
 			}
 
 		}

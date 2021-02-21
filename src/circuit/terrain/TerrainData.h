@@ -40,6 +40,7 @@ namespace circuit {
 class CCircuitAI;
 class CScheduler;
 class CGameAttribute;
+class IMainJob;
 class CMap;
 #ifdef DEBUG_VIS
 class CDebugDrawer;
@@ -224,7 +225,7 @@ private:
 // ---- Threaded areas updater ---- BEGIN
 private:
 	void EnqueueUpdate();
-	void UpdateAreas();
+	std::shared_ptr<IMainJob> UpdateAreas();
 	void ScheduleUsersUpdate();
 public:
 	void OnAreaUsersUpdated();

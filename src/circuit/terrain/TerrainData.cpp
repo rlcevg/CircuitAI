@@ -661,11 +661,10 @@ void CTerrainData::EnqueueUpdate()
 	map->GetHeightMap(GetNextAreaData()->heightMap);
 	map->GetSlopeMap(slopeMap);
 
-	scheduler->RunPriorityJob(CScheduler::WorkJob(&CTerrainData::UpdateAreas, this),
-							  CScheduler::GameJob(&CTerrainData::ScheduleUsersUpdate, this));
+	scheduler->RunPriorityJob(CScheduler::WorkJob(&CTerrainData::UpdateAreas, this));
 }
 
-void CTerrainData::UpdateAreas()
+std::shared_ptr<IMainJob> CTerrainData::UpdateAreas()
 {
 	/*
 	 *  Assign areaData references
@@ -935,6 +934,8 @@ void CTerrainData::UpdateAreas()
 
 		++itmt;
 	}
+
+	return CScheduler::GameJob(&CTerrainData::ScheduleUsersUpdate, this);
 }
 
 void CTerrainData::ScheduleUsersUpdate()

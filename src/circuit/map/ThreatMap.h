@@ -21,6 +21,7 @@ namespace circuit {
 
 class CMapManager;
 class CCircuitUnit;
+class IMainJob;
 
 class CThreatMap {
 public:
@@ -82,12 +83,23 @@ private:
 	float GetEnemyUnitThreat(const CEnemyUnit* e) const;
 
 	void Prepare(SThreatData& threatData);
-	void Update();
+	std::shared_ptr<IMainJob> Update(CScheduler* scheduler);
+	std::shared_ptr<IMainJob> AirDrawer();
+	std::shared_ptr<IMainJob> AmphDrawer();
+	std::shared_ptr<IMainJob> CloakDrawer();
+	std::shared_ptr<IMainJob> ShieldDrawer();
+	std::shared_ptr<IMainJob> ApplyDrawers();
 	void Apply();
 	void SwapBuffers();
 	SThreatData* GetNextThreatData() {
 		return (pThreatData.load() == &threatData0) ? &threatData1 : &threatData0;
 	}
+
+	std::vector<const SEnemyData*> airDraws;
+	std::vector<const SEnemyData*> amphDraws;
+	std::vector<const SEnemyData*> cloakDraws;
+	std::vector<const SEnemyData*> shieldDraws;
+	std::atomic<int> numThreadDraws;
 
 	int squareSize;
 	int width;

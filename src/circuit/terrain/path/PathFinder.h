@@ -30,13 +30,12 @@ class CCircuitAI;
 class CCircuitDef;
 #endif
 
-using PathCallback = std::function<void (const IPathQuery* query)>;
-
 class CPathFinder {
 public:
 	struct SMoveData {
 		std::vector<bool*> moveArrays;
 	};
+	using PathCallback = std::function<void (const IPathQuery* query)>;
 
 	CPathFinder(const std::shared_ptr<CScheduler>& scheduler, CTerrainData* terrainData);
 	virtual ~CPathFinder();

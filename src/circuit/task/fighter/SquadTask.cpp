@@ -372,7 +372,7 @@ void ISquadTask::Attack(const int frame)
 	std::advance(it, rangeUnits.begin()->second.size() / 2);  // TODO: Optimize
 	AIFloat3 dir = (*it)->GetPos(frame) - tPos;
 
-	if (std::fabs(dir.y) > leader->GetCircuitDef()->GetMaxRange() * 0.5f) {
+	if (leader->GetCircuitDef()->IsPlane() || (std::fabs(dir.y) > leader->GetCircuitDef()->GetMaxRange() * 0.5f)) {
 		if (isRepeatAttack) {
 			for (CCircuitUnit* unit : units) {
 				unit->GetTravelAct()->StateWait();

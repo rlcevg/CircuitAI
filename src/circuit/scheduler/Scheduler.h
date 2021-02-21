@@ -14,7 +14,6 @@
 
 #include "System/Threading/SpringThreading.h"
 
-#include <functional>
 #include <memory>
 #include <list>
 
@@ -55,9 +54,6 @@ private:
 	void StartThreads();
 
 public:
-	using PathFunc = std::function<void (int threadNum, IPathQuery* query)>;
-	using PathedFunc = std::function<void (IPathQuery* query)>;
-
 	template<typename _Callable, typename... _Args>
 	static std::shared_ptr<IMainJob> GameJob(_Callable&& __f, _Args&&... __args) {
 		return _M_make_game_routine(std::bind(std::forward<_Callable>(__f), std::forward<_Args>(__args)...));
@@ -104,17 +100,12 @@ public:
 	/*
 	 * Run concurrent task, finalize on success at main thread
 	 */
-	void RunParallelJob(const std::shared_ptr<IThreadJob>& task, const std::shared_ptr<IMainJob>& onComplete = nullptr);
+	void RunParallelJob(const std::shared_ptr<IThreadJob>& task);
 
 	/*
 	 * Same as RunParallelTask but pushes task in front of the queue
 	 */
-	void RunPriorityJob(const std::shared_ptr<IThreadJob>& task, const std::shared_ptr<IMainJob>& onComplete = nullptr);
-
-	/*
-	 * Run concurrent pathfinder, finalize on complete at main thread
-	 */
-	void RunPathJob(const std::shared_ptr<IPathQuery>& query, PathFunc&& task, PathedFunc&& onComplete = nullptr);
+	void RunPriorityJob(const std::shared_ptr<IThreadJob>& task);
 
 	/*
 	 * Remove scheduled task from queue
@@ -171,22 +162,18 @@ private:
 	std::vector<std::shared_ptr<IMainJob>> removeTasks;
 
 	struct WorkTask {
-		WorkTask(const std::weak_ptr<CScheduler>& scheduler, const std::shared_ptr<IThreadJob>& task,
-				 const std::shared_ptr<IMainJob>& onComplete)
-			: task(task), onComplete(onComplete), scheduler(scheduler) {}
-		std::shared_ptr<IThreadJob> task;
-		std::shared_ptr<IMainJob> onComplete;
+		WorkTask(const std::weak_ptr<CScheduler>& scheduler, const std::shared_ptr<IThreadJob>& task)
+			: scheduler(scheduler), task(task) {}
 		std::weak_ptr<CScheduler> scheduler;
+		std::shared_ptr<IThreadJob> task;
 	};
 	static CMultiQueue<WorkTask> workTasks;
 
 	struct FinishTask: public BaseContainer {
 		FinishTask(const std::shared_ptr<IMainJob>& task)
 			: BaseContainer(task) {}
-		FinishTask(const WorkTask& workTask)
-			: BaseContainer(workTask.onComplete) {}
 	};
-	CMultiQueue<FinishTask> finishTasks;  // onComplete
+	CMultiQueue<FinishTask> finishTasks;  // WorkTask.onComplete
 
 	std::vector<std::shared_ptr<IMainJob>> initTasks;
 	std::vector<std::shared_ptr<IMainJob>> releaseTasks;

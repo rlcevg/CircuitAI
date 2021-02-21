@@ -27,6 +27,7 @@ namespace circuit {
 
 class CMapManager;
 class CAllyUnit;
+class IMainJob;
 
 class CInfluenceMap {
 public:
@@ -70,7 +71,7 @@ private:
 	inline void PosToXZ(const springai::AIFloat3& pos, int& x, int& z) const;
 
 	void Prepare(SInfluenceData& inflData);
-	void Update();
+	std::shared_ptr<IMainJob> Update();
 	void Apply();
 	void SwapBuffers();
 	SInfluenceData* GetNextInflData() {

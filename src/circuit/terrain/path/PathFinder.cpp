@@ -401,53 +401,58 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 void CPathFinder::RunPathSingle(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathJob(query, [this](int threadNum, IPathQuery* query) {
-		this->MakePath(query, micropathers[threadNum]);
-	}
+	std::shared_ptr<IMainJob> finish = CScheduler::PathedJob(query,
 #ifdef DEBUG_VIS
-	, [this, onComplete](IPathQuery* query) {
+	[this, onComplete](IPathQuery* query) {
 		this->UpdateVis(static_cast<CQueryPathSingle*>(query)->GetPathInfo()->path);
 #else
-	, [onComplete](IPathQuery* query) {
+	[onComplete](IPathQuery* query) {
 #endif
 		query->SetState(IPathQuery::State::READY);
 		if (onComplete != nullptr) {
 			onComplete(query);
 		}
 	});
+	scheduler->RunParallelJob(CScheduler::PathJob(query, [this, finish](int threadNum, IPathQuery* query) {
+		this->MakePath(query, micropathers[threadNum]);
+		return finish;
+	}));
 }
 
 void CPathFinder::RunPathMulti(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathJob(query, [this](int threadNum, IPathQuery* query) {
-		this->FindBestPath(query, micropathers[threadNum]);
-	}
+	std::shared_ptr<IMainJob> finish = CScheduler::PathedJob(query,
 #ifdef DEBUG_VIS
-	, [this, onComplete](IPathQuery* query) {
+	[this, onComplete](IPathQuery* query) {
 		this->UpdateVis(static_cast<CQueryPathMulti*>(query)->GetPathInfo()->path);
 #else
-	, [onComplete](IPathQuery* query) {
+	[onComplete](IPathQuery* query) {
 #endif
 		query->SetState(IPathQuery::State::READY);
 		if (onComplete != nullptr) {
 			onComplete(query);
 		}
 	});
+	scheduler->RunParallelJob(CScheduler::PathJob(query, [this, finish](int threadNum, IPathQuery* query) {
+		this->FindBestPath(query, micropathers[threadNum]);
+		return finish;
+	}));
 }
 
 void CPathFinder::RunCostMap(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
-	scheduler->RunPathJob(query, [this](int threadNum, IPathQuery* query) {
-		this->MakeCostMap(query, micropathers[threadNum]);
-	}
-	, [onComplete](IPathQuery* query) {
+	std::shared_ptr<IMainJob> finish = CScheduler::PathedJob(query, [onComplete](IPathQuery* query) {
 		query->SetState(IPathQuery::State::READY);
 		if (onComplete != nullptr) {
 			onComplete(query);
 		}
 	});
+	scheduler->RunParallelJob(CScheduler::PathJob(query, [this, finish](int threadNum, IPathQuery* query) {
+		this->MakeCostMap(query, micropathers[threadNum]);
+		return finish;
+	}));
 }
 
 void CPathFinder::MakePath(IPathQuery* query, NSMicroPather::CMicroPather* micropather)

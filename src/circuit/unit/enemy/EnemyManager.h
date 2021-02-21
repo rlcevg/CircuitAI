@@ -102,7 +102,7 @@ private:
 	};
 
 	void Prepare();
-	void Update();
+	std::shared_ptr<IMainJob> Update();
 	void Apply();
 	void SwapBuffers();
 	SGroupData* GetNextGroupData() {

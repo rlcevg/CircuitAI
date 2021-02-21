@@ -77,7 +77,7 @@ protected:
 public:
 	inline virtual ~IThreadJob() = default;
 
-	virtual void Run(int num) = 0;
+	virtual std::shared_ptr<IMainJob> Run(int num) = 0;
 };
 
 template<typename _Callable>
@@ -85,7 +85,7 @@ class CWorkJob : public IThreadJob {
 public:
 	CWorkJob(_Callable&& __f) : _M_func(std::forward<_Callable>(__f)) {}
 
-	virtual void Run(int num) override { _M_func(); }
+	virtual std::shared_ptr<IMainJob> Run(int num) override { return _M_func(); }
 
 private:
 	_Callable _M_func;
@@ -102,11 +102,12 @@ public:
 	CPathJob(const std::shared_ptr<IPathQuery>& query, _Callable&& __f)
 		: _M_func(std::forward<_Callable>(__f)), query(query) {}
 
-	virtual void Run(int num) override {
+	virtual std::shared_ptr<IMainJob> Run(int num) override {
 		std::shared_ptr<IPathQuery> pQuery = query.lock();
 		if (pQuery != nullptr) {
-			_M_func(num, pQuery.get());
+			return _M_func(num, pQuery.get());
 		}
+		return nullptr;
 	}
 
 private:

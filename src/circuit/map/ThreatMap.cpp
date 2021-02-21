@@ -126,8 +126,8 @@ void CThreatMap::EnqueueUpdate()
 	CCircuitAI* circuit = manager->GetCircuit();
 	areaData = circuit->GetTerrainManager()->GetAreaData();
 
-	circuit->GetScheduler()->RunPriorityJob(CScheduler::WorkJob(&CThreatMap::Update, this),
-											CScheduler::GameJob(&CThreatMap::Apply, this));
+	CScheduler* scheduler = circuit->GetScheduler().get();
+	scheduler->RunPriorityJob(CScheduler::WorkJob(&CThreatMap::Update, this, scheduler));
 }
 
 void CThreatMap::SetEnemyUnitRange(CEnemyUnit* e) const
@@ -265,34 +265,33 @@ void CThreatMap::AddEnemyUnit(const SEnemyData& e)
 		return;
 	}
 
-	const int vsl = std::min(int(e.vel.Length2D() * slackMod.speedMod), slackMod.speedModMax);
 	if (cdef->IsInWater(areaData->GetElevationAt(e.pos.x, e.pos.z), e.pos.y)) {
 		if (cdef->HasSubToAir()) {
-			AddEnemyAir(e, vsl);
+			airDraws.push_back(&e);
 		}
 		if (cdef->HasSubToLand() || cdef->HasSubToWater()) {
-			cdef->IsAlwaysHit() ? AddEnemyAmphConst(e, vsl) : AddEnemyAmphGradient(e, vsl);
+			amphDraws.push_back(&e);
 		}
 	} else {
 		if (cdef->HasSurfToAir()) {
-			AddEnemyAir(e, vsl);
+			airDraws.push_back(&e);
 		}
 		if (cdef->HasSurfToLand() || cdef->HasSurfToWater()) {
-			cdef->IsAlwaysHit() ? AddEnemyAmphConst(e, vsl) : AddEnemyAmphGradient(e, vsl);
+			amphDraws.push_back(&e);
 		}
 	}
-	AddDecloaker(e);
+	cloakDraws.push_back(&e);
 
 	if (cdef->GetShieldMount() != nullptr) {
-		AddShield(e);
+		shieldDraws.push_back(&e);
 	}
 }
 
 void CThreatMap::AddEnemyUnitAll(const SEnemyData& e)
 {
-	AddEnemyAir(e);
-	AddEnemyAmphGradient(e);
-	AddDecloaker(e);
+	airDraws.push_back(&e);
+	amphDraws.push_back(&e);
+	cloakDraws.push_back(&e);
 }
 
 void CThreatMap::AddEnemyAir(const SEnemyData& e, const int slack)
@@ -501,6 +500,57 @@ float CThreatMap::GetEnemyUnitThreat(const CEnemyUnit* e) const
 	return e->GetDamage() * sqrtf(health + shieldArray[z * width + x] * SHIELD_MOD);  // / unit->GetUnit()->GetMaxHealth();
 }
 
+std::shared_ptr<IMainJob> CThreatMap::AirDrawer()
+{
+	for (const SEnemyData* e : airDraws) {
+		if (e->cdef == nullptr) {
+			AddEnemyAir(*e);
+		} else {
+			const int vsl = std::min(int(e->vel.Length2D() * slackMod.speedMod), slackMod.speedModMax);
+			AddEnemyAir(*e, vsl);
+		}
+	}
+	airDraws.clear();
+	return ApplyDrawers();
+}
+
+std::shared_ptr<IMainJob> CThreatMap::AmphDrawer()
+{
+	for (const SEnemyData* e : amphDraws) {
+		if (e->cdef == nullptr) {
+			AddEnemyAmphGradient(*e);
+		} else {
+			const int vsl = std::min(int(e->vel.Length2D() * slackMod.speedMod), slackMod.speedModMax);
+			e->cdef->IsAlwaysHit() ? AddEnemyAmphConst(*e, vsl) : AddEnemyAmphGradient(*e, vsl);
+		}
+	}
+	amphDraws.clear();
+	return ApplyDrawers();
+}
+
+std::shared_ptr<IMainJob> CThreatMap::CloakDrawer()
+{
+	for (const SEnemyData* e : cloakDraws) {
+		AddDecloaker(*e);
+	}
+	cloakDraws.clear();
+	return ApplyDrawers();
+}
+
+std::shared_ptr<IMainJob> CThreatMap::ShieldDrawer()
+{
+	for (const SEnemyData* e : shieldDraws) {
+		AddShield(*e);
+	}
+	shieldDraws.clear();
+	return ApplyDrawers();
+}
+
+std::shared_ptr<IMainJob> CThreatMap::ApplyDrawers()
+{
+	return (--numThreadDraws == 0) ? CScheduler::GameJob(&CThreatMap::Apply, this) : nullptr;
+}
+
 void CThreatMap::Prepare(SThreatData& threatData)
 {
 	std::fill(threatData.airThreat.begin(), threatData.airThreat.end(), THREAT_BASE);
@@ -516,7 +566,7 @@ void CThreatMap::Prepare(SThreatData& threatData)
 	drawShieldArray = threatData.shield.data();
 }
 
-void CThreatMap::Update()
+std::shared_ptr<IMainJob> CThreatMap::Update(CScheduler* scheduler)
 {
 	Prepare(*GetNextThreatData());
 
@@ -527,12 +577,24 @@ void CThreatMap::Update()
 	}
 
 	for (const SEnemyData& e : enemyMgr->GetPeaceDatas()) {
-		AddDecloaker(e);
+		cloakDraws.push_back(&e);
 	}
+
+	numThreadDraws = 4;
+	scheduler->RunPriorityJob(CScheduler::WorkJob(&CThreatMap::AirDrawer, this));
+	scheduler->RunPriorityJob(CScheduler::WorkJob(&CThreatMap::AmphDrawer, this));
+	scheduler->RunPriorityJob(CScheduler::WorkJob(&CThreatMap::CloakDrawer, this));
+	scheduler->RunPriorityJob(CScheduler::WorkJob(&CThreatMap::ShieldDrawer, this));
+
+	return nullptr;
 }
 
 void CThreatMap::Apply()
 {
+	if (!isUpdating) {
+		return;
+	}
+
 	SwapBuffers();
 	isUpdating = false;
 
