@@ -36,11 +36,11 @@ namespace circuit {
 
 using namespace springai;
 
-// FIXME: DEBUG
 //#define FACTORY_CHOICE 1
-static int tier;
-static std::string unitType;
-// FIXME: DEBUG
+#ifdef FACTORY_CHOICE
+static int tierDbg;
+static std::string unitTypeDbg;
+#endif
 
 CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit, new CFactoryScript(circuit->GetScriptManager(), this))
@@ -984,12 +984,9 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		return true;
 	};
 
-	// FIXME: DEBUG
 #ifdef FACTORY_CHOICE
-	circuit->LOG("---- AI = %i | %s | %s | tier%i ----", circuit->GetSkirmishAIId(), unit->GetCircuitDef()->GetDef()->GetName(), unitType.c_str(), tier);
+	circuit->LOG("---- AI = %i | %s | %s | tier%i ----", circuit->GetSkirmishAIId(), unit->GetCircuitDef()->GetDef()->GetName(), unitTypeDbg.c_str(), tierDbg);
 #endif
-	std::string probType;
-	// FIXME: DEBUG
 	float magnitude = 0.f;
 	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
 		CCircuitDef* bd = facDef.buildDefs[i];
@@ -998,7 +995,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			|| !terrainMgr->CanBeBuiltAt(bd, pos, range)
 			|| !isEnemyInArea(frame, bd))
 		{
-			// FIXME: DEBUG
+#ifdef FACTORY_CHOICE
 			std::string reason;
 			if ((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) {
 				reason = "no energy";
@@ -1009,10 +1006,8 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			} else if (!isEnemyInArea(frame, bd)) {
 				reason = "no enemies in related map area";
 			}
-#ifdef FACTORY_CHOICE
 			circuit->LOG("ignore %s | reason = %s", bd->GetDef()->GetName(), reason.c_str());
 #endif
-			// FIXME: DEBUG
 			continue;
 		}
 
@@ -1023,15 +1018,12 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			//       previous response system provided probs2=[0, res(n2), 0, 0, res(n5)]
 			//       current is probs2=[n1, res(n2), n3, n4, res(n5)]
 			bool isResponse = (prob > 0.f) && (bd->GetCostM() <= maxCost);
-			probType = isResponse ? "response" : "regular";
 			prob = isResponse ? prob : probs[i];
 			candidates.push_back({bd, prob, isResponse});
 			magnitude += prob;
-			// FIXME: DEBUG
 #ifdef FACTORY_CHOICE
-			circuit->LOG("%s | %s | %f", probType.c_str(), bd->GetDef()->GetName(), prob);
+			circuit->LOG("%s | %s | %f", isResponse ? "response" : "regular", bd->GetDef()->GetName(), prob);
 #endif
-			// FIXME: DEBUG
 		}
 	}
 
@@ -1058,11 +1050,9 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE / 2;
 		CRecruitTask::Priority priority = isResponse ? CRecruitTask::Priority::NORMAL : CRecruitTask::Priority::LOW;
 		// FIXME CCircuitDef::RoleType <-> CRecruitTask::RecruitType relations
-		// FIXME: DEBUG
 #ifdef FACTORY_CHOICE
 		circuit->LOG("choice = %s", buildDef->GetDef()->GetName());
 #endif
-		// FIXME: DEBUG
 		return EnqueueTask(priority, buildDef, pos, CRecruitTask::RecruitType::FIREPOWER, radius);
 	}
 	return nullptr;
@@ -1477,20 +1467,26 @@ const std::vector<float>& CFactoryManager::GetFacTierProbs(const SFactoryDef& fa
 	const bool isWaterMap = circuit->GetTerrainManager()->IsWaterMap();
 	const bool isAir = circuit->GetEnemyManager()->GetEnemyCost(ROLE_TYPE(AIR)) > 1.f;
 	const SFactoryDef::Tiers& tiers = isAir ? facDef.airTiers : isWaterMap ? facDef.waterTiers : facDef.landTiers;
-	unitType = isAir ? "air" : isWaterMap ? "water" : "land";
+#ifdef FACTORY_CHOICE
+	unitTypeDbg = isAir ? "air" : isWaterMap ? "water" : "land";
+	tierDbg = 0;
+#endif
 	auto facIt = tiers.begin();
-	tier = 0;
 	if ((metalIncome >= facDef.incomes[facIt->first]) && !(facDef.isRequireEnergy && economyMgr->IsEnergyEmpty())) {
 		while (facIt != tiers.end()) {
 			if (metalIncome < facDef.incomes[facIt->first]) {
 				break;
 			}
 			++facIt;
-			tier++;
+#ifdef FACTORY_CHOICE
+			tierDbg++;
+#endif
 		}
 		if (facIt == tiers.end()) {
 			--facIt;
-			tier--;
+#ifdef FACTORY_CHOICE
+			tierDbg--;
+#endif
 		}
 	}
 	return facIt->second;

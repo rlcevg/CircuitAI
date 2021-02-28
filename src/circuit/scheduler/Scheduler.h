@@ -12,33 +12,10 @@
 #include "util/MultiQueue.h"
 #include "util/Defines.h"
 
-#include "System/Threading/SpringThreading.h"
-
 #include <memory>
 #include <list>
 
 namespace circuit {
-
-class Barrier {
-public:
-	template<typename _Predicate>
-	void NotifyOne(_Predicate __p) {
-		{
-			std::lock_guard<spring::mutex> mlock(_mutex);
-			__p();
-		}
-		_cond.notify_one();
-	}
-	template<typename _Predicate>
-	void Wait(_Predicate __p) {
-		std::unique_lock<spring::mutex> mlock(_mutex);
-		_cond.wait(mlock, __p);
-	}
-
-private:
-	spring::mutex _mutex;
-	spring::condition_variable_any _cond;
-};
 
 class CScheduler {
 public:
@@ -133,8 +110,6 @@ private:
 	int lastFrame;
 	bool isProcessing;  // regular IMainJob
 
-	int numWorkProcess;  // parallel IThreadJob
-	Barrier barrier;
 	std::atomic<bool> isRunning;  // parallel
 
 	struct BaseContainer {

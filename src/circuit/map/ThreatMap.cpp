@@ -45,26 +45,29 @@ CThreatMap::CThreatMap(CMapManager* manager, float decloakRadius)
 	rangeDefault = (DEFAULT_SLACK * 4) / squareSize;
 	distCloak = (decloakRadius + DEFAULT_SLACK) / squareSize;
 
-	threatData0.airThreat.resize(mapSize, THREAT_BASE);
-	threatData0.surfThreat.resize(mapSize, THREAT_BASE);
-	threatData0.amphThreat.resize(mapSize, THREAT_BASE);
+	threatData0.roleThreats.resize(CMaskHandler::GetMaxMasks());
+	for (SRoleThreat& roleThreat : threatData0.roleThreats) {
+		roleThreat.airThreat.resize(mapSize, THREAT_BASE);
+		roleThreat.surfThreat.resize(mapSize, THREAT_BASE);
+		roleThreat.amphThreat.resize(mapSize, THREAT_BASE);
+	}
 	threatData0.cloakThreat.resize(mapSize, THREAT_BASE);
 	threatData0.shield.resize(mapSize, 0.f);
-	airThreat = threatData0.airThreat.data();
-	surfThreat = threatData0.surfThreat.data();
-	amphThreat = threatData0.amphThreat.data();
+	airThreat = threatData0.roleThreats[0].airThreat.data();
+	surfThreat = threatData0.roleThreats[0].surfThreat.data();
+	amphThreat = threatData0.roleThreats[0].amphThreat.data();
 	cloakThreat = threatData0.cloakThreat.data();
 	shieldArray = threatData0.shield.data();
 	threatArray = surfThreat;
 
-	threatData1.airThreat.resize(mapSize, THREAT_BASE);
-	threatData1.surfThreat.resize(mapSize, THREAT_BASE);
-	threatData1.amphThreat.resize(mapSize, THREAT_BASE);
+	threatData1.roleThreats.resize(CMaskHandler::GetMaxMasks());
+	for (SRoleThreat& roleThreat : threatData1.roleThreats) {
+		roleThreat.airThreat.resize(mapSize, THREAT_BASE);
+		roleThreat.surfThreat.resize(mapSize, THREAT_BASE);
+		roleThreat.amphThreat.resize(mapSize, THREAT_BASE);
+	}
 	threatData1.cloakThreat.resize(mapSize, THREAT_BASE);
 	threatData1.shield.resize(mapSize, 0.f);
-	drawAirThreat = threatData1.airThreat.data();
-	drawSurfThreat = threatData1.surfThreat.data();
-	drawAmphThreat = threatData1.amphThreat.data();
 	drawCloakThreat = threatData1.cloakThreat.data();
 	drawShieldArray = threatData1.shield.data();
 
@@ -294,7 +297,7 @@ void CThreatMap::AddEnemyUnitAll(const SEnemyData& e)
 	cloakDraws.push_back(&e);
 }
 
-void CThreatMap::AddEnemyAir(const SEnemyData& e, const int slack)
+void CThreatMap::AddEnemyAir(float* drawAirThreat, const SEnemyData& e, const int slack)
 {
 	int posx, posz;
 	PosToXZ(e.pos, posx, posz);
@@ -329,7 +332,7 @@ void CThreatMap::AddEnemyAir(const SEnemyData& e, const int slack)
 	}
 }
 
-void CThreatMap::AddEnemyAmphConst(const SEnemyData& e, const int slack)
+void CThreatMap::AddEnemyAmphConst(float* drawSurfThreat, float* drawAmphThreat, const SEnemyData& e, const int slack)
 {
 	int posx, posz;
 	PosToXZ(e.pos, posx, posz);
@@ -369,7 +372,7 @@ void CThreatMap::AddEnemyAmphConst(const SEnemyData& e, const int slack)
 	}
 }
 
-void CThreatMap::AddEnemyAmphGradient(const SEnemyData& e, const int slack)
+void CThreatMap::AddEnemyAmphGradient(float* drawSurfThreat, float* drawAmphThreat, const SEnemyData& e, const int slack)
 {
 	int posx, posz;
 	PosToXZ(e.pos, posx, posz);
@@ -500,31 +503,40 @@ float CThreatMap::GetEnemyUnitThreat(const CEnemyUnit* e) const
 	return e->GetDamage() * sqrtf(health + shieldArray[z * width + x] * SHIELD_MOD);  // / unit->GetUnit()->GetMaxHealth();
 }
 
-std::shared_ptr<IMainJob> CThreatMap::AirDrawer()
+std::shared_ptr<IMainJob> CThreatMap::AirDrawer(int roleNum)
 {
+	SThreatData& threatData = *GetNextThreatData();
+	SRoleThreat& roleThreat = threatData.roleThreats[roleNum];
+	std::fill(roleThreat.airThreat.begin(), roleThreat.airThreat.end(), THREAT_BASE);
+
 	for (const SEnemyData* e : airDraws) {
 		if (e->cdef == nullptr) {
-			AddEnemyAir(*e);
+			AddEnemyAir(roleThreat.airThreat.data(), *e);
 		} else {
 			const int vsl = std::min(int(e->vel.Length2D() * slackMod.speedMod), slackMod.speedModMax);
-			AddEnemyAir(*e, vsl);
+			AddEnemyAir(roleThreat.airThreat.data(), *e, vsl);
 		}
 	}
-	airDraws.clear();
 	return ApplyDrawers();
 }
 
-std::shared_ptr<IMainJob> CThreatMap::AmphDrawer()
+std::shared_ptr<IMainJob> CThreatMap::AmphDrawer(int roleNum)
 {
+	SThreatData& threatData = *GetNextThreatData();
+	SRoleThreat& roleThreat = threatData.roleThreats[roleNum];
+	std::fill(roleThreat.surfThreat.begin(), roleThreat.surfThreat.end(), THREAT_BASE);
+	std::fill(roleThreat.amphThreat.begin(), roleThreat.amphThreat.end(), THREAT_BASE);
+	float* drawSurfThreat = roleThreat.surfThreat.data();
+	float* drawAmphThreat = roleThreat.amphThreat.data();
+
 	for (const SEnemyData* e : amphDraws) {
 		if (e->cdef == nullptr) {
-			AddEnemyAmphGradient(*e);
+			AddEnemyAmphGradient(drawSurfThreat, drawAmphThreat, *e);
 		} else {
 			const int vsl = std::min(int(e->vel.Length2D() * slackMod.speedMod), slackMod.speedModMax);
-			e->cdef->IsAlwaysHit() ? AddEnemyAmphConst(*e, vsl) : AddEnemyAmphGradient(*e, vsl);
+			e->cdef->IsAlwaysHit() ? AddEnemyAmphConst(drawSurfThreat, drawAmphThreat, *e, vsl) : AddEnemyAmphGradient(drawSurfThreat, drawAmphThreat, *e, vsl);
 		}
 	}
-	amphDraws.clear();
 	return ApplyDrawers();
 }
 
@@ -548,27 +560,37 @@ std::shared_ptr<IMainJob> CThreatMap::ShieldDrawer()
 
 std::shared_ptr<IMainJob> CThreatMap::ApplyDrawers()
 {
-	return (--numThreadDraws == 0) ? CScheduler::GameJob(&CThreatMap::Apply, this) : nullptr;
+//	return (--numThreadDraws == 0) ? CScheduler::GameJob(&CThreatMap::Apply, this) : nullptr;
+	// FIXME: DEBUG
+	if (--numThreadDraws == 0) {
+//		int count = std::chrono::duration_cast<std::chrono::microseconds>(clock::now() - t0).count();
+//		printf("%i | %i mcs\n", manager->GetCircuit()->GetSkirmishAIId(), count);
+		return CScheduler::GameJob(&CThreatMap::Apply, this);
+	} else {
+		return nullptr;
+	}
+	// FIXME: DEBUG
 }
 
 void CThreatMap::Prepare(SThreatData& threatData)
 {
-	std::fill(threatData.airThreat.begin(), threatData.airThreat.end(), THREAT_BASE);
-	std::fill(threatData.surfThreat.begin(), threatData.surfThreat.end(), THREAT_BASE);
-	std::fill(threatData.amphThreat.begin(), threatData.amphThreat.end(), THREAT_BASE);
 	std::fill(threatData.cloakThreat.begin(), threatData.cloakThreat.end(), THREAT_BASE);
 	std::fill(threatData.shield.begin(), threatData.shield.end(), 0.f);
 
-	drawAirThreat = threatData.airThreat.data();
-	drawSurfThreat = threatData.surfThreat.data();
-	drawAmphThreat = threatData.amphThreat.data();
 	drawCloakThreat = threatData.cloakThreat.data();
 	drawShieldArray = threatData.shield.data();
+
+	airDraws.clear();
+	amphDraws.clear();
 }
 
 std::shared_ptr<IMainJob> CThreatMap::Update(CScheduler* scheduler)
 {
-	Prepare(*GetNextThreatData());
+	// FIXME: DEBUG
+//	t0 = clock::now();
+	// FIXME: DEBUG
+	SThreatData& threatData = *GetNextThreatData();
+	Prepare(threatData);
 
 	CEnemyManager* enemyMgr = manager->GetCircuit()->GetEnemyManager();
 
@@ -580,9 +602,11 @@ std::shared_ptr<IMainJob> CThreatMap::Update(CScheduler* scheduler)
 		cloakDraws.push_back(&e);
 	}
 
-	numThreadDraws = 4;
-	scheduler->RunPriorityJob(CScheduler::WorkJob(&CThreatMap::AirDrawer, this));
-	scheduler->RunPriorityJob(CScheduler::WorkJob(&CThreatMap::AmphDrawer, this));
+	numThreadDraws = 2 + 2 * threatData.roleThreats.size();
+	for (unsigned int i = 0; i < threatData.roleThreats.size(); ++i) {
+		scheduler->RunPriorityJob(CScheduler::WorkJob(&CThreatMap::AirDrawer, this, i));
+		scheduler->RunPriorityJob(CScheduler::WorkJob(&CThreatMap::AmphDrawer, this, i));
+	}
 	scheduler->RunPriorityJob(CScheduler::WorkJob(&CThreatMap::CloakDrawer, this));
 	scheduler->RunPriorityJob(CScheduler::WorkJob(&CThreatMap::ShieldDrawer, this));
 
@@ -607,9 +631,9 @@ void CThreatMap::SwapBuffers()
 {
 	pThreatData = GetNextThreatData();
 	SThreatData& threatData = *pThreatData.load();
-	airThreat = threatData.airThreat.data();
-	surfThreat = threatData.surfThreat.data();
-	amphThreat = threatData.amphThreat.data();
+	airThreat = threatData.roleThreats[0].airThreat.data();
+	surfThreat = threatData.roleThreats[0].surfThreat.data();
+	amphThreat = threatData.roleThreats[0].amphThreat.data();
 	cloakThreat = threatData.cloakThreat.data();
 	shieldArray = threatData.shield.data();
 	threatArray = surfThreat;

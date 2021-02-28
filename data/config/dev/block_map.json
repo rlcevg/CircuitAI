@@ -16,7 +16,7 @@
 //			"size": [7, 7],  // default: size of a unit
 
 			// Spacer, blocker_size = size + yard
-			"yard": [8, 16]  // default: [0, 0]
+			"yard": [8, 16],  // default: [0, 0]
 
 			// Integer radius of a blocker or description string.
 			// Available string values: explosion, expl_ally = [radius ~ 1 player .. radius/2 ~ 4+ players]
@@ -25,7 +25,7 @@
 			// "ignore": [<structure_type>, <structure_type>, ...]
 			// Ignore specified structures.
 			// Additional values: none, all
-//			"ignore": ["none"],  // default: ["none"]
+			"ignore": ["def_low"]  // default: ["none"]
 //			"not_ignore": ["all"]  // default: ["all"]
 		},
 		"fac_land2": {

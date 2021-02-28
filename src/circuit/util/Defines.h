@@ -39,7 +39,7 @@ template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 // x--
 #define UNIT_FACING_WEST	3
 
-#define MIN_BUILD_SEC	16
+#define MIN_BUILD_SEC	10
 #define MAX_BUILD_SEC	40
 #define MAX_TRAVEL_SEC	60
 #define ASSIGN_TIMEOUT	(FRAMES_PER_SEC * 300)

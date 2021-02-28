@@ -405,7 +405,7 @@ void CSetupManager::ReadConfig()
 		hide.threat = hhdd.get("threat", 0.f).asFloat();
 		hide.isAir = hhdd.get("air", false).asBool();
 		const Json::Value& taskRad = hhdd["task_rad"];
-		hide.sqPeaceTaskRad = taskRad.get((unsigned)0, 2000.f).asFloat();
+		hide.sqPeaceTaskRad = std::min(taskRad.get((unsigned)0, 2000.f).asFloat(), CTerrainManager::GetTerrainDiagonal() * 0.5f);
 		if (hide.sqPeaceTaskRad > 0.f) {
 			hide.sqPeaceTaskRad = SQUARE(hide.sqPeaceTaskRad);
 		}

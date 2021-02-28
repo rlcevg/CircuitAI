@@ -15,15 +15,15 @@
 	"prevent": 1,  // number of preventive defences
 	"amount": {  // income bound factor
 		"offset": [-0.15, 0.15],
-		// Amount factor: 10x10 ~ 3.8, 20x20 ~ 3.4
-		"factor": [3.8, 3.4],
+		// Amount factor: 10x10 ~ 6.0, 20x20 ~ 5.0
+		"factor": [6.0, 5.0],
 		"map": [10, 20]
 	},
 	"point_range": 600.0,  // maximum distance between 2 points in hierarchical cluster within economy cluster
 
 	// Base defence and time to build it, in seconds
 	"base": [
-		[0, 120], [3, 420], [2, 520], [0, 680], [4, 760], [5, 860], [8, 960], [10, 1200], [15,1220], [15, 1320],
+		[3, 420], [2, 520], [0, 680], [4, 760], [5, 860], [8, 960], [10, 1200], [15,1220], [15, 1320],
 		[11, 1400], [14, 1500], [12, 1800]
 	],
 
@@ -168,14 +168,26 @@
 			]
 		}
 	},
-//	"factory": {
-//		"armlab": {
-//			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 20}}]]
-//		},
-//		"armvp": {
-//			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 20}}]]
-//		}
-//	},
+	"factory": {
+		"armlab": {
+			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 10}}]]
+		},
+		"armvp": {
+			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 10}}]]
+		},
+		"armap": {
+			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 10}}]]
+		},
+		"corlab": {
+			"hub": [[{"unit": "corllt", "category": "defence", "offset": {"back": 10}}]]
+		},
+		"corvp": {
+			"hub": [[{"unit": "corllt", "category": "defence", "offset": {"back": 10}}]]
+		},
+		"corap": {
+			"hub": [[{"unit": "corllt", "category": "defence", "offset": {"back": 10}}]]
+		}
+	},
 	"mex": {
 		"armmex": {
 //			"terra": true,

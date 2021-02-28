@@ -14,14 +14,13 @@ namespace circuit {
 
 CMultiQueue<CScheduler::WorkTask> CScheduler::workTasks;
 std::vector<spring::thread> CScheduler::workThreads;
-int CScheduler::maxWorkThreads = 1;
+int CScheduler::maxWorkThreads = 2;
 std::atomic<bool> CScheduler::workerRunning(false);
 unsigned int CScheduler::counterInstance = 0;
 
 CScheduler::CScheduler()
 		: lastFrame(-1)
 		, isProcessing(false)
-		, numWorkProcess(0)
 {
 	if (counterInstance == 0) {
 		int maxThreads = spring::thread::hardware_concurrency();
@@ -82,8 +81,6 @@ void CScheduler::Release()
 		workTasks.Clear();
 	}
 
-	barrier.Wait([this]() { return numWorkProcess == 0; });
-
 	finishTasks.Clear();
 }
 
@@ -96,8 +93,7 @@ void CScheduler::StartThreads()
 
 	assert(workThreads.empty());
 	for (int i = 0; i < maxWorkThreads; ++i) {
-		std::thread t = spring::thread(&CScheduler::WorkerThread, i);
-		workThreads.push_back(std::move(t));
+		workThreads.emplace_back(&CScheduler::WorkerThread, i);
 	}
 }
 
@@ -184,7 +180,6 @@ void CScheduler::WorkerThread(int num)
 			continue;
 		}
 
-		scheduler->barrier.NotifyOne([scheduler]() { scheduler->numWorkProcess++; });
 		if (scheduler->isRunning) {
 
 			std::shared_ptr<IMainJob> onComplete = container.task->Run(num);
@@ -193,7 +188,6 @@ void CScheduler::WorkerThread(int num)
 			}
 
 		}
-		scheduler->barrier.NotifyOne([scheduler]() { scheduler->numWorkProcess--; });
 	}
 }
 

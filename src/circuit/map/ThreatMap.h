@@ -13,6 +13,9 @@
 
 #include <map>
 #include <vector>
+// FIXME: DEBUG
+#include <chrono>
+// FIXME: DEBUG
 
 namespace circuit {
 
@@ -25,6 +28,10 @@ class IMainJob;
 
 class CThreatMap {
 public:
+	// FIXME: DEBUG
+	using clock = std::chrono::high_resolution_clock;
+	clock::time_point t0;
+	// FIXME: DEBUG
 	CThreatMap(CMapManager* manager, float decloakRadius);
 	virtual ~CThreatMap();
 
@@ -56,10 +63,13 @@ private:
 	 * http://stackoverflow.com/questions/872544/precision-of-floating-point
 	 * Single precision: for accuracy of +/-0.5 (or 2^-1) the maximum size that the number can be is 2^23.
 	 */
-	struct SThreatData {
+	struct SRoleThreat {
 		FloatVec airThreat;  // air layer
 		FloatVec surfThreat;  // surface (water and land)
 		FloatVec amphThreat;  // under water and surface on land
+	};
+	struct SThreatData {
+		std::vector<SRoleThreat> roleThreats;
 		FloatVec cloakThreat;  // decloakers
 		FloatVec shield;  // total shield power that covers tile
 	};
@@ -72,9 +82,9 @@ private:
 
 	void AddEnemyUnit(const SEnemyData& e);
 	void AddEnemyUnitAll(const SEnemyData& e);
-	void AddEnemyAir(const SEnemyData& e, const int slack = 0);  // Enemy AntiAir
-	void AddEnemyAmphConst(const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
-	void AddEnemyAmphGradient(const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
+	void AddEnemyAir(float* drawAirThreat, const SEnemyData& e, const int slack = 0);  // Enemy AntiAir
+	void AddEnemyAmphConst(float* drawSurfThreat, float* drawAmphThreat, const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
+	void AddEnemyAmphGradient(float* drawSurfThreat, float* drawAmphThreat, const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
 	void AddDecloaker(const SEnemyData& e);
 	void AddShield(const SEnemyData& e);
 
@@ -84,8 +94,8 @@ private:
 
 	void Prepare(SThreatData& threatData);
 	std::shared_ptr<IMainJob> Update(CScheduler* scheduler);
-	std::shared_ptr<IMainJob> AirDrawer();
-	std::shared_ptr<IMainJob> AmphDrawer();
+	std::shared_ptr<IMainJob> AirDrawer(int roleNum);
+	std::shared_ptr<IMainJob> AmphDrawer(int roleNum);
 	std::shared_ptr<IMainJob> CloakDrawer();
 	std::shared_ptr<IMainJob> ShieldDrawer();
 	std::shared_ptr<IMainJob> ApplyDrawers();
@@ -117,9 +127,6 @@ private:
 
 	SThreatData threatData0, threatData1;  // Double-buffer for threading
 	std::atomic<SThreatData*> pThreatData;
-	float* drawAirThreat;
-	float* drawSurfThreat;
-	float* drawAmphThreat;
 	float* drawCloakThreat;
 	float* drawShieldArray;
 	bool isUpdating;

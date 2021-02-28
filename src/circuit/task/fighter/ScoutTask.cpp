@@ -93,7 +93,7 @@ void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	IFighterTask::OnUnitIdle(unit);
 	if (units.find(unit) != units.end()) {
-		RemoveAssignee(unit);
+		Start(unit);  // or RemoveAssignee(unit);
 	}
 }
 

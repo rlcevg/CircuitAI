@@ -23,7 +23,7 @@
 						[1.0, ["builderT2", "skirmish", "skirmish", "builderT2", "skirmish", "builderT2", "artillery", "artillery", "artillery", "anti_air", "builderT2"]]
 					]
 				},
-				"default": ["builder", "raider", "raider", "raider", "builder", "raider", "support", "raider"]
+				"default": ["scout", "scout", "raider", "raider", "raider", "raider", "raider", "builder", "raider", "builder", "raider", "builder", "raider"]
 			},
 
 			// Morph params
@@ -37,7 +37,7 @@
 				"time": 180,  // seconds
 				"threat": 7,
 				"air": true,
-				"task_rad": [2000.0, 1000.0]  // [<peace_radius>, <danger_radius>]
+				"task_rad": [3000.0, 1000.0]  // [<peace_radius>, <danger_radius>]
 			},
 
 			"side": "armada"
@@ -75,7 +75,7 @@
 				"time": 180,  // seconds
 				"threat": 7,
 				"air": true,
-				"task_rad": [2000.0, 1000.0]  // [<peace_radius>, <danger_radius>]
+				"task_rad": [3000.0, 1000.0]  // [<peace_radius>, <danger_radius>]
 			},
 
 			"side": "cortex"

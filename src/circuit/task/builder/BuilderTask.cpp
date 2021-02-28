@@ -78,7 +78,7 @@ IBuilderTask::~IBuilderTask()
 bool IBuilderTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	// is extra buildpower required?
-	if (cost < buildPower * MIN_BUILD_SEC) {
+	if (/*(units.size() > 1) && */(cost < buildPower * MIN_BUILD_SEC)) {
 		return false;
 	}
 	const CCircuitDef* cdef = unit->GetCircuitDef();
