@@ -21,6 +21,9 @@
 					],
 					"armavp": [
 						[1.0, ["builderT2", "skirmish", "skirmish", "builderT2", "skirmish", "builderT2", "artillery", "artillery", "artillery", "anti_air", "builderT2"]]
+					],
+					"armap": [
+						[1.0, ["scout", "raider", "raider", "raider", "raider", "raider", "builder", "bomber", "bomber", "bomber", "bomber", "bomber"]]
 					]
 				},
 				"default": ["scout", "scout", "raider", "raider", "raider", "raider", "raider", "builder", "raider", "builder", "raider", "builder", "raider"]

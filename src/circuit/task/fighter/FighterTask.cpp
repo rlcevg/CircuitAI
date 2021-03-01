@@ -179,6 +179,10 @@ void IFighterTask::Attack(CCircuitUnit* unit, const int frame)
 	}
 
 	AIFloat3 dir = unit->GetPos(frame) - tPos;
+	if (unit->GetCircuitDef()->IsPlane() || (std::fabs(dir.y) > unit->GetCircuitDef()->GetMaxRange() * 0.5f)) {
+		unit->Attack(GetTarget(), GetTarget()->GetUnit()->IsCloaked(), frame + FRAMES_PER_SEC * 60);
+		return;
+	}
 	dir.Normalize2D();
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
@@ -186,7 +190,6 @@ void IFighterTask::Attack(CCircuitUnit* unit, const int frame)
 	AIFloat3 newPos(tPos.x + range * dir.x, tPos.y, tPos.z + range * dir.z);
 	CTerrainManager::CorrectPosition(newPos);
 	unit->Attack(newPos, GetTarget(), targetTile, GetTarget()->GetUnit()->IsCloaked(), frame + FRAMES_PER_SEC * 60);
-	unit->GetTravelAct()->StateWait();
 }
 
 #ifdef DEBUG_VIS

@@ -190,13 +190,12 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		assists.erase(unit);
 	};
 
-	ReadConfig();
-
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
 		UnitDef* def = cdef.GetDef();
-		if (!cdef.IsMobile() && def->IsBuilder()) {
+		const bool isBuilder = def->IsBuilder();
+		if (!cdef.IsMobile() && isBuilder) {
 			CCircuitDef::Id unitDefId = cdef.GetId();
-			if  (!cdef.GetBuildOptions().empty()) {
+			if (!cdef.GetBuildOptions().empty()) {
 				createdHandler[unitDefId] = factoryCreatedHandler;
 				finishedHandler[unitDefId] = factoryFinishedHandler;
 				idleHandler[unitDefId] = factoryIdleHandler;
@@ -207,15 +206,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 				idleHandler[unitDefId] = assistIdleHandler;
 				destroyedHandler[unitDefId] = assistDestroyedHandler;
 				cdef.SetIsAssist(true);
-			}
-
-			for (SSideInfo& sideInfo : sideInfos) {
-				if (cdef.CanBuild(sideInfo.airpadDef)) {
-					airpadDefs[cdef.GetId()] = sideInfo.airpadDef;
-				}
-				if (cdef.CanBuild(sideInfo.assistDef)) {
-					assistDefs[cdef.GetId()] = sideInfo.assistDef;
-				}
 			}
 		}
 
@@ -231,13 +221,29 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			setRoles(ROLE_TYPE(AIR));
 		} else if (!cdef.IsMobile() && cdef.IsAttacker() && cdef.HasSurfToLand()) {
 			setRoles(ROLE_TYPE(STATIC));
-		} else if (cdef.GetDef()->IsBuilder() && !cdef.GetBuildOptions().empty() && !cdef.IsRoleComm()) {
+		} else if (isBuilder && !cdef.GetBuildOptions().empty() && !cdef.IsRoleComm()) {
 			setRoles(ROLE_TYPE(BUILDER));
 		}
 		if (cdef.IsRoleComm()) {
 			// NOTE: Omit AddRole to exclude commanders from response
 			cdef.SetMainRole(ROLE_TYPE(BUILDER));
 			cdef.AddEnemyRole(ROLE_TYPE(COMM));
+		}
+	}
+
+	ReadConfig();
+
+	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+		if (!cdef.GetDef()->IsBuilder()) {
+			continue;
+		}
+		for (SSideInfo& sideInfo : sideInfos) {
+			if (cdef.CanBuild(sideInfo.airpadDef)) {
+				airpadDefs[cdef.GetId()] = sideInfo.airpadDef;
+			}
+			if (cdef.CanBuild(sideInfo.assistDef)) {
+				assistDefs[cdef.GetId()] = sideInfo.assistDef;
+			}
 		}
 	}
 
