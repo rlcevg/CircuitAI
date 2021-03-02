@@ -43,6 +43,7 @@ protected:
 	void ActivePath(float speed = NO_SPEED_LIMIT);
 	NSMicroPather::TestFunc GetHitTest() const;
 	void Attack(const int frame);
+	void Attack(const int frame, const bool isGround);
 
 	float lowestRange;
 	float highestRange;

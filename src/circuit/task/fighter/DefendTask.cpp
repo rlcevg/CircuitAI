@@ -187,9 +187,18 @@ void CDefendTask::Update()
 
 void CDefendTask::Merge(ISquadTask* task)
 {
+	CCircuitAI* circuit = manager->GetCircuit();
+	int frame = circuit->GetLastFrame();
+	const AIFloat3& leadPos = leader->GetPos(frame);
+	frame += FRAMES_PER_SEC * 60;
+
 	const std::set<CCircuitUnit*>& rookies = task->GetAssignees();
 	for (CCircuitUnit* unit : rookies) {
 		unit->SetTask(this);
+
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->Fight(leadPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
+		)
 	}
 	units.insert(rookies.begin(), rookies.end());
 	maxPower = std::max(maxPower, static_cast<CDefendTask*>(task)->GetMaxPower());

@@ -109,7 +109,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			if (isBaseBuilderOn && !unit->GetCircuitDef()->IsRoleComm()) {
 				if (unit->GetCircuitDef()->GetCostM() < 200) {
 					if ((energizer1 == nullptr)
-						&& ((unsigned)unit->GetCircuitDef()->GetCount() > militaryMgr->GetDefendTaskNum()))
+						&& (((unsigned)unit->GetCircuitDef()->GetCount() > militaryMgr->GetDefendTaskNum())
+							|| unit->GetCircuitDef()->IsAbleToFly()))
 					{
 						energizer1 = unit;
 						unit->AddAttribute(CCircuitDef::AttrType::BASE);

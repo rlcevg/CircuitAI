@@ -14,6 +14,7 @@
 #include "terrain/path/PathFinder.h"
 #include "terrain/path/QueryPathSingle.h"
 #include "terrain/path/QueryPathMulti.h"
+#include "unit/action/FightAction.h"
 #include "unit/action/MoveAction.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "unit/CircuitUnit.h"
@@ -60,7 +61,12 @@ void CAntiAirTask::AssignTo(CCircuitUnit* unit)
 	ISquadTask::AssignTo(unit);
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
-	CMoveAction* travelAction = new CMoveAction(unit, squareSize);
+	ITravelAction* travelAction;
+	if (unit->GetCircuitDef()->IsAttrSiege()) {
+		travelAction = new CFightAction(unit, squareSize);
+	} else {
+		travelAction = new CMoveAction(unit, squareSize);
+	}
 	unit->PushTravelAct(travelAction);
 	travelAction->StateWait();
 }
@@ -220,9 +226,9 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 		return;
 	}
 
-	if (!IsQueryReady(unit)) {
-		return;
-	}
+//	if (!IsQueryReady(unit)) {
+//		return;
+//	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();

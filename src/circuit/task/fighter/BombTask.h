@@ -8,11 +8,11 @@
 #ifndef SRC_CIRCUIT_TASK_FIGHTER_BOMBTASK_H_
 #define SRC_CIRCUIT_TASK_FIGHTER_BOMBTASK_H_
 
-#include "task/fighter/FighterTask.h"
+#include "task/fighter/SquadTask.h"
 
 namespace circuit {
 
-class CBombTask: public IFighterTask {
+class CBombTask: public ISquadTask {
 public:
 	CBombTask(ITaskManager* mgr, float powerMod);
 	virtual ~CBombTask();
@@ -28,12 +28,11 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 private:
-	void Execute(CCircuitUnit* unit, bool isUpdating);
-	springai::AIFloat3 FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, const springai::AIFloat3& pos);
-	void ApplyTargetPath(const CQueryPathSingle* query, bool isUpdating);
-	void FallbackScout(CCircuitUnit* unit, bool isUpdating);
-	void ApplyScoutPath(const CQueryPathSingle* query);
-	void Fallback(CCircuitUnit* unit, bool proceed);
+	void FindTarget();
+	void ApplyTargetPath(const CQueryPathSingle* query);
+	void FallbackBasePos();
+	void ApplyBasePos(const CQueryPathSingle* query);
+	void Fallback();
 };
 
 } // namespace circuit

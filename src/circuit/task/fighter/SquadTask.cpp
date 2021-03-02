@@ -363,10 +363,14 @@ NSMicroPather::TestFunc ISquadTask::GetHitTest() const
 
 void ISquadTask::Attack(const int frame)
 {
+	Attack(frame, GetTarget()->GetUnit()->IsCloaked());
+}
+
+void ISquadTask::Attack(const int frame, const bool isGround)
+{
 	const AIFloat3& tPos = GetTarget()->GetPos();
 	const bool isRepeatAttack = (frame >= attackFrame + FRAMES_PER_SEC * 3);
 	attackFrame = isRepeatAttack ? frame : attackFrame;
-	const bool isGroundAttack = GetTarget()->GetUnit()->IsCloaked();
 
 	auto it = rangeUnits.begin()->second.begin();
 	std::advance(it, rangeUnits.begin()->second.size() / 2);  // TODO: Optimize
@@ -380,7 +384,7 @@ void ISquadTask::Attack(const int frame)
 					continue;  // Do not interrupt current action
 				}
 
-				unit->Attack(GetTarget(), isGroundAttack, frame + FRAMES_PER_SEC * 60);
+				unit->Attack(GetTarget(), isGround, frame + FRAMES_PER_SEC * 60);
 			}
 		}
 		return;
@@ -416,7 +420,7 @@ void ISquadTask::Attack(const int frame)
 				const float angle = alpha + beta;
 				AIFloat3 newPos(tPos.x + range * cosf(angle), tPos.y, tPos.z + range * sinf(angle));
 				CTerrainManager::CorrectPosition(newPos);
-				unit->Attack(newPos, GetTarget(), targetTile, isGroundAttack, frame + FRAMES_PER_SEC * 60);
+				unit->Attack(newPos, GetTarget(), targetTile, isGround, frame + FRAMES_PER_SEC * 60);
 			}
 
 			beta += delta;
