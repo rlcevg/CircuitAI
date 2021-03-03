@@ -290,7 +290,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			return;
 		}
 		// Check mex position in 20 seconds
-		this->circuit->GetScheduler()->RunTaskAfter(CScheduler::GameJob([this, mexDef, pos, index]() {
+		this->circuit->GetScheduler()->RunJobAfter(CScheduler::GameJob([this, mexDef, pos, index]() {
 			if (this->circuit->GetEconomyManager()->IsAllyOpenSpot(index) &&
 				this->circuit->GetBuilderManager()->IsBuilderInArea(mexDef, pos) &&
 				this->circuit->GetTerrainManager()->CanBeBuiltAtSafe(mexDef, pos))  // hostile environment
@@ -467,10 +467,10 @@ void CBuilderManager::Init()
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		const int interval = 8;
 		const int offset = circuit->GetSkirmishAIId() % interval;
-		scheduler->RunTaskEvery(CScheduler::GameJob(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
-		scheduler->RunTaskEvery(CScheduler::GameJob(&CBuilderManager::UpdateBuild, this), 1/*interval*/, offset + 1);
+		scheduler->RunJobEvery(CScheduler::GameJob(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
+		scheduler->RunJobEvery(CScheduler::GameJob(&CBuilderManager::UpdateBuild, this), 1/*interval*/, offset + 1);
 
-		scheduler->RunTaskEvery(CScheduler::GameJob(&CBuilderManager::Watchdog, this),
+		scheduler->RunJobEvery(CScheduler::GameJob(&CBuilderManager::Watchdog, this),
 								FRAMES_PER_SEC * 60,
 								circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 10);
 	};

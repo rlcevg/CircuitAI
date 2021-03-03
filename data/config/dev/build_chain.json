@@ -10,7 +10,7 @@
 		           "corflak", "cortoast", "cordoom", "corpun",  "corfmd", "cortarg", "corgate"]
 	},
 	// Actual number of defences per cluster bounded by income - the order of defenses that should be build with numbers as above.
-	"land":  [0, 2, 3, 2, 3, 5, 6, 5, 4, 4, 7, 3, 4, 13, 8, 10, 8, 11, 10, 12],
+	"land":  [0, 2, 3, 5, 6, 4, 7, 13, 8, 10, 11, 12],
 	"water": [1, 2, 1, 1, 2, 1, 4, 13, 9, 10, 9, 10],
 	"prevent": 1,  // number of preventive defences
 	"amount": {  // income bound factor
@@ -23,8 +23,7 @@
 
 	// Base defence and time to build it, in seconds
 	"base": [
-		[3, 420], [2, 520], [0, 680], [4, 760], [5, 860], [8, 960], [10, 1200], [15,1220], [15, 1320],
-		[11, 1400], [14, 1500], [12, 1800]
+		[3, 420], [2, 520], [4, 760], [10, 1200], [15,1220], [15, 1320], [11, 1400], [12, 1800]
 	],
 
 	"superweapon": {
@@ -170,22 +169,22 @@
 	},
 	"factory": {
 		"armlab": {
-			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 10}}]]
+			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 5}}]]
 		},
 		"armvp": {
-			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 10}}]]
+			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 5}}]]
 		},
 		"armap": {
-			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 10}}]]
+			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"front": 5}}]]
 		},
 		"corlab": {
-			"hub": [[{"unit": "corllt", "category": "defence", "offset": {"back": 10}}]]
+			"hub": [[{"unit": "corllt", "category": "defence", "offset": {"back": 5}}]]
 		},
 		"corvp": {
-			"hub": [[{"unit": "corllt", "category": "defence", "offset": {"back": 10}}]]
+			"hub": [[{"unit": "corllt", "category": "defence", "offset": {"back": 5}}]]
 		},
 		"corap": {
-			"hub": [[{"unit": "corllt", "category": "defence", "offset": {"back": 10}}]]
+			"hub": [[{"unit": "corllt", "category": "defence", "offset": {"front": 5}}]]
 		}
 	},
 	"mex": {

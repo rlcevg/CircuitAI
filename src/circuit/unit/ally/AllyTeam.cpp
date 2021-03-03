@@ -361,24 +361,22 @@ CAllyTeam::SClusterTeam CAllyTeam::GetClusterTeam(int clusterId)
 	return SClusterTeam(-1);
 }
 
-// FIXME: DEBUG
-//void CAllyTeam::OccupyArea(STerrainMapArea* area, int teamId)
-//{
-//	auto it = habitants.find(area);
-//	if (it == habitants.end()) {
-//		habitants.insert(std::make_pair(area, SAreaTeam(teamId)));
-//	}
-//}
-//
-//CAllyTeam::SAreaTeam CAllyTeam::GetAreaTeam(STerrainMapArea* area)
-//{
-//	auto it = habitants.find(area);
-//	if (it != habitants.end()) {
-//		return it->second;
-//	}
-//	return SAreaTeam(-1);
-//}
-// FIXME: DEBUG
+void CAllyTeam::OccupyArea(STerrainMapArea* area, int teamId)
+{
+	auto it = habitants.find(area);
+	if (it == habitants.end()) {
+		habitants.insert(std::make_pair(area, SAreaTeam(teamId)));
+	}
+}
+
+CAllyTeam::SAreaTeam CAllyTeam::GetAreaTeam(STerrainMapArea* area)
+{
+	auto it = habitants.find(area);
+	if (it != habitants.end()) {
+		return it->second;
+	}
+	return SAreaTeam(-1);
+}
 
 void CAllyTeam::DelegateAuthority(CCircuitAI* curOwner)
 {

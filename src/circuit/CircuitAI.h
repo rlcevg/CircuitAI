@@ -92,8 +92,8 @@ public:
 	int HandleEvent(int topic, const void* data);
 	void NotifyGameEnd();
 	void NotifyResign();
-	void Resign(int newTeamId, springai::Economy* economy);
-	void MobileSlave(int newTeamId, springai::Economy* economy);
+	void Resign(int newTeamId);
+	void MobileSlave(int newTeamId);
 private:
 	typedef int (CCircuitAI::*EventHandlerPtr)(int topic, const void* data);
 	int HandleGameEvent(int topic, const void* data);
@@ -313,6 +313,7 @@ private:
 	int allyTeamId;
 	SideType sideId;
 	std::string sideName;
+	std::shared_ptr<IMainJob> mergeTask;
 
 	std::unique_ptr<COOAICallback>        callback;
 	std::unique_ptr<CEngine>              engine;

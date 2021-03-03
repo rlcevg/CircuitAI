@@ -147,7 +147,7 @@ void CCircuitAI::NotifyResign()
 	eventHandler = &CCircuitAI::HandleResignEvent;
 }
 
-void CCircuitAI::Resign(int newTeamId, Economy* economy)
+void CCircuitAI::Resign(int newTeamId)
 {
 	std::vector<Unit*> migrants;
 	auto allTeamUnits = callback->GetTeamUnits();
@@ -164,7 +164,7 @@ void CCircuitAI::Resign(int newTeamId, Economy* economy)
 	isResigned = true;
 }
 
-void CCircuitAI::MobileSlave(int newTeamId, Economy* economy)
+void CCircuitAI::MobileSlave(int newTeamId)
 {
 	std::vector<Unit*> migrants;
 	std::vector<CCircuitUnit*> clean;
@@ -589,6 +589,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
 	economyManager = std::make_shared<CEconomyManager>(this);
+	economy = callback->GetEconomy();
 
 	allyTeam->Init(this, decloakRadius);
 	mapManager = allyTeam->GetMapManager();
@@ -624,7 +625,29 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	if (isCheating) {
 		cheats->SetEnabled(true);
 		cheats->SetEventsEnabled(true);
-		scheduler->RunTaskAt(CScheduler::GameJob(&CCircuitAI::CheatPreload, this), skirmishAIId + 1);
+		scheduler->RunJobAt(CScheduler::GameJob(&CCircuitAI::CheatPreload, this), skirmishAIId + 1);
+	}
+
+	if (callback->GetEnemyTeamSize() < allyTeam->GetAliveSize() / 2.f) {
+		mergeTask = CScheduler::GameJob([this] {
+			if ((allyTeam->GetLeaderId() != teamId) && (factoryManager->GetFactoryCount() > 0)) {
+				MobileSlave(allyTeam->GetLeaderId());
+				scheduler->RemoveJob(mergeTask);
+			}
+
+			// Complete resign by area
+//			if (factoryManager->GetFactoryCount() > 0) {
+//				CCircuitUnit* commander = setupManager->GetCommander();
+//				if (commander == nullptr) {
+//					commander = teamUnits.begin()->second;
+//				}
+//				int ownerId = allyTeam->GetAreaTeam(commander->GetArea()).teamId;
+//				if ((ownerId != teamId) && (ownerId >= 0)) {
+//					Resign(ownerId);
+//				}
+//			}
+		});
+		scheduler->RunJobEvery(mergeTask, 1, FRAMES_PER_SEC);
 	}
 
 	scheduler->ProcessInit();  // Init modules: allows to manipulate units on gadget:Initialize
@@ -714,16 +737,6 @@ int CCircuitAI::Release(int reason)
 
 int CCircuitAI::Update(int frame)
 {
-	// FIXME: DEBUG Experimental team resign
-	// TODO: Turn into IMainJob
-	if (!isSlave && (allyTeam->GetLeaderId() != teamId) && (factoryManager->GetNoT1FacCount() > 0)) {
-		Economy* economy = callback->GetEconomy();
-		MobileSlave(allyTeam->GetLeaderId(), economy);
-		delete economy;
-	}
-	// FIXME: DEBUG
-	// NOTES: The issue with merging is common or separate limits, and separate non-shared response
-
 	lastFrame = frame;
 	if (isResigned) {
 		Release(RELEASE_RESIGN);
@@ -748,7 +761,7 @@ int CCircuitAI::Update(int frame)
 
 	allyTeam->Update(this);
 
-	scheduler->ProcessTasks(frame);
+	scheduler->ProcessJobs(frame);
 	UpdateActions();
 
 #ifdef DEBUG_VIS
@@ -954,21 +967,17 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 		return 0;  // created by gadget
 	}
 
-	// FIXME: DEBUG Experimental army merge
-	//        Doesn't work: "response" structure is per AI, and after SendUnits AI tries to build the same "response" unit. Limit also doesn't work
+	// NOTE: "response" structure and limits are per AI
 	if (isSlave
-		&& (allyTeam->GetLeaderId() != teamId)  // FIXME: Required?
 		&& unit->GetCircuitDef()->IsMobile()
 		&& !unit->GetCircuitDef()->IsRoleBuilder())
 	{
-		Economy* economy = callback->GetEconomy();
 		economy->SendUnits({unit->GetUnit()}, allyTeam->GetLeaderId());
-		delete economy;
 		UnitDestroyed(unit, nullptr);
+		// BAR on SendUnits invokes EVENT_UNIT_CAPTURED, no need for:
 		UnregisterTeamUnit(unit);
 		return 0;
 	}
-	// FIXME: DEBUG
 
 	// FIXME: Random-Side workaround
 	if (unit->GetCircuitDef()->IsRoleComm() && (setupManager->GetCommander() == nullptr)) {

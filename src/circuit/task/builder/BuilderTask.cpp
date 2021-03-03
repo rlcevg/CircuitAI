@@ -683,7 +683,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 					} break;
 					case SBuildInfo::Condition::ENERGY: {
 						CEconomyManager* ecoMgr = circuit->GetEconomyManager();
-						isValid = ecoMgr->GetAvgEnergyIncome() > ecoMgr->GetEnergyPull() + bi.cdef->GetUpkeepE();
+						isValid = !ecoMgr->IsEnergyStalling() && (ecoMgr->GetAvgEnergyIncome() > ecoMgr->GetEnergyPull() + bi.cdef->GetUpkeepE());
 					} break;
 					case SBuildInfo::Condition::CHANCE: {
 						isValid = rand() < bi.chance * RAND_MAX;

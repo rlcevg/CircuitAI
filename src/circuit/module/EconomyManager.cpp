@@ -129,7 +129,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		}
 
 		ICoreUnit::Id unitId = unit->GetId();
-		this->circuit->GetScheduler()->RunTaskAfter(CScheduler::GameJob([this, unitId]() {
+		this->circuit->GetScheduler()->RunJobAfter(CScheduler::GameJob([this, unitId]() {
 			CCircuitUnit* unit = this->circuit->GetTeamUnit(unitId);
 			if (unit == nullptr) {
 				return;
@@ -156,7 +156,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			}
 			int morphFrame = this->circuit->GetSetupManager()->GetMorphFrame(unit->GetCircuitDef());
 			if (morphFrame >= 0) {
-				this->circuit->GetScheduler()->RunTaskAt(CScheduler::GameJob([this, unitId]() {
+				this->circuit->GetScheduler()->RunJobAt(CScheduler::GameJob([this, unitId]() {
 					// Force commander level 0 to morph
 					CCircuitUnit* unit = this->circuit->GetTeamUnit(unitId);
 					if ((unit != nullptr) && (unit->GetTask() != nullptr) &&
@@ -409,46 +409,37 @@ void CEconomyManager::Init()
 			const int clusterId = (spotId < 0) ? -1 : circuit->GetMetalManager()->GetCluster(spotId);
 			int ownerId = allyTeam->GetClusterTeam(clusterId).teamId;
 			if (ownerId < 0) {
-				ownerId = circuit->GetTeamId();
-				allyTeam->OccupyCluster(clusterId, ownerId);
+				allyTeam->OccupyCluster(clusterId, circuit->GetTeamId());
 			} else if (ownerId != circuit->GetTeamId()) {
-				circuit->Resign(ownerId, economy);
+				circuit->Resign(ownerId);
 				return;
 			}
-			// FIXME: DEBUG
-//			CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
-//			if (commander == nullptr) {
-//				commander = circuit->GetTeamUnits().begin()->second;
-//			}
-//			int ownerId = allyTeam->GetAreaTeam(commander->GetArea()).teamId;
-//			if (ownerId < 0) {
-//				ownerId = circuit->GetTeamId();
-//				allyTeam->OccupyArea(commander->GetArea(), ownerId);
+
+			CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+			if (commander == nullptr) {
+				commander = circuit->GetTeamUnits().begin()->second;
+			}
+			ownerId = allyTeam->GetAreaTeam(commander->GetArea()).teamId;
+			if (ownerId < 0) {
+				allyTeam->OccupyArea(commander->GetArea(), circuit->GetTeamId());
 //			} else if (ownerId != circuit->GetTeamId()) {
-//				// Resign
-//				std::vector<Unit*> migrants;
-//				for (auto& kv : circuit->GetTeamUnits()) {
-//					migrants.push_back(kv.second->GetUnit());
-//				}
-//				economy->SendUnits(migrants, ownerId);
 //				circuit->Resign(ownerId);
 //				return;
-//			}
-			// FIXME: DEBUG
+			}
 		}
 
-		scheduler->RunTaskAfter(CScheduler::GameJob([this]() {
+		scheduler->RunJobAfter(CScheduler::GameJob([this]() {
 			ecoFactor = (circuit->GetAllyTeam()->GetAliveSize() - 1.0f) * ecoStep + 1.0f;
 		}), FRAMES_PER_SEC * 10);
 
 		const float maxTravel = 7 + rand() % (10 - 7 + 1);  // seconds
 		const int interval = allyTeam->GetSize() * FRAMES_PER_SEC;
 		startFactory = CScheduler::GameJob(&CEconomyManager::StartFactoryTask, this, maxTravel);
-		scheduler->RunTaskEvery(startFactory, 1, circuit->GetSkirmishAIId() + 0 + 5 * FRAMES_PER_SEC);
-		scheduler->RunTaskEvery(CScheduler::GameJob(&CEconomyManager::UpdateStorageTasks, this),
+		scheduler->RunJobEvery(startFactory, 1, circuit->GetSkirmishAIId() + 0 + 5 * FRAMES_PER_SEC);
+		scheduler->RunJobEvery(CScheduler::GameJob(&CEconomyManager::UpdateStorageTasks, this),
 								interval, circuit->GetSkirmishAIId() + 1 + interval / 2);
 
-		scheduler->RunTaskEvery(CScheduler::GameJob(&CEconomyManager::UpdateResourceIncome, this), TEAM_SLOWUPDATE_RATE);
+		scheduler->RunJobEvery(CScheduler::GameJob(&CEconomyManager::UpdateResourceIncome, this), TEAM_SLOWUPDATE_RATE);
 	};
 
 	circuit->GetSetupManager()->ExecOnFindStart(subinit);
@@ -718,7 +709,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	bool isEnergyStalling = IsEnergyStalling();
 	if ((mexDef != nullptr) && !isEnergyStalling && mexDef->IsAvailable(circuit->GetLastFrame())) {
 		float cost = mexDef->GetCostM();
-		unsigned maxCount = builderMgr->GetBuildPower() / cost * 8 + 2;
+		unsigned maxCount = builderMgr->GetBuildPower() / cost * 8 + 10;
 		if (builderMgr->GetTasks(IBuilderTask::BuildType::MEX).size() < maxCount) {
 			CMetalManager* metalMgr = circuit->GetMetalManager();
 			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
@@ -1228,7 +1219,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 		// TODO: Optimize: when invalid link appears start watchdog gametask
 		//       that will traverse invalidLinks vector and enable link on timeout.
 		//       When invalidLinks is empty remove watchdog gametask.
-		circuit->GetScheduler()->RunTaskAfter(CScheduler::GameJob([link](CEnergyGrid* energyGrid) {
+		circuit->GetScheduler()->RunJobAfter(CScheduler::GameJob([link](CEnergyGrid* energyGrid) {
 			link->SetValid(true);
 			energyGrid->SetForceRebuild(true);
 		}, energyGrid), FRAMES_PER_SEC * 120);
@@ -1270,7 +1261,7 @@ void CEconomyManager::StartFactoryTask(const float seconds)
 
 	const int interval = circuit->GetAllyTeam()->GetSize() * FRAMES_PER_SEC;
 	auto update = static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks);
-	scheduler->RunTaskEvery(CScheduler::GameJob(update, this),
+	scheduler->RunJobEvery(CScheduler::GameJob(update, this),
 							interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
 }
 
@@ -1282,7 +1273,7 @@ void CEconomyManager::AddMorphee(CCircuitUnit* unit)
 	morphees.insert(unit);
 	if (morph == nullptr) {
 		morph = CScheduler::GameJob(&CEconomyManager::UpdateMorph, this);
-		circuit->GetScheduler()->RunTaskEvery(morph, FRAMES_PER_SEC * 10);
+		circuit->GetScheduler()->RunJobEvery(morph, FRAMES_PER_SEC * 10);
 	}
 }
 

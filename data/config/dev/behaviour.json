@@ -21,7 +21,7 @@
 
 // If unit's health drops below specified percent it will retreat
 "retreat": {
-	"builder": 0.85,  // default value for all builders
+	"builder": 0.89,  // default value for all builders
 	"fighter": 0.55,  // default value for all not-builder units
 	"shield": [0.25, 0.55]  // [<empty>, <full>] shield power
 },
@@ -30,7 +30,7 @@
 	"infl_rad": 5,  // influenece cell radius for defendAlly map
 	"base_rad": [600.0, 1200.0],  // defend if enemy within clamp(distance(lane_pos, base_pos), 1000, 2000) radius
 	"comm_rad": [1000.0, 500.0],  // 0 distance from base ~ 1000, base_rad ~ 500.0
-	"escort": [3, 1, 600]  // [<builders_count>, <defenders_count>, <constraint_seconds>]
+	"escort": [2, 1, 600]  // [<builders_count>, <defenders_count>, <constraint_seconds>]
 },
 
 "behaviour": {
@@ -48,7 +48,8 @@
 	// ARMADA defenses
 	"armllt": {
 		"role": ["static"],
-		"thr_mod": 0.8
+		"thr_mod": 0.8,
+		"pwr_mod": 0.5
 	},
 	"armbeamer": {
 		"role": ["static"],
@@ -106,6 +107,7 @@
 	"corllt": {
 		"role": ["static"],
 		"thr_mod": 0.8,
+		"pwr_mod": 0.5,
 		"midposoffset": [0, 0, 2.38]
 	},
 	"corhllt": {
@@ -188,12 +190,12 @@
 	"armap": {
 		"role": ["builder"],
 		"attribute": ["support"],
-		"build_speed": 8.0
+		"build_speed": 5.0
 	},
 	"corap": {
 		"role": ["builder"],
 		"attribute": ["support"],
-		"build_speed": 8.0
+		"build_speed": 5.0
 	},
 	"armaap": {
 		"role": ["static"],
@@ -1000,19 +1002,19 @@
 	// FIXME: temporary factory buildSpeed
 	"armlab": {
 		"role": ["builder"],
-		"build_speed": 8.0
+		"build_speed": 5.0
 	},
 	"armvp": {
 		"role": ["builder"],
-		"build_speed": 8.0
+		"build_speed": 5.0
 	},
 	"armsy": {
 		"role": ["builder"],
-		"build_speed": 8.0
+		"build_speed": 5.0
 	},
 	"armasy": {
 		"role": ["builder"],
-		"build_speed": 8.0
+		"build_speed": 10.0
 	},
 	"armhp": {
 		"role": ["builder"],
@@ -1021,11 +1023,11 @@
 	"corlab": {
 		"role": ["builder"],
 		"midposoffset": [-3.239746, 0, -2],
-		"build_speed": 8.0
+		"build_speed": 5.0
 	},
 	"corvp": {
 		"role": ["builder"],
-		"build_speed": 8.0
+		"build_speed": 5.0
 	},
 	"corhp": {
 		"role": ["builder"],
@@ -1033,11 +1035,11 @@
 	},
 	"corsy": {
 		"role": ["builder"],
-		"build_speed": 8.0
+		"build_speed": 5.0
 	},
 	"corasy": {
 		"role": ["builder"],
-		"build_speed": 8.0
+		"build_speed": 10.0
 	}
 }
 }

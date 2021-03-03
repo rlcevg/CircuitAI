@@ -78,6 +78,12 @@ void CCombatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	CCircuitDef* cdef = unit->GetCircuitDef();
+
+	// FIXME: comm kamikaze
+	if (cdef->IsRoleComm() && (GetTarget() != nullptr) && GetTarget()->IsInLOS() && GetTarget()->GetCircuitDef()->IsRoleComm()) {
+		return;
+	}
+
 	const float healthPerc = unit->GetHealthPercent();
 	if (unit->HasShield()) {
 		const float minShield = circuit->GetSetupManager()->GetEmptyShield();
@@ -106,8 +112,8 @@ void CCombatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 		return;
 	}
 	const AIFloat3& pos = unit->GetPos(frame);
-	if ((GetTarget()->GetPos().SqDistance2D(pos) > SQUARE(range)) ||
-		(threatMap->GetThreatAt(unit, pos) * 2 > threatMap->GetUnitThreat(unit)))
+	if ((GetTarget()->GetPos().SqDistance2D(pos) > SQUARE(range))
+		|| (threatMap->GetThreatAt(unit, pos) * 2 > threatMap->GetUnitThreat(unit)))
 	{
 		CRetreatTask* task = circuit->GetBuilderManager()->EnqueueRetreat();
 		manager->AssignTask(unit, task);

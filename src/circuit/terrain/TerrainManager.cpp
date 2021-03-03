@@ -1417,7 +1417,7 @@ void CTerrainManager::UpdateAreaUsers(int interval)
 	circuit->GetBuilderManager()->UpdateAreaUsers();
 
 	// stagger area update
-	circuit->GetScheduler()->RunTaskAfter(CScheduler::GameJob([this]() {
+	circuit->GetScheduler()->RunJobAfter(CScheduler::GameJob([this]() {
 		circuit->GetPathfinder()->UpdateAreaUsers(this);
 
 		OnAreaUsersUpdated();

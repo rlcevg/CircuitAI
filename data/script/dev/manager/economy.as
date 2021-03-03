@@ -21,7 +21,7 @@ void AiUpdateEconomy()
 	const SResourceInfo@ energy = aiEconomyMgr.energy;
 	aiEconomyMgr.isMetalEmpty = metal.current < metal.storage * 0.2f;
 	aiEconomyMgr.isMetalFull = metal.current > metal.storage * 0.8f;
-	if (ai.frame < 3 * MINUTE) {  // TODO: Replace by "is 1st factory finished" or raw storage value condition
+	if (ai.frame < 2 * MINUTE) {  // TODO: Replace by "is 1st factory finished" or raw storage value condition
 		aiEconomyMgr.isEnergyEmpty = false;
 		aiEconomyMgr.isEnergyStalling = (energy.income < energy.pull) && (energy.current < energy.storage * 0.3f);
 	} else {

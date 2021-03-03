@@ -87,6 +87,16 @@ void CBombTask::Start(CCircuitUnit* unit)
 
 void CBombTask::Update()
 {
+	// FIXME: Create CReloadTask
+//	if (!unit->IsWeaponReady(frame)) {  // reload empty unit
+//		if (updCount % 32 == 0) {
+//			TRY_UNIT(circuit, unit,
+//				unit->CmdFindPad(frame + FRAMES_PER_SEC * 60);
+//			)
+//		}
+//		SetTarget(nullptr);
+//		return;
+//	}
 	++updCount;
 
 	/*
@@ -153,16 +163,6 @@ void CBombTask::Update()
 			return;
 		}
 	}
-	// FIXME: Create CReloadTask
-//	if (!unit->IsWeaponReady(frame)) {  // reload empty unit
-//		if (updCount % 32 == 0) {
-//			TRY_UNIT(circuit, unit,
-//				unit->CmdFindPad(frame + FRAMES_PER_SEC * 60);
-//			)
-//		}
-//		SetTarget(nullptr);
-//		return;
-//	}
 
 	/*
 	 * Update target
@@ -251,7 +251,7 @@ void CBombTask::FindTarget()
 //	const float range = std::max(unit->GetUnit()->GetMaxRange() + threatMap->GetSquareSize(),
 //								 cdef->GetLosRadius()) * 2;
 	const float sqRange = (GetTarget() != nullptr) ? pos.SqDistance2D(GetTarget()->GetPos()) + 1.f : SQUARE(2000.0f);
-	float maxCost = .0f;
+	float minHealth = std::numeric_limits<float>::max();
 
 	COOAICallback* callback = circuit->GetCallback();
 	const float trueAoe = cdef->GetAoe() + SQUARE_SIZE;
@@ -284,7 +284,7 @@ void CBombTask::FindTarget()
 		}
 
 		int targetCat;
-		float cost;
+		float health;
 //		float altitude;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
@@ -295,7 +295,7 @@ void CBombTask::FindTarget()
 			if ((targetCat & canTargetCat) == 0) {
 				continue;
 			}
-			cost = edef->GetCostM();  // FIXME: workaround
+			health = enemy->GetHealth();
 //			altitude = edef->GetAltitude();
 		} else {
 //			targetCat = ~noChaseCat;
@@ -322,8 +322,8 @@ void CBombTask::FindTarget()
 //                }
 //				cost += ei->GetCost();
 //			}
-			if (maxCost < cost) {
-				maxCost = cost;
+			if (minHealth > health) {
+				minHealth = health;
 				const float sqDist = pos.SqDistance2D(ePos);
 				if (sqDist < sqRange) {
 					bestTarget = enemy;

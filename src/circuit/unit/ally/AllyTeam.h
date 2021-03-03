@@ -54,12 +54,10 @@ public:
 		int teamId;  // cluster leader
 		unsigned count;  // number of commanders
 	};
-	// FIXME: DEBUG
-//	struct SAreaTeam {
-//		SAreaTeam(int tid) : teamId(tid) {}
-//		int teamId;  // area leader
-//	};
-	// FIXME: DEBUG
+	struct SAreaTeam {
+		SAreaTeam(int tid) : teamId(tid) {}
+		int teamId;  // area leader
+	};
 
 public:
 	CAllyTeam(const TeamIds& tids, const SBox& sb);
@@ -114,10 +112,8 @@ public:
 
 	void OccupyCluster(int clusterId, int teamId);
 	SClusterTeam GetClusterTeam(int clusterId);
-	// FIXME: DEBUG
-//	void OccupyArea(STerrainMapArea* area, int teamId);
-//	SAreaTeam GetAreaTeam(STerrainMapArea* area);
-	// FIXME: DEBUG
+	void OccupyArea(STerrainMapArea* area, int teamId);
+	SAreaTeam GetAreaTeam(STerrainMapArea* area);
 
 private:
 	void DelegateAuthority(CCircuitAI* curOwner);
@@ -133,9 +129,7 @@ private:
 	CQuadField quadField;
 
 	std::map<int, SClusterTeam> occupants;  // Cluster owner on start. clusterId: SClusterTeam
-	// FIXME: DEBUG
-//	std::map<STerrainMapArea*, SAreaTeam> habitants;  // Area habitants on start.
-	// FIXME: DEBUG
+	std::map<STerrainMapArea*, SAreaTeam> habitants;  // Area habitants on start.
 
 	std::shared_ptr<CMapManager> mapManager;
 	std::shared_ptr<CMetalManager> metalManager;

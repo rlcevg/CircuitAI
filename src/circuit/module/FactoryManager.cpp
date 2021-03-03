@@ -571,10 +571,10 @@ void CFactoryManager::Init()
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		const int interval = 4;
 		const int offset = circuit->GetSkirmishAIId() % interval;
-		scheduler->RunTaskEvery(CScheduler::GameJob(&CFactoryManager::UpdateIdle, this), interval, offset + 0);
-		scheduler->RunTaskEvery(CScheduler::GameJob(&CFactoryManager::UpdateFactory, this), interval, offset + 2);
+		scheduler->RunJobEvery(CScheduler::GameJob(&CFactoryManager::UpdateIdle, this), interval, offset + 0);
+		scheduler->RunJobEvery(CScheduler::GameJob(&CFactoryManager::UpdateFactory, this), interval, offset + 2);
 
-		scheduler->RunTaskEvery(CScheduler::GameJob(&CFactoryManager::Watchdog, this),
+		scheduler->RunJobEvery(CScheduler::GameJob(&CFactoryManager::Watchdog, this),
 								FRAMES_PER_SEC * 60,
 								circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 11);
 	};
@@ -945,124 +945,24 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit, bool isActiv
 	return nullptr;
 }
 
-CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
+CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* builder)
 {
 	if (!CanEnqueueTask()) {
 		return nullptr;
 	}
 
-	auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
-	if (it == factoryDefs.end()) {
+	CFactoryManager* factoryMgr = circuit->IsSlave() ? circuit->GetAllyTeam()->GetLeader()->GetFactoryManager() : this;
+	SRecruitDef result = factoryMgr->RequiredFireDef(builder);
+	if (result.id < 0) {
 		return nullptr;
 	}
-	const SFactoryDef& facDef = it->second;
 
-	CCircuitDef* buildDef = nullptr;
-
-	const std::vector<float>& probs = GetFacTierProbs(facDef);
-
-	const CCircuitAI* ai = circuit->IsSlave() ? circuit->GetAllyTeam()->GetLeader() : circuit;
-	CEconomyManager* economyMgr = ai->GetEconomyManager();
-	CMilitaryManager* militaryMgr = ai->GetMilitaryManager();
-	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	struct SCandidate {
-		CCircuitDef* cdef;
-		float weight;
-		bool isResponse;
-	};
-	static std::vector<SCandidate> candidates;  // NOTE: micro-opt
-//	candidates.reserve(facDef.buildDefs.size());
-	const int frame = circuit->GetLastFrame();
-	const float energyNet = economyMgr->GetAvgEnergyIncome() - economyMgr->GetEnergyUse();
-	const float maxCost = militaryMgr->GetArmyCost();
-	const float range = unit->GetCircuitDef()->GetBuildDistance();
-	const AIFloat3& pos = unit->GetPos(frame);
-
-	const int iS = terrainMgr->GetSectorIndex(pos);
-	auto isEnemyInArea = [iS, terrainMgr](int frame, CCircuitDef* bd) {
-		if (frame < FRAMES_PER_SEC * 60 * 10) {
-			return true;
-		}
-		STerrainMapMobileType* mobileType = terrainMgr->GetMobileTypeById(bd->GetMobileId());
-		if (mobileType != nullptr) {
-			STerrainMapArea* area = mobileType->sector[iS].area;
-			return terrainMgr->IsEnemyInArea(area);
-		}
-		return true;
-	};
-
-#ifdef FACTORY_CHOICE
-	circuit->LOG("---- AI = %i | %s | %s | tier%i ----", circuit->GetSkirmishAIId(), unit->GetCircuitDef()->GetDef()->GetName(), unitTypeDbg.c_str(), tierDbg);
-#endif
-	float magnitude = 0.f;
-	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
-		CCircuitDef* bd = facDef.buildDefs[i];
-		if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost()))
-			|| !bd->IsAvailable(frame)
-			|| !terrainMgr->CanBeBuiltAt(bd, pos, range)
-			|| !isEnemyInArea(frame, bd))
-		{
-#ifdef FACTORY_CHOICE
-			std::string reason;
-			if ((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) {
-				reason = "no energy";
-			} else if (!bd->IsAvailable(frame)) {
-				reason = "limit exceeded or frame < since";
-			} else if (!terrainMgr->CanBeBuiltAt(bd, pos, range)) {
-				reason = "can't build unit at unusable map position";
-			} else if (!isEnemyInArea(frame, bd)) {
-				reason = "no enemies in related map area";
-			}
-			circuit->LOG("ignore %s | reason = %s", bd->GetDef()->GetName(), reason.c_str());
-#endif
-			continue;
-		}
-
-		if (probs[i] > 0.f) {
-			// (probs[i] + response_weight) hints preferable buildDef within same role
-			float prob = militaryMgr->RoleProbability(bd) * (probs[i] + reWeight);
-			// NOTE: with probs=[n1, n2, n3, n4, n5]
-			//       previous response system provided probs2=[0, res(n2), 0, 0, res(n5)]
-			//       current is probs2=[n1, res(n2), n3, n4, res(n5)]
-			bool isResponse = (prob > 0.f) && (bd->GetCostM() <= maxCost);
-			prob = isResponse ? prob : probs[i];
-			candidates.push_back({bd, prob, isResponse});
-			magnitude += prob;
-#ifdef FACTORY_CHOICE
-			circuit->LOG("%s | %s | %f", isResponse ? "response" : "regular", bd->GetDef()->GetName(), prob);
-#endif
-		}
-	}
-
-	bool isResponse = false;
-	if (magnitude == 0.f) {  // workaround for disabled units
-		if (!candidates.empty()) {
-			buildDef = candidates[rand() % candidates.size()].cdef;
-		}
-	} else {
-		float dice = (float)rand() / RAND_MAX * magnitude;
-		for (const SCandidate& candy : candidates) {
-			dice -= candy.weight;
-			if (dice < 0.f) {
-				buildDef = candy.cdef;
-				isResponse = candy.isResponse;
-				break;
-			}
-		}
-	}
-	candidates.clear();
-
-	if (buildDef != nullptr) {
-		UnitDef* def = unit->GetCircuitDef()->GetDef();
-		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE / 2;
-		CRecruitTask::Priority priority = isResponse ? CRecruitTask::Priority::NORMAL : CRecruitTask::Priority::LOW;
-		// FIXME CCircuitDef::RoleType <-> CRecruitTask::RecruitType relations
-#ifdef FACTORY_CHOICE
-		circuit->LOG("choice = %s", buildDef->GetDef()->GetName());
-#endif
-		return EnqueueTask(priority, buildDef, pos, CRecruitTask::RecruitType::FIREPOWER, radius);
-	}
-	return nullptr;
+	CCircuitDef* buildDef = circuit->GetCircuitDef(result.id);
+	const AIFloat3& pos = builder->GetPos(circuit->GetLastFrame());
+	UnitDef* def = builder->GetCircuitDef()->GetDef();
+	float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE / 2;
+	// FIXME CCircuitDef::RoleType <-> CRecruitTask::RecruitType relations
+	return EnqueueTask(result.priority, buildDef, pos, CRecruitTask::RecruitType::FIREPOWER, radius);
 }
 
 bool CFactoryManager::IsHighPriority(CAllyUnit* unit) const
@@ -1465,6 +1365,118 @@ void CFactoryManager::UpdateFactory()
 			n--;
 		}
 	}
+}
+
+CFactoryManager::SRecruitDef CFactoryManager::RequiredFireDef(CCircuitUnit* builder) const
+{
+	auto it = factoryDefs.find(builder->GetCircuitDef()->GetId());
+	if (it == factoryDefs.end()) {
+		return {-1};
+	}
+	const SFactoryDef& facDef = it->second;
+
+	CCircuitDef* buildDef = nullptr;
+
+	const std::vector<float>& probs = GetFacTierProbs(facDef);
+
+	CEconomyManager* economyMgr = circuit->GetEconomyManager();
+	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	struct SCandidate {
+		CCircuitDef* cdef;
+		float weight;
+		bool isResponse;
+	};
+	static std::vector<SCandidate> candidates;  // NOTE: micro-opt
+//	candidates.reserve(facDef.buildDefs.size());
+	const int frame = circuit->GetLastFrame();
+	const float energyNet = economyMgr->GetAvgEnergyIncome() - economyMgr->GetEnergyUse();
+	const float maxCost = militaryMgr->GetArmyCost();
+	const float range = builder->GetCircuitDef()->GetBuildDistance();
+	const AIFloat3& pos = builder->GetPos(frame);
+
+	const int iS = terrainMgr->GetSectorIndex(pos);
+	auto isEnemyInArea = [iS, terrainMgr](int frame, CCircuitDef* bd) {
+		if (frame < FRAMES_PER_SEC * 60 * 10) {
+			return true;
+		}
+		STerrainMapMobileType* mobileType = terrainMgr->GetMobileTypeById(bd->GetMobileId());
+		if (mobileType != nullptr) {
+			STerrainMapArea* area = mobileType->sector[iS].area;
+			return terrainMgr->IsEnemyInArea(area);
+		}
+		return true;
+	};
+
+#ifdef FACTORY_CHOICE
+	circuit->LOG("---- AI = %i | %s | %s | tier%i ----", circuit->GetSkirmishAIId(), unit->GetCircuitDef()->GetDef()->GetName(), unitTypeDbg.c_str(), tierDbg);
+#endif
+	float magnitude = 0.f;
+	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
+		CCircuitDef* bd = facDef.buildDefs[i];
+		if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost()))
+			|| !bd->IsAvailable(frame)
+			|| !terrainMgr->CanBeBuiltAt(bd, pos, range)
+			|| !isEnemyInArea(frame, bd))
+		{
+#ifdef FACTORY_CHOICE
+			std::string reason;
+			if ((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) {
+				reason = "no energy";
+			} else if (!bd->IsAvailable(frame)) {
+				reason = "limit exceeded or frame < since";
+			} else if (!terrainMgr->CanBeBuiltAt(bd, pos, range)) {
+				reason = "can't build unit at unusable map position";
+			} else if (!isEnemyInArea(frame, bd)) {
+				reason = "no enemies in related map area";
+			}
+			circuit->LOG("ignore %s | reason = %s", bd->GetDef()->GetName(), reason.c_str());
+#endif
+			continue;
+		}
+
+		if (probs[i] > 0.f) {
+			// (probs[i] + response_weight) hints preferable buildDef within same role
+			float prob = militaryMgr->RoleProbability(bd) * (probs[i] + reWeight);
+			// NOTE: with probs=[n1, n2, n3, n4, n5]
+			//       previous response system provided probs2=[0, res(n2), 0, 0, res(n5)]
+			//       current is probs2=[n1, res(n2), n3, n4, res(n5)]
+			bool isResponse = (prob > 0.f) && (bd->GetCostM() <= maxCost);
+			prob = isResponse ? prob : probs[i];
+			candidates.push_back({bd, prob, isResponse});
+			magnitude += prob;
+#ifdef FACTORY_CHOICE
+			circuit->LOG("%s | %s | %f", isResponse ? "response" : "regular", bd->GetDef()->GetName(), prob);
+#endif
+		}
+	}
+
+	bool isResponse = false;
+	if (magnitude == 0.f) {  // workaround for disabled units
+		if (!candidates.empty()) {
+			buildDef = candidates[rand() % candidates.size()].cdef;
+		}
+	} else {
+		float dice = (float)rand() / RAND_MAX * magnitude;
+		for (const SCandidate& candy : candidates) {
+			dice -= candy.weight;
+			if (dice < 0.f) {
+				buildDef = candy.cdef;
+				isResponse = candy.isResponse;
+				break;
+			}
+		}
+	}
+	candidates.clear();
+
+	if (buildDef != nullptr) {
+		CRecruitTask::Priority priority = isResponse ? CRecruitTask::Priority::NORMAL : CRecruitTask::Priority::LOW;
+#ifdef FACTORY_CHOICE
+		circuit->LOG("choice = %s", buildDef->GetDef()->GetName());
+#endif
+		return {buildDef->GetId(), priority};
+	}
+	return {-1};
 }
 
 const std::vector<float>& CFactoryManager::GetFacTierProbs(const SFactoryDef& facDef) const

@@ -473,11 +473,11 @@ void CMilitaryManager::Init()
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		const int interval = 4;
 		const int offset = circuit->GetSkirmishAIId() % interval;
-		scheduler->RunTaskEvery(CScheduler::GameJob(&CMilitaryManager::UpdateIdle, this), interval, offset + 0);
-		scheduler->RunTaskEvery(CScheduler::GameJob(&CMilitaryManager::UpdateFight, this), 1/*interval / 2*/, offset + 1);
-		scheduler->RunTaskEvery(CScheduler::GameJob(&CMilitaryManager::UpdateDefenceTasks, this), FRAMES_PER_SEC * 5, offset + 2);
+		scheduler->RunJobEvery(CScheduler::GameJob(&CMilitaryManager::UpdateIdle, this), interval, offset + 0);
+		scheduler->RunJobEvery(CScheduler::GameJob(&CMilitaryManager::UpdateFight, this), 1/*interval / 2*/, offset + 1);
+		scheduler->RunJobEvery(CScheduler::GameJob(&CMilitaryManager::UpdateDefenceTasks, this), FRAMES_PER_SEC * 5, offset + 2);
 
-		scheduler->RunTaskEvery(CScheduler::GameJob(&CMilitaryManager::Watchdog, this),
+		scheduler->RunJobEvery(CScheduler::GameJob(&CMilitaryManager::Watchdog, this),
 								FRAMES_PER_SEC * 60,
 								circuit->GetSkirmishAIId() * WATCHDOG_COUNT + 12);
 	};
@@ -1322,7 +1322,7 @@ void CMilitaryManager::MakeBaseDefence(const AIFloat3& pos)
 	buildDefence.emplace_back(pos, baseDefence);
 	if (defend == nullptr) {
 		defend = CScheduler::GameJob(&CMilitaryManager::UpdateDefence, this);
-		circuit->GetScheduler()->RunTaskEvery(defend, FRAMES_PER_SEC);
+		circuit->GetScheduler()->RunJobEvery(defend, FRAMES_PER_SEC);
 	}
 }
 

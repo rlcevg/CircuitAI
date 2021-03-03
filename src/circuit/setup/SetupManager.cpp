@@ -54,7 +54,7 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 	DisabledUnits(setupScript);
 
 	findStart = CScheduler::GameJob(&CSetupManager::FindStart, this);
-	circuit->GetScheduler()->RunTaskEvery(findStart, 1);
+	circuit->GetScheduler()->RunJobEvery(findStart, 1);
 }
 
 CSetupManager::~CSetupManager()
@@ -538,7 +538,7 @@ void CSetupManager::FindStart()
 			func(startPos);
 		}
 
-		circuit->GetScheduler()->RunTaskAfter(CScheduler::GameJob(&CSetupManager::CalcLanePos, this), FRAMES_PER_SEC);
+		circuit->GetScheduler()->RunJobAfter(CScheduler::GameJob(&CSetupManager::CalcLanePos, this), FRAMES_PER_SEC);
 		return;
 	}
 

@@ -9,7 +9,7 @@
 					// "<energy_def>": [<lower limit>, <upper limit>, <m-income>, <e-income>, <efficiency>]
 					// limit = random(<lower limit>..<upper limit>)
 					"armwin": [10, 20],
-					"armsolar": [7, 11],
+					"armsolar": [8, 12],
 					"armadvsol": [8, 12],
 					"armfus": [3, 4],
 					"armafus": [4, 5]
@@ -27,7 +27,7 @@
 					// "<energy_def>": [<lower limit>, <upper limit>]
 					// limit = random(<lower limit>..<upper limit>)
 					"corwin": [10, 20],
-					"corsolar": [6, 8],
+					"corsolar": [8, 12],
 					"coradvsol": [8, 12],
 					"corfus": [3, 4],
 					"corafus": [4, 5]
@@ -64,7 +64,7 @@
 	"eps_step": 0.2,
 
 	// Mobile buildpower to metal income ratio
-	"buildpower": 1.25,
+	"buildpower": 1.5,  // 1.25,
 	// Metal excess to income ratio, -1 to disable
 	"excess": -1.0,
 	// Mobile constructor to static constructor metal pull ratio

@@ -53,26 +53,26 @@ public:
 	/*
 	 * Add task at specified frame, or execute immediately at next frame
 	 */
-	void RunTaskAt(const std::shared_ptr<IMainJob>& task, int frame = 0) {
+	void RunJobAt(const std::shared_ptr<IMainJob>& task, int frame = 0) {
 		onceTasks.push_back({task, frame});
 	}
 
 	/*
 	 * Add task at frame relative to current frame
 	 */
-	void RunTaskAfter(const std::shared_ptr<IMainJob>& task, int frame = 0) {
+	void RunJobAfter(const std::shared_ptr<IMainJob>& task, int frame = 0) {
 		onceTasks.push_back({task, lastFrame + frame});
 	}
 
 	/*
 	 * Add task at specified interval
 	 */
-	void RunTaskEvery(const std::shared_ptr<IMainJob>& task, int frameInterval = FRAMES_PER_SEC, int frameOffset = 0);
+	void RunJobEvery(const std::shared_ptr<IMainJob>& task, int frameInterval = FRAMES_PER_SEC, int frameOffset = 0);
 
 	/*
 	 * Process queued tasks at specified frame
 	 */
-	void ProcessTasks(int frame);
+	void ProcessJobs(int frame);
 
 	/*
 	 * Run concurrent task, finalize on success at main thread

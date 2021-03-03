@@ -50,8 +50,9 @@ void CDGunAction::Update(CCircuitAI* circuit)
 		return;
 	}
 
-	int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
-	bool notDGunAA = !unit->GetCircuitDef()->HasDGunAA();
+	const int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
+	const bool notDGunAA = !unit->GetCircuitDef()->HasDGunAA();
+	const bool isRoleComm = unit->GetCircuitDef()->IsRoleComm();
 	CEnemyInfo* bestTarget = nullptr;
 	float maxThreat = 0.f;
 
@@ -64,7 +65,9 @@ void CDGunAction::Update(CCircuitAI* circuit)
 			continue;
 		}
 		CCircuitDef* edef = enemy->GetCircuitDef();
-		if ((edef == nullptr) || ((edef->GetCategory() & canTargetCat) == 0) || (edef->IsAbleToFly() && notDGunAA)) {
+		if ((edef == nullptr) || ((edef->GetCategory() & canTargetCat) == 0) || (edef->IsAbleToFly() && notDGunAA)
+			|| (isRoleComm && edef->IsRoleComm()))  // FIXME: comm kamikaze
+		{
 			continue;
 		}
 

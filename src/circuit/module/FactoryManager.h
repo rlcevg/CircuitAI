@@ -83,8 +83,8 @@ public:
 	CCircuitDef* GetAirpadDef(CCircuitDef* builderDef) { return airpadDefs[builderDef->GetId()]; }
 	CCircuitDef* GetAssistDef(CCircuitDef* builderDef) { return assistDefs[builderDef->GetId()]; }
 
-	CRecruitTask* UpdateBuildPower(CCircuitUnit* unit, bool isActive);
-	CRecruitTask* UpdateFirePower(CCircuitUnit* unit);
+	CRecruitTask* UpdateBuildPower(CCircuitUnit* builder, bool isActive);
+	CRecruitTask* UpdateFirePower(CCircuitUnit* builder);
 	bool IsHighPriority(CAllyUnit* unit) const;
 
 	CCircuitDef* GetFactoryToBuild(springai::AIFloat3 position = -RgtVector,
@@ -171,6 +171,12 @@ private:
 	std::unordered_map<CCircuitDef::Id, SFactoryDef> factoryDefs;
 	float bpRatio;
 	float reWeight;
+
+	struct SRecruitDef {
+		CCircuitDef::Id id;
+		CRecruitTask::Priority priority;
+	};
+	SRecruitDef RequiredFireDef(CCircuitUnit* builder) const;
 
 	const std::vector<float>& GetFacTierProbs(const SFactoryDef& facDef) const;
 	CCircuitDef* GetFacRoleDef(CCircuitDef::RoleT role, const SFactoryDef& facDef) const;

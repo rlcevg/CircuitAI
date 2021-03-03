@@ -34,6 +34,11 @@ void COOAICallback::Init(const struct SSkirmishAICallback* clb)
 	sAICallback = clb;
 }
 
+int COOAICallback::GetEnemyTeamSize() const
+{
+	return sAICallback->getEnemyTeams(skirmishAIId, nullptr, -1) - 1;  // -1 for Gaia team :(
+}
+
 std::vector<Unit*> COOAICallback::GetFriendlyUnits()
 {
 	unitIds.resize(MAX_UNITS);

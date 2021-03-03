@@ -11,6 +11,7 @@
 #include "map/InfluenceMap.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
+#include "resource/MetalManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/path/PathFinder.h"
 #include "terrain/path/QueryPathSingle.h"
@@ -124,7 +125,7 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 	bool isNoEndPos = true;
 	if (repairer != nullptr) {
 		endPos = repairer->GetPos(frame);
-		isNoEndPos = (circuit->GetInflMap()->GetInfluenceAt(endPos) < INFL_EPS);
+		isNoEndPos = circuit->GetInflMap()->GetInfluenceAt(endPos) < INFL_EPS;
 		if (!isNoEndPos) {
 			range = pathfinder->GetSquareSize();
 		}
@@ -134,6 +135,23 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 		endPos = factoryMgr->GetClosestHaven(unit);
 		if (!utils::is_valid(endPos)) {
 			endPos = circuit->GetSetupManager()->GetBasePos();
+
+			// Check home safety, find new one otherwise
+			CInfluenceMap* inflMap = circuit->GetInflMap();
+			if (inflMap->GetInfluenceAt(endPos) < INFL_SAFE) {
+				CMetalManager* metalMgr = circuit->GetMetalManager();
+				CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+				const CMetalData::Clusters& clusters = metalMgr->GetClusters();
+				CMetalData::PointPredicate pred = [inflMap, terrainMgr, unit, &clusters](const int index) {
+					const AIFloat3& pos = clusters[index].position;
+					return (inflMap->GetInfluenceAt(pos) > INFL_SAFE) && terrainMgr->CanReachAt(unit, pos, DEFAULT_SLACK);
+				};
+				const int clusterId = metalMgr->FindNearestCluster(endPos, pred);
+				if (clusterId >= 0) {
+					endPos = clusters[clusterId].position;
+					circuit->GetSetupManager()->SetBasePos(endPos);
+				}
+			}
 		}
 		range = factoryMgr->GetSideInfo().assistDef->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
 	}

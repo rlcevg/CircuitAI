@@ -97,10 +97,10 @@ void CScheduler::StartThreads()
 	}
 }
 
-void CScheduler::RunTaskEvery(const std::shared_ptr<IMainJob>& task, int frameInterval, int frameOffset)
+void CScheduler::RunJobEvery(const std::shared_ptr<IMainJob>& task, int frameInterval, int frameOffset)
 {
 	if (frameOffset > 0) {
-		RunTaskAfter(GameJob([this, task, frameInterval]() {
+		RunJobAfter(GameJob([this, task, frameInterval]() {
 			repeatTasks.push_back({task, frameInterval, lastFrame});
 		}), frameOffset);
 	} else {
@@ -108,7 +108,7 @@ void CScheduler::RunTaskEvery(const std::shared_ptr<IMainJob>& task, int frameIn
 	}
 }
 
-void CScheduler::ProcessTasks(int frame)
+void CScheduler::ProcessJobs(int frame)
 {
 	isProcessing = true;
 	lastFrame = frame;

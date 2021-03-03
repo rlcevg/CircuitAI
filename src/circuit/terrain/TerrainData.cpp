@@ -526,7 +526,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 		}
 	}
 
-	scheduler->RunTaskEvery(CScheduler::GameJob(&CTerrainData::EnqueueUpdate, this), AREA_UPDATE_RATE);
+	scheduler->RunJobEvery(CScheduler::GameJob(&CTerrainData::EnqueueUpdate, this), AREA_UPDATE_RATE);
 	scheduler->RunOnRelease(CScheduler::GameJob(&CTerrainData::DelegateAuthority, this, circuit));
 
 #ifdef DEBUG_VIS
@@ -642,8 +642,8 @@ void CTerrainData::DelegateAuthority(CCircuitAI* curOwner)
 		if (circuit->IsInitialized() && (circuit != curOwner)) {
 			map = circuit->GetMap();
 			scheduler = circuit->GetScheduler();
-			scheduler->RunTaskEvery(CScheduler::GameJob(&CTerrainData::EnqueueUpdate, this), AREA_UPDATE_RATE);
-			scheduler->RunTaskAfter(CScheduler::GameJob(&CTerrainData::EnqueueUpdate, this), FRAMES_PER_SEC);
+			scheduler->RunJobEvery(CScheduler::GameJob(&CTerrainData::EnqueueUpdate, this), AREA_UPDATE_RATE);
+			scheduler->RunJobAfter(CScheduler::GameJob(&CTerrainData::EnqueueUpdate, this), FRAMES_PER_SEC);
 			scheduler->RunOnRelease(CScheduler::GameJob(&CTerrainData::DelegateAuthority, this, circuit));
 			break;
 		}
@@ -948,7 +948,7 @@ void CTerrainData::ScheduleUsersUpdate()
 			auto task = CScheduler::GameJob(&CTerrainManager::UpdateAreaUsers,
 											circuit->GetTerrainManager(),
 											interval);
-			circuit->GetScheduler()->RunTaskAfter(task, ++aiToUpdate);
+			circuit->GetScheduler()->RunJobAfter(task, ++aiToUpdate);
 			circuit->PrepareAreaUpdate();
 		}
 	}
