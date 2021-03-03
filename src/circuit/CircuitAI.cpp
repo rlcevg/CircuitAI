@@ -95,6 +95,7 @@ CCircuitAI::CCircuitAI(OOAICallback* clb)
 		, isInitialized(false)
 		, isLoadSave(false)
 		, isResigned(false)
+		, isSlave(false)
 		// NOTE: assert(lastFrame != -1): CCircuitUnit initialized with -1
 		//       and lastFrame check will misbehave until first update event.
 		, lastFrame(-2)
@@ -161,6 +162,28 @@ void CCircuitAI::Resign(int newTeamId, Economy* economy)
 
 	ownerTeamId = newTeamId;
 	isResigned = true;
+}
+
+void CCircuitAI::MobileSlave(int newTeamId, Economy* economy)
+{
+	std::vector<Unit*> migrants;
+	std::vector<CCircuitUnit*> clean;
+	for (auto& kv : teamUnits) {
+		CCircuitUnit* unit = kv.second;
+		if (unit->GetCircuitDef()->IsMobile() && !unit->GetCircuitDef()->IsRoleBuilder()) {
+			migrants.push_back(unit->GetUnit());
+			clean.push_back(unit);
+		}
+	}
+	economy->SendUnits(migrants, newTeamId);
+	for (CCircuitUnit* unit : clean) {
+		UnitDestroyed(unit, nullptr);
+		UnregisterTeamUnit(unit);
+	}
+	allyTeam->ForceUpdateFriendlyUnits();
+
+	ownerTeamId = newTeamId;
+	isSlave = true;
 }
 
 int CCircuitAI::HandleGameEvent(int topic, const void* data)
@@ -692,11 +715,12 @@ int CCircuitAI::Release(int reason)
 int CCircuitAI::Update(int frame)
 {
 	// FIXME: DEBUG Experimental team resign
-//	if ((GetFactoryManager()->GetNoT1FacCount() > 0) && (allyTeam->GetLeaderId() != teamId)) {
-//		Economy* economy = callback->GetEconomy();
-//		Resign(allyTeam->GetLeaderId(), economy);
-//		delete economy;
-//	}
+	// TODO: Turn into IMainJob
+	if (!isSlave && (allyTeam->GetLeaderId() != teamId) && (factoryManager->GetNoT1FacCount() > 0)) {
+		Economy* economy = callback->GetEconomy();
+		MobileSlave(allyTeam->GetLeaderId(), economy);
+		delete economy;
+	}
 	// FIXME: DEBUG
 	// NOTES: The issue with merging is common or separate limits, and separate non-shared response
 
@@ -932,18 +956,18 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 
 	// FIXME: DEBUG Experimental army merge
 	//        Doesn't work: "response" structure is per AI, and after SendUnits AI tries to build the same "response" unit. Limit also doesn't work
-//	if ((GetFactoryManager()->GetFactoryCount() > 1)
-//		&& (allyTeam->GetLeaderId() != teamId)
-//		&& unit->GetCircuitDef()->IsMobile()
-//		&& !unit->GetCircuitDef()->IsRoleBuilder())
-//	{
-//		Economy* economy = callback->GetEconomy();
-//		economy->SendUnits({unit->GetUnit()}, allyTeam->GetLeaderId());
-//		delete economy;
-//		UnitDestroyed(unit, nullptr);
-//		UnregisterTeamUnit(unit);
-//		return 0;
-//	}
+	if (isSlave
+		&& (allyTeam->GetLeaderId() != teamId)  // FIXME: Required?
+		&& unit->GetCircuitDef()->IsMobile()
+		&& !unit->GetCircuitDef()->IsRoleBuilder())
+	{
+		Economy* economy = callback->GetEconomy();
+		economy->SendUnits({unit->GetUnit()}, allyTeam->GetLeaderId());
+		delete economy;
+		UnitDestroyed(unit, nullptr);
+		UnregisterTeamUnit(unit);
+		return 0;
+	}
 	// FIXME: DEBUG
 
 	// FIXME: Random-Side workaround
@@ -951,6 +975,7 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 		setupManager->SetCommander(unit);
 	}
 
+	unit->GetCircuitDef()->AdjustSinceFrame(lastFrame);
 	TRY_UNIT(this, unit,
 		unit->CmdFireAtRadar(true);
 		unit->GetUnit()->SetAutoRepairLevel(0);
@@ -960,6 +985,7 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 			unit->CmdCloak(true);
 		}
 	)
+
 	for (auto& module : modules) {
 		module->UnitFinished(unit);
 	}
@@ -1286,7 +1312,6 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId, Unit* u)
 
 	teamUnits[unitId] = unit;
 	cdef->Inc();
-	cdef->AdjustSinceFrame(lastFrame);
 
 	// FIXME: Sometimes area where factory is placed is not suitable for its units.
 	//        There Garbage() can cause infinite start-cancel loop.

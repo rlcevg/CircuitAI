@@ -955,7 +955,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	CCircuitDef* airpadDef = (unit == nullptr) ? factoryMgr->GetSideInfo().airpadDef : factoryMgr->GetAirpadDef(unit->GetCircuitDef());
 	if ((airpadDef != nullptr) && airpadDef->IsAvailable(frame)) {
 		CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
-		const unsigned airpadFactor = 7 + SQUARE((airpadDef->GetCount() + factoryTasks.size()) * 3);
+		const unsigned airpadFactor = SQUARE((airpadDef->GetCount() + factoryTasks.size() + 1) * 3);
 		if (militaryMgr->GetRoleUnits(ROLE_TYPE(AIR)).size() > airpadFactor) {
 			CCircuitDef* bdef;
 			AIFloat3 buildPos;

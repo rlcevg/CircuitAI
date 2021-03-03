@@ -961,8 +961,9 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 
 	const std::vector<float>& probs = GetFacTierProbs(facDef);
 
-	CEconomyManager* economyMgr = circuit->GetEconomyManager();
-	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
+	const CCircuitAI* ai = circuit->IsSlave() ? circuit->GetAllyTeam()->GetLeader() : circuit;
+	CEconomyManager* economyMgr = ai->GetEconomyManager();
+	CMilitaryManager* militaryMgr = ai->GetMilitaryManager();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	struct SCandidate {
 		CCircuitDef* cdef;

@@ -93,6 +93,7 @@ public:
 	void NotifyGameEnd();
 	void NotifyResign();
 	void Resign(int newTeamId, springai::Economy* economy);
+	void MobileSlave(int newTeamId, springai::Economy* economy);
 private:
 	typedef int (CCircuitAI::*EventHandlerPtr)(int topic, const void* data);
 	int HandleGameEvent(int topic, const void* data);
@@ -299,10 +300,13 @@ public:
 	int GetBadCategory()    const { return category.bad; }
 	int GetGoodCategory()   const { return category.good; }
 
+	bool IsSlave() const { return isSlave; }
+
 private:
 	bool isInitialized;
 	bool isLoadSave;
 	bool isResigned;
+	bool isSlave;
 	int lastFrame;
 	int skirmishAIId;
 	int teamId;

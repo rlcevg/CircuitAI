@@ -131,6 +131,7 @@
 	"instance": {
 		"fac_land": ["armlab", "armalab", "armvp", "armavp", "armhp", "coralab", "corvp", "coravp", "corhp"],
 		"fac_land2": ["corlab"],
+		"fac_air": ["armap", "corap", "armaap", "coraap"],
 		"fac_water": ["armsy", "armasy", "corsy", "corasy"],
 		"fac_strider": ["armshltx", "corgant"],
 		"solar": ["armsolar", "corsolar"],
