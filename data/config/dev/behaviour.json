@@ -1,7 +1,7 @@
 // Mono-space font required
 {
 "quota": {
-	"scout": 1,  // max scout units out of raiders
+	"scout": 1,  // max scouts out of units with attribute "scout"
 	"raid": [6.0, 420.0],  // [<min>, <avg>] power of raider squad
 	"attack": 60.0,  // min power of attack group
 	"thr_mod": {
@@ -37,11 +37,13 @@
 	"armcom": {
 		"role": ["builder"],
 		"attribute": ["commander"],
+		"pwr_mod": 0.1,
 		"build_speed": 5.0
 	},
 	"corcom": {
 		"role": ["builder"],
 		"attribute": ["commander"],
+		"pwr_mod": 0.1,
 		"build_speed": 5.0
 	},
 
@@ -520,7 +522,8 @@
 		"role": ["scout", "air"]
 	},
 	"armfig": {
-		"role": ["anti_air", "air"]
+		"role": ["anti_air", "air"],
+		"attribute": ["scout"]
 	},
 	"armthund": {
 		"role": ["bomber", "air"],
@@ -925,7 +928,8 @@
 		"role": ["scout", "air"]
 	},
 	"corveng": {
-		"role": ["anti_air", "air"]
+		"role": ["anti_air", "air"],
+		"attribute": ["scout"]
 	},
 	"corshad": {
 		"role": ["bomber", "air"],

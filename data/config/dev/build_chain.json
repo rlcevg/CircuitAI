@@ -67,6 +67,7 @@
 			//     1) [x, z] in South facing, elmos
 			//     2) {<direction>: <delta>} - left, right, front, back
 			// <condition>: air, no_air, energy, chance:0.0~1.0
+			// <priority>: low, normal, high, now
 
 			// Build pylon in direction of nearby mex cluster
 //			"pylon": true,
@@ -169,22 +170,22 @@
 	},
 	"factory": {
 		"armlab": {
-			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 5}}]]
+			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 5}, "priority": "now"}]]
 		},
 		"armvp": {
-			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 5}}]]
+			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 5}, "priority": "now"}]]
 		},
 		"armap": {
-			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"front": 5}}]]
+			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"front": 5}, "priority": "now"}]]
 		},
 		"corlab": {
-			"hub": [[{"unit": "corllt", "category": "defence", "offset": {"back": 5}}]]
+			"hub": [[{"unit": "corllt", "category": "defence", "offset": {"back": 5}, "priority": "now"}]]
 		},
 		"corvp": {
-			"hub": [[{"unit": "corllt", "category": "defence", "offset": {"back": 5}}]]
+			"hub": [[{"unit": "corllt", "category": "defence", "offset": {"back": 5}, "priority": "now"}]]
 		},
 		"corap": {
-			"hub": [[{"unit": "corllt", "category": "defence", "offset": {"front": 5}}]]
+			"hub": [[{"unit": "corllt", "category": "defence", "offset": {"front": 5}, "priority": "now"}]]
 		}
 	},
 	"mex": {

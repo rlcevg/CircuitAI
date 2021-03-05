@@ -24,7 +24,7 @@ namespace circuit {
 
 #define INFL_BASE		0.f
 #define INFL_EPS		0.01f
-#define INFL_SAFE		10.f
+#define INFL_SAFE		2.f
 
 class CMapManager;
 class CAllyUnit;

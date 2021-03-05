@@ -24,16 +24,20 @@ struct SBuildInfo {
 
 	using DirName = std::map<std::string, Direction>;
 	using CondName = std::map<std::string, Condition>;
+	using PrioName = std::map<std::string, IBuilderTask::Priority>;
 	static DirName& GetDirNames() { return dirNames; }
 	static CondName& GetCondNames() { return condNames; }
+	static PrioName& GetPrioNames() { return prioNames; }
 	static DirName dirNames;
 	static CondName condNames;
+	static PrioName prioNames;
 
 	CCircuitDef* cdef;
 	IBuilderTask::BuildType buildType;
 	springai::AIFloat3 offset;
 	Direction direction;
 	Condition condition;
+	IBuilderTask::Priority priority;
 	float chance;
 };
 

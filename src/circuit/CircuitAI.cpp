@@ -88,6 +88,7 @@ CCircuitAI::CCircuitAI(OOAICallback* clb)
 		, metalRes(nullptr)
 		, energyRes(nullptr)
 		, allyTeam(nullptr)
+		, captureSpeed(0.f)
 		, actionIterator(0)
 		, isCheating(false)
 		, isAllyAware(true)
@@ -584,6 +585,8 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 		Release(RELEASE_COMMANDER);
 		return ERROR_INIT;
 	}
+	captureSpeed = setupManager->GetCommChoice()->GetCaptureSpeed();
+
 	allyTeam = setupManager->GetAllyTeam();
 	isAllyAware &= allyTeam->GetSize() > 1;
 
@@ -956,6 +959,10 @@ int CCircuitAI::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 {
 	for (auto& module : modules) {
 		module->UnitCreated(unit, builder);
+	}
+
+	if (unit->GetTask() == nullptr) {
+		AddActionUnit(unit);
 	}
 
 	return 0;  // signaling: OK
@@ -1335,7 +1342,7 @@ void CCircuitAI::UnregisterTeamUnit(CCircuitUnit* unit)
 	teamUnits.erase(unit->GetId());
 	unit->GetCircuitDef()->Dec();
 
-	(unit->GetTask() == nullptr) ? DeleteTeamUnit(unit) : unit->SetIsDead();
+	/*(unit->GetTask() == nullptr) ? DeleteTeamUnit(unit) : */unit->SetIsDead();
 }
 
 void CCircuitAI::DeleteTeamUnit(CCircuitUnit* unit)
@@ -1519,10 +1526,26 @@ void CCircuitAI::UpdateActions()
 			actionUnits.pop_back();
 			DeleteTeamUnit(unit);
 		} else {
-			if (unit->GetTask()->GetType() != IUnitTask::Type::PLAYER) {
-				unit->Update(this);
-				--n;
+			// TODO: Turn into action. Issue: push it within proper place, and re-push on every task change
+			if (!unit->IsInSelfD() && !unit->GetCircuitDef()->IsMobile()) {
+				const float captureProgress = unit->GetUnit()->GetCaptureProgress();
+				if (captureProgress > 1e-3f) {
+					const float health = unit->GetUnit()->GetHealth();
+					const float maxHealth = unit->GetUnit()->GetMaxHealth();
+					// @see rts/Sim/Units/UnitTypes/Builder.cpp:487-500 (captureMagicNumber)
+					const float magic = (150.0f + (unit->GetCircuitDef()->GetBuildTime() / captureSpeed) * (health + maxHealth) / maxHealth * 0.4f);
+					const float stepToDestr = (unit->GetCircuitDef()->GetSelfDCountdown() + 1) * FRAMES_PER_SEC / magic;
+					if (captureProgress + stepToDestr > 1.f) {
+						unit->CmdSelfD(true);
+					}
+				}
 			}
+
+			if ((unit->GetTask() != nullptr) && (unit->GetTask()->GetType() != IUnitTask::Type::PLAYER)) {
+				unit->Update(this);
+//				--n;  // TODO
+			}
+			--n;
 			++actionIterator;
 		}
 	}

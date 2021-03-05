@@ -1509,28 +1509,26 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 		} else {
 			task = EnqueueTask(IFighterTask::FightType::SUPPORT);
 		}
+	} else if (cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
+		task = EnqueueTask(IFighterTask::FightType::SCOUT);
 	} else {
 		auto it = types.find(circuit->GetBindedRole(cdef->GetMainRole()));
 		if (it != types.end()) {
 			switch (it->second) {
 				case IFighterTask::FightType::RAID: {
-					if (cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
-						task = EnqueueTask(IFighterTask::FightType::SCOUT);
-					} else {
-						const std::set<IFighterTask*>& guards = GetTasks(IFighterTask::FightType::GUARD);
-						for (IFighterTask* t : guards) {
-							if (t->GetAssignees().size() < GetDefendersNum()) {
-								task = t;
-								break;
-							}
+					const std::set<IFighterTask*>& guards = GetTasks(IFighterTask::FightType::GUARD);
+					for (IFighterTask* t : guards) {
+						if (t->GetAssignees().size() < GetDefendersNum()) {
+							task = t;
+							break;
 						}
-						if (task == nullptr) {
-//							if (GetTasks(IFighterTask::FightType::RAID).empty()
-//								|| enemyMgr->IsEnemyNear(unit->GetPos(circuit->GetLastFrame())))
-//							{
-								task = EnqueueDefend(IFighterTask::FightType::RAID, raid.min);
-//							}
-						}
+					}
+					if (task == nullptr) {
+//						if (GetTasks(IFighterTask::FightType::RAID).empty()
+//							|| enemyMgr->IsEnemyNear(unit->GetPos(circuit->GetLastFrame())))
+//						{
+							task = EnqueueDefend(IFighterTask::FightType::RAID, raid.min);
+//						}
 					}
 				} break;
 				case IFighterTask::FightType::AH: {

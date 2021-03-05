@@ -717,9 +717,9 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 				pos = terrainMgr->GetBuildPosition(bdef, pos);
 
 				if (parent == nullptr) {
-					parent = builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, bi.cdef, pos, bi.buildType, 0.f, true, 0);
+					parent = builderMgr->EnqueueTask(bi.priority, bi.cdef, pos, bi.buildType, 0.f, true, 0);
 				} else {
-					parent->SetNextTask(builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, bi.cdef, pos, bi.buildType, 0.f, false, 0));
+					parent->SetNextTask(builderMgr->EnqueueTask(bi.priority, bi.cdef, pos, bi.buildType, 0.f, false, 0));
 					parent = parent->GetNextTask();
 				}
 			}

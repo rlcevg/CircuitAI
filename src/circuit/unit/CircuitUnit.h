@@ -128,6 +128,8 @@ public:
 	void CmdAirStrafe(float value);
 	void CmdBARPriority(float value);
 	void CmdTerraform(std::vector<float>&& params);
+	void CmdSelfD(bool state);
+	bool IsInSelfD() const { return isSelfD; }
 	void CmdWait(bool state);
 	void RemoveWait();
 	bool IsWaiting() const;
@@ -180,6 +182,7 @@ private:
 	bool isDisarmed : 1;
 	bool isWeaponReady : 1;
 	bool isMorphing : 1;
+	bool isSelfD : 1;
 	// ---- Bit fields ---- END
 
 	springai::Command* command;  // current top command

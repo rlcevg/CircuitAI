@@ -46,6 +46,7 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 		, isDisarmed(false)
 		, isWeaponReady(true)
 		, isMorphing(false)
+		, isSelfD(false)
 		, target(nullptr)
 		, targetTile(-1)
 		, attr(CCircuitDef::NONE)
@@ -323,6 +324,14 @@ void CCircuitUnit::CmdBARPriority(float value)
 void CCircuitUnit::CmdTerraform(std::vector<float>&& params)
 {
 //	unit->ExecuteCustomCommand(CMD_TERRAFORM_INTERNAL, params);
+}
+
+void CCircuitUnit::CmdSelfD(bool state)
+{
+	if (isSelfD != state) {
+		unit->SelfDestruct();
+		isSelfD = state;
+	}
 }
 
 void CCircuitUnit::CmdWait(bool state)

@@ -25,4 +25,11 @@ SBuildInfo::CondName SBuildInfo::condNames = {
 	{"always", SBuildInfo::Condition::ALWAYS},
 };
 
+SBuildInfo::PrioName SBuildInfo::prioNames = {
+	{"low",    IBuilderTask::Priority::LOW},
+	{"normal", IBuilderTask::Priority::NORMAL},
+	{"high",   IBuilderTask::Priority::HIGH},
+	{"now",    IBuilderTask::Priority::NOW},
+};
+
 } // namespace circuit

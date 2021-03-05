@@ -148,9 +148,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 {
 	id = def->GetUnitDefId();
 
-	buildDistance = def->GetBuildDistance();
-	buildSpeed    = def->GetBuildSpeed();
-	maxThisUnit   = def->GetMaxThisUnit();
+	buildDistance  = def->GetBuildDistance();
+	buildSpeed     = def->GetBuildSpeed();
+	selfDCountdown = def->GetSelfDCountdown();
+	maxThisUnit    = def->GetMaxThisUnit();
 
 //	maxRange[static_cast<RangeT>(RangeType::MAX)] = def->GetMaxWeaponRange();
 	hasDGun         = def->CanManualFire();
@@ -161,15 +162,16 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	const int ft = def->GetFireState();
 	fireState = (ft < 0) ? FireType::OPEN : static_cast<FireType>(ft);
 
-	health    = def->GetHealth();
-	speed     = def->GetSpeed();  // elmos per second
-	losRadius = def->GetLosRadius();
-	costM     = def->GetCost(resM);
-	costE     = def->GetCost(resE);
-	upkeepE   = def->GetUpkeep(resE);
-	cloakCost = std::max(def->GetCloakCost(), def->GetCloakCostMoving());
-	buildTime = def->GetBuildTime();
-//	altitude  = def->GetWantedHeight();
+	health       = def->GetHealth();
+	speed        = def->GetSpeed();  // elmos per second
+	losRadius    = def->GetLosRadius();
+	costM        = def->GetCost(resM);
+	costE        = def->GetCost(resE);
+	upkeepE      = def->GetUpkeep(resE);
+	cloakCost    = std::max(def->GetCloakCost(), def->GetCloakCostMoving());
+	buildTime    = def->GetBuildTime();
+	captureSpeed = def->GetCaptureSpeed() / TEAM_SLOWUPDATE_RATE;
+//	altitude     = def->GetWantedHeight();
 
 	MoveData* md = def->GetMoveData();
 	isSubmarine  = (md == nullptr) ? false : md->IsSubMarine();

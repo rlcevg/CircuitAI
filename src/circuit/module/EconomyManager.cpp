@@ -709,7 +709,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	bool isEnergyStalling = IsEnergyStalling();
 	if ((mexDef != nullptr) && !isEnergyStalling && mexDef->IsAvailable(circuit->GetLastFrame())) {
 		float cost = mexDef->GetCostM();
-		unsigned maxCount = builderMgr->GetBuildPower() / cost * 8 + 10;
+		unsigned maxCount = builderMgr->GetBuildPower() / cost * 8 + 3;
 		if (builderMgr->GetTasks(IBuilderTask::BuildType::MEX).size() < maxCount) {
 			CMetalManager* metalMgr = circuit->GetMetalManager();
 			CTerrainManager* terrainMgr = circuit->GetTerrainManager();

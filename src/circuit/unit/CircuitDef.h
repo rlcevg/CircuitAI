@@ -171,6 +171,7 @@ public:
 	bool operator==(const CCircuitDef& rhs) { return id == rhs.id; }
 	bool operator!=(const CCircuitDef& rhs) { return id != rhs.id; }
 
+	int GetSelfDCountdown() const { return selfDCountdown; }
 	void SetMaxThisUnit(int value) { maxThisUnit = value; }
 	int GetMaxThisUnit() const { return maxThisUnit; }
 	void SetSinceFrame(int frame) { sinceFrame = frame; }
@@ -253,17 +254,18 @@ public:
 	void SetIsDecoy(bool value) { isDecoy = value; }
 	bool IsDecoy() const { return isDecoy; }
 
-	float GetHealth()    const { return health; }
-	float GetSpeed()     const { return speed; }
-	float GetLosRadius() const { return losRadius; }
-	float GetCostM()     const { return costM; }
-	float GetCostE()     const { return costE; }
-	float GetUpkeepE()   const { return upkeepE; }
-	float GetCloakCost() const { return cloakCost; }
-	float GetStockCost() const { return stockCost; }
-	float GetBuildTime() const { return buildTime; }
-//	float GetAltitude()  const { return altitude; }
-	float GetJumpRange() const { return jumpRange; }
+	float GetHealth()       const { return health; }
+	float GetSpeed()        const { return speed; }
+	float GetLosRadius()    const { return losRadius; }
+	float GetCostM()        const { return costM; }
+	float GetCostE()        const { return costE; }
+	float GetUpkeepE()      const { return upkeepE; }
+	float GetCloakCost()    const { return cloakCost; }
+	float GetStockCost()    const { return stockCost; }
+	float GetBuildTime()    const { return buildTime; }
+	float GetCaptureSpeed() const { return captureSpeed; }
+//	float GetAltitude()     const { return altitude; }
+	float GetJumpRange()    const { return jumpRange; }
 
 	void SetRetreat(float value) { retreat = value; }
 	float GetRetreat()   const { return retreat; }
@@ -297,6 +299,7 @@ private:
 	float buildSpeed;
 	int count;
 	int buildCounts;  // number of builder defs able to build this def;
+	int selfDCountdown;
 	int maxThisUnit;
 	int sinceFrame;
 	int cooldown;
@@ -370,6 +373,7 @@ private:
 	float cloakCost;
 	float stockCost;
 	float buildTime;
+	float captureSpeed;
 //	float altitude;
 	float jumpRange;
 	float retreat;

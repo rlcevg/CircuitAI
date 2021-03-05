@@ -345,7 +345,9 @@ void CBuilderManager::ReadConfig()
 	super.minIncome = cond.get((unsigned)0, 50.f).asFloat();
 	super.maxTime = cond.get((unsigned)1, 300.f).asFloat();
 
+	SBuildInfo::DirName& dirNames = SBuildInfo::GetDirNames();
 	SBuildInfo::CondName& condNames = SBuildInfo::GetCondNames();
+	SBuildInfo::PrioName& prioNames = SBuildInfo::GetPrioNames();
 	IBuilderTask::BuildName& buildNames = IBuilderTask::GetBuildNames();
 	const Json::Value& build = root["build_chain"];
 	for (const std::string& catName : build.getMemberNames()) {
@@ -415,7 +417,6 @@ void CBuilderManager::ReadConfig()
 						}
 					} else if (off.isObject() && !off.empty()) {
 						float delta = 0.f;
-						SBuildInfo::DirName& dirNames = SBuildInfo::GetDirNames();
 						std::string dir = off.getMemberNames().front();
 						auto it = dirNames.find(dir);
 						if (it != dirNames.end()) {
@@ -449,6 +450,12 @@ void CBuilderManager::ReadConfig()
 							bi.condition = it->second;
 							bi.chance = isString ? 1.f : condition.get(cond, 1.f).asFloat();
 						}
+					}
+
+					{
+						const std::string& prio = part.get("priority", "").asString();
+						auto it = prioNames.find(prio);
+						bi.priority = (it != prioNames.end()) ? it->second : IBuilderTask::Priority::NORMAL;
 					}
 
 					queue.push_back(bi);
