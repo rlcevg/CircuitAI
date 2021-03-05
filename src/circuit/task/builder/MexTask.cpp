@@ -92,7 +92,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 			if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
 				if ((State::ENGAGE == state) || metalMgr->IsOpenSpot(index)) {  // !isFirstTry
 					state = State::ENGAGE;  // isFirstTry = false
-					metalMgr->SetOpenSpot(index, false);
+//					metalMgr->SetOpenSpot(index, false);
 					TRY_UNIT(circuit, unit,
 						unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 					)

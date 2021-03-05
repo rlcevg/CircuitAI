@@ -465,8 +465,7 @@
 		"role": ["artillery"]
 	},
 	"armjanus": {
-		"role": ["skirmish"],
-		"attribute": ["ret_fight"]
+		"role": ["skirmish"]
 	},
 	"armsam": {
 		"role": ["anti_air"],
