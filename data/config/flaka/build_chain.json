@@ -46,8 +46,8 @@
 	"water": [1, 2, 1, 1, 2, 1, 4, 13, 9, 10, 9, 10],
 	"prevent": 1,  					// number of preventive defences, count to every cluster but not base
 	"amount": {  					// income bound factor
-		"offset": [-0.15, 0.15],	// was -0.15 +0.15
-		"factor": [8.4, 7.2],       // Amount factor: 10x10 ~ 8.4, 20x20 ~ 7.2
+		"offset": [0.15, 0.15],	// was -0.15 +0.15
+		"factor": [4.2, 3.6],       // Amount factor: 10x10 ~ 4.2, 20x20 ~ 3.6
 		"map": [10, 20]
 	},
 	

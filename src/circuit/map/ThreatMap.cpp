@@ -45,7 +45,7 @@ CThreatMap::CThreatMap(CMapManager* manager, float decloakRadius)
 	rangeDefault = (DEFAULT_SLACK * 4) / squareSize;
 	distCloak = (decloakRadius + DEFAULT_SLACK) / squareSize;
 
-	threatData0.roleThreats.resize(CMaskHandler::GetMaxMasks());
+	threatData0.roleThreats.resize(1/*CMaskHandler::GetMaxMasks()*/);
 	for (SRoleThreat& roleThreat : threatData0.roleThreats) {
 		roleThreat.airThreat.resize(mapSize, THREAT_BASE);
 		roleThreat.surfThreat.resize(mapSize, THREAT_BASE);
@@ -60,7 +60,7 @@ CThreatMap::CThreatMap(CMapManager* manager, float decloakRadius)
 	shieldArray = threatData0.shield.data();
 	threatArray = surfThreat;
 
-	threatData1.roleThreats.resize(CMaskHandler::GetMaxMasks());
+	threatData1.roleThreats.resize(1/*CMaskHandler::GetMaxMasks()*/);
 	for (SRoleThreat& roleThreat : threatData1.roleThreats) {
 		roleThreat.airThreat.resize(mapSize, THREAT_BASE);
 		roleThreat.surfThreat.resize(mapSize, THREAT_BASE);
