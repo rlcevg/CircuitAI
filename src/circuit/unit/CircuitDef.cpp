@@ -92,7 +92,7 @@ void CCircuitDef::InitStatic(CCircuitAI* circuit, CMaskHandler* roleMasker, CMas
 }
 
 CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts,
-		Resource* resM, Resource* resE)
+						 Resource* resM, Resource* resE)
 		: def(def)
 		, mainRole(ROLE_TYPE(ASSAULT))
 		, enemyRole(RoleMask::NONE)
@@ -109,10 +109,11 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, shieldMount(nullptr)
 		, weaponMount(nullptr)
 		, pwrDmg(.0f)
-		, thrDmg(.0f)
+		, defDmg(.0f)
+		, thrDmg({.0f})
 		, aoe(.0f)
 		, power(.0f)
-		, threat(.0f)
+		, defThreat(.0f)
 		, minRange(.0f)
 		, maxRangeType(RangeType::AIR)
 		, maxRange({.0f})
@@ -508,8 +509,9 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 	// TODO: Include projectile-speed/range, armor
 	//       health /= def->GetArmoredMultiple();
-	thrDmg = pwrDmg = dmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
-	threat = power = dmg * sqrtf(def->GetHealth() + maxShield * SHIELD_MOD);
+	defDmg = pwrDmg = dmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
+	defThreat = power = dmg * sqrtf(def->GetHealth() + maxShield * SHIELD_MOD);
+	std::fill(thrDmg.begin(), thrDmg.end(), dmg);
 }
 
 CCircuitDef::~CCircuitDef()

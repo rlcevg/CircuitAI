@@ -367,7 +367,7 @@ void CInfluenceMap::AddEnemy(const SEnemyData& e)
 
 	PosToXZ(e.pos, posx, posz);
 
-	const float val = e.threat;
+	const float val = e.influence;
 	// FIXME: GetInfluenceRange: for statics it's just range; mobile should account for speed
 	const int range = (e.cdef == nullptr)
 			? e.GetRange(CCircuitDef::ThreatType::LAND)

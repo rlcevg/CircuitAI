@@ -202,7 +202,7 @@ void CAntiHeavyTask::Update()
 			unit->GetTravelAct()->StateWait();
 
 			if (unit->GetCircuitDef()->IsRoleMine()) {
-				const bool isAttack = (target->GetThreat() > power);
+				const bool isAttack = (target->GetThreat(ROLE_TYPE(AH)) > power);
 				power += unit->GetCircuitDef()->GetPower();
 				return isAttack;
 			}
@@ -304,7 +304,7 @@ bool CAntiHeavyTask::FindTarget()
 			continue;
 		}
 		const AIFloat3& ePos = enemy->GetPos();
-		if ((maxPower <= threatMap->GetThreatAt(ePos) - enemy->GetThreat())
+		if ((maxPower <= threatMap->GetThreatAt(ePos) - enemy->GetThreat(ROLE_TYPE(AH)))
 			|| !terrainMgr->CanMoveToPos(area, ePos))
 		{
 			continue;

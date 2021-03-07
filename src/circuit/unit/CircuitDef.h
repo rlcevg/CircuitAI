@@ -24,6 +24,7 @@ namespace circuit {
 
 #define ROLE_TYPE(x)	static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::x)
 #define ATTR_TYPE(x)	static_cast<CCircuitDef::AttrT>(CCircuitDef::AttrType::x)
+#define DEFAULT_THREAT_ROLE		ROLE_TYPE(BUILDER)
 
 class CWeaponDef;
 
@@ -36,6 +37,7 @@ public:
 	enum class ThreatType: char {AIR = 0, LAND = 1, WATER = 2, CLOAK = 3, SHIELD = 4, _SIZE_};
 	using RangeT = std::underlying_type<RangeType>::type;
 	using ThreatT = std::underlying_type<ThreatType>::type;
+	using ThrDmgArray = std::array<float, CMaskHandler::GetMaxMasks()>;
 
 	// TODO: Rebuild response system on unit vs unit basis (opposed to role vs role).
 	// Not implemented: mine, transport
@@ -191,10 +193,11 @@ public:
 	springai::WeaponMount* GetShieldMount() const { return shieldMount; }
 	springai::WeaponMount* GetWeaponMount() const { return weaponMount; }
 	float GetPwrDamage() const { return pwrDmg; }  // ally
-	float GetThrDamage() const { return thrDmg; }  // enemy
+	float GetDefDamage() const { return defDmg; }  // enemy, for influence
+	const ThrDmgArray& GetThrDamage() const { return thrDmg; }  // enemy
 	float GetAoe() const { return aoe; }
 	float GetPower() const { return power; }
-	float GetThreat() const { return threat; }
+	float GetDefThreat() const { return defThreat; }
 	float GetMinRange() const { return minRange; }
 	float GetMaxRange(RangeType type) const { return maxRange[static_cast<RangeT>(type)]; }
 	float GetMaxRange() const { return maxRange[static_cast<RangeT>(maxRangeType)]; }
@@ -208,7 +211,8 @@ public:
 	int GetNoChaseCategory() const { return noChaseCategory; }
 
 	void ModPower(float mod) { pwrDmg *= mod; power *= mod; }
-	void ModThreat(float mod) { thrDmg *= mod; threat *= mod; }
+	void ModDefThreat(float mod) { defDmg *= mod; defThreat *= mod; }
+	void ModThreat(RoleT type, float mod) { thrDmg[type] *= mod; }
 	void SetThreatRange(ThreatType type, int range) { threatRange[static_cast<ThreatT>(type)] = range; }
 	void SetFireState(FireType ft) { fireState = ft; }
 	void SetReloadTime(int time) { reloadTime = time; }
@@ -309,10 +313,11 @@ private:
 	springai::WeaponMount* shieldMount;
 	springai::WeaponMount* weaponMount;
 	float pwrDmg;  // ally damage
-	float thrDmg;  // enemy damage
+	float defDmg;  // enemy damage, for influence
+	ThrDmgArray thrDmg;  // enemy damage
 	float aoe;  // radius
 	float power;  // ally max threat
-	float threat;  // enemy max threat
+	float defThreat;  // enemy max threat
 	float minRange;
 	RangeType maxRangeType;
 	std::array<float, static_cast<RangeT>(RangeType::_SIZE_)> maxRange;

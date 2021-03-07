@@ -114,14 +114,14 @@ bool CMapManager::EnemyEnterLOS(CEnemyUnit* enemy)
 	enemy->SetInLOS();
 
 	if (!enemy->IsAttacker()) {
-		if (enemy->GetThreat() > .0f) {  // (2)
+		if (enemy->GetInfluence() > .0f) {  // (2)
 			// threat prediction failed when enemy was unknown
 			if (enemy->IsHidden()) {
 				enemy->ClearHidden();
 			}
 			hostileUnits.erase(enemy->GetId());
 			peaceUnits[enemy->GetId()] = enemy;
-			enemy->SetThreat(.0f);
+			enemy->ClearThreat();
 			threatMap->SetEnemyUnitRange(enemy);
 		} else if (peaceUnits.find(enemy->GetId()) == peaceUnits.end()) {
 			peaceUnits[enemy->GetId()] = enemy;

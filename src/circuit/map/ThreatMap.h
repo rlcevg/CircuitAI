@@ -13,9 +13,11 @@
 
 #include <map>
 #include <vector>
-// FIXME: DEBUG
+
+//#define CHRONO_THREAT 1
+#ifdef CHRONO_THREAT
 #include <chrono>
-// FIXME: DEBUG
+#endif
 
 namespace circuit {
 
@@ -28,10 +30,10 @@ class IMainJob;
 
 class CThreatMap {
 public:
-	// FIXME: DEBUG
+#ifdef CHRONO_THREAT
 	using clock = std::chrono::high_resolution_clock;
 	clock::time_point t0;
-	// FIXME: DEBUG
+#endif
 	CThreatMap(CMapManager* manager, float decloakRadius);
 	virtual ~CThreatMap();
 
@@ -39,17 +41,17 @@ public:
 	bool IsUpdating() const { return isUpdating; }
 
 	void SetEnemyUnitRange(CEnemyUnit* e) const;
-	void SetEnemyUnitThreat(CEnemyUnit* e) const { e->SetThreat(GetEnemyUnitThreat(e)); }
+	void SetEnemyUnitThreat(CEnemyUnit* e) const;
 	void NewEnemy(CEnemyUnit* e) const;
 
-	float GetAllThreatAt(const springai::AIFloat3& position) const;
+	float GetBuilderThreatAt(const springai::AIFloat3& position) const;
 	void SetThreatType(CCircuitUnit* unit);
 	float GetThreatAt(const springai::AIFloat3& position) const;
 	float GetThreatAt(CCircuitUnit* unit, const springai::AIFloat3& position) const;
 
-	float* GetAirThreatArray() { return airThreat; }
-	float* GetSurfThreatArray() { return surfThreat; }
-	float* GetAmphThreatArray() { return amphThreat; }
+	float* GetAirThreatArray(CCircuitDef::RoleT type) { return pThreatData.load()->roleThreats[type].airThreat.data(); }
+	float* GetSurfThreatArray(CCircuitDef::RoleT type) { return pThreatData.load()->roleThreats[type].surfThreat.data(); }
+	float* GetAmphThreatArray(CCircuitDef::RoleT type) { return pThreatData.load()->roleThreats[type].amphThreat.data(); }
 	float* GetCloakThreatArray() { return cloakThreat; }
 	int GetThreatMapWidth() const { return width; }
 	int GetThreatMapHeight() const { return height; }
@@ -82,15 +84,15 @@ private:
 
 	void AddEnemyUnit(const SEnemyData& e);
 	void AddEnemyUnitAll(const SEnemyData& e);
-	void AddEnemyAir(float* drawAirThreat, const SEnemyData& e, const int slack = 0);  // Enemy AntiAir
-	void AddEnemyAmphConst(float* drawSurfThreat, float* drawAmphThreat, const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
-	void AddEnemyAmphGradient(float* drawSurfThreat, float* drawAmphThreat, const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
+	void AddEnemyAir(CCircuitDef::RoleT role, float* drawAirThreat, const SEnemyData& e, const int slack = 0);  // Enemy AntiAir
+	void AddEnemyAmphConst(CCircuitDef::RoleT role, float* drawSurfThreat, float* drawAmphThreat, const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
+	void AddEnemyAmphGradient(CCircuitDef::RoleT role, float* drawSurfThreat, float* drawAmphThreat, const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
 	void AddDecloaker(const SEnemyData& e);
 	void AddShield(const SEnemyData& e);
 
 	int GetCloakRange(const CCircuitDef* edef) const;
 	int GetShieldRange(const CCircuitDef* edef) const;
-	float GetEnemyUnitThreat(const CEnemyUnit* e) const;
+	float GetThreatHealth(const CEnemyUnit* e) const;
 
 	void Prepare(SThreatData& threatData);
 	std::shared_ptr<IMainJob> Update(CScheduler* scheduler);
@@ -131,9 +133,6 @@ private:
 	float* drawShieldArray;
 	bool isUpdating;
 
-	float* airThreat;
-	float* surfThreat;
-	float* amphThreat;
 	float* cloakThreat;
 	float* shieldArray;
 	float* threatArray;  // current threat array for multiple GetThreatAt() calls

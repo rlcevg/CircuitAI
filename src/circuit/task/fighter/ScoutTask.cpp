@@ -208,7 +208,7 @@ bool CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 				continue;
 			}
 			targetCat = UNKNOWN_CATEGORY;
-			defThreat = enemy->GetThreat();
+			defThreat = enemy->GetThreat(ROLE_TYPE(SCOUT));
 			isBuilder = false;
 		}
 

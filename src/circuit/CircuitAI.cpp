@@ -629,7 +629,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 		scheduler->RunJobAt(CScheduler::GameJob(&CCircuitAI::CheatPreload, this), skirmishAIId + 1);
 	}
 
-	if (callback->GetEnemyTeamSize() < allyTeam->GetAliveSize() / 2.f) {
+	if ((callback->GetEnemyTeamSize() < allyTeam->GetAliveSize() / 2.f) || (allyTeam->GetAliveSize() > 4)) {
 		mergeTask = CScheduler::GameJob([this] {
 			if ((allyTeam->GetLeaderId() != teamId) && (factoryManager->GetFactoryCount() > 0)) {
 				MobileSlave(allyTeam->GetLeaderId());
@@ -647,6 +647,14 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 //					Resign(ownerId);
 //				}
 //			}
+		});
+		scheduler->RunJobEvery(mergeTask, 1, FRAMES_PER_SEC);
+	} else if (allyTeam->GetAliveSize() > 2) {
+		mergeTask = CScheduler::GameJob([this] {
+			if ((allyTeam->GetLeaderId() != teamId) && (factoryManager->GetNoT1FacCount() > 0)) {
+				MobileSlave(allyTeam->GetLeaderId());
+				scheduler->RemoveJob(mergeTask);
+			}
 		});
 		scheduler->RunJobEvery(mergeTask, 1, FRAMES_PER_SEC);
 	}

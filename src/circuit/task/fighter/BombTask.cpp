@@ -276,7 +276,7 @@ void CBombTask::FindTarget()
 			continue;
 		}
 		const AIFloat3& ePos = enemy->GetPos();
-		float power = threatMap->GetThreatAt(ePos)/* - enemy->GetThreat()*/;
+		float power = threatMap->GetThreatAt(ePos)/*- enemy->GetThreat(ROLE_TYPE(BOMBER))*/;
 		if ((maxPower <= power) ||
 			(notAW && (ePos.y < -SQUARE_SIZE * 5)))
 		{

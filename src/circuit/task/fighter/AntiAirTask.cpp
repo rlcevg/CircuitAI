@@ -274,6 +274,7 @@ void CAntiAirTask::FindTarget()
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float maxPower = attackPower * powerMod;
+	const CCircuitDef::RoleT role = cdef->GetMainRole();
 
 	CEnemyInfo* bestTarget = nullptr;
 	float minSqDist = std::numeric_limits<float>::max();
@@ -283,7 +284,7 @@ void CAntiAirTask::FindTarget()
 	for (auto& kv : enemies) {
 		CEnemyInfo* enemy = kv.second;
 		if (enemy->IsHidden() ||
-			(maxPower <= threatMap->GetThreatAt(enemy->GetPos()) - enemy->GetThreat()) ||
+			(maxPower <= threatMap->GetThreatAt(enemy->GetPos()) - enemy->GetThreat(role)) ||
 			!terrainMgr->CanMoveToPos(area, enemy->GetPos()))
 		{
 			continue;

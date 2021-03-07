@@ -53,6 +53,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	const int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
 	const bool notDGunAA = !unit->GetCircuitDef()->HasDGunAA();
 	const bool isRoleComm = unit->GetCircuitDef()->IsRoleComm();
+	CCircuitDef::RoleT role = unit->GetCircuitDef()->GetMainRole();
 	CEnemyInfo* bestTarget = nullptr;
 	float maxThreat = 0.f;
 
@@ -61,7 +62,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 			continue;
 		}
 		CEnemyInfo* enemy = circuit->GetEnemyInfo(eId);
-		if ((enemy == nullptr) || enemy->NotInRadarAndLOS() || (enemy->GetThreat() < THREAT_MIN)) {
+		if ((enemy == nullptr) || enemy->NotInRadarAndLOS() || (enemy->GetThreat(role) < THREAT_MIN)) {
 			continue;
 		}
 		CCircuitDef* edef = enemy->GetCircuitDef();

@@ -237,7 +237,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
 		CCircuitDef::Id unitDefId = cdef.GetId();
 		if (cdef.IsRoleComm()) {
-			cdef.ModThreat(commMod);
+			cdef.ModDefThreat(commMod);
+			for (CCircuitDef::RoleT role = 0; role < CMaskHandler::GetMaxMasks(); ++role) {
+				cdef.ModThreat(role, commMod);
+			}
 			cdef.ModPower(commMod);
 		}
 		if (cdef.GetDef()->IsBuilder()) {
@@ -735,7 +738,7 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 			}
 			// check if there is enemy neighbor
 			for (int idx : clusters[idx0].idxSpots) {
-				if (threatMap->GetAllThreatAt(spots[idx].position) > THREAT_MIN * 2) {
+				if (threatMap->GetBuilderThreatAt(spots[idx].position) > THREAT_MIN * 2) {
 					threatCount++;
 					break;
 				}

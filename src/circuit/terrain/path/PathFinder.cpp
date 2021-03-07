@@ -342,7 +342,7 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 	CostFunc threatFun;
 	// TODO: Re-organize and pre-calculate moveFun for each move-type
 	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
-		threatArray = threatMap->GetAmphThreatArray();  // cloak doesn't work under water
+		threatArray = threatMap->GetAmphThreatArray(cdef->GetMainRole());  // cloak doesn't work under water
 		moveFun = [&sectors, maxSlope](int index) {
 			return (sectors[index].isWater ? 2.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
 		};
@@ -358,7 +358,7 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 			return threatArray[index];
 		};
 	} else if (cdef->IsAbleToFly()) {
-		threatArray = threatMap->GetAirThreatArray();
+		threatArray = threatMap->GetAirThreatArray(cdef->GetMainRole());
 		moveFun = [](int index) {
 			return 0.f;
 		};
@@ -366,7 +366,7 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 			return 2.f * threatArray[index];
 		};
 	} else if (cdef->IsAmphibious()) {
-		threatArray = threatMap->GetAmphThreatArray();
+		threatArray = threatMap->GetAmphThreatArray(cdef->GetMainRole());
 		if (maxSlope > SPIDER_SLOPE) {
 			const float minElev = areaData->minElevation;
 			float elevLen = std::max(areaData->maxElevation - areaData->minElevation, 1e-3f);
@@ -386,7 +386,7 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 			};
 		}
 	} else {
-		threatArray = threatMap->GetSurfThreatArray();
+		threatArray = threatMap->GetSurfThreatArray(cdef->GetMainRole());
 		moveFun = [&sectors, maxSlope](int index) {
 			return sectors[index].isWater ? 0.f : (2.f * sectors[index].maxSlope / maxSlope);
 		};
@@ -672,9 +672,9 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateDbgPathQuery(CThreatMap* threatMa
 	const float maxSlope = (mobileTypeId < 0) ? 1.f : areaData->mobileType[mobileTypeId].maxSlope;
 	const bool* moveArray = (mobileTypeId < 0) ? airMoveArray : pMoveData.load()->moveArrays[mobileTypeId];
 	const float* costArray[] = {
-			threatMap->GetAirThreatArray(),
-			threatMap->GetSurfThreatArray(),
-			threatMap->GetAmphThreatArray(),
+			threatMap->GetAirThreatArray(dbgDef->GetMainRole()),
+			threatMap->GetSurfThreatArray(dbgDef->GetMainRole()),
+			threatMap->GetAmphThreatArray(dbgDef->GetMainRole()),
 			threatMap->GetCloakThreatArray()
 	};
 

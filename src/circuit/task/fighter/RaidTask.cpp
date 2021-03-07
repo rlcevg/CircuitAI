@@ -325,7 +325,7 @@ bool CRaidTask::FindTarget()
 				continue;
 			}
 			targetCat = UNKNOWN_CATEGORY;
-			defThreat = enemy->GetThreat();
+			defThreat = enemy->GetThreat(ROLE_TYPE(RAIDER));
 			isBuilder = false;
 		}
 

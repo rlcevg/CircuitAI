@@ -50,7 +50,15 @@
 	// ARMADA defenses
 	"armllt": {
 		"role": ["static"],
-		"thr_mod": 0.8,
+		"thr_mod": {
+			"builder": 1.0,
+			"scout": 1.0,
+			"raider": 0.8,
+			"assault": 0.1,
+			"riot": 0.5,
+			"skirmish": 0.5,
+			"_default_": 0.8
+		},
 		"pwr_mod": 0.5
 	},
 	"armbeamer": {

@@ -395,7 +395,19 @@ void CFactoryManager::ReadConfig()
 		}
 		const Json::Value& thrMod = behaviour["thr_mod"];
 		if (!thrMod.isNull()) {
-			cdef->ModThreat(thrMod.asFloat());
+			if (thrMod.isNumeric()) {
+				const float mod = thrMod.asFloat();
+				cdef->ModDefThreat(mod);
+				for (CCircuitDef::RoleT role = 0; role < CMaskHandler::GetMaxMasks(); ++role) {
+					cdef->ModThreat(role, mod);
+				}
+			} else if (thrMod.isObject()) {
+				const float defMod = thrMod.get("_default_", 1.f).asFloat();
+				cdef->ModDefThreat(defMod);
+				for (auto& kv : roleNames) {
+					cdef->ModThreat(kv.second.type, thrMod.get(kv.first, defMod).asFloat());
+				}
+			}
 		}
 
 		cdef->SetIgnore(behaviour.get("ignore", cdef->IsIgnore()).asBool());

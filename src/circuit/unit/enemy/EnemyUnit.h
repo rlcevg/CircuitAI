@@ -43,8 +43,9 @@ struct SEnemyData {
 
 	springai::AIFloat3 pos;
 	springai::AIFloat3 vel;  // elmos per frame
-	float threat;
+	CCircuitDef::ThrDmgArray threat;
 	RangeArray range;
+	float influence;
 
 	void SetRange(CCircuitDef::ThreatType t, int r) {
 		range[static_cast<CCircuitDef::ThreatT>(t)] = r;
@@ -110,17 +111,21 @@ public:
 	bool IsDisarmed() const { return data.isDisarmed; }
 
 	bool IsAttacker() const;
-	float GetDamage() const;
+	float GetDefDamage() const;
+	CCircuitDef::ThrDmgArray GetDamage() const;
 	float GetShieldPower() const { return data.shieldPower; }
 
 	const springai::AIFloat3& GetPos() const { return data.pos; }
 	const springai::AIFloat3& GetVel() const { return data.vel; }
 
-	void SetThreat(float t) { data.threat = t; }
-	float GetThreat() const { return data.threat; }
+	void SetInfluence(float value) { data.influence = value; }
+	float GetInfluence() const { return data.influence; }
+	void SetThreat(CCircuitDef::RoleT type, float value) { data.threat[type] = value; }
+	void ClearThreat();
+	float GetThreat(CCircuitDef::RoleT type) const { return data.threat[type]; }
 
-	void SetRange(CCircuitDef::ThreatType t, int r) { data.SetRange(t, r); }
-	int GetRange(CCircuitDef::ThreatType t) const { return data.GetRange(t); }
+	void SetRange(CCircuitDef::ThreatType type, int value) { data.SetRange(type, value); }
+	int GetRange(CCircuitDef::ThreatType type) const { return data.GetRange(type); }
 
 	bool IsFake() const { return data.IsFake(); }
 
@@ -187,13 +192,12 @@ public:
 	bool IsDisarmed() const { return data->IsDisarmed(); }
 
 	bool IsAttacker() const { return data->IsAttacker(); }
-	float GetDamage() const { return data->GetDamage(); }
 	float GetShieldPower() const { return data->GetShieldPower(); }
 
 	const springai::AIFloat3& GetPos() const { return data->GetPos(); }
 	const springai::AIFloat3& GetVel() const { return data->GetVel(); }
 
-	float GetThreat() const { return data->GetThreat(); }
+	float GetThreat(CCircuitDef::RoleT type) const { return data->GetThreat(type); }
 
 	bool IsInLOS()          const { return data->IsInLOS(); }
 	bool IsInRadarOrLOS()   const { return data->IsInRadarOrLOS(); }

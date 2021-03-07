@@ -28,12 +28,13 @@ public:
 	using EnemyUnits = std::unordered_map<ICoreUnit::Id, CEnemyUnit*>;
 	using EnemyFakes = std::set<CEnemyFake*>;
 	struct SEnemyGroup {
-		SEnemyGroup(const springai::AIFloat3& p) : pos(p), cost(0.f), threat(0.f) {}
+		SEnemyGroup(const springai::AIFloat3& p) : pos(p), cost(0.f), influence(0.f), vagueMetric(1.f) {}
 		std::vector<ICoreUnit::Id> units;
 		springai::AIFloat3 pos;
 		std::array<float, CMaskHandler::GetMaxMasks()> roleCosts{{0.f}};
 		float cost;
-		float threat;  // thr_mod applied
+		float influence;  // thr_mod applied
+		float vagueMetric;
 	};
 
 	CEnemyManager(CCircuitAI* circuit);
@@ -84,7 +85,7 @@ public:
 
 	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return enemyGroups; }
 	const springai::AIFloat3& GetEnemyPos() const { return enemyPos; }
-	float GetMaxGroupThreat() const { return enemyGroups[maxThreatGroupIdx].threat; }
+	float GetMaxGroupThreat() const { return enemyGroups[maxThreatGroupIdx].influence; }
 	float GetEnemyMobileCost() const { return enemyMobileCost; }
 
 	void UpdateAreaUsers(CCircuitAI* ai);

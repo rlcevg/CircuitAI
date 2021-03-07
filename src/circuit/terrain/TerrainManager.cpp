@@ -1330,7 +1330,7 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 
 bool CTerrainManager::CanBeBuiltAtSafe(CCircuitDef* cdef, const AIFloat3& position, const float range, const float threat)
 {
-	if (circuit->GetThreatMap()->GetAllThreatAt(position) > threat) {
+	if (circuit->GetThreatMap()->GetBuilderThreatAt(position) > threat) {
 		return false;
 	}
 	return CanBeBuiltAt(cdef, position, range);
@@ -1374,7 +1374,7 @@ bool CTerrainManager::CanMobileReachAt(STerrainMapArea* area, const AIFloat3& de
 
 bool CTerrainManager::CanMobileReachAtSafe(STerrainMapArea* area, const AIFloat3& destination, const float range, const float threat)
 {
-	if (circuit->GetThreatMap()->GetAllThreatAt(destination) > threat) {
+	if (circuit->GetThreatMap()->GetBuilderThreatAt(destination) > threat) {
 		return false;
 	}
 	return CanMobileReachAt(area, destination, range);

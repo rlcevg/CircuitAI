@@ -343,14 +343,14 @@ void CEnemyManager::AddEnemyCost(const CEnemyUnit* e)
 		if (cdef->IsEnemyRoleAny(CCircuitDef::GetMask(type))) {
 			SEnemyInfo& info = enemyInfos[type];
 			info.cost   += e->GetCost();
-			info.threat += cdef->GetThreat();
+			info.threat += cdef->GetDefThreat();
 		}
 	}
 	if (cdef->IsMobile()) {
-		mobileThreat += cdef->GetThreat() * initThrMod.inMobile;
+		mobileThreat += cdef->GetDefThreat() * initThrMod.inMobile;
 		enemyMobileCost += e->GetCost();
 	} else {
-		staticThreat += cdef->GetThreat() * initThrMod.inStatic;
+		staticThreat += cdef->GetDefThreat() * initThrMod.inStatic;
 	}
 }
 
@@ -364,14 +364,14 @@ void CEnemyManager::DelEnemyCost(const CEnemyUnit* e)
 		if (cdef->IsEnemyRoleAny(CCircuitDef::GetMask(type))) {
 			SEnemyInfo& info = enemyInfos[type];
 			info.cost   = std::max(info.cost   - e->GetCost(),      0.f);
-			info.threat = std::max(info.threat - cdef->GetThreat(), 0.f);
+			info.threat = std::max(info.threat - cdef->GetDefThreat(), 0.f);
 		}
 	}
 	if (cdef->IsMobile()) {
-		mobileThreat = std::max(mobileThreat - cdef->GetThreat() * initThrMod.inMobile, 0.f);
+		mobileThreat = std::max(mobileThreat - cdef->GetDefThreat() * initThrMod.inMobile, 0.f);
 		enemyMobileCost = std::max(enemyMobileCost - e->GetCost(), 0.f);
 	} else {
-		staticThreat = std::max(staticThreat - cdef->GetThreat() * initThrMod.inStatic, 0.f);
+		staticThreat = std::max(staticThreat - cdef->GetDefThreat() * initThrMod.inStatic, 0.f);
 	}
 }
 
@@ -469,7 +469,7 @@ void CEnemyManager::KMeansIteration()
 		eg.pos = ZeroVector;
 		std::fill(eg.roleCosts.begin(), eg.roleCosts.end(), 0.f);
 		eg.cost = 0.f;
-		eg.threat = 0.f;
+		eg.influence = 0.f;
 	}
 
 	{
@@ -492,9 +492,9 @@ void CEnemyManager::KMeansIteration()
 					if (!enemy.cdef->IsMobile() || enemy.IsInRadarOrLOS()) {
 						eg.cost += enemy.cost;
 					}
-					eg.threat += enemy.threat * (enemy.cdef->IsMobile() ? initThrMod.inMobile : initThrMod.inStatic);
+					eg.influence += enemy.influence * (enemy.cdef->IsMobile() ? initThrMod.inMobile : initThrMod.inStatic);
 				} else {
-					eg.threat += enemy.threat;
+					eg.influence += enemy.influence;
 				}
 			}
 		}
@@ -512,9 +512,10 @@ void CEnemyManager::KMeansIteration()
 //			newMeans[i].pos.y = circuit->GetMap()->GetElevationAt(newMeans[i].pos.x, newMeans[i].pos.z) + K_MEANS_ELEVATION;
 		}
 		groupData.enemyPos += newMeans[i].pos;
-		if (newMeans[groupData.maxThreatGroupIdx].threat < newMeans[i].threat) {
+		if (newMeans[groupData.maxThreatGroupIdx].influence < newMeans[i].influence) {
 			groupData.maxThreatGroupIdx = i;
 		}
+		newMeans[i].vagueMetric = (newMeans[i].influence + 1.f) / newMeans[i].cost;
 	}
 	groupData.enemyPos /= newK;
 
