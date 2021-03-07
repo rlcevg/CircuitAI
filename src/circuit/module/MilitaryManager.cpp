@@ -110,6 +110,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			unit->SetManager(this);
 			this->circuit->AddActionUnit(unit);
 		}
+		nilTask->RemoveAssignee(unit);
 		idleTask->AssignTo(unit);
 
 		army.insert(unit);
@@ -172,6 +173,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			unit->SetManager(this);
 			this->circuit->AddActionUnit(unit);
 		}
+		nilTask->RemoveAssignee(unit);
 		idleTask->AssignTo(unit);
 
 		TRY_UNIT(this->circuit, unit,

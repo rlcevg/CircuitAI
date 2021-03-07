@@ -99,6 +99,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 				unit->GetUnit()->ExecuteCustomCommand(CMD_AUTOMEX, {1.f});
 			)
 		} else {
+			nilTask->RemoveAssignee(unit);
 			idleTask->AssignTo(unit);
 
 			++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
@@ -192,6 +193,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			unit->SetManager(this);
 			this->circuit->AddActionUnit(unit);
 		}
+		nilTask->RemoveAssignee(unit);
 		idleTask->AssignTo(unit);
 		workers.insert(unit);
 	};

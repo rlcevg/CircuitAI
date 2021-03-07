@@ -159,8 +159,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				this->circuit->GetScheduler()->RunJobAt(CScheduler::GameJob([this, unitId]() {
 					// Force commander level 0 to morph
 					CCircuitUnit* unit = this->circuit->GetTeamUnit(unitId);
-					if ((unit != nullptr) && (unit->GetTask() != nullptr) &&
-						(unit->GetTask()->GetType() != IUnitTask::Type::PLAYER))
+					if ((unit != nullptr)
+						&& (unit->GetTask()->GetType() != IUnitTask::Type::PLAYER))
 					{
 						const std::map<std::string, std::string>& customParams = unit->GetCircuitDef()->GetDef()->GetCustomParams();
 						auto it = customParams.find("level");
@@ -1267,7 +1267,7 @@ void CEconomyManager::StartFactoryTask(const float seconds)
 
 void CEconomyManager::AddMorphee(CCircuitUnit* unit)
 {
-	if (!unit->IsUpgradable() || (unit->GetTask() == nullptr)) {
+	if (!unit->IsUpgradable() || (unit->GetTask()->GetType() == IUnitTask::Type::NIL)) {
 		return;
 	}
 	morphees.insert(unit);

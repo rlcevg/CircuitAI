@@ -44,8 +44,9 @@ void CActionList::Update(CCircuitAI* circuit)
 				blocker = action;
 				return;
 			}
-			++itAction;
+//			++itAction;
 		}
+		++itAction;
 	}
 	blocker = nullptr;
 }

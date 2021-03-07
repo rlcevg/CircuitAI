@@ -71,6 +71,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			unit->SetManager(this);
 			this->circuit->AddActionUnit(unit);
 		}
+		nilTask->RemoveAssignee(unit);
 		idleTask->AssignTo(unit);
 
 		TRY_UNIT(this->circuit, unit,
@@ -114,6 +115,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			unit->SetManager(this);
 			this->circuit->AddActionUnit(unit);
 		}
+		nilTask->RemoveAssignee(unit);
 		idleTask->AssignTo(unit);
 
 		int frame = this->circuit->GetLastFrame();
@@ -606,6 +608,12 @@ int CFactoryManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 	auto search = createdHandler.find(cdef->GetId());
 	if (search != createdHandler.end()) {
 		search->second(unit, builder);
+	}
+
+	if (unit->GetTask() == nullptr) {  // all units without handlers
+		unit->SetManager(this);
+		nilTask->AssignTo(unit);
+		circuit->AddActionUnit(unit);
 	}
 
 	if (builder == nullptr) {

@@ -88,7 +88,6 @@ CCircuitAI::CCircuitAI(OOAICallback* clb)
 		, metalRes(nullptr)
 		, energyRes(nullptr)
 		, allyTeam(nullptr)
-		, captureSpeed(0.f)
 		, actionIterator(0)
 		, isCheating(false)
 		, isAllyAware(true)
@@ -585,7 +584,6 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 		Release(RELEASE_COMMANDER);
 		return ERROR_INIT;
 	}
-	captureSpeed = setupManager->GetCommChoice()->GetCaptureSpeed();
 
 	allyTeam = setupManager->GetAllyTeam();
 	isAllyAware &= allyTeam->GetSize() > 1;
@@ -616,8 +614,8 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	// TODO: Remove EconomyManager from module (move abilities to BuilderManager).
 	modules.push_back(militaryManager);
 	modules.push_back(builderManager);
-	modules.push_back(factoryManager);
-	modules.push_back(economyManager);  // NOTE: Uses unit's manager != nullptr, thus must be last
+	modules.push_back(factoryManager);  // NOTE: Contains special last-module unit handlers.
+	modules.push_back(economyManager);  // NOTE: Uses unit's manager != nullptr, thus must be last.
 
 	script->RegisterMgr();
 	script->Init();
@@ -961,10 +959,6 @@ int CCircuitAI::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		module->UnitCreated(unit, builder);
 	}
 
-	if (unit->GetTask() == nullptr) {
-		AddActionUnit(unit);
-	}
-
 	return 0;  // signaling: OK
 }
 
@@ -1006,7 +1000,9 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 		module->UnitFinished(unit);
 	}
 
-	if ((unit->GetTask() != nullptr) && (unit->GetUnit()->GetRulesParamFloat("resurrected", 0.f) != 0.f)) {
+	if ((unit->GetTask()->GetType() != IUnitTask::Type::NIL)
+		&& (unit->GetUnit()->GetRulesParamFloat("resurrected", 0.f) != 0.f))
+	{
 		unit->GetTask()->GetManager()->Resurrected(unit);
 	}
 
@@ -1039,7 +1035,7 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 		)
 //		Garbage(unit, "stuck");
 		GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::NORMAL, unit);
-	} else if (unit->GetTask() != nullptr) {
+	} else if (unit->GetTask()->GetType() != IUnitTask::Type::NIL) {
 		unit->GetTask()->OnUnitMoveFailed(unit);
 	}
 
@@ -1152,7 +1148,7 @@ int CCircuitAI::EnemyEnterLOS(CEnemyInfo* enemy)
 			continue;
 		}
 		CCircuitUnit* unit = GetTeamUnit(fId);
-		if ((unit != nullptr) && (unit->GetTask() != nullptr)) {
+		if ((unit != nullptr) && (unit->GetTask()->GetType() != IUnitTask::Type::NIL)) {
 			unit->ForceUpdate(lastFrame + THREAT_UPDATE_RATE);
 		}
 	}
@@ -1201,9 +1197,9 @@ int CCircuitAI::EnemyDestroyed(CEnemyInfo* enemy)
 int CCircuitAI::PlayerCommand(const std::vector<CCircuitUnit*>& units)
 {
 	for (CCircuitUnit* unit : units) {
-		if ((unit != nullptr) && (unit->GetTask() != nullptr) &&
-			(unit->GetTask()->GetType() != IUnitTask::Type::NIL) &&  // ignore orders to nanoframes
-			(unit->GetTask()->GetType() != IUnitTask::Type::PLAYER))
+		if ((unit != nullptr)
+			&& (unit->GetTask()->GetType() != IUnitTask::Type::NIL)  // ignore orders to nanoframes
+			&& (unit->GetTask()->GetType() != IUnitTask::Type::PLAYER))
 		{
 			unit->GetTask()->GetManager()->AssignPlayerTask(unit);
 		}
@@ -1474,10 +1470,10 @@ CEnemyInfo* CCircuitAI::GetEnemyInfo(ICoreUnit::Id unitId) const
 
 void CCircuitAI::DisableControl(CCircuitUnit* unit)
 {
-	if (unit->GetTask() != nullptr) {
+//	if (unit->GetTask()->GetType() != IUnitTask::Type::NIL) {
 		ITaskManager* mgr = unit->GetTask()->GetManager();
 		mgr->AssignTask(unit, new CPlayerTask(mgr));
-	}
+//	}
 }
 
 void CCircuitAI::DisableControl(const std::string data)
@@ -1503,7 +1499,7 @@ void CCircuitAI::EnableControl(const std::string data)
 	std::regex patternUnit("\\w+");
 	while (std::regex_search(start, end, section, patternUnit)) {
 		CCircuitUnit* unit = GetTeamUnit(utils::string_to_int(section[0]));
-		if ((unit != nullptr) && (unit->GetTask() != nullptr)) {
+		if ((unit != nullptr)/* && (unit->GetTask()->GetType() != IUnitTask::Type::NIL)*/) {
 			unit->GetTask()->RemoveAssignee(unit);
 		}
 		start = section[0].second;
@@ -1526,26 +1522,10 @@ void CCircuitAI::UpdateActions()
 			actionUnits.pop_back();
 			DeleteTeamUnit(unit);
 		} else {
-			// TODO: Turn into action. Issue: push it within proper place, and re-push on every task change
-			if (!unit->IsInSelfD() && !unit->GetCircuitDef()->IsMobile()) {
-				const float captureProgress = unit->GetUnit()->GetCaptureProgress();
-				if (captureProgress > 1e-3f) {
-					const float health = unit->GetUnit()->GetHealth();
-					const float maxHealth = unit->GetUnit()->GetMaxHealth();
-					// @see rts/Sim/Units/UnitTypes/Builder.cpp:487-500 (captureMagicNumber)
-					const float magic = (150.0f + (unit->GetCircuitDef()->GetBuildTime() / captureSpeed) * (health + maxHealth) / maxHealth * 0.4f);
-					const float stepToDestr = (unit->GetCircuitDef()->GetSelfDCountdown() + 1) * FRAMES_PER_SEC / magic;
-					if (captureProgress + stepToDestr > 1.f) {
-						unit->CmdSelfD(true);
-					}
-				}
-			}
-
-			if ((unit->GetTask() != nullptr) && (unit->GetTask()->GetType() != IUnitTask::Type::PLAYER)) {
+			if (unit->GetTask()->GetType() != IUnitTask::Type::PLAYER) {
 				unit->Update(this);
-//				--n;  // TODO
+				--n;
 			}
-			--n;
 			++actionIterator;
 		}
 	}

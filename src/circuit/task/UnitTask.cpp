@@ -10,6 +10,7 @@
 #include "task/TaskManager.h"
 #include "terrain/path/PathQuery.h"
 #include "unit/CircuitUnit.h"
+#include "unit/action/AntiCapAction.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
@@ -55,6 +56,10 @@ void IUnitTask::AssignTo(CCircuitUnit* unit)
 	TRY_UNIT(manager->GetCircuit(), unit,
 		unit->RemoveWait();
 	)
+
+	if (!unit->GetCircuitDef()->IsMobile()) {
+		unit->PushBack(new CAntiCapAction(unit));
+	}
 }
 
 void IUnitTask::RemoveAssignee(CCircuitUnit* unit)

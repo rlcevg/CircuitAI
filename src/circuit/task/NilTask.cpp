@@ -7,6 +7,7 @@
 
 #include "task/NilTask.h"
 #include "unit/CircuitUnit.h"
+#include "unit/action/AntiCapAction.h"
 #include "util/Utils.h"
 
 namespace circuit {
@@ -23,10 +24,15 @@ CNilTask::~CNilTask()
 void CNilTask::AssignTo(CCircuitUnit* unit)
 {
 	unit->SetTask(this);
+
+	if (!unit->GetCircuitDef()->IsMobile()) {
+		unit->PushBack(new CAntiCapAction(unit));
+	}
 }
 
 void CNilTask::RemoveAssignee(CCircuitUnit* unit)
 {
+	unit->Clear();
 }
 
 void CNilTask::Start(CCircuitUnit* unit)

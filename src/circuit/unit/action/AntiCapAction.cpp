@@ -27,21 +27,25 @@ CAntiCapAction::~CAntiCapAction()
 void CAntiCapAction::Update(CCircuitAI* circuit)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
+	if (std::string("armbrtha") == unit->GetCircuitDef()->GetDef()->GetName()) {
+		circuit->LOG("CAntiCapAction::Update");
+	}
 	if (unit->IsInSelfD()) {
 		return;
 	}
 
 	const float captureProgress = unit->GetUnit()->GetCaptureProgress();
-	if (captureProgress > 1e-3f) {
-		const float health = unit->GetUnit()->GetHealth();
-		const float maxHealth = unit->GetUnit()->GetMaxHealth();
-		const float captureSpeed = circuit->GetSetupManager()->GetCommChoice()->GetCaptureSpeed();
-		// @see rts/Sim/Units/UnitTypes/Builder.cpp:487-500 (captureMagicNumber)
-		const float magic = (150.0f + (unit->GetCircuitDef()->GetBuildTime() / captureSpeed) * (health + maxHealth) / maxHealth * 0.4f);
-		const float stepToDestr = (unit->GetCircuitDef()->GetSelfDCountdown() + 1) * FRAMES_PER_SEC / magic;
-		if (captureProgress + stepToDestr > 1.f) {
-			unit->CmdSelfD(true);
-		}
+	if (captureProgress < 1e-3f) {
+		return;
+	}
+	const float health = unit->GetUnit()->GetHealth();
+	const float maxHealth = unit->GetUnit()->GetMaxHealth();
+	const float captureSpeed = circuit->GetSetupManager()->GetCommChoice()->GetCaptureSpeed();
+	// @see rts/Sim/Units/UnitTypes/Builder.cpp:487-500 (captureMagicNumber)
+	const float magic = (150.0f + (unit->GetCircuitDef()->GetBuildTime() / captureSpeed) * (health + maxHealth) / maxHealth * 0.4f);
+	const float stepToDestr = (unit->GetCircuitDef()->GetSelfDCountdown() + 1) * FRAMES_PER_SEC / magic;
+	if (captureProgress + stepToDestr > 1.f) {
+		unit->CmdSelfD(true);
 	}
 }
 

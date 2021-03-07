@@ -184,7 +184,6 @@ private:
 	EnemyInfos enemyInfos;  // owner
 	CAllyTeam* allyTeam;
 
-	float captureSpeed;  // captureSpeed of commander
 	std::vector<CCircuitUnit*> actionUnits;
 	unsigned int actionIterator;
 
