@@ -43,15 +43,18 @@ struct SEnemyData {
 
 	springai::AIFloat3 pos;
 	springai::AIFloat3 vel;  // elmos per frame
-	CCircuitDef::ThrDmgArray threat;
+	float thrMod;  // health-based part
 	RangeArray range;
 	float influence;
 
-	void SetRange(CCircuitDef::ThreatType t, int r) {
-		range[static_cast<CCircuitDef::ThreatT>(t)] = r;
+	float GetDefDamage() const;
+	float GetDamage(CCircuitDef::RoleT type) const;
+
+	void SetRange(CCircuitDef::ThreatType type, int value) {
+		range[static_cast<CCircuitDef::ThreatT>(type)] = value;
 	}
-	int GetRange(CCircuitDef::ThreatType t) const {
-		return range[static_cast<CCircuitDef::ThreatT>(t)];
+	int GetRange(CCircuitDef::ThreatType type) const {
+		return range[static_cast<CCircuitDef::ThreatT>(type)];
 	}
 
 	bool IsFake() const { return id == -1; }
@@ -111,8 +114,7 @@ public:
 	bool IsDisarmed() const { return data.isDisarmed; }
 
 	bool IsAttacker() const;
-	float GetDefDamage() const;
-	CCircuitDef::ThrDmgArray GetDamage() const;
+	float GetDefDamage() const { return data.GetDefDamage(); }
 	float GetShieldPower() const { return data.shieldPower; }
 
 	const springai::AIFloat3& GetPos() const { return data.pos; }
@@ -120,9 +122,9 @@ public:
 
 	void SetInfluence(float value) { data.influence = value; }
 	float GetInfluence() const { return data.influence; }
-	void SetThreat(CCircuitDef::RoleT type, float value) { data.threat[type] = value; }
+	void SetThrMod(float value) { data.thrMod = value; }
 	void ClearThreat();
-	float GetThreat(CCircuitDef::RoleT type) const { return data.threat[type]; }
+//	float GetThreat(CCircuitDef::RoleT type) const { return data.GetDamage(type) * data.thrMod; }
 
 	void SetRange(CCircuitDef::ThreatType type, int value) { data.SetRange(type, value); }
 	int GetRange(CCircuitDef::ThreatType type) const { return data.GetRange(type); }
@@ -197,7 +199,8 @@ public:
 	const springai::AIFloat3& GetPos() const { return data->GetPos(); }
 	const springai::AIFloat3& GetVel() const { return data->GetVel(); }
 
-	float GetThreat(CCircuitDef::RoleT type) const { return data->GetThreat(type); }
+	float GetInfluence() const { return data->GetInfluence(); }
+//	float GetThreat(CCircuitDef::RoleT type, float surfMod) const { return data->GetThreat(type) * surfMod; }
 
 	bool IsInLOS()          const { return data->IsInLOS(); }
 	bool IsInRadarOrLOS()   const { return data->IsInRadarOrLOS(); }

@@ -389,11 +389,11 @@ void CFactoryManager::ReadConfig()
 
 		cdef->SetRetreat(behaviour.get("retreat", cdef->GetRetreat()).asFloat());
 
-		const Json::Value& pwrMod = behaviour["pwr_mod"];
+		const Json::Value& pwrMod = behaviour["power"];
 		if (!pwrMod.isNull()) {
 			cdef->ModPower(pwrMod.asFloat());
 		}
-		const Json::Value& thrMod = behaviour["thr_mod"];
+		const Json::Value& thrMod = behaviour["threat"];
 		if (!thrMod.isNull()) {
 			if (thrMod.isNumeric()) {
 				const float mod = thrMod.asFloat();
@@ -402,10 +402,16 @@ void CFactoryManager::ReadConfig()
 					cdef->ModThreat(role, mod);
 				}
 			} else if (thrMod.isObject()) {
-				const float defMod = thrMod.get("_default_", 1.f).asFloat();
+				cdef->SetAirMod(thrMod.get("air", 1.f).asFloat());
+				cdef->SetSurfMod(thrMod.get("surf", 1.f).asFloat());
+				cdef->SetWaterMod(thrMod.get("water", 1.f).asFloat());
+				const float defMod = thrMod.get("default", 1.f).asFloat();
 				cdef->ModDefThreat(defMod);
-				for (auto& kv : roleNames) {
-					cdef->ModThreat(kv.second.type, thrMod.get(kv.first, defMod).asFloat());
+				const Json::Value& thrRole = thrMod["vs"];
+				if (!thrRole.isNull()) {
+					for (auto& kv : roleNames) {
+						cdef->ModThreat(kv.second.type, thrRole.get(kv.first, defMod).asFloat());
+					}
 				}
 			}
 		}

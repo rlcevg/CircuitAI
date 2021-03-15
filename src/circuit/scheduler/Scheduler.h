@@ -103,7 +103,7 @@ public:
 		releaseTasks.push_back(task);
 	}
 
-	int GetMaxPathThreads() const { return maxWorkThreads; }
+	int GetMaxWorkThreads() const { return maxWorkThreads; }
 
 private:
 	std::weak_ptr<CScheduler> self;

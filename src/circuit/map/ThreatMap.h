@@ -21,7 +21,7 @@
 
 namespace circuit {
 
-#define THREAT_UPDATE_RATE	(FRAMES_PER_SEC / 4)
+#define THREAT_UPDATE_RATE	(FRAMES_PER_SEC / 3)
 #define THREAT_BASE			0.f
 
 class CMapManager;
@@ -56,7 +56,7 @@ public:
 	int GetThreatMapWidth() const { return width; }
 	int GetThreatMapHeight() const { return height; }
 
-	float GetUnitThreat(CCircuitUnit* unit) const;
+	float GetUnitPower(CCircuitUnit* unit) const;
 	int GetSquareSize() const { return squareSize; }
 	int GetMapSize() const { return mapSize; }
 
@@ -84,9 +84,12 @@ private:
 
 	void AddEnemyUnit(const SEnemyData& e);
 	void AddEnemyUnitAll(const SEnemyData& e);
-	void AddEnemyAir(CCircuitDef::RoleT role, float* drawAirThreat, const SEnemyData& e, const int slack = 0);  // Enemy AntiAir
-	void AddEnemyAmphConst(CCircuitDef::RoleT role, float* drawSurfThreat, float* drawAmphThreat, const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
-	void AddEnemyAmphGradient(CCircuitDef::RoleT role, float* drawSurfThreat, float* drawAmphThreat, const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
+	void AddEnemyAir(const float threat, float* drawAirThreat,
+			const SEnemyData& e, const int slack = 0);  // Enemy AntiAir
+	void AddEnemyAmphConst(const float threatLand, const float threatWater, float* drawSurfThreat, float* drawAmphThreat,
+			const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
+	void AddEnemyAmphGradient(const float threatLand, const float threatWater, float* drawSurfThreat, float* drawAmphThreat,
+			const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
 	void AddDecloaker(const SEnemyData& e);
 	void AddShield(const SEnemyData& e);
 
@@ -142,12 +145,13 @@ private:
 	std::vector<std::pair<uint32_t, float*>> sdlWindows;
 	bool isWidgetDrawing = false;
 	bool isWidgetPrinting = false;
+	int layerDbg = 1;
 	void UpdateVis();
 public:
 	void ToggleSDLVis();
 	void ToggleWidgetDraw();
 	void ToggleWidgetPrint();
-	void SetMaxThreat(float maxThreat);
+	void SetMaxThreat(float maxThreat, std::string layer);
 #endif
 };
 

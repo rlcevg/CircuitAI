@@ -894,7 +894,10 @@ int CCircuitAI::Message(int playerId, const char* message)
 		}
 	}
 	else if (strncmp(message, cmdWTDiv, 6) == 0) {
-		mapManager->GetThreatMap()->SetMaxThreat(atof((const char*)&message[7]));
+		std::string s(message);
+		auto start = s.rfind(" ");
+		std::string layer = (start != std::string::npos) ? s.substr(start + 1) : "";
+		mapManager->GetThreatMap()->SetMaxThreat(atof((const char*)&message[7]), layer);
 	}
 	else if (strncmp(message, cmdWTPrint, 8) == 0) {
 		if (teamId == atoi((const char*)&message[9])) {

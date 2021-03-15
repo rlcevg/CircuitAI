@@ -1420,7 +1420,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
-	const float maxThreat = threatMap->GetUnitThreat(unit);
+	const float maxThreat = threatMap->GetUnitPower(unit);
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {

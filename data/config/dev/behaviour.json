@@ -37,34 +37,39 @@
 	"armcom": {
 		"role": ["builder"],
 		"attribute": ["commander"],
-		"pwr_mod": 0.1,
+		"power": 0.1,
 		"build_speed": 5.0
 	},
 	"corcom": {
 		"role": ["builder"],
 		"attribute": ["commander"],
-		"pwr_mod": 0.1,
+		"power": 0.1,
 		"build_speed": 5.0
 	},
 
 	// ARMADA defenses
 	"armllt": {
 		"role": ["static"],
-		"thr_mod": {
-			"builder": 1.0,
-			"scout": 1.0,
-			"raider": 0.8,
-			"assault": 0.1,
-			"riot": 0.5,
-			"skirmish": 0.5,
-			"_default_": 0.8
+		"threat": {
+			"air": 0.2,
+			"surf": 1.0,  // surface, also on water
+			"water": 1.0,  // underwater
+			"default": 0.8,
+			"vs": {
+				"builder": 1.0,
+				"scout": 1.0,
+				"raider": 0.8,
+				"assault": 0.1,
+				"riot": 0.5,
+				"skirmish": 0.5
+			}
 		},
-		"pwr_mod": 0.5
+		"power": 0.5
 	},
 	"armbeamer": {
 		"role": ["static"],
-		"pwr_mod": 1.5,
-		"thr_mod": 0.9
+		"power": 1.5,
+		"threat": 0.9
 	},
 	"armhlt": {
 		"role": ["static"]
@@ -72,7 +77,7 @@
 	"armguard": {
 		"role": ["static"],
 		"attribute": ["artillery"],
-		"thr_mod": 0.3
+		"threat": 0.3
 	},
 	"armclaw": {
 		"role": ["static"]
@@ -110,20 +115,20 @@
 	"armanni": {
 		"role": ["static"],
 		"attribute": ["heavy", "anti_heavy"],
-		"pwr_mod": 1.5
+		"power": 1.5
 	},
 
 	// CORTEX defenses
 	"corllt": {
 		"role": ["static"],
-		"thr_mod": 0.8,
-		"pwr_mod": 0.5,
+		"threat": 0.8,
+		"power": 0.5,
 		"midposoffset": [0, 0, 2.38]
 	},
 	"corhllt": {
 		"role": ["static"],
-		"pwr_mod": 1.5,
-		"thr_mod": 1.1
+		"power": 1.5,
+		"threat": 1.1
 	},
 	"corhlt": {
 		"role": ["static"]
@@ -134,7 +139,7 @@
 	"corpun": {
 		"role": ["static"],
 		"attribute": ["artillery"],
-		"thr_mod": 0.3
+		"threat": 0.3
 	},
 	"corrl": {
 		"role": ["anti_air"]
@@ -168,7 +173,7 @@
 	"cordoom": {
 		"role": ["static"],
 		"attribute": ["heavy", "anti_heavy"],
-		"pwr_mod": 1.5
+		"power": 1.5
 	},
 
 	// Factories - that should stay near main base
@@ -326,9 +331,9 @@
 //		"retreat": 0.8,
 
 		// Ally threat multiplier
-//		"pwr_mod": 1.0,
+//		"power": 1.0,
 		// Enemy threat multiplier
-//		"thr_mod": 1.0,
+//		"threat": 1.0,
 
 		// Ignore enemy
 //		"ignore": false,
@@ -428,16 +433,16 @@
 	},
 	"armraz": {
 		"role": ["skirmish", "heavy"],
-		"pwr_mod": 2.5
+		"power": 2.5
 	},
 	"armvang": {
 		"role": ["artillery", "heavy"],
-		"pwr_mod": 2.0
+		"power": 2.0
 	},
 	"armbanth": {
 		"role": ["assault", "heavy"],
 		"attribute": ["melee"],
-		"pwr_mod": 2.0
+		"power": 2.0
 	},
 
 
@@ -478,7 +483,7 @@
 	"armsam": {
 		"role": ["anti_air"],
 		"attribute": ["skirmish"],
-		"thr_mod": 0.4
+		"threat": 0.4
 	},
 
 	// adv vehicles - armavp
@@ -534,8 +539,8 @@
 	},
 	"armthund": {
 		"role": ["bomber", "air"],
-		"thr_mod": 0.1,
-		"pwr_mod": 0.1
+		"threat": 0.1,
+		"power": 0.1
 	},
 	"armkam": {
 		"role": ["raider", "air"],
@@ -658,7 +663,7 @@
 	"armah": {
 		"role": ["anti_air"],
 		"attribute": ["skirmish"],
-		"thr_mod": 0.4
+		"threat": 0.4
 	},
 
 	// bot - corlab
@@ -749,17 +754,17 @@
 	},
 	"corcat": {
 		"role": ["artillery", "heavy"],
-		"pwr_mod": 2.0
+		"power": 2.0
 	},
 	"corkorg": {
 		"role": ["assault", "heavy"],
 		"attribute": ["melee"],
-		"pwr_mod": 2.2
+		"power": 2.2
 	},
 	"corjugg": {
 		"role": ["heavy"],
 		"attribute": ["melee"],
-		"pwr_mod": 2.5
+		"power": 2.5
 	},
 
 	// vehicles - corvp
@@ -799,7 +804,7 @@
 	"cormist": {
 		"role": ["anti_air"],
 		"attribute": ["skirmish"],
-		"thr_mod": 0.4
+		"threat": 0.4
 	},
 
 	// adv vehicles - coravp
@@ -917,7 +922,7 @@
 	"corah": {
 		"role": ["anti_air"],
 		"attribute": ["skirmish"],
-		"thr_mod": 0.4
+		"threat": 0.4
 	},
 	"corhal": {
 		"role": ["assault"]
@@ -940,8 +945,8 @@
 	},
 	"corshad": {
 		"role": ["bomber", "air"],
-		"thr_mod": 0.1,
-		"pwr_mod": 0.1
+		"threat": 0.1,
+		"power": 0.1
 	},
 	"corbw": {
 		"role": ["assault", "air"],

@@ -27,9 +27,6 @@ CAntiCapAction::~CAntiCapAction()
 void CAntiCapAction::Update(CCircuitAI* circuit)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
-	if (std::string("armbrtha") == unit->GetCircuitDef()->GetDef()->GetName()) {
-		circuit->LOG("CAntiCapAction::Update");
-	}
 	if (unit->IsInSelfD()) {
 		return;
 	}

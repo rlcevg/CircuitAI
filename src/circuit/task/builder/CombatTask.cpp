@@ -113,7 +113,7 @@ void CCombatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 	}
 	const AIFloat3& pos = unit->GetPos(frame);
 	if ((GetTarget()->GetPos().SqDistance2D(pos) > SQUARE(range))
-		|| (threatMap->GetThreatAt(unit, pos) * 2 > threatMap->GetUnitThreat(unit)))
+		|| (threatMap->GetThreatAt(unit, pos) * 2 > threatMap->GetUnitPower(unit)))
 	{
 		CRetreatTask* task = circuit->GetBuilderManager()->EnqueueRetreat();
 		manager->AssignTask(unit, task);
@@ -172,7 +172,7 @@ CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 	STerrainMapArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = SQUARE(cdef->GetSpeed() / FRAMES_PER_SEC);
-	const float maxPower = threatMap->GetUnitThreat(unit) * powerMod;
+	const float maxPower = threatMap->GetUnitPower(unit) * powerMod;
 	const float weaponRange = cdef->GetMaxRange() * 0.9f;
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();

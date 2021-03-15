@@ -318,14 +318,14 @@ bool CRaidTask::FindTarget()
 			if (ePos.y - elevation > weaponRange) {
 				continue;
 			}
-			defThreat = edef->GetPower();
+			defThreat = enemy->GetInfluence();
 			isBuilder = edef->IsEnemyRoleAny(CCircuitDef::RoleMask::BUILDER | CCircuitDef::RoleMask::COMM);
 		} else {
 			if (!(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater()) && (ePos.y < -SQUARE_SIZE * 5)) {  // notAW
 				continue;
 			}
 			targetCat = UNKNOWN_CATEGORY;
-			defThreat = enemy->GetThreat(ROLE_TYPE(RAIDER));
+			defThreat = enemy->GetInfluence();
 			isBuilder = false;
 		}
 

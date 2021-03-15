@@ -56,7 +56,7 @@ CPathFinder::CPathFinder(const std::shared_ptr<CScheduler>& scheduler, CTerrainD
 	moveMapXSize = pathMapXSize + 2;  // +2 for passable edges
 	moveMapYSize = pathMapYSize + 2;  // +2 for passable edges
 
-	int numThreads = scheduler->GetMaxPathThreads();
+	int numThreads = scheduler->GetMaxWorkThreads();
 	micropathers.reserve(numThreads);
 	for (int i = 0; i < numThreads; ++i) {
 		NSMicroPather::CMicroPather* micropather = new CMicroPather(*this,

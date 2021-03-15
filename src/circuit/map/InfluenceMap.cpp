@@ -260,9 +260,9 @@ int CInfluenceMap::GetUnitRange(CAllyUnit* u) const
 	// FIXME: DEBUG
 
 		if (cdef->GetMaxRange() > 1000.f) {
-			return cdef->GetThreatRange(CCircuitDef::ThreatType::LAND) / 2;
+			return cdef->GetThreatRange(CCircuitDef::ThreatType::SURF) / 2;
 		}
-		return cdef->GetThreatRange(CCircuitDef::ThreatType::LAND);
+		return cdef->GetThreatRange(CCircuitDef::ThreatType::SURF);
 //	}
 }
 
@@ -305,7 +305,7 @@ void CInfluenceMap::AddStaticArmed(CAllyUnit* u)
 	PosToXZ(u->GetPos(circuit->GetLastFrame()), posx, posz);
 
 	const float val = u->GetCircuitDef()->GetPower();
-	const int range = u->GetCircuitDef()->GetThreatRange(CCircuitDef::ThreatType::LAND) / 2;
+	const int range = u->GetCircuitDef()->GetThreatRange(CCircuitDef::ThreatType::SURF) / 2;
 	const int rangeSq = SQUARE(range);
 
 	const int beginX = std::max(int(posx - range + 1),       0);
@@ -370,10 +370,10 @@ void CInfluenceMap::AddEnemy(const SEnemyData& e)
 	const float val = e.influence;
 	// FIXME: GetInfluenceRange: for statics it's just range; mobile should account for speed
 	const int range = (e.cdef == nullptr)
-			? e.GetRange(CCircuitDef::ThreatType::LAND)
+			? e.GetRange(CCircuitDef::ThreatType::SURF)
 			: e.cdef->IsMobile()
-					? e.GetRange(CCircuitDef::ThreatType::LAND)
-					: e.GetRange(CCircuitDef::ThreatType::LAND) / 2;
+					? e.GetRange(CCircuitDef::ThreatType::SURF)
+					: e.GetRange(CCircuitDef::ThreatType::SURF) / 2;
 	const int rangeSq = SQUARE(range);
 
 	const int beginX = std::max(int(posx - range + 1),       0);

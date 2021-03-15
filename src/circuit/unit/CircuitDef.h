@@ -34,7 +34,7 @@ public:
 
 	using Id = int;
 	enum class RangeType: char {AIR = 0, LAND = 1, WATER = 2, _SIZE_};
-	enum class ThreatType: char {AIR = 0, LAND = 1, WATER = 2, CLOAK = 3, SHIELD = 4, _SIZE_};
+	enum class ThreatType: char {AIR = 0, SURF = 1, WATER = 2, CLOAK = 3, SHIELD = 4, _SIZE_};
 	using RangeT = std::underlying_type<RangeType>::type;
 	using ThreatT = std::underlying_type<ThreatType>::type;
 	using ThrDmgArray = std::array<float, CMaskHandler::GetMaxMasks()>;
@@ -194,10 +194,13 @@ public:
 	springai::WeaponMount* GetWeaponMount() const { return weaponMount; }
 	float GetPwrDamage() const { return pwrDmg; }  // ally
 	float GetDefDamage() const { return defDmg; }  // enemy, for influence
-	const ThrDmgArray& GetThrDamage() const { return thrDmg; }  // enemy
+	float GetThrDmg(RoleT type) const { return thrDmg[type]; }  // enemy
 	float GetAoe() const { return aoe; }
 	float GetPower() const { return power; }
 	float GetDefThreat() const { return defThreat; }
+	float GetAirMod() const { return airMod; }
+	float GetSurfMod() const { return surfMod; }
+	float GetWaterMod() const { return waterMod; }
 	float GetMinRange() const { return minRange; }
 	float GetMaxRange(RangeType type) const { return maxRange[static_cast<RangeT>(type)]; }
 	float GetMaxRange() const { return maxRange[static_cast<RangeT>(maxRangeType)]; }
@@ -213,6 +216,9 @@ public:
 	void ModPower(float mod) { pwrDmg *= mod; power *= mod; }
 	void ModDefThreat(float mod) { defDmg *= mod; defThreat *= mod; }
 	void ModThreat(RoleT type, float mod) { thrDmg[type] *= mod; }
+	void SetAirMod(float value) { airMod = value; }
+	void SetSurfMod(float value) { surfMod = value; }
+	void SetWaterMod(float value) { waterMod = value; }
 	void SetThreatRange(ThreatType type, int range) { threatRange[static_cast<ThreatT>(type)] = range; }
 	void SetFireState(FireType ft) { fireState = ft; }
 	void SetReloadTime(int time) { reloadTime = time; }
@@ -315,6 +321,9 @@ private:
 	float pwrDmg;  // ally damage
 	float defDmg;  // enemy damage, for influence
 	ThrDmgArray thrDmg;  // enemy damage
+	float airMod;
+	float surfMod;  // surface, even on water
+	float waterMod;  // underwater
 	float aoe;  // radius
 	float power;  // ally max threat
 	float defThreat;  // enemy max threat

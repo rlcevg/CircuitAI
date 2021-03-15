@@ -96,7 +96,7 @@ CThreatMap::CThreatMap(CMapManager* manager, float decloakRadius)
 
 		realRange = cdef.GetMaxRange(CCircuitDef::RangeType::LAND);
 		range = (cdef.HasSurfToLand() && (realRange <= allowedRange) && (speed <= allowedSpeed)) ? int(realRange + slack) / squareSize + 1 : 0;
-		cdef.SetThreatRange(CCircuitDef::ThreatType::LAND, range);
+		cdef.SetThreatRange(CCircuitDef::ThreatType::SURF, range);
 
 		realRange = cdef.GetMaxRange(CCircuitDef::RangeType::WATER);
 		range = (cdef.HasSurfToWater() && (realRange <= allowedRange) && (speed <= allowedSpeed)) ? int(realRange + slack) / squareSize + 1 : 0;
@@ -184,10 +184,7 @@ void CThreatMap::SetEnemyUnitThreat(CEnemyUnit* e) const
 		int x, z;
 		PosToXZ(e->GetPos(), x, z);
 		const float healthMod = sqrtf(health + shieldArray[z * width + x] * SHIELD_MOD);  // / unit->GetUnit()->GetMaxHealth();
-		const CCircuitDef::ThrDmgArray& damage = e->GetDamage();
-		for (CCircuitDef::RoleT role = 0; role < (int)threatData0.roleThreats.size(); ++role) {
-			e->SetThreat(role, damage[role] * healthMod);
-		}
+		e->SetThrMod(healthMod);
 		e->SetInfluence(e->GetDefDamage() * healthMod);
 	} else {
 		e->ClearThreat();
@@ -196,13 +193,10 @@ void CThreatMap::SetEnemyUnitThreat(CEnemyUnit* e) const
 
 void CThreatMap::NewEnemy(CEnemyUnit* e) const
 {
-	const CCircuitDef::ThrDmgArray& damage = e->GetDamage();
-	for (CCircuitDef::RoleT role = 0; role < (int)threatData0.roleThreats.size(); ++role) {
-		e->SetThreat(role, damage[role]);
-	}
+//	e->SetThreatMod(1.f);  // e->GetDamage()
 	e->SetInfluence(e->GetDefDamage());
 	e->SetRange(CCircuitDef::ThreatType::AIR, rangeDefault);
-	e->SetRange(CCircuitDef::ThreatType::LAND, rangeDefault);
+	e->SetRange(CCircuitDef::ThreatType::SURF, rangeDefault);
 	e->SetRange(CCircuitDef::ThreatType::WATER, rangeDefault);
 	e->SetRange(CCircuitDef::ThreatType::CLOAK, distCloak);
 //	e->SetRange(CCircuitDef::ThreatType::SHIELD, 0);
@@ -262,7 +256,7 @@ float CThreatMap::GetThreatAt(CCircuitUnit* unit, const AIFloat3& position) cons
 	return pThreatData.load()->roleThreats[role].surfThreat[z * width + x] - THREAT_BASE;
 }
 
-float CThreatMap::GetUnitThreat(CCircuitUnit* unit) const
+float CThreatMap::GetUnitPower(CCircuitUnit* unit) const
 {
 	float health = unit->GetUnit()->GetHealth() + unit->GetShieldPower() * SHIELD_MOD;
 	return unit->GetDamage() * sqrtf(std::max(health, 0.f));  // / unit->GetUnit()->GetMaxHealth();
@@ -319,12 +313,12 @@ void CThreatMap::AddEnemyUnitAll(const SEnemyData& e)
 	cloakDraws.push_back(&e);
 }
 
-void CThreatMap::AddEnemyAir(CCircuitDef::RoleT role, float* drawAirThreat, const SEnemyData& e, const int slack)
+void CThreatMap::AddEnemyAir(const float threat, float* drawAirThreat,
+		const SEnemyData& e, const int slack)
 {
 	int posx, posz;
 	PosToXZ(e.pos, posx, posz);
 
-	const float threat = e.threat[role]/* - THREAT_DECAY*/;
 	const int range = e.GetRange(CCircuitDef::ThreatType::AIR) + slack;
 	const int rangeSq = SQUARE(range);
 
@@ -354,19 +348,19 @@ void CThreatMap::AddEnemyAir(CCircuitDef::RoleT role, float* drawAirThreat, cons
 	}
 }
 
-void CThreatMap::AddEnemyAmphConst(CCircuitDef::RoleT role, float* drawSurfThreat, float* drawAmphThreat, const SEnemyData& e, const int slack)
+void CThreatMap::AddEnemyAmphConst(const float threatSurf, const float threatWater, float* drawSurfThreat, float* drawAmphThreat,
+		const SEnemyData& e, const int slack)
 {
 	int posx, posz;
 	PosToXZ(e.pos, posx, posz);
 
-	const float threat = e.threat[role]/* - THREAT_DECAY*/;
-	int r = e.GetRange(CCircuitDef::ThreatType::LAND);
-	const int rangeLand = (r > 0) ? r + slack : 0;
-	const int rangeLandSq = (r > 0) ? SQUARE(rangeLand) : -1;
+	int r = e.GetRange(CCircuitDef::ThreatType::SURF);
+	const int rangeSurf = (r > 0) ? r + slack : 0;
+	const int rangeSurfSq = (r > 0) ? SQUARE(rangeSurf) : -1;
 	r = e.GetRange(CCircuitDef::ThreatType::WATER);
 	const int rangeWater = (r > 0) ? r + slack : 0;
 	const int rangeWaterSq = (r > 0) ? SQUARE(rangeWater) : -1;
-	const int range = std::max(rangeLand, rangeWater);
+	const int range = std::max(rangeSurf, rangeWater);
 	const std::vector<STerrainMapSector>& sector = areaData->sector;
 
 	const int beginX = std::max(int(posx - range + 1),      0);
@@ -381,26 +375,32 @@ void CThreatMap::AddEnemyAmphConst(CCircuitDef::RoleT role, float* drawSurfThrea
 
 			const int sum = dxSq + dzSq;
 			const int index = z * width + x;
-			bool isWaterThreat = (sum <= rangeWaterSq) && sector[index].isWater;
-			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[index].position.y >= -SQUARE_SIZE * 5)))
-			{
-				drawAmphThreat[index] += threat;
-			}
-			if (isWaterThreat || (sum <= rangeLandSq))
-			{
-				drawSurfThreat[index] += threat;
+
+			if (sector[index].isWater) {
+				if (sum <= rangeSurfSq) {
+					drawSurfThreat[index] += threatSurf;
+					if (sector[index].position.y >= -SQUARE_SIZE * 5) {  // check head sticking out of water
+						drawAmphThreat[index] += threatSurf;
+					}
+				}
+				if ((sum <= rangeWaterSq) && (sector[index].position.y < -SQUARE_SIZE * 2)) {  // check minimum depth
+					drawAmphThreat[index] += threatWater;
+				}
+			} else if (sum <= rangeSurfSq) {
+				drawSurfThreat[index] += threatSurf;
+				drawAmphThreat[index] += threatSurf;
 			}
 		}
 	}
 }
 
-void CThreatMap::AddEnemyAmphGradient(CCircuitDef::RoleT role, float* drawSurfThreat, float* drawAmphThreat, const SEnemyData& e, const int slack)
+void CThreatMap::AddEnemyAmphGradient(const float threatSurf, const float threatWater, float* drawSurfThreat, float* drawAmphThreat,
+		const SEnemyData& e, const int slack)
 {
 	int posx, posz;
 	PosToXZ(e.pos, posx, posz);
 
-	const float threat = e.threat[role]/* - THREAT_DECAY*/;
-	int r = e.GetRange(CCircuitDef::ThreatType::LAND);
+	int r = e.GetRange(CCircuitDef::ThreatType::SURF);
 	const int rangeLand = (r > 0) ? r + slack : 0;
 	const int rangeLandSq = (r > 0) ? SQUARE(rangeLand) : -1;
 	r = e.GetRange(CCircuitDef::ThreatType::WATER);
@@ -425,15 +425,24 @@ void CThreatMap::AddEnemyAmphGradient(CCircuitDef::RoleT role, float* drawSurfTh
 			// Laser: no gradient
 			const int sum = dxSq + dzSq;
 			const int index = z * width + x;
-			const float heat = threat * (1.0f - 0.5f * sqrtf(sum) / range);
-			bool isWaterThreat = (sum <= rangeWaterSq) && sector[index].isWater;
-			if (isWaterThreat || ((sum <= rangeLandSq) && (sector[index].position.y >= -SQUARE_SIZE * 5)))
-			{
-				drawAmphThreat[index] += heat;
-			}
-			if (isWaterThreat || (sum <= rangeLandSq))
-			{
-				drawSurfThreat[index] += heat;
+			const float half = 0.5f * sqrtf(sum);
+
+			if (sector[index].isWater) {
+				if (sum <= rangeLandSq) {
+					const float heatLand = threatSurf * (1.0f - half / rangeLand);
+					drawSurfThreat[index] += heatLand;
+					if (sector[index].position.y >= -SQUARE_SIZE * 5) {  // check head sticking out of water
+						drawAmphThreat[index] += heatLand;
+					}
+				}
+				if ((sum <= rangeWaterSq) && (sector[index].position.y < -SQUARE_SIZE * 2)) {  // check minimum depth
+					const float heatWater = threatWater * (1.0f - half / rangeWater);
+					drawAmphThreat[index] += heatWater;
+				}
+			} else if (sum <= rangeLandSq) {
+				const float heatLand = threatSurf * (1.0f - half / rangeLand);
+				drawSurfThreat[index] += heatLand;
+				drawAmphThreat[index] += heatLand;
 			}
 		}
 	}
@@ -528,13 +537,15 @@ std::shared_ptr<IMainJob> CThreatMap::AirDrawer(int roleNum)
 	SThreatData& threatData = *GetNextThreatData();
 	SRoleThreat& roleThreat = threatData.roleThreats[roleNum];
 	std::fill(roleThreat.airThreat.begin(), roleThreat.airThreat.end(), THREAT_BASE);
+	float* drawAirThreat = roleThreat.airThreat.data();
 
 	for (const SEnemyData* e : airDraws) {
 		if (e->cdef == nullptr) {
-			AddEnemyAir(roleNum, roleThreat.airThreat.data(), *e);
+			AddEnemyAir(0.1f, drawAirThreat, *e);  // unknown enemy is a threat
 		} else {
+			const float threat = e->GetDamage(roleNum) * e->thrMod * e->cdef->GetAirMod();
 			const int vsl = std::min(int(e->vel.Length2D() * slackMod.speedMod), slackMod.speedModMax);
-			AddEnemyAir(roleNum, roleThreat.airThreat.data(), *e, vsl);
+			AddEnemyAir(threat, drawAirThreat, *e, vsl);
 		}
 	}
 	return ApplyDrawers();
@@ -551,12 +562,15 @@ std::shared_ptr<IMainJob> CThreatMap::AmphDrawer(int roleNum)
 
 	for (const SEnemyData* e : amphDraws) {
 		if (e->cdef == nullptr) {
-			AddEnemyAmphGradient(roleNum, drawSurfThreat, drawAmphThreat, *e);
+			AddEnemyAmphGradient(0.1f, 0.1f, drawSurfThreat, drawAmphThreat, *e);  // unknown enemy is a threat
 		} else {
+			const float damage = e->GetDamage(roleNum) * e->thrMod;
+			const float threatSurf = damage * e->cdef->GetSurfMod();
+			const float threatWater = damage * e->cdef->GetWaterMod();
 			const int vsl = std::min(int(e->vel.Length2D() * slackMod.speedMod), slackMod.speedModMax);
 			e->cdef->IsAlwaysHit()
-					? AddEnemyAmphConst(roleNum, drawSurfThreat, drawAmphThreat, *e, vsl)
-					: AddEnemyAmphGradient(roleNum, drawSurfThreat, drawAmphThreat, *e, vsl);
+					? AddEnemyAmphConst(threatSurf, threatWater, drawSurfThreat, drawAmphThreat, *e, vsl)
+					: AddEnemyAmphGradient(threatSurf, threatWater, drawSurfThreat, drawAmphThreat, *e, vsl);
 		}
 	}
 	return ApplyDrawers();
@@ -666,7 +680,19 @@ void CThreatMap::UpdateVis()
 	if (isWidgetDrawing || isWidgetPrinting) {
 		std::ostringstream cmd;
 		cmd << "ai_thr_data:";
-		float* threatArray = pThreatData.load()->roleThreats[0].surfThreat.data();
+		float* threatArray;
+		switch (layerDbg) {
+			case 0: {
+				threatArray = pThreatData.load()->roleThreats[0].airThreat.data();
+			} break;
+			default:
+			case 1: {
+				threatArray = pThreatData.load()->roleThreats[0].surfThreat.data();
+			} break;
+			case 2: {
+				threatArray = pThreatData.load()->roleThreats[0].amphThreat.data();
+			} break;
+		}
 		for (int i = 0; i < mapSize; ++i) {
 			cmd << threatArray[i] << " ";
 		}
@@ -778,8 +804,15 @@ void CThreatMap::ToggleWidgetPrint()
 	}
 }
 
-void CThreatMap::SetMaxThreat(float maxThreat)
+void CThreatMap::SetMaxThreat(float maxThreat, std::string layer)
 {
+	if (layer == "air") {
+		layerDbg = 0;
+	} else if (layer == "amph") {
+		layerDbg = 2;
+	} else {  // surf
+		layerDbg = 1;
+	}
 	CCircuitAI* circuit = manager->GetCircuit();
 	std::string cmd = utils::float_to_string(maxThreat, "ai_thr_div:%f");
 	circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());

@@ -16,6 +16,37 @@ namespace circuit {
 
 using namespace springai;
 
+float SEnemyData::GetDefDamage() const
+{
+	if (cdef == nullptr) {  // unknown enemy is a threat
+		return 0.1f;
+	}
+	const float dmg = cdef->GetDefDamage();
+	if (dmg < 1e-3f) {
+		return .0f;
+	}
+	if (isBeingBuilt || isParalyzed || isDisarmed) {
+		return 1e-3f;
+	}
+	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;
+	return dmg;
+}
+
+float SEnemyData::GetDamage(CCircuitDef::RoleT type) const
+{
+	if (cdef == nullptr) {  // unknown enemy is a threat
+		return 0.1f;
+	}
+	if (cdef->GetDefDamage() < 1e-3f) {
+		return .0f;
+	}
+	if (isBeingBuilt || isParalyzed || isDisarmed) {
+		return 1e-3f;
+	}
+	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;
+	return cdef->GetThrDmg(type);
+}
+
 CEnemyUnit::CEnemyUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 		: ICoreUnit(unitId, unit)
 		, knownFrame(-1)
@@ -28,7 +59,7 @@ CEnemyUnit::CEnemyUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 			.isDisarmed = false,
 			.pos = ZeroVector,
 			.vel = ZeroVector,
-			.threat = {0.f},
+			.thrMod = 1.f,
 			.range = {0},
 			.influence = 0.f,
 			.id = unitId,
@@ -51,7 +82,7 @@ CEnemyUnit::CEnemyUnit(CCircuitDef* cdef, const AIFloat3& pos)
 			.isDisarmed = false,
 			.pos = pos,
 			.vel = ZeroVector,
-			.threat = {0.f},
+			.thrMod = 1.f,
 			.range = {0},
 			.influence = 0.f,
 			.id = -1,
@@ -99,41 +130,10 @@ bool CEnemyUnit::IsAttacker() const
 	return data.cdef->IsAttacker();
 }
 
-float CEnemyUnit::GetDefDamage() const
-{
-	if (data.cdef == nullptr) {  // unknown enemy is a threat
-		return 0.1f;
-	}
-	const float dmg = data.cdef->GetDefDamage();
-	if (dmg < 1e-3f) {
-		return .0f;
-	}
-	if (data.isBeingBuilt || data.isParalyzed || data.isDisarmed) {
-		return 1e-3f;
-	}
-	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;
-	return dmg;
-}
-
-CCircuitDef::ThrDmgArray CEnemyUnit::GetDamage() const
-{
-	if (data.cdef == nullptr) {  // unknown enemy is a threat
-		return {0.1f};
-	}
-	if (data.cdef->GetDefDamage() < 1e-3f) {
-		return {.0f};
-	}
-	if (data.isBeingBuilt || data.isParalyzed || data.isDisarmed) {
-		return {1e-3f};
-	}
-	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;
-	return data.cdef->GetThrDamage();
-}
-
 void CEnemyUnit::ClearThreat()
 {
 	SetInfluence(0.f);
-	std::fill(data.threat.begin(), data.threat.end(), 0.f);
+	data.thrMod = 1.f;
 }
 
 void CEnemyUnit::UpdateInRadarData(const AIFloat3& p)

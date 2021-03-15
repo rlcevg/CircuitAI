@@ -145,7 +145,7 @@ bool CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 	STerrainMapArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float speed = SQUARE(cdef->GetSpeed() * 0.8f / FRAMES_PER_SEC);
-	const float maxPower = threatMap->GetUnitThreat(unit) * powerMod;
+	const float maxPower = threatMap->GetUnitPower(unit) * powerMod;
 	const float weaponRange = cdef->GetMaxRange() * 0.9f;
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
@@ -208,7 +208,7 @@ bool CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 				continue;
 			}
 			targetCat = UNKNOWN_CATEGORY;
-			defThreat = enemy->GetThreat(ROLE_TYPE(SCOUT));
+			defThreat = enemy->GetInfluence();
 			isBuilder = false;
 		}
 
@@ -279,7 +279,7 @@ void CScoutTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 	const AIFloat3& pos = unit->GetPos(frame);
 	const AIFloat3& threatPos = unit->GetTravelAct()->IsActive() ? position : pos;
 	// NOTE: Use max(unit_threat, THREAT_MIN) for no-weapon scouts
-	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < std::max(threatMap->GetUnitThreat(unit), THREAT_MIN) * powerMod);
+	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < std::max(threatMap->GetUnitPower(unit), THREAT_MIN) * powerMod);
 	if (!proceed) {
 		position = circuit->GetMilitaryManager()->GetScoutPosition(unit);
 	}

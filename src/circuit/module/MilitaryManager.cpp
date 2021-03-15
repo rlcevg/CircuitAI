@@ -1412,7 +1412,7 @@ bool CMilitaryManager::IsCombatTargetExists(CCircuitUnit* unit, const AIFloat3& 
 	STerrainMapArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = SQUARE(cdef->GetSpeed() / FRAMES_PER_SEC);
-	const float maxPower = threatMap->GetUnitThreat(unit) * powerMod;
+	const float maxPower = threatMap->GetUnitPower(unit) * powerMod;
 	const float weaponRange = cdef->GetMaxRange() * 0.9f;
 	const int canTargetCat = cdef->GetTargetCategory();
 	const float sqCommRadBegin = SQUARE(GetCommDefRadBegin());

@@ -133,7 +133,7 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 	}
 	const AIFloat3& pos = unit->GetPos(frame);
 	if ((target->GetPos().SqDistance2D(pos) > SQUARE(range)) ||
-		(threatMap->GetThreatAt(unit, pos) * 2 > threatMap->GetUnitThreat(unit)))
+		(threatMap->GetThreatAt(unit, pos) * 2 > threatMap->GetUnitPower(unit)))
 	{
 		CRetreatTask* task = circuit->GetMilitaryManager()->EnqueueRetreat();
 		manager->AssignTask(unit, task);
