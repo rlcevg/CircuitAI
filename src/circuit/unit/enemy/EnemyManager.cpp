@@ -221,8 +221,8 @@ bool CEnemyManager::UnitInLOS(CEnemyUnit* data, CCircuitDef::Id unitDefId)
 	CCircuitDef* cdef = circuit->GetCircuitDef(unitDefId);
 	data->SetCircuitDef(cdef);
 	data->SetCost(data->GetUnit()->GetRulesParamFloat("comm_cost", data->GetCost()));
-	cdef->IsIgnore() ? data->SetIgnore() : data->ClearIgnore();
-	return !cdef->IsIgnore();
+	(cdef->IsIgnore() || (data->GetUnit()->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f)) ? data->SetIgnore() : data->ClearIgnore();
+	return !data->IsIgnore();
 }
 
 std::pair<CEnemyUnit*, bool> CEnemyManager::RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS)
@@ -231,8 +231,7 @@ std::pair<CEnemyUnit*, bool> CEnemyManager::RegisterEnemyUnit(ICoreUnit::Id unit
 	if (e == nullptr) {
 		return std::make_pair(nullptr, true);  // true error
 	}
-	// IsNeutral works in los or radar, @see rts/ExternalAI/AICallback.cpp CAICallback::IsUnitNeutral
-	bool isIgnore = e->IsNeutral() || (e->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f);
+	bool isIgnore = e->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f;
 
 	CCircuitDef* cdef = nullptr;
 	if (isInLOS) {
@@ -261,8 +260,7 @@ CEnemyUnit* CEnemyManager::RegisterEnemyUnit(Unit* e)
 	const ICoreUnit::Id unitId = e->GetUnitId();
 	CEnemyUnit* data = GetEnemyUnit(unitId);
 	CCircuitDef::Id unitDefId = circuit->GetCallback()->Unit_GetDefId(unitId);
-	// IsNeutral works in los or radar, @see rts/ExternalAI/AICallback.cpp CAICallback::IsUnitNeutral
-	bool isIgnore = e->IsNeutral() || (e->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f);
+	bool isIgnore = e->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f;
 
 	if (data != nullptr) {
 		if ((data->GetCircuitDef() == nullptr) || data->GetCircuitDef()->GetId() != unitDefId) {

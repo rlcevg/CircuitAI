@@ -28,9 +28,9 @@ class IFighterTask;
 struct SEnemyData {
 	using RangeArray = std::array<int, static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_)>;
 
-	enum LosMask: char {NONE  = 0x00,
-						LOS   = 0x01, RADAR = 0x02, HIDDEN = 0x04, IGNORE = 0x08,
-						DYING = 0x10, DEAD  = 0x20};
+	enum LosMask: char {NONE   = 0x00,
+						LOS    = 0x01, RADAR = 0x02, HIDDEN = 0x04, NEUTRAL = 0x08,
+						IGNORE = 0x08, DYING = 0x20, DEAD   = 0x40};
 	using LM = std::underlying_type<LosMask>::type;
 
 	CCircuitDef* cdef;
@@ -62,20 +62,23 @@ struct SEnemyData {
 	void SetInLOS()     { losStatus |= LosMask::LOS; }
 	void SetInRadar()   { losStatus |= LosMask::RADAR; }
 	void SetHidden()    { losStatus |= LosMask::HIDDEN; }
+	void SetNeutral()   { losStatus |= LosMask::NEUTRAL; }
 	void SetIgnore()    { losStatus |= LosMask::IGNORE; }
 	void SetDying()     { losStatus |= LosMask::DYING | LosMask::HIDDEN; }
 	void SetDead()      { losStatus |= LosMask::DEAD | LosMask::HIDDEN; }
 	void ClearInLOS()   { losStatus &= ~LosMask::LOS; }
 	void ClearInRadar() { losStatus &= ~LosMask::RADAR; }
 	void ClearHidden()  { losStatus &= ~LosMask::HIDDEN; }
+	void ClearNeutral() { losStatus &= ~LosMask::NEUTRAL; };
 	void ClearIgnore()  { losStatus &= ~LosMask::IGNORE; }
 
 	bool IsInLOS()          const { return losStatus & LosMask::LOS; }
 	bool IsInRadar()        const { return losStatus & LosMask::RADAR; }
 	bool IsInRadarOrLOS()   const { return losStatus & (LosMask::RADAR | LosMask::LOS); }
 	bool NotInRadarAndLOS() const { return (losStatus & (LosMask::RADAR | LosMask::LOS)) == 0; }
-	bool IsHidden()         const { return losStatus & (LosMask::HIDDEN | LosMask::IGNORE); }
-	bool IsIgnore()         const { return losStatus & LosMask::IGNORE; }
+	bool IsHidden()         const { return losStatus & (LosMask::HIDDEN | LosMask::NEUTRAL | LosMask::IGNORE); }
+	bool IsNeutral()        const { return losStatus & LosMask::NEUTRAL; }
+	bool IsIgnore()         const { return losStatus & (LosMask::IGNORE | LosMask::NEUTRAL); }
 	bool IsDying()          const { return losStatus & LosMask::DYING; }
 	bool IsDead()           const { return losStatus & LosMask::DEAD; }
 };
@@ -141,19 +144,22 @@ public:
 	void SetInLOS()     { data.SetInLOS(); }
 	void SetInRadar()   { data.SetInRadar(); }
 	void SetHidden()    { data.SetHidden(); }
+	void SetNeutral()   { data.SetNeutral(); }
 	void SetIgnore()    { data.SetIgnore(); }
 	void SetDying()     { data.SetDying(); }
 	void SetDead()      { data.SetDead(); }
 	void ClearInLOS()   { data.ClearInLOS(); }
 	void ClearInRadar() { data.ClearInRadar(); }
 	void ClearHidden()  { data.ClearHidden(); }
-	void ClearIgnore()  { data.ClearIgnore(); }
+	void ClearNeutral() { data.ClearNeutral(); }
+	void ClearIgnore()  { data.ClearIgnore(); }  // on decoy identification
 
 	bool IsInLOS()          const { return data.IsInLOS(); }
 	bool IsInRadar()        const { return data.IsInRadar(); }
 	bool IsInRadarOrLOS()   const { return data.IsInRadarOrLOS(); }
 	bool NotInRadarAndLOS() const { return data.NotInRadarAndLOS(); }
 	bool IsHidden()         const { return data.IsHidden(); }
+	bool IsNeutral()        const { return data.IsNeutral(); }
 	bool IsIgnore()         const { return data.IsIgnore(); }
 	bool IsDying()          const { return data.IsDying(); }
 	bool IsDead()           const { return data.IsDead(); }

@@ -173,7 +173,8 @@ void CBombTask::Update()
 	state = State::ROAM;
 	if (GetTarget() != nullptr) {
 		state = State::ENGAGE;
-		Attack(frame, GetTarget()->NotInRadarAndLOS() || (GetTarget()->GetCircuitDef() == nullptr) || !GetTarget()->GetCircuitDef()->IsMobile());
+		Attack(frame, GetTarget()->NotInRadarAndLOS() || (GetTarget()->GetCircuitDef() == nullptr)
+				|| !GetTarget()->GetCircuitDef()->IsMobile() || circuit->IsCheating());
 		return;
 	}
 

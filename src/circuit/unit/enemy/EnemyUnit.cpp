@@ -117,11 +117,22 @@ void CEnemyUnit::UpdateInRadarData(const AIFloat3& p)
 {
 	data.pos = p;
 	CTerrainData::CorrectPosition(data.pos);
+
+	// IsNeutral works in los or radar, @see rts/ExternalAI/AICallback.cpp CAICallback::IsUnitNeutral
+	unit->IsNeutral() ? SetNeutral() : ClearNeutral();
+	if (IsIgnore()) {
+		return;
+	}
+
 	data.vel = unit->GetVel();
 }
 
 void CEnemyUnit::UpdateInLosData()
 {
+	if (IsIgnore()) {
+		return;
+	}
+
 	if (shield != nullptr) {
 		data.shieldPower = shield->GetShieldPower();
 	}

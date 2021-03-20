@@ -97,7 +97,11 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	if (bestTarget != nullptr) {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			if (!circuit->IsCheating()) {
+				unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			} else {
+				unit->CmdAttackGround(bestTarget->GetPos(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			}
 			unit->CmdSetTarget(bestTarget);
 		)
 		unit->GetTravelAct()->StateWait();
@@ -160,8 +164,9 @@ CEnemyInfo* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 		CEnemyInfo* worstTarget = nullptr;
 		for (auto& kv : enemies) {
 			CEnemyInfo* enemy = kv.second;
-			if (!enemy->IsInRadarOrLOS() ||
-				(notAW && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
+			if (enemy->IsHidden()
+				|| !enemy->IsInRadarOrLOS()
+				|| (notAW && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
 			{
 				continue;
 			}
@@ -213,8 +218,9 @@ CEnemyInfo* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 		// Avoid closest units and choose safe position
 		for (auto& kv : enemies) {
 			CEnemyInfo* enemy = kv.second;
-			if (!enemy->IsInRadarOrLOS() ||
-				(notAW && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
+			if (enemy->IsHidden()
+				|| !enemy->IsInRadarOrLOS()
+				|| (notAW && (enemy->GetPos().y < -SQUARE_SIZE * 5)))
 			{
 				continue;
 			}
