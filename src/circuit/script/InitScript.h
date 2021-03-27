@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_SCRIPT_INITSCRIPT_H_
 
 #include "script/Script.h"
+#include "unit/CircuitDef.h"
 #include "util/MaskHandler.h"
 
 #include <string>
@@ -31,6 +32,7 @@ public:
 		SInitInfo() {}
 		SInitInfo(const SInitInfo& o);
 		~SInitInfo();
+		CCircuitDef::SArmorInfo armor;
 		struct SCategoryInfo {
 			SCategoryInfo() {}
 			~SCategoryInfo() {}
@@ -47,7 +49,7 @@ public:
 	virtual ~CInitScript();
 
 	void InitConfig(const std::string& profile,
-			std::vector<std::string>& outCfgParts);
+			std::vector<std::string>& outCfgParts, CCircuitDef::SArmorInfo& outArmor);
 	void Init() override;
 
 	void RegisterMgr();

@@ -184,7 +184,7 @@ void CThreatMap::SetEnemyUnitThreat(CEnemyUnit* e) const
 		int x, z;
 		PosToXZ(e->GetPos(), x, z);
 		const float healthMod = sqrtf(health + shieldArray[z * width + x] * SHIELD_MOD);  // / unit->GetUnit()->GetMaxHealth();
-		e->SetThrMod(healthMod);
+		e->SetThrHealth(healthMod);
 		e->SetInfluence(e->GetDefDamage() * healthMod);
 	} else {
 		e->ClearThreat();
@@ -543,7 +543,7 @@ std::shared_ptr<IMainJob> CThreatMap::AirDrawer(int roleNum)
 		if (e->cdef == nullptr) {
 			AddEnemyAir(0.1f, drawAirThreat, *e);  // unknown enemy is a threat
 		} else {
-			const float threat = e->GetDamage(roleNum) * e->thrMod * e->cdef->GetAirMod();
+			const float threat = e->GetAirDamage(roleNum) * e->thrHealth;
 			const int vsl = std::min(int(e->vel.Length2D() * slackMod.speedMod), slackMod.speedModMax);
 			AddEnemyAir(threat, drawAirThreat, *e, vsl);
 		}
@@ -564,9 +564,8 @@ std::shared_ptr<IMainJob> CThreatMap::AmphDrawer(int roleNum)
 		if (e->cdef == nullptr) {
 			AddEnemyAmphGradient(0.1f, 0.1f, drawSurfThreat, drawAmphThreat, *e);  // unknown enemy is a threat
 		} else {
-			const float damage = e->GetDamage(roleNum) * e->thrMod;
-			const float threatSurf = damage * e->cdef->GetSurfMod();
-			const float threatWater = damage * e->cdef->GetWaterMod();
+			const float threatSurf = e->GetSurfDamage(roleNum) * e->thrHealth;
+			const float threatWater = e->GetWaterDamage(roleNum) * e->thrHealth;
 			const int vsl = std::min(int(e->vel.Length2D() * slackMod.speedMod), slackMod.speedModMax);
 			e->cdef->IsAlwaysHit()
 					? AddEnemyAmphConst(threatSurf, threatWater, drawSurfThreat, drawAmphThreat, *e, vsl)

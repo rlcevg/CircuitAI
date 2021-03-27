@@ -32,7 +32,7 @@ float SEnemyData::GetDefDamage() const
 	return dmg;
 }
 
-float SEnemyData::GetDamage(CCircuitDef::RoleT type) const
+float SEnemyData::GetAirDamage(CCircuitDef::RoleT type) const
 {
 	if (cdef == nullptr) {  // unknown enemy is a threat
 		return 0.1f;
@@ -44,7 +44,37 @@ float SEnemyData::GetDamage(CCircuitDef::RoleT type) const
 		return 1e-3f;
 	}
 	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;
-	return cdef->GetThrDmg(type);
+	return cdef->GetAirDmg(type);
+}
+
+float SEnemyData::GetSurfDamage(CCircuitDef::RoleT type) const
+{
+	if (cdef == nullptr) {  // unknown enemy is a threat
+		return 0.1f;
+	}
+	if (cdef->GetDefDamage() < 1e-3f) {
+		return .0f;
+	}
+	if (isBeingBuilt || isParalyzed || isDisarmed) {
+		return 1e-3f;
+	}
+	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;
+	return cdef->GetSurfDmg(type);
+}
+
+float SEnemyData::GetWaterDamage(CCircuitDef::RoleT type) const
+{
+	if (cdef == nullptr) {  // unknown enemy is a threat
+		return 0.1f;
+	}
+	if (cdef->GetDefDamage() < 1e-3f) {
+		return .0f;
+	}
+	if (isBeingBuilt || isParalyzed || isDisarmed) {
+		return 1e-3f;
+	}
+	// TODO: Mind the slow down: dps * WeaponDef->GetReload / Weapon->GetReloadTime;
+	return cdef->GetWaterDmg(type);
 }
 
 CEnemyUnit::CEnemyUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
@@ -59,7 +89,7 @@ CEnemyUnit::CEnemyUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 			.isDisarmed = false,
 			.pos = ZeroVector,
 			.vel = ZeroVector,
-			.thrMod = 1.f,
+			.thrHealth = 1.f,
 			.range = {0},
 			.influence = 0.f,
 			.id = unitId,
@@ -82,7 +112,7 @@ CEnemyUnit::CEnemyUnit(CCircuitDef* cdef, const AIFloat3& pos)
 			.isDisarmed = false,
 			.pos = pos,
 			.vel = ZeroVector,
-			.thrMod = 1.f,
+			.thrHealth = 1.f,
 			.range = {0},
 			.influence = 0.f,
 			.id = -1,
@@ -133,7 +163,7 @@ bool CEnemyUnit::IsAttacker() const
 void CEnemyUnit::ClearThreat()
 {
 	SetInfluence(0.f);
-	data.thrMod = 1.f;
+	data.thrHealth = 1.f;
 }
 
 void CEnemyUnit::UpdateInRadarData(const AIFloat3& p)

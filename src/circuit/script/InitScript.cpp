@@ -30,6 +30,7 @@ using namespace springai;
 
 CInitScript::SInitInfo::SInitInfo(const SInitInfo& o)
 {
+	armor = o.armor;
 	category = o.category;
 	if (profile != nullptr) {
 		profile->Release();
@@ -47,6 +48,32 @@ CInitScript::SInitInfo::~SInitInfo()
 	}
 }
 
+static bool AddArmor(std::vector<std::vector<int>>& groups, unsigned int group, int type)
+{
+	if (group > groups.size()) {
+		return false;
+	} else if (group == groups.size()) {
+		groups.emplace_back();
+	}
+	groups[group].push_back(type);
+	return true;
+}
+
+static bool AddAirArmor(CCircuitDef::SArmorInfo* mem, unsigned int group, int type)
+{
+	return AddArmor(mem->airGroups, group, type);
+}
+
+static bool AddSurfaceArmor(CCircuitDef::SArmorInfo* mem, unsigned int group, int type)
+{
+	return AddArmor(mem->surfGroups, group, type);
+}
+
+static bool AddWaterArmor(CCircuitDef::SArmorInfo* mem, unsigned int group, int type)
+{
+	return AddArmor(mem->waterGroups, group, type);
+}
+
 static void ConstructAIFloat3(AIFloat3* mem)
 {
 	new(mem) AIFloat3();
@@ -55,6 +82,27 @@ static void ConstructAIFloat3(AIFloat3* mem)
 static void ConstructCopyAIFloat3(AIFloat3* mem, const AIFloat3& o)
 {
 	new(mem) AIFloat3(o);
+}
+
+static void ConstructSArmorInfo(CCircuitDef::SArmorInfo* mem)
+{
+	new(mem) CCircuitDef::SArmorInfo();
+}
+
+static void ConstructCopySArmorInfo(CCircuitDef::SArmorInfo* mem, const CCircuitDef::SArmorInfo& o)
+{
+	new(mem) CCircuitDef::SArmorInfo(o);
+}
+
+static void DestructSArmorInfo(CCircuitDef::SArmorInfo *mem)
+{
+	mem->~SArmorInfo();
+}
+
+static CCircuitDef::SArmorInfo& AssignSArmorInfoToSArmorInfo(CCircuitDef::SArmorInfo& mem, const CCircuitDef::SArmorInfo& o)
+{
+	mem = o;
+	return mem;
 }
 
 static void ConstructSCategoryInfo(CInitScript::SInitInfo::SCategoryInfo* mem)
@@ -139,23 +187,6 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterGlobalFunction("float AiMax(float, float)", asMETHODPR(CInitScript, Max<float>, (float, float) const, float), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("int AiRandom(int, int)", asMETHOD(CInitScript, Random), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 
-	r = engine->RegisterObjectType("SCategoryInfo", sizeof(SInitInfo::SCategoryInfo), asOBJ_VALUE | asGetTypeTraits<SInitInfo::SCategoryInfo>()); ASSERT(r >= 0);
-	r = engine->RegisterObjectBehaviour("SCategoryInfo", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructSCategoryInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
-	r = engine->RegisterObjectBehaviour("SCategoryInfo", asBEHAVE_CONSTRUCT, "void f(const SCategoryInfo& in)", asFUNCTION(ConstructCopySCategoryInfo), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
-	r = engine->RegisterObjectBehaviour("SCategoryInfo", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructSCategoryInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("SCategoryInfo", "SCategoryInfo &opAssign(const SCategoryInfo &in)", asFUNCTION(AssignSCategoryInfoToSCategoryInfo), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
-	r = engine->RegisterObjectProperty("SCategoryInfo", "string air", asOFFSET(SInitInfo::SCategoryInfo, air)); ASSERT(r >= 0);
-	r = engine->RegisterObjectProperty("SCategoryInfo", "string land", asOFFSET(SInitInfo::SCategoryInfo, land)); ASSERT(r >= 0);
-	r = engine->RegisterObjectProperty("SCategoryInfo", "string water", asOFFSET(SInitInfo::SCategoryInfo, water)); ASSERT(r >= 0);
-	r = engine->RegisterObjectProperty("SCategoryInfo", "string bad", asOFFSET(SInitInfo::SCategoryInfo, bad)); ASSERT(r >= 0);
-	r = engine->RegisterObjectProperty("SCategoryInfo", "string good", asOFFSET(SInitInfo::SCategoryInfo, good)); ASSERT(r >= 0);
-	r = engine->RegisterObjectType("SInitInfo", sizeof(SInitInfo), asOBJ_VALUE | asGetTypeTraits<SInitInfo>()); ASSERT(r >= 0);
-	r = engine->RegisterObjectBehaviour("SInitInfo", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructSInitInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
-	r = engine->RegisterObjectBehaviour("SInitInfo", asBEHAVE_CONSTRUCT, "void f(const SInitInfo& in)", asFUNCTION(ConstructCopySInitInfo), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
-	r = engine->RegisterObjectBehaviour("SInitInfo", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructSInitInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
-	r = engine->RegisterObjectProperty("SInitInfo", "SCategoryInfo category", asOFFSET(SInitInfo, category)); ASSERT(r >= 0);
-	r = engine->RegisterObjectProperty("SInitInfo", "array<string>@ profile", asOFFSET(SInitInfo, profile)); ASSERT(r >= 0);
-
 	// RegisterCircuitAI
 	r = engine->RegisterObjectType("CCircuitAI", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
 	r = engine->RegisterGlobalProperty("CCircuitAI ai", circuit); ASSERT(r >= 0);
@@ -218,38 +249,70 @@ CInitScript::~CInitScript()
 }
 
 void CInitScript::InitConfig(const std::string& profile,
-		std::vector<std::string>& outCfgParts)
+		std::vector<std::string>& outCfgParts, CCircuitDef::SArmorInfo& outArmor)
 {
+	asIScriptEngine* engine = script->GetEngine();
+	int r = engine->BeginConfigGroup("init"); ASSERT(r >= 0);
+	r = engine->RegisterObjectType("SArmorInfo", sizeof(CCircuitDef::SArmorInfo), asOBJ_VALUE | asGetTypeTraits<CCircuitDef::SArmorInfo>()); ASSERT(r >= 0);
+	r = engine->RegisterObjectBehaviour("SArmorInfo", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructSArmorInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
+	r = engine->RegisterObjectBehaviour("SArmorInfo", asBEHAVE_CONSTRUCT, "void f(const SArmorInfo& in)", asFUNCTION(ConstructCopySArmorInfo), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
+	r = engine->RegisterObjectBehaviour("SArmorInfo", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructSArmorInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("SArmorInfo", "SArmorInfo &opAssign(const SArmorInfo &in)", asFUNCTION(AssignSArmorInfoToSArmorInfo), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("SArmorInfo", "bool AddAir(uint, int)", asFUNCTION(AddAirArmor), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("SArmorInfo", "bool AddSurface(uint, int)", asFUNCTION(AddSurfaceArmor), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("SArmorInfo", "bool AddWater(uint, int)", asFUNCTION(AddWaterArmor), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
+	r = engine->RegisterObjectType("SCategoryInfo", sizeof(SInitInfo::SCategoryInfo), asOBJ_VALUE | asGetTypeTraits<SInitInfo::SCategoryInfo>()); ASSERT(r >= 0);
+	r = engine->RegisterObjectBehaviour("SCategoryInfo", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructSCategoryInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
+	r = engine->RegisterObjectBehaviour("SCategoryInfo", asBEHAVE_CONSTRUCT, "void f(const SCategoryInfo& in)", asFUNCTION(ConstructCopySCategoryInfo), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
+	r = engine->RegisterObjectBehaviour("SCategoryInfo", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructSCategoryInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("SCategoryInfo", "SCategoryInfo &opAssign(const SCategoryInfo &in)", asFUNCTION(AssignSCategoryInfoToSCategoryInfo), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("SCategoryInfo", "string air", asOFFSET(SInitInfo::SCategoryInfo, air)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("SCategoryInfo", "string land", asOFFSET(SInitInfo::SCategoryInfo, land)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("SCategoryInfo", "string water", asOFFSET(SInitInfo::SCategoryInfo, water)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("SCategoryInfo", "string bad", asOFFSET(SInitInfo::SCategoryInfo, bad)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("SCategoryInfo", "string good", asOFFSET(SInitInfo::SCategoryInfo, good)); ASSERT(r >= 0);
+	r = engine->RegisterObjectType("SInitInfo", sizeof(SInitInfo), asOBJ_VALUE | asGetTypeTraits<SInitInfo>()); ASSERT(r >= 0);
+	r = engine->RegisterObjectBehaviour("SInitInfo", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructSInitInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
+	r = engine->RegisterObjectBehaviour("SInitInfo", asBEHAVE_CONSTRUCT, "void f(const SInitInfo& in)", asFUNCTION(ConstructCopySInitInfo), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
+	r = engine->RegisterObjectBehaviour("SInitInfo", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructSInitInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("SInitInfo", "SArmorInfo armor", asOFFSET(SInitInfo, armor)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("SInitInfo", "SCategoryInfo category", asOFFSET(SInitInfo, category)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("SInitInfo", "array<string>@ profile", asOFFSET(SInitInfo, profile)); ASSERT(r >= 0);
+	r = engine->EndConfigGroup(); ASSERT(r >= 0);
+
 	folderName = profile + SLASH;
 	if (!script->Load("init", folderName + "init.as")) {
 		return;
 	}
 	asIScriptModule* mod = script->GetEngine()->GetModule("init");
-	int r = mod->SetDefaultNamespace("Init"); ASSERT(r >= 0);
+	r = mod->SetDefaultNamespace("Init"); ASSERT(r >= 0);
 	asIScriptFunction* init = script->GetFunc(mod, "SInitInfo AiInit()");
-	if (init == nullptr) {
-		return;
-	}
 
-	asIScriptContext* ctx = script->PrepareContext(init);
-	SInitInfo* result = script->Exec(ctx) ? (SInitInfo*)ctx->GetReturnObject() : nullptr;
-	if (result != nullptr) {
-		Game* game = circuit->GetGame();
-		circuit->category.air = game->GetCategoriesFlag(result->category.air.c_str());
-		circuit->category.land = game->GetCategoriesFlag(result->category.land.c_str());
-		circuit->category.water = game->GetCategoriesFlag(result->category.water.c_str());
-		circuit->category.bad = game->GetCategoriesFlag(result->category.bad.c_str());
-		circuit->category.good = game->GetCategoriesFlag(result->category.good.c_str());
+	if (init != nullptr) {
+		asIScriptContext* ctx = script->PrepareContext(init);
+		SInitInfo* result = script->Exec(ctx) ? (SInitInfo*)ctx->GetReturnObject() : nullptr;
+		if (result != nullptr) {
+			outArmor = result->armor;
 
-		if (result->profile != nullptr) {
-			for (unsigned j = 0; j < result->profile->GetSize(); ++j) {
-				outCfgParts.push_back(*(std::string*)result->profile->At(j));
+			Game* game = circuit->GetGame();
+			circuit->category.air = game->GetCategoriesFlag(result->category.air.c_str());
+			circuit->category.land = game->GetCategoriesFlag(result->category.land.c_str());
+			circuit->category.water = game->GetCategoriesFlag(result->category.water.c_str());
+			circuit->category.bad = game->GetCategoriesFlag(result->category.bad.c_str());
+			circuit->category.good = game->GetCategoriesFlag(result->category.good.c_str());
+
+			if (result->profile != nullptr) {
+				for (unsigned j = 0; j < result->profile->GetSize(); ++j) {
+					outCfgParts.push_back(*(std::string*)result->profile->At(j));
+				}
 			}
 		}
+		ctx->Unprepare();
+		script->ReturnContext(ctx);
 	}
-	script->ReturnContext(ctx);
 
 	mod->Discard();
+	r = script->GetEngine()->RemoveConfigGroup("init"); ASSERT(r >= 0);
 }
 
 void CInitScript::Init()

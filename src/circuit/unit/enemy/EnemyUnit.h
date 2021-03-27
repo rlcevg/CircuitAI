@@ -43,12 +43,14 @@ struct SEnemyData {
 
 	springai::AIFloat3 pos;
 	springai::AIFloat3 vel;  // elmos per frame
-	float thrMod;  // health-based part
+	float thrHealth;  // health-based part
 	RangeArray range;
 	float influence;
 
 	float GetDefDamage() const;
-	float GetDamage(CCircuitDef::RoleT type) const;
+	float GetAirDamage(CCircuitDef::RoleT type) const;
+	float GetSurfDamage(CCircuitDef::RoleT type) const;
+	float GetWaterDamage(CCircuitDef::RoleT type) const;
 
 	void SetRange(CCircuitDef::ThreatType type, int value) {
 		range[static_cast<CCircuitDef::ThreatT>(type)] = value;
@@ -125,7 +127,7 @@ public:
 
 	void SetInfluence(float value) { data.influence = value; }
 	float GetInfluence() const { return data.influence; }
-	void SetThrMod(float value) { data.thrMod = value; }
+	void SetThrHealth(float value) { data.thrHealth = value; }
 	void ClearThreat();
 //	float GetThreat(CCircuitDef::RoleT type) const { return data.GetDamage(type) * data.thrMod; }
 

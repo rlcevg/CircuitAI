@@ -398,19 +398,19 @@ void CFactoryManager::ReadConfig()
 			if (thrMod.isNumeric()) {
 				const float mod = thrMod.asFloat();
 				cdef->ModDefThreat(mod);
-				for (CCircuitDef::RoleT role = 0; role < CMaskHandler::GetMaxMasks(); ++role) {
-					cdef->ModThreat(role, mod);
-				}
+				cdef->ModAirThreat(mod);
+				cdef->ModSurfThreat(mod);
+				cdef->ModWaterThreat(mod);
 			} else if (thrMod.isObject()) {
-				cdef->SetAirMod(thrMod.get("air", 1.f).asFloat());
-				cdef->SetSurfMod(thrMod.get("surf", 1.f).asFloat());
-				cdef->SetWaterMod(thrMod.get("water", 1.f).asFloat());
+				cdef->ModAirThreat(thrMod.get("air", 1.f).asFloat());
+				cdef->ModSurfThreat(thrMod.get("surf", 1.f).asFloat());
+				cdef->ModWaterThreat(thrMod.get("water", 1.f).asFloat());
 				const float defMod = thrMod.get("default", 1.f).asFloat();
 				cdef->ModDefThreat(defMod);
 				const Json::Value& thrRole = thrMod["vs"];
 				if (!thrRole.isNull()) {
 					for (auto& kv : roleNames) {
-						cdef->ModThreat(kv.second.type, thrRole.get(kv.first, defMod).asFloat());
+						cdef->ModThreatMod(kv.second.type, thrRole.get(kv.first, defMod).asFloat());
 					}
 				}
 			}

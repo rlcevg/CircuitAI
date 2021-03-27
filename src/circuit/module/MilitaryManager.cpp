@@ -239,7 +239,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		if (cdef.IsRoleComm()) {
 			cdef.ModDefThreat(commMod);
 			for (CCircuitDef::RoleT role = 0; role < CMaskHandler::GetMaxMasks(); ++role) {
-				cdef.ModThreat(role, commMod);
+				cdef.ModThreatMod(role, commMod);
 			}
 			cdef.ModPower(commMod);
 		}

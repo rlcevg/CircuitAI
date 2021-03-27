@@ -51,10 +51,10 @@
 	"armllt": {
 		"role": ["static"],
 		"threat": {
-			"air": 0.2,
-			"surf": 1.0,  // surface, also on water
-			"water": 1.0,  // underwater
-			"default": 0.8,
+//			"air": 0.2,
+//			"surf": 1.0,  // surface, also on water
+//			"water": 1.0,  // underwater
+//			"default": 0.8,
 			"vs": {
 				"builder": 1.0,
 				"scout": 1.0,

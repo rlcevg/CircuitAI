@@ -226,7 +226,7 @@ public:
 	}
 private:
 	void InitRoles();
-	void InitUnitDefs(float& outDcr);
+	void InitUnitDefs(const CCircuitDef::SArmorInfo& armor, float& outDcr);
 	CircuitDefs defsById;  // owner
 	NamedDefs defsByName;
 	std::array<CCircuitDef::RoleT, CMaskHandler::GetMaxMasks()> roleBind;

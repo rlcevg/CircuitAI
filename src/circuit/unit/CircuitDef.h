@@ -39,6 +39,12 @@ public:
 	using ThreatT = std::underlying_type<ThreatType>::type;
 	using ThrDmgArray = std::array<float, CMaskHandler::GetMaxMasks()>;
 
+	struct SArmorInfo {
+		std::vector<std::vector<int>> airGroups;  // air
+		std::vector<std::vector<int>> surfGroups;  // surface, even on water
+		std::vector<std::vector<int>> waterGroups;  // underwater
+	};
+
 	// TODO: Rebuild response system on unit vs unit basis (opposed to role vs role).
 	// Not implemented: mine, transport
 	// No special task: air, sub, static, heavy, comm
@@ -96,7 +102,7 @@ public:
 //	CCircuitDef(const CCircuitDef& that) = delete;
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
 	CCircuitDef(CCircuitAI* circuit, springai::UnitDef* def, std::unordered_set<Id>& buildOpts,
-			springai::Resource* resM, springai::Resource* resE);
+			springai::Resource* resM, springai::Resource* resE, const SArmorInfo& armor);
 	virtual ~CCircuitDef();
 
 	void Init(CCircuitAI* circuit);
@@ -194,13 +200,12 @@ public:
 	springai::WeaponMount* GetWeaponMount() const { return weaponMount; }
 	float GetPwrDamage() const { return pwrDmg; }  // ally
 	float GetDefDamage() const { return defDmg; }  // enemy, for influence
-	float GetThrDmg(RoleT type) const { return thrDmg[type]; }  // enemy
+	float GetAirDmg(RoleT type) const { return airThrDmg * thrDmgMod[type]; }  // enemy
+	float GetSurfDmg(RoleT type) const { return surfThrDmg * thrDmgMod[type]; }  // enemy
+	float GetWaterDmg(RoleT type) const { return waterThrDmg * thrDmgMod[type]; }  // enemy
 	float GetAoe() const { return aoe; }
 	float GetPower() const { return power; }
 	float GetDefThreat() const { return defThreat; }
-	float GetAirMod() const { return airMod; }
-	float GetSurfMod() const { return surfMod; }
-	float GetWaterMod() const { return waterMod; }
 	float GetMinRange() const { return minRange; }
 	float GetMaxRange(RangeType type) const { return maxRange[static_cast<RangeT>(type)]; }
 	float GetMaxRange() const { return maxRange[static_cast<RangeT>(maxRangeType)]; }
@@ -215,10 +220,10 @@ public:
 
 	void ModPower(float mod) { pwrDmg *= mod; power *= mod; }
 	void ModDefThreat(float mod) { defDmg *= mod; defThreat *= mod; }
-	void ModThreat(RoleT type, float mod) { thrDmg[type] *= mod; }
-	void SetAirMod(float value) { airMod = value; }
-	void SetSurfMod(float value) { surfMod = value; }
-	void SetWaterMod(float value) { waterMod = value; }
+	void ModThreatMod(RoleT type, float mod) { thrDmgMod[type] *= mod; }
+	void ModAirThreat(float mod) { airThrDmg *= mod; }
+	void ModSurfThreat(float mod) { surfThrDmg *= mod; }
+	void ModWaterThreat(float mod) { waterThrDmg *= mod; }
 	void SetThreatRange(ThreatType type, int range) { threatRange[static_cast<ThreatT>(type)] = range; }
 	void SetFireState(FireType ft) { fireState = ft; }
 	void SetReloadTime(int time) { reloadTime = time; }
@@ -320,10 +325,10 @@ private:
 	springai::WeaponMount* weaponMount;
 	float pwrDmg;  // ally damage
 	float defDmg;  // enemy damage, for influence
-	ThrDmgArray thrDmg;  // enemy damage
-	float airMod;
-	float surfMod;  // surface, even on water
-	float waterMod;  // underwater
+	float airThrDmg;  // air enemy damage
+	float surfThrDmg;  // surface, even on water
+	float waterThrDmg;  // underwater enemy damage
+	ThrDmgArray thrDmgMod;  // mod by role
 	float aoe;  // radius
 	float power;  // ally max threat
 	float defThreat;  // enemy max threat

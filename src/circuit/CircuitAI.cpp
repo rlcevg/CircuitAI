@@ -563,7 +563,8 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	scriptManager = std::make_shared<CScriptManager>(this);
 	script = new CInitScript(GetScriptManager(), this);
 	std::vector<std::string> cfgParts;
-	script->InitConfig(profile, cfgParts);
+	CCircuitDef::SArmorInfo armor;
+	script->InitConfig(profile, cfgParts, armor);
 
 	if (!InitSide()) {
 		Release(RELEASE_SIDE);
@@ -572,7 +573,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 	InitWeaponDefs();
 	float decloakRadius;
-	InitUnitDefs(decloakRadius);  // Inits TerrainData
+	InitUnitDefs(armor, decloakRadius);  // Inits TerrainData
 
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
 	if (!setupManager->OpenConfig(profile, cfgParts)) {
@@ -1589,7 +1590,7 @@ void CCircuitAI::InitRoles()
 	}
 }
 
-void CCircuitAI::InitUnitDefs(float& outDcr)
+void CCircuitAI::InitUnitDefs(const CCircuitDef::SArmorInfo& armor, float& outDcr)
 {
 	if (!gameAttribute->GetTerrainData().IsInitialized()) {
 		gameAttribute->GetTerrainData().Init(this);
@@ -1609,8 +1610,8 @@ void CCircuitAI::InitUnitDefs(float& outDcr)
 			opts.insert(buildDef->GetUnitDefId());
 			delete buildDef;
 		}
-		// new CCircuitDef(this, ud, opts, resM, resE);
-		defsById.emplace_back(this, ud, opts, resM, resE);
+		// new CCircuitDef(this, ud, opts, resM, resE, armor);
+		defsById.emplace_back(this, ud, opts, resM, resE, armor);
 
 		defsByName[ud->GetName()] = &defsById.back();
 

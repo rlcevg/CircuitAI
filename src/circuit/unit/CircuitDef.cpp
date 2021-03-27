@@ -92,7 +92,7 @@ void CCircuitDef::InitStatic(CCircuitAI* circuit, CMaskHandler* roleMasker, CMas
 }
 
 CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts,
-						 Resource* resM, Resource* resE)
+						 Resource* resM, Resource* resE, const SArmorInfo& armor)
 		: def(def)
 		, mainRole(ROLE_TYPE(ASSAULT))
 		, enemyRole(RoleMask::NONE)
@@ -110,10 +110,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, weaponMount(nullptr)
 		, pwrDmg(.0f)
 		, defDmg(.0f)
-		, thrDmg({.0f})
-		, airMod(1.f)
-		, surfMod(1.f)
-		, waterMod(1.f)
+		, airThrDmg(.0f)
+		, surfThrDmg(.0f)
+		, waterThrDmg(.0f)
+		, thrDmgMod({1.f})
 		, aoe(.0f)
 		, power(.0f)
 		, defThreat(.0f)
@@ -283,8 +283,12 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	float minReloadTime = std::numeric_limits<float>::max();
 	float bestDGunReload = std::numeric_limits<float>::max();
 	float bestWpRange = std::numeric_limits<float>::max();
-	float dps = .0f;  // TODO: split dps like ranges on air, land, water
-	float dmg = .0f;
+	float airDps = .0f;
+	float airDmg = .0f;
+	float surfDps = .0f;
+	float surfDmg = .0f;
+	float waterDps = .0f;
+	float waterDmg = .0f;
 	CWeaponDef* bestDGunDef = nullptr;
 	WeaponMount* bestDGunMnt = nullptr;
 	WeaponMount* bestWpMnt = nullptr;
@@ -305,15 +309,11 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			continue;
 		}
 
+		float dps = .0f;
+		float dmg = .0f;
+
 		float scale = wd->IsParalyzer() ? 0.5f : 1.0f;
-
-		float extraDmg = .0f;
-		auto it = customParams.find("extra_damage");
-		if (it != customParams.end()) {
-			extraDmg += utils::string_to_float(it->second);
-		}
-
-		it = customParams.find("disarmdamageonly");
+		auto it = customParams.find("disarmdamageonly");
 		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 			scale = 0.5f;
 		}
@@ -331,6 +331,12 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		it = customParams.find("is_capture");
 		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 			scale = 2.0f;
+		}
+
+		float extraDmg = .0f;
+		it = customParams.find("extra_damage");
+		if (it != customParams.end()) {
+			extraDmg += utils::string_to_float(it->second);
 		}
 
 		it = customParams.find("area_damage_dps");
@@ -351,22 +357,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			dps += extraDmg * wd->GetSalvoSize() / reloadTime * scale;
 		}
 
-		float ldmg = .0f;
-		it = customParams.find("statsdamage");
-		if (it != customParams.end()) {
-			ldmg = utils::string_to_float(it->second);
-		} else {
-			Damage* damage = wd->GetDamage();
-			const std::vector<float>& damages = damage->GetTypes();
-			delete damage;
-			for (float d : damages) {
-				ldmg += d;
-			}
-			ldmg /= damages.size();
-		}
-		ldmg *= std::pow(2.0f, (wd->IsDynDamageInverted() ? 1 : -1) * wd->GetDynDamageExp());
-		dmg += ldmg;
-		dps += ldmg * wd->GetSalvoSize() / reloadTime * scale;
 		int weaponCat = mount->GetOnlyTargetCategory();
 		targetCategory |= weaponCat;
 
@@ -374,7 +364,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 		std::string wt(wd->GetType());  // @see https://springrts.com/wiki/Gamedev:WeaponDefs
 		const float projectileSpeed = wd->GetProjectileSpeed();
-		float range = wd->GetRange();
+		const float range = wd->GetRange();
 
 		isAlwaysHit |= ((wt == "Cannon") || (wt == "DGun") || (wt == "EmgCannon") || (wt == "Flame") ||
 				(wt == "LaserCannon") || (wt == "AircraftBomb")) && (projectileSpeed * FRAMES_PER_SEC >= .8f * range);  // Cannons with fast projectiles
@@ -392,6 +382,60 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		canSubTargetAir |= (isAirWeapon && isWaterWeapon);
 		canSubTargetLand |= (isLandWeapon && isWaterWeapon);
 		canSubTargetWater |= (wd->IsFireSubmersed() && isWaterWeapon);
+
+		it = customParams.find("statsdamage");
+		if (it != customParams.end()) {
+			float localDmg = utils::string_to_float(it->second);
+			localDmg *= std::pow(2.0f, (wd->IsDynDamageInverted() ? 1 : -1) * wd->GetDynDamageExp());
+			dmg += localDmg;
+			dps += localDmg * wd->GetSalvoSize() / reloadTime * scale;
+			airDmg += dmg;
+			airDps += dps;
+			surfDmg += dmg;
+			surfDps += dps;
+			waterDmg += dmg;
+			waterDps += dps;
+		} else {
+			Damage* damage = wd->GetDamage();
+			const std::vector<float>& damages = damage->GetTypes();
+			delete damage;
+			if ((weaponCat & circuit->GetAirCategory()) && isAirWeapon) {
+				float localDmg = .0f;
+				for (int type : armor.airGroups[0]) {  // TODO: Extend to all groups
+					localDmg += damages[type];
+				}
+				localDmg /= armor.airGroups[0].size();
+				localDmg *= std::pow(2.0f, (wd->IsDynDamageInverted() ? 1 : -1) * wd->GetDynDamageExp());
+				dmg += localDmg;
+				dps += localDmg * wd->GetSalvoSize() / reloadTime * scale;
+				airDmg += dmg;
+				airDps += dps;
+			}
+			if ((weaponCat & circuit->GetLandCategory()) && isLandWeapon) {
+				float localDmg = .0f;
+				for (int type : armor.surfGroups[0]) {  // TODO: Extend to all groups
+					localDmg += damages[type];
+				}
+				localDmg /= armor.surfGroups[0].size();
+				localDmg *= std::pow(2.0f, (wd->IsDynDamageInverted() ? 1 : -1) * wd->GetDynDamageExp());
+				dmg += localDmg;
+				dps += localDmg * wd->GetSalvoSize() / reloadTime * scale;
+				surfDmg += dmg;
+				surfDps += dps;
+			}
+			if ((weaponCat & circuit->GetWaterCategory()) && isWaterWeapon) {
+				float localDmg = .0f;
+				for (int type : armor.waterGroups[0]) {  // TODO: Extend to all groups
+					localDmg += damages[type];
+				}
+				localDmg /= armor.waterGroups[0].size();
+				localDmg *= std::pow(2.0f, (wd->IsDynDamageInverted() ? 1 : -1) * wd->GetDynDamageExp());
+				dmg += localDmg;
+				dps += localDmg * wd->GetSalvoSize() / reloadTime * scale;
+				waterDmg += dmg;
+				waterDps += dps;
+			}
+		}
 
 		minRange = std::min(minRange, range);
 		if ((weaponCat & circuit->GetAirCategory()) && isAirWeapon) {
@@ -449,8 +493,12 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	circuit->BindUnitToWeaponDefs(GetId(), allWeaponDefs, IsMobile());
 
 	if (isDynamic) {  // FIXME: Dynamo com workaround
-		dps /= mounts.size();
-		dmg /= mounts.size();
+		airDps /= mounts.size();
+		airDmg /= mounts.size();
+		surfDps /= mounts.size();
+		surfDmg /= mounts.size();
+		waterDps /= mounts.size();
+		waterDmg /= mounts.size();
 	}
 
 	if (minReloadTime < std::numeric_limits<float>::max()) {
@@ -464,28 +512,30 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		weaponMount = bestWpMnt;
 	}
 
-	isAttacker = dps > .1f;
+	isAttacker = (airDps > .1f) || (surfDps > .1f) || (waterDps > .1f);
 	if (IsMobile() && !IsAttacker()) {  // mobile bomb?
 		WeaponDef* wd = def->GetDeathExplosion();
 		aoe = wd->GetAreaOfEffect();
 		if (aoe > 64.0f) {
 			// power
-			float ldmg = .0f;
+			float localDmg = .0f;
 			it = customParams.find("statsdamage");
 			if (it != customParams.end()) {
-				ldmg = utils::string_to_float(it->second);
+				localDmg = utils::string_to_float(it->second);
 			} else {
 				Damage* damage = wd->GetDamage();
 				const std::vector<float>& damages = damage->GetTypes();
 				delete damage;
-				for (float d : damages) {
-					ldmg += d;
-				}
-				ldmg /= damages.size();
+				localDmg = damages[0];  // default
 			}
-			dmg += ldmg;
-			dps = ldmg * wd->GetSalvoSize();
-			isAttacker = dps > .1f;
+			float localDps = localDmg * wd->GetSalvoSize();
+			airDmg += localDmg;
+			airDps = localDps;
+			surfDmg += localDmg;
+			surfDps = localDps;
+			waterDmg += localDmg;
+			waterDps = localDps;
+			isAttacker = (airDps > .1f) || (surfDps > .1f) || (waterDps > .1f);
 			// range
 			minRange = aoe;
 			for (RangeT rt = 0; rt < static_cast<RangeT>(RangeType::_SIZE_); ++rt) {
@@ -512,9 +562,22 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 	// TODO: Include projectile-speed/range, armor
 	//       health /= def->GetArmoredMultiple();
-	defDmg = pwrDmg = dmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
-	defThreat = power = dmg * sqrtf(def->GetHealth() + maxShield * SHIELD_MOD);
-	std::fill(thrDmg.begin(), thrDmg.end(), dmg);
+	float dmg = std::max(std::max(waterDmg, surfDmg), airDmg);
+	float dps = std::max(std::max(waterDps, surfDps), airDps);
+	defDmg = pwrDmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
+	defThreat = power = defDmg * sqrtf(def->GetHealth() + maxShield * SHIELD_MOD);
+	airThrDmg = sqrtf(airDps) * std::pow(airDmg, 0.25f) * THREAT_MOD;
+	surfThrDmg = sqrtf(surfDps) * std::pow(surfDmg, 0.25f) * THREAT_MOD;
+	waterThrDmg = sqrtf(waterDps) * std::pow(waterDmg, 0.25f) * THREAT_MOD;
+	// FIXME: DEBUG
+	circuit->LOG("%s | def=%f air=%f surf=%f water=%f", def->GetName(), defThreat,
+			airThrDmg * sqrtf(def->GetHealth() + maxShield * SHIELD_MOD),
+			surfThrDmg * sqrtf(def->GetHealth() + maxShield * SHIELD_MOD),
+			waterThrDmg * sqrtf(def->GetHealth() + maxShield * SHIELD_MOD));
+	if (std::string("armpw") == def->GetName()) {
+		circuit->LOG("type: %i | %f", def->GetArmorType(), def->GetArmoredMultiple());
+	}
+	// FIXME: DEBUG
 }
 
 CCircuitDef::~CCircuitDef()
