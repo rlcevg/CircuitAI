@@ -94,13 +94,13 @@ void CAllyTeam::Init(CCircuitAI* circuit, float decloakRadius)
 	circuit->GetScheduler()->RunOnRelease(CScheduler::GameJob(&CAllyTeam::DelegateAuthority, this, circuit));
 }
 
-void CAllyTeam::NonDefaultThreats(const std::set<CCircuitDef::RoleT>& modRoles, CCircuitAI* ai)
+void CAllyTeam::NonDefaultThreats(std::set<CCircuitDef::RoleT>&& modRoles, CCircuitAI* ai)
 {
 	if (circuit != ai) {
 		return;
 	}
 
-	mapManager->GetThreatMap()->Init(circuit->GetGameAttribute()->GetRoleMasker().GetMasks().size(), modRoles);
+	mapManager->GetThreatMap()->Init(circuit->GetGameAttribute()->GetRoleMasker().GetMasks().size(), std::move(modRoles));
 }
 
 void CAllyTeam::Release()

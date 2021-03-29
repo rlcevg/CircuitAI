@@ -436,7 +436,7 @@ void CFactoryManager::ReadConfig()
 			cdef->SetBuildSpeed(buildSpeed.asFloat());
 		}
 	}
-	circuit->GetAllyTeam()->NonDefaultThreats(modRoles, circuit);
+	circuit->GetAllyTeam()->NonDefaultThreats(std::move(modRoles), circuit);
 
 	/*
 	 * Factories

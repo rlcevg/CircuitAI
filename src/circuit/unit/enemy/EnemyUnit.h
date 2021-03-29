@@ -43,6 +43,7 @@ struct SEnemyData {
 
 	springai::AIFloat3 pos;
 	springai::AIFloat3 vel;  // elmos per frame
+	springai::AIFloat3 thrPos;  // pos shifted by vel, used only for threat drawing
 	float thrHealth;  // health-based part
 	RangeArray range;
 	float influence;

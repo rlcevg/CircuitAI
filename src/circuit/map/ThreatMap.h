@@ -38,7 +38,7 @@ public:
 	CThreatMap(CMapManager* manager, float decloakRadius);
 	virtual ~CThreatMap();
 
-	void Init(const int roleSize, const std::set<CCircuitDef::RoleT>& modRoles);
+	void Init(const int roleSize, std::set<CCircuitDef::RoleT>&& modRoles);
 
 	void EnqueueUpdate();
 	bool IsUpdating() const { return isUpdating; }
@@ -74,7 +74,7 @@ private:
 		FloatVec amphThreat;  // under water and surface on land
 	};
 	struct SThreatData {
-		std::vector<SRoleThreat> roleThreats;
+		std::map<CCircuitDef::RoleT, SRoleThreat> roleThreats;
 		std::vector<SRoleThreat*> roleThreatPtrs;
 		SRoleThreat* defThreat;  // default when role is not modded
 		FloatVec cloakThreat;  // decloakers
@@ -87,7 +87,7 @@ private:
 	inline void PosToXZ(const springai::AIFloat3& pos, int& x, int& z) const;
 	inline springai::AIFloat3 XZToPos(int x, int z) const;
 
-	void AddEnemyUnit(const SEnemyData& e);
+	void AddEnemyUnit(SEnemyData& e);
 	void AddEnemyAir(const float threat, float* drawAirThreat,
 			const SEnemyData& e, const int slack = 0);  // Enemy AntiAir
 	void AddEnemyAmphConst(const float threatLand, const float threatWater, float* drawSurfThreat, float* drawAmphThreat,
@@ -131,8 +131,7 @@ private:
 
 	SThreatData threatData0, threatData1;  // Double-buffer for threading
 	std::atomic<SThreatData*> pThreatData;
-	std::vector<CCircuitDef::RoleT> nonDefRoles;  // modded roles
-	CCircuitDef::RoleT defRole;
+	CCircuitDef::RoleT defRole; // represents non-modded roles
 	bool isUpdating;
 
 	float* cloakThreat;
