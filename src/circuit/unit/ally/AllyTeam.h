@@ -71,6 +71,7 @@ public:
 	const SBox& GetStartBox() const { return startBox; }
 
 	void Init(CCircuitAI* circuit, float decloakRadius);
+	void NonDefaultThreats(const std::set<CCircuitDef::RoleT>& modRoles, CCircuitAI* ai);
 	void Release();
 
 	void ForceUpdateFriendlyUnits();

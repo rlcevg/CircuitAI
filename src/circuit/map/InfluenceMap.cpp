@@ -99,7 +99,8 @@ void CInfluenceMap::EnqueueUpdate()
 	isUpdating = true;
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	circuit->GetScheduler()->RunPriorityJob(CScheduler::WorkJob(&CInfluenceMap::Update, this));
+	CEnemyManager* enemyMgr = circuit->GetEnemyManager();
+	circuit->GetScheduler()->RunPriorityJob(CScheduler::WorkJob(&CInfluenceMap::Update, this, enemyMgr));
 }
 
 void CInfluenceMap::Prepare(SInfluenceData& inflData)
@@ -121,11 +122,9 @@ void CInfluenceMap::Prepare(SInfluenceData& inflData)
 	drawFeatureInfl = inflData.featureInfl.data();
 }
 
-std::shared_ptr<IMainJob> CInfluenceMap::Update()
+std::shared_ptr<IMainJob> CInfluenceMap::Update(CEnemyManager* enemyMgr)
 {
 	Prepare(*GetNextInflData());
-
-	CEnemyManager* enemyMgr = manager->GetCircuit()->GetEnemyManager();
 
 	for (const SEnemyData& e : enemyMgr->GetHostileDatas()) {
 		AddEnemy(e);

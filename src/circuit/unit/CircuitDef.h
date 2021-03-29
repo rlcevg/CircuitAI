@@ -24,7 +24,6 @@ namespace circuit {
 
 #define ROLE_TYPE(x)	static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::x)
 #define ATTR_TYPE(x)	static_cast<CCircuitDef::AttrT>(CCircuitDef::AttrType::x)
-#define DEFAULT_THREAT_ROLE		ROLE_TYPE(BUILDER)
 
 class CWeaponDef;
 
@@ -40,9 +39,9 @@ public:
 	using ThrDmgArray = std::array<float, CMaskHandler::GetMaxMasks()>;
 
 	struct SArmorInfo {
-		std::vector<std::vector<int>> airGroups;  // air
-		std::vector<std::vector<int>> surfGroups;  // surface, even on water
-		std::vector<std::vector<int>> waterGroups;  // underwater
+		std::vector<int> airTypes;  // air
+		std::vector<int> surfTypes;  // surface, even on water
+		std::vector<int> waterTypes;  // underwater
 	};
 
 	// TODO: Rebuild response system on unit vs unit basis (opposed to role vs role).

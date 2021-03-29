@@ -296,6 +296,7 @@ void CFactoryManager::ReadConfig()
 	CCircuitDef::RoleName& roleNames = CCircuitDef::GetRoleNames();
 	CCircuitDef::AttrName& attrNames = CCircuitDef::GetAttrNames();
 	CCircuitDef::FireName& fireNames = CCircuitDef::GetFireNames();
+	std::set<CCircuitDef::RoleT> modRoles;
 	const Json::Value& behaviours = root["behaviour"];
 	for (const std::string& defName : behaviours.getMemberNames()) {
 		CCircuitDef* cdef = circuit->GetCircuitDef(defName.c_str());
@@ -410,7 +411,11 @@ void CFactoryManager::ReadConfig()
 				const Json::Value& thrRole = thrMod["vs"];
 				if (!thrRole.isNull()) {
 					for (auto& kv : roleNames) {
-						cdef->ModThreatMod(kv.second.type, thrRole.get(kv.first, defMod).asFloat());
+						const float rolMod = thrRole.get(kv.first, defMod).asFloat();
+						if (rolMod != defMod) {
+							modRoles.insert(kv.second.type);
+						}
+						cdef->ModThreatMod(kv.second.type, rolMod);
 					}
 				}
 			}
@@ -431,6 +436,7 @@ void CFactoryManager::ReadConfig()
 			cdef->SetBuildSpeed(buildSpeed.asFloat());
 		}
 	}
+	circuit->GetAllyTeam()->NonDefaultThreats(modRoles, circuit);
 
 	/*
 	 * Factories

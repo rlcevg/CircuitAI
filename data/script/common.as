@@ -48,31 +48,23 @@ SArmorInfo InitArmordef()
 	armors.insertAt(0, "default");
 
 	dictionary armorTypes;
-	AiLog("Armordefs:");
 	for (uint i = 0; i < armors.length(); ++i) {
 		armorTypes[armors[i]] = i;
-		AiLog(armors[i] + " = " + i);
 	}
 
-	array<array<string>> airGroups = {{"bombers", "fighters", "vtol"}};
-	array<array<string>> surfaceGroups = {{"default"}, {"hvyboats"}};  // TODO: Remove hvyboats - has little impact
-	array<array<string>> waterGroups = {{"subs"}};
+	array<string> airTypes = {"bombers", "fighters", "vtol"};
+	array<string> surfaceTypes = {"default"};
+	array<string> waterTypes = {"subs"};
 
 	SArmorInfo armor;
-	for (uint i = 0; i < airGroups.length(); ++i) {
-		for (uint j = 0; j < airGroups[i].length(); ++j) {
-			armor.AddAir(i, int(armorTypes[airGroups[i][j]]));
-		}
+	for (uint i = 0; i < airTypes.length(); ++i) {
+		armor.AddAir(int(armorTypes[airTypes[i]]));
 	}
-	for (uint i = 0; i < surfaceGroups.length(); ++i) {
-		for (uint j = 0; j < surfaceGroups[i].length(); ++j) {
-			armor.AddSurface(i, int(armorTypes[surfaceGroups[i][j]]));
-		}
+	for (uint i = 0; i < surfaceTypes.length(); ++i) {
+		armor.AddSurface(int(armorTypes[surfaceTypes[i]]));
 	}
-	for (uint i = 0; i < waterGroups.length(); ++i) {
-		for (uint j = 0; j < waterGroups[i].length(); ++j) {
-			armor.AddWater(i, int(armorTypes[waterGroups[i][j]]));
-		}
+	for (uint i = 0; i < waterTypes.length(); ++i) {
+		armor.AddWater(int(armorTypes[waterTypes[i]]));
 	}
 	return armor;
 }

@@ -389,53 +389,36 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			localDmg *= std::pow(2.0f, (wd->IsDynDamageInverted() ? 1 : -1) * wd->GetDynDamageExp());
 			dmg += localDmg;
 			dps += localDmg * wd->GetSalvoSize() / reloadTime * scale;
-			airDmg += dmg;
-			airDps += dps;
-			surfDmg += dmg;
-			surfDps += dps;
-			waterDmg += dmg;
-			waterDps += dps;
 		} else {
 			Damage* damage = wd->GetDamage();
 			const std::vector<float>& damages = damage->GetTypes();
 			delete damage;
-			if ((weaponCat & circuit->GetAirCategory()) && isAirWeapon) {
+			auto adjustDamage = [&damages, wd, reloadTime, scale](const std::vector<int>& armorTypes, float& outDmg, float& outDps) {
 				float localDmg = .0f;
-				for (int type : armor.airGroups[0]) {  // TODO: Extend to all groups
+				for (int type : armorTypes) {
 					localDmg += damages[type];
 				}
-				localDmg /= armor.airGroups[0].size();
+				localDmg /= armorTypes.size();
 				localDmg *= std::pow(2.0f, (wd->IsDynDamageInverted() ? 1 : -1) * wd->GetDynDamageExp());
-				dmg += localDmg;
-				dps += localDmg * wd->GetSalvoSize() / reloadTime * scale;
-				airDmg += dmg;
-				airDps += dps;
+				outDmg += localDmg;
+				outDps += localDmg * wd->GetSalvoSize() / reloadTime * scale;
+			};
+			if ((weaponCat & circuit->GetAirCategory()) && isAirWeapon) {
+				adjustDamage(armor.airTypes, airDmg, airDps);
 			}
 			if ((weaponCat & circuit->GetLandCategory()) && isLandWeapon) {
-				float localDmg = .0f;
-				for (int type : armor.surfGroups[0]) {  // TODO: Extend to all groups
-					localDmg += damages[type];
-				}
-				localDmg /= armor.surfGroups[0].size();
-				localDmg *= std::pow(2.0f, (wd->IsDynDamageInverted() ? 1 : -1) * wd->GetDynDamageExp());
-				dmg += localDmg;
-				dps += localDmg * wd->GetSalvoSize() / reloadTime * scale;
-				surfDmg += dmg;
-				surfDps += dps;
+				adjustDamage(armor.surfTypes, surfDmg, surfDps);
 			}
 			if ((weaponCat & circuit->GetWaterCategory()) && isWaterWeapon) {
-				float localDmg = .0f;
-				for (int type : armor.waterGroups[0]) {  // TODO: Extend to all groups
-					localDmg += damages[type];
-				}
-				localDmg /= armor.waterGroups[0].size();
-				localDmg *= std::pow(2.0f, (wd->IsDynDamageInverted() ? 1 : -1) * wd->GetDynDamageExp());
-				dmg += localDmg;
-				dps += localDmg * wd->GetSalvoSize() / reloadTime * scale;
-				waterDmg += dmg;
-				waterDps += dps;
+				adjustDamage(armor.waterTypes, waterDmg, waterDps);
 			}
 		}
+		airDmg += dmg;
+		airDps += dps;
+		surfDmg += dmg;
+		surfDps += dps;
+		waterDmg += dmg;
+		waterDps += dps;
 
 		minRange = std::min(minRange, range);
 		if ((weaponCat & circuit->GetAirCategory()) && isAirWeapon) {

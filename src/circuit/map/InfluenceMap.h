@@ -26,6 +26,7 @@ namespace circuit {
 #define INFL_EPS		0.01f
 #define INFL_SAFE		2.f
 
+class CEnemyManager;
 class CMapManager;
 class CAllyUnit;
 class IMainJob;
@@ -72,7 +73,7 @@ private:
 	inline void PosToXZ(const springai::AIFloat3& pos, int& x, int& z) const;
 
 	void Prepare(SInfluenceData& inflData);
-	std::shared_ptr<IMainJob> Update();
+	std::shared_ptr<IMainJob> Update(CEnemyManager* enemyMgr);
 	void Apply();
 	void SwapBuffers();
 	SInfluenceData* GetNextInflData() {

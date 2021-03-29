@@ -24,6 +24,7 @@ namespace circuit {
 #define THREAT_UPDATE_RATE	(FRAMES_PER_SEC / 3)
 #define THREAT_BASE			0.f
 
+class CEnemyManager;
 class CMapManager;
 class CCircuitUnit;
 class IMainJob;
@@ -37,6 +38,8 @@ public:
 	CThreatMap(CMapManager* manager, float decloakRadius);
 	virtual ~CThreatMap();
 
+	void Init(const int roleSize, const std::set<CCircuitDef::RoleT>& modRoles);
+
 	void EnqueueUpdate();
 	bool IsUpdating() const { return isUpdating; }
 
@@ -49,9 +52,9 @@ public:
 	float GetThreatAt(const springai::AIFloat3& position) const;
 	float GetThreatAt(CCircuitUnit* unit, const springai::AIFloat3& position) const;
 
-	float* GetAirThreatArray(CCircuitDef::RoleT type) { return pThreatData.load()->roleThreats[type].airThreat.data(); }
-	float* GetSurfThreatArray(CCircuitDef::RoleT type) { return pThreatData.load()->roleThreats[type].surfThreat.data(); }
-	float* GetAmphThreatArray(CCircuitDef::RoleT type) { return pThreatData.load()->roleThreats[type].amphThreat.data(); }
+	float* GetAirThreatArray(CCircuitDef::RoleT type) { return pThreatData.load()->roleThreatPtrs[type]->airThreat.data(); }
+	float* GetSurfThreatArray(CCircuitDef::RoleT type) { return pThreatData.load()->roleThreatPtrs[type]->surfThreat.data(); }
+	float* GetAmphThreatArray(CCircuitDef::RoleT type) { return pThreatData.load()->roleThreatPtrs[type]->amphThreat.data(); }
 	float* GetCloakThreatArray() { return cloakThreat; }
 	int GetThreatMapWidth() const { return width; }
 	int GetThreatMapHeight() const { return height; }
@@ -72,6 +75,8 @@ private:
 	};
 	struct SThreatData {
 		std::vector<SRoleThreat> roleThreats;
+		std::vector<SRoleThreat*> roleThreatPtrs;
+		SRoleThreat* defThreat;  // default when role is not modded
 		FloatVec cloakThreat;  // decloakers
 		FloatVec shield;  // total shield power that covers tile
 	};
@@ -83,26 +88,22 @@ private:
 	inline springai::AIFloat3 XZToPos(int x, int z) const;
 
 	void AddEnemyUnit(const SEnemyData& e);
-	void AddEnemyUnitAll(const SEnemyData& e);
 	void AddEnemyAir(const float threat, float* drawAirThreat,
 			const SEnemyData& e, const int slack = 0);  // Enemy AntiAir
 	void AddEnemyAmphConst(const float threatLand, const float threatWater, float* drawSurfThreat, float* drawAmphThreat,
 			const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
 	void AddEnemyAmphGradient(const float threatLand, const float threatWater, float* drawSurfThreat, float* drawAmphThreat,
 			const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
-	void AddDecloaker(const SEnemyData& e);
-	void AddShield(const SEnemyData& e);
+	void AddDecloaker(float* drawCloakThreat, const SEnemyData& e);
+	void AddShield(float* drawShieldArray, const SEnemyData& e);
 
 	int GetCloakRange(const CCircuitDef* edef) const;
 	int GetShieldRange(const CCircuitDef* edef) const;
 	float GetThreatHealth(const CEnemyUnit* e) const;
 
-	void Prepare(SThreatData& threatData);
-	std::shared_ptr<IMainJob> Update(CScheduler* scheduler);
-	std::shared_ptr<IMainJob> AirDrawer(int roleNum);
-	std::shared_ptr<IMainJob> AmphDrawer(int roleNum);
-	std::shared_ptr<IMainJob> CloakDrawer();
-	std::shared_ptr<IMainJob> ShieldDrawer();
+	std::shared_ptr<IMainJob> Update(CEnemyManager* enemyMgr, CScheduler* scheduler);
+	std::shared_ptr<IMainJob> AirDrawer(CCircuitDef::RoleT role);
+	std::shared_ptr<IMainJob> AmphDrawer(CCircuitDef::RoleT role);
 	std::shared_ptr<IMainJob> ApplyDrawers();
 	void Apply();
 	void SwapBuffers();
@@ -112,8 +113,6 @@ private:
 
 	std::vector<const SEnemyData*> airDraws;
 	std::vector<const SEnemyData*> amphDraws;
-	std::vector<const SEnemyData*> cloakDraws;
-	std::vector<const SEnemyData*> shieldDraws;
 	std::atomic<int> numThreadDraws;
 
 	int squareSize;
@@ -132,8 +131,8 @@ private:
 
 	SThreatData threatData0, threatData1;  // Double-buffer for threading
 	std::atomic<SThreatData*> pThreatData;
-	float* drawCloakThreat;
-	float* drawShieldArray;
+	std::vector<CCircuitDef::RoleT> nonDefRoles;  // modded roles
+	CCircuitDef::RoleT defRole;
 	bool isUpdating;
 
 	float* cloakThreat;

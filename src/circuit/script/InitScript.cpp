@@ -48,30 +48,19 @@ CInitScript::SInitInfo::~SInitInfo()
 	}
 }
 
-static bool AddArmor(std::vector<std::vector<int>>& groups, unsigned int group, int type)
+static void AddAirArmor(CCircuitDef::SArmorInfo* mem, int type)
 {
-	if (group > groups.size()) {
-		return false;
-	} else if (group == groups.size()) {
-		groups.emplace_back();
-	}
-	groups[group].push_back(type);
-	return true;
+	mem->airTypes.push_back(type);
 }
 
-static bool AddAirArmor(CCircuitDef::SArmorInfo* mem, unsigned int group, int type)
+static void AddSurfaceArmor(CCircuitDef::SArmorInfo* mem, int type)
 {
-	return AddArmor(mem->airGroups, group, type);
+	mem->surfTypes.push_back(type);
 }
 
-static bool AddSurfaceArmor(CCircuitDef::SArmorInfo* mem, unsigned int group, int type)
+static void AddWaterArmor(CCircuitDef::SArmorInfo* mem, int type)
 {
-	return AddArmor(mem->surfGroups, group, type);
-}
-
-static bool AddWaterArmor(CCircuitDef::SArmorInfo* mem, unsigned int group, int type)
-{
-	return AddArmor(mem->waterGroups, group, type);
+	mem->waterTypes.push_back(type);
 }
 
 static void ConstructAIFloat3(AIFloat3* mem)
@@ -258,9 +247,9 @@ void CInitScript::InitConfig(const std::string& profile,
 	r = engine->RegisterObjectBehaviour("SArmorInfo", asBEHAVE_CONSTRUCT, "void f(const SArmorInfo& in)", asFUNCTION(ConstructCopySArmorInfo), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
 	r = engine->RegisterObjectBehaviour("SArmorInfo", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructSArmorInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("SArmorInfo", "SArmorInfo &opAssign(const SArmorInfo &in)", asFUNCTION(AssignSArmorInfoToSArmorInfo), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
-	r = engine->RegisterObjectMethod("SArmorInfo", "bool AddAir(uint, int)", asFUNCTION(AddAirArmor), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("SArmorInfo", "bool AddSurface(uint, int)", asFUNCTION(AddSurfaceArmor), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("SArmorInfo", "bool AddWater(uint, int)", asFUNCTION(AddWaterArmor), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("SArmorInfo", "bool AddAir(int)", asFUNCTION(AddAirArmor), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("SArmorInfo", "bool AddSurface(int)", asFUNCTION(AddSurfaceArmor), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("SArmorInfo", "bool AddWater(int)", asFUNCTION(AddWaterArmor), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
 	r = engine->RegisterObjectType("SCategoryInfo", sizeof(SInitInfo::SCategoryInfo), asOBJ_VALUE | asGetTypeTraits<SInitInfo::SCategoryInfo>()); ASSERT(r >= 0);
 	r = engine->RegisterObjectBehaviour("SCategoryInfo", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructSCategoryInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
 	r = engine->RegisterObjectBehaviour("SCategoryInfo", asBEHAVE_CONSTRUCT, "void f(const SCategoryInfo& in)", asFUNCTION(ConstructCopySCategoryInfo), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
@@ -293,6 +282,15 @@ void CInitScript::InitConfig(const std::string& profile,
 		SInitInfo* result = script->Exec(ctx) ? (SInitInfo*)ctx->GetReturnObject() : nullptr;
 		if (result != nullptr) {
 			outArmor = result->armor;
+			if (outArmor.airTypes.empty()) {
+				outArmor.airTypes.push_back(0);  // default
+			}
+			if (outArmor.surfTypes.empty()) {
+				outArmor.surfTypes.push_back(0);  // default
+			}
+			if (outArmor.waterTypes.empty()) {
+				outArmor.waterTypes.push_back(0);  // default
+			}
 
 			Game* game = circuit->GetGame();
 			circuit->category.air = game->GetCategoriesFlag(result->category.air.c_str());
