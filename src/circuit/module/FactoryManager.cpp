@@ -461,6 +461,7 @@ void CFactoryManager::ReadConfig()
 		CCircuitDef* waterDef = nullptr;
 		float landSize = std::numeric_limits<float>::max();
 		float waterSize = std::numeric_limits<float>::max();
+		std::vector<unsigned> trueIndex;
 
 		for (unsigned i = 0; i < items.size(); ++i) {
 			CCircuitDef* udef = circuit->GetCircuitDef(items[i].asCString());
@@ -468,6 +469,10 @@ void CFactoryManager::ReadConfig()
 				circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), items[i].asCString());
 				continue;
 			}
+			if (!cdef->CanBuild(udef)) {  // buildlist from modoptions
+				continue;
+			}
+			trueIndex.push_back(i);
 			facDef.buildDefs.push_back(udef);
 
 			// identify surface representatives
@@ -499,7 +504,7 @@ void CFactoryManager::ReadConfig()
 		facDef.landDef = landDef;
 		facDef.waterDef = waterDef;
 
-		auto fillProbs = [this, &cfgName, &facDef, &fac, &factory, warnProb](unsigned i, const char* type, SFactoryDef::Tiers& tiers) {
+		auto fillProbs = [this, &cfgName, &facDef, &fac, &factory, &trueIndex, warnProb](unsigned i, const char* type, SFactoryDef::Tiers& tiers) {
 			const Json::Value& tierType = factory[type];
 			if (tierType.isNull()) {
 				return false;
@@ -511,7 +516,7 @@ void CFactoryManager::ReadConfig()
 			std::vector<float>& probs = tiers[i];
 			probs.reserve(facDef.buildDefs.size());
 			float sum = .0f;
-			for (unsigned j = 0; j < facDef.buildDefs.size(); ++j) {
+			for (unsigned j : trueIndex) {
 				const float p = tier[j].asFloat();
 				sum += p;
 				probs.push_back(p);
