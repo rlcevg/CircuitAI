@@ -40,13 +40,16 @@ CInfluenceMap::CInfluenceMap(CMapManager* manager)
 	height = circuit->GetTerrainManager()->GetSectorZSize() / 4;
 	mapSize = width * height;
 
-	inflData0.enemyInfl.resize(mapSize, INFL_BASE);
-	inflData0.allyInfl.resize(mapSize, INFL_BASE);
-	inflData0.allyDefendInfl.resize(mapSize, INFL_BASE);
-	inflData0.influence.resize(mapSize, INFL_BASE);
-	inflData0.tension.resize(mapSize, INFL_BASE);
-	inflData0.vulnerability.resize(mapSize, INFL_BASE);
-	inflData0.featureInfl.resize(mapSize, INFL_BASE);
+	for (SInfluenceData* inflData : {&inflData0, &inflData1}) {
+		inflData->enemyInfl.resize(mapSize, INFL_BASE);
+		inflData->allyInfl.resize(mapSize, INFL_BASE);
+		inflData->allyDefendInfl.resize(mapSize, INFL_BASE);
+		inflData->influence.resize(mapSize, INFL_BASE);
+		inflData->tension.resize(mapSize, INFL_BASE);
+		inflData->vulnerability.resize(mapSize, INFL_BASE);
+		inflData->featureInfl.resize(mapSize, INFL_BASE);
+	}
+
 	enemyInfl = inflData0.enemyInfl.data();
 	allyInfl = inflData0.allyInfl.data();
 	allyDefendInfl = inflData0.allyDefendInfl.data();
@@ -55,13 +58,6 @@ CInfluenceMap::CInfluenceMap(CMapManager* manager)
 	vulnerability = inflData0.vulnerability.data();
 	featureInfl = inflData0.featureInfl.data();
 
-	inflData1.enemyInfl.resize(mapSize, INFL_BASE);
-	inflData1.allyInfl.resize(mapSize, INFL_BASE);
-	inflData1.allyDefendInfl.resize(mapSize, INFL_BASE);
-	inflData1.influence.resize(mapSize, INFL_BASE);
-	inflData1.tension.resize(mapSize, INFL_BASE);
-	inflData1.vulnerability.resize(mapSize, INFL_BASE);
-	inflData1.featureInfl.resize(mapSize, INFL_BASE);
 	drawEnemyInfl = inflData1.enemyInfl.data();
 	drawAllyInfl = inflData1.allyInfl.data();
 	drawAllyDefendInfl = inflData1.allyDefendInfl.data();

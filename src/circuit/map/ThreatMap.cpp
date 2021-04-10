@@ -111,15 +111,12 @@ void CThreatMap::Init(const int roleSize, std::set<CCircuitDef::RoleT>&& modRole
 	}
 
 	for (CCircuitDef::RoleT role : modRoles) {
-		SRoleThreat& roleThreat0 = threatData0.roleThreats[role];
-		roleThreat0.airThreat.resize(mapSize, THREAT_BASE);
-		roleThreat0.surfThreat.resize(mapSize, THREAT_BASE);
-		roleThreat0.amphThreat.resize(mapSize, THREAT_BASE);
-
-		SRoleThreat& roleThreat1 = threatData1.roleThreats[role];
-		roleThreat1.airThreat.resize(mapSize, THREAT_BASE);
-		roleThreat1.surfThreat.resize(mapSize, THREAT_BASE);
-		roleThreat1.amphThreat.resize(mapSize, THREAT_BASE);
+		for (SThreatData* threatData : {&threatData0, &threatData1}) {
+			SRoleThreat& roleThreat = threatData->roleThreats[role];
+			roleThreat.airThreat.resize(mapSize, THREAT_BASE);
+			roleThreat.surfThreat.resize(mapSize, THREAT_BASE);
+			roleThreat.amphThreat.resize(mapSize, THREAT_BASE);
+		}
 	}
 
 	threatData0.defThreat = &threatData0.roleThreats[defRole];
@@ -140,6 +137,7 @@ void CThreatMap::Init(const int roleSize, std::set<CCircuitDef::RoleT>&& modRole
 	threatData1.cloakThreat.resize(mapSize, THREAT_BASE);
 	threatData0.shield.resize(mapSize, 0.f);
 	threatData1.shield.resize(mapSize, 0.f);
+
 	cloakThreat = threatData0.cloakThreat.data();
 	shieldArray = threatData0.shield.data();
 	threatArray = threatData0.defThreat->surfThreat.data();
