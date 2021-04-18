@@ -294,6 +294,7 @@
 		// "ret_hold" - hold fire on retreat
 		// "ret_fight" - fight on retreat
 		// "solo" - single unit per build-task
+		// "vampire" - reclaim enemy units without threat check
 //		"attribute": ["boost", "no_strafe"],
 
 		// Fire state (open by default)
