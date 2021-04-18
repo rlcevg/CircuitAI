@@ -73,15 +73,16 @@ public:
 	 * RET_FIGHT: fight on retreat
 	 * SOLO:      single unit per build-task
 	 * BASE:      base builder, high priority for energy and storage tasks
+	 * VAMPIRE:   reclaim enemy units without threat check
 	 */
 	enum class AttrType: RoleT {NONE = -1,
 		MELEE = 0, BOOST, NO_JUMP, NO_STRAFE,
 		STOCK, SIEGE, RET_HOLD, RET_FIGHT,
-		SOLO, BASE, _SIZE_};
+		SOLO, BASE, VAMPIRE, _SIZE_};
 	enum AttrMask: RoleM {
 		MELEE = 0x00000001, BOOST = 0x00000002, NO_JUMP  = 0x00000004, NO_STRAFE = 0x00000008,
 		STOCK = 0x00000010, SIEGE = 0x00000020, RET_HOLD = 0x00000040, RET_FIGHT = 0x00000080,
-		SOLO  = 0x00000100, BASE  = 0x00000200};
+		SOLO  = 0x00000100, BASE  = 0x00000200, VAMPIRE  = 0x00000400};
 	using AttrT = std::underlying_type<AttrType>::type;
 	using AttrM = std::underlying_type<AttrMask>::type;
 
@@ -153,6 +154,7 @@ public:
 	bool IsAttrRetHold()  const { return attr & AttrMask::RET_HOLD; }
 	bool IsAttrRetFight() const { return attr & AttrMask::RET_FIGHT; }
 	bool IsAttrSolo()     const { return attr & AttrMask::SOLO; }
+	bool IsAttrVampire()  const { return attr & AttrMask::VAMPIRE; }
 
 	bool IsHoldFire()   const { return fireState == FireType::HOLD; }
 	bool IsReturnFire() const { return fireState == FireType::RETURN; }
