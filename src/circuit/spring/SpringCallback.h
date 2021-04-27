@@ -62,6 +62,8 @@ public:
 	int Unit_GetDefId(int unitId) const;
 	bool Unit_HasCommands(int unitId) const;
 
+	bool Feature_IsResurrectable(int featureId) const;
+
 private:
 	const struct SSkirmishAICallback* sAICallback;
 	springai::OOAICallback* callback;
