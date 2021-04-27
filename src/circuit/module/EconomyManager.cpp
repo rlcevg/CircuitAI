@@ -773,6 +773,7 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 		return nullptr;
 	}
 
+	COOAICallback* clb = circuit->GetCallback();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	AIFloat3 pos;
 	float cost = .0f;
@@ -783,10 +784,18 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 		if (!terrainMgr->CanReachAtSafe(unit, featPos, unit->GetCircuitDef()->GetBuildDistance())) {
 			continue;
 		}
-		FeatureDef* featDef = feature->GetDef();
-		if (isResurrect ? (featDef->GetResurrectable() == 0) : !featDef->IsReclaimable()) {
-			delete featDef;
-			continue;
+		FeatureDef* featDef;
+		if (isResurrect) {
+			if (!clb->Feature_IsResurrectable(feature->GetFeatureId())) {
+				continue;
+			}
+			featDef = feature->GetDef();
+		} else {
+			featDef = feature->GetDef();
+			if (!featDef->IsReclaimable()) {
+				delete featDef;
+				continue;
+			}
 		}
 		float reclaimValue = featDef->GetContainedResource(metalRes)/* * feature->GetReclaimLeft()*/;
 		delete featDef;

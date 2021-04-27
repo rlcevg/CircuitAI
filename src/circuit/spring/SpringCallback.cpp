@@ -147,4 +147,9 @@ bool COOAICallback::Unit_HasCommands(int unitId) const
 	return sAICallback->Unit_getCurrentCommands(skirmishAIId, unitId) > 0;
 }
 
+bool COOAICallback::Feature_IsResurrectable(int featureId) const
+{
+	return sAICallback->Feature_getResurrectDef(skirmishAIId, featureId) != -1;
+}
+
 } // namespace circuit

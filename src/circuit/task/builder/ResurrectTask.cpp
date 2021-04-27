@@ -117,6 +117,7 @@ bool CResurrectTask::Reevaluate(CCircuitUnit* unit)
 		}
 	}
 
+	COOAICallback* clb = circuit->GetCallback();
 	CBuilderManager* builderMgr = circuit->GetBuilderManager();
 	auto features = circuit->GetCallback()->GetFeaturesIn(pos, 500.0f);
 	if (!features.empty()) {
@@ -130,11 +131,10 @@ bool CResurrectTask::Reevaluate(CCircuitUnit* unit)
 			if (!terrainMgr->CanReachAtSafe(unit, featPos, unit->GetCircuitDef()->GetBuildDistance())) {
 				continue;
 			}
-			FeatureDef* featDef = feature->GetDef();
-			if (featDef->GetResurrectable() == 0) {
-				delete featDef;
+			if (!clb->Feature_IsResurrectable(feature->GetFeatureId())) {
 				continue;
 			}
+			FeatureDef* featDef = feature->GetDef();
 			float reclaimValue = featDef->GetContainedResource(metalRes)/* * feature->GetReclaimLeft()*/;
 			delete featDef;
 			if (reclaimValue < 1.0f) {
