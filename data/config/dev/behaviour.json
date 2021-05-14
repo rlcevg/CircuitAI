@@ -292,6 +292,11 @@
 		// "open" - fire at will
 //		"fire_state": "open",
 
+		// Per unit On state for static and mobile enemies while attacking. Not used when unspecified
+		// true = on
+		// false = off
+//		"slow_target": false,
+
 		// Overrides reloadTime in seconds
 //		"reload": 1.0,
 
@@ -341,7 +346,7 @@
 		"attribute": ["scout"]
 	},
 	"armrectr": {
-		"role": ["raider"],  // FIXME: auto re-assigned to builder
+		"role": ["raider"],
 		"limit": 10,
 		"since": 200
 	},
@@ -389,7 +394,8 @@
 		"attribute": ["skirmish"]
 	},
 	"armfido": {
-		"role": ["skirmish"]
+		"role": ["skirmish"],
+		"slow_target": true
 	},
 	"armvader": {
 		"role": ["raider"],
@@ -665,7 +671,7 @@
 		"attribute": ["scout"]
 	},
 	"cornecro": {
-		"role": ["raider"],  // FIXME: auto re-assigned to builder
+		"role": ["raider"],
 		"limit": 10,
 		"since": 200
 	},

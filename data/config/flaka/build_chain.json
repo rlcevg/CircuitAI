@@ -42,12 +42,12 @@
 	},
 
 	//"land":  [0, 15, 3, 5, 20, 6, 16, 20, 8, 10, 8, 24, 20, 12, 8, 24, 12], //19 adv solar is test
-	"land": [0, 15],
-	"water": [1, 2, 1, 1, 2, 1, 4, 13, 9, 10, 9, 10],
+	"land": [0, 15, 3],
+	"water": [0, 1, 15],
 	"prevent": 1,  					// number of preventive defences, count to every cluster but not base
 	"amount": {  					// income bound factor
-		"offset": [0.15, 0.15],	// was -0.15 +0.15
-		"factor": [4.2, 3.6],       // Amount factor: 10x10 ~ 4.2, 20x20 ~ 3.6
+		"offset": [0.15, 0.15],	// was -0.15 -0.15
+		"factor": [4.2, 3.6],       // Amount factor: 10x10 ~ 3.8, 20x20 ~ 3.4
 		"map": [10, 20]
 	},
 	
@@ -55,13 +55,13 @@
 	"point_range": 600, 
 
 	// Base defence and time to build it, in seconds
-	"base": [[17, 540], [6, 600], [14, 800], [8, 960], [7, 1080], [22,1200], [22, 1320]],
+	"base":[[17, 540], [6, 600], [14, 800], [8, 960], [7, 1080], [22,1200], [22, 1320]],
 	"superweapon": {
 		"unit": {
 			"armada": ["armbrtha", "armvulc", "armsilo"],
 			"cortex": ["corint",   "corbuzz", "corsilo"]
 		},
-		"weight":     [ 0.40,       0.20,      0.30],
+		"weight":     [ 0.40,       0.20,      0.20],
 
 		"condition": [50, 480]  // [<Minimum income>, <maximum seconds to build based on total metal income>]
     },
@@ -117,7 +117,17 @@
 					
 				]
 			]
-		},
+        },
+        "armwin": {
+			"hub": [
+				[
+					{"unit": "armwin", "category": "defence", "offset": [0, 0], "condition": {"chance": 0.3}},
+					{"unit": "armwin", "category": "defence", "offset": [0, 0], "condition": "energy"},
+					{"unit": "armwin", "category": "defence", "offset": [0, 0], "condition": "energy"}
+
+				]  
+			]
+		},      
 		"armsolar": {
 			"hub": [
 				[  // chain1
@@ -219,7 +229,8 @@
             "hub": [
                 [
                     {"unit": "armllt", "category": "defence", "offset": {"back": 20}},
-                    {"unit": "armsolar", "category": "defence", "offset": {"back": 60}}
+                    {"unit": "armsolar", "category": "defence", "offset": {"back": 60}},
+                    {"unit": "armpb", "category": "defence", "offset": [200, -50]} 
                 ]
             ]
         },
@@ -227,7 +238,8 @@
             "hub": [
                 [
                     {"unit": "armllt", "category": "defence", "offset": {"back": 20}},
-                    {"unit": "armsolar", "category": "defence", "offset": {"back": 60}}
+                    {"unit": "armsolar", "category": "defence", "offset": {"back": 60}},
+                    {"unit": "armpb", "category": "defence", "offset": [200, -50]}  
                 ]
             ]
         }, 
@@ -244,20 +256,34 @@
                     {"unit": "armpb", "category": "defence", "offset": {"front": 200}}                
                 ]
             ]
-        },     
+        },
+        "armshltx": {
+            "hub": [
+                [
+                    {"unit": "armanni", "category": "defence", "offset": {"front": 200}}, 
+                    {"unit": "armpb", "category": "defence", "offset": [230, -50]}                 
+                ]
+            ]
+        },  
+        "armsy": {
+            "hub": [
+                [
+					{"unit": "armnanotcplat", "category": "defence", "offset": [-20, 0]},
+					{"unit": "armnanotcplat", "category": "defence", "offset": [-20, 8]},
+                    {"unit": "armtl", "category": "defence", "offset": [-60, -60]},
+                    {"unit": "armdl", "category": "defence", "offset": [60, 60]}
+                // {"unit": "armhlt", "category": "defence", "offset": [0, -60]}
+                //  {"unit": "armguard", "category": "defence", "offset": [0, 60]}
+
+                ]
+            ]
+        } ,    
         "corlab": {
             "hub": [
                 [
                     {"unit": "corllt", "category": "defence", "offset": {"back": 20}},
-                    {"unit": "corsolar", "category": "defence", "offset": {"back": 60}}
-                ]
-            ]
-        },
-        "corvp": {
-            "hub": [
-                [
-                    {"unit": "corllt", "category": "defence", "offset": {"back": 20}},
-                    {"unit": "corsolar", "category": "defence", "offset": {"back": 60}}
+                    {"unit": "corsolar", "category": "defence", "offset": {"back": 60}},
+                    {"unit": "corvipe", "category": "defence", "offset": {"front": 200}}  
                 ]
             ]
         },
@@ -268,21 +294,59 @@
                 ]
             ]
         },
+        "corvp": {
+            "hub": [
+                [
+                    {"unit": "corllt", "category": "defence", "offset": {"back": 20}},
+                    {"unit": "corsolar", "category": "defence", "offset": {"back": 60}},
+                    {"unit": "corvipe", "category": "defence", "offset": [200, 50]} 
+                ]
+            ]
+        },
         "coravp": {
             "hub": [
                 [
-                    {"unit": "corvipe", "category": "defence", "offset": {"front": 200}}                 
+                    {"unit": "corvipe", "category": "defence", "offset": [200, -50]}               
                 ]
             ]
-        }          
+        },
+        "corgant": {
+            "hub": [
+                [
+                    {"unit": "cordoom", "category": "defence", "offset": [250, -50]},
+                    {"unit": "corvipe", "category": "defence", "offset": [300, 0]}             
+                ]
+            ]
+        },
+        "corsy": {
+            "hub": [
+                [
+					{"unit": "cornanotcplat", "category": "defence", "offset": [-20, 0]},
+					{"unit": "cornanotcplat", "category": "defence", "offset": [-20, 8]},
+                    {"unit": "cortl", "category": "defence", "offset": [-60, -60]} ,
+                    {"unit": "cordl", "category": "defence", "offset": [60, 60]}
+                   // {"unit": "corvipe", "category": "defence", "offset": [0, -60]}
+                   // {"unit": "corpun", "category": "defence", "offset": [0, 60]}
+
+                ]
+            ]
+        }         
     },
     
 "mex": {
         "armmex": {
             "hub":[
                 [ //different chains possible here
-                    {"unit": "armbeamer", "category": "defence", "offset": {"front": 120}, "condition": {"chance": 0.20}}
+                    {"unit": "armclaw", "category": "defence", "offset": {"front": 120}, "condition": {"chance": 0.20}}
                 ]
+               // [
+					//{"unit": "armfhlt", "category": "defence", "offset": {"front": 120}, "condition": {"chance": 0.25}},
+                    // {"unit": "armtide", "category": "defence", "offset": [24,0], "condition": {"chance": 0.25}},
+                    // {"unit": "armtide", "category": "defence", "offset": [48,0], "condition": {"chance": 0.25}},
+                    // {"unit": "armtide", "category": "defence", "offset": [24,24], "condition": {"chance": 0.25}},    
+                	//{"unit": "armtide", "category": "defence", "offset": [48,24], "condition": {"chance": 0.25}},
+                    //{"unit": "armfmkr", "category": "defence", "offset": [48,0], "condition": "energy"}
+               // ]
             ],    
             "energy": [20, true],
             "porc": true
@@ -290,21 +354,26 @@
         "cormex": {
         "hub":[
                 [ 
-                    {"unit": "cormaw", "category": "defence", "offset": [100, 0], "condition": {"chance": 0.1}},
+                    {"unit": "cormaw", "category": "defence", "offset": [100, 0], "condition": {"chance": 0.15}},
                     {"unit": "corvipe", "category": "defence", "offset": [100, 0], "condition": {"chance": 0.1}}
                 ]
+                //[
+                    //{"unit": "corfhlt", "category": "defence", "offset": {"front": 120}, "condition": {"chance": 0.25}}
+                //]
             ],    
             "energy": [20, true],
             "porc": true
         }
     },
 	"defence": {  // name need to be one of these categories <category>: factory, nano, store, pylon, energy, defence, bunker, big_gun, radar, sonar, mex, repair | bunker, big_gun, stor should be save to use for other purposes
-        "armbeamer": {
+        "armclaw": {
             "hub": [
                 [                    
-                    {"unit": "armclaw", "category": "defence", "offset": [0, 80], "condition": {"chance": 1.0}},
-                    {"unit": "armnanotc", "category": "defence", "offset": [-80, 80], "condition": {"chance": 0.5}}, 
-                    {"unit": "armjuno", "category": "defence", "offset": [0, 80], "condition": {"chance": 0.3}}  
+                    //{"unit": "armbeamer", "category": "defence", "offset": [0, 80], "condition": {"chance": 1.0}},
+                    {"unit": "armnanotc", "category": "defence", "offset": [-80, 80], "condition": {"chance": 1.0}}, 
+                   // {"unit": "armfhlt", "category": "defence", "offset": [-40, 80], "condition": {"chance": 1.0}},
+                    {"unit": "armjuno", "category": "defence", "offset": [-40, 80], "condition": {"chance": 0.3}},
+                    {"unit": "armamb", "category": "defence", "offset": [50, 0], "condition": {"chance": 0.5}} 
                 ],
                 [
                     {"unit": "armnanotc", "category": "defence", "offset":{"back": 120}, "condition": {"chance": 1.0}},
@@ -321,7 +390,8 @@
         "cormaw": {
             "hub": [
                 [
-                    {"unit": "corjamt", "category": "defence", "offset": [-50, 0], "condition": {"chance": 1.0}}
+                    {"unit": "corjamt", "category": "defence", "offset": [-50, 0], "condition": {"chance": 1.0}},
+                    {"unit": "cornanotc", "category": "defence", "offset": [-30, 20], "condition": {"chance": 1.0}}
                     
                 ],
                 [                  
@@ -333,17 +403,28 @@
         },
         "corvipe": {
             "hub": [
-                [
-                    {"unit": "cornanotc", "category": "defence", "offset": [-50, 0], "condition": {"chance": 1.0}},
-                    {"unit": "corjamt", "category": "defence", "offset": [-50, 0], "condition": {"chance": 1.0}}
-                    
-                ],
                 [                  
                     {"unit": "cordoom", "category": "defence", "offset": {"back": 140}, "condition": {"chance": 0.5}},
                     {"unit": "cortron", "category": "defence", "offset": {"back": 140}, "condition": {"chance": 0.5}}    
                 ]
             ]
-//		},
+        },
+        //"armtl": {
+        //    "hub": [
+        //        [
+                   // {"unit": "armguard", "category": "defence", "offset": [-50, 0], "condition": {"chance": 1.0}}               
+        //       ]
+        //   ]
+		//},
+		"armfhlt": {
+				"hub": [
+					[
+						{"unit": "armnanotcplat", "category": "defence", "offset": [-50, 0], "condition": {"chance": 1.0}},
+                        {"unit": "armdl", "category": "defence", "offset": [-60, 40], "condition": {"chance": 1.0}},    
+                        {"unit": "armtl", "category": "defence", "offset": [-60, 40], "condition": {"chance": 1.0}}                 
+					]
+				]
+		}
 //		"armmakr": {
 //			"hub": [
 //				[
@@ -353,7 +434,7 @@
 //				{"unit": "armmakr", "category": "pylon", "offset": {"back": 64}}
 //				]
 //			]
-		}
+		
     }
 }
 }

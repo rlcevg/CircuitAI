@@ -392,13 +392,15 @@ void ISquadTask::Attack(const int frame, const bool isGround)
 
 	const int targetTile = manager->GetCircuit()->GetInflMap()->Pos2Index(tPos);
 	const float alpha = std::atan2(dir.z, dir.x);
+	CCircuitDef* edef = GetTarget()->GetCircuitDef();
+	const bool isStatic = (edef != nullptr) && !edef->IsMobile();
 	// incorrect, it should check aoe in vicinity
-	const float aoe = (GetTarget()->GetCircuitDef() != nullptr) ? GetTarget()->GetCircuitDef()->GetAoe() : SQUARE_SIZE;
+	const float aoe = (edef != nullptr) ? edef->GetAoe() : SQUARE_SIZE;
 
 	int row = 0;
 	for (const auto& kv : rangeUnits) {
 		CCircuitDef* rowDef = (*kv.second.begin())->GetCircuitDef();
-		const float range = ((row++ == 0) ? std::min(kv.first, rowDef->GetLosRadius()) : kv.first) * RANGE_MOD;
+		const float range = (((row++ == 0) && !GetTarget()->IsInLOS()) ? std::min(kv.first, rowDef->GetLosRadius()) : kv.first) * RANGE_MOD;
 		const float maxDelta = (M_PI * 0.8f) / kv.second.size();
 		// NOTE: float delta = asinf(cdef->GetRadius() / range);
 		//       but sin of a small angle is similar to that angle, omit asinf() call
@@ -420,7 +422,7 @@ void ISquadTask::Attack(const int frame, const bool isGround)
 				const float angle = alpha + beta;
 				AIFloat3 newPos(tPos.x + range * cosf(angle), tPos.y, tPos.z + range * sinf(angle));
 				CTerrainManager::CorrectPosition(newPos);
-				unit->Attack(newPos, GetTarget(), targetTile, isGround, frame + FRAMES_PER_SEC * 60);
+				unit->Attack(newPos, GetTarget(), targetTile, isGround, isStatic, frame + FRAMES_PER_SEC * 60);
 			}
 
 			beta += delta;

@@ -78,11 +78,11 @@ public:
 	enum class AttrType: RoleT {NONE = -1,
 		MELEE = 0, BOOST, NO_JUMP, NO_STRAFE,
 		STOCK, SIEGE, RET_HOLD, RET_FIGHT,
-		SOLO, BASE, VAMPIRE, _SIZE_};
+		SOLO, BASE, VAMPIRE, ONOFF, _SIZE_};
 	enum AttrMask: RoleM {
 		MELEE = 0x00000001, BOOST = 0x00000002, NO_JUMP  = 0x00000004, NO_STRAFE = 0x00000008,
 		STOCK = 0x00000010, SIEGE = 0x00000020, RET_HOLD = 0x00000040, RET_FIGHT = 0x00000080,
-		SOLO  = 0x00000100, BASE  = 0x00000200, VAMPIRE  = 0x00000400};
+		SOLO  = 0x00000100, BASE  = 0x00000200, VAMPIRE  = 0x00000400, ONOFF     = 0x00000800};
 	using AttrT = std::underlying_type<AttrType>::type;
 	using AttrM = std::underlying_type<AttrMask>::type;
 
@@ -155,6 +155,7 @@ public:
 	bool IsAttrRetFight() const { return attr & AttrMask::RET_FIGHT; }
 	bool IsAttrSolo()     const { return attr & AttrMask::SOLO; }
 	bool IsAttrVampire()  const { return attr & AttrMask::VAMPIRE; }
+	bool IsAttrOnOff()    const { return attr & AttrMask::ONOFF; }
 
 	bool IsHoldFire()   const { return fireState == FireType::HOLD; }
 	bool IsReturnFire() const { return fireState == FireType::RETURN; }
@@ -269,6 +270,8 @@ public:
 	bool IsAssist() const { return isAssist; }
 	void SetIsDecoy(bool value) { isDecoy = value; }
 	bool IsDecoy() const { return isDecoy; }
+	void SetOnSlow(bool value) { isOnSlow = value; }
+	bool IsOnSlow() const { return isOnSlow; }
 
 	float GetHealth()       const { return health; }
 	float GetSpeed()        const { return speed; }
@@ -382,6 +385,7 @@ private:
 	bool isPylon : 1;
 	bool isAssist : 1;
 	bool isDecoy : 1;
+	bool isOnSlow : 1;
 	// ---- Bit fields ---- END
 
 	float health;

@@ -10,6 +10,7 @@
 #include "map/ThreatMap.h"
 #include "map/InfluenceMap.h"
 #include "module/BuilderManager.h"
+#include "module/EconomyManager.h"
 #include "module/FactoryManager.h"
 #include "resource/MetalManager.h"
 #include "setup/SetupManager.h"
@@ -80,6 +81,12 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 		travelAction = new CMoveAction(unit, squareSize);
 	}
 	unit->PushTravelAct(travelAction);
+
+	if (unit->GetCircuitDef()->IsAbleToCloak()) {
+		TRY_UNIT(manager->GetCircuit(), unit,
+			unit->CmdCloak(true);
+		)
+	}
 
 	// Mobile repair
 	if (!cdef->IsAbleToFly()) {
@@ -180,13 +187,13 @@ void CRetreatTask::Update()
 				: healthPerc > 0.98f;
 
 		if (isRepaired && !unit->IsDisarmed(frame)) {
-			RemoveAssignee(unit);
+			Recovered(unit);
 		} else if (unit->IsForceUpdate(frame) || isExecute) {
 			Start(unit);
 		} else if ((circuit->GetBindedRole(unit->GetCircuitDef()->GetMainRole()) == ROLE_TYPE(BUILDER))
 			&& (circuit->GetInflMap()->GetEnemyInflAt(unit->GetPos(frame)) < INFL_EPS))
 		{
-			RemoveAssignee(unit);
+			Recovered(unit);
 		}
 	}
 }
@@ -245,7 +252,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		if ((circuit->GetBindedRole(cdef->GetMainRole()) == ROLE_TYPE(BUILDER))
 			&& (circuit->GetBuilderManager()->GetWorkerCount() <= 2))
 		{
-			RemoveAssignee(unit);
+			Recovered(unit);
 			return;
 		}
 
@@ -342,6 +349,19 @@ void CRetreatTask::Dead()
 {
 	costQuery = nullptr;
 	IUnitTask::Dead();
+}
+
+void CRetreatTask::Recovered(CCircuitUnit* unit)
+{
+	if (unit->GetCircuitDef()->IsAbleToCloak()
+		&& unit->GetCircuitDef()->GetCloakCost() > manager->GetCircuit()->GetEconomyManager()->GetAvgEnergyIncome() * 0.1f)
+	{
+		TRY_UNIT(manager->GetCircuit(), unit,
+			unit->CmdCloak(false);
+		)
+	}
+
+	RemoveAssignee(unit);
 }
 
 void CRetreatTask::ApplyPath(const CQueryPathSingle* query)

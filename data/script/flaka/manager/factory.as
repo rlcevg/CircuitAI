@@ -33,7 +33,7 @@ void AiTaskClosed(IUnitTask@ task, bool done)
  */
 bool AiIsSwitchTime(int lastSwitchFrame)
 {
-	const float value = pow((ai.frame - lastSwitchFrame), 0.9) * aiEconomyMgr.metal.income;
+	const float value = pow((ai.frame - lastSwitchFrame), 0.9) * aiEconomyMgr.metal.income + (aiEconomyMgr.metal.current * 5);
 	if (value > switchLimit) {
 		switchLimit = MakeSwitchLimit();
 		return true;

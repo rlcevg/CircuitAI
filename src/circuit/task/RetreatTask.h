@@ -43,6 +43,8 @@ public:
 	virtual void Dead();
 
 private:
+	void Recovered(CCircuitUnit* unit);
+
 	void ApplyPath(const CQueryPathSingle* query);
 	CCircuitUnit* ValidateNewRepairer(const IPathQuery* query, int newRepId) const;
 	void ApplyCostMap(const CQueryCostMap* query, CCircuitUnit* newRep);

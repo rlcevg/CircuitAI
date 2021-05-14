@@ -870,7 +870,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 
 		if (engy.cdef->GetCount() < engy.cond.limit) {
 			isLastHope = false;
-			if (taskSize < (int)(buildPower / engy.cdef->GetCostM() * 2 + 1)) {
+			if (taskSize < (int)(buildPower / engy.cdef->GetCostM() * 10 + 1)) {
 				bestDef = engy.cdef;
 				if ((engy.cond.metalIncome < buildTimeMod * metalIncome)
 					&& (engy.cond.energyIncome < energyIncome))
@@ -888,7 +888,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			break;
 		} else if (hopeDef == nullptr) {
 			hopeDef = engy.cdef;
-			isLastHope = isLastHope && (taskSize < (int)(buildPower / engy.cdef->GetCostM() * 2 + 1));
+			isLastHope = isLastHope && (taskSize < (int)(buildPower / engy.cdef->GetCostM() * 10 + 1));
 		}
 	}
 	if (isLastHope) {

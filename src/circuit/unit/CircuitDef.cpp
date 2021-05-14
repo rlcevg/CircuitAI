@@ -144,6 +144,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, isPylon(false)
 		, isAssist(false)
 		, isDecoy(false)
+		, isOnSlow(false)
 		, stockCost(.0f)
 		, jumpRange(.0f)
 		, retreat(-1.f)
@@ -554,13 +555,14 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	surfThrDmg = sqrtf(surfDps) * std::pow(surfDmg, 0.25f) * THREAT_MOD;
 	waterThrDmg = sqrtf(waterDps) * std::pow(waterDmg, 0.25f) * THREAT_MOD;
 	// FIXME: DEBUG
-	circuit->LOG("%s | def=%f air=%f surf=%f water=%f", def->GetName(), defThreat,
+//	circuit->LOG("%s | def=%f air=%f surf=%f water=%f", def->GetName(), defThreat,
+	circuit->LOG("%s, %f, %f, %f, %f", def->GetName(), defThreat,
 			airThrDmg * sqrtf(def->GetHealth() + maxShield * SHIELD_MOD),
 			surfThrDmg * sqrtf(def->GetHealth() + maxShield * SHIELD_MOD),
 			waterThrDmg * sqrtf(def->GetHealth() + maxShield * SHIELD_MOD));
-	if (std::string("armpw") == def->GetName()) {
-		circuit->LOG("type: %i | %f", def->GetArmorType(), def->GetArmoredMultiple());
-	}
+//	if (std::string("armpw") == def->GetName()) {
+//		circuit->LOG("type: %i | %f", def->GetArmorType(), def->GetArmoredMultiple());
+//	}
 	// FIXME: DEBUG
 }
 

@@ -52,7 +52,7 @@
 // 			Integer radius of a blocker or description string.
 // 			Available string values: explosion, expl_ally
 //			"radius": "explosion",  // default: "explosion"
-			"radius": 6,  // default: "explosion"
+			"yard": [6,6],  // "default": "explosion"
 			"ignore": ["engy_low"]
 		},
 		"fusion": {
@@ -126,19 +126,19 @@
 		}
 	},
 	// Water overrides land. Map considered as water if amount of land < 40%
-	"class_water" : {
-		"wind": {
-			"type": ["rectangle", "engy_low"],
-			"ignore": ["mex", "engy_mid", "engy_high", "nano"]
-		}
-	},
+	//"class_water" : {
+	//	"wind": {
+	//		"type": ["rectangle", "engy_low"],
+	//		"ignore": ["mex", "engy_mid", "engy_high", "nano"]
+	//	}
+	//},
 	"instance": {
 		"fac_land": ["armlab", "armalab", "armvp", "armavp", "armhp", "corlab", "coralab", "corvp", "coravp", "corhp"],
 		"fac_water": ["armsy", "armasy", "corsy", "corasy"],
 		"fac_strider": ["armshltx", "corgant"],
 		"solar": ["armsolar", "corsolar"],
 		"advsolar":["armadvsol", "coradvsol"],
-		"wind": ["armwin", "corwin"],
+		"wind": ["armwin", "corwin", "armtide", "cortide"],
 		"fusion":["armfus", "armuwfus", "armckfus", "armafus", "corfus", "coruwfus", "corafus"],
 		"store": ["armmstor", "armestor", "cormstor", "corestor"],
 		"converter_t1": ["armmakr", "cormakr"],

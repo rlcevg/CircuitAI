@@ -14,20 +14,22 @@
 				"factory": {
 					"armlab": [
 						// [<weight>, [<role>, <role>, ...]]
-						[0.20, ["scout", "raider", "builder", "raider", "builder", "builder", "raider", "raider", "raider", "raider", "builder", "raider"]], //base push
+						[5.20, ["scout", "raider", "builder", "raider", "builder", "raider", "raider", "raider", "raider", "raider", "raider", "raider", "raider", "builder", "raider"]], //base push
 						[0.50, ["scout", "raider", "builder"]],
 						[0.20, ["scout", "raider", "builder", "raider", "raider", "builder", "raider", "raider", "builder", "raider", "raider", "builder"]], //classic start raider:builder = 2:1
 						[0.20, ["scout", "raider", "builder", "scout", "raider", "raider", "builder", "raider", "raider", "raider", "builder", "raider", "skirmish", "raider", "builder"]]  //offensive start
 					],
 					"armvp": [
 						[0.5, ["scout", "raider", "builder", "raider", "raider", "builder", "builder", "builder", "raider", "raider", "raider", "builder", "raider", "builder"]], //builder start
-						[0.5, ["scout", "scout", "raider", "builder", "scout", "raider", "raider", "builder", "raider", "raider", "raider", "builder", "raider", "raider", "raider", "builder" ]] //offensive start
-					],
+						[0.5, ["scout", "scout", "raider", "builder", "scout", "raider", "raider", "builder", "raider", "raider", "raider", "builder", "raider", "raider", "raider", "builder" ]], //offensive start
+                        [5.0, ["scout", "raider", "builder", "raider", "raider",  "raider", "raider", "raider", "raider"]]
+                    ],
 					"armalab": [
-						[1.0, ["builderT2", "skirmish", "skirmish", "skirmish", "builderT2", "skirmish", "skirmish", "skirmish", "skirmish", "skirmish", "anti_air", "builderT2"]]
+						[1.0, ["builderT2", "skirmish", "skirmish", "skirmish", "builderT2", "skirmish", "skirmish", "builderT2", "skirmish", "skirmish", "skirmish", "builderT2", "assault", "assault", "builderT2"]]
 					],
 					"armavp": [
-						[1.0, ["builderT2", "skirmish", "skirmish", "builderT2", "skirmish", "builderT2", "raider", "builderT2", "skirmish", "anti_air", "builderT2"]]
+						[0.5, ["builderT2", "skirmish", "skirmish", "builderT2", "skirmish", "builderT2", "raider", "builderT2", "skirmish", "builderT2", "skirmish", "builderT2"]],
+                        [0.5, ["builderT2"]]
 					]
 				},
 				
@@ -43,9 +45,9 @@
 			// Commander hides if ("time" elapsed) and ("threat" exceeds value or enemy has "air")
 			"hide": {
 				"time": 420,  // seconds
-				"threat": 7,
+				"threat": 6,
 				"air": true,
-				"task_rad": [-1, 800.0]  // [<peace_radius>, <danger_radius>]
+				"task_rad": [-1, 800.0]  // [<peace_radius>, <danger_radius>] value -1 for deactivation
 				},
 
 			"side": "armada"
@@ -59,18 +61,19 @@
 				"factory": {
 					"corlab": [
 						// [<weight>, [<role>, <role>, ...]]
-						[0.5, ["raider", "raider", "builder", "raider", "raider", "builder", "raider", "scout", "raider", "builder", "support", "raider", "raider"]],
+						[0.5, ["raider", "raider", "builder", "raider", "raider", "builder", "raider", "scout", "raider", "builder", "raider", "raider"]],
                         [0.5, ["builder", "raider", "raider", "raider", "builder", "raider", "raider", "raider", "builder", "raider", "raider", "raider", "builder", "raider", "raider", "support"]],
-                        [0.5, ["scout", "builder", "builder", "raider", "builder"]]	
+                        [0.5, ["scout", "builder", "raider", "builder", "raider", "builder"]]	
 					],
 					"corvp": [
-						[1.0, ["scout", "raider", "builder", "scout", "raider", "raider", "builder", "raider", "raider", "builder", "raider", "raider"]]
+						[1.0, ["scout", "raider", "builder", "scout", "raider", "raider", "builder", "raider", "raider", "builder", "raider", "raider"]],
+                        [5.0, ["scout", "raider", "builder", "raider", "raider",  "raider", "raider", "raider", "raider"]]
 					],
 					"coralab": [
-						[1.0, ["builderT2", "raider", "raider", "raider", "builderT2", "artillery", "artillery", "assault", "builderT2", "anti_air"]]
+						[1.0, ["builderT2", "raider", "raider", "raider", "builderT2", "artillery", "artillery", "assault", "builderT2", "raider", "raider", "builderT2", "assault", "builderT2"]]
 					],
 					"coravp": [
-						[1.0, ["builderT2", "skirmish", "skirmish", "skirmish", "builderT2", "skirmish", "skirmish", "assault", "builderT2", "builderT2"]]
+						[1.0, ["builderT2", "skirmish", "skirmish", "builderT2", "skirmish", "skirmish", "builderT2", "assault", "skirmish", "builderT2", "skirmish", "builderT2"]]
 					]
 				},
 				"default": ["builder", "builder", "skirmish", "skirmish", "builder", "raider", "support", "raider"]

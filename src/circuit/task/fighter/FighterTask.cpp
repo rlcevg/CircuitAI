@@ -178,18 +178,21 @@ void IFighterTask::Attack(CCircuitUnit* unit, const int frame)
 		return;
 	}
 
+	CCircuitDef* cdef = unit->GetCircuitDef();
 	AIFloat3 dir = unit->GetPos(frame) - tPos;
-	if (unit->GetCircuitDef()->IsPlane() || (std::fabs(dir.y) > unit->GetCircuitDef()->GetMaxRange() * 0.5f)) {
+	if (cdef->IsPlane() || (std::fabs(dir.y) > cdef->GetMaxRange() * 0.5f)) {
 		unit->Attack(GetTarget(), GetTarget()->GetUnit()->IsCloaked(), frame + FRAMES_PER_SEC * 60);
 		return;
 	}
 	dir.Normalize2D();
 
-	CCircuitDef* cdef = unit->GetCircuitDef();
+	CCircuitDef* edef = GetTarget()->GetCircuitDef();
+	const bool isStatic = (edef != nullptr) && !edef->IsMobile();
+
 	const float range = std::min(cdef->GetMinRange(), cdef->GetLosRadius()) * RANGE_MOD;
 	AIFloat3 newPos(tPos.x + range * dir.x, tPos.y, tPos.z + range * dir.z);
 	CTerrainManager::CorrectPosition(newPos);
-	unit->Attack(newPos, GetTarget(), targetTile, GetTarget()->GetUnit()->IsCloaked(), frame + FRAMES_PER_SEC * 60);
+	unit->Attack(newPos, GetTarget(), targetTile, GetTarget()->GetUnit()->IsCloaked(), isStatic, frame + FRAMES_PER_SEC * 60);
 }
 
 #ifdef DEBUG_VIS

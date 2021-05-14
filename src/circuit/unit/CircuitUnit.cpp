@@ -385,7 +385,7 @@ void CCircuitUnit::Attack(CEnemyInfo* enemy, bool isGround, int timeout)
 	)
 }
 
-void CCircuitUnit::Attack(const AIFloat3& pos, CEnemyInfo* enemy, bool isGround, int timeout)
+void CCircuitUnit::Attack(const AIFloat3& pos, CEnemyInfo* enemy, bool isGround, bool isStatic, int timeout)
 {
 	TRY_UNIT(manager->GetCircuit(), this,
 		if (circuitDef->IsAttrMelee()) {
@@ -406,14 +406,17 @@ void CCircuitUnit::Attack(const AIFloat3& pos, CEnemyInfo* enemy, bool isGround,
 		unit->Fight(enemy->GetPos(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY | UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);  // los-cheat related
 		CmdWantedSpeed(NO_SPEED_LIMIT);
 		CmdSetTarget(target);
+		if (circuitDef->IsAttrOnOff()) {
+			unit->SetOn(isStatic == circuitDef->IsOnSlow());
+		}
 	)
 }
 
-void CCircuitUnit::Attack(const AIFloat3& position, CEnemyInfo* enemy, int tile, bool isGround, int timeout)
+void CCircuitUnit::Attack(const AIFloat3& position, CEnemyInfo* enemy, int tile, bool isGround, bool isStatic, int timeout)
 {
 	target = enemy;
 	targetTile = tile;
-	Attack(position, enemy, isGround, timeout);
+	Attack(position, enemy, isGround, isStatic, timeout);
 }
 
 void CCircuitUnit::Guard(CCircuitUnit* target, int timeout)

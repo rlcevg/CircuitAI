@@ -368,6 +368,12 @@ void CFactoryManager::ReadConfig()
 			}
 		}
 
+		const Json::Value& slowOnOff = behaviour["slow_target"];
+		if (!slowOnOff.isNull()) {
+			cdef->AddAttribute(ATTR_TYPE(ONOFF));
+			cdef->SetOnSlow(slowOnOff.asBool());
+		}
+
 		const Json::Value& reload = behaviour["reload"];
 		if (!reload.isNull()) {
 			cdef->SetReloadTime(reload.asFloat() * FRAMES_PER_SEC);
