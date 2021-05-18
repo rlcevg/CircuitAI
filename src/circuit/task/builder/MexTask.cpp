@@ -177,6 +177,7 @@ void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 			}
 			if (task == nullptr) {
 				AIFloat3 newPos = buildPos - (buildPos - pos).Normalize2D() * range * 0.9f;
+				CTerrainManager::CorrectPosition(newPos);
 				task = builderMgr->EnqueueTask(IBuilderTask::Priority::HIGH, def, newPos, IBuilderTask::BuildType::DEFENCE);
 			}
 			// TODO: Before BuildTask assign MoveTask(task->GetTaskPos())

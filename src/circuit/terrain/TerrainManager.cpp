@@ -1155,7 +1155,7 @@ AIFloat3 CTerrainManager::GetMovePosition(STerrainMapArea* sourceArea, const AIF
 
 std::vector<STerrainMapAreaSector>& CTerrainManager::GetSectorList(STerrainMapArea* sourceArea)
 {
-	if ((sourceArea == nullptr) ||( sourceArea->mobileType == nullptr)) {  // It flies or it's immobile
+	if ((sourceArea == nullptr) || (sourceArea->mobileType == nullptr)) {  // It flies or it's immobile
 		return areaData->sectorAirType;
 	}
 	return sourceArea->mobileType->sector;
