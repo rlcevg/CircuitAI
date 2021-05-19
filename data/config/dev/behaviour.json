@@ -423,6 +423,9 @@
 	"armamph": {
 		"role": ["raider", "anti_air"]
 	},
+	"armspy": {
+		"role": ["scout"]
+	},
 
 	// T3 bot - armshltx
 	"armmar": {
@@ -517,6 +520,9 @@
 		"role": ["assault"],
 		"attribute": ["support"],
 		"limit": 1
+	},
+	"armgremlin": {
+		"role": ["assault"]
 	},
 
 	// aircraft - armap
@@ -737,6 +743,9 @@
 	},
 	"coramph": {
 		"role": ["raider", "anti_air"]
+	},
+	"corspy": {
+		"role": ["scout"]
 	},
 
 	// T3 bot - corgant

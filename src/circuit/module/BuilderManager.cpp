@@ -1084,7 +1084,8 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 	threatMap->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
 	const int frame = circuit->GetLastFrame();
-	AIFloat3 pos = unit->GetPos(frame);
+	const AIFloat3& pos = unit->GetPos(frame);
+//	CTerrainManager::CorrectPosition(pos);
 
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
 	economyMgr->MakeEconomyTasks(pos, unit);
@@ -1096,7 +1097,6 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-//	CTerrainManager::CorrectPosition(pos);
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
@@ -1194,7 +1194,8 @@ IBuilderTask* CBuilderManager::MakeCommPeaceTask(CCircuitUnit* unit, const CQuer
 	threatMap->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
 	const int frame = circuit->GetLastFrame();
-	AIFloat3 pos = unit->GetPos(frame);
+	const AIFloat3& pos = unit->GetPos(frame);
+//	CTerrainManager::CorrectPosition(pos);
 
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
 	economyMgr->MakeEconomyTasks(pos, unit);
@@ -1206,7 +1207,6 @@ IBuilderTask* CBuilderManager::MakeCommPeaceTask(CCircuitUnit* unit, const CQuer
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-//	CTerrainManager::CorrectPosition(pos);
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
@@ -1300,7 +1300,8 @@ IBuilderTask* CBuilderManager::MakeCommDangerTask(CCircuitUnit* unit, const CQue
 	threatMap->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
 	const int frame = circuit->GetLastFrame();
-	AIFloat3 pos = unit->GetPos(frame);
+	const AIFloat3& pos = unit->GetPos(frame);
+//	CTerrainManager::CorrectPosition(pos);
 
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
 	economyMgr->MakeEconomyTasks(pos, unit);
@@ -1309,7 +1310,6 @@ IBuilderTask* CBuilderManager::MakeCommDangerTask(CCircuitUnit* unit, const CQue
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-//	CTerrainManager::CorrectPosition(pos);
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
@@ -1401,7 +1401,8 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 	threatMap->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
 	const int frame = circuit->GetLastFrame();
-	AIFloat3 pos = unit->GetPos(frame);
+	const AIFloat3& pos = unit->GetPos(frame);
+//	CTerrainManager::CorrectPosition(pos);
 
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
 	task = economyMgr->MakeEconomyTasks(pos, unit);
@@ -1416,7 +1417,6 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-//	CTerrainManager::CorrectPosition(pos);
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
