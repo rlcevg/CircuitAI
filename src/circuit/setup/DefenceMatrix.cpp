@@ -49,9 +49,9 @@ void CDefenceMatrix::ReadConfig(CCircuitAI* circuit)
 	commRadFraction = (commRadEnd - commRadBegin) / baseRange;
 
 	const Json::Value& escort = defence["escort"];
-	defendTaskNum = escort.get(unsigned(0), 2).asUInt();
-	defendersNum = escort.get(unsigned(1), 1).asUInt();
-	defendFrame = escort.get(unsigned(2), 600).asInt() * FRAMES_PER_SEC;
+	guardTaskNum = escort.get(unsigned(0), 2).asUInt();
+	guardsNum = escort.get(unsigned(1), 1).asUInt();
+	guardFrame = escort.get(unsigned(2), 600).asInt() * FRAMES_PER_SEC;
 
 	pointRange = root["porcupine"].get("point_range", 600.f).asFloat();
 }

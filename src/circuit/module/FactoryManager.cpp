@@ -46,8 +46,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit, new CFactoryScript(circuit->GetScriptManager(), this))
 		, updateIterator(0)
 		, factoryPower(.0f)
-		, offsetPower(.0f)
-		, isResetedFactoryPower(false)
 		, isSwitchTime(false)
 		, lastSwitchFrame(-1)
 		, noT1FacCount(0)
@@ -193,8 +191,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 	};
 
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
-		UnitDef* def = cdef.GetDef();
-		const bool isBuilder = def->IsBuilder();
+		const bool isBuilder = cdef.GetDef()->IsBuilder();
 		if (!cdef.IsMobile() && isBuilder) {
 			CCircuitDef::Id unitDefId = cdef.GetId();
 			if (!cdef.GetBuildOptions().empty()) {
@@ -202,12 +199,11 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 				finishedHandler[unitDefId] = factoryFinishedHandler;
 				idleHandler[unitDefId] = factoryIdleHandler;
 				destroyedHandler[unitDefId] = factoryDestroyedHandler;
-			} else if (std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE < cdef.GetBuildDistance()) {
+			} else if (cdef.IsAssist()) {
 				createdHandler[unitDefId] = assistCreatedHandler;
 				finishedHandler[unitDefId] = assistFinishedHandler;
 				idleHandler[unitDefId] = assistIdleHandler;
 				destroyedHandler[unitDefId] = assistDestroyedHandler;
-				cdef.SetIsAssist(true);
 			}
 		}
 
@@ -242,9 +238,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		for (SSideInfo& sideInfo : sideInfos) {
 			if (cdef.CanBuild(sideInfo.airpadDef)) {
 				airpadDefs[cdef.GetId()] = sideInfo.airpadDef;
-			}
-			if (cdef.CanBuild(sideInfo.assistDef)) {
-				assistDefs[cdef.GetId()] = sideInfo.assistDef;
 			}
 		}
 	}
@@ -502,6 +495,7 @@ void CFactoryManager::ReadConfig()
 				continue;
 			}
 			if (!cdef->CanBuild(udef)) {  // buildlist from modoptions
+				circuit->LOG("CONFIG %s: factory '%s' can't build '%s'", cfgName.c_str(), fac.c_str(), items[i].asCString());
 				continue;
 			}
 			trueIndex.push_back(i);
@@ -600,11 +594,6 @@ void CFactoryManager::ReadConfig()
 void CFactoryManager::Init()
 {
 	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
-		CCircuitDef* assistDef = GetSideInfo().assistDef;
-		offsetPower = (assistDef->GetBuildSpeed() - 8.f) * 1.2f;  // 1.2 is UpdateFactoryTask's modifier
-		factoryPower -= offsetPower;
-		offsetPower -= (assistDef->GetBuildSpeed() - 60.f * 0.1f) * 1.2f;  // 60 ~ 2 solars + comm; kbot should 1 solar
-
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		const int interval = 4;
 		const int offset = circuit->GetSkirmishAIId() % interval;
@@ -790,16 +779,6 @@ void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 
 void CFactoryManager::FallbackTask(CCircuitUnit* unit)
 {
-}
-
-void CFactoryManager::ResetFactoryPower()
-{
-	isResetedFactoryPower = true;
-	// FIXME: GetPureMetalIncome() returns average or past frame value, which is lower than real income
-	const float offset = (8.f - circuit->GetEconomyManager()->GetPureMetalIncome()) * 1.2f;
-	factoryPower -= offset;
-	offsetPower += offset;
-	isSwitchTime = true;
 }
 
 void CFactoryManager::ApplySwitchFrame()
@@ -1019,11 +998,12 @@ bool CFactoryManager::IsHighPriority(CAllyUnit* unit) const
 
 CCircuitDef* CFactoryManager::GetFactoryToBuild(AIFloat3 position, bool isStart, bool isReset)
 {
-	CCircuitDef* facDef = factoryData->GetFactoryToBuild(circuit, position, isStart, isReset);
-	if ((facDef == nullptr) && utils::is_valid(position)) {
-		facDef = factoryData->GetFactoryToBuild(circuit, -RgtVector, isStart, isReset);
-	}
-	return facDef;
+//	CCircuitDef* facDef = factoryData->GetFactoryToBuild(circuit, position, isStart, isReset);
+//	if ((facDef == nullptr) && utils::is_valid(position)) {
+//		facDef = factoryData->GetFactoryToBuild(circuit, -RgtVector, isStart, isReset);
+//	}
+//	return facDef;
+	return factoryData->GetFactoryToBuild(circuit, position, isStart, isReset);
 }
 
 void CFactoryManager::AddFactory(const CCircuitDef* cdef)
@@ -1076,10 +1056,9 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 
 	// check nanos around
 	std::set<CCircuitUnit*> nanos;
-	float radius = GetSideInfo().assistDef->GetBuildDistance();
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	COOAICallback* clb = circuit->GetCallback();
-	auto units = clb->GetFriendlyUnitsIn(pos, radius);
+	auto units = clb->GetFriendlyUnitsIn(pos, GetAssistRange());
 	int teamId = circuit->GetTeamId();
 	for (Unit* nano : units) {
 		if (nano == nullptr) {

@@ -20,8 +20,11 @@ public:
 	virtual ~CBEnergyTask();
 
 	virtual void Update() override;
-
 protected:
+	virtual void Finish() override;
+	virtual void Cancel() override;
+
+private:
 	bool isStalling;
 };
 

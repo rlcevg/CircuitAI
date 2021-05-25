@@ -10,6 +10,8 @@
 #include "util/GameAttribute.h"
 #include "util/Utils.h"
 
+#include "spring/SpringCallback.h"
+
 #include "WeaponMount.h"
 #include "WeaponDef.h"
 #include "Damage.h"
@@ -155,7 +157,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	id = def->GetUnitDefId();
 
 	buildDistance  = def->GetBuildDistance();
-	buildSpeed     = def->GetBuildSpeed();
+	buildSpeed     = workerTime = def->GetBuildSpeed();
 	selfDCountdown = def->GetSelfDCountdown();
 	maxThisUnit    = def->GetMaxThisUnit();
 
@@ -179,6 +181,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	captureSpeed = def->GetCaptureSpeed() / TEAM_SLOWUPDATE_RATE;
 //	altitude     = def->GetWantedHeight();
 
+	COOAICallback* clb = circuit->GetCallback();
 	MoveData* md = def->GetMoveData();
 	isSubmarine  = (md == nullptr) ? false : md->IsSubMarine();
 	delete md;
@@ -191,7 +194,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	isAbleToRepair    = def->IsAbleToRepair();
 	isAbleToReclaim   = def->IsAbleToReclaim();
 	isAbleToResurrect = def->IsAbleToResurrect();
-	isAbleToAssist    = def->IsAbleToAssist();
+	isAbleToAssist    = def->IsAbleToAssist() && !clb->UnitDef_HasYardMap(id);
 
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto it = customParams.find("energyconv_capacity");
@@ -550,19 +553,15 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	float dmg = std::max(std::max(waterDmg, surfDmg), airDmg);
 	float dps = std::max(std::max(waterDps, surfDps), airDps);
 	defDmg = pwrDmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
-	defThreat = power = defDmg * sqrtf(def->GetHealth() + maxShield * SHIELD_MOD);
+	defThreat = power = defDmg * sqrtf(health + maxShield * SHIELD_MOD);
 	airThrDmg = sqrtf(airDps) * std::pow(airDmg, 0.25f) * THREAT_MOD;
 	surfThrDmg = sqrtf(surfDps) * std::pow(surfDmg, 0.25f) * THREAT_MOD;
 	waterThrDmg = sqrtf(waterDps) * std::pow(waterDmg, 0.25f) * THREAT_MOD;
 	// FIXME: DEBUG
 //	circuit->LOG("%s | def=%f air=%f surf=%f water=%f", def->GetName(), defThreat,
-	circuit->LOG("%s, %f, %f, %f, %f", def->GetName(), defThreat,
-			airThrDmg * sqrtf(def->GetHealth() + maxShield * SHIELD_MOD),
-			surfThrDmg * sqrtf(def->GetHealth() + maxShield * SHIELD_MOD),
-			waterThrDmg * sqrtf(def->GetHealth() + maxShield * SHIELD_MOD));
-//	if (std::string("armpw") == def->GetName()) {
-//		circuit->LOG("type: %i | %f", def->GetArmorType(), def->GetArmoredMultiple());
-//	}
+//			airThrDmg * sqrtf(health + maxShield * SHIELD_MOD),
+//			surfThrDmg * sqrtf(health + maxShield * SHIELD_MOD),
+//			waterThrDmg * sqrtf(health + maxShield * SHIELD_MOD));
 	// FIXME: DEBUG
 }
 

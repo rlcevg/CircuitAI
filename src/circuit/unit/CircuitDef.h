@@ -164,9 +164,8 @@ public:
 	const std::unordered_set<Id>& GetBuildOptions() const { return buildOptions; }
 	float GetBuildDistance() const { return buildDistance; }
 	float GetBuildSpeed() const { return buildSpeed; }
-	// FIXME: BA
 	void SetBuildSpeed(float value) { buildSpeed = value; }
-	// FIXME: BA
+	float GetWorkerTime() const { return workerTime; }
 	inline bool CanBuild(Id buildDefId) const {	return buildOptions.find(buildDefId) != buildOptions.end(); }
 	inline bool CanBuild(CCircuitDef* buildDef) const { return CanBuild(buildDef->GetId()); }
 	int GetCount() const { return count; }
@@ -297,6 +296,11 @@ public:
 	void SetMidPosOffset(float x, float y, float z) { midPosOffset = springai::AIFloat3(x, y, z); }
 	springai::AIFloat3 GetMidPosOffset(int facing) const;
 
+	// script API
+	float GetAirThreat() const { return airThrDmg * sqrtf(health + maxShield * SHIELD_MOD); }
+	float GetSurfThreat() const { return surfThrDmg * sqrtf(health + maxShield * SHIELD_MOD); }
+	float GetWaterThreat() const { return waterThrDmg * sqrtf(health + maxShield * SHIELD_MOD); }
+
 private:
 	static RoleName* roleNames;
 	static AttrName* attrNames;
@@ -316,6 +320,7 @@ private:
 	std::unordered_set<Id> buildOptions;
 	float buildDistance;
 	float buildSpeed;
+	float workerTime;
 	int count;
 	int buildCounts;  // number of builder defs able to build this def;
 	int selfDCountdown;

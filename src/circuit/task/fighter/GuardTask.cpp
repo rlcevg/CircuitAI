@@ -7,6 +7,7 @@
 
 #include "task/fighter/GuardTask.h"
 #include "task/TaskManager.h"
+#include "module/MilitaryManager.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
@@ -29,7 +30,32 @@ CFGuardTask::~CFGuardTask()
 
 bool CFGuardTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return (attackPower < maxPower) && unit->GetCircuitDef()->IsRoleRiot();
+	CCircuitAI* circuit = manager->GetCircuit();
+	unsigned int guardsNum = circuit->GetMilitaryManager()->GetGuardsNum();
+	if (unit->GetCircuitDef()->IsRoleRiot()) {
+		guardsNum /= 2;
+	}
+	if (units.size() >= guardsNum) {
+		return false;
+	}
+	CCircuitUnit* vip = circuit->GetTeamUnit(vipId);
+	if (vip == nullptr) {
+		return false;
+	}
+	if (unit->GetCircuitDef()->IsAmphibious()
+		&& (vip->GetCircuitDef()->IsAmphibious()
+			|| vip->GetCircuitDef()->IsLander()
+			|| vip->GetCircuitDef()->IsFloater()))
+	{
+		return true;
+	}
+	if ((vip->GetCircuitDef()->IsAbleToFly() && unit->GetCircuitDef()->IsAbleToFly())
+		|| (vip->GetCircuitDef()->IsLander() && unit->GetCircuitDef()->IsLander())
+		|| (vip->GetCircuitDef()->IsFloater() && unit->GetCircuitDef()->IsFloater()))
+	{
+		return true;
+	}
+	return false;
 }
 
 void CFGuardTask::Start(CCircuitUnit* unit)

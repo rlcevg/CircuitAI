@@ -19,6 +19,10 @@ public:
 				  float cost, float shake, bool isPlop, int timeout);
 	virtual ~CBFactoryTask();
 
+	CCircuitDef* GetReprDef() const { return reprDef; }
+	bool IsPlop() const { return isPlop; }
+	void SetPosition(const springai::AIFloat3& pos) { position = pos; }
+
 	virtual void Start(CCircuitUnit* unit) override;
 	virtual void Update() override;
 protected:

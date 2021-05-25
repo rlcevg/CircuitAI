@@ -34,6 +34,87 @@
 },
 
 "behaviour": {
+//	"<UnitDef>": {
+		// "role": [<main>, <enemy>, <enemy>, ...]
+		// <main> is the role to make desicions of when to build it and what task to assign
+		// <enemy> is to decide how to counter enemy unit, if missing then equals to <main>
+		// Roles: builder, scout, raider, riot, assault, skirmish, artillery, anti_air, anti_sub, anti_heavy, bomber, support, mine, transport, air, sub, static, heavy, super, commander
+		// Auto-assigned roles: builder, air, static, super, commander
+		// raider: units grouped apart from others, tries to find weak spots.
+		// riot: regular attacker, but according to response.json it is built when enemy has many raiders (in plans to make riot just con's defender).
+		// assault: regular attacker, according to response.json it is built when enemy has many statics.
+		// skirmish: regular attacker, according to response.json it is built when enemy has many riots or assaults.
+//		"role": ["builder"],
+
+		// Attributes - optinal states; can contain roles to count it as response; if factoty has support attribute then it's back-line building.
+		// "melee" - always move close to target, disregard attack range
+		// "no_jump" - disable jump on retreat
+		// "boost" - boost speed on retreat
+		// "no_strafe" - disable gunship's strafe
+		// "stockpile" - load weapon before any task (NOT IMPLEMENTED), auto-assigned
+		// "siege" - mostly use fight command instead of move
+		// "ret_hold" - hold fire on retreat
+		// "ret_fight" - fight on retreat
+		// "solo" - single unit per build-task
+		// "vampire" - reclaim enemy units without threat check
+//		"attribute": ["boost", "no_strafe"],
+
+		// Fire state (open by default)
+		// "hold" - hold fire
+		// "return" - return fire
+		// "open" - fire at will
+//		"fire_state": "open",
+
+		// Per unit On state for static and mobile enemies while attacking. Not used when unspecified
+		// true = on
+		// false = off
+//		"slow_target": false,
+
+		// Overrides reloadTime in seconds
+//		"reload": 1.0,
+
+		// Limits number of units
+//		"limit": 20,
+
+		// Unit can be built only since specific time in seconds
+//		"since": 60,
+
+		// Amount of seconds when unit is not available for construction after UnitFinished
+//		"cooldown": 1,
+
+		// Minimum hp percent before retreat
+//		"retreat": 0.8,
+
+		// Ally threat multiplier
+//		"power": 1.0,
+		// Enemy threat multiplier
+//		"threat": 1.0,
+//		"threat": {
+//			"air": 0.2,
+//			"surf": 1.0,  // surface, also on water
+//			"water": 0.5,  // underwater
+//			"default": 0.9,  // for vs
+//			"vs": {
+//				"builder": 1.0,
+//				"scout": 1.0,
+//				"raider": 0.8,
+//				"assault": 0.1,
+//				"riot": 0.5,
+//				"skirmish": 0.5
+//			}
+//		},
+
+		// Ignore enemy
+//		"ignore": false,
+
+		// Difference between build-order position and unit position returned by engine.
+		// It's about midPosOffset and collisionVolumeOffsets with no way to read it.
+//		"midposoffset": [1.1, 2, -3.3],  // default = [0, 0, 0]
+
+		// FIXME: Temporary tag to override buildSpeed
+//		"build_speed": 10.0
+//	},
+
 	"armcom": {
 		"role": ["builder"],
 		"attribute": ["commander"],
@@ -215,11 +296,19 @@
 	},
 	"armnanotc": {
 		"role": ["support"],
-		"build_speed": 11.0
+		"build_speed": 8.0
 	},
 	"cornanotc": {
 		"role": ["support"],
-		"build_speed": 11.0
+		"build_speed": 8.0
+	},
+	"armnanotcplat": {
+		"role": ["support"],
+		"build_speed": 8.0
+	},
+	"cornanotcplat": {
+		"role": ["support"],
+		"build_speed": 8.0
 	},
 	"armmakr": {
 		"role": ["static"],
@@ -262,83 +351,8 @@
 
 	// bot - armlab
 	"armck": {
-		// "role": [<main>, <enemy>, <enemy>, ...]
-		// <main> is the role to make desicions of when to build it and what task to assign
-		// <enemy> is to decide how to counter enemy unit, if missing then equals to <main>
-		// Roles: builder, scout, raider, riot, assault, skirmish, artillery, anti_air, anti_sub, anti_heavy, bomber, support, mine, transport, air, sub, static, heavy, super, commander
-		// Auto-assigned roles: builder, air, static, super, commander
-		// raider: units grouped apart from others, tries to find weak spots.
-		// riot: regular attacker, but according to response.json it is built when enemy has many raiders (in plans to make riot just con's defender).
-		// assault: regular attacker, according to response.json it is built when enemy has many statics.
-		// skirmish: regular attacker, according to response.json it is built when enemy has many riots or assaults.
 		"role": ["builder"],
-
-		// Attributes - optinal states
-		// "melee" - always move close to target, disregard attack range
-		// "no_jump" - disable jump on retreat
-		// "boost" - boost speed on retreat
-		// "no_strafe" - disable gunship's strafe
-		// "stockpile" - load weapon before any task (NOT IMPLEMENTED), auto-assigned
-		// "siege" - mostly use fight command instead of move
-		// "ret_hold" - hold fire on retreat
-		// "ret_fight" - fight on retreat
-		// "solo" - single unit per build-task
-		// "vampire" - reclaim enemy units without threat check
-//		"attribute": ["boost", "no_strafe"],
-
-		// Fire state (open by default)
-		// "hold" - hold fire
-		// "return" - return fire
-		// "open" - fire at will
-//		"fire_state": "open",
-
-		// Per unit On state for static and mobile enemies while attacking. Not used when unspecified
-		// true = on
-		// false = off
-//		"slow_target": false,
-
-		// Overrides reloadTime in seconds
-//		"reload": 1.0,
-
-		// Limits number of units
 		"limit": 20,
-
-		// Unit can be built only since specific time in seconds
-//		"since": 60,
-
-		// Amount of seconds when unit is not available for construction after UnitFinished
-//		"cooldown": 1,
-
-		// Minimum hp percent before retreat
-//		"retreat": 0.8,
-
-		// Ally threat multiplier
-//		"power": 1.0,
-		// Enemy threat multiplier
-//		"threat": 1.0,
-//		"threat": {
-//			"air": 0.2,
-//			"surf": 1.0,  // surface, also on water
-//			"water": 0.5,  // underwater
-//			"default": 0.9,  // for vs
-//			"vs": {
-//				"builder": 1.0,
-//				"scout": 1.0,
-//				"raider": 0.8,
-//				"assault": 0.1,
-//				"riot": 0.5,
-//				"skirmish": 0.5
-//			}
-//		},
-
-		// Ignore enemy
-//		"ignore": false,
-
-		// Difference between build-order position and unit position returned by engine.
-		// It's about midPosOffset and collisionVolumeOffsets with no way to read it.
-//		"midposoffset": [1.1, 2, -3.3],  // default = [0, 0, 0]
-
-		// FIXME: Temporary tag to override buildSpeed
 		"build_speed": 10.0
 	},
 	"armpw": {
@@ -1018,7 +1032,7 @@
 	// FIXME: temporary factory buildSpeed
 	"armlab": {
 		"role": ["builder"],
-		"build_speed": 5.0
+		"build_speed": 4.0
 	},
 	"armvp": {
 		"role": ["builder"],
@@ -1030,16 +1044,37 @@
 	},
 	"armasy": {
 		"role": ["builder"],
+		"attribute": ["support"],
 		"build_speed": 10.0
 	},
 	"armhp": {
 		"role": ["builder"],
+		"build_speed": 6.0
+	},
+	"armfhp": {
+		"role": ["builder"],
+		"build_speed": 6.0
+	},
+	"armamsub": {
+		"role": ["builder"],
 		"build_speed": 8.0
+	},
+	"armplat": {
+		"role": ["builder"],
+		"attribute": ["support"],
+		"build_speed": 8.0
+	},
+	"armshltxuw": {
+		"role": ["static"],
+		"attribute": ["support"],
+		"limit": 1,
+		"midposoffset": [0, 0, 21],
+		"build_speed": 10.0
 	},
 	"corlab": {
 		"role": ["builder"],
 		"midposoffset": [-3.239746, 0, -2],
-		"build_speed": 5.0
+		"build_speed": 4.0
 	},
 	"corvp": {
 		"role": ["builder"],
@@ -1047,7 +1082,7 @@
 	},
 	"corhp": {
 		"role": ["builder"],
-		"build_speed": 8.0
+		"build_speed": 6.0
 	},
 	"corsy": {
 		"role": ["builder"],
@@ -1055,6 +1090,26 @@
 	},
 	"corasy": {
 		"role": ["builder"],
+		"attribute": ["support"],
+		"build_speed": 10.0
+	},
+	"corfhp": {
+		"role": ["builder"],
+		"build_speed": 6.0
+	},
+	"coramsub": {
+		"role": ["builder"],
+		"build_speed": 8.0
+	},
+	"corplat": {
+		"role": ["builder"],
+		"attribute": ["support"],
+		"build_speed": 8.0
+	},
+	"corgantuw": {
+		"role": ["static"],
+		"attribute": ["support"],
+		"limit": 1,
 		"build_speed": 10.0
 	}
 }

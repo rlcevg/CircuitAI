@@ -62,14 +62,12 @@ public:
 
 	int GetFactoryCount() const { return factories.size(); }
 	int GetNoT1FacCount() const { return noT1FacCount; }
-	void ResetFactoryPower();
-	bool IsResetedFactoryPower() const { return isResetedFactoryPower; }
 	float GetFactoryPower() const { return factoryPower; }
-	float GetEnergyPower() const { return factoryPower + offsetPower; }
 	bool CanEnqueueTask() const { return factoryTasks.size() < factories.size() * 2; }
 	const std::vector<CRecruitTask*>& GetTasks() const { return factoryTasks; }
 	void ApplySwitchFrame();
 	bool IsSwitchTime();
+	void RaiseSwitchTime() { isSwitchTime = true; }
 	CCircuitUnit* NeedUpgrade();
 	CCircuitUnit* GetClosestFactory(springai::AIFloat3 position);
 //	CCircuitDef* GetClosestDef(springai::AIFloat3& position, CCircuitDef::RoleT role);
@@ -81,7 +79,6 @@ public:
 	const std::vector<SSideInfo>& GetSideInfos() const { return sideInfos; }
 
 	CCircuitDef* GetAirpadDef(CCircuitDef* builderDef) { return airpadDefs[builderDef->GetId()]; }
-	CCircuitDef* GetAssistDef(CCircuitDef* builderDef) { return assistDefs[builderDef->GetId()]; }
 
 	CRecruitTask* UpdateBuildPower(CCircuitUnit* builder, bool isActive);
 	CRecruitTask* UpdateFirePower(CCircuitUnit* builder);
@@ -95,6 +92,9 @@ public:
 	CCircuitDef* GetLandDef(const CCircuitDef* facDef) const;
 	CCircuitDef* GetWaterDef(const CCircuitDef* facDef) const;
 	CCircuitDef* GetRepresenter(const CCircuitDef* facDef) const;
+
+	float GetAssistSpeed() const { return GetSideInfo().assistDef->GetBuildSpeed(); }
+	float GetAssistRange() const { return GetSideInfo().assistDef->GetBuildDistance(); }
 
 private:
 	void EnableFactory(CCircuitUnit* unit);
@@ -117,13 +117,10 @@ private:
 	std::vector<IUnitTask*> updateTasks;  // owner
 	unsigned int updateIterator;
 	float factoryPower;  // related to metal
-	float offsetPower;
-	bool isResetedFactoryPower;
 
 	std::vector<SSideInfo> sideInfos;
 
 	std::unordered_map<CCircuitDef::Id, CCircuitDef*> airpadDefs;  // builder: pad
-	std::unordered_map<CCircuitDef::Id, CCircuitDef*> assistDefs;  // builder: assist
 
 	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> assists;  // nano 1:n factory
 	std::vector<springai::AIFloat3> havens;  // position behind factory

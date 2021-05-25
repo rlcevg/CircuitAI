@@ -14,6 +14,7 @@
 #include "setup/SetupManager.h"
 #include "resource/MetalManager.h"
 #include "resource/EnergyGrid.h"
+#include "task/builder/FactoryTask.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
@@ -57,13 +58,14 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, metal(SResourceInfo {-1, .0f, .0f, .0f, .0f})
 		, energy(SResourceInfo {-1, .0f, .0f, .0f, .0f})
 		, energyUse(.0f)
+		, factoryTask(nullptr)
 {
 	metalRes = circuit->GetCallback()->GetResourceByName(RES_NAME_METAL);
 	energyRes = circuit->GetCallback()->GetResourceByName(RES_NAME_ENERGY);
 	economy = circuit->GetCallback()->GetEconomy();
 
-	metalIncomes.resize(INCOME_SAMPLES, 4.0f);  // Init metal income
-	energyIncomes.resize(INCOME_SAMPLES, 6.0f);  // Init energy income
+	metalIncomes.resize(INCOME_SAMPLES, 1.0f);  // Init metal income
+	energyIncomes.resize(INCOME_SAMPLES, 2.0f);  // Init energy income
 
 	// TODO: Use A* ai planning... or sth... STRIPS https://ru.wikipedia.org/wiki/STRIPS
 	//       https://ru.wikipedia.org/wiki/Марковский_процесс_принятия_решений
@@ -223,10 +225,17 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 //			}
 			// FIXME: BA
 
-			// factory
-			if (cdef.GetDef()->IsBuilder() && !cdef.GetBuildOptions().empty()) {
-				finishedHandler[cdef.GetId()] = factoryFinishedHandler;
-				destroyedHandler[cdef.GetId()] = factoryDestroyedHandler;
+			// factory and assist
+			if (cdef.GetDef()->IsBuilder()) {
+				if (!cdef.GetBuildOptions().empty()) {
+					finishedHandler[cdef.GetId()] = factoryFinishedHandler;
+					destroyedHandler[cdef.GetId()] = factoryDestroyedHandler;
+				} else if (cdef.IsAbleToAssist()
+					&& (std::max(cdef.GetDef()->GetXSize(), cdef.GetDef()->GetZSize()) * SQUARE_SIZE < cdef.GetBuildDistance()))
+				{
+					assistDefs.all.insert(&cdef);
+					cdef.SetIsAssist(true);
+				}
 			}
 
 			// energy
@@ -282,6 +291,8 @@ CEconomyManager::~CEconomyManager()
 	delete metalRes;
 	delete energyRes;
 	delete economy;
+
+	delete factoryTask;
 }
 
 void CEconomyManager::ReadConfig()
@@ -516,6 +527,7 @@ void CEconomyManager::AddEconomyDefs(const std::set<CCircuitDef*>& buildDefs)
 	AddStoreDefs(buildDefs, storeEDefs, [this](CCircuitDef* cdef) {
 		return cdef->GetDef()->GetStorage(energyRes);
 	});
+	AddAssistDefs(buildDefs);
 }
 
 void CEconomyManager::RemoveEconomyDefs(const std::set<CCircuitDef*>& buildDefs)
@@ -523,6 +535,7 @@ void CEconomyManager::RemoveEconomyDefs(const std::set<CCircuitDef*>& buildDefs)
 	RemoveEnergyDefs(buildDefs);
 	RemoveStoreDefs(buildDefs, storeMDefs);
 	RemoveStoreDefs(buildDefs, storeEDefs);
+	RemoveAssistDefs(buildDefs);
 }
 
 const CEconomyManager::SSideInfo& CEconomyManager::GetSideInfo() const
@@ -554,11 +567,6 @@ void CEconomyManager::UpdateResourceIncome()
 
 	metalProduced += metal.income * metalMod;
 	metalUsed += economy->GetUsage(metalRes);
-}
-
-float CEconomyManager::GetPureMetalIncome() const
-{
-	return economy->GetIncome(metalRes);
 }
 
 float CEconomyManager::GetMetalCur()
@@ -942,7 +950,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
 	CBuilderManager* builderMgr = circuit->GetBuilderManager();
-	if (!builderMgr->CanEnqueueTask(64)) {
+	if (!builderMgr->CanEnqueueTask(64) || isEnergyRequired) {
 		return nullptr;
 	}
 
@@ -981,146 +989,134 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	}
 
 	/*
-	 * check buildpower
-	 */
-	CCircuitDef* assistDef = (unit == nullptr) ? factoryMgr->GetSideInfo().assistDef : factoryMgr->GetAssistDef(unit->GetCircuitDef());
-	if (assistDef == nullptr) {
-		return nullptr;
-	}
-
-	/*
-	 * check metal and energy levels
-	 */
-	const float assistSpeed = assistDef->GetBuildSpeed();
-	auto factorFunc = [assistSpeed](float resource) {
-		return (resource/* * ecoFactor*/ - assistSpeed) * 1.2f;
-	};
-//	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());
-	const float engyFactor = factorFunc(GetAvgEnergyIncome() * 0.075f);
-	const float metalFactor = factorFunc(GetAvgMetalIncome());
-	const int nanoSize = builderMgr->GetTasks(IBuilderTask::BuildType::NANO).size();
-	const float factoryPower = factoryMgr->GetFactoryPower() + nanoSize * assistSpeed;
-	if (metalFactor < factoryPower) {
-		return nullptr;
-	}
-	const float energyPower = factoryMgr->GetEnergyPower() + nanoSize * assistSpeed;
-	if (engyFactor < energyPower) {
-		isEnergyRequired = true;  // enough metal, request energy
-		return nullptr;
-	}
-
-	/*
-	 * check nanos
+	 * check assist
 	 */
 	const bool isSwitchTime = factoryMgr->IsSwitchTime();
 	if (!isSwitchTime) {
-		CCircuitUnit* factory = factoryMgr->NeedUpgrade();
-		if ((factory != nullptr) && assistDef->IsAvailable(frame)) {
-			AIFloat3 buildPos = factory->GetPos(frame);
-			switch (factory->GetUnit()->GetBuildingFacing()) {
-				default:
-				case UNIT_FACING_SOUTH:
-					buildPos.z -= 128.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
-					break;
-				case UNIT_FACING_EAST:
-					buildPos.x -= 128.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
-					break;
-				case UNIT_FACING_NORTH:
-					buildPos.z += 128.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
-					break;
-				case UNIT_FACING_WEST:
-					buildPos.x += 128.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
-					break;
-			}
-
-			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-			CCircuitDef* bdef = (unit == nullptr) ? factory->GetCircuitDef() : unit->GetCircuitDef();
-			CTerrainManager::CorrectPosition(buildPos);
-			buildPos = terrainMgr->GetBuildPosition(bdef, buildPos);
-
-			if (terrainMgr->CanBeBuiltAtSafe(assistDef, buildPos) &&
-				((unit == nullptr) || terrainMgr->CanReachAtSafe(unit, buildPos, unit->GetCircuitDef()->GetBuildDistance())))
-			{
-				return builderMgr->EnqueueTask(IBuilderTask::Priority::HIGH, assistDef, buildPos,
-											   IBuilderTask::BuildType::NANO, SQUARE_SIZE * 8, true);
-			}
+		IBuilderTask* task = nullptr;
+		if (CheckAssistRequired(position, unit, task)) {
+			return task;
 		}
 	}
 
 	/*
-	 * check factories
+	 * check factory
 	 */
 	if (!factoryTasks.empty()) {
 		return nullptr;
 	}
 
-	const AIFloat3& enemyPos = circuit->GetEnemyManager()->GetEnemyPos();
 	const bool isStart = (factoryMgr->GetFactoryCount() == 0);
-	AIFloat3 buildPos;
-	if (isStart) {
-		buildPos = circuit->GetSetupManager()->GetBasePos();
-	} else {
-		AIFloat3 pos(circuit->GetSetupManager()->GetBasePos());
-		CMetalManager* metalMgr = circuit->GetMetalManager();
-		AIFloat3 center = (pos + enemyPos) * 0.5f;
-		float minSqDist = std::numeric_limits<float>::max();
-		const CMetalData::Clusters& clusters = metalMgr->GetClusters();
-		for (unsigned i = 0; i < clusters.size(); ++i) {
-			if (!metalMgr->IsClusterFinished(i)) {
-				continue;
-			}
-			const float sqDist = center.SqDistance2D(clusters[i].position);
-			if (minSqDist > sqDist) {
-				minSqDist = sqDist;
-				pos = clusters[i].position;
-			}
-		}
-
-		CMetalData::PointPredicate predicate = [this](const int index) {
-			return clusterInfos[index].factory == nullptr;
-		};
-		int index = metalMgr->FindNearestCluster(pos, predicate);
-		if (index < 0) {
+	CCircuitDef* facDef;
+	CCircuitDef* reprDef;
+	if (factoryTask == nullptr) {
+		facDef = factoryMgr->GetFactoryToBuild(-RgtVector, isStart);
+		if (facDef == nullptr) {
 			return nullptr;
 		}
-		buildPos = clusters[index].position;
-	}
-
-	CCircuitDef* facDef = factoryMgr->GetFactoryToBuild(buildPos, isStart);
-	if (facDef == nullptr) {
-		return nullptr;
-	}
-	if (facDef->IsRoleSupport()) {
-		buildPos = circuit->GetSetupManager()->GetBasePos();
-	}
-
-	// identify area to build by factory representatives
-	CCircuitDef* reprDef = factoryMgr->GetRepresenter(facDef);
-	if (reprDef == nullptr) {
-		return nullptr;
-	}
-
-	const float sqStartDist = enemyPos.SqDistance2D(circuit->GetSetupManager()->GetStartPos());
-	const float sqBuildDist = enemyPos.SqDistance2D(buildPos);
-	float size = (sqStartDist > sqBuildDist) ? -200.0f : 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
-	buildPos.x += (buildPos.x > enemyPos.x) ? -size : size;
-	buildPos.z += (buildPos.z > enemyPos.z) ? -size : size;
-
-	CTerrainManager::CorrectPosition(buildPos);
-	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	buildPos = terrainMgr->GetBuildPosition(reprDef, buildPos);
-
-	if (terrainMgr->CanBeBuiltAtSafe(facDef, buildPos) &&
-		((unit == nullptr) || terrainMgr->CanReachAtSafe(unit, buildPos, unit->GetCircuitDef()->GetBuildDistance())))
-	{
+		reprDef = factoryMgr->GetRepresenter(facDef);
+		if (reprDef == nullptr) {  // identify area to build by factory representatives
+			return nullptr;
+		}
 		IBuilderTask::Priority priority = (builderMgr->GetWorkerCount() <= 2) ?
 										  IBuilderTask::Priority::NOW :
 										  IBuilderTask::Priority::HIGH;
 		const bool isPlop = (factoryMgr->GetFactoryCount() <= 0);
-		if (isPlop) {  // FIXME: Calculating buildPos just to kill it here
-			buildPos = -RgtVector;
+		// hold selected facDef - create non-active task
+		factoryTask = static_cast<CBFactoryTask*>(builderMgr->EnqueueFactory(priority,
+				facDef, reprDef, -RgtVector, SQUARE_SIZE, isPlop, false, FRAMES_PER_SEC * 120));
+	} else {
+		facDef = factoryTask->GetBuildDef();
+		reprDef = factoryTask->GetReprDef();
+	}
+
+	/*
+	 * check metal and energy levels
+	 */
+	const float buildTime = reprDef->GetBuildTime() / facDef->GetWorkerTime();
+	// resources required for factory to work
+	const float miRequired = reprDef->GetCostM() / buildTime;
+	const float eiRequired = reprDef->GetCostE() / buildTime;
+//	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());  // FIXME: ZK
+	float engyFactor = (GetAvgEnergyIncome() - eiRequired) * 0.08f;
+	float metalFactor = GetAvgMetalIncome() - miRequired;
+	if (factoryMgr->GetFactoryCount() > 0) {
+		engyFactor -= builderMgr->GetBuildPower() * 0.2f;
+		metalFactor -= builderMgr->GetBuildPower() * 0.1f;
+	}
+	const int nanoSize = builderMgr->GetTasks(IBuilderTask::BuildType::NANO).size();
+	const float factoryPower = /*factoryMgr->GetFactoryPower() + */nanoSize * factoryMgr->GetAssistSpeed();
+	// FIXME: DEBUG
+	circuit->LOG("%s | %f >= %f | %f >= %f", facDef->GetDef()->GetName(), metalFactor, factoryPower, engyFactor, factoryPower);
+	circuit->LOG("%s | mi: %f | ei: %f | mr: %f | er: %f", reprDef->GetDef()->GetName(), GetAvgMetalIncome(), GetAvgEnergyIncome(), miRequired, eiRequired);
+	// FIXME: DEBUG
+	if ((metalFactor < factoryPower) && !isSwitchTime && (facDef->GetCostM() > GetMetalCur())) {
+		return nullptr;
+	}
+	if (engyFactor < factoryPower) {
+		isEnergyRequired = true;  // enough metal, request energy
+		return nullptr;
+	}
+
+	// desired position
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	const AIFloat3& enemyPos = circuit->GetEnemyManager()->GetEnemyPos();
+	AIFloat3 buildPos;
+	if (factoryTask->IsPlop()) {
+		buildPos = -RgtVector;
+	} else {
+		if (isStart || facDef->IsRoleSupport()) {
+			buildPos = circuit->GetSetupManager()->GetBasePos();
+		} else {
+			AIFloat3 pos(circuit->GetSetupManager()->GetBasePos());
+			CMetalManager* metalMgr = circuit->GetMetalManager();
+			AIFloat3 center = (pos + enemyPos) * 0.5f;
+			float minSqDist = std::numeric_limits<float>::max();
+			const CMetalData::Clusters& clusters = metalMgr->GetClusters();
+			for (unsigned i = 0; i < clusters.size(); ++i) {
+				if (!metalMgr->IsClusterFinished(i)) {
+					continue;
+				}
+				const float sqDist = center.SqDistance2D(clusters[i].position);
+				if (minSqDist > sqDist) {
+					minSqDist = sqDist;
+					pos = clusters[i].position;
+				}
+			}
+
+			CMetalData::PointPredicate predicate = [this, facDef, terrainMgr, &clusters](const int index) {
+				return (clusterInfos[index].factory == nullptr) && terrainMgr->CanBeBuiltAtSafe(facDef, clusters[index].position);
+			};
+			int index = metalMgr->FindNearestCluster(pos, predicate);
+			if (index < 0) {
+				return nullptr;
+			}
+			buildPos = clusters[index].position;
 		}
-		return builderMgr->EnqueueFactory(priority, facDef, reprDef, buildPos, SQUARE_SIZE, isPlop, true, FRAMES_PER_SEC * 120);
+
+		const float sqStartDist = enemyPos.SqDistance2D(circuit->GetSetupManager()->GetStartPos());
+		const float sqBuildDist = enemyPos.SqDistance2D(buildPos);
+		float size = (sqStartDist > sqBuildDist) ? -200.0f : 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
+		buildPos.x += (buildPos.x > enemyPos.x) ? -size : size;
+		buildPos.z += (buildPos.z > enemyPos.z) ? -size : size;
+
+		CTerrainManager::CorrectPosition(buildPos);
+		buildPos = terrainMgr->GetBuildPosition(reprDef, buildPos);
+	}
+
+	factoryTask->SetPosition(buildPos);
+
+	if (factoryTask->IsPlop()
+		|| (terrainMgr->CanBeBuiltAtSafe(facDef, buildPos)
+			&& ((unit == nullptr) || terrainMgr->CanReachAtSafe(unit, buildPos, unit->GetCircuitDef()->GetBuildDistance()))))
+	{
+		builderMgr->ActivateTask(factoryTask);
+		IBuilderTask* task = factoryTask;
+		factoryTask = nullptr;
+		return task;
+	} else {
+		delete factoryTask;
+		factoryTask = nullptr;
 	}
 
 	return nullptr;
@@ -1243,11 +1239,11 @@ void CEconomyManager::StartFactoryTask(const float seconds)
 	if (factoryMgr->GetFactoryCount() == 0) {
 		CCircuitUnit* comm = circuit->GetSetupManager()->GetCommander();
 		const AIFloat3 pos = (comm != nullptr) ? comm->GetPos(circuit->GetLastFrame()) : AIFloat3(-RgtVector);
-		if (!factoryMgr->IsResetedFactoryPower() && (comm != nullptr) && (comm->GetTask()->GetType() == IUnitTask::Type::BUILDER)) {
+		if (!factoryMgr->IsSwitchTime() && (comm != nullptr) && (comm->GetTask()->GetType() == IUnitTask::Type::BUILDER)) {
 			IBuilderTask* taskB = static_cast<IBuilderTask*>(comm->GetTask());
 			const float maxDist = comm->GetCircuitDef()->GetBuildDistance() + comm->GetCircuitDef()->GetSpeed() * seconds;
 			if (taskB->GetPosition().SqDistance2D(pos) > SQUARE(maxDist)) {
-				factoryMgr->ResetFactoryPower();
+				factoryMgr->RaiseSwitchTime();
 			}
 		}
 		IBuilderTask* factoryTask = UpdateFactoryTasks();
@@ -1339,6 +1335,97 @@ void CEconomyManager::OpenStrategy(const CCircuitDef* facDef, const AIFloat3& po
 		}
 		factoryMgr->EnqueueTask(priotiry, buildDef, pos, recruit, 64.f);
 	}
+}
+
+bool CEconomyManager::CheckAssistRequired(const AIFloat3& position, CCircuitUnit* unit, IBuilderTask*& outTask)
+{
+	outTask = nullptr;
+
+	CBuilderManager* builderMgr = circuit->GetBuilderManager();
+	const int nanoSize = builderMgr->GetTasks(IBuilderTask::BuildType::NANO).size();
+	if (nanoSize > 2) {
+		return true;
+	}
+
+	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+	CCircuitUnit* factory = factoryMgr->NeedUpgrade();
+	if (factory == nullptr) {
+		return false;
+	}
+
+	const int frame = circuit->GetLastFrame();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	AIFloat3 buildPos = factory->GetPos(frame);
+	CCircuitDef* assistDef = nullptr;
+	for (const SAssistInfo& nano : assistDefs.infos) {  // sorted by high-tech first
+		if (nano.cdef->IsAvailable(frame)
+			&& terrainMgr->CanBeBuiltAtSafe(nano.cdef, buildPos))
+		{
+			assistDef = nano.cdef;
+			break;
+		}
+	}
+	if (assistDef == nullptr) {
+		return true;
+	}
+
+	/*
+	 * check metal and energy
+	 */
+//	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());  // FIXME: ZK
+	float engyFactor;
+	float metalFactor;
+	CCircuitDef* reprDef = factoryMgr->GetRepresenter(factory->GetCircuitDef());
+	if (reprDef == nullptr) {
+		engyFactor = (GetAvgEnergyIncome() - assistDef->GetUpkeepE()) * 0.08f - assistDef->GetBuildSpeed();
+		metalFactor = GetAvgMetalIncome() - assistDef->GetBuildSpeed();
+	} else {
+		const float buildTime = reprDef->GetBuildTime() / factory->GetCircuitDef()->GetWorkerTime();
+		// resources required for nano to support factory
+		const float miRequired = reprDef->GetCostM() / buildTime;
+		const float eiRequired = reprDef->GetCostE() / buildTime;
+		engyFactor = (GetAvgEnergyIncome() - assistDef->GetUpkeepE() - eiRequired) * 0.08f;
+		metalFactor = GetAvgMetalIncome() - miRequired;
+	}
+	const float factoryPower = factoryMgr->GetFactoryPower() + nanoSize * factoryMgr->GetAssistSpeed();
+	// FIXME: DEBUG
+	circuit->LOG("%s | %f >= %f | %f >= %f", assistDef->GetDef()->GetName(), metalFactor, factoryPower, engyFactor, factoryPower);
+	// FIXME: DEBUG
+	if (metalFactor < factoryPower) {
+		return true;
+	}
+	if (engyFactor < factoryPower) {
+		isEnergyRequired = true;  // enough metal, request energy
+		return true;
+	}
+
+	switch (factory->GetUnit()->GetBuildingFacing()) {
+		default:
+		case UNIT_FACING_SOUTH:
+			buildPos.z -= 128.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
+			break;
+		case UNIT_FACING_EAST:
+			buildPos.x -= 128.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
+			break;
+		case UNIT_FACING_NORTH:
+			buildPos.z += 128.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
+			break;
+		case UNIT_FACING_WEST:
+			buildPos.x += 128.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
+			break;
+	}
+	CTerrainManager::CorrectPosition(buildPos);
+	CCircuitDef* bdef = (unit == nullptr) ? factory->GetCircuitDef() : unit->GetCircuitDef();
+	buildPos = terrainMgr->GetBuildPosition(bdef, buildPos);
+
+	if (terrainMgr->CanBeBuiltAtSafe(assistDef, buildPos)
+		&& ((unit == nullptr) || terrainMgr->CanReachAtSafe(unit, buildPos, unit->GetCircuitDef()->GetBuildDistance())))
+	{
+		outTask = builderMgr->EnqueueTask(IBuilderTask::Priority::HIGH, assistDef, buildPos,
+										  IBuilderTask::BuildType::NANO, SQUARE_SIZE * 8, true);
+		return true;
+	}
+	return false;
 }
 
 float CEconomyManager::GetStorage(Resource* res)
@@ -1565,6 +1652,80 @@ void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 //	for (const SEnergyInfo& ei : energyDefs.infos) {
 //		circuit->LOG("%s | costM=%f | costE=%f | make=%f | efficiency=%f | limit=%i", ei.cdef->GetDef()->GetName(),
 //				ei.cdef->GetCostM(), ei.cdef->GetCostE(), ei.make, ei.score, ei.limit);
+//	}
+	// FIXME: DEBUG
+}
+
+void CEconomyManager::AddAssistDefs(const std::set<CCircuitDef*>& buildDefs)
+{
+	std::set<CCircuitDef*> buildNanoDefs;
+	std::set_intersection(assistDefs.all.begin(), assistDefs.all.end(),
+						  buildDefs.begin(), buildDefs.end(),
+						  std::inserter(buildNanoDefs, buildNanoDefs.begin()));
+	if (buildNanoDefs.empty()) {
+		return;
+	}
+	std::set<CCircuitDef*> diffDefs;
+	std::set_difference(buildNanoDefs.begin(), buildNanoDefs.end(),
+						assistDefs.avail.begin(), assistDefs.avail.end(),
+						std::inserter(diffDefs, diffDefs.begin()));
+	if (diffDefs.empty()) {
+		return;
+	}
+	assistDefs.avail.insert(diffDefs.begin(), diffDefs.end());
+
+	for (auto cdef : diffDefs) {
+		SAssistInfo nano;
+		nano.cdef = cdef;
+		nano.score = cdef->GetBuildSpeed() / cdef->GetCostM();
+		assistDefs.infos.push_back(nano);
+	}
+
+	// High-tech storage first
+	auto compare = [](const SAssistInfo& e1, const SAssistInfo& e2) {
+		return e1.score > e2.score;
+	};
+	std::sort(assistDefs.infos.begin(), assistDefs.infos.end(), compare);
+
+	// FIXME: DEBUG
+//	circuit->LOG("----Nano----");
+//	for (const SAssistInfo& ni : assistDefs.infos) {
+//		circuit->LOG("%s | costM=%f | costE=%f | build_speed=%f | efficiency=%f", ni.cdef->GetDef()->GetName(),
+//				ni.cdef->GetCostM(), ni.cdef->GetCostE(), ni.cdef->GetBuildSpeed(), ni.score);
+//	}
+	// FIXME: DEBUG
+}
+
+void CEconomyManager::RemoveAssistDefs(const std::set<CCircuitDef*>& buildDefs)
+{
+	std::set<CCircuitDef*> diffDefs;
+	std::set_intersection(assistDefs.all.begin(), assistDefs.all.end(),
+						  buildDefs.begin(), buildDefs.end(),
+						  std::inserter(diffDefs, diffDefs.begin()));
+	if (diffDefs.empty()) {
+		return;
+	}
+	std::set<CCircuitDef*> buildNanoDefs;
+	std::set_difference(assistDefs.avail.begin(), assistDefs.avail.end(),
+						diffDefs.begin(), diffDefs.end(),
+						std::inserter(buildNanoDefs, buildNanoDefs.begin()));
+	std::swap(assistDefs.avail, buildNanoDefs);
+
+	auto it = assistDefs.infos.begin();
+	while (it != assistDefs.infos.end()) {
+		auto search = diffDefs.find(it->cdef);
+		if (search != diffDefs.end()) {
+			it = assistDefs.infos.erase(it);
+		} else {
+			++it;
+		}
+	}
+
+	// FIXME: DEBUG
+//	circuit->LOG("----Remove Nano----");
+//	for (const SAssistInfo& ni : assistDefs.infos) {
+//		circuit->LOG("%s | costM=%f | costE=%f | build_speed=%f | efficiency=%f", ni.cdef->GetDef()->GetName(),
+//				ni.cdef->GetCostM(), ni.cdef->GetCostE(), ni.cdef->GetBuildSpeed(), ni.score);
 //	}
 	// FIXME: DEBUG
 }

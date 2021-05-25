@@ -3,7 +3,7 @@
 
 namespace Builder {
 
-//AIFloat3 lastPos;
+// AIFloat3 lastPos;
 // int gPauseCnt = 0;
 
 IUnitTask@ AiMakeTask(CCircuitUnit@ unit)

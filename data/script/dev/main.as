@@ -8,7 +8,8 @@ namespace Main {
 
 void AiInitDef(CCircuitDef@ cdef)
 {
-//	AiLog(cdef.GetName() + " | threat = " + cdef.threat + " | power = " + cdef.power);
+// 	AiLog(cdef.GetName() + " | threat = " + cdef.threat + " | power = " + cdef.power +
+// 		" | air = " + cdef.GetAirThreat() + " | surf = " + cdef.GetSurfThreat() + " | water = " + cdef.GetWaterThreat());
 }
 
 }  // namespace Main

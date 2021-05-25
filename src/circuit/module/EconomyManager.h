@@ -30,6 +30,7 @@ extern const char* RES_NAME_ENERGY;
 
 class IBuilderTask;
 class IMainJob;
+class CBFactoryTask;
 class CEnergyGrid;
 
 class CEconomyManager: public IModule {
@@ -80,7 +81,6 @@ public:
 	CCircuitDef* GetPylonDef() const { return pylonDef; }
 
 	void UpdateResourceIncome();
-	float GetPureMetalIncome() const;
 	float GetAvgMetalIncome() const { return metal.income; }
 	float GetAvgEnergyIncome() const { return energy.income; }
 	float GetEcoFactor() const { return ecoFactor; }
@@ -124,6 +124,7 @@ public:
 	void OpenStrategy(const CCircuitDef* facDef, const springai::AIFloat3& pos);
 
 private:
+	bool CheckAssistRequired(const springai::AIFloat3& position, CCircuitUnit* unit, IBuilderTask*& outTask);
 	float GetStorage(springai::Resource* res);
 	void UpdateEconomy();
 
@@ -233,7 +234,21 @@ private:
 	} metal, energy;
 	float energyUse;
 
+	struct SAssistInfo {
+		CCircuitDef* cdef;
+		float score;
+		bool operator==(const CCircuitDef* d) { return cdef == d; }
+	};
+	struct SAssistDefs {
+		std::set<CCircuitDef*> all;
+		std::set<CCircuitDef*> avail;
+		std::vector<SAssistInfo> infos;  // sorted high-score first
+	} assistDefs;
+	void AddAssistDefs(const std::set<CCircuitDef*>& buildDefs);  // add available assist defs
+	void RemoveAssistDefs(const std::set<CCircuitDef*>& buildDefs);
+
 	std::shared_ptr<IMainJob> startFactory;
+	CBFactoryTask* factoryTask;
 
 	std::shared_ptr<IMainJob> morph;
 	std::set<CCircuitUnit*> morphees;

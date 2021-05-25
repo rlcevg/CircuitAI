@@ -77,6 +77,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			nilTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
 		}
+		CEconomyManager* economyMgr = this->circuit->GetEconomyManager();
+		if (unit->GetUnit()->IsBeingBuilt() && !economyMgr->IsEnergyStalling() && !economyMgr->IsMetalEmpty()) {
+			EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
+		}
 	};
 	auto workerFinishedHandler = [this](CCircuitUnit* unit) {
 		if (unit->GetTask() == nullptr) {
@@ -110,7 +114,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			if (isBaseBuilderOn && !unit->GetCircuitDef()->IsRoleComm()) {
 				if (unit->GetCircuitDef()->GetCostM() < 200) {
 					if ((energizer1 == nullptr)
-						&& (((unsigned)unit->GetCircuitDef()->GetCount() > militaryMgr->GetDefendTaskNum())
+						&& (((unsigned)unit->GetCircuitDef()->GetCount() > militaryMgr->GetGuardTaskNum())
 							|| unit->GetCircuitDef()->IsAbleToFly()))
 					{
 						energizer1 = unit;
@@ -132,7 +136,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 		if (!unit->GetCircuitDef()->IsAttacker()
 			&& !unit->GetCircuitDef()->IsAbleToFly()
-			&& (militaryMgr->GetTasks(IFighterTask::FightType::GUARD).size() < militaryMgr->GetDefendTaskNum()))
+			&& (militaryMgr->GetTasks(IFighterTask::FightType::GUARD).size() < militaryMgr->GetGuardTaskNum()))
 		{
 			militaryMgr->AddGuardTask(unit);
 		}
@@ -866,7 +870,6 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 		}
 		case IBuilderTask::BuildType::ENERGY: {
 			task = new CBEnergyTask(this, priority, buildDef, position, cost, shake, timeout);
-			circuit->GetEconomyManager()->ClearEnergyRequired();
 			break;
 		}
 		case IBuilderTask::BuildType::DEFENCE: {
@@ -1747,7 +1750,7 @@ void CBuilderManager::UpdateAreaUsers()
 	for (auto& tasks : buildTasks) {
 		for (IBuilderTask* task : tasks) {
 			CCircuitDef* cdef = task->GetBuildDef();
-			if ((cdef != nullptr) && !IsBuilderInArea(cdef, task->GetPosition())) {
+			if ((cdef != nullptr) && (task->GetTarget() == nullptr) && !IsBuilderInArea(cdef, task->GetPosition())) {
 				removeTasks.insert(task);
 			}
 		}

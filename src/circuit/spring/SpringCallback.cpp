@@ -152,4 +152,9 @@ bool COOAICallback::Feature_IsResurrectable(int featureId) const
 	return sAICallback->Feature_getResurrectDef(skirmishAIId, featureId) != -1;
 }
 
+bool COOAICallback::UnitDef_HasYardMap(int unitDefId) const
+{
+	return sAICallback->UnitDef_getYardMap(skirmishAIId, unitDefId, UNIT_FACING_SOUTH, nullptr, -1) > 0;
+}
+
 } // namespace circuit

@@ -243,7 +243,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			}
 			cdef.ModPower(commMod);
 		}
-		if (cdef.GetDef()->IsBuilder()) {
+		if (cdef.GetDef()->IsBuilder() && (!cdef.GetBuildOptions().empty() || cdef.IsAbleToResurrect())) {
 //			damagedHandler[unitDefId] = structDamagedHandler;
 			continue;
 		}
@@ -1523,7 +1523,7 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 				case IFighterTask::FightType::RAID: {
 					const std::set<IFighterTask*>& guards = GetTasks(IFighterTask::FightType::GUARD);
 					for (IFighterTask* t : guards) {
-						if (t->GetAssignees().size() < GetDefendersNum()) {
+						if (t->CanAssignTo(unit)) {
 							task = t;
 							break;
 						}
@@ -1544,7 +1544,7 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 				case IFighterTask::FightType::DEFEND: {
 					const std::set<IFighterTask*>& guards = GetTasks(IFighterTask::FightType::GUARD);
 					for (IFighterTask* t : guards) {
-						if (t->GetAssignees().size() < GetDefendersNum() / 2) {
+						if (t->CanAssignTo(unit)) {
 							task = t;
 							break;
 						}

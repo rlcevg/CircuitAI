@@ -64,6 +64,8 @@ public:
 
 	bool Feature_IsResurrectable(int featureId) const;
 
+	bool UnitDef_HasYardMap(int unitDefId) const;
+
 private:
 	const struct SSkirmishAICallback* sAICallback;
 	springai::OOAICallback* callback;

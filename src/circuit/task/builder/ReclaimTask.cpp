@@ -60,7 +60,7 @@ bool CBReclaimTask::CanAssignTo(CCircuitUnit* unit) const
 		return true;
 	}
 	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
-	if ((militaryMgr->GetDefendTaskNum() == 0) || (circuit->GetLastFrame() > militaryMgr->GetDefendFrame())) {
+	if ((militaryMgr->GetGuardTaskNum() == 0) || (circuit->GetLastFrame() > militaryMgr->GetGuardFrame())) {
 		return true;
 	}
 	int cluster = circuit->GetMetalManager()->FindNearestCluster(pos);

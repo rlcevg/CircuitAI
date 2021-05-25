@@ -41,13 +41,15 @@ bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 	if (!IBuilderTask::CanAssignTo(unit)) {
 		return false;
 	}
+	CCircuitAI* circuit = manager->GetCircuit();
+	if (circuit->GetEconomyManager()->IsEnergyStalling()) {
+		return false;
+	}
 	if (unit->GetCircuitDef()->IsAttacker()) {
 		return true;
 	}
-	// TODO: Naked expansion on big maps
-	CCircuitAI* circuit = manager->GetCircuit();
 	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
-	if ((militaryMgr->GetDefendTaskNum() == 0) || (circuit->GetLastFrame() > militaryMgr->GetDefendFrame())) {
+	if ((militaryMgr->GetGuardTaskNum() == 0) || (circuit->GetLastFrame() > militaryMgr->GetGuardFrame())) {
 		return true;
 	}
 	int cluster = circuit->GetMetalManager()->FindNearestCluster(GetPosition());

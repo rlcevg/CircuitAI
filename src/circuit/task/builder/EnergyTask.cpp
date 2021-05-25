@@ -47,4 +47,18 @@ void CBEnergyTask::Update()
 	)
 }
 
+void CBEnergyTask::Finish()
+{
+	manager->GetCircuit()->GetEconomyManager()->ClearEnergyRequired();
+
+	IBuilderTask::Finish();
+}
+
+void CBEnergyTask::Cancel()
+{
+	manager->GetCircuit()->GetEconomyManager()->ClearEnergyRequired();
+
+	IBuilderTask::Cancel();
+}
+
 } // namespace circuit

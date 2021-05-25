@@ -160,7 +160,7 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 				}
 			}
 		}
-		range = factoryMgr->GetSideInfo().assistDef->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
+		range = factoryMgr->GetAssistRange() * 0.6f + pathfinder->GetSquareSize();
 	}
 
 //	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit) * 0.125f;
@@ -240,7 +240,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		haven = circuit->GetSetupManager()->GetBasePos();
 	}
 
-	const float maxDist = factoryMgr->GetSideInfo().assistDef->GetBuildDistance();
+	const float maxDist = factoryMgr->GetAssistRange();
 	const AIFloat3& unitPos = unit->GetPos(frame);
 	if (unitPos.SqDistance2D(haven) > SQUARE(maxDist)) {
 		// TODO: push MoveAction into unit? to avoid enemy fire
@@ -410,7 +410,7 @@ void CRetreatTask::ApplyCostMap(const CQueryCostMap* query, CCircuitUnit* newRep
 		if (!utils::is_valid(endPos)) {
 			endPos = circuit->GetSetupManager()->GetBasePos();
 		}
-		range = factoryMgr->GetSideInfo().assistDef->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
+		range = factoryMgr->GetAssistRange() * 0.6f + pathfinder->GetSquareSize();
 	}
 
 	float prevCost = query->GetCostAt(endPos, range);

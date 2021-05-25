@@ -46,9 +46,9 @@ public:
 	float GetCommRad(float baseDist) const {
 		return commRadFraction * baseDist + commRadBegin;
 	}
-	unsigned int GetDefendTaskNum() const { return defendTaskNum; }
-	unsigned int GetDefendersNum() const { return defendersNum; }
-	int GetDefendFrame() const { return defendFrame; }
+	unsigned int GetGuardTaskNum() const { return guardTaskNum; }
+	unsigned int GetGuardsNum() const { return guardsNum; }
+	int GetGuardFrame() const { return guardFrame; }
 
 private:
 	CMetalManager* metalManager;
@@ -60,9 +60,9 @@ private:
 	float commRadBegin;
 	float commRadFraction;
 
-	unsigned int defendTaskNum;
-	unsigned int defendersNum;
-	int defendFrame;
+	unsigned int guardTaskNum;
+	unsigned int guardsNum;
+	int guardFrame;
 
 	float pointRange;
 };

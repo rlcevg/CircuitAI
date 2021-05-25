@@ -49,7 +49,7 @@
 		},
 		"solar": {
 			"type": ["rectangle", "engy_low"],
-			"ignore": ["mex", "engy_mid", "engy_high", "def_low", "nano"]
+			"ignore": ["engy_mid", "engy_high", "def_low", "nano"]
 		},
 		"wind": {
 			"type": ["circle", "engy_low"],
@@ -76,6 +76,7 @@
 		},
 		"mex": {
 			"type": ["rectangle", "mex"],
+//			"offset": [0, -5],
 			"yard": [2, 2],
 			"ignore": ["all"]
 		},
@@ -124,7 +125,7 @@
 	// Water overrides land. Map considered as water if amount of land < 40%
 	"class_water" : {
 		"wind": {
-			"type": ["circle", "engy_low"],
+			"type": ["rectangle", "engy_low"],
 			"ignore": ["engy_low"]
 		}
 	},
@@ -132,10 +133,10 @@
 		"fac_land": ["armlab", "armalab", "armvp", "armavp", "armhp", "coralab", "corvp", "coravp", "corhp"],
 		"fac_land2": ["corlab"],
 		"fac_air": ["armap", "corap", "armaap", "coraap"],
-		"fac_water": ["armsy", "armasy", "corsy", "corasy"],
-		"fac_strider": ["armshltx", "corgant"],
+		"fac_water": ["armsy", "armasy", "armamsub", "armfhp", "armplat", "corsy", "corasy", "coramsub", "corfhp", "corplat"],
+		"fac_strider": ["armshltx", "armshltxuw", "corgant", "corgantuw"],
 		"solar": ["armsolar", "corsolar"],
-		"wind": ["armwin", "corwin"],
+		"wind": ["armwin", "corwin", "armtide", "cortide"],
 		"fusion": ["armadvsol", "coradvsol"],
 		"singu": ["armfus", "armuwfus", "armckfus", "armafus", "corfus", "coruwfus", "corafus"],
 		"store": ["armmstor", "armestor", "cormstor", "corestor"],
@@ -143,7 +144,7 @@
 		"converter": ["armmakr", "cormakr", "armmmkr", "cormmkr"],
 		"def_low": ["armllt", "armclaw", "corllt", "cormaw"],
 		"caretaker": ["armnanotc", "armasp", "cornanotc", "corasp"],
-		"small": ["armrad", "corrad"]
+		"small": ["armrad", "corrad", "armfrad", "corfrad"]
 	}
 }
 }
