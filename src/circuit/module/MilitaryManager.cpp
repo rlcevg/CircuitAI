@@ -282,10 +282,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 				// FIXME: BA
 			}
 			if (cdef.GetDef()->GetRadarRadius() > 1.f) {
-				radarDefs.all.insert(&cdef);
+				radarDefs.AddDef(&cdef);
 			}
 			if (cdef.GetDef()->GetSonarRadius() > 1.f) {
-				sonarDefs.all.insert(&cdef);
+				sonarDefs.AddDef(&cdef);
 			}
 		}
 	}

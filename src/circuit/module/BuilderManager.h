@@ -54,8 +54,8 @@ public:
 	CCircuitDef* GetTerraDef() const { return terraDef; }
 
 	unsigned int GetWorkerCount() const { return workers.size(); }
-	void AddBuildPower(CCircuitUnit* unit);
-	void DelBuildPower(CCircuitUnit* unit);
+	void AddBuildPower(CCircuitUnit* unit, bool isBuilder = true);
+	void DelBuildPower(CCircuitUnit* unit, bool isBuilder = true);
 	float GetBuildPower() const { return buildPower; }
 	bool CanEnqueueTask(const unsigned mod = 8) const { return buildTasksCount < workers.size() * mod; }
 	const std::set<IBuilderTask*>& GetTasks(IBuilderTask::BuildType type) const;

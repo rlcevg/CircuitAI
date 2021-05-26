@@ -116,14 +116,11 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, airThrDmg(.0f)
 		, surfThrDmg(.0f)
 		, waterThrDmg(.0f)
-		, thrDmgMod({1.f})
 		, aoe(.0f)
 		, power(.0f)
 		, defThreat(.0f)
 		, minRange(.0f)
 		, maxRangeType(RangeType::AIR)
-		, maxRange({.0f})
-		, threatRange({0})
 		, shieldRadius(.0f)
 		, maxShield(.0f)
 		, reloadTime(0)
@@ -154,6 +151,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, height(-1.f)
 		, topOffset(-1.f)
 {
+	thrDmgMod.fill(1.f);
+	maxRange.fill(.0f);
+	threatRange.fill(0);
+
 	id = def->GetUnitDefId();
 
 	buildDistance  = def->GetBuildDistance();

@@ -19,22 +19,29 @@ namespace circuit {
 template <typename T>
 class CAvailList {
 public:
-	CAvailList() {}
-	~CAvailList() {}
-
-	// using S = std::function<float (CCircuitDef*, T&)>;
-	template <typename S>
-	void AddDefs(const std::set<CCircuitDef*>& buildDefs, S scoreFunc);
-	void RemoveDefs(const std::set<CCircuitDef*>& buildDefs);
-
 	struct SAvailInfo {
 		CCircuitDef* cdef;
 		float score;
 		bool operator==(const CCircuitDef* d) { return cdef == d; }
 		T data;
 	};
+
+	CAvailList() {}
+	~CAvailList() {}
+
+	void AddDef(CCircuitDef* cdef) { all.insert(cdef); }
+
+	template <typename S>  // using S = std::function<float (CCircuitDef*, T&)>;
+	void AddDefs(const std::set<CCircuitDef*>& buildDefs, S scoreFunc);
+	void RemoveDefs(const std::set<CCircuitDef*>& buildDefs);
+
+	const std::vector<SAvailInfo>& GetInfos() const { return infos; }
+
+private:
 	std::set<CCircuitDef*> all;
 	std::set<CCircuitDef*> avail;
+
+public:
 	std::vector<SAvailInfo> infos;  // sorted high-score first
 };
 

@@ -207,10 +207,10 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 
 			// storage
 			if (cdef.GetDef()->GetStorage(metalRes) >= 1000.f) {
-				storeMDefs.all.insert(&cdef);
+				storeMDefs.AddDef(&cdef);
 			}
 			if (cdef.GetDef()->GetStorage(energyRes) > 1000.f) {
-				storeEDefs.all.insert(&cdef);
+				storeEDefs.AddDef(&cdef);
 			}
 
 			// mex
@@ -233,7 +233,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				} else if (cdef.IsAbleToAssist()
 					&& (std::max(cdef.GetDef()->GetXSize(), cdef.GetDef()->GetZSize()) * SQUARE_SIZE < cdef.GetBuildDistance()))
 				{
-					assistDefs.all.insert(&cdef);
+					assistDefs.AddDef(&cdef);
 					cdef.SetIsAssist(true);
 				}
 			}
@@ -247,7 +247,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				|| (cdef.GetDef()->GetTidalResourceGenerator(energyRes) * circuit->GetMap()->GetTidalStrength() > 1))
 			{
 				finishedHandler[cdef.GetId()] = energyFinishedHandler;
-				energyDefs.all.insert(&cdef);
+				energyDefs.AddDef(&cdef);
 			}
 
 		} else {
@@ -1135,8 +1135,8 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	const int nanoSize = builderMgr->GetTasks(IBuilderTask::BuildType::NANO).size();
 	const float factoryPower = /*factoryMgr->GetFactoryPower() + */nanoSize * factoryMgr->GetAssistSpeed();
 	// FIXME: DEBUG
-	circuit->LOG("%s | %f >= %f | %f >= %f", facDef->GetDef()->GetName(), metalFactor, factoryPower, engyFactor, factoryPower);
-	circuit->LOG("%s | mi: %f | ei: %f | mr: %f | er: %f", reprDef->GetDef()->GetName(), GetAvgMetalIncome(), GetAvgEnergyIncome(), miRequired, eiRequired);
+//	circuit->LOG("%s | %f >= %f | %f >= %f", facDef->GetDef()->GetName(), metalFactor, factoryPower, engyFactor, factoryPower);
+//	circuit->LOG("%s | mi: %f | ei: %f | mr: %f | er: %f", reprDef->GetDef()->GetName(), GetAvgMetalIncome(), GetAvgEnergyIncome(), miRequired, eiRequired);
 	// FIXME: DEBUG
 	if ((metalFactor < factoryPower) && !isSwitchTime && (facDef->GetCostM() > GetMetalCur())) {
 		return nullptr;
@@ -1477,7 +1477,7 @@ bool CEconomyManager::CheckAssistRequired(const AIFloat3& position, CCircuitUnit
 	}
 	const float factoryPower = factoryMgr->GetFactoryPower() + nanoSize * factoryMgr->GetAssistSpeed();
 	// FIXME: DEBUG
-	circuit->LOG("%s | %f >= %f | %f >= %f", assistDef->GetDef()->GetName(), metalFactor, factoryPower, engyFactor, factoryPower);
+//	circuit->LOG("%s | %f >= %f | %f >= %f", assistDef->GetDef()->GetName(), metalFactor, factoryPower, engyFactor, factoryPower);
 	// FIXME: DEBUG
 	if (metalFactor < factoryPower) {
 		return true;

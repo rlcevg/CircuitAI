@@ -199,6 +199,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		}
 		nilTask->RemoveAssignee(unit);
 		idleTask->AssignTo(unit);
+		AddBuildPower(unit, false);
 		workers.insert(unit);
 	};
 	auto rezzDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
@@ -209,6 +210,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		if (task->GetType() == IUnitTask::Type::NIL) {
 			return;
 		}
+		DelBuildPower(unit, false);
 		workers.erase(unit);
 		costQueries.erase(unit);
 	};
@@ -622,15 +624,19 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 	return 0; //signaling: OK
 }
 
-void CBuilderManager::AddBuildPower(CCircuitUnit* unit)
+void CBuilderManager::AddBuildPower(CCircuitUnit* unit, bool isBuilder)
 {
-	buildPower += unit->GetBuildSpeed();
+	if (isBuilder) {
+		buildPower += unit->GetBuildSpeed();
+	}
 	circuit->GetMilitaryManager()->AddResponse(unit);
 }
 
-void CBuilderManager::DelBuildPower(CCircuitUnit* unit)
+void CBuilderManager::DelBuildPower(CCircuitUnit* unit, bool isBuilder)
 {
-	buildPower -= unit->GetBuildSpeed();
+	if (isBuilder) {
+		buildPower -= unit->GetBuildSpeed();
+	}
 	circuit->GetMilitaryManager()->DelResponse(unit);
 }
 
