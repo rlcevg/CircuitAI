@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_MODULE_ECONOMYMANAGER_H_
 
 #include "module/Module.h"
+#include "util/AvailList.h"
 
 #include "AIFloat3.h"
 
@@ -149,18 +150,9 @@ private:
 	std::vector<SSideInfo> sideInfos;
 
 	struct SStoreInfo {
-		CCircuitDef* cdef;
 		float storage;
-		float score;
-		bool operator==(const CCircuitDef* d) { return cdef == d; }
 	};
-	struct SStoreDefs {
-		std::set<CCircuitDef*> all;
-		std::set<CCircuitDef*> avail;
-		std::vector<SStoreInfo> infos;  // sorted high-score first
-	} storeMDefs, storeEDefs;
-	void AddStoreDefs(const std::set<CCircuitDef*>& buildDefs, SStoreDefs& defsInfo, std::function<float (CCircuitDef*)> storeFunc);  // add available store defs
-	void RemoveStoreDefs(const std::set<CCircuitDef*>& buildDefs, SStoreDefs& defsInfo);
+	CAvailList<SStoreInfo> storeMDefs, storeEDefs;
 
 	std::unordered_map<CCircuitDef::Id, CCircuitDef*> mexDefs;  // builder: mex
 	std::unordered_map<CCircuitDef::Id, CCircuitDef*> defaultDefs;  // builder: default
@@ -172,18 +164,10 @@ private:
 
 	float costRatio;
 	struct SEnergyInfo {
-		CCircuitDef* cdef;
 		float make;
 		SEnergyCond cond;  // condition
-		bool operator==(const CCircuitDef* d) { return cdef == d; }
 	};
-	struct SEnergyDefs {
-		std::set<CCircuitDef*> all;
-		std::set<CCircuitDef*> avail;
-		std::vector<SEnergyInfo> infos;  // sorted high-score first
-	} energyDefs;
-	void AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs);  // add available energy defs
-	void RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs);
+	CAvailList<SEnergyInfo> energyDefs;
 
 	float ecoStep;
 	float ecoFactor;
@@ -235,17 +219,8 @@ private:
 	float energyUse;
 
 	struct SAssistInfo {
-		CCircuitDef* cdef;
-		float score;
-		bool operator==(const CCircuitDef* d) { return cdef == d; }
 	};
-	struct SAssistDefs {
-		std::set<CCircuitDef*> all;
-		std::set<CCircuitDef*> avail;
-		std::vector<SAssistInfo> infos;  // sorted high-score first
-	} assistDefs;
-	void AddAssistDefs(const std::set<CCircuitDef*>& buildDefs);  // add available assist defs
-	void RemoveAssistDefs(const std::set<CCircuitDef*>& buildDefs);
+	CAvailList<SAssistInfo> assistDefs;
 
 	std::shared_ptr<IMainJob> startFactory;
 	CBFactoryTask* factoryTask;

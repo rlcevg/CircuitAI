@@ -825,17 +825,17 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 	};
 	// radar
 	if (!radarDefs.infos.empty()) {
-		const SSensorInfo& radarInfo = radarDefs.infos.front();
+		const auto& radarInfo = radarDefs.infos.front();
 		if (radarInfo.cdef->IsAvailable(frame) && (radarInfo.cdef->GetCostM() < maxCost)) {
-		const float range = radarInfo.radius / (isPorc ? 4.f : SQRT_2);
+		const float range = radarInfo.data.radius / (isPorc ? 4.f : SQRT_2);
 		checkSensor(IBuilderTask::BuildType::RADAR, radarInfo.cdef, range);
 	}
 	}
 	// sonar
 	if (!sonarDefs.infos.empty()) {
-		const SSensorInfo& sonarInfo = sonarDefs.infos.front();
+		const auto& sonarInfo = sonarDefs.infos.front();
 		if (isWater && sonarInfo.cdef->IsAvailable(frame) && (sonarInfo.cdef->GetCostM() < maxCost)) {
-			checkSensor(IBuilderTask::BuildType::SONAR, sonarInfo.cdef, sonarInfo.radius);
+			checkSensor(IBuilderTask::BuildType::SONAR, sonarInfo.cdef, sonarInfo.data.radius);
 		}
 	}
 }
@@ -1333,18 +1333,44 @@ void CMilitaryManager::MakeBaseDefence(const AIFloat3& pos)
 
 void CMilitaryManager::AddSensorDefs(const std::set<CCircuitDef*>& buildDefs)
 {
-	AddSensorDefs(buildDefs, radarDefs, [](CCircuitDef* cdef) {
-		return cdef->GetDef()->GetRadarRadius();
+	auto scoreFunc = [](CCircuitDef* cdef, const SSensorInfo& data) {
+		return M_PI * SQUARE(data.radius) / cdef->GetCostM();  // area / cost
+//		return data.radius - cdef->GetCostM() * 0.1f;  // absolutely no physical meaning
+	};
+	radarDefs.AddDefs(buildDefs, [scoreFunc](CCircuitDef* cdef, SSensorInfo& data) {
+		data.radius = cdef->GetDef()->GetRadarRadius();
+		return scoreFunc(cdef, data);
 	});
-	AddSensorDefs(buildDefs, sonarDefs, [](CCircuitDef* cdef) {
-		return cdef->GetDef()->GetSonarRadius();
+	sonarDefs.AddDefs(buildDefs, [scoreFunc](CCircuitDef* cdef, SSensorInfo& data) {
+		data.radius = cdef->GetDef()->GetSonarRadius();
+		return scoreFunc(cdef, data);
 	});
+
+	// DEBUG
+//	std::vector<std::pair<std::string, CAvailList<SSensorInfo>*>> vec = {{"Radar", &radarDefs}, {"Sonar", &sonarDefs}};
+//	for (const auto& kv : vec) {
+//		circuit->LOG("----%s Sensor----", kv.first.c_str());
+//		for (const auto& si : kv.second->infos) {
+//			circuit->LOG("%s | costM=%f | costE=%f | radius=%f | efficiency=%f", si.cdef->GetDef()->GetName(),
+//					si.cdef->GetCostM(), si.cdef->GetCostE(), si.data.radius, si.score);
+//		}
+//	}
 }
 
 void CMilitaryManager::RemoveSensorDefs(const std::set<CCircuitDef*>& buildDefs)
 {
-	RemoveSensorDefs(buildDefs, radarDefs);
-	RemoveSensorDefs(buildDefs, sonarDefs);
+	radarDefs.RemoveDefs(buildDefs);
+	sonarDefs.RemoveDefs(buildDefs);
+
+	// DEBUG
+//	std::vector<std::pair<std::string, CAvailList<SSensorInfo>*>> vec = {{"Radar", &radarDefs}, {"Sonar", &sonarDefs}};
+//	for (const auto& kv : vec) {
+//		circuit->LOG("----Remove %s Sensor----", kv.first.c_str());
+//		for (const auto& si : kv.second->infos) {
+//			circuit->LOG("%s | costM=%f | costE=%f | radius=%f | efficiency=%f", si.cdef->GetDef()->GetName(),
+//					si.cdef->GetCostM(), si.cdef->GetCostE(), si.data.radius, si.score);
+//		}
+//	}
 }
 
 const CMilitaryManager::SSideInfo& CMilitaryManager::GetSideInfo() const
@@ -1626,82 +1652,6 @@ void CMilitaryManager::DelArmyCost(CCircuitUnit* unit)
 {
 	DelResponse(unit);
 	armyCost = std::max(armyCost - unit->GetCircuitDef()->GetCostM(), .0f);
-}
-
-void CMilitaryManager::AddSensorDefs(const std::set<CCircuitDef*>& buildDefs, SSensorDefs& defsInfo,
-		std::function<float (CCircuitDef*)> radiusFunc)
-{
-	std::set<CCircuitDef*> sensorDefs;
-	std::set_intersection(defsInfo.all.begin(), defsInfo.all.end(),
-						  buildDefs.begin(), buildDefs.end(),
-						  std::inserter(sensorDefs, sensorDefs.begin()));
-	if (sensorDefs.empty()) {
-		return;
-	}
-	std::set<CCircuitDef*> diffDefs;
-	std::set_difference(sensorDefs.begin(), sensorDefs.end(),
-						defsInfo.avail.begin(), defsInfo.avail.end(),
-						std::inserter(diffDefs, diffDefs.begin()));
-	if (diffDefs.empty()) {
-		return;
-	}
-	defsInfo.avail.insert(diffDefs.begin(), diffDefs.end());
-
-	for (auto cdef : diffDefs) {
-		SSensorInfo sensor;
-		sensor.cdef = cdef;
-		sensor.radius = radiusFunc(cdef);
-		sensor.score = M_PI * SQUARE(sensor.radius) / cdef->GetCostM();  // area / cost
-//		sensor.score = sensor.radius - cdef->GetCostM() * 0.1f;  // absolutely no physical meaning
-		defsInfo.infos.push_back(sensor);
-	}
-
-	// High-tech sensor first
-	auto compare = [](const SSensorInfo& s1, const SSensorInfo& s2) {
-		return s1.score > s2.score;
-	};
-	std::sort(defsInfo.infos.begin(), defsInfo.infos.end(), compare);
-
-	// FIXME: DEBUG
-//	circuit->LOG("----Sensor----");
-//	for (const SSensorInfo& si : defsInfo.infos) {
-//		circuit->LOG("%s | costM=%f | costE=%f | radius=%f | efficiency=%f", si.cdef->GetDef()->GetName(),
-//				si.cdef->GetCostM(), si.cdef->GetCostE(), si.radius, si.score);
-//	}
-	// FIXME: DEBUG
-}
-
-void CMilitaryManager::RemoveSensorDefs(const std::set<CCircuitDef*>& buildDefs, SSensorDefs& defsInfo)
-{
-	std::set<CCircuitDef*> diffDefs;
-	std::set_intersection(defsInfo.all.begin(), defsInfo.all.end(),
-						  buildDefs.begin(), buildDefs.end(),
-						  std::inserter(diffDefs, diffDefs.begin()));
-	if (diffDefs.empty()) {
-		return;
-	}
-	std::set<CCircuitDef*> sensorDefs;
-	std::set_difference(defsInfo.avail.begin(), defsInfo.avail.end(),
-						diffDefs.begin(), diffDefs.end(),
-						std::inserter(sensorDefs, sensorDefs.begin()));
-	std::swap(defsInfo.avail, sensorDefs);
-
-	auto it = defsInfo.infos.begin();
-	while (it != defsInfo.infos.end()) {
-		auto search = diffDefs.find(it->cdef);
-		if (search != diffDefs.end()) {
-			it = defsInfo.infos.erase(it);
-		} else {
-			++it;
-		}
-	}
-	// FIXME: DEBUG
-//	circuit->LOG("----Remove Sensor----");
-//	for (const SSensorInfo& si : defsInfo.infos) {
-//		circuit->LOG("%s | costM=%f | costE=%f | radius=%f | efficiency=%f", si.cdef->GetDef()->GetName(),
-//				si.cdef->GetCostM(), si.cdef->GetCostE(), si.radius, si.score);
-//	}
-	// FIXME: DEBUG
 }
 
 } // namespace circuit

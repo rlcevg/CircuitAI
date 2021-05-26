@@ -12,6 +12,7 @@
 #include "setup/DefenceMatrix.h"
 #include "task/fighter/FighterTask.h"
 #include "unit/CircuitDef.h"
+#include "util/AvailList.h"
 
 #include <vector>
 #include <set>
@@ -197,18 +198,9 @@ private:
 	std::vector<SSideInfo> sideInfos;
 
 	struct SSensorInfo {
-		CCircuitDef* cdef;
 		float radius;
-		float score;
-		bool operator==(const CCircuitDef* d) { return cdef == d; }
 	};
-	struct SSensorDefs {
-		std::set<CCircuitDef*> all;
-		std::set<CCircuitDef*> avail;
-		std::vector<SSensorInfo> infos;  // sorted high-score first
-	} radarDefs, sonarDefs;
-	void AddSensorDefs(const std::set<CCircuitDef*>& buildDefs, SSensorDefs& defsInfo, std::function<float (CCircuitDef*)> radiusFunc);
-	void RemoveSensorDefs(const std::set<CCircuitDef*>& buildDefs, SSensorDefs& defsInfo);
+	CAvailList<SSensorInfo> radarDefs, sonarDefs;
 
 	std::shared_ptr<IMainJob> defend;
 	std::vector<std::pair<springai::AIFloat3, BuildVector>> buildDefence;  // pos: defences

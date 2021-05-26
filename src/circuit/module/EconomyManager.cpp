@@ -99,7 +99,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	auto energyFinishedHandler = [this](CCircuitUnit* unit) {
 		auto it = std::find(energyDefs.infos.begin(), energyDefs.infos.end(), unit->GetCircuitDef());
 		if (it != energyDefs.infos.end()) {
-			const float income = it->make;
+			const float income = it->data.make;
 			for (int i = 0; i < INCOME_SAMPLES; ++i) {
 				energyIncomes[i] += income;
 			}
@@ -510,7 +510,7 @@ CCircuitDef* CEconomyManager::GetLowEnergy(const AIFloat3& pos, float& outMake, 
 			&& terrainMgr->CanBeBuiltAtSafe(candy, pos))
 		{
 			result = candy;
-			outMake = it->make;
+			outMake = it->data.make;
 			break;
 		}
 		++it;
@@ -520,22 +520,110 @@ CCircuitDef* CEconomyManager::GetLowEnergy(const AIFloat3& pos, float& outMake, 
 
 void CEconomyManager::AddEconomyDefs(const std::set<CCircuitDef*>& buildDefs)
 {
-	AddEnergyDefs(buildDefs);
-	AddStoreDefs(buildDefs, storeMDefs, [this](CCircuitDef* cdef) {
-		return cdef->GetDef()->GetStorage(metalRes);
+	const std::unordered_map<CCircuitDef*, SEnergyCond>& list = GetSideInfo().engyLimits;
+	energyDefs.AddDefs(buildDefs, [this, &list](CCircuitDef* cdef, SEnergyInfo& data) -> float {
+		auto customParams = cdef->GetDef()->GetCustomParams();
+		auto it = customParams.find("income_energy");
+		data.make = (it != customParams.end())
+				? utils::string_to_float(it->second)
+				: cdef->GetDef()->GetResourceMake(energyRes) - cdef->GetUpkeepE() - cdef->GetCloakCost();
+		if (data.make < 1) {
+			data.make = cdef->GetDef()->GetWindResourceGenerator(energyRes);
+			if (data.make < 1) {
+				data.make = cdef->GetDef()->GetTidalResourceGenerator(energyRes) * circuit->GetMap()->GetTidalStrength();
+			} else {
+				float avgWind = (circuit->GetMap()->GetMaxWind() + circuit->GetMap()->GetMinWind()) * 0.5f;
+				data.make = std::min(avgWind, cdef->GetDef()->GetWindResourceGenerator(energyRes));
+			}
+		}
+
+		auto lit = list.find(cdef);
+		if (lit != list.end()) {
+			data.cond = lit->second;
+		}
+		if (data.cond.score < .0f) {
+			// TODO: Instead of plain sizeX, sizeZ use AI's yardmap size
+			data.cond.score = SQUARE(data.make) / ((cdef->GetCostM()/* + cdef->GetCostE() * 0.05f*/) * cdef->GetDef()->GetXSize() * cdef->GetDef()->GetZSize());
+		}
+		if (data.cond.metalIncome < 0.f) {
+			// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
+			//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
+			//       solar       geothermal    fusion         singu           ...
+			//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
+			data.cond.metalIncome = sqrtf(cdef->GetCostM() * 16.0f / MAX_BUILD_SEC);
+		}
+		if (data.cond.energyIncome < 0.f) {
+			data.cond.energyIncome = cdef->GetCostE() * costRatio;
+		}
+
+		return data.cond.score;
 	});
-	AddStoreDefs(buildDefs, storeEDefs, [this](CCircuitDef* cdef) {
-		return cdef->GetDef()->GetStorage(energyRes);
+
+	auto scoreFunc = [](CCircuitDef* cdef, const SStoreInfo& data) {
+		return data.storage / cdef->GetCostM();
+	};
+	storeMDefs.AddDefs(buildDefs, [this, scoreFunc](CCircuitDef* cdef, SStoreInfo& data) -> float {
+		data.storage = cdef->GetDef()->GetStorage(metalRes);
+		return scoreFunc(cdef, data);
 	});
-	AddAssistDefs(buildDefs);
+	storeEDefs.AddDefs(buildDefs, [this, scoreFunc](CCircuitDef* cdef, SStoreInfo& data) -> float {
+		data.storage = cdef->GetDef()->GetStorage(energyRes);
+		return scoreFunc(cdef, data);
+	});
+
+	assistDefs.AddDefs(buildDefs, [](CCircuitDef* cdef, SAssistInfo& data) -> float {
+		return cdef->GetBuildSpeed() / cdef->GetCostM();
+	});
+
+	// DEBUG
+//	circuit->LOG("----Energy----");
+//	for (const auto& ei : energyDefs.infos) {
+//		circuit->LOG("%s | costM=%f | costE=%f | make=%f | efficiency=%f | limit=%i | m-income=%f | e-income=%f", ei.cdef->GetDef()->GetName(),
+//				ei.cdef->GetCostM(), ei.cdef->GetCostE(), ei.data.make, ei.data.cond.score, ei.data.cond.limit, ei.data.cond.metalIncome, ei.data.cond.energyIncome);
+//	}
+//	std::vector<std::pair<std::string, CAvailList<SStoreInfo>*>> vec = {{"Metal", &storeMDefs}, {"Energy", &storeEDefs}};
+//	for (const auto& kv : vec) {
+//		circuit->LOG("----%s Storage----", kv.first.c_str());
+//		for (const auto& si : kv.second->infos) {
+//			circuit->LOG("%s | costM=%f | costE=%f | storage=%f", si.cdef->GetDef()->GetName(),
+//					si.cdef->GetCostM(), si.cdef->GetCostE(), si.data.storage);
+//		}
+//	}
+//	circuit->LOG("----Assist----");
+//	for (const auto& ni : assistDefs.infos) {
+//		circuit->LOG("%s | costM=%f | costE=%f | build_speed=%f | efficiency=%f", ni.cdef->GetDef()->GetName(),
+//				ni.cdef->GetCostM(), ni.cdef->GetCostE(), ni.cdef->GetBuildSpeed(), ni.score);
+//	}
 }
 
 void CEconomyManager::RemoveEconomyDefs(const std::set<CCircuitDef*>& buildDefs)
 {
-	RemoveEnergyDefs(buildDefs);
-	RemoveStoreDefs(buildDefs, storeMDefs);
-	RemoveStoreDefs(buildDefs, storeEDefs);
-	RemoveAssistDefs(buildDefs);
+	energyDefs.RemoveDefs(buildDefs);
+	storeMDefs.RemoveDefs(buildDefs);
+	storeEDefs.RemoveDefs(buildDefs);
+	assistDefs.RemoveDefs(buildDefs);
+
+	// DEBUG
+//	circuit->LOG("----Remove Energy----");
+//	for (const auto& ei : energyDefs.infos) {
+//		circuit->LOG("%s | costM=%f | costE=%f | make=%f | efficiency=%f | limit=%i", ei.cdef->GetDef()->GetName(),
+//				ei.cdef->GetCostM(), ei.cdef->GetCostE(), ei.data.make, ei.data.cond.score, ei.data.cond.limit);
+//	}
+//	circuit->LOG("----Remove Metal Storage----");
+//	for (const auto& si : storeMDefs.infos) {
+//		circuit->LOG("%s | costM=%f | costE=%f | storage=%f", si.cdef->GetDef()->GetName(),
+//				si.cdef->GetCostM(), si.cdef->GetCostE(), si.data.storage);
+//	}
+//	circuit->LOG("----Remove Energy Storage----");
+//	for (const auto& si : storeEDefs.infos) {
+//		circuit->LOG("%s | costM=%f | costE=%f | storage=%f", si.cdef->GetDef()->GetName(),
+//				si.cdef->GetCostM(), si.cdef->GetCostE(), si.data.storage);
+//	}
+//	circuit->LOG("----Remove Assist----");
+//	for (const auto& ni : assistDefs.infos) {
+//		circuit->LOG("%s | costM=%f | costE=%f | build_speed=%f | efficiency=%f", ni.cdef->GetDef()->GetName(),
+//				ni.cdef->GetCostM(), ni.cdef->GetCostE(), ni.cdef->GetBuildSpeed(), ni.score);
+//	}
 }
 
 const CEconomyManager::SSideInfo& CEconomyManager::GetSideInfo() const
@@ -867,7 +955,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	bool isLastHope = isEnergyStalling;
 
 	const int frame = circuit->GetLastFrame();
-	for (const SEnergyInfo& engy : energyDefs.infos) {  // sorted by high-tech first
+	for (const auto& engy : energyDefs.infos) {  // sorted by high-tech first
 		// TODO: Add geothermal powerplant support
 		if (!engy.cdef->IsAvailable(frame)
 			|| !terrainMgr->CanBeBuiltAtSafe(engy.cdef, position)
@@ -876,17 +964,17 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			continue;
 		}
 
-		if (engy.cdef->GetCount() < engy.cond.limit) {
+		if (engy.cdef->GetCount() < engy.data.cond.limit) {
 			isLastHope = false;
 			if (taskSize < (int)(buildPower / engy.cdef->GetCostM() * 4 + 1)) {
 				bestDef = engy.cdef;
-				if ((engy.cond.metalIncome < buildTimeMod * metalIncome)
-					&& (engy.cond.energyIncome < energyIncome))
+				if ((engy.data.cond.metalIncome < buildTimeMod * metalIncome)
+					&& (engy.data.cond.energyIncome < energyIncome))
 				{
 					break;
 				}
-			} else if ((engy.cond.metalIncome < buildTimeMod * metalIncome)
-				&& (engy.cond.energyIncome < energyIncome))
+			} else if ((engy.data.cond.metalIncome < buildTimeMod * metalIncome)
+				&& (engy.data.cond.energyIncome < energyIncome))
 			{
 				bestDef = nullptr;
 				break;
@@ -1357,7 +1445,7 @@ bool CEconomyManager::CheckAssistRequired(const AIFloat3& position, CCircuitUnit
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	AIFloat3 buildPos = factory->GetPos(frame);
 	CCircuitDef* assistDef = nullptr;
-	for (const SAssistInfo& nano : assistDefs.infos) {  // sorted by high-tech first
+	for (const auto& nano : assistDefs.infos) {  // sorted by high-tech first
 		if (nano.cdef->IsAvailable(frame)
 			&& terrainMgr->CanBeBuiltAtSafe(nano.cdef, buildPos))
 		{
@@ -1471,263 +1559,6 @@ void CEconomyManager::UpdateEconomy()
 		pullMtoS = mspInfo.fraction * (mexCount - mspInfo.mex) + mspInfo.pull;
 	}
 	pullMtoS *= circuit->GetMilitaryManager()->ClampMobileCostRatio();
-}
-
-void CEconomyManager::AddStoreDefs(const std::set<CCircuitDef*>& buildDefs, SStoreDefs& defsInfo,
-		std::function<float (CCircuitDef*)> storeFunc)
-{
-	std::set<CCircuitDef*> storeDefs;
-	std::set_intersection(defsInfo.all.begin(), defsInfo.all.end(),
-						  buildDefs.begin(), buildDefs.end(),
-						  std::inserter(storeDefs, storeDefs.begin()));
-	if (storeDefs.empty()) {
-		return;
-	}
-	std::set<CCircuitDef*> diffDefs;
-	std::set_difference(storeDefs.begin(), storeDefs.end(),
-						defsInfo.avail.begin(), defsInfo.avail.end(),
-						std::inserter(diffDefs, diffDefs.begin()));
-	if (diffDefs.empty()) {
-		return;
-	}
-	defsInfo.avail.insert(diffDefs.begin(), diffDefs.end());
-
-	for (auto cdef : diffDefs) {
-		SStoreInfo store;
-		store.cdef = cdef;
-		store.storage = storeFunc(cdef);
-		store.score = store.storage / cdef->GetCostM();
-		defsInfo.infos.push_back(store);
-	}
-
-	// High-tech storage first
-	auto compare = [](const SStoreInfo& e1, const SStoreInfo& e2) {
-		return e1.score > e2.score;
-	};
-	std::sort(defsInfo.infos.begin(), defsInfo.infos.end(), compare);
-
-	// FIXME: DEBUG
-//	circuit->LOG("----Storage----");
-//	for (const SStoreInfo& si : defsInfo.infos) {
-//		circuit->LOG("%s | costM=%f | costE=%f | storage=%f", si.cdef->GetDef()->GetName(),
-//				si.cdef->GetCostM(), si.cdef->GetCostE(), si.storage);
-//	}
-	// FIXME: DEBUG
-}
-
-void CEconomyManager::RemoveStoreDefs(const std::set<CCircuitDef*>& buildDefs, SStoreDefs& defsInfo)
-{
-	std::set<CCircuitDef*> diffDefs;
-	std::set_intersection(defsInfo.all.begin(), defsInfo.all.end(),
-						  buildDefs.begin(), buildDefs.end(),
-						  std::inserter(diffDefs, diffDefs.begin()));
-	if (diffDefs.empty()) {
-		return;
-	}
-	std::set<CCircuitDef*> storeDefs;
-	std::set_difference(defsInfo.avail.begin(), defsInfo.avail.end(),
-						diffDefs.begin(), diffDefs.end(),
-						std::inserter(storeDefs, storeDefs.begin()));
-	std::swap(defsInfo.avail, storeDefs);
-
-	auto it = defsInfo.infos.begin();
-	while (it != defsInfo.infos.end()) {
-		auto search = diffDefs.find(it->cdef);
-		if (search != diffDefs.end()) {
-			it = defsInfo.infos.erase(it);
-		} else {
-			++it;
-		}
-	}
-	// FIXME: DEBUG
-//	circuit->LOG("----Remove Storage----");
-//	for (const SStoreInfo& si : defsInfo.infos) {
-//		circuit->LOG("%s | costM=%f | costE=%f | storage=%f", si.cdef->GetDef()->GetName(),
-//				si.cdef->GetCostM(), si.cdef->GetCostE(), si.storage);
-//	}
-	// FIXME: DEBUG
-}
-
-void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
-{
-	// TODO: Cache engyDefs in CCircuitDef?
-	std::set<CCircuitDef*> engyDefs;
-	std::set_intersection(energyDefs.all.begin(), energyDefs.all.end(),
-						  buildDefs.begin(), buildDefs.end(),
-						  std::inserter(engyDefs, engyDefs.begin()));
-	if (engyDefs.empty()) {
-		return;
-	}
-	std::set<CCircuitDef*> diffDefs;
-	std::set_difference(engyDefs.begin(), engyDefs.end(),
-						energyDefs.avail.begin(), energyDefs.avail.end(),
-						std::inserter(diffDefs, diffDefs.begin()));
-	if (diffDefs.empty()) {
-		return;
-	}
-	energyDefs.avail.insert(diffDefs.begin(), diffDefs.end());
-
-	const std::unordered_map<CCircuitDef*, SEnergyCond>& list = GetSideInfo().engyLimits;
-	for (auto cdef : diffDefs) {
-		SEnergyInfo engy;
-		engy.cdef = cdef;
-		auto customParams = cdef->GetDef()->GetCustomParams();
-		auto it = customParams.find("income_energy");
-		engy.make = (it != customParams.end())
-				? utils::string_to_float(it->second)
-				: cdef->GetDef()->GetResourceMake(energyRes) - cdef->GetUpkeepE() - cdef->GetCloakCost();
-		if (engy.make < 1) {
-			engy.make = cdef->GetDef()->GetWindResourceGenerator(energyRes);
-			if (engy.make < 1) {
-				engy.make = cdef->GetDef()->GetTidalResourceGenerator(energyRes) * circuit->GetMap()->GetTidalStrength();
-			} else {
-				float avgWind = (circuit->GetMap()->GetMaxWind() + circuit->GetMap()->GetMinWind()) * 0.5f;
-				engy.make = std::min(avgWind, cdef->GetDef()->GetWindResourceGenerator(energyRes));
-			}
-		}
-
-		auto lit = list.find(cdef);
-		if (lit != list.end()) {
-			engy.cond = lit->second;
-		}
-		if (engy.cond.score < .0f) {
-			// TODO: Instead of plain sizeX, sizeZ use AI's yardmap size
-			engy.cond.score = SQUARE(engy.make) / ((cdef->GetCostM()/* + cdef->GetCostE() * 0.05f*/) * cdef->GetDef()->GetXSize() * cdef->GetDef()->GetZSize());
-		}
-		if (engy.cond.metalIncome < 0.f) {
-			// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
-			//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
-			//       solar       geothermal    fusion         singu           ...
-			//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
-			engy.cond.metalIncome = sqrtf(engy.cdef->GetCostM() * 16.0f / MAX_BUILD_SEC);
-		}
-		if (engy.cond.energyIncome < 0.f) {
-			engy.cond.energyIncome = cdef->GetCostE() * costRatio;
-		}
-		energyDefs.infos.push_back(engy);
-	}
-
-	// High-tech energy first
-	auto compare = [](const SEnergyInfo& e1, const SEnergyInfo& e2) {
-		return e1.cond.score > e2.cond.score;
-	};
-	std::sort(energyDefs.infos.begin(), energyDefs.infos.end(), compare);
-
-	// FIXME: DEBUG
-//	circuit->LOG("----Energy----");
-//	for (const SEnergyInfo& ei : energyDefs.infos) {
-//		circuit->LOG("%s | costM=%f | costE=%f | make=%f | efficiency=%f | limit=%i | m-income=%f | e-income=%f", ei.cdef->GetDef()->GetName(),
-//				ei.cdef->GetCostM(), ei.cdef->GetCostE(), ei.make, ei.cond.score, ei.cond.limit, ei.cond.metalIncome, ei.cond.energyIncome);
-//	}
-	// FIXME: DEBUG
-}
-
-void CEconomyManager::RemoveEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
-{
-	// TODO: Cache diffDefs in CCircuitDef?
-	std::set<CCircuitDef*> diffDefs;
-	std::set_intersection(energyDefs.all.begin(), energyDefs.all.end(),
-						  buildDefs.begin(), buildDefs.end(),
-						  std::inserter(diffDefs, diffDefs.begin()));
-	if (diffDefs.empty()) {
-		return;
-	}
-	std::set<CCircuitDef*> engyDefs;
-	std::set_difference(energyDefs.avail.begin(), energyDefs.avail.end(),
-						diffDefs.begin(), diffDefs.end(),
-						std::inserter(engyDefs, engyDefs.begin()));
-	std::swap(energyDefs.avail, engyDefs);
-
-	auto it = energyDefs.infos.begin();
-	while (it != energyDefs.infos.end()) {
-		auto search = diffDefs.find(it->cdef);
-		if (search != diffDefs.end()) {
-			it = energyDefs.infos.erase(it);
-		} else {
-			++it;
-		}
-	}
-	// FIXME: DEBUG
-//	circuit->LOG("----Remove Energy----");
-//	for (const SEnergyInfo& ei : energyDefs.infos) {
-//		circuit->LOG("%s | costM=%f | costE=%f | make=%f | efficiency=%f | limit=%i", ei.cdef->GetDef()->GetName(),
-//				ei.cdef->GetCostM(), ei.cdef->GetCostE(), ei.make, ei.score, ei.limit);
-//	}
-	// FIXME: DEBUG
-}
-
-void CEconomyManager::AddAssistDefs(const std::set<CCircuitDef*>& buildDefs)
-{
-	std::set<CCircuitDef*> buildNanoDefs;
-	std::set_intersection(assistDefs.all.begin(), assistDefs.all.end(),
-						  buildDefs.begin(), buildDefs.end(),
-						  std::inserter(buildNanoDefs, buildNanoDefs.begin()));
-	if (buildNanoDefs.empty()) {
-		return;
-	}
-	std::set<CCircuitDef*> diffDefs;
-	std::set_difference(buildNanoDefs.begin(), buildNanoDefs.end(),
-						assistDefs.avail.begin(), assistDefs.avail.end(),
-						std::inserter(diffDefs, diffDefs.begin()));
-	if (diffDefs.empty()) {
-		return;
-	}
-	assistDefs.avail.insert(diffDefs.begin(), diffDefs.end());
-
-	for (auto cdef : diffDefs) {
-		SAssistInfo nano;
-		nano.cdef = cdef;
-		nano.score = cdef->GetBuildSpeed() / cdef->GetCostM();
-		assistDefs.infos.push_back(nano);
-	}
-
-	// High-tech storage first
-	auto compare = [](const SAssistInfo& e1, const SAssistInfo& e2) {
-		return e1.score > e2.score;
-	};
-	std::sort(assistDefs.infos.begin(), assistDefs.infos.end(), compare);
-
-	// FIXME: DEBUG
-//	circuit->LOG("----Nano----");
-//	for (const SAssistInfo& ni : assistDefs.infos) {
-//		circuit->LOG("%s | costM=%f | costE=%f | build_speed=%f | efficiency=%f", ni.cdef->GetDef()->GetName(),
-//				ni.cdef->GetCostM(), ni.cdef->GetCostE(), ni.cdef->GetBuildSpeed(), ni.score);
-//	}
-	// FIXME: DEBUG
-}
-
-void CEconomyManager::RemoveAssistDefs(const std::set<CCircuitDef*>& buildDefs)
-{
-	std::set<CCircuitDef*> diffDefs;
-	std::set_intersection(assistDefs.all.begin(), assistDefs.all.end(),
-						  buildDefs.begin(), buildDefs.end(),
-						  std::inserter(diffDefs, diffDefs.begin()));
-	if (diffDefs.empty()) {
-		return;
-	}
-	std::set<CCircuitDef*> buildNanoDefs;
-	std::set_difference(assistDefs.avail.begin(), assistDefs.avail.end(),
-						diffDefs.begin(), diffDefs.end(),
-						std::inserter(buildNanoDefs, buildNanoDefs.begin()));
-	std::swap(assistDefs.avail, buildNanoDefs);
-
-	auto it = assistDefs.infos.begin();
-	while (it != assistDefs.infos.end()) {
-		auto search = diffDefs.find(it->cdef);
-		if (search != diffDefs.end()) {
-			it = assistDefs.infos.erase(it);
-		} else {
-			++it;
-		}
-	}
-
-	// FIXME: DEBUG
-//	circuit->LOG("----Remove Nano----");
-//	for (const SAssistInfo& ni : assistDefs.infos) {
-//		circuit->LOG("%s | costM=%f | costE=%f | build_speed=%f | efficiency=%f", ni.cdef->GetDef()->GetName(),
-//				ni.cdef->GetCostM(), ni.cdef->GetCostE(), ni.cdef->GetBuildSpeed(), ni.score);
-//	}
-	// FIXME: DEBUG
 }
 
 } // namespace circuit
