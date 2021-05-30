@@ -174,6 +174,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	health       = def->GetHealth();
 	speed        = def->GetSpeed();  // elmos per second
 	losRadius    = def->GetLosRadius();
+	sonarRadius  = def->GetSonarRadius();
 	costM        = def->GetCost(resM);
 	costE        = def->GetCost(resE);
 	upkeepE      = def->GetUpkeep(resE);

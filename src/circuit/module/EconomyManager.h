@@ -70,7 +70,7 @@ public:
 	CEnergyGrid* GetEnergyGrid() const { return energyGrid; }
 	float GetClusterRange() const { return clusterRange; }
 	float GetPylonRange() const { return pylonRange; }
-	CCircuitDef* GetLowEnergy(const springai::AIFloat3& pos, float& outMake, CCircuitUnit* builder = nullptr) const;
+	CCircuitDef* GetLowEnergy(const springai::AIFloat3& pos, float& outMake, const CCircuitUnit* builder = nullptr) const;
 	void AddEconomyDefs(const std::set<CCircuitDef*>& buildDefs);  // add available economy defs
 	void RemoveEconomyDefs(const std::set<CCircuitDef*>& buildDefs);
 
@@ -85,6 +85,7 @@ public:
 	float GetAvgMetalIncome() const { return metal.income; }
 	float GetAvgEnergyIncome() const { return energy.income; }
 	float GetEcoFactor() const { return ecoFactor; }
+	float GetEcoEM() const { return ecoEMRatio; }
 	float GetPullMtoS() const { return pullMtoS; }
 	float GetMetalCur();
 	float GetMetalStore();
@@ -171,6 +172,7 @@ private:
 
 	float ecoStep;
 	float ecoFactor;
+	float ecoEMRatio;  // energy to metal ratio
 
 	struct SEnergyFactorInfo {
 		float startFactor;

@@ -45,7 +45,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 		return;
 	}
 	const AIFloat3& pos = unit->GetPos(frame);
-	auto enemies = circuit->GetCallback()->GetEnemyUnitIdsIn(pos, range);
+	auto& enemies = circuit->GetCallback()->GetEnemyUnitIdsIn(pos, range);
 	if (enemies.empty()) {
 		return;
 	}

@@ -275,6 +275,7 @@ public:
 	float GetHealth()       const { return health; }
 	float GetSpeed()        const { return speed; }
 	float GetLosRadius()    const { return losRadius; }
+	float GetSonarRadius()  const { return sonarRadius; }
 	float GetCostM()        const { return costM; }
 	float GetCostE()        const { return costE; }
 	float GetUpkeepE()      const { return upkeepE; }
@@ -396,6 +397,7 @@ private:
 	float health;
 	float speed;
 	float losRadius;
+	float sonarRadius;
 	float costM;
 	float costE;
 	float upkeepE;

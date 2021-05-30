@@ -65,6 +65,13 @@ namespace utils {
 //	return select_randomly(start, end, gen);
 //}
 
+template <class C> void free(C& cntr)
+{
+	for (typename C::const_iterator it = cntr.cbegin(); it != cntr.cend(); ++it) {
+		delete *it;
+	}
+}
+
 template <class C> void free_clear(C& cntr)
 {
 	for (typename C::iterator it = cntr.begin(); it != cntr.end(); ++it) {

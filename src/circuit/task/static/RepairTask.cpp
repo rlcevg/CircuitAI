@@ -70,7 +70,7 @@ void CSRepairTask::Update()
 		return;
 	}
 
-	if (economyMgr->GetAvgMetalIncome() < savedIncome * 0.6f) {
+	if ((economyMgr->GetAvgMetalIncome() < savedIncomeM * 0.6f) || (economyMgr->GetAvgEnergyIncome() < savedIncomeE * 0.6f)) {
 		manager->AbortTask(this);
 	} else if ((++updCount % 4 == 0) && !units.empty()) {
 		const float radius = (*units.begin())->GetCircuitDef()->GetBuildDistance();
@@ -89,10 +89,11 @@ void CSRepairTask::Update()
 				// Check for damaged units
 				CBuilderManager* builderMgr = circuit->GetBuilderManager();
 				circuit->UpdateFriendlyUnits();
-				auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
+				auto& us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 				for (Unit* u : us) {
 					CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-					if ((candUnit == nullptr) || builderMgr->IsReclaimUnit(candUnit)
+					if ((candUnit == nullptr)
+						|| builderMgr->IsReclaimUnit(candUnit)
 						|| candUnit->GetCircuitDef()->IsMex())  // FIXME: BA, should be IsT1Mex()
 					{
 						continue;
@@ -102,7 +103,7 @@ void CSRepairTask::Update()
 						break;
 					}
 				}
-				utils::free_clear(us);
+				utils::free(us);
 				if (task == nullptr) {
 					// Reclaim task
 					if (circuit->GetCallback()->IsFeaturesIn(position, radius) && !builderMgr->IsResurrect(position, radius)) {
@@ -116,10 +117,11 @@ void CSRepairTask::Update()
 			CBuilderManager* builderMgr = circuit->GetBuilderManager();
 			const float maxCost = MAX_BUILD_SEC * economyMgr->GetAvgMetalIncome() * economyMgr->GetEcoFactor();
 			circuit->UpdateFriendlyUnits();
-			auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
+			auto& us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 			for (Unit* u : us) {
 				CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-				if ((candUnit == nullptr) || builderMgr->IsReclaimUnit(candUnit)
+				if ((candUnit == nullptr)
+					|| builderMgr->IsReclaimUnit(candUnit)
 					|| candUnit->GetCircuitDef()->IsMex())  // FIXME: BA, should be IsT1Mex()
 				{
 					continue;
@@ -131,7 +133,7 @@ void CSRepairTask::Update()
 					break;
 				}
 			}
-			utils::free_clear(us);
+			utils::free(us);
 		}
 
 		if (task != nullptr) {

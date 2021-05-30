@@ -45,9 +45,16 @@ void AiTaskCreated(IUnitTask@ task)
 // 			AiAddPoint(task.GetBuildPos(), name);
 // 		}
 // 	} break;
-// 	case 10:  // BuildType::MEX
-// 	case 5:  // BuildType::DEFENCE
 // 	case 0:  // BuildType::FACTORY
+// 	case 1:  // BuildType::NANO
+// 	case 2:  // BuildType::STORE
+// 	case 3:  // BuildType::PYLON
+// 	case 5:  // BuildType::DEFENCE
+// 	case 6:  // BuildType::BUNKER
+// 	case 7:  // BuildType::BIG_GUN
+// 	case 8:  // BuildType::RADAR
+// 	case 9:  // BuildType::SONAR
+// 	case 10:  // BuildType::MEX
 // 		AiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
 // 		break;
 // 	default:
@@ -61,9 +68,17 @@ void AiTaskClosed(IUnitTask@ task, bool done)
 // 		return;
 // 	}
 // 	switch (task.GetBuildType()) {
-// 	case 10:  // BuildType::MEX
-// 	case 5:  // BuildType::DEFENCE
+// 	case 0:  // BuildType::FACTORY
+// 	case 1:  // BuildType::NANO
+// 	case 2:  // BuildType::STORE
+// 	case 3:  // BuildType::PYLON
 // 	case 4:  // BuildType::ENERGY
+// 	case 5:  // BuildType::DEFENCE
+// 	case 6:  // BuildType::BUNKER
+// 	case 7:  // BuildType::BIG_GUN
+// 	case 8:  // BuildType::RADAR
+// 	case 9:  // BuildType::SONAR
+// 	case 10:  // BuildType::MEX
 // 		AiDelPoint(task.GetBuildPos());
 // 		break;
 // 	default:

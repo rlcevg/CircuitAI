@@ -29,6 +29,7 @@ CBMexTask::CBMexTask(ITaskManager* mgr, Priority priority,
 					 CCircuitDef* buildDef, const AIFloat3& position,
 					 float cost, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::MEX, cost, 0.f, timeout)
+		, blockCount(0)
 {
 }
 
@@ -42,9 +43,9 @@ bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 		return false;
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
-	if (circuit->GetEconomyManager()->IsEnergyStalling()) {
-		return false;
-	}
+//	if (circuit->GetEconomyManager()->IsEnergyStalling()) {
+//		return false;
+//	}
 	if (unit->GetCircuitDef()->IsAttacker()) {
 		return true;
 	}
@@ -105,85 +106,22 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 			} else {
 				metalMgr->SetOpenSpot(index, true);
 				economyMgr->SetOpenSpot(index, true);
+				if (!CheckLandBlock(unit)) {
+					// Fallback to Guard/Assist/Patrol
+					manager->FallbackTask(unit);
+				}
 			}
 		}
-	}
-
-	// NOTE: Unsafe fallback expansion (mex can be behind enemy lines)
-	const CMetalData::Metals& spots = metalMgr->GetSpots();
-	CMap* map = circuit->GetMap();
-	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	CCircuitDef* mexDef = buildDef;
-	circuit->GetThreatMap()->SetThreatType(unit);
-	CMetalData::PointPredicate predicate = [&spots, economyMgr, map, mexDef, terrainMgr, unit](const int index) {
-		return (economyMgr->IsAllyOpenSpot(index)
-				&& terrainMgr->CanBeBuiltAtSafe(mexDef, spots[index].position)  // hostile environment
-				&& terrainMgr->CanReachAtSafe(unit, spots[index].position, unit->GetCircuitDef()->GetBuildDistance())
-				&& map->IsPossibleToBuildAt(mexDef->GetDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
-	};
-	int index = metalMgr->FindNearestSpot(position, predicate);
-
-	if (index >= 0) {
-		SetBuildPos(spots[index].position);
-		economyMgr->SetOpenSpot(index, false);
-		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
-		)
-	} else {
-//		buildPos = -RgtVector;
-		// Fallback to Guard/Assist/Patrol
-		manager->FallbackTask(unit);
 	}
 }
 
 void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 {
-	/*
-	 * Check if unit is idle because of enemy mex ahead and build turret if so.
-	 */
-	CCircuitAI* circuit = manager->GetCircuit();
-	CCircuitDef* def = circuit->GetMilitaryManager()->GetDefaultPorc();
-	if ((def == nullptr) || !def->IsAvailable(circuit->GetLastFrame())) {
-		IBuilderTask::OnUnitIdle(unit);
-		return;
-	}
-
-	const float range = def->GetMaxRange();
-	const float testRange = range + 200.0f;  // 200 elmos
-	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
-	if (buildPos.SqDistance2D(pos) < SQUARE(testRange)) {
-		COOAICallback* clb = circuit->GetCallback();
-		// TODO: Use internal CCircuitAI::GetEnemyUnits?
-		auto enemies = clb->GetEnemyUnitIdsIn(buildPos, SQUARE_SIZE);
-		bool blocked = false;
-		for (int enemyId : enemies) {
-			if (enemyId == -1) {
-				continue;
-			}
-			CCircuitDef::Id enemyDefId = clb->Unit_GetDefId(enemyId);
-			if ((enemyDefId != -1) && circuit->GetCircuitDef(enemyDefId)->IsMex()) {
-				blocked = true;
-				break;
-			}
-		}
-		if (blocked) {
-			CBuilderManager* builderMgr = circuit->GetBuilderManager();
-			IBuilderTask* task = nullptr;
-			const float qdist = SQUARE(200.0f);  // 200 elmos
-			// TODO: Push tasks into bgi::rtree
-			for (IBuilderTask* t : builderMgr->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
-				if (pos.SqDistance2D(t->GetTaskPos()) < qdist) {
-					task = t;
-					break;
-				}
-			}
-			if (task == nullptr) {
-				AIFloat3 newPos = buildPos - (buildPos - pos).Normalize2D() * range * 0.9f;
-				CTerrainManager::CorrectPosition(newPos);
-				task = builderMgr->EnqueueTask(IBuilderTask::Priority::HIGH, def, newPos, IBuilderTask::BuildType::DEFENCE);
-			}
-			// TODO: Before BuildTask assign MoveTask(task->GetTaskPos())
-			manager->AssignTask(unit, task);
+	if ((target == nullptr) && (State::ENGAGE == state)) {
+		const bool isBlocked = manager->GetCircuit()->GetTerrainManager()->IsWaterSector(buildPos)
+				? CheckWaterBlock(unit)
+				: CheckLandBlock(unit);
+		if (isBlocked) {
 			return;
 		}
 	}
@@ -195,6 +133,133 @@ void CBMexTask::SetBuildPos(const AIFloat3& pos)
 {
 	FindFacing(pos);
 	IBuilderTask::SetBuildPos(pos);
+}
+
+bool CBMexTask::CheckLandBlock(CCircuitUnit* unit)
+{
+	/*
+	 * Check if unit is idle because of enemy mex ahead and build turret if so.
+	 */
+	if (blockCount > 2) {
+		return false;
+	}
+	CCircuitAI* circuit = manager->GetCircuit();
+
+	const float range = unit->GetCircuitDef()->GetLosRadius();
+	const int frame = circuit->GetLastFrame();
+	const AIFloat3& pos = unit->GetPos(frame);
+	const float sqPosDist = buildPos.SqDistance2D(pos);
+	if (sqPosDist > SQUARE(range + 200.0f)) {
+		return false;
+	}
+	++blockCount;
+
+	COOAICallback* clb = circuit->GetCallback();
+	Unit* enemy = nullptr;
+	bool blocked = sqPosDist < SQUARE(unit->GetCircuitDef()->GetBuildDistance() + SQUARE_SIZE);
+	if (blocked) {
+		auto& allies = clb->GetFriendlyUnitIdsIn(buildPos, SQUARE_SIZE);
+		for (int allyId : allies) {
+			if (allyId != -1) {
+				blocked = false;
+				break;
+			}
+		}
+	}
+	auto& enemies = clb->GetEnemyUnitIdsIn(buildPos, SQUARE_SIZE);
+	for (int enemyId : enemies) {
+		if (enemyId != -1) {
+			blocked = true;
+			CEnemyInfo* ei = circuit->GetEnemyInfo(enemyId);
+			if (ei != nullptr) {
+				enemy = ei->GetUnit();
+			}
+			break;
+		}
+	}
+	if (!blocked) {
+		return false;
+	}
+
+	if (enemy != nullptr) {
+		state = State::REGROUP;
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->ReclaimUnit(enemy);
+		);
+	} else {
+		AIFloat3 dir = (buildPos - pos).Normalize2D();
+		const float step = unit->GetCircuitDef()->GetBuildDistance() / 4;
+		TRY_UNIT(circuit, unit,
+			unit->CmdMoveTo(pos + dir * step);
+			for (int i = 2; i < 4; ++i) {
+				AIFloat3 newPos = pos + dir * (step * i);
+				unit->CmdMoveTo(newPos, UNIT_COMMAND_OPTION_SHIFT_KEY);
+			}
+			unit->GetUnit()->Build(buildDef->GetDef(), buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60);
+		);
+	}
+	return true;
+}
+
+bool CBMexTask::CheckWaterBlock(CCircuitUnit* unit)
+{
+	/*
+	 * Check if unit is idle because of enemy mex ahead and build turret if so.
+	 */
+	CCircuitAI* circuit = manager->GetCircuit();
+	CCircuitDef* def = circuit->GetMilitaryManager()->GetLowSonar(unit);
+	if (def == nullptr) {
+		return false;
+	}
+
+	const float range = def->GetSonarRadius();
+	const float testRange = range + 200.0f;  // 200 elmos
+	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
+	const float sqPosDist = buildPos.SqDistance2D(pos);
+	if (sqPosDist > SQUARE(testRange)) {
+		return false;
+	}
+
+	COOAICallback* clb = circuit->GetCallback();
+	bool blocked = sqPosDist < SQUARE(unit->GetCircuitDef()->GetBuildDistance() + SQUARE_SIZE);
+	if (blocked) {
+		auto& allies = clb->GetFriendlyUnitIdsIn(buildPos, SQUARE_SIZE);
+		for (int allyId : allies) {
+			if (allyId != -1) {
+				blocked = false;
+				break;
+			}
+		}
+	}
+	auto& enemies = clb->GetEnemyUnitIdsIn(buildPos, SQUARE_SIZE);
+	for (int enemyId : enemies) {
+		if (enemyId != -1) {
+			blocked = true;
+			break;
+		}
+	}
+	if (!blocked) {
+		return false;
+	}
+
+	// TODO: send sonar scout to position
+	CBuilderManager* builderMgr = circuit->GetBuilderManager();
+	IBuilderTask* task = nullptr;
+	const float qdist = SQUARE(200.0f);  // 200 elmos
+	// TODO: Push tasks into bgi::rtree
+	for (IBuilderTask* t : builderMgr->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
+		if (pos.SqDistance2D(t->GetTaskPos()) < qdist) {
+			task = t;
+			break;
+		}
+	}
+	if (task == nullptr) {
+//		AIFloat3 newPos = AIFloat3(buildPos - (buildPos - pos).Normalize2D() * (unit->GetCircuitDef()->GetBuildDistance() * 0.9f));
+//		CTerrainManager::CorrectPosition(newPos);
+		task = builderMgr->EnqueueTask(IBuilderTask::Priority::NOW, def, pos/*newPos*/, IBuilderTask::BuildType::DEFENCE, 1.f, 0.f, true);
+	}
+	manager->AssignTask(unit, task);
+	return true;
 }
 
 } // namespace circuit

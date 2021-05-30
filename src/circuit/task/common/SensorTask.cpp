@@ -36,7 +36,7 @@ void ISensorTask::Update()
 	CCircuitAI* circuit = manager->GetCircuit();
 	bool isBuilt = false;
 	COOAICallback* clb = circuit->GetCallback();
-	auto friendlies = clb->GetFriendlyUnitIdsIn(GetPosition(), 500.f);
+	auto& friendlies = clb->GetFriendlyUnitIdsIn(GetPosition(), 500.f);
 	for (int auId : friendlies) {
 		if (auId == -1) {
 			continue;

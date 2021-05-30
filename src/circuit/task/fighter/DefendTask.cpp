@@ -254,7 +254,7 @@ bool CDefendTask::FindTarget()
 		const float sqEBDist = basePos.SqDistance2D(ePos);
 		float checkPower = maxPower;
 		if (sqEBDist < sqBaseRange) {
-			checkPower *= 2.0f - 1.0f / baseRange * sqrtf(sqEBDist);  // 200% near base
+			checkPower *= 4.0f - 3.0f / baseRange * sqrtf(sqEBDist);  // 400% near base
 		}
 		if (checkPower <= threatMap->GetThreatAt(ePos)) {
 			continue;

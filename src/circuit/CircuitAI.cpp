@@ -522,7 +522,7 @@ std::string CCircuitAI::ValidateMod()
 
 void CCircuitAI::CheatPreload()
 {
-	auto enemies = callback->GetEnemyUnits();
+	auto& enemies = callback->GetEnemyUnits();
 	for (Unit* e : enemies) {
 		if (e == nullptr) {
 			continue;
@@ -1151,7 +1151,7 @@ int CCircuitAI::EnemyEnterLOS(CEnemyInfo* enemy)
 		return 0;  // signaling: OK
 	}
 	// Force unit's reaction
-	auto friendlies = callback->GetFriendlyUnitIdsIn(enemy->GetPos(), 1000.0f);
+	auto& friendlies = callback->GetFriendlyUnitIdsIn(enemy->GetPos(), 1000.0f);
 	if (friendlies.empty()) {
 		return 0;  // signaling: OK
 	}

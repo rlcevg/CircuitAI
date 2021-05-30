@@ -63,7 +63,7 @@ void CSReclaimTask::Update()
 		CBuilderManager* builderMgr = circuit->GetBuilderManager();
 		CAllyUnit* repairTarget = nullptr;
 		circuit->UpdateFriendlyUnits();
-		auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
+		auto& us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 		for (Unit* u : us) {
 			CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
 			if ((candUnit == nullptr) || builderMgr->IsReclaimUnit(candUnit)
@@ -76,7 +76,7 @@ void CSReclaimTask::Update()
 				break;
 			}
 		}
-		utils::free_clear(us);
+		utils::free(us);
 		if (repairTarget != nullptr) {
 			// Repair task
 			IBuilderTask* task = circuit->GetFactoryManager()->EnqueueRepair(IBuilderTask::Priority::NORMAL, repairTarget);

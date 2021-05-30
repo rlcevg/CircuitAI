@@ -64,8 +64,12 @@ void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 bool CBRepairTask::Reevaluate(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	CEconomyManager* economyMgr = circuit->GetEconomyManager();
 	// FIXME: Replace const 1000.0f with build time?
-	if ((cost > 1000.0f) && (circuit->GetEconomyManager()->GetAvgMetalIncome() < savedIncome * 0.6f)) {
+	if ((cost > 1000.0f)
+		&& ((economyMgr->GetAvgMetalIncome() < savedIncomeM * 0.6f)
+			|| (economyMgr->GetAvgEnergyIncome() < savedIncomeE * 0.6f)))
+	{
 		manager->AbortTask(this);
 		return false;
 	}

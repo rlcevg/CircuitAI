@@ -45,7 +45,7 @@
 		"fac_strider": {
 			"type": ["rectangle", "special"],
 			"offset": [0, 12],
-			"yard": [20, 20]
+			"yard": [16, 20]
 		},
 		"solar": {
 			"type": ["rectangle", "engy_low"],

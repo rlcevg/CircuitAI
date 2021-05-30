@@ -229,6 +229,11 @@ float CCircuitUnit::GetBuildSpeed()
 	return circuitDef->GetBuildSpeed() * unit->GetRulesParamFloat("buildpower_mult", 1.f);
 }
 
+float CCircuitUnit::GetWorkerTime()
+{
+	return circuitDef->GetWorkerTime() * unit->GetRulesParamFloat("buildpower_mult", 1.f);
+}
+
 float CCircuitUnit::GetDGunRange()
 {
 	return dgun->GetRange() * unit->GetRulesParamFloat("comm_range_mult", 1.f);

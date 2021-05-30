@@ -39,7 +39,7 @@ int COOAICallback::GetEnemyTeamSize() const
 	return sAICallback->getEnemyTeams(skirmishAIId, nullptr, -1) - 1;  // -1 for Gaia team :(
 }
 
-std::vector<Unit*> COOAICallback::GetFriendlyUnits()
+const std::vector<Unit*>& COOAICallback::GetFriendlyUnits()
 {
 	unitIds.resize(MAX_UNITS);
 	int size = sAICallback->getFriendlyUnits(skirmishAIId, unitIds.data(), MAX_UNITS);
@@ -52,7 +52,7 @@ std::vector<Unit*> COOAICallback::GetFriendlyUnits()
 	return units;
 }
 
-std::vector<Unit*> COOAICallback::GetFriendlyUnitsIn(const AIFloat3& pos, float radius)
+const std::vector<Unit*>& COOAICallback::GetFriendlyUnitsIn(const AIFloat3& pos, float radius)
 {
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
@@ -75,7 +75,7 @@ bool COOAICallback::IsFriendlyUnitsIn(const AIFloat3& pos, float radius) const
 	return size > 0;
 }
 
-std::vector<int> COOAICallback::GetFriendlyUnitIdsIn(const springai::AIFloat3& pos, float radius)
+const std::vector<int>& COOAICallback::GetFriendlyUnitIdsIn(const springai::AIFloat3& pos, float radius)
 {
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
@@ -85,7 +85,7 @@ std::vector<int> COOAICallback::GetFriendlyUnitIdsIn(const springai::AIFloat3& p
 	return unitIds;
 }
 
-std::vector<Unit*> COOAICallback::GetEnemyUnits()
+const std::vector<Unit*>& COOAICallback::GetEnemyUnits()
 {
 	unitIds.resize(MAX_UNITS);
 	int size = sAICallback->getEnemyUnits(skirmishAIId, unitIds.data(), MAX_UNITS);
@@ -98,7 +98,7 @@ std::vector<Unit*> COOAICallback::GetEnemyUnits()
 	return units;
 }
 
-std::vector<Unit*> COOAICallback::GetEnemyUnitsIn(const AIFloat3& pos, float radius)
+const std::vector<Unit*>& COOAICallback::GetEnemyUnitsIn(const AIFloat3& pos, float radius)
 {
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
@@ -113,7 +113,7 @@ std::vector<Unit*> COOAICallback::GetEnemyUnitsIn(const AIFloat3& pos, float rad
 	return units;
 }
 
-std::vector<int> COOAICallback::GetEnemyUnitIdsIn(const AIFloat3& pos, float radius)
+const std::vector<int>& COOAICallback::GetEnemyUnitIdsIn(const AIFloat3& pos, float radius)
 {
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);

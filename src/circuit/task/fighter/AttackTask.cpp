@@ -263,8 +263,8 @@ void CAttackTask::FindTarget()
 	const std::vector<CEnemyManager::SEnemyGroup>& groups = circuit->GetEnemyManager()->GetEnemyGroups();
 	for (unsigned i = 0; i < groups.size(); ++i) {
 		const CEnemyManager::SEnemyGroup& group = groups[i];
-		const float sqBEDist = group.pos.SqDistance2D(basePos);  // Base to Enemy distance
-		const float scale = std::min(sqBEDist / sqOBDist, 1.f);
+		const float distBE = group.pos.distance2D(basePos);  // Base to Enemy distance
+		const float scale = std::min(distBE / sqOBDist, 1.f);
 		if ((maxPower <= group.influence * scale)
 			|| !terrainMgr->CanMobileReachAt(area, group.pos, highestRange))
 		{
@@ -312,7 +312,7 @@ void CAttackTask::FindTarget()
 				}
 			}
 
-			const float sqOEDist = group.vagueMetric * pos.SqDistance2D(ePos) * scale;  // Own to Enemy distance
+			const float sqOEDist = /*group.vagueMetric * */pos.SqDistance2D(ePos) * scale;  // Own to Enemy distance
 			if (minSqDist > sqOEDist) {
 				minSqDist = sqOEDist;
 				bestTarget = enemy;

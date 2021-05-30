@@ -451,12 +451,16 @@ void CBuilderManager::ReadConfig()
 					bi.condition = SBuildInfo::Condition::ALWAYS;
 					const Json::Value& condition = part["condition"];
 					if (!condition.isNull()) {
-						const bool isString = condition.isString();
-						const std::string& cond = isString ? condition.asString() : condition.getMemberNames()[0];
+						std::string cond = condition.getMemberNames().front();
 						auto it = condNames.find(cond);
 						if (it != condNames.end()) {
 							bi.condition = it->second;
-							bi.chance = isString ? 1.f : condition.get(cond, 1.f).asFloat();
+							const Json::Value& value = condition[cond];
+							if (value.isBool()) {
+								bi.value = value.asBool() ? 1.f : -1.f;
+							} else {
+								bi.value = condition.get(cond, 1.f).asFloat();
+							}
 						}
 					}
 
@@ -649,6 +653,12 @@ const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType
 void CBuilderManager::ActivateTask(IBuilderTask* task)
 {
 	if ((task->GetType() == IUnitTask::Type::BUILDER) && (task->GetBuildType() < IBuilderTask::BuildType::_SIZE_)) {
+		switch (task->GetBuildType()) {
+			case IBuilderTask::BuildType::FACTORY: {
+				circuit->GetFactoryManager()->ApplySwitchFrame();
+			} break;
+			default: break;
+		}
 		buildTasks[static_cast<IBuilderTask::BT>(task->GetBuildType())].insert(task);
 		buildTasksCount++;
 	}
@@ -695,10 +705,10 @@ IBuilderTask* CBuilderManager::EnqueueFactory(IBuilderTask::Priority priority,
 		buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::FACTORY)].insert(task);
 		buildTasksCount++;
 		buildUpdates.push_back(task);
+		circuit->GetFactoryManager()->ApplySwitchFrame();
 	} else {
 		task->Deactivate();
 	}
-	circuit->GetFactoryManager()->ApplySwitchFrame();
 	TaskCreated(task);
 	return task;
 }
@@ -1084,7 +1094,9 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQueryCostMap* query)
 {
 	if (GetTasks(IBuilderTask::BuildType::STORE).empty()
-		&& GetTasks(IBuilderTask::BuildType::ENERGY).empty())
+		&& GetTasks(IBuilderTask::BuildType::ENERGY).empty()
+		&& GetTasks(IBuilderTask::BuildType::FACTORY).empty()
+		&& GetTasks(IBuilderTask::BuildType::NANO).empty())
 	{
 		return MakeCommPeaceTask(unit, query, SQUARE(2000));
 	}
@@ -1118,8 +1130,12 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 			}
 			float prioMod = 1.f;
 			switch (candidate->GetBuildType()) {
-				case IBuilderTask::BuildType::STORE: {
+				case IBuilderTask::BuildType::NANO:
+				case IBuilderTask::BuildType::FACTORY: {
 					prioMod = .0001f;
+				} break;
+				case IBuilderTask::BuildType::STORE: {
+					prioMod = .001f;
 				} break;
 				case IBuilderTask::BuildType::ENERGY: {
 					prioMod = 1000.f;

@@ -67,7 +67,9 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 		, buildFails(0)
 		, unitIt(units.end())
 {
-	savedIncome = manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome();
+	CEconomyManager* economyMgr = manager->GetCircuit()->GetEconomyManager();
+	savedIncomeM = economyMgr->GetAvgMetalIncome();
+	savedIncomeE = economyMgr->GetAvgEnergyIncome();
 }
 
 IBuilderTask::~IBuilderTask()
@@ -228,9 +230,9 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	// FIXME: Replace const 999.0f with build time?
 	if (circuit->IsAllyAware() && (cost > 999.0f)) {
 		circuit->UpdateFriendlyUnits();
-		auto friendlies = circuit->GetCallback()->GetFriendlyUnitsIn(position, cost);
+		auto& friendlies = circuit->GetCallback()->GetFriendlyUnitsIn(position, cost);
 		CAllyUnit* alu = FindSameAlly(unit, friendlies);
-		utils::free_clear(friendlies);
+		utils::free(friendlies);
 		if (alu != nullptr) {
 			TRY_UNIT(circuit, unit,
 				unit->GetUnit()->Repair(alu->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
@@ -402,16 +404,19 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 
 	// FIXME: Replace const 1000.0f with build time?
 	CEconomyManager* ecoMgr = circuit->GetEconomyManager();
-	if ((cost > 1000.0f) &&
-		(target == nullptr) &&
-		(ecoMgr->GetAvgMetalIncome() < savedIncome * 0.6f) &&
-		(ecoMgr->GetAvgMetalIncome() * 2.0f < ecoMgr->GetMetalPull()))
+	if ((cost > 1000.0f)
+		&& (target == nullptr)
+		&& (((ecoMgr->GetAvgMetalIncome() < savedIncomeM * 0.6f) && (ecoMgr->GetAvgMetalIncome() * 2.0f < ecoMgr->GetMetalPull()))
+			|| ((ecoMgr->GetAvgEnergyIncome() < savedIncomeE * 0.6f) && (ecoMgr->GetAvgEnergyIncome() * 2.0f < ecoMgr->GetEnergyPull())))
+		)
 	{
 		manager->AbortTask(this);
 		return false;
 	}
 
-	// Reassign task if required
+	/*
+	 * Reassign task if required
+	 */
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	const float sqDist = pos.SqDistance2D(GetPosition());
 	if (sqDist <= SQUARE(unit->GetCircuitDef()->GetBuildDistance() + circuit->GetPathfinder()->GetSquareSize())
@@ -510,17 +515,29 @@ void IBuilderTask::ApplyPath(const CQueryPathSingle* query)
 
 void IBuilderTask::HideAssignee(CCircuitUnit* unit)
 {
-	buildPower -= unit->GetBuildSpeed();
-	if ((buildDef != nullptr) && !manager->GetCircuit()->GetEconomyManager()->IsIgnorePull(this)) {
-		manager->DelMetalPull(unit);
+	if (buildDef == nullptr) {
+		buildPower -= unit->GetBuildSpeed();
+	} else {
+		const float buildTime = buildDef->GetBuildTime() / unit->GetWorkerTime();
+		const float metalRequire = buildDef->GetCostM() / buildTime;
+		buildPower -= metalRequire;
+		if (!manager->GetCircuit()->GetEconomyManager()->IsIgnorePull(this)) {
+			manager->DelMetalPull(metalRequire);
+		}
 	}
 }
 
 void IBuilderTask::ShowAssignee(CCircuitUnit* unit)
 {
-	buildPower += unit->GetBuildSpeed();
-	if ((buildDef != nullptr) && !manager->GetCircuit()->GetEconomyManager()->IsIgnorePull(this)) {
-		manager->AddMetalPull(unit);
+	if (buildDef == nullptr) {
+		buildPower += unit->GetBuildSpeed();
+	} else {
+		const float buildTime = buildDef->GetBuildTime() / unit->GetWorkerTime();
+		const float metalRequire = buildDef->GetCostM() / buildTime;
+		buildPower += metalRequire;
+		if (!manager->GetCircuit()->GetEconomyManager()->IsIgnorePull(this)) {
+			manager->AddMetalPull(metalRequire);
+		}
 	}
 }
 
@@ -601,7 +618,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 			float radius = pylonRange + ourRange;
 			const int frame = circuit->GetLastFrame();
 			circuit->UpdateFriendlyUnits();
-			auto units = circuit->GetCallback()->GetFriendlyUnitsIn(buildPos, radius);
+			auto& units = circuit->GetCallback()->GetFriendlyUnitsIn(buildPos, radius);
 			for (Unit* u : units) {
 				CAllyUnit* p = circuit->GetFriendlyUnit(u);
 				if (p == nullptr) {
@@ -616,7 +633,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 					break;
 				}
 			}
-			utils::free_clear(units);
+			utils::free(units);
 			if (!foundPylon) {
 				AIFloat3 pos = buildPos;
 				CMetalManager* metalMgr = circuit->GetMetalManager();
@@ -678,16 +695,25 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 				switch (bi.condition) {
 					case SBuildInfo::Condition::AIR: {
 						isValid = bi.cdef->GetCostM() < enemyMgr->GetEnemyCost(ROLE_TYPE(AIR));
-					} break;
-					case SBuildInfo::Condition::NO_AIR: {
-						isValid = bi.cdef->GetCostM() > enemyMgr->GetEnemyCost(ROLE_TYPE(AIR));
+						if (bi.value < 0.f) {  // -1.f == false
+							isValid = !isValid;
+						}
 					} break;
 					case SBuildInfo::Condition::ENERGY: {
 						CEconomyManager* ecoMgr = circuit->GetEconomyManager();
 						isValid = !ecoMgr->IsEnergyStalling() && (ecoMgr->GetAvgEnergyIncome() > ecoMgr->GetEnergyPull() + bi.cdef->GetUpkeepE());
+						if (bi.value < 0.f) {  // -1.f == false
+							isValid = !isValid;
+						}
+					} break;
+					case SBuildInfo::Condition::WIND: {
+						CEconomyManager* ecoMgr = circuit->GetEconomyManager();
+						isValid = ecoMgr->IsEnergyStalling() || (ecoMgr->GetAvgEnergyIncome() < ecoMgr->GetEnergyPull() + bi.cdef->GetUpkeepE());
+						float avgWind = (circuit->GetMap()->GetMaxWind() + circuit->GetMap()->GetMinWind()) * 0.5f;
+						isValid = isValid && (avgWind >= bi.value);
 					} break;
 					case SBuildInfo::Condition::CHANCE: {
-						isValid = rand() < bi.chance * RAND_MAX;
+						isValid = rand() < bi.value * RAND_MAX;
 					} break;
 					case SBuildInfo::Condition::ALWAYS:
 					default: break;

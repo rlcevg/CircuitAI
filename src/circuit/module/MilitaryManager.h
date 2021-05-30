@@ -109,6 +109,7 @@ public:
 
 	CCircuitDef* GetBigGunDef() const { return bigGunDef; }
 	CCircuitDef* GetDefaultPorc() const { return GetSideInfo().defaultPorc; }
+	CCircuitDef* GetLowSonar(const CCircuitUnit* builder = nullptr) const;
 
 	void SetBaseDefRange(float range) { defence->SetBaseRange(range); }
 	float GetBaseDefRange() const { return defence->GetBaseRange(); }

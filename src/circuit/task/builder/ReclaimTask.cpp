@@ -94,7 +94,7 @@ bool CBReclaimTask::Reevaluate(CCircuitUnit* unit)
 		 */
 		const int frame = circuit->GetLastFrame();
 		const AIFloat3& pos = unit->GetPos(frame);
-		std::vector<ICoreUnit::Id> enemyIds = circuit->GetCallback()->GetEnemyUnitIdsIn(pos, 500.0f);
+		const std::vector<ICoreUnit::Id>& enemyIds = circuit->GetCallback()->GetEnemyUnitIdsIn(pos, 500.0f);
 		for (ICoreUnit::Id enemyId : enemyIds) {
 			CEnemyInfo* enemy = circuit->GetEnemyInfo(enemyId);
 			if ((enemy != nullptr)

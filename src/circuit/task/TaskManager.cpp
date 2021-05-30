@@ -54,16 +54,6 @@ void ITaskManager::DoneTask(IUnitTask* task)
 	DequeueTask(task, true);
 }
 
-void ITaskManager::AddMetalPull(CCircuitUnit* unit)
-{
-	metalPull += unit->GetBuildSpeed();
-}
-
-void ITaskManager::DelMetalPull(CCircuitUnit* unit)
-{
-	metalPull -= unit->GetBuildSpeed();
-}
-
 void ITaskManager::Init()
 {
 	nilTask = new CNilTask(this);

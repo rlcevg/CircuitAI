@@ -110,6 +110,7 @@ public:
 	float GetDamage();
 	float GetShieldPower();
 	float GetBuildSpeed();
+	float GetWorkerTime();
 	float GetDGunRange();
 	float GetHealthPercent();
 

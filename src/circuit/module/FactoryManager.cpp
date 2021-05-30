@@ -45,7 +45,8 @@ static std::string unitTypeDbg;
 CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit, new CFactoryScript(circuit->GetScriptManager(), this))
 		, updateIterator(0)
-		, factoryPower(.0f)
+		, metalRequire(0.f)
+		, energyRequire(0.f)
 		, isSwitchTime(false)
 		, lastSwitchFrame(-1)
 		, noT1FacCount(0)
@@ -130,16 +131,29 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		// check factory nano belongs to
 		const float radius = unit->GetCircuitDef()->GetBuildDistance() * 0.9f;
 		const float sqRadius = SQUARE(radius);
-		std::set<CCircuitUnit*>& facs = assists[unit];
+		SAssistToFactory& af = assists[unit];
 		for (SFactory& fac : factories) {
 			if (assPos.SqDistance2D(fac.unit->GetPos(frame)) >= sqRadius) {
 				continue;
 			}
-			fac.nanos.insert(unit);
-			facs.insert(fac.unit);
+			auto it = fac.nanos.find(unit->GetCircuitDef());
+			if (it == fac.nanos.end()) {
+				fac.nanos[unit->GetCircuitDef()].incomeMod = unit->GetCircuitDef()->GetWorkerTime() / fac.unit->GetCircuitDef()->GetWorkerTime();
+			}
+			SAssistant& assist = fac.nanos[unit->GetCircuitDef()];
+			const float metalUse = fac.miRequire * assist.incomeMod;
+			const float energyUse = fac.eiRequire * assist.incomeMod + unit->GetCircuitDef()->GetUpkeepE();
+			af.metalRequire = std::max(af.metalRequire, metalUse);
+			af.energyRequire = std::max(af.energyRequire, energyUse);
+			fac.miRequireTotal += metalUse;
+			fac.eiRequireTotal += energyUse;
+			assist.units.insert(unit);
+			++fac.nanoSize;
+			af.factories.insert(fac.unit);
 		}
-		if (!facs.empty()) {
-			factoryPower += unit->GetBuildSpeed();
+		if (!af.factories.empty()) {
+			metalRequire += af.metalRequire;
+			energyRequire += af.energyRequire;
 
 			bool isInHaven = false;
 			for (const AIFloat3& hav : havens) {
@@ -169,23 +183,35 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		const float radius = unit->GetCircuitDef()->GetBuildDistance();
 		const float sqRadius = SQUARE(radius);
 		for (SFactory& fac : factories) {
-			if ((fac.nanos.erase(unit) == 0) || !fac.nanos.empty()) {
+			auto fit = fac.nanos.find(unit->GetCircuitDef());
+			if (fit == fac.nanos.end()) {
+				continue;
+			}
+			SAssistant& assist = fit->second;
+			if (assist.units.erase(unit) == 0) {
+				continue;
+			}
+			const float metalUse = fac.miRequire * assist.incomeMod;
+			const float energyUse = fac.eiRequire * assist.incomeMod + unit->GetCircuitDef()->GetUpkeepE();
+			fac.miRequireTotal -= metalUse;
+			fac.eiRequireTotal -= energyUse;
+			if (--fac.nanoSize > 0) {
 				continue;
 			}
 			auto it = havens.begin();
 			while (it != havens.end()) {
 				if (it->SqDistance2D(assPos) < sqRadius) {
-//					it = havens.erase(it);  // NOTE: micro-opt
 					*it = havens.back();
 					havens.pop_back();
-					// TODO: Send HavenDestroyed message?
 				} else {
 					++it;
 				}
 			}
 		}
-		if (!assists[unit].empty()) {
-			factoryPower -= unit->GetBuildSpeed();
+		SAssistToFactory& af = assists[unit];
+		if (!af.factories.empty()) {
+			metalRequire -= af.metalRequire;
+			energyRequire -= af.energyRequire;
 		}
 		assists.erase(unit);
 	};
@@ -260,8 +286,9 @@ void CFactoryManager::ReadConfig()
 	CMaskHandler& sideMasker = circuit->GetGameAttribute()->GetSideMasker();
 	sideInfos.resize(sideMasker.GetMasks().size());
 
-	const Json::Value& airpad = root["economy"]["airpad"];
-	const Json::Value& nanotc = root["economy"]["nanotc"];
+	const Json::Value& econom = root["economy"];
+	const Json::Value& airpad = econom["airpad"];
+	const Json::Value& nanotc = econom["assist"];
 	for (const auto& kv : sideMasker.GetMasks()) {
 		SSideInfo& sideInfo = sideInfos[kv.second.type];
 
@@ -281,6 +308,12 @@ void CFactoryManager::ReadConfig()
 		}
 		sideInfo.assistDef = assistDef;
 	}
+
+	const Json::Value& product = econom["production"];
+	newFacModM = product.get((unsigned)0, 0.8f).asFloat();
+	newFacModE = product.get((unsigned)1, 0.8f).asFloat();
+	facModM = product.get((unsigned)2, 0.8f).asFloat();
+	facModE = product.get((unsigned)3, 0.8f).asFloat();
 
 	/*
 	 * Roles, attributes and retreat
@@ -795,7 +828,7 @@ bool CFactoryManager::IsSwitchTime()
 	return isSwitchTime;
 }
 
-CCircuitUnit* CFactoryManager::NeedUpgrade()
+CCircuitUnit* CFactoryManager::NeedUpgrade(unsigned int nanoQueued)
 {
 	const int frame = circuit->GetLastFrame();
 	unsigned facSize = factories.size();
@@ -808,7 +841,7 @@ CCircuitUnit* CFactoryManager::NeedUpgrade()
 
 			for (CCircuitDef* cdef : facDef.buildDefs) {
 				if (cdef->IsAvailable(frame)) {
-					if (fac.nanos.size() < facSize * fac.weight) {
+					if (fac.nanoSize + nanoQueued < facSize * fac.weight) {
 						return fac.unit;
 					} else {
 						break;
@@ -1052,13 +1085,11 @@ CCircuitDef* CFactoryManager::GetRepresenter(const CCircuitDef* facDef) const
 
 void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 {
-	factoryPower += unit->GetBuildSpeed();
-
 	// check nanos around
-	std::set<CCircuitUnit*> nanos;
+	std::map<CCircuitDef*, SAssistant> nanos;
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	COOAICallback* clb = circuit->GetCallback();
-	auto units = clb->GetFriendlyUnitsIn(pos, GetAssistRange());
+	auto& units = clb->GetFriendlyUnitsIn(pos, GetAssistRange());
 	int teamId = circuit->GetTeamId();
 	for (Unit* nano : units) {
 		if (nano == nullptr) {
@@ -1070,18 +1101,61 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 			CCircuitUnit* ass = circuit->GetTeamUnit(unitId);
 			// NOTE: OOAICallback::GetFriendlyUnits may return yet unregistered units created in GamePreload
 			if (ass != nullptr) {
-				nanos.insert(ass);
-
-				std::set<CCircuitUnit*>& facs = assists[ass];
-				if (facs.empty()) {
-					factoryPower += ass->GetBuildSpeed();
-				}
-				facs.insert(unit);
+				SAssistant& assist = nanos[nDef];
+				assist.units.insert(ass);
 			}
 		}
 		delete nano;
 	}
 //	utils::free_clear(units);
+
+	float facWorkerTime = unit->GetCircuitDef()->GetWorkerTime();
+	float miRequire;
+	float eiRequire;
+	CCircuitDef* reprDef = GetRepresenter(unit->GetCircuitDef());
+	if (reprDef == nullptr) {
+		miRequire = unit->GetCircuitDef()->GetBuildSpeed();
+		eiRequire = miRequire / circuit->GetEconomyManager()->GetEcoEM();
+	} else {
+		const float buildTime = reprDef->GetBuildTime() / facWorkerTime;
+		miRequire = reprDef->GetCostM() / buildTime;
+		eiRequire = reprDef->GetCostE() / buildTime;
+	}
+	float miRequireTotal = miRequire;
+	float eiRequireTotal = eiRequire;
+	unsigned int nanoSize = 0;
+	for (auto& kv : nanos) {
+		const float mod = kv.first->GetWorkerTime() / facWorkerTime;
+		kv.second.incomeMod = mod;
+		const float metalUse = miRequire * mod;
+		const float energyUse = eiRequire * mod + kv.first->GetUpkeepE();
+		miRequireTotal += metalUse;
+		eiRequireTotal += energyUse;
+		nanoSize += kv.second.units.size();
+
+		for (CCircuitUnit* ass : kv.second.units) {
+			SAssistToFactory& af = assists[ass];
+			if (af.factories.empty()) {
+				af.metalRequire = metalUse;
+				af.energyRequire = energyUse;
+				metalRequire += metalUse;
+				energyRequire += energyUse;
+			} else {
+				if (af.metalRequire < metalUse) {
+					metalRequire += metalUse - af.metalRequire;
+					af.metalRequire = metalUse;
+				}
+				if (af.energyRequire < energyUse) {
+					energyRequire += energyUse - af.energyRequire;
+					af.energyRequire = energyUse;
+				}
+			}
+			af.factories.insert(unit);
+		}
+	}
+
+	metalRequire += miRequire;
+	energyRequire += eiRequire;
 
 	if (factories.empty()) {
 		circuit->GetSetupManager()->SetBasePos(pos);
@@ -1091,9 +1165,10 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 	auto it = factoryDefs.find(unit->GetCircuitDef()->GetId());
 	if (it != factoryDefs.end()) {
 		const SFactoryDef& facDef = it->second;
-		factories.emplace_back(unit, nanos, facDef.nanoCount, GetFacRoleDef(ROLE_TYPE(BUILDER), facDef));
+		factories.emplace_back(unit, nanos, nanoSize, facDef.nanoCount, GetFacRoleDef(ROLE_TYPE(BUILDER), facDef),
+				miRequire, eiRequire, miRequireTotal, eiRequireTotal);
 	} else {
-		factories.emplace_back(unit, nanos, 0, nullptr);
+		factories.emplace_back(unit, nanos, nanoSize, 0, nullptr, 0.f, 0.f, 0.f, 0.f);
 	}
 
 	if (!factoryData->IsT1Factory(unit->GetCircuitDef())) {
@@ -1163,19 +1238,46 @@ void CFactoryManager::DisableFactory(CCircuitUnit* unit)
 		checkBuilderFactory(circuit->GetLastFrame());
 		return;
 	}
-	factoryPower -= unit->GetBuildSpeed();
+
 	for (auto it = factories.begin(); it != factories.end(); ++it) {
 		if (it->unit != unit) {
 			continue;
 		}
-		for (CCircuitUnit* ass : it->nanos) {
-			std::set<CCircuitUnit*>& facs = assists[ass];
-			facs.erase(unit);
-			if (facs.empty()) {
-				factoryPower -= ass->GetBuildSpeed();
+
+		metalRequire -= it->miRequire;
+		energyRequire -= it->eiRequire;
+
+		for (auto& kv : it->nanos) {
+			for (CCircuitUnit* ass : kv.second.units) {
+				SAssistToFactory& af = assists[ass];
+				af.factories.erase(unit);
+				if (af.factories.empty()) {
+					metalRequire -= af.metalRequire;
+					energyRequire -= af.energyRequire;
+					af.metalRequire = 0.f;
+					af.energyRequire = 0.f;
+				} else {
+					float maxMetalUse = 0.f;
+					float maxEnergyUse = 0.f;
+					for (CCircuitUnit* fac : af.factories) {
+						auto fit = factories.begin();  // FIXME: Nested loops
+						while ((fit->unit != fac) && (fit != factories.end())) {
+							++fit;
+						}
+						if (fit != factories.end()) {
+							const float mod = fit->nanos[ass->GetCircuitDef()].incomeMod;
+							maxMetalUse = std::max(maxMetalUse, fit->miRequire * mod);
+							maxEnergyUse = std::max(maxEnergyUse, fit->eiRequire * mod + ass->GetCircuitDef()->GetUpkeepE());
+						}
+					}
+					metalRequire -= af.metalRequire - maxMetalUse;
+					energyRequire -= af.energyRequire - maxEnergyUse;
+					af.metalRequire = maxMetalUse;
+					af.energyRequire = maxEnergyUse;
+				}
 			}
 		}
-//			factories.erase(it);  // NOTE: micro-opt
+
 		*it = factories.back();
 		factories.pop_back();
 		break;
@@ -1279,10 +1381,11 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 	float curCost = std::numeric_limits<float>::max();
 	circuit->UpdateFriendlyUnits();
 	// NOTE: OOAICallback::GetFriendlyUnitsIn depends on unit's radius
-	auto units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius * 0.9f);
+	auto& units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius * 0.9f);
 	for (Unit* u : units) {
 		CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-		if ((candUnit == nullptr) || builderMgr->IsReclaimUnit(candUnit)
+		if ((candUnit == nullptr) || (candUnit == unit)
+			|| builderMgr->IsReclaimUnit(candUnit)
 			|| candUnit->GetCircuitDef()->IsMex())  // FIXME: BA, should be IsT1Mex()
 		{
 			continue;
@@ -1309,7 +1412,7 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 			}
 		}
 	}
-	utils::free_clear(units);
+	utils::free(units);
 	if (/*!isMetalEmpty && */(buildTarget != nullptr)) {
 		// Construction task
 		IBuilderTask::Priority priority = buildTarget->GetCircuitDef()->IsMobile() ?

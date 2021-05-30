@@ -62,13 +62,18 @@ public:
 
 	int GetFactoryCount() const { return factories.size(); }
 	int GetNoT1FacCount() const { return noT1FacCount; }
-	float GetFactoryPower() const { return factoryPower; }
+	float GetMetalRequire() const { return metalRequire; }
+	float GetEnergyRequire() const { return energyRequire; }
+	float GetNewFacModM() const { return newFacModM; }
+	float GetNewFacModE() const { return newFacModE; }
+	float GetFacModM() const { return facModM; }
+	float GetFacModE() const { return facModE; }
 	bool CanEnqueueTask() const { return factoryTasks.size() < factories.size() * 2; }
 	const std::vector<CRecruitTask*>& GetTasks() const { return factoryTasks; }
 	void ApplySwitchFrame();
 	bool IsSwitchTime();
 	void RaiseSwitchTime() { isSwitchTime = true; }
-	CCircuitUnit* NeedUpgrade();
+	CCircuitUnit* NeedUpgrade(unsigned int nanoQueued);
 	CCircuitUnit* GetClosestFactory(springai::AIFloat3 position);
 //	CCircuitDef* GetClosestDef(springai::AIFloat3& position, CCircuitDef::RoleT role);
 
@@ -116,30 +121,48 @@ private:
 	std::vector<CRecruitTask*> factoryTasks;  // order matters
 	std::vector<IUnitTask*> updateTasks;  // owner
 	unsigned int updateIterator;
-	float factoryPower;  // related to metal
+	float metalRequire;
+	float energyRequire;
+	float newFacModM;
+	float newFacModE;
+	float facModM;
+	float facModE;
 
 	std::vector<SSideInfo> sideInfos;
 
 	std::unordered_map<CCircuitDef::Id, CCircuitDef*> airpadDefs;  // builder: pad
 
-	std::map<CCircuitUnit*, std::set<CCircuitUnit*>> assists;  // nano 1:n factory
+	struct SAssistToFactory {
+		std::set<CCircuitUnit*> factories;
+		float metalRequire = 0.f;
+		float energyRequire = 0.f;
+	};
+	std::map<CCircuitUnit*, SAssistToFactory> assists;  // nano 1:n factory
 	std::vector<springai::AIFloat3> havens;  // position behind factory
 	std::map<ICoreUnit::Id, IBuilderTask*> repairedUnits;
 
 	CFactoryData* factoryData;
+	struct SAssistant {
+		std::set<CCircuitUnit*> units;
+		float incomeMod;
+	};
 	struct SFactory {
-		SFactory(CCircuitUnit* u, const std::set<CCircuitUnit*>& n, unsigned int w, CCircuitDef* b)
-			: unit(u)
-			, nanos(n)
-			, weight(w)
-			, builder(b)
+		SFactory(CCircuitUnit* u, const std::map<CCircuitDef*, SAssistant>& n, unsigned int ns, unsigned int w, CCircuitDef* b,
+				 float mi, float ei, float mit, float eit)
+			: unit(u), nanos(n), nanoSize(ns), weight(w), builder(b)
+			, miRequire(mi), eiRequire(ei), miRequireTotal(mit), eiRequireTotal(eit)
 		{}
 		CCircuitUnit* unit;
-		std::set<CCircuitUnit*> nanos;
+		std::map<CCircuitDef*, SAssistant> nanos;
+		unsigned int nanoSize;
 		unsigned int weight;
 		CCircuitDef* builder;
+		float miRequire;
+		float eiRequire;
+		float miRequireTotal;
+		float eiRequireTotal;
 	};
-	std::vector<SFactory> factories;  // facory 1:n nano
+	std::vector<SFactory> factories;  // factory 1:n nano
 	std::set<CCircuitUnit*> validAir;
 	bool isSwitchTime;
 	int lastSwitchFrame;

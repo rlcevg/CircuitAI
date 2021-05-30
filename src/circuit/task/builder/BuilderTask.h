@@ -129,7 +129,7 @@ protected:
 	CCircuitDef* buildDef;
 
 	BuildType buildType;
-	float buildPower;
+	float buildPower;  // task's metal per second expenditure
 	float cost;
 	CCircuitUnit* target;  // FIXME: Replace target with unitId
 	springai::AIFloat3 buildPos;
@@ -137,7 +137,8 @@ protected:
 	IBuilderTask* nextTask;  // old list style
 	CCircuitUnit* initiator;
 
-	float savedIncome;
+	float savedIncomeM;
+	float savedIncomeE;
 	int buildFails;
 
 	decltype(units)::const_iterator unitIt;  // update iterator

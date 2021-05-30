@@ -146,7 +146,8 @@ void IRepairTask::SetTarget(CAllyUnit* unit)
 		if (unit->GetUnit()->IsBeingBuilt()) {
 			buildDef = unit->GetCircuitDef();
 		} else {
-			savedIncome = .0f;
+			savedIncomeM = 0.f;
+			savedIncomeE = 0.f;
 		}
 	} else {
 		target = nullptr;
@@ -167,7 +168,7 @@ CAllyUnit* IRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 	maxSpeed = SQUARE(maxSpeed * 1.5f / FRAMES_PER_SEC);
 
 	circuit->UpdateFriendlyUnits();
-	auto units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
+	auto& units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
 	for (Unit* u : units) {
 		if ((u != nullptr) && (u->GetHealth() < u->GetMaxHealth()) && (u->GetVel().SqLength2D() <= maxSpeed)) {
 			target = circuit->GetFriendlyUnit(u);
@@ -176,7 +177,7 @@ CAllyUnit* IRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 			}
 		}
 	}
-	utils::free_clear(units);
+	utils::free(units);
 	return target;
 }
 

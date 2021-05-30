@@ -5,8 +5,8 @@
 	"raid": [6.0, 420.0],  // [<min>, <avg>] power of raider squad
 	"attack": 60.0,  // min power of attack group
 	"thr_mod": {
-		"attack": [1.0, 1.0],  // [<min>, <max>] enemy threat modifier for target selection of attack task
-		"defence": [1.0, 1.0],  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
+		"attack": [0.9, 0.9],  // [<min>, <max>] enemy threat modifier for target selection of attack task
+		"defence": [0.9, 0.9],  // [<min>, <max>] enemy threat modifier for group size calculation of defence task
 		"mobile": 1.05,  // initial modifier for power of attack group based on mobile enemy threat
 		"static": 1.2,  // initial modifier for power of attack group based on static enemy threat
 		"comm": 0.01
@@ -118,13 +118,13 @@
 	"armcom": {
 		"role": ["builder"],
 		"attribute": ["commander"],
-		"power": 0.1,
+		"power": 0.4,
 		"build_speed": 5.0
 	},
 	"corcom": {
 		"role": ["builder"],
 		"attribute": ["commander"],
-		"power": 0.1,
+		"power": 0.4,
 		"build_speed": 5.0
 	},
 

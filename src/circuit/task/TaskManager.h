@@ -36,8 +36,7 @@ public:
 	void AbortTask(IUnitTask* task);
 	void DoneTask(IUnitTask* task);
 
-	void AddMetalPull(CCircuitUnit* unit);
-	void DelMetalPull(CCircuitUnit* unit);
+	void AddMetalPull(float value) { metalPull += value; }
 	void DelMetalPull(float value) { metalPull -= value; }
 	float GetMetalPull() const { return metalPull; }
 

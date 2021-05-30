@@ -798,7 +798,7 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 	auto checkSensor = [this, &backPos, builderMgr](IBuilderTask::BuildType type, CCircuitDef* cdef, float range) {
 		bool isBuilt = false;
 		COOAICallback* clb = circuit->GetCallback();
-		auto friendlies = clb->GetFriendlyUnitIdsIn(backPos, range);
+		auto& friendlies = clb->GetFriendlyUnitIdsIn(backPos, range);
 		for (int auId : friendlies) {
 			if (auId == -1) {
 				continue;
@@ -1376,6 +1376,24 @@ void CMilitaryManager::RemoveSensorDefs(const std::set<CCircuitDef*>& buildDefs)
 const CMilitaryManager::SSideInfo& CMilitaryManager::GetSideInfo() const
 {
 	return sideInfos[circuit->GetSideId()];
+}
+
+CCircuitDef* CMilitaryManager::GetLowSonar(const CCircuitUnit* builder) const
+{
+	CCircuitDef* result = nullptr;
+	const int frame = circuit->GetLastFrame();
+	auto it = sonarDefs.infos.rbegin();
+	while (it != sonarDefs.infos.rend()) {
+		CCircuitDef* candy = it->cdef;
+		if (candy->IsAvailable(frame)
+			&& ((builder == nullptr) || builder->GetCircuitDef()->CanBuild(candy)))
+		{
+			result = candy;
+			break;
+		}
+		++it;
+	}
+	return result;
 }
 
 void CMilitaryManager::MarkPointOfInterest(CEnemyInfo* enemy)

@@ -38,14 +38,14 @@ public:
 
 	std::vector<springai::Unit*> GetTeamUnits() const { return callback->GetTeamUnits(); }
 
-	std::vector<springai::Unit*> GetFriendlyUnits();
-	std::vector<springai::Unit*> GetFriendlyUnitsIn(const springai::AIFloat3& pos, float radius);
+	const std::vector<springai::Unit*>& GetFriendlyUnits();
+	const std::vector<springai::Unit*>& GetFriendlyUnitsIn(const springai::AIFloat3& pos, float radius);
 	bool IsFriendlyUnitsIn(const springai::AIFloat3& pos, float radius) const;
-	std::vector<int> GetFriendlyUnitIdsIn(const springai::AIFloat3& pos, float radius);
+	const std::vector<int>& GetFriendlyUnitIdsIn(const springai::AIFloat3& pos, float radius);
 
-	std::vector<springai::Unit*> GetEnemyUnits();
-	std::vector<springai::Unit*> GetEnemyUnitsIn(const springai::AIFloat3& pos, float radius);
-	std::vector<int> GetEnemyUnitIdsIn(const springai::AIFloat3& pos, float radius);
+	const std::vector<springai::Unit*>& GetEnemyUnits();
+	const std::vector<springai::Unit*>& GetEnemyUnitsIn(const springai::AIFloat3& pos, float radius);
+	const std::vector<int>& GetEnemyUnitIdsIn(const springai::AIFloat3& pos, float radius);
 
 	std::vector<springai::Unit*> GetSelectedUnits() const { return callback->GetSelectedUnits(); }
 
