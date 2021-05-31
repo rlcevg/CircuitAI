@@ -37,7 +37,7 @@ public:
 
 	CAllyUnit* FindUnitToAssist(CCircuitUnit* unit);
 protected:
-	ICoreUnit::Id targetId;  // Ignore "target" variable because ally units are vivid
+	ICoreUnit::Id targetId;  // Ignore "target" variable because ally units are vague
 };
 
 } // namespace circuit

@@ -992,16 +992,6 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 	return false;
 }
 
-bool CBuilderManager::IsBuilderExists(CCircuitDef* buildDef) const
-{
-	for (const CCircuitUnit* builder : workers) {
-		if (builder->GetCircuitDef()->CanBuild(buildDef->GetId())) {
-			return true;
-		}
-	}
-	return false;
-}
-
 SBuildChain* CBuilderManager::GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef)
 {
 	auto it1 = buildChains.find(static_cast<IBuilderTask::BT>(buildType));
@@ -1605,8 +1595,6 @@ void CBuilderManager::AddBuildList(CCircuitUnit* unit, int hiddenDefs)
 		circuit->GetEconomyManager()->AddEconomyDefs(buildDefs);
 		circuit->GetMilitaryManager()->AddSensorDefs(buildDefs);
 	}
-
-	// TODO: Same thing with factory, currently factory uses IsBuilderExists
 }
 
 void CBuilderManager::RemoveBuildList(CCircuitUnit* unit, int hiddenDefs)
@@ -1630,8 +1618,6 @@ void CBuilderManager::RemoveBuildList(CCircuitUnit* unit, int hiddenDefs)
 		circuit->GetEconomyManager()->RemoveEconomyDefs(buildDefs);
 		circuit->GetMilitaryManager()->RemoveSensorDefs(buildDefs);
 	}
-
-	// TODO: Same thing with factory, etc.
 }
 
 void CBuilderManager::Watchdog()
@@ -1641,17 +1627,26 @@ void CBuilderManager::Watchdog()
 	Resource* metalRes = economyMgr->GetMetalRes();
 	// somehow workers get stuck
 	for (CCircuitUnit* worker : workers) {
-		if ((worker->GetTask()->GetType() == IUnitTask::Type::PLAYER)
-			|| (worker->GetTask()->GetType() == IUnitTask::Type::WAIT))
-		{
+		if (!worker->IsInExecute()) {  // FIXME: Doesn't deal with Reclaim and Resurrect of Features
 			continue;
 		}
-		Unit* u = worker->GetUnit();
-		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())
-		if (!circuit->GetCallback()->Unit_HasCommands(worker->GetId())
-			|| ((u->GetResourceUse(metalRes) < 1e-3f) && (u->GetVel().SqLength2D() < 1e-3f) && !worker->IsWaiting()))
-		{
-			worker->GetTask()->OnUnitMoveFailed(worker);
+		IUnitTask* task = worker->GetTask();
+		bool isLost = !circuit->GetCallback()->Unit_HasCommands(worker->GetId());
+		if (!isLost && (task->GetType() == IUnitTask::Type::BUILDER)) {
+			IBuilderTask* taskB = static_cast<IBuilderTask*>(task);
+			Unit* u = worker->GetUnit();
+			if (u->GetVel().SqLength2D() < 1e-3f) {
+				if ((taskB->GetBuildType() == IBuilderTask::BuildType::RECLAIM) && (taskB->GetTarget() != nullptr)) {
+					const AIFloat3& pos = worker->GetPos(circuit->GetLastFrame());
+					const float objRadius = taskB->GetTarget()->GetCircuitDef()->GetRadius();
+					isLost = taskB->GetPosition().SqDistance2D(pos) > SQUARE(worker->GetCircuitDef()->GetBuildDistance() + objRadius);
+				} else {
+					isLost = !worker->IsWaiting() && (u->GetResourceUse(metalRes) < 1e-3f);
+				}
+			}
+		}
+		if (isLost) {
+			task->OnUnitMoveFailed(worker);
 		}
 	}
 	for (const auto& kv : mexUpgrader) {  // FIXME: autoMexer stuck on reclaiming mobile unit

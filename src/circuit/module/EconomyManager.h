@@ -81,6 +81,8 @@ public:
 	CCircuitDef* GetDefaultDef(CCircuitDef* builderDef) { return defaultDefs[builderDef->GetId()]; }
 	CCircuitDef* GetPylonDef() const { return pylonDef; }
 
+	bool IsFactoryDefAvail(CCircuitDef* buildDef) const { return factoryDefs.IsAvail(buildDef); }
+
 	void UpdateResourceIncome();
 	float GetAvgMetalIncome() const { return metal.income; }
 	float GetAvgEnergyIncome() const { return energy.income; }
@@ -223,6 +225,10 @@ private:
 	struct SAssistInfo {
 	};
 	CAvailList<SAssistInfo> assistDefs;
+
+	struct SFactoryInfo {
+	};
+	CAvailList<SFactoryInfo> factoryDefs;
 
 	std::shared_ptr<IMainJob> startFactory;
 	CBFactoryTask* factoryTask;

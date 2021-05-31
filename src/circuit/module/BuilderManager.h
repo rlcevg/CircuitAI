@@ -140,7 +140,6 @@ public:
 	virtual void FallbackTask(CCircuitUnit* unit) override;
 
 	bool IsBuilderInArea(CCircuitDef* buildDef, const springai::AIFloat3& position) const;  // Check if build-area has proper builder
-	bool IsBuilderExists(CCircuitDef* buildDef) const;
 
 	SBuildChain* GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef);
 

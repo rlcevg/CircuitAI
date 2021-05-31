@@ -82,22 +82,21 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Repair(target->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+			unit->CmdRepair(target, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 		)
 		return;
 	}
 	CMetalManager* metalMgr = circuit->GetMetalManager();
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
-	UnitDef* buildUDef = buildDef->GetDef();
 	if (utils::is_valid(buildPos)) {
 		int index = metalMgr->FindNearestSpot(buildPos);
 		if (index >= 0) {
-			if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
+			if (circuit->GetMap()->IsPossibleToBuildAt(buildDef->GetDef(), buildPos, facing)) {
 				if ((State::ENGAGE == state) || metalMgr->IsOpenSpot(index)) {  // !isFirstTry
 					state = State::ENGAGE;  // isFirstTry = false
 //					metalMgr->SetOpenSpot(index, false);
 					TRY_UNIT(circuit, unit,
-						unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
+						unit->CmdBuild(buildDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 					)
 					return;
 				} else {
@@ -195,7 +194,7 @@ bool CBMexTask::CheckLandBlock(CCircuitUnit* unit)
 				AIFloat3 newPos = pos + dir * (step * i);
 				unit->CmdMoveTo(newPos, UNIT_COMMAND_OPTION_SHIFT_KEY);
 			}
-			unit->GetUnit()->Build(buildDef->GetDef(), buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60);
+			unit->CmdBuild(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60);
 		);
 	}
 	return true;

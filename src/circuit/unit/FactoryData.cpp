@@ -7,7 +7,8 @@
 
 #include "unit/FactoryData.h"
 #include "module/FactoryManager.h"
-#include "module/BuilderManager.h"
+#include "module/BuilderManager.h"  // FIXME: only for IsBuilderInArea
+#include "module/EconomyManager.h"  // FIXME: only for IsFactoryDefAvail
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
@@ -55,7 +56,6 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 	std::map<CCircuitDef::Id, float> percents;
 	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	CBuilderManager* builderMgr = circuit->GetBuilderManager();
 	SAreaData* areaData = terrainMgr->GetAreaData();
 	const std::vector<STerrainMapImmobileType>& immobileType = areaData->immobileType;
 	const std::vector<STerrainMapMobileType>& mobileType = areaData->mobileType;
@@ -65,12 +65,14 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 	bool isPosValid = utils::is_valid(position);
 //	CTerrainManager::CorrectPosition(position);
 	if (isPosValid) {
+		CBuilderManager* builderMgr = circuit->GetBuilderManager();
 		predicate = [position, builderMgr, terrainMgr](CCircuitDef* cdef) {
 			return builderMgr->IsBuilderInArea(cdef, position) && terrainMgr->CanBeBuiltAtSafe(cdef, position);
 		};
 	} else {
-		predicate = [builderMgr](CCircuitDef* cdef) {
-			return builderMgr->IsBuilderExists(cdef);
+		CEconomyManager* economyMgr = circuit->GetEconomyManager();
+		predicate = [economyMgr](CCircuitDef* cdef) {
+			return economyMgr->IsFactoryDefAvail(cdef);
 		};
 	}
 

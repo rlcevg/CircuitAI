@@ -210,16 +210,15 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Repair(target->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+			unit->CmdRepair(target, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 		)
 		return;
 	}
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	UnitDef* buildUDef = buildDef->GetDef();
 	if (utils::is_valid(buildPos)) {
-		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
+		if (circuit->GetMap()->IsPossibleToBuildAt(buildDef->GetDef(), buildPos, facing)) {
 			TRY_UNIT(circuit, unit,
-				unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
+				unit->CmdBuild(buildDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 			)
 			return;
 		}
@@ -235,7 +234,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		utils::free(friendlies);
 		if (alu != nullptr) {
 			TRY_UNIT(circuit, unit,
-				unit->GetUnit()->Repair(alu->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+				unit->CmdRepair(alu, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 			)
 			return;
 		}
@@ -250,7 +249,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 
 	if (utils::is_valid(buildPos)) {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
+			unit->CmdBuild(buildDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 		)
 	} else {
 		if (circuit->GetSetupManager()->GetBasePos().SqDistance2D(position) < SQUARE(searchRadius)) {  // base must be full
@@ -363,7 +362,7 @@ void IBuilderTask::UpdateTarget(CCircuitUnit* unit)
 	int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 	for (CCircuitUnit* ass : units) {
 		TRY_UNIT(circuit, ass,
-			ass->GetUnit()->Repair(unit->GetUnit(), UNIT_CMD_OPTION, frame);
+			ass->CmdRepair(unit, UNIT_CMD_OPTION, frame);
 		)
 	}
 }

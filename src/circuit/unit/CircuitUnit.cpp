@@ -47,6 +47,7 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 		, isWeaponReady(true)
 		, isMorphing(false)
 		, isSelfD(false)
+		, isInExecute(false)
 		, target(nullptr)
 		, targetTile(-1)
 		, attr(CCircuitDef::NONE)
@@ -96,6 +97,7 @@ void CCircuitUnit::SetTask(IUnitTask* task)
 {
 	this->task = task;
 	SetTaskFrame(manager->GetCircuit()->GetLastFrame());
+	isInExecute = false;
 }
 
 void CCircuitUnit::ClearAct()
@@ -354,6 +356,18 @@ void CCircuitUnit::RemoveWait()
 bool CCircuitUnit::IsWaiting() const
 {
 	return command->GetId() == CMD_WAIT;
+}
+
+void CCircuitUnit::CmdRepair(CAllyUnit* target, short options, int timeout)
+{
+	unit->Repair(target->GetUnit(), options, timeout);
+	isInExecute = true;
+}
+
+void CCircuitUnit::CmdBuild(CCircuitDef* buildDef, const AIFloat3& buildPos, int facing, short options, int timeout)
+{
+	unit->Build(buildDef->GetDef(), buildPos, facing, options, timeout);
+	isInExecute = true;
 }
 
 void CCircuitUnit::Attack(CEnemyInfo* enemy, bool isGround, int timeout)

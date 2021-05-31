@@ -122,7 +122,7 @@ void IRepairTask::Execute(CCircuitUnit* unit)
 	if ((repTarget != nullptr) && (repTarget->GetUnit()->GetHealth() < repTarget->GetUnit()->GetMaxHealth())) {
 		TRY_UNIT(circuit, unit,
 			unit->CmdPriority(ClampPriority());
-			unit->GetUnit()->Repair(repTarget->GetUnit(), UNIT_CMD_OPTION, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+			unit->CmdRepair(repTarget, UNIT_CMD_OPTION, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 		)
 
 		IUnitTask* task = repTarget->GetTask();

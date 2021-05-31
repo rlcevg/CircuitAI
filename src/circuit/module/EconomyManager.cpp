@@ -230,6 +230,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				if (!cdef.GetBuildOptions().empty()) {
 					finishedHandler[cdef.GetId()] = factoryFinishedHandler;
 					destroyedHandler[cdef.GetId()] = factoryDestroyedHandler;
+					factoryDefs.AddDef(&cdef);
 				} else if (cdef.IsAbleToAssist()
 					&& (std::max(cdef.GetDef()->GetXSize(), cdef.GetDef()->GetZSize()) * SQUARE_SIZE < cdef.GetBuildDistance()))
 				{
@@ -241,10 +242,10 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			// energy
 			// BA: float netEnergy = unitDef->GetResourceMake(energyRes) - unitDef->GetUpkeep(energyRes);
 			it = customParams.find("income_energy");
-			if (((it != customParams.end()) && (utils::string_to_float(it->second) > 1))
-				|| (cdef.GetDef()->GetResourceMake(energyRes) - cdef.GetUpkeepE() > 1)
+			if (((it != customParams.end()) && (utils::string_to_float(it->second) > 5))
+				|| (cdef.GetDef()->GetResourceMake(energyRes) - cdef.GetUpkeepE() > 5)
 				|| ((cdef.GetDef()->GetWindResourceGenerator(energyRes) > 5) && (avgWind > 5))
-				|| (cdef.GetDef()->GetTidalResourceGenerator(energyRes) * circuit->GetMap()->GetTidalStrength() > 1))
+				|| (cdef.GetDef()->GetTidalResourceGenerator(energyRes) * circuit->GetMap()->GetTidalStrength() > 5))
 			{
 				finishedHandler[cdef.GetId()] = energyFinishedHandler;
 				energyDefs.AddDef(&cdef);
@@ -575,6 +576,10 @@ void CEconomyManager::AddEconomyDefs(const std::set<CCircuitDef*>& buildDefs)
 	assistDefs.AddDefs(buildDefs, [](CCircuitDef* cdef, SAssistInfo& data) -> float {
 		return cdef->GetBuildSpeed() / cdef->GetCostM();
 	});
+	factoryDefs.AddDefs(buildDefs, [](CCircuitDef* cdef, SFactoryInfo& data) -> float {
+		// FIXME: Factory sorting is not used anywhere, hence placeholder:
+		return cdef->GetBuildSpeed() / cdef->GetCostM();
+	});
 
 	// DEBUG
 //	circuit->LOG("----Energy----");
@@ -595,6 +600,11 @@ void CEconomyManager::AddEconomyDefs(const std::set<CCircuitDef*>& buildDefs)
 //		circuit->LOG("%s | costM=%f | costE=%f | build_speed=%f | efficiency=%f", ni.cdef->GetDef()->GetName(),
 //				ni.cdef->GetCostM(), ni.cdef->GetCostE(), ni.cdef->GetBuildSpeed(), ni.score);
 //	}
+//	circuit->LOG("----Factory----");
+//	for (const auto& fi : factoryDefs.infos) {
+//		circuit->LOG("%s | costM=%f | costE=%f | build_speed=%f | efficiency=%f", fi.cdef->GetDef()->GetName(),
+//				fi.cdef->GetCostM(), fi.cdef->GetCostE(), fi.cdef->GetBuildSpeed(), fi.score);
+//	}
 }
 
 void CEconomyManager::RemoveEconomyDefs(const std::set<CCircuitDef*>& buildDefs)
@@ -603,6 +613,7 @@ void CEconomyManager::RemoveEconomyDefs(const std::set<CCircuitDef*>& buildDefs)
 	storeMDefs.RemoveDefs(buildDefs);
 	storeEDefs.RemoveDefs(buildDefs);
 	assistDefs.RemoveDefs(buildDefs);
+	factoryDefs.RemoveDefs(buildDefs);
 
 	// DEBUG
 //	circuit->LOG("----Remove Energy----");
@@ -624,6 +635,11 @@ void CEconomyManager::RemoveEconomyDefs(const std::set<CCircuitDef*>& buildDefs)
 //	for (const auto& ni : assistDefs.infos) {
 //		circuit->LOG("%s | costM=%f | costE=%f | build_speed=%f | efficiency=%f", ni.cdef->GetDef()->GetName(),
 //				ni.cdef->GetCostM(), ni.cdef->GetCostE(), ni.cdef->GetBuildSpeed(), ni.score);
+//	}
+//	circuit->LOG("----Remove Factory----");
+//	for (const auto& fi : factoryDefs.infos) {
+//		circuit->LOG("%s | costM=%f | costE=%f | build_speed=%f | efficiency=%f", fi.cdef->GetDef()->GetName(),
+//				fi.cdef->GetCostM(), fi.cdef->GetCostE(), fi.cdef->GetBuildSpeed(), fi.score);
 //	}
 }
 

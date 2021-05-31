@@ -134,6 +134,8 @@ public:
 	void CmdWait(bool state);
 	void RemoveWait();
 	bool IsWaiting() const;
+	void CmdRepair(CAllyUnit* target, short options = 0, int timeout = INT_MAX);
+	void CmdBuild(CCircuitDef* buildDef, const springai::AIFloat3& buildPos, int facing, short options = 0, int timeout = INT_MAX);
 
 	void Attack(CEnemyInfo* enemy, bool isGround, int timeout);
 	void Attack(const springai::AIFloat3& position, CEnemyInfo* enemy, bool isGround, bool isStatic, int timeout);
@@ -147,6 +149,8 @@ public:
 	void Upgrade();
 	void StopUpgrade();
 	bool IsMorphing() const { return isMorphing; }
+
+	bool IsInExecute() const { return isInExecute; }
 
 	Id GetUnitIdReclaim() const;
 
@@ -184,6 +188,7 @@ private:
 	bool isWeaponReady : 1;
 	bool isMorphing : 1;
 	bool isSelfD : 1;
+	bool isInExecute : 1;
 	// ---- Bit fields ---- END
 
 	springai::Command* command;  // current top command
