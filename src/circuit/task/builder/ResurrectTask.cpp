@@ -75,17 +75,14 @@ void CResurrectTask::Execute(CCircuitUnit* unit)
 	AIFloat3 pos;
 	float rezzRadius;
 	if ((radius == .0f) || !utils::is_valid(position)) {
-		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-		float width = terrainMgr->GetTerrainWidth() / 2;
-		float height = terrainMgr->GetTerrainHeight() / 2;
-		pos = AIFloat3(width, 0, height);
-		rezzRadius = sqrtf(width * width + height * height);
+		pos = circuit->GetTerrainManager()->GetTerrainCenter();
+		rezzRadius = pos.Length2D();
 	} else {
 		pos = position;
 		rezzRadius = radius;
 	}
 	TRY_UNIT(circuit, unit,
-		unit->GetUnit()->ResurrectInArea(pos, rezzRadius, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+		unit->CmdResurrectInArea(pos, rezzRadius, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 	)
 }
 
@@ -111,7 +108,7 @@ bool CResurrectTask::Reevaluate(CCircuitUnit* unit)
 					/* && enemy->GetUnit()->IsBeingBuilt()*/)))
 		{
 			TRY_UNIT(circuit, unit,
-				unit->GetUnit()->ReclaimUnit(enemy->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+				unit->CmdReclaimEnemy(enemy, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 			)
 			return false;
 		}

@@ -154,7 +154,7 @@ bool CBMexTask::CheckLandBlock(CCircuitUnit* unit)
 	++blockCount;
 
 	COOAICallback* clb = circuit->GetCallback();
-	Unit* enemy = nullptr;
+	CEnemyInfo* enemy = nullptr;
 	bool blocked = sqPosDist < SQUARE(unit->GetCircuitDef()->GetBuildDistance() + SQUARE_SIZE);
 	if (blocked) {
 		auto& allies = clb->GetFriendlyUnitIdsIn(buildPos, SQUARE_SIZE);
@@ -169,10 +169,7 @@ bool CBMexTask::CheckLandBlock(CCircuitUnit* unit)
 	for (int enemyId : enemies) {
 		if (enemyId != -1) {
 			blocked = true;
-			CEnemyInfo* ei = circuit->GetEnemyInfo(enemyId);
-			if (ei != nullptr) {
-				enemy = ei->GetUnit();
-			}
+			enemy = circuit->GetEnemyInfo(enemyId);
 			break;
 		}
 	}
@@ -183,7 +180,7 @@ bool CBMexTask::CheckLandBlock(CCircuitUnit* unit)
 	if (enemy != nullptr) {
 		state = State::REGROUP;
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->ReclaimUnit(enemy);
+			unit->CmdReclaimEnemy(enemy);
 		);
 	} else {
 		AIFloat3 dir = (buildPos - pos).Normalize2D();

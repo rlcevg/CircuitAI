@@ -1029,7 +1029,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			buildPos = clusters[index].position;
 
 			// TODO: Calc enemy vector and move position into opposite direction
-			AIFloat3 mapCenter(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
+			AIFloat3 mapCenter = circuit->GetTerrainManager()->GetTerrainCenter();
 			buildPos += (buildPos - mapCenter).Normalize2D() * 300.0f * (bestDef->GetCostM() / energyDefs.infos.front().cdef->GetCostM());
 			CCircuitDef* bdef = (unit == nullptr) ? bestDef : unit->GetCircuitDef();
 			CTerrainManager::CorrectPosition(buildPos);

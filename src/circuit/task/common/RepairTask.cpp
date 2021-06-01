@@ -9,7 +9,7 @@
 #include "task/RetreatTask.h"
 #include "task/TaskManager.h"
 #include "map/InfluenceMap.h"
-//#include "module/BuilderManager.h"
+#include "module/BuilderManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
@@ -37,7 +37,7 @@ bool IRepairTask::CanAssignTo(CCircuitUnit* unit) const
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	return cdef->IsAbleToRepair() && !cdef->IsAttrSolo()
-			&& (target != nullptr) && (target != unit) && (cost > buildPower * MIN_BUILD_SEC)
+			&& (target != nullptr) && (target != unit) && (cost > buildPower * static_cast<CBuilderManager*>(manager)->GetGoalBuildSec())
 			&& (circuit->GetInflMap()->GetInfluenceAt(unit->GetPos(circuit->GetLastFrame())) > INFL_EPS);
 }
 

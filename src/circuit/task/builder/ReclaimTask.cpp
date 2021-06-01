@@ -104,7 +104,7 @@ bool CBReclaimTask::Reevaluate(CCircuitUnit* unit)
 						/* && enemy->GetUnit()->IsBeingBuilt()*/)))
 			{
 				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->ReclaimUnit(enemy->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+					unit->CmdReclaimEnemy(enemy, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 				)
 				return false;
 			}

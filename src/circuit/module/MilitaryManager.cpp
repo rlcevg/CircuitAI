@@ -691,7 +691,7 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 {
 	CEconomyManager* em = circuit->GetEconomyManager();
 	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
-	float maxCost = MIN_BUILD_SEC * amountFactor * metalIncome;
+	float maxCost = amountFactor * metalIncome;
 	CDefenceMatrix::SDefPoint* closestPoint = nullptr;
 	float minDist = std::numeric_limits<float>::max();
 	std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(cluster);
@@ -762,9 +762,15 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 	}
 	unsigned num = std::min<unsigned>(isPorc ? defenders.size() : preventCount, defenders.size());
 
-	AIFloat3 backDir = circuit->GetSetupManager()->GetBasePos() - closestPoint->position;
-	AIFloat3 backPos = closestPoint->position + backDir.Normalize2D() * SQUARE_SIZE * 16;
+	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
+	AIFloat3 mapCenter = circuit->GetTerrainManager()->GetTerrainCenter();
+	AIFloat3 backDir = closestPoint->position.SqDistance2D(basePos) < closestPoint->position.SqDistance2D(mapCenter)
+			? (closestPoint->position - mapCenter).Normalize2D()
+			: (basePos - closestPoint->position).Normalize2D();
+	AIFloat3 backPos = closestPoint->position + backDir * (SQUARE_SIZE * 10);
+	AIFloat3 frontPos = closestPoint->position - backDir * (SQUARE_SIZE * 10);
 	CTerrainManager::CorrectPosition(backPos);
+	CTerrainManager::CorrectPosition(frontPos);
 
 	CEnemyManager* enemyMgr = circuit->GetEnemyManager();
 	const int frame = circuit->GetLastFrame();
@@ -781,7 +787,7 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 		if (totalCost < maxCost) {
 			closestPoint->cost += defCost;
 			bool isFirst = (parentTask == nullptr);
-			const AIFloat3& buildPos = defDef->IsAttacker() ? closestPoint->position : backPos;
+			const AIFloat3& buildPos = defDef->IsAttacker() ? frontPos : backPos;
 			IBuilderTask* task = builderMgr->EnqueueTask(IBuilderTask::Priority::HIGH, defDef, buildPos,
 					IBuilderTask::BuildType::DEFENCE, defCost, SQUARE_SIZE * 8, isFirst);
 			if (parentTask != nullptr) {
@@ -827,9 +833,9 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 	if (!radarDefs.infos.empty()) {
 		const auto& radarInfo = radarDefs.infos.front();
 		if (radarInfo.cdef->IsAvailable(frame) && (radarInfo.cdef->GetCostM() < maxCost)) {
-		const float range = radarInfo.data.radius / (isPorc ? 4.f : SQRT_2);
-		checkSensor(IBuilderTask::BuildType::RADAR, radarInfo.cdef, range);
-	}
+			const float range = radarInfo.data.radius / (isPorc ? 4.f : SQRT_2);
+			checkSensor(IBuilderTask::BuildType::RADAR, radarInfo.cdef, range);
+		}
 	}
 	// sonar
 	if (!sonarDefs.infos.empty()) {
@@ -1244,7 +1250,7 @@ void CMilitaryManager::UpdateDefenceTasks()
 //			}
 //			return false;
 //		};
-//		AIFloat3 center(tm->GetTerrainWidth() / 2, 0, tm->GetTerrainHeight() / 2);
+//		AIFloat3 center = tm->GetTerrainCenter();
 //		int index = mm->FindNearestCluster(center, predicate);
 //		if (index >= 0) {
 //			dt->SetPosition(clusters[index].position);

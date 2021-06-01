@@ -71,7 +71,7 @@ void IReclaimTask::Execute(CCircuitUnit* unit)
 	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->ReclaimUnit(target->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+			unit->CmdReclaimUnit(target, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 		)
 		return;
 	}
@@ -79,17 +79,14 @@ void IReclaimTask::Execute(CCircuitUnit* unit)
 	AIFloat3 pos;
 	float reclRadius;
 	if ((radius == .0f) || !utils::is_valid(position)) {
-		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-		float width = terrainMgr->GetTerrainWidth() / 2;
-		float height = terrainMgr->GetTerrainHeight() / 2;
-		pos = AIFloat3(width, 0, height);
-		reclRadius = sqrtf(width * width + height * height);
+		pos = circuit->GetTerrainManager()->GetTerrainCenter();
+		reclRadius = pos.Length2D();
 	} else {
 		pos = position;
 		reclRadius = radius;
 	}
 	TRY_UNIT(circuit, unit,
-		unit->GetUnit()->ReclaimInArea(pos, reclRadius, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+		unit->CmdReclaimInArea(pos, reclRadius, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 	)
 }
 

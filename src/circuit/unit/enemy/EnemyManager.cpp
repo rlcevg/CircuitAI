@@ -44,7 +44,7 @@ CEnemyManager::CEnemyManager(CCircuitAI* circuit)
 {
 	enemyInfos.fill({0.f, 0.f});
 
-	enemyPos = AIFloat3(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
+	enemyPos = circuit->GetTerrainManager()->GetTerrainCenter();
 	enemyGroups.push_back(SEnemyGroup(enemyPos));
 
 	ReadConfig();

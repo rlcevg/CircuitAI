@@ -47,6 +47,9 @@ public:
 	static inline int GetTerrainDiagonal() {
 		return sqrtf(SQUARE(springai::AIFloat3::maxxpos) + SQUARE(springai::AIFloat3::maxzpos));
 	}
+	static inline springai::AIFloat3 GetTerrainCenter() {
+		return springai::AIFloat3(GetTerrainWidth() / 2, 0, GetTerrainHeight() / 2);
+	}
 
 public:
 	void Init();

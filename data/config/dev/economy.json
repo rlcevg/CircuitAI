@@ -61,6 +61,8 @@
 	},
 	"auto_mex": 1,  // number of T2 builders for each mobile type forced to auto-mex only
 
+	"goal_build": 32.0,  // assign builders till targeted time to build reached, in seconds
+
 	// Scales metal income
 	// ecoFactor = teamSize*eps_step+(1-eps_step)
 	"eps_step": 0.2,

@@ -346,6 +346,7 @@ void CBuilderManager::ReadConfig()
 	if (terraDef == nullptr) {
 		terraDef = circuit->GetEconomyManager()->GetSideInfo().defaultDef;
 	}
+	goalBuildSec = econ.get("goal_build", 16).asFloat();
 	numAutoMex = econ.get("auto_mex", 2).asUInt();
 	isBaseBuilderOn = econ.get("base_builder", true).asBool();
 
@@ -1635,13 +1636,15 @@ void CBuilderManager::Watchdog()
 		if (!isLost && (task->GetType() == IUnitTask::Type::BUILDER)) {
 			IBuilderTask* taskB = static_cast<IBuilderTask*>(task);
 			Unit* u = worker->GetUnit();
-			if (u->GetVel().SqLength2D() < 1e-3f) {
+			if (u->GetVel().SqLength2D() < 1e-3f) {  // FIXME: turn in-place may produce false-positive
 				if ((taskB->GetBuildType() == IBuilderTask::BuildType::RECLAIM) && (taskB->GetTarget() != nullptr)) {
 					const AIFloat3& pos = worker->GetPos(circuit->GetLastFrame());
 					const float objRadius = taskB->GetTarget()->GetCircuitDef()->GetRadius();
 					isLost = taskB->GetPosition().SqDistance2D(pos) > SQUARE(worker->GetCircuitDef()->GetBuildDistance() + objRadius);
-				} else {
-					isLost = !worker->IsWaiting() && (u->GetResourceUse(metalRes) < 1e-3f);
+				} else if (!worker->IsWaiting() && (taskB->GetBuildDef() != nullptr) && (u->GetResourceUse(metalRes) < 1e-3f)) {
+					const AIFloat3& pos = worker->GetPos(circuit->GetLastFrame());
+					const float objRadius = taskB->GetBuildDef()->GetRadius();
+					isLost = taskB->GetPosition().SqDistance2D(pos) > SQUARE(worker->GetCircuitDef()->GetBuildDistance() + objRadius);
 				}
 			}
 		}

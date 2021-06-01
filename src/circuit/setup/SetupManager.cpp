@@ -178,7 +178,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 					unsigned count;
 					float distDivIncome;
 				};
-				const AIFloat3 center(terrainMgr->GetTerrainWidth() / 2, 0, terrainMgr->GetTerrainHeight() / 2);
+				const AIFloat3 center = terrainMgr->GetTerrainCenter();
 				std::vector<std::pair<int, SCluster>> validClusters;
 				for (auto& kv : validPoints) {
 					SCluster c;

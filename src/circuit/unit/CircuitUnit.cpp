@@ -370,6 +370,27 @@ void CCircuitUnit::CmdBuild(CCircuitDef* buildDef, const AIFloat3& buildPos, int
 	isInExecute = true;
 }
 
+void CCircuitUnit::CmdReclaimEnemy(CEnemyInfo* enemy, short options, int timeout)
+{
+	unit->ReclaimUnit(enemy->GetUnit(), options, timeout);
+}
+
+void CCircuitUnit::CmdReclaimUnit(CAllyUnit* toReclaim, short options, int timeout)
+{
+	unit->ReclaimUnit(toReclaim->GetUnit(), options, timeout);
+	isInExecute = true;
+}
+
+void CCircuitUnit::CmdReclaimInArea(const AIFloat3& pos, float radius, short options, int timeout)
+{
+	unit->ReclaimInArea(pos, radius, options, timeout);
+}
+
+void CCircuitUnit::CmdResurrectInArea(const AIFloat3& pos, float radius, short options, int timeout)
+{
+	unit->ResurrectInArea(pos, radius, options, timeout);
+}
+
 void CCircuitUnit::Attack(CEnemyInfo* enemy, bool isGround, int timeout)
 {
 	target = enemy;
