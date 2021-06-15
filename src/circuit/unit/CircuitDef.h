@@ -166,8 +166,11 @@ public:
 	float GetBuildSpeed() const { return buildSpeed; }
 	void SetBuildSpeed(float value) { buildSpeed = value; }
 	float GetWorkerTime() const { return workerTime; }
-	inline bool CanBuild(Id buildDefId) const {	return buildOptions.find(buildDefId) != buildOptions.end(); }
-	inline bool CanBuild(CCircuitDef* buildDef) const { return CanBuild(buildDef->GetId()); }
+	void SetGoalBuildMod(float value) { goalBuildMod = value; }
+	float GetGoalBuildMod() const { return goalBuildMod; }
+	float GetGoalBuildTime(const float metalIncome) const { return goalBuildMod / metalIncome; }
+	inline bool CanBuild(const Id buildDefId) const {	return buildOptions.find(buildDefId) != buildOptions.end(); }
+	inline bool CanBuild(const CCircuitDef* buildDef) const { return CanBuild(buildDef->GetId()); }
 	int GetCount() const { return count; }
 
 	void Inc() { ++count; }
@@ -322,6 +325,7 @@ private:
 	float buildDistance;
 	float buildSpeed;
 	float workerTime;
+	float goalBuildMod;
 	int count;
 	int buildCounts;  // number of builder defs able to build this def;
 	int selfDCountdown;

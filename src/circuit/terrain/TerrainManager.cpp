@@ -308,14 +308,14 @@ void CTerrainManager::Init()
 
 	// Mark edges of the map
 	notIgnoreMask = ~(STRUCT_BIT(MEX) | STRUCT_BIT(FACTORY));  // all except mex and factory
-	for (int j = 0; j < 7; ++j) {
-		for (int i = 8; i < blockingMap.columns - 8; ++i) {
+	for (int j = 0; j < 5; ++j) {
+		for (int i = 6; i < blockingMap.columns - 6; ++i) {
 			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
 			blockingMap.MarkBlocker(i, blockingMap.rows - j - 1, SBlockingMap::StructType::TERRA, notIgnoreMask);
 		}
 	}
-	for (int j = 8; j < blockingMap.rows - 8; ++j) {
-		for (int i = 0; i < 7; ++i) {
+	for (int j = 6; j < blockingMap.rows - 6; ++j) {
+		for (int i = 0; i < 5; ++i) {
 			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
 			blockingMap.MarkBlocker(blockingMap.columns - i - 1, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
 		}

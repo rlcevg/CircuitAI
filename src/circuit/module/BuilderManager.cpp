@@ -228,6 +228,35 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	};
 
 	/*
+	 * staticmex handlers;
+	 */
+	auto mexDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
+		const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
+		CCircuitDef* mexDef = unit->GetCircuitDef();
+		const int facing = unit->GetUnit()->GetBuildingFacing();
+		this->circuit->GetTerrainManager()->DelBlocker(mexDef, pos, facing, true);
+		int index = this->circuit->GetMetalManager()->FindNearestSpot(pos);
+		if (index < 0) {
+			return;
+		}
+		this->circuit->GetMetalManager()->SetOpenSpot(index, true);
+		this->circuit->GetEconomyManager()->SetOpenSpot(index, true);
+		if (unit->GetUnit()->IsBeingBuilt()) {
+			return;
+		}
+		// Check mex position in 20 seconds
+		this->circuit->GetScheduler()->RunJobAfter(CScheduler::GameJob([this, mexDef, pos, index]() {
+			if (this->circuit->GetEconomyManager()->IsAllyOpenSpot(index) &&
+				this->circuit->GetBuilderManager()->IsBuilderInArea(mexDef, pos) &&
+				this->circuit->GetTerrainManager()->CanBeBuiltAtSafe(mexDef, pos))  // hostile environment
+			{
+				EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
+				this->circuit->GetEconomyManager()->SetOpenSpot(index, false);
+			}
+		}), FRAMES_PER_SEC * 20);
+	};
+
+	/*
 	 * heavy handlers
 	 */
 //	auto heavyCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
@@ -242,6 +271,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const float builderRet = root["retreat"].get("builder", 0.8f).asFloat();
+	const float goalBuildMod = root["economy"].get("build_mod", 320.f).asFloat();
 
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
@@ -275,41 +305,17 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 //				createdHandler[unitDefId] = heavyCreatedHandler;
 			}
 		} else {
-			damagedHandler[unitDefId]   = buildingDamagedHandler;
-			destroyedHandler[unitDefId] = buildingDestroyedHandler;
-		}
-	}
-
-	/*
-	 * staticmex handlers;
-	 */
-	auto mexDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
-		const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
-		CCircuitDef* mexDef = unit->GetCircuitDef();
-		const int facing = unit->GetUnit()->GetBuildingFacing();
-		this->circuit->GetTerrainManager()->DelBlocker(mexDef, pos, facing, true);
-		int index = this->circuit->GetMetalManager()->FindNearestSpot(pos);
-		if (index < 0) {
-			return;
-		}
-		this->circuit->GetMetalManager()->SetOpenSpot(index, true);
-		this->circuit->GetEconomyManager()->SetOpenSpot(index, true);
-		if (unit->GetUnit()->IsBeingBuilt()) {
-			return;
-		}
-		// Check mex position in 20 seconds
-		this->circuit->GetScheduler()->RunJobAfter(CScheduler::GameJob([this, mexDef, pos, index]() {
-			if (this->circuit->GetEconomyManager()->IsAllyOpenSpot(index) &&
-				this->circuit->GetBuilderManager()->IsBuilderInArea(mexDef, pos) &&
-				this->circuit->GetTerrainManager()->CanBeBuiltAtSafe(mexDef, pos))  // hostile environment
-			{
-				EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
-				this->circuit->GetEconomyManager()->SetOpenSpot(index, false);
+			damagedHandler[unitDefId] = buildingDamagedHandler;
+			if (cdef.IsMex()) {
+				destroyedHandler[unitDefId] = mexDestroyedHandler;
+			} else {
+				destroyedHandler[unitDefId] = buildingDestroyedHandler;
 			}
-		}), FRAMES_PER_SEC * 20);
-	};
-	for (const CEconomyManager::SSideInfo& si : circuit->GetEconomyManager()->GetSideInfos()) {
-		destroyedHandler[si.mexDef->GetId()] = mexDestroyedHandler;
+		}
+
+		if (cdef.GetGoalBuildMod() < 0.f) {
+			cdef.SetGoalBuildMod(goalBuildMod);
+		}
 	}
 
 	ReadConfig();
@@ -346,7 +352,7 @@ void CBuilderManager::ReadConfig()
 	if (terraDef == nullptr) {
 		terraDef = circuit->GetEconomyManager()->GetSideInfo().defaultDef;
 	}
-	goalBuildSec = econ.get("goal_build", 16).asFloat();
+	goalExecTime = econ.get("goal_exec", 16.f).asFloat();
 	numAutoMex = econ.get("auto_mex", 2).asUInt();
 	isBaseBuilderOn = econ.get("base_builder", true).asBool();
 
@@ -1534,23 +1540,10 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 
 	// FIXME: Eco rules. It should never get here
 	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
-	CCircuitDef* buildDef/* = nullptr*/;
 	const float energyIncome = ecoMgr->GetAvgEnergyIncome() * ecoMgr->GetEcoFactor();
 	const float metalIncome = std::min(ecoMgr->GetAvgMetalIncome() * ecoMgr->GetEcoFactor(), energyIncome);
-	if ((metalIncome < super.minIncome) || (energyIncome * 0.05f < super.minIncome)) {
-		float energyMake;
-		buildDef = ecoMgr->GetLowEnergy(position, energyMake, unit);
-		if (buildDef == nullptr) {  // position can be in danger
-			buildDef = ecoMgr->GetDefaultDef(unit->GetCircuitDef());
-		}
-		if ((buildDef != nullptr) && (buildDef->GetCount() < 10)
-			&& buildDef->IsAvailable(circuit->GetLastFrame())
-			&& unit->GetCircuitDef()->CanBuild(buildDef))
-		{
-			return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
-		}
-	} else {
-		buildDef = militaryMgr->GetBigGunDef();
+	if ((metalIncome >= super.minIncome) && (energyIncome * 0.05f >= super.minIncome)) {
+		CCircuitDef* buildDef = militaryMgr->GetBigGunDef();
 		if ((buildDef != nullptr) && (buildDef->GetCostM() < super.maxTime * metalIncome)) {
 			const std::set<IBuilderTask*>& tasks = GetTasks(IBuilderTask::BuildType::BIG_GUN);
 			if (tasks.empty()) {
@@ -1566,6 +1559,11 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 				return *tasks.begin();
 			}
 		}
+	}
+
+	CCircuitUnit* vip = circuit->GetFactoryManager()->GetClosestFactory(position);
+	if (vip != nullptr) {
+		return EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, FRAMES_PER_SEC * 60);
 	}
 
 	CSetupManager* setupMgr = circuit->GetSetupManager();

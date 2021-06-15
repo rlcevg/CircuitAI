@@ -312,7 +312,7 @@ bool CMetalManager::IsMexInFinished(int index) const
 	return clusterInfos[idx].finishedCount >= GetClusters()[idx].idxSpots.size();
 }
 
-int CMetalManager::GetMexToBuild(const AIFloat3& pos, CMetalData::PointPredicate& predicate)
+int CMetalManager::GetSpotToBuild(const AIFloat3& pos, CMetalData::PointPredicate& predicate)
 {
 	int index = FindNearestCluster(pos);
 	if (index < 0 || !(*threatFilter)[index]) {

@@ -56,6 +56,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	CEnemyInfo* bestTarget = nullptr;
 	float maxThreat = 0.f;
 
+	// TODO: Check water weapon
 	for (int eId : enemies) {
 		if (eId == -1) {
 			continue;

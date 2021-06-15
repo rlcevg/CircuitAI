@@ -245,8 +245,7 @@ bool CRaidTask::FindTarget()
 	const float weaponRange = cdef->GetMaxRange() * 0.9f;
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();
-	const float range = std::max(leader->GetUnit()->GetMaxRange() + threatMap->GetSquareSize() * 2,
-								 cdef->GetLosRadius());
+	const float range = std::max(leader->GetUnit()->GetMaxRange(), cdef->GetLosRadius()) + 200.f;
 	float minSqDist = SQUARE(range);
 	float maxThreat = 0.f;
 	float minPower = maxPower;

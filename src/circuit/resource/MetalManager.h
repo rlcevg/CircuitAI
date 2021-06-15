@@ -78,7 +78,7 @@ public:
 	bool IsMexInFinished(int index) const;
 	int GetCluster(int index) const { return metalInfos[index].clusterId; }
 
-	int GetMexToBuild(const springai::AIFloat3& pos, CMetalData::PointPredicate& predicate);
+	int GetSpotToBuild(const springai::AIFloat3& pos, CMetalData::PointPredicate& predicate);
 
 	float GetMinIncome() const { return metalData->GetMinIncome(); }
 	float GetAvgIncome() const { return metalData->GetAvgIncome(); }

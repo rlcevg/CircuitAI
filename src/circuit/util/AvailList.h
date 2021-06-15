@@ -35,6 +35,7 @@ public:
 	void AddDefs(const std::set<CCircuitDef*>& buildDefs, S scoreFunc);
 	void RemoveDefs(const std::set<CCircuitDef*>& buildDefs);
 
+	const std::set<CCircuitDef*>& GetAll() const { return all; }
 	bool IsAvail(CCircuitDef* buildDef) const { return avail.find(buildDef) != avail.end(); }
 	const std::vector<SAvailInfo>& GetInfos() const { return infos; }
 

@@ -13,6 +13,7 @@
 namespace circuit {
 
 class CFactoryManager;
+class CCircuitDef;
 
 class CFactoryScript: public IUnitModuleScript {
 public:
@@ -23,10 +24,12 @@ public:
 
 public:
 	bool IsSwitchTime(int lastSwitchFrame);
+	bool IsSwitchAllowed(CCircuitDef* facDef);
 
 private:
 	struct SScriptInfo {
 		asIScriptFunction* isSwitchTime = nullptr;
+		asIScriptFunction* isSwitchAllowed = nullptr;
 	} factoryInfo;
 };
 

@@ -82,6 +82,11 @@
 		// Amount of seconds when unit is not available for construction after UnitFinished
 //		"cooldown": 1,
 
+		// assign builders till targeted time to build reached
+		// default value specified in economy->build_mod
+		// goal_build_time = build_mod / metal_income
+//		"build_mod": 600.0,
+
 		// Minimum hp percent before retreat
 //		"retreat": 0.8,
 

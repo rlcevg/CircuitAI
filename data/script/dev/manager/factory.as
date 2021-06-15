@@ -33,11 +33,16 @@ void AiTaskClosed(IUnitTask@ task, bool done)
  */
 bool AiIsSwitchTime(int lastSwitchFrame)
 {
-	if ((lastSwitchFrame + switchInterval <= ai.frame) && (aiMilitaryMgr.armyCost > 3000.f)) {
+	if (lastSwitchFrame + switchInterval <= ai.frame) {
 		switchInterval = MakeSwitchInterval();
 		return true;
 	}
 	return false;
+}
+
+bool AiIsSwitchAllowed(CCircuitDef@ facDef)
+{
+	return aiMilitaryMgr.armyCost > 3000.f;
 }
 
 /* --- Utils --- */

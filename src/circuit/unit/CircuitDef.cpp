@@ -103,6 +103,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, role(RoleMask::NONE)
 		, attr(NONE)
 		, buildOptions(buildOpts)
+		, goalBuildMod(-1.f)
 		, count(0)
 		, buildCounts(0)
 		, sinceFrame(-1)

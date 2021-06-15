@@ -258,11 +258,16 @@ void CAttackTask::FindTarget()
 	CEnemyInfo* bestTarget = nullptr;
 	const float sqOBDist = pos.SqDistance2D(basePos);  // Own to Base distance
 	float minSqDist = std::numeric_limits<float>::max();
+	bool hasGoodTarget = false;
 
 	SetTarget(nullptr);  // make adequate enemy->GetTasks().size()
 	const std::vector<CEnemyManager::SEnemyGroup>& groups = circuit->GetEnemyManager()->GetEnemyGroups();
 	for (unsigned i = 0; i < groups.size(); ++i) {
 		const CEnemyManager::SEnemyGroup& group = groups[i];
+		const bool isOverpowered = maxPower * 0.25f > group.influence;
+		if (hasGoodTarget && isOverpowered) {
+			continue;
+		}
 		const float distBE = group.pos.distance2D(basePos);  // Base to Enemy distance
 		const float scale = std::min(distBE / sqOBDist, 1.f);
 		if ((maxPower <= group.influence * scale)
@@ -316,6 +321,7 @@ void CAttackTask::FindTarget()
 			if (minSqDist > sqOEDist) {
 				minSqDist = sqOEDist;
 				bestTarget = enemy;
+				hasGoodTarget = hasGoodTarget || !isOverpowered;
 			}
 		}
 	}

@@ -420,6 +420,8 @@ void CFactoryManager::ReadConfig()
 			cdef->SetCooldown(coold.asInt() * FRAMES_PER_SEC);
 		}
 
+		cdef->SetGoalBuildMod(behaviour.get("build_mod", cdef->GetGoalBuildMod()).asFloat());
+
 		cdef->SetRetreat(behaviour.get("retreat", cdef->GetRetreat()).asFloat());
 
 		const Json::Value& pwrMod = behaviour["power"];
@@ -828,6 +830,11 @@ bool CFactoryManager::IsSwitchTime()
 	return isSwitchTime;
 }
 
+bool CFactoryManager::IsSwitchAllowed(CCircuitDef* facDef) const
+{
+	return static_cast<CFactoryScript*>(script)->IsSwitchAllowed(facDef);
+}
+
 CCircuitUnit* CFactoryManager::NeedUpgrade(unsigned int nanoQueued)
 {
 	const int frame = circuit->GetLastFrame();
@@ -1031,12 +1038,12 @@ bool CFactoryManager::IsHighPriority(CAllyUnit* unit) const
 
 CCircuitDef* CFactoryManager::GetFactoryToBuild(AIFloat3 position, bool isStart, bool isReset)
 {
-//	CCircuitDef* facDef = factoryData->GetFactoryToBuild(circuit, position, isStart, isReset);
-//	if ((facDef == nullptr) && utils::is_valid(position)) {
-//		facDef = factoryData->GetFactoryToBuild(circuit, -RgtVector, isStart, isReset);
-//	}
-//	return facDef;
-	return factoryData->GetFactoryToBuild(circuit, position, isStart, isReset);
+	CCircuitDef* facDef = factoryData->GetFactoryToBuild(circuit, position, isStart, isReset);
+	if ((facDef == nullptr) && utils::is_valid(position)) {
+		facDef = factoryData->GetFactoryToBuild(circuit, -RgtVector, isStart, isReset);
+	}
+	return facDef;
+//	return factoryData->GetFactoryToBuild(circuit, position, isStart, isReset);
 }
 
 void CFactoryManager::AddFactory(const CCircuitDef* cdef)

@@ -35,6 +35,7 @@ void CFactoryScript::Init()
 	int r = mod->SetDefaultNamespace("Factory"); ASSERT(r >= 0);
 	InitModule(mod);
 	factoryInfo.isSwitchTime = script->GetFunc(mod, "bool AiIsSwitchTime(int)");
+	factoryInfo.isSwitchAllowed = script->GetFunc(mod, "bool AiIsSwitchAllowed(CCircuitDef@)");
 }
 
 bool CFactoryScript::IsSwitchTime(int lastSwitchFrame)
@@ -44,6 +45,18 @@ bool CFactoryScript::IsSwitchTime(int lastSwitchFrame)
 	}
 	asIScriptContext* ctx = script->PrepareContext(factoryInfo.isSwitchTime);
 	ctx->SetArgDWord(0, lastSwitchFrame);
+	const bool result = script->Exec(ctx) ? ctx->GetReturnByte() : false;
+	script->ReturnContext(ctx);
+	return result;
+}
+
+bool CFactoryScript::IsSwitchAllowed(CCircuitDef* facDef)
+{
+	if (factoryInfo.isSwitchAllowed == nullptr) {
+		return false;
+	}
+	asIScriptContext* ctx = script->PrepareContext(factoryInfo.isSwitchAllowed);
+	ctx->SetArgObject(0, facDef);
 	const bool result = script->Exec(ctx) ? ctx->GetReturnByte() : false;
 	script->ReturnContext(ctx);
 	return result;

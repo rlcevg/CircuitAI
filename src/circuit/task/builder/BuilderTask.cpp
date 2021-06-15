@@ -80,7 +80,8 @@ IBuilderTask::~IBuilderTask()
 bool IBuilderTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	// is extra buildpower required?
-	if (/*(units.size() > 1) && */(cost < buildPower * static_cast<CBuilderManager*>(manager)->GetGoalBuildSec())) {
+	const float metalIncome = manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome();
+	if (cost < buildPower * buildDef->GetGoalBuildTime(metalIncome)) {
 		return false;
 	}
 	const CCircuitDef* cdef = unit->GetCircuitDef();

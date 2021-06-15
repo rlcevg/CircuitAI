@@ -77,7 +77,7 @@ public:
 	const SSideInfo& GetSideInfo() const;
 	const std::vector<SSideInfo>& GetSideInfos() const { return sideInfos; }
 
-	CCircuitDef* GetMexDef(CCircuitDef* builderDef) { return mexDefs[builderDef->GetId()]; }
+	const std::vector<CCircuitDef*> GetMexDefs(CCircuitDef* builderDef) { return mexDefs[builderDef->GetId()]; }
 	CCircuitDef* GetDefaultDef(CCircuitDef* builderDef) { return defaultDefs[builderDef->GetId()]; }
 	CCircuitDef* GetPylonDef() const { return pylonDef; }
 
@@ -157,13 +157,18 @@ private:
 	};
 	CAvailList<SStoreInfo> storeMDefs, storeEDefs;
 
-	std::unordered_map<CCircuitDef::Id, CCircuitDef*> mexDefs;  // builder: mex
+	std::unordered_map<CCircuitDef::Id, std::vector<CCircuitDef*>> mexDefs;  // builder: mex
 	std::unordered_map<CCircuitDef::Id, CCircuitDef*> defaultDefs;  // builder: default
 
 	// NOTE: MetalManager::SetOpenSpot used by whole allyTeam. Therefore
 	//       local spot's state descriptor needed for better expansion
 	std::vector<bool> openSpots;  // AI-local metal info
 	int mexCount;
+
+	struct SMetalInfo {
+		float make;
+	};
+	CAvailList<SMetalInfo> metalDefs;
 
 	float costRatio;
 	struct SEnergyInfo {

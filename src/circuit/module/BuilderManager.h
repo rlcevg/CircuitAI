@@ -53,7 +53,7 @@ public:
 
 	CCircuitDef* GetTerraDef() const { return terraDef; }
 
-	float GetGoalBuildSec() const { return goalBuildSec; }
+	float GetGoalExecTime() const { return goalExecTime; }
 	unsigned int GetWorkerCount() const { return workers.size(); }
 	void AddBuildPower(CCircuitUnit* unit, bool isBuilder = true);
 	void DelBuildPower(CCircuitUnit* unit, bool isBuilder = true);
@@ -184,7 +184,7 @@ private:
 	std::vector<IUnitTask*> buildUpdates;  // owner
 	unsigned int buildIterator;
 
-	float goalBuildSec;
+	float goalExecTime;  // seconds
 	unsigned numAutoMex;
 	std::unordered_map<int, std::set<CCircuitUnit*>> mexUpgrader;  // Mobile type Id: set of units
 	std::unordered_map<CCircuitDef*, int> mexUpgraderCount;
