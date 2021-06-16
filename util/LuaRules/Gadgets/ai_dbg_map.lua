@@ -62,7 +62,7 @@ float heightAtWorldPos(vec2 w){ // this gets the world height
 
 void main() {
 	// blend start to end on mod gf%15
-	float timemix = mod(timeInfo.x,10)*(0.1);
+	// float timemix = mod(timeInfo.x,10)*(0.1); //timeInfo.x contains gameframe
 	vec4 circleWorldPos = centerposxyz_radius;
 	circleWorldPos.xz = circlepointposition.xy * circleWorldPos.w +  circleWorldPos.xz;
 	
@@ -129,9 +129,8 @@ local function initgl4()
   if not shaderCompiled then goodbye("Failed to compile AI DBG shader ") end
   local circleVBO,numVertices = makeCircleVBO(circleSegments)
   local circleInstanceVBOLayout = {
-		  {id = 1, name = 'startposrad', size = 4}, -- the start pos + radius
-		  {id = 2, name = 'endposrad', size = 4}, --  end pos + radius
-		  {id = 3, name = 'color', size = 4}, --- color
+		  {id = 1, name = 'centerposxyz_radius', size = 4}, -- the start pos + radius
+		  {id = 2, name = 'color', size = 4}, --- color
 		}
   circleInstanceVBO = makeInstanceVBOTable(circleInstanceVBOLayout,128, "AI DBG VBO")
   circleInstanceVBO.numVertices = numVertices
@@ -216,7 +215,7 @@ function gadget:DrawWorldPreUnit()
 					px = (x - 1) * size
 					for z = 0, height - 1 do
 						value = threatMap[z * width + x] - base
-						local mycolor = {0.0, 0.0, 0.0, 0.0}
+						local mycolor = {0.0, 0.0, 0.0, 0.8} -- alpha defined here!
 						
 						if value > 0 then
 							pz = z * size
