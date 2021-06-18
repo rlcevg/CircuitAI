@@ -143,6 +143,13 @@ void IBuilderTask::Start(CCircuitUnit* unit)
 
 void IBuilderTask::Update()
 {
+	std::string somestr;
+	if (buildDef == nullptr) {
+		somestr = utils::int_to_string((int)buildType, "%i | ") + __PRETTY_FUNCTION__;
+	} else {
+		somestr = utils::int_to_string((int)buildType, "%i upd | ") + buildDef->GetDef()->GetName();
+	}
+	SCOPED_TIME(manager->GetCircuit(), somestr.c_str());
 	for (CCircuitUnit* unit : traveled) {
 		Execute(unit);
 	}
@@ -203,6 +210,21 @@ void IBuilderTask::Cancel()
 
 void IBuilderTask::Execute(CCircuitUnit* unit)
 {
+	std::string somestr;
+	std::function<void(CCircuitAI*)> func = nullptr;
+	if (buildDef == nullptr) {
+		somestr = utils::int_to_string((int)buildType, "%i | ") + __PRETTY_FUNCTION__;
+	} else {
+		somestr = utils::int_to_string((int)buildType, "%i exec | ") + buildDef->GetDef()->GetName();
+		AIFloat3 poss = GetPosition();
+		func = [this, poss](CCircuitAI* ai) {
+			ai->GetDrawer()->AddPoint(poss, "o");
+			ai->GetDrawer()->AddPoint(GetPosition(), buildDef->GetDef()->GetName());
+			ai->GetDrawer()->AddLine(poss, GetPosition());
+			ai->GetGame()->SetPause(true, "pp");
+		};
+	}
+	SCOPED_TIME_FN(manager->GetCircuit(), somestr.c_str(), 20, func);
 	CCircuitAI* circuit = manager->GetCircuit();
 	TRY_UNIT(circuit, unit,
 		unit->CmdPriority(ClampPriority());
@@ -245,7 +267,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	AIFloat3 pos = (shake > .0f) ? utils::get_near_pos(position, shake) : position;
 	CTerrainManager::CorrectPosition(pos);
 
-	const float searchRadius = 200.0f * SQUARE_SIZE;
+	const float searchRadius = 200 * SQUARE_SIZE;
 	FindBuildSite(unit, pos, searchRadius);
 
 	if (utils::is_valid(buildPos)) {

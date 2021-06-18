@@ -172,8 +172,9 @@ public:
 	}
 
 	// position must be valid
-	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position, const float range = 1.f);  // NOTE: returns false if the area was too small to be recorded
-	bool CanBeBuiltAtSafe(CCircuitDef* cdef, const springai::AIFloat3& position, const float range = 1.f, const float threat = THREAT_MIN);
+	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position, const float range);  // NOTE: returns false if the area was too small to be recorded
+	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position);
+	bool CanBeBuiltAtSafe(CCircuitDef* cdef, const springai::AIFloat3& position);
 	bool CanReachAt(CCircuitUnit* unit, const springai::AIFloat3& destination, const float range);
 	bool CanReachAtSafe(CCircuitUnit* unit, const springai::AIFloat3& destination, const float range, const float threat = THREAT_MIN);
 	bool CanMobileReachAt(STerrainMapArea* area, const springai::AIFloat3& destination, const float range);

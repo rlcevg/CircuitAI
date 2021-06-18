@@ -143,6 +143,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, isMex(false)
 		, isPylon(false)
 		, isAssist(false)
+		, isRadar(false)
+		, isSonar(false)
 		, isDecoy(false)
 		, isOnSlow(false)
 		, stockCost(.0f)

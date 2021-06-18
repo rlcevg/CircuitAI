@@ -203,20 +203,28 @@ template<typename T> static inline std::istream& binary_read(std::istream& strea
 	public:
 		using clock = std::chrono::high_resolution_clock;
 		CScopedTime(circuit::CCircuitAI* ai, const std::string& msg, int t)
-			: ai(ai), text(msg), t0(clock::now()), thr(t)
+			: ai(ai), text(msg), t0(clock::now()), thr(t), callback(nullptr)
+		{}
+		CScopedTime(circuit::CCircuitAI* ai, const std::string& msg, int t, std::function<void(circuit::CCircuitAI*)> cb)
+			: ai(ai), text(msg), t0(clock::now()), thr(t), callback(cb)
 		{}
 		~CScopedTime() {
 			int count = std::chrono::duration_cast<units>(clock::now() - t0).count();
-			if (count >= thr) ai->LOG("%i | %i ms | %s", ai->GetSkirmishAIId(), count, text.c_str());
+			if (count >= thr) {
+				ai->LOG("%i | %i ms | %s", ai->GetSkirmishAIId(), count, text.c_str());
+				if (callback != nullptr) callback(ai);
+			}
 		}
 	private:
 		circuit::CCircuitAI* ai;
 		std::string text;
 		clock::time_point t0;
 		int thr;
+		std::function<void(circuit::CCircuitAI*)> callback;
 	};
 	#define SCOPED_TIME(x, y) utils::CScopedTime<std::chrono::milliseconds> st(x, y, 10)
 	#define SCOPED_TIME_NT(n, x, y, t) utils::CScopedTime<std::chrono::milliseconds> n(x, y, t)
+	#define SCOPED_TIME_FN(x, y, t, f) utils::CScopedTime<std::chrono::milliseconds> st(x, y, t, f)
 #else
 	#define SCOPED_TIME(x, y)
 #endif

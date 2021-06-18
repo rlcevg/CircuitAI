@@ -270,6 +270,10 @@ public:
 	bool IsPylon() const { return isPylon; }
 	void SetIsAssist(bool value) { isAssist = value; }
 	bool IsAssist() const { return isAssist; }
+	void SetIsRadar(bool value) { isRadar = value; }
+	bool IsRadar() const { return isRadar; }
+	void SetIsSonar(bool value) { isSonar = value ; }
+	bool IsSonar() const { return isSonar; }
 	void SetIsDecoy(bool value) { isDecoy = value; }
 	bool IsDecoy() const { return isDecoy; }
 	void SetOnSlow(bool value) { isOnSlow = value; }
@@ -394,6 +398,8 @@ private:
 	bool isMex : 1;
 	bool isPylon : 1;
 	bool isAssist : 1;
+	bool isRadar : 1;
+	bool isSonar : 1;
 	bool isDecoy : 1;
 	bool isOnSlow : 1;
 	// ---- Bit fields ---- END

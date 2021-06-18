@@ -283,9 +283,11 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			}
 			if (cdef.GetDef()->GetRadarRadius() > 1.f) {
 				radarDefs.AddDef(&cdef);
+				cdef.SetIsRadar(true);
 			}
 			if (cdef.GetDef()->GetSonarRadius() > 1.f) {
 				sonarDefs.AddDef(&cdef);
+				cdef.SetIsSonar(true);
 			}
 		}
 	}
@@ -801,47 +803,52 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 	}
 
 	// Build sensors
-	auto checkSensor = [this, &backPos, builderMgr](IBuilderTask::BuildType type, CCircuitDef* cdef, float range) {
-		bool isBuilt = false;
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	auto checkSensor = [this, frame, maxCost, &backPos, builderMgr, terrainMgr](IBuilderTask::BuildType type,
+			CCircuitDef* cdef, float range, std::function<bool (CCircuitDef*)> isSensor)
+	{
+		if (!cdef->IsAvailable(frame) || (cdef->GetCostM() > maxCost) || !terrainMgr->CanBeBuiltAt(cdef, backPos)) {
+			return false;
+		}
 		COOAICallback* clb = circuit->GetCallback();
-		auto& friendlies = clb->GetFriendlyUnitIdsIn(backPos, range);
+		const auto& friendlies = clb->GetFriendlyUnitIdsIn(backPos, range);
 		for (int auId : friendlies) {
 			if (auId == -1) {
 				continue;
 			}
-			CCircuitDef::Id defId = clb->Unit_GetDefId(auId);
-			if (defId == cdef->GetId()) {
-				isBuilt = true;
-				break;
+			// clb->Unit_GetDefId(auId) == cdef->GetId()?
+			if (isSensor(circuit->GetCircuitDef(clb->Unit_GetDefId(auId)))) {
+				return true;
 			}
 		}
-		if (!isBuilt) {
-			const IBuilderTask* task = nullptr;
-			const float qdist = SQUARE(range);
-			for (const IBuilderTask* t : builderMgr->GetTasks(type)) {
-				if (backPos.SqDistance2D(t->GetTaskPos()) < qdist) {
-					task = t;
-					break;
-				}
-			}
-			if (task == nullptr) {
-				builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, backPos, type);
+		const float qdist = SQUARE(range);
+		for (const IBuilderTask* t : builderMgr->GetTasks(type)) {
+			if (backPos.SqDistance2D(t->GetTaskPos()) < qdist) {
+				return true;
 			}
 		}
+		builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, backPos, type);
+		return true;
 	};
 	// radar
 	if (!radarDefs.infos.empty()) {
-		const auto& radarInfo = radarDefs.infos.front();
-		if (radarInfo.cdef->IsAvailable(frame) && (radarInfo.cdef->GetCostM() < maxCost)) {
+		for (const auto& radarInfo : radarDefs.infos) {
 			const float range = radarInfo.data.radius / (isPorc ? 4.f : SQRT_2);
-			checkSensor(IBuilderTask::BuildType::RADAR, radarInfo.cdef, range);
+			if (checkSensor(IBuilderTask::BuildType::RADAR, radarInfo.cdef, range,
+					[](CCircuitDef* cdef) { return cdef->IsRadar(); }))
+			{
+				break;
+			}
 		}
 	}
 	// sonar
-	if (!sonarDefs.infos.empty()) {
-		const auto& sonarInfo = sonarDefs.infos.front();
-		if (isWater && sonarInfo.cdef->IsAvailable(frame) && (sonarInfo.cdef->GetCostM() < maxCost)) {
-			checkSensor(IBuilderTask::BuildType::SONAR, sonarInfo.cdef, sonarInfo.data.radius);
+	if (isWater &&!sonarDefs.infos.empty()) {
+		for (const auto& sonarInfo : sonarDefs.infos) {
+			if (checkSensor(IBuilderTask::BuildType::SONAR, sonarInfo.cdef, sonarInfo.data.radius,
+					[](CCircuitDef* cdef) { return cdef->IsSonar(); }))
+			{
+				break;
+			}
 		}
 	}
 }
