@@ -23,6 +23,7 @@
 
 #ifdef DEBUG_VIS
 #include "DebugDrawer.h"
+#include "Lua.h"
 #endif
 
 #ifdef DEBUG_LOG

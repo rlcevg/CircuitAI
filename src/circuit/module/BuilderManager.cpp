@@ -1542,7 +1542,7 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
 	const float energyIncome = ecoMgr->GetAvgEnergyIncome() * ecoMgr->GetEcoFactor();
 	const float metalIncome = std::min(ecoMgr->GetAvgMetalIncome() * ecoMgr->GetEcoFactor(), energyIncome);
-	if ((metalIncome >= super.minIncome) && (energyIncome * 0.05f >= super.minIncome)) {
+	if ((metalIncome >= super.minIncome) && (energyIncome * 0.02f >= super.minIncome)) {
 		CCircuitDef* buildDef = militaryMgr->GetBigGunDef();
 		if ((buildDef != nullptr) && (buildDef->GetCostM() < super.maxTime * metalIncome)) {
 			const std::set<IBuilderTask*>& tasks = GetTasks(IBuilderTask::BuildType::BIG_GUN);

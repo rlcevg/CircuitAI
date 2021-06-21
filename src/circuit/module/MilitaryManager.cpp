@@ -816,8 +816,8 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 			if (auId == -1) {
 				continue;
 			}
-			// clb->Unit_GetDefId(auId) == cdef->GetId()?
-			if (isSensor(circuit->GetCircuitDef(clb->Unit_GetDefId(auId)))) {
+			CCircuitDef::Id defId = clb->Unit_GetDefId(auId);
+			if (isSensor(circuit->GetCircuitDef(defId))) {
 				return true;
 			}
 		}

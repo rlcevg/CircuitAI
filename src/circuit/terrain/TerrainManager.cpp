@@ -27,9 +27,6 @@
 #include "Pathing.h"
 #include "MoveData.h"
 #include "Log.h"
-#ifdef DEBUG_VIS
-#include "Lua.h"
-#endif
 
 namespace circuit {
 
@@ -600,9 +597,10 @@ const CTerrainManager::SearchOffsetsLow& CTerrainManager::GetSearchOffsetTableLo
 		for (int y = 0; y < radius * 2; y++) {
 			for (int x = 0; x < radius * 2; x++) {
 				SSearchOffset& i = searchOffsets[y * radius * 2 + x];
-				i.dx = x - radius;
-				i.dy = y - radius;
-				i.qdist = i.dx * i.dx + i.dy * i.dy;
+				i.dx = x - radius + GRID_RATIO_LOW / 2;
+				i.dy = y - radius + GRID_RATIO_LOW / 2;
+				i.qdist = i.dx * i.dx + i.dy * i.dy;  // from corner low-res cell
+//				i.qdist = SQUARE(x - radius) + SQUARE(y - radius);  // from center of low-res cell
 			}
 		}
 
@@ -1477,10 +1475,11 @@ void CTerrainManager::UpdateVis()
 {
 	if (isWidgetDrawing) {
 		std::ostringstream cmd;
-		cmd << "ai_thr_data:";
+		cmd << "ai_blk_data:";
 		for (int z = 0; z < blockingMap.rows; ++z) {
 			for (int x = 0; x < blockingMap.columns; ++x) {
-				cmd << blockingMap.IsBlocked(x, z, STRUCT_BIT(ALL)) << " ";
+				const char value = blockingMap.IsBlocked(x, z, STRUCT_BIT(ALL));
+				cmd.write(&value, 1);
 			}
 		}
 		std::string s = cmd.str();

@@ -21,9 +21,6 @@
 //#include "Cheats.h"
 #include "Feature.h"
 #include "FeatureDef.h"
-#ifdef DEBUG_VIS
-#include "Lua.h"
-#endif
 
 namespace circuit {
 
@@ -453,9 +450,7 @@ void CInfluenceMap::UpdateVis()
 	if (isWidgetDrawing || isWidgetPrinting) {
 		std::ostringstream cmd;
 		cmd << "ai_thr_data:";
-		for (int i = 0; i < mapSize; ++i) {
-			cmd << influence[i] << " ";
-		}
+		cmd.write(reinterpret_cast<const char*>(influence), mapSize * sizeof(float));
 		std::string s = cmd.str();
 		circuit->GetLua()->CallRules(s.c_str(), s.size());
 	}

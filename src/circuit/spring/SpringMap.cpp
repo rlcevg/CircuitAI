@@ -43,6 +43,15 @@ void CMap::GetSlopeMap(FloatVec& slopeMap) const
 	sAICallback->Map_getSlopeMap(map->GetSkirmishAIId(), slopeMap.data(), slopeMap.size());
 }
 
+void CMap::GetRadarMap(IntVec& radarMap) const
+{
+	// NOTE: radarMap = std::move(circuit->GetMap()->GetRadarMap());
+	if (radarMap.empty()) {
+		radarMap.resize(sAICallback->Map_getRadarMap(map->GetSkirmishAIId(), nullptr, -1));
+	}
+	sAICallback->Map_getRadarMap(map->GetSkirmishAIId(), radarMap.data(), radarMap.size());
+}
+
 void CMap::GetSonarMap(IntVec& sonarMap) const
 {
 	// NOTE: sonarMap = std::move(circuit->GetMap()->GetSonarMap());

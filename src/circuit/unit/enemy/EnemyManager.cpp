@@ -173,7 +173,7 @@ void CEnemyManager::PrepareUpdate()
 	const int frame = circuit->GetLastFrame();
 	std::vector<CEnemyFake*> deadFakes;
 	for (CEnemyFake* e : mapMgr->GetEnemyFakes()) {
-		if (mapMgr->IsInLOS(e->GetPos()) || (frame >= e->GetTimeout())) {
+		if (/*mapMgr->IsInRadar(e->GetPos()) || */mapMgr->IsInLOS(e->GetPos()) || (frame >= e->GetTimeout())) {
 			deadFakes.push_back(e);
 		} else {
 			hostileDatas.push_back(e->GetData());

@@ -24,6 +24,7 @@ public:
 	void GetHeightMap(FloatVec& outHeightMap) const;
 	void GetSlopeMap(FloatVec& outSlopeMap) const;
 
+	void GetRadarMap(IntVec& radarMap) const;
 	void GetSonarMap(IntVec& sonarMap) const;
 	void GetLosMap(IntVec& losMap) const;
 

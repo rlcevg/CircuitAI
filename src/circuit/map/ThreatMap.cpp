@@ -15,10 +15,6 @@
 #include "util/Utils.h"
 #include "json/json.h"
 
-#ifdef DEBUG_VIS
-#include "Lua.h"
-#endif
-
 //#undef NDEBUG
 #include <cassert>
 
@@ -695,9 +691,7 @@ void CThreatMap::UpdateVis()
 				threatArray = pThreatData.load()->roleThreats[0].amphThreat.data();
 			} break;
 		}
-		for (int i = 0; i < mapSize; ++i) {
-			cmd << threatArray[i] << " ";
-		}
+		cmd.write(reinterpret_cast<const char*>(threatArray), mapSize * sizeof(float));
 		std::string s = cmd.str();
 		circuit->GetLua()->CallRules(s.c_str(), s.size());
 	}

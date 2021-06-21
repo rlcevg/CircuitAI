@@ -18,8 +18,6 @@ public:
 				CCircuitDef* buildDef, const springai::AIFloat3& position,
 				float cost, float shake, int timeout);
 	virtual ~CBRadarTask();
-
-	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
 };
 
 } // namespace circuit

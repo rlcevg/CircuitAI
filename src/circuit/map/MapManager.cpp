@@ -29,7 +29,7 @@ CMapManager::CMapManager(CCircuitAI* circuit, float decloakRadius)
 	int radarMipLevel = mod->GetRadarMipLevel();
 	delete mod;
 
-//	radarMap = std::move(map->GetRadarMap());
+//	map->GetRadarMap(radarMap);
 	radarWidth = mapWidth >> radarMipLevel;
 	map->GetSonarMap(sonarMap);
 	radarResConv = SQUARE_SIZE << radarMipLevel;
@@ -49,7 +49,7 @@ CMapManager::~CMapManager()
 
 void CMapManager::PrepareUpdate()
 {
-//	radarMap = std::move(circuit->GetMap()->GetRadarMap());
+//	circuit->GetMap()->GetRadarMap(radarMap);
 	circuit->GetMap()->GetSonarMap(sonarMap);
 	circuit->GetMap()->GetLosMap(losMap);
 }
