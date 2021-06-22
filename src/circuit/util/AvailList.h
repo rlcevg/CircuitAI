@@ -22,7 +22,7 @@ public:
 	struct SAvailInfo {
 		CCircuitDef* cdef;
 		float score;
-		bool operator==(const CCircuitDef* d) { return cdef == d; }
+		bool operator==(const CCircuitDef* d) const { return cdef == d; }
 		T data;
 	};
 
@@ -37,13 +37,18 @@ public:
 
 	const std::set<CCircuitDef*>& GetAll() const { return all; }
 	bool IsAvail(CCircuitDef* buildDef) const { return avail.find(buildDef) != avail.end(); }
+	bool HasAvail() const { return !infos.empty(); }
+	const T* GetAvailInfo(const CCircuitDef* cdef) const;
+	CCircuitDef* GetFirstDef() const { return infos.front().cdef; }
+	template <typename F>
+	CCircuitDef* GetBestDef(F filterFunc) const;
+	template <typename F>
+	CCircuitDef* GetWorstDef(F filterFunc) const;
 	const std::vector<SAvailInfo>& GetInfos() const { return infos; }
 
 private:
 	std::set<CCircuitDef*> all;
 	std::set<CCircuitDef*> avail;
-
-public:
 	std::vector<SAvailInfo> infos;  // sorted high-score first
 };
 
@@ -105,6 +110,39 @@ void CAvailList<T>::RemoveDefs(const std::set<CCircuitDef*>& buildDefs)
 			it = infos.erase(it);
 		}
 	}
+}
+
+template <typename T>
+const T* CAvailList<T>::GetAvailInfo(const CCircuitDef* cdef) const
+{
+	auto it = std::find(infos.begin(), infos.end(), cdef);
+	return (it != infos.end()) ? &it->data : nullptr;
+}
+
+template <typename T>
+template <typename F>
+CCircuitDef* CAvailList<T>::GetBestDef(F filterFunc) const
+{
+	for (auto& info : infos) {
+		if (filterFunc(info.cdef, info.data)) {
+			return info.cdef;
+		}
+	}
+	return nullptr;
+}
+
+template <typename T>
+template <typename F>
+CCircuitDef* CAvailList<T>::GetWorstDef(F filterFunc) const
+{
+	auto it = infos.rbegin();
+	while (it != infos.rend()) {
+		if (filterFunc(it->cdef, it->data)) {
+			return it->cdef;
+		}
+		++it;
+	}
+	return nullptr;
 }
 
 } // namespace circuit

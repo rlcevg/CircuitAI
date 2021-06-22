@@ -831,25 +831,19 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 		return true;
 	};
 	// radar
-	if (!radarDefs.infos.empty()) {
-		for (const auto& radarInfo : radarDefs.infos) {
-			const float range = radarInfo.data.radius / (isPorc ? 4.f : SQRT_2);
-			if (checkSensor(IBuilderTask::BuildType::RADAR, radarInfo.cdef, range,
-					[](CCircuitDef* cdef) { return cdef->IsRadar(); }))
-			{
-				break;
-			}
-		}
+	if (radarDefs.HasAvail()) {
+		const float radiusMod = isPorc ? 1 / 4.f : 1 / SQRT_2;
+		radarDefs.GetBestDef([&checkSensor, radiusMod](CCircuitDef* cdef, const SSensorExt& data) {
+			return checkSensor(IBuilderTask::BuildType::RADAR, cdef, data.radius * radiusMod,
+					[](CCircuitDef* cdef) { return cdef->IsRadar(); });
+		});
 	}
 	// sonar
-	if (isWater &&!sonarDefs.infos.empty()) {
-		for (const auto& sonarInfo : sonarDefs.infos) {
-			if (checkSensor(IBuilderTask::BuildType::SONAR, sonarInfo.cdef, sonarInfo.data.radius,
-					[](CCircuitDef* cdef) { return cdef->IsSonar(); }))
-			{
-				break;
-			}
-		}
+	if (isWater && sonarDefs.HasAvail()) {
+		sonarDefs.GetBestDef([&checkSensor](CCircuitDef* cdef, const SSensorExt& data) {
+			return checkSensor(IBuilderTask::BuildType::SONAR, cdef, data.radius,
+					[](CCircuitDef* cdef) { return cdef->IsSonar(); });
+		});
 	}
 }
 
@@ -1346,24 +1340,24 @@ void CMilitaryManager::MakeBaseDefence(const AIFloat3& pos)
 
 void CMilitaryManager::AddSensorDefs(const std::set<CCircuitDef*>& buildDefs)
 {
-	auto scoreFunc = [](CCircuitDef* cdef, const SSensorInfo& data) {
+	auto scoreFunc = [](CCircuitDef* cdef, const SSensorExt& data) {
 		return M_PI * SQUARE(data.radius) / cdef->GetCostM();  // area / cost
 //		return data.radius - cdef->GetCostM() * 0.1f;  // absolutely no physical meaning
 	};
-	radarDefs.AddDefs(buildDefs, [scoreFunc](CCircuitDef* cdef, SSensorInfo& data) {
+	radarDefs.AddDefs(buildDefs, [scoreFunc](CCircuitDef* cdef, SSensorExt& data) {
 		data.radius = cdef->GetDef()->GetRadarRadius();
 		return scoreFunc(cdef, data);
 	});
-	sonarDefs.AddDefs(buildDefs, [scoreFunc](CCircuitDef* cdef, SSensorInfo& data) {
+	sonarDefs.AddDefs(buildDefs, [scoreFunc](CCircuitDef* cdef, SSensorExt& data) {
 		data.radius = cdef->GetDef()->GetSonarRadius();
 		return scoreFunc(cdef, data);
 	});
 
 	// DEBUG
-//	std::vector<std::pair<std::string, CAvailList<SSensorInfo>*>> vec = {{"Radar", &radarDefs}, {"Sonar", &sonarDefs}};
+//	std::vector<std::pair<std::string, CAvailList<SSensorExt>*>> vec = {{"Radar", &radarDefs}, {"Sonar", &sonarDefs}};
 //	for (const auto& kv : vec) {
 //		circuit->LOG("----%s Sensor----", kv.first.c_str());
-//		for (const auto& si : kv.second->infos) {
+//		for (const auto& si : kv.second->GetInfos()) {
 //			circuit->LOG("%s | costM=%f | costE=%f | radius=%f | efficiency=%f", si.cdef->GetDef()->GetName(),
 //					si.cdef->GetCostM(), si.cdef->GetCostE(), si.data.radius, si.score);
 //		}
@@ -1376,10 +1370,10 @@ void CMilitaryManager::RemoveSensorDefs(const std::set<CCircuitDef*>& buildDefs)
 	sonarDefs.RemoveDefs(buildDefs);
 
 	// DEBUG
-//	std::vector<std::pair<std::string, CAvailList<SSensorInfo>*>> vec = {{"Radar", &radarDefs}, {"Sonar", &sonarDefs}};
+//	std::vector<std::pair<std::string, CAvailList<SSensorExt>*>> vec = {{"Radar", &radarDefs}, {"Sonar", &sonarDefs}};
 //	for (const auto& kv : vec) {
 //		circuit->LOG("----Remove %s Sensor----", kv.first.c_str());
-//		for (const auto& si : kv.second->infos) {
+//		for (const auto& si : kv.second->GetInfos()) {
 //			circuit->LOG("%s | costM=%f | costE=%f | radius=%f | efficiency=%f", si.cdef->GetDef()->GetName(),
 //					si.cdef->GetCostM(), si.cdef->GetCostE(), si.data.radius, si.score);
 //		}
@@ -1393,20 +1387,10 @@ const CMilitaryManager::SSideInfo& CMilitaryManager::GetSideInfo() const
 
 CCircuitDef* CMilitaryManager::GetLowSonar(const CCircuitUnit* builder) const
 {
-	CCircuitDef* result = nullptr;
 	const int frame = circuit->GetLastFrame();
-	auto it = sonarDefs.infos.rbegin();
-	while (it != sonarDefs.infos.rend()) {
-		CCircuitDef* candy = it->cdef;
-		if (candy->IsAvailable(frame)
-			&& ((builder == nullptr) || builder->GetCircuitDef()->CanBuild(candy)))
-		{
-			result = candy;
-			break;
-		}
-		++it;
-	}
-	return result;
+	return sonarDefs.GetWorstDef([frame, builder](CCircuitDef* cdef, const SSensorExt& data) {
+		return cdef->IsAvailable(frame) && ((builder == nullptr) || builder->GetCircuitDef()->CanBuild(cdef));
+	});
 }
 
 void CMilitaryManager::MarkPointOfInterest(CEnemyInfo* enemy)

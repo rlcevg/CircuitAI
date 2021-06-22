@@ -244,6 +244,7 @@ void CAttackTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CMap* map = circuit->GetMap();
+	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
@@ -270,7 +271,7 @@ void CAttackTask::FindTarget()
 		}
 		const float distBE = group.pos.distance2D(basePos);  // Base to Enemy distance
 		const float scale = std::min(distBE / sqOBDist, 1.f);
-		if ((maxPower <= group.influence * scale)
+		if (((maxPower <= group.influence * scale) && (inflMap->GetInfluenceAt(group.pos) < INFL_SAFE))
 			|| !terrainMgr->CanMobileReachAt(area, group.pos, highestRange))
 		{
 			continue;

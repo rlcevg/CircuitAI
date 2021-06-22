@@ -19,6 +19,9 @@ CWeaponDef::CWeaponDef(WeaponDef* def, Resource* resE)
 	range = def->GetRange();
 	aoe = def->GetAreaOfEffect();
 	costE = def->GetCost(resE);
+	if (def->IsStockpileable()) {
+		costE /= def->GetStockpileTime();
+	}
 }
 
 CWeaponDef::~CWeaponDef()

@@ -198,10 +198,10 @@ private:
 
 	std::vector<SSideInfo> sideInfos;
 
-	struct SSensorInfo {
+	struct SSensorExt {
 		float radius;
 	};
-	CAvailList<SSensorInfo> radarDefs, sonarDefs;
+	CAvailList<SSensorExt> radarDefs, sonarDefs;
 
 	std::shared_ptr<IMainJob> defend;
 	std::vector<std::pair<springai::AIFloat3, BuildVector>> buildDefence;  // pos: defences

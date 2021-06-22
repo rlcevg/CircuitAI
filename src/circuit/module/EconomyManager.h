@@ -152,10 +152,10 @@ private:
 
 	std::vector<SSideInfo> sideInfos;
 
-	struct SStoreInfo {
+	struct SStoreExt {
 		float storage;
 	};
-	CAvailList<SStoreInfo> storeMDefs, storeEDefs;
+	CAvailList<SStoreExt> storeMDefs, storeEDefs;
 
 	std::unordered_map<CCircuitDef::Id, std::vector<CCircuitDef*>> mexDefs;  // builder: mex
 	std::unordered_map<CCircuitDef::Id, CCircuitDef*> defaultDefs;  // builder: default
@@ -165,17 +165,22 @@ private:
 	std::vector<bool> openSpots;  // AI-local metal info
 	int mexCount;
 
-	struct SMetalInfo {
+	struct SMetalExt {
+		float speed;
+	};
+	CAvailList<SMetalExt> metalDefs;
+
+	struct SConvertExt {
 		float make;
 	};
-	CAvailList<SMetalInfo> metalDefs;
+	CAvailList<SConvertExt> convertDefs;
 
 	float costRatio;
-	struct SEnergyInfo {
+	struct SEnergyExt {
 		float make;
 		SEnergyCond cond;  // condition
 	};
-	CAvailList<SEnergyInfo> energyDefs;
+	CAvailList<SEnergyExt> energyDefs;
 
 	float ecoStep;
 	float ecoFactor;
@@ -227,13 +232,13 @@ private:
 	} metal, energy;
 	float energyUse;
 
-	struct SAssistInfo {
+	struct SAssistExt {
 	};
-	CAvailList<SAssistInfo> assistDefs;
+	CAvailList<SAssistExt> assistDefs;
 
-	struct SFactoryInfo {
+	struct SFactoryExt {
 	};
-	CAvailList<SFactoryInfo> factoryDefs;
+	CAvailList<SFactoryExt> factoryDefs;
 
 	std::shared_ptr<IMainJob> startFactory;
 	CBFactoryTask* factoryTask;

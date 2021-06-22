@@ -199,6 +199,7 @@ public:
 	bool HasDGun() const { return hasDGun; }
 	bool HasDGunAA() const { return hasDGunAA; }
 	CWeaponDef* GetDGunDef() const { return dgunDef; }
+	CWeaponDef* GetWeaponDef() const { return weaponDef; }
 	springai::WeaponMount* GetDGunMount() const { return dgunMount; }
 	springai::WeaponMount* GetShieldMount() const { return shieldMount; }
 	springai::WeaponMount* GetWeaponMount() const { return weaponMount; }
@@ -338,6 +339,7 @@ private:
 	int cooldown;
 
 	CWeaponDef* dgunDef;
+	CWeaponDef* weaponDef;
 	springai::WeaponMount* dgunMount;
 	springai::WeaponMount* shieldMount;
 	springai::WeaponMount* weaponMount;

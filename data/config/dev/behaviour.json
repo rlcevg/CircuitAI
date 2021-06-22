@@ -14,7 +14,7 @@
 	"aa_threat": 25.0,  // anti-air threat threshold, air factories will stop production when AA threat exceeds
 	"slack_mod": {
 		"all": 0.5,  // threat map 64-elmos slack multiplier for all units
-		"static": 1.0,  // additional 64-elmo-cells for static units
+		"static": 0.5,  // additional 64-elmo-cells for static units
 		"speed": [0.75, 4.0]  // [<64elmo_cells_speed_mod>, <max_64elmo_cells>]
 	}
 },
@@ -85,7 +85,7 @@
 		// assign builders till targeted time to build reached
 		// default value specified in economy->build_mod
 		// goal_build_time = build_mod / metal_income
-//		"build_mod": 600.0,
+//		"build_mod": 1000.0,
 
 		// Minimum hp percent before retreat
 //		"retreat": 0.8,

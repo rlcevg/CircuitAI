@@ -109,6 +109,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, sinceFrame(-1)
 		, cooldown(0)
 		, dgunDef(nullptr)
+		, weaponDef(nullptr)
 		, dgunMount(nullptr)
 		, shieldMount(nullptr)
 		, weaponMount(nullptr)
@@ -300,6 +301,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	float waterDps = .0f;
 	float waterDmg = .0f;
 	CWeaponDef* bestDGunDef = nullptr;
+	CWeaponDef* bestWpDef = nullptr;
 	WeaponMount* bestDGunMnt = nullptr;
 	WeaponMount* bestWpMnt = nullptr;
 	bool canSurfTargetAir = false;
@@ -471,6 +473,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 				delete mount;
 			}
 		} else if (range < bestWpRange) {
+			bestWpDef = circuit->GetWeaponDef(wd->GetWeaponDefId());
 			delete bestWpMnt;
 			bestWpMnt = mount;
 			bestWpRange = range;
@@ -502,6 +505,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		dgunMount = bestDGunMnt;
 	}
 	if (bestWpRange < std::numeric_limits<float>::max()) {
+		weaponDef = bestWpDef;
 		weaponMount = bestWpMnt;
 	}
 

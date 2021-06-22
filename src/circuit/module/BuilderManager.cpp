@@ -33,6 +33,7 @@
 #include "task/builder/BigGunTask.h"
 #include "task/builder/RadarTask.h"
 #include "task/builder/SonarTask.h"
+#include "task/builder/ConvertTask.h"
 #include "task/builder/MexTask.h"
 #include "task/builder/TerraformTask.h"
 #include "task/builder/RepairTask.h"
@@ -915,6 +916,10 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 			task = new CBSonarTask(this, priority, buildDef, position, cost, shake, timeout);
 			break;
 		}
+		case IBuilderTask::BuildType::CONVERT: {
+			task = new CBConvertTask(this, priority, buildDef, position, cost, shake, timeout);
+			break;
+		}
 		case IBuilderTask::BuildType::MEX: {
 			task = new CBMexTask(this, priority, buildDef, position, cost, timeout);
 			break;
@@ -1544,7 +1549,9 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 	const float metalIncome = std::min(ecoMgr->GetAvgMetalIncome() * ecoMgr->GetEcoFactor(), energyIncome);
 	if ((metalIncome >= super.minIncome) && (energyIncome * 0.02f >= super.minIncome)) {
 		CCircuitDef* buildDef = militaryMgr->GetBigGunDef();
-		if ((buildDef != nullptr) && (buildDef->GetCostM() < super.maxTime * metalIncome)) {
+		if ((buildDef != nullptr) && (buildDef->GetCostM() < super.maxTime * metalIncome)
+			&& ((buildDef->GetWeaponDef() == nullptr) || (energyIncome > buildDef->GetWeaponDef()->GetCostE() * 2)))
+		{
 			const std::set<IBuilderTask*>& tasks = GetTasks(IBuilderTask::BuildType::BIG_GUN);
 			if (tasks.empty()) {
 				if (buildDef->IsAvailable(circuit->GetLastFrame())

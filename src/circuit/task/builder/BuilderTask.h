@@ -35,7 +35,9 @@ public:
 		BIG_GUN,  // super weapons
 		RADAR,
 		SONAR,
+		CONVERT,
 		MEX,
+		MEXUP,
 		REPAIR,
 		RECLAIM,
 		RESURRECT,
