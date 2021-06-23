@@ -79,12 +79,22 @@ public:
 	int GetCluster(int index) const { return metalInfos[index].clusterId; }
 
 	int GetSpotToBuild(const springai::AIFloat3& pos, CMetalData::PointPredicate& predicate);
+	int GetSpotToUpgrade(const springai::AIFloat3& pos, CMetalData::PointPredicate& predicate);
 
 	float GetMinIncome() const { return metalData->GetMinIncome(); }
 	float GetAvgIncome() const { return metalData->GetAvgIncome(); }
 	float GetMaxIncome() const { return metalData->GetMaxIncome(); }
 
 private:
+	class SafeCluster;
+	class BuildCluster;
+	class UpgradeCluster;
+	using ClusterGraph = lemon::FilterNodes<const CMetalData::ClusterGraph, SafeCluster>;
+	using ShortPath = lemon::Dijkstra<ClusterGraph, CMetalData::ClusterCostMap>;
+
+	int GetSpotToDo(const springai::AIFloat3& pos, CMetalData::PointPredicate& predicate,
+			std::function<CMetalData::ClusterGraph::Node (ShortPath* shortPath)>&& doGoal);
+
 	CCircuitAI* circuit;
 	CMetalData* metalData;
 
@@ -106,14 +116,11 @@ private:
 	};
 	std::deque<SMex> markedMexes;  // sorted by insertion
 
-	class SafeCluster;
-	class DetectCluster;
-	using ClusterGraph = lemon::FilterNodes<const CMetalData::ClusterGraph, SafeCluster>;
-	using ShortPath = lemon::Dijkstra<ClusterGraph, CMetalData::ClusterCostMap>;
-
 	SafeCluster* threatFilter;
 	ClusterGraph* filteredGraph;
 	ShortPath* shortPath;
+
+	static std::vector<int> indices;  // NOTE: micro-opt
 };
 
 } // namespace circuit

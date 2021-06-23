@@ -177,6 +177,7 @@ public:
 	bool CanBeBuiltAtSafe(CCircuitDef* cdef, const springai::AIFloat3& position);
 	bool CanReachAt(CCircuitUnit* unit, const springai::AIFloat3& destination, const float range);
 	bool CanReachAtSafe(CCircuitUnit* unit, const springai::AIFloat3& destination, const float range, const float threat = THREAT_MIN);
+	bool CanReachAtSafe2(CCircuitUnit* unit, const springai::AIFloat3& destination, const float range);
 	bool CanMobileReachAt(STerrainMapArea* area, const springai::AIFloat3& destination, const float range);
 	bool CanMobileReachAtSafe(STerrainMapArea* area, const springai::AIFloat3& destination, const float range, const float threat = THREAT_MIN);
 

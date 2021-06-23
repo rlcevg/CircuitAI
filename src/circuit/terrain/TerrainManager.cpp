@@ -11,6 +11,7 @@
 #include "terrain/path/PathFinder.h"
 //#include "terrain/path/QueryPathSingle.h"
 #include "map/ThreatMap.h"
+#include "map/InfluenceMap.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"  // Only for UpdateAreaUsers
 #include "resource/MetalManager.h"
@@ -1401,6 +1402,14 @@ bool CTerrainManager::CanReachAt(CCircuitUnit* unit, const AIFloat3& destination
 bool CTerrainManager::CanReachAtSafe(CCircuitUnit* unit, const AIFloat3& destination, const float range, const float threat)
 {
 	if (circuit->GetThreatMap()->GetThreatAt(destination) > threat) {
+		return false;
+	}
+	return CanReachAt(unit, destination, range);
+}
+
+bool CTerrainManager::CanReachAtSafe2(CCircuitUnit* unit, const AIFloat3& destination, const float range)
+{
+	if (circuit->GetInflMap()->GetInfluenceAt(destination) > -INFL_EPS) {
 		return false;
 	}
 	return CanReachAt(unit, destination, range);

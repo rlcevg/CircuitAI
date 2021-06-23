@@ -240,7 +240,7 @@ local function MakeConeGL4(LuaShader, goodbye)
 
 	#line 11000
 
-	vec4 lightDir = normalize(vec4(0.3, 0.3, 0.8, 0));  // vertex to light-source direction in camera space
+	vec4 lightDir = normalize(vec4(0.3, -0.3, 0.7, 0));  // vertex to light-source direction in camera space
 
 	float heightAtWorldPos(vec2 w) { // this gets the world height
 		vec2 uvhm =   vec2(clamp(w.x,8.0,mapSize.x-8.0),clamp(w.y,8.0, mapSize.y-8.0))/ mapSize.xy;
@@ -254,7 +254,7 @@ local function MakeConeGL4(LuaShader, goodbye)
 		circleWorldPos.xyz = circlepointposition.xyz * circleWorldPos.w +  circleWorldPos.xyz;
 
 		// get heightmap
-		circleWorldPos.y += max(0.0,heightAtWorldPos(circleWorldPos.xz)) + 16.0; // add 1.0, and make sure its > 0
+		circleWorldPos.y += max(0.0,heightAtWorldPos(circleWorldPos.xz)) + 1.0; // add 1.0, and make sure its > 0
 
 		// shading
 		vec4 normalCameraSpace = normalize(cameraView * vec4(circlepointposition.xyz, 0));  // hack, rough representation of normal
@@ -419,7 +419,6 @@ local function HandleAiDbgEvent(cmd, teamID, dataStr)
 	elseif dataStr:sub(1, #cmdMrkClear) == cmdMrkClear then
 		-- "ai_mrk_clear:"
 		aiData.marks = {}
-		aiData.marksChanged = 0
 	end
 end
 

@@ -325,6 +325,7 @@ void CEconomyManager::ReadConfig()
 	metalMod = (1.f - econ.get("excess", -1.f).asFloat());
 	const float bd = econ.get("build_delay", -1.f).asFloat();
 	buildDelay = (bd > 0.f) ? (bd * FRAMES_PER_SEC) : 0;
+	numMexUp = econ.get("mex_up", 2).asUInt();
 
 	const Json::Value& energy = econ["energy"];
 	const Json::Value& factor = energy["factor"];
@@ -407,6 +408,7 @@ void CEconomyManager::Init()
 	clusterInfos.resize(clSize, {nullptr, -FRAMES_PER_SEC});
 	const size_t spSize = circuit->GetMetalManager()->GetSpots().size();
 	openSpots.resize(spSize, true);
+	upSpots.resize(spSize, false);
 
 	const Json::Value& econ = circuit->GetSetupManager()->GetConfig()["economy"];
 	const float mm = econ.get("mex_max", 2.f).asFloat();
@@ -869,7 +871,66 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	if (!isEnergyStalling) {
 		const int frame = circuit->GetLastFrame();
 		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-		if (builderMgr->GetTasks(IBuilderTask::BuildType::MEX).size() < builderMgr->GetWorkerCount() + 3) {
+
+		if ((builderMgr->GetTasks(IBuilderTask::BuildType::MEXUP).size() < numMexUp) && (GetAvgMetalIncome() > 10.f)) {
+			const std::vector<CCircuitDef*>& mexDefOptions = GetMexDefs(unit->GetCircuitDef());
+			std::vector<std::pair<CCircuitDef*, float>> mexDefs;
+			float maxRange = 0.f;
+			for (CCircuitDef* mDef : mexDefOptions) {
+				if (mDef->IsAvailable(frame)) {
+					mexDefs.push_back(std::make_pair(mDef, mDef->GetDef()->GetExtractsResource(metalRes)));
+					const float range = mDef->GetDef()->GetResourceExtractorRange(metalRes);
+					if (maxRange < range) {
+						maxRange = range;
+					}
+				}
+			}
+			if (!mexDefs.empty()) {
+				CMetalManager* metalMgr = circuit->GetMetalManager();
+				const CMetalData::Metals& spots = metalMgr->GetSpots();
+				CCircuitDef* mexDef = nullptr;
+				CMetalData::PointPredicate predicate = [this, &spots, &mexDefs, maxRange, terrainMgr, unit, &mexDef](int index) {
+					const AIFloat3& pos = spots[index].position;
+					if (!IsOpenSpot(index)
+						&& !IsUpgradingSpot(index)
+						&& terrainMgr->CanReachAtSafe(unit, pos, unit->GetCircuitDef()->GetBuildDistance()))  // hostile environment
+					{
+						const auto& unitIds = circuit->GetCallback()->GetFriendlyUnitIdsIn(pos, maxRange);
+						float curExtract = -1.f;
+						for (ICoreUnit::Id unitId : unitIds) {
+							CCircuitUnit* curMex = circuit->GetTeamUnit(unitId);
+							if (curMex == nullptr) {
+								continue;
+							}
+							const float extract = curMex->GetCircuitDef()->GetDef()->GetExtractsResource(metalRes);
+							if (curExtract < extract) {
+								curExtract = extract;
+							}
+						}
+						if (curExtract <= 0.f) {
+							return false;
+						}
+						for (const auto& pair : mexDefs) {
+							if ((curExtract < pair.second) && terrainMgr->CanBeBuiltAt(pair.first, pos)) {
+								mexDef = pair.first;
+								return true;
+							}
+						}
+					}
+					return false;
+				};
+				const AIFloat3& searchPos = circuit->GetSetupManager()->GetBasePos();
+				int index = metalMgr->GetSpotToUpgrade(searchPos, predicate);
+				if (index != -1) {
+					AIFloat3 pos = spots[index].position;
+					task = builderMgr->EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEXUP, .0f, true);
+					SetUpgradingSpot(index, true);
+					return task;
+				}
+			}
+		}
+
+		if (builderMgr->GetTasks(IBuilderTask::BuildType::MEX).size() < builderMgr->GetWorkerCount() * 2 + 1) {
 			const std::vector<CCircuitDef*>& mexDefOptions = GetMexDefs(unit->GetCircuitDef());
 			std::vector<CCircuitDef*> mexDefs;
 			for (CCircuitDef* mDef : mexDefOptions) {
@@ -886,10 +947,10 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				CMetalData::PointPredicate predicate = [this, &spots, map, &mexDefs, terrainMgr, unit, &mexDef](int index) {
 					const AIFloat3& pos = spots[index].position;
 					if (IsAllyOpenSpot(index)
-						&& terrainMgr->CanReachAtSafe(unit, pos, unit->GetCircuitDef()->GetBuildDistance()))
+						&& terrainMgr->CanReachAtSafe(unit, pos, unit->GetCircuitDef()->GetBuildDistance()))  // hostile environment
 					{
 						for (CCircuitDef* mDef : mexDefs) {
-							if (terrainMgr->CanBeBuiltAtSafe(mDef, pos)  // hostile environment
+							if (terrainMgr->CanBeBuiltAt(mDef, pos)
 								&& map->IsPossibleToBuildAt(mDef->GetDef(), pos, UNIT_COMMAND_BUILD_NO_FACING))
 							{
 								mexDef = mDef;
@@ -910,7 +971,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			}
 		}
 
-		if (builderMgr->GetTasks(IBuilderTask::BuildType::CONVERT).empty() && convertDefs.HasAvail()) {
+		if ((builderMgr->GetTasks(IBuilderTask::BuildType::CONVERT).size() < 2) && convertDefs.HasAvail()) {
 			const AIFloat3& pos = circuit->GetSetupManager()->GetBasePos();  // TODO: resource-base position
 			CCircuitDef* convertDef = convertDefs.GetBestDef([frame, terrainMgr, &pos](CCircuitDef* cdef, const SConvertExt& data) {
 				return cdef->IsAvailable(frame) && terrainMgr->CanBeBuiltAt(cdef, pos);
@@ -963,7 +1024,7 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 	for (Feature* feature : features) {
 		AIFloat3 featPos = feature->GetPosition();
 		CTerrainManager::CorrectPosition(featPos);  // Impulsed flying feature
-		if (!terrainMgr->CanReachAtSafe(unit, featPos, unit->GetCircuitDef()->GetBuildDistance())) {
+		if (!terrainMgr->CanReachAtSafe2(unit, featPos, unit->GetCircuitDef()->GetBuildDistance())) {
 			continue;
 		}
 		FeatureDef* featDef;

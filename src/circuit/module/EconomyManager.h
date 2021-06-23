@@ -108,6 +108,8 @@ public:
 	bool IsAllyOpenSpot(int spotId) const;
 	bool IsOpenSpot(int spotId) const { return openSpots[spotId] && (mexCount < mexMax); }
 	void SetOpenSpot(int spotId, bool value);
+	bool IsUpgradingSpot(int spotId) const { return upSpots[spotId]; }
+	void SetUpgradingSpot(int spotId, bool value) { upSpots[spotId] = value; }
 	bool IsIgnorePull(const IBuilderTask* task) const;
 	bool IsIgnoreStallingPull(const IBuilderTask* task) const;
 
@@ -164,6 +166,7 @@ private:
 	//       local spot's state descriptor needed for better expansion
 	std::vector<bool> openSpots;  // AI-local metal info
 	int mexCount;
+	std::vector<bool> upSpots;  // spot being upgraded
 
 	struct SMetalExt {
 		float speed;
@@ -203,6 +206,7 @@ private:
 	float metalMod;
 	int mexMax;
 	int buildDelay;
+	unsigned numMexUp;
 
 	struct SPullMtoS {
 		float pull;

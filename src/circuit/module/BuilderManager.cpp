@@ -35,6 +35,7 @@
 #include "task/builder/SonarTask.h"
 #include "task/builder/ConvertTask.h"
 #include "task/builder/MexTask.h"
+#include "task/builder/MexUpTask.h"
 #include "task/builder/TerraformTask.h"
 #include "task/builder/RepairTask.h"
 #include "task/builder/ReclaimTask.h"
@@ -88,52 +89,35 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			unit->SetManager(this);
 			this->circuit->AddActionUnit(unit);
 		}
+		nilTask->RemoveAssignee(unit);
+		idleTask->AssignTo(unit);
+
+		++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
+
+		AddBuildPower(unit);
+		workers.insert(unit);
+
 		CMilitaryManager* militaryMgr = this->circuit->GetMilitaryManager();
-		// FIXME: BA
-		if ((mexUpgrader[unit->GetCircuitDef()->GetMobileId()].size() < numAutoMex)
-			&& unit->GetCircuitDef()->CanBuild(this->circuit->GetEconomyManager()->GetSideInfo().mohoMexDef))
-		{
-			IUnitTask* task = EnqueueWait(std::numeric_limits<int>::max());
-			AssignTask(unit, task);
-
-			AddBuildPower(unit);
-			mexUpgrader[unit->GetCircuitDef()->GetMobileId()].insert(unit);
-			++mexUpgraderCount[unit->GetCircuitDef()];
-
-			TRY_UNIT(this->circuit, unit,
-				unit->GetUnit()->ExecuteCustomCommand(CMD_AUTOMEX, {1.f});
-			)
-		} else {
-			nilTask->RemoveAssignee(unit);
-			idleTask->AssignTo(unit);
-
-			++buildAreas[unit->GetArea()][unit->GetCircuitDef()];
-
-			AddBuildPower(unit);
-			workers.insert(unit);
-
-			if (isBaseBuilderOn && !unit->GetCircuitDef()->IsRoleComm()) {
-				if (unit->GetCircuitDef()->GetCostM() < 200) {
-					if ((energizer1 == nullptr)
-						&& (((unsigned)unit->GetCircuitDef()->GetCount() > militaryMgr->GetGuardTaskNum())
-							|| unit->GetCircuitDef()->IsAbleToFly()))
-					{
-						energizer1 = unit;
-						unit->AddAttribute(CCircuitDef::AttrType::BASE);
-					}
-				} else {
-					if (energizer2 == nullptr) {
-						energizer2 = unit;
-						unit->AddAttribute(CCircuitDef::AttrType::BASE);
-					}
+		if (isBaseBuilderOn && !unit->GetCircuitDef()->IsRoleComm()) {
+			if (unit->GetCircuitDef()->GetCostM() < 200.f) {
+				if ((energizer1 == nullptr)
+					&& (((unsigned)unit->GetCircuitDef()->GetCount() > militaryMgr->GetGuardTaskNum())
+						|| unit->GetCircuitDef()->IsAbleToFly()))
+				{
+					energizer1 = unit;
+					unit->AddAttribute(CCircuitDef::AttrType::BASE);
+				}
+			} else {
+				if (energizer2 == nullptr) {
+					energizer2 = unit;
+					unit->AddAttribute(CCircuitDef::AttrType::BASE);
 				}
 			}
-
-			AddBuildList(unit, mexUpgraderCount[unit->GetCircuitDef()]);
-
-			static_cast<CBuilderScript*>(script)->WorkerCreated(unit);
 		}
-		// FIXME: BA
+
+		AddBuildList(unit, 0);
+
+		static_cast<CBuilderScript*>(script)->WorkerCreated(unit);
 
 		if (!unit->GetCircuitDef()->IsAttacker()
 			&& !unit->GetCircuitDef()->IsAbleToFly()
@@ -161,31 +145,23 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		if (task->GetType() == IUnitTask::Type::NIL) {
 			return;
 		}
-		// FIXME: BA
-		if (mexUpgrader[unit->GetCircuitDef()->GetMobileId()].erase(unit) > 0) {
-			DelBuildPower(unit);
+		--buildAreas[unit->GetArea()][unit->GetCircuitDef()];
 
-			--mexUpgraderCount[unit->GetCircuitDef()];
-		} else {
-			--buildAreas[unit->GetArea()][unit->GetCircuitDef()];
+		DelBuildPower(unit);
+		workers.erase(unit);
+		costQueries.erase(unit);
 
-			DelBuildPower(unit);
-			workers.erase(unit);
-			costQueries.erase(unit);
-
-			if (isBaseBuilderOn) {
-				if (energizer1 == unit) {
-					energizer1 = nullptr;
-				} else if (energizer2 == unit) {
-					energizer2 = nullptr;
-				}
+		if (isBaseBuilderOn) {
+			if (energizer1 == unit) {
+				energizer1 = nullptr;
+			} else if (energizer2 == unit) {
+				energizer2 = nullptr;
 			}
-
-			RemoveBuildList(unit, mexUpgraderCount[unit->GetCircuitDef()]);
-
-			static_cast<CBuilderScript*>(script)->WorkerDestroyed(unit);
 		}
-		// FIXME: BA
+
+		RemoveBuildList(unit, 0);
+
+		static_cast<CBuilderScript*>(script)->WorkerDestroyed(unit);
 
 		this->circuit->GetMilitaryManager()->DelGuardTask(unit);
 	};
@@ -237,7 +213,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		const int facing = unit->GetUnit()->GetBuildingFacing();
 		this->circuit->GetTerrainManager()->DelBlocker(mexDef, pos, facing, true);
 		int index = this->circuit->GetMetalManager()->FindNearestSpot(pos);
-		if (index < 0) {
+		if ((index < 0) || this->circuit->GetEconomyManager()->IsUpgradingSpot(index)) {
 			return;
 		}
 		this->circuit->GetMetalManager()->SetOpenSpot(index, true);
@@ -354,7 +330,6 @@ void CBuilderManager::ReadConfig()
 		terraDef = circuit->GetEconomyManager()->GetSideInfo().defaultDef;
 	}
 	goalExecTime = econ.get("goal_exec", 16.f).asFloat();
-	numAutoMex = econ.get("auto_mex", 2).asUInt();
 	isBaseBuilderOn = econ.get("base_builder", true).asBool();
 
 	const Json::Value& cond = root["porcupine"]["superweapon"]["condition"];
@@ -922,6 +897,10 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 		}
 		case IBuilderTask::BuildType::MEX: {
 			task = new CBMexTask(this, priority, buildDef, position, cost, timeout);
+			break;
+		}
+		case IBuilderTask::BuildType::MEXUP: {
+			task = new CBMexUpTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		default: {
@@ -1655,35 +1634,6 @@ void CBuilderManager::Watchdog()
 		}
 		if (isLost) {
 			task->OnUnitMoveFailed(worker);
-		}
-	}
-	for (const auto& kv : mexUpgrader) {  // FIXME: autoMexer stuck on reclaiming mobile unit
-		for (CCircuitUnit* unit : kv.second) {
-			if (unit->GetTask()->GetType() != IUnitTask::Type::WAIT) {
-				continue;
-			}
-			ICoreUnit::Id reclId = unit->GetUnitIdReclaim();
-			if (reclId == -1) {
-				continue;
-			}
-			CAllyUnit* au = circuit->GetFriendlyUnit(reclId);
-			if ((au == nullptr) || au->GetCircuitDef()->IsMobile()) {
-				auto commands = unit->GetUnit()->GetCurrentCommands();
-				std::vector<float> tags;
-				tags.reserve(commands.size());
-				for (springai::Command* cmd : commands) {
-					if (cmd->GetId() == CMD_RECLAIM) {
-						CAllyUnit* au = circuit->GetFriendlyUnit(cmd->GetParams()[0]);
-						if ((au == nullptr) || au->GetCircuitDef()->IsMobile()) {
-							tags.push_back(cmd->GetTag());
-						}
-					}
-					delete cmd;
-				}
-				TRY_UNIT(circuit, unit,
-					unit->CmdRemove(std::move(tags));
-				)
-			}
 		}
 	}
 

@@ -53,7 +53,7 @@ bool CFactoryScript::IsSwitchTime(int lastSwitchFrame)
 bool CFactoryScript::IsSwitchAllowed(CCircuitDef* facDef)
 {
 	if (factoryInfo.isSwitchAllowed == nullptr) {
-		return false;
+		return true;
 	}
 	asIScriptContext* ctx = script->PrepareContext(factoryInfo.isSwitchAllowed);
 	ctx->SetArgObject(0, facDef);

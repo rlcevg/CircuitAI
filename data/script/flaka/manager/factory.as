@@ -33,7 +33,7 @@ void AiTaskClosed(IUnitTask@ task, bool done)
  */
 bool AiIsSwitchTime(int lastSwitchFrame)
 {
-	const float value = pow((ai.frame - lastSwitchFrame), 0.9) * aiEconomyMgr.metal.income + (aiEconomyMgr.metal.current * 5);
+	const float value = pow((ai.frame - lastSwitchFrame), 0.9) * aiEconomyMgr.metal.income + (aiEconomyMgr.metal.current * 6);
 	if (value > switchLimit) {
 		switchLimit = MakeSwitchLimit();
 		return true;
@@ -41,11 +41,16 @@ bool AiIsSwitchTime(int lastSwitchFrame)
 	return false;
 }
 
+bool AiIsSwitchAllowed(CCircuitDef@ facDef)
+{
+	return true;
+}
+
 /* --- Utils --- */
 
 float MakeSwitchLimit()
 {
-	return AiRandom(10000, 16000) * SECOND;
+	return AiRandom(10000, 15000) * SECOND;
 }
 
 }  // namespace Factory

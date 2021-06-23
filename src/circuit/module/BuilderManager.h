@@ -185,9 +185,6 @@ private:
 	unsigned int buildIterator;
 
 	float goalExecTime;  // seconds
-	unsigned numAutoMex;
-	std::unordered_map<int, std::set<CCircuitUnit*>> mexUpgrader;  // Mobile type Id: set of units
-	std::unordered_map<CCircuitDef*, int> mexUpgraderCount;
 	bool isBaseBuilderOn;
 	CCircuitUnit* energizer1;
 	CCircuitUnit* energizer2;

@@ -2,49 +2,58 @@
 {
 "building": {
 	"class_land": {
-		"fac_land": {
+		"fac_land_t1": {
 			// "type": [<blocker_shape>, <structure_type>]
 			// Available blocker_shape: rectangle, circle.
 			// Available structure_type: factory, mex, engy_low, engy_mid, engy_high, pylon, def_low, def_mid, def_high, special, nano, terra, unknown
 			"type": ["rectangle", "factory"],
 
 			// Unit of measurement: 1 size/yard/radius = SQUARE_SIZE * 2 = 16 elmos, integer.
-			// Offset in South facing
-			"offset": [0, 6],  // default: [0, 0]
+			// Offset of yardmap in South facing [left/right, front/back]
+			"offset": [0, 5],  // default: [0, 0]
 
 			// Size of a blocker without yard
-//			"size": [7, 7],  // default: size of a unit
+			//"size": [7, 7],  // default: size of a unit
 
-			// Spacer, blocker_size = size + yard
-			"yard": [12, 12]  // default: [0, 0]
+			// Spacer, block_size = size + yard
+			"yard": [0, 30]  // default: [0, 0]
 
-			// "ignore": [<structure_type>, <structure_type>, ...]
-			// Ignore specified structures.
-			// Additional values: none, all
-//			"ignore": ["none"]  // default: ["none"]
+			
+			// "ignore" / "not_ignore" specified structures: "ignore": [<structure_type>, <structure_type>, ...] 
+			// Additional values: none, all: "ignore": ["none"]; default is ["none"]
 		},
+		"fac_land_t2":{
+			"type": ["rectangle", "factory"],
+			"size": [8 ,8],
+			"yard": [-2, 20],
+			"offset": [1, 10],
+			"ignore": ["none"]
+		},		
 		"fac_air": {
 			"type": ["rectangle", "factory"],
-			"yard": [8, 8]
+			"yard": [6, 6],
+			"not_ignore": ["pylon", "factory", "special"]
 		},
 		"fac_water": {
 			"type": ["rectangle", "factory"],
-			"offset": [0, 4],
-			"yard": [10, 12]
+			"yard": [10, 12],
+			"offset": [0, 4]
 		},
-		"fac_strider": { //t3 factory
+		"fac_strider": {                        //t3 factory
 			"type": ["rectangle", "special"],
-			"offset": [0, 12],
-			"yard": [20, 20],
+			"yard": [8, 40],
+			"offset": [-2, 15],
 			"ignore":["none"]
 		},
 		"solar": {
 			"type": ["rectangle", "engy_mid"],
-			"ignore": ["mex", "engy_mid", "engy_high", "def_low", "nano"],
-			"yard": [6, 6]
+			"ignore": ["engy_mid", "engy_high", "def_low", "nano", "mex", "def_low"],
+			"yard": [5,5]
+			
 		},
 		"advsolar":{
 			"type": ["rectangle", "engy_mid"],
+			"yard": [2, 2],
 			"ignore": ["mex", "engy_mid", "def_low", "nano"]
 		},
 		"wind": {
@@ -57,7 +66,7 @@
 		},
 		"fusion": {
 			"type": ["rectangle", "engy_high"],
-			"yard": [10, 9],
+			"yard": [5, 5],
 			"ignore": ["mex", "engy_high"]
 		},
 //		"singu": {
@@ -67,36 +76,39 @@
 //		},
 		"store": {
 			"type": ["rectangle", "mex"],
+			"yard": [4, 4],
 			"not_ignore": ["factory", "terra"]
 		},
 		"mex": {
 			"type": ["rectangle", "mex"],
 			"yard": [2, 2],
+			"offset": [0, -4],
 			"ignore": ["all"]
 		},
-		"converter_t1": {
+		"converter": {
 			"type": ["rectangle", "pylon"],
 			"yard": [6, 6],
 			"ignore": ["pylon"]
-		},
-		"converter_t2": {
-			"type": ["rectangle", "pylon"],
-			"yard": [8, 8],
-			"ignore": ["pylon"]
+			
 		},
 		"def_low": {
 			"type": ["circle", "def_low"],
-			"radius": 8,  // 128 / (SQUARE_SIZE * 2)
+			"radius": 6,  // 128 / (SQUARE_SIZE * 2)
 			"ignore": ["engy_mid", "engy_high", "engy_low", "nano"]
 		},
-		"def_mid_1": {
+		"def_mid": {
 			"type": ["circle", "def_low"],
 			"radius": 2,
-			"not_ignore": ["all"]
+			"not_ignore": ["def_low", "def_mid", "def_high"]
+		},
+		"def_air": {
+			"type": ["rectangle", "unknown"],
+			"yard": [2, 2],
+			"not_ignore": ["factory", "mex"]
 		},
 		"caretaker": {
 			"type": ["rectangle", "nano"],
-			"ignore": ["mex", "def_low", "engy_mid", "engy_high"]
+			"ignore": ["mex", "engy_mid", "engy_high"]
 		},
 		"superweapon": {
 			"type": ["circle", "special"],
@@ -133,19 +145,21 @@
 	//	}
 	//},
 	"instance": {
-		"fac_land": ["armlab", "armalab", "armvp", "armavp", "armhp", "corlab", "coralab", "corvp", "coravp", "corhp"],
+		"fac_land_t2": ["armalab", "armavp", "coralab", "coravp"],
+		"fac_land_t1": ["armlab", "armvp", "armhp", "corlab", "corvp", "corhp"],
 		"fac_water": ["armsy", "armasy", "corsy", "corasy"],
+		"fac_air":["armap","armaap", "corap", "coraap"],
 		"fac_strider": ["armshltx", "corgant"],
 		"solar": ["armsolar", "corsolar"],
 		"advsolar":["armadvsol", "coradvsol"],
 		"wind": ["armwin", "corwin", "armtide", "cortide"],
 		"fusion":["armfus", "armuwfus", "armckfus", "armafus", "corfus", "coruwfus", "corafus"],
 		"store": ["armmstor", "armestor", "cormstor", "corestor"],
-		"converter_t1": ["armmakr", "cormakr"],
-		"converter_t2": ["armmmkr", "cormmkr"],
+		"converter": ["armmakr", "cormakr", "armmmkr", "cormmkr"],
 		"mex": ["armmex", "cormex"],
 		"def_low": ["armllt", "corllt", "armbeamer", "corhllt"],
-		"def_mid_1": ["armclaw", "cormaw"],
+		"def_mid": ["armclaw", "cormaw"],
+		"def_air": ["armferret", "armcir", "corrl", "cormadsam", "corerad"],
 		"caretaker": ["armnanotc", "armasp", "cornanotc", "corasp"],
 		"small": ["armrad", "corrad"]
 //pylon: converter

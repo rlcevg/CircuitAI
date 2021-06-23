@@ -41,9 +41,9 @@ private:
 	const CMetalData::Clusters& clusters;
 };
 
-class CMetalManager::DetectCluster : public lemon::MapBase<ClusterGraph::Node, bool> {
+class CMetalManager::BuildCluster : public lemon::MapBase<ClusterGraph::Node, bool> {
 public:
-	DetectCluster(CMetalManager* mgr, CMetalData::PointPredicate& pred, std::vector<int>& outIdxs)
+	BuildCluster(CMetalManager* mgr, CMetalData::PointPredicate& pred, std::vector<int>& outIdxs)
 		: manager(mgr)
 		, predicate(pred)
 		, indices(outIdxs)
@@ -65,6 +65,30 @@ private:
 	CMetalData::PointPredicate predicate;
 	std::vector<int>& indices;
 };
+
+class CMetalManager::UpgradeCluster : public lemon::MapBase<ClusterGraph::Node, bool> {
+public:
+	UpgradeCluster(CMetalManager* mgr, CMetalData::PointPredicate& pred, std::vector<int>& outIdxs)
+		: manager(mgr)
+		, predicate(pred)
+		, indices(outIdxs)
+	{}
+	Value operator[](Key k) const {
+		const int u = CMetalData::ClusterGraph::id(k);
+		for (int index : manager->GetClusters()[u].idxSpots) {
+			if (predicate(index)) {
+				indices.push_back(index);
+			}
+		}
+		return !indices.empty();
+	}
+private:
+	CMetalManager* manager;
+	CMetalData::PointPredicate predicate;
+	std::vector<int>& indices;
+};
+
+std::vector<int> CMetalManager::indices;
 
 CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData)
 		: circuit(circuit)
@@ -314,20 +338,34 @@ bool CMetalManager::IsMexInFinished(int index) const
 
 int CMetalManager::GetSpotToBuild(const AIFloat3& pos, CMetalData::PointPredicate& predicate)
 {
+	BuildCluster goal(this, predicate, indices);
+	return GetSpotToDo(pos, predicate, [&goal](ShortPath* shortPath) {
+		return shortPath->start(goal);
+	});
+}
+
+int CMetalManager::GetSpotToUpgrade(const AIFloat3& pos, CMetalData::PointPredicate& predicate)
+{
+	UpgradeCluster goal(this, predicate, indices);
+	return GetSpotToDo(pos, predicate, [&goal](ShortPath* shortPath) {
+		return shortPath->start(goal);
+	});
+}
+
+int CMetalManager::GetSpotToDo(const AIFloat3& pos, CMetalData::PointPredicate& predicate,
+		std::function<CMetalData::ClusterGraph::Node (ShortPath* shortPath)>&& doGoal)
+{
 	int index = FindNearestCluster(pos);
 	if (index < 0 || !(*threatFilter)[index]) {
 		return -1;
 	}
 	MarkAllyMexes();
 
-	static std::vector<int> indices;  // NOTE: micro-opt
-	int result = -1;
-
-	DetectCluster goal(this, predicate, indices);
 	shortPath->init();
 	shortPath->addSource(filteredGraph->nodeFromId(index));
-	CMetalData::ClusterGraph::Node target = shortPath->start(goal);
+	CMetalData::ClusterGraph::Node target = doGoal(shortPath);
 
+	int result = -1;
 	if (target != lemon::INVALID) {
 		float sqMinDist = std::numeric_limits<float>::max();
 		for (int index : indices) {
@@ -338,7 +376,6 @@ int CMetalManager::GetSpotToBuild(const AIFloat3& pos, CMetalData::PointPredicat
 			}
 		}
 	}
-
 	indices.clear();
 	return result;
 }

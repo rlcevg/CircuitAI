@@ -120,7 +120,7 @@ bool CBReclaimTask::Reevaluate(CCircuitUnit* unit)
 			for (Feature* feature : features) {
 				AIFloat3 featPos = feature->GetPosition();
 				CTerrainManager::CorrectPosition(featPos);  // Impulsed flying feature
-				if (!terrainMgr->CanReachAtSafe(unit, featPos, unit->GetCircuitDef()->GetBuildDistance())) {
+				if (!terrainMgr->CanReachAtSafe2(unit, featPos, unit->GetCircuitDef()->GetBuildDistance())) {
 					continue;
 				}
 				FeatureDef* featDef = feature->GetDef();

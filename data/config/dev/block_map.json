@@ -58,12 +58,12 @@
 		},
 		"fusion": {
 			"type": ["circle", "engy_mid"],
-			"radius": 5,
+			"radius": 6,
 			"ignore": ["mex", "engy_mid", "engy_high", "def_low", "nano"]
 		},
 		"singu": {
 			"type": ["circle", "engy_high"],
-			"radius": 5,
+			"radius": 8,
 			"ignore": ["mex", "engy_high", "engy_mid", "def_low", "nano"]
 		},
 		"pylon": {
@@ -78,6 +78,10 @@
 			"type": ["rectangle", "mex"],
 //			"offset": [0, -5],
 			"yard": [2, 2],
+			"ignore": ["all"]
+		},
+		"mex2": {
+			"type": ["rectangle", "mex"],
 			"ignore": ["all"]
 		},
 		"converter": {
@@ -141,6 +145,7 @@
 		"singu": ["armfus", "armuwfus", "armckfus", "armafus", "corfus", "coruwfus", "corafus"],
 		"store": ["armmstor", "armestor", "cormstor", "corestor"],
 		"mex": ["armmex", "cormex"],
+		"mex2": ["armmoho", "cormoho"],
 		"converter": ["armmakr", "cormakr", "armmmkr", "cormmkr"],
 		"def_low": ["armllt", "armclaw", "corllt", "cormaw"],
 		"caretaker": ["armnanotc", "armnanotcplat", "armasp", "cornanotc", "cornanotcplat", "corasp"],

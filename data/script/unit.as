@@ -32,7 +32,7 @@ TypeMask ROLE6   = AiAddRole("turtle",          ASSAULT.type);
 TypeMask ROLE7   = AiAddRole("role7",           ASSAULT.type);
 TypeMask ROLE8   = AiAddRole("role8",           ASSAULT.type);
 TypeMask ROLE9   = AiAddRole("role9",           ASSAULT.type);
-TypeMask ROLE10  = AiAddRole("role10",          ASSAULT.type);
+TypeMask ROLE10  = AiAddRole("anti_heavy_ass",  ASSAULT.type);
 TypeMask ROLE11  = AiAddRole("builderT2",       BUILDER.type);
 }  // namespace Role
 
@@ -47,6 +47,7 @@ TypeMask RET_HOLD  = aiAttrMasker.GetTypeMask("ret_hold");
 TypeMask RET_FIGHT = aiAttrMasker.GetTypeMask("ret_fight");
 TypeMask SOLO      = aiAttrMasker.GetTypeMask("solo");
 TypeMask BASE      = aiAttrMasker.GetTypeMask("base");
+TypeMask VAMPIRE   = aiAttrMasker.GetTypeMask("vampire");
 }  // namespace Attr
 
 }  // namespace Unit

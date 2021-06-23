@@ -131,7 +131,10 @@ void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 	if (initiator == unit) {
 		initiator = nullptr;
 	}
+
 	IUnitTask::RemoveAssignee(unit);
+	traveled.erase(unit);
+	executors.erase(unit);
 
 	HideAssignee(unit);
 }
@@ -203,6 +206,8 @@ void IBuilderTask::Cancel()
 
 void IBuilderTask::Execute(CCircuitUnit* unit)
 {
+	executors.insert(unit);
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	TRY_UNIT(circuit, unit,
 		unit->CmdPriority(ClampPriority());
@@ -215,7 +220,6 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		)
 		return;
 	}
-	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	if (utils::is_valid(buildPos)) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildDef->GetDef(), buildPos, facing)) {
 			TRY_UNIT(circuit, unit,
@@ -255,6 +259,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 	} else {
 		if (circuit->GetSetupManager()->GetBasePos().SqDistance2D(position) < SQUARE(searchRadius)) {  // base must be full
 			// TODO: Select new proper BasePos, like near metal cluster.
+			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 			int terWidth = terrainMgr->GetTerrainWidth();
 			int terHeight = terrainMgr->GetTerrainHeight();
 			float x = terWidth / 4 + rand() % (int)(terWidth / 2);
@@ -430,7 +435,7 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 //			return true;
 //		}
 		if ((buildType != BuildType::GUARD)
-			&& ((units.size() < 2) || !unit->IsAttrBase()))  // TODO: check not only units.size() < 2 but units that started building
+			&& ((executors.size() < 2) || !unit->IsAttrBase()))
 		{
 			TRY_UNIT(circuit, unit,
 				const bool prio = !ecoMgr->IsEnergyStalling() || (buildType == BuildType::ENERGY);

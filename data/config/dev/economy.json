@@ -59,7 +59,7 @@
 		"armada": ["armmex", "armmoho"],  // [T1_mex, T2_mex]
 		"cortex": ["cormex", "cormoho"]  // [T1_mex, T2_mex]
 	},
-	"auto_mex": 1,  // number of T2 builders for each mobile type forced to auto-mex only
+	"mex_up": 2,  // maximum number of simultaneous mex upgrades
 
 	"goal_exec": 30.0,  // targeted time to finish non-build task, in seconds
 	"build_mod": 1000.0,  // default build_mod for UnitDef, if it's not specified
@@ -88,7 +88,7 @@
 	// [1] - energy-expenditure multiplier for build condition of new factory or assistant
 	// [2] - multiplier for total factory metal-expenditure, used as condition for new factory or assistant
 	// [3] - multiplier for total factory energy-expenditure, used as condition for new factory or assistant
-	"production": [0.8, 0.7, 1.0, 0.8],
+	"production": [0.8, 0.7, 0.9, 0.8],
 
 	//"terra": "armsy",
 	"airpad": {
