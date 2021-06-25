@@ -843,10 +843,12 @@ IBuilderTask* CEconomyManager::MakeEconomyTasks(const AIFloat3& position, CCircu
 	}
 	CMetalManager* metalMgr = circuit->GetMetalManager();
 	int index = metalMgr->FindNearestCluster(position);
-	if ((index < 0) || (clusterInfos[index].metalFrame + FRAMES_PER_SEC >= circuit->GetLastFrame())) {
-		return nullptr;
+	if (index >= 0) {
+		if (clusterInfos[index].metalFrame + FRAMES_PER_SEC >= circuit->GetLastFrame()) {
+			return nullptr;
+		}
+		clusterInfos[index].metalFrame = circuit->GetLastFrame();
 	}
-	clusterInfos[index].metalFrame = circuit->GetLastFrame();
 
 	IBuilderTask* task = UpdateMetalTasks(position, unit);
 	if (task != nullptr) {
@@ -971,12 +973,14 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			}
 		}
 
-		if ((builderMgr->GetTasks(IBuilderTask::BuildType::CONVERT).size() < 2) && convertDefs.HasAvail()) {
+		const float energyCur = GetEnergyCur();
+		const float energyStore = GetEnergyStore();
+		if ((builderMgr->GetTasks(IBuilderTask::BuildType::CONVERT).size() < 2) && convertDefs.HasAvail() && (energyCur > energyStore * 0.85f)) {
 			const AIFloat3& pos = circuit->GetSetupManager()->GetBasePos();  // TODO: resource-base position
 			CCircuitDef* convertDef = convertDefs.GetBestDef([frame, terrainMgr, &pos](CCircuitDef* cdef, const SConvertExt& data) {
 				return cdef->IsAvailable(frame) && terrainMgr->CanBeBuiltAt(cdef, pos);
 			});
-			if ((convertDef != nullptr) && (GetEnergyCur() > GetEnergyStore() * 0.9f)) {
+			if (convertDef != nullptr) {
 				task = builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, convertDef, pos, IBuilderTask::BuildType::CONVERT);
 				return task;
 			}
@@ -1161,14 +1165,20 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	}
 
 	// Find place to build
+	// TODO: Add place finder
+	// 1) at very this position
+	// 2) near mex
+	// 3) at resource base (separate metla / energy)
+	// 4) at production base
 	AIFloat3 buildPos = -RgtVector;
-	CMetalManager* metalMgr = circuit->GetMetalManager();
 	if (bestDef->GetCostM() < 200.0f) {
-		int index = metalMgr->FindNearestSpot(position);
-		if (index != -1) {
-			const CMetalData::Metals& spots = metalMgr->GetSpots();
-			buildPos = spots[index].position;
-		}
+//		CMetalManager* metalMgr = circuit->GetMetalManager();
+//		int index = metalMgr->FindNearestSpot(position);
+//		if (index != -1) {
+//			const CMetalData::Metals& spots = metalMgr->GetSpots();
+//			buildPos = spots[index].position;
+//		}
+		buildPos = position;
 	} else {
 		buildPos = circuit->GetSetupManager()->GetBasePos();
 
@@ -1422,21 +1432,7 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 	}
 
 	if (storeDef != nullptr) {
-		const AIFloat3& startPos = circuit->GetSetupManager()->GetBasePos();
-		CMetalManager* metalMgr = circuit->GetMetalManager();
-		int index = metalMgr->FindNearestSpot(startPos);
-		AIFloat3 buildPos;
-		if (index != -1) {
-			const CMetalData::Metals& spots = metalMgr->GetSpots();
-			buildPos = spots[index].position;
-		} else {
-			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-			int terWidth = terrainMgr->GetTerrainWidth();
-			int terHeight = terrainMgr->GetTerrainHeight();
-			float x = terWidth / 4 + rand() % (int)(terWidth / 2);
-			float z = terHeight / 4 + rand() % (int)(terHeight / 2);
-			buildPos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
-		}
+		AIFloat3 buildPos = circuit->GetSetupManager()->GetBasePos();
 		return builderMgr->EnqueueTask(IBuilderTask::Priority::HIGH, storeDef, buildPos, IBuilderTask::BuildType::STORE);
 	}
 

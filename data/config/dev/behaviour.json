@@ -28,7 +28,7 @@
 
 "defence": {
 	"infl_rad": 5,  // radius in influenece cells for defendAlly map
-	"base_rad": [600.0, 1200.0],  // defend if enemy within clamp(distance(lane_pos, base_pos), 1000, 2000) radius
+	"base_rad": [800.0, 1600.0],  // defend if enemy within clamp(distance(lane_pos, base_pos), 1000, 2000) radius
 	"comm_rad": [1000.0, 500.0],  // 0 distance from base ~ 1000, base_rad ~ 500.0
 	"escort": [2, 1, 600]  // [<builders_count>, <defenders_count>, <constraint_seconds>]
 },
@@ -317,11 +317,11 @@
 	},
 	"armmakr": {
 		"role": ["static"],
-		"since": 300
+		"since": 30
 	},
 	"cormakr": {
 		"role": ["static"],
-		"since": 300
+		"since": 30
 	},
 	"armmstor" : {
 		"role": ["static"],
@@ -358,7 +358,7 @@
 	"armck": {
 		"role": ["builder"],
 		"limit": 20,
-		"build_speed": 10.0
+		"build_speed": 5.0
 	},
 	"armpw": {
 		"role": ["raider"],
@@ -469,12 +469,12 @@
 	"armcv": {
 		"role": ["builder"],
 		"limit": 20,
-		"build_speed": 10.0
+		"build_speed": 7.0
 	},
 	"armbeaver": {
 		"role": ["builder"],
 		"limit": 10,
-		"build_speed": 10.0
+		"build_speed": 8.0
 	},
 	// "armmlv": {
 	// 	"role": ["support"]
@@ -549,7 +549,7 @@
 		"role": ["builder", "air"],
 		"retreat": 0.6,
 		"limit": 25,
-		"build_speed": 10.0
+		"build_speed": 5.0
 	},
 	"armpeep": {
 		"role": ["scout", "air"]
@@ -607,7 +607,7 @@
 		"role": ["builder", "air"],
 		"retreat": 0.6,
 		"limit": 6,
-		"build_speed": 10.0
+		"build_speed": 7.0
 	},
 	"armpt": {
 		"role": ["scout", "anti_air", "raider"]
@@ -664,12 +664,12 @@
 		"attribute": ["artillery"],
 		"retreat": 0.3
 	},
-	// ARMADA HOVERS
 
+	// ARMADA HOVERS
 	"armch": {
 		"role": ["builder"],
 		"limit": 10,
-		"build_speed": 10.0
+		"build_speed": 8.0
 	},
 	"armsh": {
 		"role": ["scout"]
@@ -689,7 +689,7 @@
 	"corck": {
 		"role": ["builder"],
 		"limit": 20,
-		"build_speed": 10.0
+		"build_speed": 5.0
 	},
 	"corak": {
 		"role": ["raider"],
@@ -793,12 +793,12 @@
 	"corcv": {
 		"role": ["builder"],
 		"limit": 20,
-		"build_speed": 10.0
+		"build_speed": 7.0
 	},
 	"cormuskrat": {
 		"role": ["builder"],
 		"limit": 10,
-		"build_speed": 10.0
+		"build_speed": 8.0
 	},
 	// "cormlv": {
 	// 	"role": ["support"]
@@ -867,7 +867,7 @@
 		"role": ["builder", "air"],
 		"retreat": 0.6,
 		"limit": 6,
-		"build_speed": 10.0
+		"build_speed": 7.0
 	},
 	"corpt": {
 		"role": ["scout", "anti_air", "raider"]
@@ -924,12 +924,12 @@
 		"attribute": ["artillery"],
 		"retreat": 0.3
 	},
-// CORTEX HOVERS
 
+	// CORTEX HOVERS
 	"corch": {
 		"role": ["builder"],
 		"limit": 10,
-		"build_speed": 10.0
+		"build_speed": 8.0
 	},
 	"corsh": {
 		"role": ["scout"]
@@ -948,13 +948,12 @@
 		"role": ["assault"]
 	},
 
-
 	// aircraft - corap
 	"corca": {
 		"role": ["builder", "air"],
 		"retreat": 0.6,
 		"limit": 25,
-		"build_speed": 10.0
+		"build_speed": 5.0
 	},
 	"corfink": {
 		"role": ["scout", "air"]

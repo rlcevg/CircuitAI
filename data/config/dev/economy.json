@@ -88,7 +88,7 @@
 	// [1] - energy-expenditure multiplier for build condition of new factory or assistant
 	// [2] - multiplier for total factory metal-expenditure, used as condition for new factory or assistant
 	// [3] - multiplier for total factory energy-expenditure, used as condition for new factory or assistant
-	"production": [0.8, 0.7, 0.9, 0.8],
+	"production": [0.9, 0.7, 0.8, 0.8],
 
 	//"terra": "armsy",
 	"airpad": {

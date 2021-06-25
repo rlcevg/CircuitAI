@@ -30,6 +30,7 @@ public:
 		STORE,
 		PYLON,
 		ENERGY,
+		GEO,
 		DEFENCE,  // lotus, defender, stardust, stinger
 		BUNKER,  // ddm, anni
 		BIG_GUN,  // super weapons

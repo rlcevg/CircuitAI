@@ -14,9 +14,9 @@
 	"water": [1, 1, 1, 1, 4, 9, 10, 9, 10],
 	"prevent": 1,  // number of preventive defences
 	"amount": {  // income bound factor
-		"offset": [-2.4, 2.4],
-		// Amount factor: 10x10 ~ 64.0, 20x20 ~ 48.0
-		"factor": [64.0, 48.0],
+		"offset": [-2.0, 2.0],
+		// Amount factor: 10x10 ~ 48.0, 20x20 ~ 32.0
+		"factor": [48.0, 32.0],
 		"map": [10, 20]
 	},
 	"point_range": 600.0,  // maximum distance between 2 points in hierarchical cluster within economy cluster

@@ -33,7 +33,8 @@ void CBConvertTask::Update()
 		return;
 	}
 
-	if (manager->GetCircuit()->GetEconomyManager()->IsEnergyStalling()) {
+	CEconomyManager* economyMgr = manager->GetCircuit()->GetEconomyManager();
+	if (economyMgr->GetEnergyCur() < economyMgr->GetEnergyStore() * 0.55f) {
 		manager->AbortTask(this);
 	}
 }

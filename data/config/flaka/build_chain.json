@@ -112,9 +112,9 @@
 					{"unit": "armbeamer", "category": "bunker", "offset": {"front": 80}, "condition": {"chance": 0.20}}
 				],
 				[  // chain2
-					{"unit": "armmakr", "category": "defence", "offset": [-80, 80], "condition": {"energy": true}},
-					{"unit": "armmakr", "category": "defence", "offset": [-96, 80], "condition": {"energy": true}},
-					{"unit": "armmakr", "category": "defence", "offset": [-112, 80], "condition": {"energy": true}}
+					{"unit": "armmakr", "category": "convert", "offset": [-80, 80], "condition": {"energy": true}},
+					{"unit": "armmakr", "category": "convert", "offset": [-96, 80], "condition": {"energy": true}},
+					{"unit": "armmakr", "category": "convert", "offset": [-112, 80], "condition": {"energy": true}}
 					
 				]
 			]
@@ -142,8 +142,8 @@
 					//{"unit": "armfus", "category": "energy", "offset": [0, 48]}
 				],
                 [
-                    {"unit": "armmmkr", "category": "defence", "offset": [-60, 32], "priority": "now"},
-                    {"unit": "armmmkr", "category": "defence", "offset": [-60, 0], "priority": "now"}
+                    {"unit": "armmmkr", "category": "convert", "offset": [-60, 32], "priority": "now"},
+                    {"unit": "armmmkr", "category": "convert", "offset": [-60, 0], "priority": "now"}
                 ],
                 [
                     {"unit": "armpb", "category": "defence", "offset": [100, 400], "condition": {"chance": 0.3}},
@@ -168,12 +168,12 @@
 		"armafus": {
 			"hub": [
 				[  
-					{"unit": "armmmkr", "category": "defence", "offset": [120, 120], "priority": "now"},
-					{"unit": "armmmkr", "category": "defence", "offset": [150, 120], "priority": "now"},
-					{"unit": "armmmkr", "category": "defence", "offset": [120, 150]},
-					{"unit": "armmmkr", "category": "defence", "offset": [150, 150]},
-					{"unit": "armmmkr", "category": "defence", "offset": [120, -120], "condition": {"energy": true}},
-                    {"unit": "armmmkr", "category": "defence", "offset": [120, -120], "condition": {"energy": true}},
+					{"unit": "armmmkr", "category": "convert", "offset": [120, 120], "priority": "now"},
+					{"unit": "armmmkr", "category": "convert", "offset": [150, 120], "priority": "now"},
+					{"unit": "armmmkr", "category": "convert", "offset": [120, 150]},
+					{"unit": "armmmkr", "category": "convert", "offset": [150, 150]},
+					{"unit": "armmmkr", "category": "convert", "offset": [120, -120], "condition": {"energy": true}},
+                    {"unit": "armmmkr", "category": "convert", "offset": [120, -120], "condition": {"energy": true}},
 					{"unit": "armamd", "category": "defence", "offset": [-120, -120], "condition": {"chance": 0.5}},
 					{"unit": "armanni", "category": "defence", "offset": [-180, -180]},
 					{"unit": "armpb", "category": "defence", "offset": [-80, -80], "condition": {"chance": 0.5}},
@@ -193,8 +193,8 @@
 			"hub": [
 				[
 					{"unit": "corllt", "category": "defence", "offset": {"front": 80}, "condition": {"chance": 0.2}},
-					{"unit": "cormakr", "category": "defence", "offset": [-100, 80], "condition": {"energy": true}},
-					{"unit": "cormakr", "category": "defence", "offset": [-100, 80], "condition": {"energy": true}}
+					{"unit": "cormakr", "category": "convert", "offset": [-100, 80], "condition": {"energy": true}},
+					{"unit": "cormakr", "category": "convert", "offset": [-100, 80], "condition": {"energy": true}}
 				]  
 			]
 		},
@@ -204,11 +204,11 @@
 				[
 					{"unit": "corhllt", "category": "defence", "offset": {"front": 80}, "condition": {"chance": 0.2}}
 				],  
-				[	
-                    {"unit": "cormakr", "category": "defence", "offset": [-100, 80], "condition": {"energy": true}},
-					{"unit": "cormakr", "category": "defence", "offset": [-116, 80], "condition": {"energy": true}},
-					{"unit": "cormakr", "category": "defence", "offset": [-100, 96], "condition": {"energy": true}},
-                    {"unit": "cormakr", "category": "defence", "offset": [-116, 96], "condition": {"energy": true}}	
+				[
+                    {"unit": "cormakr", "category": "convert", "offset": [-100, 80], "condition": {"energy": true}},
+					{"unit": "cormakr", "category": "convert", "offset": [-116, 80], "condition": {"energy": true}},
+					{"unit": "cormakr", "category": "convert", "offset": [-100, 96], "condition": {"energy": true}},
+                    {"unit": "cormakr", "category": "convert", "offset": [-116, 96], "condition": {"energy": true}}
 				] 
 			]
 		},
@@ -220,9 +220,9 @@
                 ],
 				[  
                     
-					{"unit": "cormmkr", "category": "defence", "offset": [24, 48], "priority": "now"},
-                    {"unit": "cormmkr", "category": "defence", "offset": [72, 48], "priority": "now","condition":{"energy":true}},
-                    {"unit": "cormmkr", "category": "defence", "offset": [120, 48], "priority": "now", "condition":{"chance": 0.5}},
+					{"unit": "cormmkr", "category": "convert", "offset": [24, 48], "priority": "now"},
+                    {"unit": "cormmkr", "category": "convert", "offset": [72, 48], "priority": "now","condition":{"energy":true}},
+                    {"unit": "cormmkr", "category": "convert", "offset": [120, 48], "priority": "now", "condition":{"chance": 0.5}},
                     {"unit": "corerad", "category": "defence", "offset": [0, 60], "condition":{"chance":0.6}}
                 ],
                 [
@@ -236,11 +236,11 @@
 				[ 
                     {"unit": "cornanotc", "category": "defence", "offset": [0, 64], "priority":"now"},
                     {"unit": "cornanotc", "category": "defence", "offset": [16, 64], "priority":"now"},
-					{"unit": "cormmkr", "category": "defence", "offset": [120, 120], "priority": "now"},
-					{"unit": "cormmkr", "category": "defence", "offset": [120, -120], "priority": "now"},
-					{"unit": "cormmkr", "category": "defence", "offset": [150, 120], "priority": "now"},
-					{"unit": "cormmkr", "category": "defence", "offset": [120, 150], "priority": "now"},
-					{"unit": "cormmkr", "category": "defence", "offset": [150, 150]},
+					{"unit": "cormmkr", "category": "convert", "offset": [120, 120], "priority": "now"},
+					{"unit": "cormmkr", "category": "convert", "offset": [120, -120], "priority": "now"},
+					{"unit": "cormmkr", "category": "convert", "offset": [150, 120], "priority": "now"},
+					{"unit": "cormmkr", "category": "convert", "offset": [120, 150], "priority": "now"},
+					{"unit": "cormmkr", "category": "convert", "offset": [150, 150]},
 				
 					{"unit": "cordoom", "category": "defence", "offset": [-180, 180]},
 					{"unit": "corvipe", "category": "defence", "offset": [-80, -80], "condition": {"chance": 0.5}},
@@ -257,8 +257,8 @@
                 
                 [                
                     {"unit": "armckfus", "category": "defence", "offset": [-200, -50], "priority":"high"}, 
-                    {"unit": "armmmkr", "category": "defence", "offset": [-200, 10], "priority":"high"} ,
-                    {"unit": "armmmkr", "category": "defence", "offset": [-240, -10], "priority":"high"} 
+                    {"unit": "armmmkr", "category": "convert", "offset": [-200, 10], "priority":"high"} ,
+                    {"unit": "armmmkr", "category": "convert", "offset": [-240, -10], "priority":"high"} 
                 ]
             ]
         },
@@ -273,8 +273,8 @@
                 ],
                 [ 
                     {"unit": "armckfus", "category": "defence", "offset": [-200, -50], "priority":"high"}, 
-                    {"unit": "armmmkr", "category": "defence", "offset": [-200, 10], "priority":"high"} ,
-                    {"unit": "armmmkr", "category": "defence", "offset": [-240, -10], "priority":"high"} 
+                    {"unit": "armmmkr", "category": "convert", "offset": [-200, 10], "priority":"high"} ,
+                    {"unit": "armmmkr", "category": "convert", "offset": [-240, -10], "priority":"high"} 
                 ]
             ]
         }, 

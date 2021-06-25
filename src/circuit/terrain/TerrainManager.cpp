@@ -1409,7 +1409,7 @@ bool CTerrainManager::CanReachAtSafe(CCircuitUnit* unit, const AIFloat3& destina
 
 bool CTerrainManager::CanReachAtSafe2(CCircuitUnit* unit, const AIFloat3& destination, const float range)
 {
-	if (circuit->GetInflMap()->GetInfluenceAt(destination) > -INFL_EPS) {
+	if (circuit->GetInflMap()->GetInfluenceAt(destination) < -INFL_EPS) {
 		return false;
 	}
 	return CanReachAt(unit, destination, range);
