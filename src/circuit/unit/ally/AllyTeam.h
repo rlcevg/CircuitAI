@@ -26,6 +26,7 @@ class CCircuitAI;
 class CAllyUnit;
 class CMapManager;
 class CMetalManager;
+class CEnergyManager;
 class CEnergyGrid;
 class CDefenceMatrix;
 class CPathFinder;
@@ -103,13 +104,14 @@ public:
 	bool IsEnemyOrFakeIn(const springai::AIFloat3& startPos, const springai::AIFloat3& dir, float length,
 			const springai::AIFloat3& enemyPos, float radius, const std::set<CCircuitDef::Id>& unitDefIds);
 
-	const std::shared_ptr<CMapManager>&    GetMapManager()    { return mapManager; }
-	const std::shared_ptr<CEnemyManager>&  GetEnemyManager()  { return enemyManager; }
-	const std::shared_ptr<CMetalManager>&  GetMetalManager()  { return metalManager; }
-	const std::shared_ptr<CEnergyGrid>&    GetEnergyGrid()    { return energyGrid; }
-	const std::shared_ptr<CDefenceMatrix>& GetDefenceMatrix() { return defence; }
-	const std::shared_ptr<CPathFinder>&    GetPathfinder()    { return pathfinder; }
-	const std::shared_ptr<CFactoryData>&   GetFactoryData()   { return factoryData; }
+	const std::shared_ptr<CMapManager>&    GetMapManager()    const { return mapManager; }
+	const std::shared_ptr<CEnemyManager>&  GetEnemyManager()  const { return enemyManager; }
+	const std::shared_ptr<CMetalManager>&  GetMetalManager()  const { return metalManager; }
+	const std::shared_ptr<CEnergyManager>& GetEnergyManager() const { return energyManager; }
+	const std::shared_ptr<CEnergyGrid>&    GetEnergyGrid()    const { return energyGrid; }
+	const std::shared_ptr<CDefenceMatrix>& GetDefenceMatrix() const { return defence; }
+	const std::shared_ptr<CPathFinder>&    GetPathfinder()    const { return pathfinder; }
+	const std::shared_ptr<CFactoryData>&   GetFactoryData()   const { return factoryData; }
 
 	void OccupyCluster(int clusterId, int teamId);
 	SClusterTeam GetClusterTeam(int clusterId);
@@ -134,6 +136,7 @@ private:
 
 	std::shared_ptr<CMapManager> mapManager;
 	std::shared_ptr<CMetalManager> metalManager;
+	std::shared_ptr<CEnergyManager> energyManager;
 	std::shared_ptr<CEnergyGrid> energyGrid;
 	std::shared_ptr<CDefenceMatrix> defence;
 	std::shared_ptr<CPathFinder> pathfinder;

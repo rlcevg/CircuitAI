@@ -36,7 +36,7 @@ CMetalData::~CMetalData()
 {
 }
 
-void CMetalData::Init(const Metals& spots)
+void CMetalData::Init(const Metals&& spots)
 {
 	this->spots = spots;
 	for (const SMetal& spot : spots) {

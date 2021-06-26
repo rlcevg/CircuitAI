@@ -16,8 +16,8 @@ namespace circuit {
 using namespace springai;
 
 CBConvertTask::CBConvertTask(ITaskManager* mgr, Priority priority,
-		  CCircuitDef* buildDef, const AIFloat3& position,
-		  float cost, float shake, int timeout)
+							 CCircuitDef* buildDef, const AIFloat3& position,
+							 float cost, float shake, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::CONVERT, cost, shake, timeout)
 {
 }

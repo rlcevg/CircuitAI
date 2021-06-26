@@ -353,6 +353,14 @@
 		"role": ["static"],
 		"since": 120
 	},
+	"armgeo": {
+		"role": ["static"],
+		"midposoffset": [0, 0, 2]
+	},
+//	"corgeo": {
+//		"role": ["static"],
+//		"midposoffset": [0, 0, 0]
+//	},
 
 	// bot - armlab
 	"armck": {
@@ -391,7 +399,7 @@
 	"armack": {
 		"role": ["builderT2"],
 		"attribute": ["solo"],
-		"limit": 6,
+		"limit": 10,
 		"build_speed": 10.0
 	},
 	"armfark": {
@@ -508,7 +516,7 @@
 	"armacv": {
 		"role": ["builderT2"],
 		"attribute": ["solo"],
-		"limit": 5,
+		"limit": 10,
 		"build_speed": 10.0
 	},
 	"armconsul": {
@@ -678,7 +686,8 @@
 		"role": ["assault"]
 	},
 	"armmh": {
-		"role": ["artillery"]
+		"role": ["artillery"],
+		"limit": 10
 	},
 	"armah": {
 		"role": ["anti_air"],
@@ -715,7 +724,7 @@
 	"corack": {
 		"role": ["builderT2"],
 		"attribute": ["solo"],
-		"limit": 6,
+		"limit": 10,
 		"build_speed": 10.0
 	},
 	"corfast": {
@@ -832,7 +841,7 @@
 	"coracv": {
 		"role": ["builderT2"],
 		"attribute": ["solo"],
-		"limit": 5,
+		"limit": 10,
 		"build_speed": 10.0
 	},
 	"correap": {
@@ -938,7 +947,8 @@
 		"role": ["assault"]
 	},
 	"cormh": {
-		"role": ["artillery"]
+		"role": ["artillery"],
+		"limit": 10
 	},
 	"corah": {
 		"role": ["anti_air"],

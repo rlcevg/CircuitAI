@@ -40,6 +40,7 @@ IBuilderTask::BuildName IBuilderTask::buildNames = {
 	{"store",   IBuilderTask::BuildType::STORE},
 	{"pylon",   IBuilderTask::BuildType::PYLON},
 	{"energy",  IBuilderTask::BuildType::ENERGY},
+	{"geo",     IBuilderTask::BuildType::GEO},
 	{"defence", IBuilderTask::BuildType::DEFENCE},
 	{"bunker",  IBuilderTask::BuildType::BUNKER},
 	{"big_gun", IBuilderTask::BuildType::BIG_GUN},
@@ -47,6 +48,7 @@ IBuilderTask::BuildName IBuilderTask::buildNames = {
 	{"sonar",   IBuilderTask::BuildType::SONAR},
 	{"convert", IBuilderTask::BuildType::CONVERT},
 	{"mex",     IBuilderTask::BuildType::MEX},
+	{"mexup",   IBuilderTask::BuildType::MEXUP},
 };
 
 IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
@@ -61,7 +63,7 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 		, cost(cost)
 		, target(nullptr)
 		, buildPos(-RgtVector)
-		, facing(UNIT_COMMAND_BUILD_NO_FACING)
+		, facing(UNIT_NO_FACING)
 		, nextTask(nullptr)
 		, initiator(nullptr)
 		, buildFails(0)
@@ -438,10 +440,11 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 			&& ((executors.size() < 2) || !unit->IsAttrBase()))
 		{
 			TRY_UNIT(circuit, unit,
-				const bool prio = !ecoMgr->IsEnergyStalling() || (buildType == BuildType::ENERGY);
+				const bool prio = !ecoMgr->IsEnergyStalling() || (buildType == BuildType::ENERGY) || (buildType == BuildType::GEO);
 				unit->CmdBARPriority(prio ? 1.f : 0.f);
 				if (unit->GetTravelAct()->IsFinished()) {
-					unit->CmdWait(ecoMgr->IsEnergyEmpty() && (buildType != BuildType::ENERGY) && (buildType != BuildType::STORE));
+					unit->CmdWait(ecoMgr->IsEnergyEmpty() && (buildType != BuildType::ENERGY)
+							&& (buildType != BuildType::GEO) && (buildType != BuildType::STORE));
 				}
 			)
 			return true;
@@ -582,7 +585,7 @@ void IBuilderTask::FindFacing(const springai::AIFloat3& pos)
 {
 	CTerrainManager* terrainMgr = manager->GetCircuit()->GetTerrainManager();
 
-//	facing = UNIT_COMMAND_BUILD_NO_FACING;
+//	facing = UNIT_NO_FACING;
 	float terWidth = terrainMgr->GetTerrainWidth();
 	float terHeight = terrainMgr->GetTerrainHeight();
 	if (std::fabs(terWidth - 2 * pos.x) > std::fabs(terHeight - 2 * pos.z)) {

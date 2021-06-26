@@ -7,7 +7,6 @@
 
 #include "task/builder/MexTask.h"
 #include "task/TaskManager.h"
-#include "map/ThreatMap.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
@@ -26,11 +25,14 @@ namespace circuit {
 using namespace springai;
 
 CBMexTask::CBMexTask(ITaskManager* mgr, Priority priority,
-					 CCircuitDef* buildDef, const AIFloat3& position,
+					 CCircuitDef* buildDef, int spotId, const AIFloat3& position,
 					 float cost, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::MEX, cost, 0.f, timeout)
+		, spotId(spotId)
 		, blockCount(0)
 {
+	SetBuildPos(position);
+	manager->GetCircuit()->GetEconomyManager()->SetOpenSpot(spotId, false);
 }
 
 CBMexTask::~CBMexTask()
@@ -53,7 +55,7 @@ bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 	if ((militaryMgr->GetGuardTaskNum() == 0) || (circuit->GetLastFrame() > militaryMgr->GetGuardFrame())) {
 		return true;
 	}
-	int cluster = circuit->GetMetalManager()->FindNearestCluster(GetPosition());
+	int cluster = circuit->GetMetalManager()->FindNearestCluster(buildPos);
 	if ((cluster < 0) || militaryMgr->HasDefence(cluster)) {
 		return true;
 	}
@@ -65,10 +67,9 @@ void CBMexTask::Cancel()
 {
 	if ((target == nullptr) && utils::is_valid(buildPos)) {
 		CCircuitAI* circuit = manager->GetCircuit();
-		int index = circuit->GetMetalManager()->FindNearestSpot(buildPos);
-		circuit->GetMetalManager()->SetOpenSpot(index, true);
-		circuit->GetEconomyManager()->SetOpenSpot(index, true);
-		SetBuildPos(-RgtVector);
+		circuit->GetMetalManager()->SetOpenSpot(spotId, true);
+		circuit->GetEconomyManager()->SetOpenSpot(spotId, true);
+		IBuilderTask::SetBuildPos(-RgtVector);
 	}
 }
 
@@ -88,28 +89,23 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 	}
 	CMetalManager* metalMgr = circuit->GetMetalManager();
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
-	if (utils::is_valid(buildPos)) {
-		int index = metalMgr->FindNearestSpot(buildPos);
-		if (index >= 0) {
-			if (circuit->GetMap()->IsPossibleToBuildAt(buildDef->GetDef(), buildPos, facing)) {
-				if ((State::ENGAGE == state) || metalMgr->IsOpenSpot(index)) {  // !isFirstTry
-					state = State::ENGAGE;  // isFirstTry = false
-//					metalMgr->SetOpenSpot(index, false);
-					TRY_UNIT(circuit, unit,
-						unit->CmdBuild(buildDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
-					)
-					return;
-				} else {
-					economyMgr->SetOpenSpot(index, true);
-				}
-			} else {
-				metalMgr->SetOpenSpot(index, true);
-				economyMgr->SetOpenSpot(index, true);
-				if (!CheckLandBlock(unit)) {
-					// Fallback to Guard/Assist/Patrol
-					manager->FallbackTask(unit);
-				}
-			}
+	if (circuit->GetMap()->IsPossibleToBuildAt(buildDef->GetDef(), buildPos, facing)) {
+		if ((State::ENGAGE == state) || metalMgr->IsOpenSpot(spotId)) {  // !isFirstTry
+			state = State::ENGAGE;  // isFirstTry = false
+//			metalMgr->SetOpenSpot(index, false);
+			TRY_UNIT(circuit, unit,
+				unit->CmdBuild(buildDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
+			)
+			return;
+		} else {
+			economyMgr->SetOpenSpot(spotId, true);
+		}
+	} else {
+		metalMgr->SetOpenSpot(spotId, true);
+		economyMgr->SetOpenSpot(spotId, true);
+		if (!CheckLandBlock(unit)) {
+			// Fallback to Guard/Assist/Patrol
+			manager->FallbackTask(unit);
 		}
 	}
 }

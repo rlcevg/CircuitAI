@@ -77,7 +77,7 @@ using namespace springai;
  * Только под ногами их крутятся:
  * По оси земля, по полу полу-люди!
  */
-constexpr char version[]{"1.4.2"};
+constexpr char version[]{"1.4.3"};
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;
@@ -597,9 +597,8 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	mapManager = allyTeam->GetMapManager();
 	enemyManager = allyTeam->GetEnemyManager();
 	metalManager = allyTeam->GetMetalManager();
+	energyManager = allyTeam->GetEnergyManager();
 	pathfinder = allyTeam->GetPathfinder();
-
-	terrainManager->Init();
 
 	if (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos()) {
 		const CSetupManager::StartPosType spt = metalManager->HasMetalSpots() ?
@@ -617,6 +616,8 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	modules.push_back(builderManager);
 	modules.push_back(factoryManager);  // NOTE: Contains special last-module unit handlers.
 	modules.push_back(economyManager);  // NOTE: Uses unit's manager != nullptr, thus must be last.
+
+	terrainManager->Init();
 
 	script->RegisterMgr();
 	script->Init();
@@ -710,6 +711,7 @@ int CCircuitAI::Release(int reason)
 	builderManager = nullptr;
 	terrainManager = nullptr;
 	metalManager = nullptr;
+	energyManager = nullptr;
 	pathfinder = nullptr;
 	setupManager = nullptr;
 	enemyManager = nullptr;

@@ -15,6 +15,7 @@
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"  // Only for UpdateAreaUsers
 #include "resource/MetalManager.h"
+#include "resource/EnergyManager.h"
 #include "scheduler/Scheduler.h"
 #include "setup/SetupManager.h"
 #include "CircuitAI.h"
@@ -279,19 +280,19 @@ void CTerrainManager::ReadConfig()
 
 void CTerrainManager::Init()
 {
-	const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
-	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetSideInfo().mexDef;
+	const CMetalData::Metals& mspots = circuit->GetMetalManager()->GetSpots();
+	CCircuitDef* cdef = circuit->GetEconomyManager()->GetSideInfo().mexDef;
 	int xsize, zsize;
-	auto it = blockInfos.find(mexDef->GetId());
+	auto it = blockInfos.find(cdef->GetId());
 	if (it != blockInfos.end()) {
 		xsize = it->second->GetXSize();
 		zsize = it->second->GetZSize();
 	} else {
-		xsize = mexDef->GetDef()->GetXSize() / 2;
-		zsize = mexDef->GetDef()->GetZSize() / 2;
+		xsize = cdef->GetDef()->GetXSize() / 2;
+		zsize = cdef->GetDef()->GetZSize() / 2;
 	}
 	int notIgnoreMask = ~STRUCT_BIT(MEX);  // all except mex
-	for (auto& spot : spots) {
+	for (auto& spot : mspots) {
 		const int x1 = int(spot.position.x / (SQUARE_SIZE << 1)) - (xsize >> 1), x2 = x1 + xsize;
 		const int z1 = int(spot.position.z / (SQUARE_SIZE << 1)) - (zsize >> 1), z2 = z1 + zsize;
 		int2 m1(x1, z1);
@@ -304,8 +305,32 @@ void CTerrainManager::Init()
 		}
 	}
 
+	const CEnergyData::Geos& espots = circuit->GetEnergyManager()->GetSpots();
+	cdef = circuit->GetEconomyManager()->GetSideInfo().geoDef;
+	it = blockInfos.find(cdef->GetId());
+	if (it != blockInfos.end()) {
+		xsize = it->second->GetXSize();
+		zsize = it->second->GetZSize();
+	} else {
+		xsize = cdef->GetDef()->GetXSize() / 2;
+		zsize = cdef->GetDef()->GetZSize() / 2;
+	}
+	notIgnoreMask = ~STRUCT_BIT(GEO);  // all except geo
+	for (auto& spot : espots) {
+		const int x1 = int(spot.x / (SQUARE_SIZE << 1)) - (xsize >> 1), x2 = x1 + xsize;
+		const int z1 = int(spot.z / (SQUARE_SIZE << 1)) - (zsize >> 1), z2 = z1 + zsize;
+		int2 m1(x1, z1);
+		int2 m2(x2, z2);
+		blockingMap.Bound(m1, m2);
+		for (int z = m1.y; z < m2.y; ++z) {
+			for (int x = m1.x; x < m2.x; ++x) {
+				blockingMap.MarkBlocker(x, z, SBlockingMap::StructType::TERRA, notIgnoreMask);
+			}
+		}
+	}
+
 	// Mark edges of the map
-	notIgnoreMask = ~(STRUCT_BIT(MEX) | STRUCT_BIT(FACTORY));  // all except mex and factory
+	notIgnoreMask = ~(STRUCT_BIT(MEX) | STRUCT_BIT(GEO) | STRUCT_BIT(FACTORY));  // all except mex, geo and factory
 	for (int j = 0; j < 5; ++j) {
 		for (int i = 6; i < blockingMap.columns - 6; ++i) {
 			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
@@ -496,7 +521,8 @@ void CTerrainManager::MarkAllyBuildings()
 
 	circuit->UpdateFriendlyUnits();
 	const CAllyTeam::AllyUnits& friendlies = circuit->GetFriendlyUnits();
-	int teamId = circuit->GetTeamId();
+	const int teamId = circuit->GetTeamId();
+	const int frame = circuit->GetLastFrame();
 
 	decltype(markedAllies) prevUnits = std::move(markedAllies);
 	markedAllies.clear();
@@ -505,12 +531,12 @@ void CTerrainManager::MarkAllyBuildings()
 	auto first2  = prevUnits.begin();
 	auto last2   = prevUnits.end();
 	auto d_first = std::back_inserter(markedAllies);
-	auto addStructure = [&d_first, this](CAllyUnit* unit) {
+	auto addStructure = [this, &d_first, frame](CAllyUnit* unit) {
 		SStructure building;
 		building.unitId = unit->GetId();
 		building.cdef = unit->GetCircuitDef();
-		building.pos = unit->GetPos(this->circuit->GetLastFrame());
 		building.facing = unit->GetUnit()->GetBuildingFacing();
+		building.pos = unit->GetPos(frame) + building.cdef->GetMidPosOffset(building.facing);
 		*d_first++ = building;
 		if (!building.cdef->IsMex()) {  // mex positions are marked on start and must not change
 			MarkBlocker(building, true);

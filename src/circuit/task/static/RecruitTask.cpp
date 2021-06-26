@@ -170,7 +170,7 @@ void CRecruitTask::Execute(CCircuitUnit* unit)
 				pos.x -= size;
 			} break;
 		}
-		buildPos = circuit->GetTerrainManager()->FindBuildSite(buildDef, pos, buildDistance, UNIT_COMMAND_BUILD_NO_FACING);
+		buildPos = circuit->GetTerrainManager()->FindBuildSite(buildDef, pos, buildDistance, UNIT_NO_FACING);
 	} else {
 		// factory
 		buildPos = unit->GetPos(frame);
@@ -178,7 +178,7 @@ void CRecruitTask::Execute(CCircuitUnit* unit)
 
 	if (utils::is_valid(buildPos)) {
 		TRY_UNIT(circuit, unit,
-			unit->CmdBuild(buildDef, buildPos, UNIT_COMMAND_BUILD_NO_FACING, 0, frame + FRAMES_PER_SEC * 10);
+			unit->CmdBuild(buildDef, buildPos, UNIT_NO_FACING, 0, frame + FRAMES_PER_SEC * 10);
 		)
 	} else {
 		manager->AbortTask(this);

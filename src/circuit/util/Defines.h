@@ -30,6 +30,8 @@ template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 #define UNKNOWN_CATEGORY	0xFFFFFFFF
 #define NO_SPEED_LIMIT		-1.0f
 
+// UNIT_COMMAND_BUILD_NO_FACING
+#define UNIT_NO_FACING		-1
 // z++
 #define UNIT_FACING_SOUTH	0
 // x++

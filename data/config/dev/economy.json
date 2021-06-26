@@ -55,13 +55,17 @@
 
 	"cluster_range": 950.0,  // maximum distance between 2 points in hierarchical cluster
 
+	"geo": {
+		"armada": "armgeo",
+		"cortex": "corgeo"
+	},
 	"metal": {
 		"armada": ["armmex", "armmoho"],  // [T1_mex, T2_mex]
 		"cortex": ["cormex", "cormoho"]  // [T1_mex, T2_mex]
 	},
 	"mex_up": 2,  // maximum number of simultaneous mex upgrades
 
-	"goal_exec": 30.0,  // targeted time to finish non-build task, in seconds
+	"goal_exec": 42.0,  // targeted time to finish non-build task, in seconds
 	"build_mod": 1000.0,  // default build_mod for UnitDef, if it's not specified
 
 	// Scales metal income

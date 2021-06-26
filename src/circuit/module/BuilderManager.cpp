@@ -28,6 +28,7 @@
 #include "task/builder/StoreTask.h"
 #include "task/builder/PylonTask.h"
 #include "task/builder/EnergyTask.h"
+#include "task/builder/GeoTask.h"
 #include "task/builder/DefenceTask.h"
 #include "task/builder/BunkerTask.h"
 #include "task/builder/BigGunTask.h"
@@ -227,8 +228,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 				this->circuit->GetBuilderManager()->IsBuilderInArea(mexDef, pos) &&
 				this->circuit->GetTerrainManager()->CanBeBuiltAtSafe(mexDef, pos))  // hostile environment
 			{
-				EnqueueTask(IBuilderTask::Priority::HIGH, mexDef, pos, IBuilderTask::BuildType::MEX)->SetBuildPos(pos);
-				this->circuit->GetEconomyManager()->SetOpenSpot(index, false);
+				EnqueueSpot(IBuilderTask::Priority::HIGH, mexDef, index, pos, IBuilderTask::BuildType::MEX);
 			}
 		}), FRAMES_PER_SEC * 20);
 	};
@@ -673,6 +673,46 @@ IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 	return AddTask(priority, buildDef, position, type, cost, shake, isActive, timeout);
 }
 
+IBuilderTask* CBuilderManager::EnqueueSpot(IBuilderTask::Priority priority,
+										   CCircuitDef* buildDef,
+										   int spotId,
+										   const springai::AIFloat3& position,
+										   IBuilderTask::BuildType type,
+										   bool isActive,
+										   int timeout)
+{
+	const float cost = buildDef->GetCostM();
+	IBuilderTask* task;
+	switch (type) {
+		case IBuilderTask::BuildType::GEO: {
+			task = new CBGeoTask(this, priority, buildDef, spotId, position, cost, timeout);
+			break;
+		}
+		case IBuilderTask::BuildType::MEX: {
+			task = new CBMexTask(this, priority, buildDef, spotId, position, cost, timeout);
+			break;
+		}
+		case IBuilderTask::BuildType::MEXUP: {
+			task = new CBMexUpTask(this, priority, buildDef, spotId, position, cost, timeout);
+			break;
+		}
+		default: {
+			task = new CBGenericTask(this, type, priority, buildDef, position, cost, 0.f, timeout);
+			break;
+		}
+	}
+
+	if (isActive) {
+		buildTasks[static_cast<IBuilderTask::BT>(type)].insert(task);
+		buildTasksCount++;
+		buildUpdates.push_back(task);
+	} else {
+		task->Deactivate();
+	}
+	TaskCreated(task);
+	return task;
+}
+
 IBuilderTask* CBuilderManager::EnqueueFactory(IBuilderTask::Priority priority,
 											  CCircuitDef* buildDef,
 											  CCircuitDef* reprDef,
@@ -893,14 +933,6 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 		}
 		case IBuilderTask::BuildType::CONVERT: {
 			task = new CBConvertTask(this, priority, buildDef, position, cost, shake, timeout);
-			break;
-		}
-		case IBuilderTask::BuildType::MEX: {
-			task = new CBMexTask(this, priority, buildDef, position, cost, timeout);
-			break;
-		}
-		case IBuilderTask::BuildType::MEXUP: {
-			task = new CBMexUpTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
 		default: {

@@ -301,7 +301,7 @@ CEnergyNode* CEnergyGrid::FindNodeDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 		&& (metalIncome > pylonDef->GetCostM() * 0.15f))
 	{
 		outDef = const_cast<CCircuitDef*>(pylonDef);
-		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, node->GetCenterPos(), searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
+		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, node->GetCenterPos(), searchRadius, UNIT_NO_FACING);
 		return node;
 	}
 
@@ -339,7 +339,7 @@ CEnergyNode* CEnergyGrid::FindNodeDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 			sweetPos = pylon0.pos + dir.Normalize2D() * (pylon0.range + range) * 0.95f;
 		}
 
-		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, sweetPos, searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
+		outPos = circuit->GetTerrainManager()->FindBuildSite(outDef, sweetPos, searchRadius, UNIT_NO_FACING);
 		if (utils::is_valid(outPos) && circuit->GetBuilderManager()->IsBuilderInArea(outDef, outPos)) {
 			break;
 		} else {
@@ -397,12 +397,12 @@ CEnergyLink* CEnergyGrid::FindLinkDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 			sweetPos = pylon0->pos + dir.Normalize2D() * (pylon0->range + range) * 0.95f;
 		}
 		// TODO: replace line placement by pathfinder
-		if (!circuit->GetMap()->IsPossibleToBuildAt(outDef->GetDef(), sweetPos, 0)) {
+		if (!circuit->GetMap()->IsPossibleToBuildAt(outDef->GetDef(), sweetPos, UNIT_NO_FACING)) {
 			candDefs.erase(range);
 			continue;
 		}
 
-		outPos = terrainMgr->FindBuildSite(outDef, sweetPos, searchRadius, UNIT_COMMAND_BUILD_NO_FACING);
+		outPos = terrainMgr->FindBuildSite(outDef, sweetPos, searchRadius, UNIT_NO_FACING);
 		if (utils::is_valid(outPos) && builderMgr->IsBuilderInArea(outDef, outPos)) {
 			break;
 		} else {

@@ -15,7 +15,7 @@ namespace circuit {
 class CBMexTask: public IBuilderTask {
 public:
 	CBMexTask(ITaskManager* mgr, Priority priority,
-			  CCircuitDef* buildDef, const springai::AIFloat3& position,
+			  CCircuitDef* buildDef, int spotId, const springai::AIFloat3& position,
 			  float cost, int timeout);
 	virtual ~CBMexTask();
 
@@ -35,6 +35,7 @@ private:
 	bool CheckLandBlock(CCircuitUnit* unit);
 	bool CheckWaterBlock(CCircuitUnit* unit);
 
+	int spotId;
 	int blockCount;
 };
 

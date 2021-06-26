@@ -10,7 +10,6 @@
 #include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
-#include "resource/MetalManager.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
@@ -24,10 +23,12 @@ namespace circuit {
 using namespace springai;
 
 CBMexUpTask::CBMexUpTask(ITaskManager* mgr, Priority priority,
-						 CCircuitDef* buildDef, const AIFloat3& position,
+						 CCircuitDef* buildDef, int spotId, const AIFloat3& position,
 						 float cost, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::MEXUP, cost, 0.f, timeout)
+		, spotId(spotId)
 {
+	manager->GetCircuit()->GetEconomyManager()->SetUpgradingSpot(spotId, true);
 }
 
 CBMexUpTask::~CBMexUpTask()
@@ -60,17 +61,14 @@ void CBMexUpTask::Finish()
 	}
 
 	// FIXME: Won't work with EnqueueReclaim
-	int index = circuit->GetMetalManager()->FindNearestSpot(position);
-	circuit->GetEconomyManager()->SetUpgradingSpot(index, false);
+	circuit->GetEconomyManager()->SetUpgradingSpot(spotId, false);
 }
 
 void CBMexUpTask::Cancel()
 {
 	IBuilderTask::Cancel();
 
-	CCircuitAI* circuit = manager->GetCircuit();
-	int index = circuit->GetMetalManager()->FindNearestSpot(position);
-	circuit->GetEconomyManager()->SetUpgradingSpot(index, false);
+	manager->GetCircuit()->GetEconomyManager()->SetUpgradingSpot(spotId, false);
 }
 
 void CBMexUpTask::Execute(CCircuitUnit* unit)
@@ -99,7 +97,8 @@ void CBMexUpTask::Execute(CCircuitUnit* unit)
 	circuit->GetThreatMap()->SetThreatType(unit);
 
 	Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
-	const float searchRadius = /*buildDef->GetDef()->GetResourceExtractorRange(metalRes) + */SQUARE_SIZE * 6;  // TODO: too short on purpose
+	// FIXME: short on purpose, won't work with EnqueueReclaim() in Finish()
+	const float searchRadius = /*buildDef->GetDef()->GetResourceExtractorRange(metalRes) + */SQUARE_SIZE * 6;
 	FindBuildSite(unit, position, searchRadius);
 
 	if (utils::is_valid(buildPos)) {
@@ -120,8 +119,7 @@ void CBMexUpTask::Execute(CCircuitUnit* unit)
 			}
 		}
 		if (oldMex != nullptr) {
-			state = State::ENGAGE;
-			// reclaim finished => UnitIdle => build on 2nd try
+			state = State::ENGAGE;  // reclaim finished => UnitIdle => build on 2nd try
 			TRY_UNIT(circuit, unit,
 				unit->CmdReclaimUnit(oldMex, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 			)

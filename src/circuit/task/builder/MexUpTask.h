@@ -15,8 +15,8 @@ namespace circuit {
 class CBMexUpTask: public IBuilderTask {
 public:
 	CBMexUpTask(ITaskManager* mgr, Priority priority,
-			  CCircuitDef* buildDef, const springai::AIFloat3& position,
-			  float cost, int timeout);
+				CCircuitDef* buildDef, int spotId, const springai::AIFloat3& position,
+				float cost, int timeout);
 	virtual ~CBMexUpTask();
 
 protected:
@@ -27,6 +27,9 @@ protected:
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
+
+private:
+	int spotId;
 };
 
 } // namespace circuit

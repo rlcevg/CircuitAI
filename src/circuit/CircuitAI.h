@@ -284,6 +284,7 @@ public:
 	CSetupManager*    GetSetupManager()    const { return setupManager.get(); }
 	CEnemyManager*    GetEnemyManager()    const { return enemyManager.get(); }
 	CMetalManager*    GetMetalManager()    const { return metalManager.get(); }
+	CEnergyManager*   GetEnergyManager()   const { return energyManager.get(); }
 	CMapManager*      GetMapManager()      const { return mapManager.get(); }
 	CThreatMap*       GetThreatMap()       const;
 	CInfluenceMap*    GetInflMap()         const;
@@ -336,6 +337,7 @@ private:
 	std::shared_ptr<CSetupManager> setupManager;
 	std::shared_ptr<CEnemyManager> enemyManager;
 	std::shared_ptr<CMetalManager> metalManager;
+	std::shared_ptr<CEnergyManager> energyManager;
 	std::shared_ptr<CMapManager> mapManager;
 	std::shared_ptr<CPathFinder> pathfinder;
 	std::shared_ptr<CTerrainManager> terrainManager;

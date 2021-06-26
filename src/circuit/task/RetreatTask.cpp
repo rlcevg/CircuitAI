@@ -275,7 +275,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 			CTerrainManager::TerrainPredicate predicate = [unitPos](const AIFloat3& p) {
 				return unitPos.SqDistance2D(p) > SQUARE(SQUARE_SIZE * 8);
 			};
-			pos = terrainMgr->FindBuildSite(cdef, pos, maxDist, UNIT_COMMAND_BUILD_NO_FACING, predicate);
+			pos = terrainMgr->FindBuildSite(cdef, pos, maxDist, UNIT_NO_FACING, predicate);
 			TRY_UNIT(circuit, unit,
 //				unit->CmdPriority(0);
 				unit->GetUnit()->PatrolTo(pos);

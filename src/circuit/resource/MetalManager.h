@@ -23,14 +23,14 @@ class CRagMatrix;
 class CMetalManager {
 public:
 	CMetalManager(CCircuitAI* circuit, CMetalData* metalData);
-	virtual ~CMetalManager();
+	~CMetalManager();
 
 private:
 	void Init();
 
-public:
 	void ParseMetalSpots();
 
+public:
 	bool HasMetalSpots() const { return (metalData->IsInitialized() && !metalData->IsEmpty()); }
 	bool HasMetalClusters() const { return !metalData->GetClusters().empty(); }
 	bool IsClusterizing() const { return metalData->IsClusterizing(); }
@@ -38,7 +38,6 @@ public:
 	void ClusterizeMetal(CCircuitDef* commDef);
 	void SetAuthority(CCircuitAI* authority) { circuit = authority; }
 
-public:
 	const CMetalData::Metals& GetSpots() const { return metalData->GetSpots(); }
 
 	const int FindNearestSpot(const springai::AIFloat3& pos) const {

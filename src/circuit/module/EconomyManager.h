@@ -46,6 +46,7 @@ public:
 	};
 	struct SSideInfo {
 		CCircuitDef* mexDef;
+		CCircuitDef* geoDef;
 		CCircuitDef* mohoMexDef;
 		CCircuitDef* defaultDef;
 
@@ -106,10 +107,12 @@ public:
 	int GetBuildDelay() const { return buildDelay; }
 
 	bool IsAllyOpenSpot(int spotId) const;
-	bool IsOpenSpot(int spotId) const { return openSpots[spotId] && (mexCount < mexMax); }
+	bool IsOpenSpot(int spotId) const { return mexSpots[spotId].isOpen && (mexCount < mexMax); }
 	void SetOpenSpot(int spotId, bool value);
-	bool IsUpgradingSpot(int spotId) const { return upSpots[spotId]; }
-	void SetUpgradingSpot(int spotId, bool value) { upSpots[spotId] = value; }
+	bool IsUpgradingSpot(int spotId) const { return mexSpots[spotId].isUp; }
+	void SetUpgradingSpot(int spotId, bool value) { mexSpots[spotId].isUp = value; }
+	bool IsOpenGeoSpot(int spotId) const { return geoSpots[spotId]; }
+	void SetOpenGeoSpot(int spotId, bool value) { geoSpots[spotId] = value; }
 	bool IsIgnorePull(const IBuilderTask* task) const;
 	bool IsIgnoreStallingPull(const IBuilderTask* task) const;
 
@@ -117,6 +120,7 @@ public:
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit);
 	IBuilderTask* UpdateReclaimTasks(const springai::AIFloat3& position, CCircuitUnit* unit, bool isNear = true);
 	IBuilderTask* UpdateEnergyTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
+	IBuilderTask* UpdateGeoTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	IBuilderTask* UpdateFactoryTasks(const springai::AIFloat3& position, CCircuitUnit* unit = nullptr);
 	IBuilderTask* UpdateFactoryTasks();
 	IBuilderTask* UpdateStorageTasks();
@@ -164,9 +168,13 @@ private:
 
 	// NOTE: MetalManager::SetOpenSpot used by whole allyTeam. Therefore
 	//       local spot's state descriptor needed for better expansion
-	std::vector<bool> openSpots;  // AI-local metal info
+	struct SMSpot {
+		bool isOpen : 1;
+		bool isUp : 1;  // spot being upgraded
+	};
+	std::vector<SMSpot> mexSpots;  // AI-local metal info
 	int mexCount;
-	std::vector<bool> upSpots;  // spot being upgraded
+	std::vector<bool> geoSpots;
 
 	struct SMetalExt {
 		float speed;
@@ -177,6 +185,11 @@ private:
 		float make;
 	};
 	CAvailList<SConvertExt> convertDefs;
+
+	struct SGeoExt {
+		float make;
+	};
+	CAvailList<SGeoExt> geoDefs;
 
 	float costRatio;
 	struct SEnergyExt {

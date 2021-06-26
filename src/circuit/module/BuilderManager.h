@@ -77,6 +77,13 @@ public:
 							  float shake = SQUARE_SIZE * 32,
 							  bool isActive = true,
 							  int timeout = ASSIGN_TIMEOUT);
+	IBuilderTask* EnqueueSpot(IBuilderTask::Priority priority,
+							  CCircuitDef* buildDef,
+							  int spotId,
+							  const springai::AIFloat3& position,
+							  IBuilderTask::BuildType type,
+							  bool isActive = true,
+							  int timeout = ASSIGN_TIMEOUT);
 	IBuilderTask* EnqueueFactory(IBuilderTask::Priority priority,
 								 CCircuitDef* buildDef,
 								 CCircuitDef* reprDef,

@@ -67,8 +67,8 @@ public:
 
 public:
 	CMetalData();
-	virtual ~CMetalData();
-	void Init(const Metals& spots);
+	~CMetalData();
+	void Init(const Metals&& spots);
 
 	bool IsInitialized() const { return isInitialized; }
 	bool IsEmpty() const { return spots.empty(); }

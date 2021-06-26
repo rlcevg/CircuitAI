@@ -10,6 +10,7 @@
 
 #include "setup/SetupData.h"
 #include "resource/MetalData.h"
+#include "resource/EnergyData.h"
 #include "terrain/TerrainData.h"
 #include "util/MaskHandler.h"
 
@@ -37,6 +38,7 @@ public:
 	const Circuits& GetCircuits() const { return circuits; }
 	CSetupData& GetSetupData() { return setupData; }
 	CMetalData& GetMetalData() { return metalData; }
+	CEnergyData& GetEnergyData() { return energyData; }
 	CTerrainData& GetTerrainData() { return terrainData; }
 	CMaskHandler& GetSideMasker() { return sideMasker; }
 	CMaskHandler& GetRoleMasker() { return roleMasker; }
@@ -48,6 +50,7 @@ private:
 	Circuits circuits;
 	CSetupData setupData;
 	CMetalData metalData;
+	CEnergyData energyData;
 	CTerrainData terrainData;
 	CMaskHandler sideMasker;
 	CMaskHandler roleMasker;

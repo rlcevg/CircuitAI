@@ -714,7 +714,7 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 	IBuilderTask* parentTask = nullptr;
 	// NOTE: circuit->GetTerrainManager()->IsWaterSector(pos) checks whole sector
 	//       but water recognized as height < 0
-	bool isWater = circuit->GetMap()->GetElevationAt(pos.x, pos.z) < -SQUARE_SIZE * 5;
+	bool isWater = circuit->GetMap()->GetElevationAt(pos.x, pos.z) < -SQUARE_SIZE * 2;
 	const std::vector<CCircuitDef*>& defenders = isWater ? GetSideInfo().waterDefenders : GetSideInfo().landDefenders;
 
 	// Front-line porc

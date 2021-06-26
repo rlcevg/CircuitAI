@@ -188,7 +188,7 @@ void CMetalManager::ParseMetalSpots()
 		}
 	}
 
-	metalData->Init(spots);
+	metalData->Init(std::move(spots));
 }
 
 void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
