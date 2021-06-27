@@ -27,6 +27,14 @@ CBRepairTask::~CBRepairTask()
 {
 }
 
+bool CBRepairTask::CanAssignTo(CCircuitUnit* unit) const
+{
+	if (unit->GetCircuitDef()->IsRoleComm()) {
+		return false;
+	}
+	return IRepairTask::CanAssignTo(unit);
+}
+
 void CBRepairTask::Start(CCircuitUnit* unit)
 {
 	IRepairTask::Start(unit);

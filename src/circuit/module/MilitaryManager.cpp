@@ -764,15 +764,15 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 	}
 	unsigned num = std::min<unsigned>(isPorc ? defenders.size() : preventCount, defenders.size());
 	std::function<bool (CCircuitDef*)> skip;
-	if (isPorc) {
-		skip = [&totalCost, closestPoint, maxCost](CCircuitDef* cdef) -> bool {
-			return (totalCost <= closestPoint->cost) || (!cdef->IsRoleAA() && (totalCost + cdef->GetCostM() < maxCost));
-		};
-	} else {
+//	if (isPorc) {
+//		skip = [&totalCost, closestPoint, maxCost](CCircuitDef* cdef) -> bool {
+//			return (totalCost <= closestPoint->cost) || (!cdef->IsRoleAA() && (totalCost + cdef->GetCostM() < maxCost));
+//		};
+//	} else {
 		skip = [&totalCost, closestPoint](CCircuitDef* cdef) -> bool {
 			return (totalCost <= closestPoint->cost);
 		};
-	}
+//	}
 
 	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	AIFloat3 mapCenter = circuit->GetTerrainManager()->GetTerrainCenter();
@@ -799,7 +799,7 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 			closestPoint->cost += defDef->GetCostM();
 			bool isFirst = (parentTask == nullptr);
 			const AIFloat3& buildPos = defDef->IsAttacker() ? frontPos : backPos;
-			IBuilderTask* task = builderMgr->EnqueueTask(IBuilderTask::Priority::HIGH, defDef, buildPos,
+			IBuilderTask* task = builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, buildPos,
 					IBuilderTask::BuildType::DEFENCE, defDef->GetCostM(), SQUARE_SIZE * 8, isFirst);
 			if (parentTask != nullptr) {
 				parentTask->SetNextTask(task);

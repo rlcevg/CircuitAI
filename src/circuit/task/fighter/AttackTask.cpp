@@ -318,7 +318,7 @@ void CAttackTask::FindTarget()
 				}
 			}
 
-			const float sqOEDist = /*group.vagueMetric * */pos.SqDistance2D(ePos) * scale;  // Own to Enemy distance
+			const float sqOEDist = group.vagueMetric * pos.SqDistance2D(ePos) * scale;  // Own to Enemy distance
 			if (minSqDist > sqOEDist) {
 				minSqDist = sqOEDist;
 				bestTarget = enemy;

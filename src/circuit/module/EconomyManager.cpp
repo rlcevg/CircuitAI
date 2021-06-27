@@ -976,7 +976,8 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			}
 		}
 
-		if (builderMgr->GetTasks(IBuilderTask::BuildType::MEX).size() < builderMgr->GetWorkerCount() * 2 + 1) {
+		const unsigned int mexTaskSize = builderMgr->GetTasks(IBuilderTask::BuildType::MEX).size();
+		if (mexTaskSize < builderMgr->GetWorkerCount() * 2 + 1) {
 			const std::vector<CCircuitDef*>& mexDefOptions = GetMexDefs(unit->GetCircuitDef());
 			std::vector<CCircuitDef*> mexDefs;
 			for (CCircuitDef* mDef : mexDefOptions) {
@@ -1017,7 +1018,10 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 
 		const float energyCur = GetEnergyCur();
 		const float energyStore = GetEnergyStore();
-		if ((builderMgr->GetTasks(IBuilderTask::BuildType::CONVERT).size() < 2) && convertDefs.HasAvail() && (energyCur > energyStore * 0.85f)) {
+		if ((builderMgr->GetTasks(IBuilderTask::BuildType::CONVERT).size() < 2)
+			&& ((mexTaskSize == 0) || (builderMgr->GetWorkerCount() > circuit->GetMilitaryManager()->GetGuardTaskNum() + 2))
+			&& convertDefs.HasAvail() && (energyCur > energyStore * 0.85f))
+		{
 			const AIFloat3& pos = circuit->GetSetupManager()->GetBasePos();  // TODO: resource-base position
 			CCircuitDef* convertDef = convertDefs.GetBestDef([frame, terrainMgr, &pos](CCircuitDef* cdef, const SConvertExt& data) {
 				return cdef->IsAvailable(frame) && terrainMgr->CanBeBuiltAt(cdef, pos);
@@ -1361,19 +1365,25 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	 */
 //	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());  // FIXME: ZK
 	const float buildTime = reprDef->GetBuildTime() / facDef->GetWorkerTime();
-	float miRequire = reprDef->GetCostM() / buildTime;
+	float miRequire;
 	float eiRequire = reprDef->GetCostE() / buildTime;
-	if (factoryMgr->GetFactoryCount() > 0) {
-		miRequire *= factoryMgr->GetNewFacModM();
+	if (isStart && (unit != nullptr)) {
+		const float startBuildTime = facDef->GetBuildTime() / unit->GetCircuitDef()->GetWorkerTime();
+		miRequire = facDef->GetCostM() / startBuildTime * 0.3f;
+		eiRequire += facDef->GetCostE() / startBuildTime * 0.3f;
+	} else {
+		miRequire = reprDef->GetCostM() / buildTime * factoryMgr->GetNewFacModM();
 		eiRequire *= factoryMgr->GetNewFacModE();
 	}
 	eiRequire += facDef->GetUpkeepE();
-	float metalFactor = GetAvgMetalIncome() - miRequire;
-	float engyFactor = (GetAvgEnergyIncome() - eiRequire) * ecoEMRatio;
+	const float metalFactor = GetAvgMetalIncome() - miRequire/* - builderMgr->GetBuildPower() * 0.2f*/;
+	const float engyFactor = (GetAvgEnergyIncome() - eiRequire) * ecoEMRatio/* - builderMgr->GetBuildPower() * 0.2f*/;
 	const int nanoQueued = builderMgr->GetTasks(IBuilderTask::BuildType::NANO).size();
 	const float factoryPower = factoryMgr->GetMetalRequire() * factoryMgr->GetFacModM() + nanoQueued * factoryMgr->GetAssistSpeed();
 	const float energyPower = factoryMgr->GetEnergyRequire() * factoryMgr->GetFacModE() * ecoEMRatio + nanoQueued * factoryMgr->GetAssistSpeed();
-	if ((metalFactor < factoryPower) && !isSwitchTime && (facDef->GetCostM() > GetMetalCur())) {
+	if ((metalFactor < factoryPower) && !isSwitchTime
+		&& (isStart || (facDef->GetCostM() > GetMetalCur())))
+	{
 		return nullptr;
 	}
 	if ((engyFactor < energyPower) || IsEnergyStalling()) {
@@ -1568,7 +1578,7 @@ void CEconomyManager::StartFactoryTask(const float seconds)
 				factoryMgr->RaiseSwitchTime();
 			}
 		}
-		IBuilderTask* factoryTask = UpdateFactoryTasks();
+		IBuilderTask* factoryTask = UpdateFactoryTasks(pos, comm);
 		if (factoryTask == nullptr) {
 //			if (isEnergyRequired) {
 //				if (comm != nullptr) {

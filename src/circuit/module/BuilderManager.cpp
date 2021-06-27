@@ -82,7 +82,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		}
 		CEconomyManager* economyMgr = this->circuit->GetEconomyManager();
 		if (unit->GetUnit()->IsBeingBuilt() && !economyMgr->IsEnergyStalling() && !economyMgr->IsMetalEmpty()) {
-			EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
+			EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
 		}
 	};
 	auto workerFinishedHandler = [this](CCircuitUnit* unit) {

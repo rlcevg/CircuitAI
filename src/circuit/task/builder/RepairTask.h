@@ -19,6 +19,8 @@ public:
 	CBRepairTask(ITaskManager* mgr, Priority priority, CAllyUnit* target, int timeout = 0);
 	virtual ~CBRepairTask();
 
+	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
+
 	virtual void Start(CCircuitUnit* unit) override;
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;

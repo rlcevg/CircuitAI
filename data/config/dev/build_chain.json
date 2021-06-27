@@ -168,6 +168,14 @@
 			]
 		}
 	},
+	"geo": {
+		"armgeo": {
+			"hub": [[{"unit": "armbeamer", "category": "defence", "offset": {"front": 64}}]]
+		},
+		"corgeo": {
+			"hub": [[{"unit": "corhllt", "category": "defence", "offset": {"front": 64}}]]
+		}
+	},
 	"factory": {
 		"armlab": {
 			"hub": [[{"unit": "armllt", "category": "defence", "offset": {"back": 5}, "priority": "now"}]]

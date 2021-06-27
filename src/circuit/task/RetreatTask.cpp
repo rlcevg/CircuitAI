@@ -323,6 +323,9 @@ void CRetreatTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 void CRetreatTask::CheckRepairer(CCircuitUnit* newRep)
 {
 	CCircuitUnit* unit = *units.begin();
+	if (unit->GetCircuitDef()->IsRoleComm()) {
+		return;
+	}
 
 	if ((costQuery != nullptr) && (costQuery->GetState() != IPathQuery::State::READY)) {  // not ready
 		return;
