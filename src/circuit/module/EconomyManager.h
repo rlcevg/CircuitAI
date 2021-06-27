@@ -47,7 +47,6 @@ public:
 	struct SSideInfo {
 		CCircuitDef* mexDef;
 		CCircuitDef* geoDef;
-		CCircuitDef* mohoMexDef;
 		CCircuitDef* defaultDef;
 
 		std::unordered_map<CCircuitDef*, SEnergyCond> engyLimits;
@@ -101,6 +100,7 @@ public:
 	bool IsMetalFull();
 	bool IsEnergyStalling();
 	bool IsEnergyEmpty();
+	bool IsEnergyFull();
 	bool IsEnergyRequired() const { return isEnergyRequired; }
 	void ClearEnergyRequired() { isEnergyRequired = false; }
 	bool IsExcessed() const { return metalProduced > metalUsed; }
@@ -236,6 +236,7 @@ private:
 	bool isMetalFull;
 	bool isEnergyStalling;
 	bool isEnergyEmpty;
+	bool isEnergyFull;
 	bool isEnergyRequired;
 
 	int metalPullFrame;

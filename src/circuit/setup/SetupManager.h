@@ -59,10 +59,13 @@ public:
 	void PickStartPos(CCircuitAI* circuit, StartPosType type);
 	void SetStartPos(const springai::AIFloat3& pos) { startPos = basePos = pos; }
 	const springai::AIFloat3& GetStartPos() const { return startPos; }
-	void SetBasePos(const springai::AIFloat3& pos) { basePos = pos; }
+	void SetBasePos(const springai::AIFloat3& pos);
 	const springai::AIFloat3& GetBasePos() const { return basePos; }
 	void SetLanePos(const springai::AIFloat3& pos) { lanePos = pos; }
 	const springai::AIFloat3& GetLanePos() const { return lanePos; }
+	const springai::AIFloat3& GetMetalBase() const { return metalBase; }
+	const springai::AIFloat3& GetEnergyBase() const { return energyBase; }
+	const springai::AIFloat3& GetEnergyBase2() const { return energyBase2; }
 	void ExecOnFindStart(StartFunc& func) { startFuncs.push_back(func); }
 
 	bool PickCommander();
@@ -104,6 +107,9 @@ private:
 	springai::AIFloat3 startPos;
 	springai::AIFloat3 basePos;
 	springai::AIFloat3 lanePos;
+	springai::AIFloat3 metalBase;
+	springai::AIFloat3 energyBase;
+	springai::AIFloat3 energyBase2;
 	std::shared_ptr<IMainJob> findStart;
 	std::vector<StartFunc> startFuncs;
 

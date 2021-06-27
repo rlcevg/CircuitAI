@@ -30,6 +30,7 @@ public:
 
 private:
 	int spotId;
+	CCircuitUnit* reclaimMex;
 };
 
 } // namespace circuit

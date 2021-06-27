@@ -214,7 +214,7 @@ public:
 
 	int sectorXSize;
 	int sectorZSize;
-	static int convertStoP;  // Sector to Position: times this value for convertion, divide for the reverse
+	static int convertStoP;  // Sector to Position: times this value for conversion, divide for the reverse
 
 private:
 //	int GetFileValue(int& fileSize, char*& file, std::string entry);

@@ -49,12 +49,12 @@
 		},
 		"solar": {
 			"type": ["rectangle", "engy_low"],
-			"ignore": ["engy_mid", "engy_high", "def_low", "nano"]
+ 			"ignore": ["engy_low", "def_low", "nano"]
 		},
 		"wind": {
 			"type": ["circle", "engy_low"],
 			"radius": 4,  // default: "explosion"
-			"not_ignore": ["factory", "engy_low", "terra"]
+			"not_ignore": ["factory", "engy_low", "pylon", "terra"]
 		},
 		"geo": {
 			"type": ["rectangle", "geo"],
@@ -68,12 +68,12 @@
 		"fusion": {
 			"type": ["circle", "engy_mid"],
 			"radius": 6,
-			"ignore": ["mex", "engy_mid", "engy_high", "def_low", "nano"]
+			"ignore": ["mex", "engy_mid", "def_low"]
 		},
 		"singu": {
 			"type": ["circle", "engy_high"],
 			"radius": 8,
-			"ignore": ["mex", "engy_high", "engy_mid", "def_low", "nano"]
+			"ignore": ["mex", "engy_high", "def_low"]
 		},
 		"pylon": {
 			"type": ["circle", "pylon"],

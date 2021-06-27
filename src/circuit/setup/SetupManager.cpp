@@ -43,6 +43,9 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 		, startPos(-RgtVector)
 		, basePos(-RgtVector)
 		, lanePos(-RgtVector)
+		, metalBase(-RgtVector)
+		, energyBase(-RgtVector)
+		, energyBase2(-RgtVector)
 		, emptyShield(0.f)
 		, commChoice(nullptr)
 		, isSideSelected(false)
@@ -252,6 +255,28 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 	AIFloat3 pos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	SetBasePos(pos);
 	circuit->GetGame()->SendStartPosition(false, pos);
+}
+
+void CSetupManager::SetBasePos(const AIFloat3& pos)
+{
+	basePos = pos;
+	const AIFloat3 mapCenter = circuit->GetTerrainManager()->GetTerrainCenter();
+	AIFloat3 refPos;
+//	if (circuit->GetMetalManager()->GetClusters().empty()) {
+		refPos = pos;
+//	} else {
+//		int index = circuit->GetMetalManager()->FindNearestCluster(pos);
+//		refPos = circuit->GetMetalManager()->GetClusters()[index].position;
+//	}
+	const AIFloat3 enemyDir = (mapCenter - refPos).Normalize2D();
+	const AIFloat3 normal = AIFloat3(-enemyDir.z, 0, enemyDir.x) * ((rand() < RAND_MAX / 2) ? -1.f : 1.f);
+	const AIFloat3 backPos = refPos - enemyDir * 300.f;
+	metalBase = backPos + normal * 150.f;
+	energyBase = backPos - normal * 150.f;
+	energyBase2 = backPos - enemyDir * 300.f;
+	CTerrainManager::CorrectPosition(metalBase);
+	CTerrainManager::CorrectPosition(energyBase);
+	CTerrainManager::CorrectPosition(energyBase2);
 }
 
 bool CSetupManager::PickCommander()

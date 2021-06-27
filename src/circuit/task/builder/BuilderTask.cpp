@@ -710,7 +710,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 					case SBuildInfo::Condition::ENERGY: {
 						CEconomyManager* ecoMgr = circuit->GetEconomyManager();
 						// isValid = !ecoMgr->IsEnergyStalling() && (ecoMgr->GetAvgEnergyIncome() > ecoMgr->GetEnergyPull() + bi.cdef->GetUpkeepE());
-						isValid = !ecoMgr->IsEnergyStalling() && (ecoMgr->GetEnergyCur() > ecoMgr->GetEnergyStore() * 0.85f);
+						isValid = !ecoMgr->IsEnergyStalling() && ecoMgr->IsEnergyFull();
 						if (bi.value < 0.f) {  // -1.f == false
 							isValid = !isValid;
 						}

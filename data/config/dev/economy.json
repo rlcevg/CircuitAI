@@ -59,9 +59,9 @@
 		"armada": "armgeo",
 		"cortex": "corgeo"
 	},
-	"metal": {
-		"armada": ["armmex", "armmoho"],  // [T1_mex, T2_mex]
-		"cortex": ["cormex", "cormoho"]  // [T1_mex, T2_mex]
+	"mex": {
+		"armada": "armmex",
+		"cortex": "cormex"
 	},
 	"mex_up": 2,  // maximum number of simultaneous mex upgrades
 

@@ -55,6 +55,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, isMetalFull(false)
 		, isEnergyStalling(false)
 		, isEnergyEmpty(false)
+		, isEnergyFull(false)
 		, isEnergyRequired(false)
 		, metal(SResourceInfo {-1, .0f, .0f, .0f, .0f})
 		, energy(SResourceInfo {-1, .0f, .0f, .0f, .0f})
@@ -362,7 +363,7 @@ void CEconomyManager::ReadConfig()
 	CMaskHandler& sideMasker = circuit->GetGameAttribute()->GetSideMasker();
 	sideInfos.resize(sideMasker.GetMasks().size());
 	const Json::Value& engySides = energy["side"];
-	const Json::Value& metal = econ["metal"];
+	const Json::Value& mex = econ["mex"];
 	const Json::Value& geo = econ["geo"];
 	const Json::Value& deflt = econ["default"];
 	for (const auto& kv : sideMasker.GetMasks()) {
@@ -395,20 +396,13 @@ void CEconomyManager::ReadConfig()
 			list[cdef] = engies[i].second;
 		}
 
-		// Metal
-		const char* name = metal[kv.first][0].asCString();
+		// Mex
+		const char* name = mex[kv.first].asCString();
 		CCircuitDef* cdef = circuit->GetCircuitDef(name);
 		if (cdef != nullptr) {
 			sideInfo.mexDef = cdef;
 		} else {
 			circuit->LOG("CONFIG %s: has unknown mexDef '%s'", cfgName.c_str(), name);
-		}
-		name = metal[kv.first][1].asCString();
-		cdef = circuit->GetCircuitDef(name);
-		if (cdef != nullptr) {
-			sideInfo.mohoMexDef = cdef;
-		} else {
-			circuit->LOG("CONFIG %s: has unknown mohoMexDef '%s'", cfgName.c_str(), name);
 		}
 
 		// Geo
@@ -843,6 +837,12 @@ bool CEconomyManager::IsEnergyEmpty()
 	return isEnergyEmpty;
 }
 
+bool CEconomyManager::IsEnergyFull()
+{
+	UpdateEconomy();
+	return isEnergyFull;
+}
+
 bool CEconomyManager::IsAllyOpenSpot(int spotId) const
 {
 	return IsOpenSpot(spotId) && circuit->GetMetalManager()->IsOpenSpot(spotId);
@@ -1016,18 +1016,16 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			}
 		}
 
-		const float energyCur = GetEnergyCur();
-		const float energyStore = GetEnergyStore();
 		if ((builderMgr->GetTasks(IBuilderTask::BuildType::CONVERT).size() < 2)
 			&& ((mexTaskSize == 0) || (builderMgr->GetWorkerCount() > circuit->GetMilitaryManager()->GetGuardTaskNum() + 2))
-			&& convertDefs.HasAvail() && (energyCur > energyStore * 0.85f))
+			&& convertDefs.HasAvail() && IsEnergyFull())
 		{
-			const AIFloat3& pos = circuit->GetSetupManager()->GetBasePos();  // TODO: resource-base position
+			const AIFloat3& pos = circuit->GetSetupManager()->GetMetalBase();
 			CCircuitDef* convertDef = convertDefs.GetBestDef([frame, terrainMgr, &pos](CCircuitDef* cdef, const SConvertExt& data) {
 				return cdef->IsAvailable(frame) && terrainMgr->CanBeBuiltAt(cdef, pos);
 			});
 			if (convertDef != nullptr) {
-				task = builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, convertDef, pos, IBuilderTask::BuildType::CONVERT);
+				task = builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, convertDef, pos, IBuilderTask::BuildType::CONVERT, 0.f, true);
 				return task;
 			}
 		}
@@ -1198,20 +1196,10 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	// 4) at production base
 	AIFloat3 buildPos = -RgtVector;
 	if (bestDef->GetCostM() < 200.0f) {
-//		CMetalManager* metalMgr = circuit->GetMetalManager();
-//		int index = metalMgr->FindNearestSpot(position);
-//		if (index != -1) {
-//			const CMetalData::Metals& spots = metalMgr->GetSpots();
-//			buildPos = spots[index].position;
-//		}
-		buildPos = position;
+		buildPos = utils::get_radial_pos(position, bestDef->GetRadius() + SQUARE_SIZE * 6);
 	} else {
-		buildPos = circuit->GetSetupManager()->GetBasePos();
-
-		AIFloat3 mapCenter = circuit->GetTerrainManager()->GetTerrainCenter();
-		buildPos += (buildPos - mapCenter).Normalize2D() * 500.0f * (bestDef->GetCostM() / energyDefs.GetFirstDef()->GetCostM());
+		buildPos = (bestDef->GetCostM() < 1000.0f) ? circuit->GetSetupManager()->GetEnergyBase() : circuit->GetSetupManager()->GetEnergyBase2();
 		CCircuitDef* bdef = (unit == nullptr) ? bestDef : unit->GetCircuitDef();
-		CTerrainManager::CorrectPosition(buildPos);
 		buildPos = circuit->GetTerrainManager()->GetBuildPosition(bdef, buildPos);
 	}
 
@@ -1221,7 +1209,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		IBuilderTask::Priority priority = isEnergyStalling
 				? (IsEnergyEmpty() ? IBuilderTask::Priority::NOW : IBuilderTask::Priority::HIGH)
 				: IBuilderTask::Priority::NORMAL;
-		IBuilderTask* task = builderMgr->EnqueueTask(priority, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, SQUARE_SIZE * 16.0f, true);
+		IBuilderTask* task = builderMgr->EnqueueTask(priority, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, 0.f, true);
 		if ((unit == nullptr) || unit->GetCircuitDef()->CanBuild(bestDef)) {
 			return task;
 		}
@@ -1369,8 +1357,8 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	float eiRequire = reprDef->GetCostE() / buildTime;
 	if (isStart && (unit != nullptr)) {
 		const float startBuildTime = facDef->GetBuildTime() / unit->GetCircuitDef()->GetWorkerTime();
-		miRequire = facDef->GetCostM() / startBuildTime * 0.3f;
-		eiRequire += facDef->GetCostE() / startBuildTime * 0.3f;
+		miRequire = facDef->GetCostM() / startBuildTime * 0.25f;
+		eiRequire += facDef->GetCostE() / startBuildTime * 0.25f;
 	} else {
 		miRequire = reprDef->GetCostM() / buildTime * factoryMgr->GetNewFacModM();
 		eiRequire *= factoryMgr->GetNewFacModE();
@@ -1381,9 +1369,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	const int nanoQueued = builderMgr->GetTasks(IBuilderTask::BuildType::NANO).size();
 	const float factoryPower = factoryMgr->GetMetalRequire() * factoryMgr->GetFacModM() + nanoQueued * factoryMgr->GetAssistSpeed();
 	const float energyPower = factoryMgr->GetEnergyRequire() * factoryMgr->GetFacModE() * ecoEMRatio + nanoQueued * factoryMgr->GetAssistSpeed();
-	if ((metalFactor < factoryPower) && !isSwitchTime
-		&& (isStart || (facDef->GetCostM() > GetMetalCur())))
-	{
+	if ((metalFactor < factoryPower) && !isSwitchTime && (isStart || (facDef->GetCostM() > GetMetalCur()))) {
 		return nullptr;
 	}
 	if ((engyFactor < energyPower) || IsEnergyStalling()) {

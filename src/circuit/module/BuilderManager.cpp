@@ -52,10 +52,6 @@
 #include "spring/SpringCallback.h"
 
 #include "Log.h"
-// FIXME: BA auto-mexer
-#include "Sim/Units/CommandAI/Command.h"
-#include "Command.h"
-// FIXME: BA auto-mexer
 
 namespace circuit {
 
@@ -214,7 +210,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		const int facing = unit->GetUnit()->GetBuildingFacing();
 		this->circuit->GetTerrainManager()->DelBlocker(mexDef, pos, facing, true);
 		int index = this->circuit->GetMetalManager()->FindNearestSpot(pos);
-		if ((index < 0) || this->circuit->GetEconomyManager()->IsUpgradingSpot(index)) {
+		if ((index < 0) || (reclaimUnits.find(unit) != reclaimUnits.end())) {
 			return;
 		}
 		this->circuit->GetMetalManager()->SetOpenSpot(index, true);
@@ -556,7 +552,7 @@ int CBuilderManager::UnitFinished(CCircuitUnit* unit)
 		DoneTask(itre->second);
 	}
 	auto itcl = reclaimUnits.find(unit);
-	if (itcl != reclaimUnits.end()) {
+	if ((itcl != reclaimUnits.end()) && (itcl->second != nullptr)) {
 		AbortTask(itcl->second);
 	}
 
@@ -599,7 +595,7 @@ int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 		AbortTask(itre->second);
 	}
 	auto itcl = reclaimUnits.find(unit);
-	if (itcl != reclaimUnits.end()) {
+	if ((itcl != reclaimUnits.end()) && (itcl->second != nullptr)) {
 		DoneTask(itcl->second);
 	}
 
@@ -1684,9 +1680,7 @@ void CBuilderManager::Watchdog()
 				float maxHealth = u->GetMaxHealth();
 				float buildPercent = (maxHealth - u->GetHealth()) / maxHealth;
 				CCircuitDef* cdef = unit->GetCircuitDef();
-				if ((cdef->GetBuildTime() * buildPercent < maxCost) || (*cdef == *terraDef)
-						|| (*cdef == *economyMgr->GetSideInfo().mohoMexDef))  // FIXME: BA
-				{
+				if ((cdef->GetBuildTime() * buildPercent < maxCost) || (*cdef == *terraDef)) {
 					EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
 				} else {
 					EnqueueReclaim(IBuilderTask::Priority::NORMAL, unit);

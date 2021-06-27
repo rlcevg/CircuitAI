@@ -27,6 +27,7 @@ CBMexUpTask::CBMexUpTask(ITaskManager* mgr, Priority priority,
 						 float cost, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::MEXUP, cost, 0.f, timeout)
 		, spotId(spotId)
+		, reclaimMex(nullptr)
 {
 	manager->GetCircuit()->GetEconomyManager()->SetUpgradingSpot(spotId, true);
 }
@@ -62,13 +63,16 @@ void CBMexUpTask::Finish()
 
 	// FIXME: Won't work with EnqueueReclaim
 	circuit->GetEconomyManager()->SetUpgradingSpot(spotId, false);
+	circuit->GetBuilderManager()->UnregisterReclaim(reclaimMex);
 }
 
 void CBMexUpTask::Cancel()
 {
 	IBuilderTask::Cancel();
 
-	manager->GetCircuit()->GetEconomyManager()->SetUpgradingSpot(spotId, false);
+	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->GetEconomyManager()->SetUpgradingSpot(spotId, false);
+	circuit->GetBuilderManager()->UnregisterReclaim(reclaimMex);
 }
 
 void CBMexUpTask::Execute(CCircuitUnit* unit)
@@ -120,6 +124,8 @@ void CBMexUpTask::Execute(CCircuitUnit* unit)
 		}
 		if (oldMex != nullptr) {
 			state = State::ENGAGE;  // reclaim finished => UnitIdle => build on 2nd try
+			reclaimMex = oldMex;
+			circuit->GetBuilderManager()->RegisterReclaim(reclaimMex);
 			TRY_UNIT(circuit, unit,
 				unit->CmdReclaimUnit(oldMex, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 			)
@@ -133,6 +139,7 @@ void CBMexUpTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	if (State::ENGAGE == state) {
 		state = State::ROAM;
+		manager->GetCircuit()->GetBuilderManager()->UnregisterReclaim(reclaimMex);
 		Execute(unit);
 		return;
 	}

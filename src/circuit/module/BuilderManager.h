@@ -153,6 +153,8 @@ public:
 
 	IBuilderTask* GetReclaimFeatureTask(const springai::AIFloat3& pos, float radius) const;
 	IBuilderTask* GetResurrectTask(const springai::AIFloat3& pos, float radius) const;
+	void RegisterReclaim(CAllyUnit* unit) { reclaimUnits[unit] = nullptr; }
+	void UnregisterReclaim(CAllyUnit* unit) { reclaimUnits.erase(unit); }
 	bool IsReclaimUnit(CAllyUnit* unit) const { return reclaimUnits.find(unit) != reclaimUnits.end(); }
 	bool IsReclaimFeature(const springai::AIFloat3& pos, float radius) const {
 		return GetReclaimFeatureTask(pos, radius) != nullptr;
