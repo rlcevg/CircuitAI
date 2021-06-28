@@ -5,7 +5,7 @@
 		"fac_land_t1": {
 			// "type": [<blocker_shape>, <structure_type>]
 			// Available blocker_shape: rectangle, circle.
-			// Available structure_type: factory, mex, engy_low, engy_mid, engy_high, pylon, def_low, def_mid, def_high, special, nano, terra, unknown
+			// Available structure_type: factory, mex, geo, pylon, convert, engy_low, engy_mid, engy_high, def_low, def_mid, def_high, special, nano, terra, unknown
 			"type": ["rectangle", "factory"],
 
 			// Unit of measurement: 1 size/yard/radius = SQUARE_SIZE * 2 = 16 elmos, integer.
@@ -32,7 +32,7 @@
 		"fac_air": {
 			"type": ["rectangle", "factory"],
 			"yard": [6, 6],
-			"not_ignore": ["pylon", "factory", "special"]
+			"not_ignore": ["convert", "factory", "special"]
 		},
 		"fac_water": {
 			"type": ["rectangle", "factory"],
@@ -64,6 +64,15 @@
 			"yard": [6,6],  // "default": "explosion"
 			"ignore": ["engy_low"]
 		},
+		"geo": {
+			"type": ["rectangle", "geo"],
+			"yard": [2, 2],
+			"ignore": ["all"]
+		},
+		"geo2": {
+			"type": ["rectangle", "geo"],
+			"ignore": ["all"]
+		},
 		"fusion": {
 			"type": ["rectangle", "engy_high"],
 			"yard": [5, 5],
@@ -85,11 +94,14 @@
 			"offset": [0, -4],
 			"ignore": ["all"]
 		},
+		"mex2": {
+			"type": ["rectangle", "mex"],
+			"ignore": ["all"]
+		},
 		"converter": {
-			"type": ["rectangle", "pylon"],
+			"type": ["rectangle", "convert"],
 			"yard": [6, 6],
-			"ignore": ["pylon"]
-			
+			"ignore": ["convert"]
 		},
 		"def_low": {
 			"type": ["circle", "def_low"],
@@ -153,16 +165,18 @@
 		"solar": ["armsolar", "corsolar"],
 		"advsolar":["armadvsol", "coradvsol"],
 		"wind": ["armwin", "corwin", "armtide", "cortide"],
+		"geo": ["armgeo", "corgeo"],
+		"geo2": ["armageo", "corageo"],
 		"fusion":["armfus", "armuwfus", "armckfus", "armafus", "corfus", "coruwfus", "corafus"],
 		"store": ["armmstor", "armestor", "cormstor", "corestor"],
-		"converter": ["armmakr", "cormakr", "armmmkr", "cormmkr"],
-		"mex": ["armmex", "cormex"],
+		"mex": ["armmex", "cormex", "armuwmex", "armuwmex"],
+		"mex2": ["armmoho", "cormoho", "armuwmme", "coruwmme"],
+		"converter": ["armmakr", "cormakr", "armmmkr", "cormmkr", "armfmkr", "corfmkr", "armuwmmm", "coruwmmm"],
 		"def_low": ["armllt", "corllt", "armbeamer", "corhllt"],
 		"def_mid": ["armclaw", "cormaw"],
 		"def_air": ["armferret", "armcir", "corrl", "cormadsam", "corerad"],
 		"caretaker": ["armnanotc", "armasp", "cornanotc", "corasp"],
 		"small": ["armrad", "corrad"]
-//pylon: converter
 //engy_low: wind
 //engy mid: fusion
 //engy_high: 

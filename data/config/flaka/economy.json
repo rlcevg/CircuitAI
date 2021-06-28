@@ -77,9 +77,13 @@
 	"cluster_range": 1500, //900
 	//size of mex cluster between two points
 
-	"metal": {
-		"armada": ["armmex", "armmoho"],  // [T1_mex, T2_mex]
-		"cortex": ["cormex", "cormoho"]  // [T1_mex, T2_mex]
+	"geo": {
+		"armada": "armgeo",
+		"cortex": "corgeo"
+	},
+	"mex": {
+		"armada": "armmex",
+		"cortex": "cormex"
 	},
 // buildpower -  Mobile buildpower to metal income ratio,
 // works but with regard to behaviour->UnitDef->build_speed. With 1.25 and m-income=100 means AI will try to build at max 125 mobile build_speed in total.
@@ -93,7 +97,7 @@
 //mspull - // Mobile constructor to static constructor metal pull ratio; [[<value>, <start_mex_percent>], [<value>, <end_mex_percent>]]
 
 	"mex_up": 3,  // maximum number of simultaneous mex upgrades (2 in v028)
-	"goal_build": 50.0,  // assign builders till targeted time to build reached, in seconds 45
+	"goal_exec": 50.0,  // assign builders till targeted time to build reached, in seconds 45
 	"build_mod": 1000.0,  // default build_mod for UnitDef, if it's not specified
 	"eps_step": 0.2,
 	"buildpower": 1.50, //1.25
