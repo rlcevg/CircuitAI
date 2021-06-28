@@ -63,6 +63,8 @@ void CBGuardTask::Stop(bool done)
 
 void CBGuardTask::Execute(CCircuitUnit* unit)
 {
+	executors.insert(unit);
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitUnit* vip = circuit->GetTeamUnit(vipId);
 	if (vip != nullptr) {

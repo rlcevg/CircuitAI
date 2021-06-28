@@ -638,9 +638,10 @@
 
 	// adv shipyard - armasy
 	"armacsub": {
-		"role": ["builder", "sub"],
+		"role": ["builderT2", "sub"],
+		"attribute": ["solo"],
 		"retreat": 0.3,
-		"limit": 4,
+		"limit": 10,
 		"build_speed": 10.0
 	},
 	"armsubk": {
@@ -899,9 +900,10 @@
 
 	// adv shipyard - corasy
 	"coracsub": {
-		"role": ["builder", "sub"],
+		"role": ["builderT2", "sub"],
+		"attribute": ["solo"],
 		"retreat": 0.3,
-		"limit": 4,
+		"limit": 10,
 		"build_speed": 10.0
 	},
 	"corshark": {

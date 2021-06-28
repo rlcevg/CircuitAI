@@ -44,7 +44,7 @@ void CBMexUpTask::Finish()
 	Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
 	const float maxRange = buildDef->GetDef()->GetResourceExtractorRange(metalRes);
 	CCircuitUnit* oldMex = nullptr;
-	const auto& unitIds = circuit->GetCallback()->GetFriendlyUnitIdsIn(buildPos, maxRange);
+	const auto& unitIds = circuit->GetCallback()->GetFriendlyUnitIdsIn(buildPos, maxRange, false);
 	float curExtract = buildDef->GetDef()->GetExtractsResource(metalRes);
 	for (ICoreUnit::Id unitId : unitIds) {
 		CCircuitUnit* curMex = circuit->GetTeamUnit(unitId);
@@ -77,6 +77,8 @@ void CBMexUpTask::Cancel()
 
 void CBMexUpTask::Execute(CCircuitUnit* unit)
 {
+	executors.insert(unit);
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	TRY_UNIT(circuit, unit,
 		unit->CmdPriority(ClampPriority());
@@ -111,7 +113,7 @@ void CBMexUpTask::Execute(CCircuitUnit* unit)
 		)
 	} else {
 		CCircuitUnit* oldMex = nullptr;
-		const auto& unitIds = circuit->GetCallback()->GetFriendlyUnitIdsIn(position, searchRadius);
+		const auto& unitIds = circuit->GetCallback()->GetFriendlyUnitIdsIn(position, searchRadius, false);
 		for (ICoreUnit::Id unitId : unitIds) {
 			CCircuitUnit* curMex = circuit->GetTeamUnit(unitId);
 			if (curMex == nullptr) {

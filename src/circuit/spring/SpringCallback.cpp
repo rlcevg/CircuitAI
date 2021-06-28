@@ -52,12 +52,12 @@ const std::vector<Unit*>& COOAICallback::GetFriendlyUnits()
 	return units;
 }
 
-const std::vector<Unit*>& COOAICallback::GetFriendlyUnitsIn(const AIFloat3& pos, float radius)
+const std::vector<Unit*>& COOAICallback::GetFriendlyUnitsIn(const AIFloat3& pos, float radius, bool spherical)
 {
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
 	unitIds.resize(MAX_UNITS);
-	int size = sAICallback->getFriendlyUnitsIn(skirmishAIId, pos_posF3, radius, unitIds.data(), MAX_UNITS);
+	int size = sAICallback->getFriendlyUnitsIn(skirmishAIId, pos_posF3, radius, spherical, unitIds.data(), MAX_UNITS);
 
 	units.resize(size);
 	for (int i = 0; i < size; ++i) {
@@ -67,20 +67,20 @@ const std::vector<Unit*>& COOAICallback::GetFriendlyUnitsIn(const AIFloat3& pos,
 	return units;
 }
 
-bool COOAICallback::IsFriendlyUnitsIn(const AIFloat3& pos, float radius) const
+bool COOAICallback::IsFriendlyUnitsIn(const AIFloat3& pos, float radius, bool spherical) const
 {
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
-	int size = sAICallback->getFriendlyUnitsIn(skirmishAIId, pos_posF3, radius, nullptr, -1);
+	int size = sAICallback->getFriendlyUnitsIn(skirmishAIId, pos_posF3, radius, spherical, nullptr, -1);
 	return size > 0;
 }
 
-const std::vector<int>& COOAICallback::GetFriendlyUnitIdsIn(const springai::AIFloat3& pos, float radius)
+const std::vector<int>& COOAICallback::GetFriendlyUnitIdsIn(const springai::AIFloat3& pos, float radius, bool spherical)
 {
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
 	unitIds.resize(MAX_UNITS);
-	int size = sAICallback->getFriendlyUnitsIn(skirmishAIId, pos_posF3, radius, unitIds.data(), MAX_UNITS);
+	int size = sAICallback->getFriendlyUnitsIn(skirmishAIId, pos_posF3, radius, spherical, unitIds.data(), MAX_UNITS);
 	unitIds.resize(size);
 	return unitIds;
 }
@@ -98,12 +98,12 @@ const std::vector<Unit*>& COOAICallback::GetEnemyUnits()
 	return units;
 }
 
-const std::vector<Unit*>& COOAICallback::GetEnemyUnitsIn(const AIFloat3& pos, float radius)
+const std::vector<Unit*>& COOAICallback::GetEnemyUnitsIn(const AIFloat3& pos, float radius, bool spherical)
 {
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
 	unitIds.resize(MAX_UNITS);
-	int size = sAICallback->getEnemyUnitsIn(skirmishAIId, pos_posF3, radius, unitIds.data(), MAX_UNITS);
+	int size = sAICallback->getEnemyUnitsIn(skirmishAIId, pos_posF3, radius, spherical, unitIds.data(), MAX_UNITS);
 
 	units.resize(size);
 	for (int i = 0; i < size; ++i) {
@@ -113,12 +113,12 @@ const std::vector<Unit*>& COOAICallback::GetEnemyUnitsIn(const AIFloat3& pos, fl
 	return units;
 }
 
-const std::vector<int>& COOAICallback::GetEnemyUnitIdsIn(const AIFloat3& pos, float radius)
+const std::vector<int>& COOAICallback::GetEnemyUnitIdsIn(const AIFloat3& pos, float radius, bool spherical)
 {
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
 	unitIds.resize(MAX_UNITS);
-	int size = sAICallback->getEnemyUnitsIn(skirmishAIId, pos_posF3, radius, unitIds.data(), MAX_UNITS);
+	int size = sAICallback->getEnemyUnitsIn(skirmishAIId, pos_posF3, radius, spherical, unitIds.data(), MAX_UNITS);
 	unitIds.resize(size);
 	return unitIds;
 }
@@ -129,11 +129,11 @@ bool COOAICallback::IsFeatures() const
 	return size > 0;
 }
 
-bool COOAICallback::IsFeaturesIn(const AIFloat3& pos, float radius) const
+bool COOAICallback::IsFeaturesIn(const AIFloat3& pos, float radius, bool spherical) const
 {
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
-	int size = sAICallback->getFeaturesIn(skirmishAIId, pos_posF3, radius, nullptr, -1);
+	int size = sAICallback->getFeaturesIn(skirmishAIId, pos_posF3, radius, spherical, nullptr, -1);
 	return size > 0;
 }
 

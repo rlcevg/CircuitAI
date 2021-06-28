@@ -942,7 +942,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 						&& !IsUpgradingSpot(index)
 						&& terrainMgr->CanReachAtSafe(unit, pos, unit->GetCircuitDef()->GetBuildDistance()))  // hostile environment
 					{
-						const auto& unitIds = circuit->GetCallback()->GetFriendlyUnitIdsIn(pos, maxRange);
+						const auto& unitIds = circuit->GetCallback()->GetFriendlyUnitIdsIn(pos, maxRange, false);
 						float curExtract = -1.f;
 						for (ICoreUnit::Id unitId : unitIds) {
 							CCircuitUnit* curMex = circuit->GetTeamUnit(unitId);
@@ -1354,14 +1354,14 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 //	const float metalIncome = std::min(GetAvgMetalIncome(), GetAvgEnergyIncome());  // FIXME: ZK
 	const float buildTime = reprDef->GetBuildTime() / facDef->GetWorkerTime();
 	float miRequire;
-	float eiRequire = reprDef->GetCostE() / buildTime;
+	float eiRequire;
 	if (isStart && (unit != nullptr)) {
 		const float startBuildTime = facDef->GetBuildTime() / unit->GetCircuitDef()->GetWorkerTime();
 		miRequire = facDef->GetCostM() / startBuildTime * 0.25f;
-		eiRequire += facDef->GetCostE() / startBuildTime * 0.25f;
+		eiRequire = facDef->GetCostE() / startBuildTime;
 	} else {
 		miRequire = reprDef->GetCostM() / buildTime * factoryMgr->GetNewFacModM();
-		eiRequire *= factoryMgr->GetNewFacModE();
+		eiRequire = reprDef->GetCostE() / buildTime * factoryMgr->GetNewFacModE();
 	}
 	eiRequire += facDef->GetUpkeepE();
 	const float metalFactor = GetAvgMetalIncome() - miRequire/* - builderMgr->GetBuildPower() * 0.2f*/;

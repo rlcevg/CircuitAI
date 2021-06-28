@@ -30,7 +30,7 @@ public:
 
 private:
 	int spotId;
-	CCircuitUnit* reclaimMex;
+	CCircuitUnit* reclaimMex;  // NOTE: never use it as unit, it's a mark (void*)
 };
 
 } // namespace circuit

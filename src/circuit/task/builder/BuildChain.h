@@ -20,7 +20,7 @@ namespace circuit {
 
 struct SBuildInfo {
 	enum class Direction: char {LEFT = 0, RIGHT, FRONT, BACK, NONE};
-	enum class Condition: char {AIR = 0, ENERGY, WIND, CHANCE, ALWAYS};
+	enum class Condition: char {AIR = 0, ENERGY, WIND, SENSOR, CHANCE, ALWAYS};
 
 	using DirName = std::map<std::string, Direction>;
 	using CondName = std::map<std::string, Condition>;

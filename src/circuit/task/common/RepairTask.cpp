@@ -116,6 +116,8 @@ void IRepairTask::Cancel()
 
 void IRepairTask::Execute(CCircuitUnit* unit)
 {
+	executors.insert(unit);
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	CAllyUnit* repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
 

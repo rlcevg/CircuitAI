@@ -74,6 +74,8 @@ void CBPatrolTask::Cancel()
 
 void CBPatrolTask::Execute(CCircuitUnit* unit)
 {
+	executors.insert(unit);
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	TRY_UNIT(circuit, unit,
 		unit->CmdPriority(0);

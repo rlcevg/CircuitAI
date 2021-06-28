@@ -721,6 +721,29 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 						float avgWind = (circuit->GetMap()->GetMaxWind() + circuit->GetMap()->GetMinWind()) * 0.5f;
 						isValid = isValid && (avgWind >= bi.value);
 					} break;
+					case SBuildInfo::Condition::SENSOR: {
+						std::function<bool (CCircuitDef*)> isSensor;
+						if (bi.cdef->IsRadar()) {
+							isSensor = [](CCircuitDef* cdef) { return cdef->IsRadar(); };
+						} else if (bi.cdef->IsSonar()) {
+							isSensor = [](CCircuitDef* cdef) { return cdef->IsSonar(); };
+						} else {
+							isValid = false;
+							break;
+						}
+						COOAICallback* clb = circuit->GetCallback();
+						const auto& friendlies = clb->GetFriendlyUnitIdsIn(buildPos, bi.value);
+						for (int auId : friendlies) {
+							if (auId == -1) {
+								continue;
+							}
+							CCircuitDef::Id defId = clb->Unit_GetDefId(auId);
+							if (isSensor(circuit->GetCircuitDef(defId))) {
+								isValid = false;
+								break;
+							}
+						}
+					} break;
 					case SBuildInfo::Condition::CHANCE: {
 						isValid = rand() < bi.value * RAND_MAX;
 					} break;

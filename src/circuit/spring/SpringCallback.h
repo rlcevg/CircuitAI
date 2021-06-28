@@ -39,13 +39,13 @@ public:
 	std::vector<springai::Unit*> GetTeamUnits() const { return callback->GetTeamUnits(); }
 
 	const std::vector<springai::Unit*>& GetFriendlyUnits();
-	const std::vector<springai::Unit*>& GetFriendlyUnitsIn(const springai::AIFloat3& pos, float radius);
-	bool IsFriendlyUnitsIn(const springai::AIFloat3& pos, float radius) const;
-	const std::vector<int>& GetFriendlyUnitIdsIn(const springai::AIFloat3& pos, float radius);
+	const std::vector<springai::Unit*>& GetFriendlyUnitsIn(const springai::AIFloat3& pos, float radius, bool spherical = true);
+	bool IsFriendlyUnitsIn(const springai::AIFloat3& pos, float radius, bool spherical = true) const;
+	const std::vector<int>& GetFriendlyUnitIdsIn(const springai::AIFloat3& pos, float radius, bool spherical = true);
 
 	const std::vector<springai::Unit*>& GetEnemyUnits();
-	const std::vector<springai::Unit*>& GetEnemyUnitsIn(const springai::AIFloat3& pos, float radius);
-	const std::vector<int>& GetEnemyUnitIdsIn(const springai::AIFloat3& pos, float radius);
+	const std::vector<springai::Unit*>& GetEnemyUnitsIn(const springai::AIFloat3& pos, float radius, bool spherical = true);
+	const std::vector<int>& GetEnemyUnitIdsIn(const springai::AIFloat3& pos, float radius, bool spherical = true);
 
 	std::vector<springai::Unit*> GetSelectedUnits() const { return callback->GetSelectedUnits(); }
 
@@ -53,11 +53,11 @@ public:
 	std::vector<springai::WeaponDef*> GetWeaponDefs() const { return callback->GetWeaponDefs(); }
 
 	std::vector<springai::Feature*> GetFeatures() const { return callback->GetFeatures(); }
-	std::vector<springai::Feature*> GetFeaturesIn(const springai::AIFloat3& pos, float radius) const {
-		return callback->GetFeaturesIn(pos, radius);
+	std::vector<springai::Feature*> GetFeaturesIn(const springai::AIFloat3& pos, float radius, bool spherical = true) const {
+		return callback->GetFeaturesIn(pos, radius, spherical);
 	}
 	bool IsFeatures() const;
-	bool IsFeaturesIn(const springai::AIFloat3& pos, float radius) const;
+	bool IsFeaturesIn(const springai::AIFloat3& pos, float radius, bool spherical = true) const;
 
 	int Unit_GetDefId(int unitId) const;
 	bool Unit_HasCommands(int unitId) const;

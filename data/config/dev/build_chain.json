@@ -66,7 +66,7 @@
 			// <offset>:
 			//     1) [x, z] in South facing, elmos
 			//     2) {<direction>: <delta>} - left, right, front, back
-			// <condition>: air:<bool>, energy:<bool>, wind:<float>, chance:0.0~1.0
+			// <condition>: air:<bool>, energy:<bool>, wind:<float>, sensor:<float>, chance:0.0~1.0
 			// <priority>: low, normal, high, now
 
 			// Build pylon in direction of nearby mex cluster

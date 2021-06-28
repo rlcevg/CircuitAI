@@ -21,6 +21,7 @@ SBuildInfo::CondName SBuildInfo::condNames = {
 	{"air",    SBuildInfo::Condition::AIR},
 	{"energy", SBuildInfo::Condition::ENERGY},
 	{"wind",   SBuildInfo::Condition::WIND},
+	{"sensor", SBuildInfo::Condition::SENSOR},
 	{"chance", SBuildInfo::Condition::CHANCE},
 	{"always", SBuildInfo::Condition::ALWAYS},
 };
