@@ -223,6 +223,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 
 	// Alter/randomize position
 	AIFloat3 pos = (shake > .0f) ? utils::get_near_pos(position, shake) : position;
+	CTerrainManager::CorrectPosition(pos);
 
 	const float searchRadius = 200.0f * SQUARE_SIZE;
 	FindBuildSite(unit, pos, searchRadius);

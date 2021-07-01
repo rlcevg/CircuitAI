@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_MODULE_ECONOMYMANAGER_H_
 
 #include "module/Module.h"
+#include "util/AvailList.h"
 
 #include "AIFloat3.h"
 
@@ -128,18 +129,11 @@ private:
 	std::vector<bool> openSpots;  // AI-local metal info
 	int mexCount;
 
-	std::set<CCircuitDef*> allEnergyDefs;
-	std::set<CCircuitDef*> availEnergyDefs;
-	struct SEnergyInfo {
-		CCircuitDef* cdef;
-		float costM;
-		float costE;
+	struct SEnergyExt {
 		float make;
-		float costDivMake;
 		int limit;
-		bool operator==(const CCircuitDef* d) { return cdef == d; }
 	};
-	std::vector<SEnergyInfo> energyInfos;
+	CAvailList<SEnergyExt> energyDefs;
 	std::unordered_map<CCircuitDef*, int> engyLimits;
 
 	float ecoStep;

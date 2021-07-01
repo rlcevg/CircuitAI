@@ -924,7 +924,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			CCircuitDef* bd = facDef.buildDefs[i];
 			if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost()))
 				|| !bd->IsAvailable(frame)
-				|| !terrainMgr->CanBeBuiltAtSafe(bd, pos, range)
+				|| !terrainMgr->CanBeBuiltAt(bd, pos, range)
 				|| !isEnemyInArea(frame, bd))
 			{
 				continue;
