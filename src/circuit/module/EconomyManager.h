@@ -164,7 +164,7 @@ private:
 		float pull;
 		int mex;
 		float fraction;
-		inline bool operator< (const SPullMtoS& rhs) { return mex < rhs.mex; }
+		inline bool operator< (const SPullMtoS& rhs) const { return mex < rhs.mex; }
 		inline bool operator() (const SPullMtoS& lhs, const int rhs) { return lhs.mex < rhs; }
 	};
 	std::vector<SPullMtoS> mspInfos;
